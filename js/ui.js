@@ -12,13 +12,52 @@ function navigateToHome(){
 // 光标位置记忆键
 const CURSOR_POS_KEY='kfm_cursor_position';
 
+// 光标高亮条（独立元素）
+let cursorHighlight=null;
+
+// 初始化光标高亮条
+function initCursorHighlight(){
+  if(cursorHighlight)return;
+  
+  const container=document.querySelector('.sidebar-content');
+  if(!container)return;
+  
+  cursorHighlight=document.createElement('div');
+  cursorHighlight.className='cursor-highlight';
+  cursorHighlight.style.top='0px';
+  container.appendChild(cursorHighlight);
+}
+
+// 更新光标高亮条位置
+function updateCursorHighlight(){
+  if(!cursorHighlight)initCursorHighlight();
+  
+  const selected=document.querySelector('.tree-item.selected');
+  if(!selected){
+    cursorHighlight.style.opacity='0';
+    return;
+  }
+  
+  const row=selected.querySelector('.tree-row')||selected;
+  const container=document.querySelector('.sidebar-content');
+  const containerRect=container.getBoundingClientRect();
+  const rowRect=row.getBoundingClientRect();
+  
+  // 计算相对于容器的位置
+  const top=rowRect.top-containerRect.top+container.scrollTop;
+  cursorHighlight.style.top=top+'px';
+  cursorHighlight.style.opacity='1';
+  cursorHighlight.style.height=rowRect.height+'px';
+}
+
 // 侧栏
 function openSidebar(){
   document.getElementById('sidebar').classList.add('open');
   document.getElementById('overlay').classList.add('show');
   
-  // 恢复光标位置
+  // 初始化并恢复光标位置
   setTimeout(()=>{
+    initCursorHighlight();
     restoreCursorPosition();
   },100);
 }
@@ -52,21 +91,38 @@ function restoreCursorPosition(){
   document.querySelectorAll('.tree-item.selected').forEach(el=>el.classList.remove('selected'));
   
   // 尝试恢复保存的位置
+  let targetIndex=-1;
   try{
     const saved=JSON.parse(localStorage.getItem(CURSOR_POS_KEY));
     if(saved&&saved.index>=0&&saved.index<items.length){
-      items[saved.index].classList.add('selected');
-      selectedFile=items[saved.index].dataset.path;
-      centerCursorToView(items[saved.index]);
-      return;
+      targetIndex=saved.index;
     }
   }catch(e){}
   
   // 首次打开或无效位置：光标放在中间
-  const middleIndex=Math.floor(items.length/2);
-  items[middleIndex].classList.add('selected');
-  selectedFile=items[middleIndex].dataset.path;
-  centerCursorToView(items[middleIndex]);
+  if(targetIndex===-1){
+    targetIndex=Math.floor(items.length/2);
+  }
+  
+  // 设置选中（无动画）
+  items[targetIndex].classList.add('selected');
+  selectedFile=items[targetIndex].dataset.path;
+  
+  // 更新光标高亮条位置
+  updateCursorHighlight();
+  centerCursorToView(items[targetIndex]);
+}
+
+// 光标居中显示
+function centerCursorToView(item){
+  const sidebarContent=document.querySelector('.sidebar-content');
+  const containerRect=sidebarContent.getBoundingClientRect();
+  const treeRow=item.querySelector('.tree-row')||item;
+  const rowRect=treeRow.getBoundingClientRect();
+  const rowCenter=rowRect.top+rowRect.height/2;
+  const containerCenter=containerRect.top+containerRect.height/2;
+  const scrollOffset=rowCenter-containerCenter;
+  sidebarContent.scrollTop+=scrollOffset;
 }
 
 // overlay 点击 - 已移至 gestures.js 的 touchend 处理

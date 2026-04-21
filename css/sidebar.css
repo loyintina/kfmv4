@@ -9,9 +9,23 @@
 .sidebar-tools button.active{border-color:var(--accent);background:rgba(124,58,237,.25)}
 
 /* 树节点 */
-.tree-item{cursor:pointer;font-size:13px;position:relative;outline:none;will-change:transform;overflow:visible}
-.tree-item.selected>.tree-row{background:rgba(46,213,163,.15);border-left:3px solid var(--accent);margin-left:-3px}
-.tree-row{display:flex;align-items:center;padding:4px 8px;border-radius:4px;position:relative;border-left:3px solid transparent;transition:all .15s}
+.tree-item{cursor:pointer;font-size:13px;position:relative;outline:none;overflow:visible}
+.tree-item.selected{pointer-events:none} /* 选中时禁止点击，防止误触 */
+.tree-row{display:flex;align-items:center;padding:4px 8px;border-radius:4px;position:relative;border-left:3px solid transparent;transition:background .15s}
+.tree-row:active{background:rgba(124,58,237,.2)}
+
+/* 光标高亮条（独立元素，浮动在文件树上方） */
+.cursor-highlight{
+  position:absolute;
+  left:0;right:0;
+  height:32px;
+  background:rgba(46,213,163,.15);
+  border-left:3px solid var(--accent);
+  border-radius:4px;
+  z-index:50;
+  pointer-events:none;
+  transition:top .3s cubic-bezier(.25,.46,.45,.94);
+}
 .tree-row:active{background:rgba(124,58,237,.2)}
 .tree-toggle{width:18px;height:18px;margin-right:6px;display:inline-block;vertical-align:middle;flex-shrink:0}
 .tree-toggle::before{content:'▶';font-size:10px;color:var(--accent);display:inline-block;transition:transform .2s}
