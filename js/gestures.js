@@ -238,15 +238,10 @@ function moveCursor(direction){
   moveCursorWithScroll(direction);
 }
 
-// 初始化光标到第一个
+// 初始化光标（使用 restoreCursorPosition）
 function initCursorToFirst(){
   setTimeout(()=>{
-    const items=document.querySelectorAll('#fileTree .tree-item');
-    if(items.length===0)return;
-    
-    document.querySelectorAll('.tree-item.selected').forEach(el=>el.classList.remove('selected'));
-    items[0].classList.add('selected');
-    selectedFile=items[0].dataset.path;
+    restoreCursorPosition();
   },100);
 }
 
