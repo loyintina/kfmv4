@@ -18,6 +18,3 @@ function closeSidebar(){document.getElementById('sidebar').classList.remove('ope
 document.getElementById('overlay').addEventListener('click',(e)=>{
   // 光标动作由 gestures.js 的 touchend 处理
 });
-
-closeSidebar();
-}
