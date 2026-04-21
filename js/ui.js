@@ -69,14 +69,43 @@ function updateCursorHighlight(immediate=false){
   }
 }
 
+// ========== 光标同步机制（光标位置 = 盒子位置） ==========
+
+// 滚动时光标立即同步盒子位置
+let scrollSyncRAF=null;
+function setupCursorSync(){
+  const container=document.querySelector('.sidebar-content');
+  if(!container)return;
+  
+  container.addEventListener('scroll',()=>{
+    if(scrollSyncRAF)cancelAnimationFrame(scrollSyncRAF);
+    scrollSyncRAF=requestAnimationFrame(()=>{
+      updateCursorHighlight(false); // 立即同步，无动画
+    });
+  },{passive:true});
+}
+
+// 展开收起时光标跟随盒子跳动
+function syncCursorDuringBounce(){
+  let frame=0;
+  const maxFrames=25; // 约400ms
+  const sync=()=>{
+    if(frame>=maxFrames)return;
+    updateCursorHighlight(false);
+    frame++;
+    requestAnimationFrame(sync);
+  };
+  sync();
+}
+
 // 侧栏
 function openSidebar(){
   document.getElementById('sidebar').classList.add('open');
   document.getElementById('overlay').classList.add('show');
   
-  // 初始化并恢复光标位置
   setTimeout(()=>{
     initCursorHighlight();
+    setupCursorSync();
     restoreCursorPosition();
   },100);
 }
