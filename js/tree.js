@@ -138,9 +138,9 @@ async function renderTree(container=document.getElementById('fileTree'),path='',
           const doBounce=(el,dir,delay)=>{
             setTimeout(()=>{
               const offset=dir?-10:10;const rebound=dir?2:-2;
-              el.style.transition='transform .3s cubic-bezier(.34,1.56,.64,1)';
+              el.style.transition='transform .15s cubic-bezier(.34,1.56,.64,1)';
               el.style.transform='translateY('+offset+'px)';
-              setTimeout(()=>{el.style.transform='translateY('+rebound+'px)';},320);
+              setTimeout(()=>{el.style.transform='translateY('+rebound+'px)';},170);
               setTimeout(()=>{el.style.transform='';el.style.transition='';},450);
             },delay);
           };
