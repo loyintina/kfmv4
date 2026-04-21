@@ -69,29 +69,28 @@ function updateCursorHighlight(immediate=false){
   }
 }
 
-// ========== 光标同步机制（光标位置 = 盒子位置） ==========
+// ========== 光标位置绑定 ==========
 
-// 滚动时光标立即同步盒子位置
+// 滚动时：光标立即跟随盒子（不掉队）
 let scrollSyncRAF=null;
-function setupCursorSync(){
+function setupScrollSync(){
   const container=document.querySelector('.sidebar-content');
   if(!container)return;
-  
   container.addEventListener('scroll',()=>{
-    if(scrollSyncRAF)cancelAnimationFrame(scrollSyncRAF);
+    if(scrollSyncRAF)return; // 已在同步中
     scrollSyncRAF=requestAnimationFrame(()=>{
-      updateCursorHighlight(false); // 立即同步，无动画
+      updateCursorHighlight(true); // 立即定位
+      scrollSyncRAF=null;
     });
   },{passive:true});
 }
 
-// 展开收起时光标跟随盒子跳动
+// 展开/收起时：光标跟随盒子跳动（循环同步）
 function syncCursorDuringBounce(){
   let frame=0;
-  const maxFrames=25; // 约400ms
   const sync=()=>{
-    if(frame>=maxFrames)return;
-    updateCursorHighlight(false);
+    if(frame>=30)return; // ~500ms
+    updateCursorHighlight(true);
     frame++;
     requestAnimationFrame(sync);
   };
@@ -105,7 +104,7 @@ function openSidebar(){
   
   setTimeout(()=>{
     initCursorHighlight();
-    setupCursorSync();
+    setupScrollSync();
     restoreCursorPosition();
   },100);
 }
