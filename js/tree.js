@@ -107,19 +107,30 @@ async function renderTree(container=document.getElementById('fileTree'),path='',
 
     // 右滑进入编辑模式
     let touchStartX=0,touchStartY=0;
-    row.addEventListener('touchstart',e=>{touchStartX=e.touches[0].clientX;touchStartY=e.touches[0].clientY;},{passive:true});
+    let rowMoved=false;
+    row.addEventListener('touchstart',e=>{touchStartX=e.touches[0].clientX;touchStartY=e.touches[0].clientY;rowMoved=false;},{passive:true});
     let rowSwiped=false;
     row.addEventListener('touchmove',e=>{
       if(rowSwiped)return;
-      // 编辑模式已删除
+      const dx=e.touches[0].clientX-touchStartX;
+      const dy=e.touches[0].clientY-touchStartY;
+      if(Math.abs(dx)>10||Math.abs(dy)>10)rowMoved=true;
     },{passive:true});
     row.addEventListener('touchend',()=>{rowSwiped=false;},{passive:true});
 
     // 点击事件
     row.addEventListener('click',(e)=>{
-      // 手势刚结束时禁止点击，防止滑动触发
-      if(typeof suppressUntil!=='undefined' && Date.now()<suppressUntil)return;
-      console.log('tree.js click handler 被调用:', item.path, 'isDir:', item.isDir);
+      // 如果手指有移动（滑动），不触发点击
+      if(rowMoved){
+        console.log('click blocked: rowMoved=true');
+        return;
+      }
+      // 滑动手势后禁止点击
+      if(typeof suppressUntil!=='undefined' && Date.now()<suppressUntil){
+        console.log('click suppressed after swipe');
+        return;
+      }
+      console.log('tree.js click:', item.path, 'isDir:', item.isDir);
       e.stopPropagation();
       
       // 检查是否点击的是当前光标所在项
