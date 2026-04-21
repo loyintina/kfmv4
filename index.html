@@ -50,7 +50,6 @@
 </div>
 <div class="info-card"><h3>⚡ 快捷操作</h3>
 <div class="quick-actions">
-<button class="quick-btn" onclick="openTerminal()"><span class="icon">⌨</span><span class="label">终端</span></button>
 <button class="quick-btn" onclick="refreshTree()"><span class="icon">↻</span><span class="label">刷新</span></button>
 <button class="quick-btn" onclick="navigateToHome()"><span class="icon">🏠</span><span class="label">主页</span></button>
 </div>
@@ -86,7 +85,7 @@
 <button onclick="editorUndo()" title="后退">←</button>
 <button onclick="editorRedo()" title="前进">→</button>
 <button onclick="editorCmd(':')" title="命令行">:</button>
-<button onclick="editorClose()">关闭</button>
+<button onclick="editorClose()">关�����</button>
 </div>
 </div>
 
@@ -100,21 +99,7 @@
 </div>
 </main>
 
-<div class="terminal-panel" id="terminalPanel">
-<div class="terminal-content">
-<div class="terminal-handle"></div>
-<div class="terminal-header">
-<span>⌨ 命令行</span>
-<button class="terminal-close" onclick="closeTerminal()">×</button>
-</div>
-<div class="terminal-output" id="terminalOutput"></div>
-<div class="terminal-input-row">
-<input class="terminal-input" id="terminalInput" placeholder="输入命令..." onkeypress="if(event.key==='Enter')runCommand()">
-<button class="terminal-run" onclick="runCommand()">运行</button>
-</div>
-<button onclick="closeTerminal()" style="width:100%;margin-top:12px;padding:12px;background:var(--border);border:none;border-radius:8px;color:var(--text);cursor:pointer">关闭</button>
-</div>
-</div>
+
 
 <div class="overlay" id="actionsOverlay"></div>
 <div class="actions-panel" id="actionsPanel">

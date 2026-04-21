@@ -89,18 +89,10 @@ document.addEventListener('touchmove',(e)=>{
     canScrollUp=scrollTop===0;
   }
 
-  // 下拉打开命令行（编辑模式下禁用）
+  // 下拉手势已禁用（命令行面板已删除）
   const sidebarOpen=document.getElementById('sidebar').classList.contains('open');
   const actionsOpen=document.getElementById('actionsPanel').classList.contains('open');
   const logOpen=document.getElementById('logPanel')?.classList.contains('open');
-  if(!sidebarOpen&&!actionsOpen&&!logOpen&&!pullDownTriggered&&!editMode){
-    if(canScrollUp&&dy>80&&!document.getElementById('terminalPanel').classList.contains('open')){
-      openTerminal();
-      pullDownTriggered=true;
-      touchStarted=false;
-      return;
-    }
-  }
 
   // 左栏打开时，左滑收起（编辑模式/刚退出编辑模式禁用）
   if(document.getElementById('sidebar').classList.contains('open')){

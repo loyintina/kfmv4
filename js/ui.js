@@ -224,7 +224,7 @@ function navigateToHome(){
   document.getElementById('homePage').style.display='block';
   document.getElementById('previewPage').classList.remove('show');
   document.getElementById('editorPage').classList.remove('show');
-  closeSidebar();closeActions();closeTerminal();
+  closeSidebar();closeActions();
 }
 
 // 侧栏
@@ -238,24 +238,6 @@ document.getElementById('overlay').addEventListener('click',(e)=>{
   // 不做任何操作，光标动作由 gestures.js 的 touchend 处理
 });
 document.getElementById('actionsOverlay').addEventListener('click',closeActions);
-document.getElementById('terminalPanel').addEventListener('click',(e)=>{if(e.target.id==='terminalPanel')closeTerminal();});
-
-// 命令栏上滑退出
-let terminalTouchStartY=0;
-document.getElementById('terminalPanel').addEventListener('touchstart',(e)=>{if(e.target.id==='terminalPanel')terminalTouchStartY=e.touches[0].clientY;},{passive:true});
-document.getElementById('terminalPanel').addEventListener('touchmove',(e)=>{if(e.target.id==='terminalPanel'){const dy=e.touches[0].clientY-terminalTouchStartY;if(dy<-80)closeTerminal();}},{passive:true});
-
-// 命令行
-function openTerminal(){document.getElementById('terminalPanel').classList.add('open');}
-function closeTerminal(){document.getElementById('terminalPanel').classList.remove('open');}
-async function runCommand(){
-  const input=document.getElementById('terminalInput');const output=document.getElementById('terminalOutput');
-  const cmd=input.value.trim();if(!cmd)return;
-  output.textContent+='$ '+cmd+'\n';input.value='';
-  const result=await apiExec(cmd);
-  output.textContent+=(result.stdout||'')+(result.stderr||'')+(result.error||'')+'\n';
-  output.scrollTop=output.scrollHeight;
-}
 
 // 预览
 async function previewFile(path){
