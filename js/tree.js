@@ -160,6 +160,9 @@ async function renderTree(container=document.getElementById('fileTree'),path='',
         if(prevSelected)prevSelected.classList.remove('selected');
         div.classList.add('selected');
         selectedFile=item.path;
+        
+        // 更新光标高亮条位置（触发平滑动画）
+        updateCursorHighlight();
       }
       
       e.stopPropagation();

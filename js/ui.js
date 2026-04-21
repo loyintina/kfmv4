@@ -12,13 +12,71 @@ function navigateToHome(){
 // 光标位置记忆键
 const CURSOR_POS_KEY='kfm_cursor_position';
 
+// 光标高亮条（独立元素）
+let cursorHighlight=null;
+
+// 初始化光标高亮条
+function initCursorHighlight(){
+  if(cursorHighlight)return;
+  
+  const container=document.querySelector('.sidebar-content');
+  if(!container)return;
+  
+  cursorHighlight=document.createElement('div');
+  cursorHighlight.className='cursor-highlight';
+  cursorHighlight.style.top='0px';
+  container.appendChild(cursorHighlight);
+}
+
+// 更新光标高亮条位置
+// immediate=true 表示立即定位（无动画）
+function updateCursorHighlight(immediate=false){
+  if(!cursorHighlight)initCursorHighlight();
+  
+  const selected=document.querySelector('.tree-item.selected');
+  if(!selected){
+    cursorHighlight.style.opacity='0';
+    return;
+  }
+  
+  const row=selected.querySelector('.tree-row')||selected;
+  const container=document.querySelector('.sidebar-content');
+  const containerRect=container.getBoundingClientRect();
+  const rowRect=row.getBoundingClientRect();
+  
+  // 计算相对于容器的位置
+  const top=rowRect.top-containerRect.top+container.scrollTop;
+  
+  // 禁用动画（立即定位）
+  if(immediate){
+    cursorHighlight.style.transition='none';
+  }else{
+    cursorHighlight.style.transition='top .3s cubic-bezier(.25,.46,.45,.94)';
+  }
+  
+  cursorHighlight.style.top=top+'px';
+  cursorHighlight.style.opacity='1';
+  cursorHighlight.style.height=rowRect.height+'px';
+  
+  // 如果是立即定位，之后恢复动画过渡
+  if(immediate){
+    // 强制重绘后恢复过渡
+    requestAnimationFrame(()=>{
+      requestAnimationFrame(()=>{
+        cursorHighlight.style.transition='top .3s cubic-bezier(.25,.46,.45,.94)';
+      });
+    });
+  }
+}
+
 // 侧栏
 function openSidebar(){
   document.getElementById('sidebar').classList.add('open');
   document.getElementById('overlay').classList.add('show');
   
-  // 恢复光标位置
+  // 初始化并恢复光标位置
   setTimeout(()=>{
+    initCursorHighlight();
     restoreCursorPosition();
   },100);
 }
@@ -65,21 +123,25 @@ function restoreCursorPosition(){
     targetIndex=Math.floor(items.length/2);
   }
   
-  // 禁用过渡动画（立即定位）
-  const row=items[targetIndex].querySelector('.tree-row');
-  if(row)row.classList.add('no-transition');
-  
+  // 设置选中（无动画）
   items[targetIndex].classList.add('selected');
   selectedFile=items[targetIndex].dataset.path;
   
-  // 强制重绘后恢复过渡
-  requestAnimationFrame(()=>{
-    requestAnimationFrame(()=>{
-      if(row)row.classList.remove('no-transition');
-    });
-  });
-  
+  // 更新光标高亮条位置（立即定位，无动画）
+  updateCursorHighlight(true);
   centerCursorToView(items[targetIndex]);
+}
+
+// 光标居中显示
+function centerCursorToView(item){
+  const sidebarContent=document.querySelector('.sidebar-content');
+  const containerRect=sidebarContent.getBoundingClientRect();
+  const treeRow=item.querySelector('.tree-row')||item;
+  const rowRect=treeRow.getBoundingClientRect();
+  const rowCenter=rowRect.top+rowRect.height/2;
+  const containerCenter=containerRect.top+containerRect.height/2;
+  const scrollOffset=rowCenter-containerCenter;
+  sidebarContent.scrollTop+=scrollOffset;
 }
 
 // overlay 点击 - 已移至 gestures.js 的 touchend 处理
