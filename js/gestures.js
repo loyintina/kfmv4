@@ -91,22 +91,12 @@ document.addEventListener('touchmove',(e)=>{
 
   // 下拉手势已禁用（命令行面板已删除）
   const sidebarOpen=document.getElementById('sidebar').classList.contains('open');
-  const actionsOpen=document.getElementById('actionsPanel').classList.contains('open');
   const logOpen=document.getElementById('logPanel')?.classList.contains('open');
 
   // 左栏打开时，左滑收起（编辑模式/刚退出编辑模式禁用）
   if(document.getElementById('sidebar').classList.contains('open')){
     if(dx<-60&&!editMode&&!justExitedEdit){
       closeSidebar();
-      touchStarted=false;
-      return;
-    }
-  }
-
-  // 右栏打开时，右滑收起（编辑模式下禁用）
-  if(document.getElementById('actionsPanel').classList.contains('open')){
-    if(dx>60&&!editMode){
-      closeActions();
       touchStarted=false;
       return;
     }
@@ -129,14 +119,6 @@ document.addEventListener('touchmove',(e)=>{
   if(!document.getElementById('sidebar').classList.contains('open')&&dx>60){
     openSidebar();
     initCursorToFirst();
-    touchStarted=false;
-    return;
-  }
-
-  // 右栏未打开时，左滑打开（但左栏打开时不触发）
-  const sidebarOpen2=document.getElementById('sidebar').classList.contains('open');
-  if(!document.getElementById('actionsPanel').classList.contains('open')&&dx<-60&&!sidebarOpen2){
-    openActions({name:'请先选择文件',path:''});
     touchStarted=false;
     return;
   }

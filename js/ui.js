@@ -224,7 +224,7 @@ function navigateToHome(){
   document.getElementById('homePage').style.display='block';
   document.getElementById('previewPage').classList.remove('show');
   document.getElementById('editorPage').classList.remove('show');
-  closeSidebar();closeActions();
+  closeSidebar();
 }
 
 // 侧栏
@@ -237,7 +237,6 @@ document.getElementById('overlay').addEventListener('click',(e)=>{
   if(editMode)return;
   // 不做任何操作，光标动作由 gestures.js 的 touchend 处理
 });
-document.getElementById('actionsOverlay').addEventListener('click',closeActions);
 
 // 预览
 async function previewFile(path){
@@ -247,14 +246,5 @@ async function previewFile(path){
   document.getElementById('previewContent').textContent='';
   const result=await apiExec('cat "'+path+'"');
   document.getElementById('previewContent').textContent=result.stdout||result.stderr||'(空文件)';
-  closeActions();closeSidebar();
+  closeSidebar();
 }
-
-// 右栏操作
-function openActions(file){selectedFile=file.path;document.getElementById('actionsFilename').textContent=file.name;document.getElementById('actionsPanel').classList.add('open');document.getElementById('actionsOverlay').classList.add('show');}
-function closeActions(){document.getElementById('actionsPanel').classList.remove('open');document.getElementById('actionsOverlay').classList.remove('show');}
-function openFile(){if(selectedFile)previewFile(selectedFile);}
-function copyPath(){navigator.clipboard.writeText(selectedFile);alert('路径已复制');}
-function runFile(){apiExec('bash "'+selectedFile+'"');closeActions();alert('已运行');}
-async function renameFile(){const newName=prompt('新文件名:',selectedFile.split('/').pop());if(newName){const dir=selectedFile.substring(0,selectedFile.lastIndexOf('/'));await apiExec('mv "'+selectedFile+'" "'+dir+'/'+newName+'"');refreshTree();}closeActions();}
-async function deleteFile(){if(confirm('确认删除 '+selectedFile.split('/').pop()+'?')){await apiExec('rm -r "'+selectedFile+'"');refreshTree();navigateToHome();}closeActions();}
