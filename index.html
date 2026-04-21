@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
+<title>Kalo File Manager</title>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/sidebar.css">
+<link rel="stylesheet" href="css/editor.css">
+<link rel="stylesheet" href="css/editmode.css">
+</head>
+<body>
+<div class="sidebar" id="sidebar">
+<div class="sidebar-content" id="fileTree"><div class="loading">加载中...</div></div>
+<div class="sidebar-tools">
+<button id="toggleExpandBtn" onclick="toggleExpand()" title="展开/收起">⇅</button>
+<button id="toggleHiddenBtn" onclick="toggleHidden()" title="显示隐藏">👁</button>
+<button onclick="createNewFile()" title="新建文件">📄</button>
+<button onclick="createNewFolder()" title="新建文件夹">📁</button>
+<button onclick="renameSelected()" title="重命名">✏</button>
+</div>
+</div>
+<div class="overlay" id="overlay"></div>
+
+<!-- 编辑模式退出按钮 -->
+<button class="edit-mode-exit" id="editModeExit">×</button>
+
+<!-- 操作盒子 -->
+<div class="operation-box" id="operationBox">
+<div class="operation-box-header">
+<span class="operation-box-count" id="operationCount">0 个项目</span>
+</div>
+<div class="operation-box-content" id="operationContent"></div>
+<div class="operation-actions" id="operationActions">
+<button class="operation-action-btn copy" onclick="setOperationMode('copy')">复制</button>
+<button class="operation-action-btn move active" onclick="setOperationMode('move')">移动</button>
+<button class="operation-action-btn delete" onclick="setOperationMode('delete')">删除</button>
+</div>
+</div>
+
+<!-- 执行提示 -->
+<div class="operation-toast" id="operationToast"></div>
+
+<main class="main" id="main">
+<div class="home-page" id="homePage">
+<div class="info-card"><h3>📊 系统信息</h3>
+<div class="info-row"><span class="info-label">用户</span><span class="info-value" id="sysUser">-</span></div>
+<div class="info-row"><span class="info-label">家目录</span><span class="info-value" id="sysHome">-</span></div>
+<div class="info-row"><span class="info-label">写入区</span><span class="info-value" id="sysWrite">-</span></div>
+</div>
+<div class="info-card"><h3>⚡ 快捷操作</h3>
+<div class="quick-actions">
+<button class="quick-btn" onclick="openTerminal()"><span class="icon">⌨</span><span class="label">终端</span></button>
+<button class="quick-btn" onclick="refreshTree()"><span class="icon">↻</span><span class="label">刷新</span></button>
+<button class="quick-btn" onclick="navigateToHome()"><span class="icon">🏠</span><span class="label">主页</span></button>
+</div>
+</div>
+<div class="home-hint">
+<p>→ 从左向右滑动打开文件树</p>
+<p>← 从右向左滑动打开操作面板</p>
+<p>↓ 从上向下拉动打开命令行</p>
+</div>
+<div class="preview-page" id="previewPage">
+<div class="preview-header"><span class="preview-filename" id="previewFilename">-</span></div>
+<div class="preview-content" id="previewContent"><div class="loading">加载中...</div></div>
+</div>
+</div>
+
+<!-- 文件编辑器 -->
+<div class="editor-page" id="editorPage">
+<div class="editor-loading" id="editorLoading"></div>
+<div class="editor-info">
+<span class="editor-filename" id="editorFilename">-</span>
+<span class="editor-modified" id="editorModified">● 已修改</span>
+</div>
+<div class="editor-container">
+<div class="editor-lines" id="editorLines"></div>
+<div class="editor-content" id="editorContent" contenteditable="true" spellcheck="false"></div>
+</div>
+<div class="cmd-input-wrap" id="cmdInputWrap">
+<span class="cmd-prompt">:</span>
+<input type="text" class="cmd-input" id="cmdInput" placeholder="输入命令...">
+</div>
+<div class="editor-toolbar">
+<span class="mode-indicator" id="modeIndicator">NORMAL</span>
+<button onclick="editorUndo()" title="后退">←</button>
+<button onclick="editorRedo()" title="前进">→</button>
+<button onclick="editorCmd(':')" title="命令行">:</button>
+<button onclick="editorClose()">关闭</button>
+</div>
+</div>
+
+<!-- 快照历史面板 -->
+<div class="snapshot-panel" id="snapshotPanel">
+<div class="snapshot-header">
+<span class="snapshot-title">版本历史</span>
+<button onclick="closeSnapshots()" style="background:none;border:none;color:var(--text);font-size:24px">×</button>
+</div>
+<div class="snapshot-list" id="snapshotList"></div>
+</div>
+</main>
+
+<div class="terminal-panel" id="terminalPanel">
+<div class="terminal-content">
+<div class="terminal-handle"></div>
+<div class="terminal-header">
+<span>⌨ 命令行</span>
+<button class="terminal-close" onclick="closeTerminal()">×</button>
+</div>
+<div class="terminal-output" id="terminalOutput"></div>
+<div class="terminal-input-row">
+<input class="terminal-input" id="terminalInput" placeholder="输入命令..." onkeypress="if(event.key==='Enter')runCommand()">
+<button class="terminal-run" onclick="runCommand()">运行</button>
+</div>
+<button onclick="closeTerminal()" style="width:100%;margin-top:12px;padding:12px;background:var(--border);border:none;border-radius:8px;color:var(--text);cursor:pointer">关闭</button>
+</div>
+</div>
+
+<div class="overlay" id="actionsOverlay"></div>
+<div class="actions-panel" id="actionsPanel">
+<div class="actions-header">
+<span class="actions-title" id="actionsFilename">文件操作</span>
+<button class="actions-close" onclick="closeActions()">×</button>
+</div>
+<div class="actions-list">
+<div class="action-item" onclick="openFile()"><span class="icon">📄</span><span class="label">打开/预览</span></div>
+<div class="action-item" onclick="runFile()"><span class="icon">▶</span><span class="label">运行</span></div>
+<div class="action-item" onclick="copyPath()"><span class="icon">📋</span><span class="label">复制路径</span></div>
+<div class="action-item" onclick="renameFile()"><span class="icon">✏</span><span class="label">重命名</span></div>
+<div class="action-item danger" onclick="deleteFile()"><span class="icon">🗑</span><span class="label">删除</span></div>
+<div class="action-item" onclick="openLogPanel()"><span class="icon">📋</span><span class="label">查看日志</span></div>
+</div>
+</div>
+
+<!-- 日志面板 -->
+<div class="log-panel" id="logPanel">
+<div class="log-header">
+<span class="log-title">调试日志</span>
+<div class="log-actions">
+<button onclick="clearLogs()" style="background:none;border:none;color:var(--text);font-size:12px;padding:4px 8px">清空</button>
+<button onclick="closeLogPanel()" style="background:none;border:none;color:var(--text);font-size:20px">×</button>
+</div>
+</div>
+<div class="log-content" id="logContent"></div>
+</div>
+
+<!-- JS加载顺序很重要 -->
+<script src="js/app.js"></script>
+<script src="js/editor.js"></script>
+<script src="js/tree.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/editmode.js"></script>
+<script src="js/gestures.js"></script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "name": "kfmv4",
+  "version": "1.0.0",
+  "description": "KFM v4 - 服务器文件管理器",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.22.1"
+  }
+}
