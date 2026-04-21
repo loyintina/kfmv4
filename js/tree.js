@@ -118,7 +118,7 @@ async function renderTree(container=document.getElementById('fileTree'),path='',
     // 点击事件
     row.addEventListener('click',(e)=>{
       // 手势刚结束时禁止点击，防止滑动触发
-      if(typeof suppressClick!=='undefined' && suppressClick)return;
+      if(typeof suppressUntil!=='undefined' && Date.now()<suppressUntil)return;
       console.log('tree.js click handler 被调用:', item.path, 'isDir:', item.isDir);
       e.stopPropagation();
       

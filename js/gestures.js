@@ -8,7 +8,7 @@ let scrollMode=false; // 是否在滚动模式
 let lastTouchY=0; // 上一次触摸Y坐标，用于计算滚动量
 let lastCursorIndex=0; // 上次光标位置，用于判断移动方向
 let suppressClick=false; // 手势结束后短暂禁止点击
-let suppressTimer=null;
+let suppressUntil=0; // 禁止点击直到此时间戳
 
 document.addEventListener('touchstart',(e)=>{
   touchStartX=e.touches[0].clientX;
@@ -87,9 +87,7 @@ document.addEventListener('touchmove',(e)=>{
   // 左栏打开时，左滑收起
   if(document.getElementById('sidebar').classList.contains('open')){
     if(dx<-60){
-      suppressClick=true;
-      if(suppressTimer)clearTimeout(suppressTimer);
-      suppressTimer=setTimeout(()=>{suppressClick=false;},400);
+      suppressUntil=Date.now()+500;
       closeSidebar();
       touchStarted=false;
       return;
@@ -110,9 +108,7 @@ document.addEventListener('touchmove',(e)=>{
 
   // 左栏未打开时，右滑打开
   if(!document.getElementById('sidebar').classList.contains('open')&&dx>60){
-    suppressClick=true;
-    if(suppressTimer)clearTimeout(suppressTimer);
-    suppressTimer=setTimeout(()=>{suppressClick=false;},400);
+    suppressUntil=Date.now()+500;
     openSidebar();
     initCursorToFirst();
     touchStarted=false;
@@ -138,7 +134,7 @@ function initHiddenScrollBox(){
   let scrollBox=document.getElementById('cursorScrollBox');
   
   if(!scrollBox){
-    // 创建隐藏滚动盒
+    // 创建隐��滚动盒
     scrollBox=document.createElement('div');
     scrollBox.id='cursorScrollBox';
     scrollBox.style.cssText=`
@@ -262,7 +258,7 @@ let isDispatching=false; // 防止循环触发
 
 async function executeCursorAction(){
   if(isDispatching)return; // 防止循环
-  if(suppressClick)return; // 手势刚结束，不触发
+  if(Date.now()<suppressUntil)return; // 手势刚结束，不触发
   isDispatching=true;
   
   const selectedItem=document.querySelector('.tree-item.selected');
