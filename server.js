@@ -63,7 +63,11 @@ app.post('/api/files/write', (req, res) => {
   try {
     const targetPath = req.body.path;
     const content = req.body.content;
-    fs.writeFileSync(targetPath, content, 'utf-8');
+        if(req.body.append){
+      fs.appendFileSync(targetPath, content, 'utf-8');
+    } else {
+      fs.writeFileSync(targetPath, content, 'utf-8');
+    }
     res.json({ success: true, path: targetPath });
   } catch (error) {
     res.json({ error: error.message });

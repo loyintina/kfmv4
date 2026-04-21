@@ -7,13 +7,8 @@ let hasMoved=false; // 是否发生过滑动
 let scrollMode=false; // 是否在滚动模式
 let lastTouchY=0; // 上一次触摸Y坐标，用于计算滚动量
 let lastCursorIndex=0; // 上次光标位置，用于判断移动方向
-let suppressClick=false; // 手势结束后短暂禁止点击
-let suppressUntil=0; // 禁止点击直到此时间戳
-let skipNextClick=false; // 跳过下一次 click 事件
 
 document.addEventListener('touchstart',(e)=>{
-  // 重置 skipNextClick，允许正常点击
-  if(typeof skipNextClick!=='undefined')skipNextClick=false;
   touchStartX=e.touches[0].clientX;
   touchStartY=e.touches[0].clientY;
   lastTouchY=touchStartY;
@@ -58,6 +53,7 @@ document.addEventListener('touchmove',(e)=>{
   if(cursorMode){
     // 在光标模式下，左滑关闭左栏（优先级最高）
     if(dx<-60){
+      hasMoved=true; // 标记为已移动，防止touchend触发executeCursorAction
       closeSidebar();
       touchStarted=false;
       return;
@@ -90,7 +86,6 @@ document.addEventListener('touchmove',(e)=>{
   // 左栏打开时，左滑收起
   if(document.getElementById('sidebar').classList.contains('open')){
     if(dx<-60){
-      suppressUntil=Date.now()+500;
       closeSidebar();
       touchStarted=false;
       return;
@@ -110,9 +105,7 @@ document.addEventListener('touchmove',(e)=>{
   // 编辑模式下禁用所有侧栏手势
 
   // 左栏未打开时，右滑打开
-  if(!sidebarOpen && dx>60){
-    console.log('SWIPE: opening sidebar, dx=', dx);
-    suppressUntil=Date.now()+500;
+  if(!document.getElementById('sidebar').classList.contains('open')&&dx>60){
     openSidebar();
     initCursorToFirst();
     touchStarted=false;
@@ -138,7 +131,7 @@ function initHiddenScrollBox(){
   let scrollBox=document.getElementById('cursorScrollBox');
   
   if(!scrollBox){
-    // 创建隐��滚动盒
+    // 创建隐藏滚动盒
     scrollBox=document.createElement('div');
     scrollBox.id='cursorScrollBox';
     scrollBox.style.cssText=`
@@ -247,24 +240,21 @@ function moveCursor(direction){
 
 // 初始化光标到第一个
 function initCursorToFirst(){
-  console.log('initCursorToFirst called, setting skipNextClick=true');
-  skipNextClick=true;
   setTimeout(()=>{
     const items=document.querySelectorAll('#fileTree .tree-item');
     if(items.length===0)return;
+    
     document.querySelectorAll('.tree-item.selected').forEach(el=>el.classList.remove('selected'));
     items[0].classList.add('selected');
     selectedFile=items[0].dataset.path;
-    console.log('initCursorToFirst done, first item selected:', items[0].dataset.path, 'skipNextClick:', skipNextClick);
   },100);
 }
 
 // 执行光标动作 - 直接触发光标所在行的点击事件
-let isDispatching=false; // ��止循环触发
+let isDispatching=false; // 防止循环触发
 
 async function executeCursorAction(){
   if(isDispatching)return; // 防止循环
-  if(Date.now()<suppressUntil)return; // 手势刚结束，不触发
   isDispatching=true;
   
   const selectedItem=document.querySelector('.tree-item.selected');
@@ -296,14 +286,11 @@ async function executeCursorAction(){
           await renderTree(childrenWrap,path,1);
           console.log('子目录加载完成');
         }
-        console.log('[GESTURE-ACTION] 展开:', path);
-        console.trace('[GESTURE-ACTION] 触发来源');
         wrap.classList.add('open');
         toggle.classList.add('expanded');
         expandedPaths[path]=true;
       }else{
-        console.log('[GESTURE-ACTION] 收起:', path);
-        console.trace('[GESTURE-ACTION] 触发来源');
+        // 收起
         wrap.classList.remove('open');
         toggle.classList.remove('expanded');
         delete expandedPaths[path];

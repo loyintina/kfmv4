@@ -4,6 +4,12 @@ let selectedFile='';
 let expandedPaths=JSON.parse(localStorage.getItem('expandedPaths')||'{}');
 let showHidden=false;
 
+// ========== 远程调试日志 ==========
+function rlog(msg){
+  const t=new Date().toLocaleTimeString('zh-CN',{hour12:false});
+  fetch(API+'/files/write',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:'/root/kfmv4/debug-swipe.log',content:t+' '+msg+'\n',append:true})}).catch(()=>{});
+}
+
 // ========== 调试日志保存函数 ==========
 // 简化版本，确保不影响手势执行
 function saveDebugLog(messages){

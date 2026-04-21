@@ -161,8 +161,7 @@ async function renderTree(container=document.getElementById('fileTree'),path='',
         console.log('文件夹点击处理:', item.path, '当前状态:', wrap.classList.contains('open')?'展开':'收起');
         const isOpen=wrap.classList.contains('open');
         if(!isOpen && !childrenWrap.querySelector('.tree-item')) renderTree(childrenWrap,item.path,depth+1);
-        console.log('[TREE-CLICK] 文件夹展开/收起:', item.path);
-        console.trace('[TREE-CLICK] 触发来源');
+        rlog('[TREE-CLICK] 展开/收起:'+item.path+' trace:'+new Error().stack.split('\n').slice(0,3).join('|'));
         wrap.classList.toggle('open');toggle.classList.toggle('expanded');
         expandedPaths[item.path]=!isOpen;
         localStorage.setItem('expandedPaths',JSON.stringify(expandedPaths));
