@@ -118,48 +118,51 @@ async function renderTree(container=document.getElementById('fileTree'),path='',
     },{passive:true});
     row.addEventListener('touchend',()=>{rowSwiped=false;},{passive:true});
 
-    // 点击事件
+    // 点击事件 - 移动光标 或 展开收起
     row.addEventListener('click',(e)=>{
-      // 总是先选中（移动光标）
-      document.querySelectorAll('.tree-item').forEach(el=>el.classList.remove('selected'));
-      div.classList.add('selected');
-      selectedFile=item.path;
-      e.stopPropagation();
+      const isCurrentlySelected=div.classList.contains('selected');
       
-      console.log('tree.js click:', item.path, 'isDir:', item.isDir);
-      
-      // 以下是原有动作逻辑
-      // 正常模式
-      if(item.isDir){
-        console.log('文件夹点击处理:', item.path, '当前状态:', wrap.classList.contains('open')?'展开':'收起');
-        const isOpen=wrap.classList.contains('open');
-        if(!isOpen && !childrenWrap.querySelector('.tree-item')) renderTree(childrenWrap,item.path,depth+1);
-        rlog('[TREE-CLICK] 展开/收起:'+item.path+' trace:'+new Error().stack.split('\n').slice(0,3).join('|'));
-        wrap.classList.toggle('open');toggle.classList.toggle('expanded');
-        expandedPaths[item.path]=!isOpen;
-        localStorage.setItem('expandedPaths',JSON.stringify(expandedPaths));
-        // 叠叠乐动画
-        const doBounce=(el,dir,delay)=>{
-          setTimeout(()=>{
-            const offset=dir?-10:10;const rebound=dir?2:-2;
-            el.style.transition='transform .3s cubic-bezier(.34,1.56,.64,1)';
-            el.style.transform='translateY('+offset+'px)';
-            setTimeout(()=>{el.style.transform='translateY('+rebound+'px)';},320);
-            setTimeout(()=>{el.style.transform='';el.style.transition='';},450);
-          },delay);
-        };
-        if(isOpen){
-          doBounce(div,true,0);
-          let sibling=div.nextElementSibling;let i=1;
-          while(sibling){doBounce(sibling,true,(i-1)*20);sibling=sibling.nextElementSibling;i++;}
-        }else{
-          doBounce(div,false,0);
-          let sibling=div.nextElementSibling;let i=1;
-          while(sibling){doBounce(sibling,false,(i-1)*20);sibling=sibling.nextElementSibling;i++;}
+      if(isCurrentlySelected){
+        // 点击已选中项：如果是文件夹，展开/收起
+        if(item.isDir){
+          const isOpen=wrap.classList.contains('open');
+          if(!isOpen&&!childrenWrap.querySelector('.tree-item')){
+            renderTree(childrenWrap,item.path,depth+1);
+          }
+          wrap.classList.toggle('open');
+          toggle.classList.toggle('expanded');
+          expandedPaths[item.path]=!isOpen;
+          localStorage.setItem('expandedPaths',JSON.stringify(expandedPaths));
+          
+          // 叠叠乐动画
+          const doBounce=(el,dir,delay)=>{
+            setTimeout(()=>{
+              const offset=dir?-10:10;const rebound=dir?2:-2;
+              el.style.transition='transform .3s cubic-bezier(.34,1.56,.64,1)';
+              el.style.transform='translateY('+offset+'px)';
+              setTimeout(()=>{el.style.transform='translateY('+rebound+'px)';},320);
+              setTimeout(()=>{el.style.transform='';el.style.transition='';},450);
+            },delay);
+          };
+          if(isOpen){
+            doBounce(div,true,0);
+            let sibling=div.nextElementSibling;let i=1;
+            while(sibling){doBounce(sibling,true,(i-1)*20);sibling=sibling.nextElementSibling;i++;}
+          }else{
+            doBounce(div,false,0);
+            let sibling=div.nextElementSibling;let i=1;
+            while(sibling){doBounce(sibling,false,(i-1)*20);sibling=sibling.nextElementSibling;i++;}
+          }
         }
       }else{
-        // 文件：无动作
+        // 点击非选中项：移动光标（选中）
+        const prevSelected=document.querySelector('.tree-item.selected');
+        if(prevSelected)prevSelected.classList.remove('selected');
+        div.classList.add('selected');
+        selectedFile=item.path;
       }
+      
+      e.stopPropagation();
     });
   }
   container.appendChild(frag);
