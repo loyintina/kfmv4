@@ -3,7 +3,6 @@ const API='/kfmv4/api';
 let selectedFile='';
 let expandedPaths=JSON.parse(localStorage.getItem('expandedPaths')||'{}');
 let showHidden=false;
-let allExpanded=false;
 
 // ========== 调试日志保存函数 ==========
 // 简化版本，确保不影响手势执行
