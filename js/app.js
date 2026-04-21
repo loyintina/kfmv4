@@ -148,18 +148,9 @@ console.error=function(...args){
   addLog(args.map(a=>typeof a==='object'?JSON.stringify(a):a).join(' '),'error');
 };
 
-// ========== 系统信息 ==========
-async function loadSystemInfo(){
-  const info=await apiInfo();
-  document.getElementById('sysUser').textContent=info.user||'unknown';
-  document.getElementById('sysHome').textContent=info.home||'-';
-  document.getElementById('sysWrite').textContent=info.paths?.写入区||'-';
-}
-
 // ========== 初始化 ==========
 async function init(){
   await loadCache();
-  loadSystemInfo();
   renderTree();
   setInterval(()=>{saveCache();},30000);
 }

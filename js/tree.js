@@ -171,4 +171,4 @@ async function renderTree(container=document.getElementById('fileTree'),path='',
   container.appendChild(frag);
 }
 
-function refreshTree(){renderTree();loadSystemInfo();}
+function refreshTree(){renderTree();}
