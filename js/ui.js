@@ -87,15 +87,17 @@ function syncCursorDuringBounce(){
       return;
     }
     
-    // 直接设置位置，不经过 updateCursorHighlight（避免恢复transition）
     const selected=document.querySelector('.tree-item.selected');
     if(selected){
       const row=selected.querySelector('.tree-row')||selected;
       const container=document.querySelector('.sidebar-content');
       const containerRect=container.getBoundingClientRect();
       const rowRect=row.getBoundingClientRect();
-      const top=rowRect.top-containerRect.top+container.scrollTop;
-      cursorHighlight.style.top=top+'px';
+      
+      // 光标位置 = 盒子视觉位置（包含 transform 偏移）
+      const visualTop=rowRect.top-containerRect.top+container.scrollTop;
+      
+      cursorHighlight.style.top=visualTop+'px';
       cursorHighlight.style.height=rowRect.height+'px';
       cursorHighlight.style.opacity='1';
     }
