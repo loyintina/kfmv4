@@ -296,11 +296,14 @@ async function executeCursorAction(){
           await renderTree(childrenWrap,path,1);
           console.log('子目录加载完成');
         }
+        console.log('[GESTURE-ACTION] 展开:', path);
+        console.trace('[GESTURE-ACTION] 触发来源');
         wrap.classList.add('open');
         toggle.classList.add('expanded');
         expandedPaths[path]=true;
       }else{
-        // 收起
+        console.log('[GESTURE-ACTION] 收起:', path);
+        console.trace('[GESTURE-ACTION] 触发来源');
         wrap.classList.remove('open');
         toggle.classList.remove('expanded');
         delete expandedPaths[path];
