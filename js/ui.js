@@ -61,21 +61,45 @@ function updateCursorHighlight(immediate=false){
   // 如果是立即定位，之后恢复动画过渡
   if(immediate){
     requestAnimationFrame(()=>{
-      requestAnimationFrame(()=>{
-        cursorHighlight.style.transition='top .3s cubic-bezier(.25,.46,.45,.94)';
-      });
+      cursorHighlight.style.transition='top .3s cubic-bezier(.25,.46,.45,.94)';
     });
   }
 }
 
 // ========== 光标位置绑定 ==========
 
-// 展开/收起时：光标跟随盒子跳动（循环同步）
+// 展开/收起时：光标跟随盒子跳动（全程禁用transition，同步结束后恢复）
 function syncCursorDuringBounce(){
+  if(!cursorHighlight)initCursorHighlight();
+  
+  // 全程禁用动画
+  cursorHighlight.style.transition='none';
+  
   let frame=0;
+  const maxFrames=30; // ~500ms，覆盖叠叠乐全部动画
+  
   const sync=()=>{
-    if(frame>=30)return; // ~500ms
-    updateCursorHighlight(true);
+    if(frame>=maxFrames){
+      // 同步结束，恢复动画能力
+      requestAnimationFrame(()=>{
+        cursorHighlight.style.transition='top .3s cubic-bezier(.25,.46,.45,.94)';
+      });
+      return;
+    }
+    
+    // 直接设置位置，不经过 updateCursorHighlight（避免恢复transition）
+    const selected=document.querySelector('.tree-item.selected');
+    if(selected){
+      const row=selected.querySelector('.tree-row')||selected;
+      const container=document.querySelector('.sidebar-content');
+      const containerRect=container.getBoundingClientRect();
+      const rowRect=row.getBoundingClientRect();
+      const top=rowRect.top-containerRect.top+container.scrollTop;
+      cursorHighlight.style.top=top+'px';
+      cursorHighlight.style.height=rowRect.height+'px';
+      cursorHighlight.style.opacity='1';
+    }
+    
     frame++;
     requestAnimationFrame(sync);
   };
@@ -139,7 +163,7 @@ function restoreCursorPosition(){
   items[targetIndex].classList.add('selected');
   selectedFile=items[targetIndex].dataset.path;
   
-  // 更新光标高亮条位置（立即定位，无动画）
+  // 更新光标高亮条位置（立即定位，无���画）
   updateCursorHighlight(true);
   centerCursorToView(items[targetIndex]);
 }
