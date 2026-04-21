@@ -14,6 +14,7 @@ const CURSOR_POS_KEY='kfm_cursor_position';
 
 // 光标高亮条（独立元素）
 let cursorHighlight=null;
+let cursorAnimating=false; // 是否正在动画中
 
 // 初始化光标高亮条
 function initCursorHighlight(){
@@ -24,12 +25,16 @@ function initCursorHighlight(){
   
   cursorHighlight=document.createElement('div');
   cursorHighlight.className='cursor-highlight';
-  cursorHighlight.style.top='0px';
+  cursorHighlight.style.cssText='top:0px;opacity:0;transition:none;';
   container.appendChild(cursorHighlight);
+  
+  // 监听滚动事件，实现磁吸效果
+  container.addEventListener('scroll',handleScrollMagnetic,{passive:true});
 }
 
 // 更新光标高亮条位置
-function updateCursorHighlight(){
+// immediate: true 表示立即定位（无动画），false 表示平滑动画
+function updateCursorHighlight(immediate=false){
   if(!cursorHighlight)initCursorHighlight();
   
   const selected=document.querySelector('.tree-item.selected');
@@ -45,9 +50,57 @@ function updateCursorHighlight(){
   
   // 计算相对于容器的位置
   const top=rowRect.top-containerRect.top+container.scrollTop;
+  
+  // 设置动画或立即定位
+  if(immediate){
+    cursorHighlight.style.transition='none';
+  }else{
+    cursorHighlight.style.transition='top .3s cubic-bezier(.25,.46,.45,.94)';
+  }
+  
   cursorHighlight.style.top=top+'px';
   cursorHighlight.style.opacity='1';
   cursorHighlight.style.height=rowRect.height+'px';
+  
+  // 如果是立即定位，恢复动画设置
+  if(immediate){
+    setTimeout(()=>{
+      cursorHighlight.style.transition='top .3s cubic-bezier(.25,.46,.45,.94)';
+    },50);
+  }
+}
+
+// 滚动磁吸效果
+let scrollMagneticTimer=null;
+function handleScrollMagnetic(){
+  // 清除之前的定时器
+  if(scrollMagneticTimer)clearTimeout(scrollMagneticTimer);
+  
+  // 滚动停止后执行磁吸
+  scrollMagneticTimer=setTimeout(()=>{
+    const selected=document.querySelector('.tree-item.selected');
+    if(!selected)return;
+    
+    // 更新光标位置（带动画）
+    updateCursorHighlight(false);
+  },100);
+}
+
+// 监听叠叠乐动画，同步光标位置
+function syncCursorWithBounce(){
+  // 叠叠乐动画期间，频繁更新光标位置
+  let frameCount=0;
+  const maxFrames=20;
+  
+  const syncFrame=()=>{
+    frameCount++;
+    updateCursorHighlight(false);
+    if(frameCount<maxFrames){
+      requestAnimationFrame(syncFrame);
+    }
+  };
+  
+  requestAnimationFrame(syncFrame);
 }
 
 // 侧栏
@@ -104,12 +157,12 @@ function restoreCursorPosition(){
     targetIndex=Math.floor(items.length/2);
   }
   
-  // 设置选中（无动画）
+  // 设置选中
   items[targetIndex].classList.add('selected');
   selectedFile=items[targetIndex].dataset.path;
   
-  // 更新光标高亮条位置
-  updateCursorHighlight();
+  // 更新光标高亮条位置（立即定位，无动画）
+  updateCursorHighlight(true);
   centerCursorToView(items[targetIndex]);
 }
 
