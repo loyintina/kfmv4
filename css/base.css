@@ -4,7 +4,7 @@
 body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;touch-action:none}
 
 /* 统一卡片风格 */
-.info-card,.preview-header,.preview-content,.quick-btn,.action-item,.terminal-output,.terminal-input,.terminal-run{background:var(--surface);border-left:2px solid var(--primary);border-radius:8px}
+.info-card,.action-item,.terminal-output,.terminal-input,.terminal-run{background:var(--surface);border-left:2px solid var(--primary);border-radius:8px}
 
 /* 主色边框变体 */
 .info-card.l2,.action-item.l2{border-color:#00d4ff}
@@ -32,13 +32,6 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 .quick-btn:active{transform:scale(.95)}
 .quick-btn .icon{font-size:22px}
 .quick-btn .label{font-size:11px;color:var(--text-dim)}
-
-/* 预览 */
-.preview-page{display:none;padding:12px}
-.preview-page.show{display:block}
-.preview-header{border-radius:8px 8px 0 0;padding:14px 16px}
-.preview-filename{font-weight:600;word-break:break-all;font-size:14px}
-.preview-content{border-radius:0 0 8px 8px;padding:14px;font-family:monospace;font-size:12px;line-height:1.7;white-space:pre-wrap;word-break:break-all;max-height:calc(100vh - 180px);overflow-y:auto;margin-top:2px}
 
 /* 加载 */
 .loading{display:flex;justify-content:center;align-items:center;height:100px;color:var(--text-dim);font-size:13px}

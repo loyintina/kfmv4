@@ -329,9 +329,7 @@ async function executeCursorAction(){
       }
     }
   }else{
-    // 文件：打开编辑器
-    closeSidebar();
-    previewFile(path);
+    // 文件：无动作
   }
   
   isDispatching=false;

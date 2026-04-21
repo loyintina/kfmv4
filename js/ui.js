@@ -6,7 +6,6 @@ function toggleHidden(){showHidden=!showHidden;document.getElementById('toggleHi
 // 导航
 function navigateToHome(){
   document.getElementById('homePage').style.display='block';
-  document.getElementById('previewPage').classList.remove('show');
   closeSidebar();
 }
 
@@ -20,18 +19,5 @@ document.getElementById('overlay').addEventListener('click',(e)=>{
   // 光标动作由 gestures.js 的 touchend 处理
 });
 
-// 预览
-async function previewFile(path){
-  document.getElementById('homePage').style.display='none';
-  document.getElementById('previewPage').classList.add('show');
-  document.getElementById('previewFilename').textContent=path.split('/').pop();
-  document.getElementById('previewContent').textContent='加载中...';
-  try {
-    const res = await fetch(API+'/files/read', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path})});
-    const data = await res.json();
-    document.getElementById('previewContent').textContent=data.content||data.error||'(空文件)';
-  } catch(e) {
-    document.getElementById('previewContent').textContent='读取失败: '+e.message;
-  }
-  closeSidebar();
+closeSidebar();
 }

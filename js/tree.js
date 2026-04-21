@@ -164,8 +164,7 @@ async function renderTree(container=document.getElementById('fileTree'),path='',
           while(sibling){doBounce(sibling,false,(i-1)*20);sibling=sibling.nextElementSibling;i++;}
         }
       }else{
-        closeSidebar();
-        previewFile(item.path);
+        // 文件：无动作
       }
     });
   }
