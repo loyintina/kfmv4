@@ -44,7 +44,7 @@ function updateCursorHighlight(immediate=false){
   const containerRect=container.getBoundingClientRect();
   const rowRect=row.getBoundingClientRect();
   
-  // 计算相对于容器的位置
+  // 光标位置 = 盒子相对于容器的绝对坐标（不受滚动影响）
   const top=rowRect.top-containerRect.top+container.scrollTop;
   
   // 禁用动画（立即定位）
@@ -60,7 +60,6 @@ function updateCursorHighlight(immediate=false){
   
   // 如果是立即定位，之后恢复动画过渡
   if(immediate){
-    // 强制重绘后恢复过渡
     requestAnimationFrame(()=>{
       requestAnimationFrame(()=>{
         cursorHighlight.style.transition='top .3s cubic-bezier(.25,.46,.45,.94)';
@@ -70,20 +69,6 @@ function updateCursorHighlight(immediate=false){
 }
 
 // ========== 光标位置绑定 ==========
-
-// 滚动时：光标立即跟随盒子（不掉队）
-let scrollSyncRAF=null;
-function setupScrollSync(){
-  const container=document.querySelector('.sidebar-content');
-  if(!container)return;
-  container.addEventListener('scroll',()=>{
-    if(scrollSyncRAF)return; // 已在同步中
-    scrollSyncRAF=requestAnimationFrame(()=>{
-      updateCursorHighlight(true); // 立即定位
-      scrollSyncRAF=null;
-    });
-  },{passive:true});
-}
 
 // 展开/收起时：光标跟随盒子跳动（循环同步）
 function syncCursorDuringBounce(){
@@ -104,7 +89,6 @@ function openSidebar(){
   
   setTimeout(()=>{
     initCursorHighlight();
-    setupScrollSync();
     restoreCursorPosition();
   },100);
 }
