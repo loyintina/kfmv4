@@ -120,6 +120,12 @@ async function renderTree(container=document.getElementById('fileTree'),path='',
 
     // 点击事件
     row.addEventListener('click',(e)=>{
+      // 如果是 initCursorToFirst 触发的选中，跳过这次 click
+      if(typeof skipNextClick!=='undefined' && skipNextClick){
+        console.log('click skipped: after initCursorToFirst');
+        skipNextClick=false;
+        return;
+      }
       // 如果手指有移动（滑动），不触发点击
       if(rowMoved){
         console.log('click blocked: rowMoved=true');

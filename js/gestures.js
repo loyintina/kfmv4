@@ -9,8 +9,11 @@ let lastTouchY=0; // 上一次触摸Y坐标，用于计算滚动量
 let lastCursorIndex=0; // 上次光标位置，用于判断移动方向
 let suppressClick=false; // 手势结束后短暂禁止点击
 let suppressUntil=0; // 禁止点击直到此时间戳
+let skipNextClick=false; // 跳过下一次 click 事件
 
 document.addEventListener('touchstart',(e)=>{
+  // 重置 skipNextClick，允许正常点击
+  if(typeof skipNextClick!=='undefined')skipNextClick=false;
   touchStartX=e.touches[0].clientX;
   touchStartY=e.touches[0].clientY;
   lastTouchY=touchStartY;
@@ -243,6 +246,7 @@ function moveCursor(direction){
 
 // 初始化光标到第一个
 function initCursorToFirst(){
+  skipNextClick=true;
   setTimeout(()=>{
     const items=document.querySelectorAll('#fileTree .tree-item');
     if(items.length===0)return;
@@ -254,7 +258,7 @@ function initCursorToFirst(){
 }
 
 // 执行光标动作 - 直接触发光标所在行的点击事件
-let isDispatching=false; // 防止循环触发
+let isDispatching=false; // ��止循环触发
 
 async function executeCursorAction(){
   if(isDispatching)return; // 防止循环
