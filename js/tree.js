@@ -120,40 +120,13 @@ async function renderTree(container=document.getElementById('fileTree'),path='',
 
     // 点击事件
     row.addEventListener('click',(e)=>{
-      const now=Date.now();
-      const suppress=suppressUntil||0;
-      const skip=skipNextClick||false;
-      console.log('CLICK DEBUG:', {path:item.path, isDir:item.isDir, rowMoved, skip, suppressActive:now<suppress, suppressNow:now, suppressUntil:suppress});
-      
-      if(skip){
-        console.log('click skipped: after initCursorToFirst');
-        return;
-      }
-      if(rowMoved){
-        console.log('click blocked: rowMoved=true');
-        return;
-      }
-      if(now<suppress){
-        console.log('click suppressed after swipe');
-        return;
-      }
-      console.log('tree.js click:', item.path, 'isDir:', item.isDir);
-      e.stopPropagation();
-      
-      // 检查是否点击的是当前光标所在项
-      const currentSelected=document.querySelector('.tree-item.selected');
-      const isCurrentSelected=(currentSelected===div);
-      
-      // 先移动光标到点击位置
+      // 总是先选中（移动光标）
       document.querySelectorAll('.tree-item').forEach(el=>el.classList.remove('selected'));
       div.classList.add('selected');
       selectedFile=item.path;
+      e.stopPropagation();
       
-      // 只有点击的是当前光标所在项，才执行动作
-      if(!isCurrentSelected){
-        // 只是移动光标，不执行展开/打开动作
-        return;
-      }
+      console.log('tree.js click:', item.path, 'isDir:', item.isDir);
       
       // 以下是原有动作逻辑
       // 正常模式
