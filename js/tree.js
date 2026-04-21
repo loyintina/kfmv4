@@ -120,19 +120,20 @@ async function renderTree(container=document.getElementById('fileTree'),path='',
 
     // 点击事件
     row.addEventListener('click',(e)=>{
-      // 如果是 initCursorToFirst 触发的选中，跳过这次 click
-      if(typeof skipNextClick!=='undefined' && skipNextClick){
+      const now=Date.now();
+      const suppress=suppressUntil||0;
+      const skip=skipNextClick||false;
+      console.log('CLICK DEBUG:', {path:item.path, isDir:item.isDir, rowMoved, skip, suppressActive:now<suppress, suppressNow:now, suppressUntil:suppress});
+      
+      if(skip){
         console.log('click skipped: after initCursorToFirst');
-        skipNextClick=false;
         return;
       }
-      // 如果手指有移动（滑动），不触发点击
       if(rowMoved){
         console.log('click blocked: rowMoved=true');
         return;
       }
-      // 滑动手势后禁止点击
-      if(typeof suppressUntil!=='undefined' && Date.now()<suppressUntil){
+      if(now<suppress){
         console.log('click suppressed after swipe');
         return;
       }

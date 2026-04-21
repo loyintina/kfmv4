@@ -110,7 +110,8 @@ document.addEventListener('touchmove',(e)=>{
   // 编辑模式下禁用所有侧栏手势
 
   // 左栏未打开时，右滑打开
-  if(!document.getElementById('sidebar').classList.contains('open')&&dx>60){
+  if(!sidebarOpen && dx>60){
+    console.log('SWIPE: opening sidebar, dx=', dx);
     suppressUntil=Date.now()+500;
     openSidebar();
     initCursorToFirst();
@@ -246,14 +247,15 @@ function moveCursor(direction){
 
 // 初始化光标到第一个
 function initCursorToFirst(){
+  console.log('initCursorToFirst called, setting skipNextClick=true');
   skipNextClick=true;
   setTimeout(()=>{
     const items=document.querySelectorAll('#fileTree .tree-item');
     if(items.length===0)return;
-    
     document.querySelectorAll('.tree-item.selected').forEach(el=>el.classList.remove('selected'));
     items[0].classList.add('selected');
     selectedFile=items[0].dataset.path;
+    console.log('initCursorToFirst done, first item selected:', items[0].dataset.path, 'skipNextClick:', skipNextClick);
   },100);
 }
 
