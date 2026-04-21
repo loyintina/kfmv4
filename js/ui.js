@@ -7,7 +7,6 @@ function toggleHidden(){showHidden=!showHidden;document.getElementById('toggleHi
 function navigateToHome(){
   document.getElementById('homePage').style.display='block';
   document.getElementById('previewPage').classList.remove('show');
-  document.getElementById('editorPage').classList.remove('show');
   closeSidebar();
 }
 

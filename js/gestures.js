@@ -74,20 +74,9 @@ document.addEventListener('touchmove',(e)=>{
   }
 
   // 获取当前可滚动元素
-  const editorContentEl=document.getElementById('editorContent');
   const mainEl=document.getElementById('main');
-  const editorOpen=document.getElementById('editorPage').classList.contains('show');
-
-  let scrollEl,scrollTop,canScrollUp;
-  if(editorOpen){
-    scrollEl=editorContentEl;
-    scrollTop=editorContentEl.scrollTop;
-    canScrollUp=scrollTop===0;
-  }else{
-    scrollEl=mainEl;
-    scrollTop=mainEl.scrollTop;
-    canScrollUp=scrollTop===0;
-  }
+  const scrollTop=mainEl.scrollTop;
+  const canScrollUp=scrollTop===0;
 
   // 下拉手势已禁用（命令行面板已删除）
   const sidebarOpen=document.getElementById('sidebar').classList.contains('open');
@@ -342,7 +331,7 @@ async function executeCursorAction(){
   }else{
     // 文件：打开编辑器
     closeSidebar();
-    openInEditor(path);
+    previewFile(path);
   }
   
   isDispatching=false;

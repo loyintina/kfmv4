@@ -6,7 +6,6 @@
 <title>Kalo File Manager</title>
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/sidebar.css">
-<link rel="stylesheet" href="css/editor.css">
 </head>
 <body>
 <div class="sidebar" id="sidebar">
@@ -40,34 +39,6 @@
 <div class="preview-content" id="previewContent"><div class="loading">加载中...</div></div>
 </div>
 </div>
-
-<!-- 文件编辑器 -->
-<div class="editor-page" id="editorPage">
-<div class="editor-loading" id="editorLoading"></div>
-<div class="editor-info">
-<span class="editor-filename" id="editorFilename">-</span>
-<span class="editor-modified" id="editorModified">● 已修改</span>
-</div>
-<div class="editor-container">
-<div class="editor-lines" id="editorLines"></div>
-<div class="editor-content" id="editorContent" contenteditable="true" spellcheck="false"></div>
-</div>
-<div class="cmd-input-wrap" id="cmdInputWrap">
-<span class="cmd-prompt">:</span>
-<input type="text" class="cmd-input" id="cmdInput" placeholder="输入命令...">
-</div>
-<div class="editor-toolbar">
-<span class="mode-indicator" id="modeIndicator">NORMAL</span>
-<button onclick="editorUndo()" title="后退">←</button>
-<button onclick="editorRedo()" title="前进">→</button>
-<button onclick="editorCmd(':')" title="命令行">:</button>
-<button onclick="editorClose()">关�����</button>
-</div>
-</div>
-
-<!-- 快照历史面板 -->
-<div class="snapshot-panel" id="snapshotPanel">
-<div class="snapshot-header">
 <span class="snapshot-title">版本历史</span>
 <button onclick="closeSnapshots()" style="background:none;border:none;color:var(--text);font-size:24px">×</button>
 </div>
@@ -92,7 +63,6 @@
 
 <!-- JS加载顺序很重要 -->
 <script src="js/app.js"></script>
-<script src="js/editor.js"></script>
 <script src="js/tree.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/gestures.js"></script>

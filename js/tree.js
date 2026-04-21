@@ -165,7 +165,7 @@ async function renderTree(container=document.getElementById('fileTree'),path='',
         }
       }else{
         closeSidebar();
-        openInEditor(item.path);
+        previewFile(item.path);
       }
     });
   }
