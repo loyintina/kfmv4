@@ -19,7 +19,7 @@ document.addEventListener('touchstart',(e)=>{
   
   // 判断是否在左栏右侧区域
   const sidebarOpen=document.getElementById('sidebar').classList.contains('open');
-  if(sidebarOpen && !editMode){
+  if(sidebarOpen){
     const sidebarRect=document.getElementById('sidebar').getBoundingClientRect();
     if(touchStartX > sidebarRect.right){
       cursorMode=true; // 进入光标模式
@@ -93,9 +93,9 @@ document.addEventListener('touchmove',(e)=>{
   const sidebarOpen=document.getElementById('sidebar').classList.contains('open');
   const logOpen=document.getElementById('logPanel')?.classList.contains('open');
 
-  // 左栏打开时，左滑收起（编辑模式/刚退出编辑模式禁用）
+  // 左栏打开时，左滑收起
   if(document.getElementById('sidebar').classList.contains('open')){
-    if(dx<-60&&!editMode&&!justExitedEdit){
+    if(dx<-60){
       closeSidebar();
       touchStarted=false;
       return;
@@ -113,7 +113,6 @@ document.addEventListener('touchmove',(e)=>{
   }
 
   // 编辑模式下禁用所有侧栏手势
-  if(editMode)return;
 
   // 左栏未打开时，右滑打开
   if(!document.getElementById('sidebar').classList.contains('open')&&dx>60){

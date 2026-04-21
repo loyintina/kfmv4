@@ -111,13 +111,7 @@ async function renderTree(container=document.getElementById('fileTree'),path='',
     let rowSwiped=false;
     row.addEventListener('touchmove',e=>{
       if(rowSwiped)return;
-      const dx=e.touches[0].clientX-touchStartX;const dy=e.touches[0].clientY-touchStartY;
-      const sidebarOpen=document.getElementById('sidebar').classList.contains('open');
-      if(sidebarOpen && Math.abs(dx)>Math.abs(dy)*2 && dx>60){
-        rowSwiped=true;
-        if(!editMode)enterEditMode();
-        addToOperationBox(item.path,item.name,item.isDir);
-      }
+      // 编辑模式已删除
     },{passive:true});
     row.addEventListener('touchend',()=>{rowSwiped=false;},{passive:true});
 
@@ -142,16 +136,6 @@ async function renderTree(container=document.getElementById('fileTree'),path='',
       }
       
       // 以下是原有动作逻辑
-      // 编辑模式下点击
-      if(editMode){
-        if(item.isDir){
-          const isOpen=wrap.classList.contains('open');
-          if(!isOpen && !childrenWrap.querySelector('.tree-item')) renderTree(childrenWrap,item.path,depth+1);
-          wrap.classList.toggle('open');toggle.classList.toggle('expanded');
-          expandedPaths[item.path]=!isOpen;
-        }
-        return;
-      }
       // 正常模式
       if(item.isDir){
         console.log('文件夹点击处理:', item.path, '当前状态:', wrap.classList.contains('open')?'展开':'收起');
@@ -180,13 +164,8 @@ async function renderTree(container=document.getElementById('fileTree'),path='',
           while(sibling){doBounce(sibling,false,(i-1)*20);sibling=sibling.nextElementSibling;i++;}
         }
       }else{
-        if(editMode){
-          document.querySelectorAll('.tree-item').forEach(el=>el.classList.remove('selected'));
-          div.classList.add('selected');selectedFile=item.path;
-        }else{
-          closeSidebar();
-          openInEditor(item.path);
-        }
+        closeSidebar();
+        openInEditor(item.path);
       }
     });
   }

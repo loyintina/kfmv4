@@ -18,8 +18,7 @@ function closeSidebar(){document.getElementById('sidebar').classList.remove('ope
 // overlay 点击 - 已移至 gestures.js 的 touchend 处理
 // 注意：移动端会同时触发 touchend 和 click，为避免重复执行，这里不再监听 click
 document.getElementById('overlay').addEventListener('click',(e)=>{
-  if(editMode)return;
-  // 不做任何操作，光标动作由 gestures.js 的 touchend 处理
+  // 光标动作由 gestures.js 的 touchend 处理
 });
 
 // 预览

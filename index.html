@@ -7,7 +7,6 @@
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/sidebar.css">
 <link rel="stylesheet" href="css/editor.css">
-<link rel="stylesheet" href="css/editmode.css">
 </head>
 <body>
 <div class="sidebar" id="sidebar">
@@ -17,25 +16,6 @@
 </div>
 </div>
 <div class="overlay" id="overlay"></div>
-
-<!-- 编辑模式退出按钮 -->
-<button class="edit-mode-exit" id="editModeExit">×</button>
-
-<!-- 操作盒子 -->
-<div class="operation-box" id="operationBox">
-<div class="operation-box-header">
-<span class="operation-box-count" id="operationCount">0 个项目</span>
-</div>
-<div class="operation-box-content" id="operationContent"></div>
-<div class="operation-actions" id="operationActions">
-<button class="operation-action-btn copy" onclick="setOperationMode('copy')">复制</button>
-<button class="operation-action-btn move active" onclick="setOperationMode('move')">移动</button>
-<button class="operation-action-btn delete" onclick="setOperationMode('delete')">删除</button>
-</div>
-</div>
-
-<!-- 执行提示 -->
-<div class="operation-toast" id="operationToast"></div>
 
 <main class="main" id="main">
 <div class="home-page" id="homePage">
@@ -115,7 +95,6 @@
 <script src="js/editor.js"></script>
 <script src="js/tree.js"></script>
 <script src="js/ui.js"></script>
-<script src="js/editmode.js"></script>
 <script src="js/gestures.js"></script>
 </body>
 </html>
