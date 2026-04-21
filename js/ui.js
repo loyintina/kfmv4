@@ -25,8 +25,13 @@ async function previewFile(path){
   document.getElementById('homePage').style.display='none';
   document.getElementById('previewPage').classList.add('show');
   document.getElementById('previewFilename').textContent=path.split('/').pop();
-  document.getElementById('previewContent').textContent='';
-  const result=await apiExec('cat "'+path+'"');
-  document.getElementById('previewContent').textContent=result.stdout||result.stderr||'(空文件)';
+  document.getElementById('previewContent').textContent='加载中...';
+  try {
+    const res = await fetch(API+'/files/read', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path})});
+    const data = await res.json();
+    document.getElementById('previewContent').textContent=data.content||data.error||'(空文件)';
+  } catch(e) {
+    document.getElementById('previewContent').textContent='读取失败: '+e.message;
+  }
   closeSidebar();
 }
