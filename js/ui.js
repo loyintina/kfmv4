@@ -47,12 +47,11 @@ function updateCursorHighlight(immediate=false){
   // 光标位置 = 盒子相对于容器的绝对坐标（不受滚动影响）
   const top=rowRect.top-containerRect.top+container.scrollTop;
   
-  // 动画控制
+  // 禁用动画（立即定位）
   if(immediate){
     cursorHighlight.style.transition='none';
   }else{
-    // 清除内联 transition，让 CSS 定义的 transition 生效
-    cursorHighlight.style.transition='';
+    cursorHighlight.style.transition='top .3s cubic-bezier(.25,.46,.45,.94)';
   }
   
   cursorHighlight.style.top=top+'px';
@@ -62,7 +61,7 @@ function updateCursorHighlight(immediate=false){
   // 如果是立即定位，之后恢复动画过渡
   if(immediate){
     requestAnimationFrame(()=>{
-      cursorHighlight.style.transition='';
+      cursorHighlight.style.transition='top .3s cubic-bezier(.25,.46,.45,.94)';
     });
   }
 }
@@ -70,30 +69,32 @@ function updateCursorHighlight(immediate=false){
 // ========== 光标位置绑定 ==========
 
 // 展开/收起时：光标跟随盒子跳动（全程禁用transition，同步结束后恢复）
-let bounceSyncTimer=null;
 function syncCursorDuringBounce(){
   if(!cursorHighlight)initCursorHighlight();
-  
-  // 清除上一次同步的定时器
-  if(bounceSyncTimer)clearTimeout(bounceSyncTimer);
   
   // 全程禁用动画
   cursorHighlight.style.transition='none';
   
   let frame=0;
-  const maxFrames=30;
-  
-  // 恢复动画的函数
-  const restoreTransition=()=>{
-    bounceSyncTimer=null;
-    requestAnimationFrame(()=>{
-      if(cursorHighlight)cursorHighlight.style.transition='';
-    });
-  };
+  const maxFrames=60; // ~1000ms，覆盖所有兄弟节点的叠叠乐
   
   const sync=()=>{
     if(frame>=maxFrames){
-      restoreTransition();
+      // 同步结束：精确归位（重新计算盒子最终位置）
+      const selected=document.querySelector('.tree-item.selected');
+      if(selected){
+        const row=selected.querySelector('.tree-row')||selected;
+        const container=document.querySelector('.sidebar-content');
+        const containerRect=container.getBoundingClientRect();
+        const rowRect=row.getBoundingClientRect();
+        const finalTop=rowRect.top-containerRect.top+container.scrollTop;
+        cursorHighlight.style.top=finalTop+'px';
+        cursorHighlight.style.height=rowRect.height+'px';
+      }
+      // 恢复动画能力
+      requestAnimationFrame(()=>{
+        cursorHighlight.style.transition='top .3s cubic-bezier(.25,.46,.45,.94)';
+      });
       return;
     }
     
@@ -103,7 +104,10 @@ function syncCursorDuringBounce(){
       const container=document.querySelector('.sidebar-content');
       const containerRect=container.getBoundingClientRect();
       const rowRect=row.getBoundingClientRect();
+      
+      // 光标位置 = 盒子视觉位置（包含 transform 偏移）
       const visualTop=rowRect.top-containerRect.top+container.scrollTop;
+      
       cursorHighlight.style.top=visualTop+'px';
       cursorHighlight.style.height=rowRect.height+'px';
       cursorHighlight.style.opacity='1';
@@ -113,9 +117,6 @@ function syncCursorDuringBounce(){
     requestAnimationFrame(sync);
   };
   sync();
-  
-  // 兜底：确保 transition 在 600ms 后恢复（防止 rAF 不触发）
-  bounceSyncTimer=setTimeout(restoreTransition,600);
 }
 
 // 侧栏
