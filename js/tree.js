@@ -153,9 +153,6 @@ async function renderTree(container=document.getElementById('fileTree'),path='',
             let sibling=div.nextElementSibling;let i=1;
             while(sibling){doBounce(sibling,false,(i-1)*20);sibling=sibling.nextElementSibling;i++;}
           }
-          
-          // 同步光标位置（跟随叠叠乐动画）
-          syncCursorWithBounce();
         }
       }else{
         // 点击非选中项：移动光标（选中）
@@ -163,9 +160,6 @@ async function renderTree(container=document.getElementById('fileTree'),path='',
         if(prevSelected)prevSelected.classList.remove('selected');
         div.classList.add('selected');
         selectedFile=item.path;
-        
-        // 更新光标高亮条位置（触发平滑动画）
-        updateCursorHighlight();
       }
       
       e.stopPropagation();

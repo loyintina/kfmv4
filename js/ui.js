@@ -12,105 +12,13 @@ function navigateToHome(){
 // 光标位置记忆键
 const CURSOR_POS_KEY='kfm_cursor_position';
 
-// 光标高亮条（独立元素）
-let cursorHighlight=null;
-let cursorAnimating=false; // 是否正在动画中
-
-// 初始化光标高亮条
-function initCursorHighlight(){
-  if(cursorHighlight)return;
-  
-  const container=document.querySelector('.sidebar-content');
-  if(!container)return;
-  
-  cursorHighlight=document.createElement('div');
-  cursorHighlight.className='cursor-highlight';
-  cursorHighlight.style.cssText='top:0px;opacity:0;transition:none;';
-  container.appendChild(cursorHighlight);
-  
-  // 监听滚动事件，实现磁吸效果
-  container.addEventListener('scroll',handleScrollMagnetic,{passive:true});
-}
-
-// 更新光标高亮条位置
-// immediate: true 表示立即定位（无动画），false 表示平滑动画
-function updateCursorHighlight(immediate=false){
-  if(!cursorHighlight)initCursorHighlight();
-  
-  const selected=document.querySelector('.tree-item.selected');
-  if(!selected){
-    cursorHighlight.style.opacity='0';
-    return;
-  }
-  
-  const row=selected.querySelector('.tree-row')||selected;
-  const container=document.querySelector('.sidebar-content');
-  const containerRect=container.getBoundingClientRect();
-  const rowRect=row.getBoundingClientRect();
-  
-  // 计算相对于容器的位置
-  const top=rowRect.top-containerRect.top+container.scrollTop;
-  
-  // 设置动画或立即定位
-  if(immediate){
-    cursorHighlight.style.transition='none';
-  }else{
-    cursorHighlight.style.transition='top .3s cubic-bezier(.25,.46,.45,.94)';
-  }
-  
-  cursorHighlight.style.top=top+'px';
-  cursorHighlight.style.opacity='1';
-  cursorHighlight.style.height=rowRect.height+'px';
-  
-  // 如果是立即定位，恢复动画设置
-  if(immediate){
-    setTimeout(()=>{
-      cursorHighlight.style.transition='top .3s cubic-bezier(.25,.46,.45,.94)';
-    },50);
-  }
-}
-
-// 滚动磁吸效果
-let scrollMagneticTimer=null;
-function handleScrollMagnetic(){
-  // 清除之前的定时器
-  if(scrollMagneticTimer)clearTimeout(scrollMagneticTimer);
-  
-  // 滚动停止后执行磁吸
-  scrollMagneticTimer=setTimeout(()=>{
-    const selected=document.querySelector('.tree-item.selected');
-    if(!selected)return;
-    
-    // 更新光标位置（带动画）
-    updateCursorHighlight(false);
-  },100);
-}
-
-// 监听叠叠乐动画，同步光标位置
-function syncCursorWithBounce(){
-  // 叠叠乐动画期间，频繁更新光标位置
-  let frameCount=0;
-  const maxFrames=20;
-  
-  const syncFrame=()=>{
-    frameCount++;
-    updateCursorHighlight(false);
-    if(frameCount<maxFrames){
-      requestAnimationFrame(syncFrame);
-    }
-  };
-  
-  requestAnimationFrame(syncFrame);
-}
-
 // 侧栏
 function openSidebar(){
   document.getElementById('sidebar').classList.add('open');
   document.getElementById('overlay').classList.add('show');
   
-  // 初始化并恢复光标位置
+  // 恢复光标位置
   setTimeout(()=>{
-    initCursorHighlight();
     restoreCursorPosition();
   },100);
 }
@@ -157,25 +65,21 @@ function restoreCursorPosition(){
     targetIndex=Math.floor(items.length/2);
   }
   
-  // 设置选中
+  // 禁用过渡动画（立即定位）
+  const row=items[targetIndex].querySelector('.tree-row');
+  if(row)row.classList.add('no-transition');
+  
   items[targetIndex].classList.add('selected');
   selectedFile=items[targetIndex].dataset.path;
   
-  // 更新光标高亮条位置（立即定位，无动画）
-  updateCursorHighlight(true);
+  // 强制重绘后恢复过渡
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      if(row)row.classList.remove('no-transition');
+    });
+  });
+  
   centerCursorToView(items[targetIndex]);
-}
-
-// 光标居中显示
-function centerCursorToView(item){
-  const sidebarContent=document.querySelector('.sidebar-content');
-  const containerRect=sidebarContent.getBoundingClientRect();
-  const treeRow=item.querySelector('.tree-row')||item;
-  const rowRect=treeRow.getBoundingClientRect();
-  const rowCenter=rowRect.top+rowRect.height/2;
-  const containerCenter=containerRect.top+containerRect.height/2;
-  const scrollOffset=rowCenter-containerCenter;
-  sidebarContent.scrollTop+=scrollOffset;
 }
 
 // overlay 点击 - 已移至 gestures.js 的 touchend 处理
