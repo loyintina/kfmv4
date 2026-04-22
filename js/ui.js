@@ -242,3 +242,97 @@ function centerCursorToView(item){
 document.getElementById('overlay').addEventListener('click',(e)=>{
   // 光标动作由 gestures.js 的 touchend 处理
 });
+
+// ========== 光标滚动倾向约束 ==========
+
+// 判断元素是否在视口内
+function isInViewport(el){
+  if(!el)return false;
+  const container=document.querySelector('.sidebar-content');
+  if(!container)return false;
+  const containerRect=container.getBoundingClientRect();
+  const elRect=el.getBoundingClientRect();
+  return elRect.top>=containerRect.top && elRect.bottom<=containerRect.bottom;
+}
+
+// 获取视口内可见的所有 tree-item
+function getVisibleItems(){
+  const container=document.querySelector('.sidebar-content');
+  if(!container)return[];
+  const containerRect=container.getBoundingClientRect();
+  const items=document.querySelectorAll('#fileTree .tree-item');
+  const visible=[];
+  for(const item of items){
+    const row=item.querySelector('.tree-row')||item;
+    const rect=row.getBoundingClientRect();
+    // 元素与视口有交集
+    if(rect.bottom>containerRect.top && rect.top<containerRect.bottom){
+      visible.push(item);
+    }
+  }
+  return visible;
+}
+
+// 找到最接近视口中央的节点
+function findClosestToCenter(items){
+  if(!items.length)return null;
+  const container=document.querySelector('.sidebar-content');
+  if(!container)return items[0];
+  const containerRect=container.getBoundingClientRect();
+  const centerY=containerRect.top+containerRect.height/2;
+  
+  let closest=items[0];
+  let minDist=Infinity;
+  for(const item of items){
+    const row=item.querySelector('.tree-row')||item;
+    const rect=row.getBoundingClientRect();
+    const itemCenter=rect.top+rect.height/2;
+    const dist=Math.abs(itemCenter-centerY);
+    if(dist<minDist){
+      minDist=dist;
+      closest=item;
+    }
+  }
+  return closest;
+}
+
+// 移动光标到目标节点（一格一格跳动）
+function moveCursorTo(target){
+  if(!target)return;
+  const current=document.querySelector('.tree-item.selected');
+  if(current===target)return;
+  
+  // 取消当前选中，选中目标
+  if(current)current.classList.remove('selected');
+  target.classList.add('selected');
+  selectedFile=target.dataset.path;
+  
+  // 更新光标位置（无动画，立即跳转）
+  updateCursorHighlight(true);
+  updateSidebarPath(target);
+}
+
+// 滚动监听 - 光标倾向约束
+let scrollTimeout=null;
+function initScrollCursorConstraint(){
+  const container=document.querySelector('.sidebar-content');
+  if(!container)return;
+  
+  container.addEventListener('scroll',()=>{
+    // 防抖：滚动停止后执行
+    if(scrollTimeout)clearTimeout(scrollTimeout);
+    scrollTimeout=setTimeout(()=>{
+      const selected=document.querySelector('.tree-item.selected');
+      
+      // 如果选中项不在视口内，跳到视口中央
+      if(selected && !isInViewport(selected)){
+        const visible=getVisibleItems();
+        const closest=findClosestToCenter(visible);
+        if(closest)moveCursorTo(closest);
+      }
+    },100);
+  });
+}
+
+// 初始化滚动约束
+initScrollCursorConstraint();
