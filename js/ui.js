@@ -44,24 +44,28 @@ function updateCursorHighlight(immediate=false){
   const containerRect=container.getBoundingClientRect();
   const rowRect=row.getBoundingClientRect();
   
-  // 光标位置 = 盒子相对于容器的绝对坐标（不受滚动影响）
+  // 光标位置 = 盒子相对于容器的绝对坐标
   const top=rowRect.top-containerRect.top+container.scrollTop;
+  const left=rowRect.left-containerRect.left;
+  const width=rowRect.width;
   
   // 禁用动画（立即定位）
   if(immediate){
     cursorHighlight.style.transition='none';
   }else{
-    cursorHighlight.style.transition='top .3s cubic-bezier(.25,.46,.45,.94)';
+    cursorHighlight.style.transition='top .3s cubic-bezier(.25,.46,.45,.94),left .3s cubic-bezier(.25,.46,.45,.94),width .3s cubic-bezier(.25,.46,.45,.94)';
   }
   
   cursorHighlight.style.top=top+'px';
+  cursorHighlight.style.left=left+'px';
+  cursorHighlight.style.width=width+'px';
   cursorHighlight.style.opacity='1';
   cursorHighlight.style.height=rowRect.height+'px';
   
   // 如果是立即定位，之后恢复动画过渡
   if(immediate){
     requestAnimationFrame(()=>{
-      cursorHighlight.style.transition='top .3s cubic-bezier(.25,.46,.45,.94)';
+      cursorHighlight.style.transition='top .3s cubic-bezier(.25,.46,.45,.94),left .3s cubic-bezier(.25,.46,.45,.94),width .3s cubic-bezier(.25,.46,.45,.94)';
     });
   }
 }
@@ -93,11 +97,15 @@ function syncCursorDuringBounce(siblingCount=0){
           const containerRect=container.getBoundingClientRect();
           const rowRect=row.getBoundingClientRect();
           const finalTop=rowRect.top-containerRect.top+container.scrollTop;
+          const finalLeft=rowRect.left-containerRect.left;
+          const finalWidth=rowRect.width;
           cursorHighlight.style.top=finalTop+'px';
+          cursorHighlight.style.left=finalLeft+'px';
+          cursorHighlight.style.width=finalWidth+'px';
           cursorHighlight.style.height=rowRect.height+'px';
         }
         requestAnimationFrame(()=>{
-          cursorHighlight.style.transition='top .3s cubic-bezier(.25,.46,.45,.94)';
+          cursorHighlight.style.transition='top .3s cubic-bezier(.25,.46,.45,.94),left .3s cubic-bezier(.25,.46,.45,.94),width .3s cubic-bezier(.25,.46,.45,.94)';
         });
       });
       return;
@@ -110,7 +118,11 @@ function syncCursorDuringBounce(siblingCount=0){
       const containerRect=container.getBoundingClientRect();
       const rowRect=row.getBoundingClientRect();
       const visualTop=rowRect.top-containerRect.top+container.scrollTop;
+      const visualLeft=rowRect.left-containerRect.left;
+      const visualWidth=rowRect.width;
       cursorHighlight.style.top=visualTop+'px';
+      cursorHighlight.style.left=visualLeft+'px';
+      cursorHighlight.style.width=visualWidth+'px';
       cursorHighlight.style.height=rowRect.height+'px';
       cursorHighlight.style.opacity='1';
     }
