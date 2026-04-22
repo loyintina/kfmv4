@@ -226,7 +226,7 @@ function restoreCursorPosition(){
 }
 
 // 光标居中显示
-function centerCursorToView(item){
+function centerCursorToView(item, smooth=true){
   const sidebarContent=document.querySelector('.sidebar-content');
   const containerRect=sidebarContent.getBoundingClientRect();
   const treeRow=item.querySelector('.tree-row')||item;
@@ -235,11 +235,10 @@ function centerCursorToView(item){
   const containerCenter=containerRect.top+containerRect.height/2;
   const scrollOffset=rowCenter-containerCenter;
   
-  // 平滑滚动
   const targetScroll=sidebarContent.scrollTop+scrollOffset;
   sidebarContent.scrollTo({
     top: targetScroll,
-    behavior: 'smooth'
+    behavior: smooth ? 'smooth' : 'instant'
   });
 }
 

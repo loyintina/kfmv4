@@ -4,7 +4,7 @@ let joystickOffset=0;        // 当前Y偏移量（负=手指上移=光标下移
 let joystickRafId=null;      // requestAnimationFrame ID
 let joystickAccum=0;         // 累积偏移（用于离散化步进）
 const JOYSTICK_DEADZONE=15;   // 死区（px）
-const JOYSTICK_SENSITIVITY=40; // 每40px偏移 = 1格/秒的速度基数
+const JOYSTICK_SENSITIVITY=80; // 每80px偏移 = 1格/秒的速度基数
 
 function joystickTick(){
   if(!joystickActive)return;
@@ -57,6 +57,11 @@ function moveCursorBySteps(steps){
   // 光标动画（复用已有过渡）
   updateCursorHighlight();
   updateSidebarPath(items[targetIndex]);
+  
+  // 摇杆模式下光标自动居中（瞬移，不堆积动画）
+  if(joystickActive){
+    centerCursorToView(items[targetIndex], false);
+  }
 }
 
 function startJoystick(){
