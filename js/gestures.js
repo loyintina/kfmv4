@@ -53,23 +53,15 @@ document.addEventListener('touchmove',(e)=>{
   if(cursorMode){
     // 在光标模式下，左滑关闭左栏（优先级最高）
     if(dx<-60){
-      hasMoved=true; // 标记为已移动，防止touchend触发executeCursorAction
+      hasMoved=true;
       closeSidebar();
       touchStarted=false;
       return;
     }
     
-    // 上下滑动控制光标 - 通过隐藏滚动盒
-    if(!hasMoved && Math.abs(dy)>15){
-      hasMoved=true;
-    }
-    
-    if(hasMoved){
-      // 更新隐藏滚动盒的滚动位置（方向反转：向上滑→光标下移）
-      const scrollBox=document.getElementById('cursorScrollBox');
-      if(scrollBox){
-        scrollBox.scrollTop-=dy;
-      }
+    // 上下滑动已禁用
+    if(Math.abs(dy)>15){
+      hasMoved=true; // 标记为已移动，但不执行任何动作
     }
     return;
   }
