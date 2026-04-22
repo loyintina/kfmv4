@@ -344,22 +344,25 @@
     const pathEl = document.getElementById("sidebarPath");
     if (!pathEl) return;
     if (!item) {
-      pathEl.style.maxWidth = "20px";
+      pathEl.style.transition = "width .2s cubic-bezier(.4,0,.2,1)";
+      pathEl.style.width = "20px";
       pathEl.textContent = "-";
       pathEl.title = "";
       return;
     }
     const nameEl = item.querySelector(".tree-name");
     const name = nameEl ? nameEl.textContent : "-";
-    const prev = pathEl.style.maxWidth;
     pathEl.style.transition = "none";
-    pathEl.style.maxWidth = "none";
+    pathEl.style.width = "auto";
     pathEl.textContent = name;
-    const targetWidth = pathEl.scrollWidth;
-    pathEl.style.maxWidth = prev || "0px";
+    const targetW = pathEl.offsetWidth;
+    const currentW = pathEl.style.width;
+    const prevW = pathEl._prevWidth || 20;
+    pathEl.style.width = prevW + "px";
     void pathEl.offsetWidth;
-    pathEl.style.transition = "max-width .25s cubic-bezier(.4,0,.2,1)";
-    pathEl.style.maxWidth = targetWidth + "px";
+    pathEl.style.transition = "width .2s cubic-bezier(.4,0,.2,1)";
+    pathEl.style.width = targetW + "px";
+    pathEl._prevWidth = targetW;
     pathEl.title = name || "";
   }
   function syncCursorDuringBounce(siblingCount = 0) {

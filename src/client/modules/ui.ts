@@ -67,8 +67,8 @@ export function updateSidebarPath(item: HTMLElement | null): void {
   const pathEl = document.getElementById('sidebarPath');
   if (!pathEl) return;
   if (!item) {
-    // 收缩到最小
-    pathEl.style.maxWidth = '20px';
+    pathEl.style.transition = 'width .2s cubic-bezier(.4,0,.2,1)';
+    pathEl.style.width = '20px';
     pathEl.textContent = '-';
     pathEl.title = '';
     return;
@@ -76,21 +76,27 @@ export function updateSidebarPath(item: HTMLElement | null): void {
   const nameEl = item.querySelector('.tree-name');
   const name = nameEl ? nameEl.textContent : '-';
 
-  // 测量目标宽度：临时设为 auto，读取实际宽度
-  const prev = pathEl.style.maxWidth;
+  // 测量目标宽度：临时移除 width 约束
   pathEl.style.transition = 'none';
-  pathEl.style.maxWidth = 'none';
+  pathEl.style.width = 'auto';
   pathEl.textContent = name;
-  const targetWidth = pathEl.scrollWidth;
+  const targetW = pathEl.offsetWidth;
 
-  // 先恢复到之前的宽度
-  pathEl.style.maxWidth = prev || '0px';
-  // 强制回流
-  void pathEl.offsetWidth;
+  // 回到当前宽度（测量前先记录）
+  const currentW = pathEl.style.width;
+  // 不需要恢复，因为上面已经 auto 了，直接设回目标
+  // 但为了动画效果，先锁回之前的值
+  // 第一次调用时没有之前的值
 
-  // 启用 transition，动画到目标宽度
-  pathEl.style.transition = 'max-width .25s cubic-bezier(.4,0,.2,1)';
-  pathEl.style.maxWidth = targetWidth + 'px';
+  // 用一个隐藏属性记住上次宽度
+  const prevW = (pathEl as any)._prevWidth || 20;
+  pathEl.style.width = prevW + 'px';
+  void pathEl.offsetWidth; // 强制回流
+
+  // 动画到目标宽度
+  pathEl.style.transition = 'width .2s cubic-bezier(.4,0,.2,1)';
+  pathEl.style.width = targetW + 'px';
+  (pathEl as any)._prevWidth = targetW;
   pathEl.title = name || '';
 }
 
