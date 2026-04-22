@@ -119,7 +119,7 @@ async function renderTree(container=document.getElementById('fileTree'),path='',
     row.addEventListener('touchend',()=>{rowSwiped=false;},{passive:true});
 
     // 点击事件 - 移动光标 或 展开收起
-    row.addEventListener('click',(e)=>{
+    row.addEventListener('click',async(e)=>{
       const isCurrentlySelected=div.classList.contains('selected');
       
       if(isCurrentlySelected){
@@ -127,7 +127,7 @@ async function renderTree(container=document.getElementById('fileTree'),path='',
         if(item.isDir){
           const isOpen=wrap.classList.contains('open');
           if(!isOpen&&!childrenWrap.querySelector('.tree-item')){
-            renderTree(childrenWrap,item.path,depth+1);
+            await renderTree(childrenWrap,item.path,depth+1);
           }
           wrap.classList.toggle('open');
           toggle.classList.toggle('expanded');
