@@ -81,20 +81,24 @@ function syncCursorDuringBounce(siblingCount=0){
   
   const sync=()=>{
     if(frame>=maxFrames){
-      // 最终归位
-      const selected=document.querySelector('.tree-item.selected');
-      if(selected){
-        const row=selected.querySelector('.tree-row')||selected;
-        const container=document.querySelector('.sidebar-content');
-        const containerRect=container.getBoundingClientRect();
-        const rowRect=row.getBoundingClientRect();
-        const finalTop=rowRect.top-containerRect.top+container.scrollTop;
-        cursorHighlight.style.top=finalTop+'px';
-        cursorHighlight.style.height=rowRect.height+'px';
-      }
-      // 恢复动画能力
+      // 归位前强制清除选中项的 transform（防止 race condition）
       requestAnimationFrame(()=>{
-        cursorHighlight.style.transition='top .3s cubic-bezier(.25,.46,.45,.94)';
+        const selected=document.querySelector('.tree-item.selected');
+        if(selected){
+          // 强制清除可能残留的 transform
+          selected.style.transform='';
+          selected.style.transition='';
+          const row=selected.querySelector('.tree-row')||selected;
+          const container=document.querySelector('.sidebar-content');
+          const containerRect=container.getBoundingClientRect();
+          const rowRect=row.getBoundingClientRect();
+          const finalTop=rowRect.top-containerRect.top+container.scrollTop;
+          cursorHighlight.style.top=finalTop+'px';
+          cursorHighlight.style.height=rowRect.height+'px';
+        }
+        requestAnimationFrame(()=>{
+          cursorHighlight.style.transition='top .3s cubic-bezier(.25,.46,.45,.94)';
+        });
       });
       return;
     }
