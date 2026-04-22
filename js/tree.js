@@ -146,16 +146,16 @@ async function renderTree(container=document.getElementById('fileTree'),path='',
           };
           // 计算兄弟数量
           let siblingCount=0;
-          {let s=div.nextElementSibling;while(s){siblingCount++;s=s.nextElementSibling;}}
+          {let s=div.nextElementSibling;while(s){if(s.classList.contains('tree-item'))siblingCount++;s=s.nextElementSibling;}}
           
           if(isOpen){
             doBounce(div,true,0);
             let sibling=div.nextElementSibling;let i=1;
-            while(sibling){doBounce(sibling,true,(i-1)*20);sibling=sibling.nextElementSibling;i++;}
+            while(sibling){if(sibling.classList.contains('tree-item')){doBounce(sibling,true,(i-1)*20);i++;}sibling=sibling.nextElementSibling;}
           }else{
             doBounce(div,false,0);
             let sibling=div.nextElementSibling;let i=1;
-            while(sibling){doBounce(sibling,false,(i-1)*20);sibling=sibling.nextElementSibling;i++;}
+            while(sibling){if(sibling.classList.contains('tree-item')){doBounce(sibling,false,(i-1)*20);i++;}sibling=sibling.nextElementSibling;}
           }
           
           // 光标跟随盒子跳动
