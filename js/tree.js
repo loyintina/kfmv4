@@ -144,6 +144,10 @@ async function renderTree(container=document.getElementById('fileTree'),path='',
               setTimeout(()=>{el.style.transform='';el.style.transition='';},450);
             },delay);
           };
+          // 计算兄弟数量
+          let siblingCount=0;
+          {let s=div.nextElementSibling;while(s){siblingCount++;s=s.nextElementSibling;}}
+          
           if(isOpen){
             doBounce(div,true,0);
             let sibling=div.nextElementSibling;let i=1;
@@ -155,7 +159,7 @@ async function renderTree(container=document.getElementById('fileTree'),path='',
           }
           
           // 光标跟随盒子跳动
-          syncCursorDuringBounce();
+          syncCursorDuringBounce(siblingCount);
         }
       }else{
         // 点击非选中项：移动光标（选中）

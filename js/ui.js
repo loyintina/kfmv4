@@ -68,47 +68,51 @@ function updateCursorHighlight(immediate=false){
 
 // ========== 光标位置绑定 ==========
 
-// 展开/收起时：光标只跟随选中项自身的叠叠乐（两步），然后精确归位
-function syncCursorDuringBounce(){
+// 展开/收起时：光标跟随盒子跳动（rAF 同步）
+function syncCursorDuringBounce(siblingCount=0){
   if(!cursorHighlight)initCursorHighlight();
   
+  // 全程禁用动画
   cursorHighlight.style.transition='none';
   
-  // 记录盒子的初始布局位置（不含 transform）
-  const selected=document.querySelector('.tree-item.selected');
-  if(!selected)return;
-  const container=document.querySelector('.sidebar-content');
-  
+  // 动态计算同步时长：最晚兄弟动画 = (siblingCount-1)*20 + 450ms
+  // 加上 100ms 余量，向上取整到帧数
+  const totalMs=Math.max(500, (siblingCount>0?(siblingCount-1)*20:0) + 450 + 100);
+  const maxFrames=Math.ceil(totalMs/16.67);
   let frame=0;
-  // 选中项的叠叠乐：delay=0, offset在0ms设置, rebound在170ms, 清除在450ms
-  // 同步到480ms（约29帧），覆盖清除动作
-  const maxFrames=30;
   
   const sync=()=>{
     if(frame>=maxFrames){
-      // 同步结束：精确归位到盒子的布局位置
-      const row=selected.querySelector('.tree-row')||selected;
-      const containerRect=container.getBoundingClientRect();
-      const rowRect=row.getBoundingClientRect();
-      const finalTop=rowRect.top-containerRect.top+container.scrollTop;
-      cursorHighlight.style.top=finalTop+'px';
-      cursorHighlight.style.height=rowRect.height+'px';
-      // 恢复动画能力
+      // 最终归位：立即同步到盒子位置
+      const selected=document.querySelector('.tree-item.selected');
+      if(selected){
+        const row=selected.querySelector('.tree-row')||selected;
+        const container=document.querySelector('.sidebar-content');
+        const containerRect=container.getBoundingClientRect();
+        const rowRect=row.getBoundingClientRect();
+        const finalTop=rowRect.top-containerRect.top+container.scrollTop;
+        cursorHighlight.style.transition='none';
+        cursorHighlight.style.top=finalTop+'px';
+        cursorHighlight.style.height=rowRect.height+'px';
+      }
+      // 归位完成后恢复动画能力
       requestAnimationFrame(()=>{
         cursorHighlight.style.transition='top .3s cubic-bezier(.25,.46,.45,.94)';
       });
       return;
     }
     
-    // 用 getBoundingClientRect 获取视觉位置（包含 transform）
-    const row=selected.querySelector('.tree-row')||selected;
-    const containerRect=container.getBoundingClientRect();
-    const rowRect=row.getBoundingClientRect();
-    const visualTop=rowRect.top-containerRect.top+container.scrollTop;
-    
-    cursorHighlight.style.top=visualTop+'px';
-    cursorHighlight.style.height=rowRect.height+'px';
-    cursorHighlight.style.opacity='1';
+    const selected=document.querySelector('.tree-item.selected');
+    if(selected){
+      const row=selected.querySelector('.tree-row')||selected;
+      const container=document.querySelector('.sidebar-content');
+      const containerRect=container.getBoundingClientRect();
+      const rowRect=row.getBoundingClientRect();
+      const visualTop=rowRect.top-containerRect.top+container.scrollTop;
+      cursorHighlight.style.top=visualTop+'px';
+      cursorHighlight.style.height=rowRect.height+'px';
+      cursorHighlight.style.opacity='1';
+    }
     
     frame++;
     requestAnimationFrame(sync);
@@ -116,7 +120,7 @@ function syncCursorDuringBounce(){
   sync();
 }
 
-// 侧栏
+// 侧���
 function openSidebar(){
   document.getElementById('sidebar').classList.add('open');
   document.getElementById('overlay').classList.add('show');
