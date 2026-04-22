@@ -154,8 +154,9 @@ async function renderTree(container=document.getElementById('fileTree'),path='',
             while(sibling){if(sibling.classList.contains('tree-item')){doBounce(sibling,false,(i-1)*20);i++;}sibling=sibling.nextElementSibling;}
           }
           
-          // 光标跟随盒子跳动
-          syncCursorDuringBounce();
+          // 光标跟随盒子跳动（传入兄弟数量以计算同步时长）
+          let sc=0;{let s=div.nextElementSibling;while(s){if(s.classList.contains('tree-item'))sc++;s=s.nextElementSibling;}}
+          syncCursorDuringBounce(sc);
         }
       }else{
         // 点击非选中项：移动光标（选中）

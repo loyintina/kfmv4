@@ -69,14 +69,15 @@ function updateCursorHighlight(immediate=false){
 // ========== 光标位置绑定 ==========
 
 // 展开/收起时：光标跟随盒子跳动（rAF 同步）
-function syncCursorDuringBounce(){
+function syncCursorDuringBounce(siblingCount=0){
   if(!cursorHighlight)initCursorHighlight();
   
-  // 全程禁用动画
   cursorHighlight.style.transition='none';
   
+  // 覆盖最晚兄弟动画：(siblingCount-1)*20 + 450ms + 100ms 余量
+  const totalMs=Math.max(500,(siblingCount>0?(siblingCount-1)*20:0)+550);
+  const maxFrames=Math.ceil(totalMs/16.67);
   let frame=0;
-  const maxFrames=30; // ~500ms，覆盖叠叠乐动画
   
   const sync=()=>{
     if(frame>=maxFrames){
