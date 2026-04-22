@@ -69,21 +69,18 @@ function updateCursorHighlight(immediate=false){
 // ========== 光标位置绑定 ==========
 
 // 展开/收起时：光标跟随盒子跳动（rAF 同步）
-function syncCursorDuringBounce(siblingCount=0){
+function syncCursorDuringBounce(){
   if(!cursorHighlight)initCursorHighlight();
   
   // 全程禁用动画
   cursorHighlight.style.transition='none';
   
-  // 动态计算同步时长：最晚兄弟动画 = (siblingCount-1)*20 + 450ms
-  // 加上 100ms 余量，向上取整到帧数
-  const totalMs=Math.max(500, (siblingCount>0?(siblingCount-1)*20:0) + 450 + 100);
-  const maxFrames=Math.ceil(totalMs/16.67);
   let frame=0;
+  const maxFrames=30; // ~500ms，覆盖叠叠乐动画
   
   const sync=()=>{
     if(frame>=maxFrames){
-      // 最终归位：立即同步到盒子位置
+      // 最终归位
       const selected=document.querySelector('.tree-item.selected');
       if(selected){
         const row=selected.querySelector('.tree-row')||selected;
@@ -91,11 +88,10 @@ function syncCursorDuringBounce(siblingCount=0){
         const containerRect=container.getBoundingClientRect();
         const rowRect=row.getBoundingClientRect();
         const finalTop=rowRect.top-containerRect.top+container.scrollTop;
-        cursorHighlight.style.transition='none';
         cursorHighlight.style.top=finalTop+'px';
         cursorHighlight.style.height=rowRect.height+'px';
       }
-      // 归位完成后恢复动画能力
+      // 恢复动画能力
       requestAnimationFrame(()=>{
         cursorHighlight.style.transition='top .3s cubic-bezier(.25,.46,.45,.94)';
       });
@@ -120,7 +116,7 @@ function syncCursorDuringBounce(siblingCount=0){
   sync();
 }
 
-// 侧���
+// 侧栏
 function openSidebar(){
   document.getElementById('sidebar').classList.add('open');
   document.getElementById('overlay').classList.add('show');
@@ -177,7 +173,7 @@ function restoreCursorPosition(){
   items[targetIndex].classList.add('selected');
   selectedFile=items[targetIndex].dataset.path;
   
-  // 更新光标高亮条位置（立即定位，无���画）
+  // 更新光标高亮条位置（立即定位，无动画）
   updateCursorHighlight(true);
   centerCursorToView(items[targetIndex]);
 }

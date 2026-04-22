@@ -138,16 +138,12 @@ async function renderTree(container=document.getElementById('fileTree'),path='',
           const doBounce=(el,dir,delay)=>{
             setTimeout(()=>{
               const offset=dir?-10:10;const rebound=dir?2:-2;
-              el.style.transition='transform .15s cubic-bezier(.34,1.56,.64,1)';
+              el.style.transition='transform .3s cubic-bezier(.34,1.56,.64,1)';
               el.style.transform='translateY('+offset+'px)';
-              setTimeout(()=>{el.style.transform='translateY('+rebound+'px)';},170);
+              setTimeout(()=>{el.style.transform='translateY('+rebound+'px)';},320);
               setTimeout(()=>{el.style.transform='';el.style.transition='';},450);
             },delay);
           };
-          // 计算兄弟数量
-          let siblingCount=0;
-          {let s=div.nextElementSibling;while(s){if(s.classList.contains('tree-item'))siblingCount++;s=s.nextElementSibling;}}
-          
           if(isOpen){
             doBounce(div,true,0);
             let sibling=div.nextElementSibling;let i=1;
@@ -159,7 +155,7 @@ async function renderTree(container=document.getElementById('fileTree'),path='',
           }
           
           // 光标跟随盒子跳动
-          syncCursorDuringBounce(siblingCount);
+          syncCursorDuringBounce();
         }
       }else{
         // 点击非选中项：移动光标（选中）
