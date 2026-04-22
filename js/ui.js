@@ -243,7 +243,7 @@ function centerCursorToView(item, smooth=true){
 }
 
 // overlay 点击 - 已移至 gestures.js 的 touchend 处理
-// 注意：移动端会同时触发 touchend 和 click，为避免重复执行，这里不再监听 click
+// 注意：移动端会同时触发 touchend 和 click，为避免重复执行，这里不再���听 click
 document.getElementById('overlay').addEventListener('click',(e)=>{
   // 光标动作由 gestures.js 的 touchend 处理
 });
@@ -378,6 +378,9 @@ function initScrollCursorConstraint(){
     const now=Date.now();
     if(now-lastScrollCheck<SCROLL_THROTTLE)return;
     lastScrollCheck=now;
+    
+    // 摇杆激活时不触发滚动约束（避免互相抢光标）
+    if(typeof joystickActive!=='undefined' && joystickActive)return;
     
     const selected=document.querySelector('.tree-item.selected');
     if(!selected)return;

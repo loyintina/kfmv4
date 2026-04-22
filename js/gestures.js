@@ -58,9 +58,9 @@ function moveCursorBySteps(steps){
   updateCursorHighlight();
   updateSidebarPath(items[targetIndex]);
   
-  // 摇杆模式下光标自动居中（瞬移，不堆积动画）
+  // 摇杆模式下光标自动居中
   if(joystickActive){
-    centerCursorToView(items[targetIndex], false);
+    centerCursorToView(items[targetIndex]);
   }
 }
 
