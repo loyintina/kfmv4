@@ -172,6 +172,12 @@ async function renderTree(container=document.getElementById('fileTree'),path='',
         
         // 更新光标高亮条位置（触发平滑动画）
         updateCursorHighlight();
+        updateSidebarPath(div);
+        
+        // 如果点击的节点不在约束区域，自动滚动使其居中
+        if(!isInConstraintZone(div)){
+          scrollIntoConstraintZone(div);
+        }
       }
       
       e.stopPropagation();

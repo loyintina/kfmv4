@@ -245,6 +245,26 @@ document.getElementById('overlay').addEventListener('click',(e)=>{
 
 // ========== 光标滚动倾向约束 ==========
 
+// 约束区域高度（视口中央 ±3个盒子高度，每个盒子约32px）
+const CONSTRAINT_HEIGHT=96; // 中央±48px
+
+// 判断元素是否在约束区域内（视口中央±40px）
+function isInConstraintZone(el){
+  if(!el)return false;
+  const container=document.querySelector('.sidebar-content');
+  if(!container)return false;
+  const containerRect=container.getBoundingClientRect();
+  const centerY=containerRect.top+containerRect.height/2;
+  const constraintTop=centerY-CONSTRAINT_HEIGHT/2;
+  const constraintBottom=centerY+CONSTRAINT_HEIGHT/2;
+  
+  const row=el.querySelector('.tree-row')||el;
+  const rect=row.getBoundingClientRect();
+  const itemCenter=rect.top+rect.height/2;
+  
+  return itemCenter>=constraintTop && itemCenter<=constraintBottom;
+}
+
 // 判断元素是否在视口内
 function isInViewport(el){
   if(!el)return false;
@@ -253,6 +273,31 @@ function isInViewport(el){
   const containerRect=container.getBoundingClientRect();
   const elRect=el.getBoundingClientRect();
   return elRect.top>=containerRect.top && elRect.bottom<=containerRect.bottom;
+}
+
+// 滚动页面使目标节点进入约束区域中央
+function scrollIntoConstraintZone(target){
+  if(!target)return;
+  const container=document.querySelector('.sidebar-content');
+  if(!container)return;
+  
+  const containerRect=container.getBoundingClientRect();
+  const centerY=containerRect.top+containerRect.height/2;
+  const row=target.querySelector('.tree-row')||target;
+  const rect=row.getBoundingClientRect();
+  const itemCenter=rect.top+rect.height/2;
+  
+  // 计算需要滚动的偏移量
+  const offset=itemCenter-centerY;
+  
+  // 边界处理：检查是否能滚动到目标位置
+  const maxScroll=container.scrollHeight-container.clientHeight;
+  const currentScroll=container.scrollTop;
+  const targetScroll=currentScroll+offset;
+  
+  // 限制在可滚动范围内
+  const finalScroll=Math.max(0,Math.min(maxScroll,targetScroll));
+  container.scrollTop=finalScroll;
 }
 
 // 获取视口内可见的所有 tree-item
@@ -273,7 +318,7 @@ function getVisibleItems(){
   return visible;
 }
 
-// 找到最接近视口中央的节点
+// 找到最接近约束区域中央的节点
 function findClosestToCenter(items){
   if(!items.length)return null;
   const container=document.querySelector('.sidebar-content');
@@ -324,8 +369,12 @@ function initScrollCursorConstraint(){
     scrollTimeout=setTimeout(()=>{
       const selected=document.querySelector('.tree-item.selected');
       
-      // 如果选中项不在视口内，跳到视口中央
-      if(selected && !isInViewport(selected)){
+      // 如果选中项不在约束区域内，跳到视口中央节点
+      if(selected && !isInConstraintZone(selected) && isInViewport(selected)){
+        // 选中项在视口内但不在约束区域 → 滚动使其居中
+        scrollIntoConstraintZone(selected);
+      }else if(selected && !isInViewport(selected)){
+        // 选中项不在视口内 → 跳到视口中央节点
         const visible=getVisibleItems();
         const closest=findClosestToCenter(visible);
         if(closest)moveCursorTo(closest);
