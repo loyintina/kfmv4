@@ -36,6 +36,7 @@ function updateCursorHighlight(immediate=false){
   const selected=document.querySelector('.tree-item.selected');
   if(!selected){
     cursorHighlight.style.opacity='0';
+    updateSidebarPath(null);
     return;
   }
   
@@ -62,12 +63,38 @@ function updateCursorHighlight(immediate=false){
   cursorHighlight.style.opacity='1';
   cursorHighlight.style.height=rowRect.height+'px';
   
+  // 更新底部路径显示
+  updateSidebarPath(selected);
+  
   // 如果是立即定位，之后恢复动画过渡
   if(immediate){
     requestAnimationFrame(()=>{
       cursorHighlight.style.transition='top .3s cubic-bezier(.25,.46,.45,.94),left .3s cubic-bezier(.25,.46,.45,.94),width .3s cubic-bezier(.25,.46,.45,.94)';
     });
   }
+}
+
+// 更新底部路径显示
+function updateSidebarPath(item){
+  const pathEl=document.getElementById('sidebarPath');
+  if(!pathEl)return;
+  if(!item){
+    pathEl.textContent='-';
+    pathEl.title='';
+    return;
+  }
+  
+  // 构建完整路径
+  const parts=[];
+  let node=item;
+  while(node){
+    const nameEl=node.querySelector('.tree-name');
+    if(nameEl)parts.unshift(nameEl.textContent);
+    node=node.parentElement?.closest('.tree-item');
+  }
+  const fullPath=parts.join('/');
+  pathEl.textContent=fullPath;
+  pathEl.title=fullPath;
 }
 
 // ========== 光标位置绑定 ==========
