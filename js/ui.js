@@ -243,7 +243,7 @@ function centerCursorToView(item, smooth=true){
 }
 
 // overlay 点击 - 已移至 gestures.js 的 touchend 处理
-// 注意：移动端会同时触发 touchend 和 click，为避免重复执行，这里不再�������听 click
+// 注意：移动端会同时触发 touchend 和 click，为避免重复执行，这里不再���������听 click
 document.getElementById('overlay').addEventListener('click',(e)=>{
   // 光标动作由 gestures.js 的 touchend 处理
 });
@@ -432,7 +432,7 @@ function initScrollCursorConstraint(){
           if(selected)selected.classList.remove('selected');
           allVisible[newIdx].classList.add('selected');
           selectedFile=allVisible[newIdx].dataset.path;
-          updateCursorHighlight(true);
+          updateCursorHighlight(); // 平滑动画过渡
           updateSidebarPath(allVisible[newIdx]);
         }
       }
