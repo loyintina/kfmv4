@@ -84,17 +84,11 @@ function updateSidebarPath(item){
     return;
   }
   
-  // 构建完整路径
-  const parts=[];
-  let node=item;
-  while(node){
-    const nameEl=node.querySelector('.tree-name');
-    if(nameEl)parts.unshift(nameEl.textContent);
-    node=node.parentElement?.closest('.tree-item');
-  }
-  const fullPath=parts.join('/');
-  pathEl.textContent=fullPath;
-  pathEl.title=fullPath;
+  // 只显示文件名
+  const nameEl=item.querySelector('.tree-name');
+  const name=nameEl?nameEl.textContent:'-';
+  pathEl.textContent=name;
+  pathEl.title=name;
 }
 
 // ========== 光标位置绑定 ==========
