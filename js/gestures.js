@@ -4,7 +4,7 @@ let joystickOffset=0;        // 当前Y偏移量（负=手指上移=光标下移
 let joystickRafId=null;      // requestAnimationFrame ID
 let joystickAccum=0;         // 累积偏移（用于离散化步进）
 const JOYSTICK_DEADZONE=15;   // 死区（px）
-const JOYSTICK_SENSITIVITY=80; // 每80px偏移 = 1格/秒的速度基数
+const JOYSTICK_SENSITIVITY=160; // 每80px偏移 = 1格/秒的速度基数
 const SCROLL_FOLLOW_SPEED=0.25; // 页面跟随速度（0-1，越大越快）
 
 function joystickTick(){
