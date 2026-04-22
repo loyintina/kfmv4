@@ -234,7 +234,13 @@ function centerCursorToView(item){
   const rowCenter=rowRect.top+rowRect.height/2;
   const containerCenter=containerRect.top+containerRect.height/2;
   const scrollOffset=rowCenter-containerCenter;
-  sidebarContent.scrollTop+=scrollOffset;
+  
+  // 平滑滚动
+  const targetScroll=sidebarContent.scrollTop+scrollOffset;
+  sidebarContent.scrollTo({
+    top: targetScroll,
+    behavior: 'smooth'
+  });
 }
 
 // overlay 点击 - 已移至 gestures.js 的 touchend 处理
@@ -297,7 +303,12 @@ function scrollIntoConstraintZone(target){
   
   // 限制在可滚动范围内
   const finalScroll=Math.max(0,Math.min(maxScroll,targetScroll));
-  container.scrollTop=finalScroll;
+  
+  // 平滑滚动
+  container.scrollTo({
+    top: finalScroll,
+    behavior: 'smooth'
+  });
 }
 
 // 获取视口内可见的所有 tree-item

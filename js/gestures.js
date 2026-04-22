@@ -190,7 +190,13 @@ function centerCursorToView(item){
   const rowCenter=rowRect.top+rowRect.height/2;
   const containerCenter=containerRect.top+containerRect.height/2;
   const scrollOffset=rowCenter-containerCenter;
-  sidebarContent.scrollTop+=scrollOffset;
+  
+  // 平滑滚动
+  const targetScroll=sidebarContent.scrollTop+scrollOffset;
+  sidebarContent.scrollTo({
+    top: targetScroll,
+    behavior: 'smooth'
+  });
 }
 
 // 光标移动函数 - 带自动滚动
