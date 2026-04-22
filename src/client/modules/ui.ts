@@ -67,40 +67,48 @@ export function updateSidebarPath(item: HTMLElement | null): void {
   const pathEl = document.getElementById('sidebarPath');
   if (!pathEl) return;
 
+  // 取消旧动画
+  pathEl.getAnimations().forEach(a => a.cancel());
+
+  // 读取当前渲染宽度
+  const currentW = parseFloat(getComputedStyle(pathEl).width) || 20;
+
   if (!item) {
-    const from = pathEl.offsetWidth;
     pathEl.textContent = '-';
     pathEl.title = '';
-    pathEl.animate(
-      [{ width: from + 'px' }, { width: '20px' }],
-      { duration: 200, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' }
-    ).onfinish = () => { pathEl.style.width = '20px'; };
+    pathEl.style.width = 'auto';
+    const targetW = pathEl.offsetWidth;
+    pathEl.style.width = currentW + 'px';
+    void pathEl.offsetWidth;
+    if (Math.abs(currentW - targetW) < 2) return;
+    const anim = pathEl.animate(
+      [{ width: currentW + 'px' }, { width: targetW + 'px' }],
+      { duration: 200, easing: 'cubic-bezier(.4,0,.2,1)' }
+    );
+    anim.onfinish = () => { pathEl.style.width = 'auto'; };
     return;
   }
 
   const nameEl = item.querySelector('.tree-name');
   const name = nameEl ? nameEl.textContent : '-';
 
-  // 记住当前宽度
-  const currentW = pathEl.offsetWidth;
-
-  // 先设为 auto 测量目标宽度
+  // 先切换文本 + width:auto 测量目标
   pathEl.style.width = 'auto';
   pathEl.textContent = name;
   const targetW = pathEl.offsetWidth;
 
-  // 锁回当前宽度
+  // 如果宽度几乎不变，跳过动画
+  if (Math.abs(currentW - targetW) < 2) return;
+
+  // 锁回当前宽度，触发动画
   pathEl.style.width = currentW + 'px';
   void pathEl.offsetWidth;
 
-  // 用 Web Animations API 从当前宽度动画到目标宽度
   const anim = pathEl.animate(
     [{ width: currentW + 'px' }, { width: targetW + 'px' }],
-    { duration: 200, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' }
+    { duration: 200, easing: 'cubic-bezier(.4,0,.2,1)' }
   );
-  anim.onfinish = () => {
-    pathEl.style.width = targetW + 'px';
-  };
+  anim.onfinish = () => { pathEl.style.width = 'auto'; };
   pathEl.title = name || '';
 }
 

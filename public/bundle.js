@@ -343,32 +343,39 @@
   function updateSidebarPath(item) {
     const pathEl = document.getElementById("sidebarPath");
     if (!pathEl) return;
+    pathEl.getAnimations().forEach((a) => a.cancel());
+    const currentW = parseFloat(getComputedStyle(pathEl).width) || 20;
     if (!item) {
-      const from = pathEl.offsetWidth;
       pathEl.textContent = "-";
       pathEl.title = "";
-      pathEl.animate(
-        [{ width: from + "px" }, { width: "20px" }],
-        { duration: 200, easing: "cubic-bezier(.4,0,.2,1)", fill: "forwards" }
-      ).onfinish = () => {
-        pathEl.style.width = "20px";
+      pathEl.style.width = "auto";
+      const targetW2 = pathEl.offsetWidth;
+      pathEl.style.width = currentW + "px";
+      void pathEl.offsetWidth;
+      if (Math.abs(currentW - targetW2) < 2) return;
+      const anim2 = pathEl.animate(
+        [{ width: currentW + "px" }, { width: targetW2 + "px" }],
+        { duration: 200, easing: "cubic-bezier(.4,0,.2,1)" }
+      );
+      anim2.onfinish = () => {
+        pathEl.style.width = "auto";
       };
       return;
     }
     const nameEl = item.querySelector(".tree-name");
     const name = nameEl ? nameEl.textContent : "-";
-    const currentW = pathEl.offsetWidth;
     pathEl.style.width = "auto";
     pathEl.textContent = name;
     const targetW = pathEl.offsetWidth;
+    if (Math.abs(currentW - targetW) < 2) return;
     pathEl.style.width = currentW + "px";
     void pathEl.offsetWidth;
     const anim = pathEl.animate(
       [{ width: currentW + "px" }, { width: targetW + "px" }],
-      { duration: 200, easing: "cubic-bezier(.4,0,.2,1)", fill: "forwards" }
+      { duration: 200, easing: "cubic-bezier(.4,0,.2,1)" }
     );
     anim.onfinish = () => {
-      pathEl.style.width = targetW + "px";
+      pathEl.style.width = "auto";
     };
     pathEl.title = name || "";
   }
