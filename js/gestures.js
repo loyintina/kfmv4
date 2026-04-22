@@ -5,6 +5,7 @@ let joystickRafId=null;      // requestAnimationFrame ID
 let joystickAccum=0;         // 累积偏移（用于离散化步进）
 const JOYSTICK_DEADZONE=15;   // 死区（px）
 const JOYSTICK_SENSITIVITY=80; // 每80px偏移 = 1格/秒的速度基数
+const SCROLL_FOLLOW_SPEED=0.25; // 页面跟随速度（0-1，越大越快）
 
 function joystickTick(){
   if(!joystickActive)return;
@@ -12,15 +13,16 @@ function joystickTick(){
   // 计算速度：偏移量 / 灵敏度 = 格/秒
   const normalizedOffset=joystickOffset;
   if(Math.abs(normalizedOffset)<=JOYSTICK_DEADZONE){
+    // 死区内仍做页面跟随（让页面追到最终位置）
+    followScrollToCursor();
     joystickRafId=requestAnimationFrame(joystickTick);
     return;
   }
   
-  // 速度 = 偏移量 / 灵敏度 * 一帧的时间占比
-  // 偏移越大速度越快，使用平方让手感更自然
+  // 速度 = 偏移量 / 灵敏度
   const sign=normalizedOffset>0?1:-1;
   const absOffset=Math.abs(normalizedOffset)-JOYSTICK_DEADZONE;
-  const speed=sign*(absOffset/JOYSTICK_SENSITIVITY); // 格/60fps
+  const speed=sign*(absOffset/JOYSTICK_SENSITIVITY);
   
   // 累积
   joystickAccum+=speed;
@@ -29,12 +31,33 @@ function joystickTick(){
   if(Math.abs(joystickAccum)>=1){
     const steps=Math.trunc(joystickAccum);
     joystickAccum-=steps;
-    
-    // 移动光标（正=手指下移=光标上移，负=手指上移=光标下移）
     moveCursorBySteps(-steps);
   }
   
+  // 每帧都做页面跟随
+  followScrollToCursor();
+  
   joystickRafId=requestAnimationFrame(joystickTick);
+}
+
+// 页面跟随光标（lerp）
+function followScrollToCursor(){
+  const container=document.querySelector('.sidebar-content');
+  if(!container)return;
+  const selected=document.querySelector('.tree-item.selected');
+  if(!selected)return;
+  
+  const containerRect=container.getBoundingClientRect();
+  const row=selected.querySelector('.tree-row')||selected;
+  const rowRect=row.getBoundingClientRect();
+  
+  // 光标中心相对于容器中心的偏移
+  const rowCenter=rowRect.top+rowRect.height/2;
+  const containerCenter=containerRect.top+containerRect.height/2;
+  const diff=rowCenter-containerCenter;
+  
+  // lerp：每帧移动差值的 25%
+  container.scrollTop+=diff*SCROLL_FOLLOW_SPEED;
 }
 
 function moveCursorBySteps(steps){
@@ -57,11 +80,6 @@ function moveCursorBySteps(steps){
   // 光标动画（复用已有过渡）
   updateCursorHighlight();
   updateSidebarPath(items[targetIndex]);
-  
-  // 摇杆模式下光标自动居中
-  if(joystickActive){
-    centerCursorToView(items[targetIndex]);
-  }
 }
 
 function startJoystick(){
@@ -110,7 +128,7 @@ document.addEventListener('touchmove',(e)=>{
   const dx=currentX-touchStartX;
   const dy=currentY-touchStartY;
 
-  // 光标模式优先处理（摇杆模式）
+  // 光��模式优先处理（摇杆模式）
   if(cursorMode){
     // 在光标模式下，左滑关闭左栏（优先级最高）
     if(dx<-60){
