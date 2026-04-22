@@ -66,10 +66,31 @@ export function updateCursorHighlight(immediate = false): void {
 export function updateSidebarPath(item: HTMLElement | null): void {
   const pathEl = document.getElementById('sidebarPath');
   if (!pathEl) return;
-  if (!item) { pathEl.textContent = '-'; pathEl.title = ''; return; }
+  if (!item) {
+    // 收缩到最小
+    pathEl.style.maxWidth = '20px';
+    pathEl.textContent = '-';
+    pathEl.title = '';
+    return;
+  }
   const nameEl = item.querySelector('.tree-name');
   const name = nameEl ? nameEl.textContent : '-';
+
+  // 测量目标宽度：临时设为 auto，读取实际宽度
+  const prev = pathEl.style.maxWidth;
+  pathEl.style.transition = 'none';
+  pathEl.style.maxWidth = 'none';
   pathEl.textContent = name;
+  const targetWidth = pathEl.scrollWidth;
+
+  // 先恢复到之前的宽度
+  pathEl.style.maxWidth = prev || '0px';
+  // 强制回流
+  void pathEl.offsetWidth;
+
+  // 启用 transition，动画到目标宽度
+  pathEl.style.transition = 'max-width .25s cubic-bezier(.4,0,.2,1)';
+  pathEl.style.maxWidth = targetWidth + 'px';
   pathEl.title = name || '';
 }
 

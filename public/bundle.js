@@ -344,13 +344,22 @@
     const pathEl = document.getElementById("sidebarPath");
     if (!pathEl) return;
     if (!item) {
+      pathEl.style.maxWidth = "20px";
       pathEl.textContent = "-";
       pathEl.title = "";
       return;
     }
     const nameEl = item.querySelector(".tree-name");
     const name = nameEl ? nameEl.textContent : "-";
+    const prev = pathEl.style.maxWidth;
+    pathEl.style.transition = "none";
+    pathEl.style.maxWidth = "none";
     pathEl.textContent = name;
+    const targetWidth = pathEl.scrollWidth;
+    pathEl.style.maxWidth = prev || "0px";
+    void pathEl.offsetWidth;
+    pathEl.style.transition = "max-width .25s cubic-bezier(.4,0,.2,1)";
+    pathEl.style.maxWidth = targetWidth + "px";
     pathEl.title = name || "";
   }
   function syncCursorDuringBounce(siblingCount = 0) {
