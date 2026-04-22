@@ -81,5 +81,5 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 .ai-send-btn{border:none;border-radius:8px;padding:12px 24px;background:var(--primary);color:white;font-weight:600;cursor:pointer;transition:opacity .1s;align-self:center;flex-shrink:0}
 .ai-send-btn:active{opacity:.8}
 /* 悬浮光球 */
-.light-orb{position:fixed;width:36px;height:36px;background:radial-gradient(circle at 30% 30%,rgba(124,58,237,.9),rgba(124,58,237,.4),transparent 70%);border-radius:50%;cursor:grab;z-index:200;box-shadow:0 0 16px 6px rgba(124,58,237,.5),0 0 32px 12px rgba(124,58,237,.3);transition:box-shadow .2s;bottom:200px;right:24px;touch-action:none}
+.light-orb{position:fixed;width:36px;height:36px;background:radial-gradient(circle at 30% 30%,rgba(124,58,237,.9),rgba(124,58,237,.4),transparent 70%);border-radius:50%;cursor:grab;z-index:200;box-shadow:0 0 16px 6px rgba(124,58,237,.5),0 0 32px 12px rgba(124,58,237,.3);transition:box-shadow .2s;bottom:140px;right:24px;touch-action:none}
 .light-orb:active{cursor:grabbing;box-shadow:0 0 24px 10px rgba(124,58,237,.6),0 0 48px 20px rgba(124,58,237,.4)}
