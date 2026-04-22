@@ -77,6 +77,8 @@ async function renderTree(container=document.getElementById('fileTree'),path='',
     // 保存光标状态
     const savedSelected=document.querySelector('.tree-item.selected');
     savedPath=savedSelected?.dataset?.path||null;
+    // 清空容器前重置光标引用（光标元素会被删除）
+    resetCursorHighlight();
     container.innerHTML='<div class="loading-pulse"><div class="pulse-row"></div><div class="pulse-row"></div><div class="pulse-row"></div></div>';}
   const items=await loadTree(path);
   container.innerHTML='';
@@ -190,7 +192,6 @@ async function renderTree(container=document.getElementById('fileTree'),path='',
     const newItem=document.querySelector(`.tree-item[data-path="${savedPath}"]`);
     if(newItem){
       newItem.classList.add('selected');
-      resetCursorHighlight();
       updateCursorHighlight(true);
     }
   }
