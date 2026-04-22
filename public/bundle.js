@@ -2783,14 +2783,19 @@
       e.stopPropagation();
       endDrag();
     });
+    let mouseDragging = false;
     orbEl.addEventListener("mousedown", (e) => {
       e.stopPropagation();
+      mouseDragging = true;
       startDrag(e.clientX, e.clientY);
     });
     document.addEventListener("mousemove", (e) => {
+      if (!mouseDragging) return;
       moveDrag(e.clientX, e.clientY);
     });
     document.addEventListener("mouseup", () => {
+      if (!mouseDragging && !dragging) return;
+      mouseDragging = false;
       endDrag();
     });
     initInputBarWatcher();
