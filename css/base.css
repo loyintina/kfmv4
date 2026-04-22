@@ -13,7 +13,7 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 .info-card.l5{border-color:#ffc107}
 
 /* 遮罩层 */
-.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:150;opacity:0;pointer-events:none;transition:opacity .25s cubic-bezier(.34,1.2,.5,1.4)}
+.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:500;opacity:0;pointer-events:none;transition:opacity .25s cubic-bezier(.34,1.2,.5,1.4)}
 .overlay.show{opacity:1;pointer-events:auto}
 
 /* 主区域 */
@@ -46,7 +46,7 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 .home-hint p{margin:4px 0}
 
 /* 命令行面板 */
-.terminal-panel{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.9);z-index:300;opacity:0;pointer-events:none;transition:opacity .3s}
+.terminal-panel{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.9);z-index:1500;opacity:0;pointer-events:none;transition:opacity .3s}
 .terminal-panel.open{opacity:1;pointer-events:auto}
 .terminal-content{background:var(--surface);border-radius:0 0 16px 16px;padding:16px;max-height:85vh;overflow-y:auto;margin-top:8px}
 .terminal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 14px}
@@ -59,7 +59,7 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 .terminal-run:active{opacity:.8}
 
 /* 右侧操作面板 */
-.actions-panel{position:fixed;top:0;right:0;width:280px;height:100%;background:var(--surface);z-index:250;transform:translateX(100%);transition:transform .35s cubic-bezier(.34,1.56,.64,1)}
+.actions-panel{position:fixed;top:0;right:0;width:280px;height:100%;background:var(--surface);z-index:350;transform:translateX(100%);transition:transform .35s cubic-bezier(.34,1.56,.64,1)}
 .actions-panel.open{transform:translateX(0)}
 .actions-header{height:56px;padding:0 16px;display:flex;align-items:center;border-bottom:1px solid var(--border)}
 .actions-title{font-weight:600}
@@ -72,14 +72,14 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 .action-item.danger{color:#ff4775}
 
 /* 执行提示 */
-.operation-toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--surface);border-left:3px solid var(--primary);border-radius:8px;padding:12px 20px;box-shadow:0 4px 12px rgba(0,0,0,.5);z-index:300;opacity:0;pointer-events:none;transition:opacity .3s}
+.operation-toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--surface);border-left:3px solid var(--primary);border-radius:8px;padding:12px 20px;box-shadow:0 4px 12px rgba(0,0,0,.5);z-index:1500;opacity:0;pointer-events:none;transition:opacity .3s}
 .operation-toast.show{opacity:1}
 /* AI对话输入栏 */
-.ai-input-bar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:12px 16px;display:flex;gap:12px;z-index:100;align-items:center}
+.ai-input-bar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:12px 16px;display:flex;gap:12px;z-index:200;align-items:center}
 .ai-input{flex:1;border:none;border-radius:8px;padding:12px 16px;background:var(--bg);color:var(--text);font-size:14px;resize:none;max-height:120px;overflow-y:auto;line-height:1.5;font-family:inherit}
 .ai-input:focus{outline:none;box-shadow:0 0 0 2px var(--primary)}
 .ai-send-btn{border:none;border-radius:8px;padding:12px 24px;background:var(--primary);color:white;font-weight:600;cursor:pointer;transition:opacity .1s;align-self:center;flex-shrink:0}
 .ai-send-btn:active{opacity:.8}
 /* 悬浮光球 */
-.light-orb{position:fixed;width:36px;height:36px;background:radial-gradient(circle at 30% 30%,rgba(124,58,237,.9),rgba(124,58,237,.4),transparent 70%);border-radius:50%;cursor:grab;z-index:200;box-shadow:0 0 16px 6px rgba(124,58,237,.5),0 0 32px 12px rgba(124,58,237,.3);transition:box-shadow .2s;bottom:140px;right:24px;touch-action:none}
+.light-orb{position:fixed;width:36px;height:36px;background:radial-gradient(circle at 30% 30%,rgba(124,58,237,.9),rgba(124,58,237,.4),transparent 70%);border-radius:50%;cursor:grab;z-index:210;box-shadow:0 0 16px 6px rgba(124,58,237,.5),0 0 32px 12px rgba(124,58,237,.3);transition:box-shadow .2s;bottom:140px;right:24px;touch-action:none}
 .light-orb:active{cursor:grabbing;box-shadow:0 0 24px 10px rgba(124,58,237,.6),0 0 48px 20px rgba(124,58,237,.4)}
