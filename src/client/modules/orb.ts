@@ -26,8 +26,8 @@ let orbState: OrbState = 'collapsed';
 let orbEl: HTMLDivElement | null = null;
 let panelEl: HTMLDivElement | null = null;
 
-const PANEL_MIN_WIDTH = 200;
-const PANEL_MIN_HEIGHT = 150;
+const PANEL_MIN_WIDTH = 120;
+const PANEL_MIN_HEIGHT = 100;
 const PANEL_DEFAULT_WIDTH = 300;
 const PANEL_DEFAULT_HEIGHT = 350;
 let panelWidth = PANEL_DEFAULT_WIDTH;
@@ -47,7 +47,7 @@ let dragStartPanelY = 0;
 
 let longPressTimer: ReturnType<typeof setTimeout> | null = null;
 let longPressFired = false;
-const LONG_PRESS_MS = 1000;
+const LONG_PRESS_MS = 600;
 
 const ORB_SIZE = 36;
 const ORB_HALF = ORB_SIZE / 2;
@@ -346,27 +346,67 @@ function moveDrag(x: number, y: number): void {
 
 function endDrag(): void {
   if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
-  if (orbEl) orbEl.style.transition = 'box-shadow .2s';
+  if (orbEl) {
+    orbEl.style.transition = 'box-shadow .2s';
+    // 更新自由位置
+    const rect = orbEl.getBoundingClientRect();
+    freeOrbX = rect.left;
+    freeOrbY = rect.top;
+    // 如果编辑模式结束，保存面板尺寸
+    if (orbState === 'editing') {
+      // 用户松手时如果在编辑模式，保持当前尺寸
+    }
+  }
   if (!dragging && !longPressFired) togglePanel();
   dragging = false;
 }
 
 // ========== 监听输入栏位置变化（输入法弹出时光球跟随） ==========
+// 记录光球的"自由位置"（不受输入栏约束时的位置）
+let freeOrbX = -1;
+let freeOrbY = -1;
+let lastBarTop = -1;
+let isOrbPushed = false; // 光球是否因输入栏被挤压
+
 function initInputBarWatcher(): void {
-  let lastBarTop = 0;
   const check = () => {
-    if (!orbEl) return;
+    if (!orbEl) { requestAnimationFrame(check); return; }
     const barTop = getInputBarTop();
+
+    // 首次初始化自由位置
+    if (freeOrbX === -1) {
+      const rect = orbEl.getBoundingClientRect();
+      freeOrbX = rect.left;
+      freeOrbY = rect.top;
+      lastBarTop = barTop;
+    }
+
     if (barTop !== lastBarTop) {
       lastBarTop = barTop;
-      const rect = orbEl.getBoundingClientRect();
-      const clamped = clampOrbPosition(rect.left, rect.top);
-      if (rect.top !== clamped.y || rect.left !== clamped.x) {
+
+      // 计算自由位置是否会被输入栏覆盖
+      const clamped = clampOrbPosition(freeOrbX, freeOrbY);
+      const needsPush = (freeOrbY !== clamped.y);
+
+      if (needsPush) {
+        // 被挤压：移到约束位置，但保持 x 不变
+        isOrbPushed = true;
         orbEl.style.left = clamped.x + 'px';
         orbEl.style.top = clamped.y + 'px';
         orbEl.style.right = 'auto';
         orbEl.style.bottom = 'auto';
-        if (panelEl && orbState !== 'collapsed') updatePanelPosition();
+      } else if (isOrbPushed) {
+        // 不再被挤压：恢复自由位置
+        isOrbPushed = false;
+        orbEl.style.left = freeOrbX + 'px';
+        orbEl.style.top = freeOrbY + 'px';
+        orbEl.style.right = 'auto';
+        orbEl.style.bottom = 'auto';
+      }
+
+      if (panelEl && orbState !== 'collapsed') {
+        updatePanelPosition();
+        if (orbState === 'expanded') renderChatContent();
       }
     }
     requestAnimationFrame(check);
@@ -389,6 +429,8 @@ export function initOrb(): void {
   orbEl.style.top = clamped.y + 'px';
   orbEl.style.right = 'auto';
   orbEl.style.bottom = 'auto';
+  freeOrbX = clamped.x;
+  freeOrbY = clamped.y;
 
   // Touch 事件
   orbEl.addEventListener('touchstart', (e) => {

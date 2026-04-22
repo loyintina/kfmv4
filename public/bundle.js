@@ -2434,8 +2434,8 @@
   var orbState = "collapsed";
   var orbEl = null;
   var panelEl = null;
-  var PANEL_MIN_WIDTH = 200;
-  var PANEL_MIN_HEIGHT = 150;
+  var PANEL_MIN_WIDTH = 120;
+  var PANEL_MIN_HEIGHT = 100;
   var PANEL_DEFAULT_WIDTH = 300;
   var PANEL_DEFAULT_HEIGHT = 350;
   var panelWidth = PANEL_DEFAULT_WIDTH;
@@ -2451,7 +2451,7 @@
   var dragStartPanelY = 0;
   var longPressTimer = null;
   var longPressFired = false;
-  var LONG_PRESS_MS = 1e3;
+  var LONG_PRESS_MS = 600;
   var ORB_SIZE = 36;
   var ORB_HALF = ORB_SIZE / 2;
   var MARGIN = 8;
@@ -2704,25 +2704,54 @@
       clearTimeout(longPressTimer);
       longPressTimer = null;
     }
-    if (orbEl) orbEl.style.transition = "box-shadow .2s";
+    if (orbEl) {
+      orbEl.style.transition = "box-shadow .2s";
+      const rect = orbEl.getBoundingClientRect();
+      freeOrbX = rect.left;
+      freeOrbY = rect.top;
+      if (orbState === "editing") {
+      }
+    }
     if (!dragging && !longPressFired) togglePanel();
     dragging = false;
   }
+  var freeOrbX = -1;
+  var freeOrbY = -1;
+  var lastBarTop = -1;
+  var isOrbPushed = false;
   function initInputBarWatcher() {
-    let lastBarTop = 0;
     const check = () => {
-      if (!orbEl) return;
+      if (!orbEl) {
+        requestAnimationFrame(check);
+        return;
+      }
       const barTop = getInputBarTop();
+      if (freeOrbX === -1) {
+        const rect = orbEl.getBoundingClientRect();
+        freeOrbX = rect.left;
+        freeOrbY = rect.top;
+        lastBarTop = barTop;
+      }
       if (barTop !== lastBarTop) {
         lastBarTop = barTop;
-        const rect = orbEl.getBoundingClientRect();
-        const clamped = clampOrbPosition(rect.left, rect.top);
-        if (rect.top !== clamped.y || rect.left !== clamped.x) {
+        const clamped = clampOrbPosition(freeOrbX, freeOrbY);
+        const needsPush = freeOrbY !== clamped.y;
+        if (needsPush) {
+          isOrbPushed = true;
           orbEl.style.left = clamped.x + "px";
           orbEl.style.top = clamped.y + "px";
           orbEl.style.right = "auto";
           orbEl.style.bottom = "auto";
-          if (panelEl && orbState !== "collapsed") updatePanelPosition();
+        } else if (isOrbPushed) {
+          isOrbPushed = false;
+          orbEl.style.left = freeOrbX + "px";
+          orbEl.style.top = freeOrbY + "px";
+          orbEl.style.right = "auto";
+          orbEl.style.bottom = "auto";
+        }
+        if (panelEl && orbState !== "collapsed") {
+          updatePanelPosition();
+          if (orbState === "expanded") renderChatContent();
         }
       }
       requestAnimationFrame(check);
@@ -2739,6 +2768,8 @@
     orbEl.style.top = clamped.y + "px";
     orbEl.style.right = "auto";
     orbEl.style.bottom = "auto";
+    freeOrbX = clamped.x;
+    freeOrbY = clamped.y;
     orbEl.addEventListener("touchstart", (e) => {
       e.stopPropagation();
       e.preventDefault();
