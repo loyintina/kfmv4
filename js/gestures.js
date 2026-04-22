@@ -62,7 +62,9 @@ function followScrollToCursor(){
 
 function moveCursorBySteps(steps){
   if(steps===0)return;
-  const items=document.querySelectorAll('#fileTree .tree-item');
+  // 只选取可见节点（收起状态的子树中的节点不可见）
+  const items=Array.from(document.querySelectorAll('#fileTree .tree-item'))
+    .filter(item=>item.offsetHeight>0);
   if(!items.length)return;
   
   const currentSelected=document.querySelector('.tree-item.selected');
