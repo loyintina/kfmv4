@@ -1,21 +1,85 @@
-// ========== 全局手势处理 ==========
-let touchStartX=0,touchStartY=0;
-let touchStarted=false;
-let pullDownTriggered=false;
-let cursorMode=false; // 光标模式标记
-let hasMoved=false; // 是否发生过滑动
-let scrollMode=false; // 是否在滚动模式
-let lastTouchY=0; // 上一次触摸Y坐标，用于计算滚动量
-let lastCursorIndex=0; // 上次光标位置，用于判断移动方向
+// ========== 摇杆光标系统 ==========
+let joystickActive=false;   // 摇杆是否激活
+let joystickOffset=0;        // 当前Y偏移量（负=手指上移=光标下移）
+let joystickRafId=null;      // requestAnimationFrame ID
+let joystickAccum=0;         // 累积偏移（用于离散化步进）
+const JOYSTICK_DEADZONE=15;   // 死区（px）
+const JOYSTICK_SENSITIVITY=40; // 每40px偏移 = 1格/秒的速度基数
+
+function joystickTick(){
+  if(!joystickActive)return;
+  
+  // 计算速度：偏移量 / 灵敏度 = 格/秒
+  const normalizedOffset=joystickOffset;
+  if(Math.abs(normalizedOffset)<=JOYSTICK_DEADZONE){
+    joystickRafId=requestAnimationFrame(joystickTick);
+    return;
+  }
+  
+  // 速度 = 偏移量 / 灵敏度 * 一帧的时间占比
+  // 偏移越大速度越快，使用平方让手感更自然
+  const sign=normalizedOffset>0?1:-1;
+  const absOffset=Math.abs(normalizedOffset)-JOYSTICK_DEADZONE;
+  const speed=sign*(absOffset/JOYSTICK_SENSITIVITY); // 格/60fps
+  
+  // 累积
+  joystickAccum+=speed;
+  
+  // 累积超过1格时移动光标
+  if(Math.abs(joystickAccum)>=1){
+    const steps=Math.trunc(joystickAccum);
+    joystickAccum-=steps;
+    
+    // 移动光标（正=手指下移=光标上移，负=手指上移=光标下移）
+    moveCursorBySteps(-steps);
+  }
+  
+  joystickRafId=requestAnimationFrame(joystickTick);
+}
+
+function moveCursorBySteps(steps){
+  if(steps===0)return;
+  const items=document.querySelectorAll('#fileTree .tree-item');
+  if(!items.length)return;
+  
+  const currentSelected=document.querySelector('.tree-item.selected');
+  let currentIndex=0;
+  items.forEach((item,i)=>{if(item===currentSelected)currentIndex=i;});
+  
+  const targetIndex=Math.min(Math.max(currentIndex+steps,0),items.length-1);
+  if(targetIndex===currentIndex)return;
+  
+  // 更新选中状态
+  if(currentSelected)currentSelected.classList.remove('selected');
+  items[targetIndex].classList.add('selected');
+  selectedFile=items[targetIndex].dataset.path;
+  
+  // 光标动画（复用已有过渡）
+  updateCursorHighlight();
+  updateSidebarPath(items[targetIndex]);
+}
+
+function startJoystick(){
+  joystickActive=true;
+  joystickAccum=0;
+  joystickTick();
+}
+
+function stopJoystick(){
+  joystickActive=false;
+  joystickAccum=0;
+  if(joystickRafId){
+    cancelAnimationFrame(joystickRafId);
+    joystickRafId=null;
+  }
+}
 
 document.addEventListener('touchstart',(e)=>{
   touchStartX=e.touches[0].clientX;
   touchStartY=e.touches[0].clientY;
-  lastTouchY=touchStartY;
   touchStarted=true;
   pullDownTriggered=false;
   hasMoved=false;
-  scrollMode=false;
   
   // 判断是否在左栏右侧区域
   const sidebarOpen=document.getElementById('sidebar').classList.contains('open');
@@ -23,14 +87,6 @@ document.addEventListener('touchstart',(e)=>{
     const sidebarRect=document.getElementById('sidebar').getBoundingClientRect();
     if(touchStartX > sidebarRect.right){
       cursorMode=true; // 进入光标模式
-      // 记录当前光标位置
-      const currentSelected=document.querySelector('.tree-item.selected');
-      if(currentSelected){
-        const items=document.querySelectorAll('#fileTree .tree-item');
-        items.forEach((item,i)=>{if(item===currentSelected)lastCursorIndex=i;});
-      }
-      // 初始化隐藏滚动盒
-      initHiddenScrollBox();
     } else {
       cursorMode=false;
     }
@@ -49,19 +105,26 @@ document.addEventListener('touchmove',(e)=>{
   const dx=currentX-touchStartX;
   const dy=currentY-touchStartY;
 
-  // 光标模式优先处理
+  // 光标模式优先处理（摇杆模式）
   if(cursorMode){
     // 在光标模式下，左滑关闭左栏（优先级最高）
     if(dx<-60){
       hasMoved=true;
+      stopJoystick();
       closeSidebar();
       touchStarted=false;
       return;
     }
     
-    // 上下滑动已禁用
-    if(Math.abs(dy)>15){
-      hasMoved=true; // 标记为已移动，但不执行任何动作
+    // 摇杆模式：手指偏移量 = 速度
+    if(Math.abs(dy)>JOYSTICK_DEADZONE){
+      if(!hasMoved){
+        hasMoved=true;
+        startJoystick();
+      }
+      joystickOffset=dy; // 正=手指下移=光标上移，负=手指上移=光标下移
+    }else if(hasMoved){
+      joystickOffset=0; // 回到死区，速度归零
     }
     return;
   }
@@ -110,6 +173,9 @@ document.addEventListener('touchend',(e)=>{
   if(cursorMode && !hasMoved){
     executeCursorAction();
   }
+  
+  // 停止摇杆
+  if(joystickActive)stopJoystick();
   
   touchStarted=false;
   cursorMode=false;
