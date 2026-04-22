@@ -20,8 +20,8 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 .main{position:fixed;top:0;left:0;right:0;bottom:0;overflow-y:auto;touch-action:pan-y;
   /* 网格背景 */
   background-image:
-    linear-gradient(rgba(124,58,237,.15) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(124,58,237,.15) 1px,transparent 1px);
+    linear-gradient(rgba(124,58,237,.30) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(124,58,237,.30) 1px,transparent 1px);
   background-size:24px 24px;
   background-attachment:local;
 }
@@ -66,7 +66,7 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 .actions-close{background:none;border:none;color:var(--text);font-size:24px;cursor:pointer}
 .actions-list{padding:8px 0}
 .action-item{display:flex;align-items:center;gap:14px;padding:14px 16px;cursor:pointer;border-radius:0;transition:background .1s}
-.action-item:active{background:rgba(124,58,237,.15)}
+.action-item:active{background:rgba(124,58,237,.30)}
 .action-item .icon{font-size:18px;width:28px;text-align:center}
 .action-item span:last-child{font-size:13px}
 .action-item.danger{color:#ff4775}
