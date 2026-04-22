@@ -15,8 +15,17 @@ const CURSOR_POS_KEY='kfm_cursor_position';
 // 光标高亮条（独立元素）
 let cursorHighlight=null;
 
+// 重置光标（用于 renderTree 后恢复）
+function resetCursorHighlight(){
+  cursorHighlight=null;
+}
+
 // 初始化光标高亮条
 function initCursorHighlight(){
+  // 如果光标元素不在 DOM 中，清除旧引用
+  if(cursorHighlight && !document.body.contains(cursorHighlight)){
+    cursorHighlight=null;
+  }
   if(cursorHighlight)return;
   
   const container=document.querySelector('.sidebar-content');

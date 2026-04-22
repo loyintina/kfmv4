@@ -72,7 +72,12 @@ async function loadTree(path=''){
 
 // 渲染文件树
 async function renderTree(container=document.getElementById('fileTree'),path='',depth=0){
-  if(depth===0)container.innerHTML='<div class="loading-pulse"><div class="pulse-row"></div><div class="pulse-row"></div><div class="pulse-row"></div></div>';
+  let savedPath=null;
+  if(depth===0){
+    // 保存光标状态
+    const savedSelected=document.querySelector('.tree-item.selected');
+    savedPath=savedSelected?.dataset?.path||null;
+    container.innerHTML='<div class="loading-pulse"><div class="pulse-row"></div><div class="pulse-row"></div><div class="pulse-row"></div></div>';}
   const items=await loadTree(path);
   container.innerHTML='';
   const frag=document.createDocumentFragment();
@@ -173,6 +178,16 @@ async function renderTree(container=document.getElementById('fileTree'),path='',
     });
   }
   container.appendChild(frag);
+  
+  // 恢复选中状态（仅根层渲染后）
+  if(depth===0 && savedPath){
+    const newItem=document.querySelector(`.tree-item[data-path="${savedPath}"]`);
+    if(newItem){
+      newItem.classList.add('selected');
+      resetCursorHighlight();
+      updateCursorHighlight(true);
+    }
+  }
 }
 
 function refreshTree(){renderTree();}
