@@ -17,7 +17,14 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 .overlay.show{opacity:1;pointer-events:auto}
 
 /* 主区域 */
-.main{position:fixed;top:0;left:0;right:0;bottom:0;overflow-y:auto;touch-action:pan-y}
+.main{position:fixed;top:0;left:0;right:0;bottom:0;overflow-y:auto;touch-action:pan-y;
+  /* 网格背景 */
+  background-image:
+    linear-gradient(rgba(124,58,237,.06) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(124,58,237,.06) 1px,transparent 1px);
+  background-size:24px 24px;
+  background-attachment:local;
+}
 .main.shifted{transform:translateX(280px)}
 
 /* 信息卡片 */
