@@ -66,37 +66,41 @@ export function updateCursorHighlight(immediate = false): void {
 export function updateSidebarPath(item: HTMLElement | null): void {
   const pathEl = document.getElementById('sidebarPath');
   if (!pathEl) return;
+
   if (!item) {
-    pathEl.style.transition = 'width .2s cubic-bezier(.4,0,.2,1)';
-    pathEl.style.width = '20px';
+    const from = pathEl.offsetWidth;
     pathEl.textContent = '-';
     pathEl.title = '';
+    pathEl.animate(
+      [{ width: from + 'px' }, { width: '20px' }],
+      { duration: 200, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' }
+    ).onfinish = () => { pathEl.style.width = '20px'; };
     return;
   }
+
   const nameEl = item.querySelector('.tree-name');
   const name = nameEl ? nameEl.textContent : '-';
 
-  // 测量目标宽度：临时移除 width 约束
-  pathEl.style.transition = 'none';
+  // 记住当前宽度
+  const currentW = pathEl.offsetWidth;
+
+  // 先设为 auto 测量目标宽度
   pathEl.style.width = 'auto';
   pathEl.textContent = name;
   const targetW = pathEl.offsetWidth;
 
-  // 回到当前宽度（测量前先记录）
-  const currentW = pathEl.style.width;
-  // 不需要恢复，因为上面已经 auto 了，直接设回目标
-  // 但为了动画效果，先锁回之前的值
-  // 第一次调用时没有之前的值
+  // 锁回当前宽度
+  pathEl.style.width = currentW + 'px';
+  void pathEl.offsetWidth;
 
-  // 用一个隐藏属性记住上次宽度
-  const prevW = (pathEl as any)._prevWidth || 20;
-  pathEl.style.width = prevW + 'px';
-  void pathEl.offsetWidth; // 强制回流
-
-  // 动画到目标宽度
-  pathEl.style.transition = 'width .2s cubic-bezier(.4,0,.2,1)';
-  pathEl.style.width = targetW + 'px';
-  (pathEl as any)._prevWidth = targetW;
+  // 用 Web Animations API 从当前宽度动画到目标宽度
+  const anim = pathEl.animate(
+    [{ width: currentW + 'px' }, { width: targetW + 'px' }],
+    { duration: 200, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' }
+  );
+  anim.onfinish = () => {
+    pathEl.style.width = targetW + 'px';
+  };
   pathEl.title = name || '';
 }
 

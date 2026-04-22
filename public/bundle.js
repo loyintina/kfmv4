@@ -344,25 +344,32 @@
     const pathEl = document.getElementById("sidebarPath");
     if (!pathEl) return;
     if (!item) {
-      pathEl.style.transition = "width .2s cubic-bezier(.4,0,.2,1)";
-      pathEl.style.width = "20px";
+      const from = pathEl.offsetWidth;
       pathEl.textContent = "-";
       pathEl.title = "";
+      pathEl.animate(
+        [{ width: from + "px" }, { width: "20px" }],
+        { duration: 200, easing: "cubic-bezier(.4,0,.2,1)", fill: "forwards" }
+      ).onfinish = () => {
+        pathEl.style.width = "20px";
+      };
       return;
     }
     const nameEl = item.querySelector(".tree-name");
     const name = nameEl ? nameEl.textContent : "-";
-    pathEl.style.transition = "none";
+    const currentW = pathEl.offsetWidth;
     pathEl.style.width = "auto";
     pathEl.textContent = name;
     const targetW = pathEl.offsetWidth;
-    const currentW = pathEl.style.width;
-    const prevW = pathEl._prevWidth || 20;
-    pathEl.style.width = prevW + "px";
+    pathEl.style.width = currentW + "px";
     void pathEl.offsetWidth;
-    pathEl.style.transition = "width .2s cubic-bezier(.4,0,.2,1)";
-    pathEl.style.width = targetW + "px";
-    pathEl._prevWidth = targetW;
+    const anim = pathEl.animate(
+      [{ width: currentW + "px" }, { width: targetW + "px" }],
+      { duration: 200, easing: "cubic-bezier(.4,0,.2,1)", fill: "forwards" }
+    );
+    anim.onfinish = () => {
+      pathEl.style.width = targetW + "px";
+    };
     pathEl.title = name || "";
   }
   function syncCursorDuringBounce(siblingCount = 0) {
