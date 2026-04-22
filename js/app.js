@@ -161,3 +161,12 @@ async function init(){
   setInterval(()=>{saveCache();},30000);
 }
 init();
+// AI输入框自动高度
+const aiInput=document.getElementById('aiInput');
+if(aiInput){
+  aiInput.addEventListener('input',()=>{
+    aiInput.style.height='auto';
+    const newHeight=Math.min(aiInput.scrollHeight,120);
+    aiInput.style.height=newHeight+'px';
+  });
+}
