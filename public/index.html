@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
+<title>Kalo File Manager</title>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/sidebar.css">
+</head>
+<body>
+<div class="sidebar" id="sidebar">
+<div class="sidebar-content" id="fileTree"><div class="loading">加载中...</div></div>
+<div class="sidebar-tools">
+<button id="toggleHiddenBtn" onclick="toggleHidden()" title="显示隐藏">👁</button>
+<div class="sidebar-path" id="sidebarPath">-</div>
+</div>
+</div>
+<div class="overlay" id="overlay"></div>
+
+<main class="main" id="main">
+<div class="home-page" id="homePage">
+</div>
+<!-- AI对话输入栏 -->
+<div class="ai-input-bar" id="aiInputBar">
+  <textarea class="ai-input" rows="1" id="aiInput" placeholder="输入消息..."></textarea>
+  <button class="ai-send-btn" id="aiSendBtn">发送</button>
+</div>
+</main>
+
+<!-- 日志面板 -->
+<div class="log-panel" id="logPanel">
+<div class="log-header">
+<span class="log-title">调试日志</span>
+<div class="log-actions">
+<button onclick="clearLogs()" style="background:none;border:none;color:var(--text);font-size:12px;padding:4px 8px">清空</button>
+<button onclick="closeLogPanel()" style="background:none;border:none;color:var(--text);font-size:20px">×</button>
+</div>
+</div>
+<div class="log-content" id="logContent"></div>
+</div>
+
+<div class="light-orb" id="lightOrb"></div>
+
+<script src="bundle.js"></script>
+</body>
+</html>
