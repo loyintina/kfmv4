@@ -170,3 +170,24 @@ if(aiInput){
     aiInput.style.height=newHeight+'px';
   });
 }
+
+// 悬浮光球拖动
+const orb=document.getElementById('lightOrb');
+if(orb){
+  let orbDragging=false,orbStartX=0,orbStartY=0,orbStartTop=0,orbStartLeft=0;
+  orb.addEventListener('touchstart',e=>{
+    orbDragging=true;orb.style.transition='none';
+    orbStartX=e.touches[0].clientX;orbStartY=e.touches[0].clientY;
+    orbStartTop=orb.offsetTop;orbStartLeft=orb.offsetLeft;
+  },{passive:true});
+  document.addEventListener('touchmove',e=>{
+    if(!orbDragging)return;
+    const dx=e.touches[0].clientX-orbStartX;
+    const dy=e.touches[0].clientY-orbStartY;
+    orb.style.top=(orbStartTop+dy)+'px';
+    orb.style.left=(orbStartLeft+dx)+'px';
+    orb.style.right='auto';
+    orb.style.transform='none';
+  },{passive:true});
+  document.addEventListener('touchend',()=>{if(orbDragging){orbDragging=false;orb.style.transition='box-shadow .2s';}});
+}
