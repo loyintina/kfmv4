@@ -243,7 +243,7 @@ function centerCursorToView(item, smooth=true){
 }
 
 // overlay 点击 - 已移至 gestures.js 的 touchend 处理
-// 注意：移动端会同时触发 touchend 和 click，为避免重复执行，这里不再�����听 click
+// 注意：移动端会同时触发 touchend 和 click，为避免重复执行，这里不再�������听 click
 document.getElementById('overlay').addEventListener('click',(e)=>{
   // 光标动作由 gestures.js 的 touchend 处理
 });
@@ -381,25 +381,82 @@ function moveCursorTo(target){
   updateSidebarPath(target);
 }
 
-// 滚动监听 - 光标倾向约束（实时跟随）
+// 滚动监听 - 光标倾向约束（实时跟随）+ 边界穿透
 let lastScrollCheck=0;
-const SCROLL_THROTTLE=50; // 50ms节流
+let lastScrollTop=-1;
+let boundaryAccum=0; // 边界穿透累积
+const SCROLL_THROTTLE=50;
+const BOUNDARY_STEP_THRESHOLD=30; // 边界处每累积30px触摸移动 = 光标跳1格
 function initScrollCursorConstraint(){
   const container=document.querySelector('.sidebar-content');
   if(!container)return;
+  
+  // 记录触摸移动量用于边界穿透
+  let boundaryTouchActive=false;
+  let boundaryLastY=0;
+  
+  container.addEventListener('touchstart',(e)=>{
+    boundaryTouchActive=true;
+    boundaryAccum=0;
+    boundaryLastY=e.touches[0].clientY;
+  },{passive:true});
+  
+  container.addEventListener('touchmove',(e)=>{
+    if(!boundaryTouchActive)return;
+    const currentY=e.touches[0].clientY;
+    const dy=currentY-boundaryLastY;
+    boundaryLastY=currentY;
+    
+    // 摇杆激活时不处理
+    if(typeof joystickActive!=='undefined' && joystickActive)return;
+    
+    const maxScroll=container.scrollHeight-container.clientHeight;
+    const atTop=container.scrollTop<=0 && dy>0;
+    const atBottom=container.scrollTop>=maxScroll-1 && dy<0;
+    
+    if(atTop||atBottom){
+      boundaryAccum+=Math.abs(dy);
+      if(boundaryAccum>=BOUNDARY_STEP_THRESHOLD){
+        const steps=Math.floor(boundaryAccum/BOUNDARY_STEP_THRESHOLD);
+        boundaryAccum-=steps*BOUNDARY_STEP_THRESHOLD;
+        
+        // 找当前选中项在可见列表中的位置
+        const allVisible=Array.from(document.querySelectorAll('#fileTree .tree-item')).filter(item=>isNodeExpanded(item));
+        const selected=document.querySelector('.tree-item.selected');
+        let idx=0;
+        allVisible.forEach((item,i)=>{if(item===selected)idx=i;});
+        
+        // 边界方向：顶部→光标上移，底部→光标下移
+        const newIdx=atTop?Math.max(0,idx-steps):Math.min(allVisible.length-1,idx+steps);
+        if(newIdx!==idx){
+          if(selected)selected.classList.remove('selected');
+          allVisible[newIdx].classList.add('selected');
+          selectedFile=allVisible[newIdx].dataset.path;
+          updateCursorHighlight(true);
+          updateSidebarPath(allVisible[newIdx]);
+        }
+      }
+    }else{
+      boundaryAccum=0;
+    }
+  },{passive:true});
+  
+  container.addEventListener('touchend',()=>{
+    boundaryTouchActive=false;
+    boundaryAccum=0;
+  },{passive:true});
   
   container.addEventListener('scroll',()=>{
     const now=Date.now();
     if(now-lastScrollCheck<SCROLL_THROTTLE)return;
     lastScrollCheck=now;
     
-    // 摇杆激活时不触发滚动约束（避免互相抢光标）
+    // 摇杆激活时不触发滚动约束
     if(typeof joystickActive!=='undefined' && joystickActive)return;
     
     const selected=document.querySelector('.tree-item.selected');
     if(!selected)return;
     
-    // 如果选中项不在约束区域，跳到约束区域中央节点
     if(!isInConstraintZone(selected)){
       const visible=getVisibleItems();
       const closest=findClosestToCenter(visible);
