@@ -62,9 +62,19 @@ function followScrollToCursor(){
 
 function moveCursorBySteps(steps){
   if(steps===0)return;
-  // 只选取可见节点（收起状态的子树中的节点不可见）
+  // 只选取可见节点（祖先 .tree-children-wrap 都处于 open 状态）
   const items=Array.from(document.querySelectorAll('#fileTree .tree-item'))
-    .filter(item=>item.offsetHeight>0);
+    .filter(item=>{
+      // 检查所有祖先的 tree-children-wrap 是否都是 open
+      let wrap=item.parentElement;
+      while(wrap && wrap.id!=='fileTree'){
+        if(wrap.classList.contains('tree-children-wrap') && !wrap.classList.contains('open')){
+          return false;
+        }
+        wrap=wrap.parentElement;
+      }
+      return true;
+    });
   if(!items.length)return;
   
   const currentSelected=document.querySelector('.tree-item.selected');
