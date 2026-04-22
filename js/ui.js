@@ -357,26 +357,29 @@ function moveCursorTo(target){
   updateSidebarPath(target);
 }
 
-// 滚动监听 - 光标倾向约束
-let scrollTimeout=null;
+// 滚动监听 - 光标倾向约束（实时跟随）
+let lastScrollCheck=0;
+const SCROLL_THROTTLE=50; // 50ms节流
 function initScrollCursorConstraint(){
   const container=document.querySelector('.sidebar-content');
   if(!container)return;
   
   container.addEventListener('scroll',()=>{
-    // 防抖：滚动停止后执行
-    if(scrollTimeout)clearTimeout(scrollTimeout);
-    scrollTimeout=setTimeout(()=>{
-      const selected=document.querySelector('.tree-item.selected');
-      
-      // 如果选中项不在约束区域，跳到约束区域中央的节点
-      if(selected && !isInConstraintZone(selected)){
-        // 找到约束区域中央最近的节点
-        const visible=getVisibleItems();
-        const closest=findClosestToCenter(visible);
-        if(closest && closest !== selected)moveCursorTo(closest);
+    const now=Date.now();
+    if(now-lastScrollCheck<SCROLL_THROTTLE)return;
+    lastScrollCheck=now;
+    
+    const selected=document.querySelector('.tree-item.selected');
+    if(!selected)return;
+    
+    // 如果选中项不在约束区域，跳到约束区域中央节点
+    if(!isInConstraintZone(selected)){
+      const visible=getVisibleItems();
+      const closest=findClosestToCenter(visible);
+      if(closest && closest!==selected){
+        moveCursorTo(closest);
       }
-    },100);
+    }
   });
 }
 
