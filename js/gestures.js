@@ -124,6 +124,7 @@ document.addEventListener('touchstart',(e)=>{
 },{passive:true});
 
 document.addEventListener('touchmove',(e)=>{
+  // 跳过光球  if(e.target.closest(".light-orb"))return;
   if(!touchStarted){
     console.log('touchmove: touchStarted false');
     return;
