@@ -369,15 +369,12 @@ function initScrollCursorConstraint(){
     scrollTimeout=setTimeout(()=>{
       const selected=document.querySelector('.tree-item.selected');
       
-      // 如果选中项不在约束区域内，跳到视口中央节点
-      if(selected && !isInConstraintZone(selected) && isInViewport(selected)){
-        // 选中项在视口内但不在约束区域 → 滚动使其居中
-        scrollIntoConstraintZone(selected);
-      }else if(selected && !isInViewport(selected)){
-        // 选中项不在视口内 → 跳到视口中央节点
+      // 如果选中项不在约束区域，跳到约束区域中央的节点
+      if(selected && !isInConstraintZone(selected)){
+        // 找到约束区域中央最近的节点
         const visible=getVisibleItems();
         const closest=findClosestToCenter(visible);
-        if(closest)moveCursorTo(closest);
+        if(closest && closest !== selected)moveCursorTo(closest);
       }
     },100);
   });
