@@ -100,6 +100,9 @@ function stopJoystick(){
 }
 
 document.addEventListener('touchstart',(e)=>{
+  // 跳过光球
+  if(e.target.closest('.light-orb'))return;
+  
   touchStartX=e.touches[0].clientX;
   touchStartY=e.touches[0].clientY;
   touchStarted=true;
