@@ -243,7 +243,7 @@ function centerCursorToView(item, smooth=true){
 }
 
 // overlay 点击 - 已移至 gestures.js 的 touchend 处理
-// 注意：移动端会同时触发 touchend 和 click，为避免重复执行，这里不再���听 click
+// 注意：移动端会同时触发 touchend 和 click，为避免重复执行，这里不再�����听 click
 document.getElementById('overlay').addEventListener('click',(e)=>{
   // 光标动作由 gestures.js 的 touchend 处理
 });
@@ -310,6 +310,18 @@ function scrollIntoConstraintZone(target){
   });
 }
 
+// 判断节点是否在展开的树中（祖先 tree-children-wrap 都 open）
+function isNodeExpanded(item){
+  let wrap=item.parentElement;
+  while(wrap && wrap.id!=='fileTree'){
+    if(wrap.classList.contains('tree-children-wrap') && !wrap.classList.contains('open')){
+      return false;
+    }
+    wrap=wrap.parentElement;
+  }
+  return true;
+}
+
 // 获取视口内可见的所有 tree-item
 function getVisibleItems(){
   const container=document.querySelector('.sidebar-content');
@@ -318,6 +330,8 @@ function getVisibleItems(){
   const items=document.querySelectorAll('#fileTree .tree-item');
   const visible=[];
   for(const item of items){
+    // 过滤折叠中的节点
+    if(!isNodeExpanded(item))continue;
     const row=item.querySelector('.tree-row')||item;
     const rect=row.getBoundingClientRect();
     // 元素与视口有交集
