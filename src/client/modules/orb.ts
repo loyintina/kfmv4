@@ -137,7 +137,7 @@ function renderChatContent(): void {
       const textHtml = lines.map(l => `<span style="display:block">${escapeHtml(l.text)}</span>`).join('');
       html += `
         <div style="display:flex;justify-content:${align};margin-bottom:8px">
-          <div style="max-width:${innerWidth - 8}px;padding:6px 12px;background:${bgColor};border:1px solid ${borderColor};border-radius:8px">
+          <div style="max-width:${innerWidth - 8}px;padding:6px 12px;background:${bgColor};border:1px solid ${borderColor};border-left:3px solid ${borderColor};border-radius:8px">
             <div style="font-size:10px;color:${labelColor};margin-bottom:2px;font-weight:600">${label}</div>
             <div style="font-family:sans-serif;font-size:13px;line-height:${lineHeight}px;color:#e0e0e0">${textHtml}</div>
           </div>
@@ -145,7 +145,7 @@ function renderChatContent(): void {
     } catch {
       html += `
         <div style="display:flex;justify-content:${align};margin-bottom:8px">
-          <div style="max-width:85%;padding:6px 12px;background:${bgColor};border:1px solid ${borderColor};border-radius:8px">
+          <div style="max-width:85%;padding:6px 12px;background:${bgColor};border:1px solid ${borderColor};border-left:3px solid ${borderColor};border-radius:8px">
             <div style="font-size:10px;color:${labelColor};margin-bottom:2px;font-weight:600">${label}</div>
             <div style="font-size:13px;color:#e0e0e0">${escapeHtml(msg.text)}</div>
           </div>
