@@ -8,7 +8,7 @@ let cursorHighlight: HTMLDivElement | null = null;
 
 // 约束区域高度
 const CONSTRAINT_HEIGHT = 96;
-const SCROLL_THROTTLE = 50;
+const SCROLL_THROTTLE = 16;
 const BOUNDARY_STEP_THRESHOLD = 30;
 
 let lastScrollCheck = 0;
@@ -340,26 +340,18 @@ function initScrollCursorConstraint(): void {
     if ((window as any).joystickActive) return;
     const sel = document.querySelector('.tree-item.selected') as HTMLElement | null;
     if (!sel) return;
-    // 计算需要追回多少步：每次最多走3步，保证惯性滚动时光标跟上
     if (!isInConstraintZone(sel)) {
       const allVisible = Array.from(document.querySelectorAll('#fileTree .tree-item')).filter(item => isNodeExpanded(item as HTMLElement)) as HTMLElement[];
       let idx = 0;
       allVisible.forEach((item, i) => { if (item === sel) idx = i; });
-      const cr = container.getBoundingClientRect();
-      const centerY = cr.top + cr.height / 2;
-      const selRow = sel.querySelector('.tree-row') || sel;
-      const selRect = selRow.getBoundingClientRect();
-      const selCenter = selRect.top + selRect.height / 2;
-      const scrollingUp = selCenter > centerY;
-      // 计算距离约束区域中心偏移了几个项的高度
-      const offset = Math.abs(selCenter - centerY);
-      const itemH = selRect.height || 32;
-      const stepsNeeded = Math.min(3, Math.ceil(offset / itemH));
-      const nextIdx = scrollingUp
-        ? Math.max(0, idx - stepsNeeded)
-        : Math.min(allVisible.length - 1, idx + stepsNeeded);
-      if (nextIdx !== idx) {
-        moveCursorTo(allVisible[nextIdx]);
+      // 找离约束区域中心最近的项（一步到位）
+      const closest = findClosestToCenter(allVisible);
+      if (!closest) return;
+      let closestIdx = 0;
+      allVisible.forEach((item, i) => { if (item === closest) closestIdx = i; });
+      // 只允许往滚动方向移动，不允许回头
+      if (closestIdx !== idx) {
+        moveCursorTo(closest);
       }
     }
   });

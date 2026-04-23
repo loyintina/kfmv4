@@ -303,7 +303,7 @@
   var CURSOR_POS_KEY = "kfm_cursor_position";
   var cursorHighlight = null;
   var CONSTRAINT_HEIGHT = 96;
-  var SCROLL_THROTTLE = 50;
+  var SCROLL_THROTTLE = 16;
   var BOUNDARY_STEP_THRESHOLD = 30;
   var lastScrollCheck = 0;
   var boundaryAccum = 0;
@@ -522,6 +522,24 @@
     }
     return true;
   }
+  function findClosestToCenter(items) {
+    if (!items.length) return null;
+    const container = document.querySelector(".sidebar-content");
+    const cr = container.getBoundingClientRect();
+    const centerY = cr.top + cr.height / 2;
+    let closest = items[0];
+    let minDist = Infinity;
+    for (const item of items) {
+      const row = item.querySelector(".tree-row") || item;
+      const rect = row.getBoundingClientRect();
+      const dist = Math.abs(rect.top + rect.height / 2 - centerY);
+      if (dist < minDist) {
+        minDist = dist;
+        closest = item;
+      }
+    }
+    return closest;
+  }
   function moveCursorTo(target) {
     if (!target) return;
     const current = document.querySelector(".tree-item.selected");
@@ -594,18 +612,14 @@
         allVisible.forEach((item, i) => {
           if (item === sel) idx = i;
         });
-        const cr = container.getBoundingClientRect();
-        const centerY = cr.top + cr.height / 2;
-        const selRow = sel.querySelector(".tree-row") || sel;
-        const selRect = selRow.getBoundingClientRect();
-        const selCenter = selRect.top + selRect.height / 2;
-        const scrollingUp = selCenter > centerY;
-        const offset = Math.abs(selCenter - centerY);
-        const itemH = selRect.height || 32;
-        const stepsNeeded = Math.min(3, Math.ceil(offset / itemH));
-        const nextIdx = scrollingUp ? Math.max(0, idx - stepsNeeded) : Math.min(allVisible.length - 1, idx + stepsNeeded);
-        if (nextIdx !== idx) {
-          moveCursorTo(allVisible[nextIdx]);
+        const closest = findClosestToCenter(allVisible);
+        if (!closest) return;
+        let closestIdx = 0;
+        allVisible.forEach((item, i) => {
+          if (item === closest) closestIdx = i;
+        });
+        if (closestIdx !== idx) {
+          moveCursorTo(closest);
         }
       }
     });
