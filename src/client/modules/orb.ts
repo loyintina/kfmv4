@@ -4,8 +4,7 @@
  * 交互模式：
  * - 点击光球 → 展开/收起面板
  * - 拖动光球 → 移动位置（光球始终在面板右下角）
- * - 长按1s → 进入编辑模式（左上角固定，拖动光球调整面板大小）
- * - 编辑模式中再次长按1s → 退出编辑模式
+ * - 长按进入编辑模式，拖动光球调整面板大小，松手自动退出
  *
  * 约束：
  * - 光球始终在输入栏上方
@@ -266,7 +265,7 @@ function updateStateLabel(): void {
   if (!panelEl) return;
   const label = panelEl.querySelector('.orb-panel-state');
   if (!label) return;
-  const labels: Record<OrbState, string> = { collapsed: '', expanded: '长按编辑大小', editing: '拖动调整大小 · 长按退出' };
+  const labels: Record<OrbState, string> = { collapsed: '', expanded: '长按编辑大小', editing: '拖动调整大小 · 松手完成' };
   label.textContent = labels[orbState];
 }
 
@@ -352,10 +351,10 @@ function endDrag(): void {
     const rect = orbEl.getBoundingClientRect();
     freeOrbX = rect.left;
     freeOrbY = rect.top;
-    // 如果编辑模式结束，保存面板尺寸
-    if (orbState === 'editing') {
-      // 用户松手时如果在编辑模式，保持当前尺寸
-    }
+  }
+  // 松手时如果处于编辑模式，直接退出
+  if (orbState === 'editing') {
+    exitEditMode();
   }
   if (!dragging && !longPressFired) togglePanel();
   dragging = false;

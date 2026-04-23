@@ -2660,7 +2660,7 @@
     if (!panelEl) return;
     const label = panelEl.querySelector(".orb-panel-state");
     if (!label) return;
-    const labels = { collapsed: "", expanded: "\u957F\u6309\u7F16\u8F91\u5927\u5C0F", editing: "\u62D6\u52A8\u8C03\u6574\u5927\u5C0F \xB7 \u957F\u6309\u9000\u51FA" };
+    const labels = { collapsed: "", expanded: "\u957F\u6309\u7F16\u8F91\u5927\u5C0F", editing: "\u62D6\u52A8\u8C03\u6574\u5927\u5C0F \xB7 \u677E\u624B\u5B8C\u6210" };
     label.textContent = labels[orbState];
   }
   function handleDragMove(dx, dy) {
@@ -2735,8 +2735,9 @@
       const rect = orbEl.getBoundingClientRect();
       freeOrbX = rect.left;
       freeOrbY = rect.top;
-      if (orbState === "editing") {
-      }
+    }
+    if (orbState === "editing") {
+      exitEditMode();
     }
     if (!dragging && !longPressFired) togglePanel();
     dragging = false;
