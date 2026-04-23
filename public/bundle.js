@@ -600,7 +600,10 @@
         const selRect = selRow.getBoundingClientRect();
         const selCenter = selRect.top + selRect.height / 2;
         const scrollingUp = selCenter > centerY;
-        const nextIdx = scrollingUp ? Math.max(0, idx - 1) : Math.min(allVisible.length - 1, idx + 1);
+        const offset = Math.abs(selCenter - centerY);
+        const itemH = selRect.height || 32;
+        const stepsNeeded = Math.min(3, Math.ceil(offset / itemH));
+        const nextIdx = scrollingUp ? Math.max(0, idx - stepsNeeded) : Math.min(allVisible.length - 1, idx + stepsNeeded);
         if (nextIdx !== idx) {
           moveCursorTo(allVisible[nextIdx]);
         }
