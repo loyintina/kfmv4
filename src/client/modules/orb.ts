@@ -96,7 +96,7 @@ function createPanel(): HTMLDivElement {
     position: fixed;
     background: rgba(20, 16, 32, 0.92);
     backdrop-filter: blur(16px);
-    border: 1px solid rgba(124, 58, 237, 0.3);
+    border: 1px solid rgba(124, 58, 237, 0.3); border-left: 3px solid rgba(46, 213, 163, 0.6);
     border-radius: 12px;
     box-shadow: 0 0 20px 4px rgba(124, 58, 237, 0.15), 0 8px 32px rgba(0, 0, 0, 0.5);
     z-index: 205;
