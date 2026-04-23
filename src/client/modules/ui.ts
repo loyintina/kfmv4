@@ -344,14 +344,15 @@ function initScrollCursorConstraint(): void {
       const allVisible = Array.from(document.querySelectorAll('#fileTree .tree-item')).filter(item => isNodeExpanded(item as HTMLElement)) as HTMLElement[];
       let idx = 0;
       allVisible.forEach((item, i) => { if (item === sel) idx = i; });
-      // 找离约束区域中心最近的项（一步到位）
-      const closest = findClosestToCenter(allVisible);
-      if (!closest) return;
-      let closestIdx = 0;
-      allVisible.forEach((item, i) => { if (item === closest) closestIdx = i; });
-      // 只允许往滚动方向移动，不允许回头
-      if (closestIdx !== idx) {
-        moveCursorTo(closest);
+      const cr = container.getBoundingClientRect();
+      const centerY = cr.top + cr.height / 2;
+      const selRow = sel.querySelector('.tree-row') || sel;
+      const selRect = selRow.getBoundingClientRect();
+      const selCenter = selRect.top + selRect.height / 2;
+      const scrollingUp = selCenter > centerY;
+      const nextIdx = scrollingUp ? Math.max(0, idx - 1) : Math.min(allVisible.length - 1, idx + 1);
+      if (nextIdx !== idx) {
+        moveCursorTo(allVisible[nextIdx]);
       }
     }
   });
