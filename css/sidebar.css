@@ -65,9 +65,6 @@
   100%{transform:scaleY(1);opacity:1}
 }
 
-/* 叠叠乐动画 */
-.tree-item.bounce-up{transform:translateY(-10px);transition:transform .35s cubic-bezier(.34,1.56,.64,1)}
-.tree-item.bounce-down{transform:translateY(10px);transition:transform .35s cubic-bezier(.34,1.56,.64,1)}
 
 /* 加载占位动画 */
 .loading-pulse{padding:8px}

@@ -2,6 +2,7 @@
  * KFM v4 - 文件树加载与渲染
  */
 import { API, expandedPaths, showHidden, selectedFile, setExpandedPaths, setSelectedFile } from './app.js';
+import gsap from 'gsap';
 
 const heightCache: Record<string, number> = {};
 const newAnimThreshold = 5;
@@ -118,26 +119,24 @@ export async function renderTree(container: HTMLElement = document.getElementByI
           setExpandedPaths(newPaths);
           localStorage.setItem('expandedPaths', JSON.stringify(newPaths));
 
-          // 叠叠乐动画
-          const doBounce = (el: HTMLElement, dir: boolean, delay: number) => {
-            setTimeout(() => {
-              const offset = dir ? -10 : 10;
-              const rebound = dir ? 2 : -2;
-              el.style.transition = 'transform .3s cubic-bezier(.34,1.56,.64,1)';
-              el.style.transform = `translateY(${offset}px)`;
-              setTimeout(() => { el.style.transform = `translateY(${rebound}px)`; }, 320);
-              setTimeout(() => { el.style.transform = ''; el.style.transition = ''; }, 450);
-            }, delay);
-          };
-          if (isOpen) {
-            doBounce(div, true, 0);
-            let sibling = div.nextElementSibling; let i = 1;
-            while (sibling) { if (sibling.classList.contains('tree-item')) { doBounce(sibling as HTMLElement, true, (i - 1) * 20); i++; } sibling = sibling.nextElementSibling; }
-          } else {
-            doBounce(div, false, 0);
-            let sibling = div.nextElementSibling; let i = 1;
-            while (sibling) { if (sibling.classList.contains('tree-item')) { doBounce(sibling as HTMLElement, false, (i - 1) * 20); i++; } sibling = sibling.nextElementSibling; }
+          // 叠叠乐动画 — GSAP timeline
+          const tl = gsap.timeline();
+          const dir = isOpen ? -1 : 1;
+          const targets: HTMLElement[] = [div];
+          let sib = div.nextElementSibling;
+          while (sib) {
+            if (sib.classList.contains('tree-item')) targets.push(sib as HTMLElement);
+            sib = sib.nextElementSibling;
           }
+          targets.forEach((el, i) => {
+            tl.fromTo(el,
+              { y: 0 },
+              { y: dir * 10, duration: 0.3, ease: 'back.out(1.7)' },
+              i * 0.02
+            );
+            tl.to(el, { y: dir * -2, duration: 0.15, ease: 'power2.out' }, '>0');
+            tl.to(el, { y: 0, duration: 0.1, ease: 'power1.inOut' }, '>0');
+          });
           let sc = 0;
           { let s: Element | null = div.nextElementSibling; while (s) { if (s.classList.contains('tree-item')) sc++; s = s.nextElementSibling; } }
           (window as any).syncCursorDuringBounce?.(sc);
