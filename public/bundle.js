@@ -8021,27 +8021,10 @@
     }
   }
   async function executeCursorAction() {
-    var _a, _b;
     const selectedItem = document.querySelector(".tree-item.selected");
     if (!selectedItem) return;
-    const path = selectedItem.dataset.path || "";
-    const toggle = selectedItem.querySelector(".tree-toggle");
-    const isDir = toggle && !toggle.classList.contains("hidden");
-    if (isDir) {
-      const wrap3 = selectedItem.querySelector(".tree-children-wrap");
-      if (wrap3 && toggle) {
-        const isOpen = wrap3.classList.contains("open");
-        const childrenWrap = ((_a = wrap3.querySelector("div")) == null ? void 0 : _a.querySelector("div")) || wrap3.querySelector("div");
-        if (!isOpen && childrenWrap && !childrenWrap.querySelector(".tree-item")) {
-          await ((_b = window.renderTree) == null ? void 0 : _b.call(window, childrenWrap, path, 1));
-        }
-        wrap3.classList.toggle("open");
-        toggle.classList.toggle("expanded");
-        const ep = JSON.parse(localStorage.getItem("expandedPaths") || "{}");
-        ep[path] = !isOpen;
-        localStorage.setItem("expandedPaths", JSON.stringify(ep));
-      }
-    }
+    const row = selectedItem.querySelector(".tree-row");
+    row == null ? void 0 : row.dispatchEvent(new Event("click", { bubbles: false }));
   }
   function initCursorToFirst() {
     setTimeout(() => {

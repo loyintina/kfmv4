@@ -89,25 +89,9 @@ function stopJoystick(): void {
 async function executeCursorAction(): Promise<void> {
   const selectedItem = document.querySelector('.tree-item.selected') as HTMLElement | null;
   if (!selectedItem) return;
-  const path = selectedItem.dataset.path || '';
-  const toggle = selectedItem.querySelector('.tree-toggle');
-  const isDir = toggle && !toggle.classList.contains('hidden');
-
-  if (isDir) {
-    const wrap = selectedItem.querySelector('.tree-children-wrap');
-    if (wrap && toggle) {
-      const isOpen = wrap.classList.contains('open');
-      const childrenWrap = wrap.querySelector('div')?.querySelector('div') || wrap.querySelector('div');
-      if (!isOpen && childrenWrap && !childrenWrap.querySelector('.tree-item')) {
-        await (window as any).renderTree?.(childrenWrap, path, 1);
-      }
-      wrap.classList.toggle('open');
-      toggle.classList.toggle('expanded');
-      const ep = JSON.parse(localStorage.getItem('expandedPaths') || '{}');
-      ep[path] = !isOpen;
-      localStorage.setItem('expandedPaths', JSON.stringify(ep));
-    }
-  }
+  // 直接 dispatch click 到 tree-row，复用 tree.ts 中完整的事件处理逻辑（叠叠乐、光标同步等）
+  const row = selectedItem.querySelector('.tree-row') as HTMLElement | null;
+  row?.dispatchEvent(new Event('click', { bubbles: false }));
 }
 
 function initCursorToFirst(): void {
