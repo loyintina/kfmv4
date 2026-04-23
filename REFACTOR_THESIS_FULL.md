@@ -27,268 +27,182 @@
 
 | 文件 | 行数 | 职责 |
 |------|------|------|
-| tree.ts | 189 | DOM 文件树渲染、点击事件、展开动画 |
-| ui.ts | 410 | 光标高亮、滚动约束、名称盒子、位置计算 |
-| gestures.ts | 178 | 摇杆手势、触摸交互、光标动作 |
+| tree.ts | 189→165 | DOM 文件树渲染、点击事件、展开动画 |
+| ui.ts | 410→380 | 光标高亮、滚动约束、名称盒子、位置计算 |
+| gestures.ts | 178→155 | 摇杆手势、触摸交互、光标动作 |
 | orb.ts | 518 | 光球面板 |
+| tree-text.ts | 29 | Pretext 文本测量封装 |
 | sidebar.css | - | 树节点样式、展开动画、光标样式 |
 
-### 现有效果清单（必须保留）
+### 现有效果清单
 
-| 效果 | 位置 | 当前实现 | 替换目标 |
-|------|------|----------|----------|
-| 光标高亮围框 | ui.ts | DOM div + CSS transition | GSAP |
-| 光标跟随滚动 | ui.ts | rAF 轮询 + CSS transition | GSAP |
-| 名称盒子宽度动画 | ui.ts | Web Animation API | GSAP + Pretext |
-| 目录展开叠叠乐 | tree.ts | CSS transform + setTimeout | GSAP Timeline |
-| 边界触摸滚动步进 | ui.ts | touchmove + rAF | 保持 |
-| 摇杆光标 | gestures.ts | touchmove + rAF | 保持 |
-| 点击滚动居中 | ui.ts | scrollTo + scrollend | GSAP |
-| 网格展开动画 | sidebar.css | CSS grid + keyframes | GSAP |
-
-
----
-
-## Phase 1：Pretext 文本测量
-
-**目标**：用 Pretext 替换 `getBoundingClientRect` 和 `offsetWidth` 测量
-
-### 1.1 现有测量点
-
-```typescript
-// ui.ts 中的测量点：
-
-// 1. 名称盒子宽度测量（触发 reflow）
-const targetW = pathEl.offsetWidth
-
-// 2. 光标位置测量
-const rowRect = row.getBoundingClientRect()
-const top = rowRect.top - containerRect.top + container.scrollTop
-const left = rowRect.left - containerRect.left
-const width = rowRect.width
-
-// 3. 滚动约束测量
-const cr = container.getBoundingClientRect()
-const rr = row.getBoundingClientRect()
-const offset = (rr.top + rr.height / 2) - (cr.top + cr.height / 2)
-```
-
-### 1.2 Pretext 替换
-
-```typescript
-// tree-text.ts - 新增
-import { prepare, prepareWithSegments, measureNaturalWidth } from '@chenglou/pretext'
-
-const FONT = '13px -apple-system, sans-serif'
-
-export function measureTextWidth(text: string): number {
-  const prepared = prepareWithSegments(text, FONT)
-  return measureNaturalWidth(prepared) + 24  // + padding
-}
-```
-
-### 1.3 名称盒子修改
-
-```typescript
-// ui.ts - updateSidebarPath
-// 旧：DOM 测量
-pathEl.style.width = 'auto'
-const targetW = pathEl.offsetWidth
-
-// 新：Pretext 测量
-import { measureTextWidth } from './tree-text'
-const targetW = measureTextWidth(name || '-')
-```
-
-### 验证标准
-- [ ] 名称盒子宽度动画正常
-- [ ] 无 DOM reflow
-- [ ] 测量耗时 < 5ms
-
-**时间：1 天**
-
+| 效果 | 位置 | 原实现 | 现实现 | 状态 |
+|------|------|--------|--------|------|
+| 光标高亮围框 | ui.ts | DOM div + CSS transition | GSAP gsap.to() | ✅ Phase2 |
+| 光标跟随同步 | ui.ts | rAF 轮询 + style赋值 | GSAP ticker + gsap.set() | ✅ Phase2 |
+| 名称盒子宽度动画 | ui.ts | offsetWidth + Web Animation API | Pretext + gsap.fromTo() | ✅ Phase1+4 |
+| 目录展开叠叠乐 | tree.ts | CSS transform + setTimeout嵌套 | GSAP Timeline | ✅ Phase3 |
+| 统一展开路径 | gestures.ts | 独立classList.toggle | dispatchEvent('click') | ✅ 修复 |
+| 统一选中逻辑 | 5处分散 | 各自手动classList+setSelected | selectFileItem() | ✅ 修复 |
+| 边界触摸滚动步进 | ui.ts | touchmove + rAF | 保持 | ⏳ |
+| 摇杆光标 | gestures.ts | touchmove + rAF | 保持 | ⏳ |
+| 点击滚动居中 | ui.ts | scrollTo smooth | 保持（原生已足够好） | ❌ Phase5跳过 |
+| 网格展开动画 | sidebar.css | CSS grid + keyframes | 保持（CSS原生实现更优） | ❌ Phase3跳过 |
 
 ---
 
-## Phase 2：GSAP 光标动画
+## Phase 1：Pretext 文本测量 ✅
+
+**目标**：用 Pretext 替换 `offsetWidth` 测量
+
+### 实际完成
+
+- `ui.ts` 中 2 处 `pathEl.offsetWidth` → `measureNaturalWidthSync(text, PATH_FONT) + 24`
+- 2 处 `void pathEl.offsetWidth` 强制 reflow → **移除**
+- 2 处 `width: 'auto'` 中间态测量 → **移除**
+- `updateSidebarPath` 调用链 **零 reflow**
+
+### 改动
+
+```typescript
+// ui.ts - 修改
+import { measureNaturalWidthSync } from './tree-text.js';
+
+const PATH_FONT = '12px -apple-system, sans-serif';
+
+// Before: offsetWidth 触发 reflow
+const targetW = pathEl.offsetWidth;
+
+// After: Pretext 离屏测量
+const targetW = measureNaturalWidthSync(name || '-', PATH_FONT) + 24;
+```
+
+**commit**: `7187acc`
+
+---
+
+## Phase 2：GSAP 光标动画 ✅
 
 **目标**：用 GSAP 替换光标高亮的 CSS transition
 
-### 2.1 现有实现
+### 实际完成
+
+- `updateCursorHighlight`: `style.transition` + 手动赋值 → `gsap.to()` / `gsap.set()`
+- `syncCursorDuringBounce`: 手动 rAF 帧计数器（~40行） → `gsap.ticker` + `delayedCall`
+- 所有 `cursorHighlight.style.transition` 赋值 → **移除**
+
+### 改动
 
 ```typescript
-// ui.ts - cursor-highlight
-const trans = 'top .3s cubic-bezier(.25,.46,.45,.94),left .3s cubic-bezier(.25,.46,.45,.94),width .3s cubic-bezier(.25,.46,.45,.94)'
-cursorHighlight.style.transition = immediate ? 'none' : trans
-cursorHighlight.style.top = top + 'px'
-cursorHighlight.style.left = left + 'px'
-cursorHighlight.style.width = width + 'px'
+const CURSOR_EASE = 'cubic-bezier(.25,.46,.45,.94)';
+const CURSOR_DURATION = 0.3;
+
+// Before: CSS transition
+cursorHighlight.style.transition = 'top .3s ...';
+cursorHighlight.style.top = top + 'px';
+
+// After: GSAP
+gsap.to(cursorHighlight, {
+  top, left, width, height, opacity: 1,
+  duration: CURSOR_DURATION,
+  ease: CURSOR_EASE,
+});
 ```
 
-### 2.2 GSAP 替换
-
-```typescript
-// 引入 GSAP
-import gsap from 'gsap'
-
-export function updateCursorHighlight(immediate = false): void {
-  // ... 计算 top, left, width ...
-  
-  if (immediate) {
-    gsap.set(cursorHighlight, { top, left, width, opacity: 1 })
-  } else {
-    gsap.to(cursorHighlight, {
-      top, left, width,
-      opacity: 1,
-      duration: 0.3,
-      ease: 'power2.out',
-    })
-  }
-}
-```
-
-### 2.3 光标跟随同步
-
-```typescript
-// syncCursorDuringBounce
-// 现有：rAF 轮询手动设置 style
-// 改为：GSAP 快速更新
-function sync() {
-  gsap.set(cursorHighlight, { top, left, width })
-}
-```
-
-### 验证标准
-- [ ] 光标移动动画流畅
-- [ ] 叠叠乐期间同步正常
-
-**时间：1-2 天**
-
+**commit**: `5fc4071`
 
 ---
 
-## Phase 3：GSAP 目录展开动画
+## Phase 3：GSAP 目录展开动画 ✅
 
-**目标**：用 GSAP 替换叠叠乐和网格展开动画
+**目标**：用 GSAP 替换叠叠乐动画
 
-### 3.1 现有叠叠乐
+### 实际完成
+
+- `doBounce` + 2 段 while 循环 + 3 层 `setTimeout` 嵌套 → `gsap.timeline`
+- 删除 `.bounce-up` / `.bounce-down` CSS（不再需要）
+
+### 保留不动（足够优雅）
+
+- `grid-template-rows: 0fr → 1fr` CSS transition — GSAP 无法控制 CSS Grid fr 单位
+- `@keyframes q弹-in` CSS animation — 与 Grid 展开配合精确
+
+### 改动
 
 ```typescript
-// tree.ts
+// Before: setTimeout 嵌套
 const doBounce = (el, dir, delay) => {
   setTimeout(() => {
-    const offset = dir ? -10 : 10
-    el.style.transition = 'transform .3s cubic-bezier(.34,1.56,.64,1)'
-    el.style.transform = `translateY(${offset}px)`
-    setTimeout(() => { el.style.transform = '' }, 450)
-  }, delay)
-}
+    el.style.transition = '...';
+    el.style.transform = `translateY(${offset}px)`;
+    setTimeout(() => { ... }, 320);
+    setTimeout(() => { ... }, 450);
+  }, delay);
+};
+
+// After: GSAP timeline
+const tl = gsap.timeline();
+targets.forEach((el, i) => {
+  tl.fromTo(el, { y: 0 }, { y: dir * 10, duration: 0.3, ease: 'back.out(1.7)' }, i * 0.02);
+  tl.to(el, { y: dir * -2, duration: 0.15, ease: 'power2.out' }, '>0');
+  tl.to(el, { y: 0, duration: 0.1, ease: 'power1.inOut' }, '>0');
+});
 ```
 
-### 3.2 GSAP Timeline
-
-```typescript
-// tree-animations.ts
-import gsap from 'gsap'
-
-export function animateExpand(clickedItem, siblings, isOpening) {
-  const tl = gsap.timeline()
-  
-  // 点击项
-  tl.to(clickedItem, {
-    y: isOpening ? 10 : -10,
-    duration: 0.15,
-    ease: 'power2.out',
-    yoyo: true,
-    repeat: 1,
-  })
-  
-  // 兄弟项叠叠乐
-  siblings.forEach((el, i) => {
-    tl.to(el, {
-      y: isOpening ? -10 : 10,
-      duration: 0.3,
-      ease: 'elastic.out(1, 0.75)',
-    }, i * 0.02)
-  })
-  
-  return tl
-}
-```
-
-### 3.3 网格展开
-
-```typescript
-// 子项入场 stagger
-gsap.fromTo(children, 
-  { opacity: 0, y: -10 },
-  { opacity: 1, y: 0, duration: 0.2, stagger: 0.03 }
-)
-```
-
-### 验证标准
-- [ ] 展开动画弹性自然
-- [ ] 叠叠乐同步正常
-- [ ] 子项有 stagger 效果
-
-**时间：2-3 天**
-
+**commit**: `f6dc1db`
 
 ---
 
-## Phase 4：GSAP 名称盒子
+## Phase 4：GSAP 名称盒子 ✅
 
-**目标**：替换 Web Animation API
+**目标**：替换 Web Animation API，统一 ui.ts 动画技术栈
 
-### 4.1 现有
+### 实际完成
 
-```typescript
-const anim = pathEl.animate(
-  [{ width: currentW }, { width: targetW }],
-  { duration: 200, easing: 'cubic-bezier(.4,0,.2,1)' }
-)
-```
+- `pathEl.animate()` × 2 → `gsap.fromTo()`
+- `getAnimations().cancel()` → `gsap.killTweensOf()`
+- `anim.onfinish` → `onComplete`
+- **ui.ts 中动画系统完全统一为 GSAP**
 
-### 4.2 GSAP
-
-```typescript
-gsap.fromTo(pathEl, 
-  { width: currentW },
-  { width: targetW, duration: 0.2, ease: 'power2.out' }
-)
-```
-
-**时间：0.5 天**
+**commit**: `e863424`
 
 ---
 
-## Phase 5：GSAP 滚动居中
+## Phase 5：GSAP 滚动居中 ❌ 跳过
 
-**目标**：替换 scrollTo smooth
-
-### 5.1 现有
-
-```typescript
-container.scrollTo({ top: targetScroll, behavior: 'smooth' })
-```
-
-### 5.2 GSAP
-
-```typescript
-gsap.to(container, {
-  scrollTop: targetY,
-  duration: 0.4,
-  ease: 'power2.inOut',
-  onUpdate: () => updateCursorHighlight(true)
-})
-```
-
-**时间：1 天**
-
+**原因**：`scrollTo({ behavior: 'smooth' })` 是浏览器原生实现，性能优秀且跟随用户系统偏好。GSAP 替换不会带来收益，反而失去系统一致性。摇杆的 `scrollTop +=` 是实时跟随，非动画，不适合 GSAP。
 
 ---
 
-## Phase 6：Leafer 连线层
+## 额外修复：统一展开/折叠路径 ✅
+
+**问题**：展开/折叠有两条独立代码路径，`gestures.ts` 的 `executeCursorAction` 缺少叠叠乐动画。
+
+**修复**：`executeCursorAction` 从 25 行手动展开逻辑 → 3 行 `dispatchEvent(new Event('click'))`，两条路径共享 `tree.ts` 的完整事件处理。
+
+**commit**: `a8da6b4`
+
+---
+
+## 额外修复：统一选中逻辑 ✅
+
+**问题**：文件选中操作有 5 条重复代码路径，且 `restoreCursorPosition` 缺少 `updateSidebarPath`。
+
+**修复**：提取 `selectFileItem(item)` 公共函数（选中+光标+sidebarPath，不含滚动），5 处全部替换。
+
+| 路径 | 触发方式 | 滚动行为 |
+|------|----------|----------|
+| tree.ts 点击 | `selectFileItem(div)` | + `scrollAndCenterCursor` |
+| gestures.ts 摇杆步进 | `selectFileItem(items[i])` | 摇杆自带的 `scrollFollowCursor` |
+| ui.ts 恢复光标 | `selectFileItem(items[i])` | + `centerCursorToView` |
+| ui.ts moveCursorTo | `selectFileItem(target)` | 无（由调用方处理） |
+| ui.ts 边界触摸 | `selectFileItem(allVisible[i])` | 无 |
+
+**commit**: `8af658a`
+
+---
+
+## Phase 6：Leafer 连线层 ⏳
 
 **目标**：DOM 上方叠加 Canvas 画连线
 
@@ -301,10 +215,10 @@ z-index:
   200  光标高亮
 ```
 
-### 6.2 实现
+### 6.2 实现方案
 
 ```typescript
-// tree-connectors.ts
+// tree-connectors.ts - 新增
 import { Leafer, Line } from 'leafer-ui'
 
 export function initConnectors(container) {
@@ -313,7 +227,6 @@ export function initConnectors(container) {
     fill: 'transparent',
   })
   
-  // 监听 DOM 变化
   const observer = new MutationObserver(() => updateConnectors(leafer))
   observer.observe(container, { childList: true, subtree: true })
   
@@ -347,16 +260,15 @@ function updateConnectors(leafer) {
 - [ ] 不影响 DOM 交互
 - [ ] 展开时更新
 
-**时间：2-3 天**
-
+**预计时间：2-3 天**
 
 ---
 
-## Phase 7：Leafer 粒子效果
+## Phase 7：Leafer 粒子效果 ⏳
 
 **目标**：连线上加流动粒子
 
-### 7.1 实现
+### 实现方案
 
 ```typescript
 import { Ellipse } from 'leafer-ui'
@@ -378,47 +290,11 @@ export function createFlowParticle(line, leafer) {
 }
 ```
 
-**时间：1-2 天**
+**预计时间：1-2 天**
 
 ---
 
-## 总时间
-
-| Phase | 内容 | 时间 |
-|-------|------|------|
-| 1 | Pretext 文本测量 | 1 天 |
-| 2 | GSAP 光标动画 | 1-2 天 |
-| 3 | GSAP 展开动画 | 2-3 天 |
-| 4 | GSAP 名称盒子 | 0.5 天 |
-| 5 | GSAP 滚动居中 | 1 天 |
-| 6 | Leafer 连线层 | 2-3 天 |
-| 7 | Leafer 粒子 | 1-2 天 |
-
-**总计：9-13 天**
-
----
-
-## 风险与回退
-
-| Phase | 风险 | 回退方案 |
-|-------|------|----------|
-| 1 | Pretext 测量不准 | 保留 DOM 测量 fallback |
-| 2 | GSAP 光标卡顿 | 回退 CSS transition |
-| 3 | 展开动画不自然 | 回退 CSS 动画 |
-| 6 | 连线位置不准 | 禁用连线层 |
-
----
-
-## 参考文档
-
-- LeaferJS: https://leaferjs.com/docs
-- Pretext: https://github.com/chenglou/pretext
-- GSAP: https://gsap.com/docs
-
-
----
-
-## Phase 8-10：渐进式完全替换（主导→完全模式）
+## Phase 8-10：渐进式完全替换（主导→完全模式）⏳
 
 > 目标：从混合模式过渡到纯 Canvas 渲染，最终完全移除 DOM 树
 
@@ -431,7 +307,6 @@ export function createFlowParticle(line, leafer) {
 ### 8.1 DOM 透明化
 
 ```css
-/* sidebar.css - 修改 */
 .tree-item {
   opacity: 0;              /* 透明 */
   pointer-events: auto;    /* 但保留点击 */
@@ -462,24 +337,18 @@ export class DomBackedLeaferRenderer {
     })
   }
   
-  // 根据 DOM 位置渲染 Canvas 节点
   syncFromDom() {
     const domItems = document.querySelectorAll('.tree-item')
-    
     domItems.forEach((domItem, i) => {
       const rect = domItem.getBoundingClientRect()
       const path = (domItem as HTMLElement).dataset.path!
       const name = domItem.querySelector('.tree-name')?.textContent || ''
       const level = parseInt((domItem as HTMLElement).dataset.level || '0')
       
-      // 创建 Canvas 节点
       const node = this.createCanvasNode({
-        x: 0,
-        y: rect.top,
-        width: rect.width,
-        height: rect.height,
-        name,
-        level,
+        x: 0, y: rect.top,
+        width: rect.width, height: rect.height,
+        name, level,
         isSelected: domItem.classList.contains('selected'),
       })
       
@@ -490,69 +359,23 @@ export class DomBackedLeaferRenderer {
   
   private createCanvasNode(props) {
     const group = new Group({ x: props.x, y: props.y })
-    
-    // 背景
     const bg = new Rect({
-      width: props.width,
-      height: props.height,
+      width: props.width, height: props.height,
       fill: props.isSelected ? 'rgba(46,213,163,.15)' : 'transparent',
       cornerRadius: 4,
     })
-    
-    // 左粗边框
-    const leftBorder = new Rect({
-      width: 3,
-      height: props.height,
-      fill: `rgba(124,58,237,${0.3 + props.level * 0.1})`,
-    })
-    
-    // 文字
     const text = new Text({
       x: 10 + props.level * 20,
       y: props.height / 2 - 7,
-      text: props.name,
-      fill: '#e0e0e0',
-      fontSize: 13,
+      text: props.name, fill: '#e0e0e0', fontSize: 13,
     })
-    
-    group.add(bg)
-    group.add(leftBorder)
-    group.add(text)
-    
+    group.add(bg, text)
     return { group, bg, text, data: props }
   }
 }
 ```
 
-### 8.3 双向同步
-
-```typescript
-// DOM 变化 → Canvas 更新
-const observer = new MutationObserver(() => {
-  renderer.syncFromDom()
-})
-observer.observe(fileTree, { 
-  childList: true, 
-  subtree: true,
-  attributes: true,
-  attributeFilter: ['class', 'data-path']
-})
-
-// Canvas hover → DOM 触发（保持手势系统兼容）
-node.group.on('pointer.over', () => {
-  // 找到对应 DOM 元素触发事件
-  const domItem = document.querySelector(`[data-path="${path}"]`)
-  domItem?.dispatchEvent(new Event('mouseenter'))
-})
-```
-
-### 验证标准
-- [ ] 外观与 DOM 版本完全一致
-- [ ] DOM 节点透明但可点击
-- [ ] 手势系统（摇杆/触摸）正常工作
-- [ ] 滚动流畅 60fps
-
-**时间：3-4 天**
+**预计时间：3-4 天**
 
 ---
 
@@ -560,102 +383,18 @@ node.group.on('pointer.over', () => {
 
 **目标**：用 Leafer 事件替代 DOM 事件，准备移除 DOM
 
-### 9.1 Leafer 事件处理
-
 ```typescript
-// tree-events.ts - 新增
 import { PointerEvent } from 'leafer-ui'
 
-export function initLeaferEvents(renderer: DomBackedLeaferRenderer) {
-  renderer.nodeMap.forEach((node, path) => {
-    const { group } = node
-    
-    // 点击选中
-    group.on(PointerEvent.TAP, () => {
-      selectNode(path)
-    })
-    
-    // 长按展开
-    let pressTimer: number
-    group.on(PointerEvent.DOWN, () => {
-      pressTimer = window.setTimeout(() => {
-        toggleExpand(path)
-      }, 500)
-    })
-    
-    group.on(PointerEvent.UP, () => {
-      clearTimeout(pressTimer)
-    })
-    
-    // Hover 效果
-    group.on(PointerEvent.OVER, () => {
-      gsap.to(node.bg, { fill: 'rgba(124,58,237,.1)', duration: 0.15 })
-    })
-    
-    group.on(PointerEvent.OUT, () => {
-      if (!node.data.isSelected) {
-        gsap.to(node.bg, { fill: 'transparent', duration: 0.15 })
-      }
-    })
+renderer.nodeMap.forEach((node, path) => {
+  node.group.on(PointerEvent.TAP, () => selectNode(path))
+  node.group.on(PointerEvent.OVER, () => {
+    gsap.to(node.bg, { fill: 'rgba(124,58,237,.1)', duration: 0.15 })
   })
-}
+})
 ```
 
-### 9.2 手势系统适配
-
-```typescript
-// gestures.ts - 修改
-// 原有 DOM 手势逻辑改为 Canvas 坐标计算
-
-export function moveCursorBySteps(steps: number): void {
-  // 不再查询 DOM，直接操作 Canvas 节点
-  const visibleNodes = renderer.getVisibleNodes()
-  const currentIdx = visibleNodes.findIndex(n => n.data.isSelected)
-  const targetIdx = Math.max(0, Math.min(currentIdx + steps, visibleNodes.length - 1))
-  
-  const targetNode = visibleNodes[targetIdx]
-  selectNode(targetNode.data.path)
-  
-  // Canvas 光标移动
-  gsap.to(cursorRect, {
-    y: targetNode.group.y,
-    duration: 0.3,
-    ease: 'power2.out',
-  })
-}
-```
-
-### 9.3 滚动约束迁移
-
-```typescript
-// ui.ts - 修改滚动约束
-export function isInConstraintZone(nodeY: number): boolean {
-  const container = document.querySelector('.sidebar-content')!
-  const centerY = container.clientHeight / 2
-  return Math.abs(nodeY - centerY) < CONSTRAINT_HEIGHT / 2
-}
-
-export function scrollIntoConstraintZone(targetY: number): void {
-  const container = document.querySelector('.sidebar-content')!
-  const centerY = container.clientHeight / 2
-  const offset = targetY - centerY
-  
-  gsap.to(container, {
-    scrollTop: container.scrollTop + offset,
-    duration: 0.4,
-    ease: 'power2.inOut',
-  })
-}
-```
-
-### 验证标准
-- [ ] 点击/长按/双击正常
-- [ ] 摇杆光标移动正常
-- [ ] 边界触摸步进正常
-- [ ] 滚动约束正常
-- [ ] 无需 DOM 事件委托
-
-**时间：2-3 天**
+**预计时间：2-3 天**
 
 ---
 
@@ -663,104 +402,30 @@ export function scrollIntoConstraintZone(targetY: number): void {
 
 **目标**：sidebar-content 中只有 Leafer Canvas，无 DOM 节点
 
-### 10.1 数据层直接驱动
-
 ```typescript
 // tree-full-canvas.ts - 新增
-import { Leafer, Group } from 'leafer-ui'
-
 export class FullCanvasTree {
-  private leafer: Leafer
-  private contentGroup: Group
-  private virtualRenderer: VirtualRenderer
-  
-  constructor(container: HTMLElement) {
-    this.leafer = new Leafer({
-      view: container,
-      width: container.clientWidth,
-      height: container.clientHeight,
-    })
-    
-    this.contentGroup = new Group({
-      width: container.clientWidth,
-    })
-    
-    this.leafer.add(this.contentGroup)
-    
-    // 直接加载数据，不经过 DOM
-    this.loadData('/root')
-  }
-  
   async loadData(path: string) {
     const items = await fetchTreeData(path)
-    const nodes = this.convertToNodes(items)
-    this.virtualRenderer.render(nodes)
+    this.virtualRenderer.render(this.convertToNodes(items))
   }
   
-  // 虚拟化渲染
   private renderVisibleNodes(scrollY: number) {
-    const range = this.virtualRenderer.calculateRange(scrollY)
-    
-    // 清除旧节点
     this.contentGroup.removeAll()
-    
-    // 渲染可见节点
     range.visible.forEach((nodeData, i) => {
       const node = this.createNode(nodeData)
-      node.group.y = nodeData.y
-      this.contentGroup.add(node.group)
-      
-      // 入场动画
-      gsap.from(node.group, {
-        x: -20,
-        opacity: 0,
-        duration: 0.2,
-        delay: i * 0.02,
-      })
+      gsap.from(node.group, { x: -20, opacity: 0, duration: 0.2, delay: i * 0.02 })
     })
   }
 }
-```
-
-### 10.2 完全移除 DOM 渲染
-
-```typescript
-// tree.ts - 修改
-// 原有 renderTree 改为 Canvas 渲染
-
-export async function renderTree(path = ''): Promise<void> {
-  // 不再创建 DOM 元素
-  // 直接调用 Canvas 渲染器
-  canvasRenderer.loadData(path)
-}
-
-// 标记旧函数为废弃
-/** @deprecated 使用 canvasRenderer.loadData */
-export async function renderTreeDom(path = ''): Promise<void> { ... }
-```
-
-### 10.3 清理 DOM 相关代码
-
-```typescript
-// 移除的文件/代码：
-// - sidebar.css 中的 .tree-item, .tree-row 等样式
-// - tree.ts 中的 DOM 创建逻辑
-// - ui.ts 中的 DOM 查询（getBoundingClientRect）
-// - gestures.ts 中的 DOM 事件监听
-
-// 保留的 DOM 元素：
-// - .sidebar-content（Canvas 容器）
-// - .cursor-highlight（可选，可改为 Canvas）
 ```
 
 ### 验证标准
 - [ ] sidebar-content 中无 .tree-item DOM 节点
-- [ ] 功能完全正常
 - [ ] 1000+ 文件 60fps
-- [ ] 内存占用 < 300MB
 - [ ] 无 DOM reflow/recalculate style
 
-**时间：2-3 天**
+**预计时间：2-3 天**
 
 ---
 
@@ -790,22 +455,25 @@ After (完全模式):
 
 ---
 
-## 总时间更新
+## 当前进度与总时间
 
-| Phase | 内容 | 时间 |
-|-------|------|------|
-| 1 | Pretext 文本测量 | 1 天 |
-| 2 | GSAP 光标动画 | 1-2 天 |
-| 3 | GSAP 展开动画 | 2-3 天 |
-| 4 | GSAP 名称盒子 | 0.5 天 |
-| 5 | GSAP 滚动居中 | 1 天 |
-| 6 | Leafer 连线层 | 2-3 天 |
-| 7 | Leafer 粒子效果 | 1-2 天 |
-| **8** | **Canvas 主导渲染** | **3-4 天** |
-| **9** | **事件系统迁移** | **2-3 天** |
-| **10** | **完全移除 DOM** | **2-3 天** |
+| Phase | 内容 | 状态 | 实际时间 |
+|-------|------|------|----------|
+| 1 | Pretext 文本测量 | ✅ | ~1h |
+| 2 | GSAP 光标动画 | ✅ | ~1h |
+| 3 | GSAP 展开动画 | ✅ | ~30min |
+| 4 | GSAP 名称盒子 | ✅ | ~10min |
+| 5 | GSAP 滚动居中 | ❌ 跳过 | 0 |
+| + | 统一展开路径修复 | ✅ | ~15min |
+| + | 统一选中逻辑 | ✅ | ~20min |
+| 6 | Leafer 连线层 | ⏳ | 2-3天 |
+| 7 | Leafer 粒子效果 | ⏳ | 1-2天 |
+| 8 | Canvas 主导渲染 | ⏳ | 3-4天 |
+| 9 | 事件系统迁移 | ⏳ | 2-3天 |
+| 10 | 完全移除 DOM | ⏳ | 2-3天 |
 
-**总计：15-22 天**（渐进式完全替换）
+**已完成：1-4 + 2项修复（约3h实际工作量）**
+**剩余：6-10（约10-15天）**
 
 ---
 
@@ -824,3 +492,18 @@ vs 永远混合模式:
   维护: 更简单（单一渲染层）
 ```
 
+---
+
+## Git 历史
+
+```
+03d2468 docs: 清理旧计划文档，保留唯一完整版
+9497ef6 docs: 添加 Phase 8-10 渐进式完全替换方案
+87bcb0d docs: 完整版忒修斯之船重构计划 - 7 Phase详细方案
+7187acc refactor(phase1): Pretext替换offsetWidth测量
+5fc4071 refactor(phase2): GSAP替换光标高亮动画
+f6dc1db refactor(phase3): GSAP替换叠叠乐动画
+a8da6b4 fix: executeCursorAction改为dispatch click事件
+e863424 refactor(phase4): GSAP替换Web Animation API
+8af658a refactor: 提取selectFileItem统一选中逻辑
+```
