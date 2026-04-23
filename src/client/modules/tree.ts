@@ -173,9 +173,9 @@ export function refreshTree(): void { renderTree(); }
 
 // 显示/隐藏
 export function toggleHidden(): void {
-  const v = !showHidden;
+  const v = !(window as any).showHidden;
   (window as any).showHidden = v;
-  setShowHidden(v);
+  (window as any).setShowHidden?.(v);
   document.getElementById('toggleHiddenBtn')?.classList.toggle('active', v);
   renderTree();
 }

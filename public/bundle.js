@@ -8,6 +8,9 @@
   function setSelectedFile(f) {
     selectedFile = f;
   }
+  function setShowHidden(v) {
+    showHidden = v;
+  }
   function setExpandedPaths(p) {
     expandedPaths = p;
   }
@@ -93,6 +96,7 @@
     window.selectedFile = selectedFile;
     window.expandedPaths = expandedPaths;
     window.showHidden = showHidden;
+    window.setShowHidden = setShowHidden;
     window.showToast = showToast;
     window.addLog = addLog;
     window.openLogPanel = openLogPanel;
@@ -283,11 +287,11 @@
     renderTree();
   }
   function toggleHidden() {
-    var _a;
-    const v = !showHidden;
+    var _a, _b;
+    const v = !window.showHidden;
     window.showHidden = v;
-    setShowHidden(v);
-    (_a = document.getElementById("toggleHiddenBtn")) == null ? void 0 : _a.classList.toggle("active", v);
+    (_a = window.setShowHidden) == null ? void 0 : _a.call(window, v);
+    (_b = document.getElementById("toggleHiddenBtn")) == null ? void 0 : _b.classList.toggle("active", v);
     renderTree();
   }
   function initTree() {

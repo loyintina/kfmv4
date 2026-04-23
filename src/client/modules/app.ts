@@ -104,6 +104,7 @@ function exposeGlobals(): void {
   window.selectedFile = selectedFile;
   window.expandedPaths = expandedPaths;
   window.showHidden = showHidden;
+  window.setShowHidden = setShowHidden;
   window.showToast = showToast;
   window.addLog = addLog;
   window.openLogPanel = openLogPanel;
