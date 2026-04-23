@@ -7645,20 +7645,21 @@
   function updateSidebarPath(item) {
     const pathEl = document.getElementById("sidebarPath");
     if (!pathEl) return;
-    pathEl.getAnimations().forEach((a) => a.cancel());
+    gsapWithCSS.killTweensOf(pathEl);
     const currentW = parseFloat(getComputedStyle(pathEl).width) || 20;
     if (!item) {
       const targetW2 = measureNaturalWidthSync("-", PATH_FONT) + 24;
       pathEl.textContent = "-";
       pathEl.title = "";
       if (Math.abs(currentW - targetW2) < 2) return;
-      const anim2 = pathEl.animate(
-        [{ width: currentW + "px" }, { width: targetW2 + "px" }],
-        { duration: 200, easing: "cubic-bezier(.4,0,.2,1)" }
-      );
-      anim2.onfinish = () => {
-        pathEl.style.width = "auto";
-      };
+      gsapWithCSS.fromTo(pathEl, { width: currentW + "px" }, {
+        width: targetW2 + "px",
+        duration: 0.2,
+        ease: "cubic-bezier(.4,0,.2,1)",
+        onComplete: () => {
+          pathEl.style.width = "auto";
+        }
+      });
       return;
     }
     const nameEl = item.querySelector(".tree-name");
@@ -7671,13 +7672,14 @@
     }
     pathEl.textContent = name;
     pathEl.style.width = currentW + "px";
-    const anim = pathEl.animate(
-      [{ width: currentW + "px" }, { width: targetW + "px" }],
-      { duration: 200, easing: "cubic-bezier(.4,0,.2,1)" }
-    );
-    anim.onfinish = () => {
-      pathEl.style.width = "auto";
-    };
+    gsapWithCSS.fromTo(pathEl, { width: currentW + "px" }, {
+      width: targetW + "px",
+      duration: 0.2,
+      ease: "cubic-bezier(.4,0,.2,1)",
+      onComplete: () => {
+        pathEl.style.width = "auto";
+      }
+    });
     pathEl.title = name || "";
   }
   function syncCursorDuringBounce(siblingCount = 0) {

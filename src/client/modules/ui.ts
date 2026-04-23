@@ -79,21 +79,22 @@ export function updateSidebarPath(item: HTMLElement | null): void {
   if (!pathEl) return;
 
   // 取消旧动画
-  pathEl.getAnimations().forEach(a => a.cancel());
+  gsap.killTweensOf(pathEl);
 
   // 读取当前渲染宽度
   const currentW = parseFloat(getComputedStyle(pathEl).width) || 20;
 
   if (!item) {
-    const targetW = measureNaturalWidthSync('-', PATH_FONT) + 24; // +padding(8*2) + border(3) +容差
+    const targetW = measureNaturalWidthSync('-', PATH_FONT) + 24;
     pathEl.textContent = '-';
     pathEl.title = '';
     if (Math.abs(currentW - targetW) < 2) return;
-    const anim = pathEl.animate(
-      [{ width: currentW + 'px' }, { width: targetW + 'px' }],
-      { duration: 200, easing: 'cubic-bezier(.4,0,.2,1)' }
-    );
-    anim.onfinish = () => { pathEl.style.width = 'auto'; };
+    gsap.fromTo(pathEl, { width: currentW + 'px' }, {
+      width: targetW + 'px',
+      duration: 0.2,
+      ease: 'cubic-bezier(.4,0,.2,1)',
+      onComplete: () => { pathEl.style.width = 'auto'; },
+    });
     return;
   }
 
@@ -113,13 +114,13 @@ export function updateSidebarPath(item: HTMLElement | null): void {
   // 锁回当前宽度，触发动画
   pathEl.textContent = name;
   pathEl.style.width = currentW + 'px';
-  // void offsetWidth 不再需要——Pretext 已完成测量，无需强制 reflow
 
-  const anim = pathEl.animate(
-    [{ width: currentW + 'px' }, { width: targetW + 'px' }],
-    { duration: 200, easing: 'cubic-bezier(.4,0,.2,1)' }
-  );
-  anim.onfinish = () => { pathEl.style.width = 'auto'; };
+  gsap.fromTo(pathEl, { width: currentW + 'px' }, {
+    width: targetW + 'px',
+    duration: 0.2,
+    ease: 'cubic-bezier(.4,0,.2,1)',
+    onComplete: () => { pathEl.style.width = 'auto'; },
+  });
   pathEl.title = name || '';
 }
 
