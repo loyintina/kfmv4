@@ -473,7 +473,7 @@
     items[targetIndex].classList.add("selected");
     setSelectedFile(items[targetIndex].dataset.path || "");
     window.selectedFile = items[targetIndex].dataset.path || "";
-    updateCursorHighlight(true);
+    updateCursorHighlight(false);
     centerCursorToView(items[targetIndex]);
   }
   function centerCursorToView(item, smooth = true) {
@@ -528,7 +528,7 @@
     target.classList.add("selected");
     setSelectedFile(target.dataset.path || "");
     window.selectedFile = target.dataset.path || "";
-    updateCursorHighlight(true);
+    updateCursorHighlight(false);
     updateSidebarPath(target);
   }
   function initScrollCursorConstraint() {

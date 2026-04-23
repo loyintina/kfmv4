@@ -193,7 +193,7 @@ function restoreCursorPosition(): void {
   items[targetIndex].classList.add('selected');
   setSelectedFile((items[targetIndex] as HTMLElement).dataset.path || '');
   window.selectedFile = (items[targetIndex] as HTMLElement).dataset.path || '';
-  updateCursorHighlight(true);
+  updateCursorHighlight(false);
   centerCursorToView(items[targetIndex] as HTMLElement);
 }
 
@@ -284,7 +284,7 @@ function moveCursorTo(target: HTMLElement): void {
   target.classList.add('selected');
   setSelectedFile(target.dataset.path || '');
   window.selectedFile = target.dataset.path || '';
-  updateCursorHighlight(true);
+  updateCursorHighlight(false);
   updateSidebarPath(target);
 }
 
