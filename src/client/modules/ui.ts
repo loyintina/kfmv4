@@ -7,7 +7,7 @@ const CURSOR_POS_KEY = 'kfm_cursor_position';
 let cursorHighlight: HTMLDivElement | null = null;
 
 // 约束区域高度
-const CONSTRAINT_HEIGHT = 96;
+const CONSTRAINT_HEIGHT = 32;
 const SCROLL_THROTTLE = 16;
 const BOUNDARY_STEP_THRESHOLD = 30;
 

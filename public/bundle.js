@@ -302,7 +302,7 @@
   // src/client/modules/ui.ts
   var CURSOR_POS_KEY = "kfm_cursor_position";
   var cursorHighlight = null;
-  var CONSTRAINT_HEIGHT = 96;
+  var CONSTRAINT_HEIGHT = 32;
   var BOUNDARY_STEP_THRESHOLD = 30;
   var boundaryAccum = 0;
   function resetCursorHighlight() {
