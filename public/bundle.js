@@ -522,38 +522,6 @@
     }
     return true;
   }
-  function getVisibleItems() {
-    const container = document.querySelector(".sidebar-content");
-    if (!container) return [];
-    const cr = container.getBoundingClientRect();
-    const items = document.querySelectorAll("#fileTree .tree-item");
-    const visible = [];
-    for (const item of items) {
-      if (!isNodeExpanded(item)) continue;
-      const row = item.querySelector(".tree-row") || item;
-      const rect = row.getBoundingClientRect();
-      if (rect.bottom > cr.top && rect.top < cr.bottom) visible.push(item);
-    }
-    return visible;
-  }
-  function findClosestToCenter(items) {
-    if (!items.length) return null;
-    const container = document.querySelector(".sidebar-content");
-    const cr = container.getBoundingClientRect();
-    const centerY = cr.top + cr.height / 2;
-    let closest = items[0];
-    let minDist = Infinity;
-    for (const item of items) {
-      const row = item.querySelector(".tree-row") || item;
-      const rect = row.getBoundingClientRect();
-      const dist = Math.abs(rect.top + rect.height / 2 - centerY);
-      if (dist < minDist) {
-        minDist = dist;
-        closest = item;
-      }
-    }
-    return closest;
-  }
   function moveCursorTo(target) {
     if (!target) return;
     const current = document.querySelector(".tree-item.selected");
@@ -621,9 +589,21 @@
       const sel = document.querySelector(".tree-item.selected");
       if (!sel) return;
       if (!isInConstraintZone(sel)) {
-        const visible = getVisibleItems();
-        const closest = findClosestToCenter(visible);
-        if (closest && closest !== sel) moveCursorTo(closest);
+        const allVisible = Array.from(document.querySelectorAll("#fileTree .tree-item")).filter((item) => isNodeExpanded(item));
+        let idx = 0;
+        allVisible.forEach((item, i) => {
+          if (item === sel) idx = i;
+        });
+        const cr = container.getBoundingClientRect();
+        const centerY = cr.top + cr.height / 2;
+        const selRow = sel.querySelector(".tree-row") || sel;
+        const selRect = selRow.getBoundingClientRect();
+        const selCenter = selRect.top + selRect.height / 2;
+        const scrollingUp = selCenter > centerY;
+        const nextIdx = scrollingUp ? Math.max(0, idx - 1) : Math.min(allVisible.length - 1, idx + 1);
+        if (nextIdx !== idx) {
+          moveCursorTo(allVisible[nextIdx]);
+        }
       }
     });
   }

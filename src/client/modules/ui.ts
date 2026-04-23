@@ -338,12 +338,25 @@ function initScrollCursorConstraint(): void {
     if (now - lastScrollCheck < SCROLL_THROTTLE) return;
     lastScrollCheck = now;
     if ((window as any).joystickActive) return;
-    const sel = document.querySelector('.tree-item.selected');
+    const sel = document.querySelector('.tree-item.selected') as HTMLElement | null;
     if (!sel) return;
-    if (!isInConstraintZone(sel as HTMLElement)) {
-      const visible = getVisibleItems();
-      const closest = findClosestToCenter(visible);
-      if (closest && closest !== sel) moveCursorTo(closest);
+    if (!isInConstraintZone(sel)) {
+      // 只移动到相邻的可见项，不跳跃
+      const allVisible = Array.from(document.querySelectorAll('#fileTree .tree-item')).filter(item => isNodeExpanded(item as HTMLElement)) as HTMLElement[];
+      let idx = 0;
+      allVisible.forEach((item, i) => { if (item === sel) idx = i; });
+      // 判断滚动方向
+      const cr = container.getBoundingClientRect();
+      const centerY = cr.top + cr.height / 2;
+      const selRow = sel.querySelector('.tree-row') || sel;
+      const selRect = selRow.getBoundingClientRect();
+      const selCenter = selRect.top + selRect.height / 2;
+      const scrollingUp = selCenter > centerY;
+      // 只移一步
+      const nextIdx = scrollingUp ? Math.max(0, idx - 1) : Math.min(allVisible.length - 1, idx + 1);
+      if (nextIdx !== idx) {
+        moveCursorTo(allVisible[nextIdx]);
+      }
     }
   });
 }
