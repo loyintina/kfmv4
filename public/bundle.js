@@ -264,7 +264,7 @@
           (_b2 = window.updateCursorHighlight) == null ? void 0 : _b2.call(window);
           (_c2 = window.updateSidebarPath) == null ? void 0 : _c2.call(window, div);
           if (!((_d = window.isInConstraintZone) == null ? void 0 : _d.call(window, div))) {
-            (_e = window.scrollIntoConstraintZone) == null ? void 0 : _e.call(window, div);
+            (_e = window.scrollAndCenterCursor) == null ? void 0 : _e.call(window, div);
           }
         }
         e.stopPropagation();
@@ -305,6 +305,7 @@
   var CONSTRAINT_HEIGHT = 32;
   var BOUNDARY_STEP_THRESHOLD = 30;
   var boundaryAccum = 0;
+  var isClickScrolling = false;
   function resetCursorHighlight() {
     cursorHighlight = null;
   }
@@ -512,6 +513,23 @@
     const targetScroll = Math.max(0, Math.min(maxScroll, container.scrollTop + offset));
     container.scrollTo({ top: targetScroll, behavior: "smooth" });
   }
+  function scrollAndCenterCursor(item) {
+    isClickScrolling = true;
+    window.isClickScrolling = true;
+    const container = document.querySelector(".sidebar-content");
+    if (container) {
+      const onEnd = () => {
+        isClickScrolling = false;
+        window.isClickScrolling = false;
+        container.removeEventListener("scrollend", onEnd);
+      };
+      container.addEventListener("scrollend", onEnd);
+      setTimeout(() => {
+        if (isClickScrolling) onEnd();
+      }, 600);
+    }
+    scrollIntoConstraintZone(item);
+  }
   function isNodeExpanded(item) {
     let wrap = item.parentElement;
     while (wrap && wrap.id !== "fileTree") {
@@ -546,7 +564,7 @@
       const currentY = e.touches[0].clientY;
       const dy = currentY - boundaryLastY;
       boundaryLastY = currentY;
-      if (window.joystickActive) return;
+      if (window.joystickActive || window.isClickScrolling) return;
       const maxScroll = container.scrollHeight - container.clientHeight;
       const atTop = container.scrollTop <= 0 && dy > 0;
       const atBottom = container.scrollTop >= maxScroll - 1 && dy < 0;
@@ -586,7 +604,7 @@
       const sp = container.scrollTop;
       if (sp === lastScrollPos) return;
       lastScrollPos = sp;
-      if (window.joystickActive) return;
+      if (window.joystickActive || window.isClickScrolling) return;
       const sel = document.querySelector(".tree-item.selected");
       if (!sel || isInConstraintZone(sel)) return;
       const allVisible = Array.from(document.querySelectorAll("#fileTree .tree-item")).filter((item) => isNodeExpanded(item));
@@ -622,6 +640,7 @@
     window.resetCursorHighlight = resetCursorHighlight;
     window.syncCursorDuringBounce = syncCursorDuringBounce;
     window.scrollIntoConstraintZone = scrollIntoConstraintZone;
+    window.scrollAndCenterCursor = scrollAndCenterCursor;
     window.isInConstraintZone = isInConstraintZone;
     window.openSidebar = openSidebar;
     window.closeSidebar = closeSidebar;

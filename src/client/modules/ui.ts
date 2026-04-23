@@ -13,6 +13,7 @@ const BOUNDARY_STEP_THRESHOLD = 30;
 
 let lastScrollCheck = 0;
 let boundaryAccum = 0;
+let isClickScrolling = false;
 
 export function resetCursorHighlight(): void { cursorHighlight = null; }
 
@@ -236,6 +237,22 @@ export function scrollIntoConstraintZone(target: HTMLElement): void {
   container.scrollTo({ top: targetScroll, behavior: 'smooth' });
 }
 
+export function scrollAndCenterCursor(item: HTMLElement): void {
+  isClickScrolling = true;
+  (window as any).isClickScrolling = true;
+  const container = document.querySelector(".sidebar-content");
+  if (container) {
+    const onEnd = () => {
+      isClickScrolling = false;
+      (window as any).isClickScrolling = false;
+      container.removeEventListener("scrollend", onEnd);
+    };
+    container.addEventListener("scrollend", onEnd);
+    setTimeout(() => { if (isClickScrolling) onEnd(); }, 600);
+  }
+  scrollIntoConstraintZone(item);
+}
+
 export function isNodeExpanded(item: HTMLElement): boolean {
   let wrap: HTMLElement | null = item.parentElement as HTMLElement;
   while (wrap && wrap.id !== 'fileTree') {
@@ -303,7 +320,7 @@ function initScrollCursorConstraint(): void {
     const currentY = e.touches[0].clientY;
     const dy = currentY - boundaryLastY;
     boundaryLastY = currentY;
-    if ((window as any).joystickActive) return;
+    if ((window as any).joystickActive || (window as any).isClickScrolling) return;
     const maxScroll = container.scrollHeight - container.clientHeight;
     const atTop = container.scrollTop <= 0 && dy > 0;
     const atBottom = container.scrollTop >= maxScroll - 1 && dy < 0;
@@ -341,7 +358,7 @@ function initScrollCursorConstraint(): void {
     const sp = container.scrollTop;
     if (sp === lastScrollPos) return; // 没滚动就跳过
     lastScrollPos = sp;
-    if ((window as any).joystickActive) return;
+    if ((window as any).joystickActive || (window as any).isClickScrolling) return;
     const sel = document.querySelector('.tree-item.selected') as HTMLElement | null;
     if (!sel || isInConstraintZone(sel)) return;
     const allVisible = Array.from(document.querySelectorAll('#fileTree .tree-item')).filter(item => isNodeExpanded(item as HTMLElement)) as HTMLElement[];
@@ -381,6 +398,7 @@ export function initUI(): void {
   (window as any).resetCursorHighlight = resetCursorHighlight;
   (window as any).syncCursorDuringBounce = syncCursorDuringBounce;
   (window as any).scrollIntoConstraintZone = scrollIntoConstraintZone;
+  (window as any).scrollAndCenterCursor = scrollAndCenterCursor;
   (window as any).isInConstraintZone = isInConstraintZone;
 
   window.openSidebar = openSidebar;

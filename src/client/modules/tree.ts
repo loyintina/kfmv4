@@ -151,7 +151,7 @@ export async function renderTree(container: HTMLElement = document.getElementByI
         (window as any).updateCursorHighlight?.();
         (window as any).updateSidebarPath?.(div);
         if (!(window as any).isInConstraintZone?.(div)) {
-          (window as any).scrollIntoConstraintZone?.(div);
+          (window as any).scrollAndCenterCursor?.(div);
         }
       }
       e.stopPropagation();
