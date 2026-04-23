@@ -333,29 +333,32 @@ function initScrollCursorConstraint(): void {
 
   container.addEventListener('touchend', () => { boundaryTouchActive = false; boundaryAccum = 0; }, { passive: true });
 
-  container.addEventListener('scroll', () => {
-    const now = Date.now();
-    if (now - lastScrollCheck < SCROLL_THROTTLE) return;
-    lastScrollCheck = now;
+  // rAF 轮询：不依赖 scroll 事件频率，每帧检测
+  let scrollRafId = 0;
+  let lastScrollPos = 0;
+  const pollScroll = () => {
+    scrollRafId = requestAnimationFrame(pollScroll);
+    const sp = container.scrollTop;
+    if (sp === lastScrollPos) return; // 没滚动就跳过
+    lastScrollPos = sp;
     if ((window as any).joystickActive) return;
     const sel = document.querySelector('.tree-item.selected') as HTMLElement | null;
-    if (!sel) return;
-    if (!isInConstraintZone(sel)) {
-      const allVisible = Array.from(document.querySelectorAll('#fileTree .tree-item')).filter(item => isNodeExpanded(item as HTMLElement)) as HTMLElement[];
-      let idx = 0;
-      allVisible.forEach((item, i) => { if (item === sel) idx = i; });
-      const cr = container.getBoundingClientRect();
-      const centerY = cr.top + cr.height / 2;
-      const selRow = sel.querySelector('.tree-row') || sel;
-      const selRect = selRow.getBoundingClientRect();
-      const selCenter = selRect.top + selRect.height / 2;
-      const scrollingUp = selCenter > centerY;
-      const nextIdx = scrollingUp ? Math.max(0, idx - 1) : Math.min(allVisible.length - 1, idx + 1);
-      if (nextIdx !== idx) {
-        moveCursorTo(allVisible[nextIdx]);
-      }
+    if (!sel || isInConstraintZone(sel)) return;
+    const allVisible = Array.from(document.querySelectorAll('#fileTree .tree-item')).filter(item => isNodeExpanded(item as HTMLElement)) as HTMLElement[];
+    let idx = 0;
+    allVisible.forEach((item, i) => { if (item === sel) idx = i; });
+    const cr = container.getBoundingClientRect();
+    const centerY = cr.top + cr.height / 2;
+    const selRow = sel.querySelector('.tree-row') || sel;
+    const selRect = selRow.getBoundingClientRect();
+    const selCenter = selRect.top + selRect.height / 2;
+    const scrollingUp = selCenter > centerY;
+    const nextIdx = scrollingUp ? Math.max(0, idx - 1) : Math.min(allVisible.length - 1, idx + 1);
+    if (nextIdx !== idx) {
+      moveCursorTo(allVisible[nextIdx]);
     }
-  });
+  };
+  scrollRafId = requestAnimationFrame(pollScroll);
 }
 
 // overlay click
