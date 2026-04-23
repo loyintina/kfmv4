@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>KFM Leafer Demo</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0f;color:#e0e0e0;font-family:-apple-system,sans-serif;height:100vh;display:flex;overflow:hidden}
+#sidebar{width:280px;height:100%;background:rgba(18,18,26,.85);border-right:1px solid rgba(124,58,237,.3);overflow:hidden;position:relative}
+#tree-canvas{width:100%;height:100%}
+#info{flex:1;padding:24px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+#info h2{font-size:18px;color:#7c3aed;margin-bottom:16px}
+#info p{font-size:14px;color:#888;margin:4px 0}
+#info .badge{display:inline-block;padding:4px 12px;border-radius:6px;font-size:12px;font-weight:600;margin:4px}
+.badge.leafer{background:rgba(46,213,163,.15);color:#2ed5a3}
+.badge.pretext{background:rgba(124,58,237,.15);color:#7c3aed}
+.badge.gsap{background:rgba(0,212,255,.15);color:#00d4ff}
+#perf{margin-top:24px;font-size:12px;color:#555;line-height:1.8}
+#perf span{color:#7c3aed;font-weight:600}
+</style>
+</head>
+<body>
+<div id="sidebar">
+  <div id="tree-canvas"></div>
+</div>
+<div id="info">
+  <h2>🎨 KFM Leafer Demo</h2>
+  <div>
+    <span class="badge leafer">LeaferJS 渲染</span>
+    <span class="badge pretext">Pretext 测量</span>
+    <span class="badge gsap">GSAP 动画</span>
+  </div>
+  <p style="margin-top:16px">点击左侧节点测试交互</p>
+  <p>光标使用 GSAP power2.out 缓动</p>
+  <div id="perf"></div>
+</div>
+<script type="module" src="/kfmv4/demo-leafer.js"></script>
+</body>
+</html>

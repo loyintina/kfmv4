@@ -393,9 +393,11 @@ layout(prepared, treeWidth, 24)
 
 ---
 
-## 依赖安装
+依赖安装
 
 ```bash
+npm install leafer-ui @chenglou/pretext gsap
+```
 npm install leafer-ui @chenglou/pretext
 ```
 
@@ -444,4 +446,4 @@ Git HEAD: 20f9093
 > 计划文档 v2.0
 > 更新时间：2026-04-23 15:32
 > 维护者：蔚然
-> 技术栈：LeaferJS + Pretext
+> 技术栈：LeaferJS + Pretext + GSAP
