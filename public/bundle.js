@@ -2806,7 +2806,7 @@
             { left: orbCurrentX + "px", top: orbCurrentY + "px" },
             { left: orbTargetX + "px", top: orbTargetY + "px" }
           ],
-          { duration: 250, easing: "cubic-bezier(.4,0,.2,1)" }
+          { duration: 100, easing: "cubic-bezier(.4,0,.2,1)" }
         );
         orbAnim.onfinish = () => {
           orbEl.style.left = orbTargetX + "px";
@@ -2820,7 +2820,7 @@
               { left: panelRect.left + "px", top: panelRect.top + "px", width: panelRect.width + "px", height: panelRect.height + "px" },
               { left: panelTarget.left + "px", top: panelTarget.top + "px", width: panelTarget.width + "px", height: panelTarget.height + "px" }
             ],
-            { duration: 250, easing: "cubic-bezier(.4,0,.2,1)" }
+            { duration: 100, easing: "cubic-bezier(.4,0,.2,1)" }
           );
           panelAnim.onfinish = () => {
             panelEl.style.left = panelTarget.left + "px";
