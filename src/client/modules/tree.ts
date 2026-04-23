@@ -1,7 +1,7 @@
 /**
  * KFM v4 - 文件树加载与渲染
  */
-import { API, expandedPaths, showHidden, selectedFile, setExpandedPaths, setSelectedFile } from './app.js';
+import { API, expandedPaths, showHidden, setExpandedPaths } from './app.js';
 import gsap from 'gsap';
 
 const heightCache: Record<string, number> = {};
@@ -142,13 +142,7 @@ export async function renderTree(container: HTMLElement = document.getElementByI
           (window as any).syncCursorDuringBounce?.(sc);
         }
       } else {
-        const prevSelected = document.querySelector('.tree-item.selected');
-        if (prevSelected) prevSelected.classList.remove('selected');
-        div.classList.add('selected');
-        setSelectedFile(item.path);
-        window.selectedFile = item.path;
-        (window as any).updateCursorHighlight?.();
-        (window as any).updateSidebarPath?.(div);
+        (window as any).selectFileItem?.(div);
         if (!(window as any).isInConstraintZone?.(div)) {
           (window as any).scrollAndCenterCursor?.(div);
         }

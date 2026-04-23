@@ -201,10 +201,7 @@ function restoreCursorPosition(): void {
     if (saved && saved.index >= 0 && saved.index < items.length) targetIndex = saved.index;
   } catch {}
   if (targetIndex === -1) targetIndex = Math.floor(items.length / 2);
-  items[targetIndex].classList.add('selected');
-  setSelectedFile((items[targetIndex] as HTMLElement).dataset.path || '');
-  window.selectedFile = (items[targetIndex] as HTMLElement).dataset.path || '';
-  updateCursorHighlight(false);
+  selectFileItem(items[targetIndex] as HTMLElement);
   centerCursorToView(items[targetIndex] as HTMLElement);
 }
 
@@ -303,16 +300,22 @@ function findClosestToCenter(items: HTMLElement[]): HTMLElement | null {
   return closest;
 }
 
+/** 统一选中逻辑 — 只做选中+光标+sidebarPath，不含滚动 */
+export function selectFileItem(item: HTMLElement): void {
+  const current = document.querySelector('.tree-item.selected');
+  if (current === item) return;
+  if (current) current.classList.remove('selected');
+  item.classList.add('selected');
+  const path = item.dataset.path || '';
+  setSelectedFile(path);
+  window.selectedFile = path;
+  updateCursorHighlight(false);
+  updateSidebarPath(item);
+}
+
 function moveCursorTo(target: HTMLElement): void {
   if (!target) return;
-  const current = document.querySelector('.tree-item.selected');
-  if (current === target) return;
-  if (current) current.classList.remove('selected');
-  target.classList.add('selected');
-  setSelectedFile(target.dataset.path || '');
-  window.selectedFile = target.dataset.path || '';
-  updateCursorHighlight(false);
-  updateSidebarPath(target);
+  selectFileItem(target);
 }
 
 function initScrollCursorConstraint(): void {
@@ -345,12 +348,7 @@ function initScrollCursorConstraint(): void {
         allVisible.forEach((item, i) => { if (item === sel) idx = i; });
         const newIdx = atTop ? Math.max(0, idx - steps) : Math.min(allVisible.length - 1, idx + steps);
         if (newIdx !== idx) {
-          if (sel) sel.classList.remove('selected');
-          allVisible[newIdx].classList.add('selected');
-          setSelectedFile(allVisible[newIdx].dataset.path || '');
-          window.selectedFile = allVisible[newIdx].dataset.path || '';
-          updateCursorHighlight();
-          updateSidebarPath(allVisible[newIdx]);
+          selectFileItem(allVisible[newIdx]);
         }
       }
     } else {
@@ -405,6 +403,7 @@ export function initUI(): void {
   window.updateSidebarPath = updateSidebarPath;
   window.centerCursorToView = centerCursorToView;
   window.isNodeExpanded = isNodeExpanded;
+  (window as any).selectFileItem = selectFileItem;
   (window as any).resetCursorHighlight = resetCursorHighlight;
   (window as any).syncCursorDuringBounce = syncCursorDuringBounce;
   (window as any).scrollIntoConstraintZone = scrollIntoConstraintZone;

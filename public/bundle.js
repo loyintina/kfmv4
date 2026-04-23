@@ -4473,7 +4473,7 @@
       frag.appendChild(div);
       if (expandedPaths[item.path] && item.isDir) renderTree(childrenWrap, item.path, depth + 1);
       row.addEventListener("click", async (e) => {
-        var _a2, _b2, _c2, _d, _e;
+        var _a2, _b2, _c2, _d;
         const isCurrentlySelected = div.classList.contains("selected");
         if (isCurrentlySelected) {
           if (item.isDir) {
@@ -4516,15 +4516,9 @@
             (_a2 = window.syncCursorDuringBounce) == null ? void 0 : _a2.call(window, sc);
           }
         } else {
-          const prevSelected = document.querySelector(".tree-item.selected");
-          if (prevSelected) prevSelected.classList.remove("selected");
-          div.classList.add("selected");
-          setSelectedFile(item.path);
-          window.selectedFile = item.path;
-          (_b2 = window.updateCursorHighlight) == null ? void 0 : _b2.call(window);
-          (_c2 = window.updateSidebarPath) == null ? void 0 : _c2.call(window, div);
-          if (!((_d = window.isInConstraintZone) == null ? void 0 : _d.call(window, div))) {
-            (_e = window.scrollAndCenterCursor) == null ? void 0 : _e.call(window, div);
+          (_b2 = window.selectFileItem) == null ? void 0 : _b2.call(window, div);
+          if (!((_c2 = window.isInConstraintZone) == null ? void 0 : _c2.call(window, div))) {
+            (_d = window.scrollAndCenterCursor) == null ? void 0 : _d.call(window, div);
           }
         }
         e.stopPropagation();
@@ -7763,10 +7757,7 @@
     } catch {
     }
     if (targetIndex === -1) targetIndex = Math.floor(items.length / 2);
-    items[targetIndex].classList.add("selected");
-    setSelectedFile(items[targetIndex].dataset.path || "");
-    window.selectedFile = items[targetIndex].dataset.path || "";
-    updateCursorHighlight(false);
+    selectFileItem(items[targetIndex]);
     centerCursorToView(items[targetIndex]);
   }
   function centerCursorToView(item, smooth = true) {
@@ -7830,16 +7821,20 @@
     }
     return true;
   }
+  function selectFileItem(item) {
+    const current = document.querySelector(".tree-item.selected");
+    if (current === item) return;
+    if (current) current.classList.remove("selected");
+    item.classList.add("selected");
+    const path = item.dataset.path || "";
+    setSelectedFile(path);
+    window.selectedFile = path;
+    updateCursorHighlight(false);
+    updateSidebarPath(item);
+  }
   function moveCursorTo(target) {
     if (!target) return;
-    const current = document.querySelector(".tree-item.selected");
-    if (current === target) return;
-    if (current) current.classList.remove("selected");
-    target.classList.add("selected");
-    setSelectedFile(target.dataset.path || "");
-    window.selectedFile = target.dataset.path || "";
-    updateCursorHighlight(false);
-    updateSidebarPath(target);
+    selectFileItem(target);
   }
   function initScrollCursorConstraint() {
     const container = document.querySelector(".sidebar-content");
@@ -7873,12 +7868,7 @@
           });
           const newIdx = atTop ? Math.max(0, idx - steps) : Math.min(allVisible.length - 1, idx + steps);
           if (newIdx !== idx) {
-            if (sel) sel.classList.remove("selected");
-            allVisible[newIdx].classList.add("selected");
-            setSelectedFile(allVisible[newIdx].dataset.path || "");
-            window.selectedFile = allVisible[newIdx].dataset.path || "";
-            updateCursorHighlight();
-            updateSidebarPath(allVisible[newIdx]);
+            selectFileItem(allVisible[newIdx]);
           }
         }
       } else {
@@ -7929,6 +7919,7 @@
     window.updateSidebarPath = updateSidebarPath;
     window.centerCursorToView = centerCursorToView;
     window.isNodeExpanded = isNodeExpanded;
+    window.selectFileItem = selectFileItem;
     window.resetCursorHighlight = resetCursorHighlight;
     window.syncCursorDuringBounce = syncCursorDuringBounce;
     window.scrollIntoConstraintZone = scrollIntoConstraintZone;
@@ -7969,6 +7960,7 @@
     container.scrollTop += diff * SCROLL_FOLLOW_SPEED;
   }
   function moveCursorBySteps(steps) {
+    var _a;
     if (steps === 0) return;
     const items = Array.from(document.querySelectorAll("#fileTree .tree-item")).filter((item) => isNodeExpanded(item));
     if (!items.length) return;
@@ -7979,12 +7971,7 @@
     });
     const targetIndex = Math.min(Math.max(currentIndex + steps, 0), items.length - 1);
     if (targetIndex === currentIndex) return;
-    if (currentSelected) currentSelected.classList.remove("selected");
-    items[targetIndex].classList.add("selected");
-    setSelectedFile(items[targetIndex].dataset.path || "");
-    window.selectedFile = items[targetIndex].dataset.path || "";
-    updateCursorHighlight();
-    updateSidebarPath(items[targetIndex]);
+    (_a = window.selectFileItem) == null ? void 0 : _a.call(window, items[targetIndex]);
   }
   function joystickTick() {
     if (!joystickActive) return;

@@ -1,8 +1,8 @@
 /**
  * KFM v4 - 手势系统（摇杆光标）
  */
-import { setSelectedFile, closeLogPanel } from './app.js';
-import { updateCursorHighlight, updateSidebarPath, isNodeExpanded, centerCursorToView, openSidebar, closeSidebar, } from './ui.js';
+import { closeLogPanel } from './app.js';
+import { isNodeExpanded, centerCursorToView, openSidebar, closeSidebar, } from './ui.js';
 
 let touchStartX = 0;
 let touchStartY = 0;
@@ -43,12 +43,7 @@ function moveCursorBySteps(steps: number): void {
   items.forEach((item, i) => { if (item === currentSelected) currentIndex = i; });
   const targetIndex = Math.min(Math.max(currentIndex + steps, 0), items.length - 1);
   if (targetIndex === currentIndex) return;
-  if (currentSelected) currentSelected.classList.remove('selected');
-  items[targetIndex].classList.add('selected');
-  setSelectedFile(items[targetIndex].dataset.path || '');
-  (window as any).selectedFile = items[targetIndex].dataset.path || '';
-  updateCursorHighlight();
-  updateSidebarPath(items[targetIndex]);
+  (window as any).selectFileItem?.(items[targetIndex]);
 }
 
 function joystickTick(): void {
