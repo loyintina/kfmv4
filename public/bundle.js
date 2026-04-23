@@ -599,8 +599,10 @@
       const selRow = sel.querySelector(".tree-row") || sel;
       const selRect = selRow.getBoundingClientRect();
       const selCenter = selRect.top + selRect.height / 2;
-      const scrollingUp = selCenter > centerY;
-      const nextIdx = scrollingUp ? Math.max(0, idx - 1) : Math.min(allVisible.length - 1, idx + 1);
+      const offset = selCenter - centerY;
+      const itemH = selRect.height || 32;
+      const steps = Math.min(10, Math.max(1, Math.round(Math.abs(offset) / itemH)));
+      const nextIdx = offset > 0 ? Math.max(0, idx - steps) : Math.min(allVisible.length - 1, idx + steps);
       if (nextIdx !== idx) {
         moveCursorTo(allVisible[nextIdx]);
       }
