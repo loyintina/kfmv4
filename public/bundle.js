@@ -103,6 +103,16 @@
   async function initApp() {
     exposeGlobals();
     initLogPanelSwipe();
+    const bar = document.getElementById("aiInputBar");
+    if (bar && window.visualViewport) {
+      const vv = window.visualViewport;
+      const onResize = () => {
+        const kh = window.innerHeight - vv.height;
+        bar.style.bottom = kh + "px";
+      };
+      vv.addEventListener("resize", onResize);
+      onResize();
+    }
     const aiInput = document.getElementById("aiInput");
     if (aiInput) {
       aiInput.addEventListener("input", () => {
@@ -2491,6 +2501,15 @@
     if (!bar) return window.innerHeight;
     return bar.getBoundingClientRect().top;
   }
+  function getPanelTargetPosition(orbCX, orbCY) {
+    let w = panelWidth;
+    let h = panelHeight;
+    const availLeft = orbCX - MARGIN;
+    const availTop = orbCY - MARGIN;
+    if (availLeft < w) w = Math.max(PANEL_MIN_WIDTH, availLeft);
+    if (availTop < h) h = Math.max(PANEL_MIN_HEIGHT, availTop);
+    return { left: orbCX - w, top: orbCY - h, width: w, height: h };
+  }
   function clampOrbPosition(x, y) {
     const maxX = window.innerWidth - ORB_SIZE - MARGIN;
     const minX = MARGIN;
@@ -2763,22 +2782,55 @@
         lastBarTop = barTop;
         const clamped = clampOrbPosition(freeOrbX, freeOrbY);
         const needsPush = freeOrbY !== clamped.y;
+        const orbRect = orbEl.getBoundingClientRect();
+        const orbCurrentX = orbRect.left;
+        const orbCurrentY = orbRect.top;
+        let orbTargetX = orbCurrentX;
+        let orbTargetY = orbCurrentY;
         if (needsPush) {
           isOrbPushed = true;
-          orbEl.style.left = clamped.x + "px";
-          orbEl.style.top = clamped.y + "px";
-          orbEl.style.right = "auto";
-          orbEl.style.bottom = "auto";
+          orbTargetX = clamped.x;
+          orbTargetY = clamped.y;
         } else if (isOrbPushed) {
           isOrbPushed = false;
-          orbEl.style.left = freeOrbX + "px";
-          orbEl.style.top = freeOrbY + "px";
-          orbEl.style.right = "auto";
-          orbEl.style.bottom = "auto";
+          orbTargetX = freeOrbX;
+          orbTargetY = freeOrbY;
+        } else {
+          requestAnimationFrame(check);
+          return;
         }
+        orbEl.style.right = "auto";
+        orbEl.style.bottom = "auto";
+        const orbAnim = orbEl.animate(
+          [
+            { left: orbCurrentX + "px", top: orbCurrentY + "px" },
+            { left: orbTargetX + "px", top: orbTargetY + "px" }
+          ],
+          { duration: 250, easing: "cubic-bezier(.4,0,.2,1)" }
+        );
+        orbAnim.onfinish = () => {
+          orbEl.style.left = orbTargetX + "px";
+          orbEl.style.top = orbTargetY + "px";
+        };
         if (panelEl && orbState !== "collapsed") {
-          updatePanelPosition();
-          if (orbState === "expanded") renderChatContent();
+          const panelRect = panelEl.getBoundingClientRect();
+          const panelTarget = getPanelTargetPosition(orbTargetX + ORB_HALF, orbTargetY + ORB_HALF);
+          const panelAnim = panelEl.animate(
+            [
+              { left: panelRect.left + "px", top: panelRect.top + "px", width: panelRect.width + "px", height: panelRect.height + "px" },
+              { left: panelTarget.left + "px", top: panelTarget.top + "px", width: panelTarget.width + "px", height: panelTarget.height + "px" }
+            ],
+            { duration: 250, easing: "cubic-bezier(.4,0,.2,1)" }
+          );
+          panelAnim.onfinish = () => {
+            panelEl.style.left = panelTarget.left + "px";
+            panelEl.style.top = panelTarget.top + "px";
+            panelEl.style.width = panelTarget.width + "px";
+            panelEl.style.height = panelTarget.height + "px";
+            renderWidth = panelTarget.width;
+            renderHeight = panelTarget.height;
+            if (orbState === "expanded") renderChatContent();
+          };
         }
       }
       requestAnimationFrame(check);

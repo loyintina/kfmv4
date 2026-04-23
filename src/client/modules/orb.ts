@@ -65,6 +65,17 @@ function getInputBarTop(): number {
   return bar.getBoundingClientRect().top;
 }
 
+
+// ========== 面板目标位置计算 ==========
+function getPanelTargetPosition(orbCX: number, orbCY: number): { left: number; top: number; width: number; height: number } {
+  let w = panelWidth;
+  let h = panelHeight;
+  const availLeft = orbCX - MARGIN;
+  const availTop = orbCY - MARGIN;
+  if (availLeft < w) w = Math.max(PANEL_MIN_WIDTH, availLeft);
+  if (availTop < h) h = Math.max(PANEL_MIN_HEIGHT, availTop);
+  return { left: orbCX - w, top: orbCY - h, width: w, height: h };
+}
 // ========== 光球位置约束 ==========
 function clampOrbPosition(x: number, y: number): { x: number; y: number } {
   const maxX = window.innerWidth - ORB_SIZE - MARGIN;
@@ -383,29 +394,65 @@ function initInputBarWatcher(): void {
     if (barTop !== lastBarTop) {
       lastBarTop = barTop;
 
-      // 计算自由位置是否会被输入栏覆盖
       const clamped = clampOrbPosition(freeOrbX, freeOrbY);
       const needsPush = (freeOrbY !== clamped.y);
 
+      const orbRect = orbEl.getBoundingClientRect();
+      const orbCurrentX = orbRect.left;
+      const orbCurrentY = orbRect.top;
+
+      let orbTargetX = orbCurrentX;
+      let orbTargetY = orbCurrentY;
+
       if (needsPush) {
-        // 被挤压：移到约束位置，但保持 x 不变
         isOrbPushed = true;
-        orbEl.style.left = clamped.x + 'px';
-        orbEl.style.top = clamped.y + 'px';
-        orbEl.style.right = 'auto';
-        orbEl.style.bottom = 'auto';
+        orbTargetX = clamped.x;
+        orbTargetY = clamped.y;
       } else if (isOrbPushed) {
-        // 不再被挤压：恢复自由位置
         isOrbPushed = false;
-        orbEl.style.left = freeOrbX + 'px';
-        orbEl.style.top = freeOrbY + 'px';
-        orbEl.style.right = 'auto';
-        orbEl.style.bottom = 'auto';
+        orbTargetX = freeOrbX;
+        orbTargetY = freeOrbY;
+      } else {
+        requestAnimationFrame(check);
+        return;
       }
 
+      orbEl.style.right = 'auto';
+      orbEl.style.bottom = 'auto';
+
+      // 光球平滑动画
+      const orbAnim = orbEl.animate(
+        [
+          { left: orbCurrentX + 'px', top: orbCurrentY + 'px' },
+          { left: orbTargetX + 'px', top: orbTargetY + 'px' }
+        ],
+        { duration: 250, easing: 'cubic-bezier(.4,0,.2,1)' }
+      );
+      orbAnim.onfinish = () => {
+        orbEl.style.left = orbTargetX + 'px';
+        orbEl.style.top = orbTargetY + 'px';
+      };
+
+      // 面板同步平滑动画
       if (panelEl && orbState !== 'collapsed') {
-        updatePanelPosition();
-        if (orbState === 'expanded') renderChatContent();
+        const panelRect = panelEl.getBoundingClientRect();
+        const panelTarget = getPanelTargetPosition(orbTargetX + ORB_HALF, orbTargetY + ORB_HALF);
+        const panelAnim = panelEl.animate(
+          [
+            { left: panelRect.left + 'px', top: panelRect.top + 'px', width: panelRect.width + 'px', height: panelRect.height + 'px' },
+            { left: panelTarget.left + 'px', top: panelTarget.top + 'px', width: panelTarget.width + 'px', height: panelTarget.height + 'px' }
+          ],
+          { duration: 250, easing: 'cubic-bezier(.4,0,.2,1)' }
+        );
+        panelAnim.onfinish = () => {
+          panelEl.style.left = panelTarget.left + 'px';
+          panelEl.style.top = panelTarget.top + 'px';
+          panelEl.style.width = panelTarget.width + 'px';
+          panelEl.style.height = panelTarget.height + 'px';
+          renderWidth = panelTarget.width;
+          renderHeight = panelTarget.height;
+          if (orbState === 'expanded') renderChatContent();
+        };
       }
     }
     requestAnimationFrame(check);

@@ -116,6 +116,18 @@ export async function initApp(): Promise<void> {
   exposeGlobals();
   initLogPanelSwipe();
 
+  // AI输入栏跟随键盘平滑移动
+  const bar = document.getElementById('aiInputBar');
+  if (bar && (window as any).visualViewport) {
+    const vv = (window as any).visualViewport;
+    const onResize = () => {
+      const kh = window.innerHeight - vv.height;
+      bar.style.bottom = kh + 'px';
+    };
+    vv.addEventListener('resize', onResize);
+    onResize();
+  }
+
   // AI输入框自动高度
   const aiInput = document.getElementById('aiInput') as HTMLTextAreaElement | null;
   if (aiInput) {
