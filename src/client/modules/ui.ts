@@ -2,6 +2,8 @@
  * KFM v4 - UI控制（侧栏、光标高亮）
  */
 import { selectedFile, setSelectedFile } from './app.js';
+import { measureNaturalWidthSync } from './tree-text.js';
+import gsap from 'gsap';
 
 const CURSOR_POS_KEY = 'kfm_cursor_position';
 let cursorHighlight: HTMLDivElement | null = null;
@@ -28,13 +30,17 @@ function initCursorHighlight(): void {
   container.appendChild(cursorHighlight);
 }
 
+// GSAP 缓动曲线 — 与原 CSS transition 等价
+const CURSOR_EASE = 'cubic-bezier(.25,.46,.45,.94)';
+const CURSOR_DURATION = 0.3;
+
 export function updateCursorHighlight(immediate = false): void {
   if (!cursorHighlight) initCursorHighlight();
   if (!cursorHighlight) return;
 
   const selected = document.querySelector('.tree-item.selected') as HTMLElement | null;
   if (!selected) {
-    cursorHighlight.style.opacity = '0';
+    gsap.set(cursorHighlight, { opacity: 0 });
     updateSidebarPath(null);
     return;
   }
@@ -44,25 +50,29 @@ export function updateCursorHighlight(immediate = false): void {
   const containerRect = container.getBoundingClientRect();
   const rowRect = row.getBoundingClientRect();
 
-  const top = rowRect.top - containerRect.top + container.scrollTop;
-  const left = rowRect.left - containerRect.left;
-  const width = rowRect.width;
-
-  const trans = 'top .3s cubic-bezier(.25,.46,.45,.94),left .3s cubic-bezier(.25,.46,.45,.94),width .3s cubic-bezier(.25,.46,.45,.94)';
-  cursorHighlight.style.transition = immediate ? 'none' : trans;
-
-  cursorHighlight.style.top = top + 'px';
-  cursorHighlight.style.left = left + 'px';
-  cursorHighlight.style.width = width + 'px';
-  cursorHighlight.style.opacity = '1';
-  cursorHighlight.style.height = rowRect.height + 'px';
-
-  updateSidebarPath(selected);
+  const target = {
+    top: rowRect.top - containerRect.top + container.scrollTop,
+    left: rowRect.left - containerRect.left,
+    width: rowRect.width,
+    height: rowRect.height,
+    opacity: 1,
+  };
 
   if (immediate) {
-    requestAnimationFrame(() => { if (cursorHighlight) cursorHighlight.style.transition = trans; });
+    gsap.set(cursorHighlight, target);
+  } else {
+    gsap.to(cursorHighlight, {
+      ...target,
+      duration: CURSOR_DURATION,
+      ease: CURSOR_EASE,
+    });
   }
+
+  updateSidebarPath(selected);
 }
+
+// sidebarPath 字体：与 CSS .sidebar-path 一致（12px + body font-family）
+const PATH_FONT = '12px -apple-system, sans-serif';
 
 export function updateSidebarPath(item: HTMLElement | null): void {
   const pathEl = document.getElementById('sidebarPath');
@@ -75,12 +85,9 @@ export function updateSidebarPath(item: HTMLElement | null): void {
   const currentW = parseFloat(getComputedStyle(pathEl).width) || 20;
 
   if (!item) {
+    const targetW = measureNaturalWidthSync('-', PATH_FONT) + 24; // +padding(8*2) + border(3) +容差
     pathEl.textContent = '-';
     pathEl.title = '';
-    pathEl.style.width = 'auto';
-    const targetW = pathEl.offsetWidth;
-    pathEl.style.width = currentW + 'px';
-    void pathEl.offsetWidth;
     if (Math.abs(currentW - targetW) < 2) return;
     const anim = pathEl.animate(
       [{ width: currentW + 'px' }, { width: targetW + 'px' }],
@@ -93,17 +100,20 @@ export function updateSidebarPath(item: HTMLElement | null): void {
   const nameEl = item.querySelector('.tree-name');
   const name = nameEl ? nameEl.textContent : '-';
 
-  // 先切换文本 + width:auto 测量目标
-  pathEl.style.width = 'auto';
-  pathEl.textContent = name;
-  const targetW = pathEl.offsetWidth;
+  // Pretext 离屏测量文本宽度，零 reflow
+  const targetW = measureNaturalWidthSync(name || '-', PATH_FONT) + 24;
 
   // 如果宽度几乎不变，跳过动画
-  if (Math.abs(currentW - targetW) < 2) return;
+  if (Math.abs(currentW - targetW) < 2) {
+    pathEl.textContent = name;
+    pathEl.title = name || '';
+    return;
+  }
 
   // 锁回当前宽度，触发动画
+  pathEl.textContent = name;
   pathEl.style.width = currentW + 'px';
-  void pathEl.offsetWidth;
+  // void offsetWidth 不再需要——Pretext 已完成测量，无需强制 reflow
 
   const anim = pathEl.animate(
     [{ width: currentW + 'px' }, { width: targetW + 'px' }],
@@ -116,47 +126,47 @@ export function updateSidebarPath(item: HTMLElement | null): void {
 export function syncCursorDuringBounce(siblingCount = 0): void {
   if (!cursorHighlight) initCursorHighlight();
   if (!cursorHighlight) return;
-  cursorHighlight.style.transition = 'none';
+
   const totalMs = Math.max(500, (siblingCount > 0 ? (siblingCount - 1) * 20 : 0) + 550);
-  const maxFrames = Math.ceil(totalMs / 16.67);
-  let frame = 0;
-  const sync = () => {
-    if (frame >= maxFrames) {
-      requestAnimationFrame(() => {
-        const sel = document.querySelector('.tree-item.selected') as HTMLElement | null;
-        if (sel && cursorHighlight) {
-          sel.style.transform = ''; sel.style.transition = '';
-          const row = sel.querySelector('.tree-row') || sel;
-          const container = document.querySelector('.sidebar-content')!;
-          const cr = container.getBoundingClientRect();
-          const rr = row.getBoundingClientRect();
-          cursorHighlight.style.top = (rr.top - cr.top + container.scrollTop) + 'px';
-          cursorHighlight.style.left = (rr.left - cr.left) + 'px';
-          cursorHighlight.style.width = rr.width + 'px';
-          cursorHighlight.style.height = rr.height + 'px';
-        }
-        requestAnimationFrame(() => {
-          if (cursorHighlight) cursorHighlight.style.transition = 'top .3s cubic-bezier(.25,.46,.45,.94),left .3s cubic-bezier(.25,.46,.45,.94),width .3s cubic-bezier(.25,.46,.45,.94)';
-        });
-      });
-      return;
-    }
+
+  // GSAP ticker 替代手动 rAF 轮询，每帧自动同步光标位置
+  const syncHandler = () => {
+    const sel = document.querySelector('.tree-item.selected') as HTMLElement | null;
+    if (!sel || !cursorHighlight) return;
+    const row = sel.querySelector('.tree-row') || sel;
+    const container = document.querySelector('.sidebar-content')!;
+    const cr = container.getBoundingClientRect();
+    const rr = row.getBoundingClientRect();
+    gsap.set(cursorHighlight, {
+      top: rr.top - cr.top + container.scrollTop,
+      left: rr.left - cr.left,
+      width: rr.width,
+      height: rr.height,
+      opacity: 1,
+    });
+  };
+
+  gsap.ticker.add(syncHandler);
+
+  // 动画结束后：最终同步 + 清理 + 恢复缓动
+  gsap.delayedCall(totalMs / 1000, () => {
+    gsap.ticker.remove(syncHandler);
     const sel = document.querySelector('.tree-item.selected') as HTMLElement | null;
     if (sel && cursorHighlight) {
+      sel.style.transform = ''; sel.style.transition = '';
       const row = sel.querySelector('.tree-row') || sel;
       const container = document.querySelector('.sidebar-content')!;
       const cr = container.getBoundingClientRect();
       const rr = row.getBoundingClientRect();
-      cursorHighlight.style.top = (rr.top - cr.top + container.scrollTop) + 'px';
-      cursorHighlight.style.left = (rr.left - cr.left) + 'px';
-      cursorHighlight.style.width = rr.width + 'px';
-      cursorHighlight.style.height = rr.height + 'px';
-      cursorHighlight.style.opacity = '1';
+      gsap.set(cursorHighlight, {
+        top: rr.top - cr.top + container.scrollTop,
+        left: rr.left - cr.left,
+        width: rr.width,
+        height: rr.height,
+        opacity: 1,
+      });
     }
-    frame++;
-    requestAnimationFrame(sync);
-  };
-  sync();
+  });
 }
 
 export function openSidebar(): void {
