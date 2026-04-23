@@ -601,7 +601,7 @@
       const selCenter = selRect.top + selRect.height / 2;
       const offset = selCenter - centerY;
       const itemH = selRect.height || 32;
-      const steps = Math.min(10, Math.max(1, Math.round(Math.abs(offset) / itemH)));
+      const steps = Math.abs(offset) < itemH * 2 ? 1 : Math.min(10, Math.round(Math.abs(offset) / itemH));
       const nextIdx = offset > 0 ? Math.max(0, idx - steps) : Math.min(allVisible.length - 1, idx + steps);
       if (nextIdx !== idx) {
         moveCursorTo(allVisible[nextIdx]);

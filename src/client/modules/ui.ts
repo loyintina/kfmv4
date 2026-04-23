@@ -355,7 +355,7 @@ function initScrollCursorConstraint(): void {
     const offset = selCenter - centerY;
     const itemH = selRect.height || 32;
     // 每帧最多追的步数 = 偏移量 / 项高度，上限10
-    const steps = Math.min(10, Math.max(1, Math.round(Math.abs(offset) / itemH)));
+    const steps = Math.abs(offset) < itemH * 2 ? 1 : Math.min(10, Math.round(Math.abs(offset) / itemH));
     const nextIdx = offset > 0
       ? Math.max(0, idx - steps)
       : Math.min(allVisible.length - 1, idx + steps);
