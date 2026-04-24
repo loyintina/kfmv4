@@ -1,18 +1,64 @@
 "use strict";
 (() => {
+  // src/client/modules/state.ts
+  var KFMState = {
+    files: {},
+    expandedPaths: JSON.parse(localStorage.getItem("expandedPaths") || "{}"),
+    selectedPath: "",
+    showHidden: false,
+    viewport: { scrollTop: 0, scrollLeft: 0 },
+    sidebarOpen: false,
+    fileCache: { version: 1, updated: 0, tree: {} },
+    _listeners: [],
+    subscribe(fn) {
+      this._listeners.push(fn);
+    },
+    unsubscribe(fn) {
+      const idx = this._listeners.indexOf(fn);
+      if (idx !== -1) this._listeners.splice(idx, 1);
+    },
+    notify() {
+      this._listeners.forEach((fn) => fn(this));
+    },
+    setExpanded(path, expanded) {
+      if (expanded) {
+        this.expandedPaths[path] = true;
+      } else {
+        delete this.expandedPaths[path];
+      }
+      localStorage.setItem("expandedPaths", JSON.stringify(this.expandedPaths));
+      this.notify();
+    },
+    setSelected(path) {
+      this.selectedPath = path;
+      this.notify();
+    },
+    toggleHidden() {
+      this.showHidden = !this.showHidden;
+      this.notify();
+    },
+    setSidebarOpen(open) {
+      this.sidebarOpen = open;
+      this.notify();
+    },
+    setViewport(v) {
+      Object.assign(this.viewport, v);
+      this.notify();
+    }
+  };
+  if (typeof window !== "undefined") {
+    window.KFMState = KFMState;
+  }
+
   // src/client/modules/app.ts
   var API = "/kfmv4/api";
   var selectedFile = "";
-  var expandedPaths = JSON.parse(localStorage.getItem("expandedPaths") || "{}");
   var showHidden = false;
   function setSelectedFile(f) {
     selectedFile = f;
   }
   function setShowHidden(v) {
     showHidden = v;
-  }
-  function setExpandedPaths(p) {
-    expandedPaths = p;
   }
   function rlog(msg) {
     const t = (/* @__PURE__ */ new Date()).toLocaleTimeString("zh-CN", { hour12: false });
@@ -94,7 +140,7 @@
   function exposeGlobals() {
     window.API = API;
     window.selectedFile = selectedFile;
-    window.expandedPaths = expandedPaths;
+    window.expandedPaths = KFMState.expandedPaths;
     window.showHidden = showHidden;
     window.setShowHidden = setShowHidden;
     window.showToast = showToast;
@@ -4445,7 +4491,7 @@
       const row = document.createElement("div");
       row.className = "tree-row";
       const toggle = document.createElement("span");
-      toggle.className = "tree-toggle" + (expandedPaths[item.path] ? " expanded" : "");
+      toggle.className = "tree-toggle" + (KFMState.expandedPaths[item.path] ? " expanded" : "");
       if (!item.isDir) toggle.classList.add("hidden");
       const name = document.createElement("span");
       name.className = "tree-name" + (item.isLink ? " link" : "");
@@ -4463,7 +4509,7 @@
       const bgBot = `rgba(124,58,237,${0.06 + depthRatio * 0.25})`;
       inner.style.background = `linear-gradient(to bottom,${bgTop},${bgBot})`;
       const childrenWrap = document.createElement("div");
-      if (expandedPaths[item.path]) {
+      if (KFMState.expandedPaths[item.path]) {
         wrap3.classList.add("open");
         toggle.classList.add("expanded");
       }
@@ -4471,7 +4517,7 @@
       inner.appendChild(childrenWrap);
       div.appendChild(wrap3);
       frag.appendChild(div);
-      if (expandedPaths[item.path] && item.isDir) renderTree(childrenWrap, item.path, depth + 1);
+      if (KFMState.expandedPaths[item.path] && item.isDir) renderTree(childrenWrap, item.path, depth + 1);
       row.addEventListener("click", async (e) => {
         var _a2, _b2, _c2, _d;
         const isCurrentlySelected = div.classList.contains("selected");
@@ -4483,10 +4529,7 @@
             }
             wrap3.classList.toggle("open");
             toggle.classList.toggle("expanded");
-            const newPaths = { ...expandedPaths };
-            newPaths[item.path] = !isOpen;
-            setExpandedPaths(newPaths);
-            localStorage.setItem("expandedPaths", JSON.stringify(newPaths));
+            KFMState.setExpanded(item.path, !isOpen);
             const tl = gsapWithCSS.timeline();
             const dir = isOpen ? -1 : 1;
             const targets = [div];

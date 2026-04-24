@@ -1,7 +1,8 @@
 /**
  * KFM v4 - 文件树加载与渲染
  */
-import { API, expandedPaths, showHidden, setExpandedPaths } from './app.js';
+import { API, showHidden } from './app.js';
+import { KFMState } from './state.js';
 import gsap from 'gsap';
 
 const heightCache: Record<string, number> = {};
@@ -67,7 +68,7 @@ export async function renderTree(container: HTMLElement = document.getElementByI
     row.className = 'tree-row';
 
     const toggle = document.createElement('span');
-    toggle.className = 'tree-toggle' + (expandedPaths[item.path] ? ' expanded' : '');
+    toggle.className = 'tree-toggle' + (KFMState.expandedPaths[item.path] ? ' expanded' : '');
     if (!item.isDir) toggle.classList.add('hidden');
 
     const name = document.createElement('span');
@@ -90,7 +91,7 @@ export async function renderTree(container: HTMLElement = document.getElementByI
     inner.style.background = `linear-gradient(to bottom,${bgTop},${bgBot})`;
 
     const childrenWrap = document.createElement('div');
-    if (expandedPaths[item.path]) {
+    if (KFMState.expandedPaths[item.path]) {
       wrap.classList.add('open');
       toggle.classList.add('expanded');
     }
@@ -100,7 +101,7 @@ export async function renderTree(container: HTMLElement = document.getElementByI
     frag.appendChild(div);
 
     // 预加载已展开的子目录
-    if (expandedPaths[item.path] && item.isDir) renderTree(childrenWrap, item.path, depth + 1);
+    if (KFMState.expandedPaths[item.path] && item.isDir) renderTree(childrenWrap, item.path, depth + 1);
 
     // 点击事件
     row.addEventListener('click', async (e) => {
@@ -114,10 +115,7 @@ export async function renderTree(container: HTMLElement = document.getElementByI
           }
           wrap.classList.toggle('open');
           toggle.classList.toggle('expanded');
-          const newPaths = { ...expandedPaths };
-          newPaths[item.path] = !isOpen;
-          setExpandedPaths(newPaths);
-          localStorage.setItem('expandedPaths', JSON.stringify(newPaths));
+          KFMState.setExpanded(item.path, !isOpen);
 
           // 叠叠乐动画 — GSAP timeline
           const tl = gsap.timeline();

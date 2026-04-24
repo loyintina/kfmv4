@@ -1,15 +1,14 @@
+import { KFMState } from './state.js';
 /**
  * KFM v4 - 全局状态与初始化
  */
 
 export const API = '/kfmv4/api';
 export let selectedFile = '';
-export let expandedPaths: Record<string, boolean> = JSON.parse(localStorage.getItem('expandedPaths') || '{}');
 export let showHidden = false;
 
 export function setSelectedFile(f: string) { selectedFile = f; }
 export function setShowHidden(v: boolean) { showHidden = v; }
-export function setExpandedPaths(p: Record<string, boolean>) { expandedPaths = p; }
 
 // ========== 调试日志 ==========
 export function rlog(msg: string): void {
@@ -102,7 +101,7 @@ console.error = function (...args: any[]) {
 function exposeGlobals(): void {
   window.API = API;
   window.selectedFile = selectedFile;
-  window.expandedPaths = expandedPaths;
+  window.expandedPaths = KFMState.expandedPaths;
   window.showHidden = showHidden;
   window.setShowHidden = setShowHidden;
   window.showToast = showToast;
