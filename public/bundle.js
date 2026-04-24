@@ -4,7 +4,7 @@
   var KFMState = {
     files: {},
     expandedPaths: JSON.parse(localStorage.getItem("expandedPaths") || "{}"),
-    selectedPath: "",
+    selectedFile: "",
     showHidden: false,
     viewport: { scrollTop: 0, scrollLeft: 0 },
     sidebarOpen: false,
@@ -29,8 +29,8 @@
       localStorage.setItem("expandedPaths", JSON.stringify(this.expandedPaths));
       this.notify();
     },
-    setSelected(path) {
-      this.selectedPath = path;
+    setSelectedFile(path) {
+      this.selectedFile = path;
       this.notify();
     },
     toggleHidden() {
@@ -52,14 +52,6 @@
 
   // src/client/modules/app.ts
   var API = "/kfmv4/api";
-  var selectedFile = "";
-  var showHidden = false;
-  function setSelectedFile(f) {
-    selectedFile = f;
-  }
-  function setShowHidden(v) {
-    showHidden = v;
-  }
   function rlog(msg) {
     const t = (/* @__PURE__ */ new Date()).toLocaleTimeString("zh-CN", { hour12: false });
     fetch(API + "/files/write", {
@@ -139,9 +131,9 @@
   };
   function exposeGlobals() {
     window.API = API;
-    window.selectedFile = selectedFile;
+    window.selectedFile = KFMState.selectedFile;
     window.expandedPaths = KFMState.expandedPaths;
-    window.showHidden = showHidden;
+    window.showHidden = KFMState.showHidden;
     window.setShowHidden = setShowHidden;
     window.showToast = showToast;
     window.addLog = addLog;
@@ -4457,7 +4449,7 @@
       const res = await fetch(API + "/files/list", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path: targetPath, showHidden })
+        body: JSON.stringify({ path: targetPath, showHidden: KFMState.showHidden })
       });
       const data = await res.json();
       if (data.error) return [];
@@ -4580,11 +4572,9 @@
     renderTree();
   }
   function toggleHidden() {
-    var _a, _b;
-    const v = !window.showHidden;
-    window.showHidden = v;
-    (_a = window.setShowHidden) == null ? void 0 : _a.call(window, v);
-    (_b = document.getElementById("toggleHiddenBtn")) == null ? void 0 : _b.classList.toggle("active", v);
+    var _a;
+    KFMState.toggleHidden();
+    (_a = document.getElementById("toggleHiddenBtn")) == null ? void 0 : _a.classList.toggle("active", KFMState.showHidden);
     renderTree();
   }
   function initTree() {
@@ -7872,8 +7862,7 @@
     if (current) current.classList.remove("selected");
     item.classList.add("selected");
     const path = item.dataset.path || "";
-    setSelectedFile(path);
-    window.selectedFile = path;
+    KFMState.setSelectedFile(path);
     updateCursorHighlight(false);
     updateSidebarPath(item);
   }

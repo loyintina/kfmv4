@@ -1,7 +1,7 @@
 /**
  * KFM v4 - 文件树加载与渲染
  */
-import { API, showHidden } from './app.js';
+import { API } from './app.js';
 import { KFMState } from './state.js';
 import gsap from 'gsap';
 
@@ -29,7 +29,7 @@ async function loadTree(path = ''): Promise<TreeItem[]> {
     const res = await fetch(API + '/files/list', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: targetPath, showHidden }),
+      body: JSON.stringify({ path: targetPath, showHidden: KFMState.showHidden }),
     });
     const data = await res.json();
     if (data.error) return [];
@@ -164,10 +164,8 @@ export function refreshTree(): void { renderTree(); }
 
 // 显示/隐藏
 export function toggleHidden(): void {
-  const v = !(window as any).showHidden;
-  (window as any).showHidden = v;
-  (window as any).setShowHidden?.(v);
-  document.getElementById('toggleHiddenBtn')?.classList.toggle('active', v);
+  KFMState.toggleHidden();
+  document.getElementById('toggleHiddenBtn')?.classList.toggle('active', KFMState.showHidden);
   renderTree();
 }
 

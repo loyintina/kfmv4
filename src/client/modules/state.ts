@@ -20,7 +20,7 @@ export interface KFMStateType {
   // 文件系统
   files: Record<string, FileNode>;
   expandedPaths: Record<string, boolean>;
-  selectedPath: string;
+  selectedFile: string;
   showHidden: boolean;
   
   // UI
@@ -38,7 +38,7 @@ export interface KFMStateType {
   
   // 操作方法
   setExpanded(path: string, expanded: boolean): void;
-  setSelected(path: string): void;
+  setSelectedFile(path: string): void;
   toggleHidden(): void;
   setSidebarOpen(open: boolean): void;
   setViewport(v: Partial<ViewportState>): void;
@@ -47,7 +47,7 @@ export interface KFMStateType {
 export const KFMState: KFMStateType = {
   files: {},
   expandedPaths: JSON.parse(localStorage.getItem('expandedPaths') || '{}'),
-  selectedPath: '',
+  selectedFile: '',
   showHidden: false,
   viewport: { scrollTop: 0, scrollLeft: 0 },
   sidebarOpen: false,
@@ -78,8 +78,8 @@ export const KFMState: KFMStateType = {
     this.notify();
   },
   
-  setSelected(path) {
-    this.selectedPath = path;
+  setSelectedFile(path) {
+    this.selectedFile = path;
     this.notify();
   },
   

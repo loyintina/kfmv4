@@ -4,11 +4,7 @@ import { KFMState } from './state.js';
  */
 
 export const API = '/kfmv4/api';
-export let selectedFile = '';
-export let showHidden = false;
 
-export function setSelectedFile(f: string) { selectedFile = f; }
-export function setShowHidden(v: boolean) { showHidden = v; }
 
 // ========== 调试日志 ==========
 export function rlog(msg: string): void {
@@ -100,9 +96,9 @@ console.error = function (...args: any[]) {
 // ========== 暴露到 window ==========
 function exposeGlobals(): void {
   window.API = API;
-  window.selectedFile = selectedFile;
+  window.selectedFile = KFMState.selectedFile;
   window.expandedPaths = KFMState.expandedPaths;
-  window.showHidden = showHidden;
+  window.showHidden = KFMState.showHidden;
   window.setShowHidden = setShowHidden;
   window.showToast = showToast;
   window.addLog = addLog;

@@ -1,7 +1,7 @@
 /**
  * KFM v4 - UI控制（侧栏、光标高亮）
  */
-import { selectedFile, setSelectedFile } from './app.js';
+import { KFMState } from './state.js';
 import { measureNaturalWidthSync } from './tree-text.js';
 import gsap from 'gsap';
 
@@ -308,8 +308,8 @@ export function selectFileItem(item: HTMLElement): void {
   if (current) current.classList.remove('selected');
   item.classList.add('selected');
   const path = item.dataset.path || '';
-  setSelectedFile(path);
-  window.selectedFile = path;
+  KFMState.setSelectedFile(path);
+  
   updateCursorHighlight(false);
   updateSidebarPath(item);
 }
