@@ -99,7 +99,6 @@ function exposeGlobals(): void {
   window.selectedFile = KFMState.selectedFile;
   window.expandedPaths = KFMState.expandedPaths;
   window.showHidden = KFMState.showHidden;
-  window.setShowHidden = setShowHidden;
   window.showToast = showToast;
   window.addLog = addLog;
   window.openLogPanel = openLogPanel;

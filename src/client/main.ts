@@ -1,12 +1,11 @@
 /**
- * KFM v4 客户端入口
- * 所有模块从此处导入，由 esbuild 打包为单个 bundle.js
+ * KFM v4 客户端入口 — 中央页面版
+ *
+ * 左栏文件树已彻底删除，后续用 Canvas + kfmv3 v2 引擎重建。
+ * 当前保留：光球面板、AI输入栏、日志系统、侧栏容器（空壳）。
  */
-
-// 统一状态层（Phase 8.0.1）
 import { KFMState } from './modules/state.js';
 
-// 全局状态（挂在 window 上供跨模块访问）
 declare global {
   interface Window {
     API: string;
@@ -20,26 +19,17 @@ declare global {
     clearLogs: () => void;
     openSidebar: () => void;
     closeSidebar: () => void;
-    renderTree: (container?: HTMLElement, path?: string, depth?: number) => Promise<void>;
-    refreshTree: () => void;
-    toggleHidden: () => void;
     rlog: (msg: string) => void;
     executeCursorAction: () => Promise<void>;
-    updateCursorHighlight: (immediate?: boolean) => void;
-    updateSidebarPath: (item: HTMLElement | null) => void;
-    isNodeExpanded: (item: HTMLElement) => boolean;
-    centerCursorToView: (item: HTMLElement, smooth?: boolean) => void;
   }
 }
 
 import { initApp } from './modules/app.js';
-import { initTree } from './modules/tree.js';
 import { initUI } from './modules/ui.js';
 import { initGestures } from './modules/gestures.js';
 import { initOrb } from './modules/orb.js';
 
 initApp();
-initTree();
 initUI();
 initGestures();
 initOrb();
