@@ -7,14 +7,20 @@
 
 let sidebarContent: HTMLElement | null = null;
 
+import { onSidebarOpen, onSidebarClose } from './tree-render.js';
+
 export function openSidebar(): void {
   document.getElementById('sidebar')?.classList.add('open');
   document.getElementById('overlay')?.classList.add('show');
+  onSidebarOpen();
 }
+
+import { onSidebarOpen, onSidebarClose } from './tree-render.js';
 
 export function closeSidebar(): void {
   document.getElementById('sidebar')?.classList.remove('open');
   document.getElementById('overlay')?.classList.remove('show');
+  onSidebarClose();
 }
 
 export function initUI(): void {

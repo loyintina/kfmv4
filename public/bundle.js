@@ -1,5 +1,9 @@
 "use strict";
 (() => {
+  var __defProp = Object.defineProperty;
+  var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+  var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
+
   // src/client/modules/state.ts
   var KFMState = {
     files: {},
@@ -134,7 +138,6 @@
     window.selectedFile = KFMState.selectedFile;
     window.expandedPaths = KFMState.expandedPaths;
     window.showHidden = KFMState.showHidden;
-    window.setShowHidden = setShowHidden;
     window.showToast = showToast;
     window.addLog = addLog;
     window.openLogPanel = openLogPanel;
@@ -163,4427 +166,6 @@
         aiInput.style.height = newHeight + "px";
       });
     }
-  }
-
-  // node_modules/gsap/gsap-core.js
-  function _assertThisInitialized(self) {
-    if (self === void 0) {
-      throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
-    }
-    return self;
-  }
-  function _inheritsLoose(subClass, superClass) {
-    subClass.prototype = Object.create(superClass.prototype);
-    subClass.prototype.constructor = subClass;
-    subClass.__proto__ = superClass;
-  }
-  var _config = {
-    autoSleep: 120,
-    force3D: "auto",
-    nullTargetWarn: 1,
-    units: {
-      lineHeight: ""
-    }
-  };
-  var _defaults = {
-    duration: 0.5,
-    overwrite: false,
-    delay: 0
-  };
-  var _suppressOverwrites;
-  var _reverting;
-  var _context;
-  var _bigNum = 1e8;
-  var _tinyNum = 1 / _bigNum;
-  var _2PI = Math.PI * 2;
-  var _HALF_PI = _2PI / 4;
-  var _gsID = 0;
-  var _sqrt = Math.sqrt;
-  var _cos = Math.cos;
-  var _sin = Math.sin;
-  var _isString = function _isString2(value) {
-    return typeof value === "string";
-  };
-  var _isFunction = function _isFunction2(value) {
-    return typeof value === "function";
-  };
-  var _isNumber = function _isNumber2(value) {
-    return typeof value === "number";
-  };
-  var _isUndefined = function _isUndefined2(value) {
-    return typeof value === "undefined";
-  };
-  var _isObject = function _isObject2(value) {
-    return typeof value === "object";
-  };
-  var _isNotFalse = function _isNotFalse2(value) {
-    return value !== false;
-  };
-  var _windowExists = function _windowExists2() {
-    return typeof window !== "undefined";
-  };
-  var _isFuncOrString = function _isFuncOrString2(value) {
-    return _isFunction(value) || _isString(value);
-  };
-  var _isTypedArray = typeof ArrayBuffer === "function" && ArrayBuffer.isView || function() {
-  };
-  var _isArray = Array.isArray;
-  var _randomExp = /random\([^)]+\)/g;
-  var _commaDelimExp = /,\s*/g;
-  var _strictNumExp = /(?:-?\.?\d|\.)+/gi;
-  var _numExp = /[-+=.]*\d+[.e\-+]*\d*[e\-+]*\d*/g;
-  var _numWithUnitExp = /[-+=.]*\d+[.e-]*\d*[a-z%]*/g;
-  var _complexStringNumExp = /[-+=.]*\d+\.?\d*(?:e-|e\+)?\d*/gi;
-  var _relExp = /[+-]=-?[.\d]+/;
-  var _delimitedValueExp = /[^,'"\[\]\s]+/gi;
-  var _unitExp = /^[+\-=e\s\d]*\d+[.\d]*([a-z]*|%)\s*$/i;
-  var _globalTimeline;
-  var _win;
-  var _coreInitted;
-  var _doc;
-  var _globals = {};
-  var _installScope = {};
-  var _coreReady;
-  var _install = function _install2(scope) {
-    return (_installScope = _merge(scope, _globals)) && gsap;
-  };
-  var _missingPlugin = function _missingPlugin2(property, value) {
-    return console.warn("Invalid property", property, "set to", value, "Missing plugin? gsap.registerPlugin()");
-  };
-  var _warn = function _warn2(message, suppress) {
-    return !suppress && console.warn(message);
-  };
-  var _addGlobal = function _addGlobal2(name, obj) {
-    return name && (_globals[name] = obj) && _installScope && (_installScope[name] = obj) || _globals;
-  };
-  var _emptyFunc = function _emptyFunc2() {
-    return 0;
-  };
-  var _startAtRevertConfig = {
-    suppressEvents: true,
-    isStart: true,
-    kill: false
-  };
-  var _revertConfigNoKill = {
-    suppressEvents: true,
-    kill: false
-  };
-  var _revertConfig = {
-    suppressEvents: true
-  };
-  var _reservedProps = {};
-  var _lazyTweens = [];
-  var _lazyLookup = {};
-  var _lastRenderedFrame;
-  var _plugins = {};
-  var _effects = {};
-  var _nextGCFrame = 30;
-  var _harnessPlugins = [];
-  var _callbackNames = "";
-  var _harness = function _harness2(targets) {
-    var target = targets[0], harnessPlugin, i;
-    _isObject(target) || _isFunction(target) || (targets = [targets]);
-    if (!(harnessPlugin = (target._gsap || {}).harness)) {
-      i = _harnessPlugins.length;
-      while (i-- && !_harnessPlugins[i].targetTest(target)) {
-      }
-      harnessPlugin = _harnessPlugins[i];
-    }
-    i = targets.length;
-    while (i--) {
-      targets[i] && (targets[i]._gsap || (targets[i]._gsap = new GSCache(targets[i], harnessPlugin))) || targets.splice(i, 1);
-    }
-    return targets;
-  };
-  var _getCache = function _getCache2(target) {
-    return target._gsap || _harness(toArray(target))[0]._gsap;
-  };
-  var _getProperty = function _getProperty2(target, property, v) {
-    return (v = target[property]) && _isFunction(v) ? target[property]() : _isUndefined(v) && target.getAttribute && target.getAttribute(property) || v;
-  };
-  var _forEachName = function _forEachName2(names, func) {
-    return (names = names.split(",")).forEach(func) || names;
-  };
-  var _round = function _round2(value) {
-    return Math.round(value * 1e5) / 1e5 || 0;
-  };
-  var _roundPrecise = function _roundPrecise2(value) {
-    return Math.round(value * 1e7) / 1e7 || 0;
-  };
-  var _parseRelative = function _parseRelative2(start, value) {
-    var operator = value.charAt(0), end = parseFloat(value.substr(2));
-    start = parseFloat(start);
-    return operator === "+" ? start + end : operator === "-" ? start - end : operator === "*" ? start * end : start / end;
-  };
-  var _arrayContainsAny = function _arrayContainsAny2(toSearch, toFind) {
-    var l = toFind.length, i = 0;
-    for (; toSearch.indexOf(toFind[i]) < 0 && ++i < l; ) {
-    }
-    return i < l;
-  };
-  var _lazyRender = function _lazyRender2() {
-    var l = _lazyTweens.length, a = _lazyTweens.slice(0), i, tween;
-    _lazyLookup = {};
-    _lazyTweens.length = 0;
-    for (i = 0; i < l; i++) {
-      tween = a[i];
-      tween && tween._lazy && (tween.render(tween._lazy[0], tween._lazy[1], true)._lazy = 0);
-    }
-  };
-  var _isRevertWorthy = function _isRevertWorthy2(animation) {
-    return !!(animation._initted || animation._startAt || animation.add);
-  };
-  var _lazySafeRender = function _lazySafeRender2(animation, time, suppressEvents, force) {
-    _lazyTweens.length && !_reverting && _lazyRender();
-    animation.render(time, suppressEvents, force || !!(_reverting && time < 0 && _isRevertWorthy(animation)));
-    _lazyTweens.length && !_reverting && _lazyRender();
-  };
-  var _numericIfPossible = function _numericIfPossible2(value) {
-    var n = parseFloat(value);
-    return (n || n === 0) && (value + "").match(_delimitedValueExp).length < 2 ? n : _isString(value) ? value.trim() : value;
-  };
-  var _passThrough = function _passThrough2(p) {
-    return p;
-  };
-  var _setDefaults = function _setDefaults2(obj, defaults2) {
-    for (var p in defaults2) {
-      p in obj || (obj[p] = defaults2[p]);
-    }
-    return obj;
-  };
-  var _setKeyframeDefaults = function _setKeyframeDefaults2(excludeDuration) {
-    return function(obj, defaults2) {
-      for (var p in defaults2) {
-        p in obj || p === "duration" && excludeDuration || p === "ease" || (obj[p] = defaults2[p]);
-      }
-    };
-  };
-  var _merge = function _merge2(base, toMerge) {
-    for (var p in toMerge) {
-      base[p] = toMerge[p];
-    }
-    return base;
-  };
-  var _mergeDeep = function _mergeDeep2(base, toMerge) {
-    for (var p in toMerge) {
-      p !== "__proto__" && p !== "constructor" && p !== "prototype" && (base[p] = _isObject(toMerge[p]) ? _mergeDeep2(base[p] || (base[p] = {}), toMerge[p]) : toMerge[p]);
-    }
-    return base;
-  };
-  var _copyExcluding = function _copyExcluding2(obj, excluding) {
-    var copy = {}, p;
-    for (p in obj) {
-      p in excluding || (copy[p] = obj[p]);
-    }
-    return copy;
-  };
-  var _inheritDefaults = function _inheritDefaults2(vars) {
-    var parent = vars.parent || _globalTimeline, func = vars.keyframes ? _setKeyframeDefaults(_isArray(vars.keyframes)) : _setDefaults;
-    if (_isNotFalse(vars.inherit)) {
-      while (parent) {
-        func(vars, parent.vars.defaults);
-        parent = parent.parent || parent._dp;
-      }
-    }
-    return vars;
-  };
-  var _arraysMatch = function _arraysMatch2(a1, a2) {
-    var i = a1.length, match = i === a2.length;
-    while (match && i-- && a1[i] === a2[i]) {
-    }
-    return i < 0;
-  };
-  var _addLinkedListItem = function _addLinkedListItem2(parent, child, firstProp, lastProp, sortBy) {
-    if (firstProp === void 0) {
-      firstProp = "_first";
-    }
-    if (lastProp === void 0) {
-      lastProp = "_last";
-    }
-    var prev = parent[lastProp], t;
-    if (sortBy) {
-      t = child[sortBy];
-      while (prev && prev[sortBy] > t) {
-        prev = prev._prev;
-      }
-    }
-    if (prev) {
-      child._next = prev._next;
-      prev._next = child;
-    } else {
-      child._next = parent[firstProp];
-      parent[firstProp] = child;
-    }
-    if (child._next) {
-      child._next._prev = child;
-    } else {
-      parent[lastProp] = child;
-    }
-    child._prev = prev;
-    child.parent = child._dp = parent;
-    return child;
-  };
-  var _removeLinkedListItem = function _removeLinkedListItem2(parent, child, firstProp, lastProp) {
-    if (firstProp === void 0) {
-      firstProp = "_first";
-    }
-    if (lastProp === void 0) {
-      lastProp = "_last";
-    }
-    var prev = child._prev, next = child._next;
-    if (prev) {
-      prev._next = next;
-    } else if (parent[firstProp] === child) {
-      parent[firstProp] = next;
-    }
-    if (next) {
-      next._prev = prev;
-    } else if (parent[lastProp] === child) {
-      parent[lastProp] = prev;
-    }
-    child._next = child._prev = child.parent = null;
-  };
-  var _removeFromParent = function _removeFromParent2(child, onlyIfParentHasAutoRemove) {
-    child.parent && (!onlyIfParentHasAutoRemove || child.parent.autoRemoveChildren) && child.parent.remove && child.parent.remove(child);
-    child._act = 0;
-  };
-  var _uncache = function _uncache2(animation, child) {
-    if (animation && (!child || child._end > animation._dur || child._start < 0)) {
-      var a = animation;
-      while (a) {
-        a._dirty = 1;
-        a = a.parent;
-      }
-    }
-    return animation;
-  };
-  var _recacheAncestors = function _recacheAncestors2(animation) {
-    var parent = animation.parent;
-    while (parent && parent.parent) {
-      parent._dirty = 1;
-      parent.totalDuration();
-      parent = parent.parent;
-    }
-    return animation;
-  };
-  var _rewindStartAt = function _rewindStartAt2(tween, totalTime, suppressEvents, force) {
-    return tween._startAt && (_reverting ? tween._startAt.revert(_revertConfigNoKill) : tween.vars.immediateRender && !tween.vars.autoRevert || tween._startAt.render(totalTime, true, force));
-  };
-  var _hasNoPausedAncestors = function _hasNoPausedAncestors2(animation) {
-    return !animation || animation._ts && _hasNoPausedAncestors2(animation.parent);
-  };
-  var _elapsedCycleDuration = function _elapsedCycleDuration2(animation) {
-    return animation._repeat ? _animationCycle(animation._tTime, animation = animation.duration() + animation._rDelay) * animation : 0;
-  };
-  var _animationCycle = function _animationCycle2(tTime, cycleDuration) {
-    var whole = Math.floor(tTime = _roundPrecise(tTime / cycleDuration));
-    return tTime && whole === tTime ? whole - 1 : whole;
-  };
-  var _parentToChildTotalTime = function _parentToChildTotalTime2(parentTime, child) {
-    return (parentTime - child._start) * child._ts + (child._ts >= 0 ? 0 : child._dirty ? child.totalDuration() : child._tDur);
-  };
-  var _setEnd = function _setEnd2(animation) {
-    return animation._end = _roundPrecise(animation._start + (animation._tDur / Math.abs(animation._ts || animation._rts || _tinyNum) || 0));
-  };
-  var _alignPlayhead = function _alignPlayhead2(animation, totalTime) {
-    var parent = animation._dp;
-    if (parent && parent.smoothChildTiming && animation._ts) {
-      animation._start = _roundPrecise(parent._time - (animation._ts > 0 ? totalTime / animation._ts : ((animation._dirty ? animation.totalDuration() : animation._tDur) - totalTime) / -animation._ts));
-      _setEnd(animation);
-      parent._dirty || _uncache(parent, animation);
-    }
-    return animation;
-  };
-  var _postAddChecks = function _postAddChecks2(timeline2, child) {
-    var t;
-    if (child._time || !child._dur && child._initted || child._start < timeline2._time && (child._dur || !child.add)) {
-      t = _parentToChildTotalTime(timeline2.rawTime(), child);
-      if (!child._dur || _clamp(0, child.totalDuration(), t) - child._tTime > _tinyNum) {
-        child.render(t, true);
-      }
-    }
-    if (_uncache(timeline2, child)._dp && timeline2._initted && timeline2._time >= timeline2._dur && timeline2._ts) {
-      if (timeline2._dur < timeline2.duration()) {
-        t = timeline2;
-        while (t._dp) {
-          t.rawTime() >= 0 && t.totalTime(t._tTime);
-          t = t._dp;
-        }
-      }
-      timeline2._zTime = -_tinyNum;
-    }
-  };
-  var _addToTimeline = function _addToTimeline2(timeline2, child, position, skipChecks) {
-    child.parent && _removeFromParent(child);
-    child._start = _roundPrecise((_isNumber(position) ? position : position || timeline2 !== _globalTimeline ? _parsePosition(timeline2, position, child) : timeline2._time) + child._delay);
-    child._end = _roundPrecise(child._start + (child.totalDuration() / Math.abs(child.timeScale()) || 0));
-    _addLinkedListItem(timeline2, child, "_first", "_last", timeline2._sort ? "_start" : 0);
-    _isFromOrFromStart(child) || (timeline2._recent = child);
-    skipChecks || _postAddChecks(timeline2, child);
-    timeline2._ts < 0 && _alignPlayhead(timeline2, timeline2._tTime);
-    return timeline2;
-  };
-  var _scrollTrigger = function _scrollTrigger2(animation, trigger) {
-    return (_globals.ScrollTrigger || _missingPlugin("scrollTrigger", trigger)) && _globals.ScrollTrigger.create(trigger, animation);
-  };
-  var _attemptInitTween = function _attemptInitTween2(tween, time, force, suppressEvents, tTime) {
-    _initTween(tween, time, tTime);
-    if (!tween._initted) {
-      return 1;
-    }
-    if (!force && tween._pt && !_reverting && (tween._dur && tween.vars.lazy !== false || !tween._dur && tween.vars.lazy) && _lastRenderedFrame !== _ticker.frame) {
-      _lazyTweens.push(tween);
-      tween._lazy = [tTime, suppressEvents];
-      return 1;
-    }
-  };
-  var _parentPlayheadIsBeforeStart = function _parentPlayheadIsBeforeStart2(_ref) {
-    var parent = _ref.parent;
-    return parent && parent._ts && parent._initted && !parent._lock && (parent.rawTime() < 0 || _parentPlayheadIsBeforeStart2(parent));
-  };
-  var _isFromOrFromStart = function _isFromOrFromStart2(_ref2) {
-    var data = _ref2.data;
-    return data === "isFromStart" || data === "isStart";
-  };
-  var _renderZeroDurationTween = function _renderZeroDurationTween2(tween, totalTime, suppressEvents, force) {
-    var prevRatio = tween.ratio, ratio = totalTime < 0 || !totalTime && (!tween._start && _parentPlayheadIsBeforeStart(tween) && !(!tween._initted && _isFromOrFromStart(tween)) || (tween._ts < 0 || tween._dp._ts < 0) && !_isFromOrFromStart(tween)) ? 0 : 1, repeatDelay = tween._rDelay, tTime = 0, pt, iteration, prevIteration;
-    if (repeatDelay && tween._repeat) {
-      tTime = _clamp(0, tween._tDur, totalTime);
-      iteration = _animationCycle(tTime, repeatDelay);
-      tween._yoyo && iteration & 1 && (ratio = 1 - ratio);
-      if (iteration !== _animationCycle(tween._tTime, repeatDelay)) {
-        prevRatio = 1 - ratio;
-        tween.vars.repeatRefresh && tween._initted && tween.invalidate();
-      }
-    }
-    if (ratio !== prevRatio || _reverting || force || tween._zTime === _tinyNum || !totalTime && tween._zTime) {
-      if (!tween._initted && _attemptInitTween(tween, totalTime, force, suppressEvents, tTime)) {
-        return;
-      }
-      prevIteration = tween._zTime;
-      tween._zTime = totalTime || (suppressEvents ? _tinyNum : 0);
-      suppressEvents || (suppressEvents = totalTime && !prevIteration);
-      tween.ratio = ratio;
-      tween._from && (ratio = 1 - ratio);
-      tween._time = 0;
-      tween._tTime = tTime;
-      pt = tween._pt;
-      while (pt) {
-        pt.r(ratio, pt.d);
-        pt = pt._next;
-      }
-      totalTime < 0 && _rewindStartAt(tween, totalTime, suppressEvents, true);
-      tween._onUpdate && !suppressEvents && _callback(tween, "onUpdate");
-      tTime && tween._repeat && !suppressEvents && tween.parent && _callback(tween, "onRepeat");
-      if ((totalTime >= tween._tDur || totalTime < 0) && tween.ratio === ratio) {
-        ratio && _removeFromParent(tween, 1);
-        if (!suppressEvents && !_reverting) {
-          _callback(tween, ratio ? "onComplete" : "onReverseComplete", true);
-          tween._prom && tween._prom();
-        }
-      }
-    } else if (!tween._zTime) {
-      tween._zTime = totalTime;
-    }
-  };
-  var _findNextPauseTween = function _findNextPauseTween2(animation, prevTime, time) {
-    var child;
-    if (time > prevTime) {
-      child = animation._first;
-      while (child && child._start <= time) {
-        if (child.data === "isPause" && child._start > prevTime) {
-          return child;
-        }
-        child = child._next;
-      }
-    } else {
-      child = animation._last;
-      while (child && child._start >= time) {
-        if (child.data === "isPause" && child._start < prevTime) {
-          return child;
-        }
-        child = child._prev;
-      }
-    }
-  };
-  var _setDuration = function _setDuration2(animation, duration, skipUncache, leavePlayhead) {
-    var repeat = animation._repeat, dur = _roundPrecise(duration) || 0, totalProgress = animation._tTime / animation._tDur;
-    totalProgress && !leavePlayhead && (animation._time *= dur / animation._dur);
-    animation._dur = dur;
-    animation._tDur = !repeat ? dur : repeat < 0 ? 1e10 : _roundPrecise(dur * (repeat + 1) + animation._rDelay * repeat);
-    totalProgress > 0 && !leavePlayhead && _alignPlayhead(animation, animation._tTime = animation._tDur * totalProgress);
-    animation.parent && _setEnd(animation);
-    skipUncache || _uncache(animation.parent, animation);
-    return animation;
-  };
-  var _onUpdateTotalDuration = function _onUpdateTotalDuration2(animation) {
-    return animation instanceof Timeline ? _uncache(animation) : _setDuration(animation, animation._dur);
-  };
-  var _zeroPosition = {
-    _start: 0,
-    endTime: _emptyFunc,
-    totalDuration: _emptyFunc
-  };
-  var _parsePosition = function _parsePosition2(animation, position, percentAnimation) {
-    var labels = animation.labels, recent = animation._recent || _zeroPosition, clippedDuration = animation.duration() >= _bigNum ? recent.endTime(false) : animation._dur, i, offset, isPercent;
-    if (_isString(position) && (isNaN(position) || position in labels)) {
-      offset = position.charAt(0);
-      isPercent = position.substr(-1) === "%";
-      i = position.indexOf("=");
-      if (offset === "<" || offset === ">") {
-        i >= 0 && (position = position.replace(/=/, ""));
-        return (offset === "<" ? recent._start : recent.endTime(recent._repeat >= 0)) + (parseFloat(position.substr(1)) || 0) * (isPercent ? (i < 0 ? recent : percentAnimation).totalDuration() / 100 : 1);
-      }
-      if (i < 0) {
-        position in labels || (labels[position] = clippedDuration);
-        return labels[position];
-      }
-      offset = parseFloat(position.charAt(i - 1) + position.substr(i + 1));
-      if (isPercent && percentAnimation) {
-        offset = offset / 100 * (_isArray(percentAnimation) ? percentAnimation[0] : percentAnimation).totalDuration();
-      }
-      return i > 1 ? _parsePosition2(animation, position.substr(0, i - 1), percentAnimation) + offset : clippedDuration + offset;
-    }
-    return position == null ? clippedDuration : +position;
-  };
-  var _createTweenType = function _createTweenType2(type, params, timeline2) {
-    var isLegacy = _isNumber(params[1]), varsIndex = (isLegacy ? 2 : 1) + (type < 2 ? 0 : 1), vars = params[varsIndex], irVars, parent;
-    isLegacy && (vars.duration = params[1]);
-    vars.parent = timeline2;
-    if (type) {
-      irVars = vars;
-      parent = timeline2;
-      while (parent && !("immediateRender" in irVars)) {
-        irVars = parent.vars.defaults || {};
-        parent = _isNotFalse(parent.vars.inherit) && parent.parent;
-      }
-      vars.immediateRender = _isNotFalse(irVars.immediateRender);
-      type < 2 ? vars.runBackwards = 1 : vars.startAt = params[varsIndex - 1];
-    }
-    return new Tween(params[0], vars, params[varsIndex + 1]);
-  };
-  var _conditionalReturn = function _conditionalReturn2(value, func) {
-    return value || value === 0 ? func(value) : func;
-  };
-  var _clamp = function _clamp2(min, max, value) {
-    return value < min ? min : value > max ? max : value;
-  };
-  var getUnit = function getUnit2(value, v) {
-    return !_isString(value) || !(v = _unitExp.exec(value)) ? "" : v[1];
-  };
-  var clamp = function clamp2(min, max, value) {
-    return _conditionalReturn(value, function(v) {
-      return _clamp(min, max, v);
-    });
-  };
-  var _slice = [].slice;
-  var _isArrayLike = function _isArrayLike2(value, nonEmpty) {
-    return value && _isObject(value) && "length" in value && (!nonEmpty && !value.length || value.length - 1 in value && _isObject(value[0])) && !value.nodeType && value !== _win;
-  };
-  var _flatten = function _flatten2(ar, leaveStrings, accumulator) {
-    if (accumulator === void 0) {
-      accumulator = [];
-    }
-    return ar.forEach(function(value) {
-      var _accumulator;
-      return _isString(value) && !leaveStrings || _isArrayLike(value, 1) ? (_accumulator = accumulator).push.apply(_accumulator, toArray(value)) : accumulator.push(value);
-    }) || accumulator;
-  };
-  var toArray = function toArray2(value, scope, leaveStrings) {
-    return _context && !scope && _context.selector ? _context.selector(value) : _isString(value) && !leaveStrings && (_coreInitted || !_wake()) ? _slice.call((scope || _doc).querySelectorAll(value), 0) : _isArray(value) ? _flatten(value, leaveStrings) : _isArrayLike(value) ? _slice.call(value, 0) : value ? [value] : [];
-  };
-  var selector = function selector2(value) {
-    value = toArray(value)[0] || _warn("Invalid scope") || {};
-    return function(v) {
-      var el = value.current || value.nativeElement || value;
-      return toArray(v, el.querySelectorAll ? el : el === value ? _warn("Invalid scope") || _doc.createElement("div") : value);
-    };
-  };
-  var shuffle = function shuffle2(a) {
-    return a.sort(function() {
-      return 0.5 - Math.random();
-    });
-  };
-  var distribute = function distribute2(v) {
-    if (_isFunction(v)) {
-      return v;
-    }
-    var vars = _isObject(v) ? v : {
-      each: v
-    }, ease = _parseEase(vars.ease), from = vars.from || 0, base = parseFloat(vars.base) || 0, cache = {}, isDecimal = from > 0 && from < 1, ratios = isNaN(from) || isDecimal, axis = vars.axis, ratioX = from, ratioY = from;
-    if (_isString(from)) {
-      ratioX = ratioY = {
-        center: 0.5,
-        edges: 0.5,
-        end: 1
-      }[from] || 0;
-    } else if (!isDecimal && ratios) {
-      ratioX = from[0];
-      ratioY = from[1];
-    }
-    return function(i, target, a) {
-      var l = (a || vars).length, distances = cache[l], originX, originY, x, y, d, j, max, min, wrapAt;
-      if (!distances) {
-        wrapAt = vars.grid === "auto" ? 0 : (vars.grid || [1, _bigNum])[1];
-        if (!wrapAt) {
-          max = -_bigNum;
-          while (max < (max = a[wrapAt++].getBoundingClientRect().left) && wrapAt < l) {
-          }
-          wrapAt < l && wrapAt--;
-        }
-        distances = cache[l] = [];
-        originX = ratios ? Math.min(wrapAt, l) * ratioX - 0.5 : from % wrapAt;
-        originY = wrapAt === _bigNum ? 0 : ratios ? l * ratioY / wrapAt - 0.5 : from / wrapAt | 0;
-        max = 0;
-        min = _bigNum;
-        for (j = 0; j < l; j++) {
-          x = j % wrapAt - originX;
-          y = originY - (j / wrapAt | 0);
-          distances[j] = d = !axis ? _sqrt(x * x + y * y) : Math.abs(axis === "y" ? y : x);
-          d > max && (max = d);
-          d < min && (min = d);
-        }
-        from === "random" && shuffle(distances);
-        distances.max = max - min;
-        distances.min = min;
-        distances.v = l = (parseFloat(vars.amount) || parseFloat(vars.each) * (wrapAt > l ? l - 1 : !axis ? Math.max(wrapAt, l / wrapAt) : axis === "y" ? l / wrapAt : wrapAt) || 0) * (from === "edges" ? -1 : 1);
-        distances.b = l < 0 ? base - l : base;
-        distances.u = getUnit(vars.amount || vars.each) || 0;
-        ease = ease && l < 0 ? _invertEase(ease) : ease;
-      }
-      l = (distances[i] - distances.min) / distances.max || 0;
-      return _roundPrecise(distances.b + (ease ? ease(l) : l) * distances.v) + distances.u;
-    };
-  };
-  var _roundModifier = function _roundModifier2(v) {
-    var p = Math.pow(10, ((v + "").split(".")[1] || "").length);
-    return function(raw) {
-      var n = _roundPrecise(Math.round(parseFloat(raw) / v) * v * p);
-      return (n - n % 1) / p + (_isNumber(raw) ? 0 : getUnit(raw));
-    };
-  };
-  var snap = function snap2(snapTo, value) {
-    var isArray = _isArray(snapTo), radius, is2D;
-    if (!isArray && _isObject(snapTo)) {
-      radius = isArray = snapTo.radius || _bigNum;
-      if (snapTo.values) {
-        snapTo = toArray(snapTo.values);
-        if (is2D = !_isNumber(snapTo[0])) {
-          radius *= radius;
-        }
-      } else {
-        snapTo = _roundModifier(snapTo.increment);
-      }
-    }
-    return _conditionalReturn(value, !isArray ? _roundModifier(snapTo) : _isFunction(snapTo) ? function(raw) {
-      is2D = snapTo(raw);
-      return Math.abs(is2D - raw) <= radius ? is2D : raw;
-    } : function(raw) {
-      var x = parseFloat(is2D ? raw.x : raw), y = parseFloat(is2D ? raw.y : 0), min = _bigNum, closest = 0, i = snapTo.length, dx, dy;
-      while (i--) {
-        if (is2D) {
-          dx = snapTo[i].x - x;
-          dy = snapTo[i].y - y;
-          dx = dx * dx + dy * dy;
-        } else {
-          dx = Math.abs(snapTo[i] - x);
-        }
-        if (dx < min) {
-          min = dx;
-          closest = i;
-        }
-      }
-      closest = !radius || min <= radius ? snapTo[closest] : raw;
-      return is2D || closest === raw || _isNumber(raw) ? closest : closest + getUnit(raw);
-    });
-  };
-  var random = function random2(min, max, roundingIncrement, returnFunction) {
-    return _conditionalReturn(_isArray(min) ? !max : roundingIncrement === true ? !!(roundingIncrement = 0) : !returnFunction, function() {
-      return _isArray(min) ? min[~~(Math.random() * min.length)] : (roundingIncrement = roundingIncrement || 1e-5) && (returnFunction = roundingIncrement < 1 ? Math.pow(10, (roundingIncrement + "").length - 2) : 1) && Math.floor(Math.round((min - roundingIncrement / 2 + Math.random() * (max - min + roundingIncrement * 0.99)) / roundingIncrement) * roundingIncrement * returnFunction) / returnFunction;
-    });
-  };
-  var pipe = function pipe2() {
-    for (var _len = arguments.length, functions = new Array(_len), _key = 0; _key < _len; _key++) {
-      functions[_key] = arguments[_key];
-    }
-    return function(value) {
-      return functions.reduce(function(v, f) {
-        return f(v);
-      }, value);
-    };
-  };
-  var unitize = function unitize2(func, unit) {
-    return function(value) {
-      return func(parseFloat(value)) + (unit || getUnit(value));
-    };
-  };
-  var normalize = function normalize2(min, max, value) {
-    return mapRange(min, max, 0, 1, value);
-  };
-  var _wrapArray = function _wrapArray2(a, wrapper, value) {
-    return _conditionalReturn(value, function(index) {
-      return a[~~wrapper(index)];
-    });
-  };
-  var wrap = function wrap2(min, max, value) {
-    var range = max - min;
-    return _isArray(min) ? _wrapArray(min, wrap2(0, min.length), max) : _conditionalReturn(value, function(value2) {
-      return (range + (value2 - min) % range) % range + min;
-    });
-  };
-  var wrapYoyo = function wrapYoyo2(min, max, value) {
-    var range = max - min, total = range * 2;
-    return _isArray(min) ? _wrapArray(min, wrapYoyo2(0, min.length - 1), max) : _conditionalReturn(value, function(value2) {
-      value2 = (total + (value2 - min) % total) % total || 0;
-      return min + (value2 > range ? total - value2 : value2);
-    });
-  };
-  var _replaceRandom = function _replaceRandom2(s) {
-    return s.replace(_randomExp, function(match) {
-      var arIndex = match.indexOf("[") + 1, values = match.substring(arIndex || 7, arIndex ? match.indexOf("]") : match.length - 1).split(_commaDelimExp);
-      return random(arIndex ? values : +values[0], arIndex ? 0 : +values[1], +values[2] || 1e-5);
-    });
-  };
-  var mapRange = function mapRange2(inMin, inMax, outMin, outMax, value) {
-    var inRange = inMax - inMin, outRange = outMax - outMin;
-    return _conditionalReturn(value, function(value2) {
-      return outMin + ((value2 - inMin) / inRange * outRange || 0);
-    });
-  };
-  var interpolate = function interpolate2(start, end, progress, mutate) {
-    var func = isNaN(start + end) ? 0 : function(p2) {
-      return (1 - p2) * start + p2 * end;
-    };
-    if (!func) {
-      var isString = _isString(start), master = {}, p, i, interpolators, l, il;
-      progress === true && (mutate = 1) && (progress = null);
-      if (isString) {
-        start = {
-          p: start
-        };
-        end = {
-          p: end
-        };
-      } else if (_isArray(start) && !_isArray(end)) {
-        interpolators = [];
-        l = start.length;
-        il = l - 2;
-        for (i = 1; i < l; i++) {
-          interpolators.push(interpolate2(start[i - 1], start[i]));
-        }
-        l--;
-        func = function func2(p2) {
-          p2 *= l;
-          var i2 = Math.min(il, ~~p2);
-          return interpolators[i2](p2 - i2);
-        };
-        progress = end;
-      } else if (!mutate) {
-        start = _merge(_isArray(start) ? [] : {}, start);
-      }
-      if (!interpolators) {
-        for (p in end) {
-          _addPropTween.call(master, start, p, "get", end[p]);
-        }
-        func = function func2(p2) {
-          return _renderPropTweens(p2, master) || (isString ? start.p : start);
-        };
-      }
-    }
-    return _conditionalReturn(progress, func);
-  };
-  var _getLabelInDirection = function _getLabelInDirection2(timeline2, fromTime, backward) {
-    var labels = timeline2.labels, min = _bigNum, p, distance, label;
-    for (p in labels) {
-      distance = labels[p] - fromTime;
-      if (distance < 0 === !!backward && distance && min > (distance = Math.abs(distance))) {
-        label = p;
-        min = distance;
-      }
-    }
-    return label;
-  };
-  var _callback = function _callback2(animation, type, executeLazyFirst) {
-    var v = animation.vars, callback = v[type], prevContext = _context, context3 = animation._ctx, params, scope, result;
-    if (!callback) {
-      return;
-    }
-    params = v[type + "Params"];
-    scope = v.callbackScope || animation;
-    executeLazyFirst && _lazyTweens.length && _lazyRender();
-    context3 && (_context = context3);
-    result = params ? callback.apply(scope, params) : callback.call(scope);
-    _context = prevContext;
-    return result;
-  };
-  var _interrupt = function _interrupt2(animation) {
-    _removeFromParent(animation);
-    animation.scrollTrigger && animation.scrollTrigger.kill(!!_reverting);
-    animation.progress() < 1 && _callback(animation, "onInterrupt");
-    return animation;
-  };
-  var _quickTween;
-  var _registerPluginQueue = [];
-  var _createPlugin = function _createPlugin2(config3) {
-    if (!config3) return;
-    config3 = !config3.name && config3["default"] || config3;
-    if (_windowExists() || config3.headless) {
-      var name = config3.name, isFunc = _isFunction(config3), Plugin = name && !isFunc && config3.init ? function() {
-        this._props = [];
-      } : config3, instanceDefaults = {
-        init: _emptyFunc,
-        render: _renderPropTweens,
-        add: _addPropTween,
-        kill: _killPropTweensOf,
-        modifier: _addPluginModifier,
-        rawVars: 0
-      }, statics = {
-        targetTest: 0,
-        get: 0,
-        getSetter: _getSetter,
-        aliases: {},
-        register: 0
-      };
-      _wake();
-      if (config3 !== Plugin) {
-        if (_plugins[name]) {
-          return;
-        }
-        _setDefaults(Plugin, _setDefaults(_copyExcluding(config3, instanceDefaults), statics));
-        _merge(Plugin.prototype, _merge(instanceDefaults, _copyExcluding(config3, statics)));
-        _plugins[Plugin.prop = name] = Plugin;
-        if (config3.targetTest) {
-          _harnessPlugins.push(Plugin);
-          _reservedProps[name] = 1;
-        }
-        name = (name === "css" ? "CSS" : name.charAt(0).toUpperCase() + name.substr(1)) + "Plugin";
-      }
-      _addGlobal(name, Plugin);
-      config3.register && config3.register(gsap, Plugin, PropTween);
-    } else {
-      _registerPluginQueue.push(config3);
-    }
-  };
-  var _255 = 255;
-  var _colorLookup = {
-    aqua: [0, _255, _255],
-    lime: [0, _255, 0],
-    silver: [192, 192, 192],
-    black: [0, 0, 0],
-    maroon: [128, 0, 0],
-    teal: [0, 128, 128],
-    blue: [0, 0, _255],
-    navy: [0, 0, 128],
-    white: [_255, _255, _255],
-    olive: [128, 128, 0],
-    yellow: [_255, _255, 0],
-    orange: [_255, 165, 0],
-    gray: [128, 128, 128],
-    purple: [128, 0, 128],
-    green: [0, 128, 0],
-    red: [_255, 0, 0],
-    pink: [_255, 192, 203],
-    cyan: [0, _255, _255],
-    transparent: [_255, _255, _255, 0]
-  };
-  var _hue = function _hue2(h, m1, m2) {
-    h += h < 0 ? 1 : h > 1 ? -1 : 0;
-    return (h * 6 < 1 ? m1 + (m2 - m1) * h * 6 : h < 0.5 ? m2 : h * 3 < 2 ? m1 + (m2 - m1) * (2 / 3 - h) * 6 : m1) * _255 + 0.5 | 0;
-  };
-  var splitColor = function splitColor2(v, toHSL, forceAlpha) {
-    var a = !v ? _colorLookup.black : _isNumber(v) ? [v >> 16, v >> 8 & _255, v & _255] : 0, r, g, b, h, s, l, max, min, d, wasHSL;
-    if (!a) {
-      if (v.substr(-1) === ",") {
-        v = v.substr(0, v.length - 1);
-      }
-      if (_colorLookup[v]) {
-        a = _colorLookup[v];
-      } else if (v.charAt(0) === "#") {
-        if (v.length < 6) {
-          r = v.charAt(1);
-          g = v.charAt(2);
-          b = v.charAt(3);
-          v = "#" + r + r + g + g + b + b + (v.length === 5 ? v.charAt(4) + v.charAt(4) : "");
-        }
-        if (v.length === 9) {
-          a = parseInt(v.substr(1, 6), 16);
-          return [a >> 16, a >> 8 & _255, a & _255, parseInt(v.substr(7), 16) / 255];
-        }
-        v = parseInt(v.substr(1), 16);
-        a = [v >> 16, v >> 8 & _255, v & _255];
-      } else if (v.substr(0, 3) === "hsl") {
-        a = wasHSL = v.match(_strictNumExp);
-        if (!toHSL) {
-          h = +a[0] % 360 / 360;
-          s = +a[1] / 100;
-          l = +a[2] / 100;
-          g = l <= 0.5 ? l * (s + 1) : l + s - l * s;
-          r = l * 2 - g;
-          a.length > 3 && (a[3] *= 1);
-          a[0] = _hue(h + 1 / 3, r, g);
-          a[1] = _hue(h, r, g);
-          a[2] = _hue(h - 1 / 3, r, g);
-        } else if (~v.indexOf("=")) {
-          a = v.match(_numExp);
-          forceAlpha && a.length < 4 && (a[3] = 1);
-          return a;
-        }
-      } else {
-        a = v.match(_strictNumExp) || _colorLookup.transparent;
-      }
-      a = a.map(Number);
-    }
-    if (toHSL && !wasHSL) {
-      r = a[0] / _255;
-      g = a[1] / _255;
-      b = a[2] / _255;
-      max = Math.max(r, g, b);
-      min = Math.min(r, g, b);
-      l = (max + min) / 2;
-      if (max === min) {
-        h = s = 0;
-      } else {
-        d = max - min;
-        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-        h = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
-        h *= 60;
-      }
-      a[0] = ~~(h + 0.5);
-      a[1] = ~~(s * 100 + 0.5);
-      a[2] = ~~(l * 100 + 0.5);
-    }
-    forceAlpha && a.length < 4 && (a[3] = 1);
-    return a;
-  };
-  var _colorOrderData = function _colorOrderData2(v) {
-    var values = [], c = [], i = -1;
-    v.split(_colorExp).forEach(function(v2) {
-      var a = v2.match(_numWithUnitExp) || [];
-      values.push.apply(values, a);
-      c.push(i += a.length + 1);
-    });
-    values.c = c;
-    return values;
-  };
-  var _formatColors = function _formatColors2(s, toHSL, orderMatchData) {
-    var result = "", colors = (s + result).match(_colorExp), type = toHSL ? "hsla(" : "rgba(", i = 0, c, shell, d, l;
-    if (!colors) {
-      return s;
-    }
-    colors = colors.map(function(color) {
-      return (color = splitColor(color, toHSL, 1)) && type + (toHSL ? color[0] + "," + color[1] + "%," + color[2] + "%," + color[3] : color.join(",")) + ")";
-    });
-    if (orderMatchData) {
-      d = _colorOrderData(s);
-      c = orderMatchData.c;
-      if (c.join(result) !== d.c.join(result)) {
-        shell = s.replace(_colorExp, "1").split(_numWithUnitExp);
-        l = shell.length - 1;
-        for (; i < l; i++) {
-          result += shell[i] + (~c.indexOf(i) ? colors.shift() || type + "0,0,0,0)" : (d.length ? d : colors.length ? colors : orderMatchData).shift());
-        }
-      }
-    }
-    if (!shell) {
-      shell = s.split(_colorExp);
-      l = shell.length - 1;
-      for (; i < l; i++) {
-        result += shell[i] + colors[i];
-      }
-    }
-    return result + shell[l];
-  };
-  var _colorExp = (function() {
-    var s = "(?:\\b(?:(?:rgb|rgba|hsl|hsla)\\(.+?\\))|\\B#(?:[0-9a-f]{3,4}){1,2}\\b", p;
-    for (p in _colorLookup) {
-      s += "|" + p + "\\b";
-    }
-    return new RegExp(s + ")", "gi");
-  })();
-  var _hslExp = /hsl[a]?\(/;
-  var _colorStringFilter = function _colorStringFilter2(a) {
-    var combined = a.join(" "), toHSL;
-    _colorExp.lastIndex = 0;
-    if (_colorExp.test(combined)) {
-      toHSL = _hslExp.test(combined);
-      a[1] = _formatColors(a[1], toHSL);
-      a[0] = _formatColors(a[0], toHSL, _colorOrderData(a[1]));
-      return true;
-    }
-  };
-  var _tickerActive;
-  var _ticker = (function() {
-    var _getTime = Date.now, _lagThreshold = 500, _adjustedLag = 33, _startTime = _getTime(), _lastUpdate = _startTime, _gap = 1e3 / 240, _nextTime = _gap, _listeners2 = [], _id, _req, _raf, _self, _delta, _i, _tick = function _tick2(v) {
-      var elapsed = _getTime() - _lastUpdate, manual = v === true, overlap, dispatch, time, frame;
-      (elapsed > _lagThreshold || elapsed < 0) && (_startTime += elapsed - _adjustedLag);
-      _lastUpdate += elapsed;
-      time = _lastUpdate - _startTime;
-      overlap = time - _nextTime;
-      if (overlap > 0 || manual) {
-        frame = ++_self.frame;
-        _delta = time - _self.time * 1e3;
-        _self.time = time = time / 1e3;
-        _nextTime += overlap + (overlap >= _gap ? 4 : _gap - overlap);
-        dispatch = 1;
-      }
-      manual || (_id = _req(_tick2));
-      if (dispatch) {
-        for (_i = 0; _i < _listeners2.length; _i++) {
-          _listeners2[_i](time, _delta, frame, v);
-        }
-      }
-    };
-    _self = {
-      time: 0,
-      frame: 0,
-      tick: function tick() {
-        _tick(true);
-      },
-      deltaRatio: function deltaRatio(fps) {
-        return _delta / (1e3 / (fps || 60));
-      },
-      wake: function wake() {
-        if (_coreReady) {
-          if (!_coreInitted && _windowExists()) {
-            _win = _coreInitted = window;
-            _doc = _win.document || {};
-            _globals.gsap = gsap;
-            (_win.gsapVersions || (_win.gsapVersions = [])).push(gsap.version);
-            _install(_installScope || _win.GreenSockGlobals || !_win.gsap && _win || {});
-            _registerPluginQueue.forEach(_createPlugin);
-          }
-          _raf = typeof requestAnimationFrame !== "undefined" && requestAnimationFrame;
-          _id && _self.sleep();
-          _req = _raf || function(f) {
-            return setTimeout(f, _nextTime - _self.time * 1e3 + 1 | 0);
-          };
-          _tickerActive = 1;
-          _tick(2);
-        }
-      },
-      sleep: function sleep() {
-        (_raf ? cancelAnimationFrame : clearTimeout)(_id);
-        _tickerActive = 0;
-        _req = _emptyFunc;
-      },
-      lagSmoothing: function lagSmoothing(threshold, adjustedLag) {
-        _lagThreshold = threshold || Infinity;
-        _adjustedLag = Math.min(adjustedLag || 33, _lagThreshold);
-      },
-      fps: function fps(_fps) {
-        _gap = 1e3 / (_fps || 240);
-        _nextTime = _self.time * 1e3 + _gap;
-      },
-      add: function add(callback, once, prioritize) {
-        var func = once ? function(t, d, f, v) {
-          callback(t, d, f, v);
-          _self.remove(func);
-        } : callback;
-        _self.remove(callback);
-        _listeners2[prioritize ? "unshift" : "push"](func);
-        _wake();
-        return func;
-      },
-      remove: function remove(callback, i) {
-        ~(i = _listeners2.indexOf(callback)) && _listeners2.splice(i, 1) && _i >= i && _i--;
-      },
-      _listeners: _listeners2
-    };
-    return _self;
-  })();
-  var _wake = function _wake2() {
-    return !_tickerActive && _ticker.wake();
-  };
-  var _easeMap = {};
-  var _customEaseExp = /^[\d.\-M][\d.\-,\s]/;
-  var _quotesExp = /["']/g;
-  var _parseObjectInString = function _parseObjectInString2(value) {
-    var obj = {}, split = value.substr(1, value.length - 3).split(":"), key = split[0], i = 1, l = split.length, index, val, parsedVal;
-    for (; i < l; i++) {
-      val = split[i];
-      index = i !== l - 1 ? val.lastIndexOf(",") : val.length;
-      parsedVal = val.substr(0, index);
-      obj[key] = isNaN(parsedVal) ? parsedVal.replace(_quotesExp, "").trim() : +parsedVal;
-      key = val.substr(index + 1).trim();
-    }
-    return obj;
-  };
-  var _valueInParentheses = function _valueInParentheses2(value) {
-    var open = value.indexOf("(") + 1, close = value.indexOf(")"), nested = value.indexOf("(", open);
-    return value.substring(open, ~nested && nested < close ? value.indexOf(")", close + 1) : close);
-  };
-  var _configEaseFromString = function _configEaseFromString2(name) {
-    var split = (name + "").split("("), ease = _easeMap[split[0]];
-    return ease && split.length > 1 && ease.config ? ease.config.apply(null, ~name.indexOf("{") ? [_parseObjectInString(split[1])] : _valueInParentheses(name).split(",").map(_numericIfPossible)) : _easeMap._CE && _customEaseExp.test(name) ? _easeMap._CE("", name) : ease;
-  };
-  var _invertEase = function _invertEase2(ease) {
-    return function(p) {
-      return 1 - ease(1 - p);
-    };
-  };
-  var _parseEase = function _parseEase2(ease, defaultEase) {
-    return !ease ? defaultEase : (_isFunction(ease) ? ease : _easeMap[ease] || _configEaseFromString(ease)) || defaultEase;
-  };
-  var _insertEase = function _insertEase2(names, easeIn, easeOut, easeInOut) {
-    if (easeOut === void 0) {
-      easeOut = function easeOut2(p) {
-        return 1 - easeIn(1 - p);
-      };
-    }
-    if (easeInOut === void 0) {
-      easeInOut = function easeInOut2(p) {
-        return p < 0.5 ? easeIn(p * 2) / 2 : 1 - easeIn((1 - p) * 2) / 2;
-      };
-    }
-    var ease = {
-      easeIn,
-      easeOut,
-      easeInOut
-    }, lowercaseName;
-    _forEachName(names, function(name) {
-      _easeMap[name] = _globals[name] = ease;
-      _easeMap[lowercaseName = name.toLowerCase()] = easeOut;
-      for (var p in ease) {
-        _easeMap[lowercaseName + (p === "easeIn" ? ".in" : p === "easeOut" ? ".out" : ".inOut")] = _easeMap[name + "." + p] = ease[p];
-      }
-    });
-    return ease;
-  };
-  var _easeInOutFromOut = function _easeInOutFromOut2(easeOut) {
-    return function(p) {
-      return p < 0.5 ? (1 - easeOut(1 - p * 2)) / 2 : 0.5 + easeOut((p - 0.5) * 2) / 2;
-    };
-  };
-  var _configElastic = function _configElastic2(type, amplitude, period) {
-    var p1 = amplitude >= 1 ? amplitude : 1, p2 = (period || (type ? 0.3 : 0.45)) / (amplitude < 1 ? amplitude : 1), p3 = p2 / _2PI * (Math.asin(1 / p1) || 0), easeOut = function easeOut2(p) {
-      return p === 1 ? 1 : p1 * Math.pow(2, -10 * p) * _sin((p - p3) * p2) + 1;
-    }, ease = type === "out" ? easeOut : type === "in" ? function(p) {
-      return 1 - easeOut(1 - p);
-    } : _easeInOutFromOut(easeOut);
-    p2 = _2PI / p2;
-    ease.config = function(amplitude2, period2) {
-      return _configElastic2(type, amplitude2, period2);
-    };
-    return ease;
-  };
-  var _configBack = function _configBack2(type, overshoot) {
-    if (overshoot === void 0) {
-      overshoot = 1.70158;
-    }
-    var easeOut = function easeOut2(p) {
-      return p ? --p * p * ((overshoot + 1) * p + overshoot) + 1 : 0;
-    }, ease = type === "out" ? easeOut : type === "in" ? function(p) {
-      return 1 - easeOut(1 - p);
-    } : _easeInOutFromOut(easeOut);
-    ease.config = function(overshoot2) {
-      return _configBack2(type, overshoot2);
-    };
-    return ease;
-  };
-  _forEachName("Linear,Quad,Cubic,Quart,Quint,Strong", function(name, i) {
-    var power = i < 5 ? i + 1 : i;
-    _insertEase(name + ",Power" + (power - 1), i ? function(p) {
-      return Math.pow(p, power);
-    } : function(p) {
-      return p;
-    }, function(p) {
-      return 1 - Math.pow(1 - p, power);
-    }, function(p) {
-      return p < 0.5 ? Math.pow(p * 2, power) / 2 : 1 - Math.pow((1 - p) * 2, power) / 2;
-    });
-  });
-  _easeMap.Linear.easeNone = _easeMap.none = _easeMap.Linear.easeIn;
-  _insertEase("Elastic", _configElastic("in"), _configElastic("out"), _configElastic());
-  (function(n, c) {
-    var n1 = 1 / c, n2 = 2 * n1, n3 = 2.5 * n1, easeOut = function easeOut2(p) {
-      return p < n1 ? n * p * p : p < n2 ? n * Math.pow(p - 1.5 / c, 2) + 0.75 : p < n3 ? n * (p -= 2.25 / c) * p + 0.9375 : n * Math.pow(p - 2.625 / c, 2) + 0.984375;
-    };
-    _insertEase("Bounce", function(p) {
-      return 1 - easeOut(1 - p);
-    }, easeOut);
-  })(7.5625, 2.75);
-  _insertEase("Expo", function(p) {
-    return Math.pow(2, 10 * (p - 1)) * p + p * p * p * p * p * p * (1 - p);
-  });
-  _insertEase("Circ", function(p) {
-    return -(_sqrt(1 - p * p) - 1);
-  });
-  _insertEase("Sine", function(p) {
-    return p === 1 ? 1 : -_cos(p * _HALF_PI) + 1;
-  });
-  _insertEase("Back", _configBack("in"), _configBack("out"), _configBack());
-  _easeMap.SteppedEase = _easeMap.steps = _globals.SteppedEase = {
-    config: function config(steps, immediateStart) {
-      if (steps === void 0) {
-        steps = 1;
-      }
-      var p1 = 1 / steps, p2 = steps + (immediateStart ? 0 : 1), p3 = immediateStart ? 1 : 0, max = 1 - _tinyNum;
-      return function(p) {
-        return ((p2 * _clamp(0, max, p) | 0) + p3) * p1;
-      };
-    }
-  };
-  _defaults.ease = _easeMap["quad.out"];
-  _forEachName("onComplete,onUpdate,onStart,onRepeat,onReverseComplete,onInterrupt", function(name) {
-    return _callbackNames += name + "," + name + "Params,";
-  });
-  var GSCache = function GSCache2(target, harness) {
-    this.id = _gsID++;
-    target._gsap = this;
-    this.target = target;
-    this.harness = harness;
-    this.get = harness ? harness.get : _getProperty;
-    this.set = harness ? harness.getSetter : _getSetter;
-  };
-  var Animation = /* @__PURE__ */ (function() {
-    function Animation2(vars) {
-      this.vars = vars;
-      this._delay = +vars.delay || 0;
-      if (this._repeat = vars.repeat === Infinity ? -2 : vars.repeat || 0) {
-        this._rDelay = vars.repeatDelay || 0;
-        this._yoyo = !!vars.yoyo || !!vars.yoyoEase;
-      }
-      this._ts = 1;
-      _setDuration(this, +vars.duration, 1, 1);
-      this.data = vars.data;
-      if (_context) {
-        this._ctx = _context;
-        _context.data.push(this);
-      }
-      _tickerActive || _ticker.wake();
-    }
-    var _proto = Animation2.prototype;
-    _proto.delay = function delay(value) {
-      if (value || value === 0) {
-        this.parent && this.parent.smoothChildTiming && this.startTime(this._start + value - this._delay);
-        this._delay = value;
-        return this;
-      }
-      return this._delay;
-    };
-    _proto.duration = function duration(value) {
-      return arguments.length ? this.totalDuration(this._repeat > 0 ? value + (value + this._rDelay) * this._repeat : value) : this.totalDuration() && this._dur;
-    };
-    _proto.totalDuration = function totalDuration(value) {
-      if (!arguments.length) {
-        return this._tDur;
-      }
-      this._dirty = 0;
-      return _setDuration(this, this._repeat < 0 ? value : (value - this._repeat * this._rDelay) / (this._repeat + 1));
-    };
-    _proto.totalTime = function totalTime(_totalTime, suppressEvents) {
-      _wake();
-      if (!arguments.length) {
-        return this._tTime;
-      }
-      var parent = this._dp;
-      if (parent && parent.smoothChildTiming && this._ts) {
-        _alignPlayhead(this, _totalTime);
-        !parent._dp || parent.parent || _postAddChecks(parent, this);
-        while (parent && parent.parent) {
-          if (parent.parent._time !== parent._start + (parent._ts >= 0 ? parent._tTime / parent._ts : (parent.totalDuration() - parent._tTime) / -parent._ts)) {
-            parent.totalTime(parent._tTime, true);
-          }
-          parent = parent.parent;
-        }
-        if (!this.parent && this._dp.autoRemoveChildren && (this._ts > 0 && _totalTime < this._tDur || this._ts < 0 && _totalTime > 0 || !this._tDur && !_totalTime)) {
-          _addToTimeline(this._dp, this, this._start - this._delay);
-        }
-      }
-      if (this._tTime !== _totalTime || !this._dur && !suppressEvents || this._initted && Math.abs(this._zTime) === _tinyNum || !this._initted && this._dur && _totalTime || !_totalTime && !this._initted && (this.add || this._ptLookup)) {
-        this._ts || (this._pTime = _totalTime);
-        _lazySafeRender(this, _totalTime, suppressEvents);
-      }
-      return this;
-    };
-    _proto.time = function time(value, suppressEvents) {
-      return arguments.length ? this.totalTime(Math.min(this.totalDuration(), value + _elapsedCycleDuration(this)) % (this._dur + this._rDelay) || (value ? this._dur : 0), suppressEvents) : this._time;
-    };
-    _proto.totalProgress = function totalProgress(value, suppressEvents) {
-      return arguments.length ? this.totalTime(this.totalDuration() * value, suppressEvents) : this.totalDuration() ? Math.min(1, this._tTime / this._tDur) : this.rawTime() >= 0 && this._initted ? 1 : 0;
-    };
-    _proto.progress = function progress(value, suppressEvents) {
-      return arguments.length ? this.totalTime(this.duration() * (this._yoyo && !(this.iteration() & 1) ? 1 - value : value) + _elapsedCycleDuration(this), suppressEvents) : this.duration() ? Math.min(1, this._time / this._dur) : this.rawTime() > 0 ? 1 : 0;
-    };
-    _proto.iteration = function iteration(value, suppressEvents) {
-      var cycleDuration = this.duration() + this._rDelay;
-      return arguments.length ? this.totalTime(this._time + (value - 1) * cycleDuration, suppressEvents) : this._repeat ? _animationCycle(this._tTime, cycleDuration) + 1 : 1;
-    };
-    _proto.timeScale = function timeScale(value, suppressEvents) {
-      if (!arguments.length) {
-        return this._rts === -_tinyNum ? 0 : this._rts;
-      }
-      if (this._rts === value) {
-        return this;
-      }
-      var tTime = this.parent && this._ts ? _parentToChildTotalTime(this.parent._time, this) : this._tTime;
-      this._rts = +value || 0;
-      this._ts = this._ps || value === -_tinyNum ? 0 : this._rts;
-      this.totalTime(_clamp(-Math.abs(this._delay), this.totalDuration(), tTime), suppressEvents !== false);
-      _setEnd(this);
-      return _recacheAncestors(this);
-    };
-    _proto.paused = function paused(value) {
-      if (!arguments.length) {
-        return this._ps;
-      }
-      if (this._ps !== value) {
-        this._ps = value;
-        if (value) {
-          this._pTime = this._tTime || Math.max(-this._delay, this.rawTime());
-          this._ts = this._act = 0;
-        } else {
-          _wake();
-          this._ts = this._rts;
-          this.totalTime(this.parent && !this.parent.smoothChildTiming ? this.rawTime() : this._tTime || this._pTime, this.progress() === 1 && Math.abs(this._zTime) !== _tinyNum && (this._tTime -= _tinyNum));
-        }
-      }
-      return this;
-    };
-    _proto.startTime = function startTime(value) {
-      if (arguments.length) {
-        this._start = _roundPrecise(value);
-        var parent = this.parent || this._dp;
-        parent && (parent._sort || !this.parent) && _addToTimeline(parent, this, this._start - this._delay);
-        return this;
-      }
-      return this._start;
-    };
-    _proto.endTime = function endTime(includeRepeats) {
-      return this._start + (_isNotFalse(includeRepeats) ? this.totalDuration() : this.duration()) / Math.abs(this._ts || 1);
-    };
-    _proto.rawTime = function rawTime(wrapRepeats) {
-      var parent = this.parent || this._dp;
-      return !parent ? this._tTime : wrapRepeats && (!this._ts || this._repeat && this._time && this.totalProgress() < 1) ? this._tTime % (this._dur + this._rDelay) : !this._ts ? this._tTime : _parentToChildTotalTime(parent.rawTime(wrapRepeats), this);
-    };
-    _proto.revert = function revert(config3) {
-      if (config3 === void 0) {
-        config3 = _revertConfig;
-      }
-      var prevIsReverting = _reverting;
-      _reverting = config3;
-      if (_isRevertWorthy(this)) {
-        this.timeline && this.timeline.revert(config3);
-        this.totalTime(-0.01, config3.suppressEvents);
-      }
-      this.data !== "nested" && config3.kill !== false && this.kill();
-      _reverting = prevIsReverting;
-      return this;
-    };
-    _proto.globalTime = function globalTime(rawTime) {
-      var animation = this, time = arguments.length ? rawTime : animation.rawTime();
-      while (animation) {
-        time = animation._start + time / (Math.abs(animation._ts) || 1);
-        animation = animation._dp;
-      }
-      return !this.parent && this._sat ? this._sat.globalTime(rawTime) : time;
-    };
-    _proto.repeat = function repeat(value) {
-      if (arguments.length) {
-        this._repeat = value === Infinity ? -2 : value;
-        return _onUpdateTotalDuration(this);
-      }
-      return this._repeat === -2 ? Infinity : this._repeat;
-    };
-    _proto.repeatDelay = function repeatDelay(value) {
-      if (arguments.length) {
-        var time = this._time;
-        this._rDelay = value;
-        _onUpdateTotalDuration(this);
-        return time ? this.time(time) : this;
-      }
-      return this._rDelay;
-    };
-    _proto.yoyo = function yoyo(value) {
-      if (arguments.length) {
-        this._yoyo = value;
-        return this;
-      }
-      return this._yoyo;
-    };
-    _proto.seek = function seek(position, suppressEvents) {
-      return this.totalTime(_parsePosition(this, position), _isNotFalse(suppressEvents));
-    };
-    _proto.restart = function restart(includeDelay, suppressEvents) {
-      this.play().totalTime(includeDelay ? -this._delay : 0, _isNotFalse(suppressEvents));
-      this._dur || (this._zTime = -_tinyNum);
-      return this;
-    };
-    _proto.play = function play(from, suppressEvents) {
-      from != null && this.seek(from, suppressEvents);
-      return this.reversed(false).paused(false);
-    };
-    _proto.reverse = function reverse(from, suppressEvents) {
-      from != null && this.seek(from || this.totalDuration(), suppressEvents);
-      return this.reversed(true).paused(false);
-    };
-    _proto.pause = function pause(atTime, suppressEvents) {
-      atTime != null && this.seek(atTime, suppressEvents);
-      return this.paused(true);
-    };
-    _proto.resume = function resume() {
-      return this.paused(false);
-    };
-    _proto.reversed = function reversed(value) {
-      if (arguments.length) {
-        !!value !== this.reversed() && this.timeScale(-this._rts || (value ? -_tinyNum : 0));
-        return this;
-      }
-      return this._rts < 0;
-    };
-    _proto.invalidate = function invalidate() {
-      this._initted = this._act = 0;
-      this._zTime = -_tinyNum;
-      return this;
-    };
-    _proto.isActive = function isActive() {
-      var parent = this.parent || this._dp, start = this._start, rawTime;
-      return !!(!parent || this._ts && this._initted && parent.isActive() && (rawTime = parent.rawTime(true)) >= start && rawTime < this.endTime(true) - _tinyNum);
-    };
-    _proto.eventCallback = function eventCallback(type, callback, params) {
-      var vars = this.vars;
-      if (arguments.length > 1) {
-        if (!callback) {
-          delete vars[type];
-        } else {
-          vars[type] = callback;
-          params && (vars[type + "Params"] = params);
-          type === "onUpdate" && (this._onUpdate = callback);
-        }
-        return this;
-      }
-      return vars[type];
-    };
-    _proto.then = function then(onFulfilled) {
-      var self = this, prevProm = self._prom;
-      return new Promise(function(resolve) {
-        var f = _isFunction(onFulfilled) ? onFulfilled : _passThrough, _resolve = function _resolve2() {
-          var _then = self.then;
-          self.then = null;
-          prevProm && prevProm();
-          _isFunction(f) && (f = f(self)) && (f.then || f === self) && (self.then = _then);
-          resolve(f);
-          self.then = _then;
-        };
-        if (self._initted && self.totalProgress() === 1 && self._ts >= 0 || !self._tTime && self._ts < 0) {
-          _resolve();
-        } else {
-          self._prom = _resolve;
-        }
-      });
-    };
-    _proto.kill = function kill() {
-      _interrupt(this);
-    };
-    return Animation2;
-  })();
-  _setDefaults(Animation.prototype, {
-    _time: 0,
-    _start: 0,
-    _end: 0,
-    _tTime: 0,
-    _tDur: 0,
-    _dirty: 0,
-    _repeat: 0,
-    _yoyo: false,
-    parent: null,
-    _initted: false,
-    _rDelay: 0,
-    _ts: 1,
-    _dp: 0,
-    ratio: 0,
-    _zTime: -_tinyNum,
-    _prom: 0,
-    _ps: false,
-    _rts: 1
-  });
-  var Timeline = /* @__PURE__ */ (function(_Animation) {
-    _inheritsLoose(Timeline2, _Animation);
-    function Timeline2(vars, position) {
-      var _this;
-      if (vars === void 0) {
-        vars = {};
-      }
-      _this = _Animation.call(this, vars) || this;
-      _this.labels = {};
-      _this.smoothChildTiming = !!vars.smoothChildTiming;
-      _this.autoRemoveChildren = !!vars.autoRemoveChildren;
-      _this._sort = _isNotFalse(vars.sortChildren);
-      _globalTimeline && _addToTimeline(vars.parent || _globalTimeline, _assertThisInitialized(_this), position);
-      vars.reversed && _this.reverse();
-      vars.paused && _this.paused(true);
-      vars.scrollTrigger && _scrollTrigger(_assertThisInitialized(_this), vars.scrollTrigger);
-      return _this;
-    }
-    var _proto2 = Timeline2.prototype;
-    _proto2.to = function to(targets, vars, position) {
-      _createTweenType(0, arguments, this);
-      return this;
-    };
-    _proto2.from = function from(targets, vars, position) {
-      _createTweenType(1, arguments, this);
-      return this;
-    };
-    _proto2.fromTo = function fromTo(targets, fromVars, toVars, position) {
-      _createTweenType(2, arguments, this);
-      return this;
-    };
-    _proto2.set = function set(targets, vars, position) {
-      vars.duration = 0;
-      vars.parent = this;
-      _inheritDefaults(vars).repeatDelay || (vars.repeat = 0);
-      vars.immediateRender = !!vars.immediateRender;
-      new Tween(targets, vars, _parsePosition(this, position), 1);
-      return this;
-    };
-    _proto2.call = function call(callback, params, position) {
-      return _addToTimeline(this, Tween.delayedCall(0, callback, params), position);
-    };
-    _proto2.staggerTo = function staggerTo(targets, duration, vars, stagger, position, onCompleteAll, onCompleteAllParams) {
-      vars.duration = duration;
-      vars.stagger = vars.stagger || stagger;
-      vars.onComplete = onCompleteAll;
-      vars.onCompleteParams = onCompleteAllParams;
-      vars.parent = this;
-      new Tween(targets, vars, _parsePosition(this, position));
-      return this;
-    };
-    _proto2.staggerFrom = function staggerFrom(targets, duration, vars, stagger, position, onCompleteAll, onCompleteAllParams) {
-      vars.runBackwards = 1;
-      _inheritDefaults(vars).immediateRender = _isNotFalse(vars.immediateRender);
-      return this.staggerTo(targets, duration, vars, stagger, position, onCompleteAll, onCompleteAllParams);
-    };
-    _proto2.staggerFromTo = function staggerFromTo(targets, duration, fromVars, toVars, stagger, position, onCompleteAll, onCompleteAllParams) {
-      toVars.startAt = fromVars;
-      _inheritDefaults(toVars).immediateRender = _isNotFalse(toVars.immediateRender);
-      return this.staggerTo(targets, duration, toVars, stagger, position, onCompleteAll, onCompleteAllParams);
-    };
-    _proto2.render = function render3(totalTime, suppressEvents, force) {
-      var prevTime = this._time, tDur = this._dirty ? this.totalDuration() : this._tDur, dur = this._dur, tTime = totalTime <= 0 ? 0 : _roundPrecise(totalTime), crossingStart = this._zTime < 0 !== totalTime < 0 && (this._initted || !dur), time, child, next, iteration, cycleDuration, prevPaused, pauseTween, timeScale, prevStart, prevIteration, yoyo, isYoyo;
-      this !== _globalTimeline && tTime > tDur && totalTime >= 0 && (tTime = tDur);
-      if (tTime !== this._tTime || force || crossingStart) {
-        if (prevTime !== this._time && dur) {
-          tTime += this._time - prevTime;
-          totalTime += this._time - prevTime;
-        }
-        time = tTime;
-        prevStart = this._start;
-        timeScale = this._ts;
-        prevPaused = !timeScale;
-        if (crossingStart) {
-          dur || (prevTime = this._zTime);
-          (totalTime || !suppressEvents) && (this._zTime = totalTime);
-        }
-        if (this._repeat) {
-          yoyo = this._yoyo;
-          cycleDuration = dur + this._rDelay;
-          if (this._repeat < -1 && totalTime < 0) {
-            return this.totalTime(cycleDuration * 100 + totalTime, suppressEvents, force);
-          }
-          time = _roundPrecise(tTime % cycleDuration);
-          if (tTime === tDur) {
-            iteration = this._repeat;
-            time = dur;
-          } else {
-            prevIteration = _roundPrecise(tTime / cycleDuration);
-            iteration = ~~prevIteration;
-            if (iteration && iteration === prevIteration) {
-              time = dur;
-              iteration--;
-            }
-            time > dur && (time = dur);
-          }
-          prevIteration = _animationCycle(this._tTime, cycleDuration);
-          !prevTime && this._tTime && prevIteration !== iteration && this._tTime - prevIteration * cycleDuration - this._dur <= 0 && (prevIteration = iteration);
-          if (yoyo && iteration & 1) {
-            time = dur - time;
-            isYoyo = 1;
-          }
-          if (iteration !== prevIteration && !this._lock) {
-            var rewinding = yoyo && prevIteration & 1, doesWrap = rewinding === (yoyo && iteration & 1);
-            iteration < prevIteration && (rewinding = !rewinding);
-            prevTime = rewinding ? 0 : tTime % dur ? dur : tTime;
-            this._lock = 1;
-            this.render(prevTime || (isYoyo ? 0 : _roundPrecise(iteration * cycleDuration)), suppressEvents, !dur)._lock = 0;
-            this._tTime = tTime;
-            !suppressEvents && this.parent && _callback(this, "onRepeat");
-            if (this.vars.repeatRefresh && !isYoyo) {
-              this.invalidate()._lock = 1;
-              prevIteration = iteration;
-            }
-            if (prevTime && prevTime !== this._time || prevPaused !== !this._ts || this.vars.onRepeat && !this.parent && !this._act) {
-              return this;
-            }
-            dur = this._dur;
-            tDur = this._tDur;
-            if (doesWrap) {
-              this._lock = 2;
-              prevTime = rewinding ? dur : -1e-4;
-              this.render(prevTime, true);
-              this.vars.repeatRefresh && !isYoyo && this.invalidate();
-            }
-            this._lock = 0;
-            if (!this._ts && !prevPaused) {
-              return this;
-            }
-          }
-        }
-        if (this._hasPause && !this._forcing && this._lock < 2) {
-          pauseTween = _findNextPauseTween(this, _roundPrecise(prevTime), _roundPrecise(time));
-          if (pauseTween) {
-            tTime -= time - (time = pauseTween._start);
-          }
-        }
-        this._tTime = tTime;
-        this._time = time;
-        this._act = !!timeScale;
-        if (!this._initted) {
-          this._onUpdate = this.vars.onUpdate;
-          this._initted = 1;
-          this._zTime = totalTime;
-          prevTime = 0;
-        }
-        if (!prevTime && tTime && dur && !suppressEvents && !prevIteration) {
-          _callback(this, "onStart");
-          if (this._tTime !== tTime) {
-            return this;
-          }
-        }
-        if (time >= prevTime && totalTime >= 0) {
-          child = this._first;
-          while (child) {
-            next = child._next;
-            if ((child._act || time >= child._start) && child._ts && pauseTween !== child) {
-              if (child.parent !== this) {
-                return this.render(totalTime, suppressEvents, force);
-              }
-              child.render(child._ts > 0 ? (time - child._start) * child._ts : (child._dirty ? child.totalDuration() : child._tDur) + (time - child._start) * child._ts, suppressEvents, force);
-              if (time !== this._time || !this._ts && !prevPaused) {
-                pauseTween = 0;
-                next && (tTime += this._zTime = -_tinyNum);
-                break;
-              }
-            }
-            child = next;
-          }
-        } else {
-          child = this._last;
-          var adjustedTime = totalTime < 0 ? totalTime : time;
-          while (child) {
-            next = child._prev;
-            if ((child._act || adjustedTime <= child._end) && child._ts && pauseTween !== child) {
-              if (child.parent !== this) {
-                return this.render(totalTime, suppressEvents, force);
-              }
-              child.render(child._ts > 0 ? (adjustedTime - child._start) * child._ts : (child._dirty ? child.totalDuration() : child._tDur) + (adjustedTime - child._start) * child._ts, suppressEvents, force || _reverting && _isRevertWorthy(child));
-              if (time !== this._time || !this._ts && !prevPaused) {
-                pauseTween = 0;
-                next && (tTime += this._zTime = adjustedTime ? -_tinyNum : _tinyNum);
-                break;
-              }
-            }
-            child = next;
-          }
-        }
-        if (pauseTween && !suppressEvents) {
-          this.pause();
-          pauseTween.render(time >= prevTime ? 0 : -_tinyNum)._zTime = time >= prevTime ? 1 : -1;
-          if (this._ts) {
-            this._start = prevStart;
-            _setEnd(this);
-            return this.render(totalTime, suppressEvents, force);
-          }
-        }
-        this._onUpdate && !suppressEvents && _callback(this, "onUpdate", true);
-        if (tTime === tDur && this._tTime >= this.totalDuration() || !tTime && prevTime) {
-          if (prevStart === this._start || Math.abs(timeScale) !== Math.abs(this._ts)) {
-            if (!this._lock) {
-              (totalTime || !dur) && (tTime === tDur && this._ts > 0 || !tTime && this._ts < 0) && _removeFromParent(this, 1);
-              if (!suppressEvents && !(totalTime < 0 && !prevTime) && (tTime || prevTime || !tDur)) {
-                _callback(this, tTime === tDur && totalTime >= 0 ? "onComplete" : "onReverseComplete", true);
-                this._prom && !(tTime < tDur && this.timeScale() > 0) && this._prom();
-              }
-            }
-          }
-        }
-      }
-      return this;
-    };
-    _proto2.add = function add(child, position) {
-      var _this2 = this;
-      _isNumber(position) || (position = _parsePosition(this, position, child));
-      if (!(child instanceof Animation)) {
-        if (_isArray(child)) {
-          child.forEach(function(obj) {
-            return _this2.add(obj, position);
-          });
-          return this;
-        }
-        if (_isString(child)) {
-          return this.addLabel(child, position);
-        }
-        if (_isFunction(child)) {
-          child = Tween.delayedCall(0, child);
-        } else {
-          return this;
-        }
-      }
-      return this !== child ? _addToTimeline(this, child, position) : this;
-    };
-    _proto2.getChildren = function getChildren(nested, tweens, timelines, ignoreBeforeTime) {
-      if (nested === void 0) {
-        nested = true;
-      }
-      if (tweens === void 0) {
-        tweens = true;
-      }
-      if (timelines === void 0) {
-        timelines = true;
-      }
-      if (ignoreBeforeTime === void 0) {
-        ignoreBeforeTime = -_bigNum;
-      }
-      var a = [], child = this._first;
-      while (child) {
-        if (child._start >= ignoreBeforeTime) {
-          if (child instanceof Tween) {
-            tweens && a.push(child);
-          } else {
-            timelines && a.push(child);
-            nested && a.push.apply(a, child.getChildren(true, tweens, timelines));
-          }
-        }
-        child = child._next;
-      }
-      return a;
-    };
-    _proto2.getById = function getById2(id) {
-      var animations = this.getChildren(1, 1, 1), i = animations.length;
-      while (i--) {
-        if (animations[i].vars.id === id) {
-          return animations[i];
-        }
-      }
-    };
-    _proto2.remove = function remove(child) {
-      if (_isString(child)) {
-        return this.removeLabel(child);
-      }
-      if (_isFunction(child)) {
-        return this.killTweensOf(child);
-      }
-      child.parent === this && _removeLinkedListItem(this, child);
-      if (child === this._recent) {
-        this._recent = this._last;
-      }
-      return _uncache(this);
-    };
-    _proto2.totalTime = function totalTime(_totalTime2, suppressEvents) {
-      if (!arguments.length) {
-        return this._tTime;
-      }
-      this._forcing = 1;
-      if (!this._dp && this._ts) {
-        this._start = _roundPrecise(_ticker.time - (this._ts > 0 ? _totalTime2 / this._ts : (this.totalDuration() - _totalTime2) / -this._ts));
-      }
-      _Animation.prototype.totalTime.call(this, _totalTime2, suppressEvents);
-      this._forcing = 0;
-      return this;
-    };
-    _proto2.addLabel = function addLabel(label, position) {
-      this.labels[label] = _parsePosition(this, position);
-      return this;
-    };
-    _proto2.removeLabel = function removeLabel(label) {
-      delete this.labels[label];
-      return this;
-    };
-    _proto2.addPause = function addPause(position, callback, params) {
-      var t = Tween.delayedCall(0, callback || _emptyFunc, params);
-      t.data = "isPause";
-      this._hasPause = 1;
-      return _addToTimeline(this, t, _parsePosition(this, position));
-    };
-    _proto2.removePause = function removePause(position) {
-      var child = this._first;
-      position = _parsePosition(this, position);
-      while (child) {
-        if (child._start === position && child.data === "isPause") {
-          _removeFromParent(child);
-        }
-        child = child._next;
-      }
-    };
-    _proto2.killTweensOf = function killTweensOf(targets, props, onlyActive) {
-      var tweens = this.getTweensOf(targets, onlyActive), i = tweens.length;
-      while (i--) {
-        _overwritingTween !== tweens[i] && tweens[i].kill(targets, props);
-      }
-      return this;
-    };
-    _proto2.getTweensOf = function getTweensOf2(targets, onlyActive) {
-      var a = [], parsedTargets = toArray(targets), child = this._first, isGlobalTime = _isNumber(onlyActive), children;
-      while (child) {
-        if (child instanceof Tween) {
-          if (_arrayContainsAny(child._targets, parsedTargets) && (isGlobalTime ? (!_overwritingTween || child._initted && child._ts) && child.globalTime(0) <= onlyActive && child.globalTime(child.totalDuration()) > onlyActive : !onlyActive || child.isActive())) {
-            a.push(child);
-          }
-        } else if ((children = child.getTweensOf(parsedTargets, onlyActive)).length) {
-          a.push.apply(a, children);
-        }
-        child = child._next;
-      }
-      return a;
-    };
-    _proto2.tweenTo = function tweenTo(position, vars) {
-      vars = vars || {};
-      var tl = this, endTime = _parsePosition(tl, position), _vars = vars, startAt = _vars.startAt, _onStart = _vars.onStart, onStartParams = _vars.onStartParams, immediateRender = _vars.immediateRender, initted, tween = Tween.to(tl, _setDefaults({
-        ease: vars.ease || "none",
-        lazy: false,
-        immediateRender: false,
-        time: endTime,
-        overwrite: "auto",
-        duration: vars.duration || Math.abs((endTime - (startAt && "time" in startAt ? startAt.time : tl._time)) / tl.timeScale()) || _tinyNum,
-        onStart: function onStart() {
-          tl.pause();
-          if (!initted) {
-            var duration = vars.duration || Math.abs((endTime - (startAt && "time" in startAt ? startAt.time : tl._time)) / tl.timeScale());
-            tween._dur !== duration && _setDuration(tween, duration, 0, 1).render(tween._time, true, true);
-            initted = 1;
-          }
-          _onStart && _onStart.apply(tween, onStartParams || []);
-        }
-      }, vars));
-      return immediateRender ? tween.render(0) : tween;
-    };
-    _proto2.tweenFromTo = function tweenFromTo(fromPosition, toPosition, vars) {
-      return this.tweenTo(toPosition, _setDefaults({
-        startAt: {
-          time: _parsePosition(this, fromPosition)
-        }
-      }, vars));
-    };
-    _proto2.recent = function recent() {
-      return this._recent;
-    };
-    _proto2.nextLabel = function nextLabel(afterTime) {
-      if (afterTime === void 0) {
-        afterTime = this._time;
-      }
-      return _getLabelInDirection(this, _parsePosition(this, afterTime));
-    };
-    _proto2.previousLabel = function previousLabel(beforeTime) {
-      if (beforeTime === void 0) {
-        beforeTime = this._time;
-      }
-      return _getLabelInDirection(this, _parsePosition(this, beforeTime), 1);
-    };
-    _proto2.currentLabel = function currentLabel(value) {
-      return arguments.length ? this.seek(value, true) : this.previousLabel(this._time + _tinyNum);
-    };
-    _proto2.shiftChildren = function shiftChildren(amount, adjustLabels, ignoreBeforeTime) {
-      if (ignoreBeforeTime === void 0) {
-        ignoreBeforeTime = 0;
-      }
-      var child = this._first, labels = this.labels, p;
-      amount = _roundPrecise(amount);
-      while (child) {
-        if (child._start >= ignoreBeforeTime) {
-          child._start += amount;
-          child._end += amount;
-        }
-        child = child._next;
-      }
-      if (adjustLabels) {
-        for (p in labels) {
-          if (labels[p] >= ignoreBeforeTime) {
-            labels[p] += amount;
-          }
-        }
-      }
-      return _uncache(this);
-    };
-    _proto2.invalidate = function invalidate(soft) {
-      var child = this._first;
-      this._lock = 0;
-      while (child) {
-        child.invalidate(soft);
-        child = child._next;
-      }
-      return _Animation.prototype.invalidate.call(this, soft);
-    };
-    _proto2.clear = function clear(includeLabels) {
-      if (includeLabels === void 0) {
-        includeLabels = true;
-      }
-      var child = this._first, next;
-      while (child) {
-        next = child._next;
-        this.remove(child);
-        child = next;
-      }
-      this._dp && (this._time = this._tTime = this._pTime = 0);
-      includeLabels && (this.labels = {});
-      return _uncache(this);
-    };
-    _proto2.totalDuration = function totalDuration(value) {
-      var max = 0, self = this, child = self._last, prevStart = _bigNum, prev, start, parent;
-      if (arguments.length) {
-        return self.timeScale((self._repeat < 0 ? self.duration() : self.totalDuration()) / (self.reversed() ? -value : value));
-      }
-      if (self._dirty) {
-        parent = self.parent;
-        while (child) {
-          prev = child._prev;
-          child._dirty && child.totalDuration();
-          start = child._start;
-          if (start > prevStart && self._sort && child._ts && !self._lock) {
-            self._lock = 1;
-            _addToTimeline(self, child, start - child._delay, 1)._lock = 0;
-          } else {
-            prevStart = start;
-          }
-          if (start < 0 && child._ts) {
-            max -= start;
-            if (!parent && !self._dp || parent && parent.smoothChildTiming) {
-              self._start += _roundPrecise(start / self._ts);
-              self._time -= start;
-              self._tTime -= start;
-            }
-            self.shiftChildren(-start, false, -Infinity);
-            prevStart = 0;
-          }
-          child._end > max && child._ts && (max = child._end);
-          child = prev;
-        }
-        _setDuration(self, self === _globalTimeline && self._time > max ? self._time : max, 1, 1);
-        self._dirty = 0;
-      }
-      return self._tDur;
-    };
-    Timeline2.updateRoot = function updateRoot(time) {
-      if (_globalTimeline._ts) {
-        _lazySafeRender(_globalTimeline, _parentToChildTotalTime(time, _globalTimeline));
-        _lastRenderedFrame = _ticker.frame;
-      }
-      if (_ticker.frame >= _nextGCFrame) {
-        _nextGCFrame += _config.autoSleep || 120;
-        var child = _globalTimeline._first;
-        if (!child || !child._ts) {
-          if (_config.autoSleep && _ticker._listeners.length < 2) {
-            while (child && !child._ts) {
-              child = child._next;
-            }
-            child || _ticker.sleep();
-          }
-        }
-      }
-    };
-    return Timeline2;
-  })(Animation);
-  _setDefaults(Timeline.prototype, {
-    _lock: 0,
-    _hasPause: 0,
-    _forcing: 0
-  });
-  var _addComplexStringPropTween = function _addComplexStringPropTween2(target, prop, start, end, setter, stringFilter, funcParam) {
-    var pt = new PropTween(this._pt, target, prop, 0, 1, _renderComplexString, null, setter), index = 0, matchIndex = 0, result, startNums, color, endNum, chunk, startNum, hasRandom, a;
-    pt.b = start;
-    pt.e = end;
-    start += "";
-    end += "";
-    if (hasRandom = ~end.indexOf("random(")) {
-      end = _replaceRandom(end);
-    }
-    if (stringFilter) {
-      a = [start, end];
-      stringFilter(a, target, prop);
-      start = a[0];
-      end = a[1];
-    }
-    startNums = start.match(_complexStringNumExp) || [];
-    while (result = _complexStringNumExp.exec(end)) {
-      endNum = result[0];
-      chunk = end.substring(index, result.index);
-      if (color) {
-        color = (color + 1) % 5;
-      } else if (chunk.substr(-5) === "rgba(") {
-        color = 1;
-      }
-      if (endNum !== startNums[matchIndex++]) {
-        startNum = parseFloat(startNums[matchIndex - 1]) || 0;
-        pt._pt = {
-          _next: pt._pt,
-          p: chunk || matchIndex === 1 ? chunk : ",",
-          //note: SVG spec allows omission of comma/space when a negative sign is wedged between two numbers, like 2.5-5.3 instead of 2.5,-5.3 but when tweening, the negative value may switch to positive, so we insert the comma just in case.
-          s: startNum,
-          c: endNum.charAt(1) === "=" ? _parseRelative(startNum, endNum) - startNum : parseFloat(endNum) - startNum,
-          m: color && color < 4 ? Math.round : 0
-        };
-        index = _complexStringNumExp.lastIndex;
-      }
-    }
-    pt.c = index < end.length ? end.substring(index, end.length) : "";
-    pt.fp = funcParam;
-    if (_relExp.test(end) || hasRandom) {
-      pt.e = 0;
-    }
-    this._pt = pt;
-    return pt;
-  };
-  var _addPropTween = function _addPropTween2(target, prop, start, end, index, targets, modifier, stringFilter, funcParam, optional) {
-    _isFunction(end) && (end = end(index || 0, target, targets));
-    var currentValue = target[prop], parsedStart = start !== "get" ? start : !_isFunction(currentValue) ? currentValue : funcParam ? target[prop.indexOf("set") || !_isFunction(target["get" + prop.substr(3)]) ? prop : "get" + prop.substr(3)](funcParam) : target[prop](), setter = !_isFunction(currentValue) ? _setterPlain : funcParam ? _setterFuncWithParam : _setterFunc, pt;
-    if (_isString(end)) {
-      if (~end.indexOf("random(")) {
-        end = _replaceRandom(end);
-      }
-      if (end.charAt(1) === "=") {
-        pt = _parseRelative(parsedStart, end) + (getUnit(parsedStart) || 0);
-        if (pt || pt === 0) {
-          end = pt;
-        }
-      }
-    }
-    if (!optional || parsedStart !== end || _forceAllPropTweens) {
-      if (!isNaN(parsedStart * end) && end !== "") {
-        pt = new PropTween(this._pt, target, prop, +parsedStart || 0, end - (parsedStart || 0), typeof currentValue === "boolean" ? _renderBoolean : _renderPlain, 0, setter);
-        funcParam && (pt.fp = funcParam);
-        modifier && pt.modifier(modifier, this, target);
-        return this._pt = pt;
-      }
-      !currentValue && !(prop in target) && _missingPlugin(prop, end);
-      return _addComplexStringPropTween.call(this, target, prop, parsedStart, end, setter, stringFilter || _config.stringFilter, funcParam);
-    }
-  };
-  var _processVars = function _processVars2(vars, index, target, targets, tween) {
-    _isFunction(vars) && (vars = _parseFuncOrString(vars, tween, index, target, targets));
-    if (!_isObject(vars) || vars.style && vars.nodeType || _isArray(vars) || _isTypedArray(vars)) {
-      return _isString(vars) ? _parseFuncOrString(vars, tween, index, target, targets) : vars;
-    }
-    var copy = {}, p;
-    for (p in vars) {
-      copy[p] = _parseFuncOrString(vars[p], tween, index, target, targets);
-    }
-    return copy;
-  };
-  var _checkPlugin = function _checkPlugin2(property, vars, tween, index, target, targets) {
-    var plugin, pt, ptLookup, i;
-    if (_plugins[property] && (plugin = new _plugins[property]()).init(target, plugin.rawVars ? vars[property] : _processVars(vars[property], index, target, targets, tween), tween, index, targets) !== false) {
-      tween._pt = pt = new PropTween(tween._pt, target, property, 0, 1, plugin.render, plugin, 0, plugin.priority);
-      if (tween !== _quickTween) {
-        ptLookup = tween._ptLookup[tween._targets.indexOf(target)];
-        i = plugin._props.length;
-        while (i--) {
-          ptLookup[plugin._props[i]] = pt;
-        }
-      }
-    }
-    return plugin;
-  };
-  var _overwritingTween;
-  var _forceAllPropTweens;
-  var _initTween = function _initTween2(tween, time, tTime) {
-    var vars = tween.vars, ease = vars.ease, startAt = vars.startAt, immediateRender = vars.immediateRender, lazy = vars.lazy, onUpdate = vars.onUpdate, runBackwards = vars.runBackwards, yoyoEase = vars.yoyoEase, keyframes = vars.keyframes, autoRevert = vars.autoRevert, dur = tween._dur, prevStartAt = tween._startAt, targets = tween._targets, parent = tween.parent, fullTargets = parent && parent.data === "nested" ? parent.vars.targets : targets, autoOverwrite = tween._overwrite === "auto" && !_suppressOverwrites, tl = tween.timeline, reverseEase = vars.easeReverse || yoyoEase, cleanVars, i, p, pt, target, hasPriority, gsData, harness, plugin, ptLookup, index, harnessVars, overwritten;
-    tl && (!keyframes || !ease) && (ease = "none");
-    tween._ease = _parseEase(ease, _defaults.ease);
-    tween._rEase = reverseEase && (_parseEase(reverseEase) || tween._ease);
-    tween._from = !tl && !!vars.runBackwards;
-    if (tween._from) tween.ratio = 1;
-    if (!tl || keyframes && !vars.stagger) {
-      harness = targets[0] ? _getCache(targets[0]).harness : 0;
-      harnessVars = harness && vars[harness.prop];
-      cleanVars = _copyExcluding(vars, _reservedProps);
-      if (prevStartAt) {
-        prevStartAt._zTime < 0 && prevStartAt.progress(1);
-        time < 0 && runBackwards && immediateRender && !autoRevert ? prevStartAt.render(-1, true) : prevStartAt.revert(runBackwards && dur ? _revertConfigNoKill : _startAtRevertConfig);
-        prevStartAt._lazy = 0;
-      }
-      if (startAt) {
-        _removeFromParent(tween._startAt = Tween.set(targets, _setDefaults({
-          data: "isStart",
-          overwrite: false,
-          parent,
-          immediateRender: true,
-          lazy: !prevStartAt && _isNotFalse(lazy),
-          startAt: null,
-          delay: 0,
-          onUpdate: onUpdate && function() {
-            return _callback(tween, "onUpdate");
-          },
-          stagger: 0
-        }, startAt)));
-        tween._startAt._dp = 0;
-        tween._startAt._sat = tween;
-        time < 0 && (_reverting || !immediateRender && !autoRevert) && tween._startAt.revert(_revertConfigNoKill);
-        if (immediateRender) {
-          if (dur && time <= 0 && tTime <= 0) {
-            time && (tween._zTime = time);
-            return;
-          }
-        }
-      } else if (runBackwards && dur) {
-        if (!prevStartAt) {
-          time && (immediateRender = false);
-          p = _setDefaults({
-            overwrite: false,
-            data: "isFromStart",
-            //we tag the tween with as "isFromStart" so that if [inside a plugin] we need to only do something at the very END of a tween, we have a way of identifying this tween as merely the one that's setting the beginning values for a "from()" tween. For example, clearProps in CSSPlugin should only get applied at the very END of a tween and without this tag, from(...{height:100, clearProps:"height", delay:1}) would wipe the height at the beginning of the tween and after 1 second, it'd kick back in.
-            lazy: immediateRender && !prevStartAt && _isNotFalse(lazy),
-            immediateRender,
-            //zero-duration tweens render immediately by default, but if we're not specifically instructed to render this tween immediately, we should skip this and merely _init() to record the starting values (rendering them immediately would push them to completion which is wasteful in that case - we'd have to render(-1) immediately after)
-            stagger: 0,
-            parent
-            //ensures that nested tweens that had a stagger are handled properly, like gsap.from(".class", {y: gsap.utils.wrap([-100,100]), stagger: 0.5})
-          }, cleanVars);
-          harnessVars && (p[harness.prop] = harnessVars);
-          _removeFromParent(tween._startAt = Tween.set(targets, p));
-          tween._startAt._dp = 0;
-          tween._startAt._sat = tween;
-          time < 0 && (_reverting ? tween._startAt.revert(_revertConfigNoKill) : tween._startAt.render(-1, true));
-          tween._zTime = time;
-          if (!immediateRender) {
-            _initTween2(tween._startAt, _tinyNum, _tinyNum);
-          } else if (!time) {
-            return;
-          }
-        }
-      }
-      tween._pt = tween._ptCache = 0;
-      lazy = dur && _isNotFalse(lazy) || lazy && !dur;
-      for (i = 0; i < targets.length; i++) {
-        target = targets[i];
-        gsData = target._gsap || _harness(targets)[i]._gsap;
-        tween._ptLookup[i] = ptLookup = {};
-        _lazyLookup[gsData.id] && _lazyTweens.length && _lazyRender();
-        index = fullTargets === targets ? i : fullTargets.indexOf(target);
-        if (harness && (plugin = new harness()).init(target, harnessVars || cleanVars, tween, index, fullTargets) !== false) {
-          tween._pt = pt = new PropTween(tween._pt, target, plugin.name, 0, 1, plugin.render, plugin, 0, plugin.priority);
-          plugin._props.forEach(function(name) {
-            ptLookup[name] = pt;
-          });
-          plugin.priority && (hasPriority = 1);
-        }
-        if (!harness || harnessVars) {
-          for (p in cleanVars) {
-            if (_plugins[p] && (plugin = _checkPlugin(p, cleanVars, tween, index, target, fullTargets))) {
-              plugin.priority && (hasPriority = 1);
-            } else {
-              ptLookup[p] = pt = _addPropTween.call(tween, target, p, "get", cleanVars[p], index, fullTargets, 0, vars.stringFilter);
-            }
-          }
-        }
-        tween._op && tween._op[i] && tween.kill(target, tween._op[i]);
-        if (autoOverwrite && tween._pt) {
-          _overwritingTween = tween;
-          _globalTimeline.killTweensOf(target, ptLookup, tween.globalTime(time));
-          overwritten = !tween.parent;
-          _overwritingTween = 0;
-        }
-        tween._pt && lazy && (_lazyLookup[gsData.id] = 1);
-      }
-      hasPriority && _sortPropTweensByPriority(tween);
-      tween._onInit && tween._onInit(tween);
-    }
-    tween._onUpdate = onUpdate;
-    tween._initted = (!tween._op || tween._pt) && !overwritten;
-    keyframes && time <= 0 && tl.render(_bigNum, true, true);
-  };
-  var _updatePropTweens = function _updatePropTweens2(tween, property, value, start, startIsRelative, ratio, time, skipRecursion) {
-    var ptCache = (tween._pt && tween._ptCache || (tween._ptCache = {}))[property], pt, rootPT, lookup, i;
-    if (!ptCache) {
-      ptCache = tween._ptCache[property] = [];
-      lookup = tween._ptLookup;
-      i = tween._targets.length;
-      while (i--) {
-        pt = lookup[i][property];
-        if (pt && pt.d && pt.d._pt) {
-          pt = pt.d._pt;
-          while (pt && pt.p !== property && pt.fp !== property) {
-            pt = pt._next;
-          }
-        }
-        if (!pt) {
-          _forceAllPropTweens = 1;
-          tween.vars[property] = "+=0";
-          _initTween(tween, time);
-          _forceAllPropTweens = 0;
-          return skipRecursion ? _warn(property + " not eligible for reset. Try splitting into individual properties") : 1;
-        }
-        ptCache.push(pt);
-      }
-    }
-    i = ptCache.length;
-    while (i--) {
-      rootPT = ptCache[i];
-      pt = rootPT._pt || rootPT;
-      pt.s = (start || start === 0) && !startIsRelative ? start : pt.s + (start || 0) + ratio * pt.c;
-      pt.c = value - pt.s;
-      rootPT.e && (rootPT.e = _round(value) + getUnit(rootPT.e));
-      rootPT.b && (rootPT.b = pt.s + getUnit(rootPT.b));
-    }
-  };
-  var _addAliasesToVars = function _addAliasesToVars2(targets, vars) {
-    var harness = targets[0] ? _getCache(targets[0]).harness : 0, propertyAliases = harness && harness.aliases, copy, p, i, aliases;
-    if (!propertyAliases) {
-      return vars;
-    }
-    copy = _merge({}, vars);
-    for (p in propertyAliases) {
-      if (p in copy) {
-        aliases = propertyAliases[p].split(",");
-        i = aliases.length;
-        while (i--) {
-          copy[aliases[i]] = copy[p];
-        }
-      }
-    }
-    return copy;
-  };
-  var _parseKeyframe = function _parseKeyframe2(prop, obj, allProps, easeEach) {
-    var ease = obj.ease || easeEach || "power1.inOut", p, a;
-    if (_isArray(obj)) {
-      a = allProps[prop] || (allProps[prop] = []);
-      obj.forEach(function(value, i) {
-        return a.push({
-          t: i / (obj.length - 1) * 100,
-          v: value,
-          e: ease
-        });
-      });
-    } else {
-      for (p in obj) {
-        a = allProps[p] || (allProps[p] = []);
-        p === "ease" || a.push({
-          t: parseFloat(prop),
-          v: obj[p],
-          e: ease
-        });
-      }
-    }
-  };
-  var _parseFuncOrString = function _parseFuncOrString2(value, tween, i, target, targets) {
-    return _isFunction(value) ? value.call(tween, i, target, targets) : _isString(value) && ~value.indexOf("random(") ? _replaceRandom(value) : value;
-  };
-  var _staggerTweenProps = _callbackNames + "repeat,repeatDelay,yoyo,repeatRefresh,yoyoEase,easeReverse,autoRevert";
-  var _staggerPropsToSkip = {};
-  _forEachName(_staggerTweenProps + ",id,stagger,delay,duration,paused,scrollTrigger", function(name) {
-    return _staggerPropsToSkip[name] = 1;
-  });
-  var Tween = /* @__PURE__ */ (function(_Animation2) {
-    _inheritsLoose(Tween2, _Animation2);
-    function Tween2(targets, vars, position, skipInherit) {
-      var _this3;
-      if (typeof vars === "number") {
-        position.duration = vars;
-        vars = position;
-        position = null;
-      }
-      _this3 = _Animation2.call(this, skipInherit ? vars : _inheritDefaults(vars)) || this;
-      var _this3$vars = _this3.vars, duration = _this3$vars.duration, delay = _this3$vars.delay, immediateRender = _this3$vars.immediateRender, stagger = _this3$vars.stagger, overwrite = _this3$vars.overwrite, keyframes = _this3$vars.keyframes, defaults2 = _this3$vars.defaults, scrollTrigger = _this3$vars.scrollTrigger, parent = vars.parent || _globalTimeline, parsedTargets = (_isArray(targets) || _isTypedArray(targets) ? _isNumber(targets[0]) : "length" in vars) ? [targets] : toArray(targets), tl, i, copy, l, p, curTarget, staggerFunc, staggerVarsToMerge;
-      _this3._targets = parsedTargets.length ? _harness(parsedTargets) : _warn("GSAP target " + targets + " not found. https://gsap.com", !_config.nullTargetWarn) || [];
-      _this3._ptLookup = [];
-      _this3._overwrite = overwrite;
-      if (keyframes || stagger || _isFuncOrString(duration) || _isFuncOrString(delay)) {
-        vars = _this3.vars;
-        var easeReverse = vars.easeReverse || vars.yoyoEase;
-        tl = _this3.timeline = new Timeline({
-          data: "nested",
-          defaults: defaults2 || {},
-          targets: parent && parent.data === "nested" ? parent.vars.targets : parsedTargets
-        });
-        tl.kill();
-        tl.parent = tl._dp = _assertThisInitialized(_this3);
-        tl._start = 0;
-        if (stagger || _isFuncOrString(duration) || _isFuncOrString(delay)) {
-          l = parsedTargets.length;
-          staggerFunc = stagger && distribute(stagger);
-          if (_isObject(stagger)) {
-            for (p in stagger) {
-              if (~_staggerTweenProps.indexOf(p)) {
-                staggerVarsToMerge || (staggerVarsToMerge = {});
-                staggerVarsToMerge[p] = stagger[p];
-              }
-            }
-          }
-          for (i = 0; i < l; i++) {
-            copy = _copyExcluding(vars, _staggerPropsToSkip);
-            copy.stagger = 0;
-            easeReverse && (copy.easeReverse = easeReverse);
-            staggerVarsToMerge && _merge(copy, staggerVarsToMerge);
-            curTarget = parsedTargets[i];
-            copy.duration = +_parseFuncOrString(duration, _assertThisInitialized(_this3), i, curTarget, parsedTargets);
-            copy.delay = (+_parseFuncOrString(delay, _assertThisInitialized(_this3), i, curTarget, parsedTargets) || 0) - _this3._delay;
-            if (!stagger && l === 1 && copy.delay) {
-              _this3._delay = delay = copy.delay;
-              _this3._start += delay;
-              copy.delay = 0;
-            }
-            tl.to(curTarget, copy, staggerFunc ? staggerFunc(i, curTarget, parsedTargets) : 0);
-            tl._ease = _easeMap.none;
-          }
-          tl.duration() ? duration = delay = 0 : _this3.timeline = 0;
-        } else if (keyframes) {
-          _inheritDefaults(_setDefaults(tl.vars.defaults, {
-            ease: "none"
-          }));
-          tl._ease = _parseEase(keyframes.ease || vars.ease || "none");
-          var time = 0, a, kf, v;
-          if (_isArray(keyframes)) {
-            keyframes.forEach(function(frame) {
-              return tl.to(parsedTargets, frame, ">");
-            });
-            tl.duration();
-          } else {
-            copy = {};
-            for (p in keyframes) {
-              p === "ease" || p === "easeEach" || _parseKeyframe(p, keyframes[p], copy, keyframes.easeEach);
-            }
-            for (p in copy) {
-              a = copy[p].sort(function(a2, b) {
-                return a2.t - b.t;
-              });
-              time = 0;
-              for (i = 0; i < a.length; i++) {
-                kf = a[i];
-                v = {
-                  ease: kf.e,
-                  duration: (kf.t - (i ? a[i - 1].t : 0)) / 100 * duration
-                };
-                v[p] = kf.v;
-                tl.to(parsedTargets, v, time);
-                time += v.duration;
-              }
-            }
-            tl.duration() < duration && tl.to({}, {
-              duration: duration - tl.duration()
-            });
-          }
-        }
-        duration || _this3.duration(duration = tl.duration());
-      } else {
-        _this3.timeline = 0;
-      }
-      if (overwrite === true && !_suppressOverwrites) {
-        _overwritingTween = _assertThisInitialized(_this3);
-        _globalTimeline.killTweensOf(parsedTargets);
-        _overwritingTween = 0;
-      }
-      _addToTimeline(parent, _assertThisInitialized(_this3), position);
-      vars.reversed && _this3.reverse();
-      vars.paused && _this3.paused(true);
-      if (immediateRender || !duration && !keyframes && _this3._start === _roundPrecise(parent._time) && _isNotFalse(immediateRender) && _hasNoPausedAncestors(_assertThisInitialized(_this3)) && parent.data !== "nested") {
-        _this3._tTime = -_tinyNum;
-        _this3.render(Math.max(0, -delay) || 0);
-      }
-      scrollTrigger && _scrollTrigger(_assertThisInitialized(_this3), scrollTrigger);
-      return _this3;
-    }
-    var _proto3 = Tween2.prototype;
-    _proto3.render = function render3(totalTime, suppressEvents, force) {
-      var prevTime = this._time, tDur = this._tDur, dur = this._dur, isNegative = totalTime < 0, tTime = totalTime > tDur - _tinyNum && !isNegative ? tDur : totalTime < _tinyNum ? 0 : totalTime, time, pt, iteration, cycleDuration, prevIteration, isYoyo, ratio, timeline2;
-      if (!dur) {
-        _renderZeroDurationTween(this, totalTime, suppressEvents, force);
-      } else if (tTime !== this._tTime || !totalTime || force || !this._initted && this._tTime || this._startAt && this._zTime < 0 !== isNegative || this._lazy) {
-        time = tTime;
-        timeline2 = this.timeline;
-        if (this._repeat) {
-          cycleDuration = dur + this._rDelay;
-          if (this._repeat < -1 && isNegative) {
-            return this.totalTime(cycleDuration * 100 + totalTime, suppressEvents, force);
-          }
-          time = _roundPrecise(tTime % cycleDuration);
-          if (tTime === tDur) {
-            iteration = this._repeat;
-            time = dur;
-          } else {
-            prevIteration = _roundPrecise(tTime / cycleDuration);
-            iteration = ~~prevIteration;
-            if (iteration && iteration === prevIteration) {
-              time = dur;
-              iteration--;
-            } else if (time > dur) {
-              time = dur;
-            }
-          }
-          isYoyo = this._yoyo && iteration & 1;
-          if (isYoyo) time = dur - time;
-          prevIteration = _animationCycle(this._tTime, cycleDuration);
-          if (time === prevTime && !force && this._initted && iteration === prevIteration) {
-            this._tTime = tTime;
-            return this;
-          }
-          if (iteration !== prevIteration) {
-            if (this.vars.repeatRefresh && !isYoyo && !this._lock && time !== cycleDuration && this._initted) {
-              this._lock = force = 1;
-              this.render(_roundPrecise(cycleDuration * iteration), true).invalidate()._lock = 0;
-            }
-          }
-        }
-        if (!this._initted) {
-          if (_attemptInitTween(this, isNegative ? totalTime : time, force, suppressEvents, tTime)) {
-            this._tTime = 0;
-            return this;
-          }
-          if (prevTime !== this._time && !(force && this.vars.repeatRefresh && iteration !== prevIteration)) {
-            return this;
-          }
-          if (dur !== this._dur) {
-            return this.render(totalTime, suppressEvents, force);
-          }
-        }
-        if (this._rEase) {
-          var inv = time < prevTime;
-          if (inv !== this._inv) {
-            var segDur = inv ? prevTime : dur - prevTime;
-            this._inv = inv;
-            if (this._from) this.ratio = 1 - this.ratio;
-            this._invRatio = this.ratio;
-            this._invTime = prevTime;
-            this._invRecip = segDur ? (inv ? -1 : 1) / segDur : 0;
-            this._invScale = inv ? -this.ratio : 1 - this.ratio;
-            this._invEase = inv ? this._rEase : this._ease;
-          }
-          this.ratio = ratio = this._invRatio + this._invScale * this._invEase((time - this._invTime) * this._invRecip);
-        } else {
-          this.ratio = ratio = this._ease(time / dur);
-        }
-        if (this._from) this.ratio = ratio = 1 - ratio;
-        this._tTime = tTime;
-        this._time = time;
-        if (!this._act && this._ts) {
-          this._act = 1;
-          this._lazy = 0;
-        }
-        if (!prevTime && tTime && !suppressEvents && !prevIteration) {
-          _callback(this, "onStart");
-          if (this._tTime !== tTime) {
-            return this;
-          }
-        }
-        pt = this._pt;
-        while (pt) {
-          pt.r(ratio, pt.d);
-          pt = pt._next;
-        }
-        timeline2 && timeline2.render(totalTime < 0 ? totalTime : timeline2._dur * timeline2._ease(time / this._dur), suppressEvents, force) || this._startAt && (this._zTime = totalTime);
-        if (this._onUpdate && !suppressEvents) {
-          isNegative && _rewindStartAt(this, totalTime, suppressEvents, force);
-          _callback(this, "onUpdate");
-        }
-        this._repeat && iteration !== prevIteration && this.vars.onRepeat && !suppressEvents && this.parent && _callback(this, "onRepeat");
-        if ((tTime === this._tDur || !tTime) && this._tTime === tTime) {
-          isNegative && !this._onUpdate && _rewindStartAt(this, totalTime, true, true);
-          (totalTime || !dur) && (tTime === this._tDur && this._ts > 0 || !tTime && this._ts < 0) && _removeFromParent(this, 1);
-          if (!suppressEvents && !(isNegative && !prevTime) && (tTime || prevTime || isYoyo)) {
-            _callback(this, tTime === tDur ? "onComplete" : "onReverseComplete", true);
-            this._prom && !(tTime < tDur && this.timeScale() > 0) && this._prom();
-          }
-        }
-      }
-      return this;
-    };
-    _proto3.targets = function targets() {
-      return this._targets;
-    };
-    _proto3.invalidate = function invalidate(soft) {
-      (!soft || !this.vars.runBackwards) && (this._startAt = 0);
-      this._pt = this._op = this._onUpdate = this._lazy = this.ratio = 0;
-      this._ptLookup = [];
-      this.timeline && this.timeline.invalidate(soft);
-      return _Animation2.prototype.invalidate.call(this, soft);
-    };
-    _proto3.resetTo = function resetTo(property, value, start, startIsRelative, skipRecursion) {
-      _tickerActive || _ticker.wake();
-      this._ts || this.play();
-      var time = Math.min(this._dur, (this._dp._time - this._start) * this._ts), ratio;
-      this._initted || _initTween(this, time);
-      ratio = this._ease(time / this._dur);
-      if (_updatePropTweens(this, property, value, start, startIsRelative, ratio, time, skipRecursion)) {
-        return this.resetTo(property, value, start, startIsRelative, 1);
-      }
-      _alignPlayhead(this, 0);
-      this.parent || _addLinkedListItem(this._dp, this, "_first", "_last", this._dp._sort ? "_start" : 0);
-      return this.render(0);
-    };
-    _proto3.kill = function kill(targets, vars) {
-      if (vars === void 0) {
-        vars = "all";
-      }
-      if (!targets && (!vars || vars === "all")) {
-        this._lazy = this._pt = 0;
-        this.parent ? _interrupt(this) : this.scrollTrigger && this.scrollTrigger.kill(!!_reverting);
-        return this;
-      }
-      if (this.timeline) {
-        var tDur = this.timeline.totalDuration();
-        this.timeline.killTweensOf(targets, vars, _overwritingTween && _overwritingTween.vars.overwrite !== true)._first || _interrupt(this);
-        this.parent && tDur !== this.timeline.totalDuration() && _setDuration(this, this._dur * this.timeline._tDur / tDur, 0, 1);
-        return this;
-      }
-      var parsedTargets = this._targets, killingTargets = targets ? toArray(targets) : parsedTargets, propTweenLookup = this._ptLookup, firstPT = this._pt, overwrittenProps, curLookup, curOverwriteProps, props, p, pt, i;
-      if ((!vars || vars === "all") && _arraysMatch(parsedTargets, killingTargets)) {
-        vars === "all" && (this._pt = 0);
-        return _interrupt(this);
-      }
-      overwrittenProps = this._op = this._op || [];
-      if (vars !== "all") {
-        if (_isString(vars)) {
-          p = {};
-          _forEachName(vars, function(name) {
-            return p[name] = 1;
-          });
-          vars = p;
-        }
-        vars = _addAliasesToVars(parsedTargets, vars);
-      }
-      i = parsedTargets.length;
-      while (i--) {
-        if (~killingTargets.indexOf(parsedTargets[i])) {
-          curLookup = propTweenLookup[i];
-          if (vars === "all") {
-            overwrittenProps[i] = vars;
-            props = curLookup;
-            curOverwriteProps = {};
-          } else {
-            curOverwriteProps = overwrittenProps[i] = overwrittenProps[i] || {};
-            props = vars;
-          }
-          for (p in props) {
-            pt = curLookup && curLookup[p];
-            if (pt) {
-              if (!("kill" in pt.d) || pt.d.kill(p) === true) {
-                _removeLinkedListItem(this, pt, "_pt");
-              }
-              delete curLookup[p];
-            }
-            if (curOverwriteProps !== "all") {
-              curOverwriteProps[p] = 1;
-            }
-          }
-        }
-      }
-      this._initted && !this._pt && firstPT && _interrupt(this);
-      return this;
-    };
-    Tween2.to = function to(targets, vars) {
-      return new Tween2(targets, vars, arguments[2]);
-    };
-    Tween2.from = function from(targets, vars) {
-      return _createTweenType(1, arguments);
-    };
-    Tween2.delayedCall = function delayedCall(delay, callback, params, scope) {
-      return new Tween2(callback, 0, {
-        immediateRender: false,
-        lazy: false,
-        overwrite: false,
-        delay,
-        onComplete: callback,
-        onReverseComplete: callback,
-        onCompleteParams: params,
-        onReverseCompleteParams: params,
-        callbackScope: scope
-      });
-    };
-    Tween2.fromTo = function fromTo(targets, fromVars, toVars) {
-      return _createTweenType(2, arguments);
-    };
-    Tween2.set = function set(targets, vars) {
-      vars.duration = 0;
-      vars.repeatDelay || (vars.repeat = 0);
-      return new Tween2(targets, vars);
-    };
-    Tween2.killTweensOf = function killTweensOf(targets, props, onlyActive) {
-      return _globalTimeline.killTweensOf(targets, props, onlyActive);
-    };
-    return Tween2;
-  })(Animation);
-  _setDefaults(Tween.prototype, {
-    _targets: [],
-    _lazy: 0,
-    _startAt: 0,
-    _op: 0,
-    _onInit: 0
-  });
-  _forEachName("staggerTo,staggerFrom,staggerFromTo", function(name) {
-    Tween[name] = function() {
-      var tl = new Timeline(), params = _slice.call(arguments, 0);
-      params.splice(name === "staggerFromTo" ? 5 : 4, 0, 0);
-      return tl[name].apply(tl, params);
-    };
-  });
-  var _setterPlain = function _setterPlain2(target, property, value) {
-    return target[property] = value;
-  };
-  var _setterFunc = function _setterFunc2(target, property, value) {
-    return target[property](value);
-  };
-  var _setterFuncWithParam = function _setterFuncWithParam2(target, property, value, data) {
-    return target[property](data.fp, value);
-  };
-  var _setterAttribute = function _setterAttribute2(target, property, value) {
-    return target.setAttribute(property, value);
-  };
-  var _getSetter = function _getSetter2(target, property) {
-    return _isFunction(target[property]) ? _setterFunc : _isUndefined(target[property]) && target.setAttribute ? _setterAttribute : _setterPlain;
-  };
-  var _renderPlain = function _renderPlain2(ratio, data) {
-    return data.set(data.t, data.p, Math.round((data.s + data.c * ratio) * 1e6) / 1e6, data);
-  };
-  var _renderBoolean = function _renderBoolean2(ratio, data) {
-    return data.set(data.t, data.p, !!(data.s + data.c * ratio), data);
-  };
-  var _renderComplexString = function _renderComplexString2(ratio, data) {
-    var pt = data._pt, s = "";
-    if (!ratio && data.b) {
-      s = data.b;
-    } else if (ratio === 1 && data.e) {
-      s = data.e;
-    } else {
-      while (pt) {
-        s = pt.p + (pt.m ? pt.m(pt.s + pt.c * ratio) : Math.round((pt.s + pt.c * ratio) * 1e4) / 1e4) + s;
-        pt = pt._next;
-      }
-      s += data.c;
-    }
-    data.set(data.t, data.p, s, data);
-  };
-  var _renderPropTweens = function _renderPropTweens2(ratio, data) {
-    var pt = data._pt;
-    while (pt) {
-      pt.r(ratio, pt.d);
-      pt = pt._next;
-    }
-  };
-  var _addPluginModifier = function _addPluginModifier2(modifier, tween, target, property) {
-    var pt = this._pt, next;
-    while (pt) {
-      next = pt._next;
-      pt.p === property && pt.modifier(modifier, tween, target);
-      pt = next;
-    }
-  };
-  var _killPropTweensOf = function _killPropTweensOf2(property) {
-    var pt = this._pt, hasNonDependentRemaining, next;
-    while (pt) {
-      next = pt._next;
-      if (pt.p === property && !pt.op || pt.op === property) {
-        _removeLinkedListItem(this, pt, "_pt");
-      } else if (!pt.dep) {
-        hasNonDependentRemaining = 1;
-      }
-      pt = next;
-    }
-    return !hasNonDependentRemaining;
-  };
-  var _setterWithModifier = function _setterWithModifier2(target, property, value, data) {
-    data.mSet(target, property, data.m.call(data.tween, value, data.mt), data);
-  };
-  var _sortPropTweensByPriority = function _sortPropTweensByPriority2(parent) {
-    var pt = parent._pt, next, pt2, first, last;
-    while (pt) {
-      next = pt._next;
-      pt2 = first;
-      while (pt2 && pt2.pr > pt.pr) {
-        pt2 = pt2._next;
-      }
-      if (pt._prev = pt2 ? pt2._prev : last) {
-        pt._prev._next = pt;
-      } else {
-        first = pt;
-      }
-      if (pt._next = pt2) {
-        pt2._prev = pt;
-      } else {
-        last = pt;
-      }
-      pt = next;
-    }
-    parent._pt = first;
-  };
-  var PropTween = /* @__PURE__ */ (function() {
-    function PropTween2(next, target, prop, start, change, renderer, data, setter, priority) {
-      this.t = target;
-      this.s = start;
-      this.c = change;
-      this.p = prop;
-      this.r = renderer || _renderPlain;
-      this.d = data || this;
-      this.set = setter || _setterPlain;
-      this.pr = priority || 0;
-      this._next = next;
-      if (next) {
-        next._prev = this;
-      }
-    }
-    var _proto4 = PropTween2.prototype;
-    _proto4.modifier = function modifier(func, tween, target) {
-      this.mSet = this.mSet || this.set;
-      this.set = _setterWithModifier;
-      this.m = func;
-      this.mt = target;
-      this.tween = tween;
-    };
-    return PropTween2;
-  })();
-  _forEachName(_callbackNames + "parent,duration,ease,delay,overwrite,runBackwards,startAt,yoyo,immediateRender,repeat,repeatDelay,data,paused,reversed,lazy,callbackScope,stringFilter,id,yoyoEase,stagger,inherit,repeatRefresh,keyframes,autoRevert,scrollTrigger,easeReverse", function(name) {
-    return _reservedProps[name] = 1;
-  });
-  _globals.TweenMax = _globals.TweenLite = Tween;
-  _globals.TimelineLite = _globals.TimelineMax = Timeline;
-  _globalTimeline = new Timeline({
-    sortChildren: false,
-    defaults: _defaults,
-    autoRemoveChildren: true,
-    id: "root",
-    smoothChildTiming: true
-  });
-  _config.stringFilter = _colorStringFilter;
-  var _media = [];
-  var _listeners = {};
-  var _emptyArray = [];
-  var _lastMediaTime = 0;
-  var _contextID = 0;
-  var _dispatch = function _dispatch2(type) {
-    return (_listeners[type] || _emptyArray).map(function(f) {
-      return f();
-    });
-  };
-  var _onMediaChange = function _onMediaChange2() {
-    var time = Date.now(), matches = [];
-    if (time - _lastMediaTime > 2) {
-      _dispatch("matchMediaInit");
-      _media.forEach(function(c) {
-        var queries = c.queries, conditions = c.conditions, match, p, anyMatch, toggled;
-        for (p in queries) {
-          match = _win.matchMedia(queries[p]).matches;
-          match && (anyMatch = 1);
-          if (match !== conditions[p]) {
-            conditions[p] = match;
-            toggled = 1;
-          }
-        }
-        if (toggled) {
-          c.revert();
-          anyMatch && matches.push(c);
-        }
-      });
-      _dispatch("matchMediaRevert");
-      matches.forEach(function(c) {
-        return c.onMatch(c, function(func) {
-          return c.add(null, func);
-        });
-      });
-      _lastMediaTime = time;
-      _dispatch("matchMedia");
-    }
-  };
-  var Context = /* @__PURE__ */ (function() {
-    function Context2(func, scope) {
-      this.selector = scope && selector(scope);
-      this.data = [];
-      this._r = [];
-      this.isReverted = false;
-      this.id = _contextID++;
-      func && this.add(func);
-    }
-    var _proto5 = Context2.prototype;
-    _proto5.add = function add(name, func, scope) {
-      if (_isFunction(name)) {
-        scope = func;
-        func = name;
-        name = _isFunction;
-      }
-      var self = this, f = function f2() {
-        var prev = _context, prevSelector = self.selector, result;
-        prev && prev !== self && prev.data.push(self);
-        scope && (self.selector = selector(scope));
-        _context = self;
-        result = func.apply(self, arguments);
-        _isFunction(result) && self._r.push(result);
-        _context = prev;
-        self.selector = prevSelector;
-        self.isReverted = false;
-        return result;
-      };
-      self.last = f;
-      return name === _isFunction ? f(self, function(func2) {
-        return self.add(null, func2);
-      }) : name ? self[name] = f : f;
-    };
-    _proto5.ignore = function ignore(func) {
-      var prev = _context;
-      _context = null;
-      func(this);
-      _context = prev;
-    };
-    _proto5.getTweens = function getTweens() {
-      var a = [];
-      this.data.forEach(function(e) {
-        return e instanceof Context2 ? a.push.apply(a, e.getTweens()) : e instanceof Tween && !(e.parent && e.parent.data === "nested") && a.push(e);
-      });
-      return a;
-    };
-    _proto5.clear = function clear() {
-      this._r.length = this.data.length = 0;
-    };
-    _proto5.kill = function kill(revert, matchMedia2) {
-      var _this4 = this;
-      if (revert) {
-        (function() {
-          var tweens = _this4.getTweens(), i2 = _this4.data.length, t;
-          while (i2--) {
-            t = _this4.data[i2];
-            if (t.data === "isFlip") {
-              t.revert();
-              t.getChildren(true, true, false).forEach(function(tween) {
-                return tweens.splice(tweens.indexOf(tween), 1);
-              });
-            }
-          }
-          tweens.map(function(t2) {
-            return {
-              g: t2._dur || t2._delay || t2._sat && !t2._sat.vars.immediateRender ? t2.globalTime(0) : -Infinity,
-              t: t2
-            };
-          }).sort(function(a, b) {
-            return b.g - a.g || -Infinity;
-          }).forEach(function(o) {
-            return o.t.revert(revert);
-          });
-          i2 = _this4.data.length;
-          while (i2--) {
-            t = _this4.data[i2];
-            if (t instanceof Timeline) {
-              if (t.data !== "nested") {
-                t.scrollTrigger && t.scrollTrigger.revert();
-                t.kill();
-              }
-            } else {
-              !(t instanceof Tween) && t.revert && t.revert(revert);
-            }
-          }
-          _this4._r.forEach(function(f) {
-            return f(revert, _this4);
-          });
-          _this4.isReverted = true;
-        })();
-      } else {
-        this.data.forEach(function(e) {
-          return e.kill && e.kill();
-        });
-      }
-      this.clear();
-      if (matchMedia2) {
-        var i = _media.length;
-        while (i--) {
-          _media[i].id === this.id && _media.splice(i, 1);
-        }
-      }
-    };
-    _proto5.revert = function revert(config3) {
-      this.kill(config3 || {});
-    };
-    return Context2;
-  })();
-  var MatchMedia = /* @__PURE__ */ (function() {
-    function MatchMedia2(scope) {
-      this.contexts = [];
-      this.scope = scope;
-      _context && _context.data.push(this);
-    }
-    var _proto6 = MatchMedia2.prototype;
-    _proto6.add = function add(conditions, func, scope) {
-      _isObject(conditions) || (conditions = {
-        matches: conditions
-      });
-      var context3 = new Context(0, scope || this.scope), cond = context3.conditions = {}, mq, p, active;
-      _context && !context3.selector && (context3.selector = _context.selector);
-      this.contexts.push(context3);
-      func = context3.add("onMatch", func);
-      context3.queries = conditions;
-      for (p in conditions) {
-        if (p === "all") {
-          active = 1;
-        } else {
-          mq = _win.matchMedia(conditions[p]);
-          if (mq) {
-            _media.indexOf(context3) < 0 && _media.push(context3);
-            (cond[p] = mq.matches) && (active = 1);
-            mq.addListener ? mq.addListener(_onMediaChange) : mq.addEventListener("change", _onMediaChange);
-          }
-        }
-      }
-      active && func(context3, function(f) {
-        return context3.add(null, f);
-      });
-      return this;
-    };
-    _proto6.revert = function revert(config3) {
-      this.kill(config3 || {});
-    };
-    _proto6.kill = function kill(revert) {
-      this.contexts.forEach(function(c) {
-        return c.kill(revert, true);
-      });
-    };
-    return MatchMedia2;
-  })();
-  var _gsap = {
-    registerPlugin: function registerPlugin() {
-      for (var _len2 = arguments.length, args = new Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-        args[_key2] = arguments[_key2];
-      }
-      args.forEach(function(config3) {
-        return _createPlugin(config3);
-      });
-    },
-    timeline: function timeline(vars) {
-      return new Timeline(vars);
-    },
-    getTweensOf: function getTweensOf(targets, onlyActive) {
-      return _globalTimeline.getTweensOf(targets, onlyActive);
-    },
-    getProperty: function getProperty(target, property, unit, uncache) {
-      _isString(target) && (target = toArray(target)[0]);
-      var getter = _getCache(target || {}).get, format = unit ? _passThrough : _numericIfPossible;
-      unit === "native" && (unit = "");
-      return !target ? target : !property ? function(property2, unit2, uncache2) {
-        return format((_plugins[property2] && _plugins[property2].get || getter)(target, property2, unit2, uncache2));
-      } : format((_plugins[property] && _plugins[property].get || getter)(target, property, unit, uncache));
-    },
-    quickSetter: function quickSetter(target, property, unit) {
-      target = toArray(target);
-      if (target.length > 1) {
-        var setters = target.map(function(t) {
-          return gsap.quickSetter(t, property, unit);
-        }), l = setters.length;
-        return function(value) {
-          var i = l;
-          while (i--) {
-            setters[i](value);
-          }
-        };
-      }
-      target = target[0] || {};
-      var Plugin = _plugins[property], cache = _getCache(target), p = cache.harness && (cache.harness.aliases || {})[property] || property, setter = Plugin ? function(value) {
-        var p2 = new Plugin();
-        _quickTween._pt = 0;
-        p2.init(target, unit ? value + unit : value, _quickTween, 0, [target]);
-        p2.render(1, p2);
-        _quickTween._pt && _renderPropTweens(1, _quickTween);
-      } : cache.set(target, p);
-      return Plugin ? setter : function(value) {
-        return setter(target, p, unit ? value + unit : value, cache, 1);
-      };
-    },
-    quickTo: function quickTo(target, property, vars) {
-      var _setDefaults22;
-      var tween = gsap.to(target, _setDefaults((_setDefaults22 = {}, _setDefaults22[property] = "+=0.1", _setDefaults22.paused = true, _setDefaults22.stagger = 0, _setDefaults22), vars || {})), func = function func2(value, start, startIsRelative) {
-        return tween.resetTo(property, value, start, startIsRelative);
-      };
-      func.tween = tween;
-      return func;
-    },
-    isTweening: function isTweening(targets) {
-      return _globalTimeline.getTweensOf(targets, true).length > 0;
-    },
-    defaults: function defaults(value) {
-      value && value.ease && (value.ease = _parseEase(value.ease, _defaults.ease));
-      return _mergeDeep(_defaults, value || {});
-    },
-    config: function config2(value) {
-      return _mergeDeep(_config, value || {});
-    },
-    registerEffect: function registerEffect(_ref3) {
-      var name = _ref3.name, effect = _ref3.effect, plugins = _ref3.plugins, defaults2 = _ref3.defaults, extendTimeline = _ref3.extendTimeline;
-      (plugins || "").split(",").forEach(function(pluginName) {
-        return pluginName && !_plugins[pluginName] && !_globals[pluginName] && _warn(name + " effect requires " + pluginName + " plugin.");
-      });
-      _effects[name] = function(targets, vars, tl) {
-        return effect(toArray(targets), _setDefaults(vars || {}, defaults2), tl);
-      };
-      if (extendTimeline) {
-        Timeline.prototype[name] = function(targets, vars, position) {
-          return this.add(_effects[name](targets, _isObject(vars) ? vars : (position = vars) && {}, this), position);
-        };
-      }
-    },
-    registerEase: function registerEase(name, ease) {
-      _easeMap[name] = _parseEase(ease);
-    },
-    parseEase: function parseEase(ease, defaultEase) {
-      return arguments.length ? _parseEase(ease, defaultEase) : _easeMap;
-    },
-    getById: function getById(id) {
-      return _globalTimeline.getById(id);
-    },
-    exportRoot: function exportRoot(vars, includeDelayedCalls) {
-      if (vars === void 0) {
-        vars = {};
-      }
-      var tl = new Timeline(vars), child, next;
-      tl.smoothChildTiming = _isNotFalse(vars.smoothChildTiming);
-      _globalTimeline.remove(tl);
-      tl._dp = 0;
-      tl._time = tl._tTime = _globalTimeline._time;
-      child = _globalTimeline._first;
-      while (child) {
-        next = child._next;
-        if (includeDelayedCalls || !(!child._dur && child instanceof Tween && child.vars.onComplete === child._targets[0])) {
-          _addToTimeline(tl, child, child._start - child._delay);
-        }
-        child = next;
-      }
-      _addToTimeline(_globalTimeline, tl, 0);
-      return tl;
-    },
-    context: function context(func, scope) {
-      return func ? new Context(func, scope) : _context;
-    },
-    matchMedia: function matchMedia(scope) {
-      return new MatchMedia(scope);
-    },
-    matchMediaRefresh: function matchMediaRefresh() {
-      return _media.forEach(function(c) {
-        var cond = c.conditions, found, p;
-        for (p in cond) {
-          if (cond[p]) {
-            cond[p] = false;
-            found = 1;
-          }
-        }
-        found && c.revert();
-      }) || _onMediaChange();
-    },
-    addEventListener: function addEventListener(type, callback) {
-      var a = _listeners[type] || (_listeners[type] = []);
-      ~a.indexOf(callback) || a.push(callback);
-    },
-    removeEventListener: function removeEventListener(type, callback) {
-      var a = _listeners[type], i = a && a.indexOf(callback);
-      i >= 0 && a.splice(i, 1);
-    },
-    utils: {
-      wrap,
-      wrapYoyo,
-      distribute,
-      random,
-      snap,
-      normalize,
-      getUnit,
-      clamp,
-      splitColor,
-      toArray,
-      selector,
-      mapRange,
-      pipe,
-      unitize,
-      interpolate,
-      shuffle
-    },
-    install: _install,
-    effects: _effects,
-    ticker: _ticker,
-    updateRoot: Timeline.updateRoot,
-    plugins: _plugins,
-    globalTimeline: _globalTimeline,
-    core: {
-      PropTween,
-      globals: _addGlobal,
-      Tween,
-      Timeline,
-      Animation,
-      getCache: _getCache,
-      _removeLinkedListItem,
-      reverting: function reverting() {
-        return _reverting;
-      },
-      context: function context2(toAdd) {
-        if (toAdd && _context) {
-          _context.data.push(toAdd);
-          toAdd._ctx = _context;
-        }
-        return _context;
-      },
-      suppressOverwrites: function suppressOverwrites(value) {
-        return _suppressOverwrites = value;
-      }
-    }
-  };
-  _forEachName("to,from,fromTo,delayedCall,set,killTweensOf", function(name) {
-    return _gsap[name] = Tween[name];
-  });
-  _ticker.add(Timeline.updateRoot);
-  _quickTween = _gsap.to({}, {
-    duration: 0
-  });
-  var _getPluginPropTween = function _getPluginPropTween2(plugin, prop) {
-    var pt = plugin._pt;
-    while (pt && pt.p !== prop && pt.op !== prop && pt.fp !== prop) {
-      pt = pt._next;
-    }
-    return pt;
-  };
-  var _addModifiers = function _addModifiers2(tween, modifiers) {
-    var targets = tween._targets, p, i, pt;
-    for (p in modifiers) {
-      i = targets.length;
-      while (i--) {
-        pt = tween._ptLookup[i][p];
-        if (pt && (pt = pt.d)) {
-          if (pt._pt) {
-            pt = _getPluginPropTween(pt, p);
-          }
-          pt && pt.modifier && pt.modifier(modifiers[p], tween, targets[i], p);
-        }
-      }
-    }
-  };
-  var _buildModifierPlugin = function _buildModifierPlugin2(name, modifier) {
-    return {
-      name,
-      headless: 1,
-      rawVars: 1,
-      //don't pre-process function-based values or "random()" strings.
-      init: function init4(target, vars, tween) {
-        tween._onInit = function(tween2) {
-          var temp, p;
-          if (_isString(vars)) {
-            temp = {};
-            _forEachName(vars, function(name2) {
-              return temp[name2] = 1;
-            });
-            vars = temp;
-          }
-          if (modifier) {
-            temp = {};
-            for (p in vars) {
-              temp[p] = modifier(vars[p]);
-            }
-            vars = temp;
-          }
-          _addModifiers(tween2, vars);
-        };
-      }
-    };
-  };
-  var gsap = _gsap.registerPlugin({
-    name: "attr",
-    init: function init(target, vars, tween, index, targets) {
-      var p, pt, v;
-      this.tween = tween;
-      for (p in vars) {
-        v = target.getAttribute(p) || "";
-        pt = this.add(target, "setAttribute", (v || 0) + "", vars[p], index, targets, 0, 0, p);
-        pt.op = p;
-        pt.b = v;
-        this._props.push(p);
-      }
-    },
-    render: function render(ratio, data) {
-      var pt = data._pt;
-      while (pt) {
-        _reverting ? pt.set(pt.t, pt.p, pt.b, pt) : pt.r(ratio, pt.d);
-        pt = pt._next;
-      }
-    }
-  }, {
-    name: "endArray",
-    headless: 1,
-    init: function init2(target, value) {
-      var i = value.length;
-      while (i--) {
-        this.add(target, i, target[i] || 0, value[i], 0, 0, 0, 0, 0, 1);
-      }
-    }
-  }, _buildModifierPlugin("roundProps", _roundModifier), _buildModifierPlugin("modifiers"), _buildModifierPlugin("snap", snap)) || _gsap;
-  Tween.version = Timeline.version = gsap.version = "3.15.0";
-  _coreReady = 1;
-  _windowExists() && _wake();
-  var Power0 = _easeMap.Power0;
-  var Power1 = _easeMap.Power1;
-  var Power2 = _easeMap.Power2;
-  var Power3 = _easeMap.Power3;
-  var Power4 = _easeMap.Power4;
-  var Linear = _easeMap.Linear;
-  var Quad = _easeMap.Quad;
-  var Cubic = _easeMap.Cubic;
-  var Quart = _easeMap.Quart;
-  var Quint = _easeMap.Quint;
-  var Strong = _easeMap.Strong;
-  var Elastic = _easeMap.Elastic;
-  var Back = _easeMap.Back;
-  var SteppedEase = _easeMap.SteppedEase;
-  var Bounce = _easeMap.Bounce;
-  var Sine = _easeMap.Sine;
-  var Expo = _easeMap.Expo;
-  var Circ = _easeMap.Circ;
-
-  // node_modules/gsap/CSSPlugin.js
-  var _win2;
-  var _doc2;
-  var _docElement;
-  var _pluginInitted;
-  var _tempDiv;
-  var _tempDivStyler;
-  var _recentSetterPlugin;
-  var _reverting2;
-  var _windowExists3 = function _windowExists4() {
-    return typeof window !== "undefined";
-  };
-  var _transformProps = {};
-  var _RAD2DEG = 180 / Math.PI;
-  var _DEG2RAD = Math.PI / 180;
-  var _atan2 = Math.atan2;
-  var _bigNum2 = 1e8;
-  var _capsExp = /([A-Z])/g;
-  var _horizontalExp = /(left|right|width|margin|padding|x)/i;
-  var _complexExp = /[\s,\(]\S/;
-  var _propertyAliases = {
-    autoAlpha: "opacity,visibility",
-    scale: "scaleX,scaleY",
-    alpha: "opacity"
-  };
-  var _renderCSSProp = function _renderCSSProp2(ratio, data) {
-    return data.set(data.t, data.p, Math.round((data.s + data.c * ratio) * 1e4) / 1e4 + data.u, data);
-  };
-  var _renderPropWithEnd = function _renderPropWithEnd2(ratio, data) {
-    return data.set(data.t, data.p, ratio === 1 ? data.e : Math.round((data.s + data.c * ratio) * 1e4) / 1e4 + data.u, data);
-  };
-  var _renderCSSPropWithBeginning = function _renderCSSPropWithBeginning2(ratio, data) {
-    return data.set(data.t, data.p, ratio ? Math.round((data.s + data.c * ratio) * 1e4) / 1e4 + data.u : data.b, data);
-  };
-  var _renderCSSPropWithBeginningAndEnd = function _renderCSSPropWithBeginningAndEnd2(ratio, data) {
-    return data.set(data.t, data.p, ratio === 1 ? data.e : ratio ? Math.round((data.s + data.c * ratio) * 1e4) / 1e4 + data.u : data.b, data);
-  };
-  var _renderRoundedCSSProp = function _renderRoundedCSSProp2(ratio, data) {
-    var value = data.s + data.c * ratio;
-    data.set(data.t, data.p, ~~(value + (value < 0 ? -0.5 : 0.5)) + data.u, data);
-  };
-  var _renderNonTweeningValue = function _renderNonTweeningValue2(ratio, data) {
-    return data.set(data.t, data.p, ratio ? data.e : data.b, data);
-  };
-  var _renderNonTweeningValueOnlyAtEnd = function _renderNonTweeningValueOnlyAtEnd2(ratio, data) {
-    return data.set(data.t, data.p, ratio !== 1 ? data.b : data.e, data);
-  };
-  var _setterCSSStyle = function _setterCSSStyle2(target, property, value) {
-    return target.style[property] = value;
-  };
-  var _setterCSSProp = function _setterCSSProp2(target, property, value) {
-    return target.style.setProperty(property, value);
-  };
-  var _setterTransform = function _setterTransform2(target, property, value) {
-    return target._gsap[property] = value;
-  };
-  var _setterScale = function _setterScale2(target, property, value) {
-    return target._gsap.scaleX = target._gsap.scaleY = value;
-  };
-  var _setterScaleWithRender = function _setterScaleWithRender2(target, property, value, data, ratio) {
-    var cache = target._gsap;
-    cache.scaleX = cache.scaleY = value;
-    cache.renderTransform(ratio, cache);
-  };
-  var _setterTransformWithRender = function _setterTransformWithRender2(target, property, value, data, ratio) {
-    var cache = target._gsap;
-    cache[property] = value;
-    cache.renderTransform(ratio, cache);
-  };
-  var _transformProp = "transform";
-  var _transformOriginProp = _transformProp + "Origin";
-  var _saveStyle = function _saveStyle2(property, isNotCSS) {
-    var _this = this;
-    var target = this.target, style = target.style, cache = target._gsap;
-    if (property in _transformProps && style) {
-      this.tfm = this.tfm || {};
-      if (property !== "transform") {
-        property = _propertyAliases[property] || property;
-        ~property.indexOf(",") ? property.split(",").forEach(function(a) {
-          return _this.tfm[a] = _get(target, a);
-        }) : this.tfm[property] = cache.x ? cache[property] : _get(target, property);
-        property === _transformOriginProp && (this.tfm.zOrigin = cache.zOrigin);
-      } else {
-        return _propertyAliases.transform.split(",").forEach(function(p) {
-          return _saveStyle2.call(_this, p, isNotCSS);
-        });
-      }
-      if (this.props.indexOf(_transformProp) >= 0) {
-        return;
-      }
-      if (cache.svg) {
-        this.svgo = target.getAttribute("data-svg-origin");
-        this.props.push(_transformOriginProp, isNotCSS, "");
-      }
-      property = _transformProp;
-    }
-    (style || isNotCSS) && this.props.push(property, isNotCSS, style[property]);
-  };
-  var _removeIndependentTransforms = function _removeIndependentTransforms2(style) {
-    if (style.translate) {
-      style.removeProperty("translate");
-      style.removeProperty("scale");
-      style.removeProperty("rotate");
-    }
-  };
-  var _revertStyle = function _revertStyle2() {
-    var props = this.props, target = this.target, style = target.style, cache = target._gsap, i, p;
-    for (i = 0; i < props.length; i += 3) {
-      if (!props[i + 1]) {
-        props[i + 2] ? style[props[i]] = props[i + 2] : style.removeProperty(props[i].substr(0, 2) === "--" ? props[i] : props[i].replace(_capsExp, "-$1").toLowerCase());
-      } else if (props[i + 1] === 2) {
-        target[props[i]](props[i + 2]);
-      } else {
-        target[props[i]] = props[i + 2];
-      }
-    }
-    if (this.tfm) {
-      for (p in this.tfm) {
-        cache[p] = this.tfm[p];
-      }
-      if (cache.svg) {
-        cache.renderTransform();
-        target.setAttribute("data-svg-origin", this.svgo || "");
-      }
-      i = _reverting2();
-      if ((!i || !i.isStart) && !style[_transformProp]) {
-        _removeIndependentTransforms(style);
-        if (cache.zOrigin && style[_transformOriginProp]) {
-          style[_transformOriginProp] += " " + cache.zOrigin + "px";
-          cache.zOrigin = 0;
-          cache.renderTransform();
-        }
-        cache.uncache = 1;
-      }
-    }
-  };
-  var _getStyleSaver = function _getStyleSaver2(target, properties) {
-    var saver = {
-      target,
-      props: [],
-      revert: _revertStyle,
-      save: _saveStyle
-    };
-    target._gsap || gsap.core.getCache(target);
-    properties && target.style && target.nodeType && properties.split(",").forEach(function(p) {
-      return saver.save(p);
-    });
-    return saver;
-  };
-  var _supports3D;
-  var _createElement = function _createElement2(type, ns) {
-    var e = _doc2.createElementNS ? _doc2.createElementNS((ns || "http://www.w3.org/1999/xhtml").replace(/^https/, "http"), type) : _doc2.createElement(type);
-    return e && e.style ? e : _doc2.createElement(type);
-  };
-  var _getComputedProperty = function _getComputedProperty2(target, property, skipPrefixFallback) {
-    var cs = getComputedStyle(target);
-    return cs[property] || cs.getPropertyValue(property.replace(_capsExp, "-$1").toLowerCase()) || cs.getPropertyValue(property) || !skipPrefixFallback && _getComputedProperty2(target, _checkPropPrefix(property) || property, 1) || "";
-  };
-  var _prefixes = "O,Moz,ms,Ms,Webkit".split(",");
-  var _checkPropPrefix = function _checkPropPrefix2(property, element, preferPrefix) {
-    var e = element || _tempDiv, s = e.style, i = 5;
-    if (property in s && !preferPrefix) {
-      return property;
-    }
-    property = property.charAt(0).toUpperCase() + property.substr(1);
-    while (i-- && !(_prefixes[i] + property in s)) {
-    }
-    return i < 0 ? null : (i === 3 ? "ms" : i >= 0 ? _prefixes[i] : "") + property;
-  };
-  var _initCore = function _initCore2() {
-    if (_windowExists3() && window.document) {
-      _win2 = window;
-      _doc2 = _win2.document;
-      _docElement = _doc2.documentElement;
-      _tempDiv = _createElement("div") || {
-        style: {}
-      };
-      _tempDivStyler = _createElement("div");
-      _transformProp = _checkPropPrefix(_transformProp);
-      _transformOriginProp = _transformProp + "Origin";
-      _tempDiv.style.cssText = "border-width:0;line-height:0;position:absolute;padding:0";
-      _supports3D = !!_checkPropPrefix("perspective");
-      _reverting2 = gsap.core.reverting;
-      _pluginInitted = 1;
-    }
-  };
-  var _getReparentedCloneBBox = function _getReparentedCloneBBox2(target) {
-    var owner = target.ownerSVGElement, svg = _createElement("svg", owner && owner.getAttribute("xmlns") || "http://www.w3.org/2000/svg"), clone = target.cloneNode(true), bbox;
-    clone.style.display = "block";
-    svg.appendChild(clone);
-    _docElement.appendChild(svg);
-    try {
-      bbox = clone.getBBox();
-    } catch (e) {
-    }
-    svg.removeChild(clone);
-    _docElement.removeChild(svg);
-    return bbox;
-  };
-  var _getAttributeFallbacks = function _getAttributeFallbacks2(target, attributesArray) {
-    var i = attributesArray.length;
-    while (i--) {
-      if (target.hasAttribute(attributesArray[i])) {
-        return target.getAttribute(attributesArray[i]);
-      }
-    }
-  };
-  var _getBBox = function _getBBox2(target) {
-    var bounds, cloned;
-    try {
-      bounds = target.getBBox();
-    } catch (error) {
-      bounds = _getReparentedCloneBBox(target);
-      cloned = 1;
-    }
-    bounds && (bounds.width || bounds.height) || cloned || (bounds = _getReparentedCloneBBox(target));
-    return bounds && !bounds.width && !bounds.x && !bounds.y ? {
-      x: +_getAttributeFallbacks(target, ["x", "cx", "x1"]) || 0,
-      y: +_getAttributeFallbacks(target, ["y", "cy", "y1"]) || 0,
-      width: 0,
-      height: 0
-    } : bounds;
-  };
-  var _isSVG = function _isSVG2(e) {
-    return !!(e.getCTM && (!e.parentNode || e.ownerSVGElement) && _getBBox(e));
-  };
-  var _removeProperty = function _removeProperty2(target, property) {
-    if (property) {
-      var style = target.style, first2Chars;
-      if (property in _transformProps && property !== _transformOriginProp) {
-        property = _transformProp;
-      }
-      if (style.removeProperty) {
-        first2Chars = property.substr(0, 2);
-        if (first2Chars === "ms" || property.substr(0, 6) === "webkit") {
-          property = "-" + property;
-        }
-        style.removeProperty(first2Chars === "--" ? property : property.replace(_capsExp, "-$1").toLowerCase());
-      } else {
-        style.removeAttribute(property);
-      }
-    }
-  };
-  var _addNonTweeningPT = function _addNonTweeningPT2(plugin, target, property, beginning, end, onlySetAtEnd) {
-    var pt = new PropTween(plugin._pt, target, property, 0, 1, onlySetAtEnd ? _renderNonTweeningValueOnlyAtEnd : _renderNonTweeningValue);
-    plugin._pt = pt;
-    pt.b = beginning;
-    pt.e = end;
-    plugin._props.push(property);
-    return pt;
-  };
-  var _nonConvertibleUnits = {
-    deg: 1,
-    rad: 1,
-    turn: 1
-  };
-  var _nonStandardLayouts = {
-    grid: 1,
-    flex: 1
-  };
-  var _convertToUnit = function _convertToUnit2(target, property, value, unit) {
-    var curValue = parseFloat(value) || 0, curUnit = (value + "").trim().substr((curValue + "").length) || "px", style = _tempDiv.style, horizontal = _horizontalExp.test(property), isRootSVG = target.tagName.toLowerCase() === "svg", measureProperty = (isRootSVG ? "client" : "offset") + (horizontal ? "Width" : "Height"), amount = 100, toPixels = unit === "px", toPercent = unit === "%", px, parent, cache, isSVG;
-    if (unit === curUnit || !curValue || _nonConvertibleUnits[unit] || _nonConvertibleUnits[curUnit]) {
-      return curValue;
-    }
-    curUnit !== "px" && !toPixels && (curValue = _convertToUnit2(target, property, value, "px"));
-    isSVG = target.getCTM && _isSVG(target);
-    if ((toPercent || curUnit === "%") && (_transformProps[property] || ~property.indexOf("adius"))) {
-      px = isSVG ? target.getBBox()[horizontal ? "width" : "height"] : target[measureProperty];
-      return _round(toPercent ? curValue / px * amount : curValue / 100 * px);
-    }
-    style[horizontal ? "width" : "height"] = amount + (toPixels ? curUnit : unit);
-    parent = unit !== "rem" && ~property.indexOf("adius") || unit === "em" && target.appendChild && !isRootSVG ? target : target.parentNode;
-    if (isSVG) {
-      parent = (target.ownerSVGElement || {}).parentNode;
-    }
-    if (!parent || parent === _doc2 || !parent.appendChild) {
-      parent = _doc2.body;
-    }
-    cache = parent._gsap;
-    if (cache && toPercent && cache.width && horizontal && cache.time === _ticker.time && !cache.uncache) {
-      return _round(curValue / cache.width * amount);
-    } else {
-      if (toPercent && (property === "height" || property === "width")) {
-        var v = target.style[property];
-        target.style[property] = amount + unit;
-        px = target[measureProperty];
-        v ? target.style[property] = v : _removeProperty(target, property);
-      } else {
-        (toPercent || curUnit === "%") && !_nonStandardLayouts[_getComputedProperty(parent, "display")] && (style.position = _getComputedProperty(target, "position"));
-        parent === target && (style.position = "static");
-        parent.appendChild(_tempDiv);
-        px = _tempDiv[measureProperty];
-        parent.removeChild(_tempDiv);
-        style.position = "absolute";
-      }
-      if (horizontal && toPercent) {
-        cache = _getCache(parent);
-        cache.time = _ticker.time;
-        cache.width = parent[measureProperty];
-      }
-    }
-    return _round(toPixels ? px * curValue / amount : px && curValue ? amount / px * curValue : 0);
-  };
-  var _get = function _get2(target, property, unit, uncache) {
-    var value;
-    _pluginInitted || _initCore();
-    if (property in _propertyAliases && property !== "transform") {
-      property = _propertyAliases[property];
-      if (~property.indexOf(",")) {
-        property = property.split(",")[0];
-      }
-    }
-    if (_transformProps[property] && property !== "transform") {
-      value = _parseTransform(target, uncache);
-      value = property !== "transformOrigin" ? value[property] : value.svg ? value.origin : _firstTwoOnly(_getComputedProperty(target, _transformOriginProp)) + " " + value.zOrigin + "px";
-    } else {
-      value = target.style[property];
-      if (!value || value === "auto" || uncache || ~(value + "").indexOf("calc(")) {
-        value = _specialProps[property] && _specialProps[property](target, property, unit) || _getComputedProperty(target, property) || _getProperty(target, property) || (property === "opacity" ? 1 : 0);
-      }
-    }
-    return unit && !~(value + "").trim().indexOf(" ") ? _convertToUnit(target, property, value, unit) + unit : value;
-  };
-  var _tweenComplexCSSString = function _tweenComplexCSSString2(target, prop, start, end) {
-    if (!start || start === "none") {
-      var p = _checkPropPrefix(prop, target, 1), s = p && _getComputedProperty(target, p, 1);
-      if (s && s !== start) {
-        prop = p;
-        start = s;
-      } else if (prop === "borderColor") {
-        start = _getComputedProperty(target, "borderTopColor");
-      }
-    }
-    var pt = new PropTween(this._pt, target.style, prop, 0, 1, _renderComplexString), index = 0, matchIndex = 0, a, result, startValues, startNum, color, startValue, endValue, endNum, chunk, endUnit, startUnit, endValues;
-    pt.b = start;
-    pt.e = end;
-    start += "";
-    end += "";
-    if (end.substring(0, 6) === "var(--") {
-      end = _getComputedProperty(target, end.substring(4, end.indexOf(")")));
-    }
-    if (end === "auto") {
-      startValue = target.style[prop];
-      target.style[prop] = end;
-      end = _getComputedProperty(target, prop) || end;
-      startValue ? target.style[prop] = startValue : _removeProperty(target, prop);
-    }
-    a = [start, end];
-    _colorStringFilter(a);
-    start = a[0];
-    end = a[1];
-    startValues = start.match(_numWithUnitExp) || [];
-    endValues = end.match(_numWithUnitExp) || [];
-    if (endValues.length) {
-      while (result = _numWithUnitExp.exec(end)) {
-        endValue = result[0];
-        chunk = end.substring(index, result.index);
-        if (color) {
-          color = (color + 1) % 5;
-        } else if (chunk.substr(-5) === "rgba(" || chunk.substr(-5) === "hsla(") {
-          color = 1;
-        }
-        if (endValue !== (startValue = startValues[matchIndex++] || "")) {
-          startNum = parseFloat(startValue) || 0;
-          startUnit = startValue.substr((startNum + "").length);
-          endValue.charAt(1) === "=" && (endValue = _parseRelative(startNum, endValue) + startUnit);
-          endNum = parseFloat(endValue);
-          endUnit = endValue.substr((endNum + "").length);
-          index = _numWithUnitExp.lastIndex - endUnit.length;
-          if (!endUnit) {
-            endUnit = endUnit || _config.units[prop] || startUnit;
-            if (index === end.length) {
-              end += endUnit;
-              pt.e += endUnit;
-            }
-          }
-          if (startUnit !== endUnit) {
-            startNum = _convertToUnit(target, prop, startValue, endUnit) || 0;
-          }
-          pt._pt = {
-            _next: pt._pt,
-            p: chunk || matchIndex === 1 ? chunk : ",",
-            //note: SVG spec allows omission of comma/space when a negative sign is wedged between two numbers, like 2.5-5.3 instead of 2.5,-5.3 but when tweening, the negative value may switch to positive, so we insert the comma just in case.
-            s: startNum,
-            c: endNum - startNum,
-            m: color && color < 4 || prop === "zIndex" ? Math.round : 0
-          };
-        }
-      }
-      pt.c = index < end.length ? end.substring(index, end.length) : "";
-    } else {
-      pt.r = prop === "display" && end === "none" ? _renderNonTweeningValueOnlyAtEnd : _renderNonTweeningValue;
-    }
-    _relExp.test(end) && (pt.e = 0);
-    this._pt = pt;
-    return pt;
-  };
-  var _keywordToPercent = {
-    top: "0%",
-    bottom: "100%",
-    left: "0%",
-    right: "100%",
-    center: "50%"
-  };
-  var _convertKeywordsToPercentages = function _convertKeywordsToPercentages2(value) {
-    var split = value.split(" "), x = split[0], y = split[1] || "50%";
-    if (x === "top" || x === "bottom" || y === "left" || y === "right") {
-      value = x;
-      x = y;
-      y = value;
-    }
-    split[0] = _keywordToPercent[x] || x;
-    split[1] = _keywordToPercent[y] || y;
-    return split.join(" ");
-  };
-  var _renderClearProps = function _renderClearProps2(ratio, data) {
-    if (data.tween && data.tween._time === data.tween._dur) {
-      var target = data.t, style = target.style, props = data.u, cache = target._gsap, prop, clearTransforms, i;
-      if (props === "all" || props === true) {
-        style.cssText = "";
-        clearTransforms = 1;
-      } else {
-        props = props.split(",");
-        i = props.length;
-        while (--i > -1) {
-          prop = props[i];
-          if (_transformProps[prop]) {
-            clearTransforms = 1;
-            prop = prop === "transformOrigin" ? _transformOriginProp : _transformProp;
-          }
-          _removeProperty(target, prop);
-        }
-      }
-      if (clearTransforms) {
-        _removeProperty(target, _transformProp);
-        if (cache) {
-          cache.svg && target.removeAttribute("transform");
-          style.scale = style.rotate = style.translate = "none";
-          _parseTransform(target, 1);
-          cache.uncache = 1;
-          _removeIndependentTransforms(style);
-        }
-      }
-    }
-  };
-  var _specialProps = {
-    clearProps: function clearProps(plugin, target, property, endValue, tween) {
-      if (tween.data !== "isFromStart") {
-        var pt = plugin._pt = new PropTween(plugin._pt, target, property, 0, 0, _renderClearProps);
-        pt.u = endValue;
-        pt.pr = -10;
-        pt.tween = tween;
-        plugin._props.push(property);
-        return 1;
-      }
-    }
-    /* className feature (about 0.4kb gzipped).
-    , className(plugin, target, property, endValue, tween) {
-    	let _renderClassName = (ratio, data) => {
-    			data.css.render(ratio, data.css);
-    			if (!ratio || ratio === 1) {
-    				let inline = data.rmv,
-    					target = data.t,
-    					p;
-    				target.setAttribute("class", ratio ? data.e : data.b);
-    				for (p in inline) {
-    					_removeProperty(target, p);
-    				}
-    			}
-    		},
-    		_getAllStyles = (target) => {
-    			let styles = {},
-    				computed = getComputedStyle(target),
-    				p;
-    			for (p in computed) {
-    				if (isNaN(p) && p !== "cssText" && p !== "length") {
-    					styles[p] = computed[p];
-    				}
-    			}
-    			_setDefaults(styles, _parseTransform(target, 1));
-    			return styles;
-    		},
-    		startClassList = target.getAttribute("class"),
-    		style = target.style,
-    		cssText = style.cssText,
-    		cache = target._gsap,
-    		classPT = cache.classPT,
-    		inlineToRemoveAtEnd = {},
-    		data = {t:target, plugin:plugin, rmv:inlineToRemoveAtEnd, b:startClassList, e:(endValue.charAt(1) !== "=") ? endValue : startClassList.replace(new RegExp("(?:\\s|^)" + endValue.substr(2) + "(?![\\w-])"), "") + ((endValue.charAt(0) === "+") ? " " + endValue.substr(2) : "")},
-    		changingVars = {},
-    		startVars = _getAllStyles(target),
-    		transformRelated = /(transform|perspective)/i,
-    		endVars, p;
-    	if (classPT) {
-    		classPT.r(1, classPT.d);
-    		_removeLinkedListItem(classPT.d.plugin, classPT, "_pt");
-    	}
-    	target.setAttribute("class", data.e);
-    	endVars = _getAllStyles(target, true);
-    	target.setAttribute("class", startClassList);
-    	for (p in endVars) {
-    		if (endVars[p] !== startVars[p] && !transformRelated.test(p)) {
-    			changingVars[p] = endVars[p];
-    			if (!style[p] && style[p] !== "0") {
-    				inlineToRemoveAtEnd[p] = 1;
-    			}
-    		}
-    	}
-    	cache.classPT = plugin._pt = new PropTween(plugin._pt, target, "className", 0, 0, _renderClassName, data, 0, -11);
-    	if (style.cssText !== cssText) { //only apply if things change. Otherwise, in cases like a background-image that's pulled dynamically, it could cause a refresh. See https://gsap.com/forums/topic/20368-possible-gsap-bug-switching-classnames-in-chrome/.
-    		style.cssText = cssText; //we recorded cssText before we swapped classes and ran _getAllStyles() because in cases when a className tween is overwritten, we remove all the related tweening properties from that class change (otherwise class-specific stuff can't override properties we've directly set on the target's style object due to specificity).
-    	}
-    	_parseTransform(target, true); //to clear the caching of transforms
-    	data.css = new gsap.plugins.css();
-    	data.css.init(target, changingVars, tween);
-    	plugin._props.push(...data.css._props);
-    	return 1;
-    }
-    */
-  };
-  var _identity2DMatrix = [1, 0, 0, 1, 0, 0];
-  var _rotationalProperties = {};
-  var _isNullTransform = function _isNullTransform2(value) {
-    return value === "matrix(1, 0, 0, 1, 0, 0)" || value === "none" || !value;
-  };
-  var _getComputedTransformMatrixAsArray = function _getComputedTransformMatrixAsArray2(target) {
-    var matrixString = _getComputedProperty(target, _transformProp);
-    return _isNullTransform(matrixString) ? _identity2DMatrix : matrixString.substr(7).match(_numExp).map(_round);
-  };
-  var _getMatrix = function _getMatrix2(target, force2D) {
-    var cache = target._gsap || _getCache(target), style = target.style, matrix = _getComputedTransformMatrixAsArray(target), parent, nextSibling, temp, addedToDOM;
-    if (cache.svg && target.getAttribute("transform")) {
-      temp = target.transform.baseVal.consolidate().matrix;
-      matrix = [temp.a, temp.b, temp.c, temp.d, temp.e, temp.f];
-      return matrix.join(",") === "1,0,0,1,0,0" ? _identity2DMatrix : matrix;
-    } else if (matrix === _identity2DMatrix && !target.offsetParent && target !== _docElement && !cache.svg) {
-      temp = style.display;
-      style.display = "block";
-      parent = target.parentNode;
-      if (!parent || !target.offsetParent && !target.getBoundingClientRect().width) {
-        addedToDOM = 1;
-        nextSibling = target.nextElementSibling;
-        _docElement.appendChild(target);
-      }
-      matrix = _getComputedTransformMatrixAsArray(target);
-      temp ? style.display = temp : _removeProperty(target, "display");
-      if (addedToDOM) {
-        nextSibling ? parent.insertBefore(target, nextSibling) : parent ? parent.appendChild(target) : _docElement.removeChild(target);
-      }
-    }
-    return force2D && matrix.length > 6 ? [matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]] : matrix;
-  };
-  var _applySVGOrigin = function _applySVGOrigin2(target, origin, originIsAbsolute, smooth, matrixArray, pluginToAddPropTweensTo) {
-    var cache = target._gsap, matrix = matrixArray || _getMatrix(target, true), xOriginOld = cache.xOrigin || 0, yOriginOld = cache.yOrigin || 0, xOffsetOld = cache.xOffset || 0, yOffsetOld = cache.yOffset || 0, a = matrix[0], b = matrix[1], c = matrix[2], d = matrix[3], tx = matrix[4], ty = matrix[5], originSplit = origin.split(" "), xOrigin = parseFloat(originSplit[0]) || 0, yOrigin = parseFloat(originSplit[1]) || 0, bounds, determinant, x, y;
-    if (!originIsAbsolute) {
-      bounds = _getBBox(target);
-      xOrigin = bounds.x + (~originSplit[0].indexOf("%") ? xOrigin / 100 * bounds.width : xOrigin);
-      yOrigin = bounds.y + (~(originSplit[1] || originSplit[0]).indexOf("%") ? yOrigin / 100 * bounds.height : yOrigin);
-    } else if (matrix !== _identity2DMatrix && (determinant = a * d - b * c)) {
-      x = xOrigin * (d / determinant) + yOrigin * (-c / determinant) + (c * ty - d * tx) / determinant;
-      y = xOrigin * (-b / determinant) + yOrigin * (a / determinant) - (a * ty - b * tx) / determinant;
-      xOrigin = x;
-      yOrigin = y;
-    }
-    if (smooth || smooth !== false && cache.smooth) {
-      tx = xOrigin - xOriginOld;
-      ty = yOrigin - yOriginOld;
-      cache.xOffset = xOffsetOld + (tx * a + ty * c) - tx;
-      cache.yOffset = yOffsetOld + (tx * b + ty * d) - ty;
-    } else {
-      cache.xOffset = cache.yOffset = 0;
-    }
-    cache.xOrigin = xOrigin;
-    cache.yOrigin = yOrigin;
-    cache.smooth = !!smooth;
-    cache.origin = origin;
-    cache.originIsAbsolute = !!originIsAbsolute;
-    target.style[_transformOriginProp] = "0px 0px";
-    if (pluginToAddPropTweensTo) {
-      _addNonTweeningPT(pluginToAddPropTweensTo, cache, "xOrigin", xOriginOld, xOrigin);
-      _addNonTweeningPT(pluginToAddPropTweensTo, cache, "yOrigin", yOriginOld, yOrigin);
-      _addNonTweeningPT(pluginToAddPropTweensTo, cache, "xOffset", xOffsetOld, cache.xOffset);
-      _addNonTweeningPT(pluginToAddPropTweensTo, cache, "yOffset", yOffsetOld, cache.yOffset);
-    }
-    target.setAttribute("data-svg-origin", xOrigin + " " + yOrigin);
-  };
-  var _parseTransform = function _parseTransform2(target, uncache) {
-    var cache = target._gsap || new GSCache(target);
-    if ("x" in cache && !uncache && !cache.uncache) {
-      return cache;
-    }
-    var style = target.style, invertedScaleX = cache.scaleX < 0, px = "px", deg = "deg", cs = getComputedStyle(target), origin = _getComputedProperty(target, _transformOriginProp) || "0", x, y, z, scaleX, scaleY, rotation, rotationX, rotationY, skewX, skewY, perspective, xOrigin, yOrigin, matrix, angle, cos, sin, a, b, c, d, a12, a22, t1, t2, t3, a13, a23, a33, a42, a43, a32;
-    x = y = z = rotation = rotationX = rotationY = skewX = skewY = perspective = 0;
-    scaleX = scaleY = 1;
-    cache.svg = !!(target.getCTM && _isSVG(target));
-    if (cs.translate) {
-      if (cs.translate !== "none" || cs.scale !== "none" || cs.rotate !== "none") {
-        style[_transformProp] = (cs.translate !== "none" ? "translate3d(" + (cs.translate + " 0 0").split(" ").slice(0, 3).join(", ") + ") " : "") + (cs.rotate !== "none" ? "rotate(" + cs.rotate + ") " : "") + (cs.scale !== "none" ? "scale(" + cs.scale.split(" ").join(",") + ") " : "") + (cs[_transformProp] !== "none" ? cs[_transformProp] : "");
-      }
-      style.scale = style.rotate = style.translate = "none";
-    }
-    matrix = _getMatrix(target, cache.svg);
-    if (cache.svg) {
-      if (cache.uncache) {
-        t2 = target.getBBox();
-        origin = cache.xOrigin - t2.x + "px " + (cache.yOrigin - t2.y) + "px";
-        t1 = "";
-      } else {
-        t1 = !uncache && target.getAttribute("data-svg-origin");
-      }
-      _applySVGOrigin(target, t1 || origin, !!t1 || cache.originIsAbsolute, cache.smooth !== false, matrix);
-    }
-    xOrigin = cache.xOrigin || 0;
-    yOrigin = cache.yOrigin || 0;
-    if (matrix !== _identity2DMatrix) {
-      a = matrix[0];
-      b = matrix[1];
-      c = matrix[2];
-      d = matrix[3];
-      x = a12 = matrix[4];
-      y = a22 = matrix[5];
-      if (matrix.length === 6) {
-        scaleX = Math.sqrt(a * a + b * b);
-        scaleY = Math.sqrt(d * d + c * c);
-        rotation = a || b ? _atan2(b, a) * _RAD2DEG : 0;
-        skewX = c || d ? _atan2(c, d) * _RAD2DEG + rotation : 0;
-        skewX && (scaleY *= Math.abs(Math.cos(skewX * _DEG2RAD)));
-        if (cache.svg) {
-          x -= xOrigin - (xOrigin * a + yOrigin * c);
-          y -= yOrigin - (xOrigin * b + yOrigin * d);
-        }
-      } else {
-        a32 = matrix[6];
-        a42 = matrix[7];
-        a13 = matrix[8];
-        a23 = matrix[9];
-        a33 = matrix[10];
-        a43 = matrix[11];
-        x = matrix[12];
-        y = matrix[13];
-        z = matrix[14];
-        angle = _atan2(a32, a33);
-        rotationX = angle * _RAD2DEG;
-        if (angle) {
-          cos = Math.cos(-angle);
-          sin = Math.sin(-angle);
-          t1 = a12 * cos + a13 * sin;
-          t2 = a22 * cos + a23 * sin;
-          t3 = a32 * cos + a33 * sin;
-          a13 = a12 * -sin + a13 * cos;
-          a23 = a22 * -sin + a23 * cos;
-          a33 = a32 * -sin + a33 * cos;
-          a43 = a42 * -sin + a43 * cos;
-          a12 = t1;
-          a22 = t2;
-          a32 = t3;
-        }
-        angle = _atan2(-c, a33);
-        rotationY = angle * _RAD2DEG;
-        if (angle) {
-          cos = Math.cos(-angle);
-          sin = Math.sin(-angle);
-          t1 = a * cos - a13 * sin;
-          t2 = b * cos - a23 * sin;
-          t3 = c * cos - a33 * sin;
-          a43 = d * sin + a43 * cos;
-          a = t1;
-          b = t2;
-          c = t3;
-        }
-        angle = _atan2(b, a);
-        rotation = angle * _RAD2DEG;
-        if (angle) {
-          cos = Math.cos(angle);
-          sin = Math.sin(angle);
-          t1 = a * cos + b * sin;
-          t2 = a12 * cos + a22 * sin;
-          b = b * cos - a * sin;
-          a22 = a22 * cos - a12 * sin;
-          a = t1;
-          a12 = t2;
-        }
-        if (rotationX && Math.abs(rotationX) + Math.abs(rotation) > 359.9) {
-          rotationX = rotation = 0;
-          rotationY = 180 - rotationY;
-        }
-        scaleX = _round(Math.sqrt(a * a + b * b + c * c));
-        scaleY = _round(Math.sqrt(a22 * a22 + a32 * a32));
-        angle = _atan2(a12, a22);
-        skewX = Math.abs(angle) > 2e-4 ? angle * _RAD2DEG : 0;
-        perspective = a43 ? 1 / (a43 < 0 ? -a43 : a43) : 0;
-      }
-      if (cache.svg) {
-        t1 = target.getAttribute("transform");
-        cache.forceCSS = target.setAttribute("transform", "") || !_isNullTransform(_getComputedProperty(target, _transformProp));
-        t1 && target.setAttribute("transform", t1);
-      }
-    }
-    if (Math.abs(skewX) > 90 && Math.abs(skewX) < 270) {
-      if (invertedScaleX) {
-        scaleX *= -1;
-        skewX += rotation <= 0 ? 180 : -180;
-        rotation += rotation <= 0 ? 180 : -180;
-      } else {
-        scaleY *= -1;
-        skewX += skewX <= 0 ? 180 : -180;
-      }
-    }
-    uncache = uncache || cache.uncache;
-    cache.x = x - ((cache.xPercent = x && (!uncache && cache.xPercent || (Math.round(target.offsetWidth / 2) === Math.round(-x) ? -50 : 0))) ? target.offsetWidth * cache.xPercent / 100 : 0) + px;
-    cache.y = y - ((cache.yPercent = y && (!uncache && cache.yPercent || (Math.round(target.offsetHeight / 2) === Math.round(-y) ? -50 : 0))) ? target.offsetHeight * cache.yPercent / 100 : 0) + px;
-    cache.z = z + px;
-    cache.scaleX = _round(scaleX);
-    cache.scaleY = _round(scaleY);
-    cache.rotation = _round(rotation) + deg;
-    cache.rotationX = _round(rotationX) + deg;
-    cache.rotationY = _round(rotationY) + deg;
-    cache.skewX = skewX + deg;
-    cache.skewY = skewY + deg;
-    cache.transformPerspective = perspective + px;
-    if (cache.zOrigin = parseFloat(origin.split(" ")[2]) || !uncache && cache.zOrigin || 0) {
-      style[_transformOriginProp] = _firstTwoOnly(origin);
-    }
-    cache.xOffset = cache.yOffset = 0;
-    cache.force3D = _config.force3D;
-    cache.renderTransform = cache.svg ? _renderSVGTransforms : _supports3D ? _renderCSSTransforms : _renderNon3DTransforms;
-    cache.uncache = 0;
-    return cache;
-  };
-  var _firstTwoOnly = function _firstTwoOnly2(value) {
-    return (value = value.split(" "))[0] + " " + value[1];
-  };
-  var _addPxTranslate = function _addPxTranslate2(target, start, value) {
-    var unit = getUnit(start);
-    return _round(parseFloat(start) + parseFloat(_convertToUnit(target, "x", value + "px", unit))) + unit;
-  };
-  var _renderNon3DTransforms = function _renderNon3DTransforms2(ratio, cache) {
-    cache.z = "0px";
-    cache.rotationY = cache.rotationX = "0deg";
-    cache.force3D = 0;
-    _renderCSSTransforms(ratio, cache);
-  };
-  var _zeroDeg = "0deg";
-  var _zeroPx = "0px";
-  var _endParenthesis = ") ";
-  var _renderCSSTransforms = function _renderCSSTransforms2(ratio, cache) {
-    var _ref = cache || this, xPercent = _ref.xPercent, yPercent = _ref.yPercent, x = _ref.x, y = _ref.y, z = _ref.z, rotation = _ref.rotation, rotationY = _ref.rotationY, rotationX = _ref.rotationX, skewX = _ref.skewX, skewY = _ref.skewY, scaleX = _ref.scaleX, scaleY = _ref.scaleY, transformPerspective = _ref.transformPerspective, force3D = _ref.force3D, target = _ref.target, zOrigin = _ref.zOrigin, transforms = "", use3D = force3D === "auto" && ratio && ratio !== 1 || force3D === true;
-    if (zOrigin && (rotationX !== _zeroDeg || rotationY !== _zeroDeg)) {
-      var angle = parseFloat(rotationY) * _DEG2RAD, a13 = Math.sin(angle), a33 = Math.cos(angle), cos;
-      angle = parseFloat(rotationX) * _DEG2RAD;
-      cos = Math.cos(angle);
-      x = _addPxTranslate(target, x, a13 * cos * -zOrigin);
-      y = _addPxTranslate(target, y, -Math.sin(angle) * -zOrigin);
-      z = _addPxTranslate(target, z, a33 * cos * -zOrigin + zOrigin);
-    }
-    if (transformPerspective !== _zeroPx) {
-      transforms += "perspective(" + transformPerspective + _endParenthesis;
-    }
-    if (xPercent || yPercent) {
-      transforms += "translate(" + xPercent + "%, " + yPercent + "%) ";
-    }
-    if (use3D || x !== _zeroPx || y !== _zeroPx || z !== _zeroPx) {
-      transforms += z !== _zeroPx || use3D ? "translate3d(" + x + ", " + y + ", " + z + ") " : "translate(" + x + ", " + y + _endParenthesis;
-    }
-    if (rotation !== _zeroDeg) {
-      transforms += "rotate(" + rotation + _endParenthesis;
-    }
-    if (rotationY !== _zeroDeg) {
-      transforms += "rotateY(" + rotationY + _endParenthesis;
-    }
-    if (rotationX !== _zeroDeg) {
-      transforms += "rotateX(" + rotationX + _endParenthesis;
-    }
-    if (skewX !== _zeroDeg || skewY !== _zeroDeg) {
-      transforms += "skew(" + skewX + ", " + skewY + _endParenthesis;
-    }
-    if (scaleX !== 1 || scaleY !== 1) {
-      transforms += "scale(" + scaleX + ", " + scaleY + _endParenthesis;
-    }
-    target.style[_transformProp] = transforms || "translate(0, 0)";
-  };
-  var _renderSVGTransforms = function _renderSVGTransforms2(ratio, cache) {
-    var _ref2 = cache || this, xPercent = _ref2.xPercent, yPercent = _ref2.yPercent, x = _ref2.x, y = _ref2.y, rotation = _ref2.rotation, skewX = _ref2.skewX, skewY = _ref2.skewY, scaleX = _ref2.scaleX, scaleY = _ref2.scaleY, target = _ref2.target, xOrigin = _ref2.xOrigin, yOrigin = _ref2.yOrigin, xOffset = _ref2.xOffset, yOffset = _ref2.yOffset, forceCSS = _ref2.forceCSS, tx = parseFloat(x), ty = parseFloat(y), a11, a21, a12, a22, temp;
-    rotation = parseFloat(rotation);
-    skewX = parseFloat(skewX);
-    skewY = parseFloat(skewY);
-    if (skewY) {
-      skewY = parseFloat(skewY);
-      skewX += skewY;
-      rotation += skewY;
-    }
-    if (rotation || skewX) {
-      rotation *= _DEG2RAD;
-      skewX *= _DEG2RAD;
-      a11 = Math.cos(rotation) * scaleX;
-      a21 = Math.sin(rotation) * scaleX;
-      a12 = Math.sin(rotation - skewX) * -scaleY;
-      a22 = Math.cos(rotation - skewX) * scaleY;
-      if (skewX) {
-        skewY *= _DEG2RAD;
-        temp = Math.tan(skewX - skewY);
-        temp = Math.sqrt(1 + temp * temp);
-        a12 *= temp;
-        a22 *= temp;
-        if (skewY) {
-          temp = Math.tan(skewY);
-          temp = Math.sqrt(1 + temp * temp);
-          a11 *= temp;
-          a21 *= temp;
-        }
-      }
-      a11 = _round(a11);
-      a21 = _round(a21);
-      a12 = _round(a12);
-      a22 = _round(a22);
-    } else {
-      a11 = scaleX;
-      a22 = scaleY;
-      a21 = a12 = 0;
-    }
-    if (tx && !~(x + "").indexOf("px") || ty && !~(y + "").indexOf("px")) {
-      tx = _convertToUnit(target, "x", x, "px");
-      ty = _convertToUnit(target, "y", y, "px");
-    }
-    if (xOrigin || yOrigin || xOffset || yOffset) {
-      tx = _round(tx + xOrigin - (xOrigin * a11 + yOrigin * a12) + xOffset);
-      ty = _round(ty + yOrigin - (xOrigin * a21 + yOrigin * a22) + yOffset);
-    }
-    if (xPercent || yPercent) {
-      temp = target.getBBox();
-      tx = _round(tx + xPercent / 100 * temp.width);
-      ty = _round(ty + yPercent / 100 * temp.height);
-    }
-    temp = "matrix(" + a11 + "," + a21 + "," + a12 + "," + a22 + "," + tx + "," + ty + ")";
-    target.setAttribute("transform", temp);
-    forceCSS && (target.style[_transformProp] = temp);
-  };
-  var _addRotationalPropTween = function _addRotationalPropTween2(plugin, target, property, startNum, endValue) {
-    var cap = 360, isString = _isString(endValue), endNum = parseFloat(endValue) * (isString && ~endValue.indexOf("rad") ? _RAD2DEG : 1), change = endNum - startNum, finalValue = startNum + change + "deg", direction, pt;
-    if (isString) {
-      direction = endValue.split("_")[1];
-      if (direction === "short") {
-        change %= cap;
-        if (change !== change % (cap / 2)) {
-          change += change < 0 ? cap : -cap;
-        }
-      }
-      if (direction === "cw" && change < 0) {
-        change = (change + cap * _bigNum2) % cap - ~~(change / cap) * cap;
-      } else if (direction === "ccw" && change > 0) {
-        change = (change - cap * _bigNum2) % cap - ~~(change / cap) * cap;
-      }
-    }
-    plugin._pt = pt = new PropTween(plugin._pt, target, property, startNum, change, _renderPropWithEnd);
-    pt.e = finalValue;
-    pt.u = "deg";
-    plugin._props.push(property);
-    return pt;
-  };
-  var _assign = function _assign2(target, source) {
-    for (var p in source) {
-      target[p] = source[p];
-    }
-    return target;
-  };
-  var _addRawTransformPTs = function _addRawTransformPTs2(plugin, transforms, target) {
-    var startCache = _assign({}, target._gsap), exclude = "perspective,force3D,transformOrigin,svgOrigin", style = target.style, endCache, p, startValue, endValue, startNum, endNum, startUnit, endUnit;
-    if (startCache.svg) {
-      startValue = target.getAttribute("transform");
-      target.setAttribute("transform", "");
-      style[_transformProp] = transforms;
-      endCache = _parseTransform(target, 1);
-      _removeProperty(target, _transformProp);
-      target.setAttribute("transform", startValue);
-    } else {
-      startValue = getComputedStyle(target)[_transformProp];
-      style[_transformProp] = transforms;
-      endCache = _parseTransform(target, 1);
-      style[_transformProp] = startValue;
-    }
-    for (p in _transformProps) {
-      startValue = startCache[p];
-      endValue = endCache[p];
-      if (startValue !== endValue && exclude.indexOf(p) < 0) {
-        startUnit = getUnit(startValue);
-        endUnit = getUnit(endValue);
-        startNum = startUnit !== endUnit ? _convertToUnit(target, p, startValue, endUnit) : parseFloat(startValue);
-        endNum = parseFloat(endValue);
-        plugin._pt = new PropTween(plugin._pt, endCache, p, startNum, endNum - startNum, _renderCSSProp);
-        plugin._pt.u = endUnit || 0;
-        plugin._props.push(p);
-      }
-    }
-    _assign(endCache, startCache);
-  };
-  _forEachName("padding,margin,Width,Radius", function(name, index) {
-    var t = "Top", r = "Right", b = "Bottom", l = "Left", props = (index < 3 ? [t, r, b, l] : [t + l, t + r, b + r, b + l]).map(function(side) {
-      return index < 2 ? name + side : "border" + side + name;
-    });
-    _specialProps[index > 1 ? "border" + name : name] = function(plugin, target, property, endValue, tween) {
-      var a, vars;
-      if (arguments.length < 4) {
-        a = props.map(function(prop) {
-          return _get(plugin, prop, property);
-        });
-        vars = a.join(" ");
-        return vars.split(a[0]).length === 5 ? a[0] : vars;
-      }
-      a = (endValue + "").split(" ");
-      vars = {};
-      props.forEach(function(prop, i) {
-        return vars[prop] = a[i] = a[i] || a[(i - 1) / 2 | 0];
-      });
-      plugin.init(target, vars, tween);
-    };
-  });
-  var CSSPlugin = {
-    name: "css",
-    register: _initCore,
-    targetTest: function targetTest(target) {
-      return target.style && target.nodeType;
-    },
-    init: function init3(target, vars, tween, index, targets) {
-      var props = this._props, style = target.style, startAt = tween.vars.startAt, startValue, endValue, endNum, startNum, type, specialProp, p, startUnit, endUnit, relative, isTransformRelated, transformPropTween, cache, smooth, hasPriority, inlineProps, finalTransformValue;
-      _pluginInitted || _initCore();
-      this.styles = this.styles || _getStyleSaver(target);
-      inlineProps = this.styles.props;
-      this.tween = tween;
-      for (p in vars) {
-        if (p === "autoRound") {
-          continue;
-        }
-        endValue = vars[p];
-        if (_plugins[p] && _checkPlugin(p, vars, tween, index, target, targets)) {
-          continue;
-        }
-        type = typeof endValue;
-        specialProp = _specialProps[p];
-        if (type === "function") {
-          endValue = endValue.call(tween, index, target, targets);
-          type = typeof endValue;
-        }
-        if (type === "string" && ~endValue.indexOf("random(")) {
-          endValue = _replaceRandom(endValue);
-        }
-        if (specialProp) {
-          specialProp(this, target, p, endValue, tween) && (hasPriority = 1);
-        } else if (p.substr(0, 2) === "--") {
-          startValue = (getComputedStyle(target).getPropertyValue(p) + "").trim();
-          endValue += "";
-          _colorExp.lastIndex = 0;
-          if (!_colorExp.test(startValue)) {
-            startUnit = getUnit(startValue);
-            endUnit = getUnit(endValue);
-            endUnit ? startUnit !== endUnit && (startValue = _convertToUnit(target, p, startValue, endUnit) + endUnit) : startUnit && (endValue += startUnit);
-          }
-          this.add(style, "setProperty", startValue, endValue, index, targets, 0, 0, p);
-          props.push(p);
-          inlineProps.push(p, 0, style[p]);
-        } else if (type !== "undefined") {
-          if (startAt && p in startAt) {
-            startValue = typeof startAt[p] === "function" ? startAt[p].call(tween, index, target, targets) : startAt[p];
-            _isString(startValue) && ~startValue.indexOf("random(") && (startValue = _replaceRandom(startValue));
-            getUnit(startValue + "") || startValue === "auto" || (startValue += _config.units[p] || getUnit(_get(target, p)) || "");
-            (startValue + "").charAt(1) === "=" && (startValue = _get(target, p));
-          } else {
-            startValue = _get(target, p);
-          }
-          startNum = parseFloat(startValue);
-          relative = type === "string" && endValue.charAt(1) === "=" && endValue.substr(0, 2);
-          relative && (endValue = endValue.substr(2));
-          endNum = parseFloat(endValue);
-          if (p in _propertyAliases) {
-            if (p === "autoAlpha") {
-              if (startNum === 1 && _get(target, "visibility") === "hidden" && endNum) {
-                startNum = 0;
-              }
-              inlineProps.push("visibility", 0, style.visibility);
-              _addNonTweeningPT(this, style, "visibility", startNum ? "inherit" : "hidden", endNum ? "inherit" : "hidden", !endNum);
-            }
-            if (p !== "scale" && p !== "transform") {
-              p = _propertyAliases[p];
-              ~p.indexOf(",") && (p = p.split(",")[0]);
-            }
-          }
-          isTransformRelated = p in _transformProps;
-          if (isTransformRelated) {
-            this.styles.save(p);
-            finalTransformValue = endValue;
-            if (type === "string" && endValue.substring(0, 6) === "var(--") {
-              endValue = _getComputedProperty(target, endValue.substring(4, endValue.indexOf(")")));
-              if (endValue.substring(0, 5) === "calc(") {
-                var origPerspective = target.style.perspective;
-                target.style.perspective = endValue;
-                endValue = _getComputedProperty(target, "perspective");
-                origPerspective ? target.style.perspective = origPerspective : _removeProperty(target, "perspective");
-              }
-              endNum = parseFloat(endValue);
-            }
-            if (!transformPropTween) {
-              cache = target._gsap;
-              cache.renderTransform && !vars.parseTransform || _parseTransform(target, vars.parseTransform);
-              smooth = vars.smoothOrigin !== false && cache.smooth;
-              transformPropTween = this._pt = new PropTween(this._pt, style, _transformProp, 0, 1, cache.renderTransform, cache, 0, -1);
-              transformPropTween.dep = 1;
-            }
-            if (p === "scale") {
-              this._pt = new PropTween(this._pt, cache, "scaleY", cache.scaleY, (relative ? _parseRelative(cache.scaleY, relative + endNum) : endNum) - cache.scaleY || 0, _renderCSSProp);
-              this._pt.u = 0;
-              props.push("scaleY", p);
-              p += "X";
-            } else if (p === "transformOrigin") {
-              inlineProps.push(_transformOriginProp, 0, style[_transformOriginProp]);
-              endValue = _convertKeywordsToPercentages(endValue);
-              if (cache.svg) {
-                _applySVGOrigin(target, endValue, 0, smooth, 0, this);
-              } else {
-                endUnit = parseFloat(endValue.split(" ")[2]) || 0;
-                endUnit !== cache.zOrigin && _addNonTweeningPT(this, cache, "zOrigin", cache.zOrigin, endUnit);
-                _addNonTweeningPT(this, style, p, _firstTwoOnly(startValue), _firstTwoOnly(endValue));
-              }
-              continue;
-            } else if (p === "svgOrigin") {
-              _applySVGOrigin(target, endValue, 1, smooth, 0, this);
-              continue;
-            } else if (p in _rotationalProperties) {
-              _addRotationalPropTween(this, cache, p, startNum, relative ? _parseRelative(startNum, relative + endValue) : endValue);
-              continue;
-            } else if (p === "smoothOrigin") {
-              _addNonTweeningPT(this, cache, "smooth", cache.smooth, endValue);
-              continue;
-            } else if (p === "force3D") {
-              cache[p] = endValue;
-              continue;
-            } else if (p === "transform") {
-              _addRawTransformPTs(this, endValue, target);
-              continue;
-            }
-          } else if (!(p in style)) {
-            p = _checkPropPrefix(p) || p;
-          }
-          if (isTransformRelated || (endNum || endNum === 0) && (startNum || startNum === 0) && !_complexExp.test(endValue) && p in style) {
-            startUnit = (startValue + "").substr((startNum + "").length);
-            endNum || (endNum = 0);
-            endUnit = getUnit(endValue) || (p in _config.units ? _config.units[p] : startUnit);
-            startUnit !== endUnit && (startNum = _convertToUnit(target, p, startValue, endUnit));
-            this._pt = new PropTween(this._pt, isTransformRelated ? cache : style, p, startNum, (relative ? _parseRelative(startNum, relative + endNum) : endNum) - startNum, !isTransformRelated && (endUnit === "px" || p === "zIndex") && vars.autoRound !== false ? _renderRoundedCSSProp : _renderCSSProp);
-            this._pt.u = endUnit || 0;
-            if (isTransformRelated && finalTransformValue !== endValue) {
-              this._pt.b = startValue;
-              this._pt.e = finalTransformValue;
-              this._pt.r = _renderCSSPropWithBeginningAndEnd;
-            } else if (startUnit !== endUnit && endUnit !== "%") {
-              this._pt.b = startValue;
-              this._pt.r = _renderCSSPropWithBeginning;
-            }
-          } else if (!(p in style)) {
-            if (p in target) {
-              this.add(target, p, startValue || target[p], relative ? relative + endValue : endValue, index, targets);
-            } else if (p !== "parseTransform") {
-              _missingPlugin(p, endValue);
-              continue;
-            }
-          } else {
-            _tweenComplexCSSString.call(this, target, p, startValue, relative ? relative + endValue : endValue);
-          }
-          isTransformRelated || (p in style ? inlineProps.push(p, 0, style[p]) : typeof target[p] === "function" ? inlineProps.push(p, 2, target[p]()) : inlineProps.push(p, 1, startValue || target[p]));
-          props.push(p);
-        }
-      }
-      hasPriority && _sortPropTweensByPriority(this);
-    },
-    render: function render2(ratio, data) {
-      if (data.tween._time || !_reverting2()) {
-        var pt = data._pt;
-        while (pt) {
-          pt.r(ratio, pt.d);
-          pt = pt._next;
-        }
-      } else {
-        data.styles.revert();
-      }
-    },
-    get: _get,
-    aliases: _propertyAliases,
-    getSetter: function getSetter(target, property, plugin) {
-      var p = _propertyAliases[property];
-      p && p.indexOf(",") < 0 && (property = p);
-      return property in _transformProps && property !== _transformOriginProp && (target._gsap.x || _get(target, "x")) ? plugin && _recentSetterPlugin === plugin ? property === "scale" ? _setterScale : _setterTransform : (_recentSetterPlugin = plugin || {}) && (property === "scale" ? _setterScaleWithRender : _setterTransformWithRender) : target.style && !_isUndefined(target.style[property]) ? _setterCSSStyle : ~property.indexOf("-") ? _setterCSSProp : _getSetter(target, property);
-    },
-    core: {
-      _removeProperty,
-      _getMatrix
-    }
-  };
-  gsap.utils.checkPrefix = _checkPropPrefix;
-  gsap.core.getStyleSaver = _getStyleSaver;
-  (function(positionAndScale, rotation, others, aliases) {
-    var all = _forEachName(positionAndScale + "," + rotation + "," + others, function(name) {
-      _transformProps[name] = 1;
-    });
-    _forEachName(rotation, function(name) {
-      _config.units[name] = "deg";
-      _rotationalProperties[name] = 1;
-    });
-    _propertyAliases[all[13]] = positionAndScale + "," + rotation;
-    _forEachName(aliases, function(name) {
-      var split = name.split(":");
-      _propertyAliases[split[1]] = all[split[0]];
-    });
-  })("x,y,z,scale,scaleX,scaleY,xPercent,yPercent", "rotation,rotationX,rotationY,skewX,skewY", "transform,transformOrigin,svgOrigin,force3D,smoothOrigin,transformPerspective", "0:translateX,1:translateY,2:translateZ,8:rotate,8:rotationZ,8:rotateZ,9:rotateX,10:rotateY");
-  _forEachName("x,y,z,top,right,bottom,left,width,height,fontSize,padding,margin,perspective", function(name) {
-    _config.units[name] = "px";
-  });
-  gsap.registerPlugin(CSSPlugin);
-
-  // node_modules/gsap/index.js
-  var gsapWithCSS = gsap.registerPlugin(CSSPlugin) || gsap;
-  var TweenMaxWithCSS = gsapWithCSS.core.Tween;
-
-  // src/client/modules/tree.ts
-  async function loadTree(path = "") {
-    let targetPath = path || "/root";
-    if (targetPath.startsWith("~")) targetPath = "/root" + (targetPath.length > 1 ? targetPath.slice(1) : "");
-    try {
-      const res = await fetch(API + "/files/list", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path: targetPath, showHidden: KFMState.showHidden })
-      });
-      const data = await res.json();
-      if (data.error) return [];
-      return data.items.map((item) => ({
-        name: item.name,
-        isDir: item.isDir,
-        isLink: false,
-        path: item.path
-      }));
-    } catch (e) {
-      console.error("loadTree error:", e);
-      return [];
-    }
-  }
-  async function renderTree(container = document.getElementById("fileTree"), path = "", depth = 0) {
-    var _a, _b, _c;
-    let savedPath = null;
-    if (depth === 0) {
-      const savedSelected = document.querySelector(".tree-item.selected");
-      savedPath = ((_a = savedSelected == null ? void 0 : savedSelected.dataset) == null ? void 0 : _a.path) || null;
-      (_b = window.resetCursorHighlight) == null ? void 0 : _b.call(window);
-      container.innerHTML = '<div class="loading-pulse"><div class="pulse-row"></div><div class="pulse-row"></div><div class="pulse-row"></div></div>';
-    }
-    const items = await loadTree(path);
-    container.innerHTML = "";
-    const frag = document.createDocumentFragment();
-    for (const item of items) {
-      const div = document.createElement("div");
-      div.className = "tree-item";
-      div.dataset.path = item.path;
-      const row = document.createElement("div");
-      row.className = "tree-row";
-      const toggle = document.createElement("span");
-      toggle.className = "tree-toggle" + (KFMState.expandedPaths[item.path] ? " expanded" : "");
-      if (!item.isDir) toggle.classList.add("hidden");
-      const name = document.createElement("span");
-      name.className = "tree-name" + (item.isLink ? " link" : "");
-      name.textContent = item.name + (item.isLink ? " \u2192" : "");
-      row.append(toggle, name);
-      div.appendChild(row);
-      const wrap3 = document.createElement("div");
-      wrap3.className = "tree-children-wrap";
-      const maxDepth = 6;
-      const depthRatio = Math.min(depth / maxDepth, 1);
-      const opacity = 0.15 + depthRatio * 0.85;
-      wrap3.style.borderColor = `rgba(124,58,237,${opacity})`;
-      const inner = document.createElement("div");
-      const bgTop = `rgba(124,58,237,${0.01 + depthRatio * 0.1})`;
-      const bgBot = `rgba(124,58,237,${0.06 + depthRatio * 0.25})`;
-      inner.style.background = `linear-gradient(to bottom,${bgTop},${bgBot})`;
-      const childrenWrap = document.createElement("div");
-      if (KFMState.expandedPaths[item.path]) {
-        wrap3.classList.add("open");
-        toggle.classList.add("expanded");
-      }
-      wrap3.appendChild(inner);
-      inner.appendChild(childrenWrap);
-      div.appendChild(wrap3);
-      frag.appendChild(div);
-      if (KFMState.expandedPaths[item.path] && item.isDir) renderTree(childrenWrap, item.path, depth + 1);
-      row.addEventListener("click", async (e) => {
-        var _a2, _b2, _c2, _d;
-        const isCurrentlySelected = div.classList.contains("selected");
-        if (isCurrentlySelected) {
-          if (item.isDir) {
-            const isOpen = wrap3.classList.contains("open");
-            if (!isOpen && !childrenWrap.querySelector(".tree-item")) {
-              await renderTree(childrenWrap, item.path, depth + 1);
-            }
-            wrap3.classList.toggle("open");
-            toggle.classList.toggle("expanded");
-            KFMState.setExpanded(item.path, !isOpen);
-            const tl = gsapWithCSS.timeline();
-            const dir = isOpen ? -1 : 1;
-            const targets = [div];
-            let sib = div.nextElementSibling;
-            while (sib) {
-              if (sib.classList.contains("tree-item")) targets.push(sib);
-              sib = sib.nextElementSibling;
-            }
-            targets.forEach((el, i) => {
-              tl.fromTo(
-                el,
-                { y: 0 },
-                { y: dir * 10, duration: 0.3, ease: "back.out(1.7)" },
-                i * 0.02
-              );
-              tl.to(el, { y: dir * -2, duration: 0.15, ease: "power2.out" }, ">0");
-              tl.to(el, { y: 0, duration: 0.1, ease: "power1.inOut" }, ">0");
-            });
-            let sc = 0;
-            {
-              let s = div.nextElementSibling;
-              while (s) {
-                if (s.classList.contains("tree-item")) sc++;
-                s = s.nextElementSibling;
-              }
-            }
-            (_a2 = window.syncCursorDuringBounce) == null ? void 0 : _a2.call(window, sc);
-          }
-        } else {
-          (_b2 = window.selectFileItem) == null ? void 0 : _b2.call(window, div);
-          if (!((_c2 = window.isInConstraintZone) == null ? void 0 : _c2.call(window, div))) {
-            (_d = window.scrollAndCenterCursor) == null ? void 0 : _d.call(window, div);
-          }
-        }
-        e.stopPropagation();
-      });
-    }
-    container.appendChild(frag);
-    if (depth === 0 && savedPath) {
-      const newItem = document.querySelector(`.tree-item[data-path="${savedPath}"]`);
-      if (newItem) {
-        newItem.classList.add("selected");
-        (_c = window.updateCursorHighlight) == null ? void 0 : _c.call(window, true);
-      }
-    }
-  }
-  function refreshTree() {
-    renderTree();
-  }
-  function toggleHidden() {
-    var _a;
-    KFMState.toggleHidden();
-    (_a = document.getElementById("toggleHiddenBtn")) == null ? void 0 : _a.classList.toggle("active", KFMState.showHidden);
-    renderTree();
-  }
-  function initTree() {
-    window.renderTree = renderTree;
-    window.refreshTree = refreshTree;
-    window.toggleHidden = toggleHidden;
-    renderTree();
-    setInterval(() => {
-    }, 3e4);
   }
 
   // node_modules/@chenglou/pretext/dist/generated/bidi-data.js
@@ -7310,13 +2892,75 @@
     return lineCount;
   }
 
-  // node_modules/@chenglou/pretext/dist/layout.js
+  // node_modules/@chenglou/pretext/dist/line-text.js
   var sharedGraphemeSegmenter2 = null;
+  var sharedLineTextCaches = /* @__PURE__ */ new WeakMap();
   function getSharedGraphemeSegmenter2() {
     if (sharedGraphemeSegmenter2 === null) {
       sharedGraphemeSegmenter2 = new Intl.Segmenter(void 0, { granularity: "grapheme" });
     }
     return sharedGraphemeSegmenter2;
+  }
+  function getSegmentGraphemes(segmentIndex, segments, cache) {
+    let graphemes = cache.get(segmentIndex);
+    if (graphemes !== void 0)
+      return graphemes;
+    graphemes = [];
+    const graphemeSegmenter = getSharedGraphemeSegmenter2();
+    for (const gs of graphemeSegmenter.segment(segments[segmentIndex])) {
+      graphemes.push(gs.segment);
+    }
+    cache.set(segmentIndex, graphemes);
+    return graphemes;
+  }
+  function lineHasDiscretionaryHyphen(kinds, startSegmentIndex, startGraphemeIndex, endSegmentIndex) {
+    return endSegmentIndex > 0 && kinds[endSegmentIndex - 1] === "soft-hyphen" && !(startSegmentIndex === endSegmentIndex && startGraphemeIndex > 0);
+  }
+  function appendSegmentGraphemeRange(text, graphemes, startGraphemeIndex, endGraphemeIndex) {
+    for (let i = startGraphemeIndex; i < endGraphemeIndex; i++) {
+      text += graphemes[i];
+    }
+    return text;
+  }
+  function getLineTextCache(prepared) {
+    let cache = sharedLineTextCaches.get(prepared);
+    if (cache !== void 0)
+      return cache;
+    cache = /* @__PURE__ */ new Map();
+    sharedLineTextCaches.set(prepared, cache);
+    return cache;
+  }
+  function buildLineTextFromRange(prepared, cache, startSegmentIndex, startGraphemeIndex, endSegmentIndex, endGraphemeIndex) {
+    let text = "";
+    const endsWithDiscretionaryHyphen = lineHasDiscretionaryHyphen(prepared.kinds, startSegmentIndex, startGraphemeIndex, endSegmentIndex);
+    for (let i = startSegmentIndex; i < endSegmentIndex; i++) {
+      if (prepared.kinds[i] === "soft-hyphen" || prepared.kinds[i] === "hard-break")
+        continue;
+      if (i === startSegmentIndex && startGraphemeIndex > 0) {
+        const graphemes = getSegmentGraphemes(i, prepared.segments, cache);
+        text = appendSegmentGraphemeRange(text, graphemes, startGraphemeIndex, graphemes.length);
+      } else {
+        text += prepared.segments[i];
+      }
+    }
+    if (endGraphemeIndex > 0) {
+      if (endsWithDiscretionaryHyphen)
+        text += "-";
+      const graphemes = getSegmentGraphemes(endSegmentIndex, prepared.segments, cache);
+      text = appendSegmentGraphemeRange(text, graphemes, startSegmentIndex === endSegmentIndex ? startGraphemeIndex : 0, endGraphemeIndex);
+    } else if (endsWithDiscretionaryHyphen) {
+      text += "-";
+    }
+    return text;
+  }
+
+  // node_modules/@chenglou/pretext/dist/layout.js
+  var sharedGraphemeSegmenter3 = null;
+  function getSharedGraphemeSegmenter3() {
+    if (sharedGraphemeSegmenter3 === null) {
+      sharedGraphemeSegmenter3 = new Intl.Segmenter(void 0, { granularity: "grapheme" });
+    }
+    return sharedGraphemeSegmenter3;
   }
   function createEmptyPrepared(includeSegments) {
     if (includeSegments) {
@@ -7388,7 +3032,7 @@
       }
       unitIsSingleKinsokuEnd = false;
     }
-    for (const gs of getSharedGraphemeSegmenter2().segment(segText)) {
+    for (const gs of getSharedGraphemeSegmenter3().segment(segText)) {
       const grapheme = gs.segment;
       const graphemeContainsCJK = isCJK(grapheme);
       if (unitParts.length === 0) {
@@ -7449,7 +3093,7 @@
     if (kind === "tab")
       return 1;
     let count = 0;
-    const graphemeSegmenter = getSharedGraphemeSegmenter2();
+    const graphemeSegmenter = getSharedGraphemeSegmenter3();
     for (const _ of graphemeSegmenter.segment(text))
       count++;
     return count;
@@ -7605,472 +3249,1700 @@
   function getInternalPrepared(prepared) {
     return prepared;
   }
-  function measureNaturalWidth(prepared) {
-    let maxWidth = 0;
-    walkPreparedLinesRaw(getInternalPrepared(prepared), Number.POSITIVE_INFINITY, (width) => {
-      if (width > maxWidth)
-        maxWidth = width;
+  function createLayoutLine(prepared, cache, width, startSegmentIndex, startGraphemeIndex, endSegmentIndex, endGraphemeIndex) {
+    return {
+      text: buildLineTextFromRange(prepared, cache, startSegmentIndex, startGraphemeIndex, endSegmentIndex, endGraphemeIndex),
+      width,
+      start: {
+        segmentIndex: startSegmentIndex,
+        graphemeIndex: startGraphemeIndex
+      },
+      end: {
+        segmentIndex: endSegmentIndex,
+        graphemeIndex: endGraphemeIndex
+      }
+    };
+  }
+  function layoutWithLines(prepared, maxWidth, lineHeight) {
+    const lines = [];
+    if (prepared.widths.length === 0)
+      return { lineCount: 0, height: 0, lines };
+    const graphemeCache = getLineTextCache(prepared);
+    const lineCount = walkPreparedLinesRaw(getInternalPrepared(prepared), maxWidth, (width, startSegmentIndex, startGraphemeIndex, endSegmentIndex, endGraphemeIndex) => {
+      lines.push(createLayoutLine(prepared, graphemeCache, width, startSegmentIndex, startGraphemeIndex, endSegmentIndex, endGraphemeIndex));
     });
-    return maxWidth;
+    return { lineCount, height: lineCount * lineHeight, lines };
   }
 
-  // src/client/modules/tree-text.ts
-  var TREE_FONT = "12px -apple-system, sans-serif";
-  function measureNaturalWidthSync(text, font = TREE_FONT) {
-    const prepared = prepareWithSegments(text, font);
-    return measureNaturalWidth(prepared);
+  // src/client/engine/v2/flex.ts
+  var DEFAULT_FLEX = {
+    flexDirection: "row",
+    justifyContent: "flex-start",
+    alignItems: "flex-start",
+    flexWrap: "nowrap",
+    gap: 0,
+    rowGap: 0,
+    columnGap: 0
+  };
+  var DEFAULT_FLEX_ITEM = {
+    flex: 0,
+    flexShrink: 1,
+    flexBasis: "auto",
+    alignSelf: "auto",
+    minWidth: 0,
+    maxWidth: Infinity,
+    minHeight: 0,
+    maxHeight: Infinity
+  };
+  function applyFlexLayout(parent) {
+    var _a, _b, _c;
+    if (!parent.layout) return;
+    if (parent.children.length === 0) return;
+    const layout2 = parent.layout;
+    const style = { ...DEFAULT_FLEX, ...layout2 };
+    const isRow = style.flexDirection === "row" || style.flexDirection === "row-reverse";
+    const isReverse = style.flexDirection === "row-reverse" || style.flexDirection === "column-reverse";
+    const gap = (_a = layout2.gap) != null ? _a : 0;
+    const rowGap = (_b = layout2.rowGap) != null ? _b : gap;
+    const columnGap = (_c = layout2.columnGap) != null ? _c : gap;
+    const mainGap = isRow ? columnGap : rowGap;
+    const crossGap = isRow ? rowGap : columnGap;
+    const contentX = parent.padding.left;
+    const contentY = parent.padding.top;
+    const contentWidth = parent.width - parent.padding.left - parent.padding.right;
+    const contentHeight = parent.height - parent.padding.top - parent.padding.bottom;
+    const children = parent.children.slice();
+    const layouts = children.map((child) => {
+      var _a2;
+      const itemStyle = { ...DEFAULT_FLEX_ITEM, ...child.layoutItem };
+      let mainSize = isRow ? child.width : child.height;
+      let crossSize = isRow ? child.height : child.width;
+      if (itemStyle.flexBasis !== "auto") {
+        mainSize = itemStyle.flexBasis;
+      }
+      if (isRow) {
+        mainSize = Math.max(itemStyle.minWidth, Math.min(itemStyle.maxWidth, mainSize));
+        crossSize = Math.max(itemStyle.minHeight, Math.min(itemStyle.maxHeight, crossSize));
+      } else {
+        mainSize = Math.max(itemStyle.minHeight, Math.min(itemStyle.maxHeight, mainSize));
+        crossSize = Math.max(itemStyle.minWidth, Math.min(itemStyle.maxWidth, crossSize));
+      }
+      return {
+        child,
+        itemStyle,
+        mainSize,
+        crossSize,
+        mainPos: 0,
+        crossPos: 0,
+        flexGrow: (_a2 = itemStyle.flex) != null ? _a2 : 0
+      };
+    });
+    const totalFlexGrow = layouts.reduce((sum, l) => sum + l.flexGrow, 0);
+    const totalMainSize = layouts.reduce((sum, l) => sum + l.mainSize, 0);
+    const totalGaps = mainGap * (children.length - 1);
+    const availableMainSpace = isRow ? contentWidth : contentHeight;
+    const remainingSpace = availableMainSpace - totalMainSize - totalGaps;
+    if (totalFlexGrow > 0 && remainingSpace > 0) {
+      layouts.forEach((l) => {
+        if (l.flexGrow > 0) {
+          const extra = remainingSpace * l.flexGrow / totalFlexGrow;
+          l.mainSize += extra;
+          if (isRow) {
+            l.mainSize = Math.min(l.itemStyle.maxWidth, l.mainSize);
+          } else {
+            l.mainSize = Math.min(l.itemStyle.maxHeight, l.mainSize);
+          }
+        }
+      });
+    }
+    const finalTotalMainSize = layouts.reduce((sum, l) => sum + l.mainSize, 0);
+    const finalRemaining = availableMainSpace - finalTotalMainSize - totalGaps;
+    let mainOffset = contentX;
+    let gapBetween = mainGap;
+    switch (style.justifyContent) {
+      case "flex-start":
+        mainOffset = contentX;
+        break;
+      case "flex-end":
+        mainOffset = contentX + finalRemaining;
+        break;
+      case "center":
+        mainOffset = contentX + finalRemaining / 2;
+        break;
+      case "space-between":
+        mainOffset = contentX;
+        if (children.length > 1) {
+          gapBetween = mainGap + finalRemaining / (children.length - 1);
+        }
+        break;
+      case "space-around":
+        if (children.length > 0) {
+          const spacePer = finalRemaining / children.length;
+          mainOffset = contentX + spacePer / 2;
+          gapBetween = mainGap + spacePer;
+        }
+        break;
+      case "space-evenly":
+        if (children.length > 0) {
+          const spacePer = finalRemaining / (children.length + 1);
+          mainOffset = contentX + spacePer;
+          gapBetween = mainGap + spacePer;
+        }
+        break;
+    }
+    if (isReverse) {
+      mainOffset = isRow ? contentX + contentWidth - layouts[0].mainSize : contentY + contentHeight - layouts[0].mainSize;
+      let pos = mainOffset;
+      layouts.forEach((l, i) => {
+        l.mainPos = pos;
+        pos -= l.mainSize + gapBetween;
+      });
+    } else {
+      let pos = mainOffset;
+      layouts.forEach((l, i) => {
+        l.mainPos = pos;
+        pos += l.mainSize + gapBetween;
+      });
+    }
+    const crossSpace = isRow ? contentHeight : contentWidth;
+    const crossStart = isRow ? contentY : contentX;
+    layouts.forEach((l) => {
+      const align = l.itemStyle.alignSelf === "auto" ? style.alignItems : l.itemStyle.alignSelf;
+      switch (align) {
+        case "flex-start":
+          l.crossPos = crossStart;
+          break;
+        case "flex-end":
+          l.crossPos = crossStart + crossSpace - l.crossSize;
+          break;
+        case "center":
+          l.crossPos = crossStart + (crossSpace - l.crossSize) / 2;
+          break;
+        case "stretch":
+          l.crossSize = crossSpace;
+          l.crossPos = crossStart;
+          break;
+      }
+    });
+    layouts.forEach((l) => {
+      if (isRow) {
+        l.child.x = l.mainPos;
+        l.child.y = l.crossPos;
+        l.child.width = l.mainSize;
+        l.child.height = l.crossSize;
+      } else {
+        l.child.x = l.crossPos;
+        l.child.y = l.mainPos;
+        l.child.width = l.crossSize;
+        l.child.height = l.mainSize;
+      }
+    });
+  }
+
+  // src/client/engine/v2/BorderDrawer.ts
+  function getCornerSides(corner) {
+    switch (corner) {
+      case 1:
+        return { side1: "top", side2: "left" };
+      // 左上：上边→左边（逆时针）
+      case 3:
+        return { side1: "left", side2: "bottom" };
+      // 左下：左边→下边
+      case 5:
+        return { side1: "bottom", side2: "right" };
+      // 右下：下边→右边
+      case 7:
+        return { side1: "right", side2: "top" };
+    }
+  }
+  function shouldDrawCorner(corner, border) {
+    var sides = getCornerSides(corner);
+    var s1 = border[sides.side1];
+    var s2 = border[sides.side2];
+    if (s1 === "hidden" && s2 === "hidden") return false;
+    if (s1 === "normal" && s2 === "hidden" || s1 === "hidden" && s2 === "normal") return false;
+    return true;
+  }
+  function getCornerType(corner, border, emphasisW, normalW) {
+    var sides = getCornerSides(corner);
+    var s1 = border[sides.side1];
+    var s2 = border[sides.side2];
+    if (s1 === "emphasis" && s2 === "emphasis") {
+      return { type: "uniform", width: emphasisW };
+    }
+    if (s1 === "normal" && s2 === "normal") {
+      return { type: "uniform", width: normalW };
+    }
+    if (s1 === "emphasis" && s2 === "normal") {
+      return { type: "taper", startWidth: emphasisW, endWidth: normalW };
+    }
+    if (s1 === "normal" && s2 === "emphasis") {
+      return { type: "taper", startWidth: normalW, endWidth: emphasisW };
+    }
+    if (s1 === "emphasis" && s2 === "hidden") {
+      return { type: "taper", startWidth: emphasisW, endWidth: 0 };
+    }
+    if (s1 === "hidden" && s2 === "emphasis") {
+      return { type: "taper", startWidth: 0, endWidth: emphasisW };
+    }
+    return null;
+  }
+  function getArcAngles(corner) {
+    switch (corner) {
+      case 1:
+        return { start: 3 * Math.PI / 2, end: Math.PI };
+      // 左上：上→左
+      case 3:
+        return { start: Math.PI, end: Math.PI / 2 };
+      // 左下：左→下
+      case 5:
+        return { start: Math.PI / 2, end: 0 };
+      // 右下：下→右
+      case 7:
+        return { start: 0, end: -Math.PI / 2 };
+    }
+  }
+  function getArcCenter(corner, x, y, w, h, radius) {
+    switch (corner) {
+      case 1:
+        return { cx: x + radius, cy: y + radius };
+      case 3:
+        return { cx: x + radius, cy: y + h - radius };
+      case 5:
+        return { cx: x + w - radius, cy: y + h - radius };
+      case 7:
+        return { cx: x + w - radius, cy: y + radius };
+    }
+  }
+  function drawUniformArc(ctx, corner, x, y, w, h, radius, strokeWidth, color) {
+    if (radius <= 0 || strokeWidth <= 0) return;
+    var center = getArcCenter(corner, x, y, w, h, radius);
+    var angles = getArcAngles(corner);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = strokeWidth;
+    ctx.lineCap = "butt";
+    ctx.beginPath();
+    ctx.arc(center.cx, center.cy, radius, angles.start, angles.end, true);
+    ctx.stroke();
+  }
+  function drawTaperArc(ctx, corner, x, y, w, h, radius, startWidth, endWidth, color) {
+    var segments = 10;
+    var center = getArcCenter(corner, x, y, w, h, radius);
+    var angles = getArcAngles(corner);
+    var angleStep = (angles.end - angles.start) / segments;
+    ctx.strokeStyle = color;
+    ctx.lineCap = "butt";
+    for (var i = 0; i < segments; i++) {
+      var t = (i + 0.5) / segments;
+      var sw = startWidth + (endWidth - startWidth) * t;
+      if (sw < 0.3) continue;
+      var a1 = angles.start + angleStep * i;
+      var a2 = angles.start + angleStep * (i + 1);
+      ctx.lineWidth = sw;
+      ctx.beginPath();
+      ctx.arc(center.cx, center.cy, radius, a1, a2, true);
+      ctx.stroke();
+    }
+  }
+  function drawLineSegment(ctx, side, x, y, w, h, radius, strokeWidth, color) {
+    var halfSw = strokeWidth / 2;
+    ctx.fillStyle = color;
+    switch (side) {
+      case "left":
+        ctx.fillRect(x - halfSw, y + radius, strokeWidth, Math.max(1, h - radius * 2));
+        break;
+      case "bottom":
+        ctx.fillRect(x + radius, y + h - halfSw, Math.max(1, w - radius * 2), strokeWidth);
+        break;
+      case "right":
+        ctx.fillRect(x + w - halfSw, y + radius, strokeWidth, Math.max(1, h - radius * 2));
+        break;
+      case "top":
+        ctx.fillRect(x + radius, y - halfSw, Math.max(1, w - radius * 2), strokeWidth);
+        break;
+    }
+  }
+  function drawBorders(ctx, x, y, w, h, style) {
+    var emphasisW = style.borderWidth * style.emphasisScale;
+    var normalW = style.borderWidth;
+    var radius = style.cornerRadius;
+    var emColor = typeof style.borderColor === "string" ? style.borderColor : "#7c3aed";
+    var nmColor = emColor;
+    var border = style.border;
+    var sides = ["top", "right", "bottom", "left"];
+    for (var i = 0; i < 4; i++) {
+      var side = sides[i];
+      if (border[side] !== "normal") continue;
+      drawLineSegment(ctx, side, x, y, w, h, radius, normalW, nmColor);
+    }
+    for (var j = 0; j < 4; j++) {
+      var side2 = sides[j];
+      if (border[side2] !== "emphasis") continue;
+      drawLineSegment(ctx, side2, x, y, w, h, radius, emphasisW, emColor);
+    }
+    var corners = [1, 3, 5, 7];
+    for (var k = 0; k < 4; k++) {
+      var corner = corners[k];
+      if (!shouldDrawCorner(corner, border)) continue;
+      var cornerSides = getCornerSides(corner);
+      var hasEm = border[cornerSides.side1] === "emphasis" || border[cornerSides.side2] === "emphasis";
+      var color = hasEm ? emColor : nmColor;
+      var cType = getCornerType(corner, border, emphasisW, normalW);
+      if (!cType) continue;
+      if (cType.type === "uniform") {
+        drawUniformArc(ctx, corner, x, y, w, h, radius, cType.width, color);
+      } else {
+        drawTaperArc(
+          ctx,
+          corner,
+          x,
+          y,
+          w,
+          h,
+          radius,
+          cType.startWidth,
+          cType.endWidth,
+          color
+        );
+      }
+    }
+  }
+
+  // src/client/engine/v2/renderer.ts
+  var Renderer = class {
+    constructor(canvas, options = {}) {
+      __publicField(this, "canvas");
+      __publicField(this, "ctx");
+      __publicField(this, "dpr");
+      __publicField(this, "width");
+      __publicField(this, "height");
+      __publicField(this, "backgroundColor");
+      __publicField(this, "_isRunning");
+      __publicField(this, "_root");
+      __publicField(this, "_rafId");
+      __publicField(this, "_lastTime");
+      __publicField(this, "_frameCount");
+      __publicField(this, "_fps");
+      // Pretext 缓存：key = font + text
+      __publicField(this, "_pretextCache");
+      // input 元素缓存：key = Box.id
+      __publicField(this, "_inputElements");
+      var _a, _b;
+      this.canvas = canvas;
+      this.ctx = canvas.getContext("2d");
+      this.dpr = (_a = options.dpr) != null ? _a : window.devicePixelRatio || 1;
+      this.backgroundColor = (_b = options.backgroundColor) != null ? _b : "#0a0a0f";
+      this.width = 0;
+      this.height = 0;
+      this._isRunning = false;
+      this._root = null;
+      this._rafId = 0;
+      this._lastTime = 0;
+      this._frameCount = 0;
+      this._fps = 0;
+      this._pretextCache = /* @__PURE__ */ new Map();
+      this._inputElements = /* @__PURE__ */ new Map();
+      this.resize();
+    }
+    // ============================================================
+    // 生命周期
+    // ============================================================
+    resize() {
+      const w = this.canvas.clientWidth || window.innerWidth;
+      const h = this.canvas.clientHeight || window.innerHeight;
+      this.canvas.width = w * this.dpr;
+      this.canvas.height = h * this.dpr;
+      this.canvas.style.width = `${w}px`;
+      this.canvas.style.height = `${h}px`;
+      this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+      this.width = w;
+      this.height = h;
+    }
+    setRoot(box) {
+      this._root = box;
+      return this;
+    }
+    getRoot() {
+      return this._root;
+    }
+    start() {
+      if (this._isRunning) return this;
+      this._isRunning = true;
+      this._lastTime = performance.now();
+      const loop = (now) => {
+        if (!this._isRunning) return;
+        this._render(now);
+        this._rafId = requestAnimationFrame(loop);
+      };
+      this._rafId = requestAnimationFrame(loop);
+      return this;
+    }
+    stop() {
+      this._isRunning = false;
+      if (this._rafId) cancelAnimationFrame(this._rafId);
+      return this;
+    }
+    get isRunning() {
+      return this._isRunning;
+    }
+    get fps() {
+      return this._fps;
+    }
+    // ============================================================
+    // 渲染主循环
+    // ============================================================
+    _render(now) {
+      if (this._lastTime) {
+        const delta = now - this._lastTime;
+        this._fps = Math.round(1e3 / delta);
+      }
+      this._lastTime = now;
+      this._frameCount++;
+      this.ctx.fillStyle = this.backgroundColor;
+      this.ctx.fillRect(0, 0, this.width, this.height);
+      if (this._root) {
+        this._tickAndRender(this._root, now, 1);
+        try {
+          this._manageInputs(this._root);
+        } catch (e) {
+          console.error("_manageInputs error", e);
+        }
+      }
+    }
+    _tickAndRender(box, now, parentOpacity) {
+      box.tickAnimations(now);
+      if (!box.visible) return;
+      const opacity = box.opacity * parentOpacity;
+      if (opacity <= 0) return;
+      this.ctx.save();
+      this.ctx.globalAlpha = opacity;
+      const bounds = box.getBounds();
+      const cx = bounds.x + bounds.width / 2;
+      const cy = bounds.y + bounds.height / 2;
+      const { scale, rotate, translateX, translateY } = box.transform;
+      if (translateX !== 0 || translateY !== 0) {
+        this.ctx.translate(translateX, translateY);
+      }
+      if (rotate !== 0 || scale !== 1) {
+        this.ctx.translate(cx, cy);
+        if (rotate !== 0) this.ctx.rotate(rotate);
+        if (scale !== 1) this.ctx.scale(scale, scale);
+        this.ctx.translate(-cx, -cy);
+      }
+      if (box.overflow === "hidden" || box.scrollable) {
+        this.ctx.beginPath();
+        this.ctx.roundRect(bounds.x, bounds.y, bounds.width, bounds.height, box.borderRadius);
+        this.ctx.clip();
+      }
+      this._drawShadow(box, bounds);
+      this._drawBackground(box, bounds);
+      if (box.shape) this._drawShape(box, bounds);
+      this._drawBorder(box, bounds);
+      this._drawHighlight(box, bounds);
+      if (box.icon) this._drawIcon(box.icon, bounds, box.padding);
+      if (box.textStyle.content) this._drawText(box.textStyle, bounds, box.padding, box.icon);
+      if (box.layout) {
+        applyFlexLayout(box);
+      }
+      if (box.scrollable) {
+        this.ctx.save();
+        this.ctx.translate(-box.scrollX, -box.scrollY);
+      }
+      const sortedChildren = [...box.children].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+      for (const child of sortedChildren) {
+        this._tickAndRender(child, now, opacity);
+      }
+      if (box.scrollable) {
+        this.ctx.restore();
+        if (box.scrollbarVisible) {
+          this._drawScrollbar(box, bounds);
+        }
+      }
+      this.ctx.restore();
+    }
+    // ============================================================
+    // input 元素管理（Phase 2 Demo）
+    // ============================================================
+    _manageInputs(root) {
+      var _a, _b, _c, _d, _e, _f, _g;
+      const inputableBoxes = root.flatten().filter((b) => {
+        var _a2;
+        return (_a2 = b.inputable) == null ? void 0 : _a2.enabled;
+      });
+      const seenIds = /* @__PURE__ */ new Set();
+      for (const box of inputableBoxes) {
+        seenIds.add(box.id);
+        const bounds = box.getBounds();
+        let el = this._inputElements.get(box.id);
+        if (!el) {
+          const isTextarea = ((_a = box.inputable) == null ? void 0 : _a.type) === "textarea";
+          el = document.createElement(isTextarea ? "textarea" : "input");
+          el.style.position = "fixed";
+          el.style.background = "transparent";
+          el.style.border = "none";
+          el.style.outline = "none";
+          el.style.fontSize = "16px";
+          el.style.color = "#e0e0e0";
+          el.style.zIndex = "10";
+          el.style.resize = "none";
+          el.style.padding = "10px";
+          el.style.boxSizing = "border-box";
+          el.style.lineHeight = (((_b = box.inputable) == null ? void 0 : _b.lineHeight) || 24) + "px";
+          if (isTextarea) {
+            el.style.wordWrap = "break-word";
+            el.style.overflowY = "auto";
+            const maxRows = ((_c = box.inputable) == null ? void 0 : _c.maxRows) || 5;
+            const lineHeight = ((_d = box.inputable) == null ? void 0 : _d.lineHeight) || 24;
+            const maxHeight = maxRows * lineHeight + 20;
+            el.style.maxHeight = maxHeight + "px";
+            const textareaEl = el;
+            const inputBox = box;
+            const rendererInstance = this;
+            const adjustHeight = () => {
+              textareaEl.style.height = "auto";
+              const scrollHeight = textareaEl.scrollHeight;
+              const minHeight = lineHeight;
+              const newHeight = Math.max(minHeight, Math.min(scrollHeight, maxHeight));
+              textareaEl.style.height = newHeight + "px";
+              inputBox.height = newHeight;
+              if (inputBox.parent) {
+                inputBox.parent.height = newHeight + 24;
+                inputBox.parent.y = rendererInstance.height - inputBox.parent.height;
+              }
+            };
+            el.addEventListener("input", adjustHeight);
+            el.style.height = lineHeight + "px";
+            inputBox.height = lineHeight;
+            if (inputBox.parent) {
+              inputBox.parent.height = lineHeight + 24;
+              inputBox.parent.y = rendererInstance.height - inputBox.parent.height;
+            }
+          }
+          el.setAttribute("autocapitalize", "off");
+          el.setAttribute("autocomplete", "off");
+          el.setAttribute("autocorrect", "off");
+          if ((_e = box.inputable) == null ? void 0 : _e.placeholder) el.placeholder = box.inputable.placeholder;
+          if ((_f = box.inputable) == null ? void 0 : _f.value) el.value = box.inputable.value;
+          el.style.left = `${bounds.x}px`;
+          el.style.top = `${bounds.y}px`;
+          el.style.width = `${bounds.width}px`;
+          el.style.height = `${bounds.height}px`;
+          (_g = this.canvas.parentElement) == null ? void 0 : _g.appendChild(el);
+          this._inputElements.set(box.id, el);
+        } else {
+          el.style.left = `${bounds.x}px`;
+          el.style.top = `${bounds.y}px`;
+          el.style.width = `${bounds.width}px`;
+          el.style.height = `${bounds.height}px`;
+        }
+      }
+      for (const [id, el] of this._inputElements) {
+        if (!seenIds.has(id)) {
+          el.remove();
+          this._inputElements.delete(id);
+        }
+      }
+    }
+    // ============================================================
+    // 绘制层
+    // ============================================================
+    _drawShadow(box, b) {
+      const shadow = box.shadow;
+      if (!shadow) return;
+      this.ctx.save();
+      this.ctx.shadowColor = shadow.color;
+      this.ctx.shadowBlur = shadow.blur;
+      this.ctx.shadowOffsetX = shadow.offsetX;
+      this.ctx.shadowOffsetY = shadow.offsetY;
+      this.ctx.fillStyle = box.backgroundColor;
+      this.ctx.beginPath();
+      this.ctx.roundRect(b.x, b.y, b.width, b.height, box.borderRadius);
+      this.ctx.fill();
+      this.ctx.restore();
+    }
+    /** 绘制矢量形状（Phase 2 Demo） */
+    _drawShape(box, b) {
+      var _a, _b;
+      const shape = box.shape;
+      const points = shape.points;
+      if (points.length < 2) return;
+      const composite = (_a = shape.composite) != null ? _a : "destination-out";
+      const closed = (_b = shape.closed) != null ? _b : true;
+      this.ctx.save();
+      this.ctx.globalCompositeOperation = composite;
+      this.ctx.beginPath();
+      this.ctx.moveTo(b.x + points[0].x * b.width, b.y + points[0].y * b.height);
+      for (let i = 1; i < points.length; i++) {
+        this.ctx.lineTo(b.x + points[i].x * b.width, b.y + points[i].y * b.height);
+      }
+      if (closed) this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.restore();
+    }
+    _drawBackground(box, b) {
+      if (box.gradient) {
+        this._drawGradient(box.gradient, b, box.borderRadius);
+      } else {
+        this.ctx.fillStyle = box.backgroundColor;
+        this.ctx.beginPath();
+        this.ctx.roundRect(b.x, b.y, b.width, b.height, box.borderRadius);
+        this.ctx.fill();
+      }
+      if (box.backgroundPattern && box.backgroundPattern.type === "grid") {
+        this._drawBoxGridPattern(box, b);
+      }
+    }
+    /** 绘制 Box 内的网格背景图案 */
+    _drawBoxGridPattern(box, b) {
+      var _a, _b, _c;
+      const pattern = box.backgroundPattern;
+      const cellSize = (_a = pattern.cellSize) != null ? _a : 20;
+      const lineColor = (_b = pattern.lineColor) != null ? _b : "#2a2a3a";
+      const lineWidth = (_c = pattern.lineWidth) != null ? _c : 1;
+      this.ctx.save();
+      this.ctx.strokeStyle = lineColor;
+      this.ctx.lineWidth = lineWidth;
+      this.ctx.beginPath();
+      this.ctx.roundRect(b.x, b.y, b.width, b.height, box.borderRadius);
+      this.ctx.clip();
+      for (let x = b.x; x <= b.x + b.width; x += cellSize) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(x, b.y);
+        this.ctx.lineTo(x, b.y + b.height);
+        this.ctx.stroke();
+      }
+      for (let y = b.y; y <= b.y + b.height; y += cellSize) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(b.x, y);
+        this.ctx.lineTo(b.x + b.width, y);
+        this.ctx.stroke();
+      }
+      this.ctx.restore();
+      if (this._frameCount === 1) {
+        const vLines = Math.floor(b.width / cellSize) + 1;
+        const hLines = Math.floor(b.height / cellSize) + 1;
+        console.log(`[Box\u7F51\u683C] ${box.id}: ${b.width}x${b.height}, \u5782\u76F4=${vLines}, \u6C34\u5E73=${hLines}, \u5355\u5143\u683C=${cellSize}px \u2705`);
+      }
+    }
+    _drawGradient(grad, b, radius) {
+      let fillStyle;
+      if (grad.type === "linear") {
+        const angle = grad.angle * Math.PI / 180;
+        const halfW = b.width / 2;
+        const halfH = b.height / 2;
+        fillStyle = this.ctx.createLinearGradient(
+          b.x + halfW - Math.cos(angle) * halfW,
+          b.y + halfH - Math.sin(angle) * halfH,
+          b.x + halfW + Math.cos(angle) * halfW,
+          b.y + halfH + Math.sin(angle) * halfH
+        );
+      } else {
+        fillStyle = this.ctx.createRadialGradient(
+          b.x + b.width / 2,
+          b.y + b.height / 2,
+          0,
+          b.x + b.width / 2,
+          b.y + b.height / 2,
+          Math.max(b.width, b.height) / 2
+        );
+      }
+      for (const stop of grad.stops) {
+        fillStyle.addColorStop(stop.offset, stop.color);
+      }
+      this.ctx.fillStyle = fillStyle;
+      this.ctx.beginPath();
+      this.ctx.roundRect(b.x, b.y, b.width, b.height, radius);
+      this.ctx.fill();
+    }
+    _drawScrollbar(box, b) {
+      const content = box.getContentSize();
+      const viewportH = b.height - box.padding.top - box.padding.bottom;
+      const viewportW = b.width - box.padding.left - box.padding.right;
+      const maxScroll = box.getMaxScroll();
+      if (maxScroll.maxY > 0 && (box.scrollDirection === "vertical" || box.scrollDirection === "both")) {
+        const trackHeight = viewportH;
+        const thumbHeight = Math.max(20, viewportH / content.height * trackHeight);
+        const thumbY = b.y + box.padding.top + box.scrollY / maxScroll.maxY * (trackHeight - thumbHeight);
+        this.ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+        this.ctx.beginPath();
+        this.ctx.roundRect(b.x + b.width - 6, thumbY, 4, thumbHeight, 2);
+        this.ctx.fill();
+      }
+      if (maxScroll.maxX > 0 && (box.scrollDirection === "horizontal" || box.scrollDirection === "both")) {
+        const trackWidth = viewportW;
+        const thumbWidth = Math.max(20, viewportW / content.width * trackWidth);
+        const thumbX = b.x + box.padding.left + box.scrollX / maxScroll.maxX * (trackWidth - thumbWidth);
+        this.ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+        this.ctx.beginPath();
+        this.ctx.roundRect(thumbX, b.y + b.height - 6, thumbWidth, 4, 2);
+        this.ctx.fill();
+      }
+    }
+    _drawBorder(box, b) {
+      if (box.kfmStyle) {
+        drawBorders(this.ctx, b.x, b.y, b.width, b.height, box.kfmStyle);
+        return;
+      }
+      const border = box.border;
+      if (!border || border.width <= 0) return;
+      const { color, width, sides } = border;
+      this.ctx.strokeStyle = color;
+      this.ctx.lineWidth = width;
+      this.ctx.lineCap = "round";
+      const x = b.x, y = b.y, w = b.width, h = b.height, r = box.borderRadius;
+      this.ctx.beginPath();
+      if (sides.top) {
+        this.ctx.moveTo(x + r, y);
+        this.ctx.lineTo(x + w - r, y);
+      }
+      if (sides.right) {
+        this.ctx.moveTo(x + w, y + r);
+        this.ctx.lineTo(x + w, y + h - r);
+      }
+      if (sides.bottom) {
+        this.ctx.moveTo(x + w - r, y + h);
+        this.ctx.lineTo(x + r, y + h);
+      }
+      if (sides.left) {
+        this.ctx.moveTo(x, y + h - r);
+        this.ctx.lineTo(x, y + r);
+      }
+      this.ctx.stroke();
+      if (sides.top && sides.right && sides.bottom && sides.left) {
+        this.ctx.beginPath();
+        this.ctx.roundRect(x, y, w, h, r);
+        this.ctx.stroke();
+      }
+    }
+    _drawHighlight(box, b) {
+      const hl = box.highlight;
+      if (!hl) return;
+      this.ctx.strokeStyle = hl.color;
+      this.ctx.lineWidth = hl.width;
+      this.ctx.lineCap = "round";
+      this.ctx.beginPath();
+      this.ctx.moveTo(b.x + hl.width / 2, b.y + 4);
+      this.ctx.lineTo(b.x + hl.width / 2, b.y + b.height - 4);
+      this.ctx.stroke();
+    }
+    _drawIcon(icon, b, padding) {
+      const iconX = icon.position === "left" ? b.x + padding.left : b.x + b.width - padding.right - icon.size;
+      const iconY = b.y + padding.top;
+      this.ctx.font = `${icon.size}px system-ui`;
+      this.ctx.fillStyle = "#e0e0e0";
+      this.ctx.textBaseline = "top";
+      this.ctx.textAlign = "left";
+      this.ctx.fillText(icon.char, iconX, iconY);
+    }
+    // ============================================================
+    // Pretext 文本渲染
+    // ============================================================
+    _getTextKey(text, font) {
+      return `${font}::${text}`;
+    }
+    _drawText(style, b, padding, icon) {
+      if (!style.content) return;
+      const iconWidth = icon && icon.position === "left" ? icon.size + 8 : 0;
+      const iconRightWidth = icon && icon.position === "right" ? icon.size + 8 : 0;
+      const textX = b.x + padding.left + iconWidth;
+      const textY = b.y + padding.top;
+      const maxWidth = b.width - padding.left - padding.right - iconWidth - iconRightWidth;
+      if (maxWidth <= 0) return;
+      const key = this._getTextKey(style.content, style.font);
+      let prepared = this._pretextCache.get(key);
+      if (!prepared) {
+        try {
+          prepared = prepareWithSegments(style.content, style.font);
+          this._pretextCache.set(key, prepared);
+        } catch {
+          this._drawTextFallback(style, textX, textY, maxWidth, b, padding);
+          return;
+        }
+      }
+      const { lines } = layoutWithLines(prepared, maxWidth, style.lineHeight);
+      const maxL = style.maxLines > 0 ? style.maxLines : lines.length;
+      const visibleLines = lines.slice(0, maxL);
+      const totalTextHeight = visibleLines.length * style.lineHeight;
+      const availableHeight = b.height - padding.top - padding.bottom;
+      let offsetY = 0;
+      if (style.verticalAlign === "middle") {
+        offsetY = (availableHeight - totalTextHeight) / 2;
+      } else if (style.verticalAlign === "bottom") {
+        offsetY = availableHeight - totalTextHeight;
+      }
+      this.ctx.font = style.font;
+      this.ctx.fillStyle = style.color;
+      this.ctx.textBaseline = "top";
+      for (let i = 0; i < visibleLines.length; i++) {
+        const line = visibleLines[i];
+        let lineText = line.text;
+        if (style.overflow === "ellipsis" && i === maxL - 1 && lines.length > maxL) {
+          lineText = lineText.slice(0, -1) + "\u2026";
+        }
+        let alignX = textX;
+        if (style.align === "center") {
+          alignX = textX + (maxWidth - line.width) / 2;
+        } else if (style.align === "right") {
+          alignX = textX + maxWidth - line.width;
+        }
+        this.ctx.fillText(lineText, alignX, textY + offsetY + i * style.lineHeight);
+      }
+    }
+    /** 简单文本渲染回退（Pretext 不可用时） */
+    _drawTextFallback(style, x, y, maxWidth, b, padding) {
+      this.ctx.font = style.font;
+      this.ctx.fillStyle = style.color;
+      this.ctx.textBaseline = "middle";
+      const centerY = y + (b.height - padding.top - padding.bottom) / 2;
+      let text = style.content;
+      const measured = this.ctx.measureText(text);
+      if (measured.width > maxWidth) {
+        while (text.length > 0 && this.ctx.measureText(text + "\u2026").width > maxWidth) {
+          text = text.slice(0, -1);
+        }
+        text += "\u2026";
+      }
+      this.ctx.fillText(text, x, centerY);
+    }
+    // ============================================================
+    // 碰撞检测
+    // ============================================================
+    /** 获取指定坐标下最顶层的可交互 Box */
+    hitTest(x, y) {
+      if (!this._root) return null;
+      return this._hitTestRecursive(this._root, x, y);
+    }
+    _hitTestRecursive(box, x, y) {
+      if (!box.visible || !box.interactive || box.disabled) return null;
+      for (let i = box.children.length - 1; i >= 0; i--) {
+        const found = this._hitTestRecursive(box.children[i], x, y);
+        if (found) return found;
+      }
+      if (box.containsPoint(x, y)) {
+        if (box.gesture) {
+          const hasCallbacks = this._hasGestureCallbacks(box.gesture);
+          const isPassive = box.gesture.passive !== false;
+          if (isPassive && !hasCallbacks) {
+            return null;
+          }
+        }
+        return box;
+      }
+      return null;
+    }
+    /** 检测 gesture 是否绑定了任何回调 */
+    _hasGestureCallbacks(gesture) {
+      return !!(gesture.onTap || gesture.onLongPress || gesture.onSwipeLeft || gesture.onSwipeRight || gesture.onSwipeUp || gesture.onSwipeDown || gesture.onPan || gesture.onPanEnd || gesture.onPinch || gesture.onRotate || gesture.onCancel);
+    }
+    // ============================================================
+    // 缓存管理
+    // ============================================================
+    clearTextCache() {
+      this._pretextCache.clear();
+    }
+  };
+
+  // src/client/engine/v2/utils.ts
+  var ZERO_SPACING = { top: 0, right: 0, bottom: 0, left: 0 };
+
+  // src/client/engine/v2/animation.ts
+  function ease(name, t) {
+    switch (name) {
+      case "linear":
+        return t;
+      case "easeInQuad":
+        return t * t;
+      case "easeOutQuad":
+        return t * (2 - t);
+      case "easeInOutQuad":
+        return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+      case "easeInCubic":
+        return t * t * t;
+      case "easeOutCubic": {
+        const t1 = t - 1;
+        return t1 * t1 * t1 + 1;
+      }
+      case "easeInOutCubic":
+        return t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
+      case "easeOutElastic": {
+        const p = 0.3;
+        return Math.pow(2, -10 * t) * Math.sin((t - p / 4) * (2 * Math.PI) / p) + 1;
+      }
+      case "easeOutBounce": {
+        if (t < 1 / 2.75) return 7.5625 * t * t;
+        if (t < 2 / 2.75) {
+          const t1 = t - 1.5 / 2.75;
+          return 7.5625 * t1 * t1 + 0.75;
+        }
+        if (t < 2.5 / 2.75) {
+          const t1 = t - 2.25 / 2.75;
+          return 7.5625 * t1 * t1 + 0.9375;
+        }
+        {
+          const t1 = t - 2.625 / 2.75;
+          return 7.5625 * t1 * t1 + 0.984375;
+        }
+      }
+    }
+  }
+
+  // src/client/engine/v2/box.ts
+  var Box = class _Box {
+    constructor(options = {}) {
+      // --- 身份 ---
+      __publicField(this, "id");
+      __publicField(this, "type");
+      // --- 几何 ---
+      __publicField(this, "x");
+      __publicField(this, "y");
+      __publicField(this, "width");
+      __publicField(this, "height");
+      // --- 盒模型 ---
+      __publicField(this, "padding");
+      __publicField(this, "margin");
+      // --- 视觉 ---
+      __publicField(this, "backgroundColor");
+      __publicField(this, "gradient");
+      __publicField(this, "backgroundPattern");
+      // Phase 2 Demo：网格背景
+      __publicField(this, "borderRadius");
+      __publicField(this, "opacity");
+      __publicField(this, "visible");
+      // --- 边框 ---
+      __publicField(this, "border");
+      __publicField(this, "highlight");
+      // --- 阴影 ---
+      __publicField(this, "shadow");
+      // --- 文本 ---
+      __publicField(this, "textStyle");
+      // --- 图标 ---
+      __publicField(this, "icon");
+      // --- 交互 ---
+      __publicField(this, "interactive");
+      __publicField(this, "disabled");
+      __publicField(this, "selected");
+      __publicField(this, "state");
+      __publicField(this, "stateStyles");
+      // --- 层级 ---
+      __publicField(this, "zIndex");
+      __publicField(this, "overflow");
+      // --- 变换 ---
+      __publicField(this, "transform");
+      // --- 动画 ---
+      __publicField(this, "animations");
+      // --- 树形 ---
+      __publicField(this, "children");
+      __publicField(this, "parent");
+      __publicField(this, "data");
+      // --- Flex 布局 ---
+      __publicField(this, "layout");
+      __publicField(this, "layoutItem");
+      // --- 滚动容器 ---
+      __publicField(this, "scrollable");
+      __publicField(this, "scrollX");
+      __publicField(this, "scrollY");
+      __publicField(this, "scrollDirection");
+      __publicField(this, "scrollbarVisible");
+      // --- KFM 边���样式（高级）---
+      __publicField(this, "kfmStyle");
+      // --- 手势配置（D-013 决策）---
+      __publicField(this, "gesture");
+      // 矢量形状（Phase 2 Demo）
+      __publicField(this, "shape");
+      // 可输入配置
+      __publicField(this, "inputable");
+      // --- 事件 ---
+      __publicField(this, "eventHandlers");
+      // --- 缓存 ---
+      __publicField(this, "_contentWidth");
+      __publicField(this, "_contentHeight");
+      var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _A, _B, _C, _D, _E, _F, _G, _H, _I, _J, _K, _L, _M, _N, _O, _P, _Q, _R, _S, _T, _U, _V, _W, _X;
+      this.id = options.id || `box_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      this.type = (_a = options.type) != null ? _a : "container";
+      this.x = (_b = options.x) != null ? _b : 0;
+      this.y = (_c = options.y) != null ? _c : 0;
+      this.width = (_d = options.width) != null ? _d : 100;
+      this.height = (_e = options.height) != null ? _e : 40;
+      this.padding = { ...ZERO_SPACING, ...options.padding };
+      this.margin = { ...ZERO_SPACING, ...options.margin };
+      this.backgroundColor = (_f = options.backgroundColor) != null ? _f : "#12121a";
+      this.gradient = (_g = options.gradient) != null ? _g : null;
+      this.backgroundPattern = (_h = options.backgroundPattern) != null ? _h : null;
+      this.borderRadius = (_i = options.borderRadius) != null ? _i : 8;
+      this.opacity = (_j = options.opacity) != null ? _j : 1;
+      this.visible = (_k = options.visible) != null ? _k : true;
+      this.border = (_l = options.border) != null ? _l : null;
+      this.highlight = (_m = options.highlight) != null ? _m : null;
+      this.shadow = (_n = options.shadow) != null ? _n : null;
+      this.textStyle = {
+        content: (_o = options.text) != null ? _o : "",
+        color: (_p = options.textColor) != null ? _p : "#e0e0e0",
+        font: (_q = options.font) != null ? _q : "14px system-ui, sans-serif",
+        lineHeight: (_r = options.lineHeight) != null ? _r : 20,
+        align: (_s = options.textAlign) != null ? _s : "left",
+        verticalAlign: (_t = options.textVerticalAlign) != null ? _t : "middle",
+        overflow: (_u = options.textOverflow) != null ? _u : "ellipsis",
+        maxLines: (_v = options.maxLines) != null ? _v : 1
+      };
+      this.icon = options.icon ? { char: options.icon, size: (_w = options.iconSize) != null ? _w : 16, position: (_x = options.iconPosition) != null ? _x : "left" } : null;
+      this.interactive = (_y = options.interactive) != null ? _y : this.type === "button" || this.type === "list-item";
+      this.disabled = (_z = options.disabled) != null ? _z : false;
+      this.selected = (_A = options.selected) != null ? _A : false;
+      this.state = "normal";
+      this.stateStyles = (_B = options.stateStyles) != null ? _B : {};
+      this.zIndex = (_C = options.zIndex) != null ? _C : 0;
+      this.overflow = (_D = options.overflow) != null ? _D : "visible";
+      this.transform = {
+        scale: (_F = (_E = options.transform) == null ? void 0 : _E.scale) != null ? _F : 1,
+        rotate: (_H = (_G = options.transform) == null ? void 0 : _G.rotate) != null ? _H : 0,
+        translateX: (_J = (_I = options.transform) == null ? void 0 : _I.translateX) != null ? _J : 0,
+        translateY: (_L = (_K = options.transform) == null ? void 0 : _K.translateY) != null ? _L : 0
+      };
+      this.animations = [];
+      this.children = (_M = options.children) != null ? _M : [];
+      this.parent = null;
+      this.data = (_N = options.data) != null ? _N : {};
+      this.children.forEach((child) => {
+        child.parent = this;
+      });
+      this.layout = (_O = options.layout) != null ? _O : null;
+      this.layoutItem = (_P = options.layoutItem) != null ? _P : null;
+      this.scrollable = (_Q = options.scrollable) != null ? _Q : false;
+      this.scrollX = (_R = options.scrollX) != null ? _R : 0;
+      this.scrollY = (_S = options.scrollY) != null ? _S : 0;
+      this.scrollDirection = (_T = options.scrollDirection) != null ? _T : "vertical";
+      this.scrollbarVisible = (_U = options.scrollbarVisible) != null ? _U : true;
+      this.kfmStyle = (_V = options.kfmStyle) != null ? _V : null;
+      this.gesture = (_W = options.gesture) != null ? _W : null;
+      this.shape = (_X = options.shape) != null ? _X : null;
+      if (options.inputable) {
+        this.inputable = typeof options.inputable === "boolean" ? { enabled: options.inputable } : options.inputable;
+      } else {
+        this.inputable = null;
+      }
+      this.eventHandlers = /* @__PURE__ */ new Map();
+      this._contentWidth = null;
+      this._contentHeight = null;
+    }
+    // ============================================================
+    // 几何计算
+    // ============================================================
+    /** 内容区域（去掉 padding 后的矩形） */
+    get contentRect() {
+      return {
+        x: this.padding.left,
+        y: this.padding.top,
+        width: this.width - this.padding.left - this.padding.right,
+        height: this.height - this.padding.top - this.padding.bottom
+      };
+    }
+    /** 绝对位置（含所有父级偏移） */
+    getAbsolutePosition() {
+      let x = this.x;
+      let y = this.y;
+      let p = this.parent;
+      while (p) {
+        x += p.x + p.padding.left;
+        y += p.y + p.padding.top;
+        p = p.parent;
+      }
+      return { x, y };
+    }
+    /** 考虑 transform 后的包围盒 */
+    getBounds() {
+      const pos = this.getAbsolutePosition();
+      const s = this.transform.scale;
+      return {
+        x: pos.x + this.transform.translateX,
+        y: pos.y + this.transform.translateY,
+        width: this.width * s,
+        height: this.height * s
+      };
+    }
+    /** 点是否在 Box 内 */
+    containsPoint(px, py) {
+      const b = this.getBounds();
+      return px >= b.x && px <= b.x + b.width && py >= b.y && py <= b.y + b.height;
+    }
+    // ============================================================
+    // 滚动相关
+    // ============================================================
+    /** 计算内容实际尺寸（Flex 布局后的子元素边界） */
+    getContentSize() {
+      if (this.children.length === 0) {
+        return { width: 0, height: 0 };
+      }
+      let maxRight = 0;
+      let maxBottom = 0;
+      for (const child of this.children) {
+        const childRight = child.x + child.width;
+        const childBottom = child.y + child.height;
+        maxRight = Math.max(maxRight, childRight);
+        maxBottom = Math.max(maxBottom, childBottom);
+      }
+      return { width: maxRight, height: maxBottom };
+    }
+    /** 获取最大滚动偏移 */
+    getMaxScroll() {
+      const content = this.getContentSize();
+      const viewportW = this.width - this.padding.left - this.padding.right;
+      const viewportH = this.height - this.padding.top - this.padding.bottom;
+      return {
+        maxX: Math.max(0, content.width - viewportW),
+        maxY: Math.max(0, content.height - viewportH)
+      };
+    }
+    /** 将滚动偏移限制在合法范围内 */
+    clampScroll() {
+      const max = this.getMaxScroll();
+      if (this.scrollDirection === "vertical" || this.scrollDirection === "both") {
+        this.scrollY = Math.max(0, Math.min(this.scrollY, max.maxY));
+      }
+      if (this.scrollDirection === "horizontal" || this.scrollDirection === "both") {
+        this.scrollX = Math.max(0, Math.min(this.scrollX, max.maxX));
+      }
+    }
+    // ============================================================
+    // 树操作
+    // ============================================================
+    addChild(child) {
+      child.parent = this;
+      this.children.push(child);
+      return this;
+    }
+    removeChild(child) {
+      const i = this.children.indexOf(child);
+      if (i > -1) {
+        this.children.splice(i, 1);
+        child.parent = null;
+      }
+      return this;
+    }
+    /** 深度优先查找 */
+    find(predicate) {
+      if (predicate(this)) return this;
+      for (const child of this.children) {
+        const found = child.find(predicate);
+        if (found) return found;
+      }
+      return null;
+    }
+    /** 扁平化所有后代 */
+    flatten(result = []) {
+      result.push(this);
+      for (const child of this.children) {
+        child.flatten(result);
+      }
+      return result;
+    }
+    // ============================================================
+    // 交互
+    // ============================================================
+    on(event, handler) {
+      this.eventHandlers.set(event, handler);
+      return this;
+    }
+    off(event) {
+      this.eventHandlers.delete(event);
+      return this;
+    }
+    emit(event, x, y, originalEvent) {
+      const handler = this.eventHandlers.get(event);
+      if (handler) {
+        handler({ box: this, x, y, originalEvent });
+      }
+    }
+    setState(state) {
+      if (this.state === state) return;
+      this.state = state;
+    }
+    /** 获取当前状态对应的样式覆盖 */
+    getStateStyle() {
+      var _a, _b;
+      return (_b = (_a = this.stateStyles[this.state]) != null ? _a : this.stateStyles.normal) != null ? _b : {};
+    }
+    // ============================================================
+    // 动画
+    // ============================================================
+    animate(prop, to, duration, easing = "easeOutCubic", onComplete) {
+      const from = this.getAnimProp(prop);
+      this.animations.push({
+        prop,
+        from,
+        to,
+        duration,
+        startTime: performance.now(),
+        easing,
+        onComplete
+      });
+      return this;
+    }
+    getAnimProp(prop) {
+      switch (prop) {
+        case "opacity":
+          return this.opacity;
+        case "scale":
+          return this.transform.scale;
+        case "rotate":
+          return this.transform.rotate;
+        case "translateX":
+          return this.transform.translateX;
+        case "translateY":
+          return this.transform.translateY;
+        case "x":
+          return this.x;
+        case "y":
+          return this.y;
+        case "width":
+          return this.width;
+        case "height":
+          return this.height;
+      }
+    }
+    setAnimProp(prop, value) {
+      switch (prop) {
+        case "opacity":
+          this.opacity = value;
+          break;
+        case "scale":
+          this.transform.scale = value;
+          break;
+        case "rotate":
+          this.transform.rotate = value;
+          break;
+        case "translateX":
+          this.transform.translateX = value;
+          break;
+        case "translateY":
+          this.transform.translateY = value;
+          break;
+        case "x":
+          this.x = value;
+          break;
+        case "y":
+          this.y = value;
+          break;
+        case "width":
+          this.width = value;
+          break;
+        case "height":
+          this.height = value;
+          break;
+      }
+    }
+    /** 更新所有活跃动画，返回是否有动画在播放 */
+    tickAnimations(now) {
+      let active = false;
+      this.animations = this.animations.filter((anim) => {
+        var _a;
+        const elapsed = now - anim.startTime;
+        const progress = Math.min(elapsed / anim.duration, 1);
+        const eased = ease(anim.easing, progress);
+        const value = anim.from + (anim.to - anim.from) * eased;
+        this.setAnimProp(anim.prop, value);
+        if (progress >= 1) {
+          (_a = anim.onComplete) == null ? void 0 : _a.call(anim);
+          return false;
+        }
+        active = true;
+        return true;
+      });
+      for (const child of this.children) {
+        if (child.tickAnimations(now)) active = true;
+      }
+      return active;
+    }
+    // ============================================================
+    // 工具
+    // ============================================================
+    clone() {
+      return new _Box({
+        ...this.serialize(),
+        id: void 0,
+        children: this.children.map((c) => c.clone())
+      });
+    }
+    serialize() {
+      var _a, _b, _c, _d, _e, _f;
+      return {
+        id: this.id,
+        type: this.type,
+        x: this.x,
+        y: this.y,
+        width: this.width,
+        height: this.height,
+        padding: { ...this.padding },
+        margin: { ...this.margin },
+        backgroundColor: this.backgroundColor,
+        gradient: this.gradient ? { ...this.gradient } : null,
+        borderRadius: this.borderRadius,
+        opacity: this.opacity,
+        visible: this.visible,
+        border: this.border ? { ...this.border } : null,
+        highlight: this.highlight ? { ...this.highlight } : null,
+        shadow: this.shadow ? { ...this.shadow } : null,
+        text: this.textStyle.content,
+        textColor: this.textStyle.color,
+        font: this.textStyle.font,
+        lineHeight: this.textStyle.lineHeight,
+        textAlign: this.textStyle.align,
+        textVerticalAlign: this.textStyle.verticalAlign,
+        textOverflow: this.textStyle.overflow,
+        maxLines: this.textStyle.maxLines,
+        icon: (_b = (_a = this.icon) == null ? void 0 : _a.char) != null ? _b : null,
+        iconSize: (_c = this.icon) == null ? void 0 : _c.size,
+        iconPosition: (_d = this.icon) == null ? void 0 : _d.position,
+        interactive: this.interactive,
+        disabled: this.disabled,
+        selected: this.selected,
+        stateStyles: { ...this.stateStyles },
+        zIndex: this.zIndex,
+        overflow: this.overflow,
+        transform: { ...this.transform },
+        layout: (_e = this.layout) != null ? _e : void 0,
+        layoutItem: (_f = this.layoutItem) != null ? _f : void 0,
+        scrollable: this.scrollable,
+        scrollX: this.scrollX,
+        scrollY: this.scrollY,
+        scrollDirection: this.scrollDirection,
+        scrollbarVisible: this.scrollbarVisible,
+        kfmStyle: this.kfmStyle ? { ...this.kfmStyle } : null,
+        gesture: this.gesture ? { ...this.gesture } : null,
+        shape: this.shape ? { ...this.shape, points: [...this.shape.points] } : null,
+        inputable: this.inputable ? { ...this.inputable } : void 0,
+        data: { ...this.data }
+      };
+    }
+  };
+
+  // src/client/modules/tree-model.ts
+  var BOX_HEIGHT = 32;
+  var SIDEBAR_WIDTH = 280;
+  var INDENT = 18;
+  var ROW_PAD = 8;
+  var DIR_COLOR = "#7c3aed";
+  var FILE_COLOR = "#e0e0e0";
+  var ACCENT_COLOR = "#00d4ff";
+  var TRIANGLE_SIZE = 10;
+  var TRIANGLE_GAP = 6;
+  function getFileColor(name) {
+    var _a;
+    const ext = (_a = name.split(".").pop()) == null ? void 0 : _a.toLowerCase();
+    if (!ext) return FILE_COLOR;
+    const map = {
+      ts: "#3178c6",
+      js: "#f7df1e",
+      json: "#292929",
+      html: "#e34f26",
+      css: "#1572b6",
+      md: "#083fa1",
+      py: "#3776ab",
+      rs: "#dea584",
+      go: "#00add8",
+      rsync: "#7c3aed",
+      zip: "#f39c12",
+      gz: "#f39c12",
+      tar: "#f39c12",
+      bak: "#888",
+      old: "#888"
+    };
+    return map[ext] || FILE_COLOR;
+  }
+  function buildFolderBox(path, name, children, depth, ctx) {
+    const isExpanded = !!ctx.expandedPaths[path];
+    const indent = INDENT * depth + ROW_PAD;
+    const titleRow = new Box({
+      id: `title-${path}`,
+      x: 0,
+      y: 0,
+      width: SIDEBAR_WIDTH,
+      height: BOX_HEIGHT,
+      backgroundColor: ctx.selectedFile === path ? "rgba(124,58,237,0.15)" : "transparent",
+      borderRadius: 0,
+      interactive: true,
+      overflow: "hidden",
+      data: { path, isDir: true, isExpanded },
+      gesture: {
+        passive: true,
+        onTap: () => ctx.onDirToggle(path, !isExpanded)
+      }
+    });
+    const toggleIcon = new Box({
+      id: `toggle-${path}`,
+      x: indent,
+      y: 0,
+      width: TRIANGLE_SIZE,
+      height: BOX_HEIGHT,
+      backgroundColor: "transparent",
+      borderRadius: 0
+    });
+    toggleIcon.textStyle = {
+      content: isExpanded ? "\u25BC" : "\u25B6",
+      color: ACCENT_COLOR,
+      font: `${TRIANGLE_SIZE}px system-ui, sans-serif`,
+      lineHeight: BOX_HEIGHT,
+      align: "center",
+      verticalAlign: "middle"
+    };
+    titleRow.addChild(toggleIcon);
+    const titleLabel = new Box({
+      id: `label-${path}`,
+      x: indent + TRIANGLE_SIZE + TRIANGLE_GAP,
+      y: 0,
+      width: SIDEBAR_WIDTH - indent - TRIANGLE_SIZE - TRIANGLE_GAP - ROW_PAD,
+      height: BOX_HEIGHT,
+      backgroundColor: "transparent",
+      borderRadius: 0
+    });
+    titleLabel.textStyle = {
+      content: path === "/root" ? "root" : name,
+      color: DIR_COLOR,
+      font: "13px system-ui, sans-serif",
+      lineHeight: BOX_HEIGHT,
+      align: "left",
+      verticalAlign: "middle",
+      overflow: "ellipsis",
+      maxLines: 1
+    };
+    titleRow.addChild(titleLabel);
+    const subItems = [];
+    let currentY = titleRow.y + BOX_HEIGHT;
+    if (isExpanded) {
+      for (const item of children) {
+        if (item.isDir) {
+          const folderBox = buildFolderBox(item.path, item.name, item.children || [], depth + 1, ctx);
+          folderBox.y = currentY;
+          subItems.push(folderBox);
+          currentY += folderBox.height;
+        } else {
+          const fileRow = new Box({
+            id: `file-${item.path}`,
+            x: 0,
+            y: currentY,
+            width: SIDEBAR_WIDTH,
+            height: BOX_HEIGHT,
+            backgroundColor: ctx.selectedFile === item.path ? "rgba(124,58,237,0.15)" : "transparent",
+            borderRadius: 0,
+            interactive: true,
+            overflow: "hidden",
+            data: { path: item.path, isDir: false },
+            gesture: {
+              passive: true,
+              onTap: () => ctx.onFileClick(item.path)
+            }
+          });
+          const fileLabel = new Box({
+            id: `label-${item.path}`,
+            x: INDENT * (depth + 1) + ROW_PAD,
+            y: 0,
+            width: SIDEBAR_WIDTH - INDENT * (depth + 1) - ROW_PAD,
+            height: BOX_HEIGHT,
+            backgroundColor: "transparent",
+            borderRadius: 0
+          });
+          fileLabel.textStyle = {
+            content: item.name,
+            color: getFileColor(item.name),
+            font: "13px system-ui, sans-serif",
+            lineHeight: BOX_HEIGHT,
+            align: "left",
+            verticalAlign: "middle",
+            overflow: "ellipsis",
+            maxLines: 1
+          };
+          fileRow.addChild(fileLabel);
+          subItems.push(fileRow);
+          currentY += BOX_HEIGHT;
+        }
+      }
+    }
+    for (const child of subItems) {
+      titleRow.addChild(child);
+    }
+    const totalChildrenHeight = subItems.reduce((sum, c) => sum + c.height, 0);
+    titleRow.height = BOX_HEIGHT + totalChildrenHeight;
+    titleRow.highlight = {
+      color: ACCENT_COLOR,
+      width: 3,
+      side: "left"
+    };
+    return titleRow;
+  }
+  function buildSidebarTree() {
+    var _a;
+    const state = KFMState;
+    const rootBox = new Box({
+      id: "sidebar-root",
+      x: 0,
+      y: 0,
+      width: SIDEBAR_WIDTH,
+      height: 0,
+      backgroundColor: "transparent",
+      borderRadius: 0,
+      overflow: "hidden"
+    });
+    let currentY = 0;
+    const ctx = {
+      expandedPaths: state.expandedPaths,
+      selectedFile: state.selectedFile,
+      onDirToggle: (path, expand) => state.setExpanded(path, expand),
+      onFileClick: (path) => state.selectFile(path)
+    };
+    const rootNode = state.files["/root"];
+    const filesList = (_a = rootNode == null ? void 0 : rootNode.children) != null ? _a : [];
+    for (const item of filesList) {
+      if (item.isDir) {
+        const folderBox = buildFolderBox(item.path, item.name, item.children || [], 1, ctx);
+        folderBox.y = currentY;
+        rootBox.addChild(folderBox);
+        currentY += folderBox.height;
+      } else {
+        const fileRow = new Box({
+          id: `file-${item.path}`,
+          x: 0,
+          y: currentY,
+          width: SIDEBAR_WIDTH,
+          height: BOX_HEIGHT,
+          backgroundColor: ctx.selectedFile === item.path ? "rgba(124,58,237,0.15)" : "transparent",
+          borderRadius: 0,
+          interactive: true,
+          overflow: "hidden",
+          data: { path: item.path, isDir: false },
+          gesture: {
+            passive: true,
+            onTap: () => ctx.onFileClick(item.path)
+          }
+        });
+        const fileLabel = new Box({
+          id: `label-${item.path}`,
+          x: INDENT + ROW_PAD,
+          y: 0,
+          width: SIDEBAR_WIDTH - INDENT - ROW_PAD,
+          height: BOX_HEIGHT,
+          backgroundColor: "transparent",
+          borderRadius: 0
+        });
+        fileLabel.textStyle = {
+          content: item.name,
+          color: getFileColor(item.name),
+          font: "13px system-ui, sans-serif",
+          lineHeight: BOX_HEIGHT,
+          align: "left",
+          verticalAlign: "middle",
+          overflow: "ellipsis",
+          maxLines: 1
+        };
+        fileRow.addChild(fileLabel);
+        rootBox.addChild(fileRow);
+        currentY += BOX_HEIGHT;
+      }
+    }
+    rootBox.height = currentY;
+    rootBox.scrollY = 0;
+    return rootBox;
+  }
+
+  // src/client/modules/tree-render.ts
+  var renderer = null;
+  var sidebarCanvas = null;
+  function onSidebarOpen() {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      renderer == null ? void 0 : renderer.resize();
+    }));
+  }
+  function onSidebarClose() {
+  }
+  function initTreeRenderer() {
+    const fileTree = document.getElementById("fileTree");
+    if (!fileTree) {
+      console.warn("[tree-render] #fileTree not found");
+      return;
+    }
+    sidebarCanvas = document.createElement("canvas");
+    sidebarCanvas.id = "tree-canvas";
+    sidebarCanvas.style.width = "100%";
+    sidebarCanvas.style.height = "100%";
+    sidebarCanvas.style.display = "block";
+    fileTree.innerHTML = "";
+    fileTree.appendChild(sidebarCanvas);
+    renderer = new Renderer(sidebarCanvas, {
+      backgroundColor: "rgba(10,10,15,0.85)",
+      dpr: window.devicePixelRatio || 1
+    });
+    rebuildTree();
+    KFMState.subscribe(() => {
+      rebuildTree();
+    });
+    window.addEventListener("resize", () => {
+      renderer == null ? void 0 : renderer.resize();
+    });
+    sidebarCanvas.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      const root = renderer == null ? void 0 : renderer.getRoot();
+      if (!root) return;
+      root.scrollY += e.deltaY;
+      if (root.scrollY < 0) root.scrollY = 0;
+      if (root.scrollY > root.height) root.scrollY = root.height;
+    }, { passive: false });
+    let touchStartY2 = 0;
+    let touchScrollY = 0;
+    sidebarCanvas.addEventListener("touchstart", (e) => {
+      touchStartY2 = e.touches[0].clientY;
+      const root = renderer == null ? void 0 : renderer.getRoot();
+      touchScrollY = (root == null ? void 0 : root.scrollY) || 0;
+    }, { passive: true });
+    sidebarCanvas.addEventListener("touchmove", (e) => {
+      const dy = touchStartY2 - e.touches[0].clientY;
+      const root = renderer == null ? void 0 : renderer.getRoot();
+      if (!root) return;
+      root.scrollY = touchScrollY + dy;
+      if (root.scrollY < 0) root.scrollY = 0;
+      if (root.scrollY > root.height) root.scrollY = root.height;
+    }, { passive: true });
+  }
+  function rebuildTree() {
+    if (!renderer) return;
+    const rootBox = buildSidebarTree();
+    renderer.setRoot(rootBox);
+    if (!renderer.isRunning) {
+      renderer.start();
+    }
   }
 
   // src/client/modules/ui.ts
-  var CURSOR_POS_KEY = "kfm_cursor_position";
-  var cursorHighlight = null;
-  var CONSTRAINT_HEIGHT = 32;
-  var BOUNDARY_STEP_THRESHOLD = 30;
-  var boundaryAccum = 0;
-  var isClickScrolling = false;
-  function resetCursorHighlight() {
-    cursorHighlight = null;
-  }
-  function initCursorHighlight() {
-    if (cursorHighlight && !document.body.contains(cursorHighlight)) cursorHighlight = null;
-    if (cursorHighlight) return;
-    const container = document.querySelector(".sidebar-content");
-    if (!container) return;
-    cursorHighlight = document.createElement("div");
-    cursorHighlight.className = "cursor-highlight";
-    cursorHighlight.style.top = "0px";
-    container.appendChild(cursorHighlight);
-  }
-  var CURSOR_EASE = "cubic-bezier(.25,.46,.45,.94)";
-  var CURSOR_DURATION = 0.3;
-  function updateCursorHighlight(immediate = false) {
-    if (!cursorHighlight) initCursorHighlight();
-    if (!cursorHighlight) return;
-    const selected = document.querySelector(".tree-item.selected");
-    if (!selected) {
-      gsapWithCSS.set(cursorHighlight, { opacity: 0 });
-      updateSidebarPath(null);
-      return;
-    }
-    const row = selected.querySelector(".tree-row") || selected;
-    const container = document.querySelector(".sidebar-content");
-    const containerRect = container.getBoundingClientRect();
-    const rowRect = row.getBoundingClientRect();
-    const target = {
-      top: rowRect.top - containerRect.top + container.scrollTop,
-      left: rowRect.left - containerRect.left,
-      width: rowRect.width,
-      height: rowRect.height,
-      opacity: 1
-    };
-    if (immediate) {
-      gsapWithCSS.set(cursorHighlight, target);
-    } else {
-      gsapWithCSS.to(cursorHighlight, {
-        ...target,
-        duration: CURSOR_DURATION,
-        ease: CURSOR_EASE
-      });
-    }
-    updateSidebarPath(selected);
-  }
-  var PATH_FONT = "12px -apple-system, sans-serif";
-  function updateSidebarPath(item) {
-    const pathEl = document.getElementById("sidebarPath");
-    if (!pathEl) return;
-    gsapWithCSS.killTweensOf(pathEl);
-    const currentW = parseFloat(getComputedStyle(pathEl).width) || 20;
-    if (!item) {
-      const targetW2 = measureNaturalWidthSync("-", PATH_FONT) + 24;
-      pathEl.textContent = "-";
-      pathEl.title = "";
-      if (Math.abs(currentW - targetW2) < 2) return;
-      gsapWithCSS.fromTo(pathEl, { width: currentW + "px" }, {
-        width: targetW2 + "px",
-        duration: 0.2,
-        ease: "cubic-bezier(.4,0,.2,1)",
-        onComplete: () => {
-          pathEl.style.width = "auto";
-        }
-      });
-      return;
-    }
-    const nameEl = item.querySelector(".tree-name");
-    const name = nameEl ? nameEl.textContent : "-";
-    const targetW = measureNaturalWidthSync(name || "-", PATH_FONT) + 24;
-    if (Math.abs(currentW - targetW) < 2) {
-      pathEl.textContent = name;
-      pathEl.title = name || "";
-      return;
-    }
-    pathEl.textContent = name;
-    pathEl.style.width = currentW + "px";
-    gsapWithCSS.fromTo(pathEl, { width: currentW + "px" }, {
-      width: targetW + "px",
-      duration: 0.2,
-      ease: "cubic-bezier(.4,0,.2,1)",
-      onComplete: () => {
-        pathEl.style.width = "auto";
-      }
-    });
-    pathEl.title = name || "";
-  }
-  function syncCursorDuringBounce(siblingCount = 0) {
-    if (!cursorHighlight) initCursorHighlight();
-    if (!cursorHighlight) return;
-    const totalMs = Math.max(500, (siblingCount > 0 ? (siblingCount - 1) * 20 : 0) + 550);
-    const syncHandler = () => {
-      const sel = document.querySelector(".tree-item.selected");
-      if (!sel || !cursorHighlight) return;
-      const row = sel.querySelector(".tree-row") || sel;
-      const container = document.querySelector(".sidebar-content");
-      const cr = container.getBoundingClientRect();
-      const rr = row.getBoundingClientRect();
-      gsapWithCSS.set(cursorHighlight, {
-        top: rr.top - cr.top + container.scrollTop,
-        left: rr.left - cr.left,
-        width: rr.width,
-        height: rr.height,
-        opacity: 1
-      });
-    };
-    gsapWithCSS.ticker.add(syncHandler);
-    gsapWithCSS.delayedCall(totalMs / 1e3, () => {
-      gsapWithCSS.ticker.remove(syncHandler);
-      const sel = document.querySelector(".tree-item.selected");
-      if (sel && cursorHighlight) {
-        sel.style.transform = "";
-        sel.style.transition = "";
-        const row = sel.querySelector(".tree-row") || sel;
-        const container = document.querySelector(".sidebar-content");
-        const cr = container.getBoundingClientRect();
-        const rr = row.getBoundingClientRect();
-        gsapWithCSS.set(cursorHighlight, {
-          top: rr.top - cr.top + container.scrollTop,
-          left: rr.left - cr.left,
-          width: rr.width,
-          height: rr.height,
-          opacity: 1
-        });
-      }
-    });
-  }
   function openSidebar() {
     var _a, _b;
     (_a = document.getElementById("sidebar")) == null ? void 0 : _a.classList.add("open");
     (_b = document.getElementById("overlay")) == null ? void 0 : _b.classList.add("show");
-    setTimeout(() => {
-      initCursorHighlight();
-      restoreCursorPosition();
-    }, 100);
+    onSidebarOpen();
   }
   function closeSidebar() {
     var _a, _b;
-    saveCursorPosition();
     (_a = document.getElementById("sidebar")) == null ? void 0 : _a.classList.remove("open");
     (_b = document.getElementById("overlay")) == null ? void 0 : _b.classList.remove("show");
-  }
-  function saveCursorPosition() {
-    const selected = document.querySelector(".tree-item.selected");
-    if (selected) {
-      const items = document.querySelectorAll("#fileTree .tree-item");
-      let index = -1;
-      items.forEach((item, i) => {
-        if (item === selected) index = i;
-      });
-      if (index !== -1) localStorage.setItem(CURSOR_POS_KEY, JSON.stringify({ index, timestamp: Date.now() }));
-    }
-  }
-  function restoreCursorPosition() {
-    const items = document.querySelectorAll("#fileTree .tree-item");
-    if (items.length === 0) return;
-    document.querySelectorAll(".tree-item.selected").forEach((el) => el.classList.remove("selected"));
-    let targetIndex = -1;
-    try {
-      const saved = JSON.parse(localStorage.getItem(CURSOR_POS_KEY) || "null");
-      if (saved && saved.index >= 0 && saved.index < items.length) targetIndex = saved.index;
-    } catch {
-    }
-    if (targetIndex === -1) targetIndex = Math.floor(items.length / 2);
-    selectFileItem(items[targetIndex]);
-    centerCursorToView(items[targetIndex]);
-  }
-  function centerCursorToView(item, smooth = true) {
-    const sidebarContent = document.querySelector(".sidebar-content");
-    if (!sidebarContent) return;
-    const containerRect = sidebarContent.getBoundingClientRect();
-    const treeRow = item.querySelector(".tree-row") || item;
-    const rowRect = treeRow.getBoundingClientRect();
-    const rowCenter = rowRect.top + rowRect.height / 2;
-    const containerCenter = containerRect.top + containerRect.height / 2;
-    const scrollOffset = rowCenter - containerCenter;
-    const targetScroll = sidebarContent.scrollTop + scrollOffset;
-    sidebarContent.scrollTo({ top: targetScroll, behavior: smooth ? "smooth" : "instant" });
-  }
-  function isInConstraintZone(el) {
-    if (!el) return false;
-    const container = document.querySelector(".sidebar-content");
-    if (!container) return false;
-    const cr = container.getBoundingClientRect();
-    const centerY = cr.top + cr.height / 2;
-    const row = el.querySelector(".tree-row") || el;
-    const rect = row.getBoundingClientRect();
-    const itemCenter = rect.top + rect.height / 2;
-    return itemCenter >= centerY - CONSTRAINT_HEIGHT / 2 && itemCenter <= centerY + CONSTRAINT_HEIGHT / 2;
-  }
-  function scrollIntoConstraintZone(target) {
-    if (!target) return;
-    const container = document.querySelector(".sidebar-content");
-    if (!container) return;
-    const cr = container.getBoundingClientRect();
-    const centerY = cr.top + cr.height / 2;
-    const row = target.querySelector(".tree-row") || target;
-    const rect = row.getBoundingClientRect();
-    const offset = rect.top + rect.height / 2 - centerY;
-    const maxScroll = container.scrollHeight - container.clientHeight;
-    const targetScroll = Math.max(0, Math.min(maxScroll, container.scrollTop + offset));
-    container.scrollTo({ top: targetScroll, behavior: "smooth" });
-  }
-  function scrollAndCenterCursor(item) {
-    isClickScrolling = true;
-    window.isClickScrolling = true;
-    const container = document.querySelector(".sidebar-content");
-    if (container) {
-      const onEnd = () => {
-        isClickScrolling = false;
-        window.isClickScrolling = false;
-        container.removeEventListener("scrollend", onEnd);
-      };
-      container.addEventListener("scrollend", onEnd);
-      setTimeout(() => {
-        if (isClickScrolling) onEnd();
-      }, 600);
-    }
-    scrollIntoConstraintZone(item);
-  }
-  function isNodeExpanded(item) {
-    let wrap3 = item.parentElement;
-    while (wrap3 && wrap3.id !== "fileTree") {
-      if (wrap3.classList.contains("tree-children-wrap") && !wrap3.classList.contains("open")) return false;
-      wrap3 = wrap3.parentElement;
-    }
-    return true;
-  }
-  function selectFileItem(item) {
-    const current = document.querySelector(".tree-item.selected");
-    if (current === item) return;
-    if (current) current.classList.remove("selected");
-    item.classList.add("selected");
-    const path = item.dataset.path || "";
-    KFMState.setSelectedFile(path);
-    updateCursorHighlight(false);
-    updateSidebarPath(item);
-  }
-  function moveCursorTo(target) {
-    if (!target) return;
-    selectFileItem(target);
-  }
-  function initScrollCursorConstraint() {
-    const container = document.querySelector(".sidebar-content");
-    if (!container) return;
-    let boundaryTouchActive = false;
-    let boundaryLastY = 0;
-    container.addEventListener("touchstart", (e) => {
-      boundaryTouchActive = true;
-      boundaryAccum = 0;
-      boundaryLastY = e.touches[0].clientY;
-    }, { passive: true });
-    container.addEventListener("touchmove", (e) => {
-      if (!boundaryTouchActive) return;
-      const currentY = e.touches[0].clientY;
-      const dy = currentY - boundaryLastY;
-      boundaryLastY = currentY;
-      if (window.joystickActive || window.isClickScrolling) return;
-      const maxScroll = container.scrollHeight - container.clientHeight;
-      const atTop = container.scrollTop <= 0 && dy > 0;
-      const atBottom = container.scrollTop >= maxScroll - 1 && dy < 0;
-      if (atTop || atBottom) {
-        boundaryAccum += Math.abs(dy);
-        if (boundaryAccum >= BOUNDARY_STEP_THRESHOLD) {
-          const steps = Math.floor(boundaryAccum / BOUNDARY_STEP_THRESHOLD);
-          boundaryAccum -= steps * BOUNDARY_STEP_THRESHOLD;
-          const allVisible = Array.from(document.querySelectorAll("#fileTree .tree-item")).filter((item) => isNodeExpanded(item));
-          const sel = document.querySelector(".tree-item.selected");
-          let idx = 0;
-          allVisible.forEach((item, i) => {
-            if (item === sel) idx = i;
-          });
-          const newIdx = atTop ? Math.max(0, idx - steps) : Math.min(allVisible.length - 1, idx + steps);
-          if (newIdx !== idx) {
-            selectFileItem(allVisible[newIdx]);
-          }
-        }
-      } else {
-        boundaryAccum = 0;
-      }
-    }, { passive: true });
-    container.addEventListener("touchend", () => {
-      boundaryTouchActive = false;
-      boundaryAccum = 0;
-    }, { passive: true });
-    let scrollRafId = 0;
-    let lastScrollPos = 0;
-    const pollScroll = () => {
-      scrollRafId = requestAnimationFrame(pollScroll);
-      const sp = container.scrollTop;
-      if (sp === lastScrollPos) return;
-      lastScrollPos = sp;
-      if (window.joystickActive || window.isClickScrolling) return;
-      const sel = document.querySelector(".tree-item.selected");
-      if (!sel || isInConstraintZone(sel)) return;
-      const allVisible = Array.from(document.querySelectorAll("#fileTree .tree-item")).filter((item) => isNodeExpanded(item));
-      let idx = 0;
-      allVisible.forEach((item, i) => {
-        if (item === sel) idx = i;
-      });
-      const cr = container.getBoundingClientRect();
-      const centerY = cr.top + cr.height / 2;
-      const selRow = sel.querySelector(".tree-row") || sel;
-      const selRect = selRow.getBoundingClientRect();
-      const selCenter = selRect.top + selRect.height / 2;
-      const offset = selCenter - centerY;
-      const itemH = selRect.height || 32;
-      const steps = Math.abs(offset) < itemH * 2 ? 1 : Math.min(10, Math.round(Math.abs(offset) / itemH));
-      const nextIdx = offset > 0 ? Math.max(0, idx - steps) : Math.min(allVisible.length - 1, idx + steps);
-      if (nextIdx !== idx) {
-        moveCursorTo(allVisible[nextIdx]);
-      }
-    };
-    scrollRafId = requestAnimationFrame(pollScroll);
-  }
-  function initOverlay() {
-    var _a;
-    (_a = document.getElementById("overlay")) == null ? void 0 : _a.addEventListener("click", () => {
-    });
+    onSidebarClose();
   }
   function initUI() {
-    window.updateCursorHighlight = updateCursorHighlight;
-    window.updateSidebarPath = updateSidebarPath;
-    window.centerCursorToView = centerCursorToView;
-    window.isNodeExpanded = isNodeExpanded;
-    window.selectFileItem = selectFileItem;
-    window.resetCursorHighlight = resetCursorHighlight;
-    window.syncCursorDuringBounce = syncCursorDuringBounce;
-    window.scrollIntoConstraintZone = scrollIntoConstraintZone;
-    window.scrollAndCenterCursor = scrollAndCenterCursor;
-    window.isInConstraintZone = isInConstraintZone;
+    var _a;
     window.openSidebar = openSidebar;
     window.closeSidebar = closeSidebar;
     window.executeCursorAction = async function() {
     };
-    initScrollCursorConstraint();
-    initOverlay();
+    (_a = document.getElementById("overlay")) == null ? void 0 : _a.addEventListener("click", () => {
+      closeSidebar();
+    });
   }
 
   // src/client/modules/gestures.ts
   var touchStartX = 0;
   var touchStartY = 0;
   var touchStarted = false;
-  var pullDownTriggered = false;
-  var hasMoved = false;
-  var cursorMode = false;
-  var scrollMode = false;
-  var joystickActive = false;
-  var joystickOffset = 0;
-  var joystickRafId = null;
-  var joystickAccum = 0;
-  var JOYSTICK_DEADZONE = 15;
-  var JOYSTICK_SENSITIVITY = 320;
-  var SCROLL_FOLLOW_SPEED = 0.25;
-  function followScrollToCursor() {
-    const container = document.querySelector(".sidebar-content");
-    if (!container) return;
-    const selected = document.querySelector(".tree-item.selected");
-    if (!selected) return;
-    const cr = container.getBoundingClientRect();
-    const row = selected.querySelector(".tree-row") || selected;
-    const rr = row.getBoundingClientRect();
-    const diff = rr.top + rr.height / 2 - (cr.top + cr.height / 2);
-    container.scrollTop += diff * SCROLL_FOLLOW_SPEED;
-  }
-  function moveCursorBySteps(steps) {
-    var _a;
-    if (steps === 0) return;
-    const items = Array.from(document.querySelectorAll("#fileTree .tree-item")).filter((item) => isNodeExpanded(item));
-    if (!items.length) return;
-    const currentSelected = document.querySelector(".tree-item.selected");
-    let currentIndex = 0;
-    items.forEach((item, i) => {
-      if (item === currentSelected) currentIndex = i;
-    });
-    const targetIndex = Math.min(Math.max(currentIndex + steps, 0), items.length - 1);
-    if (targetIndex === currentIndex) return;
-    (_a = window.selectFileItem) == null ? void 0 : _a.call(window, items[targetIndex]);
-  }
-  function joystickTick() {
-    if (!joystickActive) return;
-    if (Math.abs(joystickOffset) <= JOYSTICK_DEADZONE) {
-      followScrollToCursor();
-      joystickRafId = requestAnimationFrame(joystickTick);
-      return;
-    }
-    const sign = joystickOffset > 0 ? 1 : -1;
-    const absOffset = Math.abs(joystickOffset) - JOYSTICK_DEADZONE;
-    const speed = sign * (absOffset / JOYSTICK_SENSITIVITY);
-    joystickAccum += speed;
-    if (Math.abs(joystickAccum) >= 1) {
-      const steps = Math.trunc(joystickAccum);
-      joystickAccum -= steps;
-      moveCursorBySteps(-steps);
-    }
-    followScrollToCursor();
-    joystickRafId = requestAnimationFrame(joystickTick);
-  }
-  function startJoystick() {
-    joystickActive = true;
-    joystickAccum = 0;
-    window.joystickActive = true;
-    joystickTick();
-  }
-  function stopJoystick() {
-    joystickActive = false;
-    joystickAccum = 0;
-    window.joystickActive = false;
-    if (joystickRafId) {
-      cancelAnimationFrame(joystickRafId);
-      joystickRafId = null;
-    }
-  }
-  async function executeCursorAction() {
-    const selectedItem = document.querySelector(".tree-item.selected");
-    if (!selectedItem) return;
-    const row = selectedItem.querySelector(".tree-row");
-    row == null ? void 0 : row.dispatchEvent(new Event("click", { bubbles: false }));
-  }
-  function initCursorToFirst() {
-    setTimeout(() => {
-      var _a;
-      (_a = window.restoreCursorPosition) == null ? void 0 : _a.call(window);
-    }, 100);
-  }
   function initGestures() {
-    window.executeCursorAction = executeCursorAction;
-    window.joystickActive = false;
     document.addEventListener("touchstart", (e) => {
-      var _a;
       if (e.target.closest(".light-orb")) return;
       touchStartX = e.touches[0].clientX;
       touchStartY = e.touches[0].clientY;
       touchStarted = true;
-      pullDownTriggered = false;
-      hasMoved = false;
-      const sidebarOpen = (_a = document.getElementById("sidebar")) == null ? void 0 : _a.classList.contains("open");
-      if (sidebarOpen) {
-        const sidebarRect = document.getElementById("sidebar").getBoundingClientRect();
-        cursorMode = touchStartX > sidebarRect.right;
-      } else {
-        cursorMode = false;
-      }
     }, { passive: true });
     document.addEventListener("touchmove", (e) => {
       var _a, _b, _c;
@@ -8079,38 +4951,19 @@
       const currentX = e.touches[0].clientX;
       const currentY = e.touches[0].clientY;
       const dx = currentX - touchStartX;
-      const dy = currentY - touchStartY;
-      if (cursorMode) {
+      const dxAbs = Math.abs(dx);
+      if ((_a = document.getElementById("sidebar")) == null ? void 0 : _a.classList.contains("open")) {
         if (dx < -60) {
-          hasMoved = true;
-          stopJoystick();
           closeSidebar();
           touchStarted = false;
           return;
-        }
-        if (Math.abs(dy) > JOYSTICK_DEADZONE) {
-          if (!hasMoved) {
-            hasMoved = true;
-            startJoystick();
-          }
-          joystickOffset = dy;
-        } else if (hasMoved) {
-          joystickOffset = 0;
         }
         return;
       }
-      const logOpen = (_a = document.getElementById("logPanel")) == null ? void 0 : _a.classList.contains("open");
-      if ((_b = document.getElementById("sidebar")) == null ? void 0 : _b.classList.contains("open")) {
-        if (dx < -60) {
-          closeSidebar();
-          touchStarted = false;
-          return;
-        }
-      }
+      const logOpen = (_b = document.getElementById("logPanel")) == null ? void 0 : _b.classList.contains("open");
       if (logOpen) {
         if (dx > 60) {
           closeLogPanel();
-          ;
           touchStarted = false;
           return;
         }
@@ -8118,18 +4971,12 @@
       }
       if (!((_c = document.getElementById("sidebar")) == null ? void 0 : _c.classList.contains("open")) && dx > 60) {
         openSidebar();
-        initCursorToFirst();
         touchStarted = false;
         return;
       }
     }, { passive: true });
     document.addEventListener("touchend", () => {
-      if (cursorMode && !hasMoved) executeCursorAction();
-      if (joystickActive) stopJoystick();
       touchStarted = false;
-      cursorMode = false;
-      hasMoved = false;
-      scrollMode = false;
     }, { passive: true });
   }
 
@@ -8996,7 +5843,7 @@
   var segmentMetricCaches2 = /* @__PURE__ */ new Map();
   var cachedEngineProfile2 = null;
   var maybeEmojiRe2 = /[\p{Emoji_Presentation}\p{Extended_Pictographic}\p{Regional_Indicator}\uFE0F\u20E3]/u;
-  var sharedGraphemeSegmenter3 = null;
+  var sharedGraphemeSegmenter4 = null;
   var emojiCorrectionCache2 = /* @__PURE__ */ new Map();
   function getSegmentMetricCache2(font) {
     let cache = segmentMetricCaches2.get(font);
@@ -9045,11 +5892,11 @@
     const m = font.match(/(\d+(?:\.\d+)?)\s*px/);
     return m ? parseFloat(m[1]) : 16;
   }
-  function getSharedGraphemeSegmenter3() {
-    if (sharedGraphemeSegmenter3 === null) {
-      sharedGraphemeSegmenter3 = new Intl.Segmenter(void 0, { granularity: "grapheme" });
+  function getSharedGraphemeSegmenter4() {
+    if (sharedGraphemeSegmenter4 === null) {
+      sharedGraphemeSegmenter4 = new Intl.Segmenter(void 0, { granularity: "grapheme" });
     }
-    return sharedGraphemeSegmenter3;
+    return sharedGraphemeSegmenter4;
   }
   function textMayContainEmoji2(text) {
     return maybeEmojiRe2.test(text);
@@ -9063,7 +5910,7 @@
   }
   function countEmojiGraphemes2(text) {
     let count = 0;
-    const graphemeSegmenter = getSharedGraphemeSegmenter3();
+    const graphemeSegmenter = getSharedGraphemeSegmenter4();
     for (const g of graphemeSegmenter.segment(text)) {
       if (maybeEmojiRe2.test(g.segment)) count++;
     }
@@ -9082,7 +5929,7 @@
   function getSegmentGraphemeWidths(seg, metrics, cache, emojiCorrection) {
     if (metrics.graphemeWidths !== void 0) return metrics.graphemeWidths;
     const widths = [];
-    const graphemeSegmenter = getSharedGraphemeSegmenter3();
+    const graphemeSegmenter = getSharedGraphemeSegmenter4();
     for (const gs of graphemeSegmenter.segment(seg)) {
       const graphemeMetrics = getSegmentMetrics2(gs.segment, cache);
       widths.push(getCorrectedSegmentWidth2(gs.segment, graphemeMetrics, emojiCorrection));
@@ -9093,7 +5940,7 @@
   function getSegmentGraphemePrefixWidths(seg, metrics, cache, emojiCorrection) {
     if (metrics.graphemePrefixWidths !== void 0) return metrics.graphemePrefixWidths;
     const prefixWidths = [];
-    const graphemeSegmenter = getSharedGraphemeSegmenter3();
+    const graphemeSegmenter = getSharedGraphemeSegmenter4();
     let prefix = "";
     for (const gs of graphemeSegmenter.segment(seg)) {
       prefix += gs.segment;
@@ -9512,13 +6359,13 @@
   }
 
   // src/client/engine/text-layout/layout.ts
-  var sharedGraphemeSegmenter4 = null;
-  var sharedLineTextCaches = /* @__PURE__ */ new WeakMap();
-  function getSharedGraphemeSegmenter4() {
-    if (sharedGraphemeSegmenter4 === null) {
-      sharedGraphemeSegmenter4 = new Intl.Segmenter(void 0, { granularity: "grapheme" });
+  var sharedGraphemeSegmenter5 = null;
+  var sharedLineTextCaches2 = /* @__PURE__ */ new WeakMap();
+  function getSharedGraphemeSegmenter5() {
+    if (sharedGraphemeSegmenter5 === null) {
+      sharedGraphemeSegmenter5 = new Intl.Segmenter(void 0, { granularity: "grapheme" });
     }
-    return sharedGraphemeSegmenter4;
+    return sharedGraphemeSegmenter5;
   }
   function createEmptyPrepared2(includeSegments) {
     const base = {
@@ -9571,7 +6418,7 @@
       breakablePrefixWidths.push(breakablePrefix);
       if (segments !== null) segments.push(text);
     }
-    const graphemeSegmenter = getSharedGraphemeSegmenter4();
+    const graphemeSegmenter = getSharedGraphemeSegmenter5();
     for (let mi = 0; mi < analysis.len; mi++) {
       preparedStartByAnalysisIndex[mi] = widths.length;
       const segText = analysis.texts[mi];
@@ -9690,38 +6537,38 @@
     return measureAnalysis2(analysis, font, true);
   }
   function getLineTextCache2(prepared) {
-    let cache = sharedLineTextCaches.get(prepared);
+    let cache = sharedLineTextCaches2.get(prepared);
     if (cache !== void 0) return cache;
     cache = /* @__PURE__ */ new Map();
-    sharedLineTextCaches.set(prepared, cache);
+    sharedLineTextCaches2.set(prepared, cache);
     return cache;
   }
-  function getSegmentGraphemes(segmentIndex, segments, cache) {
+  function getSegmentGraphemes2(segmentIndex, segments, cache) {
     let graphemes = cache.get(segmentIndex);
     if (graphemes !== void 0) return graphemes;
     graphemes = [];
-    const gs = getSharedGraphemeSegmenter4();
+    const gs = getSharedGraphemeSegmenter5();
     for (const g of gs.segment(segments[segmentIndex])) graphemes.push(g.segment);
     cache.set(segmentIndex, graphemes);
     return graphemes;
   }
-  function lineHasDiscretionaryHyphen(kinds, startSI, startGI, endSI) {
+  function lineHasDiscretionaryHyphen2(kinds, startSI, startGI, endSI) {
     return endSI > 0 && kinds[endSI - 1] === "soft-hyphen" && !(startSI === endSI && startGI > 0);
   }
   function buildLineTextFromRange2(segments, kinds, cache, startSI, startGI, endSI, endGI) {
     let text = "";
-    const endsWithHyphen = lineHasDiscretionaryHyphen(kinds, startSI, startGI, endSI);
+    const endsWithHyphen = lineHasDiscretionaryHyphen2(kinds, startSI, startGI, endSI);
     for (let i = startSI; i < endSI; i++) {
       if (kinds[i] === "soft-hyphen" || kinds[i] === "hard-break") continue;
       if (i === startSI && startGI > 0) {
-        text += getSegmentGraphemes(i, segments, cache).slice(startGI).join("");
+        text += getSegmentGraphemes2(i, segments, cache).slice(startGI).join("");
       } else {
         text += segments[i];
       }
     }
     if (endGI > 0) {
       if (endsWithHyphen) text += "-";
-      text += getSegmentGraphemes(endSI, segments, cache).slice(
+      text += getSegmentGraphemes2(endSI, segments, cache).slice(
         startSI === endSI ? startGI : 0,
         endGI
       ).join("");
@@ -9746,7 +6593,7 @@
       end: { segmentIndex: line.endSegmentIndex, graphemeIndex: line.endGraphemeIndex }
     };
   }
-  function layoutWithLines(prepared, maxWidth, lineHeight) {
+  function layoutWithLines2(prepared, maxWidth, lineHeight) {
     const lines = [];
     if (prepared.widths.length === 0) return { lineCount: 0, height: 0, lines };
     const graphemeCache = getLineTextCache2(prepared);
@@ -9759,7 +6606,7 @@
   // src/client/engine/text-layout/index.ts
   function layoutLines(text, font, maxWidth, lineHeight) {
     const prepared = prepareWithSegments2(text, font);
-    const { lines } = layoutWithLines(prepared, maxWidth, lineHeight);
+    const { lines } = layoutWithLines2(prepared, maxWidth, lineHeight);
     return lines.map((l) => ({ text: l.text, width: l.width }));
   }
 
@@ -10177,32 +7024,69 @@
     initInputBarWatcher();
   }
 
+  // src/client/modules/tree-loader.ts
+  var API2 = "/kfmv4/api";
+  async function fetchDir(path) {
+    var _a, _b;
+    if (((_b = (_a = KFMState.files[path]) == null ? void 0 : _a.children) == null ? void 0 : _b.length) !== void 0) {
+      return true;
+    }
+    try {
+      const res = await fetch(API2 + "/files/list", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path })
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      const items = data.items || [];
+      const children = items.map((item) => ({
+        name: item.name,
+        path: item.path,
+        isDir: item.isDir,
+        isLink: false
+      }));
+      KFMState.files[path] = {
+        name: path.split("/").pop() || path,
+        path,
+        isDir: true,
+        isLink: false,
+        children
+      };
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  async function loadFileTree(rootPath, _maxDepth = 0) {
+    await fetchDir(rootPath);
+    KFMState.notify();
+  }
+  function ensureDirLoaded(path) {
+    var _a, _b;
+    if (!KFMState.expandedPaths[path]) return;
+    if (((_b = (_a = KFMState.files[path]) == null ? void 0 : _a.children) == null ? void 0 : _b.length) !== void 0) return;
+    fetchDir(path).then(() => {
+      KFMState.notify();
+    });
+  }
+  function initLazyLoader() {
+    const originalSetExpanded = KFMState.setExpanded.bind(KFMState);
+    KFMState.setExpanded = function(path, expanded) {
+      originalSetExpanded(path, expanded);
+      if (expanded) {
+        ensureDirLoaded(path);
+      }
+    };
+  }
+
   // src/client/main.ts
   initApp();
-  initTree();
   initUI();
   initGestures();
   initOrb();
+  initTreeRenderer();
+  loadFileTree("/root").then(() => {
+    initLazyLoader();
+  }).catch((e) => console.error("[main] loadFileTree failed:", e));
 })();
-/*! Bundled license information:
-
-gsap/gsap-core.js:
-  (*!
-   * GSAP 3.15.0
-   * https://gsap.com
-   *
-   * @license Copyright 2008-2026, GreenSock. All rights reserved.
-   * Subject to the terms at https://gsap.com/standard-license
-   * @author: Jack Doyle, jack@greensock.com
-  *)
-
-gsap/CSSPlugin.js:
-  (*!
-   * CSSPlugin 3.15.0
-   * https://gsap.com
-   *
-   * Copyright 2008-2026, GreenSock. All rights reserved.
-   * Subject to the terms at https://gsap.com/standard-license
-   * @author: Jack Doyle, jack@greensock.com
-  *)
-*/
