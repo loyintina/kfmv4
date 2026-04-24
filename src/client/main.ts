@@ -3,6 +3,9 @@
  * 所有模块从此处导入，由 esbuild 打包为单个 bundle.js
  */
 
+// 统一状态层（Phase 8.0.1）
+import { KFMState } from './modules/state.js';
+
 // 全局状态（挂在 window 上供跨模块访问）
 declare global {
   interface Window {
