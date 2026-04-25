@@ -103,7 +103,7 @@ function buildExpanded(path: string, children: FileNode[], ctx: BuildCtx, depth:
   for (const item of children) {
     if (item.isDir) {
       container.addChild(innerFolderRow(item, cy, w, ctx));
-      cy += 32;
+      cy += 28;
       if (ctx.expandedPaths[item.path]) {
         const ch = KFMState.files[item.path]?.children ?? item.children ?? [];
         const sub = buildExpanded(item.path, ch, ctx, depth + 1, getShift(depth));
@@ -111,7 +111,7 @@ function buildExpanded(path: string, children: FileNode[], ctx: BuildCtx, depth:
       }
     } else {
       container.addChild(innerFileRow(item, cy, w, ctx));
-      cy += 32;
+      cy += 28;
     }
   }
 
@@ -138,7 +138,7 @@ export function buildTree(items: FileNode[], options: TreeOptions = {}): Box {
     if (item.isDir) {
       // 根层行用绝对坐标
       container_AddRootFolderRow(rootBox, item, cy, baseDepth, containerWidth, ctx);
-      cy += 32;
+      cy += 28;
       if (ctx.expandedPaths[item.path]) {
         const ch = KFMState.files[item.path]?.children ?? item.children ?? [];
         const c = buildExpanded(item.path, ch, ctx, baseDepth, absX(baseDepth) + getShift(baseDepth));
@@ -146,7 +146,7 @@ export function buildTree(items: FileNode[], options: TreeOptions = {}): Box {
       }
     } else {
       container_AddRootFileRow(rootBox, item, cy, baseDepth, containerWidth, ctx);
-      cy += 32;
+      cy += 28;
     }
   }
   rootBox.height = cy; rootBox.scrollY = 0;

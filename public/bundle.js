@@ -4841,7 +4841,7 @@
     for (const item of children) {
       if (item.isDir) {
         container.addChild(innerFolderRow(item, cy, w, ctx));
-        cy += 32;
+        cy += 28;
         if (ctx.expandedPaths[item.path]) {
           const ch = (_c = (_b = (_a = KFMState.files[item.path]) == null ? void 0 : _a.children) != null ? _b : item.children) != null ? _c : [];
           const sub = buildExpanded(item.path, ch, ctx, depth + 1, getShift(depth));
@@ -4851,7 +4851,7 @@
         }
       } else {
         container.addChild(innerFileRow(item, cy, w, ctx));
-        cy += 32;
+        cy += 28;
       }
     }
     container.height = cy;
@@ -4882,7 +4882,7 @@
     for (const item of items) {
       if (item.isDir) {
         container_AddRootFolderRow(rootBox, item, cy, baseDepth, containerWidth, ctx);
-        cy += 32;
+        cy += 28;
         if (ctx.expandedPaths[item.path]) {
           const ch = (_c = (_b = (_a = KFMState.files[item.path]) == null ? void 0 : _a.children) != null ? _b : item.children) != null ? _c : [];
           const c = buildExpanded(item.path, ch, ctx, baseDepth, absX(baseDepth) + getShift(baseDepth));
@@ -4892,7 +4892,7 @@
         }
       } else {
         container_AddRootFileRow(rootBox, item, cy, baseDepth, containerWidth, ctx);
-        cy += 32;
+        cy += 28;
       }
     }
     rootBox.height = cy;
