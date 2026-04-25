@@ -67,27 +67,73 @@ function getRootScrollY(): number | null {
 function setRootScrollY(val: number): void {
   const root = renderer?.getRoot();
   if (!root) return;
-  const maxScroll = Math.max(0, root.height - root.getBounds().height);
+  const maxScroll = root.getMaxScroll().maxY;
   root.scrollY = Math.max(0, Math.min(val, maxScroll));
 }
 
 function bindScrollEvents(canvas: HTMLCanvasElement): void {
+  // === Wheel 平滑滚动 ===
+  let wheelTarget = 0;
+  let wheelRaf = 0;
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
-    const cur = getRootScrollY();
-    if (cur !== null) setRootScrollY(cur + e.deltaY);
+    const cur = getRootScrollY() ?? 0;
+    wheelTarget = cur + e.deltaY;
+    if (!wheelRaf) {
+      wheelRaf = requestAnimationFrame(function smoothWheel() {
+        const cur2 = getRootScrollY() ?? 0;
+        const diff = wheelTarget - cur2;
+        if (Math.abs(diff) < 0.5) {
+          setRootScrollY(wheelTarget);
+          wheelRaf = 0;
+          return;
+        }
+        setRootScrollY(cur2 + diff * 0.25);
+        wheelRaf = requestAnimationFrame(smoothWheel);
+      });
+    }
   }, { passive: false });
 
+  // === Touch 惯性滚动 ===
   let touchStartY = 0;
   let touchScrollY = 0;
+  let lastTouchY = 0;
+  let lastTouchTime = 0;
+  let velocity = 0;
+  let flingRaf = 0;
+
   canvas.addEventListener('touchstart', (e) => {
     touchStartY = e.touches[0].clientY;
     touchScrollY = getRootScrollY() ?? 0;
+    lastTouchY = touchStartY;
+    lastTouchTime = performance.now();
+    velocity = 0;
+    if (flingRaf) { cancelAnimationFrame(flingRaf); flingRaf = 0; }
   }, { passive: true });
 
   canvas.addEventListener('touchmove', (e) => {
-    const dy = touchStartY - e.touches[0].clientY;
+    const y = e.touches[0].clientY;
+    const dy = touchStartY - y;
+    const now = performance.now();
+    const dt = now - lastTouchTime;
+    if (dt > 0) {
+      velocity = (lastTouchY - y) / dt * 16 * 1.7;
+    }
+    lastTouchY = y;
+    lastTouchTime = now;
     setRootScrollY(touchScrollY + dy);
+  }, { passive: true });
+
+  canvas.addEventListener('touchend', () => {
+    if (Math.abs(velocity) < 0.5) return;
+    function fling() {
+      velocity *= 0.96;
+      if (Math.abs(velocity) < 0.3) { flingRaf = 0; return; }
+      const cur = getRootScrollY() ?? 0;
+      setRootScrollY(cur + velocity);
+      flingRaf = requestAnimationFrame(fling);
+    }
+    flingRaf = requestAnimationFrame(fling);
   }, { passive: true });
 }
 
@@ -146,6 +192,13 @@ function rebuildTree(): void {
   if (!renderer) return;
 
   const rootBox = buildSidebarTree();
+  // rootBox.height 必须是 Canvas 可视高度，不是内容高度
+  // getMaxScroll = contentSize - (height - padding)
+  // 如果 height = 内容高度，maxScroll = 0，无法滚动
+  const canvas = document.getElementById('tree-canvas');
+  if (canvas) {
+    rootBox.height = canvas.clientHeight || 618;
+  }
   renderer.setRoot(rootBox);
 
   if (!renderer.isRunning) {

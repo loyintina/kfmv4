@@ -3849,7 +3849,6 @@
     _drawShadow(box, b) {
       const shadow = box.shadow;
       if (!shadow) return;
-      console.log("DRAW SHADOW:", box.id, shadow, b);
       this.ctx.save();
       this.ctx.beginPath();
       this.ctx.rect(-1e4, -1e4, 2e4, 2e4);
@@ -3926,7 +3925,6 @@
       if (this._frameCount === 1) {
         const vLines = Math.floor(b.width / cellSize) + 1;
         const hLines = Math.floor(b.height / cellSize) + 1;
-        console.log(`[Box\u7F51\u683C] ${box.id}: ${b.width}x${b.height}, \u5782\u76F4=${vLines}, \u6C34\u5E73=${hLines}, \u5355\u5143\u683C=${cellSize}px \u2705`);
       }
     }
     _drawGradient(grad, b, radius) {
@@ -4634,7 +4632,7 @@
 
   // src/client/modules/style-registry.ts
   var DIMENSIONS = {
-    BOX_HEIGHT: 28,
+    BOX_HEIGHT: 26,
     SIDEBAR_WIDTH: 280,
     INDENT: 18,
     ROW_PAD: 8,
@@ -4648,7 +4646,7 @@
     SELECTED_BG: "rgba(124,58,237,0.15)",
     CANVAS_BG: "rgba(10,10,15,0.85)"
   };
-  var FONT = "12px system-ui, sans-serif";
+  var FONT = "11px system-ui, sans-serif";
   var TEXT_STYLES = {
     folderLabel: {
       font: FONT,
@@ -4769,6 +4767,72 @@
     window.TEXT_STYLES = TEXT_STYLES;
   }
 
+  // src/client/engine/v2/StyleConfig.ts
+  var DEFAULT_BOX_STYLE = {
+    border: { left: "emphasis", bottom: "normal", top: "hidden", right: "hidden" },
+    borderWidth: 1,
+    emphasisScale: 3,
+    cornerRadius: 12,
+    borderColor: "#7c3aed",
+    glowEnabled: false,
+    glowRadius: 8,
+    background: "glass",
+    backgroundOpacity: 0.6
+  };
+  var PRESETS = {
+    "default": {},
+    // use DEFAULT_BOX_STYLE
+    "all-emphasis": {
+      border: { top: "emphasis", right: "emphasis", bottom: "emphasis", left: "emphasis" }
+    },
+    "all-hidden": {
+      border: { top: "hidden", right: "hidden", bottom: "hidden", left: "hidden" },
+      background: "glass",
+      backgroundOpacity: 0.4
+    },
+    "left-emphasis-rest-hidden": {
+      border: { left: "emphasis", top: "hidden", right: "hidden", bottom: "hidden" }
+    },
+    "left-bottom-normal": {
+      border: { left: "normal", bottom: "normal", top: "hidden", right: "hidden" }
+    },
+    "bottom-right-normal": {
+      border: { bottom: "normal", right: "normal", top: "hidden", left: "hidden" }
+    },
+    "left-right-emphasis": {
+      border: { left: "emphasis", right: "emphasis", top: "hidden", bottom: "hidden" }
+    }
+  };
+  function resolveStyle(preset, overrides) {
+    var base = { ...DEFAULT_BOX_STYLE };
+    var p = PRESETS[preset];
+    if (p) {
+      if (p.border) base.border = { ...base.border, ...p.border };
+      if (p.borderWidth !== void 0) base.borderWidth = p.borderWidth;
+      if (p.emphasisScale !== void 0) base.emphasisScale = p.emphasisScale;
+      if (p.cornerRadius !== void 0) base.cornerRadius = p.cornerRadius;
+      if (p.borderColor !== void 0) base.borderColor = p.borderColor;
+      if (p.glowEnabled !== void 0) base.glowEnabled = p.glowEnabled;
+      if (p.glowRadius !== void 0) base.glowRadius = p.glowRadius;
+      if (p.background !== void 0) base.background = p.background;
+      if (p.backgroundOpacity !== void 0) base.backgroundOpacity = p.backgroundOpacity;
+      if (p.backgroundFill !== void 0) base.backgroundFill = p.backgroundFill;
+    }
+    if (overrides) {
+      if (overrides.border) base.border = { ...base.border, ...overrides.border };
+      if (overrides.borderWidth !== void 0) base.borderWidth = overrides.borderWidth;
+      if (overrides.emphasisScale !== void 0) base.emphasisScale = overrides.emphasisScale;
+      if (overrides.cornerRadius !== void 0) base.cornerRadius = overrides.cornerRadius;
+      if (overrides.borderColor !== void 0) base.borderColor = overrides.borderColor;
+      if (overrides.glowEnabled !== void 0) base.glowEnabled = overrides.glowEnabled;
+      if (overrides.glowRadius !== void 0) base.glowRadius = overrides.glowRadius;
+      if (overrides.background !== void 0) base.background = overrides.background;
+      if (overrides.backgroundOpacity !== void 0) base.backgroundOpacity = overrides.backgroundOpacity;
+      if (overrides.backgroundFill !== void 0) base.backgroundFill = overrides.backgroundFill;
+    }
+    return base;
+  }
+
   // src/client/modules/tree-model.ts
   var SHIFT_TABLE = [18, 16, 14, 12, 10, 9, 8, 7, 6, 5, 4, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2];
   function getShift(depth) {
@@ -4849,7 +4913,11 @@
       gradient: depthGradient(depth),
       shadow: { color: "rgba(0,0,0,0.5)", blur: 12, offsetX: -4, offsetY: 0 }
     });
-    container.border = { color: `rgba(150,55,235,${borderOp})`, width: 2, sides: { top: false, right: false, bottom: false, left: true } };
+    container.kfmStyle = resolveStyle("left-emphasis-rest-hidden", {
+      borderColor: `rgba(150,55,235,${borderOp})`,
+      emphasisScale: 2,
+      cornerRadius: 4
+    });
     let cy = 0;
     if (children.length === 0) {
       const lr = createBox("file-row", { id: `loading-${path}`, x: TXT_L, y: 0, width: w - TXT_L, height: 28 });
@@ -4863,7 +4931,7 @@
     for (const item of children) {
       if (item.isDir) {
         container.addChild(innerFolderRow(item, cy, w, ctx, depth));
-        cy += 28;
+        cy += 26;
         if (ctx.expandedPaths[item.path]) {
           const ch = (_c = (_b = (_a = KFMState.files[item.path]) == null ? void 0 : _a.children) != null ? _b : item.children) != null ? _c : [];
           const sub = buildExpanded(item.path, ch, ctx, depth + 1, getShift(depth));
@@ -4873,7 +4941,7 @@
         }
       } else {
         container.addChild(innerFileRow(item, cy, w, ctx, depth));
-        cy += 28;
+        cy += 26;
       }
     }
     container.height = cy;
@@ -4904,7 +4972,7 @@
     for (const item of items) {
       if (item.isDir) {
         container_AddRootFolderRow(rootBox, item, cy, baseDepth, containerWidth, ctx);
-        cy += 28;
+        cy += 26;
         if (ctx.expandedPaths[item.path]) {
           const ch = (_c = (_b = (_a = KFMState.files[item.path]) == null ? void 0 : _a.children) != null ? _b : item.children) != null ? _c : [];
           const c = buildExpanded(item.path, ch, ctx, baseDepth, absX(baseDepth) + getShift(baseDepth));
@@ -4914,7 +4982,7 @@
         }
       } else {
         container_AddRootFileRow(rootBox, item, cy, baseDepth, containerWidth, ctx);
-        cy += 28;
+        cy += 26;
       }
     }
     rootBox.height = cy;
@@ -5019,25 +5087,76 @@
   function setRootScrollY(val) {
     const root = renderer == null ? void 0 : renderer.getRoot();
     if (!root) return;
-    const maxScroll = Math.max(0, root.height - root.getBounds().height);
+    const maxScroll = root.getMaxScroll().maxY;
     root.scrollY = Math.max(0, Math.min(val, maxScroll));
   }
   function bindScrollEvents(canvas) {
+    let wheelTarget = 0;
+    let wheelRaf = 0;
     canvas.addEventListener("wheel", (e) => {
+      var _a;
       e.preventDefault();
-      const cur = getRootScrollY();
-      if (cur !== null) setRootScrollY(cur + e.deltaY);
+      const cur = (_a = getRootScrollY()) != null ? _a : 0;
+      wheelTarget = cur + e.deltaY;
+      if (!wheelRaf) {
+        wheelRaf = requestAnimationFrame(function smoothWheel() {
+          var _a2;
+          const cur2 = (_a2 = getRootScrollY()) != null ? _a2 : 0;
+          const diff = wheelTarget - cur2;
+          if (Math.abs(diff) < 0.5) {
+            setRootScrollY(wheelTarget);
+            wheelRaf = 0;
+            return;
+          }
+          setRootScrollY(cur2 + diff * 0.25);
+          wheelRaf = requestAnimationFrame(smoothWheel);
+        });
+      }
     }, { passive: false });
     let touchStartY2 = 0;
     let touchScrollY = 0;
+    let lastTouchY = 0;
+    let lastTouchTime = 0;
+    let velocity = 0;
+    let flingRaf = 0;
     canvas.addEventListener("touchstart", (e) => {
       var _a;
       touchStartY2 = e.touches[0].clientY;
       touchScrollY = (_a = getRootScrollY()) != null ? _a : 0;
+      lastTouchY = touchStartY2;
+      lastTouchTime = performance.now();
+      velocity = 0;
+      if (flingRaf) {
+        cancelAnimationFrame(flingRaf);
+        flingRaf = 0;
+      }
     }, { passive: true });
     canvas.addEventListener("touchmove", (e) => {
-      const dy = touchStartY2 - e.touches[0].clientY;
+      const y = e.touches[0].clientY;
+      const dy = touchStartY2 - y;
+      const now = performance.now();
+      const dt = now - lastTouchTime;
+      if (dt > 0) {
+        velocity = (lastTouchY - y) / dt * 16 * 1.7;
+      }
+      lastTouchY = y;
+      lastTouchTime = now;
       setRootScrollY(touchScrollY + dy);
+    }, { passive: true });
+    canvas.addEventListener("touchend", () => {
+      if (Math.abs(velocity) < 0.5) return;
+      function fling() {
+        var _a;
+        velocity *= 0.96;
+        if (Math.abs(velocity) < 0.3) {
+          flingRaf = 0;
+          return;
+        }
+        const cur = (_a = getRootScrollY()) != null ? _a : 0;
+        setRootScrollY(cur + velocity);
+        flingRaf = requestAnimationFrame(fling);
+      }
+      flingRaf = requestAnimationFrame(fling);
     }, { passive: true });
   }
   function bindClickEvents(canvas, _dpr) {
@@ -5075,6 +5194,10 @@
   function rebuildTree() {
     if (!renderer) return;
     const rootBox = buildSidebarTree();
+    const canvas = document.getElementById("tree-canvas");
+    if (canvas) {
+      rootBox.height = canvas.clientHeight || 618;
+    }
     renderer.setRoot(rootBox);
     if (!renderer.isRunning) {
       renderer.start();

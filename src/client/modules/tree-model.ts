@@ -13,6 +13,7 @@
 import { Box } from '../engine/v2/box.js';
 import { KFMState, type FileNode } from './state.js';
 import { DIMENSIONS, COLORS, TEXT_STYLES, getFileColor, createBox } from './style-registry.js';
+import { resolveStyle } from '../engine/v2/StyleConfig.js';
 
 export interface TreeOptions {
   expandedPaths: Record<string, boolean>;
@@ -108,7 +109,11 @@ function buildExpanded(path: string, children: FileNode[], ctx: BuildCtx, depth:
     gradient: depthGradient(depth),
     shadow: { color: 'rgba(0,0,0,0.5)', blur: 12, offsetX: -4, offsetY: 0 },
   });
-  container.border = { color: `rgba(150,55,235,${borderOp})`, width: 2, sides: { top: false, right: false, bottom: false, left: true } };
+  container.kfmStyle = resolveStyle('left-emphasis-rest-hidden', {
+    borderColor: `rgba(150,55,235,${borderOp})`,
+    emphasisScale: 2,
+    cornerRadius: 4,
+  });
 
   let cy = 0;
 
@@ -124,7 +129,7 @@ function buildExpanded(path: string, children: FileNode[], ctx: BuildCtx, depth:
   for (const item of children) {
     if (item.isDir) {
       container.addChild(innerFolderRow(item, cy, w, ctx, depth));
-      cy += 28;
+      cy += 26;
       if (ctx.expandedPaths[item.path]) {
         const ch = KFMState.files[item.path]?.children ?? item.children ?? [];
         const sub = buildExpanded(item.path, ch, ctx, depth + 1, getShift(depth));
@@ -132,7 +137,7 @@ function buildExpanded(path: string, children: FileNode[], ctx: BuildCtx, depth:
       }
     } else {
       container.addChild(innerFileRow(item, cy, w, ctx, depth));
-      cy += 28;
+      cy += 26;
     }
   }
 
@@ -159,7 +164,7 @@ export function buildTree(items: FileNode[], options: TreeOptions = {}): Box {
     if (item.isDir) {
       // 根层行用绝对坐标
       container_AddRootFolderRow(rootBox, item, cy, baseDepth, containerWidth, ctx);
-      cy += 28;
+      cy += 26;
       if (ctx.expandedPaths[item.path]) {
         const ch = KFMState.files[item.path]?.children ?? item.children ?? [];
         const c = buildExpanded(item.path, ch, ctx, baseDepth, absX(baseDepth) + getShift(baseDepth));
@@ -167,7 +172,7 @@ export function buildTree(items: FileNode[], options: TreeOptions = {}): Box {
       }
     } else {
       container_AddRootFileRow(rootBox, item, cy, baseDepth, containerWidth, ctx);
-      cy += 28;
+      cy += 26;
     }
   }
   rootBox.height = cy; rootBox.scrollY = 0;

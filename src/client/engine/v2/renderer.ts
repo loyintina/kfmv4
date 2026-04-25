@@ -312,7 +312,7 @@ export class Renderer {
   private _drawShadow(box: Box, b: Rect): void {
     const shadow = box.shadow;
     if (!shadow) return;
-    console.log("DRAW SHADOW:", box.id, shadow, b);
+    // console.log("DRAW SHADOW:", box.id, shadow, b);
     this.ctx.save();
     
     this.ctx.beginPath();
@@ -406,7 +406,7 @@ export class Renderer {
     if (this._frameCount === 1) {
       const vLines = Math.floor(b.width / cellSize) + 1;
       const hLines = Math.floor(b.height / cellSize) + 1;
-      console.log(`[Box网格] ${box.id}: ${b.width}x${b.height}, 垂直=${vLines}, 水平=${hLines}, 单元格=${cellSize}px ✅`);
+      // console.log(`[Box网格] ${box.id}: ${b.width}x${b.height}, 垂直=${vLines}, 水平=${hLines}, 单元格=${cellSize}px ✅`);
     }
   }
 
