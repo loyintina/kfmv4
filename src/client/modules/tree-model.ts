@@ -46,7 +46,7 @@ function innerFolderRow(item: FileNode, y: number, cw: number, ctx: BuildCtx): B
   const ex = !!ctx.expandedPaths[item.path];
   const sel = ctx.selectedFile === item.path;
   const row = createBox('folder-row', {
-    id: `title-${item.path}`, x: SHIFT, y, width: cw - SHIFT, height: 32,
+    id: `title-${item.path}`, x: 0, y, width: cw, height: 32,
     backgroundColor: sel ? 'rgba(124,58,237,0.15)' : 'transparent',
     data: { path: item.path, isDir: true, isExpanded: ex },
     gesture: { passive: true, onTap: () => ctx.onDirToggle(item.path, !ex) },
@@ -54,7 +54,7 @@ function innerFolderRow(item: FileNode, y: number, cw: number, ctx: BuildCtx): B
   const tog = createBox('toggle-icon', { id: `toggle-${item.path}`, x: T_OFF });
   tog.textStyle = { ...TEXT_STYLES.toggleIcon, content: ex ? '▼' : '▶', color: '#00d4ff' };
   row.addChild(tog);
-  const label = createBox('folder-label', { id: `label-${item.path}`, x: TXT_L, width: cw - SHIFT - TXT_L - 8 });
+  const label = createBox('folder-label', { id: `label-${item.path}`, x: TXT_L, width: cw - TXT_L - 8 });
   label.textStyle = { ...TEXT_STYLES.folderLabel, content: item.name, color: '#7c3aed' };
   row.addChild(label);
   return row;
@@ -63,7 +63,7 @@ function innerFolderRow(item: FileNode, y: number, cw: number, ctx: BuildCtx): B
 function innerFileRow(item: FileNode, y: number, cw: number, ctx: BuildCtx): Box {
   const sel = ctx.selectedFile === item.path;
   const row = createBox('file-row', {
-    id: `file-${item.path}`, x: SHIFT + TXT_L, y, width: cw - SHIFT - TXT_L, height: 32,
+    id: `file-${item.path}`, x: TXT_L, y, width: cw - TXT_L, height: 32,
     backgroundColor: sel ? 'rgba(124,58,237,0.15)' : 'transparent',
     data: { path: item.path, isDir: false },
     gesture: { passive: true, onTap: () => ctx.onFileClick(item.path) },
@@ -140,7 +140,7 @@ export function buildTree(items: FileNode[], options: TreeOptions = {}): Box {
       cy += 32;
       if (ctx.expandedPaths[item.path]) {
         const ch = KFMState.files[item.path]?.children ?? item.children ?? [];
-        const c = buildExpanded(item.path, ch, ctx, baseDepth, absX(baseDepth));
+        const c = buildExpanded(item.path, ch, ctx, baseDepth, absX(baseDepth) + SHIFT);
         c.y = cy; rootBox.addChild(c); cy += c.height;
       }
     } else {

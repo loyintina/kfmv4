@@ -4800,9 +4800,9 @@
     const sel = ctx.selectedFile === item.path;
     const row = createBox("folder-row", {
       id: `title-${item.path}`,
-      x: SHIFT,
+      x: 0,
       y,
-      width: cw - SHIFT,
+      width: cw,
       height: 32,
       backgroundColor: sel ? "rgba(124,58,237,0.15)" : "transparent",
       data: { path: item.path, isDir: true, isExpanded: ex },
@@ -4811,7 +4811,7 @@
     const tog = createBox("toggle-icon", { id: `toggle-${item.path}`, x: T_OFF });
     tog.textStyle = { ...TEXT_STYLES.toggleIcon, content: ex ? "\u25BC" : "\u25B6", color: "#00d4ff" };
     row.addChild(tog);
-    const label = createBox("folder-label", { id: `label-${item.path}`, x: TXT_L, width: cw - SHIFT - TXT_L - 8 });
+    const label = createBox("folder-label", { id: `label-${item.path}`, x: TXT_L, width: cw - TXT_L - 8 });
     label.textStyle = { ...TEXT_STYLES.folderLabel, content: item.name, color: "#7c3aed" };
     row.addChild(label);
     return row;
@@ -4820,9 +4820,9 @@
     const sel = ctx.selectedFile === item.path;
     const row = createBox("file-row", {
       id: `file-${item.path}`,
-      x: SHIFT + TXT_L,
+      x: TXT_L,
       y,
-      width: cw - SHIFT - TXT_L,
+      width: cw - TXT_L,
       height: 32,
       backgroundColor: sel ? "rgba(124,58,237,0.15)" : "transparent",
       data: { path: item.path, isDir: false },
@@ -4901,7 +4901,7 @@
         cy += 32;
         if (ctx.expandedPaths[item.path]) {
           const ch = (_c = (_b = (_a = KFMState.files[item.path]) == null ? void 0 : _a.children) != null ? _b : item.children) != null ? _c : [];
-          const c = buildExpanded(item.path, ch, ctx, baseDepth, absX(baseDepth));
+          const c = buildExpanded(item.path, ch, ctx, baseDepth, absX(baseDepth) + SHIFT);
           c.y = cy;
           rootBox.addChild(c);
           cy += c.height;
