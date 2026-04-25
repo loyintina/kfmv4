@@ -4615,98 +4615,220 @@
     }
   };
 
-  // src/client/modules/tree-model.ts
-  var BOX_HEIGHT = 32;
-  var SIDEBAR_WIDTH = 280;
-  var INDENT = 18;
-  var ROW_PAD = 8;
-  var DIR_COLOR = "#7c3aed";
-  var FILE_COLOR = "#e0e0e0";
-  var ACCENT_COLOR = "#00d4ff";
-  var TRIANGLE_SIZE = 10;
-  var TRIANGLE_GAP = 6;
+  // src/client/modules/style-registry.ts
+  var DIMENSIONS = {
+    BOX_HEIGHT: 32,
+    // 每行高度
+    SIDEBAR_WIDTH: 280,
+    // 侧栏宽度
+    INDENT: 18,
+    // 每层缩进
+    ROW_PAD: 8,
+    // 行内边距
+    TRIANGLE_SIZE: 10,
+    // ▶/▼ 字号
+    TRIANGLE_GAP: 6
+    // 三角和文字间距
+  };
+  var COLORS = {
+    DIR: "#7c3aed",
+    // 文件夹文字色 (var(--primary))
+    FILE: "#e0e0e0",
+    // 文件文字色 (var(--text))
+    ACCENT: "#00d4ff",
+    // 三角/引导线色 (var(--accent))
+    SELECTED_BG: "rgba(124,58,237,0.15)",
+    // 选中底色
+    CANVAS_BG: "rgba(10,10,15,0.85)"
+    // Canvas 背景
+  };
+  var FONT_FAMILY = "13px system-ui, sans-serif";
+  var TEXT_STYLES = {
+    folderLabel: {
+      font: FONT_FAMILY,
+      lineHeight: DIMENSIONS.BOX_HEIGHT,
+      align: "left",
+      verticalAlign: "middle",
+      overflow: "ellipsis",
+      maxLines: 1
+    },
+    fileLabel: {
+      font: FONT_FAMILY,
+      lineHeight: DIMENSIONS.BOX_HEIGHT,
+      align: "left",
+      verticalAlign: "middle",
+      overflow: "ellipsis",
+      maxLines: 1
+    },
+    toggleIcon: {
+      font: `${DIMENSIONS.TRIANGLE_SIZE}px system-ui, sans-serif`,
+      lineHeight: DIMENSIONS.BOX_HEIGHT,
+      align: "center",
+      verticalAlign: "middle"
+    }
+  };
+  var templates = {
+    // 文件夹标题行：可点击、带左边框
+    "folder-row": {
+      width: DIMENSIONS.SIDEBAR_WIDTH,
+      height: DIMENSIONS.BOX_HEIGHT,
+      backgroundColor: "transparent",
+      borderRadius: 0,
+      interactive: true,
+      overflow: "hidden"
+    },
+    // 文件行：可点击、无边框
+    "file-row": {
+      width: DIMENSIONS.SIDEBAR_WIDTH,
+      height: DIMENSIONS.BOX_HEIGHT,
+      backgroundColor: "transparent",
+      borderRadius: 0,
+      interactive: true,
+      overflow: "hidden"
+    },
+    // 三角图标容器：纯文字
+    "toggle-icon": {
+      width: DIMENSIONS.TRIANGLE_SIZE,
+      height: DIMENSIONS.BOX_HEIGHT,
+      backgroundColor: "transparent",
+      borderRadius: 0,
+      interactive: false
+    },
+    // 文件夹文字标签
+    "folder-label": {
+      height: DIMENSIONS.BOX_HEIGHT,
+      backgroundColor: "transparent",
+      borderRadius: 0,
+      interactive: false
+    },
+    // 文件文字标签
+    "file-label": {
+      height: DIMENSIONS.BOX_HEIGHT,
+      backgroundColor: "transparent",
+      borderRadius: 0,
+      interactive: false
+    },
+    // 根容器
+    "sidebar-root": {
+      width: DIMENSIONS.SIDEBAR_WIDTH,
+      height: 0,
+      backgroundColor: "transparent",
+      borderRadius: 0,
+      overflow: "hidden"
+    }
+  };
+  var listeners = [];
+  var styleRegistry = {
+    /** 拿一个模板的副本（避免外部修改污染模板） */
+    get(name) {
+      const t = templates[name];
+      return t ? { ...t } : void 0;
+    },
+    /** 改模板，自动通知 */
+    set(name, updates) {
+      const old = templates[name];
+      if (!old) {
+        templates[name] = { ...updates };
+      } else {
+        Object.assign(templates[name], updates);
+      }
+      listeners.forEach((fn) => fn(name, old, templates[name]));
+    },
+    /** 批量修改多个模板 */
+    patch(patches) {
+      for (const [name, updates] of Object.entries(patches)) {
+        const old = templates[name];
+        if (!old) {
+          templates[name] = { ...updates };
+        } else {
+          Object.assign(templates[name], updates);
+        }
+        listeners.forEach((fn) => fn(name, old, templates[name]));
+      }
+    },
+    /** 重置所有模板为初始值（调试用） */
+    reset() {
+    },
+    subscribe(fn) {
+      listeners.push(fn);
+    },
+    unsubscribe(fn) {
+      const idx = listeners.indexOf(fn);
+      if (idx !== -1) listeners.splice(idx, 1);
+    }
+  };
+  var extColors = {
+    ts: "#3178c6",
+    js: "#f7df1e",
+    json: "#292929",
+    html: "#e34f26",
+    css: "#1572b6",
+    md: "#083fa1",
+    py: "#3776ab",
+    rs: "#dea584",
+    go: "#00add8",
+    rsync: "#7c3aed",
+    zip: "#f39c12",
+    gz: "#f39c12",
+    tar: "#f39c12",
+    bak: "#888",
+    old: "#888"
+  };
   function getFileColor(name) {
     var _a;
     const ext = (_a = name.split(".").pop()) == null ? void 0 : _a.toLowerCase();
-    if (!ext) return FILE_COLOR;
-    const map = {
-      ts: "#3178c6",
-      js: "#f7df1e",
-      json: "#292929",
-      html: "#e34f26",
-      css: "#1572b6",
-      md: "#083fa1",
-      py: "#3776ab",
-      rs: "#dea584",
-      go: "#00add8",
-      rsync: "#7c3aed",
-      zip: "#f39c12",
-      gz: "#f39c12",
-      tar: "#f39c12",
-      bak: "#888",
-      old: "#888"
-    };
-    return map[ext] || FILE_COLOR;
+    return ext && extColors[ext] || COLORS.FILE;
   }
+  function createBox(templateName, overrides) {
+    if (!templates[templateName]) {
+      console.warn(`[style-registry] unknown template: "${templateName}"`);
+    }
+    const base = styleRegistry.get(templateName) || {};
+    return new Box({ ...base, ...overrides });
+  }
+  if (typeof window !== "undefined") {
+    window.styleRegistry = styleRegistry;
+    window.DIMENSIONS = DIMENSIONS;
+    window.COLORS = COLORS;
+  }
+
+  // src/client/modules/tree-model.ts
   function buildFolderBox(path, name, children, depth, ctx) {
     const isExpanded = !!ctx.expandedPaths[path];
-    const indent = INDENT * depth + ROW_PAD;
-    const titleRow = new Box({
+    const indent = DIMENSIONS.INDENT * depth + DIMENSIONS.ROW_PAD;
+    const titleRow = createBox("folder-row", {
       id: `title-${path}`,
-      x: 0,
       y: 0,
-      width: SIDEBAR_WIDTH,
-      height: BOX_HEIGHT,
-      backgroundColor: ctx.selectedFile === path ? "rgba(124,58,237,0.15)" : "transparent",
-      borderRadius: 0,
-      interactive: true,
-      overflow: "hidden",
+      backgroundColor: ctx.selectedFile === path ? COLORS.SELECTED_BG : "transparent",
       data: { path, isDir: true, isExpanded },
       gesture: {
         passive: true,
         onTap: () => ctx.onDirToggle(path, !isExpanded)
       }
     });
-    const toggleIcon = new Box({
+    const toggleIcon = createBox("toggle-icon", {
       id: `toggle-${path}`,
-      x: indent,
-      y: 0,
-      width: TRIANGLE_SIZE,
-      height: BOX_HEIGHT,
-      backgroundColor: "transparent",
-      borderRadius: 0
+      x: indent
     });
     toggleIcon.textStyle = {
+      ...TEXT_STYLES.toggleIcon,
       content: isExpanded ? "\u25BC" : "\u25B6",
-      color: ACCENT_COLOR,
-      font: `${TRIANGLE_SIZE}px system-ui, sans-serif`,
-      lineHeight: BOX_HEIGHT,
-      align: "center",
-      verticalAlign: "middle"
+      color: COLORS.ACCENT
     };
     titleRow.addChild(toggleIcon);
-    const titleLabel = new Box({
+    const titleLabel = createBox("folder-label", {
       id: `label-${path}`,
-      x: indent + TRIANGLE_SIZE + TRIANGLE_GAP,
-      y: 0,
-      width: SIDEBAR_WIDTH - indent - TRIANGLE_SIZE - TRIANGLE_GAP - ROW_PAD,
-      height: BOX_HEIGHT,
-      backgroundColor: "transparent",
-      borderRadius: 0
+      x: indent + DIMENSIONS.TRIANGLE_SIZE + DIMENSIONS.TRIANGLE_GAP,
+      width: DIMENSIONS.SIDEBAR_WIDTH - indent - DIMENSIONS.TRIANGLE_SIZE - DIMENSIONS.TRIANGLE_GAP - DIMENSIONS.ROW_PAD
     });
     titleLabel.textStyle = {
+      ...TEXT_STYLES.folderLabel,
       content: path === "/root" ? "root" : name,
-      color: DIR_COLOR,
-      font: "13px system-ui, sans-serif",
-      lineHeight: BOX_HEIGHT,
-      align: "left",
-      verticalAlign: "middle",
-      overflow: "ellipsis",
-      maxLines: 1
+      color: COLORS.DIR
     };
     titleRow.addChild(titleLabel);
     const subItems = [];
-    let currentY = titleRow.y + BOX_HEIGHT;
+    let currentY = titleRow.y + DIMENSIONS.BOX_HEIGHT;
     if (isExpanded) {
       for (const item of children) {
         if (item.isDir) {
@@ -4715,44 +4837,29 @@
           subItems.push(folderBox);
           currentY += folderBox.height;
         } else {
-          const fileRow = new Box({
+          const fileRow = createBox("file-row", {
             id: `file-${item.path}`,
-            x: 0,
             y: currentY,
-            width: SIDEBAR_WIDTH,
-            height: BOX_HEIGHT,
-            backgroundColor: ctx.selectedFile === item.path ? "rgba(124,58,237,0.15)" : "transparent",
-            borderRadius: 0,
-            interactive: true,
-            overflow: "hidden",
+            backgroundColor: ctx.selectedFile === item.path ? COLORS.SELECTED_BG : "transparent",
             data: { path: item.path, isDir: false },
             gesture: {
               passive: true,
               onTap: () => ctx.onFileClick(item.path)
             }
           });
-          const fileLabel = new Box({
+          const fileLabel = createBox("file-label", {
             id: `label-${item.path}`,
-            x: INDENT * (depth + 1) + ROW_PAD,
-            y: 0,
-            width: SIDEBAR_WIDTH - INDENT * (depth + 1) - ROW_PAD,
-            height: BOX_HEIGHT,
-            backgroundColor: "transparent",
-            borderRadius: 0
+            x: DIMENSIONS.INDENT * (depth + 1) + DIMENSIONS.ROW_PAD,
+            width: DIMENSIONS.SIDEBAR_WIDTH - DIMENSIONS.INDENT * (depth + 1) - DIMENSIONS.ROW_PAD
           });
           fileLabel.textStyle = {
+            ...TEXT_STYLES.fileLabel,
             content: item.name,
-            color: getFileColor(item.name),
-            font: "13px system-ui, sans-serif",
-            lineHeight: BOX_HEIGHT,
-            align: "left",
-            verticalAlign: "middle",
-            overflow: "ellipsis",
-            maxLines: 1
+            color: getFileColor(item.name)
           };
           fileRow.addChild(fileLabel);
           subItems.push(fileRow);
-          currentY += BOX_HEIGHT;
+          currentY += DIMENSIONS.BOX_HEIGHT;
         }
       }
     }
@@ -4760,9 +4867,9 @@
       titleRow.addChild(child);
     }
     const totalChildrenHeight = subItems.reduce((sum, c) => sum + c.height, 0);
-    titleRow.height = BOX_HEIGHT + totalChildrenHeight;
+    titleRow.height = DIMENSIONS.BOX_HEIGHT + totalChildrenHeight;
     titleRow.highlight = {
-      color: ACCENT_COLOR,
+      color: COLORS.ACCENT,
       width: 3,
       side: "left"
     };
@@ -4771,15 +4878,8 @@
   function buildSidebarTree() {
     var _a;
     const state = KFMState;
-    const rootBox = new Box({
-      id: "sidebar-root",
-      x: 0,
-      y: 0,
-      width: SIDEBAR_WIDTH,
-      height: 0,
-      backgroundColor: "transparent",
-      borderRadius: 0,
-      overflow: "hidden"
+    const rootBox = createBox("sidebar-root", {
+      id: "sidebar-root"
     });
     let currentY = 0;
     const ctx = {
@@ -4797,44 +4897,29 @@
         rootBox.addChild(folderBox);
         currentY += folderBox.height;
       } else {
-        const fileRow = new Box({
+        const fileRow = createBox("file-row", {
           id: `file-${item.path}`,
-          x: 0,
           y: currentY,
-          width: SIDEBAR_WIDTH,
-          height: BOX_HEIGHT,
-          backgroundColor: ctx.selectedFile === item.path ? "rgba(124,58,237,0.15)" : "transparent",
-          borderRadius: 0,
-          interactive: true,
-          overflow: "hidden",
+          backgroundColor: ctx.selectedFile === item.path ? COLORS.SELECTED_BG : "transparent",
           data: { path: item.path, isDir: false },
           gesture: {
             passive: true,
             onTap: () => ctx.onFileClick(item.path)
           }
         });
-        const fileLabel = new Box({
+        const fileLabel = createBox("file-label", {
           id: `label-${item.path}`,
-          x: INDENT + ROW_PAD,
-          y: 0,
-          width: SIDEBAR_WIDTH - INDENT - ROW_PAD,
-          height: BOX_HEIGHT,
-          backgroundColor: "transparent",
-          borderRadius: 0
+          x: DIMENSIONS.INDENT + DIMENSIONS.ROW_PAD,
+          width: DIMENSIONS.SIDEBAR_WIDTH - DIMENSIONS.INDENT - DIMENSIONS.ROW_PAD
         });
         fileLabel.textStyle = {
+          ...TEXT_STYLES.fileLabel,
           content: item.name,
-          color: getFileColor(item.name),
-          font: "13px system-ui, sans-serif",
-          lineHeight: BOX_HEIGHT,
-          align: "left",
-          verticalAlign: "middle",
-          overflow: "ellipsis",
-          maxLines: 1
+          color: getFileColor(item.name)
         };
         fileRow.addChild(fileLabel);
         rootBox.addChild(fileRow);
-        currentY += BOX_HEIGHT;
+        currentY += DIMENSIONS.BOX_HEIGHT;
       }
     }
     rootBox.height = currentY;
@@ -4871,6 +4956,9 @@
     });
     rebuildTree();
     KFMState.subscribe(() => {
+      rebuildTree();
+    });
+    styleRegistry.subscribe(() => {
       rebuildTree();
     });
     window.addEventListener("resize", () => {

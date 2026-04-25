@@ -6,6 +6,7 @@
  */
 
 import { Renderer } from '../engine/v2/renderer.js';
+import { styleRegistry } from './style-registry.js';
 import { buildSidebarTree } from './tree-model.js';
 import { KFMState } from './state.js';
 
@@ -44,6 +45,11 @@ export function initTreeRenderer(): void {
   rebuildTree();
 
   KFMState.subscribe(() => {
+    rebuildTree();
+  });
+
+  // 注册表热更新 → 自动重建
+  styleRegistry.subscribe(() => {
     rebuildTree();
   });
 
