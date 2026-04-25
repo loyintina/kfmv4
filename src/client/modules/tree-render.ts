@@ -191,6 +191,9 @@ function findTapTarget(box: Box, px: number, py: number): Box | null {
 function rebuildTree(): void {
   if (!renderer) return;
 
+  // 保存当前滚动位置
+  const prevScrollY = renderer.getRoot()?.scrollY ?? 0;
+
   const rootBox = buildSidebarTree();
   // rootBox.height 必须是 Canvas 可视高度，不是内容高度
   // getMaxScroll = contentSize - (height - padding)
@@ -200,6 +203,13 @@ function rebuildTree(): void {
     rootBox.height = canvas.clientHeight || 618;
   }
   renderer.setRoot(rootBox);
+
+  // 恢复滚动位置
+  const newRoot = renderer.getRoot();
+  if (newRoot && prevScrollY > 0) {
+    const maxY = newRoot.getMaxScroll().maxY;
+    newRoot.scrollY = Math.min(prevScrollY, maxY);
+  }
 
   if (!renderer.isRunning) {
     renderer.start();

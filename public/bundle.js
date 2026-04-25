@@ -5192,13 +5192,20 @@
     return null;
   }
   function rebuildTree() {
+    var _a, _b;
     if (!renderer) return;
+    const prevScrollY = (_b = (_a = renderer.getRoot()) == null ? void 0 : _a.scrollY) != null ? _b : 0;
     const rootBox = buildSidebarTree();
     const canvas = document.getElementById("tree-canvas");
     if (canvas) {
       rootBox.height = canvas.clientHeight || 618;
     }
     renderer.setRoot(rootBox);
+    const newRoot = renderer.getRoot();
+    if (newRoot && prevScrollY > 0) {
+      const maxY = newRoot.getMaxScroll().maxY;
+      newRoot.scrollY = Math.min(prevScrollY, maxY);
+    }
     if (!renderer.isRunning) {
       renderer.start();
     }
