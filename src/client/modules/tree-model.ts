@@ -32,11 +32,12 @@ interface BuildCtx {
   containerWidth: number;
 }
 
-const SHIFT = 18;          // 每层缩进
-const T_OFF = 14;          // 三角形偏移（尖角对准下一层左边框）
-const TXT_L = 30;          // 文字左边缘 = 14 + 10 + 6
+const SHIFT_TABLE = [18, 16, 14, 12, 10, 9, 8, 7, 6, 5, 4, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2];
+function getShift(depth: number): number { return SHIFT_TABLE[depth] ?? 2; }
+const T_OFF = 12;
+const TXT_L = 26;
 
-function absX(d: number): number { return d * SHIFT; }
+function absX(d: number): number { let x = 0; for (let i = 0; i < d; i++) x += getShift(i); return x; }
 
 // ============================================================
 // 容器内部行构建（x=0 相对容器）
@@ -46,7 +47,7 @@ function innerFolderRow(item: FileNode, y: number, cw: number, ctx: BuildCtx): B
   const ex = !!ctx.expandedPaths[item.path];
   const sel = ctx.selectedFile === item.path;
   const row = createBox('folder-row', {
-    id: `title-${item.path}`, x: 0, y, width: cw, height: 32,
+    id: `title-${item.path}`, x: 0, y, width: cw, height: 28,
     backgroundColor: sel ? 'rgba(124,58,237,0.15)' : 'transparent',
     data: { path: item.path, isDir: true, isExpanded: ex },
     gesture: { passive: true, onTap: () => ctx.onDirToggle(item.path, !ex) },
@@ -55,7 +56,7 @@ function innerFolderRow(item: FileNode, y: number, cw: number, ctx: BuildCtx): B
   tog.textStyle = { ...TEXT_STYLES.toggleIcon, content: ex ? '▼' : '▶', color: '#00d4ff' };
   row.addChild(tog);
   const label = createBox('folder-label', { id: `label-${item.path}`, x: TXT_L, width: cw - TXT_L - 8 });
-  label.textStyle = { ...TEXT_STYLES.folderLabel, content: item.name, color: '#7c3aed' };
+  label.textStyle = { ...TEXT_STYLES.folderLabel, content: item.name, color: '#e8e0f0' };
   row.addChild(label);
   return row;
 }
@@ -63,13 +64,13 @@ function innerFolderRow(item: FileNode, y: number, cw: number, ctx: BuildCtx): B
 function innerFileRow(item: FileNode, y: number, cw: number, ctx: BuildCtx): Box {
   const sel = ctx.selectedFile === item.path;
   const row = createBox('file-row', {
-    id: `file-${item.path}`, x: TXT_L, y, width: cw - TXT_L, height: 32,
+    id: `file-${item.path}`, x: TXT_L, y, width: cw - TXT_L, height: 28,
     backgroundColor: sel ? 'rgba(124,58,237,0.15)' : 'transparent',
     data: { path: item.path, isDir: false },
     gesture: { passive: true, onTap: () => ctx.onFileClick(item.path) },
   });
   const label = createBox('file-label', { id: `label-${item.path}`, x: 0, width: row.width - 8 });
-  label.textStyle = { ...TEXT_STYLES.fileLabel, content: item.name, color: getFileColor(item.name) };
+  label.textStyle = { ...TEXT_STYLES.fileLabel, content: item.name, color: "#e8e0f0" };
   row.addChild(label);
   return row;
 }
@@ -92,9 +93,9 @@ function buildExpanded(path: string, children: FileNode[], ctx: BuildCtx, depth:
 
   // 无数据 → 占位行
   if (children.length === 0) {
-    const lr = createBox('file-row', { id: `loading-${path}`, x: TXT_L, y: 0, width: w - TXT_L, height: 32 });
+    const lr = createBox('file-row', { id: `loading-${path}`, x: TXT_L, y: 0, width: w - TXT_L, height: 28 });
     const lb = createBox('file-label', { id: `loading-label-${path}`, x: 0, width: lr.width - 8 });
-    lb.textStyle = { ...TEXT_STYLES.fileLabel, content: '…', color: '#e0e0e0' };
+    lb.textStyle = { ...TEXT_STYLES.fileLabel, content: '…', color: '#e8e0f0' };
     lr.addChild(lb); container.addChild(lr); container.height = 32;
     return container;
   }
@@ -105,7 +106,7 @@ function buildExpanded(path: string, children: FileNode[], ctx: BuildCtx, depth:
       cy += 32;
       if (ctx.expandedPaths[item.path]) {
         const ch = KFMState.files[item.path]?.children ?? item.children ?? [];
-        const sub = buildExpanded(item.path, ch, ctx, depth + 1, SHIFT);
+        const sub = buildExpanded(item.path, ch, ctx, depth + 1, getShift(depth));
         sub.y = cy; container.addChild(sub); cy += sub.height;
       }
     } else {
@@ -140,7 +141,7 @@ export function buildTree(items: FileNode[], options: TreeOptions = {}): Box {
       cy += 32;
       if (ctx.expandedPaths[item.path]) {
         const ch = KFMState.files[item.path]?.children ?? item.children ?? [];
-        const c = buildExpanded(item.path, ch, ctx, baseDepth, absX(baseDepth) + SHIFT);
+        const c = buildExpanded(item.path, ch, ctx, baseDepth, absX(baseDepth) + getShift(baseDepth));
         c.y = cy; rootBox.addChild(c); cy += c.height;
       }
     } else {
@@ -158,7 +159,7 @@ function container_AddRootFolderRow(parent: Box, item: FileNode, y: number, dept
   const ex = !!ctx.expandedPaths[item.path];
   const sel = ctx.selectedFile === item.path;
   const row = createBox('folder-row', {
-    id: `title-${item.path}`, x, y, width: w, height: 32,
+    id: `title-${item.path}`, x, y, width: w, height: 28,
     backgroundColor: sel ? 'rgba(124,58,237,0.15)' : 'transparent',
     data: { path: item.path, isDir: true, isExpanded: ex },
     gesture: { passive: true, onTap: () => ctx.onDirToggle(item.path, !ex) },
@@ -167,7 +168,7 @@ function container_AddRootFolderRow(parent: Box, item: FileNode, y: number, dept
   tog.textStyle = { ...TEXT_STYLES.toggleIcon, content: ex ? '▼' : '▶', color: '#00d4ff' };
   row.addChild(tog);
   const label = createBox('folder-label', { id: `label-${item.path}`, x: TXT_L, width: w - TXT_L - 8 });
-  label.textStyle = { ...TEXT_STYLES.folderLabel, content: item.name, color: '#7c3aed' };
+  label.textStyle = { ...TEXT_STYLES.folderLabel, content: item.name, color: '#e8e0f0' };
   row.addChild(label);
   parent.addChild(row);
 }
@@ -177,13 +178,13 @@ function container_AddRootFileRow(parent: Box, item: FileNode, y: number, depth:
   const w = cw - x;
   const sel = ctx.selectedFile === item.path;
   const row = createBox('file-row', {
-    id: `file-${item.path}`, x: x + TXT_L, y, width: w - TXT_L, height: 32,
+    id: `file-${item.path}`, x: x + TXT_L, y, width: w - TXT_L, height: 28,
     backgroundColor: sel ? 'rgba(124,58,237,0.15)' : 'transparent',
     data: { path: item.path, isDir: false },
     gesture: { passive: true, onTap: () => ctx.onFileClick(item.path) },
   });
   const label = createBox('file-label', { id: `label-${item.path}`, x: 0, width: row.width - 8 });
-  label.textStyle = { ...TEXT_STYLES.fileLabel, content: item.name, color: getFileColor(item.name) };
+  label.textStyle = { ...TEXT_STYLES.fileLabel, content: item.name, color: "#e8e0f0" };
   row.addChild(label);
   parent.addChild(row);
 }

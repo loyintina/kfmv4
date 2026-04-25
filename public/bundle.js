@@ -4629,12 +4629,12 @@
 
   // src/client/modules/style-registry.ts
   var DIMENSIONS = {
-    BOX_HEIGHT: 32,
+    BOX_HEIGHT: 28,
     SIDEBAR_WIDTH: 280,
     INDENT: 18,
     ROW_PAD: 8,
-    TRIANGLE_SIZE: 10,
-    TRIANGLE_GAP: 6
+    TRIANGLE_SIZE: 9,
+    TRIANGLE_GAP: 5
   };
   var COLORS = {
     DIR: "#7c3aed",
@@ -4643,7 +4643,7 @@
     SELECTED_BG: "rgba(124,58,237,0.15)",
     CANVAS_BG: "rgba(10,10,15,0.85)"
   };
-  var FONT = "13px system-ui, sans-serif";
+  var FONT = "12px system-ui, sans-serif";
   var TEXT_STYLES = {
     folderLabel: {
       font: FONT,
@@ -4752,28 +4752,6 @@
       listeners.forEach((fn) => fn("", void 0, void 0));
     }
   };
-  var extColors = {
-    ts: "#3178c6",
-    js: "#f7df1e",
-    json: "#292929",
-    html: "#e34f26",
-    css: "#1572b6",
-    md: "#083fa1",
-    py: "#3776ab",
-    rs: "#dea584",
-    go: "#00d800",
-    rsync: "#7c3aed",
-    zip: "#f39c12",
-    gz: "#f39c12",
-    tar: "#f39c12",
-    bak: "#888",
-    old: "#888"
-  };
-  function getFileColor(name) {
-    var _a;
-    const ext = (_a = name.split(".").pop()) == null ? void 0 : _a.toLowerCase();
-    return ext && extColors[ext] || COLORS.FILE;
-  }
   function createBox(templateName, overrides) {
     if (!templates[templateName]) {
       console.warn(`[style-registry] unknown template: "${templateName}"`);
@@ -4789,11 +4767,17 @@
   }
 
   // src/client/modules/tree-model.ts
-  var SHIFT = 18;
-  var T_OFF = 14;
-  var TXT_L = 30;
+  var SHIFT_TABLE = [18, 16, 14, 12, 10, 9, 8, 7, 6, 5, 4, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2];
+  function getShift(depth) {
+    var _a;
+    return (_a = SHIFT_TABLE[depth]) != null ? _a : 2;
+  }
+  var T_OFF = 12;
+  var TXT_L = 26;
   function absX(d) {
-    return d * SHIFT;
+    let x = 0;
+    for (let i = 0; i < d; i++) x += getShift(i);
+    return x;
   }
   function innerFolderRow(item, y, cw, ctx) {
     const ex = !!ctx.expandedPaths[item.path];
@@ -4803,7 +4787,7 @@
       x: 0,
       y,
       width: cw,
-      height: 32,
+      height: 28,
       backgroundColor: sel ? "rgba(124,58,237,0.15)" : "transparent",
       data: { path: item.path, isDir: true, isExpanded: ex },
       gesture: { passive: true, onTap: () => ctx.onDirToggle(item.path, !ex) }
@@ -4812,7 +4796,7 @@
     tog.textStyle = { ...TEXT_STYLES.toggleIcon, content: ex ? "\u25BC" : "\u25B6", color: "#00d4ff" };
     row.addChild(tog);
     const label = createBox("folder-label", { id: `label-${item.path}`, x: TXT_L, width: cw - TXT_L - 8 });
-    label.textStyle = { ...TEXT_STYLES.folderLabel, content: item.name, color: "#7c3aed" };
+    label.textStyle = { ...TEXT_STYLES.folderLabel, content: item.name, color: "#e8e0f0" };
     row.addChild(label);
     return row;
   }
@@ -4823,13 +4807,13 @@
       x: TXT_L,
       y,
       width: cw - TXT_L,
-      height: 32,
+      height: 28,
       backgroundColor: sel ? "rgba(124,58,237,0.15)" : "transparent",
       data: { path: item.path, isDir: false },
       gesture: { passive: true, onTap: () => ctx.onFileClick(item.path) }
     });
     const label = createBox("file-label", { id: `label-${item.path}`, x: 0, width: row.width - 8 });
-    label.textStyle = { ...TEXT_STYLES.fileLabel, content: item.name, color: getFileColor(item.name) };
+    label.textStyle = { ...TEXT_STYLES.fileLabel, content: item.name, color: "#e8e0f0" };
     row.addChild(label);
     return row;
   }
@@ -4846,9 +4830,9 @@
     container.border = { color: "#7c3aed", width: 1, sides: ["top", "bottom", "left", "right"] };
     let cy = 0;
     if (children.length === 0) {
-      const lr = createBox("file-row", { id: `loading-${path}`, x: TXT_L, y: 0, width: w - TXT_L, height: 32 });
+      const lr = createBox("file-row", { id: `loading-${path}`, x: TXT_L, y: 0, width: w - TXT_L, height: 28 });
       const lb = createBox("file-label", { id: `loading-label-${path}`, x: 0, width: lr.width - 8 });
-      lb.textStyle = { ...TEXT_STYLES.fileLabel, content: "\u2026", color: "#e0e0e0" };
+      lb.textStyle = { ...TEXT_STYLES.fileLabel, content: "\u2026", color: "#e8e0f0" };
       lr.addChild(lb);
       container.addChild(lr);
       container.height = 32;
@@ -4860,7 +4844,7 @@
         cy += 32;
         if (ctx.expandedPaths[item.path]) {
           const ch = (_c = (_b = (_a = KFMState.files[item.path]) == null ? void 0 : _a.children) != null ? _b : item.children) != null ? _c : [];
-          const sub = buildExpanded(item.path, ch, ctx, depth + 1, SHIFT);
+          const sub = buildExpanded(item.path, ch, ctx, depth + 1, getShift(depth));
           sub.y = cy;
           container.addChild(sub);
           cy += sub.height;
@@ -4901,7 +4885,7 @@
         cy += 32;
         if (ctx.expandedPaths[item.path]) {
           const ch = (_c = (_b = (_a = KFMState.files[item.path]) == null ? void 0 : _a.children) != null ? _b : item.children) != null ? _c : [];
-          const c = buildExpanded(item.path, ch, ctx, baseDepth, absX(baseDepth) + SHIFT);
+          const c = buildExpanded(item.path, ch, ctx, baseDepth, absX(baseDepth) + getShift(baseDepth));
           c.y = cy;
           rootBox.addChild(c);
           cy += c.height;
@@ -4925,7 +4909,7 @@
       x,
       y,
       width: w,
-      height: 32,
+      height: 28,
       backgroundColor: sel ? "rgba(124,58,237,0.15)" : "transparent",
       data: { path: item.path, isDir: true, isExpanded: ex },
       gesture: { passive: true, onTap: () => ctx.onDirToggle(item.path, !ex) }
@@ -4934,7 +4918,7 @@
     tog.textStyle = { ...TEXT_STYLES.toggleIcon, content: ex ? "\u25BC" : "\u25B6", color: "#00d4ff" };
     row.addChild(tog);
     const label = createBox("folder-label", { id: `label-${item.path}`, x: TXT_L, width: w - TXT_L - 8 });
-    label.textStyle = { ...TEXT_STYLES.folderLabel, content: item.name, color: "#7c3aed" };
+    label.textStyle = { ...TEXT_STYLES.folderLabel, content: item.name, color: "#e8e0f0" };
     row.addChild(label);
     parent.addChild(row);
   }
@@ -4947,13 +4931,13 @@
       x: x + TXT_L,
       y,
       width: w - TXT_L,
-      height: 32,
+      height: 28,
       backgroundColor: sel ? "rgba(124,58,237,0.15)" : "transparent",
       data: { path: item.path, isDir: false },
       gesture: { passive: true, onTap: () => ctx.onFileClick(item.path) }
     });
     const label = createBox("file-label", { id: `label-${item.path}`, x: 0, width: row.width - 8 });
-    label.textStyle = { ...TEXT_STYLES.fileLabel, content: item.name, color: getFileColor(item.name) };
+    label.textStyle = { ...TEXT_STYLES.fileLabel, content: item.name, color: "#e8e0f0" };
     row.addChild(label);
     parent.addChild(row);
   }

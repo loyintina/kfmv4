@@ -13,12 +13,12 @@ import type { TextStyle, HighlightConfig } from '../engine/v2/types.js';
 // ============================================================
 
 export const DIMENSIONS = {
-  BOX_HEIGHT: 32,
+  BOX_HEIGHT: 28,
   SIDEBAR_WIDTH: 280,
   INDENT: 18,
   ROW_PAD: 8,
-  TRIANGLE_SIZE: 10,
-  TRIANGLE_GAP: 6,
+  TRIANGLE_SIZE: 9,
+  TRIANGLE_GAP: 5,
 } as Record<string, number>;
 
 // ============================================================
@@ -52,7 +52,7 @@ export const COLORS = {
 // 文字样式常量
 // ============================================================
 
-const FONT = '13px system-ui, sans-serif';
+const FONT = '12px system-ui, sans-serif';
 
 export const TEXT_STYLES = {
   folderLabel: {
