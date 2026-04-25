@@ -3849,14 +3849,19 @@
     _drawShadow(box, b) {
       const shadow = box.shadow;
       if (!shadow) return;
+      console.log("DRAW SHADOW:", box.id, shadow, b);
       this.ctx.save();
+      this.ctx.beginPath();
+      this.ctx.rect(-1e4, -1e4, 2e4, 2e4);
+      this.ctx.roundRect(b.x, b.y, b.width, b.height, box.borderRadius);
+      this.ctx.clip("evenodd");
       this.ctx.shadowColor = shadow.color;
       this.ctx.shadowBlur = shadow.blur;
-      this.ctx.shadowOffsetX = shadow.offsetX;
+      this.ctx.shadowOffsetX = shadow.offsetX + 1e4;
       this.ctx.shadowOffsetY = shadow.offsetY;
-      this.ctx.fillStyle = box.backgroundColor;
+      this.ctx.fillStyle = "#000";
       this.ctx.beginPath();
-      this.ctx.roundRect(b.x, b.y, b.width, b.height, box.borderRadius);
+      this.ctx.roundRect(b.x - 1e4, b.y, b.width, b.height, box.borderRadius);
       this.ctx.fill();
       this.ctx.restore();
     }
@@ -4842,7 +4847,7 @@
       y: 0,
       backgroundColor: "transparent",
       gradient: depthGradient(depth),
-      shadow: { color: "rgba(0,0,0,0.3)", blur: 8, offsetX: -2, offsetY: 0 }
+      shadow: { color: "rgba(0,0,0,0.5)", blur: 12, offsetX: -4, offsetY: 0 }
     });
     container.border = { color: `rgba(150,55,235,${borderOp})`, width: 2, sides: { top: false, right: false, bottom: false, left: true } };
     let cy = 0;

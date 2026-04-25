@@ -312,15 +312,24 @@ export class Renderer {
   private _drawShadow(box: Box, b: Rect): void {
     const shadow = box.shadow;
     if (!shadow) return;
+    console.log("DRAW SHADOW:", box.id, shadow, b);
     this.ctx.save();
+    
+    this.ctx.beginPath();
+    this.ctx.rect(-10000, -10000, 20000, 20000);
+    this.ctx.roundRect(b.x, b.y, b.width, b.height, box.borderRadius);
+    this.ctx.clip('evenodd');
+
     this.ctx.shadowColor = shadow.color;
     this.ctx.shadowBlur = shadow.blur;
-    this.ctx.shadowOffsetX = shadow.offsetX;
+    this.ctx.shadowOffsetX = shadow.offsetX + 10000;
     this.ctx.shadowOffsetY = shadow.offsetY;
-    this.ctx.fillStyle = box.backgroundColor;
+    
+    this.ctx.fillStyle = '#000';
     this.ctx.beginPath();
-    this.ctx.roundRect(b.x, b.y, b.width, b.height, box.borderRadius);
+    this.ctx.roundRect(b.x - 10000, b.y, b.width, b.height, box.borderRadius);
     this.ctx.fill();
+    
     this.ctx.restore();
   }
 

@@ -106,7 +106,7 @@ function buildExpanded(path: string, children: FileNode[], ctx: BuildCtx, depth:
     id: `expanded-${path}`, width: w, height: 0, x: relX, y: 0,
     backgroundColor: 'transparent',
     gradient: depthGradient(depth),
-    shadow: { color: 'rgba(0,0,0,0.3)', blur: 8, offsetX: -2, offsetY: 0 },
+    shadow: { color: 'rgba(0,0,0,0.5)', blur: 12, offsetX: -4, offsetY: 0 },
   });
   container.border = { color: `rgba(150,55,235,${borderOp})`, width: 2, sides: { top: false, right: false, bottom: false, left: true } };
 
