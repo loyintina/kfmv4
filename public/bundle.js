@@ -4796,9 +4796,11 @@
   function buildFolderBox(path, name, children, depth, ctx) {
     const isExpanded = !!ctx.expandedPaths[path];
     const indent = DIMENSIONS.INDENT * depth + DIMENSIONS.ROW_PAD;
+    const cw = ctx.containerWidth;
     const titleRow = createBox("folder-row", {
       id: `title-${path}`,
       y: 0,
+      width: cw,
       backgroundColor: ctx.selectedFile === path ? COLORS.SELECTED_BG : "transparent",
       data: { path, isDir: true, isExpanded },
       gesture: {
@@ -4819,7 +4821,7 @@
     const titleLabel = createBox("folder-label", {
       id: `label-${path}`,
       x: indent + DIMENSIONS.TRIANGLE_SIZE + DIMENSIONS.TRIANGLE_GAP,
-      width: DIMENSIONS.SIDEBAR_WIDTH - indent - DIMENSIONS.TRIANGLE_SIZE - DIMENSIONS.TRIANGLE_GAP - DIMENSIONS.ROW_PAD
+      width: cw - indent - DIMENSIONS.TRIANGLE_SIZE - DIMENSIONS.TRIANGLE_GAP - DIMENSIONS.ROW_PAD
     });
     titleLabel.textStyle = {
       ...TEXT_STYLES.folderLabel,
@@ -4850,7 +4852,7 @@
           const fileLabel = createBox("file-label", {
             id: `label-${item.path}`,
             x: DIMENSIONS.INDENT * (depth + 1) + DIMENSIONS.ROW_PAD,
-            width: DIMENSIONS.SIDEBAR_WIDTH - DIMENSIONS.INDENT * (depth + 1) - DIMENSIONS.ROW_PAD
+            width: cw - DIMENSIONS.INDENT * (depth + 1) - DIMENSIONS.ROW_PAD
           });
           fileLabel.textStyle = {
             ...TEXT_STYLES.fileLabel,
@@ -4875,24 +4877,36 @@
     };
     return titleRow;
   }
-  function buildSidebarTree() {
-    var _a;
-    const state = KFMState;
+  function buildTree(items, options = {}) {
+    const {
+      expandedPaths,
+      selectedFile = null,
+      onDirToggle = () => {
+      },
+      onFileClick = () => {
+      },
+      baseDepth = 0,
+      containerWidth = DIMENSIONS.SIDEBAR_WIDTH,
+      scrollable = true
+    } = options;
+    const ctx = {
+      expandedPaths: expandedPaths != null ? expandedPaths : {},
+      selectedFile,
+      onDirToggle,
+      onFileClick,
+      containerWidth
+    };
     const rootBox = createBox("sidebar-root", {
-      id: "sidebar-root"
+      id: "file-tree-root",
+      width: containerWidth,
+      scrollable,
+      scrollY: 0,
+      height: 0
     });
     let currentY = 0;
-    const ctx = {
-      expandedPaths: state.expandedPaths,
-      selectedFile: state.selectedFile,
-      onDirToggle: (path, expand) => state.setExpanded(path, expand),
-      onFileClick: (path) => state.selectFile(path)
-    };
-    const rootNode = state.files["/root"];
-    const filesList = (_a = rootNode == null ? void 0 : rootNode.children) != null ? _a : [];
-    for (const item of filesList) {
+    for (const item of items) {
       if (item.isDir) {
-        const folderBox = buildFolderBox(item.path, item.name, item.children || [], 1, ctx);
+        const folderBox = buildFolderBox(item.path, item.name, item.children || [], baseDepth, ctx);
         folderBox.y = currentY;
         rootBox.addChild(folderBox);
         currentY += folderBox.height;
@@ -4909,8 +4923,8 @@
         });
         const fileLabel = createBox("file-label", {
           id: `label-${item.path}`,
-          x: DIMENSIONS.INDENT + DIMENSIONS.ROW_PAD,
-          width: DIMENSIONS.SIDEBAR_WIDTH - DIMENSIONS.INDENT - DIMENSIONS.ROW_PAD
+          x: DIMENSIONS.INDENT * baseDepth + DIMENSIONS.ROW_PAD,
+          width: containerWidth - DIMENSIONS.INDENT * baseDepth - DIMENSIONS.ROW_PAD
         });
         fileLabel.textStyle = {
           ...TEXT_STYLES.fileLabel,
@@ -4926,10 +4940,24 @@
     rootBox.scrollY = 0;
     return rootBox;
   }
+  function buildSidebarTree() {
+    var _a;
+    const state = KFMState;
+    const rootNode = state.files["/root"];
+    const items = (_a = rootNode == null ? void 0 : rootNode.children) != null ? _a : [];
+    return buildTree(items, {
+      expandedPaths: state.expandedPaths,
+      selectedFile: state.selectedFile,
+      onDirToggle: (path, expand) => state.setExpanded(path, expand),
+      onFileClick: (path) => state.selectFile(path),
+      baseDepth: 1,
+      containerWidth: DIMENSIONS.SIDEBAR_WIDTH,
+      scrollable: true
+    });
+  }
 
   // src/client/modules/tree-render.ts
   var renderer = null;
-  var sidebarCanvas = null;
   function onSidebarOpen() {
     requestAnimationFrame(() => requestAnimationFrame(() => {
       renderer == null ? void 0 : renderer.resize();
@@ -4943,49 +4971,49 @@
       console.warn("[tree-render] #fileTree not found");
       return;
     }
-    sidebarCanvas = document.createElement("canvas");
-    sidebarCanvas.id = "tree-canvas";
-    sidebarCanvas.style.width = "100%";
-    sidebarCanvas.style.height = "100%";
-    sidebarCanvas.style.display = "block";
+    const canvas = document.createElement("canvas");
+    canvas.id = "tree-canvas";
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
+    canvas.style.display = "block";
     fileTree.innerHTML = "";
-    fileTree.appendChild(sidebarCanvas);
-    renderer = new Renderer(sidebarCanvas, {
+    fileTree.appendChild(canvas);
+    renderer = new Renderer(canvas, {
       backgroundColor: "rgba(10,10,15,0.85)",
       dpr: window.devicePixelRatio || 1
     });
     rebuildTree();
-    KFMState.subscribe(() => {
-      rebuildTree();
-    });
-    styleRegistry.subscribe(() => {
-      rebuildTree();
-    });
-    window.addEventListener("resize", () => {
-      renderer == null ? void 0 : renderer.resize();
-    });
-    sidebarCanvas.addEventListener("wheel", (e) => {
+    KFMState.subscribe(() => rebuildTree());
+    styleRegistry.subscribe(() => rebuildTree());
+    window.addEventListener("resize", () => renderer == null ? void 0 : renderer.resize());
+    bindScrollEvents(canvas);
+  }
+  function getRootScrollY() {
+    var _a, _b;
+    return (_b = (_a = renderer == null ? void 0 : renderer.getRoot()) == null ? void 0 : _a.scrollY) != null ? _b : null;
+  }
+  function setRootScrollY(val) {
+    const root = renderer == null ? void 0 : renderer.getRoot();
+    if (!root) return;
+    const maxScroll = Math.max(0, root.height - root.getBounds().height);
+    root.scrollY = Math.max(0, Math.min(val, maxScroll));
+  }
+  function bindScrollEvents(canvas) {
+    canvas.addEventListener("wheel", (e) => {
       e.preventDefault();
-      const root = renderer == null ? void 0 : renderer.getRoot();
-      if (!root) return;
-      root.scrollY += e.deltaY;
-      if (root.scrollY < 0) root.scrollY = 0;
-      if (root.scrollY > root.height) root.scrollY = root.height;
+      const cur = getRootScrollY();
+      if (cur !== null) setRootScrollY(cur + e.deltaY);
     }, { passive: false });
     let touchStartY2 = 0;
     let touchScrollY = 0;
-    sidebarCanvas.addEventListener("touchstart", (e) => {
+    canvas.addEventListener("touchstart", (e) => {
+      var _a;
       touchStartY2 = e.touches[0].clientY;
-      const root = renderer == null ? void 0 : renderer.getRoot();
-      touchScrollY = (root == null ? void 0 : root.scrollY) || 0;
+      touchScrollY = (_a = getRootScrollY()) != null ? _a : 0;
     }, { passive: true });
-    sidebarCanvas.addEventListener("touchmove", (e) => {
+    canvas.addEventListener("touchmove", (e) => {
       const dy = touchStartY2 - e.touches[0].clientY;
-      const root = renderer == null ? void 0 : renderer.getRoot();
-      if (!root) return;
-      root.scrollY = touchScrollY + dy;
-      if (root.scrollY < 0) root.scrollY = 0;
-      if (root.scrollY > root.height) root.scrollY = root.height;
+      setRootScrollY(touchScrollY + dy);
     }, { passive: true });
   }
   function rebuildTree() {

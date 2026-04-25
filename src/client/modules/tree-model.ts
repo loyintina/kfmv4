@@ -1,23 +1,43 @@
 /**
  * tree-model.ts — 数据建模层
  *
- * 把 KFMState 里的文件树数据映射成 Box 树。
+ * 核心 API 是一个通用函数 buildTree()：
+ *   给定文件列表和选项，返回一棵 Box 树。
+ *   不依赖 KFMState，不绑死侧栏。
+ *
+ * buildSidebarTree() = 专为侧栏准备的快捷调用。
+ *
  * 所有视觉属性来自 style-registry.ts 注册表。
  * 改注册表 = 改所有盒子，不用动这文件。
- *
- * 建模规则：
- * - 每个文件夹 = 一个容器 Box（它就是那层盒子）
- * - 文件夹盒子自己带左边框（highlight），高度 = 子项总和
- * - 每个文件 = 一个行 Box，没有子项
- * - 展开/折叠 = 增删子项 → 文件夹盒子高度变化 → 左边框自动延长
  */
 
 import { Box } from '../engine/v2/box.js';
 import { KFMState, type FileNode } from './state.js';
-import { DIMENSIONS, COLORS, TEXT_STYLES, styleRegistry, getFileColor, createBox } from './style-registry.js';
+import { DIMENSIONS, COLORS, TEXT_STYLES, getFileColor, createBox } from './style-registry.js';
 
 // ============================================================
-// 上下文类型
+// 树构建选项
+// ============================================================
+
+export interface TreeOptions {
+  /** 展开路径集合 */
+  expandedPaths: Record<string, boolean>;
+  /** 选中的文件/文件夹路径 */
+  selectedFile?: string | null;
+  /** 点击文件夹 */
+  onDirToggle?: (path: string, expand: boolean) => void;
+  /** 点击文件 */
+  onFileClick?: (path: string) => void;
+  /** 首层缩进级数（侧栏从1开始，弹窗从0开始） */
+  baseDepth?: number;
+  /** 容器宽度（默认SIDEBAR_WIDTH） */
+  containerWidth?: number;
+  /** 容器是否可滚动（默认true） */
+  scrollable?: boolean;
+}
+
+// ============================================================
+// 内部上下文
 // ============================================================
 
 interface BuildCtx {
@@ -25,10 +45,11 @@ interface BuildCtx {
   selectedFile: string | null;
   onDirToggle: (path: string, expand: boolean) => void;
   onFileClick: (path: string) => void;
+  containerWidth: number;
 }
 
 // ============================================================
-// 单个文件夹节点（递归构建 Box 树）
+// 单个文件夹节点（递归）
 // ============================================================
 
 function buildFolderBox(
@@ -40,11 +61,13 @@ function buildFolderBox(
 ): Box {
   const isExpanded = !!ctx.expandedPaths[path];
   const indent = DIMENSIONS.INDENT * depth + DIMENSIONS.ROW_PAD;
+  const cw = ctx.containerWidth;
 
   // --- 标题行 ---
   const titleRow = createBox('folder-row', {
     id: `title-${path}`,
     y: 0,
+    width: cw,
     backgroundColor: ctx.selectedFile === path ? COLORS.SELECTED_BG : 'transparent',
     data: { path, isDir: true, isExpanded },
     gesture: {
@@ -69,7 +92,7 @@ function buildFolderBox(
   const titleLabel = createBox('folder-label', {
     id: `label-${path}`,
     x: indent + DIMENSIONS.TRIANGLE_SIZE + DIMENSIONS.TRIANGLE_GAP,
-    width: DIMENSIONS.SIDEBAR_WIDTH - indent - DIMENSIONS.TRIANGLE_SIZE - DIMENSIONS.TRIANGLE_GAP - DIMENSIONS.ROW_PAD,
+    width: cw - indent - DIMENSIONS.TRIANGLE_SIZE - DIMENSIONS.TRIANGLE_GAP - DIMENSIONS.ROW_PAD,
   });
   titleLabel.textStyle = {
     ...TEXT_STYLES.folderLabel,
@@ -78,7 +101,7 @@ function buildFolderBox(
   };
   titleRow.addChild(titleLabel);
 
-  // --- 子项容器 ---
+  // --- 子项 ---
   const subItems: Box[] = [];
   let currentY = titleRow.y + DIMENSIONS.BOX_HEIGHT;
 
@@ -104,7 +127,7 @@ function buildFolderBox(
         const fileLabel = createBox('file-label', {
           id: `label-${item.path}`,
           x: DIMENSIONS.INDENT * (depth + 1) + DIMENSIONS.ROW_PAD,
-          width: DIMENSIONS.SIDEBAR_WIDTH - DIMENSIONS.INDENT * (depth + 1) - DIMENSIONS.ROW_PAD,
+          width: cw - DIMENSIONS.INDENT * (depth + 1) - DIMENSIONS.ROW_PAD,
         });
         fileLabel.textStyle = {
           ...TEXT_STYLES.fileLabel,
@@ -119,12 +142,10 @@ function buildFolderBox(
     }
   }
 
-  // 把子项全挂到标题行下
   for (const child of subItems) {
     titleRow.addChild(child);
   }
 
-  // 总高度 = 标题行 + 所有子项
   const totalChildrenHeight = subItems.reduce((sum, c) => sum + c.height, 0);
   titleRow.height = DIMENSIONS.BOX_HEIGHT + totalChildrenHeight;
 
@@ -139,30 +160,55 @@ function buildFolderBox(
 }
 
 // ============================================================
-// 构建根文件夹
+// buildTree — 通用文件树构建
 // ============================================================
 
-export function buildSidebarTree(): Box {
-  const state = KFMState;
+/**
+ * 给定一个文件列表，构建完整的 Box 树。
+ * 不依赖 KFMState，任何地方都能用。
+ *
+ * 用法：
+ *   const tree = buildTree(files, {
+ *     expandedPaths: { '/root/a': true },
+ *     onDirToggle: (path, expand) => { ... },
+ *   });
+ *   renderer.setRoot(tree);
+ */
+export function buildTree(
+  items: FileNode[],
+  options: TreeOptions = {},
+): Box {
+  const {
+    expandedPaths,
+    selectedFile = null,
+    onDirToggle = () => {},
+    onFileClick = () => {},
+    baseDepth = 0,
+    containerWidth = DIMENSIONS.SIDEBAR_WIDTH,
+    scrollable = true,
+  } = options;
+
+  const ctx: BuildCtx = {
+    expandedPaths: expandedPaths ?? {},
+    selectedFile,
+    onDirToggle,
+    onFileClick,
+    containerWidth,
+  };
 
   const rootBox = createBox('sidebar-root', {
-    id: 'sidebar-root',
+    id: 'file-tree-root',
+    width: containerWidth,
+    scrollable,
+    scrollY: 0,
+    height: 0,
   });
 
   let currentY = 0;
-  const ctx: BuildCtx = {
-    expandedPaths: state.expandedPaths,
-    selectedFile: state.selectedFile,
-    onDirToggle: (path: string, expand: boolean) => state.setExpanded(path, expand),
-    onFileClick: (path: string) => state.selectFile(path),
-  };
 
-  const rootNode = state.files['/root'];
-  const filesList = rootNode?.children ?? [];
-
-  for (const item of filesList) {
+  for (const item of items) {
     if (item.isDir) {
-      const folderBox = buildFolderBox(item.path, item.name, item.children || [], 1, ctx);
+      const folderBox = buildFolderBox(item.path, item.name, item.children || [], baseDepth, ctx);
       folderBox.y = currentY;
       rootBox.addChild(folderBox);
       currentY += folderBox.height;
@@ -180,8 +226,8 @@ export function buildSidebarTree(): Box {
 
       const fileLabel = createBox('file-label', {
         id: `label-${item.path}`,
-        x: DIMENSIONS.INDENT + DIMENSIONS.ROW_PAD,
-        width: DIMENSIONS.SIDEBAR_WIDTH - DIMENSIONS.INDENT - DIMENSIONS.ROW_PAD,
+        x: DIMENSIONS.INDENT * baseDepth + DIMENSIONS.ROW_PAD,
+        width: containerWidth - DIMENSIONS.INDENT * baseDepth - DIMENSIONS.ROW_PAD,
       });
       fileLabel.textStyle = {
         ...TEXT_STYLES.fileLabel,
@@ -198,4 +244,24 @@ export function buildSidebarTree(): Box {
   rootBox.height = currentY;
   rootBox.scrollY = 0;
   return rootBox;
+}
+
+// ============================================================
+// buildSidebarTree — 侧栏专用快捷调用
+// ============================================================
+
+export function buildSidebarTree(): Box {
+  const state = KFMState;
+  const rootNode = state.files['/root'];
+  const items = rootNode?.children ?? [];
+
+  return buildTree(items, {
+    expandedPaths: state.expandedPaths,
+    selectedFile: state.selectedFile,
+    onDirToggle: (path, expand) => state.setExpanded(path, expand),
+    onFileClick: (path) => state.selectFile(path),
+    baseDepth: 1,
+    containerWidth: DIMENSIONS.SIDEBAR_WIDTH,
+    scrollable: true,
+  });
 }
