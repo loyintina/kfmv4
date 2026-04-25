@@ -4668,7 +4668,6 @@
       verticalAlign: "middle"
     }
   };
-  var HIGHLIGHT = { color: "#7c3aed", width: 2, side: "all" };
   var templates = {
     "folder-row": {
       width: DIMENSIONS.SIDEBAR_WIDTH,
@@ -4705,8 +4704,7 @@
     },
     "folder-container": {
       backgroundColor: "transparent",
-      borderRadius: 0,
-      highlight: HIGHLIGHT
+      borderRadius: 0
     },
     "sidebar-root": {
       width: DIMENSIONS.SIDEBAR_WIDTH,
@@ -4779,7 +4777,21 @@
     for (let i = 0; i < d; i++) x += getShift(i);
     return x;
   }
-  function innerFolderRow(item, y, cw, ctx) {
+  function depthGradient(depth) {
+    const shift = getShift(depth);
+    const density = 1 - shift / 18;
+    const topA = (0.02 + density * 0.18).toFixed(3);
+    const botA = (0.08 + density * 0.35).toFixed(3);
+    return {
+      type: "linear",
+      angle: 180,
+      stops: [
+        { offset: 0, color: `rgba(124,58,237,${topA})` },
+        { offset: 1, color: `rgba(124,58,237,${botA})` }
+      ]
+    };
+  }
+  function innerFolderRow(item, y, cw, ctx, depth) {
     const ex = !!ctx.expandedPaths[item.path];
     const sel = ctx.selectedFile === item.path;
     const row = createBox("folder-row", {
@@ -4800,19 +4812,19 @@
     row.addChild(label);
     return row;
   }
-  function innerFileRow(item, y, cw, ctx) {
+  function innerFileRow(item, y, cw, ctx, depth) {
     const sel = ctx.selectedFile === item.path;
     const row = createBox("file-row", {
       id: `file-${item.path}`,
-      x: TXT_L,
+      x: 0,
       y,
-      width: cw - TXT_L,
+      width: cw,
       height: 28,
       backgroundColor: sel ? "rgba(124,58,237,0.15)" : "transparent",
       data: { path: item.path, isDir: false },
       gesture: { passive: true, onTap: () => ctx.onFileClick(item.path) }
     });
-    const label = createBox("file-label", { id: `label-${item.path}`, x: 0, width: row.width - 8 });
+    const label = createBox("file-label", { id: `label-${item.path}`, x: TXT_L, width: cw - TXT_L - 8 });
     label.textStyle = { ...TEXT_STYLES.fileLabel, content: item.name, color: "#e8e0f0" };
     row.addChild(label);
     return row;
@@ -4825,9 +4837,11 @@
       width: w,
       height: 0,
       x: relX,
-      y: 0
+      y: 0,
+      backgroundColor: "transparent",
+      gradient: depthGradient(depth)
     });
-    container.border = { color: "#7c3aed", width: 1, sides: ["top", "bottom", "left", "right"] };
+    container.border = { color: "#7c3aed", width: 1, sides: { top: false, right: false, bottom: false, left: true } };
     let cy = 0;
     if (children.length === 0) {
       const lr = createBox("file-row", { id: `loading-${path}`, x: TXT_L, y: 0, width: w - TXT_L, height: 28 });
@@ -4840,7 +4854,7 @@
     }
     for (const item of children) {
       if (item.isDir) {
-        container.addChild(innerFolderRow(item, cy, w, ctx));
+        container.addChild(innerFolderRow(item, cy, w, ctx, depth));
         cy += 28;
         if (ctx.expandedPaths[item.path]) {
           const ch = (_c = (_b = (_a = KFMState.files[item.path]) == null ? void 0 : _a.children) != null ? _b : item.children) != null ? _c : [];
@@ -4850,7 +4864,7 @@
           cy += sub.height;
         }
       } else {
-        container.addChild(innerFileRow(item, cy, w, ctx));
+        container.addChild(innerFileRow(item, cy, w, ctx, depth));
         cy += 28;
       }
     }
@@ -4928,15 +4942,15 @@
     const sel = ctx.selectedFile === item.path;
     const row = createBox("file-row", {
       id: `file-${item.path}`,
-      x: x + TXT_L,
+      x,
       y,
-      width: w - TXT_L,
+      width: w,
       height: 28,
       backgroundColor: sel ? "rgba(124,58,237,0.15)" : "transparent",
       data: { path: item.path, isDir: false },
       gesture: { passive: true, onTap: () => ctx.onFileClick(item.path) }
     });
-    const label = createBox("file-label", { id: `label-${item.path}`, x: 0, width: row.width - 8 });
+    const label = createBox("file-label", { id: `label-${item.path}`, x: TXT_L, width: w - TXT_L - 8 });
     label.textStyle = { ...TEXT_STYLES.fileLabel, content: item.name, color: "#e8e0f0" };
     row.addChild(label);
     parent.addChild(row);
