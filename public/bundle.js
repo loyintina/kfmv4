@@ -4709,7 +4709,7 @@
     },
     "folder-container": {
       backgroundColor: "transparent",
-      borderRadius: 0
+      borderRadius: 4
     },
     "sidebar-root": {
       width: DIMENSIONS.SIDEBAR_WIDTH,

@@ -133,7 +133,7 @@ const templates: Record<string, Record<string, any>> = {
 
   'folder-container': {
     backgroundColor: 'transparent',
-    borderRadius: 0,
+    borderRadius: 4,
   },
 
   'sidebar-root': {
