@@ -4832,6 +4832,8 @@
   function buildExpanded(path, children, ctx, depth, relX) {
     var _a, _b, _c;
     const w = ctx.containerWidth - absX(depth);
+    const density = 1 - getShift(depth) / 18;
+    const borderOp = (0.3 + density * 0.5).toFixed(3);
     const container = createBox("folder-container", {
       id: `expanded-${path}`,
       width: w,
@@ -4839,9 +4841,10 @@
       x: relX,
       y: 0,
       backgroundColor: "transparent",
-      gradient: depthGradient(depth)
+      gradient: depthGradient(depth),
+      shadow: { color: "rgba(0,0,0,0.3)", blur: 8, offsetX: -2, offsetY: 0 }
     });
-    container.border = { color: "#7c3aed", width: 1, sides: { top: false, right: false, bottom: false, left: true } };
+    container.border = { color: `rgba(150,55,235,${borderOp})`, width: 2, sides: { top: false, right: false, bottom: false, left: true } };
     let cy = 0;
     if (children.length === 0) {
       const lr = createBox("file-row", { id: `loading-${path}`, x: TXT_L, y: 0, width: w - TXT_L, height: 28 });
