@@ -511,10 +511,21 @@ export class Renderer {
     this.ctx.strokeStyle = hl.color;
     this.ctx.lineWidth = hl.width;
     this.ctx.lineCap = 'round';
-    this.ctx.beginPath();
-    this.ctx.moveTo(b.x + hl.width / 2, b.y + 4);
-    this.ctx.lineTo(b.x + hl.width / 2, b.y + b.height - 4);
-    this.ctx.stroke();
+
+    if (hl.side === 'all') {
+      // 画完整矩形框（不受 clip 影响，因为是实心色块 stroke）
+      if (box.borderRadius > 0) {
+        this.ctx.roundRect(b.x, b.y, b.width, b.height, box.borderRadius);
+      } else {
+        this.ctx.strokeRect(b.x, b.y, b.width, b.height);
+      }
+    } else {
+      // 原有逻辑：只画左侧竖线
+      this.ctx.beginPath();
+      this.ctx.moveTo(b.x + hl.width / 2, b.y + 4);
+      this.ctx.lineTo(b.x + hl.width / 2, b.y + b.height - 4);
+      this.ctx.stroke();
+    }
   }
 
   private _drawIcon(icon: IconConfig, b: Rect, padding: Spacing): void {
@@ -581,7 +592,12 @@ export class Renderer {
     // 绘制每一行
     this.ctx.font = style.font;
     this.ctx.fillStyle = style.color;
-    this.ctx.textBaseline = 'top';
+    this.ctx.textBaseline = 'middle';
+
+    // 计算当前字体的实际行高（ascender + descender）
+    const metrics = this.ctx.measureText('Ag');
+    const fontHeight = Math.abs(metrics.actualBoundingBoxAscent) + Math.abs(metrics.actualBoundingBoxDescent);
+    const lineGap = (style.lineHeight - fontHeight) / 2;
 
     for (let i = 0; i < visibleLines.length; i++) {
       const line = visibleLines[i];
@@ -600,7 +616,9 @@ export class Renderer {
         alignX = textX + maxWidth - line.width;
       }
 
-      this.ctx.fillText(lineText, alignX, textY + offsetY + i * style.lineHeight);
+      // 垂直居中：框中心 + 偏移，用 textBaseline middle 精确对齐
+      const lineCenterY = textY + offsetY + i * style.lineHeight + style.lineHeight / 2;
+      this.ctx.fillText(lineText, alignX, lineCenterY);
     }
   }
 
