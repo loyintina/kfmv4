@@ -1,19 +1,17 @@
 /**
  * tree-loader.ts — 按需加载数据层
  *
- * 不递归预加载全量树，只加载需要展示的文件夹的子项。
- * expandedPaths 记录了已展开的路径，每次只加载这些路径缺少的数据。
+ * 核心逻辑：
+ * - 只加载已展开路径的数据
+ * - 展开一个文件夹时，递归加载其内部所有已展开的子文件夹
+ * - 这样 rebuildTree 时所有展开节点的数据都已就绪，直接递归构建
  */
 
 import { KFMState, type FileNode } from './state.js';
 
 const API = '/kfmv4/api';
 
-/**
- * 从 API 获取一个文件夹的子文件列表，填充到 KFMState.files
- */
 async function fetchDir(path: string): Promise<boolean> {
-  // 如果已经加载过，跳过
   if (KFMState.files[path]?.children?.length !== undefined) {
     return true;
   }
@@ -50,43 +48,89 @@ async function fetchDir(path: string): Promise<boolean> {
 }
 
 /**
- * 加载所有已展开路径的子文件。
- * expandedPaths = { '/root': true, '/root/kfmv4': true, ... }
- * 逐层加载，确保每个展开的文件夹都有 children 数据。
+ * 递归加载所有已展开路径的数据。
+ * 一次性把整棵展开树填满，后续 rebuildTree 直接递归构建。
  */
-export async function loadFileTree(rootPath: string, _maxDepth = 0): Promise<void> {
-  // 只加载根目录一层。深层路径等用户点击展开时再按需拉取。
+export async function ensureDirLoadedRecursive(path: string): Promise<void> {
+  if (!KFMState.expandedPaths[path]) return;
+
+  const loaded = await fetchDir(path);
+  if (!loaded) return;
+
+  // 加载完后检查子文件夹是否有已展开的，递归加载
+  const node = KFMState.files[path];
+  if (node?.children) {
+    const loadPromises: Promise<void>[] = [];
+    for (const child of node.children) {
+      if (child.isDir && KFMState.expandedPaths[child.path]) {
+        loadPromises.push(ensureDirLoadedRecursive(child.path));
+      }
+    }
+    if (loadPromises.length > 0) {
+      await Promise.all(loadPromises);
+    }
+  }
+}
+
+/**
+ * 初始化时加载根目录 + 递归加载所有已展开路径
+ */
+export async function loadFileTree(rootPath: string): Promise<void> {
+  // 加载根目录
   await fetchDir(rootPath);
 
-  // 通知渲染
+  // 递归加载所有已展开的子文件夹
+  const rootNode = KFMState.files[rootPath];
+  if (rootNode?.children) {
+    const loadPromises: Promise<void>[] = [];
+    for (const child of rootNode.children) {
+      if (child.isDir && KFMState.expandedPaths[child.path]) {
+        loadPromises.push(ensureDirLoadedRecursive(child.path));
+      }
+    }
+    if (loadPromises.length > 0) {
+      await Promise.all(loadPromises);
+    }
+  }
+
   KFMState.notify();
 }
 
 /**
- * 当用户展开/折叠文件夹时，需要按需加载子文件
- * 订阅 expandedPaths 变化，动态拉取
+ * 逐层加载展开的目录：加载一层就 notify 一次，让界面立即展示
  */
-export function ensureDirLoaded(path: string): void {
-  // 如果还没展开过，不加载
-  if (!KFMState.expandedPaths[path]) return;
-  // 如果已加载，跳过
-  if (KFMState.files[path]?.children?.length !== undefined) return;
+async function loadLayerByLayer(path: string): Promise<void> {
+  // 立即 notify 一次，让 rebuildTree 生成带省略号的盒子
+  KFMState.notify();
 
-  fetchDir(path).then(() => {
-    KFMState.notify();
-  });
+  // 加载当前层的直接子项
+  const loaded = await fetchDir(path);
+  if (!loaded) return;
+
+  // 加载完本层立即刷新显示真实子项
+  KFMState.notify();
+
+  // 检查是否有已展开的子文件夹，递归逐层加载
+  const node = KFMState.files[path];
+  if (node?.children) {
+    for (const child of node.children) {
+      if (child.isDir && KFMState.expandedPaths[child.path]) {
+        await loadLayerByLayer(child.path);
+      }
+    }
+  }
 }
 
 /**
- * 初始化：监听 expandedPaths 变化，自动按需加载
- * 只监听用户主动展开操作，不做穷举扫描
+ * 初始化：劫持 setExpanded，展开时逐层加载并逐层显示
  */
 export function initLazyLoader(): void {
   const originalSetExpanded = KFMState.setExpanded.bind(KFMState);
   KFMState.setExpanded = function (path: string, expanded: boolean) {
     originalSetExpanded(path, expanded);
     if (expanded) {
-      ensureDirLoaded(path);
+      // 异步逐层加载，每加载一层就 notify 一次
+      loadLayerByLayer(path).catch(console.error);
     }
   };
 }

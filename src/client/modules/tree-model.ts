@@ -1,14 +1,14 @@
 /**
  * tree-model.ts — 数据建模层
  *
- * 核心 API 是一个通用函数 buildTree()：
- *   给定文件列表和选项，返回一棵 Box 树。
- *   不依赖 KFMState，不绑死侧栏。
+ * 核心 API 是 buildTree() 通用函数。
  *
- * buildSidebarTree() = 专为侧栏准备的快捷调用。
- *
- * 所有视觉属性来自 style-registry.ts 注册表。
- * 改注册表 = 改所有盒子，不用动这文件。
+ * 建模规则（正确嵌套）：
+ *  - 根目录是一个无左边框的大盒子，里面全是文字行。
+ *  - 每个文件夹标题行 = 一个纯文字行（可点击）。
+ *  - 文件夹展开时，在标题行下面**插入一个带左边框的子容器盒子**，
+ *    里面放该目录的所有子项（文件行/递归文件夹区域）。
+ *  - 子项按深度缩进。
  */
 
 import { Box } from '../engine/v2/box.js';
@@ -20,25 +20,14 @@ import { DIMENSIONS, COLORS, TEXT_STYLES, getFileColor, createBox } from './styl
 // ============================================================
 
 export interface TreeOptions {
-  /** 展开路径集合 */
   expandedPaths: Record<string, boolean>;
-  /** 选中的文件/文件夹路径 */
   selectedFile?: string | null;
-  /** 点击文件夹 */
   onDirToggle?: (path: string, expand: boolean) => void;
-  /** 点击文件 */
   onFileClick?: (path: string) => void;
-  /** 首层缩进级数（侧栏从1开始，弹窗从0开始） */
   baseDepth?: number;
-  /** 容器宽度（默认SIDEBAR_WIDTH） */
   containerWidth?: number;
-  /** 容器是否可滚动（默认true） */
   scrollable?: boolean;
 }
-
-// ============================================================
-// 内部上下文
-// ============================================================
 
 interface BuildCtx {
   expandedPaths: Record<string, boolean>;
@@ -49,137 +38,168 @@ interface BuildCtx {
 }
 
 // ============================================================
-// 单个文件夹节点（递归）
+// 构建一个文件夹展开区域（带左边框的盒子）
 // ============================================================
 
-function buildFolderBox(
+/**
+ * 返回一个带蓝色左边框的容器，里面包含该文件夹的所有子项。
+ * 展开/折叠时才会创建或销毁这个盒子。
+ */
+function buildExpandedContainer(
   path: string,
-  name: string,
   children: FileNode[],
   depth: number,
   ctx: BuildCtx,
 ): Box {
-  const isExpanded = !!ctx.expandedPaths[path];
-  const indent = DIMENSIONS.INDENT * depth + DIMENSIONS.ROW_PAD;
   const cw = ctx.containerWidth;
-
-  // --- 标题行 ---
-  const titleRow = createBox('folder-row', {
-    id: `title-${path}`,
-    y: 0,
+  const container = createBox('folder-container', {
+    id: `expanded-${path}`,
     width: cw,
-    backgroundColor: ctx.selectedFile === path ? COLORS.SELECTED_BG : 'transparent',
-    data: { path, isDir: true, isExpanded },
-    gesture: {
-      passive: true,
-      onTap: () => ctx.onDirToggle(path, !isExpanded),
-    },
+    height: 0,
+    x: 0,
+    y: 0,
   });
-
-  // 折叠三角
-  const toggleIcon = createBox('toggle-icon', {
-    id: `toggle-${path}`,
-    x: indent,
-  });
-  toggleIcon.textStyle = {
-    ...TEXT_STYLES.toggleIcon,
-    content: isExpanded ? '▼' : '▶',
-    color: COLORS.ACCENT,
-  };
-  titleRow.addChild(toggleIcon);
-
-  // 标题文字
-  const titleLabel = createBox('folder-label', {
-    id: `label-${path}`,
-    x: indent + DIMENSIONS.TRIANGLE_SIZE + DIMENSIONS.TRIANGLE_GAP,
-    width: cw - indent - DIMENSIONS.TRIANGLE_SIZE - DIMENSIONS.TRIANGLE_GAP - DIMENSIONS.ROW_PAD,
-  });
-  titleLabel.textStyle = {
-    ...TEXT_STYLES.folderLabel,
-    content: path === '/root' ? 'root' : name,
+  container.border = {
     color: COLORS.DIR,
+    width: 1,
+    sides: ['top', 'bottom', 'left', 'right'],
   };
-  titleRow.addChild(titleLabel);
 
-  // --- 子项 ---
-  const subItems: Box[] = [];
-  let currentY = titleRow.y + DIMENSIONS.BOX_HEIGHT;
+  let currentY = 0;
 
-  if (isExpanded) {
-    for (const item of children) {
-      if (item.isDir) {
-        const folderBox = buildFolderBox(item.path, item.name, item.children || [], depth + 1, ctx);
-        folderBox.y = currentY;
-        subItems.push(folderBox);
-        currentY += folderBox.height;
-      } else {
-        const fileRow = createBox('file-row', {
-          id: `file-${item.path}`,
-          y: currentY,
-          backgroundColor: ctx.selectedFile === item.path ? COLORS.SELECTED_BG : 'transparent',
-          data: { path: item.path, isDir: false },
-          gesture: {
-            passive: true,
-            onTap: () => ctx.onFileClick(item.path),
-          },
-        });
+  // 数据未加载 → 占位行"…"，让紫色边框立刻可见
+  if (children.length === 0) {
+    const loadingRow = createBox('file-row', {
+      id: `loading-${path}`,
+      x: 0,
+      y: currentY,
+      width: cw,
+      height: DIMENSIONS.BOX_HEIGHT,
+      backgroundColor: 'transparent',
+      data: { path, loading: true },
+    });
+    const loadingLabel = createBox('file-label', {
+      id: `loading-label-${path}`,
+      x: DIMENSIONS.INDENT * (depth + 1) + DIMENSIONS.ROW_PAD,
+      width: cw - DIMENSIONS.INDENT * (depth + 1) - DIMENSIONS.ROW_PAD,
+    });
+    loadingLabel.textStyle = {
+      ...TEXT_STYLES.fileLabel,
+      content: '…',
+      color: COLORS.FILE,
+    };
+    loadingRow.addChild(loadingLabel);
+    container.addChild(loadingRow);
+    currentY += DIMENSIONS.BOX_HEIGHT;
+    container.height = currentY;
+    return container;
+  }
 
-        const fileLabel = createBox('file-label', {
-          id: `label-${item.path}`,
-          x: DIMENSIONS.INDENT * (depth + 1) + DIMENSIONS.ROW_PAD,
-          width: cw - DIMENSIONS.INDENT * (depth + 1) - DIMENSIONS.ROW_PAD,
-        });
-        fileLabel.textStyle = {
-          ...TEXT_STYLES.fileLabel,
-          content: item.name,
-          color: getFileColor(item.name),
-        };
+  for (const item of children) {
+    if (item.isDir) {
+      // 子文件夹：先文字行，再展开区域
+      const subDepth = depth + 1;
+      const subIndent = DIMENSIONS.INDENT * subDepth + DIMENSIONS.ROW_PAD;
 
-        fileRow.addChild(fileLabel);
-        subItems.push(fileRow);
-        currentY += DIMENSIONS.BOX_HEIGHT;
+      // 子文件夹标题行（纯文字，无边框）
+      const subTitleRow = createBox('folder-row', {
+        id: `title-${item.path}`,
+        x: 0,
+        y: currentY,
+        width: cw,
+        height: DIMENSIONS.BOX_HEIGHT,
+        backgroundColor: ctx.selectedFile === item.path ? COLORS.SELECTED_BG : 'transparent',
+        data: { path: item.path, isDir: true, isExpanded: !!ctx.expandedPaths[item.path] },
+        gesture: {
+          passive: true,
+          onTap: () => ctx.onDirToggle(item.path, !ctx.expandedPaths[item.path]),
+        },
+      });
+
+      // 三角
+      const subToggle = createBox('toggle-icon', {
+        id: `toggle-${item.path}`,
+        x: subIndent,
+      });
+      subToggle.textStyle = {
+        ...TEXT_STYLES.toggleIcon,
+        content: ctx.expandedPaths[item.path] ? '▼' : '▶',
+        color: COLORS.ACCENT,
+      };
+      subTitleRow.addChild(subToggle);
+
+      // 名称
+      const subLabel = createBox('folder-label', {
+        id: `label-${item.path}`,
+        x: subIndent + DIMENSIONS.TRIANGLE_SIZE + DIMENSIONS.TRIANGLE_GAP,
+        width: cw - subIndent - DIMENSIONS.TRIANGLE_SIZE - DIMENSIONS.TRIANGLE_GAP - DIMENSIONS.ROW_PAD,
+      });
+      subLabel.textStyle = {
+        ...TEXT_STYLES.folderLabel,
+        content: item.name,
+        color: COLORS.DIR,
+      };
+      subTitleRow.addChild(subLabel);
+
+      container.addChild(subTitleRow);
+      currentY += DIMENSIONS.BOX_HEIGHT;
+
+      // 子文件夹展开→递归插入子容器
+      if (ctx.expandedPaths[item.path]) {
+        const children = KFMState.files[item.path]?.children ?? item.children ?? [];
+        const subContainer = buildExpandedContainer(item.path, children, subDepth, ctx);
+        subContainer.y = currentY;
+        container.addChild(subContainer);
+        currentY += subContainer.height;
       }
+    } else {
+      // 文件行
+      const fileIndent = DIMENSIONS.INDENT * (depth + 1) + DIMENSIONS.ROW_PAD;
+      const fileRow = createBox('file-row', {
+        id: `file-${item.path}`,
+        x: 0,
+        y: currentY,
+        width: cw,
+        height: DIMENSIONS.BOX_HEIGHT,
+        backgroundColor: ctx.selectedFile === item.path ? COLORS.SELECTED_BG : 'transparent',
+        data: { path: item.path, isDir: false },
+        gesture: {
+          passive: true,
+          onTap: () => ctx.onFileClick(item.path),
+        },
+      });
+
+      const fileLabel = createBox('file-label', {
+        id: `label-${item.path}`,
+        x: fileIndent,
+        width: cw - fileIndent - DIMENSIONS.ROW_PAD,
+      });
+      fileLabel.textStyle = {
+        ...TEXT_STYLES.fileLabel,
+        content: item.name,
+        color: getFileColor(item.name),
+      };
+
+      fileRow.addChild(fileLabel);
+      container.addChild(fileRow);
+      currentY += DIMENSIONS.BOX_HEIGHT;
     }
   }
 
-  for (const child of subItems) {
-    titleRow.addChild(child);
-  }
-
-  const totalChildrenHeight = subItems.reduce((sum, c) => sum + c.height, 0);
-  titleRow.height = DIMENSIONS.BOX_HEIGHT + totalChildrenHeight;
-
-  // 左边框
-  titleRow.highlight = {
-    color: COLORS.ACCENT,
-    width: 3,
-    side: 'left',
-  };
-
-  return titleRow;
+  container.height = currentY;
+  return container;
 }
 
 // ============================================================
 // buildTree — 通用文件树构建
 // ============================================================
 
-/**
- * 给定一个文件列表，构建完整的 Box 树。
- * 不依赖 KFMState，任何地方都能用。
- *
- * 用法：
- *   const tree = buildTree(files, {
- *     expandedPaths: { '/root/a': true },
- *     onDirToggle: (path, expand) => { ... },
- *   });
- *   renderer.setRoot(tree);
- */
 export function buildTree(
   items: FileNode[],
   options: TreeOptions = {},
 ): Box {
   const {
-    expandedPaths,
+    expandedPaths = {},
     selectedFile = null,
     onDirToggle = () => {},
     onFileClick = () => {},
@@ -189,13 +209,14 @@ export function buildTree(
   } = options;
 
   const ctx: BuildCtx = {
-    expandedPaths: expandedPaths ?? {},
+    expandedPaths,
     selectedFile,
     onDirToggle,
     onFileClick,
     containerWidth,
   };
 
+  // 根目录大盒子：无左边框，纯文本流容器
   const rootBox = createBox('sidebar-root', {
     id: 'file-tree-root',
     width: containerWidth,
@@ -208,14 +229,68 @@ export function buildTree(
 
   for (const item of items) {
     if (item.isDir) {
-      const folderBox = buildFolderBox(item.path, item.name, item.children || [], baseDepth, ctx);
-      folderBox.y = currentY;
-      rootBox.addChild(folderBox);
-      currentY += folderBox.height;
+      // 文件夹标题行（纯文字，无边框）
+      const indent = DIMENSIONS.INDENT * baseDepth + DIMENSIONS.ROW_PAD;
+      const titleRow = createBox('folder-row', {
+        id: `title-${item.path}`,
+        x: 0,
+        y: currentY,
+        width: containerWidth,
+        height: DIMENSIONS.BOX_HEIGHT,
+        backgroundColor: ctx.selectedFile === item.path ? COLORS.SELECTED_BG : 'transparent',
+        data: { path: item.path, isDir: true, isExpanded: !!ctx.expandedPaths[item.path] },
+        gesture: {
+          passive: true,
+          onTap: () => ctx.onDirToggle(item.path, !ctx.expandedPaths[item.path]),
+        },
+      });
+
+      // 三角
+      const toggleIcon = createBox('toggle-icon', {
+        id: `toggle-${item.path}`,
+        x: indent,
+      });
+      toggleIcon.textStyle = {
+        ...TEXT_STYLES.toggleIcon,
+        content: ctx.expandedPaths[item.path] ? '▼' : '▶',
+        color: COLORS.ACCENT,
+      };
+      titleRow.addChild(toggleIcon);
+
+      // 名称
+      const titleLabel = createBox('folder-label', {
+        id: `label-${item.path}`,
+        x: indent + DIMENSIONS.TRIANGLE_SIZE + DIMENSIONS.TRIANGLE_GAP,
+        width: containerWidth - indent - DIMENSIONS.TRIANGLE_SIZE - DIMENSIONS.TRIANGLE_GAP - DIMENSIONS.ROW_PAD,
+      });
+      titleLabel.textStyle = {
+        ...TEXT_STYLES.folderLabel,
+        content: item.name,
+        color: COLORS.DIR,
+      };
+      titleRow.addChild(titleLabel);
+
+      rootBox.addChild(titleRow);
+      currentY += DIMENSIONS.BOX_HEIGHT;
+
+      // 展开 → 插入带边框的子容器（数据从 KFMState.files 读取，尚未异步加载时为 item.children 后备）
+      if (ctx.expandedPaths[item.path]) {
+        const cached = KFMState.files[item.path]?.children;
+        const children = cached ?? item.children ?? [];
+        const expandedContainer = buildExpandedContainer(item.path, children, baseDepth, ctx);
+        expandedContainer.y = currentY;
+        rootBox.addChild(expandedContainer);
+        currentY += expandedContainer.height;
+      }
     } else {
+      // 文件行
+      const indent = DIMENSIONS.INDENT * baseDepth + DIMENSIONS.ROW_PAD;
       const fileRow = createBox('file-row', {
         id: `file-${item.path}`,
+        x: 0,
         y: currentY,
+        width: containerWidth,
+        height: DIMENSIONS.BOX_HEIGHT,
         backgroundColor: ctx.selectedFile === item.path ? COLORS.SELECTED_BG : 'transparent',
         data: { path: item.path, isDir: false },
         gesture: {
@@ -226,8 +301,8 @@ export function buildTree(
 
       const fileLabel = createBox('file-label', {
         id: `label-${item.path}`,
-        x: DIMENSIONS.INDENT * baseDepth + DIMENSIONS.ROW_PAD,
-        width: containerWidth - DIMENSIONS.INDENT * baseDepth - DIMENSIONS.ROW_PAD,
+        x: indent,
+        width: containerWidth - indent - DIMENSIONS.ROW_PAD,
       });
       fileLabel.textStyle = {
         ...TEXT_STYLES.fileLabel,

@@ -4708,6 +4708,13 @@
       borderRadius: 0,
       interactive: false
     },
+    // 文件夹容器（带紫色左边框的外层盒子）
+    "folder-container": {
+      width: DIMENSIONS.SIDEBAR_WIDTH,
+      backgroundColor: "transparent",
+      borderRadius: 0,
+      overflow: "hidden"
+    },
     // 根容器
     "sidebar-root": {
       width: DIMENSIONS.SIDEBAR_WIDTH,
@@ -4793,93 +4800,132 @@
   }
 
   // src/client/modules/tree-model.ts
-  function buildFolderBox(path, name, children, depth, ctx) {
-    const isExpanded = !!ctx.expandedPaths[path];
-    const indent = DIMENSIONS.INDENT * depth + DIMENSIONS.ROW_PAD;
+  function buildExpandedContainer(path, children, depth, ctx) {
+    var _a, _b, _c;
     const cw = ctx.containerWidth;
-    const titleRow = createBox("folder-row", {
-      id: `title-${path}`,
-      y: 0,
+    const container = createBox("folder-container", {
+      id: `expanded-${path}`,
       width: cw,
-      backgroundColor: ctx.selectedFile === path ? COLORS.SELECTED_BG : "transparent",
-      data: { path, isDir: true, isExpanded },
-      gesture: {
-        passive: true,
-        onTap: () => ctx.onDirToggle(path, !isExpanded)
-      }
+      height: 0,
+      x: 0,
+      y: 0
     });
-    const toggleIcon = createBox("toggle-icon", {
-      id: `toggle-${path}`,
-      x: indent
-    });
-    toggleIcon.textStyle = {
-      ...TEXT_STYLES.toggleIcon,
-      content: isExpanded ? "\u25BC" : "\u25B6",
-      color: COLORS.ACCENT
+    container.border = {
+      color: COLORS.DIR,
+      width: 1,
+      sides: ["top", "bottom", "left", "right"]
     };
-    titleRow.addChild(toggleIcon);
-    const titleLabel = createBox("folder-label", {
-      id: `label-${path}`,
-      x: indent + DIMENSIONS.TRIANGLE_SIZE + DIMENSIONS.TRIANGLE_GAP,
-      width: cw - indent - DIMENSIONS.TRIANGLE_SIZE - DIMENSIONS.TRIANGLE_GAP - DIMENSIONS.ROW_PAD
-    });
-    titleLabel.textStyle = {
-      ...TEXT_STYLES.folderLabel,
-      content: path === "/root" ? "root" : name,
-      color: COLORS.DIR
-    };
-    titleRow.addChild(titleLabel);
-    const subItems = [];
-    let currentY = titleRow.y + DIMENSIONS.BOX_HEIGHT;
-    if (isExpanded) {
-      for (const item of children) {
-        if (item.isDir) {
-          const folderBox = buildFolderBox(item.path, item.name, item.children || [], depth + 1, ctx);
-          folderBox.y = currentY;
-          subItems.push(folderBox);
-          currentY += folderBox.height;
-        } else {
-          const fileRow = createBox("file-row", {
-            id: `file-${item.path}`,
-            y: currentY,
-            backgroundColor: ctx.selectedFile === item.path ? COLORS.SELECTED_BG : "transparent",
-            data: { path: item.path, isDir: false },
-            gesture: {
-              passive: true,
-              onTap: () => ctx.onFileClick(item.path)
-            }
-          });
-          const fileLabel = createBox("file-label", {
-            id: `label-${item.path}`,
-            x: DIMENSIONS.INDENT * (depth + 1) + DIMENSIONS.ROW_PAD,
-            width: cw - DIMENSIONS.INDENT * (depth + 1) - DIMENSIONS.ROW_PAD
-          });
-          fileLabel.textStyle = {
-            ...TEXT_STYLES.fileLabel,
-            content: item.name,
-            color: getFileColor(item.name)
-          };
-          fileRow.addChild(fileLabel);
-          subItems.push(fileRow);
-          currentY += DIMENSIONS.BOX_HEIGHT;
+    let currentY = 0;
+    if (children.length === 0) {
+      const loadingRow = createBox("file-row", {
+        id: `loading-${path}`,
+        x: 0,
+        y: currentY,
+        width: cw,
+        height: DIMENSIONS.BOX_HEIGHT,
+        backgroundColor: "transparent",
+        data: { path, loading: true }
+      });
+      const loadingLabel = createBox("file-label", {
+        id: `loading-label-${path}`,
+        x: DIMENSIONS.INDENT * (depth + 1) + DIMENSIONS.ROW_PAD,
+        width: cw - DIMENSIONS.INDENT * (depth + 1) - DIMENSIONS.ROW_PAD
+      });
+      loadingLabel.textStyle = {
+        ...TEXT_STYLES.fileLabel,
+        content: "\u2026",
+        color: COLORS.FILE
+      };
+      loadingRow.addChild(loadingLabel);
+      container.addChild(loadingRow);
+      currentY += DIMENSIONS.BOX_HEIGHT;
+      container.height = currentY;
+      return container;
+    }
+    for (const item of children) {
+      if (item.isDir) {
+        const subDepth = depth + 1;
+        const subIndent = DIMENSIONS.INDENT * subDepth + DIMENSIONS.ROW_PAD;
+        const subTitleRow = createBox("folder-row", {
+          id: `title-${item.path}`,
+          x: 0,
+          y: currentY,
+          width: cw,
+          height: DIMENSIONS.BOX_HEIGHT,
+          backgroundColor: ctx.selectedFile === item.path ? COLORS.SELECTED_BG : "transparent",
+          data: { path: item.path, isDir: true, isExpanded: !!ctx.expandedPaths[item.path] },
+          gesture: {
+            passive: true,
+            onTap: () => ctx.onDirToggle(item.path, !ctx.expandedPaths[item.path])
+          }
+        });
+        const subToggle = createBox("toggle-icon", {
+          id: `toggle-${item.path}`,
+          x: subIndent
+        });
+        subToggle.textStyle = {
+          ...TEXT_STYLES.toggleIcon,
+          content: ctx.expandedPaths[item.path] ? "\u25BC" : "\u25B6",
+          color: COLORS.ACCENT
+        };
+        subTitleRow.addChild(subToggle);
+        const subLabel = createBox("folder-label", {
+          id: `label-${item.path}`,
+          x: subIndent + DIMENSIONS.TRIANGLE_SIZE + DIMENSIONS.TRIANGLE_GAP,
+          width: cw - subIndent - DIMENSIONS.TRIANGLE_SIZE - DIMENSIONS.TRIANGLE_GAP - DIMENSIONS.ROW_PAD
+        });
+        subLabel.textStyle = {
+          ...TEXT_STYLES.folderLabel,
+          content: item.name,
+          color: COLORS.DIR
+        };
+        subTitleRow.addChild(subLabel);
+        container.addChild(subTitleRow);
+        currentY += DIMENSIONS.BOX_HEIGHT;
+        if (ctx.expandedPaths[item.path]) {
+          const children2 = (_c = (_b = (_a = KFMState.files[item.path]) == null ? void 0 : _a.children) != null ? _b : item.children) != null ? _c : [];
+          const subContainer = buildExpandedContainer(item.path, children2, subDepth, ctx);
+          subContainer.y = currentY;
+          container.addChild(subContainer);
+          currentY += subContainer.height;
         }
+      } else {
+        const fileIndent = DIMENSIONS.INDENT * (depth + 1) + DIMENSIONS.ROW_PAD;
+        const fileRow = createBox("file-row", {
+          id: `file-${item.path}`,
+          x: 0,
+          y: currentY,
+          width: cw,
+          height: DIMENSIONS.BOX_HEIGHT,
+          backgroundColor: ctx.selectedFile === item.path ? COLORS.SELECTED_BG : "transparent",
+          data: { path: item.path, isDir: false },
+          gesture: {
+            passive: true,
+            onTap: () => ctx.onFileClick(item.path)
+          }
+        });
+        const fileLabel = createBox("file-label", {
+          id: `label-${item.path}`,
+          x: fileIndent,
+          width: cw - fileIndent - DIMENSIONS.ROW_PAD
+        });
+        fileLabel.textStyle = {
+          ...TEXT_STYLES.fileLabel,
+          content: item.name,
+          color: getFileColor(item.name)
+        };
+        fileRow.addChild(fileLabel);
+        container.addChild(fileRow);
+        currentY += DIMENSIONS.BOX_HEIGHT;
       }
     }
-    for (const child of subItems) {
-      titleRow.addChild(child);
-    }
-    const totalChildrenHeight = subItems.reduce((sum, c) => sum + c.height, 0);
-    titleRow.height = DIMENSIONS.BOX_HEIGHT + totalChildrenHeight;
-    titleRow.highlight = {
-      color: COLORS.ACCENT,
-      width: 3,
-      side: "left"
-    };
-    return titleRow;
+    container.height = currentY;
+    return container;
   }
   function buildTree(items, options = {}) {
+    var _a, _b;
     const {
-      expandedPaths,
+      expandedPaths = {},
       selectedFile = null,
       onDirToggle = () => {
       },
@@ -4890,7 +4936,7 @@
       scrollable = true
     } = options;
     const ctx = {
-      expandedPaths: expandedPaths != null ? expandedPaths : {},
+      expandedPaths,
       selectedFile,
       onDirToggle,
       onFileClick,
@@ -4906,14 +4952,59 @@
     let currentY = 0;
     for (const item of items) {
       if (item.isDir) {
-        const folderBox = buildFolderBox(item.path, item.name, item.children || [], baseDepth, ctx);
-        folderBox.y = currentY;
-        rootBox.addChild(folderBox);
-        currentY += folderBox.height;
+        const indent = DIMENSIONS.INDENT * baseDepth + DIMENSIONS.ROW_PAD;
+        const titleRow = createBox("folder-row", {
+          id: `title-${item.path}`,
+          x: 0,
+          y: currentY,
+          width: containerWidth,
+          height: DIMENSIONS.BOX_HEIGHT,
+          backgroundColor: ctx.selectedFile === item.path ? COLORS.SELECTED_BG : "transparent",
+          data: { path: item.path, isDir: true, isExpanded: !!ctx.expandedPaths[item.path] },
+          gesture: {
+            passive: true,
+            onTap: () => ctx.onDirToggle(item.path, !ctx.expandedPaths[item.path])
+          }
+        });
+        const toggleIcon = createBox("toggle-icon", {
+          id: `toggle-${item.path}`,
+          x: indent
+        });
+        toggleIcon.textStyle = {
+          ...TEXT_STYLES.toggleIcon,
+          content: ctx.expandedPaths[item.path] ? "\u25BC" : "\u25B6",
+          color: COLORS.ACCENT
+        };
+        titleRow.addChild(toggleIcon);
+        const titleLabel = createBox("folder-label", {
+          id: `label-${item.path}`,
+          x: indent + DIMENSIONS.TRIANGLE_SIZE + DIMENSIONS.TRIANGLE_GAP,
+          width: containerWidth - indent - DIMENSIONS.TRIANGLE_SIZE - DIMENSIONS.TRIANGLE_GAP - DIMENSIONS.ROW_PAD
+        });
+        titleLabel.textStyle = {
+          ...TEXT_STYLES.folderLabel,
+          content: item.name,
+          color: COLORS.DIR
+        };
+        titleRow.addChild(titleLabel);
+        rootBox.addChild(titleRow);
+        currentY += DIMENSIONS.BOX_HEIGHT;
+        if (ctx.expandedPaths[item.path]) {
+          const cached = (_a = KFMState.files[item.path]) == null ? void 0 : _a.children;
+          const children = (_b = cached != null ? cached : item.children) != null ? _b : [];
+          const expandedContainer = buildExpandedContainer(item.path, children, baseDepth, ctx);
+          expandedContainer.y = currentY;
+          rootBox.addChild(expandedContainer);
+          currentY += expandedContainer.height;
+        }
       } else {
+        const indent = DIMENSIONS.INDENT * baseDepth + DIMENSIONS.ROW_PAD;
         const fileRow = createBox("file-row", {
           id: `file-${item.path}`,
+          x: 0,
           y: currentY,
+          width: containerWidth,
+          height: DIMENSIONS.BOX_HEIGHT,
           backgroundColor: ctx.selectedFile === item.path ? COLORS.SELECTED_BG : "transparent",
           data: { path: item.path, isDir: false },
           gesture: {
@@ -4923,8 +5014,8 @@
         });
         const fileLabel = createBox("file-label", {
           id: `label-${item.path}`,
-          x: DIMENSIONS.INDENT * baseDepth + DIMENSIONS.ROW_PAD,
-          width: containerWidth - DIMENSIONS.INDENT * baseDepth - DIMENSIONS.ROW_PAD
+          x: indent,
+          width: containerWidth - indent - DIMENSIONS.ROW_PAD
         });
         fileLabel.textStyle = {
           ...TEXT_STYLES.fileLabel,
@@ -4978,15 +5069,18 @@
     canvas.style.display = "block";
     fileTree.innerHTML = "";
     fileTree.appendChild(canvas);
+    const dpr = window.devicePixelRatio || 1;
     renderer = new Renderer(canvas, {
       backgroundColor: "rgba(10,10,15,0.85)",
-      dpr: window.devicePixelRatio || 1
+      dpr
     });
     rebuildTree();
+    window.__treeRenderer = renderer;
     KFMState.subscribe(() => rebuildTree());
     styleRegistry.subscribe(() => rebuildTree());
     window.addEventListener("resize", () => renderer == null ? void 0 : renderer.resize());
     bindScrollEvents(canvas);
+    bindClickEvents(canvas, dpr);
   }
   function getRootScrollY() {
     var _a, _b;
@@ -5015,6 +5109,38 @@
       const dy = touchStartY2 - e.touches[0].clientY;
       setRootScrollY(touchScrollY + dy);
     }, { passive: true });
+  }
+  function bindClickEvents(canvas, _dpr) {
+    canvas.addEventListener("click", (e) => {
+      var _a, _b;
+      if (!renderer) return;
+      const root = renderer.getRoot();
+      if (!root) return;
+      const scrollY = (_a = root.scrollY) != null ? _a : 0;
+      const px = e.offsetX;
+      const py = e.offsetY + scrollY;
+      for (const child of root.children) {
+        if (!child.visible || child.disabled) continue;
+        const hit = findTapTarget(child, px, py);
+        if ((_b = hit == null ? void 0 : hit.gesture) == null ? void 0 : _b.onTap) {
+          hit.gesture.onTap();
+          return;
+        }
+      }
+    });
+  }
+  function findTapTarget(box, px, py) {
+    var _a;
+    for (let i = box.children.length - 1; i >= 0; i--) {
+      const child = box.children[i];
+      if (!child.visible || child.disabled) continue;
+      const found = findTapTarget(child, px, py);
+      if (found) return found;
+    }
+    if (box.containsPoint(px, py) && box.interactive && ((_a = box.gesture) == null ? void 0 : _a.onTap)) {
+      return box;
+    }
+    return null;
   }
   function rebuildTree() {
     if (!renderer) return;
@@ -7174,24 +7300,59 @@
       return false;
     }
   }
-  async function loadFileTree(rootPath, _maxDepth = 0) {
+  async function ensureDirLoadedRecursive(path) {
+    if (!KFMState.expandedPaths[path]) return;
+    const loaded = await fetchDir(path);
+    if (!loaded) return;
+    const node = KFMState.files[path];
+    if (node == null ? void 0 : node.children) {
+      const loadPromises = [];
+      for (const child of node.children) {
+        if (child.isDir && KFMState.expandedPaths[child.path]) {
+          loadPromises.push(ensureDirLoadedRecursive(child.path));
+        }
+      }
+      if (loadPromises.length > 0) {
+        await Promise.all(loadPromises);
+      }
+    }
+  }
+  async function loadFileTree(rootPath) {
     await fetchDir(rootPath);
+    const rootNode = KFMState.files[rootPath];
+    if (rootNode == null ? void 0 : rootNode.children) {
+      const loadPromises = [];
+      for (const child of rootNode.children) {
+        if (child.isDir && KFMState.expandedPaths[child.path]) {
+          loadPromises.push(ensureDirLoadedRecursive(child.path));
+        }
+      }
+      if (loadPromises.length > 0) {
+        await Promise.all(loadPromises);
+      }
+    }
     KFMState.notify();
   }
-  function ensureDirLoaded(path) {
-    var _a, _b;
-    if (!KFMState.expandedPaths[path]) return;
-    if (((_b = (_a = KFMState.files[path]) == null ? void 0 : _a.children) == null ? void 0 : _b.length) !== void 0) return;
-    fetchDir(path).then(() => {
-      KFMState.notify();
-    });
+  async function loadLayerByLayer(path) {
+    KFMState.notify();
+    const loaded = await fetchDir(path);
+    if (!loaded) return;
+    KFMState.notify();
+    const node = KFMState.files[path];
+    if (node == null ? void 0 : node.children) {
+      for (const child of node.children) {
+        if (child.isDir && KFMState.expandedPaths[child.path]) {
+          await loadLayerByLayer(child.path);
+        }
+      }
+    }
   }
   function initLazyLoader() {
     const originalSetExpanded = KFMState.setExpanded.bind(KFMState);
     KFMState.setExpanded = function(path, expanded) {
       originalSetExpanded(path, expanded);
       if (expanded) {
-        ensureDirLoaded(path);
+        loadLayerByLayer(path).catch(console.error);
       }
     };
   }

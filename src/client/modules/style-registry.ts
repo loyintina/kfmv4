@@ -139,6 +139,14 @@ const templates: Record<string, Record<string, any>> = {
     interactive: false,
   },
 
+  // 文件夹容器（带紫色左边框的外层盒子）
+  'folder-container': {
+    width: DIMENSIONS.SIDEBAR_WIDTH,
+    backgroundColor: 'transparent',
+    borderRadius: 0,
+    overflow: 'hidden',
+  },
+
   // 根容器
   'sidebar-root': {
     width: DIMENSIONS.SIDEBAR_WIDTH,
