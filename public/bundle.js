@@ -4720,14 +4720,14 @@
     CANVAS_BG: "rgba(10,10,15,0.85)"
   };
   var FONT = "11px system-ui, sans-serif";
-  var LINE_HEIGHT = 16;
+  var LINE_HEIGHT = 20;
   var MAX_LINES = 2;
   var TEXT_STYLES = {
     folderLabel: {
       font: FONT,
       lineHeight: LINE_HEIGHT,
       align: "left",
-      verticalAlign: "top",
+      verticalAlign: "middle",
       overflow: "ellipsis",
       maxLines: MAX_LINES
     },
@@ -4735,7 +4735,7 @@
       font: FONT,
       lineHeight: LINE_HEIGHT,
       align: "left",
-      verticalAlign: "top",
+      verticalAlign: "middle",
       overflow: "ellipsis",
       maxLines: MAX_LINES
     },
@@ -4958,7 +4958,7 @@
       data: { path: item.path, isDir: true, isExpanded: ex, depth, lineCount: actualLines },
       gesture: { passive: true, onTap: () => ctx.onDirToggle(item.path, !ex) }
     });
-    const tog = createBox("toggle-icon", { id: `toggle-${item.path}`, x: T_OFF, y: 3 });
+    const tog = createBox("toggle-icon", { id: `toggle-${item.path}`, x: T_OFF, y: 0, height: rowHeight });
     tog.textStyle = { ...TEXT_STYLES.toggleIcon, content: ex ? "\u25BC" : "\u25B6", color: "#00d4ff" };
     row.addChild(tog);
     const label = createBox("folder-label", { id: `label-${item.path}`, x: TXT_L, width: maxWidth, height: rowHeight });
@@ -5097,7 +5097,7 @@
       data: { path: item.path, isDir: true, isExpanded: ex, depth, lineCount: actualLines },
       gesture: { passive: true, onTap: () => ctx.onDirToggle(item.path, !ex) }
     });
-    const tog = createBox("toggle-icon", { id: `toggle-${item.path}`, x: T_OFF, y: 3 });
+    const tog = createBox("toggle-icon", { id: `toggle-${item.path}`, x: T_OFF, y: 0, height: rowHeight });
     tog.textStyle = { ...TEXT_STYLES.toggleIcon, content: ex ? "\u25BC" : "\u25B6", color: "#00d4ff" };
     row.addChild(tog);
     const label = createBox("folder-label", { id: `label-${item.path}`, x: TXT_L, width: maxWidth, height: rowHeight });

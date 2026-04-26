@@ -84,7 +84,7 @@ function innerFolderRow(item: FileNode, y: number, cw: number, ctx: BuildCtx, de
     data: { path: item.path, isDir: true, isExpanded: ex, depth, lineCount: actualLines },
     gesture: { passive: true, onTap: () => ctx.onDirToggle(item.path, !ex) },
   });
-  const tog = createBox('toggle-icon', { id: `toggle-${item.path}`, x: T_OFF, y: 3 });
+  const tog = createBox('toggle-icon', { id: `toggle-${item.path}`, x: T_OFF, y: 0, height: rowHeight });
   tog.textStyle = { ...TEXT_STYLES.toggleIcon, content: ex ? '▼' : '▶', color: '#00d4ff' };  row.addChild(tog);
   const label = createBox('folder-label', { id: `label-${item.path}`, x: TXT_L, width: maxWidth, height: rowHeight });
   label.textStyle = { ...TEXT_STYLES.folderLabel, content: item.name, color: '#e8e0f0' };
@@ -211,7 +211,7 @@ function container_AddRootFolderRow(parent: Box, item: FileNode, y: number, dept
     data: { path: item.path, isDir: true, isExpanded: ex, depth, lineCount: actualLines },
     gesture: { passive: true, onTap: () => ctx.onDirToggle(item.path, !ex) },
   });
-  const tog = createBox('toggle-icon', { id: `toggle-${item.path}`, x: T_OFF, y: 3 });
+  const tog = createBox('toggle-icon', { id: `toggle-${item.path}`, x: T_OFF, y: 0, height: rowHeight });
   tog.textStyle = { ...TEXT_STYLES.toggleIcon, content: ex ? '▼' : '▶', color: '#00d4ff' };
   row.addChild(tog);
   const label = createBox('folder-label', { id: `label-${item.path}`, x: TXT_L, width: maxWidth, height: rowHeight });

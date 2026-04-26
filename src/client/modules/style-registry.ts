@@ -57,7 +57,7 @@ export const COLORS = {
 export const FONT = '11px system-ui, sans-serif';
 
 // 多行换行参数：行高 16px，最多 2 行
-export const LINE_HEIGHT = 16;
+export const LINE_HEIGHT = 20;
 export const MAX_LINES = 2;
 
 export const TEXT_STYLES = {
@@ -65,7 +65,7 @@ export const TEXT_STYLES = {
     font: FONT,
     lineHeight: LINE_HEIGHT,
     align: 'left',
-    verticalAlign: 'top',
+    verticalAlign: 'middle',
     overflow: 'ellipsis',
     maxLines: MAX_LINES,
   } as TextStyle,
@@ -74,7 +74,7 @@ export const TEXT_STYLES = {
     font: FONT,
     lineHeight: LINE_HEIGHT,
     align: 'left',
-    verticalAlign: 'top',
+    verticalAlign: 'middle',
     overflow: 'ellipsis',
     maxLines: MAX_LINES,
   } as TextStyle,
