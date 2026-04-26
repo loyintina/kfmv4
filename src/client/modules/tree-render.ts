@@ -306,11 +306,19 @@ function bindClickEvents(canvas: HTMLCanvasElement, _dpr: number): void {
               
               if (container) {
                 const fullH = container.height;
+                // 记录子项原始 y
+                const origYs = container.children.map(c => c.y);
                 tl.to(container, {
                   height: 0,
-                  duration: 0.25,
+                  duration: 0.3,
                   ease: 'power2.in',
-                  onUpdate: () => { if (renderer) renderer.setRoot(renderer.getRoot()!); },
+                  onUpdate: function() {
+                    const offset = container.height - fullH;  // 0 → -fullH
+                    for (let i = 0; i < container.children.length; i++) {
+                      container.children[i].y = origYs[i] + offset;
+                    }
+                    renderer?.setRoot(renderer!.getRoot()!);
+                  },
                 }, 0);
               }
               
@@ -350,7 +358,7 @@ function bindClickEvents(canvas: HTMLCanvasElement, _dpr: number): void {
   });
 }
 
-/** 递归找有 onTap 回调的命���节点 */
+/** 递归找有 onTap 回调的命�����节点 */
 function findTapTarget(box: Box, px: number, py: number): Box | null {
   for (let i = box.children.length - 1; i >= 0; i--) {
     const child = box.children[i];

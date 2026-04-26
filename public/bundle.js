@@ -9668,12 +9668,17 @@
                 }
                 if (container) {
                   const fullH = container.height;
+                  const origYs = container.children.map((c) => c.y);
                   tl.to(container, {
                     height: 0,
-                    duration: 0.25,
+                    duration: 0.3,
                     ease: "power2.in",
-                    onUpdate: () => {
-                      if (renderer) renderer.setRoot(renderer.getRoot());
+                    onUpdate: function() {
+                      const offset = container.height - fullH;
+                      for (let i = 0; i < container.children.length; i++) {
+                        container.children[i].y = origYs[i] + offset;
+                      }
+                      renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
                     }
                   }, 0);
                 }
