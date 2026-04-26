@@ -10,6 +10,7 @@ import { Renderer } from '../engine/v2/renderer.js';
 import { Box } from '../engine/v2/box.js';
 import { buildSidebarTree, getShift } from './tree-model.js';
 import { KFMState } from './state.js';
+import gsap from 'gsap';
 import { styleRegistry, LINE_HEIGHT, MAX_LINES } from './style-registry.js';
 import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
 
@@ -265,8 +266,33 @@ function bindClickEvents(canvas: HTMLCanvasElement, _dpr: number): void {
       if (hit?.gesture?.onTap) {
         // 光标逻辑：第一次点击移动光标，第二次同一行才执行
         if (cursorRowId !== null && cursorRowId === hit.id) {
-          // 第二次点击同一行 → 执行 onTap
-          hit.gesture.onTap();
+          // 第二次点击同一行 → 目录展开/折叠动画
+          const hitData = (hit as any).data || {};
+          const isDir = hitData.isDir;
+          const isExpanded = hitData.isExpanded;
+          
+          if (isDir) {
+            // 找到 toggle-icon
+            const tog = hit.children.find(c => c.id?.startsWith('toggle-'));
+            const targetRotate = isExpanded ? 0 : Math.PI / 2;
+            
+            if (tog) {
+              gsap.to(tog.transform, {
+                rotate: targetRotate,
+                duration: 0.25,
+                ease: 'power2.out',
+                onUpdate: () => { if (renderer) renderer.setRoot(renderer.getRoot()!); },
+                onComplete: () => {
+                  // 旋转完成后执行 toggle
+                  hit.gesture!.onTap!();
+                },
+              });
+            } else {
+              hit.gesture.onTap();
+            }
+          } else {
+            hit.gesture.onTap();
+          }
         } else {
           // 第一次点击或切换行 → 移动光标
           moveCursorTo(hit);

@@ -1,13 +1,5 @@
 /**
  * tree-model.ts — 绝对深度布局
- * 
- * 核心规则（利用引擎 getBounds() 自动累加父节点偏移）：
- * 1. rootBox.x = 0
- * 2. 根层行（挂在 rootBox 下）: x = absX(depth)
- * 3. 展开容器（挂在 rootBox 下）: x = absX(depth)
- * 4. 展开容器内部子行: x = 0, width = container.width
- * 5. 子展开容器（挂在父容器内）: x = SHIFT (18px)
- * 这样每层容器只需偏移 18px，引擎自动累加出正确的绝对位置。
  */
 
 import { Box } from '../engine/v2/box.js';
@@ -44,15 +36,13 @@ const TXT_L = 26;
 
 function absX(d: number): number { let x = 0; for (let i = 0; i < d; i++) x += getShift(i); return x; }
 
-/** 深度渐变：缩进越密集（SHIFT越小）→ density越高 → 颜色越深 */
 function depthGradient(depth: number) {
   const shift = getShift(depth);
-  const density = 1 - shift / 18;  // 0=最宽层，1=最密层
+  const density = 1 - shift / 18;
   const topA = (0.02 + density * 0.18).toFixed(3);
   const botA = (0.08 + density * 0.35).toFixed(3);
   return {
-    type: 'linear' as const,
-    angle: 180,
+    type: 'linear' as const, angle: 180,
     stops: [
       { offset: 0, color: `rgba(124,58,237,${topA})` },
       { offset: 1, color: `rgba(124,58,237,${botA})` },
@@ -60,16 +50,19 @@ function depthGradient(depth: number) {
   };
 }
 
-// ============================================================
-// 容器内部行构建（x=0 相对容器）
-// ============================================================
-
-/** 计算文本需要的行数和高度 */
 function calcTextLayout(name: string, maxWidth: number): { lines: number, height: number } {
   const prepared = prepareWithSegments(name, FONT);
   const { lines } = layoutWithLines(prepared, maxWidth, LINE_HEIGHT);
   const actualLines = Math.min(lines.length, MAX_LINES);
-  return { lines: actualLines, height: actualLines * LINE_HEIGHT + 6 };  // +6 是上下 padding
+  return { lines: actualLines, height: actualLines * LINE_HEIGHT + 6 };
+}
+
+/** 创建 toggle-icon 并设置初始旋转状态 */
+function createToggle(item: FileNode, rowHeight: number, ex: boolean): Box {
+  const tog = createBox('toggle-icon', { id: `toggle-${item.path}`, x: T_OFF, y: 0, height: rowHeight });
+  tog.textStyle = { ...TEXT_STYLES.toggleIcon, content: '\u25b6', color: '#00d4ff' };
+  if (ex) tog.transform.rotate = Math.PI / 2;  // 已展开时初始旋转 90°
+  return tog;
 }
 
 function innerFolderRow(item: FileNode, y: number, cw: number, ctx: BuildCtx, depth: number): Box {
@@ -84,8 +77,7 @@ function innerFolderRow(item: FileNode, y: number, cw: number, ctx: BuildCtx, de
     data: { path: item.path, isDir: true, isExpanded: ex, depth, lineCount: actualLines },
     gesture: { passive: true, onTap: () => ctx.onDirToggle(item.path, !ex) },
   });
-  const tog = createBox('toggle-icon', { id: `toggle-${item.path}`, x: T_OFF, y: 0, height: rowHeight });
-  tog.textStyle = { ...TEXT_STYLES.toggleIcon, content: ex ? '▼' : '▶', color: '#00d4ff' };  row.addChild(tog);
+  row.addChild(createToggle(item, rowHeight, ex));
   const label = createBox('folder-label', { id: `label-${item.path}`, x: TXT_L, width: maxWidth, height: rowHeight });
   label.textStyle = { ...TEXT_STYLES.folderLabel, content: item.name, color: '#e8e0f0' };
   row.addChild(label);
@@ -109,13 +101,6 @@ function innerFileRow(item: FileNode, y: number, cw: number, ctx: BuildCtx, dept
   return row;
 }
 
-// ============================================================
-// 展开容器
-// relX: 相对于父节点的偏移
-//   - 挂在 rootBox: absX(depth)
-//   - 挂在父容器: SHIFT
-// ============================================================
-
 function buildExpanded(path: string, children: FileNode[], ctx: BuildCtx, depth: number, relX: number, parentWidth?: number): Box {
   const w = (parentWidth ?? ctx.rightMargin) - relX;
   const density = 1 - getShift(depth) / 18;
@@ -127,18 +112,14 @@ function buildExpanded(path: string, children: FileNode[], ctx: BuildCtx, depth:
     shadow: { color: 'rgba(0,0,0,0.5)', blur: 12, offsetX: -4, offsetY: 0 },
   });
   container.kfmStyle = resolveStyle('left-emphasis-rest-hidden', {
-    borderColor: `rgba(180,130,255,${borderOp})`,
-    emphasisScale: 2,
-    cornerRadius: 4,
+    borderColor: `rgba(180,130,255,${borderOp})`, emphasisScale: 2, cornerRadius: 4,
   });
 
   let cy = 0;
-
-  // 无数据 → 占位行
   if (children.length === 0) {
     const lr = createBox('file-row', { id: `loading-${path}`, x: TXT_L, y: 0, width: w - TXT_L, height: LINE_HEIGHT + 6 });
     const lb = createBox('file-label', { id: `loading-label-${path}`, x: 0, width: lr.width - 8, height: lr.height });
-    lb.textStyle = { ...TEXT_STYLES.fileLabel, content: '…', color: '#e8e0f0' };
+    lb.textStyle = { ...TEXT_STYLES.fileLabel, content: '\u2026', color: '#e8e0f0' };
     lr.addChild(lb); container.addChild(lr); container.height = LINE_HEIGHT + 10;
     return container;
   }
@@ -147,7 +128,7 @@ function buildExpanded(path: string, children: FileNode[], ctx: BuildCtx, depth:
     if (item.isDir) {
       const folderRow = innerFolderRow(item, cy, w, ctx, depth);
       container.addChild(folderRow);
-      cy += folderRow.height;  // 动态高度
+      cy += folderRow.height;
       if (ctx.expandedPaths[item.path]) {
         const ch = KFMState.files[item.path]?.children ?? item.children ?? [];
         const sub = buildExpanded(item.path, ch, ctx, depth + 1, getShift(depth), w);
@@ -156,17 +137,12 @@ function buildExpanded(path: string, children: FileNode[], ctx: BuildCtx, depth:
     } else {
       const fileRow = innerFileRow(item, cy, w, ctx, depth);
       container.addChild(fileRow);
-      cy += fileRow.height;  // 动态高度
+      cy += fileRow.height;
     }
   }
-
   container.height = cy;
   return container;
 }
-
-// ============================================================
-// buildTree
-// ============================================================
 
 export function buildTree(items: FileNode[], options: TreeOptions = {}): Box {
   const {
@@ -182,7 +158,7 @@ export function buildTree(items: FileNode[], options: TreeOptions = {}): Box {
   for (const item of items) {
     if (item.isDir) {
       const folderRow = container_AddRootFolderRow(rootBox, item, cy, baseDepth, containerWidth, ctx);
-      cy += folderRow.height;  // 动态高度
+      cy += folderRow.height;
       if (ctx.expandedPaths[item.path]) {
         const ch = KFMState.files[item.path]?.children ?? item.children ?? [];
         const c = buildExpanded(item.path, ch, ctx, baseDepth, absX(baseDepth) + getShift(baseDepth));
@@ -190,7 +166,7 @@ export function buildTree(items: FileNode[], options: TreeOptions = {}): Box {
       }
     } else {
       const fileRow = container_AddRootFileRow(rootBox, item, cy, baseDepth, containerWidth, ctx);
-      cy += fileRow.height;  // 动态高度
+      cy += fileRow.height;
     }
   }
   rootBox.height = cy; rootBox.scrollY = 0;
@@ -211,9 +187,7 @@ function container_AddRootFolderRow(parent: Box, item: FileNode, y: number, dept
     data: { path: item.path, isDir: true, isExpanded: ex, depth, lineCount: actualLines },
     gesture: { passive: true, onTap: () => ctx.onDirToggle(item.path, !ex) },
   });
-  const tog = createBox('toggle-icon', { id: `toggle-${item.path}`, x: T_OFF, y: 0, height: rowHeight });
-  tog.textStyle = { ...TEXT_STYLES.toggleIcon, content: ex ? '▼' : '▶', color: '#00d4ff' };
-  row.addChild(tog);
+  row.addChild(createToggle(item, rowHeight, ex));
   const label = createBox('folder-label', { id: `label-${item.path}`, x: TXT_L, width: maxWidth, height: rowHeight });
   label.textStyle = { ...TEXT_STYLES.folderLabel, content: item.name, color: '#e8e0f0' };
   row.addChild(label);
