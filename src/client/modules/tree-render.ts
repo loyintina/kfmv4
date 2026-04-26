@@ -8,7 +8,7 @@
 
 import { Renderer } from '../engine/v2/renderer.js';
 import { Box } from '../engine/v2/box.js';
-import { buildSidebarTree } from './tree-model.js';
+import { buildSidebarTree, getShift } from './tree-model.js';
 import { KFMState } from './state.js';
 import { styleRegistry } from './style-registry.js';
 import { resolveStyle } from '../engine/v2/StyleConfig.js';
@@ -63,9 +63,15 @@ function moveCursorTo(hitBox: Box): void {
   const abs = hitBox.getAbsolutePosition();
   const canvas = document.getElementById('tree-canvas');
   const visibleW = canvas ? canvas.clientWidth : 280;
-  cursorBox.x = abs.x;
+
+  // 右移 shift/2，让光标左强调线居中在当前层和下一层的左强调线之间
+  const depth = (hitBox as any).data?.depth ?? 0;
+  const shift = getShift(depth);
+  const offsetX = shift / 2;
+
+  cursorBox.x = abs.x + offsetX;
   cursorBox.y = abs.y;
-  cursorBox.width = visibleW - abs.x - 3;  // 右侧留出 3px 强调线空间
+  cursorBox.width = visibleW - abs.x - offsetX - 3;  // 右侧留 3px 强调线空间
   cursorBox.height = hitBox.height;
   cursorRowId = hitBox.id || null;
 }

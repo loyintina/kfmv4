@@ -34,7 +34,7 @@ interface BuildCtx {
 }
 
 const SHIFT_TABLE = [18, 16, 14, 12, 10, 9, 8, 7, 6, 5, 4, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2];
-function getShift(depth: number): number { return SHIFT_TABLE[depth] ?? 2; }
+export function getShift(depth: number): number { return SHIFT_TABLE[depth] ?? 2; }
 const T_OFF = 12;
 const TXT_L = 26;
 
@@ -66,7 +66,7 @@ function innerFolderRow(item: FileNode, y: number, cw: number, ctx: BuildCtx, de
   const row = createBox('folder-row', {
     id: `title-${item.path}`, x: 0, y, width: cw, height: 28,
     backgroundColor: sel ? 'rgba(124,58,237,0.15)' : 'transparent',
-    data: { path: item.path, isDir: true, isExpanded: ex },
+    data: { path: item.path, isDir: true, isExpanded: ex, depth },
     gesture: { passive: true, onTap: () => ctx.onDirToggle(item.path, !ex) },
   });
   const tog = createBox('toggle-icon', { id: `toggle-${item.path}`, x: T_OFF });
@@ -83,7 +83,7 @@ function innerFileRow(item: FileNode, y: number, cw: number, ctx: BuildCtx, dept
   const row = createBox('file-row', {
     id: `file-${item.path}`, x: 0, y, width: cw, height: 28,
     backgroundColor: sel ? 'rgba(124,58,237,0.15)' : 'transparent',
-    data: { path: item.path, isDir: false },
+    data: { path: item.path, isDir: false, depth },
     gesture: { passive: true, onTap: () => ctx.onFileClick(item.path) },
   });
   const label = createBox('file-label', { id: `label-${item.path}`, x: TXT_L, width: cw - TXT_L - 8 });
@@ -187,7 +187,7 @@ function container_AddRootFolderRow(parent: Box, item: FileNode, y: number, dept
   const row = createBox('folder-row', {
     id: `title-${item.path}`, x, y, width: w, height: 28,
     backgroundColor: sel ? 'rgba(124,58,237,0.15)' : 'transparent',
-    data: { path: item.path, isDir: true, isExpanded: ex },
+    data: { path: item.path, isDir: true, isExpanded: ex, depth },
     gesture: { passive: true, onTap: () => ctx.onDirToggle(item.path, !ex) },
   });
   const tog = createBox('toggle-icon', { id: `toggle-${item.path}`, x: T_OFF });
@@ -206,7 +206,7 @@ function container_AddRootFileRow(parent: Box, item: FileNode, y: number, depth:
   const row = createBox('file-row', {
     id: `file-${item.path}`, x, y, width: w, height: 28,
     backgroundColor: sel ? 'rgba(124,58,237,0.15)' : 'transparent',
-    data: { path: item.path, isDir: false },
+    data: { path: item.path, isDir: false, depth },
     gesture: { passive: true, onTap: () => ctx.onFileClick(item.path) },
   });
   const label = createBox('file-label', { id: `label-${item.path}`, x: TXT_L, width: w - TXT_L - 8 });

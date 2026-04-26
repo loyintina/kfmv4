@@ -4870,7 +4870,7 @@
       width: cw,
       height: 28,
       backgroundColor: sel ? "rgba(124,58,237,0.15)" : "transparent",
-      data: { path: item.path, isDir: true, isExpanded: ex },
+      data: { path: item.path, isDir: true, isExpanded: ex, depth },
       gesture: { passive: true, onTap: () => ctx.onDirToggle(item.path, !ex) }
     });
     const tog = createBox("toggle-icon", { id: `toggle-${item.path}`, x: T_OFF });
@@ -4890,7 +4890,7 @@
       width: cw,
       height: 28,
       backgroundColor: sel ? "rgba(124,58,237,0.15)" : "transparent",
-      data: { path: item.path, isDir: false },
+      data: { path: item.path, isDir: false, depth },
       gesture: { passive: true, onTap: () => ctx.onFileClick(item.path) }
     });
     const label = createBox("file-label", { id: `label-${item.path}`, x: TXT_L, width: cw - TXT_L - 8 });
@@ -5002,7 +5002,7 @@
       width: w,
       height: 28,
       backgroundColor: sel ? "rgba(124,58,237,0.15)" : "transparent",
-      data: { path: item.path, isDir: true, isExpanded: ex },
+      data: { path: item.path, isDir: true, isExpanded: ex, depth },
       gesture: { passive: true, onTap: () => ctx.onDirToggle(item.path, !ex) }
     });
     const tog = createBox("toggle-icon", { id: `toggle-${item.path}`, x: T_OFF });
@@ -5024,7 +5024,7 @@
       width: w,
       height: 28,
       backgroundColor: sel ? "rgba(124,58,237,0.15)" : "transparent",
-      data: { path: item.path, isDir: false },
+      data: { path: item.path, isDir: false, depth },
       gesture: { passive: true, onTap: () => ctx.onFileClick(item.path) }
     });
     const label = createBox("file-label", { id: `label-${item.path}`, x: TXT_L, width: w - TXT_L - 8 });
@@ -5081,13 +5081,17 @@
     return cursorBox;
   }
   function moveCursorTo(hitBox) {
+    var _a, _b;
     if (!cursorBox) return;
     const abs = hitBox.getAbsolutePosition();
     const canvas = document.getElementById("tree-canvas");
     const visibleW = canvas ? canvas.clientWidth : 280;
-    cursorBox.x = abs.x;
+    const depth = (_b = (_a = hitBox.data) == null ? void 0 : _a.depth) != null ? _b : 0;
+    const shift = getShift(depth);
+    const offsetX = shift / 2;
+    cursorBox.x = abs.x + offsetX;
     cursorBox.y = abs.y;
-    cursorBox.width = visibleW - abs.x - 3;
+    cursorBox.width = visibleW - abs.x - offsetX - 3;
     cursorBox.height = hitBox.height;
     cursorRowId = hitBox.id || null;
   }
