@@ -73,7 +73,7 @@ function innerFolderRow(item: FileNode, y: number, cw: number, ctx: BuildCtx, de
   const tog = createBox('toggle-icon', { id: `toggle-${item.path}`, x: T_OFF });
   tog.textStyle = { ...TEXT_STYLES.toggleIcon, content: ex ? '▼' : '▶', color: '#00d4ff' };
   row.addChild(tog);
-  const label = createBox('folder-label', { id: `label-${item.path}`, x: TXT_L, width: cw - TXT_L - 8 });
+  const label = createBox('folder-label', { id: `label-${item.path}`, x: TXT_L, width: cw - TXT_L - 16 });
   label.textStyle = { ...TEXT_STYLES.folderLabel, content: item.name, color: '#e8e0f0' };
   row.addChild(label);
   return row;
@@ -87,7 +87,7 @@ function innerFileRow(item: FileNode, y: number, cw: number, ctx: BuildCtx, dept
     data: { path: item.path, isDir: false, depth },
     gesture: { passive: true, onTap: () => ctx.onFileClick(item.path) },
   });
-  const label = createBox('file-label', { id: `label-${item.path}`, x: TXT_L, width: cw - TXT_L - 8 });
+  const label = createBox('file-label', { id: `label-${item.path}`, x: TXT_L, width: cw - TXT_L - 16 });
   label.textStyle = { ...TEXT_STYLES.fileLabel, content: item.name, color: "#e8e0f0" };
   row.addChild(label);
   return row;
@@ -194,7 +194,7 @@ function container_AddRootFolderRow(parent: Box, item: FileNode, y: number, dept
   const tog = createBox('toggle-icon', { id: `toggle-${item.path}`, x: T_OFF });
   tog.textStyle = { ...TEXT_STYLES.toggleIcon, content: ex ? '▼' : '▶', color: '#00d4ff' };
   row.addChild(tog);
-  const label = createBox('folder-label', { id: `label-${item.path}`, x: TXT_L, width: w - TXT_L - 8 });
+  const label = createBox('folder-label', { id: `label-${item.path}`, x: TXT_L, width: w - TXT_L - 16 });
   label.textStyle = { ...TEXT_STYLES.folderLabel, content: item.name, color: '#e8e0f0' };
   row.addChild(label);
   parent.addChild(row);
@@ -210,7 +210,7 @@ function container_AddRootFileRow(parent: Box, item: FileNode, y: number, depth:
     data: { path: item.path, isDir: false, depth },
     gesture: { passive: true, onTap: () => ctx.onFileClick(item.path) },
   });
-  const label = createBox('file-label', { id: `label-${item.path}`, x: TXT_L, width: w - TXT_L - 8 });
+  const label = createBox('file-label', { id: `label-${item.path}`, x: TXT_L, width: w - TXT_L - 16 });
   label.textStyle = { ...TEXT_STYLES.fileLabel, content: item.name, color: "#e8e0f0" };
   row.addChild(label);
   parent.addChild(row);
