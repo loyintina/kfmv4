@@ -4975,7 +4975,7 @@
   }
   function buildExpanded(path, children, ctx, depth, relX, parentWidth) {
     var _a, _b, _c;
-    const w = (parentWidth != null ? parentWidth : DIMENSIONS.RIGHT_MARGIN) - relX;
+    const w = (parentWidth != null ? parentWidth : ctx.rightMargin) - relX;
     const density = 1 - getShift(depth) / 18;
     const borderOp = (0.3 + density * 0.5).toFixed(3);
     const container = createBox("folder-container", {
@@ -5032,10 +5032,11 @@
       onFileClick = () => {
       },
       baseDepth = 0,
-      containerWidth = 280,
-      scrollable = true
+      containerWidth = 295,
+      scrollable = true,
+      rightMargin = containerWidth - 8
     } = options;
-    const ctx = { expandedPaths, selectedFile, onDirToggle, onFileClick, containerWidth };
+    const ctx = { expandedPaths, selectedFile, onDirToggle, onFileClick, containerWidth, rightMargin };
     const rootBox = createBox("sidebar-root", {
       id: "file-tree-root",
       width: containerWidth,
@@ -5067,7 +5068,7 @@
   }
   function container_AddRootFolderRow(parent, item, y, depth, cw, ctx) {
     const x = absX(depth);
-    const w = DIMENSIONS.RIGHT_MARGIN - x;
+    const w = ctx.rightMargin - x;
     const ex = !!ctx.expandedPaths[item.path];
     const sel = ctx.selectedFile === item.path;
     const row = createBox("folder-row", {
@@ -5090,7 +5091,7 @@
   }
   function container_AddRootFileRow(parent, item, y, depth, cw, ctx) {
     const x = absX(depth);
-    const w = DIMENSIONS.RIGHT_MARGIN - x;
+    const w = ctx.rightMargin - x;
     const sel = ctx.selectedFile === item.path;
     const row = createBox("file-row", {
       id: `file-${item.path}`,
@@ -5107,9 +5108,10 @@
     row.addChild(label);
     parent.addChild(row);
   }
-  function buildSidebarTree(containerWidth) {
+  function buildSidebarTree(containerWidth, rightMargin) {
     var _a, _b;
     const state = KFMState;
+    const rm = rightMargin != null ? rightMargin : (containerWidth != null ? containerWidth : 295) - 8;
     return buildTree((_b = (_a = state.files["/root"]) == null ? void 0 : _a.children) != null ? _b : [], {
       expandedPaths: state.expandedPaths,
       selectedFile: state.selectedFile,
@@ -5117,7 +5119,8 @@
       onFileClick: (p) => state.selectFile(p),
       baseDepth: 0,
       containerWidth: containerWidth != null ? containerWidth : 280,
-      scrollable: true
+      scrollable: true,
+      rightMargin: rm
     });
   }
 
@@ -5352,15 +5355,16 @@
     return null;
   }
   function rebuildTree() {
-    var _a, _b;
+    var _a, _b, _c;
     if (!renderer) return;
     const prevScrollY = (_b = (_a = renderer.getRoot()) == null ? void 0 : _a.scrollY) != null ? _b : 0;
     const prevCursorRowId = cursorRowId;
     cursorBox = null;
     cursorRowId = null;
     const canvas = document.getElementById("tree-canvas");
-    const cw = 280;
-    const rootBox = buildSidebarTree(cw);
+    const cw = (_c = canvas == null ? void 0 : canvas.clientWidth) != null ? _c : 295;
+    const rightMargin = cw - 8;
+    const rootBox = buildSidebarTree(cw, rightMargin);
     if (canvas) rootBox.width = canvas.clientWidth;
     const canvasH = canvas ? canvas.clientHeight : 618;
     if (canvas) {

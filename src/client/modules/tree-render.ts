@@ -302,9 +302,10 @@ function rebuildTree(): void {
   cursorRowId = null;
 
   const canvas = document.getElementById('tree-canvas');
-  const cw = 280;
-  const rootBox = buildSidebarTree(cw);
-  // 让 rootBox 的实际宽度=canvas 宽度（扩大裁剪区域），但内部盒子保持 280 宽度
+  const cw = canvas?.clientWidth ?? 295;  // 动态宽度
+  const rightMargin = cw - 8;              // 行右边界 = 画布宽度 - 8px 留白
+  const rootBox = buildSidebarTree(cw, rightMargin);
+  // 让 rootBox 的实际宽度=canvas 宽度（扩大裁剪区域），但内部盒子保持相应比例
   if (canvas) rootBox.width = canvas.clientWidth;
   const canvasH = canvas ? canvas.clientHeight : 618;
   if (canvas) {
