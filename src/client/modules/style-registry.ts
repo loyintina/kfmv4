@@ -99,6 +99,7 @@ const templates: Record<string, Record<string, any>> = {
     backgroundColor: 'rgba(124,58,237,0.3)',
     borderRadius: 0,
     interactive: true,
+    overflow: 'hidden',
   },
 
   'file-row': {
@@ -107,6 +108,7 @@ const templates: Record<string, Record<string, any>> = {
     backgroundColor: 'rgba(124,58,237,0.3)',
     borderRadius: 0,
     interactive: true,
+    overflow: 'hidden',
   },
 
   'toggle-icon': {

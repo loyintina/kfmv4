@@ -11,6 +11,7 @@ import { Box } from '../engine/v2/box.js';
 import { buildSidebarTree, getShift } from './tree-model.js';
 import { KFMState } from './state.js';
 import { styleRegistry } from './style-registry.js';
+import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
 
 let renderer: Renderer | null = null;
 
@@ -64,15 +65,45 @@ function moveCursorTo(hitBox: Box): void {
   cursorRowId = hitBox.id || null;
 
   // 测量文字宽度，计算上下线长度
+  // 使用 @chenglou/pretext 精确排版，与渲染器 _drawText 流程 100% 一致
   const label = hitBox.children.find(c => c.id?.startsWith('label-'));
   let textW = 0;
   if (label?.textStyle?.content) {
     const ctx2d = (canvas as any)?.getContext?.('2d');
     if (ctx2d) {
-      ctx2d.font = label.textStyle.font || '11px system-ui, sans-serif';
-      const measured = ctx2d.measureText(label.textStyle.content);
+      const font = label.textStyle.font || '11px system-ui, sans-serif';
       const labelX = label.x || 0;
-      textW = labelX + measured.width;
+      const maxWidth = label.width;
+      const content = label.textStyle.content;
+
+      try {
+        // 用 Pretext 精确排版，和 renderer._drawText 一致
+        const prepared = prepareWithSegments(content, font);
+        const { lines } = layoutWithLines(prepared, maxWidth, 26);
+        const firstLine = lines[0];
+        let renderWidth = firstLine.width;
+
+        // 如果被截断（多行），模拟省略号宽度
+        if (lines.length > 1 && label.textStyle.overflow === 'ellipsis') {
+          const truncated = firstLine.text.slice(0, -1) + '…';
+          ctx2d.font = font;
+          renderWidth = ctx2d.measureText(truncated).width;
+        }
+        textW = labelX + renderWidth;
+      } catch {
+        // Pretext 失败时 fallback 到原始 measureText 截断
+        ctx2d.font = font;
+        const measured = ctx2d.measureText(content);
+        if (measured.width > maxWidth && label.textStyle.overflow === 'ellipsis') {
+          let text = content;
+          while (text.length > 0 && ctx2d.measureText(text + '…').width > maxWidth) {
+            text = text.slice(0, -1);
+          }
+          textW = labelX + ctx2d.measureText(text + '…').width;
+        } else {
+          textW = labelX + measured.width;
+        }
+      }
     }
   }
   const totalLineW = cursorBox.width;

@@ -4156,8 +4156,12 @@
       for (let i = 0; i < visibleLines.length; i++) {
         const line = visibleLines[i];
         let lineText = line.text;
-        if (style.overflow === "ellipsis" && i === maxL - 1 && lines.length > maxL) {
+        const isOverflowing = style.overflow === "ellipsis";
+        const isMultiLineTrimmed = lines.length > maxL;
+        const isSingleLineTrimmed = maxL === 1 && visibleLines.length === 1 && line.text !== style.content && !style.content.endsWith("\u2026");
+        if (isOverflowing && i === maxL - 1 && (isMultiLineTrimmed || isSingleLineTrimmed)) {
           lineText = lineText.slice(0, -1) + "\u2026";
+          line.width = this.ctx.measureText(lineText).width;
         }
         let alignX = textX;
         if (style.align === "center") {
@@ -4745,14 +4749,16 @@
       height: DIMENSIONS.BOX_HEIGHT,
       backgroundColor: "rgba(124,58,237,0.3)",
       borderRadius: 0,
-      interactive: true
+      interactive: true,
+      overflow: "hidden"
     },
     "file-row": {
       width: DIMENSIONS.SIDEBAR_WIDTH,
       height: DIMENSIONS.BOX_HEIGHT,
       backgroundColor: "rgba(124,58,237,0.3)",
       borderRadius: 0,
-      interactive: true
+      interactive: true,
+      overflow: "hidden"
     },
     "toggle-icon": {
       width: DIMENSIONS.TRIANGLE_SIZE,
@@ -5160,10 +5166,34 @@
     if ((_c = label == null ? void 0 : label.textStyle) == null ? void 0 : _c.content) {
       const ctx2d = (_d = canvas == null ? void 0 : canvas.getContext) == null ? void 0 : _d.call(canvas, "2d");
       if (ctx2d) {
-        ctx2d.font = label.textStyle.font || "11px system-ui, sans-serif";
-        const measured = ctx2d.measureText(label.textStyle.content);
+        const font = label.textStyle.font || "11px system-ui, sans-serif";
         const labelX = label.x || 0;
-        textW = labelX + measured.width;
+        const maxWidth = label.width;
+        const content = label.textStyle.content;
+        try {
+          const prepared = prepareWithSegments(content, font);
+          const { lines } = layoutWithLines(prepared, maxWidth, 26);
+          const firstLine = lines[0];
+          let renderWidth2 = firstLine.width;
+          if (lines.length > 1 && label.textStyle.overflow === "ellipsis") {
+            const truncated = firstLine.text.slice(0, -1) + "\u2026";
+            ctx2d.font = font;
+            renderWidth2 = ctx2d.measureText(truncated).width;
+          }
+          textW = labelX + renderWidth2;
+        } catch {
+          ctx2d.font = font;
+          const measured = ctx2d.measureText(content);
+          if (measured.width > maxWidth && label.textStyle.overflow === "ellipsis") {
+            let text = content;
+            while (text.length > 0 && ctx2d.measureText(text + "\u2026").width > maxWidth) {
+              text = text.slice(0, -1);
+            }
+            textW = labelX + ctx2d.measureText(text + "\u2026").width;
+          } else {
+            textW = labelX + measured.width;
+          }
+        }
       }
     }
     const totalLineW = cursorBox.width;
