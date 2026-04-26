@@ -156,7 +156,7 @@ export function buildTree(items: FileNode[], options: TreeOptions = {}): Box {
   } = options;
   const ctx: BuildCtx = { expandedPaths, selectedFile, onDirToggle, onFileClick, containerWidth };
   const rootBox = createBox('sidebar-root', {
-    id: 'file-tree-root', width: containerWidth, scrollable, scrollY: 0, height: 0,
+    id: 'file-tree-root', width: containerWidth, scrollable, scrollY: 0, height: 0, scrollbarVisible: false,
   });
 
   let cy = 0;

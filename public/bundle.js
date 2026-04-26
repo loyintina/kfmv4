@@ -4966,7 +4966,8 @@
       width: containerWidth,
       scrollable,
       scrollY: 0,
-      height: 0
+      height: 0,
+      scrollbarVisible: false
     });
     let cy = 0;
     for (const item of items) {
@@ -5047,6 +5048,49 @@
 
   // src/client/modules/tree-render.ts
   var renderer = null;
+  var cursorBox = null;
+  var cursorRowId = null;
+  function ensureCursorBox(root, canvasH) {
+    var _a;
+    if (cursorBox) {
+      if (root.children.includes(cursorBox)) return cursorBox;
+    }
+    const cursorStyle = resolveStyle("default", {
+      border: { left: "emphasis", right: "emphasis", top: "normal", bottom: "normal" },
+      borderWidth: 1,
+      emphasisScale: 3,
+      cornerRadius: 4,
+      borderColor: "rgba(0,212,255,0.7)",
+      background: "none",
+      backgroundOpacity: 0,
+      glowEnabled: false
+    });
+    cursorBox = new Box({
+      id: "cursor-highlight",
+      x: 0,
+      y: canvasH / 2 - 14,
+      width: (((_a = document.getElementById("tree-canvas")) == null ? void 0 : _a.clientWidth) || 280) - 3,
+      height: 28,
+      backgroundColor: "transparent",
+      borderRadius: 4,
+      interactive: false,
+      visible: true,
+      kfmStyle: cursorStyle
+    });
+    root.addChild(cursorBox);
+    return cursorBox;
+  }
+  function moveCursorTo(hitBox) {
+    if (!cursorBox) return;
+    const abs = hitBox.getAbsolutePosition();
+    const canvas = document.getElementById("tree-canvas");
+    const visibleW = canvas ? canvas.clientWidth : 280;
+    cursorBox.x = abs.x;
+    cursorBox.y = abs.y;
+    cursorBox.width = visibleW - abs.x - 3;
+    cursorBox.height = hitBox.height;
+    cursorRowId = hitBox.id || null;
+  }
   function onSidebarOpen() {
     requestAnimationFrame(() => requestAnimationFrame(() => {
       renderer == null ? void 0 : renderer.resize();
@@ -5172,7 +5216,11 @@
         if (!child.visible || child.disabled) continue;
         const hit = findTapTarget(child, px, py);
         if ((_b = hit == null ? void 0 : hit.gesture) == null ? void 0 : _b.onTap) {
-          hit.gesture.onTap();
+          if (cursorRowId !== null && cursorRowId === hit.id) {
+            hit.gesture.onTap();
+          } else {
+            moveCursorTo(hit);
+          }
           return;
         }
       }
@@ -5195,10 +5243,14 @@
     var _a, _b;
     if (!renderer) return;
     const prevScrollY = (_b = (_a = renderer.getRoot()) == null ? void 0 : _a.scrollY) != null ? _b : 0;
+    const prevCursorRowId = cursorRowId;
+    cursorBox = null;
+    cursorRowId = null;
     const rootBox = buildSidebarTree();
     const canvas = document.getElementById("tree-canvas");
+    const canvasH = canvas ? canvas.clientHeight : 618;
     if (canvas) {
-      rootBox.height = canvas.clientHeight || 618;
+      rootBox.height = canvasH;
     }
     renderer.setRoot(rootBox);
     const newRoot = renderer.getRoot();
@@ -5206,9 +5258,55 @@
       const maxY = newRoot.getMaxScroll().maxY;
       newRoot.scrollY = Math.min(prevScrollY, maxY);
     }
+    if (newRoot) {
+      ensureCursorBox(newRoot, canvasH);
+      if (prevCursorRowId) {
+        const target = findBoxById(newRoot, prevCursorRowId);
+        if (target) {
+          moveCursorTo(target);
+        } else {
+          snapToCenterRow(newRoot, canvasH);
+        }
+      } else {
+        snapToCenterRow(newRoot, canvasH);
+      }
+    }
     if (!renderer.isRunning) {
       renderer.start();
     }
+  }
+  function findBoxById(root, id) {
+    for (const child of root.children) {
+      if (child.id === id) return child;
+      const found = findBoxById(child, id);
+      if (found) return found;
+    }
+    return null;
+  }
+  function snapToCenterRow(root, canvasH) {
+    var _a;
+    const scrollY = (_a = root.scrollY) != null ? _a : 0;
+    const centerY = scrollY + canvasH / 2;
+    let closest = null;
+    let closestDist = Infinity;
+    function walk(box) {
+      var _a2;
+      for (const child of box.children) {
+        if (!child.visible || child.disabled) continue;
+        if (child.interactive && ((_a2 = child.gesture) == null ? void 0 : _a2.onTap)) {
+          const abs = child.getAbsolutePosition();
+          const rowCenter = abs.y + child.height / 2;
+          const dist = Math.abs(rowCenter - centerY);
+          if (dist < closestDist) {
+            closestDist = dist;
+            closest = child;
+          }
+        }
+        walk(child);
+      }
+    }
+    walk(root);
+    if (closest) moveCursorTo(closest);
   }
 
   // src/client/modules/ui.ts
