@@ -9770,11 +9770,20 @@
       if (container) {
         const fullHeight = container.height;
         container.height = 0;
+        const origYs = [];
+        for (const child of container.children) {
+          origYs.push(child.y);
+          child.y = child.y - fullHeight;
+        }
         gsapWithCSS.to(container, {
           height: fullHeight,
           duration: 0.35,
           ease: "power2.out",
-          onUpdate: () => {
+          onUpdate: function() {
+            const offset = container.height - fullHeight;
+            for (let i = 0; i < container.children.length; i++) {
+              container.children[i].y = origYs[i] + offset;
+            }
             renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
           },
           onComplete: () => {

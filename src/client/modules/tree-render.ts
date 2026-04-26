@@ -350,7 +350,7 @@ function bindClickEvents(canvas: HTMLCanvasElement, _dpr: number): void {
   });
 }
 
-/** 递归找有 onTap 回调的命中节点 */
+/** 递归找有 onTap 回调的命���节点 */
 function findTapTarget(box: Box, px: number, py: number): Box | null {
   for (let i = box.children.length - 1; i >= 0; i--) {
     const child = box.children[i];
@@ -421,18 +421,30 @@ function rebuildTree(): void {
     renderer.start();
   }
 
-  // 展开动画：容器从 height=0 平滑拉出到最终高度
+  // 展开动画：容器从 height=0 平滑拉出到最终高度，子项跟随下滑
   if (animatingPath && newRoot) {
     const containerId = `expanded-${animatingPath}`;
     const container = findBoxById(newRoot, containerId);
     if (container) {
       const fullHeight = container.height;
       container.height = 0;
+      // 记录子项原始 y
+      const origYs: number[] = [];
+      for (const child of container.children) {
+        origYs.push(child.y);
+        child.y = child.y - fullHeight;  // 初始推到容器上方
+      }
       gsap.to(container, {
         height: fullHeight,
         duration: 0.35,
         ease: 'power2.out',
-        onUpdate: () => { renderer?.setRoot(renderer!.getRoot()!); },
+        onUpdate: function() {
+          const offset = container.height - fullHeight;  // -fullHeight → 0
+          for (let i = 0; i < container.children.length; i++) {
+            container.children[i].y = origYs[i] + offset;
+          }
+          renderer?.setRoot(renderer!.getRoot()!);
+        },
         onComplete: () => { animatingPath = null; },
       });
     } else {
