@@ -327,23 +327,7 @@ function bindClickEvents(canvas: HTMLCanvasElement, _dpr: number): void {
             } else {
               // ========== 展开：先 toggle → rebuild → 三角旋转+容器展开并行 ==========
               animatingPath = hitData.path;
-              hit.gesture!.onTap!();  // 同步 rebuild，rebuildTree 会检测 animatingPath 做动画
-              // rebuild 后新树已渲染，找到新 toggle 做旋转
-              if (tog) {
-                // 旧的 toggle 已被 rebuild 销毁，从新树中找
-                const newRoot = renderer!.getRoot()!;
-                const newRow = findBoxById(newRoot, hit.id);
-                const newTog = newRow?.children?.find(c => c.id?.startsWith('toggle-'));
-                if (newTog) {
-                  newTog.transform.rotate = 0;  // 从 0 开始旋转
-                  gsap.to(newTog.transform, {
-                    rotate: Math.PI / 2,
-                    duration: 0.35,
-                    ease: 'power2.out',
-                    onUpdate: () => { renderer?.setRoot(renderer!.getRoot()!); },
-                  });
-                }
-              }
+              hit.gesture!.onTap!();  // rebuildTree 会检测 animatingPath 做三角旋转+容器动画
             }
           } else {
             hit.gesture.onTap();
@@ -429,10 +413,15 @@ function rebuildTree(): void {
     renderer.start();
   }
 
-  // 展开动画：容器从 height=0 平滑拉出到最终高度，子项跟随下滑
+  // 展开动画：容器从 height=0 平滑拉出到最终高度，子项跟随下滑，三角形旋转
   if (animatingPath && newRoot) {
     const containerId = `expanded-${animatingPath}`;
     const container = findBoxById(newRoot, containerId);
+    // 找到对应的 toggle
+    const titleId = `title-${animatingPath}`;
+    const titleRow = findBoxById(newRoot, titleId);
+    const tog = titleRow?.children?.find(c => c.id?.startsWith('toggle-'));
+    
     if (container) {
       const fullHeight = container.height;
       container.height = 0;
@@ -441,6 +430,16 @@ function rebuildTree(): void {
       for (const child of container.children) {
         origYs.push(child.y);
         child.y = child.y - fullHeight;  // 初始推到容器上方
+      }
+      // 三角形从 0 旋转到 90°
+      if (tog) {
+        tog.transform.rotate = 0;
+        gsap.to(tog.transform, {
+          rotate: Math.PI / 2,
+          duration: 0.35,
+          ease: 'power2.out',
+          onUpdate: () => { renderer?.setRoot(renderer!.getRoot()!); },
+        });
       }
       gsap.to(container, {
         height: fullHeight,
