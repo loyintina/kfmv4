@@ -679,16 +679,12 @@ export class Renderer {
       const line = visibleLines[i];
       let lineText = line.text;
 
-      // 省略号：两种情形
-      // 1) 多行截断：最后一行被截断
-      // 2) 单行截断：maxLines=1 且第一行文本被 Pretext 截断（不等于原始 content）
+      // 省略号：当排版宽度达到或超过 maxWidth 时表示被截断
+      // 注意：单行情况下 Pretext 返回 line.text 可能仍是原始文本，不能靠字符串比较
       const isOverflowing = style.overflow === 'ellipsis';
-      const isMultiLineTrimmed = lines.length > maxL;
-      const isSingleLineTrimmed = maxL === 1 && visibleLines.length === 1 &&
-        line.text !== style.content && !style.content.endsWith('…');
-      if (isOverflowing && i === maxL - 1 && (isMultiLineTrimmed || isSingleLineTrimmed)) {
+      const isTrimmed = lines.length > maxL || (maxL === 1 && line.width >= maxWidth - 2);
+      if (isOverflowing && i === maxL - 1 && isTrimmed) {
         lineText = lineText.slice(0, -1) + '…';
-        // 重新测量带省略号后的宽度，对齐保持正确
         line.width = this.ctx.measureText(lineText).width;
       }
 

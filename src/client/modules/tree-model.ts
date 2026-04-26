@@ -13,6 +13,7 @@
 import { Box } from '../engine/v2/box.js';
 import { KFMState, type FileNode } from './state.js';
 import { DIMENSIONS, COLORS, TEXT_STYLES, getFileColor, createBox } from './style-registry.js';
+import { DIMENSIONS as D } from './style-registry.js';
 import { resolveStyle } from '../engine/v2/StyleConfig.js';
 
 export interface TreeOptions {
@@ -99,8 +100,8 @@ function innerFileRow(item: FileNode, y: number, cw: number, ctx: BuildCtx, dept
 //   - 挂在父容器: SHIFT
 // ============================================================
 
-function buildExpanded(path: string, children: FileNode[], ctx: BuildCtx, depth: number, relX: number): Box {
-  const w = ctx.containerWidth - absX(depth);
+function buildExpanded(path: string, children: FileNode[], ctx: BuildCtx, depth: number, relX: number, parentWidth?: number): Box {
+  const w = (parentWidth ?? D.RIGHT_MARGIN) - relX;
   const density = 1 - getShift(depth) / 18;
   const borderOp = (0.3 + density * 0.5).toFixed(3);
   const container = createBox('folder-container', {
@@ -132,7 +133,7 @@ function buildExpanded(path: string, children: FileNode[], ctx: BuildCtx, depth:
       cy += 26;
       if (ctx.expandedPaths[item.path]) {
         const ch = KFMState.files[item.path]?.children ?? item.children ?? [];
-        const sub = buildExpanded(item.path, ch, ctx, depth + 1, getShift(depth));
+        const sub = buildExpanded(item.path, ch, ctx, depth + 1, getShift(depth), w);
         sub.y = cy; container.addChild(sub); cy += sub.height;
       }
     } else {
@@ -181,7 +182,7 @@ export function buildTree(items: FileNode[], options: TreeOptions = {}): Box {
 
 function container_AddRootFolderRow(parent: Box, item: FileNode, y: number, depth: number, cw: number, ctx: BuildCtx): void {
   const x = absX(depth);
-  const w = cw - x;
+  const w = D.RIGHT_MARGIN - x;
   const ex = !!ctx.expandedPaths[item.path];
   const sel = ctx.selectedFile === item.path;
   const row = createBox('folder-row', {
@@ -201,7 +202,7 @@ function container_AddRootFolderRow(parent: Box, item: FileNode, y: number, dept
 
 function container_AddRootFileRow(parent: Box, item: FileNode, y: number, depth: number, cw: number, ctx: BuildCtx): void {
   const x = absX(depth);
-  const w = cw - x;
+  const w = D.RIGHT_MARGIN - x;
   const sel = ctx.selectedFile === item.path;
   const row = createBox('file-row', {
     id: `file-${item.path}`, x, y, width: w, height: 28,
@@ -215,11 +216,11 @@ function container_AddRootFileRow(parent: Box, item: FileNode, y: number, depth:
   parent.addChild(row);
 }
 
-export function buildSidebarTree(): Box {
+export function buildSidebarTree(containerWidth?: number): Box {
   const state = KFMState;
   return buildTree(state.files['/root']?.children ?? [], {
     expandedPaths: state.expandedPaths, selectedFile: state.selectedFile,
     onDirToggle: (p, e) => state.setExpanded(p, e), onFileClick: p => state.selectFile(p),
-    baseDepth: 0, containerWidth: 280, scrollable: true,
+    baseDepth: 0, containerWidth: containerWidth ?? 280, scrollable: true,
   });
 }

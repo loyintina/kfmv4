@@ -60,7 +60,7 @@ function moveCursorTo(hitBox: Box): void {
 
   cursorBox.x = abs.x + offsetX;
   cursorBox.y = abs.y + 2;
-  cursorBox.width = visibleW - abs.x - offsetX;
+  cursorBox.width = 287 - abs.x - offsetX; // 对齐到 RIGHT_MARGIN
   cursorBox.height = 24;
   cursorRowId = hitBox.id || null;
 
@@ -116,6 +116,7 @@ function moveCursorTo(hitBox: Box): void {
 
 export function onSidebarOpen(): void {
   requestAnimationFrame(() => requestAnimationFrame(() => {
+    rebuildTree();
     renderer?.resize();
   }));
 }
@@ -300,8 +301,11 @@ function rebuildTree(): void {
   cursorBox = null;
   cursorRowId = null;
 
-  const rootBox = buildSidebarTree();
   const canvas = document.getElementById('tree-canvas');
+  const cw = 280;
+  const rootBox = buildSidebarTree(cw);
+  // 让 rootBox 的实际宽度=canvas 宽度（扩大裁剪区域），但内部盒子保持 280 宽度
+  if (canvas) rootBox.width = canvas.clientWidth;
   const canvasH = canvas ? canvas.clientHeight : 618;
   if (canvas) {
     rootBox.height = canvasH;

@@ -14,7 +14,9 @@ import type { TextStyle, HighlightConfig } from '../engine/v2/types.js';
 
 export const DIMENSIONS = {
   BOX_HEIGHT: 26,
-  SIDEBAR_WIDTH: 280,
+  SIDEBAR_WIDTH: 295,
+  DISPLAY_WIDTH: 280,
+  RIGHT_MARGIN: 287,
   INDENT: 18,
   ROW_PAD: 8,
   TRIANGLE_SIZE: 9,

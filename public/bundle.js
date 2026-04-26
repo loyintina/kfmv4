@@ -4157,9 +4157,8 @@
         const line = visibleLines[i];
         let lineText = line.text;
         const isOverflowing = style.overflow === "ellipsis";
-        const isMultiLineTrimmed = lines.length > maxL;
-        const isSingleLineTrimmed = maxL === 1 && visibleLines.length === 1 && line.text !== style.content && !style.content.endsWith("\u2026");
-        if (isOverflowing && i === maxL - 1 && (isMultiLineTrimmed || isSingleLineTrimmed)) {
+        const isTrimmed = lines.length > maxL || maxL === 1 && line.width >= maxWidth - 2;
+        if (isOverflowing && i === maxL - 1 && isTrimmed) {
           lineText = lineText.slice(0, -1) + "\u2026";
           line.width = this.ctx.measureText(lineText).width;
         }
@@ -4705,7 +4704,9 @@
   // src/client/modules/style-registry.ts
   var DIMENSIONS = {
     BOX_HEIGHT: 26,
-    SIDEBAR_WIDTH: 280,
+    SIDEBAR_WIDTH: 295,
+    DISPLAY_WIDTH: 280,
+    RIGHT_MARGIN: 287,
     INDENT: 18,
     ROW_PAD: 8,
     TRIANGLE_SIZE: 9,
@@ -4972,9 +4973,9 @@
     row.addChild(label);
     return row;
   }
-  function buildExpanded(path, children, ctx, depth, relX) {
+  function buildExpanded(path, children, ctx, depth, relX, parentWidth) {
     var _a, _b, _c;
-    const w = ctx.containerWidth - absX(depth);
+    const w = (parentWidth != null ? parentWidth : DIMENSIONS.RIGHT_MARGIN) - relX;
     const density = 1 - getShift(depth) / 18;
     const borderOp = (0.3 + density * 0.5).toFixed(3);
     const container = createBox("folder-container", {
@@ -5008,7 +5009,7 @@
         cy += 26;
         if (ctx.expandedPaths[item.path]) {
           const ch = (_c = (_b = (_a = KFMState.files[item.path]) == null ? void 0 : _a.children) != null ? _b : item.children) != null ? _c : [];
-          const sub = buildExpanded(item.path, ch, ctx, depth + 1, getShift(depth));
+          const sub = buildExpanded(item.path, ch, ctx, depth + 1, getShift(depth), w);
           sub.y = cy;
           container.addChild(sub);
           cy += sub.height;
@@ -5066,7 +5067,7 @@
   }
   function container_AddRootFolderRow(parent, item, y, depth, cw, ctx) {
     const x = absX(depth);
-    const w = cw - x;
+    const w = DIMENSIONS.RIGHT_MARGIN - x;
     const ex = !!ctx.expandedPaths[item.path];
     const sel = ctx.selectedFile === item.path;
     const row = createBox("folder-row", {
@@ -5089,7 +5090,7 @@
   }
   function container_AddRootFileRow(parent, item, y, depth, cw, ctx) {
     const x = absX(depth);
-    const w = cw - x;
+    const w = DIMENSIONS.RIGHT_MARGIN - x;
     const sel = ctx.selectedFile === item.path;
     const row = createBox("file-row", {
       id: `file-${item.path}`,
@@ -5106,7 +5107,7 @@
     row.addChild(label);
     parent.addChild(row);
   }
-  function buildSidebarTree() {
+  function buildSidebarTree(containerWidth) {
     var _a, _b;
     const state = KFMState;
     return buildTree((_b = (_a = state.files["/root"]) == null ? void 0 : _a.children) != null ? _b : [], {
@@ -5115,7 +5116,7 @@
       onDirToggle: (p, e) => state.setExpanded(p, e),
       onFileClick: (p) => state.selectFile(p),
       baseDepth: 0,
-      containerWidth: 280,
+      containerWidth: containerWidth != null ? containerWidth : 280,
       scrollable: true
     });
   }
@@ -5155,7 +5156,7 @@
     const offsetX = shift / 2;
     cursorBox.x = abs.x + offsetX;
     cursorBox.y = abs.y + 2;
-    cursorBox.width = visibleW - abs.x - offsetX;
+    cursorBox.width = 287 - abs.x - offsetX;
     cursorBox.height = 24;
     cursorRowId = hitBox.id || null;
     const label = hitBox.children.find((c) => {
@@ -5203,6 +5204,7 @@
   }
   function onSidebarOpen() {
     requestAnimationFrame(() => requestAnimationFrame(() => {
+      rebuildTree();
       renderer == null ? void 0 : renderer.resize();
     }));
   }
@@ -5356,8 +5358,10 @@
     const prevCursorRowId = cursorRowId;
     cursorBox = null;
     cursorRowId = null;
-    const rootBox = buildSidebarTree();
     const canvas = document.getElementById("tree-canvas");
+    const cw = 280;
+    const rootBox = buildSidebarTree(cw);
+    if (canvas) rootBox.width = canvas.clientWidth;
     const canvasH = canvas ? canvas.clientHeight : 618;
     if (canvas) {
       rootBox.height = canvasH;
