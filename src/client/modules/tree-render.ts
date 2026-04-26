@@ -46,7 +46,7 @@ function ensureCursorBox(root: Box, canvasH: number): Box {
     y: canvasH / 2 - 14,
     width: document.getElementById('tree-canvas')?.clientWidth || 280,
     height: 24,
-    backgroundColor: 'rgba(0,150,255,0.18)',
+    backgroundColor: 'rgba(46,213,163,0.15)',
     borderRadius: 4,
     interactive: false,
     visible: true,

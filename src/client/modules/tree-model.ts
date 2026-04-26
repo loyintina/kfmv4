@@ -110,7 +110,7 @@ function buildExpanded(path: string, children: FileNode[], ctx: BuildCtx, depth:
     shadow: { color: 'rgba(0,0,0,0.5)', blur: 12, offsetX: -4, offsetY: 0 },
   });
   container.kfmStyle = resolveStyle('left-emphasis-rest-hidden', {
-    borderColor: `rgba(150,55,235,${borderOp})`,
+    borderColor: `rgba(180,130,255,${borderOp})`,
     emphasisScale: 2,
     cornerRadius: 4,
   });

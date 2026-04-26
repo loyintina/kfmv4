@@ -4924,7 +4924,7 @@
       shadow: { color: "rgba(0,0,0,0.5)", blur: 12, offsetX: -4, offsetY: 0 }
     });
     container.kfmStyle = resolveStyle("left-emphasis-rest-hidden", {
-      borderColor: `rgba(150,55,235,${borderOp})`,
+      borderColor: `rgba(180,130,255,${borderOp})`,
       emphasisScale: 2,
       cornerRadius: 4
     });
@@ -5081,7 +5081,7 @@
       y: canvasH / 2 - 14,
       width: ((_a = document.getElementById("tree-canvas")) == null ? void 0 : _a.clientWidth) || 280,
       height: 24,
-      backgroundColor: "rgba(0,150,255,0.18)",
+      backgroundColor: "rgba(46,213,163,0.15)",
       borderRadius: 4,
       interactive: false,
       visible: true,
