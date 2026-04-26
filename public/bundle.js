@@ -5210,6 +5210,9 @@
     requestAnimationFrame(() => requestAnimationFrame(() => {
       rebuildTree();
       renderer == null ? void 0 : renderer.resize();
+      const canvas = document.getElementById("tree-canvas");
+      const tools = document.querySelector(".sidebar-tools");
+      if (canvas && tools) tools.style.width = canvas.clientWidth + "px";
     }));
   }
   function onSidebarClose() {

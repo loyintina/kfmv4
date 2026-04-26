@@ -119,6 +119,10 @@ export function onSidebarOpen(): void {
   requestAnimationFrame(() => requestAnimationFrame(() => {
     rebuildTree();
     renderer?.resize();
+    // 同步底部工具栏宽度
+    const canvas = document.getElementById('tree-canvas');
+    const tools = document.querySelector('.sidebar-tools') as HTMLElement;
+    if (canvas && tools) tools.style.width = canvas.clientWidth + 'px';
   }));
 }
 
