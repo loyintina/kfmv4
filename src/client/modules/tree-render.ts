@@ -11,7 +11,6 @@ import { Box } from '../engine/v2/box.js';
 import { buildSidebarTree, getShift } from './tree-model.js';
 import { KFMState } from './state.js';
 import { styleRegistry } from './style-registry.js';
-import { resolveStyle } from '../engine/v2/StyleConfig.js';
 
 let renderer: Renderer | null = null;
 
@@ -29,17 +28,6 @@ function ensureCursorBox(root: Box, canvasH: number): Box {
     if (root.children.includes(cursorBox)) return cursorBox;
   }
 
-  const cursorStyle = resolveStyle('default', {
-    border: { left: 'emphasis', right: 'hidden', top: 'hidden', bottom: 'hidden' },
-    borderWidth: 1,
-    emphasisScale: 3,
-    cornerRadius: 4,
-    borderColor: 'rgba(0,230,255,0.9)',
-    background: 'glass',
-    backgroundOpacity: 0.3,
-    glowEnabled: false,
-  });
-
   cursorBox = new Box({
     id: 'cursor-highlight',
     x: 0,
@@ -47,10 +35,10 @@ function ensureCursorBox(root: Box, canvasH: number): Box {
     width: document.getElementById('tree-canvas')?.clientWidth || 280,
     height: 24,
     backgroundColor: 'rgba(46,213,163,0.15)',
-    borderRadius: 4,
+    borderRadius: 0,
     interactive: false,
     visible: true,
-    kfmStyle: cursorStyle,
+    data: { cursorDynamicLines: true, topLineW: 0, botLineW: 0, color: 'rgba(0,212,255,0.7)' },
   });
 
   root.addChild(cursorBox);
@@ -74,6 +62,23 @@ function moveCursorTo(hitBox: Box): void {
   cursorBox.width = visibleW - abs.x - offsetX;
   cursorBox.height = 24;
   cursorRowId = hitBox.id || null;
+
+  // 测量文字宽度，计算上下线长度
+  const label = hitBox.children.find(c => c.id?.startsWith('label-'));
+  let textW = 0;
+  if (label?.textStyle?.content) {
+    const ctx2d = (canvas as any)?.getContext?.('2d');
+    if (ctx2d) {
+      ctx2d.font = label.textStyle.font || '11px system-ui, sans-serif';
+      const measured = ctx2d.measureText(label.textStyle.content);
+      const labelX = label.x || 0;
+      textW = labelX + measured.width;
+    }
+  }
+  const totalLineW = cursorBox.width;
+  const topLineW = Math.min(Math.max(textW, 20), totalLineW - 10);
+  const botLineW = totalLineW - topLineW;
+  (cursorBox as any).data = { cursorDynamicLines: true, topLineW, botLineW, color: 'rgba(0,212,255,0.7)' };
 }
 
 // ============================================================
@@ -279,7 +284,7 @@ function rebuildTree(): void {
     newRoot.scrollY = Math.min(prevScrollY, maxY);
   }
 
-  // 重新创建光标
+  // ���新创建光标
   if (newRoot) {
     ensureCursorBox(newRoot, canvasH);
 

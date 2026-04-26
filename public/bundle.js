@@ -3989,7 +3989,65 @@
         this.ctx.fill();
       }
     }
+    _drawCursorBorder(b, data) {
+      const ctx = this.ctx;
+      const color = data.color || "rgba(0,212,255,0.7)";
+      const x = b.x;
+      const y = b.y;
+      const h = b.height;
+      const R = 4;
+      const EW = 3;
+      const NW = 1;
+      const seg = 12;
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.strokeStyle = color;
+      ctx.lineCap = "butt";
+      ctx.fillRect(x - 1.65, y + R, EW, h - R * 2);
+      const tlCx = x + R, tlCy = y + R + 0.1;
+      for (let i = 0; i < seg; i++) {
+        const t = (i + 0.5) / seg;
+        ctx.lineWidth = EW + (NW - EW) * t;
+        const a1 = Math.PI + Math.PI / 2 * (i / seg);
+        const a2 = Math.PI + Math.PI / 2 * ((i + 1) / seg);
+        ctx.beginPath();
+        ctx.arc(tlCx, tlCy, R, a1, a2, false);
+        ctx.stroke();
+      }
+      const blCx = x + R, blCy = y + h - R;
+      for (let i = 0; i < seg; i++) {
+        const t = (i + 0.5) / seg;
+        ctx.lineWidth = NW + (EW - NW) * t;
+        const a1 = Math.PI / 2 + Math.PI / 2 * (i / seg);
+        const a2 = Math.PI / 2 + Math.PI / 2 * ((i + 1) / seg);
+        ctx.beginPath();
+        ctx.arc(blCx, blCy, R, a1, a2, false);
+        ctx.stroke();
+      }
+      const topW = data.topLineW || 0;
+      if (topW > 0) {
+        ctx.lineWidth = NW;
+        ctx.beginPath();
+        ctx.moveTo(x + R, y);
+        ctx.lineTo(x + R + topW, y);
+        ctx.stroke();
+      }
+      const botW = data.botLineW || 0;
+      if (botW > 0) {
+        ctx.lineWidth = NW;
+        ctx.beginPath();
+        ctx.moveTo(x + R, y + h);
+        ctx.lineTo(x + R + botW, y + h);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
     _drawBorder(box, b) {
+      const cdata = box.data;
+      if (cdata == null ? void 0 : cdata.cursorDynamicLines) {
+        this._drawCursorBorder(b, cdata);
+        return;
+      }
       if (box.kfmStyle) {
         drawBorders(this.ctx, b.x, b.y, b.width, b.height, box.kfmStyle);
         return;
@@ -5065,16 +5123,6 @@
     if (cursorBox) {
       if (root.children.includes(cursorBox)) return cursorBox;
     }
-    const cursorStyle = resolveStyle("default", {
-      border: { left: "emphasis", right: "hidden", top: "hidden", bottom: "hidden" },
-      borderWidth: 1,
-      emphasisScale: 3,
-      cornerRadius: 4,
-      borderColor: "rgba(0,230,255,0.9)",
-      background: "glass",
-      backgroundOpacity: 0.3,
-      glowEnabled: false
-    });
     cursorBox = new Box({
       id: "cursor-highlight",
       x: 0,
@@ -5082,16 +5130,16 @@
       width: ((_a = document.getElementById("tree-canvas")) == null ? void 0 : _a.clientWidth) || 280,
       height: 24,
       backgroundColor: "rgba(46,213,163,0.15)",
-      borderRadius: 4,
+      borderRadius: 0,
       interactive: false,
       visible: true,
-      kfmStyle: cursorStyle
+      data: { cursorDynamicLines: true, topLineW: 0, botLineW: 0, color: "rgba(0,212,255,0.7)" }
     });
     root.addChild(cursorBox);
     return cursorBox;
   }
   function moveCursorTo(hitBox) {
-    var _a, _b;
+    var _a, _b, _c, _d;
     if (!cursorBox) return;
     const abs = hitBox.getAbsolutePosition();
     const canvas = document.getElementById("tree-canvas");
@@ -5104,6 +5152,24 @@
     cursorBox.width = visibleW - abs.x - offsetX;
     cursorBox.height = 24;
     cursorRowId = hitBox.id || null;
+    const label = hitBox.children.find((c) => {
+      var _a2;
+      return (_a2 = c.id) == null ? void 0 : _a2.startsWith("label-");
+    });
+    let textW = 0;
+    if ((_c = label == null ? void 0 : label.textStyle) == null ? void 0 : _c.content) {
+      const ctx2d = (_d = canvas == null ? void 0 : canvas.getContext) == null ? void 0 : _d.call(canvas, "2d");
+      if (ctx2d) {
+        ctx2d.font = label.textStyle.font || "11px system-ui, sans-serif";
+        const measured = ctx2d.measureText(label.textStyle.content);
+        const labelX = label.x || 0;
+        textW = labelX + measured.width;
+      }
+    }
+    const totalLineW = cursorBox.width;
+    const topLineW = Math.min(Math.max(textW, 20), totalLineW - 10);
+    const botLineW = totalLineW - topLineW;
+    cursorBox.data = { cursorDynamicLines: true, topLineW, botLineW, color: "rgba(0,212,255,0.7)" };
   }
   function onSidebarOpen() {
     requestAnimationFrame(() => requestAnimationFrame(() => {

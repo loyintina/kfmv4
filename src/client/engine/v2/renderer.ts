@@ -479,8 +479,64 @@ export class Renderer {
     }
   }
 
+  private _drawCursorBorder(b: Rect, data: any): void {
+    const ctx = this.ctx;
+    const color = data.color || 'rgba(0,212,255,0.7)';
+    const x = b.x;
+    const y = b.y;
+    const h = b.height;
+    const R = 4;   // cornerRadius
+    const EW = 3;  // emphasis width
+    const NW = 1;  // normal width
+    const seg = 12;
+
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.strokeStyle = color;
+    ctx.lineCap = 'butt';
+
+    // 1. 左强调线主体（跳过圆角区）
+    ctx.fillRect(x - 1.65, y + R, EW, h - R * 2);
+
+    // 2. 左上圆角：从 π(左,3px) 逆时针到 3π/2(上,1px)
+    //    圆心 (x+R, y+R)，弧上角度从 π 递减到 3π/2
+    const tlCx = x + R, tlCy = y + R + 0.1;
+    for (let i = 0; i < seg; i++) {
+      const t = (i + 0.5) / seg;
+      ctx.lineWidth = EW + (NW - EW) * t;  // 3 → 1
+      const a1 = Math.PI + (Math.PI / 2) * (i / seg);       // π → 3π/2
+      const a2 = Math.PI + (Math.PI / 2) * ((i + 1) / seg);
+      ctx.beginPath();
+      ctx.arc(tlCx, tlCy, R, a1, a2, false);  // clockwise
+      ctx.stroke();
+    }
+
+    // 3. 左下圆角：从 3π/2(上,1px) 顺时针到 π(左,3px)
+    //    实际就是从 π(左) 逆时针到 π/2(下)，线宽 1→3
+    //    圆心 (x+R, y+h-R)
+    const blCx = x + R, blCy = y + h - R;
+    for (let i = 0; i < seg; i++) {
+      const t = (i + 0.5) / seg;
+      ctx.lineWidth = NW + (EW - NW) * t;  // 1 → 3
+      const a1 = Math.PI / 2 + (Math.PI / 2) * (i / seg);       // π/2 → π
+      const a2 = Math.PI / 2 + (Math.PI / 2) * ((i + 1) / seg);
+      ctx.beginPath();
+      ctx.arc(blCx, blCy, R, a1, a2, false);  // clockwise
+      ctx.stroke();
+    }
+    const topW = data.topLineW || 0;
+    if (topW > 0) { ctx.lineWidth = NW; ctx.beginPath(); ctx.moveTo(x + R, y); ctx.lineTo(x + R + topW, y); ctx.stroke(); }
+    const botW = data.botLineW || 0;
+    if (botW > 0) { ctx.lineWidth = NW; ctx.beginPath(); ctx.moveTo(x + R, y + h); ctx.lineTo(x + R + botW, y + h); ctx.stroke(); }
+    ctx.restore();
+  }
   private _drawBorder(box: Box, b: Rect): void {
     // 优先使用 kfmStyle（高级边框）
+    const cdata = (box as any).data;
+    if (cdata?.cursorDynamicLines) {
+      this._drawCursorBorder(b, cdata);
+      return;
+    }
     if (box.kfmStyle) {
       drawBorders(this.ctx, b.x, b.y, b.width, b.height, box.kfmStyle);
       return;
