@@ -26,6 +26,7 @@ let cursorRowId: string | null = null;  // 当前光标指向的行 id
 // 动画状态
 let animatingPath: string | null = null;  // 正在展开动画的路径
 let pendingCollapse: { path: string, rowId: string } | null = null;  // 正在折叠动画
+let animLocked = false;  // 动画期间锁定，阻止 rebuildTree 重复执行
 
 /** 创建/获取光标 Box，保证它挂在 root 上 */
 function ensureCursorBox(root: Box, canvasH: number): Box {
@@ -288,9 +289,11 @@ function bindClickEvents(canvas: HTMLCanvasElement, _dpr: number): void {
               const container = findBoxById(root, containerId);
               
               // 三角旋转 + 容器收缩并行
+              animLocked = true;  // 锁定 rebuild
               const tl = gsap.timeline({
                 onComplete: () => {
                   pendingCollapse = null;
+                  animLocked = false;  // 解锁，允许接下来的 rebuild
                   hit.gesture!.onTap!();
                 },
               });
@@ -362,6 +365,7 @@ function findTapTarget(box: Box, px: number, py: number): Box | null {
 
 function rebuildTree(): void {
   if (!renderer) return;
+  if (animLocked) return;  // 动画期间跳过 rebuild
 
   // 保存当前滚动位置和光标行
   const prevScrollY = renderer.getRoot()?.scrollY ?? 0;
@@ -416,7 +420,8 @@ function rebuildTree(): void {
   // 展开动画：容器从 height=0 平滑拉出到最终高度，子项跟随下滑，三角形旋转
   if (animatingPath && newRoot) {
     const path = animatingPath;
-    animatingPath = null;  // 立即清除，防止重复触发
+    animatingPath = null;
+    animLocked = true;  // 锁定 rebuild
     
     const containerId = `expanded-${path}`;
     const container = findBoxById(newRoot, containerId);
@@ -454,7 +459,7 @@ function rebuildTree(): void {
           }
           renderer?.setRoot(renderer!.getRoot()!);
         },
-        onComplete: () => {},
+        onComplete: () => { animLocked = false; },
       });
     } else {
       animatingPath = null;

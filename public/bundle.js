@@ -9429,6 +9429,7 @@
   var cursorRowId = null;
   var animatingPath = null;
   var pendingCollapse = null;
+  var animLocked = false;
   function ensureCursorBox(root, canvasH) {
     var _a;
     if (cursorBox) {
@@ -9650,9 +9651,11 @@
                 const containerId = `expanded-${hitData.path}`;
                 const root2 = renderer.getRoot();
                 const container = findBoxById(root2, containerId);
+                animLocked = true;
                 const tl = gsapWithCSS.timeline({
                   onComplete: () => {
                     pendingCollapse = null;
+                    animLocked = false;
                     hit.gesture.onTap();
                   }
                 });
@@ -9715,6 +9718,7 @@
   function rebuildTree() {
     var _a, _b, _c, _d;
     if (!renderer) return;
+    if (animLocked) return;
     const prevScrollY = (_b = (_a = renderer.getRoot()) == null ? void 0 : _a.scrollY) != null ? _b : 0;
     const prevCursorRowId = cursorRowId;
     cursorBox = null;
@@ -9753,6 +9757,7 @@
     if (animatingPath && newRoot) {
       const path = animatingPath;
       animatingPath = null;
+      animLocked = true;
       const containerId = `expanded-${path}`;
       const container = findBoxById(newRoot, containerId);
       const titleId = `title-${path}`;
@@ -9792,6 +9797,7 @@
             renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
           },
           onComplete: () => {
+            animLocked = false;
           }
         });
       } else {
