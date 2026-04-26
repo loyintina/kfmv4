@@ -317,21 +317,24 @@ function bindClickEvents(canvas: HTMLCanvasElement, _dpr: number): void {
               pendingCollapse = { path: hitData.path, rowId: hit.id };
               tl.play();
             } else {
-              // ========== 展开：先旋转三角形，再 toggle → rebuild → 容器动画 ==========
+              // ========== 展开：先 toggle → rebuild → 三角旋转+容器展开并行 ==========
+              animatingPath = hitData.path;
+              hit.gesture!.onTap!();  // 同步 rebuild，rebuildTree 会检测 animatingPath 做动画
+              // rebuild 后新树已渲染，找到新 toggle 做旋转
               if (tog) {
-                gsap.to(tog.transform, {
-                  rotate: Math.PI / 2,
-                  duration: 0.25,
-                  ease: 'power2.out',
-                  onUpdate: () => { if (renderer) renderer.setRoot(renderer.getRoot()!); },
-                  onComplete: () => {
-                    animatingPath = hitData.path;
-                    hit.gesture!.onTap!();
-                  },
-                });
-              } else {
-                animatingPath = hitData.path;
-                hit.gesture.onTap();
+                // 旧的 toggle 已被 rebuild 销毁，从新树中找
+                const newRoot = renderer!.getRoot()!;
+                const newRow = findBoxById(newRoot, hit.id);
+                const newTog = newRow?.children?.find(c => c.id?.startsWith('toggle-'));
+                if (newTog) {
+                  newTog.transform.rotate = 0;  // 从 0 开始旋转
+                  gsap.to(newTog.transform, {
+                    rotate: Math.PI / 2,
+                    duration: 0.35,
+                    ease: 'power2.out',
+                    onUpdate: () => { renderer?.setRoot(renderer!.getRoot()!); },
+                  });
+                }
               }
             }
           } else {

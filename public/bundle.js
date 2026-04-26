@@ -5001,6 +5001,7 @@
       x: relX,
       y: 0,
       backgroundColor: "transparent",
+      overflow: "hidden",
       gradient: depthGradient(depth),
       shadow: { color: "rgba(0,0,0,0.5)", blur: 12, offsetX: -4, offsetY: 0 }
     });
@@ -9624,7 +9625,7 @@
   }
   function bindClickEvents(canvas, _dpr) {
     canvas.addEventListener("click", (e) => {
-      var _a, _b;
+      var _a, _b, _c;
       if (!renderer) return;
       const root = renderer.getRoot();
       if (!root) return;
@@ -9679,22 +9680,26 @@
                 pendingCollapse = { path: hitData.path, rowId: hit.id };
                 tl.play();
               } else {
+                animatingPath = hitData.path;
+                hit.gesture.onTap();
                 if (tog) {
-                  gsapWithCSS.to(tog.transform, {
-                    rotate: Math.PI / 2,
-                    duration: 0.25,
-                    ease: "power2.out",
-                    onUpdate: () => {
-                      if (renderer) renderer.setRoot(renderer.getRoot());
-                    },
-                    onComplete: () => {
-                      animatingPath = hitData.path;
-                      hit.gesture.onTap();
-                    }
+                  const newRoot = renderer.getRoot();
+                  const newRow = findBoxById(newRoot, hit.id);
+                  const newTog = (_c = newRow == null ? void 0 : newRow.children) == null ? void 0 : _c.find((c) => {
+                    var _a2;
+                    return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
                   });
-                } else {
-                  animatingPath = hitData.path;
-                  hit.gesture.onTap();
+                  if (newTog) {
+                    newTog.transform.rotate = 0;
+                    gsapWithCSS.to(newTog.transform, {
+                      rotate: Math.PI / 2,
+                      duration: 0.35,
+                      ease: "power2.out",
+                      onUpdate: () => {
+                        renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+                      }
+                    });
+                  }
                 }
               }
             } else {

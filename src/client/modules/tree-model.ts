@@ -108,6 +108,7 @@ function buildExpanded(path: string, children: FileNode[], ctx: BuildCtx, depth:
   const container = createBox('folder-container', {
     id: `expanded-${path}`, width: w, height: 0, x: relX, y: 0,
     backgroundColor: 'transparent',
+    overflow: 'hidden',
     gradient: depthGradient(depth),
     shadow: { color: 'rgba(0,0,0,0.5)', blur: 12, offsetX: -4, offsetY: 0 },
   });
