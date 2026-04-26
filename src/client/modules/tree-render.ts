@@ -415,10 +415,12 @@ function rebuildTree(): void {
 
   // 展开动画：容器从 height=0 平滑拉出到最终高度，子项跟随下滑，三角形旋转
   if (animatingPath && newRoot) {
-    const containerId = `expanded-${animatingPath}`;
+    const path = animatingPath;
+    animatingPath = null;  // 立即清除，防止重复触发
+    
+    const containerId = `expanded-${path}`;
     const container = findBoxById(newRoot, containerId);
-    // 找到对应的 toggle
-    const titleId = `title-${animatingPath}`;
+    const titleId = `title-${path}`;
     const titleRow = findBoxById(newRoot, titleId);
     const tog = titleRow?.children?.find(c => c.id?.startsWith('toggle-'));
     
@@ -452,7 +454,7 @@ function rebuildTree(): void {
           }
           renderer?.setRoot(renderer!.getRoot()!);
         },
-        onComplete: () => { animatingPath = null; },
+        onComplete: () => {},
       });
     } else {
       animatingPath = null;

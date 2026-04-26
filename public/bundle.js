@@ -9751,9 +9751,11 @@
       renderer.start();
     }
     if (animatingPath && newRoot) {
-      const containerId = `expanded-${animatingPath}`;
+      const path = animatingPath;
+      animatingPath = null;
+      const containerId = `expanded-${path}`;
       const container = findBoxById(newRoot, containerId);
-      const titleId = `title-${animatingPath}`;
+      const titleId = `title-${path}`;
       const titleRow = findBoxById(newRoot, titleId);
       const tog = (_d = titleRow == null ? void 0 : titleRow.children) == null ? void 0 : _d.find((c) => {
         var _a2;
@@ -9790,7 +9792,6 @@
             renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
           },
           onComplete: () => {
-            animatingPath = null;
           }
         });
       } else {
