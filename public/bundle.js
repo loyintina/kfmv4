@@ -5149,7 +5149,7 @@
     return cursorBox;
   }
   function moveCursorTo(hitBox) {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e;
     if (!cursorBox) return;
     const abs = hitBox.getAbsolutePosition();
     const canvas = document.getElementById("tree-canvas");
@@ -5159,7 +5159,8 @@
     const offsetX = shift / 2;
     cursorBox.x = abs.x + offsetX;
     cursorBox.y = abs.y + 2;
-    cursorBox.width = 287 - abs.x - offsetX;
+    const rm = ((_c = canvas == null ? void 0 : canvas.clientWidth) != null ? _c : 295) - 8;
+    cursorBox.width = rm - abs.x - offsetX;
     cursorBox.height = 24;
     cursorRowId = hitBox.id || null;
     const label = hitBox.children.find((c) => {
@@ -5167,8 +5168,8 @@
       return (_a2 = c.id) == null ? void 0 : _a2.startsWith("label-");
     });
     let textW = 0;
-    if ((_c = label == null ? void 0 : label.textStyle) == null ? void 0 : _c.content) {
-      const ctx2d = (_d = canvas == null ? void 0 : canvas.getContext) == null ? void 0 : _d.call(canvas, "2d");
+    if ((_d = label == null ? void 0 : label.textStyle) == null ? void 0 : _d.content) {
+      const ctx2d = (_e = canvas == null ? void 0 : canvas.getContext) == null ? void 0 : _e.call(canvas, "2d");
       if (ctx2d) {
         const font = label.textStyle.font || "11px system-ui, sans-serif";
         const labelX = label.x || 0;

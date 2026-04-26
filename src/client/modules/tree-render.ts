@@ -60,7 +60,8 @@ function moveCursorTo(hitBox: Box): void {
 
   cursorBox.x = abs.x + offsetX;
   cursorBox.y = abs.y + 2;
-  cursorBox.width = 287 - abs.x - offsetX; // 对齐到 RIGHT_MARGIN
+  const rm = (canvas?.clientWidth ?? 295) - 8;
+  cursorBox.width = rm - abs.x - offsetX;
   cursorBox.height = 24;
   cursorRowId = hitBox.id || null;
 
