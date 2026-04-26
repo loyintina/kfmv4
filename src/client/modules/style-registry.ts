@@ -54,30 +54,34 @@ export const COLORS = {
 // 文字样式常量
 // ============================================================
 
-const FONT = '11px system-ui, sans-serif';
+export const FONT = '11px system-ui, sans-serif';
+
+// 多行换行参数：行高 16px，最多 2 行
+export const LINE_HEIGHT = 16;
+export const MAX_LINES = 2;
 
 export const TEXT_STYLES = {
   folderLabel: {
     font: FONT,
-    lineHeight: DIMENSIONS.BOX_HEIGHT,
+    lineHeight: LINE_HEIGHT,
     align: 'left',
-    verticalAlign: 'middle',
+    verticalAlign: 'top',
     overflow: 'ellipsis',
-    maxLines: 1,
+    maxLines: MAX_LINES,
   } as TextStyle,
 
   fileLabel: {
     font: FONT,
-    lineHeight: DIMENSIONS.BOX_HEIGHT,
+    lineHeight: LINE_HEIGHT,
     align: 'left',
-    verticalAlign: 'middle',
+    verticalAlign: 'top',
     overflow: 'ellipsis',
-    maxLines: 1,
+    maxLines: MAX_LINES,
   } as TextStyle,
 
   toggleIcon: {
     font: `${DIMENSIONS.TRIANGLE_SIZE}px system-ui, sans-serif`,
-    lineHeight: DIMENSIONS.BOX_HEIGHT,
+    lineHeight: LINE_HEIGHT,
     align: 'center',
     verticalAlign: 'middle',
   } as TextStyle,

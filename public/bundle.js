@@ -4720,26 +4720,28 @@
     CANVAS_BG: "rgba(10,10,15,0.85)"
   };
   var FONT = "11px system-ui, sans-serif";
+  var LINE_HEIGHT = 16;
+  var MAX_LINES = 2;
   var TEXT_STYLES = {
     folderLabel: {
       font: FONT,
-      lineHeight: DIMENSIONS.BOX_HEIGHT,
+      lineHeight: LINE_HEIGHT,
       align: "left",
-      verticalAlign: "middle",
+      verticalAlign: "top",
       overflow: "ellipsis",
-      maxLines: 1
+      maxLines: MAX_LINES
     },
     fileLabel: {
       font: FONT,
-      lineHeight: DIMENSIONS.BOX_HEIGHT,
+      lineHeight: LINE_HEIGHT,
       align: "left",
-      verticalAlign: "middle",
+      verticalAlign: "top",
       overflow: "ellipsis",
-      maxLines: 1
+      maxLines: MAX_LINES
     },
     toggleIcon: {
       font: `${DIMENSIONS.TRIANGLE_SIZE}px system-ui, sans-serif`,
-      lineHeight: DIMENSIONS.BOX_HEIGHT,
+      lineHeight: LINE_HEIGHT,
       align: "center",
       verticalAlign: "middle"
     }
@@ -4935,40 +4937,50 @@
       ]
     };
   }
+  function calcTextLayout(name, maxWidth) {
+    const prepared = prepareWithSegments(name, FONT);
+    const { lines } = layoutWithLines(prepared, maxWidth, LINE_HEIGHT);
+    const actualLines = Math.min(lines.length, MAX_LINES);
+    return { lines: actualLines, height: actualLines * LINE_HEIGHT + 6 };
+  }
   function innerFolderRow(item, y, cw, ctx, depth) {
     const ex = !!ctx.expandedPaths[item.path];
     const sel = ctx.selectedFile === item.path;
+    const maxWidth = cw - TXT_L - 16;
+    const { lines: actualLines, height: rowHeight } = calcTextLayout(item.name, maxWidth);
     const row = createBox("folder-row", {
       id: `title-${item.path}`,
       x: 0,
       y,
       width: cw,
-      height: 28,
+      height: rowHeight,
       backgroundColor: sel ? "rgba(124,58,237,0.15)" : "transparent",
-      data: { path: item.path, isDir: true, isExpanded: ex, depth },
+      data: { path: item.path, isDir: true, isExpanded: ex, depth, lineCount: actualLines },
       gesture: { passive: true, onTap: () => ctx.onDirToggle(item.path, !ex) }
     });
-    const tog = createBox("toggle-icon", { id: `toggle-${item.path}`, x: T_OFF });
+    const tog = createBox("toggle-icon", { id: `toggle-${item.path}`, x: T_OFF, y: 3 });
     tog.textStyle = { ...TEXT_STYLES.toggleIcon, content: ex ? "\u25BC" : "\u25B6", color: "#00d4ff" };
     row.addChild(tog);
-    const label = createBox("folder-label", { id: `label-${item.path}`, x: TXT_L, width: cw - TXT_L - 16 });
+    const label = createBox("folder-label", { id: `label-${item.path}`, x: TXT_L, width: maxWidth, height: rowHeight });
     label.textStyle = { ...TEXT_STYLES.folderLabel, content: item.name, color: "#e8e0f0" };
     row.addChild(label);
     return row;
   }
   function innerFileRow(item, y, cw, ctx, depth) {
     const sel = ctx.selectedFile === item.path;
+    const maxWidth = cw - TXT_L - 16;
+    const { lines: actualLines, height: rowHeight } = calcTextLayout(item.name, maxWidth);
     const row = createBox("file-row", {
       id: `file-${item.path}`,
       x: 0,
       y,
       width: cw,
-      height: 28,
+      height: rowHeight,
       backgroundColor: sel ? "rgba(124,58,237,0.15)" : "transparent",
-      data: { path: item.path, isDir: false, depth },
+      data: { path: item.path, isDir: false, depth, lineCount: actualLines },
       gesture: { passive: true, onTap: () => ctx.onFileClick(item.path) }
     });
-    const label = createBox("file-label", { id: `label-${item.path}`, x: TXT_L, width: cw - TXT_L - 16 });
+    const label = createBox("file-label", { id: `label-${item.path}`, x: TXT_L, width: maxWidth, height: rowHeight });
     label.textStyle = { ...TEXT_STYLES.fileLabel, content: item.name, color: "#e8e0f0" };
     row.addChild(label);
     return row;
@@ -4995,18 +5007,19 @@
     });
     let cy = 0;
     if (children.length === 0) {
-      const lr = createBox("file-row", { id: `loading-${path}`, x: TXT_L, y: 0, width: w - TXT_L, height: 28 });
-      const lb = createBox("file-label", { id: `loading-label-${path}`, x: 0, width: lr.width - 8 });
+      const lr = createBox("file-row", { id: `loading-${path}`, x: TXT_L, y: 0, width: w - TXT_L, height: LINE_HEIGHT + 6 });
+      const lb = createBox("file-label", { id: `loading-label-${path}`, x: 0, width: lr.width - 8, height: lr.height });
       lb.textStyle = { ...TEXT_STYLES.fileLabel, content: "\u2026", color: "#e8e0f0" };
       lr.addChild(lb);
       container.addChild(lr);
-      container.height = 32;
+      container.height = LINE_HEIGHT + 10;
       return container;
     }
     for (const item of children) {
       if (item.isDir) {
-        container.addChild(innerFolderRow(item, cy, w, ctx, depth));
-        cy += 26;
+        const folderRow = innerFolderRow(item, cy, w, ctx, depth);
+        container.addChild(folderRow);
+        cy += folderRow.height;
         if (ctx.expandedPaths[item.path]) {
           const ch = (_c = (_b = (_a = KFMState.files[item.path]) == null ? void 0 : _a.children) != null ? _b : item.children) != null ? _c : [];
           const sub = buildExpanded(item.path, ch, ctx, depth + 1, getShift(depth), w);
@@ -5015,8 +5028,9 @@
           cy += sub.height;
         }
       } else {
-        container.addChild(innerFileRow(item, cy, w, ctx, depth));
-        cy += 26;
+        const fileRow = innerFileRow(item, cy, w, ctx, depth);
+        container.addChild(fileRow);
+        cy += fileRow.height;
       }
     }
     container.height = cy;
@@ -5048,8 +5062,8 @@
     let cy = 0;
     for (const item of items) {
       if (item.isDir) {
-        container_AddRootFolderRow(rootBox, item, cy, baseDepth, containerWidth, ctx);
-        cy += 26;
+        const folderRow = container_AddRootFolderRow(rootBox, item, cy, baseDepth, containerWidth, ctx);
+        cy += folderRow.height;
         if (ctx.expandedPaths[item.path]) {
           const ch = (_c = (_b = (_a = KFMState.files[item.path]) == null ? void 0 : _a.children) != null ? _b : item.children) != null ? _c : [];
           const c = buildExpanded(item.path, ch, ctx, baseDepth, absX(baseDepth) + getShift(baseDepth));
@@ -5058,8 +5072,8 @@
           cy += c.height;
         }
       } else {
-        container_AddRootFileRow(rootBox, item, cy, baseDepth, containerWidth, ctx);
-        cy += 26;
+        const fileRow = container_AddRootFileRow(rootBox, item, cy, baseDepth, containerWidth, ctx);
+        cy += fileRow.height;
       }
     }
     rootBox.height = cy;
@@ -5071,42 +5085,48 @@
     const w = ctx.rightMargin - x;
     const ex = !!ctx.expandedPaths[item.path];
     const sel = ctx.selectedFile === item.path;
+    const maxWidth = w - TXT_L - 16;
+    const { lines: actualLines, height: rowHeight } = calcTextLayout(item.name, maxWidth);
     const row = createBox("folder-row", {
       id: `title-${item.path}`,
       x,
       y,
       width: w,
-      height: 28,
+      height: rowHeight,
       backgroundColor: sel ? "rgba(124,58,237,0.15)" : "transparent",
-      data: { path: item.path, isDir: true, isExpanded: ex, depth },
+      data: { path: item.path, isDir: true, isExpanded: ex, depth, lineCount: actualLines },
       gesture: { passive: true, onTap: () => ctx.onDirToggle(item.path, !ex) }
     });
-    const tog = createBox("toggle-icon", { id: `toggle-${item.path}`, x: T_OFF });
+    const tog = createBox("toggle-icon", { id: `toggle-${item.path}`, x: T_OFF, y: 3 });
     tog.textStyle = { ...TEXT_STYLES.toggleIcon, content: ex ? "\u25BC" : "\u25B6", color: "#00d4ff" };
     row.addChild(tog);
-    const label = createBox("folder-label", { id: `label-${item.path}`, x: TXT_L, width: w - TXT_L - 16 });
+    const label = createBox("folder-label", { id: `label-${item.path}`, x: TXT_L, width: maxWidth, height: rowHeight });
     label.textStyle = { ...TEXT_STYLES.folderLabel, content: item.name, color: "#e8e0f0" };
     row.addChild(label);
     parent.addChild(row);
+    return row;
   }
   function container_AddRootFileRow(parent, item, y, depth, cw, ctx) {
     const x = absX(depth);
     const w = ctx.rightMargin - x;
     const sel = ctx.selectedFile === item.path;
+    const maxWidth = w - TXT_L - 16;
+    const { lines: actualLines, height: rowHeight } = calcTextLayout(item.name, maxWidth);
     const row = createBox("file-row", {
       id: `file-${item.path}`,
       x,
       y,
       width: w,
-      height: 28,
+      height: rowHeight,
       backgroundColor: sel ? "rgba(124,58,237,0.15)" : "transparent",
-      data: { path: item.path, isDir: false, depth },
+      data: { path: item.path, isDir: false, depth, lineCount: actualLines },
       gesture: { passive: true, onTap: () => ctx.onFileClick(item.path) }
     });
-    const label = createBox("file-label", { id: `label-${item.path}`, x: TXT_L, width: w - TXT_L - 16 });
+    const label = createBox("file-label", { id: `label-${item.path}`, x: TXT_L, width: maxWidth, height: rowHeight });
     label.textStyle = { ...TEXT_STYLES.fileLabel, content: item.name, color: "#e8e0f0" };
     row.addChild(label);
     parent.addChild(row);
+    return row;
   }
   function buildSidebarTree(containerWidth, rightMargin) {
     var _a, _b;
@@ -5161,7 +5181,7 @@
     cursorBox.y = abs.y + 2;
     const rm = ((_c = canvas == null ? void 0 : canvas.clientWidth) != null ? _c : 295) - 8;
     cursorBox.width = rm - abs.x - offsetX;
-    cursorBox.height = 24;
+    cursorBox.height = hitBox.height - 4;
     cursorRowId = hitBox.id || null;
     const label = hitBox.children.find((c) => {
       var _a2;
@@ -5177,7 +5197,7 @@
         const content = label.textStyle.content;
         try {
           const prepared = prepareWithSegments(content, font);
-          const { lines } = layoutWithLines(prepared, maxWidth, 26);
+          const { lines } = layoutWithLines(prepared, maxWidth, LINE_HEIGHT);
           const firstLine = lines[0];
           let renderWidth2 = firstLine.width;
           if (lines.length > 1 && label.textStyle.overflow === "ellipsis") {

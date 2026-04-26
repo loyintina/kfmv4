@@ -12,9 +12,10 @@
 
 import { Box } from '../engine/v2/box.js';
 import { KFMState, type FileNode } from './state.js';
-import { DIMENSIONS, COLORS, TEXT_STYLES, getFileColor, createBox } from './style-registry.js';
+import { DIMENSIONS, COLORS, TEXT_STYLES, getFileColor, createBox, LINE_HEIGHT, MAX_LINES, FONT } from './style-registry.js';
 import { DIMENSIONS as D } from './style-registry.js';
 import { resolveStyle } from '../engine/v2/StyleConfig.js';
+import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
 
 export interface TreeOptions {
   expandedPaths: Record<string, boolean>;
@@ -63,19 +64,29 @@ function depthGradient(depth: number) {
 // 容器内部行构建（x=0 相对容器）
 // ============================================================
 
+/** 计算文本需要的行数和高度 */
+function calcTextLayout(name: string, maxWidth: number): { lines: number, height: number } {
+  const prepared = prepareWithSegments(name, FONT);
+  const { lines } = layoutWithLines(prepared, maxWidth, LINE_HEIGHT);
+  const actualLines = Math.min(lines.length, MAX_LINES);
+  return { lines: actualLines, height: actualLines * LINE_HEIGHT + 6 };  // +6 是上下 padding
+}
+
 function innerFolderRow(item: FileNode, y: number, cw: number, ctx: BuildCtx, depth: number): Box {
   const ex = !!ctx.expandedPaths[item.path];
   const sel = ctx.selectedFile === item.path;
+  const maxWidth = cw - TXT_L - 16;
+  const { lines: actualLines, height: rowHeight } = calcTextLayout(item.name, maxWidth);
+  
   const row = createBox('folder-row', {
-    id: `title-${item.path}`, x: 0, y, width: cw, height: 28,
+    id: `title-${item.path}`, x: 0, y, width: cw, height: rowHeight,
     backgroundColor: sel ? 'rgba(124,58,237,0.15)' : 'transparent',
-    data: { path: item.path, isDir: true, isExpanded: ex, depth },
+    data: { path: item.path, isDir: true, isExpanded: ex, depth, lineCount: actualLines },
     gesture: { passive: true, onTap: () => ctx.onDirToggle(item.path, !ex) },
   });
-  const tog = createBox('toggle-icon', { id: `toggle-${item.path}`, x: T_OFF });
-  tog.textStyle = { ...TEXT_STYLES.toggleIcon, content: ex ? '▼' : '▶', color: '#00d4ff' };
-  row.addChild(tog);
-  const label = createBox('folder-label', { id: `label-${item.path}`, x: TXT_L, width: cw - TXT_L - 16 });
+  const tog = createBox('toggle-icon', { id: `toggle-${item.path}`, x: T_OFF, y: 3 });
+  tog.textStyle = { ...TEXT_STYLES.toggleIcon, content: ex ? '▼' : '▶', color: '#00d4ff' };  row.addChild(tog);
+  const label = createBox('folder-label', { id: `label-${item.path}`, x: TXT_L, width: maxWidth, height: rowHeight });
   label.textStyle = { ...TEXT_STYLES.folderLabel, content: item.name, color: '#e8e0f0' };
   row.addChild(label);
   return row;
@@ -83,13 +94,16 @@ function innerFolderRow(item: FileNode, y: number, cw: number, ctx: BuildCtx, de
 
 function innerFileRow(item: FileNode, y: number, cw: number, ctx: BuildCtx, depth: number): Box {
   const sel = ctx.selectedFile === item.path;
+  const maxWidth = cw - TXT_L - 16;
+  const { lines: actualLines, height: rowHeight } = calcTextLayout(item.name, maxWidth);
+  
   const row = createBox('file-row', {
-    id: `file-${item.path}`, x: 0, y, width: cw, height: 28,
+    id: `file-${item.path}`, x: 0, y, width: cw, height: rowHeight,
     backgroundColor: sel ? 'rgba(124,58,237,0.15)' : 'transparent',
-    data: { path: item.path, isDir: false, depth },
+    data: { path: item.path, isDir: false, depth, lineCount: actualLines },
     gesture: { passive: true, onTap: () => ctx.onFileClick(item.path) },
   });
-  const label = createBox('file-label', { id: `label-${item.path}`, x: TXT_L, width: cw - TXT_L - 16 });
+  const label = createBox('file-label', { id: `label-${item.path}`, x: TXT_L, width: maxWidth, height: rowHeight });
   label.textStyle = { ...TEXT_STYLES.fileLabel, content: item.name, color: "#e8e0f0" };
   row.addChild(label);
   return row;
@@ -122,25 +136,27 @@ function buildExpanded(path: string, children: FileNode[], ctx: BuildCtx, depth:
 
   // 无数据 → 占位行
   if (children.length === 0) {
-    const lr = createBox('file-row', { id: `loading-${path}`, x: TXT_L, y: 0, width: w - TXT_L, height: 28 });
-    const lb = createBox('file-label', { id: `loading-label-${path}`, x: 0, width: lr.width - 8 });
+    const lr = createBox('file-row', { id: `loading-${path}`, x: TXT_L, y: 0, width: w - TXT_L, height: LINE_HEIGHT + 6 });
+    const lb = createBox('file-label', { id: `loading-label-${path}`, x: 0, width: lr.width - 8, height: lr.height });
     lb.textStyle = { ...TEXT_STYLES.fileLabel, content: '…', color: '#e8e0f0' };
-    lr.addChild(lb); container.addChild(lr); container.height = 32;
+    lr.addChild(lb); container.addChild(lr); container.height = LINE_HEIGHT + 10;
     return container;
   }
 
   for (const item of children) {
     if (item.isDir) {
-      container.addChild(innerFolderRow(item, cy, w, ctx, depth));
-      cy += 26;
+      const folderRow = innerFolderRow(item, cy, w, ctx, depth);
+      container.addChild(folderRow);
+      cy += folderRow.height;  // 动态高度
       if (ctx.expandedPaths[item.path]) {
         const ch = KFMState.files[item.path]?.children ?? item.children ?? [];
         const sub = buildExpanded(item.path, ch, ctx, depth + 1, getShift(depth), w);
         sub.y = cy; container.addChild(sub); cy += sub.height;
       }
     } else {
-      container.addChild(innerFileRow(item, cy, w, ctx, depth));
-      cy += 26;
+      const fileRow = innerFileRow(item, cy, w, ctx, depth);
+      container.addChild(fileRow);
+      cy += fileRow.height;  // 动态高度
     }
   }
 
@@ -165,57 +181,64 @@ export function buildTree(items: FileNode[], options: TreeOptions = {}): Box {
   let cy = 0;
   for (const item of items) {
     if (item.isDir) {
-      // 根层行用绝对坐标
-      container_AddRootFolderRow(rootBox, item, cy, baseDepth, containerWidth, ctx);
-      cy += 26;
+      const folderRow = container_AddRootFolderRow(rootBox, item, cy, baseDepth, containerWidth, ctx);
+      cy += folderRow.height;  // 动态高度
       if (ctx.expandedPaths[item.path]) {
         const ch = KFMState.files[item.path]?.children ?? item.children ?? [];
         const c = buildExpanded(item.path, ch, ctx, baseDepth, absX(baseDepth) + getShift(baseDepth));
         c.y = cy; rootBox.addChild(c); cy += c.height;
       }
     } else {
-      container_AddRootFileRow(rootBox, item, cy, baseDepth, containerWidth, ctx);
-      cy += 26;
+      const fileRow = container_AddRootFileRow(rootBox, item, cy, baseDepth, containerWidth, ctx);
+      cy += fileRow.height;  // 动态高度
     }
   }
   rootBox.height = cy; rootBox.scrollY = 0;
   return rootBox;
 }
 
-function container_AddRootFolderRow(parent: Box, item: FileNode, y: number, depth: number, cw: number, ctx: BuildCtx): void {
+function container_AddRootFolderRow(parent: Box, item: FileNode, y: number, depth: number, cw: number, ctx: BuildCtx): Box {
   const x = absX(depth);
   const w = ctx.rightMargin - x;
   const ex = !!ctx.expandedPaths[item.path];
   const sel = ctx.selectedFile === item.path;
+  const maxWidth = w - TXT_L - 16;
+  const { lines: actualLines, height: rowHeight } = calcTextLayout(item.name, maxWidth);
+  
   const row = createBox('folder-row', {
-    id: `title-${item.path}`, x, y, width: w, height: 28,
+    id: `title-${item.path}`, x, y, width: w, height: rowHeight,
     backgroundColor: sel ? 'rgba(124,58,237,0.15)' : 'transparent',
-    data: { path: item.path, isDir: true, isExpanded: ex, depth },
+    data: { path: item.path, isDir: true, isExpanded: ex, depth, lineCount: actualLines },
     gesture: { passive: true, onTap: () => ctx.onDirToggle(item.path, !ex) },
   });
-  const tog = createBox('toggle-icon', { id: `toggle-${item.path}`, x: T_OFF });
+  const tog = createBox('toggle-icon', { id: `toggle-${item.path}`, x: T_OFF, y: 3 });
   tog.textStyle = { ...TEXT_STYLES.toggleIcon, content: ex ? '▼' : '▶', color: '#00d4ff' };
   row.addChild(tog);
-  const label = createBox('folder-label', { id: `label-${item.path}`, x: TXT_L, width: w - TXT_L - 16 });
+  const label = createBox('folder-label', { id: `label-${item.path}`, x: TXT_L, width: maxWidth, height: rowHeight });
   label.textStyle = { ...TEXT_STYLES.folderLabel, content: item.name, color: '#e8e0f0' };
   row.addChild(label);
   parent.addChild(row);
+  return row;
 }
 
-function container_AddRootFileRow(parent: Box, item: FileNode, y: number, depth: number, cw: number, ctx: BuildCtx): void {
+function container_AddRootFileRow(parent: Box, item: FileNode, y: number, depth: number, cw: number, ctx: BuildCtx): Box {
   const x = absX(depth);
   const w = ctx.rightMargin - x;
   const sel = ctx.selectedFile === item.path;
+  const maxWidth = w - TXT_L - 16;
+  const { lines: actualLines, height: rowHeight } = calcTextLayout(item.name, maxWidth);
+  
   const row = createBox('file-row', {
-    id: `file-${item.path}`, x, y, width: w, height: 28,
+    id: `file-${item.path}`, x, y, width: w, height: rowHeight,
     backgroundColor: sel ? 'rgba(124,58,237,0.15)' : 'transparent',
-    data: { path: item.path, isDir: false, depth },
+    data: { path: item.path, isDir: false, depth, lineCount: actualLines },
     gesture: { passive: true, onTap: () => ctx.onFileClick(item.path) },
   });
-  const label = createBox('file-label', { id: `label-${item.path}`, x: TXT_L, width: w - TXT_L - 16 });
+  const label = createBox('file-label', { id: `label-${item.path}`, x: TXT_L, width: maxWidth, height: rowHeight });
   label.textStyle = { ...TEXT_STYLES.fileLabel, content: item.name, color: "#e8e0f0" };
   row.addChild(label);
   parent.addChild(row);
+  return row;
 }
 
 export function buildSidebarTree(containerWidth?: number, rightMargin?: number): Box {

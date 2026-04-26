@@ -10,7 +10,7 @@ import { Renderer } from '../engine/v2/renderer.js';
 import { Box } from '../engine/v2/box.js';
 import { buildSidebarTree, getShift } from './tree-model.js';
 import { KFMState } from './state.js';
-import { styleRegistry } from './style-registry.js';
+import { styleRegistry, LINE_HEIGHT, MAX_LINES } from './style-registry.js';
 import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
 
 let renderer: Renderer | null = null;
@@ -62,7 +62,7 @@ function moveCursorTo(hitBox: Box): void {
   cursorBox.y = abs.y + 2;
   const rm = (canvas?.clientWidth ?? 295) - 8;
   cursorBox.width = rm - abs.x - offsetX;
-  cursorBox.height = 24;
+  cursorBox.height = hitBox.height - 4;  // 动态高度，减去上下 padding
   cursorRowId = hitBox.id || null;
 
   // 测量文字宽度，计算上下线长度
@@ -80,7 +80,7 @@ function moveCursorTo(hitBox: Box): void {
       try {
         // 用 Pretext 精确排版，和 renderer._drawText 一致
         const prepared = prepareWithSegments(content, font);
-        const { lines } = layoutWithLines(prepared, maxWidth, 26);
+        const { lines } = layoutWithLines(prepared, maxWidth, LINE_HEIGHT);
         const firstLine = lines[0];
         let renderWidth = firstLine.width;
 
@@ -245,7 +245,7 @@ function bindScrollEvents(canvas: HTMLCanvasElement): void {
 }
 
 // ============================================================
-// 点击事件（光标优先 → 二次点击执行 onTap）
+// 点击事件（光标优先 → 二次点击执行 onTap��
 // ============================================================
 
 function bindClickEvents(canvas: HTMLCanvasElement, _dpr: number): void {
