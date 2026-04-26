@@ -23,6 +23,10 @@ let renderer: Renderer | null = null;
 let cursorBox: Box | null = null;   // 光标 Box 实例
 let cursorRowId: string | null = null;  // 当前光标指向的行 id
 
+// 动画状态
+let animatingPath: string | null = null;  // 正在展开动画的路径
+let pendingCollapse: { path: string, rowId: string } | null = null;  // 正在折叠动画
+
 /** 创建/获取光标 Box，保证它挂在 root 上 */
 function ensureCursorBox(root: Box, canvasH: number): Box {
   if (cursorBox) {
@@ -276,19 +280,59 @@ function bindClickEvents(canvas: HTMLCanvasElement, _dpr: number): void {
             const tog = hit.children.find(c => c.id?.startsWith('toggle-'));
             const targetRotate = isExpanded ? 0 : Math.PI / 2;
             
-            if (tog) {
-              gsap.to(tog.transform, {
-                rotate: targetRotate,
-                duration: 0.25,
-                ease: 'power2.out',
-                onUpdate: () => { if (renderer) renderer.setRoot(renderer.getRoot()!); },
+            if (isExpanded) {
+              // ========== 折叠：先动画再 rebuild ==========
+              // 找到展开容器
+              const containerId = `expanded-${hitData.path}`;
+              const root = renderer!.getRoot()!;
+              const container = findBoxById(root, containerId);
+              
+              // 三角旋转 + 容器收缩并行
+              const tl = gsap.timeline({
                 onComplete: () => {
-                  // 旋转完成后执行 toggle
+                  pendingCollapse = null;
                   hit.gesture!.onTap!();
                 },
               });
+              
+              if (tog) {
+                tl.to(tog.transform, {
+                  rotate: 0,
+                  duration: 0.25,
+                  ease: 'power2.in',
+                  onUpdate: () => { if (renderer) renderer.setRoot(renderer.getRoot()!); },
+                }, 0);
+              }
+              
+              if (container) {
+                const fullH = container.height;
+                tl.to(container, {
+                  height: 0,
+                  duration: 0.25,
+                  ease: 'power2.in',
+                  onUpdate: () => { if (renderer) renderer.setRoot(renderer.getRoot()!); },
+                }, 0);
+              }
+              
+              pendingCollapse = { path: hitData.path, rowId: hit.id };
+              tl.play();
             } else {
-              hit.gesture.onTap();
+              // ========== 展开：先旋转三角形，再 toggle → rebuild → 容器动画 ==========
+              if (tog) {
+                gsap.to(tog.transform, {
+                  rotate: Math.PI / 2,
+                  duration: 0.25,
+                  ease: 'power2.out',
+                  onUpdate: () => { if (renderer) renderer.setRoot(renderer.getRoot()!); },
+                  onComplete: () => {
+                    animatingPath = hitData.path;
+                    hit.gesture!.onTap!();
+                  },
+                });
+              } else {
+                animatingPath = hitData.path;
+                hit.gesture.onTap();
+              }
             }
           } else {
             hit.gesture.onTap();
@@ -361,7 +405,7 @@ function rebuildTree(): void {
       if (target) {
         moveCursorTo(target);
       } else {
-        // 行已不存在，吸附到视口中央最近的行
+        // ���已不存在，吸附到视口中央最近的行
         snapToCenterRow(newRoot, canvasH);
       }
     } else {
@@ -372,6 +416,25 @@ function rebuildTree(): void {
 
   if (!renderer.isRunning) {
     renderer.start();
+  }
+
+  // 展开动画：容器从 height=0 平滑拉出到最终高度
+  if (animatingPath && newRoot) {
+    const containerId = `expanded-${animatingPath}`;
+    const container = findBoxById(newRoot, containerId);
+    if (container) {
+      const fullHeight = container.height;
+      container.height = 0;
+      gsap.to(container, {
+        height: fullHeight,
+        duration: 0.35,
+        ease: 'power2.out',
+        onUpdate: () => { renderer?.setRoot(renderer!.getRoot()!); },
+        onComplete: () => { animatingPath = null; },
+      });
+    } else {
+      animatingPath = null;
+    }
   }
 }
 

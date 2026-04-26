@@ -9426,6 +9426,8 @@
   var renderer = null;
   var cursorBox = null;
   var cursorRowId = null;
+  var animatingPath = null;
+  var pendingCollapse = null;
   function ensureCursorBox(root, canvasH) {
     var _a;
     if (cursorBox) {
@@ -9643,20 +9645,57 @@
                 return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
               });
               const targetRotate = isExpanded ? 0 : Math.PI / 2;
-              if (tog) {
-                gsapWithCSS.to(tog.transform, {
-                  rotate: targetRotate,
-                  duration: 0.25,
-                  ease: "power2.out",
-                  onUpdate: () => {
-                    if (renderer) renderer.setRoot(renderer.getRoot());
-                  },
+              if (isExpanded) {
+                const containerId = `expanded-${hitData.path}`;
+                const root2 = renderer.getRoot();
+                const container = findBoxById(root2, containerId);
+                const tl = gsapWithCSS.timeline({
                   onComplete: () => {
+                    pendingCollapse = null;
                     hit.gesture.onTap();
                   }
                 });
+                if (tog) {
+                  tl.to(tog.transform, {
+                    rotate: 0,
+                    duration: 0.25,
+                    ease: "power2.in",
+                    onUpdate: () => {
+                      if (renderer) renderer.setRoot(renderer.getRoot());
+                    }
+                  }, 0);
+                }
+                if (container) {
+                  const fullH = container.height;
+                  tl.to(container, {
+                    height: 0,
+                    duration: 0.25,
+                    ease: "power2.in",
+                    onUpdate: () => {
+                      if (renderer) renderer.setRoot(renderer.getRoot());
+                    }
+                  }, 0);
+                }
+                pendingCollapse = { path: hitData.path, rowId: hit.id };
+                tl.play();
               } else {
-                hit.gesture.onTap();
+                if (tog) {
+                  gsapWithCSS.to(tog.transform, {
+                    rotate: Math.PI / 2,
+                    duration: 0.25,
+                    ease: "power2.out",
+                    onUpdate: () => {
+                      if (renderer) renderer.setRoot(renderer.getRoot());
+                    },
+                    onComplete: () => {
+                      animatingPath = hitData.path;
+                      hit.gesture.onTap();
+                    }
+                  });
+                } else {
+                  animatingPath = hitData.path;
+                  hit.gesture.onTap();
+                }
               }
             } else {
               hit.gesture.onTap();
@@ -9719,6 +9758,27 @@
     }
     if (!renderer.isRunning) {
       renderer.start();
+    }
+    if (animatingPath && newRoot) {
+      const containerId = `expanded-${animatingPath}`;
+      const container = findBoxById(newRoot, containerId);
+      if (container) {
+        const fullHeight = container.height;
+        container.height = 0;
+        gsapWithCSS.to(container, {
+          height: fullHeight,
+          duration: 0.35,
+          ease: "power2.out",
+          onUpdate: () => {
+            renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+          },
+          onComplete: () => {
+            animatingPath = null;
+          }
+        });
+      } else {
+        animatingPath = null;
+      }
     }
   }
   function findBoxById(root, id) {
