@@ -3884,6 +3884,11 @@
       this.ctx.restore();
     }
     _drawBackground(box, b) {
+      const prevComposite = box.composite || "";
+      if (prevComposite) {
+        this.ctx.save();
+        this.ctx.globalCompositeOperation = prevComposite;
+      }
       if (box.gradient) {
         this._drawGradient(box.gradient, b, box.borderRadius);
       } else {
@@ -3891,6 +3896,9 @@
         this.ctx.beginPath();
         this.ctx.roundRect(b.x, b.y, b.width, b.height, box.borderRadius);
         this.ctx.fill();
+      }
+      if (prevComposite) {
+        this.ctx.restore();
       }
       if (box.backgroundPattern && box.backgroundPattern.type === "grid") {
         this._drawBoxGridPattern(box, b);
@@ -4260,6 +4268,7 @@
       __publicField(this, "scrollbarVisible");
       // --- KFM 边���样式（高级）---
       __publicField(this, "kfmStyle");
+      __publicField(this, "composite");
       // --- 手势配置（D-013 决策）---
       __publicField(this, "gesture");
       // 矢量形状（Phase 2 Demo）
@@ -4328,6 +4337,7 @@
       this.scrollDirection = (_T = options.scrollDirection) != null ? _T : "vertical";
       this.scrollbarVisible = (_U = options.scrollbarVisible) != null ? _U : true;
       this.kfmStyle = (_V = options.kfmStyle) != null ? _V : null;
+      this.composite = options.composite || "";
       this.gesture = (_W = options.gesture) != null ? _W : null;
       this.shape = (_X = options.shape) != null ? _X : null;
       if (options.inputable) {
@@ -5056,22 +5066,22 @@
       if (root.children.includes(cursorBox)) return cursorBox;
     }
     const cursorStyle = resolveStyle("default", {
-      border: { left: "emphasis", right: "emphasis", top: "normal", bottom: "normal" },
+      border: { left: "emphasis", right: "hidden", top: "hidden", bottom: "hidden" },
       borderWidth: 1,
       emphasisScale: 3,
       cornerRadius: 4,
-      borderColor: "rgba(0,212,255,0.7)",
-      background: "none",
-      backgroundOpacity: 0,
+      borderColor: "rgba(0,230,255,0.9)",
+      background: "glass",
+      backgroundOpacity: 0.3,
       glowEnabled: false
     });
     cursorBox = new Box({
       id: "cursor-highlight",
       x: 0,
       y: canvasH / 2 - 14,
-      width: (((_a = document.getElementById("tree-canvas")) == null ? void 0 : _a.clientWidth) || 280) - 3,
-      height: 28,
-      backgroundColor: "transparent",
+      width: ((_a = document.getElementById("tree-canvas")) == null ? void 0 : _a.clientWidth) || 280,
+      height: 24,
+      backgroundColor: "rgba(0,150,255,0.18)",
       borderRadius: 4,
       interactive: false,
       visible: true,
@@ -5090,9 +5100,9 @@
     const shift = getShift(depth);
     const offsetX = shift / 2;
     cursorBox.x = abs.x + offsetX;
-    cursorBox.y = abs.y;
-    cursorBox.width = visibleW - abs.x - offsetX - 3;
-    cursorBox.height = hitBox.height;
+    cursorBox.y = abs.y + 2;
+    cursorBox.width = visibleW - abs.x - offsetX;
+    cursorBox.height = 24;
     cursorRowId = hitBox.id || null;
   }
   function onSidebarOpen() {

@@ -30,13 +30,13 @@ function ensureCursorBox(root: Box, canvasH: number): Box {
   }
 
   const cursorStyle = resolveStyle('default', {
-    border: { left: 'emphasis', right: 'emphasis', top: 'normal', bottom: 'normal' },
+    border: { left: 'emphasis', right: 'hidden', top: 'hidden', bottom: 'hidden' },
     borderWidth: 1,
     emphasisScale: 3,
     cornerRadius: 4,
-    borderColor: 'rgba(0,212,255,0.7)',
-    background: 'none',
-    backgroundOpacity: 0,
+    borderColor: 'rgba(0,230,255,0.9)',
+    background: 'glass',
+    backgroundOpacity: 0.3,
     glowEnabled: false,
   });
 
@@ -44,9 +44,9 @@ function ensureCursorBox(root: Box, canvasH: number): Box {
     id: 'cursor-highlight',
     x: 0,
     y: canvasH / 2 - 14,
-    width: (document.getElementById('tree-canvas')?.clientWidth || 280) - 3,
-    height: 28,
-    backgroundColor: 'transparent',
+    width: document.getElementById('tree-canvas')?.clientWidth || 280,
+    height: 24,
+    backgroundColor: 'rgba(0,150,255,0.18)',
     borderRadius: 4,
     interactive: false,
     visible: true,
@@ -70,9 +70,9 @@ function moveCursorTo(hitBox: Box): void {
   const offsetX = shift / 2;
 
   cursorBox.x = abs.x + offsetX;
-  cursorBox.y = abs.y;
-  cursorBox.width = visibleW - abs.x - offsetX - 3;  // 右侧留 3px 强调线空间
-  cursorBox.height = hitBox.height;
+  cursorBox.y = abs.y + 2;
+  cursorBox.width = visibleW - abs.x - offsetX;
+  cursorBox.height = 24;
   cursorRowId = hitBox.id || null;
 }
 

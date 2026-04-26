@@ -110,6 +110,8 @@ export interface BoxOptions {
 
   // KFM 边框样式（高级）
   kfmStyle?: KFMBoxStyle | null;
+n  // 背景合成模式（如 "destination-over"）
+  composite?: string;
 
   // 手势配置（D-013 决策）
   gesture?: GestureConfig | null;
@@ -196,6 +198,7 @@ export class Box {
 
   // --- KFM 边���样式（高级）---
   kfmStyle: KFMBoxStyle | null;
+  composite: string;
 
   // --- 手势配置（D-013 决策）---
   gesture: GestureConfig | null;
@@ -301,6 +304,7 @@ export class Box {
 
     // KFM 边框样式
     this.kfmStyle = options.kfmStyle ?? null;
+    this.composite = options.composite || "";
 
     // 手势配置（D-013 决策）
     this.gesture = options.gesture ?? null;

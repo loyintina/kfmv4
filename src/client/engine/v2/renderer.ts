@@ -353,6 +353,13 @@ export class Renderer {
   }
 
   private _drawBackground(box: Box, b: Rect): void {
+    // 合成模式：如 destination-over 让背景画在已有内容下面
+    const prevComposite = box.composite || '';
+    if (prevComposite) {
+      this.ctx.save();
+      this.ctx.globalCompositeOperation = prevComposite;
+    }
+
     if (box.gradient) {
       this._drawGradient(box.gradient, b, box.borderRadius);
     } else {
@@ -362,6 +369,10 @@ export class Renderer {
       this.ctx.fill();
     }
     
+    if (prevComposite) {
+      this.ctx.restore();
+    }
+
     // Phase 2 Demo：绘制 Box 的网格背景图案
     if (box.backgroundPattern && box.backgroundPattern.type === 'grid') {
       this._drawBoxGridPattern(box, b);
