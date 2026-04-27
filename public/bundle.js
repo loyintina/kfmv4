@@ -9430,7 +9430,7 @@
   var animatingPath = null;
   var pendingCollapse = null;
   var animLocked = false;
-  var prevContainerHeights = {};
+  var growTarget = null;
   function ensureCursorBox(root, canvasH) {
     var _a;
     if (cursorBox) {
@@ -9717,7 +9717,7 @@
     return null;
   }
   function rebuildTree() {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d;
     if (!renderer) return;
     if (animLocked) return;
     const prevScrollY = (_b = (_a = renderer.getRoot()) == null ? void 0 : _a.scrollY) != null ? _b : 0;
@@ -9799,6 +9799,7 @@
           },
           onComplete: () => {
             animLocked = false;
+            growTarget = `expanded-${path}`;
             rebuildTree();
           }
         });
@@ -9806,36 +9807,34 @@
         animatingPath = null;
       }
     }
-    if (newRoot && !animatingPath) {
-      let collectContainers2 = function(box) {
-        var _a2;
-        if ((_a2 = box.id) == null ? void 0 : _a2.startsWith("expanded-")) expandedContainers.push(box);
-        for (const c of box.children) collectContainers2(c);
-      };
-      var collectContainers = collectContainers2;
-      const expandedContainers = [];
-      collectContainers2(newRoot);
-      for (const container of expandedContainers) {
-        const prevH = (_e = prevContainerHeights[container.id]) != null ? _e : 0;
-        const currH = container.height;
-        if (prevH > 0 && currH > prevH + 5) {
-          container.height = prevH;
+    if (newRoot && growTarget) {
+      const container = findBoxById(newRoot, growTarget);
+      growTarget = null;
+      if (container) {
+        const loadingRow = container.children.find((c) => {
+          var _a2;
+          return (_a2 = c.id) == null ? void 0 : _a2.startsWith("loading-");
+        });
+        if (!loadingRow && container.height > 50) {
+          const fullH = container.height;
+          const startH = 36;
+          container.height = startH;
           const origYs = container.children.map((c) => c.y);
-          const diff = currH - prevH;
-          const growChildren = container.children.filter((c) => c.y >= prevH - 5);
+          const diff = fullH - startH;
+          const growChildren = container.children.slice();
           growChildren.forEach((c) => {
             c.opacity = 0;
           });
           gsapWithCSS.to(container, {
-            height: currH,
+            height: fullH,
             duration: 0.5,
             ease: "power2.out",
             onUpdate: function() {
-              const offset = container.height - currH;
+              const offset = container.height - fullH;
               for (let i = 0; i < container.children.length; i++) {
                 container.children[i].y = origYs[i] + offset;
               }
-              const progress = Math.min(1, (container.height - prevH) / diff);
+              const progress = Math.min(1, (container.height - startH) / diff);
               growChildren.forEach((c) => {
                 c.opacity = progress;
               });
@@ -9843,7 +9842,6 @@
             }
           });
         }
-        prevContainerHeights[container.id] = currH;
       }
     }
   }

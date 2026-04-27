@@ -27,7 +27,7 @@ let cursorRowId: string | null = null;  // 当前光标指向的行 id
 let animatingPath: string | null = null;  // 正在展开动画的路径
 let pendingCollapse: { path: string, rowId: string } | null = null;  // 正在折叠动画
 let animLocked = false;  // 动画期间锁定，阻止 rebuildTree 重复执行
-const prevContainerHeights: Record<string, number> = {};  // 记录容器前一次高度
+let growTarget: string | null = null;  // 需要做膨胀动画的容器 id
 
 /** 创建/获取光标 Box，保证它挂在 root 上 */
 function ensureCursorBox(root: Box, canvasH: number): Box {
@@ -460,49 +460,49 @@ function rebuildTree(): void {
           }
           renderer?.setRoot(renderer!.getRoot()!);
         },
-        onComplete: () => { animLocked = false; rebuildTree(); },
+        onComplete: () => {
+          animLocked = false;
+          // 标记该容器下次 rebuild 时可能需要膨胀动画（子项从省略号变成真实内容）
+          growTarget = `expanded-${path}`;
+          rebuildTree();
+        },
       });
     } else {
       animatingPath = null;
     }
   }
 
-  // 膨胀动画：检测已展开容器高度变化，平滑过渡
-  if (newRoot && !animatingPath) {
-    const expandedContainers: Box[] = [];
-    function collectContainers(box: Box) {
-      if (box.id?.startsWith('expanded-')) expandedContainers.push(box);
-      for (const c of box.children) collectContainers(c);
-    }
-    collectContainers(newRoot);
+  // 膨胀动画：仅针对 growTarget 容器（从省略号变成真实内容）
+  if (newRoot && growTarget) {
+    const container = findBoxById(newRoot, growTarget);
+    growTarget = null;
     
-    for (const container of expandedContainers) {
-      const prevH = prevContainerHeights[container.id!] ?? 0;
-      const currH = container.height;
-      if (prevH > 0 && currH > prevH + 5) {
-        // 高度显著增加 → 做膨胀动画
-        container.height = prevH;
+    if (container) {
+      // 检查是否省略号占位符已消失（有真实子项）
+      const loadingRow = container.children.find(c => c.id?.startsWith('loading-'));
+      if (!loadingRow && container.height > 50) {
+        const fullH = container.height;
+        const startH = 36;
+        container.height = startH;
         const origYs = container.children.map(c => c.y);
-        const diff = currH - prevH;
-        // 新增子项从下方滑入 + 渐显
-        const growChildren = container.children.filter(c => c.y >= prevH - 5);
+        const diff = fullH - startH;
+        const growChildren = container.children.slice();
         growChildren.forEach(c => { c.opacity = 0; });
         gsap.to(container, {
-          height: currH,
+          height: fullH,
           duration: 0.5,
           ease: 'power2.out',
           onUpdate: function() {
-            const offset = container.height - currH;  // -(diff) → 0
+            const offset = container.height - fullH;
             for (let i = 0; i < container.children.length; i++) {
               container.children[i].y = origYs[i] + offset;
             }
-            const progress = Math.min(1, (container.height - prevH) / diff);
+            const progress = Math.min(1, (container.height - startH) / diff);
             growChildren.forEach(c => { c.opacity = progress; });
             renderer?.setRoot(renderer!.getRoot()!);
           },
         });
       }
-      prevContainerHeights[container.id!] = currH;
     }
   }
 }
