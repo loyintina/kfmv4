@@ -500,6 +500,8 @@ function rebuildTree(): void {
   }
 
 
+  // grow animation
+  if (newRoot && growTarget) {
     const container = findBoxById(newRoot, growTarget);
     growTarget = null;
     
@@ -590,7 +592,7 @@ function applyAnimOffset(
       if (sib.id === 'cursor-highlight') continue;
       sib.y = anc.sibOrigYs[i - anc.sibIdx - 1] + heightDelta;
     }
-    // 调整祖先���度（root 不调，它是画布高度）
+    // ��整祖先���度（root 不调，它是画布高度）
     if (anc.parent !== root) {
       anc.parent.height = anc.origHeight + heightDelta;
     }

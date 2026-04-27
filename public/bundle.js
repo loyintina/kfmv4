@@ -9836,6 +9836,8 @@
             }
           }
         });
+        applyAnimOffset(container, origYs, fullHeight, ancestors, root);
+        renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
       } else {
         animatingPath = null;
       }
@@ -9865,6 +9867,8 @@
               renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
             }
           });
+          applyAnimOffset(container, origYs, fullH, ancestors, root);
+          renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
         }
       }
     }
