@@ -312,6 +312,15 @@ function bindClickEvents(canvas: HTMLCanvasElement, _dpr: number): void {
                 const fullH = container.height;
                 // 记录子项原始 y
                 const origYs = container.children.map(c => c.y);
+                // 后续兄弟
+                const parent = container.parent;
+                const sibIdx = parent ? parent.children.indexOf(container) : -1;
+                const sibOrigYs: number[] = [];
+                if (parent && sibIdx >= 0) {
+                  for (let i = sibIdx + 1; i < parent.children.length; i++) {
+                    sibOrigYs.push(parent.children[i].y);
+                  }
+                }
                 tl.to(container, {
                   height: 0,
                   duration: 0.3,
@@ -320,6 +329,11 @@ function bindClickEvents(canvas: HTMLCanvasElement, _dpr: number): void {
                     const offset = container.height - fullH;  // 0 → -fullH
                     for (let i = 0; i < container.children.length; i++) {
                       container.children[i].y = origYs[i] + offset;
+                    }
+                    if (parent && sibIdx >= 0) {
+                      for (let i = sibIdx + 1; i < parent.children.length; i++) {
+                        parent.children[i].y = sibOrigYs[i - sibIdx - 1] + offset;
+                      }
                     }
                     renderer?.setRoot(renderer!.getRoot()!);
                   },
@@ -439,6 +453,15 @@ function rebuildTree(): void {
         origYs.push(child.y);
         child.y = child.y - fullHeight;  // 初始推到容器上方
       }
+      // 找到容器的后续兄弟（需要跟着一起动）
+      const parent = container.parent;
+      const sibIdx = parent ? parent.children.indexOf(container) : -1;
+      const sibOrigYs: number[] = [];
+      if (parent && sibIdx >= 0) {
+        for (let i = sibIdx + 1; i < parent.children.length; i++) {
+          sibOrigYs.push(parent.children[i].y);
+        }
+      }
       // 三角形从 0 旋转到 90°
       if (tog) {
         tog.transform.rotate = 0;
@@ -457,6 +480,12 @@ function rebuildTree(): void {
           const offset = container.height - fullHeight;  // -fullHeight → 0
           for (let i = 0; i < container.children.length; i++) {
             container.children[i].y = origYs[i] + offset;
+          }
+          // 后续兄弟跟着偏移
+          if (parent && sibIdx >= 0) {
+            for (let i = sibIdx + 1; i < parent.children.length; i++) {
+              parent.children[i].y = sibOrigYs[i - sibIdx - 1] + offset;
+            }
           }
           renderer?.setRoot(renderer!.getRoot()!);
         },
@@ -491,6 +520,15 @@ function rebuildTree(): void {
         const diff = fullH - startH;
         const growChildren = container.children.slice();
         growChildren.forEach(c => { c.opacity = 0; });
+        // 后续兄弟
+        const parent = container.parent;
+        const sibIdx = parent ? parent.children.indexOf(container) : -1;
+        const sibOrigYs: number[] = [];
+        if (parent && sibIdx >= 0) {
+          for (let i = sibIdx + 1; i < parent.children.length; i++) {
+            sibOrigYs.push(parent.children[i].y);
+          }
+        }
         gsap.to(container, {
           height: fullH,
           duration: 0.5,
@@ -499,6 +537,11 @@ function rebuildTree(): void {
             const offset = container.height - fullH;
             for (let i = 0; i < container.children.length; i++) {
               container.children[i].y = origYs[i] + offset;
+            }
+            if (parent && sibIdx >= 0) {
+              for (let i = sibIdx + 1; i < parent.children.length; i++) {
+                parent.children[i].y = sibOrigYs[i - sibIdx - 1] + offset;
+              }
             }
             const progress = Math.min(1, (container.height - startH) / diff);
             growChildren.forEach(c => { c.opacity = progress; });

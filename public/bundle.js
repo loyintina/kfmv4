@@ -9673,6 +9673,14 @@
                 if (container) {
                   const fullH = container.height;
                   const origYs = container.children.map((c) => c.y);
+                  const parent = container.parent;
+                  const sibIdx = parent ? parent.children.indexOf(container) : -1;
+                  const sibOrigYs = [];
+                  if (parent && sibIdx >= 0) {
+                    for (let i = sibIdx + 1; i < parent.children.length; i++) {
+                      sibOrigYs.push(parent.children[i].y);
+                    }
+                  }
                   tl.to(container, {
                     height: 0,
                     duration: 0.3,
@@ -9681,6 +9689,11 @@
                       const offset = container.height - fullH;
                       for (let i = 0; i < container.children.length; i++) {
                         container.children[i].y = origYs[i] + offset;
+                      }
+                      if (parent && sibIdx >= 0) {
+                        for (let i = sibIdx + 1; i < parent.children.length; i++) {
+                          parent.children[i].y = sibOrigYs[i - sibIdx - 1] + offset;
+                        }
                       }
                       renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
                     }
@@ -9775,6 +9788,14 @@
           origYs.push(child.y);
           child.y = child.y - fullHeight;
         }
+        const parent = container.parent;
+        const sibIdx = parent ? parent.children.indexOf(container) : -1;
+        const sibOrigYs = [];
+        if (parent && sibIdx >= 0) {
+          for (let i = sibIdx + 1; i < parent.children.length; i++) {
+            sibOrigYs.push(parent.children[i].y);
+          }
+        }
         if (tog) {
           tog.transform.rotate = 0;
           gsapWithCSS.to(tog.transform, {
@@ -9794,6 +9815,11 @@
             const offset = container.height - fullHeight;
             for (let i = 0; i < container.children.length; i++) {
               container.children[i].y = origYs[i] + offset;
+            }
+            if (parent && sibIdx >= 0) {
+              for (let i = sibIdx + 1; i < parent.children.length; i++) {
+                parent.children[i].y = sibOrigYs[i - sibIdx - 1] + offset;
+              }
             }
             renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
           },
@@ -9831,6 +9857,14 @@
           growChildren.forEach((c) => {
             c.opacity = 0;
           });
+          const parent = container.parent;
+          const sibIdx = parent ? parent.children.indexOf(container) : -1;
+          const sibOrigYs = [];
+          if (parent && sibIdx >= 0) {
+            for (let i = sibIdx + 1; i < parent.children.length; i++) {
+              sibOrigYs.push(parent.children[i].y);
+            }
+          }
           gsapWithCSS.to(container, {
             height: fullH,
             duration: 0.5,
@@ -9839,6 +9873,11 @@
               const offset = container.height - fullH;
               for (let i = 0; i < container.children.length; i++) {
                 container.children[i].y = origYs[i] + offset;
+              }
+              if (parent && sibIdx >= 0) {
+                for (let i = sibIdx + 1; i < parent.children.length; i++) {
+                  parent.children[i].y = sibOrigYs[i - sibIdx - 1] + offset;
+                }
               }
               const progress = Math.min(1, (container.height - startH) / diff);
               growChildren.forEach((c) => {
