@@ -473,7 +473,7 @@ function rebuildTree(): void {
     }
   }
 
-  // 膨胀动画：仅针对 growTarget 容���（从省略号变成真实内容）
+  // 膨胀动画：仅针对 growTarget 容�������（从省略号变成真实内容）
   if (newRoot && growTarget) {
     const container = findBoxById(newRoot, growTarget);
     growTarget = null;
@@ -526,7 +526,7 @@ interface AncestorInfo {
 function collectAncestors(box: Box, root: Box): AncestorInfo[] {
   const ancestors: AncestorInfo[] = [];
   let current = box;
-  while (current.parent && current.parent !== root) {
+  while (current.parent) {
     const p = current.parent;
     const idx = p.children.indexOf(current);
     if (idx < 0) break;
@@ -535,6 +535,7 @@ function collectAncestors(box: Box, root: Box): AncestorInfo[] {
       sibOrigYs.push(p.children[i].y);
     }
     ancestors.push({ parent: p, sibIdx: idx, sibOrigYs, origHeight: p.height });
+    if (p === root) break;  // 到 root 为e止（含 root 层）
     current = p;
   }
   return ancestors;
@@ -555,8 +556,8 @@ function applyAnimOffset(
     container.children[i].y = containerOrigYs[i] + offset;
   }
   
-  // 2) 逐层祖先：偏移后续兄弟 + 调整父容器高度
-  let heightDelta = offset;  // 容器高度变化量
+  // 2) 逐层祖先：偏移后续兄弟 + 调整父容器高度（root 除外）
+  let heightDelta = offset;
   for (const anc of ancestors) {
     // 偏移后续兄弟
     for (let i = anc.sibIdx + 1; i < anc.parent.children.length; i++) {
@@ -564,9 +565,10 @@ function applyAnimOffset(
       if (sib.id === 'cursor-highlight') continue;
       sib.y = anc.sibOrigYs[i - anc.sibIdx - 1] + heightDelta;
     }
-    // 调整祖先高度
-    anc.parent.height = anc.origHeight + heightDelta;
-    // heightDelta 不变，因为祖先的高度变化 = 容器的高度变化
+    // 调整祖先高度（root 不调，它是画布高度）
+    if (anc.parent !== root) {
+      anc.parent.height = anc.origHeight + heightDelta;
+    }
   }
 }
 

@@ -9860,7 +9860,7 @@
   function collectAncestors(box, root) {
     const ancestors = [];
     let current = box;
-    while (current.parent && current.parent !== root) {
+    while (current.parent) {
       const p = current.parent;
       const idx = p.children.indexOf(current);
       if (idx < 0) break;
@@ -9869,6 +9869,7 @@
         sibOrigYs.push(p.children[i].y);
       }
       ancestors.push({ parent: p, sibIdx: idx, sibOrigYs, origHeight: p.height });
+      if (p === root) break;
       current = p;
     }
     return ancestors;
@@ -9885,7 +9886,9 @@
         if (sib.id === "cursor-highlight") continue;
         sib.y = anc.sibOrigYs[i - anc.sibIdx - 1] + heightDelta;
       }
-      anc.parent.height = anc.origHeight + heightDelta;
+      if (anc.parent !== root) {
+        anc.parent.height = anc.origHeight + heightDelta;
+      }
     }
   }
   function snapToCenterRow(root, canvasH) {
