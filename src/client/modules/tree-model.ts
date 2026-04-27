@@ -122,6 +122,7 @@ function buildExpanded(path: string, children: FileNode[], ctx: BuildCtx, depth:
     const lb = createBox('file-label', { id: `loading-label-${path}`, x: TXT_L, width: w - TXT_L - 8, height: lr.height });
     lb.textStyle = { ...TEXT_STYLES.fileLabel, content: '\u2026', color: '#e8e0f0' };
     lr.addChild(lb); container.addChild(lr); container.height = LINE_HEIGHT + 10;
+    container.gradient = undefined;  // loading 时不要渐变背景
     return container;
   }
 

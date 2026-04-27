@@ -5018,6 +5018,7 @@
       lr.addChild(lb);
       container.addChild(lr);
       container.height = LINE_HEIGHT + 10;
+      container.gradient = void 0;
       return container;
     }
     for (const item of children) {
