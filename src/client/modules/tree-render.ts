@@ -460,12 +460,12 @@ function rebuildTree(): void {
         },
         onComplete: () => {
           animLocked = false;
-          // 只有容器内有省略号占位符时，才需要等异步加载后做膨胀动画
+          // 只有省略号占位符时才需要 rebuild 等待异步加载
           const hasLoading = container.children.some(c => c.id?.startsWith('loading-'));
           if (hasLoading) {
             growTarget = `expanded-${path}`;
+            rebuildTree();
           }
-          rebuildTree();
         },
       });
     } else {
@@ -473,7 +473,7 @@ function rebuildTree(): void {
     }
   }
 
-  // 膨胀动画：仅针对 growTarget 容�������（从省略号变成真实内容）
+  // 膨胀动画：仅针对 growTarget 容���������（从省略号变成真实内容）
   if (newRoot && growTarget) {
     const container = findBoxById(newRoot, growTarget);
     growTarget = null;

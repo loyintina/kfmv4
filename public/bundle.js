@@ -9804,8 +9804,8 @@
             });
             if (hasLoading) {
               growTarget = `expanded-${path}`;
+              rebuildTree();
             }
-            rebuildTree();
           }
         });
       } else {
