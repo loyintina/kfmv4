@@ -384,6 +384,32 @@ function rebuildTree(): void {
   if (canvas) {
     rootBox.height = canvasH;
   }
+
+  // 在 setRoot 之前预设动画初始状态，避免满高一帧闪烁
+  if (animatingPath) {
+    const preContainer = findBoxById(rootBox, `expanded-${animatingPath}`);
+    if (preContainer) {
+      const preFullH = preContainer.height;
+      (preContainer as any)._fullHeight = preFullH;
+      (preContainer as any)._origYs = preContainer.children.map((c: any) => c.y);
+      preContainer.height = 0;
+      for (const child of preContainer.children) { child.y = child.y - preFullH; }
+    }
+  }
+  if (growTarget) {
+    const gc = findBoxById(rootBox, growTarget);
+    if (gc && gc.height > 50) {
+      const gfh = gc.height;
+      (gc as any)._growFullH = gfh;
+      (gc as any)._growOrigYs = gc.children.map((c: any) => c.y);
+      gc.height = 36;
+      const gd = gfh - 36;
+      for (const child of gc.children) { child.y = child.y - gd; }
+      // 子项透明
+      gc.children.forEach((c: any) => { c.opacity = 0; });
+    }
+  }
+
   renderer.setRoot(rootBox);
 
   // 恢复滚动位置
@@ -429,16 +455,14 @@ function rebuildTree(): void {
     const tog = titleRow?.children?.find(c => c.id?.startsWith('toggle-'));
     
     if (container) {
-      const fullHeight = container.height;
-      container.height = 0;
-      const root = renderer!.getRoot()!;
-      // 记录子项原始 y
-      const origYs: number[] = [];
-      for (const child of container.children) {
-        origYs.push(child.y);
-        child.y = child.y - fullHeight;
+      const fullHeight = (container as any)._fullHeight || 0;
+      const origYs: number[] = (container as any)._origYs || container.children.map(c => c.y);
+      if (!fullHeight) {
+        animatingPath = null;
+        animLocked = false;
+        return;
       }
-      // 收集祖先信息（递归向上偏移用）
+      const root = renderer!.getRoot()!;
       const ancestors = collectAncestors(container, root);
       // 三角形从 0 旋转到 90°
       if (tog) {
@@ -460,7 +484,7 @@ function rebuildTree(): void {
         },
         onComplete: () => {
           animLocked = false;
-          // 只有省略号占位符时才需要 rebuild 等待异步加载
+          // 只有省略号占位符��才需要 rebuild 等待异步加载
           const hasLoading = container.children.some(c => c.id?.startsWith('loading-'));
           if (hasLoading) {
             growTarget = `expanded-${path}`;
@@ -473,22 +497,20 @@ function rebuildTree(): void {
     }
   }
 
-  // 膨胀动画：仅针对 growTarget 容���������（从省略号变成真实内容）
+
+  // 膨胀动画：仅针对 growTarget 容器（从省略号变成真实内容）
   if (newRoot && growTarget) {
     const container = findBoxById(newRoot, growTarget);
     growTarget = null;
     
     if (container) {
-      const loadingRow = container.children.find(c => c.id?.startsWith('loading-'));
-      if (!loadingRow && container.height > 50) {
-        const fullH = container.height;
-        const startH = 36;
-        container.height = startH;
+      const fullH = (container as any)._growFullH || container.height;
+      const origYs: number[] = (container as any)._growOrigYs || container.children.map((c: any) => c.y);
+      const startH = 36;
+      if (fullH > 50) {
         const root = renderer!.getRoot()!;
-        const origYs = container.children.map(c => c.y);
         const diff = fullH - startH;
         const growChildren = container.children.slice();
-        growChildren.forEach(c => { c.opacity = 0; });
         const ancestors = collectAncestors(container, root);
         gsap.to(container, {
           height: fullH,
@@ -572,7 +594,7 @@ function applyAnimOffset(
   }
 }
 
-/** 光标吸附到视口中央最近的行 */
+/** 光��吸附到视口中央最近的行 */
 function snapToCenterRow(root: Box, canvasH: number): void {
   const scrollY = root.scrollY ?? 0;
   const centerY = scrollY + canvasH / 2;

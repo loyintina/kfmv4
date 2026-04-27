@@ -9733,6 +9733,34 @@
     if (canvas) {
       rootBox.height = canvasH;
     }
+    if (animatingPath) {
+      const preContainer = findBoxById(rootBox, `expanded-${animatingPath}`);
+      if (preContainer) {
+        const preFullH = preContainer.height;
+        preContainer._fullHeight = preFullH;
+        preContainer._origYs = preContainer.children.map((c) => c.y);
+        preContainer.height = 0;
+        for (const child of preContainer.children) {
+          child.y = child.y - preFullH;
+        }
+      }
+    }
+    if (growTarget) {
+      const gc = findBoxById(rootBox, growTarget);
+      if (gc && gc.height > 50) {
+        const gfh = gc.height;
+        gc._growFullH = gfh;
+        gc._growOrigYs = gc.children.map((c) => c.y);
+        gc.height = 36;
+        const gd = gfh - 36;
+        for (const child of gc.children) {
+          child.y = child.y - gd;
+        }
+        gc.children.forEach((c) => {
+          c.opacity = 0;
+        });
+      }
+    }
     renderer.setRoot(rootBox);
     const newRoot = renderer.getRoot();
     if (newRoot && prevScrollY > 0) {
@@ -9768,14 +9796,14 @@
         return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
       });
       if (container) {
-        const fullHeight = container.height;
-        container.height = 0;
-        const root = renderer.getRoot();
-        const origYs = [];
-        for (const child of container.children) {
-          origYs.push(child.y);
-          child.y = child.y - fullHeight;
+        const fullHeight = container._fullHeight || 0;
+        const origYs = container._origYs || container.children.map((c) => c.y);
+        if (!fullHeight) {
+          animatingPath = null;
+          animLocked = false;
+          return;
         }
+        const root = renderer.getRoot();
         const ancestors = collectAncestors(container, root);
         if (tog) {
           tog.transform.rotate = 0;
@@ -9816,21 +9844,13 @@
       const container = findBoxById(newRoot, growTarget);
       growTarget = null;
       if (container) {
-        const loadingRow = container.children.find((c) => {
-          var _a2;
-          return (_a2 = c.id) == null ? void 0 : _a2.startsWith("loading-");
-        });
-        if (!loadingRow && container.height > 50) {
-          const fullH = container.height;
-          const startH = 36;
-          container.height = startH;
+        const fullH = container._growFullH || container.height;
+        const origYs = container._growOrigYs || container.children.map((c) => c.y);
+        const startH = 36;
+        if (fullH > 50) {
           const root = renderer.getRoot();
-          const origYs = container.children.map((c) => c.y);
           const diff = fullH - startH;
           const growChildren = container.children.slice();
-          growChildren.forEach((c) => {
-            c.opacity = 0;
-          });
           const ancestors = collectAncestors(container, root);
           gsapWithCSS.to(container, {
             height: fullH,
