@@ -5012,7 +5012,7 @@
     });
     let cy = 0;
     if (children.length === 0) {
-      const lr = createBox("file-row", { id: `loading-${path}`, x: 0, y: 0, width: w, height: LINE_HEIGHT + 6 });
+      const lr = createBox("file-row", { id: `loading-${path}`, x: 0, y: 0, width: w, height: LINE_HEIGHT + 6, backgroundColor: "transparent" });
       const lb = createBox("file-label", { id: `loading-label-${path}`, x: TXT_L, width: w - TXT_L - 8, height: lr.height });
       lb.textStyle = { ...TEXT_STYLES.fileLabel, content: "\u2026", color: "#e8e0f0" };
       lr.addChild(lb);
