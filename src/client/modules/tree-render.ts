@@ -27,6 +27,7 @@ let cursorRowId: string | null = null;  // 当前光标指向的行 id
 let animatingPath: string | null = null;  // 正在展开动画的路径
 let pendingCollapse: { path: string, rowId: string } | null = null;  // 正在折叠动画
 let animLocked = false;  // 动画期间锁定，阻止 rebuildTree 重复执行
+const prevContainerHeights: Record<string, number> = {};  // 记录容器前一次高度
 
 /** 创建/获取光标 Box，保证它挂在 root 上 */
 function ensureCursorBox(root: Box, canvasH: number): Box {
@@ -463,6 +464,32 @@ function rebuildTree(): void {
       });
     } else {
       animatingPath = null;
+    }
+  }
+
+  // 膨胀动画：检测已展开容器高度变化，平滑过渡
+  if (newRoot && !animatingPath) {
+    const expandedContainers: Box[] = [];
+    function collectContainers(box: Box) {
+      if (box.id?.startsWith('expanded-')) expandedContainers.push(box);
+      for (const c of box.children) collectContainers(c);
+    }
+    collectContainers(newRoot);
+    
+    for (const container of expandedContainers) {
+      const prevH = prevContainerHeights[container.id!] ?? 0;
+      const currH = container.height;
+      if (prevH > 0 && currH > prevH + 5) {
+        // 高度显著增加 → 做膨胀动画
+        container.height = prevH;
+        gsap.to(container, {
+          height: currH,
+          duration: 0.3,
+          ease: 'power2.out',
+          onUpdate: () => { renderer?.setRoot(renderer!.getRoot()!); },
+        });
+      }
+      prevContainerHeights[container.id!] = currH;
     }
   }
 }

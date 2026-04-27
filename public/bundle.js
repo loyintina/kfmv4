@@ -9430,6 +9430,7 @@
   var animatingPath = null;
   var pendingCollapse = null;
   var animLocked = false;
+  var prevContainerHeights = {};
   function ensureCursorBox(root, canvasH) {
     var _a;
     if (cursorBox) {
@@ -9716,7 +9717,7 @@
     return null;
   }
   function rebuildTree() {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e;
     if (!renderer) return;
     if (animLocked) return;
     const prevScrollY = (_b = (_a = renderer.getRoot()) == null ? void 0 : _a.scrollY) != null ? _b : 0;
@@ -9803,6 +9804,32 @@
         });
       } else {
         animatingPath = null;
+      }
+    }
+    if (newRoot && !animatingPath) {
+      let collectContainers2 = function(box) {
+        var _a2;
+        if ((_a2 = box.id) == null ? void 0 : _a2.startsWith("expanded-")) expandedContainers.push(box);
+        for (const c of box.children) collectContainers2(c);
+      };
+      var collectContainers = collectContainers2;
+      const expandedContainers = [];
+      collectContainers2(newRoot);
+      for (const container of expandedContainers) {
+        const prevH = (_e = prevContainerHeights[container.id]) != null ? _e : 0;
+        const currH = container.height;
+        if (prevH > 0 && currH > prevH + 5) {
+          container.height = prevH;
+          gsapWithCSS.to(container, {
+            height: currH,
+            duration: 0.3,
+            ease: "power2.out",
+            onUpdate: () => {
+              renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+            }
+          });
+        }
+        prevContainerHeights[container.id] = currH;
       }
     }
   }
