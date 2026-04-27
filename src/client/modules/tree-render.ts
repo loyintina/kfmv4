@@ -484,7 +484,6 @@ function rebuildTree(): void {
         },
         onComplete: () => {
           animLocked = false;
-          // 只有省略号占位符��才需要 rebuild 等待异步加载
           const hasLoading = container.children.some(c => c.id?.startsWith('loading-'));
           if (hasLoading) {
             growTarget = `expanded-${path}`;
@@ -492,14 +491,15 @@ function rebuildTree(): void {
           }
         },
       });
+      // 立即应用一帧偏移，避免 GSAP 首帧延迟导致闪烁
+      applyAnimOffset(container, origYs, fullHeight, ancestors, root);
+      renderer?.setRoot(renderer!.getRoot()!);
     } else {
       animatingPath = null;
     }
   }
 
 
-  // 膨胀动画：仅针对 growTarget 容器（从省略号变成真实内容）
-  if (newRoot && growTarget) {
     const container = findBoxById(newRoot, growTarget);
     growTarget = null;
     
@@ -523,6 +523,9 @@ function rebuildTree(): void {
             renderer?.setRoot(renderer!.getRoot()!);
           },
         });
+        // 立即应用一帧，避免 GSAP 首帧延迟
+        applyAnimOffset(container, origYs, fullH, ancestors, root);
+        renderer?.setRoot(renderer!.getRoot()!);
       }
     }
   }
@@ -587,14 +590,14 @@ function applyAnimOffset(
       if (sib.id === 'cursor-highlight') continue;
       sib.y = anc.sibOrigYs[i - anc.sibIdx - 1] + heightDelta;
     }
-    // 调整祖先高度（root 不调，它是画布高度）
+    // 调整祖先���度（root 不调，它是画布高度）
     if (anc.parent !== root) {
       anc.parent.height = anc.origHeight + heightDelta;
     }
   }
 }
 
-/** 光��吸附到视口中央最近的行 */
+/** 光����附到视口中央最近的行 */
 function snapToCenterRow(root: Box, canvasH: number): void {
   const scrollY = root.scrollY ?? 0;
   const centerY = scrollY + canvasH / 2;
