@@ -9836,6 +9836,7 @@
             }
           }
         });
+        animateBounce(container, root);
         applyAnimOffset(container, origYs, fullHeight, ancestors, root);
         renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
       } else {
@@ -9939,6 +9940,76 @@
     }
     walk(root);
     if (closest) moveCursorTo(closest);
+  }
+  function animateBounce(container, root) {
+    var _a, _b, _c, _d, _e;
+    const children = container.children;
+    if (!children || children.length === 0) return;
+    const groups = [];
+    for (let i = 0; i < children.length; i++) {
+      const child = children[i];
+      if ((_a = child.id) == null ? void 0 : _a.startsWith("cursor-highlight")) continue;
+      if ((_b = child.id) == null ? void 0 : _b.startsWith("title-")) {
+        const group = [child];
+        const next = children[i + 1];
+        if (next && next.id === "expanded-" + child.id.slice(6)) {
+          group.push(next);
+          i++;
+        }
+        groups.push(group);
+      } else if ((_c = child.id) == null ? void 0 : _c.startsWith("file-")) {
+        groups.push([child]);
+      } else if ((_d = child.id) == null ? void 0 : _d.startsWith("expanded-")) {
+        groups.push([child]);
+      }
+    }
+    if (groups.length === 0) return;
+    const bounceDist = 6;
+    const baseDelay = 18;
+    const downDuration = 0.2;
+    const upDuration = 0.2;
+    groups.forEach((group, idx) => {
+      const delay = idx * baseDelay / 1e3;
+      group.forEach((b) => {
+        b.transform.translateY = 0;
+      });
+      group.forEach((b) => {
+        gsapWithCSS.to(b.transform, {
+          translateY: bounceDist,
+          duration: downDuration,
+          ease: "power2.out",
+          delay,
+          onUpdate: () => {
+            renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+          }
+        });
+      });
+      group.forEach((b) => {
+        gsapWithCSS.to(b.transform, {
+          translateY: 0,
+          duration: upDuration,
+          ease: "back.out(1.7)",
+          delay: delay + downDuration,
+          onUpdate: () => {
+            renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+          }
+        });
+      });
+    });
+    const subContainers = [];
+    for (const child of children) {
+      if (((_e = child.id) == null ? void 0 : _e.startsWith("expanded-")) && child.height > 0) {
+        subContainers.push(child);
+      }
+    }
+    if (subContainers.length > 0) {
+      const subDelay = 0.04;
+      setTimeout(() => {
+        for (const sub of subContainers) {
+          animateBounce(sub, root);
+        }
+      }, subDelay * 1e3);
+    }
   }
 
   // src/client/modules/ui.ts

@@ -491,6 +491,8 @@ function rebuildTree(): void {
           }
         },
       });
+      // 展开动画开始的同时，触发内部子行弹跳
+      animateBounce(container, root);
       // 立即应用一帧偏移，避免 GSAP 首帧延迟导致闪烁
       applyAnimOffset(container, origYs, fullHeight, ancestors, root);
       renderer?.setRoot(renderer!.getRoot()!);
@@ -624,4 +626,84 @@ function snapToCenterRow(root: Box, canvasH: number): void {
 
   walk(root);
   if (closest) moveCursorTo(closest);
+}
+
+/**
+ * 展开动画完成后：容器内部子行依次做 y 偏移弹跳，产生 Q 弹感。
+ * 每行先向下偏移 bounceDist，再 back.out 弹回。
+ * 同层 title-* + 紧跟的 expanded-* 作为一组整体弹跳。
+ */
+function animateBounce(container: Box, root: Box): void {
+  const children = container.children;
+  if (!children || children.length === 0) return;
+
+  // 按 title+expanded 分组
+  const groups: Box[][] = [];
+  for (let i = 0; i < children.length; i++) {
+    const child = children[i];
+    if (child.id?.startsWith('cursor-highlight')) continue;
+    if (child.id?.startsWith('title-')) {
+      const group: Box[] = [child];
+      const next = children[i + 1];
+      if (next && next.id === 'expanded-' + child.id!.slice(6)) {
+        group.push(next);
+        i++;
+      }
+      groups.push(group);
+    } else if (child.id?.startsWith('file-')) {
+      groups.push([child]);
+    } else if (child.id?.startsWith('expanded-')) {
+      groups.push([child]);
+    }
+  }
+
+  if (groups.length === 0) return;
+
+  const bounceDist = 6;
+  const baseDelay = 18; // ms
+  const downDuration = 0.2;
+  const upDuration = 0.2;
+
+  groups.forEach((group, idx) => {
+    const delay = idx * baseDelay / 1000;
+    // 重置 translateY
+    group.forEach(b => { b.transform.translateY = 0; });
+    // 先向下弹（用 translateY，不与 applyAnimOffset 的 y 冲突）
+    group.forEach(b => {
+      gsap.to(b.transform, {
+        translateY: bounceDist,
+        duration: downDuration,
+        ease: 'power2.out',
+        delay: delay,
+        onUpdate: () => { renderer?.setRoot(renderer!.getRoot()!); },
+      });
+    });
+    // 再弹回
+    group.forEach(b => {
+      gsap.to(b.transform, {
+        translateY: 0,
+        duration: upDuration,
+        ease: 'back.out(1.7)',
+        delay: delay + downDuration,
+        onUpdate: () => { renderer?.setRoot(renderer!.getRoot()!); },
+      });
+    });
+  });
+
+  // 递归：对容器内已展开的子文件夹也触发弹跳
+  const subContainers: Box[] = [];
+  for (const child of children) {
+    if (child.id?.startsWith('expanded-') && child.height > 0) {
+      subContainers.push(child);
+    }
+  }
+  if (subContainers.length > 0) {
+    // 子层和当前层几乎同时开始，仅微小延迟产生层次感
+    const subDelay = 0.04;
+    setTimeout(() => {
+      for (const sub of subContainers) {
+        animateBounce(sub, root);
+      }
+    }, subDelay * 1000);
+  }
 }
