@@ -459,7 +459,7 @@ function rebuildTree(): void {
           }
           renderer?.setRoot(renderer!.getRoot()!);
         },
-        onComplete: () => { animLocked = false; },
+        onComplete: () => { animLocked = false; rebuildTree(); },
       });
     } else {
       animatingPath = null;

@@ -9798,6 +9798,7 @@
           },
           onComplete: () => {
             animLocked = false;
+            rebuildTree();
           }
         });
       } else {
