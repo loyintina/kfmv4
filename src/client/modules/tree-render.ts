@@ -462,8 +462,11 @@ function rebuildTree(): void {
         },
         onComplete: () => {
           animLocked = false;
-          // 标记该容器下次 rebuild 时可能需要膨胀动画（子项从省略号变成真实内容）
-          growTarget = `expanded-${path}`;
+          // 只有容器内有省略号占位符时，才需要等异步加载后做膨胀动画
+          const hasLoading = container.children.some(c => c.id?.startsWith('loading-'));
+          if (hasLoading) {
+            growTarget = `expanded-${path}`;
+          }
           rebuildTree();
         },
       });

@@ -9799,7 +9799,13 @@
           },
           onComplete: () => {
             animLocked = false;
-            growTarget = `expanded-${path}`;
+            const hasLoading = container.children.some((c) => {
+              var _a2;
+              return (_a2 = c.id) == null ? void 0 : _a2.startsWith("loading-");
+            });
+            if (hasLoading) {
+              growTarget = `expanded-${path}`;
+            }
             rebuildTree();
           }
         });
