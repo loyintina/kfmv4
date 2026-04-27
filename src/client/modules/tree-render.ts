@@ -310,32 +310,15 @@ function bindClickEvents(canvas: HTMLCanvasElement, _dpr: number): void {
               
               if (container) {
                 const fullH = container.height;
-                // 记录子项原始 y
+                const root = renderer!.getRoot()!;
                 const origYs = container.children.map(c => c.y);
-                // 后续兄弟
-                const parent = container.parent;
-                const sibIdx = parent ? parent.children.indexOf(container) : -1;
-                const sibOrigYs: number[] = [];
-                if (parent && sibIdx >= 0) {
-                  for (let i = sibIdx + 1; i < parent.children.length; i++) {
-                    sibOrigYs.push(parent.children[i].y);
-                  }
-                }
+                const ancestors = collectAncestors(container, root);
                 tl.to(container, {
                   height: 0,
                   duration: 0.3,
                   ease: 'power2.in',
                   onUpdate: function() {
-                    const offset = container.height - fullH;  // 0 → -fullH
-                    for (let i = 0; i < container.children.length; i++) {
-                      container.children[i].y = origYs[i] + offset;
-                    }
-                    if (parent && sibIdx >= 0) {
-                      for (let i = sibIdx + 1; i < parent.children.length; i++) {
-                        if (parent.children[i].id === 'cursor-highlight') continue;
-                        parent.children[i].y = sibOrigYs[i - sibIdx - 1] + offset;
-                      }
-                    }
+                    applyAnimOffset(container, origYs, fullH, ancestors, root);
                     renderer?.setRoot(renderer!.getRoot()!);
                   },
                 }, 0);
@@ -448,21 +431,15 @@ function rebuildTree(): void {
     if (container) {
       const fullHeight = container.height;
       container.height = 0;
+      const root = renderer!.getRoot()!;
       // 记录子项原始 y
       const origYs: number[] = [];
       for (const child of container.children) {
         origYs.push(child.y);
-        child.y = child.y - fullHeight;  // 初始推到容器上方
+        child.y = child.y - fullHeight;
       }
-      // 找到容器的后续兄弟（需要跟着一起动）
-      const parent = container.parent;
-      const sibIdx = parent ? parent.children.indexOf(container) : -1;
-      const sibOrigYs: number[] = [];
-      if (parent && sibIdx >= 0) {
-        for (let i = sibIdx + 1; i < parent.children.length; i++) {
-          sibOrigYs.push(parent.children[i].y);
-        }
-      }
+      // 收集祖先信息（递归向上偏移用）
+      const ancestors = collectAncestors(container, root);
       // 三角形从 0 旋转到 90°
       if (tog) {
         tog.transform.rotate = 0;
@@ -478,18 +455,7 @@ function rebuildTree(): void {
         duration: 0.35,
         ease: 'power2.out',
         onUpdate: function() {
-          const offset = container.height - fullHeight;  // -fullHeight → 0
-          for (let i = 0; i < container.children.length; i++) {
-            container.children[i].y = origYs[i] + offset;
-          }
-          // 后续兄弟跟着偏移
-          if (parent && sibIdx >= 0) {
-            for (let i = sibIdx + 1; i < parent.children.length; i++) {
-              const sib = parent.children[i];
-              if (sib.id === 'cursor-highlight') continue;  // 光标不动
-              sib.y = sibOrigYs[i - sibIdx - 1] + offset;
-            }
-          }
+          applyAnimOffset(container, origYs, fullHeight, ancestors, root);
           renderer?.setRoot(renderer!.getRoot()!);
         },
         onComplete: () => {
@@ -507,46 +473,29 @@ function rebuildTree(): void {
     }
   }
 
-  // 膨胀动画：仅针对 growTarget 容器（从省略号变成真实内容）
+  // 膨胀动画：仅针对 growTarget 容���（从省略号变成真实内容）
   if (newRoot && growTarget) {
     const container = findBoxById(newRoot, growTarget);
     growTarget = null;
     
     if (container) {
-      // 检查是否省略号占位符已消失（有真实子项）
       const loadingRow = container.children.find(c => c.id?.startsWith('loading-'));
       if (!loadingRow && container.height > 50) {
         const fullH = container.height;
         const startH = 36;
         container.height = startH;
+        const root = renderer!.getRoot()!;
         const origYs = container.children.map(c => c.y);
         const diff = fullH - startH;
         const growChildren = container.children.slice();
         growChildren.forEach(c => { c.opacity = 0; });
-        // 后续兄弟
-        const parent = container.parent;
-        const sibIdx = parent ? parent.children.indexOf(container) : -1;
-        const sibOrigYs: number[] = [];
-        if (parent && sibIdx >= 0) {
-          for (let i = sibIdx + 1; i < parent.children.length; i++) {
-            sibOrigYs.push(parent.children[i].y);
-          }
-        }
+        const ancestors = collectAncestors(container, root);
         gsap.to(container, {
           height: fullH,
           duration: 0.5,
           ease: 'power2.out',
           onUpdate: function() {
-            const offset = container.height - fullH;
-            for (let i = 0; i < container.children.length; i++) {
-              container.children[i].y = origYs[i] + offset;
-            }
-            if (parent && sibIdx >= 0) {
-              for (let i = sibIdx + 1; i < parent.children.length; i++) {
-                if (parent.children[i].id === 'cursor-highlight') continue;
-                parent.children[i].y = sibOrigYs[i - sibIdx - 1] + offset;
-              }
-            }
+            applyAnimOffset(container, origYs, fullH, ancestors, root);
             const progress = Math.min(1, (container.height - startH) / diff);
             growChildren.forEach(c => { c.opacity = progress; });
             renderer?.setRoot(renderer!.getRoot()!);
@@ -565,6 +514,60 @@ function findBoxById(root: Box, id: string): Box | null {
     if (found) return found;
   }
   return null;
+}
+
+/** 收集从 box 向上到 root 路径上的所有祖先（不含 root 自身），返回 [{parent, sibIdx, sibOrigYs, origHeight}] */
+interface AncestorInfo {
+  parent: Box;
+  sibIdx: number;
+  sibOrigYs: number[];
+  origHeight: number;
+}
+function collectAncestors(box: Box, root: Box): AncestorInfo[] {
+  const ancestors: AncestorInfo[] = [];
+  let current = box;
+  while (current.parent && current.parent !== root) {
+    const p = current.parent;
+    const idx = p.children.indexOf(current);
+    if (idx < 0) break;
+    const sibOrigYs: number[] = [];
+    for (let i = idx + 1; i < p.children.length; i++) {
+      sibOrigYs.push(p.children[i].y);
+    }
+    ancestors.push({ parent: p, sibIdx: idx, sibOrigYs, origHeight: p.height });
+    current = p;
+  }
+  return ancestors;
+}
+
+/** 在动画每帧调用：偏移目标容器内部子项 + 所有祖先层的后续兄弟 + 调整祖先高度 */
+function applyAnimOffset(
+  container: Box,
+  containerOrigYs: number[],
+  fullHeight: number,
+  ancestors: AncestorInfo[],
+  root: Box,
+): void {
+  const offset = container.height - fullHeight;  // -fullHeight → 0
+  
+  // 1) 容器内部子项偏移
+  for (let i = 0; i < container.children.length; i++) {
+    container.children[i].y = containerOrigYs[i] + offset;
+  }
+  
+  // 2) 逐层祖先：偏移后续兄弟 + 调整父容器高度
+  let heightDelta = offset;  // 容器高度变化量
+  for (const anc of ancestors) {
+    // 偏移后续兄弟
+    for (let i = anc.sibIdx + 1; i < anc.parent.children.length; i++) {
+      const sib = anc.parent.children[i];
+      if (sib.id === 'cursor-highlight') continue;
+      sib.y = anc.sibOrigYs[i - anc.sibIdx - 1] + heightDelta;
+    }
+    // 调整祖先高度
+    anc.parent.height = anc.origHeight + heightDelta;
+    // heightDelta 不变，因为祖先的高度变化 = 容器的高度变化
+  }
 }
 
 /** 光标吸附到视口中央最近的行 */

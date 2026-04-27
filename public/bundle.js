@@ -9673,30 +9673,15 @@
                 }
                 if (container) {
                   const fullH = container.height;
+                  const root3 = renderer.getRoot();
                   const origYs = container.children.map((c) => c.y);
-                  const parent = container.parent;
-                  const sibIdx = parent ? parent.children.indexOf(container) : -1;
-                  const sibOrigYs = [];
-                  if (parent && sibIdx >= 0) {
-                    for (let i = sibIdx + 1; i < parent.children.length; i++) {
-                      sibOrigYs.push(parent.children[i].y);
-                    }
-                  }
+                  const ancestors = collectAncestors(container, root3);
                   tl.to(container, {
                     height: 0,
                     duration: 0.3,
                     ease: "power2.in",
                     onUpdate: function() {
-                      const offset = container.height - fullH;
-                      for (let i = 0; i < container.children.length; i++) {
-                        container.children[i].y = origYs[i] + offset;
-                      }
-                      if (parent && sibIdx >= 0) {
-                        for (let i = sibIdx + 1; i < parent.children.length; i++) {
-                          if (parent.children[i].id === "cursor-highlight") continue;
-                          parent.children[i].y = sibOrigYs[i - sibIdx - 1] + offset;
-                        }
-                      }
+                      applyAnimOffset(container, origYs, fullH, ancestors, root3);
                       renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
                     }
                   }, 0);
@@ -9785,19 +9770,13 @@
       if (container) {
         const fullHeight = container.height;
         container.height = 0;
+        const root = renderer.getRoot();
         const origYs = [];
         for (const child of container.children) {
           origYs.push(child.y);
           child.y = child.y - fullHeight;
         }
-        const parent = container.parent;
-        const sibIdx = parent ? parent.children.indexOf(container) : -1;
-        const sibOrigYs = [];
-        if (parent && sibIdx >= 0) {
-          for (let i = sibIdx + 1; i < parent.children.length; i++) {
-            sibOrigYs.push(parent.children[i].y);
-          }
-        }
+        const ancestors = collectAncestors(container, root);
         if (tog) {
           tog.transform.rotate = 0;
           gsapWithCSS.to(tog.transform, {
@@ -9814,17 +9793,7 @@
           duration: 0.35,
           ease: "power2.out",
           onUpdate: function() {
-            const offset = container.height - fullHeight;
-            for (let i = 0; i < container.children.length; i++) {
-              container.children[i].y = origYs[i] + offset;
-            }
-            if (parent && sibIdx >= 0) {
-              for (let i = sibIdx + 1; i < parent.children.length; i++) {
-                const sib = parent.children[i];
-                if (sib.id === "cursor-highlight") continue;
-                sib.y = sibOrigYs[i - sibIdx - 1] + offset;
-              }
-            }
+            applyAnimOffset(container, origYs, fullHeight, ancestors, root);
             renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
           },
           onComplete: () => {
@@ -9855,35 +9824,20 @@
           const fullH = container.height;
           const startH = 36;
           container.height = startH;
+          const root = renderer.getRoot();
           const origYs = container.children.map((c) => c.y);
           const diff = fullH - startH;
           const growChildren = container.children.slice();
           growChildren.forEach((c) => {
             c.opacity = 0;
           });
-          const parent = container.parent;
-          const sibIdx = parent ? parent.children.indexOf(container) : -1;
-          const sibOrigYs = [];
-          if (parent && sibIdx >= 0) {
-            for (let i = sibIdx + 1; i < parent.children.length; i++) {
-              sibOrigYs.push(parent.children[i].y);
-            }
-          }
+          const ancestors = collectAncestors(container, root);
           gsapWithCSS.to(container, {
             height: fullH,
             duration: 0.5,
             ease: "power2.out",
             onUpdate: function() {
-              const offset = container.height - fullH;
-              for (let i = 0; i < container.children.length; i++) {
-                container.children[i].y = origYs[i] + offset;
-              }
-              if (parent && sibIdx >= 0) {
-                for (let i = sibIdx + 1; i < parent.children.length; i++) {
-                  if (parent.children[i].id === "cursor-highlight") continue;
-                  parent.children[i].y = sibOrigYs[i - sibIdx - 1] + offset;
-                }
-              }
+              applyAnimOffset(container, origYs, fullH, ancestors, root);
               const progress = Math.min(1, (container.height - startH) / diff);
               growChildren.forEach((c) => {
                 c.opacity = progress;
@@ -9902,6 +9856,37 @@
       if (found) return found;
     }
     return null;
+  }
+  function collectAncestors(box, root) {
+    const ancestors = [];
+    let current = box;
+    while (current.parent && current.parent !== root) {
+      const p = current.parent;
+      const idx = p.children.indexOf(current);
+      if (idx < 0) break;
+      const sibOrigYs = [];
+      for (let i = idx + 1; i < p.children.length; i++) {
+        sibOrigYs.push(p.children[i].y);
+      }
+      ancestors.push({ parent: p, sibIdx: idx, sibOrigYs, origHeight: p.height });
+      current = p;
+    }
+    return ancestors;
+  }
+  function applyAnimOffset(container, containerOrigYs, fullHeight, ancestors, root) {
+    const offset = container.height - fullHeight;
+    for (let i = 0; i < container.children.length; i++) {
+      container.children[i].y = containerOrigYs[i] + offset;
+    }
+    let heightDelta = offset;
+    for (const anc of ancestors) {
+      for (let i = anc.sibIdx + 1; i < anc.parent.children.length; i++) {
+        const sib = anc.parent.children[i];
+        if (sib.id === "cursor-highlight") continue;
+        sib.y = anc.sibOrigYs[i - anc.sibIdx - 1] + heightDelta;
+      }
+      anc.parent.height = anc.origHeight + heightDelta;
+    }
   }
   function snapToCenterRow(root, canvasH) {
     var _a;
