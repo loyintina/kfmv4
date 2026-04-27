@@ -9820,11 +9820,25 @@
         const currH = container.height;
         if (prevH > 0 && currH > prevH + 5) {
           container.height = prevH;
+          const origYs = container.children.map((c) => c.y);
+          const diff = currH - prevH;
+          const growChildren = container.children.filter((c) => c.y >= prevH - 5);
+          growChildren.forEach((c) => {
+            c.opacity = 0;
+          });
           gsapWithCSS.to(container, {
             height: currH,
-            duration: 0.3,
+            duration: 0.5,
             ease: "power2.out",
-            onUpdate: () => {
+            onUpdate: function() {
+              const offset = container.height - currH;
+              for (let i = 0; i < container.children.length; i++) {
+                container.children[i].y = origYs[i] + offset;
+              }
+              const progress = Math.min(1, (container.height - prevH) / diff);
+              growChildren.forEach((c) => {
+                c.opacity = progress;
+              });
               renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
             }
           });

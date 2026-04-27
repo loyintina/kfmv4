@@ -482,11 +482,24 @@ function rebuildTree(): void {
       if (prevH > 0 && currH > prevH + 5) {
         // 高度显著增加 → 做膨胀动画
         container.height = prevH;
+        const origYs = container.children.map(c => c.y);
+        const diff = currH - prevH;
+        // 新增子项从下方滑入 + 渐显
+        const growChildren = container.children.filter(c => c.y >= prevH - 5);
+        growChildren.forEach(c => { c.opacity = 0; });
         gsap.to(container, {
           height: currH,
-          duration: 0.3,
+          duration: 0.5,
           ease: 'power2.out',
-          onUpdate: () => { renderer?.setRoot(renderer!.getRoot()!); },
+          onUpdate: function() {
+            const offset = container.height - currH;  // -(diff) → 0
+            for (let i = 0; i < container.children.length; i++) {
+              container.children[i].y = origYs[i] + offset;
+            }
+            const progress = Math.min(1, (container.height - prevH) / diff);
+            growChildren.forEach(c => { c.opacity = progress; });
+            renderer?.setRoot(renderer!.getRoot()!);
+          },
         });
       }
       prevContainerHeights[container.id!] = currH;
