@@ -332,6 +332,7 @@ function bindClickEvents(canvas: HTMLCanvasElement, _dpr: number): void {
                     }
                     if (parent && sibIdx >= 0) {
                       for (let i = sibIdx + 1; i < parent.children.length; i++) {
+                        if (parent.children[i].id === 'cursor-highlight') continue;
                         parent.children[i].y = sibOrigYs[i - sibIdx - 1] + offset;
                       }
                     }
@@ -484,7 +485,9 @@ function rebuildTree(): void {
           // 后续兄弟跟着偏移
           if (parent && sibIdx >= 0) {
             for (let i = sibIdx + 1; i < parent.children.length; i++) {
-              parent.children[i].y = sibOrigYs[i - sibIdx - 1] + offset;
+              const sib = parent.children[i];
+              if (sib.id === 'cursor-highlight') continue;  // 光标不动
+              sib.y = sibOrigYs[i - sibIdx - 1] + offset;
             }
           }
           renderer?.setRoot(renderer!.getRoot()!);
@@ -540,6 +543,7 @@ function rebuildTree(): void {
             }
             if (parent && sibIdx >= 0) {
               for (let i = sibIdx + 1; i < parent.children.length; i++) {
+                if (parent.children[i].id === 'cursor-highlight') continue;
                 parent.children[i].y = sibOrigYs[i - sibIdx - 1] + offset;
               }
             }

@@ -9692,6 +9692,7 @@
                       }
                       if (parent && sibIdx >= 0) {
                         for (let i = sibIdx + 1; i < parent.children.length; i++) {
+                          if (parent.children[i].id === "cursor-highlight") continue;
                           parent.children[i].y = sibOrigYs[i - sibIdx - 1] + offset;
                         }
                       }
@@ -9818,7 +9819,9 @@
             }
             if (parent && sibIdx >= 0) {
               for (let i = sibIdx + 1; i < parent.children.length; i++) {
-                parent.children[i].y = sibOrigYs[i - sibIdx - 1] + offset;
+                const sib = parent.children[i];
+                if (sib.id === "cursor-highlight") continue;
+                sib.y = sibOrigYs[i - sibIdx - 1] + offset;
               }
             }
             renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
@@ -9876,6 +9879,7 @@
               }
               if (parent && sibIdx >= 0) {
                 for (let i = sibIdx + 1; i < parent.children.length; i++) {
+                  if (parent.children[i].id === "cursor-highlight") continue;
                   parent.children[i].y = sibOrigYs[i - sibIdx - 1] + offset;
                 }
               }
