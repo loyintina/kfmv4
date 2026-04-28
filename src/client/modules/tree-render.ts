@@ -276,19 +276,16 @@ function bindClickEvents(canvas: HTMLCanvasElement, _dpr: number): void {
           const hitData = (hit as any).data || {};
           const isDir = hitData.isDir;
           const isExpanded = hitData.isExpanded;
-          
           if (isDir) {
             // 找到 toggle-icon
             const tog = hit.children.find(c => c.id?.startsWith('toggle-'));
             const targetRotate = isExpanded ? 0 : Math.PI / 2;
-            
             if (isExpanded) {
               // ========== 折叠：先动画再 rebuild ==========
               // 找到展开容器
               const containerId = `expanded-${hitData.path}`;
               const root = renderer!.getRoot()!;
               const container = findBoxById(root, containerId);
-              
               // 三角旋转 + 容器收缩并行
               animLocked = true;  // 锁定 rebuild
               const tl = gsap.timeline({
@@ -298,7 +295,6 @@ function bindClickEvents(canvas: HTMLCanvasElement, _dpr: number): void {
                   hit.gesture!.onTap!();
                 },
               });
-              
               if (tog) {
                 tl.to(tog.transform, {
                   rotate: 0,
@@ -307,7 +303,6 @@ function bindClickEvents(canvas: HTMLCanvasElement, _dpr: number): void {
                   onUpdate: () => { if (renderer) renderer.setRoot(renderer.getRoot()!); },
                 }, 0);
               }
-              
               if (container) {
                 const fullH = container.height;
                 const root = renderer!.getRoot()!;
@@ -323,7 +318,6 @@ function bindClickEvents(canvas: HTMLCanvasElement, _dpr: number): void {
                   },
                 }, 0);
               }
-              
               pendingCollapse = { path: hitData.path, rowId: hit.id };
               tl.play();
             } else {
@@ -386,6 +380,28 @@ function rebuildTree(): void {
   }
 
   // 在 setRoot 之前预设动画初始状态，避免满高一帧闪烁
+  // 递归折叠所有已展开子容器，确保展开动画期间内容不可见
+  function collapseSubs(box: any): void {
+    if (!box || !box.children) return;
+    for (const child of box.children) {
+      if (child.id?.startsWith('expanded-') && child.height > 0) {
+        const subFullH = child.height;
+        (child as any)._fullHeight = subFullH;
+        (child as any)._origYs = child.children.map((c: any) => c.y);
+        child.height = 0;
+        for (const c of child.children) { c.y = c.y - subFullH; }
+        // save toggle reference for cascade expand later
+        const subPath = child.id.slice("expanded-".length);
+        const subTitle = findBoxById(rootBox, "title-" + subPath);
+        const subTog = subTitle?.children?.find((c: any) => c.id?.startsWith("toggle-"));
+        if (subTog) {
+          (child as any)._toggleBox = subTog;
+          subTog.transform.rotate = 0; // 折叠时三角归零
+        }
+        collapseSubs(child);
+      }
+    }
+  }
   if (animatingPath) {
     const preContainer = findBoxById(rootBox, `expanded-${animatingPath}`);
     if (preContainer) {
@@ -394,6 +410,8 @@ function rebuildTree(): void {
       (preContainer as any)._origYs = preContainer.children.map((c: any) => c.y);
       preContainer.height = 0;
       for (const child of preContainer.children) { child.y = child.y - preFullH; }
+      // 递归折叠内部已展开的子容器
+      collapseSubs(preContainer);
     }
   }
   if (growTarget) {
@@ -442,18 +460,16 @@ function rebuildTree(): void {
     renderer.start();
   }
 
-  // 展开动画：容器从 height=0 平滑拉出到最终高度，子项跟随下滑，三角形旋转
+  // 展开动画：容器从 height=0 平滑拉出到最终高度，子项跟�����下滑，三角形旋转
   if (animatingPath && newRoot) {
     const path = animatingPath;
     animatingPath = null;
     animLocked = true;  // 锁定 rebuild
-    
     const containerId = `expanded-${path}`;
     const container = findBoxById(newRoot, containerId);
     const titleId = `title-${path}`;
     const titleRow = findBoxById(newRoot, titleId);
     const tog = titleRow?.children?.find(c => c.id?.startsWith('toggle-'));
-    
     if (container) {
       const fullHeight = (container as any)._fullHeight || 0;
       const origYs: number[] = (container as any)._origYs || container.children.map(c => c.y);
@@ -479,7 +495,7 @@ function rebuildTree(): void {
         duration: 0.35,
         ease: 'power2.out',
         onUpdate: function() {
-          applyAnimOffset(container, origYs, fullHeight, ancestors, root);
+          applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
           renderer?.setRoot(renderer!.getRoot()!);
         },
         onComplete: () => {
@@ -488,13 +504,16 @@ function rebuildTree(): void {
           if (hasLoading) {
             growTarget = `expanded-${path}`;
             rebuildTree();
+          } else {
+            // Step 1: 逐行滑入直接子行
+            slideInRows(container, root);
           }
         },
       });
       // 展开动画开始的同时，触发内部子行弹跳
       animateBounce(container, root);
       // 立即应用一帧偏移，避免 GSAP 首帧延迟导致闪烁
-      applyAnimOffset(container, origYs, fullHeight, ancestors, root);
+      applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
       renderer?.setRoot(renderer!.getRoot()!);
     } else {
       animatingPath = null;
@@ -506,7 +525,6 @@ function rebuildTree(): void {
   if (newRoot && growTarget) {
     const container = findBoxById(newRoot, growTarget);
     growTarget = null;
-    
     if (container) {
       const fullH = (container as any)._growFullH || container.height;
       const origYs: number[] = (container as any)._growOrigYs || container.children.map((c: any) => c.y);
@@ -579,12 +597,10 @@ function applyAnimOffset(
   root: Box,
 ): void {
   const offset = container.height - fullHeight;  // -fullHeight → 0
-  
   // 1) 容器内部子项偏移
   for (let i = 0; i < container.children.length; i++) {
     container.children[i].y = containerOrigYs[i] + offset;
   }
-  
   // 2) 逐层祖先：偏移后续兄弟 + 调整父容器高度（root 除外）
   let heightDelta = offset;
   for (const anc of ancestors) {
@@ -601,6 +617,27 @@ function applyAnimOffset(
   }
 }
 
+
+/** 只做兄弟偏移+祖先高度调整，不碰子行 y（用于展开动画，让 slideInRows 统一处理子行登场） */
+function applyAnimOffsetSiblings(
+  container: Box,
+  fullHeight: number,
+  ancestors: AncestorInfo[],
+  root: Box,
+): void {
+  const offset = container.height - fullHeight;
+  let heightDelta = offset;
+  for (const anc of ancestors) {
+    for (let i = anc.sibIdx + 1; i < anc.parent.children.length; i++) {
+      const sib = anc.parent.children[i];
+      if (sib.id === 'cursor-highlight') continue;
+      sib.y = anc.sibOrigYs[i - anc.sibIdx - 1] + heightDelta;
+    }
+    if (anc.parent !== root) {
+      anc.parent.height = anc.origHeight + heightDelta;
+    }
+  }
+}
 /** 光����附到视口中央最近的行 */
 function snapToCenterRow(root: Box, canvasH: number): void {
   const scrollY = root.scrollY ?? 0;
@@ -706,4 +743,75 @@ function animateBounce(container: Box, root: Box): void {
       }
     }, subDelay * 1000);
   }
+}
+
+/**
+ * SlideInRows: 收集容器内直接子行，全部上移隐藏，再逐行用 translateY 滑下。
+ * 暂不递归。
+ */
+function slideInRows(container: Box, root: Box): void {
+  const rows = container.children.filter(c =>
+    (c.id?.startsWith('title-') || c.id?.startsWith('file-') || c.id?.startsWith('expanded-'))
+  );
+  if (rows.length === 0) return;
+
+  // 上移量：容器已展开高度
+  const totalH = container.height;
+
+  // 恢复子行 y（collapseSubs 折叠时上移了，展开动画没有推它们）
+  const containerOrigYs = (container as any)._origYs as number[] | undefined;
+  if (containerOrigYs && container.children.length === containerOrigYs.length) {
+    container.children.forEach((c, j) => { c.y = containerOrigYs[j]; });
+  }
+
+  // 恢复子行 opacity（触发展开前被归零了）
+  container.children.forEach(c => { c.opacity = 1; });
+
+  // 全部上移隐藏
+  rows.forEach(r => { r.transform.translateY = -totalH; });
+  renderer?.setRoot(renderer!.getRoot()!);
+
+  // 逐行滑下，间隔 18ms
+  const duration = 0.2;
+  const interval = 18;
+  rows.forEach((row, i) => {
+    gsap.to(row.transform, {
+      translateY: 0,
+      duration,
+      ease: 'power2.out',
+      delay: (i * interval) / 1000,
+      onUpdate: () => { renderer?.setRoot(renderer!.getRoot()!); },
+      onComplete: () => {
+        // 如果此行是 title-*，查找对应子容器并触发递归展开
+        if (!row.id?.startsWith('title-')) return;
+        const subId = 'expanded-' + row.id.slice(6);
+        const sub = container.children.find(c => c.id === subId);
+        if (!sub || !(sub as any)._fullHeight) return;
+        const subFullH = (sub as any)._fullHeight;
+        // 展开前隐藏子行，避免在展开过程中暴露
+        sub.children.forEach(c => { c.opacity = 0; });
+        // 三角旋转
+        const tog = (sub as any)._toggleBox;
+        if (tog) {
+          tog.transform.rotate = 0;
+          gsap.to(tog.transform, {
+            rotate: Math.PI / 2,
+            duration: 0.25,
+            ease: 'power2.out',
+            onUpdate: () => { renderer?.setRoot(renderer!.getRoot()!); },
+          });
+        }
+        // 子容器高度展开，然后递归 slideInRows
+        gsap.to(sub, {
+          height: subFullH,
+          duration: 0.25,
+          ease: 'power2.out',
+          onUpdate: () => { renderer?.setRoot(renderer!.getRoot()!); },
+          onComplete: () => {
+            slideInRows(sub, root);
+          },
+        });
+      },
+    });
+  });
 }

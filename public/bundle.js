@@ -9733,6 +9733,32 @@
     if (canvas) {
       rootBox.height = canvasH;
     }
+    function collapseSubs(box) {
+      var _a2, _b2;
+      if (!box || !box.children) return;
+      for (const child of box.children) {
+        if (((_a2 = child.id) == null ? void 0 : _a2.startsWith("expanded-")) && child.height > 0) {
+          const subFullH = child.height;
+          child._fullHeight = subFullH;
+          child._origYs = child.children.map((c) => c.y);
+          child.height = 0;
+          for (const c of child.children) {
+            c.y = c.y - subFullH;
+          }
+          const subPath = child.id.slice("expanded-".length);
+          const subTitle = findBoxById(rootBox, "title-" + subPath);
+          const subTog = (_b2 = subTitle == null ? void 0 : subTitle.children) == null ? void 0 : _b2.find((c) => {
+            var _a3;
+            return (_a3 = c.id) == null ? void 0 : _a3.startsWith("toggle-");
+          });
+          if (subTog) {
+            child._toggleBox = subTog;
+            subTog.transform.rotate = 0;
+          }
+          collapseSubs(child);
+        }
+      }
+    }
     if (animatingPath) {
       const preContainer = findBoxById(rootBox, `expanded-${animatingPath}`);
       if (preContainer) {
@@ -9743,6 +9769,7 @@
         for (const child of preContainer.children) {
           child.y = child.y - preFullH;
         }
+        collapseSubs(preContainer);
       }
     }
     if (growTarget) {
@@ -9821,7 +9848,7 @@
           duration: 0.35,
           ease: "power2.out",
           onUpdate: function() {
-            applyAnimOffset(container, origYs, fullHeight, ancestors, root);
+            applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
             renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
           },
           onComplete: () => {
@@ -9833,11 +9860,13 @@
             if (hasLoading) {
               growTarget = `expanded-${path}`;
               rebuildTree();
+            } else {
+              slideInRows(container, root);
             }
           }
         });
         animateBounce(container, root);
-        applyAnimOffset(container, origYs, fullHeight, ancestors, root);
+        applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
         renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
       } else {
         animatingPath = null;
@@ -9904,6 +9933,20 @@
     for (let i = 0; i < container.children.length; i++) {
       container.children[i].y = containerOrigYs[i] + offset;
     }
+    let heightDelta = offset;
+    for (const anc of ancestors) {
+      for (let i = anc.sibIdx + 1; i < anc.parent.children.length; i++) {
+        const sib = anc.parent.children[i];
+        if (sib.id === "cursor-highlight") continue;
+        sib.y = anc.sibOrigYs[i - anc.sibIdx - 1] + heightDelta;
+      }
+      if (anc.parent !== root) {
+        anc.parent.height = anc.origHeight + heightDelta;
+      }
+    }
+  }
+  function applyAnimOffsetSiblings(container, fullHeight, ancestors, root) {
+    const offset = container.height - fullHeight;
     let heightDelta = offset;
     for (const anc of ancestors) {
       for (let i = anc.sibIdx + 1; i < anc.parent.children.length; i++) {
@@ -10010,6 +10053,76 @@
         }
       }, subDelay * 1e3);
     }
+  }
+  function slideInRows(container, root) {
+    const rows = container.children.filter(
+      (c) => {
+        var _a, _b, _c;
+        return ((_a = c.id) == null ? void 0 : _a.startsWith("title-")) || ((_b = c.id) == null ? void 0 : _b.startsWith("file-")) || ((_c = c.id) == null ? void 0 : _c.startsWith("expanded-"));
+      }
+    );
+    if (rows.length === 0) return;
+    const totalH = container.height;
+    const containerOrigYs = container._origYs;
+    if (containerOrigYs && container.children.length === containerOrigYs.length) {
+      container.children.forEach((c, j) => {
+        c.y = containerOrigYs[j];
+      });
+    }
+    container.children.forEach((c) => {
+      c.opacity = 1;
+    });
+    rows.forEach((r) => {
+      r.transform.translateY = -totalH;
+    });
+    renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+    const duration = 0.2;
+    const interval = 18;
+    rows.forEach((row, i) => {
+      gsapWithCSS.to(row.transform, {
+        translateY: 0,
+        duration,
+        ease: "power2.out",
+        delay: i * interval / 1e3,
+        onUpdate: () => {
+          renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+        },
+        onComplete: () => {
+          var _a;
+          if (!((_a = row.id) == null ? void 0 : _a.startsWith("title-"))) return;
+          const subId = "expanded-" + row.id.slice(6);
+          const sub = container.children.find((c) => c.id === subId);
+          if (!sub || !sub._fullHeight) return;
+          const subFullH = sub._fullHeight;
+          sub.children.forEach((c) => {
+            c.opacity = 0;
+          });
+          const tog = sub._toggleBox;
+          if (tog) {
+            tog.transform.rotate = 0;
+            gsapWithCSS.to(tog.transform, {
+              rotate: Math.PI / 2,
+              duration: 0.25,
+              ease: "power2.out",
+              onUpdate: () => {
+                renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+              }
+            });
+          }
+          gsapWithCSS.to(sub, {
+            height: subFullH,
+            duration: 0.25,
+            ease: "power2.out",
+            onUpdate: () => {
+              renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+            },
+            onComplete: () => {
+              slideInRows(sub, root);
+            }
+          });
+        }
+      });
+    });
   }
 
   // src/client/modules/ui.ts
