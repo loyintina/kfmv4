@@ -460,7 +460,7 @@ function rebuildTree(): void {
     renderer.start();
   }
 
-  // 展开动画：容器从 height=0 平滑拉出到最终高度，子项跟�����下滑，三角形旋转
+  // 展开动画：容器从 height=0 平滑拉出到最终高度，子项跟������下滑，三角形旋转
   if (animatingPath && newRoot) {
     const path = animatingPath;
     animatingPath = null;
@@ -480,6 +480,8 @@ function rebuildTree(): void {
       }
       const root = renderer!.getRoot()!;
       const ancestors = collectAncestors(container, root);
+      // 展开前隐藏直接子行，避免在展开过程中暴露
+      container.children.forEach(c => { c.opacity = 0; });
       // 三角形从 0 旋转到 90°
       if (tog) {
         tog.transform.rotate = 0;

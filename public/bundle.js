@@ -9832,6 +9832,9 @@
         }
         const root = renderer.getRoot();
         const ancestors = collectAncestors(container, root);
+        container.children.forEach((c) => {
+          c.opacity = 0;
+        });
         if (tog) {
           tog.transform.rotate = 0;
           gsapWithCSS.to(tog.transform, {
