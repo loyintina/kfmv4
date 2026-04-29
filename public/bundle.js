@@ -9839,7 +9839,7 @@
           tog.transform.rotate = 0;
           gsapWithCSS.to(tog.transform, {
             rotate: Math.PI / 2,
-            duration: 0.35,
+            duration: 0.25,
             ease: "power2.out",
             onUpdate: () => {
               renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
@@ -9848,7 +9848,7 @@
         }
         gsapWithCSS.to(container, {
           height: fullHeight,
-          duration: 0.35,
+          duration: 0.02,
           ease: "power2.out",
           onUpdate: function() {
             applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
@@ -9868,7 +9868,6 @@
             }
           }
         });
-        animateBounce(container, root);
         applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
         renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
       } else {
@@ -9987,81 +9986,12 @@
     walk(root);
     if (closest) moveCursorTo(closest);
   }
-  function animateBounce(container, root) {
-    var _a, _b, _c, _d, _e;
-    const children = container.children;
-    if (!children || children.length === 0) return;
-    const groups = [];
-    for (let i = 0; i < children.length; i++) {
-      const child = children[i];
-      if ((_a = child.id) == null ? void 0 : _a.startsWith("cursor-highlight")) continue;
-      if ((_b = child.id) == null ? void 0 : _b.startsWith("title-")) {
-        const group = [child];
-        const next = children[i + 1];
-        if (next && next.id === "expanded-" + child.id.slice(6)) {
-          group.push(next);
-          i++;
-        }
-        groups.push(group);
-      } else if ((_c = child.id) == null ? void 0 : _c.startsWith("file-")) {
-        groups.push([child]);
-      } else if ((_d = child.id) == null ? void 0 : _d.startsWith("expanded-")) {
-        groups.push([child]);
-      }
-    }
-    if (groups.length === 0) return;
-    const bounceDist = 6;
-    const baseDelay = 18;
-    const downDuration = 0.2;
-    const upDuration = 0.2;
-    groups.forEach((group, idx) => {
-      const delay = idx * baseDelay / 1e3;
-      group.forEach((b) => {
-        b.transform.translateY = 0;
-      });
-      group.forEach((b) => {
-        gsapWithCSS.to(b.transform, {
-          translateY: bounceDist,
-          duration: downDuration,
-          ease: "power2.out",
-          delay,
-          onUpdate: () => {
-            renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
-          }
-        });
-      });
-      group.forEach((b) => {
-        gsapWithCSS.to(b.transform, {
-          translateY: 0,
-          duration: upDuration,
-          ease: "back.out(1.7)",
-          delay: delay + downDuration,
-          onUpdate: () => {
-            renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
-          }
-        });
-      });
-    });
-    const subContainers = [];
-    for (const child of children) {
-      if (((_e = child.id) == null ? void 0 : _e.startsWith("expanded-")) && child.height > 0) {
-        subContainers.push(child);
-      }
-    }
-    if (subContainers.length > 0) {
-      const subDelay = 0.04;
-      setTimeout(() => {
-        for (const sub of subContainers) {
-          animateBounce(sub, root);
-        }
-      }, subDelay * 1e3);
-    }
-  }
   function slideInRows(container, root) {
+    var _a;
     const rows = container.children.filter(
       (c) => {
-        var _a, _b, _c;
-        return ((_a = c.id) == null ? void 0 : _a.startsWith("title-")) || ((_b = c.id) == null ? void 0 : _b.startsWith("file-")) || ((_c = c.id) == null ? void 0 : _c.startsWith("expanded-"));
+        var _a2, _b, _c;
+        return ((_a2 = c.id) == null ? void 0 : _a2.startsWith("title-")) || ((_b = c.id) == null ? void 0 : _b.startsWith("file-")) || ((_c = c.id) == null ? void 0 : _c.startsWith("expanded-"));
       }
     );
     if (rows.length === 0) return;
@@ -10079,30 +10009,54 @@
       r.transform.translateY = -totalH;
     });
     renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
-    const duration = 0.2;
-    const interval = 18;
+    for (const child of container.children) {
+      if (((_a = child.id) == null ? void 0 : _a.startsWith("expanded-")) && child._fullHeight > 0) {
+        const subFullH = child._fullHeight;
+        child.children.forEach((c) => {
+          c.opacity = 0;
+        });
+        const tog = child._toggleBox;
+        if (tog) {
+          tog.transform.rotate = 0;
+          gsapWithCSS.to(tog.transform, {
+            rotate: Math.PI / 2,
+            duration: 0.25,
+            ease: "power2.out",
+            onUpdate: () => {
+              renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+            }
+          });
+        }
+        gsapWithCSS.to(child, {
+          height: subFullH,
+          duration: 0.02,
+          ease: "power2.out",
+          onUpdate: () => {
+            renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+          },
+          onComplete: () => {
+            slideInRows(child, root);
+          }
+        });
+      }
+    }
     rows.forEach((row, i) => {
       gsapWithCSS.to(row.transform, {
         translateY: 0,
-        duration,
+        duration: 0.05,
         ease: "power2.out",
-        delay: i * interval / 1e3,
+        delay: i * 25 / 1e3,
         onUpdate: () => {
           renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
         },
         onComplete: () => {
-          var _a;
-          if (!((_a = row.id) == null ? void 0 : _a.startsWith("title-"))) return;
+          var _a2;
+          if (!((_a2 = row.id) == null ? void 0 : _a2.startsWith("title-"))) return;
           const subId = "expanded-" + row.id.slice(6);
           const sub = container.children.find((c) => c.id === subId);
           if (!sub || !sub._fullHeight) return;
-          const subFullH = sub._fullHeight;
-          sub.children.forEach((c) => {
-            c.opacity = 0;
-          });
           const tog = sub._toggleBox;
-          if (tog) {
-            tog.transform.rotate = 0;
+          if (tog && Math.abs(tog.transform.rotate) < 0.01) {
             gsapWithCSS.to(tog.transform, {
               rotate: Math.PI / 2,
               duration: 0.25,
@@ -10112,17 +10066,6 @@
               }
             });
           }
-          gsapWithCSS.to(sub, {
-            height: subFullH,
-            duration: 0.25,
-            ease: "power2.out",
-            onUpdate: () => {
-              renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
-            },
-            onComplete: () => {
-              slideInRows(sub, root);
-            }
-          });
         }
       });
     });
