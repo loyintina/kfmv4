@@ -460,7 +460,7 @@ function rebuildTree(): void {
     renderer.start();
   }
 
-  // 展开动画：容器从 height=0 平滑拉出到最终高度，子项跟�����������下滑，三角形旋转
+  // 展开动画：容器从 height=0 平滑拉出到最终高度，子项跟�������������下滑，三角形旋转
   if (animatingPath && newRoot) {
     const path = animatingPath;
     animatingPath = null;
@@ -494,7 +494,7 @@ function rebuildTree(): void {
       }
       gsap.to(container, {
         height: fullHeight,
-        duration: 0.02,
+        duration: 0.05,
         ease: 'power2.out',
         onUpdate: function() {
           applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
@@ -707,7 +707,7 @@ function slideInRows(container: Box, root: Box): void {
       }
       gsap.to(child, {
         height: subFullH,
-        duration: 0.02,
+        duration: 0.05,
         ease: 'power2.out',
         onUpdate: () => { renderer?.setRoot(renderer!.getRoot()!); },
         onComplete: () => { slideInRows(child, root); },
@@ -719,7 +719,7 @@ function slideInRows(container: Box, root: Box): void {
   rows.forEach((row, i) => {
     gsap.to(row.transform, {
       translateY: 0,
-      duration: 0.05,
+      duration: 0.2,
       ease: 'power2.out',
       delay: (i * 25) / 1000,
       onUpdate: () => { renderer?.setRoot(renderer!.getRoot()!); },

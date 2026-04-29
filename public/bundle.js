@@ -9848,7 +9848,7 @@
         }
         gsapWithCSS.to(container, {
           height: fullHeight,
-          duration: 0.02,
+          duration: 0.05,
           ease: "power2.out",
           onUpdate: function() {
             applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
@@ -10029,7 +10029,7 @@
         }
         gsapWithCSS.to(child, {
           height: subFullH,
-          duration: 0.02,
+          duration: 0.05,
           ease: "power2.out",
           onUpdate: () => {
             renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
@@ -10043,7 +10043,7 @@
     rows.forEach((row, i) => {
       gsapWithCSS.to(row.transform, {
         translateY: 0,
-        duration: 0.05,
+        duration: 0.2,
         ease: "power2.out",
         delay: i * 25 / 1e3,
         onUpdate: () => {
