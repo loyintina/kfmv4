@@ -8,6 +8,7 @@
  */
 
 import { KFMState, type FileNode } from './state.js';
+import { markAnimatingPath, isAnimLocked } from './tree-render.js';
 
 const API = '/kfmv4/api';
 
@@ -73,53 +74,76 @@ export async function ensureDirLoadedRecursive(path: string): Promise<void> {
 }
 
 /**
- * 初始化时加载根目录 + 递归加载所有已展开路径
+ * 逐层加载每个展开的目录，每加载一层的直系子项就立即 notify。
+ * 边加载边播展开动画 —— 加载多少就展开多少。
  */
 export async function loadFileTree(rootPath: string): Promise<void> {
-  // 加载根目录
+  // 先把根目录的数据加载进来
   await fetchDir(rootPath);
+  // 标记根目录做展开动画 + notify
+  markAnimatingPath(rootPath);
+  KFMState.notify();
 
-  // 递归加载所有已展开的子文件夹
+  // 然后逐层加载已展开的子目录（延迟一小段时间让 rebuildTree 动画先启动）
+  await sleep(50);
+
   const rootNode = KFMState.files[rootPath];
   if (rootNode?.children) {
-    const loadPromises: Promise<void>[] = [];
     for (const child of rootNode.children) {
       if (child.isDir && KFMState.expandedPaths[child.path]) {
-        loadPromises.push(ensureDirLoadedRecursive(child.path));
+        await loadLayerByLayerDeep(child.path);
       }
     }
-    if (loadPromises.length > 0) {
-      await Promise.all(loadPromises);
-    }
   }
+}
 
-  KFMState.notify();
+/** 休眠指定毫秒 */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 /**
- * 逐层加载展开的目录：加载一层就 notify 一次，让界面立即展示
+ * 逐层加载展开的目录：
+ * 1. 设置 animatingPath → notify → 等一帧让动画启动
+ * 2. 加载这一层 → notify → 触发 expanded- 容器从 0 展开
+ * 3. 递归子目录
  */
-async function loadLayerByLayer(path: string): Promise<void> {
-  // 立即 notify 一次，让 rebuildTree 生成带省略号的盒子
+async function loadLayerByLayerDeep(path: string): Promise<void> {
+  // 先标记自己做展开动画（让 rebuildTree 在数据加载前就记录 _fullHeight）
+  markAnimatingPath(path);
   KFMState.notify();
+  await sleep(30);
 
-  // 加载当前层的直接子项
+  // 加载这一层
   const loaded = await fetchDir(path);
   if (!loaded) return;
 
-  // 加载完本层立即刷新显示真实子项
+  // 数据就绪后，等待动画解锁（避免 notify 被 animLocked 挡掉）
+  if (isAnimLocked()) {
+    // 轮回等待 — 每次检查间隔 50ms，最长等 3000ms
+    const start = Date.now();
+    while (isAnimLocked()) {
+      if (Date.now() - start > 3000) break;
+      await sleep(50);
+    }
+  }
+  // notify 让真实内容显示出来 → rebuildTree 检测到 animatingPath → 展开动画
+  markAnimatingPath(path);
   KFMState.notify();
+  await sleep(30);
 
-  // 检查是否有已展开的子文件夹，递归逐层加载
+  // 递归已展开的子目录
   const node = KFMState.files[path];
   if (node?.children) {
     for (const child of node.children) {
       if (child.isDir && KFMState.expandedPaths[child.path]) {
-        await loadLayerByLayer(child.path);
+        await loadLayerByLayerDeep(child.path);
       }
     }
   }
 }
+
+
 
 /**
  * 初始化：劫持 setExpanded，展开时逐层加载并逐层显示
@@ -129,8 +153,13 @@ export function initLazyLoader(): void {
   KFMState.setExpanded = function (path: string, expanded: boolean) {
     originalSetExpanded(path, expanded);
     if (expanded) {
-      // 异步逐层加载，每加载一层就 notify 一次
-      loadLayerByLayer(path).catch(console.error);
+      // 数据已在缓存中时，不要走逐层加载流程
+      // （点击事件自己的 animatingPath → notify 已足够触发展开动画）
+      // 逐层加载会额外 notify，打乱动画状态机
+      const cached = KFMState.files[path]?.children?.length !== undefined;
+      if (!cached) {
+        loadLayerByLayerDeep(path).catch(console.error);
+      }
     }
   };
 }

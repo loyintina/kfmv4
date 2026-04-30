@@ -5002,23 +5002,19 @@
       y: 0,
       backgroundColor: "transparent",
       overflow: "hidden",
-      gradient: depthGradient(depth),
+      gradient: depth > 0 ? depthGradient(depth) : void 0,
       shadow: { color: "rgba(0,0,0,0.5)", blur: 12, offsetX: -4, offsetY: 0 }
     });
-    container.kfmStyle = resolveStyle("left-emphasis-rest-hidden", {
-      borderColor: `rgba(180,130,255,${borderOp})`,
-      emphasisScale: 2,
-      cornerRadius: 4
-    });
+    if (depth > 0) {
+      container.kfmStyle = resolveStyle("left-emphasis-rest-hidden", {
+        borderColor: `rgba(180,130,255,${borderOp})`,
+        emphasisScale: 2,
+        cornerRadius: 4
+      });
+    }
     let cy = 0;
     if (children.length === 0) {
-      const lr = createBox("file-row", { id: `loading-${path}`, x: 0, y: 0, width: w, height: LINE_HEIGHT + 6, backgroundColor: "transparent" });
-      const lb = createBox("file-label", { id: `loading-label-${path}`, x: TXT_L, width: w - TXT_L - 8, height: lr.height });
-      lb.textStyle = { ...TEXT_STYLES.fileLabel, content: "\u2026", color: "#e8e0f0" };
-      lr.addChild(lb);
-      container.addChild(lr);
-      container.height = LINE_HEIGHT + 10;
-      container.gradient = void 0;
+      container.height = 0;
       return container;
     }
     for (const item of children) {
@@ -5043,7 +5039,6 @@
     return container;
   }
   function buildTree(items, options = {}) {
-    var _a, _b, _c;
     const {
       expandedPaths = {},
       selectedFile = null,
@@ -5065,72 +5060,13 @@
       height: 0,
       scrollbarVisible: false
     });
-    let cy = 0;
-    for (const item of items) {
-      if (item.isDir) {
-        const folderRow = container_AddRootFolderRow(rootBox, item, cy, baseDepth, containerWidth, ctx);
-        cy += folderRow.height;
-        if (ctx.expandedPaths[item.path]) {
-          const ch = (_c = (_b = (_a = KFMState.files[item.path]) == null ? void 0 : _a.children) != null ? _b : item.children) != null ? _c : [];
-          const c = buildExpanded(item.path, ch, ctx, baseDepth, absX(baseDepth) + getShift(baseDepth));
-          c.y = cy;
-          rootBox.addChild(c);
-          cy += c.height;
-        }
-      } else {
-        const fileRow = container_AddRootFileRow(rootBox, item, cy, baseDepth, containerWidth, ctx);
-        cy += fileRow.height;
-      }
-    }
-    rootBox.height = cy;
+    const rootRelX = absX(baseDepth) + getShift(baseDepth);
+    const rootContainer = buildExpanded("/root", items, ctx, baseDepth, rootRelX);
+    rootContainer.y = 0;
+    rootBox.addChild(rootContainer);
+    rootBox.height = rootContainer.height;
     rootBox.scrollY = 0;
     return rootBox;
-  }
-  function container_AddRootFolderRow(parent, item, y, depth, cw, ctx) {
-    const x = absX(depth);
-    const w = ctx.rightMargin - x;
-    const ex = !!ctx.expandedPaths[item.path];
-    const sel = ctx.selectedFile === item.path;
-    const maxWidth = w - TXT_L - 16;
-    const { lines: actualLines, height: rowHeight } = calcTextLayout(item.name, maxWidth);
-    const row = createBox("folder-row", {
-      id: `title-${item.path}`,
-      x,
-      y,
-      width: w,
-      height: rowHeight,
-      backgroundColor: sel ? "rgba(124,58,237,0.15)" : "transparent",
-      data: { path: item.path, isDir: true, isExpanded: ex, depth, lineCount: actualLines },
-      gesture: { passive: true, onTap: () => ctx.onDirToggle(item.path, !ex) }
-    });
-    row.addChild(createToggle(item, rowHeight, ex));
-    const label = createBox("folder-label", { id: `label-${item.path}`, x: TXT_L, width: maxWidth, height: rowHeight });
-    label.textStyle = { ...TEXT_STYLES.folderLabel, content: item.name, color: "#e8e0f0" };
-    row.addChild(label);
-    parent.addChild(row);
-    return row;
-  }
-  function container_AddRootFileRow(parent, item, y, depth, cw, ctx) {
-    const x = absX(depth);
-    const w = ctx.rightMargin - x;
-    const sel = ctx.selectedFile === item.path;
-    const maxWidth = w - TXT_L - 16;
-    const { lines: actualLines, height: rowHeight } = calcTextLayout(item.name, maxWidth);
-    const row = createBox("file-row", {
-      id: `file-${item.path}`,
-      x,
-      y,
-      width: w,
-      height: rowHeight,
-      backgroundColor: sel ? "rgba(124,58,237,0.15)" : "transparent",
-      data: { path: item.path, isDir: false, depth, lineCount: actualLines },
-      gesture: { passive: true, onTap: () => ctx.onFileClick(item.path) }
-    });
-    const label = createBox("file-label", { id: `label-${item.path}`, x: TXT_L, width: maxWidth, height: rowHeight });
-    label.textStyle = { ...TEXT_STYLES.fileLabel, content: item.name, color: "#e8e0f0" };
-    row.addChild(label);
-    parent.addChild(row);
-    return row;
   }
   function buildSidebarTree(containerWidth, rightMargin) {
     var _a, _b;
@@ -6144,7 +6080,7 @@
           _tick(2);
         }
       },
-      sleep: function sleep() {
+      sleep: function sleep2() {
         (_raf ? cancelAnimationFrame : clearTimeout)(_id);
         _tickerActive = 0;
         _req = _emptyFunc;
@@ -9426,11 +9362,18 @@
 
   // src/client/modules/tree-render.ts
   var renderer = null;
+  function markAnimatingPath(path) {
+    animatingPath = path;
+  }
+  function isAnimLocked() {
+    return animLocked;
+  }
   var cursorBox = null;
   var cursorRowId = null;
   var animatingPath = null;
   var pendingCollapse = null;
   var animLocked = false;
+  var animLockedAt = 0;
   var growTarget = null;
   function ensureCursorBox(root, canvasH) {
     var _a;
@@ -9654,10 +9597,12 @@
                 const root2 = renderer.getRoot();
                 const container = findBoxById(root2, containerId);
                 animLocked = true;
+                animLockedAt = Date.now();
                 const tl = gsapWithCSS.timeline({
                   onComplete: () => {
                     pendingCollapse = null;
                     animLocked = false;
+                    animLockedAt = 0;
                     hit.gesture.onTap();
                   }
                 });
@@ -9719,7 +9664,14 @@
   function rebuildTree() {
     var _a, _b, _c, _d;
     if (!renderer) return;
-    if (animLocked) return;
+    if (animLocked) {
+      if (animLockedAt && Date.now() - animLockedAt > 3e3) {
+        animLocked = false;
+        animLockedAt = 0;
+      } else {
+        return;
+      }
+    }
     const prevScrollY = (_b = (_a = renderer.getRoot()) == null ? void 0 : _a.scrollY) != null ? _b : 0;
     const prevCursorRowId = cursorRowId;
     cursorBox = null;
@@ -9812,8 +9764,8 @@
     }
     if (animatingPath && newRoot) {
       const path = animatingPath;
-      animatingPath = null;
       animLocked = true;
+      animLockedAt = Date.now();
       const containerId = `expanded-${path}`;
       const container = findBoxById(newRoot, containerId);
       const titleId = `title-${path}`;
@@ -9826,10 +9778,11 @@
         const fullHeight = container._fullHeight || 0;
         const origYs = container._origYs || container.children.map((c) => c.y);
         if (!fullHeight) {
-          animatingPath = null;
           animLocked = false;
+          animLockedAt = 0;
           return;
         }
+        animatingPath = null;
         const root = renderer.getRoot();
         const ancestors = collectAncestors(container, root);
         container.children.forEach((c) => {
@@ -9856,6 +9809,7 @@
           },
           onComplete: () => {
             animLocked = false;
+            animLockedAt = 0;
             const hasLoading = container.children.some((c) => {
               var _a2;
               return (_a2 = c.id) == null ? void 0 : _a2.startsWith("loading-");
@@ -9871,7 +9825,7 @@
         applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
         renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
       } else {
-        animatingPath = null;
+        animLocked = false;
       }
     }
     if (newRoot && growTarget) {
@@ -12220,49 +12174,44 @@
       return false;
     }
   }
-  async function ensureDirLoadedRecursive(path) {
-    if (!KFMState.expandedPaths[path]) return;
-    const loaded = await fetchDir(path);
-    if (!loaded) return;
-    const node = KFMState.files[path];
-    if (node == null ? void 0 : node.children) {
-      const loadPromises = [];
-      for (const child of node.children) {
-        if (child.isDir && KFMState.expandedPaths[child.path]) {
-          loadPromises.push(ensureDirLoadedRecursive(child.path));
-        }
-      }
-      if (loadPromises.length > 0) {
-        await Promise.all(loadPromises);
-      }
-    }
-  }
   async function loadFileTree(rootPath) {
     await fetchDir(rootPath);
+    markAnimatingPath(rootPath);
+    KFMState.notify();
+    await sleep(50);
     const rootNode = KFMState.files[rootPath];
     if (rootNode == null ? void 0 : rootNode.children) {
-      const loadPromises = [];
       for (const child of rootNode.children) {
         if (child.isDir && KFMState.expandedPaths[child.path]) {
-          loadPromises.push(ensureDirLoadedRecursive(child.path));
+          await loadLayerByLayerDeep(child.path);
         }
       }
-      if (loadPromises.length > 0) {
-        await Promise.all(loadPromises);
-      }
     }
-    KFMState.notify();
   }
-  async function loadLayerByLayer(path) {
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+  async function loadLayerByLayerDeep(path) {
+    markAnimatingPath(path);
     KFMState.notify();
+    await sleep(30);
     const loaded = await fetchDir(path);
     if (!loaded) return;
+    if (isAnimLocked()) {
+      const start = Date.now();
+      while (isAnimLocked()) {
+        if (Date.now() - start > 3e3) break;
+        await sleep(50);
+      }
+    }
+    markAnimatingPath(path);
     KFMState.notify();
+    await sleep(30);
     const node = KFMState.files[path];
     if (node == null ? void 0 : node.children) {
       for (const child of node.children) {
         if (child.isDir && KFMState.expandedPaths[child.path]) {
-          await loadLayerByLayer(child.path);
+          await loadLayerByLayerDeep(child.path);
         }
       }
     }
@@ -12270,9 +12219,13 @@
   function initLazyLoader() {
     const originalSetExpanded = KFMState.setExpanded.bind(KFMState);
     KFMState.setExpanded = function(path, expanded) {
+      var _a, _b;
       originalSetExpanded(path, expanded);
       if (expanded) {
-        loadLayerByLayer(path).catch(console.error);
+        const cached = ((_b = (_a = KFMState.files[path]) == null ? void 0 : _a.children) == null ? void 0 : _b.length) !== void 0;
+        if (!cached) {
+          loadLayerByLayerDeep(path).catch(console.error);
+        }
       }
     };
   }

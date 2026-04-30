@@ -16,6 +16,17 @@ import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
 
 let renderer: Renderer | null = null;
 
+/** 外部使用：标记某路径正在做展开动画 */
+/** 外部使用：标记某路径正在做展开动画 */
+export function markAnimatingPath(path: string | null): void {
+  animatingPath = path;
+}
+
+/** 外部使用：检查动画是否锁定中 */
+export function isAnimLocked(): boolean {
+  return animLocked;
+}
+
 // ============================================================
 // 光标状态
 // ============================================================
@@ -27,6 +38,7 @@ let cursorRowId: string | null = null;  // 当前光标指向的行 id
 let animatingPath: string | null = null;  // 正在展开动画的路径
 let pendingCollapse: { path: string, rowId: string } | null = null;  // 正在折叠动画
 let animLocked = false;  // 动画期间锁定，阻止 rebuildTree 重复执行
+let animLockedAt = 0;    // animLocked 设置的毫秒时间戳，用于超时兜底
 let growTarget: string | null = null;  // 需要做膨胀动画的容器 id
 
 /** 创建/获取光标 Box，保证它挂在 root 上 */
@@ -287,11 +299,11 @@ function bindClickEvents(canvas: HTMLCanvasElement, _dpr: number): void {
               const root = renderer!.getRoot()!;
               const container = findBoxById(root, containerId);
               // 三角旋转 + 容器收缩并行
-              animLocked = true;  // 锁定 rebuild
+              animLocked = true; animLockedAt = Date.now();  // 锁定 rebuild
               const tl = gsap.timeline({
                 onComplete: () => {
                   pendingCollapse = null;
-                  animLocked = false;  // 解锁，允许接下来的 rebuild
+                  animLocked = false; animLockedAt = 0;  // 解锁，允许接下来的 rebuild
                   hit.gesture!.onTap!();
                 },
               });
@@ -329,7 +341,7 @@ function bindClickEvents(canvas: HTMLCanvasElement, _dpr: number): void {
             hit.gesture.onTap();
           }
         } else {
-          // 第一次点击或切换行 → 移动光标
+          // 第一次点击或切换�� → 移动光标
           moveCursorTo(hit);
         }
         return;
@@ -358,7 +370,15 @@ function findTapTarget(box: Box, px: number, py: number): Box | null {
 
 function rebuildTree(): void {
   if (!renderer) return;
-  if (animLocked) return;  // 动画期间跳过 rebuild
+  if (animLocked) {
+    // 超时兜底：锁超过 3000ms 自动释放，防止异常导致永久卡死
+    if (animLockedAt && Date.now() - animLockedAt > 3000) {
+      animLocked = false;
+      animLockedAt = 0;
+    } else {
+      return;  // 动画期间跳过 rebuild
+    }
+  }
 
   // 保存当前滚动位置和光标行
   const prevScrollY = renderer.getRoot()?.scrollY ?? 0;
@@ -447,7 +467,7 @@ function rebuildTree(): void {
       if (target) {
         moveCursorTo(target);
       } else {
-        // ���已不存在，吸附到视口中央最近的行
+        // ���已不存在，吸附到视口中���最近的行
         snapToCenterRow(newRoot, canvasH);
       }
     } else {
@@ -463,8 +483,7 @@ function rebuildTree(): void {
   // 展开动画：容器从 height=0 平滑拉出到最终高度，子项跟�������������下滑，三角形旋转
   if (animatingPath && newRoot) {
     const path = animatingPath;
-    animatingPath = null;
-    animLocked = true;  // 锁定 rebuild
+    animLocked = true; animLockedAt = Date.now();  // 锁定 rebuild
     const containerId = `expanded-${path}`;
     const container = findBoxById(newRoot, containerId);
     const titleId = `title-${path}`;
@@ -474,10 +493,11 @@ function rebuildTree(): void {
       const fullHeight = (container as any)._fullHeight || 0;
       const origYs: number[] = (container as any)._origYs || container.children.map(c => c.y);
       if (!fullHeight) {
-        animatingPath = null;
-        animLocked = false;
+        // animatingPath kept — 数据未就绪，等下一次 rebuild 重试
+        animLocked = false; animLockedAt = 0;
         return;
       }
+      animatingPath = null;
       const root = renderer!.getRoot()!;
       const ancestors = collectAncestors(container, root);
       // 展开前隐藏直接子行，避免在展开过程中暴露
@@ -501,7 +521,7 @@ function rebuildTree(): void {
           renderer?.setRoot(renderer!.getRoot()!);
         },
         onComplete: () => {
-          animLocked = false;
+          animLocked = false; animLockedAt = 0;
           const hasLoading = container.children.some(c => c.id?.startsWith('loading-'));
           if (hasLoading) {
             growTarget = `expanded-${path}`;
@@ -516,7 +536,8 @@ function rebuildTree(): void {
       applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
       renderer?.setRoot(renderer!.getRoot()!);
     } else {
-      animatingPath = null;
+      // container not found — 解锁，让后续点击可以重新触发
+      animLocked = false;
     }
   }
 
@@ -672,7 +693,7 @@ function snapToCenterRow(root: Box, canvasH: number): void {
  */
 
 /**
- * SlideInRows: 收集容器内直接子行，全部上移隐藏，再逐行用 translateY 滑下。
+ * SlideInRows: 收集容器内直接子行，全部上移隐藏��再逐行用 translateY 滑下。
  * 暂不递归。
  */
 function slideInRows(container: Box, root: Box): void {

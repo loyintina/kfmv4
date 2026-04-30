@@ -109,20 +109,19 @@ function buildExpanded(path: string, children: FileNode[], ctx: BuildCtx, depth:
     id: `expanded-${path}`, width: w, height: 0, x: relX, y: 0,
     backgroundColor: 'transparent',
     overflow: 'hidden',
-    gradient: depthGradient(depth),
+    gradient: depth > 0 ? depthGradient(depth) : undefined,
     shadow: { color: 'rgba(0,0,0,0.5)', blur: 12, offsetX: -4, offsetY: 0 },
   });
-  container.kfmStyle = resolveStyle('left-emphasis-rest-hidden', {
-    borderColor: `rgba(180,130,255,${borderOp})`, emphasisScale: 2, cornerRadius: 4,
-  });
+  if (depth > 0) {
+    container.kfmStyle = resolveStyle('left-emphasis-rest-hidden', {
+      borderColor: `rgba(180,130,255,${borderOp})`, emphasisScale: 2, cornerRadius: 4,
+    });
+  }
 
   let cy = 0;
+  // children.length === 0 时直接返回空容器（高度 0）
   if (children.length === 0) {
-    const lr = createBox('file-row', { id: `loading-${path}`, x: 0, y: 0, width: w, height: LINE_HEIGHT + 6, backgroundColor: 'transparent' });
-    const lb = createBox('file-label', { id: `loading-label-${path}`, x: TXT_L, width: w - TXT_L - 8, height: lr.height });
-    lb.textStyle = { ...TEXT_STYLES.fileLabel, content: '\u2026', color: '#e8e0f0' };
-    lr.addChild(lb); container.addChild(lr); container.height = LINE_HEIGHT + 10;
-    container.gradient = undefined;  // loading 时不要渐变背景
+    container.height = 0;
     return container;
   }
 
@@ -156,22 +155,13 @@ export function buildTree(items: FileNode[], options: TreeOptions = {}): Box {
     id: 'file-tree-root', width: containerWidth, scrollable, scrollY: 0, height: 0, scrollbarVisible: false,
   });
 
-  let cy = 0;
-  for (const item of items) {
-    if (item.isDir) {
-      const folderRow = container_AddRootFolderRow(rootBox, item, cy, baseDepth, containerWidth, ctx);
-      cy += folderRow.height;
-      if (ctx.expandedPaths[item.path]) {
-        const ch = KFMState.files[item.path]?.children ?? item.children ?? [];
-        const c = buildExpanded(item.path, ch, ctx, baseDepth, absX(baseDepth) + getShift(baseDepth));
-        c.y = cy; rootBox.addChild(c); cy += c.height;
-      }
-    } else {
-      const fileRow = container_AddRootFileRow(rootBox, item, cy, baseDepth, containerWidth, ctx);
-      cy += fileRow.height;
-    }
-  }
-  rootBox.height = cy; rootBox.scrollY = 0;
+  // 把根目录所有内容包进 expanded-/root 容器，方便动画
+  const rootRelX = absX(baseDepth) + getShift(baseDepth);
+  const rootContainer = buildExpanded('/root', items, ctx, baseDepth, rootRelX);
+  rootContainer.y = 0;
+  rootBox.addChild(rootContainer);
+  rootBox.height = rootContainer.height;
+  rootBox.scrollY = 0;
   return rootBox;
 }
 
