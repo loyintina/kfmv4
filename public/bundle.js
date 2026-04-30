@@ -9374,7 +9374,6 @@
   var pendingCollapse = null;
   var animLocked = false;
   var animLockedAt = 0;
-  var growTarget = null;
   function ensureCursorBox(root, canvasH) {
     var _a;
     if (cursorBox) {
@@ -9736,22 +9735,6 @@
         collapseSubs(preContainer);
       }
     }
-    if (growTarget) {
-      const gc = findBoxById(rootBox, growTarget);
-      if (gc && gc.height > 50) {
-        const gfh = gc.height;
-        gc._growFullH = gfh;
-        gc._growOrigYs = gc.children.map((c) => c.y);
-        gc.height = 36;
-        const gd = gfh - 36;
-        for (const child of gc.children) {
-          child.y = child.y - gd;
-        }
-        gc.children.forEach((c) => {
-          c.opacity = 0;
-        });
-      }
-    }
     renderer.setRoot(rootBox);
     const newRoot = renderer.getRoot();
     if (newRoot && prevScrollY > 0) {
@@ -9812,50 +9795,12 @@
             animLocked = false;
             animLockedAt = 0;
             slideInRows(container, root, tog);
-            const hasLoading = container.children.some((c) => {
-              var _a2;
-              return (_a2 = c.id) == null ? void 0 : _a2.startsWith("loading-");
-            });
-            if (hasLoading) {
-              growTarget = `expanded-${path}`;
-              setTimeout(() => rebuildTree(), 100);
-            }
           }
         });
         applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
         renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
       } else {
         animLocked = false;
-      }
-    }
-    if (newRoot && growTarget) {
-      const container = findBoxById(newRoot, growTarget);
-      growTarget = null;
-      if (container) {
-        const fullH = container._growFullH || container.height;
-        const origYs = container._growOrigYs || container.children.map((c) => c.y);
-        const startH = 36;
-        if (fullH > 50) {
-          const root = renderer.getRoot();
-          const diff = fullH - startH;
-          const growChildren = container.children.slice();
-          const ancestors = collectAncestors(container, root);
-          gsapWithCSS.to(container, {
-            height: fullH,
-            duration: 0.5,
-            ease: "power2.out",
-            onUpdate: function() {
-              applyAnimOffset(container, origYs, fullH, ancestors, root);
-              const progress = Math.min(1, (container.height - startH) / diff);
-              growChildren.forEach((c) => {
-                c.opacity = progress;
-              });
-              renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
-            }
-          });
-          applyAnimOffset(container, origYs, fullH, ancestors, root);
-          renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
-        }
       }
     }
   }
@@ -12132,36 +12077,15 @@
 
   // src/client/modules/tree-loader.ts
   var API2 = "/kfmv4/api";
-  async function fetchDir(path) {
-    var _a, _b;
-    if (((_b = (_a = KFMState.files[path]) == null ? void 0 : _a.children) == null ? void 0 : _b.length) !== void 0) {
-      return true;
-    }
-    try {
-      const res = await fetch(API2 + "/files/list", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path })
-      });
-      if (!res.ok) return false;
-      const data = await res.json();
-      const items = data.items || [];
-      const children = items.map((item) => ({
-        name: item.name,
-        path: item.path,
-        isDir: item.isDir,
-        isLink: false
-      }));
-      KFMState.files[path] = {
-        name: path.split("/").pop() || path,
-        path,
-        isDir: true,
-        isLink: false,
-        children
-      };
-      return true;
-    } catch {
-      return false;
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+  async function waitForAnimUnlock() {
+    if (!isAnimLocked()) return;
+    const start = Date.now();
+    while (isAnimLocked()) {
+      if (Date.now() - start > 3e3) break;
+      await sleep(50);
     }
   }
   async function fetchDirRecursive(dirPath, depth = 20) {
@@ -12202,53 +12126,32 @@
       return false;
     }
   }
+  async function loadAndAnimate(path) {
+    markAnimatingPath(path);
+    KFMState.notify();
+    await sleep(30);
+    const loaded = await fetchDirRecursive(path);
+    if (!loaded) return;
+    await waitForAnimUnlock();
+    markAnimatingPath(path);
+    KFMState.notify();
+  }
   async function loadFileTree(rootPath) {
-    await fetchDir(rootPath);
+    const loaded = await fetchDirRecursive(rootPath);
+    if (!loaded) return;
     markAnimatingPath(rootPath);
     KFMState.notify();
-    if (isAnimLocked()) {
-      const start = Date.now();
-      while (isAnimLocked()) {
-        if (Date.now() - start > 3e3) break;
-        await sleep(50);
-      }
-    }
+    await waitForAnimUnlock();
     const rootNode = KFMState.files[rootPath];
     if (rootNode == null ? void 0 : rootNode.children) {
       for (const child of rootNode.children) {
         if (child.isDir && KFMState.expandedPaths[child.path]) {
           markAnimatingPath(child.path);
           KFMState.notify();
-          if (isAnimLocked()) {
-            const start = Date.now();
-            while (isAnimLocked()) {
-              if (Date.now() - start > 3e3) break;
-              await sleep(50);
-            }
-          }
+          await waitForAnimUnlock();
         }
       }
     }
-  }
-  function sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-  async function loadLayerByLayerDeep(path) {
-    markAnimatingPath(path);
-    KFMState.notify();
-    await sleep(30);
-    const loaded = await fetchDirRecursive(path);
-    if (!loaded) return;
-    if (isAnimLocked()) {
-      const start = Date.now();
-      while (isAnimLocked()) {
-        if (Date.now() - start > 3e3) break;
-        await sleep(50);
-      }
-    }
-    markAnimatingPath(path);
-    KFMState.notify();
-    await sleep(30);
   }
   function initLazyLoader() {
     const originalSetExpanded = KFMState.setExpanded.bind(KFMState);
@@ -12258,7 +12161,7 @@
       if (expanded) {
         const cached = ((_b = (_a = KFMState.files[path]) == null ? void 0 : _a.children) == null ? void 0 : _b.length) !== void 0;
         if (!cached) {
-          loadLayerByLayerDeep(path).catch(console.error);
+          loadAndAnimate(path).catch(console.error);
         }
       }
     };

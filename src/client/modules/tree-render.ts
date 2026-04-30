@@ -17,7 +17,6 @@ import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
 let renderer: Renderer | null = null;
 
 /** 外部使用：标记某路径正在做展开动画 */
-/** 外部使用：标记某路径正在做展开动画 */
 export function markAnimatingPath(path: string | null): void {
   animatingPath = path;
 }
@@ -39,7 +38,6 @@ let animatingPath: string | null = null;  // 正在展开动画的路径
 let pendingCollapse: { path: string, rowId: string } | null = null;  // 正在折叠动画
 let animLocked = false;  // 动画期间锁定，阻止 rebuildTree 重复执行
 let animLockedAt = 0;    // animLocked 设置的毫秒时间戳，用于超时兜底
-let growTarget: string | null = null;  // 需要做膨胀动画的容器 id
 
 /** 创建/获取光标 Box，保证它挂在 root 上 */
 function ensureCursorBox(root: Box, canvasH: number): Box {
@@ -447,19 +445,7 @@ function rebuildTree(): void {
       collapseSubs(preContainer);
     }
   }
-  if (growTarget) {
-    const gc = findBoxById(rootBox, growTarget);
-    if (gc && gc.height > 50) {
-      const gfh = gc.height;
-      (gc as any)._growFullH = gfh;
-      (gc as any)._growOrigYs = gc.children.map((c: any) => c.y);
-      gc.height = 36;
-      const gd = gfh - 36;
-      for (const child of gc.children) { child.y = child.y - gd; }
-      // 子项透明
-      gc.children.forEach((c: any) => { c.opacity = 0; });
-    }
-  }
+
 
   renderer.setRoot(rootBox);
 
@@ -529,12 +515,7 @@ function rebuildTree(): void {
           // 盒子链（子容器立即展开）→ 当前toggle旋转 + 文字链（并行）
           // 初次展开和后续展开走完全相同的逻辑
           slideInRows(container, root, tog);
-          // 如果有 loading 占位，等 slideInRows 处理完后标记重试
-          const hasLoading = container.children.some(c => c.id?.startsWith('loading-'));
-          if (hasLoading) {
-            growTarget = `expanded-${path}`;
-            setTimeout(() => rebuildTree(), 100);
-          }
+
         },
       });
       // 立即应用一帧偏移，避免 GSAP 首帧延迟导致闪烁
@@ -547,36 +528,6 @@ function rebuildTree(): void {
   }
 
 
-  // grow animation
-  if (newRoot && growTarget) {
-    const container = findBoxById(newRoot, growTarget);
-    growTarget = null;
-    if (container) {
-      const fullH = (container as any)._growFullH || container.height;
-      const origYs: number[] = (container as any)._growOrigYs || container.children.map((c: any) => c.y);
-      const startH = 36;
-      if (fullH > 50) {
-        const root = renderer!.getRoot()!;
-        const diff = fullH - startH;
-        const growChildren = container.children.slice();
-        const ancestors = collectAncestors(container, root);
-        gsap.to(container, {
-          height: fullH,
-          duration: 0.5,
-          ease: 'power2.out',
-          onUpdate: function() {
-            applyAnimOffset(container, origYs, fullH, ancestors, root);
-            const progress = Math.min(1, (container.height - startH) / diff);
-            growChildren.forEach(c => { c.opacity = progress; });
-            renderer?.setRoot(renderer!.getRoot()!);
-          },
-        });
-        // 立即应���一帧，避免 GSAP 首帧延迟
-        applyAnimOffset(container, origYs, fullH, ancestors, root);
-        renderer?.setRoot(renderer!.getRoot()!);
-      }
-    }
-  }
 }
 
 /** 在 root 子树中按 id 查找 Box */
@@ -692,14 +643,10 @@ function snapToCenterRow(root: Box, canvasH: number): void {
 }
 
 /**
- * 展开动画完成后：容器内部子行依次做 y 偏���弹跳，产生 Q 弹感。
- * 每行先向下偏移 bounceDist，再 back.out 弹回。
- * 同层 title-* + 紧跟的 expanded-* 作为一组整体弹跳。
- */
 
 /**
  * SlideInRows: 收集容器内直接子行，��部上移隐藏��再逐行用 translateY 滑下。
- * 暂不递归。
+ * 盒子链串行展开子容器，每个子容器展开后递归调用自身。
  */
 function slideInRows(container: Box, root: Box, selfToggle?: any): void {
   const rows = container.children.filter(c =>
