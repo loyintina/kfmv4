@@ -9662,7 +9662,7 @@
     return null;
   }
   function rebuildTree() {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e;
     if (!renderer) return;
     if (animLocked) {
       if (animLockedAt && Date.now() - animLockedAt > 3e3) {
@@ -9685,11 +9685,23 @@
     if (canvas) {
       rootBox.height = canvasH;
     }
+    if (animatingPath) {
+      const titleRow = findBoxById(rootBox, `title-${animatingPath}`);
+      const toggle = (_d = titleRow == null ? void 0 : titleRow.children) == null ? void 0 : _d.find((c) => {
+        var _a2;
+        return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
+      });
+      if (toggle) {
+        toggle.transform.rotate = 0;
+        renderer == null ? void 0 : renderer.setRoot(rootBox);
+      }
+    }
     function collapseSubs(box) {
       var _a2, _b2;
       if (!box || !box.children) return;
       for (const child of box.children) {
         if (((_a2 = child.id) == null ? void 0 : _a2.startsWith("expanded-")) && child.height > 0) {
+          if (animatingPath && child.id === `expanded-${animatingPath}`) continue;
           const subFullH = child.height;
           child._fullHeight = subFullH;
           child._origYs = child.children.map((c) => c.y);
@@ -9770,7 +9782,7 @@
       const container = findBoxById(newRoot, containerId);
       const titleId = `title-${path}`;
       const titleRow = findBoxById(newRoot, titleId);
-      const tog = (_d = titleRow == null ? void 0 : titleRow.children) == null ? void 0 : _d.find((c) => {
+      const tog = (_e = titleRow == null ? void 0 : titleRow.children) == null ? void 0 : _e.find((c) => {
         var _a2;
         return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
       });
@@ -9789,8 +9801,7 @@
           c.opacity = 0;
         });
         if (tog) {
-          tog.transform.rotate = 0;
-          gsapWithCSS.to(tog.transform, {
+          gsapWithCSS.fromTo(tog.transform, { rotate: 0 }, {
             rotate: Math.PI / 2,
             duration: 0.25,
             ease: "power2.out",

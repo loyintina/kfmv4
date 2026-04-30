@@ -399,12 +399,25 @@ function rebuildTree(): void {
     rootBox.height = canvasH;
   }
 
+  // 在 setRoot 之前，把 animatingPath 的 toggle 强行归零并提交，
+  // 盖掉 buildExpanded 设的 90°，避免第一帧闪烁
+  if (animatingPath) {
+    const titleRow = findBoxById(rootBox, `title-${animatingPath}`);
+    const toggle = titleRow?.children?.find(c => c.id?.startsWith('toggle-'));
+    if (toggle) {
+      toggle.transform.rotate = 0;
+      renderer?.setRoot(rootBox);
+    }
+  }
+
   // 在 setRoot 之前预设动画初始状态，避免满高一帧闪烁
   // 递归折叠所有已展开子容器，确保展开动画期间内容不可见
   function collapseSubs(box: any): void {
     if (!box || !box.children) return;
     for (const child of box.children) {
       if (child.id?.startsWith('expanded-') && child.height > 0) {
+        // 跳过当前正在做展开动画的容器——动画块自己会处理 toggle 旋转
+        if (animatingPath && child.id === `expanded-${animatingPath}`) continue;
         const subFullH = child.height;
         (child as any)._fullHeight = subFullH;
         (child as any)._origYs = child.children.map((c: any) => c.y);
@@ -502,10 +515,9 @@ function rebuildTree(): void {
       const ancestors = collectAncestors(container, root);
       // 展开前隐藏直接子行，避免在展开过程中暴露
       container.children.forEach(c => { c.opacity = 0; });
-      // 三角形从 0 旋转到 90°
+      // 三角形从 0 旋转到 90°，使用 fromTo 避免先赋值造成的闪烁
       if (tog) {
-        tog.transform.rotate = 0;
-        gsap.to(tog.transform, {
+        gsap.fromTo(tog.transform, { rotate: 0 }, {
           rotate: Math.PI / 2,
           duration: 0.25,
           ease: 'power2.out',
@@ -566,7 +578,7 @@ function rebuildTree(): void {
             renderer?.setRoot(renderer!.getRoot()!);
           },
         });
-        // 立即应用一帧，避免 GSAP 首帧延迟
+        // 立即应���一帧，避免 GSAP 首帧延迟
         applyAnimOffset(container, origYs, fullH, ancestors, root);
         renderer?.setRoot(renderer!.getRoot()!);
       }
@@ -687,13 +699,13 @@ function snapToCenterRow(root: Box, canvasH: number): void {
 }
 
 /**
- * 展开动画完成后：容器内部子行依次做 y 偏移弹跳，产生 Q 弹感。
+ * 展开动画完成后：容器内部子行依次做 y 偏���弹跳，产生 Q 弹感。
  * 每行先向下偏移 bounceDist，再 back.out 弹回。
  * 同层 title-* + 紧跟的 expanded-* 作为一组整体弹跳。
  */
 
 /**
- * SlideInRows: 收集容器内直接子行，全部上移隐藏��再逐行用 translateY 滑下。
+ * SlideInRows: 收集容器内直接子行，��部上移隐藏��再逐行用 translateY 滑下。
  * 暂不递归。
  */
 function slideInRows(container: Box, root: Box): void {
