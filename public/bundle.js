@@ -9800,16 +9800,6 @@
         container.children.forEach((c) => {
           c.opacity = 0;
         });
-        if (tog) {
-          gsapWithCSS.fromTo(tog.transform, { rotate: 0 }, {
-            rotate: Math.PI / 2,
-            duration: 0.25,
-            ease: "power2.out",
-            onUpdate: () => {
-              renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
-            }
-          });
-        }
         gsapWithCSS.to(container, {
           height: fullHeight,
           duration: 0.05,
@@ -9821,15 +9811,14 @@
           onComplete: () => {
             animLocked = false;
             animLockedAt = 0;
+            slideInRows(container, root, tog);
             const hasLoading = container.children.some((c) => {
               var _a2;
               return (_a2 = c.id) == null ? void 0 : _a2.startsWith("loading-");
             });
             if (hasLoading) {
               growTarget = `expanded-${path}`;
-              rebuildTree();
-            } else {
-              slideInRows(container, root);
+              setTimeout(() => rebuildTree(), 100);
             }
           }
         });
@@ -9951,7 +9940,7 @@
     walk(root);
     if (closest) moveCursorTo(closest);
   }
-  function slideInRows(container, root) {
+  function slideInRows(container, root, selfToggle) {
     var _a;
     const rows = container.children.filter(
       (c) => {
@@ -9981,17 +9970,7 @@
           c.opacity = 0;
         });
         const tog = child._toggleBox;
-        if (tog) {
-          tog.transform.rotate = 0;
-          gsapWithCSS.to(tog.transform, {
-            rotate: Math.PI / 2,
-            duration: 0.25,
-            ease: "power2.out",
-            onUpdate: () => {
-              renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
-            }
-          });
-        }
+        if (tog) tog.transform.rotate = 0;
         gsapWithCSS.to(child, {
           height: subFullH,
           duration: 0.05,
@@ -10005,32 +9984,44 @@
         });
       }
     }
-    rows.forEach((row, i) => {
-      gsapWithCSS.to(row.transform, {
-        translateY: 0,
-        duration: 0.2,
+    if (selfToggle) {
+      gsapWithCSS.fromTo(selfToggle.transform, { rotate: 0 }, {
+        rotate: Math.PI / 2,
+        duration: 0.25,
         ease: "power2.out",
-        delay: i * 25 / 1e3,
         onUpdate: () => {
           renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
-        },
-        onComplete: () => {
-          var _a2;
-          if (!((_a2 = row.id) == null ? void 0 : _a2.startsWith("title-"))) return;
-          const subId = "expanded-" + row.id.slice(6);
-          const sub = container.children.find((c) => c.id === subId);
-          if (!sub || !sub._fullHeight) return;
+        }
+      });
+    }
+    rows.forEach((row, i) => {
+      var _a2;
+      const rowDelay = i * 25 / 1e3;
+      if ((_a2 = row.id) == null ? void 0 : _a2.startsWith("title-")) {
+        const subId = "expanded-" + row.id.slice(6);
+        const sub = container.children.find((c) => c.id === subId);
+        if (sub && sub._fullHeight) {
           const tog = sub._toggleBox;
-          if (tog && Math.abs(tog.transform.rotate) < 0.01) {
-            gsapWithCSS.to(tog.transform, {
+          if (tog) {
+            gsapWithCSS.fromTo(tog.transform, { rotate: 0 }, {
               rotate: Math.PI / 2,
-              duration: 0.25,
+              duration: 0.5,
               ease: "power2.out",
+              delay: rowDelay,
               onUpdate: () => {
                 renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
               }
             });
           }
+        }
+      }
+      gsapWithCSS.to(row.transform, {
+        translateY: 0,
+        duration: 0.2,
+        ease: "power2.out",
+        delay: rowDelay,
+        onUpdate: () => {
+          renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
         }
       });
     });

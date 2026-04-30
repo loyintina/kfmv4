@@ -515,15 +515,6 @@ function rebuildTree(): void {
       const ancestors = collectAncestors(container, root);
       // 展开前隐藏直接子行，避免在展开过程中暴露
       container.children.forEach(c => { c.opacity = 0; });
-      // 三角形从 0 旋转到 90°，使用 fromTo 避免先赋值造成的闪烁
-      if (tog) {
-        gsap.fromTo(tog.transform, { rotate: 0 }, {
-          rotate: Math.PI / 2,
-          duration: 0.25,
-          ease: 'power2.out',
-          onUpdate: () => { renderer?.setRoot(renderer!.getRoot()!); },
-        });
-      }
       gsap.to(container, {
         height: fullHeight,
         duration: 0.05,
@@ -534,13 +525,15 @@ function rebuildTree(): void {
         },
         onComplete: () => {
           animLocked = false; animLockedAt = 0;
+          // slideInRows 内部实现了统一的动画结构：
+          // 盒子链（子容器立即展开）→ 当前toggle旋转 + 文字链（并行）
+          // 初次展开和后续展开走完全相同的逻辑
+          slideInRows(container, root, tog);
+          // 如果有 loading 占位，等 slideInRows 处理完后标记重试
           const hasLoading = container.children.some(c => c.id?.startsWith('loading-'));
           if (hasLoading) {
             growTarget = `expanded-${path}`;
-            rebuildTree();
-          } else {
-            // Step 1: 逐行滑入直接子行
-            slideInRows(container, root);
+            setTimeout(() => rebuildTree(), 100);
           }
         },
       });
@@ -708,7 +701,7 @@ function snapToCenterRow(root: Box, canvasH: number): void {
  * SlideInRows: 收集容器内直接子行，��部上移隐藏��再逐行用 translateY 滑下。
  * 暂不递归。
  */
-function slideInRows(container: Box, root: Box): void {
+function slideInRows(container: Box, root: Box, selfToggle?: any): void {
   const rows = container.children.filter(c =>
     (c.id?.startsWith('title-') || c.id?.startsWith('file-') || c.id?.startsWith('expanded-'))
   );
@@ -723,21 +716,14 @@ function slideInRows(container: Box, root: Box): void {
   rows.forEach(r => { r.transform.translateY = -totalH; });
   renderer?.setRoot(renderer!.getRoot()!);
 
-  // ====== 盒子链：立即展开所有子容器，不等文字 ======
+  // ====== 盒子链：立即展开所有子容器（三角形只设起始态，旋转移到文字链同步），不等文字 ======
   for (const child of container.children) {
     if (child.id?.startsWith('expanded-') && (child as any)._fullHeight > 0) {
       const subFullH = (child as any)._fullHeight;
       child.children.forEach(c => { c.opacity = 0; });
+      // 预设三角形起始态为 0°，避免从上一帧 90° 闪回
       const tog = (child as any)._toggleBox;
-      if (tog) {
-        tog.transform.rotate = 0;
-        gsap.to(tog.transform, {
-          rotate: Math.PI / 2,
-          duration: 0.25,
-          ease: 'power2.out',
-          onUpdate: () => { renderer?.setRoot(renderer!.getRoot()!); },
-        });
-      }
+      if (tog) tog.transform.rotate = 0;
       gsap.to(child, {
         height: subFullH,
         duration: 0.05,
@@ -748,29 +734,42 @@ function slideInRows(container: Box, root: Box): void {
     }
   }
 
+  // ====== 当前容器 toggle 旋转（和文字链并行） ======
+  if (selfToggle) {
+    gsap.fromTo(selfToggle.transform, { rotate: 0 }, {
+      rotate: Math.PI / 2,
+      duration: 0.25,
+      ease: 'power2.out',
+      onUpdate: () => { renderer?.setRoot(renderer!.getRoot()!); },
+    });
+  }
+
   // ====== 文字链：逐行滑入（不阻塞盒子链） ======
   rows.forEach((row, i) => {
+    const rowDelay = (i * 25) / 1000;
+    // 子文件夹三角形和文字滑入并行启动，但转得慢一些
+    if (row.id?.startsWith('title-')) {
+      const subId = 'expanded-' + row.id.slice(6);
+      const sub = container.children.find(c => c.id === subId);
+      if (sub && (sub as any)._fullHeight) {
+        const tog = (sub as any)._toggleBox;
+        if (tog) {
+          gsap.fromTo(tog.transform, { rotate: 0 }, {
+            rotate: Math.PI / 2,
+            duration: 0.5,
+            ease: 'power2.out',
+            delay: rowDelay,
+            onUpdate: () => { renderer?.setRoot(renderer!.getRoot()!); },
+          });
+        }
+      }
+    }
     gsap.to(row.transform, {
       translateY: 0,
       duration: 0.2,
       ease: 'power2.out',
-      delay: (i * 25) / 1000,
+      delay: rowDelay,
       onUpdate: () => { renderer?.setRoot(renderer!.getRoot()!); },
-      onComplete: () => {
-        if (!row.id?.startsWith('title-')) return;
-        const subId = 'expanded-' + row.id.slice(6);
-        const sub = container.children.find(c => c.id === subId);
-        if (!sub || !(sub as any)._fullHeight) return;
-        const tog = (sub as any)._toggleBox;
-        if (tog && Math.abs(tog.transform.rotate) < 0.01) {
-          gsap.to(tog.transform, {
-            rotate: Math.PI / 2,
-            duration: 0.25,
-            ease: 'power2.out',
-            onUpdate: () => { renderer?.setRoot(renderer!.getRoot()!); },
-          });
-        }
-      },
     });
   });
 }
