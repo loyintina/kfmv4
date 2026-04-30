@@ -12088,7 +12088,7 @@
       await sleep(50);
     }
   }
-  async function fetchDirRecursive(dirPath, depth = 20) {
+  async function fetchDirRecursive(dirPath, expandedPaths = {}, depth = 20) {
     try {
       let ingestTree2 = function(parentPath, items) {
         const children = items.map((item) => ({
@@ -12114,7 +12114,7 @@
       const res = await fetch(API2 + "/files/list-recursive", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path: dirPath, depth })
+        body: JSON.stringify({ path: dirPath, depth, expandedPaths })
       });
       if (!res.ok) return false;
       const data = await res.json();
@@ -12130,14 +12130,25 @@
     markAnimatingPath(path);
     KFMState.notify();
     await sleep(30);
-    const loaded = await fetchDirRecursive(path);
+    const childExpandedPaths = getChildExpandedPaths(path);
+    const loaded = await fetchDirRecursive(path, childExpandedPaths);
     if (!loaded) return;
     await waitForAnimUnlock();
     markAnimatingPath(path);
     KFMState.notify();
   }
+  function getChildExpandedPaths(path) {
+    const result = {};
+    for (const expandedPath of Object.keys(KFMState.expandedPaths)) {
+      if (expandedPath.startsWith(path + "/")) {
+        result[expandedPath] = true;
+      }
+    }
+    return result;
+  }
   async function loadFileTree(rootPath) {
-    const loaded = await fetchDirRecursive(rootPath, 1);
+    const allExpandedPaths = { ...KFMState.expandedPaths };
+    const loaded = await fetchDirRecursive(rootPath, allExpandedPaths);
     if (!loaded) return;
     markAnimatingPath(rootPath);
     KFMState.notify();

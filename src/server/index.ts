@@ -46,6 +46,7 @@ function setupApiRoutes(router: express.Router) {
     try {
       const targetPath = req.body.path || ROOT_DIR;
       const maxDepth = req.body.depth || 20;
+      const expandedPaths: Record<string, boolean> = req.body.expandedPaths || {};
       const resolvedPath = targetPath === '~' ? ROOT_DIR : targetPath;
       if (!fs.existsSync(resolvedPath)) { res.json({ error: '路径不存在', path: resolvedPath }); return; }
 
@@ -71,8 +72,12 @@ function setupApiRoutes(router: express.Router) {
                   name, path: fullPath, isDir: stats.isDirectory(),
                   size: stats.size, modified: stats.mtime.toISOString(),
                 };
+                // 只有展开的目录才递归获取子节点
                 if (stats.isDirectory()) {
-                  node.children = readDirRecursive(fullPath, depth - 1);
+                  const isExpanded = expandedPaths[fullPath] || Object.keys(expandedPaths).some(ep => ep.startsWith(fullPath + '/'));
+                  if (isExpanded) {
+                    node.children = readDirRecursive(fullPath, depth - 1);
+                  }
                 }
                 return node;
               } catch { return null; }

@@ -2,8 +2,9 @@
  * tree-loader.ts — 数据加载层
  *
  * 核心逻辑：
- * - 展开文件夹时，通过递归 API 一次性获取整棵子树数据
- * - 数据就绪后 notify 触发展开动画，无需逐层串行加载
+ * - 页面加载时，根据 expandedPaths 只获取展开路径上的节点
+ * - 点击展开时，获取该目录的子节点（不递归获取未展开的子目录）
+ * - 后端根据 expandedPaths 参数，只返回展开路径上的节点
  */
 
 import { KFMState, type FileNode } from './state.js';
@@ -27,15 +28,19 @@ async function waitForAnimUnlock(): Promise<void> {
 }
 
 /**
- * 递归获取目录树：一次请求拿到指定路径下所有层级的子目录内容。
- * 后端 /files/list-recursive 一次性返回整棵子树。
+ * 获取指定路径下展开路径上的所有节点。
+ * 后端根据 expandedPaths 只返回展开的子目录的子节点。
  */
-async function fetchDirRecursive(dirPath: string, depth: number = 20): Promise<boolean> {
+async function fetchDirRecursive(
+  dirPath: string,
+  expandedPaths: Record<string, boolean> = {},
+  depth: number = 20
+): Promise<boolean> {
   try {
     const res = await fetch(API + '/files/list-recursive', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: dirPath, depth }),
+      body: JSON.stringify({ path: dirPath, depth, expandedPaths }),
     });
     if (!res.ok) return false;
     const data = await res.json();
@@ -73,14 +78,16 @@ async function fetchDirRecursive(dirPath: string, depth: number = 20): Promise<b
 
 /**
  * 加载指定目录的子树数据，然后触发展开动画。
- * 用于首次展开（数据未缓存时）。
+ * 用于点击展开时：只获取该目录的子节点，不递归获取未展开的子目录。
  */
 async function loadAndAnimate(path: string): Promise<void> {
   markAnimatingPath(path);
   KFMState.notify();
   await sleep(30);
 
-  const loaded = await fetchDirRecursive(path);
+  // 只获取当前目录的子节点，传入该目录下展开的子路径
+  const childExpandedPaths = getChildExpandedPaths(path);
+  const loaded = await fetchDirRecursive(path, childExpandedPaths);
   if (!loaded) return;
 
   await waitForAnimUnlock();
@@ -89,16 +96,35 @@ async function loadAndAnimate(path: string): Promise<void> {
 }
 
 /**
- * 初始化根目录：加载根目录数据并触发展开动画。
+ * 获取指定路径下展开的子路径。
+ * 例如：path=/root，expandedPaths 有 /root/go 和 /root/go/src
+ * 则返回 { "/root/go": true, "/root/go/src": true }
+ */
+function getChildExpandedPaths(path: string): Record<string, boolean> {
+  const result: Record<string, boolean> = {};
+  for (const expandedPath of Object.keys(KFMState.expandedPaths)) {
+    if (expandedPath.startsWith(path + '/')) {
+      result[expandedPath] = true;
+    }
+  }
+  return result;
+}
+
+/**
+ * 初始化根目录：根据 expandedPaths 获取所有展开路径上的节点。
  */
 export async function loadFileTree(rootPath: string): Promise<void> {
-  // 根目录初始化只获取第一层，用户展开子目录时再递归获取
-  const loaded = await fetchDirRecursive(rootPath, 1);
+  // 获取所有展开路径
+  const allExpandedPaths = { ...KFMState.expandedPaths };
+  
+  // 一次性获取所有展开路径上的节点
+  const loaded = await fetchDirRecursive(rootPath, allExpandedPaths);
   if (!loaded) return;
 
   markAnimatingPath(rootPath);
   KFMState.notify();
 
+  // 依次触发展开动画
   await waitForAnimUnlock();
   const rootNode = KFMState.files[rootPath];
   if (rootNode?.children) {

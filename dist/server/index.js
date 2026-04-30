@@ -52,7 +52,10 @@ function setupApiRoutes(router) {
                 modified: stats.mtime.toISOString()
               };
               if (stats.isDirectory()) {
-                node.children = readDirRecursive2(fullPath, depth - 1);
+                const isExpanded = expandedPaths[fullPath] || Object.keys(expandedPaths).some((ep) => ep.startsWith(fullPath + "/"));
+                if (isExpanded) {
+                  node.children = readDirRecursive2(fullPath, depth - 1);
+                }
               }
               return node;
             } catch {
@@ -69,6 +72,7 @@ function setupApiRoutes(router) {
       var readDirRecursive = readDirRecursive2;
       const targetPath = req.body.path || ROOT_DIR;
       const maxDepth = req.body.depth || 20;
+      const expandedPaths = req.body.expandedPaths || {};
       const resolvedPath = targetPath === "~" ? ROOT_DIR : targetPath;
       if (!fs.existsSync(resolvedPath)) {
         res.json({ error: "\u8DEF\u5F84\u4E0D\u5B58\u5728", path: resolvedPath });
