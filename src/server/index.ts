@@ -40,6 +40,53 @@ function setupApiRoutes(router: express.Router) {
     } catch (error: any) { res.json({ error: error.message }); }
   });
 
+  // 递归获取目录树：一次返回指定路径下所有层级的子目录内容
+  // depth 限制递归深度，默认 5 层，防止超大目录卡住
+  router.post('/files/list-recursive', (req: express.Request, res: express.Response) => {
+    try {
+      const targetPath = req.body.path || ROOT_DIR;
+      const maxDepth = req.body.depth || 20;
+      const resolvedPath = targetPath === '~' ? ROOT_DIR : targetPath;
+      if (!fs.existsSync(resolvedPath)) { res.json({ error: '路径不存在', path: resolvedPath }); return; }
+
+      interface TreeNode {
+        name: string;
+        path: string;
+        isDir: boolean;
+        size: number;
+        modified: string;
+        children?: TreeNode[];
+      }
+
+      function readDirRecursive(dirPath: string, depth: number): TreeNode[] {
+        if (depth <= 0) return [];
+        try {
+          return fs.readdirSync(dirPath)
+            .filter(name => !name.startsWith('.'))
+            .map(name => {
+              const fullPath = path.join(dirPath, name);
+              try {
+                const stats = fs.statSync(fullPath);
+                const node: TreeNode = {
+                  name, path: fullPath, isDir: stats.isDirectory(),
+                  size: stats.size, modified: stats.mtime.toISOString(),
+                };
+                if (stats.isDirectory()) {
+                  node.children = readDirRecursive(fullPath, depth - 1);
+                }
+                return node;
+              } catch { return null; }
+            })
+            .filter((item): item is TreeNode => item !== null)
+            .sort((a, b) => { if (a.isDir !== b.isDir) return a.isDir ? -1 : 1; return a.name.localeCompare(b.name); });
+        } catch { return []; }
+      }
+
+      const tree = readDirRecursive(resolvedPath, maxDepth);
+      res.json({ path: resolvedPath, tree });
+    } catch (error: any) { res.json({ error: error.message }); }
+  });
+
   router.post('/files/read', (req: express.Request, res: express.Response) => {
     try {
       const targetPath: string = req.body.path;

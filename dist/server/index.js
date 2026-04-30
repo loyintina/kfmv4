@@ -35,6 +35,51 @@ function setupApiRoutes(router) {
       res.json({ error: error.message });
     }
   });
+  router.post("/files/list-recursive", (req, res) => {
+    try {
+      let readDirRecursive2 = function(dirPath, depth) {
+        if (depth <= 0) return [];
+        try {
+          return fs.readdirSync(dirPath).filter((name) => !name.startsWith(".")).map((name) => {
+            const fullPath = path.join(dirPath, name);
+            try {
+              const stats = fs.statSync(fullPath);
+              const node = {
+                name,
+                path: fullPath,
+                isDir: stats.isDirectory(),
+                size: stats.size,
+                modified: stats.mtime.toISOString()
+              };
+              if (stats.isDirectory()) {
+                node.children = readDirRecursive2(fullPath, depth - 1);
+              }
+              return node;
+            } catch {
+              return null;
+            }
+          }).filter((item) => item !== null).sort((a, b) => {
+            if (a.isDir !== b.isDir) return a.isDir ? -1 : 1;
+            return a.name.localeCompare(b.name);
+          });
+        } catch {
+          return [];
+        }
+      };
+      var readDirRecursive = readDirRecursive2;
+      const targetPath = req.body.path || ROOT_DIR;
+      const maxDepth = req.body.depth || 20;
+      const resolvedPath = targetPath === "~" ? ROOT_DIR : targetPath;
+      if (!fs.existsSync(resolvedPath)) {
+        res.json({ error: "\u8DEF\u5F84\u4E0D\u5B58\u5728", path: resolvedPath });
+        return;
+      }
+      const tree = readDirRecursive2(resolvedPath, maxDepth);
+      res.json({ path: resolvedPath, tree });
+    } catch (error) {
+      res.json({ error: error.message });
+    }
+  });
   router.post("/files/read", (req, res) => {
     try {
       const targetPath = req.body.path;

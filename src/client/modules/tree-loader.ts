@@ -49,6 +49,52 @@ async function fetchDir(path: string): Promise<boolean> {
 }
 
 /**
+ * 递归获取目录树：一次请求拿到指定路径下所有层级的子目录内容。
+ * 后端 /files/list-recursive 一次性返回整棵子树，避免串行 await。
+ */
+async function fetchDirRecursive(dirPath: string, depth: number = 20): Promise<boolean> {
+  try {
+    const res = await fetch(API + '/files/list-recursive', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: dirPath, depth }),
+    });
+    if (!res.ok) return false;
+    const data = await res.json();
+    const tree: any[] = data.tree || [];
+    if (tree.length === 0) return false;
+
+    // 将递归树结构写入 KFMState.files
+    function ingestTree(parentPath: string, items: any[]): void {
+      const children: FileNode[] = items.map(item => ({
+        name: item.name,
+        path: item.path,
+        isDir: item.isDir,
+        isLink: false,
+      }));
+      KFMState.files[parentPath] = {
+        name: parentPath.split('/').pop() || parentPath,
+        path: parentPath,
+        isDir: true,
+        isLink: false,
+        children,
+      };
+      // 递归写入子目录
+      for (const item of items) {
+        if (item.isDir && item.children && item.children.length > 0) {
+          ingestTree(item.path, item.children);
+        }
+      }
+    }
+
+    ingestTree(dirPath, tree);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * 递归加载所有已展开路径的数据。
  * 一次性把整棵展开树填满，后续 rebuildTree 直接递归构建。
  */
@@ -84,14 +130,29 @@ export async function loadFileTree(rootPath: string): Promise<void> {
   markAnimatingPath(rootPath);
   KFMState.notify();
 
-  // 然后逐层加载已展开的子目录（延迟一小段时间让 rebuildTree 动画先启动）
-  await sleep(50);
-
+  // 已展开的子目录数据随根目录一起递归获取，不再逐层串行加载
+  // 等动画解锁后，对已展开的子目录逐个触发展开动画
+  if (isAnimLocked()) {
+    const start = Date.now();
+    while (isAnimLocked()) {
+      if (Date.now() - start > 3000) break;
+      await sleep(50);
+    }
+  }
   const rootNode = KFMState.files[rootPath];
   if (rootNode?.children) {
     for (const child of rootNode.children) {
       if (child.isDir && KFMState.expandedPaths[child.path]) {
-        await loadLayerByLayerDeep(child.path);
+        // 子目录数据已在 fetchDirRecursive 中就绪，直接触发展开动画
+        markAnimatingPath(child.path);
+        KFMState.notify();
+        if (isAnimLocked()) {
+          const start = Date.now();
+          while (isAnimLocked()) {
+            if (Date.now() - start > 3000) break;
+            await sleep(50);
+          }
+        }
       }
     }
   }
@@ -114,13 +175,12 @@ async function loadLayerByLayerDeep(path: string): Promise<void> {
   KFMState.notify();
   await sleep(30);
 
-  // 加载这一层
-  const loaded = await fetchDir(path);
+  // 一次性递归获取整棵子树数据
+  const loaded = await fetchDirRecursive(path);
   if (!loaded) return;
 
   // 数据就绪后，等待动画解锁（避免 notify 被 animLocked 挡掉）
   if (isAnimLocked()) {
-    // 轮回等待 — 每次检查间隔 50ms，最长等 3000ms
     const start = Date.now();
     while (isAnimLocked()) {
       if (Date.now() - start > 3000) break;
@@ -132,15 +192,8 @@ async function loadLayerByLayerDeep(path: string): Promise<void> {
   KFMState.notify();
   await sleep(30);
 
-  // 递归已展开的子目录
-  const node = KFMState.files[path];
-  if (node?.children) {
-    for (const child of node.children) {
-      if (child.isDir && KFMState.expandedPaths[child.path]) {
-        await loadLayerByLayerDeep(child.path);
-      }
-    }
-  }
+  // 数据已全部就绪，不再需要递归加载子目录
+  // 子目录的展开动画由 slideInRows 的盒子链串行驱动
 }
 
 

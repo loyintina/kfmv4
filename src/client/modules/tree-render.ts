@@ -703,7 +703,7 @@ function snapToCenterRow(root: Box, canvasH: number): void {
  */
 function slideInRows(container: Box, root: Box, selfToggle?: any): void {
   const rows = container.children.filter(c =>
-    (c.id?.startsWith('title-') || c.id?.startsWith('file-') || c.id?.startsWith('expanded-'))
+    (c.id?.startsWith('title-') || c.id?.startsWith('file-'))
   );
   if (rows.length === 0) return;
 
@@ -716,29 +716,35 @@ function slideInRows(container: Box, root: Box, selfToggle?: any): void {
   rows.forEach(r => { r.transform.translateY = -totalH; });
   renderer?.setRoot(renderer!.getRoot()!);
 
-  // ====== 盒子链：立即展开所有子容器（三角形只设起始态，旋转移到文字链同步），不等文字 ======
-  for (const child of container.children) {
-    if (child.id?.startsWith('expanded-') && (child as any)._fullHeight > 0) {
-      const subFullH = (child as any)._fullHeight;
-      child.children.forEach(c => { c.opacity = 0; });
-      // 预设三角形起始态为 0°，避免从上一帧 90° 闪回
-      const tog = (child as any)._toggleBox;
-      if (tog) tog.transform.rotate = 0;
-      gsap.to(child, {
-        height: subFullH,
-        duration: 0.05,
-        ease: 'power2.out',
-        onUpdate: () => { renderer?.setRoot(renderer!.getRoot()!); },
-        onComplete: () => { slideInRows(child, root); },
-      });
-    }
+  // ====== 盒子链：串行展开子容器，一个完再展开下一个 ======
+  const subContainers = container.children.filter(
+    c => c.id?.startsWith('expanded-') && (c as any)._fullHeight > 0
+  );
+  function expandNext(idx: number): void {
+    if (idx >= subContainers.length) return;
+    const child = subContainers[idx];
+    const subFullH = (child as any)._fullHeight;
+    child.children.forEach(c => { c.opacity = 0; });
+    const tog = (child as any)._toggleBox;
+    if (tog) tog.transform.rotate = 0;
+    gsap.to(child, {
+      height: subFullH,
+      duration: 0.05,
+      ease: 'power2.out',
+      onUpdate: () => { renderer?.setRoot(renderer!.getRoot()!); },
+      onComplete: () => {
+        expandNext(idx + 1);
+        slideInRows(child, root, tog);
+      },
+    });
   }
+  expandNext(0);
 
   // ====== 当前容器 toggle 旋转（和文字链并行） ======
   if (selfToggle) {
     gsap.fromTo(selfToggle.transform, { rotate: 0 }, {
       rotate: Math.PI / 2,
-      duration: 0.25,
+      duration: 0.5,
       ease: 'power2.out',
       onUpdate: () => { renderer?.setRoot(renderer!.getRoot()!); },
     });
@@ -747,23 +753,6 @@ function slideInRows(container: Box, root: Box, selfToggle?: any): void {
   // ====== 文字链：逐行滑入（不阻塞盒子链） ======
   rows.forEach((row, i) => {
     const rowDelay = (i * 25) / 1000;
-    // 子文件夹三角形和文字滑入并行启动，但转得慢一些
-    if (row.id?.startsWith('title-')) {
-      const subId = 'expanded-' + row.id.slice(6);
-      const sub = container.children.find(c => c.id === subId);
-      if (sub && (sub as any)._fullHeight) {
-        const tog = (sub as any)._toggleBox;
-        if (tog) {
-          gsap.fromTo(tog.transform, { rotate: 0 }, {
-            rotate: Math.PI / 2,
-            duration: 0.5,
-            ease: 'power2.out',
-            delay: rowDelay,
-            onUpdate: () => { renderer?.setRoot(renderer!.getRoot()!); },
-          });
-        }
-      }
-    }
     gsap.to(row.transform, {
       translateY: 0,
       duration: 0.2,

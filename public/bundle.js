@@ -9941,11 +9941,10 @@
     if (closest) moveCursorTo(closest);
   }
   function slideInRows(container, root, selfToggle) {
-    var _a;
     const rows = container.children.filter(
       (c) => {
-        var _a2, _b, _c;
-        return ((_a2 = c.id) == null ? void 0 : _a2.startsWith("title-")) || ((_b = c.id) == null ? void 0 : _b.startsWith("file-")) || ((_c = c.id) == null ? void 0 : _c.startsWith("expanded-"));
+        var _a, _b;
+        return ((_a = c.id) == null ? void 0 : _a.startsWith("title-")) || ((_b = c.id) == null ? void 0 : _b.startsWith("file-"));
       }
     );
     if (rows.length === 0) return;
@@ -9963,31 +9962,39 @@
       r.transform.translateY = -totalH;
     });
     renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
-    for (const child of container.children) {
-      if (((_a = child.id) == null ? void 0 : _a.startsWith("expanded-")) && child._fullHeight > 0) {
-        const subFullH = child._fullHeight;
-        child.children.forEach((c) => {
-          c.opacity = 0;
-        });
-        const tog = child._toggleBox;
-        if (tog) tog.transform.rotate = 0;
-        gsapWithCSS.to(child, {
-          height: subFullH,
-          duration: 0.05,
-          ease: "power2.out",
-          onUpdate: () => {
-            renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
-          },
-          onComplete: () => {
-            slideInRows(child, root);
-          }
-        });
+    const subContainers = container.children.filter(
+      (c) => {
+        var _a;
+        return ((_a = c.id) == null ? void 0 : _a.startsWith("expanded-")) && c._fullHeight > 0;
       }
+    );
+    function expandNext(idx) {
+      if (idx >= subContainers.length) return;
+      const child = subContainers[idx];
+      const subFullH = child._fullHeight;
+      child.children.forEach((c) => {
+        c.opacity = 0;
+      });
+      const tog = child._toggleBox;
+      if (tog) tog.transform.rotate = 0;
+      gsapWithCSS.to(child, {
+        height: subFullH,
+        duration: 0.05,
+        ease: "power2.out",
+        onUpdate: () => {
+          renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+        },
+        onComplete: () => {
+          expandNext(idx + 1);
+          slideInRows(child, root, tog);
+        }
+      });
     }
+    expandNext(0);
     if (selfToggle) {
       gsapWithCSS.fromTo(selfToggle.transform, { rotate: 0 }, {
         rotate: Math.PI / 2,
-        duration: 0.25,
+        duration: 0.5,
         ease: "power2.out",
         onUpdate: () => {
           renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
@@ -9995,26 +10002,7 @@
       });
     }
     rows.forEach((row, i) => {
-      var _a2;
       const rowDelay = i * 25 / 1e3;
-      if ((_a2 = row.id) == null ? void 0 : _a2.startsWith("title-")) {
-        const subId = "expanded-" + row.id.slice(6);
-        const sub = container.children.find((c) => c.id === subId);
-        if (sub && sub._fullHeight) {
-          const tog = sub._toggleBox;
-          if (tog) {
-            gsapWithCSS.fromTo(tog.transform, { rotate: 0 }, {
-              rotate: Math.PI / 2,
-              duration: 0.5,
-              ease: "power2.out",
-              delay: rowDelay,
-              onUpdate: () => {
-                renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
-              }
-            });
-          }
-        }
-      }
       gsapWithCSS.to(row.transform, {
         translateY: 0,
         duration: 0.2,
@@ -12176,16 +12164,68 @@
       return false;
     }
   }
+  async function fetchDirRecursive(dirPath, depth = 20) {
+    try {
+      let ingestTree2 = function(parentPath, items) {
+        const children = items.map((item) => ({
+          name: item.name,
+          path: item.path,
+          isDir: item.isDir,
+          isLink: false
+        }));
+        KFMState.files[parentPath] = {
+          name: parentPath.split("/").pop() || parentPath,
+          path: parentPath,
+          isDir: true,
+          isLink: false,
+          children
+        };
+        for (const item of items) {
+          if (item.isDir && item.children && item.children.length > 0) {
+            ingestTree2(item.path, item.children);
+          }
+        }
+      };
+      var ingestTree = ingestTree2;
+      const res = await fetch(API2 + "/files/list-recursive", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: dirPath, depth })
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      const tree = data.tree || [];
+      if (tree.length === 0) return false;
+      ingestTree2(dirPath, tree);
+      return true;
+    } catch {
+      return false;
+    }
+  }
   async function loadFileTree(rootPath) {
     await fetchDir(rootPath);
     markAnimatingPath(rootPath);
     KFMState.notify();
-    await sleep(50);
+    if (isAnimLocked()) {
+      const start = Date.now();
+      while (isAnimLocked()) {
+        if (Date.now() - start > 3e3) break;
+        await sleep(50);
+      }
+    }
     const rootNode = KFMState.files[rootPath];
     if (rootNode == null ? void 0 : rootNode.children) {
       for (const child of rootNode.children) {
         if (child.isDir && KFMState.expandedPaths[child.path]) {
-          await loadLayerByLayerDeep(child.path);
+          markAnimatingPath(child.path);
+          KFMState.notify();
+          if (isAnimLocked()) {
+            const start = Date.now();
+            while (isAnimLocked()) {
+              if (Date.now() - start > 3e3) break;
+              await sleep(50);
+            }
+          }
         }
       }
     }
@@ -12197,7 +12237,7 @@
     markAnimatingPath(path);
     KFMState.notify();
     await sleep(30);
-    const loaded = await fetchDir(path);
+    const loaded = await fetchDirRecursive(path);
     if (!loaded) return;
     if (isAnimLocked()) {
       const start = Date.now();
@@ -12209,14 +12249,6 @@
     markAnimatingPath(path);
     KFMState.notify();
     await sleep(30);
-    const node = KFMState.files[path];
-    if (node == null ? void 0 : node.children) {
-      for (const child of node.children) {
-        if (child.isDir && KFMState.expandedPaths[child.path]) {
-          await loadLayerByLayerDeep(child.path);
-        }
-      }
-    }
   }
   function initLazyLoader() {
     const originalSetExpanded = KFMState.setExpanded.bind(KFMState);
