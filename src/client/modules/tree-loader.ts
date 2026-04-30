@@ -92,7 +92,8 @@ async function loadAndAnimate(path: string): Promise<void> {
  * 初始化根目录：加载根目录数据并触发展开动画。
  */
 export async function loadFileTree(rootPath: string): Promise<void> {
-  const loaded = await fetchDirRecursive(rootPath);
+  // 根目录初始化只获取第一层，用户展开子目录时再递归获取
+  const loaded = await fetchDirRecursive(rootPath, 1);
   if (!loaded) return;
 
   markAnimatingPath(rootPath);

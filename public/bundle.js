@@ -12137,7 +12137,7 @@
     KFMState.notify();
   }
   async function loadFileTree(rootPath) {
-    const loaded = await fetchDirRecursive(rootPath);
+    const loaded = await fetchDirRecursive(rootPath, 1);
     if (!loaded) return;
     markAnimatingPath(rootPath);
     KFMState.notify();
