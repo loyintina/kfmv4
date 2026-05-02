@@ -9488,7 +9488,7 @@
           maxLines: 1
         };
         container.addChild(tBox);
-        allTargets.push({ box: tBox, targetX: tTargetX, targetY: tTargetY });
+        allTargets.push({ box: tBox, targetX: tTargetX, targetY: tTargetY, isToggle: toggleBox.transform.rotate > 0.1 });
       }
       const labelBox = row.children.find((c) => {
         var _a2;
@@ -9525,12 +9525,23 @@
             opacity: 1,
             duration: 0.35,
             ease: "power2.out",
-            // 低调的缓动，去掉弹性
             stagger: 5e-3
-            // 更密集的 stagger，字符几乎同时到位
           },
           0
         );
+        const toggleTargets = allTargets.filter((t) => t.isToggle);
+        if (toggleTargets.length > 0) {
+          tl.to(
+            toggleTargets.map((t) => t.box.transform),
+            {
+              rotate: Math.PI / 2,
+              duration: 0.35,
+              ease: "power2.out",
+              stagger: 5e-3
+            },
+            0
+          );
+        }
       });
     } finally {
       const currentRoot = renderer2 == null ? void 0 : renderer2.getRoot();

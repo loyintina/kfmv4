@@ -17,6 +17,7 @@ interface CharTarget {
   box: Box;
   targetX: number;
   targetY: number;
+  isToggle?: boolean;
 }
 
 /**
@@ -181,7 +182,7 @@ export async function animateCharRain(
       };
 
       container.addChild(tBox);
-      allTargets.push({ box: tBox, targetX: tTargetX, targetY: tTargetY });
+      allTargets.push({ box: tBox, targetX: tTargetX, targetY: tTargetY, isToggle: toggleBox.transform.rotate > 0.1 });
     }
 
     // 隐藏原始 label（字符 Box 不隐藏，等 GSAP 后删除）
@@ -215,11 +216,26 @@ export async function animateCharRain(
           y: (i: number) => allTargets[i].targetY,
           opacity: 1,
           duration: 0.35,
-          ease: "power2.out",      // 低调的缓动，去掉弹性
-          stagger: 0.005,          // 更密集的 stagger，字符几乎同时到位
+          ease: "power2.out",
+          stagger: 0.005,
         },
         0
       );
+
+      // 三角旋转变换：展开态三角形下落同时旋转到 90°
+      const toggleTargets = allTargets.filter((t) => t.isToggle);
+      if (toggleTargets.length > 0) {
+        tl.to(
+          toggleTargets.map((t) => t.box.transform),
+          {
+            rotate: Math.PI / 2,
+            duration: 0.35,
+            ease: "power2.out",
+            stagger: 0.005,
+          },
+          0
+        );
+      }
     });
   } finally {
     // 根检查：如果树已被重建（renderer 的当前 root 不是我们记住的那个），跳过所有操作
