@@ -9430,7 +9430,7 @@
             y: initY,
             width: charWidths[ci] + 2,
             height: lineH,
-            opacity: 0,
+            opacity: 1,
             backgroundColor: "transparent",
             // 透明背景，消除阴影
             interactive: false,
@@ -9471,7 +9471,7 @@
           y: tInitY,
           width: toggleBox.width,
           height: toggleBox.height || LINE_HEIGHT,
-          opacity: 0,
+          opacity: 1,
           backgroundColor: "transparent",
           interactive: false,
           zIndex: 99,
@@ -9517,10 +9517,9 @@
           {
             x: (i) => allTargets[i].targetX,
             y: (i) => allTargets[i].targetY,
-            opacity: 1,
-            duration: 0.35,
+            duration: 0.25,
             ease: "power2.out",
-            stagger: 5e-3
+            stagger: 2e-3
           },
           0
         );
@@ -9530,9 +9529,9 @@
             toggleTargets.map((t) => t.box.transform),
             {
               rotate: Math.PI / 2,
-              duration: 0.35,
+              duration: 0.25,
               ease: "power2.out",
-              stagger: 5e-3
+              stagger: 2e-3
             },
             0
           );

@@ -122,7 +122,7 @@ export async function animateCharRain(
           y: initY,
           width: charWidths[ci] + 2,
           height: lineH,
-          opacity: 0,
+          opacity: 1,
           backgroundColor: "transparent", // 透明背景，消除阴影
           interactive: false,
           zIndex: 99,
@@ -164,7 +164,7 @@ export async function animateCharRain(
         y: tInitY,
         width: toggleBox.width,
         height: toggleBox.height || LINE_HEIGHT,
-        opacity: 0,
+        opacity: 1,
         backgroundColor: "transparent",
         interactive: false,
         zIndex: 99,
@@ -194,7 +194,7 @@ export async function animateCharRain(
     return;
   }
 
-  // 推送初始状态（字符在屏幕顶部，opacity=0）
+  // 推送初始状态（字符在屏幕顶部）
   renderer?.setRoot(root);
 
   // 5. GSAP 动画：逐字符落体
@@ -209,10 +209,9 @@ export async function animateCharRain(
         {
           x: (i: number) => allTargets[i].targetX,
           y: (i: number) => allTargets[i].targetY,
-          opacity: 1,
-          duration: 0.35,
+          duration: 0.25,
           ease: "power2.out",
-          stagger: 0.005,
+          stagger: 0.002,
         },
         0
       );
@@ -224,9 +223,9 @@ export async function animateCharRain(
           toggleTargets.map((t) => t.box.transform),
           {
             rotate: Math.PI / 2,
-            duration: 0.35,
+            duration: 0.25,
             ease: "power2.out",
-            stagger: 0.005,
+            stagger: 0.002,
           },
           0
         );
