@@ -165,14 +165,8 @@ export class Renderer {
       this.ctx.translate(-cx, -cy);
     }
 
-    // 裁剪（滚动容器必须裁剪子元素）
-    if (box.overflow === 'hidden' || box.scrollable) {
-      this.ctx.beginPath();
-      this.ctx.roundRect(bounds.x, bounds.y, bounds.width, bounds.height, box.borderRadius);
-      this.ctx.clip();
-    }
 
-    // 绘制各层（背景层不受滚动影响）
+    // 绘制各层（在 clip 之前，确保边框全宽可见）
     this._drawShadow(box, bounds);
     this._drawBackground(box, bounds);
     if (box.shape) this._drawShape(box, bounds);
@@ -180,6 +174,12 @@ export class Renderer {
     this._drawHighlight(box, bounds);
     if (box.icon) this._drawIcon(box.icon, bounds, box.padding);
     if (box.textStyle.content) this._drawText(box.textStyle, bounds, box.padding, box.icon);
+    // 裁剪子元素（滚动容器必须裁剪子元素）
+    if (box.overflow === 'hidden' || box.scrollable) {
+      this.ctx.beginPath();
+      this.ctx.roundRect(bounds.x, bounds.y, bounds.width, bounds.height, box.borderRadius);
+      this.ctx.clip();
+    }
 
     // Flex 布局（在子元素渲染前计算位置）
     if (box.layout) {

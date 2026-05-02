@@ -3729,11 +3729,6 @@
         if (scale !== 1) this.ctx.scale(scale, scale);
         this.ctx.translate(-cx, -cy);
       }
-      if (box.overflow === "hidden" || box.scrollable) {
-        this.ctx.beginPath();
-        this.ctx.roundRect(bounds.x, bounds.y, bounds.width, bounds.height, box.borderRadius);
-        this.ctx.clip();
-      }
       this._drawShadow(box, bounds);
       this._drawBackground(box, bounds);
       if (box.shape) this._drawShape(box, bounds);
@@ -3741,6 +3736,11 @@
       this._drawHighlight(box, bounds);
       if (box.icon) this._drawIcon(box.icon, bounds, box.padding);
       if (box.textStyle.content) this._drawText(box.textStyle, bounds, box.padding, box.icon);
+      if (box.overflow === "hidden" || box.scrollable) {
+        this.ctx.beginPath();
+        this.ctx.roundRect(bounds.x, bounds.y, bounds.width, bounds.height, box.borderRadius);
+        this.ctx.clip();
+      }
       if (box.layout) {
         applyFlexLayout(box);
       }
