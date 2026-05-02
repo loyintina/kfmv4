@@ -8,7 +8,7 @@
  */
 
 import { KFMState, type FileNode } from './state.js';
-import { markAnimatingPath, isAnimLocked } from './tree-render.js';
+import { markAnimatingPath, isAnimLocked, triggerExpandAnimation } from './tree-render.js';
 
 const API = '/kfmv4/api';
 
@@ -81,18 +81,19 @@ async function fetchDirRecursive(
  * 用于点击展开时：只获取该目录的子节点，不递归获取未展开的子目录。
  */
 async function loadAndAnimate(path: string): Promise<void> {
+  // 先标记 animatingPath，让 rebuildTree 能正确预设动画初始状态
   markAnimatingPath(path);
-  KFMState.notify();
-  await sleep(30);
-
+  
   // 只获取当前目录的子节点，传入该目录下展开的子路径
   const childExpandedPaths = getChildExpandedPaths(path);
   const loaded = await fetchDirRecursive(path, childExpandedPaths);
   if (!loaded) return;
 
-  await waitForAnimUnlock();
-  markAnimatingPath(path);
+  // 数据已加载，触发 rebuildTree
   KFMState.notify();
+  
+  // 立即触发动画（不等待，避免中间帧渲染）
+  triggerExpandAnimation(path);
 }
 
 /**
@@ -144,12 +145,17 @@ export async function loadFileTree(rootPath: string): Promise<void> {
 export function initLazyLoader(): void {
   const originalSetExpanded = KFMState.setExpanded.bind(KFMState);
   KFMState.setExpanded = function (path: string, expanded: boolean) {
-    originalSetExpanded(path, expanded);
     if (expanded) {
-      const cached = KFMState.files[path]?.children?.length !== undefined;
+      const cached = KFMState.files[path]?.children?.length !== undefined && KFMState.files[path]?.children?.length > 0;
       if (!cached) {
+        // 数据未加载：先设置展开状态（不 notify），然后加载数据
+        KFMState.expandedPaths[path] = true;
+        localStorage.setItem('expandedPaths', JSON.stringify(KFMState.expandedPaths));
         loadAndAnimate(path).catch(console.error);
+        return;  // 不调用 originalSetExpanded，避免提前 notify
       }
     }
+    // 数据已存在，直接调用原方法
+    originalSetExpanded(path, expanded);
   };
 }

@@ -9360,20 +9360,301 @@
   var gsapWithCSS = gsap.registerPlugin(CSSPlugin) || gsap;
   var TweenMaxWithCSS = gsapWithCSS.core.Tween;
 
+  // src/client/modules/char-rain.ts
+  async function animateCharRain(container, root, renderer2) {
+    var _a, _b, _c;
+    const rows = container.children.filter(
+      (c) => {
+        var _a2, _b2;
+        return ((_a2 = c.id) == null ? void 0 : _a2.startsWith("title-")) || ((_b2 = c.id) == null ? void 0 : _b2.startsWith("file-"));
+      }
+    );
+    if (rows.length === 0) return;
+    const canvas = document.getElementById("tree-canvas");
+    const ctx = canvas == null ? void 0 : canvas.getContext("2d");
+    if (!ctx) return;
+    const origOverflow = container.overflow;
+    container.overflow = "visible";
+    const absY = container.getAbsolutePosition().y;
+    const scrollY = (_a = root.scrollY) != null ? _a : 0;
+    const topY = scrollY - absY;
+    container.children.forEach((c) => {
+      c.opacity = 1;
+    });
+    renderer2 == null ? void 0 : renderer2.setRoot(root);
+    const allTargets = [];
+    const hiddenLabels = [];
+    const hiddenToggles = [];
+    for (const row of rows) {
+      const label = row.children.find((c) => {
+        var _a2;
+        return (_a2 = c.id) == null ? void 0 : _a2.startsWith("label-");
+      });
+      if (!label || !((_b = label.textStyle) == null ? void 0 : _b.content)) continue;
+      const text = label.textStyle.content;
+      const font = label.textStyle.font || FONT;
+      const color = label.textStyle.color;
+      const lineH = label.textStyle.lineHeight || LINE_HEIGHT;
+      ctx.font = font;
+      let layoutLines2;
+      try {
+        const prepared = prepareWithSegments(text, font);
+        const layout2 = layoutWithLines(prepared, label.width, lineH);
+        layoutLines2 = layout2.lines;
+      } catch {
+        layoutLines2 = [{ text, width: ctx.measureText(text).width }];
+      }
+      const maxVis = label.textStyle.maxLines || MAX_LINES;
+      const isTrunc = layoutLines2.length > maxVis;
+      const visLines = layoutLines2.slice(0, maxVis);
+      const totalTextHeight = visLines.length * lineH;
+      const verticalOffset = Math.max(0, (row.height - totalTextHeight) / 2);
+      for (let li = 0; li < visLines.length; li++) {
+        const line = visLines[li];
+        let chars;
+        if (li === maxVis - 1 && isTrunc) {
+          chars = [...line.text.slice(0, -1), "\u2026"];
+        } else {
+          chars = [...line.text];
+        }
+        const charWidths = chars.map((ch) => ctx.measureText(ch).width);
+        let cx = 0;
+        for (let ci = 0; ci < chars.length; ci++) {
+          const targetX = row.x + label.x + cx;
+          const targetY = row.y + label.y + verticalOffset + li * lineH;
+          const initX = targetX + (Math.random() - 0.5) * 60;
+          const initY = Math.min(topY + li * lineH, targetY - 160);
+          const box = new Box({
+            id: `cr-${row.id}-L${li}-C${ci}`,
+            x: initX,
+            y: initY,
+            width: charWidths[ci] + 2,
+            height: lineH,
+            opacity: 0,
+            backgroundColor: "transparent",
+            // 透明背景，消除阴影
+            interactive: false,
+            zIndex: 99,
+            overflow: "visible"
+          });
+          box.textStyle = {
+            content: chars[ci],
+            color,
+            font,
+            lineHeight: lineH,
+            align: "left",
+            verticalAlign: "middle",
+            overflow: "visible",
+            maxLines: 1
+          };
+          container.addChild(box);
+          allTargets.push({ box, targetX, targetY });
+          cx += charWidths[ci];
+        }
+      }
+      const toggleBox = row.children.find((c) => {
+        var _a2;
+        return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
+      });
+      if (toggleBox && ((_c = toggleBox.textStyle) == null ? void 0 : _c.content)) {
+        const tChar = toggleBox.textStyle.content;
+        const tFont = toggleBox.textStyle.font || font;
+        ctx.font = tFont;
+        const tWidth = ctx.measureText(tChar).width;
+        const tTargetX = row.x + toggleBox.x;
+        const tTargetY = row.y + toggleBox.y + verticalOffset;
+        const tInitX = tTargetX + (Math.random() - 0.5) * 60;
+        const tInitY = Math.min(topY, tTargetY - 160);
+        const tBox = new Box({
+          id: `cr-${row.id}-toggle`,
+          x: tInitX,
+          y: tInitY,
+          width: tWidth + 2,
+          height: toggleBox.height || LINE_HEIGHT,
+          opacity: 0,
+          backgroundColor: "transparent",
+          interactive: false,
+          zIndex: 99,
+          overflow: "visible"
+        });
+        tBox.textStyle = {
+          content: tChar,
+          color: toggleBox.textStyle.color,
+          font: tFont,
+          lineHeight: toggleBox.height || LINE_HEIGHT,
+          align: "left",
+          verticalAlign: "middle",
+          overflow: "visible",
+          maxLines: 1
+        };
+        container.addChild(tBox);
+        allTargets.push({ box: tBox, targetX: tTargetX, targetY: tTargetY });
+      }
+      const labelBox = row.children.find((c) => {
+        var _a2;
+        return (_a2 = c.id) == null ? void 0 : _a2.startsWith("label-");
+      });
+      if (labelBox) {
+        labelBox.visible = false;
+        hiddenLabels.push(labelBox);
+      }
+      const toggleHider = row.children.find((c) => {
+        var _a2;
+        return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
+      });
+      if (toggleHider) {
+        toggleHider.visible = false;
+        hiddenToggles.push(toggleHider);
+      }
+    }
+    if (allTargets.length === 0) {
+      container.overflow = origOverflow;
+      return;
+    }
+    renderer2 == null ? void 0 : renderer2.setRoot(root);
+    try {
+      await new Promise((resolve) => {
+        const tl = gsapWithCSS.timeline({
+          onComplete: resolve
+        });
+        tl.to(
+          allTargets.map((t) => t.box),
+          {
+            x: (i) => allTargets[i].targetX,
+            y: (i) => allTargets[i].targetY,
+            opacity: 1,
+            duration: 0.35,
+            ease: "power2.out",
+            // 低调的缓动，去掉弹性
+            stagger: 5e-3
+            // 更密集的 stagger，字符几乎同时到位
+          },
+          0
+        );
+      });
+    } finally {
+      const currentRoot = renderer2 == null ? void 0 : renderer2.getRoot();
+      if (currentRoot !== root) return;
+      for (const t of allTargets) {
+        const idx = container.children.indexOf(t.box);
+        if (idx >= 0) container.children.splice(idx, 1);
+      }
+      hiddenLabels.forEach((l) => {
+        l.visible = true;
+      });
+      hiddenToggles.forEach((t) => {
+        t.visible = true;
+      });
+      container.overflow = origOverflow;
+      container.children.forEach((c) => {
+        c.opacity = 1;
+      });
+      renderer2 == null ? void 0 : renderer2.setRoot(root);
+    }
+  }
+
   // src/client/modules/tree-render.ts
   var renderer = null;
   function markAnimatingPath(path) {
     animatingPath = path;
   }
+  function triggerExpandAnimation(path) {
+    var _a;
+    const root = renderer == null ? void 0 : renderer.getRoot();
+    if (!root) return;
+    const container = findBoxById(root, `expanded-${path}`);
+    const titleRow = findBoxById(root, `title-${path}`);
+    const toggle2 = (_a = titleRow == null ? void 0 : titleRow.children) == null ? void 0 : _a.find((c) => {
+      var _a2;
+      return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
+    });
+    if (!container) return;
+    const fullHeight = container._fullHeight || 0;
+    if (!fullHeight) return;
+    animatingPath = null;
+    const _origYs = container._origYs;
+    if (_origYs && container.children.length === _origYs.length) {
+      container.children.forEach((c, j) => {
+        c.y = _origYs[j];
+      });
+    }
+    container.children.forEach((c) => {
+      c.opacity = 1;
+    });
+    const ancestors = collectAncestors(container, root);
+    _animBusy = true;
+    _animBusyAt = Date.now();
+    animateCharRain(container, root, renderer);
+    gsapWithCSS.to(container, {
+      height: fullHeight,
+      duration: 0.05,
+      ease: "power2.out",
+      onUpdate: function() {
+        applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
+        renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+      },
+      onComplete: () => {
+        slideInRows(container, root, toggle2).then(() => {
+          fixExpandedToggles(container);
+          renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+        }).finally(() => {
+          _animBusy = false;
+          _animBusyAt = 0;
+          processClickQueue();
+        });
+      }
+    });
+    applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
+    renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+  }
+  function fixExpandedToggles(container) {
+    const state = KFMState;
+    if (!state) return;
+    function walk(box) {
+      var _a, _b;
+      if (!box.children) return;
+      for (const child of box.children) {
+        if ((_a = child.id) == null ? void 0 : _a.startsWith("expanded-")) {
+          const path = child.id.slice("expanded-".length);
+          if (state.expandedPaths[path]) {
+            const titleRow = findBoxByIdLocal(child.parent, `title-${path}`);
+            const tog = (_b = titleRow == null ? void 0 : titleRow.children) == null ? void 0 : _b.find((c) => {
+              var _a2;
+              return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
+            });
+            if (tog) {
+              gsapWithCSS.killTweensOf(tog.transform);
+              tog.transform.rotate = Math.PI / 2;
+            }
+          }
+        }
+        walk(child);
+      }
+    }
+    walk(container);
+  }
+  function findBoxByIdLocal(root, id) {
+    if (!root) return null;
+    if (root.id === id) return root;
+    if (root.children) {
+      for (const c of root.children) {
+        const found = findBoxByIdLocal(c, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
   function isAnimLocked() {
-    return animLocked;
+    return _animBusy;
   }
   var cursorBox = null;
   var cursorRowId = null;
+  var _sessionId = 0;
   var animatingPath = null;
+  var _animBusy = false;
+  var _animBusyAt = 0;
   var pendingCollapse = null;
-  var animLocked = false;
-  var animLockedAt = 0;
+  var _clickQueue = [];
   function ensureCursorBox(root, canvasH) {
     var _a;
     if (cursorBox) {
@@ -9453,15 +9734,62 @@
     cursorBox.data = { cursorDynamicLines: true, topLineW, botLineW, color: "rgba(0,212,255,0.7)" };
   }
   function onSidebarOpen() {
-    requestAnimationFrame(() => requestAnimationFrame(() => {
+    _sessionId++;
+    _animBusy = false;
+    _animBusyAt = 0;
+    animatingPath = null;
+    _clickQueue = [];
+    cursorBox = null;
+    cursorRowId = null;
+    pendingCollapse = null;
+    gsapWithCSS.globalTimeline.clear();
+    renderer == null ? void 0 : renderer.stop();
+    renderer = null;
+    const fileTree = document.getElementById("fileTree");
+    if (!fileTree) return;
+    const canvas = document.createElement("canvas");
+    canvas.id = "tree-canvas";
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
+    canvas.style.display = "block";
+    fileTree.innerHTML = "";
+    fileTree.appendChild(canvas);
+    const dpr = window.devicePixelRatio || 1;
+    renderer = new Renderer(canvas, {
+      backgroundColor: "rgba(10,10,15,0.85)",
+      dpr
+    });
+    requestAnimationFrame(() => {
       rebuildTree();
       renderer == null ? void 0 : renderer.resize();
-      const canvas = document.getElementById("tree-canvas");
-      const tools = document.querySelector(".sidebar-tools");
-      if (canvas && tools) tools.style.width = canvas.clientWidth + "px";
-    }));
+      window.__treeRenderer = renderer;
+      KFMState.subscribe(() => rebuildTree());
+      styleRegistry.subscribe(() => rebuildTree());
+      window.addEventListener("resize", () => renderer == null ? void 0 : renderer.resize());
+      bindScrollEvents(canvas);
+      bindClickEvents(canvas, dpr);
+    });
+    const sidebar = document.getElementById("sidebar");
+    if (sidebar) {
+      const onEnd = () => {
+        sidebar.removeEventListener("transitionend", onEnd);
+        renderer == null ? void 0 : renderer.resize();
+      };
+      sidebar.addEventListener("transitionend", onEnd);
+    }
   }
   function onSidebarClose() {
+    _sessionId++;
+    gsapWithCSS.globalTimeline.clear();
+    _animBusy = false;
+    _animBusyAt = 0;
+    animatingPath = null;
+    pendingCollapse = null;
+    _clickQueue = [];
+    cursorBox = null;
+    cursorRowId = null;
+    renderer == null ? void 0 : renderer.stop();
+    renderer = null;
   }
   function initTreeRenderer() {
     const fileTree = document.getElementById("fileTree");
@@ -9570,82 +9898,151 @@
   }
   function bindClickEvents(canvas, _dpr) {
     canvas.addEventListener("click", (e) => {
-      var _a, _b;
       if (!renderer) return;
-      const root = renderer.getRoot();
-      if (!root) return;
-      const scrollY = (_a = root.scrollY) != null ? _a : 0;
-      const px = e.offsetX;
-      const py = e.offsetY + scrollY;
-      for (const child of root.children) {
-        if (!child.visible || child.disabled) continue;
-        const hit = findTapTarget(child, px, py);
-        if ((_b = hit == null ? void 0 : hit.gesture) == null ? void 0 : _b.onTap) {
-          if (cursorRowId !== null && cursorRowId === hit.id) {
-            const hitData = hit.data || {};
-            const isDir = hitData.isDir;
-            const isExpanded = hitData.isExpanded;
-            if (isDir) {
-              const tog = hit.children.find((c) => {
-                var _a2;
-                return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
-              });
-              const targetRotate = isExpanded ? 0 : Math.PI / 2;
-              if (isExpanded) {
-                const containerId = `expanded-${hitData.path}`;
-                const root2 = renderer.getRoot();
-                const container = findBoxById(root2, containerId);
-                animLocked = true;
-                animLockedAt = Date.now();
-                const tl = gsapWithCSS.timeline({
-                  onComplete: () => {
-                    pendingCollapse = null;
-                    animLocked = false;
-                    animLockedAt = 0;
-                    hit.gesture.onTap();
-                  }
-                });
-                if (tog) {
-                  tl.to(tog.transform, {
-                    rotate: 0,
-                    duration: 0.25,
-                    ease: "power2.in",
-                    onUpdate: () => {
-                      if (renderer) renderer.setRoot(renderer.getRoot());
-                    }
-                  }, 0);
-                }
-                if (container) {
-                  const fullH = container.height;
-                  const root3 = renderer.getRoot();
-                  const origYs = container.children.map((c) => c.y);
-                  const ancestors = collectAncestors(container, root3);
-                  tl.to(container, {
-                    height: 0,
-                    duration: 0.3,
-                    ease: "power2.in",
-                    onUpdate: function() {
-                      applyAnimOffset(container, origYs, fullH, ancestors, root3);
-                      renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
-                    }
-                  }, 0);
-                }
-                pendingCollapse = { path: hitData.path, rowId: hit.id };
-                tl.play();
-              } else {
-                animatingPath = hitData.path;
-                hit.gesture.onTap();
-              }
+      _clickQueue.push({ offsetX: e.offsetX, offsetY: e.offsetY });
+      processClickQueue();
+    });
+  }
+  function processClickQueue() {
+    var _a, _b;
+    if (_animBusy || _clickQueue.length === 0 || !renderer) return;
+    const { offsetX, offsetY } = _clickQueue.shift();
+    const root = renderer.getRoot();
+    if (!root) return;
+    const scrollY = (_a = root.scrollY) != null ? _a : 0;
+    const px = offsetX;
+    const py = offsetY + scrollY;
+    for (const child of root.children) {
+      if (!child.visible || child.disabled) continue;
+      const hit = findTapTarget(child, px, py);
+      if ((_b = hit == null ? void 0 : hit.gesture) == null ? void 0 : _b.onTap) {
+        if (cursorRowId !== null && cursorRowId === hit.id) {
+          const hitData = hit.data || {};
+          const isDir = hitData.isDir;
+          const isExpanded = hitData.isExpanded;
+          if (isDir) {
+            if (isExpanded) {
+              doCollapse(hit, hitData);
             } else {
-              hit.gesture.onTap();
+              doExpand(hit, hitData);
             }
+            return;
           } else {
-            moveCursorTo(hit);
+            hit.gesture.onTap();
           }
-          return;
+        } else {
+          moveCursorTo(hit);
         }
+        break;
+      }
+    }
+    processClickQueue();
+  }
+  function doExpand(hit, hitData) {
+    var _a;
+    animatingPath = hitData.path;
+    hit.gesture.onTap();
+    _animBusy = true;
+    _animBusyAt = Date.now();
+    const root = renderer.getRoot();
+    const containerId = `expanded-${hitData.path}`;
+    const container = findBoxById(root, containerId);
+    const titleRow = findBoxById(root, `title-${hitData.path}`);
+    const toggle2 = (_a = titleRow == null ? void 0 : titleRow.children) == null ? void 0 : _a.find((c) => {
+      var _a2;
+      return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
+    });
+    if (!container) {
+      _animBusy = false;
+      _animBusyAt = 0;
+      processClickQueue();
+      return;
+    }
+    const fullHeight = container._fullHeight || 0;
+    if (!fullHeight) {
+      _animBusy = false;
+      _animBusyAt = 0;
+      processClickQueue();
+      return;
+    }
+    animatingPath = null;
+    const _origYs = container._origYs;
+    if (_origYs && container.children.length === _origYs.length) {
+      container.children.forEach((c, j) => {
+        c.y = _origYs[j];
+      });
+    }
+    container.children.forEach((c) => {
+      c.opacity = 1;
+    });
+    const ancestors = collectAncestors(container, root);
+    animateCharRain(container, root, renderer);
+    gsapWithCSS.to(container, {
+      height: fullHeight,
+      duration: 0.05,
+      ease: "power2.out",
+      onUpdate: function() {
+        applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
+        renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+      },
+      onComplete: () => {
+        slideInRows(container, root, toggle2).then(() => {
+          fixExpandedToggles(container);
+          renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+        }).finally(() => {
+          _animBusy = false;
+          _animBusyAt = 0;
+          processClickQueue();
+        });
       }
     });
+    applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
+    renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+  }
+  function doCollapse(hit, hitData) {
+    const tog = hit.children.find((c) => {
+      var _a;
+      return (_a = c.id) == null ? void 0 : _a.startsWith("toggle-");
+    });
+    const containerId = `expanded-${hitData.path}`;
+    const root = renderer.getRoot();
+    const container = findBoxById(root, containerId);
+    _animBusy = true;
+    _animBusyAt = Date.now();
+    const tl = gsapWithCSS.timeline({
+      onComplete: () => {
+        _animBusy = false;
+        _animBusyAt = 0;
+        hit.gesture.onTap();
+        processClickQueue();
+      }
+    });
+    if (tog) {
+      tl.to(tog.transform, {
+        rotate: 0,
+        duration: 0.25,
+        ease: "power2.in",
+        onUpdate: () => {
+          if (renderer) renderer.setRoot(renderer.getRoot());
+        }
+      }, 0);
+    }
+    if (container) {
+      const fullH = container.height;
+      const root2 = renderer.getRoot();
+      const origYs = container.children.map((c) => c.y);
+      const ancestors = collectAncestors(container, root2);
+      tl.to(container, {
+        height: 0,
+        duration: 0.3,
+        ease: "power2.in",
+        onUpdate: function() {
+          applyAnimOffset(container, origYs, fullH, ancestors, root2);
+          renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+        }
+      }, 0);
+    }
+    tl.play();
   }
   function findTapTarget(box, px, py) {
     var _a;
@@ -9663,10 +10060,11 @@
   function rebuildTree() {
     var _a, _b, _c, _d, _e;
     if (!renderer) return;
-    if (animLocked) {
-      if (animLockedAt && Date.now() - animLockedAt > 3e3) {
-        animLocked = false;
-        animLockedAt = 0;
+    if (_animBusy) {
+      if (_animBusyAt && Date.now() - _animBusyAt > 3e3) {
+        _animBusy = false;
+        _animBusyAt = 0;
+        _clickQueue = [];
       } else {
         return;
       }
@@ -9676,23 +10074,22 @@
     cursorBox = null;
     cursorRowId = null;
     const canvas = document.getElementById("tree-canvas");
-    const cw = (_c = canvas == null ? void 0 : canvas.clientWidth) != null ? _c : 295;
+    const cw = ((_c = canvas == null ? void 0 : canvas.clientWidth) != null ? _c : 0) || 295;
     const rightMargin = cw - 8;
     const rootBox = buildSidebarTree(cw, rightMargin);
-    if (canvas) rootBox.width = canvas.clientWidth;
-    const canvasH = canvas ? canvas.clientHeight : 618;
+    if (canvas) rootBox.width = cw;
+    const canvasH = ((_d = canvas == null ? void 0 : canvas.clientHeight) != null ? _d : 0) || 618;
     if (canvas) {
       rootBox.height = canvasH;
     }
     if (animatingPath) {
       const titleRow = findBoxById(rootBox, `title-${animatingPath}`);
-      const toggle = (_d = titleRow == null ? void 0 : titleRow.children) == null ? void 0 : _d.find((c) => {
+      const toggle = (_e = titleRow == null ? void 0 : titleRow.children) == null ? void 0 : _e.find((c) => {
         var _a2;
         return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
       });
       if (toggle) {
         toggle.transform.rotate = 0;
-        renderer == null ? void 0 : renderer.setRoot(rootBox);
       }
     }
     function collapseSubs(box) {
@@ -9716,7 +10113,7 @@
           });
           if (subTog) {
             child._toggleBox = subTog;
-            subTog.transform.rotate = 0;
+            child._toggleRotate = subTog.transform.rotate;
           }
           collapseSubs(child);
         }
@@ -9731,6 +10128,7 @@
         preContainer.height = 0;
         for (const child of preContainer.children) {
           child.y = child.y - preFullH;
+          child.opacity = 0;
         }
         collapseSubs(preContainer);
       }
@@ -9751,57 +10149,10 @@
           snapToCenterRow(newRoot, canvasH);
         }
       } else {
-        snapToCenterRow(newRoot, canvasH);
       }
     }
     if (!renderer.isRunning) {
       renderer.start();
-    }
-    if (animatingPath && newRoot) {
-      const path = animatingPath;
-      animLocked = true;
-      animLockedAt = Date.now();
-      const containerId = `expanded-${path}`;
-      const container = findBoxById(newRoot, containerId);
-      const titleId = `title-${path}`;
-      const titleRow = findBoxById(newRoot, titleId);
-      const tog = (_e = titleRow == null ? void 0 : titleRow.children) == null ? void 0 : _e.find((c) => {
-        var _a2;
-        return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
-      });
-      if (container) {
-        const fullHeight = container._fullHeight || 0;
-        const origYs = container._origYs || container.children.map((c) => c.y);
-        if (!fullHeight) {
-          animLocked = false;
-          animLockedAt = 0;
-          return;
-        }
-        animatingPath = null;
-        const root = renderer.getRoot();
-        const ancestors = collectAncestors(container, root);
-        container.children.forEach((c) => {
-          c.opacity = 0;
-        });
-        gsapWithCSS.to(container, {
-          height: fullHeight,
-          duration: 0.05,
-          ease: "power2.out",
-          onUpdate: function() {
-            applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
-            renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
-          },
-          onComplete: () => {
-            animLocked = false;
-            animLockedAt = 0;
-            slideInRows(container, root, tog);
-          }
-        });
-        applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
-        renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
-      } else {
-        animLocked = false;
-      }
     }
   }
   function findBoxById(root, id) {
@@ -9885,57 +10236,7 @@
     walk(root);
     if (closest) moveCursorTo(closest);
   }
-  function slideInRows(container, root, selfToggle) {
-    const rows = container.children.filter(
-      (c) => {
-        var _a, _b;
-        return ((_a = c.id) == null ? void 0 : _a.startsWith("title-")) || ((_b = c.id) == null ? void 0 : _b.startsWith("file-"));
-      }
-    );
-    if (rows.length === 0) return;
-    const totalH = container.height;
-    const containerOrigYs = container._origYs;
-    if (containerOrigYs && container.children.length === containerOrigYs.length) {
-      container.children.forEach((c, j) => {
-        c.y = containerOrigYs[j];
-      });
-    }
-    container.children.forEach((c) => {
-      c.opacity = 1;
-    });
-    rows.forEach((r) => {
-      r.transform.translateY = -totalH;
-    });
-    renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
-    const subContainers = container.children.filter(
-      (c) => {
-        var _a;
-        return ((_a = c.id) == null ? void 0 : _a.startsWith("expanded-")) && c._fullHeight > 0;
-      }
-    );
-    function expandNext(idx) {
-      if (idx >= subContainers.length) return;
-      const child = subContainers[idx];
-      const subFullH = child._fullHeight;
-      child.children.forEach((c) => {
-        c.opacity = 0;
-      });
-      const tog = child._toggleBox;
-      if (tog) tog.transform.rotate = 0;
-      gsapWithCSS.to(child, {
-        height: subFullH,
-        duration: 0.05,
-        ease: "power2.out",
-        onUpdate: () => {
-          renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
-        },
-        onComplete: () => {
-          expandNext(idx + 1);
-          slideInRows(child, root, tog);
-        }
-      });
-    }
-    expandNext(0);
+  async function slideInRows(container, root, selfToggle) {
     if (selfToggle) {
       gsapWithCSS.fromTo(selfToggle.transform, { rotate: 0 }, {
         rotate: Math.PI / 2,
@@ -9946,18 +10247,53 @@
         }
       });
     }
-    rows.forEach((row, i) => {
-      const rowDelay = i * 25 / 1e3;
-      gsapWithCSS.to(row.transform, {
-        translateY: 0,
-        duration: 0.2,
-        ease: "power2.out",
-        delay: rowDelay,
-        onUpdate: () => {
-          renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
-        }
+    const subContainers = container.children.filter(
+      (c) => {
+        var _a;
+        return ((_a = c.id) == null ? void 0 : _a.startsWith("expanded-")) && c._fullHeight > 0;
+      }
+    );
+    async function expandNext(idx) {
+      var _a, _b;
+      if (idx >= subContainers.length) return;
+      const child = subContainers[idx];
+      const subFullH = child._fullHeight;
+      const subOrigYs = child._origYs;
+      if (subOrigYs && child.children.length === subOrigYs.length) {
+        child.children.forEach((c, j) => {
+          c.y = subOrigYs[j];
+        });
+      }
+      child.children.forEach((c) => {
+        c.opacity = 1;
       });
-    });
+      const subTog = child._toggleBox;
+      const subTogRotate = (_a = child._toggleRotate) != null ? _a : Math.PI / 2;
+      const freshTitle = findBoxById(root, `title-${child.id.slice("expanded-".length)}`);
+      const freshTog = (_b = freshTitle == null ? void 0 : freshTitle.children) == null ? void 0 : _b.find((c) => {
+        var _a2;
+        return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
+      });
+      if (freshTog) {
+        gsapWithCSS.killTweensOf(freshTog.transform);
+        freshTog.transform.rotate = subTogRotate;
+      }
+      const subRainPromise = animateCharRain(child, root, renderer);
+      await new Promise((resolve) => {
+        gsapWithCSS.to(child, {
+          height: subFullH,
+          duration: 0.05,
+          ease: "power2.out",
+          onUpdate: () => {
+            renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+          },
+          onComplete: resolve
+        });
+      });
+      await slideInRows(child, root);
+      await expandNext(idx + 1);
+    }
+    await expandNext(0);
   }
 
   // src/client/modules/ui.ts
@@ -12128,14 +12464,11 @@
   }
   async function loadAndAnimate(path) {
     markAnimatingPath(path);
-    KFMState.notify();
-    await sleep(30);
     const childExpandedPaths = getChildExpandedPaths(path);
     const loaded = await fetchDirRecursive(path, childExpandedPaths);
     if (!loaded) return;
-    await waitForAnimUnlock();
-    markAnimatingPath(path);
     KFMState.notify();
+    triggerExpandAnimation(path);
   }
   function getChildExpandedPaths(path) {
     const result = {};
@@ -12167,14 +12500,17 @@
   function initLazyLoader() {
     const originalSetExpanded = KFMState.setExpanded.bind(KFMState);
     KFMState.setExpanded = function(path, expanded) {
-      var _a, _b;
-      originalSetExpanded(path, expanded);
+      var _a, _b, _c, _d;
       if (expanded) {
-        const cached = ((_b = (_a = KFMState.files[path]) == null ? void 0 : _a.children) == null ? void 0 : _b.length) !== void 0;
+        const cached = ((_b = (_a = KFMState.files[path]) == null ? void 0 : _a.children) == null ? void 0 : _b.length) !== void 0 && ((_d = (_c = KFMState.files[path]) == null ? void 0 : _c.children) == null ? void 0 : _d.length) > 0;
         if (!cached) {
+          KFMState.expandedPaths[path] = true;
+          localStorage.setItem("expandedPaths", JSON.stringify(KFMState.expandedPaths));
           loadAndAnimate(path).catch(console.error);
+          return;
         }
       }
+      originalSetExpanded(path, expanded);
     };
   }
 
