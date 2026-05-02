@@ -154,7 +154,7 @@ export async function animateCharRain(
       ctx.font = tFont;
       const tWidth = ctx.measureText(tChar).width;
       const tTargetX = row.x + toggleBox.x;
-      const tTargetY = row.y + toggleBox.y + verticalOffset;
+      const tTargetY = row.y + toggleBox.y;
       const tInitX = tTargetX + (Math.random() - 0.5) * 60;
       const tInitY = Math.min(topY, tTargetY - 160);
 
@@ -162,7 +162,7 @@ export async function animateCharRain(
         id: `cr-${row.id}-toggle`,
         x: tInitX,
         y: tInitY,
-        width: tWidth + 2,
+        width: toggleBox.width,
         height: toggleBox.height || LINE_HEIGHT,
         opacity: 0,
         backgroundColor: "transparent",
@@ -171,12 +171,7 @@ export async function animateCharRain(
         overflow: "visible",
       });
       tBox.textStyle = {
-        content: tChar,
-        color: toggleBox.textStyle.color,
-        font: tFont,
-        lineHeight: toggleBox.height || LINE_HEIGHT,
-        align: "left",
-        verticalAlign: "middle",
+        ...toggleBox.textStyle,
         overflow: "visible",
         maxLines: 1,
       };
