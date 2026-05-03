@@ -10217,7 +10217,6 @@
       if (Math.abs(velocity) < 0.5) return;
       let flingPen = _boundPen;
       let flingIsTop = _boundIsTop;
-      const flingCenterIdx = _getCenterRowIndex();
       const flingMaxY = (_b = (_a = renderer == null ? void 0 : renderer.getRoot()) == null ? void 0 : _a.getMaxScroll().maxY) != null ? _b : 0;
       function fling() {
         var _a2;
@@ -10234,8 +10233,9 @@
           } else {
             setRootScrollY(flingIsTop ? 0 : flingMaxY);
             const steps = Math.floor(flingPen / LINE_HEIGHT);
-            if (steps > 0) {
-              const targetIdx = flingIsTop ? Math.max(0, flingCenterIdx - steps) : Math.min(_rowIndex.length - 1, flingCenterIdx + steps);
+            const centerIdx = _getCenterRowIndex();
+            if (centerIdx >= 0 && steps > 0) {
+              const targetIdx = flingIsTop ? Math.max(0, centerIdx - steps) : Math.min(_rowIndex.length - 1, centerIdx + steps);
               if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
             }
           }
@@ -10246,10 +10246,22 @@
             flingPen = -desired;
             flingIsTop = true;
             setRootScrollY(0);
+            const centerIdx = _getCenterRowIndex();
+            const steps = Math.floor(flingPen / LINE_HEIGHT);
+            if (centerIdx >= 0 && steps > 0) {
+              const targetIdx = Math.max(0, centerIdx - steps);
+              if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+            }
           } else if (desired > flingMaxY) {
             flingPen = desired - flingMaxY;
             flingIsTop = false;
             setRootScrollY(flingMaxY);
+            const centerIdx = _getCenterRowIndex();
+            const steps = Math.floor(flingPen / LINE_HEIGHT);
+            if (centerIdx >= 0 && steps > 0) {
+              const targetIdx = Math.min(_rowIndex.length - 1, centerIdx + steps);
+              if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+            }
           } else {
             setRootScrollY(desired);
             _snapCursorToCenter();

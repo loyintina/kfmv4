@@ -736,7 +736,6 @@ function bindScrollEvents(canvas: HTMLCanvasElement): void {
     if (Math.abs(velocity) < 0.5) return;
     let flingPen = _boundPen;
     let flingIsTop = _boundIsTop;
-    const flingCenterIdx = _getCenterRowIndex();
     const flingMaxY = renderer?.getRoot()?.getMaxScroll().maxY ?? 0;
     function fling() {
       velocity *= 0.96;
@@ -752,10 +751,11 @@ function bindScrollEvents(canvas: HTMLCanvasElement): void {
         } else {
           setRootScrollY(flingIsTop ? 0 : flingMaxY);
           const steps = Math.floor(flingPen / LINE_HEIGHT);
-          if (steps > 0) {
+          const centerIdx = _getCenterRowIndex(); // 实时获取边界处中央行，不用 touchend 旧值
+          if (centerIdx >= 0 && steps > 0) {
             const targetIdx = flingIsTop
-              ? Math.max(0, flingCenterIdx - steps)
-              : Math.min(_rowIndex.length - 1, flingCenterIdx + steps);
+              ? Math.max(0, centerIdx - steps)
+              : Math.min(_rowIndex.length - 1, centerIdx + steps);
             if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
           }
         }
@@ -767,10 +767,24 @@ function bindScrollEvents(canvas: HTMLCanvasElement): void {
           flingPen = -desired;
           flingIsTop = true;
           setRootScrollY(0);
+          // 首次触碰边界：立刻基于当前中央行做初始光标偏移
+          const centerIdx = _getCenterRowIndex();
+          const steps = Math.floor(flingPen / LINE_HEIGHT);
+          if (centerIdx >= 0 && steps > 0) {
+            const targetIdx = Math.max(0, centerIdx - steps);
+            if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+          }
         } else if (desired > flingMaxY) {
           flingPen = desired - flingMaxY;
           flingIsTop = false;
           setRootScrollY(flingMaxY);
+          // 首次触碰边界：立刻基于当前中央行做初始光标偏移
+          const centerIdx = _getCenterRowIndex();
+          const steps = Math.floor(flingPen / LINE_HEIGHT);
+          if (centerIdx >= 0 && steps > 0) {
+            const targetIdx = Math.min(_rowIndex.length - 1, centerIdx + steps);
+            if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+          }
         } else {
           setRootScrollY(desired);
           _snapCursorToCenter();
