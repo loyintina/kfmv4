@@ -10499,6 +10499,7 @@
     renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
   }
   function doCollapse(hit, hitData) {
+    animatingPath = hitData.path;
     const tog = hit.children.find((c) => {
       var _a;
       return (_a = c.id) == null ? void 0 : _a.startsWith("toggle-");
@@ -10512,7 +10513,6 @@
       onComplete: () => {
         _animBusy = false;
         _animBusyAt = 0;
-        animatingPath = null;
         hit.gesture.onTap();
         processClickQueue();
       }
@@ -10558,7 +10558,7 @@
     return null;
   }
   function rebuildTree() {
-    var _a, _b, _c, _d, _e, _f;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m;
     if (!renderer) return;
     if (_animBusy) {
       if (_animBusyAt && Date.now() - _animBusyAt > 3e3) {
@@ -10571,21 +10571,26 @@
     }
     const prevScrollY = (_b = (_a = renderer.getRoot()) == null ? void 0 : _a.scrollY) != null ? _b : 0;
     const prevCursorRowId = cursorRowId;
-    const prevCursorY = (_c = cursorBox == null ? void 0 : cursorBox.y) != null ? _c : -1;
+    const prevCursorX = (_c = cursorBox == null ? void 0 : cursorBox.x) != null ? _c : -1;
+    const prevCursorY = (_d = cursorBox == null ? void 0 : cursorBox.y) != null ? _d : -1;
+    const prevCursorW = (_e = cursorBox == null ? void 0 : cursorBox.width) != null ? _e : -1;
+    const prevCursorH = (_f = cursorBox == null ? void 0 : cursorBox.height) != null ? _f : -1;
+    const prevCursorTopLine = (_h = (_g = cursorBox == null ? void 0 : cursorBox.data) == null ? void 0 : _g.topLineW) != null ? _h : -1;
+    const prevCursorBotLine = (_j = (_i = cursorBox == null ? void 0 : cursorBox.data) == null ? void 0 : _i.botLineW) != null ? _j : -1;
     cursorBox = null;
     cursorRowId = null;
     const canvas = document.getElementById("tree-canvas");
-    const cw = ((_d = canvas == null ? void 0 : canvas.clientWidth) != null ? _d : 0) || 295;
+    const cw = ((_k = canvas == null ? void 0 : canvas.clientWidth) != null ? _k : 0) || 295;
     const rightMargin = cw - 8;
     const rootBox = buildSidebarTree(cw, rightMargin);
     if (canvas) rootBox.width = cw;
-    const canvasH = ((_e = canvas == null ? void 0 : canvas.clientHeight) != null ? _e : 0) || 618;
+    const canvasH = ((_l = canvas == null ? void 0 : canvas.clientHeight) != null ? _l : 0) || 618;
     if (canvas) {
       rootBox.height = canvasH;
     }
     if (animatingPath) {
       const titleRow = findBoxById(rootBox, `title-${animatingPath}`);
-      const toggle = (_f = titleRow == null ? void 0 : titleRow.children) == null ? void 0 : _f.find((c) => {
+      const toggle = (_m = titleRow == null ? void 0 : titleRow.children) == null ? void 0 : _m.find((c) => {
         var _a2;
         return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
       });
@@ -10654,7 +10659,18 @@
         const target = findBoxById(newRoot, prevCursorRowId);
         if (target) {
           if (animatingPath && prevCursorY >= 0) {
+            cursorBox.x = prevCursorX;
             cursorBox.y = prevCursorY;
+            cursorBox.width = prevCursorW;
+            if (prevCursorH >= 0) {
+              cursorBox.height = prevCursorH;
+            }
+            if (prevCursorTopLine >= 0) {
+              cursorBox.data.topLineW = prevCursorTopLine;
+            }
+            if (prevCursorBotLine >= 0) {
+              cursorBox.data.botLineW = prevCursorBotLine;
+            }
             cursorRowId = prevCursorRowId;
           } else {
             moveCursorTo(target);

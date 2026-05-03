@@ -1044,6 +1044,7 @@ function doExpand(hit: Box, hitData: any): void {
 
 /** 折叠动画 */
 function doCollapse(hit: Box, hitData: any): void {
+  animatingPath = hitData.path;
   const tog = hit.children.find(c => c.id?.startsWith('toggle-'));
   const containerId = `expanded-${hitData.path}`;
   const root = renderer!.getRoot()!;
@@ -1054,8 +1055,7 @@ function doCollapse(hit: Box, hitData: any): void {
   const tl = gsap.timeline({
     onComplete: () => {
       _animBusy = false; _animBusyAt = 0;
-      animatingPath = null;  // 防御性清空：防止 rebuildTree 读到上一个展开的脏值
-      hit.gesture!.onTap!();  // 切换状态 → rebuildTree（无锁，正常执行）
+      hit.gesture!.onTap!();  // 切换状态 → rebuildTree（读取 animatingPath，末尾自行清空）
       processClickQueue();    // 处理队列中下一个点击
     },
   });
@@ -1123,7 +1123,12 @@ function rebuildTree(): void {
   const prevScrollY = renderer.getRoot()?.scrollY ?? 0;
   const prevCursorRowId = cursorRowId;
    // 动画重建时，保存旧光标位置以保持视觉稳定
+  const prevCursorX = cursorBox?.x ?? -1;
   const prevCursorY = cursorBox?.y ?? -1;
+  const prevCursorW = cursorBox?.width ?? -1;
+  const prevCursorH = cursorBox?.height ?? -1;
+  const prevCursorTopLine = (cursorBox as any)?.data?.topLineW ?? -1;
+  const prevCursorBotLine = (cursorBox as any)?.data?.botLineW ?? -1;
 
   // 重置光标实例（旧 root 销毁后 cursorBox ��向的 Box 已无效）
   cursorBox = null;
@@ -1218,7 +1223,12 @@ function rebuildTree(): void {
       if (target) {
         if (animatingPath && prevCursorY >= 0) {
           // ä¿æåæ çè§è§ä½ç½®ï¼ä¸è·éè¢« collapseSubs ä¸ç§»çè¡
+          cursorBox.x = prevCursorX;
           cursorBox.y = prevCursorY;
+          cursorBox.width = prevCursorW;
+          if (prevCursorH >= 0) { cursorBox.height = prevCursorH; }
+          if (prevCursorTopLine >= 0) { (cursorBox as any).data.topLineW = prevCursorTopLine; }
+          if (prevCursorBotLine >= 0) { (cursorBox as any).data.botLineW = prevCursorBotLine; }
           cursorRowId = prevCursorRowId;
         } else {
           moveCursorTo(target);
