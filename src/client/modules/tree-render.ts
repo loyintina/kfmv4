@@ -84,7 +84,7 @@ export function triggerExpandAnimation(path: string): void {
   // 容器展开动画
   gsap.to(container, {
     height: fullHeight,
-    duration: 0.06,
+    duration: 0.05,
     ease: 'back.out(1.15)',
     onUpdate: function() {
       applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
@@ -592,7 +592,7 @@ function doExpand(hit: Box, hitData: any): void {
   // 容器展开 + 兄弟偏移
   gsap.to(container, {
     height: fullHeight,
-    duration: 0.06,
+    duration: 0.05,
     ease: 'back.out(1.15)',
     onUpdate: function() {
       applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
@@ -925,7 +925,7 @@ async function slideInRows(container: Box, root: Box, selfToggle?: any): Promise
   if (selfToggle) {
     gsap.fromTo(selfToggle.transform, { rotate: 0 }, {
       rotate: Math.PI / 2,
-      duration: 0.5,
+      duration: 0.15,
       ease: 'power2.out',
       onUpdate: () => { renderer?.setRoot(renderer!.getRoot()!); },
     });
@@ -959,7 +959,7 @@ async function slideInRows(container: Box, root: Box, selfToggle?: any): Promise
     await new Promise<void>(resolve => {
       gsap.to(child, {
         height: subFullH,
-        duration: 0.06,
+        duration: 0.05,
         ease: 'back.out(1.15)',
         onUpdate: () => { renderer?.setRoot(renderer!.getRoot()!); },
         onComplete: resolve,

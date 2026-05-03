@@ -9535,7 +9535,7 @@
       return;
     }
     renderer2 == null ? void 0 : renderer2.setRoot(root);
-    const BASE_DUR = 0.2;
+    const BASE_DUR = 0.22;
     try {
       await new Promise((resolve) => {
         const tl = gsapWithCSS.timeline({ onComplete: resolve });
@@ -9647,7 +9647,7 @@
     animateCharRain(container, root, renderer);
     gsapWithCSS.to(container, {
       height: fullHeight,
-      duration: 0.06,
+      duration: 0.05,
       ease: "back.out(1.15)",
       onUpdate: function() {
         applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
@@ -10081,7 +10081,7 @@
     animateCharRain(container, root, renderer);
     gsapWithCSS.to(container, {
       height: fullHeight,
-      duration: 0.06,
+      duration: 0.05,
       ease: "back.out(1.15)",
       onUpdate: function() {
         applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
@@ -10353,7 +10353,7 @@
     if (selfToggle) {
       gsapWithCSS.fromTo(selfToggle.transform, { rotate: 0 }, {
         rotate: Math.PI / 2,
-        duration: 0.5,
+        duration: 0.15,
         ease: "power2.out",
         onUpdate: () => {
           renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
@@ -10395,7 +10395,7 @@
       await new Promise((resolve) => {
         gsapWithCSS.to(child, {
           height: subFullH,
-          duration: 0.06,
+          duration: 0.05,
           ease: "back.out(1.15)",
           onUpdate: () => {
             renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());

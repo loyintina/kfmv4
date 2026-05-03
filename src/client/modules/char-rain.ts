@@ -206,7 +206,7 @@ export async function animateCharRain(
   renderer?.setRoot(root);
 
   // 5. GSAP 动画：逐字随机延迟，碎片化散落
-  const BASE_DUR = 0.2;
+  const BASE_DUR = 0.22;
 
   try {
     await new Promise<void>((resolve) => {
