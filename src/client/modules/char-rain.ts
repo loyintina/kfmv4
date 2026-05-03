@@ -58,6 +58,8 @@ export async function animateCharRain(
 
   // 4. 逐行逐字创建字符 Box
   const allTargets: CharTarget[] = [];
+  const lineGroups: CharTarget[][] = [];
+  let currentLineGroup = 0;
   const hiddenLabels: Box[] = [];
   const hiddenToggles: Box[] = [];
 
@@ -92,6 +94,7 @@ export async function animateCharRain(
     const totalTextHeight = visLines.length * lineH;
     const verticalOffset = Math.max(0, (row.height - totalTextHeight) / 2);
 
+    const rowFirstLineGroup = currentLineGroup;
     for (let li = 0; li < visLines.length; li++) {
       const line = visLines[li];
       let chars: string[];
@@ -106,6 +109,7 @@ export async function animateCharRain(
       // 逐字测量宽度
       const charWidths = chars.map((ch) => ctx.measureText(ch).width);
 
+      if (!lineGroups[currentLineGroup]) lineGroups[currentLineGroup] = [];
       let cx = 0;
       for (let ci = 0; ci < chars.length; ci++) {
         // 目标位置（容器空间中的最终坐标）
@@ -122,7 +126,7 @@ export async function animateCharRain(
           y: initY,
           width: charWidths[ci] + 2,
           height: lineH,
-          opacity: 1,
+          opacity: 0,
           backgroundColor: "transparent", // 透明背景，消除阴影
           interactive: false,
           zIndex: 99,
@@ -141,8 +145,10 @@ export async function animateCharRain(
 
         container.addChild(box);
         allTargets.push({ box, targetX, targetY });
+        lineGroups[currentLineGroup].push({ box, targetX, targetY });
         cx += charWidths[ci];
       }
+      currentLineGroup++;
     }
 
     // --- 三角 (▶) 字符雨 ---
@@ -164,7 +170,7 @@ export async function animateCharRain(
         y: tInitY,
         width: toggleBox.width,
         height: toggleBox.height || LINE_HEIGHT,
-        opacity: 1,
+        opacity: 0,
         backgroundColor: "transparent",
         interactive: false,
         zIndex: 99,
@@ -177,7 +183,9 @@ export async function animateCharRain(
       };
 
       container.addChild(tBox);
-      allTargets.push({ box: tBox, targetX: tTargetX, targetY: tTargetY, isToggle: toggleBox.transform.rotate > 0.1 });
+      const togTarget = { box: tBox, targetX: tTargetX, targetY: tTargetY, isToggle: toggleBox.transform.rotate > 0.1 };
+      allTargets.push(togTarget);
+      lineGroups[rowFirstLineGroup].push(togTarget);
     }
 
     // 隐藏原始 label（字符 Box 不隐藏，等 GSAP 后删除）
@@ -197,38 +205,49 @@ export async function animateCharRain(
   // 推送初始状态（字符在屏幕顶部）
   renderer?.setRoot(root);
 
-  // 5. GSAP 动画：逐字符落体
+  // 5. GSAP 动画：行间波浪 + 回弹着地
+  const DUR = 0.3;
+  const LINE_DELAY = 0.025;
+  const CHAR_STAGGER = 0.004;
+
   try {
     await new Promise<void>((resolve) => {
       const tl = gsap.timeline({
         onComplete: resolve,
       });
 
-      tl.to(
-        allTargets.map((t) => t.box),
-        {
-          x: (i: number) => allTargets[i].targetX,
-          y: (i: number) => allTargets[i].targetY,
-          duration: 0.25,
-          ease: "power2.out",
-          stagger: 0.002,
-        },
-        0
-      );
+      for (let gi = 0; gi < lineGroups.length; gi++) {
+        const group = lineGroups[gi];
+        if (!group || group.length === 0) continue;
 
-      // 三角旋转变换：展开态三角形下落同时旋转到 90°
-      const toggleTargets = allTargets.filter((t) => t.isToggle);
-      if (toggleTargets.length > 0) {
+        // 落体动画（回弹缓动）
         tl.to(
-          toggleTargets.map((t) => t.box.transform),
+          group.map((t) => t.box),
           {
-            rotate: Math.PI / 2,
-            duration: 0.25,
-            ease: "power2.out",
-            stagger: 0.002,
+            x: (i: number) => group[i].targetX,
+            y: (i: number) => group[i].targetY,
+            opacity: 1,
+            duration: DUR,
+            ease: "back.out(1.05)",
+            stagger: CHAR_STAGGER,
           },
-          0
+          gi * LINE_DELAY
         );
+
+        // 三角旋转（同组并行）
+        const groupToggles = group.filter((t) => t.isToggle);
+        if (groupToggles.length > 0) {
+          tl.to(
+            groupToggles.map((t) => t.box.transform),
+            {
+              rotate: Math.PI / 2,
+              duration: DUR,
+              ease: "power2.out",
+              stagger: CHAR_STAGGER,
+            },
+            gi * LINE_DELAY
+          );
+        }
       }
     });
   } finally {

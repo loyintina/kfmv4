@@ -106,6 +106,22 @@
     logs.length = 0;
     renderLogs();
   }
+  function copyLogs() {
+    const text = logs.map((l) => `[${l.time}] ${l.msg}`).join(String.fromCharCode(10));
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => showToast("\u65E5\u5FD7\u5DF2\u590D\u5236"));
+    } else {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      showToast("\u65E5\u5FD7\u5DF2\u590D\u5236");
+    }
+  }
   function initLogPanelSwipe() {
     const panel = document.getElementById("logPanel");
     if (!panel) return;
@@ -143,6 +159,7 @@
     window.openLogPanel = openLogPanel;
     window.closeLogPanel = closeLogPanel;
     window.clearLogs = clearLogs;
+    window.copyLogs = copyLogs;
     window.rlog = rlog;
   }
   async function initApp() {
@@ -5015,6 +5032,9 @@
     let cy = 0;
     if (children.length === 0) {
       container.height = 0;
+      if (container.kfmStyle) {
+        container.kfmStyle.cornerRadius = 0;
+      }
       return container;
     }
     for (const item of children) {
@@ -9383,6 +9403,8 @@
     });
     renderer2 == null ? void 0 : renderer2.setRoot(root);
     const allTargets = [];
+    const lineGroups = [];
+    let currentLineGroup = 0;
     const hiddenLabels = [];
     const hiddenToggles = [];
     for (const row of rows) {
@@ -9409,6 +9431,7 @@
       const visLines = layoutLines2.slice(0, maxVis);
       const totalTextHeight = visLines.length * lineH;
       const verticalOffset = Math.max(0, (row.height - totalTextHeight) / 2);
+      const rowFirstLineGroup = currentLineGroup;
       for (let li = 0; li < visLines.length; li++) {
         const line = visLines[li];
         let chars;
@@ -9418,6 +9441,7 @@
           chars = [...line.text];
         }
         const charWidths = chars.map((ch) => ctx.measureText(ch).width);
+        if (!lineGroups[currentLineGroup]) lineGroups[currentLineGroup] = [];
         let cx = 0;
         for (let ci = 0; ci < chars.length; ci++) {
           const targetX = row.x + label.x + cx;
@@ -9430,7 +9454,7 @@
             y: initY,
             width: charWidths[ci] + 2,
             height: lineH,
-            opacity: 1,
+            opacity: 0,
             backgroundColor: "transparent",
             // 透明背景，消除阴影
             interactive: false,
@@ -9449,8 +9473,10 @@
           };
           container.addChild(box);
           allTargets.push({ box, targetX, targetY });
+          lineGroups[currentLineGroup].push({ box, targetX, targetY });
           cx += charWidths[ci];
         }
+        currentLineGroup++;
       }
       const toggleBox = row.children.find((c) => {
         var _a2;
@@ -9471,7 +9497,7 @@
           y: tInitY,
           width: toggleBox.width,
           height: toggleBox.height || LINE_HEIGHT,
-          opacity: 1,
+          opacity: 0,
           backgroundColor: "transparent",
           interactive: false,
           zIndex: 99,
@@ -9483,7 +9509,9 @@
           maxLines: 1
         };
         container.addChild(tBox);
-        allTargets.push({ box: tBox, targetX: tTargetX, targetY: tTargetY, isToggle: toggleBox.transform.rotate > 0.1 });
+        const togTarget = { box: tBox, targetX: tTargetX, targetY: tTargetY, isToggle: toggleBox.transform.rotate > 0.1 };
+        allTargets.push(togTarget);
+        lineGroups[rowFirstLineGroup].push(togTarget);
       }
       const labelBox = row.children.find((c) => {
         var _a2;
@@ -9507,34 +9535,42 @@
       return;
     }
     renderer2 == null ? void 0 : renderer2.setRoot(root);
+    const DUR = 0.3;
+    const LINE_DELAY = 0.025;
+    const CHAR_STAGGER = 4e-3;
     try {
       await new Promise((resolve) => {
         const tl = gsapWithCSS.timeline({
           onComplete: resolve
         });
-        tl.to(
-          allTargets.map((t) => t.box),
-          {
-            x: (i) => allTargets[i].targetX,
-            y: (i) => allTargets[i].targetY,
-            duration: 0.25,
-            ease: "power2.out",
-            stagger: 2e-3
-          },
-          0
-        );
-        const toggleTargets = allTargets.filter((t) => t.isToggle);
-        if (toggleTargets.length > 0) {
+        for (let gi = 0; gi < lineGroups.length; gi++) {
+          const group = lineGroups[gi];
+          if (!group || group.length === 0) continue;
           tl.to(
-            toggleTargets.map((t) => t.box.transform),
+            group.map((t) => t.box),
             {
-              rotate: Math.PI / 2,
-              duration: 0.25,
-              ease: "power2.out",
-              stagger: 2e-3
+              x: (i) => group[i].targetX,
+              y: (i) => group[i].targetY,
+              opacity: 1,
+              duration: DUR,
+              ease: "back.out(1.05)",
+              stagger: CHAR_STAGGER
             },
-            0
+            gi * LINE_DELAY
           );
+          const groupToggles = group.filter((t) => t.isToggle);
+          if (groupToggles.length > 0) {
+            tl.to(
+              groupToggles.map((t) => t.box.transform),
+              {
+                rotate: Math.PI / 2,
+                duration: DUR,
+                ease: "power2.out",
+                stagger: CHAR_STAGGER
+              },
+              gi * LINE_DELAY
+            );
+          }
         }
       });
     } finally {
@@ -9560,6 +9596,12 @@
 
   // src/client/modules/tree-render.ts
   var renderer = null;
+  var _stateSub = null;
+  function _ensureSubscribed() {
+    if (_stateSub) KFMState.unsubscribe(_stateSub);
+    _stateSub = () => rebuildTree();
+    KFMState.subscribe(_stateSub);
+  }
   function markAnimatingPath(path) {
     animatingPath = path;
   }
@@ -9575,7 +9617,30 @@
     });
     if (!container) return;
     const fullHeight = container._fullHeight || 0;
-    if (!fullHeight) return;
+    if (!fullHeight) {
+      if (toggle2 && toggle2.transform) {
+        let animFrame2 = function() {
+          const elapsed = performance.now() - startTime;
+          const t = Math.min(elapsed / durationMs, 1);
+          const eased = 1 - (1 - t) * (1 - t);
+          toggle2.transform.rotate = endRot * eased;
+          if (rend) rend.setRoot(rend.getRoot());
+          if (elapsed < durationMs) {
+            requestAnimationFrame(animFrame2);
+          } else {
+          }
+        };
+        var animFrame = animFrame2;
+        toggle2.transform.rotate = 0;
+        const startTime = performance.now();
+        const endRot = Math.PI / 2;
+        const durationMs = 300;
+        const rend = renderer;
+        requestAnimationFrame(animFrame2);
+      }
+      renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+      return;
+    }
     animatingPath = null;
     const _origYs = container._origYs;
     if (_origYs && container.children.length === _origYs.length) {
@@ -9592,13 +9657,16 @@
     animateCharRain(container, root, renderer);
     gsapWithCSS.to(container, {
       height: fullHeight,
-      duration: 0.05,
-      ease: "power2.out",
+      duration: 0.08,
+      ease: "back.out(1.15)",
       onUpdate: function() {
         applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
         renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
       },
       onComplete: () => {
+        if (container.kfmStyle && container._savedCr !== void 0) {
+          container.kfmStyle.cornerRadius = container._savedCr;
+        }
         slideInRows(container, root, toggle2).then(() => {
           fixExpandedToggles(container);
           renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
@@ -9768,7 +9836,7 @@
       rebuildTree();
       renderer == null ? void 0 : renderer.resize();
       window.__treeRenderer = renderer;
-      KFMState.subscribe(() => rebuildTree());
+      _ensureSubscribed();
       styleRegistry.subscribe(() => rebuildTree());
       window.addEventListener("resize", () => renderer == null ? void 0 : renderer.resize());
       bindScrollEvents(canvas);
@@ -9816,7 +9884,7 @@
     });
     rebuildTree();
     window.__treeRenderer = renderer;
-    KFMState.subscribe(() => rebuildTree());
+    _ensureSubscribed();
     styleRegistry.subscribe(() => rebuildTree());
     window.addEventListener("resize", () => renderer == null ? void 0 : renderer.resize());
     bindScrollEvents(canvas);
@@ -9910,7 +9978,20 @@
   }
   function processClickQueue() {
     var _a, _b;
-    if (_animBusy || _clickQueue.length === 0 || !renderer) return;
+    if (_clickQueue.length === 0 || !renderer) return;
+    if (_animBusy) {
+      if (_animBusyAt && Date.now() - _animBusyAt > 3e3) {
+        _animBusy = false;
+        _animBusyAt = 0;
+        _clickQueue = [];
+        return;
+      }
+      gsapWithCSS.globalTimeline.clear();
+      _animBusy = false;
+      _animBusyAt = 0;
+      animatingPath = null;
+      rebuildTree();
+    }
     const { offsetX, offsetY } = _clickQueue.shift();
     const root = renderer.getRoot();
     if (!root) return;
@@ -9965,9 +10046,35 @@
     }
     const fullHeight = container._fullHeight || 0;
     if (!fullHeight) {
-      _animBusy = false;
-      _animBusyAt = 0;
-      processClickQueue();
+      const finish = () => {
+        _animBusy = false;
+        _animBusyAt = 0;
+        processClickQueue();
+      };
+      if (toggle2 && toggle2.transform) {
+        let animFrame2 = function() {
+          const elapsed = performance.now() - startTime;
+          const t = Math.min(elapsed / durationMs, 1);
+          const eased = 1 - (1 - t) * (1 - t);
+          toggle2.transform.rotate = startRot + (endRot - startRot) * eased;
+          if (rend) rend.setRoot(rend.getRoot());
+          if (elapsed < durationMs) {
+            requestAnimationFrame(animFrame2);
+          } else {
+            finish();
+          }
+        };
+        var animFrame = animFrame2;
+        toggle2.transform.rotate = 0;
+        const startTime = performance.now();
+        const startRot = 0;
+        const endRot = Math.PI / 2;
+        const durationMs = 300;
+        const rend = renderer;
+        requestAnimationFrame(animFrame2);
+      } else {
+        finish();
+      }
       return;
     }
     animatingPath = null;
@@ -9984,13 +10091,16 @@
     animateCharRain(container, root, renderer);
     gsapWithCSS.to(container, {
       height: fullHeight,
-      duration: 0.05,
-      ease: "power2.out",
+      duration: 0.08,
+      ease: "back.out(1.15)",
       onUpdate: function() {
         applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
         renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
       },
       onComplete: () => {
+        if (container.kfmStyle && container._savedCr !== void 0) {
+          container.kfmStyle.cornerRadius = container._savedCr;
+        }
         slideInRows(container, root, toggle2).then(() => {
           fixExpandedToggles(container);
           renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
@@ -10107,6 +10217,10 @@
           child._fullHeight = subFullH;
           child._origYs = child.children.map((c) => c.y);
           child.height = 0;
+          if (child.kfmStyle) {
+            child._savedCr = child.kfmStyle.cornerRadius;
+            child.kfmStyle.cornerRadius = 0;
+          }
           for (const c of child.children) {
             c.y = c.y - subFullH;
           }
@@ -10131,6 +10245,10 @@
         preContainer._fullHeight = preFullH;
         preContainer._origYs = preContainer.children.map((c) => c.y);
         preContainer.height = 0;
+        if (preContainer.kfmStyle) {
+          preContainer._savedCr = preContainer.kfmStyle.cornerRadius;
+          preContainer.kfmStyle.cornerRadius = 0;
+        }
         for (const child of preContainer.children) {
           child.y = child.y - preFullH;
           child.opacity = 0;
@@ -10287,14 +10405,17 @@
       await new Promise((resolve) => {
         gsapWithCSS.to(child, {
           height: subFullH,
-          duration: 0.05,
-          ease: "power2.out",
+          duration: 0.08,
+          ease: "back.out(1.15)",
           onUpdate: () => {
             renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
           },
           onComplete: resolve
         });
       });
+      if (child.kfmStyle && child._savedCr !== void 0) {
+        child.kfmStyle.cornerRadius = child._savedCr;
+      }
       await slideInRows(child, root);
       await expandNext(idx + 1);
     }
@@ -12460,7 +12581,16 @@
       if (!res.ok) return false;
       const data = await res.json();
       const tree = data.tree || [];
-      if (tree.length === 0) return false;
+      if (tree.length === 0) {
+        KFMState.files[dirPath] = {
+          name: dirPath.split("/").pop() || dirPath,
+          path: dirPath,
+          isDir: true,
+          isLink: false,
+          children: []
+        };
+        return true;
+      }
       ingestTree2(dirPath, tree);
       return true;
     } catch {
@@ -12505,9 +12635,9 @@
   function initLazyLoader() {
     const originalSetExpanded = KFMState.setExpanded.bind(KFMState);
     KFMState.setExpanded = function(path, expanded) {
-      var _a, _b, _c, _d;
+      var _a;
       if (expanded) {
-        const cached = ((_b = (_a = KFMState.files[path]) == null ? void 0 : _a.children) == null ? void 0 : _b.length) !== void 0 && ((_d = (_c = KFMState.files[path]) == null ? void 0 : _c.children) == null ? void 0 : _d.length) > 0;
+        const cached = ((_a = KFMState.files[path]) == null ? void 0 : _a.children) !== void 0;
         if (!cached) {
           KFMState.expandedPaths[path] = true;
           localStorage.setItem("expandedPaths", JSON.stringify(KFMState.expandedPaths));

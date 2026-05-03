@@ -17,6 +17,14 @@ import { animateCharRain } from "./char-rain.js";
 
 let renderer: Renderer | null = null;
 
+/** 保存 KFMState 订阅引用，防止重复订阅 */
+let _stateSub: ((state: any) => void) | null = null;
+function _ensureSubscribed(): void {
+  if (_stateSub) KFMState.unsubscribe(_stateSub);
+  _stateSub = () => rebuildTree();
+  KFMState.subscribe(_stateSub);
+}
+
 /** 外部使用：标记某路径正在做展开动画 */
 export function markAnimatingPath(path: string | null): void {
   animatingPath = path;
@@ -32,7 +40,30 @@ export function triggerExpandAnimation(path: string): void {
   if (!container) return;
   
   const fullHeight = (container as any)._fullHeight || 0;
-  if (!fullHeight) return;
+  if (!fullHeight) {
+    // 空文件夹：播放 toggle 旋转动画（cornerRadius 已由 rebuildTree 归零，无需恢复）
+    if (toggle2 && toggle2.transform) {
+      toggle2.transform.rotate = 0;
+      const startTime = performance.now();
+      const endRot = Math.PI / 2;
+      const durationMs = 300;
+      const rend = renderer;
+      function animFrame() {
+        const elapsed = performance.now() - startTime;
+        const t = Math.min(elapsed / durationMs, 1);
+        const eased = 1 - (1 - t) * (1 - t);
+        toggle2!.transform.rotate = endRot * eased;
+        if (rend) rend.setRoot(rend.getRoot()!);
+        if (elapsed < durationMs) {
+          requestAnimationFrame(animFrame);
+        } else {
+        }
+      }
+      requestAnimationFrame(animFrame);
+    }
+    renderer?.setRoot(renderer!.getRoot()!);
+    return;
+  }
   
   animatingPath = null;
   
@@ -46,20 +77,24 @@ export function triggerExpandAnimation(path: string): void {
   const ancestors = collectAncestors(container, root);
   
   _animBusy = true; _animBusyAt = Date.now();
-  
+
   // 字符雨
   animateCharRain(container, root, renderer);
   
   // 容器展开动画
   gsap.to(container, {
     height: fullHeight,
-    duration: 0.05,
-    ease: 'power2.out',
+    duration: 0.08,
+    ease: 'back.out(1.15)',
     onUpdate: function() {
       applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
       renderer?.setRoot(renderer!.getRoot()!);
     },
     onComplete: () => {
+      // 恢复 cornerRadius
+      if (container.kfmStyle && (container as any)._savedCr !== undefined) {
+        container.kfmStyle.cornerRadius = (container as any)._savedCr;
+      }
       slideInRows(container, root, toggle2).then(() => {
         fixExpandedToggles(container);
         renderer?.setRoot(renderer!.getRoot()!);
@@ -264,7 +299,7 @@ export function onSidebarOpen(): void {
     renderer?.resize();
     (window as any).__treeRenderer = renderer;
 
-    KFMState.subscribe(() => rebuildTree());
+    _ensureSubscribed();
     styleRegistry.subscribe(() => rebuildTree());
     window.addEventListener('resize', () => renderer?.resize());
 
@@ -325,7 +360,7 @@ export function initTreeRenderer(): void {
   // 暴露到 window 供调试
   (window as any).__treeRenderer = renderer;
 
-  KFMState.subscribe(() => rebuildTree());
+  _ensureSubscribed();
   styleRegistry.subscribe(() => rebuildTree());
   window.addEventListener('resize', () => renderer?.resize());
 
@@ -433,7 +468,24 @@ function bindClickEvents(canvas: HTMLCanvasElement, _dpr: number): void {
  * 动画完成后自动处理队列中下一个点击。
  */
 function processClickQueue(): void {
-  if (_animBusy || _clickQueue.length === 0 || !renderer) return;
+  if (_clickQueue.length === 0 || !renderer) return;
+
+  // 动画进行中收到点击 → 中断当前动画，立即响应
+  if (_animBusy) {
+    if (_animBusyAt && Date.now() - _animBusyAt > 3000) {
+      // 超时兜底：强制释放
+      _animBusy = false;
+      _animBusyAt = 0;
+      _clickQueue = [];
+      return;
+    }
+    // 中断 GSAP 动画，重建干净树，立即处理队列中的点击
+    gsap.globalTimeline.clear();
+    _animBusy = false;
+    _animBusyAt = 0;
+    animatingPath = null;
+    rebuildTree();
+  }
 
   const { offsetX, offsetY } = _clickQueue.shift()!;
   const root = renderer.getRoot();
@@ -492,8 +544,34 @@ function doExpand(hit: Box, hitData: any): void {
 
   const fullHeight = (container as any)._fullHeight || 0;
   if (!fullHeight) {
-    _animBusy = false; _animBusyAt = 0;
-    processClickQueue();
+    // 空文件夹：RAF 驱动 toggle 旋转动画
+    const finish = () => {
+      _animBusy = false; _animBusyAt = 0;
+      processClickQueue();
+    };
+    if (toggle2 && toggle2.transform) {
+      toggle2.transform.rotate = 0;
+      const startTime = performance.now();
+      const startRot = 0;
+      const endRot = Math.PI / 2;
+      const durationMs = 300;
+      const rend = renderer;
+      function animFrame() {
+        const elapsed = performance.now() - startTime;
+        const t = Math.min(elapsed / durationMs, 1);
+        const eased = 1 - (1 - t) * (1 - t);
+        toggle2!.transform.rotate = startRot + (endRot - startRot) * eased;
+        if (rend) rend.setRoot(rend.getRoot()!);
+        if (elapsed < durationMs) {
+          requestAnimationFrame(animFrame);
+        } else {
+          finish();
+        }
+      }
+      requestAnimationFrame(animFrame);
+    } else {
+      finish();
+    }
     return;
   }
 
@@ -514,13 +592,17 @@ function doExpand(hit: Box, hitData: any): void {
   // 容器展开 + 兄弟偏移
   gsap.to(container, {
     height: fullHeight,
-    duration: 0.05,
-    ease: 'power2.out',
+    duration: 0.08,
+    ease: 'back.out(1.15)',
     onUpdate: function() {
       applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
       renderer?.setRoot(renderer!.getRoot()!);
     },
     onComplete: () => {
+      // 恢复 cornerRadius
+      if (container.kfmStyle && (container as any)._savedCr !== undefined) {
+        container.kfmStyle.cornerRadius = (container as any)._savedCr;
+      }
       slideInRows(container, root, toggle2).then(() => {
         // 修复所有子容器 toggle 状态
         fixExpandedToggles(container);
@@ -654,6 +736,11 @@ function rebuildTree(): void {
         (child as any)._fullHeight = subFullH;
         (child as any)._origYs = child.children.map((c: any) => c.y);
         child.height = 0;
+        // Save and zero cornerRadius to prevent overlapping rounded corners
+        if (child.kfmStyle) {
+          (child as any)._savedCr = child.kfmStyle.cornerRadius;
+          child.kfmStyle.cornerRadius = 0;
+        }
         for (const c of child.children) { c.y = c.y - subFullH; }
         // save toggle reference for cascade expand later
         const subPath = child.id.slice("expanded-".length);
@@ -674,6 +761,10 @@ function rebuildTree(): void {
       (preContainer as any)._fullHeight = preFullH;
       (preContainer as any)._origYs = preContainer.children.map((c: any) => c.y);
       preContainer.height = 0;
+      if (preContainer.kfmStyle) {
+        (preContainer as any)._savedCr = preContainer.kfmStyle.cornerRadius;
+        preContainer.kfmStyle.cornerRadius = 0;
+      }
       for (const child of preContainer.children) { child.y = child.y - preFullH; child.opacity = 0; }
       // 递归折叠内部已展开的子容器
       collapseSubs(preContainer);
@@ -868,13 +959,17 @@ async function slideInRows(container: Box, root: Box, selfToggle?: any): Promise
     await new Promise<void>(resolve => {
       gsap.to(child, {
         height: subFullH,
-        duration: 0.05,
-        ease: 'power2.out',
+        duration: 0.08,
+        ease: 'back.out(1.15)',
         onUpdate: () => { renderer?.setRoot(renderer!.getRoot()!); },
         onComplete: resolve,
       });
     });
     // 子容器展开后递归 slideInRows
+    // restore sub-container cornerRadius
+    if (child.kfmStyle && (child as any)._savedCr !== undefined) {
+      child.kfmStyle.cornerRadius = (child as any)._savedCr;
+    }
     await slideInRows(child, root);
     await expandNext(idx + 1);
   }

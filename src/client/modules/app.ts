@@ -64,6 +64,24 @@ export function clearLogs(): void {
   renderLogs();
 }
 
+export function copyLogs(): void {
+  const text = logs.map(l => `[${l.time}] ${l.msg}`).join(String.fromCharCode(10));
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => showToast('日志已复制'));
+  } else {
+    // fallback for mobile
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('日志已复制');
+  }
+}
+
 // 日志面板滑动关闭
 function initLogPanelSwipe(): void {
   const panel = document.getElementById('logPanel');
@@ -104,6 +122,7 @@ function exposeGlobals(): void {
   window.openLogPanel = openLogPanel;
   window.closeLogPanel = closeLogPanel;
   window.clearLogs = clearLogs;
+  window.copyLogs = copyLogs;
   window.rlog = rlog;
 }
 

@@ -122,6 +122,10 @@ function buildExpanded(path: string, children: FileNode[], ctx: BuildCtx, depth:
   // children.length === 0 时直接返回空容器（高度 0）
   if (children.length === 0) {
     container.height = 0;
+    // 空文件夹高度为0，圆角会重叠，必须归零
+    if (container.kfmStyle) {
+      container.kfmStyle.cornerRadius = 0;
+    }
     return container;
   }
 
@@ -130,6 +134,7 @@ function buildExpanded(path: string, children: FileNode[], ctx: BuildCtx, depth:
       const folderRow = innerFolderRow(item, cy, w, ctx, depth);
       container.addChild(folderRow);
       cy += folderRow.height;
+
       if (ctx.expandedPaths[item.path]) {
         const ch = KFMState.files[item.path]?.children ?? item.children ?? [];
         const sub = buildExpanded(item.path, ch, ctx, depth + 1, getShift(depth), w);

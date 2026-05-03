@@ -45,7 +45,17 @@ async function fetchDirRecursive(
     if (!res.ok) return false;
     const data = await res.json();
     const tree: any[] = data.tree || [];
-    if (tree.length === 0) return false;
+    if (tree.length === 0) {
+      // 空目录也视为加载成功，缓存空的 children 以便后续展开/折叠动画
+      KFMState.files[dirPath] = {
+        name: dirPath.split('/').pop() || dirPath,
+        path: dirPath,
+        isDir: true,
+        isLink: false,
+        children: [],
+      };
+      return true;
+    }
 
     // 将递归树结构写入 KFMState.files
     function ingestTree(parentPath: string, items: any[]): void {
@@ -146,7 +156,7 @@ export function initLazyLoader(): void {
   const originalSetExpanded = KFMState.setExpanded.bind(KFMState);
   KFMState.setExpanded = function (path: string, expanded: boolean) {
     if (expanded) {
-      const cached = KFMState.files[path]?.children?.length !== undefined && KFMState.files[path]?.children?.length > 0;
+      const cached = KFMState.files[path]?.children !== undefined;  // 空目录 children=[] 也算已缓存
       if (!cached) {
         // 数据未加载：先设置展开状态（不 notify），然后加载数据
         KFMState.expandedPaths[path] = true;

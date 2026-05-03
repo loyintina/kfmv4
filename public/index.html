@@ -12,6 +12,7 @@
 <div class="sidebar-content" id="fileTree"><div class="loading">加载中...</div></div>
 <div class="sidebar-tools">
 <button id="toggleHiddenBtn" onclick="openSidebar()" title="显示隐藏">👁</button>
+<button id="debugLogBtn" style="display:none" onclick="window.openLogPanel&&window.openLogPanel()" title="debug">D</button>
 <div class="sidebar-path" id="sidebarPath">-</div>
 </div>
 </div>
@@ -28,10 +29,11 @@
 </main>
 
 <!-- 日志面板 -->
-<div class="log-panel" id="logPanel">
+<div class="log-panel" id="logPanel" style="display:none">
 <div class="log-header">
 <span class="log-title">调试日志</span>
 <div class="log-actions">
+<button onclick="copyLogs()" style="background:none;border:none;color:var(--accent);font-size:12px;padding:4px 8px">复制</button>
 <button onclick="clearLogs()" style="background:none;border:none;color:var(--text);font-size:12px;padding:4px 8px">清空</button>
 <button onclick="closeLogPanel()" style="background:none;border:none;color:var(--text);font-size:20px">×</button>
 </div>
@@ -41,6 +43,6 @@
 
 <div class="light-orb" id="lightOrb"></div>
 
-<script src="bundle.js?v=1777724026"></script>
+<script src="bundle.js?v=1777772557"></script>
 </body>
 </html>
