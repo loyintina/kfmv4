@@ -130,6 +130,7 @@ function buildExpanded(path: string, children: FileNode[], ctx: BuildCtx, depth:
   }
 
   for (const item of children) {
+    if (!KFMState.showHidden && item.name.startsWith('.')) continue;
     if (item.isDir) {
       const folderRow = innerFolderRow(item, cy, w, ctx, depth);
       container.addChild(folderRow);

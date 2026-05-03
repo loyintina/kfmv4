@@ -12,8 +12,6 @@
 <div class="sidebar-content" id="fileTree"><div class="loading">加载中...</div></div>
 <div class="sidebar-tools">
 <button id="toggleHiddenBtn" title="显示隐藏文件">👁</button>
-<button id="debugLogBtn" style="display:none" onclick="window.openLogPanel&&window.openLogPanel()" title="调试日志">D</button>
-<!-- 调试日志按钮：预留，未来使用 -->
 </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -32,7 +30,7 @@
 </main>
 
 <!-- 日志面板：预留接口，未来调试使用 -->
-<div class="log-panel" id="logPanel" style="display:none">
+<div class="log-panel" id="logPanel" style="display:none;visibility:hidden;position:absolute;width:0;height:0;overflow:hidden">
 <div class="log-header">
 <span class="log-title">调试日志</span>
 <div class="log-actions">
