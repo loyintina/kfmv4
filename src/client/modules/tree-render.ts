@@ -1217,6 +1217,8 @@ function rebuildTree(): void {
       const target = findBoxById(newRoot, prevCursorRowId);
       if (target) {
         if (animatingPath && prevCursorY >= 0) {
+          // ä¿æåæ çè§è§ä½ç½®ï¼ä¸è·éè¢« collapseSubs ä¸ç§»çè¡
+          cursorBox.y = prevCursorY;
           cursorRowId = prevCursorRowId;
         } else {
           moveCursorTo(target);

@@ -10654,6 +10654,7 @@
         const target = findBoxById(newRoot, prevCursorRowId);
         if (target) {
           if (animatingPath && prevCursorY >= 0) {
+            cursorBox.y = prevCursorY;
             cursorRowId = prevCursorRowId;
           } else {
             moveCursorTo(target);
