@@ -9855,15 +9855,15 @@
       dpr
     });
     requestAnimationFrame(() => {
-      var _a, _b;
       rebuildTree();
       renderer == null ? void 0 : renderer.resize();
       window.__treeRenderer = renderer;
       _ensureSubscribed();
       styleRegistry.subscribe(() => rebuildTree());
       window.addEventListener("resize", () => renderer == null ? void 0 : renderer.resize());
-      bindScrollEvents(canvas, (_a = document.getElementById("main")) != null ? _a : void 0);
-      bindClickEvents(canvas, dpr, (_b = document.getElementById("main")) != null ? _b : void 0);
+      bindScrollEvents(canvas);
+      bindClickEvents(canvas, dpr);
+      _createSidebarTouchArea();
     });
     const sidebar = document.getElementById("sidebar");
     if (sidebar) {
@@ -9875,6 +9875,7 @@
     }
   }
   function onSidebarClose() {
+    var _a;
     _sessionId++;
     gsapWithCSS.globalTimeline.clear();
     _animBusy = false;
@@ -9887,9 +9888,9 @@
     _rowIndex = [];
     renderer == null ? void 0 : renderer.stop();
     renderer = null;
+    (_a = document.getElementById("sidebarTouchArea")) == null ? void 0 : _a.remove();
   }
   function initTreeRenderer() {
-    var _a, _b;
     const fileTree = document.getElementById("fileTree");
     if (!fileTree) {
       console.warn("[tree-render] #fileTree not found");
@@ -9912,8 +9913,8 @@
     _ensureSubscribed();
     styleRegistry.subscribe(() => rebuildTree());
     window.addEventListener("resize", () => renderer == null ? void 0 : renderer.resize());
-    bindScrollEvents(canvas, (_a = document.getElementById("main")) != null ? _a : void 0);
-    bindClickEvents(canvas, dpr, (_b = document.getElementById("main")) != null ? _b : void 0);
+    bindScrollEvents(canvas);
+    bindClickEvents(canvas, dpr);
   }
   function getRootScrollY() {
     var _a, _b;
@@ -9986,7 +9987,43 @@
       moveCursorTo(_rowIndex[idx]);
     }
   }
-  function bindScrollEvents(canvas, rightArea) {
+  function _createSidebarTouchArea() {
+    const old = document.getElementById("sidebarTouchArea");
+    if (old) old.remove();
+    const sidebar = document.getElementById("sidebar");
+    if (!sidebar) return;
+    const box = document.createElement("div");
+    box.id = "sidebarTouchArea";
+    const w = sidebar.getBoundingClientRect().width;
+    box.style.cssText = `position:fixed;top:0;bottom:0;right:0;z-index:999;touch-action:none;left:${w}px;`;
+    document.body.appendChild(box);
+    bindScrollEvents(box);
+    box.addEventListener("click", () => {
+      var _a, _b;
+      if (!cursorRowId || _rowIndex.length === 0) return;
+      const idx = _getCursorRowIndex();
+      if (idx < 0 || !_rowIndex[idx]) return;
+      const hit = _rowIndex[idx];
+      const hitData = hit.data || {};
+      if (hitData.isDir) {
+        if (hitData.isExpanded) {
+          doCollapse(hit, hitData);
+        } else {
+          doExpand(hit, hitData);
+        }
+      } else {
+        (_b = (_a = hit.gesture) == null ? void 0 : _a.onTap) == null ? void 0 : _b.call(_a);
+      }
+    });
+    let sx = 0;
+    box.addEventListener("touchstart", (e) => {
+      sx = e.touches[0].clientX;
+    }, { passive: true });
+    box.addEventListener("touchend", (e) => {
+      if (sx - e.changedTouches[0].clientX > 60) closeSidebar();
+    });
+  }
+  function bindScrollEvents(canvas) {
     let _touchIsCursor = false;
     let wheelTarget = 0;
     let wheelRaf = 0;
@@ -10273,54 +10310,13 @@
       }
       flingRaf = requestAnimationFrame(fling);
     }, { passive: true });
-    if (rightArea) {
-      const touchArray = (tl) => {
-        const a = [];
-        for (let i = 0; i < tl.length; i++) a.push(tl[i]);
-        return a;
-      };
-      rightArea.addEventListener("wheel", (e) => {
-        e.preventDefault();
-        canvas.dispatchEvent(new WheelEvent("wheel", {
-          deltaX: e.deltaX,
-          deltaY: e.deltaY,
-          deltaZ: e.deltaZ,
-          deltaMode: e.deltaMode,
-          bubbles: false,
-          cancelable: true
-        }));
-      }, { passive: false });
-      for (const t of ["touchstart", "touchmove", "touchend"]) {
-        rightArea.addEventListener(t, (e) => {
-          const te = e;
-          canvas.dispatchEvent(new TouchEvent(t, {
-            touches: touchArray(te.touches),
-            targetTouches: touchArray(te.targetTouches),
-            changedTouches: touchArray(te.changedTouches),
-            bubbles: false,
-            cancelable: true
-          }));
-        }, { passive: true });
-      }
-    }
   }
-  function bindClickEvents(canvas, _dpr, rightArea) {
+  function bindClickEvents(canvas, _dpr) {
     canvas.addEventListener("click", (e) => {
       if (!renderer) return;
       _clickQueue.push({ offsetX: e.offsetX, offsetY: e.offsetY });
       processClickQueue();
     });
-    if (rightArea) {
-      rightArea.addEventListener("click", (e) => {
-        if (!renderer) return;
-        const rect = canvas.getBoundingClientRect();
-        _clickQueue.push({
-          offsetX: e.clientX - rect.left,
-          offsetY: e.clientY - rect.top
-        });
-        processClickQueue();
-      });
-    }
   }
   function processClickQueue() {
     var _a, _b;
