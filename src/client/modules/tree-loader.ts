@@ -147,7 +147,11 @@ export async function loadFileTree(rootPath: string): Promise<void> {
       }
     }
   }
+  // 清理 animatingPath，防止后续操作读到脏值
+  markAnimatingPath(null);
+
 }
+
 
 /**
  * 初始化：劫持 setExpanded，展开时加载数据并触发展开动画。

@@ -101,6 +101,8 @@ export function triggerExpandAnimation(path: string): void {
         renderer?.setRoot(renderer!.getRoot()!);
       }).finally(() => {
         _animBusy = false; _animBusyAt = 0;
+        const _root = renderer?.getRoot();
+        if (_root) { _rebuildRowIndex(_root); }
         processClickQueue();
       });
     },
@@ -506,6 +508,7 @@ function _snapCursorToCenter(): void {
   if (_animBusy) return;
   const idx = _getCenterRowIndex();
   if (idx >= 0 && _rowIndex[idx] && _rowIndex[idx]!.id !== cursorRowId) {
+    console.log('[snapCursorToCenter] snapping from', cursorRowId, 'to', _rowIndex[idx]!.id, 'centerIdx=', idx);
     moveCursorTo(_rowIndex[idx]!);
   }
 }
@@ -663,6 +666,7 @@ function bindScrollEvents(canvas: HTMLElement): void {
     if (cursorFlingRaf) { cancelAnimationFrame(cursorFlingRaf); cursorFlingRaf = 0; }
 
     _touchIsCursor = _isCursorMode();
+    console.log('[touchstart] _touchIsCursor=', _touchIsCursor, ' _isCursorMode()=', _isCursorMode());
 
     if (_touchIsCursor) {
       cursorTouchBase = Math.max(0, _getCursorRowIndex());
@@ -917,8 +921,10 @@ function processClickQueue(): void {
         const isExpanded = hitData.isExpanded;
         if (isDir) {
           if (isExpanded) {
+            console.log('[processClickQueue] doCollapse path=', hitData.path);
             doCollapse(hit, hitData);
           } else {
+            console.log('[processClickQueue] doExpand path=', hitData.path);
             doExpand(hit, hitData);
           }
           return;  // 动画函数完成后会 processClickQueue()
@@ -1021,6 +1027,8 @@ function doExpand(hit: Box, hitData: any): void {
         renderer?.setRoot(renderer!.getRoot()!);
       }).finally(() => {
         _animBusy = false; _animBusyAt = 0;
+        const _root = renderer?.getRoot();
+        if (_root) { _rebuildRowIndex(_root); }
         processClickQueue();
       });
     },
@@ -1042,6 +1050,7 @@ function doCollapse(hit: Box, hitData: any): void {
   const tl = gsap.timeline({
     onComplete: () => {
       _animBusy = false; _animBusyAt = 0;
+      animatingPath = null;  // 防御性清空：防止 rebuildTree 读到上一个展开的脏值
       hit.gesture!.onTap!();  // 切换状态 → rebuildTree（无锁，正常执行）
       processClickQueue();    // 处理队列中下一个点击
     },
@@ -1215,9 +1224,31 @@ function rebuildTree(): void {
   // 重建光标步进行索引
   _rebuildRowIndex(newRoot);
 
+  // 滚动模式下：确保光标在视口中央附近，防止光标偏离触发边界锁残留
+  if (!_isCursorMode() && cursorRowId) {
+    snapToCenterRow(newRoot, canvasH);
+  }
+
   if (!renderer.isRunning) {
     renderer.start();
   }
+
+  // 清空 animatingPath，防止后续 rebuildTree（如来自 doCollapse）读到脏值
+  animatingPath = null;
+
+  // [DIAG] 展开/折叠后光标状态追踪
+  const diagRoot = renderer?.getRoot();
+  const diagCS = diagRoot?.getContentSize();
+  console.log('[rebuildTree] _isCursorMode=', _isCursorMode(),
+    ' scrollY=', diagRoot?.scrollY,
+    ' contentH=', diagCS?.height,
+    ' viewportH=', (diagRoot?.height || 0),
+    ' maxY=', diagRoot?.getMaxScroll().maxY,
+    ' _rowIndexLen=', _rowIndex.length,
+    ' cursorRowId=', cursorRowId,
+    ' cursorIdx=', _getCursorRowIndex(),
+    ' prevCursorRowId=', prevCursorRowId,
+    ' animatingPath=', animatingPath);
 }
 /** 在 root 子树中按 id 查找 Box */
 function findBoxById(root: Box, id: string): Box | null {
@@ -1390,3 +1421,110 @@ async function slideInRows(container: Box, root: Box, selfToggle?: any): Promise
   }
   await expandNext(0);
 }
+
+// ============================================================
+// 调试面板（自包含，不依赖 app.ts）
+// ============================================================
+(() => {
+  const MAX = 80;
+  const entries: string[] = [];
+
+  // 拦截 console.log
+  const _origLog = console.log.bind(console);
+  console.log = function (...args: any[]) {
+    _origLog(...args);
+    const msg = args.map(a => (typeof a === 'object' && a !== null) ? JSON.stringify(a) : String(a)).join(' ');
+    const t = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+    entries.unshift(`[${t}] ${msg}`);
+    if (entries.length > MAX) entries.pop();
+    _renderDbg();
+  };
+
+  let _panel: HTMLElement | null = null;
+  function _renderDbg() {
+    if (!_panel) return;
+    const list = _panel.querySelector('.dbg-list');
+    if (list) list.innerHTML = entries.map(e => `<div style="border-bottom:1px solid rgba(255,255,255,0.06);padding:2px 0;font-size:11px;word-break:break-all">${e.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`).join('');
+  }
+
+  function _ensurePanel() {
+    if (_panel) return;
+    // Toggle button
+    const btn = document.createElement('button');
+    btn.textContent = 'D';
+    btn.style.cssText = 'position:fixed;top:6px;right:8px;z-index:99999;width:30px;height:30px;border-radius:50%;background:rgba(0,212,255,0.85);color:#000;border:none;font-size:13px;font-weight:bold;cursor:pointer';
+    btn.addEventListener('click', () => {
+      if (!_panel) return;
+      const open = _panel.style.transform === 'translateX(0px)';
+      _panel.style.transform = open ? 'translateX(100%)' : 'translateX(0px)';
+    });
+    document.body.appendChild(btn);
+
+    // Panel
+    _panel = document.createElement('div');
+    _panel.style.cssText = 'position:fixed;top:0;right:0;width:88%;max-width:380px;height:100%;background:#0d1117;z-index:99998;transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;font-family:monospace;color:#c9d1d9;box-shadow:-4px 0 20px rgba(0,0,0,0.5)';
+
+    // Header
+    const hdr = document.createElement('div');
+    hdr.style.cssText = 'padding:10px 12px;border-bottom:1px solid #21262d;display:flex;align-items:center;justify-content:space-between;flex-shrink:0';
+    hdr.innerHTML = '<span style="font-weight:bold;font-size:14px">调试日志</span><div></div>';
+    const btns = hdr.querySelector('div')!;
+
+    const cpBtn = document.createElement('button');
+    cpBtn.textContent = '复制';
+    cpBtn.style.cssText = 'background:#21262d;color:#58a6ff;border:none;padding:4px 10px;border-radius:4px;font-size:12px;margin-right:6px;cursor:pointer';
+    cpBtn.addEventListener('click', async () => {
+      const text = entries.join('\n');
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.style.cssText = 'position:fixed;left:-9999px';
+        document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+      }
+    });
+    btns.appendChild(cpBtn);
+
+    const clrBtn = document.createElement('button');
+    clrBtn.textContent = '清空';
+    clrBtn.style.cssText = 'background:#21262d;color:#c9d1d9;border:none;padding:4px 10px;border-radius:4px;font-size:12px;margin-right:6px;cursor:pointer';
+    clrBtn.addEventListener('click', () => { entries.length = 0; _renderDbg(); });
+    btns.appendChild(clrBtn);
+
+    const clsBtn = document.createElement('button');
+    clsBtn.textContent = '×';
+    clsBtn.style.cssText = 'background:none;border:none;color:#8b949e;font-size:22px;cursor:pointer;padding:0 4px';
+    clsBtn.addEventListener('click', () => {
+      if (_panel) _panel.style.transform = 'translateX(100%)';
+    });
+    btns.appendChild(clsBtn);
+    hdr.appendChild(btns);
+    _panel.appendChild(hdr);
+
+    // Log list
+    const list = document.createElement('div');
+    list.className = 'dbg-list';
+    list.style.cssText = 'flex:1;overflow-y:auto;padding:8px 12px;-webkit-overflow-scrolling:touch';
+    _panel.appendChild(list);
+
+    document.body.appendChild(_panel);
+    _renderDbg();
+
+    // Swipe right to close
+    let sx = 0;
+    _panel.addEventListener('touchstart', (e) => { sx = e.touches[0].clientX; }, { passive: true });
+    _panel.addEventListener('touchend', (e) => {
+      if (e.changedTouches[0].clientX - sx > 80) {
+        _panel!.style.transform = 'translateX(100%)';
+      }
+    });
+  }
+
+  // 页面加载后创建
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _ensurePanel);
+  } else {
+    _ensurePanel();
+  }
+})();

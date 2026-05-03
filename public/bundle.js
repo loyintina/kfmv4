@@ -9663,6 +9663,10 @@
         }).finally(() => {
           _animBusy = false;
           _animBusyAt = 0;
+          const _root = renderer == null ? void 0 : renderer.getRoot();
+          if (_root) {
+            _rebuildRowIndex(_root);
+          }
           processClickQueue();
         });
       }
@@ -10006,6 +10010,7 @@
     if (_animBusy) return;
     const idx = _getCenterRowIndex();
     if (idx >= 0 && _rowIndex[idx] && _rowIndex[idx].id !== cursorRowId) {
+      console.log("[snapCursorToCenter] snapping from", cursorRowId, "to", _rowIndex[idx].id, "centerIdx=", idx);
       moveCursorTo(_rowIndex[idx]);
     }
   }
@@ -10150,6 +10155,7 @@
         cursorFlingRaf = 0;
       }
       _touchIsCursor = _isCursorMode();
+      console.log("[touchstart] _touchIsCursor=", _touchIsCursor, " _isCursorMode()=", _isCursorMode());
       if (_touchIsCursor) {
         cursorTouchBase = Math.max(0, _getCursorRowIndex());
         cursorTouchStartY = y;
@@ -10372,8 +10378,10 @@
           const isExpanded = hitData.isExpanded;
           if (isDir) {
             if (isExpanded) {
+              console.log("[processClickQueue] doCollapse path=", hitData.path);
               doCollapse(hit, hitData);
             } else {
+              console.log("[processClickQueue] doExpand path=", hitData.path);
               doExpand(hit, hitData);
             }
             return;
@@ -10471,6 +10479,10 @@
         }).finally(() => {
           _animBusy = false;
           _animBusyAt = 0;
+          const _root = renderer == null ? void 0 : renderer.getRoot();
+          if (_root) {
+            _rebuildRowIndex(_root);
+          }
           processClickQueue();
         });
       }
@@ -10492,6 +10504,7 @@
       onComplete: () => {
         _animBusy = false;
         _animBusyAt = 0;
+        animatingPath = null;
         hit.gesture.onTap();
         processClickQueue();
       }
@@ -10639,9 +10652,37 @@
       }
     }
     _rebuildRowIndex(newRoot);
+    if (!_isCursorMode() && cursorRowId) {
+      snapToCenterRow(newRoot, canvasH);
+    }
     if (!renderer.isRunning) {
       renderer.start();
     }
+    animatingPath = null;
+    const diagRoot = renderer == null ? void 0 : renderer.getRoot();
+    const diagCS = diagRoot == null ? void 0 : diagRoot.getContentSize();
+    console.log(
+      "[rebuildTree] _isCursorMode=",
+      _isCursorMode(),
+      " scrollY=",
+      diagRoot == null ? void 0 : diagRoot.scrollY,
+      " contentH=",
+      diagCS == null ? void 0 : diagCS.height,
+      " viewportH=",
+      (diagRoot == null ? void 0 : diagRoot.height) || 0,
+      " maxY=",
+      diagRoot == null ? void 0 : diagRoot.getMaxScroll().maxY,
+      " _rowIndexLen=",
+      _rowIndex.length,
+      " cursorRowId=",
+      cursorRowId,
+      " cursorIdx=",
+      _getCursorRowIndex(),
+      " prevCursorRowId=",
+      prevCursorRowId,
+      " animatingPath=",
+      animatingPath
+    );
   }
   function findBoxById(root, id) {
     for (const child of root.children) {
@@ -10786,6 +10827,98 @@
     }
     await expandNext(0);
   }
+  (() => {
+    const MAX = 80;
+    const entries = [];
+    const _origLog = console.log.bind(console);
+    console.log = function(...args) {
+      _origLog(...args);
+      const msg = args.map((a) => typeof a === "object" && a !== null ? JSON.stringify(a) : String(a)).join(" ");
+      const t = (/* @__PURE__ */ new Date()).toLocaleTimeString("zh-CN", { hour12: false });
+      entries.unshift(`[${t}] ${msg}`);
+      if (entries.length > MAX) entries.pop();
+      _renderDbg();
+    };
+    let _panel = null;
+    function _renderDbg() {
+      if (!_panel) return;
+      const list = _panel.querySelector(".dbg-list");
+      if (list) list.innerHTML = entries.map((e) => `<div style="border-bottom:1px solid rgba(255,255,255,0.06);padding:2px 0;font-size:11px;word-break:break-all">${e.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>`).join("");
+    }
+    function _ensurePanel() {
+      if (_panel) return;
+      const btn = document.createElement("button");
+      btn.textContent = "D";
+      btn.style.cssText = "position:fixed;top:6px;right:8px;z-index:99999;width:30px;height:30px;border-radius:50%;background:rgba(0,212,255,0.85);color:#000;border:none;font-size:13px;font-weight:bold;cursor:pointer";
+      btn.addEventListener("click", () => {
+        if (!_panel) return;
+        const open = _panel.style.transform === "translateX(0px)";
+        _panel.style.transform = open ? "translateX(100%)" : "translateX(0px)";
+      });
+      document.body.appendChild(btn);
+      _panel = document.createElement("div");
+      _panel.style.cssText = "position:fixed;top:0;right:0;width:88%;max-width:380px;height:100%;background:#0d1117;z-index:99998;transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;font-family:monospace;color:#c9d1d9;box-shadow:-4px 0 20px rgba(0,0,0,0.5)";
+      const hdr = document.createElement("div");
+      hdr.style.cssText = "padding:10px 12px;border-bottom:1px solid #21262d;display:flex;align-items:center;justify-content:space-between;flex-shrink:0";
+      hdr.innerHTML = '<span style="font-weight:bold;font-size:14px">\u8C03\u8BD5\u65E5\u5FD7</span><div></div>';
+      const btns = hdr.querySelector("div");
+      const cpBtn = document.createElement("button");
+      cpBtn.textContent = "\u590D\u5236";
+      cpBtn.style.cssText = "background:#21262d;color:#58a6ff;border:none;padding:4px 10px;border-radius:4px;font-size:12px;margin-right:6px;cursor:pointer";
+      cpBtn.addEventListener("click", async () => {
+        const text = entries.join("\n");
+        try {
+          await navigator.clipboard.writeText(text);
+        } catch {
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          ta.style.cssText = "position:fixed;left:-9999px";
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+        }
+      });
+      btns.appendChild(cpBtn);
+      const clrBtn = document.createElement("button");
+      clrBtn.textContent = "\u6E05\u7A7A";
+      clrBtn.style.cssText = "background:#21262d;color:#c9d1d9;border:none;padding:4px 10px;border-radius:4px;font-size:12px;margin-right:6px;cursor:pointer";
+      clrBtn.addEventListener("click", () => {
+        entries.length = 0;
+        _renderDbg();
+      });
+      btns.appendChild(clrBtn);
+      const clsBtn = document.createElement("button");
+      clsBtn.textContent = "\xD7";
+      clsBtn.style.cssText = "background:none;border:none;color:#8b949e;font-size:22px;cursor:pointer;padding:0 4px";
+      clsBtn.addEventListener("click", () => {
+        if (_panel) _panel.style.transform = "translateX(100%)";
+      });
+      btns.appendChild(clsBtn);
+      hdr.appendChild(btns);
+      _panel.appendChild(hdr);
+      const list = document.createElement("div");
+      list.className = "dbg-list";
+      list.style.cssText = "flex:1;overflow-y:auto;padding:8px 12px;-webkit-overflow-scrolling:touch";
+      _panel.appendChild(list);
+      document.body.appendChild(_panel);
+      _renderDbg();
+      let sx = 0;
+      _panel.addEventListener("touchstart", (e) => {
+        sx = e.touches[0].clientX;
+      }, { passive: true });
+      _panel.addEventListener("touchend", (e) => {
+        if (e.changedTouches[0].clientX - sx > 80) {
+          _panel.style.transform = "translateX(100%)";
+        }
+      });
+    }
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", _ensurePanel);
+    } else {
+      _ensurePanel();
+    }
+  })();
 
   // src/client/modules/ui.ts
   function openSidebar() {
@@ -12996,6 +13129,7 @@
         }
       }
     }
+    markAnimatingPath(null);
   }
   function initLazyLoader() {
     const originalSetExpanded = KFMState.setExpanded.bind(KFMState);
