@@ -3719,10 +3719,12 @@
       this.ctx.fillRect(0, 0, this.width, this.height);
       if (this._root) {
         this._tickAndRender(this._root, now, 1);
-        try {
-          this._manageInputs(this._root);
-        } catch (e) {
-          console.error("_manageInputs error", e);
+        if (this._frameCount % 10 === 0) {
+          try {
+            this._manageInputs(this._root);
+          } catch (e) {
+            console.error("_manageInputs error", e);
+          }
         }
       }
     }
@@ -9817,7 +9819,7 @@
     canvas.style.display = "block";
     fileTree.innerHTML = "";
     fileTree.appendChild(canvas);
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     renderer = new Renderer(canvas, {
       backgroundColor: "rgba(10,10,15,0.85)",
       dpr
@@ -9867,7 +9869,7 @@
     canvas.style.display = "block";
     fileTree.innerHTML = "";
     fileTree.appendChild(canvas);
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     renderer = new Renderer(canvas, {
       backgroundColor: "rgba(10,10,15,0.85)",
       dpr

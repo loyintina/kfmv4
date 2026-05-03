@@ -130,10 +130,13 @@ export class Renderer {
     // 渲染树
     if (this._root) {
       this._tickAndRender(this._root, now, 1);
-      try {
-        this._manageInputs(this._root);
-      } catch (e) {
-        console.error('_manageInputs error', e);
+      // _manageInputs 含全树 flatten()，仅每 10 帧执行一次（~6Hz），大幅降低滚动时 CPU 开销
+      if (this._frameCount % 10 === 0) {
+        try {
+          this._manageInputs(this._root);
+        } catch (e) {
+          console.error('_manageInputs error', e);
+        }
       }
     }
   }
