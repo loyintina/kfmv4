@@ -331,8 +331,8 @@ export function onSidebarOpen(): void {
     styleRegistry.subscribe(() => rebuildTree());
     window.addEventListener('resize', () => renderer?.resize());
 
-    bindScrollEvents(canvas);
-    bindClickEvents(canvas, dpr);
+    bindScrollEvents(canvas, document.getElementById('main') ?? void 0);
+    bindClickEvents(canvas, dpr, document.getElementById('main') ?? void 0);
   });
 
   // 等侧栏 CSS 过渡结束后再 resize 一次
@@ -393,8 +393,8 @@ export function initTreeRenderer(): void {
   styleRegistry.subscribe(() => rebuildTree());
   window.addEventListener('resize', () => renderer?.resize());
 
-  bindScrollEvents(canvas);
-  bindClickEvents(canvas, dpr);
+  bindScrollEvents(canvas, document.getElementById('main') ?? void 0);
+  bindClickEvents(canvas, dpr, document.getElementById('main') ?? void 0);
 }
 
 // ============================================================
@@ -487,7 +487,7 @@ function _snapCursorToCenter(): void {
   }
 }
 
-function bindScrollEvents(canvas: HTMLCanvasElement): void {
+function bindScrollEvents(canvas: HTMLCanvasElement, rightArea?: HTMLElement): void {
   // 记录当前触摸手势属于哪种模式（touchstart 时判定，touchend 时消费）
   let _touchIsCursor = false;
 
@@ -794,19 +794,61 @@ function bindScrollEvents(canvas: HTMLCanvasElement): void {
     }
     flingRaf = requestAnimationFrame(fling);
   }, { passive: true });
+
+  // ===== 右侧空白区域事件转发 =====
+  // 让左栏右侧空白区域的触摸/滚轮也能控制左栏滚动
+  if (rightArea) {
+    const touchArray = (tl: TouchList): Touch[] => {
+      const a: Touch[] = [];
+      for (let i = 0; i < tl.length; i++) a.push(tl[i]!);
+      return a;
+    };
+    rightArea.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      canvas.dispatchEvent(new WheelEvent('wheel', {
+        deltaX: e.deltaX, deltaY: e.deltaY, deltaZ: e.deltaZ,
+        deltaMode: e.deltaMode,
+        bubbles: false, cancelable: true,
+      }));
+    }, { passive: false });
+    for (const t of ['touchstart', 'touchmove', 'touchend'] as const) {
+      rightArea.addEventListener(t, (e: Event) => {
+        const te = e as TouchEvent;
+        canvas.dispatchEvent(new TouchEvent(t, {
+          touches: touchArray(te.touches),
+          targetTouches: touchArray(te.targetTouches),
+          changedTouches: touchArray(te.changedTouches),
+          bubbles: false, cancelable: true,
+        }));
+      }, { passive: true });
+    }
+  }
 }
 
 // ============================================================
 // 点击事件（光标优先 → 二次点击执行 onTap��
 // ============================================================
 
-function bindClickEvents(canvas: HTMLCanvasElement, _dpr: number): void {
+function bindClickEvents(canvas: HTMLCanvasElement, _dpr: number, rightArea?: HTMLElement): void {
   canvas.addEventListener('click', (e) => {
     if (!renderer) return;
 
     _clickQueue.push({ offsetX: e.offsetX, offsetY: e.offsetY });
     processClickQueue();
   });
+
+  // 右侧空白区域点击 → 转换为 canvas 本地坐标
+  if (rightArea) {
+    rightArea.addEventListener('click', (e) => {
+      if (!renderer) return;
+      const rect = canvas.getBoundingClientRect();
+      _clickQueue.push({
+        offsetX: e.clientX - rect.left,
+        offsetY: e.clientY - rect.top,
+      });
+      processClickQueue();
+    });
+  }
 }
 
 /**
