@@ -9667,6 +9667,10 @@
           if (_root) {
             _rebuildRowIndex(_root);
           }
+          if (cursorRowId) {
+            const _t = findBoxById(_root, cursorRowId);
+            if (_t) moveCursorTo(_t, false);
+          }
           processClickQueue();
         });
       }
@@ -10483,6 +10487,10 @@
           if (_root) {
             _rebuildRowIndex(_root);
           }
+          if (cursorRowId) {
+            const _t = findBoxById(_root, cursorRowId);
+            if (_t) moveCursorTo(_t, false);
+          }
           processClickQueue();
         });
       }
@@ -10550,7 +10558,7 @@
     return null;
   }
   function rebuildTree() {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d, _e, _f;
     if (!renderer) return;
     if (_animBusy) {
       if (_animBusyAt && Date.now() - _animBusyAt > 3e3) {
@@ -10563,20 +10571,21 @@
     }
     const prevScrollY = (_b = (_a = renderer.getRoot()) == null ? void 0 : _a.scrollY) != null ? _b : 0;
     const prevCursorRowId = cursorRowId;
+    const prevCursorY = (_c = cursorBox == null ? void 0 : cursorBox.y) != null ? _c : -1;
     cursorBox = null;
     cursorRowId = null;
     const canvas = document.getElementById("tree-canvas");
-    const cw = ((_c = canvas == null ? void 0 : canvas.clientWidth) != null ? _c : 0) || 295;
+    const cw = ((_d = canvas == null ? void 0 : canvas.clientWidth) != null ? _d : 0) || 295;
     const rightMargin = cw - 8;
     const rootBox = buildSidebarTree(cw, rightMargin);
     if (canvas) rootBox.width = cw;
-    const canvasH = ((_d = canvas == null ? void 0 : canvas.clientHeight) != null ? _d : 0) || 618;
+    const canvasH = ((_e = canvas == null ? void 0 : canvas.clientHeight) != null ? _e : 0) || 618;
     if (canvas) {
       rootBox.height = canvasH;
     }
     if (animatingPath) {
       const titleRow = findBoxById(rootBox, `title-${animatingPath}`);
-      const toggle = (_e = titleRow == null ? void 0 : titleRow.children) == null ? void 0 : _e.find((c) => {
+      const toggle = (_f = titleRow == null ? void 0 : titleRow.children) == null ? void 0 : _f.find((c) => {
         var _a2;
         return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
       });
@@ -10644,7 +10653,11 @@
       if (prevCursorRowId) {
         const target = findBoxById(newRoot, prevCursorRowId);
         if (target) {
-          moveCursorTo(target);
+          if (animatingPath && prevCursorY >= 0) {
+            cursorRowId = prevCursorRowId;
+          } else {
+            moveCursorTo(target);
+          }
         } else {
           snapToCenterRow(newRoot, canvasH);
         }

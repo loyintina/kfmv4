@@ -103,6 +103,8 @@ export function triggerExpandAnimation(path: string): void {
         _animBusy = false; _animBusyAt = 0;
         const _root = renderer?.getRoot();
         if (_root) { _rebuildRowIndex(_root); }
+        // ä¿®æ­£å¨ç»ååæ çä½ç½®
+        if (cursorRowId) { const _t = findBoxById(_root, cursorRowId); if (_t) moveCursorTo(_t, false); }
         processClickQueue();
       });
     },
@@ -1029,6 +1031,8 @@ function doExpand(hit: Box, hitData: any): void {
         _animBusy = false; _animBusyAt = 0;
         const _root = renderer?.getRoot();
         if (_root) { _rebuildRowIndex(_root); }
+        // ä¿®æ­£å¨ç»ååæ çä½ç½®
+        if (cursorRowId) { const _t = findBoxById(_root, cursorRowId); if (_t) moveCursorTo(_t, false); }
         processClickQueue();
       });
     },
@@ -1118,6 +1122,8 @@ function rebuildTree(): void {
   // 保存当前滚动位置和光标行
   const prevScrollY = renderer.getRoot()?.scrollY ?? 0;
   const prevCursorRowId = cursorRowId;
+   // 动画重建时，保存旧光标位置以保持视觉稳定
+  const prevCursorY = cursorBox?.y ?? -1;
 
   // 重置光标实例（旧 root 销毁后 cursorBox ��向的 Box 已无效）
   cursorBox = null;
@@ -1210,9 +1216,12 @@ function rebuildTree(): void {
       // 尝试恢复光���到之前的行
       const target = findBoxById(newRoot, prevCursorRowId);
       if (target) {
-        moveCursorTo(target);
+        if (animatingPath && prevCursorY >= 0) {
+          cursorRowId = prevCursorRowId;
+        } else {
+          moveCursorTo(target);
+        }
       } else {
-        // ���已不存在，吸附到视口中���最近的行
         snapToCenterRow(newRoot, canvasH);
       }
     } else {
