@@ -10652,9 +10652,6 @@
       }
     }
     _rebuildRowIndex(newRoot);
-    if (!_isCursorMode() && cursorRowId) {
-      snapToCenterRow(newRoot, canvasH);
-    }
     if (!renderer.isRunning) {
       renderer.start();
     }

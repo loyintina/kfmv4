@@ -1224,10 +1224,6 @@ function rebuildTree(): void {
   // 重建光标步进行索引
   _rebuildRowIndex(newRoot);
 
-  // 滚动模式下：确保光标在视口中央附近，防止光标偏离触发边界锁残留
-  if (!_isCursorMode() && cursorRowId) {
-    snapToCenterRow(newRoot, canvasH);
-  }
 
   if (!renderer.isRunning) {
     renderer.start();
