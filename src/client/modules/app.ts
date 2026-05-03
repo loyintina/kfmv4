@@ -142,6 +142,30 @@ export async function initApp(): Promise<void> {
     onResize();
   }
 
+  // 眼睛按钮：显示/隐藏隐藏文件
+  const eyeBtn = document.getElementById('toggleHiddenBtn');
+  if (eyeBtn) {
+    eyeBtn.addEventListener('click', () => {
+      KFMState.toggleHidden();
+      eyeBtn.classList.toggle('active');
+    });
+  }
+
+  // 侧栏召唤按钮
+  const toggleBtn = document.getElementById('sidebarToggleBtn');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      const sidebar = document.getElementById('sidebar');
+      if (sidebar) {
+        if (sidebar.classList.contains('open')) {
+          window.closeSidebar?.();
+        } else {
+          window.openSidebar?.();
+        }
+      }
+    });
+  }
+
   // AI输入框自动高度
   const aiInput = document.getElementById('aiInput') as HTMLTextAreaElement | null;
   if (aiInput) {

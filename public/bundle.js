@@ -175,6 +175,27 @@
       vv.addEventListener("resize", onResize);
       onResize();
     }
+    const eyeBtn = document.getElementById("toggleHiddenBtn");
+    if (eyeBtn) {
+      eyeBtn.addEventListener("click", () => {
+        KFMState.toggleHidden();
+        eyeBtn.classList.toggle("active");
+      });
+    }
+    const toggleBtn = document.getElementById("sidebarToggleBtn");
+    if (toggleBtn) {
+      toggleBtn.addEventListener("click", () => {
+        var _a, _b;
+        const sidebar = document.getElementById("sidebar");
+        if (sidebar) {
+          if (sidebar.classList.contains("open")) {
+            (_a = window.closeSidebar) == null ? void 0 : _a.call(window);
+          } else {
+            (_b = window.openSidebar) == null ? void 0 : _b.call(window);
+          }
+        }
+      });
+    }
     const aiInput = document.getElementById("aiInput");
     if (aiInput) {
       aiInput.addEventListener("input", () => {

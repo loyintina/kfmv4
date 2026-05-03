@@ -75,6 +75,52 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 .operation-toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--surface);border-left:3px solid var(--primary);border-radius:8px;padding:12px 20px;box-shadow:0 4px 12px rgba(0,0,0,.5);z-index:1500;opacity:0;pointer-events:none;transition:opacity .3s}
 .operation-toast.show{opacity:1}
 /* AI对话输入栏 */
+
+/* 侧栏召唤按钮 */
+.sidebar-toggle-btn{
+  position:fixed;
+  top:16px;
+  left:16px;
+  z-index:150;
+  width:40px;
+  height:40px;
+  border:none;
+  border-radius:12px;
+  background:rgba(18,18,26,.75);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  cursor:pointer;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  box-shadow:0 4px 16px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.08);
+  transition:all .25s cubic-bezier(.34,1.56,.64,1);
+  border:1px solid rgba(124,58,237,.25);
+}
+.sidebar-toggle-btn:hover{
+  transform:translateY(-1px) scale(1.05);
+  border-color:rgba(0,212,255,.4);
+  box-shadow:0 6px 24px rgba(124,58,237,.25),inset 0 1px 0 rgba(255,255,255,.1)
+}
+.sidebar-toggle-btn:active{
+  transform:scale(.92)
+}
+.sidebar-toggle-btn span{
+  display:block;
+  width:20px;
+  height:2px;
+  border-radius:2px;
+  background:linear-gradient(90deg,#7c3aed,#00d4ff);
+  transition:all .25s cubic-bezier(.34,1.56,.64,1);
+  opacity:.85
+}
+.sidebar-toggle-btn:hover span{
+  opacity:1;
+  box-shadow:0 0 8px rgba(0,212,255,.3)
+}
+
 /* 悬浮光球 */
 .light-orb{position:fixed;width:36px;height:36px;background:radial-gradient(circle at 30% 30%,rgba(124,58,237,.9),rgba(124,58,237,.4),transparent 70%);border-radius:50%;cursor:grab;z-index:210;box-shadow:0 0 16px 6px rgba(124,58,237,.5),0 0 32px 12px rgba(124,58,237,.3);transition:box-shadow .2s;bottom:140px;right:24px;touch-action:none}
 .light-orb:active{cursor:grabbing;box-shadow:0 0 24px 10px rgba(124,58,237,.6),0 0 48px 20px rgba(124,58,237,.4)}/* AI输入栏高级样式 */
