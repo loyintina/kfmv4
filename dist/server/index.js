@@ -40,7 +40,7 @@ function setupApiRoutes(router) {
       let readDirRecursive2 = function(dirPath, depth) {
         if (depth <= 0) return [];
         try {
-          return fs.readdirSync(dirPath).filter((name) => !name.startsWith(".")).map((name) => {
+          return fs.readdirSync(dirPath).map((name) => {
             const fullPath = path.join(dirPath, name);
             try {
               const stats = fs.statSync(fullPath);

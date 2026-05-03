@@ -56,15 +56,6 @@
 
   // src/client/modules/app.ts
   var API = "/kfmv4/api";
-  function rlog(msg) {
-    const t = (/* @__PURE__ */ new Date()).toLocaleTimeString("zh-CN", { hour12: false });
-    fetch(API + "/files/write", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ path: "/root/kfmv4/debug-swipe.log", content: t + " " + msg + "\n", append: true })
-    }).catch(() => {
-    });
-  }
   function showToast(msg) {
     const toast = document.getElementById("operationToast");
     if (!toast) return;
@@ -74,97 +65,16 @@
       toast.classList.remove("show");
     }, 2e3);
   }
-  var logs = [];
-  var MAX_LOGS = 100;
-  function escapeHtml(str) {
-    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  }
-  function renderLogs() {
-    const content = document.getElementById("logContent");
-    if (!content) return;
-    content.innerHTML = logs.map((log) => {
-      const cls = log.type === "error" ? "error" : log.type === "success" ? "success" : "";
-      return `<div class="log-item ${cls}"><span class="time">${log.time}</span>${escapeHtml(log.msg)}</div>`;
-    }).join("");
-  }
-  function addLog(msg, type = "info") {
-    const time = (/* @__PURE__ */ new Date()).toLocaleTimeString();
-    logs.unshift({ time, msg: String(msg), type });
-    if (logs.length > MAX_LOGS) logs.pop();
-    renderLogs();
-  }
-  function openLogPanel() {
-    var _a;
-    (_a = document.getElementById("logPanel")) == null ? void 0 : _a.classList.add("open");
-    renderLogs();
-  }
-  function closeLogPanel() {
-    var _a;
-    (_a = document.getElementById("logPanel")) == null ? void 0 : _a.classList.remove("open");
-  }
-  function clearLogs() {
-    logs.length = 0;
-    renderLogs();
-  }
-  function copyLogs() {
-    const text = logs.map((l) => `[${l.time}] ${l.msg}`).join(String.fromCharCode(10));
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(text).then(() => showToast("\u65E5\u5FD7\u5DF2\u590D\u5236"));
-    } else {
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      ta.style.position = "fixed";
-      ta.style.left = "-9999px";
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
-      showToast("\u65E5\u5FD7\u5DF2\u590D\u5236");
-    }
-  }
-  function initLogPanelSwipe() {
-    const panel = document.getElementById("logPanel");
-    if (!panel) return;
-    let startX = 0;
-    panel.addEventListener("touchstart", (e) => {
-      startX = e.touches[0].clientX;
-    }, { passive: true });
-    panel.addEventListener("touchmove", (e) => {
-      const dx = e.touches[0].clientX - startX;
-      if (dx > 0) panel.style.transform = `translateX(${dx}px)`;
-    }, { passive: true });
-    panel.addEventListener("touchend", (e) => {
-      const dx = e.changedTouches[0].clientX - startX;
-      panel.style.transform = "";
-      if (dx > 80) closeLogPanel();
-    }, { passive: true });
-  }
-  var originalLog = console.log;
-  var originalError = console.error;
-  console.log = function(...args) {
-    originalLog.apply(console, args);
-    addLog(args.map((a) => typeof a === "object" ? JSON.stringify(a) : a).join(" "));
-  };
-  console.error = function(...args) {
-    originalError.apply(console, args);
-    addLog(args.map((a) => typeof a === "object" ? JSON.stringify(a) : a).join(" "), "error");
-  };
   function exposeGlobals() {
     window.API = API;
+    window.KFMState = KFMState;
     window.selectedFile = KFMState.selectedFile;
     window.expandedPaths = KFMState.expandedPaths;
-    window.showHidden = KFMState.showHidden;
+    Object.defineProperty(window, "showHidden", { get: () => KFMState.showHidden, configurable: true });
     window.showToast = showToast;
-    window.addLog = addLog;
-    window.openLogPanel = openLogPanel;
-    window.closeLogPanel = closeLogPanel;
-    window.clearLogs = clearLogs;
-    window.copyLogs = copyLogs;
-    window.rlog = rlog;
   }
   async function initApp() {
     exposeGlobals();
-    initLogPanelSwipe();
     const bar = document.getElementById("aiInputBar");
     if (bar && window.visualViewport) {
       const vv = window.visualViewport;
@@ -9611,7 +9521,12 @@
   var _stateSub = null;
   function _ensureSubscribed() {
     if (_stateSub) KFMState.unsubscribe(_stateSub);
-    _stateSub = () => rebuildTree();
+    _stateSub = () => {
+      _animBusy = false;
+      _animBusyAt = 0;
+      _clickQueue = [];
+      rebuildTree();
+    };
     KFMState.subscribe(_stateSub);
   }
   function markAnimatingPath(path) {
@@ -10876,98 +10791,6 @@
     }
     await expandNext(0);
   }
-  (() => {
-    const MAX = 80;
-    const entries = [];
-    const _origLog = console.log.bind(console);
-    console.log = function(...args) {
-      _origLog(...args);
-      const msg = args.map((a) => typeof a === "object" && a !== null ? JSON.stringify(a) : String(a)).join(" ");
-      const t = (/* @__PURE__ */ new Date()).toLocaleTimeString("zh-CN", { hour12: false });
-      entries.unshift(`[${t}] ${msg}`);
-      if (entries.length > MAX) entries.pop();
-      _renderDbg();
-    };
-    let _panel = null;
-    function _renderDbg() {
-      if (!_panel) return;
-      const list = _panel.querySelector(".dbg-list");
-      if (list) list.innerHTML = entries.map((e) => `<div style="border-bottom:1px solid rgba(255,255,255,0.06);padding:2px 0;font-size:11px;word-break:break-all">${e.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>`).join("");
-    }
-    function _ensurePanel() {
-      if (_panel) return;
-      const btn = document.createElement("button");
-      btn.textContent = "D";
-      btn.style.cssText = "position:fixed;top:6px;right:8px;z-index:99999;width:30px;height:30px;border-radius:50%;background:rgba(0,212,255,0.85);color:#000;border:none;font-size:13px;font-weight:bold;cursor:pointer";
-      btn.addEventListener("click", () => {
-        if (!_panel) return;
-        const open = _panel.style.transform === "translateX(0px)";
-        _panel.style.transform = open ? "translateX(100%)" : "translateX(0px)";
-      });
-      document.body.appendChild(btn);
-      _panel = document.createElement("div");
-      _panel.style.cssText = "position:fixed;top:0;right:0;width:88%;max-width:380px;height:100%;background:#0d1117;z-index:99998;transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;font-family:monospace;color:#c9d1d9;box-shadow:-4px 0 20px rgba(0,0,0,0.5)";
-      const hdr = document.createElement("div");
-      hdr.style.cssText = "padding:10px 12px;border-bottom:1px solid #21262d;display:flex;align-items:center;justify-content:space-between;flex-shrink:0";
-      hdr.innerHTML = '<span style="font-weight:bold;font-size:14px">\u8C03\u8BD5\u65E5\u5FD7</span><div></div>';
-      const btns = hdr.querySelector("div");
-      const cpBtn = document.createElement("button");
-      cpBtn.textContent = "\u590D\u5236";
-      cpBtn.style.cssText = "background:#21262d;color:#58a6ff;border:none;padding:4px 10px;border-radius:4px;font-size:12px;margin-right:6px;cursor:pointer";
-      cpBtn.addEventListener("click", async () => {
-        const text = entries.join("\n");
-        try {
-          await navigator.clipboard.writeText(text);
-        } catch {
-          const ta = document.createElement("textarea");
-          ta.value = text;
-          ta.style.cssText = "position:fixed;left:-9999px";
-          document.body.appendChild(ta);
-          ta.select();
-          document.execCommand("copy");
-          document.body.removeChild(ta);
-        }
-      });
-      btns.appendChild(cpBtn);
-      const clrBtn = document.createElement("button");
-      clrBtn.textContent = "\u6E05\u7A7A";
-      clrBtn.style.cssText = "background:#21262d;color:#c9d1d9;border:none;padding:4px 10px;border-radius:4px;font-size:12px;margin-right:6px;cursor:pointer";
-      clrBtn.addEventListener("click", () => {
-        entries.length = 0;
-        _renderDbg();
-      });
-      btns.appendChild(clrBtn);
-      const clsBtn = document.createElement("button");
-      clsBtn.textContent = "\xD7";
-      clsBtn.style.cssText = "background:none;border:none;color:#8b949e;font-size:22px;cursor:pointer;padding:0 4px";
-      clsBtn.addEventListener("click", () => {
-        if (_panel) _panel.style.transform = "translateX(100%)";
-      });
-      btns.appendChild(clsBtn);
-      hdr.appendChild(btns);
-      _panel.appendChild(hdr);
-      const list = document.createElement("div");
-      list.className = "dbg-list";
-      list.style.cssText = "flex:1;overflow-y:auto;padding:8px 12px;-webkit-overflow-scrolling:touch";
-      _panel.appendChild(list);
-      document.body.appendChild(_panel);
-      _renderDbg();
-      let sx = 0;
-      _panel.addEventListener("touchstart", (e) => {
-        sx = e.touches[0].clientX;
-      }, { passive: true });
-      _panel.addEventListener("touchend", (e) => {
-        if (e.changedTouches[0].clientX - sx > 80) {
-          _panel.style.transform = "translateX(100%)";
-        }
-      });
-    }
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", _ensurePanel);
-    } else {
-      _ensurePanel();
-    }
-  })();
 
   // src/client/modules/ui.ts
   function openSidebar() {
@@ -11005,13 +10828,10 @@
       touchStarted = true;
     }, { passive: true });
     document.addEventListener("touchmove", (e) => {
-      var _a, _b, _c;
+      var _a, _b;
       if (e.target.closest(".light-orb")) return;
       if (!touchStarted) return;
-      const currentX = e.touches[0].clientX;
-      const currentY = e.touches[0].clientY;
-      const dx = currentX - touchStartX;
-      const dxAbs = Math.abs(dx);
+      const dx = e.touches[0].clientX - touchStartX;
       if ((_a = document.getElementById("sidebar")) == null ? void 0 : _a.classList.contains("open")) {
         if (dx < -60) {
           closeSidebar();
@@ -11020,16 +10840,7 @@
         }
         return;
       }
-      const logOpen = (_b = document.getElementById("logPanel")) == null ? void 0 : _b.classList.contains("open");
-      if (logOpen) {
-        if (dx > 60) {
-          closeLogPanel();
-          touchStarted = false;
-          return;
-        }
-        return;
-      }
-      if (!((_c = document.getElementById("sidebar")) == null ? void 0 : _c.classList.contains("open")) && dx > 60) {
+      if (!((_b = document.getElementById("sidebar")) == null ? void 0 : _b.classList.contains("open")) && dx > 60) {
         openSidebar();
         touchStarted = false;
         return;
@@ -12764,7 +12575,7 @@
       const lineHeight = 20;
       try {
         const lines = layoutLines(msg.text, font, innerWidth - 24, lineHeight);
-        const textHtml = lines.map((l) => `<span style="display:block">${escapeHtml2(l.text)}</span>`).join("");
+        const textHtml = lines.map((l) => `<span style="display:block">${escapeHtml(l.text)}</span>`).join("");
         html += `
         <div style="display:flex;justify-content:${align};margin-bottom:8px">
           <div style="max-width:${innerWidth - 8}px;padding:6px 12px;background:${bgColor};border:1px solid ${borderColor};border-left:3px solid ${borderColor};border-radius:8px">
@@ -12777,7 +12588,7 @@
         <div style="display:flex;justify-content:${align};margin-bottom:8px">
           <div style="max-width:85%;padding:6px 12px;background:${bgColor};border:1px solid ${borderColor};border-left:3px solid ${borderColor};border-radius:8px">
             <div style="font-size:10px;color:${labelColor};margin-bottom:2px;font-weight:600">${label}</div>
-            <div style="font-size:13px;color:#e0e0e0">${escapeHtml2(msg.text)}</div>
+            <div style="font-size:13px;color:#e0e0e0">${escapeHtml(msg.text)}</div>
           </div>
         </div>`;
       }
@@ -12785,7 +12596,7 @@
     contentArea.innerHTML = html;
     contentArea.scrollTop = contentArea.scrollHeight;
   }
-  function escapeHtml2(str) {
+  function escapeHtml(str) {
     return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
   function updatePanelPosition() {

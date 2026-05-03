@@ -22,7 +22,13 @@ let renderer: Renderer | null = null;
 let _stateSub: ((state: any) => void) | null = null;
 function _ensureSubscribed(): void {
   if (_stateSub) KFMState.unsubscribe(_stateSub);
-  _stateSub = () => rebuildTree();
+  _stateSub = () => {
+    // state 变化（toggleHidden/expanded）是用户主动行为，跳过 _animBusy 锁
+    _animBusy = false;
+    _animBusyAt = 0;
+    _clickQueue = [];
+    rebuildTree();
+  };
   KFMState.subscribe(_stateSub);
 }
 
@@ -113,7 +119,7 @@ export function triggerExpandAnimation(path: string): void {
   renderer?.setRoot(renderer!.getRoot()!);
 }
 
-/** 修复容器内所有已展开子容器的 toggle 旋转状态 */
+/** 修复容器内所有����展开子容器的 toggle 旋转状态 */
 function fixExpandedToggles(container: Box): void {
   const state = KFMState;
   if (!state) return;
@@ -505,7 +511,7 @@ function _getCenterRowIndex(): number {
   return closestIdx;
 }
 
-/** 滚动模式下，将光标吸附到视口中央最近的行 */
+/** 滚���模式下，将光标吸附到视口中央最近的行 */
 function _snapCursorToCenter(): void {
   if (_animBusy) return;
   const idx = _getCenterRowIndex();
@@ -735,7 +741,7 @@ function bindScrollEvents(canvas: HTMLElement): void {
       // === 边界锁：滚动锁定，手指位移只改变穿透深度 ===
       _boundPen = Math.max(0, _boundPen + (_boundIsTop ? -dPen : dPen));
       if (_boundPen === 0) {
-        // 光标回到中心，解锁，重置滚动参考点
+        // 光标��到中����解锁，重置滚动参考点
         touchScrollY = _boundIsTop ? 0 : maxY;
         touchStartY = y;
         setRootScrollY(touchScrollY);
@@ -838,7 +844,7 @@ function bindScrollEvents(canvas: HTMLElement): void {
           flingPen = -desired;
           flingIsTop = true;
           setRootScrollY(0);
-          // 首次触碰边界：立刻基于当前中央行做初始光标偏移
+          // ���次触碰边界：立刻基于当前中央行做初始光标偏移
           const centerIdx = _getCenterRowIndex();
           const steps = Math.floor(flingPen / LINE_HEIGHT);
           if (centerIdx >= 0 && steps > 0) {
@@ -1106,6 +1112,14 @@ function findTapTarget(box: Box, px: number, py: number): Box | null {
 // 树重建
 // ============================================================
 
+/** 强制重建树（跳过 _animBusy 锁，用于眼睛图标等用户主动行为） */
+export function forceRebuildTree(): void {
+  _animBusy = false;
+  _animBusyAt = 0;
+  _clickQueue = [];
+  rebuildTree();
+}
+
 function rebuildTree(): void {
   if (!renderer) return;
   if (_animBusy) {
@@ -1296,7 +1310,7 @@ function collectAncestors(box: Box, root: Box): AncestorInfo[] {
       sibOrigYs.push(p.children[i].y);
     }
     ancestors.push({ parent: p, sibIdx: idx, sibOrigYs, origHeight: p.height });
-    if (p === root) break;  // 到 root 为e止（含 root 层）
+    if (p === root) break;  // 到 root 为e止��含 root 层）
     current = p;
   }
   return ancestors;
@@ -1440,108 +1454,4 @@ async function slideInRows(container: Box, root: Box, selfToggle?: any): Promise
 }
 
 // ============================================================
-// 调试面板（自包含，不依赖 app.ts）
-// ============================================================
-(() => {
-  const MAX = 80;
-  const entries: string[] = [];
-
-  // 拦截 console.log
-  const _origLog = console.log.bind(console);
-  console.log = function (...args: any[]) {
-    _origLog(...args);
-    const msg = args.map(a => (typeof a === 'object' && a !== null) ? JSON.stringify(a) : String(a)).join(' ');
-    const t = new Date().toLocaleTimeString('zh-CN', { hour12: false });
-    entries.unshift(`[${t}] ${msg}`);
-    if (entries.length > MAX) entries.pop();
-    _renderDbg();
-  };
-
-  let _panel: HTMLElement | null = null;
-  function _renderDbg() {
-    if (!_panel) return;
-    const list = _panel.querySelector('.dbg-list');
-    if (list) list.innerHTML = entries.map(e => `<div style="border-bottom:1px solid rgba(255,255,255,0.06);padding:2px 0;font-size:11px;word-break:break-all">${e.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`).join('');
-  }
-
-  function _ensurePanel() {
-    if (_panel) return;
-    // Toggle button
-    const btn = document.createElement('button');
-    btn.textContent = 'D';
-    btn.style.cssText = 'position:fixed;top:6px;right:8px;z-index:99999;width:30px;height:30px;border-radius:50%;background:rgba(0,212,255,0.85);color:#000;border:none;font-size:13px;font-weight:bold;cursor:pointer';
-    btn.addEventListener('click', () => {
-      if (!_panel) return;
-      const open = _panel.style.transform === 'translateX(0px)';
-      _panel.style.transform = open ? 'translateX(100%)' : 'translateX(0px)';
-    });
-    document.body.appendChild(btn);
-
-    // Panel
-    _panel = document.createElement('div');
-    _panel.style.cssText = 'position:fixed;top:0;right:0;width:88%;max-width:380px;height:100%;background:#0d1117;z-index:99998;transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;font-family:monospace;color:#c9d1d9;box-shadow:-4px 0 20px rgba(0,0,0,0.5)';
-
-    // Header
-    const hdr = document.createElement('div');
-    hdr.style.cssText = 'padding:10px 12px;border-bottom:1px solid #21262d;display:flex;align-items:center;justify-content:space-between;flex-shrink:0';
-    hdr.innerHTML = '<span style="font-weight:bold;font-size:14px">调试日志</span><div></div>';
-    const btns = hdr.querySelector('div')!;
-
-    const cpBtn = document.createElement('button');
-    cpBtn.textContent = '复制';
-    cpBtn.style.cssText = 'background:#21262d;color:#58a6ff;border:none;padding:4px 10px;border-radius:4px;font-size:12px;margin-right:6px;cursor:pointer';
-    cpBtn.addEventListener('click', async () => {
-      const text = entries.join('\n');
-      try {
-        await navigator.clipboard.writeText(text);
-      } catch {
-        const ta = document.createElement('textarea');
-        ta.value = text; ta.style.cssText = 'position:fixed;left:-9999px';
-        document.body.appendChild(ta); ta.select();
-        document.execCommand('copy'); document.body.removeChild(ta);
-      }
-    });
-    btns.appendChild(cpBtn);
-
-    const clrBtn = document.createElement('button');
-    clrBtn.textContent = '清空';
-    clrBtn.style.cssText = 'background:#21262d;color:#c9d1d9;border:none;padding:4px 10px;border-radius:4px;font-size:12px;margin-right:6px;cursor:pointer';
-    clrBtn.addEventListener('click', () => { entries.length = 0; _renderDbg(); });
-    btns.appendChild(clrBtn);
-
-    const clsBtn = document.createElement('button');
-    clsBtn.textContent = '×';
-    clsBtn.style.cssText = 'background:none;border:none;color:#8b949e;font-size:22px;cursor:pointer;padding:0 4px';
-    clsBtn.addEventListener('click', () => {
-      if (_panel) _panel.style.transform = 'translateX(100%)';
-    });
-    btns.appendChild(clsBtn);
-    hdr.appendChild(btns);
-    _panel.appendChild(hdr);
-
-    // Log list
-    const list = document.createElement('div');
-    list.className = 'dbg-list';
-    list.style.cssText = 'flex:1;overflow-y:auto;padding:8px 12px;-webkit-overflow-scrolling:touch';
-    _panel.appendChild(list);
-
-    document.body.appendChild(_panel);
-    _renderDbg();
-
-    // Swipe right to close
-    let sx = 0;
-    _panel.addEventListener('touchstart', (e) => { sx = e.touches[0].clientX; }, { passive: true });
-    _panel.addEventListener('touchend', (e) => {
-      if (e.changedTouches[0].clientX - sx > 80) {
-        _panel!.style.transform = 'translateX(100%)';
-      }
-    });
-  }
-
-  // 页面加载后创建
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', _ensurePanel);
-  } else {
-    _ensurePanel();
-  }
-})();
+// 调试面板已删除

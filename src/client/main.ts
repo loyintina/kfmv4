@@ -13,13 +13,8 @@ declare global {
     expandedPaths: Record<string, boolean>;
     showHidden: boolean;
     showToast: (msg: string) => void;
-    addLog: (msg: string, type?: string) => void;
-    openLogPanel: () => void;
-    closeLogPanel: () => void;
-    clearLogs: () => void;
     openSidebar: () => void;
     closeSidebar: () => void;
-    rlog: (msg: string) => void;
     executeCursorAction: () => Promise<void>;
   }
 }

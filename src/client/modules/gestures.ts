@@ -1,10 +1,9 @@
 /**
  * KFM v4 - 手势系统
  * 
- * 中央页面手势：只有边缘滑动打开/关闭侧栏，日志面板左滑关闭。
- * 侧栏内的光标、joystick 等手势将在 Canvas 版侧栏重建时重新实现。
+ * 中央页面手势：只有边缘滑动打开/关闭侧栏。
+ * 日志面板已彻底移除。
  */
-import { closeLogPanel } from './app.js';
 import { openSidebar, closeSidebar } from './ui.js';
 
 let touchStartX = 0;
@@ -22,21 +21,11 @@ export function initGestures(): void {
   document.addEventListener('touchmove', (e) => {
     if ((e.target as HTMLElement).closest('.light-orb')) return;
     if (!touchStarted) return;
-    const currentX = e.touches[0].clientX;
-    const currentY = e.touches[0].clientY;
-    const dx = currentX - touchStartX;
-    const dxAbs = Math.abs(dx);
+    const dx = e.touches[0].clientX - touchStartX;
 
     // 侧栏打开时：左滑关闭
     if (document.getElementById('sidebar')?.classList.contains('open')) {
       if (dx < -60) { closeSidebar(); touchStarted = false; return; }
-      return;
-    }
-
-    // 日志面板打开时：左滑关闭
-    const logOpen = document.getElementById('logPanel')?.classList.contains('open');
-    if (logOpen) {
-      if (dx > 60) { closeLogPanel(); touchStarted = false; return; }
       return;
     }
 

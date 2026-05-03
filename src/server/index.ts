@@ -63,7 +63,6 @@ function setupApiRoutes(router: express.Router) {
         if (depth <= 0) return [];
         try {
           return fs.readdirSync(dirPath)
-            .filter(name => !name.startsWith('.'))
             .map(name => {
               const fullPath = path.join(dirPath, name);
               try {
