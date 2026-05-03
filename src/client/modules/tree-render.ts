@@ -287,7 +287,7 @@ export function onSidebarOpen(): void {
   fileTree.innerHTML = '';          // 彻底销毁旧 DOM（包括旧 canvas）
   fileTree.appendChild(canvas);
 
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const dpr = window.devicePixelRatio || 1;
   renderer = new Renderer(canvas, {
     backgroundColor: 'rgba(10,10,15,0.85)',
     dpr,
@@ -349,7 +349,7 @@ export function initTreeRenderer(): void {
   fileTree.innerHTML = '';
   fileTree.appendChild(canvas);
 
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const dpr = window.devicePixelRatio || 1;
   renderer = new Renderer(canvas, {
     backgroundColor: 'rgba(10,10,15,0.85)',
     dpr,
