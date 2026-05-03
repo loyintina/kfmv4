@@ -9712,6 +9712,7 @@
   }
   var cursorBox = null;
   var cursorRowId = null;
+  var _rowIndex = [];
   var _sessionId = 0;
   var animatingPath = null;
   var _animBusy = false;
@@ -9738,20 +9739,19 @@
     root.addChild(cursorBox);
     return cursorBox;
   }
-  function moveCursorTo(hitBox) {
+  function moveCursorTo(hitBox, animate = true) {
     var _a, _b, _c, _d, _e;
     if (!cursorBox) return;
     const abs = hitBox.getAbsolutePosition();
     const canvas = document.getElementById("tree-canvas");
-    const visibleW = canvas ? canvas.clientWidth : 280;
     const depth = (_b = (_a = hitBox.data) == null ? void 0 : _a.depth) != null ? _b : 0;
     const shift = getShift(depth);
     const offsetX = shift / 2;
-    cursorBox.x = abs.x + offsetX;
-    cursorBox.y = abs.y + 2;
     const rm = ((_c = canvas == null ? void 0 : canvas.clientWidth) != null ? _c : 295) - 8;
-    cursorBox.width = rm - abs.x - offsetX;
-    cursorBox.height = hitBox.height - 4;
+    const targetX = abs.x + offsetX;
+    const targetY = abs.y + 2;
+    const targetW = rm - abs.x - offsetX;
+    const targetH = hitBox.height - 4;
     cursorRowId = hitBox.id || null;
     const label = hitBox.children.find((c) => {
       var _a2;
@@ -9791,10 +9791,41 @@
         }
       }
     }
-    const totalLineW = cursorBox.width;
+    const totalLineW = targetW;
     const topLineW = Math.min(Math.max(textW, 20), totalLineW - 10);
     const botLineW = totalLineW - topLineW;
-    cursorBox.data = { cursorDynamicLines: true, topLineW, botLineW, color: "rgba(0,212,255,0.7)" };
+    const cdata = cursorBox.data;
+    if (cdata) {
+      cdata.cursorDynamicLines = true;
+      cdata.color = "rgba(0,212,255,0.7)";
+    }
+    if (animate && cdata) {
+      gsapWithCSS.to(cursorBox, {
+        x: targetX,
+        y: targetY,
+        width: targetW,
+        height: targetH,
+        duration: 0.18,
+        ease: "power3.out",
+        overwrite: "auto"
+      });
+      gsapWithCSS.to(cdata, {
+        topLineW,
+        botLineW,
+        duration: 0.18,
+        ease: "power3.out",
+        overwrite: "auto"
+      });
+    } else {
+      cursorBox.x = targetX;
+      cursorBox.y = targetY;
+      cursorBox.width = targetW;
+      cursorBox.height = targetH;
+      if (cdata) {
+        cdata.topLineW = topLineW;
+        cdata.botLineW = botLineW;
+      }
+    }
   }
   function onSidebarOpen() {
     _sessionId++;
@@ -9804,6 +9835,7 @@
     _clickQueue = [];
     cursorBox = null;
     cursorRowId = null;
+    _rowIndex = [];
     pendingCollapse = null;
     gsapWithCSS.globalTimeline.clear();
     renderer == null ? void 0 : renderer.stop();
@@ -9851,6 +9883,7 @@
     _clickQueue = [];
     cursorBox = null;
     cursorRowId = null;
+    _rowIndex = [];
     renderer == null ? void 0 : renderer.stop();
     renderer = null;
   }
@@ -9890,25 +9923,140 @@
     const maxScroll = root.getMaxScroll().maxY;
     root.scrollY = Math.max(0, Math.min(val, maxScroll));
   }
+  function _rebuildRowIndex(root) {
+    _rowIndex = [];
+    function walk(box) {
+      var _a;
+      for (const child of box.children) {
+        if (!child.visible || child.disabled) continue;
+        if (child.interactive && ((_a = child.gesture) == null ? void 0 : _a.onTap)) {
+          _rowIndex.push(child);
+        }
+        walk(child);
+      }
+    }
+    walk(root);
+    _rowIndex.sort((a, b) => {
+      return a.getAbsolutePosition().y - b.getAbsolutePosition().y;
+    });
+  }
+  function _getCursorRowIndex() {
+    if (!cursorRowId || _rowIndex.length === 0) return -1;
+    return _rowIndex.findIndex((box) => box.id === cursorRowId);
+  }
+  function _moveCursorBySteps(steps) {
+    if (_rowIndex.length === 0) return;
+    const oldIdx = _getCursorRowIndex();
+    const newIdx = Math.max(0, Math.min(_rowIndex.length - 1, oldIdx + steps));
+    if (newIdx !== oldIdx && _rowIndex[newIdx]) {
+      moveCursorTo(_rowIndex[newIdx]);
+    }
+  }
+  function _isCursorMode() {
+    const root = renderer == null ? void 0 : renderer.getRoot();
+    if (!root) return false;
+    return root.getMaxScroll().maxY <= 0;
+  }
+  function _getCenterRowIndex() {
+    var _a, _b, _c;
+    const root = renderer == null ? void 0 : renderer.getRoot();
+    if (!root || _rowIndex.length === 0) return -1;
+    const canvasH = ((_b = (_a = document.getElementById("tree-canvas")) == null ? void 0 : _a.clientHeight) != null ? _b : 0) || 618;
+    const scrollY = (_c = root.scrollY) != null ? _c : 0;
+    const centerY = scrollY + canvasH / 2;
+    let closestIdx = -1;
+    let closestDist = Infinity;
+    for (let i = 0; i < _rowIndex.length; i++) {
+      const abs = _rowIndex[i].getAbsolutePosition();
+      const rowCenter = abs.y + _rowIndex[i].height / 2;
+      const dist = Math.abs(rowCenter - centerY);
+      if (dist < closestDist) {
+        closestDist = dist;
+        closestIdx = i;
+      }
+    }
+    return closestIdx;
+  }
+  function _snapCursorToCenter() {
+    if (_animBusy) return;
+    const idx = _getCenterRowIndex();
+    if (idx >= 0 && _rowIndex[idx].id !== cursorRowId) {
+      moveCursorTo(_rowIndex[idx]);
+    }
+  }
   function bindScrollEvents(canvas) {
+    let _touchIsCursor = false;
     let wheelTarget = 0;
     let wheelRaf = 0;
+    let cursorWheelAccum = 0;
+    let cursorWheelDecayRaf = 0;
     canvas.addEventListener("wheel", (e) => {
       var _a;
       e.preventDefault();
+      if (_isCursorMode()) {
+        cursorWheelAccum += e.deltaY / LINE_HEIGHT;
+        const steps = Math.trunc(cursorWheelAccum);
+        if (steps !== 0) {
+          _moveCursorBySteps(-steps);
+          cursorWheelAccum -= steps;
+        }
+        if (!cursorWheelDecayRaf) {
+          cursorWheelDecayRaf = requestAnimationFrame(function decay() {
+            cursorWheelAccum *= 0.85;
+            const s = Math.trunc(cursorWheelAccum);
+            if (s !== 0) {
+              _moveCursorBySteps(-s);
+              cursorWheelAccum -= s;
+            }
+            if (Math.abs(cursorWheelAccum) < 0.05) {
+              cursorWheelAccum = 0;
+              cursorWheelDecayRaf = 0;
+              return;
+            }
+            cursorWheelDecayRaf = requestAnimationFrame(decay);
+          });
+        }
+        return;
+      }
       const cur = (_a = getRootScrollY()) != null ? _a : 0;
       wheelTarget = cur + e.deltaY;
       if (!wheelRaf) {
+        let wheelAccum = 0;
+        const wheelCenterIdx = _getCenterRowIndex();
         wheelRaf = requestAnimationFrame(function smoothWheel() {
-          var _a2;
+          var _a2, _b, _c;
           const cur2 = (_a2 = getRootScrollY()) != null ? _a2 : 0;
           const diff = wheelTarget - cur2;
           if (Math.abs(diff) < 0.5) {
             setRootScrollY(wheelTarget);
+            _snapCursorToCenter();
             wheelRaf = 0;
             return;
           }
-          setRootScrollY(cur2 + diff * 0.25);
+          const maxY = (_c = (_b = renderer == null ? void 0 : renderer.getRoot()) == null ? void 0 : _b.getMaxScroll().maxY) != null ? _c : 0;
+          const desired = cur2 + diff * 0.25;
+          if (desired < 0 && maxY > 0) {
+            setRootScrollY(0);
+            wheelAccum += -desired;
+            const steps = Math.floor(wheelAccum / LINE_HEIGHT);
+            if (steps > 0) {
+              wheelAccum -= steps * LINE_HEIGHT;
+              const targetIdx = Math.max(0, wheelCenterIdx - steps);
+              if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+            }
+          } else if (desired > maxY) {
+            setRootScrollY(maxY);
+            wheelAccum += desired - maxY;
+            const steps = Math.floor(wheelAccum / LINE_HEIGHT);
+            if (steps > 0) {
+              wheelAccum -= steps * LINE_HEIGHT;
+              const targetIdx = Math.min(_rowIndex.length - 1, wheelCenterIdx + steps);
+              if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+            }
+          } else {
+            setRootScrollY(desired);
+            _snapCursorToCenter();
+          }
           wheelRaf = requestAnimationFrame(smoothWheel);
         });
       }
@@ -9919,41 +10067,194 @@
     let lastTouchTime = 0;
     let velocity = 0;
     let flingRaf = 0;
+    let _boundPen = 0;
+    let _boundIsTop = false;
+    let cursorTouchBase = 0;
+    let cursorTouchStartY = 0;
+    let cursorLastTouchY = 0;
+    let cursorLastTouchTime = 0;
+    let cursorVelocity = 0;
+    let cursorFlingRaf = 0;
     canvas.addEventListener("touchstart", (e) => {
-      var _a;
-      touchStartY2 = e.touches[0].clientY;
-      touchScrollY = (_a = getRootScrollY()) != null ? _a : 0;
-      lastTouchY = touchStartY2;
+      var _a, _b;
+      const y = e.touches[0].clientY;
+      lastTouchY = y;
       lastTouchTime = performance.now();
-      velocity = 0;
       if (flingRaf) {
         cancelAnimationFrame(flingRaf);
         flingRaf = 0;
       }
+      if (cursorFlingRaf) {
+        cancelAnimationFrame(cursorFlingRaf);
+        cursorFlingRaf = 0;
+      }
+      _touchIsCursor = _isCursorMode();
+      if (_touchIsCursor) {
+        cursorTouchBase = Math.max(0, _getCursorRowIndex());
+        cursorTouchStartY = y;
+        cursorLastTouchY = y;
+        cursorLastTouchTime = lastTouchTime;
+        cursorVelocity = 0;
+      } else {
+        touchStartY2 = y;
+        touchScrollY = (_a = getRootScrollY()) != null ? _a : 0;
+        velocity = 0;
+        _boundPen = 0;
+        _boundIsTop = false;
+        const root2 = renderer == null ? void 0 : renderer.getRoot();
+        if (root2 && !_isCursorMode()) {
+          const maxY2 = (_b = root2.getMaxScroll().maxY) != null ? _b : 0;
+          const centerIdx = _getCenterRowIndex();
+          const cursorIdx = _getCursorRowIndex();
+          if (touchScrollY <= 0 && centerIdx >= 0 && cursorIdx >= 0 && cursorIdx < centerIdx) {
+            _boundPen = (centerIdx - cursorIdx) * LINE_HEIGHT;
+            _boundIsTop = true;
+          } else if (touchScrollY >= maxY2 && centerIdx >= 0 && cursorIdx >= 0 && cursorIdx > centerIdx) {
+            _boundPen = (cursorIdx - centerIdx) * LINE_HEIGHT;
+            _boundIsTop = false;
+          }
+        }
+      }
     }, { passive: true });
     canvas.addEventListener("touchmove", (e) => {
+      var _a;
       const y = e.touches[0].clientY;
-      const dy = touchStartY2 - y;
       const now = performance.now();
+      if (_touchIsCursor) {
+        const dy2 = cursorTouchStartY - y;
+        const dt2 = now - cursorLastTouchTime;
+        if (dt2 > 0) {
+          cursorVelocity = (cursorLastTouchY - y) / dt2 * 16 * 1.7;
+        }
+        cursorLastTouchY = y;
+        cursorLastTouchTime = now;
+        const stepOffset = dy2 / LINE_HEIGHT;
+        const idx = Math.round(
+          Math.max(0, Math.min(_rowIndex.length - 1, cursorTouchBase + stepOffset))
+        );
+        if (_rowIndex[idx]) moveCursorTo(_rowIndex[idx]);
+        return;
+      }
+      const dy = touchStartY2 - y;
       const dt = now - lastTouchTime;
       if (dt > 0) {
         velocity = (lastTouchY - y) / dt * 16 * 1.7;
       }
+      const dPen = lastTouchY - y;
       lastTouchY = y;
       lastTouchTime = now;
-      setRootScrollY(touchScrollY + dy);
+      const root3 = renderer == null ? void 0 : renderer.getRoot();
+      const maxY = (_a = root3 == null ? void 0 : root3.getMaxScroll().maxY) != null ? _a : 0;
+      if (_boundPen > 0) {
+        _boundPen = Math.max(0, _boundPen + (_boundIsTop ? -dPen : dPen));
+        if (_boundPen === 0) {
+          touchScrollY = _boundIsTop ? 0 : maxY;
+          touchStartY2 = y;
+          setRootScrollY(touchScrollY);
+          _snapCursorToCenter();
+        } else {
+          setRootScrollY(_boundIsTop ? 0 : maxY);
+          const steps = Math.floor(_boundPen / LINE_HEIGHT);
+          const centerIdx = _getCenterRowIndex();
+          if (centerIdx >= 0 && steps > 0) {
+            const targetIdx = _boundIsTop ? Math.max(0, centerIdx - steps) : Math.min(_rowIndex.length - 1, centerIdx + steps);
+            if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+          } else {
+            _snapCursorToCenter();
+          }
+        }
+      } else {
+        const desired = touchScrollY + dy;
+        if (desired < 0 && maxY > 0) {
+          _boundPen = -desired;
+          _boundIsTop = true;
+          setRootScrollY(0);
+          const steps = Math.floor(_boundPen / LINE_HEIGHT);
+          const centerIdx = _getCenterRowIndex();
+          if (centerIdx >= 0 && steps > 0) {
+            const targetIdx = Math.max(0, centerIdx - steps);
+            if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+          }
+        } else if (desired > maxY) {
+          _boundPen = desired - maxY;
+          _boundIsTop = false;
+          setRootScrollY(maxY);
+          const steps = Math.floor(_boundPen / LINE_HEIGHT);
+          const centerIdx = _getCenterRowIndex();
+          if (centerIdx >= 0 && steps > 0) {
+            const targetIdx = Math.min(_rowIndex.length - 1, centerIdx + steps);
+            if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+          }
+        } else {
+          setRootScrollY(desired);
+          _snapCursorToCenter();
+        }
+      }
     }, { passive: true });
     canvas.addEventListener("touchend", () => {
+      var _a, _b;
+      if (_touchIsCursor) {
+        if (Math.abs(cursorVelocity) >= 0.5 && _rowIndex.length > 0) {
+          let cursorFling2 = function() {
+            cursorVelocity *= 0.96;
+            if (Math.abs(cursorVelocity) < 0.3) {
+              cursorFlingRaf = 0;
+              return;
+            }
+            cursorTouchBase += cursorVelocity / LINE_HEIGHT;
+            const idx = Math.round(
+              Math.max(0, Math.min(_rowIndex.length - 1, cursorTouchBase))
+            );
+            if (_rowIndex[idx]) moveCursorTo(_rowIndex[idx]);
+            cursorFlingRaf = requestAnimationFrame(cursorFling2);
+          };
+          var cursorFling = cursorFling2;
+          cursorTouchBase = Math.max(0, _getCursorRowIndex());
+          cursorFlingRaf = requestAnimationFrame(cursorFling2);
+        }
+        return;
+      }
       if (Math.abs(velocity) < 0.5) return;
+      let flingPen = _boundPen;
+      let flingIsTop = _boundIsTop;
+      const flingCenterIdx = _getCenterRowIndex();
+      const flingMaxY = (_b = (_a = renderer == null ? void 0 : renderer.getRoot()) == null ? void 0 : _a.getMaxScroll().maxY) != null ? _b : 0;
       function fling() {
-        var _a;
+        var _a2;
         velocity *= 0.96;
         if (Math.abs(velocity) < 0.3) {
           flingRaf = 0;
           return;
         }
-        const cur = (_a = getRootScrollY()) != null ? _a : 0;
-        setRootScrollY(cur + velocity);
+        if (flingPen > 0) {
+          flingPen = Math.max(0, flingPen + (flingIsTop ? -velocity : velocity));
+          if (flingPen === 0) {
+            setRootScrollY(flingIsTop ? 0 : flingMaxY);
+            _snapCursorToCenter();
+          } else {
+            setRootScrollY(flingIsTop ? 0 : flingMaxY);
+            const steps = Math.floor(flingPen / LINE_HEIGHT);
+            if (steps > 0) {
+              const targetIdx = flingIsTop ? Math.max(0, flingCenterIdx - steps) : Math.min(_rowIndex.length - 1, flingCenterIdx + steps);
+              if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+            }
+          }
+        } else {
+          const cur = (_a2 = getRootScrollY()) != null ? _a2 : 0;
+          const desired = cur + velocity;
+          if (desired < 0 && flingMaxY > 0) {
+            flingPen = -desired;
+            flingIsTop = true;
+            setRootScrollY(0);
+          } else if (desired > flingMaxY) {
+            flingPen = desired - flingMaxY;
+            flingIsTop = false;
+            setRootScrollY(flingMaxY);
+          } else {
+            setRootScrollY(desired);
+            _snapCursorToCenter();
+          }
+        }
         flingRaf = requestAnimationFrame(fling);
       }
       flingRaf = requestAnimationFrame(fling);
@@ -10264,6 +10565,7 @@
       } else {
       }
     }
+    _rebuildRowIndex(newRoot);
     if (!renderer.isRunning) {
       renderer.start();
     }

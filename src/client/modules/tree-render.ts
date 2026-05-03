@@ -155,6 +155,9 @@ export function isAnimLocked(): boolean {
 let cursorBox: Box | null = null;   // 光标 Box 实例
 let cursorRowId: string | null = null;  // 当前光标指向的行 id
 
+// 光标步进模式 —— 行索引（按绝对 Y 坐标排序的可交互行）
+let _rowIndex: Box[] = [];
+
 // ===== 事件堆栈 + 会话隔离 =====
 // 会话隔离：每次开/关侧栏递增 _sessionId，旧会话异步操作自动失效
 // 事件堆栈：同一会话内快速点击串行执行
@@ -191,27 +194,24 @@ function ensureCursorBox(root: Box, canvasH: number): Box {
   return cursorBox;
 }
 
-/** 瞬移光标到指定行的位置 */
-function moveCursorTo(hitBox: Box): void {
+/** 移动光标到指定行（GSAP 平滑过渡） */
+function moveCursorTo(hitBox: Box, animate = true): void {
   if (!cursorBox) return;
   const abs = hitBox.getAbsolutePosition();
   const canvas = document.getElementById('tree-canvas');
-  const visibleW = canvas ? canvas.clientWidth : 280;
 
-  // 右移 shift/2，让光标左强调线居中在当前层和下一层的左强调线之间
   const depth = (hitBox as any).data?.depth ?? 0;
   const shift = getShift(depth);
   const offsetX = shift / 2;
 
-  cursorBox.x = abs.x + offsetX;
-  cursorBox.y = abs.y + 2;
   const rm = (canvas?.clientWidth ?? 295) - 8;
-  cursorBox.width = rm - abs.x - offsetX;
-  cursorBox.height = hitBox.height - 4;  // 动态高度，减去上下 padding
+  const targetX = abs.x + offsetX;
+  const targetY = abs.y + 2;
+  const targetW = rm - abs.x - offsetX;
+  const targetH = hitBox.height - 4;
   cursorRowId = hitBox.id || null;
 
   // 测量文字宽度，计算上下线长度
-  // 使用 @chenglou/pretext 精确排版，与渲染器 _drawText 流程 100% 一致
   const label = hitBox.children.find(c => c.id?.startsWith('label-'));
   let textW = 0;
   if (label?.textStyle?.content) {
@@ -223,13 +223,10 @@ function moveCursorTo(hitBox: Box): void {
       const content = label.textStyle.content;
 
       try {
-        // 用 Pretext 精确排版，和 renderer._drawText 一致
         const prepared = prepareWithSegments(content, font);
         const { lines } = layoutWithLines(prepared, maxWidth, LINE_HEIGHT);
         const firstLine = lines[0];
         let renderWidth = firstLine.width;
-
-        // 如果被截断（多行），模拟省略号宽���
         if (lines.length > 1 && label.textStyle.overflow === 'ellipsis') {
           const truncated = firstLine.text.slice(0, -1) + '…';
           ctx2d.font = font;
@@ -237,7 +234,6 @@ function moveCursorTo(hitBox: Box): void {
         }
         textW = labelX + renderWidth;
       } catch {
-        // Pretext 失败时 fallback 到原始 measureText 截断
         ctx2d.font = font;
         const measured = ctx2d.measureText(content);
         if (measured.width > maxWidth && label.textStyle.overflow === 'ellipsis') {
@@ -252,10 +248,41 @@ function moveCursorTo(hitBox: Box): void {
       }
     }
   }
-  const totalLineW = cursorBox.width;
+  const totalLineW = targetW;
   const topLineW = Math.min(Math.max(textW, 20), totalLineW - 10);
   const botLineW = totalLineW - topLineW;
-  (cursorBox as any).data = { cursorDynamicLines: true, topLineW, botLineW, color: 'rgba(0,212,255,0.7)' };
+
+  // 确保 data 对象存在（不替换，直接在属性上做动画）
+  const cdata = (cursorBox as any).data;
+  if (cdata) {
+    cdata.cursorDynamicLines = true;
+    cdata.color = 'rgba(0,212,255,0.7)';
+  }
+
+  if (animate && cdata) {
+    // GSAP 平滑过渡：位置/尺寸 + 上线长度
+    // 不 kill 旧动画——让 GSAP 自动衔接连续的目标变更，避免视觉跳动
+    gsap.to(cursorBox, {
+      x: targetX, y: targetY, width: targetW, height: targetH,
+      duration: 0.18, ease: 'power3.out',
+      overwrite: 'auto',
+    });
+    gsap.to(cdata, {
+      topLineW, botLineW,
+      duration: 0.18, ease: 'power3.out',
+      overwrite: 'auto',
+    });
+  } else {
+    // 瞬移模式（初始放置等场景）
+    cursorBox.x = targetX;
+    cursorBox.y = targetY;
+    cursorBox.width = targetW;
+    cursorBox.height = targetH;
+    if (cdata) {
+      cdata.topLineW = topLineW;
+      cdata.botLineW = botLineW;
+    }
+  }
 }
 
 // ============================================================
@@ -269,6 +296,7 @@ export function onSidebarOpen(): void {
   _clickQueue = [];
   cursorBox = null;
   cursorRowId = null;
+  _rowIndex = [];
   pendingCollapse = null;
   gsap.globalTimeline.clear();
   renderer?.stop();
@@ -329,6 +357,7 @@ export function onSidebarClose(): void {
   _clickQueue = [];
   cursorBox = null;
   cursorRowId = null;
+  _rowIndex = [];
   renderer?.stop();
   renderer = null;
 }
@@ -383,66 +412,370 @@ function setRootScrollY(val: number): void {
   root.scrollY = Math.max(0, Math.min(val, maxScroll));
 }
 
+// ============================================================
+// 光标步进辅助函数
+// ============================================================
+
+/** 重建行索引：遍历树收集所有可交互行，按绝对 Y 排序 */
+function _rebuildRowIndex(root: Box): void {
+  _rowIndex = [];
+  function walk(box: Box): void {
+    for (const child of box.children) {
+      if (!child.visible || child.disabled) continue;
+      if (child.interactive && child.gesture?.onTap) {
+        _rowIndex.push(child);
+      }
+      walk(child);
+    }
+  }
+  walk(root);
+  _rowIndex.sort((a, b) => {
+    return a.getAbsolutePosition().y - b.getAbsolutePosition().y;
+  });
+}
+
+/** 获取当前光标在行索引中的位置 */
+function _getCursorRowIndex(): number {
+  if (!cursorRowId || _rowIndex.length === 0) return -1;
+  return _rowIndex.findIndex(box => box.id === cursorRowId);
+}
+
+/** 移动光标 N 步（正=向下，负=向上），自动 clamp */
+function _moveCursorBySteps(steps: number): void {
+  if (_rowIndex.length === 0) return;
+  const oldIdx = _getCursorRowIndex();
+  const newIdx = Math.max(0, Math.min(_rowIndex.length - 1, oldIdx + steps));
+  if (newIdx !== oldIdx && _rowIndex[newIdx]) {
+    moveCursorTo(_rowIndex[newIdx]);
+  }
+}
+
+/** 判断当前是否光标模式（内容高度 <= 视口高度，无溢出） */
+function _isCursorMode(): boolean {
+  const root = renderer?.getRoot();
+  if (!root) return false;
+  return root.getMaxScroll().maxY <= 0;
+}
+
+/** 获取视口中央最近行的索引（在 _rowIndex 中的位置） */
+function _getCenterRowIndex(): number {
+  const root = renderer?.getRoot();
+  if (!root || _rowIndex.length === 0) return -1;
+  const canvasH = (document.getElementById('tree-canvas')?.clientHeight ?? 0) || 618;
+  const scrollY = root.scrollY ?? 0;
+  const centerY = scrollY + canvasH / 2;
+  let closestIdx = -1;
+  let closestDist = Infinity;
+  for (let i = 0; i < _rowIndex.length; i++) {
+    const abs = _rowIndex[i].getAbsolutePosition();
+    const rowCenter = abs.y + _rowIndex[i].height / 2;
+    const dist = Math.abs(rowCenter - centerY);
+    if (dist < closestDist) {
+      closestDist = dist;
+      closestIdx = i;
+    }
+  }
+  return closestIdx;
+}
+
+/** 滚动模式下，将光标吸附到视口中央最近的行 */
+function _snapCursorToCenter(): void {
+  if (_animBusy) return;
+  const idx = _getCenterRowIndex();
+  if (idx >= 0 && _rowIndex[idx].id !== cursorRowId) {
+    moveCursorTo(_rowIndex[idx]);
+  }
+}
+
 function bindScrollEvents(canvas: HTMLCanvasElement): void {
-  // === Wheel 平滑滚动 ===
+  // 记录当前触摸手势属于哪种模式（touchstart 时判定，touchend 时消费）
+  let _touchIsCursor = false;
+
+  // ===== Wheel =====
   let wheelTarget = 0;
   let wheelRaf = 0;
+  let cursorWheelAccum = 0;
+  let cursorWheelDecayRaf = 0;
+
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
+    if (_isCursorMode()) {
+      // 光标模式：累积 deltaY 转为步进
+      cursorWheelAccum += e.deltaY / LINE_HEIGHT;
+      const steps = Math.trunc(cursorWheelAccum);
+      if (steps !== 0) {
+        _moveCursorBySteps(-steps);  // deltaY>0 向下 → 光标向下（索引增大）
+        cursorWheelAccum -= steps;
+      }
+      // 衰减残余（模拟滚轮惯性）
+      if (!cursorWheelDecayRaf) {
+        cursorWheelDecayRaf = requestAnimationFrame(function decay() {
+          cursorWheelAccum *= 0.85;
+          const s = Math.trunc(cursorWheelAccum);
+          if (s !== 0) {
+            _moveCursorBySteps(-s);
+            cursorWheelAccum -= s;
+          }
+          if (Math.abs(cursorWheelAccum) < 0.05) {
+            cursorWheelAccum = 0;
+            cursorWheelDecayRaf = 0;
+            return;
+          }
+          cursorWheelDecayRaf = requestAnimationFrame(decay);
+        });
+      }
+      return;
+    }
+    // 滚动模式（含边界穿透，累积跨帧）
     const cur = getRootScrollY() ?? 0;
     wheelTarget = cur + e.deltaY;
     if (!wheelRaf) {
+      let wheelAccum = 0;
+      const wheelCenterIdx = _getCenterRowIndex();
       wheelRaf = requestAnimationFrame(function smoothWheel() {
         const cur2 = getRootScrollY() ?? 0;
         const diff = wheelTarget - cur2;
         if (Math.abs(diff) < 0.5) {
           setRootScrollY(wheelTarget);
+          _snapCursorToCenter();
           wheelRaf = 0;
           return;
         }
-        setRootScrollY(cur2 + diff * 0.25);
+        const maxY = renderer?.getRoot()?.getMaxScroll().maxY ?? 0;
+        const desired = cur2 + diff * 0.25;
+        if (desired < 0 && maxY > 0) {
+          setRootScrollY(0);
+          wheelAccum += -desired;
+          const steps = Math.floor(wheelAccum / LINE_HEIGHT);
+          if (steps > 0) {
+            wheelAccum -= steps * LINE_HEIGHT;
+            const targetIdx = Math.max(0, wheelCenterIdx - steps);
+            if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+          }
+        } else if (desired > maxY) {
+          setRootScrollY(maxY);
+          wheelAccum += desired - maxY;
+          const steps = Math.floor(wheelAccum / LINE_HEIGHT);
+          if (steps > 0) {
+            wheelAccum -= steps * LINE_HEIGHT;
+            const targetIdx = Math.min(_rowIndex.length - 1, wheelCenterIdx + steps);
+            if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+          }
+        } else {
+          setRootScrollY(desired);
+          _snapCursorToCenter();
+        }
         wheelRaf = requestAnimationFrame(smoothWheel);
       });
     }
   }, { passive: false });
 
-  // === Touch 惯性滚动 ===
+  // ===== Touch =====
+  // 滚动模式状态
   let touchStartY = 0;
   let touchScrollY = 0;
   let lastTouchY = 0;
   let lastTouchTime = 0;
   let velocity = 0;
   let flingRaf = 0;
+  // 边界锁状态：光标偏离中心时锁定滚动，回到中心才解锁
+  let _boundPen = 0;       // 穿透深度（像素），>0 表示锁住
+  let _boundIsTop = false; // true=上边界锁，false=下边界锁
+  // 光标模式状态
+  let cursorTouchBase = 0;
+  let cursorTouchStartY = 0;
+  let cursorLastTouchY = 0;
+  let cursorLastTouchTime = 0;
+  let cursorVelocity = 0;
+  let cursorFlingRaf = 0;
 
   canvas.addEventListener('touchstart', (e) => {
-    touchStartY = e.touches[0].clientY;
-    touchScrollY = getRootScrollY() ?? 0;
-    lastTouchY = touchStartY;
+    const y = e.touches[0].clientY;
+    lastTouchY = y;
     lastTouchTime = performance.now();
-    velocity = 0;
+    // 取消所有进行中的 RAF
     if (flingRaf) { cancelAnimationFrame(flingRaf); flingRaf = 0; }
+    if (cursorFlingRaf) { cancelAnimationFrame(cursorFlingRaf); cursorFlingRaf = 0; }
+
+    _touchIsCursor = _isCursorMode();
+
+    if (_touchIsCursor) {
+      cursorTouchBase = Math.max(0, _getCursorRowIndex());
+      cursorTouchStartY = y;
+      cursorLastTouchY = y;
+      cursorLastTouchTime = lastTouchTime;
+      cursorVelocity = 0;
+    } else {
+      touchStartY = y;
+      touchScrollY = getRootScrollY() ?? 0;
+      velocity = 0;
+      // 检测边界锁残留：光标因上次手势偏离中心
+      _boundPen = 0;
+      _boundIsTop = false;
+      const root2 = renderer?.getRoot();
+      if (root2 && !_isCursorMode()) {
+        const maxY2 = root2.getMaxScroll().maxY ?? 0;
+        const centerIdx = _getCenterRowIndex();
+        const cursorIdx = _getCursorRowIndex();
+        if (touchScrollY <= 0 && centerIdx >= 0 && cursorIdx >= 0 && cursorIdx < centerIdx) {
+          _boundPen = (centerIdx - cursorIdx) * LINE_HEIGHT;
+          _boundIsTop = true;
+        } else if (touchScrollY >= maxY2 && centerIdx >= 0 && cursorIdx >= 0 && cursorIdx > centerIdx) {
+          _boundPen = (cursorIdx - centerIdx) * LINE_HEIGHT;
+          _boundIsTop = false;
+        }
+      }
+    }
   }, { passive: true });
 
   canvas.addEventListener('touchmove', (e) => {
     const y = e.touches[0].clientY;
-    const dy = touchStartY - y;
     const now = performance.now();
+
+    if (_touchIsCursor) {
+      const dy = cursorTouchStartY - y;
+      const dt = now - cursorLastTouchTime;
+      if (dt > 0) {
+        cursorVelocity = (cursorLastTouchY - y) / dt * 16 * 1.7;
+      }
+      cursorLastTouchY = y;
+      cursorLastTouchTime = now;
+      const stepOffset = dy / LINE_HEIGHT;
+      const idx = Math.round(
+        Math.max(0, Math.min(_rowIndex.length - 1, cursorTouchBase + stepOffset))
+      );
+      if (_rowIndex[idx]) moveCursorTo(_rowIndex[idx]);
+      return;
+    }
+
+    // 滚动模式（含边界锁状态机）
+    const dy = touchStartY - y;
     const dt = now - lastTouchTime;
     if (dt > 0) {
       velocity = (lastTouchY - y) / dt * 16 * 1.7;
     }
+    const dPen = lastTouchY - y;  // 逐帧增量：>0=手指上滑
     lastTouchY = y;
     lastTouchTime = now;
-    setRootScrollY(touchScrollY + dy);
+    const root3 = renderer?.getRoot();
+    const maxY = root3?.getMaxScroll().maxY ?? 0;
+
+    if (_boundPen > 0) {
+      // === 边界锁：滚动锁定，手指位移只改变穿透深度 ===
+      _boundPen = Math.max(0, _boundPen + (_boundIsTop ? -dPen : dPen));
+      if (_boundPen === 0) {
+        // 光标回到中心，解锁，重置滚动参考点
+        touchScrollY = _boundIsTop ? 0 : maxY;
+        touchStartY = y;
+        setRootScrollY(touchScrollY);
+        _snapCursorToCenter();
+      } else {
+        setRootScrollY(_boundIsTop ? 0 : maxY);
+        const steps = Math.floor(_boundPen / LINE_HEIGHT);
+        const centerIdx = _getCenterRowIndex();
+        if (centerIdx >= 0 && steps > 0) {
+          const targetIdx = _boundIsTop
+            ? Math.max(0, centerIdx - steps)
+            : Math.min(_rowIndex.length - 1, centerIdx + steps);
+          if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+        } else {
+          _snapCursorToCenter();
+        }
+      }
+    } else {
+      // === 正常滚动 ===
+      const desired = touchScrollY + dy;
+      if (desired < 0 && maxY > 0) {
+        _boundPen = -desired;
+        _boundIsTop = true;
+        setRootScrollY(0);
+        const steps = Math.floor(_boundPen / LINE_HEIGHT);
+        const centerIdx = _getCenterRowIndex();
+        if (centerIdx >= 0 && steps > 0) {
+          const targetIdx = Math.max(0, centerIdx - steps);
+          if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+        }
+      } else if (desired > maxY) {
+        _boundPen = desired - maxY;
+        _boundIsTop = false;
+        setRootScrollY(maxY);
+        const steps = Math.floor(_boundPen / LINE_HEIGHT);
+        const centerIdx = _getCenterRowIndex();
+        if (centerIdx >= 0 && steps > 0) {
+          const targetIdx = Math.min(_rowIndex.length - 1, centerIdx + steps);
+          if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+        }
+      } else {
+        setRootScrollY(desired);
+        _snapCursorToCenter();
+      }
+    }
   }, { passive: true });
 
   canvas.addEventListener('touchend', () => {
+    if (_touchIsCursor) {
+      if (Math.abs(cursorVelocity) >= 0.5 && _rowIndex.length > 0) {
+        // 将起点更新为当前光标位置，避免飞回 touchstart 位置
+        cursorTouchBase = Math.max(0, _getCursorRowIndex());
+        function cursorFling() {
+          cursorVelocity *= 0.96;
+          if (Math.abs(cursorVelocity) < 0.3) { cursorFlingRaf = 0; return; }
+          cursorTouchBase += cursorVelocity / LINE_HEIGHT;
+          const idx = Math.round(
+            Math.max(0, Math.min(_rowIndex.length - 1, cursorTouchBase))
+          );
+          if (_rowIndex[idx]) moveCursorTo(_rowIndex[idx]);
+          cursorFlingRaf = requestAnimationFrame(cursorFling);
+        }
+        cursorFlingRaf = requestAnimationFrame(cursorFling);
+      }
+      return;
+    }
+
+    // 滚动模式 fling（边界锁：velocity 先消耗穿透深度，归零后才允许滚动）
     if (Math.abs(velocity) < 0.5) return;
+    let flingPen = _boundPen;
+    let flingIsTop = _boundIsTop;
+    const flingCenterIdx = _getCenterRowIndex();
+    const flingMaxY = renderer?.getRoot()?.getMaxScroll().maxY ?? 0;
     function fling() {
       velocity *= 0.96;
       if (Math.abs(velocity) < 0.3) { flingRaf = 0; return; }
-      const cur = getRootScrollY() ?? 0;
-      setRootScrollY(cur + velocity);
+
+      if (flingPen > 0) {
+        // 锁状态：velocity 先消耗穿透深度
+        flingPen = Math.max(0, flingPen + (flingIsTop ? -velocity : velocity));
+        if (flingPen === 0) {
+          // 解锁，转为正常滚动
+          setRootScrollY(flingIsTop ? 0 : flingMaxY);
+          _snapCursorToCenter();
+        } else {
+          setRootScrollY(flingIsTop ? 0 : flingMaxY);
+          const steps = Math.floor(flingPen / LINE_HEIGHT);
+          if (steps > 0) {
+            const targetIdx = flingIsTop
+              ? Math.max(0, flingCenterIdx - steps)
+              : Math.min(_rowIndex.length - 1, flingCenterIdx + steps);
+            if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+          }
+        }
+      } else {
+        // 正常滚动 fling
+        const cur = getRootScrollY() ?? 0;
+        const desired = cur + velocity;
+        if (desired < 0 && flingMaxY > 0) {
+          flingPen = -desired;
+          flingIsTop = true;
+          setRootScrollY(0);
+        } else if (desired > flingMaxY) {
+          flingPen = desired - flingMaxY;
+          flingIsTop = false;
+          setRootScrollY(flingMaxY);
+        } else {
+          setRootScrollY(desired);
+          _snapCursorToCenter();
+        }
+      }
       flingRaf = requestAnimationFrame(fling);
     }
     flingRaf = requestAnimationFrame(fling);
@@ -799,6 +1132,9 @@ function rebuildTree(): void {
     // snapToCenterRow(newRoot, canvasH);
     }
   }
+
+  // 重建光标步进行索引
+  _rebuildRowIndex(newRoot);
 
   if (!renderer.isRunning) {
     renderer.start();
