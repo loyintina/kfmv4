@@ -9446,8 +9446,8 @@
         for (let ci = 0; ci < chars.length; ci++) {
           const targetX = row.x + label.x + cx;
           const targetY = row.y + label.y + verticalOffset + li * lineH;
-          const initX = targetX + (Math.random() - 0.5) * 60;
-          const initY = Math.min(topY + li * lineH, targetY - 160);
+          const initX = targetX + (Math.random() - 0.5) * 100;
+          const initY = targetY - 80 - Math.random() * 140;
           const box = new Box({
             id: `cr-${row.id}-L${li}-C${ci}`,
             x: initX,
@@ -9489,8 +9489,8 @@
         const tWidth = ctx.measureText(tChar).width;
         const tTargetX = row.x + toggleBox.x;
         const tTargetY = row.y + toggleBox.y;
-        const tInitX = tTargetX + (Math.random() - 0.5) * 60;
-        const tInitY = Math.min(topY, tTargetY - 160);
+        const tInitX = tTargetX + (Math.random() - 0.5) * 100;
+        const tInitY = tTargetY - 80 - Math.random() * 140;
         const tBox = new Box({
           id: `cr-${row.id}-toggle`,
           x: tInitX,
@@ -9535,41 +9535,31 @@
       return;
     }
     renderer2 == null ? void 0 : renderer2.setRoot(root);
-    const DUR = 0.3;
-    const LINE_DELAY = 0.025;
-    const CHAR_STAGGER = 4e-3;
+    const BASE_DUR = 0.2;
     try {
       await new Promise((resolve) => {
-        const tl = gsapWithCSS.timeline({
-          onComplete: resolve
-        });
+        const tl = gsapWithCSS.timeline({ onComplete: resolve });
         for (let gi = 0; gi < lineGroups.length; gi++) {
           const group = lineGroups[gi];
           if (!group || group.length === 0) continue;
-          tl.to(
-            group.map((t) => t.box),
-            {
-              x: (i) => group[i].targetX,
-              y: (i) => group[i].targetY,
+          for (let ci = 0; ci < group.length; ci++) {
+            const t = group[ci];
+            const randDelay = Math.random() * 0.1 + gi * 8e-3;
+            const randDur = BASE_DUR + Math.random() * 0.06;
+            tl.to(t.box, {
+              x: t.targetX,
+              y: t.targetY,
               opacity: 1,
-              duration: DUR,
-              ease: "back.out(1.05)",
-              stagger: CHAR_STAGGER
-            },
-            gi * LINE_DELAY
-          );
-          const groupToggles = group.filter((t) => t.isToggle);
-          if (groupToggles.length > 0) {
-            tl.to(
-              groupToggles.map((t) => t.box.transform),
-              {
+              duration: randDur,
+              ease: "back.out(1.05)"
+            }, randDelay);
+            if (t.isToggle) {
+              tl.to(t.box.transform, {
                 rotate: Math.PI / 2,
-                duration: DUR,
-                ease: "power2.out",
-                stagger: CHAR_STAGGER
-              },
-              gi * LINE_DELAY
-            );
+                duration: randDur,
+                ease: "power2.out"
+              }, randDelay);
+            }
           }
         }
       });
@@ -9657,7 +9647,7 @@
     animateCharRain(container, root, renderer);
     gsapWithCSS.to(container, {
       height: fullHeight,
-      duration: 0.08,
+      duration: 0.06,
       ease: "back.out(1.15)",
       onUpdate: function() {
         applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
@@ -10091,7 +10081,7 @@
     animateCharRain(container, root, renderer);
     gsapWithCSS.to(container, {
       height: fullHeight,
-      duration: 0.08,
+      duration: 0.06,
       ease: "back.out(1.15)",
       onUpdate: function() {
         applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
@@ -10405,7 +10395,7 @@
       await new Promise((resolve) => {
         gsapWithCSS.to(child, {
           height: subFullH,
-          duration: 0.08,
+          duration: 0.06,
           ease: "back.out(1.15)",
           onUpdate: () => {
             renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());

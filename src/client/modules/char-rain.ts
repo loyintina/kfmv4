@@ -117,8 +117,8 @@ export async function animateCharRain(
         const targetY = row.y + label.y + verticalOffset + li * lineH;
 
         // 初始位置：水平随机偏摆����垂直在屏幕顶部
-        const initX = targetX + (Math.random() - 0.5) * 60;
-        const initY = Math.min(topY + li * lineH, targetY - 160);
+        const initX = targetX + (Math.random() - 0.5) * 100;
+        const initY = targetY - 80 - Math.random() * 140;
 
         const box = new Box({
           id: `cr-${row.id}-L${li}-C${ci}`,
@@ -161,8 +161,8 @@ export async function animateCharRain(
       const tWidth = ctx.measureText(tChar).width;
       const tTargetX = row.x + toggleBox.x;
       const tTargetY = row.y + toggleBox.y;
-      const tInitX = tTargetX + (Math.random() - 0.5) * 60;
-      const tInitY = Math.min(topY, tTargetY - 160);
+      const tInitX = tTargetX + (Math.random() - 0.5) * 100;
+      const tInitY = tTargetY - 80 - Math.random() * 140;
 
       const tBox = new Box({
         id: `cr-${row.id}-toggle`,
@@ -205,48 +205,38 @@ export async function animateCharRain(
   // 推送初始状态（字符在屏幕顶部）
   renderer?.setRoot(root);
 
-  // 5. GSAP 动画：行间波浪 + 回弹着地
-  const DUR = 0.3;
-  const LINE_DELAY = 0.025;
-  const CHAR_STAGGER = 0.004;
+  // 5. GSAP 动画：逐字随机延迟，碎片化散落
+  const BASE_DUR = 0.2;
 
   try {
     await new Promise<void>((resolve) => {
-      const tl = gsap.timeline({
-        onComplete: resolve,
-      });
+      const tl = gsap.timeline({ onComplete: resolve });
 
       for (let gi = 0; gi < lineGroups.length; gi++) {
         const group = lineGroups[gi];
         if (!group || group.length === 0) continue;
 
-        // 落体动画（回弹缓动）
-        tl.to(
-          group.map((t) => t.box),
-          {
-            x: (i: number) => group[i].targetX,
-            y: (i: number) => group[i].targetY,
-            opacity: 1,
-            duration: DUR,
-            ease: "back.out(1.05)",
-            stagger: CHAR_STAGGER,
-          },
-          gi * LINE_DELAY
-        );
+        for (let ci = 0; ci < group.length; ci++) {
+          const t = group[ci];
+          // 每个字符独立随机延迟和微变时长，打破排队感
+          const randDelay = Math.random() * 0.1 + gi * 0.008;
+          const randDur = BASE_DUR + Math.random() * 0.06;
 
-        // 三角旋转（同组并行）
-        const groupToggles = group.filter((t) => t.isToggle);
-        if (groupToggles.length > 0) {
-          tl.to(
-            groupToggles.map((t) => t.box.transform),
-            {
+          tl.to(t.box, {
+            x: t.targetX,
+            y: t.targetY,
+            opacity: 1,
+            duration: randDur,
+            ease: "back.out(1.05)",
+          }, randDelay);
+
+          if (t.isToggle) {
+            tl.to(t.box.transform, {
               rotate: Math.PI / 2,
-              duration: DUR,
+              duration: randDur,
               ease: "power2.out",
-              stagger: CHAR_STAGGER,
-            },
-            gi * LINE_DELAY
-          );
+            }, randDelay);
+          }
         }
       }
     });
