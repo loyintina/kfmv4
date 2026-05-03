@@ -9955,6 +9955,23 @@
       moveCursorTo(_rowIndex[idx]);
     }
   }
+  function _scrollToCenterCursor() {
+    var _a;
+    if (_isCursorMode()) return;
+    const root = renderer == null ? void 0 : renderer.getRoot();
+    if (!root || cursorRowId === null) return;
+    const canvas = document.getElementById("tree-canvas");
+    const canvasH = (_a = canvas == null ? void 0 : canvas.clientHeight) != null ? _a : 618;
+    const maxY = root.getMaxScroll().maxY;
+    const idx = _getCursorRowIndex();
+    if (idx < 0 || !_rowIndex[idx]) return;
+    try {
+      const abs = _rowIndex[idx].getAbsolutePosition();
+      const targetScrollY = Math.max(0, Math.min(maxY, abs.y + _rowIndex[idx].height / 2 - canvasH / 2));
+      root.scrollY = targetScrollY;
+    } catch {
+    }
+  }
   function _createSidebarTouchArea() {
     const old = document.getElementById("sidebarTouchArea");
     if (old) old.remove();
@@ -10330,7 +10347,8 @@
             hit.gesture.onTap();
           }
         } else {
-          moveCursorTo(hit);
+          moveCursorTo(hit, false);
+          _scrollToCenterCursor();
         }
         break;
       }

@@ -521,6 +521,24 @@ function _snapCursorToCenter(): void {
   }
 }
 
+
+/** 点击后将页面滚动到光标居中位置 */
+function _scrollToCenterCursor(): void {
+  if (_isCursorMode()) return; // 光标模式无需滚动
+  const root = renderer?.getRoot();
+  if (!root || cursorRowId === null) return;
+  const canvas = document.getElementById('tree-canvas');
+  const canvasH = canvas?.clientHeight ?? 618;
+  const maxY = root.getMaxScroll().maxY;
+  const idx = _getCursorRowIndex();
+  if (idx < 0 || !_rowIndex[idx]) return;
+  try {
+    const abs = _rowIndex[idx].getAbsolutePosition();
+    const targetScrollY = Math.max(0, Math.min(maxY, abs.y + _rowIndex[idx].height / 2 - canvasH / 2));
+    root.scrollY = targetScrollY;
+  } catch {}
+}
+
 /** 创建左栏右侧触摸盒子：填充剩余屏幕，同步滚动 + 点击执行光标动作 + 右往左滑关闭 */
 function _createSidebarTouchArea(): void {
   const old = document.getElementById('sidebarTouchArea');
@@ -940,7 +958,8 @@ function processClickQueue(): void {
           hit.gesture.onTap();
         }
       } else {
-        moveCursorTo(hit);
+        moveCursorTo(hit, false);
+        _scrollToCenterCursor();
       }
       break;
     }
