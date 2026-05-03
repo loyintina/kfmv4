@@ -9740,14 +9740,23 @@
     return cursorBox;
   }
   function moveCursorTo(hitBox, animate = true) {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d, _e, _f, _g;
     if (!cursorBox) return;
-    const abs = hitBox.getAbsolutePosition();
+    const root = renderer == null ? void 0 : renderer.getRoot();
+    if (root && !root.children.includes(cursorBox)) {
+      ensureCursorBox(root, root.height || ((_b = (_a = document.getElementById("tree-canvas")) == null ? void 0 : _a.clientHeight) != null ? _b : 618));
+    }
+    let abs;
+    try {
+      abs = hitBox.getAbsolutePosition();
+    } catch {
+      return;
+    }
     const canvas = document.getElementById("tree-canvas");
-    const depth = (_b = (_a = hitBox.data) == null ? void 0 : _a.depth) != null ? _b : 0;
+    const depth = (_d = (_c = hitBox.data) == null ? void 0 : _c.depth) != null ? _d : 0;
     const shift = getShift(depth);
     const offsetX = shift / 2;
-    const rm = ((_c = canvas == null ? void 0 : canvas.clientWidth) != null ? _c : 295) - 8;
+    const rm = ((_e = canvas == null ? void 0 : canvas.clientWidth) != null ? _e : 295) - 8;
     const targetX = abs.x + offsetX;
     const targetY = abs.y + 2;
     const targetW = rm - abs.x - offsetX;
@@ -9758,8 +9767,8 @@
       return (_a2 = c.id) == null ? void 0 : _a2.startsWith("label-");
     });
     let textW = 0;
-    if ((_d = label == null ? void 0 : label.textStyle) == null ? void 0 : _d.content) {
-      const ctx2d = (_e = canvas == null ? void 0 : canvas.getContext) == null ? void 0 : _e.call(canvas, "2d");
+    if ((_f = label == null ? void 0 : label.textStyle) == null ? void 0 : _f.content) {
+      const ctx2d = (_g = canvas == null ? void 0 : canvas.getContext) == null ? void 0 : _g.call(canvas, "2d");
       if (ctx2d) {
         const font = label.textStyle.font || "11px system-ui, sans-serif";
         const labelX = label.x || 0;
@@ -9800,22 +9809,31 @@
       cdata.color = "rgba(0,212,255,0.7)";
     }
     if (animate && cdata) {
-      gsapWithCSS.to(cursorBox, {
-        x: targetX,
-        y: targetY,
-        width: targetW,
-        height: targetH,
-        duration: 0.18,
-        ease: "power3.out",
-        overwrite: "auto"
-      });
-      gsapWithCSS.to(cdata, {
-        topLineW,
-        botLineW,
-        duration: 0.18,
-        ease: "power3.out",
-        overwrite: "auto"
-      });
+      try {
+        gsapWithCSS.to(cursorBox, {
+          x: targetX,
+          y: targetY,
+          width: targetW,
+          height: targetH,
+          duration: 0.18,
+          ease: "power3.out",
+          overwrite: "auto"
+        });
+        gsapWithCSS.to(cdata, {
+          topLineW,
+          botLineW,
+          duration: 0.18,
+          ease: "power3.out",
+          overwrite: "auto"
+        });
+      } catch {
+        cursorBox.x = targetX;
+        cursorBox.y = targetY;
+        cursorBox.width = targetW;
+        cursorBox.height = targetH;
+        cdata.topLineW = topLineW;
+        cdata.botLineW = botLineW;
+      }
     } else {
       cursorBox.x = targetX;
       cursorBox.y = targetY;
@@ -9970,12 +9988,16 @@
     let closestIdx = -1;
     let closestDist = Infinity;
     for (let i = 0; i < _rowIndex.length; i++) {
-      const abs = _rowIndex[i].getAbsolutePosition();
-      const rowCenter = abs.y + _rowIndex[i].height / 2;
-      const dist = Math.abs(rowCenter - centerY);
-      if (dist < closestDist) {
-        closestDist = dist;
-        closestIdx = i;
+      try {
+        if (!_rowIndex[i]) continue;
+        const abs = _rowIndex[i].getAbsolutePosition();
+        const rowCenter = abs.y + _rowIndex[i].height / 2;
+        const dist = Math.abs(rowCenter - centerY);
+        if (dist < closestDist) {
+          closestDist = dist;
+          closestIdx = i;
+        }
+      } catch {
       }
     }
     return closestIdx;
@@ -9983,7 +10005,7 @@
   function _snapCursorToCenter() {
     if (_animBusy) return;
     const idx = _getCenterRowIndex();
-    if (idx >= 0 && _rowIndex[idx].id !== cursorRowId) {
+    if (idx >= 0 && _rowIndex[idx] && _rowIndex[idx].id !== cursorRowId) {
       moveCursorTo(_rowIndex[idx]);
     }
   }

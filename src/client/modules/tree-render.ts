@@ -198,7 +198,15 @@ function ensureCursorBox(root: Box, canvasH: number): Box {
 /** 移动光标到指定行（GSAP 平滑过渡） */
 function moveCursorTo(hitBox: Box, animate = true): void {
   if (!cursorBox) return;
-  const abs = hitBox.getAbsolutePosition();
+  // 防崩溃：确认光标盒仍在树中，不在则重新挂载
+  const root = renderer?.getRoot();
+  if (root && !root.children.includes(cursorBox)) {
+    ensureCursorBox(root, root.height || (document.getElementById('tree-canvas')?.clientHeight ?? 618));
+  }
+  let abs: { x: number; y: number };
+  try {
+    abs = hitBox.getAbsolutePosition();
+  } catch { return; }
   const canvas = document.getElementById('tree-canvas');
 
   const depth = (hitBox as any).data?.depth ?? 0;
@@ -263,16 +271,23 @@ function moveCursorTo(hitBox: Box, animate = true): void {
   if (animate && cdata) {
     // GSAP 平滑过渡：位置/尺寸 + 上线长度
     // 不 kill 旧动画——让 GSAP 自动衔接连续的目标变更，避免视觉跳动
-    gsap.to(cursorBox, {
-      x: targetX, y: targetY, width: targetW, height: targetH,
-      duration: 0.18, ease: 'power3.out',
-      overwrite: 'auto',
-    });
-    gsap.to(cdata, {
-      topLineW, botLineW,
-      duration: 0.18, ease: 'power3.out',
-      overwrite: 'auto',
-    });
+    try {
+      gsap.to(cursorBox, {
+        x: targetX, y: targetY, width: targetW, height: targetH,
+        duration: 0.18, ease: 'power3.out',
+        overwrite: 'auto',
+      });
+      gsap.to(cdata, {
+        topLineW, botLineW,
+        duration: 0.18, ease: 'power3.out',
+        overwrite: 'auto',
+      });
+    } catch {
+      // GSAP 异常时降级为瞬移
+      cursorBox.x = targetX; cursorBox.y = targetY;
+      cursorBox.width = targetW; cursorBox.height = targetH;
+      cdata.topLineW = topLineW; cdata.botLineW = botLineW;
+    }
   } else {
     // 瞬移模式（初始放置等场景）
     cursorBox.x = targetX;
@@ -472,13 +487,16 @@ function _getCenterRowIndex(): number {
   let closestIdx = -1;
   let closestDist = Infinity;
   for (let i = 0; i < _rowIndex.length; i++) {
-    const abs = _rowIndex[i].getAbsolutePosition();
-    const rowCenter = abs.y + _rowIndex[i].height / 2;
-    const dist = Math.abs(rowCenter - centerY);
-    if (dist < closestDist) {
-      closestDist = dist;
-      closestIdx = i;
-    }
+    try {
+      if (!_rowIndex[i]) continue;
+      const abs = _rowIndex[i].getAbsolutePosition();
+      const rowCenter = abs.y + _rowIndex[i].height / 2;
+      const dist = Math.abs(rowCenter - centerY);
+      if (dist < closestDist) {
+        closestDist = dist;
+        closestIdx = i;
+      }
+    } catch { /* Box 被移除则跳过 */ }
   }
   return closestIdx;
 }
@@ -487,8 +505,8 @@ function _getCenterRowIndex(): number {
 function _snapCursorToCenter(): void {
   if (_animBusy) return;
   const idx = _getCenterRowIndex();
-  if (idx >= 0 && _rowIndex[idx].id !== cursorRowId) {
-    moveCursorTo(_rowIndex[idx]);
+  if (idx >= 0 && _rowIndex[idx] && _rowIndex[idx]!.id !== cursorRowId) {
+    moveCursorTo(_rowIndex[idx]!);
   }
 }
 
