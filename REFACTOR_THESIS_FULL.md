@@ -121,7 +121,7 @@ DOM 层（覆盖在 Canvas 上）：编辑器 / AI对话 / 输入框 / 表单
 
 ## 当前实现现状（2026-05）
 
-当前版本是基于 **kfmv3 v2 自研引擎** 的移动端文件管理器 + AI 对话助手，作为走向蓝图的第一步。
+当前版本是基于 **kfmv3 v2 自研引擎** 的移动端文件管理器 + AI 对话���手，作为走向蓝图的第一步。
 
 **核心运行形态：**
 
@@ -339,6 +339,110 @@ interface Box {
 2025-05-xx  03fdee2  fix: 交换气泡配色
 2025-05-xx  4c23ee7  fix: 侧栏渐变边框 + 关闭按钮
 2025-05-xx  c820cff  docs: 同步更新技术文档
+```
+
+---
+
+## 代码审计对照（2026-05-04）
+
+### ✅ 文档对齐
+
+| 文档章节 | 代码位置 | 状态 |
+|---------|---------|------|
+| 侧栏渲染管线 | `renderer.ts` 渲染循环 | 对齐 |
+| 盒子模型 | `box.ts` Box 类 | 对齐 |
+| 动画 GSAP 独占 | `tree-render.ts`/`char-rain.ts` GSAP 使用 | 对齐 |
+| Pretext 文本测量 | `renderer.ts` _drawText + tree-render 光标 | 对齐 |
+| 事件堆栈+会话隔离 | `tree-render.ts` _sessionId/_clickQueue | 对齐 |
+| 颜色系统 | `index.html` CSS + `orb.ts` + tree-render 光标 | 对齐 |
+| 调试系统删除 | `app.ts`/`gestures.ts`/`tree-render.ts` 已清理 | 对齐 |
+
+### ⚠️ 文档遗漏
+
+| 内容 | 代码位置 | 说明 |
+|------|---------|------|
+| 自研 Flexbox | `engine/v2/flex.ts` (244行) | 当前只做备用，文档未展开 |
+| 边框绘制引擎 | `engine/v2/BorderDrawer.ts` | 圆角/渐变/虚线边框渲染，文档未提及 |
+| 自研缓动函数 | `engine/v2/animation.ts` | 备选缓动（当前由 GSAP 替代） |
+| 滚动事件处理 | `engine/v2/scroll.ts` | 触摸/鼠标滚轮，树内独立实现 |
+| 手势框架 | `engine/v2/gesture.ts` + `GestureRecognizer.ts` | 文档对引擎层手势系统描述不足 |
+| 样式配置 | `engine/v2/StyleConfig.ts` | 盒子样式类型，未记录 |
+| 全局类型 | `engine/v2/types.ts` | 类型定义汇总，未记录 |
+| 工具函数 | `engine/v2/utils.ts` | 零间距常量等，未记录 |
+| onSidebarOpen 完全重建 | `tree-render.ts` onSidebarOpen | 文档只记录了会话ID，实际还做了 renderer.stop → null → 重建 canvas 和事件绑定 |
+| 文件数据懒加载流程 | `tree-loader.ts` loadAndAnimate | 展开文件夹 → API拉取 → notify → rebuild → 展开动画，文档未完整描述 |
+| 光球实现 | `orb.ts` | AI 对话面板 + 光球跟随触摸，文档只简略提及 |
+
+### 🗑️ 残留文件（待清理候选）
+
+| 文件 | 行数 | 状态 |
+|------|------|------|
+| `src/client/modules/debug-helper.ts` | 17 | 全量删除安全 |
+| `src/client/modules/debug-panel.ts` | 54 | 全量删除安全 |
+| `src/client/modules/tree-render-legacy.ts` | 163 | 全量删除安全 |
+
+三个文件在 `src/client/modules/` 目录下，但未被任何模块 import 引用，属于死文件。
+
+### 🔍 引擎层手势系统（补充 · 文档遗漏）
+
+引擎层有两套互补的手势系统：
+
+```yaml
+gesture.ts — 边缘检测 + 滑动识别 + 磁吸:
+  常量:
+    EDGE_THRESHOLD:   20px   从屏幕边缘开始检测
+    SLIDE_THRESHOLD:  60px   触发展开/折叠
+    SNAP_THRESHOLD:   150px  磁吸阈值
+    HOLD_THRESHOLD_MS: 300ms 按住触发
+  用途: 侧栏边缘滑出/滑入、面板边缘操作
+
+GestureRecognizer.ts — 独立手势识别器:
+  用途: 与 Box.gesture 属性配合，识别点击/长按/滑动等
+  状态: 已创建，当前与 gestures.ts 应用层配合使用
+```
+
+应用层 `gestures.ts` 进一步封装了主页面触摸手势（右滑开侧栏、左滑关侧栏），与引擎层手势框架为独立的两层实现。
+
+### 🔍 文件懒加载与展开流程（补充 · 文档遗漏）
+
+展开文件夹时的完整调用链：
+
+```yaml
+用户点文件行（第二次）:
+  1. processClickQueue() → doExpand()
+  2. 设 animatingPath = path
+  3. hit.gesture.onTap()  → KFMState.setExpanded() → notify()
+     4. _stateSub → forceRebuildTree()
+        5. buildSidebarTree()
+           6. 发现该目录 children 未加载
+              → loadFileTree.lazyLoader 拦截
+     ─── 如果数据已缓存，直接走 <- 8
+   
+  7. loadAndAnimate(path)
+     7a. fetchDirRecursive → API POST /files/list-recursive
+     7b. ingestTree() → 写入 KFMState.files
+     7c. KFMState.notify() → rebuildTree()（树重建，含展开预设）
+     7d. triggerExpandAnimation(path)
+         → GSAP 展开容器 + slideInRows（子容器递归）
+         → char-rain.ts 字符散落（fire-and-forget）
+
+  8. 动画完成 → _animBusy = false → processClickQueue()
+```
+
+### 🔍 onSidebarOpen 完全重建流程（补充 · 文档遗漏）
+
+每次打开侧栏并非简单刷新，而是**彻底销毁重建**：
+
+```yaml
+1. _sessionId++                        # 旧会话失效
+2. gsap.globalTimeline.clear()         # 杀 GSAP
+3. renderer?.stop()                    # 停旧渲染器
+4. renderer = null                     # 释放引用
+5. cursorBox = null, cursorRowId = null # 清光标
+6. fileTree.innerHTML = ''             # 删旧 canvas DOM
+7. 创建新 canvas → new Renderer()
+8. requestAnimationFrame → rebuildTree()  # 等 layout
+9. 重新绑定 scroll/click/gamepad 事件
 ```
 
 ---
