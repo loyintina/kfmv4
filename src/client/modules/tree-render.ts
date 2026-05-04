@@ -166,7 +166,7 @@ export function isAnimLocked(): boolean {
 let cursorBox: Box | null = null;   // 光标 Box 实例
 let cursorRowId: string | null = null;  // 当前光标指向的行 id
 let _savedCursorRowId: string | null = null;  // 侧栏关闭时保存的光标位置
-let _savedScrollY = 0;  // 侧栏关闭时保存的滚动位置
+let _restoringFromSave = false;  // 标记正在从关闭状态恢复
 
 // 光标步进模式 —— 行索引（按绝对 Y 坐标排序的可交互行）
 let _rowIndex: Box[] = [];
@@ -380,8 +380,8 @@ export function onSidebarOpen(): void {
 
 export function onSidebarClose(): void {
   // 保存光标位置供下次打开恢复
+  _restoringFromSave = true;
   _savedCursorRowId = cursorRowId;
-  _savedScrollY = renderer?.getRoot()?.scrollY ?? 0;
   // 同样销毁一切——确保没有残留状态
   _sessionId++;
   gsap.globalTimeline.clear();
@@ -1165,8 +1165,7 @@ function rebuildTree(): void {
   }
 
   // 保存当前滚动位置和光标行
-  const prevScrollY = (_savedScrollY || renderer.getRoot()?.scrollY) ?? 0;
-  _savedScrollY = 0;
+  const prevScrollY = renderer.getRoot()?.scrollY ?? 0;
   const prevCursorRowId = cursorRowId;
    // 动画重建时，保存旧光标位置以保持视觉稳定
   const prevCursorX = cursorBox?.x ?? -1;
@@ -1290,6 +1289,12 @@ function rebuildTree(): void {
 
   // 重建光标步进行索引
   _rebuildRowIndex(newRoot);
+
+  // 从关闭状态恢复时，滚动让光标居中
+  if (_restoringFromSave && cursorRowId) {
+    _restoringFromSave = false;
+    requestAnimationFrame(() => _scrollToCenterCursor());
+  }
 
 
   if (!renderer.isRunning) {
