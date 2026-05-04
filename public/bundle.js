@@ -12593,12 +12593,12 @@
     let html = "";
     for (const msg of chatMessages) {
       const isUser = msg.role === "user";
-      const bgColor = isUser ? "linear-gradient(rgba(10,10,15,.85),rgba(10,10,15,.85)) padding-box,linear-gradient(135deg,rgba(0,212,255,.8),rgba(99,102,241,.7),rgba(124,58,237,.7)) border-box" : "linear-gradient(rgba(10,15,30,0.88),rgba(10,15,30,0.88)) padding-box,linear-gradient(135deg,#00d4d4,rgba(160,80,230,0.35)) border-box";
+      const bgColor = isUser ? "linear-gradient(rgba(10,10,15,.85),rgba(10,10,15,.85)) padding-box,linear-gradient(135deg,#7c3aed,rgba(0,212,255,.8)) border-box" : "linear-gradient(rgba(10,15,30,0.88),rgba(10,15,30,0.88)) padding-box,linear-gradient(135deg,rgba(0,212,255,.8),rgba(99,102,241,.7),rgba(124,58,237,.7)) border-box";
       const borderStyle = isUser ? "border:1px solid transparent;border-left-width:3px;" : "border:1px solid transparent;border-left-width:3px;";
       const align = isUser ? "flex-end" : "flex-start";
       const label = isUser ? "\u4F60" : "\u851A\u7136";
-      const labelColor = isUser ? "#7c3aed" : "#00d4ff";
-      const boxShadow = isUser ? "0 0 10px 2px rgba(124,58,237,0.12)" : "0 0 10px 2px rgba(0,210,230,0.1)";
+      const labelColor = isUser ? "#7c3aed" : "#818cf8";
+      const boxShadow = isUser ? "0 0 10px 2px rgba(124,58,237,0.12)" : "0 0 10px 2px rgba(99,102,241,0.08)";
       const font = "13px sans-serif";
       const lineHeight = 20;
       try {
