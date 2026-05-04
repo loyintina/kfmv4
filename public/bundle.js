@@ -12571,7 +12571,7 @@
     border: 1px solid transparent;
     border-left-width: 3px;
     border-radius: 12px;
-    box-shadow: 0 0 20px 4px rgba(124, 58, 237, 0.15), 0 8px 32px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 24px 8px rgba(124, 58, 237, 0.25), 0 8px 32px rgba(0, 0, 0, 0.5);
     z-index: 205;
     display: flex;
     flex-direction: column;
@@ -12593,12 +12593,12 @@
     let html = "";
     for (const msg of chatMessages) {
       const isUser = msg.role === "user";
-      const bgColor = isUser ? "linear-gradient(rgba(10,10,15,.85),rgba(10,10,15,.85)) padding-box,linear-gradient(135deg,#7c3aed,rgba(0,212,255,.8)) border-box" : "linear-gradient(rgba(10,15,30,0.88),rgba(10,15,30,0.88)) padding-box,linear-gradient(135deg,rgba(0,200,220,0.3),rgba(130,60,200,0.15)) border-box";
-      const borderStyle = isUser ? "border:1px solid transparent;border-left-width:3px;" : "border:1px solid transparent;border-left:3px solid rgba(0,200,220,0.12);";
+      const bgColor = isUser ? "linear-gradient(rgba(10,10,15,.85),rgba(10,10,15,.85)) padding-box,linear-gradient(135deg,#7c3aed,rgba(0,212,255,.8)) border-box" : "linear-gradient(rgba(10,15,30,0.88),rgba(10,15,30,0.88)) padding-box,linear-gradient(135deg,#00d4d4,rgba(160,80,230,0.35)) border-box";
+      const borderStyle = isUser ? "border:1px solid transparent;border-left-width:3px;" : "border:1px solid transparent;border-left-width:3px;";
       const align = isUser ? "flex-end" : "flex-start";
       const label = isUser ? "\u4F60" : "\u851A\u7136";
       const labelColor = isUser ? "#7c3aed" : "#00d4ff";
-      const boxShadow = isUser ? "0 0 10px 2px rgba(124,58,237,0.12)" : "0 0 10px 2px rgba(0,200,220,0.06)";
+      const boxShadow = isUser ? "0 0 10px 2px rgba(124,58,237,0.12)" : "0 0 10px 2px rgba(0,210,230,0.1)";
       const font = "13px sans-serif";
       const lineHeight = 20;
       try {
@@ -12699,7 +12699,7 @@
     if (orbState !== "expanded") return;
     orbState = "editing";
     if (panelEl) {
-      panelEl.style.boxShadow = "0 0 30px 8px rgba(0, 212, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.5)";
+      panelEl.style.boxShadow = "0 0 30px 8px rgba(124, 58, 237, 0.35), 0 8px 32px rgba(0, 0, 0, 0.5)";
     }
     updateStateLabel();
   }
@@ -12707,7 +12707,7 @@
     if (orbState !== "editing") return;
     orbState = "expanded";
     if (panelEl) {
-      panelEl.style.boxShadow = "0 0 20px 4px rgba(124, 58, 237, 0.15), 0 8px 32px rgba(0, 0, 0, 0.5)";
+      panelEl.style.boxShadow = "0 0 24px 8px rgba(124, 58, 237, 0.25), 0 8px 32px rgba(0, 0, 0, 0.5)";
     }
     renderChatContent();
     updateStateLabel();
