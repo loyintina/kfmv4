@@ -12566,7 +12566,7 @@
     panel.className = "orb-panel";
     panel.style.cssText = `
     position: fixed;
-    background: linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, linear-gradient(135deg,#7c3aed,rgba(0,212,255,.8)) border-box;
+    background: linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, linear-gradient(135deg,rgba(0,212,255,.8),rgba(99,102,241,.7),rgba(124,58,237,.7)) border-box;
     backdrop-filter: blur(16px);
     border: 1px solid transparent;
     border-left-width: 3px;
@@ -12593,7 +12593,7 @@
     let html = "";
     for (const msg of chatMessages) {
       const isUser = msg.role === "user";
-      const bgColor = isUser ? "linear-gradient(rgba(10,10,15,.85),rgba(10,10,15,.85)) padding-box,linear-gradient(135deg,#7c3aed,rgba(0,212,255,.8)) border-box" : "linear-gradient(rgba(10,15,30,0.88),rgba(10,15,30,0.88)) padding-box,linear-gradient(135deg,#00d4d4,rgba(160,80,230,0.35)) border-box";
+      const bgColor = isUser ? "linear-gradient(rgba(10,10,15,.85),rgba(10,10,15,.85)) padding-box,linear-gradient(135deg,rgba(0,212,255,.8),rgba(99,102,241,.7),rgba(124,58,237,.7)) border-box" : "linear-gradient(rgba(10,15,30,0.88),rgba(10,15,30,0.88)) padding-box,linear-gradient(135deg,#00d4d4,rgba(160,80,230,0.35)) border-box";
       const borderStyle = isUser ? "border:1px solid transparent;border-left-width:3px;" : "border:1px solid transparent;border-left-width:3px;";
       const align = isUser ? "flex-end" : "flex-start";
       const label = isUser ? "\u4F60" : "\u851A\u7136";
