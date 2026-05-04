@@ -9839,7 +9839,6 @@
         if (root) {
           const maxY = root.getMaxScroll().maxY;
           root.scrollY = Math.min(_savedScrollY, maxY);
-          console.log("[RESTORE] scrollY=", root.scrollY, "saved=", _savedScrollY, "maxY=", maxY);
           const savedVal = root.scrollY;
           _savedScrollY = 0;
           _restoreMode = true;
@@ -9847,7 +9846,6 @@
             _restoreMode = false;
             const r2 = renderer == null ? void 0 : renderer.getRoot();
             if (r2 && Math.abs(r2.scrollY - savedVal) > 10) {
-              console.log("[DELAYED-RESTORE] scrollY was", r2.scrollY, "force to", savedVal);
               r2.scrollY = savedVal;
             }
           }, 500);
@@ -9857,6 +9855,8 @@
       renderer == null ? void 0 : renderer.resize();
       window.__treeRenderer = renderer;
       _ensureSubscribed();
+      styleRegistry.subscribe(() => rebuildTree());
+      window.addEventListener("resize", () => renderer == null ? void 0 : renderer.resize());
       styleRegistry.subscribe(() => rebuildTree());
       window.addEventListener("resize", () => renderer == null ? void 0 : renderer.resize());
       bindScrollEvents(canvas);
@@ -9879,12 +9879,11 @@
     _animBusy = false;
     _animBusyAt = 0;
     _restoringFromSave = true;
-    _savedCursorRowId = cursorRowId;
     const rootScrollY = (_b = (_a = renderer == null ? void 0 : renderer.getRoot()) == null ? void 0 : _a.scrollY) != null ? _b : 0;
-    _savedScrollY = rootScrollY;
-    console.log("[CLOSE] savedScrollY=", rootScrollY, "cursorRowId=", cursorRowId);
-    animatingPath = null;
-    pendingCollapse = null;
+    if (renderer && renderer.getRoot()) {
+      _savedScrollY = rootScrollY;
+      _savedCursorRowId = cursorRowId;
+    }
     _clickQueue = [];
     cursorBox = null;
     cursorRowId = null;

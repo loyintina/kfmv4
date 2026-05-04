@@ -364,7 +364,7 @@ export function onSidebarOpen(): void {
       if (root) {
         const maxY = root.getMaxScroll().maxY;
         root.scrollY = Math.min(_savedScrollY, maxY);
-        console.log('[RESTORE] scrollY=', root.scrollY, 'saved=', _savedScrollY, 'maxY=', maxY);
+        // 实验日志：写到页面上可见
         const savedVal = root.scrollY;
         _savedScrollY = 0;
         _restoreMode = true;
@@ -373,9 +373,9 @@ export function onSidebarOpen(): void {
           // 最终检查：如果 scrollY 被覆盖了，强制恢复
           const r2 = renderer?.getRoot();
           if (r2 && Math.abs(r2.scrollY - savedVal) > 10) {
-            console.log('[DELAYED-RESTORE] scrollY was', r2.scrollY, 'force to', savedVal);
             r2.scrollY = savedVal;
           }
+          // 最终状态日志
         }, 500);
       }
     }
@@ -384,6 +384,8 @@ export function onSidebarOpen(): void {
     (window as any).__treeRenderer = renderer;
 
     _ensureSubscribed();
+    styleRegistry.subscribe(() => rebuildTree());
+    window.addEventListener('resize', () => renderer?.resize());
     styleRegistry.subscribe(() => rebuildTree());
     window.addEventListener('resize', () => renderer?.resize());
 
@@ -412,13 +414,13 @@ export function onSidebarClose(): void {
   _animBusy = false;
   _animBusyAt = 0;
   _restoringFromSave = true;
-  _savedCursorRowId = cursorRowId;
   // 直接保存当前 scrollY（动画停止后的稳定值）
   const rootScrollY = renderer?.getRoot()?.scrollY ?? 0;
-  _savedScrollY = rootScrollY;
-  console.log('[CLOSE] savedScrollY=', rootScrollY, 'cursorRowId=', cursorRowId);
-  animatingPath = null;
-  pendingCollapse = null;
+  // 关键：只有 renderer 存在时才保存，避免用 0/null 覆盖正确的值
+  if (renderer && renderer.getRoot()) {
+    _savedScrollY = rootScrollY;
+    _savedCursorRowId = cursorRowId;
+  }
   _clickQueue = [];
   cursorBox = null;
   cursorRowId = null;
@@ -482,7 +484,7 @@ function setRootScrollY(val: number): void {
 // 光标步进辅助函数
 // ============================================================
 
-/** 重建行索引：遍历树收集所有可交互行，按绝对 Y 排序 */
+/** 重建行索引：遍历树收集所有可交互行，按绝对 Y 排�� */
 function _rebuildRowIndex(root: Box): void {
   _rowIndex = [];
   function walk(box: Box): void {
@@ -597,10 +599,10 @@ function _createSidebarTouchArea(): void {
   box.style.cssText = `position:fixed;top:0;bottom:0;right:0;z-index:999;touch-action:none;left:${w}px;`;
   document.body.appendChild(box);
 
-  // 绑定同样的滚动事件（wheel + touch）
+  // 绑定��样的滚动事件（wheel + touch）
   bindScrollEvents(box);
 
-  // 点击任意位置 → 执行��前光标行的动作
+  // 点击任意位置 → 执行���前光标行的动作
   box.addEventListener('click', () => {
     if (!cursorRowId || _rowIndex.length === 0) return;
     const idx = _getCursorRowIndex();
@@ -805,7 +807,7 @@ function bindScrollEvents(canvas: HTMLElement): void {
     const maxY = root3?.getMaxScroll().maxY ?? 0;
 
     if (_boundPen > 0) {
-      // === 边界锁：滚动锁定，手指位移只改变穿透深度 ===
+      // === 边界锁：滚动��定，手指位移只改变穿透深度 ===
       _boundPen = Math.max(0, _boundPen + (_boundIsTop ? -dPen : dPen));
       if (_boundPen === 0) {
         // 光标��到中����解锁，重置滚动参考点
@@ -924,7 +926,7 @@ function bindScrollEvents(canvas: HTMLElement): void {
           flingPen = desired - flingMaxY;
           flingIsTop = false;
           setRootScrollY(flingMaxY);
-          // 首次触碰边界：��刻基于当前中央行做初始光标偏移
+          // 首次触碰边界����刻基于当前中央行做初始光标偏移
           const centerIdx = _getCenterRowIndex();
           const steps = Math.floor(flingPen / LINE_HEIGHT);
           if (centerIdx >= 0 && steps > 0) {
@@ -966,13 +968,13 @@ function processClickQueue(): void {
   // 动画进行中收到点击 → ����当前动画，立即响应
   if (_animBusy) {
     if (_animBusyAt && Date.now() - _animBusyAt > 3000) {
-      // 超������底：强制释放
+      // 超��������底：强制释放
       _animBusy = false;
       _animBusyAt = 0;
       _clickQueue = [];
       return;
     }
-    // 中断 GSAP 动画，重建干净��，��即����理队列中的点击
+    // 中断 GSAP 动画，重建干净������即����理队列中的点击
     gsap.globalTimeline.clear();
     _animBusy = false;
     _animBusyAt = 0;
@@ -1222,7 +1224,7 @@ function rebuildTree(): void {
   const cw = (canvas?.clientWidth ?? 0) || 295;  // 动态宽度（|| 兜底 clientWidth=0 的��况）
   const rightMargin = cw - 8;              // 行右边界 = 画布宽��� - 8px ���白
   const rootBox = buildSidebarTree(cw, rightMargin);
-  // 让 rootBox ��实际��度=canvas 宽度（扩大裁剪区域），但内部盒子保��相应比例
+  // 让 rootBox ��实际����=canvas 宽度（扩大裁剪区域），但内部盒��保��相应比例
   if (canvas) rootBox.width = cw;
   const canvasH = (canvas?.clientHeight ?? 0) || 618;
   if (canvas) {
@@ -1241,7 +1243,7 @@ function rebuildTree(): void {
   }
 
   // 在 setRoot 之前预设动画初始状态，避免满高一帧闪烁
-  // 递归折叠所有已展开子容器，���保展开动画期间内容不可见
+  // 递归折���所有已展开子容器，���保展开动画期间内容不可见
   function collapseSubs(box: any): void {
     if (!box || !box.children) return;
     for (const child of box.children) {
@@ -1342,7 +1344,7 @@ function rebuildTree(): void {
     renderer.start();
   }
 
-  // 清空 animatingPath，防止后续 rebuildTree（如来自 doCollapse）读到脏值
+  // 清空 animatingPath，防止后续 rebuildTree（如���自 doCollapse）读到脏值
   animatingPath = null;
 
   // [DIAG] 展开/折叠后光标状态追踪
@@ -1500,7 +1502,7 @@ async function slideInRows(container: Box, root: Box, selfToggle?: any): Promise
       child.children.forEach((c, j) => { c.y = subOrigYs[j]; });
     }
     child.children.forEach(c => { c.opacity = 1; });
-    // 子���器的 toggle 直接设置为最终状态（已展开为 90°）
+    // 子���器的 toggle 直接设置为最终状态（已展开为 90��）
     const subTog = (child as any)._toggleBox;
     const subTogRotate = (child as any)._toggleRotate ?? Math.PI / 2;
     // ��当前 root 重新查找 toggle，确保引�����确
