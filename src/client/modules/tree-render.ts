@@ -522,9 +522,9 @@ function _snapCursorToCenter(): void {
 }
 
 
-/** 点击后将页面滚动到光标居中位置 */
+/** 点击后滚动页面到光标居中位置（GSAP 平滑动画） */
 function _scrollToCenterCursor(): void {
-  if (_isCursorMode()) return; // 光标模式无需滚动
+  if (_isCursorMode()) return;
   const root = renderer?.getRoot();
   if (!root || cursorRowId === null) return;
   const canvas = document.getElementById('tree-canvas');
@@ -535,7 +535,13 @@ function _scrollToCenterCursor(): void {
   try {
     const abs = _rowIndex[idx].getAbsolutePosition();
     const targetScrollY = Math.max(0, Math.min(maxY, abs.y + _rowIndex[idx].height / 2 - canvasH / 2));
-    root.scrollY = targetScrollY;
+    gsap.to(root, {
+      scrollY: targetScrollY,
+      duration: 0.35,
+      ease: 'power2.inOut',
+      overwrite: 'auto',
+      onUpdate: function() { renderer?.setRoot(renderer.getRoot()!); },
+    });
   } catch {}
 }
 
@@ -958,7 +964,7 @@ function processClickQueue(): void {
           hit.gesture.onTap();
         }
       } else {
-        moveCursorTo(hit, false);
+        moveCursorTo(hit);
         _scrollToCenterCursor();
       }
       break;

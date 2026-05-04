@@ -9968,7 +9968,15 @@
     try {
       const abs = _rowIndex[idx].getAbsolutePosition();
       const targetScrollY = Math.max(0, Math.min(maxY, abs.y + _rowIndex[idx].height / 2 - canvasH / 2));
-      root.scrollY = targetScrollY;
+      gsapWithCSS.to(root, {
+        scrollY: targetScrollY,
+        duration: 0.35,
+        ease: "power2.inOut",
+        overwrite: "auto",
+        onUpdate: function() {
+          renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+        }
+      });
     } catch {
     }
   }
@@ -10347,7 +10355,7 @@
             hit.gesture.onTap();
           }
         } else {
-          moveCursorTo(hit, false);
+          moveCursorTo(hit);
           _scrollToCenterCursor();
         }
         break;
