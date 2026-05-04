@@ -9850,13 +9850,12 @@
   }
   function onSidebarClose() {
     var _a, _b, _c;
-    _restoringFromSave = true;
-    _savedCursorRowId = cursorRowId;
-    _savedScrollY = (_b = (_a = renderer == null ? void 0 : renderer.getRoot()) == null ? void 0 : _a.scrollY) != null ? _b : 0;
-    _sessionId++;
     gsapWithCSS.globalTimeline.clear();
     _animBusy = false;
     _animBusyAt = 0;
+    _restoringFromSave = true;
+    _savedCursorRowId = cursorRowId;
+    _savedScrollY = (_b = (_a = renderer == null ? void 0 : renderer.getRoot()) == null ? void 0 : _a.scrollY) != null ? _b : 0;
     animatingPath = null;
     pendingCollapse = null;
     _clickQueue = [];
@@ -10535,7 +10534,7 @@
     return null;
   }
   function rebuildTree() {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m;
     if (!renderer) return;
     if (_animBusy) {
       if (_animBusyAt && Date.now() - _animBusyAt > 3e3) {
@@ -10665,19 +10664,7 @@
         const maxY = newRoot.getMaxScroll().maxY;
         newRoot.scrollY = Math.min(_savedScrollY, maxY);
         _savedScrollY = 0;
-      }
-      const restoreScrollY = newRoot.scrollY;
-      try {
-        const cursorIdx = _getCursorRowIndex();
-        if (cursorIdx >= 0 && _rowIndex[cursorIdx]) {
-          const abs = _rowIndex[cursorIdx].getAbsolutePosition();
-          const canvasH2 = ((_o = (_n = document.getElementById("tree-canvas")) == null ? void 0 : _n.clientHeight) != null ? _o : 0) || 618;
-          if (abs.y < restoreScrollY || abs.y > restoreScrollY + canvasH2 - _rowIndex[cursorIdx].height) {
-            requestAnimationFrame(() => _scrollToCenterCursor());
-          }
-        }
-      } catch {
-        requestAnimationFrame(() => _scrollToCenterCursor());
+      } else {
       }
       _restoringFromSave = false;
     }

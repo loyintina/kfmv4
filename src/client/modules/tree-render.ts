@@ -380,15 +380,13 @@ export function onSidebarOpen(): void {
 }
 
 export function onSidebarClose(): void {
-  // 保存光标位置和滚动位置供下次打开恢复
-  _restoringFromSave = true;
-  _savedCursorRowId = cursorRowId;
-  _savedScrollY = renderer?.getRoot()?.scrollY ?? 0;
-  // 同样销毁一切——确保没有残留状态
-  _sessionId++;
+  // 先停掉所有动画（包括 GSAP），再读取 scrollY
   gsap.globalTimeline.clear();
   _animBusy = false;
   _animBusyAt = 0;
+  _restoringFromSave = true;
+  _savedCursorRowId = cursorRowId;
+  _savedScrollY = renderer?.getRoot()?.scrollY ?? 0;
   animatingPath = null;
   pendingCollapse = null;
   _clickQueue = [];
@@ -488,14 +486,14 @@ function _moveCursorBySteps(steps: number): void {
   }
 }
 
-/** 判断当前是否光标模式（内容高度 <= 视口高度，无溢出） */
+/** 判断��前是否���标模式（内容高度 <= 视口高度，无溢出） */
 function _isCursorMode(): boolean {
   const root = renderer?.getRoot();
   if (!root) return false;
   return root.getMaxScroll().maxY <= 0;
 }
 
-/** 获取视口中央最近行的索引（在 _rowIndex 中的位置） */
+/** 获取视口中央最近行的索引（在 _rowIndex 中的位���） */
 function _getCenterRowIndex(): number {
   const root = renderer?.getRoot();
   if (!root || _rowIndex.length === 0) return -1;
@@ -608,11 +606,11 @@ function bindScrollEvents(canvas: HTMLElement): void {
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
     if (_isCursorMode()) {
-      // 光标模式：累积 deltaY 转为步进
+      // 光标模式：累������ deltaY 转为步进
       cursorWheelAccum += e.deltaY / LINE_HEIGHT;
       const steps = Math.trunc(cursorWheelAccum);
       if (steps !== 0) {
-        _moveCursorBySteps(-steps);  // deltaY>0 向下 → 光标向下（索引增大）
+        _moveCursorBySteps(-steps);  // deltaY>0 向下 → 光标向��（索引增大）
         cursorWheelAccum -= steps;
       }
       // 衰减残余（模拟滚轮惯性）
@@ -718,7 +716,7 @@ function bindScrollEvents(canvas: HTMLElement): void {
       touchStartY = y;
       touchScrollY = getRootScrollY() ?? 0;
       velocity = 0;
-      // 检测边界锁残留：光标因上次手势偏离中心
+      // 检���边界锁残留：光标因上次手势偏离��心
       _boundPen = 0;
       _boundIsTop = false;
       const root2 = renderer?.getRoot();
@@ -841,7 +839,7 @@ function bindScrollEvents(canvas: HTMLElement): void {
       return;
     }
 
-    // 滚动模式 fling（边界锁：velocity 先消耗穿透�������度，归零后才允许滚动）
+    // 滚动模式 fling（边界锁：velocity 先消耗穿透���������������度，归零后才允许滚动）
     if (Math.abs(velocity) < 0.5) return;
     let flingPen = _boundPen;
     let flingIsTop = _boundIsTop;
@@ -929,13 +927,13 @@ function processClickQueue(): void {
   // 动画进行中收到点击 → 中断当前动画，立即响应
   if (_animBusy) {
     if (_animBusyAt && Date.now() - _animBusyAt > 3000) {
-      // 超时兜底：强制释放
+      // 超������底：强制释放
       _animBusy = false;
       _animBusyAt = 0;
       _clickQueue = [];
       return;
     }
-    // 中断 GSAP 动画，重建干净树，立即处理队列中的点击
+    // 中断 GSAP 动画，重建干净��，��即����理队列中的点击
     gsap.globalTimeline.clear();
     _animBusy = false;
     _animBusyAt = 0;
@@ -1058,12 +1056,12 @@ function doExpand(hit: Box, hitData: any): void {
       renderer?.setRoot(renderer!.getRoot()!);
     },
     onComplete: () => {
-      // 恢复 cornerRadius
+      // 恢�� cornerRadius
       if (container.kfmStyle && (container as any)._savedCr !== undefined) {
         container.kfmStyle.cornerRadius = (container as any)._savedCr;
       }
       slideInRows(container, root, toggle2).then(() => {
-        // 修复所有子容器 toggle 状态
+        // 修复��有子容器 toggle 状态
         fixExpandedToggles(container);
         renderer?.setRoot(renderer!.getRoot()!);
       }).finally(() => {
@@ -1177,22 +1175,22 @@ function rebuildTree(): void {
   const prevCursorTopLine = (cursorBox as any)?.data?.topLineW ?? -1;
   const prevCursorBotLine = (cursorBox as any)?.data?.botLineW ?? -1;
 
-  // 重置光标实例（旧 root 销毁后 cursorBox ��向的 Box 已无效）
+  // 重置光标实例（旧 root 销毁后 cursorBox ��向的 Box 已无���）
   cursorBox = null;
   cursorRowId = null;
 
   const canvas = document.getElementById('tree-canvas');
-  const cw = (canvas?.clientWidth ?? 0) || 295;  // 动态宽度（|| 兜底 clientWidth=0 的情况）
-  const rightMargin = cw - 8;              // 行右边界 = 画布宽度 - 8px 留白
+  const cw = (canvas?.clientWidth ?? 0) || 295;  // 动态宽度（|| 兜底 clientWidth=0 的��况）
+  const rightMargin = cw - 8;              // 行右边界 = 画布宽��� - 8px ���白
   const rootBox = buildSidebarTree(cw, rightMargin);
-  // 让 rootBox 的实际宽度=canvas 宽度（扩大裁剪区域），但内部盒子保持相应比例
+  // 让 rootBox ��实际��度=canvas 宽度（扩大裁剪区域），但内部盒子保��相应比例
   if (canvas) rootBox.width = cw;
   const canvasH = (canvas?.clientHeight ?? 0) || 618;
   if (canvas) {
     rootBox.height = canvasH;
   }
 
-  // 在 setRoot 之前，把 animatingPath 的 toggle 强行归零并提交，
+  // ��� setRoot 之前，把 animatingPath 的 toggle 强行归零并提交��
   // 盖掉 buildExpanded ������� 90°，避免第一帧闪烁
   if (animatingPath) {
     const titleRow = findBoxById(rootBox, `title-${animatingPath}`);
@@ -1292,26 +1290,13 @@ function rebuildTree(): void {
   // 重建光标步进行索引
   _rebuildRowIndex(newRoot);
 
-  // 从关闭状态恢复时：优先恢复滚动位置，光标居中仅做兜底
+  // V2FIX: 从关闭状态恢��时：优先恢复滚动位置
   if (_restoringFromSave && cursorRowId) {
     if (_savedScrollY > 0) {
       const maxY = newRoot.getMaxScroll().maxY;
       newRoot.scrollY = Math.min(_savedScrollY, maxY);
       _savedScrollY = 0;
-    }
-    // 仅当光标完全不可见时才 GSAP 居中（避免视觉跳跃）
-    const restoreScrollY = newRoot.scrollY;
-    try {
-      const cursorIdx = _getCursorRowIndex();
-      if (cursorIdx >= 0 && _rowIndex[cursorIdx]) {
-        const abs = _rowIndex[cursorIdx].getAbsolutePosition();
-        const canvasH = (document.getElementById('tree-canvas')?.clientHeight ?? 0) || 618;
-        if (abs.y < restoreScrollY || abs.y > restoreScrollY + canvasH - _rowIndex[cursorIdx].height) {
-          requestAnimationFrame(() => _scrollToCenterCursor());
-        }
-      }
-    } catch {
-      requestAnimationFrame(() => _scrollToCenterCursor());
+    } else {
     }
     _restoringFromSave = false;
   }
@@ -1403,7 +1388,7 @@ function applyAnimOffset(
 }
 
 
-/** 只做兄弟偏移+祖先高度调整，不碰子行 y（用于展开动画，让 slideInRows 统一处理子行登场） */
+/** 只做兄弟偏移+祖先高��调整，不碰子行 y（用于展开动画，让 slideInRows 统��处理子行登场） */
 function applyAnimOffsetSiblings(
   container: Box,
   fullHeight: number,
