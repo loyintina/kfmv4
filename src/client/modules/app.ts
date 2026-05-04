@@ -48,6 +48,14 @@ export async function initApp(): Promise<void> {
     });
   }
 
+  // 关闭侧栏按钮
+  const closeBtn = document.getElementById('closeSidebarBtn');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      window.closeSidebar?.();
+    });
+  }
+
   // 侧栏召唤按钮
   const toggleBtn = document.getElementById('sidebarToggleBtn');
   if (toggleBtn) {

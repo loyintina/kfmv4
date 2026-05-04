@@ -92,6 +92,13 @@
         eyeBtn.classList.toggle("active");
       });
     }
+    const closeBtn = document.getElementById("closeSidebarBtn");
+    if (closeBtn) {
+      closeBtn.addEventListener("click", () => {
+        var _a;
+        (_a = window.closeSidebar) == null ? void 0 : _a.call(window);
+      });
+    }
     const toggleBtn = document.getElementById("sidebarToggleBtn");
     if (toggleBtn) {
       toggleBtn.addEventListener("click", () => {
