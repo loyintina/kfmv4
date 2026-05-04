@@ -411,10 +411,9 @@ export function onSidebarClose(): void {
   _animBusyAt = 0;
   _restoringFromSave = true;
   _savedCursorRowId = cursorRowId;
-  // 优先用 _lastUserScrollY（用户意图），fallback 到 root.scrollY
+  // 直接保存当前 scrollY（动画停止后的稳定值）
   const rootScrollY = renderer?.getRoot()?.scrollY ?? 0;
-  _savedScrollY = _lastUserScrollY > 0 ? _lastUserScrollY : rootScrollY;
-  _lastUserScrollY = 0;
+  _savedScrollY = rootScrollY;
   animatingPath = null;
   pendingCollapse = null;
   _clickQueue = [];
@@ -1504,7 +1503,7 @@ async function slideInRows(container: Box, root: Box, selfToggle?: any): Promise
     // 子容器的 toggle 直接设置为最终状态（已展开为 90°）
     const subTog = (child as any)._toggleBox;
     const subTogRotate = (child as any)._toggleRotate ?? Math.PI / 2;
-    // 从当前 root 重新查找 toggle，确保引�����确
+    // ��当前 root 重新查找 toggle，确保引�����确
     const freshTitle = findBoxById(root, `title-${child.id.slice('expanded-'.length)}`);
     const freshTog = freshTitle?.children?.find((c: any) => c.id?.startsWith('toggle-'));
     if (freshTog) {

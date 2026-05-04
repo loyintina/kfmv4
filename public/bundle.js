@@ -9879,8 +9879,7 @@
     _restoringFromSave = true;
     _savedCursorRowId = cursorRowId;
     const rootScrollY = (_b = (_a = renderer == null ? void 0 : renderer.getRoot()) == null ? void 0 : _a.scrollY) != null ? _b : 0;
-    _savedScrollY = _lastUserScrollY > 0 ? _lastUserScrollY : rootScrollY;
-    _lastUserScrollY = 0;
+    _savedScrollY = rootScrollY;
     animatingPath = null;
     pendingCollapse = null;
     _clickQueue = [];
