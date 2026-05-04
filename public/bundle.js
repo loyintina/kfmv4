@@ -12699,7 +12699,7 @@
     if (orbState !== "expanded") return;
     orbState = "editing";
     if (panelEl) {
-      panelEl.style.boxShadow = "0 0 30px 8px rgba(124, 58, 237, 0.35), 0 8px 32px rgba(0, 0, 0, 0.5)";
+      panelEl.style.boxShadow = "0 0 40px 20px rgba(124, 58, 237, 0.55), 0 8px 32px rgba(0, 0, 0, 0.5)";
     }
     updateStateLabel();
   }
