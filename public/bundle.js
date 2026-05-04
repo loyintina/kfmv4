@@ -12566,9 +12566,10 @@
     panel.className = "orb-panel";
     panel.style.cssText = `
     position: fixed;
-    background: rgba(20, 16, 32, 0.92);
+    background: linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, linear-gradient(135deg,#7c3aed,rgba(0,212,255,.8)) border-box;
     backdrop-filter: blur(16px);
-    border: 1px solid rgba(124, 58, 237, 0.3); border-left: 3px solid rgba(124, 58, 237, 0.3);
+    border: 1px solid transparent;
+    border-left-width: 3px;
     border-radius: 12px;
     box-shadow: 0 0 20px 4px rgba(124, 58, 237, 0.15), 0 8px 32px rgba(0, 0, 0, 0.5);
     z-index: 205;
@@ -12697,8 +12698,8 @@
     if (orbState !== "expanded") return;
     orbState = "editing";
     if (panelEl) {
-      panelEl.style.borderColor = "rgba(124, 58, 237, 0.8)";
-      panelEl.style.boxShadow = "0 0 30px 8px rgba(124, 58, 237, 0.3), 0 8px 32px rgba(0, 0, 0, 0.5)";
+      panelEl.style.borderColor = "rgba(0, 212, 255, 0.6)";
+      panelEl.style.boxShadow = "0 0 30px 8px rgba(0, 212, 255, 0.25), 0 8px 32px rgba(0, 0, 0, 0.5)";
     }
     updateStateLabel();
   }
@@ -12706,7 +12707,7 @@
     if (orbState !== "editing") return;
     orbState = "expanded";
     if (panelEl) {
-      panelEl.style.borderColor = "rgba(124, 58, 237, 0.3)";
+      panelEl.style.borderColor = "";
       panelEl.style.boxShadow = "0 0 20px 4px rgba(124, 58, 237, 0.15), 0 8px 32px rgba(0, 0, 0, 0.5)";
     }
     renderChatContent();
