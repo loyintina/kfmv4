@@ -841,7 +841,7 @@ function bindScrollEvents(canvas: HTMLElement): void {
       return;
     }
 
-    // 滚动模式 fling（边界锁：velocity 先消耗穿透���度，归零后才允许滚动）
+    // 滚动模式 fling（边界锁：velocity 先消耗穿透�������度，归零后才允许滚动）
     if (Math.abs(velocity) < 0.5) return;
     let flingPen = _boundPen;
     let flingIsTop = _boundIsTop;
@@ -1193,7 +1193,7 @@ function rebuildTree(): void {
   }
 
   // 在 setRoot 之前，把 animatingPath 的 toggle 强行归零并提交，
-  // 盖掉 buildExpanded 设��� 90°，避免第一帧闪烁
+  // 盖掉 buildExpanded ������� 90°，避免第一帧闪烁
   if (animatingPath) {
     const titleRow = findBoxById(rootBox, `title-${animatingPath}`);
     const toggle = titleRow?.children?.find(c => c.id?.startsWith('toggle-'));
@@ -1253,9 +1253,9 @@ function rebuildTree(): void {
 
   renderer.setRoot(rootBox);
 
-  // 恢复滚动位置
+  // 恢复滚动位置（从关闭状态恢复时，_savedScrollY 在下游统一处理，此处跳过）
   const newRoot = renderer.getRoot();
-  if (newRoot && prevScrollY > 0) {
+  if (!_restoringFromSave && newRoot && prevScrollY > 0) {
     const maxY = newRoot.getMaxScroll().maxY;
     newRoot.scrollY = Math.min(prevScrollY, maxY);
   }
@@ -1294,26 +1294,26 @@ function rebuildTree(): void {
 
   // 从关闭状态恢复时：优先恢复滚动位置，光标居中仅做兜底
   if (_restoringFromSave && cursorRowId) {
-    _restoringFromSave = false;
     if (_savedScrollY > 0) {
       const maxY = newRoot.getMaxScroll().maxY;
       newRoot.scrollY = Math.min(_savedScrollY, maxY);
       _savedScrollY = 0;
     }
     // 仅当光标完全不可见时才 GSAP 居中（避免视觉跳跃）
+    const restoreScrollY = newRoot.scrollY;
     try {
       const cursorIdx = _getCursorRowIndex();
       if (cursorIdx >= 0 && _rowIndex[cursorIdx]) {
         const abs = _rowIndex[cursorIdx].getAbsolutePosition();
-        const currentScrollY = newRoot.scrollY;
         const canvasH = (document.getElementById('tree-canvas')?.clientHeight ?? 0) || 618;
-        if (abs.y < currentScrollY || abs.y > currentScrollY + canvasH - _rowIndex[cursorIdx].height) {
+        if (abs.y < restoreScrollY || abs.y > restoreScrollY + canvasH - _rowIndex[cursorIdx].height) {
           requestAnimationFrame(() => _scrollToCenterCursor());
         }
       }
     } catch {
       requestAnimationFrame(() => _scrollToCenterCursor());
     }
+    _restoringFromSave = false;
   }
 
 
@@ -1386,7 +1386,7 @@ function applyAnimOffset(
   for (let i = 0; i < container.children.length; i++) {
     container.children[i].y = containerOrigYs[i] + offset;
   }
-  // 2) 逐层祖先：偏移后续兄弟 + 调整父容器高度���root 除外）
+  // 2) 逐层祖先：偏移后续兄弟 + 调整父容器高度���root ���外）
   let heightDelta = offset;
   for (const anc of ancestors) {
     // 偏移后续兄弟

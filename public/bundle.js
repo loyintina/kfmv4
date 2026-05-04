@@ -10626,7 +10626,7 @@
     }
     renderer.setRoot(rootBox);
     const newRoot = renderer.getRoot();
-    if (newRoot && prevScrollY > 0) {
+    if (!_restoringFromSave && newRoot && prevScrollY > 0) {
       const maxY = newRoot.getMaxScroll().maxY;
       newRoot.scrollY = Math.min(prevScrollY, maxY);
     }
@@ -10661,25 +10661,25 @@
     }
     _rebuildRowIndex(newRoot);
     if (_restoringFromSave && cursorRowId) {
-      _restoringFromSave = false;
       if (_savedScrollY > 0) {
         const maxY = newRoot.getMaxScroll().maxY;
         newRoot.scrollY = Math.min(_savedScrollY, maxY);
         _savedScrollY = 0;
       }
+      const restoreScrollY = newRoot.scrollY;
       try {
         const cursorIdx = _getCursorRowIndex();
         if (cursorIdx >= 0 && _rowIndex[cursorIdx]) {
           const abs = _rowIndex[cursorIdx].getAbsolutePosition();
-          const currentScrollY = newRoot.scrollY;
           const canvasH2 = ((_o = (_n = document.getElementById("tree-canvas")) == null ? void 0 : _n.clientHeight) != null ? _o : 0) || 618;
-          if (abs.y < currentScrollY || abs.y > currentScrollY + canvasH2 - _rowIndex[cursorIdx].height) {
+          if (abs.y < restoreScrollY || abs.y > restoreScrollY + canvasH2 - _rowIndex[cursorIdx].height) {
             requestAnimationFrame(() => _scrollToCenterCursor());
           }
         }
       } catch {
         requestAnimationFrame(() => _scrollToCenterCursor());
       }
+      _restoringFromSave = false;
     }
     if (!renderer.isRunning) {
       renderer.start();
