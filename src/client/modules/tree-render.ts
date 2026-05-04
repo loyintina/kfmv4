@@ -166,6 +166,7 @@ export function isAnimLocked(): boolean {
 let cursorBox: Box | null = null;   // 光标 Box 实例
 let cursorRowId: string | null = null;  // 当前光标指向的行 id
 let _savedCursorRowId: string | null = null;  // 侧栏关闭时保存的光标位置
+let _savedScrollY = 0;  // 侧栏关闭时保存的滚动位置
 let _restoringFromSave = false;  // 标记正在从关闭状态恢复
 
 // 光标步进模式 —— 行索引（按绝对 Y 坐标排序的可交互行）
@@ -379,9 +380,10 @@ export function onSidebarOpen(): void {
 }
 
 export function onSidebarClose(): void {
-  // 保存光标位置供下次打开恢复
+  // 保存光标位置和滚动位置供下次打开恢复
   _restoringFromSave = true;
   _savedCursorRowId = cursorRowId;
+  _savedScrollY = renderer?.getRoot()?.scrollY ?? 0;
   // 同样销毁一切——确保没有残留状态
   _sessionId++;
   gsap.globalTimeline.clear();
@@ -839,7 +841,7 @@ function bindScrollEvents(canvas: HTMLElement): void {
       return;
     }
 
-    // 滚动模式 fling（边界锁：velocity 先消耗穿透深度，归零后才允许滚动）
+    // 滚动模式 fling（边界锁：velocity 先消耗穿透���度，归零后才允许滚动）
     if (Math.abs(velocity) < 0.5) return;
     let flingPen = _boundPen;
     let flingIsTop = _boundIsTop;
@@ -952,7 +954,7 @@ function processClickQueue(): void {
     if (!child.visible || child.disabled) continue;
     const hit = findTapTarget(child, px, py);
     if (hit?.gesture?.onTap) {
-      // 光标逻辑：第一次点击移动光标，第二次同一行才执行
+      // 光标逻辑：第一次点击移动光��，第二次同一行才执行
       if (cursorRowId !== null && cursorRowId === hit.id) {
         const hitData = (hit as any).data || {};
         const isDir = hitData.isDir;
@@ -1290,10 +1292,28 @@ function rebuildTree(): void {
   // 重建光标步进行索引
   _rebuildRowIndex(newRoot);
 
-  // 从关闭状态恢复时，滚动让光标居中
+  // 从关闭状态恢复时：优先恢复滚动位置，光标居中仅做兜底
   if (_restoringFromSave && cursorRowId) {
     _restoringFromSave = false;
-    requestAnimationFrame(() => _scrollToCenterCursor());
+    if (_savedScrollY > 0) {
+      const maxY = newRoot.getMaxScroll().maxY;
+      newRoot.scrollY = Math.min(_savedScrollY, maxY);
+      _savedScrollY = 0;
+    }
+    // 仅当光标完全不可见时才 GSAP 居中（避免视觉跳跃）
+    try {
+      const cursorIdx = _getCursorRowIndex();
+      if (cursorIdx >= 0 && _rowIndex[cursorIdx]) {
+        const abs = _rowIndex[cursorIdx].getAbsolutePosition();
+        const currentScrollY = newRoot.scrollY;
+        const canvasH = (document.getElementById('tree-canvas')?.clientHeight ?? 0) || 618;
+        if (abs.y < currentScrollY || abs.y > currentScrollY + canvasH - _rowIndex[cursorIdx].height) {
+          requestAnimationFrame(() => _scrollToCenterCursor());
+        }
+      }
+    } catch {
+      requestAnimationFrame(() => _scrollToCenterCursor());
+    }
   }
 
 

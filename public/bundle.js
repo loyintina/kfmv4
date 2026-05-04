@@ -9665,6 +9665,7 @@
   var cursorBox = null;
   var cursorRowId = null;
   var _savedCursorRowId = null;
+  var _savedScrollY = 0;
   var _restoringFromSave = false;
   var _rowIndex = [];
   var _sessionId = 0;
@@ -9848,9 +9849,10 @@
     }
   }
   function onSidebarClose() {
-    var _a;
+    var _a, _b, _c;
     _restoringFromSave = true;
     _savedCursorRowId = cursorRowId;
+    _savedScrollY = (_b = (_a = renderer == null ? void 0 : renderer.getRoot()) == null ? void 0 : _a.scrollY) != null ? _b : 0;
     _sessionId++;
     gsapWithCSS.globalTimeline.clear();
     _animBusy = false;
@@ -9863,7 +9865,7 @@
     _rowIndex = [];
     renderer == null ? void 0 : renderer.stop();
     renderer = null;
-    (_a = document.getElementById("sidebarTouchArea")) == null ? void 0 : _a.remove();
+    (_c = document.getElementById("sidebarTouchArea")) == null ? void 0 : _c.remove();
   }
   function initTreeRenderer() {
     const fileTree = document.getElementById("fileTree");
@@ -10533,7 +10535,7 @@
     return null;
   }
   function rebuildTree() {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o;
     if (!renderer) return;
     if (_animBusy) {
       if (_animBusyAt && Date.now() - _animBusyAt > 3e3) {
@@ -10660,7 +10662,24 @@
     _rebuildRowIndex(newRoot);
     if (_restoringFromSave && cursorRowId) {
       _restoringFromSave = false;
-      requestAnimationFrame(() => _scrollToCenterCursor());
+      if (_savedScrollY > 0) {
+        const maxY = newRoot.getMaxScroll().maxY;
+        newRoot.scrollY = Math.min(_savedScrollY, maxY);
+        _savedScrollY = 0;
+      }
+      try {
+        const cursorIdx = _getCursorRowIndex();
+        if (cursorIdx >= 0 && _rowIndex[cursorIdx]) {
+          const abs = _rowIndex[cursorIdx].getAbsolutePosition();
+          const currentScrollY = newRoot.scrollY;
+          const canvasH2 = ((_o = (_n = document.getElementById("tree-canvas")) == null ? void 0 : _n.clientHeight) != null ? _o : 0) || 618;
+          if (abs.y < currentScrollY || abs.y > currentScrollY + canvasH2 - _rowIndex[cursorIdx].height) {
+            requestAnimationFrame(() => _scrollToCenterCursor());
+          }
+        }
+      } catch {
+        requestAnimationFrame(() => _scrollToCenterCursor());
+      }
     }
     if (!renderer.isRunning) {
       renderer.start();
