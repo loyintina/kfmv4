@@ -9666,6 +9666,8 @@
   var cursorRowId = null;
   var _savedCursorRowId = null;
   var _savedScrollY = 0;
+  var _lastUserScrollY = 0;
+  var _restoreMode = false;
   var _restoringFromSave = false;
   var _rowIndex = [];
   var _sessionId = 0;
@@ -9830,6 +9832,24 @@
     });
     requestAnimationFrame(() => {
       rebuildTree();
+      if (_savedScrollY > 0) {
+        const root = renderer == null ? void 0 : renderer.getRoot();
+        if (root) {
+          const maxY = root.getMaxScroll().maxY;
+          root.scrollY = Math.min(_savedScrollY, maxY);
+          const savedVal = root.scrollY;
+          _savedScrollY = 0;
+          _restoreMode = true;
+          setTimeout(() => {
+            _restoreMode = false;
+            const r2 = renderer == null ? void 0 : renderer.getRoot();
+            if (r2 && Math.abs(r2.scrollY - savedVal) > 10) {
+              r2.scrollY = savedVal;
+            }
+          }, 500);
+        }
+      }
+      _restoringFromSave = false;
       renderer == null ? void 0 : renderer.resize();
       window.__treeRenderer = renderer;
       _ensureSubscribed();
@@ -9855,7 +9875,9 @@
     _animBusyAt = 0;
     _restoringFromSave = true;
     _savedCursorRowId = cursorRowId;
-    _savedScrollY = (_b = (_a = renderer == null ? void 0 : renderer.getRoot()) == null ? void 0 : _a.scrollY) != null ? _b : 0;
+    const rootScrollY = (_b = (_a = renderer == null ? void 0 : renderer.getRoot()) == null ? void 0 : _a.scrollY) != null ? _b : 0;
+    _savedScrollY = _lastUserScrollY > 0 ? _lastUserScrollY : rootScrollY;
+    _lastUserScrollY = 0;
     animatingPath = null;
     pendingCollapse = null;
     _clickQueue = [];
@@ -9971,6 +9993,7 @@
   function _scrollToCenterCursor() {
     var _a;
     if (_isCursorMode()) return;
+    if (_restoreMode) return;
     const root = renderer == null ? void 0 : renderer.getRoot();
     if (!root || cursorRowId === null) return;
     const canvas = document.getElementById("tree-canvas");
@@ -9981,6 +10004,7 @@
     try {
       const abs = _rowIndex[idx].getAbsolutePosition();
       const targetScrollY = Math.max(0, Math.min(maxY, abs.y + _rowIndex[idx].height / 2 - canvasH / 2));
+      console.log("[GSAP-SCROLL] targetScrollY=", targetScrollY, "from=", root.scrollY);
       gsapWithCSS.to(root, {
         scrollY: targetScrollY,
         duration: 0.35,
@@ -10064,6 +10088,7 @@
         return;
       }
       const cur = (_a = getRootScrollY()) != null ? _a : 0;
+      _lastUserScrollY = cur;
       wheelTarget = cur + e.deltaY;
       if (!wheelRaf) {
         let wheelAccum = 0;
@@ -10100,6 +10125,7 @@
             }
           } else {
             setRootScrollY(desired);
+            _lastUserScrollY = desired;
             _snapCursorToCenter();
           }
           wheelRaf = requestAnimationFrame(smoothWheel);
@@ -10144,6 +10170,7 @@
       } else {
         touchStartY2 = y;
         touchScrollY = (_a = getRootScrollY()) != null ? _a : 0;
+        _lastUserScrollY = touchScrollY;
         velocity = 0;
         _boundPen = 0;
         _boundIsTop = false;
@@ -10233,6 +10260,7 @@
           }
         } else {
           setRootScrollY(desired);
+          _lastUserScrollY = desired;
           _snapCursorToCenter();
         }
       }
@@ -10534,7 +10562,7 @@
     return null;
   }
   function rebuildTree() {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n;
     if (!renderer) return;
     if (_animBusy) {
       if (_animBusyAt && Date.now() - _animBusyAt > 3e3) {
@@ -10629,6 +10657,13 @@
       const maxY = newRoot.getMaxScroll().maxY;
       newRoot.scrollY = Math.min(prevScrollY, maxY);
     }
+    if (_restoringFromSave && _savedScrollY > 0) {
+      const maxY = (_n = newRoot == null ? void 0 : newRoot.getMaxScroll().maxY) != null ? _n : 0;
+      if (newRoot) newRoot.scrollY = Math.min(_savedScrollY, maxY);
+    }
+    if (_restoringFromSave) {
+      _restoringFromSave = false;
+    }
     if (newRoot) {
       ensureCursorBox(newRoot, canvasH);
       if (prevCursorRowId) {
@@ -10659,15 +10694,6 @@
       }
     }
     _rebuildRowIndex(newRoot);
-    if (_restoringFromSave && cursorRowId) {
-      if (_savedScrollY > 0) {
-        const maxY = newRoot.getMaxScroll().maxY;
-        newRoot.scrollY = Math.min(_savedScrollY, maxY);
-        _savedScrollY = 0;
-      } else {
-      }
-      _restoringFromSave = false;
-    }
     if (!renderer.isRunning) {
       renderer.start();
     }

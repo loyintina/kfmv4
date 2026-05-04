@@ -167,6 +167,8 @@ let cursorBox: Box | null = null;   // 光标 Box 实例
 let cursorRowId: string | null = null;  // 当前光标指向的行 id
 let _savedCursorRowId: string | null = null;  // 侧栏关闭时保存的光标位置
 let _savedScrollY = 0;  // 侧栏关闭时保存的滚动位置
+let _lastUserScrollY = 0;  // 用户最近一次输入的 scrollY 值（不受 GSAP 影响）
+let _restoreMode = false;  // 恢复期间，跳过 GSAP scroll 动画
 let _restoringFromSave = false;  // 标记正在从关闭状态恢复
 
 // 光标步进模式 —— 行索引（按绝对 Y 坐标排序的可交互行）
@@ -354,6 +356,26 @@ export function onSidebarOpen(): void {
   // 等 CSS layout 完成后再 rebuildTree（canvas 刚创建时 clientWidth=0）
   requestAnimationFrame(() => {
     rebuildTree();
+    // rebuildTree 后强制恢复 scrollY（在所有可能覆盖它的逻辑之后）
+    if (_savedScrollY > 0) {
+      const root = renderer?.getRoot();
+      if (root) {
+        const maxY = root.getMaxScroll().maxY;
+        root.scrollY = Math.min(_savedScrollY, maxY);
+        const savedVal = root.scrollY;
+        _savedScrollY = 0;
+        _restoreMode = true;
+        setTimeout(() => {
+          _restoreMode = false;
+          // 最终检查：如果 scrollY 被覆盖了，强制恢复
+          const r2 = renderer?.getRoot();
+          if (r2 && Math.abs(r2.scrollY - savedVal) > 10) {
+            r2.scrollY = savedVal;
+          }
+        }, 500);
+      }
+    }
+    _restoringFromSave = false;
     renderer?.resize();
     (window as any).__treeRenderer = renderer;
 
@@ -380,13 +402,16 @@ export function onSidebarOpen(): void {
 }
 
 export function onSidebarClose(): void {
-  // 先停掉所有动画（包括 GSAP），再读取 scrollY
+  // 先停掉所有动画
   gsap.globalTimeline.clear();
   _animBusy = false;
   _animBusyAt = 0;
   _restoringFromSave = true;
   _savedCursorRowId = cursorRowId;
-  _savedScrollY = renderer?.getRoot()?.scrollY ?? 0;
+  // 优先用 _lastUserScrollY（用户意图），fallback 到 root.scrollY
+  const rootScrollY = renderer?.getRoot()?.scrollY ?? 0;
+  _savedScrollY = _lastUserScrollY > 0 ? _lastUserScrollY : rootScrollY;
+  _lastUserScrollY = 0;
   animatingPath = null;
   pendingCollapse = null;
   _clickQueue = [];
@@ -476,7 +501,7 @@ function _getCursorRowIndex(): number {
   return _rowIndex.findIndex(box => box.id === cursorRowId);
 }
 
-/** 移动光标 N 步（正=向下，负=向上），自动 clamp */
+/** 移���光标 N 步（正=向下，负=向上），自动 clamp */
 function _moveCursorBySteps(steps: number): void {
   if (_rowIndex.length === 0) return;
   const oldIdx = _getCursorRowIndex();
@@ -531,6 +556,7 @@ function _snapCursorToCenter(): void {
 /** 点击后滚动页面到光标居中位置（GSAP 平滑动画） */
 function _scrollToCenterCursor(): void {
   if (_isCursorMode()) return;
+  if (_restoreMode) return;  // 恢复期间跳过 GSAP
   const root = renderer?.getRoot();
   if (!root || cursorRowId === null) return;
   const canvas = document.getElementById('tree-canvas');
@@ -541,6 +567,7 @@ function _scrollToCenterCursor(): void {
   try {
     const abs = _rowIndex[idx].getAbsolutePosition();
     const targetScrollY = Math.max(0, Math.min(maxY, abs.y + _rowIndex[idx].height / 2 - canvasH / 2));
+    console.log('[GSAP-SCROLL] targetScrollY=', targetScrollY, 'from=', root.scrollY);
     gsap.to(root, {
       scrollY: targetScrollY,
       duration: 0.35,
@@ -634,6 +661,7 @@ function bindScrollEvents(canvas: HTMLElement): void {
     }
     // 滚动模式（含边界穿透，累积跨帧）
     const cur = getRootScrollY() ?? 0;
+    _lastUserScrollY = cur;  // 记录 GSAP 之前的值
     wheelTarget = cur + e.deltaY;
     if (!wheelRaf) {
       let wheelAccum = 0;
@@ -669,6 +697,7 @@ function bindScrollEvents(canvas: HTMLElement): void {
           }
         } else {
           setRootScrollY(desired);
+          _lastUserScrollY = desired;
           _snapCursorToCenter();
         }
         wheelRaf = requestAnimationFrame(smoothWheel);
@@ -685,8 +714,8 @@ function bindScrollEvents(canvas: HTMLElement): void {
   let velocity = 0;
   let flingRaf = 0;
   // 边界锁状态：光标偏离中心时锁定滚动，回到中心才解锁
-  let _boundPen = 0;       // 穿透深度（像素），>0 表示锁住
-  let _boundIsTop = false; // true=上边界锁，false=下边界锁
+  let _boundPen = 0;       // 穿透深度（像素），>0 表��锁住
+  let _boundIsTop = false; // true=上边界锁���false=下边界锁
   // 光标模式状态
   let cursorTouchBase = 0;
   let cursorTouchStartY = 0;
@@ -699,7 +728,7 @@ function bindScrollEvents(canvas: HTMLElement): void {
     const y = e.touches[0].clientY;
     lastTouchY = y;
     lastTouchTime = performance.now();
-    // 取消所有进行中的 RAF
+    // 取消所有进���中的 RAF
     if (flingRaf) { cancelAnimationFrame(flingRaf); flingRaf = 0; }
     if (cursorFlingRaf) { cancelAnimationFrame(cursorFlingRaf); cursorFlingRaf = 0; }
 
@@ -715,8 +744,9 @@ function bindScrollEvents(canvas: HTMLElement): void {
     } else {
       touchStartY = y;
       touchScrollY = getRootScrollY() ?? 0;
+      _lastUserScrollY = touchScrollY;  // 记录用户触摸开始时的 scrollY
       velocity = 0;
-      // 检���边界锁残留：光标因上次手势偏离��心
+      // 检������界锁残留：光标因上次手势偏离��心
       _boundPen = 0;
       _boundIsTop = false;
       const root2 = renderer?.getRoot();
@@ -814,6 +844,7 @@ function bindScrollEvents(canvas: HTMLElement): void {
         }
       } else {
         setRootScrollY(desired);
+        _lastUserScrollY = desired;  // 记录用户意图的滚动位置
         _snapCursorToCenter();
       }
     }
@@ -822,7 +853,7 @@ function bindScrollEvents(canvas: HTMLElement): void {
   canvas.addEventListener('touchend', () => {
     if (_touchIsCursor) {
       if (Math.abs(cursorVelocity) >= 0.5 && _rowIndex.length > 0) {
-        // 将起点更新为当前光标位置，避免飞回 touchstart 位置
+        // 将起点更新为当前光标位置，避免飞回 touchstart ����置
         cursorTouchBase = Math.max(0, _getCursorRowIndex());
         function cursorFling() {
           cursorVelocity *= 0.96;
@@ -839,7 +870,7 @@ function bindScrollEvents(canvas: HTMLElement): void {
       return;
     }
 
-    // 滚动模式 fling（边界锁：velocity 先消耗穿透���������������度，归零后才允许滚动）
+    // 滚动模式 fling（边界锁：velocity 先消耗穿透�����������������度，归零后才允许滚动）
     if (Math.abs(velocity) < 0.5) return;
     let flingPen = _boundPen;
     let flingIsTop = _boundIsTop;
@@ -919,12 +950,12 @@ function bindClickEvents(canvas: HTMLElement, _dpr: number): void {
 /**
  * 事件堆栈核心：逐一处理点击队列。
  * 每次处理一个点击，如果是展开/折叠则启动动画，
- * 动画完成后自动处理队列中下一个点击。
+ * 动画�������成后自动处理队列中下一个点击。
  */
 function processClickQueue(): void {
   if (_clickQueue.length === 0 || !renderer) return;
 
-  // 动画进行中收到点击 → 中断当前动画，立即响应
+  // 动画进行中收到点击 → ����当前动画，立即响应
   if (_animBusy) {
     if (_animBusyAt && Date.now() - _animBusyAt > 3000) {
       // 超������底：强制释放
@@ -1068,7 +1099,7 @@ function doExpand(hit: Box, hitData: any): void {
         _animBusy = false; _animBusyAt = 0;
         const _root = renderer?.getRoot();
         if (_root) { _rebuildRowIndex(_root); }
-        // ä¿®æ­£å¨ç»ååæ çä½ç½®
+        // ä¿®æ­£å¨ç»åå�� çä½ç½®
         if (cursorRowId) { const _t = findBoxById(_root, cursorRowId); if (_t) moveCursorTo(_t, false); }
         processClickQueue();
       });
@@ -1158,13 +1189,13 @@ function rebuildTree(): void {
     if (_animBusyAt && Date.now() - _animBusyAt > 3000) {
       _animBusy = false;
       _animBusyAt = 0;
-      _clickQueue = [];  // 清��队列防死循环
+      _clickQueue = [];  // ����队列防死循环
     } else {
       return;
     }
   }
 
-  // 保存当前滚动位置和光标行
+  // 保存当前滚动位置和����标行
   const prevScrollY = renderer.getRoot()?.scrollY ?? 0;
   const prevCursorRowId = cursorRowId;
    // 动画重建时，保存旧光标位置以保持视觉稳定
@@ -1258,6 +1289,16 @@ function rebuildTree(): void {
     newRoot.scrollY = Math.min(prevScrollY, maxY);
   }
 
+  // 【关键】从关闭状态恢复时，先恢复 scrollY，再让光标逻辑基于恢复后的位置工作
+  // 注意：不在这里消耗 _savedScrollY，让 rAF 回调中的强制恢复做最终保证
+  if (_restoringFromSave && _savedScrollY > 0) {
+    const maxY = newRoot?.getMaxScroll().maxY ?? 0;
+    if (newRoot) newRoot.scrollY = Math.min(_savedScrollY, maxY);
+  }
+  if (_restoringFromSave) {
+    _restoringFromSave = false;
+  }
+
   // ���新创建光标
   if (newRoot) {
     ensureCursorBox(newRoot, canvasH);
@@ -1290,16 +1331,6 @@ function rebuildTree(): void {
   // 重建光标步进行索引
   _rebuildRowIndex(newRoot);
 
-  // V2FIX: 从关闭状态恢��时：优先恢复滚动位置
-  if (_restoringFromSave && cursorRowId) {
-    if (_savedScrollY > 0) {
-      const maxY = newRoot.getMaxScroll().maxY;
-      newRoot.scrollY = Math.min(_savedScrollY, maxY);
-      _savedScrollY = 0;
-    } else {
-    }
-    _restoringFromSave = false;
-  }
 
 
   if (!renderer.isRunning) {
@@ -1358,7 +1389,7 @@ function collectAncestors(box: Box, root: Box): AncestorInfo[] {
   return ancestors;
 }
 
-/** 在动画每帧调用：偏移目标容器内部子项 + 所有祖先层的后续兄弟 + 调整祖���高度 */
+/** 在动画每帧调用：偏��目标容器内部子项 + 所有祖先层的后续兄弟 + 调整祖���高度 */
 function applyAnimOffset(
   container: Box,
   containerOrigYs: number[],
@@ -1380,7 +1411,7 @@ function applyAnimOffset(
       if (sib.id === 'cursor-highlight') continue;
       sib.y = anc.sibOrigYs[i - anc.sibIdx - 1] + heightDelta;
     }
-    // ��整祖先���度（root 不调，它是画布高度）
+    // ��整祖�����度（root ��调，它是画布高度）
     if (anc.parent !== root) {
       anc.parent.height = anc.origHeight + heightDelta;
     }
@@ -1388,7 +1419,7 @@ function applyAnimOffset(
 }
 
 
-/** 只做兄弟偏移+祖先高��调整，不碰子行 y（用于展开动画，让 slideInRows 统��处理子行登场） */
+/** 只���兄弟偏移+祖先高��调整，不碰子行 y（用于展开动画，让 slideInRows 统��处理子行登���） */
 function applyAnimOffsetSiblings(
   container: Box,
   fullHeight: number,
@@ -1467,7 +1498,7 @@ async function slideInRows(container: Box, root: Box, selfToggle?: any): Promise
     // 子容器的 toggle 直接设置为最终状态（已展开为 90°）
     const subTog = (child as any)._toggleBox;
     const subTogRotate = (child as any)._toggleRotate ?? Math.PI / 2;
-    // 从当前 root 重新查找 toggle，确保引用正确
+    // 从当前 root 重新查找 toggle，确保引���正确
     const freshTitle = findBoxById(root, `title-${child.id.slice('expanded-'.length)}`);
     const freshTog = freshTitle?.children?.find((c: any) => c.id?.startsWith('toggle-'));
     if (freshTog) {
