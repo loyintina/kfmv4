@@ -10649,11 +10649,7 @@
           snapToCenterRow(newRoot, canvasH);
         }
       } else {
-        _rebuildRowIndex(newRoot);
-        if (_rowIndex.length > 0) {
-          cursorRowId = _rowIndex[0].id || null;
-          moveCursorTo(_rowIndex[0]);
-        }
+        snapToCenterRow(newRoot, canvasH);
       }
     }
     _rebuildRowIndex(newRoot);

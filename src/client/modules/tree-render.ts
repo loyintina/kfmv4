@@ -1276,12 +1276,8 @@ function rebuildTree(): void {
         snapToCenterRow(newRoot, canvasH);
       }
     } else {
-      // 初始状态：先建索引再吸附到第一个文件行
-      _rebuildRowIndex(newRoot);
-      if (_rowIndex.length > 0) {
-        cursorRowId = _rowIndex[0].id || null;
-        moveCursorTo(_rowIndex[0]);
-      }
+      // 初始状态：光标居中吸附
+      snapToCenterRow(newRoot, canvasH);
     }
   }
 
