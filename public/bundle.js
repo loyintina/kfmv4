@@ -12593,8 +12593,8 @@
     let html = "";
     for (const msg of chatMessages) {
       const isUser = msg.role === "user";
-      const bgColor = isUser ? "linear-gradient(rgba(10,10,15,.85),rgba(10,10,15,.85)) padding-box,linear-gradient(135deg,#7c3aed,rgba(0,212,255,.8)) border-box" : "rgba(12,20,35,0.85)";
-      const borderStyle = isUser ? "border:1px solid transparent;border-left-width:3px;" : "border:1px solid rgba(0,212,255,0.08);border-left:3px solid rgba(0,212,255,0.2);";
+      const bgColor = isUser ? "linear-gradient(rgba(10,10,15,.85),rgba(10,10,15,.85)) padding-box,linear-gradient(135deg,#7c3aed,rgba(0,212,255,.8)) border-box" : "linear-gradient(rgba(12,20,35,0.9),rgba(12,20,35,0.9)) padding-box,linear-gradient(135deg,rgba(0,180,200,0.45),rgba(80,40,180,0.25)) border-box";
+      const borderStyle = isUser ? "border:1px solid transparent;border-left-width:3px;" : "border:1px solid transparent;border-left:3px solid rgba(0,200,220,0.3);";
       const align = isUser ? "flex-end" : "flex-start";
       const label = isUser ? "\u4F60" : "\u851A\u7136";
       const labelColor = isUser ? "#7c3aed" : "#00d4ff";
@@ -12698,8 +12698,7 @@
     if (orbState !== "expanded") return;
     orbState = "editing";
     if (panelEl) {
-      panelEl.style.borderColor = "rgba(0, 212, 255, 0.6)";
-      panelEl.style.boxShadow = "0 0 30px 8px rgba(0, 212, 255, 0.25), 0 8px 32px rgba(0, 0, 0, 0.5)";
+      panelEl.style.boxShadow = "0 0 30px 8px rgba(0, 212, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.5)";
     }
     updateStateLabel();
   }
@@ -12707,7 +12706,6 @@
     if (orbState !== "editing") return;
     orbState = "expanded";
     if (panelEl) {
-      panelEl.style.borderColor = "";
       panelEl.style.boxShadow = "0 0 20px 4px rgba(124, 58, 237, 0.15), 0 8px 32px rgba(0, 0, 0, 0.5)";
     }
     renderChatContent();
