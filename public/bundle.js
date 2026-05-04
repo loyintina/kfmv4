@@ -12593,11 +12593,11 @@
     let html = "";
     for (const msg of chatMessages) {
       const isUser = msg.role === "user";
-      const bgColor = isUser ? "rgba(124,58,237,0.15)" : "rgba(46,213,163,0.1)";
-      const borderColor = isUser ? "rgba(124,58,237,0.4)" : "rgba(46,213,163,0.3)";
+      const bgColor = isUser ? "linear-gradient(rgba(10,10,15,.85),rgba(10,10,15,.85)) padding-box,linear-gradient(135deg,#7c3aed,rgba(0,212,255,.8)) border-box" : "rgba(12,20,35,0.85)";
+      const borderStyle = isUser ? "border:1px solid transparent;border-left-width:3px;" : "border:1px solid rgba(0,212,255,0.08);border-left:3px solid rgba(0,212,255,0.2);";
       const align = isUser ? "flex-end" : "flex-start";
       const label = isUser ? "\u4F60" : "\u851A\u7136";
-      const labelColor = isUser ? "#7c3aed" : "#2ed5a3";
+      const labelColor = isUser ? "#7c3aed" : "#00d4ff";
       const font = "13px sans-serif";
       const lineHeight = 20;
       try {
@@ -12605,7 +12605,7 @@
         const textHtml = lines.map((l) => `<span style="display:block">${escapeHtml(l.text)}</span>`).join("");
         html += `
         <div style="display:flex;justify-content:${align};margin-bottom:8px">
-          <div style="max-width:${innerWidth - 8}px;padding:6px 12px;background:${bgColor};border:1px solid ${borderColor};border-left:3px solid ${borderColor};border-radius:8px">
+          <div style="max-width:${innerWidth - 8}px;padding:6px 12px;background:${bgColor};${borderStyle}border-radius:8px">
             <div style="font-size:10px;color:${labelColor};margin-bottom:2px;font-weight:600">${label}</div>
             <div style="font-family:sans-serif;font-size:13px;line-height:${lineHeight}px;color:#e0e0e0">${textHtml}</div>
           </div>
@@ -12613,7 +12613,7 @@
       } catch {
         html += `
         <div style="display:flex;justify-content:${align};margin-bottom:8px">
-          <div style="max-width:85%;padding:6px 12px;background:${bgColor};border:1px solid ${borderColor};border-left:3px solid ${borderColor};border-radius:8px">
+          <div style="max-width:85%;padding:6px 12px;background:${bgColor};${borderStyle}border-radius:8px">
             <div style="font-size:10px;color:${labelColor};margin-bottom:2px;font-weight:600">${label}</div>
             <div style="font-size:13px;color:#e0e0e0">${escapeHtml(msg.text)}</div>
           </div>
