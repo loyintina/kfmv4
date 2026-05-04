@@ -9839,6 +9839,7 @@
         if (root) {
           const maxY = root.getMaxScroll().maxY;
           root.scrollY = Math.min(_savedScrollY, maxY);
+          console.log("[RESTORE] scrollY=", root.scrollY, "saved=", _savedScrollY, "maxY=", maxY);
           const savedVal = root.scrollY;
           _savedScrollY = 0;
           _restoreMode = true;
@@ -9846,6 +9847,7 @@
             _restoreMode = false;
             const r2 = renderer == null ? void 0 : renderer.getRoot();
             if (r2 && Math.abs(r2.scrollY - savedVal) > 10) {
+              console.log("[DELAYED-RESTORE] scrollY was", r2.scrollY, "force to", savedVal);
               r2.scrollY = savedVal;
             }
           }, 500);
@@ -9880,6 +9882,7 @@
     _savedCursorRowId = cursorRowId;
     const rootScrollY = (_b = (_a = renderer == null ? void 0 : renderer.getRoot()) == null ? void 0 : _a.scrollY) != null ? _b : 0;
     _savedScrollY = rootScrollY;
+    console.log("[CLOSE] savedScrollY=", rootScrollY, "cursorRowId=", cursorRowId);
     animatingPath = null;
     pendingCollapse = null;
     _clickQueue = [];
@@ -10576,7 +10579,7 @@
     return null;
   }
   function rebuildTree() {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m;
     if (!renderer) return;
     if (_animBusy) {
       if (_animBusyAt && Date.now() - _animBusyAt > 3e3) {
@@ -10670,10 +10673,6 @@
     if (!_restoringFromSave && newRoot && prevScrollY > 0) {
       const maxY = newRoot.getMaxScroll().maxY;
       newRoot.scrollY = Math.min(prevScrollY, maxY);
-    }
-    if (_restoringFromSave && _savedScrollY > 0) {
-      const maxY = (_n = newRoot == null ? void 0 : newRoot.getMaxScroll().maxY) != null ? _n : 0;
-      if (newRoot) newRoot.scrollY = Math.min(_savedScrollY, maxY);
     }
     if (_restoringFromSave) {
       _restoringFromSave = false;

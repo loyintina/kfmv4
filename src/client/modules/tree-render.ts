@@ -364,6 +364,7 @@ export function onSidebarOpen(): void {
       if (root) {
         const maxY = root.getMaxScroll().maxY;
         root.scrollY = Math.min(_savedScrollY, maxY);
+        console.log('[RESTORE] scrollY=', root.scrollY, 'saved=', _savedScrollY, 'maxY=', maxY);
         const savedVal = root.scrollY;
         _savedScrollY = 0;
         _restoreMode = true;
@@ -372,6 +373,7 @@ export function onSidebarOpen(): void {
           // 最终检查：如果 scrollY 被覆盖了，强制恢复
           const r2 = renderer?.getRoot();
           if (r2 && Math.abs(r2.scrollY - savedVal) > 10) {
+            console.log('[DELAYED-RESTORE] scrollY was', r2.scrollY, 'force to', savedVal);
             r2.scrollY = savedVal;
           }
         }, 500);
@@ -414,6 +416,7 @@ export function onSidebarClose(): void {
   // 直接保存当前 scrollY（动画停止后的稳定值）
   const rootScrollY = renderer?.getRoot()?.scrollY ?? 0;
   _savedScrollY = rootScrollY;
+  console.log('[CLOSE] savedScrollY=', rootScrollY, 'cursorRowId=', cursorRowId);
   animatingPath = null;
   pendingCollapse = null;
   _clickQueue = [];
@@ -597,7 +600,7 @@ function _createSidebarTouchArea(): void {
   // 绑定同样的滚动事件（wheel + touch）
   bindScrollEvents(box);
 
-  // 点击任意位置 → 执行当前光标行的动作
+  // 点击任意位置 → 执行��前光标行的动作
   box.addEventListener('click', () => {
     if (!cursorRowId || _rowIndex.length === 0) return;
     const idx = _getCursorRowIndex();
@@ -921,7 +924,7 @@ function bindScrollEvents(canvas: HTMLElement): void {
           flingPen = desired - flingMaxY;
           flingIsTop = false;
           setRootScrollY(flingMaxY);
-          // 首次触碰边界：立刻基于当前中央行做初始光标偏移
+          // 首次触碰边界：��刻基于当前中央行做初始光标偏移
           const centerIdx = _getCenterRowIndex();
           const steps = Math.floor(flingPen / LINE_HEIGHT);
           if (centerIdx >= 0 && steps > 0) {
@@ -1295,13 +1298,10 @@ function rebuildTree(): void {
   }
 
   // 【关键】从关闭状态恢复时，先恢复 scrollY，再让光标逻辑基于恢复后的位置工作
-  // 注意：不在这里消耗 _savedScrollY，让 rAF 回调中的强制恢复做最终保证
-  if (_restoringFromSave && _savedScrollY > 0) {
-    const maxY = newRoot?.getMaxScroll().maxY ?? 0;
-    if (newRoot) newRoot.scrollY = Math.min(_savedScrollY, maxY);
-  }
+  // 注意：第一次rebuildTree时_isCursorMode=true,maxY=0,恢复会失败
+  // 不在这里消耗_savedScrollY，等rAF回调中的强制恢复
   if (_restoringFromSave) {
-    _restoringFromSave = false;
+    _restoringFromSave = false;  // 只消耗标志，不消耗_savedScrollY
   }
 
   // ���新创建光标
@@ -1500,7 +1500,7 @@ async function slideInRows(container: Box, root: Box, selfToggle?: any): Promise
       child.children.forEach((c, j) => { c.y = subOrigYs[j]; });
     }
     child.children.forEach(c => { c.opacity = 1; });
-    // 子容器的 toggle 直接设置为最终状态（已展开为 90°）
+    // 子���器的 toggle 直接设置为最终状态（已展开为 90°）
     const subTog = (child as any)._toggleBox;
     const subTogRotate = (child as any)._toggleRotate ?? Math.PI / 2;
     // ��当前 root 重新查找 toggle，确保引�����确
