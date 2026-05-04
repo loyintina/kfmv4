@@ -9665,6 +9665,7 @@
   var cursorBox = null;
   var cursorRowId = null;
   var _savedCursorRowId = null;
+  var _savedScrollY = 0;
   var _rowIndex = [];
   var _sessionId = 0;
   var animatingPath = null;
@@ -9847,8 +9848,9 @@
     }
   }
   function onSidebarClose() {
-    var _a;
+    var _a, _b, _c;
     _savedCursorRowId = cursorRowId;
+    _savedScrollY = (_b = (_a = renderer == null ? void 0 : renderer.getRoot()) == null ? void 0 : _a.scrollY) != null ? _b : 0;
     _sessionId++;
     gsapWithCSS.globalTimeline.clear();
     _animBusy = false;
@@ -9861,7 +9863,7 @@
     _rowIndex = [];
     renderer == null ? void 0 : renderer.stop();
     renderer = null;
-    (_a = document.getElementById("sidebarTouchArea")) == null ? void 0 : _a.remove();
+    (_c = document.getElementById("sidebarTouchArea")) == null ? void 0 : _c.remove();
   }
   function initTreeRenderer() {
     const fileTree = document.getElementById("fileTree");
@@ -10542,7 +10544,8 @@
         return;
       }
     }
-    const prevScrollY = (_b = (_a = renderer.getRoot()) == null ? void 0 : _a.scrollY) != null ? _b : 0;
+    const prevScrollY = (_b = _savedScrollY || ((_a = renderer.getRoot()) == null ? void 0 : _a.scrollY)) != null ? _b : 0;
+    _savedScrollY = 0;
     const prevCursorRowId = cursorRowId;
     const prevCursorX = (_c = cursorBox == null ? void 0 : cursorBox.x) != null ? _c : -1;
     const prevCursorY = (_d = cursorBox == null ? void 0 : cursorBox.y) != null ? _d : -1;
