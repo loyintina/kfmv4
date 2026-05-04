@@ -1,13 +1,127 @@
-# Kalo File Manager (KFM v4) — 技术架构与演进记录
+# Kaf Fee Mew — 技术架构与实施蓝图
 
-> AI 人机交互的个人工作台 — 手机浏览器移动端优先
-> 核心理念：一切皆盒子
+> AI 人机交互的个人工作台，创意与能力的延伸工具。
+> 一切皆盒子。
 
 ---
 
-## 现状（2026-05）
+## 愿景
 
-当前版本是基于 **kfmv3 v2 自研引擎** 的移动端文件管理器 + AI 对话助手。
+```yaml
+名字: Kaf Fee Mew (KFM / 咖啡猫)
+本质: 面向 AI 人机交互的个人工作台
+核心理念: 一切皆盒子——任何可拆分的要素都可以卡片形式加入工作流
+
+交互模型:
+  左栏: 文件树（选择 / 创建 / 管理）
+  中央画布: 盒子卡片桌面（工作流编排）
+  盒子类型: 文件卡片 / 编辑器 / AI提示词 / 输入框 / 历史记录 / 设置面板 / …
+  交互: 左栏选择文件 → 中央生成卡片 → 点击卡片进入编辑器
+
+运行平台:
+  现在: 手机浏览器（移动端优先）
+  未来: 桌面浏览器 → APK → EXE → CLI
+```
+
+---
+
+## 技术栈蓝图
+
+```yaml
+五技术各司其职:
+
+  LeaferJS:
+    职责: Canvas 渲染（画布、盒子外观、连线、粒子）
+    不做: 文字编辑、表单、输入法
+    
+  GSAP:
+    职责: 动画引擎（唯一）
+    不做: 布局计算、状态管理
+    
+  Pretext:
+    职责: 离屏文本测量（零 reflow）
+    不做: 文字渲染、布局
+    
+  Yoga Layout:
+    职责: Flexbox 布局计算（WASM，微秒级）
+    不做: 渲染、动画
+    
+  DOM:
+    职责: 盒子内容（编辑器、AI对话、输入框、表单）
+    不做: 画布、连线、粒子
+```
+
+### 统一动画引擎
+
+全项目动画由 GSAP 独占：
+
+| 已淘汰 | 替换为 |
+|--------|--------|
+| CSS transition | gsap.to() / gsap.set() |
+| Web Animation API (animate()) | gsap.fromTo() |
+| setTimeout 嵌套编排 | gsap.timeline() |
+| rAF 手动帧计数器 | gsap.ticker + delayedCall |
+
+---
+
+## 架构蓝图
+
+```
+┌─────────────────────────────────────────────────┐
+│                 KFMState（统一状态层）                │
+│  files / boxes / connections / aiContext / ui       │
+└───────┬────────────────────────┬─────────────────────┘
+         │                          │
+    ┌───▼─────────┐           ┌────▼─────────────────┐
+    │  侧栏      │           │  中央画布            │
+    │            │           │                    │
+    │  Leafer    │           │  Leafer Canvas     │ ← 画布、盒子外观、连线
+    │  + Yoga    │           │      ↕             │
+    │  + GSAP    │           │  DOM Islands       │ ← 盒子内容：编辑器、AI
+    │  + Pretext │           │  (CodeMirror 等)   │
+    └─────────────┘           └──────────────────────────┘
+```
+
+### DOM Island 模式
+
+中央画布的核心设计：盒子内容用 DOM，但"浮"在 Canvas 上。
+
+```
+Canvas 层（Leafer）：盒子边框 / 阴影 / 缩放把手 / 连线 / 粒子 / 画布背景
+DOM 层（覆盖在 Canvas 上）：编辑器 / AI对话 / 输入框 / 表单
+```
+
+每个盒子在 Canvas 上有 position / size / rotation，对应 DOM 内容用 transform 跟随。
+
+---
+
+## 中央画布路线图
+
+### MVP 定义
+
+第一个可验证版本：
+
+- [ ] Leafer Canvas 画布（可平移/缩放）
+- [ ] 第一个盒子：文件卡片（从左栏拖入或点击生成）
+- [ ] 盒子可拖拽、可选中
+- [ ] 点击文件卡片 → 打开侧栏对应路径
+
+### 渐进式扩展
+
+| 步骤 | 内容 |
+|------|------|
+| 1 | 画布 MVP：Canvas + 可拖拽盒子 |
+| 2 | DOM Island 验证：盒子内嵌入 CodeMirror 编辑器 |
+| 3 | 盒子间连线：拖拽连接两个盒子 |
+| 4 | AI 对话盒子：内嵌聊天 DOM |
+| 5 | 工作流编排：盒子 + 连线 + 状态 = 可视化流程 |
+| 6 | 持久化：工作流保存/加载 |
+
+---
+
+## 当前实现现状（2026-05）
+
+当前版本是基于 **kfmv3 v2 自研引擎** 的移动端文件管理器 + AI 对话助手，作为走向蓝图的第一步。
 
 **核心运行形态：**
 
@@ -28,17 +142,15 @@
 └───────────┘   └───────────────┘
 ```
 
----
-
-## 技术栈
+### 实际技术栈
 
 ```yaml
-实际使用:
+当前使用:
 
   kfmv3 v2 自研引擎 (renderer.ts):
     职责: Canvas 渲染（盒子树绘制、文本排版、粒子、光标）
     核心: Box 树 + 变换链 + Pretext 文本测量
-    不依赖: 第三方 Canvas 框架
+    不依赖: 第三方 Canvas 框架（愿景中的 LeaferJS 尚未引入）
 
   GSAP:
     职责: 动画引擎（唯一动画驱动）
@@ -48,7 +160,7 @@
     职责: 离屏文本测量与换行（零 reflow）
 
   自研 Flexbox (flex.ts):
-    职责: 轻量 Flexbox 布局计算（无 WASM 依赖）
+    职责: 轻量 Flexbox 布局计算（愿景中的 Yoga 尚未引入）
 
   DOM:
     职责: AI 输入栏、按钮、手势层、光球特效
@@ -57,9 +169,9 @@
 
 ---
 
-## 架构演进
+## 架构演进（已完成）
 
-### Phase 0 — 基础设施重建（已完成）
+### Phase 0 — 基础设施重建
 
 将项目从复杂的第三方依赖中解耦，建立自研渲染管线。
 
@@ -73,11 +185,9 @@
 | P0.6 | 统一选中逻辑 — 提取 selectFileItem 公共函数 | `8af658a` |
 | P0.7 | 侧栏 Canvas 化 — kfmv3 v2 引擎渲染左栏 | `91cdc9e` 起 |
 
-### Phase 1 — 侧栏重构（已完成）
+### Phase 1 — 侧栏重构
 
 左栏从 DOM 渲染迁移到自研 Canvas 引擎。
-
-**核心变化：**
 
 | 组件 | 旧实现 | 新实现 |
 |------|--------|--------|
@@ -88,7 +198,7 @@
 | 偏移 | CSS 自动流 | 自研 applyAnimOffset 逐层计算 |
 | 光标 | DOM div 背景高亮 | Canvas Box（渐变上线 + 下线） |
 
-### Phase 2 — 动画系统（已完成）
+### Phase 2 — 动画系统
 
 | 功能 | 实现 | 细节 |
 |------|------|------|
@@ -98,7 +208,7 @@
 | 字符散落 | char-rain.ts + GSAP | 展开时字符从屏幕顶端掉落到目标位置 |
 | 光标平滑过渡 | GSAP to() | 位置/宽度/高度/动态线 0.18s power3.out |
 
-### Phase 3 — 状态管理（已完成）
+### Phase 3 — 状态管理
 
 **事件堆栈 + 会话隔离：**
 
@@ -111,13 +221,13 @@ let _animBusy = false;
 let _sessionId = 0;
 
 export function onSidebarOpen(): void {
-  _sessionId++;          // 新会话
-  gsap.globalTimeline.clear();  // 杀残留 GSAP
+  _sessionId++;
+  gsap.globalTimeline.clear();
   // ... 重建
 }
 
 export function onSidebarClose(): void {
-  _sessionId++;          // 旧会话残留静默失效
+  _sessionId++;
   // ... 清理
 }
 ```
@@ -128,7 +238,7 @@ export function onSidebarClose(): void {
 
 ## 侧栏渲染管线
 
-```
+```yaml
 每帧 _tickAndRender:
   1. 清空 Canvas
   2. 递归遍历 Box 树
@@ -155,19 +265,10 @@ interface Box {
   textStyle: { content, font, color, lineHeight, align, verticalAlign, overflow, maxLines };
   icon: { char, font, color, size };
   gesture: { onTap };
-  scrollY: number;  // 滚动容器
+  scrollY: number;
   parent: Box | null;
   data: Record<string, any>;
 }
-```
-
-### 坐标系
-
-```
-变换链内 → 局部坐标（box.getAbsolutePosition）
-变换链外 → 屏幕坐标（ctx.getTransform().transformPoint）
-
-文字绘制和粒子系统在同一变换链内完成，坐标天然对齐。
 ```
 
 ---
@@ -176,30 +277,29 @@ interface Box {
 
 多次调优后的最终稳定方案：
 
-| 元素 | 配色 | 描述 |
-|------|------|------|
-| 侧栏背景 | `rgba(10,10,15,0.85)` | 深色半透明 |
-| 侧栏文字 | `#e0e0e0` | 浅灰 |
-| 侧栏光标 | `rgba(46,213,163,0.15)` 背景 + 青色动态线 | 绿底 + 蓝紫渐变动线 |
-| 侧栏边界 | 紫蓝色 2px border-top | 渐变紫蓝青 |
-| 用户气泡 | 紫蓝青渐变边框 | 饱和度较高 |
-| AI 气泡 | 青靛紫渐变左线条 | 饱和度较低 |
-| 面板外光晕 | 紫色 | 统一紫色调 |
-| 编辑模式光晕 | 紫色（亮度 0.55） | 明显可辨 |
-| 光球 | 紫色 | 跟随系统色 |
+| 元素 | 配色 |
+|------|------|
+| 侧栏背景 | `rgba(10,10,15,0.85)` |
+| 侧栏文字 | `#e0e0e0` |
+| 侧栏光标 | 绿底 + 蓝紫渐变动线 |
+| 侧栏边界 | 紫蓝色 2px border-top |
+| 用户气泡 | 紫蓝青渐变边框 |
+| AI 气泡 | 青靛紫渐变左线条（降饱和） |
+| 面板外光晕 | 紫色 |
+| 编辑模式光晕 | 紫色（亮度 0.55） |
+| 光球 | 紫色 |
 
 ---
 
-## 调试系统
+## 已知设计决策
 
-**当前状态：日志面板已彻底移除。**
-
-经历了三次删除：
-1. `index.html` 中 `#logPanel` DOM（`0bbbfaa` 用 display:none 隐藏）
-2. `src/client/modules/app.ts` 中所有日志代码（`bf73996` 彻底删除 addLog/openLogPanel 等全部函数）
-3. `src/client/modules/tree-render.ts` 末尾的自执行 IIFE 调试面板（`bf73996` 删除 "D" 按钮 + 第二个调试日志）
-
-当前 `console.log` 不受任何劫持，直接输出到浏览器控制台。
+| 决策 | 当前 | 愿景 |
+|------|------|------|
+| Canvas 框架 | 自研 kfmv3 v2 | LeaferJS |
+| 布局引擎 | 自研 flex.ts | Yoga Layout |
+| 动画引擎 | GSAP | GSAP（不变） |
+| 文本测量 | Pretext | Pretext（不变） |
+| 状态管理 | KFMState 发布订阅 | KFMState（不变） |
 
 ---
 
@@ -207,56 +307,43 @@ interface Box {
 
 ```
 2025-04-xx  c6e5fb9  docs: 更新重构计划文档
-2025-04-xx  e863424  refactor(phase4): GSAP 替换 Web Animation API
-2025-04-xx  8af658a  refactor: 提取 selectFileItem 统一选中逻辑
+2025-04-xx  e863424  refactor: GSAP 替换 Web Animation API
+2025-04-xx  8af658a  refactor: 提取 selectFileItem
 2025-04-xx  a8da6b4  fix: executeCursorAction 改为 dispatch click
-2025-04-xx  f6dc1db  refactor(phase3): GSAP 替换叠叠乐动画
-2025-04-xx  5fc4071  refactor(phase2): GSAP 替换光标高亮动画
-2025-04-xx  7187acc  refactor(phase1): Pretext 替换 offsetWidth
-─── Phase 1-4 完成，转向 kfmv3 v2 引擎 ───
+2025-04-xx  f6dc1db  refactor: GSAP 替换叠叠乐动画
+2025-04-xx  5fc4071  refactor: GSAP 替换光标高亮动画
+2025-04-xx  7187acc  refactor: Pretext 替换 offsetWidth
+─── 转向 kfmv3 v2 自研引擎 ───
 2025-05-xx  5630399  perf: 按 expandedPaths 只获取展开节点
-2025-05-xx  91cdc9e  fix: 展开/折叠动画时光标高度闪烁等
+2025-05-xx  91cdc9e  fix: 展开/折叠动画光标闪烁
 2025-05-xx  a6ed195  fix: ensureCursorBox 居中保护
 2025-05-xx  6ca8add  fix: 点击展开时光标闪烁
 2025-05-xx  bc12f3c  fix: 展开/折叠后光标跳转
 2025-05-xx  dded230  fix: 展开动画后光标模式卡死
-2025-05-xx  3595445  fix: 快速滑动时光标消失 — GSAP 降级
-2025-05-xx  d9df6cd  feat: 左栏右侧触摸盒子同步滚动
+2025-05-xx  3595445  fix: 快速滑动时光标消失
+2025-05-xx  d9df6cd  feat: 左栏右侧触摸盒子
 2025-05-xx  b7f51f0  feat: 手势控制 + 右滑关闭
 ─── 事件堆栈 + 会话隔离 ───
-2025-05-xx  15bad60  feat: UI 优化 — 日志隐藏、按钮、光标删除
-2025-05-xx  0bbbfaa  fix: 眼睛图标 + 日志面板彻底移除
-2025-05-xx  bf73996  fix: 日志面板彻底删除 + 眼睛生效修复
+2025-05-xx  15bad60  feat: UI 优化
+2025-05-xx  0bbbfaa  fix: 眼睛图标 + 隐藏日志面板
+2025-05-xx  bf73996  fix: 日志面板彻底删除 + 眼睛生效
 ─── UI 统一 ───
-2025-05-xx  d002041  feat: 光球面板 UI — 渐变边框 + 青色光球
-2025-05-xx  3ec24c6  feat: 对话气泡 — 用户渐变边框 + AI 青色线条
-2025-05-xx  b8395b6  fix: 编辑模式不破坏渐变边框 + AI 冷色渐变
-2025-05-xx  06c3621  fix: AI 气泡亮色渐变 + 四边光晕
+2025-05-xx  d002041  feat: 光球面板 UI
+2025-05-xx  3ec24c6  feat: 对话气泡
+2025-05-xx  b8395b6  fix: AI 渐变边框
+2025-05-xx  06c3621  fix: AI 气泡光晕
 2025-05-xx  40c4ff5  fix: AI 气泡降饱和度
-2025-05-xx  b90cdeb  fix: 面板外光晕统一紫色
-2025-05-xx  bd3264b  fix: 编辑模式紫色光晕加亮
-2025-05-xx  b69507d  feat: 面板/气泡渐变青→紫 + 光球紫色
+2025-05-xx  b90cdeb  fix: 面板外光晕统紫
+2025-05-xx  bd3264b  fix: 编辑模式光晕加亮
+2025-05-xx  b69507d  feat: 渐变青→紫 + 紫色光球
 2025-05-xx  03fdee2  fix: 交换气泡配色
-2025-05-xx  4c23ee7  fix: 侧栏工具条渐变紫蓝青边框 + 关闭按钮
+2025-05-xx  4c23ee7  fix: 侧栏渐变边框 + 关闭按钮
+2025-05-xx  c820cff  docs: 同步更新技术文档
 ```
 
 ---
 
-## 已知设计决策
-
-| 决策 | 结论 | 原因 |
-|------|------|------|
-| Canvas 框架 | 自研 kfmv3 v2（不用 LeaferJS） | 第三方框架约束过多，自研引擎完全可控 |
-| 布局引擎 | 自研 flex.ts（不用 Yoga） | 文件树布局简单，无需 WASM |
-| 动画引擎 | GSAP 独占（不用 CSS transition） | 动画可控、可链式编排、可全局 kill |
-| 文本测量 | Pretext 独占 | 零 reflow，与 Canvas 坐标系无缝配合 |
-| 状态管理 | KFMState 简单发布订阅（不用 Redux） | 小型项目，避免过度抽象 |
-| 调试 | 无内嵌调试面板 | 浏览器 DevTools 已足够 |
-| 隐藏文件 | 服务端返回全部，客户端过滤 | toggle 时无需重新拉取 API |
-
----
-
-## 未来方向
+## 节奏
 
 ```yaml
 短期:
@@ -272,5 +359,5 @@ interface Box {
 远期:
   - 工作流编排（盒子 + 连线 + 状态）
   - 持久化
-  - 跨平台（桌面 → APK → EXE）
+  - 跨平台（桌面 → APK → EXE → CLI）
 ```
