@@ -165,6 +165,7 @@ export function isAnimLocked(): boolean {
 
 let cursorBox: Box | null = null;   // 光标 Box 实例
 let cursorRowId: string | null = null;  // 当前光标指向的行 id
+let _savedCursorRowId: string | null = null;  // 侧栏关闭时保存的光标位置
 
 // 光标步进模式 —— 行索引（按绝对 Y 坐标排序的可交互行）
 let _rowIndex: Box[] = [];
@@ -321,7 +322,8 @@ export function onSidebarOpen(): void {
   animatingPath = null;
   _clickQueue = [];
   cursorBox = null;
-  cursorRowId = null;
+  cursorRowId = _savedCursorRowId;
+  _savedCursorRowId = null;
   _rowIndex = [];
   pendingCollapse = null;
   gsap.globalTimeline.clear();
@@ -376,6 +378,8 @@ export function onSidebarOpen(): void {
 }
 
 export function onSidebarClose(): void {
+  // 保存光标位置供下次打开恢复
+  _savedCursorRowId = cursorRowId;
   // 同样销毁一切——确保没有残留状态
   _sessionId++;
   gsap.globalTimeline.clear();

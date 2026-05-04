@@ -9664,6 +9664,7 @@
   }
   var cursorBox = null;
   var cursorRowId = null;
+  var _savedCursorRowId = null;
   var _rowIndex = [];
   var _sessionId = 0;
   var animatingPath = null;
@@ -9804,7 +9805,8 @@
     animatingPath = null;
     _clickQueue = [];
     cursorBox = null;
-    cursorRowId = null;
+    cursorRowId = _savedCursorRowId;
+    _savedCursorRowId = null;
     _rowIndex = [];
     pendingCollapse = null;
     gsapWithCSS.globalTimeline.clear();
@@ -9846,6 +9848,7 @@
   }
   function onSidebarClose() {
     var _a;
+    _savedCursorRowId = cursorRowId;
     _sessionId++;
     gsapWithCSS.globalTimeline.clear();
     _animBusy = false;
