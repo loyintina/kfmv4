@@ -9668,6 +9668,7 @@
   var _savedScrollY = 0;
   var _lastUserScrollY = 0;
   var _restoreMode = false;
+  var _sidebarClosed = true;
   var _restoringFromSave = false;
   var _rowIndex = [];
   var _sessionId = 0;
@@ -9803,6 +9804,7 @@
     }
   }
   function onSidebarOpen() {
+    _sidebarClosed = false;
     _sessionId++;
     _animBusy = false;
     _animBusyAt = 0;
@@ -9871,6 +9873,7 @@
   function onSidebarClose() {
     var _a, _b, _c;
     gsapWithCSS.globalTimeline.clear();
+    _sidebarClosed = true;
     _animBusy = false;
     _animBusyAt = 0;
     _restoringFromSave = true;
@@ -10071,6 +10074,10 @@
         }
         if (!cursorWheelDecayRaf) {
           cursorWheelDecayRaf = requestAnimationFrame(function decay() {
+            if (_sidebarClosed) {
+              cursorWheelDecayRaf = 0;
+              return;
+            }
             cursorWheelAccum *= 0.85;
             const s = Math.trunc(cursorWheelAccum);
             if (s !== 0) {
@@ -10095,6 +10102,10 @@
         const wheelCenterIdx = _getCenterRowIndex();
         wheelRaf = requestAnimationFrame(function smoothWheel() {
           var _a2, _b, _c;
+          if (_sidebarClosed) {
+            wheelRaf = 0;
+            return;
+          }
           const cur2 = (_a2 = getRootScrollY()) != null ? _a2 : 0;
           const diff = wheelTarget - cur2;
           if (Math.abs(diff) < 0.5) {
@@ -10294,6 +10305,10 @@
       const flingMaxY = (_b = (_a = renderer == null ? void 0 : renderer.getRoot()) == null ? void 0 : _a.getMaxScroll().maxY) != null ? _b : 0;
       function fling() {
         var _a2;
+        if (_sidebarClosed) {
+          flingRaf = 0;
+          return;
+        }
         velocity *= 0.96;
         if (Math.abs(velocity) < 0.3) {
           flingRaf = 0;
