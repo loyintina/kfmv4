@@ -127,14 +127,14 @@ function renderChatContent(): void {
     const isUser = msg.role === 'user';
     const bgColor = isUser
       ? 'linear-gradient(rgba(10,10,15,.85),rgba(10,10,15,.85)) padding-box,linear-gradient(135deg,#7c3aed,rgba(0,212,255,.8)) border-box'
-      : 'linear-gradient(rgba(10,15,30,0.88),rgba(10,15,30,0.88)) padding-box,linear-gradient(135deg,#00e5ff,#b388ff) border-box';
+      : 'linear-gradient(rgba(10,15,30,0.88),rgba(10,15,30,0.88)) padding-box,linear-gradient(135deg,rgba(0,200,220,0.3),rgba(130,60,200,0.15)) border-box';
     const borderStyle = isUser
       ? 'border:1px solid transparent;border-left-width:3px;'
-      : 'border:1px solid transparent;border-left-width:3px;';
+      : 'border:1px solid transparent;border-left:3px solid rgba(0,200,220,0.12);';
     const align = isUser ? 'flex-end' : 'flex-start';
     const label = isUser ? '你' : '蔚然';
     const labelColor = isUser ? '#7c3aed' : '#00d4ff';
-    const boxShadow = isUser ? '0 0 10px 2px rgba(124,58,237,0.12)' : '0 0 10px 2px rgba(0,229,255,0.12)';
+    const boxShadow = isUser ? '0 0 10px 2px rgba(124,58,237,0.12)' : '0 0 10px 2px rgba(0,200,220,0.06)';
 
     const font = '13px sans-serif';
     const lineHeight = 20;
