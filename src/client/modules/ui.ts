@@ -10,16 +10,17 @@ let sidebarContent: HTMLElement | null = null;
 import { onSidebarOpen, onSidebarClose } from './tree-render.js';
 
 export function openSidebar(): void {
-  document.getElementById('sidebar')?.classList.add('open');
-  document.getElementById('overlay')?.classList.add('show');
+  DOM.sidebar?.classList.add('open');
+  DOM.overlay?.classList.add('show');
   onSidebarOpen();
 }
 
 import { onSidebarOpen, onSidebarClose } from './tree-render.js';
+import { DOM } from "./dom-refs.js";
 
 export function closeSidebar(): void {
-  document.getElementById('sidebar')?.classList.remove('open');
-  document.getElementById('overlay')?.classList.remove('show');
+  DOM.sidebar?.classList.remove('open');
+  DOM.overlay?.classList.remove('show');
   onSidebarClose();
 }
 
@@ -28,10 +29,10 @@ export function initUI(): void {
   window.closeSidebar = closeSidebar;
 
   // 保留 executeCursorAction 作为空壳
-  (window as any).executeCursorAction = async function() {};
+  window.executeCursorAction = async function() {};
 
   // overlay 点击关侧栏
-  document.getElementById('overlay')?.addEventListener('click', () => {
+  DOM.overlay?.addEventListener('click', () => {
     closeSidebar();
   });
 }

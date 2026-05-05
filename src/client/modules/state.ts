@@ -107,5 +107,5 @@ declare global {
 }
 
 if (typeof window !== 'undefined') {
-  (window as any).KFMState = KFMState;
+  window.KFMState = KFMState;
 }

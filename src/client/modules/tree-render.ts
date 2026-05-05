@@ -15,30 +15,30 @@ import { styleRegistry, LINE_HEIGHT, MAX_LINES } from './style-registry.js';
 import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
 import { animateCharRain } from "./char-rain.js";
 import { closeSidebar } from './ui.js';
+import { L } from './renderer-lifecycle.js';
+import { DOM } from "./dom-refs.js";
 
-let renderer: Renderer | null = null;
 
 /** 保存 KFMState 订阅引用，防止重复订阅 */
-let _stateSub: ((state: any) => void) | null = null;
 function _ensureSubscribed(): void {
-  if (_stateSub) KFMState.unsubscribe(_stateSub);
-  _stateSub = () => {
-    // state 变化（toggleHidden/expanded）是用户主动行为，跳过 _animBusy 锁
-    _animBusy = false;
-    _animBusyAt = 0;
-    _clickQueue = [];
+  if (L._stateSub) KFMState.unsubscribe(L._stateSub);
+  L._stateSub = () => {
+    // state 变化（toggleHidden/expanded）是用户主动行为，跳过 L._animBusy 锁
+    L._animBusy = false;
+    L._animBusyAt = 0;
+    L._clickQueue = [];
     rebuildTree();
   };
-  KFMState.subscribe(_stateSub);
+  KFMState.subscribe(L._stateSub);
 }
 
 /** 外部使用：标记某路径正在做展开动画 */
 export function markAnimatingPath(path: string | null): void {
-  animatingPath = path;
+  L.animatingPath = path;
 }
 
 export function triggerExpandAnimation(path: string): void {
-  const root = renderer?.getRoot();
+  const root = L.renderer?.getRoot();
   if (!root) return;
   const container = findBoxById(root, `expanded-${path}`);
   const titleRow = findBoxById(root, `title-${path}`);
@@ -54,7 +54,7 @@ export function triggerExpandAnimation(path: string): void {
       const startTime = performance.now();
       const endRot = Math.PI / 2;
       const durationMs = 300;
-      const rend = renderer;
+      const rend = L.renderer;
       function animFrame() {
         const elapsed = performance.now() - startTime;
         const t = Math.min(elapsed / durationMs, 1);
@@ -68,11 +68,11 @@ export function triggerExpandAnimation(path: string): void {
       }
       requestAnimationFrame(animFrame);
     }
-    renderer?.setRoot(renderer!.getRoot()!);
+    L.renderer?.setRoot(L.renderer!.getRoot()!);
     return;
   }
   
-  animatingPath = null;
+  L.animatingPath = null;
   
   // 恢复子行原始 y
   const _origYs = (container as any)._origYs as number[] | undefined;
@@ -83,10 +83,10 @@ export function triggerExpandAnimation(path: string): void {
   
   const ancestors = collectAncestors(container, root);
   
-  _animBusy = true; _animBusyAt = Date.now();
+  L._animBusy = true; L._animBusyAt = Date.now();
 
   // 字符雨
-  animateCharRain(container, root, renderer);
+  animateCharRain(container, root, L.renderer);
   
   // 容器展开动画
   gsap.to(container, {
@@ -95,7 +95,7 @@ export function triggerExpandAnimation(path: string): void {
     ease: 'back.out(1.15)',
     onUpdate: function() {
       applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
-      renderer?.setRoot(renderer!.getRoot()!);
+      L.renderer?.setRoot(L.renderer!.getRoot()!);
     },
     onComplete: () => {
       // 恢复 cornerRadius
@@ -104,19 +104,19 @@ export function triggerExpandAnimation(path: string): void {
       }
       slideInRows(container, root, toggle2).then(() => {
         fixExpandedToggles(container);
-        renderer?.setRoot(renderer!.getRoot()!);
+        L.renderer?.setRoot(L.renderer!.getRoot()!);
       }).finally(() => {
-        _animBusy = false; _animBusyAt = 0;
-        const _root = renderer?.getRoot();
+        L._animBusy = false; L._animBusyAt = 0;
+        const _root = L.renderer?.getRoot();
         if (_root) { _rebuildRowIndex(_root); }
         // ä¿®æ­£å¨ç»ååæ çä½ç½®
-        if (cursorRowId) { const _t = findBoxById(_root, cursorRowId); if (_t) moveCursorTo(_t, false); }
+        if (L.cursorRowId) { const _t = findBoxById(_root, L.cursorRowId); if (_t) moveCursorTo(_t, false); }
         processClickQueue();
       });
     },
   });
   applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
-  renderer?.setRoot(renderer!.getRoot()!);
+  L.renderer?.setRoot(L.renderer!.getRoot()!);
 }
 
 /** 修复容器内所有����展开子容器的 toggle 旋转状态 */
@@ -156,50 +156,35 @@ function findBoxByIdLocal(root: Box | null, id: string): Box | null {
   return null;
 }
 export function isAnimLocked(): boolean {
-  return _animBusy;
+  return L._animBusy;
 }
 
 // ============================================================
 // 光标状态
 // ============================================================
 
-let cursorBox: Box | null = null;   // 光标 Box 实例
-let cursorRowId: string | null = null;  // 当前光标指向的行 id
-let _savedCursorRowId: string | null = null;  // 侧栏关闭时保存的光标位置
-let _savedScrollY = 0;  // 侧栏关闭时保存的滚动位置
-let _lastUserScrollY = 0;  // 用户最近一次输入的 scrollY 值（不受 GSAP 影响）
-let _restoreMode = false;  // 恢复期间，跳过 GSAP scroll 动画
-let _sidebarClosed = true;  // 侧栏关闭状态，rAF循环检查此标志退出
-let _restoringFromSave = false;  // 标记正在从关闭状态恢复
 
 // 光标步进模式 —— 行索引（按绝对 Y 坐标排序的可交互行）
-let _rowIndex: Box[] = [];
 
 // ===== 事件堆栈 + 会话隔离 =====
-// 会话隔离：每次开/关侧栏递增 _sessionId，旧会话异步操作自动失效
+// 会话隔离：每次开/关侧栏递增 L._sessionId，旧会话异步操作自动失效
 // 事件堆栈：同一会话内快速点击串行执行
-let _sessionId = 0;
-export function getSession(): number { return _sessionId; }
-export function getRowIndexLength(): number { return _rowIndex.length; }
+export function getSession(): number { return L._sessionId; }
+export function getRowIndexLength(): number { return L._rowIndex.length; }
 
-let animatingPath: string | null = null;
-let _animBusy = false;
-let _animBusyAt = 0;
-let pendingCollapse: { path: string, rowId: string } | null = null;
-let _clickQueue: Array<{offsetX: number, offsetY: number}> = [];
 
 /** 创建/获取光标 Box，保证它挂在 root 上 */
 function ensureCursorBox(root: Box, canvasH: number): Box {
-  if (cursorBox) {
+  if (L.cursorBox) {
     // 确保还在 root 的子节点中
-    if (root.children.includes(cursorBox)) return cursorBox;
+    if (root.children.includes(L.cursorBox)) return L.cursorBox;
   }
 
-  cursorBox = new Box({
+  L.cursorBox = new Box({
     id: 'cursor-highlight',
     x: 0,
     y: canvasH / 2 - 14,
-    width: document.getElementById('tree-canvas')?.clientWidth || 280,
+    width: DOM.treeCanvas?.clientWidth || 280,
     height: 24,
     backgroundColor: 'rgba(46,213,163,0.15)',
     borderRadius: 0,
@@ -208,23 +193,23 @@ function ensureCursorBox(root: Box, canvasH: number): Box {
     data: { cursorDynamicLines: true, topLineW: 0, botLineW: 0, color: 'rgba(0,212,255,0.7)' },
   });
 
-  root.addChild(cursorBox);
-  return cursorBox;
+  root.addChild(L.cursorBox);
+  return L.cursorBox;
 }
 
 /** 移动光标到指定行（GSAP 平滑过渡） */
 function moveCursorTo(hitBox: Box, animate = true): void {
-  if (!cursorBox) return;
+  if (!L.cursorBox) return;
   // 防崩溃：确认光标盒仍在树中，不在则重新挂载
-  const root = renderer?.getRoot();
-  if (root && !root.children.includes(cursorBox)) {
-    ensureCursorBox(root, root.height || (document.getElementById('tree-canvas')?.clientHeight ?? 618));
+  const root = L.renderer?.getRoot();
+  if (root && !root.children.includes(L.cursorBox)) {
+    ensureCursorBox(root, root.height || (DOM.treeCanvas?.clientHeight ?? 618));
   }
   let abs: { x: number; y: number };
   try {
     abs = hitBox.getAbsolutePosition();
   } catch { return; }
-  const canvas = document.getElementById('tree-canvas');
+  const canvas = DOM.treeCanvas;
 
   const depth = (hitBox as any).data?.depth ?? 0;
   const shift = getShift(depth);
@@ -235,7 +220,7 @@ function moveCursorTo(hitBox: Box, animate = true): void {
   const targetY = abs.y + 2;
   const targetW = rm - abs.x - offsetX;
   const targetH = hitBox.height - 4;
-  cursorRowId = hitBox.id || null;
+  L.cursorRowId = hitBox.id || null;
 
   // 测量文字宽度，计算上下线长度
   const label = hitBox.children.find(c => c.id?.startsWith('label-'));
@@ -279,7 +264,7 @@ function moveCursorTo(hitBox: Box, animate = true): void {
   const botLineW = totalLineW - topLineW;
 
   // 确保 data 对象存在（不替换，直接在属性上做动画）
-  const cdata = (cursorBox as any).data;
+  const cdata = (L.cursorBox as any).data;
   if (cdata) {
     cdata.cursorDynamicLines = true;
     cdata.color = 'rgba(0,212,255,0.7)';
@@ -289,7 +274,7 @@ function moveCursorTo(hitBox: Box, animate = true): void {
     // GSAP 平滑过渡：位置/尺寸 + 上线长度
     // 不 kill 旧动画——让 GSAP 自动衔接连续的目标变更，避免视觉跳动
     try {
-      gsap.to(cursorBox, {
+      gsap.to(L.cursorBox, {
         x: targetX, y: targetY, width: targetW, height: targetH,
         duration: 0.18, ease: 'power3.out',
         overwrite: 'auto',
@@ -301,16 +286,16 @@ function moveCursorTo(hitBox: Box, animate = true): void {
       });
     } catch {
       // GSAP 异常时降级为瞬移
-      cursorBox.x = targetX; cursorBox.y = targetY;
-      cursorBox.width = targetW; cursorBox.height = targetH;
+      L.cursorBox.x = targetX; L.cursorBox.y = targetY;
+      L.cursorBox.width = targetW; L.cursorBox.height = targetH;
       cdata.topLineW = topLineW; cdata.botLineW = botLineW;
     }
   } else {
     // 瞬移模式（初始放置等场景）
-    cursorBox.x = targetX;
-    cursorBox.y = targetY;
-    cursorBox.width = targetW;
-    cursorBox.height = targetH;
+    L.cursorBox.x = targetX;
+    L.cursorBox.y = targetY;
+    L.cursorBox.width = targetW;
+    L.cursorBox.height = targetH;
     if (cdata) {
       cdata.topLineW = topLineW;
       cdata.botLineW = botLineW;
@@ -321,24 +306,14 @@ function moveCursorTo(hitBox: Box, animate = true): void {
 // ============================================================
 
 export function onSidebarOpen(): void {
-  _sidebarClosed = false;  // 侧栏打开，允许rAF循环运行
-  // ===== 销毁旧渲染器和所有残留状态 =====
-  _sessionId++;
-  _animBusy = false;
-  _animBusyAt = 0;
-  animatingPath = null;
-  _clickQueue = [];
-  cursorBox = null;
-  cursorRowId = _savedCursorRowId;
-  _savedCursorRowId = null;
-  _rowIndex = [];
-  pendingCollapse = null;
+  // ===== 销毁旧渲染器 + 通过生命周期重置所有状态 =====
   gsap.globalTimeline.clear();
-  renderer?.stop();
-  renderer = null;
+  L.renderer?.stop();
+  L.renderer = null;
+  L.resetForOpen();
 
   // ===== 从零重建：销毁旧 canvas，创建新渲染器 =====
-  const fileTree = document.getElementById('fileTree');
+  const fileTree = DOM.fileTree;
   if (!fileTree) return;
 
   const canvas = document.createElement('canvas');
@@ -351,7 +326,7 @@ export function onSidebarOpen(): void {
   fileTree.appendChild(canvas);
 
   const dpr = window.devicePixelRatio || 1;
-  renderer = new Renderer(canvas, {
+  L.renderer = new Renderer(canvas, {
     backgroundColor: 'rgba(10,10,15,0.85)',
     dpr,
   });
@@ -360,19 +335,19 @@ export function onSidebarOpen(): void {
   requestAnimationFrame(() => {
     rebuildTree();
     // rebuildTree 后强制恢复 scrollY（在所有可能覆盖它的逻辑之后）
-    if (_savedScrollY > 0) {
-      const root = renderer?.getRoot();
+    if (L._savedScrollY > 0) {
+      const root = L.renderer?.getRoot();
       if (root) {
         const maxY = root.getMaxScroll().maxY;
-        root.scrollY = Math.min(_savedScrollY, maxY);
+        root.scrollY = Math.min(L._savedScrollY, maxY);
         // 实验日志：写到页面上可见
         const savedVal = root.scrollY;
-        _savedScrollY = 0;
-        _restoreMode = true;
+        L._savedScrollY = 0;
+        L._restoreMode = true;
         setTimeout(() => {
-          _restoreMode = false;
+          L._restoreMode = false;
           // 最终检查：如果 scrollY 被覆盖了，强制恢复
-          const r2 = renderer?.getRoot();
+          const r2 = L.renderer?.getRoot();
           if (r2 && Math.abs(r2.scrollY - savedVal) > 10) {
             r2.scrollY = savedVal;
           }
@@ -380,15 +355,13 @@ export function onSidebarOpen(): void {
         }, 500);
       }
     }
-    _restoringFromSave = false;
-    renderer?.resize();
-    (window as any).__treeRenderer = renderer;
+    L._restoringFromSave = false;
+    L.renderer?.resize();
+    window.__treeRenderer = L.renderer;
 
     _ensureSubscribed();
     styleRegistry.subscribe(() => rebuildTree());
-    window.addEventListener('resize', () => renderer?.resize());
-    styleRegistry.subscribe(() => rebuildTree());
-    window.addEventListener('resize', () => renderer?.resize());
+    window.addEventListener('resize', () => L.renderer?.resize());
 
     bindScrollEvents(canvas);
     bindClickEvents(canvas, dpr);
@@ -398,11 +371,11 @@ export function onSidebarOpen(): void {
   });
 
   // 等侧栏 CSS 过渡结束后再 resize 一次
-  const sidebar = document.getElementById('sidebar');
+  const sidebar = DOM.sidebar;
   if (sidebar) {
     const onEnd = () => {
       sidebar.removeEventListener('transitionend', onEnd);
-      renderer?.resize();
+      L.renderer?.resize();
     };
     sidebar.addEventListener('transitionend', onEnd);
   }
@@ -411,28 +384,29 @@ export function onSidebarOpen(): void {
 export function onSidebarClose(): void {
   // 先停掉所有动画和独立rAF循环
   gsap.globalTimeline.clear();
-  _sidebarClosed = true;  // 让wheel/touch的rAF循环自己退出
-  _animBusy = false;
-  _animBusyAt = 0;
-  _restoringFromSave = true;
+  L._sidebarClosed = true;  // 让wheel/touch的rAF循环自己退出
+  L._animBusy = false;
+  L._animBusyAt = 0;
+  L._restoringFromSave = true;
   // 直接保存当前 scrollY（动画停止后的稳定值）
-  const rootScrollY = renderer?.getRoot()?.scrollY ?? 0;
-  // 关键：只有 renderer 存在时才保存，避免用 0/null 覆盖正确的值
-  if (renderer && renderer.getRoot()) {
-    _savedScrollY = rootScrollY;
-    _savedCursorRowId = cursorRowId;
+  const rootScrollY = L.renderer?.getRoot()?.scrollY ?? 0;
+  // 关键：只有 L.renderer 存在时才保存，避免用 0/null 覆盖正确的值
+  if (L.renderer && L.renderer.getRoot()) {
+    L._savedScrollY = rootScrollY;
+    L._savedCursorRowId = L.cursorRowId;
   }
-  _clickQueue = [];
-  cursorBox = null;
-  cursorRowId = null;
-  _rowIndex = [];
-  renderer?.stop();
-  renderer = null;
-  document.getElementById('sidebarTouchArea')?.remove();
+  L._clickQueue = [];
+  L.cursorBox = null;
+  L.cursorRowId = null;
+  L._rowIndex = [];
+  L.renderer?.stop();
+  L.renderer = null;
+  DOM.sidebarTouchArea?.remove();
+  L.cancelAllRafs();
 }
 
 export function initTreeRenderer(): void {
-  const fileTree = document.getElementById('fileTree');
+  const fileTree = DOM.fileTree;
   if (!fileTree) {
     console.warn('[tree-render] #fileTree not found');
     return;
@@ -448,7 +422,7 @@ export function initTreeRenderer(): void {
   fileTree.appendChild(canvas);
 
   const dpr = window.devicePixelRatio || 1;
-  renderer = new Renderer(canvas, {
+  L.renderer = new Renderer(canvas, {
     backgroundColor: 'rgba(10,10,15,0.85)',
     dpr,
   });
@@ -456,11 +430,11 @@ export function initTreeRenderer(): void {
   rebuildTree();
 
   // 暴露到 window 供调试
-  (window as any).__treeRenderer = renderer;
+  window.__treeRenderer = L.renderer;
 
   _ensureSubscribed();
   styleRegistry.subscribe(() => rebuildTree());
-  window.addEventListener('resize', () => renderer?.resize());
+  window.addEventListener('resize', () => L.renderer?.resize());
 
   bindScrollEvents(canvas);
   bindClickEvents(canvas, dpr);
@@ -471,11 +445,11 @@ export function initTreeRenderer(): void {
 // ============================================================
 
 function getRootScrollY(): number | null {
-  return renderer?.getRoot()?.scrollY ?? null;
+  return L.renderer?.getRoot()?.scrollY ?? null;
 }
 
 function setRootScrollY(val: number): void {
-  const root = renderer?.getRoot();
+  const root = L.renderer?.getRoot();
   if (!root) return;
   const maxScroll = root.getMaxScroll().maxY;
   root.scrollY = Math.max(0, Math.min(val, maxScroll));
@@ -487,59 +461,59 @@ function setRootScrollY(val: number): void {
 
 /** 重建行索引：遍历树收集所有可交互行，按绝对 Y 排�� */
 function _rebuildRowIndex(root: Box): void {
-  _rowIndex = [];
+  L._rowIndex = [];
   function walk(box: Box): void {
     for (const child of box.children) {
       if (!child.visible || child.disabled) continue;
       if (child.interactive && child.gesture?.onTap) {
-        _rowIndex.push(child);
+        L._rowIndex.push(child);
       }
       walk(child);
     }
   }
   walk(root);
-  _rowIndex.sort((a, b) => {
+  L._rowIndex.sort((a, b) => {
     return a.getAbsolutePosition().y - b.getAbsolutePosition().y;
   });
 }
 
 /** ��取当前光标在行索引中的位置 */
 export function getCursorRowIndex(): number {
-  if (!cursorRowId || _rowIndex.length === 0) return -1;
-  return _rowIndex.findIndex(box => box.id === cursorRowId);
+  if (!L.cursorRowId || L._rowIndex.length === 0) return -1;
+  return L._rowIndex.findIndex(box => box.id === L.cursorRowId);
 }
 
 /** 移���光标 N 步（正=向下，负=向上），自动 clamp */
 function _moveCursorBySteps(steps: number): void {
-  if (_rowIndex.length === 0) return;
+  if (L._rowIndex.length === 0) return;
   const oldIdx = getCursorRowIndex();
-  const newIdx = Math.max(0, Math.min(_rowIndex.length - 1, oldIdx + steps));
-  if (newIdx !== oldIdx && _rowIndex[newIdx]) {
-    moveCursorTo(_rowIndex[newIdx]);
+  const newIdx = Math.max(0, Math.min(L._rowIndex.length - 1, oldIdx + steps));
+  if (newIdx !== oldIdx && L._rowIndex[newIdx]) {
+    moveCursorTo(L._rowIndex[newIdx]);
   }
 }
 
 /** 判断��前是否���标模式（内容高度 <= 视口高度，无溢出） */
 function _isCursorMode(): boolean {
-  const root = renderer?.getRoot();
+  const root = L.renderer?.getRoot();
   if (!root) return false;
   return root.getMaxScroll().maxY <= 0;
 }
 
-/** 获取视口中央最近行的索引（在 _rowIndex 中的位���） */
+/** 获取视口中央最近行的索引（在 L._rowIndex 中的位���） */
 function _getCenterRowIndex(): number {
-  const root = renderer?.getRoot();
-  if (!root || _rowIndex.length === 0) return -1;
-  const canvasH = (document.getElementById('tree-canvas')?.clientHeight ?? 0) || 618;
+  const root = L.renderer?.getRoot();
+  if (!root || L._rowIndex.length === 0) return -1;
+  const canvasH = (DOM.treeCanvas?.clientHeight ?? 0) || 618;
   const scrollY = root.scrollY ?? 0;
   const centerY = scrollY + canvasH / 2;
   let closestIdx = -1;
   let closestDist = Infinity;
-  for (let i = 0; i < _rowIndex.length; i++) {
+  for (let i = 0; i < L._rowIndex.length; i++) {
     try {
-      if (!_rowIndex[i]) continue;
-      const abs = _rowIndex[i].getAbsolutePosition();
-      const rowCenter = abs.y + _rowIndex[i].height / 2;
+      if (!L._rowIndex[i]) continue;
+      const abs = L._rowIndex[i].getAbsolutePosition();
+      const rowCenter = abs.y + L._rowIndex[i].height / 2;
       const dist = Math.abs(rowCenter - centerY);
       if (dist < closestDist) {
         closestDist = dist;
@@ -552,11 +526,11 @@ function _getCenterRowIndex(): number {
 
 /** 滚���模式下，将光标吸附到视口中央最近的行 */
 function _snapCursorToCenter(): void {
-  if (_animBusy) return;
+  if (L._animBusy) return;
   const idx = _getCenterRowIndex();
-  if (idx >= 0 && _rowIndex[idx] && _rowIndex[idx]!.id !== cursorRowId) {
-    console.log('[snapCursorToCenter] snapping from', cursorRowId, 'to', _rowIndex[idx]!.id, 'centerIdx=', idx);
-    moveCursorTo(_rowIndex[idx]!);
+  if (idx >= 0 && L._rowIndex[idx] && L._rowIndex[idx]!.id !== L.cursorRowId) {
+    console.log('[snapCursorToCenter] snapping from', L.cursorRowId, 'to', L._rowIndex[idx]!.id, 'centerIdx=', idx);
+    moveCursorTo(L._rowIndex[idx]!);
   }
 }
 
@@ -564,34 +538,34 @@ function _snapCursorToCenter(): void {
 /** 点击后滚动页面到光标居中位置（GSAP 平滑动画） */
 function _scrollToCenterCursor(): void {
   if (_isCursorMode()) return;
-  if (_restoreMode) return;  // 恢复期间跳过 GSAP
-  const root = renderer?.getRoot();
-  if (!root || cursorRowId === null) return;
-  const canvas = document.getElementById('tree-canvas');
+  if (L._restoreMode) return;  // 恢复期间跳过 GSAP
+  const root = L.renderer?.getRoot();
+  if (!root || L.cursorRowId === null) return;
+  const canvas = DOM.treeCanvas;
   const canvasH = canvas?.clientHeight ?? 618;
   const maxY = root.getMaxScroll().maxY;
   const idx = getCursorRowIndex();
-  if (idx < 0 || !_rowIndex[idx]) return;
+  if (idx < 0 || !L._rowIndex[idx]) return;
   try {
-    const abs = _rowIndex[idx].getAbsolutePosition();
-    const targetScrollY = Math.max(0, Math.min(maxY, abs.y + _rowIndex[idx].height / 2 - canvasH / 2));
+    const abs = L._rowIndex[idx].getAbsolutePosition();
+    const targetScrollY = Math.max(0, Math.min(maxY, abs.y + L._rowIndex[idx].height / 2 - canvasH / 2));
     console.log('[GSAP-SCROLL] targetScrollY=', targetScrollY, 'from=', root.scrollY);
     gsap.to(root, {
       scrollY: targetScrollY,
       duration: 0.35,
       ease: 'power2.inOut',
       overwrite: 'auto',
-      onUpdate: function() { renderer?.setRoot(renderer.getRoot()!); },
+      onUpdate: function() { L.renderer?.setRoot(L.renderer.getRoot()!); },
     });
   } catch {}
 }
 
 /** 创建左栏右侧触摸盒子：填充剩余屏幕，同步滚动 + 点击执行光标动作 + 右往左滑关闭 */
 function _createSidebarTouchArea(): void {
-  const old = document.getElementById('sidebarTouchArea');
+  const old = DOM.sidebarTouchArea;
   if (old) old.remove();
 
-  const sidebar = document.getElementById('sidebar');
+  const sidebar = DOM.sidebar;
   if (!sidebar) return;
 
   const box = document.createElement('div');
@@ -605,10 +579,10 @@ function _createSidebarTouchArea(): void {
 
   // 点击任意位置 → 执行���前光标行的动作
   box.addEventListener('click', () => {
-    if (!cursorRowId || _rowIndex.length === 0) return;
+    if (!L.cursorRowId || L._rowIndex.length === 0) return;
     const idx = getCursorRowIndex();
-    if (idx < 0 || !_rowIndex[idx]) return;
-    const hit = _rowIndex[idx]!;
+    if (idx < 0 || !L._rowIndex[idx]) return;
+    const hit = L._rowIndex[idx]!;
     const hitData = (hit as any).data || {};
     if (hitData.isDir) {
       if (hitData.isExpanded) { doCollapse(hit, hitData); }
@@ -634,9 +608,7 @@ function bindScrollEvents(canvas: HTMLElement): void {
 
   // ===== Wheel =====
   let wheelTarget = 0;
-  let wheelRaf = 0;
   let cursorWheelAccum = 0;
-  let cursorWheelDecayRaf = 0;
 
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
@@ -649,9 +621,9 @@ function bindScrollEvents(canvas: HTMLElement): void {
         cursorWheelAccum -= steps;
       }
       // 衰减残余（模拟滚轮惯性）
-      if (!cursorWheelDecayRaf) {
-        cursorWheelDecayRaf = requestAnimationFrame(function decay() {
-          if (_sidebarClosed) { cursorWheelDecayRaf = 0; return; }
+      if (!L._cursorWheelDecayRaf) {
+        L._cursorWheelDecayRaf = requestAnimationFrame(function decay() {
+          if (L._sidebarClosed) { L._cursorWheelDecayRaf = 0; return; }
           cursorWheelAccum *= 0.85;
           const s = Math.trunc(cursorWheelAccum);
           if (s !== 0) {
@@ -660,32 +632,32 @@ function bindScrollEvents(canvas: HTMLElement): void {
           }
           if (Math.abs(cursorWheelAccum) < 0.05) {
             cursorWheelAccum = 0;
-            cursorWheelDecayRaf = 0;
+            L._cursorWheelDecayRaf = 0;
             return;
           }
-          cursorWheelDecayRaf = requestAnimationFrame(decay);
+          L._cursorWheelDecayRaf = requestAnimationFrame(decay);
         });
       }
       return;
     }
     // 滚动模式（含边界穿透，累积跨帧）
     const cur = getRootScrollY() ?? 0;
-    _lastUserScrollY = cur;  // 记录 GSAP 之前的值
+    L._lastUserScrollY = cur;  // 记录 GSAP 之前的值
     wheelTarget = cur + e.deltaY;
-    if (!wheelRaf) {
+    if (!L._wheelRaf) {
       let wheelAccum = 0;
       const wheelCenterIdx = _getCenterRowIndex();
-      wheelRaf = requestAnimationFrame(function smoothWheel() {
-        if (_sidebarClosed) { wheelRaf = 0; return; }
+      L._wheelRaf = requestAnimationFrame(function smoothWheel() {
+        if (L._sidebarClosed) { L._wheelRaf = 0; return; }
         const cur2 = getRootScrollY() ?? 0;
         const diff = wheelTarget - cur2;
         if (Math.abs(diff) < 0.5) {
           setRootScrollY(wheelTarget);
           _snapCursorToCenter();
-          wheelRaf = 0;
+          L._wheelRaf = 0;
           return;
         }
-        const maxY = renderer?.getRoot()?.getMaxScroll().maxY ?? 0;
+        const maxY = L.renderer?.getRoot()?.getMaxScroll().maxY ?? 0;
         const desired = cur2 + diff * 0.25;
         if (desired < 0 && maxY > 0) {
           setRootScrollY(0);
@@ -694,7 +666,7 @@ function bindScrollEvents(canvas: HTMLElement): void {
           if (steps > 0) {
             wheelAccum -= steps * LINE_HEIGHT;
             const targetIdx = Math.max(0, wheelCenterIdx - steps);
-            if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+            if (L._rowIndex[targetIdx]) moveCursorTo(L._rowIndex[targetIdx]);
           }
         } else if (desired > maxY) {
           setRootScrollY(maxY);
@@ -702,15 +674,15 @@ function bindScrollEvents(canvas: HTMLElement): void {
           const steps = Math.floor(wheelAccum / LINE_HEIGHT);
           if (steps > 0) {
             wheelAccum -= steps * LINE_HEIGHT;
-            const targetIdx = Math.min(_rowIndex.length - 1, wheelCenterIdx + steps);
-            if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+            const targetIdx = Math.min(L._rowIndex.length - 1, wheelCenterIdx + steps);
+            if (L._rowIndex[targetIdx]) moveCursorTo(L._rowIndex[targetIdx]);
           }
         } else {
           setRootScrollY(desired);
-          _lastUserScrollY = desired;
+          L._lastUserScrollY = desired;
           _snapCursorToCenter();
         }
-        wheelRaf = requestAnimationFrame(smoothWheel);
+        L._wheelRaf = requestAnimationFrame(smoothWheel);
       });
     }
   }, { passive: false });
@@ -722,7 +694,6 @@ function bindScrollEvents(canvas: HTMLElement): void {
   let lastTouchY = 0;
   let lastTouchTime = 0;
   let velocity = 0;
-  let flingRaf = 0;
   // 边界锁状态：光标偏离中心时锁定滚动，回到中心才解锁
   let _boundPen = 0;       // 穿透深度（像素），>0 表��锁住
   let _boundIsTop = false; // true=上边界锁���false=下边界锁
@@ -732,15 +703,14 @@ function bindScrollEvents(canvas: HTMLElement): void {
   let cursorLastTouchY = 0;
   let cursorLastTouchTime = 0;
   let cursorVelocity = 0;
-  let cursorFlingRaf = 0;
 
   canvas.addEventListener('touchstart', (e) => {
     const y = e.touches[0].clientY;
     lastTouchY = y;
     lastTouchTime = performance.now();
     // 取消所有进���中的 RAF
-    if (flingRaf) { cancelAnimationFrame(flingRaf); flingRaf = 0; }
-    if (cursorFlingRaf) { cancelAnimationFrame(cursorFlingRaf); cursorFlingRaf = 0; }
+    if (L._flingRaf) { cancelAnimationFrame(L._flingRaf); L._flingRaf = 0; }
+    if (L._cursorFlingRaf) { cancelAnimationFrame(L._cursorFlingRaf); L._cursorFlingRaf = 0; }
 
     _touchIsCursor = _isCursorMode();
     console.log('[touchstart] _touchIsCursor=', _touchIsCursor, ' _isCursorMode()=', _isCursorMode());
@@ -754,12 +724,12 @@ function bindScrollEvents(canvas: HTMLElement): void {
     } else {
       touchStartY = y;
       touchScrollY = getRootScrollY() ?? 0;
-      _lastUserScrollY = touchScrollY;  // 记录用户触摸开始时的 scrollY
+      L._lastUserScrollY = touchScrollY;  // 记录用户触摸开始时的 scrollY
       velocity = 0;
       // 检������界锁残留：光标因上次手势偏离��心
       _boundPen = 0;
       _boundIsTop = false;
-      const root2 = renderer?.getRoot();
+      const root2 = L.renderer?.getRoot();
       if (root2 && !_isCursorMode()) {
         const maxY2 = root2.getMaxScroll().maxY ?? 0;
         const centerIdx = _getCenterRowIndex();
@@ -789,9 +759,9 @@ function bindScrollEvents(canvas: HTMLElement): void {
       cursorLastTouchTime = now;
       const stepOffset = dy / LINE_HEIGHT;
       const idx = Math.round(
-        Math.max(0, Math.min(_rowIndex.length - 1, cursorTouchBase + stepOffset))
+        Math.max(0, Math.min(L._rowIndex.length - 1, cursorTouchBase + stepOffset))
       );
-      if (_rowIndex[idx]) moveCursorTo(_rowIndex[idx]);
+      if (L._rowIndex[idx]) moveCursorTo(L._rowIndex[idx]);
       return;
     }
 
@@ -804,7 +774,7 @@ function bindScrollEvents(canvas: HTMLElement): void {
     const dPen = lastTouchY - y;  // 逐帧增量：>0=手指上滑
     lastTouchY = y;
     lastTouchTime = now;
-    const root3 = renderer?.getRoot();
+    const root3 = L.renderer?.getRoot();
     const maxY = root3?.getMaxScroll().maxY ?? 0;
 
     if (_boundPen > 0) {
@@ -823,8 +793,8 @@ function bindScrollEvents(canvas: HTMLElement): void {
         if (centerIdx >= 0 && steps > 0) {
           const targetIdx = _boundIsTop
             ? Math.max(0, centerIdx - steps)
-            : Math.min(_rowIndex.length - 1, centerIdx + steps);
-          if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+            : Math.min(L._rowIndex.length - 1, centerIdx + steps);
+          if (L._rowIndex[targetIdx]) moveCursorTo(L._rowIndex[targetIdx]);
         } else {
           _snapCursorToCenter();
         }
@@ -840,7 +810,7 @@ function bindScrollEvents(canvas: HTMLElement): void {
         const centerIdx = _getCenterRowIndex();
         if (centerIdx >= 0 && steps > 0) {
           const targetIdx = Math.max(0, centerIdx - steps);
-          if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+          if (L._rowIndex[targetIdx]) moveCursorTo(L._rowIndex[targetIdx]);
         }
       } else if (desired > maxY) {
         _boundPen = desired - maxY;
@@ -849,12 +819,12 @@ function bindScrollEvents(canvas: HTMLElement): void {
         const steps = Math.floor(_boundPen / LINE_HEIGHT);
         const centerIdx = _getCenterRowIndex();
         if (centerIdx >= 0 && steps > 0) {
-          const targetIdx = Math.min(_rowIndex.length - 1, centerIdx + steps);
-          if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+          const targetIdx = Math.min(L._rowIndex.length - 1, centerIdx + steps);
+          if (L._rowIndex[targetIdx]) moveCursorTo(L._rowIndex[targetIdx]);
         }
       } else {
         setRootScrollY(desired);
-        _lastUserScrollY = desired;  // 记录用户意图的滚动位置
+        L._lastUserScrollY = desired;  // 记录用户意图的滚动位置
         _snapCursorToCenter();
       }
     }
@@ -862,20 +832,20 @@ function bindScrollEvents(canvas: HTMLElement): void {
 
   canvas.addEventListener('touchend', () => {
     if (_touchIsCursor) {
-      if (Math.abs(cursorVelocity) >= 0.5 && _rowIndex.length > 0) {
+      if (Math.abs(cursorVelocity) >= 0.5 && L._rowIndex.length > 0) {
         // 将起点更新为当前光标位置，避免飞回 touchstart ����置
         cursorTouchBase = Math.max(0, getCursorRowIndex());
         function cursorFling() {
           cursorVelocity *= 0.96;
-          if (Math.abs(cursorVelocity) < 0.3) { cursorFlingRaf = 0; return; }
+          if (Math.abs(cursorVelocity) < 0.3) { L._cursorFlingRaf = 0; return; }
           cursorTouchBase += cursorVelocity / LINE_HEIGHT;
           const idx = Math.round(
-            Math.max(0, Math.min(_rowIndex.length - 1, cursorTouchBase))
+            Math.max(0, Math.min(L._rowIndex.length - 1, cursorTouchBase))
           );
-          if (_rowIndex[idx]) moveCursorTo(_rowIndex[idx]);
-          cursorFlingRaf = requestAnimationFrame(cursorFling);
+          if (L._rowIndex[idx]) moveCursorTo(L._rowIndex[idx]);
+          L._cursorFlingRaf = requestAnimationFrame(cursorFling);
         }
-        cursorFlingRaf = requestAnimationFrame(cursorFling);
+        L._cursorFlingRaf = requestAnimationFrame(cursorFling);
       }
       return;
     }
@@ -884,11 +854,11 @@ function bindScrollEvents(canvas: HTMLElement): void {
     if (Math.abs(velocity) < 0.5) return;
     let flingPen = _boundPen;
     let flingIsTop = _boundIsTop;
-    const flingMaxY = renderer?.getRoot()?.getMaxScroll().maxY ?? 0;
+    const flingMaxY = L.renderer?.getRoot()?.getMaxScroll().maxY ?? 0;
     function fling() {
-      if (_sidebarClosed) { flingRaf = 0; return; }
+      if (L._sidebarClosed) { L._flingRaf = 0; return; }
       velocity *= 0.96;
-      if (Math.abs(velocity) < 0.3) { flingRaf = 0; return; }
+      if (Math.abs(velocity) < 0.3) { L._flingRaf = 0; return; }
 
       if (flingPen > 0) {
         // 锁状态：velocity 先消耗穿透深度
@@ -904,8 +874,8 @@ function bindScrollEvents(canvas: HTMLElement): void {
           if (centerIdx >= 0 && steps > 0) {
             const targetIdx = flingIsTop
               ? Math.max(0, centerIdx - steps)
-              : Math.min(_rowIndex.length - 1, centerIdx + steps);
-            if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+              : Math.min(L._rowIndex.length - 1, centerIdx + steps);
+            if (L._rowIndex[targetIdx]) moveCursorTo(L._rowIndex[targetIdx]);
           }
         }
       } else {
@@ -921,7 +891,7 @@ function bindScrollEvents(canvas: HTMLElement): void {
           const steps = Math.floor(flingPen / LINE_HEIGHT);
           if (centerIdx >= 0 && steps > 0) {
             const targetIdx = Math.max(0, centerIdx - steps);
-            if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+            if (L._rowIndex[targetIdx]) moveCursorTo(L._rowIndex[targetIdx]);
           }
         } else if (desired > flingMaxY) {
           flingPen = desired - flingMaxY;
@@ -931,17 +901,17 @@ function bindScrollEvents(canvas: HTMLElement): void {
           const centerIdx = _getCenterRowIndex();
           const steps = Math.floor(flingPen / LINE_HEIGHT);
           if (centerIdx >= 0 && steps > 0) {
-            const targetIdx = Math.min(_rowIndex.length - 1, centerIdx + steps);
-            if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+            const targetIdx = Math.min(L._rowIndex.length - 1, centerIdx + steps);
+            if (L._rowIndex[targetIdx]) moveCursorTo(L._rowIndex[targetIdx]);
           }
         } else {
           setRootScrollY(desired);
           _snapCursorToCenter();
         }
       }
-      flingRaf = requestAnimationFrame(fling);
+      L._flingRaf = requestAnimationFrame(fling);
     }
-    flingRaf = requestAnimationFrame(fling);
+    L._flingRaf = requestAnimationFrame(fling);
   }, { passive: true });
 }
 
@@ -951,9 +921,9 @@ function bindScrollEvents(canvas: HTMLElement): void {
 
 function bindClickEvents(canvas: HTMLElement, _dpr: number): void {
   canvas.addEventListener('click', (e) => {
-    if (!renderer) return;
+    if (!L.renderer) return;
 
-    _clickQueue.push({ offsetX: e.offsetX, offsetY: e.offsetY });
+    L._clickQueue.push({ offsetX: e.offsetX, offsetY: e.offsetY });
     processClickQueue();
   });
 }
@@ -964,27 +934,27 @@ function bindClickEvents(canvas: HTMLElement, _dpr: number): void {
  * 动画�������成后自动处理队列中下一个点击。
  */
 function processClickQueue(): void {
-  if (_clickQueue.length === 0 || !renderer) return;
+  if (L._clickQueue.length === 0 || !L.renderer) return;
 
   // 动画进行中收到点击 → ����当前动画，立即响应
-  if (_animBusy) {
-    if (_animBusyAt && Date.now() - _animBusyAt > 3000) {
+  if (L._animBusy) {
+    if (L._animBusyAt && Date.now() - L._animBusyAt > 3000) {
       // 超��������底：强制释放
-      _animBusy = false;
-      _animBusyAt = 0;
-      _clickQueue = [];
+      L._animBusy = false;
+      L._animBusyAt = 0;
+      L._clickQueue = [];
       return;
     }
     // 中断 GSAP 动画，重建干净������即����理队列中的点击
     gsap.globalTimeline.clear();
-    _animBusy = false;
-    _animBusyAt = 0;
-    animatingPath = null;
+    L._animBusy = false;
+    L._animBusyAt = 0;
+    L.animatingPath = null;
     rebuildTree();
   }
 
-  const { offsetX, offsetY } = _clickQueue.shift()!;
-  const root = renderer.getRoot();
+  const { offsetX, offsetY } = L._clickQueue.shift()!;
+  const root = L.renderer.getRoot();
   if (!root) return;
   const scrollY = root.scrollY ?? 0;
   const px = offsetX;
@@ -995,7 +965,7 @@ function processClickQueue(): void {
     const hit = findTapTarget(child, px, py);
     if (hit?.gesture?.onTap) {
       // 光标逻辑：第一次点击移动光��，第二次同一行才执行
-      if (cursorRowId !== null && cursorRowId === hit.id) {
+      if (L.cursorRowId !== null && L.cursorRowId === hit.id) {
         const hitData = (hit as any).data || {};
         const isDir = hitData.isDir;
         const isExpanded = hitData.isExpanded;
@@ -1024,19 +994,19 @@ function processClickQueue(): void {
 
 /** 展开动画 */
 function doExpand(hit: Box, hitData: any): void {
-  animatingPath = hitData.path;
-  hit.gesture!.onTap!();  // 切换状态 → rebuildTree（检��� animatingPath，预置 height=0）
+  L.animatingPath = hitData.path;
+  hit.gesture!.onTap!();  // 切换状态 → rebuildTree（检��� L.animatingPath，预置 height=0）
 
   // rebuildTree 已完成，启动动画
-  _animBusy = true; _animBusyAt = Date.now();
-  const root = renderer!.getRoot()!;
+  L._animBusy = true; L._animBusyAt = Date.now();
+  const root = L.renderer!.getRoot()!;
   const containerId = `expanded-${hitData.path}`;
   const container = findBoxById(root, containerId);
   const titleRow = findBoxById(root, `title-${hitData.path}`);
   const toggle2 = titleRow?.children?.find(c => c.id?.startsWith('toggle-'));
 
   if (!container) {
-    _animBusy = false; _animBusyAt = 0;
+    L._animBusy = false; L._animBusyAt = 0;
     processClickQueue();
     return;
   }
@@ -1045,7 +1015,7 @@ function doExpand(hit: Box, hitData: any): void {
   if (!fullHeight) {
     // 空文件夹：RAF 驱动 toggle 旋转动画
     const finish = () => {
-      _animBusy = false; _animBusyAt = 0;
+      L._animBusy = false; L._animBusyAt = 0;
       processClickQueue();
     };
     if (toggle2 && toggle2.transform) {
@@ -1054,7 +1024,7 @@ function doExpand(hit: Box, hitData: any): void {
       const startRot = 0;
       const endRot = Math.PI / 2;
       const durationMs = 300;
-      const rend = renderer;
+      const rend = L.renderer;
       function animFrame() {
         const elapsed = performance.now() - startTime;
         const t = Math.min(elapsed / durationMs, 1);
@@ -1074,7 +1044,7 @@ function doExpand(hit: Box, hitData: any): void {
     return;
   }
 
-  animatingPath = null;
+  L.animatingPath = null;
 
   // 恢复子行原始 y
   const _origYs = (container as any)._origYs as number[] | undefined;
@@ -1086,7 +1056,7 @@ function doExpand(hit: Box, hitData: any): void {
   const ancestors = collectAncestors(container, root);
 
   // 字符雨（fire-and-forget，不阻塞队列）
-  animateCharRain(container, root, renderer);
+  animateCharRain(container, root, L.renderer);
 
   // 容器展开 + 兄弟偏移
   gsap.to(container, {
@@ -1095,7 +1065,7 @@ function doExpand(hit: Box, hitData: any): void {
     ease: 'back.out(1.15)',
     onUpdate: function() {
       applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
-      renderer?.setRoot(renderer!.getRoot()!);
+      L.renderer?.setRoot(L.renderer!.getRoot()!);
     },
     onComplete: () => {
       // 恢�� cornerRadius
@@ -1105,36 +1075,36 @@ function doExpand(hit: Box, hitData: any): void {
       slideInRows(container, root, toggle2).then(() => {
         // 修复��有子容器 toggle 状态
         fixExpandedToggles(container);
-        renderer?.setRoot(renderer!.getRoot()!);
+        L.renderer?.setRoot(L.renderer!.getRoot()!);
       }).finally(() => {
-        _animBusy = false; _animBusyAt = 0;
-        const _root = renderer?.getRoot();
+        L._animBusy = false; L._animBusyAt = 0;
+        const _root = L.renderer?.getRoot();
         if (_root) { _rebuildRowIndex(_root); }
         // ä¿®æ­£å¨ç»åå�� çä½ç½®
-        if (cursorRowId) { const _t = findBoxById(_root, cursorRowId); if (_t) moveCursorTo(_t, false); }
+        if (L.cursorRowId) { const _t = findBoxById(_root, L.cursorRowId); if (_t) moveCursorTo(_t, false); }
         processClickQueue();
       });
     },
   });
   // 首帧偏移
   applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
-  renderer?.setRoot(renderer!.getRoot()!);
+  L.renderer?.setRoot(L.renderer!.getRoot()!);
 }
 
 /** 折叠动画 */
 function doCollapse(hit: Box, hitData: any): void {
-  animatingPath = hitData.path;
+  L.animatingPath = hitData.path;
   const tog = hit.children.find(c => c.id?.startsWith('toggle-'));
   const containerId = `expanded-${hitData.path}`;
-  const root = renderer!.getRoot()!;
+  const root = L.renderer!.getRoot()!;
   const container = findBoxById(root, containerId);
 
-  _animBusy = true; _animBusyAt = Date.now();
+  L._animBusy = true; L._animBusyAt = Date.now();
 
   const tl = gsap.timeline({
     onComplete: () => {
-      _animBusy = false; _animBusyAt = 0;
-      hit.gesture!.onTap!();  // 切换状态 → rebuildTree（读取 animatingPath，末尾自行清空）
+      L._animBusy = false; L._animBusyAt = 0;
+      hit.gesture!.onTap!();  // 切换状态 → rebuildTree（读取 L.animatingPath，末尾自行清空）
       processClickQueue();    // 处理队列中下一个点击
     },
   });
@@ -1144,13 +1114,13 @@ function doCollapse(hit: Box, hitData: any): void {
       rotate: 0,
       duration: 0.25,
       ease: 'power2.in',
-      onUpdate: () => { if (renderer) renderer.setRoot(renderer.getRoot()!); },
+      onUpdate: () => { if (L.renderer) L.renderer.setRoot(L.renderer.getRoot()!); },
     }, 0);
   }
 
   if (container) {
     const fullH = container.height;
-    const root2 = renderer!.getRoot()!;
+    const root2 = L.renderer!.getRoot()!;
     const origYs = container.children.map(c => c.y);
     const ancestors = collectAncestors(container, root2);
     tl.to(container, {
@@ -1159,7 +1129,7 @@ function doCollapse(hit: Box, hitData: any): void {
       ease: 'power2.in',
       onUpdate: function() {
         applyAnimOffset(container, origYs, fullH, ancestors, root2);
-        renderer?.setRoot(renderer!.getRoot()!);
+        L.renderer?.setRoot(L.renderer!.getRoot()!);
       },
     }, 0);
   }
@@ -1185,43 +1155,43 @@ function findTapTarget(box: Box, px: number, py: number): Box | null {
 // 树重建
 // ============================================================
 
-/** 强制重建树（跳过 _animBusy 锁，用于眼睛图标��用户主动行为） */
+/** 强制重建树（跳过 L._animBusy 锁，用于眼睛图标��用户主动行为） */
 export function forceRebuildTree(): void {
-  _animBusy = false;
-  _animBusyAt = 0;
-  _clickQueue = [];
+  L._animBusy = false;
+  L._animBusyAt = 0;
+  L._clickQueue = [];
   rebuildTree();
 }
 
 function rebuildTree(): void {
-  if (!renderer) return;
-  if (_animBusy) {
+  if (!L.renderer) return;
+  if (L._animBusy) {
     // 超���兜底：超过 3000ms 自动释��
-    if (_animBusyAt && Date.now() - _animBusyAt > 3000) {
-      _animBusy = false;
-      _animBusyAt = 0;
-      _clickQueue = [];  // ����队列防死循环
+    if (L._animBusyAt && Date.now() - L._animBusyAt > 3000) {
+      L._animBusy = false;
+      L._animBusyAt = 0;
+      L._clickQueue = [];  // ����队列防死循环
     } else {
       return;
     }
   }
 
   // 保存当前滚动位置和����标行
-  const prevScrollY = renderer.getRoot()?.scrollY ?? 0;
-  const prevCursorRowId = cursorRowId;
+  const prevScrollY = L.renderer.getRoot()?.scrollY ?? 0;
+  const prevCursorRowId = L.cursorRowId;
    // 动画重建时，保存旧光标位置以保持视觉稳定
-  const prevCursorX = cursorBox?.x ?? -1;
-  const prevCursorY = cursorBox?.y ?? -1;
-  const prevCursorW = cursorBox?.width ?? -1;
-  const prevCursorH = cursorBox?.height ?? -1;
-  const prevCursorTopLine = (cursorBox as any)?.data?.topLineW ?? -1;
-  const prevCursorBotLine = (cursorBox as any)?.data?.botLineW ?? -1;
+  const prevCursorX = L.cursorBox?.x ?? -1;
+  const prevCursorY = L.cursorBox?.y ?? -1;
+  const prevCursorW = L.cursorBox?.width ?? -1;
+  const prevCursorH = L.cursorBox?.height ?? -1;
+  const prevCursorTopLine = (L.cursorBox as any)?.data?.topLineW ?? -1;
+  const prevCursorBotLine = (L.cursorBox as any)?.data?.botLineW ?? -1;
 
-  // 重置光标实例（旧 root 销毁后 cursorBox ��向的 Box 已无���）
-  cursorBox = null;
-  cursorRowId = null;
+  // 重置光标实例（旧 root 销毁后 L.cursorBox ��向的 Box 已无���）
+  L.cursorBox = null;
+  L.cursorRowId = null;
 
-  const canvas = document.getElementById('tree-canvas');
+  const canvas = DOM.treeCanvas;
   const cw = (canvas?.clientWidth ?? 0) || 295;  // 动态宽度（|| 兜底 clientWidth=0 的��况）
   const rightMargin = cw - 8;              // 行右边界 = 画布宽��� - 8px ���白
   const rootBox = buildSidebarTree(cw, rightMargin);
@@ -1232,10 +1202,10 @@ function rebuildTree(): void {
     rootBox.height = canvasH;
   }
 
-  // ��� setRoot 之前，把 animatingPath 的 toggle 强行归零并提交��
+  // ��� setRoot 之前，把 L.animatingPath 的 toggle 强行归零并提交��
   // 盖掉 buildExpanded ������� 90°，避免第一帧闪烁
-  if (animatingPath) {
-    const titleRow = findBoxById(rootBox, `title-${animatingPath}`);
+  if (L.animatingPath) {
+    const titleRow = findBoxById(rootBox, `title-${L.animatingPath}`);
     const toggle = titleRow?.children?.find(c => c.id?.startsWith('toggle-'));
     if (toggle) {
       toggle.transform.rotate = 0;
@@ -1250,7 +1220,7 @@ function rebuildTree(): void {
     for (const child of box.children) {
       if (child.id?.startsWith('expanded-') && child.height > 0) {
         // 跳过当前正在做展开动画的容器——动画块自己会处理 toggle 旋转
-        if (animatingPath && child.id === `expanded-${animatingPath}`) continue;
+        if (L.animatingPath && child.id === `expanded-${L.animatingPath}`) continue;
         const subFullH = child.height;
         (child as any)._fullHeight = subFullH;
         (child as any)._origYs = child.children.map((c: any) => c.y);
@@ -1273,8 +1243,8 @@ function rebuildTree(): void {
       }
     }
   }
-  if (animatingPath) {
-    const preContainer = findBoxById(rootBox, `expanded-${animatingPath}`);
+  if (L.animatingPath) {
+    const preContainer = findBoxById(rootBox, `expanded-${L.animatingPath}`);
     if (preContainer) {
       const preFullH = preContainer.height;
       (preContainer as any)._fullHeight = preFullH;
@@ -1291,11 +1261,11 @@ function rebuildTree(): void {
   }
 
 
-  renderer.setRoot(rootBox);
+  L.renderer.setRoot(rootBox);
 
-  // 恢复滚动位置（从关闭���态恢复时，_savedScrollY 在下游统一处理，此处跳过）
-  const newRoot = renderer.getRoot();
-  if (!_restoringFromSave && newRoot && prevScrollY > 0) {
+  // 恢复滚动位置（从关闭���态恢复时，L._savedScrollY 在下游统一处理，此处跳过）
+  const newRoot = L.renderer.getRoot();
+  if (!L._restoringFromSave && newRoot && prevScrollY > 0) {
     const maxY = newRoot.getMaxScroll().maxY;
     newRoot.scrollY = Math.min(prevScrollY, maxY);
   }
@@ -1303,8 +1273,8 @@ function rebuildTree(): void {
   // 【关键】从关闭状态恢复时，先恢复 scrollY，再让光标逻辑基于恢复后的位置工作
   // 注意：第一次rebuildTree时_isCursorMode=true,maxY=0,恢复会失败
   // 不在这里消耗_savedScrollY，等rAF回调中的强制恢复
-  if (_restoringFromSave) {
-    _restoringFromSave = false;  // 只消耗标志，不消耗_savedScrollY
+  if (L._restoringFromSave) {
+    L._restoringFromSave = false;  // 只消耗标志，不消耗_savedScrollY
   }
 
   // ���新创建光标
@@ -1315,15 +1285,15 @@ function rebuildTree(): void {
       // 尝试恢复光���到之前的行
       const target = findBoxById(newRoot, prevCursorRowId);
       if (target) {
-        if (animatingPath && prevCursorY >= 0) {
+        if (L.animatingPath && prevCursorY >= 0) {
           // ä¿æåæ çè§è§ä½ç½®ï¼ä¸è·éè¢« collapseSubs ä¸ç§»çè¡
-          cursorBox.x = prevCursorX;
-          cursorBox.y = prevCursorY;
-          cursorBox.width = prevCursorW;
-          if (prevCursorH >= 0) { cursorBox.height = prevCursorH; }
-          if (prevCursorTopLine >= 0) { (cursorBox as any).data.topLineW = prevCursorTopLine; }
-          if (prevCursorBotLine >= 0) { (cursorBox as any).data.botLineW = prevCursorBotLine; }
-          cursorRowId = prevCursorRowId;
+          L.cursorBox.x = prevCursorX;
+          L.cursorBox.y = prevCursorY;
+          L.cursorBox.width = prevCursorW;
+          if (prevCursorH >= 0) { L.cursorBox.height = prevCursorH; }
+          if (prevCursorTopLine >= 0) { (L.cursorBox as any).data.topLineW = prevCursorTopLine; }
+          if (prevCursorBotLine >= 0) { (L.cursorBox as any).data.botLineW = prevCursorBotLine; }
+          L.cursorRowId = prevCursorRowId;
         } else {
           moveCursorTo(target);
         }
@@ -1341,26 +1311,26 @@ function rebuildTree(): void {
 
 
 
-  if (!renderer.isRunning) {
-    renderer.start();
+  if (!L.renderer.isRunning) {
+    L.renderer.start();
   }
 
-  // 清空 animatingPath，防止后续 rebuildTree（如���自 doCollapse）读到脏值
-  animatingPath = null;
+  // 清空 L.animatingPath，防止后续 rebuildTree（如���自 doCollapse）读到脏值
+  L.animatingPath = null;
 
   // [DIAG] 展开/折叠后光标状态追踪
-  const diagRoot = renderer?.getRoot();
+  const diagRoot = L.renderer?.getRoot();
   const diagCS = diagRoot?.getContentSize();
   console.log('[rebuildTree] _isCursorMode=', _isCursorMode(),
     ' scrollY=', diagRoot?.scrollY,
     ' contentH=', diagCS?.height,
     ' viewportH=', (diagRoot?.height || 0),
     ' maxY=', diagRoot?.getMaxScroll().maxY,
-    ' _rowIndexLen=', _rowIndex.length,
-    ' cursorRowId=', cursorRowId,
+    ' _rowIndexLen=', L._rowIndex.length,
+    ' L.cursorRowId=', L.cursorRowId,
     ' cursorIdx=', getCursorRowIndex(),
     ' prevCursorRowId=', prevCursorRowId,
-    ' animatingPath=', animatingPath);
+    ' L.animatingPath=', L.animatingPath);
 }
 /** 在 root 子树中按 id 查找 Box */
 function findBoxById(root: Box, id: string): Box | null {
@@ -1485,7 +1455,7 @@ async function slideInRows(container: Box, root: Box, selfToggle?: any): Promise
       rotate: Math.PI / 2,
       duration: 0.15,
       ease: 'power2.out',
-      onUpdate: () => { renderer?.setRoot(renderer!.getRoot()!); },
+      onUpdate: () => { L.renderer?.setRoot(L.renderer!.getRoot()!); },
     });
   }
 
@@ -1513,13 +1483,13 @@ async function slideInRows(container: Box, root: Box, selfToggle?: any): Promise
       gsap.killTweensOf(freshTog.transform);
       freshTog.transform.rotate = subTogRotate;
     }
-    const subRainPromise = animateCharRain(child, root, renderer);
+    const subRainPromise = animateCharRain(child, root, L.renderer);
     await new Promise<void>(resolve => {
       gsap.to(child, {
         height: subFullH,
         duration: 0.05,
         ease: 'back.out(1.15)',
-        onUpdate: () => { renderer?.setRoot(renderer!.getRoot()!); },
+        onUpdate: () => { L.renderer?.setRoot(L.renderer!.getRoot()!); },
         onComplete: resolve,
       });
     });

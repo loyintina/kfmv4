@@ -12,6 +12,7 @@ import { Renderer } from "../engine/v2/renderer.js";
 import { FONT, LINE_HEIGHT, MAX_LINES } from "./style-registry.js";
 import { prepareWithSegments, layoutWithLines } from "@chenglou/pretext";
 import gsap from "gsap";
+import { DOM } from "./dom-refs.js";
 
 interface CharTarget {
   box: Box;
@@ -39,7 +40,7 @@ export async function animateCharRain(
   );
   if (rows.length === 0) return;
 
-  const canvas = document.getElementById("tree-canvas") as HTMLCanvasElement | null;
+  const canvas = DOM.treeCanvas;
   const ctx = canvas?.getContext("2d");
   if (!ctx) return;
 

@@ -14,6 +14,7 @@
 
 import { measureText, layoutLines } from '../engine/text-layout/index.js';
 import { gestures } from './gesture-registry.js';
+import { DOM } from "./dom-refs.js";
 
 interface ChatMessage {
   role: 'user' | 'ai';
@@ -61,7 +62,7 @@ const chatMessages: ChatMessage[] = [
 
 // ========== 获取输入栏上边界 ==========
 function getInputBarTop(): number {
-  const bar = document.getElementById('aiInputBar');
+  const bar = DOM.aiInputBar;
   if (!bar) return window.innerHeight;
   return bar.getBoundingClientRect().top;
 }
@@ -117,7 +118,7 @@ function createPanel(): HTMLDivElement {
 // ========== Pretext 文本排版 ==========
 function renderChatContent(): void {
   if (!panelEl) return;
-  const contentArea = panelEl.querySelector('.orb-panel-content') as HTMLElement;
+  const contentArea = DOM.orbPanelContent(panelEl);
   if (!contentArea) return;
 
   const innerWidth = renderWidth - 24;
@@ -279,7 +280,7 @@ function togglePanel(): void {
 
 function updateStateLabel(): void {
   if (!panelEl) return;
-  const label = panelEl.querySelector('.orb-panel-state');
+  const label = DOM.orbPanelState(panelEl);
   if (!label) return;
   const labels: Record<OrbState, string> = { collapsed: '', expanded: '长按编辑大小', editing: '拖动调整大小 · 松手完成' };
   label.textContent = labels[orbState];
@@ -465,9 +466,12 @@ function initInputBarWatcher(): void {
   requestAnimationFrame(check);
 }
 
+// ========== 鼠标事件句柄（供清理） ==========
+let _mouseHandlers: { onMouseDown: (e: MouseEvent) => void; onMouseMove: (e: MouseEvent) => void; onMouseUp: () => void } | null = null;
+
 // ========== 初始化 ==========
 export function initOrb(): void {
-  orbEl = document.getElementById('lightOrb') as HTMLDivElement | null;
+  orbEl = DOM.lightOrb;
   if (!orbEl) return;
 
   // 确保光球 z-index > 面板
@@ -501,24 +505,28 @@ export function initOrb(): void {
     },
   });
 
-  // Mouse 事件（调试）
-  let mouseDragging = false;
-  orbEl.addEventListener('mousedown', (e) => {
-    e.stopPropagation();
-    mouseDragging = true;
-    startDrag(e.clientX, e.clientY);
-  });
-
-  document.addEventListener('mousemove', (e) => {
-    if (!mouseDragging) return;
-    moveDrag(e.clientX, e.clientY);
-  });
-
-  document.addEventListener('mouseup', () => {
-    if (!mouseDragging && !dragging) return;
-    mouseDragging = false;
-    endDrag();
-  });
+  // Mouse 事件（桌面调试，可复用引用便于清理）
+  if (!_mouseHandlers) {
+    let mouseDragging = false;
+    const onMouseDown = (e: MouseEvent) => {
+      e.stopPropagation();
+      mouseDragging = true;
+      startDrag(e.clientX, e.clientY);
+    };
+    const onMouseMove = (e: MouseEvent) => {
+      if (!mouseDragging) return;
+      moveDrag(e.clientX, e.clientY);
+    };
+    const onMouseUp = () => {
+      if (!mouseDragging && !dragging) return;
+      mouseDragging = false;
+      endDrag();
+    };
+    orbEl.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+    _mouseHandlers = { onMouseDown, onMouseMove, onMouseUp };
+  }
 
   // 监听输入栏位置
   initInputBarWatcher();

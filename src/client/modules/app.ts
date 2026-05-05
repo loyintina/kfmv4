@@ -1,4 +1,5 @@
 import { KFMState } from './state.js';
+import { DOM } from "./dom-refs.js";
 /**
  * KFM v4 - 全局状态与初始化
  */
@@ -7,7 +8,7 @@ export const API = '/kfmv4/api';
 
 // ========== Toast ==========
 export function showToast(msg: string): void {
-  const toast = document.getElementById('operationToast');
+  const toast = DOM.operationToast;
   if (!toast) return;
   toast.textContent = msg;
   toast.classList.add('show');
@@ -28,7 +29,7 @@ export async function initApp(): Promise<void> {
   exposeGlobals();
 
   // AI输入栏跟随键盘平滑移动
-  const bar = document.getElementById('aiInputBar');
+  const bar = DOM.aiInputBar;
   if (bar && (window as any).visualViewport) {
     const vv = (window as any).visualViewport;
     const onResize = () => {
@@ -40,7 +41,7 @@ export async function initApp(): Promise<void> {
   }
 
   // 眼睛按钮：显示/隐藏隐藏文件
-  const eyeBtn = document.getElementById('toggleHiddenBtn');
+  const eyeBtn = DOM.toggleHiddenBtn;
   if (eyeBtn) {
     eyeBtn.addEventListener('click', () => {
       KFMState.toggleHidden();
@@ -49,7 +50,7 @@ export async function initApp(): Promise<void> {
   }
 
   // 关闭侧栏按钮
-  const closeBtn = document.getElementById('closeSidebarBtn');
+  const closeBtn = DOM.closeSidebarBtn;
   if (closeBtn) {
     closeBtn.addEventListener('click', () => {
       window.closeSidebar?.();
@@ -57,10 +58,10 @@ export async function initApp(): Promise<void> {
   }
 
   // 侧栏召唤按钮
-  const toggleBtn = document.getElementById('sidebarToggleBtn');
+  const toggleBtn = DOM.sidebarToggleBtn;
   if (toggleBtn) {
     toggleBtn.addEventListener('click', () => {
-      const sidebar = document.getElementById('sidebar');
+      const sidebar = DOM.sidebar;
       if (sidebar) {
         if (sidebar.classList.contains('open')) {
           window.closeSidebar?.();
@@ -72,7 +73,7 @@ export async function initApp(): Promise<void> {
   }
 
   // AI输入框自动高度
-  const aiInput = document.getElementById('aiInput') as HTMLTextAreaElement | null;
+  const aiInput = DOM.aiInput;
   if (aiInput) {
     aiInput.addEventListener('input', () => {
       aiInput.style.height = 'auto';

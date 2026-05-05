@@ -54,10 +54,74 @@
     window.KFMState = KFMState;
   }
 
+  // src/client/modules/dom-refs.ts
+  var DOM = {
+    // ===== 页面固定元素（来自 index.html） =====
+    get sidebar() {
+      return document.getElementById("sidebar");
+    },
+    get fileTree() {
+      return document.getElementById("fileTree");
+    },
+    get overlay() {
+      return document.getElementById("overlay");
+    },
+    get aiInputBar() {
+      return document.getElementById("aiInputBar");
+    },
+    get aiInput() {
+      return document.getElementById("aiInput");
+    },
+    get aiSendBtn() {
+      return document.getElementById("aiSendBtn");
+    },
+    get lightOrb() {
+      return document.getElementById("lightOrb");
+    },
+    get operationToast() {
+      return document.getElementById("operationToast");
+    },
+    get toggleHiddenBtn() {
+      return document.getElementById("toggleHiddenBtn");
+    },
+    get closeSidebarBtn() {
+      return document.getElementById("closeSidebarBtn");
+    },
+    get sidebarToggleBtn() {
+      return document.getElementById("sidebarToggleBtn");
+    },
+    get main() {
+      return document.getElementById("main");
+    },
+    get homePage() {
+      return document.getElementById("homePage");
+    },
+    // ===== JS 动态创建的元素 =====
+    get treeCanvas() {
+      return document.getElementById("tree-canvas");
+    },
+    get sidebarTouchArea() {
+      return document.getElementById("sidebarTouchArea");
+    },
+    // ===== querySelector 模式（参数化，不走 getElementById） =====
+    /** 卡片面板内的序号元素 */
+    stackCardIndex(el) {
+      return el.querySelector(".stack-card-index");
+    },
+    /** 光球面板内容区 */
+    orbPanelContent(el) {
+      return el.querySelector(".orb-panel-content");
+    },
+    /** 光球面板状态标签 */
+    orbPanelState(el) {
+      return el.querySelector(".orb-panel-state");
+    }
+  };
+
   // src/client/modules/app.ts
   var API = "/kfmv4/api";
   function showToast(msg) {
-    const toast = document.getElementById("operationToast");
+    const toast = DOM.operationToast;
     if (!toast) return;
     toast.textContent = msg;
     toast.classList.add("show");
@@ -75,7 +139,7 @@
   }
   async function initApp() {
     exposeGlobals();
-    const bar = document.getElementById("aiInputBar");
+    const bar = DOM.aiInputBar;
     if (bar && window.visualViewport) {
       const vv = window.visualViewport;
       const onResize = () => {
@@ -85,25 +149,25 @@
       vv.addEventListener("resize", onResize);
       onResize();
     }
-    const eyeBtn = document.getElementById("toggleHiddenBtn");
+    const eyeBtn = DOM.toggleHiddenBtn;
     if (eyeBtn) {
       eyeBtn.addEventListener("click", () => {
         KFMState.toggleHidden();
         eyeBtn.classList.toggle("active");
       });
     }
-    const closeBtn = document.getElementById("closeSidebarBtn");
+    const closeBtn = DOM.closeSidebarBtn;
     if (closeBtn) {
       closeBtn.addEventListener("click", () => {
         var _a;
         (_a = window.closeSidebar) == null ? void 0 : _a.call(window);
       });
     }
-    const toggleBtn = document.getElementById("sidebarToggleBtn");
+    const toggleBtn = DOM.sidebarToggleBtn;
     if (toggleBtn) {
       toggleBtn.addEventListener("click", () => {
         var _a, _b;
-        const sidebar = document.getElementById("sidebar");
+        const sidebar = DOM.sidebar;
         if (sidebar) {
           if (sidebar.classList.contains("open")) {
             (_a = window.closeSidebar) == null ? void 0 : _a.call(window);
@@ -113,7 +177,7 @@
         }
       });
     }
-    const aiInput = document.getElementById("aiInput");
+    const aiInput = DOM.aiInput;
     if (aiInput) {
       aiInput.addEventListener("input", () => {
         aiInput.style.height = "auto";
@@ -7680,12 +7744,12 @@
     parent._pt = first;
   };
   var PropTween = /* @__PURE__ */ (function() {
-    function PropTween2(next, target, prop, start, change, renderer2, data, setter, priority) {
+    function PropTween2(next, target, prop, start, change, renderer, data, setter, priority) {
       this.t = target;
       this.s = start;
       this.c = change;
       this.p = prop;
-      this.r = renderer2 || _renderPlain;
+      this.r = renderer || _renderPlain;
       this.d = data || this;
       this.set = setter || _setterPlain;
       this.pr = priority || 0;
@@ -9320,7 +9384,7 @@
   var TweenMaxWithCSS = gsapWithCSS.core.Tween;
 
   // src/client/modules/char-rain.ts
-  async function animateCharRain(container, root, renderer2) {
+  async function animateCharRain(container, root, renderer) {
     var _a, _b, _c;
     const rows = container.children.filter(
       (c) => {
@@ -9329,7 +9393,7 @@
       }
     );
     if (rows.length === 0) return;
-    const canvas = document.getElementById("tree-canvas");
+    const canvas = DOM.treeCanvas;
     const ctx = canvas == null ? void 0 : canvas.getContext("2d");
     if (!ctx) return;
     const origOverflow = container.overflow;
@@ -9340,7 +9404,7 @@
     container.children.forEach((c) => {
       c.opacity = 1;
     });
-    renderer2 == null ? void 0 : renderer2.setRoot(root);
+    renderer == null ? void 0 : renderer.setRoot(root);
     const allTargets = [];
     const lineGroups = [];
     let currentLineGroup = 0;
@@ -9473,7 +9537,7 @@
       container.overflow = origOverflow;
       return;
     }
-    renderer2 == null ? void 0 : renderer2.setRoot(root);
+    renderer == null ? void 0 : renderer.setRoot(root);
     const BASE_DUR = 0.22;
     try {
       await new Promise((resolve) => {
@@ -9503,7 +9567,7 @@
         }
       });
     } finally {
-      const currentRoot = renderer2 == null ? void 0 : renderer2.getRoot();
+      const currentRoot = renderer == null ? void 0 : renderer.getRoot();
       if (currentRoot !== root) return;
       for (const t of allTargets) {
         const idx = container.children.indexOf(t.box);
@@ -9519,33 +9583,127 @@
       container.children.forEach((c) => {
         c.opacity = 1;
       });
-      renderer2 == null ? void 0 : renderer2.setRoot(root);
+      renderer == null ? void 0 : renderer.setRoot(root);
     }
   }
 
+  // src/client/modules/renderer-lifecycle.ts
+  var RendererLifecycle = class {
+    constructor() {
+      // ---- Renderer ----
+      __publicField(this, "renderer", null);
+      // ---- KFMState 订阅 ----
+      __publicField(this, "_stateSub", null);
+      // ---- 光标 ----
+      __publicField(this, "cursorBox", null);
+      __publicField(this, "cursorRowId", null);
+      __publicField(this, "_savedCursorRowId", null);
+      // ---- 滚动 ----
+      __publicField(this, "_savedScrollY", 0);
+      __publicField(this, "_lastUserScrollY", 0);
+      __publicField(this, "_restoreMode", false);
+      __publicField(this, "_sidebarClosed", true);
+      __publicField(this, "_restoringFromSave", false);
+      // ---- 行索引 ----
+      __publicField(this, "_rowIndex", []);
+      // ---- 会话隔离 ----
+      __publicField(this, "_sessionId", 0);
+      // ---- 动画锁 ----
+      __publicField(this, "animatingPath", null);
+      __publicField(this, "_animBusy", false);
+      __publicField(this, "_animBusyAt", 0);
+      __publicField(this, "pendingCollapse", null);
+      __publicField(this, "_clickQueue", []);
+      // ---- rAF 句柄 ----
+      __publicField(this, "_cursorWheelDecayRaf", 0);
+      __publicField(this, "_wheelRaf", 0);
+      __publicField(this, "_cursorFlingRaf", 0);
+      __publicField(this, "_flingRaf", 0);
+      // ---- DOM 监听器追踪 ----
+      __publicField(this, "_listenerRefs", []);
+    }
+    // ========== rAF 管理 ==========
+    /** 取消所有已注册的 rAF 循环 */
+    cancelAllRafs() {
+      const handles = [
+        "_cursorWheelDecayRaf",
+        "_wheelRaf",
+        "_cursorFlingRaf",
+        "_flingRaf"
+      ];
+      for (const key of handles) {
+        const id = this[key];
+        if (id) {
+          cancelAnimationFrame(id);
+          this[key] = 0;
+        }
+      }
+    }
+    // ========== Listener 管理 ==========
+    /** 注册 DOM 事件监听（自动追踪，供 removeAllListeners 清理） */
+    registerListener(target, type, listener, options) {
+      target.addEventListener(type, listener, options);
+      this._listenerRefs.push({ target, type, listener, options });
+    }
+    /** 移除所有通过 registerListener 注册的监听器 */
+    removeAllListeners() {
+      for (const ref of this._listenerRefs) {
+        ref.target.removeEventListener(ref.type, ref.listener, ref.options);
+      }
+      this._listenerRefs = [];
+    }
+    // ========== 生命周期快捷方法 ==========
+    /** 侧栏打开时的状态重置 */
+    resetForOpen() {
+      this._sessionId++;
+      this._animBusy = false;
+      this._animBusyAt = 0;
+      this.animatingPath = null;
+      this._clickQueue = [];
+      this.cursorBox = null;
+      this.cursorRowId = this._savedCursorRowId;
+      this._savedCursorRowId = null;
+      this._rowIndex = [];
+      this.pendingCollapse = null;
+      this._sidebarClosed = false;
+    }
+    /** 侧栏关闭时的状态保存 + 清理 */
+    prepareClose() {
+      this._sidebarClosed = true;
+      this._animBusy = false;
+      this._animBusyAt = 0;
+      this._restoringFromSave = true;
+      this._clickQueue = [];
+      this.cursorBox = null;
+      this.cursorRowId = null;
+      this._rowIndex = [];
+      this.cancelAllRafs();
+      this.removeAllListeners();
+    }
+  };
+  var L = new RendererLifecycle();
+
   // src/client/modules/tree-render.ts
-  var renderer = null;
-  var _stateSub = null;
   function _ensureSubscribed() {
-    if (_stateSub) KFMState.unsubscribe(_stateSub);
-    _stateSub = () => {
-      _animBusy = false;
-      _animBusyAt = 0;
-      _clickQueue = [];
+    if (L._stateSub) KFMState.unsubscribe(L._stateSub);
+    L._stateSub = () => {
+      L._animBusy = false;
+      L._animBusyAt = 0;
+      L._clickQueue = [];
       rebuildTree();
     };
-    KFMState.subscribe(_stateSub);
+    KFMState.subscribe(L._stateSub);
   }
   function markAnimatingPath(path) {
-    animatingPath = path;
+    L.animatingPath = path;
   }
   function triggerExpandAnimation(path) {
-    var _a;
-    const root = renderer == null ? void 0 : renderer.getRoot();
+    var _a, _b, _c, _d;
+    const root = (_a = L.renderer) == null ? void 0 : _a.getRoot();
     if (!root) return;
     const container = findBoxById(root, `expanded-${path}`);
     const titleRow = findBoxById(root, `title-${path}`);
-    const toggle2 = (_a = titleRow == null ? void 0 : titleRow.children) == null ? void 0 : _a.find((c) => {
+    const toggle2 = (_b = titleRow == null ? void 0 : titleRow.children) == null ? void 0 : _b.find((c) => {
       var _a2;
       return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
     });
@@ -9569,13 +9727,13 @@
         const startTime = performance.now();
         const endRot = Math.PI / 2;
         const durationMs = 300;
-        const rend = renderer;
+        const rend = L.renderer;
         requestAnimationFrame(animFrame2);
       }
-      renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+      (_c = L.renderer) == null ? void 0 : _c.setRoot(L.renderer.getRoot());
       return;
     }
-    animatingPath = null;
+    L.animatingPath = null;
     const _origYs = container._origYs;
     if (_origYs && container.children.length === _origYs.length) {
       container.children.forEach((c, j) => {
@@ -9586,33 +9744,36 @@
       c.opacity = 1;
     });
     const ancestors = collectAncestors(container, root);
-    _animBusy = true;
-    _animBusyAt = Date.now();
-    animateCharRain(container, root, renderer);
+    L._animBusy = true;
+    L._animBusyAt = Date.now();
+    animateCharRain(container, root, L.renderer);
     gsapWithCSS.to(container, {
       height: fullHeight,
       duration: 0.05,
       ease: "back.out(1.15)",
       onUpdate: function() {
+        var _a2;
         applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
-        renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+        (_a2 = L.renderer) == null ? void 0 : _a2.setRoot(L.renderer.getRoot());
       },
       onComplete: () => {
         if (container.kfmStyle && container._savedCr !== void 0) {
           container.kfmStyle.cornerRadius = container._savedCr;
         }
         slideInRows(container, root, toggle2).then(() => {
+          var _a2;
           fixExpandedToggles(container);
-          renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+          (_a2 = L.renderer) == null ? void 0 : _a2.setRoot(L.renderer.getRoot());
         }).finally(() => {
-          _animBusy = false;
-          _animBusyAt = 0;
-          const _root = renderer == null ? void 0 : renderer.getRoot();
+          var _a2;
+          L._animBusy = false;
+          L._animBusyAt = 0;
+          const _root = (_a2 = L.renderer) == null ? void 0 : _a2.getRoot();
           if (_root) {
             _rebuildRowIndex(_root);
           }
-          if (cursorRowId) {
-            const _t = findBoxById(_root, cursorRowId);
+          if (L.cursorRowId) {
+            const _t = findBoxById(_root, L.cursorRowId);
             if (_t) moveCursorTo(_t, false);
           }
           processClickQueue();
@@ -9620,7 +9781,7 @@
       }
     });
     applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
-    renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+    (_d = L.renderer) == null ? void 0 : _d.setRoot(L.renderer.getRoot());
   }
   function fixExpandedToggles(container) {
     const state = KFMState;
@@ -9660,36 +9821,21 @@
     return null;
   }
   function isAnimLocked() {
-    return _animBusy;
+    return L._animBusy;
   }
-  var cursorBox = null;
-  var cursorRowId = null;
-  var _savedCursorRowId = null;
-  var _savedScrollY = 0;
-  var _lastUserScrollY = 0;
-  var _restoreMode = false;
-  var _sidebarClosed = true;
-  var _restoringFromSave = false;
-  var _rowIndex = [];
-  var _sessionId = 0;
   function getRowIndexLength() {
-    return _rowIndex.length;
+    return L._rowIndex.length;
   }
-  var animatingPath = null;
-  var _animBusy = false;
-  var _animBusyAt = 0;
-  var pendingCollapse = null;
-  var _clickQueue = [];
   function ensureCursorBox(root, canvasH) {
     var _a;
-    if (cursorBox) {
-      if (root.children.includes(cursorBox)) return cursorBox;
+    if (L.cursorBox) {
+      if (root.children.includes(L.cursorBox)) return L.cursorBox;
     }
-    cursorBox = new Box({
+    L.cursorBox = new Box({
       id: "cursor-highlight",
       x: 0,
       y: canvasH / 2 - 14,
-      width: ((_a = document.getElementById("tree-canvas")) == null ? void 0 : _a.clientWidth) || 280,
+      width: ((_a = DOM.treeCanvas) == null ? void 0 : _a.clientWidth) || 280,
       height: 24,
       backgroundColor: "rgba(46,213,163,0.15)",
       borderRadius: 0,
@@ -9697,15 +9843,15 @@
       visible: true,
       data: { cursorDynamicLines: true, topLineW: 0, botLineW: 0, color: "rgba(0,212,255,0.7)" }
     });
-    root.addChild(cursorBox);
-    return cursorBox;
+    root.addChild(L.cursorBox);
+    return L.cursorBox;
   }
   function moveCursorTo(hitBox, animate = true) {
-    var _a, _b, _c, _d, _e, _f, _g;
-    if (!cursorBox) return;
-    const root = renderer == null ? void 0 : renderer.getRoot();
-    if (root && !root.children.includes(cursorBox)) {
-      ensureCursorBox(root, root.height || ((_b = (_a = document.getElementById("tree-canvas")) == null ? void 0 : _a.clientHeight) != null ? _b : 618));
+    var _a, _b, _c, _d, _e, _f, _g, _h;
+    if (!L.cursorBox) return;
+    const root = (_a = L.renderer) == null ? void 0 : _a.getRoot();
+    if (root && !root.children.includes(L.cursorBox)) {
+      ensureCursorBox(root, root.height || ((_c = (_b = DOM.treeCanvas) == null ? void 0 : _b.clientHeight) != null ? _c : 618));
     }
     let abs;
     try {
@@ -9713,23 +9859,23 @@
     } catch {
       return;
     }
-    const canvas = document.getElementById("tree-canvas");
-    const depth = (_d = (_c = hitBox.data) == null ? void 0 : _c.depth) != null ? _d : 0;
+    const canvas = DOM.treeCanvas;
+    const depth = (_e = (_d = hitBox.data) == null ? void 0 : _d.depth) != null ? _e : 0;
     const shift = getShift(depth);
     const offsetX = shift / 2;
-    const rm = ((_e = canvas == null ? void 0 : canvas.clientWidth) != null ? _e : 295) - 8;
+    const rm = ((_f = canvas == null ? void 0 : canvas.clientWidth) != null ? _f : 295) - 8;
     const targetX = abs.x + offsetX;
     const targetY = abs.y + 2;
     const targetW = rm - abs.x - offsetX;
     const targetH = hitBox.height - 4;
-    cursorRowId = hitBox.id || null;
+    L.cursorRowId = hitBox.id || null;
     const label = hitBox.children.find((c) => {
       var _a2;
       return (_a2 = c.id) == null ? void 0 : _a2.startsWith("label-");
     });
     let textW = 0;
-    if ((_f = label == null ? void 0 : label.textStyle) == null ? void 0 : _f.content) {
-      const ctx2d = (_g = canvas == null ? void 0 : canvas.getContext) == null ? void 0 : _g.call(canvas, "2d");
+    if ((_g = label == null ? void 0 : label.textStyle) == null ? void 0 : _g.content) {
+      const ctx2d = (_h = canvas == null ? void 0 : canvas.getContext) == null ? void 0 : _h.call(canvas, "2d");
       if (ctx2d) {
         const font = label.textStyle.font || "11px system-ui, sans-serif";
         const labelX = label.x || 0;
@@ -9764,14 +9910,14 @@
     const totalLineW = targetW;
     const topLineW = Math.min(Math.max(textW, 20), totalLineW - 10);
     const botLineW = totalLineW - topLineW;
-    const cdata = cursorBox.data;
+    const cdata = L.cursorBox.data;
     if (cdata) {
       cdata.cursorDynamicLines = true;
       cdata.color = "rgba(0,212,255,0.7)";
     }
     if (animate && cdata) {
       try {
-        gsapWithCSS.to(cursorBox, {
+        gsapWithCSS.to(L.cursorBox, {
           x: targetX,
           y: targetY,
           width: targetW,
@@ -9788,18 +9934,18 @@
           overwrite: "auto"
         });
       } catch {
-        cursorBox.x = targetX;
-        cursorBox.y = targetY;
-        cursorBox.width = targetW;
-        cursorBox.height = targetH;
+        L.cursorBox.x = targetX;
+        L.cursorBox.y = targetY;
+        L.cursorBox.width = targetW;
+        L.cursorBox.height = targetH;
         cdata.topLineW = topLineW;
         cdata.botLineW = botLineW;
       }
     } else {
-      cursorBox.x = targetX;
-      cursorBox.y = targetY;
-      cursorBox.width = targetW;
-      cursorBox.height = targetH;
+      L.cursorBox.x = targetX;
+      L.cursorBox.y = targetY;
+      L.cursorBox.width = targetW;
+      L.cursorBox.height = targetH;
       if (cdata) {
         cdata.topLineW = topLineW;
         cdata.botLineW = botLineW;
@@ -9807,21 +9953,12 @@
     }
   }
   function onSidebarOpen() {
-    _sidebarClosed = false;
-    _sessionId++;
-    _animBusy = false;
-    _animBusyAt = 0;
-    animatingPath = null;
-    _clickQueue = [];
-    cursorBox = null;
-    cursorRowId = _savedCursorRowId;
-    _savedCursorRowId = null;
-    _rowIndex = [];
-    pendingCollapse = null;
+    var _a;
     gsapWithCSS.globalTimeline.clear();
-    renderer == null ? void 0 : renderer.stop();
-    renderer = null;
-    const fileTree = document.getElementById("fileTree");
+    (_a = L.renderer) == null ? void 0 : _a.stop();
+    L.renderer = null;
+    L.resetForOpen();
+    const fileTree = DOM.fileTree;
     if (!fileTree) return;
     const canvas = document.createElement("canvas");
     canvas.id = "tree-canvas";
@@ -9831,72 +9968,77 @@
     fileTree.innerHTML = "";
     fileTree.appendChild(canvas);
     const dpr = window.devicePixelRatio || 1;
-    renderer = new Renderer(canvas, {
+    L.renderer = new Renderer(canvas, {
       backgroundColor: "rgba(10,10,15,0.85)",
       dpr
     });
     requestAnimationFrame(() => {
+      var _a2, _b;
       rebuildTree();
-      if (_savedScrollY > 0) {
-        const root = renderer == null ? void 0 : renderer.getRoot();
+      if (L._savedScrollY > 0) {
+        const root = (_a2 = L.renderer) == null ? void 0 : _a2.getRoot();
         if (root) {
           const maxY = root.getMaxScroll().maxY;
-          root.scrollY = Math.min(_savedScrollY, maxY);
+          root.scrollY = Math.min(L._savedScrollY, maxY);
           const savedVal = root.scrollY;
-          _savedScrollY = 0;
-          _restoreMode = true;
+          L._savedScrollY = 0;
+          L._restoreMode = true;
           setTimeout(() => {
-            _restoreMode = false;
-            const r2 = renderer == null ? void 0 : renderer.getRoot();
+            var _a3;
+            L._restoreMode = false;
+            const r2 = (_a3 = L.renderer) == null ? void 0 : _a3.getRoot();
             if (r2 && Math.abs(r2.scrollY - savedVal) > 10) {
               r2.scrollY = savedVal;
             }
           }, 500);
         }
       }
-      _restoringFromSave = false;
-      renderer == null ? void 0 : renderer.resize();
-      window.__treeRenderer = renderer;
+      L._restoringFromSave = false;
+      (_b = L.renderer) == null ? void 0 : _b.resize();
+      window.__treeRenderer = L.renderer;
       _ensureSubscribed();
       styleRegistry.subscribe(() => rebuildTree());
-      window.addEventListener("resize", () => renderer == null ? void 0 : renderer.resize());
-      styleRegistry.subscribe(() => rebuildTree());
-      window.addEventListener("resize", () => renderer == null ? void 0 : renderer.resize());
+      window.addEventListener("resize", () => {
+        var _a3;
+        return (_a3 = L.renderer) == null ? void 0 : _a3.resize();
+      });
       bindScrollEvents(canvas);
       bindClickEvents(canvas, dpr);
       _createSidebarTouchArea();
     });
-    const sidebar = document.getElementById("sidebar");
+    const sidebar = DOM.sidebar;
     if (sidebar) {
       const onEnd = () => {
+        var _a2;
         sidebar.removeEventListener("transitionend", onEnd);
-        renderer == null ? void 0 : renderer.resize();
+        (_a2 = L.renderer) == null ? void 0 : _a2.resize();
       };
       sidebar.addEventListener("transitionend", onEnd);
     }
   }
   function onSidebarClose() {
-    var _a, _b, _c;
+    var _a, _b, _c, _d, _e;
     gsapWithCSS.globalTimeline.clear();
-    _sidebarClosed = true;
-    _animBusy = false;
-    _animBusyAt = 0;
-    _restoringFromSave = true;
-    const rootScrollY = (_b = (_a = renderer == null ? void 0 : renderer.getRoot()) == null ? void 0 : _a.scrollY) != null ? _b : 0;
-    if (renderer && renderer.getRoot()) {
-      _savedScrollY = rootScrollY;
-      _savedCursorRowId = cursorRowId;
+    L._sidebarClosed = true;
+    L._animBusy = false;
+    L._animBusyAt = 0;
+    L._restoringFromSave = true;
+    const rootScrollY = (_c = (_b = (_a = L.renderer) == null ? void 0 : _a.getRoot()) == null ? void 0 : _b.scrollY) != null ? _c : 0;
+    if (L.renderer && L.renderer.getRoot()) {
+      L._savedScrollY = rootScrollY;
+      L._savedCursorRowId = L.cursorRowId;
     }
-    _clickQueue = [];
-    cursorBox = null;
-    cursorRowId = null;
-    _rowIndex = [];
-    renderer == null ? void 0 : renderer.stop();
-    renderer = null;
-    (_c = document.getElementById("sidebarTouchArea")) == null ? void 0 : _c.remove();
+    L._clickQueue = [];
+    L.cursorBox = null;
+    L.cursorRowId = null;
+    L._rowIndex = [];
+    (_d = L.renderer) == null ? void 0 : _d.stop();
+    L.renderer = null;
+    (_e = DOM.sidebarTouchArea) == null ? void 0 : _e.remove();
+    L.cancelAllRafs();
   }
   function initTreeRenderer() {
-    const fileTree = document.getElementById("fileTree");
+    const fileTree = DOM.fileTree;
     if (!fileTree) {
       console.warn("[tree-render] #fileTree not found");
       return;
@@ -9909,76 +10051,81 @@
     fileTree.innerHTML = "";
     fileTree.appendChild(canvas);
     const dpr = window.devicePixelRatio || 1;
-    renderer = new Renderer(canvas, {
+    L.renderer = new Renderer(canvas, {
       backgroundColor: "rgba(10,10,15,0.85)",
       dpr
     });
     rebuildTree();
-    window.__treeRenderer = renderer;
+    window.__treeRenderer = L.renderer;
     _ensureSubscribed();
     styleRegistry.subscribe(() => rebuildTree());
-    window.addEventListener("resize", () => renderer == null ? void 0 : renderer.resize());
+    window.addEventListener("resize", () => {
+      var _a;
+      return (_a = L.renderer) == null ? void 0 : _a.resize();
+    });
     bindScrollEvents(canvas);
     bindClickEvents(canvas, dpr);
   }
   function getRootScrollY() {
-    var _a, _b;
-    return (_b = (_a = renderer == null ? void 0 : renderer.getRoot()) == null ? void 0 : _a.scrollY) != null ? _b : null;
+    var _a, _b, _c;
+    return (_c = (_b = (_a = L.renderer) == null ? void 0 : _a.getRoot()) == null ? void 0 : _b.scrollY) != null ? _c : null;
   }
   function setRootScrollY(val) {
-    const root = renderer == null ? void 0 : renderer.getRoot();
+    var _a;
+    const root = (_a = L.renderer) == null ? void 0 : _a.getRoot();
     if (!root) return;
     const maxScroll = root.getMaxScroll().maxY;
     root.scrollY = Math.max(0, Math.min(val, maxScroll));
   }
   function _rebuildRowIndex(root) {
-    _rowIndex = [];
+    L._rowIndex = [];
     function walk(box) {
       var _a;
       for (const child of box.children) {
         if (!child.visible || child.disabled) continue;
         if (child.interactive && ((_a = child.gesture) == null ? void 0 : _a.onTap)) {
-          _rowIndex.push(child);
+          L._rowIndex.push(child);
         }
         walk(child);
       }
     }
     walk(root);
-    _rowIndex.sort((a, b) => {
+    L._rowIndex.sort((a, b) => {
       return a.getAbsolutePosition().y - b.getAbsolutePosition().y;
     });
   }
   function getCursorRowIndex() {
-    if (!cursorRowId || _rowIndex.length === 0) return -1;
-    return _rowIndex.findIndex((box) => box.id === cursorRowId);
+    if (!L.cursorRowId || L._rowIndex.length === 0) return -1;
+    return L._rowIndex.findIndex((box) => box.id === L.cursorRowId);
   }
   function _moveCursorBySteps(steps) {
-    if (_rowIndex.length === 0) return;
+    if (L._rowIndex.length === 0) return;
     const oldIdx = getCursorRowIndex();
-    const newIdx = Math.max(0, Math.min(_rowIndex.length - 1, oldIdx + steps));
-    if (newIdx !== oldIdx && _rowIndex[newIdx]) {
-      moveCursorTo(_rowIndex[newIdx]);
+    const newIdx = Math.max(0, Math.min(L._rowIndex.length - 1, oldIdx + steps));
+    if (newIdx !== oldIdx && L._rowIndex[newIdx]) {
+      moveCursorTo(L._rowIndex[newIdx]);
     }
   }
   function _isCursorMode() {
-    const root = renderer == null ? void 0 : renderer.getRoot();
+    var _a;
+    const root = (_a = L.renderer) == null ? void 0 : _a.getRoot();
     if (!root) return false;
     return root.getMaxScroll().maxY <= 0;
   }
   function _getCenterRowIndex() {
-    var _a, _b, _c;
-    const root = renderer == null ? void 0 : renderer.getRoot();
-    if (!root || _rowIndex.length === 0) return -1;
-    const canvasH = ((_b = (_a = document.getElementById("tree-canvas")) == null ? void 0 : _a.clientHeight) != null ? _b : 0) || 618;
-    const scrollY = (_c = root.scrollY) != null ? _c : 0;
+    var _a, _b, _c, _d;
+    const root = (_a = L.renderer) == null ? void 0 : _a.getRoot();
+    if (!root || L._rowIndex.length === 0) return -1;
+    const canvasH = ((_c = (_b = DOM.treeCanvas) == null ? void 0 : _b.clientHeight) != null ? _c : 0) || 618;
+    const scrollY = (_d = root.scrollY) != null ? _d : 0;
     const centerY = scrollY + canvasH / 2;
     let closestIdx = -1;
     let closestDist = Infinity;
-    for (let i = 0; i < _rowIndex.length; i++) {
+    for (let i = 0; i < L._rowIndex.length; i++) {
       try {
-        if (!_rowIndex[i]) continue;
-        const abs = _rowIndex[i].getAbsolutePosition();
-        const rowCenter = abs.y + _rowIndex[i].height / 2;
+        if (!L._rowIndex[i]) continue;
+        const abs = L._rowIndex[i].getAbsolutePosition();
+        const rowCenter = abs.y + L._rowIndex[i].height / 2;
         const dist = Math.abs(rowCenter - centerY);
         if (dist < closestDist) {
           closestDist = dist;
@@ -9990,27 +10137,27 @@
     return closestIdx;
   }
   function _snapCursorToCenter() {
-    if (_animBusy) return;
+    if (L._animBusy) return;
     const idx = _getCenterRowIndex();
-    if (idx >= 0 && _rowIndex[idx] && _rowIndex[idx].id !== cursorRowId) {
-      console.log("[snapCursorToCenter] snapping from", cursorRowId, "to", _rowIndex[idx].id, "centerIdx=", idx);
-      moveCursorTo(_rowIndex[idx]);
+    if (idx >= 0 && L._rowIndex[idx] && L._rowIndex[idx].id !== L.cursorRowId) {
+      console.log("[snapCursorToCenter] snapping from", L.cursorRowId, "to", L._rowIndex[idx].id, "centerIdx=", idx);
+      moveCursorTo(L._rowIndex[idx]);
     }
   }
   function _scrollToCenterCursor() {
-    var _a;
+    var _a, _b;
     if (_isCursorMode()) return;
-    if (_restoreMode) return;
-    const root = renderer == null ? void 0 : renderer.getRoot();
-    if (!root || cursorRowId === null) return;
-    const canvas = document.getElementById("tree-canvas");
-    const canvasH = (_a = canvas == null ? void 0 : canvas.clientHeight) != null ? _a : 618;
+    if (L._restoreMode) return;
+    const root = (_a = L.renderer) == null ? void 0 : _a.getRoot();
+    if (!root || L.cursorRowId === null) return;
+    const canvas = DOM.treeCanvas;
+    const canvasH = (_b = canvas == null ? void 0 : canvas.clientHeight) != null ? _b : 618;
     const maxY = root.getMaxScroll().maxY;
     const idx = getCursorRowIndex();
-    if (idx < 0 || !_rowIndex[idx]) return;
+    if (idx < 0 || !L._rowIndex[idx]) return;
     try {
-      const abs = _rowIndex[idx].getAbsolutePosition();
-      const targetScrollY = Math.max(0, Math.min(maxY, abs.y + _rowIndex[idx].height / 2 - canvasH / 2));
+      const abs = L._rowIndex[idx].getAbsolutePosition();
+      const targetScrollY = Math.max(0, Math.min(maxY, abs.y + L._rowIndex[idx].height / 2 - canvasH / 2));
       console.log("[GSAP-SCROLL] targetScrollY=", targetScrollY, "from=", root.scrollY);
       gsapWithCSS.to(root, {
         scrollY: targetScrollY,
@@ -10018,16 +10165,17 @@
         ease: "power2.inOut",
         overwrite: "auto",
         onUpdate: function() {
-          renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+          var _a2;
+          (_a2 = L.renderer) == null ? void 0 : _a2.setRoot(L.renderer.getRoot());
         }
       });
     } catch {
     }
   }
   function _createSidebarTouchArea() {
-    const old = document.getElementById("sidebarTouchArea");
+    const old = DOM.sidebarTouchArea;
     if (old) old.remove();
-    const sidebar = document.getElementById("sidebar");
+    const sidebar = DOM.sidebar;
     if (!sidebar) return;
     const box = document.createElement("div");
     box.id = "sidebarTouchArea";
@@ -10037,10 +10185,10 @@
     bindScrollEvents(box);
     box.addEventListener("click", () => {
       var _a, _b;
-      if (!cursorRowId || _rowIndex.length === 0) return;
+      if (!L.cursorRowId || L._rowIndex.length === 0) return;
       const idx = getCursorRowIndex();
-      if (idx < 0 || !_rowIndex[idx]) return;
-      const hit = _rowIndex[idx];
+      if (idx < 0 || !L._rowIndex[idx]) return;
+      const hit = L._rowIndex[idx];
       const hitData = hit.data || {};
       if (hitData.isDir) {
         if (hitData.isExpanded) {
@@ -10063,9 +10211,7 @@
   function bindScrollEvents(canvas) {
     let _touchIsCursor = false;
     let wheelTarget = 0;
-    let wheelRaf = 0;
     let cursorWheelAccum = 0;
-    let cursorWheelDecayRaf = 0;
     canvas.addEventListener("wheel", (e) => {
       var _a;
       e.preventDefault();
@@ -10076,10 +10222,10 @@
           _moveCursorBySteps(-steps);
           cursorWheelAccum -= steps;
         }
-        if (!cursorWheelDecayRaf) {
-          cursorWheelDecayRaf = requestAnimationFrame(function decay() {
-            if (_sidebarClosed) {
-              cursorWheelDecayRaf = 0;
+        if (!L._cursorWheelDecayRaf) {
+          L._cursorWheelDecayRaf = requestAnimationFrame(function decay() {
+            if (L._sidebarClosed) {
+              L._cursorWheelDecayRaf = 0;
               return;
             }
             cursorWheelAccum *= 0.85;
@@ -10090,24 +10236,24 @@
             }
             if (Math.abs(cursorWheelAccum) < 0.05) {
               cursorWheelAccum = 0;
-              cursorWheelDecayRaf = 0;
+              L._cursorWheelDecayRaf = 0;
               return;
             }
-            cursorWheelDecayRaf = requestAnimationFrame(decay);
+            L._cursorWheelDecayRaf = requestAnimationFrame(decay);
           });
         }
         return;
       }
       const cur = (_a = getRootScrollY()) != null ? _a : 0;
-      _lastUserScrollY = cur;
+      L._lastUserScrollY = cur;
       wheelTarget = cur + e.deltaY;
-      if (!wheelRaf) {
+      if (!L._wheelRaf) {
         let wheelAccum = 0;
         const wheelCenterIdx = _getCenterRowIndex();
-        wheelRaf = requestAnimationFrame(function smoothWheel() {
-          var _a2, _b, _c;
-          if (_sidebarClosed) {
-            wheelRaf = 0;
+        L._wheelRaf = requestAnimationFrame(function smoothWheel() {
+          var _a2, _b, _c, _d;
+          if (L._sidebarClosed) {
+            L._wheelRaf = 0;
             return;
           }
           const cur2 = (_a2 = getRootScrollY()) != null ? _a2 : 0;
@@ -10115,10 +10261,10 @@
           if (Math.abs(diff) < 0.5) {
             setRootScrollY(wheelTarget);
             _snapCursorToCenter();
-            wheelRaf = 0;
+            L._wheelRaf = 0;
             return;
           }
-          const maxY = (_c = (_b = renderer == null ? void 0 : renderer.getRoot()) == null ? void 0 : _b.getMaxScroll().maxY) != null ? _c : 0;
+          const maxY = (_d = (_c = (_b = L.renderer) == null ? void 0 : _b.getRoot()) == null ? void 0 : _c.getMaxScroll().maxY) != null ? _d : 0;
           const desired = cur2 + diff * 0.25;
           if (desired < 0 && maxY > 0) {
             setRootScrollY(0);
@@ -10127,7 +10273,7 @@
             if (steps > 0) {
               wheelAccum -= steps * LINE_HEIGHT;
               const targetIdx = Math.max(0, wheelCenterIdx - steps);
-              if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+              if (L._rowIndex[targetIdx]) moveCursorTo(L._rowIndex[targetIdx]);
             }
           } else if (desired > maxY) {
             setRootScrollY(maxY);
@@ -10135,15 +10281,15 @@
             const steps = Math.floor(wheelAccum / LINE_HEIGHT);
             if (steps > 0) {
               wheelAccum -= steps * LINE_HEIGHT;
-              const targetIdx = Math.min(_rowIndex.length - 1, wheelCenterIdx + steps);
-              if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+              const targetIdx = Math.min(L._rowIndex.length - 1, wheelCenterIdx + steps);
+              if (L._rowIndex[targetIdx]) moveCursorTo(L._rowIndex[targetIdx]);
             }
           } else {
             setRootScrollY(desired);
-            _lastUserScrollY = desired;
+            L._lastUserScrollY = desired;
             _snapCursorToCenter();
           }
-          wheelRaf = requestAnimationFrame(smoothWheel);
+          L._wheelRaf = requestAnimationFrame(smoothWheel);
         });
       }
     }, { passive: false });
@@ -10152,7 +10298,6 @@
     let lastTouchY = 0;
     let lastTouchTime = 0;
     let velocity = 0;
-    let flingRaf = 0;
     let _boundPen = 0;
     let _boundIsTop = false;
     let cursorTouchBase = 0;
@@ -10160,19 +10305,18 @@
     let cursorLastTouchY = 0;
     let cursorLastTouchTime = 0;
     let cursorVelocity = 0;
-    let cursorFlingRaf = 0;
     canvas.addEventListener("touchstart", (e) => {
-      var _a, _b;
+      var _a, _b, _c;
       const y = e.touches[0].clientY;
       lastTouchY = y;
       lastTouchTime = performance.now();
-      if (flingRaf) {
-        cancelAnimationFrame(flingRaf);
-        flingRaf = 0;
+      if (L._flingRaf) {
+        cancelAnimationFrame(L._flingRaf);
+        L._flingRaf = 0;
       }
-      if (cursorFlingRaf) {
-        cancelAnimationFrame(cursorFlingRaf);
-        cursorFlingRaf = 0;
+      if (L._cursorFlingRaf) {
+        cancelAnimationFrame(L._cursorFlingRaf);
+        L._cursorFlingRaf = 0;
       }
       _touchIsCursor = _isCursorMode();
       console.log("[touchstart] _touchIsCursor=", _touchIsCursor, " _isCursorMode()=", _isCursorMode());
@@ -10185,13 +10329,13 @@
       } else {
         touchStartY = y;
         touchScrollY = (_a = getRootScrollY()) != null ? _a : 0;
-        _lastUserScrollY = touchScrollY;
+        L._lastUserScrollY = touchScrollY;
         velocity = 0;
         _boundPen = 0;
         _boundIsTop = false;
-        const root2 = renderer == null ? void 0 : renderer.getRoot();
+        const root2 = (_b = L.renderer) == null ? void 0 : _b.getRoot();
         if (root2 && !_isCursorMode()) {
-          const maxY2 = (_b = root2.getMaxScroll().maxY) != null ? _b : 0;
+          const maxY2 = (_c = root2.getMaxScroll().maxY) != null ? _c : 0;
           const centerIdx = _getCenterRowIndex();
           const cursorIdx = getCursorRowIndex();
           if (touchScrollY <= 0 && centerIdx >= 0 && cursorIdx >= 0 && cursorIdx < centerIdx) {
@@ -10205,7 +10349,7 @@
       }
     }, { passive: true });
     canvas.addEventListener("touchmove", (e) => {
-      var _a;
+      var _a, _b;
       const y = e.touches[0].clientY;
       const now = performance.now();
       if (_touchIsCursor) {
@@ -10218,9 +10362,9 @@
         cursorLastTouchTime = now;
         const stepOffset = dy2 / LINE_HEIGHT;
         const idx = Math.round(
-          Math.max(0, Math.min(_rowIndex.length - 1, cursorTouchBase + stepOffset))
+          Math.max(0, Math.min(L._rowIndex.length - 1, cursorTouchBase + stepOffset))
         );
-        if (_rowIndex[idx]) moveCursorTo(_rowIndex[idx]);
+        if (L._rowIndex[idx]) moveCursorTo(L._rowIndex[idx]);
         return;
       }
       const dy = touchStartY - y;
@@ -10231,8 +10375,8 @@
       const dPen = lastTouchY - y;
       lastTouchY = y;
       lastTouchTime = now;
-      const root3 = renderer == null ? void 0 : renderer.getRoot();
-      const maxY = (_a = root3 == null ? void 0 : root3.getMaxScroll().maxY) != null ? _a : 0;
+      const root3 = (_a = L.renderer) == null ? void 0 : _a.getRoot();
+      const maxY = (_b = root3 == null ? void 0 : root3.getMaxScroll().maxY) != null ? _b : 0;
       if (_boundPen > 0) {
         _boundPen = Math.max(0, _boundPen + (_boundIsTop ? -dPen : dPen));
         if (_boundPen === 0) {
@@ -10245,8 +10389,8 @@
           const steps = Math.floor(_boundPen / LINE_HEIGHT);
           const centerIdx = _getCenterRowIndex();
           if (centerIdx >= 0 && steps > 0) {
-            const targetIdx = _boundIsTop ? Math.max(0, centerIdx - steps) : Math.min(_rowIndex.length - 1, centerIdx + steps);
-            if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+            const targetIdx = _boundIsTop ? Math.max(0, centerIdx - steps) : Math.min(L._rowIndex.length - 1, centerIdx + steps);
+            if (L._rowIndex[targetIdx]) moveCursorTo(L._rowIndex[targetIdx]);
           } else {
             _snapCursorToCenter();
           }
@@ -10261,7 +10405,7 @@
           const centerIdx = _getCenterRowIndex();
           if (centerIdx >= 0 && steps > 0) {
             const targetIdx = Math.max(0, centerIdx - steps);
-            if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+            if (L._rowIndex[targetIdx]) moveCursorTo(L._rowIndex[targetIdx]);
           }
         } else if (desired > maxY) {
           _boundPen = desired - maxY;
@@ -10270,52 +10414,52 @@
           const steps = Math.floor(_boundPen / LINE_HEIGHT);
           const centerIdx = _getCenterRowIndex();
           if (centerIdx >= 0 && steps > 0) {
-            const targetIdx = Math.min(_rowIndex.length - 1, centerIdx + steps);
-            if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+            const targetIdx = Math.min(L._rowIndex.length - 1, centerIdx + steps);
+            if (L._rowIndex[targetIdx]) moveCursorTo(L._rowIndex[targetIdx]);
           }
         } else {
           setRootScrollY(desired);
-          _lastUserScrollY = desired;
+          L._lastUserScrollY = desired;
           _snapCursorToCenter();
         }
       }
     }, { passive: true });
     canvas.addEventListener("touchend", () => {
-      var _a, _b;
+      var _a, _b, _c;
       if (_touchIsCursor) {
-        if (Math.abs(cursorVelocity) >= 0.5 && _rowIndex.length > 0) {
+        if (Math.abs(cursorVelocity) >= 0.5 && L._rowIndex.length > 0) {
           let cursorFling2 = function() {
             cursorVelocity *= 0.96;
             if (Math.abs(cursorVelocity) < 0.3) {
-              cursorFlingRaf = 0;
+              L._cursorFlingRaf = 0;
               return;
             }
             cursorTouchBase += cursorVelocity / LINE_HEIGHT;
             const idx = Math.round(
-              Math.max(0, Math.min(_rowIndex.length - 1, cursorTouchBase))
+              Math.max(0, Math.min(L._rowIndex.length - 1, cursorTouchBase))
             );
-            if (_rowIndex[idx]) moveCursorTo(_rowIndex[idx]);
-            cursorFlingRaf = requestAnimationFrame(cursorFling2);
+            if (L._rowIndex[idx]) moveCursorTo(L._rowIndex[idx]);
+            L._cursorFlingRaf = requestAnimationFrame(cursorFling2);
           };
           var cursorFling = cursorFling2;
           cursorTouchBase = Math.max(0, getCursorRowIndex());
-          cursorFlingRaf = requestAnimationFrame(cursorFling2);
+          L._cursorFlingRaf = requestAnimationFrame(cursorFling2);
         }
         return;
       }
       if (Math.abs(velocity) < 0.5) return;
       let flingPen = _boundPen;
       let flingIsTop = _boundIsTop;
-      const flingMaxY = (_b = (_a = renderer == null ? void 0 : renderer.getRoot()) == null ? void 0 : _a.getMaxScroll().maxY) != null ? _b : 0;
+      const flingMaxY = (_c = (_b = (_a = L.renderer) == null ? void 0 : _a.getRoot()) == null ? void 0 : _b.getMaxScroll().maxY) != null ? _c : 0;
       function fling() {
         var _a2;
-        if (_sidebarClosed) {
-          flingRaf = 0;
+        if (L._sidebarClosed) {
+          L._flingRaf = 0;
           return;
         }
         velocity *= 0.96;
         if (Math.abs(velocity) < 0.3) {
-          flingRaf = 0;
+          L._flingRaf = 0;
           return;
         }
         if (flingPen > 0) {
@@ -10328,8 +10472,8 @@
             const steps = Math.floor(flingPen / LINE_HEIGHT);
             const centerIdx = _getCenterRowIndex();
             if (centerIdx >= 0 && steps > 0) {
-              const targetIdx = flingIsTop ? Math.max(0, centerIdx - steps) : Math.min(_rowIndex.length - 1, centerIdx + steps);
-              if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+              const targetIdx = flingIsTop ? Math.max(0, centerIdx - steps) : Math.min(L._rowIndex.length - 1, centerIdx + steps);
+              if (L._rowIndex[targetIdx]) moveCursorTo(L._rowIndex[targetIdx]);
             }
           }
         } else {
@@ -10343,7 +10487,7 @@
             const steps = Math.floor(flingPen / LINE_HEIGHT);
             if (centerIdx >= 0 && steps > 0) {
               const targetIdx = Math.max(0, centerIdx - steps);
-              if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+              if (L._rowIndex[targetIdx]) moveCursorTo(L._rowIndex[targetIdx]);
             }
           } else if (desired > flingMaxY) {
             flingPen = desired - flingMaxY;
@@ -10352,44 +10496,44 @@
             const centerIdx = _getCenterRowIndex();
             const steps = Math.floor(flingPen / LINE_HEIGHT);
             if (centerIdx >= 0 && steps > 0) {
-              const targetIdx = Math.min(_rowIndex.length - 1, centerIdx + steps);
-              if (_rowIndex[targetIdx]) moveCursorTo(_rowIndex[targetIdx]);
+              const targetIdx = Math.min(L._rowIndex.length - 1, centerIdx + steps);
+              if (L._rowIndex[targetIdx]) moveCursorTo(L._rowIndex[targetIdx]);
             }
           } else {
             setRootScrollY(desired);
             _snapCursorToCenter();
           }
         }
-        flingRaf = requestAnimationFrame(fling);
+        L._flingRaf = requestAnimationFrame(fling);
       }
-      flingRaf = requestAnimationFrame(fling);
+      L._flingRaf = requestAnimationFrame(fling);
     }, { passive: true });
   }
   function bindClickEvents(canvas, _dpr) {
     canvas.addEventListener("click", (e) => {
-      if (!renderer) return;
-      _clickQueue.push({ offsetX: e.offsetX, offsetY: e.offsetY });
+      if (!L.renderer) return;
+      L._clickQueue.push({ offsetX: e.offsetX, offsetY: e.offsetY });
       processClickQueue();
     });
   }
   function processClickQueue() {
     var _a, _b;
-    if (_clickQueue.length === 0 || !renderer) return;
-    if (_animBusy) {
-      if (_animBusyAt && Date.now() - _animBusyAt > 3e3) {
-        _animBusy = false;
-        _animBusyAt = 0;
-        _clickQueue = [];
+    if (L._clickQueue.length === 0 || !L.renderer) return;
+    if (L._animBusy) {
+      if (L._animBusyAt && Date.now() - L._animBusyAt > 3e3) {
+        L._animBusy = false;
+        L._animBusyAt = 0;
+        L._clickQueue = [];
         return;
       }
       gsapWithCSS.globalTimeline.clear();
-      _animBusy = false;
-      _animBusyAt = 0;
-      animatingPath = null;
+      L._animBusy = false;
+      L._animBusyAt = 0;
+      L.animatingPath = null;
       rebuildTree();
     }
-    const { offsetX, offsetY } = _clickQueue.shift();
-    const root = renderer.getRoot();
+    const { offsetX, offsetY } = L._clickQueue.shift();
+    const root = L.renderer.getRoot();
     if (!root) return;
     const scrollY = (_a = root.scrollY) != null ? _a : 0;
     const px = offsetX;
@@ -10398,7 +10542,7 @@
       if (!child.visible || child.disabled) continue;
       const hit = findTapTarget(child, px, py);
       if ((_b = hit == null ? void 0 : hit.gesture) == null ? void 0 : _b.onTap) {
-        if (cursorRowId !== null && cursorRowId === hit.id) {
+        if (L.cursorRowId !== null && L.cursorRowId === hit.id) {
           const hitData = hit.data || {};
           const isDir = hitData.isDir;
           const isExpanded = hitData.isExpanded;
@@ -10424,12 +10568,12 @@
     processClickQueue();
   }
   function doExpand(hit, hitData) {
-    var _a;
-    animatingPath = hitData.path;
+    var _a, _b;
+    L.animatingPath = hitData.path;
     hit.gesture.onTap();
-    _animBusy = true;
-    _animBusyAt = Date.now();
-    const root = renderer.getRoot();
+    L._animBusy = true;
+    L._animBusyAt = Date.now();
+    const root = L.renderer.getRoot();
     const containerId = `expanded-${hitData.path}`;
     const container = findBoxById(root, containerId);
     const titleRow = findBoxById(root, `title-${hitData.path}`);
@@ -10438,16 +10582,16 @@
       return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
     });
     if (!container) {
-      _animBusy = false;
-      _animBusyAt = 0;
+      L._animBusy = false;
+      L._animBusyAt = 0;
       processClickQueue();
       return;
     }
     const fullHeight = container._fullHeight || 0;
     if (!fullHeight) {
       const finish = () => {
-        _animBusy = false;
-        _animBusyAt = 0;
+        L._animBusy = false;
+        L._animBusyAt = 0;
         processClickQueue();
       };
       if (toggle2 && toggle2.transform) {
@@ -10469,14 +10613,14 @@
         const startRot = 0;
         const endRot = Math.PI / 2;
         const durationMs = 300;
-        const rend = renderer;
+        const rend = L.renderer;
         requestAnimationFrame(animFrame2);
       } else {
         finish();
       }
       return;
     }
-    animatingPath = null;
+    L.animatingPath = null;
     const _origYs = container._origYs;
     if (_origYs && container.children.length === _origYs.length) {
       container.children.forEach((c, j) => {
@@ -10487,31 +10631,34 @@
       c.opacity = 1;
     });
     const ancestors = collectAncestors(container, root);
-    animateCharRain(container, root, renderer);
+    animateCharRain(container, root, L.renderer);
     gsapWithCSS.to(container, {
       height: fullHeight,
       duration: 0.05,
       ease: "back.out(1.15)",
       onUpdate: function() {
+        var _a2;
         applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
-        renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+        (_a2 = L.renderer) == null ? void 0 : _a2.setRoot(L.renderer.getRoot());
       },
       onComplete: () => {
         if (container.kfmStyle && container._savedCr !== void 0) {
           container.kfmStyle.cornerRadius = container._savedCr;
         }
         slideInRows(container, root, toggle2).then(() => {
+          var _a2;
           fixExpandedToggles(container);
-          renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+          (_a2 = L.renderer) == null ? void 0 : _a2.setRoot(L.renderer.getRoot());
         }).finally(() => {
-          _animBusy = false;
-          _animBusyAt = 0;
-          const _root = renderer == null ? void 0 : renderer.getRoot();
+          var _a2;
+          L._animBusy = false;
+          L._animBusyAt = 0;
+          const _root = (_a2 = L.renderer) == null ? void 0 : _a2.getRoot();
           if (_root) {
             _rebuildRowIndex(_root);
           }
-          if (cursorRowId) {
-            const _t = findBoxById(_root, cursorRowId);
+          if (L.cursorRowId) {
+            const _t = findBoxById(_root, L.cursorRowId);
             if (_t) moveCursorTo(_t, false);
           }
           processClickQueue();
@@ -10519,23 +10666,23 @@
       }
     });
     applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
-    renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+    (_b = L.renderer) == null ? void 0 : _b.setRoot(L.renderer.getRoot());
   }
   function doCollapse(hit, hitData) {
-    animatingPath = hitData.path;
+    L.animatingPath = hitData.path;
     const tog = hit.children.find((c) => {
       var _a;
       return (_a = c.id) == null ? void 0 : _a.startsWith("toggle-");
     });
     const containerId = `expanded-${hitData.path}`;
-    const root = renderer.getRoot();
+    const root = L.renderer.getRoot();
     const container = findBoxById(root, containerId);
-    _animBusy = true;
-    _animBusyAt = Date.now();
+    L._animBusy = true;
+    L._animBusyAt = Date.now();
     const tl = gsapWithCSS.timeline({
       onComplete: () => {
-        _animBusy = false;
-        _animBusyAt = 0;
+        L._animBusy = false;
+        L._animBusyAt = 0;
         hit.gesture.onTap();
         processClickQueue();
       }
@@ -10546,13 +10693,13 @@
         duration: 0.25,
         ease: "power2.in",
         onUpdate: () => {
-          if (renderer) renderer.setRoot(renderer.getRoot());
+          if (L.renderer) L.renderer.setRoot(L.renderer.getRoot());
         }
       }, 0);
     }
     if (container) {
       const fullH = container.height;
-      const root2 = renderer.getRoot();
+      const root2 = L.renderer.getRoot();
       const origYs = container.children.map((c) => c.y);
       const ancestors = collectAncestors(container, root2);
       tl.to(container, {
@@ -10560,8 +10707,9 @@
         duration: 0.3,
         ease: "power2.in",
         onUpdate: function() {
+          var _a;
           applyAnimOffset(container, origYs, fullH, ancestors, root2);
-          renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+          (_a = L.renderer) == null ? void 0 : _a.setRoot(L.renderer.getRoot());
         }
       }, 0);
     }
@@ -10581,39 +10729,39 @@
     return null;
   }
   function rebuildTree() {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m;
-    if (!renderer) return;
-    if (_animBusy) {
-      if (_animBusyAt && Date.now() - _animBusyAt > 3e3) {
-        _animBusy = false;
-        _animBusyAt = 0;
-        _clickQueue = [];
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t;
+    if (!L.renderer) return;
+    if (L._animBusy) {
+      if (L._animBusyAt && Date.now() - L._animBusyAt > 3e3) {
+        L._animBusy = false;
+        L._animBusyAt = 0;
+        L._clickQueue = [];
       } else {
         return;
       }
     }
-    const prevScrollY = (_b = (_a = renderer.getRoot()) == null ? void 0 : _a.scrollY) != null ? _b : 0;
-    const prevCursorRowId = cursorRowId;
-    const prevCursorX = (_c = cursorBox == null ? void 0 : cursorBox.x) != null ? _c : -1;
-    const prevCursorY = (_d = cursorBox == null ? void 0 : cursorBox.y) != null ? _d : -1;
-    const prevCursorW = (_e = cursorBox == null ? void 0 : cursorBox.width) != null ? _e : -1;
-    const prevCursorH = (_f = cursorBox == null ? void 0 : cursorBox.height) != null ? _f : -1;
-    const prevCursorTopLine = (_h = (_g = cursorBox == null ? void 0 : cursorBox.data) == null ? void 0 : _g.topLineW) != null ? _h : -1;
-    const prevCursorBotLine = (_j = (_i = cursorBox == null ? void 0 : cursorBox.data) == null ? void 0 : _i.botLineW) != null ? _j : -1;
-    cursorBox = null;
-    cursorRowId = null;
-    const canvas = document.getElementById("tree-canvas");
-    const cw = ((_k = canvas == null ? void 0 : canvas.clientWidth) != null ? _k : 0) || 295;
+    const prevScrollY = (_b = (_a = L.renderer.getRoot()) == null ? void 0 : _a.scrollY) != null ? _b : 0;
+    const prevCursorRowId = L.cursorRowId;
+    const prevCursorX = (_d = (_c = L.cursorBox) == null ? void 0 : _c.x) != null ? _d : -1;
+    const prevCursorY = (_f = (_e = L.cursorBox) == null ? void 0 : _e.y) != null ? _f : -1;
+    const prevCursorW = (_h = (_g = L.cursorBox) == null ? void 0 : _g.width) != null ? _h : -1;
+    const prevCursorH = (_j = (_i = L.cursorBox) == null ? void 0 : _i.height) != null ? _j : -1;
+    const prevCursorTopLine = (_m = (_l = (_k = L.cursorBox) == null ? void 0 : _k.data) == null ? void 0 : _l.topLineW) != null ? _m : -1;
+    const prevCursorBotLine = (_p = (_o = (_n = L.cursorBox) == null ? void 0 : _n.data) == null ? void 0 : _o.botLineW) != null ? _p : -1;
+    L.cursorBox = null;
+    L.cursorRowId = null;
+    const canvas = DOM.treeCanvas;
+    const cw = ((_q = canvas == null ? void 0 : canvas.clientWidth) != null ? _q : 0) || 295;
     const rightMargin = cw - 8;
     const rootBox = buildSidebarTree(cw, rightMargin);
     if (canvas) rootBox.width = cw;
-    const canvasH = ((_l = canvas == null ? void 0 : canvas.clientHeight) != null ? _l : 0) || 618;
+    const canvasH = ((_r = canvas == null ? void 0 : canvas.clientHeight) != null ? _r : 0) || 618;
     if (canvas) {
       rootBox.height = canvasH;
     }
-    if (animatingPath) {
-      const titleRow = findBoxById(rootBox, `title-${animatingPath}`);
-      const toggle = (_m = titleRow == null ? void 0 : titleRow.children) == null ? void 0 : _m.find((c) => {
+    if (L.animatingPath) {
+      const titleRow = findBoxById(rootBox, `title-${L.animatingPath}`);
+      const toggle = (_s = titleRow == null ? void 0 : titleRow.children) == null ? void 0 : _s.find((c) => {
         var _a2;
         return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
       });
@@ -10626,7 +10774,7 @@
       if (!box || !box.children) return;
       for (const child of box.children) {
         if (((_a2 = child.id) == null ? void 0 : _a2.startsWith("expanded-")) && child.height > 0) {
-          if (animatingPath && child.id === `expanded-${animatingPath}`) continue;
+          if (L.animatingPath && child.id === `expanded-${L.animatingPath}`) continue;
           const subFullH = child.height;
           child._fullHeight = subFullH;
           child._origYs = child.children.map((c) => c.y);
@@ -10652,8 +10800,8 @@
         }
       }
     }
-    if (animatingPath) {
-      const preContainer = findBoxById(rootBox, `expanded-${animatingPath}`);
+    if (L.animatingPath) {
+      const preContainer = findBoxById(rootBox, `expanded-${L.animatingPath}`);
       if (preContainer) {
         const preFullH = preContainer.height;
         preContainer._fullHeight = preFullH;
@@ -10670,34 +10818,34 @@
         collapseSubs(preContainer);
       }
     }
-    renderer.setRoot(rootBox);
-    const newRoot = renderer.getRoot();
-    if (!_restoringFromSave && newRoot && prevScrollY > 0) {
+    L.renderer.setRoot(rootBox);
+    const newRoot = L.renderer.getRoot();
+    if (!L._restoringFromSave && newRoot && prevScrollY > 0) {
       const maxY = newRoot.getMaxScroll().maxY;
       newRoot.scrollY = Math.min(prevScrollY, maxY);
     }
-    if (_restoringFromSave) {
-      _restoringFromSave = false;
+    if (L._restoringFromSave) {
+      L._restoringFromSave = false;
     }
     if (newRoot) {
       ensureCursorBox(newRoot, canvasH);
       if (prevCursorRowId) {
         const target = findBoxById(newRoot, prevCursorRowId);
         if (target) {
-          if (animatingPath && prevCursorY >= 0) {
-            cursorBox.x = prevCursorX;
-            cursorBox.y = prevCursorY;
-            cursorBox.width = prevCursorW;
+          if (L.animatingPath && prevCursorY >= 0) {
+            L.cursorBox.x = prevCursorX;
+            L.cursorBox.y = prevCursorY;
+            L.cursorBox.width = prevCursorW;
             if (prevCursorH >= 0) {
-              cursorBox.height = prevCursorH;
+              L.cursorBox.height = prevCursorH;
             }
             if (prevCursorTopLine >= 0) {
-              cursorBox.data.topLineW = prevCursorTopLine;
+              L.cursorBox.data.topLineW = prevCursorTopLine;
             }
             if (prevCursorBotLine >= 0) {
-              cursorBox.data.botLineW = prevCursorBotLine;
+              L.cursorBox.data.botLineW = prevCursorBotLine;
             }
-            cursorRowId = prevCursorRowId;
+            L.cursorRowId = prevCursorRowId;
           } else {
             moveCursorTo(target);
           }
@@ -10709,11 +10857,11 @@
       }
     }
     _rebuildRowIndex(newRoot);
-    if (!renderer.isRunning) {
-      renderer.start();
+    if (!L.renderer.isRunning) {
+      L.renderer.start();
     }
-    animatingPath = null;
-    const diagRoot = renderer == null ? void 0 : renderer.getRoot();
+    L.animatingPath = null;
+    const diagRoot = (_t = L.renderer) == null ? void 0 : _t.getRoot();
     const diagCS = diagRoot == null ? void 0 : diagRoot.getContentSize();
     console.log(
       "[rebuildTree] _isCursorMode=",
@@ -10727,15 +10875,15 @@
       " maxY=",
       diagRoot == null ? void 0 : diagRoot.getMaxScroll().maxY,
       " _rowIndexLen=",
-      _rowIndex.length,
-      " cursorRowId=",
-      cursorRowId,
+      L._rowIndex.length,
+      " L.cursorRowId=",
+      L.cursorRowId,
       " cursorIdx=",
       getCursorRowIndex(),
       " prevCursorRowId=",
       prevCursorRowId,
-      " animatingPath=",
-      animatingPath
+      " L.animatingPath=",
+      L.animatingPath
     );
   }
   function findBoxById(root, id) {
@@ -10826,7 +10974,8 @@
         duration: 0.15,
         ease: "power2.out",
         onUpdate: () => {
-          renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+          var _a;
+          (_a = L.renderer) == null ? void 0 : _a.setRoot(L.renderer.getRoot());
         }
       });
     }
@@ -10861,14 +11010,15 @@
         gsapWithCSS.killTweensOf(freshTog.transform);
         freshTog.transform.rotate = subTogRotate;
       }
-      const subRainPromise = animateCharRain(child, root, renderer);
+      const subRainPromise = animateCharRain(child, root, L.renderer);
       await new Promise((resolve) => {
         gsapWithCSS.to(child, {
           height: subFullH,
           duration: 0.05,
           ease: "back.out(1.15)",
           onUpdate: () => {
-            renderer == null ? void 0 : renderer.setRoot(renderer.getRoot());
+            var _a2;
+            (_a2 = L.renderer) == null ? void 0 : _a2.setRoot(L.renderer.getRoot());
           },
           onComplete: resolve
         });
@@ -10885,14 +11035,14 @@
   // src/client/modules/ui.ts
   function openSidebar() {
     var _a, _b;
-    (_a = document.getElementById("sidebar")) == null ? void 0 : _a.classList.add("open");
-    (_b = document.getElementById("overlay")) == null ? void 0 : _b.classList.add("show");
+    (_a = DOM.sidebar) == null ? void 0 : _a.classList.add("open");
+    (_b = DOM.overlay) == null ? void 0 : _b.classList.add("show");
     onSidebarOpen();
   }
   function closeSidebar() {
     var _a, _b;
-    (_a = document.getElementById("sidebar")) == null ? void 0 : _a.classList.remove("open");
-    (_b = document.getElementById("overlay")) == null ? void 0 : _b.classList.remove("show");
+    (_a = DOM.sidebar) == null ? void 0 : _a.classList.remove("open");
+    (_b = DOM.overlay) == null ? void 0 : _b.classList.remove("show");
     onSidebarClose();
   }
   function initUI() {
@@ -10901,7 +11051,7 @@
     window.closeSidebar = closeSidebar;
     window.executeCursorAction = async function() {
     };
-    (_a = document.getElementById("overlay")) == null ? void 0 : _a.addEventListener("click", () => {
+    (_a = DOM.overlay) == null ? void 0 : _a.addEventListener("click", () => {
       closeSidebar();
     });
   }
@@ -11316,7 +11466,7 @@
           }
           return;
         }
-        if ((_a = document.getElementById("sidebar")) == null ? void 0 : _a.classList.contains("open")) {
+        if ((_a = DOM.sidebar) == null ? void 0 : _a.classList.contains("open")) {
           if (dx < -60) {
             closeSidebar();
             return;
@@ -12997,7 +13147,7 @@
     { role: "ai", text: "\u597D\u7684\uFF0C\u6B63\u5728\u5206\u6790\u76EE\u5F55\u7ED3\u6784\u3002\u5F53\u524D\u76EE\u5F55\u4E0B\u5171\u6709 12 \u4E2A\u6587\u4EF6\u5939\u548C 8 \u4E2A\u6587\u4EF6\u3002" }
   ];
   function getInputBarTop() {
-    const bar = document.getElementById("aiInputBar");
+    const bar = DOM.aiInputBar;
     if (!bar) return window.innerHeight;
     return bar.getBoundingClientRect().top;
   }
@@ -13045,7 +13195,7 @@
   }
   function renderChatContent() {
     if (!panelEl) return;
-    const contentArea = panelEl.querySelector(".orb-panel-content");
+    const contentArea = DOM.orbPanelContent(panelEl);
     if (!contentArea) return;
     const innerWidth = renderWidth - 24;
     if (innerWidth < 50) return;
@@ -13177,7 +13327,7 @@
   }
   function updateStateLabel() {
     if (!panelEl) return;
-    const label = panelEl.querySelector(".orb-panel-state");
+    const label = DOM.orbPanelState(panelEl);
     if (!label) return;
     const labels = { collapsed: "", expanded: "\u957F\u6309\u7F16\u8F91\u5927\u5C0F", editing: "\u62D6\u52A8\u8C03\u6574\u5927\u5C0F \xB7 \u677E\u624B\u5B8C\u6210" };
     label.textContent = labels[orbState];
@@ -13337,8 +13487,9 @@
     };
     requestAnimationFrame(check);
   }
+  var _mouseHandlers = null;
   function initOrb() {
-    orbEl = document.getElementById("lightOrb");
+    orbEl = DOM.lightOrb;
     if (!orbEl) return;
     orbEl.style.zIndex = "210";
     const initRect = orbEl.getBoundingClientRect();
@@ -13365,21 +13516,27 @@
         endDrag();
       }
     });
-    let mouseDragging = false;
-    orbEl.addEventListener("mousedown", (e) => {
-      e.stopPropagation();
-      mouseDragging = true;
-      startDrag(e.clientX, e.clientY);
-    });
-    document.addEventListener("mousemove", (e) => {
-      if (!mouseDragging) return;
-      moveDrag(e.clientX, e.clientY);
-    });
-    document.addEventListener("mouseup", () => {
-      if (!mouseDragging && !dragging) return;
-      mouseDragging = false;
-      endDrag();
-    });
+    if (!_mouseHandlers) {
+      let mouseDragging = false;
+      const onMouseDown = (e) => {
+        e.stopPropagation();
+        mouseDragging = true;
+        startDrag(e.clientX, e.clientY);
+      };
+      const onMouseMove = (e) => {
+        if (!mouseDragging) return;
+        moveDrag(e.clientX, e.clientY);
+      };
+      const onMouseUp = () => {
+        if (!mouseDragging && !dragging) return;
+        mouseDragging = false;
+        endDrag();
+      };
+      orbEl.addEventListener("mousedown", onMouseDown);
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+      _mouseHandlers = { onMouseDown, onMouseMove, onMouseUp };
+    }
     initInputBarWatcher();
   }
 

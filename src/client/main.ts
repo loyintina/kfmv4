@@ -9,6 +9,7 @@ import { KFMState } from './modules/state.js';
 
 declare global {
   interface Window {
+    // ===== 应用全局接口 =====
     API: string;
     selectedFile: string;
     expandedPaths: Record<string, boolean>;
@@ -17,6 +18,13 @@ declare global {
     openSidebar: () => void;
     closeSidebar: () => void;
     executeCursorAction: () => Promise<void>;
+    // ===== 调试/跨模块访问 =====
+    KFMState: any;
+    styleRegistry: any;
+    DIMENSIONS: any;
+    COLORS: any;
+    TEXT_STYLES: any;
+    __treeRenderer: any;
   }
 }
 

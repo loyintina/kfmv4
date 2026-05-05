@@ -231,8 +231,8 @@ export function createBox(templateName: string, overrides: Record<string, any>):
 }
 
 if (typeof window !== 'undefined') {
-  (window as any).styleRegistry = styleRegistry;
-  (window as any).DIMENSIONS = DIMENSIONS;
-  (window as any).COLORS = COLORS;
-  (window as any).TEXT_STYLES = TEXT_STYLES;
+  window.styleRegistry = styleRegistry;
+  window.DIMENSIONS = DIMENSIONS;
+  window.COLORS = COLORS;
+  window.TEXT_STYLES = TEXT_STYLES;
 }

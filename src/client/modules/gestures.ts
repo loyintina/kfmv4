@@ -10,6 +10,7 @@
 import { openSidebar, closeSidebar } from './ui.js';
 import { openCardStack, closeCardStack, isCardStackOpen } from './card-stack.js';
 import { gestures } from './gesture-registry.js';
+import { DOM } from "./dom-refs.js";
 
 export function initGestures(): void {
   gestures.register({
@@ -28,7 +29,7 @@ export function initGestures(): void {
       }
 
       // 侧栏打开时：左滑关闭
-      if (document.getElementById('sidebar')?.classList.contains('open')) {
+      if (DOM.sidebar?.classList.contains('open')) {
         if (dx < -60) { closeSidebar(); return; }
         return;
       }
