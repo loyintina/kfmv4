@@ -11,7 +11,7 @@ import { Box } from '../engine/v2/box.js';
 import { buildSidebarTree, getShift } from './tree-model.js';
 import { KFMState } from './state.js';
 import gsap from 'gsap';
-import { styleRegistry, LINE_HEIGHT, MAX_LINES } from './style-registry.js';
+import { LINE_HEIGHT, MAX_LINES } from './style-registry.js';
 import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
 import { animateCharRain } from "./char-rain.js";
 import { closeSidebar } from './ui.js';

@@ -7,6 +7,9 @@
 
 // ========== 类型 ==========
 
+import type { Box } from '../engine/v2/box.js';
+import type { Renderer } from '../engine/v2/renderer.js';
+
 interface ListenerRef {
   target: EventTarget;
   type: string;
@@ -18,13 +21,13 @@ interface ListenerRef {
 
 export class RendererLifecycle {
   // ---- Renderer ----
-  renderer: any = null;
+  renderer: Renderer | null = null;
 
   // ---- KFMState 订阅 ----
-  _stateSub: ((state: any) => void) | null = null;
+  _stateSub: ((state: Record<string, unknown>) => void) | null = null;
 
   // ---- 光标 ----
-  cursorBox: any = null;
+  cursorBox: Box | null = null;
   cursorRowId: string | null = null;
   _savedCursorRowId: string | null = null;
 
@@ -36,7 +39,7 @@ export class RendererLifecycle {
   _restoringFromSave = false;
 
   // ---- 行索引 ----
-  _rowIndex: any[] = [];
+  _rowIndex: Box[] = [];
 
   // ---- 会话隔离 ----
   _sessionId = 0;

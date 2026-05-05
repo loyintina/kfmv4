@@ -34,7 +34,7 @@ export const DIMENSIONS = {
  * 根据深度返回该行的绝对布局 { x, width }
  * 不依赖容器递归传递偏移，每层独立计算
  */
-export function getRowLayout(depth) {
+export function getRowLayout(depth: number): { x: number; width: number } {
   var x = depth * 18;
   return { x: x, width: DIMENSIONS.SIDEBAR_WIDTH - x };
 }
