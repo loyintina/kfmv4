@@ -39,11 +39,15 @@ src/
 │   └── modules/
 │       ├── gesture-registry.ts    # 🔑 手势注册中心（优先级调度，独占执行）
 │       ├── renderer-lifecycle.ts  # 🔑 渲染器生命周期（状态托管 + rAF/Listener 追踪）
+│       ├── dom-refs.ts            # 🔑 DOM 元素引用注册表（全局 getElementById 收敛于此）
+│       ├── canvas-utils.ts        # 🔧 通用 Canvas 工具函数（60行，非文件树专属）
+│       ├── canvas-cursor.ts       # 🔧 通用光标系统（246行，非文件树专属）
+│       ├── canvas-scroll.ts       # 🔧 通用滚动系统（352行，非文件树专属）
 │       ├── app.ts            # 全局初始化、日志系统、Toast、AI输入栏
-│       ├── state.ts          # KFMState 统一状态层（发布-订阅）
+│       ├── state.ts          # KFMState 统一状态层（发布-订阅 + beforeExpand Hook）
 │       ├── tree-model.ts     # Box 树构建（文件树布局）
-│       ├── tree-render.ts    # Canvas 渲染 + 展开/折叠动画（~1500行，核心文件）
-│       ├── tree-loader.ts    # 懒加载（劫持 setExpanded 实现）
+│       ├── tree-render.ts    # 文件树 Canvas 渲染（~910行：生命周期 + 树构建 + 点击）
+│       ├── tree-loader.ts    # 懒加载（通过 KFMState.addHook 实现）
 │       ├── ui.ts             # 侧栏开关
 │       ├── gestures.ts       # 全局手势（边缘滑动→侧栏/卡片面板）
 │       ├── orb.ts            # 悬浮光球 + AI 对话面板
@@ -61,8 +65,28 @@ src/
 |----------|------|------|
 | `GestureRegistry` | `gesture-registry.ts` | document 级触摸事件统一调度，优先级匹配 |
 | `RendererLifecycle` (`L`) | `renderer-lifecycle.ts` | tree-render 全部可变状态 + rAF 追踪 + Listener 追踪 |
+| `DOM` | `dom-refs.ts` | 全局 DOM 元素引用，getter 属性，去掉所有 document.getElementById |
 
 **手势优先级**: orb(100) > card-stack-panel(90) > card-stack-global(80) > page-swipe(50)
+
+## Canvas 通用模块（🔧 标记）
+
+`canvas-utils.ts`、`canvas-cursor.ts`、`canvas-scroll.ts` 三个文件**不绑定任何具体页面**。它们是通用的 Canvas Box 基元，未来任何用 Box + Canvas 渲染的页面（卡片流 card-stream、编辑器面板等）都可以直接复用。
+
+**依赖方向**（防循环依赖）:
+```
+renderer-lifecycle.ts (L 单例)
+       ↓
+canvas-utils.ts       ← 最底层工具，只依赖 L
+       ↓
+canvas-cursor.ts      ← 光标移动/吸附/模式判断
+       ↓
+canvas-scroll.ts      ← 滚轮/触摸/fling 惯性
+       ↓
+tree-render.ts        ← 文件树业务逻辑（展开/折叠/点击/重建）
+```
+
+**重要**: canvas-* 模块不导入任何 tree-* 模块（`canvas-cursor.ts` 例外——它从 `tree-model.js` 导入 `getShift` 和从 `style-registry.js` 导入 `LINE_HEIGHT/MAX_LINES`，这都是数据/参数类依赖，不涉及业务逻辑）。
 
 ## 关键约定
 
@@ -71,6 +95,7 @@ src/
 - `L.renderer` 等通过 `renderer-lifecycle.ts` 单例访问，不要新造 `let renderer`
 - `KFMState` 是发布-订阅模式，订阅后记得取消订阅（`_ensureSubscribed` 的正确模式）
 - Canvas 滚动/点击事件是元素级监听（在 canvas 上），不走 GestureRegistry
+- 新建 Canvas 页面时，从 `canvas-*` 模块导入通用基元，只写本页面业务逻辑
 
 ## 跨模块依赖（关键调用链）
 
@@ -81,13 +106,13 @@ main.ts
   ├─ initUI()                 # 往 window 挂 openSidebar/closeSidebar
   ├─ initGestures()           # → gestures.register(id="page-swipe")
   ├─ initOrb()                # → gestures.register(id="orb")
-  ├─ initTreeRenderer()       # 创建 canvas + Renderer + 订阅 KFMState/styleRegistry
+  ├─ initTreeRenderer()       # 创建 canvas + Renderer + 订阅 KFMState
   ├─ loadFileTree(/root)    # 加载初始数据
-  │   └─ initLazyLoader()     # 劫持 KFMState.setExpanded 实现懒加载
+  │   └─ initLazyLoader()     # KFMState.addHook(beforeExpand) 实现懒加载
   └─ initCardStack()          # → gestures.register(id="card-stack-panel" + "card-stack-global")
 
 tree-render.ts ← 被 tree-loader.ts、card-stack.ts、ui.ts 导入
-  ├─ card-stack.ts 导入: getCursorRowIndex, getRowIndexLength
+  ├─ card-stack.ts 导入: (从 canvas-cursor.ts 导入 getCursorRowIndex, getRowIndexLength)
   ├─ tree-loader.ts 导入: markAnimatingPath, isAnimLocked, triggerExpandAnimation
   └─ ui.ts 导入: onSidebarOpen, onSidebarClose
 ```
@@ -99,4 +124,3 @@ tree-render.ts ← 被 tree-loader.ts、card-stack.ts、ui.ts 导入
 - **Canvas 初始化**: canvas 刚创建时 `clientWidth=0`，需要在 `requestAnimationFrame` 回调里 `rebuildTree()`
 - **PM2 不存在**: 用 `nohup node dist/server/index.js &` 启动，`kill $(pgrep -f node.*dist/server)` 停止
 - **`kill` 退出码 255**: 没有匹配进程时 pgrep 返回空 → kill 报 255，不影响后续命令
-- **tree-render 的 `_sidebarClosed`**: 原来是 `let` 变量，现在在 `L._sidebarClosed`（renderer-lifecycle 单例）

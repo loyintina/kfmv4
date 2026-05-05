@@ -192,6 +192,685 @@
     }
   }
 
+  // src/client/engine/v2/utils.ts
+  var ZERO_SPACING = { top: 0, right: 0, bottom: 0, left: 0 };
+
+  // src/client/engine/v2/animation.ts
+  function ease(name, t) {
+    switch (name) {
+      case "linear":
+        return t;
+      case "easeInQuad":
+        return t * t;
+      case "easeOutQuad":
+        return t * (2 - t);
+      case "easeInOutQuad":
+        return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+      case "easeInCubic":
+        return t * t * t;
+      case "easeOutCubic": {
+        const t1 = t - 1;
+        return t1 * t1 * t1 + 1;
+      }
+      case "easeInOutCubic":
+        return t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
+      case "easeOutElastic": {
+        const p = 0.3;
+        return Math.pow(2, -10 * t) * Math.sin((t - p / 4) * (2 * Math.PI) / p) + 1;
+      }
+      case "easeOutBounce": {
+        if (t < 1 / 2.75) return 7.5625 * t * t;
+        if (t < 2 / 2.75) {
+          const t1 = t - 1.5 / 2.75;
+          return 7.5625 * t1 * t1 + 0.75;
+        }
+        if (t < 2.5 / 2.75) {
+          const t1 = t - 2.25 / 2.75;
+          return 7.5625 * t1 * t1 + 0.9375;
+        }
+        {
+          const t1 = t - 2.625 / 2.75;
+          return 7.5625 * t1 * t1 + 0.984375;
+        }
+      }
+    }
+  }
+
+  // src/client/engine/v2/box.ts
+  var Box = class _Box {
+    constructor(options = {}) {
+      // --- 身份 ---
+      __publicField(this, "id");
+      __publicField(this, "type");
+      // --- 几何 ---
+      __publicField(this, "x");
+      __publicField(this, "y");
+      __publicField(this, "width");
+      __publicField(this, "height");
+      // --- 盒模型 ---
+      __publicField(this, "padding");
+      __publicField(this, "margin");
+      // --- 视觉 ---
+      __publicField(this, "backgroundColor");
+      __publicField(this, "gradient");
+      __publicField(this, "backgroundPattern");
+      // Phase 2 Demo：网格背景
+      __publicField(this, "borderRadius");
+      __publicField(this, "opacity");
+      __publicField(this, "visible");
+      // --- 边框 ---
+      __publicField(this, "border");
+      __publicField(this, "highlight");
+      // --- 阴影 ---
+      __publicField(this, "shadow");
+      // --- 文本 ---
+      __publicField(this, "textStyle");
+      // --- 图标 ---
+      __publicField(this, "icon");
+      // --- 交互 ---
+      __publicField(this, "interactive");
+      __publicField(this, "disabled");
+      __publicField(this, "selected");
+      __publicField(this, "state");
+      __publicField(this, "stateStyles");
+      // --- 层级 ---
+      __publicField(this, "zIndex");
+      __publicField(this, "overflow");
+      // --- 变换 ---
+      __publicField(this, "transform");
+      // --- 动画 ---
+      __publicField(this, "animations");
+      // --- 树形 ---
+      __publicField(this, "children");
+      __publicField(this, "parent");
+      __publicField(this, "data");
+      // --- Flex 布局 ---
+      __publicField(this, "layout");
+      __publicField(this, "layoutItem");
+      // --- 滚动容器 ---
+      __publicField(this, "scrollable");
+      __publicField(this, "scrollX");
+      __publicField(this, "scrollY");
+      __publicField(this, "scrollDirection");
+      __publicField(this, "scrollbarVisible");
+      // --- KFM 边���样式（高级）---
+      __publicField(this, "kfmStyle");
+      __publicField(this, "composite");
+      // --- 手势配置（D-013 决策）---
+      __publicField(this, "gesture");
+      // 矢量形状（Phase 2 Demo）
+      __publicField(this, "shape");
+      // 可输入配置
+      __publicField(this, "inputable");
+      // --- 事件 ---
+      __publicField(this, "eventHandlers");
+      // --- 缓存 ---
+      __publicField(this, "_contentWidth");
+      __publicField(this, "_contentHeight");
+      var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _A, _B, _C, _D, _E, _F, _G, _H, _I, _J, _K, _L, _M, _N, _O, _P, _Q, _R, _S, _T, _U, _V, _W, _X;
+      this.id = options.id || `box_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      this.type = (_a = options.type) != null ? _a : "container";
+      this.x = (_b = options.x) != null ? _b : 0;
+      this.y = (_c = options.y) != null ? _c : 0;
+      this.width = (_d = options.width) != null ? _d : 100;
+      this.height = (_e = options.height) != null ? _e : 40;
+      this.padding = { ...ZERO_SPACING, ...options.padding };
+      this.margin = { ...ZERO_SPACING, ...options.margin };
+      this.backgroundColor = (_f = options.backgroundColor) != null ? _f : "#12121a";
+      this.gradient = (_g = options.gradient) != null ? _g : null;
+      this.backgroundPattern = (_h = options.backgroundPattern) != null ? _h : null;
+      this.borderRadius = (_i = options.borderRadius) != null ? _i : 8;
+      this.opacity = (_j = options.opacity) != null ? _j : 1;
+      this.visible = (_k = options.visible) != null ? _k : true;
+      this.border = (_l = options.border) != null ? _l : null;
+      this.highlight = (_m = options.highlight) != null ? _m : null;
+      this.shadow = (_n = options.shadow) != null ? _n : null;
+      this.textStyle = {
+        content: (_o = options.text) != null ? _o : "",
+        color: (_p = options.textColor) != null ? _p : "#e0e0e0",
+        font: (_q = options.font) != null ? _q : "14px system-ui, sans-serif",
+        lineHeight: (_r = options.lineHeight) != null ? _r : 20,
+        align: (_s = options.textAlign) != null ? _s : "left",
+        verticalAlign: (_t = options.textVerticalAlign) != null ? _t : "middle",
+        overflow: (_u = options.textOverflow) != null ? _u : "ellipsis",
+        maxLines: (_v = options.maxLines) != null ? _v : 1
+      };
+      this.icon = options.icon ? { char: options.icon, size: (_w = options.iconSize) != null ? _w : 16, position: (_x = options.iconPosition) != null ? _x : "left" } : null;
+      this.interactive = (_y = options.interactive) != null ? _y : this.type === "button" || this.type === "list-item";
+      this.disabled = (_z = options.disabled) != null ? _z : false;
+      this.selected = (_A = options.selected) != null ? _A : false;
+      this.state = "normal";
+      this.stateStyles = (_B = options.stateStyles) != null ? _B : {};
+      this.zIndex = (_C = options.zIndex) != null ? _C : 0;
+      this.overflow = (_D = options.overflow) != null ? _D : "visible";
+      this.transform = {
+        scale: (_F = (_E = options.transform) == null ? void 0 : _E.scale) != null ? _F : 1,
+        rotate: (_H = (_G = options.transform) == null ? void 0 : _G.rotate) != null ? _H : 0,
+        translateX: (_J = (_I = options.transform) == null ? void 0 : _I.translateX) != null ? _J : 0,
+        translateY: (_L = (_K = options.transform) == null ? void 0 : _K.translateY) != null ? _L : 0
+      };
+      this.animations = [];
+      this.children = (_M = options.children) != null ? _M : [];
+      this.parent = null;
+      this.data = (_N = options.data) != null ? _N : {};
+      this.children.forEach((child) => {
+        child.parent = this;
+      });
+      this.layout = (_O = options.layout) != null ? _O : null;
+      this.layoutItem = (_P = options.layoutItem) != null ? _P : null;
+      this.scrollable = (_Q = options.scrollable) != null ? _Q : false;
+      this.scrollX = (_R = options.scrollX) != null ? _R : 0;
+      this.scrollY = (_S = options.scrollY) != null ? _S : 0;
+      this.scrollDirection = (_T = options.scrollDirection) != null ? _T : "vertical";
+      this.scrollbarVisible = (_U = options.scrollbarVisible) != null ? _U : true;
+      this.kfmStyle = (_V = options.kfmStyle) != null ? _V : null;
+      this.composite = options.composite || "";
+      this.gesture = (_W = options.gesture) != null ? _W : null;
+      this.shape = (_X = options.shape) != null ? _X : null;
+      if (options.inputable) {
+        this.inputable = typeof options.inputable === "boolean" ? { enabled: options.inputable } : options.inputable;
+      } else {
+        this.inputable = null;
+      }
+      this.eventHandlers = /* @__PURE__ */ new Map();
+      this._contentWidth = null;
+      this._contentHeight = null;
+    }
+    // ============================================================
+    // 几何计算
+    // ============================================================
+    /** 内容区域（去掉 padding 后的矩形） */
+    get contentRect() {
+      return {
+        x: this.padding.left,
+        y: this.padding.top,
+        width: this.width - this.padding.left - this.padding.right,
+        height: this.height - this.padding.top - this.padding.bottom
+      };
+    }
+    /** 绝对位置（含所有父级偏移） */
+    getAbsolutePosition() {
+      let x = this.x;
+      let y = this.y;
+      let p = this.parent;
+      while (p) {
+        x += p.x + p.padding.left;
+        y += p.y + p.padding.top;
+        p = p.parent;
+      }
+      return { x, y };
+    }
+    /** 考虑 transform 后的包围盒 */
+    getBounds() {
+      const pos = this.getAbsolutePosition();
+      const s = this.transform.scale;
+      return {
+        x: pos.x + this.transform.translateX,
+        y: pos.y + this.transform.translateY,
+        width: this.width * s,
+        height: this.height * s
+      };
+    }
+    /** 点是否在 Box 内 */
+    containsPoint(px, py) {
+      const b = this.getBounds();
+      return px >= b.x && px <= b.x + b.width && py >= b.y && py <= b.y + b.height;
+    }
+    // ============================================================
+    // 滚动相关
+    // ============================================================
+    /** 计算内容实际尺寸（Flex 布局后的子元素边界） */
+    getContentSize() {
+      if (this.children.length === 0) {
+        return { width: 0, height: 0 };
+      }
+      let maxRight = 0;
+      let maxBottom = 0;
+      for (const child of this.children) {
+        const childRight = child.x + child.width;
+        const childBottom = child.y + child.height;
+        maxRight = Math.max(maxRight, childRight);
+        maxBottom = Math.max(maxBottom, childBottom);
+      }
+      return { width: maxRight, height: maxBottom };
+    }
+    /** 获取最大滚动偏移 */
+    getMaxScroll() {
+      const content = this.getContentSize();
+      const viewportW = this.width - this.padding.left - this.padding.right;
+      const viewportH = this.height - this.padding.top - this.padding.bottom;
+      return {
+        maxX: Math.max(0, content.width - viewportW),
+        maxY: Math.max(0, content.height - viewportH)
+      };
+    }
+    /** 将滚动偏移限制在合法范围内 */
+    clampScroll() {
+      const max = this.getMaxScroll();
+      if (this.scrollDirection === "vertical" || this.scrollDirection === "both") {
+        this.scrollY = Math.max(0, Math.min(this.scrollY, max.maxY));
+      }
+      if (this.scrollDirection === "horizontal" || this.scrollDirection === "both") {
+        this.scrollX = Math.max(0, Math.min(this.scrollX, max.maxX));
+      }
+    }
+    // ============================================================
+    // 树操作
+    // ============================================================
+    addChild(child) {
+      child.parent = this;
+      this.children.push(child);
+      return this;
+    }
+    removeChild(child) {
+      const i = this.children.indexOf(child);
+      if (i > -1) {
+        this.children.splice(i, 1);
+        child.parent = null;
+      }
+      return this;
+    }
+    /** 深度优先查找 */
+    find(predicate) {
+      if (predicate(this)) return this;
+      for (const child of this.children) {
+        const found = child.find(predicate);
+        if (found) return found;
+      }
+      return null;
+    }
+    /** 扁平化所有后代 */
+    flatten(result = []) {
+      result.push(this);
+      for (const child of this.children) {
+        child.flatten(result);
+      }
+      return result;
+    }
+    // ============================================================
+    // 交互
+    // ============================================================
+    on(event, handler) {
+      this.eventHandlers.set(event, handler);
+      return this;
+    }
+    off(event) {
+      this.eventHandlers.delete(event);
+      return this;
+    }
+    emit(event, x, y, originalEvent) {
+      const handler = this.eventHandlers.get(event);
+      if (handler) {
+        handler({ box: this, x, y, originalEvent });
+      }
+    }
+    setState(state) {
+      if (this.state === state) return;
+      this.state = state;
+    }
+    /** 获取当前状态对应的样式覆盖 */
+    getStateStyle() {
+      var _a, _b;
+      return (_b = (_a = this.stateStyles[this.state]) != null ? _a : this.stateStyles.normal) != null ? _b : {};
+    }
+    // ============================================================
+    // 动画
+    // ============================================================
+    animate(prop, to, duration, easing = "easeOutCubic", onComplete) {
+      const from = this.getAnimProp(prop);
+      this.animations.push({
+        prop,
+        from,
+        to,
+        duration,
+        startTime: performance.now(),
+        easing,
+        onComplete
+      });
+      return this;
+    }
+    getAnimProp(prop) {
+      switch (prop) {
+        case "opacity":
+          return this.opacity;
+        case "scale":
+          return this.transform.scale;
+        case "rotate":
+          return this.transform.rotate;
+        case "translateX":
+          return this.transform.translateX;
+        case "translateY":
+          return this.transform.translateY;
+        case "x":
+          return this.x;
+        case "y":
+          return this.y;
+        case "width":
+          return this.width;
+        case "height":
+          return this.height;
+      }
+    }
+    setAnimProp(prop, value) {
+      switch (prop) {
+        case "opacity":
+          this.opacity = value;
+          break;
+        case "scale":
+          this.transform.scale = value;
+          break;
+        case "rotate":
+          this.transform.rotate = value;
+          break;
+        case "translateX":
+          this.transform.translateX = value;
+          break;
+        case "translateY":
+          this.transform.translateY = value;
+          break;
+        case "x":
+          this.x = value;
+          break;
+        case "y":
+          this.y = value;
+          break;
+        case "width":
+          this.width = value;
+          break;
+        case "height":
+          this.height = value;
+          break;
+      }
+    }
+    /** 更新所有活跃动画，返回是否有动画在播放 */
+    tickAnimations(now) {
+      let active = false;
+      this.animations = this.animations.filter((anim) => {
+        var _a;
+        const elapsed = now - anim.startTime;
+        const progress = Math.min(elapsed / anim.duration, 1);
+        const eased = ease(anim.easing, progress);
+        const value = anim.from + (anim.to - anim.from) * eased;
+        this.setAnimProp(anim.prop, value);
+        if (progress >= 1) {
+          (_a = anim.onComplete) == null ? void 0 : _a.call(anim);
+          return false;
+        }
+        active = true;
+        return true;
+      });
+      for (const child of this.children) {
+        if (child.tickAnimations(now)) active = true;
+      }
+      return active;
+    }
+    // ============================================================
+    // 工具
+    // ============================================================
+    clone() {
+      return new _Box({
+        ...this.serialize(),
+        id: void 0,
+        children: this.children.map((c) => c.clone())
+      });
+    }
+    serialize() {
+      var _a, _b, _c, _d, _e, _f;
+      return {
+        id: this.id,
+        type: this.type,
+        x: this.x,
+        y: this.y,
+        width: this.width,
+        height: this.height,
+        padding: { ...this.padding },
+        margin: { ...this.margin },
+        backgroundColor: this.backgroundColor,
+        gradient: this.gradient ? { ...this.gradient } : null,
+        borderRadius: this.borderRadius,
+        opacity: this.opacity,
+        visible: this.visible,
+        border: this.border ? { ...this.border } : null,
+        highlight: this.highlight ? { ...this.highlight } : null,
+        shadow: this.shadow ? { ...this.shadow } : null,
+        text: this.textStyle.content,
+        textColor: this.textStyle.color,
+        font: this.textStyle.font,
+        lineHeight: this.textStyle.lineHeight,
+        textAlign: this.textStyle.align,
+        textVerticalAlign: this.textStyle.verticalAlign,
+        textOverflow: this.textStyle.overflow,
+        maxLines: this.textStyle.maxLines,
+        icon: (_b = (_a = this.icon) == null ? void 0 : _a.char) != null ? _b : null,
+        iconSize: (_c = this.icon) == null ? void 0 : _c.size,
+        iconPosition: (_d = this.icon) == null ? void 0 : _d.position,
+        interactive: this.interactive,
+        disabled: this.disabled,
+        selected: this.selected,
+        stateStyles: { ...this.stateStyles },
+        zIndex: this.zIndex,
+        overflow: this.overflow,
+        transform: { ...this.transform },
+        layout: (_e = this.layout) != null ? _e : void 0,
+        layoutItem: (_f = this.layoutItem) != null ? _f : void 0,
+        scrollable: this.scrollable,
+        scrollX: this.scrollX,
+        scrollY: this.scrollY,
+        scrollDirection: this.scrollDirection,
+        scrollbarVisible: this.scrollbarVisible,
+        kfmStyle: this.kfmStyle ? { ...this.kfmStyle } : null,
+        gesture: this.gesture ? { ...this.gesture } : null,
+        shape: this.shape ? { ...this.shape, points: [...this.shape.points] } : null,
+        inputable: this.inputable ? { ...this.inputable } : void 0,
+        data: { ...this.data }
+      };
+    }
+  };
+
+  // src/client/modules/style-registry.ts
+  var DIMENSIONS = {
+    BOX_HEIGHT: 26,
+    SIDEBAR_WIDTH: 295,
+    DISPLAY_WIDTH: 280,
+    RIGHT_MARGIN: 287,
+    INDENT: 18,
+    ROW_PAD: 8,
+    TRIANGLE_SIZE: 9,
+    TRIANGLE_GAP: 5
+  };
+  var COLORS = {
+    DIR: "#7c3aed",
+    FILE: "#e0e0e0",
+    ACCENT: "#00d4ff",
+    SELECTED_BG: "rgba(124,58,237,0.15)",
+    CANVAS_BG: "rgba(10,10,15,0.85)"
+  };
+  var FONT = "11px system-ui, sans-serif";
+  var LINE_HEIGHT = 20;
+  var MAX_LINES = 2;
+  var TEXT_STYLES = {
+    folderLabel: {
+      font: FONT,
+      lineHeight: LINE_HEIGHT,
+      align: "left",
+      verticalAlign: "middle",
+      overflow: "ellipsis",
+      maxLines: MAX_LINES
+    },
+    fileLabel: {
+      font: FONT,
+      lineHeight: LINE_HEIGHT,
+      align: "left",
+      verticalAlign: "middle",
+      overflow: "ellipsis",
+      maxLines: MAX_LINES
+    },
+    toggleIcon: {
+      font: `${DIMENSIONS.TRIANGLE_SIZE}px system-ui, sans-serif`,
+      lineHeight: LINE_HEIGHT,
+      align: "center",
+      verticalAlign: "middle"
+    }
+  };
+  var templates = {
+    "folder-row": {
+      width: DIMENSIONS.SIDEBAR_WIDTH,
+      height: DIMENSIONS.BOX_HEIGHT,
+      backgroundColor: "rgba(124,58,237,0.3)",
+      borderRadius: 0,
+      interactive: true,
+      overflow: "hidden"
+    },
+    "file-row": {
+      width: DIMENSIONS.SIDEBAR_WIDTH,
+      height: DIMENSIONS.BOX_HEIGHT,
+      backgroundColor: "rgba(124,58,237,0.3)",
+      borderRadius: 0,
+      interactive: true,
+      overflow: "hidden"
+    },
+    "toggle-icon": {
+      width: DIMENSIONS.TRIANGLE_SIZE,
+      height: DIMENSIONS.BOX_HEIGHT,
+      backgroundColor: "transparent",
+      borderRadius: 0,
+      interactive: false
+    },
+    "folder-label": {
+      height: DIMENSIONS.BOX_HEIGHT,
+      backgroundColor: "transparent",
+      borderRadius: 0,
+      interactive: false
+    },
+    "file-label": {
+      height: DIMENSIONS.BOX_HEIGHT,
+      backgroundColor: "transparent",
+      borderRadius: 0,
+      interactive: false
+    },
+    "folder-container": {
+      backgroundColor: "transparent",
+      borderRadius: 4
+    },
+    "sidebar-root": {
+      width: DIMENSIONS.SIDEBAR_WIDTH,
+      height: 0,
+      backgroundColor: "transparent",
+      borderRadius: 0
+    }
+  };
+  var styleRegistry = {
+    get(name) {
+      const t = templates[name];
+      return t ? { ...t } : void 0;
+    },
+    set(name, updates) {
+      const old = templates[name];
+      if (!old) {
+        templates[name] = { ...updates };
+      } else {
+        Object.assign(templates[name], updates);
+      }
+      KFMState.notify();
+    },
+    patch(patches) {
+      for (const [name, updates] of Object.entries(patches)) {
+        const old = templates[name];
+        if (!old) {
+          templates[name] = { ...updates };
+        } else {
+          Object.assign(templates[name], updates);
+        }
+      }
+      KFMState.notify();
+    },
+    subscribe(fn) {
+      KFMState.subscribe(fn);
+    },
+    unsubscribe(fn) {
+      KFMState.unsubscribe(fn);
+    }
+  };
+  function createBox(templateName, overrides) {
+    if (!templates[templateName]) {
+      console.warn(`[style-registry] unknown template: "${templateName}"`);
+    }
+    const base = styleRegistry.get(templateName) || {};
+    return new Box({ ...base, ...overrides });
+  }
+  if (typeof window !== "undefined") {
+    window.styleRegistry = styleRegistry;
+    window.DIMENSIONS = DIMENSIONS;
+    window.COLORS = COLORS;
+    window.TEXT_STYLES = TEXT_STYLES;
+  }
+
+  // src/client/engine/v2/StyleConfig.ts
+  var DEFAULT_BOX_STYLE = {
+    border: { left: "emphasis", bottom: "normal", top: "hidden", right: "hidden" },
+    borderWidth: 1,
+    emphasisScale: 3,
+    cornerRadius: 12,
+    borderColor: "#7c3aed",
+    glowEnabled: false,
+    glowRadius: 8,
+    background: "glass",
+    backgroundOpacity: 0.6
+  };
+  var PRESETS = {
+    "default": {},
+    // use DEFAULT_BOX_STYLE
+    "all-emphasis": {
+      border: { top: "emphasis", right: "emphasis", bottom: "emphasis", left: "emphasis" }
+    },
+    "all-hidden": {
+      border: { top: "hidden", right: "hidden", bottom: "hidden", left: "hidden" },
+      background: "glass",
+      backgroundOpacity: 0.4
+    },
+    "left-emphasis-rest-hidden": {
+      border: { left: "emphasis", top: "hidden", right: "hidden", bottom: "hidden" }
+    },
+    "left-bottom-normal": {
+      border: { left: "normal", bottom: "normal", top: "hidden", right: "hidden" }
+    },
+    "bottom-right-normal": {
+      border: { bottom: "normal", right: "normal", top: "hidden", left: "hidden" }
+    },
+    "left-right-emphasis": {
+      border: { left: "emphasis", right: "emphasis", top: "hidden", bottom: "hidden" }
+    }
+  };
+  function resolveStyle(preset, overrides) {
+    var base = { ...DEFAULT_BOX_STYLE };
+    var p = PRESETS[preset];
+    if (p) {
+      if (p.border) base.border = { ...base.border, ...p.border };
+      if (p.borderWidth !== void 0) base.borderWidth = p.borderWidth;
+      if (p.emphasisScale !== void 0) base.emphasisScale = p.emphasisScale;
+      if (p.cornerRadius !== void 0) base.cornerRadius = p.cornerRadius;
+      if (p.borderColor !== void 0) base.borderColor = p.borderColor;
+      if (p.glowEnabled !== void 0) base.glowEnabled = p.glowEnabled;
+      if (p.glowRadius !== void 0) base.glowRadius = p.glowRadius;
+      if (p.background !== void 0) base.background = p.background;
+      if (p.backgroundOpacity !== void 0) base.backgroundOpacity = p.backgroundOpacity;
+      if (p.backgroundFill !== void 0) base.backgroundFill = p.backgroundFill;
+    }
+    if (overrides) {
+      if (overrides.border) base.border = { ...base.border, ...overrides.border };
+      if (overrides.borderWidth !== void 0) base.borderWidth = overrides.borderWidth;
+      if (overrides.emphasisScale !== void 0) base.emphasisScale = overrides.emphasisScale;
+      if (overrides.cornerRadius !== void 0) base.cornerRadius = overrides.cornerRadius;
+      if (overrides.borderColor !== void 0) base.borderColor = overrides.borderColor;
+      if (overrides.glowEnabled !== void 0) base.glowEnabled = overrides.glowEnabled;
+      if (overrides.glowRadius !== void 0) base.glowRadius = overrides.glowRadius;
+      if (overrides.background !== void 0) base.background = overrides.background;
+      if (overrides.backgroundOpacity !== void 0) base.backgroundOpacity = overrides.backgroundOpacity;
+      if (overrides.backgroundFill !== void 0) base.backgroundFill = overrides.backgroundFill;
+    }
+    return base;
+  }
+
   // node_modules/@chenglou/pretext/dist/generated/bidi-data.js
   var latin1BidiTypes = [
     "BN",
@@ -3296,1637 +3975,6 @@
       lines.push(createLayoutLine(prepared, graphemeCache, width, startSegmentIndex, startGraphemeIndex, endSegmentIndex, endGraphemeIndex));
     });
     return { lineCount, height: lineCount * lineHeight, lines };
-  }
-
-  // src/client/engine/v2/flex.ts
-  var DEFAULT_FLEX = {
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    alignItems: "flex-start",
-    flexWrap: "nowrap",
-    gap: 0,
-    rowGap: 0,
-    columnGap: 0
-  };
-  var DEFAULT_FLEX_ITEM = {
-    flex: 0,
-    flexShrink: 1,
-    flexBasis: "auto",
-    alignSelf: "auto",
-    minWidth: 0,
-    maxWidth: Infinity,
-    minHeight: 0,
-    maxHeight: Infinity
-  };
-  function applyFlexLayout(parent) {
-    var _a, _b, _c;
-    if (!parent.layout) return;
-    if (parent.children.length === 0) return;
-    const layout2 = parent.layout;
-    const style = { ...DEFAULT_FLEX, ...layout2 };
-    const isRow = style.flexDirection === "row" || style.flexDirection === "row-reverse";
-    const isReverse = style.flexDirection === "row-reverse" || style.flexDirection === "column-reverse";
-    const gap = (_a = layout2.gap) != null ? _a : 0;
-    const rowGap = (_b = layout2.rowGap) != null ? _b : gap;
-    const columnGap = (_c = layout2.columnGap) != null ? _c : gap;
-    const mainGap = isRow ? columnGap : rowGap;
-    const crossGap = isRow ? rowGap : columnGap;
-    const contentX = parent.padding.left;
-    const contentY = parent.padding.top;
-    const contentWidth = parent.width - parent.padding.left - parent.padding.right;
-    const contentHeight = parent.height - parent.padding.top - parent.padding.bottom;
-    const children = parent.children.slice();
-    const layouts = children.map((child) => {
-      var _a2;
-      const itemStyle = { ...DEFAULT_FLEX_ITEM, ...child.layoutItem };
-      let mainSize = isRow ? child.width : child.height;
-      let crossSize = isRow ? child.height : child.width;
-      if (itemStyle.flexBasis !== "auto") {
-        mainSize = itemStyle.flexBasis;
-      }
-      if (isRow) {
-        mainSize = Math.max(itemStyle.minWidth, Math.min(itemStyle.maxWidth, mainSize));
-        crossSize = Math.max(itemStyle.minHeight, Math.min(itemStyle.maxHeight, crossSize));
-      } else {
-        mainSize = Math.max(itemStyle.minHeight, Math.min(itemStyle.maxHeight, mainSize));
-        crossSize = Math.max(itemStyle.minWidth, Math.min(itemStyle.maxWidth, crossSize));
-      }
-      return {
-        child,
-        itemStyle,
-        mainSize,
-        crossSize,
-        mainPos: 0,
-        crossPos: 0,
-        flexGrow: (_a2 = itemStyle.flex) != null ? _a2 : 0
-      };
-    });
-    const totalFlexGrow = layouts.reduce((sum, l) => sum + l.flexGrow, 0);
-    const totalMainSize = layouts.reduce((sum, l) => sum + l.mainSize, 0);
-    const totalGaps = mainGap * (children.length - 1);
-    const availableMainSpace = isRow ? contentWidth : contentHeight;
-    const remainingSpace = availableMainSpace - totalMainSize - totalGaps;
-    if (totalFlexGrow > 0 && remainingSpace > 0) {
-      layouts.forEach((l) => {
-        if (l.flexGrow > 0) {
-          const extra = remainingSpace * l.flexGrow / totalFlexGrow;
-          l.mainSize += extra;
-          if (isRow) {
-            l.mainSize = Math.min(l.itemStyle.maxWidth, l.mainSize);
-          } else {
-            l.mainSize = Math.min(l.itemStyle.maxHeight, l.mainSize);
-          }
-        }
-      });
-    }
-    const finalTotalMainSize = layouts.reduce((sum, l) => sum + l.mainSize, 0);
-    const finalRemaining = availableMainSpace - finalTotalMainSize - totalGaps;
-    let mainOffset = contentX;
-    let gapBetween = mainGap;
-    switch (style.justifyContent) {
-      case "flex-start":
-        mainOffset = contentX;
-        break;
-      case "flex-end":
-        mainOffset = contentX + finalRemaining;
-        break;
-      case "center":
-        mainOffset = contentX + finalRemaining / 2;
-        break;
-      case "space-between":
-        mainOffset = contentX;
-        if (children.length > 1) {
-          gapBetween = mainGap + finalRemaining / (children.length - 1);
-        }
-        break;
-      case "space-around":
-        if (children.length > 0) {
-          const spacePer = finalRemaining / children.length;
-          mainOffset = contentX + spacePer / 2;
-          gapBetween = mainGap + spacePer;
-        }
-        break;
-      case "space-evenly":
-        if (children.length > 0) {
-          const spacePer = finalRemaining / (children.length + 1);
-          mainOffset = contentX + spacePer;
-          gapBetween = mainGap + spacePer;
-        }
-        break;
-    }
-    if (isReverse) {
-      mainOffset = isRow ? contentX + contentWidth - layouts[0].mainSize : contentY + contentHeight - layouts[0].mainSize;
-      let pos = mainOffset;
-      layouts.forEach((l, i) => {
-        l.mainPos = pos;
-        pos -= l.mainSize + gapBetween;
-      });
-    } else {
-      let pos = mainOffset;
-      layouts.forEach((l, i) => {
-        l.mainPos = pos;
-        pos += l.mainSize + gapBetween;
-      });
-    }
-    const crossSpace = isRow ? contentHeight : contentWidth;
-    const crossStart = isRow ? contentY : contentX;
-    layouts.forEach((l) => {
-      const align = l.itemStyle.alignSelf === "auto" ? style.alignItems : l.itemStyle.alignSelf;
-      switch (align) {
-        case "flex-start":
-          l.crossPos = crossStart;
-          break;
-        case "flex-end":
-          l.crossPos = crossStart + crossSpace - l.crossSize;
-          break;
-        case "center":
-          l.crossPos = crossStart + (crossSpace - l.crossSize) / 2;
-          break;
-        case "stretch":
-          l.crossSize = crossSpace;
-          l.crossPos = crossStart;
-          break;
-      }
-    });
-    layouts.forEach((l) => {
-      if (isRow) {
-        l.child.x = l.mainPos;
-        l.child.y = l.crossPos;
-        l.child.width = l.mainSize;
-        l.child.height = l.crossSize;
-      } else {
-        l.child.x = l.crossPos;
-        l.child.y = l.mainPos;
-        l.child.width = l.crossSize;
-        l.child.height = l.mainSize;
-      }
-    });
-  }
-
-  // src/client/engine/v2/BorderDrawer.ts
-  function getCornerSides(corner) {
-    switch (corner) {
-      case 1:
-        return { side1: "top", side2: "left" };
-      // 左上：上边→左边（逆时针）
-      case 3:
-        return { side1: "left", side2: "bottom" };
-      // 左下：左边→下边
-      case 5:
-        return { side1: "bottom", side2: "right" };
-      // 右下：下边→右边
-      case 7:
-        return { side1: "right", side2: "top" };
-    }
-  }
-  function shouldDrawCorner(corner, border) {
-    var sides = getCornerSides(corner);
-    var s1 = border[sides.side1];
-    var s2 = border[sides.side2];
-    if (s1 === "hidden" && s2 === "hidden") return false;
-    if (s1 === "normal" && s2 === "hidden" || s1 === "hidden" && s2 === "normal") return false;
-    return true;
-  }
-  function getCornerType(corner, border, emphasisW, normalW) {
-    var sides = getCornerSides(corner);
-    var s1 = border[sides.side1];
-    var s2 = border[sides.side2];
-    if (s1 === "emphasis" && s2 === "emphasis") {
-      return { type: "uniform", width: emphasisW };
-    }
-    if (s1 === "normal" && s2 === "normal") {
-      return { type: "uniform", width: normalW };
-    }
-    if (s1 === "emphasis" && s2 === "normal") {
-      return { type: "taper", startWidth: emphasisW, endWidth: normalW };
-    }
-    if (s1 === "normal" && s2 === "emphasis") {
-      return { type: "taper", startWidth: normalW, endWidth: emphasisW };
-    }
-    if (s1 === "emphasis" && s2 === "hidden") {
-      return { type: "taper", startWidth: emphasisW, endWidth: 0 };
-    }
-    if (s1 === "hidden" && s2 === "emphasis") {
-      return { type: "taper", startWidth: 0, endWidth: emphasisW };
-    }
-    return null;
-  }
-  function getArcAngles(corner) {
-    switch (corner) {
-      case 1:
-        return { start: 3 * Math.PI / 2, end: Math.PI };
-      // 左上：上→左
-      case 3:
-        return { start: Math.PI, end: Math.PI / 2 };
-      // 左下：左→下
-      case 5:
-        return { start: Math.PI / 2, end: 0 };
-      // 右下：下→右
-      case 7:
-        return { start: 0, end: -Math.PI / 2 };
-    }
-  }
-  function getArcCenter(corner, x, y, w, h, radius) {
-    switch (corner) {
-      case 1:
-        return { cx: x + radius, cy: y + radius };
-      case 3:
-        return { cx: x + radius, cy: y + h - radius };
-      case 5:
-        return { cx: x + w - radius, cy: y + h - radius };
-      case 7:
-        return { cx: x + w - radius, cy: y + radius };
-    }
-  }
-  function drawUniformArc(ctx, corner, x, y, w, h, radius, strokeWidth, color) {
-    if (radius <= 0 || strokeWidth <= 0) return;
-    var center = getArcCenter(corner, x, y, w, h, radius);
-    var angles = getArcAngles(corner);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = strokeWidth;
-    ctx.lineCap = "butt";
-    ctx.beginPath();
-    ctx.arc(center.cx, center.cy, radius, angles.start, angles.end, true);
-    ctx.stroke();
-  }
-  function drawTaperArc(ctx, corner, x, y, w, h, radius, startWidth, endWidth, color) {
-    var segments = 10;
-    var center = getArcCenter(corner, x, y, w, h, radius);
-    var angles = getArcAngles(corner);
-    var angleStep = (angles.end - angles.start) / segments;
-    ctx.strokeStyle = color;
-    ctx.lineCap = "butt";
-    for (var i = 0; i < segments; i++) {
-      var t = (i + 0.5) / segments;
-      var sw = startWidth + (endWidth - startWidth) * t;
-      if (sw < 0.3) continue;
-      var a1 = angles.start + angleStep * i;
-      var a2 = angles.start + angleStep * (i + 1);
-      ctx.lineWidth = sw;
-      ctx.beginPath();
-      ctx.arc(center.cx, center.cy, radius, a1, a2, true);
-      ctx.stroke();
-    }
-  }
-  function drawLineSegment(ctx, side, x, y, w, h, radius, strokeWidth, color) {
-    var halfSw = strokeWidth / 2;
-    ctx.fillStyle = color;
-    switch (side) {
-      case "left":
-        ctx.fillRect(x - halfSw, y + radius, strokeWidth, Math.max(1, h - radius * 2));
-        break;
-      case "bottom":
-        ctx.fillRect(x + radius, y + h - halfSw, Math.max(1, w - radius * 2), strokeWidth);
-        break;
-      case "right":
-        ctx.fillRect(x + w - halfSw, y + radius, strokeWidth, Math.max(1, h - radius * 2));
-        break;
-      case "top":
-        ctx.fillRect(x + radius, y - halfSw, Math.max(1, w - radius * 2), strokeWidth);
-        break;
-    }
-  }
-  function drawBorders(ctx, x, y, w, h, style) {
-    var emphasisW = style.borderWidth * style.emphasisScale;
-    var normalW = style.borderWidth;
-    var radius = style.cornerRadius;
-    var emColor = typeof style.borderColor === "string" ? style.borderColor : "#7c3aed";
-    var nmColor = emColor;
-    var border = style.border;
-    var sides = ["top", "right", "bottom", "left"];
-    for (var i = 0; i < 4; i++) {
-      var side = sides[i];
-      if (border[side] !== "normal") continue;
-      drawLineSegment(ctx, side, x, y, w, h, radius, normalW, nmColor);
-    }
-    for (var j = 0; j < 4; j++) {
-      var side2 = sides[j];
-      if (border[side2] !== "emphasis") continue;
-      drawLineSegment(ctx, side2, x, y, w, h, radius, emphasisW, emColor);
-    }
-    var corners = [1, 3, 5, 7];
-    for (var k = 0; k < 4; k++) {
-      var corner = corners[k];
-      if (!shouldDrawCorner(corner, border)) continue;
-      var cornerSides = getCornerSides(corner);
-      var hasEm = border[cornerSides.side1] === "emphasis" || border[cornerSides.side2] === "emphasis";
-      var color = hasEm ? emColor : nmColor;
-      var cType = getCornerType(corner, border, emphasisW, normalW);
-      if (!cType) continue;
-      if (cType.type === "uniform") {
-        drawUniformArc(ctx, corner, x, y, w, h, radius, cType.width, color);
-      } else {
-        drawTaperArc(
-          ctx,
-          corner,
-          x,
-          y,
-          w,
-          h,
-          radius,
-          cType.startWidth,
-          cType.endWidth,
-          color
-        );
-      }
-    }
-  }
-
-  // src/client/engine/v2/renderer.ts
-  var Renderer = class {
-    constructor(canvas, options = {}) {
-      __publicField(this, "canvas");
-      __publicField(this, "ctx");
-      __publicField(this, "dpr");
-      __publicField(this, "width");
-      __publicField(this, "height");
-      __publicField(this, "backgroundColor");
-      __publicField(this, "_isRunning");
-      __publicField(this, "_root");
-      __publicField(this, "_rafId");
-      __publicField(this, "_lastTime");
-      __publicField(this, "_frameCount");
-      __publicField(this, "_fps");
-      // Pretext 缓存：key = font + text
-      __publicField(this, "_pretextCache");
-      // input 元素缓存：key = Box.id
-      __publicField(this, "_inputElements");
-      var _a, _b;
-      this.canvas = canvas;
-      this.ctx = canvas.getContext("2d");
-      this.dpr = (_a = options.dpr) != null ? _a : window.devicePixelRatio || 1;
-      this.backgroundColor = (_b = options.backgroundColor) != null ? _b : "#0a0a0f";
-      this.width = 0;
-      this.height = 0;
-      this._isRunning = false;
-      this._root = null;
-      this._rafId = 0;
-      this._lastTime = 0;
-      this._frameCount = 0;
-      this._fps = 0;
-      this._pretextCache = /* @__PURE__ */ new Map();
-      this._inputElements = /* @__PURE__ */ new Map();
-      this.resize();
-    }
-    // ============================================================
-    // 生命周期
-    // ============================================================
-    resize() {
-      const w = this.canvas.clientWidth || window.innerWidth;
-      const h = this.canvas.clientHeight || window.innerHeight;
-      this.canvas.width = w * this.dpr;
-      this.canvas.height = h * this.dpr;
-      this.canvas.style.width = `${w}px`;
-      this.canvas.style.height = `${h}px`;
-      this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-      this.width = w;
-      this.height = h;
-    }
-    setRoot(box) {
-      this._root = box;
-      return this;
-    }
-    getRoot() {
-      return this._root;
-    }
-    start() {
-      if (this._isRunning) return this;
-      this._isRunning = true;
-      this._lastTime = performance.now();
-      const loop = (now) => {
-        if (!this._isRunning) return;
-        this._render(now);
-        this._rafId = requestAnimationFrame(loop);
-      };
-      this._rafId = requestAnimationFrame(loop);
-      return this;
-    }
-    stop() {
-      this._isRunning = false;
-      if (this._rafId) cancelAnimationFrame(this._rafId);
-      return this;
-    }
-    get isRunning() {
-      return this._isRunning;
-    }
-    get fps() {
-      return this._fps;
-    }
-    // ============================================================
-    // 渲染主循环
-    // ============================================================
-    _render(now) {
-      if (this._lastTime) {
-        const delta = now - this._lastTime;
-        this._fps = Math.round(1e3 / delta);
-      }
-      this._lastTime = now;
-      this._frameCount++;
-      this.ctx.fillStyle = this.backgroundColor;
-      this.ctx.fillRect(0, 0, this.width, this.height);
-      if (this._root) {
-        this._tickAndRender(this._root, now, 1);
-        try {
-          this._manageInputs(this._root);
-        } catch (e) {
-          console.error("_manageInputs error", e);
-        }
-      }
-    }
-    _tickAndRender(box, now, parentOpacity) {
-      box.tickAnimations(now);
-      if (!box.visible) return;
-      const opacity = box.opacity * parentOpacity;
-      if (opacity <= 0) return;
-      this.ctx.save();
-      this.ctx.globalAlpha = opacity;
-      const bounds = box.getBounds();
-      const cx = bounds.x + bounds.width / 2;
-      const cy = bounds.y + bounds.height / 2;
-      const { scale, rotate, translateX, translateY } = box.transform;
-      if (translateX !== 0 || translateY !== 0) {
-        this.ctx.translate(translateX, translateY);
-      }
-      if (rotate !== 0 || scale !== 1) {
-        this.ctx.translate(cx, cy);
-        if (rotate !== 0) this.ctx.rotate(rotate);
-        if (scale !== 1) this.ctx.scale(scale, scale);
-        this.ctx.translate(-cx, -cy);
-      }
-      this._drawShadow(box, bounds);
-      this._drawBackground(box, bounds);
-      if (box.shape) this._drawShape(box, bounds);
-      this._drawBorder(box, bounds);
-      this._drawHighlight(box, bounds);
-      if (box.icon) this._drawIcon(box.icon, bounds, box.padding);
-      if (box.textStyle.content) this._drawText(box.textStyle, bounds, box.padding, box.icon);
-      if (box.overflow === "hidden" || box.scrollable) {
-        this.ctx.beginPath();
-        this.ctx.roundRect(bounds.x, bounds.y, bounds.width, bounds.height, box.borderRadius);
-        this.ctx.clip();
-      }
-      if (box.layout) {
-        applyFlexLayout(box);
-      }
-      if (box.scrollable) {
-        this.ctx.save();
-        this.ctx.translate(-box.scrollX, -box.scrollY);
-      }
-      const sortedChildren = [...box.children].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
-      for (const child of sortedChildren) {
-        this._tickAndRender(child, now, opacity);
-      }
-      if (box.scrollable) {
-        this.ctx.restore();
-        if (box.scrollbarVisible) {
-          this._drawScrollbar(box, bounds);
-        }
-      }
-      this.ctx.restore();
-    }
-    // ============================================================
-    // input 元素管理（Phase 2 Demo）
-    // ============================================================
-    _manageInputs(root) {
-      var _a, _b, _c, _d, _e, _f, _g;
-      const inputableBoxes = root.flatten().filter((b) => {
-        var _a2;
-        return (_a2 = b.inputable) == null ? void 0 : _a2.enabled;
-      });
-      const seenIds = /* @__PURE__ */ new Set();
-      for (const box of inputableBoxes) {
-        seenIds.add(box.id);
-        const bounds = box.getBounds();
-        let el = this._inputElements.get(box.id);
-        if (!el) {
-          const isTextarea = ((_a = box.inputable) == null ? void 0 : _a.type) === "textarea";
-          el = document.createElement(isTextarea ? "textarea" : "input");
-          el.style.position = "fixed";
-          el.style.background = "transparent";
-          el.style.border = "none";
-          el.style.outline = "none";
-          el.style.fontSize = "16px";
-          el.style.color = "#e0e0e0";
-          el.style.zIndex = "10";
-          el.style.resize = "none";
-          el.style.padding = "10px";
-          el.style.boxSizing = "border-box";
-          el.style.lineHeight = (((_b = box.inputable) == null ? void 0 : _b.lineHeight) || 24) + "px";
-          if (isTextarea) {
-            el.style.wordWrap = "break-word";
-            el.style.overflowY = "auto";
-            const maxRows = ((_c = box.inputable) == null ? void 0 : _c.maxRows) || 5;
-            const lineHeight = ((_d = box.inputable) == null ? void 0 : _d.lineHeight) || 24;
-            const maxHeight = maxRows * lineHeight + 20;
-            el.style.maxHeight = maxHeight + "px";
-            const textareaEl = el;
-            const inputBox = box;
-            const rendererInstance = this;
-            const adjustHeight = () => {
-              textareaEl.style.height = "auto";
-              const scrollHeight = textareaEl.scrollHeight;
-              const minHeight = lineHeight;
-              const newHeight = Math.max(minHeight, Math.min(scrollHeight, maxHeight));
-              textareaEl.style.height = newHeight + "px";
-              inputBox.height = newHeight;
-              if (inputBox.parent) {
-                inputBox.parent.height = newHeight + 24;
-                inputBox.parent.y = rendererInstance.height - inputBox.parent.height;
-              }
-            };
-            el.addEventListener("input", adjustHeight);
-            el.style.height = lineHeight + "px";
-            inputBox.height = lineHeight;
-            if (inputBox.parent) {
-              inputBox.parent.height = lineHeight + 24;
-              inputBox.parent.y = rendererInstance.height - inputBox.parent.height;
-            }
-          }
-          el.setAttribute("autocapitalize", "off");
-          el.setAttribute("autocomplete", "off");
-          el.setAttribute("autocorrect", "off");
-          if ((_e = box.inputable) == null ? void 0 : _e.placeholder) el.placeholder = box.inputable.placeholder;
-          if ((_f = box.inputable) == null ? void 0 : _f.value) el.value = box.inputable.value;
-          el.style.left = `${bounds.x}px`;
-          el.style.top = `${bounds.y}px`;
-          el.style.width = `${bounds.width}px`;
-          el.style.height = `${bounds.height}px`;
-          (_g = this.canvas.parentElement) == null ? void 0 : _g.appendChild(el);
-          this._inputElements.set(box.id, el);
-        } else {
-          el.style.left = `${bounds.x}px`;
-          el.style.top = `${bounds.y}px`;
-          el.style.width = `${bounds.width}px`;
-          el.style.height = `${bounds.height}px`;
-        }
-      }
-      for (const [id, el] of this._inputElements) {
-        if (!seenIds.has(id)) {
-          el.remove();
-          this._inputElements.delete(id);
-        }
-      }
-    }
-    // ============================================================
-    // 绘制层
-    // ============================================================
-    _drawShadow(box, b) {
-      const shadow = box.shadow;
-      if (!shadow) return;
-      this.ctx.save();
-      this.ctx.beginPath();
-      this.ctx.rect(-1e4, -1e4, 2e4, 2e4);
-      this.ctx.roundRect(b.x, b.y, b.width, b.height, box.borderRadius);
-      this.ctx.clip("evenodd");
-      this.ctx.shadowColor = shadow.color;
-      this.ctx.shadowBlur = shadow.blur;
-      this.ctx.shadowOffsetX = shadow.offsetX + 1e4;
-      this.ctx.shadowOffsetY = shadow.offsetY;
-      this.ctx.fillStyle = "#000";
-      this.ctx.beginPath();
-      this.ctx.roundRect(b.x - 1e4, b.y, b.width, b.height, box.borderRadius);
-      this.ctx.fill();
-      this.ctx.restore();
-    }
-    /** 绘制矢量形状（Phase 2 Demo） */
-    _drawShape(box, b) {
-      var _a, _b;
-      const shape = box.shape;
-      const points = shape.points;
-      if (points.length < 2) return;
-      const composite = (_a = shape.composite) != null ? _a : "destination-out";
-      const closed = (_b = shape.closed) != null ? _b : true;
-      this.ctx.save();
-      this.ctx.globalCompositeOperation = composite;
-      this.ctx.beginPath();
-      this.ctx.moveTo(b.x + points[0].x * b.width, b.y + points[0].y * b.height);
-      for (let i = 1; i < points.length; i++) {
-        this.ctx.lineTo(b.x + points[i].x * b.width, b.y + points[i].y * b.height);
-      }
-      if (closed) this.ctx.closePath();
-      this.ctx.fill();
-      this.ctx.restore();
-    }
-    _drawBackground(box, b) {
-      const prevComposite = box.composite || "";
-      if (prevComposite) {
-        this.ctx.save();
-        this.ctx.globalCompositeOperation = prevComposite;
-      }
-      if (box.gradient) {
-        this._drawGradient(box.gradient, b, box.borderRadius);
-      } else {
-        this.ctx.fillStyle = box.backgroundColor;
-        this.ctx.beginPath();
-        this.ctx.roundRect(b.x, b.y, b.width, b.height, box.borderRadius);
-        this.ctx.fill();
-      }
-      if (prevComposite) {
-        this.ctx.restore();
-      }
-      if (box.backgroundPattern && box.backgroundPattern.type === "grid") {
-        this._drawBoxGridPattern(box, b);
-      }
-    }
-    /** 绘制 Box 内的网格背景图案 */
-    _drawBoxGridPattern(box, b) {
-      var _a, _b, _c;
-      const pattern = box.backgroundPattern;
-      const cellSize = (_a = pattern.cellSize) != null ? _a : 20;
-      const lineColor = (_b = pattern.lineColor) != null ? _b : "#2a2a3a";
-      const lineWidth = (_c = pattern.lineWidth) != null ? _c : 1;
-      this.ctx.save();
-      this.ctx.strokeStyle = lineColor;
-      this.ctx.lineWidth = lineWidth;
-      this.ctx.beginPath();
-      this.ctx.roundRect(b.x, b.y, b.width, b.height, box.borderRadius);
-      this.ctx.clip();
-      for (let x = b.x; x <= b.x + b.width; x += cellSize) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(x, b.y);
-        this.ctx.lineTo(x, b.y + b.height);
-        this.ctx.stroke();
-      }
-      for (let y = b.y; y <= b.y + b.height; y += cellSize) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(b.x, y);
-        this.ctx.lineTo(b.x + b.width, y);
-        this.ctx.stroke();
-      }
-      this.ctx.restore();
-      if (this._frameCount === 1) {
-        const vLines = Math.floor(b.width / cellSize) + 1;
-        const hLines = Math.floor(b.height / cellSize) + 1;
-      }
-    }
-    _drawGradient(grad, b, radius) {
-      let fillStyle;
-      if (grad.type === "linear") {
-        const angle = grad.angle * Math.PI / 180;
-        const halfW = b.width / 2;
-        const halfH = b.height / 2;
-        fillStyle = this.ctx.createLinearGradient(
-          b.x + halfW - Math.cos(angle) * halfW,
-          b.y + halfH - Math.sin(angle) * halfH,
-          b.x + halfW + Math.cos(angle) * halfW,
-          b.y + halfH + Math.sin(angle) * halfH
-        );
-      } else {
-        fillStyle = this.ctx.createRadialGradient(
-          b.x + b.width / 2,
-          b.y + b.height / 2,
-          0,
-          b.x + b.width / 2,
-          b.y + b.height / 2,
-          Math.max(b.width, b.height) / 2
-        );
-      }
-      for (const stop of grad.stops) {
-        fillStyle.addColorStop(stop.offset, stop.color);
-      }
-      this.ctx.fillStyle = fillStyle;
-      this.ctx.beginPath();
-      this.ctx.roundRect(b.x, b.y, b.width, b.height, radius);
-      this.ctx.fill();
-    }
-    _drawScrollbar(box, b) {
-      const content = box.getContentSize();
-      const viewportH = b.height - box.padding.top - box.padding.bottom;
-      const viewportW = b.width - box.padding.left - box.padding.right;
-      const maxScroll = box.getMaxScroll();
-      if (maxScroll.maxY > 0 && (box.scrollDirection === "vertical" || box.scrollDirection === "both")) {
-        const trackHeight = viewportH;
-        const thumbHeight = Math.max(20, viewportH / content.height * trackHeight);
-        const thumbY = b.y + box.padding.top + box.scrollY / maxScroll.maxY * (trackHeight - thumbHeight);
-        this.ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
-        this.ctx.beginPath();
-        this.ctx.roundRect(b.x + b.width - 6, thumbY, 4, thumbHeight, 2);
-        this.ctx.fill();
-      }
-      if (maxScroll.maxX > 0 && (box.scrollDirection === "horizontal" || box.scrollDirection === "both")) {
-        const trackWidth = viewportW;
-        const thumbWidth = Math.max(20, viewportW / content.width * trackWidth);
-        const thumbX = b.x + box.padding.left + box.scrollX / maxScroll.maxX * (trackWidth - thumbWidth);
-        this.ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
-        this.ctx.beginPath();
-        this.ctx.roundRect(thumbX, b.y + b.height - 6, thumbWidth, 4, 2);
-        this.ctx.fill();
-      }
-    }
-    _drawCursorBorder(b, data) {
-      const ctx = this.ctx;
-      const color = data.color || "rgba(0,212,255,0.7)";
-      const x = b.x;
-      const y = b.y;
-      const h = b.height;
-      const R = 4;
-      const EW = 3;
-      const NW = 1;
-      const seg = 12;
-      ctx.save();
-      ctx.fillStyle = color;
-      ctx.strokeStyle = color;
-      ctx.lineCap = "butt";
-      ctx.fillRect(x - 1.65, y + R, EW, h - R * 2);
-      const tlCx = x + R, tlCy = y + R + 0.1;
-      for (let i = 0; i < seg; i++) {
-        const t = (i + 0.5) / seg;
-        ctx.lineWidth = EW + (NW - EW) * t;
-        const a1 = Math.PI + Math.PI / 2 * (i / seg);
-        const a2 = Math.PI + Math.PI / 2 * ((i + 1) / seg);
-        ctx.beginPath();
-        ctx.arc(tlCx, tlCy, R, a1, a2, false);
-        ctx.stroke();
-      }
-      const blCx = x + R, blCy = y + h - R;
-      for (let i = 0; i < seg; i++) {
-        const t = (i + 0.5) / seg;
-        ctx.lineWidth = NW + (EW - NW) * t;
-        const a1 = Math.PI / 2 + Math.PI / 2 * (i / seg);
-        const a2 = Math.PI / 2 + Math.PI / 2 * ((i + 1) / seg);
-        ctx.beginPath();
-        ctx.arc(blCx, blCy, R, a1, a2, false);
-        ctx.stroke();
-      }
-      const topW = data.topLineW || 0;
-      if (topW > 0) {
-        ctx.lineWidth = NW;
-        ctx.beginPath();
-        ctx.moveTo(x + R, y);
-        ctx.lineTo(x + R + topW, y);
-        ctx.stroke();
-      }
-      const botW = data.botLineW || 0;
-      if (botW > 0) {
-        ctx.lineWidth = NW;
-        ctx.beginPath();
-        ctx.moveTo(x + R, y + h);
-        ctx.lineTo(x + R + botW, y + h);
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
-    _drawBorder(box, b) {
-      const cdata = box.data;
-      if (cdata == null ? void 0 : cdata.cursorDynamicLines) {
-        this._drawCursorBorder(b, cdata);
-        return;
-      }
-      if (box.kfmStyle) {
-        drawBorders(this.ctx, b.x, b.y, b.width, b.height, box.kfmStyle);
-        return;
-      }
-      const border = box.border;
-      if (!border || border.width <= 0) return;
-      const { color, width, sides } = border;
-      this.ctx.strokeStyle = color;
-      this.ctx.lineWidth = width;
-      this.ctx.lineCap = "round";
-      const x = b.x, y = b.y, w = b.width, h = b.height, r = box.borderRadius;
-      this.ctx.beginPath();
-      if (sides.top) {
-        this.ctx.moveTo(x + r, y);
-        this.ctx.lineTo(x + w - r, y);
-      }
-      if (sides.right) {
-        this.ctx.moveTo(x + w, y + r);
-        this.ctx.lineTo(x + w, y + h - r);
-      }
-      if (sides.bottom) {
-        this.ctx.moveTo(x + w - r, y + h);
-        this.ctx.lineTo(x + r, y + h);
-      }
-      if (sides.left) {
-        this.ctx.moveTo(x, y + h - r);
-        this.ctx.lineTo(x, y + r);
-      }
-      this.ctx.stroke();
-      if (sides.top && sides.right && sides.bottom && sides.left) {
-        this.ctx.beginPath();
-        this.ctx.roundRect(x, y, w, h, r);
-        this.ctx.stroke();
-      }
-    }
-    _drawHighlight(box, b) {
-      const hl = box.highlight;
-      if (!hl) return;
-      this.ctx.strokeStyle = hl.color;
-      this.ctx.lineWidth = hl.width;
-      this.ctx.lineCap = "round";
-      if (hl.side === "all") {
-        if (box.borderRadius > 0) {
-          this.ctx.roundRect(b.x, b.y, b.width, b.height, box.borderRadius);
-        } else {
-          this.ctx.strokeRect(b.x, b.y, b.width, b.height);
-        }
-      } else {
-        this.ctx.beginPath();
-        this.ctx.moveTo(b.x + hl.width / 2, b.y + 4);
-        this.ctx.lineTo(b.x + hl.width / 2, b.y + b.height - 4);
-        this.ctx.stroke();
-      }
-    }
-    _drawIcon(icon, b, padding) {
-      const iconX = icon.position === "left" ? b.x + padding.left : b.x + b.width - padding.right - icon.size;
-      const iconY = b.y + padding.top;
-      this.ctx.font = `${icon.size}px system-ui`;
-      this.ctx.fillStyle = "#e0e0e0";
-      this.ctx.textBaseline = "top";
-      this.ctx.textAlign = "left";
-      this.ctx.fillText(icon.char, iconX, iconY);
-    }
-    // ============================================================
-    // Pretext 文本渲染
-    // ============================================================
-    _getTextKey(text, font) {
-      return `${font}::${text}`;
-    }
-    _drawText(style, b, padding, icon) {
-      if (!style.content) return;
-      const iconWidth = icon && icon.position === "left" ? icon.size + 8 : 0;
-      const iconRightWidth = icon && icon.position === "right" ? icon.size + 8 : 0;
-      const textX = b.x + padding.left + iconWidth;
-      const textY = b.y + padding.top;
-      const maxWidth = b.width - padding.left - padding.right - iconWidth - iconRightWidth;
-      if (maxWidth <= 0) return;
-      const key = this._getTextKey(style.content, style.font);
-      let prepared = this._pretextCache.get(key);
-      if (!prepared) {
-        try {
-          prepared = prepareWithSegments(style.content, style.font);
-          this._pretextCache.set(key, prepared);
-        } catch {
-          this._drawTextFallback(style, textX, textY, maxWidth, b, padding);
-          return;
-        }
-      }
-      const { lines } = layoutWithLines(prepared, maxWidth, style.lineHeight);
-      const maxL = style.maxLines > 0 ? style.maxLines : lines.length;
-      const visibleLines = lines.slice(0, maxL);
-      const totalTextHeight = visibleLines.length * style.lineHeight;
-      const availableHeight = b.height - padding.top - padding.bottom;
-      let offsetY = 0;
-      if (style.verticalAlign === "middle") {
-        offsetY = (availableHeight - totalTextHeight) / 2;
-      } else if (style.verticalAlign === "bottom") {
-        offsetY = availableHeight - totalTextHeight;
-      }
-      this.ctx.font = style.font;
-      this.ctx.fillStyle = style.color;
-      this.ctx.textBaseline = "middle";
-      const metrics = this.ctx.measureText("Ag");
-      const fontHeight = Math.abs(metrics.actualBoundingBoxAscent) + Math.abs(metrics.actualBoundingBoxDescent);
-      const lineGap = (style.lineHeight - fontHeight) / 2;
-      for (let i = 0; i < visibleLines.length; i++) {
-        const line = visibleLines[i];
-        let lineText = line.text;
-        const isOverflowing = style.overflow === "ellipsis";
-        const isTrimmed = lines.length > maxL || maxL === 1 && line.width >= maxWidth - 2;
-        if (isOverflowing && i === maxL - 1 && isTrimmed) {
-          lineText = lineText.slice(0, -1) + "\u2026";
-          line.width = this.ctx.measureText(lineText).width;
-        }
-        let alignX = textX;
-        if (style.align === "center") {
-          alignX = textX + (maxWidth - line.width) / 2;
-        } else if (style.align === "right") {
-          alignX = textX + maxWidth - line.width;
-        }
-        const lineCenterY = textY + offsetY + i * style.lineHeight + style.lineHeight / 2;
-        this.ctx.fillText(lineText, alignX, lineCenterY);
-      }
-    }
-    /** 简单文本渲染回退（Pretext 不可用时） */
-    _drawTextFallback(style, x, y, maxWidth, b, padding) {
-      this.ctx.font = style.font;
-      this.ctx.fillStyle = style.color;
-      this.ctx.textBaseline = "middle";
-      const centerY = y + (b.height - padding.top - padding.bottom) / 2;
-      let text = style.content;
-      const measured = this.ctx.measureText(text);
-      if (measured.width > maxWidth) {
-        while (text.length > 0 && this.ctx.measureText(text + "\u2026").width > maxWidth) {
-          text = text.slice(0, -1);
-        }
-        text += "\u2026";
-      }
-      this.ctx.fillText(text, x, centerY);
-    }
-    // ============================================================
-    // 碰撞检测
-    // ============================================================
-    /** 获取指定坐标下最顶层的可交互 Box */
-    hitTest(x, y) {
-      if (!this._root) return null;
-      return this._hitTestRecursive(this._root, x, y);
-    }
-    _hitTestRecursive(box, x, y) {
-      if (!box.visible || !box.interactive || box.disabled) return null;
-      for (let i = box.children.length - 1; i >= 0; i--) {
-        const found = this._hitTestRecursive(box.children[i], x, y);
-        if (found) return found;
-      }
-      if (box.containsPoint(x, y)) {
-        if (box.gesture) {
-          const hasCallbacks = this._hasGestureCallbacks(box.gesture);
-          const isPassive = box.gesture.passive !== false;
-          if (isPassive && !hasCallbacks) {
-            return null;
-          }
-        }
-        return box;
-      }
-      return null;
-    }
-    /** 检测 gesture 是否绑定了任何回调 */
-    _hasGestureCallbacks(gesture) {
-      return !!(gesture.onTap || gesture.onLongPress || gesture.onSwipeLeft || gesture.onSwipeRight || gesture.onSwipeUp || gesture.onSwipeDown || gesture.onPan || gesture.onPanEnd || gesture.onPinch || gesture.onRotate || gesture.onCancel);
-    }
-    // ============================================================
-    // 缓存管理
-    // ============================================================
-    clearTextCache() {
-      this._pretextCache.clear();
-    }
-  };
-
-  // src/client/engine/v2/utils.ts
-  var ZERO_SPACING = { top: 0, right: 0, bottom: 0, left: 0 };
-
-  // src/client/engine/v2/animation.ts
-  function ease(name, t) {
-    switch (name) {
-      case "linear":
-        return t;
-      case "easeInQuad":
-        return t * t;
-      case "easeOutQuad":
-        return t * (2 - t);
-      case "easeInOutQuad":
-        return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-      case "easeInCubic":
-        return t * t * t;
-      case "easeOutCubic": {
-        const t1 = t - 1;
-        return t1 * t1 * t1 + 1;
-      }
-      case "easeInOutCubic":
-        return t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
-      case "easeOutElastic": {
-        const p = 0.3;
-        return Math.pow(2, -10 * t) * Math.sin((t - p / 4) * (2 * Math.PI) / p) + 1;
-      }
-      case "easeOutBounce": {
-        if (t < 1 / 2.75) return 7.5625 * t * t;
-        if (t < 2 / 2.75) {
-          const t1 = t - 1.5 / 2.75;
-          return 7.5625 * t1 * t1 + 0.75;
-        }
-        if (t < 2.5 / 2.75) {
-          const t1 = t - 2.25 / 2.75;
-          return 7.5625 * t1 * t1 + 0.9375;
-        }
-        {
-          const t1 = t - 2.625 / 2.75;
-          return 7.5625 * t1 * t1 + 0.984375;
-        }
-      }
-    }
-  }
-
-  // src/client/engine/v2/box.ts
-  var Box = class _Box {
-    constructor(options = {}) {
-      // --- 身份 ---
-      __publicField(this, "id");
-      __publicField(this, "type");
-      // --- 几何 ---
-      __publicField(this, "x");
-      __publicField(this, "y");
-      __publicField(this, "width");
-      __publicField(this, "height");
-      // --- 盒模型 ---
-      __publicField(this, "padding");
-      __publicField(this, "margin");
-      // --- 视觉 ---
-      __publicField(this, "backgroundColor");
-      __publicField(this, "gradient");
-      __publicField(this, "backgroundPattern");
-      // Phase 2 Demo：网格背景
-      __publicField(this, "borderRadius");
-      __publicField(this, "opacity");
-      __publicField(this, "visible");
-      // --- 边框 ---
-      __publicField(this, "border");
-      __publicField(this, "highlight");
-      // --- 阴影 ---
-      __publicField(this, "shadow");
-      // --- 文本 ---
-      __publicField(this, "textStyle");
-      // --- 图标 ---
-      __publicField(this, "icon");
-      // --- 交互 ---
-      __publicField(this, "interactive");
-      __publicField(this, "disabled");
-      __publicField(this, "selected");
-      __publicField(this, "state");
-      __publicField(this, "stateStyles");
-      // --- 层级 ---
-      __publicField(this, "zIndex");
-      __publicField(this, "overflow");
-      // --- 变换 ---
-      __publicField(this, "transform");
-      // --- 动画 ---
-      __publicField(this, "animations");
-      // --- 树形 ---
-      __publicField(this, "children");
-      __publicField(this, "parent");
-      __publicField(this, "data");
-      // --- Flex 布局 ---
-      __publicField(this, "layout");
-      __publicField(this, "layoutItem");
-      // --- 滚动容器 ---
-      __publicField(this, "scrollable");
-      __publicField(this, "scrollX");
-      __publicField(this, "scrollY");
-      __publicField(this, "scrollDirection");
-      __publicField(this, "scrollbarVisible");
-      // --- KFM 边���样式（高级）---
-      __publicField(this, "kfmStyle");
-      __publicField(this, "composite");
-      // --- 手势配置（D-013 决策）---
-      __publicField(this, "gesture");
-      // 矢量形状（Phase 2 Demo）
-      __publicField(this, "shape");
-      // 可输入配置
-      __publicField(this, "inputable");
-      // --- 事件 ---
-      __publicField(this, "eventHandlers");
-      // --- 缓存 ---
-      __publicField(this, "_contentWidth");
-      __publicField(this, "_contentHeight");
-      var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _A, _B, _C, _D, _E, _F, _G, _H, _I, _J, _K, _L, _M, _N, _O, _P, _Q, _R, _S, _T, _U, _V, _W, _X;
-      this.id = options.id || `box_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-      this.type = (_a = options.type) != null ? _a : "container";
-      this.x = (_b = options.x) != null ? _b : 0;
-      this.y = (_c = options.y) != null ? _c : 0;
-      this.width = (_d = options.width) != null ? _d : 100;
-      this.height = (_e = options.height) != null ? _e : 40;
-      this.padding = { ...ZERO_SPACING, ...options.padding };
-      this.margin = { ...ZERO_SPACING, ...options.margin };
-      this.backgroundColor = (_f = options.backgroundColor) != null ? _f : "#12121a";
-      this.gradient = (_g = options.gradient) != null ? _g : null;
-      this.backgroundPattern = (_h = options.backgroundPattern) != null ? _h : null;
-      this.borderRadius = (_i = options.borderRadius) != null ? _i : 8;
-      this.opacity = (_j = options.opacity) != null ? _j : 1;
-      this.visible = (_k = options.visible) != null ? _k : true;
-      this.border = (_l = options.border) != null ? _l : null;
-      this.highlight = (_m = options.highlight) != null ? _m : null;
-      this.shadow = (_n = options.shadow) != null ? _n : null;
-      this.textStyle = {
-        content: (_o = options.text) != null ? _o : "",
-        color: (_p = options.textColor) != null ? _p : "#e0e0e0",
-        font: (_q = options.font) != null ? _q : "14px system-ui, sans-serif",
-        lineHeight: (_r = options.lineHeight) != null ? _r : 20,
-        align: (_s = options.textAlign) != null ? _s : "left",
-        verticalAlign: (_t = options.textVerticalAlign) != null ? _t : "middle",
-        overflow: (_u = options.textOverflow) != null ? _u : "ellipsis",
-        maxLines: (_v = options.maxLines) != null ? _v : 1
-      };
-      this.icon = options.icon ? { char: options.icon, size: (_w = options.iconSize) != null ? _w : 16, position: (_x = options.iconPosition) != null ? _x : "left" } : null;
-      this.interactive = (_y = options.interactive) != null ? _y : this.type === "button" || this.type === "list-item";
-      this.disabled = (_z = options.disabled) != null ? _z : false;
-      this.selected = (_A = options.selected) != null ? _A : false;
-      this.state = "normal";
-      this.stateStyles = (_B = options.stateStyles) != null ? _B : {};
-      this.zIndex = (_C = options.zIndex) != null ? _C : 0;
-      this.overflow = (_D = options.overflow) != null ? _D : "visible";
-      this.transform = {
-        scale: (_F = (_E = options.transform) == null ? void 0 : _E.scale) != null ? _F : 1,
-        rotate: (_H = (_G = options.transform) == null ? void 0 : _G.rotate) != null ? _H : 0,
-        translateX: (_J = (_I = options.transform) == null ? void 0 : _I.translateX) != null ? _J : 0,
-        translateY: (_L = (_K = options.transform) == null ? void 0 : _K.translateY) != null ? _L : 0
-      };
-      this.animations = [];
-      this.children = (_M = options.children) != null ? _M : [];
-      this.parent = null;
-      this.data = (_N = options.data) != null ? _N : {};
-      this.children.forEach((child) => {
-        child.parent = this;
-      });
-      this.layout = (_O = options.layout) != null ? _O : null;
-      this.layoutItem = (_P = options.layoutItem) != null ? _P : null;
-      this.scrollable = (_Q = options.scrollable) != null ? _Q : false;
-      this.scrollX = (_R = options.scrollX) != null ? _R : 0;
-      this.scrollY = (_S = options.scrollY) != null ? _S : 0;
-      this.scrollDirection = (_T = options.scrollDirection) != null ? _T : "vertical";
-      this.scrollbarVisible = (_U = options.scrollbarVisible) != null ? _U : true;
-      this.kfmStyle = (_V = options.kfmStyle) != null ? _V : null;
-      this.composite = options.composite || "";
-      this.gesture = (_W = options.gesture) != null ? _W : null;
-      this.shape = (_X = options.shape) != null ? _X : null;
-      if (options.inputable) {
-        this.inputable = typeof options.inputable === "boolean" ? { enabled: options.inputable } : options.inputable;
-      } else {
-        this.inputable = null;
-      }
-      this.eventHandlers = /* @__PURE__ */ new Map();
-      this._contentWidth = null;
-      this._contentHeight = null;
-    }
-    // ============================================================
-    // 几何计算
-    // ============================================================
-    /** 内容区域（去掉 padding 后的矩形） */
-    get contentRect() {
-      return {
-        x: this.padding.left,
-        y: this.padding.top,
-        width: this.width - this.padding.left - this.padding.right,
-        height: this.height - this.padding.top - this.padding.bottom
-      };
-    }
-    /** 绝对位置（含所有父级偏移） */
-    getAbsolutePosition() {
-      let x = this.x;
-      let y = this.y;
-      let p = this.parent;
-      while (p) {
-        x += p.x + p.padding.left;
-        y += p.y + p.padding.top;
-        p = p.parent;
-      }
-      return { x, y };
-    }
-    /** 考虑 transform 后的包围盒 */
-    getBounds() {
-      const pos = this.getAbsolutePosition();
-      const s = this.transform.scale;
-      return {
-        x: pos.x + this.transform.translateX,
-        y: pos.y + this.transform.translateY,
-        width: this.width * s,
-        height: this.height * s
-      };
-    }
-    /** 点是否在 Box 内 */
-    containsPoint(px, py) {
-      const b = this.getBounds();
-      return px >= b.x && px <= b.x + b.width && py >= b.y && py <= b.y + b.height;
-    }
-    // ============================================================
-    // 滚动相关
-    // ============================================================
-    /** 计算内容实际尺寸（Flex 布局后的子元素边界） */
-    getContentSize() {
-      if (this.children.length === 0) {
-        return { width: 0, height: 0 };
-      }
-      let maxRight = 0;
-      let maxBottom = 0;
-      for (const child of this.children) {
-        const childRight = child.x + child.width;
-        const childBottom = child.y + child.height;
-        maxRight = Math.max(maxRight, childRight);
-        maxBottom = Math.max(maxBottom, childBottom);
-      }
-      return { width: maxRight, height: maxBottom };
-    }
-    /** 获取最大滚动偏移 */
-    getMaxScroll() {
-      const content = this.getContentSize();
-      const viewportW = this.width - this.padding.left - this.padding.right;
-      const viewportH = this.height - this.padding.top - this.padding.bottom;
-      return {
-        maxX: Math.max(0, content.width - viewportW),
-        maxY: Math.max(0, content.height - viewportH)
-      };
-    }
-    /** 将滚动偏移限制在合法范围内 */
-    clampScroll() {
-      const max = this.getMaxScroll();
-      if (this.scrollDirection === "vertical" || this.scrollDirection === "both") {
-        this.scrollY = Math.max(0, Math.min(this.scrollY, max.maxY));
-      }
-      if (this.scrollDirection === "horizontal" || this.scrollDirection === "both") {
-        this.scrollX = Math.max(0, Math.min(this.scrollX, max.maxX));
-      }
-    }
-    // ============================================================
-    // 树操作
-    // ============================================================
-    addChild(child) {
-      child.parent = this;
-      this.children.push(child);
-      return this;
-    }
-    removeChild(child) {
-      const i = this.children.indexOf(child);
-      if (i > -1) {
-        this.children.splice(i, 1);
-        child.parent = null;
-      }
-      return this;
-    }
-    /** 深度优先查找 */
-    find(predicate) {
-      if (predicate(this)) return this;
-      for (const child of this.children) {
-        const found = child.find(predicate);
-        if (found) return found;
-      }
-      return null;
-    }
-    /** 扁平化所有后代 */
-    flatten(result = []) {
-      result.push(this);
-      for (const child of this.children) {
-        child.flatten(result);
-      }
-      return result;
-    }
-    // ============================================================
-    // 交互
-    // ============================================================
-    on(event, handler) {
-      this.eventHandlers.set(event, handler);
-      return this;
-    }
-    off(event) {
-      this.eventHandlers.delete(event);
-      return this;
-    }
-    emit(event, x, y, originalEvent) {
-      const handler = this.eventHandlers.get(event);
-      if (handler) {
-        handler({ box: this, x, y, originalEvent });
-      }
-    }
-    setState(state) {
-      if (this.state === state) return;
-      this.state = state;
-    }
-    /** 获取当前状态对应的样式覆盖 */
-    getStateStyle() {
-      var _a, _b;
-      return (_b = (_a = this.stateStyles[this.state]) != null ? _a : this.stateStyles.normal) != null ? _b : {};
-    }
-    // ============================================================
-    // 动画
-    // ============================================================
-    animate(prop, to, duration, easing = "easeOutCubic", onComplete) {
-      const from = this.getAnimProp(prop);
-      this.animations.push({
-        prop,
-        from,
-        to,
-        duration,
-        startTime: performance.now(),
-        easing,
-        onComplete
-      });
-      return this;
-    }
-    getAnimProp(prop) {
-      switch (prop) {
-        case "opacity":
-          return this.opacity;
-        case "scale":
-          return this.transform.scale;
-        case "rotate":
-          return this.transform.rotate;
-        case "translateX":
-          return this.transform.translateX;
-        case "translateY":
-          return this.transform.translateY;
-        case "x":
-          return this.x;
-        case "y":
-          return this.y;
-        case "width":
-          return this.width;
-        case "height":
-          return this.height;
-      }
-    }
-    setAnimProp(prop, value) {
-      switch (prop) {
-        case "opacity":
-          this.opacity = value;
-          break;
-        case "scale":
-          this.transform.scale = value;
-          break;
-        case "rotate":
-          this.transform.rotate = value;
-          break;
-        case "translateX":
-          this.transform.translateX = value;
-          break;
-        case "translateY":
-          this.transform.translateY = value;
-          break;
-        case "x":
-          this.x = value;
-          break;
-        case "y":
-          this.y = value;
-          break;
-        case "width":
-          this.width = value;
-          break;
-        case "height":
-          this.height = value;
-          break;
-      }
-    }
-    /** 更新所有活跃动画，返回是否有动画在播放 */
-    tickAnimations(now) {
-      let active = false;
-      this.animations = this.animations.filter((anim) => {
-        var _a;
-        const elapsed = now - anim.startTime;
-        const progress = Math.min(elapsed / anim.duration, 1);
-        const eased = ease(anim.easing, progress);
-        const value = anim.from + (anim.to - anim.from) * eased;
-        this.setAnimProp(anim.prop, value);
-        if (progress >= 1) {
-          (_a = anim.onComplete) == null ? void 0 : _a.call(anim);
-          return false;
-        }
-        active = true;
-        return true;
-      });
-      for (const child of this.children) {
-        if (child.tickAnimations(now)) active = true;
-      }
-      return active;
-    }
-    // ============================================================
-    // 工具
-    // ============================================================
-    clone() {
-      return new _Box({
-        ...this.serialize(),
-        id: void 0,
-        children: this.children.map((c) => c.clone())
-      });
-    }
-    serialize() {
-      var _a, _b, _c, _d, _e, _f;
-      return {
-        id: this.id,
-        type: this.type,
-        x: this.x,
-        y: this.y,
-        width: this.width,
-        height: this.height,
-        padding: { ...this.padding },
-        margin: { ...this.margin },
-        backgroundColor: this.backgroundColor,
-        gradient: this.gradient ? { ...this.gradient } : null,
-        borderRadius: this.borderRadius,
-        opacity: this.opacity,
-        visible: this.visible,
-        border: this.border ? { ...this.border } : null,
-        highlight: this.highlight ? { ...this.highlight } : null,
-        shadow: this.shadow ? { ...this.shadow } : null,
-        text: this.textStyle.content,
-        textColor: this.textStyle.color,
-        font: this.textStyle.font,
-        lineHeight: this.textStyle.lineHeight,
-        textAlign: this.textStyle.align,
-        textVerticalAlign: this.textStyle.verticalAlign,
-        textOverflow: this.textStyle.overflow,
-        maxLines: this.textStyle.maxLines,
-        icon: (_b = (_a = this.icon) == null ? void 0 : _a.char) != null ? _b : null,
-        iconSize: (_c = this.icon) == null ? void 0 : _c.size,
-        iconPosition: (_d = this.icon) == null ? void 0 : _d.position,
-        interactive: this.interactive,
-        disabled: this.disabled,
-        selected: this.selected,
-        stateStyles: { ...this.stateStyles },
-        zIndex: this.zIndex,
-        overflow: this.overflow,
-        transform: { ...this.transform },
-        layout: (_e = this.layout) != null ? _e : void 0,
-        layoutItem: (_f = this.layoutItem) != null ? _f : void 0,
-        scrollable: this.scrollable,
-        scrollX: this.scrollX,
-        scrollY: this.scrollY,
-        scrollDirection: this.scrollDirection,
-        scrollbarVisible: this.scrollbarVisible,
-        kfmStyle: this.kfmStyle ? { ...this.kfmStyle } : null,
-        gesture: this.gesture ? { ...this.gesture } : null,
-        shape: this.shape ? { ...this.shape, points: [...this.shape.points] } : null,
-        inputable: this.inputable ? { ...this.inputable } : void 0,
-        data: { ...this.data }
-      };
-    }
-  };
-
-  // src/client/modules/style-registry.ts
-  var DIMENSIONS = {
-    BOX_HEIGHT: 26,
-    SIDEBAR_WIDTH: 295,
-    DISPLAY_WIDTH: 280,
-    RIGHT_MARGIN: 287,
-    INDENT: 18,
-    ROW_PAD: 8,
-    TRIANGLE_SIZE: 9,
-    TRIANGLE_GAP: 5
-  };
-  var COLORS = {
-    DIR: "#7c3aed",
-    FILE: "#e0e0e0",
-    ACCENT: "#00d4ff",
-    SELECTED_BG: "rgba(124,58,237,0.15)",
-    CANVAS_BG: "rgba(10,10,15,0.85)"
-  };
-  var FONT = "11px system-ui, sans-serif";
-  var LINE_HEIGHT = 20;
-  var MAX_LINES = 2;
-  var TEXT_STYLES = {
-    folderLabel: {
-      font: FONT,
-      lineHeight: LINE_HEIGHT,
-      align: "left",
-      verticalAlign: "middle",
-      overflow: "ellipsis",
-      maxLines: MAX_LINES
-    },
-    fileLabel: {
-      font: FONT,
-      lineHeight: LINE_HEIGHT,
-      align: "left",
-      verticalAlign: "middle",
-      overflow: "ellipsis",
-      maxLines: MAX_LINES
-    },
-    toggleIcon: {
-      font: `${DIMENSIONS.TRIANGLE_SIZE}px system-ui, sans-serif`,
-      lineHeight: LINE_HEIGHT,
-      align: "center",
-      verticalAlign: "middle"
-    }
-  };
-  var templates = {
-    "folder-row": {
-      width: DIMENSIONS.SIDEBAR_WIDTH,
-      height: DIMENSIONS.BOX_HEIGHT,
-      backgroundColor: "rgba(124,58,237,0.3)",
-      borderRadius: 0,
-      interactive: true,
-      overflow: "hidden"
-    },
-    "file-row": {
-      width: DIMENSIONS.SIDEBAR_WIDTH,
-      height: DIMENSIONS.BOX_HEIGHT,
-      backgroundColor: "rgba(124,58,237,0.3)",
-      borderRadius: 0,
-      interactive: true,
-      overflow: "hidden"
-    },
-    "toggle-icon": {
-      width: DIMENSIONS.TRIANGLE_SIZE,
-      height: DIMENSIONS.BOX_HEIGHT,
-      backgroundColor: "transparent",
-      borderRadius: 0,
-      interactive: false
-    },
-    "folder-label": {
-      height: DIMENSIONS.BOX_HEIGHT,
-      backgroundColor: "transparent",
-      borderRadius: 0,
-      interactive: false
-    },
-    "file-label": {
-      height: DIMENSIONS.BOX_HEIGHT,
-      backgroundColor: "transparent",
-      borderRadius: 0,
-      interactive: false
-    },
-    "folder-container": {
-      backgroundColor: "transparent",
-      borderRadius: 4
-    },
-    "sidebar-root": {
-      width: DIMENSIONS.SIDEBAR_WIDTH,
-      height: 0,
-      backgroundColor: "transparent",
-      borderRadius: 0
-    }
-  };
-  var styleRegistry = {
-    get(name) {
-      const t = templates[name];
-      return t ? { ...t } : void 0;
-    },
-    set(name, updates) {
-      const old = templates[name];
-      if (!old) {
-        templates[name] = { ...updates };
-      } else {
-        Object.assign(templates[name], updates);
-      }
-      KFMState.notify();
-    },
-    patch(patches) {
-      for (const [name, updates] of Object.entries(patches)) {
-        const old = templates[name];
-        if (!old) {
-          templates[name] = { ...updates };
-        } else {
-          Object.assign(templates[name], updates);
-        }
-      }
-      KFMState.notify();
-    },
-    subscribe(fn) {
-      KFMState.subscribe(fn);
-    },
-    unsubscribe(fn) {
-      KFMState.unsubscribe(fn);
-    }
-  };
-  function createBox(templateName, overrides) {
-    if (!templates[templateName]) {
-      console.warn(`[style-registry] unknown template: "${templateName}"`);
-    }
-    const base = styleRegistry.get(templateName) || {};
-    return new Box({ ...base, ...overrides });
-  }
-  if (typeof window !== "undefined") {
-    window.styleRegistry = styleRegistry;
-    window.DIMENSIONS = DIMENSIONS;
-    window.COLORS = COLORS;
-    window.TEXT_STYLES = TEXT_STYLES;
-  }
-
-  // src/client/engine/v2/StyleConfig.ts
-  var DEFAULT_BOX_STYLE = {
-    border: { left: "emphasis", bottom: "normal", top: "hidden", right: "hidden" },
-    borderWidth: 1,
-    emphasisScale: 3,
-    cornerRadius: 12,
-    borderColor: "#7c3aed",
-    glowEnabled: false,
-    glowRadius: 8,
-    background: "glass",
-    backgroundOpacity: 0.6
-  };
-  var PRESETS = {
-    "default": {},
-    // use DEFAULT_BOX_STYLE
-    "all-emphasis": {
-      border: { top: "emphasis", right: "emphasis", bottom: "emphasis", left: "emphasis" }
-    },
-    "all-hidden": {
-      border: { top: "hidden", right: "hidden", bottom: "hidden", left: "hidden" },
-      background: "glass",
-      backgroundOpacity: 0.4
-    },
-    "left-emphasis-rest-hidden": {
-      border: { left: "emphasis", top: "hidden", right: "hidden", bottom: "hidden" }
-    },
-    "left-bottom-normal": {
-      border: { left: "normal", bottom: "normal", top: "hidden", right: "hidden" }
-    },
-    "bottom-right-normal": {
-      border: { bottom: "normal", right: "normal", top: "hidden", left: "hidden" }
-    },
-    "left-right-emphasis": {
-      border: { left: "emphasis", right: "emphasis", top: "hidden", bottom: "hidden" }
-    }
-  };
-  function resolveStyle(preset, overrides) {
-    var base = { ...DEFAULT_BOX_STYLE };
-    var p = PRESETS[preset];
-    if (p) {
-      if (p.border) base.border = { ...base.border, ...p.border };
-      if (p.borderWidth !== void 0) base.borderWidth = p.borderWidth;
-      if (p.emphasisScale !== void 0) base.emphasisScale = p.emphasisScale;
-      if (p.cornerRadius !== void 0) base.cornerRadius = p.cornerRadius;
-      if (p.borderColor !== void 0) base.borderColor = p.borderColor;
-      if (p.glowEnabled !== void 0) base.glowEnabled = p.glowEnabled;
-      if (p.glowRadius !== void 0) base.glowRadius = p.glowRadius;
-      if (p.background !== void 0) base.background = p.background;
-      if (p.backgroundOpacity !== void 0) base.backgroundOpacity = p.backgroundOpacity;
-      if (p.backgroundFill !== void 0) base.backgroundFill = p.backgroundFill;
-    }
-    if (overrides) {
-      if (overrides.border) base.border = { ...base.border, ...overrides.border };
-      if (overrides.borderWidth !== void 0) base.borderWidth = overrides.borderWidth;
-      if (overrides.emphasisScale !== void 0) base.emphasisScale = overrides.emphasisScale;
-      if (overrides.cornerRadius !== void 0) base.cornerRadius = overrides.cornerRadius;
-      if (overrides.borderColor !== void 0) base.borderColor = overrides.borderColor;
-      if (overrides.glowEnabled !== void 0) base.glowEnabled = overrides.glowEnabled;
-      if (overrides.glowRadius !== void 0) base.glowRadius = overrides.glowRadius;
-      if (overrides.background !== void 0) base.background = overrides.background;
-      if (overrides.backgroundOpacity !== void 0) base.backgroundOpacity = overrides.backgroundOpacity;
-      if (overrides.backgroundFill !== void 0) base.backgroundFill = overrides.backgroundFill;
-    }
-    return base;
   }
 
   // src/client/modules/tree-model.ts
@@ -9683,146 +8731,45 @@
   };
   var L = new RendererLifecycle();
 
-  // src/client/modules/tree-render.ts
-  function _ensureSubscribed() {
-    if (L._stateSub) KFMState.unsubscribe(L._stateSub);
-    L._stateSub = () => {
-      L._animBusy = false;
-      L._animBusyAt = 0;
-      L._clickQueue = [];
-      rebuildTree();
-    };
-    KFMState.subscribe(L._stateSub);
+  // src/client/modules/canvas-utils.ts
+  function getRootScrollY() {
+    var _a, _b, _c;
+    return (_c = (_b = (_a = L.renderer) == null ? void 0 : _a.getRoot()) == null ? void 0 : _b.scrollY) != null ? _c : null;
   }
-  function markAnimatingPath(path) {
-    L.animatingPath = path;
-  }
-  function triggerExpandAnimation(path) {
-    var _a, _b, _c, _d;
+  function setRootScrollY(val) {
+    var _a;
     const root = (_a = L.renderer) == null ? void 0 : _a.getRoot();
     if (!root) return;
-    const container = findBoxById(root, `expanded-${path}`);
-    const titleRow = findBoxById(root, `title-${path}`);
-    const toggle2 = (_b = titleRow == null ? void 0 : titleRow.children) == null ? void 0 : _b.find((c) => {
-      var _a2;
-      return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
-    });
-    if (!container) return;
-    const fullHeight = container._fullHeight || 0;
-    if (!fullHeight) {
-      if (toggle2 && toggle2.transform) {
-        let animFrame2 = function() {
-          const elapsed = performance.now() - startTime;
-          const t = Math.min(elapsed / durationMs, 1);
-          const eased = 1 - (1 - t) * (1 - t);
-          toggle2.transform.rotate = endRot * eased;
-          if (rend) rend.setRoot(rend.getRoot());
-          if (elapsed < durationMs) {
-            requestAnimationFrame(animFrame2);
-          } else {
-          }
-        };
-        var animFrame = animFrame2;
-        toggle2.transform.rotate = 0;
-        const startTime = performance.now();
-        const endRot = Math.PI / 2;
-        const durationMs = 300;
-        const rend = L.renderer;
-        requestAnimationFrame(animFrame2);
-      }
-      (_c = L.renderer) == null ? void 0 : _c.setRoot(L.renderer.getRoot());
-      return;
-    }
-    L.animatingPath = null;
-    const _origYs = container._origYs;
-    if (_origYs && container.children.length === _origYs.length) {
-      container.children.forEach((c, j) => {
-        c.y = _origYs[j];
-      });
-    }
-    container.children.forEach((c) => {
-      c.opacity = 1;
-    });
-    const ancestors = collectAncestors(container, root);
-    L._animBusy = true;
-    L._animBusyAt = Date.now();
-    animateCharRain(container, root, L.renderer);
-    gsapWithCSS.to(container, {
-      height: fullHeight,
-      duration: 0.05,
-      ease: "back.out(1.15)",
-      onUpdate: function() {
-        var _a2;
-        applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
-        (_a2 = L.renderer) == null ? void 0 : _a2.setRoot(L.renderer.getRoot());
-      },
-      onComplete: () => {
-        if (container.kfmStyle && container._savedCr !== void 0) {
-          container.kfmStyle.cornerRadius = container._savedCr;
-        }
-        slideInRows(container, root, toggle2).then(() => {
-          var _a2;
-          fixExpandedToggles(container);
-          (_a2 = L.renderer) == null ? void 0 : _a2.setRoot(L.renderer.getRoot());
-        }).finally(() => {
-          var _a2;
-          L._animBusy = false;
-          L._animBusyAt = 0;
-          const _root = (_a2 = L.renderer) == null ? void 0 : _a2.getRoot();
-          if (_root) {
-            _rebuildRowIndex(_root);
-          }
-          if (L.cursorRowId) {
-            const _t = findBoxById(_root, L.cursorRowId);
-            if (_t) moveCursorTo(_t, false);
-          }
-          processClickQueue();
-        });
-      }
-    });
-    applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
-    (_d = L.renderer) == null ? void 0 : _d.setRoot(L.renderer.getRoot());
+    const maxScroll = root.getMaxScroll().maxY;
+    root.scrollY = Math.max(0, Math.min(val, maxScroll));
   }
-  function fixExpandedToggles(container) {
-    const state = KFMState;
-    if (!state) return;
+  function _rebuildRowIndex(root) {
+    L._rowIndex = [];
     function walk(box) {
-      var _a, _b;
-      if (!box.children) return;
+      var _a;
       for (const child of box.children) {
-        if ((_a = child.id) == null ? void 0 : _a.startsWith("expanded-")) {
-          const path = child.id.slice("expanded-".length);
-          if (state.expandedPaths[path]) {
-            const titleRow = findBoxByIdLocal(child.parent, `title-${path}`);
-            const tog = (_b = titleRow == null ? void 0 : titleRow.children) == null ? void 0 : _b.find((c) => {
-              var _a2;
-              return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
-            });
-            if (tog) {
-              gsapWithCSS.killTweensOf(tog.transform);
-              tog.transform.rotate = Math.PI / 2;
-            }
-          }
+        if (!child.visible || child.disabled) continue;
+        if (child.interactive && ((_a = child.gesture) == null ? void 0 : _a.onTap)) {
+          L._rowIndex.push(child);
         }
         walk(child);
       }
     }
-    walk(container);
+    walk(root);
+    L._rowIndex.sort((a, b) => {
+      return a.getAbsolutePosition().y - b.getAbsolutePosition().y;
+    });
   }
-  function findBoxByIdLocal(root, id) {
-    if (!root) return null;
-    if (root.id === id) return root;
-    if (root.children) {
-      for (const c of root.children) {
-        const found = findBoxByIdLocal(c, id);
-        if (found) return found;
-      }
+  function findBoxById(root, id) {
+    for (const child of root.children) {
+      if (child.id === id) return child;
+      const found = findBoxById(child, id);
+      if (found) return found;
     }
     return null;
   }
-  function isAnimLocked() {
-    return L._animBusy;
-  }
+
+  // src/client/modules/canvas-cursor.ts
   function getRowIndexLength() {
     return L._rowIndex.length;
   }
@@ -9952,146 +8899,6 @@
       }
     }
   }
-  function onSidebarOpen() {
-    var _a;
-    gsapWithCSS.globalTimeline.clear();
-    (_a = L.renderer) == null ? void 0 : _a.stop();
-    L.renderer = null;
-    L.resetForOpen();
-    const fileTree = DOM.fileTree;
-    if (!fileTree) return;
-    const canvas = document.createElement("canvas");
-    canvas.id = "tree-canvas";
-    canvas.style.width = "100%";
-    canvas.style.height = "100%";
-    canvas.style.display = "block";
-    fileTree.innerHTML = "";
-    fileTree.appendChild(canvas);
-    const dpr = window.devicePixelRatio || 1;
-    L.renderer = new Renderer(canvas, {
-      backgroundColor: "rgba(10,10,15,0.85)",
-      dpr
-    });
-    requestAnimationFrame(() => {
-      var _a2, _b;
-      rebuildTree();
-      if (L._savedScrollY > 0) {
-        const root = (_a2 = L.renderer) == null ? void 0 : _a2.getRoot();
-        if (root) {
-          const maxY = root.getMaxScroll().maxY;
-          root.scrollY = Math.min(L._savedScrollY, maxY);
-          const savedVal = root.scrollY;
-          L._savedScrollY = 0;
-          L._restoreMode = true;
-          setTimeout(() => {
-            var _a3;
-            L._restoreMode = false;
-            const r2 = (_a3 = L.renderer) == null ? void 0 : _a3.getRoot();
-            if (r2 && Math.abs(r2.scrollY - savedVal) > 10) {
-              r2.scrollY = savedVal;
-            }
-          }, 500);
-        }
-      }
-      L._restoringFromSave = false;
-      (_b = L.renderer) == null ? void 0 : _b.resize();
-      window.__treeRenderer = L.renderer;
-      _ensureSubscribed();
-      window.addEventListener("resize", () => {
-        var _a3;
-        return (_a3 = L.renderer) == null ? void 0 : _a3.resize();
-      });
-      bindScrollEvents(canvas);
-      bindClickEvents(canvas, dpr);
-      _createSidebarTouchArea();
-    });
-    const sidebar = DOM.sidebar;
-    if (sidebar) {
-      const onEnd = () => {
-        var _a2;
-        sidebar.removeEventListener("transitionend", onEnd);
-        (_a2 = L.renderer) == null ? void 0 : _a2.resize();
-      };
-      sidebar.addEventListener("transitionend", onEnd);
-    }
-  }
-  function onSidebarClose() {
-    var _a, _b, _c, _d, _e;
-    gsapWithCSS.globalTimeline.clear();
-    L._sidebarClosed = true;
-    L._animBusy = false;
-    L._animBusyAt = 0;
-    L._restoringFromSave = true;
-    const rootScrollY = (_c = (_b = (_a = L.renderer) == null ? void 0 : _a.getRoot()) == null ? void 0 : _b.scrollY) != null ? _c : 0;
-    if (L.renderer && L.renderer.getRoot()) {
-      L._savedScrollY = rootScrollY;
-      L._savedCursorRowId = L.cursorRowId;
-    }
-    L._clickQueue = [];
-    L.cursorBox = null;
-    L.cursorRowId = null;
-    L._rowIndex = [];
-    (_d = L.renderer) == null ? void 0 : _d.stop();
-    L.renderer = null;
-    (_e = DOM.sidebarTouchArea) == null ? void 0 : _e.remove();
-    L.cancelAllRafs();
-  }
-  function initTreeRenderer() {
-    const fileTree = DOM.fileTree;
-    if (!fileTree) {
-      console.warn("[tree-render] #fileTree not found");
-      return;
-    }
-    const canvas = document.createElement("canvas");
-    canvas.id = "tree-canvas";
-    canvas.style.width = "100%";
-    canvas.style.height = "100%";
-    canvas.style.display = "block";
-    fileTree.innerHTML = "";
-    fileTree.appendChild(canvas);
-    const dpr = window.devicePixelRatio || 1;
-    L.renderer = new Renderer(canvas, {
-      backgroundColor: "rgba(10,10,15,0.85)",
-      dpr
-    });
-    rebuildTree();
-    window.__treeRenderer = L.renderer;
-    _ensureSubscribed();
-    window.addEventListener("resize", () => {
-      var _a;
-      return (_a = L.renderer) == null ? void 0 : _a.resize();
-    });
-    bindScrollEvents(canvas);
-    bindClickEvents(canvas, dpr);
-  }
-  function getRootScrollY() {
-    var _a, _b, _c;
-    return (_c = (_b = (_a = L.renderer) == null ? void 0 : _a.getRoot()) == null ? void 0 : _b.scrollY) != null ? _c : null;
-  }
-  function setRootScrollY(val) {
-    var _a;
-    const root = (_a = L.renderer) == null ? void 0 : _a.getRoot();
-    if (!root) return;
-    const maxScroll = root.getMaxScroll().maxY;
-    root.scrollY = Math.max(0, Math.min(val, maxScroll));
-  }
-  function _rebuildRowIndex(root) {
-    L._rowIndex = [];
-    function walk(box) {
-      var _a;
-      for (const child of box.children) {
-        if (!child.visible || child.disabled) continue;
-        if (child.interactive && ((_a = child.gesture) == null ? void 0 : _a.onTap)) {
-          L._rowIndex.push(child);
-        }
-        walk(child);
-      }
-    }
-    walk(root);
-    L._rowIndex.sort((a, b) => {
-      return a.getAbsolutePosition().y - b.getAbsolutePosition().y;
-    });
-  }
   function getCursorRowIndex() {
     if (!L.cursorRowId || L._rowIndex.length === 0) return -1;
     return L._rowIndex.findIndex((box) => box.id === L.cursorRowId);
@@ -10142,70 +8949,8 @@
       moveCursorTo(L._rowIndex[idx]);
     }
   }
-  function _scrollToCenterCursor() {
-    var _a, _b;
-    if (_isCursorMode()) return;
-    if (L._restoreMode) return;
-    const root = (_a = L.renderer) == null ? void 0 : _a.getRoot();
-    if (!root || L.cursorRowId === null) return;
-    const canvas = DOM.treeCanvas;
-    const canvasH = (_b = canvas == null ? void 0 : canvas.clientHeight) != null ? _b : 618;
-    const maxY = root.getMaxScroll().maxY;
-    const idx = getCursorRowIndex();
-    if (idx < 0 || !L._rowIndex[idx]) return;
-    try {
-      const abs = L._rowIndex[idx].getAbsolutePosition();
-      const targetScrollY = Math.max(0, Math.min(maxY, abs.y + L._rowIndex[idx].height / 2 - canvasH / 2));
-      console.log("[GSAP-SCROLL] targetScrollY=", targetScrollY, "from=", root.scrollY);
-      gsapWithCSS.to(root, {
-        scrollY: targetScrollY,
-        duration: 0.35,
-        ease: "power2.inOut",
-        overwrite: "auto",
-        onUpdate: function() {
-          var _a2;
-          (_a2 = L.renderer) == null ? void 0 : _a2.setRoot(L.renderer.getRoot());
-        }
-      });
-    } catch {
-    }
-  }
-  function _createSidebarTouchArea() {
-    const old = DOM.sidebarTouchArea;
-    if (old) old.remove();
-    const sidebar = DOM.sidebar;
-    if (!sidebar) return;
-    const box = document.createElement("div");
-    box.id = "sidebarTouchArea";
-    const w = sidebar.getBoundingClientRect().width;
-    box.style.cssText = `position:fixed;top:0;bottom:0;right:0;z-index:999;touch-action:none;left:${w}px;`;
-    document.body.appendChild(box);
-    bindScrollEvents(box);
-    box.addEventListener("click", () => {
-      var _a, _b;
-      if (!L.cursorRowId || L._rowIndex.length === 0) return;
-      const idx = getCursorRowIndex();
-      if (idx < 0 || !L._rowIndex[idx]) return;
-      const hit = L._rowIndex[idx];
-      const hitData = hit.data || {};
-      if (hitData.isDir) {
-        if (hitData.isExpanded) {
-          doCollapse(hit, hitData);
-        } else {
-          doExpand(hit, hitData);
-        }
-      } else {
-        (_b = (_a = hit.gesture) == null ? void 0 : _a.onTap) == null ? void 0 : _b.call(_a);
-      }
-    });
-    let sx = 0;
-    box.addEventListener("touchstart", (e) => {
-      sx = e.touches[0].clientX;
-    }, { passive: true });
-    box.addEventListener("touchend", (e) => {
-      if (sx - e.changedTouches[0].clientX > 60) closeSidebar();
-    });
-  }
+
+  // src/client/modules/canvas-scroll.ts
   function bindScrollEvents(canvas) {
     let _touchIsCursor = false;
     let wheelTarget = 0;
@@ -10506,6 +9251,295 @@
       }
       L._flingRaf = requestAnimationFrame(fling);
     }, { passive: true });
+  }
+
+  // src/client/modules/tree-render.ts
+  function _ensureSubscribed() {
+    if (L._stateSub) KFMState.unsubscribe(L._stateSub);
+    L._stateSub = () => {
+      L._animBusy = false;
+      L._animBusyAt = 0;
+      L._clickQueue = [];
+      rebuildTree();
+    };
+    KFMState.subscribe(L._stateSub);
+  }
+  function markAnimatingPath(path) {
+    L.animatingPath = path;
+  }
+  function triggerExpandAnimation(path) {
+    var _a, _b, _c, _d;
+    const root = (_a = L.renderer) == null ? void 0 : _a.getRoot();
+    if (!root) return;
+    const container = findBoxById(root, `expanded-${path}`);
+    const titleRow = findBoxById(root, `title-${path}`);
+    const toggle2 = (_b = titleRow == null ? void 0 : titleRow.children) == null ? void 0 : _b.find((c) => {
+      var _a2;
+      return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
+    });
+    if (!container) return;
+    const fullHeight = container._fullHeight || 0;
+    if (!fullHeight) {
+      if (toggle2 && toggle2.transform) {
+        let animFrame2 = function() {
+          const elapsed = performance.now() - startTime;
+          const t = Math.min(elapsed / durationMs, 1);
+          const eased = 1 - (1 - t) * (1 - t);
+          toggle2.transform.rotate = endRot * eased;
+          if (rend) rend.setRoot(rend.getRoot());
+          if (elapsed < durationMs) {
+            requestAnimationFrame(animFrame2);
+          } else {
+          }
+        };
+        var animFrame = animFrame2;
+        toggle2.transform.rotate = 0;
+        const startTime = performance.now();
+        const endRot = Math.PI / 2;
+        const durationMs = 300;
+        const rend = L.renderer;
+        requestAnimationFrame(animFrame2);
+      }
+      (_c = L.renderer) == null ? void 0 : _c.setRoot(L.renderer.getRoot());
+      return;
+    }
+    L.animatingPath = null;
+    const _origYs = container._origYs;
+    if (_origYs && container.children.length === _origYs.length) {
+      container.children.forEach((c, j) => {
+        c.y = _origYs[j];
+      });
+    }
+    container.children.forEach((c) => {
+      c.opacity = 1;
+    });
+    const ancestors = collectAncestors(container, root);
+    L._animBusy = true;
+    L._animBusyAt = Date.now();
+    animateCharRain(container, root, L.renderer);
+    gsapWithCSS.to(container, {
+      height: fullHeight,
+      duration: 0.05,
+      ease: "back.out(1.15)",
+      onUpdate: function() {
+        var _a2;
+        applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
+        (_a2 = L.renderer) == null ? void 0 : _a2.setRoot(L.renderer.getRoot());
+      },
+      onComplete: () => {
+        if (container.kfmStyle && container._savedCr !== void 0) {
+          container.kfmStyle.cornerRadius = container._savedCr;
+        }
+        slideInRows(container, root, toggle2).then(() => {
+          var _a2;
+          fixExpandedToggles(container);
+          (_a2 = L.renderer) == null ? void 0 : _a2.setRoot(L.renderer.getRoot());
+        }).finally(() => {
+          var _a2;
+          L._animBusy = false;
+          L._animBusyAt = 0;
+          const _root = (_a2 = L.renderer) == null ? void 0 : _a2.getRoot();
+          if (_root) {
+            _rebuildRowIndex(_root);
+          }
+          if (L.cursorRowId) {
+            const _t = findBoxById(_root, L.cursorRowId);
+            if (_t) moveCursorTo(_t, false);
+          }
+          processClickQueue();
+        });
+      }
+    });
+    applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
+    (_d = L.renderer) == null ? void 0 : _d.setRoot(L.renderer.getRoot());
+  }
+  function fixExpandedToggles(container) {
+    const state = KFMState;
+    if (!state) return;
+    function walk(box) {
+      var _a, _b;
+      if (!box.children) return;
+      for (const child of box.children) {
+        if ((_a = child.id) == null ? void 0 : _a.startsWith("expanded-")) {
+          const path = child.id.slice("expanded-".length);
+          if (state.expandedPaths[path]) {
+            const titleRow = findBoxByIdLocal(child.parent, `title-${path}`);
+            const tog = (_b = titleRow == null ? void 0 : titleRow.children) == null ? void 0 : _b.find((c) => {
+              var _a2;
+              return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
+            });
+            if (tog) {
+              gsapWithCSS.killTweensOf(tog.transform);
+              tog.transform.rotate = Math.PI / 2;
+            }
+          }
+        }
+        walk(child);
+      }
+    }
+    walk(container);
+  }
+  function findBoxByIdLocal(root, id) {
+    if (!root) return null;
+    if (root.id === id) return root;
+    if (root.children) {
+      for (const c of root.children) {
+        const found = findBoxByIdLocal(c, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+  function isAnimLocked() {
+    return L._animBusy;
+  }
+  function onSidebarOpen() {
+    var _a;
+    gsapWithCSS.globalTimeline.clear();
+    (_a = L.renderer) == null ? void 0 : _a.stop();
+    L.renderer = null;
+    L.resetForOpen();
+    const fileTree = DOM.fileTree;
+    if (!fileTree) return;
+    const canvas = document.createElement("canvas");
+    canvas.id = "tree-canvas";
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
+    canvas.style.display = "block";
+    fileTree.innerHTML = "";
+    fileTree.appendChild(canvas);
+    const dpr = window.devicePixelRatio || 1;
+    L.renderer = new Renderer(canvas, {
+      backgroundColor: "rgba(10,10,15,0.85)",
+      dpr
+    });
+    requestAnimationFrame(() => {
+      var _a2, _b;
+      rebuildTree();
+      if (L._savedScrollY > 0) {
+        const root = (_a2 = L.renderer) == null ? void 0 : _a2.getRoot();
+        if (root) {
+          const maxY = root.getMaxScroll().maxY;
+          root.scrollY = Math.min(L._savedScrollY, maxY);
+          const savedVal = root.scrollY;
+          L._savedScrollY = 0;
+          L._restoreMode = true;
+          setTimeout(() => {
+            var _a3;
+            L._restoreMode = false;
+            const r2 = (_a3 = L.renderer) == null ? void 0 : _a3.getRoot();
+            if (r2 && Math.abs(r2.scrollY - savedVal) > 10) {
+              r2.scrollY = savedVal;
+            }
+          }, 500);
+        }
+      }
+      L._restoringFromSave = false;
+      (_b = L.renderer) == null ? void 0 : _b.resize();
+      window.__treeRenderer = L.renderer;
+      _ensureSubscribed();
+      window.addEventListener("resize", () => {
+        var _a3;
+        return (_a3 = L.renderer) == null ? void 0 : _a3.resize();
+      });
+      bindScrollEvents(canvas);
+      bindClickEvents(canvas, dpr);
+      _createSidebarTouchArea();
+    });
+    const sidebar = DOM.sidebar;
+    if (sidebar) {
+      const onEnd = () => {
+        var _a2;
+        sidebar.removeEventListener("transitionend", onEnd);
+        (_a2 = L.renderer) == null ? void 0 : _a2.resize();
+      };
+      sidebar.addEventListener("transitionend", onEnd);
+    }
+  }
+  function onSidebarClose() {
+    var _a, _b, _c, _d, _e;
+    gsapWithCSS.globalTimeline.clear();
+    L._sidebarClosed = true;
+    L._animBusy = false;
+    L._animBusyAt = 0;
+    L._restoringFromSave = true;
+    const rootScrollY = (_c = (_b = (_a = L.renderer) == null ? void 0 : _a.getRoot()) == null ? void 0 : _b.scrollY) != null ? _c : 0;
+    if (L.renderer && L.renderer.getRoot()) {
+      L._savedScrollY = rootScrollY;
+      L._savedCursorRowId = L.cursorRowId;
+    }
+    L._clickQueue = [];
+    L.cursorBox = null;
+    L.cursorRowId = null;
+    L._rowIndex = [];
+    (_d = L.renderer) == null ? void 0 : _d.stop();
+    L.renderer = null;
+    (_e = DOM.sidebarTouchArea) == null ? void 0 : _e.remove();
+    L.cancelAllRafs();
+  }
+  function initTreeRenderer() {
+    const fileTree = DOM.fileTree;
+    if (!fileTree) {
+      console.warn("[tree-render] #fileTree not found");
+      return;
+    }
+    const canvas = document.createElement("canvas");
+    canvas.id = "tree-canvas";
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
+    canvas.style.display = "block";
+    fileTree.innerHTML = "";
+    fileTree.appendChild(canvas);
+    const dpr = window.devicePixelRatio || 1;
+    L.renderer = new Renderer(canvas, {
+      backgroundColor: "rgba(10,10,15,0.85)",
+      dpr
+    });
+    rebuildTree();
+    window.__treeRenderer = L.renderer;
+    _ensureSubscribed();
+    window.addEventListener("resize", () => {
+      var _a;
+      return (_a = L.renderer) == null ? void 0 : _a.resize();
+    });
+    bindScrollEvents(canvas);
+    bindClickEvents(canvas, dpr);
+  }
+  function _createSidebarTouchArea() {
+    const old = DOM.sidebarTouchArea;
+    if (old) old.remove();
+    const sidebar = DOM.sidebar;
+    if (!sidebar) return;
+    const box = document.createElement("div");
+    box.id = "sidebarTouchArea";
+    const w = sidebar.getBoundingClientRect().width;
+    box.style.cssText = `position:fixed;top:0;bottom:0;right:0;z-index:999;touch-action:none;left:${w}px;`;
+    document.body.appendChild(box);
+    bindScrollEvents(box);
+    box.addEventListener("click", () => {
+      var _a, _b;
+      if (!L.cursorRowId || L._rowIndex.length === 0) return;
+      const idx = getCursorRowIndex();
+      if (idx < 0 || !L._rowIndex[idx]) return;
+      const hit = L._rowIndex[idx];
+      const hitData = hit.data || {};
+      if (hitData.isDir) {
+        if (hitData.isExpanded) {
+          doCollapse(hit, hitData);
+        } else {
+          doExpand(hit, hitData);
+        }
+      } else {
+        (_b = (_a = hit.gesture) == null ? void 0 : _a.onTap) == null ? void 0 : _b.call(_a);
+      }
+    });
+    let sx = 0;
+    box.addEventListener("touchstart", (e) => {
+      sx = e.touches[0].clientX;
+    }, { passive: true });
+    box.addEventListener("touchend", (e) => {
+      if (sx - e.changedTouches[0].clientX > 60) closeSidebar();
+    });
   }
   function bindClickEvents(canvas, _dpr) {
     canvas.addEventListener("click", (e) => {
@@ -10883,14 +9917,6 @@
       " L.animatingPath=",
       L.animatingPath
     );
-  }
-  function findBoxById(root, id) {
-    for (const child of root.children) {
-      if (child.id === id) return child;
-      const found = findBoxById(child, id);
-      if (found) return found;
-    }
-    return null;
   }
   function collectAncestors(box, root) {
     const ancestors = [];

@@ -6,18 +6,16 @@
  * 点击事件 → 光标优先：第一次点击移动光标，第二次点击同一行执行 onTap。
  */
 
-import { Renderer } from '../engine/v2/renderer.js';
-import { Box } from '../engine/v2/box.js';
 import { buildSidebarTree, getShift } from './tree-model.js';
 import { KFMState } from './state.js';
 import gsap from 'gsap';
-import { LINE_HEIGHT, MAX_LINES } from './style-registry.js';
-import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
 import { animateCharRain } from "./char-rain.js";
 import { closeSidebar } from './ui.js';
 import { L } from './renderer-lifecycle.js';
+import { getRootScrollY, setRootScrollY, _rebuildRowIndex, findBoxById } from './canvas-utils.js';
+import { getCursorRowIndex, getRowIndexLength, moveCursorTo, ensureCursorBox, _moveCursorBySteps, _isCursorMode, _getCenterRowIndex, _snapCursorToCenter } from './canvas-cursor.js';
+import { bindScrollEvents } from './canvas-scroll.js';
 import { DOM } from "./dom-refs.js";
-
 
 /** 保存 KFMState 订阅引用，防止重复订阅 */
 function _ensureSubscribed(): void {
@@ -163,147 +161,11 @@ export function isAnimLocked(): boolean {
 // 光标状态
 // ============================================================
 
-
 // 光标步进模式 —— 行索引（按绝对 Y 坐标排序的可交互行）
 
 // ===== 事件堆栈 + 会话隔离 =====
 // 会话隔离：每次开/关侧栏递增 L._sessionId，旧会话异步操作自动失效
 // 事件堆栈：同一会话内快速点击串行执行
-export function getSession(): number { return L._sessionId; }
-export function getRowIndexLength(): number { return L._rowIndex.length; }
-
-
-/** 创建/获取光标 Box，保证它挂在 root 上 */
-function ensureCursorBox(root: Box, canvasH: number): Box {
-  if (L.cursorBox) {
-    // 确保还在 root 的子节点中
-    if (root.children.includes(L.cursorBox)) return L.cursorBox;
-  }
-
-  L.cursorBox = new Box({
-    id: 'cursor-highlight',
-    x: 0,
-    y: canvasH / 2 - 14,
-    width: DOM.treeCanvas?.clientWidth || 280,
-    height: 24,
-    backgroundColor: 'rgba(46,213,163,0.15)',
-    borderRadius: 0,
-    interactive: false,
-    visible: true,
-    data: { cursorDynamicLines: true, topLineW: 0, botLineW: 0, color: 'rgba(0,212,255,0.7)' },
-  });
-
-  root.addChild(L.cursorBox);
-  return L.cursorBox;
-}
-
-/** 移动光标到指定行（GSAP 平滑过渡） */
-function moveCursorTo(hitBox: Box, animate = true): void {
-  if (!L.cursorBox) return;
-  // 防崩溃：确认光标盒仍在树中，不在则重新挂载
-  const root = L.renderer?.getRoot();
-  if (root && !root.children.includes(L.cursorBox)) {
-    ensureCursorBox(root, root.height || (DOM.treeCanvas?.clientHeight ?? 618));
-  }
-  let abs: { x: number; y: number };
-  try {
-    abs = hitBox.getAbsolutePosition();
-  } catch { return; }
-  const canvas = DOM.treeCanvas;
-
-  const depth = (hitBox as any).data?.depth ?? 0;
-  const shift = getShift(depth);
-  const offsetX = shift / 2;
-
-  const rm = (canvas?.clientWidth ?? 295) - 8;
-  const targetX = abs.x + offsetX;
-  const targetY = abs.y + 2;
-  const targetW = rm - abs.x - offsetX;
-  const targetH = hitBox.height - 4;
-  L.cursorRowId = hitBox.id || null;
-
-  // 测量文字宽度，计算上下线长度
-  const label = hitBox.children.find(c => c.id?.startsWith('label-'));
-  let textW = 0;
-  if (label?.textStyle?.content) {
-    const ctx2d = (canvas as any)?.getContext?.('2d');
-    if (ctx2d) {
-      const font = label.textStyle.font || '11px system-ui, sans-serif';
-      const labelX = label.x || 0;
-      const maxWidth = label.width;
-      const content = label.textStyle.content;
-
-      try {
-        const prepared = prepareWithSegments(content, font);
-        const { lines } = layoutWithLines(prepared, maxWidth, LINE_HEIGHT);
-        const firstLine = lines[0];
-        let renderWidth = firstLine.width;
-        if (lines.length > 1 && label.textStyle.overflow === 'ellipsis') {
-          const truncated = firstLine.text.slice(0, -1) + '…';
-          ctx2d.font = font;
-          renderWidth = ctx2d.measureText(truncated).width;
-        }
-        textW = labelX + renderWidth;
-      } catch {
-        ctx2d.font = font;
-        const measured = ctx2d.measureText(content);
-        if (measured.width > maxWidth && label.textStyle.overflow === 'ellipsis') {
-          let text = content;
-          while (text.length > 0 && ctx2d.measureText(text + '…').width > maxWidth) {
-            text = text.slice(0, -1);
-          }
-          textW = labelX + ctx2d.measureText(text + '…').width;
-        } else {
-          textW = labelX + measured.width;
-        }
-      }
-    }
-  }
-  const totalLineW = targetW;
-  const topLineW = Math.min(Math.max(textW, 20), totalLineW - 10);
-  const botLineW = totalLineW - topLineW;
-
-  // 确保 data 对象存在（不替换，直接在属性上做动画）
-  const cdata = (L.cursorBox as any).data;
-  if (cdata) {
-    cdata.cursorDynamicLines = true;
-    cdata.color = 'rgba(0,212,255,0.7)';
-  }
-
-  if (animate && cdata) {
-    // GSAP 平滑过渡：位置/尺寸 + 上线长度
-    // 不 kill 旧动画——让 GSAP 自动衔接连续的目标变更，避免视觉跳动
-    try {
-      gsap.to(L.cursorBox, {
-        x: targetX, y: targetY, width: targetW, height: targetH,
-        duration: 0.18, ease: 'power3.out',
-        overwrite: 'auto',
-      });
-      gsap.to(cdata, {
-        topLineW, botLineW,
-        duration: 0.18, ease: 'power3.out',
-        overwrite: 'auto',
-      });
-    } catch {
-      // GSAP 异常时降级为瞬移
-      L.cursorBox.x = targetX; L.cursorBox.y = targetY;
-      L.cursorBox.width = targetW; L.cursorBox.height = targetH;
-      cdata.topLineW = topLineW; cdata.botLineW = botLineW;
-    }
-  } else {
-    // 瞬移模式（初始放置等场景）
-    L.cursorBox.x = targetX;
-    L.cursorBox.y = targetY;
-    L.cursorBox.width = targetW;
-    L.cursorBox.height = targetH;
-    if (cdata) {
-      cdata.topLineW = topLineW;
-      cdata.botLineW = botLineW;
-    }
-  }
-}
-
-// ============================================================
 
 export function onSidebarOpen(): void {
   // ===== 销毁旧渲染器 + 通过生命周期重置所有状态 =====
@@ -438,125 +300,6 @@ export function initTreeRenderer(): void {
   bindClickEvents(canvas, dpr);
 }
 
-// ============================================================
-// 滚动事件
-// ============================================================
-
-function getRootScrollY(): number | null {
-  return L.renderer?.getRoot()?.scrollY ?? null;
-}
-
-function setRootScrollY(val: number): void {
-  const root = L.renderer?.getRoot();
-  if (!root) return;
-  const maxScroll = root.getMaxScroll().maxY;
-  root.scrollY = Math.max(0, Math.min(val, maxScroll));
-}
-
-// ============================================================
-// 光标步进辅助函数
-// ============================================================
-
-/** 重建行索引：遍历树收集所有可交互行，按绝对 Y 排�� */
-function _rebuildRowIndex(root: Box): void {
-  L._rowIndex = [];
-  function walk(box: Box): void {
-    for (const child of box.children) {
-      if (!child.visible || child.disabled) continue;
-      if (child.interactive && child.gesture?.onTap) {
-        L._rowIndex.push(child);
-      }
-      walk(child);
-    }
-  }
-  walk(root);
-  L._rowIndex.sort((a, b) => {
-    return a.getAbsolutePosition().y - b.getAbsolutePosition().y;
-  });
-}
-
-/** ��取当前光标在行索引中的位置 */
-export function getCursorRowIndex(): number {
-  if (!L.cursorRowId || L._rowIndex.length === 0) return -1;
-  return L._rowIndex.findIndex(box => box.id === L.cursorRowId);
-}
-
-/** 移���光标 N 步（正=向下，负=向上），自动 clamp */
-function _moveCursorBySteps(steps: number): void {
-  if (L._rowIndex.length === 0) return;
-  const oldIdx = getCursorRowIndex();
-  const newIdx = Math.max(0, Math.min(L._rowIndex.length - 1, oldIdx + steps));
-  if (newIdx !== oldIdx && L._rowIndex[newIdx]) {
-    moveCursorTo(L._rowIndex[newIdx]);
-  }
-}
-
-/** 判断��前是否���标模式（内容高度 <= 视口高度，无溢出） */
-function _isCursorMode(): boolean {
-  const root = L.renderer?.getRoot();
-  if (!root) return false;
-  return root.getMaxScroll().maxY <= 0;
-}
-
-/** 获取视口中央最近行的索引（在 L._rowIndex 中的位���） */
-function _getCenterRowIndex(): number {
-  const root = L.renderer?.getRoot();
-  if (!root || L._rowIndex.length === 0) return -1;
-  const canvasH = (DOM.treeCanvas?.clientHeight ?? 0) || 618;
-  const scrollY = root.scrollY ?? 0;
-  const centerY = scrollY + canvasH / 2;
-  let closestIdx = -1;
-  let closestDist = Infinity;
-  for (let i = 0; i < L._rowIndex.length; i++) {
-    try {
-      if (!L._rowIndex[i]) continue;
-      const abs = L._rowIndex[i].getAbsolutePosition();
-      const rowCenter = abs.y + L._rowIndex[i].height / 2;
-      const dist = Math.abs(rowCenter - centerY);
-      if (dist < closestDist) {
-        closestDist = dist;
-        closestIdx = i;
-      }
-    } catch { /* Box 被移除则跳过 */ }
-  }
-  return closestIdx;
-}
-
-/** 滚���模式下，将光标吸附到视口中央最近的行 */
-function _snapCursorToCenter(): void {
-  if (L._animBusy) return;
-  const idx = _getCenterRowIndex();
-  if (idx >= 0 && L._rowIndex[idx] && L._rowIndex[idx]!.id !== L.cursorRowId) {
-    console.log('[snapCursorToCenter] snapping from', L.cursorRowId, 'to', L._rowIndex[idx]!.id, 'centerIdx=', idx);
-    moveCursorTo(L._rowIndex[idx]!);
-  }
-}
-
-
-/** 点击后滚动页面到光标居中位置（GSAP 平滑动画） */
-function _scrollToCenterCursor(): void {
-  if (_isCursorMode()) return;
-  if (L._restoreMode) return;  // 恢复期间跳过 GSAP
-  const root = L.renderer?.getRoot();
-  if (!root || L.cursorRowId === null) return;
-  const canvas = DOM.treeCanvas;
-  const canvasH = canvas?.clientHeight ?? 618;
-  const maxY = root.getMaxScroll().maxY;
-  const idx = getCursorRowIndex();
-  if (idx < 0 || !L._rowIndex[idx]) return;
-  try {
-    const abs = L._rowIndex[idx].getAbsolutePosition();
-    const targetScrollY = Math.max(0, Math.min(maxY, abs.y + L._rowIndex[idx].height / 2 - canvasH / 2));
-    console.log('[GSAP-SCROLL] targetScrollY=', targetScrollY, 'from=', root.scrollY);
-    gsap.to(root, {
-      scrollY: targetScrollY,
-      duration: 0.35,
-      ease: 'power2.inOut',
-      overwrite: 'auto',
-      onUpdate: function() { L.renderer?.setRoot(L.renderer.getRoot()!); },
-    });
-  } catch {}
-}
 
 /** 创建左栏右侧触摸盒子：填充剩余屏幕，同步滚动 + 点击执行光标动作 + 右往左滑关闭 */
 function _createSidebarTouchArea(): void {
@@ -599,323 +342,6 @@ function _createSidebarTouchArea(): void {
     if (sx - e.changedTouches[0].clientX > 60) closeSidebar();
   });
 }
-
-function bindScrollEvents(canvas: HTMLElement): void {
-  // 记录当前触摸手势属于哪种模式（touchstart 时判定，touchend 时消费）
-  let _touchIsCursor = false;
-
-  // ===== Wheel =====
-  let wheelTarget = 0;
-  let cursorWheelAccum = 0;
-
-  canvas.addEventListener('wheel', (e) => {
-    e.preventDefault();
-    if (_isCursorMode()) {
-      // 光标模式：累������ deltaY 转为步进
-      cursorWheelAccum += e.deltaY / LINE_HEIGHT;
-      const steps = Math.trunc(cursorWheelAccum);
-      if (steps !== 0) {
-        _moveCursorBySteps(-steps);  // deltaY>0 向下 → 光标向��（索引增大）
-        cursorWheelAccum -= steps;
-      }
-      // 衰减残余（模拟滚轮惯性）
-      if (!L._cursorWheelDecayRaf) {
-        L._cursorWheelDecayRaf = requestAnimationFrame(function decay() {
-          if (L._sidebarClosed) { L._cursorWheelDecayRaf = 0; return; }
-          cursorWheelAccum *= 0.85;
-          const s = Math.trunc(cursorWheelAccum);
-          if (s !== 0) {
-            _moveCursorBySteps(-s);
-            cursorWheelAccum -= s;
-          }
-          if (Math.abs(cursorWheelAccum) < 0.05) {
-            cursorWheelAccum = 0;
-            L._cursorWheelDecayRaf = 0;
-            return;
-          }
-          L._cursorWheelDecayRaf = requestAnimationFrame(decay);
-        });
-      }
-      return;
-    }
-    // 滚动模式（含边界穿透，累积跨帧）
-    const cur = getRootScrollY() ?? 0;
-    L._lastUserScrollY = cur;  // 记录 GSAP 之前的值
-    wheelTarget = cur + e.deltaY;
-    if (!L._wheelRaf) {
-      let wheelAccum = 0;
-      const wheelCenterIdx = _getCenterRowIndex();
-      L._wheelRaf = requestAnimationFrame(function smoothWheel() {
-        if (L._sidebarClosed) { L._wheelRaf = 0; return; }
-        const cur2 = getRootScrollY() ?? 0;
-        const diff = wheelTarget - cur2;
-        if (Math.abs(diff) < 0.5) {
-          setRootScrollY(wheelTarget);
-          _snapCursorToCenter();
-          L._wheelRaf = 0;
-          return;
-        }
-        const maxY = L.renderer?.getRoot()?.getMaxScroll().maxY ?? 0;
-        const desired = cur2 + diff * 0.25;
-        if (desired < 0 && maxY > 0) {
-          setRootScrollY(0);
-          wheelAccum += -desired;
-          const steps = Math.floor(wheelAccum / LINE_HEIGHT);
-          if (steps > 0) {
-            wheelAccum -= steps * LINE_HEIGHT;
-            const targetIdx = Math.max(0, wheelCenterIdx - steps);
-            if (L._rowIndex[targetIdx]) moveCursorTo(L._rowIndex[targetIdx]);
-          }
-        } else if (desired > maxY) {
-          setRootScrollY(maxY);
-          wheelAccum += desired - maxY;
-          const steps = Math.floor(wheelAccum / LINE_HEIGHT);
-          if (steps > 0) {
-            wheelAccum -= steps * LINE_HEIGHT;
-            const targetIdx = Math.min(L._rowIndex.length - 1, wheelCenterIdx + steps);
-            if (L._rowIndex[targetIdx]) moveCursorTo(L._rowIndex[targetIdx]);
-          }
-        } else {
-          setRootScrollY(desired);
-          L._lastUserScrollY = desired;
-          _snapCursorToCenter();
-        }
-        L._wheelRaf = requestAnimationFrame(smoothWheel);
-      });
-    }
-  }, { passive: false });
-
-  // ===== Touch =====
-  // 滚动模式状态
-  let touchStartY = 0;
-  let touchScrollY = 0;
-  let lastTouchY = 0;
-  let lastTouchTime = 0;
-  let velocity = 0;
-  // 边界锁状态：光标偏离中心时锁定滚动，回到中心才解锁
-  let _boundPen = 0;       // 穿透深度（像素），>0 表��锁住
-  let _boundIsTop = false; // true=上边界锁���false=下边界锁
-  // ��标模式状态
-  let cursorTouchBase = 0;
-  let cursorTouchStartY = 0;
-  let cursorLastTouchY = 0;
-  let cursorLastTouchTime = 0;
-  let cursorVelocity = 0;
-
-  canvas.addEventListener('touchstart', (e) => {
-    const y = e.touches[0].clientY;
-    lastTouchY = y;
-    lastTouchTime = performance.now();
-    // 取消所有进���中的 RAF
-    if (L._flingRaf) { cancelAnimationFrame(L._flingRaf); L._flingRaf = 0; }
-    if (L._cursorFlingRaf) { cancelAnimationFrame(L._cursorFlingRaf); L._cursorFlingRaf = 0; }
-
-    _touchIsCursor = _isCursorMode();
-    console.log('[touchstart] _touchIsCursor=', _touchIsCursor, ' _isCursorMode()=', _isCursorMode());
-
-    if (_touchIsCursor) {
-      cursorTouchBase = Math.max(0, getCursorRowIndex());
-      cursorTouchStartY = y;
-      cursorLastTouchY = y;
-      cursorLastTouchTime = lastTouchTime;
-      cursorVelocity = 0;
-    } else {
-      touchStartY = y;
-      touchScrollY = getRootScrollY() ?? 0;
-      L._lastUserScrollY = touchScrollY;  // 记录用户触摸开始时的 scrollY
-      velocity = 0;
-      // 检������界锁残留：光标因上次手势偏离��心
-      _boundPen = 0;
-      _boundIsTop = false;
-      const root2 = L.renderer?.getRoot();
-      if (root2 && !_isCursorMode()) {
-        const maxY2 = root2.getMaxScroll().maxY ?? 0;
-        const centerIdx = _getCenterRowIndex();
-        const cursorIdx = getCursorRowIndex();
-        if (touchScrollY <= 0 && centerIdx >= 0 && cursorIdx >= 0 && cursorIdx < centerIdx) {
-          _boundPen = (centerIdx - cursorIdx) * LINE_HEIGHT;
-          _boundIsTop = true;
-        } else if (touchScrollY >= maxY2 && centerIdx >= 0 && cursorIdx >= 0 && cursorIdx > centerIdx) {
-          _boundPen = (cursorIdx - centerIdx) * LINE_HEIGHT;
-          _boundIsTop = false;
-        }
-      }
-    }
-  }, { passive: true });
-
-  canvas.addEventListener('touchmove', (e) => {
-    const y = e.touches[0].clientY;
-    const now = performance.now();
-
-    if (_touchIsCursor) {
-      const dy = cursorTouchStartY - y;
-      const dt = now - cursorLastTouchTime;
-      if (dt > 0) {
-        cursorVelocity = (cursorLastTouchY - y) / dt * 16 * 1.7;
-      }
-      cursorLastTouchY = y;
-      cursorLastTouchTime = now;
-      const stepOffset = dy / LINE_HEIGHT;
-      const idx = Math.round(
-        Math.max(0, Math.min(L._rowIndex.length - 1, cursorTouchBase + stepOffset))
-      );
-      if (L._rowIndex[idx]) moveCursorTo(L._rowIndex[idx]);
-      return;
-    }
-
-    // 滚动模式（含边界锁状态机）
-    const dy = touchStartY - y;
-    const dt = now - lastTouchTime;
-    if (dt > 0) {
-      velocity = (lastTouchY - y) / dt * 16 * 1.7;
-    }
-    const dPen = lastTouchY - y;  // 逐帧增量：>0=手指上滑
-    lastTouchY = y;
-    lastTouchTime = now;
-    const root3 = L.renderer?.getRoot();
-    const maxY = root3?.getMaxScroll().maxY ?? 0;
-
-    if (_boundPen > 0) {
-      // === 边界锁：滚动��定，手指位移只改变穿透深度 ===
-      _boundPen = Math.max(0, _boundPen + (_boundIsTop ? -dPen : dPen));
-      if (_boundPen === 0) {
-        // 光标��到中����解锁，重置滚动参考点
-        touchScrollY = _boundIsTop ? 0 : maxY;
-        touchStartY = y;
-        setRootScrollY(touchScrollY);
-        _snapCursorToCenter();
-      } else {
-        setRootScrollY(_boundIsTop ? 0 : maxY);
-        const steps = Math.floor(_boundPen / LINE_HEIGHT);
-        const centerIdx = _getCenterRowIndex();
-        if (centerIdx >= 0 && steps > 0) {
-          const targetIdx = _boundIsTop
-            ? Math.max(0, centerIdx - steps)
-            : Math.min(L._rowIndex.length - 1, centerIdx + steps);
-          if (L._rowIndex[targetIdx]) moveCursorTo(L._rowIndex[targetIdx]);
-        } else {
-          _snapCursorToCenter();
-        }
-      }
-    } else {
-      // === 正常滚动 ===
-      const desired = touchScrollY + dy;
-      if (desired < 0 && maxY > 0) {
-        _boundPen = -desired;
-        _boundIsTop = true;
-        setRootScrollY(0);
-        const steps = Math.floor(_boundPen / LINE_HEIGHT);
-        const centerIdx = _getCenterRowIndex();
-        if (centerIdx >= 0 && steps > 0) {
-          const targetIdx = Math.max(0, centerIdx - steps);
-          if (L._rowIndex[targetIdx]) moveCursorTo(L._rowIndex[targetIdx]);
-        }
-      } else if (desired > maxY) {
-        _boundPen = desired - maxY;
-        _boundIsTop = false;
-        setRootScrollY(maxY);
-        const steps = Math.floor(_boundPen / LINE_HEIGHT);
-        const centerIdx = _getCenterRowIndex();
-        if (centerIdx >= 0 && steps > 0) {
-          const targetIdx = Math.min(L._rowIndex.length - 1, centerIdx + steps);
-          if (L._rowIndex[targetIdx]) moveCursorTo(L._rowIndex[targetIdx]);
-        }
-      } else {
-        setRootScrollY(desired);
-        L._lastUserScrollY = desired;  // 记录用户意图的滚动位置
-        _snapCursorToCenter();
-      }
-    }
-  }, { passive: true });
-
-  canvas.addEventListener('touchend', () => {
-    if (_touchIsCursor) {
-      if (Math.abs(cursorVelocity) >= 0.5 && L._rowIndex.length > 0) {
-        // 将起点更新为当前光标位置，避免飞回 touchstart ����置
-        cursorTouchBase = Math.max(0, getCursorRowIndex());
-        function cursorFling() {
-          cursorVelocity *= 0.96;
-          if (Math.abs(cursorVelocity) < 0.3) { L._cursorFlingRaf = 0; return; }
-          cursorTouchBase += cursorVelocity / LINE_HEIGHT;
-          const idx = Math.round(
-            Math.max(0, Math.min(L._rowIndex.length - 1, cursorTouchBase))
-          );
-          if (L._rowIndex[idx]) moveCursorTo(L._rowIndex[idx]);
-          L._cursorFlingRaf = requestAnimationFrame(cursorFling);
-        }
-        L._cursorFlingRaf = requestAnimationFrame(cursorFling);
-      }
-      return;
-    }
-
-    // 滚动模式 fling（边界锁：velocity 先消耗穿透�����������������度，归零后才允许滚动）
-    if (Math.abs(velocity) < 0.5) return;
-    let flingPen = _boundPen;
-    let flingIsTop = _boundIsTop;
-    const flingMaxY = L.renderer?.getRoot()?.getMaxScroll().maxY ?? 0;
-    function fling() {
-      if (L._sidebarClosed) { L._flingRaf = 0; return; }
-      velocity *= 0.96;
-      if (Math.abs(velocity) < 0.3) { L._flingRaf = 0; return; }
-
-      if (flingPen > 0) {
-        // 锁状态：velocity 先消耗穿透深度
-        flingPen = Math.max(0, flingPen + (flingIsTop ? -velocity : velocity));
-        if (flingPen === 0) {
-          // 解锁，转为正常滚动
-          setRootScrollY(flingIsTop ? 0 : flingMaxY);
-          _snapCursorToCenter();
-        } else {
-          setRootScrollY(flingIsTop ? 0 : flingMaxY);
-          const steps = Math.floor(flingPen / LINE_HEIGHT);
-          const centerIdx = _getCenterRowIndex(); // 实时获取边界处中央行，不用 touchend 旧值
-          if (centerIdx >= 0 && steps > 0) {
-            const targetIdx = flingIsTop
-              ? Math.max(0, centerIdx - steps)
-              : Math.min(L._rowIndex.length - 1, centerIdx + steps);
-            if (L._rowIndex[targetIdx]) moveCursorTo(L._rowIndex[targetIdx]);
-          }
-        }
-      } else {
-        // 正常滚动 fling
-        const cur = getRootScrollY() ?? 0;
-        const desired = cur + velocity;
-        if (desired < 0 && flingMaxY > 0) {
-          flingPen = -desired;
-          flingIsTop = true;
-          setRootScrollY(0);
-          // ���次触碰边界：立刻基于当前中央行做初始光标偏移
-          const centerIdx = _getCenterRowIndex();
-          const steps = Math.floor(flingPen / LINE_HEIGHT);
-          if (centerIdx >= 0 && steps > 0) {
-            const targetIdx = Math.max(0, centerIdx - steps);
-            if (L._rowIndex[targetIdx]) moveCursorTo(L._rowIndex[targetIdx]);
-          }
-        } else if (desired > flingMaxY) {
-          flingPen = desired - flingMaxY;
-          flingIsTop = false;
-          setRootScrollY(flingMaxY);
-          // 首次触碰边界����刻基于当前中央行做初始光标偏移
-          const centerIdx = _getCenterRowIndex();
-          const steps = Math.floor(flingPen / LINE_HEIGHT);
-          if (centerIdx >= 0 && steps > 0) {
-            const targetIdx = Math.min(L._rowIndex.length - 1, centerIdx + steps);
-            if (L._rowIndex[targetIdx]) moveCursorTo(L._rowIndex[targetIdx]);
-          }
-        } else {
-          setRootScrollY(desired);
-          _snapCursorToCenter();
-        }
-      }
-      L._flingRaf = requestAnimationFrame(fling);
-    }
-    L._flingRaf = requestAnimationFrame(fling);
-  }, { passive: true });
-}
-
-// ============================================================
-// 点击事件（光标优先 → 二次点击执行 onTap��
-// ============================================================
 
 function bindClickEvents(canvas: HTMLElement, _dpr: number): void {
   canvas.addEventListener('click', (e) => {
@@ -1135,7 +561,6 @@ function doCollapse(hit: Box, hitData: any): void {
   tl.play();
 }
 
-
 function findTapTarget(box: Box, px: number, py: number): Box | null {
   for (let i = box.children.length - 1; i >= 0; i--) {
     const child = box.children[i];
@@ -1258,7 +683,6 @@ function rebuildTree(): void {
     }
   }
 
-
   L.renderer.setRoot(rootBox);
 
   // 恢复滚动位置（从关闭���态恢复时，L._savedScrollY 在下游统一处理，此处跳过）
@@ -1307,8 +731,6 @@ function rebuildTree(): void {
   // 重建光标步进行索引
   _rebuildRowIndex(newRoot);
 
-
-
   if (!L.renderer.isRunning) {
     L.renderer.start();
   }
@@ -1329,15 +751,6 @@ function rebuildTree(): void {
     ' cursorIdx=', getCursorRowIndex(),
     ' prevCursorRowId=', prevCursorRowId,
     ' L.animatingPath=', L.animatingPath);
-}
-/** 在 root 子树中按 id 查找 Box */
-function findBoxById(root: Box, id: string): Box | null {
-  for (const child of root.children) {
-    if (child.id === id) return child;
-    const found = findBoxById(child, id);
-    if (found) return found;
-  }
-  return null;
 }
 
 /** 收集从 box 向上到 root 路径上的所有祖先（不含 root 自身），返回 [{parent, sibIdx, sibOrigYs, origHeight}] */
@@ -1393,7 +806,6 @@ function applyAnimOffset(
     }
   }
 }
-
 
 /** 只���兄弟偏移+祖先高��调整，不碰子行 y（用于展开动画，让 slideInRows 统��处理子行登���） */
 function applyAnimOffsetSiblings(

@@ -1,5 +1,5 @@
 import { gestures } from "./gesture-registry.js";
-import { getCursorRowIndex, getRowIndexLength } from "./tree-render.js";
+import { getCursorRowIndex, getRowIndexLength } from "./canvas-cursor.js";
 
 /**
  * KFM v4 - 堆叠卡片面板
