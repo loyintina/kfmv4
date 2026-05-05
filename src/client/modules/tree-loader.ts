@@ -157,19 +157,15 @@ export async function loadFileTree(rootPath: string): Promise<void> {
  * 初始化：劫持 setExpanded，展开时加载数据并触发展开动画。
  */
 export function initLazyLoader(): void {
-  const originalSetExpanded = KFMState.setExpanded.bind(KFMState);
-  KFMState.setExpanded = function (path: string, expanded: boolean) {
-    if (expanded) {
-      const cached = KFMState.files[path]?.children !== undefined;  // 空目录 children=[] 也算已缓存
-      if (!cached) {
-        // 数据未加载：先设置展开状态（不 notify），然后加载数据
-        KFMState.expandedPaths[path] = true;
-        localStorage.setItem('expandedPaths', JSON.stringify(KFMState.expandedPaths));
-        loadAndAnimate(path).catch(console.error);
-        return;  // 不调用 originalSetExpanded，避免提前 notify
-      }
+  KFMState.addHook('beforeExpand', function lazyLoadHook(path: string): void | true {
+    const cached = KFMState.files[path]?.children !== undefined;  // 空目录 children=[] 也算已缓存
+    if (!cached) {
+      // 数据未加载：先设置展开状态（不 notify），然后加载数据
+      KFMState.expandedPaths[path] = true;
+      localStorage.setItem('expandedPaths', JSON.stringify(KFMState.expandedPaths));
+      loadAndAnimate(path).catch(console.error);
+      return true;  // 返回 true 跳过默认 setExpanded（避免提前 notify）
     }
-    // 数据已存在，直接调用原方法
-    originalSetExpanded(path, expanded);
-  };
+    // 数据已存在，什么都不做，走默认 setExpanded
+  });
 }

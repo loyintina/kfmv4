@@ -26,6 +26,11 @@
     },
     setExpanded(path, expanded) {
       if (expanded) {
+        for (const hook of this._beforeExpandHooks) {
+          if (hook(path) === true) return;
+        }
+      }
+      if (expanded) {
         this.expandedPaths[path] = true;
       } else {
         delete this.expandedPaths[path];
@@ -4812,7 +4817,6 @@
       borderRadius: 0
     }
   };
-  var listeners = [];
   var styleRegistry = {
     get(name) {
       const t = templates[name];
@@ -4825,7 +4829,7 @@
       } else {
         Object.assign(templates[name], updates);
       }
-      listeners.forEach((fn) => fn(name, old, templates[name]));
+      KFMState.notify();
     },
     patch(patches) {
       for (const [name, updates] of Object.entries(patches)) {
@@ -4835,18 +4839,14 @@
         } else {
           Object.assign(templates[name], updates);
         }
-        listeners.forEach((fn) => fn(name, old, templates[name]));
       }
+      KFMState.notify();
     },
     subscribe(fn) {
-      listeners.push(fn);
+      KFMState.subscribe(fn);
     },
     unsubscribe(fn) {
-      const idx = listeners.indexOf(fn);
-      if (idx !== -1) listeners.splice(idx, 1);
-    },
-    notify() {
-      listeners.forEach((fn) => fn("", void 0, void 0));
+      KFMState.unsubscribe(fn);
     }
   };
   function createBox(templateName, overrides) {
@@ -9997,7 +9997,6 @@
       (_b = L.renderer) == null ? void 0 : _b.resize();
       window.__treeRenderer = L.renderer;
       _ensureSubscribed();
-      styleRegistry.subscribe(() => rebuildTree());
       window.addEventListener("resize", () => {
         var _a3;
         return (_a3 = L.renderer) == null ? void 0 : _a3.resize();
@@ -10058,7 +10057,6 @@
     rebuildTree();
     window.__treeRenderer = L.renderer;
     _ensureSubscribed();
-    styleRegistry.subscribe(() => rebuildTree());
     window.addEventListener("resize", () => {
       var _a;
       return (_a = L.renderer) == null ? void 0 : _a.resize();
@@ -13637,20 +13635,16 @@
     markAnimatingPath(null);
   }
   function initLazyLoader() {
-    const originalSetExpanded = KFMState.setExpanded.bind(KFMState);
-    KFMState.setExpanded = function(path, expanded) {
+    KFMState.addHook("beforeExpand", function lazyLoadHook(path) {
       var _a;
-      if (expanded) {
-        const cached = ((_a = KFMState.files[path]) == null ? void 0 : _a.children) !== void 0;
-        if (!cached) {
-          KFMState.expandedPaths[path] = true;
-          localStorage.setItem("expandedPaths", JSON.stringify(KFMState.expandedPaths));
-          loadAndAnimate(path).catch(console.error);
-          return;
-        }
+      const cached = ((_a = KFMState.files[path]) == null ? void 0 : _a.children) !== void 0;
+      if (!cached) {
+        KFMState.expandedPaths[path] = true;
+        localStorage.setItem("expandedPaths", JSON.stringify(KFMState.expandedPaths));
+        loadAndAnimate(path).catch(console.error);
+        return true;
       }
-      originalSetExpanded(path, expanded);
-    };
+    });
   }
 
   // src/client/main.ts

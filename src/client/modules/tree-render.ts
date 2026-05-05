@@ -360,7 +360,6 @@ export function onSidebarOpen(): void {
     window.__treeRenderer = L.renderer;
 
     _ensureSubscribed();
-    styleRegistry.subscribe(() => rebuildTree());
     window.addEventListener('resize', () => L.renderer?.resize());
 
     bindScrollEvents(canvas);
@@ -433,7 +432,6 @@ export function initTreeRenderer(): void {
   window.__treeRenderer = L.renderer;
 
   _ensureSubscribed();
-  styleRegistry.subscribe(() => rebuildTree());
   window.addEventListener('resize', () => L.renderer?.resize());
 
   bindScrollEvents(canvas);

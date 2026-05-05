@@ -7,6 +7,7 @@
 
 import { Box } from '../engine/v2/box.js';
 import type { TextStyle, HighlightConfig } from '../engine/v2/types.js';
+import { KFMState } from "./state.js";
 
 // ============================================================
 // 尺寸常量
@@ -156,8 +157,6 @@ const templates: Record<string, Record<string, any>> = {
 // 注册表管理
 // ============================================================
 
-type StyleListener = (name: string, oldVal: any, newVal: any) => void;
-const listeners: StyleListener[] = [];
 
 export const styleRegistry = {
   get(name: string): Record<string, any> | undefined {
@@ -172,7 +171,7 @@ export const styleRegistry = {
     } else {
       Object.assign(templates[name], updates);
     }
-    listeners.forEach(fn => fn(name, old, templates[name]));
+    KFMState.notify();
   },
 
   patch(patches: Record<string, Record<string, any>>): void {
@@ -183,21 +182,16 @@ export const styleRegistry = {
       } else {
         Object.assign(templates[name], updates);
       }
-      listeners.forEach(fn => fn(name, old, templates[name]));
     }
+    KFMState.notify();
   },
 
-  subscribe(fn: StyleListener): void {
-    listeners.push(fn);
+  subscribe(fn: (state: any) => void): void {
+    KFMState.subscribe(fn);
   },
 
-  unsubscribe(fn: StyleListener): void {
-    const idx = listeners.indexOf(fn);
-    if (idx !== -1) listeners.splice(idx, 1);
-  },
-
-  notify(): void {
-    listeners.forEach(fn => fn('', undefined, undefined));
+  unsubscribe(fn: (state: any) => void): void {
+    KFMState.unsubscribe(fn);
   },
 };
 

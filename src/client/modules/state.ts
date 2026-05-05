@@ -35,6 +35,11 @@ export interface KFMStateType {
   subscribe(fn: (state: KFMStateType) => void): void;
   unsubscribe(fn: (state: KFMStateType) => void): void;
   notify(): void;
+
+  // 钩子系统（替代 monkey-patch）
+  _beforeExpandHooks: Array<(path: string) => boolean | void>;
+  addHook(hook: 'beforeExpand', fn: (path: string) => boolean | void): void;
+  removeHook(hook: 'beforeExpand', fn: (path: string) => boolean | void): void;
   
   // 操作方法
   setExpanded(path: string, expanded: boolean): void;
@@ -69,6 +74,12 @@ export const KFMState: KFMStateType = {
   },
   
   setExpanded(path, expanded) {
+    // beforeExpand 钩子：返回 true 表示跳过默认逻辑
+    if (expanded) {
+      for (const hook of this._beforeExpandHooks) {
+        if (hook(path) === true) return;
+      }
+    }
     if (expanded) {
       this.expandedPaths[path] = true;
     } else {
