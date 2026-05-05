@@ -80,7 +80,7 @@ function createCard(index: number): HTMLElement {
     'gap:10px',
     'backdrop-filter:blur(12px)',
     '-webkit-backdrop-filter:blur(12px)',
-    'border:1.5px solid ' + color.border,
+    'border:1px solid ' + color.border + ';border-left-width:3px',
     'background:' + color.bg,
     'box-shadow:-6px 6px 24px rgba(0,0,0,0.5)',
     'cursor:pointer',
@@ -176,14 +176,14 @@ function updateFocus(): void {
       el.style.transform = 'translateX(-12px) scale(1.04)';
       el.style.opacity = '1';
       el.style.zIndex = '20';
-      el.style.borderWidth = '2px';
+      el.style.borderWidth = "1px"; el.style.borderLeftWidth = "3px";
       const idxEl = el.querySelector('.stack-card-index') as HTMLElement;
       if (idxEl) idxEl.style.opacity = '0.8';
     } else {
       el.style.transform = 'translateX(0px) scale(1)';
       el.style.opacity = String(Math.max(0.12, 1 - dist * 0.28));
       el.style.zIndex = String(10 - i);
-      el.style.borderWidth = '1.5px';
+      el.style.borderWidth = "1px"; el.style.borderLeftWidth = "3px";
       const idxEl = el.querySelector('.stack-card-index') as HTMLElement;
       if (idxEl) idxEl.style.opacity = '0.3';
     }
