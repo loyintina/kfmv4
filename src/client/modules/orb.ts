@@ -13,6 +13,7 @@
  */
 
 import { measureText, layoutLines } from '../engine/text-layout/index.js';
+import { gestures } from './gesture-registry.js';
 
 interface ChatMessage {
   role: 'user' | 'ai';
@@ -482,21 +483,22 @@ export function initOrb(): void {
   freeOrbX = clamped.x;
   freeOrbY = clamped.y;
 
-  // Touch 事件
-  orbEl.addEventListener('touchstart', (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-    startDrag(e.touches[0].clientX, e.touches[0].clientY);
-  }, { passive: false });
-
-  orbEl.addEventListener('touchmove', (e) => {
-    e.stopPropagation();
-    moveDrag(e.touches[0].clientX, e.touches[0].clientY);
-  }, { passive: false });
-
-  orbEl.addEventListener('touchend', (e) => {
-    e.stopPropagation();
-    endDrag();
+  // Touch 事件 -> GestureRegistry
+  gestures.register({
+    id: "orb",
+    targetFilter: ".light-orb",
+    priority: 100,
+    stopPropagation: true,
+    onStart: (e: TouchEvent) => {
+      e.preventDefault();
+      startDrag(e.touches[0].clientX, e.touches[0].clientY);
+    },
+    onMove: (e: TouchEvent) => {
+      moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+    },
+    onEnd: () => {
+      endDrag();
+    },
   });
 
   // Mouse 事件（调试）

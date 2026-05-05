@@ -9672,6 +9672,9 @@
   var _restoringFromSave = false;
   var _rowIndex = [];
   var _sessionId = 0;
+  function getRowIndexLength() {
+    return _rowIndex.length;
+  }
   var animatingPath = null;
   var _animBusy = false;
   var _animBusyAt = 0;
@@ -9945,13 +9948,13 @@
       return a.getAbsolutePosition().y - b.getAbsolutePosition().y;
     });
   }
-  function _getCursorRowIndex() {
+  function getCursorRowIndex() {
     if (!cursorRowId || _rowIndex.length === 0) return -1;
     return _rowIndex.findIndex((box) => box.id === cursorRowId);
   }
   function _moveCursorBySteps(steps) {
     if (_rowIndex.length === 0) return;
-    const oldIdx = _getCursorRowIndex();
+    const oldIdx = getCursorRowIndex();
     const newIdx = Math.max(0, Math.min(_rowIndex.length - 1, oldIdx + steps));
     if (newIdx !== oldIdx && _rowIndex[newIdx]) {
       moveCursorTo(_rowIndex[newIdx]);
@@ -10003,7 +10006,7 @@
     const canvas = document.getElementById("tree-canvas");
     const canvasH = (_a = canvas == null ? void 0 : canvas.clientHeight) != null ? _a : 618;
     const maxY = root.getMaxScroll().maxY;
-    const idx = _getCursorRowIndex();
+    const idx = getCursorRowIndex();
     if (idx < 0 || !_rowIndex[idx]) return;
     try {
       const abs = _rowIndex[idx].getAbsolutePosition();
@@ -10035,7 +10038,7 @@
     box.addEventListener("click", () => {
       var _a, _b;
       if (!cursorRowId || _rowIndex.length === 0) return;
-      const idx = _getCursorRowIndex();
+      const idx = getCursorRowIndex();
       if (idx < 0 || !_rowIndex[idx]) return;
       const hit = _rowIndex[idx];
       const hitData = hit.data || {};
@@ -10144,7 +10147,7 @@
         });
       }
     }, { passive: false });
-    let touchStartY2 = 0;
+    let touchStartY = 0;
     let touchScrollY = 0;
     let lastTouchY = 0;
     let lastTouchTime = 0;
@@ -10174,13 +10177,13 @@
       _touchIsCursor = _isCursorMode();
       console.log("[touchstart] _touchIsCursor=", _touchIsCursor, " _isCursorMode()=", _isCursorMode());
       if (_touchIsCursor) {
-        cursorTouchBase = Math.max(0, _getCursorRowIndex());
+        cursorTouchBase = Math.max(0, getCursorRowIndex());
         cursorTouchStartY = y;
         cursorLastTouchY = y;
         cursorLastTouchTime = lastTouchTime;
         cursorVelocity = 0;
       } else {
-        touchStartY2 = y;
+        touchStartY = y;
         touchScrollY = (_a = getRootScrollY()) != null ? _a : 0;
         _lastUserScrollY = touchScrollY;
         velocity = 0;
@@ -10190,7 +10193,7 @@
         if (root2 && !_isCursorMode()) {
           const maxY2 = (_b = root2.getMaxScroll().maxY) != null ? _b : 0;
           const centerIdx = _getCenterRowIndex();
-          const cursorIdx = _getCursorRowIndex();
+          const cursorIdx = getCursorRowIndex();
           if (touchScrollY <= 0 && centerIdx >= 0 && cursorIdx >= 0 && cursorIdx < centerIdx) {
             _boundPen = (centerIdx - cursorIdx) * LINE_HEIGHT;
             _boundIsTop = true;
@@ -10220,7 +10223,7 @@
         if (_rowIndex[idx]) moveCursorTo(_rowIndex[idx]);
         return;
       }
-      const dy = touchStartY2 - y;
+      const dy = touchStartY - y;
       const dt = now - lastTouchTime;
       if (dt > 0) {
         velocity = (lastTouchY - y) / dt * 16 * 1.7;
@@ -10234,7 +10237,7 @@
         _boundPen = Math.max(0, _boundPen + (_boundIsTop ? -dPen : dPen));
         if (_boundPen === 0) {
           touchScrollY = _boundIsTop ? 0 : maxY;
-          touchStartY2 = y;
+          touchStartY = y;
           setRootScrollY(touchScrollY);
           _snapCursorToCenter();
         } else {
@@ -10295,7 +10298,7 @@
             cursorFlingRaf = requestAnimationFrame(cursorFling2);
           };
           var cursorFling = cursorFling2;
-          cursorTouchBase = Math.max(0, _getCursorRowIndex());
+          cursorTouchBase = Math.max(0, getCursorRowIndex());
           cursorFlingRaf = requestAnimationFrame(cursorFling2);
         }
         return;
@@ -10728,7 +10731,7 @@
       " cursorRowId=",
       cursorRowId,
       " cursorIdx=",
-      _getCursorRowIndex(),
+      getCursorRowIndex(),
       " prevCursorRowId=",
       prevCursorRowId,
       " animatingPath=",
@@ -10903,6 +10906,142 @@
     });
   }
 
+  // src/client/modules/gesture-registry.ts
+  var GestureRegistry = class {
+    constructor() {
+      __publicField(this, "_handlers", []);
+      __publicField(this, "_active", null);
+      __publicField(this, "_enabled", true);
+      __publicField(this, "_initialized", false);
+      // 绑定的回调引用（用于 removeEventListener）
+      __publicField(this, "_onStart");
+      __publicField(this, "_onMove");
+      __publicField(this, "_onEnd");
+      this._onStart = this._handleStart.bind(this);
+      this._onMove = this._handleMove.bind(this);
+      this._onEnd = this._handleEnd.bind(this);
+    }
+    // ========== 注册 / 注销 ==========
+    /** 注册手势处理器，返回注销函数 */
+    register(handler) {
+      const oldIdx = this._handlers.findIndex((h) => h.id === handler.id);
+      if (oldIdx !== -1) this._handlers.splice(oldIdx, 1);
+      this._handlers.push(handler);
+      this._handlers.sort((a, b) => b.priority - a.priority);
+      return () => this.unregister(handler.id);
+    }
+    /** 按 id 注销处理器 */
+    unregister(id) {
+      const idx = this._handlers.findIndex((h) => h.id === id);
+      if (idx !== -1) {
+        this._handlers.splice(idx, 1);
+      }
+      if (this._active && this._active.handler.id === id) {
+        this._active = null;
+      }
+    }
+    isRegistered(id) {
+      return this._handlers.some((h) => h.id === id);
+    }
+    // ========== 全局控制 ==========
+    disable() {
+      this._enabled = false;
+      this._active = null;
+    }
+    enable() {
+      this._enabled = true;
+    }
+    get enabled() {
+      return this._enabled;
+    }
+    // ========== 生命周期 ==========
+    /** 初始化：注册 document 级 touch 监听（在主入口调用一次） */
+    init() {
+      if (this._initialized) return;
+      this._initialized = true;
+      document.addEventListener("touchstart", this._onStart, { passive: false });
+      document.addEventListener("touchmove", this._onMove, { passive: true });
+      document.addEventListener("touchend", this._onEnd, { passive: true });
+      document.addEventListener("touchcancel", this._onEnd, { passive: true });
+    }
+    /** 销毁：移除所有监听 */
+    destroy() {
+      document.removeEventListener("touchstart", this._onStart);
+      document.removeEventListener("touchmove", this._onMove);
+      document.removeEventListener("touchend", this._onEnd);
+      document.removeEventListener("touchcancel", this._onEnd);
+      this._handlers = [];
+      this._active = null;
+      this._initialized = false;
+    }
+    // ========== 内部调度 ==========
+    _matchTarget(handler, target, event) {
+      if (typeof handler.targetFilter === "string") {
+        return !!target.closest(handler.targetFilter);
+      }
+      return handler.targetFilter(target, event);
+    }
+    _shouldStop(handler, phase) {
+      const sp = handler.stopPropagation;
+      if (typeof sp === "boolean") return sp;
+      if (typeof sp === "object") return !!sp[phase];
+      return false;
+    }
+    _handleStart(e) {
+      var _a;
+      if (!this._enabled) return;
+      this._active = null;
+      const target = e.target;
+      if (!target) return;
+      for (const handler of this._handlers) {
+        if (handler.condition && !handler.condition()) continue;
+        if (!this._matchTarget(handler, target, e)) continue;
+        if (handler.onBeforeStart && !handler.onBeforeStart(e)) continue;
+        const touch = e.touches[0];
+        this._active = {
+          handler,
+          startX: touch.clientX,
+          startY: touch.clientY,
+          startTime: Date.now()
+        };
+        if (this._shouldStop(handler, "start")) e.stopPropagation();
+        (_a = handler.onStart) == null ? void 0 : _a.call(handler, e);
+        return;
+      }
+    }
+    _handleMove(e) {
+      var _a, _b, _c, _d;
+      if (!this._enabled) return;
+      const active = this._active;
+      if (!active) return;
+      if (active.handler.condition && !active.handler.condition()) {
+        (_b = (_a = active.handler).onEnd) == null ? void 0 : _b.call(_a, e, 0, 0, Date.now() - active.startTime);
+        this._active = null;
+        return;
+      }
+      const touch = e.touches[0];
+      const dx = touch.clientX - active.startX;
+      const dy = touch.clientY - active.startY;
+      const elapsed = Date.now() - active.startTime;
+      if (this._shouldStop(active.handler, "move")) e.stopPropagation();
+      (_d = (_c = active.handler).onMove) == null ? void 0 : _d.call(_c, e, dx, dy, elapsed);
+    }
+    _handleEnd(e) {
+      var _a, _b;
+      if (!this._enabled) return;
+      const active = this._active;
+      if (!active) return;
+      const touch = e.changedTouches[0];
+      const dx = touch ? touch.clientX - active.startX : 0;
+      const dy = touch ? touch.clientY - active.startY : 0;
+      const elapsed = Date.now() - active.startTime;
+      if (this._shouldStop(active.handler, "end")) e.stopPropagation();
+      (_b = (_a = active.handler).onEnd) == null ? void 0 : _b.call(_a, e, dx, dy, elapsed);
+      this._active = null;
+    }
+  };
+  var gestures = new GestureRegistry();
+
   // src/client/modules/card-stack.ts
   var CARD_BG = "rgba(20,16,32,0.92)";
   var CARD_COLORS = [
@@ -10955,12 +11094,22 @@
     const el = document.createElement("div");
     el.className = "stack-card";
     el.dataset.index = String(index);
+    const randomRight = 14 + Math.floor(Math.random() * 12);
+    const randomRotate = (Math.random() - 0.5) * 4;
     const topPx = Math.round(window.innerHeight * STACK_TOP_RATIO + index * CARD_GAP);
+    el.dataset.randomRight = String(randomRight);
+    el.dataset.randomRotate = String(randomRotate);
     const alpha = 0.85;
     const [c1, c2, c3] = getTriple(index, alpha);
+    const shadow = [
+      "0 2px 4px rgba(0,0,0,0.3)",
+      "0 8px 16px rgba(0,0,0,0.25)",
+      "0 16px 32px rgba(0,0,0,0.2)",
+      "-4px 4px 8px rgba(0,0,0,0.15)"
+    ].join(",");
     el.style.cssText = [
       "position:absolute",
-      "right:16px",
+      "right:" + randomRight + "px",
       "top:" + topPx + "px",
       "width:min(85%, 260px)",
       "height:" + CARD_HEIGHT + "px",
@@ -10974,18 +11123,27 @@
       "border:1px solid transparent",
       "border-left-width:3px",
       "background: linear-gradient(" + CARD_BG + "," + CARD_BG + ") padding-box, linear-gradient(135deg," + c1 + "," + c2 + "," + c3 + ") border-box",
-      "box-shadow:-6px 6px 24px rgba(0,0,0,0.5)",
+      "box-shadow:" + shadow,
+      "transform:rotate(" + randomRotate + "deg)",
       "cursor:pointer",
       "transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1)",
-      "z-index:" + (10 - index),
-      "opacity:" + (1 - index * 0.12),
+      "z-index:" + (10 + index),
+      "opacity:1",
       "user-select:none",
       "-webkit-user-select:none"
     ].join(";");
     el.innerHTML = '<div class="stack-card-icon" style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;background:' + color.iconBg + ";color:" + color.border + '">' + card.icon + '</div><div class="stack-card-info" style="flex:1;min-width:0">  <div class="stack-card-name" style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + card.name + '</div>  <div class="stack-card-desc" style="font-size:11px;opacity:0.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px">' + card.desc + '</div></div><div class="stack-card-index" style="font-size:11px;font-weight:600;opacity:0.4;width:20px;text-align:center;flex-shrink:0">' + String(index + 1).padStart(2, "0") + "</div>";
+    el.addEventListener("click", (e) => {
+      const idx = parseInt(el.dataset.index || "0", 10);
+      if (idx !== _focusIndex) {
+        _focusIndex = idx;
+        updateFocus();
+      }
+    });
     return el;
   }
   function buildPanel() {
+    console.log("[CARD-STACK] buildPanel called");
     const panel = document.createElement("div");
     panel.className = "stack-panel";
     panel.style.cssText = [
@@ -11040,31 +11198,33 @@
         console.log("[card-stack] select:", card.id, card.name);
       }
     }, { passive: true });
+    console.log("[CARD-STACK] buildPanel done, _panelEl=", _panelEl, "offsetWidth=", panel.offsetWidth);
   }
   function updateFocus() {
     for (let i = 0; i < _cardEls.length; i++) {
       const el = _cardEls[i];
       const dist = Math.abs(i - _focusIndex);
       if (dist === 0) {
-        el.style.transform = "translateX(-12px) scale(1.04)";
+        el.style.transform = "translateX(-20px) scale(1.04) rotate(0deg)";
         el.style.opacity = "1";
         el.style.backdropFilter = "blur(16px)";
         el.style.webkitBackdropFilter = "blur(16px)";
         const alpha = 0.85;
         const [c1, c2, c3] = getTriple(i, alpha);
         el.style.background = "linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, linear-gradient(135deg," + c1 + "," + c2 + "," + c3 + ") border-box";
-        el.style.zIndex = "20";
+        el.style.boxShadow = "0 4px 8px rgba(0,0,0,0.4),0 12px 24px rgba(0,0,0,0.3),0 24px 48px rgba(0,0,0,0.25),-6px 6px 12px rgba(0,0,0,0.2)";
         const idxEl = el.querySelector(".stack-card-index");
         if (idxEl) idxEl.style.opacity = "0.8";
       } else {
-        el.style.transform = "translateX(0px) scale(1)";
+        const randomRotate = el.dataset.randomRotate || "0";
+        el.style.transform = "translateX(0px) scale(1) rotate(" + randomRotate + "deg)";
         el.style.opacity = "1";
-        el.style.zIndex = String(20 - dist);
         el.style.backdropFilter = "blur(16px)";
         el.style.webkitBackdropFilter = "blur(16px)";
         const alpha2 = 0.85;
         const [c4, c5, c6] = getTriple(i, alpha2);
         el.style.background = "linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, linear-gradient(135deg," + c4 + "," + c5 + "," + c6 + ") border-box";
+        el.style.boxShadow = "0 2px 4px rgba(0,0,0,0.3),0 8px 16px rgba(0,0,0,0.25),0 16px 32px rgba(0,0,0,0.2),-4px 4px 8px rgba(0,0,0,0.15)";
         const idxEl = el.querySelector(".stack-card-index");
         if (idxEl) idxEl.style.opacity = "0.3";
       }
@@ -11079,7 +11239,15 @@
   function openCardStack() {
     if (_isOpen) return;
     _isOpen = true;
-    _focusIndex = 0;
+    const cursorIdx = getCursorRowIndex();
+    const totalRows = getRowIndexLength();
+    const cardCount = CARDS.length;
+    if (cursorIdx >= 0 && totalRows > 0) {
+      _focusIndex = Math.floor(cursorIdx / totalRows * cardCount);
+      _focusIndex = Math.max(0, Math.min(cardCount - 1, _focusIndex));
+    } else {
+      _focusIndex = 0;
+    }
     if (_panelEl) {
       const pw = _panelEl.offsetWidth || Math.min(window.innerWidth * 0.85, 300);
       _panelEl.style.right = String(-pw * (1 - PEEK_RATIO)) + "px";
@@ -11101,6 +11269,26 @@
   }
   function initCardStack() {
     buildPanel();
+    gestures.register({
+      id: "card-stack-global",
+      targetFilter: () => true,
+      condition: () => isCardStackOpen(),
+      priority: 80,
+      onMove: (e, dx, dy) => {
+        if (dx > 60) {
+          closeCardStack();
+          return;
+        }
+        if (Math.abs(dy) > 30) {
+          const dir = dy < 0 ? 1 : -1;
+          const newIndex = _focusIndex + dir;
+          if (newIndex >= 0 && newIndex < CARDS.length) {
+            _focusIndex = newIndex;
+            updateFocus();
+          }
+        }
+      }
+    });
     window.addEventListener("resize", () => {
       repositionCards();
       if (_isOpen && _panelEl) {
@@ -11111,58 +11299,41 @@
   }
 
   // src/client/modules/gestures.ts
-  var touchStartX = 0;
-  var touchStartY = 0;
-  var touchStarted = false;
   function initGestures() {
-    document.addEventListener("touchstart", (e) => {
-      if (e.target.closest(".light-orb")) return;
-      if (e.target.closest(".stack-panel")) {
-        touchStarted = false;
-        return;
-      }
-      touchStartX = e.touches[0].clientX;
-      touchStartY = e.touches[0].clientY;
-      touchStarted = true;
-    }, { passive: true });
-    document.addEventListener("touchmove", (e) => {
-      var _a;
-      if (e.target.closest(".light-orb")) return;
-      if (!touchStarted) return;
-      const dx = e.touches[0].clientX - touchStartX;
-      const dy = e.touches[0].clientY - touchStartY;
-      const isHorizontal = Math.abs(dx) > Math.abs(dy) * 1.5;
-      if (isCardStackOpen()) {
-        if (dx > 50) {
-          closeCardStack();
-          touchStarted = false;
+    gestures.register({
+      id: "gestures-page-swipe",
+      targetFilter: (target) => {
+        return !target.closest(".light-orb") && !target.closest(".stack-panel");
+      },
+      priority: 50,
+      onMove: (e, dx, dy) => {
+        var _a;
+        const isHorizontal = Math.abs(dx) > Math.abs(dy) * 1.5;
+        if (isCardStackOpen()) {
+          if (dx > 50) {
+            closeCardStack();
+            return;
+          }
           return;
         }
-        return;
-      }
-      if ((_a = document.getElementById("sidebar")) == null ? void 0 : _a.classList.contains("open")) {
+        if ((_a = document.getElementById("sidebar")) == null ? void 0 : _a.classList.contains("open")) {
+          if (dx < -60) {
+            closeSidebar();
+            return;
+          }
+          return;
+        }
+        if (!isHorizontal) return;
         if (dx < -60) {
-          closeSidebar();
-          touchStarted = false;
+          openCardStack();
           return;
         }
-        return;
+        if (dx > 60) {
+          openSidebar();
+          return;
+        }
       }
-      if (!isHorizontal) return;
-      if (dx < -60) {
-        openCardStack();
-        touchStarted = false;
-        return;
-      }
-      if (dx > 60) {
-        openSidebar();
-        touchStarted = false;
-        return;
-      }
-    }, { passive: true });
-    document.addEventListener("touchend", () => {
-      touchStarted = false;
-    }, { passive: true });
+    });
   }
 
   // src/client/engine/text-layout/bidi.ts
@@ -13178,18 +13349,21 @@
     orbEl.style.bottom = "auto";
     freeOrbX = clamped.x;
     freeOrbY = clamped.y;
-    orbEl.addEventListener("touchstart", (e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      startDrag(e.touches[0].clientX, e.touches[0].clientY);
-    }, { passive: false });
-    orbEl.addEventListener("touchmove", (e) => {
-      e.stopPropagation();
-      moveDrag(e.touches[0].clientX, e.touches[0].clientY);
-    }, { passive: false });
-    orbEl.addEventListener("touchend", (e) => {
-      e.stopPropagation();
-      endDrag();
+    gestures.register({
+      id: "orb",
+      targetFilter: ".light-orb",
+      priority: 100,
+      stopPropagation: true,
+      onStart: (e) => {
+        e.preventDefault();
+        startDrag(e.touches[0].clientX, e.touches[0].clientY);
+      },
+      onMove: (e) => {
+        moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+      },
+      onEnd: () => {
+        endDrag();
+      }
     });
     let mouseDragging = false;
     orbEl.addEventListener("mousedown", (e) => {
@@ -13323,6 +13497,7 @@
   }
 
   // src/client/main.ts
+  gestures.init();
   initApp();
   initUI();
   initGestures();

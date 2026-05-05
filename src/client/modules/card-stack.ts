@@ -1,3 +1,6 @@
+import { gestures } from "./gesture-registry.js";
+import { getCursorRowIndex, getRowIndexLength } from "./tree-render.js";
+
 /**
  * KFM v4 - 堆叠卡片面板
  *
@@ -78,6 +81,7 @@ let _touchStartTime = 0;
 
 // ========== DOM 构建 ==========
 
+
 function createCard(index: number): HTMLElement {
   const card = CARDS[index];
   const color = CARD_COLORS[index];
@@ -86,15 +90,30 @@ function createCard(index: number): HTMLElement {
   el.className = 'stack-card';
   el.dataset.index = String(index);
 
+  // 随机偏移：让卡片看起来像是散落在桌面上
+  const randomRight = 14 + Math.floor(Math.random() * 12); // 14-26px
+  const randomRotate = (Math.random() - 0.5) * 4; // -2deg ~ +2deg 微倾斜
   const topPx = Math.round(window.innerHeight * STACK_TOP_RATIO + index * CARD_GAP);
 
-  // 三色渐变边框（完全复刻光球面板的格式，仅改配色）
+  // 存储随机值供后续使用
+  el.dataset.randomRight = String(randomRight);
+  el.dataset.randomRotate = String(randomRotate);
+
+  // 三色渐变边框
   const alpha = 0.85;
   const [c1, c2, c3] = getTriple(index, alpha);
 
+  // 多层阴影：立体感，像桌面上的物件
+  const shadow = [
+    '0 2px 4px rgba(0,0,0,0.3)',
+    '0 8px 16px rgba(0,0,0,0.25)',
+    '0 16px 32px rgba(0,0,0,0.2)',
+    '-4px 4px 8px rgba(0,0,0,0.15)',
+  ].join(',');
+
   el.style.cssText = [
     'position:absolute',
-    'right:16px',
+    'right:' + randomRight + 'px',
     'top:' + topPx + 'px',
     'width:min(85%, 260px)',
     'height:' + CARD_HEIGHT + 'px',
@@ -108,11 +127,12 @@ function createCard(index: number): HTMLElement {
     'border:1px solid transparent',
     'border-left-width:3px',
     'background: linear-gradient(' + CARD_BG + ',' + CARD_BG + ') padding-box, linear-gradient(135deg,' + c1 + ',' + c2 + ',' + c3 + ') border-box',
-    'box-shadow:-6px 6px 24px rgba(0,0,0,0.5)',
+    'box-shadow:' + shadow,
+    'transform:rotate(' + randomRotate + 'deg)',
     'cursor:pointer',
     'transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1)',
-    'z-index:' + (10 - index),
-    'opacity:' + (1 - index * 0.12),
+    'z-index:' + (10 + index),
+    'opacity:1',
     'user-select:none',
     '-webkit-user-select:none',
   ].join(';');
@@ -125,10 +145,18 @@ function createCard(index: number): HTMLElement {
     + '</div>'
     + '<div class="stack-card-index" style="font-size:11px;font-weight:600;opacity:0.4;width:20px;text-align:center;flex-shrink:0">' + String(index + 1).padStart(2, '0') + '</div>';
 
+  // 点击卡片切换焦点
+  el.addEventListener("click", (e) => {
+    const idx = parseInt(el.dataset.index || "0", 10);
+    if (idx !== _focusIndex) {
+      _focusIndex = idx;
+      updateFocus();
+    }
+  });
   return el;
 }
-
 function buildPanel(): void {
+  console.log("[CARD-STACK] buildPanel called");
   const panel = document.createElement('div');
   panel.className = 'stack-panel';
   panel.style.cssText = [
@@ -191,6 +219,7 @@ function buildPanel(): void {
       // TODO: 打开对应盒子
     }
   }, { passive: true });
+  console.log("[CARD-STACK] buildPanel done, _panelEl=", _panelEl, "offsetWidth=", panel.offsetWidth);
 }
 
 function updateFocus(): void {
@@ -199,25 +228,31 @@ function updateFocus(): void {
     const dist = Math.abs(i - _focusIndex);
 
     if (dist === 0) {
-      el.style.transform = 'translateX(-12px) scale(1.04)';
+      // 聚焦：左移更多、取消旋转、增强阴影（不改层级）
+      el.style.transform = 'translateX(-20px) scale(1.04) rotate(0deg)';
       el.style.opacity = '1';
-      el.style.backdropFilter = "blur(16px)";
-      el.style.webkitBackdropFilter = "blur(16px)";
+      el.style.backdropFilter = 'blur(16px)';
+      el.style.webkitBackdropFilter = 'blur(16px)';
       const alpha = 0.85;
       const [c1, c2, c3] = getTriple(i, alpha);
-      el.style.background = "linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, linear-gradient(135deg," + c1 + "," + c2 + "," + c3 + ") border-box";
-      el.style.zIndex = '20';
+      el.style.background = 'linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, linear-gradient(135deg,' + c1 + ',' + c2 + ',' + c3 + ') border-box';
+      // 聚焦时阴影更突出
+      el.style.boxShadow = '0 4px 8px rgba(0,0,0,0.4),0 12px 24px rgba(0,0,0,0.3),0 24px 48px rgba(0,0,0,0.25),-6px 6px 12px rgba(0,0,0,0.2)';
+      // 不改 zIndex，保持原有层级
       const idxEl = el.querySelector('.stack-card-index') as HTMLElement;
       if (idxEl) idxEl.style.opacity = '0.8';
     } else {
-      el.style.transform = 'translateX(0px) scale(1)';
-      el.style.opacity = "1";
-      el.style.zIndex = String(20 - dist);
-      el.style.backdropFilter = "blur(16px)";
-      el.style.webkitBackdropFilter = "blur(16px)";
+      // 非聚焦：恢复随机旋转、普通阴影
+      const randomRotate = el.dataset.randomRotate || '0';
+      el.style.transform = 'translateX(0px) scale(1) rotate(' + randomRotate + 'deg)';
+      el.style.opacity = '1';
+      // 不改 zIndex
+      el.style.backdropFilter = 'blur(16px)';
+      el.style.webkitBackdropFilter = 'blur(16px)';
       const alpha2 = 0.85;
       const [c4, c5, c6] = getTriple(i, alpha2);
-      el.style.background = "linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, linear-gradient(135deg," + c4 + "," + c5 + "," + c6 + ") border-box";
+      el.style.background = 'linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, linear-gradient(135deg,' + c4 + ',' + c5 + ',' + c6 + ') border-box';
+      el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3),0 8px 16px rgba(0,0,0,0.25),0 16px 32px rgba(0,0,0,0.2),-4px 4px 8px rgba(0,0,0,0.15)';
       const idxEl = el.querySelector('.stack-card-index') as HTMLElement;
       if (idxEl) idxEl.style.opacity = '0.3';
     }
@@ -237,7 +272,17 @@ function repositionCards(): void {
 export function openCardStack(): void {
   if (_isOpen) return;
   _isOpen = true;
-  _focusIndex = 0;
+  // 根据文件树光标位置映射到卡片索引
+  const cursorIdx = getCursorRowIndex();
+  const totalRows = getRowIndexLength();
+  const cardCount = CARDS.length;
+  if (cursorIdx >= 0 && totalRows > 0) {
+    // 光标位置映射到卡片：cursorIdx/totalRows * cardCount
+    _focusIndex = Math.floor((cursorIdx / totalRows) * cardCount);
+    _focusIndex = Math.max(0, Math.min(cardCount - 1, _focusIndex));
+  } else {
+    _focusIndex = 0;
+  }
   if (_panelEl) {
     const pw = _panelEl.offsetWidth || Math.min(window.innerWidth * 0.85, 300);
     _panelEl.style.right = String(-pw * (1 - PEEK_RATIO)) + 'px';
@@ -276,12 +321,30 @@ export function focusPrev(): void {
 
 export function initCardStack(): void {
   buildPanel();
+  // 全局滑动切卡（通过 GestureRegistry 管理）
+  gestures.register({
+    id: 'card-stack-global',
+    targetFilter: () => true,
+    condition: () => isCardStackOpen(),
+    priority: 80,
+    onMove: (e, dx, dy) => {
+      if (dx > 60) { closeCardStack(); return; }
+      if (Math.abs(dy) > 30) {
+        const dir = dy < 0 ? 1 : -1;
+        const newIndex = _focusIndex + dir;
+        if (newIndex >= 0 && newIndex < CARDS.length) {
+          _focusIndex = newIndex;
+          updateFocus();
+        }
+      }
+    },
+  });
   window.addEventListener('resize', () => {
     repositionCards();
-    // 面板打开时重新计算右偏移
     if (_isOpen && _panelEl) {
       const pw = _panelEl.offsetWidth || Math.min(window.innerWidth * 0.85, 300);
       _panelEl.style.right = String(-pw * (1 - PEEK_RATIO)) + 'px';
     }
   });
 }
+

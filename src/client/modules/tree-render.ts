@@ -180,6 +180,7 @@ let _rowIndex: Box[] = [];
 // 事件堆栈：同一会话内快速点击串行执行
 let _sessionId = 0;
 export function getSession(): number { return _sessionId; }
+export function getRowIndexLength(): number { return _rowIndex.length; }
 
 let animatingPath: string | null = null;
 let _animBusy = false;
@@ -503,7 +504,7 @@ function _rebuildRowIndex(root: Box): void {
 }
 
 /** ��取当前光标在行索引中的位置 */
-function _getCursorRowIndex(): number {
+export function getCursorRowIndex(): number {
   if (!cursorRowId || _rowIndex.length === 0) return -1;
   return _rowIndex.findIndex(box => box.id === cursorRowId);
 }
@@ -511,7 +512,7 @@ function _getCursorRowIndex(): number {
 /** 移���光标 N 步（正=向下，负=向上），自动 clamp */
 function _moveCursorBySteps(steps: number): void {
   if (_rowIndex.length === 0) return;
-  const oldIdx = _getCursorRowIndex();
+  const oldIdx = getCursorRowIndex();
   const newIdx = Math.max(0, Math.min(_rowIndex.length - 1, oldIdx + steps));
   if (newIdx !== oldIdx && _rowIndex[newIdx]) {
     moveCursorTo(_rowIndex[newIdx]);
@@ -569,7 +570,7 @@ function _scrollToCenterCursor(): void {
   const canvas = document.getElementById('tree-canvas');
   const canvasH = canvas?.clientHeight ?? 618;
   const maxY = root.getMaxScroll().maxY;
-  const idx = _getCursorRowIndex();
+  const idx = getCursorRowIndex();
   if (idx < 0 || !_rowIndex[idx]) return;
   try {
     const abs = _rowIndex[idx].getAbsolutePosition();
@@ -605,7 +606,7 @@ function _createSidebarTouchArea(): void {
   // 点击任意位置 → 执行���前光标行的动作
   box.addEventListener('click', () => {
     if (!cursorRowId || _rowIndex.length === 0) return;
-    const idx = _getCursorRowIndex();
+    const idx = getCursorRowIndex();
     if (idx < 0 || !_rowIndex[idx]) return;
     const hit = _rowIndex[idx]!;
     const hitData = (hit as any).data || {};
@@ -745,7 +746,7 @@ function bindScrollEvents(canvas: HTMLElement): void {
     console.log('[touchstart] _touchIsCursor=', _touchIsCursor, ' _isCursorMode()=', _isCursorMode());
 
     if (_touchIsCursor) {
-      cursorTouchBase = Math.max(0, _getCursorRowIndex());
+      cursorTouchBase = Math.max(0, getCursorRowIndex());
       cursorTouchStartY = y;
       cursorLastTouchY = y;
       cursorLastTouchTime = lastTouchTime;
@@ -762,7 +763,7 @@ function bindScrollEvents(canvas: HTMLElement): void {
       if (root2 && !_isCursorMode()) {
         const maxY2 = root2.getMaxScroll().maxY ?? 0;
         const centerIdx = _getCenterRowIndex();
-        const cursorIdx = _getCursorRowIndex();
+        const cursorIdx = getCursorRowIndex();
         if (touchScrollY <= 0 && centerIdx >= 0 && cursorIdx >= 0 && cursorIdx < centerIdx) {
           _boundPen = (centerIdx - cursorIdx) * LINE_HEIGHT;
           _boundIsTop = true;
@@ -863,7 +864,7 @@ function bindScrollEvents(canvas: HTMLElement): void {
     if (_touchIsCursor) {
       if (Math.abs(cursorVelocity) >= 0.5 && _rowIndex.length > 0) {
         // 将起点更新为当前光标位置，避免飞回 touchstart ����置
-        cursorTouchBase = Math.max(0, _getCursorRowIndex());
+        cursorTouchBase = Math.max(0, getCursorRowIndex());
         function cursorFling() {
           cursorVelocity *= 0.96;
           if (Math.abs(cursorVelocity) < 0.3) { cursorFlingRaf = 0; return; }
@@ -1357,7 +1358,7 @@ function rebuildTree(): void {
     ' maxY=', diagRoot?.getMaxScroll().maxY,
     ' _rowIndexLen=', _rowIndex.length,
     ' cursorRowId=', cursorRowId,
-    ' cursorIdx=', _getCursorRowIndex(),
+    ' cursorIdx=', getCursorRowIndex(),
     ' prevCursorRowId=', prevCursorRowId,
     ' animatingPath=', animatingPath);
 }

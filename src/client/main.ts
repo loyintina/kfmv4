@@ -27,7 +27,9 @@ import { initOrb } from './modules/orb.js';
 import { initTreeRenderer } from './modules/tree-render.js';
 import { loadFileTree, initLazyLoader } from './modules/tree-loader.js';
 import { initCardStack } from './modules/card-stack.js';
+import { gestures } from './modules/gesture-registry.js';
 
+gestures.init();
 initApp();
 initUI();
 initGestures();
