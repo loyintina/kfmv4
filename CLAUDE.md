@@ -14,9 +14,9 @@ AI 人机交互个人工作台，面向移动端浏览器。核心理念：**一
 
 ```bash
 npm run build    # esbuild 构建服务端+客户端
+npm run check    # tsc --noEmit 类型检查（每次改动后必跑！能拦住 import 缺失）
 npm run start    # node dist/server/index.js  →  http://localhost:8021
 npm run dev      # ts-node ESM 模式直接运行
-npm run check    # tsc --noEmit 类型检查
 ```
 
 ## 目录结构
@@ -37,12 +37,12 @@ src/
 │   │   ├── StyleConfig.ts    # 边框状态配置（hidden/normal/emphasis）
 │   │   └── GestureRecognizer.ts  # 手势识别器
 │   └── modules/
-│       ├── gesture-registry.ts    # 🔑 手势注册中心（优先级调度，独占执行）
-│       ├── renderer-lifecycle.ts  # 🔑 渲染器生命周期（状态托管 + rAF/Listener 追踪）
-│       ├── dom-refs.ts            # 🔑 DOM 元素引用注册表（全局 getElementById 收敛于此）
-│       ├── canvas-utils.ts        # 🔧 通用 Canvas 工具函数（60行，非文件树专属）
-│       ├── canvas-cursor.ts       # 🔧 通用光标系统（246行，非文件树专属）
-│       ├── canvas-scroll.ts       # 🔧 通用滚动系统（352行，非文件树专属）
+│       ├── gesture-registry.ts    # 手势注册中心（优先级调度，独占执行）
+│       ├── renderer-lifecycle.ts  # 渲染器生命周期（状态托管 + rAF/Listener 追踪）
+│       ├── dom-refs.ts            # DOM 元素引用注册表（全局 getElementById 收敛于此）
+│       ├── canvas-utils.ts        # 通用 Canvas 工具函数（60行，非文件树专属）
+│       ├── canvas-cursor.ts       # 通用光标系统（246行，非文件树专属）
+│       ├── canvas-scroll.ts       # 通用滚动系统（352行，非文件树专属）
 │       ├── app.ts            # 全局初始化、日志系统、Toast、AI输入栏
 │       ├── state.ts          # KFMState 统一状态层（发布-订阅 + beforeExpand Hook）
 │       ├── tree-model.ts     # Box 树构建（文件树布局）
@@ -117,6 +117,50 @@ tree-render.ts ← 被 tree-loader.ts、card-stack.ts、ui.ts 导入
   └─ ui.ts 导入: onSidebarOpen, onSidebarClose
 ```
 
+## 完整性校验（每次改动后必做）
+
+**改动代码后，按顺序执行：**
+
+```bash
+npm run check   # TypeScript 类型检查 → 拦住 import/export 缺失、类型错误
+npm run build   # esbuild 构建 → 拦住语法错误、未定义变量
+```
+
+两者都要过。esbuild 在打包模式下不严格检查命名导出（把模块合并到同一作用域），所以不能只靠 build。`tsc --noEmit` 是真正严格的检查。
+
+### 已知的预存类型错误
+
+以下错误是引擎层设计遗留的，`npm run check` 会报告但不会影响功能：
+- `box.ts`: `Property 'n'` 缺失（BoxOptions 的 `n` 字段）
+- `renderer.ts`: `GlobalCompositeOperation` / `HighlightConfig.side` 类型不匹配
+- `state.ts`: `KFMStateType` 缺少 `_beforeExpandHooks` 等属性
+- `tree-model.ts`: `expandedPaths` / `selectFile` 类型不匹配
+- `card-stack.ts`: `webkitBackdropFilter` 非标准属性
+- `orb.ts`: null 检查告警
+
+如果 `npm run check` 报出其他文件或新的错误 → 很可能是改动引入的。
+
+## 功能回归检查清单
+
+**每次部署后，在手机上对着这个清单快速过一遍：**
+
+| # | 操作 | 预期结果 |
+|---|------|----------|
+| 1 | 打开页面 | 主页面正常显示，光球可见 |
+| 2 | 点击左上角三横线按钮（或右滑） | 左栏打开，文件树完整显示 |
+| 3 | 左栏区域上下滑动 | 文件列表正常滚动 |
+| 4 | 点击文件夹 | 文件夹展开/折叠，有动画 |
+| 5 | 点击文件 | 文件打开（在堆叠卡片中显示） |
+| 6 | 左栏区域左滑 | 左栏关闭，回到主页面 |
+| 7 | 左栏打开时，左侧 Canvas 区域左滑 | 左栏关闭（不召唤卡堆） |
+| 8 | 主页面（侧栏关闭时）左滑 | 召唤堆叠卡片面板 |
+| 9 | 卡堆打开后右滑 | 卡堆关闭 |
+| 10 | 卡堆打开后上下滑 | 切换卡片 |
+| 11 | 点击光球 | AI 对话面板打开 |
+| 12 | 右边缘右滑（侧栏关闭时） | 打开侧栏 |
+
+**注意第 7 条**：这是最容易出 bug 的场景。左栏打开后，侧栏触摸区（sidebarTouchArea）的触摸事件会冒泡到 document 被 GestureRegistry 捕获。如果先关了侧栏再冒泡上去，全局层会以为"侧栏已关闭"而走"召唤卡堆"的逻辑。
+
 ## 已知坑点
 
 - **bash heredoc**: SSH + heredoc + Python 三重引号会导致 shell 误解析，建议用 `scp` 上传 Python 脚本
@@ -124,3 +168,4 @@ tree-render.ts ← 被 tree-loader.ts、card-stack.ts、ui.ts 导入
 - **Canvas 初始化**: canvas 刚创建时 `clientWidth=0`，需要在 `requestAnimationFrame` 回调里 `rebuildTree()`
 - **PM2 不存在**: 用 `nohup node dist/server/index.js &` 启动，`kill $(pgrep -f node.*dist/server)` 停止
 - **`kill` 退出码 255**: 没有匹配进程时 pgrep 返回空 → kill 报 255，不影响后续命令
+- **事件冒泡冲突**: 侧栏触摸区事件会冒泡到 document → GestureRegistry 误触发。修复时注意只隔离 sidebarTouchArea，不要阻止 Canvas 区域的正常冒泡
