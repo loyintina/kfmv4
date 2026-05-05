@@ -10906,19 +10906,12 @@
   // src/client/modules/card-stack.ts
   var CARD_COLORS = [
     { border: "#D4899B", bg: "rgba(212,137,155,0.12)", iconBg: "rgba(212,137,155,0.18)" },
-    // Dusty Rose
     { border: "#D4A080", bg: "rgba(212,160,128,0.12)", iconBg: "rgba(212,160,128,0.18)" },
-    // Terracotta
     { border: "#C9B07A", bg: "rgba(201,176,122,0.12)", iconBg: "rgba(201,176,122,0.18)" },
-    // Antique Gold
     { border: "#8FB58F", bg: "rgba(143,181,143,0.12)", iconBg: "rgba(143,181,143,0.18)" },
-    // Sage
     { border: "#7DA8B8", bg: "rgba(125,168,184,0.12)", iconBg: "rgba(125,168,184,0.18)" },
-    // Dusty Teal
     { border: "#8E8EB8", bg: "rgba(142,142,184,0.12)", iconBg: "rgba(142,142,184,0.18)" },
-    // Muted Lavender
     { border: "#A08CC4", bg: "rgba(160,140,196,0.12)", iconBg: "rgba(160,140,196,0.18)" }
-    // Soft Violet
   ];
   var CARDS = [
     { id: "settings", icon: "\u2699", name: "\u8BBE\u7F6E", desc: "API Key \xB7 \u6A21\u578B\u9009\u62E9" },
@@ -10929,10 +10922,13 @@
     { id: "stats", icon: "\u{1F4CA}", name: "\u7EDF\u8BA1", desc: "\u4F7F\u7528\u6570\u636E \xB7 \u8D8B\u52BF" },
     { id: "about", icon: "\u{1F48E}", name: "\u5173\u4E8E", desc: "\u7248\u672C \xB7 \u4FE1\u606F" }
   ];
+  var PEEK_RATIO = 0.55;
+  var CARD_GAP = 36;
+  var CARD_HEIGHT = 68;
+  var STACK_TOP_RATIO = 0.12;
   var _isOpen = false;
   var _focusIndex = 0;
   var _panelEl = null;
-  var _overlayEl = null;
   var _cardEls = [];
   var _touchStartY = 0;
   var _swipeStartX = 0;
@@ -10944,13 +10940,13 @@
     const el = document.createElement("div");
     el.className = "stack-card";
     el.dataset.index = String(index);
-    const topPx = Math.round(window.innerHeight * 0.12 + index * 36);
+    const topPx = Math.round(window.innerHeight * STACK_TOP_RATIO + index * CARD_GAP);
     el.style.cssText = [
       "position:absolute",
       "right:16px",
       "top:" + topPx + "px",
       "width:min(85%, 260px)",
-      "height:68px",
+      "height:" + CARD_HEIGHT + "px",
       "border-radius:12px",
       "padding:12px 14px",
       "display:flex",
@@ -10972,26 +10968,6 @@
     return el;
   }
   function buildPanel() {
-    const overlay = document.createElement("div");
-    overlay.className = "stack-overlay";
-    overlay.style.cssText = [
-      "position:fixed",
-      "top:0",
-      "left:0",
-      "right:0",
-      "bottom:0",
-      "z-index:600",
-      "background:rgba(0,0,0,0.5)",
-      "opacity:0",
-      "pointer-events:none",
-      "transition:opacity 0.3s ease"
-    ].join(";");
-    overlay.addEventListener("click", closeCardStack);
-    overlay.addEventListener("touchend", (e) => {
-      if (e.target === overlay) closeCardStack();
-    }, { passive: true });
-    document.body.appendChild(overlay);
-    _overlayEl = overlay;
     const panel = document.createElement("div");
     panel.className = "stack-panel";
     panel.style.cssText = [
@@ -11013,6 +10989,7 @@
       _cardEls.push(card);
     }
     panel.addEventListener("touchstart", (e) => {
+      e.stopPropagation();
       const t = e.touches[0];
       _touchStartY = t.clientY;
       _swipeStartX = t.clientX;
@@ -11028,7 +11005,7 @@
         closeCardStack();
         return;
       }
-      if (Math.abs(dy) > 30) {
+      if (Math.abs(dy) > 25) {
         const dir = dy < 0 ? 1 : -1;
         const newIndex = _focusIndex + dir;
         if (newIndex >= 0 && newIndex < CARDS.length) {
@@ -11069,19 +11046,18 @@
   function repositionCards() {
     if (!_panelEl) return;
     for (let i = 0; i < _cardEls.length; i++) {
-      _cardEls[i].style.top = Math.round(window.innerHeight * 0.12 + i * 36) + "px";
+      _cardEls[i].style.top = Math.round(window.innerHeight * STACK_TOP_RATIO + i * CARD_GAP) + "px";
     }
+  }
+  function getPeekX() {
+    return (1 - PEEK_RATIO) * 100;
   }
   function openCardStack() {
     if (_isOpen) return;
     _isOpen = true;
     _focusIndex = 0;
-    if (_overlayEl) {
-      _overlayEl.style.opacity = "1";
-      _overlayEl.style.pointerEvents = "auto";
-    }
     if (_panelEl) {
-      _panelEl.style.transform = "translateX(0)";
+      _panelEl.style.transform = "translateX(" + getPeekX() + "%)";
       _panelEl.style.pointerEvents = "auto";
     }
     repositionCards();
@@ -11090,10 +11066,6 @@
   function closeCardStack() {
     if (!_isOpen) return;
     _isOpen = false;
-    if (_overlayEl) {
-      _overlayEl.style.opacity = "0";
-      _overlayEl.style.pointerEvents = "none";
-    }
     if (_panelEl) {
       _panelEl.style.transform = "translateX(100%)";
       _panelEl.style.pointerEvents = "none";
@@ -11114,28 +11086,27 @@
   function initGestures() {
     document.addEventListener("touchstart", (e) => {
       if (e.target.closest(".light-orb")) return;
+      if (e.target.closest(".stack-panel")) {
+        touchStarted = false;
+        return;
+      }
       touchStartX = e.touches[0].clientX;
       touchStartY = e.touches[0].clientY;
       touchStarted = true;
     }, { passive: true });
     document.addEventListener("touchmove", (e) => {
-      var _a, _b;
+      var _a;
       if (e.target.closest(".light-orb")) return;
       if (!touchStarted) return;
       const dx = e.touches[0].clientX - touchStartX;
-      const startX = touchStartX;
-      const vw = window.innerWidth;
+      const dy = e.touches[0].clientY - touchStartY;
+      const isHorizontal = Math.abs(dx) > Math.abs(dy) * 1.5;
       if (isCardStackOpen()) {
         if (dx > 50) {
           closeCardStack();
           touchStarted = false;
           return;
         }
-        return;
-      }
-      if (startX > vw - 30 && dx < -40) {
-        openCardStack();
-        touchStarted = false;
         return;
       }
       if ((_a = document.getElementById("sidebar")) == null ? void 0 : _a.classList.contains("open")) {
@@ -11146,7 +11117,13 @@
         }
         return;
       }
-      if (!((_b = document.getElementById("sidebar")) == null ? void 0 : _b.classList.contains("open")) && dx > 60) {
+      if (!isHorizontal) return;
+      if (dx < -60) {
+        openCardStack();
+        touchStarted = false;
+        return;
+      }
+      if (dx > 60) {
         openSidebar();
         touchStarted = false;
         return;

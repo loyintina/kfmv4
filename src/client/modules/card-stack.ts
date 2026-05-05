@@ -1,19 +1,20 @@
 /**
  * KFM v4 - 堆叠卡片面板
  *
- * 右侧边缘左滑唤出，7 张卡片按暮光光谱堆叠。
- * 垂直滑动切换聚焦卡片，点击聚焦卡打开对应盒子（TODO），点击背景关闭。
+ * 全屏左滑唤出，7 张卡片按暮光光谱堆叠。
+ * 垂直滑动切换聚焦卡片，点击聚焦卡打开对应盒子（TODO）。
+ * 无遮罩 + 卡片只露部分，像半开的抽屉。
  */
 
 // ========== 暮光配色 (Twilight) ==========
 const CARD_COLORS = [
-  { border: '#D4899B', bg: 'rgba(212,137,155,0.12)', iconBg: 'rgba(212,137,155,0.18)' },  // Dusty Rose
-  { border: '#D4A080', bg: 'rgba(212,160,128,0.12)', iconBg: 'rgba(212,160,128,0.18)' },  // Terracotta
-  { border: '#C9B07A', bg: 'rgba(201,176,122,0.12)', iconBg: 'rgba(201,176,122,0.18)' },  // Antique Gold
-  { border: '#8FB58F', bg: 'rgba(143,181,143,0.12)', iconBg: 'rgba(143,181,143,0.18)' },  // Sage
-  { border: '#7DA8B8', bg: 'rgba(125,168,184,0.12)', iconBg: 'rgba(125,168,184,0.18)' },  // Dusty Teal
-  { border: '#8E8EB8', bg: 'rgba(142,142,184,0.12)', iconBg: 'rgba(142,142,184,0.18)' },  // Muted Lavender
-  { border: '#A08CC4', bg: 'rgba(160,140,196,0.12)', iconBg: 'rgba(160,140,196,0.18)' },  // Soft Violet
+  { border: '#D4899B', bg: 'rgba(212,137,155,0.12)', iconBg: 'rgba(212,137,155,0.18)' },
+  { border: '#D4A080', bg: 'rgba(212,160,128,0.12)', iconBg: 'rgba(212,160,128,0.18)' },
+  { border: '#C9B07A', bg: 'rgba(201,176,122,0.12)', iconBg: 'rgba(201,176,122,0.18)' },
+  { border: '#8FB58F', bg: 'rgba(143,181,143,0.12)', iconBg: 'rgba(143,181,143,0.18)' },
+  { border: '#7DA8B8', bg: 'rgba(125,168,184,0.12)', iconBg: 'rgba(125,168,184,0.18)' },
+  { border: '#8E8EB8', bg: 'rgba(142,142,184,0.12)', iconBg: 'rgba(142,142,184,0.18)' },
+  { border: '#A08CC4', bg: 'rgba(160,140,196,0.12)', iconBg: 'rgba(160,140,196,0.18)' },
 ];
 
 interface CardDef {
@@ -33,11 +34,20 @@ const CARDS: CardDef[] = [
   { id: 'about',    icon: '\uD83D\uDC8E', name: '关于',     desc: '版本 \u00b7 信息' },
 ];
 
+// ========== 配置 ==========
+/** 面板打开时露出比例（0-1），0.6 = 露出 60% */
+const PEEK_RATIO = 0.55;
+/** 卡片垂直间距 px */
+const CARD_GAP = 36;
+/** 卡片高度 px */
+const CARD_HEIGHT = 68;
+/** 堆叠起始位置（距顶部比例） */
+const STACK_TOP_RATIO = 0.12;
+
 // ========== 状态 ==========
 let _isOpen = false;
 let _focusIndex = 0;
 let _panelEl: HTMLElement | null = null;
-let _overlayEl: HTMLElement | null = null;
 let _cardEls: HTMLElement[] = [];
 
 // 触摸状态
@@ -56,13 +66,13 @@ function createCard(index: number): HTMLElement {
   el.className = 'stack-card';
   el.dataset.index = String(index);
 
-  const topPx = Math.round(window.innerHeight * 0.12 + index * 36);
+  const topPx = Math.round(window.innerHeight * STACK_TOP_RATIO + index * CARD_GAP);
   el.style.cssText = [
     'position:absolute',
     'right:16px',
     'top:' + topPx + 'px',
     'width:min(85%, 260px)',
-    'height:68px',
+    'height:' + CARD_HEIGHT + 'px',
     'border-radius:12px',
     'padding:12px 14px',
     'display:flex',
@@ -93,24 +103,6 @@ function createCard(index: number): HTMLElement {
 }
 
 function buildPanel(): void {
-  // 背景遮罩
-  const overlay = document.createElement('div');
-  overlay.className = 'stack-overlay';
-  overlay.style.cssText = [
-    'position:fixed', 'top:0', 'left:0', 'right:0', 'bottom:0',
-    'z-index:600', 'background:rgba(0,0,0,0.5)',
-    'opacity:0', 'pointer-events:none',
-    'transition:opacity 0.3s ease',
-  ].join(';');
-  overlay.addEventListener('click', closeCardStack);
-  overlay.addEventListener('touchend', (e) => {
-    // 点击遮罩本身才关闭（防止卡片事件冒泡误触）
-    if (e.target === overlay) closeCardStack();
-  }, { passive: true });
-  document.body.appendChild(overlay);
-  _overlayEl = overlay;
-
-  // 面板容器
   const panel = document.createElement('div');
   panel.className = 'stack-panel';
   panel.style.cssText = [
@@ -132,8 +124,9 @@ function buildPanel(): void {
     _cardEls.push(card);
   }
 
-  // 面板触摸事件
+  // 面板内触摸事件
   panel.addEventListener('touchstart', (e: TouchEvent) => {
+    e.stopPropagation();
     const t = e.touches[0];
     _touchStartY = t.clientY;
     _swipeStartX = t.clientX;
@@ -147,15 +140,15 @@ function buildPanel(): void {
     const dx = t.clientX - _swipeStartX;
     _touchMoved = true;
 
-    // 右滑超过阈值 -> 关闭
+    // 右滑 -> 关闭
     if (dx > 50) {
       closeCardStack();
       return;
     }
 
     // 垂直滑动切换聚焦
-    if (Math.abs(dy) > 30) {
-      const dir = dy < 0 ? 1 : -1; // 上滑 = index++ (往下翻), 下滑 = index--
+    if (Math.abs(dy) > 25) {
+      const dir = dy < 0 ? 1 : -1;
       const newIndex = _focusIndex + dir;
       if (newIndex >= 0 && newIndex < CARDS.length) {
         _focusIndex = newIndex;
@@ -166,7 +159,6 @@ function buildPanel(): void {
   }, { passive: true });
 
   panel.addEventListener('touchend', () => {
-    // 点击（无移动、短暂触摸）-> 打开对应盒子（TODO）
     if (!_touchMoved && Date.now() - _touchStartTime < 300) {
       const card = CARDS[_focusIndex];
       console.log('[card-stack] select:', card.id, card.name);
@@ -181,7 +173,6 @@ function updateFocus(): void {
     const dist = Math.abs(i - _focusIndex);
 
     if (dist === 0) {
-      // 聚焦卡片：高亮边框、向右弹出、完全可见
       el.style.transform = 'translateX(-12px) scale(1.04)';
       el.style.opacity = '1';
       el.style.zIndex = '20';
@@ -189,7 +180,6 @@ function updateFocus(): void {
       const idxEl = el.querySelector('.stack-card-index') as HTMLElement;
       if (idxEl) idxEl.style.opacity = '0.8';
     } else {
-      // 非聚焦：回退、渐隐
       el.style.transform = 'translateX(0px) scale(1)';
       el.style.opacity = String(Math.max(0.12, 1 - dist * 0.28));
       el.style.zIndex = String(10 - i);
@@ -204,22 +194,23 @@ function updateFocus(): void {
 function repositionCards(): void {
   if (!_panelEl) return;
   for (let i = 0; i < _cardEls.length; i++) {
-    _cardEls[i].style.top = Math.round(window.innerHeight * 0.12 + i * 36) + 'px';
+    _cardEls[i].style.top = Math.round(window.innerHeight * STACK_TOP_RATIO + i * CARD_GAP) + 'px';
   }
 }
 
 // ========== 公开 API ==========
 
+/** 面板完全露出的 translateX */
+function getPeekX(): number {
+  return (1 - PEEK_RATIO) * 100;
+}
+
 export function openCardStack(): void {
   if (_isOpen) return;
   _isOpen = true;
   _focusIndex = 0;
-  if (_overlayEl) {
-    _overlayEl.style.opacity = '1';
-    _overlayEl.style.pointerEvents = 'auto';
-  }
   if (_panelEl) {
-    _panelEl.style.transform = 'translateX(0)';
+    _panelEl.style.transform = 'translateX(' + getPeekX() + '%)';
     _panelEl.style.pointerEvents = 'auto';
   }
   repositionCards();
@@ -229,10 +220,6 @@ export function openCardStack(): void {
 export function closeCardStack(): void {
   if (!_isOpen) return;
   _isOpen = false;
-  if (_overlayEl) {
-    _overlayEl.style.opacity = '0';
-    _overlayEl.style.pointerEvents = 'none';
-  }
   if (_panelEl) {
     _panelEl.style.transform = 'translateX(100%)';
     _panelEl.style.pointerEvents = 'none';
