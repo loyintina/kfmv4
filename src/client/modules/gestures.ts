@@ -6,6 +6,10 @@
  *  - 右滑 -> 打开侧栏（侧栏关闭时，非卡堆区域）
  *  - 左滑 -> 关闭侧栏（侧栏打开时）
  *  - 卡堆打开时：右滑关闭
+ *
+ * 设计要点：
+ *  - touchstart 时拍状态快照，整个手势过程只读快照，不查实时 DOM
+ *  - 一次手势只触发一个动作（_actionTaken 锁），防止竞态冒泡
  */
 import { openSidebar, closeSidebar } from './ui.js';
 import { openCardStack, closeCardStack, isCardStackOpen } from './card-stack.js';
@@ -13,38 +17,44 @@ import { gestures } from './gesture-registry.js';
 import { DOM } from "./dom-refs.js";
 
 export function initGestures(): void {
+  // 手势闭包状态：一次触摸只做一次决策
+  type GestureSnapshot = 'cardstack-open' | 'sidebar-open' | 'both-closed';
+  let _snapshot: GestureSnapshot = 'both-closed';
+  let _actionTaken = false;
+
   gestures.register({
     id: 'gestures-page-swipe',
     targetFilter: (target) => {
       return !target.closest('.light-orb') && !target.closest('.stack-panel');
     },
     priority: 50,
-    onMove: (e, dx, dy) => {
+    onStart: () => {
+      // 在触摸开始时拍下状态快照，后续只读快照
+      if (isCardStackOpen()) {
+        _snapshot = 'cardstack-open';
+      } else if (DOM.sidebar?.classList.contains('open')) {
+        _snapshot = 'sidebar-open';
+      } else {
+        _snapshot = 'both-closed';
+      }
+      _actionTaken = false;
+    },
+    onMove: (_e, dx, dy) => {
+      if (_actionTaken) return;
       const isHorizontal = Math.abs(dx) > Math.abs(dy) * 1.5;
 
-      // 堆叠卡片打开时：右滑关闭
-      if (isCardStackOpen()) {
-        if (dx > 50) { closeCardStack(); return; }
-        return;
-      }
-
-      // 侧栏打开时：左滑关闭
-      if (DOM.sidebar?.classList.contains('open')) {
-        if (dx < -60) { closeSidebar(); return; }
-        return;
-      }
-
-      // 两侧都关闭时：全屏手势
-      if (!isHorizontal) return;
-
-      if (dx < -60) {
-        openCardStack();
-        return;
-      }
-
-      if (dx > 60) {
-        openSidebar();
-        return;
+      switch (_snapshot) {
+        case 'cardstack-open':
+          if (dx > 50) { closeCardStack(); _actionTaken = true; }
+          break;
+        case 'sidebar-open':
+          if (dx < -60) { closeSidebar(); _actionTaken = true; }
+          break;
+        case 'both-closed':
+          if (!isHorizontal) break;
+          if (dx < -60) { openCardStack(); _actionTaken = true; }
+          else if (dx > 60) { openSidebar(); _actionTaken = true; }
+          break;
       }
     },
   });

@@ -10523,8 +10523,12 @@
   }
   function bindClickEvents(canvas, _dpr) {
     canvas.addEventListener("click", (e) => {
-      if (!L.renderer) return;
+      if (!L.renderer) {
+        window.showToast && window.showToast("CLICK: no renderer");
+        return;
+      }
       L._clickQueue.push({ offsetX: e.offsetX, offsetY: e.offsetY });
+      window.showToast && window.showToast("tap: " + e.offsetX + "," + e.offsetY);
       processClickQueue();
     });
   }
@@ -10553,6 +10557,7 @@
     for (const child of root.children) {
       if (!child.visible || child.disabled) continue;
       const hit = findTapTarget(child, px, py);
+      window.showToast && window.showToast("hit=" + (hit ? hit.id : "null"));
       if ((_b = hit == null ? void 0 : hit.gesture) == null ? void 0 : _b.onTap) {
         if (L.cursorRowId !== null && L.cursorRowId === hit.id) {
           const hitData = hit.data || {};
@@ -10742,7 +10747,10 @@
   }
   function rebuildTree() {
     var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t;
-    if (!L.renderer) return;
+    if (!L.renderer) {
+      window.showToast && window.showToast("CLICK: no renderer");
+      return;
+    }
     if (L._animBusy) {
       if (L._animBusyAt && Date.now() - L._animBusyAt > 3e3) {
         L._animBusy = false;
@@ -11454,37 +11462,51 @@
 
   // src/client/modules/gestures.ts
   function initGestures() {
+    let _snapshot = "both-closed";
+    let _actionTaken = false;
     gestures.register({
       id: "gestures-page-swipe",
       targetFilter: (target) => {
         return !target.closest(".light-orb") && !target.closest(".stack-panel");
       },
       priority: 50,
-      onMove: (e, dx, dy) => {
+      onStart: () => {
         var _a;
-        const isHorizontal = Math.abs(dx) > Math.abs(dy) * 1.5;
         if (isCardStackOpen()) {
-          if (dx > 50) {
-            closeCardStack();
-            return;
-          }
-          return;
+          _snapshot = "cardstack-open";
+        } else if ((_a = DOM.sidebar) == null ? void 0 : _a.classList.contains("open")) {
+          _snapshot = "sidebar-open";
+        } else {
+          _snapshot = "both-closed";
         }
-        if ((_a = DOM.sidebar) == null ? void 0 : _a.classList.contains("open")) {
-          if (dx < -60) {
-            closeSidebar();
-            return;
-          }
-          return;
-        }
-        if (!isHorizontal) return;
-        if (dx < -60) {
-          openCardStack();
-          return;
-        }
-        if (dx > 60) {
-          openSidebar();
-          return;
+        _actionTaken = false;
+      },
+      onMove: (_e, dx, dy) => {
+        if (_actionTaken) return;
+        const isHorizontal = Math.abs(dx) > Math.abs(dy) * 1.5;
+        switch (_snapshot) {
+          case "cardstack-open":
+            if (dx > 50) {
+              closeCardStack();
+              _actionTaken = true;
+            }
+            break;
+          case "sidebar-open":
+            if (dx < -60) {
+              closeSidebar();
+              _actionTaken = true;
+            }
+            break;
+          case "both-closed":
+            if (!isHorizontal) break;
+            if (dx < -60) {
+              openCardStack();
+              _actionTaken = true;
+            } else if (dx > 60) {
+              openSidebar();
+              _actionTaken = true;
+            }
+            break;
         }
       }
     });
