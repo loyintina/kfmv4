@@ -10913,6 +10913,13 @@
     { border: "#8E8EB8", bg: "rgba(142,142,184,0.12)", iconBg: "rgba(142,142,184,0.18)" },
     { border: "#A08CC4", bg: "rgba(160,140,196,0.12)", iconBg: "rgba(160,140,196,0.18)" }
   ];
+  function adjustColor(hex, amount) {
+    const num = parseInt(hex.slice(1), 16);
+    const r = Math.min(255, Math.max(0, (num >> 16) + amount));
+    const g = Math.min(255, Math.max(0, (num >> 8 & 255) + amount));
+    const b = Math.min(255, Math.max(0, (num & 255) + amount));
+    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  }
   var CARDS = [
     { id: "settings", icon: "\u2699", name: "\u8BBE\u7F6E", desc: "API Key \xB7 \u6A21\u578B\u9009\u62E9" },
     { id: "files", icon: "\u{1F4C1}", name: "\u6587\u4EF6\u7BA1\u7406", desc: "\u4E0A\u4F20 \xB7 \u4E0B\u8F7D \xB7 \u6574\u7406" },
@@ -10954,7 +10961,7 @@
       "gap:10px",
       "backdrop-filter:blur(12px)",
       "-webkit-backdrop-filter:blur(12px)",
-      "border:1px solid " + color.border + ";border-left-width:3px",
+      "border:1px solid " + color.border,
       "background:" + color.bg,
       "box-shadow:-6px 6px 24px rgba(0,0,0,0.5)",
       "cursor:pointer",
@@ -10964,7 +10971,7 @@
       "user-select:none",
       "-webkit-user-select:none"
     ].join(";");
-    el.innerHTML = '<div class="stack-card-icon" style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;background:' + color.iconBg + ";color:" + color.border + '">' + card.icon + '</div><div class="stack-card-info" style="flex:1;min-width:0">  <div class="stack-card-name" style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + card.name + '</div>  <div class="stack-card-desc" style="font-size:11px;opacity:0.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px">' + card.desc + '</div></div><div class="stack-card-index" style="font-size:11px;font-weight:600;opacity:0.4;width:20px;text-align:center;flex-shrink:0">' + String(index + 1).padStart(2, "0") + "</div>";
+    el.innerHTML = '<div class="stack-card-icon" style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;background:' + color.iconBg + ";color:" + color.border + '">' + card.icon + '</div><div class="stack-card-info" style="flex:1;min-width:0">  <div class="stack-card-name" style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + card.name + '</div>  <div class="stack-card-desc" style="font-size:11px;opacity:0.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px">' + card.desc + '</div></div><div class="stack-card-index" style="font-size:11px;font-weight:600;opacity:0.4;width:20px;text-align:center;flex-shrink:0">' + String(index + 1).padStart(2, "0") + '</div><div class="stack-card-strip" style="position:absolute;left:0;top:1px;bottom:1px;width:3px;border-radius:12px 0 0 12px;background:linear-gradient(to bottom,' + adjustColor(color.border, 40) + "," + color.border + "," + adjustColor(color.border, -35) + ');pointer-events:none"></div>';
     return el;
   }
   function buildPanel() {
@@ -11031,17 +11038,19 @@
         el.style.opacity = "1";
         el.style.zIndex = "20";
         el.style.borderWidth = "1px";
-        el.style.borderLeftWidth = "3px";
         const idxEl = el.querySelector(".stack-card-index");
         if (idxEl) idxEl.style.opacity = "0.8";
+        const stripEl = el.querySelector(".stack-card-strip");
+        if (stripEl) stripEl.style.opacity = "1";
       } else {
         el.style.transform = "translateX(0px) scale(1)";
         el.style.opacity = String(Math.max(0.12, 1 - dist * 0.28));
         el.style.zIndex = String(10 - i);
         el.style.borderWidth = "1px";
-        el.style.borderLeftWidth = "3px";
         const idxEl = el.querySelector(".stack-card-index");
         if (idxEl) idxEl.style.opacity = "0.3";
+        const stripEl = el.querySelector(".stack-card-strip");
+        if (stripEl) stripEl.style.opacity = String(Math.max(0.15, 1 - dist * 0.35));
       }
     }
   }
