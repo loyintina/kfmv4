@@ -10904,21 +10904,29 @@
   }
 
   // src/client/modules/card-stack.ts
+  var CARD_BG = "rgba(20,16,32,0.92)";
   var CARD_COLORS = [
-    { border: "#D4899B", bg: "rgba(212,137,155,0.12)", iconBg: "rgba(212,137,155,0.18)" },
-    { border: "#D4A080", bg: "rgba(212,160,128,0.12)", iconBg: "rgba(212,160,128,0.18)" },
-    { border: "#C9B07A", bg: "rgba(201,176,122,0.12)", iconBg: "rgba(201,176,122,0.18)" },
-    { border: "#8FB58F", bg: "rgba(143,181,143,0.12)", iconBg: "rgba(143,181,143,0.18)" },
-    { border: "#7DA8B8", bg: "rgba(125,168,184,0.12)", iconBg: "rgba(125,168,184,0.18)" },
-    { border: "#8E8EB8", bg: "rgba(142,142,184,0.12)", iconBg: "rgba(142,142,184,0.18)" },
-    { border: "#A08CC4", bg: "rgba(160,140,196,0.12)", iconBg: "rgba(160,140,196,0.18)" }
+    { border: "#D4899B", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(212,137,155,0.25)" },
+    { border: "#D4A080", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(212,160,128,0.25)" },
+    { border: "#C9B07A", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(201,176,122,0.25)" },
+    { border: "#8FB58F", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(143,181,143,0.25)" },
+    { border: "#7DA8B8", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(125,168,184,0.25)" },
+    { border: "#8E8EB8", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(142,142,184,0.25)" },
+    { border: "#A08CC4", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(160,140,196,0.25)" }
   ];
-  function adjustColor(hex, amount) {
+  function hexToRgba(hex, alpha) {
     const num = parseInt(hex.slice(1), 16);
-    const r = Math.min(255, Math.max(0, (num >> 16) + amount));
-    const g = Math.min(255, Math.max(0, (num >> 8 & 255) + amount));
-    const b = Math.min(255, Math.max(0, (num & 255) + amount));
-    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+    const r = num >> 16 & 255;
+    const g = num >> 8 & 255;
+    const b = num & 255;
+    return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
+  }
+  function getTriple(i, alpha) {
+    const n = CARD_COLORS.length;
+    const mainRgba = hexToRgba(CARD_COLORS[i].border, alpha);
+    const prev = i > 0 ? hexToRgba(CARD_COLORS[i - 1].border, alpha) : hexToRgba(CARD_COLORS[0].border, Math.min(1, alpha + 0.15));
+    const next = i < n - 1 ? hexToRgba(CARD_COLORS[i + 1].border, alpha) : hexToRgba(CARD_COLORS[n - 1].border, Math.max(0.05, alpha - 0.2));
+    return [prev, mainRgba, next];
   }
   var CARDS = [
     { id: "settings", icon: "\u2699", name: "\u8BBE\u7F6E", desc: "API Key \xB7 \u6A21\u578B\u9009\u62E9" },
@@ -10948,8 +10956,8 @@
     el.className = "stack-card";
     el.dataset.index = String(index);
     const topPx = Math.round(window.innerHeight * STACK_TOP_RATIO + index * CARD_GAP);
-    const light = adjustColor(color.border, 45);
-    const dark = adjustColor(color.border, -35);
+    const alpha = 0.85;
+    const [c1, c2, c3] = getTriple(index, alpha);
     el.style.cssText = [
       "position:absolute",
       "right:16px",
@@ -10961,12 +10969,11 @@
       "display:flex",
       "align-items:center",
       "gap:10px",
-      "backdrop-filter:blur(12px)",
-      "-webkit-backdrop-filter:blur(12px)",
+      "backdrop-filter:blur(16px)",
+      "-webkit-backdrop-filter:blur(16px)",
       "border:1px solid transparent",
       "border-left-width:3px",
-      "border-image:linear-gradient(135deg," + light + "," + color.border + "," + dark + ") 1",
-      "background:" + color.bg,
+      "background: linear-gradient(" + CARD_BG + "," + CARD_BG + ") padding-box, linear-gradient(135deg," + c1 + "," + c2 + "," + c3 + ") border-box",
       "box-shadow:-6px 6px 24px rgba(0,0,0,0.5)",
       "cursor:pointer",
       "transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1)",
@@ -10988,8 +10995,9 @@
       "height:100%",
       "width:min(85%, 300px)",
       "z-index:610",
-      "transform:translateX(100%)",
-      "transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1)",
+      "right:-300px",
+      // 关闭时右偏移（不用 transform）
+      "transition:right 0.35s cubic-bezier(0.34,1.56,0.64,1)",
       "pointer-events:none"
     ].join(";");
     document.body.appendChild(panel);
@@ -11040,13 +11048,23 @@
       if (dist === 0) {
         el.style.transform = "translateX(-12px) scale(1.04)";
         el.style.opacity = "1";
+        el.style.backdropFilter = "blur(16px)";
+        el.style.webkitBackdropFilter = "blur(16px)";
+        const alpha = 0.85;
+        const [c1, c2, c3] = getTriple(i, alpha);
+        el.style.background = "linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, linear-gradient(135deg," + c1 + "," + c2 + "," + c3 + ") border-box";
         el.style.zIndex = "20";
         const idxEl = el.querySelector(".stack-card-index");
         if (idxEl) idxEl.style.opacity = "0.8";
       } else {
         el.style.transform = "translateX(0px) scale(1)";
-        el.style.opacity = String(Math.max(0.12, 1 - dist * 0.28));
-        el.style.zIndex = String(10 - i);
+        el.style.opacity = "1";
+        el.style.zIndex = String(20 - dist);
+        el.style.backdropFilter = "blur(16px)";
+        el.style.webkitBackdropFilter = "blur(16px)";
+        const alpha2 = 0.85;
+        const [c4, c5, c6] = getTriple(i, alpha2);
+        el.style.background = "linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, linear-gradient(135deg," + c4 + "," + c5 + "," + c6 + ") border-box";
         const idxEl = el.querySelector(".stack-card-index");
         if (idxEl) idxEl.style.opacity = "0.3";
       }
@@ -11058,15 +11076,13 @@
       _cardEls[i].style.top = Math.round(window.innerHeight * STACK_TOP_RATIO + i * CARD_GAP) + "px";
     }
   }
-  function getPeekX() {
-    return (1 - PEEK_RATIO) * 100;
-  }
   function openCardStack() {
     if (_isOpen) return;
     _isOpen = true;
     _focusIndex = 0;
     if (_panelEl) {
-      _panelEl.style.transform = "translateX(" + getPeekX() + "%)";
+      const pw = _panelEl.offsetWidth || Math.min(window.innerWidth * 0.85, 300);
+      _panelEl.style.right = String(-pw * (1 - PEEK_RATIO)) + "px";
       _panelEl.style.pointerEvents = "auto";
     }
     repositionCards();
@@ -11076,7 +11092,7 @@
     if (!_isOpen) return;
     _isOpen = false;
     if (_panelEl) {
-      _panelEl.style.transform = "translateX(100%)";
+      _panelEl.style.right = "-300px";
       _panelEl.style.pointerEvents = "none";
     }
   }
@@ -11085,7 +11101,13 @@
   }
   function initCardStack() {
     buildPanel();
-    window.addEventListener("resize", repositionCards);
+    window.addEventListener("resize", () => {
+      repositionCards();
+      if (_isOpen && _panelEl) {
+        const pw = _panelEl.offsetWidth || Math.min(window.innerWidth * 0.85, 300);
+        _panelEl.style.right = String(-pw * (1 - PEEK_RATIO)) + "px";
+      }
+    });
   }
 
   // src/client/modules/gestures.ts

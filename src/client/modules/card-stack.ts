@@ -7,23 +7,34 @@
  */
 
 // ========== 暮光配色 (Twilight) ==========
+const CARD_BG = 'rgba(20,16,32,0.92)';  // 深色毛玻璃底
 const CARD_COLORS = [
-  { border: '#D4899B', bg: 'rgba(212,137,155,0.12)', iconBg: 'rgba(212,137,155,0.18)' },
-  { border: '#D4A080', bg: 'rgba(212,160,128,0.12)', iconBg: 'rgba(212,160,128,0.18)' },
-  { border: '#C9B07A', bg: 'rgba(201,176,122,0.12)', iconBg: 'rgba(201,176,122,0.18)' },
-  { border: '#8FB58F', bg: 'rgba(143,181,143,0.12)', iconBg: 'rgba(143,181,143,0.18)' },
-  { border: '#7DA8B8', bg: 'rgba(125,168,184,0.12)', iconBg: 'rgba(125,168,184,0.18)' },
-  { border: '#8E8EB8', bg: 'rgba(142,142,184,0.12)', iconBg: 'rgba(142,142,184,0.18)' },
-  { border: '#A08CC4', bg: 'rgba(160,140,196,0.12)', iconBg: 'rgba(160,140,196,0.18)' },
+  { border: '#D4899B', bg: 'rgba(20,16,32,0.92)', iconBg: 'rgba(212,137,155,0.25)' },
+  { border: '#D4A080', bg: 'rgba(20,16,32,0.92)', iconBg: 'rgba(212,160,128,0.25)' },
+  { border: '#C9B07A', bg: 'rgba(20,16,32,0.92)', iconBg: 'rgba(201,176,122,0.25)' },
+  { border: '#8FB58F', bg: 'rgba(20,16,32,0.92)', iconBg: 'rgba(143,181,143,0.25)' },
+  { border: '#7DA8B8', bg: 'rgba(20,16,32,0.92)', iconBg: 'rgba(125,168,184,0.25)' },
+  { border: '#8E8EB8', bg: 'rgba(20,16,32,0.92)', iconBg: 'rgba(142,142,184,0.25)' },
+  { border: '#A08CC4', bg: 'rgba(20,16,32,0.92)', iconBg: 'rgba(160,140,196,0.25)' },
 ];
 
-// 颜色工具：生成浅/中/深三色
-function adjustColor(hex: string, amount: number): string {
+// 颜色工具：hex → rgba（带 alpha）
+function hexToRgba(hex: string, alpha: number): string {
   const num = parseInt(hex.slice(1), 16);
-  const r = Math.min(255, Math.max(0, (num >> 16) + amount));
-  const g = Math.min(255, Math.max(0, ((num >> 8) & 0xFF) + amount));
-  const b = Math.min(255, Math.max(0, (num & 0xFF) + amount));
-  return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  const r = (num >> 16) & 0xFF;
+  const g = (num >> 8) & 0xFF;
+  const b = num & 0xFF;
+  return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+}
+
+/** 获取卡片 i 的三色渐变 [前色, 主色, 后色]，全部 rgba 格式 */
+function getTriple(i: number, alpha: number): string[] {
+  const n = CARD_COLORS.length;
+  const mainRgba = hexToRgba(CARD_COLORS[i].border, alpha);
+  // 前/后色取相邻卡，首尾卡用自身变浅/变深
+  const prev = i > 0 ? hexToRgba(CARD_COLORS[i - 1].border, alpha) : hexToRgba(CARD_COLORS[0].border, Math.min(1, alpha + 0.15));
+  const next = i < n - 1 ? hexToRgba(CARD_COLORS[i + 1].border, alpha) : hexToRgba(CARD_COLORS[n - 1].border, Math.max(0.05, alpha - 0.2));
+  return [prev, mainRgba, next];
 }
 
 interface CardDef {
@@ -77,9 +88,9 @@ function createCard(index: number): HTMLElement {
 
   const topPx = Math.round(window.innerHeight * STACK_TOP_RATIO + index * CARD_GAP);
 
-  // 同 AI 输入框/光球面板的渐变边框技法
-  const light = adjustColor(color.border, 45);
-  const dark = adjustColor(color.border, -35);
+  // 三色渐变边框（完全复刻光球面板的格式，仅改配色）
+  const alpha = 0.85;
+  const [c1, c2, c3] = getTriple(index, alpha);
 
   el.style.cssText = [
     'position:absolute',
@@ -92,12 +103,11 @@ function createCard(index: number): HTMLElement {
     'display:flex',
     'align-items:center',
     'gap:10px',
-    'backdrop-filter:blur(12px)',
-    '-webkit-backdrop-filter:blur(12px)',
+    'backdrop-filter:blur(16px)',
+    '-webkit-backdrop-filter:blur(16px)',
     'border:1px solid transparent',
     'border-left-width:3px',
-    'border-image:linear-gradient(135deg,' + light + ',' + color.border + ',' + dark + ') 1',
-    'background:' + color.bg,
+    'background: linear-gradient(' + CARD_BG + ',' + CARD_BG + ') padding-box, linear-gradient(135deg,' + c1 + ',' + c2 + ',' + c3 + ') border-box',
     'box-shadow:-6px 6px 24px rgba(0,0,0,0.5)',
     'cursor:pointer',
     'transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1)',
@@ -126,8 +136,8 @@ function buildPanel(): void {
     'height:100%',
     'width:min(85%, 300px)',
     'z-index:610',
-    'transform:translateX(100%)',
-    'transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1)',
+    'right:-300px',  // 关闭时右偏移（不用 transform）
+    'transition:right 0.35s cubic-bezier(0.34,1.56,0.64,1)',
     'pointer-events:none',
   ].join(';');
   document.body.appendChild(panel);
@@ -191,13 +201,23 @@ function updateFocus(): void {
     if (dist === 0) {
       el.style.transform = 'translateX(-12px) scale(1.04)';
       el.style.opacity = '1';
+      el.style.backdropFilter = "blur(16px)";
+      el.style.webkitBackdropFilter = "blur(16px)";
+      const alpha = 0.85;
+      const [c1, c2, c3] = getTriple(i, alpha);
+      el.style.background = "linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, linear-gradient(135deg," + c1 + "," + c2 + "," + c3 + ") border-box";
       el.style.zIndex = '20';
       const idxEl = el.querySelector('.stack-card-index') as HTMLElement;
       if (idxEl) idxEl.style.opacity = '0.8';
     } else {
       el.style.transform = 'translateX(0px) scale(1)';
-      el.style.opacity = String(Math.max(0.12, 1 - dist * 0.28));
-      el.style.zIndex = String(10 - i);
+      el.style.opacity = "1";
+      el.style.zIndex = String(20 - dist);
+      el.style.backdropFilter = "blur(16px)";
+      el.style.webkitBackdropFilter = "blur(16px)";
+      const alpha2 = 0.85;
+      const [c4, c5, c6] = getTriple(i, alpha2);
+      el.style.background = "linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, linear-gradient(135deg," + c4 + "," + c5 + "," + c6 + ") border-box";
       const idxEl = el.querySelector('.stack-card-index') as HTMLElement;
       if (idxEl) idxEl.style.opacity = '0.3';
     }
@@ -214,17 +234,13 @@ function repositionCards(): void {
 
 // ========== 公开 API ==========
 
-/** 面板完全露出的 translateX */
-function getPeekX(): number {
-  return (1 - PEEK_RATIO) * 100;
-}
-
 export function openCardStack(): void {
   if (_isOpen) return;
   _isOpen = true;
   _focusIndex = 0;
   if (_panelEl) {
-    _panelEl.style.transform = 'translateX(' + getPeekX() + '%)';
+    const pw = _panelEl.offsetWidth || Math.min(window.innerWidth * 0.85, 300);
+    _panelEl.style.right = String(-pw * (1 - PEEK_RATIO)) + 'px';
     _panelEl.style.pointerEvents = 'auto';
   }
   repositionCards();
@@ -235,7 +251,7 @@ export function closeCardStack(): void {
   if (!_isOpen) return;
   _isOpen = false;
   if (_panelEl) {
-    _panelEl.style.transform = 'translateX(100%)';
+    _panelEl.style.right = '-300px';
     _panelEl.style.pointerEvents = 'none';
   }
 }
@@ -260,5 +276,12 @@ export function focusPrev(): void {
 
 export function initCardStack(): void {
   buildPanel();
-  window.addEventListener('resize', repositionCards);
+  window.addEventListener('resize', () => {
+    repositionCards();
+    // 面板打开时重新计算右偏移
+    if (_isOpen && _panelEl) {
+      const pw = _panelEl.offsetWidth || Math.min(window.innerWidth * 0.85, 300);
+      _panelEl.style.right = String(-pw * (1 - PEEK_RATIO)) + 'px';
+    }
+  });
 }
