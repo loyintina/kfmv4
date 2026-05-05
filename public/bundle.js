@@ -10903,6 +10903,210 @@
     });
   }
 
+  // src/client/modules/card-stack.ts
+  var CARD_COLORS = [
+    { border: "#D4899B", bg: "rgba(212,137,155,0.12)", iconBg: "rgba(212,137,155,0.18)" },
+    // Dusty Rose
+    { border: "#D4A080", bg: "rgba(212,160,128,0.12)", iconBg: "rgba(212,160,128,0.18)" },
+    // Terracotta
+    { border: "#C9B07A", bg: "rgba(201,176,122,0.12)", iconBg: "rgba(201,176,122,0.18)" },
+    // Antique Gold
+    { border: "#8FB58F", bg: "rgba(143,181,143,0.12)", iconBg: "rgba(143,181,143,0.18)" },
+    // Sage
+    { border: "#7DA8B8", bg: "rgba(125,168,184,0.12)", iconBg: "rgba(125,168,184,0.18)" },
+    // Dusty Teal
+    { border: "#8E8EB8", bg: "rgba(142,142,184,0.12)", iconBg: "rgba(142,142,184,0.18)" },
+    // Muted Lavender
+    { border: "#A08CC4", bg: "rgba(160,140,196,0.12)", iconBg: "rgba(160,140,196,0.18)" }
+    // Soft Violet
+  ];
+  var CARDS = [
+    { id: "settings", icon: "\u2699", name: "\u8BBE\u7F6E", desc: "API Key \xB7 \u6A21\u578B\u9009\u62E9" },
+    { id: "files", icon: "\u{1F4C1}", name: "\u6587\u4EF6\u7BA1\u7406", desc: "\u4E0A\u4F20 \xB7 \u4E0B\u8F7D \xB7 \u6574\u7406" },
+    { id: "notes", icon: "\u{1F4DD}", name: "\u7B14\u8BB0", desc: "\u5FEB\u901F\u8BB0\u5F55 \xB7 \u8349\u7A3F" },
+    { id: "plugins", icon: "\u{1F50C}", name: "\u63D2\u4EF6", desc: "\u6269\u5C55 \xB7 \u96C6\u6210" },
+    { id: "theme", icon: "\u{1F3A8}", name: "\u4E3B\u9898", desc: "\u5916\u89C2 \xB7 \u914D\u8272" },
+    { id: "stats", icon: "\u{1F4CA}", name: "\u7EDF\u8BA1", desc: "\u4F7F\u7528\u6570\u636E \xB7 \u8D8B\u52BF" },
+    { id: "about", icon: "\u{1F48E}", name: "\u5173\u4E8E", desc: "\u7248\u672C \xB7 \u4FE1\u606F" }
+  ];
+  var _isOpen = false;
+  var _focusIndex = 0;
+  var _panelEl = null;
+  var _overlayEl = null;
+  var _cardEls = [];
+  var _touchStartY = 0;
+  var _swipeStartX = 0;
+  var _touchMoved = false;
+  var _touchStartTime = 0;
+  function createCard(index) {
+    const card = CARDS[index];
+    const color = CARD_COLORS[index];
+    const el = document.createElement("div");
+    el.className = "stack-card";
+    el.dataset.index = String(index);
+    const topPx = Math.round(window.innerHeight * 0.12 + index * 36);
+    el.style.cssText = [
+      "position:absolute",
+      "right:16px",
+      "top:" + topPx + "px",
+      "width:min(85%, 260px)",
+      "height:68px",
+      "border-radius:12px",
+      "padding:12px 14px",
+      "display:flex",
+      "align-items:center",
+      "gap:10px",
+      "backdrop-filter:blur(12px)",
+      "-webkit-backdrop-filter:blur(12px)",
+      "border:1.5px solid " + color.border,
+      "background:" + color.bg,
+      "box-shadow:-6px 6px 24px rgba(0,0,0,0.5)",
+      "cursor:pointer",
+      "transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1)",
+      "z-index:" + (10 - index),
+      "opacity:" + (1 - index * 0.12),
+      "user-select:none",
+      "-webkit-user-select:none"
+    ].join(";");
+    el.innerHTML = '<div class="stack-card-icon" style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;background:' + color.iconBg + ";color:" + color.border + '">' + card.icon + '</div><div class="stack-card-info" style="flex:1;min-width:0">  <div class="stack-card-name" style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + card.name + '</div>  <div class="stack-card-desc" style="font-size:11px;opacity:0.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px">' + card.desc + '</div></div><div class="stack-card-index" style="font-size:11px;font-weight:600;opacity:0.4;width:20px;text-align:center;flex-shrink:0">' + String(index + 1).padStart(2, "0") + "</div>";
+    return el;
+  }
+  function buildPanel() {
+    const overlay = document.createElement("div");
+    overlay.className = "stack-overlay";
+    overlay.style.cssText = [
+      "position:fixed",
+      "top:0",
+      "left:0",
+      "right:0",
+      "bottom:0",
+      "z-index:600",
+      "background:rgba(0,0,0,0.5)",
+      "opacity:0",
+      "pointer-events:none",
+      "transition:opacity 0.3s ease"
+    ].join(";");
+    overlay.addEventListener("click", closeCardStack);
+    overlay.addEventListener("touchend", (e) => {
+      if (e.target === overlay) closeCardStack();
+    }, { passive: true });
+    document.body.appendChild(overlay);
+    _overlayEl = overlay;
+    const panel = document.createElement("div");
+    panel.className = "stack-panel";
+    panel.style.cssText = [
+      "position:fixed",
+      "top:0",
+      "right:0",
+      "height:100%",
+      "width:min(85%, 300px)",
+      "z-index:610",
+      "transform:translateX(100%)",
+      "transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1)",
+      "pointer-events:none"
+    ].join(";");
+    document.body.appendChild(panel);
+    _panelEl = panel;
+    for (let i = 0; i < CARDS.length; i++) {
+      const card = createCard(i);
+      panel.appendChild(card);
+      _cardEls.push(card);
+    }
+    panel.addEventListener("touchstart", (e) => {
+      const t = e.touches[0];
+      _touchStartY = t.clientY;
+      _swipeStartX = t.clientX;
+      _touchMoved = false;
+      _touchStartTime = Date.now();
+    }, { passive: true });
+    panel.addEventListener("touchmove", (e) => {
+      const t = e.touches[0];
+      const dy = t.clientY - _touchStartY;
+      const dx = t.clientX - _swipeStartX;
+      _touchMoved = true;
+      if (dx > 50) {
+        closeCardStack();
+        return;
+      }
+      if (Math.abs(dy) > 30) {
+        const dir = dy < 0 ? 1 : -1;
+        const newIndex = _focusIndex + dir;
+        if (newIndex >= 0 && newIndex < CARDS.length) {
+          _focusIndex = newIndex;
+          _touchStartY = t.clientY;
+          updateFocus();
+        }
+      }
+    }, { passive: true });
+    panel.addEventListener("touchend", () => {
+      if (!_touchMoved && Date.now() - _touchStartTime < 300) {
+        const card = CARDS[_focusIndex];
+        console.log("[card-stack] select:", card.id, card.name);
+      }
+    }, { passive: true });
+  }
+  function updateFocus() {
+    for (let i = 0; i < _cardEls.length; i++) {
+      const el = _cardEls[i];
+      const dist = Math.abs(i - _focusIndex);
+      if (dist === 0) {
+        el.style.transform = "translateX(-12px) scale(1.04)";
+        el.style.opacity = "1";
+        el.style.zIndex = "20";
+        el.style.borderWidth = "2px";
+        const idxEl = el.querySelector(".stack-card-index");
+        if (idxEl) idxEl.style.opacity = "0.8";
+      } else {
+        el.style.transform = "translateX(0px) scale(1)";
+        el.style.opacity = String(Math.max(0.12, 1 - dist * 0.28));
+        el.style.zIndex = String(10 - i);
+        el.style.borderWidth = "1.5px";
+        const idxEl = el.querySelector(".stack-card-index");
+        if (idxEl) idxEl.style.opacity = "0.3";
+      }
+    }
+  }
+  function repositionCards() {
+    if (!_panelEl) return;
+    for (let i = 0; i < _cardEls.length; i++) {
+      _cardEls[i].style.top = Math.round(window.innerHeight * 0.12 + i * 36) + "px";
+    }
+  }
+  function openCardStack() {
+    if (_isOpen) return;
+    _isOpen = true;
+    _focusIndex = 0;
+    if (_overlayEl) {
+      _overlayEl.style.opacity = "1";
+      _overlayEl.style.pointerEvents = "auto";
+    }
+    if (_panelEl) {
+      _panelEl.style.transform = "translateX(0)";
+      _panelEl.style.pointerEvents = "auto";
+    }
+    repositionCards();
+    updateFocus();
+  }
+  function closeCardStack() {
+    if (!_isOpen) return;
+    _isOpen = false;
+    if (_overlayEl) {
+      _overlayEl.style.opacity = "0";
+      _overlayEl.style.pointerEvents = "none";
+    }
+    if (_panelEl) {
+      _panelEl.style.transform = "translateX(100%)";
+      _panelEl.style.pointerEvents = "none";
+    }
+  }
+  function isCardStackOpen() {
+    return _isOpen;
+  }
+  function initCardStack() {
+    buildPanel();
+    window.addEventListener("resize", repositionCards);
+  }
+
   // src/client/modules/gestures.ts
   var touchStartX = 0;
   var touchStartY = 0;
@@ -10919,6 +11123,21 @@
       if (e.target.closest(".light-orb")) return;
       if (!touchStarted) return;
       const dx = e.touches[0].clientX - touchStartX;
+      const startX = touchStartX;
+      const vw = window.innerWidth;
+      if (isCardStackOpen()) {
+        if (dx > 50) {
+          closeCardStack();
+          touchStarted = false;
+          return;
+        }
+        return;
+      }
+      if (startX > vw - 30 && dx < -40) {
+        openCardStack();
+        touchStarted = false;
+        return;
+      }
       if ((_a = document.getElementById("sidebar")) == null ? void 0 : _a.classList.contains("open")) {
         if (dx < -60) {
           closeSidebar();
@@ -13101,6 +13320,7 @@
   initGestures();
   initOrb();
   initTreeRenderer();
+  initCardStack();
   loadFileTree("/root").then(() => {
     initLazyLoader();
   }).catch((e) => console.error("[main] loadFileTree failed:", e));

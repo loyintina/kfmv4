@@ -3,6 +3,7 @@
  *
  * 左栏文件树已彻底删除，后续用 Canvas + kfmv3 v2 引擎重建。
  * 当前保留：光球面板、AI输入栏、日志系统、侧栏容器（空壳）。
+ * 堆叠卡片面板：右侧边缘左滑唤出。
  */
 import { KFMState } from './modules/state.js';
 
@@ -25,12 +26,14 @@ import { initGestures } from './modules/gestures.js';
 import { initOrb } from './modules/orb.js';
 import { initTreeRenderer } from './modules/tree-render.js';
 import { loadFileTree, initLazyLoader } from './modules/tree-loader.js';
+import { initCardStack } from './modules/card-stack.js';
 
 initApp();
 initUI();
 initGestures();
 initOrb();
 initTreeRenderer();
+initCardStack();
 
 // 加载根目录，然后启用懒加载（展开某文件夹时自动拉子文件）
 loadFileTree('/root').then(() => {

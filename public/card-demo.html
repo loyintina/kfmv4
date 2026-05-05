@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>堆叠卡片 — 配色方案 Demo</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0f;color:#e0e0e0;font-family:-apple-system,system-ui,sans-serif;padding:16px;min-height:100vh}
+h1{font-size:20px;font-weight:600;color:#e8e8e8;margin:24px 0 4px;letter-spacing:-0.3px}
+h2{font-size:15px;font-weight:500;color:#888;margin-bottom:8px;letter-spacing:0.3px}
+.sub{font-size:12px;color:#666;margin-bottom:16px}
+.palette-section{margin-bottom:40px}
+
+/* 卡片容器 - 从右到左堆叠 */
+.stack{
+  position:relative;
+  width:100%;
+  height:320px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  justify-content:flex-start;
+  padding-right:16px;
+  margin-bottom:12px;
+}
+
+/* 卡片基础样式 */
+.card{
+  position:absolute;
+  right:16px;
+  width:min(85%,260px);
+  height:68px;
+  border-radius:12px;
+  padding:12px 14px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  border:1.5px solid;
+  box-shadow:-6px 6px 24px rgba(0,0,0,0.5);
+  transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+.card .icon{
+  width:30px;height:30px;
+  border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;flex-shrink:0;
+}
+.card .info{flex:1;min-width:0}
+.card .info .name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .info .desc{font-size:11px;opacity:0.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.card .index{
+  font-size:11px;font-weight:600;opacity:0.4;
+  width:20px;text-align:center;flex-shrink:0;
+}
+
+/* 聚焦态 */
+.card.focus{
+  transform:scale(1.04) translateX(-12px);
+  border-width:2px;
+  z-index:10;
+}
+.card.focus .index{opacity:0.8}
+
+/* ============================================ */
+/* Palette 1: 暮光 Twilight                      */
+/* ============================================ */
+.twilight .card:nth-child(1){top:0px;background:rgba(212,137,155,0.12);border-color:#D4899B;box-shadow:-6px 6px 24px rgba(212,137,155,0.12)}
+.twilight .card:nth-child(1) .icon{background:rgba(212,137,155,0.18);color:#D4899B}
+.twilight .card:nth-child(2){top:36px;background:rgba(212,160,128,0.12);border-color:#D4A080;box-shadow:-6px 6px 24px rgba(212,160,128,0.12)}
+.twilight .card:nth-child(2) .icon{background:rgba(212,160,128,0.18);color:#D4A080}
+.twilight .card:nth-child(3){top:72px;background:rgba(201,176,122,0.12);border-color:#C9B07A;box-shadow:-6px 6px 24px rgba(201,176,122,0.12)}
+.twilight .card:nth-child(3) .icon{background:rgba(201,176,122,0.18);color:#C9B07A}
+.twilight .card:nth-child(4){top:108px;background:rgba(143,181,143,0.12);border-color:#8FB58F;box-shadow:-6px 6px 24px rgba(143,181,143,0.12)}
+.twilight .card:nth-child(4) .icon{background:rgba(143,181,143,0.18);color:#8FB58F}
+.twilight .card:nth-child(5){top:144px;background:rgba(125,168,184,0.12);border-color:#7DA8B8;box-shadow:-6px 6px 24px rgba(125,168,184,0.12)}
+.twilight .card:nth-child(5) .icon{background:rgba(125,168,184,0.18);color:#7DA8B8}
+.twilight .card:nth-child(6){top:180px;background:rgba(142,142,184,0.12);border-color:#8E8EB8;box-shadow:-6px 6px 24px rgba(142,142,184,0.12)}
+.twilight .card:nth-child(6) .icon{background:rgba(142,142,184,0.18);color:#8E8EB8}
+.twilight .card:nth-child(7){top:216px;background:rgba(160,140,196,0.12);border-color:#A08CC4;box-shadow:-6px 6px 24px rgba(160,140,196,0.12)}
+.twilight .card:nth-child(7) .icon{background:rgba(160,140,196,0.18);color:#A08CC4}
+
+/* ============================================ */
+/* Palette 2: 琉璃 Colored Glass                 */
+/* ============================================ */
+.glass .card:nth-child(1){top:0px;background:rgba(232,180,180,0.08);border-color:#E8B4B4;box-shadow:-6px 6px 24px rgba(232,180,180,0.10)}
+.glass .card:nth-child(1) .icon{background:rgba(232,180,180,0.16);color:#E8B4B4}
+.glass .card:nth-child(2){top:36px;background:rgba(232,200,160,0.08);border-color:#E8C8A0;box-shadow:-6px 6px 24px rgba(232,200,160,0.10)}
+.glass .card:nth-child(2) .icon{background:rgba(232,200,160,0.16);color:#E8C8A0}
+.glass .card:nth-child(3){top:72px;background:rgba(212,204,148,0.08);border-color:#D4CC94;box-shadow:-6px 6px 24px rgba(212,204,148,0.10)}
+.glass .card:nth-child(3) .icon{background:rgba(212,204,148,0.16);color:#D4CC94}
+.glass .card:nth-child(4){top:108px;background:rgba(160,200,160,0.08);border-color:#A0C8A0;box-shadow:-6px 6px 24px rgba(160,200,160,0.10)}
+.glass .card:nth-child(4) .icon{background:rgba(160,200,160,0.16);color:#A0C8A0}
+.glass .card:nth-child(5){top:144px;background:rgba(148,184,212,0.08);border-color:#94B8D4;box-shadow:-6px 6px 24px rgba(148,184,212,0.10)}
+.glass .card:nth-child(5) .icon{background:rgba(148,184,212,0.16);color:#94B8D4}
+.glass .card:nth-child(6){top:180px;background:rgba(168,168,212,0.08);border-color:#A8A8D4;box-shadow:-6px 6px 24px rgba(168,168,212,0.10)}
+.glass .card:nth-child(6) .icon{background:rgba(168,168,212,0.16);color:#A8A8D4}
+.glass .card:nth-child(7){top:216px;background:rgba(200,168,212,0.08);border-color:#C8A8D4;box-shadow:-6px 6px 24px rgba(200,168,212,0.10)}
+.glass .card:nth-child(7) .icon{background:rgba(200,168,212,0.16);color:#C8A8D4}
+
+/* ============================================ */
+/* Palette 3: 星云 Nebula                        */
+/* ============================================ */
+.nebula .card:nth-child(1){top:0px;background:rgba(180,100,120,0.14);border-color:#B46478;box-shadow:-6px 6px 24px rgba(180,100,120,0.18)}
+.nebula .card:nth-child(1) .icon{background:rgba(180,100,120,0.22);color:#B46478}
+.nebula .card:nth-child(2){top:36px;background:rgba(200,140,90,0.14);border-color:#C88C5A;box-shadow:-6px 6px 24px rgba(200,140,90,0.18)}
+.nebula .card:nth-child(2) .icon{background:rgba(200,140,90,0.22);color:#C88C5A}
+.nebula .card:nth-child(3){top:72px;background:rgba(180,170,80,0.14);border-color:#B4AA50;box-shadow:-6px 6px 24px rgba(180,170,80,0.18)}
+.nebula .card:nth-child(3) .icon{background:rgba(180,170,80,0.22);color:#B4AA50}
+.nebula .card:nth-child(4){top:108px;background:rgba(80,168,128,0.14);border-color:#50A880;box-shadow:-6px 6px 24px rgba(80,168,128,0.18)}
+.nebula .card:nth-child(4) .icon{background:rgba(80,168,128,0.22);color:#50A880}
+.nebula .card:nth-child(5){top:144px;background:rgba(80,136,200,0.14);border-color:#5088C8;box-shadow:-6px 6px 24px rgba(80,136,200,0.18)}
+.nebula .card:nth-child(5) .icon{background:rgba(80,136,200,0.22);color:#5088C8}
+.nebula .card:nth-child(6){top:180px;background:rgba(108,92,200,0.14);border-color:#6C5CC8;box-shadow:-6px 6px 24px rgba(108,92,200,0.18)}
+.nebula .card:nth-child(6) .icon{background:rgba(108,92,200,0.22);color:#6C5CC8}
+.nebula .card:nth-child(7){top:216px;background:rgba(150,80,200,0.14);border-color:#9650C8;box-shadow:-6px 6px 24px rgba(150,80,200,0.18)}
+.nebula .card:nth-child(7) .icon{background:rgba(150,80,200,0.22);color:#9650C8}
+
+/* Palette Swatch 在底部 */
+.swatches{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 4px}
+.swatch{width:28px;height:28px;border-radius:6px;border:1px solid rgba(255,255,255,0.1)}
+.caption{font-size:11px;color:#666;display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.caption span{font-size:10px;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,0.04);color:#888}
+
+.tag{
+  display:inline-block;
+  padding:2px 10px;
+  border-radius:4px;
+  font-size:11px;
+  font-weight:500;
+  margin-bottom:8px;
+}
+.tag.recommend{background:rgba(46,213,163,0.12);color:#2ed5a3}
+.tag.option{background:rgba(124,58,237,0.12);color:#7c3aed}
+</style>
+</head>
+<body>
+
+<h1>堆叠卡片 · 配色方案</h1>
+<p class="sub">右侧边缘左滑唤出 · 七张卡片按光谱排列 · 聚焦态向右弹出</p>
+
+<!-- ============ 方案一 · 暮光 ============ -->
+<div class="palette-section">
+  <span class="tag recommend">推荐</span>
+  <h2>暮光 · Twilight</h2>
+  <p class="sub">低饱和暖→冷过渡，像黄昏到夜晚的天色过渡。沉稳、耐看、高级。</p>
+  <div class="stack twilight">
+    <div class="card focus"><div class="icon">⚙</div><div class="info"><div class="name">设置</div><div class="desc">API Key · 模型选择</div></div><div class="index">01</div></div>
+    <div class="card"><div class="icon">📁</div><div class="info"><div class="name">文件管理</div><div class="desc">上传 · 下载 · 整理</div></div><div class="index">02</div></div>
+    <div class="card"><div class="icon">📝</div><div class="info"><div class="name">笔记</div><div class="desc">快速记录 · 草稿</div></div><div class="index">03</div></div>
+    <div class="card"><div class="icon">🔌</div><div class="info"><div class="name">插件</div><div class="desc">扩展 · 集成</div></div><div class="index">04</div></div>
+    <div class="card"><div class="icon">🎨</div><div class="info"><div class="name">主题</div><div class="desc">外观 · 配色</div></div><div class="index">05</div></div>
+    <div class="card"><div class="icon">📊</div><div class="info"><div class="name">统计</div><div class="desc">使用数据 · 趋势</div></div><div class="index">06</div></div>
+    <div class="card"><div class="icon">💎</div><div class="info"><div class="name">关于</div><div class="desc">版本 · 信息</div></div><div class="index">07</div></div>
+  </div>
+  <div class="swatches">
+    <div class="swatch" style="background:#D4899B"></div>
+    <div class="swatch" style="background:#D4A080"></div>
+    <div class="swatch" style="background:#C9B07A"></div>
+    <div class="swatch" style="background:#8FB58F"></div>
+    <div class="swatch" style="background:#7DA8B8"></div>
+    <div class="swatch" style="background:#8E8EB8"></div>
+    <div class="swatch" style="background:#A08CC4"></div>
+  </div>
+</div>
+
+<!-- ============ 方案二 · 琉璃 ============ -->
+<div class="palette-section">
+  <span class="tag option">备选</span>
+  <h2>琉璃 · Colored Glass</h2>
+  <p class="sub">高明度低饱和，像彩色玻璃透光的效果。轻盈、通透、柔和。</p>
+  <div class="stack glass">
+    <div class="card focus"><div class="icon">⚙</div><div class="info"><div class="name">设置</div><div class="desc">API Key · 模型选择</div></div><div class="index">01</div></div>
+    <div class="card"><div class="icon">📁</div><div class="info"><div class="name">文件管理</div><div class="desc">上传 · 下载 · 整理</div></div><div class="index">02</div></div>
+    <div class="card"><div class="icon">📝</div><div class="info"><div class="name">笔记</div><div class="desc">快速记录 · 草稿</div></div><div class="index">03</div></div>
+    <div class="card"><div class="icon">🔌</div><div class="info"><div class="name">插件</div><div class="desc">扩展 · 集成</div></div><div class="index">04</div></div>
+    <div class="card"><div class="icon">🎨</div><div class="info"><div class="name">主题</div><div class="desc">外观 · 配色</div></div><div class="index">05</div></div>
+    <div class="card"><div class="icon">📊</div><div class="info"><div class="name">统计</div><div class="desc">使用数据 · 趋势</div></div><div class="index">06</div></div>
+    <div class="card"><div class="icon">💎</div><div class="info"><div class="name">关于</div><div class="desc">版本 · 信息</div></div><div class="index">07</div></div>
+  </div>
+  <div class="swatches">
+    <div class="swatch" style="background:#E8B4B4"></div>
+    <div class="swatch" style="background:#E8C8A0"></div>
+    <div class="swatch" style="background:#D4CC94"></div>
+    <div class="swatch" style="background:#A0C8A0"></div>
+    <div class="swatch" style="background:#94B8D4"></div>
+    <div class="swatch" style="background:#A8A8D4"></div>
+    <div class="swatch" style="background:#C8A8D4"></div>
+  </div>
+</div>
+
+<!-- ============ 方案三 · 星云 ============ -->
+<div class="palette-section">
+  <span class="tag option">备选</span>
+  <h2>星云 · Nebula</h2>
+  <p class="sub">中饱和暖→冷过渡，比暮光更浓郁。像星云气体反射不同波段的光。</p>
+  <div class="stack nebula">
+    <div class="card focus"><div class="icon">⚙</div><div class="info"><div class="name">设置</div><div class="desc">API Key · 模型选择</div></div><div class="index">01</div></div>
+    <div class="card"><div class="icon">📁</div><div class="info"><div class="name">文件管理</div><div class="desc">上传 · 下载 · 整理</div></div><div class="index">02</div></div>
+    <div class="card"><div class="icon">📝</div><div class="info"><div class="name">笔记</div><div class="desc">快速记录 · 草稿</div></div><div class="index">03</div></div>
+    <div class="card"><div class="icon">🔌</div><div class="info"><div class="name">插件</div><div class="desc">扩展 · 集成</div></div><div class="index">04</div></div>
+    <div class="card"><div class="icon">🎨</div><div class="info"><div class="name">主题</div><div class="desc">外观 · 配色</div></div><div class="index">05</div></div>
+    <div class="card"><div class="icon">📊</div><div class="info"><div class="name">统计</div><div class="desc">使用数据 · 趋势</div></div><div class="index">06</div></div>
+    <div class="card"><div class="icon">💎</div><div class="info"><div class="name">关于</div><div class="desc">版本 · 信息</div></div><div class="index">07</div></div>
+  </div>
+  <div class="swatches">
+    <div class="swatch" style="background:#B46478"></div>
+    <div class="swatch" style="background:#C88C5A"></div>
+    <div class="swatch" style="background:#B4AA50"></div>
+    <div class="swatch" style="background:#50A880"></div>
+    <div class="swatch" style="background:#5088C8"></div>
+    <div class="swatch" style="background:#6C5CC8"></div>
+    <div class="swatch" style="background:#9650C8"></div>
+  </div>
+</div>
+
+</body>
+</html>
