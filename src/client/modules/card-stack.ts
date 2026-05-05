@@ -76,6 +76,11 @@ function createCard(index: number): HTMLElement {
   el.dataset.index = String(index);
 
   const topPx = Math.round(window.innerHeight * STACK_TOP_RATIO + index * CARD_GAP);
+
+  // 同 AI 输入框/光球面板的渐变边框技法
+  const light = adjustColor(color.border, 45);
+  const dark = adjustColor(color.border, -35);
+
   el.style.cssText = [
     'position:absolute',
     'right:16px',
@@ -89,8 +94,9 @@ function createCard(index: number): HTMLElement {
     'gap:10px',
     'backdrop-filter:blur(12px)',
     '-webkit-backdrop-filter:blur(12px)',
-    'border:1px solid ' + color.border,
-    'background:' + color.bg,
+    'border:1px solid transparent',
+    'border-left-width:3px',
+    'background:linear-gradient(' + color.bg + ',' + color.bg + ') padding-box,linear-gradient(135deg,' + light + ',' + color.border + ',' + dark + ') border-box',
     'box-shadow:-6px 6px 24px rgba(0,0,0,0.5)',
     'cursor:pointer',
     'transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1)',
@@ -106,9 +112,7 @@ function createCard(index: number): HTMLElement {
     + '  <div class="stack-card-name" style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + card.name + '</div>'
     + '  <div class="stack-card-desc" style="font-size:11px;opacity:0.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px">' + card.desc + '</div>'
     + '</div>'
-    + '<div class="stack-card-index" style="font-size:11px;font-weight:600;opacity:0.4;width:20px;text-align:center;flex-shrink:0">' + String(index + 1).padStart(2, '0') + '</div>'
-    // 左侧三色渐变条
-    + '<div class="stack-card-strip" style="position:absolute;left:0;top:1px;bottom:1px;width:3px;border-radius:12px 0 0 12px;background:linear-gradient(to bottom,' + adjustColor(color.border, 40) + ',' + color.border + ',' + adjustColor(color.border, -35) + ');pointer-events:none"></div>';
+    + '<div class="stack-card-index" style="font-size:11px;font-weight:600;opacity:0.4;width:20px;text-align:center;flex-shrink:0">' + String(index + 1).padStart(2, '0') + '</div>';
 
   return el;
 }
@@ -187,22 +191,14 @@ function updateFocus(): void {
       el.style.transform = 'translateX(-12px) scale(1.04)';
       el.style.opacity = '1';
       el.style.zIndex = '20';
-      el.style.borderWidth = '1px';
       const idxEl = el.querySelector('.stack-card-index') as HTMLElement;
       if (idxEl) idxEl.style.opacity = '0.8';
-      // 渐变条加亮
-      const stripEl = el.querySelector('.stack-card-strip') as HTMLElement;
-      if (stripEl) stripEl.style.opacity = '1';
     } else {
       el.style.transform = 'translateX(0px) scale(1)';
       el.style.opacity = String(Math.max(0.12, 1 - dist * 0.28));
       el.style.zIndex = String(10 - i);
-      el.style.borderWidth = '1px';
       const idxEl = el.querySelector('.stack-card-index') as HTMLElement;
       if (idxEl) idxEl.style.opacity = '0.3';
-      // 渐变条随卡片淡出
-      const stripEl = el.querySelector('.stack-card-strip') as HTMLElement;
-      if (stripEl) stripEl.style.opacity = String(Math.max(0.15, 1 - dist * 0.35));
     }
   }
 }
