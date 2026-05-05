@@ -15,7 +15,6 @@ export function openSidebar(): void {
   onSidebarOpen();
 }
 
-import { onSidebarOpen, onSidebarClose } from './tree-render.js';
 import { DOM } from "./dom-refs.js";
 
 export function closeSidebar(): void {

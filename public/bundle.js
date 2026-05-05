@@ -8635,6 +8635,958 @@
     }
   }
 
+  // src/client/engine/v2/flex.ts
+  var DEFAULT_FLEX = {
+    flexDirection: "row",
+    justifyContent: "flex-start",
+    alignItems: "flex-start",
+    flexWrap: "nowrap",
+    gap: 0,
+    rowGap: 0,
+    columnGap: 0
+  };
+  var DEFAULT_FLEX_ITEM = {
+    flex: 0,
+    flexShrink: 1,
+    flexBasis: "auto",
+    alignSelf: "auto",
+    minWidth: 0,
+    maxWidth: Infinity,
+    minHeight: 0,
+    maxHeight: Infinity
+  };
+  function applyFlexLayout(parent) {
+    var _a, _b, _c;
+    if (!parent.layout) return;
+    if (parent.children.length === 0) return;
+    const layout2 = parent.layout;
+    const style = { ...DEFAULT_FLEX, ...layout2 };
+    const isRow = style.flexDirection === "row" || style.flexDirection === "row-reverse";
+    const isReverse = style.flexDirection === "row-reverse" || style.flexDirection === "column-reverse";
+    const gap = (_a = layout2.gap) != null ? _a : 0;
+    const rowGap = (_b = layout2.rowGap) != null ? _b : gap;
+    const columnGap = (_c = layout2.columnGap) != null ? _c : gap;
+    const mainGap = isRow ? columnGap : rowGap;
+    const crossGap = isRow ? rowGap : columnGap;
+    const contentX = parent.padding.left;
+    const contentY = parent.padding.top;
+    const contentWidth = parent.width - parent.padding.left - parent.padding.right;
+    const contentHeight = parent.height - parent.padding.top - parent.padding.bottom;
+    const children = parent.children.slice();
+    const layouts = children.map((child) => {
+      var _a2;
+      const itemStyle = { ...DEFAULT_FLEX_ITEM, ...child.layoutItem };
+      let mainSize = isRow ? child.width : child.height;
+      let crossSize = isRow ? child.height : child.width;
+      if (itemStyle.flexBasis !== "auto") {
+        mainSize = itemStyle.flexBasis;
+      }
+      if (isRow) {
+        mainSize = Math.max(itemStyle.minWidth, Math.min(itemStyle.maxWidth, mainSize));
+        crossSize = Math.max(itemStyle.minHeight, Math.min(itemStyle.maxHeight, crossSize));
+      } else {
+        mainSize = Math.max(itemStyle.minHeight, Math.min(itemStyle.maxHeight, mainSize));
+        crossSize = Math.max(itemStyle.minWidth, Math.min(itemStyle.maxWidth, crossSize));
+      }
+      return {
+        child,
+        itemStyle,
+        mainSize,
+        crossSize,
+        mainPos: 0,
+        crossPos: 0,
+        flexGrow: (_a2 = itemStyle.flex) != null ? _a2 : 0
+      };
+    });
+    const totalFlexGrow = layouts.reduce((sum, l) => sum + l.flexGrow, 0);
+    const totalMainSize = layouts.reduce((sum, l) => sum + l.mainSize, 0);
+    const totalGaps = mainGap * (children.length - 1);
+    const availableMainSpace = isRow ? contentWidth : contentHeight;
+    const remainingSpace = availableMainSpace - totalMainSize - totalGaps;
+    if (totalFlexGrow > 0 && remainingSpace > 0) {
+      layouts.forEach((l) => {
+        if (l.flexGrow > 0) {
+          const extra = remainingSpace * l.flexGrow / totalFlexGrow;
+          l.mainSize += extra;
+          if (isRow) {
+            l.mainSize = Math.min(l.itemStyle.maxWidth, l.mainSize);
+          } else {
+            l.mainSize = Math.min(l.itemStyle.maxHeight, l.mainSize);
+          }
+        }
+      });
+    }
+    const finalTotalMainSize = layouts.reduce((sum, l) => sum + l.mainSize, 0);
+    const finalRemaining = availableMainSpace - finalTotalMainSize - totalGaps;
+    let mainOffset = contentX;
+    let gapBetween = mainGap;
+    switch (style.justifyContent) {
+      case "flex-start":
+        mainOffset = contentX;
+        break;
+      case "flex-end":
+        mainOffset = contentX + finalRemaining;
+        break;
+      case "center":
+        mainOffset = contentX + finalRemaining / 2;
+        break;
+      case "space-between":
+        mainOffset = contentX;
+        if (children.length > 1) {
+          gapBetween = mainGap + finalRemaining / (children.length - 1);
+        }
+        break;
+      case "space-around":
+        if (children.length > 0) {
+          const spacePer = finalRemaining / children.length;
+          mainOffset = contentX + spacePer / 2;
+          gapBetween = mainGap + spacePer;
+        }
+        break;
+      case "space-evenly":
+        if (children.length > 0) {
+          const spacePer = finalRemaining / (children.length + 1);
+          mainOffset = contentX + spacePer;
+          gapBetween = mainGap + spacePer;
+        }
+        break;
+    }
+    if (isReverse) {
+      mainOffset = isRow ? contentX + contentWidth - layouts[0].mainSize : contentY + contentHeight - layouts[0].mainSize;
+      let pos = mainOffset;
+      layouts.forEach((l, i) => {
+        l.mainPos = pos;
+        pos -= l.mainSize + gapBetween;
+      });
+    } else {
+      let pos = mainOffset;
+      layouts.forEach((l, i) => {
+        l.mainPos = pos;
+        pos += l.mainSize + gapBetween;
+      });
+    }
+    const crossSpace = isRow ? contentHeight : contentWidth;
+    const crossStart = isRow ? contentY : contentX;
+    layouts.forEach((l) => {
+      const align = l.itemStyle.alignSelf === "auto" ? style.alignItems : l.itemStyle.alignSelf;
+      switch (align) {
+        case "flex-start":
+          l.crossPos = crossStart;
+          break;
+        case "flex-end":
+          l.crossPos = crossStart + crossSpace - l.crossSize;
+          break;
+        case "center":
+          l.crossPos = crossStart + (crossSpace - l.crossSize) / 2;
+          break;
+        case "stretch":
+          l.crossSize = crossSpace;
+          l.crossPos = crossStart;
+          break;
+      }
+    });
+    layouts.forEach((l) => {
+      if (isRow) {
+        l.child.x = l.mainPos;
+        l.child.y = l.crossPos;
+        l.child.width = l.mainSize;
+        l.child.height = l.crossSize;
+      } else {
+        l.child.x = l.crossPos;
+        l.child.y = l.mainPos;
+        l.child.width = l.crossSize;
+        l.child.height = l.mainSize;
+      }
+    });
+  }
+
+  // src/client/engine/v2/BorderDrawer.ts
+  function getCornerSides(corner) {
+    switch (corner) {
+      case 1:
+        return { side1: "top", side2: "left" };
+      // 左上：上边→左边（逆时针）
+      case 3:
+        return { side1: "left", side2: "bottom" };
+      // 左下：左边→下边
+      case 5:
+        return { side1: "bottom", side2: "right" };
+      // 右下：下边→右边
+      case 7:
+        return { side1: "right", side2: "top" };
+    }
+  }
+  function shouldDrawCorner(corner, border) {
+    var sides = getCornerSides(corner);
+    var s1 = border[sides.side1];
+    var s2 = border[sides.side2];
+    if (s1 === "hidden" && s2 === "hidden") return false;
+    if (s1 === "normal" && s2 === "hidden" || s1 === "hidden" && s2 === "normal") return false;
+    return true;
+  }
+  function getCornerType(corner, border, emphasisW, normalW) {
+    var sides = getCornerSides(corner);
+    var s1 = border[sides.side1];
+    var s2 = border[sides.side2];
+    if (s1 === "emphasis" && s2 === "emphasis") {
+      return { type: "uniform", width: emphasisW };
+    }
+    if (s1 === "normal" && s2 === "normal") {
+      return { type: "uniform", width: normalW };
+    }
+    if (s1 === "emphasis" && s2 === "normal") {
+      return { type: "taper", startWidth: emphasisW, endWidth: normalW };
+    }
+    if (s1 === "normal" && s2 === "emphasis") {
+      return { type: "taper", startWidth: normalW, endWidth: emphasisW };
+    }
+    if (s1 === "emphasis" && s2 === "hidden") {
+      return { type: "taper", startWidth: emphasisW, endWidth: 0 };
+    }
+    if (s1 === "hidden" && s2 === "emphasis") {
+      return { type: "taper", startWidth: 0, endWidth: emphasisW };
+    }
+    return null;
+  }
+  function getArcAngles(corner) {
+    switch (corner) {
+      case 1:
+        return { start: 3 * Math.PI / 2, end: Math.PI };
+      // 左上：上→左
+      case 3:
+        return { start: Math.PI, end: Math.PI / 2 };
+      // 左下：左→下
+      case 5:
+        return { start: Math.PI / 2, end: 0 };
+      // 右下：下→右
+      case 7:
+        return { start: 0, end: -Math.PI / 2 };
+    }
+  }
+  function getArcCenter(corner, x, y, w, h, radius) {
+    switch (corner) {
+      case 1:
+        return { cx: x + radius, cy: y + radius };
+      case 3:
+        return { cx: x + radius, cy: y + h - radius };
+      case 5:
+        return { cx: x + w - radius, cy: y + h - radius };
+      case 7:
+        return { cx: x + w - radius, cy: y + radius };
+    }
+  }
+  function drawUniformArc(ctx, corner, x, y, w, h, radius, strokeWidth, color) {
+    if (radius <= 0 || strokeWidth <= 0) return;
+    var center = getArcCenter(corner, x, y, w, h, radius);
+    var angles = getArcAngles(corner);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = strokeWidth;
+    ctx.lineCap = "butt";
+    ctx.beginPath();
+    ctx.arc(center.cx, center.cy, radius, angles.start, angles.end, true);
+    ctx.stroke();
+  }
+  function drawTaperArc(ctx, corner, x, y, w, h, radius, startWidth, endWidth, color) {
+    var segments = 10;
+    var center = getArcCenter(corner, x, y, w, h, radius);
+    var angles = getArcAngles(corner);
+    var angleStep = (angles.end - angles.start) / segments;
+    ctx.strokeStyle = color;
+    ctx.lineCap = "butt";
+    for (var i = 0; i < segments; i++) {
+      var t = (i + 0.5) / segments;
+      var sw = startWidth + (endWidth - startWidth) * t;
+      if (sw < 0.3) continue;
+      var a1 = angles.start + angleStep * i;
+      var a2 = angles.start + angleStep * (i + 1);
+      ctx.lineWidth = sw;
+      ctx.beginPath();
+      ctx.arc(center.cx, center.cy, radius, a1, a2, true);
+      ctx.stroke();
+    }
+  }
+  function drawLineSegment(ctx, side, x, y, w, h, radius, strokeWidth, color) {
+    var halfSw = strokeWidth / 2;
+    ctx.fillStyle = color;
+    switch (side) {
+      case "left":
+        ctx.fillRect(x - halfSw, y + radius, strokeWidth, Math.max(1, h - radius * 2));
+        break;
+      case "bottom":
+        ctx.fillRect(x + radius, y + h - halfSw, Math.max(1, w - radius * 2), strokeWidth);
+        break;
+      case "right":
+        ctx.fillRect(x + w - halfSw, y + radius, strokeWidth, Math.max(1, h - radius * 2));
+        break;
+      case "top":
+        ctx.fillRect(x + radius, y - halfSw, Math.max(1, w - radius * 2), strokeWidth);
+        break;
+    }
+  }
+  function drawBorders(ctx, x, y, w, h, style) {
+    var emphasisW = style.borderWidth * style.emphasisScale;
+    var normalW = style.borderWidth;
+    var radius = style.cornerRadius;
+    var emColor = typeof style.borderColor === "string" ? style.borderColor : "#7c3aed";
+    var nmColor = emColor;
+    var border = style.border;
+    var sides = ["top", "right", "bottom", "left"];
+    for (var i = 0; i < 4; i++) {
+      var side = sides[i];
+      if (border[side] !== "normal") continue;
+      drawLineSegment(ctx, side, x, y, w, h, radius, normalW, nmColor);
+    }
+    for (var j = 0; j < 4; j++) {
+      var side2 = sides[j];
+      if (border[side2] !== "emphasis") continue;
+      drawLineSegment(ctx, side2, x, y, w, h, radius, emphasisW, emColor);
+    }
+    var corners = [1, 3, 5, 7];
+    for (var k = 0; k < 4; k++) {
+      var corner = corners[k];
+      if (!shouldDrawCorner(corner, border)) continue;
+      var cornerSides = getCornerSides(corner);
+      var hasEm = border[cornerSides.side1] === "emphasis" || border[cornerSides.side2] === "emphasis";
+      var color = hasEm ? emColor : nmColor;
+      var cType = getCornerType(corner, border, emphasisW, normalW);
+      if (!cType) continue;
+      if (cType.type === "uniform") {
+        drawUniformArc(ctx, corner, x, y, w, h, radius, cType.width, color);
+      } else {
+        drawTaperArc(
+          ctx,
+          corner,
+          x,
+          y,
+          w,
+          h,
+          radius,
+          cType.startWidth,
+          cType.endWidth,
+          color
+        );
+      }
+    }
+  }
+
+  // src/client/engine/v2/renderer.ts
+  var Renderer = class {
+    constructor(canvas, options = {}) {
+      __publicField(this, "canvas");
+      __publicField(this, "ctx");
+      __publicField(this, "dpr");
+      __publicField(this, "width");
+      __publicField(this, "height");
+      __publicField(this, "backgroundColor");
+      __publicField(this, "_isRunning");
+      __publicField(this, "_root");
+      __publicField(this, "_rafId");
+      __publicField(this, "_lastTime");
+      __publicField(this, "_frameCount");
+      __publicField(this, "_fps");
+      // Pretext 缓存：key = font + text
+      __publicField(this, "_pretextCache");
+      // input 元素缓存：key = Box.id
+      __publicField(this, "_inputElements");
+      var _a, _b;
+      this.canvas = canvas;
+      this.ctx = canvas.getContext("2d");
+      this.dpr = (_a = options.dpr) != null ? _a : window.devicePixelRatio || 1;
+      this.backgroundColor = (_b = options.backgroundColor) != null ? _b : "#0a0a0f";
+      this.width = 0;
+      this.height = 0;
+      this._isRunning = false;
+      this._root = null;
+      this._rafId = 0;
+      this._lastTime = 0;
+      this._frameCount = 0;
+      this._fps = 0;
+      this._pretextCache = /* @__PURE__ */ new Map();
+      this._inputElements = /* @__PURE__ */ new Map();
+      this.resize();
+    }
+    // ============================================================
+    // 生命周期
+    // ============================================================
+    resize() {
+      const w = this.canvas.clientWidth || window.innerWidth;
+      const h = this.canvas.clientHeight || window.innerHeight;
+      this.canvas.width = w * this.dpr;
+      this.canvas.height = h * this.dpr;
+      this.canvas.style.width = `${w}px`;
+      this.canvas.style.height = `${h}px`;
+      this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+      this.width = w;
+      this.height = h;
+    }
+    setRoot(box) {
+      this._root = box;
+      return this;
+    }
+    getRoot() {
+      return this._root;
+    }
+    start() {
+      if (this._isRunning) return this;
+      this._isRunning = true;
+      this._lastTime = performance.now();
+      const loop = (now) => {
+        if (!this._isRunning) return;
+        this._render(now);
+        this._rafId = requestAnimationFrame(loop);
+      };
+      this._rafId = requestAnimationFrame(loop);
+      return this;
+    }
+    stop() {
+      this._isRunning = false;
+      if (this._rafId) cancelAnimationFrame(this._rafId);
+      return this;
+    }
+    get isRunning() {
+      return this._isRunning;
+    }
+    get fps() {
+      return this._fps;
+    }
+    // ============================================================
+    // 渲染主循环
+    // ============================================================
+    _render(now) {
+      if (this._lastTime) {
+        const delta = now - this._lastTime;
+        this._fps = Math.round(1e3 / delta);
+      }
+      this._lastTime = now;
+      this._frameCount++;
+      this.ctx.fillStyle = this.backgroundColor;
+      this.ctx.fillRect(0, 0, this.width, this.height);
+      if (this._root) {
+        this._tickAndRender(this._root, now, 1);
+        try {
+          this._manageInputs(this._root);
+        } catch (e) {
+          console.error("_manageInputs error", e);
+        }
+      }
+    }
+    _tickAndRender(box, now, parentOpacity) {
+      box.tickAnimations(now);
+      if (!box.visible) return;
+      const opacity = box.opacity * parentOpacity;
+      if (opacity <= 0) return;
+      this.ctx.save();
+      this.ctx.globalAlpha = opacity;
+      const bounds = box.getBounds();
+      const cx = bounds.x + bounds.width / 2;
+      const cy = bounds.y + bounds.height / 2;
+      const { scale, rotate, translateX, translateY } = box.transform;
+      if (translateX !== 0 || translateY !== 0) {
+        this.ctx.translate(translateX, translateY);
+      }
+      if (rotate !== 0 || scale !== 1) {
+        this.ctx.translate(cx, cy);
+        if (rotate !== 0) this.ctx.rotate(rotate);
+        if (scale !== 1) this.ctx.scale(scale, scale);
+        this.ctx.translate(-cx, -cy);
+      }
+      this._drawShadow(box, bounds);
+      this._drawBackground(box, bounds);
+      if (box.shape) this._drawShape(box, bounds);
+      this._drawBorder(box, bounds);
+      this._drawHighlight(box, bounds);
+      if (box.icon) this._drawIcon(box.icon, bounds, box.padding);
+      if (box.textStyle.content) this._drawText(box.textStyle, bounds, box.padding, box.icon);
+      if (box.overflow === "hidden" || box.scrollable) {
+        this.ctx.beginPath();
+        this.ctx.roundRect(bounds.x, bounds.y, bounds.width, bounds.height, box.borderRadius);
+        this.ctx.clip();
+      }
+      if (box.layout) {
+        applyFlexLayout(box);
+      }
+      if (box.scrollable) {
+        this.ctx.save();
+        this.ctx.translate(-box.scrollX, -box.scrollY);
+      }
+      const sortedChildren = [...box.children].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+      for (const child of sortedChildren) {
+        this._tickAndRender(child, now, opacity);
+      }
+      if (box.scrollable) {
+        this.ctx.restore();
+        if (box.scrollbarVisible) {
+          this._drawScrollbar(box, bounds);
+        }
+      }
+      this.ctx.restore();
+    }
+    // ============================================================
+    // input 元素管理（Phase 2 Demo）
+    // ============================================================
+    _manageInputs(root) {
+      var _a, _b, _c, _d, _e, _f, _g;
+      const inputableBoxes = root.flatten().filter((b) => {
+        var _a2;
+        return (_a2 = b.inputable) == null ? void 0 : _a2.enabled;
+      });
+      const seenIds = /* @__PURE__ */ new Set();
+      for (const box of inputableBoxes) {
+        seenIds.add(box.id);
+        const bounds = box.getBounds();
+        let el = this._inputElements.get(box.id);
+        if (!el) {
+          const isTextarea = ((_a = box.inputable) == null ? void 0 : _a.type) === "textarea";
+          el = document.createElement(isTextarea ? "textarea" : "input");
+          el.style.position = "fixed";
+          el.style.background = "transparent";
+          el.style.border = "none";
+          el.style.outline = "none";
+          el.style.fontSize = "16px";
+          el.style.color = "#e0e0e0";
+          el.style.zIndex = "10";
+          el.style.resize = "none";
+          el.style.padding = "10px";
+          el.style.boxSizing = "border-box";
+          el.style.lineHeight = (((_b = box.inputable) == null ? void 0 : _b.lineHeight) || 24) + "px";
+          if (isTextarea) {
+            el.style.wordWrap = "break-word";
+            el.style.overflowY = "auto";
+            const maxRows = ((_c = box.inputable) == null ? void 0 : _c.maxRows) || 5;
+            const lineHeight = ((_d = box.inputable) == null ? void 0 : _d.lineHeight) || 24;
+            const maxHeight = maxRows * lineHeight + 20;
+            el.style.maxHeight = maxHeight + "px";
+            const textareaEl = el;
+            const inputBox = box;
+            const rendererInstance = this;
+            const adjustHeight = () => {
+              textareaEl.style.height = "auto";
+              const scrollHeight = textareaEl.scrollHeight;
+              const minHeight = lineHeight;
+              const newHeight = Math.max(minHeight, Math.min(scrollHeight, maxHeight));
+              textareaEl.style.height = newHeight + "px";
+              inputBox.height = newHeight;
+              if (inputBox.parent) {
+                inputBox.parent.height = newHeight + 24;
+                inputBox.parent.y = rendererInstance.height - inputBox.parent.height;
+              }
+            };
+            el.addEventListener("input", adjustHeight);
+            el.style.height = lineHeight + "px";
+            inputBox.height = lineHeight;
+            if (inputBox.parent) {
+              inputBox.parent.height = lineHeight + 24;
+              inputBox.parent.y = rendererInstance.height - inputBox.parent.height;
+            }
+          }
+          el.setAttribute("autocapitalize", "off");
+          el.setAttribute("autocomplete", "off");
+          el.setAttribute("autocorrect", "off");
+          if ((_e = box.inputable) == null ? void 0 : _e.placeholder) el.placeholder = box.inputable.placeholder;
+          if ((_f = box.inputable) == null ? void 0 : _f.value) el.value = box.inputable.value;
+          el.style.left = `${bounds.x}px`;
+          el.style.top = `${bounds.y}px`;
+          el.style.width = `${bounds.width}px`;
+          el.style.height = `${bounds.height}px`;
+          (_g = this.canvas.parentElement) == null ? void 0 : _g.appendChild(el);
+          this._inputElements.set(box.id, el);
+        } else {
+          el.style.left = `${bounds.x}px`;
+          el.style.top = `${bounds.y}px`;
+          el.style.width = `${bounds.width}px`;
+          el.style.height = `${bounds.height}px`;
+        }
+      }
+      for (const [id, el] of this._inputElements) {
+        if (!seenIds.has(id)) {
+          el.remove();
+          this._inputElements.delete(id);
+        }
+      }
+    }
+    // ============================================================
+    // 绘制层
+    // ============================================================
+    _drawShadow(box, b) {
+      const shadow = box.shadow;
+      if (!shadow) return;
+      this.ctx.save();
+      this.ctx.beginPath();
+      this.ctx.rect(-1e4, -1e4, 2e4, 2e4);
+      this.ctx.roundRect(b.x, b.y, b.width, b.height, box.borderRadius);
+      this.ctx.clip("evenodd");
+      this.ctx.shadowColor = shadow.color;
+      this.ctx.shadowBlur = shadow.blur;
+      this.ctx.shadowOffsetX = shadow.offsetX + 1e4;
+      this.ctx.shadowOffsetY = shadow.offsetY;
+      this.ctx.fillStyle = "#000";
+      this.ctx.beginPath();
+      this.ctx.roundRect(b.x - 1e4, b.y, b.width, b.height, box.borderRadius);
+      this.ctx.fill();
+      this.ctx.restore();
+    }
+    /** 绘制矢量形状（Phase 2 Demo） */
+    _drawShape(box, b) {
+      var _a, _b;
+      const shape = box.shape;
+      const points = shape.points;
+      if (points.length < 2) return;
+      const composite = (_a = shape.composite) != null ? _a : "destination-out";
+      const closed = (_b = shape.closed) != null ? _b : true;
+      this.ctx.save();
+      this.ctx.globalCompositeOperation = composite;
+      this.ctx.beginPath();
+      this.ctx.moveTo(b.x + points[0].x * b.width, b.y + points[0].y * b.height);
+      for (let i = 1; i < points.length; i++) {
+        this.ctx.lineTo(b.x + points[i].x * b.width, b.y + points[i].y * b.height);
+      }
+      if (closed) this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.restore();
+    }
+    _drawBackground(box, b) {
+      const prevComposite = box.composite || "";
+      if (prevComposite) {
+        this.ctx.save();
+        this.ctx.globalCompositeOperation = prevComposite;
+      }
+      if (box.gradient) {
+        this._drawGradient(box.gradient, b, box.borderRadius);
+      } else {
+        this.ctx.fillStyle = box.backgroundColor;
+        this.ctx.beginPath();
+        this.ctx.roundRect(b.x, b.y, b.width, b.height, box.borderRadius);
+        this.ctx.fill();
+      }
+      if (prevComposite) {
+        this.ctx.restore();
+      }
+      if (box.backgroundPattern && box.backgroundPattern.type === "grid") {
+        this._drawBoxGridPattern(box, b);
+      }
+    }
+    /** 绘制 Box 内的网格背景图案 */
+    _drawBoxGridPattern(box, b) {
+      var _a, _b, _c;
+      const pattern = box.backgroundPattern;
+      const cellSize = (_a = pattern.cellSize) != null ? _a : 20;
+      const lineColor = (_b = pattern.lineColor) != null ? _b : "#2a2a3a";
+      const lineWidth = (_c = pattern.lineWidth) != null ? _c : 1;
+      this.ctx.save();
+      this.ctx.strokeStyle = lineColor;
+      this.ctx.lineWidth = lineWidth;
+      this.ctx.beginPath();
+      this.ctx.roundRect(b.x, b.y, b.width, b.height, box.borderRadius);
+      this.ctx.clip();
+      for (let x = b.x; x <= b.x + b.width; x += cellSize) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(x, b.y);
+        this.ctx.lineTo(x, b.y + b.height);
+        this.ctx.stroke();
+      }
+      for (let y = b.y; y <= b.y + b.height; y += cellSize) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(b.x, y);
+        this.ctx.lineTo(b.x + b.width, y);
+        this.ctx.stroke();
+      }
+      this.ctx.restore();
+      if (this._frameCount === 1) {
+        const vLines = Math.floor(b.width / cellSize) + 1;
+        const hLines = Math.floor(b.height / cellSize) + 1;
+      }
+    }
+    _drawGradient(grad, b, radius) {
+      let fillStyle;
+      if (grad.type === "linear") {
+        const angle = grad.angle * Math.PI / 180;
+        const halfW = b.width / 2;
+        const halfH = b.height / 2;
+        fillStyle = this.ctx.createLinearGradient(
+          b.x + halfW - Math.cos(angle) * halfW,
+          b.y + halfH - Math.sin(angle) * halfH,
+          b.x + halfW + Math.cos(angle) * halfW,
+          b.y + halfH + Math.sin(angle) * halfH
+        );
+      } else {
+        fillStyle = this.ctx.createRadialGradient(
+          b.x + b.width / 2,
+          b.y + b.height / 2,
+          0,
+          b.x + b.width / 2,
+          b.y + b.height / 2,
+          Math.max(b.width, b.height) / 2
+        );
+      }
+      for (const stop of grad.stops) {
+        fillStyle.addColorStop(stop.offset, stop.color);
+      }
+      this.ctx.fillStyle = fillStyle;
+      this.ctx.beginPath();
+      this.ctx.roundRect(b.x, b.y, b.width, b.height, radius);
+      this.ctx.fill();
+    }
+    _drawScrollbar(box, b) {
+      const content = box.getContentSize();
+      const viewportH = b.height - box.padding.top - box.padding.bottom;
+      const viewportW = b.width - box.padding.left - box.padding.right;
+      const maxScroll = box.getMaxScroll();
+      if (maxScroll.maxY > 0 && (box.scrollDirection === "vertical" || box.scrollDirection === "both")) {
+        const trackHeight = viewportH;
+        const thumbHeight = Math.max(20, viewportH / content.height * trackHeight);
+        const thumbY = b.y + box.padding.top + box.scrollY / maxScroll.maxY * (trackHeight - thumbHeight);
+        this.ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+        this.ctx.beginPath();
+        this.ctx.roundRect(b.x + b.width - 6, thumbY, 4, thumbHeight, 2);
+        this.ctx.fill();
+      }
+      if (maxScroll.maxX > 0 && (box.scrollDirection === "horizontal" || box.scrollDirection === "both")) {
+        const trackWidth = viewportW;
+        const thumbWidth = Math.max(20, viewportW / content.width * trackWidth);
+        const thumbX = b.x + box.padding.left + box.scrollX / maxScroll.maxX * (trackWidth - thumbWidth);
+        this.ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+        this.ctx.beginPath();
+        this.ctx.roundRect(thumbX, b.y + b.height - 6, thumbWidth, 4, 2);
+        this.ctx.fill();
+      }
+    }
+    _drawCursorBorder(b, data) {
+      const ctx = this.ctx;
+      const color = data.color || "rgba(0,212,255,0.7)";
+      const x = b.x;
+      const y = b.y;
+      const h = b.height;
+      const R = 4;
+      const EW = 3;
+      const NW = 1;
+      const seg = 12;
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.strokeStyle = color;
+      ctx.lineCap = "butt";
+      ctx.fillRect(x - 1.65, y + R, EW, h - R * 2);
+      const tlCx = x + R, tlCy = y + R + 0.1;
+      for (let i = 0; i < seg; i++) {
+        const t = (i + 0.5) / seg;
+        ctx.lineWidth = EW + (NW - EW) * t;
+        const a1 = Math.PI + Math.PI / 2 * (i / seg);
+        const a2 = Math.PI + Math.PI / 2 * ((i + 1) / seg);
+        ctx.beginPath();
+        ctx.arc(tlCx, tlCy, R, a1, a2, false);
+        ctx.stroke();
+      }
+      const blCx = x + R, blCy = y + h - R;
+      for (let i = 0; i < seg; i++) {
+        const t = (i + 0.5) / seg;
+        ctx.lineWidth = NW + (EW - NW) * t;
+        const a1 = Math.PI / 2 + Math.PI / 2 * (i / seg);
+        const a2 = Math.PI / 2 + Math.PI / 2 * ((i + 1) / seg);
+        ctx.beginPath();
+        ctx.arc(blCx, blCy, R, a1, a2, false);
+        ctx.stroke();
+      }
+      const topW = data.topLineW || 0;
+      if (topW > 0) {
+        ctx.lineWidth = NW;
+        ctx.beginPath();
+        ctx.moveTo(x + R, y);
+        ctx.lineTo(x + R + topW, y);
+        ctx.stroke();
+      }
+      const botW = data.botLineW || 0;
+      if (botW > 0) {
+        ctx.lineWidth = NW;
+        ctx.beginPath();
+        ctx.moveTo(x + R, y + h);
+        ctx.lineTo(x + R + botW, y + h);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+    _drawBorder(box, b) {
+      const cdata = box.data;
+      if (cdata == null ? void 0 : cdata.cursorDynamicLines) {
+        this._drawCursorBorder(b, cdata);
+        return;
+      }
+      if (box.kfmStyle) {
+        drawBorders(this.ctx, b.x, b.y, b.width, b.height, box.kfmStyle);
+        return;
+      }
+      const border = box.border;
+      if (!border || border.width <= 0) return;
+      const { color, width, sides } = border;
+      this.ctx.strokeStyle = color;
+      this.ctx.lineWidth = width;
+      this.ctx.lineCap = "round";
+      const x = b.x, y = b.y, w = b.width, h = b.height, r = box.borderRadius;
+      this.ctx.beginPath();
+      if (sides.top) {
+        this.ctx.moveTo(x + r, y);
+        this.ctx.lineTo(x + w - r, y);
+      }
+      if (sides.right) {
+        this.ctx.moveTo(x + w, y + r);
+        this.ctx.lineTo(x + w, y + h - r);
+      }
+      if (sides.bottom) {
+        this.ctx.moveTo(x + w - r, y + h);
+        this.ctx.lineTo(x + r, y + h);
+      }
+      if (sides.left) {
+        this.ctx.moveTo(x, y + h - r);
+        this.ctx.lineTo(x, y + r);
+      }
+      this.ctx.stroke();
+      if (sides.top && sides.right && sides.bottom && sides.left) {
+        this.ctx.beginPath();
+        this.ctx.roundRect(x, y, w, h, r);
+        this.ctx.stroke();
+      }
+    }
+    _drawHighlight(box, b) {
+      const hl = box.highlight;
+      if (!hl) return;
+      this.ctx.strokeStyle = hl.color;
+      this.ctx.lineWidth = hl.width;
+      this.ctx.lineCap = "round";
+      if (hl.side === "all") {
+        if (box.borderRadius > 0) {
+          this.ctx.roundRect(b.x, b.y, b.width, b.height, box.borderRadius);
+        } else {
+          this.ctx.strokeRect(b.x, b.y, b.width, b.height);
+        }
+      } else {
+        this.ctx.beginPath();
+        this.ctx.moveTo(b.x + hl.width / 2, b.y + 4);
+        this.ctx.lineTo(b.x + hl.width / 2, b.y + b.height - 4);
+        this.ctx.stroke();
+      }
+    }
+    _drawIcon(icon, b, padding) {
+      const iconX = icon.position === "left" ? b.x + padding.left : b.x + b.width - padding.right - icon.size;
+      const iconY = b.y + padding.top;
+      this.ctx.font = `${icon.size}px system-ui`;
+      this.ctx.fillStyle = "#e0e0e0";
+      this.ctx.textBaseline = "top";
+      this.ctx.textAlign = "left";
+      this.ctx.fillText(icon.char, iconX, iconY);
+    }
+    // ============================================================
+    // Pretext 文本渲染
+    // ============================================================
+    _getTextKey(text, font) {
+      return `${font}::${text}`;
+    }
+    _drawText(style, b, padding, icon) {
+      if (!style.content) return;
+      const iconWidth = icon && icon.position === "left" ? icon.size + 8 : 0;
+      const iconRightWidth = icon && icon.position === "right" ? icon.size + 8 : 0;
+      const textX = b.x + padding.left + iconWidth;
+      const textY = b.y + padding.top;
+      const maxWidth = b.width - padding.left - padding.right - iconWidth - iconRightWidth;
+      if (maxWidth <= 0) return;
+      const key = this._getTextKey(style.content, style.font);
+      let prepared = this._pretextCache.get(key);
+      if (!prepared) {
+        try {
+          prepared = prepareWithSegments(style.content, style.font);
+          this._pretextCache.set(key, prepared);
+        } catch {
+          this._drawTextFallback(style, textX, textY, maxWidth, b, padding);
+          return;
+        }
+      }
+      const { lines } = layoutWithLines(prepared, maxWidth, style.lineHeight);
+      const maxL = style.maxLines > 0 ? style.maxLines : lines.length;
+      const visibleLines = lines.slice(0, maxL);
+      const totalTextHeight = visibleLines.length * style.lineHeight;
+      const availableHeight = b.height - padding.top - padding.bottom;
+      let offsetY = 0;
+      if (style.verticalAlign === "middle") {
+        offsetY = (availableHeight - totalTextHeight) / 2;
+      } else if (style.verticalAlign === "bottom") {
+        offsetY = availableHeight - totalTextHeight;
+      }
+      this.ctx.font = style.font;
+      this.ctx.fillStyle = style.color;
+      this.ctx.textBaseline = "middle";
+      const metrics = this.ctx.measureText("Ag");
+      const fontHeight = Math.abs(metrics.actualBoundingBoxAscent) + Math.abs(metrics.actualBoundingBoxDescent);
+      const lineGap = (style.lineHeight - fontHeight) / 2;
+      for (let i = 0; i < visibleLines.length; i++) {
+        const line = visibleLines[i];
+        let lineText = line.text;
+        const isOverflowing = style.overflow === "ellipsis";
+        const isTrimmed = lines.length > maxL || maxL === 1 && line.width >= maxWidth - 2;
+        if (isOverflowing && i === maxL - 1 && isTrimmed) {
+          lineText = lineText.slice(0, -1) + "\u2026";
+          line.width = this.ctx.measureText(lineText).width;
+        }
+        let alignX = textX;
+        if (style.align === "center") {
+          alignX = textX + (maxWidth - line.width) / 2;
+        } else if (style.align === "right") {
+          alignX = textX + maxWidth - line.width;
+        }
+        const lineCenterY = textY + offsetY + i * style.lineHeight + style.lineHeight / 2;
+        this.ctx.fillText(lineText, alignX, lineCenterY);
+      }
+    }
+    /** 简单文本渲染回退（Pretext 不可用时） */
+    _drawTextFallback(style, x, y, maxWidth, b, padding) {
+      this.ctx.font = style.font;
+      this.ctx.fillStyle = style.color;
+      this.ctx.textBaseline = "middle";
+      const centerY = y + (b.height - padding.top - padding.bottom) / 2;
+      let text = style.content;
+      const measured = this.ctx.measureText(text);
+      if (measured.width > maxWidth) {
+        while (text.length > 0 && this.ctx.measureText(text + "\u2026").width > maxWidth) {
+          text = text.slice(0, -1);
+        }
+        text += "\u2026";
+      }
+      this.ctx.fillText(text, x, centerY);
+    }
+    // ============================================================
+    // 碰撞检测
+    // ============================================================
+    /** 获取指定坐标下最顶层的可交互 Box */
+    hitTest(x, y) {
+      if (!this._root) return null;
+      return this._hitTestRecursive(this._root, x, y);
+    }
+    _hitTestRecursive(box, x, y) {
+      if (!box.visible || !box.interactive || box.disabled) return null;
+      for (let i = box.children.length - 1; i >= 0; i--) {
+        const found = this._hitTestRecursive(box.children[i], x, y);
+        if (found) return found;
+      }
+      if (box.containsPoint(x, y)) {
+        if (box.gesture) {
+          const hasCallbacks = this._hasGestureCallbacks(box.gesture);
+          const isPassive = box.gesture.passive !== false;
+          if (isPassive && !hasCallbacks) {
+            return null;
+          }
+        }
+        return box;
+      }
+      return null;
+    }
+    /** 检测 gesture 是否绑定了任何回调 */
+    _hasGestureCallbacks(gesture) {
+      return !!(gesture.onTap || gesture.onLongPress || gesture.onSwipeLeft || gesture.onSwipeRight || gesture.onSwipeUp || gesture.onSwipeDown || gesture.onPan || gesture.onPanEnd || gesture.onPinch || gesture.onRotate || gesture.onCancel);
+    }
+    // ============================================================
+    // 缓存管理
+    // ============================================================
+    clearTextCache() {
+      this._pretextCache.clear();
+    }
+  };
+
   // src/client/modules/renderer-lifecycle.ts
   var RendererLifecycle = class {
     constructor() {
@@ -8947,6 +9899,34 @@
     if (idx >= 0 && L._rowIndex[idx] && L._rowIndex[idx].id !== L.cursorRowId) {
       console.log("[snapCursorToCenter] snapping from", L.cursorRowId, "to", L._rowIndex[idx].id, "centerIdx=", idx);
       moveCursorTo(L._rowIndex[idx]);
+    }
+  }
+  function _scrollToCenterCursor() {
+    var _a, _b;
+    if (_isCursorMode()) return;
+    if (L._restoreMode) return;
+    const root = (_a = L.renderer) == null ? void 0 : _a.getRoot();
+    if (!root || L.cursorRowId === null) return;
+    const canvas = DOM.treeCanvas;
+    const canvasH = (_b = canvas == null ? void 0 : canvas.clientHeight) != null ? _b : 618;
+    const maxY = root.getMaxScroll().maxY;
+    const idx = getCursorRowIndex();
+    if (idx < 0 || !L._rowIndex[idx]) return;
+    try {
+      const abs = L._rowIndex[idx].getAbsolutePosition();
+      const targetScrollY = Math.max(0, Math.min(maxY, abs.y + L._rowIndex[idx].height / 2 - canvasH / 2));
+      console.log("[GSAP-SCROLL] targetScrollY=", targetScrollY, "from=", root.scrollY);
+      gsapWithCSS.to(root, {
+        scrollY: targetScrollY,
+        duration: 0.35,
+        ease: "power2.inOut",
+        overwrite: "auto",
+        onUpdate: function() {
+          var _a2;
+          (_a2 = L.renderer) == null ? void 0 : _a2.setRoot(L.renderer.getRoot());
+        }
+      });
+    } catch {
     }
   }
 
