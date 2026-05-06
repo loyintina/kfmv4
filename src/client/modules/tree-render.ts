@@ -18,6 +18,7 @@ import type { Box } from '../engine/v2/box.js';
 import { getCursorRowIndex, getRowIndexLength, moveCursorTo, ensureCursorBox, _moveCursorBySteps, _isCursorMode, _getCenterRowIndex, _snapCursorToCenter, _scrollToCenterCursor } from './canvas-cursor.js';
 import { bindScrollEvents } from './canvas-scroll.js';
 import { DOM } from "./dom-refs.js";
+import { treeAbort } from './abort.js';
 const ts = anim.scope('tree-render');
 
 // ========== 点击事件队列 ==========
@@ -757,8 +758,10 @@ function rebuildTree(): void {
     L.renderer.start();
   }
 
-  // 清空 L.animatingPath，防止后续 rebuildTree（如���自 doCollapse）读到脏值
+  // 清空 L.animatingPath，防止后续 rebuildTree 读到脏值
   L.animatingPath = null;
+  // 通知所有持有旧 token 的 async 动画中止
+  treeAbort.cancel();
 
   // [DIAG] 展开/折叠后光标状态追踪
   const diagRoot = L.renderer?.getRoot();
@@ -881,6 +884,7 @@ function snapToCenterRow(root: Box, canvasH: number): void {
  * 盒子链串行展开子容器，每个子容器展开后递归调用自身。
  */
 async function slideInRows(container: Box, root: Box, selfToggle?: any): Promise<void> {
+  const token = treeAbort.start();
   // ========== current toggle rotation ==========
   if (selfToggle) {
     anim.fromTo(selfToggle.transform, { rotate: 0 }, {
@@ -926,16 +930,16 @@ async function slideInRows(container: Box, root: Box, selfToggle?: any): Promise
       });
     });
     // root check: bail if tree was rebuilt mid-animation
-    if (L.renderer?.getRoot() !== root) return;
+    if (treeAbort.isCancelled(token)) return;
     if (child.kfmStyle && (child as any)._savedCr !== undefined) {
       child.kfmStyle.cornerRadius = (child as any)._savedCr;
     }
     await slideInRows(child, root);
-    if (L.renderer?.getRoot() !== root) return;
+    if (treeAbort.isCancelled(token)) return;
     await expandNext(idx + 1);
   }
   await expandNext(0);
-  if (L.renderer?.getRoot() !== root) return;
+  if (treeAbort.isCancelled(token)) return;
 }
 
 // ============================================================

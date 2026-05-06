@@ -10358,6 +10358,26 @@
     }, { passive: true });
   }
 
+  // src/client/modules/abort.ts
+  var AbortController = class {
+    constructor() {
+      __publicField(this, "_generation", 0);
+    }
+    /** 开始新的操作世代，返回令牌 */
+    start() {
+      return this._generation;
+    }
+    /** 取消当前世代（递增 generation） */
+    cancel() {
+      this._generation++;
+    }
+    /** 检查令牌是否已被取消 */
+    isCancelled(token) {
+      return token !== this._generation;
+    }
+  };
+  var treeAbort = new AbortController();
+
   // src/client/modules/tree-render.ts
   var ts = anim.scope("tree-render");
   var _clickQueue = [];
@@ -11024,6 +11044,7 @@
       L.renderer.start();
     }
     L.animatingPath = null;
+    treeAbort.cancel();
     const diagRoot = (_t = L.renderer) == null ? void 0 : _t.getRoot();
     const diagCS = diagRoot == null ? void 0 : diagRoot.getContentSize();
     console.log(
@@ -11123,26 +11144,26 @@
     if (closest) moveCursorTo(closest);
   }
   async function slideInRows(container, root, selfToggle) {
-    var _a;
+    const token = treeAbort.start();
     if (selfToggle) {
       anim.fromTo(selfToggle.transform, { rotate: 0 }, {
         rotate: Math.PI / 2,
         duration: 0.15,
         ease: "power2.out",
         onUpdate: () => {
-          var _a2;
-          (_a2 = L.renderer) == null ? void 0 : _a2.setRoot(L.renderer.getRoot());
+          var _a;
+          (_a = L.renderer) == null ? void 0 : _a.setRoot(L.renderer.getRoot());
         }
       });
     }
     const subContainers = container.children.filter(
       (c) => {
-        var _a2;
-        return ((_a2 = c.id) == null ? void 0 : _a2.startsWith("expanded-")) && c._fullHeight > 0;
+        var _a;
+        return ((_a = c.id) == null ? void 0 : _a.startsWith("expanded-")) && c._fullHeight > 0;
       }
     );
     async function expandNext(idx) {
-      var _a2, _b, _c, _d;
+      var _a, _b;
       if (idx >= subContainers.length) return;
       const child = subContainers[idx];
       const subFullH = child._fullHeight;
@@ -11156,11 +11177,11 @@
         c.opacity = 1;
       });
       const subTog = child._toggleBox;
-      const subTogRotate = (_a2 = child._toggleRotate) != null ? _a2 : Math.PI / 2;
+      const subTogRotate = (_a = child._toggleRotate) != null ? _a : Math.PI / 2;
       const freshTitle = findBoxById(root, `title-${child.id.slice("expanded-".length)}`);
       const freshTog = (_b = freshTitle == null ? void 0 : freshTitle.children) == null ? void 0 : _b.find((c) => {
-        var _a3;
-        return (_a3 = c.id) == null ? void 0 : _a3.startsWith("toggle-");
+        var _a2;
+        return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
       });
       if (freshTog) {
         anim.killTweensOf(freshTog.transform);
@@ -11173,22 +11194,22 @@
           duration: 0.05,
           ease: "back.out(1.15)",
           onUpdate: () => {
-            var _a3;
-            (_a3 = L.renderer) == null ? void 0 : _a3.setRoot(L.renderer.getRoot());
+            var _a2;
+            (_a2 = L.renderer) == null ? void 0 : _a2.setRoot(L.renderer.getRoot());
           },
           onComplete: resolve
         });
       });
-      if (((_c = L.renderer) == null ? void 0 : _c.getRoot()) !== root) return;
+      if (treeAbort.isCancelled(token)) return;
       if (child.kfmStyle && child._savedCr !== void 0) {
         child.kfmStyle.cornerRadius = child._savedCr;
       }
       await slideInRows(child, root);
-      if (((_d = L.renderer) == null ? void 0 : _d.getRoot()) !== root) return;
+      if (treeAbort.isCancelled(token)) return;
       await expandNext(idx + 1);
     }
     await expandNext(0);
-    if (((_a = L.renderer) == null ? void 0 : _a.getRoot()) !== root) return;
+    if (treeAbort.isCancelled(token)) return;
   }
 
   // src/client/modules/ui.ts
