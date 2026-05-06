@@ -435,8 +435,8 @@ function initInputBarWatcher(): void {
         { duration: 100, easing: 'cubic-bezier(.4,0,.2,1)' }
       );
       orbAnim.onfinish = () => {
-        orbEl.style.left = orbTargetX + 'px';
-        orbEl.style.top = orbTargetY + 'px';
+        orbEl!.style.left = orbTargetX + 'px';
+        orbEl!.style.top = orbTargetY + 'px';
       };
 
       // 面板同步平滑动画
@@ -451,10 +451,10 @@ function initInputBarWatcher(): void {
           { duration: 100, easing: 'cubic-bezier(.4,0,.2,1)' }
         );
         panelAnim.onfinish = () => {
-          panelEl.style.left = panelTarget.left + 'px';
-          panelEl.style.top = panelTarget.top + 'px';
-          panelEl.style.width = panelTarget.width + 'px';
-          panelEl.style.height = panelTarget.height + 'px';
+          panelEl!.style.left = panelTarget.left + 'px';
+          panelEl!.style.top = panelTarget.top + 'px';
+          panelEl!.style.width = panelTarget.width + 'px';
+          panelEl!.style.height = panelTarget.height + 'px';
           renderWidth = panelTarget.width;
           renderHeight = panelTarget.height;
           if (orbState === 'expanded') renderChatContent();

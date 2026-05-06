@@ -14,6 +14,18 @@
     sidebarOpen: false,
     fileCache: { version: 1, updated: 0, tree: {} },
     _listeners: [],
+    _beforeExpandHooks: [],
+    addHook(hook, fn) {
+      if (hook === "beforeExpand") {
+        this._beforeExpandHooks.push(fn);
+      }
+    },
+    removeHook(hook, fn) {
+      if (hook === "beforeExpand") {
+        const idx = this._beforeExpandHooks.indexOf(fn);
+        if (idx !== -1) this._beforeExpandHooks.splice(idx, 1);
+      }
+    },
     subscribe(fn) {
       this._listeners.push(fn);
     },
@@ -4147,7 +4159,7 @@
       expandedPaths: state.expandedPaths,
       selectedFile: state.selectedFile,
       onDirToggle: (p, e) => state.setExpanded(p, e),
-      onFileClick: (p) => state.selectFile(p),
+      onFileClick: (p) => state.setSelectedFile(p),
       baseDepth: 0,
       containerWidth: containerWidth != null ? containerWidth : 280,
       scrollable: true,
@@ -10322,7 +10334,7 @@
           if (_root) {
             _rebuildRowIndex(_root);
           }
-          if (L.cursorRowId) {
+          if (L.cursorRowId && _root) {
             const _t = findBoxById(_root, L.cursorRowId);
             if (_t) moveCursorTo(_t, false);
           }
@@ -10523,12 +10535,8 @@
   }
   function bindClickEvents(canvas, _dpr) {
     canvas.addEventListener("click", (e) => {
-      if (!L.renderer) {
-        window.showToast && window.showToast("CLICK: no renderer");
-        return;
-      }
+      if (!L.renderer) return;
       L._clickQueue.push({ offsetX: e.offsetX, offsetY: e.offsetY });
-      window.showToast && window.showToast("tap: " + e.offsetX + "," + e.offsetY);
       processClickQueue();
     });
   }
@@ -10557,7 +10565,6 @@
     for (const child of root.children) {
       if (!child.visible || child.disabled) continue;
       const hit = findTapTarget(child, px, py);
-      window.showToast && window.showToast("hit=" + (hit ? hit.id : "null"));
       if ((_b = hit == null ? void 0 : hit.gesture) == null ? void 0 : _b.onTap) {
         if (L.cursorRowId !== null && L.cursorRowId === hit.id) {
           const hitData = hit.data || {};
@@ -10674,7 +10681,7 @@
           if (_root) {
             _rebuildRowIndex(_root);
           }
-          if (L.cursorRowId) {
+          if (L.cursorRowId && _root) {
             const _t = findBoxById(_root, L.cursorRowId);
             if (_t) moveCursorTo(_t, false);
           }
@@ -10747,10 +10754,7 @@
   }
   function rebuildTree() {
     var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t;
-    if (!L.renderer) {
-      window.showToast && window.showToast("CLICK: no renderer");
-      return;
-    }
+    if (!L.renderer) return;
     if (L._animBusy) {
       if (L._animBusyAt && Date.now() - L._animBusyAt > 3e3) {
         L._animBusy = false;
@@ -10876,7 +10880,7 @@
         snapToCenterRow(newRoot, canvasH);
       }
     }
-    _rebuildRowIndex(newRoot);
+    if (newRoot) _rebuildRowIndex(newRoot);
     if (!L.renderer.isRunning) {
       L.renderer.start();
     }

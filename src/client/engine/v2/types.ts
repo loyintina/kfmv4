@@ -55,6 +55,7 @@ export interface VisualBorderConfig {
 export interface HighlightConfig {
   color: string;
   width: number;
+  side?: string;
 }
 
 // ============================================================
@@ -105,7 +106,7 @@ export interface BackgroundPatternConfig {
 
 export type TextAlign = 'left' | 'center' | 'right';
 export type TextVerticalAlign = 'top' | 'middle' | 'bottom';
-export type TextOverflow = 'ellipsis' | 'wrap' | 'clip';
+export type TextOverflow = 'ellipsis' | 'wrap' | 'clip' | 'visible';
 
 /** 文本样式配置 */
 export interface TextStyle {
@@ -301,7 +302,7 @@ export interface GestureEventData {
 }
 
 /** 手势事件处理器 */
-export type GestureEventHandler = (data: GestureEventData) => void;
+export type GestureEventHandler = (data?: GestureEventData) => void;
 
 /** 手势阈值配置 */
 export interface GestureThresholds {

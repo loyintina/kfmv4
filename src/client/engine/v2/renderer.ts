@@ -357,7 +357,7 @@ export class Renderer {
     const prevComposite = box.composite || '';
     if (prevComposite) {
       this.ctx.save();
-      this.ctx.globalCompositeOperation = prevComposite;
+      this.ctx.globalCompositeOperation = prevComposite as GlobalCompositeOperation;
     }
 
     if (box.gradient) {

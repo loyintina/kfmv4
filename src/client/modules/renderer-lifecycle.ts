@@ -24,7 +24,7 @@ export class RendererLifecycle {
   renderer: Renderer | null = null;
 
   // ---- KFMState 订阅 ----
-  _stateSub: ((state: Record<string, unknown>) => void) | null = null;
+  _stateSub: ((state: any) => void) | null = null;
 
   // ---- 光标 ----
   cursorBox: Box | null = null;

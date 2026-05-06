@@ -110,7 +110,7 @@ export function triggerExpandAnimation(path: string): void {
         const _root = L.renderer?.getRoot();
         if (_root) { _rebuildRowIndex(_root); }
         // ä¿®æ­£å¨ç»ååæ çä½ç½®
-        if (L.cursorRowId) { const _t = findBoxById(_root, L.cursorRowId); if (_t) moveCursorTo(_t, false); }
+        if (L.cursorRowId && _root) { const _t = findBoxById(_root, L.cursorRowId); if (_t) moveCursorTo(_t, false); }
         processClickQueue();
       });
     },
@@ -508,7 +508,7 @@ function doExpand(hit: Box, hitData: any): void {
         const _root = L.renderer?.getRoot();
         if (_root) { _rebuildRowIndex(_root); }
         // ä¿®æ­£å¨ç»åå�� çä½ç½®
-        if (L.cursorRowId) { const _t = findBoxById(_root, L.cursorRowId); if (_t) moveCursorTo(_t, false); }
+        if (L.cursorRowId && _root) { const _t = findBoxById(_root, L.cursorRowId); if (_t) moveCursorTo(_t, false); }
         processClickQueue();
       });
     },
@@ -712,10 +712,10 @@ function rebuildTree(): void {
       if (target) {
         if (L.animatingPath && prevCursorY >= 0) {
           // ä¿æåæ çè§è§ä½ç½®ï¼ä¸è·éè¢« collapseSubs ä¸ç§»çè¡
-          L.cursorBox.x = prevCursorX;
-          L.cursorBox.y = prevCursorY;
-          L.cursorBox.width = prevCursorW;
-          if (prevCursorH >= 0) { L.cursorBox.height = prevCursorH; }
+          L.cursorBox!.x = prevCursorX;
+          L.cursorBox!.y = prevCursorY;
+          L.cursorBox!.width = prevCursorW;
+          if (prevCursorH >= 0) { L.cursorBox!.height = prevCursorH; }
           if (prevCursorTopLine >= 0) { (L.cursorBox as any).data.topLineW = prevCursorTopLine; }
           if (prevCursorBotLine >= 0) { (L.cursorBox as any).data.botLineW = prevCursorBotLine; }
           L.cursorRowId = prevCursorRowId;
@@ -732,7 +732,7 @@ function rebuildTree(): void {
   }
 
   // 重建光标步进行索引
-  _rebuildRowIndex(newRoot);
+  if (newRoot) _rebuildRowIndex(newRoot);
 
   if (!L.renderer.isRunning) {
     L.renderer.start();

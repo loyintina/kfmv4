@@ -10,7 +10,7 @@ import { resolveStyle } from '../engine/v2/StyleConfig.js';
 import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
 
 export interface TreeOptions {
-  expandedPaths: Record<string, boolean>;
+  expandedPaths?: Record<string, boolean>;
   selectedFile?: string | null;
   onDirToggle?: (path: string, expand: boolean) => void;
   onFileClick?: (path: string) => void;

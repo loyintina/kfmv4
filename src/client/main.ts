@@ -19,7 +19,7 @@ declare global {
     closeSidebar: () => void;
     executeCursorAction: () => Promise<void>;
     // ===== 调试/跨模块访问 =====
-    KFMState: any;
+    KFMState: import('./modules/state.js').KFMStateType;
     styleRegistry: any;
     DIMENSIONS: any;
     COLORS: any;

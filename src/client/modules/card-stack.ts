@@ -232,7 +232,7 @@ function updateFocus(): void {
       el.style.transform = 'translateX(-20px) scale(1.04) rotate(0deg)';
       el.style.opacity = '1';
       el.style.backdropFilter = 'blur(16px)';
-      el.style.webkitBackdropFilter = 'blur(16px)';
+      (el.style as any).webkitBackdropFilter = 'blur(16px)';
       const alpha = 0.85;
       const [c1, c2, c3] = getTriple(i, alpha);
       el.style.background = 'linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, linear-gradient(135deg,' + c1 + ',' + c2 + ',' + c3 + ') border-box';
@@ -248,7 +248,7 @@ function updateFocus(): void {
       el.style.opacity = '1';
       // 不改 zIndex
       el.style.backdropFilter = 'blur(16px)';
-      el.style.webkitBackdropFilter = 'blur(16px)';
+      (el.style as any).webkitBackdropFilter = 'blur(16px)';
       const alpha2 = 0.85;
       const [c4, c5, c6] = getTriple(i, alpha2);
       el.style.background = 'linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, linear-gradient(135deg,' + c4 + ',' + c5 + ',' + c6 + ') border-box';
