@@ -9734,9 +9734,6 @@
   }
 
   // src/client/modules/canvas-cursor.ts
-  function getRowIndexLength() {
-    return L._rowIndex.length;
-  }
   function ensureCursorBox(root, canvasH) {
     var _a;
     if (L.cursorBox) {
@@ -11344,7 +11341,7 @@
       const dy = t.clientY - _touchStartY;
       const dx = t.clientX - _swipeStartX;
       _touchMoved = true;
-      if (dx > 50) {
+      if (dx > 50 && dx > Math.abs(dy)) {
         closeCardStack();
         return;
       }
@@ -11405,15 +11402,6 @@
   function openCardStack() {
     if (_isOpen) return;
     _isOpen = true;
-    const cursorIdx = getCursorRowIndex();
-    const totalRows = getRowIndexLength();
-    const cardCount = CARDS.length;
-    if (cursorIdx >= 0 && totalRows > 0) {
-      _focusIndex = Math.floor(cursorIdx / totalRows * cardCount);
-      _focusIndex = Math.max(0, Math.min(cardCount - 1, _focusIndex));
-    } else {
-      _focusIndex = 0;
-    }
     if (_panelEl) {
       const pw = _panelEl.offsetWidth || Math.min(window.innerWidth * 0.85, 300);
       _panelEl.style.right = String(-pw * (1 - PEEK_RATIO)) + "px";
@@ -11441,7 +11429,7 @@
       condition: () => isCardStackOpen(),
       priority: 80,
       onMove: (e, dx, dy) => {
-        if (dx > 60) {
+        if (dx > 60 && dx > Math.abs(dy)) {
           closeCardStack();
           return;
         }

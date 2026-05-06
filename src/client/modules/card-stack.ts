@@ -195,7 +195,7 @@ function buildPanel(): void {
     _touchMoved = true;
 
     // 右滑 -> 关闭
-    if (dx > 50) {
+    if (dx > 50 && dx > Math.abs(dy)) {
       closeCardStack();
       return;
     }
@@ -272,17 +272,7 @@ function repositionCards(): void {
 export function openCardStack(): void {
   if (_isOpen) return;
   _isOpen = true;
-  // 根据文件树光标位置映射到卡片索引
-  const cursorIdx = getCursorRowIndex();
-  const totalRows = getRowIndexLength();
-  const cardCount = CARDS.length;
-  if (cursorIdx >= 0 && totalRows > 0) {
-    // 光标位置映射到卡片：cursorIdx/totalRows * cardCount
-    _focusIndex = Math.floor((cursorIdx / totalRows) * cardCount);
-    _focusIndex = Math.max(0, Math.min(cardCount - 1, _focusIndex));
-  } else {
-    _focusIndex = 0;
-  }
+  // 保持上次聚焦状态，不再根据光标位置重置
   if (_panelEl) {
     const pw = _panelEl.offsetWidth || Math.min(window.innerWidth * 0.85, 300);
     _panelEl.style.right = String(-pw * (1 - PEEK_RATIO)) + 'px';
@@ -328,7 +318,7 @@ export function initCardStack(): void {
     condition: () => isCardStackOpen(),
     priority: 80,
     onMove: (e, dx, dy) => {
-      if (dx > 60) { closeCardStack(); return; }
+      if (dx > 60 && dx > Math.abs(dy)) { closeCardStack(); return; }
       if (Math.abs(dy) > 30) {
         const dir = dy < 0 ? 1 : -1;
         const newIndex = _focusIndex + dir;
