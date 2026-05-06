@@ -14,7 +14,7 @@ import { closeSidebar } from './ui.js';
 import { Renderer } from '../engine/v2/renderer.js';
 import { L } from './renderer-lifecycle.js';
 import { getRootScrollY, setRootScrollY, _rebuildRowIndex, findBoxById } from './canvas-utils.js';
-import type { Box } from '../engine/v2/box.js';
+import { Box } from '../engine/v2/box.js';
 import { getCursorRowIndex, getRowIndexLength, moveCursorTo, ensureCursorBox, _moveCursorBySteps, _isCursorMode, _getCenterRowIndex, _snapCursorToCenter, _scrollToCenterCursor } from './canvas-cursor.js';
 import { bindScrollEvents } from './canvas-scroll.js';
 import { DOM } from "./dom-refs.js";
@@ -29,6 +29,107 @@ function enqueueClick(e: ClickEvent): void { _clickQueue.push(e); }
 function dequeueClick(): ClickEvent | undefined { return _clickQueue.shift(); }
 function clearClickQueue(): void { _clickQueue.length = 0; }
 function hasClicks(): boolean { return _clickQueue.length > 0; }
+
+// ========== 帧标识（Root Identity Sentinel） ==========
+let _rootKey = 0;
+function _advanceFrameKey(): void { _rootKey++; }
+function _getFrameKey(): number { return _rootKey; }
+
+// ========== Overlay 管理 ==========
+const _activeOverlays: Box[] = [];
+
+const OVERLAY_Z = 200;
+
+function _addOverlay(overlay: Box): void {
+  _activeOverlays.push(overlay);
+}
+
+function _removeOverlay(overlay: Box): void {
+  const idx = _activeOverlays.indexOf(overlay);
+  if (idx >= 0) _activeOverlays.splice(idx, 1);
+  if (overlay.parent) {
+    const pidx = overlay.parent.children.indexOf(overlay);
+    if (pidx >= 0) overlay.parent.children.splice(pidx, 1);
+  }
+}
+
+function _removeAllOverlays(): void {
+  for (const ov of [..._activeOverlays]) {
+    _removeOverlay(ov);
+  }
+  _activeOverlays.length = 0;
+}
+
+/** 收集 container 在 parent 中之后的所有兄弟（排除 cursor-highlight） */
+function _collectSiblingsAfter(container: Box): Box[] {
+  const parent = container.parent;
+  if (!parent) return [];
+  const idx = parent.children.indexOf(container);
+  if (idx < 0) return [];
+  const result: Box[] = [];
+  for (let i = idx + 1; i < parent.children.length; i++) {
+    const sib = parent.children[i];
+    if (sib.id === 'cursor-highlight') continue;
+    if (_activeOverlays.includes(sib)) continue;
+    result.push(sib);
+  }
+  return result;
+}
+
+// ========== Box 视觉克隆器 ==========
+
+function _createVisualClone(
+  src: Box,
+  overrides?: Partial<{ x: number; y: number; width: number; height: number; opacity: number; zIndex: number; visible: boolean }>,
+): Box {
+  const clone = new Box({
+    x: overrides?.x ?? src.x,
+    y: overrides?.y ?? src.y,
+    width: overrides?.width ?? src.width,
+    height: overrides?.height ?? src.height,
+    opacity: overrides?.opacity ?? src.opacity ?? 1,
+    visible: overrides?.visible ?? src.visible,
+    backgroundColor: src.backgroundColor || 'transparent',
+    borderRadius: src.borderRadius,
+    gradient: src.gradient ? { ...src.gradient } : undefined,
+    shadow: src.shadow ? { ...src.shadow } : undefined,
+    border: src.border ? { ...src.border } : undefined,
+    highlight: src.highlight ? { ...src.highlight } : undefined,
+    interactive: false,
+    zIndex: overrides?.zIndex ?? src.zIndex + OVERLAY_Z,
+    overflow: 'visible',
+    kfmStyle: src.kfmStyle ? { ...src.kfmStyle } : undefined,
+    data: { ...(src as any).data },
+  });
+  if (src.textStyle) {
+    clone.textStyle = { ...src.textStyle };
+  }
+  if (src.transform) {
+    clone.transform = { ...src.transform };
+  }
+  // 递归克隆子 Box（label-* / toggle-* 等视觉子元素）
+  for (const child of src.children) {
+    if (child.id?.startsWith('label-') || child.id?.startsWith('toggle-')) {
+      const childClone = new Box({
+        x: child.x,
+        y: child.y,
+        width: child.width,
+        height: child.height,
+        opacity: child.opacity ?? 1,
+        visible: child.visible,
+        backgroundColor: child.backgroundColor || 'transparent',
+        interactive: false,
+        zIndex: child.zIndex + OVERLAY_Z,
+        overflow: 'visible',
+        kfmStyle: child.kfmStyle ? { ...child.kfmStyle } : undefined,
+      });
+      if (child.textStyle) childClone.textStyle = { ...child.textStyle };
+      if (child.transform) childClone.transform = { ...child.transform };
+      clone.addChild(childClone);
+    }
+  }
+  return clone;
+}
 
 /** 保存 KFMState 订阅引用，防止重复订阅 */
 function _ensureSubscribed(): void {
