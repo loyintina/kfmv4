@@ -11245,18 +11245,14 @@
     const [c1, c2, c3] = getTriple(i, alpha);
     return "linear-gradient(to bottom right, " + c1 + " 0%, " + c2 + " 33%, " + c3 + " 50%)";
   }
-  var PEEK_RATIO = 0.55;
   var CARD_GAP = 36;
   var CARD_HEIGHT = 68;
   var STACK_TOP_RATIO = 0.12;
-  var _isOpen = false;
+  var _state = "closed";
   var _focusIndex = 0;
-  var _panelEl = null;
   var _cardEls = [];
-  var _touchStartY = 0;
-  var _swipeStartX = 0;
-  var _touchMoved = false;
-  var _touchStartTime = 0;
+  var _scrollStartFocus = 0;
+  var _tl = null;
   function createCard(index) {
     const card = CARDS[index];
     const color = CARD_COLORS[index];
@@ -11277,7 +11273,7 @@
       "-4px 4px 8px rgba(0,0,0,0.15)"
     ].join(",");
     el.style.cssText = [
-      "position:absolute",
+      "position:fixed",
       "right:" + randomRight + "px",
       "top:" + topPx + "px",
       "width:min(85%, 260px)",
@@ -11295,7 +11291,7 @@
       "box-shadow:" + shadow,
       "transform:rotate(" + randomRotate + "deg)",
       "cursor:pointer",
-      "transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1)",
+      "transition:all 0.35s cubic-bezier(0.34,1.2,0.64,1)",
       "z-index:" + (10 + index),
       "opacity:1",
       "user-select:none",
@@ -11311,70 +11307,25 @@
     });
     return el;
   }
-  function buildPanel() {
-    console.log("[CARD-STACK] buildPanel called");
-    const panel = document.createElement("div");
-    panel.className = "stack-panel";
-    panel.style.cssText = [
-      "position:fixed",
-      "top:0",
-      "right:0",
-      "height:100%",
-      "width:min(85%, 300px)",
-      "z-index:610",
-      "right:-300px",
-      // 关闭时右偏移（不用 transform）
-      "transition:right 0.35s cubic-bezier(0.34,1.56,0.64,1)",
-      "pointer-events:none"
-    ].join(";");
-    document.body.appendChild(panel);
-    _panelEl = panel;
+  function buildCards() {
+    console.log("[CARD-STACK] buildCards called");
     for (let i = 0; i < CARDS.length; i++) {
       const card = createCard(i);
-      panel.appendChild(card);
+      card.style.transition = "none";
+      card.style.transform = "translateX(100vw)";
+      card.style.pointerEvents = "none";
+      document.body.appendChild(card);
       _cardEls.push(card);
     }
-    panel.addEventListener("touchstart", (e) => {
-      e.stopPropagation();
-      const t = e.touches[0];
-      _touchStartY = t.clientY;
-      _swipeStartX = t.clientX;
-      _touchMoved = false;
-      _touchStartTime = Date.now();
-    }, { passive: true });
-    panel.addEventListener("touchmove", (e) => {
-      const t = e.touches[0];
-      const dy = t.clientY - _touchStartY;
-      const dx = t.clientX - _swipeStartX;
-      _touchMoved = true;
-      if (dx > 50 && dx > Math.abs(dy)) {
-        closeCardStack();
-        return;
-      }
-      if (Math.abs(dy) > 25) {
-        const dir = dy < 0 ? 1 : -1;
-        const newIndex = _focusIndex + dir;
-        if (newIndex >= 0 && newIndex < CARDS.length) {
-          _focusIndex = newIndex;
-          _touchStartY = t.clientY;
-          updateFocus();
-        }
-      }
-    }, { passive: true });
-    panel.addEventListener("touchend", () => {
-      if (!_touchMoved && Date.now() - _touchStartTime < 300) {
-        const card = CARDS[_focusIndex];
-        console.log("[card-stack] select:", card.id, card.name);
-      }
-    }, { passive: true });
-    console.log("[CARD-STACK] buildPanel done, _panelEl=", _panelEl, "offsetWidth=", panel.offsetWidth);
+    console.log("[CARD-STACK] buildCards done, cards=", _cardEls.length);
   }
   function updateFocus() {
     for (let i = 0; i < _cardEls.length; i++) {
       const el = _cardEls[i];
+      el.style.transitionDelay = "0s";
       const dist = Math.abs(i - _focusIndex);
       if (dist === 0) {
-        el.style.transform = "translateX(-20px) scale(1.04) rotate(0deg)";
+        el.style.transform = "translateX(calc(35% - 20px)) scale(1.04) rotate(0deg)";
         el.style.opacity = "1";
         el.style.backdropFilter = "blur(16px)";
         el.style.webkitBackdropFilter = "blur(16px)";
@@ -11385,7 +11336,7 @@
         if (idxEl) idxEl.style.opacity = "0.8";
       } else {
         const randomRotate = el.dataset.randomRotate || "0";
-        el.style.transform = "translateX(0px) scale(1) rotate(" + randomRotate + "deg)";
+        el.style.transform = "translateX(35%) scale(1) rotate(" + randomRotate + "deg)";
         el.style.opacity = "1";
         el.style.backdropFilter = "blur(16px)";
         el.style.webkitBackdropFilter = "blur(16px)";
@@ -11398,61 +11349,106 @@
     }
   }
   function repositionCards() {
-    if (!_panelEl) return;
     for (let i = 0; i < _cardEls.length; i++) {
       _cardEls[i].style.top = Math.round(window.innerHeight * STACK_TOP_RATIO + i * CARD_GAP) + "px";
     }
   }
   function openCardStack() {
-    if (_isOpen) return;
-    _isOpen = true;
-    if (_panelEl) {
-      const pw = _panelEl.offsetWidth || Math.min(window.innerWidth * 0.85, 300);
-      _panelEl.style.right = String(-pw * (1 - PEEK_RATIO)) + "px";
-      _panelEl.style.pointerEvents = "auto";
+    if (_state === "open" || _state === "opening") return;
+    if (_state === "closing" && _tl) {
+      _state = "opening";
+      _tl.reverse();
+      return;
     }
+    _state = "opening";
     repositionCards();
-    updateFocus();
+    for (let i = 0; i < _cardEls.length; i++) {
+      const el = _cardEls[i];
+      gsapWithCSS.set(el, { x: "100vw", opacity: 1, pointerEvents: "auto" });
+    }
+    _tl = gsapWithCSS.timeline({
+      onComplete: () => {
+        _state = "open";
+        _tl = null;
+        updateFocus();
+      },
+      onReverseComplete: () => {
+        _state = "closed";
+        _tl = null;
+      }
+    });
+    for (let i = 0; i < _cardEls.length; i++) {
+      const el = _cardEls[i];
+      const dur = 0.2 + Math.random() * 0.3;
+      const rot = el.dataset.randomRotate || "0";
+      _tl.to(el, {
+        x: "35%",
+        scale: 1,
+        rotation: parseFloat(rot),
+        duration: dur,
+        ease: "back.out(1.2)"
+      }, 0);
+    }
   }
   function closeCardStack() {
-    if (!_isOpen) return;
-    _isOpen = false;
-    if (_panelEl) {
-      _panelEl.style.right = "-300px";
-      _panelEl.style.pointerEvents = "none";
+    if (_state === "closed" || _state === "closing") return;
+    if (_state === "opening" && _tl) {
+      _state = "closing";
+      _tl.reverse();
+      return;
+    }
+    _state = "closing";
+    _tl = gsapWithCSS.timeline({
+      onComplete: () => {
+        _state = "closed";
+        _tl = null;
+      },
+      onReverseComplete: () => {
+        _state = "open";
+        _tl = null;
+        updateFocus();
+      }
+    });
+    for (const el of _cardEls) {
+      _tl.to(el, {
+        x: "100vw",
+        duration: 0.3,
+        ease: "power2.in",
+        onComplete: () => {
+          el.style.pointerEvents = "none";
+        }
+      }, 0);
     }
   }
   function isCardStackOpen() {
-    return _isOpen;
+    return _state === "open" || _state === "opening";
   }
   function initCardStack() {
-    buildPanel();
+    buildCards();
     gestures.register({
       id: "card-stack-global",
       targetFilter: () => true,
       condition: () => isCardStackOpen(),
       priority: 80,
+      onStart: () => {
+        _scrollStartFocus = _focusIndex;
+      },
       onMove: (e, dx, dy) => {
-        if (dx > 60 && dx > Math.abs(dy)) {
+        if (dx > 50 && dx > Math.abs(dy)) {
           closeCardStack();
           return;
         }
-        if (Math.abs(dy) > 30) {
-          const dir = dy < 0 ? 1 : -1;
-          const newIndex = _focusIndex + dir;
-          if (newIndex >= 0 && newIndex < CARDS.length) {
-            _focusIndex = newIndex;
-            updateFocus();
-          }
+        const offset = Math.round(-dy / CARD_GAP);
+        const target = _scrollStartFocus + offset;
+        const clamped = Math.max(0, Math.min(CARDS.length - 1, target));
+        if (clamped !== _focusIndex) {
+          _focusIndex = clamped;
+          updateFocus();
         }
       }
     });
     window.addEventListener("resize", () => {
       repositionCards();
-      if (_isOpen && _panelEl) {
-        const pw = _panelEl.offsetWidth || Math.min(window.innerWidth * 0.85, 300);
-        _panelEl.style.right = String(-pw * (1 - PEEK_RATIO)) + "px";
-      }
     });
   }
 
@@ -11463,7 +11459,7 @@
     gestures.register({
       id: "gestures-page-swipe",
       targetFilter: (target) => {
-        return !target.closest(".light-orb") && !target.closest(".stack-panel");
+        return !target.closest(".light-orb") && !target.closest(".stack-card");
       },
       priority: 50,
       onStart: () => {

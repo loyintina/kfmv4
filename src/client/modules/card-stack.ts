@@ -1,4 +1,5 @@
 import { gestures } from "./gesture-registry.js";
+import gsap from 'gsap';
 
 /**
  * KFM v4 - 堆叠卡片面板
@@ -68,8 +69,6 @@ function getBorderGradient(i: number, alpha: number): string {
 }
 
 // ========== 配置 ==========
-/** 面板打开时露出比例（0-1），0.6 = 露出 60% */
-const PEEK_RATIO = 0.55;
 /** 卡片垂直间距 px */
 const CARD_GAP = 36;
 /** 卡片高度 px */
@@ -78,16 +77,13 @@ const CARD_HEIGHT = 68;
 const STACK_TOP_RATIO = 0.12;
 
 // ========== 状态 ==========
-let _isOpen = false;
+// 状态机：closed → opening → open → closing → closed
+type StackState = 'closed' | 'opening' | 'open' | 'closing';
+let _state: StackState = 'closed';
 let _focusIndex = 0;
-let _panelEl: HTMLElement | null = null;
 let _cardEls: HTMLElement[] = [];
-
-// 触摸状态
-let _touchStartY = 0;
-let _swipeStartX = 0;
-let _touchMoved = false;
-let _touchStartTime = 0;
+let _scrollStartFocus = 0;
+let _tl: gsap.core.Timeline | null = null;
 
 // ========== DOM 构建 ==========
 
@@ -122,7 +118,7 @@ function createCard(index: number): HTMLElement {
   ].join(',');
 
   el.style.cssText = [
-    'position:absolute',
+    'position:fixed',
     'right:' + randomRight + 'px',
     'top:' + topPx + 'px',
     'width:min(85%, 260px)',
@@ -140,7 +136,7 @@ function createCard(index: number): HTMLElement {
     'box-shadow:' + shadow,
     'transform:rotate(' + randomRotate + 'deg)',
     'cursor:pointer',
-    'transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1)',
+    'transition:all 0.35s cubic-bezier(0.34,1.2,0.64,1)',
     'z-index:' + (10 + index),
     'opacity:1',
     'user-select:none',
@@ -165,81 +161,29 @@ function createCard(index: number): HTMLElement {
   });
   return el;
 }
-function buildPanel(): void {
-  console.log("[CARD-STACK] buildPanel called");
-  const panel = document.createElement('div');
-  panel.className = 'stack-panel';
-  panel.style.cssText = [
-    'position:fixed', 'top:0', 'right:0',
-    'height:100%',
-    'width:min(85%, 300px)',
-    'z-index:610',
-    'right:-300px',  // 关闭时右偏移（不用 transform）
-    'transition:right 0.35s cubic-bezier(0.34,1.56,0.64,1)',
-    'pointer-events:none',
-  ].join(';');
-  document.body.appendChild(panel);
-  _panelEl = panel;
-
-  // 构建卡片
+function buildCards(): void {
+  console.log("[CARD-STACK] buildCards called");
   for (let i = 0; i < CARDS.length; i++) {
     const card = createCard(i);
-    panel.appendChild(card);
+    // 初始状态：屏幕外，不可交互
+    card.style.transition = 'none';
+    card.style.transform = 'translateX(100vw)';
+    card.style.pointerEvents = 'none';
+    document.body.appendChild(card);
     _cardEls.push(card);
   }
-
-  // 面板内触摸事件
-  panel.addEventListener('touchstart', (e: TouchEvent) => {
-    e.stopPropagation();
-    const t = e.touches[0];
-    _touchStartY = t.clientY;
-    _swipeStartX = t.clientX;
-    _touchMoved = false;
-    _touchStartTime = Date.now();
-  }, { passive: true });
-
-  panel.addEventListener('touchmove', (e: TouchEvent) => {
-    const t = e.touches[0];
-    const dy = t.clientY - _touchStartY;
-    const dx = t.clientX - _swipeStartX;
-    _touchMoved = true;
-
-    // 右滑 -> 关闭
-    if (dx > 50 && dx > Math.abs(dy)) {
-      closeCardStack();
-      return;
-    }
-
-    // 垂直滑动切换聚焦
-    if (Math.abs(dy) > 25) {
-      const dir = dy < 0 ? 1 : -1;
-      const newIndex = _focusIndex + dir;
-      if (newIndex >= 0 && newIndex < CARDS.length) {
-        _focusIndex = newIndex;
-        _touchStartY = t.clientY;
-        updateFocus();
-      }
-    }
-  }, { passive: true });
-
-  panel.addEventListener('touchend', () => {
-    if (!_touchMoved && Date.now() - _touchStartTime < 300) {
-      const card = CARDS[_focusIndex];
-      console.log('[card-stack] select:', card.id, card.name);
-      // TODO: 打开对应盒子
-    }
-  }, { passive: true });
-  console.log("[CARD-STACK] buildPanel done, _panelEl=", _panelEl, "offsetWidth=", panel.offsetWidth);
+  console.log("[CARD-STACK] buildCards done, cards=", _cardEls.length);
 }
 
 function updateFocus(): void {
   for (let i = 0; i < _cardEls.length; i++) {
     const el = _cardEls[i];
+    el.style.transitionDelay = '0s';
     const dist = Math.abs(i - _focusIndex);
 
     if (dist === 0) {
       // 聚焦：左移更多、取消旋转、增强阴影（不改层级）
-      el.style.transform = 'translateX(-20px) scale(1.04) rotate(0deg)';
+      el.style.transform = 'translateX(calc(35% - 20px)) scale(1.04) rotate(0deg)';
       el.style.opacity = '1';
       el.style.backdropFilter = 'blur(16px)';
       (el.style as any).webkitBackdropFilter = 'blur(16px)';
@@ -252,7 +196,7 @@ function updateFocus(): void {
     } else {
       // 非聚焦：恢复随机旋转、普通阴影
       const randomRotate = el.dataset.randomRotate || '0';
-      el.style.transform = 'translateX(0px) scale(1) rotate(' + randomRotate + 'deg)';
+      el.style.transform = 'translateX(35%) scale(1) rotate(' + randomRotate + 'deg)';
       el.style.opacity = '1';
       // 不改 zIndex
       el.style.backdropFilter = 'blur(16px)';
@@ -268,7 +212,6 @@ function updateFocus(): void {
 
 // ========== 窗口自适应 ==========
 function repositionCards(): void {
-  if (!_panelEl) return;
   for (let i = 0; i < _cardEls.length; i++) {
     _cardEls[i].style.top = Math.round(window.innerHeight * STACK_TOP_RATIO + i * CARD_GAP) + 'px';
   }
@@ -277,29 +220,75 @@ function repositionCards(): void {
 // ========== 公开 API ==========
 
 export function openCardStack(): void {
-  if (_isOpen) return;
-  _isOpen = true;
-  // 保持上次聚焦状态，不再根据光标位置重置
-  if (_panelEl) {
-    const pw = _panelEl.offsetWidth || Math.min(window.innerWidth * 0.85, 300);
-    _panelEl.style.right = String(-pw * (1 - PEEK_RATIO)) + 'px';
-    _panelEl.style.pointerEvents = 'auto';
+  // 状态机守卫
+  if (_state === 'open' || _state === 'opening') return;
+
+  // 如果正在关闭中 → reverse 回去（从当前位置丝滑反弹）
+  if (_state === 'closing' && _tl) {
+    _state = 'opening';
+    _tl.reverse();
+    return;
   }
+
+  _state = 'opening';
   repositionCards();
-  updateFocus();
+
+  // 设置初始状态：屏幕外
+  for (let i = 0; i < _cardEls.length; i++) {
+    const el = _cardEls[i];
+    gsap.set(el, { x: '100vw', opacity: 1, pointerEvents: 'auto' });
+  }
+
+  // 构建 GSAP timeline：同时出发，随机速度 200-500ms，Q弹曲线
+  _tl = gsap.timeline({
+    onComplete: () => { _state = 'open'; _tl = null; updateFocus(); },
+    onReverseComplete: () => { _state = 'closed'; _tl = null; }
+  });
+
+  for (let i = 0; i < _cardEls.length; i++) {
+    const el = _cardEls[i];
+    const dur = 0.2 + Math.random() * 0.3;
+    const rot = el.dataset.randomRotate || '0';
+    _tl.to(el, {
+      x: '35%',
+      scale: 1,
+      rotation: parseFloat(rot),
+      duration: dur,
+      ease: 'back.out(1.2)',
+    }, 0); // 全部从时间0开始，同时出发
+  }
 }
 
 export function closeCardStack(): void {
-  if (!_isOpen) return;
-  _isOpen = false;
-  if (_panelEl) {
-    _panelEl.style.right = '-300px';
-    _panelEl.style.pointerEvents = 'none';
+  if (_state === 'closed' || _state === 'closing') return;
+
+  // 如果正在打开中 → reverse 回去
+  if (_state === 'opening' && _tl) {
+    _state = 'closing';
+    _tl.reverse();
+    return;
+  }
+
+  _state = 'closing';
+
+  // 构建关闭 timeline
+  _tl = gsap.timeline({
+    onComplete: () => { _state = 'closed'; _tl = null; },
+    onReverseComplete: () => { _state = 'open'; _tl = null; updateFocus(); }
+  });
+
+  for (const el of _cardEls) {
+    _tl.to(el, {
+      x: '100vw',
+      duration: 0.3,
+      ease: 'power2.in',
+      onComplete: () => { el.style.pointerEvents = 'none'; }
+    }, 0);
   }
 }
 
 export function isCardStackOpen(): boolean {
-  return _isOpen;
+  return _state === 'open' || _state === 'opening';
 }
 
 export function focusNext(): void {
@@ -317,31 +306,32 @@ export function focusPrev(): void {
 }
 
 export function initCardStack(): void {
-  buildPanel();
-  // 全局滑动切卡（通过 GestureRegistry 管理）
+  buildCards();
+  // 全局切卡手势（通过 GestureRegistry 管理）
+  // 右滑关闭卡片堆、左滑预留、上下平滑切卡
   gestures.register({
     id: 'card-stack-global',
     targetFilter: () => true,
     condition: () => isCardStackOpen(),
     priority: 80,
+    onStart: () => {
+      _scrollStartFocus = _focusIndex;
+    },
     onMove: (e, dx, dy) => {
-      if (dx > 60 && dx > Math.abs(dy)) { closeCardStack(); return; }
-      if (Math.abs(dy) > 30) {
-        const dir = dy < 0 ? 1 : -1;
-        const newIndex = _focusIndex + dir;
-        if (newIndex >= 0 && newIndex < CARDS.length) {
-          _focusIndex = newIndex;
-          updateFocus();
-        }
+      // 右滑：水平主导时关闭卡片堆
+      if (dx > 50 && dx > Math.abs(dy)) { closeCardStack(); return; }
+      // 上下：连续平滑切卡，映射滑动距离到卡片索引
+      const offset = Math.round(-dy / CARD_GAP);
+      const target = _scrollStartFocus + offset;
+      const clamped = Math.max(0, Math.min(CARDS.length - 1, target));
+      if (clamped !== _focusIndex) {
+        _focusIndex = clamped;
+        updateFocus();
       }
     },
   });
   window.addEventListener('resize', () => {
     repositionCards();
-    if (_isOpen && _panelEl) {
-      const pw = _panelEl.offsetWidth || Math.min(window.innerWidth * 0.85, 300);
-      _panelEl.style.right = String(-pw * (1 - PEEK_RATIO)) + 'px';
-    }
   });
 }
 

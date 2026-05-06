@@ -25,7 +25,7 @@ export function initGestures(): void {
   gestures.register({
     id: 'gestures-page-swipe',
     targetFilter: (target) => {
-      return !target.closest('.light-orb') && !target.closest('.stack-panel');
+      return !target.closest('.light-orb') && !target.closest('.stack-card');
     },
     priority: 50,
     onStart: () => {
