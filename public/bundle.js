@@ -10514,6 +10514,42 @@
     }
     return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenSiblings, hiddenChildren };
   }
+  function _setupCollapseOverlays(container, fullH) {
+    const parent = container.parent;
+    const ci = parent.children.indexOf(container);
+    const containerOv = _createVisualClone(container, { id: `ov-${container.id || "container"}`, height: fullH, opacity: 1, zIndex: OVERLAY_Z });
+    _addOverlay(containerOv);
+    parent.children.splice(ci + 1, 0, containerOv);
+    containerOv.parent = parent;
+    const rowOverlays = [];
+    const hiddenChildren = [];
+    for (let j = 0; j < container.children.length; j++) {
+      const child = container.children[j];
+      if (!child.visible) continue;
+      const rowOv = _createVisualClone(child, { id: `ov-${child.id || "row"}-${j}`, y: child.y, opacity: 1, zIndex: OVERLAY_Z + 1 });
+      rowOv._targetY = child.y - fullH;
+      _addOverlay(rowOv);
+      containerOv.addChild(rowOv);
+      rowOverlays.push(rowOv);
+      child.opacity = 0;
+      hiddenChildren.push(child);
+    }
+    const siblingOverlays = [];
+    const hiddenSiblings = [];
+    const siblings = _collectSiblingsAfter(container);
+    for (const sib of siblings) {
+      const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || "sib"}`, y: sib.y, opacity: 1, zIndex: OVERLAY_Z });
+      sibOv._targetY = sib.y - fullH;
+      _addOverlay(sibOv);
+      const si = parent.children.indexOf(sib);
+      parent.children.splice(si, 0, sibOv);
+      sibOv.parent = parent;
+      siblingOverlays.push(sibOv);
+      sib.opacity = 0;
+      hiddenSiblings.push(sib);
+    }
+    return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenSiblings, hiddenChildren };
+  }
   function _ensureSubscribed() {
     if (L._stateSub) KFMState.unsubscribe(L._stateSub);
     L._stateSub = () => {
@@ -11029,27 +11065,54 @@
         }
       }, 0);
     }
+    let pack = null;
     if (container) {
       const fullH = container.height;
-      const root2 = L.renderer.getRoot();
-      const origYs = container.children.map((c) => c.y);
-      const ancestors = collectAncestors(container, root2);
-      ts.to(container, {
+      pack = _setupCollapseOverlays(container, fullH);
+      ts.to(pack.containerOverlay, {
         height: 0,
         duration: 0.3,
         ease: "power2.in",
-        onUpdate: function() {
+        onUpdate: () => {
           var _a, _b;
           if (((_a = L.renderer) == null ? void 0 : _a.getRoot()) !== animRoot) return;
-          applyAnimOffset(container, origYs, fullH, ancestors, root2);
           (_b = L.renderer) == null ? void 0 : _b.setRoot(L.renderer.getRoot());
         }
       }, 0);
+      for (const rowOv of pack.rowOverlays) {
+        ts.to(rowOv, {
+          y: rowOv._targetY,
+          duration: 0.3,
+          ease: "power2.in",
+          onUpdate: () => {
+            var _a, _b;
+            if (((_a = L.renderer) == null ? void 0 : _a.getRoot()) !== animRoot) return;
+            (_b = L.renderer) == null ? void 0 : _b.setRoot(L.renderer.getRoot());
+          }
+        }, 0);
+      }
+      for (const sibOv of pack.siblingOverlays) {
+        ts.to(sibOv, {
+          y: sibOv._targetY,
+          duration: 0.3,
+          ease: "power2.in",
+          onUpdate: () => {
+            var _a, _b;
+            if (((_a = L.renderer) == null ? void 0 : _a.getRoot()) !== animRoot) return;
+            (_b = L.renderer) == null ? void 0 : _b.setRoot(L.renderer.getRoot());
+          }
+        }, 0);
+      }
     }
     const maxDur = container ? 0.3 : tog ? 0.25 : 0;
     ts.call(() => {
       var _a;
       if (((_a = L.renderer) == null ? void 0 : _a.getRoot()) !== animRoot) return;
+      _removeAllOverlays();
+      if (pack) {
+        for (const c of pack.hiddenChildren) c.opacity = 1;
+        for (const s of pack.hiddenSiblings) s.opacity = 1;
+      }
       L._animBusy = false;
       L._animBusyAt = 0;
       hit.gesture.onTap();
@@ -11245,23 +11308,6 @@
       current = p;
     }
     return ancestors;
-  }
-  function applyAnimOffset(container, containerOrigYs, fullHeight, ancestors, root) {
-    const offset = container.height - fullHeight;
-    for (let i = 0; i < container.children.length; i++) {
-      container.children[i].y = containerOrigYs[i] + offset;
-    }
-    let heightDelta = offset;
-    for (const anc of ancestors) {
-      for (let i = anc.sibIdx + 1; i < anc.parent.children.length; i++) {
-        const sib = anc.parent.children[i];
-        if (sib.id === "cursor-highlight") continue;
-        sib.y = anc.sibOrigYs[i - anc.sibIdx - 1] + heightDelta;
-      }
-      if (anc.parent !== root) {
-        anc.parent.height = anc.origHeight + heightDelta;
-      }
-    }
   }
   function applyAnimOffsetSiblings(container, fullHeight, ancestors, root) {
     const offset = container.height - fullHeight;

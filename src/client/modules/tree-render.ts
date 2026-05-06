@@ -781,7 +781,7 @@ function doExpand(hit: Box, hitData: any): void {
   });
 }
 
-/** 折叠动画：全部挂载到 ts scope，ts.clear() 可可靠清除（不再使用独立 timeline） */
+/** 折叠动画（overlay 模式：GSAP 只碰 overlay Box，不碰主树） */
 function doCollapse(hit: Box, hitData: any): void {
   L.animatingPath = hitData.path;
   const tog = hit.children.find(c => c.id?.startsWith('toggle-'));
@@ -791,10 +791,9 @@ function doCollapse(hit: Box, hitData: any): void {
 
   L._animBusy = true; L._animBusyAt = Date.now();
   const animRoot = L.renderer!.getRoot()!;
-
-  // 强制 playhead 归零——sidebarTouchArea 直接调 doCollapse 时可能不在 processClickQueue 保护下
   ts.time(0);
 
+  // toggle 旋转动画（在主树上，不是 overlay）
   if (tog) {
     ts.to(tog.transform, {
       rotate: 0,
@@ -804,34 +803,62 @@ function doCollapse(hit: Box, hitData: any): void {
     }, 0);
   }
 
+  let pack: OverlayPack | null = null;
   if (container) {
     const fullH = container.height;
-    const root2 = L.renderer!.getRoot()!;
-    const origYs = container.children.map(c => c.y);
-    const ancestors = collectAncestors(container, root2);
-    ts.to(container, {
+    pack = _setupCollapseOverlays(container, fullH);
+
+    // 容器 overlay: height fullH → 0
+    ts.to(pack.containerOverlay, {
       height: 0,
       duration: 0.3,
       ease: 'power2.in',
-      onUpdate: function() {
+      onUpdate: () => {
         if (L.renderer?.getRoot() !== animRoot) return;
-        applyAnimOffset(container, origYs, fullH, ancestors, root2);
         L.renderer?.setRoot(L.renderer!.getRoot()!);
       },
     }, 0);
+
+    // 行 overlay: y → _targetY（展开态 → 折叠态）
+    for (const rowOv of pack.rowOverlays) {
+      ts.to(rowOv, {
+        y: (rowOv as any)._targetY,
+        duration: 0.3,
+        ease: 'power2.in',
+        onUpdate: () => {
+          if (L.renderer?.getRoot() !== animRoot) return;
+          L.renderer?.setRoot(L.renderer!.getRoot()!);
+        },
+      }, 0);
+    }
+
+    // 兄弟 overlay: y → _targetY
+    for (const sibOv of pack.siblingOverlays) {
+      ts.to(sibOv, {
+        y: (sibOv as any)._targetY,
+        duration: 0.3,
+        ease: 'power2.in',
+        onUpdate: () => {
+          if (L.renderer?.getRoot() !== animRoot) return;
+          L.renderer?.setRoot(L.renderer!.getRoot()!);
+        },
+      }, 0);
+    }
   }
 
-  // 用 ts.call 替代独立 anim.timeline().onComplete。
-  // ts.call 挂载到 scope，ts.clear() 会一并清除，不会残留幽灵回调。
   const maxDur = container ? 0.3 : (tog ? 0.25 : 0);
   ts.call(() => {
     if (L.renderer?.getRoot() !== animRoot) return;
+    _removeAllOverlays();
+    if (pack) {
+      for (const c of pack.hiddenChildren) c.opacity = 1;
+      for (const s of pack.hiddenSiblings) s.opacity = 1;
+    }
     L._animBusy = false; L._animBusyAt = 0;
     hit.gesture!.onTap!();
     processClickQueue();
   }, undefined, maxDur);
 
-  // 折叠动画不需要 L.animatingPath 给 rebuildTree 做预设，立即清除防止 _stateSub 误读
   L.animatingPath = null;
 }
 
