@@ -11235,17 +11235,15 @@
   function getTriple(i, alpha) {
     const n = CARD_COLORS.length;
     const mainRgba = hexToRgba(CARD_COLORS[i].border, alpha);
-    const prev = i > 0 ? hexToRgba(CARD_COLORS[i - 1].border, alpha) : hexToRgba(CARD_COLORS[0].border, Math.min(1, alpha + 0.15));
-    const next = i < n - 1 ? hexToRgba(CARD_COLORS[i + 1].border, alpha) : hexToRgba(CARD_COLORS[n - 1].border, Math.max(0.05, alpha - 0.2));
+    const prevIdx = (i - 1 + n) % n;
+    const nextIdx = (i + 1) % n;
+    const prev = hexToRgba(CARD_COLORS[prevIdx].border, alpha);
+    const next = hexToRgba(CARD_COLORS[nextIdx].border, alpha);
     return [prev, mainRgba, next];
   }
   function getBorderGradient(i, alpha) {
     const [c1, c2, c3] = getTriple(i, alpha);
-    const diag = Math.atan2(CARD_HEIGHT, 260) * 180 / Math.PI;
-    const bw = 5;
-    const d1 = (diag - bw).toFixed(1);
-    const d2 = (diag + bw).toFixed(1);
-    return "conic-gradient(from 90deg at 0% 0%," + c1 + " 0deg," + c1 + " " + d1 + "deg," + c2 + " " + d1 + "deg," + c2 + " " + d2 + "deg," + c3 + " " + d2 + "deg," + c3 + " 90deg)";
+    return "linear-gradient(to bottom right, " + c1 + " 0%, " + c2 + " 33%, " + c3 + " 50%)";
   }
   var PEEK_RATIO = 0.55;
   var CARD_GAP = 36;
