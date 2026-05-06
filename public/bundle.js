@@ -10538,6 +10538,7 @@
   function onSidebarOpen() {
     var _a;
     ts.clear();
+    ts.time(0);
     (_a = L.renderer) == null ? void 0 : _a.stop();
     L.renderer = null;
     L.resetForOpen();
@@ -10701,6 +10702,7 @@
         return;
       }
       ts.clear();
+      ts.time(0);
       L._animBusy = false;
       L._animBusyAt = 0;
       L.animatingPath = null;
@@ -10858,18 +10860,9 @@
     L._animBusy = true;
     L._animBusyAt = Date.now();
     const animRoot = L.renderer.getRoot();
-    const tl = anim.timeline({
-      onComplete: () => {
-        var _a;
-        if (((_a = L.renderer) == null ? void 0 : _a.getRoot()) !== animRoot) return;
-        L._animBusy = false;
-        L._animBusyAt = 0;
-        hit.gesture.onTap();
-        processClickQueue();
-      }
-    });
+    ts.time(0);
     if (tog) {
-      tl.to(tog.transform, {
+      ts.to(tog.transform, {
         rotate: 0,
         duration: 0.25,
         ease: "power2.in",
@@ -10884,7 +10877,7 @@
       const root2 = L.renderer.getRoot();
       const origYs = container.children.map((c) => c.y);
       const ancestors = collectAncestors(container, root2);
-      tl.to(container, {
+      ts.to(container, {
         height: 0,
         duration: 0.3,
         ease: "power2.in",
@@ -10896,7 +10889,16 @@
         }
       }, 0);
     }
-    ts.add(tl, 0);
+    const maxDur = container ? 0.3 : tog ? 0.25 : 0;
+    ts.call(() => {
+      var _a;
+      if (((_a = L.renderer) == null ? void 0 : _a.getRoot()) !== animRoot) return;
+      L._animBusy = false;
+      L._animBusyAt = 0;
+      hit.gesture.onTap();
+      processClickQueue();
+    }, void 0, maxDur);
+    L.animatingPath = null;
   }
   function findTapTarget(box, px, py) {
     var _a;
@@ -10983,7 +10985,7 @@
         }
       }
     }
-    if (L.animatingPath) {
+    if (L.animatingPath && KFMState.expandedPaths[L.animatingPath]) {
       const preContainer = findBoxById(rootBox, `expanded-${L.animatingPath}`);
       if (preContainer) {
         const preFullH = preContainer.height;

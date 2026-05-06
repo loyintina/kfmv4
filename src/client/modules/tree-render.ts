@@ -35,6 +35,8 @@ function _ensureSubscribed(): void {
   if (L._stateSub) KFMState.unsubscribe(L._stateSub);
   L._stateSub = () => {
     // state 变化（toggleHidden/expanded）是用户主动行为，跳过 L._animBusy 锁
+    // 注意：不能在此清除 L.animatingPath — doExpand 依赖 _stateSub 同步触发 rebuildTree 时
+    // L.animatingPath 仍然有效来施加展开预设。折叠场景下 doCollapse 已自行清除。
     L._animBusy = false;
     L._animBusyAt = 0;
     rebuildTree();
@@ -186,6 +188,7 @@ export function isAnimLocked(): boolean {
 export function onSidebarOpen(): void {
   // ===== 销毁旧渲染器 + 通过生命周期重置所有状态 =====
   ts.clear();
+  ts.time(0);  // 重置 playhead，确保后续补间从 0 开始
   L.renderer?.stop();
   L.renderer = null;
   L.resetForOpen();
@@ -385,8 +388,9 @@ function processClickQueue(): void {
       clearClickQueue();
       return;
     }
-    // 中断 GSAP 动画，重建干净������即����理队列中的点击
+    // 中断 GSAP 动画，重建干净 tree，立即处理队列中的点击
     ts.clear();
+    ts.time(0);  // 重置 playhead 到 0，否则后续补间在 playhead 的"过去"会被瞬间跳过
     L._animBusy = false;
     L._animBusyAt = 0;
     L.animatingPath = null;
@@ -535,7 +539,7 @@ function doExpand(hit: Box, hitData: any): void {
   L.renderer?.setRoot(L.renderer!.getRoot()!);
 }
 
-/** 折叠动画 */
+/** 折叠动画：全部挂载到 ts scope，ts.clear() 可可靠清除（不再使用独立 timeline） */
 function doCollapse(hit: Box, hitData: any): void {
   L.animatingPath = hitData.path;
   const tog = hit.children.find(c => c.id?.startsWith('toggle-'));
@@ -544,19 +548,13 @@ function doCollapse(hit: Box, hitData: any): void {
   const container = findBoxById(root, containerId);
 
   L._animBusy = true; L._animBusyAt = Date.now();
-
   const animRoot = L.renderer!.getRoot()!;
-  const tl = anim.timeline({
-    onComplete: () => {
-      if (L.renderer?.getRoot() !== animRoot) return;
-      L._animBusy = false; L._animBusyAt = 0;
-      hit.gesture!.onTap!();
-      processClickQueue();
-    },
-  });
+
+  // 强制 playhead 归零——sidebarTouchArea 直接调 doCollapse 时可能不在 processClickQueue 保护下
+  ts.time(0);
 
   if (tog) {
-    tl.to(tog.transform, {
+    ts.to(tog.transform, {
       rotate: 0,
       duration: 0.25,
       ease: 'power2.in',
@@ -569,7 +567,7 @@ function doCollapse(hit: Box, hitData: any): void {
     const root2 = L.renderer!.getRoot()!;
     const origYs = container.children.map(c => c.y);
     const ancestors = collectAncestors(container, root2);
-    tl.to(container, {
+    ts.to(container, {
       height: 0,
       duration: 0.3,
       ease: 'power2.in',
@@ -581,7 +579,18 @@ function doCollapse(hit: Box, hitData: any): void {
     }, 0);
   }
 
-  ts.add(tl, 0);
+  // 用 ts.call 替代独立 anim.timeline().onComplete。
+  // ts.call 挂载到 scope，ts.clear() 会一并清除，不会残留幽灵回调。
+  const maxDur = container ? 0.3 : (tog ? 0.25 : 0);
+  ts.call(() => {
+    if (L.renderer?.getRoot() !== animRoot) return;
+    L._animBusy = false; L._animBusyAt = 0;
+    hit.gesture!.onTap!();
+    processClickQueue();
+  }, undefined, maxDur);
+
+  // 折叠动画不需要 L.animatingPath 给 rebuildTree 做预设，立即清除防止 _stateSub 误读
+  L.animatingPath = null;
 }
 
 function findTapTarget(box: Box, px: number, py: number): Box | null {
@@ -689,7 +698,10 @@ function rebuildTree(): void {
       }
     }
   }
-  if (L.animatingPath) {
+  if (L.animatingPath && KFMState.expandedPaths[L.animatingPath]) {
+    // 仅当状态中该文件夹确实展开时才施加展开预设（height=0 → 动画展开）。
+    // 如果状态中已折叠，说明这是折叠动画执行中被 _stateSub 误触发的 rebuildTree，
+    // 此时不应施加展开预设，直接跳过。
     const preContainer = findBoxById(rootBox, `expanded-${L.animatingPath}`);
     if (preContainer) {
       const preFullH = preContainer.height;
