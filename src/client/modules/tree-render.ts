@@ -87,17 +87,21 @@ export function triggerExpandAnimation(path: string): void {
 
   // 字符雨
   animateCharRain(container, root, L.renderer);
-  
+
+  // 容器展开动画（懒加载路径，需要 root 校验）
+  const animRoot2 = L.renderer!.getRoot()!;
   // 容器展开动画
   ts.to(container, {
     height: fullHeight,
     duration: 0.05,
     ease: 'back.out(1.15)',
     onUpdate: function() {
+      if (L.renderer?.getRoot() !== animRoot2) return;
       applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
       L.renderer?.setRoot(L.renderer!.getRoot()!);
     },
     onComplete: () => {
+      if (L.renderer?.getRoot() !== animRoot2) return;
       // 恢复 cornerRadius
       if (container.kfmStyle && (container as any)._savedCr !== undefined) {
         container.kfmStyle.cornerRadius = (container as any)._savedCr;
@@ -486,15 +490,18 @@ function doExpand(hit: Box, hitData: any): void {
   animateCharRain(container, root, L.renderer);
 
   // 容器展开 + 兄弟偏移
+  const animRoot = L.renderer!.getRoot()!;
   ts.to(container, {
     height: fullHeight,
     duration: 0.05,
     ease: 'back.out(1.15)',
     onUpdate: function() {
+      if (L.renderer?.getRoot() !== animRoot) return;
       applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
       L.renderer?.setRoot(L.renderer!.getRoot()!);
     },
     onComplete: () => {
+      if (L.renderer?.getRoot() !== animRoot) return;
       // 恢�� cornerRadius
       if (container.kfmStyle && (container as any)._savedCr !== undefined) {
         container.kfmStyle.cornerRadius = (container as any)._savedCr;
@@ -528,11 +535,13 @@ function doCollapse(hit: Box, hitData: any): void {
 
   L._animBusy = true; L._animBusyAt = Date.now();
 
+  const animRoot = L.renderer!.getRoot()!;
   const tl = anim.timeline({
     onComplete: () => {
+      if (L.renderer?.getRoot() !== animRoot) return;
       L._animBusy = false; L._animBusyAt = 0;
-      hit.gesture!.onTap!();  // 切换状态 → rebuildTree（读取 L.animatingPath，末尾自行清空）
-      processClickQueue();    // 处理队列中下一个点击
+      hit.gesture!.onTap!();
+      processClickQueue();
     },
   });
 
@@ -541,7 +550,7 @@ function doCollapse(hit: Box, hitData: any): void {
       rotate: 0,
       duration: 0.25,
       ease: 'power2.in',
-      onUpdate: () => { if (L.renderer) L.renderer.setRoot(L.renderer.getRoot()!); },
+      onUpdate: () => { if (L.renderer?.getRoot() === animRoot) L.renderer.setRoot(L.renderer.getRoot()!); },
     }, 0);
   }
 
@@ -555,6 +564,7 @@ function doCollapse(hit: Box, hitData: any): void {
       duration: 0.3,
       ease: 'power2.in',
       onUpdate: function() {
+        if (L.renderer?.getRoot() !== animRoot) return;
         applyAnimOffset(container, origYs, fullH, ancestors, root2);
         L.renderer?.setRoot(L.renderer!.getRoot()!);
       },

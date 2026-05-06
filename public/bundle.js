@@ -10425,28 +10425,32 @@
     L._animBusy = true;
     L._animBusyAt = Date.now();
     animateCharRain(container, root, L.renderer);
+    const animRoot2 = L.renderer.getRoot();
     ts.to(container, {
       height: fullHeight,
       duration: 0.05,
       ease: "back.out(1.15)",
       onUpdate: function() {
-        var _a2;
+        var _a2, _b2;
+        if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot2) return;
         applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
-        (_a2 = L.renderer) == null ? void 0 : _a2.setRoot(L.renderer.getRoot());
+        (_b2 = L.renderer) == null ? void 0 : _b2.setRoot(L.renderer.getRoot());
       },
       onComplete: () => {
+        var _a2;
+        if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot2) return;
         if (container.kfmStyle && container._savedCr !== void 0) {
           container.kfmStyle.cornerRadius = container._savedCr;
         }
         slideInRows(container, root, toggle2).then(() => {
-          var _a2;
+          var _a3;
           fixExpandedToggles(container);
-          (_a2 = L.renderer) == null ? void 0 : _a2.setRoot(L.renderer.getRoot());
+          (_a3 = L.renderer) == null ? void 0 : _a3.setRoot(L.renderer.getRoot());
         }).finally(() => {
-          var _a2;
+          var _a3;
           L._animBusy = false;
           L._animBusyAt = 0;
-          const _root = (_a2 = L.renderer) == null ? void 0 : _a2.getRoot();
+          const _root = (_a3 = L.renderer) == null ? void 0 : _a3.getRoot();
           if (_root) {
             _rebuildRowIndex(_root);
           }
@@ -10772,28 +10776,32 @@
     });
     const ancestors = collectAncestors(container, root);
     animateCharRain(container, root, L.renderer);
+    const animRoot = L.renderer.getRoot();
     ts.to(container, {
       height: fullHeight,
       duration: 0.05,
       ease: "back.out(1.15)",
       onUpdate: function() {
-        var _a2;
+        var _a2, _b2;
+        if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
         applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
-        (_a2 = L.renderer) == null ? void 0 : _a2.setRoot(L.renderer.getRoot());
+        (_b2 = L.renderer) == null ? void 0 : _b2.setRoot(L.renderer.getRoot());
       },
       onComplete: () => {
+        var _a2;
+        if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
         if (container.kfmStyle && container._savedCr !== void 0) {
           container.kfmStyle.cornerRadius = container._savedCr;
         }
         slideInRows(container, root, toggle2).then(() => {
-          var _a2;
+          var _a3;
           fixExpandedToggles(container);
-          (_a2 = L.renderer) == null ? void 0 : _a2.setRoot(L.renderer.getRoot());
+          (_a3 = L.renderer) == null ? void 0 : _a3.setRoot(L.renderer.getRoot());
         }).finally(() => {
-          var _a2;
+          var _a3;
           L._animBusy = false;
           L._animBusyAt = 0;
-          const _root = (_a2 = L.renderer) == null ? void 0 : _a2.getRoot();
+          const _root = (_a3 = L.renderer) == null ? void 0 : _a3.getRoot();
           if (_root) {
             _rebuildRowIndex(_root);
           }
@@ -10819,8 +10827,11 @@
     const container = findBoxById(root, containerId);
     L._animBusy = true;
     L._animBusyAt = Date.now();
+    const animRoot = L.renderer.getRoot();
     const tl = anim.timeline({
       onComplete: () => {
+        var _a;
+        if (((_a = L.renderer) == null ? void 0 : _a.getRoot()) !== animRoot) return;
         L._animBusy = false;
         L._animBusyAt = 0;
         hit.gesture.onTap();
@@ -10833,7 +10844,8 @@
         duration: 0.25,
         ease: "power2.in",
         onUpdate: () => {
-          if (L.renderer) L.renderer.setRoot(L.renderer.getRoot());
+          var _a;
+          if (((_a = L.renderer) == null ? void 0 : _a.getRoot()) === animRoot) L.renderer.setRoot(L.renderer.getRoot());
         }
       }, 0);
     }
@@ -10847,9 +10859,10 @@
         duration: 0.3,
         ease: "power2.in",
         onUpdate: function() {
-          var _a;
+          var _a, _b;
+          if (((_a = L.renderer) == null ? void 0 : _a.getRoot()) !== animRoot) return;
           applyAnimOffset(container, origYs, fullH, ancestors, root2);
-          (_a = L.renderer) == null ? void 0 : _a.setRoot(L.renderer.getRoot());
+          (_b = L.renderer) == null ? void 0 : _b.setRoot(L.renderer.getRoot());
         }
       }, 0);
     }
