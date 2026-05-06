@@ -10563,7 +10563,7 @@
     L.animatingPath = path;
   }
   function triggerExpandAnimation(path) {
-    var _a, _b, _c, _d;
+    var _a, _b, _c;
     const root = (_a = L.renderer) == null ? void 0 : _a.getRoot();
     if (!root) return;
     const container = findBoxById(root, `expanded-${path}`);
@@ -10584,7 +10584,6 @@
           if (rend) rend.setRoot(rend.getRoot());
           if (elapsed < durationMs) {
             requestAnimationFrame(animFrame2);
-          } else {
           }
         };
         var animFrame = animFrame2;
@@ -10599,41 +10598,67 @@
       return;
     }
     L.animatingPath = null;
-    const _origYs = container._origYs;
-    if (_origYs && container.children.length === _origYs.length) {
-      container.children.forEach((c, j) => {
-        c.y = _origYs[j];
-      });
-    }
-    container.children.forEach((c) => {
-      c.opacity = 1;
-    });
-    const ancestors = collectAncestors(container, root);
+    const pack = _setupExpandOverlays(container, fullHeight);
+    animateCharRain(pack.containerOverlay, root, L.renderer);
     L._animBusy = true;
     L._animBusyAt = Date.now();
-    animateCharRain(container, root, L.renderer);
-    const animRoot2 = L.renderer.getRoot();
-    ts.to(container, {
+    const animRoot = L.renderer.getRoot();
+    ts.to(pack.containerOverlay, {
       height: fullHeight,
       duration: 0.05,
       ease: "back.out(1.15)",
-      onUpdate: function() {
+      onUpdate: () => {
         var _a2, _b2;
-        if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot2) return;
-        applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
+        if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
         (_b2 = L.renderer) == null ? void 0 : _b2.setRoot(L.renderer.getRoot());
-      },
-      onComplete: () => {
-        var _a2;
-        if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot2) return;
-        if (container.kfmStyle && container._savedCr !== void 0) {
-          container.kfmStyle.cornerRadius = container._savedCr;
+      }
+    });
+    for (const rowOv of pack.rowOverlays) {
+      ts.to(rowOv, {
+        y: rowOv._targetY,
+        duration: 0.05,
+        ease: "back.out(1.15)",
+        onUpdate: () => {
+          var _a2, _b2;
+          if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
+          (_b2 = L.renderer) == null ? void 0 : _b2.setRoot(L.renderer.getRoot());
         }
-        slideInRows(container, root, toggle2).then(() => {
-          var _a3;
-          fixExpandedToggles(container);
-          (_a3 = L.renderer) == null ? void 0 : _a3.setRoot(L.renderer.getRoot());
-        }).finally(() => {
+      });
+    }
+    for (const sibOv of pack.siblingOverlays) {
+      ts.to(sibOv, {
+        y: sibOv._targetY,
+        duration: 0.05,
+        ease: "back.out(1.15)",
+        onUpdate: () => {
+          var _a2, _b2;
+          if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
+          (_b2 = L.renderer) == null ? void 0 : _b2.setRoot(L.renderer.getRoot());
+        }
+      });
+    }
+    ts.call(() => {
+      var _a2, _b2, _c2, _d;
+      if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
+      _removeAllOverlays();
+      for (const c of pack.hiddenChildren) c.opacity = 1;
+      for (const s of pack.hiddenSiblings) s.opacity = 1;
+      if (container.kfmStyle && container._savedCr !== void 0) {
+        container.kfmStyle.cornerRadius = container._savedCr;
+      }
+      L.animatingPath = null;
+      rebuildTree();
+      const root2 = L.renderer.getRoot();
+      const container2 = findBoxById(root2, `expanded-${path}`);
+      const titleRow2 = findBoxById(root2, `title-${path}`);
+      const toggle3 = (_b2 = titleRow2 == null ? void 0 : titleRow2.children) == null ? void 0 : _b2.find((c) => {
+        var _a3;
+        return (_a3 = c.id) == null ? void 0 : _a3.startsWith("toggle-");
+      });
+      if (container2) fixExpandedToggles(container2);
+      (_c2 = L.renderer) == null ? void 0 : _c2.setRoot(L.renderer.getRoot());
+      if (container2) {
+        slideInRows(container2, root2, toggle3).finally(() => {
           var _a3;
           L._animBusy = false;
           L._animBusyAt = 0;
@@ -10647,10 +10672,20 @@
           }
           processClickQueue();
         });
+      } else {
+        L._animBusy = false;
+        L._animBusyAt = 0;
+        const _root = (_d = L.renderer) == null ? void 0 : _d.getRoot();
+        if (_root) {
+          _rebuildRowIndex(_root);
+        }
+        if (L.cursorRowId && _root) {
+          const _t = findBoxById(_root, L.cursorRowId);
+          if (_t) moveCursorTo(_t, false);
+        }
+        processClickQueue();
       }
     });
-    applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
-    (_d = L.renderer) == null ? void 0 : _d.setRoot(L.renderer.getRoot());
   }
   function fixExpandedToggles(container) {
     const state = KFMState;
@@ -11291,37 +11326,6 @@
       " L.animatingPath=",
       L.animatingPath
     );
-  }
-  function collectAncestors(box, root) {
-    const ancestors = [];
-    let current = box;
-    while (current.parent) {
-      const p = current.parent;
-      const idx = p.children.indexOf(current);
-      if (idx < 0) break;
-      const sibOrigYs = [];
-      for (let i = idx + 1; i < p.children.length; i++) {
-        sibOrigYs.push(p.children[i].y);
-      }
-      ancestors.push({ parent: p, sibIdx: idx, sibOrigYs, origHeight: p.height });
-      if (p === root) break;
-      current = p;
-    }
-    return ancestors;
-  }
-  function applyAnimOffsetSiblings(container, fullHeight, ancestors, root) {
-    const offset = container.height - fullHeight;
-    let heightDelta = offset;
-    for (const anc of ancestors) {
-      for (let i = anc.sibIdx + 1; i < anc.parent.children.length; i++) {
-        const sib = anc.parent.children[i];
-        if (sib.id === "cursor-highlight") continue;
-        sib.y = anc.sibOrigYs[i - anc.sibIdx - 1] + heightDelta;
-      }
-      if (anc.parent !== root) {
-        anc.parent.height = anc.origHeight + heightDelta;
-      }
-    }
   }
   function snapToCenterRow(root, canvasH) {
     var _a;

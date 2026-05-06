@@ -264,12 +264,11 @@ export function triggerExpandAnimation(path: string): void {
   const container = findBoxById(root, `expanded-${path}`);
   const titleRow = findBoxById(root, `title-${path}`);
   const toggle2 = titleRow?.children?.find(c => c.id?.startsWith('toggle-'));
-  
+
   if (!container) return;
-  
+
   const fullHeight = (container as any)._fullHeight || 0;
   if (!fullHeight) {
-    // 空文件夹：播放 toggle 旋转动画（cornerRadius 已由 rebuildTree 归零，无需恢复）
     if (toggle2 && toggle2.transform) {
       toggle2.transform.rotate = 0;
       const startTime = performance.now();
@@ -284,7 +283,6 @@ export function triggerExpandAnimation(path: string): void {
         if (rend) rend.setRoot(rend.getRoot()!);
         if (elapsed < durationMs) {
           requestAnimationFrame(animFrame);
-        } else {
         }
       }
       requestAnimationFrame(animFrame);
@@ -292,56 +290,92 @@ export function triggerExpandAnimation(path: string): void {
     L.renderer?.setRoot(L.renderer!.getRoot()!);
     return;
   }
-  
+
   L.animatingPath = null;
-  
-  // 恢复子行原始 y
-  const _origYs = (container as any)._origYs as number[] | undefined;
-  if (_origYs && container.children.length === _origYs.length) {
-    container.children.forEach((c, j) => { c.y = _origYs[j]; });
-  }
-  container.children.forEach(c => { c.opacity = 1; });
-  
-  const ancestors = collectAncestors(container, root);
-  
+
+  // === overlay 模式 ===
+  const pack = _setupExpandOverlays(container, fullHeight);
+  animateCharRain(pack.containerOverlay, root, L.renderer);
+
   L._animBusy = true; L._animBusyAt = Date.now();
+  const animRoot = L.renderer!.getRoot()!;
 
-  // 字符雨
-  animateCharRain(container, root, L.renderer);
-
-  // 容器展开动画（懒加载路径，需要 root 校验）
-  const animRoot2 = L.renderer!.getRoot()!;
-  // 容器展开动画
-  ts.to(container, {
+  // 容器 overlay: height 0→fullHeight
+  ts.to(pack.containerOverlay, {
     height: fullHeight,
     duration: 0.05,
     ease: 'back.out(1.15)',
-    onUpdate: function() {
-      if (L.renderer?.getRoot() !== animRoot2) return;
-      applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
+    onUpdate: () => {
+      if (L.renderer?.getRoot() !== animRoot) return;
       L.renderer?.setRoot(L.renderer!.getRoot()!);
     },
-    onComplete: () => {
-      if (L.renderer?.getRoot() !== animRoot2) return;
-      // 恢复 cornerRadius
-      if (container.kfmStyle && (container as any)._savedCr !== undefined) {
-        container.kfmStyle.cornerRadius = (container as any)._savedCr;
-      }
-      slideInRows(container, root, toggle2).then(() => {
-        fixExpandedToggles(container);
+  });
+
+  // 行 overlay: y→_targetY
+  for (const rowOv of pack.rowOverlays) {
+    ts.to(rowOv, {
+      y: (rowOv as any)._targetY,
+      duration: 0.05,
+      ease: 'back.out(1.15)',
+      onUpdate: () => {
+        if (L.renderer?.getRoot() !== animRoot) return;
         L.renderer?.setRoot(L.renderer!.getRoot()!);
-      }).finally(() => {
+      },
+    });
+  }
+
+  // 兄弟 overlay: y→_targetY
+  for (const sibOv of pack.siblingOverlays) {
+    ts.to(sibOv, {
+      y: (sibOv as any)._targetY,
+      duration: 0.05,
+      ease: 'back.out(1.15)',
+      onUpdate: () => {
+        if (L.renderer?.getRoot() !== animRoot) return;
+        L.renderer?.setRoot(L.renderer!.getRoot()!);
+      },
+    });
+  }
+
+  // 动画完成: 清理 overlay → 展开终态
+  ts.call(() => {
+    if (L.renderer?.getRoot() !== animRoot) return;
+    _removeAllOverlays();
+    for (const c of pack.hiddenChildren) c.opacity = 1;
+    for (const s of pack.hiddenSiblings) s.opacity = 1;
+    if (container.kfmStyle && (container as any)._savedCr !== undefined) {
+      container.kfmStyle.cornerRadius = (container as any)._savedCr;
+    }
+    L.animatingPath = null;
+    rebuildTree();
+    const root2 = L.renderer!.getRoot()!;
+    const container2 = findBoxById(root2, `expanded-${path}`);
+    const titleRow2 = findBoxById(root2, `title-${path}`);
+    const toggle3 = titleRow2?.children?.find(c => c.id?.startsWith('toggle-'));
+    if (container2) fixExpandedToggles(container2);
+    L.renderer?.setRoot(L.renderer!.getRoot()!);
+    if (container2) {
+      slideInRows(container2, root2, toggle3).finally(() => {
         L._animBusy = false; L._animBusyAt = 0;
         const _root = L.renderer?.getRoot();
         if (_root) { _rebuildRowIndex(_root); }
-        // ä¿®æ­£å¨ç»ååæ çä½ç½®
-        if (L.cursorRowId && _root) { const _t = findBoxById(_root, L.cursorRowId); if (_t) moveCursorTo(_t, false); }
+        if (L.cursorRowId && _root) {
+          const _t = findBoxById(_root, L.cursorRowId);
+          if (_t) moveCursorTo(_t, false);
+        }
         processClickQueue();
       });
-    },
+    } else {
+      L._animBusy = false; L._animBusyAt = 0;
+      const _root = L.renderer?.getRoot();
+      if (_root) { _rebuildRowIndex(_root); }
+      if (L.cursorRowId && _root) {
+        const _t = findBoxById(_root, L.cursorRowId);
+        if (_t) moveCursorTo(_t, false);
+      }
+      processClickQueue();
+    }
   });
-  applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
-  L.renderer?.setRoot(L.renderer!.getRoot()!);
 }
 
 /** 修复容器内所有����展开子容器的 toggle 旋转状态 */
