@@ -1,44 +1,15 @@
 import { gestures } from "./gesture-registry.js";
-import { getCursorRowIndex, getRowIndexLength } from "./canvas-cursor.js";
 
 /**
  * KFM v4 - 堆叠卡片面板
  *
- * 全屏左滑唤出，7 张卡片按暮光光谱堆叠。
+ * 全屏左滑唤出，7 张卡片按星云光谱堆叠。
  * 垂直滑动切换聚焦卡片，点击聚焦卡打开对应盒子（TODO）。
  * 无遮罩 + 卡片只露部分，像半开的抽屉。
  */
 
-// ========== 暮光配色 (Twilight) ==========
+// ========== 卡片内容定义 ==========
 const CARD_BG = 'rgba(20,16,32,0.92)';  // 深色毛玻璃底
-const CARD_COLORS = [
-  { border: '#D4899B', bg: 'rgba(20,16,32,0.92)', iconBg: 'rgba(212,137,155,0.25)' },
-  { border: '#D4A080', bg: 'rgba(20,16,32,0.92)', iconBg: 'rgba(212,160,128,0.25)' },
-  { border: '#C9B07A', bg: 'rgba(20,16,32,0.92)', iconBg: 'rgba(201,176,122,0.25)' },
-  { border: '#8FB58F', bg: 'rgba(20,16,32,0.92)', iconBg: 'rgba(143,181,143,0.25)' },
-  { border: '#7DA8B8', bg: 'rgba(20,16,32,0.92)', iconBg: 'rgba(125,168,184,0.25)' },
-  { border: '#8E8EB8', bg: 'rgba(20,16,32,0.92)', iconBg: 'rgba(142,142,184,0.25)' },
-  { border: '#A08CC4', bg: 'rgba(20,16,32,0.92)', iconBg: 'rgba(160,140,196,0.25)' },
-];
-
-// 颜色工具：hex → rgba（带 alpha）
-function hexToRgba(hex: string, alpha: number): string {
-  const num = parseInt(hex.slice(1), 16);
-  const r = (num >> 16) & 0xFF;
-  const g = (num >> 8) & 0xFF;
-  const b = num & 0xFF;
-  return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
-}
-
-/** 获取卡片 i 的三色渐变 [前色, 主色, 后色]，全部 rgba 格式 */
-function getTriple(i: number, alpha: number): string[] {
-  const n = CARD_COLORS.length;
-  const mainRgba = hexToRgba(CARD_COLORS[i].border, alpha);
-  // 前/后色取相邻卡，首尾卡用自身变浅/变深
-  const prev = i > 0 ? hexToRgba(CARD_COLORS[i - 1].border, alpha) : hexToRgba(CARD_COLORS[0].border, Math.min(1, alpha + 0.15));
-  const next = i < n - 1 ? hexToRgba(CARD_COLORS[i + 1].border, alpha) : hexToRgba(CARD_COLORS[n - 1].border, Math.max(0.05, alpha - 0.2));
-  return [prev, mainRgba, next];
-}
 
 interface CardDef {
   id: string;
@@ -56,6 +27,52 @@ const CARDS: CardDef[] = [
   { id: 'stats',    icon: '\uD83D\uDCCA', name: '统计',     desc: '使用数据 \u00b7 趋势' },
   { id: 'about',    icon: '\uD83D\uDC8E', name: '关于',     desc: '版本 \u00b7 信息' },
 ];
+
+// ========== 星云配色 (Nebula) ==========
+const CARD_COLORS = [
+  { border: '#B46478', bg: 'rgba(20,16,32,0.92)', iconBg: 'rgba(180,100,120,0.25)' },
+  { border: '#C88C5A', bg: 'rgba(20,16,32,0.92)', iconBg: 'rgba(200,140,90,0.25)' },
+  { border: '#B4AA50', bg: 'rgba(20,16,32,0.92)', iconBg: 'rgba(180,170,80,0.25)' },
+  { border: '#50A880', bg: 'rgba(20,16,32,0.92)', iconBg: 'rgba(80,168,128,0.25)' },
+  { border: '#5088C8', bg: 'rgba(20,16,32,0.92)', iconBg: 'rgba(80,136,200,0.25)' },
+  { border: '#6C5CC8', bg: 'rgba(20,16,32,0.92)', iconBg: 'rgba(108,92,200,0.25)' },
+  { border: '#9650C8', bg: 'rgba(20,16,32,0.92)', iconBg: 'rgba(150,80,200,0.25)' },
+];
+
+// 颜色工具：hex → rgba（带 alpha）
+function hexToRgba(hex: string, alpha: number): string {
+  const num = parseInt(hex.slice(1), 16);
+  const r = (num >> 16) & 0xFF;
+  const g = (num >> 8) & 0xFF;
+  const b = num & 0xFF;
+  return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+}
+
+/** 获取卡片 i 的三色渐变 [前色, 主色, 后色]，全部 rgba 格式 */
+function getTriple(i: number, alpha: number): string[] {
+  const n = CARD_COLORS.length;
+  const mainRgba = hexToRgba(CARD_COLORS[i].border, alpha);
+  const prev = i > 0 ? hexToRgba(CARD_COLORS[i - 1].border, alpha) : hexToRgba(CARD_COLORS[0].border, Math.min(1, alpha + 0.15));
+  const next = i < n - 1 ? hexToRgba(CARD_COLORS[i + 1].border, alpha) : hexToRgba(CARD_COLORS[n - 1].border, Math.max(0.05, alpha - 0.2));
+  return [prev, mainRgba, next];
+}
+
+/** 生成边框 conic-gradient：从左上角辐射，prev(右上)/main(对角线带)/next(左下) 三区硬边 */
+function getBorderGradient(i: number, alpha: number): string {
+  const [c1, c2, c3] = getTriple(i, alpha);
+  // 对角线角度：atan2(height, width)，卡片 ~260×68 → ~14.7°
+  const diag = Math.atan2(CARD_HEIGHT, 260) * 180 / Math.PI;
+  const bw = 5;  // 主颜色带半宽（度）
+  const d1 = (diag - bw).toFixed(1);
+  const d2 = (diag + bw).toFixed(1);
+  return 'conic-gradient(from 90deg at 0% 0%,' +
+    c1 + ' 0deg,' +
+    c1 + ' ' + d1 + 'deg,' +
+    c2 + ' ' + d1 + 'deg,' +
+    c2 + ' ' + d2 + 'deg,' +
+    c3 + ' ' + d2 + 'deg,' +
+    c3 + ' 90deg)';
+}
 
 // ========== 配置 ==========
 /** 面板打开时露出比例（0-1），0.6 = 露出 60% */
@@ -101,7 +118,7 @@ function createCard(index: number): HTMLElement {
 
   // 三色渐变边框
   const alpha = 0.85;
-  const [c1, c2, c3] = getTriple(index, alpha);
+  const borderGrad = getBorderGradient(index, alpha);
 
   // 多层阴影：立体感，像桌面上的物件
   const shadow = [
@@ -126,7 +143,7 @@ function createCard(index: number): HTMLElement {
     '-webkit-backdrop-filter:blur(16px)',
     'border:1px solid transparent',
     'border-left-width:3px',
-    'background: linear-gradient(' + CARD_BG + ',' + CARD_BG + ') padding-box, linear-gradient(135deg,' + c1 + ',' + c2 + ',' + c3 + ') border-box',
+    'background: linear-gradient(' + CARD_BG + ',' + CARD_BG + ') padding-box, ' + borderGrad + ' border-box',
     'box-shadow:' + shadow,
     'transform:rotate(' + randomRotate + 'deg)',
     'cursor:pointer',
@@ -234,11 +251,9 @@ function updateFocus(): void {
       el.style.backdropFilter = 'blur(16px)';
       (el.style as any).webkitBackdropFilter = 'blur(16px)';
       const alpha = 0.85;
-      const [c1, c2, c3] = getTriple(i, alpha);
-      el.style.background = 'linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, linear-gradient(135deg,' + c1 + ',' + c2 + ',' + c3 + ') border-box';
+      el.style.background = 'linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, ' + getBorderGradient(i, alpha) + ' border-box';
       // 聚焦时阴影更突出
       el.style.boxShadow = '0 4px 8px rgba(0,0,0,0.4),0 12px 24px rgba(0,0,0,0.3),0 24px 48px rgba(0,0,0,0.25),-6px 6px 12px rgba(0,0,0,0.2)';
-      // 不改 zIndex，保持原有层级
       const idxEl = el.querySelector('.stack-card-index') as HTMLElement;
       if (idxEl) idxEl.style.opacity = '0.8';
     } else {
@@ -250,8 +265,7 @@ function updateFocus(): void {
       el.style.backdropFilter = 'blur(16px)';
       (el.style as any).webkitBackdropFilter = 'blur(16px)';
       const alpha2 = 0.85;
-      const [c4, c5, c6] = getTriple(i, alpha2);
-      el.style.background = 'linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, linear-gradient(135deg,' + c4 + ',' + c5 + ',' + c6 + ') border-box';
+      el.style.background = 'linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, ' + getBorderGradient(i, alpha2) + ' border-box';
       el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3),0 8px 16px rgba(0,0,0,0.25),0 16px 32px rgba(0,0,0,0.2),-4px 4px 8px rgba(0,0,0,0.15)';
       const idxEl = el.querySelector('.stack-card-index') as HTMLElement;
       if (idxEl) idxEl.style.opacity = '0.3';

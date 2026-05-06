@@ -11207,14 +11207,23 @@
 
   // src/client/modules/card-stack.ts
   var CARD_BG = "rgba(20,16,32,0.92)";
+  var CARDS = [
+    { id: "settings", icon: "\u2699", name: "\u8BBE\u7F6E", desc: "API Key \xB7 \u6A21\u578B\u9009\u62E9" },
+    { id: "files", icon: "\u{1F4C1}", name: "\u6587\u4EF6\u7BA1\u7406", desc: "\u4E0A\u4F20 \xB7 \u4E0B\u8F7D \xB7 \u6574\u7406" },
+    { id: "notes", icon: "\u{1F4DD}", name: "\u7B14\u8BB0", desc: "\u5FEB\u901F\u8BB0\u5F55 \xB7 \u8349\u7A3F" },
+    { id: "plugins", icon: "\u{1F50C}", name: "\u63D2\u4EF6", desc: "\u6269\u5C55 \xB7 \u96C6\u6210" },
+    { id: "theme", icon: "\u{1F3A8}", name: "\u4E3B\u9898", desc: "\u5916\u89C2 \xB7 \u914D\u8272" },
+    { id: "stats", icon: "\u{1F4CA}", name: "\u7EDF\u8BA1", desc: "\u4F7F\u7528\u6570\u636E \xB7 \u8D8B\u52BF" },
+    { id: "about", icon: "\u{1F48E}", name: "\u5173\u4E8E", desc: "\u7248\u672C \xB7 \u4FE1\u606F" }
+  ];
   var CARD_COLORS = [
-    { border: "#D4899B", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(212,137,155,0.25)" },
-    { border: "#D4A080", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(212,160,128,0.25)" },
-    { border: "#C9B07A", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(201,176,122,0.25)" },
-    { border: "#8FB58F", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(143,181,143,0.25)" },
-    { border: "#7DA8B8", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(125,168,184,0.25)" },
-    { border: "#8E8EB8", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(142,142,184,0.25)" },
-    { border: "#A08CC4", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(160,140,196,0.25)" }
+    { border: "#B46478", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(180,100,120,0.25)" },
+    { border: "#C88C5A", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(200,140,90,0.25)" },
+    { border: "#B4AA50", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(180,170,80,0.25)" },
+    { border: "#50A880", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(80,168,128,0.25)" },
+    { border: "#5088C8", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(80,136,200,0.25)" },
+    { border: "#6C5CC8", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(108,92,200,0.25)" },
+    { border: "#9650C8", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(150,80,200,0.25)" }
   ];
   function hexToRgba(hex, alpha) {
     const num = parseInt(hex.slice(1), 16);
@@ -11230,15 +11239,14 @@
     const next = i < n - 1 ? hexToRgba(CARD_COLORS[i + 1].border, alpha) : hexToRgba(CARD_COLORS[n - 1].border, Math.max(0.05, alpha - 0.2));
     return [prev, mainRgba, next];
   }
-  var CARDS = [
-    { id: "settings", icon: "\u2699", name: "\u8BBE\u7F6E", desc: "API Key \xB7 \u6A21\u578B\u9009\u62E9" },
-    { id: "files", icon: "\u{1F4C1}", name: "\u6587\u4EF6\u7BA1\u7406", desc: "\u4E0A\u4F20 \xB7 \u4E0B\u8F7D \xB7 \u6574\u7406" },
-    { id: "notes", icon: "\u{1F4DD}", name: "\u7B14\u8BB0", desc: "\u5FEB\u901F\u8BB0\u5F55 \xB7 \u8349\u7A3F" },
-    { id: "plugins", icon: "\u{1F50C}", name: "\u63D2\u4EF6", desc: "\u6269\u5C55 \xB7 \u96C6\u6210" },
-    { id: "theme", icon: "\u{1F3A8}", name: "\u4E3B\u9898", desc: "\u5916\u89C2 \xB7 \u914D\u8272" },
-    { id: "stats", icon: "\u{1F4CA}", name: "\u7EDF\u8BA1", desc: "\u4F7F\u7528\u6570\u636E \xB7 \u8D8B\u52BF" },
-    { id: "about", icon: "\u{1F48E}", name: "\u5173\u4E8E", desc: "\u7248\u672C \xB7 \u4FE1\u606F" }
-  ];
+  function getBorderGradient(i, alpha) {
+    const [c1, c2, c3] = getTriple(i, alpha);
+    const diag = Math.atan2(CARD_HEIGHT, 260) * 180 / Math.PI;
+    const bw = 5;
+    const d1 = (diag - bw).toFixed(1);
+    const d2 = (diag + bw).toFixed(1);
+    return "conic-gradient(from 90deg at 0% 0%," + c1 + " 0deg," + c1 + " " + d1 + "deg," + c2 + " " + d1 + "deg," + c2 + " " + d2 + "deg," + c3 + " " + d2 + "deg," + c3 + " 90deg)";
+  }
   var PEEK_RATIO = 0.55;
   var CARD_GAP = 36;
   var CARD_HEIGHT = 68;
@@ -11263,7 +11271,7 @@
     el.dataset.randomRight = String(randomRight);
     el.dataset.randomRotate = String(randomRotate);
     const alpha = 0.85;
-    const [c1, c2, c3] = getTriple(index, alpha);
+    const borderGrad = getBorderGradient(index, alpha);
     const shadow = [
       "0 2px 4px rgba(0,0,0,0.3)",
       "0 8px 16px rgba(0,0,0,0.25)",
@@ -11285,7 +11293,7 @@
       "-webkit-backdrop-filter:blur(16px)",
       "border:1px solid transparent",
       "border-left-width:3px",
-      "background: linear-gradient(" + CARD_BG + "," + CARD_BG + ") padding-box, linear-gradient(135deg," + c1 + "," + c2 + "," + c3 + ") border-box",
+      "background: linear-gradient(" + CARD_BG + "," + CARD_BG + ") padding-box, " + borderGrad + " border-box",
       "box-shadow:" + shadow,
       "transform:rotate(" + randomRotate + "deg)",
       "cursor:pointer",
@@ -11373,8 +11381,7 @@
         el.style.backdropFilter = "blur(16px)";
         el.style.webkitBackdropFilter = "blur(16px)";
         const alpha = 0.85;
-        const [c1, c2, c3] = getTriple(i, alpha);
-        el.style.background = "linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, linear-gradient(135deg," + c1 + "," + c2 + "," + c3 + ") border-box";
+        el.style.background = "linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, " + getBorderGradient(i, alpha) + " border-box";
         el.style.boxShadow = "0 4px 8px rgba(0,0,0,0.4),0 12px 24px rgba(0,0,0,0.3),0 24px 48px rgba(0,0,0,0.25),-6px 6px 12px rgba(0,0,0,0.2)";
         const idxEl = el.querySelector(".stack-card-index");
         if (idxEl) idxEl.style.opacity = "0.8";
@@ -11385,8 +11392,7 @@
         el.style.backdropFilter = "blur(16px)";
         el.style.webkitBackdropFilter = "blur(16px)";
         const alpha2 = 0.85;
-        const [c4, c5, c6] = getTriple(i, alpha2);
-        el.style.background = "linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, linear-gradient(135deg," + c4 + "," + c5 + "," + c6 + ") border-box";
+        el.style.background = "linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, " + getBorderGradient(i, alpha2) + " border-box";
         el.style.boxShadow = "0 2px 4px rgba(0,0,0,0.3),0 8px 16px rgba(0,0,0,0.25),0 16px 32px rgba(0,0,0,0.2),-4px 4px 8px rgba(0,0,0,0.15)";
         const idxEl = el.querySelector(".stack-card-index");
         if (idxEl) idxEl.style.opacity = "0.3";
