@@ -4159,7 +4159,8 @@
       expandedPaths: state.expandedPaths,
       selectedFile: state.selectedFile,
       onDirToggle: (p, e) => state.setExpanded(p, e),
-      onFileClick: (p) => state.setSelectedFile(p),
+      onFileClick: () => {
+      },
       baseDepth: 0,
       containerWidth: containerWidth != null ? containerWidth : 280,
       scrollable: true,
@@ -9849,11 +9850,15 @@
     return L.cursorBox;
   }
   function moveCursorTo(hitBox, animate = true) {
-    var _a, _b, _c, _d, _e, _f, _g, _h;
-    if (!L.cursorBox) return;
-    const root = (_a = L.renderer) == null ? void 0 : _a.getRoot();
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k;
+    if (!L.cursorBox) {
+      const r = (_a = L.renderer) == null ? void 0 : _a.getRoot();
+      if (!r) return;
+      ensureCursorBox(r, r.height || ((_c = (_b = DOM.treeCanvas) == null ? void 0 : _b.clientHeight) != null ? _c : 618));
+    }
+    const root = (_d = L.renderer) == null ? void 0 : _d.getRoot();
     if (root && !root.children.includes(L.cursorBox)) {
-      ensureCursorBox(root, root.height || ((_c = (_b = DOM.treeCanvas) == null ? void 0 : _b.clientHeight) != null ? _c : 618));
+      ensureCursorBox(root, root.height || ((_f = (_e = DOM.treeCanvas) == null ? void 0 : _e.clientHeight) != null ? _f : 618));
     }
     let abs;
     try {
@@ -9862,10 +9867,10 @@
       return;
     }
     const canvas = DOM.treeCanvas;
-    const depth = (_e = (_d = hitBox.data) == null ? void 0 : _d.depth) != null ? _e : 0;
+    const depth = (_h = (_g = hitBox.data) == null ? void 0 : _g.depth) != null ? _h : 0;
     const shift = getShift(depth);
     const offsetX = shift / 2;
-    const rm = ((_f = canvas == null ? void 0 : canvas.clientWidth) != null ? _f : 295) - 8;
+    const rm = ((_i = canvas == null ? void 0 : canvas.clientWidth) != null ? _i : 295) - 8;
     const targetX = abs.x + offsetX;
     const targetY = abs.y + 2;
     const targetW = rm - abs.x - offsetX;
@@ -9876,8 +9881,8 @@
       return (_a2 = c.id) == null ? void 0 : _a2.startsWith("label-");
     });
     let textW = 0;
-    if ((_g = label == null ? void 0 : label.textStyle) == null ? void 0 : _g.content) {
-      const ctx2d = (_h = canvas == null ? void 0 : canvas.getContext) == null ? void 0 : _h.call(canvas, "2d");
+    if ((_j = label == null ? void 0 : label.textStyle) == null ? void 0 : _j.content) {
+      const ctx2d = (_k = canvas == null ? void 0 : canvas.getContext) == null ? void 0 : _k.call(canvas, "2d");
       if (ctx2d) {
         const font = label.textStyle.font || "11px system-ui, sans-serif";
         const labelX = label.x || 0;
@@ -11417,6 +11422,7 @@
   function updateFocus() {
     for (let i = 0; i < _cardEls.length; i++) {
       const el = _cardEls[i];
+      el.style.transition = "all 0.35s cubic-bezier(0.34,1.2,0.64,1)";
       el.style.transitionDelay = "0s";
       const dist = Math.abs(i - _focusIndex);
       if (dist === 0) {

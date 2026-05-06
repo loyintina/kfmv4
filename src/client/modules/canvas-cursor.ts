@@ -32,7 +32,7 @@ export function getRowIndexLength(): number { return L._rowIndex.length; }
 export function ensureCursorBox(root: Box, canvasH: number): Box {
   if (L.cursorBox) {
     // 确保还在 root 的子节点中
-    if (root.children.includes(L.cursorBox)) return L.cursorBox;
+    if (root.children.includes(L.cursorBox!)) return L.cursorBox;
   }
 
   L.cursorBox = new Box({
@@ -55,10 +55,10 @@ export function ensureCursorBox(root: Box, canvasH: number): Box {
 
 /** 移动光标到指定行（GSAP 平滑过渡） */
 export function moveCursorTo(hitBox: Box, animate = true): void {
-  if (!L.cursorBox) return;
+  if (!L.cursorBox) { const r = L.renderer?.getRoot(); if (!r) return; ensureCursorBox(r, r.height || (DOM.treeCanvas?.clientHeight ?? 618)); }
   // 防崩溃：确认光标盒仍在树中，不在则重新挂载
   const root = L.renderer?.getRoot();
-  if (root && !root.children.includes(L.cursorBox)) {
+  if (root && !root.children.includes(L.cursorBox!)) {
     ensureCursorBox(root, root.height || (DOM.treeCanvas?.clientHeight ?? 618));
   }
   let abs: { x: number; y: number };
@@ -142,16 +142,16 @@ export function moveCursorTo(hitBox: Box, animate = true): void {
       });
     } catch {
       // GSAP 异常时降级为瞬移
-      L.cursorBox.x = targetX; L.cursorBox.y = targetY;
-      L.cursorBox.width = targetW; L.cursorBox.height = targetH;
+      L.cursorBox!.x = targetX; L.cursorBox!.y = targetY;
+      L.cursorBox!.width = targetW; L.cursorBox!.height = targetH;
       cdata.topLineW = topLineW; cdata.botLineW = botLineW;
     }
   } else {
     // 瞬移模式（初始放置等场景）
-    L.cursorBox.x = targetX;
-    L.cursorBox.y = targetY;
-    L.cursorBox.width = targetW;
-    L.cursorBox.height = targetH;
+    L.cursorBox!.x = targetX;
+    L.cursorBox!.y = targetY;
+    L.cursorBox!.width = targetW;
+    L.cursorBox!.height = targetH;
     if (cdata) {
       cdata.topLineW = topLineW;
       cdata.botLineW = botLineW;

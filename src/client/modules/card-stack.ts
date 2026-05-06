@@ -178,6 +178,7 @@ function buildCards(): void {
 function updateFocus(): void {
   for (let i = 0; i < _cardEls.length; i++) {
     const el = _cardEls[i];
+    el.style.transition = 'all 0.35s cubic-bezier(0.34,1.2,0.64,1)';
     el.style.transitionDelay = '0s';
     const dist = Math.abs(i - _focusIndex);
 
