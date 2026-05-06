@@ -597,15 +597,15 @@
     /** 更新所有活跃动画，返回是否有动画在播放 */
     tickAnimations(now) {
       let active = false;
-      this.animations = this.animations.filter((anim) => {
+      this.animations = this.animations.filter((anim2) => {
         var _a;
-        const elapsed = now - anim.startTime;
-        const progress = Math.min(elapsed / anim.duration, 1);
-        const eased = ease(anim.easing, progress);
-        const value = anim.from + (anim.to - anim.from) * eased;
-        this.setAnimProp(anim.prop, value);
+        const elapsed = now - anim2.startTime;
+        const progress = Math.min(elapsed / anim2.duration, 1);
+        const eased = ease(anim2.easing, progress);
+        const value = anim2.from + (anim2.to - anim2.from) * eased;
+        this.setAnimProp(anim2.prop, value);
         if (progress >= 1) {
-          (_a = anim.onComplete) == null ? void 0 : _a.call(anim);
+          (_a = anim2.onComplete) == null ? void 0 : _a.call(anim2);
           return false;
         }
         active = true;
@@ -8443,6 +8443,100 @@
   var gsapWithCSS = gsap.registerPlugin(CSSPlugin) || gsap;
   var TweenMaxWithCSS = gsapWithCSS.core.Tween;
 
+  // src/client/modules/animation-registry.ts
+  var AnimationRegistryClass = class {
+    constructor() {
+      __publicField(this, "_entries", /* @__PURE__ */ new Map());
+      __publicField(this, "_scopes", /* @__PURE__ */ new Map());
+    }
+    // ========== 一次性补间（轻薄封装，直接透传 GSAP） ==========
+    /** 一次性补间 —— 直接透传 gsap.to()，返回 Tween 供调用方自行管理 */
+    to(target, vars) {
+      return gsapWithCSS.to(target, vars);
+    }
+    /** fromTo 补间 —— 透传 gsap.fromTo() */
+    fromTo(target, fromVars, toVars) {
+      return gsapWithCSS.fromTo(target, fromVars, toVars);
+    }
+    /** 瞬设属性 —— 透传 gsap.set() */
+    set(target, vars) {
+      return gsapWithCSS.set(target, vars);
+    }
+    /** 创建新 timeline —— 透传 gsap.timeline()，供模块自行管理 */
+    timeline(vars) {
+      return gsapWithCSS.timeline(vars);
+    }
+    /** 清除目标的补间 —— 透传 gsap.killTweensOf() */
+    killTweensOf(target) {
+      gsapWithCSS.killTweensOf(target);
+    }
+    // ========== 模块级 scope（替代 globalTimeline.clear()） ==========
+    /**
+     * 获取或创建模块级独立 timeline。
+     *
+     * 所有该模块的动画都应添加到这个 timeline 上：
+     *   const ts = anim.scope('tree-render');
+     *   ts.to(box, { height: 100 });     // 而非 gsap.to()
+     *   ts.add(subTimeline, 0);
+     *   ts.clear();                       // 而非 gsap.globalTimeline.clear()
+     *
+     * 这样 clear() 只影响本模块，不会误杀其他模块的动画。
+     */
+    scope(name) {
+      let tl = this._scopes.get(name);
+      if (!tl) {
+        tl = gsapWithCSS.timeline();
+        this._scopes.set(name, tl);
+      }
+      return tl;
+    }
+    /** 清除 scope 中的所有动画并销毁 */
+    clearScope(name) {
+      const tl = this._scopes.get(name);
+      if (tl) {
+        tl.clear();
+        this._scopes.delete(name);
+      }
+    }
+    // ========== 命名动画（有状态管理） ==========
+    /** 播放命名动画（自动 kill 同名旧动画） */
+    play(name, tl) {
+      this.kill(name);
+      this._entries.set(name, { name, tl });
+    }
+    /** 反向播放命名动画（如果存在且正在运行） */
+    reverse(name) {
+      const entry = this._entries.get(name);
+      if (!entry) return false;
+      entry.tl.reverse();
+      return true;
+    }
+    /** Kill 指定命名动画 */
+    kill(name) {
+      const entry = this._entries.get(name);
+      if (entry) {
+        entry.tl.kill();
+        this._entries.delete(name);
+      }
+    }
+    /** Kill 所有命名动画 + 所有 scope */
+    killAll() {
+      for (const [, entry] of this._entries) {
+        entry.tl.kill();
+      }
+      this._entries.clear();
+      for (const [, tl] of this._scopes) {
+        tl.clear();
+      }
+      this._scopes.clear();
+    }
+    /** 检查命名动画是否存在 */
+    has(name) {
+      return this._entries.has(name);
+    }
+  };
+  var anim = new AnimationRegistryClass();
+
   // src/client/modules/char-rain.ts
   async function animateCharRain(container, root, renderer) {
     var _a, _b, _c;
@@ -8601,7 +8695,7 @@
     const BASE_DUR = 0.22;
     try {
       await new Promise((resolve) => {
-        const tl = gsapWithCSS.timeline({ onComplete: resolve });
+        const tl = anim.timeline({ onComplete: resolve });
         for (let gi = 0; gi < lineGroups.length; gi++) {
           const group = lineGroups[gi];
           if (!group || group.length === 0) continue;
@@ -9825,7 +9919,7 @@
     }
     if (animate && cdata) {
       try {
-        gsapWithCSS.to(L.cursorBox, {
+        anim.to(L.cursorBox, {
           x: targetX,
           y: targetY,
           width: targetW,
@@ -9834,7 +9928,7 @@
           ease: "power3.out",
           overwrite: "auto"
         });
-        gsapWithCSS.to(cdata, {
+        anim.to(cdata, {
           topLineW,
           botLineW,
           duration: 0.18,
@@ -9925,7 +10019,7 @@
       const abs = L._rowIndex[idx].getAbsolutePosition();
       const targetScrollY = Math.max(0, Math.min(maxY, abs.y + L._rowIndex[idx].height / 2 - canvasH / 2));
       console.log("[GSAP-SCROLL] targetScrollY=", targetScrollY, "from=", root.scrollY);
-      gsapWithCSS.to(root, {
+      anim.to(root, {
         scrollY: targetScrollY,
         duration: 0.35,
         ease: "power2.inOut",
@@ -10243,6 +10337,7 @@
   }
 
   // src/client/modules/tree-render.ts
+  var ts = anim.scope("tree-render");
   function _ensureSubscribed() {
     if (L._stateSub) KFMState.unsubscribe(L._stateSub);
     L._stateSub = () => {
@@ -10306,7 +10401,7 @@
     L._animBusy = true;
     L._animBusyAt = Date.now();
     animateCharRain(container, root, L.renderer);
-    gsapWithCSS.to(container, {
+    ts.to(container, {
       height: fullHeight,
       duration: 0.05,
       ease: "back.out(1.15)",
@@ -10358,7 +10453,7 @@
               return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
             });
             if (tog) {
-              gsapWithCSS.killTweensOf(tog.transform);
+              anim.killTweensOf(tog.transform);
               tog.transform.rotate = Math.PI / 2;
             }
           }
@@ -10384,7 +10479,7 @@
   }
   function onSidebarOpen() {
     var _a;
-    gsapWithCSS.globalTimeline.clear();
+    ts.clear();
     (_a = L.renderer) == null ? void 0 : _a.stop();
     L.renderer = null;
     L.resetForOpen();
@@ -10447,7 +10542,7 @@
   }
   function onSidebarClose() {
     var _a, _b, _c, _d, _e;
-    gsapWithCSS.globalTimeline.clear();
+    ts.clear();
     L._sidebarClosed = true;
     L._animBusy = false;
     L._animBusyAt = 0;
@@ -10547,7 +10642,7 @@
         L._clickQueue = [];
         return;
       }
-      gsapWithCSS.globalTimeline.clear();
+      ts.clear();
       L._animBusy = false;
       L._animBusyAt = 0;
       L.animatingPath = null;
@@ -10653,7 +10748,7 @@
     });
     const ancestors = collectAncestors(container, root);
     animateCharRain(container, root, L.renderer);
-    gsapWithCSS.to(container, {
+    ts.to(container, {
       height: fullHeight,
       duration: 0.05,
       ease: "back.out(1.15)",
@@ -10700,7 +10795,7 @@
     const container = findBoxById(root, containerId);
     L._animBusy = true;
     L._animBusyAt = Date.now();
-    const tl = gsapWithCSS.timeline({
+    const tl = anim.timeline({
       onComplete: () => {
         L._animBusy = false;
         L._animBusyAt = 0;
@@ -10734,7 +10829,7 @@
         }
       }, 0);
     }
-    tl.play();
+    ts.add(tl, 0);
   }
   function findTapTarget(box, px, py) {
     var _a;
@@ -10982,7 +11077,7 @@
   }
   async function slideInRows(container, root, selfToggle) {
     if (selfToggle) {
-      gsapWithCSS.fromTo(selfToggle.transform, { rotate: 0 }, {
+      ts.fromTo(selfToggle.transform, { rotate: 0 }, {
         rotate: Math.PI / 2,
         duration: 0.15,
         ease: "power2.out",
@@ -11020,12 +11115,12 @@
         return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
       });
       if (freshTog) {
-        gsapWithCSS.killTweensOf(freshTog.transform);
+        anim.killTweensOf(freshTog.transform);
         freshTog.transform.rotate = subTogRotate;
       }
       const subRainPromise = animateCharRain(child, root, L.renderer);
       await new Promise((resolve) => {
-        gsapWithCSS.to(child, {
+        ts.to(child, {
           height: subFullH,
           duration: 0.05,
           ease: "back.out(1.15)",
@@ -11364,9 +11459,9 @@
     repositionCards();
     for (let i = 0; i < _cardEls.length; i++) {
       const el = _cardEls[i];
-      gsapWithCSS.set(el, { x: "100vw", opacity: 1, pointerEvents: "auto" });
+      anim.set(el, { x: "100vw", opacity: 1, pointerEvents: "auto" });
     }
-    _tl = gsapWithCSS.timeline({
+    _tl = anim.timeline({
       onComplete: () => {
         _state = "open";
         _tl = null;
@@ -11398,7 +11493,7 @@
       return;
     }
     _state = "closing";
-    _tl = gsapWithCSS.timeline({
+    _tl = anim.timeline({
       onComplete: () => {
         _state = "closed";
         _tl = null;

@@ -1,5 +1,5 @@
 import { gestures } from "./gesture-registry.js";
-import gsap from 'gsap';
+import { anim, AnimTimeline } from './animation-registry.js';
 
 /**
  * KFM v4 - 堆叠卡片面板
@@ -83,7 +83,7 @@ let _state: StackState = 'closed';
 let _focusIndex = 0;
 let _cardEls: HTMLElement[] = [];
 let _scrollStartFocus = 0;
-let _tl: gsap.core.Timeline | null = null;
+let _tl: AnimTimeline | null = null;
 
 // ========== DOM 构建 ==========
 
@@ -236,11 +236,11 @@ export function openCardStack(): void {
   // 设置初始状态：屏幕外
   for (let i = 0; i < _cardEls.length; i++) {
     const el = _cardEls[i];
-    gsap.set(el, { x: '100vw', opacity: 1, pointerEvents: 'auto' });
+    anim.set(el, { x: '100vw', opacity: 1, pointerEvents: 'auto' });
   }
 
   // 构建 GSAP timeline：同时出发，随机速度 200-500ms，Q弹曲线
-  _tl = gsap.timeline({
+  _tl = anim.timeline({
     onComplete: () => { _state = 'open'; _tl = null; updateFocus(); },
     onReverseComplete: () => { _state = 'closed'; _tl = null; }
   });
@@ -272,7 +272,7 @@ export function closeCardStack(): void {
   _state = 'closing';
 
   // 构建关闭 timeline
-  _tl = gsap.timeline({
+  _tl = anim.timeline({
     onComplete: () => { _state = 'closed'; _tl = null; },
     onReverseComplete: () => { _state = 'open'; _tl = null; updateFocus(); }
   });

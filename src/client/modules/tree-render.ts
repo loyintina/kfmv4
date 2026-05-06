@@ -8,7 +8,7 @@
 
 import { buildSidebarTree, getShift } from './tree-model.js';
 import { KFMState } from './state.js';
-import gsap from 'gsap';
+import { anim, AnimTimeline } from './animation-registry.js';
 import { animateCharRain } from "./char-rain.js";
 import { closeSidebar } from './ui.js';
 import { Renderer } from '../engine/v2/renderer.js';
@@ -18,6 +18,7 @@ import type { Box } from '../engine/v2/box.js';
 import { getCursorRowIndex, getRowIndexLength, moveCursorTo, ensureCursorBox, _moveCursorBySteps, _isCursorMode, _getCenterRowIndex, _snapCursorToCenter, _scrollToCenterCursor } from './canvas-cursor.js';
 import { bindScrollEvents } from './canvas-scroll.js';
 import { DOM } from "./dom-refs.js";
+const ts = anim.scope('tree-render');
 
 /** 保存 KFMState 订阅引用，防止重复订阅 */
 function _ensureSubscribed(): void {
@@ -89,7 +90,7 @@ export function triggerExpandAnimation(path: string): void {
   animateCharRain(container, root, L.renderer);
   
   // 容器展开动画
-  gsap.to(container, {
+  ts.to(container, {
     height: fullHeight,
     duration: 0.05,
     ease: 'back.out(1.15)',
@@ -133,7 +134,7 @@ function fixExpandedToggles(container: Box): void {
           const titleRow = findBoxByIdLocal(child.parent, `title-${path}`);
           const tog = titleRow?.children?.find(c => c.id?.startsWith('toggle-'));
           if (tog) {
-            gsap.killTweensOf(tog.transform);
+            anim.killTweensOf(tog.transform);
             tog.transform.rotate = Math.PI / 2;
           }
         }
@@ -171,7 +172,7 @@ export function isAnimLocked(): boolean {
 
 export function onSidebarOpen(): void {
   // ===== 销毁旧渲染器 + 通过生命周期重置所有状态 =====
-  gsap.globalTimeline.clear();
+  ts.clear();
   L.renderer?.stop();
   L.renderer = null;
   L.resetForOpen();
@@ -246,7 +247,7 @@ export function onSidebarOpen(): void {
 
 export function onSidebarClose(): void {
   // 先停掉所有动画和独立rAF循环
-  gsap.globalTimeline.clear();
+  ts.clear();
   L._sidebarClosed = true;  // 让wheel/touch的rAF循环自己退出
   L._animBusy = false;
   L._animBusyAt = 0;
@@ -372,7 +373,7 @@ function processClickQueue(): void {
       return;
     }
     // 中断 GSAP 动画，重建干净������即����理队列中的点击
-    gsap.globalTimeline.clear();
+    ts.clear();
     L._animBusy = false;
     L._animBusyAt = 0;
     L.animatingPath = null;
@@ -486,7 +487,7 @@ function doExpand(hit: Box, hitData: any): void {
   animateCharRain(container, root, L.renderer);
 
   // 容器展开 + 兄弟偏移
-  gsap.to(container, {
+  ts.to(container, {
     height: fullHeight,
     duration: 0.05,
     ease: 'back.out(1.15)',
@@ -528,7 +529,7 @@ function doCollapse(hit: Box, hitData: any): void {
 
   L._animBusy = true; L._animBusyAt = Date.now();
 
-  const tl = gsap.timeline({
+  const tl = anim.timeline({
     onComplete: () => {
       L._animBusy = false; L._animBusyAt = 0;
       hit.gesture!.onTap!();  // 切换状态 → rebuildTree（读取 L.animatingPath，末尾自行清空）
@@ -561,7 +562,7 @@ function doCollapse(hit: Box, hitData: any): void {
     }, 0);
   }
 
-  tl.play();
+  ts.add(tl, 0);
 }
 
 function findTapTarget(box: Box, px: number, py: number): Box | null {
@@ -864,7 +865,7 @@ function snapToCenterRow(root: Box, canvasH: number): void {
 async function slideInRows(container: Box, root: Box, selfToggle?: any): Promise<void> {
   // ========== current toggle rotation ==========
   if (selfToggle) {
-    gsap.fromTo(selfToggle.transform, { rotate: 0 }, {
+    ts.fromTo(selfToggle.transform, { rotate: 0 }, {
       rotate: Math.PI / 2,
       duration: 0.15,
       ease: 'power2.out',
@@ -893,12 +894,12 @@ async function slideInRows(container: Box, root: Box, selfToggle?: any): Promise
     const freshTitle = findBoxById(root, `title-${child.id.slice('expanded-'.length)}`);
     const freshTog = freshTitle?.children?.find((c: any) => c.id?.startsWith('toggle-'));
     if (freshTog) {
-      gsap.killTweensOf(freshTog.transform);
+      anim.killTweensOf(freshTog.transform);
       freshTog.transform.rotate = subTogRotate;
     }
     const subRainPromise = animateCharRain(child, root, L.renderer);
     await new Promise<void>(resolve => {
-      gsap.to(child, {
+      ts.to(child, {
         height: subFullH,
         duration: 0.05,
         ease: 'back.out(1.15)',

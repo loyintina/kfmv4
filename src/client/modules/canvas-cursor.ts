@@ -19,7 +19,7 @@ import { Box } from '../engine/v2/box.js';
 import { L } from './renderer-lifecycle.js';
 import { DOM } from './dom-refs.js';
 import { getRootScrollY, setRootScrollY, _rebuildRowIndex, findBoxById } from './canvas-utils.js';
-import gsap from 'gsap';
+import { anim } from './animation-registry.js';
 import { getShift } from './tree-model.js';
 import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
 import { LINE_HEIGHT, MAX_LINES } from './style-registry.js';
@@ -130,12 +130,12 @@ export function moveCursorTo(hitBox: Box, animate = true): void {
     // GSAP 平滑过渡：位置/尺寸 + 上线长度
     // 不 kill 旧动画——让 GSAP 自动衔接连续的目标变更，避免视觉跳动
     try {
-      gsap.to(L.cursorBox, {
+      anim.to(L.cursorBox, {
         x: targetX, y: targetY, width: targetW, height: targetH,
         duration: 0.18, ease: 'power3.out',
         overwrite: 'auto',
       });
-      gsap.to(cdata, {
+      anim.to(cdata, {
         topLineW, botLineW,
         duration: 0.18, ease: 'power3.out',
         overwrite: 'auto',
@@ -234,7 +234,7 @@ export function _scrollToCenterCursor(): void {
     const abs = L._rowIndex[idx].getAbsolutePosition();
     const targetScrollY = Math.max(0, Math.min(maxY, abs.y + L._rowIndex[idx].height / 2 - canvasH / 2));
     console.log('[GSAP-SCROLL] targetScrollY=', targetScrollY, 'from=', root.scrollY);
-    gsap.to(root, {
+    anim.to(root, {
       scrollY: targetScrollY,
       duration: 0.35,
       ease: 'power2.inOut',

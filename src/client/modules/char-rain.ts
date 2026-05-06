@@ -11,7 +11,7 @@ import { Box } from "../engine/v2/box.js";
 import { Renderer } from "../engine/v2/renderer.js";
 import { FONT, LINE_HEIGHT, MAX_LINES } from "./style-registry.js";
 import { prepareWithSegments, layoutWithLines } from "@chenglou/pretext";
-import gsap from "gsap";
+import { anim } from "./animation-registry.js";
 import { DOM } from "./dom-refs.js";
 
 interface CharTarget {
@@ -211,7 +211,7 @@ export async function animateCharRain(
 
   try {
     await new Promise<void>((resolve) => {
-      const tl = gsap.timeline({ onComplete: resolve });
+      const tl = anim.timeline({ onComplete: resolve });
 
       for (let gi = 0; gi < lineGroups.length; gi++) {
         const group = lineGroups[gi];

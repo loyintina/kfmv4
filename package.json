@@ -1,12 +1,12 @@
 {
   "name": "kfmv4",
   "version": "4.0.0",
-  "description": "KFM v4 - TypeScript 全栈文件管理器",
+  "description": "KFM v4 - TypeScript \u5168\u6808\u6587\u4ef6\u7ba1\u7406\u5668",
   "type": "module",
   "scripts": {
     "dev": "node --loader ts-node/esm src/server/index.ts",
     "check": "tsc --noEmit",
-    "build": "tsc --noEmit && node build.mjs",
+    "build": "node check-anim.mjs && tsc --noEmit && node build.mjs",
     "start": "node dist/server/index.js"
   },
   "dependencies": {
