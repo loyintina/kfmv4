@@ -390,7 +390,7 @@ function processClickQueue(): void {
     if (!child.visible || child.disabled) continue;
     const hit = findTapTarget(child, px, py);
     if (hit?.gesture?.onTap) {
-      // 光标逻辑：第一次点击移动光��，第二次同一行才执行
+      // 光标逻辑：第一次点击移动光标，第二次同一行才执行
       if (L.cursorRowId !== null && L.cursorRowId === hit.id) {
         const hitData = (hit as any).data || {};
         const isDir = hitData.isDir;
@@ -421,7 +421,7 @@ function processClickQueue(): void {
 /** 展开动画 */
 function doExpand(hit: Box, hitData: any): void {
   L.animatingPath = hitData.path;
-  hit.gesture!.onTap!();  // 切换状态 → rebuildTree（检��� L.animatingPath，预置 height=0）
+  hit.gesture!.onTap!();  // 切换状态 → rebuildTree（检查 L.animatingPath，预置 height=0）
 
   // rebuildTree 已完成，启动动画
   L._animBusy = true; L._animBusyAt = Date.now();
@@ -431,6 +431,7 @@ function doExpand(hit: Box, hitData: any): void {
   const titleRow = findBoxById(root, `title-${hitData.path}`);
   const toggle2 = titleRow?.children?.find(c => c.id?.startsWith('toggle-'));
 
+  // 容器不存在：懒加载尚未完成，由 loadAndAnimate 异步处理
   if (!container) {
     L._animBusy = false; L._animBusyAt = 0;
     processClickQueue();

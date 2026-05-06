@@ -59,7 +59,21 @@ export const KFMState: KFMStateType = {
   fileCache: { version: 1, updated: 0, tree: {} },
   
   _listeners: [],
-  
+  _beforeExpandHooks: [],
+
+  addHook(hook: 'beforeExpand', fn: (path: string) => boolean | void): void {
+    if (hook === 'beforeExpand') {
+      this._beforeExpandHooks.push(fn);
+    }
+  },
+
+  removeHook(hook: 'beforeExpand', fn: (path: string) => boolean | void): void {
+    if (hook === 'beforeExpand') {
+      const idx = this._beforeExpandHooks.indexOf(fn);
+      if (idx !== -1) this._beforeExpandHooks.splice(idx, 1);
+    }
+  },
+
   subscribe(fn) {
     this._listeners.push(fn);
   },
