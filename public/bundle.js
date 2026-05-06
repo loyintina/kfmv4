@@ -10393,6 +10393,127 @@
   function hasClicks() {
     return _clickQueue.length > 0;
   }
+  var _activeOverlays = [];
+  var OVERLAY_Z = 200;
+  function _addOverlay(overlay) {
+    _activeOverlays.push(overlay);
+  }
+  function _removeOverlay(overlay) {
+    const idx = _activeOverlays.indexOf(overlay);
+    if (idx >= 0) _activeOverlays.splice(idx, 1);
+    if (overlay.parent) {
+      const pidx = overlay.parent.children.indexOf(overlay);
+      if (pidx >= 0) overlay.parent.children.splice(pidx, 1);
+    }
+  }
+  function _removeAllOverlays() {
+    for (const ov of [..._activeOverlays]) {
+      _removeOverlay(ov);
+    }
+    _activeOverlays.length = 0;
+  }
+  function _collectSiblingsAfter(container) {
+    const parent = container.parent;
+    if (!parent) return [];
+    const idx = parent.children.indexOf(container);
+    if (idx < 0) return [];
+    const result = [];
+    for (let i = idx + 1; i < parent.children.length; i++) {
+      const sib = parent.children[i];
+      if (sib.id === "cursor-highlight") continue;
+      if (_activeOverlays.includes(sib)) continue;
+      result.push(sib);
+    }
+    return result;
+  }
+  function _createVisualClone(src, overrides) {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l;
+    const clone = new Box({
+      x: (_a = overrides == null ? void 0 : overrides.x) != null ? _a : src.x,
+      y: (_b = overrides == null ? void 0 : overrides.y) != null ? _b : src.y,
+      width: (_c = overrides == null ? void 0 : overrides.width) != null ? _c : src.width,
+      height: (_d = overrides == null ? void 0 : overrides.height) != null ? _d : src.height,
+      opacity: (_f = (_e = overrides == null ? void 0 : overrides.opacity) != null ? _e : src.opacity) != null ? _f : 1,
+      visible: (_g = overrides == null ? void 0 : overrides.visible) != null ? _g : src.visible,
+      backgroundColor: src.backgroundColor || "transparent",
+      borderRadius: src.borderRadius,
+      gradient: src.gradient ? { ...src.gradient } : void 0,
+      shadow: src.shadow ? { ...src.shadow } : void 0,
+      border: src.border ? { ...src.border } : void 0,
+      highlight: src.highlight ? { ...src.highlight } : void 0,
+      id: (_h = overrides == null ? void 0 : overrides.id) != null ? _h : `ov-${src.id || "unknown"}`,
+      interactive: false,
+      zIndex: (_i = overrides == null ? void 0 : overrides.zIndex) != null ? _i : src.zIndex + OVERLAY_Z,
+      overflow: "visible",
+      kfmStyle: src.kfmStyle ? { ...src.kfmStyle } : void 0,
+      data: { ...src.data }
+    });
+    if (src.textStyle) {
+      clone.textStyle = { ...src.textStyle };
+    }
+    if (src.transform) {
+      clone.transform = { ...src.transform };
+    }
+    for (const child of src.children) {
+      if (((_j = child.id) == null ? void 0 : _j.startsWith("label-")) || ((_k = child.id) == null ? void 0 : _k.startsWith("toggle-"))) {
+        const childClone = new Box({
+          x: child.x,
+          y: child.y,
+          width: child.width,
+          height: child.height,
+          opacity: (_l = child.opacity) != null ? _l : 1,
+          visible: child.visible,
+          backgroundColor: child.backgroundColor || "transparent",
+          interactive: false,
+          zIndex: child.zIndex + OVERLAY_Z,
+          overflow: "visible",
+          kfmStyle: child.kfmStyle ? { ...child.kfmStyle } : void 0
+        });
+        if (child.textStyle) childClone.textStyle = { ...child.textStyle };
+        if (child.transform) childClone.transform = { ...child.transform };
+        clone.addChild(childClone);
+      }
+    }
+    return clone;
+  }
+  function _setupExpandOverlays(container, fullHeight) {
+    const parent = container.parent;
+    const ci = parent.children.indexOf(container);
+    const containerOv = _createVisualClone(container, { id: `ov-${container.id || "container"}`, height: 0, opacity: 1, zIndex: OVERLAY_Z });
+    _addOverlay(containerOv);
+    parent.children.splice(ci + 1, 0, containerOv);
+    containerOv.parent = parent;
+    const rowOverlays = [];
+    const hiddenChildren = [];
+    const origYs = container._origYs;
+    for (let j = 0; j < container.children.length; j++) {
+      const child = container.children[j];
+      if (!child.visible) continue;
+      const targetY = origYs ? origYs[j] : child.y;
+      const rowOv = _createVisualClone(child, { id: `ov-${child.id || "row"}-${j}`, y: child.y, opacity: 1, zIndex: OVERLAY_Z + 1 });
+      rowOv._targetY = targetY;
+      _addOverlay(rowOv);
+      containerOv.addChild(rowOv);
+      rowOverlays.push(rowOv);
+      child.opacity = 0;
+      hiddenChildren.push(child);
+    }
+    const siblingOverlays = [];
+    const hiddenSiblings = [];
+    const siblings = _collectSiblingsAfter(container);
+    for (const sib of siblings) {
+      const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || "sib"}`, y: sib.y, opacity: 1, zIndex: OVERLAY_Z });
+      sibOv._targetY = sib.y + fullHeight;
+      _addOverlay(sibOv);
+      const si = parent.children.indexOf(sib);
+      parent.children.splice(si, 0, sibOv);
+      sibOv.parent = parent;
+      siblingOverlays.push(sibOv);
+      sib.opacity = 0;
+      hiddenSiblings.push(sib);
+    }
+    return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenSiblings, hiddenChildren };
+  }
   function _ensureSubscribed() {
     if (L._stateSub) KFMState.unsubscribe(L._stateSub);
     L._stateSub = () => {
@@ -10744,7 +10865,7 @@
     processClickQueue();
   }
   function doExpand(hit, hitData) {
-    var _a, _b;
+    var _a;
     L.animatingPath = hitData.path;
     hit.gesture.onTap();
     L._animBusy = true;
@@ -10797,39 +10918,65 @@
       return;
     }
     L.animatingPath = null;
-    const _origYs = container._origYs;
-    if (_origYs && container.children.length === _origYs.length) {
-      container.children.forEach((c, j) => {
-        c.y = _origYs[j];
-      });
-    }
-    container.children.forEach((c) => {
-      c.opacity = 1;
-    });
-    const ancestors = collectAncestors(container, root);
-    animateCharRain(container, root, L.renderer);
+    const pack = _setupExpandOverlays(container, fullHeight);
+    animateCharRain(pack.containerOverlay, root, L.renderer);
     const animRoot = L.renderer.getRoot();
-    ts.to(container, {
+    ts.to(pack.containerOverlay, {
       height: fullHeight,
       duration: 0.05,
       ease: "back.out(1.15)",
-      onUpdate: function() {
-        var _a2, _b2;
+      onUpdate: () => {
+        var _a2, _b;
         if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
-        applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
-        (_b2 = L.renderer) == null ? void 0 : _b2.setRoot(L.renderer.getRoot());
-      },
-      onComplete: () => {
-        var _a2;
-        if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
-        if (container.kfmStyle && container._savedCr !== void 0) {
-          container.kfmStyle.cornerRadius = container._savedCr;
+        (_b = L.renderer) == null ? void 0 : _b.setRoot(L.renderer.getRoot());
+      }
+    });
+    for (const rowOv of pack.rowOverlays) {
+      ts.to(rowOv, {
+        y: rowOv._targetY,
+        duration: 0.05,
+        ease: "back.out(1.15)",
+        onUpdate: () => {
+          var _a2, _b;
+          if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
+          (_b = L.renderer) == null ? void 0 : _b.setRoot(L.renderer.getRoot());
         }
-        slideInRows(container, root, toggle2).then(() => {
-          var _a3;
-          fixExpandedToggles(container);
-          (_a3 = L.renderer) == null ? void 0 : _a3.setRoot(L.renderer.getRoot());
-        }).finally(() => {
+      });
+    }
+    for (const sibOv of pack.siblingOverlays) {
+      ts.to(sibOv, {
+        y: sibOv._targetY,
+        duration: 0.05,
+        ease: "back.out(1.15)",
+        onUpdate: () => {
+          var _a2, _b;
+          if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
+          (_b = L.renderer) == null ? void 0 : _b.setRoot(L.renderer.getRoot());
+        }
+      });
+    }
+    ts.call(() => {
+      var _a2, _b, _c, _d;
+      if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
+      _removeAllOverlays();
+      for (const c of pack.hiddenChildren) c.opacity = 1;
+      for (const s of pack.hiddenSiblings) s.opacity = 1;
+      if (container.kfmStyle && container._savedCr !== void 0) {
+        container.kfmStyle.cornerRadius = container._savedCr;
+      }
+      L.animatingPath = null;
+      rebuildTree();
+      const root2 = L.renderer.getRoot();
+      const container2 = findBoxById(root2, containerId);
+      const titleRow2 = findBoxById(root2, `title-${hitData.path}`);
+      const toggle3 = (_b = titleRow2 == null ? void 0 : titleRow2.children) == null ? void 0 : _b.find((c) => {
+        var _a3;
+        return (_a3 = c.id) == null ? void 0 : _a3.startsWith("toggle-");
+      });
+      if (container2) fixExpandedToggles(container2);
+      (_c = L.renderer) == null ? void 0 : _c.setRoot(L.renderer.getRoot());
+      if (container2) {
+        slideInRows(container2, root2, toggle3).finally(() => {
           var _a3;
           L._animBusy = false;
           L._animBusyAt = 0;
@@ -10843,10 +10990,20 @@
           }
           processClickQueue();
         });
+      } else {
+        L._animBusy = false;
+        L._animBusyAt = 0;
+        const _root = (_d = L.renderer) == null ? void 0 : _d.getRoot();
+        if (_root) {
+          _rebuildRowIndex(_root);
+        }
+        if (L.cursorRowId && _root) {
+          const _t = findBoxById(_root, L.cursorRowId);
+          if (_t) moveCursorTo(_t, false);
+        }
+        processClickQueue();
       }
     });
-    applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
-    (_b = L.renderer) == null ? void 0 : _b.setRoot(L.renderer.getRoot());
   }
   function doCollapse(hit, hitData) {
     L.animatingPath = hitData.path;

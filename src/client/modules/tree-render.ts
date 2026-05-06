@@ -645,12 +645,11 @@ function processClickQueue(): void {
   processClickQueue();
 }
 
-/** 展开动画 */
+/** 展开动画（overlay 模式：GSAP 只碰 overlay Box，不碰主树） */
 function doExpand(hit: Box, hitData: any): void {
   L.animatingPath = hitData.path;
-  hit.gesture!.onTap!();  // 切换状态 → rebuildTree（检查 L.animatingPath，预置 height=0）
+  hit.gesture!.onTap!();  // KFMState toggle → _stateSub → rebuildTree（折叠态: collapseSubs 预置 height=0）
 
-  // rebuildTree 已完成，启动动画
   L._animBusy = true; L._animBusyAt = Date.now();
   const root = L.renderer!.getRoot()!;
   const containerId = `expanded-${hitData.path}`;
@@ -658,7 +657,6 @@ function doExpand(hit: Box, hitData: any): void {
   const titleRow = findBoxById(root, `title-${hitData.path}`);
   const toggle2 = titleRow?.children?.find(c => c.id?.startsWith('toggle-'));
 
-  // 容器不存在：懒加载尚未完成，由 loadAndAnimate 异步处理
   if (!container) {
     L._animBusy = false; L._animBusyAt = 0;
     processClickQueue();
@@ -667,7 +665,6 @@ function doExpand(hit: Box, hitData: any): void {
 
   const fullHeight = (container as any)._fullHeight || 0;
   if (!fullHeight) {
-    // 空文件夹：RAF 驱动 toggle 旋转动画
     const finish = () => {
       L._animBusy = false; L._animBusyAt = 0;
       processClickQueue();
@@ -700,52 +697,88 @@ function doExpand(hit: Box, hitData: any): void {
 
   L.animatingPath = null;
 
-  // 恢复子行原始 y
-  const _origYs = (container as any)._origYs as number[] | undefined;
-  if (_origYs && container.children.length === _origYs.length) {
-    container.children.forEach((c, j) => { c.y = _origYs[j]; });
-  }
-  container.children.forEach(c => { c.opacity = 1; });
+  // === overlay 模式 ===
+  const pack = _setupExpandOverlays(container, fullHeight);
+  animateCharRain(pack.containerOverlay, root, L.renderer);
 
-  const ancestors = collectAncestors(container, root);
-
-  // 字符雨（fire-and-forget，不阻塞队列）
-  animateCharRain(container, root, L.renderer);
-
-  // 容器展开 + 兄弟偏移
   const animRoot = L.renderer!.getRoot()!;
-  ts.to(container, {
+
+  // 容器 overlay: height 0→fullHeight
+  ts.to(pack.containerOverlay, {
     height: fullHeight,
     duration: 0.05,
     ease: 'back.out(1.15)',
-    onUpdate: function() {
+    onUpdate: () => {
       if (L.renderer?.getRoot() !== animRoot) return;
-      applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
       L.renderer?.setRoot(L.renderer!.getRoot()!);
     },
-    onComplete: () => {
-      if (L.renderer?.getRoot() !== animRoot) return;
-      // 恢�� cornerRadius
-      if (container.kfmStyle && (container as any)._savedCr !== undefined) {
-        container.kfmStyle.cornerRadius = (container as any)._savedCr;
-      }
-      slideInRows(container, root, toggle2).then(() => {
-        // 修复��有子容器 toggle 状态
-        fixExpandedToggles(container);
+  });
+
+  // 行 overlay: y→_targetY
+  for (const rowOv of pack.rowOverlays) {
+    ts.to(rowOv, {
+      y: (rowOv as any)._targetY,
+      duration: 0.05,
+      ease: 'back.out(1.15)',
+      onUpdate: () => {
+        if (L.renderer?.getRoot() !== animRoot) return;
         L.renderer?.setRoot(L.renderer!.getRoot()!);
-      }).finally(() => {
+      },
+    });
+  }
+
+  // 兄弟 overlay: y→_targetY
+  for (const sibOv of pack.siblingOverlays) {
+    ts.to(sibOv, {
+      y: (sibOv as any)._targetY,
+      duration: 0.05,
+      ease: 'back.out(1.15)',
+      onUpdate: () => {
+        if (L.renderer?.getRoot() !== animRoot) return;
+        L.renderer?.setRoot(L.renderer!.getRoot()!);
+      },
+    });
+  }
+
+  // 动画完成: 清理 overlay → 展开终态
+  ts.call(() => {
+    if (L.renderer?.getRoot() !== animRoot) return;
+    _removeAllOverlays();
+    for (const c of pack.hiddenChildren) c.opacity = 1;
+    for (const s of pack.hiddenSiblings) s.opacity = 1;
+    if (container.kfmStyle && (container as any)._savedCr !== undefined) {
+      container.kfmStyle.cornerRadius = (container as any)._savedCr;
+    }
+    L.animatingPath = null;
+    rebuildTree();
+    const root2 = L.renderer!.getRoot()!;
+    const container2 = findBoxById(root2, containerId);
+    const titleRow2 = findBoxById(root2, `title-${hitData.path}`);
+    const toggle3 = titleRow2?.children?.find(c => c.id?.startsWith('toggle-'));
+    if (container2) fixExpandedToggles(container2);
+    L.renderer?.setRoot(L.renderer!.getRoot()!);
+    if (container2) {
+      slideInRows(container2, root2, toggle3).finally(() => {
         L._animBusy = false; L._animBusyAt = 0;
         const _root = L.renderer?.getRoot();
         if (_root) { _rebuildRowIndex(_root); }
-        // ä¿®æ­£å¨ç»åå�� çä½ç½®
-        if (L.cursorRowId && _root) { const _t = findBoxById(_root, L.cursorRowId); if (_t) moveCursorTo(_t, false); }
+        if (L.cursorRowId && _root) {
+          const _t = findBoxById(_root, L.cursorRowId);
+          if (_t) moveCursorTo(_t, false);
+        }
         processClickQueue();
       });
-    },
+    } else {
+      L._animBusy = false; L._animBusyAt = 0;
+      const _root = L.renderer?.getRoot();
+      if (_root) { _rebuildRowIndex(_root); }
+      if (L.cursorRowId && _root) {
+        const _t = findBoxById(_root, L.cursorRowId);
+        if (_t) moveCursorTo(_t, false);
+      }
+      processClickQueue();
+    }
   });
-  // 首帧偏移
-  applyAnimOffsetSiblings(container, fullHeight, ancestors, root);
-  L.renderer?.setRoot(L.renderer!.getRoot()!);
 }
 
 /** 折叠动画：全部挂载到 ts scope，ts.clear() 可可靠清除（不再使用独立 timeline） */
