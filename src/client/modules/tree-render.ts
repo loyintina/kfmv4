@@ -80,7 +80,7 @@ function _collectSiblingsAfter(container: Box): Box[] {
 
 function _createVisualClone(
   src: Box,
-  overrides?: Partial<{ x: number; y: number; width: number; height: number; opacity: number; zIndex: number; visible: boolean }>,
+  overrides?: Partial<{ x: number; y: number; width: number; height: number; opacity: number; zIndex: number; visible: boolean; id: string }>,
 ): Box {
   const clone = new Box({
     x: overrides?.x ?? src.x,
@@ -95,6 +95,7 @@ function _createVisualClone(
     shadow: src.shadow ? { ...src.shadow } : undefined,
     border: src.border ? { ...src.border } : undefined,
     highlight: src.highlight ? { ...src.highlight } : undefined,
+    id: overrides?.id ?? `ov-${src.id || 'unknown'}`,
     interactive: false,
     zIndex: overrides?.zIndex ?? src.zIndex + OVERLAY_Z,
     overflow: 'visible',
@@ -129,6 +130,113 @@ function _createVisualClone(
     }
   }
   return clone;
+}
+
+// ========== Overlay 搭建 ==========
+
+interface OverlayPack {
+  containerOverlay: Box;
+  rowOverlays: Box[];
+  siblingOverlays: Box[];
+  /** 被隐藏的真实兄弟 */
+  hiddenSiblings: Box[];
+  /** 被隐藏的容器内子行 */
+  hiddenChildren: Box[];
+}
+
+/** 搭建展开动画的 overlay 集合 */
+function _setupExpandOverlays(container: Box, fullHeight: number): OverlayPack {
+  const parent = container.parent!;
+  const ci = parent.children.indexOf(container);
+
+  // 1. 容器 overlay (height=0, 即将动画到 fullHeight)
+  const containerOv = _createVisualClone(container, { id: `ov-${container.id || 'container'}`, height: 0, opacity: 1, zIndex: OVERLAY_Z });
+  _addOverlay(containerOv);
+  // 插入到 container 之后
+  parent.children.splice(ci + 1, 0, containerOv);
+  // 修正 parent 引用（splice 不自动设置）
+  containerOv.parent = parent;
+
+  // 2. 行 overlay（在折叠态 y，目标为 _origYs 展开态 y）
+  const rowOverlays: Box[] = [];
+  const hiddenChildren: Box[] = [];
+  const origYs = (container as any)._origYs as number[] | undefined;
+  for (let j = 0; j < container.children.length; j++) {
+    const child = container.children[j];
+    if (!child.visible) continue;
+    const targetY = origYs ? origYs[j] : child.y;
+    const rowOv = _createVisualClone(child, { id: `ov-${child.id || 'row'}-${j}`, y: child.y, opacity: 1, zIndex: OVERLAY_Z + 1 });
+    (rowOv as any)._targetY = targetY;  // GSAP 目标
+    _addOverlay(rowOv);
+    containerOv.addChild(rowOv);
+    rowOverlays.push(rowOv);
+    // 隐藏真实行
+    child.opacity = 0;
+    hiddenChildren.push(child);
+  }
+
+  // 3. 兄弟 overlay（在折叠态 y，目标 y = 当前 y + fullHeight）
+  const siblingOverlays: Box[] = [];
+  const hiddenSiblings: Box[] = [];
+  const siblings = _collectSiblingsAfter(container);
+  for (const sib of siblings) {
+    const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || 'sib'}`, y: sib.y, opacity: 1, zIndex: OVERLAY_Z });
+    (sibOv as any)._targetY = sib.y + fullHeight;
+    _addOverlay(sibOv);
+    const si = parent.children.indexOf(sib);
+    parent.children.splice(si, 0, sibOv);
+    sibOv.parent = parent;
+    siblingOverlays.push(sibOv);
+    sib.opacity = 0;
+    hiddenSiblings.push(sib);
+  }
+
+  return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenSiblings, hiddenChildren };
+}
+
+/** 搭建折叠动画的 overlay 集合 */
+function _setupCollapseOverlays(container: Box, fullH: number): OverlayPack {
+  const parent = container.parent!;
+  const ci = parent.children.indexOf(container);
+
+  // 1. 容器 overlay (height=fullH, 即将动画到 0)
+  const containerOv = _createVisualClone(container, { id: `ov-${container.id || 'container'}`, height: fullH, opacity: 1, zIndex: OVERLAY_Z });
+  _addOverlay(containerOv);
+  parent.children.splice(ci + 1, 0, containerOv);
+  containerOv.parent = parent;
+
+  // 2. 行 overlay（在展开态 y，目标 y = y - fullH 折叠态）
+  const rowOverlays: Box[] = [];
+  const hiddenChildren: Box[] = [];
+  for (let j = 0; j < container.children.length; j++) {
+    const child = container.children[j];
+    if (!child.visible) continue;
+    const rowOv = _createVisualClone(child, { id: `ov-${child.id || 'row'}-${j}`, y: child.y, opacity: 1, zIndex: OVERLAY_Z + 1 });
+    (rowOv as any)._targetY = child.y - fullH;
+    _addOverlay(rowOv);
+    containerOv.addChild(rowOv);
+    rowOverlays.push(rowOv);
+    child.opacity = 0;
+    hiddenChildren.push(child);
+  }
+
+  // 3. 兄弟 overlay（在展开态 y（已下移），目标 y = y - fullH 折叠态）
+  const siblingOverlays: Box[] = [];
+  const hiddenSiblings: Box[] = [];
+  const siblings = _collectSiblingsAfter(container);
+  for (const sib of siblings) {
+    const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || 'sib'}`, y: sib.y, opacity: 1, zIndex: OVERLAY_Z });
+    (sibOv as any)._targetY = sib.y - fullH;
+    _addOverlay(sibOv);
+    const si = parent.children.indexOf(sib);
+    parent.children.splice(si, 0, sibOv);
+    sibOv.parent = parent;
+    siblingOverlays.push(sibOv);
+    sib.opacity = 0;
+    hiddenSiblings.push(sib);
+  }
+
+  return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenSiblings, hiddenChildren };
 }
 
 /** 保存 KFMState 订阅引用，防止重复订阅 */
