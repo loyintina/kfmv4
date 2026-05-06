@@ -11391,7 +11391,6 @@
       "box-shadow:" + shadow,
       "transform:rotate(" + randomRotate + "deg)",
       "cursor:pointer",
-      "transition:all 0.35s cubic-bezier(0.34,1.2,0.64,1)",
       "z-index:" + (10 + index),
       "opacity:1",
       "user-select:none",
@@ -11411,7 +11410,6 @@
     console.log("[CARD-STACK] buildCards called");
     for (let i = 0; i < CARDS.length; i++) {
       const card = createCard(i);
-      card.style.transition = "none";
       card.style.transform = "translateX(100vw)";
       card.style.pointerEvents = "none";
       document.body.appendChild(card);
@@ -11422,27 +11420,37 @@
   function updateFocus() {
     for (let i = 0; i < _cardEls.length; i++) {
       const el = _cardEls[i];
-      el.style.transition = "all 0.35s cubic-bezier(0.34,1.2,0.64,1)";
-      el.style.transitionDelay = "0s";
       const dist = Math.abs(i - _focusIndex);
+      anim.killTweensOf(el);
+      const alpha = 0.85;
       if (dist === 0) {
-        el.style.transform = "translateX(calc(35% - 20px)) scale(1.04) rotate(0deg)";
-        el.style.opacity = "1";
+        anim.to(el, {
+          xPercent: 35,
+          x: -20,
+          scale: 1.04,
+          rotation: 0,
+          duration: 0.35,
+          ease: "back.out(1.2)"
+        });
         el.style.backdropFilter = "blur(16px)";
         el.style.webkitBackdropFilter = "blur(16px)";
-        const alpha = 0.85;
         el.style.background = "linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, " + getBorderGradient(i, alpha) + " border-box";
         el.style.boxShadow = "0 4px 8px rgba(0,0,0,0.4),0 12px 24px rgba(0,0,0,0.3),0 24px 48px rgba(0,0,0,0.25),-6px 6px 12px rgba(0,0,0,0.2)";
         const idxEl = el.querySelector(".stack-card-index");
         if (idxEl) idxEl.style.opacity = "0.8";
       } else {
-        const randomRotate = el.dataset.randomRotate || "0";
-        el.style.transform = "translateX(35%) scale(1) rotate(" + randomRotate + "deg)";
-        el.style.opacity = "1";
+        const randomRotate = parseFloat(el.dataset.randomRotate || "0");
+        anim.to(el, {
+          xPercent: 35,
+          x: 0,
+          scale: 1,
+          rotation: randomRotate,
+          duration: 0.35,
+          ease: "back.out(1.2)"
+        });
         el.style.backdropFilter = "blur(16px)";
         el.style.webkitBackdropFilter = "blur(16px)";
-        const alpha2 = 0.85;
-        el.style.background = "linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, " + getBorderGradient(i, alpha2) + " border-box";
+        el.style.background = "linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, " + getBorderGradient(i, alpha) + " border-box";
         el.style.boxShadow = "0 2px 4px rgba(0,0,0,0.3),0 8px 16px rgba(0,0,0,0.25),0 16px 32px rgba(0,0,0,0.2),-4px 4px 8px rgba(0,0,0,0.15)";
         const idxEl = el.querySelector(".stack-card-index");
         if (idxEl) idxEl.style.opacity = "0.3";
