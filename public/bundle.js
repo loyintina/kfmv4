@@ -10658,7 +10658,7 @@
       if (container2) fixExpandedToggles(container2);
       (_c2 = L.renderer) == null ? void 0 : _c2.setRoot(L.renderer.getRoot());
       if (container2) {
-        slideInRows(container2, root2, toggle3).finally(() => {
+        _unveilOverlaySubContainers(container2, root2, toggle3).finally(() => {
           var _a3;
           L._animBusy = false;
           L._animBusyAt = 0;
@@ -11047,7 +11047,7 @@
       if (container2) fixExpandedToggles(container2);
       (_c = L.renderer) == null ? void 0 : _c.setRoot(L.renderer.getRoot());
       if (container2) {
-        slideInRows(container2, root2, toggle3).finally(() => {
+        _unveilOverlaySubContainers(container2, root2, toggle3).finally(() => {
           var _a3;
           L._animBusy = false;
           L._animBusyAt = 0;
@@ -11352,7 +11352,8 @@
     walk(root);
     if (closest) moveCursorTo(closest);
   }
-  async function slideInRows(container, root, selfToggle) {
+  async function _unveilOverlaySubContainers(container, root, selfToggle) {
+    var _a, _b, _c;
     const token = treeAbort.start();
     if (selfToggle) {
       anim.fromTo(selfToggle.transform, { rotate: 0 }, {
@@ -11360,65 +11361,84 @@
         duration: 0.15,
         ease: "power2.out",
         onUpdate: () => {
-          var _a;
-          (_a = L.renderer) == null ? void 0 : _a.setRoot(L.renderer.getRoot());
+          var _a2;
+          (_a2 = L.renderer) == null ? void 0 : _a2.setRoot(L.renderer.getRoot());
         }
       });
     }
     const subContainers = container.children.filter(
       (c) => {
-        var _a;
-        return ((_a = c.id) == null ? void 0 : _a.startsWith("expanded-")) && c._fullHeight > 0;
+        var _a2;
+        return ((_a2 = c.id) == null ? void 0 : _a2.startsWith("expanded-")) && c._fullHeight > 0;
       }
     );
-    async function expandNext(idx) {
-      var _a, _b;
-      if (idx >= subContainers.length) return;
+    for (let idx = 0; idx < subContainers.length; idx++) {
       const child = subContainers[idx];
       const subFullH = child._fullHeight;
-      const subOrigYs = child._origYs;
-      if (subOrigYs && child.children.length === subOrigYs.length) {
-        child.children.forEach((c, j) => {
-          c.y = subOrigYs[j];
-        });
-      }
-      child.children.forEach((c) => {
-        c.opacity = 1;
-      });
-      const subTog = child._toggleBox;
-      const subTogRotate = (_a = child._toggleRotate) != null ? _a : Math.PI / 2;
       const freshTitle = findBoxById(root, `title-${child.id.slice("expanded-".length)}`);
-      const freshTog = (_b = freshTitle == null ? void 0 : freshTitle.children) == null ? void 0 : _b.find((c) => {
+      const freshTog = (_a = freshTitle == null ? void 0 : freshTitle.children) == null ? void 0 : _a.find((c) => {
         var _a2;
         return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
       });
       if (freshTog) {
         anim.killTweensOf(freshTog.transform);
-        freshTog.transform.rotate = subTogRotate;
+        freshTog.transform.rotate = (_b = child._toggleRotate) != null ? _b : Math.PI / 2;
       }
       animateCharRain(child, root, L.renderer);
+      const pack = _setupExpandOverlays(child, subFullH);
       await new Promise((resolve) => {
-        anim.to(child, {
+        const tl = anim.timeline({
+          onComplete: () => {
+            _removeAllOverlays();
+            for (const c of pack.hiddenChildren) c.opacity = 1;
+            for (const s of pack.hiddenSiblings) s.opacity = 1;
+            if (child.kfmStyle && child._savedCr !== void 0) {
+              child.kfmStyle.cornerRadius = child._savedCr;
+            }
+            resolve();
+          }
+        });
+        tl.to(pack.containerOverlay, {
           height: subFullH,
           duration: 0.05,
           ease: "back.out(1.15)",
           onUpdate: () => {
             var _a2;
             (_a2 = L.renderer) == null ? void 0 : _a2.setRoot(L.renderer.getRoot());
-          },
-          onComplete: resolve
-        });
+          }
+        }, 0);
+        for (const rowOv of pack.rowOverlays) {
+          tl.to(rowOv, {
+            y: rowOv._targetY,
+            duration: 0.05,
+            ease: "back.out(1.15)",
+            onUpdate: () => {
+              var _a2;
+              (_a2 = L.renderer) == null ? void 0 : _a2.setRoot(L.renderer.getRoot());
+            }
+          }, 0);
+        }
+        for (const sibOv of pack.siblingOverlays) {
+          tl.to(sibOv, {
+            y: sibOv._targetY,
+            duration: 0.05,
+            ease: "back.out(1.15)",
+            onUpdate: () => {
+              var _a2;
+              (_a2 = L.renderer) == null ? void 0 : _a2.setRoot(L.renderer.getRoot());
+            }
+          }, 0);
+        }
       });
       if (treeAbort.isCancelled(token)) return;
-      if (child.kfmStyle && child._savedCr !== void 0) {
-        child.kfmStyle.cornerRadius = child._savedCr;
+      const root2 = (_c = L.renderer) == null ? void 0 : _c.getRoot();
+      if (!root2) return;
+      const child2 = findBoxById(root2, child.id);
+      if (child2) {
+        await _unveilOverlaySubContainers(child2, root2);
+        if (treeAbort.isCancelled(token)) return;
       }
-      await slideInRows(child, root);
-      if (treeAbort.isCancelled(token)) return;
-      await expandNext(idx + 1);
     }
-    await expandNext(0);
-    if (treeAbort.isCancelled(token)) return;
   }
 
   // src/client/modules/ui.ts

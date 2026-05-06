@@ -355,7 +355,7 @@ export function triggerExpandAnimation(path: string): void {
     if (container2) fixExpandedToggles(container2);
     L.renderer?.setRoot(L.renderer!.getRoot()!);
     if (container2) {
-      slideInRows(container2, root2, toggle3).finally(() => {
+      _unveilOverlaySubContainers(container2, root2, toggle3).finally(() => {
         L._animBusy = false; L._animBusyAt = 0;
         const _root = L.renderer?.getRoot();
         if (_root) { _rebuildRowIndex(_root); }
@@ -792,7 +792,7 @@ function doExpand(hit: Box, hitData: any): void {
     if (container2) fixExpandedToggles(container2);
     L.renderer?.setRoot(L.renderer!.getRoot()!);
     if (container2) {
-      slideInRows(container2, root2, toggle3).finally(() => {
+      _unveilOverlaySubContainers(container2, root2, toggle3).finally(() => {
         L._animBusy = false; L._animBusyAt = 0;
         const _root = L.renderer?.getRoot();
         if (_root) { _rebuildRowIndex(_root); }
@@ -1195,12 +1195,16 @@ function snapToCenterRow(root: Box, canvasH: number): void {
 }
 
 /**
- * SlideInRows: 收集容器内直接子行，��部上移隐藏��再逐行用 translateY 滑下。
- * 盒子链串行展开子容器，每个子容器展开后递归调用自身。
+ * _unveilOverlaySubContainers: overlay 模式的子容器串行展示。
+ *
+ * 为每个展开子容器创建临时 overlay，在 overlay 上做高度展开动画，
+ * 完成后移除 overlay 并恢复真实内容。递归处理嵌套。
+ * 使用 treeAbort 令牌在 rebuildTree 后安全中止。
  */
-async function slideInRows(container: Box, root: Box, selfToggle?: any): Promise<void> {
+async function _unveilOverlaySubContainers(container: Box, root: Box, selfToggle?: Box): Promise<void> {
   const token = treeAbort.start();
-  // ========== current toggle rotation ==========
+
+  // self-toggle 旋转动画
   if (selfToggle) {
     anim.fromTo(selfToggle.transform, { rotate: 0 }, {
       rotate: Math.PI / 2,
@@ -1210,51 +1214,77 @@ async function slideInRows(container: Box, root: Box, selfToggle?: any): Promise
     });
   }
 
-  // ========== sub-container serial expansion ==========
   const subContainers = container.children.filter(
     c => c.id?.startsWith('expanded-') && (c as any)._fullHeight > 0
   );
-  async function expandNext(idx: number): Promise<void> {
-    if (idx >= subContainers.length) return;
+
+  for (let idx = 0; idx < subContainers.length; idx++) {
     const child = subContainers[idx];
-    const subFullH = (child as any)._fullHeight;
-    // restore y positions, launch char rain at t=0 parallel with sub-container expansion
-    const subOrigYs = (child as any)._origYs as number[] | undefined;
-    if (subOrigYs && child.children.length === subOrigYs.length) {
-      child.children.forEach((c, j) => { c.y = subOrigYs[j]; });
-    }
-    child.children.forEach(c => { c.opacity = 1; });
-    // 子���器的 toggle 直接设置为最终状态（已展开为 90��）
-    const subTog = (child as any)._toggleBox;
-    const subTogRotate = (child as any)._toggleRotate ?? Math.PI / 2;
-    // ��当前 root 重新查找 toggle，确保引�����确
-    const freshTitle = findBoxById(root, `title-${child.id.slice('expanded-'.length)}`);
-    const freshTog = freshTitle?.children?.find((c: any) => c.id?.startsWith('toggle-'));
+    const subFullH = (child as any)._fullHeight as number;
+
+    // 修复子容器 toggle
+    const freshTitle = findBoxById(root, `title-${child.id!.slice('expanded-'.length)}`);
+    const freshTog = freshTitle?.children?.find((c: Box) => c.id?.startsWith('toggle-'));
     if (freshTog) {
       anim.killTweensOf(freshTog.transform);
-      freshTog.transform.rotate = subTogRotate;
+      freshTog.transform.rotate = (child as any)._toggleRotate ?? Math.PI / 2;
     }
+
     animateCharRain(child, root, L.renderer);
+
+    // 创建 overlay 并动画
+    const pack = _setupExpandOverlays(child, subFullH);
+
     await new Promise<void>(resolve => {
-      anim.to(child, {
+      const tl = anim.timeline({
+        onComplete: () => {
+          _removeAllOverlays();
+          for (const c of pack.hiddenChildren) c.opacity = 1;
+          for (const s of pack.hiddenSiblings) s.opacity = 1;
+          if (child.kfmStyle && (child as any)._savedCr !== undefined) {
+            child.kfmStyle.cornerRadius = (child as any)._savedCr;
+          }
+          resolve();
+        },
+      });
+
+      tl.to(pack.containerOverlay, {
         height: subFullH,
         duration: 0.05,
         ease: 'back.out(1.15)',
         onUpdate: () => { L.renderer?.setRoot(L.renderer!.getRoot()!); },
-        onComplete: resolve,
-      });
+      }, 0);
+
+      for (const rowOv of pack.rowOverlays) {
+        tl.to(rowOv, {
+          y: (rowOv as any)._targetY,
+          duration: 0.05,
+          ease: 'back.out(1.15)',
+          onUpdate: () => { L.renderer?.setRoot(L.renderer!.getRoot()!); },
+        }, 0);
+      }
+
+      for (const sibOv of pack.siblingOverlays) {
+        tl.to(sibOv, {
+          y: (sibOv as any)._targetY,
+          duration: 0.05,
+          ease: 'back.out(1.15)',
+          onUpdate: () => { L.renderer?.setRoot(L.renderer!.getRoot()!); },
+        }, 0);
+      }
     });
-    // root check: bail if tree was rebuilt mid-animation
+
     if (treeAbort.isCancelled(token)) return;
-    if (child.kfmStyle && (child as any)._savedCr !== undefined) {
-      child.kfmStyle.cornerRadius = (child as any)._savedCr;
+
+    // 递归处理嵌套子容器
+    const root2 = L.renderer?.getRoot();
+    if (!root2) return;
+    const child2 = findBoxById(root2, child.id!);
+    if (child2) {
+      await _unveilOverlaySubContainers(child2, root2);
+      if (treeAbort.isCancelled(token)) return;
     }
-    await slideInRows(child, root);
-    if (treeAbort.isCancelled(token)) return;
-    await expandNext(idx + 1);
   }
-  await expandNext(0);
-  if (treeAbort.isCancelled(token)) return;
 }
 
 // ============================================================
