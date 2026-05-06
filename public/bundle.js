@@ -9715,10 +9715,9 @@
       __publicField(this, "_rowIndex", []);
       // ---- 会话隔离 ----
       __publicField(this, "_sessionId", 0);
-      // ---- 动画锁 ----
-      __publicField(this, "animatingPath", null);
-      __publicField(this, "_animBusy", false);
-      __publicField(this, "_animBusyAt", 0);
+      // ---- 动画锁（形式化状态机） ----
+      // idle = 无动画进行；animating = 正在展开或折叠指定路径
+      __publicField(this, "_treeOp", { kind: "idle" });
       __publicField(this, "pendingCollapse", null);
       __publicField(this, "_clickQueue", []);
       // ---- rAF 句柄 ----
@@ -9728,6 +9727,30 @@
       __publicField(this, "_flingRaf", 0);
       // ---- DOM 监听器追踪 ----
       __publicField(this, "_listenerRefs", []);
+    }
+    // ---- 向后兼容：旧代码仍可读取 animatingPath / _animBusy / _animBusyAt ----
+    get animatingPath() {
+      return this._treeOp.kind === "animating" ? this._treeOp.path : null;
+    }
+    set animatingPath(v) {
+      if (v === null) {
+        this._treeOp = { kind: "idle" };
+      } else {
+        this._treeOp = { kind: "animating", path: v, direction: "expand", startedAt: Date.now() };
+      }
+    }
+    get _animBusy() {
+      return this._treeOp.kind !== "idle";
+    }
+    set _animBusy(v) {
+      if (!v && this._treeOp.kind === "animating") {
+        this._treeOp = { kind: "idle" };
+      }
+    }
+    get _animBusyAt() {
+      return this._treeOp.kind === "animating" ? this._treeOp.startedAt : 0;
+    }
+    set _animBusyAt(_v) {
     }
     // ========== rAF 管理 ==========
     /** 取消所有已注册的 rAF 循环 */
@@ -9763,9 +9786,7 @@
     /** 侧栏打开时的状态重置 */
     resetForOpen() {
       this._sessionId++;
-      this._animBusy = false;
-      this._animBusyAt = 0;
-      this.animatingPath = null;
+      this._treeOp = { kind: "idle" };
       this._clickQueue = [];
       this.cursorBox = null;
       this.cursorRowId = this._savedCursorRowId;
@@ -9777,8 +9798,7 @@
     /** 侧栏关闭时的状态保存 + 清理 */
     prepareClose() {
       this._sidebarClosed = true;
-      this._animBusy = false;
-      this._animBusyAt = 0;
+      this._treeOp = { kind: "idle" };
       this._restoringFromSave = true;
       this._clickQueue = [];
       this.cursorBox = null;

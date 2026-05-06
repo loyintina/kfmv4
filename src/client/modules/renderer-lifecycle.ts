@@ -44,12 +44,38 @@ export class RendererLifecycle {
   // ---- 会话隔离 ----
   _sessionId = 0;
 
-  // ---- 动画锁 ----
-  animatingPath: string | null = null;
-  _animBusy = false;
-  _animBusyAt = 0;
+  // ---- 动画锁（形式化状态机） ----
+  // idle = 无动画进行；animating = 正在展开或折叠指定路径
+  _treeOp: { kind: 'idle' } | { kind: 'animating'; path: string; direction: 'expand' | 'collapse'; startedAt: number } = { kind: 'idle' };
   pendingCollapse: { path: string; rowId: string } | null = null;
   _clickQueue: Array<{ offsetX: number; offsetY: number }> = [];
+
+  // ---- 向后兼容：旧代码仍可读取 animatingPath / _animBusy / _animBusyAt ----
+  get animatingPath(): string | null {
+    return this._treeOp.kind === 'animating' ? this._treeOp.path : null;
+  }
+  set animatingPath(v: string | null) {
+    if (v === null) {
+      this._treeOp = { kind: 'idle' };
+    } else {
+      this._treeOp = { kind: 'animating', path: v, direction: 'expand', startedAt: Date.now() };
+    }
+  }
+  get _animBusy(): boolean {
+    return this._treeOp.kind !== 'idle';
+  }
+  set _animBusy(v: boolean) {
+    if (!v && this._treeOp.kind === 'animating') {
+      this._treeOp = { kind: 'idle' };
+    }
+    // setting true is always preceded by animatingPath setter, so no-op here
+  }
+  get _animBusyAt(): number {
+    return this._treeOp.kind === 'animating' ? this._treeOp.startedAt : 0;
+  }
+  set _animBusyAt(_v: number) {
+    // no-op, startedAt is set when the op begins
+  }
 
   // ---- rAF 句柄 ----
   _cursorWheelDecayRaf = 0;
@@ -99,9 +125,7 @@ export class RendererLifecycle {
   /** 侧栏打开时的状态重置 */
   resetForOpen(): void {
     this._sessionId++;
-    this._animBusy = false;
-    this._animBusyAt = 0;
-    this.animatingPath = null;
+    this._treeOp = { kind: 'idle' };
     this._clickQueue = [];
     this.cursorBox = null;
     this.cursorRowId = this._savedCursorRowId;
@@ -114,8 +138,7 @@ export class RendererLifecycle {
   /** 侧栏关闭时的状态保存 + 清理 */
   prepareClose(): void {
     this._sidebarClosed = true;
-    this._animBusy = false;
-    this._animBusyAt = 0;
+    this._treeOp = { kind: 'idle' };
     this._restoringFromSave = true;
     this._clickQueue = [];
     this.cursorBox = null;
