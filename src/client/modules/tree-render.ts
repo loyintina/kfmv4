@@ -27,7 +27,6 @@ function _ensureSubscribed(): void {
     // state 变化（toggleHidden/expanded）是用户主动行为，跳过 L._animBusy 锁
     L._animBusy = false;
     L._animBusyAt = 0;
-    L._clickQueue = [];
     rebuildTree();
   };
   KFMState.subscribe(L._stateSub);
@@ -865,7 +864,7 @@ function snapToCenterRow(root: Box, canvasH: number): void {
 async function slideInRows(container: Box, root: Box, selfToggle?: any): Promise<void> {
   // ========== current toggle rotation ==========
   if (selfToggle) {
-    ts.fromTo(selfToggle.transform, { rotate: 0 }, {
+    anim.fromTo(selfToggle.transform, { rotate: 0 }, {
       rotate: Math.PI / 2,
       duration: 0.15,
       ease: 'power2.out',
@@ -897,9 +896,9 @@ async function slideInRows(container: Box, root: Box, selfToggle?: any): Promise
       anim.killTweensOf(freshTog.transform);
       freshTog.transform.rotate = subTogRotate;
     }
-    const subRainPromise = animateCharRain(child, root, L.renderer);
+    animateCharRain(child, root, L.renderer);
     await new Promise<void>(resolve => {
-      ts.to(child, {
+      anim.to(child, {
         height: subFullH,
         duration: 0.05,
         ease: 'back.out(1.15)',
@@ -907,15 +906,17 @@ async function slideInRows(container: Box, root: Box, selfToggle?: any): Promise
         onComplete: resolve,
       });
     });
-    // 子容器展开后递归 slideInRows
-    // restore sub-container cornerRadius
+    // root check: bail if tree was rebuilt mid-animation
+    if (L.renderer?.getRoot() !== root) return;
     if (child.kfmStyle && (child as any)._savedCr !== undefined) {
       child.kfmStyle.cornerRadius = (child as any)._savedCr;
     }
     await slideInRows(child, root);
+    if (L.renderer?.getRoot() !== root) return;
     await expandNext(idx + 1);
   }
   await expandNext(0);
+  if (L.renderer?.getRoot() !== root) return;
 }
 
 // ============================================================
