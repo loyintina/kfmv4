@@ -9719,7 +9719,6 @@
       // idle = 无动画进行；animating = 正在展开或折叠指定路径
       __publicField(this, "_treeOp", { kind: "idle" });
       __publicField(this, "pendingCollapse", null);
-      __publicField(this, "_clickQueue", []);
       // ---- rAF 句柄 ----
       __publicField(this, "_cursorWheelDecayRaf", 0);
       __publicField(this, "_wheelRaf", 0);
@@ -9787,7 +9786,6 @@
     resetForOpen() {
       this._sessionId++;
       this._treeOp = { kind: "idle" };
-      this._clickQueue = [];
       this.cursorBox = null;
       this.cursorRowId = this._savedCursorRowId;
       this._savedCursorRowId = null;
@@ -9800,7 +9798,6 @@
       this._sidebarClosed = true;
       this._treeOp = { kind: "idle" };
       this._restoringFromSave = true;
-      this._clickQueue = [];
       this.cursorBox = null;
       this.cursorRowId = null;
       this._rowIndex = [];
@@ -10363,6 +10360,19 @@
 
   // src/client/modules/tree-render.ts
   var ts = anim.scope("tree-render");
+  var _clickQueue = [];
+  function enqueueClick(e) {
+    _clickQueue.push(e);
+  }
+  function dequeueClick() {
+    return _clickQueue.shift();
+  }
+  function clearClickQueue() {
+    _clickQueue.length = 0;
+  }
+  function hasClicks() {
+    return _clickQueue.length > 0;
+  }
   function _ensureSubscribed() {
     if (L._stateSub) KFMState.unsubscribe(L._stateSub);
     L._stateSub = () => {
@@ -10580,7 +10590,7 @@
       L._savedScrollY = rootScrollY;
       L._savedCursorRowId = L.cursorRowId;
     }
-    L._clickQueue = [];
+    clearClickQueue();
     L.cursorBox = null;
     L.cursorRowId = null;
     L._rowIndex = [];
@@ -10656,18 +10666,18 @@
   function bindClickEvents(canvas, _dpr) {
     canvas.addEventListener("click", (e) => {
       if (!L.renderer) return;
-      L._clickQueue.push({ offsetX: e.offsetX, offsetY: e.offsetY });
+      enqueueClick({ offsetX: e.offsetX, offsetY: e.offsetY });
       processClickQueue();
     });
   }
   function processClickQueue() {
     var _a, _b;
-    if (L._clickQueue.length === 0 || !L.renderer) return;
+    if (!hasClicks() || !L.renderer) return;
     if (L._animBusy) {
       if (L._animBusyAt && Date.now() - L._animBusyAt > 3e3) {
         L._animBusy = false;
         L._animBusyAt = 0;
-        L._clickQueue = [];
+        clearClickQueue();
         return;
       }
       ts.clear();
@@ -10676,7 +10686,7 @@
       L.animatingPath = null;
       rebuildTree();
     }
-    const { offsetX, offsetY } = L._clickQueue.shift();
+    const { offsetX, offsetY } = dequeueClick();
     const root = L.renderer.getRoot();
     if (!root) return;
     const scrollY = (_a = root.scrollY) != null ? _a : 0;
@@ -10888,7 +10898,7 @@
       if (L._animBusyAt && Date.now() - L._animBusyAt > 3e3) {
         L._animBusy = false;
         L._animBusyAt = 0;
-        L._clickQueue = [];
+        clearClickQueue();
       } else {
         return;
       }

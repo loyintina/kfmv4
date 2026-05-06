@@ -48,7 +48,6 @@ export class RendererLifecycle {
   // idle = 无动画进行；animating = 正在展开或折叠指定路径
   _treeOp: { kind: 'idle' } | { kind: 'animating'; path: string; direction: 'expand' | 'collapse'; startedAt: number } = { kind: 'idle' };
   pendingCollapse: { path: string; rowId: string } | null = null;
-  _clickQueue: Array<{ offsetX: number; offsetY: number }> = [];
 
   // ---- 向后兼容：旧代码仍可读取 animatingPath / _animBusy / _animBusyAt ----
   get animatingPath(): string | null {
@@ -126,7 +125,6 @@ export class RendererLifecycle {
   resetForOpen(): void {
     this._sessionId++;
     this._treeOp = { kind: 'idle' };
-    this._clickQueue = [];
     this.cursorBox = null;
     this.cursorRowId = this._savedCursorRowId;
     this._savedCursorRowId = null;
@@ -140,7 +138,6 @@ export class RendererLifecycle {
     this._sidebarClosed = true;
     this._treeOp = { kind: 'idle' };
     this._restoringFromSave = true;
-    this._clickQueue = [];
     this.cursorBox = null;
     this.cursorRowId = null;
     this._rowIndex = [];
