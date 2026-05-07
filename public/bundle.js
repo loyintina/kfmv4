@@ -11093,9 +11093,7 @@
       L._animBusy = false;
       L._animBusyAt = 0;
       const _savedCid = L.cursorRowId;
-      L._skipCursorRestore = true;
       hit.gesture.onTap();
-      L._skipCursorRestore = false;
       processClickQueue();
       if (_savedCid) {
         const _r = (_b = L.renderer) == null ? void 0 : _b.getRoot();
@@ -11121,7 +11119,7 @@
     return null;
   }
   function rebuildTree() {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s;
+    var _a, _b, _c, _d, _e;
     if (!L.renderer) return;
     if (L._animBusy) {
       if (L._animBusyAt && Date.now() - L._animBusyAt > 3e3) {
@@ -11134,20 +11132,14 @@
     }
     const prevScrollY = (_b = (_a = L.renderer.getRoot()) == null ? void 0 : _a.scrollY) != null ? _b : 0;
     const prevCursorRowId = L.cursorRowId;
-    const prevCursorX = (_d = (_c = L.cursorBox) == null ? void 0 : _c.x) != null ? _d : -1;
-    const prevCursorY = (_f = (_e = L.cursorBox) == null ? void 0 : _e.y) != null ? _f : -1;
-    const prevCursorW = (_h = (_g = L.cursorBox) == null ? void 0 : _g.width) != null ? _h : -1;
-    const prevCursorH = (_j = (_i = L.cursorBox) == null ? void 0 : _i.height) != null ? _j : -1;
-    const prevCursorTopLine = (_m = (_l = (_k = L.cursorBox) == null ? void 0 : _k.data) == null ? void 0 : _l.topLineW) != null ? _m : -1;
-    const prevCursorBotLine = (_p = (_o = (_n = L.cursorBox) == null ? void 0 : _n.data) == null ? void 0 : _o.botLineW) != null ? _p : -1;
     L.cursorBox = null;
     L.cursorRowId = null;
     const canvas = DOM.treeCanvas;
-    const cw = ((_q = canvas == null ? void 0 : canvas.clientWidth) != null ? _q : 0) || 295;
+    const cw = ((_c = canvas == null ? void 0 : canvas.clientWidth) != null ? _c : 0) || 295;
     const rightMargin = cw - 8;
     const rootBox = buildSidebarTree(cw, rightMargin);
     if (canvas) rootBox.width = cw;
-    const canvasH = ((_r = canvas == null ? void 0 : canvas.clientHeight) != null ? _r : 0) || 618;
+    const canvasH = ((_d = canvas == null ? void 0 : canvas.clientHeight) != null ? _d : 0) || 618;
     if (canvas) {
       rootBox.height = canvasH;
     }
@@ -11182,7 +11174,7 @@
     }
     L.animatingPath = null;
     treeAbort.cancel();
-    const diagRoot = (_s = L.renderer) == null ? void 0 : _s.getRoot();
+    const diagRoot = (_e = L.renderer) == null ? void 0 : _e.getRoot();
     const diagCS = diagRoot == null ? void 0 : diagRoot.getContentSize();
     console.log(
       "[rebuildTree] _isCursorMode=",

@@ -6,14 +6,14 @@
  * 点击事件 → 光标优先：第一次点击移动光标，第二次点击同一行执行 onTap。
  */
 
-import { buildSidebarTree, getShift } from './tree-model.js';
+import { buildSidebarTree } from './tree-model.js';
 import { KFMState } from './state.js';
-import { anim, AnimTimeline } from './animation-registry.js';
+import { anim } from './animation-registry.js';
 import { animateCharRain } from "./char-rain.js";
 import { closeSidebar } from './ui.js';
 import { Renderer } from '../engine/v2/renderer.js';
 import { L } from './renderer-lifecycle.js';
-import { getRootScrollY, setRootScrollY, _rebuildRowIndex, findBoxById } from './canvas-utils.js';
+import { _rebuildRowIndex, findBoxById } from './canvas-utils.js';
 import { Box } from '../engine/v2/box.js';
 import { getCursorRowIndex, getRowIndexLength, moveCursorTo, ensureCursorBox, _moveCursorBySteps, _isCursorMode, _getCenterRowIndex, _snapCursorToCenter, _scrollToCenterCursor } from './canvas-cursor.js';
 import { bindScrollEvents } from './canvas-scroll.js';
@@ -830,9 +830,7 @@ function doCollapse(hit: Box, hitData: any): void {
     }
     L._animBusy = false; L._animBusyAt = 0;
     const _savedCid = L.cursorRowId;
-    (L as any)._skipCursorRestore = true;
     hit.gesture!.onTap!();
-    (L as any)._skipCursorRestore = false;
     processClickQueue();
     if (_savedCid) {
       const _r = L.renderer?.getRoot();
@@ -885,13 +883,6 @@ function rebuildTree(): void {
   // 保存当前滚动位置和����标行
   const prevScrollY = L.renderer.getRoot()?.scrollY ?? 0;
   const prevCursorRowId = L.cursorRowId;
-   // 动画重建时，保存旧光标位置以保持视觉稳定
-  const prevCursorX = L.cursorBox?.x ?? -1;
-  const prevCursorY = L.cursorBox?.y ?? -1;
-  const prevCursorW = L.cursorBox?.width ?? -1;
-  const prevCursorH = L.cursorBox?.height ?? -1;
-  const prevCursorTopLine = (L.cursorBox as any)?.data?.topLineW ?? -1;
-  const prevCursorBotLine = (L.cursorBox as any)?.data?.botLineW ?? -1;
 
   // 重置光标实例（旧 root 销毁后 L.cursorBox ��向的 Box 已无���）
   L.cursorBox = null;
