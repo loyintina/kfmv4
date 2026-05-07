@@ -6015,7 +6015,7 @@
       }
       return _Animation.prototype.invalidate.call(this, soft);
     };
-    _proto2.clear = function clear(includeLabels) {
+    _proto2.clear = function clear2(includeLabels) {
       if (includeLabels === void 0) {
         includeLabels = true;
       }
@@ -6927,7 +6927,7 @@
       });
       return a;
     };
-    _proto5.clear = function clear() {
+    _proto5.clear = function clear2() {
       this._r.length = this.data.length = 0;
     };
     _proto5.kill = function kill(revert, matchMedia2) {
@@ -10376,21 +10376,23 @@
   };
   var treeAbort = new AbortController();
 
+  // src/client/modules/click-queue.ts
+  var _queue = [];
+  function enqueue(e) {
+    _queue.push(e);
+  }
+  function dequeue() {
+    return _queue.shift();
+  }
+  function clear() {
+    _queue.length = 0;
+  }
+  function isEmpty() {
+    return _queue.length === 0;
+  }
+
   // src/client/modules/tree-render.ts
   var ts = anim.scope("tree-render");
-  var _clickQueue = [];
-  function enqueueClick(e) {
-    _clickQueue.push(e);
-  }
-  function dequeueClick() {
-    return _clickQueue.shift();
-  }
-  function clearClickQueue() {
-    _clickQueue.length = 0;
-  }
-  function hasClicks() {
-    return _clickQueue.length > 0;
-  }
   var _activeOverlays = [];
   var OVERLAY_Z = 200;
   function _addOverlay(overlay) {
@@ -10756,7 +10758,7 @@
       L._savedScrollY = rootScrollY;
       L._savedCursorRowId = L.cursorRowId;
     }
-    clearClickQueue();
+    clear();
     L.cursorBox = null;
     L.cursorRowId = null;
     L._rowIndex = [];
@@ -10832,18 +10834,18 @@
   function bindClickEvents(canvas, _dpr) {
     canvas.addEventListener("click", (e) => {
       if (!L.renderer) return;
-      enqueueClick({ offsetX: e.offsetX, offsetY: e.offsetY });
+      enqueue({ offsetX: e.offsetX, offsetY: e.offsetY });
       processClickQueue();
     });
   }
   function processClickQueue() {
     var _a, _b;
-    if (!hasClicks() || !L.renderer) return;
+    if (isEmpty() || !L.renderer) return;
     if (L._animBusy) {
       if (L._animBusyAt && Date.now() - L._animBusyAt > 3e3) {
         L._animBusy = false;
         L._animBusyAt = 0;
-        clearClickQueue();
+        clear();
         return;
       }
       ts.clear();
@@ -10853,7 +10855,7 @@
       L.animatingPath = null;
       rebuildTree();
     }
-    const { offsetX, offsetY } = dequeueClick();
+    const { offsetX, offsetY } = dequeue();
     const root = L.renderer.getRoot();
     if (!root) return;
     const scrollY = (_a = root.scrollY) != null ? _a : 0;
@@ -11125,7 +11127,7 @@
       if (L._animBusyAt && Date.now() - L._animBusyAt > 3e3) {
         L._animBusy = false;
         L._animBusyAt = 0;
-        clearClickQueue();
+        clear();
       } else {
         return;
       }

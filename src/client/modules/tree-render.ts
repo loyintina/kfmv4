@@ -19,16 +19,8 @@ import { getCursorRowIndex, getRowIndexLength, moveCursorTo, ensureCursorBox, _m
 import { bindScrollEvents } from './canvas-scroll.js';
 import { DOM } from "./dom-refs.js";
 import { treeAbort } from './abort.js';
+import * as clickQueue from "./click-queue.js";
 const ts = anim.scope('tree-render');
-
-// ========== 点击事件队列 ==========
-// 只有 processClickQueue 可消费；外部只能 enqueueClick / clearClickQueue
-interface ClickEvent { offsetX: number; offsetY: number; }
-const _clickQueue: ClickEvent[] = [];
-function enqueueClick(e: ClickEvent): void { _clickQueue.push(e); }
-function dequeueClick(): ClickEvent | undefined { return _clickQueue.shift(); }
-function clearClickQueue(): void { _clickQueue.length = 0; }
-function hasClicks(): boolean { return _clickQueue.length > 0; }
 
 // ========== Overlay 管理 ==========
 const _activeOverlays: Box[] = [];
@@ -471,7 +463,7 @@ export function onSidebarClose(): void {
     L._savedScrollY = rootScrollY;
     L._savedCursorRowId = L.cursorRowId;
   }
-  clearClickQueue();
+  clickQueue.clear();
   L.cursorBox = null;
   L.cursorRowId = null;
   L._rowIndex = [];
@@ -562,7 +554,7 @@ function bindClickEvents(canvas: HTMLElement, _dpr: number): void {
   canvas.addEventListener('click', (e) => {
     if (!L.renderer) return;
 
-    enqueueClick({ offsetX: e.offsetX, offsetY: e.offsetY });
+    clickQueue.enqueue({ offsetX: e.offsetX, offsetY: e.offsetY });
     processClickQueue();
   });
 }
@@ -573,7 +565,7 @@ function bindClickEvents(canvas: HTMLElement, _dpr: number): void {
  * 动画�������成后自动处理队列中下一个点击。
  */
 function processClickQueue(): void {
-  if (!hasClicks() || !L.renderer) return;
+  if (clickQueue.isEmpty() || !L.renderer) return;
 
   // 动画进行中收到点击 → ����当前动画，立即响应
   if (L._animBusy) {
@@ -581,7 +573,7 @@ function processClickQueue(): void {
       // 超��������底：强制释放
       L._animBusy = false;
       L._animBusyAt = 0;
-      clearClickQueue();
+      clickQueue.clear();
       return;
     }
     // 中断 GSAP 动画，重建干净 tree，立即处理队列中的点击
@@ -593,7 +585,7 @@ function processClickQueue(): void {
     rebuildTree();
   }
 
-  const { offsetX, offsetY } = dequeueClick()!;
+  const { offsetX, offsetY } = clickQueue.dequeue()!;
   const root = L.renderer.getRoot();
   if (!root) return;
   const scrollY = root.scrollY ?? 0;
@@ -873,7 +865,7 @@ export function forceRebuildTree(): void {
   _removeAllOverlays();
   L._animBusy = false;
   L._animBusyAt = 0;
-  clearClickQueue();
+  clickQueue.clear();
   rebuildTree();
 }
 
@@ -884,7 +876,7 @@ function rebuildTree(): void {
     if (L._animBusyAt && Date.now() - L._animBusyAt > 3000) {
       L._animBusy = false;
       L._animBusyAt = 0;
-      clearClickQueue();  // ����队列防死循环
+      clickQueue.clear();  // ����队列防死循环
     } else {
       return;
     }
