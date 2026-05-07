@@ -10900,6 +10900,7 @@
           ts.clear();
           killActiveCharRain();
           ts.time(0);
+          _removeAllOverlays();
           L.endOp();
           rebuildTree();
         } else {

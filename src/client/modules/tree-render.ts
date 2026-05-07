@@ -610,7 +610,10 @@ function processClickQueue(): void {
       const sy = r.scrollY ?? 0;
       const tgt = _findClickPath(r, next.offsetX, next.offsetY + sy);
       if (tgt && tgt === L.animatingPath) {
+        // P2 逆向动画：同路径点击 → 中断当前动画，清理 overlay，
+        // 主树已在终端态，直接走反向（下方 dequeue + doExpand/doCollapse）
         ts.clear(); killActiveCharRain(); ts.time(0);
+        _removeAllOverlays();
         L.endOp();
         rebuildTree();
       } else {
