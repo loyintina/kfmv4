@@ -8,7 +8,7 @@
     "check": "tsc --noEmit",
     "build": "node check-anim.mjs && tsc --noEmit && node build.mjs",
     "start": "node dist/server/index.js",
-    "test": "npx tsx --import ./tests/preload.mjs ./tests/regression.test.ts"
+    "test": "npx tsx --import ./tests/register-hook.mjs --import ./tests/preload.mjs ./tests/regression.test.ts"
   },
   "dependencies": {
     "@chenglou/pretext": "^0.0.6",
