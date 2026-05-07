@@ -48,6 +48,23 @@ export class RendererLifecycle {
   // idle = 无动画进行；animating = 正在展开或折叠指定路径
   _treeOp: { kind: 'idle' } | { kind: 'animating'; path: string; direction: 'expand' | 'collapse'; startedAt: number } = { kind: 'idle' };
 
+  // ---- 状态机：显式状态转换 ----
+  beginOp(path: string, direction: 'expand' | 'collapse'): void {
+    this._treeOp = { kind: 'animating', path, direction, startedAt: Date.now() };
+  }
+
+  endOp(): void {
+    this._treeOp = { kind: 'idle' };
+  }
+
+  get isAnimating(): boolean {
+    return this._treeOp.kind !== 'idle';
+  }
+
+  get animatingDir(): 'expand' | 'collapse' | null {
+    return this._treeOp.kind === 'animating' ? this._treeOp.direction : null;
+  }
+
   // ---- 向后兼容：旧代码仍可读取 animatingPath / _animBusy / _animBusyAt ----
   get animatingPath(): string | null {
     return this._treeOp.kind === 'animating' ? this._treeOp.path : null;

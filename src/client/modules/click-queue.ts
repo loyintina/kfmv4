@@ -32,3 +32,7 @@ export function clear(): void {
 export function isEmpty(): boolean {
   return _queue.length === 0;
 }
+
+export function peek(): ClickEvent | undefined {
+  return _queue[0];
+}

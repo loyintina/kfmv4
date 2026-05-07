@@ -9726,6 +9726,19 @@
       // ---- DOM 监听器追踪 ----
       __publicField(this, "_listenerRefs", []);
     }
+    // ---- 状态机：显式状态转换 ----
+    beginOp(path, direction) {
+      this._treeOp = { kind: "animating", path, direction, startedAt: Date.now() };
+    }
+    endOp() {
+      this._treeOp = { kind: "idle" };
+    }
+    get isAnimating() {
+      return this._treeOp.kind !== "idle";
+    }
+    get animatingDir() {
+      return this._treeOp.kind === "animating" ? this._treeOp.direction : null;
+    }
     // ---- 向后兼容：旧代码仍可读取 animatingPath / _animBusy / _animBusyAt ----
     get animatingPath() {
       return this._treeOp.kind === "animating" ? this._treeOp.path : null;
@@ -10006,7 +10019,7 @@
     return closestIdx;
   }
   function _snapCursorToCenter() {
-    if (L._animBusy) return;
+    if (L.isAnimating) return;
     const idx = _getCenterRowIndex();
     if (idx >= 0 && L._rowIndex[idx] && L._rowIndex[idx].id !== L.cursorRowId) {
       console.log("[snapCursorToCenter] snapping from", L.cursorRowId, "to", L._rowIndex[idx].id, "centerIdx=", idx);
@@ -10379,6 +10392,9 @@
   function isEmpty() {
     return _queue.length === 0;
   }
+  function peek() {
+    return _queue[0];
+  }
 
   // src/client/modules/tree-render.ts
   var ts = anim.scope("tree-render");
@@ -10545,8 +10561,7 @@
   function _ensureSubscribed() {
     if (L._stateSub) KFMState.unsubscribe(L._stateSub);
     L._stateSub = () => {
-      L._animBusy = false;
-      L._animBusyAt = 0;
+      L.endOp();
       rebuildTree();
     };
     KFMState.subscribe(L._stateSub);
@@ -10595,8 +10610,7 @@
     }
     const pack = _setupExpandOverlays(container, fullHeight);
     animateCharRain(pack.containerOverlay, root, L.renderer);
-    L._animBusy = true;
-    L._animBusyAt = Date.now();
+    L.beginOp(path, "expand");
     const animRoot = L.renderer.getRoot();
     ts.to(pack.containerOverlay, {
       height: fullHeight,
@@ -10645,9 +10659,7 @@
       if (container) {
         _unveilOverlaySubContainers(container, root, toggle2).finally(() => {
           var _a3;
-          L._animBusy = false;
-          L._animBusyAt = 0;
-          L.animatingPath = null;
+          L.endOp();
           const _root = (_a3 = L.renderer) == null ? void 0 : _a3.getRoot();
           if (_root) {
             _rebuildRowIndex(_root);
@@ -10655,9 +10667,7 @@
           processClickQueue();
         });
       } else {
-        L._animBusy = false;
-        L._animBusyAt = 0;
-        L.animatingPath = null;
+        L.endOp();
         const _root = (_c2 = L.renderer) == null ? void 0 : _c2.getRoot();
         if (_root) {
           _rebuildRowIndex(_root);
@@ -10667,7 +10677,7 @@
     });
   }
   function isAnimLocked() {
-    return L._animBusy;
+    return L.isAnimating;
   }
   function onSidebarOpen() {
     var _a;
@@ -10739,8 +10749,7 @@
     _removeAllOverlays();
     ts.clear();
     L._sidebarClosed = true;
-    L._animBusy = false;
-    L._animBusyAt = 0;
+    L.endOp();
     L._restoringFromSave = true;
     const rootScrollY = (_c = (_b = (_a = L.renderer) == null ? void 0 : _a.getRoot()) == null ? void 0 : _b.scrollY) != null ? _c : 0;
     if (L.renderer && L.renderer.getRoot()) {
@@ -10827,33 +10836,51 @@
       processClickQueue();
     });
   }
+  function _findClickPath(root, px, py) {
+    for (const child of root.children) {
+      if (!child.visible || child.disabled) continue;
+      const hit = findTapTarget(child, px, py);
+      if (hit) {
+        const d = hit.data || {};
+        return d.path || null;
+      }
+    }
+    return null;
+  }
   function processClickQueue() {
-    var _a, _b;
+    var _a, _b, _c;
     if (isEmpty() || !L.renderer) return;
-    if (L._animBusy) {
+    if (L.isAnimating) {
       if (L._animBusyAt && Date.now() - L._animBusyAt > 3e3) {
-        L._animBusy = false;
-        L._animBusyAt = 0;
+        L.endOp();
         clear();
         return;
       }
-      ts.clear();
-      ts.time(0);
-      L._animBusy = false;
-      L._animBusyAt = 0;
-      L.animatingPath = null;
-      rebuildTree();
+      const next = peek();
+      if (next) {
+        const r = L.renderer.getRoot();
+        const sy = (_a = r.scrollY) != null ? _a : 0;
+        const tgt = _findClickPath(r, next.offsetX, next.offsetY + sy);
+        if (tgt && tgt === L.animatingPath) {
+          ts.clear();
+          ts.time(0);
+          L.endOp();
+          rebuildTree();
+        } else {
+          return;
+        }
+      }
     }
     const { offsetX, offsetY } = dequeue();
     const root = L.renderer.getRoot();
     if (!root) return;
-    const scrollY = (_a = root.scrollY) != null ? _a : 0;
+    const scrollY = (_b = root.scrollY) != null ? _b : 0;
     const px = offsetX;
     const py = offsetY + scrollY;
     for (const child of root.children) {
       if (!child.visible || child.disabled) continue;
       const hit = findTapTarget(child, px, py);
-      if ((_b = hit == null ? void 0 : hit.gesture) == null ? void 0 : _b.onTap) {
+      if ((_c = hit == null ? void 0 : hit.gesture) == null ? void 0 : _c.onTap) {
         if (L.cursorRowId !== null && L.cursorRowId === hit.id) {
           const hitData = hit.data || {};
           const isDir = hitData.isDir;
@@ -10881,10 +10908,8 @@
   }
   function doExpand(hit, hitData) {
     var _a;
-    L.animatingPath = hitData.path;
+    L.beginOp(hitData.path, "expand");
     hit.gesture.onTap();
-    L._animBusy = true;
-    L._animBusyAt = Date.now();
     const root = L.renderer.getRoot();
     const containerId = `expanded-${hitData.path}`;
     const container = findBoxById(root, containerId);
@@ -10894,16 +10919,14 @@
       return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
     });
     if (!container) {
-      L._animBusy = false;
-      L._animBusyAt = 0;
+      L.endOp();
       processClickQueue();
       return;
     }
     const fullHeight = container._fullHeight || 0;
     if (!fullHeight) {
       const finish = () => {
-        L._animBusy = false;
-        L._animBusyAt = 0;
+        L.endOp();
         processClickQueue();
       };
       if (toggle2 && toggle2.transform) {
@@ -10986,9 +11009,7 @@
       if (container) {
         _unveilOverlaySubContainers(container, root, toggle2).finally(() => {
           var _a3;
-          L._animBusy = false;
-          L._animBusyAt = 0;
-          L.animatingPath = null;
+          L.endOp();
           const _root = (_a3 = L.renderer) == null ? void 0 : _a3.getRoot();
           if (_root) {
             _rebuildRowIndex(_root);
@@ -10996,9 +11017,7 @@
           processClickQueue();
         });
       } else {
-        L._animBusy = false;
-        L._animBusyAt = 0;
-        L.animatingPath = null;
+        L.endOp();
         const _root = (_c = L.renderer) == null ? void 0 : _c.getRoot();
         if (_root) {
           _rebuildRowIndex(_root);
@@ -11008,7 +11027,7 @@
     });
   }
   function doCollapse(hit, hitData) {
-    L.animatingPath = hitData.path;
+    L.beginOp(hitData.path, "collapse");
     const tog = hit.children.find((c) => {
       var _a;
       return (_a = c.id) == null ? void 0 : _a.startsWith("toggle-");
@@ -11016,8 +11035,6 @@
     const containerId = `expanded-${hitData.path}`;
     const root = L.renderer.getRoot();
     const container = findBoxById(root, containerId);
-    L._animBusy = true;
-    L._animBusyAt = Date.now();
     const animRoot = L.renderer.getRoot();
     ts.time(0);
     if (tog) {
@@ -11079,8 +11096,7 @@
         for (const c of pack.hiddenChildren) c.opacity = 1;
         for (const s of pack.hiddenSiblings) s.opacity = 1;
       }
-      L._animBusy = false;
-      L._animBusyAt = 0;
+      L.endOp();
       const _savedCid = L.cursorRowId;
       hit.gesture.onTap();
       processClickQueue();
@@ -11092,7 +11108,6 @@
         }
       }
     }, void 0, maxDur);
-    L.animatingPath = null;
   }
   function findTapTarget(box, px, py) {
     var _a;
@@ -11110,10 +11125,9 @@
   function rebuildTree() {
     var _a, _b, _c, _d;
     if (!L.renderer) return;
-    if (L._animBusy) {
+    if (L.isAnimating) {
       if (L._animBusyAt && Date.now() - L._animBusyAt > 3e3) {
-        L._animBusy = false;
-        L._animBusyAt = 0;
+        L.endOp();
         clear();
       } else {
         return;
@@ -11161,7 +11175,6 @@
     if (!L.renderer.isRunning) {
       L.renderer.start();
     }
-    L.animatingPath = null;
     treeAbort.cancel();
   }
   function snapToCenterRow(root, canvasH) {

@@ -233,8 +233,8 @@ function _ensureSubscribed(): void {
   if (L._stateSub) KFMState.unsubscribe(L._stateSub);
   L._stateSub = () => {
     // state 变化（toggleHidden/expanded）是用户主动行为，跳过 L._animBusy 锁
-    L._animBusy = false;
-    L._animBusyAt = 0;
+    L.endOp();
+    
     rebuildTree();
   };
   KFMState.subscribe(L._stateSub);
@@ -288,7 +288,7 @@ export function triggerExpandAnimation(path: string): void {
   const pack = _setupExpandOverlays(container, fullHeight);
   animateCharRain(pack.containerOverlay, root, L.renderer);
 
-  L._animBusy = true; L._animBusyAt = Date.now();
+  L.beginOp(path, 'expand');
   const animRoot = L.renderer!.getRoot()!;
 
   // 容器 overlay: height 0→fullHeight
@@ -342,15 +342,13 @@ export function triggerExpandAnimation(path: string): void {
     L.renderer?.setRoot(L.renderer!.getRoot()!);
     if (container) {
       _unveilOverlaySubContainers(container, root, toggle2).finally(() => {
-        L._animBusy = false; L._animBusyAt = 0;
-        L.animatingPath = null;
+        L.endOp();
         const _root = L.renderer?.getRoot();
         if (_root) { _rebuildRowIndex(_root); }
         processClickQueue();
       });
     } else {
-      L._animBusy = false; L._animBusyAt = 0;
-      L.animatingPath = null;
+      L.endOp();
       const _root = L.renderer?.getRoot();
       if (_root) { _rebuildRowIndex(_root); }
       processClickQueue();
@@ -358,7 +356,7 @@ export function triggerExpandAnimation(path: string): void {
   });
 }
 export function isAnimLocked(): boolean {
-  return L._animBusy;
+  return L.isAnimating;
 }
 
 // ============================================================
@@ -453,8 +451,8 @@ export function onSidebarClose(): void {
   _removeAllOverlays();
   ts.clear();
   L._sidebarClosed = true;  // 让wheel/touch的rAF循环自己退出
-  L._animBusy = false;
-  L._animBusyAt = 0;
+  L.endOp();
+  
   L._restoringFromSave = true;
   // 直接保存当前 scrollY（动画停止后的稳定值）
   const rootScrollY = L.renderer?.getRoot()?.scrollY ?? 0;
@@ -564,25 +562,42 @@ function bindClickEvents(canvas: HTMLElement, _dpr: number): void {
  * 每次处理一个点击，如果是展开/折叠则启动动画，
  * 动画�������成后自动处理队列中下一个点击。
  */
+
+/** 在树中查找点击目标路径（用于 P2 状态机同路径判断） */
+function _findClickPath(root: Box, px: number, py: number): string | null {
+  for (const child of root.children) {
+    if (!child.visible || child.disabled) continue;
+    const hit = findTapTarget(child, px, py);
+    if (hit) {
+      const d = (hit as any).data || {};
+      return d.path || null;
+    }
+  }
+  return null;
+}
 function processClickQueue(): void {
   if (clickQueue.isEmpty() || !L.renderer) return;
 
-  // 动画进行中收到点击 → ����当前动画，立即响应
-  if (L._animBusy) {
+  // === P2 状态机：动画进行中 ===
+  if (L.isAnimating) {
     if (L._animBusyAt && Date.now() - L._animBusyAt > 3000) {
-      // 超��������底：强制释放
-      L._animBusy = false;
-      L._animBusyAt = 0;
+      L.endOp();
       clickQueue.clear();
       return;
     }
-    // 中断 GSAP 动画，重建干净 tree，立即处理队列中的点击
-    ts.clear();
-    ts.time(0);  // 重置 playhead 到 0，否则后续补间在 playhead 的"过去"会被瞬间跳过
-    L._animBusy = false;
-    L._animBusyAt = 0;
-    L.animatingPath = null;
-    rebuildTree();
+    const next = clickQueue.peek();
+    if (next) {
+      const r = L.renderer!.getRoot()!;
+      const sy = r.scrollY ?? 0;
+      const tgt = _findClickPath(r, next.offsetX, next.offsetY + sy);
+      if (tgt && tgt === L.animatingPath) {
+        ts.clear(); ts.time(0);
+        L.endOp();
+        rebuildTree();
+      } else {
+        return;
+      }
+    }
   }
 
   const { offsetX, offsetY } = clickQueue.dequeue()!;
@@ -628,10 +643,10 @@ function processClickQueue(): void {
  *  rebuildTree 构建终端态树 → _ensureMetaFromExpandedState 补元数据
  *  → 手动 toggle.rotate=0 → _setupExpandOverlays（从元数据计算 FROM）→ GSAP */
 function doExpand(hit: Box, hitData: any): void {
-  L.animatingPath = hitData.path;
+  L.beginOp(hitData.path, 'expand');
   hit.gesture!.onTap!();  // KFMState toggle → _stateSub → rebuildTree（终端态，无 collapseSubs）
 
-  L._animBusy = true; L._animBusyAt = Date.now();
+  
   const root = L.renderer!.getRoot()!;
   const containerId = `expanded-${hitData.path}`;
   const container = findBoxById(root, containerId);
@@ -639,7 +654,7 @@ function doExpand(hit: Box, hitData: any): void {
   const toggle2 = titleRow?.children?.find(c => c.id?.startsWith('toggle-'));
 
   if (!container) {
-    L._animBusy = false; L._animBusyAt = 0;
+    L.endOp();
     processClickQueue();
     return;
   }
@@ -647,7 +662,7 @@ function doExpand(hit: Box, hitData: any): void {
   const fullHeight = (container as any)._fullHeight || 0;
   if (!fullHeight) {
     const finish = () => {
-      L._animBusy = false; L._animBusyAt = 0;
+      L.endOp();
       processClickQueue();
     };
     if (toggle2 && toggle2.transform) {
@@ -739,15 +754,13 @@ function doExpand(hit: Box, hitData: any): void {
     L.renderer?.setRoot(L.renderer!.getRoot()!);
     if (container) {
       _unveilOverlaySubContainers(container, root, toggle2).finally(() => {
-        L._animBusy = false; L._animBusyAt = 0;
-        L.animatingPath = null;
+        L.endOp();
         const _root = L.renderer?.getRoot();
         if (_root) { _rebuildRowIndex(_root); }
         processClickQueue();
       });
     } else {
-      L._animBusy = false; L._animBusyAt = 0;
-      L.animatingPath = null;
+      L.endOp();
       const _root = L.renderer?.getRoot();
       if (_root) { _rebuildRowIndex(_root); }
       processClickQueue();
@@ -757,13 +770,13 @@ function doExpand(hit: Box, hitData: any): void {
 
 /** 折叠动画（overlay 模式：GSAP 只碰 overlay Box，不碰主树） */
 function doCollapse(hit: Box, hitData: any): void {
-  L.animatingPath = hitData.path;
+  L.beginOp(hitData.path, 'collapse');
   const tog = hit.children.find(c => c.id?.startsWith('toggle-'));
   const containerId = `expanded-${hitData.path}`;
   const root = L.renderer!.getRoot()!;
   const container = findBoxById(root, containerId);
 
-  L._animBusy = true; L._animBusyAt = Date.now();
+  
   const animRoot = L.renderer!.getRoot()!;
   ts.time(0);
 
@@ -828,7 +841,7 @@ function doCollapse(hit: Box, hitData: any): void {
       for (const c of pack.hiddenChildren) c.opacity = 1;
       for (const s of pack.hiddenSiblings) s.opacity = 1;
     }
-    L._animBusy = false; L._animBusyAt = 0;
+    L.endOp();
     const _savedCid = L.cursorRowId;
     hit.gesture!.onTap!();
     processClickQueue();
@@ -838,7 +851,6 @@ function doCollapse(hit: Box, hitData: any): void {
     }
   }, undefined, maxDur);
 
-  L.animatingPath = null;
 }
 
 function findTapTarget(box: Box, px: number, py: number): Box | null {
@@ -861,19 +873,19 @@ function findTapTarget(box: Box, px: number, py: number): Box | null {
 /** 强制重建树（跳过 L._animBusy 锁，用于眼睛图标��用户主动行为） */
 export function forceRebuildTree(): void {
   _removeAllOverlays();
-  L._animBusy = false;
-  L._animBusyAt = 0;
+  L.endOp();
+  
   clickQueue.clear();
   rebuildTree();
 }
 
 function rebuildTree(): void {
   if (!L.renderer) return;
-  if (L._animBusy) {
+  if (L.isAnimating) {
     // 超���兜底：超过 3000ms 自动释��
     if (L._animBusyAt && Date.now() - L._animBusyAt > 3000) {
-      L._animBusy = false;
-      L._animBusyAt = 0;
+      L.endOp();
+      
       clickQueue.clear();  // ����队列防死循环
     } else {
       return;
@@ -947,7 +959,6 @@ function rebuildTree(): void {
   }
 
   // 清空 L.animatingPath，防止后续 rebuildTree 读到脏值
-  L.animatingPath = null;
   // 通知所有持有旧 token 的 async 动画中止
   treeAbort.cancel();
 

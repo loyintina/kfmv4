@@ -210,7 +210,7 @@ export function _getCenterRowIndex(): number {
 
 /** 滚���模式下，将光标吸附到视口中央最近的行 */
 export function _snapCursorToCenter(): void {
-  if (L._animBusy) return;
+  if (L.isAnimating) return;
   const idx = _getCenterRowIndex();
   if (idx >= 0 && L._rowIndex[idx] && L._rowIndex[idx]!.id !== L.cursorRowId) {
     console.log('[snapCursorToCenter] snapping from', L.cursorRowId, 'to', L._rowIndex[idx]!.id, 'centerIdx=', idx);
