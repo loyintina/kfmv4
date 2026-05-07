@@ -11,8 +11,19 @@ import { Box } from "../engine/v2/box.js";
 import { Renderer } from "../engine/v2/renderer.js";
 import { FONT, LINE_HEIGHT, MAX_LINES } from "./style-registry.js";
 import { prepareWithSegments, layoutWithLines } from "@chenglou/pretext";
-import { anim } from "./animation-registry.js";
+import { anim, type AnimTimeline } from "./animation-registry.js";
 import { DOM } from "./dom-refs.js";
+
+// 活跃的 char-rain 时间线引用，供外部 killActiveCharRain() 中断
+let _activeTl: ReturnType<typeof anim.timeline> | null = null;
+
+/** 中断当前正在运行的字符雨动画 */
+export function killActiveCharRain(): void {
+  if (_activeTl) {
+    _activeTl.kill();
+    _activeTl = null;
+  }
+}
 
 interface CharTarget {
   box: Box;
@@ -215,6 +226,7 @@ export async function animateCharRain(
   try {
     await new Promise<void>((resolve) => {
       const tl = anim.timeline({ onComplete: resolve });
+      _activeTl = tl;
 
       for (let gi = 0; gi < lineGroups.length; gi++) {
         const group = lineGroups[gi];
@@ -246,6 +258,7 @@ export async function animateCharRain(
       }
     });
   } finally {
+    _activeTl = null;
     // 根检查：如果树已被重建（renderer 的当前 root 不是我们记住的那个），跳过所有操作
     const currentRoot = renderer?.getRoot();
     if (currentRoot !== root) return;

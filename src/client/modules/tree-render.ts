@@ -9,7 +9,7 @@
 import { buildSidebarTree } from './tree-model.js';
 import { KFMState } from './state.js';
 import { anim } from './animation-registry.js';
-import { animateCharRain } from "./char-rain.js";
+import { animateCharRain, killActiveCharRain } from "./char-rain.js";
 import { closeSidebar } from './ui.js';
 import { Renderer } from '../engine/v2/renderer.js';
 import { L } from './renderer-lifecycle.js';
@@ -349,7 +349,7 @@ export function triggerExpandAnimation(path: string): void {
   ts.call(() => {
     if (L.renderer?.getRoot() !== animRoot) return;
     _removeAllOverlays();
-    ts.clear();
+    ts.clear(); killActiveCharRain();
     assert(_activeOverlays.length === 0, 'overlays leaked after animation');
     for (const c of pack.hiddenChildren) c.opacity = 1;
     for (const s of pack.hiddenSiblings) s.opacity = 1;
@@ -390,7 +390,7 @@ export function isAnimLocked(): boolean {
 
 export function onSidebarOpen(): void {
   // ===== 销毁旧渲染器 + 通过生命周期重置所有状态 =====
-  ts.clear();
+  ts.clear(); killActiveCharRain();
   ts.time(0);  // 重置 playhead，确保后续补间从 0 开始
   L.renderer?.stop();
   L.renderer = null;
@@ -468,7 +468,7 @@ export function onSidebarOpen(): void {
 export function onSidebarClose(): void {
   // 先停掉所有动画和独立rAF循环
   _removeAllOverlays();
-  ts.clear();
+  ts.clear(); killActiveCharRain();
   L._sidebarClosed = true;  // 让wheel/touch的rAF循环自己退出
   L.endOp();
   
@@ -610,7 +610,7 @@ function processClickQueue(): void {
       const sy = r.scrollY ?? 0;
       const tgt = _findClickPath(r, next.offsetX, next.offsetY + sy);
       if (tgt && tgt === L.animatingPath) {
-        ts.clear(); ts.time(0);
+        ts.clear(); killActiveCharRain(); ts.time(0);
         L.endOp();
         rebuildTree();
       } else {
@@ -766,7 +766,7 @@ function doExpand(hit: Box, hitData: any): void {
     if (L.renderer?.getRoot() !== animRoot) return;
     _removeAllOverlays();
     assert(_activeOverlays.length === 0, 'overlays leaked after doExpand');
-    ts.clear();
+    ts.clear(); killActiveCharRain();
     for (const c of pack.hiddenChildren) c.opacity = 1;
     for (const s of pack.hiddenSiblings) s.opacity = 1;
     if (container.kfmStyle && (container as Box & OverlayMeta)._savedCr !== undefined) {
@@ -849,7 +849,7 @@ function doCollapse(hit: Box, hitData: any): void {
     if (L.renderer?.getRoot() !== animRoot) return;
     _removeAllOverlays();
     assert(_activeOverlays.length === 0, 'overlays leaked after doCollapse');
-    ts.clear();
+    ts.clear(); killActiveCharRain();
     if (pack) {
       for (const c of pack.hiddenChildren) c.opacity = 1;
       for (const s of pack.hiddenSiblings) s.opacity = 1;

@@ -8539,6 +8539,13 @@
   var anim = new AnimationRegistryClass();
 
   // src/client/modules/char-rain.ts
+  var _activeTl = null;
+  function killActiveCharRain() {
+    if (_activeTl) {
+      _activeTl.kill();
+      _activeTl = null;
+    }
+  }
   async function animateCharRain(container, root, renderer, rowTargetYs) {
     var _a, _b, _c, _d;
     const rows = container.children.filter(
@@ -8699,6 +8706,7 @@
     try {
       await new Promise((resolve) => {
         const tl = anim.timeline({ onComplete: resolve });
+        _activeTl = tl;
         for (let gi = 0; gi < lineGroups.length; gi++) {
           const group = lineGroups[gi];
           if (!group || group.length === 0) continue;
@@ -8727,6 +8735,7 @@
         }
       });
     } finally {
+      _activeTl = null;
       const currentRoot = renderer == null ? void 0 : renderer.getRoot();
       if (currentRoot !== root) return;
       for (const t of allTargets) {
@@ -10672,6 +10681,7 @@
       if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
       _removeAllOverlays();
       ts.clear();
+      killActiveCharRain();
       assert(_activeOverlays.length === 0, "overlays leaked after animation");
       for (const c of pack.hiddenChildren) c.opacity = 1;
       for (const s of pack.hiddenSiblings) s.opacity = 1;
@@ -10705,6 +10715,7 @@
   function onSidebarOpen() {
     var _a;
     ts.clear();
+    killActiveCharRain();
     ts.time(0);
     (_a = L.renderer) == null ? void 0 : _a.stop();
     L.renderer = null;
@@ -10771,6 +10782,7 @@
     var _a, _b, _c, _d, _e;
     _removeAllOverlays();
     ts.clear();
+    killActiveCharRain();
     L._sidebarClosed = true;
     L.endOp();
     L._restoringFromSave = true;
@@ -10886,6 +10898,7 @@
         const tgt = _findClickPath(r, next.offsetX, next.offsetY + sy);
         if (tgt && tgt === L.animatingPath) {
           ts.clear();
+          killActiveCharRain();
           ts.time(0);
           L.endOp();
           rebuildTree();
@@ -11027,6 +11040,7 @@
       _removeAllOverlays();
       assert(_activeOverlays.length === 0, "overlays leaked after doExpand");
       ts.clear();
+      killActiveCharRain();
       for (const c of pack.hiddenChildren) c.opacity = 1;
       for (const s of pack.hiddenSiblings) s.opacity = 1;
       if (container.kfmStyle && container._savedCr !== void 0) {
@@ -11110,6 +11124,7 @@
       _removeAllOverlays();
       assert(_activeOverlays.length === 0, "overlays leaked after doCollapse");
       ts.clear();
+      killActiveCharRain();
       if (pack) {
         for (const c of pack.hiddenChildren) c.opacity = 1;
         for (const s of pack.hiddenSiblings) s.opacity = 1;
