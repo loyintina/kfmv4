@@ -152,16 +152,17 @@ function _setupExpandOverlays(container: Box, fullHeight: number): OverlayPack {
   // 修正 parent 引用（splice 不自动设置）
   containerOv.parent = parent;
 
-  // 2. 行 overlay（在折叠态 y，目标为 _origYs 展开态 y）
+  // 2. 行 overlay（FROM=折叠态 y，TO=终端态 y，从元数据计算）
   const rowOverlays: Box[] = [];
   const hiddenChildren: Box[] = [];
   const origYs = (container as any)._origYs as number[] | undefined;
   for (let j = 0; j < container.children.length; j++) {
     const child = container.children[j];
     if (!child.visible) continue;
-    const targetY = origYs ? origYs[j] : child.y;
-    const rowOv = _createVisualClone(child, { id: child.id || (`row-${j}`), y: child.y, opacity: 1, zIndex: OVERLAY_Z + 1 });
-    (rowOv as any)._targetY = targetY;  // GSAP 目标
+    const expandedY = origYs ? origYs[j] : child.y;   // terminal (expanded) Y
+    const collapsedY = expandedY - fullHeight;         // computed collapsed Y
+    const rowOv = _createVisualClone(child, { id: child.id || (`row-${j}`), y: collapsedY, opacity: 1, zIndex: OVERLAY_Z + 1 });
+    (rowOv as any)._targetY = expandedY;  // GSAP target
     _addOverlay(rowOv);
     containerOv.addChild(rowOv);
     rowOverlays.push(rowOv);
@@ -170,13 +171,13 @@ function _setupExpandOverlays(container: Box, fullHeight: number): OverlayPack {
     hiddenChildren.push(child);
   }
 
-  // 3. 兄弟 overlay（在折叠态 y，目标 y = 当前 y + fullHeight）
+  // 3. 兄弟 overlay（FROM=折叠态 y，TO=终端态 y，从元数据计算）
   const siblingOverlays: Box[] = [];
   const hiddenSiblings: Box[] = [];
   const siblings = _collectSiblingsAfter(container);
   for (const sib of siblings) {
-    const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || 'sib'}`, y: sib.y, opacity: 1, zIndex: OVERLAY_Z });
-    (sibOv as any)._targetY = sib.y + fullHeight;
+    const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || 'sib'}`, y: sib.y - fullHeight, opacity: 1, zIndex: OVERLAY_Z });
+    (sibOv as any)._targetY = sib.y;  // terminal position
     _addOverlay(sibOv);
     const si = parent.children.indexOf(sib);
     parent.children.splice(si, 0, sibOv);
@@ -240,8 +241,6 @@ function _ensureSubscribed(): void {
   if (L._stateSub) KFMState.unsubscribe(L._stateSub);
   L._stateSub = () => {
     // state 变化（toggleHidden/expanded）是用户主动行为，跳过 L._animBusy 锁
-    // 注意：不能在此清除 L.animatingPath — doExpand 依赖 _stateSub 同步触发 rebuildTree 时
-    // L.animatingPath 仍然有效来施加展开预设。折叠场景下 doCollapse 已自行清除。
     L._animBusy = false;
     L._animBusyAt = 0;
     rebuildTree();
@@ -287,7 +286,11 @@ export function triggerExpandAnimation(path: string): void {
     return;
   }
 
-  L.animatingPath = null;
+  // 手动将 toggle 归零（buildExpanded 设为 90°，但展开动画 FROM 是 0°）
+  if (toggle2) {
+    anim.killTweensOf(toggle2.transform);
+    toggle2.transform.rotate = 0;
+  }
 
   // === overlay 模式 ===
   const pack = _setupExpandOverlays(container, fullHeight);
@@ -333,7 +336,7 @@ export function triggerExpandAnimation(path: string): void {
     });
   }
 
-  // 动画完成: 清理 overlay → 展开终态
+  // 动画完成: 清理 overlay → 主树已是终端态
   ts.call(() => {
     if (L.renderer?.getRoot() !== animRoot) return;
     _removeAllOverlays();
@@ -342,72 +345,25 @@ export function triggerExpandAnimation(path: string): void {
     if (container.kfmStyle && (container as any)._savedCr !== undefined) {
       container.kfmStyle.cornerRadius = (container as any)._savedCr;
     }
-    L.animatingPath = null;
-    (L as any)._skipCursorRestore = true;
-    rebuildTree();
-    (L as any)._skipCursorRestore = false;
-    const root2 = L.renderer!.getRoot()!;
-    _ensureExpandMeta(root2);
-    if (L.cursorRowId) {
-      const _tc2 = findBoxById(L.renderer!.getRoot()!, L.cursorRowId);
-      if (_tc2) moveCursorTo(_tc2, false);
-    }
-    const container2 = findBoxById(root2, `expanded-${path}`);
-    const titleRow2 = findBoxById(root2, `title-${path}`);
-    const toggle3 = titleRow2?.children?.find(c => c.id?.startsWith('toggle-'));
-    if (container2) fixExpandedToggles(container2);
+    // 主树已是终端态，不需要第二次 rebuildTree
+    // _ensureMetaFromExpandedState 已在 rebuildTree 中调用
     L.renderer?.setRoot(L.renderer!.getRoot()!);
-    if (container2) {
-      _unveilOverlaySubContainers(container2, root2, toggle3).finally(() => {
+    if (container) {
+      _unveilOverlaySubContainers(container, root, toggle2).finally(() => {
         L._animBusy = false; L._animBusyAt = 0;
+        L.animatingPath = null;
         const _root = L.renderer?.getRoot();
         if (_root) { _rebuildRowIndex(_root); }
         processClickQueue();
       });
     } else {
       L._animBusy = false; L._animBusyAt = 0;
+      L.animatingPath = null;
       const _root = L.renderer?.getRoot();
       if (_root) { _rebuildRowIndex(_root); }
       processClickQueue();
     }
   });
-}
-
-/** 修复容器内所有����展开子容器的 toggle 旋转状态 */
-function fixExpandedToggles(container: Box): void {
-  const state = KFMState;
-  if (!state) return;
-  function walk(box: Box): void {
-    if (!box.children) return;
-    for (const child of box.children) {
-      if (child.id?.startsWith('expanded-')) {
-        const path = child.id.slice('expanded-'.length);
-        if (state.expandedPaths[path]) {
-          // 这个子容器是展开状态，找到它的 toggle 并设为 90°
-          const titleRow = findBoxByIdLocal(child.parent, `title-${path}`);
-          const tog = titleRow?.children?.find(c => c.id?.startsWith('toggle-'));
-          if (tog) {
-            anim.killTweensOf(tog.transform);
-            tog.transform.rotate = Math.PI / 2;
-          }
-        }
-      }
-      walk(child);
-    }
-  }
-  walk(container);
-}
-
-function findBoxByIdLocal(root: Box | null, id: string): Box | null {
-  if (!root) return null;
-  if (root.id === id) return root;
-  if (root.children) {
-    for (const c of root.children) {
-      const found = findBoxByIdLocal(c, id);
-      if (found) return found;
-    }
-  }
-  return null;
 }
 export function isAnimLocked(): boolean {
   return L._animBusy;
@@ -676,17 +632,12 @@ function processClickQueue(): void {
   processClickQueue();
 }
 
-/** 展开动画（overlay 模式：GSAP 只碰 overlay Box，不碰主树） */
+/** 展开动画（overlay 模式：GSAP 只碰 overlay Box，不碰主树）
+ *  rebuildTree 构建终端态树 → _ensureMetaFromExpandedState 补元数据
+ *  → 手动 toggle.rotate=0 → _setupExpandOverlays（从元数据计算 FROM）→ GSAP */
 function doExpand(hit: Box, hitData: any): void {
   L.animatingPath = hitData.path;
-  const _savedRowId0 = L.cursorRowId;
-  (L as any)._skipCursorRestore = true;
-  hit.gesture!.onTap!();  // KFMState toggle → _stateSub → rebuildTree（折叠态: collapseSubs 预置 height=0）
-  (L as any)._skipCursorRestore = false;
-  if (_savedRowId0) {
-    const _tc0 = findBoxById(L.renderer!.getRoot()!, _savedRowId0);
-    if (_tc0) moveCursorTo(_tc0, false);
-  }
+  hit.gesture!.onTap!();  // KFMState toggle → _stateSub → rebuildTree（终端态，无 collapseSubs）
 
   L._animBusy = true; L._animBusyAt = Date.now();
   const root = L.renderer!.getRoot()!;
@@ -733,7 +684,11 @@ function doExpand(hit: Box, hitData: any): void {
     return;
   }
 
-  L.animatingPath = null;
+  // 手动将 toggle 归零（buildExpanded 设为 90°，但展开动画 FROM 是 0°）
+  if (toggle2) {
+    anim.killTweensOf(toggle2.transform);
+    toggle2.transform.rotate = 0;
+  }
 
   // === overlay 模式 ===
   const pack = _setupExpandOverlays(container, fullHeight);
@@ -778,7 +733,7 @@ function doExpand(hit: Box, hitData: any): void {
     });
   }
 
-  // 动画完成: 清理 overlay → 展开终态
+  // 动画完成: 清理 overlay → 主树已是终端态，直接 _unveilOverlaySubContainers
   ts.call(() => {
     if (L.renderer?.getRoot() !== animRoot) return;
     _removeAllOverlays();
@@ -787,30 +742,20 @@ function doExpand(hit: Box, hitData: any): void {
     if (container.kfmStyle && (container as any)._savedCr !== undefined) {
       container.kfmStyle.cornerRadius = (container as any)._savedCr;
     }
-    L.animatingPath = null;
-    (L as any)._skipCursorRestore = true;
-    rebuildTree();
-    (L as any)._skipCursorRestore = false;
-    if (L.cursorRowId) {
-      const _tc = findBoxById(L.renderer!.getRoot()!, L.cursorRowId);
-      if (_tc) moveCursorTo(_tc, false);
-    }
-    const root2 = L.renderer!.getRoot()!;
-    _ensureExpandMeta(root2);
-    const container2 = findBoxById(root2, containerId);
-    const titleRow2 = findBoxById(root2, `title-${hitData.path}`);
-    const toggle3 = titleRow2?.children?.find(c => c.id?.startsWith('toggle-'));
-    if (container2) fixExpandedToggles(container2);
+    // 主树已是终端态，不需要第二次 rebuildTree
+    // _ensureMetaFromExpandedState 已在 rebuildTree 中调用
     L.renderer?.setRoot(L.renderer!.getRoot()!);
-    if (container2) {
-      _unveilOverlaySubContainers(container2, root2, toggle3).finally(() => {
+    if (container) {
+      _unveilOverlaySubContainers(container, root, toggle2).finally(() => {
         L._animBusy = false; L._animBusyAt = 0;
+        L.animatingPath = null;
         const _root = L.renderer?.getRoot();
         if (_root) { _rebuildRowIndex(_root); }
         processClickQueue();
       });
     } else {
       L._animBusy = false; L._animBusyAt = 0;
+      L.animatingPath = null;
       const _root = L.renderer?.getRoot();
       if (_root) { _rebuildRowIndex(_root); }
       processClickQueue();
@@ -971,68 +916,10 @@ function rebuildTree(): void {
     rootBox.height = canvasH;
   }
 
-  // ��� setRoot 之前，把 L.animatingPath 的 toggle 强行归零并提交��
-  // 盖掉 buildExpanded ������� 90°，避免第一帧闪烁
-  if (L.animatingPath) {
-    const titleRow = findBoxById(rootBox, `title-${L.animatingPath}`);
-    const toggle = titleRow?.children?.find(c => c.id?.startsWith('toggle-'));
-    if (toggle) {
-      toggle.transform.rotate = 0;
-      // 不提前调用 setRoot，等容器后处理完成后再统一提交
-    }
-  }
-
-  // 在 setRoot 之前预设动画初始状态，避免满高一帧闪烁
-  // 递归折���所有已展开子容器，���保展开动画期间内容不可见
-  function collapseSubs(box: any): void {
-    if (!box || !box.children) return;
-    for (const child of box.children) {
-      if (child.id?.startsWith('expanded-') && child.height > 0) {
-        // 跳过当前正在做展开动画的容器——动画块自己会处理 toggle 旋转
-        if (L.animatingPath && child.id === `expanded-${L.animatingPath}`) continue;
-        const subFullH = child.height;
-        (child as any)._fullHeight = subFullH;
-        (child as any)._origYs = child.children.map((c: any) => c.y);
-        child.height = 0;
-        // Save and zero cornerRadius to prevent overlapping rounded corners
-        if (child.kfmStyle) {
-          (child as any)._savedCr = child.kfmStyle.cornerRadius;
-          child.kfmStyle.cornerRadius = 0;
-        }
-        for (const c of child.children) { c.y = c.y - subFullH; }
-        // save toggle reference for cascade expand later
-        const subPath = child.id.slice("expanded-".length);
-        const subTitle = findBoxById(rootBox, "title-" + subPath);
-        const subTog = subTitle?.children?.find((c: any) => c.id?.startsWith("toggle-"));
-        if (subTog) {
-          (child as any)._toggleBox = subTog;
-          (child as any)._toggleRotate = subTog.transform.rotate; // 保存原始旋转状态
-        }
-        collapseSubs(child);
-      }
-    }
-  }
-  if (L.animatingPath && KFMState.expandedPaths[L.animatingPath]) {
-    // 仅当状态中该文件夹确实展开时才施加展开预设（height=0 → 动画展开）。
-    // 如果状态中已折叠，说明这是折叠动画执行中被 _stateSub 误触发的 rebuildTree，
-    // 此时不应施加展开预设，直接跳过。
-    const preContainer = findBoxById(rootBox, `expanded-${L.animatingPath}`);
-    if (preContainer) {
-      const preFullH = preContainer.height;
-      (preContainer as any)._fullHeight = preFullH;
-      (preContainer as any)._origYs = preContainer.children.map((c: any) => c.y);
-      preContainer.height = 0;
-      if (preContainer.kfmStyle) {
-        (preContainer as any)._savedCr = preContainer.kfmStyle.cornerRadius;
-        preContainer.kfmStyle.cornerRadius = 0;
-      }
-      for (const child of preContainer.children) { child.y = child.y - preFullH; child.opacity = 0; }
-      // 递归折叠内部已展开的子容器
-      collapseSubs(preContainer);
-    }
-  }
-
   L.renderer.setRoot(rootBox);
+
+  // 为终端态树的所有 expanded-* 容器补元数据
+  _ensureMetaFromExpandedState(rootBox);
 
   // 恢复滚动位置（从关闭���态恢复时，L._savedScrollY 在下游统一处理，此处跳过）
   const newRoot = L.renderer.getRoot();
@@ -1052,23 +939,12 @@ function rebuildTree(): void {
   if (newRoot) {
     ensureCursorBox(newRoot, canvasH);
 
-    if (!(L as any)._skipCursorRestore) {
+    {
       if (prevCursorRowId) {
-        // 尝试恢复光���到之前的行
+        // 尝试恢复光标到之前的行
         const target = findBoxById(newRoot, prevCursorRowId);
         if (target) {
-          if (L.animatingPath && prevCursorY >= 0) {
-            // ä¿æåæ çè§è§ä½ç½®ï¼ä¸è·éè¢« collapseSubs ä¸ç§»çè¡
-            L.cursorBox!.x = prevCursorX;
-            L.cursorBox!.y = prevCursorY;
-            L.cursorBox!.width = prevCursorW;
-            if (prevCursorH >= 0) { L.cursorBox!.height = prevCursorH; }
-            if (prevCursorTopLine >= 0) { (L.cursorBox as any).data.topLineW = prevCursorTopLine; }
-            if (prevCursorBotLine >= 0) { (L.cursorBox as any).data.botLineW = prevCursorBotLine; }
-            L.cursorRowId = prevCursorRowId;
-          } else {
-            moveCursorTo(target);
-          }
+          moveCursorTo(target);
         } else {
           snapToCenterRow(newRoot, canvasH);
         }
@@ -1140,15 +1016,23 @@ function snapToCenterRow(root: Box, canvasH: number): void {
  * 完成后移除 overlay 并恢复真实内容。递归处理嵌套。
  * 使用 treeAbort 令牌在 rebuildTree 后安全中止。
  */
-/** 为 rebuildTree 终端态树补充展开元数据（_fullHeight, _origYs），
- * 使 _unveilOverlaySubContainers 能正常处理嵌套子容器展开动画。
- * rebuildTree #2 创建新树时不运行 collapseSubs，元数据全部丢失。 */
-function _ensureExpandMeta(root: Box): void {
+/** 为终端态树的所有 expanded-* 容器补元数据。
+ * 在 rebuildTree setRoot 之后调用，确保元数据始终可用。
+ * 捕获 _fullHeight, _origYs, _toggleBox, _toggleRotate。 */
+function _ensureMetaFromExpandedState(root: Box): void {
   function walk(box: Box): void {
     for (const c of box.children) {
       if (c.id?.startsWith('expanded-') && c.height > 0) {
-        (c as any)._fullHeight = c.height;
-        (c as any)._origYs = c.children.map((ch: Box) => ch.y);
+        if (!(c as any)._fullHeight) (c as any)._fullHeight = c.height;
+        if (!(c as any)._origYs) (c as any)._origYs = c.children.map((ch: Box) => ch.y);
+        // capture toggle reference for cascade expand
+        const subPath = c.id.slice("expanded-".length);
+        const subTitle = findBoxById(root, "title-" + subPath);
+        const subTog = subTitle?.children?.find((ch: Box) => ch.id?.startsWith("toggle-"));
+        if (subTog && !(c as any)._toggleBox) {
+          (c as any)._toggleBox = subTog;
+          (c as any)._toggleRotate = subTog.transform.rotate;
+        }
       }
       walk(c);
     }
@@ -1185,39 +1069,28 @@ async function _unveilOverlaySubContainers(container: Box, root: Box, selfToggle
       freshTog.transform.rotate = (child as any)._toggleRotate ?? Math.PI / 2;
     }
 
-    // === 压缩子容器（类似 collapseSubs），使 _setupExpandOverlays 能正确读取压缩态 ===
-    (child as any)._fullHeight = subFullH;
-    (child as any)._origYs = child.children.map((c: Box) => c.y);
+    // === overlay 模式：主树已是终端态，直接用元数据建 overlay ===
+    // 元数据已在 rebuildTree 中被 _ensureMetaFromExpandedState 补全
     if (child.kfmStyle) {
       (child as any)._savedCr = child.kfmStyle.cornerRadius;
       child.kfmStyle.cornerRadius = 0;
     }
-    child.height = 0;
-    for (const c of child.children) { c.y = c.y - subFullH; }
-    // 触发 flexbox 重新计算 sibling 位置
-    L.renderer?.setRoot(L.renderer!.getRoot()!);
 
     animateCharRain(child, root, L.renderer);
 
-    // 创建 overlay 并动画
+    // 创建 overlay 并动画（_setupExpandOverlays 从元数据计算 FROM 位置）
     const pack = _setupExpandOverlays(child, subFullH);
 
     await new Promise<void>(resolve => {
       const tl = anim.timeline({
         onComplete: () => {
           _removeAllOverlays();
-          // 恢复子容器到终端态
-          const savedYs = (child as any)._origYs as number[];
-          for (let j = 0; j < child.children.length; j++) {
-            child.children[j].y = savedYs[j];
-          }
-          child.height = subFullH;
+          // 主树已是终端态，只需恢复可见性
           for (const c of pack.hiddenChildren) c.opacity = 1;
           for (const s of pack.hiddenSiblings) s.opacity = 1;
           if (child.kfmStyle && (child as any)._savedCr !== undefined) {
             child.kfmStyle.cornerRadius = (child as any)._savedCr;
           }
-          // 让布局恢复
           L.renderer?.setRoot(L.renderer!.getRoot()!);
           resolve();
         },

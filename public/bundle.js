@@ -10488,9 +10488,10 @@
     for (let j = 0; j < container.children.length; j++) {
       const child = container.children[j];
       if (!child.visible) continue;
-      const targetY = origYs ? origYs[j] : child.y;
-      const rowOv = _createVisualClone(child, { id: child.id || `row-${j}`, y: child.y, opacity: 1, zIndex: OVERLAY_Z + 1 });
-      rowOv._targetY = targetY;
+      const expandedY = origYs ? origYs[j] : child.y;
+      const collapsedY = expandedY - fullHeight;
+      const rowOv = _createVisualClone(child, { id: child.id || `row-${j}`, y: collapsedY, opacity: 1, zIndex: OVERLAY_Z + 1 });
+      rowOv._targetY = expandedY;
       _addOverlay(rowOv);
       containerOv.addChild(rowOv);
       rowOverlays.push(rowOv);
@@ -10501,8 +10502,8 @@
     const hiddenSiblings = [];
     const siblings = _collectSiblingsAfter(container);
     for (const sib of siblings) {
-      const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || "sib"}`, y: sib.y, opacity: 1, zIndex: OVERLAY_Z });
-      sibOv._targetY = sib.y + fullHeight;
+      const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || "sib"}`, y: sib.y - fullHeight, opacity: 1, zIndex: OVERLAY_Z });
+      sibOv._targetY = sib.y;
       _addOverlay(sibOv);
       const si = parent.children.indexOf(sib);
       parent.children.splice(si, 0, sibOv);
@@ -10597,7 +10598,10 @@
       (_c = L.renderer) == null ? void 0 : _c.setRoot(L.renderer.getRoot());
       return;
     }
-    L.animatingPath = null;
+    if (toggle2) {
+      anim.killTweensOf(toggle2.transform);
+      toggle2.transform.rotate = 0;
+    }
     const pack = _setupExpandOverlays(container, fullHeight);
     animateCharRain(pack.containerOverlay, root, L.renderer);
     L._animBusy = true;
@@ -10638,7 +10642,7 @@
       });
     }
     ts.call(() => {
-      var _a2, _b2, _c2, _d;
+      var _a2, _b2, _c2;
       if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
       _removeAllOverlays();
       for (const c of pack.hiddenChildren) c.opacity = 1;
@@ -10646,29 +10650,13 @@
       if (container.kfmStyle && container._savedCr !== void 0) {
         container.kfmStyle.cornerRadius = container._savedCr;
       }
-      L.animatingPath = null;
-      L._skipCursorRestore = true;
-      rebuildTree();
-      L._skipCursorRestore = false;
-      const root2 = L.renderer.getRoot();
-      _ensureExpandMeta(root2);
-      if (L.cursorRowId) {
-        const _tc2 = findBoxById(L.renderer.getRoot(), L.cursorRowId);
-        if (_tc2) moveCursorTo(_tc2, false);
-      }
-      const container2 = findBoxById(root2, `expanded-${path}`);
-      const titleRow2 = findBoxById(root2, `title-${path}`);
-      const toggle3 = (_b2 = titleRow2 == null ? void 0 : titleRow2.children) == null ? void 0 : _b2.find((c) => {
-        var _a3;
-        return (_a3 = c.id) == null ? void 0 : _a3.startsWith("toggle-");
-      });
-      if (container2) fixExpandedToggles(container2);
-      (_c2 = L.renderer) == null ? void 0 : _c2.setRoot(L.renderer.getRoot());
-      if (container2) {
-        _unveilOverlaySubContainers(container2, root2, toggle3).finally(() => {
+      (_b2 = L.renderer) == null ? void 0 : _b2.setRoot(L.renderer.getRoot());
+      if (container) {
+        _unveilOverlaySubContainers(container, root, toggle2).finally(() => {
           var _a3;
           L._animBusy = false;
           L._animBusyAt = 0;
+          L.animatingPath = null;
           const _root = (_a3 = L.renderer) == null ? void 0 : _a3.getRoot();
           if (_root) {
             _rebuildRowIndex(_root);
@@ -10678,50 +10666,14 @@
       } else {
         L._animBusy = false;
         L._animBusyAt = 0;
-        const _root = (_d = L.renderer) == null ? void 0 : _d.getRoot();
+        L.animatingPath = null;
+        const _root = (_c2 = L.renderer) == null ? void 0 : _c2.getRoot();
         if (_root) {
           _rebuildRowIndex(_root);
         }
         processClickQueue();
       }
     });
-  }
-  function fixExpandedToggles(container) {
-    const state = KFMState;
-    if (!state) return;
-    function walk(box) {
-      var _a, _b;
-      if (!box.children) return;
-      for (const child of box.children) {
-        if ((_a = child.id) == null ? void 0 : _a.startsWith("expanded-")) {
-          const path = child.id.slice("expanded-".length);
-          if (state.expandedPaths[path]) {
-            const titleRow = findBoxByIdLocal(child.parent, `title-${path}`);
-            const tog = (_b = titleRow == null ? void 0 : titleRow.children) == null ? void 0 : _b.find((c) => {
-              var _a2;
-              return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
-            });
-            if (tog) {
-              anim.killTweensOf(tog.transform);
-              tog.transform.rotate = Math.PI / 2;
-            }
-          }
-        }
-        walk(child);
-      }
-    }
-    walk(container);
-  }
-  function findBoxByIdLocal(root, id) {
-    if (!root) return null;
-    if (root.id === id) return root;
-    if (root.children) {
-      for (const c of root.children) {
-        const found = findBoxByIdLocal(c, id);
-        if (found) return found;
-      }
-    }
-    return null;
   }
   function isAnimLocked() {
     return L._animBusy;
@@ -10939,14 +10891,7 @@
   function doExpand(hit, hitData) {
     var _a;
     L.animatingPath = hitData.path;
-    const _savedRowId0 = L.cursorRowId;
-    L._skipCursorRestore = true;
     hit.gesture.onTap();
-    L._skipCursorRestore = false;
-    if (_savedRowId0) {
-      const _tc0 = findBoxById(L.renderer.getRoot(), _savedRowId0);
-      if (_tc0) moveCursorTo(_tc0, false);
-    }
     L._animBusy = true;
     L._animBusyAt = Date.now();
     const root = L.renderer.getRoot();
@@ -10996,7 +10941,10 @@
       }
       return;
     }
-    L.animatingPath = null;
+    if (toggle2) {
+      anim.killTweensOf(toggle2.transform);
+      toggle2.transform.rotate = 0;
+    }
     const pack = _setupExpandOverlays(container, fullHeight);
     animateCharRain(pack.containerOverlay, root, L.renderer);
     const animRoot = L.renderer.getRoot();
@@ -11035,7 +10983,7 @@
       });
     }
     ts.call(() => {
-      var _a2, _b, _c, _d;
+      var _a2, _b, _c;
       if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
       _removeAllOverlays();
       for (const c of pack.hiddenChildren) c.opacity = 1;
@@ -11043,29 +10991,13 @@
       if (container.kfmStyle && container._savedCr !== void 0) {
         container.kfmStyle.cornerRadius = container._savedCr;
       }
-      L.animatingPath = null;
-      L._skipCursorRestore = true;
-      rebuildTree();
-      L._skipCursorRestore = false;
-      if (L.cursorRowId) {
-        const _tc = findBoxById(L.renderer.getRoot(), L.cursorRowId);
-        if (_tc) moveCursorTo(_tc, false);
-      }
-      const root2 = L.renderer.getRoot();
-      _ensureExpandMeta(root2);
-      const container2 = findBoxById(root2, containerId);
-      const titleRow2 = findBoxById(root2, `title-${hitData.path}`);
-      const toggle3 = (_b = titleRow2 == null ? void 0 : titleRow2.children) == null ? void 0 : _b.find((c) => {
-        var _a3;
-        return (_a3 = c.id) == null ? void 0 : _a3.startsWith("toggle-");
-      });
-      if (container2) fixExpandedToggles(container2);
-      (_c = L.renderer) == null ? void 0 : _c.setRoot(L.renderer.getRoot());
-      if (container2) {
-        _unveilOverlaySubContainers(container2, root2, toggle3).finally(() => {
+      (_b = L.renderer) == null ? void 0 : _b.setRoot(L.renderer.getRoot());
+      if (container) {
+        _unveilOverlaySubContainers(container, root, toggle2).finally(() => {
           var _a3;
           L._animBusy = false;
           L._animBusyAt = 0;
+          L.animatingPath = null;
           const _root = (_a3 = L.renderer) == null ? void 0 : _a3.getRoot();
           if (_root) {
             _rebuildRowIndex(_root);
@@ -11075,7 +11007,8 @@
       } else {
         L._animBusy = false;
         L._animBusyAt = 0;
-        const _root = (_d = L.renderer) == null ? void 0 : _d.getRoot();
+        L.animatingPath = null;
+        const _root = (_c = L.renderer) == null ? void 0 : _c.getRoot();
         if (_root) {
           _rebuildRowIndex(_root);
         }
@@ -11186,7 +11119,7 @@
     return null;
   }
   function rebuildTree() {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s;
     if (!L.renderer) return;
     if (L._animBusy) {
       if (L._animBusyAt && Date.now() - L._animBusyAt > 3e3) {
@@ -11216,66 +11149,8 @@
     if (canvas) {
       rootBox.height = canvasH;
     }
-    if (L.animatingPath) {
-      const titleRow = findBoxById(rootBox, `title-${L.animatingPath}`);
-      const toggle = (_s = titleRow == null ? void 0 : titleRow.children) == null ? void 0 : _s.find((c) => {
-        var _a2;
-        return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
-      });
-      if (toggle) {
-        toggle.transform.rotate = 0;
-      }
-    }
-    function collapseSubs(box) {
-      var _a2, _b2;
-      if (!box || !box.children) return;
-      for (const child of box.children) {
-        if (((_a2 = child.id) == null ? void 0 : _a2.startsWith("expanded-")) && child.height > 0) {
-          if (L.animatingPath && child.id === `expanded-${L.animatingPath}`) continue;
-          const subFullH = child.height;
-          child._fullHeight = subFullH;
-          child._origYs = child.children.map((c) => c.y);
-          child.height = 0;
-          if (child.kfmStyle) {
-            child._savedCr = child.kfmStyle.cornerRadius;
-            child.kfmStyle.cornerRadius = 0;
-          }
-          for (const c of child.children) {
-            c.y = c.y - subFullH;
-          }
-          const subPath = child.id.slice("expanded-".length);
-          const subTitle = findBoxById(rootBox, "title-" + subPath);
-          const subTog = (_b2 = subTitle == null ? void 0 : subTitle.children) == null ? void 0 : _b2.find((c) => {
-            var _a3;
-            return (_a3 = c.id) == null ? void 0 : _a3.startsWith("toggle-");
-          });
-          if (subTog) {
-            child._toggleBox = subTog;
-            child._toggleRotate = subTog.transform.rotate;
-          }
-          collapseSubs(child);
-        }
-      }
-    }
-    if (L.animatingPath && KFMState.expandedPaths[L.animatingPath]) {
-      const preContainer = findBoxById(rootBox, `expanded-${L.animatingPath}`);
-      if (preContainer) {
-        const preFullH = preContainer.height;
-        preContainer._fullHeight = preFullH;
-        preContainer._origYs = preContainer.children.map((c) => c.y);
-        preContainer.height = 0;
-        if (preContainer.kfmStyle) {
-          preContainer._savedCr = preContainer.kfmStyle.cornerRadius;
-          preContainer.kfmStyle.cornerRadius = 0;
-        }
-        for (const child of preContainer.children) {
-          child.y = child.y - preFullH;
-          child.opacity = 0;
-        }
-        collapseSubs(preContainer);
-      }
-    }
     L.renderer.setRoot(rootBox);
+    _ensureMetaFromExpandedState(rootBox);
     const newRoot = L.renderer.getRoot();
     if (!L._restoringFromSave && newRoot && prevScrollY > 0) {
       const maxY = newRoot.getMaxScroll().maxY;
@@ -11286,27 +11161,11 @@
     }
     if (newRoot) {
       ensureCursorBox(newRoot, canvasH);
-      if (!L._skipCursorRestore) {
+      {
         if (prevCursorRowId) {
           const target = findBoxById(newRoot, prevCursorRowId);
           if (target) {
-            if (L.animatingPath && prevCursorY >= 0) {
-              L.cursorBox.x = prevCursorX;
-              L.cursorBox.y = prevCursorY;
-              L.cursorBox.width = prevCursorW;
-              if (prevCursorH >= 0) {
-                L.cursorBox.height = prevCursorH;
-              }
-              if (prevCursorTopLine >= 0) {
-                L.cursorBox.data.topLineW = prevCursorTopLine;
-              }
-              if (prevCursorBotLine >= 0) {
-                L.cursorBox.data.botLineW = prevCursorBotLine;
-              }
-              L.cursorRowId = prevCursorRowId;
-            } else {
-              moveCursorTo(target);
-            }
+            moveCursorTo(target);
           } else {
             snapToCenterRow(newRoot, canvasH);
           }
@@ -11321,7 +11180,7 @@
     }
     L.animatingPath = null;
     treeAbort.cancel();
-    const diagRoot = (_t = L.renderer) == null ? void 0 : _t.getRoot();
+    const diagRoot = (_s = L.renderer) == null ? void 0 : _s.getRoot();
     const diagCS = diagRoot == null ? void 0 : diagRoot.getContentSize();
     console.log(
       "[rebuildTree] _isCursorMode=",
@@ -11371,13 +11230,23 @@
     walk(root);
     if (closest) moveCursorTo(closest);
   }
-  function _ensureExpandMeta(root) {
+  function _ensureMetaFromExpandedState(root) {
     function walk(box) {
-      var _a;
+      var _a, _b;
       for (const c of box.children) {
         if (((_a = c.id) == null ? void 0 : _a.startsWith("expanded-")) && c.height > 0) {
-          c._fullHeight = c.height;
-          c._origYs = c.children.map((ch) => ch.y);
+          if (!c._fullHeight) c._fullHeight = c.height;
+          if (!c._origYs) c._origYs = c.children.map((ch) => ch.y);
+          const subPath = c.id.slice("expanded-".length);
+          const subTitle = findBoxById(root, "title-" + subPath);
+          const subTog = (_b = subTitle == null ? void 0 : subTitle.children) == null ? void 0 : _b.find((ch) => {
+            var _a2;
+            return (_a2 = ch.id) == null ? void 0 : _a2.startsWith("toggle-");
+          });
+          if (subTog && !c._toggleBox) {
+            c._toggleBox = subTog;
+            c._toggleRotate = subTog.transform.rotate;
+          }
         }
         walk(c);
       }
@@ -11385,7 +11254,7 @@
     walk(root);
   }
   async function _unveilOverlaySubContainers(container, root, selfToggle) {
-    var _a, _b, _c, _d;
+    var _a, _b, _c;
     const token = treeAbort.start();
     if (selfToggle) {
       anim.fromTo(selfToggle.transform, { rotate: 0 }, {
@@ -11416,17 +11285,10 @@
         anim.killTweensOf(freshTog.transform);
         freshTog.transform.rotate = (_b = child._toggleRotate) != null ? _b : Math.PI / 2;
       }
-      child._fullHeight = subFullH;
-      child._origYs = child.children.map((c) => c.y);
       if (child.kfmStyle) {
         child._savedCr = child.kfmStyle.cornerRadius;
         child.kfmStyle.cornerRadius = 0;
       }
-      child.height = 0;
-      for (const c of child.children) {
-        c.y = c.y - subFullH;
-      }
-      (_c = L.renderer) == null ? void 0 : _c.setRoot(L.renderer.getRoot());
       animateCharRain(child, root, L.renderer);
       const pack = _setupExpandOverlays(child, subFullH);
       await new Promise((resolve) => {
@@ -11434,11 +11296,6 @@
           onComplete: () => {
             var _a2;
             _removeAllOverlays();
-            const savedYs = child._origYs;
-            for (let j = 0; j < child.children.length; j++) {
-              child.children[j].y = savedYs[j];
-            }
-            child.height = subFullH;
             for (const c of pack.hiddenChildren) c.opacity = 1;
             for (const s of pack.hiddenSiblings) s.opacity = 1;
             if (child.kfmStyle && child._savedCr !== void 0) {
@@ -11481,7 +11338,7 @@
         }
       });
       if (treeAbort.isCancelled(token)) return;
-      const root2 = (_d = L.renderer) == null ? void 0 : _d.getRoot();
+      const root2 = (_c = L.renderer) == null ? void 0 : _c.getRoot();
       if (!root2) return;
       const child2 = findBoxById(root2, child.id);
       if (child2) {
