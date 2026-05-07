@@ -8711,7 +8711,10 @@
               y: t.targetY,
               opacity: 1,
               duration: randDur,
-              ease: "back.out(1.05)"
+              ease: "back.out(1.05)",
+              onUpdate: () => {
+                renderer == null ? void 0 : renderer.setRoot(root);
+              }
             }, randDelay);
             if (t.isToggle) {
               tl.to(t.box.transform, {
@@ -10537,7 +10540,6 @@
       const child = container.children[j];
       if (!child.visible) continue;
       const rowOv = _createVisualClone(child, { id: child.id || `row-${j}`, y: child.y, opacity: 1, zIndex: OVERLAY_Z + 1 });
-      rowOv._targetY = child.y - fullH;
       _addOverlay(rowOv);
       containerOv.addChild(rowOv);
       rowOverlays.push(rowOv);
@@ -11068,18 +11070,6 @@
           (_b = L.renderer) == null ? void 0 : _b.setRoot(L.renderer.getRoot());
         }
       }, 0);
-      for (const rowOv of pack.rowOverlays) {
-        ts.to(rowOv, {
-          y: rowOv._targetY,
-          duration: 0.3,
-          ease: "power2.in",
-          onUpdate: () => {
-            var _a, _b;
-            if (((_a = L.renderer) == null ? void 0 : _a.getRoot()) !== animRoot) return;
-            (_b = L.renderer) == null ? void 0 : _b.setRoot(L.renderer.getRoot());
-          }
-        }, 0);
-      }
       for (const sibOv of pack.siblingOverlays) {
         ts.to(sibOv, {
           y: sibOv._targetY,

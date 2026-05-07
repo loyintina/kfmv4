@@ -205,14 +205,14 @@ function _setupCollapseOverlays(container: Box, fullH: number): OverlayPack {
   containerOv.parent = parent;
   containerOv.overflow = 'hidden';  // 折叠时裁剪文字
 
-  // 2. 行 overlay（在展开态 y，目标 y = y - fullH 折叠态）
+  // 2. 行 overlay：固定在展开态 y，不单独做 Y 动画。
+  // 容器 overlay 收缩时 overflow:hidden 自然裁掉它们，无需行自己动。
   const rowOverlays: Box[] = [];
   const hiddenChildren: Box[] = [];
   for (let j = 0; j < container.children.length; j++) {
     const child = container.children[j];
     if (!child.visible) continue;
     const rowOv = _createVisualClone(child, { id: child.id || (`row-${j}`), y: child.y, opacity: 1, zIndex: OVERLAY_Z + 1 });
-    (rowOv as Box & OverlayMeta)._targetY = child.y - fullH;
     _addOverlay(rowOv);
     containerOv.addChild(rowOv);
     rowOverlays.push(rowOv);
@@ -820,19 +820,6 @@ function doCollapse(hit: Box, hitData: any): void {
         L.renderer?.setRoot(L.renderer!.getRoot()!);
       },
     }, 0);
-
-    // 行 overlay: y → _targetY（展开态 → 折叠态）
-    for (const rowOv of pack.rowOverlays) {
-      ts.to(rowOv, {
-        y: (rowOv as Box & OverlayMeta)._targetY!,
-        duration: 0.3,
-        ease: 'power2.in',
-        onUpdate: () => {
-          if (L.renderer?.getRoot() !== animRoot) return;
-          L.renderer?.setRoot(L.renderer!.getRoot()!);
-        },
-      }, 0);
-    }
 
     // 兄弟 overlay: y → _targetY
     for (const sibOv of pack.siblingOverlays) {
