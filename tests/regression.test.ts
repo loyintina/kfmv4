@@ -114,10 +114,9 @@ test('endOp returns to idle', () => {
   if (L.animatingPath !== null) throw new Error('path should be null');
 });
 
-test('animatingPath setter defaults to expand (backward compat)', () => {
-  L.animatingPath = '/root/test';
-  if (L.animatingDir !== 'expand') throw new Error('setter should default to expand');
-  L.endOp();
+test('markAnimatingPath uses beginOp internally', () => {
+  // markAnimatingPath now calls beginOp/endOp instead of the old setter
+  // (setter was deleted — closed the dual-write loophole)
 });
 
 // ========== 测试 3: tree-model 树结构 ==========

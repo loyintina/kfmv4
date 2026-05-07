@@ -255,9 +255,13 @@ function _ensureSubscribed(): void {
   KFMState.subscribe(L._stateSub);
 }
 
-/** 外部使用：标记某路径正在做展开动画 */
+/** 外部使用：标记某路径正在做展开动画（懒加载专用） */
 export function markAnimatingPath(path: string | null): void {
-  L.animatingPath = path;
+  if (path === null) {
+    L.endOp();
+  } else {
+    L.beginOp(path, 'expand');
+  }
 }
 
 export function triggerExpandAnimation(path: string): void {

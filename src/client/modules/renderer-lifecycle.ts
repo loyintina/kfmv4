@@ -66,16 +66,11 @@ export class RendererLifecycle {
   }
 
   // ---- 向后兼容：旧代码仍可读取 animatingPath / _animBusy / _animBusyAt ----
+  // 写入请用 beginOp() / endOp()；读取用 isAnimating / animatingDir / animatingPath
   get animatingPath(): string | null {
     return this._treeOp.kind === 'animating' ? this._treeOp.path : null;
   }
-  set animatingPath(v: string | null) {
-    if (v === null) {
-      this._treeOp = { kind: 'idle' };
-    } else {
-      this._treeOp = { kind: 'animating', path: v, direction: 'expand', startedAt: Date.now() };
-    }
-  }
+  // animatingPath setter 已删除 — 所有写入走 beginOp(path, direction)
   get _animBusy(): boolean {
     return this._treeOp.kind !== 'idle';
   }
