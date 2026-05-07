@@ -47,7 +47,6 @@ export class RendererLifecycle {
   // ---- 动画锁（形式化状态机） ----
   // idle = 无动画进行；animating = 正在展开或折叠指定路径
   _treeOp: { kind: 'idle' } | { kind: 'animating'; path: string; direction: 'expand' | 'collapse'; startedAt: number } = { kind: 'idle' };
-  pendingCollapse: { path: string; rowId: string } | null = null;
 
   // ---- 向后兼容：旧代码仍可读取 animatingPath / _animBusy / _animBusyAt ----
   get animatingPath(): string | null {
@@ -129,7 +128,6 @@ export class RendererLifecycle {
     this.cursorRowId = this._savedCursorRowId;
     this._savedCursorRowId = null;
     this._rowIndex = [];
-    this.pendingCollapse = null;
     this._sidebarClosed = false;
   }
 

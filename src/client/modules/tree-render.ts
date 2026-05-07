@@ -457,6 +457,7 @@ export function onSidebarOpen(): void {
 
   // 等 CSS layout 完成后再 rebuildTree（canvas 刚创建时 clientWidth=0）
   requestAnimationFrame(() => {
+    _removeAllOverlays();
     rebuildTree();
     // rebuildTree 后强制恢复 scrollY（在所有可能覆盖它的逻辑之后）
     if (L._savedScrollY > 0) {
@@ -506,6 +507,7 @@ export function onSidebarOpen(): void {
 
 export function onSidebarClose(): void {
   // 先停掉所有动画和独立rAF循环
+  _removeAllOverlays();
   ts.clear();
   L._sidebarClosed = true;  // 让wheel/touch的rAF循环自己退出
   L._animBusy = false;
@@ -915,6 +917,7 @@ function findTapTarget(box: Box, px: number, py: number): Box | null {
 
 /** 强制重建树（跳过 L._animBusy 锁，用于眼睛图标��用户主动行为） */
 export function forceRebuildTree(): void {
+  _removeAllOverlays();
   L._animBusy = false;
   L._animBusyAt = 0;
   clearClickQueue();
@@ -1093,81 +1096,6 @@ function rebuildTree(): void {
     ' L.animatingPath=', L.animatingPath);
 }
 
-/** 收集从 box 向上到 root 路径上的所有祖先（不含 root 自身），返回 [{parent, sibIdx, sibOrigYs, origHeight}] */
-interface AncestorInfo {
-  parent: Box;
-  sibIdx: number;
-  sibOrigYs: number[];
-  origHeight: number;
-}
-function collectAncestors(box: Box, root: Box): AncestorInfo[] {
-  const ancestors: AncestorInfo[] = [];
-  let current = box;
-  while (current.parent) {
-    const p = current.parent;
-    const idx = p.children.indexOf(current);
-    if (idx < 0) break;
-    const sibOrigYs: number[] = [];
-    for (let i = idx + 1; i < p.children.length; i++) {
-      sibOrigYs.push(p.children[i].y);
-    }
-    ancestors.push({ parent: p, sibIdx: idx, sibOrigYs, origHeight: p.height });
-    if (p === root) break;  // 到 root 为e止��含 root 层）
-    current = p;
-  }
-  return ancestors;
-}
-
-/** 在动画每帧调用：偏��目标容器内部子项 + 所有祖先层的后续兄弟 + 调整祖���高度 */
-function applyAnimOffset(
-  container: Box,
-  containerOrigYs: number[],
-  fullHeight: number,
-  ancestors: AncestorInfo[],
-  root: Box,
-): void {
-  const offset = container.height - fullHeight;  // -fullHeight → 0
-  // 1) 容器内部子项偏移
-  for (let i = 0; i < container.children.length; i++) {
-    container.children[i].y = containerOrigYs[i] + offset;
-  }
-  // 2) 逐层祖先：偏移后续兄弟 + 调整父容器高度���root ���外）
-  let heightDelta = offset;
-  for (const anc of ancestors) {
-    // 偏移后续兄弟
-    for (let i = anc.sibIdx + 1; i < anc.parent.children.length; i++) {
-      const sib = anc.parent.children[i];
-      if (sib.id === 'cursor-highlight') continue;
-      sib.y = anc.sibOrigYs[i - anc.sibIdx - 1] + heightDelta;
-    }
-    // ��整祖�����度（root ��调，它是画布高度）
-    if (anc.parent !== root) {
-      anc.parent.height = anc.origHeight + heightDelta;
-    }
-  }
-}
-
-/** 只���兄弟偏移+祖先高��调整，不碰子行 y（用于展开动画，让 slideInRows 统��处理子行登���） */
-function applyAnimOffsetSiblings(
-  container: Box,
-  fullHeight: number,
-  ancestors: AncestorInfo[],
-  root: Box,
-): void {
-  const offset = container.height - fullHeight;
-  let heightDelta = offset;
-  for (const anc of ancestors) {
-    for (let i = anc.sibIdx + 1; i < anc.parent.children.length; i++) {
-      const sib = anc.parent.children[i];
-      if (sib.id === 'cursor-highlight') continue;
-      sib.y = anc.sibOrigYs[i - anc.sibIdx - 1] + heightDelta;
-    }
-    if (anc.parent !== root) {
-      anc.parent.height = anc.origHeight + heightDelta;
-    }
-  }
-}
-/** 光����附到视口中央最近的行 */
 function snapToCenterRow(root: Box, canvasH: number): void {
   const scrollY = root.scrollY ?? 0;
   const centerY = scrollY + canvasH / 2;

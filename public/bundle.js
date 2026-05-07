@@ -9718,7 +9718,6 @@
       // ---- 动画锁（形式化状态机） ----
       // idle = 无动画进行；animating = 正在展开或折叠指定路径
       __publicField(this, "_treeOp", { kind: "idle" });
-      __publicField(this, "pendingCollapse", null);
       // ---- rAF 句柄 ----
       __publicField(this, "_cursorWheelDecayRaf", 0);
       __publicField(this, "_wheelRaf", 0);
@@ -9790,7 +9789,6 @@
       this.cursorRowId = this._savedCursorRowId;
       this._savedCursorRowId = null;
       this._rowIndex = [];
-      this.pendingCollapse = null;
       this._sidebarClosed = false;
     }
     /** 侧栏关闭时的状态保存 + 清理 */
@@ -10750,6 +10748,7 @@
     });
     requestAnimationFrame(() => {
       var _a2, _b;
+      _removeAllOverlays();
       rebuildTree();
       if (L._savedScrollY > 0) {
         const root = (_a2 = L.renderer) == null ? void 0 : _a2.getRoot();
@@ -10793,6 +10792,7 @@
   }
   function onSidebarClose() {
     var _a, _b, _c, _d, _e;
+    _removeAllOverlays();
     ts.clear();
     L._sidebarClosed = true;
     L._animBusy = false;
