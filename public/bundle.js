@@ -8543,8 +8543,8 @@
     var _a, _b, _c;
     const rows = container.children.filter(
       (c) => {
-        var _a2, _b2, _c2, _d;
-        return ((_a2 = c.id) == null ? void 0 : _a2.startsWith("title-")) || ((_b2 = c.id) == null ? void 0 : _b2.startsWith("file-")) || ((_c2 = c.id) == null ? void 0 : _c2.startsWith("ov-title-")) || ((_d = c.id) == null ? void 0 : _d.startsWith("ov-file-"));
+        var _a2, _b2;
+        return ((_a2 = c.id) == null ? void 0 : _a2.startsWith("title-")) || ((_b2 = c.id) == null ? void 0 : _b2.startsWith("file-"));
       }
     );
     if (rows.length === 0) return;
@@ -10489,7 +10489,7 @@
       const child = container.children[j];
       if (!child.visible) continue;
       const targetY = origYs ? origYs[j] : child.y;
-      const rowOv = _createVisualClone(child, { id: `ov-${child.id || "row"}-${j}`, y: child.y, opacity: 1, zIndex: OVERLAY_Z + 1 });
+      const rowOv = _createVisualClone(child, { id: child.id || `row-${j}`, y: child.y, opacity: 1, zIndex: OVERLAY_Z + 1 });
       rowOv._targetY = targetY;
       _addOverlay(rowOv);
       containerOv.addChild(rowOv);
@@ -10526,7 +10526,7 @@
     for (let j = 0; j < container.children.length; j++) {
       const child = container.children[j];
       if (!child.visible) continue;
-      const rowOv = _createVisualClone(child, { id: `ov-${child.id || "row"}-${j}`, y: child.y, opacity: 1, zIndex: OVERLAY_Z + 1 });
+      const rowOv = _createVisualClone(child, { id: child.id || `row-${j}`, y: child.y, opacity: 1, zIndex: OVERLAY_Z + 1 });
       rowOv._targetY = child.y - fullH;
       _addOverlay(rowOv);
       containerOv.addChild(rowOv);

@@ -165,7 +165,7 @@ function _setupExpandOverlays(container: Box, fullHeight: number): OverlayPack {
     const child = container.children[j];
     if (!child.visible) continue;
     const targetY = origYs ? origYs[j] : child.y;
-    const rowOv = _createVisualClone(child, { id: `ov-${child.id || 'row'}-${j}`, y: child.y, opacity: 1, zIndex: OVERLAY_Z + 1 });
+    const rowOv = _createVisualClone(child, { id: child.id || (`row-${j}`), y: child.y, opacity: 1, zIndex: OVERLAY_Z + 1 });
     (rowOv as any)._targetY = targetY;  // GSAP 目标
     _addOverlay(rowOv);
     containerOv.addChild(rowOv);
@@ -212,7 +212,7 @@ function _setupCollapseOverlays(container: Box, fullH: number): OverlayPack {
   for (let j = 0; j < container.children.length; j++) {
     const child = container.children[j];
     if (!child.visible) continue;
-    const rowOv = _createVisualClone(child, { id: `ov-${child.id || 'row'}-${j}`, y: child.y, opacity: 1, zIndex: OVERLAY_Z + 1 });
+    const rowOv = _createVisualClone(child, { id: child.id || (`row-${j}`), y: child.y, opacity: 1, zIndex: OVERLAY_Z + 1 });
     (rowOv as any)._targetY = child.y - fullH;
     _addOverlay(rowOv);
     containerOv.addChild(rowOv);
