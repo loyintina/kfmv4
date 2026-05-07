@@ -30,11 +30,6 @@ function dequeueClick(): ClickEvent | undefined { return _clickQueue.shift(); }
 function clearClickQueue(): void { _clickQueue.length = 0; }
 function hasClicks(): boolean { return _clickQueue.length > 0; }
 
-// ========== 帧标识（Root Identity Sentinel） ==========
-let _rootKey = 0;
-function _advanceFrameKey(): void { _rootKey++; }
-function _getFrameKey(): number { return _rootKey; }
-
 // ========== Overlay 管理 ==========
 const _activeOverlays: Box[] = [];
 
@@ -348,11 +343,13 @@ export function triggerExpandAnimation(path: string): void {
       container.kfmStyle.cornerRadius = (container as any)._savedCr;
     }
     L.animatingPath = null;
-    const _savedCid2 = L.cursorRowId;
+    (L as any)._skipCursorRestore = true;
     rebuildTree();
+    (L as any)._skipCursorRestore = false;
     const root2 = L.renderer!.getRoot()!;
-    if (_savedCid2) {
-      const _tc2 = findBoxById(L.renderer!.getRoot()!, _savedCid2);
+    _ensureExpandMeta(root2);
+    if (L.cursorRowId) {
+      const _tc2 = findBoxById(L.renderer!.getRoot()!, L.cursorRowId);
       if (_tc2) moveCursorTo(_tc2, false);
     }
     const container2 = findBoxById(root2, `expanded-${path}`);
@@ -365,20 +362,12 @@ export function triggerExpandAnimation(path: string): void {
         L._animBusy = false; L._animBusyAt = 0;
         const _root = L.renderer?.getRoot();
         if (_root) { _rebuildRowIndex(_root); }
-        if (L.cursorRowId && _root) {
-          const _t = findBoxById(_root, L.cursorRowId);
-          if (_t) moveCursorTo(_t, false);
-        }
         processClickQueue();
       });
     } else {
       L._animBusy = false; L._animBusyAt = 0;
       const _root = L.renderer?.getRoot();
       if (_root) { _rebuildRowIndex(_root); }
-      if (L.cursorRowId && _root) {
-        const _t = findBoxById(_root, L.cursorRowId);
-        if (_t) moveCursorTo(_t, false);
-      }
       processClickQueue();
     }
   });
@@ -690,7 +679,14 @@ function processClickQueue(): void {
 /** 展开动画（overlay 模式：GSAP 只碰 overlay Box，不碰主树） */
 function doExpand(hit: Box, hitData: any): void {
   L.animatingPath = hitData.path;
+  const _savedRowId0 = L.cursorRowId;
+  (L as any)._skipCursorRestore = true;
   hit.gesture!.onTap!();  // KFMState toggle → _stateSub → rebuildTree（折叠态: collapseSubs 预置 height=0）
+  (L as any)._skipCursorRestore = false;
+  if (_savedRowId0) {
+    const _tc0 = findBoxById(L.renderer!.getRoot()!, _savedRowId0);
+    if (_tc0) moveCursorTo(_tc0, false);
+  }
 
   L._animBusy = true; L._animBusyAt = Date.now();
   const root = L.renderer!.getRoot()!;
@@ -792,13 +788,15 @@ function doExpand(hit: Box, hitData: any): void {
       container.kfmStyle.cornerRadius = (container as any)._savedCr;
     }
     L.animatingPath = null;
-    const _savedCursorRowId = L.cursorRowId;
+    (L as any)._skipCursorRestore = true;
     rebuildTree();
-    if (_savedCursorRowId) {
-      const _tc = findBoxById(L.renderer!.getRoot()!, _savedCursorRowId);
+    (L as any)._skipCursorRestore = false;
+    if (L.cursorRowId) {
+      const _tc = findBoxById(L.renderer!.getRoot()!, L.cursorRowId);
       if (_tc) moveCursorTo(_tc, false);
     }
     const root2 = L.renderer!.getRoot()!;
+    _ensureExpandMeta(root2);
     const container2 = findBoxById(root2, containerId);
     const titleRow2 = findBoxById(root2, `title-${hitData.path}`);
     const toggle3 = titleRow2?.children?.find(c => c.id?.startsWith('toggle-'));
@@ -809,20 +807,12 @@ function doExpand(hit: Box, hitData: any): void {
         L._animBusy = false; L._animBusyAt = 0;
         const _root = L.renderer?.getRoot();
         if (_root) { _rebuildRowIndex(_root); }
-        if (L.cursorRowId && _root) {
-          const _t = findBoxById(_root, L.cursorRowId);
-          if (_t) moveCursorTo(_t, false);
-        }
         processClickQueue();
       });
     } else {
       L._animBusy = false; L._animBusyAt = 0;
       const _root = L.renderer?.getRoot();
       if (_root) { _rebuildRowIndex(_root); }
-      if (L.cursorRowId && _root) {
-        const _t = findBoxById(_root, L.cursorRowId);
-        if (_t) moveCursorTo(_t, false);
-      }
       processClickQueue();
     }
   });
@@ -903,13 +893,13 @@ function doCollapse(hit: Box, hitData: any): void {
     }
     L._animBusy = false; L._animBusyAt = 0;
     const _savedCid = L.cursorRowId;
+    (L as any)._skipCursorRestore = true;
     hit.gesture!.onTap!();
+    (L as any)._skipCursorRestore = false;
     processClickQueue();
     if (_savedCid) {
-      setTimeout(() => {
-        const _r = L.renderer?.getRoot();
-        if (_r) { const _tc = findBoxById(_r, _savedCid); if (_tc) moveCursorTo(_tc, false); }
-      }, 100);
+      const _r = L.renderer?.getRoot();
+      if (_r) { const _tc = findBoxById(_r, _savedCid); if (_tc) moveCursorTo(_tc, false); }
     }
   }, undefined, maxDur);
 
@@ -1062,32 +1052,35 @@ function rebuildTree(): void {
   if (newRoot) {
     ensureCursorBox(newRoot, canvasH);
 
-    if (prevCursorRowId) {
-      // 尝试恢复光���到之前的行
-      const target = findBoxById(newRoot, prevCursorRowId);
-      if (target) {
-        if (L.animatingPath && prevCursorY >= 0) {
-          // ä¿æåæ çè§è§ä½ç½®ï¼ä¸è·éè¢« collapseSubs ä¸ç§»çè¡
-          L.cursorBox!.x = prevCursorX;
-          L.cursorBox!.y = prevCursorY;
-          L.cursorBox!.width = prevCursorW;
-          if (prevCursorH >= 0) { L.cursorBox!.height = prevCursorH; }
-          if (prevCursorTopLine >= 0) { (L.cursorBox as any).data.topLineW = prevCursorTopLine; }
-          if (prevCursorBotLine >= 0) { (L.cursorBox as any).data.botLineW = prevCursorBotLine; }
-          L.cursorRowId = prevCursorRowId;
+    if (!(L as any)._skipCursorRestore) {
+      if (prevCursorRowId) {
+        // 尝试恢复光���到之前的行
+        const target = findBoxById(newRoot, prevCursorRowId);
+        if (target) {
+          if (L.animatingPath && prevCursorY >= 0) {
+            // ä¿æåæ çè§è§ä½ç½®ï¼ä¸è·éè¢« collapseSubs ä¸ç§»çè¡
+            L.cursorBox!.x = prevCursorX;
+            L.cursorBox!.y = prevCursorY;
+            L.cursorBox!.width = prevCursorW;
+            if (prevCursorH >= 0) { L.cursorBox!.height = prevCursorH; }
+            if (prevCursorTopLine >= 0) { (L.cursorBox as any).data.topLineW = prevCursorTopLine; }
+            if (prevCursorBotLine >= 0) { (L.cursorBox as any).data.botLineW = prevCursorBotLine; }
+            L.cursorRowId = prevCursorRowId;
+          } else {
+            moveCursorTo(target);
+          }
         } else {
-          moveCursorTo(target);
+          snapToCenterRow(newRoot, canvasH);
         }
       } else {
+        // 初始状态：光标居中吸附
         snapToCenterRow(newRoot, canvasH);
       }
-    } else {
-      // 初始状态：光标居中吸附
-      snapToCenterRow(newRoot, canvasH);
     }
-  }
+  
+    // 重建光标步进行索引
+    }
 
-  // 重建光标步进行索引
   if (newRoot) _rebuildRowIndex(newRoot);
 
   if (!L.renderer.isRunning) {
@@ -1147,6 +1140,22 @@ function snapToCenterRow(root: Box, canvasH: number): void {
  * 完成后移除 overlay 并恢复真实内容。递归处理嵌套。
  * 使用 treeAbort 令牌在 rebuildTree 后安全中止。
  */
+/** 为 rebuildTree 终端态树补充展开元数据（_fullHeight, _origYs），
+ * 使 _unveilOverlaySubContainers 能正常处理嵌套子容器展开动画。
+ * rebuildTree #2 创建新树时不运行 collapseSubs，元数据全部丢失。 */
+function _ensureExpandMeta(root: Box): void {
+  function walk(box: Box): void {
+    for (const c of box.children) {
+      if (c.id?.startsWith('expanded-') && c.height > 0) {
+        (c as any)._fullHeight = c.height;
+        (c as any)._origYs = c.children.map((ch: Box) => ch.y);
+      }
+      walk(c);
+    }
+  }
+  walk(root);
+}
+
 async function _unveilOverlaySubContainers(container: Box, root: Box, selfToggle?: Box): Promise<void> {
   const token = treeAbort.start();
 
@@ -1161,12 +1170,12 @@ async function _unveilOverlaySubContainers(container: Box, root: Box, selfToggle
   }
 
   const subContainers = container.children.filter(
-    c => c.id?.startsWith('expanded-') && (c as any)._fullHeight > 0
+    c => c.id?.startsWith('expanded-') && c.height > 0
   );
 
   for (let idx = 0; idx < subContainers.length; idx++) {
     const child = subContainers[idx];
-    const subFullH = (child as any)._fullHeight as number;
+    const subFullH = child.height;
 
     // 修复子容器 toggle
     const freshTitle = findBoxById(root, `title-${child.id!.slice('expanded-'.length)}`);
@@ -1175,6 +1184,18 @@ async function _unveilOverlaySubContainers(container: Box, root: Box, selfToggle
       anim.killTweensOf(freshTog.transform);
       freshTog.transform.rotate = (child as any)._toggleRotate ?? Math.PI / 2;
     }
+
+    // === 压缩子容器（类似 collapseSubs），使 _setupExpandOverlays 能正确读取压缩态 ===
+    (child as any)._fullHeight = subFullH;
+    (child as any)._origYs = child.children.map((c: Box) => c.y);
+    if (child.kfmStyle) {
+      (child as any)._savedCr = child.kfmStyle.cornerRadius;
+      child.kfmStyle.cornerRadius = 0;
+    }
+    child.height = 0;
+    for (const c of child.children) { c.y = c.y - subFullH; }
+    // 触发 flexbox 重新计算 sibling 位置
+    L.renderer?.setRoot(L.renderer!.getRoot()!);
 
     animateCharRain(child, root, L.renderer);
 
@@ -1185,11 +1206,19 @@ async function _unveilOverlaySubContainers(container: Box, root: Box, selfToggle
       const tl = anim.timeline({
         onComplete: () => {
           _removeAllOverlays();
+          // 恢复子容器到终端态
+          const savedYs = (child as any)._origYs as number[];
+          for (let j = 0; j < child.children.length; j++) {
+            child.children[j].y = savedYs[j];
+          }
+          child.height = subFullH;
           for (const c of pack.hiddenChildren) c.opacity = 1;
           for (const s of pack.hiddenSiblings) s.opacity = 1;
           if (child.kfmStyle && (child as any)._savedCr !== undefined) {
             child.kfmStyle.cornerRadius = (child as any)._savedCr;
           }
+          // 让布局恢复
+          L.renderer?.setRoot(L.renderer!.getRoot()!);
           resolve();
         },
       });

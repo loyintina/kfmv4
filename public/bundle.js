@@ -10647,11 +10647,13 @@
         container.kfmStyle.cornerRadius = container._savedCr;
       }
       L.animatingPath = null;
-      const _savedCid2 = L.cursorRowId;
+      L._skipCursorRestore = true;
       rebuildTree();
+      L._skipCursorRestore = false;
       const root2 = L.renderer.getRoot();
-      if (_savedCid2) {
-        const _tc2 = findBoxById(L.renderer.getRoot(), _savedCid2);
+      _ensureExpandMeta(root2);
+      if (L.cursorRowId) {
+        const _tc2 = findBoxById(L.renderer.getRoot(), L.cursorRowId);
         if (_tc2) moveCursorTo(_tc2, false);
       }
       const container2 = findBoxById(root2, `expanded-${path}`);
@@ -10671,10 +10673,6 @@
           if (_root) {
             _rebuildRowIndex(_root);
           }
-          if (L.cursorRowId && _root) {
-            const _t = findBoxById(_root, L.cursorRowId);
-            if (_t) moveCursorTo(_t, false);
-          }
           processClickQueue();
         });
       } else {
@@ -10683,10 +10681,6 @@
         const _root = (_d = L.renderer) == null ? void 0 : _d.getRoot();
         if (_root) {
           _rebuildRowIndex(_root);
-        }
-        if (L.cursorRowId && _root) {
-          const _t = findBoxById(_root, L.cursorRowId);
-          if (_t) moveCursorTo(_t, false);
         }
         processClickQueue();
       }
@@ -10945,7 +10939,14 @@
   function doExpand(hit, hitData) {
     var _a;
     L.animatingPath = hitData.path;
+    const _savedRowId0 = L.cursorRowId;
+    L._skipCursorRestore = true;
     hit.gesture.onTap();
+    L._skipCursorRestore = false;
+    if (_savedRowId0) {
+      const _tc0 = findBoxById(L.renderer.getRoot(), _savedRowId0);
+      if (_tc0) moveCursorTo(_tc0, false);
+    }
     L._animBusy = true;
     L._animBusyAt = Date.now();
     const root = L.renderer.getRoot();
@@ -11043,13 +11044,15 @@
         container.kfmStyle.cornerRadius = container._savedCr;
       }
       L.animatingPath = null;
-      const _savedCursorRowId = L.cursorRowId;
+      L._skipCursorRestore = true;
       rebuildTree();
-      if (_savedCursorRowId) {
-        const _tc = findBoxById(L.renderer.getRoot(), _savedCursorRowId);
+      L._skipCursorRestore = false;
+      if (L.cursorRowId) {
+        const _tc = findBoxById(L.renderer.getRoot(), L.cursorRowId);
         if (_tc) moveCursorTo(_tc, false);
       }
       const root2 = L.renderer.getRoot();
+      _ensureExpandMeta(root2);
       const container2 = findBoxById(root2, containerId);
       const titleRow2 = findBoxById(root2, `title-${hitData.path}`);
       const toggle3 = (_b = titleRow2 == null ? void 0 : titleRow2.children) == null ? void 0 : _b.find((c) => {
@@ -11067,10 +11070,6 @@
           if (_root) {
             _rebuildRowIndex(_root);
           }
-          if (L.cursorRowId && _root) {
-            const _t = findBoxById(_root, L.cursorRowId);
-            if (_t) moveCursorTo(_t, false);
-          }
           processClickQueue();
         });
       } else {
@@ -11079,10 +11078,6 @@
         const _root = (_d = L.renderer) == null ? void 0 : _d.getRoot();
         if (_root) {
           _rebuildRowIndex(_root);
-        }
-        if (L.cursorRowId && _root) {
-          const _t = findBoxById(_root, L.cursorRowId);
-          if (_t) moveCursorTo(_t, false);
         }
         processClickQueue();
       }
@@ -11153,7 +11148,7 @@
     }
     const maxDur = container ? 0.3 : tog ? 0.25 : 0;
     ts.call(() => {
-      var _a;
+      var _a, _b;
       if (((_a = L.renderer) == null ? void 0 : _a.getRoot()) !== animRoot) return;
       _removeAllOverlays();
       if (pack) {
@@ -11163,17 +11158,16 @@
       L._animBusy = false;
       L._animBusyAt = 0;
       const _savedCid = L.cursorRowId;
+      L._skipCursorRestore = true;
       hit.gesture.onTap();
+      L._skipCursorRestore = false;
       processClickQueue();
       if (_savedCid) {
-        setTimeout(() => {
-          var _a2;
-          const _r = (_a2 = L.renderer) == null ? void 0 : _a2.getRoot();
-          if (_r) {
-            const _tc = findBoxById(_r, _savedCid);
-            if (_tc) moveCursorTo(_tc, false);
-          }
-        }, 100);
+        const _r = (_b = L.renderer) == null ? void 0 : _b.getRoot();
+        if (_r) {
+          const _tc = findBoxById(_r, _savedCid);
+          if (_tc) moveCursorTo(_tc, false);
+        }
       }
     }, void 0, maxDur);
     L.animatingPath = null;
@@ -11292,31 +11286,33 @@
     }
     if (newRoot) {
       ensureCursorBox(newRoot, canvasH);
-      if (prevCursorRowId) {
-        const target = findBoxById(newRoot, prevCursorRowId);
-        if (target) {
-          if (L.animatingPath && prevCursorY >= 0) {
-            L.cursorBox.x = prevCursorX;
-            L.cursorBox.y = prevCursorY;
-            L.cursorBox.width = prevCursorW;
-            if (prevCursorH >= 0) {
-              L.cursorBox.height = prevCursorH;
+      if (!L._skipCursorRestore) {
+        if (prevCursorRowId) {
+          const target = findBoxById(newRoot, prevCursorRowId);
+          if (target) {
+            if (L.animatingPath && prevCursorY >= 0) {
+              L.cursorBox.x = prevCursorX;
+              L.cursorBox.y = prevCursorY;
+              L.cursorBox.width = prevCursorW;
+              if (prevCursorH >= 0) {
+                L.cursorBox.height = prevCursorH;
+              }
+              if (prevCursorTopLine >= 0) {
+                L.cursorBox.data.topLineW = prevCursorTopLine;
+              }
+              if (prevCursorBotLine >= 0) {
+                L.cursorBox.data.botLineW = prevCursorBotLine;
+              }
+              L.cursorRowId = prevCursorRowId;
+            } else {
+              moveCursorTo(target);
             }
-            if (prevCursorTopLine >= 0) {
-              L.cursorBox.data.topLineW = prevCursorTopLine;
-            }
-            if (prevCursorBotLine >= 0) {
-              L.cursorBox.data.botLineW = prevCursorBotLine;
-            }
-            L.cursorRowId = prevCursorRowId;
           } else {
-            moveCursorTo(target);
+            snapToCenterRow(newRoot, canvasH);
           }
         } else {
           snapToCenterRow(newRoot, canvasH);
         }
-      } else {
-        snapToCenterRow(newRoot, canvasH);
       }
     }
     if (newRoot) _rebuildRowIndex(newRoot);
@@ -11375,8 +11371,21 @@
     walk(root);
     if (closest) moveCursorTo(closest);
   }
+  function _ensureExpandMeta(root) {
+    function walk(box) {
+      var _a;
+      for (const c of box.children) {
+        if (((_a = c.id) == null ? void 0 : _a.startsWith("expanded-")) && c.height > 0) {
+          c._fullHeight = c.height;
+          c._origYs = c.children.map((ch) => ch.y);
+        }
+        walk(c);
+      }
+    }
+    walk(root);
+  }
   async function _unveilOverlaySubContainers(container, root, selfToggle) {
-    var _a, _b, _c;
+    var _a, _b, _c, _d;
     const token = treeAbort.start();
     if (selfToggle) {
       anim.fromTo(selfToggle.transform, { rotate: 0 }, {
@@ -11392,12 +11401,12 @@
     const subContainers = container.children.filter(
       (c) => {
         var _a2;
-        return ((_a2 = c.id) == null ? void 0 : _a2.startsWith("expanded-")) && c._fullHeight > 0;
+        return ((_a2 = c.id) == null ? void 0 : _a2.startsWith("expanded-")) && c.height > 0;
       }
     );
     for (let idx = 0; idx < subContainers.length; idx++) {
       const child = subContainers[idx];
-      const subFullH = child._fullHeight;
+      const subFullH = child.height;
       const freshTitle = findBoxById(root, `title-${child.id.slice("expanded-".length)}`);
       const freshTog = (_a = freshTitle == null ? void 0 : freshTitle.children) == null ? void 0 : _a.find((c) => {
         var _a2;
@@ -11407,17 +11416,35 @@
         anim.killTweensOf(freshTog.transform);
         freshTog.transform.rotate = (_b = child._toggleRotate) != null ? _b : Math.PI / 2;
       }
+      child._fullHeight = subFullH;
+      child._origYs = child.children.map((c) => c.y);
+      if (child.kfmStyle) {
+        child._savedCr = child.kfmStyle.cornerRadius;
+        child.kfmStyle.cornerRadius = 0;
+      }
+      child.height = 0;
+      for (const c of child.children) {
+        c.y = c.y - subFullH;
+      }
+      (_c = L.renderer) == null ? void 0 : _c.setRoot(L.renderer.getRoot());
       animateCharRain(child, root, L.renderer);
       const pack = _setupExpandOverlays(child, subFullH);
       await new Promise((resolve) => {
         const tl = anim.timeline({
           onComplete: () => {
+            var _a2;
             _removeAllOverlays();
+            const savedYs = child._origYs;
+            for (let j = 0; j < child.children.length; j++) {
+              child.children[j].y = savedYs[j];
+            }
+            child.height = subFullH;
             for (const c of pack.hiddenChildren) c.opacity = 1;
             for (const s of pack.hiddenSiblings) s.opacity = 1;
             if (child.kfmStyle && child._savedCr !== void 0) {
               child.kfmStyle.cornerRadius = child._savedCr;
             }
+            (_a2 = L.renderer) == null ? void 0 : _a2.setRoot(L.renderer.getRoot());
             resolve();
           }
         });
@@ -11454,7 +11481,7 @@
         }
       });
       if (treeAbort.isCancelled(token)) return;
-      const root2 = (_c = L.renderer) == null ? void 0 : _c.getRoot();
+      const root2 = (_d = L.renderer) == null ? void 0 : _d.getRoot();
       if (!root2) return;
       const child2 = findBoxById(root2, child.id);
       if (child2) {
