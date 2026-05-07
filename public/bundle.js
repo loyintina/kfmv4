@@ -10653,6 +10653,7 @@
       var _a2, _b2, _c2;
       if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
       _removeAllOverlays();
+      ts.clear();
       for (const c of pack.hiddenChildren) c.opacity = 1;
       for (const s of pack.hiddenSiblings) s.opacity = 1;
       if (container.kfmStyle && container._savedCr !== void 0) {
@@ -11004,6 +11005,7 @@
       var _a2, _b, _c;
       if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
       _removeAllOverlays();
+      ts.clear();
       for (const c of pack.hiddenChildren) c.opacity = 1;
       for (const s of pack.hiddenSiblings) s.opacity = 1;
       if (container.kfmStyle && container._savedCr !== void 0) {
@@ -11096,6 +11098,7 @@
       var _a, _b;
       if (((_a = L.renderer) == null ? void 0 : _a.getRoot()) !== animRoot) return;
       _removeAllOverlays();
+      ts.clear();
       if (pack) {
         for (const c of pack.hiddenChildren) c.opacity = 1;
         for (const s of pack.hiddenSiblings) s.opacity = 1;

@@ -344,6 +344,7 @@ export function triggerExpandAnimation(path: string): void {
   ts.call(() => {
     if (L.renderer?.getRoot() !== animRoot) return;
     _removeAllOverlays();
+    ts.clear();
     for (const c of pack.hiddenChildren) c.opacity = 1;
     for (const s of pack.hiddenSiblings) s.opacity = 1;
     if (container.kfmStyle && (container as Box & OverlayMeta)._savedCr !== undefined) {
@@ -757,6 +758,7 @@ function doExpand(hit: Box, hitData: any): void {
   ts.call(() => {
     if (L.renderer?.getRoot() !== animRoot) return;
     _removeAllOverlays();
+    ts.clear();
     for (const c of pack.hiddenChildren) c.opacity = 1;
     for (const s of pack.hiddenSiblings) s.opacity = 1;
     if (container.kfmStyle && (container as Box & OverlayMeta)._savedCr !== undefined) {
@@ -850,6 +852,7 @@ function doCollapse(hit: Box, hitData: any): void {
   ts.call(() => {
     if (L.renderer?.getRoot() !== animRoot) return;
     _removeAllOverlays();
+    ts.clear();
     if (pack) {
       for (const c of pack.hiddenChildren) c.opacity = 1;
       for (const s of pack.hiddenSiblings) s.opacity = 1;
