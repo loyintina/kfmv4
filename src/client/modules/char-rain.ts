@@ -36,7 +36,7 @@ export async function animateCharRain(
 ): Promise<void> {
   // 1. 收集需要动画的行
   const rows = container.children.filter((c) =>
-    c.id?.startsWith("title-") || c.id?.startsWith("file-")
+    c.id?.startsWith("title-") || c.id?.startsWith("file-") || c.id?.startsWith("ov-title-") || c.id?.startsWith("ov-file-")
   );
   if (rows.length === 0) return;
 

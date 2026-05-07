@@ -119,7 +119,7 @@ function _createVisualClone(
         opacity: child.opacity ?? 1,
         visible: child.visible,
         backgroundColor: child.backgroundColor || 'transparent',
-        interactive: false,
+        interactive: false, id: child.id,
         zIndex: child.zIndex + OVERLAY_Z,
         overflow: 'visible',
         kfmStyle: child.kfmStyle ? { ...child.kfmStyle } : undefined,
@@ -204,6 +204,7 @@ function _setupCollapseOverlays(container: Box, fullH: number): OverlayPack {
   _addOverlay(containerOv);
   parent.children.splice(ci + 1, 0, containerOv);
   containerOv.parent = parent;
+  containerOv.overflow = 'hidden';  // 折叠时裁剪文字
 
   // 2. 行 overlay（在展开态 y，目标 y = y - fullH 折叠态）
   const rowOverlays: Box[] = [];
@@ -347,8 +348,13 @@ export function triggerExpandAnimation(path: string): void {
       container.kfmStyle.cornerRadius = (container as any)._savedCr;
     }
     L.animatingPath = null;
+    const _savedCid2 = L.cursorRowId;
     rebuildTree();
     const root2 = L.renderer!.getRoot()!;
+    if (_savedCid2) {
+      const _tc2 = findBoxById(L.renderer!.getRoot()!, _savedCid2);
+      if (_tc2) moveCursorTo(_tc2, false);
+    }
     const container2 = findBoxById(root2, `expanded-${path}`);
     const titleRow2 = findBoxById(root2, `title-${path}`);
     const toggle3 = titleRow2?.children?.find(c => c.id?.startsWith('toggle-'));
@@ -786,7 +792,12 @@ function doExpand(hit: Box, hitData: any): void {
       container.kfmStyle.cornerRadius = (container as any)._savedCr;
     }
     L.animatingPath = null;
+    const _savedCursorRowId = L.cursorRowId;
     rebuildTree();
+    if (_savedCursorRowId) {
+      const _tc = findBoxById(L.renderer!.getRoot()!, _savedCursorRowId);
+      if (_tc) moveCursorTo(_tc, false);
+    }
     const root2 = L.renderer!.getRoot()!;
     const container2 = findBoxById(root2, containerId);
     const titleRow2 = findBoxById(root2, `title-${hitData.path}`);
@@ -891,8 +902,15 @@ function doCollapse(hit: Box, hitData: any): void {
       for (const s of pack.hiddenSiblings) s.opacity = 1;
     }
     L._animBusy = false; L._animBusyAt = 0;
+    const _savedCid = L.cursorRowId;
     hit.gesture!.onTap!();
     processClickQueue();
+    if (_savedCid) {
+      setTimeout(() => {
+        const _r = L.renderer?.getRoot();
+        if (_r) { const _tc = findBoxById(_r, _savedCid); if (_tc) moveCursorTo(_tc, false); }
+      }, 100);
+    }
   }, undefined, maxDur);
 
   L.animatingPath = null;

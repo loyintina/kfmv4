@@ -8543,8 +8543,8 @@
     var _a, _b, _c;
     const rows = container.children.filter(
       (c) => {
-        var _a2, _b2;
-        return ((_a2 = c.id) == null ? void 0 : _a2.startsWith("title-")) || ((_b2 = c.id) == null ? void 0 : _b2.startsWith("file-"));
+        var _a2, _b2, _c2, _d;
+        return ((_a2 = c.id) == null ? void 0 : _a2.startsWith("title-")) || ((_b2 = c.id) == null ? void 0 : _b2.startsWith("file-")) || ((_c2 = c.id) == null ? void 0 : _c2.startsWith("ov-title-")) || ((_d = c.id) == null ? void 0 : _d.startsWith("ov-file-"));
       }
     );
     if (rows.length === 0) return;
@@ -10463,6 +10463,7 @@
           visible: child.visible,
           backgroundColor: child.backgroundColor || "transparent",
           interactive: false,
+          id: child.id,
           zIndex: child.zIndex + OVERLAY_Z,
           overflow: "visible",
           kfmStyle: child.kfmStyle ? { ...child.kfmStyle } : void 0
@@ -10519,6 +10520,7 @@
     _addOverlay(containerOv);
     parent.children.splice(ci + 1, 0, containerOv);
     containerOv.parent = parent;
+    containerOv.overflow = "hidden";
     const rowOverlays = [];
     const hiddenChildren = [];
     for (let j = 0; j < container.children.length; j++) {
@@ -10645,8 +10647,13 @@
         container.kfmStyle.cornerRadius = container._savedCr;
       }
       L.animatingPath = null;
+      const _savedCid2 = L.cursorRowId;
       rebuildTree();
       const root2 = L.renderer.getRoot();
+      if (_savedCid2) {
+        const _tc2 = findBoxById(L.renderer.getRoot(), _savedCid2);
+        if (_tc2) moveCursorTo(_tc2, false);
+      }
       const container2 = findBoxById(root2, `expanded-${path}`);
       const titleRow2 = findBoxById(root2, `title-${path}`);
       const toggle3 = (_b2 = titleRow2 == null ? void 0 : titleRow2.children) == null ? void 0 : _b2.find((c) => {
@@ -11036,7 +11043,12 @@
         container.kfmStyle.cornerRadius = container._savedCr;
       }
       L.animatingPath = null;
+      const _savedCursorRowId = L.cursorRowId;
       rebuildTree();
+      if (_savedCursorRowId) {
+        const _tc = findBoxById(L.renderer.getRoot(), _savedCursorRowId);
+        if (_tc) moveCursorTo(_tc, false);
+      }
       const root2 = L.renderer.getRoot();
       const container2 = findBoxById(root2, containerId);
       const titleRow2 = findBoxById(root2, `title-${hitData.path}`);
@@ -11150,8 +11162,19 @@
       }
       L._animBusy = false;
       L._animBusyAt = 0;
+      const _savedCid = L.cursorRowId;
       hit.gesture.onTap();
       processClickQueue();
+      if (_savedCid) {
+        setTimeout(() => {
+          var _a2;
+          const _r = (_a2 = L.renderer) == null ? void 0 : _a2.getRoot();
+          if (_r) {
+            const _tc = findBoxById(_r, _savedCid);
+            if (_tc) moveCursorTo(_tc, false);
+          }
+        }, 100);
+      }
     }, void 0, maxDur);
     L.animatingPath = null;
   }
