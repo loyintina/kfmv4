@@ -9791,17 +9791,6 @@
       this._rowIndex = [];
       this._sidebarClosed = false;
     }
-    /** 侧栏关闭时的状态保存 + 清理 */
-    prepareClose() {
-      this._sidebarClosed = true;
-      this._treeOp = { kind: "idle" };
-      this._restoringFromSave = true;
-      this.cursorBox = null;
-      this.cursorRowId = null;
-      this._rowIndex = [];
-      this.cancelAllRafs();
-      this.removeAllListeners();
-    }
   };
   var L = new RendererLifecycle();
 
@@ -11119,7 +11108,7 @@
     return null;
   }
   function rebuildTree() {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d;
     if (!L.renderer) return;
     if (L._animBusy) {
       if (L._animBusyAt && Date.now() - L._animBusyAt > 3e3) {
@@ -11174,30 +11163,6 @@
     }
     L.animatingPath = null;
     treeAbort.cancel();
-    const diagRoot = (_e = L.renderer) == null ? void 0 : _e.getRoot();
-    const diagCS = diagRoot == null ? void 0 : diagRoot.getContentSize();
-    console.log(
-      "[rebuildTree] _isCursorMode=",
-      _isCursorMode(),
-      " scrollY=",
-      diagRoot == null ? void 0 : diagRoot.scrollY,
-      " contentH=",
-      diagCS == null ? void 0 : diagCS.height,
-      " viewportH=",
-      (diagRoot == null ? void 0 : diagRoot.height) || 0,
-      " maxY=",
-      diagRoot == null ? void 0 : diagRoot.getMaxScroll().maxY,
-      " _rowIndexLen=",
-      L._rowIndex.length,
-      " L.cursorRowId=",
-      L.cursorRowId,
-      " cursorIdx=",
-      getCursorRowIndex(),
-      " prevCursorRowId=",
-      prevCursorRowId,
-      " L.animatingPath=",
-      L.animatingPath
-    );
   }
   function snapToCenterRow(root, canvasH) {
     var _a;

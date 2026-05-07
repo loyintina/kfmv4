@@ -131,17 +131,6 @@ export class RendererLifecycle {
     this._sidebarClosed = false;
   }
 
-  /** 侧栏关闭时的状态保存 + 清理 */
-  prepareClose(): void {
-    this._sidebarClosed = true;
-    this._treeOp = { kind: 'idle' };
-    this._restoringFromSave = true;
-    this.cursorBox = null;
-    this.cursorRowId = null;
-    this._rowIndex = [];
-    this.cancelAllRafs();
-    this.removeAllListeners();
-  }
 }
 
 /** 全局单例 */

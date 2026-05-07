@@ -951,19 +951,6 @@ function rebuildTree(): void {
   // 通知所有持有旧 token 的 async 动画中止
   treeAbort.cancel();
 
-  // [DIAG] 展开/折叠后光标状态追踪
-  const diagRoot = L.renderer?.getRoot();
-  const diagCS = diagRoot?.getContentSize();
-  console.log('[rebuildTree] _isCursorMode=', _isCursorMode(),
-    ' scrollY=', diagRoot?.scrollY,
-    ' contentH=', diagCS?.height,
-    ' viewportH=', (diagRoot?.height || 0),
-    ' maxY=', diagRoot?.getMaxScroll().maxY,
-    ' _rowIndexLen=', L._rowIndex.length,
-    ' L.cursorRowId=', L.cursorRowId,
-    ' cursorIdx=', getCursorRowIndex(),
-    ' prevCursorRowId=', prevCursorRowId,
-    ' L.animatingPath=', L.animatingPath);
 }
 
 function snapToCenterRow(root: Box, canvasH: number): void {
