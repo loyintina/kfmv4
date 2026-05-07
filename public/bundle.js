@@ -8539,8 +8539,8 @@
   var anim = new AnimationRegistryClass();
 
   // src/client/modules/char-rain.ts
-  async function animateCharRain(container, root, renderer) {
-    var _a, _b, _c;
+  async function animateCharRain(container, root, renderer, rowTargetYs) {
+    var _a, _b, _c, _d;
     const rows = container.children.filter(
       (c) => {
         var _a2, _b2;
@@ -8565,12 +8565,14 @@
     let currentLineGroup = 0;
     const hiddenLabels = [];
     const hiddenToggles = [];
-    for (const row of rows) {
+    for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
+      const row = rows[rowIdx];
+      const rowExpandedY = (_b = rowTargetYs == null ? void 0 : rowTargetYs[rowIdx]) != null ? _b : row.y;
       const label = row.children.find((c) => {
         var _a2;
         return (_a2 = c.id) == null ? void 0 : _a2.startsWith("label-");
       });
-      if (!label || !((_b = label.textStyle) == null ? void 0 : _b.content)) continue;
+      if (!label || !((_c = label.textStyle) == null ? void 0 : _c.content)) continue;
       const text = label.textStyle.content;
       const font = label.textStyle.font || FONT;
       const color = label.textStyle.color;
@@ -8603,7 +8605,7 @@
         let cx = 0;
         for (let ci = 0; ci < chars.length; ci++) {
           const targetX = row.x + label.x + cx;
-          const targetY = row.y + label.y + verticalOffset + li * lineH;
+          const targetY = rowExpandedY + label.y + verticalOffset + li * lineH;
           const initX = targetX + (Math.random() - 0.5) * 100;
           const initY = targetY - 80 - Math.random() * 140;
           const box = new Box({
@@ -8640,13 +8642,13 @@
         var _a2;
         return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
       });
-      if (toggleBox && ((_c = toggleBox.textStyle) == null ? void 0 : _c.content)) {
+      if (toggleBox && ((_d = toggleBox.textStyle) == null ? void 0 : _d.content)) {
         const tChar = toggleBox.textStyle.content;
         const tFont = toggleBox.textStyle.font || font;
         ctx.font = tFont;
         const tWidth = ctx.measureText(tChar).width;
         const tTargetX = row.x + toggleBox.x;
-        const tTargetY = row.y + toggleBox.y;
+        const tTargetY = rowExpandedY + toggleBox.y;
         const tInitX = tTargetX + (Math.random() - 0.5) * 100;
         const tInitY = tTargetY - 80 - Math.random() * 140;
         const tBox = new Box({
@@ -10609,7 +10611,8 @@
       toggle2.transform.rotate = 0;
     }
     const pack = _setupExpandOverlays(container, fullHeight);
-    animateCharRain(pack.containerOverlay, root, L.renderer);
+    const rowTargetYs = pack.rowOverlays.map((r) => r._targetY);
+    animateCharRain(pack.containerOverlay, root, L.renderer, rowTargetYs);
     L.beginOp(path, "expand");
     const animRoot = L.renderer.getRoot();
     ts.to(pack.containerOverlay, {
@@ -10621,7 +10624,7 @@
         if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
         (_b2 = L.renderer) == null ? void 0 : _b2.setRoot(L.renderer.getRoot());
       }
-    });
+    }, 0);
     for (const rowOv of pack.rowOverlays) {
       ts.to(rowOv, {
         y: rowOv._targetY,
@@ -10632,7 +10635,7 @@
           if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
           (_b2 = L.renderer) == null ? void 0 : _b2.setRoot(L.renderer.getRoot());
         }
-      });
+      }, 0);
     }
     for (const sibOv of pack.siblingOverlays) {
       ts.to(sibOv, {
@@ -10644,7 +10647,7 @@
           if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
           (_b2 = L.renderer) == null ? void 0 : _b2.setRoot(L.renderer.getRoot());
         }
-      });
+      }, 0);
     }
     ts.call(() => {
       var _a2, _b2, _c2;
@@ -10960,7 +10963,8 @@
       toggle2.transform.rotate = 0;
     }
     const pack = _setupExpandOverlays(container, fullHeight);
-    animateCharRain(pack.containerOverlay, root, L.renderer);
+    const rowTargetYs = pack.rowOverlays.map((r) => r._targetY);
+    animateCharRain(pack.containerOverlay, root, L.renderer, rowTargetYs);
     const animRoot = L.renderer.getRoot();
     ts.to(pack.containerOverlay, {
       height: fullHeight,
@@ -10971,7 +10975,7 @@
         if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
         (_b = L.renderer) == null ? void 0 : _b.setRoot(L.renderer.getRoot());
       }
-    });
+    }, 0);
     for (const rowOv of pack.rowOverlays) {
       ts.to(rowOv, {
         y: rowOv._targetY,
@@ -10982,7 +10986,7 @@
           if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
           (_b = L.renderer) == null ? void 0 : _b.setRoot(L.renderer.getRoot());
         }
-      });
+      }, 0);
     }
     for (const sibOv of pack.siblingOverlays) {
       ts.to(sibOv, {
@@ -10994,7 +10998,7 @@
           if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
           (_b = L.renderer) == null ? void 0 : _b.setRoot(L.renderer.getRoot());
         }
-      });
+      }, 0);
     }
     ts.call(() => {
       var _a2, _b, _c;
@@ -11162,7 +11166,7 @@
         if (prevCursorRowId) {
           const target = findBoxById(newRoot, prevCursorRowId);
           if (target) {
-            moveCursorTo(target);
+            moveCursorTo(target, false);
           } else {
             snapToCenterRow(newRoot, canvasH);
           }

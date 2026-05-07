@@ -32,7 +32,8 @@ interface CharTarget {
 export async function animateCharRain(
   container: Box,
   root: Box,
-  renderer: Renderer | null
+  renderer: Renderer | null,
+  rowTargetYs?: number[]
 ): Promise<void> {
   // 1. 收集需要动画的行
   const rows = container.children.filter((c) =>
@@ -64,7 +65,9 @@ export async function animateCharRain(
   const hiddenLabels: Box[] = [];
   const hiddenToggles: Box[] = [];
 
-  for (const row of rows) {
+  for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
+    const row = rows[rowIdx];
+    const rowExpandedY = rowTargetYs?.[rowIdx] ?? row.y;
     const label = row.children.find((c) => c.id?.startsWith("label-"));
     if (!label || !label.textStyle?.content) continue;
 
@@ -115,7 +118,7 @@ export async function animateCharRain(
       for (let ci = 0; ci < chars.length; ci++) {
         // 目标位置（容器空间中的最终坐标）
         const targetX = row.x + label.x + cx;
-        const targetY = row.y + label.y + verticalOffset + li * lineH;
+        const targetY = rowExpandedY + label.y + verticalOffset + li * lineH;
 
         // 初始位置：水平随机偏摆����垂直在屏幕顶部
         const initX = targetX + (Math.random() - 0.5) * 100;
@@ -161,7 +164,7 @@ export async function animateCharRain(
       ctx.font = tFont;
       const tWidth = ctx.measureText(tChar).width;
       const tTargetX = row.x + toggleBox.x;
-      const tTargetY = row.y + toggleBox.y;
+      const tTargetY = rowExpandedY + toggleBox.y;
       const tInitX = tTargetX + (Math.random() - 0.5) * 100;
       const tInitY = tTargetY - 80 - Math.random() * 140;
 

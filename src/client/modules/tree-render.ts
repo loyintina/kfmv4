@@ -22,6 +22,17 @@ import { treeAbort } from './abort.js';
 import * as clickQueue from "./click-queue.js";
 const ts = anim.scope('tree-render');
 
+// ========== Overlay 元数据类型 ==========
+/** overlay Box 上挂载的动画元数据，替代 (as any) 隐式契约 */
+interface OverlayMeta {
+  _fullHeight?: number;
+  _origYs?: number[];
+  _targetY?: number;
+  _savedCr?: number;
+  _toggleBox?: Box;
+  _toggleRotate?: number;
+}
+
 // ========== Overlay 管理 ==========
 const _activeOverlays: Box[] = [];
 
@@ -147,14 +158,14 @@ function _setupExpandOverlays(container: Box, fullHeight: number): OverlayPack {
   // 2. 行 overlay（FROM=折叠态 y，TO=终端态 y，从元数据计算）
   const rowOverlays: Box[] = [];
   const hiddenChildren: Box[] = [];
-  const origYs = (container as any)._origYs as number[] | undefined;
+  const origYs = (container as Box & OverlayMeta)._origYs as number[] | undefined;
   for (let j = 0; j < container.children.length; j++) {
     const child = container.children[j];
     if (!child.visible) continue;
     const expandedY = origYs ? origYs[j] : child.y;   // terminal (expanded) Y
     const collapsedY = expandedY - fullHeight;         // computed collapsed Y
     const rowOv = _createVisualClone(child, { id: child.id || (`row-${j}`), y: collapsedY, opacity: 1, zIndex: OVERLAY_Z + 1 });
-    (rowOv as any)._targetY = expandedY;  // GSAP target
+    (rowOv as Box & OverlayMeta)._targetY = expandedY;  // GSAP target
     _addOverlay(rowOv);
     containerOv.addChild(rowOv);
     rowOverlays.push(rowOv);
@@ -169,7 +180,7 @@ function _setupExpandOverlays(container: Box, fullHeight: number): OverlayPack {
   const siblings = _collectSiblingsAfter(container);
   for (const sib of siblings) {
     const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || 'sib'}`, y: sib.y - fullHeight, opacity: 1, zIndex: OVERLAY_Z });
-    (sibOv as any)._targetY = sib.y;  // terminal position
+    (sibOv as Box & OverlayMeta)._targetY = sib.y;  // terminal position
     _addOverlay(sibOv);
     const si = parent.children.indexOf(sib);
     parent.children.splice(si, 0, sibOv);
@@ -201,7 +212,7 @@ function _setupCollapseOverlays(container: Box, fullH: number): OverlayPack {
     const child = container.children[j];
     if (!child.visible) continue;
     const rowOv = _createVisualClone(child, { id: child.id || (`row-${j}`), y: child.y, opacity: 1, zIndex: OVERLAY_Z + 1 });
-    (rowOv as any)._targetY = child.y - fullH;
+    (rowOv as Box & OverlayMeta)._targetY = child.y - fullH;
     _addOverlay(rowOv);
     containerOv.addChild(rowOv);
     rowOverlays.push(rowOv);
@@ -215,7 +226,7 @@ function _setupCollapseOverlays(container: Box, fullH: number): OverlayPack {
   const siblings = _collectSiblingsAfter(container);
   for (const sib of siblings) {
     const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || 'sib'}`, y: sib.y, opacity: 1, zIndex: OVERLAY_Z });
-    (sibOv as any)._targetY = sib.y - fullH;
+    (sibOv as Box & OverlayMeta)._targetY = sib.y - fullH;
     _addOverlay(sibOv);
     const si = parent.children.indexOf(sib);
     parent.children.splice(si, 0, sibOv);
@@ -254,7 +265,7 @@ export function triggerExpandAnimation(path: string): void {
 
   if (!container) return;
 
-  const fullHeight = (container as any)._fullHeight || 0;
+  const fullHeight = (container as Box & OverlayMeta)._fullHeight || 0;
   if (!fullHeight) {
     if (toggle2 && toggle2.transform) {
       toggle2.transform.rotate = 0;
@@ -286,7 +297,8 @@ export function triggerExpandAnimation(path: string): void {
 
   // === overlay 模式 ===
   const pack = _setupExpandOverlays(container, fullHeight);
-  animateCharRain(pack.containerOverlay, root, L.renderer);
+  const rowTargetYs = pack.rowOverlays.map(r => (r as Box & OverlayMeta)._targetY as number);
+  animateCharRain(pack.containerOverlay, root, L.renderer, rowTargetYs);
 
   L.beginOp(path, 'expand');
   const animRoot = L.renderer!.getRoot()!;
@@ -300,32 +312,32 @@ export function triggerExpandAnimation(path: string): void {
       if (L.renderer?.getRoot() !== animRoot) return;
       L.renderer?.setRoot(L.renderer!.getRoot()!);
     },
-  });
+  }, 0);
 
   // 行 overlay: y→_targetY
   for (const rowOv of pack.rowOverlays) {
     ts.to(rowOv, {
-      y: (rowOv as any)._targetY,
+      y: (rowOv as Box & OverlayMeta)._targetY!,
       duration: 0.05,
       ease: 'back.out(1.15)',
       onUpdate: () => {
         if (L.renderer?.getRoot() !== animRoot) return;
         L.renderer?.setRoot(L.renderer!.getRoot()!);
       },
-    });
+    }, 0);
   }
 
   // 兄弟 overlay: y→_targetY
   for (const sibOv of pack.siblingOverlays) {
     ts.to(sibOv, {
-      y: (sibOv as any)._targetY,
+      y: (sibOv as Box & OverlayMeta)._targetY!,
       duration: 0.05,
       ease: 'back.out(1.15)',
       onUpdate: () => {
         if (L.renderer?.getRoot() !== animRoot) return;
         L.renderer?.setRoot(L.renderer!.getRoot()!);
       },
-    });
+    }, 0);
   }
 
   // 动画完成: 清理 overlay → 主树已是终端态
@@ -334,8 +346,8 @@ export function triggerExpandAnimation(path: string): void {
     _removeAllOverlays();
     for (const c of pack.hiddenChildren) c.opacity = 1;
     for (const s of pack.hiddenSiblings) s.opacity = 1;
-    if (container.kfmStyle && (container as any)._savedCr !== undefined) {
-      container.kfmStyle.cornerRadius = (container as any)._savedCr;
+    if (container.kfmStyle && (container as Box & OverlayMeta)._savedCr !== undefined) {
+      container.kfmStyle.cornerRadius = (container as Box & OverlayMeta)._savedCr!;
     }
     // 主树已是终端态，不需要第二次 rebuildTree
     // _ensureMetaFromExpandedState 已在 rebuildTree 中调用
@@ -659,7 +671,7 @@ function doExpand(hit: Box, hitData: any): void {
     return;
   }
 
-  const fullHeight = (container as any)._fullHeight || 0;
+  const fullHeight = (container as Box & OverlayMeta)._fullHeight || 0;
   if (!fullHeight) {
     const finish = () => {
       L.endOp();
@@ -699,7 +711,8 @@ function doExpand(hit: Box, hitData: any): void {
 
   // === overlay 模式 ===
   const pack = _setupExpandOverlays(container, fullHeight);
-  animateCharRain(pack.containerOverlay, root, L.renderer);
+  const rowTargetYs = pack.rowOverlays.map(r => (r as Box & OverlayMeta)._targetY as number);
+  animateCharRain(pack.containerOverlay, root, L.renderer, rowTargetYs);
 
   const animRoot = L.renderer!.getRoot()!;
 
@@ -712,32 +725,32 @@ function doExpand(hit: Box, hitData: any): void {
       if (L.renderer?.getRoot() !== animRoot) return;
       L.renderer?.setRoot(L.renderer!.getRoot()!);
     },
-  });
+  }, 0);
 
   // 行 overlay: y→_targetY
   for (const rowOv of pack.rowOverlays) {
     ts.to(rowOv, {
-      y: (rowOv as any)._targetY,
+      y: (rowOv as Box & OverlayMeta)._targetY!,
       duration: 0.05,
       ease: 'back.out(1.15)',
       onUpdate: () => {
         if (L.renderer?.getRoot() !== animRoot) return;
         L.renderer?.setRoot(L.renderer!.getRoot()!);
       },
-    });
+    }, 0);
   }
 
   // 兄弟 overlay: y→_targetY
   for (const sibOv of pack.siblingOverlays) {
     ts.to(sibOv, {
-      y: (sibOv as any)._targetY,
+      y: (sibOv as Box & OverlayMeta)._targetY!,
       duration: 0.05,
       ease: 'back.out(1.15)',
       onUpdate: () => {
         if (L.renderer?.getRoot() !== animRoot) return;
         L.renderer?.setRoot(L.renderer!.getRoot()!);
       },
-    });
+    }, 0);
   }
 
   // 动画完成: 清理 overlay → 主树已是终端态，直接 _unveilOverlaySubContainers
@@ -746,8 +759,8 @@ function doExpand(hit: Box, hitData: any): void {
     _removeAllOverlays();
     for (const c of pack.hiddenChildren) c.opacity = 1;
     for (const s of pack.hiddenSiblings) s.opacity = 1;
-    if (container.kfmStyle && (container as any)._savedCr !== undefined) {
-      container.kfmStyle.cornerRadius = (container as any)._savedCr;
+    if (container.kfmStyle && (container as Box & OverlayMeta)._savedCr !== undefined) {
+      container.kfmStyle.cornerRadius = (container as Box & OverlayMeta)._savedCr!;
     }
     // 主树已是终端态，不需要第二次 rebuildTree
     // _ensureMetaFromExpandedState 已在 rebuildTree 中调用
@@ -809,7 +822,7 @@ function doCollapse(hit: Box, hitData: any): void {
     // 行 overlay: y → _targetY（展开态 → 折叠态）
     for (const rowOv of pack.rowOverlays) {
       ts.to(rowOv, {
-        y: (rowOv as any)._targetY,
+        y: (rowOv as Box & OverlayMeta)._targetY!,
         duration: 0.3,
         ease: 'power2.in',
         onUpdate: () => {
@@ -822,7 +835,7 @@ function doCollapse(hit: Box, hitData: any): void {
     // 兄弟 overlay: y → _targetY
     for (const sibOv of pack.siblingOverlays) {
       ts.to(sibOv, {
-        y: (sibOv as any)._targetY,
+        y: (sibOv as Box & OverlayMeta)._targetY!,
         duration: 0.3,
         ease: 'power2.in',
         onUpdate: () => {
@@ -939,7 +952,7 @@ function rebuildTree(): void {
         // 尝试恢复光标到之前的行
         const target = findBoxById(newRoot, prevCursorRowId);
         if (target) {
-          moveCursorTo(target);
+          moveCursorTo(target, false);
         } else {
           snapToCenterRow(newRoot, canvasH);
         }
@@ -1004,15 +1017,15 @@ function _ensureMetaFromExpandedState(root: Box): void {
   function walk(box: Box): void {
     for (const c of box.children) {
       if (c.id?.startsWith('expanded-') && c.height > 0) {
-        if (!(c as any)._fullHeight) (c as any)._fullHeight = c.height;
-        if (!(c as any)._origYs) (c as any)._origYs = c.children.map((ch: Box) => ch.y);
+        if (!(c as Box & OverlayMeta)._fullHeight) (c as Box & OverlayMeta)._fullHeight = c.height;
+        if (!(c as Box & OverlayMeta)._origYs) (c as Box & OverlayMeta)._origYs = c.children.map((ch: Box) => ch.y);
         // capture toggle reference for cascade expand
         const subPath = c.id.slice("expanded-".length);
         const subTitle = findBoxById(root, "title-" + subPath);
         const subTog = subTitle?.children?.find((ch: Box) => ch.id?.startsWith("toggle-"));
-        if (subTog && !(c as any)._toggleBox) {
-          (c as any)._toggleBox = subTog;
-          (c as any)._toggleRotate = subTog.transform.rotate;
+        if (subTog && !(c as Box & OverlayMeta)._toggleBox) {
+          (c as Box & OverlayMeta)._toggleBox = subTog;
+          (c as Box & OverlayMeta)._toggleRotate = subTog.transform.rotate;
         }
       }
       walk(c);
@@ -1047,13 +1060,13 @@ async function _unveilOverlaySubContainers(container: Box, root: Box, selfToggle
     const freshTog = freshTitle?.children?.find((c: Box) => c.id?.startsWith('toggle-'));
     if (freshTog) {
       anim.killTweensOf(freshTog.transform);
-      freshTog.transform.rotate = (child as any)._toggleRotate ?? Math.PI / 2;
+      freshTog.transform.rotate = (child as Box & OverlayMeta)._toggleRotate ?? Math.PI / 2;
     }
 
     // === overlay 模式：主树已是终端态，直接用元数据建 overlay ===
     // 元数据已在 rebuildTree 中被 _ensureMetaFromExpandedState 补全
     if (child.kfmStyle) {
-      (child as any)._savedCr = child.kfmStyle.cornerRadius;
+      (child as Box & OverlayMeta)._savedCr = child.kfmStyle.cornerRadius;
       child.kfmStyle.cornerRadius = 0;
     }
 
@@ -1069,8 +1082,8 @@ async function _unveilOverlaySubContainers(container: Box, root: Box, selfToggle
           // 主树已是终端态，只需恢复可见性
           for (const c of pack.hiddenChildren) c.opacity = 1;
           for (const s of pack.hiddenSiblings) s.opacity = 1;
-          if (child.kfmStyle && (child as any)._savedCr !== undefined) {
-            child.kfmStyle.cornerRadius = (child as any)._savedCr;
+          if (child.kfmStyle && (child as Box & OverlayMeta)._savedCr !== undefined) {
+            child.kfmStyle.cornerRadius = (child as Box & OverlayMeta)._savedCr!;
           }
           L.renderer?.setRoot(L.renderer!.getRoot()!);
           resolve();
@@ -1086,7 +1099,7 @@ async function _unveilOverlaySubContainers(container: Box, root: Box, selfToggle
 
       for (const rowOv of pack.rowOverlays) {
         tl.to(rowOv, {
-          y: (rowOv as any)._targetY,
+          y: (rowOv as Box & OverlayMeta)._targetY!,
           duration: 0.05,
           ease: 'back.out(1.15)',
           onUpdate: () => { L.renderer?.setRoot(L.renderer!.getRoot()!); },
@@ -1095,7 +1108,7 @@ async function _unveilOverlaySubContainers(container: Box, root: Box, selfToggle
 
       for (const sibOv of pack.siblingOverlays) {
         tl.to(sibOv, {
-          y: (sibOv as any)._targetY,
+          y: (sibOv as Box & OverlayMeta)._targetY!,
           duration: 0.05,
           ease: 'back.out(1.15)',
           onUpdate: () => { L.renderer?.setRoot(L.renderer!.getRoot()!); },
