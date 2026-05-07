@@ -10401,6 +10401,20 @@
     return _queue[0];
   }
 
+  // src/client/modules/debug-assert.ts
+  var DEBUG = true;
+  function assert(condition, message) {
+    if (DEBUG && !condition) {
+      console.error(`[ASSERT FAILED] ${message}`);
+      debugger;
+    }
+  }
+  function warn(message) {
+    if (DEBUG) {
+      console.warn(`[WARN] ${message}`);
+    }
+  }
+
   // src/client/modules/tree-render.ts
   var ts = anim.scope("tree-render");
   var _activeOverlays = [];
@@ -10566,6 +10580,7 @@
     if (L._stateSub) KFMState.unsubscribe(L._stateSub);
     L._stateSub = () => {
       L.endOp();
+      if (L.isAnimating) warn("_stateSub fired while animation still active");
       rebuildTree();
     };
     KFMState.subscribe(L._stateSub);
@@ -10612,6 +10627,7 @@
       anim.killTweensOf(toggle2.transform);
       toggle2.transform.rotate = 0;
     }
+    assert(_activeOverlays.length === 0, "overlays not empty before triggerExpandAnimation");
     const pack = _setupExpandOverlays(container, fullHeight);
     const rowTargetYs = pack.rowOverlays.map((r) => r._targetY);
     animateCharRain(pack.containerOverlay, root, L.renderer, rowTargetYs);
@@ -10656,6 +10672,7 @@
       if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
       _removeAllOverlays();
       ts.clear();
+      assert(_activeOverlays.length === 0, "overlays leaked after animation");
       for (const c of pack.hiddenChildren) c.opacity = 1;
       for (const s of pack.hiddenSiblings) s.opacity = 1;
       if (container.kfmStyle && container._savedCr !== void 0) {
@@ -10965,6 +10982,7 @@
       anim.killTweensOf(toggle2.transform);
       toggle2.transform.rotate = 0;
     }
+    assert(_activeOverlays.length === 0, "overlays not empty before doExpand");
     const pack = _setupExpandOverlays(container, fullHeight);
     const rowTargetYs = pack.rowOverlays.map((r) => r._targetY);
     animateCharRain(pack.containerOverlay, root, L.renderer, rowTargetYs);
@@ -11007,6 +11025,7 @@
       var _a2, _b, _c;
       if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
       _removeAllOverlays();
+      assert(_activeOverlays.length === 0, "overlays leaked after doExpand");
       ts.clear();
       for (const c of pack.hiddenChildren) c.opacity = 1;
       for (const s of pack.hiddenSiblings) s.opacity = 1;
@@ -11059,6 +11078,7 @@
     let pack = null;
     if (container) {
       const fullH = container.height;
+      assert(_activeOverlays.length === 0, "overlays not empty before doCollapse");
       pack = _setupCollapseOverlays(container, fullH);
       ts.to(pack.containerOverlay, {
         height: 0,
@@ -11088,6 +11108,7 @@
       var _a, _b;
       if (((_a = L.renderer) == null ? void 0 : _a.getRoot()) !== animRoot) return;
       _removeAllOverlays();
+      assert(_activeOverlays.length === 0, "overlays leaked after doCollapse");
       ts.clear();
       if (pack) {
         for (const c of pack.hiddenChildren) c.opacity = 1;
@@ -11123,6 +11144,7 @@
     var _a, _b, _c, _d;
     if (!L.renderer) return;
     if (L.isAnimating) {
+      warn("rebuildTree called while animation still active \u2014 forcing release");
       if (L._animBusyAt && Date.now() - L._animBusyAt > 3e3) {
         L.endOp();
         clear();
@@ -11264,6 +11286,7 @@
         const tl = anim.timeline({
           onComplete: () => {
             var _a2;
+            assert(_activeOverlays.length === 0, "overlays leaked after unveil");
             _removeAllOverlays();
             for (const c of pack.hiddenChildren) c.opacity = 1;
             for (const s of pack.hiddenSiblings) s.opacity = 1;

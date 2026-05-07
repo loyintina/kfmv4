@@ -20,6 +20,7 @@ import { bindScrollEvents } from './canvas-scroll.js';
 import { DOM } from "./dom-refs.js";
 import { treeAbort } from './abort.js';
 import * as clickQueue from "./click-queue.js";
+import { assert, warn } from "./debug-assert.js";
 const ts = anim.scope('tree-render');
 
 // ========== Overlay 元数据类型 ==========
@@ -245,7 +246,10 @@ function _ensureSubscribed(): void {
   L._stateSub = () => {
     // state 变化（toggleHidden/expanded）是用户主动行为，跳过 L._animBusy 锁
     L.endOp();
-    
+    // 守卫：_stateSub 被调用时 L.isAnimating 必须已被 endOp() 清除。
+    // 如果这里 isAnimating 仍为 true，说明有人在动画进行中调了 notify()。
+    if (L.isAnimating) warn('_stateSub fired while animation still active');
+
     rebuildTree();
   };
   KFMState.subscribe(L._stateSub);
@@ -296,6 +300,7 @@ export function triggerExpandAnimation(path: string): void {
   }
 
   // === overlay 模式 ===
+  assert(_activeOverlays.length === 0, 'overlays not empty before triggerExpandAnimation');
   const pack = _setupExpandOverlays(container, fullHeight);
   const rowTargetYs = pack.rowOverlays.map(r => (r as Box & OverlayMeta)._targetY as number);
   animateCharRain(pack.containerOverlay, root, L.renderer, rowTargetYs);
@@ -345,6 +350,7 @@ export function triggerExpandAnimation(path: string): void {
     if (L.renderer?.getRoot() !== animRoot) return;
     _removeAllOverlays();
     ts.clear();
+    assert(_activeOverlays.length === 0, 'overlays leaked after animation');
     for (const c of pack.hiddenChildren) c.opacity = 1;
     for (const s of pack.hiddenSiblings) s.opacity = 1;
     if (container.kfmStyle && (container as Box & OverlayMeta)._savedCr !== undefined) {
@@ -711,6 +717,7 @@ function doExpand(hit: Box, hitData: any): void {
   }
 
   // === overlay 模式 ===
+  assert(_activeOverlays.length === 0, 'overlays not empty before doExpand');
   const pack = _setupExpandOverlays(container, fullHeight);
   const rowTargetYs = pack.rowOverlays.map(r => (r as Box & OverlayMeta)._targetY as number);
   animateCharRain(pack.containerOverlay, root, L.renderer, rowTargetYs);
@@ -758,6 +765,7 @@ function doExpand(hit: Box, hitData: any): void {
   ts.call(() => {
     if (L.renderer?.getRoot() !== animRoot) return;
     _removeAllOverlays();
+    assert(_activeOverlays.length === 0, 'overlays leaked after doExpand');
     ts.clear();
     for (const c of pack.hiddenChildren) c.opacity = 1;
     for (const s of pack.hiddenSiblings) s.opacity = 1;
@@ -808,6 +816,7 @@ function doCollapse(hit: Box, hitData: any): void {
   let pack: OverlayPack | null = null;
   if (container) {
     const fullH = container.height;
+    assert(_activeOverlays.length === 0, 'overlays not empty before doCollapse');
     pack = _setupCollapseOverlays(container, fullH);
 
     // 容器 overlay: height fullH → 0
@@ -839,6 +848,7 @@ function doCollapse(hit: Box, hitData: any): void {
   ts.call(() => {
     if (L.renderer?.getRoot() !== animRoot) return;
     _removeAllOverlays();
+    assert(_activeOverlays.length === 0, 'overlays leaked after doCollapse');
     ts.clear();
     if (pack) {
       for (const c of pack.hiddenChildren) c.opacity = 1;
@@ -885,6 +895,9 @@ export function forceRebuildTree(): void {
 function rebuildTree(): void {
   if (!L.renderer) return;
   if (L.isAnimating) {
+    // rebuildTree 被调用时动画应已完成或超时。
+    // 这是一个防御性守卫：如果走到这里说明 _stateSub 可能绕过了 endOp()。
+    warn('rebuildTree called while animation still active — forcing release');
     // 超���兜底：超过 3000ms 自动释��
     if (L._animBusyAt && Date.now() - L._animBusyAt > 3000) {
       L.endOp();
@@ -1068,6 +1081,7 @@ async function _unveilOverlaySubContainers(container: Box, root: Box, selfToggle
     await new Promise<void>(resolve => {
       const tl = anim.timeline({
         onComplete: () => {
+          assert(_activeOverlays.length === 0, 'overlays leaked after unveil');
           _removeAllOverlays();
           // 主树已是终端态，只需恢复可见性
           for (const c of pack.hiddenChildren) c.opacity = 1;
