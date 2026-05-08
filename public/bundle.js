@@ -11240,18 +11240,21 @@
     function walk(box) {
       var _a, _b;
       for (const c of box.children) {
-        if (((_a = c.id) == null ? void 0 : _a.startsWith("expanded-")) && c.height > 0) {
-          if (!c._fullHeight) c._fullHeight = c.height;
-          if (!c._origYs) c._origYs = c.children.map((ch) => ch.y);
-          const subPath = c.id.slice("expanded-".length);
-          const subTitle = findBoxById(root, "title-" + subPath);
-          const subTog = (_b = subTitle == null ? void 0 : subTitle.children) == null ? void 0 : _b.find((ch) => {
-            var _a2;
-            return (_a2 = ch.id) == null ? void 0 : _a2.startsWith("toggle-");
-          });
-          if (subTog && !c._toggleBox) {
-            c._toggleBox = subTog;
-            c._toggleRotate = subTog.transform.rotate;
+        if ((_a = c.id) == null ? void 0 : _a.startsWith("expanded-")) {
+          const h = c.height > 0 ? c.height : (c.children || []).reduce((s, ch) => s + (ch.height > 0 ? ch.height : 0), 0);
+          if (h > 0) {
+            if (!c._fullHeight) c._fullHeight = h;
+            if (!c._origYs) c._origYs = c.children.map((ch) => ch.y);
+            const subPath = c.id.slice("expanded-".length);
+            const subTitle = findBoxById(root, "title-" + subPath);
+            const subTog = (_b = subTitle == null ? void 0 : subTitle.children) == null ? void 0 : _b.find((ch) => {
+              var _a2;
+              return (_a2 = ch.id) == null ? void 0 : _a2.startsWith("toggle-");
+            });
+            if (subTog && !c._toggleBox) {
+              c._toggleBox = subTog;
+              c._toggleRotate = subTog.transform.rotate;
+            }
           }
         }
         walk(c);

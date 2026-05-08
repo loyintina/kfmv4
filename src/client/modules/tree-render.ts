@@ -1026,16 +1026,21 @@ function snapToCenterRow(root: Box, canvasH: number): void {
 function _ensureMetaFromExpandedState(root: Box): void {
   function walk(box: Box): void {
     for (const c of box.children) {
-      if (c.id?.startsWith('expanded-') && c.height > 0) {
-        if (!(c as Box & OverlayMeta)._fullHeight) (c as Box & OverlayMeta)._fullHeight = c.height;
-        if (!(c as Box & OverlayMeta)._origYs) (c as Box & OverlayMeta)._origYs = c.children.map((ch: Box) => ch.y);
-        // capture toggle reference for cascade expand
-        const subPath = c.id.slice("expanded-".length);
-        const subTitle = findBoxById(root, "title-" + subPath);
-        const subTog = subTitle?.children?.find((ch: Box) => ch.id?.startsWith("toggle-"));
-        if (subTog && !(c as Box & OverlayMeta)._toggleBox) {
-          (c as Box & OverlayMeta)._toggleBox = subTog;
-          (c as Box & OverlayMeta)._toggleRotate = subTog.transform.rotate;
+      if (c.id?.startsWith('expanded-')) {
+        // 防御性：如果 c.height 被渲染器重置为 0，从子元素推算
+        const h = c.height > 0 ? c.height
+          : (c.children || []).reduce((s: number, ch: Box) => s + (ch.height > 0 ? ch.height : 0), 0);
+        if (h > 0) {
+          if (!(c as Box & OverlayMeta)._fullHeight) (c as Box & OverlayMeta)._fullHeight = h;
+          if (!(c as Box & OverlayMeta)._origYs) (c as Box & OverlayMeta)._origYs = c.children.map((ch: Box) => ch.y);
+          // capture toggle reference for cascade expand
+          const subPath = c.id.slice("expanded-".length);
+          const subTitle = findBoxById(root, "title-" + subPath);
+          const subTog = subTitle?.children?.find((ch: Box) => ch.id?.startsWith("toggle-"));
+          if (subTog && !(c as Box & OverlayMeta)._toggleBox) {
+            (c as Box & OverlayMeta)._toggleBox = subTog;
+            (c as Box & OverlayMeta)._toggleRotate = subTog.transform.rotate;
+          }
         }
       }
       walk(c);
