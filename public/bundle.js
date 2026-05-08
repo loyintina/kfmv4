@@ -10431,7 +10431,6 @@
   function _resetAnimTimeline() {
     ts.clear();
     ts.time(0);
-    killActiveCharRain();
   }
   var _activeOverlays = [];
   var OVERLAY_Z = 200;
@@ -10724,6 +10723,7 @@
   }
   function onSidebarOpen() {
     var _a;
+    killActiveCharRain();
     _resetAnimTimeline();
     (_a = L.renderer) == null ? void 0 : _a.stop();
     L.renderer = null;
@@ -10789,6 +10789,7 @@
   function onSidebarClose() {
     var _a, _b, _c, _d, _e;
     _removeAllOverlays();
+    killActiveCharRain();
     _resetAnimTimeline();
     L._sidebarClosed = true;
     L.endOp();
@@ -10904,6 +10905,7 @@
         const sy = (_a = r.scrollY) != null ? _a : 0;
         const tgt = _findClickPath(r, next.offsetX, next.offsetY + sy);
         if (tgt && tgt === L.animatingPath) {
+          killActiveCharRain();
           _resetAnimTimeline();
           _removeAllOverlays();
           L.endOp();

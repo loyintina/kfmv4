@@ -23,11 +23,11 @@ import * as clickQueue from "./click-queue.js";
 import { assert, warn } from "./debug-assert.js";
 const ts = anim.scope('tree-render');
 
-/** 重置动画时间线：清空 tween + 归零播放头 + 杀字符雨。所有动画出口统一调此函数。 */
+/** 重置动画时间线：清空 tween + 归零播放头。正常动画结束时调用。
+ *  注意：不杀 char-rain（让其自然播完）。中断场景需额外调用 killActiveCharRain()。 */
 function _resetAnimTimeline(): void {
   ts.clear();
   ts.time(0);
-  killActiveCharRain();
 }
 
 // ========== Overlay 元数据类型 ==========
@@ -401,6 +401,7 @@ export function isAnimLocked(): boolean {
 
 export function onSidebarOpen(): void {
   // ===== 销毁旧渲染器 + 通过生命周期重置所有状态 =====
+  killActiveCharRain();
   _resetAnimTimeline();
   L.renderer?.stop();
   L.renderer = null;
@@ -478,6 +479,7 @@ export function onSidebarOpen(): void {
 export function onSidebarClose(): void {
   // 先停掉所有动画和独立rAF循环
   _removeAllOverlays();
+  killActiveCharRain();
   _resetAnimTimeline();
   L._sidebarClosed = true;  // 让wheel/touch的rAF循环自己退出
   L.endOp();
@@ -622,6 +624,7 @@ function processClickQueue(): void {
       if (tgt && tgt === L.animatingPath) {
         // P2 逆向动画：同路径点击 → 中断当前动画，清理 overlay，
         // 主树已在终端态，直接走反向（下方 dequeue + doExpand/doCollapse）
+        killActiveCharRain();
         _resetAnimTimeline();
         _removeAllOverlays();
         L.endOp();
