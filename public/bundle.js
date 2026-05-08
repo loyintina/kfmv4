@@ -8547,7 +8547,7 @@
     }
   }
   async function animateCharRain(container, root, renderer, rowTargetYs) {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e;
     const rows = container.children.filter(
       (c) => {
         var _a2, _b2;
@@ -8560,8 +8560,12 @@
     if (!ctx) return;
     const origOverflow = container.overflow;
     container.overflow = "visible";
+    const parentOrigOverflow = (_a = container.parent) == null ? void 0 : _a.overflow;
+    if (container.parent && container.parent.overflow === "hidden") {
+      container.parent.overflow = "visible";
+    }
     const absY = container.getAbsolutePosition().y;
-    const scrollY = (_a = root.scrollY) != null ? _a : 0;
+    const scrollY = (_b = root.scrollY) != null ? _b : 0;
     const topY = scrollY - absY;
     container.children.forEach((c) => {
       c.opacity = 1;
@@ -8574,12 +8578,12 @@
     const hiddenToggles = [];
     for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
       const row = rows[rowIdx];
-      const rowExpandedY = (_b = rowTargetYs == null ? void 0 : rowTargetYs[rowIdx]) != null ? _b : row.y;
+      const rowExpandedY = (_c = rowTargetYs == null ? void 0 : rowTargetYs[rowIdx]) != null ? _c : row.y;
       const label = row.children.find((c) => {
         var _a2;
         return (_a2 = c.id) == null ? void 0 : _a2.startsWith("label-");
       });
-      if (!label || !((_c = label.textStyle) == null ? void 0 : _c.content)) continue;
+      if (!label || !((_d = label.textStyle) == null ? void 0 : _d.content)) continue;
       const text = label.textStyle.content;
       const font = label.textStyle.font || FONT;
       const color = label.textStyle.color;
@@ -8649,7 +8653,7 @@
         var _a2;
         return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
       });
-      if (toggleBox && ((_d = toggleBox.textStyle) == null ? void 0 : _d.content)) {
+      if (toggleBox && ((_e = toggleBox.textStyle) == null ? void 0 : _e.content)) {
         const tChar = toggleBox.textStyle.content;
         const tFont = toggleBox.textStyle.font || font;
         ctx.font = tFont;
@@ -8749,6 +8753,9 @@
         t.visible = true;
       });
       container.overflow = origOverflow;
+      if (container.parent && parentOrigOverflow) {
+        container.parent.overflow = parentOrigOverflow;
+      }
       container.children.forEach((c) => {
         c.opacity = 1;
       });

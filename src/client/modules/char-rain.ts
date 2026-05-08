@@ -56,9 +56,14 @@ export async function animateCharRain(
   const ctx = canvas?.getContext("2d");
   if (!ctx) return;
 
-  // 2. 保存并临时修改 overflow，允许字符在容器外渲染
+  // 2. 保存并临时修改 overflow。字符起始 Y 为负，会被自身及父容器的
+  //    overflow:hidden 裁掉。两个都要改成 visible。
   const origOverflow = container.overflow;
   container.overflow = "visible";
+  const parentOrigOverflow = container.parent?.overflow;
+  if (container.parent && container.parent.overflow === 'hidden') {
+    container.parent.overflow = 'visible';
+  }
 
   // 3. 计算坐标：字符初始位置在屏幕顶部（sidebar 可视区 y=0）
   const absY = container.getAbsolutePosition().y;
@@ -274,6 +279,9 @@ export async function animateCharRain(
     hiddenToggles.forEach(t => { t.visible = true; });
 
     container.overflow = origOverflow;
+    if (container.parent && parentOrigOverflow) {
+      container.parent.overflow = parentOrigOverflow;
+    }
     container.children.forEach((c) => { c.opacity = 1; });
     renderer?.setRoot(root);
   }
