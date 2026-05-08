@@ -8567,9 +8567,6 @@
     const absY = container.getAbsolutePosition().y;
     const scrollY = (_b = root.scrollY) != null ? _b : 0;
     const topY = scrollY - absY;
-    container.children.forEach((c) => {
-      c.opacity = 1;
-    });
     renderer == null ? void 0 : renderer.setRoot(root);
     const allTargets = [];
     const lineGroups = [];
@@ -8756,9 +8753,6 @@
       if (container.parent && parentOrigOverflow) {
         container.parent.overflow = parentOrigOverflow;
       }
-      container.children.forEach((c) => {
-        c.opacity = 1;
-      });
       renderer == null ? void 0 : renderer.setRoot(root);
     }
   }
@@ -10641,7 +10635,7 @@
     assert(_activeOverlays.length === 0, "overlays not empty before triggerExpandAnimation");
     const pack = _setupExpandOverlays(container, fullHeight);
     const rowTargetYs = pack.rowOverlays.map((r) => r._targetY);
-    animateCharRain(pack.containerOverlay, root, L.renderer, rowTargetYs);
+    animateCharRain(container, root, L.renderer, rowTargetYs);
     L.beginOp(path, "expand");
     const animRoot = L.renderer.getRoot();
     ts.to(pack.containerOverlay, {
@@ -10991,7 +10985,7 @@
     assert(_activeOverlays.length === 0, "overlays not empty before doExpand");
     const pack = _setupExpandOverlays(container, fullHeight);
     const rowTargetYs = pack.rowOverlays.map((r) => r._targetY);
-    animateCharRain(pack.containerOverlay, root, L.renderer, rowTargetYs);
+    animateCharRain(container, root, L.renderer, rowTargetYs);
     const animRoot = L.renderer.getRoot();
     ts.to(pack.containerOverlay, {
       height: fullHeight,

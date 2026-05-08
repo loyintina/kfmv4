@@ -70,8 +70,6 @@ export async function animateCharRain(
   const scrollY = root.scrollY ?? 0;
   const topY = scrollY - absY; // 容器空间中对应屏幕 y=0 的值
 
-  // 确保所有子元素可见（容器动画阶段可能设为 0）
-  container.children.forEach((c) => { c.opacity = 1; });
   renderer?.setRoot(root);
 
   // 4. 逐行逐字创建字符 Box
@@ -282,7 +280,6 @@ export async function animateCharRain(
     if (container.parent && parentOrigOverflow) {
       container.parent.overflow = parentOrigOverflow;
     }
-    container.children.forEach((c) => { c.opacity = 1; });
     renderer?.setRoot(root);
   }
 }

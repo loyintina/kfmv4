@@ -304,7 +304,8 @@ export function triggerExpandAnimation(path: string): void {
   assert(_activeOverlays.length === 0, 'overlays not empty before triggerExpandAnimation');
   const pack = _setupExpandOverlays(container, fullHeight);
   const rowTargetYs = pack.rowOverlays.map(r => (r as Box & OverlayMeta)._targetY as number);
-  animateCharRain(pack.containerOverlay, root, L.renderer, rowTargetYs);
+  // 关键：传真实容器而非 overlay，字符 Box 不会被 _removeAllOverlays 误杀
+  animateCharRain(container, root, L.renderer, rowTargetYs);
 
   L.beginOp(path, 'expand');
   const animRoot = L.renderer!.getRoot()!;
@@ -717,7 +718,9 @@ function doExpand(hit: Box, hitData: any): void {
   assert(_activeOverlays.length === 0, 'overlays not empty before doExpand');
   const pack = _setupExpandOverlays(container, fullHeight);
   const rowTargetYs = pack.rowOverlays.map(r => (r as Box & OverlayMeta)._targetY as number);
-  animateCharRain(pack.containerOverlay, root, L.renderer, rowTargetYs);
+  // 关键：传真实容器而非 overlay。字符 Box 挂载在真实容器上，
+  // 这样 ts.call 里 _removeAllOverlays() 移除 overlay 时字符不受影响。
+  animateCharRain(container, root, L.renderer, rowTargetYs);
 
   const animRoot = L.renderer!.getRoot()!;
 
