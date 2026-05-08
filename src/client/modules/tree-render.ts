@@ -862,13 +862,9 @@ function doCollapse(hit: Box, hitData: any): void {
       for (const s of pack.hiddenSiblings) s.opacity = 1;
     }
     L.endOp();
-    const _savedCid = L.cursorRowId;
+    // onTap 内部的 rebuildTree 已处理光标定位，无需重复恢复
     hit.gesture!.onTap!();
     processClickQueue();
-    if (_savedCid) {
-      const _r = L.renderer?.getRoot();
-      if (_r) { const _tc = findBoxById(_r, _savedCid); if (_tc) moveCursorTo(_tc, false); }
-    }
   }, undefined, maxDur);
 
 }
@@ -957,23 +953,21 @@ function rebuildTree(): void {
   if (newRoot) {
     ensureCursorBox(newRoot, canvasH);
 
-    {
-      if (prevCursorRowId) {
-        // 尝试恢复光标到之前的行
-        const target = findBoxById(newRoot, prevCursorRowId);
-        if (target) {
-          moveCursorTo(target, false);
-        } else {
-          snapToCenterRow(newRoot, canvasH);
-        }
+    if (prevCursorRowId) {
+      // 尝试恢复光标到之前的行
+      const target = findBoxById(newRoot, prevCursorRowId);
+      if (target) {
+        moveCursorTo(target, false);
       } else {
-        // 初始状态：光标居中吸附
         snapToCenterRow(newRoot, canvasH);
       }
+    } else {
+      // 初始状态：光标居中吸附
+      snapToCenterRow(newRoot, canvasH);
     }
   
     // 重建光标步进行索引
-    }
+  }
 
   if (newRoot) _rebuildRowIndex(newRoot);
 
@@ -1085,10 +1079,10 @@ async function _unveilOverlaySubContainers(container: Box, root: Box, selfToggle
       child.kfmStyle.cornerRadius = 0;
     }
 
-    animateCharRain(child, root, L.renderer);
-
-    // 创建 overlay 并动画（_setupExpandOverlays 从元数据计算 FROM 位置）
+    // 先搭建 overlay（从元数据计算 FROM 位置），再启动字符雨
     const pack = _setupExpandOverlays(child, subFullH);
+    const rowTargetYs = pack.rowOverlays.map(r => (r as Box & OverlayMeta)._targetY as number);
+    animateCharRain(child, root, L.renderer, rowTargetYs);
 
     await new Promise<void>(resolve => {
       const tl = anim.timeline({
