@@ -32,6 +32,7 @@ import { initApp } from './modules/app.js';
 import { initUI } from './modules/ui.js';
 import { initGestures } from './modules/gestures.js';
 import { initOrb } from './modules/orb.js';
+import { initDebugPanel } from './modules/debug-panel.js';
 import { initTreeRenderer } from './modules/tree-render.js';
 import { loadFileTree, initLazyLoader } from './modules/tree-loader.js';
 import { initCardStack } from './modules/card-stack.js';
@@ -42,6 +43,7 @@ initApp();
 initUI();
 initGestures();
 initOrb();
+initDebugPanel();
 initTreeRenderer();
 initCardStack();
 

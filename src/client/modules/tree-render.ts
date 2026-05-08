@@ -21,6 +21,7 @@ import { DOM } from "./dom-refs.js";
 import { treeAbort } from './abort.js';
 import * as clickQueue from "./click-queue.js";
 import { assert, warn } from "./debug-assert.js";
+import { debugLog } from "./debug-panel.js";
 const ts = anim.scope('tree-render');
 
 /** 重置动画时间线：清空 tween + 归零播放头。正常动画结束时调用。
@@ -212,6 +213,8 @@ function _setupCollapseOverlays(container: Box, fullH: number): OverlayPack {
   parent.children.splice(ci + 1, 0, containerOv);
   containerOv.parent = parent;
   containerOv.overflow = 'hidden';  // 折叠时裁剪文字
+
+  debugLog(`[collapse] setup path=${container.id} fullH=${fullH} overflow=${containerOv.overflow} height=${containerOv.height} borderRadius=${containerOv.borderRadius} parent=${parent.id}`);
 
   // 2. 行 overlay：固定在展开态 y，不单独做 Y 动画。
   // 容器 overlay 收缩时 overflow:hidden 自然裁掉它们，无需行自己动。
@@ -820,15 +823,18 @@ function doCollapse(hit: Box, hitData: any): void {
     assert(_activeOverlays.length === 0, 'overlays not empty before doCollapse');
     pack = _setupCollapseOverlays(container, fullH);
 
+    debugLog(`[collapse] anim start path=${hitData.path} fullH=${fullH} containerOv=${pack.containerOverlay.id}`);
+
     // 容器 overlay: height fullH → 0
     ts.to(pack.containerOverlay, {
       height: 0,
       duration: 0.3,
       ease: 'power2.in',
       onUpdate: () => {
-        if (L.renderer?.getRoot() !== animRoot) return;
+        if (L.renderer?.getRoot() !== animRoot) { debugLog(`[collapse] SKIP onUpdate root mismatch`); return; }
         L.renderer?.setRoot(L.renderer!.getRoot()!);
       },
+      onStart: () => { debugLog(`[collapse] tween START height=${pack!.containerOverlay.height}`); },
     }, 0);
 
     // 兄弟 overlay: y → _targetY
