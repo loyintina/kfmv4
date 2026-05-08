@@ -10428,6 +10428,11 @@
 
   // src/client/modules/tree-render.ts
   var ts = anim.scope("tree-render");
+  function _resetAnimTimeline() {
+    ts.clear();
+    ts.time(0);
+    killActiveCharRain();
+  }
   var _activeOverlays = [];
   var OVERLAY_Z = 200;
   function _addOverlay(overlay) {
@@ -10686,8 +10691,7 @@
       var _a2, _b2, _c2;
       if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
       _removeAllOverlays();
-      ts.clear();
-      killActiveCharRain();
+      _resetAnimTimeline();
       assert(_activeOverlays.length === 0, "overlays leaked after animation");
       for (const c of pack.hiddenChildren) c.opacity = 1;
       for (const s of pack.hiddenSiblings) s.opacity = 1;
@@ -10720,9 +10724,7 @@
   }
   function onSidebarOpen() {
     var _a;
-    ts.clear();
-    killActiveCharRain();
-    ts.time(0);
+    _resetAnimTimeline();
     (_a = L.renderer) == null ? void 0 : _a.stop();
     L.renderer = null;
     L.resetForOpen();
@@ -10787,8 +10789,7 @@
   function onSidebarClose() {
     var _a, _b, _c, _d, _e;
     _removeAllOverlays();
-    ts.clear();
-    killActiveCharRain();
+    _resetAnimTimeline();
     L._sidebarClosed = true;
     L.endOp();
     L._restoringFromSave = true;
@@ -10903,9 +10904,7 @@
         const sy = (_a = r.scrollY) != null ? _a : 0;
         const tgt = _findClickPath(r, next.offsetX, next.offsetY + sy);
         if (tgt && tgt === L.animatingPath) {
-          ts.clear();
-          killActiveCharRain();
-          ts.time(0);
+          _resetAnimTimeline();
           _removeAllOverlays();
           L.endOp();
           rebuildTree();
@@ -11046,8 +11045,7 @@
       if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
       _removeAllOverlays();
       assert(_activeOverlays.length === 0, "overlays leaked after doExpand");
-      ts.clear();
-      killActiveCharRain();
+      _resetAnimTimeline();
       for (const c of pack.hiddenChildren) c.opacity = 1;
       for (const s of pack.hiddenSiblings) s.opacity = 1;
       if (container.kfmStyle && container._savedCr !== void 0) {
@@ -11084,7 +11082,6 @@
     const root = L.renderer.getRoot();
     const container = findBoxById(root, containerId);
     const animRoot = L.renderer.getRoot();
-    ts.time(0);
     if (tog) {
       ts.to(tog.transform, {
         rotate: 0,
@@ -11130,8 +11127,7 @@
       if (((_a = L.renderer) == null ? void 0 : _a.getRoot()) !== animRoot) return;
       _removeAllOverlays();
       assert(_activeOverlays.length === 0, "overlays leaked after doCollapse");
-      ts.clear();
-      killActiveCharRain();
+      _resetAnimTimeline();
       if (pack) {
         for (const c of pack.hiddenChildren) c.opacity = 1;
         for (const s of pack.hiddenSiblings) s.opacity = 1;

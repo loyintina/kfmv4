@@ -23,6 +23,13 @@ import * as clickQueue from "./click-queue.js";
 import { assert, warn } from "./debug-assert.js";
 const ts = anim.scope('tree-render');
 
+/** 重置动画时间线：清空 tween + 归零播放头 + 杀字符雨。所有动画出口统一调此函数。 */
+function _resetAnimTimeline(): void {
+  ts.clear();
+  ts.time(0);
+  killActiveCharRain();
+}
+
 // ========== Overlay 元数据类型 ==========
 /** overlay Box 上挂载的动画元数据，替代 (as any) 隐式契约 */
 interface OverlayMeta {
@@ -353,7 +360,7 @@ export function triggerExpandAnimation(path: string): void {
   ts.call(() => {
     if (L.renderer?.getRoot() !== animRoot) return;
     _removeAllOverlays();
-    ts.clear(); killActiveCharRain();
+    _resetAnimTimeline();
     assert(_activeOverlays.length === 0, 'overlays leaked after animation');
     for (const c of pack.hiddenChildren) c.opacity = 1;
     for (const s of pack.hiddenSiblings) s.opacity = 1;
@@ -394,8 +401,7 @@ export function isAnimLocked(): boolean {
 
 export function onSidebarOpen(): void {
   // ===== 销毁旧渲染器 + 通过生命周期重置所有状态 =====
-  ts.clear(); killActiveCharRain();
-  ts.time(0);  // 重置 playhead，确保后续补间从 0 开始
+  _resetAnimTimeline();
   L.renderer?.stop();
   L.renderer = null;
   L.resetForOpen();
@@ -472,7 +478,7 @@ export function onSidebarOpen(): void {
 export function onSidebarClose(): void {
   // 先停掉所有动画和独立rAF循环
   _removeAllOverlays();
-  ts.clear(); killActiveCharRain();
+  _resetAnimTimeline();
   L._sidebarClosed = true;  // 让wheel/touch的rAF循环自己退出
   L.endOp();
   
@@ -616,7 +622,7 @@ function processClickQueue(): void {
       if (tgt && tgt === L.animatingPath) {
         // P2 逆向动画：同路径点击 → 中断当前动画，清理 overlay，
         // 主树已在终端态，直接走反向（下方 dequeue + doExpand/doCollapse）
-        ts.clear(); killActiveCharRain(); ts.time(0);
+        _resetAnimTimeline();
         _removeAllOverlays();
         L.endOp();
         rebuildTree();
@@ -773,7 +779,7 @@ function doExpand(hit: Box, hitData: any): void {
     if (L.renderer?.getRoot() !== animRoot) return;
     _removeAllOverlays();
     assert(_activeOverlays.length === 0, 'overlays leaked after doExpand');
-    ts.clear(); killActiveCharRain();
+    _resetAnimTimeline();
     for (const c of pack.hiddenChildren) c.opacity = 1;
     for (const s of pack.hiddenSiblings) s.opacity = 1;
     if (container.kfmStyle && (container as Box & OverlayMeta)._savedCr !== undefined) {
@@ -808,7 +814,6 @@ function doCollapse(hit: Box, hitData: any): void {
 
   
   const animRoot = L.renderer!.getRoot()!;
-  ts.time(0);
 
   // toggle 旋转动画（在主树上，不是 overlay）
   if (tog) {
@@ -856,7 +861,7 @@ function doCollapse(hit: Box, hitData: any): void {
     if (L.renderer?.getRoot() !== animRoot) return;
     _removeAllOverlays();
     assert(_activeOverlays.length === 0, 'overlays leaked after doCollapse');
-    ts.clear(); killActiveCharRain();
+    _resetAnimTimeline();
     if (pack) {
       for (const c of pack.hiddenChildren) c.opacity = 1;
       for (const s of pack.hiddenSiblings) s.opacity = 1;
