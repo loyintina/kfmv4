@@ -284,23 +284,13 @@ export function triggerExpandAnimation(path: string): void {
   if (!fullHeight) {
     if (toggle2 && toggle2.transform) {
       toggle2.transform.rotate = 0;
-      const startTime = performance.now();
-      const endRot = Math.PI / 2;
-      const durationMs = 300;
-      const rend = L.renderer;
-      function animFrame() {
-        const elapsed = performance.now() - startTime;
-        const t = Math.min(elapsed / durationMs, 1);
-        const eased = 1 - (1 - t) * (1 - t);
-        toggle2!.transform.rotate = endRot * eased;
-        if (rend) rend.setRoot(rend.getRoot()!);
-        if (elapsed < durationMs) {
-          requestAnimationFrame(animFrame);
-        }
-      }
-      requestAnimationFrame(animFrame);
+      ts.to(toggle2.transform, {
+        rotate: Math.PI / 2,
+        duration: 0.3,
+        ease: 'power2.out',
+        onUpdate: () => { L.renderer?.setRoot(L.renderer!.getRoot()!); },
+      }, 0);
     }
-    L.renderer?.setRoot(L.renderer!.getRoot()!);
     return;
   }
 
@@ -371,7 +361,9 @@ export function triggerExpandAnimation(path: string): void {
     // _ensureMetaFromExpandedState 已在 rebuildTree 中调用
     L.renderer?.setRoot(L.renderer!.getRoot()!);
     if (container) {
-      _unveilOverlaySubContainers(container, root, toggle2).finally(() => {
+      _unveilOverlaySubContainers(container, root, toggle2).catch((err: any) => {
+        warn(`_unveilOverlaySubContainers failed: ${err?.message || err}`);
+      }).finally(() => {
         L.endOp();
         const _root = L.renderer?.getRoot();
         if (_root) { _rebuildRowIndex(_root); }
@@ -702,24 +694,13 @@ function doExpand(hit: Box, hitData: any): void {
     };
     if (toggle2 && toggle2.transform) {
       toggle2.transform.rotate = 0;
-      const startTime = performance.now();
-      const startRot = 0;
-      const endRot = Math.PI / 2;
-      const durationMs = 300;
-      const rend = L.renderer;
-      function animFrame() {
-        const elapsed = performance.now() - startTime;
-        const t = Math.min(elapsed / durationMs, 1);
-        const eased = 1 - (1 - t) * (1 - t);
-        toggle2!.transform.rotate = startRot + (endRot - startRot) * eased;
-        if (rend) rend.setRoot(rend.getRoot()!);
-        if (elapsed < durationMs) {
-          requestAnimationFrame(animFrame);
-        } else {
-          finish();
-        }
-      }
-      requestAnimationFrame(animFrame);
+      ts.to(toggle2.transform, {
+        rotate: Math.PI / 2,
+        duration: 0.3,
+        ease: 'power2.out',
+        onUpdate: () => { L.renderer?.setRoot(L.renderer!.getRoot()!); },
+        onComplete: finish,
+      }, 0);
     } else {
       finish();
     }
@@ -792,7 +773,9 @@ function doExpand(hit: Box, hitData: any): void {
     // _ensureMetaFromExpandedState 已在 rebuildTree 中调用
     L.renderer?.setRoot(L.renderer!.getRoot()!);
     if (container) {
-      _unveilOverlaySubContainers(container, root, toggle2).finally(() => {
+      _unveilOverlaySubContainers(container, root, toggle2).catch((err: any) => {
+        warn(`_unveilOverlaySubContainers failed: ${err?.message || err}`);
+      }).finally(() => {
         L.endOp();
         const _root = L.renderer?.getRoot();
         if (_root) { _rebuildRowIndex(_root); }

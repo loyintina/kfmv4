@@ -10608,7 +10608,7 @@
     }
   }
   function triggerExpandAnimation(path) {
-    var _a, _b, _c;
+    var _a, _b;
     const root = (_a = L.renderer) == null ? void 0 : _a.getRoot();
     if (!root) return;
     const container = findBoxById(root, `expanded-${path}`);
@@ -10621,25 +10621,17 @@
     const fullHeight = container._fullHeight || 0;
     if (!fullHeight) {
       if (toggle2 && toggle2.transform) {
-        let animFrame2 = function() {
-          const elapsed = performance.now() - startTime;
-          const t = Math.min(elapsed / durationMs, 1);
-          const eased = 1 - (1 - t) * (1 - t);
-          toggle2.transform.rotate = endRot * eased;
-          if (rend) rend.setRoot(rend.getRoot());
-          if (elapsed < durationMs) {
-            requestAnimationFrame(animFrame2);
-          }
-        };
-        var animFrame = animFrame2;
         toggle2.transform.rotate = 0;
-        const startTime = performance.now();
-        const endRot = Math.PI / 2;
-        const durationMs = 300;
-        const rend = L.renderer;
-        requestAnimationFrame(animFrame2);
+        ts.to(toggle2.transform, {
+          rotate: Math.PI / 2,
+          duration: 0.3,
+          ease: "power2.out",
+          onUpdate: () => {
+            var _a2;
+            (_a2 = L.renderer) == null ? void 0 : _a2.setRoot(L.renderer.getRoot());
+          }
+        }, 0);
       }
-      (_c = L.renderer) == null ? void 0 : _c.setRoot(L.renderer.getRoot());
       return;
     }
     if (toggle2) {
@@ -10687,7 +10679,7 @@
       }, 0);
     }
     ts.call(() => {
-      var _a2, _b2, _c2;
+      var _a2, _b2, _c;
       if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
       _removeAllOverlays();
       _resetAnimTimeline();
@@ -10699,7 +10691,9 @@
       }
       (_b2 = L.renderer) == null ? void 0 : _b2.setRoot(L.renderer.getRoot());
       if (container) {
-        _unveilOverlaySubContainers(container, root, toggle2).finally(() => {
+        _unveilOverlaySubContainers(container, root, toggle2).catch((err) => {
+          warn(`_unveilOverlaySubContainers failed: ${(err == null ? void 0 : err.message) || err}`);
+        }).finally(() => {
           var _a3;
           L.endOp();
           const _root = (_a3 = L.renderer) == null ? void 0 : _a3.getRoot();
@@ -10710,7 +10704,7 @@
         });
       } else {
         L.endOp();
-        const _root = (_c2 = L.renderer) == null ? void 0 : _c2.getRoot();
+        const _root = (_c = L.renderer) == null ? void 0 : _c.getRoot();
         if (_root) {
           _rebuildRowIndex(_root);
         }
@@ -10974,26 +10968,17 @@
         processClickQueue();
       };
       if (toggle2 && toggle2.transform) {
-        let animFrame2 = function() {
-          const elapsed = performance.now() - startTime;
-          const t = Math.min(elapsed / durationMs, 1);
-          const eased = 1 - (1 - t) * (1 - t);
-          toggle2.transform.rotate = startRot + (endRot - startRot) * eased;
-          if (rend) rend.setRoot(rend.getRoot());
-          if (elapsed < durationMs) {
-            requestAnimationFrame(animFrame2);
-          } else {
-            finish();
-          }
-        };
-        var animFrame = animFrame2;
         toggle2.transform.rotate = 0;
-        const startTime = performance.now();
-        const startRot = 0;
-        const endRot = Math.PI / 2;
-        const durationMs = 300;
-        const rend = L.renderer;
-        requestAnimationFrame(animFrame2);
+        ts.to(toggle2.transform, {
+          rotate: Math.PI / 2,
+          duration: 0.3,
+          ease: "power2.out",
+          onUpdate: () => {
+            var _a2;
+            (_a2 = L.renderer) == null ? void 0 : _a2.setRoot(L.renderer.getRoot());
+          },
+          onComplete: finish
+        }, 0);
       } else {
         finish();
       }
@@ -11055,7 +11040,9 @@
       }
       (_b = L.renderer) == null ? void 0 : _b.setRoot(L.renderer.getRoot());
       if (container) {
-        _unveilOverlaySubContainers(container, root, toggle2).finally(() => {
+        _unveilOverlaySubContainers(container, root, toggle2).catch((err) => {
+          warn(`_unveilOverlaySubContainers failed: ${(err == null ? void 0 : err.message) || err}`);
+        }).finally(() => {
           var _a3;
           L.endOp();
           const _root = (_a3 = L.renderer) == null ? void 0 : _a3.getRoot();
@@ -13949,7 +13936,10 @@
     markAnimatingPath(path);
     const childExpandedPaths = getChildExpandedPaths(path);
     const loaded = await fetchDirRecursive(path, childExpandedPaths);
-    if (!loaded) return;
+    if (!loaded) {
+      markAnimatingPath(null);
+      return;
+    }
     KFMState.notify();
     triggerExpandAnimation(path);
   }
@@ -13988,7 +13978,10 @@
       if (!cached) {
         KFMState.expandedPaths[path] = true;
         localStorage.setItem("expandedPaths", JSON.stringify(KFMState.expandedPaths));
-        loadAndAnimate(path).catch(console.error);
+        loadAndAnimate(path).catch((err) => {
+          console.error(err);
+          markAnimatingPath(null);
+        });
         return true;
       }
     });

@@ -97,7 +97,7 @@ async function loadAndAnimate(path: string): Promise<void> {
   // 只获取当前目录的子节点，传入该目录下展开的子路径
   const childExpandedPaths = getChildExpandedPaths(path);
   const loaded = await fetchDirRecursive(path, childExpandedPaths);
-  if (!loaded) return;
+  if (!loaded) { markAnimatingPath(null); return; }
 
   // 数据已加载，触发 rebuildTree
   KFMState.notify();
@@ -163,7 +163,10 @@ export function initLazyLoader(): void {
       // 数据未加载：先设置展开状态（不 notify），然后加载数据
       KFMState.expandedPaths[path] = true;
       localStorage.setItem('expandedPaths', JSON.stringify(KFMState.expandedPaths));
-      loadAndAnimate(path).catch(console.error);
+      loadAndAnimate(path).catch((err: any) => {
+        console.error(err);
+        markAnimatingPath(null);
+      });
       return true;  // 返回 true 跳过默认 setExpanded（避免提前 notify）
     }
     // 数据已存在，什么都不做，走默认 setExpanded
