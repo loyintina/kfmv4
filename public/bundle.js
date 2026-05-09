@@ -10588,11 +10588,11 @@
   function _setupExpandOverlays(container, fullHeight) {
     var _a;
     const parent = container.parent;
-    const ci = parent.children.indexOf(container);
     const containerOv = _createVisualClone(container, { id: `ov-${container.id || "container"}`, height: 0, opacity: 1, zIndex: OVERLAY_Z });
     _addOverlay(containerOv);
     containerOv.parent = parent;
     const rowOverlays = [];
+    const hiddenChildren = [];
     const origYs = container._origYs;
     for (let j = 0; j < container.children.length; j++) {
       const child = container.children[j];
@@ -10605,8 +10605,11 @@
       _addOverlay(rowOv);
       containerOv.addChild(rowOv);
       rowOverlays.push(rowOv);
+      child.opacity = 0;
+      hiddenChildren.push(child);
     }
     const siblingOverlays = [];
+    const hiddenSiblings = [];
     const siblings = _collectSiblingsAfter(container);
     for (const sib of siblings) {
       const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || "sib"}`, y: sib.y - fullHeight, opacity: 1, zIndex: OVERLAY_Z }, true);
@@ -10614,17 +10617,19 @@
       _addOverlay(sibOv);
       sibOv.parent = parent;
       siblingOverlays.push(sibOv);
+      sib.opacity = 0;
+      hiddenSiblings.push(sib);
     }
-    return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenSiblings: [], hiddenChildren: [] };
+    return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenSiblings, hiddenChildren };
   }
   function _setupCollapseOverlays(container, fullH) {
     var _a;
     const parent = container.parent;
-    const ci = parent.children.indexOf(container);
     const containerOv = _createVisualClone(container, { id: `ov-${container.id || "container"}`, height: fullH, opacity: 1, zIndex: OVERLAY_Z });
     _addOverlay(containerOv);
     containerOv.parent = parent;
     const rowOverlays = [];
+    const hiddenChildren = [];
     for (let j = 0; j < container.children.length; j++) {
       const child = container.children[j];
       if (!child.visible) continue;
@@ -10633,8 +10638,11 @@
       _addOverlay(rowOv);
       containerOv.addChild(rowOv);
       rowOverlays.push(rowOv);
+      child.opacity = 0;
+      hiddenChildren.push(child);
     }
     const siblingOverlays = [];
+    const hiddenSiblings = [];
     const siblings = _collectSiblingsAfter(container);
     for (const sib of siblings) {
       const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || "sib"}`, y: sib.y, opacity: 1, zIndex: OVERLAY_Z }, true);
@@ -10642,8 +10650,10 @@
       _addOverlay(sibOv);
       sibOv.parent = parent;
       siblingOverlays.push(sibOv);
+      sib.opacity = 0;
+      hiddenSiblings.push(sib);
     }
-    return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenSiblings: [], hiddenChildren: [] };
+    return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenSiblings, hiddenChildren };
   }
   function _ensureSubscribed() {
     if (L._stateSub) KFMState.unsubscribe(L._stateSub);
@@ -11047,6 +11057,10 @@
       for (const cu of charRainCleanups) cleanupCharRain(cu);
       _removeAllOverlays();
       (_b2 = L.renderer) == null ? void 0 : _b2.setOverlayRoot(null);
+      for (const p of [pack, ...subPacks]) {
+        for (const child of p.hiddenChildren) child.opacity = 1;
+        for (const sib of p.hiddenSiblings) sib.opacity = 1;
+      }
       _resetAnimTimeline();
       assert(_activeOverlays.length === 0, "overlays leaked after expand");
       L.endOp();

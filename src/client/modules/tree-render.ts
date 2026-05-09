@@ -217,21 +217,21 @@ interface OverlayPack {
   hiddenChildren: Box[];
 }
 
-/** 搭建展开动画的 overlay 集合（不再修改主树） */
+/** 搭建展开动画的 overlay 集合 */
 function _setupExpandOverlays(container: Box, fullHeight: number): OverlayPack {
   const parent = container.parent!;
-  const ci = parent.children.indexOf(container);
 
   // 1. 容器 overlay (height=0, 即将动画到 fullHeight)
   const containerOv = _createVisualClone(container, { id: `ov-${container.id || 'container'}`, height: 0, opacity: 1, zIndex: OVERLAY_Z });
   _addOverlay(containerOv);
-  // 不再插入到主树 parent.children 中 — 由调用方统一构建 overlay 树
-  // 但标记 parent 引用以便 getAbsolutePosition 能正确计算
+  // 由 _buildAndSetOverlayTree 统一构建 overlay 树
+  // 但暂时标记 parent 引用以便 getAbsolutePosition 能正确计算
   containerOv.parent = parent;
 
-  // 2. 行 overlay（FROM=折叠态 y，TO=终端态 y，从元数据计算）
-  //    注意：跳过已展开的子容器（expanded-*），它们由独立的 setupExpandOverlays 处理
+  // 2. 行 overlay（FROM=折叠态 y，TO=终端态 y）
+  //    跳过已展开的子容器（expanded-*），它们由独立的 setupExpandOverlays 处理
   const rowOverlays: Box[] = [];
+  const hiddenChildren: Box[] = [];
   const origYs = (container as Box & OverlayMeta)._origYs as number[] | undefined;
   for (let j = 0; j < container.children.length; j++) {
     const child = container.children[j];
@@ -244,11 +244,14 @@ function _setupExpandOverlays(container: Box, fullHeight: number): OverlayPack {
     _addOverlay(rowOv);
     containerOv.addChild(rowOv);
     rowOverlays.push(rowOv);
-    // 不修改主树 — 双树渲染，主树不设 opacity=0
+    // 隐藏主树真实行：动画期间只有 overlay 可见，防止两棵树重叠
+    child.opacity = 0;
+    hiddenChildren.push(child);
   }
 
   // 3. 兄弟 overlay（FROM=折叠态 y，TO=终端态 y）
   const siblingOverlays: Box[] = [];
+  const hiddenSiblings: Box[] = [];
   const siblings = _collectSiblingsAfter(container);
   for (const sib of siblings) {
     const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || 'sib'}`, y: sib.y - fullHeight, opacity: 1, zIndex: OVERLAY_Z }, true);
@@ -256,16 +259,17 @@ function _setupExpandOverlays(container: Box, fullHeight: number): OverlayPack {
     _addOverlay(sibOv);
     sibOv.parent = parent;
     siblingOverlays.push(sibOv);
-    // 不修改主树
+    // 同上：隐藏主树真实兄弟
+    sib.opacity = 0;
+    hiddenSiblings.push(sib);
   }
 
-  return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenSiblings: [], hiddenChildren: [] };
+  return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenSiblings, hiddenChildren };
 }
 
-/** 搭建折叠动画的 overlay 集合（不再修改主树） */
+/** 搭建折叠动画的 overlay 集合 */
 function _setupCollapseOverlays(container: Box, fullH: number): OverlayPack {
   const parent = container.parent!;
-  const ci = parent.children.indexOf(container);
 
   // 1. 容器 overlay (height=fullH, 即将动画到 0)
   const containerOv = _createVisualClone(container, { id: `ov-${container.id || 'container'}`, height: fullH, opacity: 1, zIndex: OVERLAY_Z });
@@ -273,8 +277,9 @@ function _setupCollapseOverlays(container: Box, fullH: number): OverlayPack {
   containerOv.parent = parent;
 
   // 2. 行 overlay：固定在展开态 y
-  //    注意：跳过已展开的子容器（expanded-*）
+  //    跳过已展开的子容器（expanded-*）
   const rowOverlays: Box[] = [];
+  const hiddenChildren: Box[] = [];
   for (let j = 0; j < container.children.length; j++) {
     const child = container.children[j];
     if (!child.visible) continue;
@@ -283,10 +288,14 @@ function _setupCollapseOverlays(container: Box, fullH: number): OverlayPack {
     _addOverlay(rowOv);
     containerOv.addChild(rowOv);
     rowOverlays.push(rowOv);
+    // 隐藏主树真实行 — 动画期间只有 overlay 可见
+    child.opacity = 0;
+    hiddenChildren.push(child);
   }
 
   // 3. 兄弟 overlay
   const siblingOverlays: Box[] = [];
+  const hiddenSiblings: Box[] = [];
   const siblings = _collectSiblingsAfter(container);
   for (const sib of siblings) {
     const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || 'sib'}`, y: sib.y, opacity: 1, zIndex: OVERLAY_Z }, true);
@@ -294,9 +303,12 @@ function _setupCollapseOverlays(container: Box, fullH: number): OverlayPack {
     _addOverlay(sibOv);
     sibOv.parent = parent;
     siblingOverlays.push(sibOv);
+    // 隐藏主树真实兄弟
+    sib.opacity = 0;
+    hiddenSiblings.push(sib);
   }
 
-  return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenSiblings: [], hiddenChildren: [] };
+  return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenSiblings, hiddenChildren };
 }
 
 /** 保存 KFMState 订阅引用，防止重复订阅 */
@@ -802,6 +814,11 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
     for (const cu of charRainCleanups) cleanupCharRain(cu);
     _removeAllOverlays();
     L.renderer?.setOverlayRoot(null);  // 销毁动画树
+    // 恢复主树被隐藏的元素（展开动画：树已重建，元素仍在）
+    for (const p of [pack, ...subPacks]) {
+      for (const child of p.hiddenChildren) child.opacity = 1;
+      for (const sib of p.hiddenSiblings) sib.opacity = 1;
+    }
     _resetAnimTimeline();
     assert(_activeOverlays.length === 0, 'overlays leaked after expand');
     L.endOp();
