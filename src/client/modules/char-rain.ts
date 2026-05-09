@@ -1,12 +1,11 @@
 /**
- * char-rain.ts — 字符散落动画
+ * char-rain.ts — 字符散落/回收动画
  *
  * 在文件树展开时，将文字拆分为独立字符，
- * 每个字符从页面顶端（sidebar 可视区域顶部）散落掉落到目标位置。
+ * 每个字符从页面顶端散落掉落到目标位置。
+ * 折叠时同理，字符从当前位置往回飞到屏幕上方。
  *
- * v2 重构：不再使用独立 GSAP timeline，接受外部 ts 并直接加上 tween。
- * 所有字符 tween 挂到主时间线上，使 ts.reverse() 能统一逆转所有动画。
- * 不再 async，不再有独立生命周期，cleanup 信息同步返回。
+ * 展开和回收共用同一套字符创建逻辑，仅动画方向和参数不同。
  */
 
 import { Box } from "../engine/v2/box.js";
@@ -32,7 +31,7 @@ export interface CharRainCleanup {
 
 /**
  * 创建字符 Box 并将动画 tween 添加到指定 timeline 上。
- * 不再创建独立 timeline，不再 async。
+ * 展开和回收共用此函数，通过 direction 控制。
  *
  * @param container   展开的文件夹容器（expanded-*）
  * @param root        文件树根 Box
@@ -40,6 +39,7 @@ export interface CharRainCleanup {
  * @param rowTargetYs 每行在展开态时的 y 坐标
  * @param tl          目标 timeline（通常是 ts scope）
  * @param baseDelay   该层动画的起始时间偏移（用于 staggered）
+ * @param direction   'expand' 或 'collapse'
  * @returns cleanup 信息，如果没有字符需要动画则返回 null
  */
 export function setupCharRainTweens(
@@ -49,8 +49,9 @@ export function setupCharRainTweens(
   rowTargetYs: number[] | undefined,
   tl: AnimTimeline,
   baseDelay: number,
+  direction: 'expand' | 'collapse' = 'expand',
 ): CharRainCleanup | null {
-  // 1. 收集需要动画的行
+  const isCollapse = direction === 'collapse';
   const rows = container.children.filter((c) =>
     c.id?.startsWith("title-") || c.id?.startsWith("file-")
   );
@@ -60,8 +61,7 @@ export function setupCharRainTweens(
   const ctx = canvas?.getContext("2d");
   if (!ctx) return null;
 
-  // 2. 保存并临时修改 overflow。字符起始 Y 为负，会被自身及父容器的
-  //    overflow:hidden 裁掉。两个都要改成 visible。
+  // 保存并临时修改 overflow。字符起始 Y 可能超出容器边界。
   const origOverflow = container.overflow;
   container.overflow = "visible";
   const parentOrigOverflow = container.parent?.overflow;
@@ -69,11 +69,13 @@ export function setupCharRainTweens(
     container.parent.overflow = 'visible';
   }
 
-  // 3. 创建字符 Box 和 tween
   const charBoxes: Box[] = [];
   const hiddenLabels: Box[] = [];
   const hiddenToggles: Box[] = [];
   const BASE_DUR = 0.22;
+  const scrollY = root.scrollY ?? 0;
+  const absY = container.getAbsolutePosition().y;
+  const topY = scrollY - absY; // 容器空间中的屏幕顶部位置
 
   for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
     const row = rows[rowIdx];
@@ -119,101 +121,122 @@ export function setupCharRainTweens(
 
       let cx = 0;
       for (let ci = 0; ci < chars.length; ci++) {
-        const targetX = row.x + label.x + cx;
-        const targetY = rowExpandedY + label.y + verticalOffset + li * lineH;
-        const initX = targetX + (Math.random() - 0.5) * 100;
-        const initY = targetY - 80 - Math.random() * 140;
+        const fromX = row.x + label.x + cx;
+        const fromY = rowExpandedY + label.y + verticalOffset + li * lineH;
 
-        const box = new Box({
-          id: `cr-${row.id}-L${li}-C${ci}`,
-          x: initX,
-          y: initY,
-          width: charWidths[ci] + 2,
-          height: lineH,
-          opacity: 0,
-          backgroundColor: "transparent",
-          interactive: false,
-          zIndex: 99,
-          overflow: "visible",
-        });
-        box.textStyle = {
-          content: chars[ci],
-          color,
-          font,
-          lineHeight: lineH,
-          align: "left",
-          verticalAlign: "middle",
-          overflow: "visible",
-          maxLines: 1,
-        };
-
-        container.addChild(box);
-        charBoxes.push(box);
-
-        // 加到主时间线上
         const randDelay = Math.random() * 0.1 + baseDelay;
         const randDur = BASE_DUR + Math.random() * 0.06;
 
-        tl.to(box, {
-          x: targetX,
-          y: targetY,
-          opacity: 1,
-          duration: randDur,
-          ease: "back.out(1.05)",
-        }, randDelay);
+        if (isCollapse) {
+          const toX = fromX + (Math.random() - 0.5) * 100;
+          const toY = topY - 80 - Math.random() * 140;
+          const box = new Box({
+            id: `cc-${row.id}-L${li}-C${ci}`,
+            x: fromX, y: fromY,
+            width: charWidths[ci] + 2, height: lineH,
+            opacity: 1,
+            backgroundColor: "transparent",
+            interactive: false,
+            zIndex: 99,
+            overflow: "visible",
+          });
+          box.textStyle = {
+            content: chars[ci], color, font,
+            lineHeight: lineH, align: "left",
+            verticalAlign: "middle", overflow: "visible", maxLines: 1,
+          };
+          container.addChild(box);
+          charBoxes.push(box);
+
+          tl.to(box, {
+            x: toX, y: toY, opacity: 0,
+            duration: randDur,
+            ease: "back.in(1.05)",
+          }, randDelay);
+        } else {
+          const initX = fromX + (Math.random() - 0.5) * 100;
+          const initY = fromY - 80 - Math.random() * 140;
+          const box = new Box({
+            id: `cr-${row.id}-L${li}-C${ci}`,
+            x: initX, y: initY,
+            width: charWidths[ci] + 2, height: lineH,
+            opacity: 0,
+            backgroundColor: "transparent",
+            interactive: false,
+            zIndex: 99,
+            overflow: "visible",
+          });
+          box.textStyle = {
+            content: chars[ci], color, font,
+            lineHeight: lineH, align: "left",
+            verticalAlign: "middle", overflow: "visible", maxLines: 1,
+          };
+          container.addChild(box);
+          charBoxes.push(box);
+
+          tl.to(box, {
+            x: fromX, y: fromY, opacity: 1,
+            duration: randDur,
+            ease: "back.out(1.05)",
+          }, randDelay);
+        }
 
         cx += charWidths[ci];
       }
     }
 
-    // toggle 图标也一起掉落
+    // toggle 图标
     const toggleBox = row.children.find((c) => c.id?.startsWith("toggle-"));
     if (toggleBox && toggleBox.textStyle?.content) {
       const tFont = toggleBox.textStyle.font || font;
       ctx.font = tFont;
-      const tWidth = ctx.measureText(toggleBox.textStyle.content).width;
       const tTargetX = row.x + toggleBox.x;
       const tTargetY = rowExpandedY + toggleBox.y;
-      const tInitX = tTargetX + (Math.random() - 0.5) * 100;
-      const tInitY = tTargetY - 80 - Math.random() * 140;
-
-      const tBox = new Box({
-        id: `cr-${row.id}-toggle`,
-        x: tInitX,
-        y: tInitY,
-        width: toggleBox.width,
-        height: toggleBox.height || LINE_HEIGHT,
-        opacity: 0,
-        backgroundColor: "transparent",
-        interactive: false,
-        zIndex: 99,
-        overflow: "visible",
-      });
-      tBox.textStyle = {
-        ...toggleBox.textStyle,
-        overflow: "visible",
-        maxLines: 1,
-      };
-
-      container.addChild(tBox);
-      charBoxes.push(tBox);
-
       const tRandDelay = Math.random() * 0.1 + baseDelay;
       const tRandDur = BASE_DUR + Math.random() * 0.06;
-      tl.to(tBox, {
-        x: tTargetX,
-        y: tTargetY,
-        opacity: 1,
-        duration: tRandDur,
-        ease: "back.out(1.05)",
-      }, tRandDelay);
 
-      if (toggleBox.transform.rotate > 0.1) {
-        tl.to(tBox.transform, {
-          rotate: Math.PI / 2,
-          duration: tRandDur,
-          ease: "power2.out",
+      if (isCollapse) {
+        const tToX = tTargetX + (Math.random() - 0.5) * 100;
+        const tToY = topY - 80 - Math.random() * 140;
+        const tBox = new Box({
+          id: `cc-${row.id}-toggle`,
+          x: tTargetX, y: tTargetY,
+          width: toggleBox.width, height: toggleBox.height || LINE_HEIGHT,
+          opacity: 1,
+          backgroundColor: "transparent",
+          interactive: false, zIndex: 99, overflow: "visible",
+        });
+        tBox.textStyle = { ...toggleBox.textStyle, overflow: "visible", maxLines: 1 };
+        container.addChild(tBox);
+        charBoxes.push(tBox);
+        tl.to(tBox, {
+          x: tToX, y: tToY, opacity: 0,
+          duration: tRandDur, ease: "back.in(1.05)",
         }, tRandDelay);
+      } else {
+        const tInitX = tTargetX + (Math.random() - 0.5) * 100;
+        const tInitY = tTargetY - 80 - Math.random() * 140;
+        const tBox = new Box({
+          id: `cr-${row.id}-toggle`,
+          x: tInitX, y: tInitY,
+          width: toggleBox.width, height: toggleBox.height || LINE_HEIGHT,
+          opacity: 0,
+          backgroundColor: "transparent",
+          interactive: false, zIndex: 99, overflow: "visible",
+        });
+        tBox.textStyle = { ...toggleBox.textStyle, overflow: "visible", maxLines: 1 };
+        container.addChild(tBox);
+        charBoxes.push(tBox);
+        tl.to(tBox, {
+          x: tTargetX, y: tTargetY, opacity: 1,
+          duration: tRandDur, ease: "back.out(1.05)",
+        }, tRandDelay);
+        if (toggleBox.transform.rotate > 0.1) {
+          tl.to(tBox.transform, {
+            rotate: Math.PI / 2, duration: tRandDur,
+            ease: "power2.out",
+          }, tRandDelay);
+        }
       }
     }
 
@@ -230,7 +253,6 @@ export function setupCharRainTweens(
     return null;
   }
 
-  // 推送初始状态
   renderer?.setRoot(root);
 
   return { container, charBoxes, hiddenLabels, hiddenToggles, origOverflow, parentOrigOverflow };
@@ -238,7 +260,6 @@ export function setupCharRainTweens(
 
 /**
  * 清理字符雨创建的字符 Box 和恢复原始状态。
- * 在动画正向完成或逆转完成时调用。
  */
 export function cleanupCharRain(cu: CharRainCleanup): void {
   for (const box of cu.charBoxes) {

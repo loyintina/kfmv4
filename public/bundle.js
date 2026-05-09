@@ -8545,8 +8545,9 @@
   var anim = new AnimationRegistryClass();
 
   // src/client/modules/char-rain.ts
-  function setupCharRainTweens(container, root, renderer, rowTargetYs, tl, baseDelay) {
-    var _a, _b, _c, _d;
+  function setupCharRainTweens(container, root, renderer, rowTargetYs, tl, baseDelay, direction = "expand") {
+    var _a, _b, _c, _d, _e;
+    const isCollapse = direction === "collapse";
     const rows = container.children.filter(
       (c) => {
         var _a2, _b2;
@@ -8567,14 +8568,17 @@
     const hiddenLabels = [];
     const hiddenToggles = [];
     const BASE_DUR = 0.22;
+    const scrollY = (_b = root.scrollY) != null ? _b : 0;
+    const absY = container.getAbsolutePosition().y;
+    const topY = scrollY - absY;
     for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
       const row = rows[rowIdx];
-      const rowExpandedY = (_b = rowTargetYs == null ? void 0 : rowTargetYs[rowIdx]) != null ? _b : row.y;
+      const rowExpandedY = (_c = rowTargetYs == null ? void 0 : rowTargetYs[rowIdx]) != null ? _c : row.y;
       const label = row.children.find((c) => {
         var _a2;
         return (_a2 = c.id) == null ? void 0 : _a2.startsWith("label-");
       });
-      if (!label || !((_c = label.textStyle) == null ? void 0 : _c.content)) continue;
+      if (!label || !((_d = label.textStyle) == null ? void 0 : _d.content)) continue;
       const text = label.textStyle.content;
       const font = label.textStyle.font || FONT;
       const color = label.textStyle.color;
@@ -8604,43 +8608,79 @@
         const charWidths = chars.map((ch) => ctx.measureText(ch).width);
         let cx = 0;
         for (let ci = 0; ci < chars.length; ci++) {
-          const targetX = row.x + label.x + cx;
-          const targetY = rowExpandedY + label.y + verticalOffset + li * lineH;
-          const initX = targetX + (Math.random() - 0.5) * 100;
-          const initY = targetY - 80 - Math.random() * 140;
-          const box = new Box({
-            id: `cr-${row.id}-L${li}-C${ci}`,
-            x: initX,
-            y: initY,
-            width: charWidths[ci] + 2,
-            height: lineH,
-            opacity: 0,
-            backgroundColor: "transparent",
-            interactive: false,
-            zIndex: 99,
-            overflow: "visible"
-          });
-          box.textStyle = {
-            content: chars[ci],
-            color,
-            font,
-            lineHeight: lineH,
-            align: "left",
-            verticalAlign: "middle",
-            overflow: "visible",
-            maxLines: 1
-          };
-          container.addChild(box);
-          charBoxes.push(box);
+          const fromX = row.x + label.x + cx;
+          const fromY = rowExpandedY + label.y + verticalOffset + li * lineH;
           const randDelay = Math.random() * 0.1 + baseDelay;
           const randDur = BASE_DUR + Math.random() * 0.06;
-          tl.to(box, {
-            x: targetX,
-            y: targetY,
-            opacity: 1,
-            duration: randDur,
-            ease: "back.out(1.05)"
-          }, randDelay);
+          if (isCollapse) {
+            const toX = fromX + (Math.random() - 0.5) * 100;
+            const toY = topY - 80 - Math.random() * 140;
+            const box = new Box({
+              id: `cc-${row.id}-L${li}-C${ci}`,
+              x: fromX,
+              y: fromY,
+              width: charWidths[ci] + 2,
+              height: lineH,
+              opacity: 1,
+              backgroundColor: "transparent",
+              interactive: false,
+              zIndex: 99,
+              overflow: "visible"
+            });
+            box.textStyle = {
+              content: chars[ci],
+              color,
+              font,
+              lineHeight: lineH,
+              align: "left",
+              verticalAlign: "middle",
+              overflow: "visible",
+              maxLines: 1
+            };
+            container.addChild(box);
+            charBoxes.push(box);
+            tl.to(box, {
+              x: toX,
+              y: toY,
+              opacity: 0,
+              duration: randDur,
+              ease: "back.in(1.05)"
+            }, randDelay);
+          } else {
+            const initX = fromX + (Math.random() - 0.5) * 100;
+            const initY = fromY - 80 - Math.random() * 140;
+            const box = new Box({
+              id: `cr-${row.id}-L${li}-C${ci}`,
+              x: initX,
+              y: initY,
+              width: charWidths[ci] + 2,
+              height: lineH,
+              opacity: 0,
+              backgroundColor: "transparent",
+              interactive: false,
+              zIndex: 99,
+              overflow: "visible"
+            });
+            box.textStyle = {
+              content: chars[ci],
+              color,
+              font,
+              lineHeight: lineH,
+              align: "left",
+              verticalAlign: "middle",
+              overflow: "visible",
+              maxLines: 1
+            };
+            container.addChild(box);
+            charBoxes.push(box);
+            tl.to(box, {
+              x: fromX,
+              y: fromY,
+              opacity: 1,
+              duration: randDur,
+              ease: "back.out(1.05)"
+            }, randDelay);
+          }
           cx += charWidths[ci];
         }
       }
@@ -8648,48 +8688,70 @@
         var _a2;
         return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
       });
-      if (toggleBox && ((_d = toggleBox.textStyle) == null ? void 0 : _d.content)) {
+      if (toggleBox && ((_e = toggleBox.textStyle) == null ? void 0 : _e.content)) {
         const tFont = toggleBox.textStyle.font || font;
         ctx.font = tFont;
-        const tWidth = ctx.measureText(toggleBox.textStyle.content).width;
         const tTargetX = row.x + toggleBox.x;
         const tTargetY = rowExpandedY + toggleBox.y;
-        const tInitX = tTargetX + (Math.random() - 0.5) * 100;
-        const tInitY = tTargetY - 80 - Math.random() * 140;
-        const tBox = new Box({
-          id: `cr-${row.id}-toggle`,
-          x: tInitX,
-          y: tInitY,
-          width: toggleBox.width,
-          height: toggleBox.height || LINE_HEIGHT,
-          opacity: 0,
-          backgroundColor: "transparent",
-          interactive: false,
-          zIndex: 99,
-          overflow: "visible"
-        });
-        tBox.textStyle = {
-          ...toggleBox.textStyle,
-          overflow: "visible",
-          maxLines: 1
-        };
-        container.addChild(tBox);
-        charBoxes.push(tBox);
         const tRandDelay = Math.random() * 0.1 + baseDelay;
         const tRandDur = BASE_DUR + Math.random() * 0.06;
-        tl.to(tBox, {
-          x: tTargetX,
-          y: tTargetY,
-          opacity: 1,
-          duration: tRandDur,
-          ease: "back.out(1.05)"
-        }, tRandDelay);
-        if (toggleBox.transform.rotate > 0.1) {
-          tl.to(tBox.transform, {
-            rotate: Math.PI / 2,
+        if (isCollapse) {
+          const tToX = tTargetX + (Math.random() - 0.5) * 100;
+          const tToY = topY - 80 - Math.random() * 140;
+          const tBox = new Box({
+            id: `cc-${row.id}-toggle`,
+            x: tTargetX,
+            y: tTargetY,
+            width: toggleBox.width,
+            height: toggleBox.height || LINE_HEIGHT,
+            opacity: 1,
+            backgroundColor: "transparent",
+            interactive: false,
+            zIndex: 99,
+            overflow: "visible"
+          });
+          tBox.textStyle = { ...toggleBox.textStyle, overflow: "visible", maxLines: 1 };
+          container.addChild(tBox);
+          charBoxes.push(tBox);
+          tl.to(tBox, {
+            x: tToX,
+            y: tToY,
+            opacity: 0,
             duration: tRandDur,
-            ease: "power2.out"
+            ease: "back.in(1.05)"
           }, tRandDelay);
+        } else {
+          const tInitX = tTargetX + (Math.random() - 0.5) * 100;
+          const tInitY = tTargetY - 80 - Math.random() * 140;
+          const tBox = new Box({
+            id: `cr-${row.id}-toggle`,
+            x: tInitX,
+            y: tInitY,
+            width: toggleBox.width,
+            height: toggleBox.height || LINE_HEIGHT,
+            opacity: 0,
+            backgroundColor: "transparent",
+            interactive: false,
+            zIndex: 99,
+            overflow: "visible"
+          });
+          tBox.textStyle = { ...toggleBox.textStyle, overflow: "visible", maxLines: 1 };
+          container.addChild(tBox);
+          charBoxes.push(tBox);
+          tl.to(tBox, {
+            x: tTargetX,
+            y: tTargetY,
+            opacity: 1,
+            duration: tRandDur,
+            ease: "back.out(1.05)"
+          }, tRandDelay);
+          if (toggleBox.transform.rotate > 0.1) {
+            tl.to(tBox.transform, {
+              rotate: Math.PI / 2,
+              duration: tRandDur,
+              ease: "power2.out"
+            }, tRandDelay);
+          }
         }
       }
       const labelBox = row.children.find((c) => {
@@ -11404,170 +11466,17 @@
     const overlaysToClean = [pack, ...subPacks];
     const maxLevel = subTargets.length > 0 ? Math.max(...subTargets.map((st) => st.level)) : 0;
     const charRainCleanups = [];
-    function collectCollapseCharCleanup(container2, baseDelay) {
-      var _a2, _b2, _c2, _d2;
-      const rows = container2.children.filter((c) => {
-        var _a3, _b3;
-        return ((_a3 = c.id) == null ? void 0 : _a3.startsWith("title-")) || ((_b3 = c.id) == null ? void 0 : _b3.startsWith("file-"));
-      });
-      if (rows.length === 0) return;
-      const canvas = DOM.treeCanvas;
-      const ctx = canvas == null ? void 0 : canvas.getContext("2d");
-      if (!ctx) return;
-      const origOverflow = container2.overflow;
-      container2.overflow = "visible";
-      const parentOrigOverflow = (_a2 = container2.parent) == null ? void 0 : _a2.overflow;
-      if (container2.parent && container2.parent.overflow === "hidden") {
-        container2.parent.overflow = "visible";
-      }
-      const charBoxes = [];
-      const hiddenLabels = [];
-      const hiddenToggles = [];
-      const BASE_DUR = 0.22;
-      const scrollY = (_b2 = root.scrollY) != null ? _b2 : 0;
-      const absY = container2.getAbsolutePosition().y;
-      const topY = scrollY - absY;
-      for (const row of rows) {
-        const label = row.children.find((c) => {
-          var _a3;
-          return (_a3 = c.id) == null ? void 0 : _a3.startsWith("label-");
-        });
-        if (!label || !((_c2 = label.textStyle) == null ? void 0 : _c2.content)) continue;
-        const text = label.textStyle.content;
-        const font = label.textStyle.font || FONT;
-        const color = label.textStyle.color;
-        const lineH = label.textStyle.lineHeight || LINE_HEIGHT;
-        ctx.font = font;
-        let layoutLines2;
-        try {
-          const prepared = prepareWithSegments(text, font);
-          const layout2 = layoutWithLines(prepared, label.width, lineH);
-          layoutLines2 = layout2.lines;
-        } catch {
-          layoutLines2 = [{ text, width: ctx.measureText(text).width }];
-        }
-        const maxVis = label.textStyle.maxLines || MAX_LINES;
-        const isTrunc = layoutLines2.length > maxVis;
-        const visLines = layoutLines2.slice(0, maxVis);
-        const totalTextHeight = visLines.length * lineH;
-        const verticalOffset = Math.max(0, (row.height - totalTextHeight) / 2);
-        for (let li = 0; li < visLines.length; li++) {
-          const line = visLines[li];
-          let chars;
-          if (li === maxVis - 1 && isTrunc) {
-            chars = [...line.text.slice(0, -1), "\u2026"];
-          } else {
-            chars = [...line.text];
-          }
-          const charWidths = chars.map((ch) => ctx.measureText(ch).width);
-          let cx = 0;
-          for (let ci = 0; ci < chars.length; ci++) {
-            const fromX = row.x + label.x + cx;
-            const fromY = row.y + label.y + verticalOffset + li * lineH;
-            const toX = fromX + (Math.random() - 0.5) * 100;
-            const toY = topY - 80 - Math.random() * 140;
-            const box = new Box({
-              id: `cc-${row.id}-L${li}-C${ci}`,
-              x: fromX,
-              y: fromY,
-              width: charWidths[ci] + 2,
-              height: lineH,
-              opacity: 1,
-              backgroundColor: "transparent",
-              interactive: false,
-              zIndex: 99,
-              overflow: "visible"
-            });
-            box.textStyle = {
-              content: chars[ci],
-              color,
-              font,
-              lineHeight: lineH,
-              align: "left",
-              verticalAlign: "middle",
-              overflow: "visible",
-              maxLines: 1
-            };
-            container2.addChild(box);
-            charBoxes.push(box);
-            const randDelay = Math.random() * 0.1 + baseDelay;
-            const randDur = BASE_DUR + Math.random() * 0.06;
-            ts.to(box, {
-              x: toX,
-              y: toY,
-              opacity: 0,
-              duration: randDur,
-              ease: "back.in(1.05)"
-            }, randDelay);
-            cx += charWidths[ci];
-          }
-        }
-        const toggleBox = row.children.find((c) => {
-          var _a3;
-          return (_a3 = c.id) == null ? void 0 : _a3.startsWith("toggle-");
-        });
-        if (toggleBox && ((_d2 = toggleBox.textStyle) == null ? void 0 : _d2.content)) {
-          const tFont = toggleBox.textStyle.font || font;
-          ctx.font = tFont;
-          const tTargetX = row.x + toggleBox.x;
-          const tTargetY = row.y + toggleBox.y;
-          const tToX = tTargetX + (Math.random() - 0.5) * 100;
-          const tToY = topY - 80 - Math.random() * 140;
-          const tBox = new Box({
-            id: `cc-${row.id}-toggle`,
-            x: tTargetX,
-            y: tTargetY,
-            width: toggleBox.width,
-            height: toggleBox.height || LINE_HEIGHT,
-            opacity: 1,
-            backgroundColor: "transparent",
-            interactive: false,
-            zIndex: 99,
-            overflow: "visible"
-          });
-          tBox.textStyle = { ...toggleBox.textStyle, overflow: "visible", maxLines: 1 };
-          container2.addChild(tBox);
-          charBoxes.push(tBox);
-          const tRandDelay = Math.random() * 0.1 + baseDelay;
-          const tRandDur = BASE_DUR + Math.random() * 0.06;
-          ts.to(tBox, {
-            x: tToX,
-            y: tToY,
-            opacity: 0,
-            duration: tRandDur,
-            ease: "back.in(1.05)"
-          }, tRandDelay);
-        }
-        const labelBox = row.children.find((c) => {
-          var _a3;
-          return (_a3 = c.id) == null ? void 0 : _a3.startsWith("label-");
-        });
-        if (labelBox) {
-          labelBox.visible = false;
-          hiddenLabels.push(labelBox);
-        }
-        const toggleHider = row.children.find((c) => {
-          var _a3;
-          return (_a3 = c.id) == null ? void 0 : _a3.startsWith("toggle-");
-        });
-        if (toggleHider) {
-          toggleHider.visible = false;
-          hiddenToggles.push(toggleHider);
-        }
-      }
-      if (charBoxes.length > 0) {
-        charRainCleanups.push({
-          container: container2,
-          charBoxes,
-          hiddenLabels,
-          hiddenToggles,
-          origOverflow,
-          parentOrigOverflow
-        });
-      }
-    }
     const collapseBaseDelay = maxLevel * 0.06;
-    collectCollapseCharCleanup(container, collapseBaseDelay);
+    const topCleanup = setupCharRainTweens(
+      container,
+      root,
+      L.renderer,
+      pack.rowOverlays.map((r) => r._targetY),
+      ts,
+      collapseBaseDelay,
+      "collapse"
+    );
+    if (topCleanup) charRainCleanups.push(topCleanup);
     for (const sp of subPacks) {
       const subLevel = (_b = (_a = subTargets.find((st) => {
         var _a2;
@@ -11576,7 +11485,16 @@
       const delay = collapseBaseDelay - subLevel * 0.06;
       const realContainer = (_c = subTargets.find((st) => `ov-${st.container.id}` === sp.containerOverlay.id)) == null ? void 0 : _c.container;
       if (realContainer) {
-        collectCollapseCharCleanup(realContainer, delay);
+        const subCleanup = setupCharRainTweens(
+          realContainer,
+          root,
+          L.renderer,
+          sp.rowOverlays.map((r) => r._targetY),
+          ts,
+          delay,
+          "collapse"
+        );
+        if (subCleanup) charRainCleanups.push(subCleanup);
       }
     }
     const boxStartDelay = collapseBaseDelay ? collapseBaseDelay - 0.06 + 0.29 : 0.29;
