@@ -8545,48 +8545,36 @@
   var anim = new AnimationRegistryClass();
 
   // src/client/modules/char-rain.ts
-  var _activeTl = null;
-  function killActiveCharRain() {
-    if (_activeTl) {
-      _activeTl.kill();
-      _activeTl = null;
-    }
-  }
-  async function animateCharRain(container, root, renderer, rowTargetYs) {
-    var _a, _b, _c, _d, _e;
+  function setupCharRainTweens(container, root, renderer, rowTargetYs, tl, baseDelay) {
+    var _a, _b, _c, _d;
     const rows = container.children.filter(
       (c) => {
         var _a2, _b2;
         return ((_a2 = c.id) == null ? void 0 : _a2.startsWith("title-")) || ((_b2 = c.id) == null ? void 0 : _b2.startsWith("file-"));
       }
     );
-    if (rows.length === 0) return;
+    if (rows.length === 0) return null;
     const canvas = DOM.treeCanvas;
     const ctx = canvas == null ? void 0 : canvas.getContext("2d");
-    if (!ctx) return;
+    if (!ctx) return null;
     const origOverflow = container.overflow;
     container.overflow = "visible";
     const parentOrigOverflow = (_a = container.parent) == null ? void 0 : _a.overflow;
     if (container.parent && container.parent.overflow === "hidden") {
       container.parent.overflow = "visible";
     }
-    const absY = container.getAbsolutePosition().y;
-    const scrollY = (_b = root.scrollY) != null ? _b : 0;
-    const topY = scrollY - absY;
-    renderer == null ? void 0 : renderer.setRoot(root);
-    const allTargets = [];
-    const lineGroups = [];
-    let currentLineGroup = 0;
+    const charBoxes = [];
     const hiddenLabels = [];
     const hiddenToggles = [];
+    const BASE_DUR = 0.22;
     for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
       const row = rows[rowIdx];
-      const rowExpandedY = (_c = rowTargetYs == null ? void 0 : rowTargetYs[rowIdx]) != null ? _c : row.y;
+      const rowExpandedY = (_b = rowTargetYs == null ? void 0 : rowTargetYs[rowIdx]) != null ? _b : row.y;
       const label = row.children.find((c) => {
         var _a2;
         return (_a2 = c.id) == null ? void 0 : _a2.startsWith("label-");
       });
-      if (!label || !((_d = label.textStyle) == null ? void 0 : _d.content)) continue;
+      if (!label || !((_c = label.textStyle) == null ? void 0 : _c.content)) continue;
       const text = label.textStyle.content;
       const font = label.textStyle.font || FONT;
       const color = label.textStyle.color;
@@ -8605,7 +8593,6 @@
       const visLines = layoutLines2.slice(0, maxVis);
       const totalTextHeight = visLines.length * lineH;
       const verticalOffset = Math.max(0, (row.height - totalTextHeight) / 2);
-      const rowFirstLineGroup = currentLineGroup;
       for (let li = 0; li < visLines.length; li++) {
         const line = visLines[li];
         let chars;
@@ -8615,7 +8602,6 @@
           chars = [...line.text];
         }
         const charWidths = chars.map((ch) => ctx.measureText(ch).width);
-        if (!lineGroups[currentLineGroup]) lineGroups[currentLineGroup] = [];
         let cx = 0;
         for (let ci = 0; ci < chars.length; ci++) {
           const targetX = row.x + label.x + cx;
@@ -8630,7 +8616,6 @@
             height: lineH,
             opacity: 0,
             backgroundColor: "transparent",
-            // 透明背景，消除阴影
             interactive: false,
             zIndex: 99,
             overflow: "visible"
@@ -8646,21 +8631,27 @@
             maxLines: 1
           };
           container.addChild(box);
-          allTargets.push({ box, targetX, targetY });
-          lineGroups[currentLineGroup].push({ box, targetX, targetY });
+          charBoxes.push(box);
+          const randDelay = Math.random() * 0.1 + baseDelay;
+          const randDur = BASE_DUR + Math.random() * 0.06;
+          tl.to(box, {
+            x: targetX,
+            y: targetY,
+            opacity: 1,
+            duration: randDur,
+            ease: "back.out(1.05)"
+          }, randDelay);
           cx += charWidths[ci];
         }
-        currentLineGroup++;
       }
       const toggleBox = row.children.find((c) => {
         var _a2;
         return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
       });
-      if (toggleBox && ((_e = toggleBox.textStyle) == null ? void 0 : _e.content)) {
-        const tChar = toggleBox.textStyle.content;
+      if (toggleBox && ((_d = toggleBox.textStyle) == null ? void 0 : _d.content)) {
         const tFont = toggleBox.textStyle.font || font;
         ctx.font = tFont;
-        const tWidth = ctx.measureText(tChar).width;
+        const tWidth = ctx.measureText(toggleBox.textStyle.content).width;
         const tTargetX = row.x + toggleBox.x;
         const tTargetY = rowExpandedY + toggleBox.y;
         const tInitX = tTargetX + (Math.random() - 0.5) * 100;
@@ -8683,9 +8674,23 @@
           maxLines: 1
         };
         container.addChild(tBox);
-        const togTarget = { box: tBox, targetX: tTargetX, targetY: tTargetY, isToggle: toggleBox.transform.rotate > 0.1 };
-        allTargets.push(togTarget);
-        lineGroups[rowFirstLineGroup].push(togTarget);
+        charBoxes.push(tBox);
+        const tRandDelay = Math.random() * 0.1 + baseDelay;
+        const tRandDur = BASE_DUR + Math.random() * 0.06;
+        tl.to(tBox, {
+          x: tTargetX,
+          y: tTargetY,
+          opacity: 1,
+          duration: tRandDur,
+          ease: "back.out(1.05)"
+        }, tRandDelay);
+        if (toggleBox.transform.rotate > 0.1) {
+          tl.to(tBox.transform, {
+            rotate: Math.PI / 2,
+            duration: tRandDur,
+            ease: "power2.out"
+          }, tRandDelay);
+        }
       }
       const labelBox = row.children.find((c) => {
         var _a2;
@@ -8704,59 +8709,27 @@
         hiddenToggles.push(toggleHider);
       }
     }
-    if (allTargets.length === 0) {
+    if (charBoxes.length === 0) {
       container.overflow = origOverflow;
-      return;
+      return null;
     }
     renderer == null ? void 0 : renderer.setRoot(root);
-    const BASE_DUR = 0.22;
-    try {
-      await new Promise((resolve) => {
-        const tl = anim.timeline({ onComplete: resolve });
-        _activeTl = tl;
-        for (let gi = 0; gi < lineGroups.length; gi++) {
-          const group = lineGroups[gi];
-          if (!group || group.length === 0) continue;
-          for (let ci = 0; ci < group.length; ci++) {
-            const t = group[ci];
-            const randDelay = Math.random() * 0.1 + gi * 8e-3;
-            const randDur = BASE_DUR + Math.random() * 0.06;
-            tl.to(t.box, {
-              x: t.targetX,
-              y: t.targetY,
-              opacity: 1,
-              duration: randDur,
-              ease: "back.out(1.05)"
-            }, randDelay);
-            if (t.isToggle) {
-              tl.to(t.box.transform, {
-                rotate: Math.PI / 2,
-                duration: randDur,
-                ease: "power2.out"
-              }, randDelay);
-            }
-          }
-        }
-      });
-    } finally {
-      _activeTl = null;
-      const currentRoot = renderer == null ? void 0 : renderer.getRoot();
-      if (currentRoot !== root) return;
-      for (const t of allTargets) {
-        const idx = container.children.indexOf(t.box);
-        if (idx >= 0) container.children.splice(idx, 1);
-      }
-      hiddenLabels.forEach((l) => {
-        l.visible = true;
-      });
-      hiddenToggles.forEach((t) => {
-        t.visible = true;
-      });
-      container.overflow = origOverflow;
-      if (container.parent && parentOrigOverflow) {
-        container.parent.overflow = parentOrigOverflow;
-      }
-      renderer == null ? void 0 : renderer.setRoot(root);
+    return { container, charBoxes, hiddenLabels, hiddenToggles, origOverflow, parentOrigOverflow };
+  }
+  function cleanupCharRain(cu) {
+    for (const box of cu.charBoxes) {
+      const idx = cu.container.children.indexOf(box);
+      if (idx >= 0) cu.container.children.splice(idx, 1);
+    }
+    cu.hiddenLabels.forEach((l) => {
+      l.visible = true;
+    });
+    cu.hiddenToggles.forEach((t) => {
+      t.visible = true;
+    });
+    cu.container.overflow = cu.origOverflow;
+    if (cu.container.parent && cu.parentOrigOverflow) {
+      cu.container.parent.overflow = cu.parentOrigOverflow;
     }
   }
 
@@ -11037,7 +11010,6 @@
   }
   function onSidebarOpen() {
     var _a;
-    killActiveCharRain();
     _resetAnimTimeline();
     (_a = L.renderer) == null ? void 0 : _a.stop();
     L.renderer = null;
@@ -11103,7 +11075,6 @@
   function onSidebarClose() {
     var _a, _b, _c, _d, _e;
     _removeAllOverlays();
-    killActiveCharRain();
     _resetAnimTimeline();
     L._sidebarClosed = true;
     L.endOp();
@@ -11223,28 +11194,32 @@
         return;
       }
       const next = peek();
-      if (next) {
-        const r = L.renderer.getRoot();
-        const sy = (_a = r.scrollY) != null ? _a : 0;
-        const hit = _quickHitTest(r, next.offsetX, next.offsetY + sy);
-        if (hit && L.cursorRowId !== null && L.cursorRowId !== hit.id) {
-          dequeue();
-          moveCursorTo(hit);
-          _scrollToCenterCursor();
-          setTimeout(processClickQueue, 0);
-          return;
-        }
-        const tgt = _findClickPath(r, next.offsetX, next.offsetY + sy);
-        if (tgt && tgt === L.animatingPath) {
-          killActiveCharRain();
-          _resetAnimTimeline();
-          _removeAllOverlays();
-          L.endOp();
-          rebuildTree();
-        } else {
-          return;
-        }
+      if (!next) return;
+      const r = L.renderer.getRoot();
+      const sy = (_a = r.scrollY) != null ? _a : 0;
+      const hit = _quickHitTest(r, next.offsetX, next.offsetY + sy);
+      if (hit && L.cursorRowId !== null && L.cursorRowId !== hit.id) {
+        dequeue();
+        moveCursorTo(hit);
+        _scrollToCenterCursor();
+        setTimeout(processClickQueue, 0);
+        return;
       }
+      const tgt = _findClickPath(r, next.offsetX, next.offsetY + sy);
+      if (!tgt || tgt !== L.animatingPath) return;
+      dequeue();
+      const currentState = !!KFMState.expandedPaths[tgt];
+      KFMState.expandedPaths[tgt] = !currentState;
+      localStorage.setItem("expandedPaths", JSON.stringify(KFMState.expandedPaths));
+      ts.reverse();
+      ts.eventCallback("onReverseComplete", () => {
+        L.endOp();
+        _removeAllOverlays();
+        _resetAnimTimeline();
+        KFMState.notify();
+        processClickQueue();
+      });
+      return;
     }
     const { offsetX, offsetY } = dequeue();
     const root = L.renderer.getRoot();
@@ -11320,7 +11295,7 @@
     _runExpandAnimation({ container, root, fullHeight, toggle2, path: hitData.path, onTap: null });
   }
   function _runExpandAnimation(params) {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e;
     const { container, root, fullHeight, toggle2, path, onTap } = params;
     if (toggle2) {
       anim.killTweensOf(toggle2.transform);
@@ -11332,6 +11307,8 @@
     const subPacks = subTargets.map((st) => _setupExpandOverlays(st.container, st.fullHeight));
     L.beginOp(path, "expand");
     const animRoot = L.renderer.getRoot();
+    const charRainCleanups = [];
+    const overlaysToClean = [pack, ...subPacks];
     ts.to(pack.containerOverlay, { height: fullHeight, duration: 0.05, ease: "back.out(1.15)" }, 0);
     for (const rowOv of pack.rowOverlays) {
       ts.to(rowOv, { y: rowOv._targetY, duration: 0.05, ease: "back.out(1.15)" }, 0);
@@ -11339,7 +11316,15 @@
     for (const sibOv of pack.siblingOverlays) {
       ts.to(sibOv, { y: sibOv._targetY, duration: 0.05, ease: "back.out(1.15)" }, 0);
     }
-    const overlaysToClean = [pack, ...subPacks];
+    const topCleanup = setupCharRainTweens(
+      container,
+      root,
+      L.renderer,
+      pack.rowOverlays.map((r) => r._targetY),
+      ts,
+      0
+    );
+    if (topCleanup) charRainCleanups.push(topCleanup);
     for (const sp of subPacks) {
       const subLevel = (_b = (_a = subTargets.find((st) => {
         var _a2;
@@ -11348,12 +11333,26 @@
       const delay = subLevel * 0.06;
       ts.to(sp.containerOverlay, { height: sp.containerOverlay.height === 0 ? (_d = (_c = subTargets.find((st) => `ov-${st.container.id}` === sp.containerOverlay.id)) == null ? void 0 : _c.fullHeight) != null ? _d : sp.containerOverlay.height : sp.containerOverlay.height, duration: 0.05, ease: "back.out(1.15)" }, delay);
       for (const rowOv of sp.rowOverlays) {
-        ts.to(rowOv, { y: rowOv._targetY, duration: 0.05 + delay * 0.2, ease: "back.out(1.15)" }, delay);
+        ts.to(rowOv, { y: rowOv._targetY, duration: 0.05, ease: "back.out(1.15)" }, delay);
       }
       for (const sibOv of sp.siblingOverlays) {
         ts.to(sibOv, { y: sibOv._targetY, duration: 0.05, ease: "back.out(1.15)" }, delay);
       }
+      const realContainer = (_e = subTargets.find((st) => `ov-${st.container.id}` === sp.containerOverlay.id)) == null ? void 0 : _e.container;
+      if (realContainer) {
+        const subCleanup = setupCharRainTweens(
+          realContainer,
+          root,
+          L.renderer,
+          sp.rowOverlays.map((r) => r._targetY),
+          ts,
+          delay
+        );
+        if (subCleanup) charRainCleanups.push(subCleanup);
+      }
     }
+    const maxLevel = subTargets.length > 0 ? Math.max(...subTargets.map((st) => st.level)) : 0;
+    const cleanupDelay = maxLevel * 0.06 + 0.05;
     ts.call(() => {
       var _a2, _b2;
       if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
@@ -11361,11 +11360,10 @@
         for (const c of op.hiddenChildren) c.opacity = 1;
         for (const s of op.hiddenSiblings) s.opacity = 1;
       }
+      for (const cu of charRainCleanups) cleanupCharRain(cu);
       _removeAllOverlays();
       _resetAnimTimeline();
       assert(_activeOverlays.length === 0, "overlays leaked after expand");
-      animateCharRain(container, root, L.renderer, pack.rowOverlays.map((r) => r._targetY)).catch(() => {
-      });
       L.endOp();
       const _root = (_b2 = L.renderer) == null ? void 0 : _b2.getRoot();
       if (_root) {
@@ -11373,7 +11371,7 @@
       }
       if (onTap) onTap();
       processClickQueue();
-    });
+    }, void 0, cleanupDelay);
   }
   function doCollapse(hit, hitData) {
     L.beginOp(hitData.path, "collapse");

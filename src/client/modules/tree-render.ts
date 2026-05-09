@@ -9,7 +9,7 @@
 import { buildSidebarTree } from './tree-model.js';
 import { KFMState, getFileRowData, type FileRowData } from './state.js';
 import { anim } from './animation-registry.js';
-import { animateCharRain, killActiveCharRain } from "./char-rain.js";
+import { setupCharRainTweens, cleanupCharRain, type CharRainCleanup } from "./char-rain.js";
 import { closeSidebar } from './ui.js';
 import { Renderer } from '../engine/v2/renderer.js';
 import { L } from './renderer-lifecycle.js';
@@ -313,7 +313,6 @@ export function isAnimLocked(): boolean {
 
 export function onSidebarOpen(): void {
   // ===== 销毁旧渲染器 + 通过生命周期重置所有状态 =====
-  killActiveCharRain();
   _resetAnimTimeline();
   L.renderer?.stop();
   L.renderer = null;
@@ -391,7 +390,6 @@ export function onSidebarOpen(): void {
 export function onSidebarClose(): void {
   // 先停掉所有动画和独立rAF循环
   _removeAllOverlays();
-  killActiveCharRain();
   _resetAnimTimeline();
   L._sidebarClosed = true;  // 让wheel/touch的rAF循环自己退出
   L.endOp();
@@ -535,7 +533,7 @@ function _quickHitTest(root: Box, px: number, py: number): Box | null {
 function processClickQueue(): void {
   if (clickQueue.isEmpty() || !L.renderer) return;
 
-  // === P2 状态机：动画进行中 ===
+  // === 规则：动画进行中 ===
   if (L.isAnimating) {
     if (L._animBusyAt && Date.now() - L._animBusyAt > 3000) {
       L.endOp();
@@ -543,34 +541,44 @@ function processClickQueue(): void {
       return;
     }
     const next = clickQueue.peek();
-    if (next) {
-      const r = L.renderer!.getRoot()!;
-      const sy = r.scrollY ?? 0;
-      const hit = _quickHitTest(r, next.offsetX, next.offsetY + sy);
-      
-      // 双层调度：光标移动穿透，不排队
-      if (hit && L.cursorRowId !== null && L.cursorRowId !== hit.id) {
-        clickQueue.dequeue();
-        moveCursorTo(hit);
-        _scrollToCenterCursor();
-        setTimeout(processClickQueue, 0);  // 推迟到下一轮事件循环，防栈溢出
-        return;
-      }
-      
-      // 同路径中断（P2 逆向动画）
-      const tgt = _findClickPath(r, next.offsetX, next.offsetY + sy);
-      if (tgt && tgt === L.animatingPath) {
-        killActiveCharRain();
-        _resetAnimTimeline();
-        _removeAllOverlays();
-        L.endOp();
-        rebuildTree();
-      } else {
-        return;
-      }
+    if (!next) return;
+
+    const r = L.renderer!.getRoot()!;
+    const sy = r.scrollY ?? 0;
+    const hit = _quickHitTest(r, next.offsetX, next.offsetY + sy);
+
+    // 规则 2a：光标移动穿透（保留）
+    if (hit && L.cursorRowId !== null && L.cursorRowId !== hit.id) {
+      clickQueue.dequeue();
+      moveCursorTo(hit);
+      _scrollToCenterCursor();
+      setTimeout(processClickQueue, 0);
+      return;
     }
+
+    // 规则 2b：不同路径点击 → 直接忽略
+    const tgt = _findClickPath(r, next.offsetX, next.offsetY + sy);
+    if (!tgt || tgt !== L.animatingPath) return;
+
+    // 规则 1：同路径点击 → 状态先行 + reverse
+    clickQueue.dequeue();
+    // 状态先行（不 notify，不触发 rebuildTree）
+    const currentState = !!KFMState.expandedPaths[tgt];
+    KFMState.expandedPaths[tgt] = !currentState;
+    localStorage.setItem('expandedPaths', JSON.stringify(KFMState.expandedPaths));
+    // reverse 所有 tween（overlay 高度/位置 + 字符位置/透明度）
+    ts.reverse();
+    ts.eventCallback('onReverseComplete', () => {
+      L.endOp();
+      _removeAllOverlays();
+      _resetAnimTimeline();  // ts.clear() + time(0)
+      KFMState.notify();    // 触发 _stateSub → rebuildTree
+      processClickQueue();
+    });
+    return;
   }
 
+  // === 非动画中：正常消费 ===
   const { offsetX, offsetY } = clickQueue.dequeue()!;
   const root = L.renderer.getRoot();
   if (!root) return;
@@ -661,7 +669,7 @@ interface ExpandAnimParams {
   onTap: (() => void) | null;
 }
 
-/** 展开动画核心：overlay 模式 + GSAP + 清理 + 字符雨 */
+/** 展开动画核心：一条 ts timeline 上同时布置 overlay tween 和字符 tween */
 function _runExpandAnimation(params: ExpandAnimParams): void {
   const { container, root, fullHeight, toggle2, path, onTap } = params;
 
@@ -682,7 +690,11 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
   L.beginOp(path, 'expand');
   const animRoot = L.renderer!.getRoot()!;
 
-  // 本层 overlay
+  // 所有 overlay tween + 字符雨 cleanup 信息收集
+  const charRainCleanups: CharRainCleanup[] = [];
+  const overlaysToClean: OverlayPack[] = [pack, ...subPacks];
+
+  // 本层 overlay tween
   ts.to(pack.containerOverlay, { height: fullHeight, duration: 0.05, ease: 'back.out(1.15)' }, 0);
   for (const rowOv of pack.rowOverlays) {
     ts.to(rowOv, { y: (rowOv as Box & OverlayMeta)._targetY!, duration: 0.05, ease: 'back.out(1.15)' }, 0);
@@ -691,38 +703,58 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
     ts.to(sibOv, { y: (sibOv as Box & OverlayMeta)._targetY!, duration: 0.05, ease: 'back.out(1.15)' }, 0);
   }
 
-  // 所有子容器 overlay，按层 staggered delay
-  const overlaysToClean: OverlayPack[] = [pack, ...subPacks];
+  // 本层字符雨 tween（直接挂到 ts 上，不建独立时间线）
+  const topCleanup = setupCharRainTweens(
+    container, root, L.renderer,
+    pack.rowOverlays.map(r => (r as Box & OverlayMeta)._targetY as number),
+    ts, 0
+  );
+  if (topCleanup) charRainCleanups.push(topCleanup);
+
+  // 所有子容器 overlay + 字符雨，按层 staggered delay
   for (const sp of subPacks) {
     const subLevel = subTargets.find(st => st.container.id === sp.containerOverlay.id?.replace('ov-expanded-', 'expanded-'))?.level ?? 1;
     const delay = subLevel * 0.06;
     ts.to(sp.containerOverlay, { height: sp.containerOverlay.height === 0 ? (subTargets.find(st => `ov-${st.container.id}` === sp.containerOverlay.id)?.fullHeight ?? sp.containerOverlay.height) : sp.containerOverlay.height, duration: 0.05, ease: 'back.out(1.15)' }, delay);
     for (const rowOv of sp.rowOverlays) {
-      ts.to(rowOv, { y: (rowOv as Box & OverlayMeta)._targetY!, duration: 0.05 + delay * 0.2, ease: 'back.out(1.15)' }, delay);
+      ts.to(rowOv, { y: (rowOv as Box & OverlayMeta)._targetY!, duration: 0.05, ease: 'back.out(1.15)' }, delay);
     }
     for (const sibOv of sp.siblingOverlays) {
       ts.to(sibOv, { y: (sibOv as Box & OverlayMeta)._targetY!, duration: 0.05, ease: 'back.out(1.15)' }, delay);
     }
+    // 子层字符雨（在真实容器上创建字符 Box）
+    const realContainer = subTargets.find(st => `ov-${st.container.id}` === sp.containerOverlay.id)?.container;
+    if (realContainer) {
+      const subCleanup = setupCharRainTweens(
+        realContainer, root, L.renderer,
+        sp.rowOverlays.map(r => (r as Box & OverlayMeta)._targetY as number),
+        ts, delay
+      );
+      if (subCleanup) charRainCleanups.push(subCleanup);
+    }
   }
 
-  // 动画完成: 清理所有 overlay，恢复可见性，触发字符雨
+  // 计算 cleanupt 时间：所有 overlay 完成的时间
+  const maxLevel = subTargets.length > 0 ? Math.max(...subTargets.map(st => st.level)) : 0;
+  const cleanupDelay = maxLevel * 0.06 + 0.05;
+
+  // cleanup: 恢复可见性，清理 overlay，清理字符 Box
   ts.call(() => {
     if (L.renderer?.getRoot() !== animRoot) return;
     for (const op of overlaysToClean) {
       for (const c of op.hiddenChildren) c.opacity = 1;
       for (const s of op.hiddenSiblings) s.opacity = 1;
     }
+    for (const cu of charRainCleanups) cleanupCharRain(cu);
     _removeAllOverlays();
     _resetAnimTimeline();
     assert(_activeOverlays.length === 0, 'overlays leaked after expand');
-    // 字符雨：在 overlay 完成后触发
-    animateCharRain(container, root, L.renderer, pack.rowOverlays.map(r => (r as Box & OverlayMeta)._targetY as number)).catch(() => {});
     L.endOp();
     const _root = L.renderer?.getRoot();
     if (_root) { _rebuildRowIndex(_root); }
     if (onTap) onTap();
     processClickQueue();
-  });
+  }, undefined, cleanupDelay);
 }
 
 /** 折叠动画（overlay 模式：GSAP 只碰 overlay Box，不碰主树） */

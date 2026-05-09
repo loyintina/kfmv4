@@ -3,58 +3,62 @@
  *
  * 在文件树展开时，将文字拆分为独立字符，
  * 每个字符从页面顶端（sidebar 可视区域顶部）散落掉落到目标位置。
- * 用 Canvas measureText 逐字测量宽度，GSAP 驱动动画。
- * 渲染器 rAF 循环自动读取 GSAP 更新的 Box 值，无需额外 onUpdate。
+ *
+ * v2 重构：不再使用独立 GSAP timeline，接受外部 ts 并直接加上 tween。
+ * 所有字符 tween 挂到主时间线上，使 ts.reverse() 能统一逆转所有动画。
+ * 不再 async，不再有独立生命周期，cleanup 信息同步返回。
  */
 
 import { Box } from "../engine/v2/box.js";
 import { Renderer } from "../engine/v2/renderer.js";
 import { FONT, LINE_HEIGHT, MAX_LINES } from "./style-registry.js";
 import { prepareWithSegments, layoutWithLines } from "@chenglou/pretext";
-import { anim, type AnimTimeline } from "./animation-registry.js";
+import type { AnimTimeline } from "./animation-registry.js";
 import { DOM } from "./dom-refs.js";
+import type { Overflow } from "../engine/v2/types.js";
 
-// 活跃的 char-rain 时间线引用，供外部 killActiveCharRain() 中断
-let _activeTl: ReturnType<typeof anim.timeline> | null = null;
+// ============================================================
+// cleanup 信息（供外部在动画完成时清理字符 Box）
+// ============================================================
 
-/** 中断当前正在运行的字符雨动画 */
-export function killActiveCharRain(): void {
-  if (_activeTl) {
-    _activeTl.kill();
-    _activeTl = null;
-  }
-}
-
-interface CharTarget {
-  box: Box;
-  targetX: number;
-  targetY: number;
-  isToggle?: boolean;
+export interface CharRainCleanup {
+  container: Box;
+  charBoxes: Box[];
+  hiddenLabels: Box[];
+  hiddenToggles: Box[];
+  origOverflow: Overflow;
+  parentOrigOverflow: Overflow | undefined;
 }
 
 /**
- * 对展开容器内的所有文字行应用字符雨落体动画。
- * 字符从 sidebar 可视区域顶部掉落到目标位置。
+ * 创建字符 Box 并将动画 tween 添加到指定 timeline 上。
+ * 不再创建独立 timeline，不再 async。
  *
- * @param container - 展开的文件夹容器（expanded-*）
- * @param root      - 文件树根 Box
- * @param renderer  - 渲染器实例
+ * @param container   展开的文件夹容器（expanded-*）
+ * @param root        文件树根 Box
+ * @param renderer    渲染器实例
+ * @param rowTargetYs 每行在展开态时的 y 坐标
+ * @param tl          目标 timeline（通常是 ts scope）
+ * @param baseDelay   该层动画的起始时间偏移（用于 staggered）
+ * @returns cleanup 信息，如果没有字符需要动画则返回 null
  */
-export async function animateCharRain(
+export function setupCharRainTweens(
   container: Box,
   root: Box,
   renderer: Renderer | null,
-  rowTargetYs?: number[]
-): Promise<void> {
+  rowTargetYs: number[] | undefined,
+  tl: AnimTimeline,
+  baseDelay: number,
+): CharRainCleanup | null {
   // 1. 收集需要动画的行
   const rows = container.children.filter((c) =>
     c.id?.startsWith("title-") || c.id?.startsWith("file-")
   );
-  if (rows.length === 0) return;
+  if (rows.length === 0) return null;
 
   const canvas = DOM.treeCanvas;
   const ctx = canvas?.getContext("2d");
-  if (!ctx) return;
+  if (!ctx) return null;
 
   // 2. 保存并临时修改 overflow。字符起始 Y 为负，会被自身及父容器的
   //    overflow:hidden 裁掉。两个都要改成 visible。
@@ -65,19 +69,11 @@ export async function animateCharRain(
     container.parent.overflow = 'visible';
   }
 
-  // 3. 计算坐标：字符初始位置在屏幕顶部（sidebar 可视区 y=0）
-  const absY = container.getAbsolutePosition().y;
-  const scrollY = root.scrollY ?? 0;
-  const topY = scrollY - absY; // 容器空间中对应屏幕 y=0 的值
-
-  renderer?.setRoot(root);
-
-  // 4. 逐行逐字创建字符 Box
-  const allTargets: CharTarget[] = [];
-  const lineGroups: CharTarget[][] = [];
-  let currentLineGroup = 0;
+  // 3. 创建字符 Box 和 tween
+  const charBoxes: Box[] = [];
   const hiddenLabels: Box[] = [];
   const hiddenToggles: Box[] = [];
+  const BASE_DUR = 0.22;
 
   for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
     const row = rows[rowIdx];
@@ -99,42 +95,32 @@ export async function animateCharRain(
       const layout = layoutWithLines(prepared, label.width, lineH);
       layoutLines = layout.lines;
     } catch {
-      // Pretext 失败时回退到单行
       layoutLines = [{ text, width: ctx.measureText(text).width }];
     }
 
-    // 截断处理（与 renderer._drawText 逻辑一致）
     const maxVis = label.textStyle.maxLines || MAX_LINES;
     const isTrunc = layoutLines.length > maxVis;
     const visLines = layoutLines.slice(0, maxVis);
 
-    // 计算垂直居中偏移（与 renderer._drawText 的 verticalAlign middle 逻辑一致）
     const totalTextHeight = visLines.length * lineH;
     const verticalOffset = Math.max(0, (row.height - totalTextHeight) / 2);
 
-    const rowFirstLineGroup = currentLineGroup;
     for (let li = 0; li < visLines.length; li++) {
       const line = visLines[li];
       let chars: string[];
 
-      // 省略号替换（与 renderer._drawText 一致：最后可见行末字符 → \u2026）
       if (li === maxVis - 1 && isTrunc) {
         chars = [...line.text.slice(0, -1), "\u2026"];
       } else {
         chars = [...line.text];
       }
 
-      // 逐字测量宽度
       const charWidths = chars.map((ch) => ctx.measureText(ch).width);
 
-      if (!lineGroups[currentLineGroup]) lineGroups[currentLineGroup] = [];
       let cx = 0;
       for (let ci = 0; ci < chars.length; ci++) {
-        // 目标位置（容器空间中的最终坐标）
         const targetX = row.x + label.x + cx;
         const targetY = rowExpandedY + label.y + verticalOffset + li * lineH;
-
-        // 初始位置：水平随机偏摆����垂直在屏幕顶部
         const initX = targetX + (Math.random() - 0.5) * 100;
         const initY = targetY - 80 - Math.random() * 140;
 
@@ -145,7 +131,7 @@ export async function animateCharRain(
           width: charWidths[ci] + 2,
           height: lineH,
           opacity: 0,
-          backgroundColor: "transparent", // 透明背景，消除阴影
+          backgroundColor: "transparent",
           interactive: false,
           zIndex: 99,
           overflow: "visible",
@@ -162,21 +148,30 @@ export async function animateCharRain(
         };
 
         container.addChild(box);
-        allTargets.push({ box, targetX, targetY });
-        lineGroups[currentLineGroup].push({ box, targetX, targetY });
+        charBoxes.push(box);
+
+        // 加到主时间线上
+        const randDelay = Math.random() * 0.1 + baseDelay;
+        const randDur = BASE_DUR + Math.random() * 0.06;
+
+        tl.to(box, {
+          x: targetX,
+          y: targetY,
+          opacity: 1,
+          duration: randDur,
+          ease: "back.out(1.05)",
+        }, randDelay);
+
         cx += charWidths[ci];
       }
-      currentLineGroup++;
     }
 
-    // --- 三角 (▶) 字符雨 ---
-    // 让 toggle 图标也一起掉落
+    // toggle 图标也一起掉落
     const toggleBox = row.children.find((c) => c.id?.startsWith("toggle-"));
     if (toggleBox && toggleBox.textStyle?.content) {
-      const tChar = toggleBox.textStyle.content;
       const tFont = toggleBox.textStyle.font || font;
       ctx.font = tFont;
-      const tWidth = ctx.measureText(tChar).width;
+      const tWidth = ctx.measureText(toggleBox.textStyle.content).width;
       const tTargetX = row.x + toggleBox.x;
       const tTargetY = rowExpandedY + toggleBox.y;
       const tInitX = tTargetX + (Math.random() - 0.5) * 100;
@@ -201,12 +196,28 @@ export async function animateCharRain(
       };
 
       container.addChild(tBox);
-      const togTarget = { box: tBox, targetX: tTargetX, targetY: tTargetY, isToggle: toggleBox.transform.rotate > 0.1 };
-      allTargets.push(togTarget);
-      lineGroups[rowFirstLineGroup].push(togTarget);
+      charBoxes.push(tBox);
+
+      const tRandDelay = Math.random() * 0.1 + baseDelay;
+      const tRandDur = BASE_DUR + Math.random() * 0.06;
+      tl.to(tBox, {
+        x: tTargetX,
+        y: tTargetY,
+        opacity: 1,
+        duration: tRandDur,
+        ease: "back.out(1.05)",
+      }, tRandDelay);
+
+      if (toggleBox.transform.rotate > 0.1) {
+        tl.to(tBox.transform, {
+          rotate: Math.PI / 2,
+          duration: tRandDur,
+          ease: "power2.out",
+        }, tRandDelay);
+      }
     }
 
-    // 隐藏原始 label（字符 Box 不隐藏，等 GSAP 后删除）
+    // 隐藏原始 label 和 toggle
     const labelBox = row.children.find((c) => c.id?.startsWith("label-"));
     if (labelBox) { labelBox.visible = false; hiddenLabels.push(labelBox); }
 
@@ -214,71 +225,30 @@ export async function animateCharRain(
     if (toggleHider) { toggleHider.visible = false; hiddenToggles.push(toggleHider); }
   }
 
-  // 没有字符需要动画（空文本等）
-  if (allTargets.length === 0) {
+  if (charBoxes.length === 0) {
     container.overflow = origOverflow;
-    return;
+    return null;
   }
 
-  // 推送初始状态（字符在屏幕顶部）
+  // 推送初始状态
   renderer?.setRoot(root);
 
-  // 5. GSAP 动画：逐字随机延迟，碎片化散落
-  const BASE_DUR = 0.22;
+  return { container, charBoxes, hiddenLabels, hiddenToggles, origOverflow, parentOrigOverflow };
+}
 
-  try {
-    await new Promise<void>((resolve) => {
-      const tl = anim.timeline({ onComplete: resolve });
-      _activeTl = tl;
-
-      for (let gi = 0; gi < lineGroups.length; gi++) {
-        const group = lineGroups[gi];
-        if (!group || group.length === 0) continue;
-
-        for (let ci = 0; ci < group.length; ci++) {
-          const t = group[ci];
-          // 每个字符独立随机延迟和微变时长，打破排队感
-          const randDelay = Math.random() * 0.1 + gi * 0.008;
-          const randDur = BASE_DUR + Math.random() * 0.06;
-
-          tl.to(t.box, {
-            x: t.targetX,
-            y: t.targetY,
-            opacity: 1,
-            duration: randDur,
-            ease: "back.out(1.05)",
-          }, randDelay);
-
-          if (t.isToggle) {
-            tl.to(t.box.transform, {
-              rotate: Math.PI / 2,
-              duration: randDur,
-              ease: "power2.out",
-            }, randDelay);
-          }
-        }
-      }
-    });
-  } finally {
-    _activeTl = null;
-    // 根检查：如果树已被重建（renderer 的当前 root 不是我们记住的那个），跳过所有操作
-    const currentRoot = renderer?.getRoot();
-    if (currentRoot !== root) return;
-
-    // 清理字符 tiles
-    for (const t of allTargets) {
-      const idx = container.children.indexOf(t.box);
-      if (idx >= 0) container.children.splice(idx, 1);
-    }
-
-    // 恢复原始 label 和 toggle 可见性
-    hiddenLabels.forEach(l => { l.visible = true; });
-    hiddenToggles.forEach(t => { t.visible = true; });
-
-    container.overflow = origOverflow;
-    if (container.parent && parentOrigOverflow) {
-      container.parent.overflow = parentOrigOverflow;
-    }
-    renderer?.setRoot(root);
+/**
+ * 清理字符雨创建的字符 Box 和恢复原始状态。
+ * 在动画正向完成或逆转完成时调用。
+ */
+export function cleanupCharRain(cu: CharRainCleanup): void {
+  for (const box of cu.charBoxes) {
+    const idx = cu.container.children.indexOf(box);
+    if (idx >= 0) cu.container.children.splice(idx, 1);
+  }
+  cu.hiddenLabels.forEach(l => { l.visible = true; });
+  cu.hiddenToggles.forEach(t => { t.visible = true; });
+  cu.container.overflow = cu.origOverflow;
+  if (cu.container.parent && cu.parentOrigOverflow) {
+    cu.container.parent.overflow = cu.parentOrigOverflow;
   }
 }
