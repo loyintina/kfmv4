@@ -6,46 +6,46 @@
  * 折叠时同理，字符从当前位置往回飞到屏幕上方。
  *
  * 展开和回收共用同一套字符创建逻辑，仅动画方向和参数不同。
+ *
+ * 双树设计：字符盒子建在 overlay 树的容器克隆上，不碰主树。
+ * 主树的 container 参数仅用于读取行数据（标签文字、字体、颜色等）。
  */
 
 import { Box } from "../engine/v2/box.js";
-import { Renderer } from "../engine/v2/renderer.js";
 import { FONT, LINE_HEIGHT, MAX_LINES } from "./style-registry.js";
 import { prepareWithSegments, layoutWithLines } from "@chenglou/pretext";
 import type { AnimTimeline } from "./animation-registry.js";
 import { DOM } from "./dom-refs.js";
-import type { Overflow } from "../engine/v2/types.js";
 
 // ============================================================
 // cleanup 信息（供外部在动画完成时清理字符 Box）
 // ============================================================
 
 export interface CharRainCleanup {
+  /** overlay 容器（字符盒在此创建，cleanup 时从此移除） */
   container: Box;
   charBoxes: Box[];
   hiddenLabels: Box[];
   hiddenToggles: Box[];
-  origOverflow: Overflow;
-  parentOrigOverflow: Overflow | undefined;
 }
 
 /**
  * 创建字符 Box 并将动画 tween 添加到指定 timeline 上。
  * 展开和回收共用此函数，通过 direction 控制。
  *
- * @param container   展开的文件夹容器（expanded-*）
- * @param root        文件树根 Box
- * @param renderer    渲染器实例
- * @param rowTargetYs 每行在展开态时的 y 坐标
- * @param tl          目标 timeline（通常是 ts scope）
- * @param baseDelay   该层动画的起始时间偏移（用于 staggered）
- * @param direction   'expand' 或 'collapse'
+ * @param container       主树的 expanded-* 容器（仅读取行/标签/切换符数据，不修改）
+ * @param overlayContainer overlay 树的容器克隆（字符盒建在此，overflow 已为 'visible'）
+ * @param root            文件树根 Box（用于计算屏幕顶部位置）
+ * @param rowTargetYs     每行在展开态时的 y 坐标（overlay 坐标空间）
+ * @param tl              目标 timeline（通常是 ts scope）
+ * @param baseDelay       该层动画的起始时间偏移（用于 staggered）
+ * @param direction       'expand' 或 'collapse'
  * @returns cleanup 信息，如果没有字符需要动画则返回 null
  */
 export function setupCharRainTweens(
   container: Box,
+  overlayContainer: Box,
   root: Box,
-  renderer: Renderer | null,
   rowTargetYs: number[] | undefined,
   tl: AnimTimeline,
   baseDelay: number,
@@ -61,13 +61,8 @@ export function setupCharRainTweens(
   const ctx = canvas?.getContext("2d");
   if (!ctx) return null;
 
-  // 保存并临时修改 overflow。字符起始 Y 可能超出容器边界。
-  const origOverflow = container.overflow;
-  container.overflow = "visible";
-  const parentOrigOverflow = container.parent?.overflow;
-  if (container.parent && container.parent.overflow === 'hidden') {
-    container.parent.overflow = 'visible';
-  }
+  // overlay 容器克隆已在 _createVisualClone 中设置为 overflow: 'visible'，
+  // 无需额外修改。字符起始 Y 可能超出容器边界，overlay 容器允许子元素溢出。
 
   const charBoxes: Box[] = [];
   const hiddenLabels: Box[] = [];
@@ -145,7 +140,7 @@ export function setupCharRainTweens(
             lineHeight: lineH, align: "left",
             verticalAlign: "middle", overflow: "visible", maxLines: 1,
           };
-          container.addChild(box);
+          overlayContainer.addChild(box);
           charBoxes.push(box);
 
           tl.to(box, {
@@ -171,7 +166,7 @@ export function setupCharRainTweens(
             lineHeight: lineH, align: "left",
             verticalAlign: "middle", overflow: "visible", maxLines: 1,
           };
-          container.addChild(box);
+          overlayContainer.addChild(box);
           charBoxes.push(box);
 
           tl.to(box, {
@@ -207,7 +202,7 @@ export function setupCharRainTweens(
           interactive: false, zIndex: 99, overflow: "visible",
         });
         tBox.textStyle = { ...toggleBox.textStyle, overflow: "visible", maxLines: 1 };
-        container.addChild(tBox);
+        overlayContainer.addChild(tBox);
         charBoxes.push(tBox);
         tl.to(tBox, {
           x: tToX, y: tToY, opacity: 0,
@@ -225,7 +220,7 @@ export function setupCharRainTweens(
           interactive: false, zIndex: 99, overflow: "visible",
         });
         tBox.textStyle = { ...toggleBox.textStyle, overflow: "visible", maxLines: 1 };
-        container.addChild(tBox);
+        overlayContainer.addChild(tBox);
         charBoxes.push(tBox);
         tl.to(tBox, {
           x: tTargetX, y: tTargetY, opacity: 1,
@@ -240,7 +235,8 @@ export function setupCharRainTweens(
       }
     }
 
-    // 隐藏原始 label 和 toggle
+    // 隐藏原始 label 和 toggle（双保险：主树行 opacity=0 已隐藏，
+    // 此处的 visible=false 防止重建后的主树被 char-rain 残留数据影响）
     const labelBox = row.children.find((c) => c.id?.startsWith("label-"));
     if (labelBox) { labelBox.visible = false; hiddenLabels.push(labelBox); }
 
@@ -248,14 +244,9 @@ export function setupCharRainTweens(
     if (toggleHider) { toggleHider.visible = false; hiddenToggles.push(toggleHider); }
   }
 
-  if (charBoxes.length === 0) {
-    container.overflow = origOverflow;
-    return null;
-  }
+  if (charBoxes.length === 0) return null;
 
-  renderer?.setRoot(root);
-
-  return { container, charBoxes, hiddenLabels, hiddenToggles, origOverflow, parentOrigOverflow };
+  return { container: overlayContainer, charBoxes, hiddenLabels, hiddenToggles };
 }
 
 /**
@@ -268,8 +259,4 @@ export function cleanupCharRain(cu: CharRainCleanup): void {
   }
   cu.hiddenLabels.forEach(l => { l.visible = true; });
   cu.hiddenToggles.forEach(t => { t.visible = true; });
-  cu.container.overflow = cu.origOverflow;
-  if (cu.container.parent && cu.parentOrigOverflow) {
-    cu.container.parent.overflow = cu.parentOrigOverflow;
-  }
 }

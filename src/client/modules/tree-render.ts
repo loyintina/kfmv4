@@ -776,7 +776,7 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
 
   // 本层字符雨 tween（直接挂到 ts 上，不建独立时间线）
   const topCleanup = setupCharRainTweens(
-    container, root, L.renderer,
+    container, pack.containerOverlay, root,
     pack.rowOverlays.map(r => (r as Box & OverlayMeta)._targetY as number),
     ts, 0
   );
@@ -796,11 +796,11 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
     for (const sibOv of sp.siblingOverlays) {
       ts.to(sibOv, { y: (sibOv as Box & OverlayMeta)._targetY!, duration: 0.05, ease: 'back.out(1.15)' }, delay);
     }
-    // 子层字符雨（在真实容器上创建字符 Box）
+    // 子层字符雨（在 overlay 容器上创建字符 Box）
     const realContainer = subTargets.find(st => `ov-${st.container.id}` === sp.containerOverlay.id)?.container;
     if (realContainer) {
       const subCleanup = setupCharRainTweens(
-        realContainer, root, L.renderer,
+        realContainer, sp.containerOverlay, root,
         sp.rowOverlays.map(r => (r as Box & OverlayMeta)._targetY as number),
         ts, delay
       );
@@ -874,7 +874,7 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
   // 字符雨：方向 collapse，最深层先飞（delay 从最深层的展开延迟对称）
   const collapseBaseDelay = maxLevel * 0.06;
   const topCleanup = setupCharRainTweens(
-    container, root, L.renderer,
+    container, pack.containerOverlay, root,
     pack.rowOverlays.map(r => (r as Box & OverlayMeta)._targetY as number),
     ts, collapseBaseDelay, 'collapse',
   );
@@ -886,7 +886,7 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
     const realContainer = subTargets.find(st => `ov-${st.container.id}` === sp.containerOverlay.id)?.container;
     if (realContainer) {
       const subCleanup = setupCharRainTweens(
-        realContainer, root, L.renderer,
+        realContainer, sp.containerOverlay, root,
         sp.rowOverlays.map(r => (r as Box & OverlayMeta)._targetY as number),
         ts, delay, 'collapse',
       );

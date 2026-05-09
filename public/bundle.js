@@ -8545,8 +8545,8 @@
   var anim = new AnimationRegistryClass();
 
   // src/client/modules/char-rain.ts
-  function setupCharRainTweens(container, root, renderer, rowTargetYs, tl, baseDelay, direction = "expand") {
-    var _a, _b, _c, _d, _e;
+  function setupCharRainTweens(container, overlayContainer, root, rowTargetYs, tl, baseDelay, direction = "expand") {
+    var _a, _b, _c, _d;
     const isCollapse = direction === "collapse";
     const rows = container.children.filter(
       (c) => {
@@ -8558,27 +8558,21 @@
     const canvas = DOM.treeCanvas;
     const ctx = canvas == null ? void 0 : canvas.getContext("2d");
     if (!ctx) return null;
-    const origOverflow = container.overflow;
-    container.overflow = "visible";
-    const parentOrigOverflow = (_a = container.parent) == null ? void 0 : _a.overflow;
-    if (container.parent && container.parent.overflow === "hidden") {
-      container.parent.overflow = "visible";
-    }
     const charBoxes = [];
     const hiddenLabels = [];
     const hiddenToggles = [];
     const BASE_DUR = 0.22;
-    const scrollY = (_b = root.scrollY) != null ? _b : 0;
+    const scrollY = (_a = root.scrollY) != null ? _a : 0;
     const absY = container.getAbsolutePosition().y;
     const topY = scrollY - absY;
     for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
       const row = rows[rowIdx];
-      const rowExpandedY = (_c = rowTargetYs == null ? void 0 : rowTargetYs[rowIdx]) != null ? _c : row.y;
+      const rowExpandedY = (_b = rowTargetYs == null ? void 0 : rowTargetYs[rowIdx]) != null ? _b : row.y;
       const label = row.children.find((c) => {
         var _a2;
         return (_a2 = c.id) == null ? void 0 : _a2.startsWith("label-");
       });
-      if (!label || !((_d = label.textStyle) == null ? void 0 : _d.content)) continue;
+      if (!label || !((_c = label.textStyle) == null ? void 0 : _c.content)) continue;
       const text = label.textStyle.content;
       const font = label.textStyle.font || FONT;
       const color = label.textStyle.color;
@@ -8637,7 +8631,7 @@
               overflow: "visible",
               maxLines: 1
             };
-            container.addChild(box);
+            overlayContainer.addChild(box);
             charBoxes.push(box);
             tl.to(box, {
               x: toX,
@@ -8671,7 +8665,7 @@
               overflow: "visible",
               maxLines: 1
             };
-            container.addChild(box);
+            overlayContainer.addChild(box);
             charBoxes.push(box);
             tl.to(box, {
               x: fromX,
@@ -8688,7 +8682,7 @@
         var _a2;
         return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
       });
-      if (toggleBox && ((_e = toggleBox.textStyle) == null ? void 0 : _e.content)) {
+      if (toggleBox && ((_d = toggleBox.textStyle) == null ? void 0 : _d.content)) {
         const tFont = toggleBox.textStyle.font || font;
         ctx.font = tFont;
         const tTargetX = row.x + toggleBox.x;
@@ -8711,7 +8705,7 @@
             overflow: "visible"
           });
           tBox.textStyle = { ...toggleBox.textStyle, overflow: "visible", maxLines: 1 };
-          container.addChild(tBox);
+          overlayContainer.addChild(tBox);
           charBoxes.push(tBox);
           tl.to(tBox, {
             x: tToX,
@@ -8736,7 +8730,7 @@
             overflow: "visible"
           });
           tBox.textStyle = { ...toggleBox.textStyle, overflow: "visible", maxLines: 1 };
-          container.addChild(tBox);
+          overlayContainer.addChild(tBox);
           charBoxes.push(tBox);
           tl.to(tBox, {
             x: tTargetX,
@@ -8771,12 +8765,8 @@
         hiddenToggles.push(toggleHider);
       }
     }
-    if (charBoxes.length === 0) {
-      container.overflow = origOverflow;
-      return null;
-    }
-    renderer == null ? void 0 : renderer.setRoot(root);
-    return { container, charBoxes, hiddenLabels, hiddenToggles, origOverflow, parentOrigOverflow };
+    if (charBoxes.length === 0) return null;
+    return { container: overlayContainer, charBoxes, hiddenLabels, hiddenToggles };
   }
   function cleanupCharRain(cu) {
     for (const box of cu.charBoxes) {
@@ -8789,10 +8779,6 @@
     cu.hiddenToggles.forEach((t) => {
       t.visible = true;
     });
-    cu.container.overflow = cu.origOverflow;
-    if (cu.container.parent && cu.parentOrigOverflow) {
-      cu.container.parent.overflow = cu.parentOrigOverflow;
-    }
   }
 
   // src/client/engine/v2/flex.ts
@@ -11017,8 +11003,8 @@
     }
     const topCleanup = setupCharRainTweens(
       container,
+      pack.containerOverlay,
       root,
-      L.renderer,
       pack.rowOverlays.map((r) => r._targetY),
       ts,
       0
@@ -11042,8 +11028,8 @@
       if (realContainer) {
         const subCleanup = setupCharRainTweens(
           realContainer,
+          sp.containerOverlay,
           root,
-          L.renderer,
           sp.rowOverlays.map((r) => r._targetY),
           ts,
           delay
@@ -11107,8 +11093,8 @@
     const collapseBaseDelay = maxLevel * 0.06;
     const topCleanup = setupCharRainTweens(
       container,
+      pack.containerOverlay,
       root,
-      L.renderer,
       pack.rowOverlays.map((r) => r._targetY),
       ts,
       collapseBaseDelay,
@@ -11125,8 +11111,8 @@
       if (realContainer) {
         const subCleanup = setupCharRainTweens(
           realContainer,
+          sp.containerOverlay,
           root,
-          L.renderer,
           sp.rowOverlays.map((r) => r._targetY),
           ts,
           delay,
