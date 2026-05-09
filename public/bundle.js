@@ -11413,8 +11413,6 @@
         if (subCleanup) charRainCleanups.push(subCleanup);
       }
     }
-    const maxLevel = subTargets.length > 0 ? Math.max(...subTargets.map((st) => st.level)) : 0;
-    const cleanupDelay = maxLevel * 0.06 + 0.35;
     ts.call(() => {
       var _a2, _b2;
       if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
@@ -11433,7 +11431,7 @@
       }
       if (onTap) onTap();
       processClickQueue();
-    }, void 0, cleanupDelay);
+    });
   }
   function doCollapse(hit, hitData) {
     var _a, _b, _c, _d, _e;
@@ -11540,7 +11538,7 @@
       L.endOp();
       hit.gesture.onTap();
       processClickQueue();
-    }, void 0, cleanupDelay);
+    });
   }
   function findTapTarget(box, px, py) {
     var _a;

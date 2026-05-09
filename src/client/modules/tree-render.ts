@@ -734,12 +734,7 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
     }
   }
 
-  // 计算 cleanup 时间：最晚的字符雨完成时间
-  // 字符雨 base_dur ≈ 0.22 + 随机 0.06 + 随机延迟 0.1 ≈ 0.35
-  const maxLevel = subTargets.length > 0 ? Math.max(...subTargets.map(st => st.level)) : 0;
-  const cleanupDelay = maxLevel * 0.06 + 0.35;
-
-  // cleanup: 恢复可见性，清理 overlay，清理字符 Box
+  // cleanup: 在所有动画完成后自动触发
   ts.call(() => {
     if (L.renderer?.getRoot() !== animRoot) return;
     for (const op of overlaysToClean) {
@@ -755,7 +750,7 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
     if (_root) { _rebuildRowIndex(_root); }
     if (onTap) onTap();
     processClickQueue();
-  }, undefined, cleanupDelay);
+  });
 }
 
 /** 折叠动画：与展开对称的正向折叠（字符往回飞 + 盒子缩回 + 兄弟复位） */
@@ -859,7 +854,7 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
     L.endOp();
     hit.gesture!.onTap!();
     processClickQueue();
-  }, undefined, cleanupDelay);
+  });
 }
 
 function findTapTarget(box: Box, px: number, py: number): Box | null {
