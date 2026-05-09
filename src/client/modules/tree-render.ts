@@ -112,9 +112,9 @@ function _createVisualClone(
   if (src.transform) {
     clone.transform = { ...src.transform };
   }
-  // 递归克隆子 Box（label-* / toggle-* 等视觉子元素）
+  // 递归克隆子 Box（只克隆 toggle 图标，不克隆 label — 文字由字符雨提供）
   for (const child of src.children) {
-    if (child.id?.startsWith('label-') || child.id?.startsWith('toggle-')) {
+    if (child.id?.startsWith('toggle-')) {
       const childClone = new Box({
         x: child.x,
         y: child.y,
