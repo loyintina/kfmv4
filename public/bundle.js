@@ -11414,7 +11414,7 @@
       }
     }
     const maxLevel = subTargets.length > 0 ? Math.max(...subTargets.map((st) => st.level)) : 0;
-    const cleanupDelay = maxLevel * 0.06 + 0.05;
+    const cleanupDelay = maxLevel * 0.06 + 0.35;
     ts.call(() => {
       var _a2, _b2;
       if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
@@ -11525,7 +11525,7 @@
         }, delay);
       }
     }
-    const cleanupDelay = boxStartDelay + maxLevel * 0.06 + 0.05;
+    const cleanupDelay = boxStartDelay + maxLevel * 0.06 + 0.35;
     ts.call(() => {
       var _a2;
       if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;

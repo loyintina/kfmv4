@@ -734,9 +734,10 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
     }
   }
 
-  // 计算 cleanupt 时间：所有 overlay 完成的时间
+  // 计算 cleanup 时间：最晚的字符雨完成时间
+  // 字符雨 base_dur ≈ 0.22 + 随机 0.06 + 随机延迟 0.1 ≈ 0.35
   const maxLevel = subTargets.length > 0 ? Math.max(...subTargets.map(st => st.level)) : 0;
-  const cleanupDelay = maxLevel * 0.06 + 0.05;
+  const cleanupDelay = maxLevel * 0.06 + 0.35;
 
   // cleanup: 恢复可见性，清理 overlay，清理字符 Box
   ts.call(() => {
@@ -844,7 +845,7 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
   }
 
   // cleanup
-  const cleanupDelay = boxStartDelay + maxLevel * 0.06 + 0.05;
+  const cleanupDelay = boxStartDelay + maxLevel * 0.06 + 0.35;
   ts.call(() => {
     if (L.renderer?.getRoot() !== animRoot) return;
     for (const op of overlaysToClean) {
