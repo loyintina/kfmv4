@@ -9140,6 +9140,8 @@
       __publicField(this, "backgroundColor");
       __publicField(this, "_isRunning");
       __publicField(this, "_root");
+      /** 动画树根（可选，动画期间在主树上方独立渲染，互不影响） */
+      __publicField(this, "_overlayRoot");
       __publicField(this, "_rafId");
       __publicField(this, "_lastTime");
       __publicField(this, "_frameCount");
@@ -9157,6 +9159,7 @@
       this.height = 0;
       this._isRunning = false;
       this._root = null;
+      this._overlayRoot = null;
       this._rafId = 0;
       this._lastTime = 0;
       this._frameCount = 0;
@@ -9185,6 +9188,14 @@
     }
     getRoot() {
       return this._root;
+    }
+    /** 设置动画树根（在主树之上独立渲染） */
+    setOverlayRoot(box) {
+      this._overlayRoot = box;
+      return this;
+    }
+    getOverlayRoot() {
+      return this._overlayRoot;
     }
     start() {
       if (this._isRunning) return this;
@@ -9228,6 +9239,9 @@
         } catch (e) {
           console.error("_manageInputs error", e);
         }
+      }
+      if (this._overlayRoot) {
+        this._tickAndRender(this._overlayRoot, now, 1);
       }
     }
     _tickAndRender(box, now, parentOpacity) {
@@ -10434,425 +10448,6 @@
     }
   }
 
-  // src/client/modules/gesture-registry.ts
-  var GestureRegistry = class {
-    constructor() {
-      __publicField(this, "_handlers", []);
-      __publicField(this, "_active", null);
-      __publicField(this, "_enabled", true);
-      __publicField(this, "_initialized", false);
-      // 绑定的回调引用（用于 removeEventListener）
-      __publicField(this, "_onStart");
-      __publicField(this, "_onMove");
-      __publicField(this, "_onEnd");
-      this._onStart = this._handleStart.bind(this);
-      this._onMove = this._handleMove.bind(this);
-      this._onEnd = this._handleEnd.bind(this);
-    }
-    // ========== 注册 / 注销 ==========
-    /** 注册手势处理器，返回注销函数 */
-    register(handler) {
-      const oldIdx = this._handlers.findIndex((h) => h.id === handler.id);
-      if (oldIdx !== -1) this._handlers.splice(oldIdx, 1);
-      this._handlers.push(handler);
-      this._handlers.sort((a, b) => b.priority - a.priority);
-      return () => this.unregister(handler.id);
-    }
-    /** 按 id 注销处理器 */
-    unregister(id) {
-      const idx = this._handlers.findIndex((h) => h.id === id);
-      if (idx !== -1) {
-        this._handlers.splice(idx, 1);
-      }
-      if (this._active && this._active.handler.id === id) {
-        this._active = null;
-      }
-    }
-    isRegistered(id) {
-      return this._handlers.some((h) => h.id === id);
-    }
-    // ========== 全局控制 ==========
-    disable() {
-      this._enabled = false;
-      this._active = null;
-    }
-    enable() {
-      this._enabled = true;
-    }
-    get enabled() {
-      return this._enabled;
-    }
-    // ========== 生命周期 ==========
-    /** 初始化：注册 document 级 touch 监听（在主入口调用一次） */
-    init() {
-      if (this._initialized) return;
-      this._initialized = true;
-      document.addEventListener("touchstart", this._onStart, { passive: false });
-      document.addEventListener("touchmove", this._onMove, { passive: true });
-      document.addEventListener("touchend", this._onEnd, { passive: true });
-      document.addEventListener("touchcancel", this._onEnd, { passive: true });
-    }
-    /** 销毁：移除所有监听 */
-    destroy() {
-      document.removeEventListener("touchstart", this._onStart);
-      document.removeEventListener("touchmove", this._onMove);
-      document.removeEventListener("touchend", this._onEnd);
-      document.removeEventListener("touchcancel", this._onEnd);
-      this._handlers = [];
-      this._active = null;
-      this._initialized = false;
-    }
-    // ========== 内部调度 ==========
-    _matchTarget(handler, target, event) {
-      if (typeof handler.targetFilter === "string") {
-        return !!target.closest(handler.targetFilter);
-      }
-      return handler.targetFilter(target, event);
-    }
-    _shouldStop(handler, phase) {
-      const sp = handler.stopPropagation;
-      if (typeof sp === "boolean") return sp;
-      if (typeof sp === "object") return !!sp[phase];
-      return false;
-    }
-    _handleStart(e) {
-      var _a;
-      if (!this._enabled) return;
-      this._active = null;
-      const target = e.target;
-      if (!target) return;
-      for (const handler of this._handlers) {
-        if (handler.condition && !handler.condition()) continue;
-        if (!this._matchTarget(handler, target, e)) continue;
-        if (handler.onBeforeStart && !handler.onBeforeStart(e)) continue;
-        const touch = e.touches[0];
-        this._active = {
-          handler,
-          startX: touch.clientX,
-          startY: touch.clientY,
-          startTime: Date.now()
-        };
-        if (this._shouldStop(handler, "start")) e.stopPropagation();
-        (_a = handler.onStart) == null ? void 0 : _a.call(handler, e);
-        return;
-      }
-    }
-    _handleMove(e) {
-      var _a, _b, _c, _d;
-      if (!this._enabled) return;
-      const active = this._active;
-      if (!active) return;
-      if (active.handler.condition && !active.handler.condition()) {
-        (_b = (_a = active.handler).onEnd) == null ? void 0 : _b.call(_a, e, 0, 0, Date.now() - active.startTime);
-        this._active = null;
-        return;
-      }
-      const touch = e.touches[0];
-      const dx = touch.clientX - active.startX;
-      const dy = touch.clientY - active.startY;
-      const elapsed = Date.now() - active.startTime;
-      if (this._shouldStop(active.handler, "move")) e.stopPropagation();
-      (_d = (_c = active.handler).onMove) == null ? void 0 : _d.call(_c, e, dx, dy, elapsed);
-    }
-    _handleEnd(e) {
-      var _a, _b;
-      if (!this._enabled) return;
-      const active = this._active;
-      if (!active) return;
-      const touch = e.changedTouches[0];
-      const dx = touch ? touch.clientX - active.startX : 0;
-      const dy = touch ? touch.clientY - active.startY : 0;
-      const elapsed = Date.now() - active.startTime;
-      if (this._shouldStop(active.handler, "end")) e.stopPropagation();
-      (_b = (_a = active.handler).onEnd) == null ? void 0 : _b.call(_a, e, dx, dy, elapsed);
-      this._active = null;
-    }
-  };
-  var gestures = new GestureRegistry();
-
-  // src/client/modules/debug-panel.ts
-  var state = "collapsed";
-  var orbEl = null;
-  var panelEl = null;
-  var ORB_SIZE = 36;
-  var ORB_HALF = ORB_SIZE / 2;
-  var MARGIN = 8;
-  var PANEL_MIN_W = 200;
-  var PANEL_MIN_H = 120;
-  var LONG_PRESS_MS = 600;
-  var panelW = 300;
-  var panelH = 250;
-  var dragging = false;
-  var dragSX = 0;
-  var dragSY = 0;
-  var dragOrbX = 0;
-  var dragOrbY = 0;
-  var longPressTimer = null;
-  var longPressFired = false;
-  var MAX_LOG_LINES = 200;
-  var logLines = [];
-  function formatTime() {
-    const d = /* @__PURE__ */ new Date();
-    const h = String(d.getHours()).padStart(2, "0");
-    const m = String(d.getMinutes()).padStart(2, "0");
-    const s = String(d.getSeconds()).padStart(2, "0");
-    const ms = String(d.getMilliseconds()).padStart(3, "0");
-    return `${h}:${m}:${s}.${ms}`;
-  }
-  function debugLog(msg) {
-    logLines.push(`[${formatTime()}] ${msg}`);
-    if (logLines.length > MAX_LOG_LINES) logLines.shift();
-    flushLogUI();
-  }
-  function debugClear() {
-    logLines.length = 0;
-    flushLogUI();
-  }
-  function debugCopy() {
-    const text = logLines.join("\n");
-    navigator.clipboard.writeText(text).then(() => {
-      debugLog("\u{1F4CB} \u65E5\u5FD7\u5DF2\u590D\u5236\u5230\u526A\u8D34\u677F");
-    }).catch(() => {
-      debugLog("\u274C \u590D\u5236\u5931\u8D25");
-    });
-  }
-  function flushLogUI() {
-    if (!panelEl) return;
-    const area = panelEl.querySelector(".debug-log-area");
-    if (area) {
-      area.textContent = logLines.length > 0 ? logLines.join("\n") : "(\u7A7A)";
-      area.scrollTop = area.scrollHeight;
-    }
-  }
-  function clampOrb(x, y) {
-    return {
-      x: Math.max(MARGIN, Math.min(window.innerWidth - ORB_SIZE - MARGIN, x)),
-      y: Math.max(MARGIN, Math.min(window.innerHeight - ORB_SIZE - MARGIN, y))
-    };
-  }
-  function createOrb() {
-    const el = document.createElement("div");
-    el.className = "debug-orb";
-    el.style.cssText = `
-    position: fixed;
-    width: ${ORB_SIZE}px;
-    height: ${ORB_SIZE}px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, rgba(0,255,200,0.9), rgba(0,180,150,0.6));
-    box-shadow: 0 0 16px 4px rgba(0,255,200,0.4), 0 0 40px 12px rgba(0,200,160,0.2);
-    z-index: 300;
-    cursor: pointer;
-    transition: box-shadow 0.2s;
-    right: 80px;
-    bottom: 80px;
-  `;
-    el.id = "debugOrb";
-    document.body.appendChild(el);
-    return el;
-  }
-  function createPanel() {
-    const panel = document.createElement("div");
-    panel.style.cssText = `
-    position: fixed;
-    background: linear-gradient(rgba(8,20,18,0.94),rgba(8,20,18,0.94)) padding-box,
-                linear-gradient(135deg,rgba(0,255,200,.7),rgba(0,180,150,.5)) border-box;
-    backdrop-filter: blur(16px);
-    border: 1px solid transparent;
-    border-radius: 10px;
-    box-shadow: 0 0 20px 6px rgba(0,255,200,0.2), 0 6px 24px rgba(0,0,0,0.5);
-    z-index: 295;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    opacity: 0;
-    pointer-events: none;
-    font-family: monospace;
-  `;
-    panel.id = "debugPanel";
-    document.body.appendChild(panel);
-    return panel;
-  }
-  function buildPanelContent() {
-    var _a, _b;
-    if (!panelEl) return;
-    panelEl.innerHTML = `
-    <div style="
-      padding:6px 10px;
-      border-bottom:1px solid rgba(0,255,200,0.2);
-      display:flex;justify-content:space-between;align-items:center;
-      flex-shrink:0;
-    ">
-      <span style="font-size:12px;color:rgba(0,255,200,0.9);font-weight:600">\u{1F527} \u8C03\u8BD5\u9762\u677F</span>
-      <span style="display:flex;gap:6px">
-        <button class="debug-btn-clear" style="
-          font-size:11px;padding:3px 10px;
-          background:rgba(0,255,200,0.15);color:rgba(0,255,200,0.9);
-          border:1px solid rgba(0,255,200,0.3);border-radius:5px;
-          cursor:pointer;
-        ">\u6E05\u7A7A</button>
-        <button class="debug-btn-copy" style="
-          font-size:11px;padding:3px 10px;
-          background:rgba(0,255,200,0.15);color:rgba(0,255,200,0.9);
-          border:1px solid rgba(0,255,200,0.3);border-radius:5px;
-          cursor:pointer;
-        ">\u590D\u5236</button>
-      </span>
-    </div>
-    <pre class="debug-log-area" style="
-      flex:1;
-      overflow-y:auto;
-      padding:8px 10px;
-      margin:0;
-      font-size:11px;
-      line-height:1.5;
-      color:rgba(180,255,230,0.85);
-      white-space:pre-wrap;
-      word-break:break-all;
-      min-height:0;
-    ">${logLines.length > 0 ? logLines.join("\n") : "(\u7A7A)"}</pre>
-  `;
-    (_a = panelEl.querySelector(".debug-btn-clear")) == null ? void 0 : _a.addEventListener("click", () => debugClear());
-    (_b = panelEl.querySelector(".debug-btn-copy")) == null ? void 0 : _b.addEventListener("click", () => debugCopy());
-  }
-  function updatePanelPosition() {
-    if (!orbEl || !panelEl) return;
-    const r = orbEl.getBoundingClientRect();
-    const cx = r.left + ORB_HALF;
-    const cy = r.top + ORB_HALF;
-    const w = Math.max(PANEL_MIN_W, Math.min(panelW, cx - MARGIN));
-    const h = Math.max(PANEL_MIN_H, Math.min(panelH, cy - MARGIN));
-    panelEl.style.left = Math.max(MARGIN, cx - w) + "px";
-    panelEl.style.top = Math.max(MARGIN, cy - h) + "px";
-    panelEl.style.width = w + "px";
-    panelEl.style.height = h + "px";
-  }
-  function expandPanel() {
-    if (!panelEl) panelEl = createPanel();
-    if (state === "collapsed") {
-      state = "expanded";
-      buildPanelContent();
-      updatePanelPosition();
-      panelEl.style.opacity = "1";
-      panelEl.style.pointerEvents = "auto";
-    }
-  }
-  function collapsePanel() {
-    if (state === "expanded") {
-      state = "collapsed";
-      if (panelEl) {
-        panelEl.style.opacity = "0";
-        panelEl.style.pointerEvents = "none";
-      }
-    }
-  }
-  function enterEdit() {
-    if (state !== "expanded") return;
-    state = "editing";
-    if (panelEl) panelEl.style.boxShadow = "0 0 40px 20px rgba(0,255,200,0.45), 0 6px 24px rgba(0,0,0,0.5)";
-  }
-  function exitEdit() {
-    if (state !== "editing") return;
-    state = "expanded";
-    if (panelEl) panelEl.style.boxShadow = "0 0 20px 6px rgba(0,255,200,0.2), 0 6px 24px rgba(0,0,0,0.5)";
-  }
-  function toggle() {
-    if (state === "collapsed") expandPanel();
-    else if (state === "expanded") collapsePanel();
-  }
-  function startDrag(x, y) {
-    dragging = false;
-    longPressFired = false;
-    dragSX = x;
-    dragSY = y;
-    const r = orbEl.getBoundingClientRect();
-    dragOrbX = r.left;
-    dragOrbY = r.top;
-    longPressTimer = setTimeout(() => {
-      longPressFired = true;
-      if (state === "expanded") enterEdit();
-      else if (state === "editing") exitEdit();
-    }, LONG_PRESS_MS);
-  }
-  function moveDrag(x, y) {
-    const dx = x - dragSX;
-    const dy = y - dragSY;
-    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
-      dragging = true;
-      if (longPressTimer) {
-        clearTimeout(longPressTimer);
-        longPressTimer = null;
-      }
-    }
-    if (!dragging || !orbEl) return;
-    if (state === "editing") {
-      const raw = clampOrb(dragOrbX + dx, dragOrbY + dy);
-      orbEl.style.left = raw.x + "px";
-      orbEl.style.top = raw.y + "px";
-      orbEl.style.right = "auto";
-      orbEl.style.bottom = "auto";
-      const cx = raw.x + ORB_HALF;
-      const cy = raw.y + ORB_HALF;
-      panelW = Math.max(PANEL_MIN_W, cx - MARGIN);
-      panelH = Math.max(PANEL_MIN_H, cy - MARGIN);
-      updatePanelPosition();
-    } else {
-      const raw = clampOrb(dragOrbX + dx, dragOrbY + dy);
-      orbEl.style.left = raw.x + "px";
-      orbEl.style.top = raw.y + "px";
-      orbEl.style.right = "auto";
-      orbEl.style.bottom = "auto";
-      orbEl.style.transition = "none";
-      if (state === "expanded") updatePanelPosition();
-    }
-  }
-  function endDrag() {
-    if (longPressTimer) {
-      clearTimeout(longPressTimer);
-      longPressTimer = null;
-    }
-    if (orbEl) orbEl.style.transition = "box-shadow 0.2s";
-    if (state === "editing") exitEdit();
-    if (!dragging && !longPressFired) toggle();
-    dragging = false;
-  }
-  var mouseOn = false;
-  function bindMouse() {
-    if (!orbEl) return;
-    orbEl.addEventListener("mousedown", (e) => {
-      e.stopPropagation();
-      mouseOn = true;
-      startDrag(e.clientX, e.clientY);
-    });
-    document.addEventListener("mousemove", (e) => {
-      if (!mouseOn) return;
-      moveDrag(e.clientX, e.clientY);
-    });
-    document.addEventListener("mouseup", () => {
-      if (!mouseOn) return;
-      mouseOn = false;
-      endDrag();
-    });
-  }
-  function initDebugPanel() {
-    orbEl = createOrb();
-    gestures.register({
-      id: "debug-orb",
-      targetFilter: "#debugOrb",
-      priority: 99,
-      stopPropagation: true,
-      onStart: (e) => {
-        e.preventDefault();
-        startDrag(e.touches[0].clientX, e.touches[0].clientY);
-      },
-      onMove: (e) => {
-        moveDrag(e.touches[0].clientX, e.touches[0].clientY);
-      },
-      onEnd: () => endDrag()
-    });
-    bindMouse();
-    debugLog("\u{1F527} \u8C03\u8BD5\u9762\u677F\u5DF2\u542F\u52A8");
-  }
-
   // src/client/modules/tree-render.ts
   var ts = anim.scope("tree-render");
   function _resetAnimTimeline() {
@@ -10891,6 +10486,49 @@
       result.push(sib);
     }
     return result;
+  }
+  function _buildAndSetOverlayTree(pack, subTargets, subPacks, root) {
+    var _a, _b, _c, _d;
+    const overlayRoot = new Box({
+      id: "overlay-root",
+      x: root.x,
+      y: root.y,
+      width: root.width,
+      height: root.height,
+      scrollY: (_a = root.scrollY) != null ? _a : 0,
+      scrollable: false,
+      opacity: 1,
+      visible: true,
+      backgroundColor: "transparent"
+    });
+    overlayRoot.addChild(pack.containerOverlay);
+    for (const sibOv of pack.siblingOverlays) {
+      overlayRoot.addChild(sibOv);
+    }
+    const ovById = /* @__PURE__ */ new Map();
+    ovById.set((_b = pack.containerOverlay.id) != null ? _b : "", pack.containerOverlay);
+    for (let i = 0; i < subTargets.length; i++) {
+      ovById.set((_c = subPacks[i].containerOverlay.id) != null ? _c : "", subPacks[i].containerOverlay);
+    }
+    for (let i = 0; i < subTargets.length; i++) {
+      const st = subTargets[i];
+      const sp = subPacks[i];
+      const parentReal = st.container.parent;
+      const parentOvId = parentReal ? `ov-${parentReal.id}` : pack.containerOverlay.id;
+      const parentOv = parentOvId ? ovById.get(parentOvId) : null;
+      if (parentOv) {
+        parentOv.addChild(sp.containerOverlay);
+        for (const sibOv of sp.siblingOverlays) {
+          parentOv.addChild(sibOv);
+        }
+      } else {
+        overlayRoot.addChild(sp.containerOverlay);
+        for (const sibOv of sp.siblingOverlays) {
+          overlayRoot.addChild(sibOv);
+        }
+      }
+    }
+    (_d = L.renderer) == null ? void 0 : _d.setOverlayRoot(overlayRoot);
   }
   function _createVisualClone(src, overrides, cloneLabel = false) {
     var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j;
@@ -10949,10 +10587,8 @@
     const ci = parent.children.indexOf(container);
     const containerOv = _createVisualClone(container, { id: `ov-${container.id || "container"}`, height: 0, opacity: 1, zIndex: OVERLAY_Z });
     _addOverlay(containerOv);
-    parent.children.splice(ci + 1, 0, containerOv);
     containerOv.parent = parent;
     const rowOverlays = [];
-    const hiddenChildren = [];
     const origYs = container._origYs;
     for (let j = 0; j < container.children.length; j++) {
       const child = container.children[j];
@@ -10965,24 +10601,17 @@
       _addOverlay(rowOv);
       containerOv.addChild(rowOv);
       rowOverlays.push(rowOv);
-      child.opacity = 0;
-      hiddenChildren.push(child);
     }
     const siblingOverlays = [];
-    const hiddenSiblings = [];
     const siblings = _collectSiblingsAfter(container);
     for (const sib of siblings) {
       const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || "sib"}`, y: sib.y - fullHeight, opacity: 1, zIndex: OVERLAY_Z }, true);
       sibOv._targetY = sib.y;
       _addOverlay(sibOv);
-      const si = parent.children.indexOf(sib);
-      parent.children.splice(si, 0, sibOv);
       sibOv.parent = parent;
       siblingOverlays.push(sibOv);
-      sib.opacity = 0;
-      hiddenSiblings.push(sib);
     }
-    return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenSiblings, hiddenChildren };
+    return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenSiblings: [], hiddenChildren: [] };
   }
   function _setupCollapseOverlays(container, fullH) {
     var _a;
@@ -10990,12 +10619,8 @@
     const ci = parent.children.indexOf(container);
     const containerOv = _createVisualClone(container, { id: `ov-${container.id || "container"}`, height: fullH, opacity: 1, zIndex: OVERLAY_Z });
     _addOverlay(containerOv);
-    parent.children.splice(ci + 1, 0, containerOv);
     containerOv.parent = parent;
-    containerOv.overflow = "hidden";
-    debugLog(`[collapse] setup path=${container.id} fullH=${fullH} overflow=${containerOv.overflow} height=${containerOv.height} borderRadius=${containerOv.borderRadius} parent=${parent.id}`);
     const rowOverlays = [];
-    const hiddenChildren = [];
     for (let j = 0; j < container.children.length; j++) {
       const child = container.children[j];
       if (!child.visible) continue;
@@ -11004,24 +10629,17 @@
       _addOverlay(rowOv);
       containerOv.addChild(rowOv);
       rowOverlays.push(rowOv);
-      child.opacity = 0;
-      hiddenChildren.push(child);
     }
     const siblingOverlays = [];
-    const hiddenSiblings = [];
     const siblings = _collectSiblingsAfter(container);
     for (const sib of siblings) {
       const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || "sib"}`, y: sib.y, opacity: 1, zIndex: OVERLAY_Z }, true);
       sibOv._targetY = sib.y - fullH;
       _addOverlay(sibOv);
-      const si = parent.children.indexOf(sib);
-      parent.children.splice(si, 0, sibOv);
       sibOv.parent = parent;
       siblingOverlays.push(sibOv);
-      sib.opacity = 0;
-      hiddenSiblings.push(sib);
     }
-    return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenSiblings, hiddenChildren };
+    return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenSiblings: [], hiddenChildren: [] };
   }
   function _ensureSubscribed() {
     if (L._stateSub) KFMState.unsubscribe(L._stateSub);
@@ -11371,6 +10989,7 @@
     const pack = _setupExpandOverlays(container, fullHeight);
     const subTargets = _flattenExpandTree(container, 1);
     const subPacks = subTargets.map((st) => _setupExpandOverlays(st.container, st.fullHeight));
+    _buildAndSetOverlayTree(pack, subTargets, subPacks, root);
     L.beginOp(path, "expand");
     const animRoot = L.renderer.getRoot();
     const charRainCleanups = [];
@@ -11419,18 +11038,15 @@
       }
     }
     ts.call(() => {
-      var _a2, _b2;
+      var _a2, _b2, _c2;
       if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
-      for (const op of overlaysToClean) {
-        for (const c of op.hiddenChildren) c.opacity = 1;
-        for (const s of op.hiddenSiblings) s.opacity = 1;
-      }
       for (const cu of charRainCleanups) cleanupCharRain(cu);
       _removeAllOverlays();
+      (_b2 = L.renderer) == null ? void 0 : _b2.setOverlayRoot(null);
       _resetAnimTimeline();
       assert(_activeOverlays.length === 0, "overlays leaked after expand");
       L.endOp();
-      const _root = (_b2 = L.renderer) == null ? void 0 : _b2.getRoot();
+      const _root = (_c2 = L.renderer) == null ? void 0 : _c2.getRoot();
       if (_root) {
         _rebuildRowIndex(_root);
       }
@@ -11467,6 +11083,7 @@
     const subTargets = _flattenExpandTree(container, 1);
     const subPacks = subTargets.map((st) => _setupCollapseOverlays(st.container, st.fullHeight));
     const overlaysToClean = [pack, ...subPacks];
+    _buildAndSetOverlayTree(pack, subTargets, subPacks, root);
     const maxLevel = subTargets.length > 0 ? Math.max(...subTargets.map((st) => st.level)) : 0;
     const charRainCleanups = [];
     const collapseBaseDelay = maxLevel * 0.06;
@@ -11528,16 +11145,12 @@
         }, delay);
       }
     }
-    const cleanupDelay = boxStartDelay + maxLevel * 0.06 + 0.35;
     ts.call(() => {
-      var _a2;
+      var _a2, _b2;
       if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
-      for (const op of overlaysToClean) {
-        for (const c of op.hiddenChildren) c.opacity = 1;
-        for (const s of op.hiddenSiblings) s.opacity = 1;
-      }
       for (const cu of charRainCleanups) cleanupCharRain(cu);
       _removeAllOverlays();
+      (_b2 = L.renderer) == null ? void 0 : _b2.setOverlayRoot(null);
       assert(_activeOverlays.length === 0, "overlays leaked after doCollapse");
       _resetAnimTimeline();
       L.endOp();
@@ -11690,6 +11303,142 @@
       closeSidebar();
     });
   }
+
+  // src/client/modules/gesture-registry.ts
+  var GestureRegistry = class {
+    constructor() {
+      __publicField(this, "_handlers", []);
+      __publicField(this, "_active", null);
+      __publicField(this, "_enabled", true);
+      __publicField(this, "_initialized", false);
+      // 绑定的回调引用（用于 removeEventListener）
+      __publicField(this, "_onStart");
+      __publicField(this, "_onMove");
+      __publicField(this, "_onEnd");
+      this._onStart = this._handleStart.bind(this);
+      this._onMove = this._handleMove.bind(this);
+      this._onEnd = this._handleEnd.bind(this);
+    }
+    // ========== 注册 / 注销 ==========
+    /** 注册手势处理器，返回注销函数 */
+    register(handler) {
+      const oldIdx = this._handlers.findIndex((h) => h.id === handler.id);
+      if (oldIdx !== -1) this._handlers.splice(oldIdx, 1);
+      this._handlers.push(handler);
+      this._handlers.sort((a, b) => b.priority - a.priority);
+      return () => this.unregister(handler.id);
+    }
+    /** 按 id 注销处理器 */
+    unregister(id) {
+      const idx = this._handlers.findIndex((h) => h.id === id);
+      if (idx !== -1) {
+        this._handlers.splice(idx, 1);
+      }
+      if (this._active && this._active.handler.id === id) {
+        this._active = null;
+      }
+    }
+    isRegistered(id) {
+      return this._handlers.some((h) => h.id === id);
+    }
+    // ========== 全局控制 ==========
+    disable() {
+      this._enabled = false;
+      this._active = null;
+    }
+    enable() {
+      this._enabled = true;
+    }
+    get enabled() {
+      return this._enabled;
+    }
+    // ========== 生命周期 ==========
+    /** 初始化：注册 document 级 touch 监听（在主入口调用一次） */
+    init() {
+      if (this._initialized) return;
+      this._initialized = true;
+      document.addEventListener("touchstart", this._onStart, { passive: false });
+      document.addEventListener("touchmove", this._onMove, { passive: true });
+      document.addEventListener("touchend", this._onEnd, { passive: true });
+      document.addEventListener("touchcancel", this._onEnd, { passive: true });
+    }
+    /** 销毁：移除所有监听 */
+    destroy() {
+      document.removeEventListener("touchstart", this._onStart);
+      document.removeEventListener("touchmove", this._onMove);
+      document.removeEventListener("touchend", this._onEnd);
+      document.removeEventListener("touchcancel", this._onEnd);
+      this._handlers = [];
+      this._active = null;
+      this._initialized = false;
+    }
+    // ========== 内部调度 ==========
+    _matchTarget(handler, target, event) {
+      if (typeof handler.targetFilter === "string") {
+        return !!target.closest(handler.targetFilter);
+      }
+      return handler.targetFilter(target, event);
+    }
+    _shouldStop(handler, phase) {
+      const sp = handler.stopPropagation;
+      if (typeof sp === "boolean") return sp;
+      if (typeof sp === "object") return !!sp[phase];
+      return false;
+    }
+    _handleStart(e) {
+      var _a;
+      if (!this._enabled) return;
+      this._active = null;
+      const target = e.target;
+      if (!target) return;
+      for (const handler of this._handlers) {
+        if (handler.condition && !handler.condition()) continue;
+        if (!this._matchTarget(handler, target, e)) continue;
+        if (handler.onBeforeStart && !handler.onBeforeStart(e)) continue;
+        const touch = e.touches[0];
+        this._active = {
+          handler,
+          startX: touch.clientX,
+          startY: touch.clientY,
+          startTime: Date.now()
+        };
+        if (this._shouldStop(handler, "start")) e.stopPropagation();
+        (_a = handler.onStart) == null ? void 0 : _a.call(handler, e);
+        return;
+      }
+    }
+    _handleMove(e) {
+      var _a, _b, _c, _d;
+      if (!this._enabled) return;
+      const active = this._active;
+      if (!active) return;
+      if (active.handler.condition && !active.handler.condition()) {
+        (_b = (_a = active.handler).onEnd) == null ? void 0 : _b.call(_a, e, 0, 0, Date.now() - active.startTime);
+        this._active = null;
+        return;
+      }
+      const touch = e.touches[0];
+      const dx = touch.clientX - active.startX;
+      const dy = touch.clientY - active.startY;
+      const elapsed = Date.now() - active.startTime;
+      if (this._shouldStop(active.handler, "move")) e.stopPropagation();
+      (_d = (_c = active.handler).onMove) == null ? void 0 : _d.call(_c, e, dx, dy, elapsed);
+    }
+    _handleEnd(e) {
+      var _a, _b;
+      if (!this._enabled) return;
+      const active = this._active;
+      if (!active) return;
+      const touch = e.changedTouches[0];
+      const dx = touch ? touch.clientX - active.startX : 0;
+      const dy = touch ? touch.clientY - active.startY : 0;
+      const elapsed = Date.now() - active.startTime;
+      if (this._shouldStop(active.handler, "end")) e.stopPropagation();
+      (_b = (_a = active.handler).onEnd) == null ? void 0 : _b.call(_a, e, dx, dy, elapsed);
+      this._active = null;
+    }
+  };
+  var gestures = new GestureRegistry();
 
   // src/client/modules/card-stack.ts
   var CARD_BG = "rgba(20,16,32,0.92)";
@@ -13631,8 +13380,8 @@
 
   // src/client/modules/orb.ts
   var orbState = "collapsed";
-  var orbEl2 = null;
-  var panelEl2 = null;
+  var orbEl = null;
+  var panelEl = null;
   var PANEL_MIN_WIDTH = 120;
   var PANEL_MIN_HEIGHT = 100;
   var PANEL_DEFAULT_WIDTH = 300;
@@ -13641,19 +13390,19 @@
   var panelHeight = PANEL_DEFAULT_HEIGHT;
   var renderWidth = PANEL_DEFAULT_WIDTH;
   var renderHeight = PANEL_DEFAULT_HEIGHT;
-  var dragging2 = false;
+  var dragging = false;
   var dragStartX = 0;
   var dragStartY = 0;
   var dragStartOrbX = 0;
   var dragStartOrbY = 0;
   var dragStartPanelX = 0;
   var dragStartPanelY = 0;
-  var longPressTimer2 = null;
-  var longPressFired2 = false;
-  var LONG_PRESS_MS2 = 600;
-  var ORB_SIZE2 = 36;
-  var ORB_HALF2 = ORB_SIZE2 / 2;
-  var MARGIN2 = 8;
+  var longPressTimer = null;
+  var longPressFired = false;
+  var LONG_PRESS_MS = 600;
+  var ORB_SIZE = 36;
+  var ORB_HALF = ORB_SIZE / 2;
+  var MARGIN = 8;
   var chatMessages = [
     { role: "ai", text: "\u4F60\u597D\uFF0C\u6211\u662F\u851A\u7136\u3002\u6709\u4EC0\u4E48\u53EF\u4EE5\u5E2E\u4F60\u7684\u5417\uFF1F" },
     { role: "user", text: "\u5E2E\u6211\u5206\u6790\u4E00\u4E0B\u5F53\u524D\u7684\u76EE\u5F55\u7ED3\u6784" },
@@ -13667,23 +13416,23 @@
   function getPanelTargetPosition(orbCX, orbCY) {
     let w = panelWidth;
     let h = panelHeight;
-    const availLeft = orbCX - MARGIN2;
-    const availTop = orbCY - MARGIN2;
+    const availLeft = orbCX - MARGIN;
+    const availTop = orbCY - MARGIN;
     if (availLeft < w) w = Math.max(PANEL_MIN_WIDTH, availLeft);
     if (availTop < h) h = Math.max(PANEL_MIN_HEIGHT, availTop);
     return { left: orbCX - w, top: orbCY - h, width: w, height: h };
   }
   function clampOrbPosition(x, y) {
-    const maxX = window.innerWidth - ORB_SIZE2 - MARGIN2;
-    const minX = MARGIN2;
-    const maxY = getInputBarTop() - ORB_SIZE2 - MARGIN2;
-    const minY = MARGIN2;
+    const maxX = window.innerWidth - ORB_SIZE - MARGIN;
+    const minX = MARGIN;
+    const maxY = getInputBarTop() - ORB_SIZE - MARGIN;
+    const minY = MARGIN;
     return {
       x: Math.max(minX, Math.min(maxX, x)),
       y: Math.max(minY, Math.min(maxY, y))
     };
   }
-  function createPanel2() {
+  function createPanel() {
     const panel = document.createElement("div");
     panel.className = "orb-panel";
     panel.style.cssText = `
@@ -13707,8 +13456,8 @@
     return panel;
   }
   function renderChatContent() {
-    if (!panelEl2) return;
-    const contentArea = DOM.orbPanelContent(panelEl2);
+    if (!panelEl) return;
+    const contentArea = DOM.orbPanelContent(panelEl);
     if (!contentArea) return;
     const innerWidth = renderWidth - 24;
     if (innerWidth < 50) return;
@@ -13749,17 +13498,17 @@
   function escapeHtml(str) {
     return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
-  function updatePanelPosition2() {
-    if (!orbEl2 || !panelEl2) return;
-    const orbRect = orbEl2.getBoundingClientRect();
-    const orbCX = orbRect.left + ORB_HALF2;
-    const orbCY = orbRect.top + ORB_HALF2;
+  function updatePanelPosition() {
+    if (!orbEl || !panelEl) return;
+    const orbRect = orbEl.getBoundingClientRect();
+    const orbCX = orbRect.left + ORB_HALF;
+    const orbCY = orbRect.top + ORB_HALF;
     const idealLeft = orbCX - panelWidth;
     const idealTop = orbCY - panelHeight;
-    const screenLeft = MARGIN2;
-    const screenTop = MARGIN2;
-    const screenRight = window.innerWidth - MARGIN2;
-    const screenBottom = getInputBarTop() - MARGIN2;
+    const screenLeft = MARGIN;
+    const screenTop = MARGIN;
+    const screenRight = window.innerWidth - MARGIN;
+    const screenBottom = getInputBarTop() - MARGIN;
     const availLeft = orbCX - screenLeft;
     const availTop = orbCY - screenTop;
     const availRight = screenRight - orbCX;
@@ -13768,14 +13517,14 @@
     renderHeight = Math.max(PANEL_MIN_HEIGHT, Math.min(panelHeight, availTop));
     const panelLeft = orbCX - renderWidth;
     const panelTop = orbCY - renderHeight;
-    panelEl2.style.left = Math.max(screenLeft, panelLeft) + "px";
-    panelEl2.style.top = Math.max(screenTop, panelTop) + "px";
-    panelEl2.style.width = renderWidth + "px";
-    panelEl2.style.height = renderHeight + "px";
+    panelEl.style.left = Math.max(screenLeft, panelLeft) + "px";
+    panelEl.style.top = Math.max(screenTop, panelTop) + "px";
+    panelEl.style.width = renderWidth + "px";
+    panelEl.style.height = renderHeight + "px";
   }
-  function buildPanelContent2() {
-    if (!panelEl2) return;
-    panelEl2.innerHTML = `
+  function buildPanelContent() {
+    if (!panelEl) return;
+    panelEl.innerHTML = `
     <div class="orb-panel-header" style="
       padding: 10px 14px;
       border-bottom: 1px solid rgba(124,58,237,0.2);
@@ -13795,24 +13544,24 @@
     "></div>
   `;
   }
-  function expandPanel2() {
-    if (!panelEl2) panelEl2 = createPanel2();
+  function expandPanel() {
+    if (!panelEl) panelEl = createPanel();
     if (orbState === "collapsed") {
       orbState = "expanded";
-      buildPanelContent2();
-      updatePanelPosition2();
+      buildPanelContent();
+      updatePanelPosition();
       renderChatContent();
-      panelEl2.style.opacity = "1";
-      panelEl2.style.pointerEvents = "auto";
+      panelEl.style.opacity = "1";
+      panelEl.style.pointerEvents = "auto";
       updateStateLabel();
     }
   }
-  function collapsePanel2() {
+  function collapsePanel() {
     if (orbState === "expanded") {
       orbState = "collapsed";
-      if (panelEl2) {
-        panelEl2.style.opacity = "0";
-        panelEl2.style.pointerEvents = "none";
+      if (panelEl) {
+        panelEl.style.opacity = "0";
+        panelEl.style.pointerEvents = "none";
       }
       updateStateLabel();
     }
@@ -13820,109 +13569,109 @@
   function enterEditMode() {
     if (orbState !== "expanded") return;
     orbState = "editing";
-    if (panelEl2) {
-      panelEl2.style.boxShadow = "0 0 40px 20px rgba(124, 58, 237, 0.55), 0 8px 32px rgba(0, 0, 0, 0.5)";
+    if (panelEl) {
+      panelEl.style.boxShadow = "0 0 40px 20px rgba(124, 58, 237, 0.55), 0 8px 32px rgba(0, 0, 0, 0.5)";
     }
     updateStateLabel();
   }
   function exitEditMode() {
     if (orbState !== "editing") return;
     orbState = "expanded";
-    if (panelEl2) {
-      panelEl2.style.boxShadow = "0 0 24px 8px rgba(124, 58, 237, 0.25), 0 8px 32px rgba(0, 0, 0, 0.5)";
+    if (panelEl) {
+      panelEl.style.boxShadow = "0 0 24px 8px rgba(124, 58, 237, 0.25), 0 8px 32px rgba(0, 0, 0, 0.5)";
     }
     renderChatContent();
     updateStateLabel();
   }
   function togglePanel() {
-    if (orbState === "collapsed") expandPanel2();
-    else if (orbState === "expanded") collapsePanel2();
+    if (orbState === "collapsed") expandPanel();
+    else if (orbState === "expanded") collapsePanel();
   }
   function updateStateLabel() {
-    if (!panelEl2) return;
-    const label = DOM.orbPanelState(panelEl2);
+    if (!panelEl) return;
+    const label = DOM.orbPanelState(panelEl);
     if (!label) return;
     const labels = { collapsed: "", expanded: "\u957F\u6309\u7F16\u8F91\u5927\u5C0F", editing: "\u62D6\u52A8\u8C03\u6574\u5927\u5C0F \xB7 \u677E\u624B\u5B8C\u6210" };
     label.textContent = labels[orbState];
   }
   function handleDragMove(dx, dy) {
-    if (!orbEl2) return;
+    if (!orbEl) return;
     if (orbState === "editing") {
       const rawX = dragStartOrbX + dx;
       const rawY = dragStartOrbY + dy;
       const clamped = clampOrbPosition(rawX, rawY);
-      const orbCX = clamped.x + ORB_HALF2;
-      const orbCY = clamped.y + ORB_HALF2;
+      const orbCX = clamped.x + ORB_HALF;
+      const orbCY = clamped.y + ORB_HALF;
       panelWidth = Math.max(PANEL_MIN_WIDTH, orbCX - dragStartPanelX);
       panelHeight = Math.max(PANEL_MIN_HEIGHT, orbCY - dragStartPanelY);
-      orbEl2.style.left = clamped.x + "px";
-      orbEl2.style.top = clamped.y + "px";
-      orbEl2.style.right = "auto";
-      orbEl2.style.bottom = "auto";
-      updatePanelPosition2();
+      orbEl.style.left = clamped.x + "px";
+      orbEl.style.top = clamped.y + "px";
+      orbEl.style.right = "auto";
+      orbEl.style.bottom = "auto";
+      updatePanelPosition();
       renderChatContent();
     } else {
       const rawX = dragStartOrbX + dx;
       const rawY = dragStartOrbY + dy;
       const clamped = clampOrbPosition(rawX, rawY);
-      orbEl2.style.left = clamped.x + "px";
-      orbEl2.style.top = clamped.y + "px";
-      orbEl2.style.right = "auto";
-      orbEl2.style.bottom = "auto";
-      orbEl2.style.transition = "none";
-      if (orbState === "expanded" && panelEl2) {
-        updatePanelPosition2();
+      orbEl.style.left = clamped.x + "px";
+      orbEl.style.top = clamped.y + "px";
+      orbEl.style.right = "auto";
+      orbEl.style.bottom = "auto";
+      orbEl.style.transition = "none";
+      if (orbState === "expanded" && panelEl) {
+        updatePanelPosition();
         renderChatContent();
       }
     }
   }
-  function startDrag2(x, y) {
-    dragging2 = false;
-    longPressFired2 = false;
+  function startDrag(x, y) {
+    dragging = false;
+    longPressFired = false;
     dragStartX = x;
     dragStartY = y;
-    const rect = orbEl2.getBoundingClientRect();
+    const rect = orbEl.getBoundingClientRect();
     dragStartOrbX = rect.left;
     dragStartOrbY = rect.top;
-    if (panelEl2) {
-      dragStartPanelX = parseFloat(panelEl2.style.left) || 0;
-      dragStartPanelY = parseFloat(panelEl2.style.top) || 0;
+    if (panelEl) {
+      dragStartPanelX = parseFloat(panelEl.style.left) || 0;
+      dragStartPanelY = parseFloat(panelEl.style.top) || 0;
     }
-    longPressTimer2 = setTimeout(() => {
-      longPressFired2 = true;
+    longPressTimer = setTimeout(() => {
+      longPressFired = true;
       if (orbState === "expanded") enterEditMode();
       else if (orbState === "editing") exitEditMode();
-    }, LONG_PRESS_MS2);
+    }, LONG_PRESS_MS);
   }
-  function moveDrag2(x, y) {
+  function moveDrag(x, y) {
     const dx = x - dragStartX;
     const dy = y - dragStartY;
     if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
-      dragging2 = true;
-      if (longPressTimer2) {
-        clearTimeout(longPressTimer2);
-        longPressTimer2 = null;
+      dragging = true;
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
       }
     }
-    if (!dragging2) return;
+    if (!dragging) return;
     handleDragMove(dx, dy);
   }
-  function endDrag2() {
-    if (longPressTimer2) {
-      clearTimeout(longPressTimer2);
-      longPressTimer2 = null;
+  function endDrag() {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
     }
-    if (orbEl2) {
-      orbEl2.style.transition = "box-shadow .2s";
-      const rect = orbEl2.getBoundingClientRect();
+    if (orbEl) {
+      orbEl.style.transition = "box-shadow .2s";
+      const rect = orbEl.getBoundingClientRect();
       freeOrbX = rect.left;
       freeOrbY = rect.top;
     }
     if (orbState === "editing") {
       exitEditMode();
     }
-    if (!dragging2 && !longPressFired2) togglePanel();
-    dragging2 = false;
+    if (!dragging && !longPressFired) togglePanel();
+    dragging = false;
   }
   var freeOrbX = -1;
   var freeOrbY = -1;
@@ -13930,13 +13679,13 @@
   var isOrbPushed = false;
   function initInputBarWatcher() {
     const check = () => {
-      if (!orbEl2) {
+      if (!orbEl) {
         requestAnimationFrame(check);
         return;
       }
       const barTop = getInputBarTop();
       if (freeOrbX === -1) {
-        const rect = orbEl2.getBoundingClientRect();
+        const rect = orbEl.getBoundingClientRect();
         freeOrbX = rect.left;
         freeOrbY = rect.top;
         lastBarTop = barTop;
@@ -13945,7 +13694,7 @@
         lastBarTop = barTop;
         const clamped = clampOrbPosition(freeOrbX, freeOrbY);
         const needsPush = freeOrbY !== clamped.y;
-        const orbRect = orbEl2.getBoundingClientRect();
+        const orbRect = orbEl.getBoundingClientRect();
         const orbCurrentX = orbRect.left;
         const orbCurrentY = orbRect.top;
         let orbTargetX = orbCurrentX;
@@ -13962,9 +13711,9 @@
           requestAnimationFrame(check);
           return;
         }
-        orbEl2.style.right = "auto";
-        orbEl2.style.bottom = "auto";
-        const orbAnim = orbEl2.animate(
+        orbEl.style.right = "auto";
+        orbEl.style.bottom = "auto";
+        const orbAnim = orbEl.animate(
           [
             { left: orbCurrentX + "px", top: orbCurrentY + "px" },
             { left: orbTargetX + "px", top: orbTargetY + "px" }
@@ -13972,13 +13721,13 @@
           { duration: 100, easing: "cubic-bezier(.4,0,.2,1)" }
         );
         orbAnim.onfinish = () => {
-          orbEl2.style.left = orbTargetX + "px";
-          orbEl2.style.top = orbTargetY + "px";
+          orbEl.style.left = orbTargetX + "px";
+          orbEl.style.top = orbTargetY + "px";
         };
-        if (panelEl2 && orbState !== "collapsed") {
-          const panelRect = panelEl2.getBoundingClientRect();
-          const panelTarget = getPanelTargetPosition(orbTargetX + ORB_HALF2, orbTargetY + ORB_HALF2);
-          const panelAnim = panelEl2.animate(
+        if (panelEl && orbState !== "collapsed") {
+          const panelRect = panelEl.getBoundingClientRect();
+          const panelTarget = getPanelTargetPosition(orbTargetX + ORB_HALF, orbTargetY + ORB_HALF);
+          const panelAnim = panelEl.animate(
             [
               { left: panelRect.left + "px", top: panelRect.top + "px", width: panelRect.width + "px", height: panelRect.height + "px" },
               { left: panelTarget.left + "px", top: panelTarget.top + "px", width: panelTarget.width + "px", height: panelTarget.height + "px" }
@@ -13986,10 +13735,10 @@
             { duration: 100, easing: "cubic-bezier(.4,0,.2,1)" }
           );
           panelAnim.onfinish = () => {
-            panelEl2.style.left = panelTarget.left + "px";
-            panelEl2.style.top = panelTarget.top + "px";
-            panelEl2.style.width = panelTarget.width + "px";
-            panelEl2.style.height = panelTarget.height + "px";
+            panelEl.style.left = panelTarget.left + "px";
+            panelEl.style.top = panelTarget.top + "px";
+            panelEl.style.width = panelTarget.width + "px";
+            panelEl.style.height = panelTarget.height + "px";
             renderWidth = panelTarget.width;
             renderHeight = panelTarget.height;
             if (orbState === "expanded") renderChatContent();
@@ -14002,15 +13751,15 @@
   }
   var _mouseHandlers = null;
   function initOrb() {
-    orbEl2 = DOM.lightOrb;
-    if (!orbEl2) return;
-    orbEl2.style.zIndex = "210";
-    const initRect = orbEl2.getBoundingClientRect();
+    orbEl = DOM.lightOrb;
+    if (!orbEl) return;
+    orbEl.style.zIndex = "210";
+    const initRect = orbEl.getBoundingClientRect();
     const clamped = clampOrbPosition(initRect.left, initRect.top);
-    orbEl2.style.left = clamped.x + "px";
-    orbEl2.style.top = clamped.y + "px";
-    orbEl2.style.right = "auto";
-    orbEl2.style.bottom = "auto";
+    orbEl.style.left = clamped.x + "px";
+    orbEl.style.top = clamped.y + "px";
+    orbEl.style.right = "auto";
+    orbEl.style.bottom = "auto";
     freeOrbX = clamped.x;
     freeOrbY = clamped.y;
     gestures.register({
@@ -14020,13 +13769,13 @@
       stopPropagation: true,
       onStart: (e) => {
         e.preventDefault();
-        startDrag2(e.touches[0].clientX, e.touches[0].clientY);
+        startDrag(e.touches[0].clientX, e.touches[0].clientY);
       },
       onMove: (e) => {
-        moveDrag2(e.touches[0].clientX, e.touches[0].clientY);
+        moveDrag(e.touches[0].clientX, e.touches[0].clientY);
       },
       onEnd: () => {
-        endDrag2();
+        endDrag();
       }
     });
     if (!_mouseHandlers) {
@@ -14034,23 +13783,306 @@
       const onMouseDown = (e) => {
         e.stopPropagation();
         mouseDragging = true;
-        startDrag2(e.clientX, e.clientY);
+        startDrag(e.clientX, e.clientY);
       };
       const onMouseMove = (e) => {
         if (!mouseDragging) return;
-        moveDrag2(e.clientX, e.clientY);
+        moveDrag(e.clientX, e.clientY);
       };
       const onMouseUp = () => {
-        if (!mouseDragging && !dragging2) return;
+        if (!mouseDragging && !dragging) return;
         mouseDragging = false;
-        endDrag2();
+        endDrag();
       };
-      orbEl2.addEventListener("mousedown", onMouseDown);
+      orbEl.addEventListener("mousedown", onMouseDown);
       document.addEventListener("mousemove", onMouseMove);
       document.addEventListener("mouseup", onMouseUp);
       _mouseHandlers = { onMouseDown, onMouseMove, onMouseUp };
     }
     initInputBarWatcher();
+  }
+
+  // src/client/modules/debug-panel.ts
+  var state = "collapsed";
+  var orbEl2 = null;
+  var panelEl2 = null;
+  var ORB_SIZE2 = 36;
+  var ORB_HALF2 = ORB_SIZE2 / 2;
+  var MARGIN2 = 8;
+  var PANEL_MIN_W = 200;
+  var PANEL_MIN_H = 120;
+  var LONG_PRESS_MS2 = 600;
+  var panelW = 300;
+  var panelH = 250;
+  var dragging2 = false;
+  var dragSX = 0;
+  var dragSY = 0;
+  var dragOrbX = 0;
+  var dragOrbY = 0;
+  var longPressTimer2 = null;
+  var longPressFired2 = false;
+  var MAX_LOG_LINES = 200;
+  var logLines = [];
+  function formatTime() {
+    const d = /* @__PURE__ */ new Date();
+    const h = String(d.getHours()).padStart(2, "0");
+    const m = String(d.getMinutes()).padStart(2, "0");
+    const s = String(d.getSeconds()).padStart(2, "0");
+    const ms = String(d.getMilliseconds()).padStart(3, "0");
+    return `${h}:${m}:${s}.${ms}`;
+  }
+  function debugLog(msg) {
+    logLines.push(`[${formatTime()}] ${msg}`);
+    if (logLines.length > MAX_LOG_LINES) logLines.shift();
+    flushLogUI();
+  }
+  function debugClear() {
+    logLines.length = 0;
+    flushLogUI();
+  }
+  function debugCopy() {
+    const text = logLines.join("\n");
+    navigator.clipboard.writeText(text).then(() => {
+      debugLog("\u{1F4CB} \u65E5\u5FD7\u5DF2\u590D\u5236\u5230\u526A\u8D34\u677F");
+    }).catch(() => {
+      debugLog("\u274C \u590D\u5236\u5931\u8D25");
+    });
+  }
+  function flushLogUI() {
+    if (!panelEl2) return;
+    const area = panelEl2.querySelector(".debug-log-area");
+    if (area) {
+      area.textContent = logLines.length > 0 ? logLines.join("\n") : "(\u7A7A)";
+      area.scrollTop = area.scrollHeight;
+    }
+  }
+  function clampOrb(x, y) {
+    return {
+      x: Math.max(MARGIN2, Math.min(window.innerWidth - ORB_SIZE2 - MARGIN2, x)),
+      y: Math.max(MARGIN2, Math.min(window.innerHeight - ORB_SIZE2 - MARGIN2, y))
+    };
+  }
+  function createOrb() {
+    const el = document.createElement("div");
+    el.className = "debug-orb";
+    el.style.cssText = `
+    position: fixed;
+    width: ${ORB_SIZE2}px;
+    height: ${ORB_SIZE2}px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, rgba(0,255,200,0.9), rgba(0,180,150,0.6));
+    box-shadow: 0 0 16px 4px rgba(0,255,200,0.4), 0 0 40px 12px rgba(0,200,160,0.2);
+    z-index: 300;
+    cursor: pointer;
+    transition: box-shadow 0.2s;
+    right: 80px;
+    bottom: 80px;
+  `;
+    el.id = "debugOrb";
+    document.body.appendChild(el);
+    return el;
+  }
+  function createPanel2() {
+    const panel = document.createElement("div");
+    panel.style.cssText = `
+    position: fixed;
+    background: linear-gradient(rgba(8,20,18,0.94),rgba(8,20,18,0.94)) padding-box,
+                linear-gradient(135deg,rgba(0,255,200,.7),rgba(0,180,150,.5)) border-box;
+    backdrop-filter: blur(16px);
+    border: 1px solid transparent;
+    border-radius: 10px;
+    box-shadow: 0 0 20px 6px rgba(0,255,200,0.2), 0 6px 24px rgba(0,0,0,0.5);
+    z-index: 295;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+    font-family: monospace;
+  `;
+    panel.id = "debugPanel";
+    document.body.appendChild(panel);
+    return panel;
+  }
+  function buildPanelContent2() {
+    var _a, _b;
+    if (!panelEl2) return;
+    panelEl2.innerHTML = `
+    <div style="
+      padding:6px 10px;
+      border-bottom:1px solid rgba(0,255,200,0.2);
+      display:flex;justify-content:space-between;align-items:center;
+      flex-shrink:0;
+    ">
+      <span style="font-size:12px;color:rgba(0,255,200,0.9);font-weight:600">\u{1F527} \u8C03\u8BD5\u9762\u677F</span>
+      <span style="display:flex;gap:6px">
+        <button class="debug-btn-clear" style="
+          font-size:11px;padding:3px 10px;
+          background:rgba(0,255,200,0.15);color:rgba(0,255,200,0.9);
+          border:1px solid rgba(0,255,200,0.3);border-radius:5px;
+          cursor:pointer;
+        ">\u6E05\u7A7A</button>
+        <button class="debug-btn-copy" style="
+          font-size:11px;padding:3px 10px;
+          background:rgba(0,255,200,0.15);color:rgba(0,255,200,0.9);
+          border:1px solid rgba(0,255,200,0.3);border-radius:5px;
+          cursor:pointer;
+        ">\u590D\u5236</button>
+      </span>
+    </div>
+    <pre class="debug-log-area" style="
+      flex:1;
+      overflow-y:auto;
+      padding:8px 10px;
+      margin:0;
+      font-size:11px;
+      line-height:1.5;
+      color:rgba(180,255,230,0.85);
+      white-space:pre-wrap;
+      word-break:break-all;
+      min-height:0;
+    ">${logLines.length > 0 ? logLines.join("\n") : "(\u7A7A)"}</pre>
+  `;
+    (_a = panelEl2.querySelector(".debug-btn-clear")) == null ? void 0 : _a.addEventListener("click", () => debugClear());
+    (_b = panelEl2.querySelector(".debug-btn-copy")) == null ? void 0 : _b.addEventListener("click", () => debugCopy());
+  }
+  function updatePanelPosition2() {
+    if (!orbEl2 || !panelEl2) return;
+    const r = orbEl2.getBoundingClientRect();
+    const cx = r.left + ORB_HALF2;
+    const cy = r.top + ORB_HALF2;
+    const w = Math.max(PANEL_MIN_W, Math.min(panelW, cx - MARGIN2));
+    const h = Math.max(PANEL_MIN_H, Math.min(panelH, cy - MARGIN2));
+    panelEl2.style.left = Math.max(MARGIN2, cx - w) + "px";
+    panelEl2.style.top = Math.max(MARGIN2, cy - h) + "px";
+    panelEl2.style.width = w + "px";
+    panelEl2.style.height = h + "px";
+  }
+  function expandPanel2() {
+    if (!panelEl2) panelEl2 = createPanel2();
+    if (state === "collapsed") {
+      state = "expanded";
+      buildPanelContent2();
+      updatePanelPosition2();
+      panelEl2.style.opacity = "1";
+      panelEl2.style.pointerEvents = "auto";
+    }
+  }
+  function collapsePanel2() {
+    if (state === "expanded") {
+      state = "collapsed";
+      if (panelEl2) {
+        panelEl2.style.opacity = "0";
+        panelEl2.style.pointerEvents = "none";
+      }
+    }
+  }
+  function enterEdit() {
+    if (state !== "expanded") return;
+    state = "editing";
+    if (panelEl2) panelEl2.style.boxShadow = "0 0 40px 20px rgba(0,255,200,0.45), 0 6px 24px rgba(0,0,0,0.5)";
+  }
+  function exitEdit() {
+    if (state !== "editing") return;
+    state = "expanded";
+    if (panelEl2) panelEl2.style.boxShadow = "0 0 20px 6px rgba(0,255,200,0.2), 0 6px 24px rgba(0,0,0,0.5)";
+  }
+  function toggle() {
+    if (state === "collapsed") expandPanel2();
+    else if (state === "expanded") collapsePanel2();
+  }
+  function startDrag2(x, y) {
+    dragging2 = false;
+    longPressFired2 = false;
+    dragSX = x;
+    dragSY = y;
+    const r = orbEl2.getBoundingClientRect();
+    dragOrbX = r.left;
+    dragOrbY = r.top;
+    longPressTimer2 = setTimeout(() => {
+      longPressFired2 = true;
+      if (state === "expanded") enterEdit();
+      else if (state === "editing") exitEdit();
+    }, LONG_PRESS_MS2);
+  }
+  function moveDrag2(x, y) {
+    const dx = x - dragSX;
+    const dy = y - dragSY;
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+      dragging2 = true;
+      if (longPressTimer2) {
+        clearTimeout(longPressTimer2);
+        longPressTimer2 = null;
+      }
+    }
+    if (!dragging2 || !orbEl2) return;
+    if (state === "editing") {
+      const raw = clampOrb(dragOrbX + dx, dragOrbY + dy);
+      orbEl2.style.left = raw.x + "px";
+      orbEl2.style.top = raw.y + "px";
+      orbEl2.style.right = "auto";
+      orbEl2.style.bottom = "auto";
+      const cx = raw.x + ORB_HALF2;
+      const cy = raw.y + ORB_HALF2;
+      panelW = Math.max(PANEL_MIN_W, cx - MARGIN2);
+      panelH = Math.max(PANEL_MIN_H, cy - MARGIN2);
+      updatePanelPosition2();
+    } else {
+      const raw = clampOrb(dragOrbX + dx, dragOrbY + dy);
+      orbEl2.style.left = raw.x + "px";
+      orbEl2.style.top = raw.y + "px";
+      orbEl2.style.right = "auto";
+      orbEl2.style.bottom = "auto";
+      orbEl2.style.transition = "none";
+      if (state === "expanded") updatePanelPosition2();
+    }
+  }
+  function endDrag2() {
+    if (longPressTimer2) {
+      clearTimeout(longPressTimer2);
+      longPressTimer2 = null;
+    }
+    if (orbEl2) orbEl2.style.transition = "box-shadow 0.2s";
+    if (state === "editing") exitEdit();
+    if (!dragging2 && !longPressFired2) toggle();
+    dragging2 = false;
+  }
+  var mouseOn = false;
+  function bindMouse() {
+    if (!orbEl2) return;
+    orbEl2.addEventListener("mousedown", (e) => {
+      e.stopPropagation();
+      mouseOn = true;
+      startDrag2(e.clientX, e.clientY);
+    });
+    document.addEventListener("mousemove", (e) => {
+      if (!mouseOn) return;
+      moveDrag2(e.clientX, e.clientY);
+    });
+    document.addEventListener("mouseup", () => {
+      if (!mouseOn) return;
+      mouseOn = false;
+      endDrag2();
+    });
+  }
+  function initDebugPanel() {
+    orbEl2 = createOrb();
+    gestures.register({
+      id: "debug-orb",
+      targetFilter: "#debugOrb",
+      priority: 99,
+      stopPropagation: true,
+      onStart: (e) => {
+        e.preventDefault();
+        startDrag2(e.touches[0].clientX, e.touches[0].clientY);
+      },
+      onMove: (e) => {
+        moveDrag2(e.touches[0].clientX, e.touches[0].clientY);
+      },
+      onEnd: () => endDrag2()
+    });
+    bindMouse();
+    debugLog("\u{1F527} \u8C03\u8BD5\u9762\u677F\u5DF2\u542F\u52A8");
   }
 
   // src/client/modules/tree-loader.ts

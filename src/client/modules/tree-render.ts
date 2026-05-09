@@ -78,6 +78,64 @@ function _collectSiblingsAfter(container: Box): Box[] {
   return result;
 }
 
+/**
+ * 构建独立的动画树并设置到渲染器。
+ * 双树渲染：overlay 节点不寄生在主树上，而是挂在独立的 _overlayRoot 下。
+ * 主树的 opacity/overflow 完全不影响动画树。
+ */
+function _buildAndSetOverlayTree(
+  pack: OverlayPack,
+  subTargets: FlatSubTarget[],
+  subPacks: OverlayPack[],
+  root: Box,
+): void {
+  const overlayRoot = new Box({
+    id: 'overlay-root',
+    x: root.x, y: root.y,
+    width: root.width, height: root.height,
+    scrollY: root.scrollY ?? 0,
+    scrollable: false,
+    opacity: 1,
+    visible: true,
+    backgroundColor: 'transparent',
+  });
+
+  // Top-level: container overlay + sibling overlays → direct children of overlayRoot
+  overlayRoot.addChild(pack.containerOverlay);
+  for (const sibOv of pack.siblingOverlays) {
+    overlayRoot.addChild(sibOv);
+  }
+
+  // Map overlay id → overlay box for parent lookup
+  const ovById = new Map<string, Box>();
+  ovById.set(pack.containerOverlay.id ?? '', pack.containerOverlay);
+  for (let i = 0; i < subTargets.length; i++) {
+    ovById.set(subPacks[i].containerOverlay.id ?? '', subPacks[i].containerOverlay);
+  }
+
+  // Place each sub-pack's container overlays as children of their parent overlay
+  for (let i = 0; i < subTargets.length; i++) {
+    const st = subTargets[i];
+    const sp = subPacks[i];
+    const parentReal = st.container.parent;
+    const parentOvId = parentReal ? `ov-${parentReal.id}` : pack.containerOverlay.id;
+    const parentOv = parentOvId ? ovById.get(parentOvId) : null;
+    if (parentOv) {
+      parentOv.addChild(sp.containerOverlay);
+      for (const sibOv of sp.siblingOverlays) {
+        parentOv.addChild(sibOv);
+      }
+    } else {
+      overlayRoot.addChild(sp.containerOverlay);
+      for (const sibOv of sp.siblingOverlays) {
+        overlayRoot.addChild(sibOv);
+      }
+    }
+  }
+
+  L.renderer?.setOverlayRoot(overlayRoot);
+}
+
 // ========== Box 视觉克隆器 ==========
 
 function _createVisualClone(
@@ -149,7 +207,7 @@ interface OverlayPack {
   hiddenChildren: Box[];
 }
 
-/** 搭建展开动画的 overlay 集合 */
+/** 搭建展开动画的 overlay 集合（不再修改主树） */
 function _setupExpandOverlays(container: Box, fullHeight: number): OverlayPack {
   const parent = container.parent!;
   const ci = parent.children.indexOf(container);
@@ -157,53 +215,44 @@ function _setupExpandOverlays(container: Box, fullHeight: number): OverlayPack {
   // 1. 容器 overlay (height=0, 即将动画到 fullHeight)
   const containerOv = _createVisualClone(container, { id: `ov-${container.id || 'container'}`, height: 0, opacity: 1, zIndex: OVERLAY_Z });
   _addOverlay(containerOv);
-  // 插入到 container 之后
-  parent.children.splice(ci + 1, 0, containerOv);
-  // 修正 parent 引用（splice 不自动设置）
+  // 不再插入到主树 parent.children 中 — 由调用方统一构建 overlay 树
+  // 但标记 parent 引用以便 getAbsolutePosition 能正确计算
   containerOv.parent = parent;
 
   // 2. 行 overlay（FROM=折叠态 y，TO=终端态 y，从元数据计算）
   //    注意：跳过已展开的子容器（expanded-*），它们由独立的 setupExpandOverlays 处理
   const rowOverlays: Box[] = [];
-  const hiddenChildren: Box[] = [];
   const origYs = (container as Box & OverlayMeta)._origYs as number[] | undefined;
   for (let j = 0; j < container.children.length; j++) {
     const child = container.children[j];
     if (!child.visible) continue;
-    // 跳过已展开的子容器 — 它们有自己的 overlay，不能被隐藏
     if (child.id?.startsWith('expanded-')) continue;
-    const expandedY = origYs ? origYs[j] : child.y;   // terminal (expanded) Y
-    const collapsedY = expandedY - fullHeight;         // computed collapsed Y
+    const expandedY = origYs ? origYs[j] : child.y;
+    const collapsedY = expandedY - fullHeight;
     const rowOv = _createVisualClone(child, { id: child.id || (`row-${j}`), y: collapsedY, opacity: 1, zIndex: OVERLAY_Z + 1 });
-    (rowOv as Box & OverlayMeta)._targetY = expandedY;  // GSAP target
+    (rowOv as Box & OverlayMeta)._targetY = expandedY;
     _addOverlay(rowOv);
     containerOv.addChild(rowOv);
     rowOverlays.push(rowOv);
-    // 隐藏真实行
-    child.opacity = 0;
-    hiddenChildren.push(child);
+    // 不修改主树 — 双树渲染，主树不设 opacity=0
   }
 
-  // 3. 兄弟 overlay（FROM=折叠态 y，TO=终端态 y，从元数据计算）
+  // 3. 兄弟 overlay（FROM=折叠态 y，TO=终端态 y）
   const siblingOverlays: Box[] = [];
-  const hiddenSiblings: Box[] = [];
   const siblings = _collectSiblingsAfter(container);
   for (const sib of siblings) {
     const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || 'sib'}`, y: sib.y - fullHeight, opacity: 1, zIndex: OVERLAY_Z }, true);
-    (sibOv as Box & OverlayMeta)._targetY = sib.y;  // terminal position
+    (sibOv as Box & OverlayMeta)._targetY = sib.y;
     _addOverlay(sibOv);
-    const si = parent.children.indexOf(sib);
-    parent.children.splice(si, 0, sibOv);
     sibOv.parent = parent;
     siblingOverlays.push(sibOv);
-    sib.opacity = 0;
-    hiddenSiblings.push(sib);
+    // 不修改主树
   }
 
-  return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenSiblings, hiddenChildren };
+  return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenSiblings: [], hiddenChildren: [] };
 }
 
-/** 搭建折叠动画的 overlay 集合 */
+/** 搭建折叠动画的 overlay 集合（不再修改主树） */
 function _setupCollapseOverlays(container: Box, fullH: number): OverlayPack {
   const parent = container.parent!;
   const ci = parent.children.indexOf(container);
@@ -211,46 +260,33 @@ function _setupCollapseOverlays(container: Box, fullH: number): OverlayPack {
   // 1. 容器 overlay (height=fullH, 即将动画到 0)
   const containerOv = _createVisualClone(container, { id: `ov-${container.id || 'container'}`, height: fullH, opacity: 1, zIndex: OVERLAY_Z });
   _addOverlay(containerOv);
-  parent.children.splice(ci + 1, 0, containerOv);
   containerOv.parent = parent;
-  containerOv.overflow = 'hidden';  // 折叠时裁剪文字
 
-  debugLog(`[collapse] setup path=${container.id} fullH=${fullH} overflow=${containerOv.overflow} height=${containerOv.height} borderRadius=${containerOv.borderRadius} parent=${parent.id}`);
-
-  // 2. 行 overlay：固定在展开态 y，不单独做 Y 动画。
-  //    注意：跳过已展开的子容器（expanded-*），它们由独立的 setupCollapseOverlays 处理
+  // 2. 行 overlay：固定在展开态 y
+  //    注意：跳过已展开的子容器（expanded-*）
   const rowOverlays: Box[] = [];
-  const hiddenChildren: Box[] = [];
   for (let j = 0; j < container.children.length; j++) {
     const child = container.children[j];
     if (!child.visible) continue;
-    // 跳过已展开的子容器 — 它们有自己的 overlay，不能被隐藏
     if (child.id?.startsWith('expanded-')) continue;
     const rowOv = _createVisualClone(child, { id: child.id || (`row-${j}`), y: child.y, opacity: 1, zIndex: OVERLAY_Z + 1 });
     _addOverlay(rowOv);
     containerOv.addChild(rowOv);
     rowOverlays.push(rowOv);
-    child.opacity = 0;
-    hiddenChildren.push(child);
   }
 
-  // 3. 兄弟 overlay（在展开态 y（已下移），目标 y = y - fullH 折叠态）
+  // 3. 兄弟 overlay
   const siblingOverlays: Box[] = [];
-  const hiddenSiblings: Box[] = [];
   const siblings = _collectSiblingsAfter(container);
   for (const sib of siblings) {
     const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || 'sib'}`, y: sib.y, opacity: 1, zIndex: OVERLAY_Z }, true);
     (sibOv as Box & OverlayMeta)._targetY = sib.y - fullH;
     _addOverlay(sibOv);
-    const si = parent.children.indexOf(sib);
-    parent.children.splice(si, 0, sibOv);
     sibOv.parent = parent;
     siblingOverlays.push(sibOv);
-    sib.opacity = 0;
-    hiddenSiblings.push(sib);
   }
 
-  return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenSiblings, hiddenChildren };
+  return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenSiblings: [], hiddenChildren: [] };
 }
 
 /** 保存 KFMState 订阅引用，防止重复订阅 */
@@ -695,14 +731,19 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
   const subTargets = _flattenExpandTree(container, 1);
   const subPacks = subTargets.map(st => _setupExpandOverlays(st.container, st.fullHeight));
 
+  // 构建独立动画树并设置到渲染器（双树渲染）
+  _buildAndSetOverlayTree(pack, subTargets, subPacks, root);
+
   L.beginOp(path, 'expand');
   const animRoot = L.renderer!.getRoot()!;
 
   // 所有 overlay tween + 字符雨 cleanup 信息收集
   const charRainCleanups: CharRainCleanup[] = [];
-  const overlaysToClean: OverlayPack[] = [pack, ...subPacks];
+  const overlaysToClean: OverlayPack[] = [pack, ...subPacks]; // used by doCollapse only
 
   // 本层 overlay tween
+
+
   ts.to(pack.containerOverlay, { height: fullHeight, duration: 0.05, ease: 'back.out(1.15)' }, 0);
   for (const rowOv of pack.rowOverlays) {
     ts.to(rowOv, { y: (rowOv as Box & OverlayMeta)._targetY!, duration: 0.05, ease: 'back.out(1.15)' }, 0);
@@ -748,12 +789,9 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
   // cleanup: 在所有动画完成后自动触发
   ts.call(() => {
     if (L.renderer?.getRoot() !== animRoot) return;
-    for (const op of overlaysToClean) {
-      for (const c of op.hiddenChildren) c.opacity = 1;
-      for (const s of op.hiddenSiblings) s.opacity = 1;
-    }
     for (const cu of charRainCleanups) cleanupCharRain(cu);
     _removeAllOverlays();
+    L.renderer?.setOverlayRoot(null);  // 销毁动画树
     _resetAnimTimeline();
     assert(_activeOverlays.length === 0, 'overlays leaked after expand');
     L.endOp();
@@ -799,6 +837,9 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
   const subTargets = _flattenExpandTree(container, 1);
   const subPacks = subTargets.map(st => _setupCollapseOverlays(st.container, st.fullHeight));
   const overlaysToClean: OverlayPack[] = [pack, ...subPacks];
+
+  // 构建独立动画树（折叠）
+  _buildAndSetOverlayTree(pack, subTargets, subPacks, root);
 
   const maxLevel = subTargets.length > 0 ? Math.max(...subTargets.map(st => st.level)) : 0;
   const charRainCleanups: CharRainCleanup[] = [];
@@ -851,15 +892,11 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
   }
 
   // cleanup
-  const cleanupDelay = boxStartDelay + maxLevel * 0.06 + 0.35;
   ts.call(() => {
     if (L.renderer?.getRoot() !== animRoot) return;
-    for (const op of overlaysToClean) {
-      for (const c of op.hiddenChildren) c.opacity = 1;
-      for (const s of op.hiddenSiblings) s.opacity = 1;
-    }
     for (const cu of charRainCleanups) cleanupCharRain(cu);
     _removeAllOverlays();
+    L.renderer?.setOverlayRoot(null);  // 销毁动画树
     assert(_activeOverlays.length === 0, 'overlays leaked after doCollapse');
     _resetAnimTimeline();
     L.endOp();

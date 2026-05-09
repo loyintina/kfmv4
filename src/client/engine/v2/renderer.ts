@@ -34,6 +34,8 @@ export class Renderer {
   backgroundColor: string;
   private _isRunning: boolean;
   private _root: Box | null;
+  /** 动画树根（可选，动画期间在主树上方独立渲染，互不影响） */
+  private _overlayRoot: Box | null;
   private _rafId: number;
   private _lastTime: number;
   private _frameCount: number;
@@ -54,6 +56,7 @@ export class Renderer {
     this.height = 0;
     this._isRunning = false;
     this._root = null;
+    this._overlayRoot = null;
     this._rafId = 0;
     this._lastTime = 0;
     this._frameCount = 0;
@@ -86,6 +89,16 @@ export class Renderer {
 
   getRoot(): Box | null {
     return this._root;
+  }
+
+  /** 设置动画树根（在主树之上独立渲染） */
+  setOverlayRoot(box: Box | null): this {
+    this._overlayRoot = box;
+    return this;
+  }
+
+  getOverlayRoot(): Box | null {
+    return this._overlayRoot;
   }
 
   start(): this {
@@ -127,7 +140,7 @@ export class Renderer {
     this.ctx.fillStyle = this.backgroundColor;
     this.ctx.fillRect(0, 0, this.width, this.height);
 
-    // 渲染树
+    // 渲染主树
     if (this._root) {
       this._tickAndRender(this._root, now, 1);
       try {
@@ -135,6 +148,11 @@ export class Renderer {
       } catch (e) {
         console.error('_manageInputs error', e);
       }
+    }
+
+    // 在主树之上渲染动画树（如果有）
+    if (this._overlayRoot) {
+      this._tickAndRender(this._overlayRoot, now, 1);
     }
   }
 
