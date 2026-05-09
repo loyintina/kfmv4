@@ -8720,10 +8720,7 @@
               y: t.targetY,
               opacity: 1,
               duration: randDur,
-              ease: "back.out(1.05)",
-              onUpdate: () => {
-                renderer == null ? void 0 : renderer.setRoot(root);
-              }
+              ease: "back.out(1.05)"
             }, randDelay);
             if (t.isToggle) {
               tl.to(t.box.transform, {
@@ -10055,11 +10052,7 @@
         scrollY: targetScrollY,
         duration: 0.35,
         ease: "power2.inOut",
-        overwrite: "auto",
-        onUpdate: function() {
-          var _a2;
-          (_a2 = L.renderer) == null ? void 0 : _a2.setRoot(L.renderer.getRoot());
-        }
+        overwrite: "auto"
       });
     } catch {
     }
@@ -11019,11 +11012,7 @@
         ts.to(toggle2.transform, {
           rotate: Math.PI / 2,
           duration: 0.3,
-          ease: "power2.out",
-          onUpdate: () => {
-            var _a2;
-            (_a2 = L.renderer) == null ? void 0 : _a2.setRoot(L.renderer.getRoot());
-          }
+          ease: "power2.out"
         }, 0);
       }
       return;
@@ -11038,27 +11027,12 @@
     const subPacks = subTargets.map((st) => _setupExpandOverlays(st.container, st.fullHeight));
     L.beginOp(path, "expand");
     const animRoot = L.renderer.getRoot();
-    ts.to(pack.containerOverlay, {
-      height: fullHeight,
-      duration: 0.05,
-      ease: "back.out(1.15)",
-      onUpdate: () => {
-        var _a2, _b2;
-        if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
-        (_b2 = L.renderer) == null ? void 0 : _b2.setRoot(L.renderer.getRoot());
-      }
-    }, 0);
+    ts.to(pack.containerOverlay, { height: fullHeight, duration: 0.05, ease: "back.out(1.15)" }, 0);
     for (const rowOv of pack.rowOverlays) {
-      ts.to(rowOv, { y: rowOv._targetY, duration: 0.05, ease: "back.out(1.15)", onUpdate: () => {
-        var _a2;
-        if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) === animRoot) L.renderer.setRoot(L.renderer.getRoot());
-      } }, 0);
+      ts.to(rowOv, { y: rowOv._targetY, duration: 0.05, ease: "back.out(1.15)" }, 0);
     }
     for (const sibOv of pack.siblingOverlays) {
-      ts.to(sibOv, { y: sibOv._targetY, duration: 0.05, ease: "back.out(1.15)", onUpdate: () => {
-        var _a2;
-        if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) === animRoot) L.renderer.setRoot(L.renderer.getRoot());
-      } }, 0);
+      ts.to(sibOv, { y: sibOv._targetY, duration: 0.05, ease: "back.out(1.15)" }, 0);
     }
     const overlaysToClean = [pack, ...subPacks];
     for (const sp of subPacks) {
@@ -11067,25 +11041,16 @@
         return st.container.id === ((_a2 = sp.containerOverlay.id) == null ? void 0 : _a2.replace("ov-expanded-", "expanded-"));
       })) == null ? void 0 : _c.level) != null ? _d : 1;
       const delay = subLevel * 0.06;
-      ts.to(sp.containerOverlay, { height: sp.containerOverlay.height === 0 ? (_f = (_e = subTargets.find((st) => `ov-${st.container.id}` === sp.containerOverlay.id)) == null ? void 0 : _e.fullHeight) != null ? _f : sp.containerOverlay.height : sp.containerOverlay.height, duration: 0.05, ease: "back.out(1.15)", onUpdate: () => {
-        var _a2;
-        if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) === animRoot) L.renderer.setRoot(L.renderer.getRoot());
-      } }, delay);
+      ts.to(sp.containerOverlay, { height: sp.containerOverlay.height === 0 ? (_f = (_e = subTargets.find((st) => `ov-${st.container.id}` === sp.containerOverlay.id)) == null ? void 0 : _e.fullHeight) != null ? _f : sp.containerOverlay.height : sp.containerOverlay.height, duration: 0.05, ease: "back.out(1.15)" }, delay);
       for (const rowOv of sp.rowOverlays) {
-        ts.to(rowOv, { y: rowOv._targetY, duration: 0.05 + delay * 0.2, ease: "back.out(1.15)", onUpdate: () => {
-          var _a2;
-          if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) === animRoot) L.renderer.setRoot(L.renderer.getRoot());
-        } }, delay);
+        ts.to(rowOv, { y: rowOv._targetY, duration: 0.05 + delay * 0.2, ease: "back.out(1.15)" }, delay);
       }
       for (const sibOv of sp.siblingOverlays) {
-        ts.to(sibOv, { y: sibOv._targetY, duration: 0.05, ease: "back.out(1.15)", onUpdate: () => {
-          var _a2;
-          if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) === animRoot) L.renderer.setRoot(L.renderer.getRoot());
-        } }, delay);
+        ts.to(sibOv, { y: sibOv._targetY, duration: 0.05, ease: "back.out(1.15)" }, delay);
       }
     }
     ts.call(() => {
-      var _a2, _b2, _c2;
+      var _a2, _b2;
       if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
       for (const op of overlaysToClean) {
         for (const c of op.hiddenChildren) c.opacity = 1;
@@ -11094,11 +11059,10 @@
       _removeAllOverlays();
       _resetAnimTimeline();
       assert(_activeOverlays.length === 0, "overlays leaked after expand");
-      (_b2 = L.renderer) == null ? void 0 : _b2.setRoot(L.renderer.getRoot());
       animateCharRain(container, root, L.renderer, pack.rowOverlays.map((r) => r._targetY)).catch(() => {
       });
       L.endOp();
-      const _root = (_c2 = L.renderer) == null ? void 0 : _c2.getRoot();
+      const _root = (_b2 = L.renderer) == null ? void 0 : _b2.getRoot();
       if (_root) {
         _rebuildRowIndex(_root);
       }
@@ -11382,10 +11346,6 @@
           rotate: Math.PI / 2,
           duration: 0.3,
           ease: "power2.out",
-          onUpdate: () => {
-            var _a2;
-            (_a2 = L.renderer) == null ? void 0 : _a2.setRoot(L.renderer.getRoot());
-          },
           onComplete: finish
         }, 0);
       } else {
@@ -11402,45 +11362,27 @@
     const subTargets = _flattenExpandTree(container, 1);
     const subPacks = subTargets.map((st) => _setupExpandOverlays(st.container, st.fullHeight));
     const animRoot = L.renderer.getRoot();
-    ts.to(pack.containerOverlay, { height: fullHeight, duration: 0.05, ease: "back.out(1.15)", onUpdate: () => {
-      var _a2;
-      if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) === animRoot) L.renderer.setRoot(L.renderer.getRoot());
-    } }, 0);
+    ts.to(pack.containerOverlay, { height: fullHeight, duration: 0.05, ease: "back.out(1.15)" }, 0);
     for (const rowOv of pack.rowOverlays) {
-      ts.to(rowOv, { y: rowOv._targetY, duration: 0.05, ease: "back.out(1.15)", onUpdate: () => {
-        var _a2;
-        if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) === animRoot) L.renderer.setRoot(L.renderer.getRoot());
-      } }, 0);
+      ts.to(rowOv, { y: rowOv._targetY, duration: 0.05, ease: "back.out(1.15)" }, 0);
     }
     for (const sibOv of pack.siblingOverlays) {
-      ts.to(sibOv, { y: sibOv._targetY, duration: 0.05, ease: "back.out(1.15)", onUpdate: () => {
-        var _a2;
-        if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) === animRoot) L.renderer.setRoot(L.renderer.getRoot());
-      } }, 0);
+      ts.to(sibOv, { y: sibOv._targetY, duration: 0.05, ease: "back.out(1.15)" }, 0);
     }
     const overlaysToClean = [pack, ...subPacks];
     for (const sp of subPacks) {
       const subLevel = (_c = (_b = subTargets.find((st) => `ov-${st.container.id}` === sp.containerOverlay.id)) == null ? void 0 : _b.level) != null ? _c : 1;
       const delay = subLevel * 0.06;
-      ts.to(sp.containerOverlay, { height: (_e = (_d = subTargets.find((st) => `ov-${st.container.id}` === sp.containerOverlay.id)) == null ? void 0 : _d.fullHeight) != null ? _e : 0, duration: 0.05, ease: "back.out(1.15)", onUpdate: () => {
-        var _a2;
-        if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) === animRoot) L.renderer.setRoot(L.renderer.getRoot());
-      } }, delay);
+      ts.to(sp.containerOverlay, { height: (_e = (_d = subTargets.find((st) => `ov-${st.container.id}` === sp.containerOverlay.id)) == null ? void 0 : _d.fullHeight) != null ? _e : 0, duration: 0.05, ease: "back.out(1.15)" }, delay);
       for (const rowOv of sp.rowOverlays) {
-        ts.to(rowOv, { y: rowOv._targetY, duration: 0.05 + delay * 0.2, ease: "back.out(1.15)", onUpdate: () => {
-          var _a2;
-          if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) === animRoot) L.renderer.setRoot(L.renderer.getRoot());
-        } }, delay);
+        ts.to(rowOv, { y: rowOv._targetY, duration: 0.05 + delay * 0.2, ease: "back.out(1.15)" }, delay);
       }
       for (const sibOv of sp.siblingOverlays) {
-        ts.to(sibOv, { y: sibOv._targetY, duration: 0.05, ease: "back.out(1.15)", onUpdate: () => {
-          var _a2;
-          if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) === animRoot) L.renderer.setRoot(L.renderer.getRoot());
-        } }, delay);
+        ts.to(sibOv, { y: sibOv._targetY, duration: 0.05, ease: "back.out(1.15)" }, delay);
       }
     }
     ts.call(() => {
-      var _a2, _b2, _c2;
+      var _a2, _b2;
       if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
       for (const op of overlaysToClean) {
         for (const c of op.hiddenChildren) c.opacity = 1;
@@ -11449,11 +11391,10 @@
       _removeAllOverlays();
       assert(_activeOverlays.length === 0, "overlays leaked after doExpand");
       _resetAnimTimeline();
-      (_b2 = L.renderer) == null ? void 0 : _b2.setRoot(L.renderer.getRoot());
       animateCharRain(container, root, L.renderer, pack.rowOverlays.map((r) => r._targetY)).catch(() => {
       });
       L.endOp();
-      const _root = (_c2 = L.renderer) == null ? void 0 : _c2.getRoot();
+      const _root = (_b2 = L.renderer) == null ? void 0 : _b2.getRoot();
       if (_root) {
         _rebuildRowIndex(_root);
       }
@@ -11474,11 +11415,7 @@
       ts.to(tog.transform, {
         rotate: 0,
         duration: 0.25,
-        ease: "power2.in",
-        onUpdate: () => {
-          var _a;
-          if (((_a = L.renderer) == null ? void 0 : _a.getRoot()) === animRoot) L.renderer.setRoot(L.renderer.getRoot());
-        }
+        ease: "power2.in"
       }, 0);
     }
     let pack = null;
@@ -11490,29 +11427,13 @@
       ts.to(pack.containerOverlay, {
         height: 0,
         duration: 0.3,
-        ease: "power2.in",
-        onUpdate: () => {
-          var _a, _b;
-          if (((_a = L.renderer) == null ? void 0 : _a.getRoot()) !== animRoot) {
-            debugLog(`[collapse] SKIP onUpdate root mismatch`);
-            return;
-          }
-          (_b = L.renderer) == null ? void 0 : _b.setRoot(L.renderer.getRoot());
-        },
-        onStart: () => {
-          debugLog(`[collapse] tween START height=${pack.containerOverlay.height}`);
-        }
+        ease: "power2.in"
       }, 0);
       for (const sibOv of pack.siblingOverlays) {
         ts.to(sibOv, {
           y: sibOv._targetY,
           duration: 0.3,
-          ease: "power2.in",
-          onUpdate: () => {
-            var _a, _b;
-            if (((_a = L.renderer) == null ? void 0 : _a.getRoot()) !== animRoot) return;
-            (_b = L.renderer) == null ? void 0 : _b.setRoot(L.renderer.getRoot());
-          }
+          ease: "power2.in"
         }, 0);
       }
     }

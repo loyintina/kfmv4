@@ -239,7 +239,6 @@ export function _scrollToCenterCursor(): void {
       duration: 0.35,
       ease: 'power2.inOut',
       overwrite: 'auto',
-      onUpdate: function() { L.renderer?.setRoot(L.renderer.getRoot()!); },
     });
   } catch {}
 }

@@ -247,7 +247,6 @@ export async function animateCharRain(
             opacity: 1,
             duration: randDur,
             ease: "back.out(1.05)",
-            onUpdate: () => { renderer?.setRoot(root); },
           }, randDelay);
 
           if (t.isToggle) {

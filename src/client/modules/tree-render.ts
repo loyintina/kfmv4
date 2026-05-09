@@ -286,7 +286,6 @@ export function triggerExpandAnimation(path: string): void {
         rotate: Math.PI / 2,
         duration: 0.3,
         ease: 'power2.out',
-        onUpdate: () => { L.renderer?.setRoot(L.renderer!.getRoot()!); },
       }, 0);
     }
     return;
@@ -310,20 +309,12 @@ export function triggerExpandAnimation(path: string): void {
   const animRoot = L.renderer!.getRoot()!;
 
   // 本层 overlay: height 0→fullHeight, rows/sibs y→targetY
-  ts.to(pack.containerOverlay, {
-    height: fullHeight,
-    duration: 0.05,
-    ease: 'back.out(1.15)',
-    onUpdate: () => {
-      if (L.renderer?.getRoot() !== animRoot) return;
-      L.renderer?.setRoot(L.renderer!.getRoot()!);
-    },
-  }, 0);
+  ts.to(pack.containerOverlay, { height: fullHeight, duration: 0.05, ease: 'back.out(1.15)' }, 0);
   for (const rowOv of pack.rowOverlays) {
-    ts.to(rowOv, { y: (rowOv as Box & OverlayMeta)._targetY!, duration: 0.05, ease: 'back.out(1.15)', onUpdate: () => { if (L.renderer?.getRoot() === animRoot) L.renderer.setRoot(L.renderer.getRoot()!); } }, 0);
+    ts.to(rowOv, { y: (rowOv as Box & OverlayMeta)._targetY!, duration: 0.05, ease: 'back.out(1.15)' }, 0);
   }
   for (const sibOv of pack.siblingOverlays) {
-    ts.to(sibOv, { y: (sibOv as Box & OverlayMeta)._targetY!, duration: 0.05, ease: 'back.out(1.15)', onUpdate: () => { if (L.renderer?.getRoot() === animRoot) L.renderer.setRoot(L.renderer.getRoot()!); } }, 0);
+    ts.to(sibOv, { y: (sibOv as Box & OverlayMeta)._targetY!, duration: 0.05, ease: 'back.out(1.15)' }, 0);
   }
 
   // 所有子容器 overlay，按层 staggered delay
@@ -331,12 +322,12 @@ export function triggerExpandAnimation(path: string): void {
   for (const sp of subPacks) {
     const subLevel = subTargets.find(st => st.container.id === sp.containerOverlay.id?.replace('ov-expanded-', 'expanded-'))?.level ?? 1;
     const delay = subLevel * 0.06;
-    ts.to(sp.containerOverlay, { height: sp.containerOverlay.height === 0 ? (subTargets.find(st => `ov-${st.container.id}` === sp.containerOverlay.id)?.fullHeight ?? sp.containerOverlay.height) : sp.containerOverlay.height, duration: 0.05, ease: 'back.out(1.15)', onUpdate: () => { if (L.renderer?.getRoot() === animRoot) L.renderer.setRoot(L.renderer.getRoot()!); } }, delay);
+    ts.to(sp.containerOverlay, { height: sp.containerOverlay.height === 0 ? (subTargets.find(st => `ov-${st.container.id}` === sp.containerOverlay.id)?.fullHeight ?? sp.containerOverlay.height) : sp.containerOverlay.height, duration: 0.05, ease: 'back.out(1.15)' }, delay);
     for (const rowOv of sp.rowOverlays) {
-      ts.to(rowOv, { y: (rowOv as Box & OverlayMeta)._targetY!, duration: 0.05 + delay * 0.2, ease: 'back.out(1.15)', onUpdate: () => { if (L.renderer?.getRoot() === animRoot) L.renderer.setRoot(L.renderer.getRoot()!); } }, delay);
+      ts.to(rowOv, { y: (rowOv as Box & OverlayMeta)._targetY!, duration: 0.05 + delay * 0.2, ease: 'back.out(1.15)' }, delay);
     }
     for (const sibOv of sp.siblingOverlays) {
-      ts.to(sibOv, { y: (sibOv as Box & OverlayMeta)._targetY!, duration: 0.05, ease: 'back.out(1.15)', onUpdate: () => { if (L.renderer?.getRoot() === animRoot) L.renderer.setRoot(L.renderer.getRoot()!); } }, delay);
+      ts.to(sibOv, { y: (sibOv as Box & OverlayMeta)._targetY!, duration: 0.05, ease: 'back.out(1.15)' }, delay);
     }
   }
 
@@ -351,7 +342,6 @@ export function triggerExpandAnimation(path: string): void {
     _removeAllOverlays();
     _resetAnimTimeline();
     assert(_activeOverlays.length === 0, 'overlays leaked after expand');
-    L.renderer?.setRoot(L.renderer!.getRoot()!);
     // 字符雨：在 overlay 完成后触发，字符从上方散落
     animateCharRain(container, root, L.renderer, pack.rowOverlays.map(r => (r as Box & OverlayMeta)._targetY as number)).catch(() => {});
     L.endOp();
@@ -704,7 +694,6 @@ function doExpand(hit: Box, hitData: any): void {
         rotate: Math.PI / 2,
         duration: 0.3,
         ease: 'power2.out',
-        onUpdate: () => { L.renderer?.setRoot(L.renderer!.getRoot()!); },
         onComplete: finish,
       }, 0);
     } else {
@@ -728,12 +717,12 @@ function doExpand(hit: Box, hitData: any): void {
   const animRoot = L.renderer!.getRoot()!;
 
   // 本层 overlay
-  ts.to(pack.containerOverlay, { height: fullHeight, duration: 0.05, ease: 'back.out(1.15)', onUpdate: () => { if (L.renderer?.getRoot() === animRoot) L.renderer.setRoot(L.renderer.getRoot()!); } }, 0);
+  ts.to(pack.containerOverlay, { height: fullHeight, duration: 0.05, ease: 'back.out(1.15)' }, 0);
   for (const rowOv of pack.rowOverlays) {
-    ts.to(rowOv, { y: (rowOv as Box & OverlayMeta)._targetY!, duration: 0.05, ease: 'back.out(1.15)', onUpdate: () => { if (L.renderer?.getRoot() === animRoot) L.renderer.setRoot(L.renderer.getRoot()!); } }, 0);
+    ts.to(rowOv, { y: (rowOv as Box & OverlayMeta)._targetY!, duration: 0.05, ease: 'back.out(1.15)' }, 0);
   }
   for (const sibOv of pack.siblingOverlays) {
-    ts.to(sibOv, { y: (sibOv as Box & OverlayMeta)._targetY!, duration: 0.05, ease: 'back.out(1.15)', onUpdate: () => { if (L.renderer?.getRoot() === animRoot) L.renderer.setRoot(L.renderer.getRoot()!); } }, 0);
+    ts.to(sibOv, { y: (sibOv as Box & OverlayMeta)._targetY!, duration: 0.05, ease: 'back.out(1.15)' }, 0);
   }
 
   // 所有子容器 overlay，按层 staggered delay
@@ -741,12 +730,12 @@ function doExpand(hit: Box, hitData: any): void {
   for (const sp of subPacks) {
     const subLevel = subTargets.find(st => `ov-${st.container.id}` === sp.containerOverlay.id)?.level ?? 1;
     const delay = subLevel * 0.06;
-    ts.to(sp.containerOverlay, { height: (subTargets.find(st => `ov-${st.container.id}` === sp.containerOverlay.id)?.fullHeight ?? 0), duration: 0.05, ease: 'back.out(1.15)', onUpdate: () => { if (L.renderer?.getRoot() === animRoot) L.renderer.setRoot(L.renderer.getRoot()!); } }, delay);
+    ts.to(sp.containerOverlay, { height: (subTargets.find(st => `ov-${st.container.id}` === sp.containerOverlay.id)?.fullHeight ?? 0), duration: 0.05, ease: 'back.out(1.15)' }, delay);
     for (const rowOv of sp.rowOverlays) {
-      ts.to(rowOv, { y: (rowOv as Box & OverlayMeta)._targetY!, duration: 0.05 + delay * 0.2, ease: 'back.out(1.15)', onUpdate: () => { if (L.renderer?.getRoot() === animRoot) L.renderer.setRoot(L.renderer.getRoot()!); } }, delay);
+      ts.to(rowOv, { y: (rowOv as Box & OverlayMeta)._targetY!, duration: 0.05 + delay * 0.2, ease: 'back.out(1.15)' }, delay);
     }
     for (const sibOv of sp.siblingOverlays) {
-      ts.to(sibOv, { y: (sibOv as Box & OverlayMeta)._targetY!, duration: 0.05, ease: 'back.out(1.15)', onUpdate: () => { if (L.renderer?.getRoot() === animRoot) L.renderer.setRoot(L.renderer.getRoot()!); } }, delay);
+      ts.to(sibOv, { y: (sibOv as Box & OverlayMeta)._targetY!, duration: 0.05, ease: 'back.out(1.15)' }, delay);
     }
   }
 
@@ -760,7 +749,6 @@ function doExpand(hit: Box, hitData: any): void {
     _removeAllOverlays();
     assert(_activeOverlays.length === 0, 'overlays leaked after doExpand');
     _resetAnimTimeline();
-    L.renderer?.setRoot(L.renderer!.getRoot()!);
     // 字符雨：在 overlay 完成后触发
     animateCharRain(container, root, L.renderer, pack.rowOverlays.map(r => (r as Box & OverlayMeta)._targetY as number)).catch(() => {});
     L.endOp();
@@ -778,7 +766,6 @@ function doCollapse(hit: Box, hitData: any): void {
   const root = L.renderer!.getRoot()!;
   const container = findBoxById(root, containerId);
 
-  
   const animRoot = L.renderer!.getRoot()!;
 
   // toggle 旋转动画（在主树上，不是 overlay）
@@ -787,7 +774,6 @@ function doCollapse(hit: Box, hitData: any): void {
       rotate: 0,
       duration: 0.25,
       ease: 'power2.in',
-      onUpdate: () => { if (L.renderer?.getRoot() === animRoot) L.renderer.setRoot(L.renderer.getRoot()!); },
     }, 0);
   }
 
@@ -804,11 +790,6 @@ function doCollapse(hit: Box, hitData: any): void {
       height: 0,
       duration: 0.3,
       ease: 'power2.in',
-      onUpdate: () => {
-        if (L.renderer?.getRoot() !== animRoot) { debugLog(`[collapse] SKIP onUpdate root mismatch`); return; }
-        L.renderer?.setRoot(L.renderer!.getRoot()!);
-      },
-      onStart: () => { debugLog(`[collapse] tween START height=${pack!.containerOverlay.height}`); },
     }, 0);
 
     // 兄弟 overlay: y → _targetY
@@ -817,10 +798,6 @@ function doCollapse(hit: Box, hitData: any): void {
         y: (sibOv as Box & OverlayMeta)._targetY!,
         duration: 0.3,
         ease: 'power2.in',
-        onUpdate: () => {
-          if (L.renderer?.getRoot() !== animRoot) return;
-          L.renderer?.setRoot(L.renderer!.getRoot()!);
-        },
       }, 0);
     }
   }
