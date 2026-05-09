@@ -112,9 +112,10 @@ function _createVisualClone(
   if (src.transform) {
     clone.transform = { ...src.transform };
   }
-  // 递归克隆子 Box（行 overlay 不克隆 label — 文字由字符雨提供）
+  // 递归克隆子 Box（行 overlay 不克隆 label/toggle — 文字和三角由字符雨提供）
+  // 兄弟 overlay 需要克隆全部子元素（兄弟没有字符雨）
   for (const child of src.children) {
-    if (child.id?.startsWith('toggle-') || (cloneLabel && child.id?.startsWith('label-'))) {
+    if (cloneLabel) {
       const childClone = new Box({
         x: child.x,
         y: child.y,

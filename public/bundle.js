@@ -10893,7 +10893,7 @@
     return result;
   }
   function _createVisualClone(src, overrides, cloneLabel = false) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j;
     const clone = new Box({
       x: (_a = overrides == null ? void 0 : overrides.x) != null ? _a : src.x,
       y: (_b = overrides == null ? void 0 : overrides.y) != null ? _b : src.y,
@@ -10921,13 +10921,13 @@
       clone.transform = { ...src.transform };
     }
     for (const child of src.children) {
-      if (((_j = child.id) == null ? void 0 : _j.startsWith("toggle-")) || cloneLabel && ((_k = child.id) == null ? void 0 : _k.startsWith("label-"))) {
+      if (cloneLabel) {
         const childClone = new Box({
           x: child.x,
           y: child.y,
           width: child.width,
           height: child.height,
-          opacity: (_l = child.opacity) != null ? _l : 1,
+          opacity: (_j = child.opacity) != null ? _j : 1,
           visible: child.visible,
           backgroundColor: child.backgroundColor || "transparent",
           interactive: false,
