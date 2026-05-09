@@ -10892,8 +10892,8 @@
     }
     return result;
   }
-  function _createVisualClone(src, overrides) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k;
+  function _createVisualClone(src, overrides, cloneLabel = false) {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l;
     const clone = new Box({
       x: (_a = overrides == null ? void 0 : overrides.x) != null ? _a : src.x,
       y: (_b = overrides == null ? void 0 : overrides.y) != null ? _b : src.y,
@@ -10921,13 +10921,13 @@
       clone.transform = { ...src.transform };
     }
     for (const child of src.children) {
-      if ((_j = child.id) == null ? void 0 : _j.startsWith("toggle-")) {
+      if (((_j = child.id) == null ? void 0 : _j.startsWith("toggle-")) || cloneLabel && ((_k = child.id) == null ? void 0 : _k.startsWith("label-"))) {
         const childClone = new Box({
           x: child.x,
           y: child.y,
           width: child.width,
           height: child.height,
-          opacity: (_k = child.opacity) != null ? _k : 1,
+          opacity: (_l = child.opacity) != null ? _l : 1,
           visible: child.visible,
           backgroundColor: child.backgroundColor || "transparent",
           interactive: false,
@@ -10970,7 +10970,7 @@
     const hiddenSiblings = [];
     const siblings = _collectSiblingsAfter(container);
     for (const sib of siblings) {
-      const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || "sib"}`, y: sib.y - fullHeight, opacity: 1, zIndex: OVERLAY_Z });
+      const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || "sib"}`, y: sib.y - fullHeight, opacity: 1, zIndex: OVERLAY_Z }, true);
       sibOv._targetY = sib.y;
       _addOverlay(sibOv);
       const si = parent.children.indexOf(sib);
@@ -11007,7 +11007,7 @@
     const hiddenSiblings = [];
     const siblings = _collectSiblingsAfter(container);
     for (const sib of siblings) {
-      const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || "sib"}`, y: sib.y, opacity: 1, zIndex: OVERLAY_Z });
+      const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || "sib"}`, y: sib.y, opacity: 1, zIndex: OVERLAY_Z }, true);
       sibOv._targetY = sib.y - fullH;
       _addOverlay(sibOv);
       const si = parent.children.indexOf(sib);

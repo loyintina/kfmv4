@@ -83,6 +83,8 @@ function _collectSiblingsAfter(container: Box): Box[] {
 function _createVisualClone(
   src: Box,
   overrides?: Partial<{ x: number; y: number; width: number; height: number; opacity: number; zIndex: number; visible: boolean; id: string }>,
+  /** 是否克隆 label 子元素。行 overlay 不克隆（文字由字符雨提供），兄弟 overlay 需要克隆 */
+  cloneLabel = false,
 ): Box {
   const clone = new Box({
     x: overrides?.x ?? src.x,
@@ -110,9 +112,9 @@ function _createVisualClone(
   if (src.transform) {
     clone.transform = { ...src.transform };
   }
-  // 递归克隆子 Box（只克隆 toggle 图标，不克隆 label — 文字由字符雨提供）
+  // 递归克隆子 Box（行 overlay 不克隆 label — 文字由字符雨提供）
   for (const child of src.children) {
-    if (child.id?.startsWith('toggle-')) {
+    if (child.id?.startsWith('toggle-') || (cloneLabel && child.id?.startsWith('label-'))) {
       const childClone = new Box({
         x: child.x,
         y: child.y,
@@ -183,7 +185,7 @@ function _setupExpandOverlays(container: Box, fullHeight: number): OverlayPack {
   const hiddenSiblings: Box[] = [];
   const siblings = _collectSiblingsAfter(container);
   for (const sib of siblings) {
-    const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || 'sib'}`, y: sib.y - fullHeight, opacity: 1, zIndex: OVERLAY_Z });
+    const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || 'sib'}`, y: sib.y - fullHeight, opacity: 1, zIndex: OVERLAY_Z }, true);
     (sibOv as Box & OverlayMeta)._targetY = sib.y;  // terminal position
     _addOverlay(sibOv);
     const si = parent.children.indexOf(sib);
@@ -231,7 +233,7 @@ function _setupCollapseOverlays(container: Box, fullH: number): OverlayPack {
   const hiddenSiblings: Box[] = [];
   const siblings = _collectSiblingsAfter(container);
   for (const sib of siblings) {
-    const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || 'sib'}`, y: sib.y, opacity: 1, zIndex: OVERLAY_Z });
+    const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || 'sib'}`, y: sib.y, opacity: 1, zIndex: OVERLAY_Z }, true);
     (sibOv as Box & OverlayMeta)._targetY = sib.y - fullH;
     _addOverlay(sibOv);
     const si = parent.children.indexOf(sib);
