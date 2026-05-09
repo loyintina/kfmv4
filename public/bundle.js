@@ -10944,6 +10944,7 @@
     return clone;
   }
   function _setupExpandOverlays(container, fullHeight) {
+    var _a;
     const parent = container.parent;
     const ci = parent.children.indexOf(container);
     const containerOv = _createVisualClone(container, { id: `ov-${container.id || "container"}`, height: 0, opacity: 1, zIndex: OVERLAY_Z });
@@ -10956,6 +10957,7 @@
     for (let j = 0; j < container.children.length; j++) {
       const child = container.children[j];
       if (!child.visible) continue;
+      if ((_a = child.id) == null ? void 0 : _a.startsWith("expanded-")) continue;
       const expandedY = origYs ? origYs[j] : child.y;
       const collapsedY = expandedY - fullHeight;
       const rowOv = _createVisualClone(child, { id: child.id || `row-${j}`, y: collapsedY, opacity: 1, zIndex: OVERLAY_Z + 1 });
@@ -10983,6 +10985,7 @@
     return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenSiblings, hiddenChildren };
   }
   function _setupCollapseOverlays(container, fullH) {
+    var _a;
     const parent = container.parent;
     const ci = parent.children.indexOf(container);
     const containerOv = _createVisualClone(container, { id: `ov-${container.id || "container"}`, height: fullH, opacity: 1, zIndex: OVERLAY_Z });
@@ -10996,6 +10999,7 @@
     for (let j = 0; j < container.children.length; j++) {
       const child = container.children[j];
       if (!child.visible) continue;
+      if ((_a = child.id) == null ? void 0 : _a.startsWith("expanded-")) continue;
       const rowOv = _createVisualClone(child, { id: child.id || `row-${j}`, y: child.y, opacity: 1, zIndex: OVERLAY_Z + 1 });
       _addOverlay(rowOv);
       containerOv.addChild(rowOv);
@@ -11393,7 +11397,8 @@
         return st.container.id === ((_a2 = sp.containerOverlay.id) == null ? void 0 : _a2.replace("ov-expanded-", "expanded-"));
       })) == null ? void 0 : _a.level) != null ? _b : 1;
       const delay = subLevel * 0.06;
-      ts.to(sp.containerOverlay, { height: sp.containerOverlay.height === 0 ? (_d = (_c = subTargets.find((st) => `ov-${st.container.id}` === sp.containerOverlay.id)) == null ? void 0 : _c.fullHeight) != null ? _d : sp.containerOverlay.height : sp.containerOverlay.height, duration: 0.05, ease: "back.out(1.15)" }, delay);
+      const targetHeight = sp.containerOverlay.height === 0 ? (_d = (_c = subTargets.find((st) => `ov-${st.container.id}` === sp.containerOverlay.id)) == null ? void 0 : _c.fullHeight) != null ? _d : sp.containerOverlay.height : sp.containerOverlay.height;
+      ts.to(sp.containerOverlay, { height: targetHeight, duration: 0.05, ease: "back.out(1.15)" }, delay);
       for (const rowOv of sp.rowOverlays) {
         ts.to(rowOv, { y: rowOv._targetY, duration: 0.05, ease: "back.out(1.15)" }, delay);
       }

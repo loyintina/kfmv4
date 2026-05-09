@@ -163,12 +163,15 @@ function _setupExpandOverlays(container: Box, fullHeight: number): OverlayPack {
   containerOv.parent = parent;
 
   // 2. 行 overlay（FROM=折叠态 y，TO=终端态 y，从元数据计算）
+  //    注意：跳过已展开的子容器（expanded-*），它们由独立的 setupExpandOverlays 处理
   const rowOverlays: Box[] = [];
   const hiddenChildren: Box[] = [];
   const origYs = (container as Box & OverlayMeta)._origYs as number[] | undefined;
   for (let j = 0; j < container.children.length; j++) {
     const child = container.children[j];
     if (!child.visible) continue;
+    // 跳过已展开的子容器 — 它们有自己的 overlay，不能被隐藏
+    if (child.id?.startsWith('expanded-')) continue;
     const expandedY = origYs ? origYs[j] : child.y;   // terminal (expanded) Y
     const collapsedY = expandedY - fullHeight;         // computed collapsed Y
     const rowOv = _createVisualClone(child, { id: child.id || (`row-${j}`), y: collapsedY, opacity: 1, zIndex: OVERLAY_Z + 1 });
@@ -215,12 +218,14 @@ function _setupCollapseOverlays(container: Box, fullH: number): OverlayPack {
   debugLog(`[collapse] setup path=${container.id} fullH=${fullH} overflow=${containerOv.overflow} height=${containerOv.height} borderRadius=${containerOv.borderRadius} parent=${parent.id}`);
 
   // 2. 行 overlay：固定在展开态 y，不单独做 Y 动画。
-  // 容器 overlay 收缩时 overflow:hidden 自然裁掉它们，无需行自己动。
+  //    注意：跳过已展开的子容器（expanded-*），它们由独立的 setupCollapseOverlays 处理
   const rowOverlays: Box[] = [];
   const hiddenChildren: Box[] = [];
   for (let j = 0; j < container.children.length; j++) {
     const child = container.children[j];
     if (!child.visible) continue;
+    // 跳过已展开的子容器 — 它们有自己的 overlay，不能被隐藏
+    if (child.id?.startsWith('expanded-')) continue;
     const rowOv = _createVisualClone(child, { id: child.id || (`row-${j}`), y: child.y, opacity: 1, zIndex: OVERLAY_Z + 1 });
     _addOverlay(rowOv);
     containerOv.addChild(rowOv);
@@ -718,7 +723,10 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
   for (const sp of subPacks) {
     const subLevel = subTargets.find(st => st.container.id === sp.containerOverlay.id?.replace('ov-expanded-', 'expanded-'))?.level ?? 1;
     const delay = subLevel * 0.06;
-    ts.to(sp.containerOverlay, { height: sp.containerOverlay.height === 0 ? (subTargets.find(st => `ov-${st.container.id}` === sp.containerOverlay.id)?.fullHeight ?? sp.containerOverlay.height) : sp.containerOverlay.height, duration: 0.05, ease: 'back.out(1.15)' }, delay);
+    const targetHeight = sp.containerOverlay.height === 0
+      ? (subTargets.find(st => `ov-${st.container.id}` === sp.containerOverlay.id)?.fullHeight ?? sp.containerOverlay.height)
+      : sp.containerOverlay.height;
+    ts.to(sp.containerOverlay, { height: targetHeight, duration: 0.05, ease: 'back.out(1.15)' }, delay);
     for (const rowOv of sp.rowOverlays) {
       ts.to(rowOv, { y: (rowOv as Box & OverlayMeta)._targetY!, duration: 0.05, ease: 'back.out(1.15)' }, delay);
     }
