@@ -552,7 +552,7 @@ function processClickQueue(): void {
         clickQueue.dequeue();
         moveCursorTo(hit);
         _scrollToCenterCursor();
-        processClickQueue();  // 继续处理下一个
+        setTimeout(processClickQueue, 0);  // 推迟到下一轮事件循环，防栈溢出
         return;
       }
       
@@ -606,7 +606,7 @@ function processClickQueue(): void {
     }
   }
   // 非动画操作，继续处理队列
-  processClickQueue();
+  setTimeout(processClickQueue, 0);
 }
 
 /** 用户点击触发的展开：先调 onTap 触发状态变更 + rebuildTree，再执行动画 */

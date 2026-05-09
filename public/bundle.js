@@ -11224,7 +11224,7 @@
           dequeue();
           moveCursorTo(hit);
           _scrollToCenterCursor();
-          processClickQueue();
+          setTimeout(processClickQueue, 0);
           return;
         }
         const tgt = _findClickPath(r, next.offsetX, next.offsetY + sy);
@@ -11272,7 +11272,7 @@
         break;
       }
     }
-    processClickQueue();
+    setTimeout(processClickQueue, 0);
   }
   function doExpand(hit, hitData) {
     var _a;
