@@ -26,14 +26,17 @@ npm run dev      # ts-node ESM 模式直接运行
 ```
 CLAUDE.md                          # 主文档（本文件）
 docs/
-├── REFACTOR_THESIS_FULL.md        # 愿景 + 架构蓝图
-├── AI_OPERATION_PROTOCOL.md       # AI 操作协议（未来功能）
-├── STACK_CARDS_DESIGN.md          # 堆叠卡片配色设计
-├── CARD-STACK-HANDOFF.md          # 卡片面板交接笔记
+├── HANDOFF_AUDIT.md               # 项目交接 + 代码审计结论（新接手必读）
+├── STACK_CARDS_DESIGN.md          # 堆叠卡片配色设计（暮光/琉璃/星云）
 ├── BUG_FIXING_PHILOSOPHY.md       # Bug 修复原则 + 架构审计
 └── archive/
+    ├── CLAUDE_v2.md               # 上一版 CLAUDE（已合并）
     ├── RACE_CONDITION_PLAN.md     # P1-P5 竞态方案（已完成）
-    └── CLAUDE_v2.md               # 上一版 CLAUDE（已合并）
+    ├── REFACTOR_THESIS_FULL.md    # 愿景 + 架构蓝图（大部分已过时）
+    ├── AI_OPERATION_PROTOCOL.md   # AI 操作协议（未实现功能设计）
+    ├── CARD-STACK-HANDOFF.md      # 卡片面板交接笔记（已完成）
+    ├── BUG_HANDOFF_ROOT_CHAR_RAIN.md  # 字符雨 bug 交接（已修复）
+    └── HANDOFF_P3_REMAINING.md    # P3 遗留任务单（任务已完成）
 ```
 
 ## 目录结构
