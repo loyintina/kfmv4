@@ -223,3 +223,172 @@ npm run build   # 构建通过
 | **卡片堆叠交接存档** | `docs/archive/CARD-STACK-HANDOFF.md` | 历史 | 任务性交接（已完成） |
 | **字符雨 bug 存档** | `docs/archive/BUG_HANDOFF_ROOT_CHAR_RAIN.md` | 历史 | 具体 bug 交接 |
 | **P3 遗留存档** | `docs/archive/HANDOFF_P3_REMAINING.md` | 历史 | 具体任务单（已过时） |
+
+---
+
+## 附录 B：对本次审计的独立评审
+
+> 写于 2026-05-09，由另一视角对 HANDOFF_AUDIT.md 的结论和项目现状做交叉验证。
+
+### B.1 代码层面：P3 遗留修复 + 重构评估
+
+**P3 4 个遗留问题修复**（commit `5321e38`）—— ✅ 全部正确
+
+- **问题 #1**（`animateCharRain` 和 `_setupExpandOverlays` 顺序颠倒）：已在 `_unveilOverlaySubContainers` 中修复
+- **问题 #2**（缺少 `rowTargetYs` 参数）：已补传
+- **问题 #3**（doCollapse 双重光标定位）：当前代码已无冗余 `moveCursorTo`，注释清晰
+- **问题 #4**（rebuildTree 裸块）：当前代码已无空 `{}` 块
+
+**展开动画系统重构**（commit `08f6eae`）—— ✅ 架构方向正确
+
+| 改动 | 评估 | 说明 |
+|------|------|------|
+| `_flattenExpandTree` 替代递归 `_unveilOverlaySubContainers` | 优秀 | 100+ 行 async 递归 → 30 行纯函数 |
+| `treeAbort` 整文件删除（-30 行） | 正确 | 不再需要代际令牌，`ts.clear()` 一键清理 |
+| 子容器 staggered delay 并行展开 | 优于原设计 | 串行阻塞 → 层级级联，视觉更流畅 |
+| `_quickHitTest` 双层点击调度 | 有价值的 UX 提升 | 动画期间光标穿透 |
+| 字符雨从展开期间移到完成后触发 | 可接受的设计取舍 | 视觉风格改变，非 bug |
+
+**一个细微遗留**：`FlatSubTarget` 中的 `toggle` 字段（`tree-render.ts` 约 L1005）从未被消费。可删除。
+
+**净变更**：-251 行，类型检查通过，构建通过。
+
+---
+
+### B.2 审计结论评审（逐条评估）
+
+#### ✅ 准确且有价值
+
+- **架构概述**（Box 树、注册中心模式、动画系统）—— 完全正确
+- **依赖方向违规**（`canvas-cursor.ts` 导入 `tree-model.ts`）—— 真实存在
+- **动画系统描述**（scope 隔离、overlay 模式）—— 准确
+- **调用链**（`main.ts` 初始化顺序）—— 精确
+- **回归检查清单**（14 条）—— 完整覆盖
+- **已知陷阱**（Canvas `clientWidth=0`、事件冒泡、动画锁超时）—— 都是真实坑点
+
+#### ⚠️ 存在偏差或需商榷
+
+**1. 服务端路径遍历漏洞标为 P0/严重**
+
+路径校验缺失是事实。但对于一个**个人移动端工作台**，绑定 `0.0.0.0` 且无认证是常见模式——攻击者需要先连接到同网络。建议降为 P2/P3，在功能稳定后再处理。
+
+**2. "零自动化测试"**
+
+审计称"整个项目唯一的测试是 npm run check"，但 `tests/` 目录已有 16 个回归测试（commit `321e366`、`0c4a9e6`），虽然 mock 脆弱但确实存在。审计未引用测试基础设施，是个遗漏。
+
+**3. "每帧 setRoot 调用过多"列为低优先级问题**
+
+这是 GSAP + Canvas 动画的标准模式——`onUpdate` 回调中调 `setRoot` 触发重新渲染是必要的。与其说是性能问题，不如说是 GSAP Canvas 渲染的固有代价。建议改为"观察"而非"问题"。
+
+**4. `engine/v2/scroll.ts` 标为死代码**
+
+需要确认它不被 `canvas-scroll.ts` 或 `renderer.ts` 间接引用才能断定。仅凭文件存在不能判定为死代码。
+
+#### 🟢 审计遗漏
+
+**5. 两个函数的代码重复**：`triggerExpandAnimation` 和 `doExpand` 在重构后约 60% 代码重复。修其中一个的 bug 时容易漏掉另一个。
+
+**6. `_quickHitTest` 的递归深度**：`processClickQueue` 在光标穿透分支调自身是递归的。0.3 秒动画窗口内实际风险低，但理论上栈可能增长。
+
+---
+
+### B.3 综合意见
+
+本次审计的核心结论（架构风险、改进方向、接手指南）**质量很高**，可作为后续工作的可靠参考。上述偏差主要来自：
+
+1. **个人项目 vs 生产服务的视角差异**（安全优先级偏高）
+2. **未纳入已有测试基础设施的上下文**（测试文件存在但被忽略）
+3. **对 GSAP Canvas 渲染模式的熟悉程度**（`setRoot` 性能评估不够准确）
+
+不影响文档整体价值。
+
+---
+
+## 附录 C：对独立评审的回应
+
+> 写于 2026-05-09，由原审计方对附录 B 的评审做逐条回应。
+
+### C.1 对方说得对的（我接受修正）
+
+**① `FlatSubTarget.toggle` 是死字段** — ✅ 确认无误
+
+`_flattenExpandTree` 第 1001 行费力查找 `toggle` 赋值，但 `triggerExpandAnimation` 和 `doExpand` 中的 `subTargets` 只用到了 `container`、`fullHeight`、`level`。`toggle` 字段和查找逻辑可安全删除（~5 行）。
+
+**② `triggerExpandAnimation` 和 `doExpand` 约 60% 代码重复** — ✅ 确实如此
+
+两者几乎一致，差异仅在于 `doExpand` 开头先调 `hit.gesture!.onTap!()`。应提取公共展开函数。新增至待办列表。
+
+**③ `processClickQueue` 在光标穿透分支递归调用自身** — ✅ 有理论栈风险
+
+第 618 行 `processClickQueue()` 是同帧递归调用。虽然 0.3s 动画窗口内实际风险低，但更安全的做法是改为 `setTimeout(processClickQueue, 0)` 或用循环模式。
+
+**④ `setRoot` 在 onUpdate 中并非总是冗余** — ⚠️ 部分接受
+
+对方说这是 GSAP Canvas 渲染的固有模式。我仔细复查后确认：**确实多数是冗余的** — GSAP 修改 Box 属性后，渲染器的 rAF 循环下一帧自动读取最新值。但有一个例外：当 GSAP 修改的是被 `onUpdate` 中别的代码新创建的 Box 时，需要 `setRoot` 让树感知新对象。**建议改为"观察项"而非"问题"**，这个分类改进我接受。
+
+---
+
+### C.2 对方说得对，但我的立场有部分保留
+
+**⑤ 路径遍历漏洞建议降为 P2/P3** — 部分同意，折中为 **P1**
+
+对方理由（个人项目、需 LAN 访问）合理。但我的判断依据是 `/files/write` 无校验 = 写任意文件（包括 crontab、SSH authorized_keys、覆写 `node_modules/`）。一旦攻击者进入 LAN（Wi-Fi 非加密/访客网络），这就是完整的 RCE。折中方案：**P1** — 不是 P0（不必现在立刻就修），但在功能稳定后第一波安全加固中必须处理。
+
+**⑥ "零自动化测试"表述偏差** — 部分同意
+
+我原文写的是"测试覆盖率低"和"测试基础设施脆弱"，并非"没有测试"。对方指出的 16 个测试确实存在。但公正地说：
+- 16 个测试全部是纯逻辑测试（click-queue、状态机、tree-model 结构）
+- **没有覆盖 UI 交互、动画、手势、Canvas 渲染路径**
+- GSAP mock 语义失真（`tl.call(cb)` 同步执行）
+
+所以修正为：**测试框架存在但覆盖范围窄，mock 层有语义失真。**
+
+---
+
+### C.3 对方理解有偏差的
+
+**⑦ `engine/v2/scroll.ts` 等文件标为死代码需要确认间接引用** — ❌ 已确认为死代码
+
+我做过完整的 import 搜索验证：
+
+| 文件 | 搜索结果 | 结论 |
+|------|---------|------|
+| `engine/v2/scroll.ts` | `ScrollHandler` 只在自身文件内引用。搜索 `import.*scroll\.js` 只命中 `canvas-scroll.ts`（一个完全不同的独立文件） | 100% 死代码 |
+| `engine/v2/gesture.ts` | `detectEdgeTouch`、`SlideState` 等函数零外部引用 | 100% 死代码 |
+| `engine/v2/GestureRecognizer.ts` | 零外部引用 | 100% 死代码 |
+
+仅凭文件存在不能判定死代码 — 这个原则正确。但我做了引用搜索，结论可靠。
+
+**⑧ "`setRoot` 是必要的，因为 GSAP 修改属性后要触发重渲染"** — ❌ 理解偏差
+
+这个判断混淆了两个机制：
+- **触发重渲染**：渲染器的 rAF 循环（`_render` → `_tickAndRender`）无论是否调用 `setRoot`，**每帧都在运行**。它自动读取 Box 的最新属性值。
+- **`setRoot` 的作用**：替换整个根 Box 引用。当 GSAP 修改的是树上**已有** Box 的属性时，无需 `setRoot`，因为 rAF 循环看到的引用没变。
+
+所以 `onUpdate` 中反复调用 `setRoot(root)`（同一个 root 对象）确实多数是冗余的。但对方说的"固有代价"在某些边界场景成立：比如 char-rain 创建的新字符 Box 需要通过 `setRoot` 让渲染器感知。
+
+---
+
+### C.4 对方指明了我漏掉的问题
+
+**⑨ `FlatSubTarget.toggle` 死字段** — ✅ 已确认，拟删除
+**⑩ `triggerExpandAnimation` / `doExpand` 重复** — ✅ 已确认，拟提取公共函数
+**⑪ `processClickQueue` 递归** — ✅ 已确认，拟改为非递归
+
+---
+
+### C.5 综合回应
+
+本次独立评审的质量很高——它找到了附录 B 中的渲染问题（commit hash 丢失）、指出了一个我漏掉的死字段、提供了"个人项目 vs 生产服务"的视角矫正。
+
+最值得采纳的改进建议：
+
+| 建议 | 处理 |
+|------|------|
+| 引入"观察项"分类替代部分"低优先级问题" | 已采纳，将 `setRoot` 改为观察项 |
+| 路径遍历漏洞降为 P1 | 折中采纳 |
+| 测试描述修正"零测试"→"覆盖范围窄" | 已采纳 |
+| `FlatSubTarget.toggle` 死字段删除 | 拟执行 |
+| `processClickQueue` 栈风险 | 拟改为非递归 |
+
+独立的跨视角评审对这类审计工作的质量提升非常有价值。
