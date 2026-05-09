@@ -89,18 +89,28 @@ function _buildAndSetOverlayTree(
   subPacks: OverlayPack[],
   root: Box,
 ): void {
+  // === 关键修复：overlayRoot 的位置 ===
+  // overlay 树是扁平的（overlayRoot → 直接子节点），
+  // 但主树的容器和兄弟位于 rootedContainer 等中间祖先节点之下（有 x 偏移）。
+  // 捕获扣除 overlay 自身的 x/y 后的祖先偏移，赋给 overlayRoot，
+  // 这样 overlayRoot 下的直接子节点自动获得正确的绝对位置。
+  const topAbs = pack.containerOverlay.getAbsolutePosition();
+  const parentOffX = topAbs.x - pack.containerOverlay.x;
+  const parentOffY = topAbs.y - pack.containerOverlay.y;
+
   const overlayRoot = new Box({
     id: 'overlay-root',
-    x: root.x, y: root.y,
+    x: parentOffX, y: parentOffY,
     width: root.width, height: root.height,
     scrollY: root.scrollY ?? 0,
-    scrollable: false,
+    scrollable: true,   // 与主树 rootBox 一致，让 renderer 应用 scroll 偏移
     opacity: 1,
     visible: true,
     backgroundColor: 'transparent',
   });
 
   // Top-level: container overlay + sibling overlays → direct children of overlayRoot
+  // overlayRoot 已有正确的祖先偏移，直接子的 x/y 保持相对值即可
   overlayRoot.addChild(pack.containerOverlay);
   for (const sibOv of pack.siblingOverlays) {
     overlayRoot.addChild(sibOv);

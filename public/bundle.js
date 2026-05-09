@@ -10489,14 +10489,18 @@
   }
   function _buildAndSetOverlayTree(pack, subTargets, subPacks, root) {
     var _a, _b, _c, _d;
+    const topAbs = pack.containerOverlay.getAbsolutePosition();
+    const parentOffX = topAbs.x - pack.containerOverlay.x;
+    const parentOffY = topAbs.y - pack.containerOverlay.y;
     const overlayRoot = new Box({
       id: "overlay-root",
-      x: root.x,
-      y: root.y,
+      x: parentOffX,
+      y: parentOffY,
       width: root.width,
       height: root.height,
       scrollY: (_a = root.scrollY) != null ? _a : 0,
-      scrollable: false,
+      scrollable: true,
+      // 与主树 rootBox 一致，让 renderer 应用 scroll 偏移
       opacity: 1,
       visible: true,
       backgroundColor: "transparent"
