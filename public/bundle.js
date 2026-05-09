@@ -803,6 +803,11 @@
       KFMState.unsubscribe(fn);
     }
   };
+  var SHIFT_TABLE = [18, 16, 14, 12, 10, 9, 8, 7, 6, 5, 4, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2];
+  function getShift(depth) {
+    var _a;
+    return (_a = SHIFT_TABLE[depth]) != null ? _a : 2;
+  }
   function createBox(templateName, overrides) {
     if (!templates[templateName]) {
       console.warn(`[style-registry] unknown template: "${templateName}"`);
@@ -3990,11 +3995,6 @@
   }
 
   // src/client/modules/tree-model.ts
-  var SHIFT_TABLE = [18, 16, 14, 12, 10, 9, 8, 7, 6, 5, 4, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2];
-  function getShift(depth) {
-    var _a;
-    return (_a = SHIFT_TABLE[depth]) != null ? _a : 2;
-  }
   var T_OFF = 12;
   var TXT_L = 26;
   function absX(d) {

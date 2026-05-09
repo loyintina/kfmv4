@@ -4,7 +4,7 @@
 
 import { Box } from '../engine/v2/box.js';
 import { KFMState, type FileNode } from './state.js';
-import { DIMENSIONS, COLORS, TEXT_STYLES, getFileColor, createBox, LINE_HEIGHT, MAX_LINES, FONT } from './style-registry.js';
+import { DIMENSIONS, COLORS, TEXT_STYLES, getFileColor, createBox, LINE_HEIGHT, MAX_LINES, FONT, getShift } from './style-registry.js';
 import { DIMENSIONS as D } from './style-registry.js';
 import { resolveStyle } from '../engine/v2/StyleConfig.js';
 import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
@@ -29,8 +29,6 @@ interface BuildCtx {
   rightMargin: number;
 }
 
-const SHIFT_TABLE = [18, 16, 14, 12, 10, 9, 8, 7, 6, 5, 4, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2];
-export function getShift(depth: number): number { return SHIFT_TABLE[depth] ?? 2; }
 const T_OFF = 12;
 const TXT_L = 26;
 

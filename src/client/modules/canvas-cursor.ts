@@ -20,9 +20,8 @@ import { L } from './renderer-lifecycle.js';
 import { DOM } from './dom-refs.js';
 import { getRootScrollY, setRootScrollY, _rebuildRowIndex, findBoxById } from './canvas-utils.js';
 import { anim } from './animation-registry.js';
-import { getShift } from './tree-model.js';
+import { getShift, LINE_HEIGHT, MAX_LINES } from './style-registry.js';
 import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
-import { LINE_HEIGHT, MAX_LINES } from './style-registry.js';
 
 export function getSession(): number { return L._sessionId; }
 
