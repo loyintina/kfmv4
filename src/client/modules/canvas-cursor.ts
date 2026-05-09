@@ -21,6 +21,7 @@ import { DOM } from './dom-refs.js';
 import { getRootScrollY, setRootScrollY, _rebuildRowIndex, findBoxById } from './canvas-utils.js';
 import { anim } from './animation-registry.js';
 import { getShift, LINE_HEIGHT, MAX_LINES } from './style-registry.js';
+import { getFileRowData } from './state.js';
 import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
 
 export function getSession(): number { return L._sessionId; }
@@ -66,7 +67,7 @@ export function moveCursorTo(hitBox: Box, animate = true): void {
   } catch { return; }
   const canvas = DOM.treeCanvas;
 
-  const depth = (hitBox as any).data?.depth ?? 0;
+  const depth = getFileRowData(hitBox.data)?.depth ?? 0;
   const shift = getShift(depth);
   const offsetX = shift / 2;
 

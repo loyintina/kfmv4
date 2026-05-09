@@ -532,7 +532,7 @@ export class Renderer {
   }
   private _drawBorder(box: Box, b: Rect): void {
     // 优先使用 kfmStyle（高级边框）
-    const cdata = (box as any).data;
+    const cdata = box.data;
     if (cdata?.cursorDynamicLines) {
       this._drawCursorBorder(b, cdata);
       return;

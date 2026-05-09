@@ -124,6 +124,27 @@ export const KFMState: KFMStateType = {
   }
 };
 
+// ============================================================
+// 文件行业务数据类型（替代 (as any).data 模式）
+// ============================================================
+
+/** 文件树中每行的 data 类型 */
+export interface FileRowData {
+  path: string;
+  isDir: boolean;
+  isExpanded?: boolean;  // 仅文件夹行有
+  depth: number;
+  lineCount: number;
+}
+
+/** 从 Box.data 中安全读取 FileRowData */
+export function getFileRowData(d: Record<string, unknown>): FileRowData | null {
+  if (typeof d.path === 'string' && typeof d.isDir === 'boolean') {
+    return d as unknown as FileRowData;
+  }
+  return null;
+}
+
 // 挂载到 window 供跨模块访问
 declare global {
   interface Window {

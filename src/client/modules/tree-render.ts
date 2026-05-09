@@ -7,7 +7,7 @@
  */
 
 import { buildSidebarTree } from './tree-model.js';
-import { KFMState } from './state.js';
+import { KFMState, getFileRowData, type FileRowData } from './state.js';
 import { anim } from './animation-registry.js';
 import { animateCharRain, killActiveCharRain } from "./char-rain.js";
 import { closeSidebar } from './ui.js';
@@ -472,7 +472,8 @@ function _createSidebarTouchArea(): void {
     const idx = getCursorRowIndex();
     if (idx < 0 || !L._rowIndex[idx]) return;
     const hit = L._rowIndex[idx]!;
-    const hitData = (hit as any).data || {};
+    const hitData = getFileRowData(hit.data);
+    if (!hitData) return;
     if (hitData.isDir) {
       if (hitData.isExpanded) { doCollapse(hit, hitData); }
       else { doExpand(hit, hitData); }
@@ -512,8 +513,8 @@ function _findClickPath(root: Box, px: number, py: number): string | null {
     if (!child.visible || child.disabled) continue;
     const hit = findTapTarget(child, px, py);
     if (hit) {
-      const d = (hit as any).data || {};
-      return d.path || null;
+      const d = getFileRowData(hit.data);
+      return d?.path || null;
     }
   }
   return null;
@@ -583,7 +584,8 @@ function processClickQueue(): void {
     if (hit?.gesture?.onTap) {
       // 光标逻辑：第一次点击移动光标，第二次同一行才执行
       if (L.cursorRowId !== null && L.cursorRowId === hit.id) {
-        const hitData = (hit as any).data || {};
+        const hitData = getFileRowData(hit.data);
+        if (!hitData) return;
         const isDir = hitData.isDir;
         const isExpanded = hitData.isExpanded;
         if (isDir) {
@@ -610,8 +612,8 @@ function processClickQueue(): void {
 }
 
 /** 用户点击触发的展开：先调 onTap 触发状态变更 + rebuildTree，再执行动画 */
-function doExpand(hit: Box, hitData: Record<string, unknown>): void {
-  L.beginOp(hitData.path as string, 'expand');
+function doExpand(hit: Box, hitData: FileRowData): void {
+  L.beginOp(hitData.path, 'expand');
   hit.gesture!.onTap!();  // KFMState toggle → _stateSub → rebuildTree（终端态）
 
   const root = L.renderer!.getRoot()!;
@@ -645,7 +647,7 @@ function doExpand(hit: Box, hitData: Record<string, unknown>): void {
     return;
   }
 
-  _runExpandAnimation({ container, root, fullHeight, toggle2, path: hitData.path as string, onTap: null });
+  _runExpandAnimation({ container, root, fullHeight, toggle2, path: hitData.path, onTap: null });
 }
 
 /** 展开动画参数的公共接口 */
@@ -724,7 +726,7 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
 }
 
 /** 折叠动画（overlay 模式：GSAP 只碰 overlay Box，不碰主树） */
-function doCollapse(hit: Box, hitData: any): void {
+function doCollapse(hit: Box, hitData: FileRowData): void {
   L.beginOp(hitData.path, 'collapse');
   const tog = hit.children.find(c => c.id?.startsWith('toggle-'));
   const containerId = `expanded-${hitData.path}`;

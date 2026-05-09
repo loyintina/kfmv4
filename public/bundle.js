@@ -67,6 +67,12 @@
       this.notify();
     }
   };
+  function getFileRowData(d) {
+    if (typeof d.path === "string" && typeof d.isDir === "boolean") {
+      return d;
+    }
+    return null;
+  }
   if (typeof window !== "undefined") {
     window.KFMState = KFMState;
   }
@@ -9891,7 +9897,7 @@
       return;
     }
     const canvas = DOM.treeCanvas;
-    const depth = (_h = (_g = hitBox.data) == null ? void 0 : _g.depth) != null ? _h : 0;
+    const depth = (_h = (_g = getFileRowData(hitBox.data)) == null ? void 0 : _g.depth) != null ? _h : 0;
     const shift = getShift(depth);
     const offsetX = shift / 2;
     const rm = ((_i = canvas == null ? void 0 : canvas.clientWidth) != null ? _i : 295) - 8;
@@ -11161,7 +11167,8 @@
       const idx = getCursorRowIndex();
       if (idx < 0 || !L._rowIndex[idx]) return;
       const hit = L._rowIndex[idx];
-      const hitData = hit.data || {};
+      const hitData = getFileRowData(hit.data);
+      if (!hitData) return;
       if (hitData.isDir) {
         if (hitData.isExpanded) {
           doCollapse(hit, hitData);
@@ -11192,8 +11199,8 @@
       if (!child.visible || child.disabled) continue;
       const hit = findTapTarget(child, px, py);
       if (hit) {
-        const d = hit.data || {};
-        return d.path || null;
+        const d = getFileRowData(hit.data);
+        return (d == null ? void 0 : d.path) || null;
       }
     }
     return null;
@@ -11250,7 +11257,8 @@
       const hit = findTapTarget(child, px, py);
       if ((_c = hit == null ? void 0 : hit.gesture) == null ? void 0 : _c.onTap) {
         if (L.cursorRowId !== null && L.cursorRowId === hit.id) {
-          const hitData = hit.data || {};
+          const hitData = getFileRowData(hit.data);
+          if (!hitData) return;
           const isDir = hitData.isDir;
           const isExpanded = hitData.isExpanded;
           if (isDir) {
