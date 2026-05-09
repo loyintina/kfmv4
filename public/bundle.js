@@ -10995,7 +10995,7 @@
     }
   }
   function triggerExpandAnimation(path) {
-    var _a, _b, _c, _d, _e, _f;
+    var _a, _b;
     const root = (_a = L.renderer) == null ? void 0 : _a.getRoot();
     if (!root) return;
     const container = findBoxById(root, `expanded-${path}`);
@@ -11017,56 +11017,13 @@
       }
       return;
     }
-    if (toggle2) {
-      anim.killTweensOf(toggle2.transform);
-      toggle2.transform.rotate = 0;
-    }
-    assert(_activeOverlays.length === 0, "overlays not empty before triggerExpandAnimation");
-    const pack = _setupExpandOverlays(container, fullHeight);
-    const subTargets = _flattenExpandTree(container, 1);
-    const subPacks = subTargets.map((st) => _setupExpandOverlays(st.container, st.fullHeight));
-    L.beginOp(path, "expand");
-    const animRoot = L.renderer.getRoot();
-    ts.to(pack.containerOverlay, { height: fullHeight, duration: 0.05, ease: "back.out(1.15)" }, 0);
-    for (const rowOv of pack.rowOverlays) {
-      ts.to(rowOv, { y: rowOv._targetY, duration: 0.05, ease: "back.out(1.15)" }, 0);
-    }
-    for (const sibOv of pack.siblingOverlays) {
-      ts.to(sibOv, { y: sibOv._targetY, duration: 0.05, ease: "back.out(1.15)" }, 0);
-    }
-    const overlaysToClean = [pack, ...subPacks];
-    for (const sp of subPacks) {
-      const subLevel = (_d = (_c = subTargets.find((st) => {
-        var _a2;
-        return st.container.id === ((_a2 = sp.containerOverlay.id) == null ? void 0 : _a2.replace("ov-expanded-", "expanded-"));
-      })) == null ? void 0 : _c.level) != null ? _d : 1;
-      const delay = subLevel * 0.06;
-      ts.to(sp.containerOverlay, { height: sp.containerOverlay.height === 0 ? (_f = (_e = subTargets.find((st) => `ov-${st.container.id}` === sp.containerOverlay.id)) == null ? void 0 : _e.fullHeight) != null ? _f : sp.containerOverlay.height : sp.containerOverlay.height, duration: 0.05, ease: "back.out(1.15)" }, delay);
-      for (const rowOv of sp.rowOverlays) {
-        ts.to(rowOv, { y: rowOv._targetY, duration: 0.05 + delay * 0.2, ease: "back.out(1.15)" }, delay);
-      }
-      for (const sibOv of sp.siblingOverlays) {
-        ts.to(sibOv, { y: sibOv._targetY, duration: 0.05, ease: "back.out(1.15)" }, delay);
-      }
-    }
-    ts.call(() => {
-      var _a2, _b2;
-      if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
-      for (const op of overlaysToClean) {
-        for (const c of op.hiddenChildren) c.opacity = 1;
-        for (const s of op.hiddenSiblings) s.opacity = 1;
-      }
-      _removeAllOverlays();
-      _resetAnimTimeline();
-      assert(_activeOverlays.length === 0, "overlays leaked after expand");
-      animateCharRain(container, root, L.renderer, pack.rowOverlays.map((r) => r._targetY)).catch(() => {
-      });
-      L.endOp();
-      const _root = (_b2 = L.renderer) == null ? void 0 : _b2.getRoot();
-      if (_root) {
-        _rebuildRowIndex(_root);
-      }
-      processClickQueue();
+    _runExpandAnimation({
+      container,
+      root,
+      fullHeight,
+      toggle2,
+      path,
+      onTap: null
     });
   }
   function isAnimLocked() {
@@ -11318,12 +11275,11 @@
     processClickQueue();
   }
   function doExpand(hit, hitData) {
-    var _a, _b, _c, _d, _e;
+    var _a;
     L.beginOp(hitData.path, "expand");
     hit.gesture.onTap();
     const root = L.renderer.getRoot();
-    const containerId = `expanded-${hitData.path}`;
-    const container = findBoxById(root, containerId);
+    const container = findBoxById(root, `expanded-${hitData.path}`);
     const titleRow = findBoxById(root, `title-${hitData.path}`);
     const toggle2 = (_a = titleRow == null ? void 0 : titleRow.children) == null ? void 0 : _a.find((c) => {
       var _a2;
@@ -11353,14 +11309,20 @@
       }
       return;
     }
+    _runExpandAnimation({ container, root, fullHeight, toggle2, path: hitData.path, onTap: null });
+  }
+  function _runExpandAnimation(params) {
+    var _a, _b, _c, _d;
+    const { container, root, fullHeight, toggle2, path, onTap } = params;
     if (toggle2) {
       anim.killTweensOf(toggle2.transform);
       toggle2.transform.rotate = 0;
     }
-    assert(_activeOverlays.length === 0, "overlays not empty before doExpand");
+    assert(_activeOverlays.length === 0, "overlays not empty before expand");
     const pack = _setupExpandOverlays(container, fullHeight);
     const subTargets = _flattenExpandTree(container, 1);
     const subPacks = subTargets.map((st) => _setupExpandOverlays(st.container, st.fullHeight));
+    L.beginOp(path, "expand");
     const animRoot = L.renderer.getRoot();
     ts.to(pack.containerOverlay, { height: fullHeight, duration: 0.05, ease: "back.out(1.15)" }, 0);
     for (const rowOv of pack.rowOverlays) {
@@ -11371,9 +11333,12 @@
     }
     const overlaysToClean = [pack, ...subPacks];
     for (const sp of subPacks) {
-      const subLevel = (_c = (_b = subTargets.find((st) => `ov-${st.container.id}` === sp.containerOverlay.id)) == null ? void 0 : _b.level) != null ? _c : 1;
+      const subLevel = (_b = (_a = subTargets.find((st) => {
+        var _a2;
+        return st.container.id === ((_a2 = sp.containerOverlay.id) == null ? void 0 : _a2.replace("ov-expanded-", "expanded-"));
+      })) == null ? void 0 : _a.level) != null ? _b : 1;
       const delay = subLevel * 0.06;
-      ts.to(sp.containerOverlay, { height: (_e = (_d = subTargets.find((st) => `ov-${st.container.id}` === sp.containerOverlay.id)) == null ? void 0 : _d.fullHeight) != null ? _e : 0, duration: 0.05, ease: "back.out(1.15)" }, delay);
+      ts.to(sp.containerOverlay, { height: sp.containerOverlay.height === 0 ? (_d = (_c = subTargets.find((st) => `ov-${st.container.id}` === sp.containerOverlay.id)) == null ? void 0 : _c.fullHeight) != null ? _d : sp.containerOverlay.height : sp.containerOverlay.height, duration: 0.05, ease: "back.out(1.15)" }, delay);
       for (const rowOv of sp.rowOverlays) {
         ts.to(rowOv, { y: rowOv._targetY, duration: 0.05 + delay * 0.2, ease: "back.out(1.15)" }, delay);
       }
@@ -11389,8 +11354,8 @@
         for (const s of op.hiddenSiblings) s.opacity = 1;
       }
       _removeAllOverlays();
-      assert(_activeOverlays.length === 0, "overlays leaked after doExpand");
       _resetAnimTimeline();
+      assert(_activeOverlays.length === 0, "overlays leaked after expand");
       animateCharRain(container, root, L.renderer, pack.rowOverlays.map((r) => r._targetY)).catch(() => {
       });
       L.endOp();
@@ -11398,6 +11363,7 @@
       if (_root) {
         _rebuildRowIndex(_root);
       }
+      if (onTap) onTap();
       processClickQueue();
     });
   }
@@ -11545,21 +11511,14 @@
     if (closest) moveCursorTo(closest);
   }
   function _flattenExpandTree(container, level = 0) {
-    var _a, _b, _c, _d;
+    var _a;
     const result = [];
     for (const c of container.children) {
       if (!((_a = c.id) == null ? void 0 : _a.startsWith("expanded-")) || !c.height) continue;
       result.push({
         container: c,
         fullHeight: c.height,
-        level,
-        toggle: (_d = (_c = (_b = c.children.find((ch) => {
-          var _a2;
-          return (_a2 = ch.id) == null ? void 0 : _a2.startsWith("title-");
-        })) == null ? void 0 : _b.children) == null ? void 0 : _c.find((t) => {
-          var _a2;
-          return (_a2 = t.id) == null ? void 0 : _a2.startsWith("toggle-");
-        })) != null ? _d : null
+        level
       });
       result.push(..._flattenExpandTree(c, level + 1));
     }
