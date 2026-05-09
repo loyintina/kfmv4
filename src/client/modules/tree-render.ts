@@ -10,6 +10,8 @@ import { buildSidebarTree } from './tree-model.js';
 import { KFMState, getFileRowData, type FileRowData } from './state.js';
 import { anim } from './animation-registry.js';
 import { setupCharRainTweens, cleanupCharRain, type CharRainCleanup } from "./char-rain.js";
+import { FONT, LINE_HEIGHT, MAX_LINES } from './style-registry.js';
+import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
 import { closeSidebar } from './ui.js';
 import { Renderer } from '../engine/v2/renderer.js';
 import { L } from './renderer-lifecycle.js';
@@ -757,17 +759,16 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
   }, undefined, cleanupDelay);
 }
 
-/** 折叠动画（overlay 模式：GSAP 只碰 overlay Box，不碰主树） */
+/** 折叠动画：与展开对称的正向折叠（字符往回飞 + 盒子缩回 + 兄弟复位） */
 function doCollapse(hit: Box, hitData: FileRowData): void {
   L.beginOp(hitData.path, 'collapse');
-  const tog = hit.children.find(c => c.id?.startsWith('toggle-'));
-  const containerId = `expanded-${hitData.path}`;
   const root = L.renderer!.getRoot()!;
-  const container = findBoxById(root, containerId);
+  const container = findBoxById(root, `expanded-${hitData.path}`);
+  const tog = hit.children.find(c => c.id?.startsWith('toggle-'));
 
   const animRoot = L.renderer!.getRoot()!;
 
-  // toggle 旋转动画（在主树上，不是 overlay）
+  // toggle 旋转回收
   if (tog) {
     ts.to(tog.transform, {
       rotate: 0,
@@ -776,47 +777,240 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
     }, 0);
   }
 
-  let pack: OverlayPack | null = null;
-  if (container) {
-    const fullH = container.height;
-    assert(_activeOverlays.length === 0, 'overlays not empty before doCollapse');
-    pack = _setupCollapseOverlays(container, fullH);
+  if (!container) {
+    L.endOp();
+    hit.gesture!.onTap!();
+    processClickQueue();
+    return;
+  }
 
-    debugLog(`[collapse] anim start path=${hitData.path} fullH=${fullH} containerOv=${pack.containerOverlay.id}`);
+  const fullH = container.height;
+  assert(_activeOverlays.length === 0, 'overlays not empty before doCollapse');
 
-    // 容器 overlay: height fullH → 0
-    ts.to(pack.containerOverlay, {
-      height: 0,
-      duration: 0.3,
-      ease: 'power2.in',
-    }, 0);
+  // 搭建折叠 overlay
+  const pack = _setupCollapseOverlays(container, fullH);
 
-    // 兄弟 overlay: y → _targetY
-    for (const sibOv of pack.siblingOverlays) {
-      ts.to(sibOv, {
-        y: (sibOv as Box & OverlayMeta)._targetY!,
-        duration: 0.3,
-        ease: 'power2.in',
-      }, 0);
+  // 扁平化收集子容器
+  const subTargets = _flattenExpandTree(container, 1);
+  const subPacks = subTargets.map(st => _setupCollapseOverlays(st.container, st.fullHeight));
+  const overlaysToClean: OverlayPack[] = [pack, ...subPacks];
+
+  const maxLevel = subTargets.length > 0 ? Math.max(...subTargets.map(st => st.level)) : 0;
+
+  // 字符雨的 FROM=展开态 Y，TO=屏幕上方（与展开对称，但方向相反）
+  // 展开: initY = screenTop, targetY = expandedY, delay = baseDelay
+  // 折叠: initY = expandedY, targetY = screenTop, delay = collapseCharDelay
+
+  const charRainCleanups: CharRainCleanup[] = [];
+
+  // 收集该容器所有行的展开态 Y 坐标（即当前视觉位置）
+  function collectCollapseCharCleanup(
+    container: Box,
+    baseDelay: number,
+  ): void {
+    const rows = container.children.filter(c => c.id?.startsWith('title-') || c.id?.startsWith('file-'));
+    if (rows.length === 0) return;
+
+    const canvas = DOM.treeCanvas;
+    const ctx = canvas?.getContext('2d');
+    if (!ctx) return;
+
+    // 保存并临时修改 overflow
+    const origOverflow = container.overflow;
+    container.overflow = 'visible';
+    const parentOrigOverflow = container.parent?.overflow;
+    if (container.parent && container.parent.overflow === 'hidden') {
+      container.parent.overflow = 'visible';
+    }
+
+    const charBoxes: Box[] = [];
+    const hiddenLabels: Box[] = [];
+    const hiddenToggles: Box[] = [];
+    const BASE_DUR = 0.22;
+    const scrollY = root.scrollY ?? 0;
+    const absY = container.getAbsolutePosition().y;
+    const topY = scrollY - absY; // 容器空间中的屏幕顶部位置
+
+    for (const row of rows) {
+      const label = row.children.find(c => c.id?.startsWith('label-'));
+      if (!label || !label.textStyle?.content) continue;
+
+      const text = label.textStyle.content;
+      const font = label.textStyle.font || FONT;
+      const color = label.textStyle.color;
+      const lineH = label.textStyle.lineHeight || LINE_HEIGHT;
+      ctx.font = font;
+
+      let layoutLines: { text: string; width: number }[];
+      try {
+        const prepared = prepareWithSegments(text, font);
+        const layout = layoutWithLines(prepared, label.width, lineH);
+        layoutLines = layout.lines;
+      } catch {
+        layoutLines = [{ text, width: ctx.measureText(text).width }];
+      }
+
+      const maxVis = label.textStyle.maxLines || MAX_LINES;
+      const isTrunc = layoutLines.length > maxVis;
+      const visLines = layoutLines.slice(0, maxVis);
+      const totalTextHeight = visLines.length * lineH;
+      const verticalOffset = Math.max(0, (row.height - totalTextHeight) / 2);
+
+      for (let li = 0; li < visLines.length; li++) {
+        const line = visLines[li];
+        let chars: string[];
+        if (li === maxVis - 1 && isTrunc) {
+          chars = [...line.text.slice(0, -1), '\u2026'];
+        } else {
+          chars = [...line.text];
+        }
+        const charWidths = chars.map(ch => ctx.measureText(ch).width);
+
+        let cx = 0;
+        for (let ci = 0; ci < chars.length; ci++) {
+          // FROM = 展开态位置（当前可见位置）
+          const fromX = row.x + label.x + cx;
+          const fromY = row.y + label.y + verticalOffset + li * lineH;
+          // TO = 屏幕上方随机位置
+          const toX = fromX + (Math.random() - 0.5) * 100;
+          const toY = topY - 80 - Math.random() * 140;
+
+          const box = new Box({
+            id: `cc-${row.id}-L${li}-C${ci}`,
+            x: fromX, y: fromY,
+            width: charWidths[ci] + 2, height: lineH,
+            opacity: 1,
+            backgroundColor: 'transparent',
+            interactive: false,
+            zIndex: 99,
+            overflow: 'visible',
+          });
+          box.textStyle = {
+            content: chars[ci], color, font,
+            lineHeight: lineH, align: 'left',
+            verticalAlign: 'middle', overflow: 'visible', maxLines: 1,
+          };
+          container.addChild(box);
+          charBoxes.push(box);
+
+          const randDelay = Math.random() * 0.1 + baseDelay;
+          const randDur = BASE_DUR + Math.random() * 0.06;
+          ts.to(box, {
+            x: toX, y: toY, opacity: 0,
+            duration: randDur,
+            ease: 'back.in(1.05)',
+          }, randDelay);
+
+          cx += charWidths[ci];
+        }
+      }
+
+      // toggle 图标也往回飞
+      const toggleBox = row.children.find(c => c.id?.startsWith('toggle-'));
+      if (toggleBox && toggleBox.textStyle?.content) {
+        const tFont = toggleBox.textStyle.font || font;
+        ctx.font = tFont;
+        const tTargetX = row.x + toggleBox.x;
+        const tTargetY = row.y + toggleBox.y;
+        const tToX = tTargetX + (Math.random() - 0.5) * 100;
+        const tToY = topY - 80 - Math.random() * 140;
+
+        const tBox = new Box({
+          id: `cc-${row.id}-toggle`,
+          x: tTargetX, y: tTargetY,
+          width: toggleBox.width, height: toggleBox.height || LINE_HEIGHT,
+          opacity: 1,
+          backgroundColor: 'transparent',
+          interactive: false, zIndex: 99, overflow: 'visible',
+        });
+        tBox.textStyle = { ...toggleBox.textStyle, overflow: 'visible', maxLines: 1 };
+        container.addChild(tBox);
+        charBoxes.push(tBox);
+
+        const tRandDelay = Math.random() * 0.1 + baseDelay;
+        const tRandDur = BASE_DUR + Math.random() * 0.06;
+        ts.to(tBox, {
+          x: tToX, y: tToY, opacity: 0,
+          duration: tRandDur,
+          ease: 'back.in(1.05)',
+        }, tRandDelay);
+      }
+
+      // 隐藏原始 label 和 toggle
+      const labelBox = row.children.find(c => c.id?.startsWith('label-'));
+      if (labelBox) { labelBox.visible = false; hiddenLabels.push(labelBox); }
+      const toggleHider = row.children.find(c => c.id?.startsWith('toggle-'));
+      if (toggleHider) { toggleHider.visible = false; hiddenToggles.push(toggleHider); }
+    }
+
+    if (charBoxes.length > 0) {
+      charRainCleanups.push({
+        container, charBoxes, hiddenLabels, hiddenToggles,
+        origOverflow, parentOrigOverflow,
+      });
     }
   }
 
-  const maxDur = container ? 0.3 : (tog ? 0.25 : 0);
+  // 本层字符往回飞 @ 0（最深层的延迟基数为 0）
+  // 实际：最深层的字符 tween delay = maxLevel * 0.06（与展开时最深层一致）
+  // 但因为展开时最深层 delay 最大，折叠时最深层先从 0 开始
+  // 这样折叠时最深层的字符最先往回飞，最外层的最后飞
+  const collapseBaseDelay = maxLevel * 0.06;
+  collectCollapseCharCleanup(container, collapseBaseDelay);
+
+  for (const sp of subPacks) {
+    const subLevel = subTargets.find(st => st.container.id === sp.containerOverlay.id?.replace('ov-expanded-', 'expanded-'))?.level ?? 1;
+    const delay = collapseBaseDelay - subLevel * 0.06;
+    const realContainer = subTargets.find(st => `ov-${st.container.id}` === sp.containerOverlay.id)?.container;
+    if (realContainer) {
+      collectCollapseCharCleanup(realContainer, delay);
+    }
+  }
+
+  // overlay tween（从外到内：最外层先开始缩）
+  // 最外层 box 在字符飞了 0.29s 后开始缩
+  const boxStartDelay = collapseBaseDelay ? collapseBaseDelay - 0.06 + 0.29 : 0.29;
+  ts.to(pack.containerOverlay, {
+    height: 0,
+    duration: 0.05,
+    ease: 'power2.in',
+  }, boxStartDelay);
+  for (const sibOv of pack.siblingOverlays) {
+    ts.to(sibOv, {
+      y: (sibOv as Box & OverlayMeta)._targetY!,
+      duration: 0.05,
+      ease: 'power2.in',
+    }, boxStartDelay);
+  }
+
+  for (const sp of subPacks) {
+    const subLevel = subTargets.find(st => st.container.id === sp.containerOverlay.id?.replace('ov-expanded-', 'expanded-'))?.level ?? 1;
+    const delay = boxStartDelay + subLevel * 0.06;
+    ts.to(sp.containerOverlay, { height: 0, duration: 0.05, ease: 'power2.in' }, delay);
+    for (const sibOv of sp.siblingOverlays) {
+      ts.to(sibOv, {
+        y: (sibOv as Box & OverlayMeta)._targetY!,
+        duration: 0.05, ease: 'power2.in',
+      }, delay);
+    }
+  }
+
+  // cleanup
+  const cleanupDelay = boxStartDelay + maxLevel * 0.06 + 0.05;
   ts.call(() => {
     if (L.renderer?.getRoot() !== animRoot) return;
+    for (const op of overlaysToClean) {
+      for (const c of op.hiddenChildren) c.opacity = 1;
+      for (const s of op.hiddenSiblings) s.opacity = 1;
+    }
+    for (const cu of charRainCleanups) cleanupCharRain(cu);
     _removeAllOverlays();
     assert(_activeOverlays.length === 0, 'overlays leaked after doCollapse');
     _resetAnimTimeline();
-    if (pack) {
-      for (const c of pack.hiddenChildren) c.opacity = 1;
-      for (const s of pack.hiddenSiblings) s.opacity = 1;
-    }
     L.endOp();
-    // onTap 内部的 rebuildTree 已处理光标定位，无需重复恢复
     hit.gesture!.onTap!();
     processClickQueue();
-  }, undefined, maxDur);
-
+  }, undefined, cleanupDelay);
 }
 
 function findTapTarget(box: Box, px: number, py: number): Box | null {

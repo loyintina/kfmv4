@@ -11374,14 +11374,14 @@
     }, void 0, cleanupDelay);
   }
   function doCollapse(hit, hitData) {
+    var _a, _b, _c, _d, _e;
     L.beginOp(hitData.path, "collapse");
-    const tog = hit.children.find((c) => {
-      var _a;
-      return (_a = c.id) == null ? void 0 : _a.startsWith("toggle-");
-    });
-    const containerId = `expanded-${hitData.path}`;
     const root = L.renderer.getRoot();
-    const container = findBoxById(root, containerId);
+    const container = findBoxById(root, `expanded-${hitData.path}`);
+    const tog = hit.children.find((c) => {
+      var _a2;
+      return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
+    });
     const animRoot = L.renderer.getRoot();
     if (tog) {
       ts.to(tog.transform, {
@@ -11390,40 +11390,239 @@
         ease: "power2.in"
       }, 0);
     }
-    let pack = null;
-    if (container) {
-      const fullH = container.height;
-      assert(_activeOverlays.length === 0, "overlays not empty before doCollapse");
-      pack = _setupCollapseOverlays(container, fullH);
-      debugLog(`[collapse] anim start path=${hitData.path} fullH=${fullH} containerOv=${pack.containerOverlay.id}`);
-      ts.to(pack.containerOverlay, {
-        height: 0,
-        duration: 0.3,
-        ease: "power2.in"
-      }, 0);
-      for (const sibOv of pack.siblingOverlays) {
-        ts.to(sibOv, {
-          y: sibOv._targetY,
-          duration: 0.3,
-          ease: "power2.in"
-        }, 0);
-      }
-    }
-    const maxDur = container ? 0.3 : tog ? 0.25 : 0;
-    ts.call(() => {
-      var _a;
-      if (((_a = L.renderer) == null ? void 0 : _a.getRoot()) !== animRoot) return;
-      _removeAllOverlays();
-      assert(_activeOverlays.length === 0, "overlays leaked after doCollapse");
-      _resetAnimTimeline();
-      if (pack) {
-        for (const c of pack.hiddenChildren) c.opacity = 1;
-        for (const s of pack.hiddenSiblings) s.opacity = 1;
-      }
+    if (!container) {
       L.endOp();
       hit.gesture.onTap();
       processClickQueue();
-    }, void 0, maxDur);
+      return;
+    }
+    const fullH = container.height;
+    assert(_activeOverlays.length === 0, "overlays not empty before doCollapse");
+    const pack = _setupCollapseOverlays(container, fullH);
+    const subTargets = _flattenExpandTree(container, 1);
+    const subPacks = subTargets.map((st) => _setupCollapseOverlays(st.container, st.fullHeight));
+    const overlaysToClean = [pack, ...subPacks];
+    const maxLevel = subTargets.length > 0 ? Math.max(...subTargets.map((st) => st.level)) : 0;
+    const charRainCleanups = [];
+    function collectCollapseCharCleanup(container2, baseDelay) {
+      var _a2, _b2, _c2, _d2;
+      const rows = container2.children.filter((c) => {
+        var _a3, _b3;
+        return ((_a3 = c.id) == null ? void 0 : _a3.startsWith("title-")) || ((_b3 = c.id) == null ? void 0 : _b3.startsWith("file-"));
+      });
+      if (rows.length === 0) return;
+      const canvas = DOM.treeCanvas;
+      const ctx = canvas == null ? void 0 : canvas.getContext("2d");
+      if (!ctx) return;
+      const origOverflow = container2.overflow;
+      container2.overflow = "visible";
+      const parentOrigOverflow = (_a2 = container2.parent) == null ? void 0 : _a2.overflow;
+      if (container2.parent && container2.parent.overflow === "hidden") {
+        container2.parent.overflow = "visible";
+      }
+      const charBoxes = [];
+      const hiddenLabels = [];
+      const hiddenToggles = [];
+      const BASE_DUR = 0.22;
+      const scrollY = (_b2 = root.scrollY) != null ? _b2 : 0;
+      const absY = container2.getAbsolutePosition().y;
+      const topY = scrollY - absY;
+      for (const row of rows) {
+        const label = row.children.find((c) => {
+          var _a3;
+          return (_a3 = c.id) == null ? void 0 : _a3.startsWith("label-");
+        });
+        if (!label || !((_c2 = label.textStyle) == null ? void 0 : _c2.content)) continue;
+        const text = label.textStyle.content;
+        const font = label.textStyle.font || FONT;
+        const color = label.textStyle.color;
+        const lineH = label.textStyle.lineHeight || LINE_HEIGHT;
+        ctx.font = font;
+        let layoutLines2;
+        try {
+          const prepared = prepareWithSegments(text, font);
+          const layout2 = layoutWithLines(prepared, label.width, lineH);
+          layoutLines2 = layout2.lines;
+        } catch {
+          layoutLines2 = [{ text, width: ctx.measureText(text).width }];
+        }
+        const maxVis = label.textStyle.maxLines || MAX_LINES;
+        const isTrunc = layoutLines2.length > maxVis;
+        const visLines = layoutLines2.slice(0, maxVis);
+        const totalTextHeight = visLines.length * lineH;
+        const verticalOffset = Math.max(0, (row.height - totalTextHeight) / 2);
+        for (let li = 0; li < visLines.length; li++) {
+          const line = visLines[li];
+          let chars;
+          if (li === maxVis - 1 && isTrunc) {
+            chars = [...line.text.slice(0, -1), "\u2026"];
+          } else {
+            chars = [...line.text];
+          }
+          const charWidths = chars.map((ch) => ctx.measureText(ch).width);
+          let cx = 0;
+          for (let ci = 0; ci < chars.length; ci++) {
+            const fromX = row.x + label.x + cx;
+            const fromY = row.y + label.y + verticalOffset + li * lineH;
+            const toX = fromX + (Math.random() - 0.5) * 100;
+            const toY = topY - 80 - Math.random() * 140;
+            const box = new Box({
+              id: `cc-${row.id}-L${li}-C${ci}`,
+              x: fromX,
+              y: fromY,
+              width: charWidths[ci] + 2,
+              height: lineH,
+              opacity: 1,
+              backgroundColor: "transparent",
+              interactive: false,
+              zIndex: 99,
+              overflow: "visible"
+            });
+            box.textStyle = {
+              content: chars[ci],
+              color,
+              font,
+              lineHeight: lineH,
+              align: "left",
+              verticalAlign: "middle",
+              overflow: "visible",
+              maxLines: 1
+            };
+            container2.addChild(box);
+            charBoxes.push(box);
+            const randDelay = Math.random() * 0.1 + baseDelay;
+            const randDur = BASE_DUR + Math.random() * 0.06;
+            ts.to(box, {
+              x: toX,
+              y: toY,
+              opacity: 0,
+              duration: randDur,
+              ease: "back.in(1.05)"
+            }, randDelay);
+            cx += charWidths[ci];
+          }
+        }
+        const toggleBox = row.children.find((c) => {
+          var _a3;
+          return (_a3 = c.id) == null ? void 0 : _a3.startsWith("toggle-");
+        });
+        if (toggleBox && ((_d2 = toggleBox.textStyle) == null ? void 0 : _d2.content)) {
+          const tFont = toggleBox.textStyle.font || font;
+          ctx.font = tFont;
+          const tTargetX = row.x + toggleBox.x;
+          const tTargetY = row.y + toggleBox.y;
+          const tToX = tTargetX + (Math.random() - 0.5) * 100;
+          const tToY = topY - 80 - Math.random() * 140;
+          const tBox = new Box({
+            id: `cc-${row.id}-toggle`,
+            x: tTargetX,
+            y: tTargetY,
+            width: toggleBox.width,
+            height: toggleBox.height || LINE_HEIGHT,
+            opacity: 1,
+            backgroundColor: "transparent",
+            interactive: false,
+            zIndex: 99,
+            overflow: "visible"
+          });
+          tBox.textStyle = { ...toggleBox.textStyle, overflow: "visible", maxLines: 1 };
+          container2.addChild(tBox);
+          charBoxes.push(tBox);
+          const tRandDelay = Math.random() * 0.1 + baseDelay;
+          const tRandDur = BASE_DUR + Math.random() * 0.06;
+          ts.to(tBox, {
+            x: tToX,
+            y: tToY,
+            opacity: 0,
+            duration: tRandDur,
+            ease: "back.in(1.05)"
+          }, tRandDelay);
+        }
+        const labelBox = row.children.find((c) => {
+          var _a3;
+          return (_a3 = c.id) == null ? void 0 : _a3.startsWith("label-");
+        });
+        if (labelBox) {
+          labelBox.visible = false;
+          hiddenLabels.push(labelBox);
+        }
+        const toggleHider = row.children.find((c) => {
+          var _a3;
+          return (_a3 = c.id) == null ? void 0 : _a3.startsWith("toggle-");
+        });
+        if (toggleHider) {
+          toggleHider.visible = false;
+          hiddenToggles.push(toggleHider);
+        }
+      }
+      if (charBoxes.length > 0) {
+        charRainCleanups.push({
+          container: container2,
+          charBoxes,
+          hiddenLabels,
+          hiddenToggles,
+          origOverflow,
+          parentOrigOverflow
+        });
+      }
+    }
+    const collapseBaseDelay = maxLevel * 0.06;
+    collectCollapseCharCleanup(container, collapseBaseDelay);
+    for (const sp of subPacks) {
+      const subLevel = (_b = (_a = subTargets.find((st) => {
+        var _a2;
+        return st.container.id === ((_a2 = sp.containerOverlay.id) == null ? void 0 : _a2.replace("ov-expanded-", "expanded-"));
+      })) == null ? void 0 : _a.level) != null ? _b : 1;
+      const delay = collapseBaseDelay - subLevel * 0.06;
+      const realContainer = (_c = subTargets.find((st) => `ov-${st.container.id}` === sp.containerOverlay.id)) == null ? void 0 : _c.container;
+      if (realContainer) {
+        collectCollapseCharCleanup(realContainer, delay);
+      }
+    }
+    const boxStartDelay = collapseBaseDelay ? collapseBaseDelay - 0.06 + 0.29 : 0.29;
+    ts.to(pack.containerOverlay, {
+      height: 0,
+      duration: 0.05,
+      ease: "power2.in"
+    }, boxStartDelay);
+    for (const sibOv of pack.siblingOverlays) {
+      ts.to(sibOv, {
+        y: sibOv._targetY,
+        duration: 0.05,
+        ease: "power2.in"
+      }, boxStartDelay);
+    }
+    for (const sp of subPacks) {
+      const subLevel = (_e = (_d = subTargets.find((st) => {
+        var _a2;
+        return st.container.id === ((_a2 = sp.containerOverlay.id) == null ? void 0 : _a2.replace("ov-expanded-", "expanded-"));
+      })) == null ? void 0 : _d.level) != null ? _e : 1;
+      const delay = boxStartDelay + subLevel * 0.06;
+      ts.to(sp.containerOverlay, { height: 0, duration: 0.05, ease: "power2.in" }, delay);
+      for (const sibOv of sp.siblingOverlays) {
+        ts.to(sibOv, {
+          y: sibOv._targetY,
+          duration: 0.05,
+          ease: "power2.in"
+        }, delay);
+      }
+    }
+    const cleanupDelay = boxStartDelay + maxLevel * 0.06 + 0.05;
+    ts.call(() => {
+      var _a2;
+      if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
+      for (const op of overlaysToClean) {
+        for (const c of op.hiddenChildren) c.opacity = 1;
+        for (const s of op.hiddenSiblings) s.opacity = 1;
+      }
+      for (const cu of charRainCleanups) cleanupCharRain(cu);
+      _removeAllOverlays();
+      assert(_activeOverlays.length === 0, "overlays leaked after doCollapse");
+      _resetAnimTimeline();
+      L.endOp();
+      hit.gesture.onTap();
+      processClickQueue();
+    }, void 0, cleanupDelay);
   }
   function findTapTarget(box, px, py) {
     var _a;
