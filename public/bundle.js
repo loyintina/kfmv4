@@ -10957,30 +10957,24 @@
       processClickQueue();
       return;
     }
-    let fullHeight = container._fullHeight || 0;
+    const fullHeight = container._fullHeight || 0;
     if (!fullHeight) {
-      _ensureMetaFromExpandedState(root);
-      const retry = container._fullHeight || 0;
-      if (retry) {
-        fullHeight = retry;
+      const finish = () => {
+        L.endOp();
+        processClickQueue();
+      };
+      if (toggle2 && toggle2.transform) {
+        toggle2.transform.rotate = 0;
+        ts.to(toggle2.transform, {
+          rotate: Math.PI / 2,
+          duration: 0.3,
+          ease: "power2.out",
+          onComplete: finish
+        }, 0);
       } else {
-        const finish = () => {
-          L.endOp();
-          processClickQueue();
-        };
-        if (toggle2 && toggle2.transform) {
-          toggle2.transform.rotate = 0;
-          ts.to(toggle2.transform, {
-            rotate: Math.PI / 2,
-            duration: 0.3,
-            ease: "power2.out",
-            onComplete: finish
-          }, 0);
-        } else {
-          finish();
-        }
-        return;
+        finish();
       }
+      return;
     }
     _runExpandAnimation({ container, root, fullHeight, toggle2, path: hitData.path, onTap: null });
   }
