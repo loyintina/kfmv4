@@ -667,26 +667,19 @@ function processClickQueue(): void {
 
     // 规则 1：同路径点击 → 状态先行 + reverse
     clickQueue.dequeue();
-    // 状态先行：每次点击切换 state（doCollapse 也已先切，始终与动画一致）
-    KFMState.expandedPaths[tgt] = !KFMState.expandedPaths[tgt];
+    // 反转目标取决于动画方向：
+    // 展开中反转 → 折叠（false），折叠中反转 → 展开（true）
+    KFMState.expandedPaths[tgt] = L.animatingDir === 'collapse';
     localStorage.setItem('expandedPaths', JSON.stringify(KFMState.expandedPaths));
-    // 清除旧回调，注册与新方向匹配的回调
-    ts.eventCallback('onComplete', null);
-    ts.eventCallback('onReverseComplete', null);
-    // reverse 切换播放方向（GSAP 自动：正向→反向，反向→正向）
+    // reverse 所有 tween（overlay 高度/位置 + 字符位置/透明度）
     ts.reverse();
-    const animEnd = () => {
+    ts.eventCallback('onReverseComplete', () => {
       L.endOp();
       _removeAllOverlays();
-      _resetAnimTimeline();
-      KFMState.notify();
+      _resetAnimTimeline();  // ts.clear() + time(0) + 清除 onComplete
+      KFMState.notify();    // 触发 _stateSub → rebuildTree
       processClickQueue();
-    };
-    if (ts.reversed()) {
-      ts.eventCallback('onReverseComplete', animEnd);
-    } else {
-      ts.eventCallback('onComplete', animEnd);
-    }
+    });
     return;
   }
 
@@ -922,10 +915,6 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
   // 字符雨层：与容器Ov平级，不受 overflow:hidden 裁剪
   const charLayer = _createCharLayer(pack.containerOverlay.x, pack.containerOverlay.y, overlayRoot);
 
-  // 状态先行：切 state 但不 notify（树保持展开，overlay 需展开态数据）
-  KFMState.expandedPaths[hitData.path] = false;
-  localStorage.setItem('expandedPaths', JSON.stringify(KFMState.expandedPaths));
-
   const maxLevel = subTargets.length > 0 ? Math.max(...subTargets.map(st => st.level)) : 0;
   const charRainCleanups: CharRainCleanup[] = [];
 
@@ -990,7 +979,7 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
     assert(_activeOverlays.length === 0, 'overlays leaked after doCollapse');
     _resetAnimTimeline();
     L.endOp();
-    KFMState.notify();  // 触发 _stateSub → rebuildTree（折叠态）
+    hit.gesture!.onTap!();
     processClickQueue();
   });
 }
