@@ -26,6 +26,7 @@ const ts = anim.scope('tree-render');
 function _resetAnimTimeline(): void {
   ts.clear();
   ts.eventCallback('onComplete', null);
+  ts.reversed(false);  // 清除反转状态，确保新加 tween 正向播放
   ts.time(0);
 }
 

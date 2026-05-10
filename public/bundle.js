@@ -10418,6 +10418,7 @@
   function _resetAnimTimeline() {
     ts.clear();
     ts.eventCallback("onComplete", null);
+    ts.reversed(false);
     ts.time(0);
   }
   var _activeOverlays = [];
