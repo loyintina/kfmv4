@@ -10906,16 +10906,23 @@
       const tgt = _findClickPath(r, next.offsetX, next.offsetY + sy);
       if (!tgt || tgt !== L.animatingPath) return;
       dequeue();
-      KFMState.expandedPaths[tgt] = L.animatingDir === "collapse";
+      KFMState.expandedPaths[tgt] = !KFMState.expandedPaths[tgt];
       localStorage.setItem("expandedPaths", JSON.stringify(KFMState.expandedPaths));
+      ts.eventCallback("onComplete", null);
+      ts.eventCallback("onReverseComplete", null);
       ts.reverse();
-      ts.eventCallback("onReverseComplete", () => {
+      const animEnd = () => {
         L.endOp();
         _removeAllOverlays();
         _resetAnimTimeline();
         KFMState.notify();
         processClickQueue();
-      });
+      };
+      if (ts.reversed()) {
+        ts.eventCallback("onReverseComplete", animEnd);
+      } else {
+        ts.eventCallback("onComplete", animEnd);
+      }
       return;
     }
     const { offsetX, offsetY } = dequeue();
@@ -11103,6 +11110,8 @@
     const subPacks = subTargets.map((st) => _setupCollapseOverlays(st.container, st.fullHeight, false));
     const overlayRoot = _buildAndSetOverlayTree(pack, subTargets, subPacks, root);
     const charLayer = _createCharLayer(pack.containerOverlay.x, pack.containerOverlay.y, overlayRoot);
+    KFMState.expandedPaths[hitData.path] = false;
+    localStorage.setItem("expandedPaths", JSON.stringify(KFMState.expandedPaths));
     const maxLevel = subTargets.length > 0 ? Math.max(...subTargets.map((st) => st.level)) : 0;
     const charRainCleanups = [];
     const collapseBaseDelay = maxLevel * 0.06;
@@ -11176,7 +11185,7 @@
       assert(_activeOverlays.length === 0, "overlays leaked after doCollapse");
       _resetAnimTimeline();
       L.endOp();
-      hit.gesture.onTap();
+      KFMState.notify();
       processClickQueue();
     });
   }
