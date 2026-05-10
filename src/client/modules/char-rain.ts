@@ -27,46 +27,44 @@ export interface CharRainCleanup {
   charBoxes: Box[];
 }
 
+// ============================================================
+// 核心：给定行列表，为每行创建字符雨动画
+// ============================================================
+
 /**
- * 创建字符 Box 并将动画 tween 添加到指定 timeline 上。
- * 展开和回收共用此函数，通过 direction 控制。
+ * 核心函数：为 explicit 行列表创建字符雨动画。
  *
- * @param container       主树的 expanded-* 容器（仅读取行/标签/切换符数据，不修改）
- * @param overlayContainer overlay 树的容器克隆（字符盒建在此，overflow 已为 'visible'）
- * @param root            文件树根 Box（用于计算屏幕顶部位置）
- * @param rowTargetYs     每行在展开态时的 y 坐标（overlay 坐标空间）
- * @param tl              目标 timeline（通常是 ts scope）
- * @param baseDelay       该层动画的起始时间偏移（用于 staggered）
- * @param direction       'expand' 或 'collapse'
- * @returns cleanup 信息，如果没有字符需要动画则返回 null
+ * @param rows           要动画的行（main tree 的 title-* / file-* Box）
+ * @param rowTargetYs    每行的最终 y（与 rows 同顺序）
+ * @param referenceBox   用于计算 topY 的参考 Box（通常是行们的父容器）
+ * @param overlayContainer 字符盒创建在此（charLayer）
+ * @param root           文件树根 Box
+ * @param tl             timeline
+ * @param baseDelay      起始延迟
+ * @param direction      'expand' 或 'collapse'
  */
-export function setupCharRainTweens(
-  container: Box,
+function _charRainCore(
+  rows: Box[],
+  rowTargetYs: number[] | undefined,
+  referenceBox: Box,
   overlayContainer: Box,
   root: Box,
-  rowTargetYs: number[] | undefined,
   tl: AnimTimeline,
   baseDelay: number,
-  direction: 'expand' | 'collapse' = 'expand',
+  direction: 'expand' | 'collapse',
 ): CharRainCleanup | null {
   const isCollapse = direction === 'collapse';
-  const rows = container.children.filter((c) =>
-    c.id?.startsWith("title-") || c.id?.startsWith("file-")
-  );
   if (rows.length === 0) return null;
 
   const canvas = DOM.treeCanvas;
   const ctx = canvas?.getContext("2d");
   if (!ctx) return null;
 
-  // overlay 容器克隆已在 _createVisualClone 中设置为 overflow: 'visible'，
-  // 无需额外修改。字符起始 Y 可能超出容器边界，overlay 容器允许子元素溢出。
-
   const charBoxes: Box[] = [];
   const BASE_DUR = 0.22;
   const scrollY = root.scrollY ?? 0;
-  const absY = container.getAbsolutePosition().y;
-  const topY = scrollY - absY; // 容器空间中的屏幕顶部位置
+  const absY = referenceBox.getAbsolutePosition().y;
+  const topY = scrollY - absY;
 
   for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
     const row = rows[rowIdx];
@@ -237,8 +235,56 @@ export function setupCharRainTweens(
   return { container: overlayContainer, charBoxes };
 }
 
+// ============================================================
+// 便捷入口 1：从容器自动找行（现有调用方不变）
+// ============================================================
+
 /**
- * 清理字符雨创建的字符 Box 和恢复原始状态。
+ * 从容器 children 中过滤 title-* / file-* 行，创建字符雨。
+ * 与旧签名完全兼容，调用方无需修改。
+ */
+export function setupCharRainTweens(
+  container: Box,
+  overlayContainer: Box,
+  root: Box,
+  rowTargetYs: number[] | undefined,
+  tl: AnimTimeline,
+  baseDelay: number,
+  direction: 'expand' | 'collapse' = 'expand',
+): CharRainCleanup | null {
+  const rows = container.children.filter((c) =>
+    c.id?.startsWith("title-") || c.id?.startsWith("file-")
+  );
+  return _charRainCore(rows, rowTargetYs, container, overlayContainer, root, tl, baseDelay, direction);
+}
+
+// ============================================================
+// 便捷入口 2：为显式指定的行创建字符雨（兄弟行用）
+// ============================================================
+
+/**
+ * 为显式指定的行列表创建字符雨。
+ * referenceBox 用于计算 topY — 通常传行们的父容器。
+ */
+export function setupCharRainForSiblings(
+  rows: Box[],
+  rowTargetYs: number[] | undefined,
+  referenceBox: Box,
+  overlayContainer: Box,
+  root: Box,
+  tl: AnimTimeline,
+  baseDelay: number,
+  direction: 'expand' | 'collapse' = 'expand',
+): CharRainCleanup | null {
+  return _charRainCore(rows, rowTargetYs, referenceBox, overlayContainer, root, tl, baseDelay, direction);
+}
+
+// ============================================================
+// 清理
+// ============================================================
+
+/**
+ * 清理字符雨创建的字符 Box。
  */
 export function cleanupCharRain(cu: CharRainCleanup): void {
   for (const box of cu.charBoxes) {

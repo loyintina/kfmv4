@@ -8545,15 +8545,9 @@
   var anim = new AnimationRegistryClass();
 
   // src/client/modules/char-rain.ts
-  function setupCharRainTweens(container, overlayContainer, root, rowTargetYs, tl, baseDelay, direction = "expand") {
+  function _charRainCore(rows, rowTargetYs, referenceBox, overlayContainer, root, tl, baseDelay, direction) {
     var _a, _b, _c, _d;
     const isCollapse = direction === "collapse";
-    const rows = container.children.filter(
-      (c) => {
-        var _a2, _b2;
-        return ((_a2 = c.id) == null ? void 0 : _a2.startsWith("title-")) || ((_b2 = c.id) == null ? void 0 : _b2.startsWith("file-"));
-      }
-    );
     if (rows.length === 0) return null;
     const canvas = DOM.treeCanvas;
     const ctx = canvas == null ? void 0 : canvas.getContext("2d");
@@ -8561,7 +8555,7 @@
     const charBoxes = [];
     const BASE_DUR = 0.22;
     const scrollY = (_a = root.scrollY) != null ? _a : 0;
-    const absY = container.getAbsolutePosition().y;
+    const absY = referenceBox.getAbsolutePosition().y;
     const topY = scrollY - absY;
     for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
       const row = rows[rowIdx];
@@ -8749,6 +8743,18 @@
     }
     if (charBoxes.length === 0) return null;
     return { container: overlayContainer, charBoxes };
+  }
+  function setupCharRainTweens(container, overlayContainer, root, rowTargetYs, tl, baseDelay, direction = "expand") {
+    const rows = container.children.filter(
+      (c) => {
+        var _a, _b;
+        return ((_a = c.id) == null ? void 0 : _a.startsWith("title-")) || ((_b = c.id) == null ? void 0 : _b.startsWith("file-"));
+      }
+    );
+    return _charRainCore(rows, rowTargetYs, container, overlayContainer, root, tl, baseDelay, direction);
+  }
+  function setupCharRainForSiblings(rows, rowTargetYs, referenceBox, overlayContainer, root, tl, baseDelay, direction = "expand") {
+    return _charRainCore(rows, rowTargetYs, referenceBox, overlayContainer, root, tl, baseDelay, direction);
   }
   function cleanupCharRain(cu) {
     for (const box of cu.charBoxes) {
@@ -10564,7 +10570,7 @@
     }
     return clone;
   }
-  function _setupExpandOverlays(container, fullHeight) {
+  function _setupExpandOverlays(container, fullHeight, siblingCloneLabels = true) {
     var _a;
     const parent = container.parent;
     const containerOv = _createVisualClone(container, { id: `ov-${container.id || "container"}`, height: 0, opacity: 1, zIndex: OVERLAY_Z });
@@ -10591,7 +10597,7 @@
     const hiddenSiblings = [];
     const siblings = _collectSiblingsAfter(container);
     for (const sib of siblings) {
-      const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || "sib"}`, y: sib.y - fullHeight, opacity: 1, zIndex: OVERLAY_Z }, true);
+      const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || "sib"}`, y: sib.y - fullHeight, opacity: 1, zIndex: OVERLAY_Z }, siblingCloneLabels);
       sibOv._targetY = sib.y;
       _addOverlay(sibOv);
       sibOv.parent = parent;
@@ -10601,7 +10607,7 @@
     }
     return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenContainer: container, hiddenSiblings, hiddenChildren };
   }
-  function _setupCollapseOverlays(container, fullH) {
+  function _setupCollapseOverlays(container, fullH, siblingCloneLabels = true) {
     var _a;
     const parent = container.parent;
     const containerOv = _createVisualClone(container, { id: `ov-${container.id || "container"}`, height: fullH, opacity: 1, zIndex: OVERLAY_Z });
@@ -10626,7 +10632,7 @@
     const hiddenSiblings = [];
     const siblings = _collectSiblingsAfter(container);
     for (const sib of siblings) {
-      const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || "sib"}`, y: sib.y, opacity: 1, zIndex: OVERLAY_Z }, true);
+      const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || "sib"}`, y: sib.y, opacity: 1, zIndex: OVERLAY_Z }, siblingCloneLabels);
       sibOv._targetY = sib.y - fullH;
       _addOverlay(sibOv);
       sibOv.parent = parent;
@@ -10983,7 +10989,7 @@
     assert(_activeOverlays.length === 0, "overlays not empty before expand");
     const pack = _setupExpandOverlays(container, fullHeight);
     const subTargets = _flattenExpandTree(container, 1);
-    const subPacks = subTargets.map((st) => _setupExpandOverlays(st.container, st.fullHeight));
+    const subPacks = subTargets.map((st) => _setupExpandOverlays(st.container, st.fullHeight, false));
     const overlayRoot = _buildAndSetOverlayTree(pack, subTargets, subPacks, root);
     const charLayer = _createCharLayer(pack.containerOverlay.x, pack.containerOverlay.y, overlayRoot);
     L.beginOp(path, "expand");
@@ -11026,6 +11032,27 @@
           delay
         );
         if (subCleanup) charRainCleanups.push(subCleanup);
+        const sibRows = sp.hiddenSiblings.filter(
+          (s) => {
+            var _a2, _b2;
+            return ((_a2 = s.id) == null ? void 0 : _a2.startsWith("title-")) || ((_b2 = s.id) == null ? void 0 : _b2.startsWith("file-"));
+          }
+        );
+        if (sibRows.length > 0) {
+          const sibParent = sibRows[0].parent;
+          const sibCli = _createCharLayer(0, 0, subParent);
+          const sibTargetYs = sp.siblingOverlays.filter((_, i) => sibRows.includes(sp.hiddenSiblings[i])).map((o) => o._targetY);
+          const sibCleanup = setupCharRainForSiblings(
+            sibRows,
+            sibTargetYs,
+            sibParent,
+            sibCli,
+            root,
+            ts,
+            delay
+          );
+          if (sibCleanup) charRainCleanups.push(sibCleanup);
+        }
       }
     }
     ts.call(() => {
@@ -11077,7 +11104,7 @@
     assert(_activeOverlays.length === 0, "overlays not empty before doCollapse");
     const pack = _setupCollapseOverlays(container, fullH);
     const subTargets = _flattenExpandTree(container, 1);
-    const subPacks = subTargets.map((st) => _setupCollapseOverlays(st.container, st.fullHeight));
+    const subPacks = subTargets.map((st) => _setupCollapseOverlays(st.container, st.fullHeight, false));
     const overlayRoot = _buildAndSetOverlayTree(pack, subTargets, subPacks, root);
     const charLayer = _createCharLayer(pack.containerOverlay.x, pack.containerOverlay.y, overlayRoot);
     const maxLevel = subTargets.length > 0 ? Math.max(...subTargets.map((st) => st.level)) : 0;
@@ -11113,6 +11140,28 @@
           "collapse"
         );
         if (subCleanup) charRainCleanups.push(subCleanup);
+        const sibRows = sp.hiddenSiblings.filter(
+          (s) => {
+            var _a2, _b2;
+            return ((_a2 = s.id) == null ? void 0 : _a2.startsWith("title-")) || ((_b2 = s.id) == null ? void 0 : _b2.startsWith("file-"));
+          }
+        );
+        if (sibRows.length > 0) {
+          const sibParent = sibRows[0].parent;
+          const sibCli = _createCharLayer(0, 0, subParent);
+          const sibTargetYs = sp.siblingOverlays.filter((_, i) => sibRows.includes(sp.hiddenSiblings[i])).map((o) => o._targetY);
+          const sibCleanup = setupCharRainForSiblings(
+            sibRows,
+            sibTargetYs,
+            sibParent,
+            sibCli,
+            root,
+            ts,
+            delay,
+            "collapse"
+          );
+          if (sibCleanup) charRainCleanups.push(sibCleanup);
+        }
       }
     }
     const boxStartDelay = collapseBaseDelay ? collapseBaseDelay - 0.06 + 0.29 : 0.29;

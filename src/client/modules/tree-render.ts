@@ -9,7 +9,7 @@
 import { buildSidebarTree } from './tree-model.js';
 import { KFMState, getFileRowData, type FileRowData } from './state.js';
 import { anim } from './animation-registry.js';
-import { setupCharRainTweens, cleanupCharRain, type CharRainCleanup } from "./char-rain.js";
+import { setupCharRainTweens, setupCharRainForSiblings, cleanupCharRain, type CharRainCleanup } from "./char-rain.js";
 import { closeSidebar } from './ui.js';
 import { Renderer } from '../engine/v2/renderer.js';
 import { L } from './renderer-lifecycle.js';
@@ -233,7 +233,7 @@ interface OverlayPack {
 }
 
 /** 搭建展开动画的 overlay 集合 */
-function _setupExpandOverlays(container: Box, fullHeight: number): OverlayPack {
+function _setupExpandOverlays(container: Box, fullHeight: number, siblingCloneLabels = true): OverlayPack {
   const parent = container.parent!;
 
   // 1. 容器 overlay (height=0, 即将动画到 fullHeight)
@@ -270,11 +270,12 @@ function _setupExpandOverlays(container: Box, fullHeight: number): OverlayPack {
   }
 
   // 3. 兄弟 overlay（FROM=折叠态 y，TO=终端态 y）
+  //    最外层兄弟 cloneLabel=true（无字符雨），内部子层兄弟 cloneLabel=false
   const siblingOverlays: Box[] = [];
   const hiddenSiblings: Box[] = [];
   const siblings = _collectSiblingsAfter(container);
   for (const sib of siblings) {
-    const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || 'sib'}`, y: sib.y - fullHeight, opacity: 1, zIndex: OVERLAY_Z }, true);
+    const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || 'sib'}`, y: sib.y - fullHeight, opacity: 1, zIndex: OVERLAY_Z }, siblingCloneLabels);
     (sibOv as Box & OverlayMeta)._targetY = sib.y;
     _addOverlay(sibOv);
     sibOv.parent = parent;
@@ -288,7 +289,7 @@ function _setupExpandOverlays(container: Box, fullHeight: number): OverlayPack {
 }
 
 /** 搭建折叠动画的 overlay 集合 */
-function _setupCollapseOverlays(container: Box, fullH: number): OverlayPack {
+function _setupCollapseOverlays(container: Box, fullH: number, siblingCloneLabels = true): OverlayPack {
   const parent = container.parent!;
 
   // 1. 容器 overlay (height=fullH, 即将动画到 0)
@@ -322,11 +323,12 @@ function _setupCollapseOverlays(container: Box, fullH: number): OverlayPack {
   // 容器高度从 fullH 缩到 0，行从底部逐行消失。
 
   // 3. 兄弟 overlay
+  //    最外层兄弟 cloneLabel=true，内部子层兄弟 cloneLabel=false
   const siblingOverlays: Box[] = [];
   const hiddenSiblings: Box[] = [];
   const siblings = _collectSiblingsAfter(container);
   for (const sib of siblings) {
-    const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || 'sib'}`, y: sib.y, opacity: 1, zIndex: OVERLAY_Z }, true);
+    const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || 'sib'}`, y: sib.y, opacity: 1, zIndex: OVERLAY_Z }, siblingCloneLabels);
     (sibOv as Box & OverlayMeta)._targetY = sib.y - fullH;
     _addOverlay(sibOv);
     sibOv.parent = parent;
@@ -779,7 +781,7 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
 
   // 扁平化收集所有子容器 target，一次性搭建 overlay
   const subTargets = _flattenExpandTree(container, 1);
-  const subPacks = subTargets.map(st => _setupExpandOverlays(st.container, st.fullHeight));
+  const subPacks = subTargets.map(st => _setupExpandOverlays(st.container, st.fullHeight, false));
 
   // 构建独立动画树并设置到渲染器（双树渲染）
   const overlayRoot = _buildAndSetOverlayTree(pack, subTargets, subPacks, root);
@@ -823,12 +825,29 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
     if (realContainer) {
       const subParent = sp.containerOverlay.parent!;
       const subCharLayer = _createCharLayer(sp.containerOverlay.x, sp.containerOverlay.y, subParent);
+      // 容器内部行的字符雨
       const subCleanup = setupCharRainTweens(
         realContainer, subCharLayer, root,
         sp.rowOverlays.map(r => r.y),
         ts, delay
       );
       if (subCleanup) charRainCleanups.push(subCleanup);
+      // 兄弟行的字符雨（title-/file- 等单行兄弟）
+      const sibRows = sp.hiddenSiblings.filter(s =>
+        s.id?.startsWith('title-') || s.id?.startsWith('file-')
+      );
+      if (sibRows.length > 0) {
+        const sibParent = sibRows[0].parent!;
+        const sibCli = _createCharLayer(0, 0, subParent);
+        const sibTargetYs = sp.siblingOverlays
+          .filter((_, i) => sibRows.includes(sp.hiddenSiblings[i]))
+          .map(o => (o as Box & OverlayMeta)._targetY!);
+        const sibCleanup = setupCharRainForSiblings(
+          sibRows, sibTargetYs, sibParent,
+          sibCli, root, ts, delay
+        );
+        if (sibCleanup) charRainCleanups.push(sibCleanup);
+      }
     }
   }
 
@@ -887,7 +906,7 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
 
   // 扁平化收集子容器
   const subTargets = _flattenExpandTree(container, 1);
-  const subPacks = subTargets.map(st => _setupCollapseOverlays(st.container, st.fullHeight));
+  const subPacks = subTargets.map(st => _setupCollapseOverlays(st.container, st.fullHeight, false));
 
   // 构建独立动画树（折叠）
   const overlayRoot = _buildAndSetOverlayTree(pack, subTargets, subPacks, root);
@@ -920,6 +939,22 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
         ts, delay, 'collapse',
       );
       if (subCleanup) charRainCleanups.push(subCleanup);
+      // 兄弟行字符雨回收
+      const sibRows = sp.hiddenSiblings.filter(s =>
+        s.id?.startsWith('title-') || s.id?.startsWith('file-')
+      );
+      if (sibRows.length > 0) {
+        const sibParent = sibRows[0].parent!;
+        const sibCli = _createCharLayer(0, 0, subParent);
+        const sibTargetYs = sp.siblingOverlays
+          .filter((_, i) => sibRows.includes(sp.hiddenSiblings[i]))
+          .map(o => (o as Box & OverlayMeta)._targetY!);
+        const sibCleanup = setupCharRainForSiblings(
+          sibRows, sibTargetYs, sibParent,
+          sibCli, root, ts, delay, 'collapse',
+        );
+        if (sibCleanup) charRainCleanups.push(sibCleanup);
+      }
     }
   }
 
