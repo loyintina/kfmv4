@@ -667,9 +667,9 @@ function processClickQueue(): void {
 
     // 规则 1：同路径点击 → 状态先行 + reverse
     clickQueue.dequeue();
-    // 状态先行（不 notify，不触发 rebuildTree）
-    const currentState = !!KFMState.expandedPaths[tgt];
-    KFMState.expandedPaths[tgt] = !currentState;
+    // 反转目标取决于动画方向：
+    // 展开中反转 → 折叠（false），折叠中反转 → 展开（true）
+    KFMState.expandedPaths[tgt] = L.animatingDir === 'collapse';
     localStorage.setItem('expandedPaths', JSON.stringify(KFMState.expandedPaths));
     // reverse 所有 tween（overlay 高度/位置 + 字符位置/透明度）
     ts.reverse();

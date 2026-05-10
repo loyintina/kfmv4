@@ -10906,8 +10906,7 @@
       const tgt = _findClickPath(r, next.offsetX, next.offsetY + sy);
       if (!tgt || tgt !== L.animatingPath) return;
       dequeue();
-      const currentState = !!KFMState.expandedPaths[tgt];
-      KFMState.expandedPaths[tgt] = !currentState;
+      KFMState.expandedPaths[tgt] = L.animatingDir === "collapse";
       localStorage.setItem("expandedPaths", JSON.stringify(KFMState.expandedPaths));
       ts.reverse();
       ts.eventCallback("onReverseComplete", () => {
