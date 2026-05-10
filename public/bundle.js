@@ -10906,16 +10906,25 @@
       const tgt = _findClickPath(r, next.offsetX, next.offsetY + sy);
       if (!tgt || tgt !== L.animatingPath) return;
       dequeue();
-      KFMState.expandedPaths[tgt] = L.animatingDir === "collapse";
+      const newDir = L.animatingDir === "expand" ? "collapse" : "expand";
+      L.beginOp(tgt, newDir);
+      KFMState.expandedPaths[tgt] = newDir === "expand";
       localStorage.setItem("expandedPaths", JSON.stringify(KFMState.expandedPaths));
       ts.reverse();
-      ts.eventCallback("onReverseComplete", () => {
+      ts.eventCallback("onComplete", null);
+      ts.eventCallback("onReverseComplete", null);
+      const animEnd = () => {
         L.endOp();
         _removeAllOverlays();
         _resetAnimTimeline();
         KFMState.notify();
         processClickQueue();
-      });
+      };
+      if (ts.reversed()) {
+        ts.eventCallback("onReverseComplete", animEnd);
+      } else {
+        ts.eventCallback("onComplete", animEnd);
+      }
       return;
     }
     const { offsetX, offsetY } = dequeue();
