@@ -15,12 +15,11 @@ import { Renderer } from '../engine/v2/renderer.js';
 import { L } from './renderer-lifecycle.js';
 import { _rebuildRowIndex, findBoxById } from './canvas-utils.js';
 import { Box } from '../engine/v2/box.js';
-import { getCursorRowIndex, getRowIndexLength, moveCursorTo, ensureCursorBox, _moveCursorBySteps, _isCursorMode, _getCenterRowIndex, _snapCursorToCenter, _scrollToCenterCursor } from './canvas-cursor.js';
+import { getCursorRowIndex, moveCursorTo, ensureCursorBox, _scrollToCenterCursor } from './canvas-cursor.js';
 import { bindScrollEvents } from './canvas-scroll.js';
 import { DOM } from "./dom-refs.js";
 import * as clickQueue from "./click-queue.js";
 import { assert, warn } from "./debug-assert.js";
-import { debugLog } from "./debug-panel.js";
 const ts = anim.scope('tree-render');
 
 /** 重置动画时间线：清空 tween + 归零播放头。正常动画结束时调用。 */
@@ -761,7 +760,6 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
 
   // 所有 overlay tween + 字符雨 cleanup 信息收集
   const charRainCleanups: CharRainCleanup[] = [];
-  const overlaysToClean: OverlayPack[] = [pack, ...subPacks]; // used by doCollapse only
 
   // 本层 overlay tween
 
@@ -863,7 +861,6 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
   // 扁平化收集子容器
   const subTargets = _flattenExpandTree(container, 1);
   const subPacks = subTargets.map(st => _setupCollapseOverlays(st.container, st.fullHeight));
-  const overlaysToClean: OverlayPack[] = [pack, ...subPacks];
 
   // 构建独立动画树（折叠）
   _buildAndSetOverlayTree(pack, subTargets, subPacks, root);
@@ -1111,9 +1108,3 @@ function _ensureMetaFromExpandedState(root: Box): void {
   }
   walk(root);
 }
-
-// ============================================================
-// 调试面板已删除
-
-// ============================================================
-// 调试面板已删除

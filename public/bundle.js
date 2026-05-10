@@ -10969,7 +10969,6 @@
     L.beginOp(path, "expand");
     const animRoot = L.renderer.getRoot();
     const charRainCleanups = [];
-    const overlaysToClean = [pack, ...subPacks];
     ts.to(pack.containerOverlay, { height: fullHeight, duration: 0.05, ease: "back.out(1.15)" }, 0);
     for (const rowOv of pack.rowOverlays) {
       ts.to(rowOv, { y: rowOv._targetY, duration: 0.05, ease: "back.out(1.15)" }, 0);
@@ -11062,7 +11061,6 @@
     const pack = _setupCollapseOverlays(container, fullH);
     const subTargets = _flattenExpandTree(container, 1);
     const subPacks = subTargets.map((st) => _setupCollapseOverlays(st.container, st.fullHeight));
-    const overlaysToClean = [pack, ...subPacks];
     _buildAndSetOverlayTree(pack, subTargets, subPacks, root);
     const maxLevel = subTargets.length > 0 ? Math.max(...subTargets.map((st) => st.level)) : 0;
     const charRainCleanups = [];
