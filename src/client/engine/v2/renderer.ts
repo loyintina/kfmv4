@@ -18,7 +18,6 @@ import type {
 import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
 import { applyFlexLayout } from './flex.js';
 import { drawBorders } from './BorderDrawer.js';
-import type { BoxStyle as KFMBoxStyle } from './StyleConfig.js';
 
 export interface RendererOptions {
   dpr?: number;
