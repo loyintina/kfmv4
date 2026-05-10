@@ -10435,6 +10435,22 @@
     }
     _activeOverlays.length = 0;
   }
+  function _createCharLayer(x, y, parent) {
+    const layer = new Box({
+      id: "char-layer",
+      x,
+      y,
+      width: 0,
+      height: 0,
+      opacity: 1,
+      visible: true,
+      backgroundColor: "transparent",
+      interactive: false,
+      overflow: "visible"
+    });
+    parent.addChild(layer);
+    return layer;
+  }
   function _collectSiblingsAfter(container) {
     const parent = container.parent;
     if (!parent) return [];
@@ -10495,6 +10511,7 @@
       }
     }
     (_d = L.renderer) == null ? void 0 : _d.setOverlayRoot(overlayRoot);
+    return overlayRoot;
   }
   function _createVisualClone(src, overrides, cloneLabel = false) {
     var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j;
@@ -10965,7 +10982,8 @@
     const pack = _setupExpandOverlays(container, fullHeight);
     const subTargets = _flattenExpandTree(container, 1);
     const subPacks = subTargets.map((st) => _setupExpandOverlays(st.container, st.fullHeight));
-    _buildAndSetOverlayTree(pack, subTargets, subPacks, root);
+    const overlayRoot = _buildAndSetOverlayTree(pack, subTargets, subPacks, root);
+    const charLayer = _createCharLayer(pack.containerOverlay.x, pack.containerOverlay.y, overlayRoot);
     L.beginOp(path, "expand");
     const animRoot = L.renderer.getRoot();
     const charRainCleanups = [];
@@ -10975,7 +10993,7 @@
     }
     const topCleanup = setupCharRainTweens(
       container,
-      pack.containerOverlay,
+      charLayer,
       root,
       pack.rowOverlays.map((r) => r.y),
       ts,
@@ -10995,9 +11013,11 @@
       }
       const realContainer = (_e = subTargets.find((st) => `ov-${st.container.id}` === sp.containerOverlay.id)) == null ? void 0 : _e.container;
       if (realContainer) {
+        const subParent = sp.containerOverlay.parent;
+        const subCharLayer = _createCharLayer(sp.containerOverlay.x, sp.containerOverlay.y, subParent);
         const subCleanup = setupCharRainTweens(
           realContainer,
-          sp.containerOverlay,
+          subCharLayer,
           root,
           sp.rowOverlays.map((r) => r.y),
           ts,
@@ -11055,13 +11075,14 @@
     const pack = _setupCollapseOverlays(container, fullH);
     const subTargets = _flattenExpandTree(container, 1);
     const subPacks = subTargets.map((st) => _setupCollapseOverlays(st.container, st.fullHeight));
-    _buildAndSetOverlayTree(pack, subTargets, subPacks, root);
+    const overlayRoot = _buildAndSetOverlayTree(pack, subTargets, subPacks, root);
+    const charLayer = _createCharLayer(pack.containerOverlay.x, pack.containerOverlay.y, overlayRoot);
     const maxLevel = subTargets.length > 0 ? Math.max(...subTargets.map((st) => st.level)) : 0;
     const charRainCleanups = [];
     const collapseBaseDelay = maxLevel * 0.06;
     const topCleanup = setupCharRainTweens(
       container,
-      pack.containerOverlay,
+      charLayer,
       root,
       pack.rowOverlays.map((r) => r.y),
       ts,
@@ -11077,9 +11098,11 @@
       const delay = collapseBaseDelay - subLevel * 0.06;
       const realContainer = (_c = subTargets.find((st) => `ov-${st.container.id}` === sp.containerOverlay.id)) == null ? void 0 : _c.container;
       if (realContainer) {
+        const subParent = sp.containerOverlay.parent;
+        const subCharLayer = _createCharLayer(sp.containerOverlay.x, sp.containerOverlay.y, subParent);
         const subCleanup = setupCharRainTweens(
           realContainer,
-          sp.containerOverlay,
+          subCharLayer,
           root,
           sp.rowOverlays.map((r) => r.y),
           ts,

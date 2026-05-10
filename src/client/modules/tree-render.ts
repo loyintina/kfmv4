@@ -61,6 +61,19 @@ function _removeAllOverlays(): void {
   _activeOverlays.length = 0;
 }
 
+/** 创建字符雨层：与容器Ov平级的独立 Box，不受 overflow:hidden 裁剪 */
+function _createCharLayer(x: number, y: number, parent: Box): Box {
+  const layer = new Box({
+    id: 'char-layer',
+    x, y, width: 0, height: 0,
+    opacity: 1, visible: true,
+    backgroundColor: 'transparent', interactive: false,
+    overflow: 'visible',
+  });
+  parent.addChild(layer);
+  return layer;
+}
+
 /** 收集 container 在 parent 中之后的所有兄弟（排除 cursor-highlight） */
 function _collectSiblingsAfter(container: Box): Box[] {
   const parent = container.parent;
@@ -87,7 +100,7 @@ function _buildAndSetOverlayTree(
   subTargets: FlatSubTarget[],
   subPacks: OverlayPack[],
   root: Box,
-): void {
+): Box {
   // === 关键修复：overlayRoot 的位置 ===
   // overlay 树是扁平的（overlayRoot → 直接子节点），
   // 但主树的容器和兄弟位于 rootedContainer 等中间祖先节点之下（有 x 偏移）。
@@ -143,6 +156,7 @@ function _buildAndSetOverlayTree(
   }
 
   L.renderer?.setOverlayRoot(overlayRoot);
+  return overlayRoot;
 }
 
 // ========== Box 视觉克隆器 ==========
@@ -760,7 +774,10 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
   const subPacks = subTargets.map(st => _setupExpandOverlays(st.container, st.fullHeight));
 
   // 构建独立动画树并设置到渲染器（双树渲染）
-  _buildAndSetOverlayTree(pack, subTargets, subPacks, root);
+  const overlayRoot = _buildAndSetOverlayTree(pack, subTargets, subPacks, root);
+
+  // 字符雨层：与容器Ov平级，不受 overflow:hidden 裁剪
+  const charLayer = _createCharLayer(pack.containerOverlay.x, pack.containerOverlay.y, overlayRoot);
 
   L.beginOp(path, 'expand');
   const animRoot = L.renderer!.getRoot()!;
@@ -776,7 +793,7 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
 
   // 本层字符雨 tween（行已在 final 位置，rowOv.y = expandedY）
   const topCleanup = setupCharRainTweens(
-    container, pack.containerOverlay, root,
+    container, charLayer, root,
     pack.rowOverlays.map(r => r.y),
     ts, 0
   );
@@ -793,11 +810,13 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
     for (const sibOv of sp.siblingOverlays) {
       ts.to(sibOv, { y: (sibOv as Box & OverlayMeta)._targetY!, duration: 0.05, ease: 'back.out(1.15)' }, delay);
     }
-    // 子层字符雨（在 overlay 容器上创建字符 Box）
+    // 子层字符雨（在独立的子层字符层上创建字符 Box）
     const realContainer = subTargets.find(st => `ov-${st.container.id}` === sp.containerOverlay.id)?.container;
     if (realContainer) {
+      const subParent = sp.containerOverlay.parent!;
+      const subCharLayer = _createCharLayer(sp.containerOverlay.x, sp.containerOverlay.y, subParent);
       const subCleanup = setupCharRainTweens(
-        realContainer, sp.containerOverlay, root,
+        realContainer, subCharLayer, root,
         sp.rowOverlays.map(r => r.y),
         ts, delay
       );
@@ -862,7 +881,10 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
   const subPacks = subTargets.map(st => _setupCollapseOverlays(st.container, st.fullHeight));
 
   // 构建独立动画树（折叠）
-  _buildAndSetOverlayTree(pack, subTargets, subPacks, root);
+  const overlayRoot = _buildAndSetOverlayTree(pack, subTargets, subPacks, root);
+
+  // 字符雨层：与容器Ov平级，不受 overflow:hidden 裁剪
+  const charLayer = _createCharLayer(pack.containerOverlay.x, pack.containerOverlay.y, overlayRoot);
 
   const maxLevel = subTargets.length > 0 ? Math.max(...subTargets.map(st => st.level)) : 0;
   const charRainCleanups: CharRainCleanup[] = [];
@@ -870,7 +892,7 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
   // 字符雨：方向 collapse，最深层先飞（delay 从最深层的展开延迟对称）
   const collapseBaseDelay = maxLevel * 0.06;
   const topCleanup = setupCharRainTweens(
-    container, pack.containerOverlay, root,
+    container, charLayer, root,
     pack.rowOverlays.map(r => r.y),
     ts, collapseBaseDelay, 'collapse',
   );
@@ -881,8 +903,10 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
     const delay = collapseBaseDelay - subLevel * 0.06;
     const realContainer = subTargets.find(st => `ov-${st.container.id}` === sp.containerOverlay.id)?.container;
     if (realContainer) {
+      const subParent = sp.containerOverlay.parent!;
+      const subCharLayer = _createCharLayer(sp.containerOverlay.x, sp.containerOverlay.y, subParent);
       const subCleanup = setupCharRainTweens(
-        realContainer, sp.containerOverlay, root,
+        realContainer, subCharLayer, root,
         sp.rowOverlays.map(r => r.y),
         ts, delay, 'collapse',
       );
