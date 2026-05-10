@@ -8753,9 +8753,6 @@
     );
     return _charRainCore(rows, rowTargetYs, container, overlayContainer, root, tl, baseDelay, direction);
   }
-  function setupCharRainForSiblings(rows, rowTargetYs, referenceBox, overlayContainer, root, tl, baseDelay, direction = "expand") {
-    return _charRainCore(rows, rowTargetYs, referenceBox, overlayContainer, root, tl, baseDelay, direction);
-  }
   function cleanupCharRain(cu) {
     for (const box of cu.charBoxes) {
       const idx = cu.container.children.indexOf(box);
@@ -11032,27 +11029,6 @@
           delay
         );
         if (subCleanup) charRainCleanups.push(subCleanup);
-        const sibRows = sp.hiddenSiblings.filter(
-          (s) => {
-            var _a2, _b2;
-            return ((_a2 = s.id) == null ? void 0 : _a2.startsWith("title-")) || ((_b2 = s.id) == null ? void 0 : _b2.startsWith("file-"));
-          }
-        );
-        if (sibRows.length > 0) {
-          const sibParent = sibRows[0].parent;
-          const sibCli = _createCharLayer(0, 0, subParent);
-          const sibTargetYs = sp.siblingOverlays.filter((_, i) => sibRows.includes(sp.hiddenSiblings[i])).map((o) => o._targetY);
-          const sibCleanup = setupCharRainForSiblings(
-            sibRows,
-            sibTargetYs,
-            sibParent,
-            sibCli,
-            root,
-            ts,
-            delay
-          );
-          if (sibCleanup) charRainCleanups.push(sibCleanup);
-        }
       }
     }
     ts.call(() => {
@@ -11140,28 +11116,6 @@
           "collapse"
         );
         if (subCleanup) charRainCleanups.push(subCleanup);
-        const sibRows = sp.hiddenSiblings.filter(
-          (s) => {
-            var _a2, _b2;
-            return ((_a2 = s.id) == null ? void 0 : _a2.startsWith("title-")) || ((_b2 = s.id) == null ? void 0 : _b2.startsWith("file-"));
-          }
-        );
-        if (sibRows.length > 0) {
-          const sibParent = sibRows[0].parent;
-          const sibCli = _createCharLayer(0, 0, subParent);
-          const sibTargetYs = sp.siblingOverlays.filter((_, i) => sibRows.includes(sp.hiddenSiblings[i])).map((o) => o._targetY);
-          const sibCleanup = setupCharRainForSiblings(
-            sibRows,
-            sibTargetYs,
-            sibParent,
-            sibCli,
-            root,
-            ts,
-            delay,
-            "collapse"
-          );
-          if (sibCleanup) charRainCleanups.push(sibCleanup);
-        }
       }
     }
     const boxStartDelay = collapseBaseDelay ? collapseBaseDelay - 0.06 + 0.29 : 0.29;

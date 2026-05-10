@@ -832,22 +832,6 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
         ts, delay
       );
       if (subCleanup) charRainCleanups.push(subCleanup);
-      // 兄弟行的字符雨（title-/file- 等单行兄弟）
-      const sibRows = sp.hiddenSiblings.filter(s =>
-        s.id?.startsWith('title-') || s.id?.startsWith('file-')
-      );
-      if (sibRows.length > 0) {
-        const sibParent = sibRows[0].parent!;
-        const sibCli = _createCharLayer(0, 0, subParent);
-        const sibTargetYs = sp.siblingOverlays
-          .filter((_, i) => sibRows.includes(sp.hiddenSiblings[i]))
-          .map(o => (o as Box & OverlayMeta)._targetY!);
-        const sibCleanup = setupCharRainForSiblings(
-          sibRows, sibTargetYs, sibParent,
-          sibCli, root, ts, delay
-        );
-        if (sibCleanup) charRainCleanups.push(sibCleanup);
-      }
     }
   }
 
@@ -939,22 +923,6 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
         ts, delay, 'collapse',
       );
       if (subCleanup) charRainCleanups.push(subCleanup);
-      // 兄弟行字符雨回收
-      const sibRows = sp.hiddenSiblings.filter(s =>
-        s.id?.startsWith('title-') || s.id?.startsWith('file-')
-      );
-      if (sibRows.length > 0) {
-        const sibParent = sibRows[0].parent!;
-        const sibCli = _createCharLayer(0, 0, subParent);
-        const sibTargetYs = sp.siblingOverlays
-          .filter((_, i) => sibRows.includes(sp.hiddenSiblings[i]))
-          .map(o => (o as Box & OverlayMeta)._targetY!);
-        const sibCleanup = setupCharRainForSiblings(
-          sibRows, sibTargetYs, sibParent,
-          sibCli, root, ts, delay, 'collapse',
-        );
-        if (sibCleanup) charRainCleanups.push(sibCleanup);
-      }
     }
   }
 
