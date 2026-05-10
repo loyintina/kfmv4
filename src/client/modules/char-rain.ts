@@ -196,11 +196,17 @@ function _charRainCore(
           interactive: false, zIndex: 99, overflow: "visible",
         });
         tBox.textStyle = { ...toggleBox.textStyle, overflow: "visible", maxLines: 1 };
+        // 折叠 toggle 从主树当前旋转开始（展开态是 PI/2）
+        tBox.transform.rotate = toggleBox.transform.rotate;
         overlayContainer.addChild(tBox);
         charBoxes.push(tBox);
         tl.to(tBox, {
           x: tToX, y: tToY, opacity: 0,
           duration: tRandDur, ease: "back.in(1.05)",
+        }, tRandDelay);
+        tl.to(tBox.transform, {
+          rotate: 0, duration: tRandDur,
+          ease: "back.in(1.05)",
         }, tRandDelay);
       } else {
         const tInitX = tTargetX + (Math.random() - 0.5) * 100;

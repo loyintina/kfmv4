@@ -8697,12 +8697,18 @@
             overflow: "visible"
           });
           tBox.textStyle = { ...toggleBox.textStyle, overflow: "visible", maxLines: 1 };
+          tBox.transform.rotate = toggleBox.transform.rotate;
           overlayContainer.addChild(tBox);
           charBoxes.push(tBox);
           tl.to(tBox, {
             x: tToX,
             y: tToY,
             opacity: 0,
+            duration: tRandDur,
+            ease: "back.in(1.05)"
+          }, tRandDelay);
+          tl.to(tBox.transform, {
+            rotate: 0,
             duration: tRandDur,
             ease: "back.in(1.05)"
           }, tRandDelay);
