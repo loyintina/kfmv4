@@ -61,11 +61,13 @@ export function debugClear(): void {
   flushLogUI();
 }
 
-/** 公开：复制日志到剪贴板 */
+/** 公开：复制日志到剪贴板（单行模式：换行符替换为 →，防误提交） */
 export function debugCopy(): void {
   const text = logLines.join('\n');
-  navigator.clipboard.writeText(text).then(() => {
-    debugLog('📋 日志已复制到剪贴板');
+  // 替换换行为 → 防止复制到聊天框时自动提交
+  const singleLine = text.replace(/\n/g, ' → ');
+  navigator.clipboard.writeText(singleLine).then(() => {
+    debugLog('📋 日志已复制（单行模式）');
   }).catch(() => {
     debugLog('❌ 复制失败');
   });

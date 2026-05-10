@@ -13845,8 +13845,9 @@
   }
   function debugCopy() {
     const text = logLines.join("\n");
-    navigator.clipboard.writeText(text).then(() => {
-      debugLog("\u{1F4CB} \u65E5\u5FD7\u5DF2\u590D\u5236\u5230\u526A\u8D34\u677F");
+    const singleLine = text.replace(/\n/g, " \u2192 ");
+    navigator.clipboard.writeText(singleLine).then(() => {
+      debugLog("\u{1F4CB} \u65E5\u5FD7\u5DF2\u590D\u5236\uFF08\u5355\u884C\u6A21\u5F0F\uFF09");
     }).catch(() => {
       debugLog("\u274C \u590D\u5236\u5931\u8D25");
     });
