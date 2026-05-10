@@ -222,6 +222,7 @@ function _setupExpandOverlays(container: Box, fullHeight: number): OverlayPack {
 
   // 1. 容器 overlay (height=0, 即将动画到 fullHeight)
   const containerOv = _createVisualClone(container, { id: `ov-${container.id || 'container'}`, height: 0, opacity: 1, zIndex: OVERLAY_Z });
+  containerOv.overflow = 'hidden';  // 裁剪子元素，height=0 时不可见
   _addOverlay(containerOv);
   // 由 _buildAndSetOverlayTree 统一构建 overlay 树
   // 但暂时标记 parent 引用以便 getAbsolutePosition 能正确计算
@@ -231,15 +232,16 @@ function _setupExpandOverlays(container: Box, fullHeight: number): OverlayPack {
   //    跳过已展开的子容器（expanded-*），它们由独立的 setupExpandOverlays 处理
   const rowOverlays: Box[] = [];
   const hiddenChildren: Box[] = [];
+  // 行直接在最终位置（expandedY），不设 collapsedY。
+  // 容器 overlay 有 overflow:hidden，行被裁剪不显示。
+  // 容器高度从 0 增长到 fullHeight，行从顶部逐行显露。
   const origYs = (container as Box & OverlayMeta)._origYs as number[] | undefined;
   for (let j = 0; j < container.children.length; j++) {
     const child = container.children[j];
     if (!child.visible) continue;
     if (child.id?.startsWith('expanded-')) continue;
     const expandedY = origYs ? origYs[j] : child.y;
-    const collapsedY = expandedY - fullHeight;
-    const rowOv = _createVisualClone(child, { id: child.id || (`row-${j}`), y: collapsedY, opacity: 1, zIndex: OVERLAY_Z + 1 });
-    (rowOv as Box & OverlayMeta)._targetY = expandedY;
+    const rowOv = _createVisualClone(child, { id: child.id || (`row-${j}`), y: expandedY, opacity: 1, zIndex: OVERLAY_Z + 1 });
     _addOverlay(rowOv);
     containerOv.addChild(rowOv);
     rowOverlays.push(rowOv);
@@ -272,6 +274,7 @@ function _setupCollapseOverlays(container: Box, fullH: number): OverlayPack {
 
   // 1. 容器 overlay (height=fullH, 即将动画到 0)
   const containerOv = _createVisualClone(container, { id: `ov-${container.id || 'container'}`, height: fullH, opacity: 1, zIndex: OVERLAY_Z });
+  containerOv.overflow = 'hidden';  // 裁剪子元素，折叠时子行逐行消失
   _addOverlay(containerOv);
   containerOv.parent = parent;
 
@@ -287,10 +290,14 @@ function _setupCollapseOverlays(container: Box, fullH: number): OverlayPack {
     _addOverlay(rowOv);
     containerOv.addChild(rowOv);
     rowOverlays.push(rowOv);
-    // 隐藏主树真实行 — 动画期间只有 overlay 可见
+    // 隐藏主树真实行：动画期间只有 overlay 可见
     child.opacity = 0;
     hiddenChildren.push(child);
   }
+
+  // 行直接在最终位置（expandedY），不设 collapsedY。
+  // 容器 overlay 有 overflow:hidden，行被裁剪不显示。
+  // 容器高度从 fullH 缩到 0，行从底部逐行消失。
 
   // 3. 兄弟 overlay
   const siblingOverlays: Box[] = [];
@@ -762,20 +769,15 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
   const charRainCleanups: CharRainCleanup[] = [];
 
   // 本层 overlay tween
-
-
   ts.to(pack.containerOverlay, { height: fullHeight, duration: 0.05, ease: 'back.out(1.15)' }, 0);
-  for (const rowOv of pack.rowOverlays) {
-    ts.to(rowOv, { y: (rowOv as Box & OverlayMeta)._targetY!, duration: 0.05, ease: 'back.out(1.15)' }, 0);
-  }
   for (const sibOv of pack.siblingOverlays) {
     ts.to(sibOv, { y: (sibOv as Box & OverlayMeta)._targetY!, duration: 0.05, ease: 'back.out(1.15)' }, 0);
   }
 
-  // 本层字符雨 tween（直接挂到 ts 上，不建独立时间线）
+  // 本层字符雨 tween（行已在 final 位置，rowOv.y = expandedY）
   const topCleanup = setupCharRainTweens(
     container, pack.containerOverlay, root,
-    pack.rowOverlays.map(r => (r as Box & OverlayMeta)._targetY as number),
+    pack.rowOverlays.map(r => r.y),
     ts, 0
   );
   if (topCleanup) charRainCleanups.push(topCleanup);
@@ -788,9 +790,6 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
       ? (subTargets.find(st => `ov-${st.container.id}` === sp.containerOverlay.id)?.fullHeight ?? sp.containerOverlay.height)
       : sp.containerOverlay.height;
     ts.to(sp.containerOverlay, { height: targetHeight, duration: 0.05, ease: 'back.out(1.15)' }, delay);
-    for (const rowOv of sp.rowOverlays) {
-      ts.to(rowOv, { y: (rowOv as Box & OverlayMeta)._targetY!, duration: 0.05, ease: 'back.out(1.15)' }, delay);
-    }
     for (const sibOv of sp.siblingOverlays) {
       ts.to(sibOv, { y: (sibOv as Box & OverlayMeta)._targetY!, duration: 0.05, ease: 'back.out(1.15)' }, delay);
     }
@@ -799,7 +798,7 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
     if (realContainer) {
       const subCleanup = setupCharRainTweens(
         realContainer, sp.containerOverlay, root,
-        sp.rowOverlays.map(r => (r as Box & OverlayMeta)._targetY as number),
+        sp.rowOverlays.map(r => r.y),
         ts, delay
       );
       if (subCleanup) charRainCleanups.push(subCleanup);
@@ -872,7 +871,7 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
   const collapseBaseDelay = maxLevel * 0.06;
   const topCleanup = setupCharRainTweens(
     container, pack.containerOverlay, root,
-    pack.rowOverlays.map(r => (r as Box & OverlayMeta)._targetY as number),
+    pack.rowOverlays.map(r => r.y),
     ts, collapseBaseDelay, 'collapse',
   );
   if (topCleanup) charRainCleanups.push(topCleanup);
@@ -884,7 +883,7 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
     if (realContainer) {
       const subCleanup = setupCharRainTweens(
         realContainer, sp.containerOverlay, root,
-        sp.rowOverlays.map(r => (r as Box & OverlayMeta)._targetY as number),
+        sp.rowOverlays.map(r => r.y),
         ts, delay, 'collapse',
       );
       if (subCleanup) charRainCleanups.push(subCleanup);

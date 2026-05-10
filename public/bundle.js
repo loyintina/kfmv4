@@ -10551,6 +10551,7 @@
     var _a;
     const parent = container.parent;
     const containerOv = _createVisualClone(container, { id: `ov-${container.id || "container"}`, height: 0, opacity: 1, zIndex: OVERLAY_Z });
+    containerOv.overflow = "hidden";
     _addOverlay(containerOv);
     containerOv.parent = parent;
     const rowOverlays = [];
@@ -10561,9 +10562,7 @@
       if (!child.visible) continue;
       if ((_a = child.id) == null ? void 0 : _a.startsWith("expanded-")) continue;
       const expandedY = origYs ? origYs[j] : child.y;
-      const collapsedY = expandedY - fullHeight;
-      const rowOv = _createVisualClone(child, { id: child.id || `row-${j}`, y: collapsedY, opacity: 1, zIndex: OVERLAY_Z + 1 });
-      rowOv._targetY = expandedY;
+      const rowOv = _createVisualClone(child, { id: child.id || `row-${j}`, y: expandedY, opacity: 1, zIndex: OVERLAY_Z + 1 });
       _addOverlay(rowOv);
       containerOv.addChild(rowOv);
       rowOverlays.push(rowOv);
@@ -10588,6 +10587,7 @@
     var _a;
     const parent = container.parent;
     const containerOv = _createVisualClone(container, { id: `ov-${container.id || "container"}`, height: fullH, opacity: 1, zIndex: OVERLAY_Z });
+    containerOv.overflow = "hidden";
     _addOverlay(containerOv);
     containerOv.parent = parent;
     const rowOverlays = [];
@@ -10970,9 +10970,6 @@
     const animRoot = L.renderer.getRoot();
     const charRainCleanups = [];
     ts.to(pack.containerOverlay, { height: fullHeight, duration: 0.05, ease: "back.out(1.15)" }, 0);
-    for (const rowOv of pack.rowOverlays) {
-      ts.to(rowOv, { y: rowOv._targetY, duration: 0.05, ease: "back.out(1.15)" }, 0);
-    }
     for (const sibOv of pack.siblingOverlays) {
       ts.to(sibOv, { y: sibOv._targetY, duration: 0.05, ease: "back.out(1.15)" }, 0);
     }
@@ -10980,7 +10977,7 @@
       container,
       pack.containerOverlay,
       root,
-      pack.rowOverlays.map((r) => r._targetY),
+      pack.rowOverlays.map((r) => r.y),
       ts,
       0
     );
@@ -10993,9 +10990,6 @@
       const delay = subLevel * 0.06;
       const targetHeight = sp.containerOverlay.height === 0 ? (_d = (_c = subTargets.find((st) => `ov-${st.container.id}` === sp.containerOverlay.id)) == null ? void 0 : _c.fullHeight) != null ? _d : sp.containerOverlay.height : sp.containerOverlay.height;
       ts.to(sp.containerOverlay, { height: targetHeight, duration: 0.05, ease: "back.out(1.15)" }, delay);
-      for (const rowOv of sp.rowOverlays) {
-        ts.to(rowOv, { y: rowOv._targetY, duration: 0.05, ease: "back.out(1.15)" }, delay);
-      }
       for (const sibOv of sp.siblingOverlays) {
         ts.to(sibOv, { y: sibOv._targetY, duration: 0.05, ease: "back.out(1.15)" }, delay);
       }
@@ -11005,7 +10999,7 @@
           realContainer,
           sp.containerOverlay,
           root,
-          sp.rowOverlays.map((r) => r._targetY),
+          sp.rowOverlays.map((r) => r.y),
           ts,
           delay
         );
@@ -11069,7 +11063,7 @@
       container,
       pack.containerOverlay,
       root,
-      pack.rowOverlays.map((r) => r._targetY),
+      pack.rowOverlays.map((r) => r.y),
       ts,
       collapseBaseDelay,
       "collapse"
@@ -11087,7 +11081,7 @@
           realContainer,
           sp.containerOverlay,
           root,
-          sp.rowOverlays.map((r) => r._targetY),
+          sp.rowOverlays.map((r) => r.y),
           ts,
           delay,
           "collapse"
