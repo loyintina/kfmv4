@@ -25,8 +25,6 @@ export interface CharRainCleanup {
   /** overlay 容器（字符盒在此创建，cleanup 时从此移除） */
   container: Box;
   charBoxes: Box[];
-  hiddenLabels: Box[];
-  hiddenToggles: Box[];
 }
 
 /**
@@ -65,8 +63,6 @@ export function setupCharRainTweens(
   // 无需额外修改。字符起始 Y 可能超出容器边界，overlay 容器允许子元素溢出。
 
   const charBoxes: Box[] = [];
-  const hiddenLabels: Box[] = [];
-  const hiddenToggles: Box[] = [];
   const BASE_DUR = 0.22;
   const scrollY = root.scrollY ?? 0;
   const absY = container.getAbsolutePosition().y;
@@ -234,19 +230,11 @@ export function setupCharRainTweens(
         }
       }
     }
-
-    // 隐藏原始 label 和 toggle（双保险：主树行 opacity=0 已隐藏，
-    // 此处的 visible=false 防止重建后的主树被 char-rain 残留数据影响）
-    const labelBox = row.children.find((c) => c.id?.startsWith("label-"));
-    if (labelBox) { labelBox.visible = false; hiddenLabels.push(labelBox); }
-
-    const toggleHider = row.children.find((c) => c.id?.startsWith("toggle-"));
-    if (toggleHider) { toggleHider.visible = false; hiddenToggles.push(toggleHider); }
   }
 
   if (charBoxes.length === 0) return null;
 
-  return { container: overlayContainer, charBoxes, hiddenLabels, hiddenToggles };
+  return { container: overlayContainer, charBoxes };
 }
 
 /**
@@ -257,6 +245,4 @@ export function cleanupCharRain(cu: CharRainCleanup): void {
     const idx = cu.container.children.indexOf(box);
     if (idx >= 0) cu.container.children.splice(idx, 1);
   }
-  cu.hiddenLabels.forEach(l => { l.visible = true; });
-  cu.hiddenToggles.forEach(t => { t.visible = true; });
 }

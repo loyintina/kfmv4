@@ -8559,8 +8559,6 @@
     const ctx = canvas == null ? void 0 : canvas.getContext("2d");
     if (!ctx) return null;
     const charBoxes = [];
-    const hiddenLabels = [];
-    const hiddenToggles = [];
     const BASE_DUR = 0.22;
     const scrollY = (_a = root.scrollY) != null ? _a : 0;
     const absY = container.getAbsolutePosition().y;
@@ -8748,37 +8746,15 @@
           }
         }
       }
-      const labelBox = row.children.find((c) => {
-        var _a2;
-        return (_a2 = c.id) == null ? void 0 : _a2.startsWith("label-");
-      });
-      if (labelBox) {
-        labelBox.visible = false;
-        hiddenLabels.push(labelBox);
-      }
-      const toggleHider = row.children.find((c) => {
-        var _a2;
-        return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
-      });
-      if (toggleHider) {
-        toggleHider.visible = false;
-        hiddenToggles.push(toggleHider);
-      }
     }
     if (charBoxes.length === 0) return null;
-    return { container: overlayContainer, charBoxes, hiddenLabels, hiddenToggles };
+    return { container: overlayContainer, charBoxes };
   }
   function cleanupCharRain(cu) {
     for (const box of cu.charBoxes) {
       const idx = cu.container.children.indexOf(box);
       if (idx >= 0) cu.container.children.splice(idx, 1);
     }
-    cu.hiddenLabels.forEach((l) => {
-      l.visible = true;
-    });
-    cu.hiddenToggles.forEach((t) => {
-      t.visible = true;
-    });
   }
 
   // src/client/engine/v2/flex.ts
