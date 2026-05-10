@@ -224,6 +224,8 @@ interface OverlayPack {
   containerOverlay: Box;
   rowOverlays: Box[];
   siblingOverlays: Box[];
+  /** 被隐藏的容器（主树 expanded-* 自身） */
+  hiddenContainer: Box | null;
   /** 被隐藏的真实兄弟 */
   hiddenSiblings: Box[];
   /** 被隐藏的容器内子行 */
@@ -241,6 +243,9 @@ function _setupExpandOverlays(container: Box, fullHeight: number): OverlayPack {
   // 由 _buildAndSetOverlayTree 统一构建 overlay 树
   // 但暂时标记 parent 引用以便 getAbsolutePosition 能正确计算
   containerOv.parent = parent;
+
+  // 隐藏主树容器自身（gradient/shadow/border 与 overlay 叠加会变亮）
+  container.opacity = 0;
 
   // 2. 行 overlay（FROM=折叠态 y，TO=终端态 y）
   //    跳过已展开的子容器（expanded-*），它们由独立的 setupExpandOverlays 处理
@@ -279,7 +284,7 @@ function _setupExpandOverlays(container: Box, fullHeight: number): OverlayPack {
     hiddenSiblings.push(sib);
   }
 
-  return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenSiblings, hiddenChildren };
+  return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenContainer: container, hiddenSiblings, hiddenChildren };
 }
 
 /** 搭建折叠动画的 overlay 集合 */
@@ -291,6 +296,9 @@ function _setupCollapseOverlays(container: Box, fullH: number): OverlayPack {
   containerOv.overflow = 'hidden';  // 裁剪子元素，折叠时子行逐行消失
   _addOverlay(containerOv);
   containerOv.parent = parent;
+
+  // 隐藏主树容器自身（gradient/shadow/border 与 overlay 叠加会变亮）
+  container.opacity = 0;
 
   // 2. 行 overlay：固定在展开态 y
   //    跳过已展开的子容器（expanded-*）
@@ -328,7 +336,7 @@ function _setupCollapseOverlays(container: Box, fullH: number): OverlayPack {
     hiddenSiblings.push(sib);
   }
 
-  return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenSiblings, hiddenChildren };
+  return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenContainer: container, hiddenSiblings, hiddenChildren };
 }
 
 /** 保存 KFMState 订阅引用，防止重复订阅 */
@@ -832,6 +840,7 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
     L.renderer?.setOverlayRoot(null);  // 销毁动画树
     // 恢复主树被隐藏的元素（展开动画：树已重建，元素仍在）
     for (const p of [pack, ...subPacks]) {
+      if (p.hiddenContainer) p.hiddenContainer.opacity = 1;
       for (const child of p.hiddenChildren) child.opacity = 1;
       for (const sib of p.hiddenSiblings) sib.opacity = 1;
     }

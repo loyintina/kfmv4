@@ -10571,6 +10571,7 @@
     containerOv.overflow = "hidden";
     _addOverlay(containerOv);
     containerOv.parent = parent;
+    container.opacity = 0;
     const rowOverlays = [];
     const hiddenChildren = [];
     const origYs = container._origYs;
@@ -10598,7 +10599,7 @@
       sib.opacity = 0;
       hiddenSiblings.push(sib);
     }
-    return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenSiblings, hiddenChildren };
+    return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenContainer: container, hiddenSiblings, hiddenChildren };
   }
   function _setupCollapseOverlays(container, fullH) {
     var _a;
@@ -10607,6 +10608,7 @@
     containerOv.overflow = "hidden";
     _addOverlay(containerOv);
     containerOv.parent = parent;
+    container.opacity = 0;
     const rowOverlays = [];
     const hiddenChildren = [];
     for (let j = 0; j < container.children.length; j++) {
@@ -10632,7 +10634,7 @@
       sib.opacity = 0;
       hiddenSiblings.push(sib);
     }
-    return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenSiblings, hiddenChildren };
+    return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenContainer: container, hiddenSiblings, hiddenChildren };
   }
   function _ensureSubscribed() {
     if (L._stateSub) KFMState.unsubscribe(L._stateSub);
@@ -11033,6 +11035,7 @@
       _removeAllOverlays();
       (_b2 = L.renderer) == null ? void 0 : _b2.setOverlayRoot(null);
       for (const p of [pack, ...subPacks]) {
+        if (p.hiddenContainer) p.hiddenContainer.opacity = 1;
         for (const child of p.hiddenChildren) child.opacity = 1;
         for (const sib of p.hiddenSiblings) sib.opacity = 1;
       }
