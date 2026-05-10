@@ -22,9 +22,10 @@ import * as clickQueue from "./click-queue.js";
 import { assert, warn } from "./debug-assert.js";
 const ts = anim.scope('tree-render');
 
-/** 重置动画时间线：清空 tween + 归零播放头。正常动画结束时调用。 */
+/** 重置动画时间线：清空 tween + 归零播放头 + 清除回调。正常动画结束时调用。 */
 function _resetAnimTimeline(): void {
   ts.clear();
+  ts.eventCallback('onComplete', null);
   ts.time(0);
 }
 
@@ -40,9 +41,6 @@ interface OverlayMeta {
 const _activeOverlays: Box[] = [];
 
 const OVERLAY_Z = 200;
-
-/** 手动反转标志：processClickQueue 规则 1 设 true，onReverseComplete 清 false */
-let _manualReversing = false;
 
 function _addOverlay(overlay: Box): void {
   _activeOverlays.push(overlay);
@@ -487,7 +485,6 @@ export function onSidebarOpen(): void {
 }
 
 export function onSidebarClose(): void {
-  _manualReversing = false;
   // 先停掉所有动画和独立rAF循环
   _removeAllOverlays();
   _resetAnimTimeline();
@@ -666,15 +663,12 @@ function processClickQueue(): void {
     const currentState = !!KFMState.expandedPaths[tgt];
     KFMState.expandedPaths[tgt] = !currentState;
     localStorage.setItem('expandedPaths', JSON.stringify(KFMState.expandedPaths));
-    // 设置反转标志，防止 expand 的 ts.call(cleanup) 干扰
-    _manualReversing = true;
     // reverse 所有 tween（overlay 高度/位置 + 字符位置/透明度）
     ts.reverse();
     ts.eventCallback('onReverseComplete', () => {
-      _manualReversing = false;
       L.endOp();
       _removeAllOverlays();
-      _resetAnimTimeline();  // ts.clear() + time(0)
+      _resetAnimTimeline();  // ts.clear() + time(0) + 清除 onComplete
       KFMState.notify();    // 触发 _stateSub → rebuildTree
       processClickQueue();
     });
@@ -843,10 +837,10 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
   }
 
   // cleanup: 在所有动画完成后自动触发
-  ts.call(() => {
+  // 用 onComplete 而非 ts.call：反向播放时 onComplete 不会被触发，
+  // 不会与 processClickQueue 的 onReverseComplete 冲突。
+  ts.eventCallback('onComplete', () => {
     if (L.renderer?.getRoot() !== animRoot) return;
-    // 手动反转进行中：cleanup 由 processClickQueue 的 onReverseComplete 接管
-    if (_manualReversing) return;
     for (const cu of charRainCleanups) cleanupCharRain(cu);
     _removeAllOverlays();
     L.renderer?.setOverlayRoot(null);  // 销毁动画树
@@ -962,9 +956,9 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
   }
 
   // cleanup
-  ts.call(() => {
+  // 用 onComplete：反向播放时不被触发，由 onReverseComplete 接管。
+  ts.eventCallback('onComplete', () => {
     if (L.renderer?.getRoot() !== animRoot) return;
-    if (_manualReversing) return;
     for (const cu of charRainCleanups) cleanupCharRain(cu);
     _removeAllOverlays();
     L.renderer?.setOverlayRoot(null);  // 销毁动画树
@@ -995,7 +989,6 @@ function findTapTarget(box: Box, px: number, py: number): Box | null {
 
 /** 强制重建树（跳过 L._animBusy 锁，用于眼睛图标��用户主动行为） */
 export function forceRebuildTree(): void {
-  _manualReversing = false;
   _removeAllOverlays();
   L.endOp();
   
