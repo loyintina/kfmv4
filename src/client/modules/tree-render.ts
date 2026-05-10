@@ -667,29 +667,19 @@ function processClickQueue(): void {
 
     // 规则 1：同路径点击 → 状态先行 + reverse
     clickQueue.dequeue();
-    // 切换动画方向：展开→折叠，折叠→展开
-    const newDir = L.animatingDir === 'expand' ? 'collapse' : 'expand';
-    L.beginOp(tgt, newDir);
-    // 状态与方向一致
-    KFMState.expandedPaths[tgt] = newDir === 'expand';
+    // 反转目标取决于动画方向：
+    // 展开中反转 → 折叠（false），折叠中反转 → 展开（true）
+    KFMState.expandedPaths[tgt] = L.animatingDir === 'collapse';
     localStorage.setItem('expandedPaths', JSON.stringify(KFMState.expandedPaths));
-    // reverse 切换播放方向（GSAP 自动处理：反向→正向，正向→反向）
+    // reverse 所有 tween（overlay 高度/位置 + 字符位置/透明度）
     ts.reverse();
-    // 清除旧回调，注册与新方向匹配的回调
-    ts.eventCallback('onComplete', null);
-    ts.eventCallback('onReverseComplete', null);
-    const animEnd = () => {
+    ts.eventCallback('onReverseComplete', () => {
       L.endOp();
       _removeAllOverlays();
-      _resetAnimTimeline();
-      KFMState.notify();
+      _resetAnimTimeline();  // ts.clear() + time(0) + 清除 onComplete
+      KFMState.notify();    // 触发 _stateSub → rebuildTree
       processClickQueue();
-    };
-    if (ts.reversed()) {
-      ts.eventCallback('onReverseComplete', animEnd);
-    } else {
-      ts.eventCallback('onComplete', animEnd);
-    }
+    });
     return;
   }
 
