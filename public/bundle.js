@@ -10421,6 +10421,7 @@
   }
   var _activeOverlays = [];
   var OVERLAY_Z = 200;
+  var _manualReversing = false;
   function _addOverlay(overlay) {
     _activeOverlays.push(overlay);
   }
@@ -10756,6 +10757,7 @@
   }
   function onSidebarClose() {
     var _a, _b, _c, _d, _e;
+    _manualReversing = false;
     _removeAllOverlays();
     _resetAnimTimeline();
     L._sidebarClosed = true;
@@ -10893,8 +10895,10 @@
       const currentState = !!KFMState.expandedPaths[tgt];
       KFMState.expandedPaths[tgt] = !currentState;
       localStorage.setItem("expandedPaths", JSON.stringify(KFMState.expandedPaths));
+      _manualReversing = true;
       ts.reverse();
       ts.eventCallback("onReverseComplete", () => {
+        _manualReversing = false;
         L.endOp();
         _removeAllOverlays();
         _resetAnimTimeline();
@@ -11034,6 +11038,7 @@
     ts.call(() => {
       var _a2, _b2, _c2;
       if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
+      if (_manualReversing) return;
       for (const cu of charRainCleanups) cleanupCharRain(cu);
       _removeAllOverlays();
       (_b2 = L.renderer) == null ? void 0 : _b2.setOverlayRoot(null);
@@ -11150,6 +11155,7 @@
     ts.call(() => {
       var _a2, _b2;
       if (((_a2 = L.renderer) == null ? void 0 : _a2.getRoot()) !== animRoot) return;
+      if (_manualReversing) return;
       for (const cu of charRainCleanups) cleanupCharRain(cu);
       _removeAllOverlays();
       (_b2 = L.renderer) == null ? void 0 : _b2.setOverlayRoot(null);

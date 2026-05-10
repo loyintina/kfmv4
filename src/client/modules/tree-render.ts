@@ -41,6 +41,9 @@ const _activeOverlays: Box[] = [];
 
 const OVERLAY_Z = 200;
 
+/** 手动反转标志：processClickQueue 规则 1 设 true，onReverseComplete 清 false */
+let _manualReversing = false;
+
 function _addOverlay(overlay: Box): void {
   _activeOverlays.push(overlay);
 }
@@ -484,6 +487,7 @@ export function onSidebarOpen(): void {
 }
 
 export function onSidebarClose(): void {
+  _manualReversing = false;
   // 先停掉所有动画和独立rAF循环
   _removeAllOverlays();
   _resetAnimTimeline();
@@ -662,9 +666,12 @@ function processClickQueue(): void {
     const currentState = !!KFMState.expandedPaths[tgt];
     KFMState.expandedPaths[tgt] = !currentState;
     localStorage.setItem('expandedPaths', JSON.stringify(KFMState.expandedPaths));
+    // 设置反转标志，防止 expand 的 ts.call(cleanup) 干扰
+    _manualReversing = true;
     // reverse 所有 tween（overlay 高度/位置 + 字符位置/透明度）
     ts.reverse();
     ts.eventCallback('onReverseComplete', () => {
+      _manualReversing = false;
       L.endOp();
       _removeAllOverlays();
       _resetAnimTimeline();  // ts.clear() + time(0)
@@ -838,6 +845,8 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
   // cleanup: 在所有动画完成后自动触发
   ts.call(() => {
     if (L.renderer?.getRoot() !== animRoot) return;
+    // 手动反转进行中：cleanup 由 processClickQueue 的 onReverseComplete 接管
+    if (_manualReversing) return;
     for (const cu of charRainCleanups) cleanupCharRain(cu);
     _removeAllOverlays();
     L.renderer?.setOverlayRoot(null);  // 销毁动画树
@@ -955,6 +964,7 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
   // cleanup
   ts.call(() => {
     if (L.renderer?.getRoot() !== animRoot) return;
+    if (_manualReversing) return;
     for (const cu of charRainCleanups) cleanupCharRain(cu);
     _removeAllOverlays();
     L.renderer?.setOverlayRoot(null);  // 销毁动画树
@@ -985,6 +995,7 @@ function findTapTarget(box: Box, px: number, py: number): Box | null {
 
 /** 强制重建树（跳过 L._animBusy 锁，用于眼睛图标��用户主动行为） */
 export function forceRebuildTree(): void {
+  _manualReversing = false;
   _removeAllOverlays();
   L.endOp();
   
