@@ -10636,6 +10636,13 @@
       _addOverlay(sibOv);
       sibOv.parent = parent;
       siblingOverlays.push(sibOv);
+      if (siblingCloneLabels) {
+        const tc = sibOv.children.find((c) => {
+          var _a2;
+          return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
+        });
+        if (tc == null ? void 0 : tc.transform) tc.transform.rotate = 0;
+      }
       sib.opacity = 0;
       hiddenSiblings.push(sib);
     }
@@ -10985,6 +10992,11 @@
     if (toggle2) {
       anim.killTweensOf(toggle2.transform);
       toggle2.transform.rotate = 0;
+      ts.to(toggle2.transform, {
+        rotate: Math.PI / 2,
+        duration: 0.3,
+        ease: "power2.out"
+      }, 0);
     }
     assert(_activeOverlays.length === 0, "overlays not empty before expand");
     const pack = _setupExpandOverlays(container, fullHeight);

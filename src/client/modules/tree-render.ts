@@ -335,6 +335,11 @@ function _setupCollapseOverlays(container: Box, fullH: number, siblingCloneLabel
     _addOverlay(sibOv);
     sibOv.parent = parent;
     siblingOverlays.push(sibOv);
+    // 折叠时兄弟 overlay 内的 toggle 设 0°（主树展开态是 90°）
+    if (siblingCloneLabels) {
+      const tc = sibOv.children.find(c => c.id?.startsWith('toggle-'));
+      if (tc?.transform) tc.transform.rotate = 0;
+    }
     // 隐藏主树真实兄弟
     sib.opacity = 0;
     hiddenSiblings.push(sib);
@@ -774,9 +779,15 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
   const { container, root, fullHeight, toggle2, path, onTap } = params;
 
   // 手动将 toggle 归零（buildExpanded 设为 90°，但展开动画 FROM 是 0°）
+  // 然后动画到 90°
   if (toggle2) {
     anim.killTweensOf(toggle2.transform);
     toggle2.transform.rotate = 0;
+    ts.to(toggle2.transform, {
+      rotate: Math.PI / 2,
+      duration: 0.3,
+      ease: 'power2.out',
+    }, 0);
   }
 
   // === overlay 模式 ===
