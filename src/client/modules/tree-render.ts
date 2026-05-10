@@ -732,24 +732,31 @@ function doExpand(hit: Box, hitData: FileRowData): void {
     return;
   }
 
-  const fullHeight = (container as Box & OverlayMeta)._fullHeight || 0;
+  let fullHeight = (container as Box & OverlayMeta)._fullHeight || 0;
   if (!fullHeight) {
-    const finish = () => {
-      L.endOp();
-      processClickQueue();
-    };
-    if (toggle2 && toggle2.transform) {
-      toggle2.transform.rotate = 0;
-      ts.to(toggle2.transform, {
-        rotate: Math.PI / 2,
-        duration: 0.3,
-        ease: 'power2.out',
-        onComplete: finish,
-      }, 0);
+    // _fullHeight 未捕获到时强制补元数据
+    _ensureMetaFromExpandedState(root);
+    const retry = (container as Box & OverlayMeta)._fullHeight || 0;
+    if (retry) {
+      fullHeight = retry;
     } else {
-      finish();
+      const finish = () => {
+        L.endOp();
+        processClickQueue();
+      };
+      if (toggle2 && toggle2.transform) {
+        toggle2.transform.rotate = 0;
+        ts.to(toggle2.transform, {
+          rotate: Math.PI / 2,
+          duration: 0.3,
+          ease: 'power2.out',
+          onComplete: finish,
+        }, 0);
+      } else {
+        finish();
+      }
+      return;
     }
-    return;
   }
 
   _runExpandAnimation({ container, root, fullHeight, toggle2, path: hitData.path, onTap: null });
