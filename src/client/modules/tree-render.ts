@@ -926,21 +926,23 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
     }
   }
 
-  // overlay tween（从外到内缩回）
-  const boxStartDelay = collapseBaseDelay ? collapseBaseDelay - 0.06 + 0.29 : 0.29;
+  // 盒子收缩：从内到外（最深层先收缩），与字符雨同步结束
+  // 字符雨 ≈ BASE_DUR(0.22s)，盒子 0.05s → 偏移 0.17s
+  const COLLAPSE_BOX_OFFSET = 0.17;
+  const topBoxDelay = collapseBaseDelay + COLLAPSE_BOX_OFFSET;
   ts.to(pack.containerOverlay, {
     height: 0, duration: 0.05, ease: 'power2.in',
-  }, boxStartDelay);
+  }, topBoxDelay);
   for (const sibOv of pack.siblingOverlays) {
     ts.to(sibOv, {
       y: (sibOv as Box & OverlayMeta)._targetY!,
       duration: 0.05, ease: 'power2.in',
-    }, boxStartDelay);
+    }, topBoxDelay);
   }
 
   for (const sp of subPacks) {
     const subLevel = subTargets.find(st => st.container.id === sp.containerOverlay.id?.replace('ov-expanded-', 'expanded-'))?.level ?? 1;
-    const delay = boxStartDelay + subLevel * 0.06;
+    const delay = (maxLevel - subLevel) * 0.06 + COLLAPSE_BOX_OFFSET;
     ts.to(sp.containerOverlay, { height: 0, duration: 0.05, ease: 'power2.in' }, delay);
     for (const sibOv of sp.siblingOverlays) {
       ts.to(sibOv, {

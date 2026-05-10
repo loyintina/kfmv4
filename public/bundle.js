@@ -11118,25 +11118,26 @@
         if (subCleanup) charRainCleanups.push(subCleanup);
       }
     }
-    const boxStartDelay = collapseBaseDelay ? collapseBaseDelay - 0.06 + 0.29 : 0.29;
+    const COLLAPSE_BOX_OFFSET = 0.17;
+    const topBoxDelay = collapseBaseDelay + COLLAPSE_BOX_OFFSET;
     ts.to(pack.containerOverlay, {
       height: 0,
       duration: 0.05,
       ease: "power2.in"
-    }, boxStartDelay);
+    }, topBoxDelay);
     for (const sibOv of pack.siblingOverlays) {
       ts.to(sibOv, {
         y: sibOv._targetY,
         duration: 0.05,
         ease: "power2.in"
-      }, boxStartDelay);
+      }, topBoxDelay);
     }
     for (const sp of subPacks) {
       const subLevel = (_e = (_d = subTargets.find((st) => {
         var _a2;
         return st.container.id === ((_a2 = sp.containerOverlay.id) == null ? void 0 : _a2.replace("ov-expanded-", "expanded-"));
       })) == null ? void 0 : _d.level) != null ? _e : 1;
-      const delay = boxStartDelay + subLevel * 0.06;
+      const delay = (maxLevel - subLevel) * 0.06 + COLLAPSE_BOX_OFFSET;
       ts.to(sp.containerOverlay, { height: 0, duration: 0.05, ease: "power2.in" }, delay);
       for (const sibOv of sp.siblingOverlays) {
         ts.to(sibOv, {
