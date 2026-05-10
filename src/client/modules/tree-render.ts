@@ -667,9 +667,8 @@ function processClickQueue(): void {
 
     // 规则 1：同路径点击 → 状态先行 + reverse
     clickQueue.dequeue();
-    // 反转目标取决于动画方向：
-    // 展开中反转 → 折叠（false），折叠中反转 → 展开（true）
-    KFMState.expandedPaths[tgt] = L.animatingDir === 'collapse';
+    // 状态先行：切换当前状态（doCollapse 也已先切，状态始终与动画一致）
+    KFMState.expandedPaths[tgt] = !KFMState.expandedPaths[tgt];
     localStorage.setItem('expandedPaths', JSON.stringify(KFMState.expandedPaths));
     // reverse 所有 tween（overlay 高度/位置 + 字符位置/透明度）
     ts.reverse();
@@ -902,18 +901,16 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
   const fullH = container.height;
   assert(_activeOverlays.length === 0, 'overlays not empty before doCollapse');
 
-  // 搭建折叠 overlay
+  // 搭建折叠 overlay（建 overlay 后再切状态，当前树仍是展开态）
   const pack = _setupCollapseOverlays(container, fullH);
-
-  // 扁平化收集子容器
   const subTargets = _flattenExpandTree(container, 1);
   const subPacks = subTargets.map(st => _setupCollapseOverlays(st.container, st.fullHeight, false));
-
-  // 构建独立动画树（折叠）
   const overlayRoot = _buildAndSetOverlayTree(pack, subTargets, subPacks, root);
-
-  // 字符雨层：与容器Ov平级，不受 overflow:hidden 裁剪
   const charLayer = _createCharLayer(pack.containerOverlay.x, pack.containerOverlay.y, overlayRoot);
+
+  // 状态先行：切状态但不 notify（树保持展开，overlay 需展开态数据）
+  KFMState.expandedPaths[hitData.path] = false;
+  localStorage.setItem('expandedPaths', JSON.stringify(KFMState.expandedPaths));
 
   const maxLevel = subTargets.length > 0 ? Math.max(...subTargets.map(st => st.level)) : 0;
   const charRainCleanups: CharRainCleanup[] = [];
@@ -979,7 +976,7 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
     assert(_activeOverlays.length === 0, 'overlays leaked after doCollapse');
     _resetAnimTimeline();
     L.endOp();
-    hit.gesture!.onTap!();
+    KFMState.notify();  // 触发 _stateSub → rebuildTree（折叠态）
     processClickQueue();
   });
 }
