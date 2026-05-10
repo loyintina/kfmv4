@@ -10906,7 +10906,9 @@
       const tgt = _findClickPath(r, next.offsetX, next.offsetY + sy);
       if (!tgt || tgt !== L.animatingPath) return;
       dequeue();
-      KFMState.expandedPaths[tgt] = !KFMState.expandedPaths[tgt];
+      const newDir = L.animatingDir === "expand" ? "collapse" : "expand";
+      L.beginOp(tgt, newDir);
+      KFMState.expandedPaths[tgt] = newDir === "expand";
       localStorage.setItem("expandedPaths", JSON.stringify(KFMState.expandedPaths));
       ts.reverse();
       ts.eventCallback("onComplete", null);
@@ -11089,14 +11091,7 @@
       var _a2;
       return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
     });
-    if (!container) {
-      L.endOp();
-      hit.gesture.onTap();
-      processClickQueue();
-      return;
-    }
-    const savedContainer = container;
-    const savedFullH = savedContainer.height;
+    const animRoot = L.renderer.getRoot();
     if (tog) {
       ts.to(tog.transform, {
         rotate: 0,
@@ -11104,21 +11099,26 @@
         ease: "power2.in"
       }, 0);
     }
-    hit.gesture.onTap();
-    const animRoot = L.renderer.getRoot();
+    if (!container) {
+      L.endOp();
+      hit.gesture.onTap();
+      processClickQueue();
+      return;
+    }
+    const fullH = container.height;
     assert(_activeOverlays.length === 0, "overlays not empty before doCollapse");
-    const pack = _setupCollapseOverlays(savedContainer, savedFullH);
-    const subTargets = _flattenExpandTree(savedContainer, 1);
+    const pack = _setupCollapseOverlays(container, fullH);
+    const subTargets = _flattenExpandTree(container, 1);
     const subPacks = subTargets.map((st) => _setupCollapseOverlays(st.container, st.fullHeight, false));
-    const overlayRoot = _buildAndSetOverlayTree(pack, subTargets, subPacks, animRoot);
+    const overlayRoot = _buildAndSetOverlayTree(pack, subTargets, subPacks, root);
     const charLayer = _createCharLayer(pack.containerOverlay.x, pack.containerOverlay.y, overlayRoot);
     const maxLevel = subTargets.length > 0 ? Math.max(...subTargets.map((st) => st.level)) : 0;
     const charRainCleanups = [];
     const collapseBaseDelay = maxLevel * 0.06;
     const topCleanup = setupCharRainTweens(
-      savedContainer,
+      container,
       charLayer,
-      animRoot,
+      root,
       pack.rowOverlays.map((r) => r.y),
       ts,
       collapseBaseDelay,
@@ -11138,7 +11138,7 @@
         const subCleanup = setupCharRainTweens(
           realContainer,
           subCharLayer,
-          animRoot,
+          root,
           sp.rowOverlays.map((r) => r.y),
           ts,
           delay,
@@ -11185,6 +11185,7 @@
       assert(_activeOverlays.length === 0, "overlays leaked after doCollapse");
       _resetAnimTimeline();
       L.endOp();
+      hit.gesture.onTap();
       processClickQueue();
     });
   }

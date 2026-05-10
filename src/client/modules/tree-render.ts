@@ -667,11 +667,13 @@ function processClickQueue(): void {
 
     // 规则 1：同路径点击 → 状态先行 + reverse
     clickQueue.dequeue();
-    // 状态先行：切到当前状态的相反值
-    // doExpand/doCollapse 都已先切状态，动画期间 state 与动画目标一致
-    KFMState.expandedPaths[tgt] = !KFMState.expandedPaths[tgt];
+    // 切换动画方向：展开→折叠，折叠→展开
+    const newDir = L.animatingDir === 'expand' ? 'collapse' : 'expand';
+    L.beginOp(tgt, newDir);
+    // 状态与方向一致
+    KFMState.expandedPaths[tgt] = newDir === 'expand';
     localStorage.setItem('expandedPaths', JSON.stringify(KFMState.expandedPaths));
-    // reverse 切换播放方向（GSAP 自动处理）
+    // reverse 切换播放方向（GSAP 自动处理：反向→正向，正向→反向）
     ts.reverse();
     // 清除旧回调，注册与新方向匹配的回调
     ts.eventCallback('onComplete', null);
@@ -882,12 +884,23 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
   });
 }
 
-/** 折叠动画：状态先行 → 保存数据 → 切状态 → 建 overlay → 动画 */
+/** 折叠动画：与展开对称的正向折叠（字符往回飞 + 盒子缩回 + 兄弟复位） */
 function doCollapse(hit: Box, hitData: FileRowData): void {
   L.beginOp(hitData.path, 'collapse');
   const root = L.renderer!.getRoot()!;
   const container = findBoxById(root, `expanded-${hitData.path}`);
   const tog = hit.children.find(c => c.id?.startsWith('toggle-'));
+
+  const animRoot = L.renderer!.getRoot()!;
+
+  // toggle 旋转回收
+  if (tog) {
+    ts.to(tog.transform, {
+      rotate: 0,
+      duration: 0.25,
+      ease: 'power2.in',
+    }, 0);
+  }
 
   if (!container) {
     L.endOp();
@@ -896,35 +909,29 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
     return;
   }
 
-  // 1. 保存展开态数据（切状态后旧树容器不再存在）
-  const savedContainer = container;
-  const savedFullH = savedContainer.height;
-
-  // 2. 状态先行：toggle 动画注册在切状态前（tog 指向旧树，切后新树也有）
-  if (tog) {
-    ts.to(tog.transform, {
-      rotate: 0, duration: 0.25, ease: 'power2.in',
-    }, 0);
-  }
-
-  // 3. 先切状态 + rebuildTree（树现在是折叠态）
-  hit.gesture!.onTap!();
-
-  const animRoot = L.renderer!.getRoot()!;
+  const fullH = container.height;
   assert(_activeOverlays.length === 0, 'overlays not empty before doCollapse');
 
-  // 4. 用保存的展开态容器建 overlay（旧树 Box 仍在内存，可读）
-  const pack = _setupCollapseOverlays(savedContainer, savedFullH);
-  const subTargets = _flattenExpandTree(savedContainer, 1);
+  // 搭建折叠 overlay
+  const pack = _setupCollapseOverlays(container, fullH);
+
+  // 扁平化收集子容器
+  const subTargets = _flattenExpandTree(container, 1);
   const subPacks = subTargets.map(st => _setupCollapseOverlays(st.container, st.fullHeight, false));
-  const overlayRoot = _buildAndSetOverlayTree(pack, subTargets, subPacks, animRoot);
+
+  // 构建独立动画树（折叠）
+  const overlayRoot = _buildAndSetOverlayTree(pack, subTargets, subPacks, root);
+
+  // 字符雨层：与容器Ov平级，不受 overflow:hidden 裁剪
   const charLayer = _createCharLayer(pack.containerOverlay.x, pack.containerOverlay.y, overlayRoot);
 
   const maxLevel = subTargets.length > 0 ? Math.max(...subTargets.map(st => st.level)) : 0;
   const charRainCleanups: CharRainCleanup[] = [];
+
+  // 字符雨：方向 collapse，最深层先飞（delay 从最深层的展开延迟对称）
   const collapseBaseDelay = maxLevel * 0.06;
   const topCleanup = setupCharRainTweens(
-    savedContainer, charLayer, animRoot,
+    container, charLayer, root,
     pack.rowOverlays.map(r => r.y),
     ts, collapseBaseDelay, 'collapse',
   );
@@ -938,7 +945,7 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
       const subParent = sp.containerOverlay.parent!;
       const subCharLayer = _createCharLayer(sp.containerOverlay.x, sp.containerOverlay.y, subParent);
       const subCleanup = setupCharRainTweens(
-        realContainer, subCharLayer, animRoot,
+        realContainer, subCharLayer, root,
         sp.rowOverlays.map(r => r.y),
         ts, delay, 'collapse',
       );
@@ -946,7 +953,8 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
     }
   }
 
-  // 盒子收缩
+  // 盒子收缩：从内到外（最深层先收缩），与字符雨同步结束
+  // 字符雨 ≈ BASE_DUR(0.22s)，盒子 0.05s → 偏移 0.17s
   const COLLAPSE_BOX_OFFSET = 0.17;
   const topBoxDelay = collapseBaseDelay + COLLAPSE_BOX_OFFSET;
   ts.to(pack.containerOverlay, {
@@ -958,6 +966,7 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
       duration: 0.05, ease: 'power2.in',
     }, topBoxDelay);
   }
+
   for (const sp of subPacks) {
     const subLevel = subTargets.find(st => st.container.id === sp.containerOverlay.id?.replace('ov-expanded-', 'expanded-'))?.level ?? 1;
     const delay = (maxLevel - subLevel) * 0.06 + COLLAPSE_BOX_OFFSET;
@@ -970,15 +979,17 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
     }
   }
 
-  // cleanup：状态已切，不需再 onTap
+  // cleanup
+  // 用 onComplete：反向播放时不被触发，由 onReverseComplete 接管。
   ts.eventCallback('onComplete', () => {
     if (L.renderer?.getRoot() !== animRoot) return;
     for (const cu of charRainCleanups) cleanupCharRain(cu);
     _removeAllOverlays();
-    L.renderer?.setOverlayRoot(null);
+    L.renderer?.setOverlayRoot(null);  // 销毁动画树
     assert(_activeOverlays.length === 0, 'overlays leaked after doCollapse');
     _resetAnimTimeline();
     L.endOp();
+    hit.gesture!.onTap!();
     processClickQueue();
   });
 }
