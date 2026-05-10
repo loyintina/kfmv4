@@ -10757,6 +10757,7 @@
   }
   function onSidebarClose() {
     var _a, _b, _c, _d, _e;
+    if (L._sidebarClosed) return;
     _removeAllOverlays();
     _resetAnimTimeline();
     L._sidebarClosed = true;

@@ -485,6 +485,8 @@ export function onSidebarOpen(): void {
 }
 
 export function onSidebarClose(): void {
+  // 幂等：侧栏已关闭时跳过（防 overlay + 关闭按钮同时触发）
+  if (L._sidebarClosed) return;
   // 先停掉所有动画和独立rAF循环
   _removeAllOverlays();
   _resetAnimTimeline();
