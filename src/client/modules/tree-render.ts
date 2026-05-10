@@ -827,7 +827,7 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
   // 所有子容器 overlay + 字符雨，按层 staggered delay
   for (const sp of subPacks) {
     const subLevel = subTargets.find(st => st.container.id === sp.containerOverlay.id?.replace('ov-expanded-', 'expanded-'))?.level ?? 1;
-    const delay = subLevel * 0.06;
+    const delay = subLevel * 0.05;
     const targetHeight = sp.containerOverlay.height === 0
       ? (subTargets.find(st => `ov-${st.container.id}` === sp.containerOverlay.id)?.fullHeight ?? sp.containerOverlay.height)
       : sp.containerOverlay.height;
@@ -919,7 +919,7 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
   const charRainCleanups: CharRainCleanup[] = [];
 
   // 字符雨：方向 collapse，最深层先飞（delay 从最深层的展开延迟对称）
-  const collapseBaseDelay = maxLevel * 0.06;
+  const collapseBaseDelay = maxLevel * 0.05;
   const topCleanup = setupCharRainTweens(
     container, charLayer, root,
     pack.rowOverlays.map(r => r.y),
@@ -929,7 +929,7 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
 
   for (const sp of subPacks) {
     const subLevel = subTargets.find(st => st.container.id === sp.containerOverlay.id?.replace('ov-expanded-', 'expanded-'))?.level ?? 1;
-    const delay = collapseBaseDelay - subLevel * 0.06;
+    const delay = collapseBaseDelay - subLevel * 0.05;
     const realContainer = subTargets.find(st => `ov-${st.container.id}` === sp.containerOverlay.id)?.container;
     if (realContainer) {
       const subParent = sp.containerOverlay.parent!;
@@ -959,7 +959,7 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
 
   for (const sp of subPacks) {
     const subLevel = subTargets.find(st => st.container.id === sp.containerOverlay.id?.replace('ov-expanded-', 'expanded-'))?.level ?? 1;
-    const delay = (maxLevel - subLevel) * 0.06 + COLLAPSE_BOX_OFFSET;
+    const delay = (maxLevel - subLevel) * 0.05 + COLLAPSE_BOX_OFFSET;
     ts.to(sp.containerOverlay, { height: 0, duration: 0.05, ease: 'power2.in' }, delay);
     for (const sibOv of sp.siblingOverlays) {
       ts.to(sibOv, {

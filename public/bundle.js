@@ -11030,7 +11030,7 @@
         var _a2;
         return st.container.id === ((_a2 = sp.containerOverlay.id) == null ? void 0 : _a2.replace("ov-expanded-", "expanded-"));
       })) == null ? void 0 : _a.level) != null ? _b : 1;
-      const delay = subLevel * 0.06;
+      const delay = subLevel * 0.05;
       const targetHeight = sp.containerOverlay.height === 0 ? (_d = (_c = subTargets.find((st) => `ov-${st.container.id}` === sp.containerOverlay.id)) == null ? void 0 : _c.fullHeight) != null ? _d : sp.containerOverlay.height : sp.containerOverlay.height;
       ts.to(sp.containerOverlay, { height: targetHeight, duration: 0.05, ease: "back.out(1.15)" }, delay);
       for (const sibOv of sp.siblingOverlays) {
@@ -11105,7 +11105,7 @@
     const charLayer = _createCharLayer(pack.containerOverlay.x, pack.containerOverlay.y, overlayRoot);
     const maxLevel = subTargets.length > 0 ? Math.max(...subTargets.map((st) => st.level)) : 0;
     const charRainCleanups = [];
-    const collapseBaseDelay = maxLevel * 0.06;
+    const collapseBaseDelay = maxLevel * 0.05;
     const topCleanup = setupCharRainTweens(
       container,
       charLayer,
@@ -11121,7 +11121,7 @@
         var _a2;
         return st.container.id === ((_a2 = sp.containerOverlay.id) == null ? void 0 : _a2.replace("ov-expanded-", "expanded-"));
       })) == null ? void 0 : _a.level) != null ? _b : 1;
-      const delay = collapseBaseDelay - subLevel * 0.06;
+      const delay = collapseBaseDelay - subLevel * 0.05;
       const realContainer = (_c = subTargets.find((st) => `ov-${st.container.id}` === sp.containerOverlay.id)) == null ? void 0 : _c.container;
       if (realContainer) {
         const subParent = sp.containerOverlay.parent;
@@ -11157,7 +11157,7 @@
         var _a2;
         return st.container.id === ((_a2 = sp.containerOverlay.id) == null ? void 0 : _a2.replace("ov-expanded-", "expanded-"));
       })) == null ? void 0 : _d.level) != null ? _e : 1;
-      const delay = (maxLevel - subLevel) * 0.06 + COLLAPSE_BOX_OFFSET;
+      const delay = (maxLevel - subLevel) * 0.05 + COLLAPSE_BOX_OFFSET;
       ts.to(sp.containerOverlay, { height: 0, duration: 0.05, ease: "power2.in" }, delay);
       for (const sibOv of sp.siblingOverlays) {
         ts.to(sibOv, {
