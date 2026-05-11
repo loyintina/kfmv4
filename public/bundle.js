@@ -9640,6 +9640,26 @@
       if (this._overlayRoot) {
         this._tickAndRender(this._overlayRoot, now, 1);
       }
+      this._renderCursorPost(this._root, now);
+    }
+    _renderCursorPost(root, now) {
+      if (!root) return;
+      const cursorBox = this._findCursorBox(root);
+      if (cursorBox) {
+        const b = cursorBox.getBounds();
+        if (root.scrollY) b.y -= root.scrollY;
+        if (root.scrollX) b.x -= root.scrollX;
+        this._drawCursorBorder(b, cursorBox.data);
+      }
+    }
+    _findCursorBox(box) {
+      var _a;
+      if ((_a = box.data) == null ? void 0 : _a.cursorDynamicLines) return box;
+      for (const child of box.children) {
+        const found = this._findCursorBox(child);
+        if (found) return found;
+      }
+      return null;
     }
     _tickAndRender(box, now, parentOpacity) {
       box.tickAnimations(now);
@@ -10857,7 +10877,6 @@
   var OVERLAY_Z = 200;
   function _addOverlay(overlay) {
     _activeOverlays.push(overlay);
-    debugLog(`[overlay] ADD ${overlay.id} total=${_activeOverlays.length}`);
   }
   function _removeOverlay(overlay) {
     const idx = _activeOverlays.indexOf(overlay);
@@ -10866,15 +10885,12 @@
       const pidx = overlay.parent.children.indexOf(overlay);
       if (pidx >= 0) overlay.parent.children.splice(pidx, 1);
     }
-    debugLog(`[overlay] REMOVE ${overlay.id} total=${_activeOverlays.length}`);
   }
   function _removeAllOverlays() {
-    debugLog(`[overlay] REMOVE_ALL start count=${_activeOverlays.length}`);
     for (const ov of [..._activeOverlays]) {
       _removeOverlay(ov);
     }
     _activeOverlays.length = 0;
-    debugLog("[overlay] REMOVE_ALL done");
   }
   function _createCharLayer(x, y, parent) {
     const layer = new Box({
@@ -11306,6 +11322,16 @@
     }
     return null;
   }
+  function _overlayContainsPoint(box, px, py) {
+    for (let i = box.children.length - 1; i >= 0; i--) {
+      const child = box.children[i];
+      if (!child.visible || child.disabled) continue;
+      const found = _overlayContainsPoint(child, px, py);
+      if (found) return found;
+    }
+    if (box.containsPoint(px, py)) return box;
+    return null;
+  }
   function processClickQueue() {
     var _a, _b, _c;
     if (isEmpty() || !L.renderer) return;
@@ -11327,7 +11353,15 @@
         setTimeout(processClickQueue, 0);
         return;
       }
-      const tgt = _findClickPath(r, next.offsetX, next.offsetY + sy);
+      const overlayRoot2 = L.renderer.getOverlayRoot();
+      let tgt = null;
+      if (overlayRoot2) {
+        const ovHit = _overlayContainsPoint(overlayRoot2, next.offsetX, next.offsetY + sy);
+        if (ovHit) tgt = L.animatingPath;
+      }
+      if (!tgt) {
+        tgt = _findClickPath(r, next.offsetX, next.offsetY + sy);
+      }
       if (!tgt || tgt !== L.animatingPath) return;
       dequeue();
       KFMState.expandedPaths[tgt] = L.animatingDir === "collapse";
@@ -11514,7 +11548,7 @@
     });
   }
   function doCollapse(hit, hitData) {
-    var _a, _b, _c, _d, _e, _f;
+    var _a, _b, _c, _d, _e;
     L.beginOp(hitData.path, "collapse");
     const root = L.renderer.getRoot();
     const container = findBoxById(root, `expanded-${hitData.path}`);
@@ -11592,40 +11626,11 @@
         ease: "power2.in"
       }, topBoxDelay);
     }
-    const parentLevelHiddenSibs = [];
-    const parentLevelSibOverlays = [];
-    const parentContainer = container.parent;
-    if ((_d = parentContainer == null ? void 0 : parentContainer.id) == null ? void 0 : _d.startsWith("expanded-")) {
-      const parentSibs = _collectSiblingsAfter(parentContainer);
-      const parentFullH = fullH;
-      const parentY = parentContainer.y;
-      for (const psib of parentSibs) {
-        const psibOv = _createVisualClone(psib, {
-          id: `ov-${psib.id || "psib"}`,
-          y: psib.y - parentY,
-          opacity: 1,
-          zIndex: OVERLAY_Z
-        }, true);
-        psibOv._targetY = psib.y - parentY - parentFullH;
-        _addOverlay(psibOv);
-        overlayRoot.addChild(psibOv);
-        parentLevelSibOverlays.push(psibOv);
-        psib.opacity = 0;
-        parentLevelHiddenSibs.push(psib);
-      }
-      for (const psibOv of parentLevelSibOverlays) {
-        ts.to(psibOv, {
-          y: psibOv._targetY,
-          duration: 0.05,
-          ease: "power2.in"
-        }, topBoxDelay);
-      }
-    }
     for (const sp of subPacks) {
-      const subLevel = (_f = (_e = subTargets.find((st) => {
+      const subLevel = (_e = (_d = subTargets.find((st) => {
         var _a2;
         return st.container.id === ((_a2 = sp.containerOverlay.id) == null ? void 0 : _a2.replace("ov-expanded-", "expanded-"));
-      })) == null ? void 0 : _e.level) != null ? _f : 1;
+      })) == null ? void 0 : _d.level) != null ? _e : 1;
       const delay = (maxLevel - subLevel) * 0.05 + COLLAPSE_BOX_OFFSET;
       ts.to(sp.containerOverlay, { height: 0, duration: 0.05, ease: "power2.in" }, delay);
       for (const sibOv of sp.siblingOverlays) {
@@ -11642,7 +11647,6 @@
       for (const cu of charRainCleanups) cleanupCharRain(cu);
       _removeAllOverlays();
       (_b2 = L.renderer) == null ? void 0 : _b2.setOverlayRoot(null);
-      for (const psib of parentLevelHiddenSibs) psib.opacity = 1;
       assert(_activeOverlays.length === 0, "overlays leaked after doCollapse");
       _resetAnimTimeline();
       L.endOp();

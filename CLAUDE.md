@@ -27,9 +27,11 @@ npm run dev      # ts-node ESM 模式直接运行
 CLAUDE.md                          # 主文档（本文件）
 docs/
 ├── HANDOFF_AUDIT.md               # 项目交接 + 代码审计结论（新接手必读）
+├── KFM_V4_INVARIANTS.md           # 项目专用架构不变量（开工前必读）
+├── AI_COLLABORATION_PRINCIPLES.md # 通用 AI 协作守则
 ├── STACK_CARDS_DESIGN.md          # 堆叠卡片配色设计（暮光/琉璃/星云）
-├── BUG_FIXING_PHILOSOPHY.md       # Bug 修复原则 + 架构审计
 └── archive/
+    ├── BUG_FIXING_PHILOSOPHY.md   # 旧版 Bug 修复原则（已拆分为通用+专用）
     ├── CLAUDE_v2.md               # 上一版 CLAUDE（已合并）
     ├── RACE_CONDITION_PLAN.md     # P1-P5 竞态方案（已完成）
     ├── REFACTOR_THESIS_FULL.md    # 愿景 + 架构蓝图（大部分已过时）

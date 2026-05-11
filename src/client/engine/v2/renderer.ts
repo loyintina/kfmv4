@@ -154,6 +154,30 @@ export class Renderer {
     if (this._overlayRoot) {
       this._tickAndRender(this._overlayRoot, now, 1);
     }
+
+    // 光标画在 overlay 之上：从主树找到光标 Box 重新画一次 border
+    this._renderCursorPost(this._root, now);
+  }
+
+  private _renderCursorPost(root: Box | null, now: number): void {
+    if (!root) return;
+    const cursorBox = this._findCursorBox(root);
+    if (cursorBox) {
+      const b = cursorBox.getBounds();
+      // 减去 scrollY：getBounds() 返回 tree 坐标系，但 canvas context 无 scroll 偏移
+      if (root.scrollY) b.y -= root.scrollY;
+      if (root.scrollX) b.x -= root.scrollX;
+      this._drawCursorBorder(b, cursorBox.data);
+    }
+  }
+
+  private _findCursorBox(box: Box): Box | null {
+    if (box.data?.cursorDynamicLines) return box;
+    for (const child of box.children) {
+      const found = this._findCursorBox(child);
+      if (found) return found;
+    }
+    return null;
   }
 
   private _tickAndRender(box: Box, now: number, parentOpacity: number): void {

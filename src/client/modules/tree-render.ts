@@ -46,7 +46,7 @@ const OVERLAY_Z = 200;
 
 function _addOverlay(overlay: Box): void {
   _activeOverlays.push(overlay);
-  debugLog(`[overlay] ADD ${overlay.id} total=${_activeOverlays.length}`);
+  // debugLog(`[overlay] ADD ${overlay.id} total=${_activeOverlays.length}`);
 }
 
 function _removeOverlay(overlay: Box): void {
@@ -56,16 +56,16 @@ function _removeOverlay(overlay: Box): void {
     const pidx = overlay.parent.children.indexOf(overlay);
     if (pidx >= 0) overlay.parent.children.splice(pidx, 1);
   }
-  debugLog(`[overlay] REMOVE ${overlay.id} total=${_activeOverlays.length}`);
+  // debugLog(`[overlay] REMOVE ${overlay.id} total=${_activeOverlays.length}`);
 }
 
 function _removeAllOverlays(): void {
-  debugLog(`[overlay] REMOVE_ALL start count=${_activeOverlays.length}`);
+  // debugLog(`[overlay] REMOVE_ALL start count=${_activeOverlays.length}`);
   for (const ov of [..._activeOverlays]) {
     _removeOverlay(ov);
   }
   _activeOverlays.length = 0;
-  debugLog('[overlay] REMOVE_ALL done');
+  // debugLog('[overlay] REMOVE_ALL done');
 }
 
 /** 创建字符雨层：与容器Ov平级的独立 Box，不受 overflow:hidden 裁剪 */
@@ -201,8 +201,8 @@ function _createVisualClone(
   if (src.transform) {
     clone.transform = { ...src.transform };
   }
-  // 递归克隆子 Box（行 overlay 不克隆 label/toggle — 文字和三角由字符雨提供）
-  // 兄弟 overlay 需要递归克隆全部子元素（兄弟没有字符雨）
+  // 递归克隆子 Box（行 overlay 需要克隆全部子元素）
+  // 到展开/折叠时主树子行被隐藏（opacity=0），overlay 中的 toggle 自然可见且无重影
   for (const child of src.children) {
     if (cloneLabel) {
       const childClone = _createVisualClone(child, { id: child.id, zIndex: child.zIndex + OVERLAY_Z }, true);
@@ -632,6 +632,18 @@ function _quickHitTest(root: Box, px: number, py: number): Box | null {
   return null;
 }
 
+/** 在 overlay 树上查找点击目标（不要求 interactive/gesture） */
+function _overlayContainsPoint(box: Box, px: number, py: number): Box | null {
+  for (let i = box.children.length - 1; i >= 0; i--) {
+    const child = box.children[i];
+    if (!child.visible || child.disabled) continue;
+    const found = _overlayContainsPoint(child, px, py);
+    if (found) return found;
+  }
+  if (box.containsPoint(px, py)) return box;
+  return null;
+}
+
 function processClickQueue(): void {
   if (clickQueue.isEmpty() || !L.renderer) return;
 
@@ -659,7 +671,16 @@ function processClickQueue(): void {
     }
 
     // 规则 2b：不同路径点击 → 直接忽略
-    const tgt = _findClickPath(r, next.offsetX, next.offsetY + sy);
+    // 动画期间主树内容已隐藏（opacity=0/visible=false），优先在 overlay 树上做 hit test
+    const overlayRoot2 = L.renderer!.getOverlayRoot();
+    let tgt: string | null = null;
+    if (overlayRoot2) {
+      const ovHit = _overlayContainsPoint(overlayRoot2, next.offsetX, next.offsetY + sy);
+      if (ovHit) tgt = L.animatingPath;  // overlay 内点击 = 同一动画路径
+    }
+    if (!tgt) {
+      tgt = _findClickPath(r, next.offsetX, next.offsetY + sy);
+    }
     if (!tgt || tgt !== L.animatingPath) return;
 
     // 规则 1：同路径点击 → 状态先行 + reverse
@@ -668,6 +689,8 @@ function processClickQueue(): void {
     // 展开中反转 → 折叠（false），折叠中反转 → 展开（true）
     KFMState.expandedPaths[tgt] = L.animatingDir === 'collapse';
     localStorage.setItem('expandedPaths', JSON.stringify(KFMState.expandedPaths));
+    // 直接 reverse：overlay 反向播放时会将内容"展开"回主树位置，
+    // 由 onReverseComplete 统一重建。
     // reverse 所有 tween（overlay 高度/位置 + 字符位置/透明度）
     ts.reverse();
     ts.eventCallback('onReverseComplete', () => {
@@ -884,7 +907,7 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
   });
 }
 
-/** 折叠动画：与展开对称的正向折叠（字符往回飞 + 盒子缩回 + 兄弟复位） */
+/** 折叠动画：字符往回飞 + 盒子缩回 + 兄弟复位 */
 function doCollapse(hit: Box, hitData: FileRowData): void {
   L.beginOp(hitData.path, 'collapse');
   const root = L.renderer!.getRoot()!;
@@ -967,36 +990,6 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
     }, topBoxDelay);
   }
 
-  // === 父容器（被回收容器的直系 expanded-* 父）的兄弟也要同步上移 ===
-  const parentLevelHiddenSibs: Box[] = [];
-  const parentLevelSibOverlays: Box[] = [];
-  const parentContainer = container.parent;
-  if (parentContainer?.id?.startsWith('expanded-')) {
-    const parentSibs = _collectSiblingsAfter(parentContainer);
-    const parentFullH = fullH;
-    const parentY = parentContainer.y;
-    for (const psib of parentSibs) {
-      // 父容器的兄弟比容器少一层 parent.y，overlayRoot 已包含 parent.y，需减去
-      const psibOv = _createVisualClone(psib, {
-        id: `ov-${psib.id || 'psib'}`,
-        y: psib.y - parentY,
-        opacity: 1, zIndex: OVERLAY_Z,
-      }, true);
-      (psibOv as Box & OverlayMeta)._targetY = psib.y - parentY - parentFullH;
-      _addOverlay(psibOv);
-      overlayRoot.addChild(psibOv);
-      parentLevelSibOverlays.push(psibOv);
-      psib.opacity = 0;
-      parentLevelHiddenSibs.push(psib);
-    }
-    for (const psibOv of parentLevelSibOverlays) {
-      ts.to(psibOv, {
-        y: (psibOv as Box & OverlayMeta)._targetY!,
-        duration: 0.05, ease: 'power2.in',
-      }, topBoxDelay);
-    }
-  }
-
   for (const sp of subPacks) {
     const subLevel = subTargets.find(st => st.container.id === sp.containerOverlay.id?.replace('ov-expanded-', 'expanded-'))?.level ?? 1;
     const delay = (maxLevel - subLevel) * 0.05 + COLLAPSE_BOX_OFFSET;
@@ -1009,15 +1002,12 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
     }
   }
 
-  // cleanup
   // 用 onComplete：反向播放时不被触发，由 onReverseComplete 接管。
   ts.eventCallback('onComplete', () => {
     if (L.renderer?.getRoot() !== animRoot) return;
     for (const cu of charRainCleanups) cleanupCharRain(cu);
     _removeAllOverlays();
     L.renderer?.setOverlayRoot(null);  // 销毁动画树
-    // 恢复父容器兄弟的透明度
-    for (const psib of parentLevelHiddenSibs) psib.opacity = 1;
     assert(_activeOverlays.length === 0, 'overlays leaked after doCollapse');
     _resetAnimTimeline();
     L.endOp();
