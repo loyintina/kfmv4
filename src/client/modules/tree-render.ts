@@ -269,6 +269,7 @@ function _setupExpandOverlays(container: Box, fullHeight: number, siblingCloneLa
   const hiddenSiblings: Box[] = [];
   const siblings = _collectSiblingsAfter(container);
   for (const sib of siblings) {
+    if (!siblingCloneLabels && sib.id?.startsWith("expanded-")) continue;
     const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || 'sib'}`, y: sib.y - fullHeight, opacity: 1, zIndex: OVERLAY_Z }, siblingCloneLabels);
     (sibOv as Box & OverlayMeta)._targetY = sib.y;
     _addOverlay(sibOv);
@@ -322,6 +323,7 @@ function _setupCollapseOverlays(container: Box, fullH: number, siblingCloneLabel
   const hiddenSiblings: Box[] = [];
   const siblings = _collectSiblingsAfter(container);
   for (const sib of siblings) {
+    if (!siblingCloneLabels && sib.id?.startsWith("expanded-")) continue;
     const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || 'sib'}`, y: sib.y, opacity: 1, zIndex: OVERLAY_Z }, siblingCloneLabels);
     (sibOv as Box & OverlayMeta)._targetY = sib.y - fullH;
     _addOverlay(sibOv);
@@ -692,6 +694,8 @@ function processClickQueue(): void {
     // 直接 reverse：overlay 反向播放时会将内容"展开"回主树位置，
     // 由 onReverseComplete 统一重建。
     // reverse 所有 tween（overlay 高度/位置 + 字符位置/透明度）
+    // 清除 onComplete：防止折叠动画的 onComplete 反转 state（竞态）
+    ts.eventCallback('onComplete', null);
     ts.reverse();
     ts.eventCallback('onReverseComplete', () => {
       L.endOp();

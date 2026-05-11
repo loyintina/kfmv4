@@ -11009,7 +11009,7 @@
     return clone;
   }
   function _setupExpandOverlays(container, fullHeight, siblingCloneLabels = true) {
-    var _a;
+    var _a, _b;
     const parent = container.parent;
     const containerOv = _createVisualClone(container, { id: `ov-${container.id || "container"}`, height: 0, opacity: 1, zIndex: OVERLAY_Z });
     containerOv.overflow = "hidden";
@@ -11035,6 +11035,7 @@
     const hiddenSiblings = [];
     const siblings = _collectSiblingsAfter(container);
     for (const sib of siblings) {
+      if (!siblingCloneLabels && ((_b = sib.id) == null ? void 0 : _b.startsWith("expanded-"))) continue;
       const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || "sib"}`, y: sib.y - fullHeight, opacity: 1, zIndex: OVERLAY_Z }, siblingCloneLabels);
       sibOv._targetY = sib.y;
       _addOverlay(sibOv);
@@ -11046,7 +11047,7 @@
     return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenContainer: container, hiddenSiblings, hiddenChildren };
   }
   function _setupCollapseOverlays(container, fullH, siblingCloneLabels = true) {
-    var _a, _b, _c;
+    var _a, _b, _c, _d;
     const parent = container.parent;
     const containerOv = _createVisualClone(container, { id: `ov-${container.id || "container"}`, height: fullH, opacity: 1, zIndex: OVERLAY_Z });
     containerOv.overflow = "hidden";
@@ -11070,6 +11071,7 @@
     const hiddenSiblings = [];
     const siblings = _collectSiblingsAfter(container);
     for (const sib of siblings) {
+      if (!siblingCloneLabels && ((_b = sib.id) == null ? void 0 : _b.startsWith("expanded-"))) continue;
       const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || "sib"}`, y: sib.y, opacity: 1, zIndex: OVERLAY_Z }, siblingCloneLabels);
       sibOv._targetY = sib.y - fullH;
       _addOverlay(sibOv);
@@ -11080,7 +11082,7 @@
           var _a2;
           return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
         });
-        const needsReset = !origTc || ((_c = (_b = origTc.transform) == null ? void 0 : _b.rotate) != null ? _c : 0) < 0.1;
+        const needsReset = !origTc || ((_d = (_c = origTc.transform) == null ? void 0 : _c.rotate) != null ? _d : 0) < 0.1;
         if (needsReset) {
           const tc = sibOv.children.find((c) => {
             var _a2;
@@ -11366,6 +11368,7 @@
       dequeue();
       KFMState.expandedPaths[tgt] = L.animatingDir === "collapse";
       localStorage.setItem("expandedPaths", JSON.stringify(KFMState.expandedPaths));
+      ts.eventCallback("onComplete", null);
       ts.reverse();
       ts.eventCallback("onReverseComplete", () => {
         L.endOp();
