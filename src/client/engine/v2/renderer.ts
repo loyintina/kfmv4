@@ -92,6 +92,7 @@ export class Renderer {
 
   /** 设置动画树根（在主树之上独立渲染） */
   setOverlayRoot(box: Box | null): this {
+    console.log(`[renderer] setOverlayRoot: ${box ? box.id : 'null'} (was: ${this._overlayRoot ? this._overlayRoot.id : 'null'})`);
     this._overlayRoot = box;
     return this;
   }
@@ -191,8 +192,8 @@ export class Renderer {
     this._drawHighlight(box, bounds);
     if (box.icon) this._drawIcon(box.icon, bounds, box.padding);
     if (box.textStyle.content) this._drawText(box.textStyle, bounds, box.padding, box.icon);
-    // 裁剪子元素（滚动容器必须裁剪子元素）
-    if (box.overflow === 'hidden' || box.scrollable) {
+    // 裁剪子元素（滚动容器必须裁剪子元素，但 overflow:visible 时跳过）
+    if ((box.overflow === 'hidden' || box.scrollable) && box.overflow !== 'visible') {
       this.ctx.beginPath();
       this.ctx.roundRect(bounds.x, bounds.y, bounds.width, bounds.height, box.borderRadius);
       this.ctx.clip();

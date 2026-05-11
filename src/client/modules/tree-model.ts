@@ -156,7 +156,7 @@ export function buildTree(items: FileNode[], options: TreeOptions = {}): Box {
   } = options;
   const ctx: BuildCtx = { expandedPaths, selectedFile, onDirToggle, onFileClick, containerWidth, rightMargin };
   const rootBox = createBox('sidebar-root', {
-    id: 'file-tree-root', width: containerWidth, scrollable, scrollY: 0, height: 0, scrollbarVisible: false,
+    id: 'file-tree-root', width: containerWidth, scrollable, scrollY: 0, height: 0, scrollbarVisible: false, overflow: 'hidden',
   });
 
   // 把根目录所有内容包进 expanded-/root 容器，方便动画
