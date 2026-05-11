@@ -10957,7 +10957,7 @@
     return overlayRoot;
   }
   function _createVisualClone(src, overrides, cloneLabel = false) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i;
     const clone = new Box({
       x: (_a = overrides == null ? void 0 : overrides.x) != null ? _a : src.x,
       y: (_b = overrides == null ? void 0 : overrides.y) != null ? _b : src.y,
@@ -10986,22 +10986,7 @@
     }
     for (const child of src.children) {
       if (cloneLabel) {
-        const childClone = new Box({
-          x: child.x,
-          y: child.y,
-          width: child.width,
-          height: child.height,
-          opacity: (_j = child.opacity) != null ? _j : 1,
-          visible: child.visible,
-          backgroundColor: child.backgroundColor || "transparent",
-          interactive: false,
-          id: child.id,
-          zIndex: child.zIndex + OVERLAY_Z,
-          overflow: "visible",
-          kfmStyle: child.kfmStyle ? { ...child.kfmStyle } : void 0
-        });
-        if (child.textStyle) childClone.textStyle = { ...child.textStyle };
-        if (child.transform) childClone.transform = { ...child.transform };
+        const childClone = _createVisualClone(child, { id: child.id, zIndex: child.zIndex + OVERLAY_Z }, true);
         clone.addChild(childClone);
       }
     }
@@ -11045,7 +11030,7 @@
     return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenContainer: container, hiddenSiblings, hiddenChildren };
   }
   function _setupCollapseOverlays(container, fullH, siblingCloneLabels = true) {
-    var _a;
+    var _a, _b, _c;
     const parent = container.parent;
     const containerOv = _createVisualClone(container, { id: `ov-${container.id || "container"}`, height: fullH, opacity: 1, zIndex: OVERLAY_Z });
     containerOv.overflow = "hidden";
@@ -11075,11 +11060,18 @@
       sibOv.parent = parent;
       siblingOverlays.push(sibOv);
       if (siblingCloneLabels) {
-        const tc = sibOv.children.find((c) => {
+        const origTc = sib.children.find((c) => {
           var _a2;
           return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
         });
-        if (tc == null ? void 0 : tc.transform) tc.transform.rotate = 0;
+        const needsReset = !origTc || ((_c = (_b = origTc.transform) == null ? void 0 : _b.rotate) != null ? _c : 0) < 0.1;
+        if (needsReset) {
+          const tc = sibOv.children.find((c) => {
+            var _a2;
+            return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
+          });
+          if (tc == null ? void 0 : tc.transform) tc.transform.rotate = 0;
+        }
       }
       sib.opacity = 0;
       hiddenSiblings.push(sib);
@@ -11522,7 +11514,7 @@
     });
   }
   function doCollapse(hit, hitData) {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d, _e, _f;
     L.beginOp(hitData.path, "collapse");
     const root = L.renderer.getRoot();
     const container = findBoxById(root, `expanded-${hitData.path}`);
@@ -11600,11 +11592,40 @@
         ease: "power2.in"
       }, topBoxDelay);
     }
+    const parentLevelHiddenSibs = [];
+    const parentLevelSibOverlays = [];
+    const parentContainer = container.parent;
+    if ((_d = parentContainer == null ? void 0 : parentContainer.id) == null ? void 0 : _d.startsWith("expanded-")) {
+      const parentSibs = _collectSiblingsAfter(parentContainer);
+      const parentFullH = fullH;
+      const parentY = parentContainer.y;
+      for (const psib of parentSibs) {
+        const psibOv = _createVisualClone(psib, {
+          id: `ov-${psib.id || "psib"}`,
+          y: psib.y - parentY,
+          opacity: 1,
+          zIndex: OVERLAY_Z
+        }, true);
+        psibOv._targetY = psib.y - parentY - parentFullH;
+        _addOverlay(psibOv);
+        overlayRoot.addChild(psibOv);
+        parentLevelSibOverlays.push(psibOv);
+        psib.opacity = 0;
+        parentLevelHiddenSibs.push(psib);
+      }
+      for (const psibOv of parentLevelSibOverlays) {
+        ts.to(psibOv, {
+          y: psibOv._targetY,
+          duration: 0.05,
+          ease: "power2.in"
+        }, topBoxDelay);
+      }
+    }
     for (const sp of subPacks) {
-      const subLevel = (_e = (_d = subTargets.find((st) => {
+      const subLevel = (_f = (_e = subTargets.find((st) => {
         var _a2;
         return st.container.id === ((_a2 = sp.containerOverlay.id) == null ? void 0 : _a2.replace("ov-expanded-", "expanded-"));
-      })) == null ? void 0 : _d.level) != null ? _e : 1;
+      })) == null ? void 0 : _e.level) != null ? _f : 1;
       const delay = (maxLevel - subLevel) * 0.05 + COLLAPSE_BOX_OFFSET;
       ts.to(sp.containerOverlay, { height: 0, duration: 0.05, ease: "power2.in" }, delay);
       for (const sibOv of sp.siblingOverlays) {
@@ -11621,6 +11642,7 @@
       for (const cu of charRainCleanups) cleanupCharRain(cu);
       _removeAllOverlays();
       (_b2 = L.renderer) == null ? void 0 : _b2.setOverlayRoot(null);
+      for (const psib of parentLevelHiddenSibs) psib.opacity = 1;
       assert(_activeOverlays.length === 0, "overlays leaked after doCollapse");
       _resetAnimTimeline();
       L.endOp();

@@ -202,24 +202,10 @@ function _createVisualClone(
     clone.transform = { ...src.transform };
   }
   // 递归克隆子 Box（行 overlay 不克隆 label/toggle — 文字和三角由字符雨提供）
-  // 兄弟 overlay 需要克隆全部子元素（兄弟没有字符雨）
+  // 兄弟 overlay 需要递归克隆全部子元素（兄弟没有字符雨）
   for (const child of src.children) {
     if (cloneLabel) {
-      const childClone = new Box({
-        x: child.x,
-        y: child.y,
-        width: child.width,
-        height: child.height,
-        opacity: child.opacity ?? 1,
-        visible: child.visible,
-        backgroundColor: child.backgroundColor || 'transparent',
-        interactive: false, id: child.id,
-        zIndex: child.zIndex + OVERLAY_Z,
-        overflow: 'visible',
-        kfmStyle: child.kfmStyle ? { ...child.kfmStyle } : undefined,
-      });
-      if (child.textStyle) childClone.textStyle = { ...child.textStyle };
-      if (child.transform) childClone.transform = { ...child.transform };
+      const childClone = _createVisualClone(child, { id: child.id, zIndex: child.zIndex + OVERLAY_Z }, true);
       clone.addChild(childClone);
     }
   }
@@ -341,10 +327,15 @@ function _setupCollapseOverlays(container: Box, fullH: number, siblingCloneLabel
     _addOverlay(sibOv);
     sibOv.parent = parent;
     siblingOverlays.push(sibOv);
-    // 折叠时兄弟 overlay 内的 toggle 设 0°（主树展开态是 90°）
+    // 折叠时兄弟 overlay 的 toggle 设 0°（仅对 toggle 当前为 0° 的兄弟，
+    // 展开态 toggle 是 ~90°，折叠态是 0°，保持展开兄弟的 toggle 不动）
     if (siblingCloneLabels) {
-      const tc = sibOv.children.find(c => c.id?.startsWith('toggle-'));
-      if (tc?.transform) tc.transform.rotate = 0;
+      const origTc = sib.children.find(c => c.id?.startsWith('toggle-'));
+      const needsReset = !origTc || (origTc.transform?.rotate ?? 0) < 0.1;
+      if (needsReset) {
+        const tc = sibOv.children.find(c => c.id?.startsWith('toggle-'));
+        if (tc?.transform) tc.transform.rotate = 0;
+      }
     }
     // 隐藏主树真实兄弟
     sib.opacity = 0;
@@ -976,6 +967,36 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
     }, topBoxDelay);
   }
 
+  // === 父容器（被回收容器的直系 expanded-* 父）的兄弟也要同步上移 ===
+  const parentLevelHiddenSibs: Box[] = [];
+  const parentLevelSibOverlays: Box[] = [];
+  const parentContainer = container.parent;
+  if (parentContainer?.id?.startsWith('expanded-')) {
+    const parentSibs = _collectSiblingsAfter(parentContainer);
+    const parentFullH = fullH;
+    const parentY = parentContainer.y;
+    for (const psib of parentSibs) {
+      // 父容器的兄弟比容器少一层 parent.y，overlayRoot 已包含 parent.y，需减去
+      const psibOv = _createVisualClone(psib, {
+        id: `ov-${psib.id || 'psib'}`,
+        y: psib.y - parentY,
+        opacity: 1, zIndex: OVERLAY_Z,
+      }, true);
+      (psibOv as Box & OverlayMeta)._targetY = psib.y - parentY - parentFullH;
+      _addOverlay(psibOv);
+      overlayRoot.addChild(psibOv);
+      parentLevelSibOverlays.push(psibOv);
+      psib.opacity = 0;
+      parentLevelHiddenSibs.push(psib);
+    }
+    for (const psibOv of parentLevelSibOverlays) {
+      ts.to(psibOv, {
+        y: (psibOv as Box & OverlayMeta)._targetY!,
+        duration: 0.05, ease: 'power2.in',
+      }, topBoxDelay);
+    }
+  }
+
   for (const sp of subPacks) {
     const subLevel = subTargets.find(st => st.container.id === sp.containerOverlay.id?.replace('ov-expanded-', 'expanded-'))?.level ?? 1;
     const delay = (maxLevel - subLevel) * 0.05 + COLLAPSE_BOX_OFFSET;
@@ -995,6 +1016,8 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
     for (const cu of charRainCleanups) cleanupCharRain(cu);
     _removeAllOverlays();
     L.renderer?.setOverlayRoot(null);  // 销毁动画树
+    // 恢复父容器兄弟的透明度
+    for (const psib of parentLevelHiddenSibs) psib.opacity = 1;
     assert(_activeOverlays.length === 0, 'overlays leaked after doCollapse');
     _resetAnimTimeline();
     L.endOp();
