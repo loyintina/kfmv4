@@ -8,8 +8,19 @@ function mockTl() {
   };
   return tl;
 }
+// Apply vars to target (for set/to/fromTo)
+function applyVars(target: any, vars: any) {
+  if (target && vars) {
+    for (const key of Object.keys(vars)) {
+      if (key === 'duration' || key === 'ease' || key === 'overwrite') continue;
+      target[key] = vars[key];
+    }
+  }
+}
 const gsap: any = {
-  to: () => ({ kill: noop }), fromTo: () => ({ kill: noop }), set: () => ({ kill: noop }),
+  to: (target: any, vars: any) => { applyVars(target, vars); return { kill: noop }; },
+  fromTo: (target: any, from: any, to: any) => { applyVars(target, to); return { kill: noop }; },
+  set: (target: any, vars: any) => { applyVars(target, vars); return { kill: noop }; },
   timeline: () => mockTl(), killTweensOf: noop,
   globalTimeline: mockTl(), registerPlugin: noop,
   core: { Timeline: function() { return mockTl(); } },
