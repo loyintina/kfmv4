@@ -13901,7 +13901,7 @@
     let html = "";
     for (const msg of chatMessages) {
       const isUser = msg.role === "user";
-      const bgColor = isUser ? "linear-gradient(${theme.surface.bgLight},${theme.surface.bgLight}) padding-box,${theme.aiChat.bubbleSelfGradient} border-box" : "linear-gradient(rgba(10,15,30,0.88),rgba(10,15,30,0.88)) padding-box,${theme.aiChat.panelBorderGradient} border-box";
+      const bgColor = isUser ? `linear-gradient(${currentTheme.surface.bgLight},${currentTheme.surface.bgLight}) padding-box,${currentTheme.aiChat.bubbleSelfGradient} border-box` : `linear-gradient(rgba(10,15,30,0.88),rgba(10,15,30,0.88)) padding-box,${currentTheme.aiChat.panelBorderGradient} border-box`;
       const borderStyle = isUser ? "border:1px solid transparent;border-left-width:3px;" : "border:1px solid transparent;border-left-width:3px;";
       const align = isUser ? "flex-end" : "flex-start";
       const label = isUser ? "\u4F60" : "\u851A\u7136";
