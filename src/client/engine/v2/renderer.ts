@@ -18,6 +18,7 @@ import type {
 import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
 import { applyFlexLayout } from './flex.js';
 import { drawBorders } from './BorderDrawer.js';
+import { currentTheme as theme } from '../../modules/theme.js';
 
 export interface RendererOptions {
   dpr?: number;
@@ -50,7 +51,7 @@ export class Renderer {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d')!;
     this.dpr = options.dpr ?? (window.devicePixelRatio || 1);
-    this.backgroundColor = options.backgroundColor ?? '#0a0a0f';
+    this.backgroundColor = options.backgroundColor ?? theme.canvas.bg;
     this.width = 0;
     this.height = 0;
     this._isRunning = false;
@@ -275,7 +276,7 @@ export class Renderer {
         el.style.border = 'none';
         el.style.outline = 'none';
         el.style.fontSize = '16px';
-        el.style.color = '#e0e0e0';
+        el.style.color = theme.canvas.text;
         el.style.zIndex = '10';
         el.style.resize = 'none';
         el.style.padding = '10px';  // 内边距，让滚动窗口小一圈
@@ -425,7 +426,7 @@ export class Renderer {
   private _drawBoxGridPattern(box: Box, b: Rect): void {
     const pattern = box.backgroundPattern!;
     const cellSize = pattern.cellSize ?? 20;
-    const lineColor = pattern.lineColor ?? '#2a2a3a';  // 默认暗色
+    const lineColor = pattern.lineColor ?? theme.canvas.gridLine;  // 默认暗色
     const lineWidth = pattern.lineWidth ?? 1;
     
     this.ctx.save();
@@ -502,7 +503,7 @@ export class Renderer {
       const thumbHeight = Math.max(20, (viewportH / content.height) * trackHeight);
       const thumbY = b.y + box.padding.top + (box.scrollY / maxScroll.maxY) * (trackHeight - thumbHeight);
 
-      this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      this.ctx.fillStyle = theme.canvas.accent + '4d';
       this.ctx.beginPath();
       this.ctx.roundRect(b.x + b.width - 6, thumbY, 4, thumbHeight, 2);
       this.ctx.fill();
@@ -514,7 +515,7 @@ export class Renderer {
       const thumbWidth = Math.max(20, (viewportW / content.width) * trackWidth);
       const thumbX = b.x + box.padding.left + (box.scrollX / maxScroll.maxX) * (trackWidth - thumbWidth);
 
-      this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      this.ctx.fillStyle = theme.canvas.accent + '4d';
       this.ctx.beginPath();
       this.ctx.roundRect(thumbX, b.y + b.height - 6, thumbWidth, 4, 2);
       this.ctx.fill();
@@ -523,7 +524,7 @@ export class Renderer {
 
   private _drawCursorBorder(b: Rect, data: any): void {
     const ctx = this.ctx;
-    const color = data.color || 'rgba(0,212,255,0.7)';
+    const color = data.color || theme.canvas.cursor;
     const x = b.x;
     const y = b.y;
     const h = b.height;
@@ -653,7 +654,7 @@ export class Renderer {
     const iconY = b.y + padding.top;
 
     this.ctx.font = `${icon.size}px system-ui`;
-    this.ctx.fillStyle = '#e0e0e0';
+    this.ctx.fillStyle = theme.canvas.text;
     this.ctx.textBaseline = 'top';
     this.ctx.textAlign = 'left';
     this.ctx.fillText(icon.char, iconX, iconY);

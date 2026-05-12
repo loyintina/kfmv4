@@ -685,6 +685,102 @@
     }
   };
 
+  // src/client/modules/theme.ts
+  var nebula = {
+    name: "nebula",
+    canvas: {
+      bg: "#0a0a0f",
+      gridLine: "#2a2a3a",
+      text: "#e0e0e0",
+      cursor: "rgba(0,212,255,0.7)",
+      cursorBg: "rgba(46,213,163,0.15)",
+      accent: "#00d4ff"
+    },
+    tree: {
+      dir: "#7c3aed",
+      file: "#e0e0e0",
+      label: "#e8e0f0",
+      selectedBg: "rgba(124,58,237,0.15)",
+      folderBg: "rgba(124,58,237,0.3)",
+      fileBg: "rgba(124,58,237,0.3)",
+      toggleColor: "#00d4ff",
+      containerBorder: "rgba(180,130,255,",
+      shadow: "rgba(0,0,0,0.5)"
+    },
+    surface: {
+      bg: "rgba(20,16,32,0.92)",
+      bgLight: "rgba(10,10,15,0.85)",
+      bgLighter: "rgba(10,15,30,0.88)",
+      border: "transparent",
+      borderRadius: "12px"
+    },
+    aiChat: {
+      panelBorderGradient: "linear-gradient(135deg,rgba(0,212,255,.8),rgba(99,102,241,.7),rgba(124,58,237,.7))",
+      panelShadow: "0 0 24px 8px rgba(124, 58, 237, 0.25), 0 8px 32px rgba(0, 0, 0, 0.5)",
+      panelShadowEdit: "0 0 40px 20px rgba(124, 58, 237, 0.55), 0 8px 32px rgba(0, 0, 0, 0.5)",
+      headerBorder: "rgba(124,58,237,0.2)",
+      headerText: "#7c3aed",
+      stateText: "rgba(255,255,255,0.3)",
+      bubbleSelfGradient: "linear-gradient(135deg,#7c3aed,rgba(0,212,255,.8))",
+      bubbleAIGradient: "linear-gradient(135deg,rgba(0,212,255,.8),rgba(99,102,241,.7),rgba(124,58,237,.7))",
+      bubbleSelfShadow: "0 0 10px 2px rgba(124,58,237,0.12)",
+      bubbleAIShadow: "0 0 10px 2px rgba(99,102,241,0.08)",
+      bubbleLabelSelf: "#7c3aed",
+      bubbleLabelAI: "#818cf8",
+      bubbleText: "#e0e0e0",
+      orbGradient: ""
+    },
+    debug: {
+      orbGradient: "radial-gradient(circle at 35% 35%, rgba(0,255,200,0.9), rgba(0,180,150,0.6))",
+      orbShadow: "0 0 16px 4px rgba(0,255,200,0.4), 0 0 40px 12px rgba(0,200,160,0.2)",
+      panelBgGradient: "linear-gradient(rgba(8,20,18,0.94),rgba(8,20,18,0.94))",
+      panelBorderGradient: "linear-gradient(135deg,rgba(0,255,200,.7),rgba(0,180,150,.5))",
+      panelShadow: "0 0 20px 6px rgba(0,255,200,0.2), 0 6px 24px rgba(0,0,0,0.5)",
+      panelShadowEdit: "0 0 40px 20px rgba(0,255,200,0.45), 0 6px 24px rgba(0,0,0,0.5)",
+      headerBorder: "rgba(0,255,200,0.2)",
+      headerText: "rgba(0,255,200,0.9)",
+      buttonBg: "rgba(0,255,200,0.15)",
+      buttonBorder: "rgba(0,255,200,0.3)",
+      logText: "rgba(180,255,230,0.85)",
+      accentColor: "#00ffc8"
+    },
+    cardAccents: [
+      { border: "#B46478", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(180,100,120,0.25)" },
+      { border: "#C88C5A", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(200,140,90,0.25)" },
+      { border: "#B4AA50", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(180,170,80,0.25)" },
+      { border: "#50A880", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(80,168,128,0.25)" },
+      { border: "#5088C8", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(80,136,200,0.25)" },
+      { border: "#6C5CC8", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(108,92,200,0.25)" },
+      { border: "#9650C8", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(150,80,200,0.25)" }
+    ],
+    stack: {
+      focusShadow: "0 4px 8px rgba(0,0,0,0.4),0 12px 24px rgba(0,0,0,0.3),0 24px 48px rgba(0,0,0,0.25),-6px 6px 12px rgba(0,0,0,0.2)",
+      blurShadow: "0 2px 4px rgba(0,0,0,0.3),0 8px 16px rgba(0,0,0,0.25),0 16px 32px rgba(0,0,0,0.2),-4px 4px 8px rgba(0,0,0,0.15)",
+      cardBg: "rgba(20,16,32,0.92)",
+      cardBorderRadius: "12px",
+      cardGap: 36,
+      cardHeight: 68
+    },
+    extColors: {
+      ts: "#3178c6",
+      js: "#f7df1e",
+      json: "#292929",
+      html: "#e34f26",
+      css: "#1572b6",
+      md: "#083fa1",
+      py: "#3776ab",
+      rs: "#dea584",
+      go: "#00d800",
+      rsync: "#7c3aed",
+      zip: "#f39c12",
+      gz: "#f39c12",
+      tar: "#f39c12",
+      bak: "#888",
+      old: "#888"
+    }
+  };
+  var currentTheme = nebula;
+
   // src/client/modules/style-registry.ts
   var DIMENSIONS = {
     BOX_HEIGHT: 26,
@@ -695,13 +791,6 @@
     ROW_PAD: 8,
     TRIANGLE_SIZE: 9,
     TRIANGLE_GAP: 5
-  };
-  var COLORS = {
-    DIR: "#7c3aed",
-    FILE: "#e0e0e0",
-    ACCENT: "#00d4ff",
-    SELECTED_BG: "rgba(124,58,237,0.15)",
-    CANVAS_BG: "rgba(10,10,15,0.85)"
   };
   var FONT = "11px system-ui, sans-serif";
   var LINE_HEIGHT = 20;
@@ -730,11 +819,12 @@
       verticalAlign: "middle"
     }
   };
+  var HIGHLIGHT = { color: currentTheme.tree.dir, width: 2, side: "all" };
   var templates = {
     "folder-row": {
       width: DIMENSIONS.SIDEBAR_WIDTH,
       height: DIMENSIONS.BOX_HEIGHT,
-      backgroundColor: "rgba(124,58,237,0.3)",
+      backgroundColor: currentTheme.tree.folderBg,
       borderRadius: 0,
       interactive: true,
       overflow: "hidden"
@@ -742,7 +832,7 @@
     "file-row": {
       width: DIMENSIONS.SIDEBAR_WIDTH,
       height: DIMENSIONS.BOX_HEIGHT,
-      backgroundColor: "rgba(124,58,237,0.3)",
+      backgroundColor: currentTheme.tree.folderBg,
       borderRadius: 0,
       interactive: true,
       overflow: "hidden"
@@ -824,7 +914,6 @@
   if (typeof window !== "undefined") {
     window.styleRegistry = styleRegistry;
     window.DIMENSIONS = DIMENSIONS;
-    window.COLORS = COLORS;
     window.TEXT_STYLES = TEXT_STYLES;
   }
 
@@ -4008,17 +4097,22 @@
     for (let i = 0; i < d; i++) x += getShift(i);
     return x;
   }
+  function hexToRgb(hex) {
+    const v = parseInt(hex.slice(1), 16);
+    return `${v >> 16 & 255},${v >> 8 & 255},${v & 255}`;
+  }
   function depthGradient(depth) {
     const shift = getShift(depth);
     const density = 1 - shift / 18;
     const topA = (0.02 + density * 0.18).toFixed(3);
     const botA = (0.08 + density * 0.35).toFixed(3);
+    const rgb = hexToRgb(currentTheme.tree.dir);
     return {
       type: "linear",
       angle: 180,
       stops: [
-        { offset: 0, color: `rgba(124,58,237,${topA})` },
-        { offset: 1, color: `rgba(124,58,237,${botA})` }
+        { offset: 0, color: `rgba(${rgb},${topA})` },
+        { offset: 1, color: `rgba(${rgb},${botA})` }
       ]
     };
   }
@@ -4030,7 +4124,7 @@
   }
   function createToggle(item, rowHeight, ex) {
     const tog = createBox("toggle-icon", { id: `toggle-${item.path}`, x: T_OFF, y: 0, height: rowHeight });
-    tog.textStyle = { ...TEXT_STYLES.toggleIcon, content: "\u25B6", color: "#00d4ff" };
+    tog.textStyle = { ...TEXT_STYLES.toggleIcon, content: "\u25B6", color: currentTheme.canvas.accent };
     if (ex) tog.transform.rotate = Math.PI / 2;
     return tog;
   }
@@ -4045,13 +4139,13 @@
       y,
       width: cw,
       height: rowHeight,
-      backgroundColor: sel ? "rgba(124,58,237,0.15)" : "transparent",
+      backgroundColor: sel ? currentTheme.tree.selectedBg : "transparent",
       data: { path: item.path, isDir: true, isExpanded: ex, depth, lineCount: actualLines },
       gesture: { passive: true, onTap: () => ctx.onDirToggle(item.path, !ex) }
     });
     row.addChild(createToggle(item, rowHeight, ex));
     const label = createBox("folder-label", { id: `label-${item.path}`, x: TXT_L, width: maxWidth, height: rowHeight });
-    label.textStyle = { ...TEXT_STYLES.folderLabel, content: item.name, color: "#e8e0f0" };
+    label.textStyle = { ...TEXT_STYLES.folderLabel, content: item.name, color: currentTheme.tree.label };
     row.addChild(label);
     return row;
   }
@@ -4065,12 +4159,12 @@
       y,
       width: cw,
       height: rowHeight,
-      backgroundColor: sel ? "rgba(124,58,237,0.15)" : "transparent",
+      backgroundColor: sel ? currentTheme.tree.selectedBg : "transparent",
       data: { path: item.path, isDir: false, depth, lineCount: actualLines },
       gesture: { passive: true, onTap: () => ctx.onFileClick(item.path) }
     });
     const label = createBox("file-label", { id: `label-${item.path}`, x: TXT_L, width: maxWidth, height: rowHeight });
-    label.textStyle = { ...TEXT_STYLES.fileLabel, content: item.name, color: "#e8e0f0" };
+    label.textStyle = { ...TEXT_STYLES.fileLabel, content: item.name, color: currentTheme.tree.label };
     row.addChild(label);
     return row;
   }
@@ -4088,7 +4182,7 @@
       backgroundColor: "transparent",
       overflow: "hidden",
       gradient: depth > 0 ? depthGradient(depth) : void 0,
-      shadow: { color: "rgba(0,0,0,0.5)", blur: 12, offsetX: -4, offsetY: 0 }
+      shadow: { color: currentTheme.tree.shadow, blur: 12, offsetX: -4, offsetY: 0 }
     });
     if (depth > 0) {
       container.kfmStyle = resolveStyle("left-emphasis-rest-hidden", {
@@ -8750,8 +8844,8 @@
     width: ${ORB_SIZE}px;
     height: ${ORB_SIZE}px;
     border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, rgba(0,255,200,0.9), rgba(0,180,150,0.6));
-    box-shadow: 0 0 16px 4px rgba(0,255,200,0.4), 0 0 40px 12px rgba(0,200,160,0.2);
+    background: ${currentTheme.debug.orbGradient};
+    box-shadow: ${currentTheme.debug.orbShadow};
     z-index: 300;
     cursor: pointer;
     transition: box-shadow 0.2s;
@@ -8766,12 +8860,12 @@
     const panel = document.createElement("div");
     panel.style.cssText = `
     position: fixed;
-    background: linear-gradient(rgba(8,20,18,0.94),rgba(8,20,18,0.94)) padding-box,
-                linear-gradient(135deg,rgba(0,255,200,.7),rgba(0,180,150,.5)) border-box;
+    background: ${currentTheme.debug.panelBgGradient} padding-box,
+                ${currentTheme.debug.panelBorderGradient} border-box;
     backdrop-filter: blur(16px);
     border: 1px solid transparent;
     border-radius: 10px;
-    box-shadow: 0 0 20px 6px rgba(0,255,200,0.2), 0 6px 24px rgba(0,0,0,0.5);
+    box-shadow: ${currentTheme.debug.panelShadow};
     z-index: 295;
     display: flex;
     flex-direction: column;
@@ -8790,7 +8884,7 @@
     panelEl.innerHTML = `
     <div style="
       padding:6px 10px;
-      border-bottom:1px solid rgba(0,255,200,0.2);
+      border-bottom:1px solid ${currentTheme.debug.headerBorder};
       display:flex;justify-content:space-between;align-items:center;
       flex-shrink:0;
     ">
@@ -8798,14 +8892,14 @@
       <span style="display:flex;gap:6px">
         <button class="debug-btn-clear" style="
           font-size:11px;padding:3px 10px;
-          background:rgba(0,255,200,0.15);color:rgba(0,255,200,0.9);
-          border:1px solid rgba(0,255,200,0.3);border-radius:5px;
+          background:${currentTheme.debug.buttonBg};color:${currentTheme.debug.headerText};
+          border:1px solid ${currentTheme.debug.buttonBorder};border-radius:5px;
           cursor:pointer;
         ">\u6E05\u7A7A</button>
         <button class="debug-btn-copy" style="
           font-size:11px;padding:3px 10px;
-          background:rgba(0,255,200,0.15);color:rgba(0,255,200,0.9);
-          border:1px solid rgba(0,255,200,0.3);border-radius:5px;
+          background:${currentTheme.debug.buttonBg};color:${currentTheme.debug.headerText};
+          border:1px solid ${currentTheme.debug.buttonBorder};border-radius:5px;
           cursor:pointer;
         ">\u590D\u5236</button>
       </span>
@@ -8817,7 +8911,7 @@
       margin:0;
       font-size:11px;
       line-height:1.5;
-      color:rgba(180,255,230,0.85);
+      color:${currentTheme.debug.logText};
       white-space:pre-wrap;
       word-break:break-all;
       min-height:0;
@@ -8860,12 +8954,12 @@
   function enterEdit() {
     if (state !== "expanded") return;
     state = "editing";
-    if (panelEl) panelEl.style.boxShadow = "0 0 40px 20px rgba(0,255,200,0.45), 0 6px 24px rgba(0,0,0,0.5)";
+    if (panelEl) panelEl.style.boxShadow = currentTheme.debug.panelShadowEdit;
   }
   function exitEdit() {
     if (state !== "editing") return;
     state = "expanded";
-    if (panelEl) panelEl.style.boxShadow = "0 0 20px 6px rgba(0,255,200,0.2), 0 6px 24px rgba(0,0,0,0.5)";
+    if (panelEl) panelEl.style.boxShadow = currentTheme.debug.panelShadow;
   }
   function toggle() {
     if (state === "collapsed") expandPanel();
@@ -9550,7 +9644,7 @@
       this.canvas = canvas;
       this.ctx = canvas.getContext("2d");
       this.dpr = (_a = options.dpr) != null ? _a : window.devicePixelRatio || 1;
-      this.backgroundColor = (_b = options.backgroundColor) != null ? _b : "#0a0a0f";
+      this.backgroundColor = (_b = options.backgroundColor) != null ? _b : currentTheme.canvas.bg;
       this.width = 0;
       this.height = 0;
       this._isRunning = false;
@@ -9734,7 +9828,7 @@
           el.style.border = "none";
           el.style.outline = "none";
           el.style.fontSize = "16px";
-          el.style.color = "#e0e0e0";
+          el.style.color = currentTheme.canvas.text;
           el.style.zIndex = "10";
           el.style.resize = "none";
           el.style.padding = "10px";
@@ -9861,7 +9955,7 @@
       var _a, _b, _c;
       const pattern = box.backgroundPattern;
       const cellSize = (_a = pattern.cellSize) != null ? _a : 20;
-      const lineColor = (_b = pattern.lineColor) != null ? _b : "#2a2a3a";
+      const lineColor = (_b = pattern.lineColor) != null ? _b : currentTheme.canvas.gridLine;
       const lineWidth = (_c = pattern.lineWidth) != null ? _c : 1;
       this.ctx.save();
       this.ctx.strokeStyle = lineColor;
@@ -9926,7 +10020,7 @@
         const trackHeight = viewportH;
         const thumbHeight = Math.max(20, viewportH / content.height * trackHeight);
         const thumbY = b.y + box.padding.top + box.scrollY / maxScroll.maxY * (trackHeight - thumbHeight);
-        this.ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+        this.ctx.fillStyle = currentTheme.canvas.accent + "4d";
         this.ctx.beginPath();
         this.ctx.roundRect(b.x + b.width - 6, thumbY, 4, thumbHeight, 2);
         this.ctx.fill();
@@ -9935,7 +10029,7 @@
         const trackWidth = viewportW;
         const thumbWidth = Math.max(20, viewportW / content.width * trackWidth);
         const thumbX = b.x + box.padding.left + box.scrollX / maxScroll.maxX * (trackWidth - thumbWidth);
-        this.ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+        this.ctx.fillStyle = currentTheme.canvas.accent + "4d";
         this.ctx.beginPath();
         this.ctx.roundRect(thumbX, b.y + b.height - 6, thumbWidth, 4, 2);
         this.ctx.fill();
@@ -9943,7 +10037,7 @@
     }
     _drawCursorBorder(b, data) {
       const ctx = this.ctx;
-      const color = data.color || "rgba(0,212,255,0.7)";
+      const color = data.color || currentTheme.canvas.cursor;
       const x = b.x;
       const y = b.y;
       const h = b.height;
@@ -10058,7 +10152,7 @@
       const iconX = icon.position === "left" ? b.x + padding.left : b.x + b.width - padding.right - icon.size;
       const iconY = b.y + padding.top;
       this.ctx.font = `${icon.size}px system-ui`;
-      this.ctx.fillStyle = "#e0e0e0";
+      this.ctx.fillStyle = currentTheme.canvas.text;
       this.ctx.textBaseline = "top";
       this.ctx.textAlign = "left";
       this.ctx.fillText(icon.char, iconX, iconY);
@@ -10336,11 +10430,11 @@
       y: canvasH / 2 - 14,
       width: ((_a = DOM.treeCanvas) == null ? void 0 : _a.clientWidth) || 280,
       height: 24,
-      backgroundColor: "rgba(46,213,163,0.15)",
+      backgroundColor: currentTheme.canvas.cursorBg,
       borderRadius: 0,
       interactive: false,
       visible: true,
-      data: { cursorDynamicLines: true, topLineW: 0, botLineW: 0, color: "rgba(0,212,255,0.7)" }
+      data: { cursorDynamicLines: true, topLineW: 0, botLineW: 0, color: currentTheme.canvas.cursor }
     });
     root.addChild(L.cursorBox);
     return L.cursorBox;
@@ -10416,7 +10510,7 @@
     const cdata = L.cursorBox.data;
     if (cdata) {
       cdata.cursorDynamicLines = true;
-      cdata.color = "rgba(0,212,255,0.7)";
+      cdata.color = currentTheme.canvas.cursor;
     }
     if (animate && cdata) {
       try {
@@ -11795,7 +11889,7 @@
   }
 
   // src/client/modules/card-stack.ts
-  var CARD_BG = "rgba(20,16,32,0.92)";
+  var CARD_BG = currentTheme.stack.cardBg;
   var CARDS = [
     { id: "settings", icon: "\u2699", name: "\u8BBE\u7F6E", desc: "API Key \xB7 \u6A21\u578B\u9009\u62E9" },
     { id: "files", icon: "\u{1F4C1}", name: "\u6587\u4EF6\u7BA1\u7406", desc: "\u4E0A\u4F20 \xB7 \u4E0B\u8F7D \xB7 \u6574\u7406" },
@@ -11805,15 +11899,7 @@
     { id: "stats", icon: "\u{1F4CA}", name: "\u7EDF\u8BA1", desc: "\u4F7F\u7528\u6570\u636E \xB7 \u8D8B\u52BF" },
     { id: "about", icon: "\u{1F48E}", name: "\u5173\u4E8E", desc: "\u7248\u672C \xB7 \u4FE1\u606F" }
   ];
-  var CARD_COLORS = [
-    { border: "#B46478", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(180,100,120,0.25)" },
-    { border: "#C88C5A", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(200,140,90,0.25)" },
-    { border: "#B4AA50", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(180,170,80,0.25)" },
-    { border: "#50A880", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(80,168,128,0.25)" },
-    { border: "#5088C8", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(80,136,200,0.25)" },
-    { border: "#6C5CC8", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(108,92,200,0.25)" },
-    { border: "#9650C8", bg: "rgba(20,16,32,0.92)", iconBg: "rgba(150,80,200,0.25)" }
-  ];
+  var CARD_COLORS = currentTheme.cardAccents;
   function hexToRgba(hex, alpha) {
     const num = parseInt(hex.slice(1), 16);
     const r = num >> 16 & 255;
@@ -11834,8 +11920,8 @@
     const [c1, c2, c3] = getTriple(i, alpha);
     return "linear-gradient(to bottom right, " + c1 + " 0%, " + c2 + " 33%, " + c3 + " 50%)";
   }
-  var CARD_GAP = 36;
-  var CARD_HEIGHT = 68;
+  var CARD_GAP = currentTheme.stack.cardGap;
+  var CARD_HEIGHT = currentTheme.stack.cardHeight;
   var STACK_TOP_RATIO = 0.12;
   var _state = "closed";
   var _focusIndex = 0;
@@ -11856,10 +11942,7 @@
     const alpha = 0.85;
     const borderGrad = getBorderGradient(index, alpha);
     const shadow = [
-      "0 2px 4px rgba(0,0,0,0.3)",
-      "0 8px 16px rgba(0,0,0,0.25)",
-      "0 16px 32px rgba(0,0,0,0.2)",
-      "-4px 4px 8px rgba(0,0,0,0.15)"
+      currentTheme.stack.blurShadow
     ].join(",");
     el.style.cssText = [
       "position:fixed",
@@ -11923,8 +12006,8 @@
         });
         el.style.backdropFilter = "blur(16px)";
         el.style.webkitBackdropFilter = "blur(16px)";
-        el.style.background = "linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, " + getBorderGradient(i, alpha) + " border-box";
-        el.style.boxShadow = "0 4px 8px rgba(0,0,0,0.4),0 12px 24px rgba(0,0,0,0.3),0 24px 48px rgba(0,0,0,0.25),-6px 6px 12px rgba(0,0,0,0.2)";
+        el.style.background = "linear-gradient(" + currentTheme.stack.cardBg + "," + currentTheme.stack.cardBg + ") padding-box, " + getBorderGradient(i, alpha) + " border-box";
+        el.style.boxShadow = currentTheme.stack.focusShadow;
         const idxEl = el.querySelector(".stack-card-index");
         if (idxEl) idxEl.style.opacity = "0.8";
       } else {
@@ -11939,8 +12022,8 @@
         });
         el.style.backdropFilter = "blur(16px)";
         el.style.webkitBackdropFilter = "blur(16px)";
-        el.style.background = "linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, " + getBorderGradient(i, alpha) + " border-box";
-        el.style.boxShadow = "0 2px 4px rgba(0,0,0,0.3),0 8px 16px rgba(0,0,0,0.25),0 16px 32px rgba(0,0,0,0.2),-4px 4px 8px rgba(0,0,0,0.15)";
+        el.style.background = "linear-gradient(" + currentTheme.stack.cardBg + "," + currentTheme.stack.cardBg + ") padding-box, " + getBorderGradient(i, alpha) + " border-box";
+        el.style.boxShadow = currentTheme.stack.blurShadow;
         const idxEl = el.querySelector(".stack-card-index");
         if (idxEl) idxEl.style.opacity = "0.3";
       }
@@ -13791,12 +13874,12 @@
     panel.className = "orb-panel";
     panel.style.cssText = `
     position: fixed;
-    background: linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, linear-gradient(135deg,rgba(0,212,255,.8),rgba(99,102,241,.7),rgba(124,58,237,.7)) border-box;
+    background: linear-gradient(${currentTheme.surface.bg},${currentTheme.surface.bg}) padding-box, ${currentTheme.aiChat.panelBorderGradient} border-box;
     backdrop-filter: blur(16px);
     border: 1px solid transparent;
     border-left-width: 3px;
     border-radius: 12px;
-    box-shadow: 0 0 24px 8px rgba(124, 58, 237, 0.25), 0 8px 32px rgba(0, 0, 0, 0.5);
+    box-shadow: ${currentTheme.aiChat.panelShadow};
     z-index: 205;
     display: flex;
     flex-direction: column;
@@ -13818,12 +13901,12 @@
     let html = "";
     for (const msg of chatMessages) {
       const isUser = msg.role === "user";
-      const bgColor = isUser ? "linear-gradient(rgba(10,10,15,.85),rgba(10,10,15,.85)) padding-box,linear-gradient(135deg,#7c3aed,rgba(0,212,255,.8)) border-box" : "linear-gradient(rgba(10,15,30,0.88),rgba(10,15,30,0.88)) padding-box,linear-gradient(135deg,rgba(0,212,255,.8),rgba(99,102,241,.7),rgba(124,58,237,.7)) border-box";
+      const bgColor = isUser ? "linear-gradient(${theme.surface.bgLight},${theme.surface.bgLight}) padding-box,${theme.aiChat.bubbleSelfGradient} border-box" : "linear-gradient(rgba(10,15,30,0.88),rgba(10,15,30,0.88)) padding-box,${theme.aiChat.panelBorderGradient} border-box";
       const borderStyle = isUser ? "border:1px solid transparent;border-left-width:3px;" : "border:1px solid transparent;border-left-width:3px;";
       const align = isUser ? "flex-end" : "flex-start";
       const label = isUser ? "\u4F60" : "\u851A\u7136";
-      const labelColor = isUser ? "#7c3aed" : "#818cf8";
-      const boxShadow = isUser ? "0 0 10px 2px rgba(124,58,237,0.12)" : "0 0 10px 2px rgba(99,102,241,0.08)";
+      const labelColor = isUser ? currentTheme.aiChat.bubbleLabelSelf : currentTheme.aiChat.bubbleLabelAI;
+      const boxShadow = isUser ? currentTheme.aiChat.bubbleSelfShadow : currentTheme.aiChat.bubbleAIShadow;
       const font = "13px sans-serif";
       const lineHeight = 20;
       try {
@@ -13833,7 +13916,7 @@
         <div style="display:flex;justify-content:${align};margin-bottom:8px">
           <div style="max-width:${innerWidth - 8}px;padding:6px 12px;background:${bgColor};${borderStyle}border-radius:8px;box-shadow:${boxShadow}">
             <div style="font-size:10px;color:${labelColor};margin-bottom:2px;font-weight:600">${label}</div>
-            <div style="font-family:sans-serif;font-size:13px;line-height:${lineHeight}px;color:#e0e0e0">${textHtml}</div>
+            <div style="font-family:sans-serif;font-size:13px;line-height:${lineHeight}px;color:${currentTheme.aiChat.bubbleText}">${textHtml}</div>
           </div>
         </div>`;
       } catch {
@@ -13841,7 +13924,7 @@
         <div style="display:flex;justify-content:${align};margin-bottom:8px">
           <div style="max-width:85%;padding:6px 12px;background:${bgColor};${borderStyle}border-radius:8px;box-shadow:${boxShadow}">
             <div style="font-size:10px;color:${labelColor};margin-bottom:2px;font-weight:600">${label}</div>
-            <div style="font-size:13px;color:#e0e0e0">${escapeHtml(msg.text)}</div>
+            <div style="font-size:13px;color:${currentTheme.aiChat.bubbleText}">${escapeHtml(msg.text)}</div>
           </div>
         </div>`;
       }
@@ -13881,14 +13964,14 @@
     panelEl2.innerHTML = `
     <div class="orb-panel-header" style="
       padding: 10px 14px;
-      border-bottom: 1px solid rgba(124,58,237,0.2);
+      border-bottom: 1px solid ${currentTheme.aiChat.headerBorder};
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-shrink: 0;
     ">
-      <span style="font-size:13px;color:#7c3aed;font-weight:600">AI \u5BF9\u8BDD\u4E0A\u4E0B\u6587</span>
-      <span class="orb-panel-state" style="font-size:10px;color:rgba(255,255,255,0.3)"></span>
+      <span style="font-size:13px;color:${currentTheme.aiChat.headerText};font-weight:600">AI \u5BF9\u8BDD\u4E0A\u4E0B\u6587</span>
+      <span class="orb-panel-state" style="font-size:10px;color:${currentTheme.aiChat.stateText}"></span>
     </div>
     <div class="orb-panel-content" style="
       flex: 1;
@@ -13924,7 +14007,7 @@
     if (orbState !== "expanded") return;
     orbState = "editing";
     if (panelEl2) {
-      panelEl2.style.boxShadow = "0 0 40px 20px rgba(124, 58, 237, 0.55), 0 8px 32px rgba(0, 0, 0, 0.5)";
+      panelEl2.style.boxShadow = currentTheme.aiChat.panelShadowEdit;
     }
     updateStateLabel();
   }
@@ -13932,7 +14015,7 @@
     if (orbState !== "editing") return;
     orbState = "expanded";
     if (panelEl2) {
-      panelEl2.style.boxShadow = "0 0 24px 8px rgba(124, 58, 237, 0.25), 0 8px 32px rgba(0, 0, 0, 0.5)";
+      panelEl2.style.boxShadow = currentTheme.aiChat.panelShadow;
     }
     renderChatContent();
     updateStateLabel();

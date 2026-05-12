@@ -8,6 +8,7 @@
 import { Box } from '../engine/v2/box.js';
 import type { TextStyle, HighlightConfig } from '../engine/v2/types.js';
 import { KFMState } from "./state.js";
+import { currentTheme as theme } from './theme.js';
 
 // ============================================================
 // 尺寸常量
@@ -38,18 +39,6 @@ export function getRowLayout(depth: number): { x: number; width: number } {
   var x = depth * 18;
   return { x: x, width: DIMENSIONS.SIDEBAR_WIDTH - x };
 }
-
-// ============================================================
-// 颜色
-// ============================================================
-
-export const COLORS = {
-  DIR: '#7c3aed',
-  FILE: '#e0e0e0',
-  ACCENT: '#00d4ff',
-  SELECTED_BG: 'rgba(124,58,237,0.15)',
-  CANVAS_BG: 'rgba(10,10,15,0.85)',
-} as Record<string, string>;
 
 // ============================================================
 // 文字样式常量
@@ -93,7 +82,7 @@ export const TEXT_STYLES = {
 // 用 highlight 画出 3px 宽的紫色色块，clip 不影响它
 // ============================================================
 
-const HIGHLIGHT: HighlightConfig = { color: '#7c3aed', width: 2, side: 'all' };
+const HIGHLIGHT: HighlightConfig = { color: theme.tree.dir, width: 2, side: 'all' };
 
 // ============================================================
 // 模板注册表
@@ -103,7 +92,7 @@ const templates: Record<string, Record<string, any>> = {
   'folder-row': {
     width: DIMENSIONS.SIDEBAR_WIDTH,
     height: DIMENSIONS.BOX_HEIGHT,
-    backgroundColor: 'rgba(124,58,237,0.3)',
+    backgroundColor: theme.tree.folderBg,
     borderRadius: 0,
     interactive: true,
     overflow: 'hidden',
@@ -112,7 +101,7 @@ const templates: Record<string, Record<string, any>> = {
   'file-row': {
     width: DIMENSIONS.SIDEBAR_WIDTH,
     height: DIMENSIONS.BOX_HEIGHT,
-    backgroundColor: 'rgba(124,58,237,0.3)',
+    backgroundColor: theme.tree.folderBg,
     borderRadius: 0,
     interactive: true,
     overflow: 'hidden',
@@ -199,17 +188,9 @@ export const styleRegistry = {
 // 文件扩展名 → 颜色映射
 // ============================================================
 
-const extColors: Record<string, string> = {
-  ts: '#3178c6', js: '#f7df1e', json: '#292929',
-  html: '#e34f26', css: '#1572b6', md: '#083fa1',
-  py: '#3776ab', rs: '#dea584', go: '#00d800',
-  rsync: '#7c3aed', zip: '#f39c12', gz: '#f39c12',
-  tar: '#f39c12', bak: '#888', old: '#888',
-};
-
 export function getFileColor(name: string): string {
   const ext = name.split('.').pop()?.toLowerCase();
-  return (ext && extColors[ext]) || COLORS.FILE;
+  return (ext && theme.extColors[ext]) || theme.tree.file;
 }
 
 // ============================================================
@@ -235,6 +216,6 @@ export function createBox(templateName: string, overrides: Record<string, any>):
 if (typeof window !== 'undefined') {
   window.styleRegistry = styleRegistry;
   window.DIMENSIONS = DIMENSIONS;
-  window.COLORS = COLORS;
+
   window.TEXT_STYLES = TEXT_STYLES;
 }

@@ -4,7 +4,8 @@
 
 import { Box } from '../engine/v2/box.js';
 import { KFMState, type FileNode } from './state.js';
-import { DIMENSIONS, COLORS, TEXT_STYLES, getFileColor, createBox, LINE_HEIGHT, MAX_LINES, FONT, getShift } from './style-registry.js';
+import { DIMENSIONS, TEXT_STYLES, getFileColor, createBox, LINE_HEIGHT, MAX_LINES, FONT, getShift } from './style-registry.js';
+import { currentTheme as theme } from './theme.js';
 import { DIMENSIONS as D } from './style-registry.js';
 import { resolveStyle } from '../engine/v2/StyleConfig.js';
 import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
@@ -34,16 +35,22 @@ const TXT_L = 26;
 
 function absX(d: number): number { let x = 0; for (let i = 0; i < d; i++) x += getShift(i); return x; }
 
+function hexToRgb(hex: string): string {
+  const v = parseInt(hex.slice(1), 16);
+  return `${(v >> 16) & 255},${(v >> 8) & 255},${v & 255}`;
+}
+
 function depthGradient(depth: number) {
   const shift = getShift(depth);
   const density = 1 - shift / 18;
   const topA = (0.02 + density * 0.18).toFixed(3);
   const botA = (0.08 + density * 0.35).toFixed(3);
+  const rgb = hexToRgb(theme.tree.dir);
   return {
     type: 'linear' as const, angle: 180,
     stops: [
-      { offset: 0, color: `rgba(124,58,237,${topA})` },
-      { offset: 1, color: `rgba(124,58,237,${botA})` },
+      { offset: 0, color: `rgba(${rgb},${topA})` },
+      { offset: 1, color: `rgba(${rgb},${botA})` },
     ],
   };
 }
@@ -58,7 +65,7 @@ function calcTextLayout(name: string, maxWidth: number): { lines: number, height
 /** 创建 toggle-icon 并设置初始旋转状态 */
 function createToggle(item: FileNode, rowHeight: number, ex: boolean): Box {
   const tog = createBox('toggle-icon', { id: `toggle-${item.path}`, x: T_OFF, y: 0, height: rowHeight });
-  tog.textStyle = { ...TEXT_STYLES.toggleIcon, content: '\u25b6', color: '#00d4ff' };
+  tog.textStyle = { ...TEXT_STYLES.toggleIcon, content: '\u25b6', color: theme.canvas.accent };
   if (ex) tog.transform.rotate = Math.PI / 2;  // 已展开时初始旋转 90°
   return tog;
 }
@@ -71,13 +78,13 @@ function innerFolderRow(item: FileNode, y: number, cw: number, ctx: BuildCtx, de
   
   const row = createBox('folder-row', {
     id: `title-${item.path}`, x: 0, y, width: cw, height: rowHeight,
-    backgroundColor: sel ? 'rgba(124,58,237,0.15)' : 'transparent',
+    backgroundColor: sel ? theme.tree.selectedBg : 'transparent',
     data: { path: item.path, isDir: true, isExpanded: ex, depth, lineCount: actualLines },
     gesture: { passive: true, onTap: () => ctx.onDirToggle(item.path, !ex) },
   });
   row.addChild(createToggle(item, rowHeight, ex));
   const label = createBox('folder-label', { id: `label-${item.path}`, x: TXT_L, width: maxWidth, height: rowHeight });
-  label.textStyle = { ...TEXT_STYLES.folderLabel, content: item.name, color: '#e8e0f0' };
+  label.textStyle = { ...TEXT_STYLES.folderLabel, content: item.name, color: theme.tree.label };
   row.addChild(label);
   return row;
 }
@@ -89,12 +96,12 @@ function innerFileRow(item: FileNode, y: number, cw: number, ctx: BuildCtx, dept
   
   const row = createBox('file-row', {
     id: `file-${item.path}`, x: 0, y, width: cw, height: rowHeight,
-    backgroundColor: sel ? 'rgba(124,58,237,0.15)' : 'transparent',
+    backgroundColor: sel ? theme.tree.selectedBg : 'transparent',
     data: { path: item.path, isDir: false, depth, lineCount: actualLines },
     gesture: { passive: true, onTap: () => ctx.onFileClick(item.path) },
   });
   const label = createBox('file-label', { id: `label-${item.path}`, x: TXT_L, width: maxWidth, height: rowHeight });
-  label.textStyle = { ...TEXT_STYLES.fileLabel, content: item.name, color: "#e8e0f0" };
+  label.textStyle = { ...TEXT_STYLES.fileLabel, content: item.name, color: theme.tree.label };
   row.addChild(label);
   return row;
 }
@@ -108,7 +115,7 @@ function buildExpanded(path: string, children: FileNode[], ctx: BuildCtx, depth:
     backgroundColor: 'transparent',
     overflow: 'hidden',
     gradient: depth > 0 ? depthGradient(depth) : undefined,
-    shadow: { color: 'rgba(0,0,0,0.5)', blur: 12, offsetX: -4, offsetY: 0 },
+    shadow: { color: theme.tree.shadow, blur: 12, offsetX: -4, offsetY: 0 },
   });
   if (depth > 0) {
     container.kfmStyle = resolveStyle('left-emphasis-rest-hidden', {
@@ -179,13 +186,13 @@ function container_AddRootFolderRow(parent: Box, item: FileNode, y: number, dept
   
   const row = createBox('folder-row', {
     id: `title-${item.path}`, x, y, width: w, height: rowHeight,
-    backgroundColor: sel ? 'rgba(124,58,237,0.15)' : 'transparent',
+    backgroundColor: sel ? theme.tree.selectedBg : 'transparent',
     data: { path: item.path, isDir: true, isExpanded: ex, depth, lineCount: actualLines },
     gesture: { passive: true, onTap: () => ctx.onDirToggle(item.path, !ex) },
   });
   row.addChild(createToggle(item, rowHeight, ex));
   const label = createBox('folder-label', { id: `label-${item.path}`, x: TXT_L, width: maxWidth, height: rowHeight });
-  label.textStyle = { ...TEXT_STYLES.folderLabel, content: item.name, color: '#e8e0f0' };
+  label.textStyle = { ...TEXT_STYLES.folderLabel, content: item.name, color: theme.tree.label };
   row.addChild(label);
   parent.addChild(row);
   return row;
@@ -200,12 +207,12 @@ function container_AddRootFileRow(parent: Box, item: FileNode, y: number, depth:
   
   const row = createBox('file-row', {
     id: `file-${item.path}`, x, y, width: w, height: rowHeight,
-    backgroundColor: sel ? 'rgba(124,58,237,0.15)' : 'transparent',
+    backgroundColor: sel ? theme.tree.selectedBg : 'transparent',
     data: { path: item.path, isDir: false, depth, lineCount: actualLines },
     gesture: { passive: true, onTap: () => ctx.onFileClick(item.path) },
   });
   const label = createBox('file-label', { id: `label-${item.path}`, x: TXT_L, width: maxWidth, height: rowHeight });
-  label.textStyle = { ...TEXT_STYLES.fileLabel, content: item.name, color: "#e8e0f0" };
+  label.textStyle = { ...TEXT_STYLES.fileLabel, content: item.name, color: theme.tree.label };
   row.addChild(label);
   parent.addChild(row);
   return row;

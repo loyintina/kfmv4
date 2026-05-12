@@ -21,6 +21,7 @@ import { DOM } from './dom-refs.js';
 import { getRootScrollY, setRootScrollY, _rebuildRowIndex, findBoxById } from './canvas-utils.js';
 import { anim } from './animation-registry.js';
 import { getShift, LINE_HEIGHT, MAX_LINES } from './style-registry.js';
+import { currentTheme as theme } from './theme.js';
 import { getFileRowData } from './state.js';
 import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
 
@@ -41,11 +42,11 @@ export function ensureCursorBox(root: Box, canvasH: number): Box {
     y: canvasH / 2 - 14,
     width: DOM.treeCanvas?.clientWidth || 280,
     height: 24,
-    backgroundColor: 'rgba(46,213,163,0.15)',
+    backgroundColor: theme.canvas.cursorBg,
     borderRadius: 0,
     interactive: false,
     visible: true,
-    data: { cursorDynamicLines: true, topLineW: 0, botLineW: 0, color: 'rgba(0,212,255,0.7)' },
+    data: { cursorDynamicLines: true, topLineW: 0, botLineW: 0, color: theme.canvas.cursor },
   });
 
   root.addChild(L.cursorBox);
@@ -123,7 +124,7 @@ export function moveCursorTo(hitBox: Box, animate = true): void {
   const cdata = (L.cursorBox as any).data;
   if (cdata) {
     cdata.cursorDynamicLines = true;
-    cdata.color = 'rgba(0,212,255,0.7)';
+    cdata.color = theme.canvas.cursor;
   }
 
   if (animate && cdata) {

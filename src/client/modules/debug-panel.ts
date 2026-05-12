@@ -13,6 +13,7 @@
  */
 
 import { gestures } from './gesture-registry.js';
+import { currentTheme as theme } from './theme.js';
 
 type DebugState = 'collapsed' | 'expanded' | 'editing';
 
@@ -99,8 +100,8 @@ function createOrb(): HTMLDivElement {
     width: ${ORB_SIZE}px;
     height: ${ORB_SIZE}px;
     border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, rgba(0,255,200,0.9), rgba(0,180,150,0.6));
-    box-shadow: 0 0 16px 4px rgba(0,255,200,0.4), 0 0 40px 12px rgba(0,200,160,0.2);
+    background: ${theme.debug.orbGradient};
+    box-shadow: ${theme.debug.orbShadow};
     z-index: 300;
     cursor: pointer;
     transition: box-shadow 0.2s;
@@ -116,12 +117,12 @@ function createPanel(): HTMLDivElement {
   const panel = document.createElement('div');
   panel.style.cssText = `
     position: fixed;
-    background: linear-gradient(rgba(8,20,18,0.94),rgba(8,20,18,0.94)) padding-box,
-                linear-gradient(135deg,rgba(0,255,200,.7),rgba(0,180,150,.5)) border-box;
+    background: ${theme.debug.panelBgGradient} padding-box,
+                ${theme.debug.panelBorderGradient} border-box;
     backdrop-filter: blur(16px);
     border: 1px solid transparent;
     border-radius: 10px;
-    box-shadow: 0 0 20px 6px rgba(0,255,200,0.2), 0 6px 24px rgba(0,0,0,0.5);
+    box-shadow: ${theme.debug.panelShadow};
     z-index: 295;
     display: flex;
     flex-direction: column;
@@ -140,7 +141,7 @@ function buildPanelContent(): void {
   panelEl.innerHTML = `
     <div style="
       padding:6px 10px;
-      border-bottom:1px solid rgba(0,255,200,0.2);
+      border-bottom:1px solid ${theme.debug.headerBorder};
       display:flex;justify-content:space-between;align-items:center;
       flex-shrink:0;
     ">
@@ -148,14 +149,14 @@ function buildPanelContent(): void {
       <span style="display:flex;gap:6px">
         <button class="debug-btn-clear" style="
           font-size:11px;padding:3px 10px;
-          background:rgba(0,255,200,0.15);color:rgba(0,255,200,0.9);
-          border:1px solid rgba(0,255,200,0.3);border-radius:5px;
+          background:${theme.debug.buttonBg};color:${theme.debug.headerText};
+          border:1px solid ${theme.debug.buttonBorder};border-radius:5px;
           cursor:pointer;
         ">清空</button>
         <button class="debug-btn-copy" style="
           font-size:11px;padding:3px 10px;
-          background:rgba(0,255,200,0.15);color:rgba(0,255,200,0.9);
-          border:1px solid rgba(0,255,200,0.3);border-radius:5px;
+          background:${theme.debug.buttonBg};color:${theme.debug.headerText};
+          border:1px solid ${theme.debug.buttonBorder};border-radius:5px;
           cursor:pointer;
         ">复制</button>
       </span>
@@ -167,7 +168,7 @@ function buildPanelContent(): void {
       margin:0;
       font-size:11px;
       line-height:1.5;
-      color:rgba(180,255,230,0.85);
+      color:${theme.debug.logText};
       white-space:pre-wrap;
       word-break:break-all;
       min-height:0;
@@ -218,13 +219,13 @@ function collapsePanel(): void {
 function enterEdit(): void {
   if (state !== 'expanded') return;
   state = 'editing';
-  if (panelEl) panelEl.style.boxShadow = '0 0 40px 20px rgba(0,255,200,0.45), 0 6px 24px rgba(0,0,0,0.5)';
+  if (panelEl) panelEl.style.boxShadow = theme.debug.panelShadowEdit;
 }
 
 function exitEdit(): void {
   if (state !== 'editing') return;
   state = 'expanded';
-  if (panelEl) panelEl.style.boxShadow = '0 0 20px 6px rgba(0,255,200,0.2), 0 6px 24px rgba(0,0,0,0.5)';
+  if (panelEl) panelEl.style.boxShadow = theme.debug.panelShadow;
 }
 
 function toggle(): void {

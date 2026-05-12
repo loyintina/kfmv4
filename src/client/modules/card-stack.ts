@@ -1,5 +1,6 @@
 import { gestures } from "./gesture-registry.js";
 import { anim, AnimTimeline } from './animation-registry.js';
+import { currentTheme as theme } from './theme.js';
 
 /**
  * KFM v4 - 堆叠卡片面板
@@ -10,7 +11,7 @@ import { anim, AnimTimeline } from './animation-registry.js';
  */
 
 // ========== 卡片内容定义 ==========
-const CARD_BG = 'rgba(20,16,32,0.92)';  // 深色毛玻璃底
+const CARD_BG = theme.stack.cardBg;  // 深色毛玻璃底
 
 interface CardDef {
   id: string;
@@ -30,15 +31,7 @@ const CARDS: CardDef[] = [
 ];
 
 // ========== 星云配色 (Nebula) ==========
-const CARD_COLORS = [
-  { border: '#B46478', bg: 'rgba(20,16,32,0.92)', iconBg: 'rgba(180,100,120,0.25)' },
-  { border: '#C88C5A', bg: 'rgba(20,16,32,0.92)', iconBg: 'rgba(200,140,90,0.25)' },
-  { border: '#B4AA50', bg: 'rgba(20,16,32,0.92)', iconBg: 'rgba(180,170,80,0.25)' },
-  { border: '#50A880', bg: 'rgba(20,16,32,0.92)', iconBg: 'rgba(80,168,128,0.25)' },
-  { border: '#5088C8', bg: 'rgba(20,16,32,0.92)', iconBg: 'rgba(80,136,200,0.25)' },
-  { border: '#6C5CC8', bg: 'rgba(20,16,32,0.92)', iconBg: 'rgba(108,92,200,0.25)' },
-  { border: '#9650C8', bg: 'rgba(20,16,32,0.92)', iconBg: 'rgba(150,80,200,0.25)' },
-];
+const CARD_COLORS = theme.cardAccents;
 
 // 颜色工具：hex → rgba（带 alpha）
 function hexToRgba(hex: string, alpha: number): string {
@@ -70,9 +63,9 @@ function getBorderGradient(i: number, alpha: number): string {
 
 // ========== 配置 ==========
 /** 卡片垂直间距 px */
-const CARD_GAP = 36;
+const CARD_GAP = theme.stack.cardGap;
 /** 卡片高度 px */
-const CARD_HEIGHT = 68;
+const CARD_HEIGHT = theme.stack.cardHeight;
 /** 堆叠起始位置（距顶部比例） */
 const STACK_TOP_RATIO = 0.12;
 
@@ -111,10 +104,7 @@ function createCard(index: number): HTMLElement {
 
   // 多层阴影：立体感，像桌面上的物件
   const shadow = [
-    '0 2px 4px rgba(0,0,0,0.3)',
-    '0 8px 16px rgba(0,0,0,0.25)',
-    '0 16px 32px rgba(0,0,0,0.2)',
-    '-4px 4px 8px rgba(0,0,0,0.15)',
+    theme.stack.blurShadow
   ].join(',');
 
   el.style.cssText = [
@@ -191,8 +181,8 @@ function updateFocus(): void {
       });
       el.style.backdropFilter = 'blur(16px)';
       (el.style as any).webkitBackdropFilter = 'blur(16px)';
-      el.style.background = 'linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, ' + getBorderGradient(i, alpha) + ' border-box';
-      el.style.boxShadow = '0 4px 8px rgba(0,0,0,0.4),0 12px 24px rgba(0,0,0,0.3),0 24px 48px rgba(0,0,0,0.25),-6px 6px 12px rgba(0,0,0,0.2)';
+      el.style.background = 'linear-gradient(' + theme.stack.cardBg + ',' + theme.stack.cardBg + ') padding-box, ' + getBorderGradient(i, alpha) + ' border-box';
+      el.style.boxShadow = theme.stack.focusShadow;
       const idxEl = el.querySelector('.stack-card-index') as HTMLElement;
       if (idxEl) idxEl.style.opacity = '0.8';
     } else {
@@ -204,8 +194,8 @@ function updateFocus(): void {
       });
       el.style.backdropFilter = 'blur(16px)';
       (el.style as any).webkitBackdropFilter = 'blur(16px)';
-      el.style.background = 'linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, ' + getBorderGradient(i, alpha) + ' border-box';
-      el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3),0 8px 16px rgba(0,0,0,0.25),0 16px 32px rgba(0,0,0,0.2),-4px 4px 8px rgba(0,0,0,0.15)';
+      el.style.background = 'linear-gradient(' + theme.stack.cardBg + ',' + theme.stack.cardBg + ') padding-box, ' + getBorderGradient(i, alpha) + ' border-box';
+      el.style.boxShadow = theme.stack.blurShadow;
       const idxEl = el.querySelector('.stack-card-index') as HTMLElement;
       if (idxEl) idxEl.style.opacity = '0.3';
     }

@@ -15,6 +15,7 @@
 import { measureText, layoutLines } from '../engine/text-layout/index.js';
 import { gestures } from './gesture-registry.js';
 import { DOM } from "./dom-refs.js";
+import { currentTheme as theme } from './theme.js';
 
 interface ChatMessage {
   role: 'user' | 'ai';
@@ -96,12 +97,12 @@ function createPanel(): HTMLDivElement {
   panel.className = 'orb-panel';
   panel.style.cssText = `
     position: fixed;
-    background: linear-gradient(rgba(20,16,32,0.92),rgba(20,16,32,0.92)) padding-box, linear-gradient(135deg,rgba(0,212,255,.8),rgba(99,102,241,.7),rgba(124,58,237,.7)) border-box;
+    background: linear-gradient(${theme.surface.bg},${theme.surface.bg}) padding-box, ${theme.aiChat.panelBorderGradient} border-box;
     backdrop-filter: blur(16px);
     border: 1px solid transparent;
     border-left-width: 3px;
     border-radius: 12px;
-    box-shadow: 0 0 24px 8px rgba(124, 58, 237, 0.25), 0 8px 32px rgba(0, 0, 0, 0.5);
+    box-shadow: ${theme.aiChat.panelShadow};
     z-index: 205;
     display: flex;
     flex-direction: column;
@@ -128,15 +129,15 @@ function renderChatContent(): void {
   for (const msg of chatMessages) {
     const isUser = msg.role === 'user';
     const bgColor = isUser
-      ? 'linear-gradient(rgba(10,10,15,.85),rgba(10,10,15,.85)) padding-box,linear-gradient(135deg,#7c3aed,rgba(0,212,255,.8)) border-box'
-      : 'linear-gradient(rgba(10,15,30,0.88),rgba(10,15,30,0.88)) padding-box,linear-gradient(135deg,rgba(0,212,255,.8),rgba(99,102,241,.7),rgba(124,58,237,.7)) border-box';
+      ? 'linear-gradient(${theme.surface.bgLight},${theme.surface.bgLight}) padding-box,${theme.aiChat.bubbleSelfGradient} border-box'
+      : 'linear-gradient(rgba(10,15,30,0.88),rgba(10,15,30,0.88)) padding-box,${theme.aiChat.panelBorderGradient} border-box';
     const borderStyle = isUser
       ? 'border:1px solid transparent;border-left-width:3px;'
       : 'border:1px solid transparent;border-left-width:3px;';
     const align = isUser ? 'flex-end' : 'flex-start';
     const label = isUser ? '你' : '蔚然';
-    const labelColor = isUser ? '#7c3aed' : '#818cf8';
-    const boxShadow = isUser ? '0 0 10px 2px rgba(124,58,237,0.12)' : '0 0 10px 2px rgba(99,102,241,0.08)';
+    const labelColor = isUser ? theme.aiChat.bubbleLabelSelf : theme.aiChat.bubbleLabelAI;
+    const boxShadow = isUser ? theme.aiChat.bubbleSelfShadow : theme.aiChat.bubbleAIShadow;
 
     const font = '13px sans-serif';
     const lineHeight = 20;
@@ -147,7 +148,7 @@ function renderChatContent(): void {
         <div style="display:flex;justify-content:${align};margin-bottom:8px">
           <div style="max-width:${innerWidth - 8}px;padding:6px 12px;background:${bgColor};${borderStyle}border-radius:8px;box-shadow:${boxShadow}">
             <div style="font-size:10px;color:${labelColor};margin-bottom:2px;font-weight:600">${label}</div>
-            <div style="font-family:sans-serif;font-size:13px;line-height:${lineHeight}px;color:#e0e0e0">${textHtml}</div>
+            <div style="font-family:sans-serif;font-size:13px;line-height:${lineHeight}px;color:${theme.aiChat.bubbleText}">${textHtml}</div>
           </div>
         </div>`;
     } catch {
@@ -155,7 +156,7 @@ function renderChatContent(): void {
         <div style="display:flex;justify-content:${align};margin-bottom:8px">
           <div style="max-width:85%;padding:6px 12px;background:${bgColor};${borderStyle}border-radius:8px;box-shadow:${boxShadow}">
             <div style="font-size:10px;color:${labelColor};margin-bottom:2px;font-weight:600">${label}</div>
-            <div style="font-size:13px;color:#e0e0e0">${escapeHtml(msg.text)}</div>
+            <div style="font-size:13px;color:${theme.aiChat.bubbleText}">${escapeHtml(msg.text)}</div>
           </div>
         </div>`;
     }
@@ -211,14 +212,14 @@ function buildPanelContent(): void {
   panelEl.innerHTML = `
     <div class="orb-panel-header" style="
       padding: 10px 14px;
-      border-bottom: 1px solid rgba(124,58,237,0.2);
+      border-bottom: 1px solid ${theme.aiChat.headerBorder};
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-shrink: 0;
     ">
-      <span style="font-size:13px;color:#7c3aed;font-weight:600">AI 对话上下文</span>
-      <span class="orb-panel-state" style="font-size:10px;color:rgba(255,255,255,0.3)"></span>
+      <span style="font-size:13px;color:${theme.aiChat.headerText};font-weight:600">AI 对话上下文</span>
+      <span class="orb-panel-state" style="font-size:10px;color:${theme.aiChat.stateText}"></span>
     </div>
     <div class="orb-panel-content" style="
       flex: 1;
@@ -258,7 +259,7 @@ function enterEditMode(): void {
   if (orbState !== 'expanded') return;
   orbState = 'editing';
   if (panelEl) {
-    panelEl.style.boxShadow = '0 0 40px 20px rgba(124, 58, 237, 0.55), 0 8px 32px rgba(0, 0, 0, 0.5)';
+    panelEl.style.boxShadow = theme.aiChat.panelShadowEdit;
   }
   updateStateLabel();
 }
@@ -267,7 +268,7 @@ function exitEditMode(): void {
   if (orbState !== 'editing') return;
   orbState = 'expanded';
   if (panelEl) {
-    panelEl.style.boxShadow = '0 0 24px 8px rgba(124, 58, 237, 0.25), 0 8px 32px rgba(0, 0, 0, 0.5)';
+    panelEl.style.boxShadow = theme.aiChat.panelShadow;
   }
   renderChatContent();
   updateStateLabel();
