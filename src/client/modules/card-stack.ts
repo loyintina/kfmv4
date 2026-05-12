@@ -89,14 +89,11 @@ function createCard(index: number): HTMLElement {
   el.className = 'stack-card';
   el.dataset.index = String(index);
 
-  // 随机偏移：让卡片看起来像是散落在桌面上
-  const randomRight = 14 + Math.floor(Math.random() * 12); // 14-26px
-  const randomRotate = (Math.random() - 0.5) * 4; // -2deg ~ +2deg 微倾斜
   const topPx = Math.round(window.innerHeight * STACK_TOP_RATIO + index * CARD_GAP);
 
-  // 存储随机值供后续使用
-  el.dataset.randomRight = String(randomRight);
-  el.dataset.randomRotate = String(randomRotate);
+  // 随机值由 randomizeCards() 在每次 open 前生成，初始设默认
+  el.dataset.randomRight = '20';
+  el.dataset.randomRotate = '0';
 
   // 三色渐变边框
   const alpha = 0.85;
@@ -109,7 +106,7 @@ function createCard(index: number): HTMLElement {
 
   el.style.cssText = [
     'position:fixed',
-    'right:' + randomRight + 'px',
+    'right:20px',
     'top:' + topPx + 'px',
     'width:min(85%, 260px)',
     'height:' + CARD_HEIGHT + 'px',
@@ -124,7 +121,7 @@ function createCard(index: number): HTMLElement {
     'border-left-width:3px',
     'background: linear-gradient(' + CARD_BG + ',' + CARD_BG + ') padding-box, ' + borderGrad + ' border-box',
     'box-shadow:' + shadow,
-    'transform:rotate(' + randomRotate + 'deg)',
+    'transform:rotate(0deg)',
     'cursor:pointer',
     'z-index:' + (10 + index),
     'opacity:1',
@@ -202,10 +199,16 @@ function updateFocus(): void {
   }
 }
 
-// ========== 窗口自适应 ==========
-function repositionCards(): void {
+// ========== 窗口自适应 + 随机化 ==========
+function randomizeCards(): void {
   for (let i = 0; i < _cardEls.length; i++) {
-    _cardEls[i].style.top = Math.round(window.innerHeight * STACK_TOP_RATIO + i * CARD_GAP) + 'px';
+    const el = _cardEls[i];
+    const right = 14 + Math.floor(Math.random() * 12);     // 14-26px
+    const rot = (Math.random() - 0.5) * 4;                   // -2deg ~ +2deg
+    el.dataset.randomRight = String(right);
+    el.dataset.randomRotate = String(rot);
+    el.style.right = right + 'px';
+    el.style.top = Math.round(window.innerHeight * STACK_TOP_RATIO + i * CARD_GAP) + 'px';
   }
 }
 
@@ -223,17 +226,7 @@ export function openCardStack(): void {
   }
 
   _state = 'opening';
-  repositionCards();
-
-  // 每次召唤重新生成随机偏移，让卡片散落位置每次都不同
-  for (let i = 0; i < _cardEls.length; i++) {
-    const el = _cardEls[i];
-    const right = 14 + Math.floor(Math.random() * 12);
-    const rot = (Math.random() - 0.5) * 4;
-    el.dataset.randomRight = String(right);
-    el.dataset.randomRotate = String(rot);
-    el.style.right = right + 'px';
-  }
+  randomizeCards();
 
   // 设置初始状态：屏幕外
   for (let i = 0; i < _cardEls.length; i++) {
@@ -350,7 +343,7 @@ export function initCardStack(): void {
     },
   });
   window.addEventListener('resize', () => {
-    repositionCards();
+    randomizeCards();
   });
 }
 

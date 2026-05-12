@@ -11934,11 +11934,9 @@
     const el = document.createElement("div");
     el.className = "stack-card";
     el.dataset.index = String(index);
-    const randomRight = 14 + Math.floor(Math.random() * 12);
-    const randomRotate = (Math.random() - 0.5) * 4;
     const topPx = Math.round(window.innerHeight * STACK_TOP_RATIO + index * CARD_GAP);
-    el.dataset.randomRight = String(randomRight);
-    el.dataset.randomRotate = String(randomRotate);
+    el.dataset.randomRight = "20";
+    el.dataset.randomRotate = "0";
     const alpha = 0.85;
     const borderGrad = getBorderGradient(index, alpha);
     const shadow = [
@@ -11946,7 +11944,7 @@
     ].join(",");
     el.style.cssText = [
       "position:fixed",
-      "right:" + randomRight + "px",
+      "right:20px",
       "top:" + topPx + "px",
       "width:min(85%, 260px)",
       "height:" + CARD_HEIGHT + "px",
@@ -11961,7 +11959,7 @@
       "border-left-width:3px",
       "background: linear-gradient(" + CARD_BG + "," + CARD_BG + ") padding-box, " + borderGrad + " border-box",
       "box-shadow:" + shadow,
-      "transform:rotate(" + randomRotate + "deg)",
+      "transform:rotate(0deg)",
       "cursor:pointer",
       "z-index:" + (10 + index),
       "opacity:1",
@@ -12029,9 +12027,15 @@
       }
     }
   }
-  function repositionCards() {
+  function randomizeCards() {
     for (let i = 0; i < _cardEls.length; i++) {
-      _cardEls[i].style.top = Math.round(window.innerHeight * STACK_TOP_RATIO + i * CARD_GAP) + "px";
+      const el = _cardEls[i];
+      const right = 14 + Math.floor(Math.random() * 12);
+      const rot = (Math.random() - 0.5) * 4;
+      el.dataset.randomRight = String(right);
+      el.dataset.randomRotate = String(rot);
+      el.style.right = right + "px";
+      el.style.top = Math.round(window.innerHeight * STACK_TOP_RATIO + i * CARD_GAP) + "px";
     }
   }
   function openCardStack() {
@@ -12042,15 +12046,7 @@
       return;
     }
     _state = "opening";
-    repositionCards();
-    for (let i = 0; i < _cardEls.length; i++) {
-      const el = _cardEls[i];
-      const right = 14 + Math.floor(Math.random() * 12);
-      const rot = (Math.random() - 0.5) * 4;
-      el.dataset.randomRight = String(right);
-      el.dataset.randomRotate = String(rot);
-      el.style.right = right + "px";
-    }
+    randomizeCards();
     for (let i = 0; i < _cardEls.length; i++) {
       const el = _cardEls[i];
       anim.set(el, { x: "100vw", opacity: 1, pointerEvents: "auto" });
@@ -12158,7 +12154,7 @@
       }
     });
     window.addEventListener("resize", () => {
-      repositionCards();
+      randomizeCards();
     });
   }
 
