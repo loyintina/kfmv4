@@ -13962,23 +13962,9 @@
   function buildPanelContent2() {
     if (!panelEl2) return;
     panelEl2.innerHTML = `
-    <div class="orb-panel-header" style="
-      padding: 10px 14px;
-      border-bottom: 1px solid ${currentTheme.aiChat.headerBorder};
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-shrink: 0;
-    ">
-      <span style="font-size:13px;color:${currentTheme.aiChat.headerText};font-weight:600">AI \u5BF9\u8BDD\u4E0A\u4E0B\u6587</span>
-      <span class="orb-panel-state" style="font-size:10px;color:${currentTheme.aiChat.stateText}"></span>
-    </div>
-    <div class="orb-panel-content" style="
-      flex: 1;
-      overflow-y: auto;
-      padding: 10px 12px;
-      min-height: 0;
-    "></div>
+<div class="orb-panel-content" style="
+  flex:1;overflow-y:auto;padding:12px 14px;min-height:0
+"></div>
   `;
   }
   function expandPanel2() {

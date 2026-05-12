@@ -210,23 +210,9 @@ function updatePanelPosition(): void {
 function buildPanelContent(): void {
   if (!panelEl) return;
   panelEl.innerHTML = `
-    <div class="orb-panel-header" style="
-      padding: 10px 14px;
-      border-bottom: 1px solid ${theme.aiChat.headerBorder};
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-shrink: 0;
-    ">
-      <span style="font-size:13px;color:${theme.aiChat.headerText};font-weight:600">AI 对话上下文</span>
-      <span class="orb-panel-state" style="font-size:10px;color:${theme.aiChat.stateText}"></span>
-    </div>
-    <div class="orb-panel-content" style="
-      flex: 1;
-      overflow-y: auto;
-      padding: 10px 12px;
-      min-height: 0;
-    "></div>
+<div class="orb-panel-content" style="
+  flex:1;overflow-y:auto;padding:12px 14px;min-height:0
+"></div>
   `;
 }
 
