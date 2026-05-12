@@ -225,6 +225,16 @@ export function openCardStack(): void {
   _state = 'opening';
   repositionCards();
 
+  // 每次召唤重新生成随机偏移，让卡片散落位置每次都不同
+  for (let i = 0; i < _cardEls.length; i++) {
+    const el = _cardEls[i];
+    const right = 14 + Math.floor(Math.random() * 12);
+    const rot = (Math.random() - 0.5) * 4;
+    el.dataset.randomRight = String(right);
+    el.dataset.randomRotate = String(rot);
+    el.style.right = right + 'px';
+  }
+
   // 设置初始状态：屏幕外
   for (let i = 0; i < _cardEls.length; i++) {
     const el = _cardEls[i];

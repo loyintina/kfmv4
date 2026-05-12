@@ -12045,6 +12045,14 @@
     repositionCards();
     for (let i = 0; i < _cardEls.length; i++) {
       const el = _cardEls[i];
+      const right = 14 + Math.floor(Math.random() * 12);
+      const rot = (Math.random() - 0.5) * 4;
+      el.dataset.randomRight = String(right);
+      el.dataset.randomRotate = String(rot);
+      el.style.right = right + "px";
+    }
+    for (let i = 0; i < _cardEls.length; i++) {
+      const el = _cardEls[i];
       anim.set(el, { x: "100vw", opacity: 1, pointerEvents: "auto" });
     }
     _tl = anim.timeline({
