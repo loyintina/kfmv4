@@ -170,7 +170,7 @@ processClickQueue() 独占消费:
 
 ```
 tree-render.ts     — 所有展开/折叠动画逻辑
-                     当前 ~1241 行，核心约束见第一章
+                     当前 ~1211 行，核心约束见第一章
 char-rain.ts       — 字符雨粒子动画
                      建在 charLayer 上，不碰主树 visible
 renderer.ts        — Canvas 渲染，支持双树渲染

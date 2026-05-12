@@ -52,7 +52,6 @@ KFM v4（咖啡猫 / Kaf Fee Mew）是一个面向移动端浏览器的 **AI 人
 ├── tests/                      # 回归测试
 ├── public/                     # 静态文件
 ├── css/                        # 样式（与 public/css 重复）
-└── css/                        # 样式文件
 ```
 
 ---

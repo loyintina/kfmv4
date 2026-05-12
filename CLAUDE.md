@@ -53,11 +53,10 @@ src/
 │   │   ├── renderer.ts       # Canvas 2D 渲染器 + 主循环
 │   │   ├── types.ts          # 全部类型定义
 │   │   ├── flex.ts           # Flexbox 布局算法
-│   │   ├── scroll.ts         # 滚动事件处理
+│   │   ├── utils.ts          # 通用工具函数
 │   │   ├── animation.ts      # 缓动函数
 │   │   ├── BorderDrawer.ts   # 四边独立控制 + 宽度渐变边框
 │   │   ├── StyleConfig.ts    # 边框状态配置
-│   │   └── GestureRecognizer.ts  # 手势识别器
 │   └── modules/
 │       ├── gesture-registry.ts    # 手势注册中心（优先级调度，独占执行）
 │       ├── renderer-lifecycle.ts  # 渲染器生命周期（状态机 + rAF/Listener 追踪）
@@ -66,14 +65,15 @@ src/
 │       ├── canvas-cursor.ts       # 通用光标系统
 │       ├── canvas-scroll.ts       # 通用滚动系统
 │       ├── click-queue.ts         # 点击事件队列（P4 提取）
+│       ├── debug-assert.ts        # 运行时断言
+│       ├── debug-panel.ts         # 调试面板（青色，独立光球）
 │       ├── app.ts                 # 全局初始化、日志、AI 输入栏
 │       ├── state.ts               # KFMState 统一状态层（发布-订阅 + beforeExpand Hook）
 │       ├── tree-model.ts          # Box 树构建（buildSidebarTree → buildExpanded）
-│       ├── tree-render.ts         # 文件树渲染 + 动画 + 光标（~970行）
+│       ├── tree-render.ts         # 文件树渲染 + 动画 + 光标（~1211行）
 │       ├── tree-loader.ts         # 懒加载（KFMState.addHook）
 │       ├── char-rain.ts           # 字符雨粒子动画（独立 GSAP 时间线）
 │       ├── animation-registry.ts  # GSAP scope 隔离（anim.scope + AnimTimeline）
-│       ├── abort.ts               # 代际令牌（treeAbort）
 │       ├── ui.ts                  # 侧栏开关
 │       ├── gestures.ts            # 全局手势
 │       ├── orb.ts                 # 悬浮光球 + AI 对话面板
@@ -113,7 +113,7 @@ scope 隔离:
   每轮动画结束 ts.call() 内调用 ts.clear() 清理残留 tween。
 
 overlay 元数据 (OverlayMeta 接口):
-  _fullHeight, _origYs, _targetY, _savedCr, _toggleBox, _toggleRotate
+  _fullHeight, _origYs, _targetY
   全部通过 (as Box & OverlayMeta) 类型化访问，无 (as any) 隐式契约。
 ```
 
