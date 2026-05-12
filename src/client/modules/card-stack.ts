@@ -173,7 +173,7 @@ function updateFocus(): void {
     if (dist === 0) {
       // 聚焦：左移更多、取消旋转、增强阴影
       anim.to(el, {
-        xPercent: 22, x: -12, scale: 1.04, rotation: 0,
+        xPercent: 48, x: -28, scale: 1.04, rotation: 0,
         duration: 0.35, ease: 'back.out(1.2)',
       });
       el.style.backdropFilter = 'blur(16px)';
@@ -186,7 +186,7 @@ function updateFocus(): void {
       // 非聚焦：恢复随机旋转、普通阴影
       const randomRotate = parseFloat(el.dataset.randomRotate || '0');
       anim.to(el, {
-        xPercent: 22, x: 0, scale: 1, rotation: randomRotate,
+        xPercent: 48, x: 0, scale: 1, rotation: randomRotate,
         duration: 0.35, ease: 'back.out(1.2)',
       });
       el.style.backdropFilter = 'blur(16px)';
@@ -258,13 +258,13 @@ export function openCardStack(): void {
     const dur = 0.2 + Math.random() * 0.3;
     if (i === _focusIndex) {
       _tl.to(el, {
-        xPercent: 22, x: -12, scale: 1.04, rotation: 0,
+        xPercent: 48, x: -28, scale: 1.04, rotation: 0,
         duration: dur, ease: 'back.out(1.2)',
       }, 0);
     } else {
       const rot = parseFloat(el.dataset.randomRotate || '0');
       _tl.to(el, {
-        xPercent: 22, x: 0, scale: 1, rotation: rot,
+        xPercent: 48, x: 0, scale: 1, rotation: rot,
         duration: dur, ease: 'back.out(1.2)',
       }, 0);
     }

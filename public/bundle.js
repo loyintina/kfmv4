@@ -11995,8 +11995,8 @@
       const alpha = 0.85;
       if (dist === 0) {
         anim.to(el, {
-          xPercent: 22,
-          x: -12,
+          xPercent: 48,
+          x: -28,
           scale: 1.04,
           rotation: 0,
           duration: 0.35,
@@ -12011,7 +12011,7 @@
       } else {
         const randomRotate = parseFloat(el.dataset.randomRotate || "0");
         anim.to(el, {
-          xPercent: 22,
+          xPercent: 48,
           x: 0,
           scale: 1,
           rotation: randomRotate,
@@ -12076,8 +12076,8 @@
       const dur = 0.2 + Math.random() * 0.3;
       if (i === _focusIndex) {
         _tl.to(el, {
-          xPercent: 22,
-          x: -12,
+          xPercent: 48,
+          x: -28,
           scale: 1.04,
           rotation: 0,
           duration: dur,
@@ -12086,7 +12086,7 @@
       } else {
         const rot = parseFloat(el.dataset.randomRotate || "0");
         _tl.to(el, {
-          xPercent: 22,
+          xPercent: 48,
           x: 0,
           scale: 1,
           rotation: rot,
