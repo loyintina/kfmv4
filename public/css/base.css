@@ -254,3 +254,18 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 /* 光球面板内容区 — 隐藏滚动条，保留滚动 */
 .orb-panel-content{scrollbar-width:none;-ms-overflow-style:none}
 .orb-panel-content::-webkit-scrollbar{display:none}
+
+/* 卡片堆召唤按钮（右上角） */
+.card-stack-toggle-btn{
+  left:auto;
+  right:16px;
+}
+.card-stack-toggle-btn:hover .stack-icon rect{
+  filter:drop-shadow(0 0 5px rgba(0,212,255,.3));
+}
+.card-stack-toggle-btn.active .stack-icon rect:first-child{
+  opacity:.85;
+}
+.card-stack-toggle-btn.active .stack-icon rect:last-child{
+  filter:drop-shadow(0 0 6px rgba(0,212,255,.5));
+}

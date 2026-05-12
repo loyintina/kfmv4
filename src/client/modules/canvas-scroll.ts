@@ -189,9 +189,8 @@ export function bindScrollEvents(canvas: HTMLElement): void {
       cursorLastTouchY = y;
       cursorLastTouchTime = now;
       const stepOffset = dy / LINE_HEIGHT;
-      const idx = Math.round(
-        Math.max(0, Math.min(L._rowIndex.length - 1, cursorTouchBase + stepOffset))
-      );
+      const raw = Math.round(cursorTouchBase + stepOffset);
+      const idx = ((raw % L._rowIndex.length) + L._rowIndex.length) % L._rowIndex.length;
       if (L._rowIndex[idx]) moveCursorTo(L._rowIndex[idx]);
       return;
     }
@@ -270,9 +269,8 @@ export function bindScrollEvents(canvas: HTMLElement): void {
           cursorVelocity *= 0.96;
           if (Math.abs(cursorVelocity) < 0.3) { L._cursorFlingRaf = 0; return; }
           cursorTouchBase += cursorVelocity / LINE_HEIGHT;
-          const idx = Math.round(
-            Math.max(0, Math.min(L._rowIndex.length - 1, cursorTouchBase))
-          );
+          const raw = Math.round(cursorTouchBase);
+          const idx = ((raw % L._rowIndex.length) + L._rowIndex.length) % L._rowIndex.length;
           if (L._rowIndex[idx]) moveCursorTo(L._rowIndex[idx]);
           L._cursorFlingRaf = requestAnimationFrame(cursorFling);
         }

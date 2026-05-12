@@ -18,6 +18,7 @@ export const DOM = {
   get toggleHiddenBtn()   { return document.getElementById("toggleHiddenBtn"); },
   get closeSidebarBtn()   { return document.getElementById("closeSidebarBtn"); },
   get sidebarToggleBtn()  { return document.getElementById("sidebarToggleBtn"); },
+  get cardStackToggleBtn() { return document.getElementById("cardStackToggleBtn"); },
   get main()              { return document.getElementById("main"); },
   get homePage()          { return document.getElementById("homePage"); },
 

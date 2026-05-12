@@ -19,8 +19,10 @@ import { DOM } from "./dom-refs.js";
 export function initGestures(): void {
   // 手势闭包状态：一次触摸只做一次决策
   type GestureSnapshot = 'cardstack-open' | 'sidebar-open' | 'both-closed';
+  type AxisLock = 'none' | 'horizontal' | 'vertical';
   let _snapshot: GestureSnapshot = 'both-closed';
   let _actionTaken = false;
+  let _axisLock: AxisLock = 'none';
 
   gestures.register({
     id: 'gestures-page-swipe',
@@ -38,10 +40,16 @@ export function initGestures(): void {
         _snapshot = 'both-closed';
       }
       _actionTaken = false;
+      _axisLock = 'none';
     },
     onMove: (_e, dx, dy) => {
       if (_actionTaken) return;
-      const isHorizontal = Math.abs(dx) > Math.abs(dy) * 1.5;
+
+      // 轴向锁定：首次移动判定主导方向，锁定后只处理水平手势
+      if (_axisLock === 'none' && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
+        _axisLock = Math.abs(dx) > Math.abs(dy) ? 'horizontal' : 'vertical';
+      }
+      if (_axisLock !== 'horizontal') return;
 
       switch (_snapshot) {
         case 'cardstack-open':
@@ -51,7 +59,6 @@ export function initGestures(): void {
           if (dx < -60) { closeSidebar(); _actionTaken = true; }
           break;
         case 'both-closed':
-          if (!isHorizontal) break;
           if (dx < -60) { openCardStack(); _actionTaken = true; }
           else if (dx > 60) { openSidebar(); _actionTaken = true; }
           break;

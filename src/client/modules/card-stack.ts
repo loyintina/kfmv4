@@ -304,23 +304,23 @@ export function isCardStackOpen(): boolean {
 }
 
 export function focusNext(): void {
-  if (_focusIndex < CARDS.length - 1) {
-    _focusIndex++;
-    updateFocus();
-  }
+  _focusIndex = (_focusIndex + 1) % CARDS.length;
+  updateFocus();
 }
 
 export function focusPrev(): void {
-  if (_focusIndex > 0) {
-    _focusIndex--;
-    updateFocus();
-  }
+  _focusIndex = (_focusIndex - 1 + CARDS.length) % CARDS.length;
+  updateFocus();
 }
 
 export function initCardStack(): void {
   buildCards();
   // 全局切卡手势（通过 GestureRegistry 管理）
   // 右滑关闭卡片堆、左滑预留、上下平滑切卡
+  // 轴向锁：一次手势只处理一个方向，避免斜滑误触
+  type _AxisLock = 'none' | 'horizontal' | 'vertical';
+  let _axisLock: _AxisLock = 'none';
+
   gestures.register({
     id: 'card-stack-global',
     targetFilter: () => true,
@@ -328,17 +328,26 @@ export function initCardStack(): void {
     priority: 80,
     onStart: () => {
       _scrollStartFocus = _focusIndex;
+      _axisLock = 'none';
     },
     onMove: (e, dx, dy) => {
-      // 右滑：水平主导时关闭卡片堆
-      if (dx > 50 && dx > Math.abs(dy)) { closeCardStack(); return; }
-      // 上下：连续平滑切卡，映射滑动距离到卡片索引
-      const offset = Math.round(-dy / CARD_GAP);
-      const target = _scrollStartFocus + offset;
-      const clamped = Math.max(0, Math.min(CARDS.length - 1, target));
-      if (clamped !== _focusIndex) {
-        _focusIndex = clamped;
-        updateFocus();
+      // 锁定轴向：首次移动超过阈值时判定主导方向
+      if (_axisLock === 'none' && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
+        _axisLock = Math.abs(dx) > Math.abs(dy) ? 'horizontal' : 'vertical';
+      }
+
+      if (_axisLock === 'horizontal') {
+        // 右滑（水平主导）：关闭卡片堆
+        if (dx > 50) { closeCardStack(); return; }
+      } else if (_axisLock === 'vertical') {
+        // 上下滑动：连续平滑切卡
+        const offset = Math.round(-dy / CARD_GAP);
+        const target = _scrollStartFocus + offset;
+        const clamped = ((target % CARDS.length) + CARDS.length) % CARDS.length;
+        if (clamped !== _focusIndex) {
+          _focusIndex = clamped;
+          updateFocus();
+        }
       }
     },
   });

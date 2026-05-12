@@ -1,5 +1,6 @@
 import { KFMState } from './state.js';
 import { DOM } from "./dom-refs.js";
+import { openCardStack, closeCardStack, isCardStackOpen } from './card-stack.js';
 /**
  * KFM v4 - 全局状态与初始化
  */
@@ -68,6 +69,20 @@ export async function initApp(): Promise<void> {
         } else {
           window.openSidebar?.();
         }
+      }
+    });
+  }
+
+  // 卡片堆召唤按钮
+  const cardBtn = DOM.cardStackToggleBtn;
+  if (cardBtn) {
+    cardBtn.addEventListener('click', () => {
+      if (isCardStackOpen()) {
+        closeCardStack();
+        cardBtn.classList.remove('active');
+      } else {
+        openCardStack();
+        cardBtn.classList.add('active');
       }
     });
   }

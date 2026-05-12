@@ -607,13 +607,17 @@ function _createSidebarTouchArea(): void {
   });
 ;
 
-  // 右往左滑 → 关闭左栏
-  let sx = 0;
+  // 右往左滑 → 关闭左栏（垂直主导时不触发，避免斜滑误触）
+  let sx = 0, sy = 0;
   box.addEventListener('touchstart', (e) => {
     sx = e.touches[0].clientX;
+    sy = e.touches[0].clientY;
   }, { passive: true });
   box.addEventListener('touchend', (e) => {
-    if (sx - e.changedTouches[0].clientX > 60) closeSidebar();
+    const touch = e.changedTouches[0];
+    const dx = sx - touch.clientX;             // 正 = 向左
+    const dy = Math.abs(sy - touch.clientY);   // 垂直移动距离
+    if (dx > 60 && dx > dy * 1.5) closeSidebar();
   });
 }
 

@@ -172,7 +172,7 @@ export function getCursorRowIndex(): number {
 export function _moveCursorBySteps(steps: number): void {
   if (L._rowIndex.length === 0) return;
   const oldIdx = getCursorRowIndex();
-  const newIdx = Math.max(0, Math.min(L._rowIndex.length - 1, oldIdx + steps));
+  const newIdx = ((oldIdx + steps) % L._rowIndex.length + L._rowIndex.length) % L._rowIndex.length;
   if (newIdx !== oldIdx && L._rowIndex[newIdx]) {
     moveCursorTo(L._rowIndex[newIdx]);
   }
