@@ -84,9 +84,11 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
   z-index:150;
   width:40px;
   height:40px;
-  border:none;
+  border:1px solid transparent;
   border-radius:12px;
-  background:rgba(18,18,26,.75);
+  background:
+    linear-gradient(rgba(18,18,26,.75), rgba(18,18,26,.75)) padding-box,
+    linear-gradient(90deg, rgba(0,212,255,.2), rgba(124,58,237,.15)) border-box;
   backdrop-filter:blur(8px);
   -webkit-backdrop-filter:blur(8px);
   cursor:pointer;
@@ -97,11 +99,12 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
   gap:5px;
   box-shadow:0 4px 16px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.08);
   transition:all .25s cubic-bezier(.34,1.56,.64,1);
-  border:1px solid rgba(124,58,237,.25);
 }
 .sidebar-toggle-btn:hover{
   transform:translateY(-1px) scale(1.05);
-  border-color:rgba(0,212,255,.4);
+  background:
+    linear-gradient(rgba(18,18,26,.75), rgba(18,18,26,.75)) padding-box,
+    linear-gradient(90deg, rgba(0,212,255,.5), rgba(124,58,237,.35)) border-box;
   box-shadow:0 6px 24px rgba(124,58,237,.25),inset 0 1px 0 rgba(255,255,255,.1)
 }
 .sidebar-toggle-btn:active{
