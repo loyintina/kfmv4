@@ -574,14 +574,11 @@ function _createSidebarTouchArea(): void {
     const idx = getCursorRowIndex();
     if (idx < 0 || !L._rowIndex[idx]) return;
     const hit = L._rowIndex[idx]!;
-    const hitData = getFileRowData(hit.data);
-    if (!hitData) return;
-    if (hitData.isDir) {
-      if (hitData.isExpanded) { doCollapse(hit, hitData); }
-      else { doExpand(hit, hitData); }
-    } else {
-      hit.gesture?.onTap?.();
-    }
+    const root = L.renderer?.getRoot();
+    if (!root) return;
+    const scrollY = root.scrollY ?? 0;
+    clickQueue.enqueue({ offsetX: 0, offsetY: hit.y - scrollY });
+    processClickQueue();
   });
 
   // 右往左滑 → 关闭左栏

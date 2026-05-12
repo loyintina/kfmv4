@@ -12,6 +12,14 @@ app.use(express.static(path.join(__dirname, '../../public')));
 app.use(express.static(path.join(__dirname, '../..')));
 
 const ROOT_DIR = '/root';
+const SAFE_ROOT = path.resolve(ROOT_DIR) + path.sep;
+
+/** 路径校验：确保用户路径不逃逸出 SAFE_ROOT */
+function sanitizePath(userPath: string): string | null {
+  const resolved = path.resolve(SAFE_ROOT, userPath);
+  if (resolved !== SAFE_ROOT.slice(0, -1) && !resolved.startsWith(SAFE_ROOT)) return null;
+  return resolved;
+}
 
 interface FileItem {
   name: string;
@@ -26,7 +34,8 @@ function setupApiRoutes(router: express.Router) {
   router.post('/files/list', (req: express.Request, res: express.Response) => {
     try {
       const targetPath = req.body.path || ROOT_DIR;
-      const resolvedPath = targetPath === '~' ? ROOT_DIR : targetPath;
+      const resolvedPath = sanitizePath(targetPath === '~' ? ROOT_DIR : targetPath);
+      if (!resolvedPath) { res.json({ error: '路径不合法' }); return; }
       if (!fs.existsSync(resolvedPath)) { res.json({ error: '路径不存在', path: resolvedPath }); return; }
       const items: FileItem[] = fs.readdirSync(resolvedPath)
         .filter(name => !name.startsWith('.') || req.body.showHidden)
@@ -47,7 +56,8 @@ function setupApiRoutes(router: express.Router) {
       const targetPath = req.body.path || ROOT_DIR;
       const maxDepth = req.body.depth || 20;
       const expandedPaths: Record<string, boolean> = req.body.expandedPaths || {};
-      const resolvedPath = targetPath === '~' ? ROOT_DIR : targetPath;
+      const resolvedPath = sanitizePath(targetPath === '~' ? ROOT_DIR : targetPath);
+      if (!resolvedPath) { res.json({ error: '路径不合法' }); return; }
       if (!fs.existsSync(resolvedPath)) { res.json({ error: '路径不存在', path: resolvedPath }); return; }
 
       interface TreeNode {
@@ -93,7 +103,8 @@ function setupApiRoutes(router: express.Router) {
 
   router.post('/files/read', (req: express.Request, res: express.Response) => {
     try {
-      const targetPath: string = req.body.path;
+      const targetPath = sanitizePath(req.body.path);
+      if (!targetPath) { res.json({ error: '路径不合法' }); return; }
       if (!fs.existsSync(targetPath)) { res.json({ error: '文件不存在' }); return; }
       res.json({ path: targetPath, content: fs.readFileSync(targetPath, 'utf-8') });
     } catch (error: any) { res.json({ error: error.message }); }
@@ -101,7 +112,8 @@ function setupApiRoutes(router: express.Router) {
 
   router.post('/files/write', (req: express.Request, res: express.Response) => {
     try {
-      const targetPath: string = req.body.path;
+      const targetPath = sanitizePath(req.body.path);
+      if (!targetPath) { res.json({ error: '路径不合法' }); return; }
       const content: string = req.body.content;
       if (req.body.append) fs.appendFileSync(targetPath, content, 'utf-8');
       else fs.writeFileSync(targetPath, content, 'utf-8');

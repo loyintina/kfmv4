@@ -9,11 +9,21 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "../../public")));
 app.use(express.static(path.join(__dirname, "../..")));
 var ROOT_DIR = "/root";
+var SAFE_ROOT = path.resolve(ROOT_DIR) + path.sep;
+function sanitizePath(userPath) {
+  const resolved = path.resolve(SAFE_ROOT, userPath);
+  if (resolved !== SAFE_ROOT.slice(0, -1) && !resolved.startsWith(SAFE_ROOT)) return null;
+  return resolved;
+}
 function setupApiRoutes(router) {
   router.post("/files/list", (req, res) => {
     try {
       const targetPath = req.body.path || ROOT_DIR;
-      const resolvedPath = targetPath === "~" ? ROOT_DIR : targetPath;
+      const resolvedPath = sanitizePath(targetPath === "~" ? ROOT_DIR : targetPath);
+      if (!resolvedPath) {
+        res.json({ error: "\u8DEF\u5F84\u4E0D\u5408\u6CD5" });
+        return;
+      }
       if (!fs.existsSync(resolvedPath)) {
         res.json({ error: "\u8DEF\u5F84\u4E0D\u5B58\u5728", path: resolvedPath });
         return;
@@ -73,7 +83,11 @@ function setupApiRoutes(router) {
       const targetPath = req.body.path || ROOT_DIR;
       const maxDepth = req.body.depth || 20;
       const expandedPaths = req.body.expandedPaths || {};
-      const resolvedPath = targetPath === "~" ? ROOT_DIR : targetPath;
+      const resolvedPath = sanitizePath(targetPath === "~" ? ROOT_DIR : targetPath);
+      if (!resolvedPath) {
+        res.json({ error: "\u8DEF\u5F84\u4E0D\u5408\u6CD5" });
+        return;
+      }
       if (!fs.existsSync(resolvedPath)) {
         res.json({ error: "\u8DEF\u5F84\u4E0D\u5B58\u5728", path: resolvedPath });
         return;
@@ -86,7 +100,11 @@ function setupApiRoutes(router) {
   });
   router.post("/files/read", (req, res) => {
     try {
-      const targetPath = req.body.path;
+      const targetPath = sanitizePath(req.body.path);
+      if (!targetPath) {
+        res.json({ error: "\u8DEF\u5F84\u4E0D\u5408\u6CD5" });
+        return;
+      }
       if (!fs.existsSync(targetPath)) {
         res.json({ error: "\u6587\u4EF6\u4E0D\u5B58\u5728" });
         return;
@@ -98,7 +116,11 @@ function setupApiRoutes(router) {
   });
   router.post("/files/write", (req, res) => {
     try {
-      const targetPath = req.body.path;
+      const targetPath = sanitizePath(req.body.path);
+      if (!targetPath) {
+        res.json({ error: "\u8DEF\u5F84\u4E0D\u5408\u6CD5" });
+        return;
+      }
       const content = req.body.content;
       if (req.body.append) fs.appendFileSync(targetPath, content, "utf-8");
       else fs.writeFileSync(targetPath, content, "utf-8");

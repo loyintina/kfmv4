@@ -11278,17 +11278,11 @@
       const idx = getCursorRowIndex();
       if (idx < 0 || !L._rowIndex[idx]) return;
       const hit = L._rowIndex[idx];
-      const hitData = getFileRowData(hit.data);
-      if (!hitData) return;
-      if (hitData.isDir) {
-        if (hitData.isExpanded) {
-          doCollapse(hit, hitData);
-        } else {
-          doExpand(hit, hitData);
-        }
-      } else {
-        (_b = (_a = hit.gesture) == null ? void 0 : _a.onTap) == null ? void 0 : _b.call(_a);
-      }
+      const root = (_a = L.renderer) == null ? void 0 : _a.getRoot();
+      if (!root) return;
+      const scrollY = (_b = root.scrollY) != null ? _b : 0;
+      enqueue({ offsetX: 0, offsetY: hit.y - scrollY });
+      processClickQueue();
     });
     let sx = 0;
     box.addEventListener("touchstart", (e) => {
