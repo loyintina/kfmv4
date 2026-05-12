@@ -251,3 +251,6 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
   opacity:.85;
   transform:translateY(0) scale(.98)
 }
+/* 光球面板内容区 — 隐藏滚动条，保留滚动 */
+.orb-panel-content{scrollbar-width:none;-ms-overflow-style:none}
+.orb-panel-content::-webkit-scrollbar{display:none}
