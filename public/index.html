@@ -11,8 +11,19 @@
 <div class="sidebar" id="sidebar">
 <div class="sidebar-content" id="fileTree"><div class="loading">加载中...</div></div>
 <div class="sidebar-tools">
-<button id="toggleHiddenBtn" title="显示隐藏文件">👁</button>
-<button id="closeSidebarBtn" class="sidebar-close-btn" title="关闭侧栏">✕</button>
+<button id="toggleHiddenBtn" title="显示隐藏文件">
+  <svg class="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+    <path d="M1 12s4-7.5 11-7.5 11 7.5 11 7.5-4 7.5-11 7.5-11-7.5-11-7.5z" stroke="url(#iconGrad)" stroke-width="1.5"/>
+    <circle cx="12" cy="12" r="2.5" fill="url(#iconGrad)"/>
+    <defs>
+      <linearGradient id="iconGrad" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#7c3aed"/>
+        <stop offset="100%" stop-color="#00d4ff"/>
+      </linearGradient>
+    </defs>
+  </svg>
+</button>
+<button id="closeSidebarBtn" class="sidebar-close-btn" title="关闭侧栏"><span></span><span></span></button>
 </div>
 </div>
 <div class="overlay" id="overlay"></div>

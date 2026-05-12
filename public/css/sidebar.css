@@ -43,6 +43,22 @@
 .sidebar-tools button.active{border-color:var(--accent);background:rgba(124,58,237,.25)}
 .sidebar-tools button:last-child{margin-left:auto}
 
+
+/* 眼睛图标 — 渐变色 SVG */
+.eye-icon{
+  display:block;
+  transition:all .25s cubic-bezier(.34,1.56,.64,1);
+  opacity:.85;
+}
+.sidebar-tools button:hover .eye-icon{
+  opacity:1;
+  filter:drop-shadow(0 0 6px rgba(0,212,255,.4))
+}
+.sidebar-tools button.active .eye-icon{
+  opacity:1;
+  filter:drop-shadow(0 0 10px rgba(0,212,255,.5))
+}
+
 /* 树节点 */
 .tree-item{cursor:pointer;font-size:13px;position:relative;outline:none;overflow:visible}
 .tree-row{display:flex;align-items:center;padding:4px 8px;border-radius:4px;position:relative;border-left:3px solid transparent}
@@ -122,5 +138,23 @@
 .log-item.success{border-color:#2ed5a3;background:rgba(46,213,163,.1)}
 .log-item .time{color:var(--accent);font-size:10px;margin-right:6px}
 
-/* 侧栏关闭按钮 - 样式继承自 .sidebar-tools button */
-.sidebar-close-btn{margin-left:auto}
+/* 侧栏关闭按钮 — 渐变 X（两条交叉线，与召唤按钮同语言） */
+.sidebar-close-btn{
+  margin-left:auto;
+  position:relative;
+}
+.sidebar-close-btn span{
+  position:absolute;
+  display:block;
+  width:20px;height:2px;
+  border-radius:2px;
+  background:linear-gradient(90deg,#7c3aed,#00d4ff);
+  transition:all .25s cubic-bezier(.34,1.56,.64,1);
+  opacity:.85;
+}
+.sidebar-close-btn span:first-child{transform:rotate(45deg)}
+.sidebar-close-btn span:last-child{transform:rotate(-45deg)}
+.sidebar-close-btn:hover span{
+  opacity:1;
+  box-shadow:0 0 8px rgba(0,212,255,.3)
+}
