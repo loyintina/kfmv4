@@ -233,21 +233,38 @@ export function openCardStack(): void {
 
   // 构建 GSAP timeline：同时出发，随机速度 200-500ms，Q弹曲线
   _tl = anim.timeline({
-    onComplete: () => { _state = 'open'; _tl = null; updateFocus(); },
+    onComplete: () => {
+      _state = 'open'; _tl = null;
+      // 只应用样式，不做二次动画（卡片已在最终位置）
+      const alpha = 0.85;
+      for (let i = 0; i < _cardEls.length; i++) {
+        const el = _cardEls[i];
+        el.style.backdropFilter = 'blur(16px)';
+        (el.style as any).webkitBackdropFilter = 'blur(16px)';
+        el.style.background = 'linear-gradient(' + theme.stack.cardBg + ',' + theme.stack.cardBg + ') padding-box, ' + getBorderGradient(i, alpha) + ' border-box';
+        el.style.boxShadow = (i === _focusIndex) ? theme.stack.focusShadow : theme.stack.blurShadow;
+        const idxEl = el.querySelector('.stack-card-index') as HTMLElement;
+        if (idxEl) idxEl.style.opacity = (i === _focusIndex) ? '0.8' : '0.3';
+      }
+    },
     onReverseComplete: () => { _state = 'closed'; _tl = null; }
   });
 
   for (let i = 0; i < _cardEls.length; i++) {
     const el = _cardEls[i];
     const dur = 0.2 + Math.random() * 0.3;
-    const rot = el.dataset.randomRotate || '0';
-    _tl.to(el, {
-      x: '35%',
-      scale: 1,
-      rotation: parseFloat(rot),
-      duration: dur,
-      ease: 'back.out(1.2)',
-    }, 0); // 全部从时间0开始，同时出发
+    if (i === _focusIndex) {
+      _tl.to(el, {
+        xPercent: 35, x: -20, scale: 1.04, rotation: 0,
+        duration: dur, ease: 'back.out(1.2)',
+      }, 0);
+    } else {
+      const rot = parseFloat(el.dataset.randomRotate || '0');
+      _tl.to(el, {
+        xPercent: 35, x: 0, scale: 1, rotation: rot,
+        duration: dur, ease: 'back.out(1.2)',
+      }, 0);
+    }
   }
 }
 

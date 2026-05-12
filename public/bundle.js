@@ -12051,7 +12051,16 @@
       onComplete: () => {
         _state = "open";
         _tl = null;
-        updateFocus();
+        const alpha = 0.85;
+        for (let i = 0; i < _cardEls.length; i++) {
+          const el = _cardEls[i];
+          el.style.backdropFilter = "blur(16px)";
+          el.style.webkitBackdropFilter = "blur(16px)";
+          el.style.background = "linear-gradient(" + currentTheme.stack.cardBg + "," + currentTheme.stack.cardBg + ") padding-box, " + getBorderGradient(i, alpha) + " border-box";
+          el.style.boxShadow = i === _focusIndex ? currentTheme.stack.focusShadow : currentTheme.stack.blurShadow;
+          const idxEl = el.querySelector(".stack-card-index");
+          if (idxEl) idxEl.style.opacity = i === _focusIndex ? "0.8" : "0.3";
+        }
       },
       onReverseComplete: () => {
         _state = "closed";
@@ -12061,14 +12070,26 @@
     for (let i = 0; i < _cardEls.length; i++) {
       const el = _cardEls[i];
       const dur = 0.2 + Math.random() * 0.3;
-      const rot = el.dataset.randomRotate || "0";
-      _tl.to(el, {
-        x: "35%",
-        scale: 1,
-        rotation: parseFloat(rot),
-        duration: dur,
-        ease: "back.out(1.2)"
-      }, 0);
+      if (i === _focusIndex) {
+        _tl.to(el, {
+          xPercent: 35,
+          x: -20,
+          scale: 1.04,
+          rotation: 0,
+          duration: dur,
+          ease: "back.out(1.2)"
+        }, 0);
+      } else {
+        const rot = parseFloat(el.dataset.randomRotate || "0");
+        _tl.to(el, {
+          xPercent: 35,
+          x: 0,
+          scale: 1,
+          rotation: rot,
+          duration: dur,
+          ease: "back.out(1.2)"
+        }, 0);
+      }
     }
   }
   function closeCardStack() {
