@@ -24,6 +24,7 @@
 
 ```
 ▎ Overlay 元数据用 (as Box & OverlayMeta) 访问，禁止 (as any)._xxx
+▎ 已知遗留: _createVisualClone 中 (src as any).data 一处逃逸 (P2)
 ▎ char-rain.ts 不直接读取 (row as any)._targetY
    rowTargetYs 通过显式参数传入
 ▎ 所有 _ 前缀属性只在模块内访问
@@ -140,13 +141,14 @@ processClickQueue() 独占消费:
       行固定在其展开态位置，容器收缩时自动遮住
 ```
 
-### ❌ 为父容器加补丁（当前发生中）
+### ❌ 为父容器加补丁（v4.0.2 已解决）
 
 ```
 问题: 折叠子容器时父容器有闪烁
 补丁: 建父容器的 visual overlay + 建内部其他行的 overlay + 修 x 坐标
-根解: （待定。可能的方案：doCollapse 在设计时就为父容器层
-      同步创建 overlay，而不是作为事后补丁逐个加）
+根解: doCollapse 在设计时即为父容器层同步创建 overlay，
+      siblingOverlay 跳过 subTarget 避免双重渲染。
+      _setupCollapseOverlays 的 siblingCloneLabels 参数控制此行为。
 ```
 
 **判断标准**：如果你为了修一个 bug 而新增的代码行数 > 你能用一句话说清的逻辑，那你很可能在打补丁。

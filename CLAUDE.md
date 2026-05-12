@@ -169,6 +169,7 @@ tree-render.ts 导出: markAnimatingPath, isAnimLocked, triggerExpandAnimation,
 - `KFMState` 发布-订阅，订阅后用 `_ensureSubscribed` 模式
 - Canvas 滚动/点击事件走元素级监听，不走 GestureRegistry
 - overlay 元数据用 `(as Box & OverlayMeta)` 访问，**禁止 (as any)._xxx**
+- 已知遗留: _createVisualClone 中 (src as any).data 一处逃逸（P2 FileRowData 类型化解决）
 - 向 `ts` 添加 tween 的函数，必须在 `ts.call` 回调里 `ts.clear()`
 - 动画中 `_stateSub` 不会触发 `rebuildTree`（`L.isAnimating` 守卫）
 
