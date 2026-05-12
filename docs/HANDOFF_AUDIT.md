@@ -1,6 +1,23 @@
 # KFM v4 项目交接文档
 
 > 写于 2026-05-09，基于对全部源代码的全面审计。
+> 最后更新：2026-05-12（v4.0.2 已标记，以下已完成项已标注）
+
+---
+
+## v4.0.2 状态更新
+
+以下审计条目已在 v4.0.1-v4.0.2 修复周期中处理：
+
+| 审计项 | 状态 | commit |
+|--------|------|--------|
+| 路径遍历漏洞 (P0) | ✅ `sanitizePath` 已部署 | d453a82 |
+| `canvas-cursor.ts` 依赖违规 (P1) | ✅ `getShift` 已移至 `style-registry.ts` | 重构期间自动解决 |
+| 死代码清理 (P1) | ✅ `scroll.ts` `gesture.ts` `GestureRecognizer.ts` `demo-leafer.ts` `js/` 均已不存在 | 重构期间自动清理 |
+| `FlatSubTarget.toggle` 死字段 (P3) | ✅ 接口已不含 toggle 字段 | 重构期间自动移除 |
+| `processClickQueue` 栈递归 | ✅ 已使用 `setTimeout(processClickQueue, 0)` | 重构期间已修正 |
+
+尚未处理的继续项：`(as any)` 类型逃逸、`doExpand/triggerExpandAnimation` 去重、`orb/debug-panel` 拖动逻辑重复。
 
 ---
 
@@ -35,7 +52,7 @@ KFM v4（咖啡猫 / Kaf Fee Mew）是一个面向移动端浏览器的 **AI 人
 ├── tests/                      # 回归测试
 ├── public/                     # 静态文件
 ├── css/                        # 样式（与 public/css 重复）
-└── js/                         # 遗留旧版 JS（死代码）
+└── css/                        # 样式文件
 ```
 
 ---
@@ -92,23 +109,21 @@ canvas-scroll.ts         ← 滚轮/触摸/fling
 tree-render.ts           ← 文件树业务
 ```
 
-**当前违规**: `canvas-cursor.ts` 导入了 `tree-model.ts` 的 `getShift`。
-
 ---
 
 ## 三、代码审计结论（核心摘要）
 
 ### 🔴 必须立即修复
 
-1. **服务端路径遍历漏洞** (`src/server/index.ts`) — `/files/read`、`/files/write` 等 API 接受客户端传来的 `path`，无任何路径校验。`../etc/passwd` 即可穿透。
+1. **服务端路径遍历漏洞** ✅ 已修复 (commit d453a82) — 添加了 `sanitizePath` 校验，拒绝所有逃逸出 SAFE_ROOT 的路径。
 2. **服务端无认证** — 所有 API 开放，监听 `0.0.0.0`。
 
 ### 🟠 中优先级
 
 3. **全局单例导致难测试** — `KFMState`、`L`、`gestures`、`anim` 全部是模块级单例，无依赖注入。
 4. **`(as any)` 类型逃逸** — 多处违反 CLAUDE.md 约定，使用 `(as any).data.xxx`。
-5. **死代码过多** — `engine/v2/scroll.ts`、`engine/v2/gesture.ts`、`js/` 目录、`public/card-demo.html`、`demo-leafer.ts` 均未使用。
-6. **`canvas-cursor.ts` 违反依赖方向** — 导入了 `tree-model.ts`。
+5. **死代码过多** ✅ 已清理 — `engine/v2/scroll.ts`、`engine/v2/gesture.ts`、`GestureRecognizer.ts`、`demo-leafer.ts`、`js/` 目录、`public/card-demo.html` 均已不存在。
+6. **`canvas-cursor.ts` 违反依赖方向** ✅ 已修复 — `getShift` 已移至 `style-registry.ts`，当前 `canvas-cursor.ts` 只导入 `style-registry.ts`。（查阅记录 `RENDERER_REFACTOR_HISTORY` 或 `style-registry.ts` 更新详情）
 
 ### 🟢 低优先级
 
@@ -141,26 +156,19 @@ npm run test     # 回归测试
 7. `src/client/engine/v2/box.ts` + `renderer.ts` — 引擎核心
 8. `docs/HANDOFF_AUDIT.md` — 本文件（审计结论 + 陷阱）
 
-### 第三步：安全修复（如果还没做）
+### 第三步：安全修复 ✅ 已完成
 
-```typescript
-// src/server/index.ts — 加路径校验
-const SAFE_ROOT = path.resolve('/root');
-function sanitizePath(userPath: string): string | null {
-  const resolved = path.resolve(SAFE_ROOT, userPath);
-  if (!resolved.startsWith(SAFE_ROOT)) return null;
-  return resolved;
-}
-```
+路径遍历漏洞已在 commit d453a82 修复，`sanitizePath` 已部署到生产环境。
+无需重复操作。
 
 ### 第四步：按优先级推进
 
 | 优先级 | 工作项 | 预计影响 |
 |--------|--------|----------|
-| P0 | 路径遍历漏洞修复 | 安全 |
+| P0 | 路径遍历漏洞修复 | ✅ 已修复 (d453a82) |
 | P0 | 全面检查所有 API 路由 | 安全 |
-| P1 | 清理死代码 | 可维护性 |
-| P1 | 修复 `canvas-cursor.ts` 依赖违规 | 架构 |
+| P1 | 清理死代码 | ✅ 已清洁 |
+| P1 | 修复 `canvas-cursor.ts` 依赖违规 | ✅ 已解决 |
 | P2 | 定义 `FileRowData` 类型，消除 `(as any)` | 类型安全 |
 | P2 | 动画性能优化（减少 `setRoot`） | 性能 |
 | P3 | `orb.ts` / `debug-panel.ts` 公共组件提取 | 代码复用 |
@@ -371,7 +379,7 @@ npm run build   # 构建通过
 
 ### C.4 对方指明了我漏掉的问题
 
-**⑨ `FlatSubTarget.toggle` 死字段** — ✅ 已确认，拟删除
+**⑨ `FlatSubTarget.toggle` 死字段** — ✅ 已确认，已不存在（重构期间自动移除）
 **⑩ `triggerExpandAnimation` / `doExpand` 重复** — ✅ 已确认，拟提取公共函数
 **⑪ `processClickQueue` 递归** — ✅ 已确认，拟改为非递归
 

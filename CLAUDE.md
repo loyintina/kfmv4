@@ -205,15 +205,43 @@ npm run build   # esbuild 构建 → 必须通过
 - **服务端**: `nohup node dist/server/index.js &` 启动，`kill $(pgrep -f node.*dist/server)` 停止
 - **事件冒泡**: 侧栏触摸区事件冒泡到 document → GestureRegistry 误触发
 
+## v4.0.1 — v4.0.2 修复记录
+
+### 展开/折叠动画对称性修复
+
+| 修复 | 根因 | 解法 |
+|------|------|------|
+| toggle 动画期间消失 | `_createVisualClone` 跳过 toggle-* 子节点 | 移除 skip 行，overlay 克隆包含 toggle |
+| expanded-* 兄弟闪烁 | 子层 siblingOverlay 与 containerOv 叠加渲染 | `!siblingCloneLabels` 跳过 subTarget |
+| 回收反转竞态 | doCollapse 的 onComplete 在 reverse 前调了 _resetAnimTimeline | reverse 路径先清 onComplete |
+| 右侧点击不可反转 | 侧栏 touch area 直接调 doCollapse，绕过 clickQueue | 动画中路由 clickQueue（绝对坐标），非动画直接执行 |
+
+### 架构状态验证
+
+```
+overlay 模式完整：GSAP tween 只碰临时 overlay，主树保持终端态
+双入口统一：canvas 点击 + 右侧触控区均路由到 clickQueue
+反转安全：ts.reverse() 前清除 onComplete，无竞态
+全部修正在 v4.0.2 版本标记
+```
+
 ## 近期重构历史
 
 ```
+7bd38b9 fix: 右侧点击取绝对坐标 + 非动画直接执行
+d453a82 fix: 右侧点击路由到 clickQueue（中间态回滚）
+bc377d4 chore: bump 4.0.0 to 4.0.1
+fbecea1 fix: 子层 expanded-* 兄弟 overlay 跳过避免闪烁
+eab3ca4 fix: 移除 toggle skip，三角动画不消失
+4cee384 fix: 子文件夹折叠父容器兄弟同步上移
+4523763 fix: overlayRoot 裁剪字符雨不可见
+60c643d chore: 动画间隔 0.06 to 0.05
 992ba87 refactor: 清除 collapseSubs，终态树单次 rebuildTree
 160df3f refactor: P4 事件队列形式化，提取 click-queue.ts
 9b67561 chore: 清理死代码
 36fa881 chore: 文档归档
 99e2af8 refactor: P2 形式化展开/折叠状态机
 9ae5dd8 fix: 三个展开动画 bug + 消除跨模块隐式契约
-a455f36 fix: 折叠动画闪烁及癫痫 — ts.call 回调里加 ts.clear()
+a455f36 fix: 折叠动画闪烁及癫痫
 1c171f4 fix: 展开无字符雨 + 折叠文字提前消失
 ```

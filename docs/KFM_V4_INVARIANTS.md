@@ -44,7 +44,6 @@ canvas-scroll.ts        ← 滚动，不导入 tree-*
 tree-render.ts          ← 文件树业务，可以导入任何 canvas-*
 ```
 
-**当前违规**：`canvas-cursor.ts` 导入了 `tree-model.ts` 的 `getShift`。需要修复。
 
 ### 1.4 动画治理
 
