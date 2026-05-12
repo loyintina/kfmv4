@@ -11273,17 +11273,34 @@
     document.body.appendChild(box);
     bindScrollEvents(box);
     box.addEventListener("click", () => {
-      var _a, _b;
+      var _a, _b, _c, _d;
       if (!L.cursorRowId || L._rowIndex.length === 0) return;
       const idx = getCursorRowIndex();
       if (idx < 0 || !L._rowIndex[idx]) return;
+      if (L._animBusy) {
+        const hit2 = L._rowIndex[idx];
+        const root = (_a = L.renderer) == null ? void 0 : _a.getRoot();
+        if (!root) return;
+        const abs = hit2.getAbsolutePosition();
+        const scrollY = (_b = root.scrollY) != null ? _b : 0;
+        enqueue({ offsetX: abs.x + 4, offsetY: abs.y - scrollY });
+        processClickQueue();
+        return;
+      }
       const hit = L._rowIndex[idx];
-      const root = (_a = L.renderer) == null ? void 0 : _a.getRoot();
-      if (!root) return;
-      const scrollY = (_b = root.scrollY) != null ? _b : 0;
-      enqueue({ offsetX: 0, offsetY: hit.y - scrollY });
-      processClickQueue();
+      const hitData = getFileRowData(hit.data);
+      if (!hitData) return;
+      if (hitData.isDir) {
+        if (hitData.isExpanded) {
+          doCollapse(hit, hitData);
+        } else {
+          doExpand(hit, hitData);
+        }
+      } else {
+        (_d = (_c = hit.gesture) == null ? void 0 : _c.onTap) == null ? void 0 : _d.call(_c);
+      }
     });
+    ;
     let sx = 0;
     box.addEventListener("touchstart", (e) => {
       sx = e.touches[0].clientX;
