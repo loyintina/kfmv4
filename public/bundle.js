@@ -11112,17 +11112,18 @@
       L.beginOp(path, "expand");
     }
   }
-  function triggerExpandAnimation(path) {
-    var _a, _b;
-    const root = (_a = L.renderer) == null ? void 0 : _a.getRoot();
-    if (!root) return;
+  function _getExpandContext(root, path, onEmpty) {
+    var _a;
     const container = findBoxById(root, `expanded-${path}`);
     const titleRow = findBoxById(root, `title-${path}`);
-    const toggle2 = (_b = titleRow == null ? void 0 : titleRow.children) == null ? void 0 : _b.find((c) => {
+    if (!container) {
+      onEmpty == null ? void 0 : onEmpty();
+      return null;
+    }
+    const toggle2 = (_a = titleRow == null ? void 0 : titleRow.children) == null ? void 0 : _a.find((c) => {
       var _a2;
       return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
     });
-    if (!container) return;
     const fullHeight = container._fullHeight || 0;
     if (!fullHeight) {
       if (toggle2 && toggle2.transform) {
@@ -11130,19 +11131,23 @@
         ts.to(toggle2.transform, {
           rotate: Math.PI / 2,
           duration: 0.3,
-          ease: "power2.out"
+          ease: "power2.out",
+          onComplete: onEmpty
         }, 0);
+      } else {
+        onEmpty == null ? void 0 : onEmpty();
       }
-      return;
+      return null;
     }
-    _runExpandAnimation({
-      container,
-      root,
-      fullHeight,
-      toggle2,
-      path,
-      onTap: null
-    });
+    return { container, toggle2, fullHeight };
+  }
+  function triggerExpandAnimation(path) {
+    var _a;
+    const root = (_a = L.renderer) == null ? void 0 : _a.getRoot();
+    if (!root) return;
+    const ctx = _getExpandContext(root, path);
+    if (!ctx) return;
+    _runExpandAnimation({ container: ctx.container, root, fullHeight: ctx.fullHeight, toggle2: ctx.toggle2, path, onTap: null });
   }
   function isAnimLocked() {
     return L.isAnimating;
@@ -11427,41 +11432,16 @@
     setTimeout(processClickQueue, 0);
   }
   function doExpand(hit, hitData) {
-    var _a;
     L.beginOp(hitData.path, "expand");
     hit.gesture.onTap();
     const root = L.renderer.getRoot();
-    const container = findBoxById(root, `expanded-${hitData.path}`);
-    const titleRow = findBoxById(root, `title-${hitData.path}`);
-    const toggle2 = (_a = titleRow == null ? void 0 : titleRow.children) == null ? void 0 : _a.find((c) => {
-      var _a2;
-      return (_a2 = c.id) == null ? void 0 : _a2.startsWith("toggle-");
-    });
-    if (!container) {
+    const cleanup = () => {
       L.endOp();
       processClickQueue();
-      return;
-    }
-    const fullHeight = container._fullHeight || 0;
-    if (!fullHeight) {
-      const finish = () => {
-        L.endOp();
-        processClickQueue();
-      };
-      if (toggle2 && toggle2.transform) {
-        toggle2.transform.rotate = 0;
-        ts.to(toggle2.transform, {
-          rotate: Math.PI / 2,
-          duration: 0.3,
-          ease: "power2.out",
-          onComplete: finish
-        }, 0);
-      } else {
-        finish();
-      }
-      return;
-    }
-    _runExpandAnimation({ container, root, fullHeight, toggle2, path: hitData.path, onTap: null });
+    };
+    const ctx = _getExpandContext(root, hitData.path, cleanup);
+    if (!ctx) return;
+    _runExpandAnimation({ container: ctx.container, root, fullHeight: ctx.fullHeight, toggle2: ctx.toggle2, path: hitData.path, onTap: null });
   }
   function _runExpandAnimation(params) {
     var _a, _b, _c, _d, _e, _f, _g, _h;

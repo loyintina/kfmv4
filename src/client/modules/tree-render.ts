@@ -371,14 +371,20 @@ export function markAnimatingPath(path: string | null): void {
   }
 }
 
-export function triggerExpandAnimation(path: string): void {
-  const root = L.renderer?.getRoot();
-  if (!root) return;
+/** 懒加载等场景的程序化展开入口：跳过状态切换和生命周期锁，直接跑动画 */
+/** 从终端树获取展开所需的上下文（容器、三角、完整高度）。
+ *  如果 fullHeight 为 0，自动处理三角旋转动画并调 onEmpty 回调。
+ *  返回 null 时调用方应直接返回（无需继续）。
+ *  onEmpty 用于生命周期清理（doExpand 需要 unlock，triggerExpandAnimation 不需要）。 */
+function _getExpandContext(
+  root: Box,
+  path: string,
+  onEmpty?: () => void,
+): { container: Box; toggle2: Box | undefined; fullHeight: number } | null {
   const container = findBoxById(root, `expanded-${path}`);
   const titleRow = findBoxById(root, `title-${path}`);
+  if (!container) { onEmpty?.(); return null; }
   const toggle2 = titleRow?.children?.find(c => c.id?.startsWith('toggle-'));
-
-  if (!container) return;
 
   const fullHeight = (container as Box & OverlayMeta)._fullHeight || 0;
   if (!fullHeight) {
@@ -388,16 +394,22 @@ export function triggerExpandAnimation(path: string): void {
         rotate: Math.PI / 2,
         duration: 0.3,
         ease: 'power2.out',
+        onComplete: onEmpty,
       }, 0);
+    } else {
+      onEmpty?.();
     }
-    return;
+    return null;
   }
+  return { container, toggle2, fullHeight };
+}
 
-  _runExpandAnimation({
-    container, root: root!,
-    fullHeight, toggle2, path,
-    onTap: null,
-  });
+export function triggerExpandAnimation(path: string): void {
+  const root = L.renderer?.getRoot();
+  if (!root) return;
+  const ctx = _getExpandContext(root, path);
+  if (!ctx) return;
+  _runExpandAnimation({ container: ctx.container, root, fullHeight: ctx.fullHeight, toggle2: ctx.toggle2, path, onTap: null });
 }
 export function isAnimLocked(): boolean {
   return L.isAnimating;
@@ -760,42 +772,16 @@ function processClickQueue(): void {
 }
 
 /** 用户点击触发的展开：先调 onTap 触发状态变更 + rebuildTree，再执行动画 */
+/** 用户点击触发的展开：先调 onTap 触发状态变更 + rebuildTree，再执行动画 */
 function doExpand(hit: Box, hitData: FileRowData): void {
   L.beginOp(hitData.path, 'expand');
   hit.gesture!.onTap!();  // KFMState toggle → _stateSub → rebuildTree（终端态）
 
   const root = L.renderer!.getRoot()!;
-  const container = findBoxById(root, `expanded-${hitData.path}`);
-  const titleRow = findBoxById(root, `title-${hitData.path}`);
-  const toggle2 = titleRow?.children?.find(c => c.id?.startsWith('toggle-'));
-
-  if (!container) {
-    L.endOp();
-    processClickQueue();
-    return;
-  }
-
-  const fullHeight = (container as Box & OverlayMeta)._fullHeight || 0;
-  if (!fullHeight) {
-    const finish = () => {
-      L.endOp();
-      processClickQueue();
-    };
-    if (toggle2 && toggle2.transform) {
-      toggle2.transform.rotate = 0;
-      ts.to(toggle2.transform, {
-        rotate: Math.PI / 2,
-        duration: 0.3,
-        ease: 'power2.out',
-        onComplete: finish,
-      }, 0);
-    } else {
-      finish();
-    }
-    return;
-  }
-
-  _runExpandAnimation({ container, root, fullHeight, toggle2, path: hitData.path, onTap: null });
+  const cleanup = () => { L.endOp(); processClickQueue(); };
+  const ctx = _getExpandContext(root, hitData.path, cleanup);
+  if (!ctx) return;
+  _runExpandAnimation({ container: ctx.container, root, fullHeight: ctx.fullHeight, toggle2: ctx.toggle2, path: hitData.path, onTap: null });
 }
 
 /** 展开动画参数的公共接口 */
