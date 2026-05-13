@@ -4893,9 +4893,9 @@
       el.style.top = Math.round(window.innerHeight * STACK_TOP_RATIO + i * CARD_GAP) + "px";
     }
   }
-  var FLOATING_CARD_W = 280;
-  var FLOATING_CARD_H = 280;
-  function createCornerBox(x, y, w, h, color) {
+  var FLOATING_CARD_W = 155;
+  var FLOATING_CARD_H = 68;
+  function createDecoratedCorner(x, y, w, h, color, svgInner) {
     const box = document.createElement("div");
     box.style.cssText = [
       "position:absolute",
@@ -4904,10 +4904,13 @@
       "width:" + w + "px",
       "height:" + h + "px",
       "border:1px solid " + color,
-      "border-radius:2px",
-      "opacity:0.5",
+      "border-radius:6px",
+      "display:flex",
+      "align-items:center",
+      "justify-content:center",
       "pointer-events:none"
     ].join(";");
+    box.innerHTML = svgInner;
     return box;
   }
   function launchFocusedCard() {
@@ -4922,14 +4925,43 @@
     el.dataset.index = String(_focusIndex);
     const iconClone = (_a = focusedCard.querySelector(".stack-card-icon")) == null ? void 0 : _a.cloneNode(true);
     const infoClone = (_b = focusedCard.querySelector(".stack-card-info")) == null ? void 0 : _b.cloneNode(true);
-    const cornerColor = hexToRgba(color.border, 0.4);
-    el.innerHTML = "";
-    const cornerSize = 16;
-    const margin = 8;
-    el.appendChild(createCornerBox(margin, margin, cornerSize, cornerSize, cornerColor));
-    el.appendChild(createCornerBox(FLOATING_CARD_W - margin - cornerSize, margin, cornerSize, cornerSize, cornerColor));
-    el.appendChild(createCornerBox(margin, FLOATING_CARD_H - margin - cornerSize, cornerSize, cornerSize, cornerColor));
-    el.appendChild(createCornerBox(FLOATING_CARD_W - margin - cornerSize, FLOATING_CARD_H - margin - cornerSize, cornerSize, cornerSize, cornerColor));
+    const [triPrev, triMain, triNext] = getTriple(_focusIndex, 1);
+    const cornerSize = 20;
+    const cornerOff = -10;
+    const rightOff = cornerOff + 6;
+    const bottomOff = cornerOff + 4;
+    el.appendChild(createDecoratedCorner(
+      cornerOff,
+      cornerOff,
+      cornerSize,
+      cornerSize,
+      triPrev,
+      '<svg width="14" height="14" viewBox="0 0 12 12"><polygon points="6,2 10,6 6,10 2,6" stroke="' + triPrev + '" stroke-width="1.5" fill="none"/></svg>'
+    ));
+    el.appendChild(createDecoratedCorner(
+      FLOATING_CARD_W - rightOff - cornerSize,
+      cornerOff,
+      cornerSize,
+      cornerSize,
+      triMain,
+      '<svg width="14" height="14" viewBox="0 0 12 12"><circle cx="6" cy="6" r="3.5" stroke="' + triMain + '" stroke-width="1.5" fill="none"/></svg>'
+    ));
+    el.appendChild(createDecoratedCorner(
+      cornerOff,
+      FLOATING_CARD_H - bottomOff - cornerSize,
+      cornerSize,
+      cornerSize,
+      triMain,
+      '<svg width="14" height="14" viewBox="0 0 12 12"><rect x="2.5" y="2.5" width="7" height="7" rx="1" stroke="' + triMain + '" stroke-width="1.5" fill="none"/></svg>'
+    ));
+    el.appendChild(createDecoratedCorner(
+      FLOATING_CARD_W - rightOff - cornerSize,
+      FLOATING_CARD_H - bottomOff - cornerSize,
+      cornerSize,
+      cornerSize,
+      triNext,
+      '<svg width="14" height="14" viewBox="0 0 12 12"><polygon points="6,2 10,10 2,10" stroke="' + triNext + '" stroke-width="1.5" fill="none"/></svg>'
+    ));
     const content = document.createElement("div");
     content.style.cssText = "position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:8px;pointer-events:none";
     if (iconClone) {
@@ -4946,17 +4978,21 @@
       "top:" + cardRect.top + "px",
       "width:" + FLOATING_CARD_W + "px",
       "height:" + FLOATING_CARD_H + "px",
-      "border-radius:16px",
-      "background:transparent",
+      "border-radius:12px",
+      "border:1px solid transparent",
+      "border-left-width:3px",
+      "background: linear-gradient(" + CARD_BG + "," + CARD_BG + ") padding-box, linear-gradient(to bottom right, " + triPrev + " 0%, " + triMain + " 33%, " + triNext + " 50%) border-box",
+      "backdrop-filter:blur(16px)",
+      "-webkit-backdrop-filter:blur(16px)",
       "pointer-events:auto",
       "z-index:300",
-      "opacity:0",
-      "transform:scale(0.8)"
+      "opacity:0"
     ].join(";");
     document.body.appendChild(el);
     _floatingCardEl = el;
     const targetLeft = Math.round((window.innerWidth - FLOATING_CARD_W) / 2);
     const targetTop = Math.round((window.innerHeight - FLOATING_CARD_H) / 2);
+    anim.set(el, { scale: 0.8 });
     anim.to(el, {
       left: targetLeft,
       top: targetTop,
@@ -5029,6 +5065,7 @@
   }
   function closeCardStack() {
     if (_state === "closed" || _state === "closing") return;
+    dismissFloatingCard();
     if (_state === "opening" && _tl) {
       _state = "closing";
       _tl.reverse();

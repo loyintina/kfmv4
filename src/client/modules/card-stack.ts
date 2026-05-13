@@ -210,11 +210,14 @@ function randomizeCards(): void {
 
 // ========== 浮卡（从卡片堆发射到中央） ==========
 
-const FLOATING_CARD_W = 280;
-const FLOATING_CARD_H = 280;
+const FLOATING_CARD_W = 155;
+const FLOATING_CARD_H = 68;
 
-/** 构建浮卡的四个角装饰框 */
-function createCornerBox(x: number, y: number, w: number, h: number, color: string): HTMLElement {
+/** 创建四角装饰框 — 不透明彩色边框 + 中心符号 */
+function createDecoratedCorner(
+  x: number, y: number, w: number, h: number,
+  color: string, svgInner: string,
+): HTMLElement {
   const box = document.createElement('div');
   box.style.cssText = [
     'position:absolute',
@@ -223,10 +226,13 @@ function createCornerBox(x: number, y: number, w: number, h: number, color: stri
     'width:' + w + 'px',
     'height:' + h + 'px',
     'border:1px solid ' + color,
-    'border-radius:2px',
-    'opacity:0.5',
+    'border-radius:6px',
+    'display:flex',
+    'align-items:center',
+    'justify-content:center',
     'pointer-events:none',
   ].join(';');
+  box.innerHTML = svgInner;
   return box;
 }
 
@@ -251,17 +257,27 @@ export function launchFocusedCard(): void {
   const iconClone = focusedCard.querySelector('.stack-card-icon')?.cloneNode(true) as HTMLElement;
   const infoClone = focusedCard.querySelector('.stack-card-info')?.cloneNode(true) as HTMLElement;
 
-  // 四角装饰框颜色
-  const cornerColor = hexToRgba(color.border, 0.4);
+  // 四角装饰框颜色 — 与卡片左边框渐变的顶点同色
+  const [triPrev, triMain, triNext] = getTriple(_focusIndex, 1);
 
-  el.innerHTML = '';
   // 四个角框
-  const cornerSize = 16;
-  const margin = 8;
-  el.appendChild(createCornerBox(margin, margin, cornerSize, cornerSize, cornerColor));           // 左上
-  el.appendChild(createCornerBox(FLOATING_CARD_W - margin - cornerSize, margin, cornerSize, cornerSize, cornerColor)); // 右上
-  el.appendChild(createCornerBox(margin, FLOATING_CARD_H - margin - cornerSize, cornerSize, cornerSize, cornerColor)); // 左下
-  el.appendChild(createCornerBox(FLOATING_CARD_W - margin - cornerSize, FLOATING_CARD_H - margin - cornerSize, cornerSize, cornerSize, cornerColor)); // 右下
+  const cornerSize = 20;
+  const cornerOff = -10;
+  const rightOff = cornerOff + 6;
+  const bottomOff = cornerOff + 4;
+  // 左上 菱形
+  el.appendChild(createDecoratedCorner(cornerOff, cornerOff, cornerSize, cornerSize, triPrev,
+    '<svg width="14" height="14" viewBox="0 0 12 12"><polygon points="6,2 10,6 6,10 2,6" stroke="' + triPrev + '" stroke-width="1.5" fill="none"/></svg>'));
+  // 右上 圆圈
+  el.appendChild(createDecoratedCorner(FLOATING_CARD_W - rightOff - cornerSize, cornerOff, cornerSize, cornerSize, triMain,
+    '<svg width="14" height="14" viewBox="0 0 12 12"><circle cx="6" cy="6" r="3.5" stroke="' + triMain + '" stroke-width="1.5" fill="none"/></svg>'));
+  // 左下 方块
+  el.appendChild(createDecoratedCorner(cornerOff, FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, triMain,
+    '<svg width="14" height="14" viewBox="0 0 12 12"><rect x="2.5" y="2.5" width="7" height="7" rx="1" stroke="' + triMain + '" stroke-width="1.5" fill="none"/></svg>'));
+  // 右下 三角
+  el.appendChild(createDecoratedCorner(FLOATING_CARD_W - rightOff - cornerSize, FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, triNext,
+    '<svg width="14" height="14" viewBox="0 0 12 12"><polygon points="6,2 10,10 2,10" stroke="' + triNext + '" stroke-width="1.5" fill="none"/></svg>'));
+
   // 数字+文字内容（居中）
   const content = document.createElement('div');
   content.style.cssText = 'position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:8px;pointer-events:none';
@@ -274,19 +290,22 @@ export function launchFocusedCard(): void {
   if (infoClone) content.appendChild(infoClone);
   el.appendChild(content);
 
-  // 浮卡样式
+  // 浮卡样式 — 暗色毛玻璃 + 左边框渐变（与卡片堆一致）
   el.style.cssText = [
     'position:fixed',
     'left:' + cardRect.left + 'px',
     'top:' + cardRect.top + 'px',
     'width:' + FLOATING_CARD_W + 'px',
     'height:' + FLOATING_CARD_H + 'px',
-    'border-radius:16px',
-    'background:transparent',
+    'border-radius:12px',
+    'border:1px solid transparent',
+    'border-left-width:3px',
+    'background: linear-gradient(' + CARD_BG + ',' + CARD_BG + ') padding-box, linear-gradient(to bottom right, ' + triPrev + ' 0%, ' + triMain + ' 33%, ' + triNext + ' 50%) border-box',
+    'backdrop-filter:blur(16px)',
+    '-webkit-backdrop-filter:blur(16px)',
     'pointer-events:auto',
     'z-index:300',
     'opacity:0',
-    'transform:scale(0.8)',
   ].join(';');
 
   document.body.appendChild(el);
@@ -296,7 +315,8 @@ export function launchFocusedCard(): void {
   const targetLeft = Math.round((window.innerWidth - FLOATING_CARD_W) / 2);
   const targetTop = Math.round((window.innerHeight - FLOATING_CARD_H) / 2);
 
-  // GSAP 飞行动画
+  // GSAP 飞行动画（从当前位置飞到屏幕中央）
+  anim.set(el, { scale: 0.8 });
   anim.to(el, {
     left: targetLeft,
     top: targetTop,
