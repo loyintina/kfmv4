@@ -4936,7 +4936,7 @@
       cornerSize,
       cornerSize,
       triPrev,
-      '<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><polyline points="10,11 2,11 2,9" stroke="' + triPrev + '" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><polygon points="2,6 0,9 4,9" fill="' + triPrev + '"/></svg>'
+      '<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><polyline points="11,7 3,7 3,5" stroke="' + triPrev + '" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><polygon points="3,2 1,5 5,5" fill="' + triPrev + '"/></svg>'
     ));
     el.appendChild(createDecoratedCorner(
       FLOATING_CARD_W - rightOff - cornerSize,
@@ -4944,7 +4944,7 @@
       cornerSize,
       cornerSize,
       triMain,
-      '<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><line x1="3" y1="3" x2="9" y2="9" stroke="' + triMain + '" stroke-width="1.5" stroke-linecap="round"/><line x1="9" y1="3" x2="3" y2="9" stroke="' + triMain + '" stroke-width="1.5" stroke-linecap="round"/></svg>'
+      '<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><line x1="4" y1="2" x2="10" y2="8" stroke="' + triMain + '" stroke-width="1.5" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="' + triMain + '" stroke-width="1.5" stroke-linecap="round"/></svg>'
     ));
     el.appendChild(createDecoratedCorner(
       cornerOff,
@@ -4952,7 +4952,7 @@
       cornerSize,
       cornerSize,
       triMain,
-      '<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><polyline points="10,1 2,1 2,3" stroke="' + triMain + '" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><polygon points="2,6 0,3 4,3" fill="' + triMain + '"/></svg>'
+      '<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><polyline points="11,6 3,6 3,8" stroke="' + triMain + '" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><polygon points="3,11 1,8 5,8" fill="' + triMain + '"/></svg>'
     ));
     el.appendChild(createDecoratedCorner(
       FLOATING_CARD_W - rightOff - cornerSize,
@@ -4960,7 +4960,7 @@
       cornerSize,
       cornerSize,
       triNext,
-      '<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><polygon points="6,1 4,4 8,4" fill="' + triNext + '"/><polygon points="6,11 4,8 8,8" fill="' + triNext + '"/><polygon points="1,6 4,4 4,8" fill="' + triNext + '"/><polygon points="11,6 8,4 8,8" fill="' + triNext + '"/></svg>'
+      '<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><polygon points="8,4 6,6 10,6" fill="' + triNext + '"/><polygon points="8,12 6,10 10,10" fill="' + triNext + '"/><polygon points="4,8 6,6 6,10" fill="' + triNext + '"/><polygon points="12,8 10,6 10,10" fill="' + triNext + '"/></svg>'
     ));
     const content = document.createElement("div");
     content.style.cssText = "position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:8px;pointer-events:none";
