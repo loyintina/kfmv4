@@ -92,7 +92,7 @@ function createCard(index: number): HTMLElement {
   const topPx = Math.round(window.innerHeight * STACK_TOP_RATIO + index * CARD_GAP);
 
   // 随机值由 randomizeCards() 在每次 open 前生成，初始设默认
-  el.dataset.randomRight = '20';
+  el.dataset.randomRight = '0';
   el.dataset.randomRotate = '0';
 
   // 三色渐变边框
@@ -106,9 +106,9 @@ function createCard(index: number): HTMLElement {
 
   el.style.cssText = [
     'position:fixed',
-    'right:20px',
+    'right:0px',
     'top:' + topPx + 'px',
-    'width:min(85%, 260px)',
+    'width:155px',
     'height:' + CARD_HEIGHT + 'px',
     'border-radius:12px',
     'padding:12px 14px',
@@ -173,7 +173,7 @@ function updateFocus(): void {
     if (dist === 0) {
       // 聚焦：左移更多、取消旋转、增强阴影
       anim.to(el, {
-        xPercent: 48, x: -28, scale: 1.04, rotation: 0,
+        xPercent: 0, x: -28, scale: 1.04, rotation: 0,
         duration: 0.35, ease: 'back.out(1.2)',
       });
       el.style.backdropFilter = 'blur(16px)';
@@ -186,7 +186,7 @@ function updateFocus(): void {
       // 非聚焦：恢复随机旋转、普通阴影
       const randomRotate = parseFloat(el.dataset.randomRotate || '0');
       anim.to(el, {
-        xPercent: 48, x: 0, scale: 1, rotation: randomRotate,
+        xPercent: 0, x: 0, scale: 1, rotation: randomRotate,
         duration: 0.35, ease: 'back.out(1.2)',
       });
       el.style.backdropFilter = 'blur(16px)';
@@ -203,7 +203,7 @@ function updateFocus(): void {
 function randomizeCards(): void {
   for (let i = 0; i < _cardEls.length; i++) {
     const el = _cardEls[i];
-    const right = 14 + Math.floor(Math.random() * 12);     // 14-26px
+    const right = Math.floor(Math.random() * 14) - 4;        // -4 ~ +10px（微错位）
     const rot = (Math.random() - 0.5) * 4;                   // -2deg ~ +2deg
     el.dataset.randomRight = String(right);
     el.dataset.randomRotate = String(rot);
@@ -258,13 +258,13 @@ export function openCardStack(): void {
     const dur = 0.2 + Math.random() * 0.3;
     if (i === _focusIndex) {
       _tl.to(el, {
-        xPercent: 48, x: -28, scale: 1.04, rotation: 0,
+        xPercent: 0, x: -28, scale: 1.04, rotation: 0,
         duration: dur, ease: 'back.out(1.2)',
       }, 0);
     } else {
       const rot = parseFloat(el.dataset.randomRotate || '0');
       _tl.to(el, {
-        xPercent: 48, x: 0, scale: 1, rotation: rot,
+        xPercent: 0, x: 0, scale: 1, rotation: rot,
         duration: dur, ease: 'back.out(1.2)',
       }, 0);
     }
