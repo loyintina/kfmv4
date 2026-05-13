@@ -4917,7 +4917,7 @@
   }
   var FLOATING_CARD_W = 155;
   var FLOATING_CARD_H = 68;
-  function createDecoratedCorner(x, y, w, h, color, svgInner) {
+  function createDecoratedCorner(x, y, w, h, color, svgInner, onClick) {
     const box = document.createElement("div");
     box.style.cssText = [
       "position:absolute",
@@ -4928,8 +4928,10 @@
       "display:flex",
       "align-items:center",
       "justify-content:center",
-      "pointer-events:none"
-    ].join(";");
+      onClick ? "pointer-events:auto" : "pointer-events:none",
+      onClick ? "cursor:pointer" : ""
+    ].filter(Boolean).join(";");
+    if (onClick) box.addEventListener("click", onClick);
     const m = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
     const glowC = m ? "rgba(" + m[1] + "," + m[2] + "," + m[3] + "," + orbT.glowCenterAlpha + ")" : color;
     const glowM = m ? "rgba(" + m[1] + "," + m[2] + "," + m[3] + "," + orbT.glowMidAlpha + ")" : color;
@@ -4996,7 +4998,8 @@
       cornerSize,
       cornerSize,
       triMain,
-      `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c + sh},${c - sh}) scale(${s})"><line x1="4" y1="2" x2="10" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/></g></svg>`
+      `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c + sh},${c - sh}) scale(${s})"><line x1="4" y1="2" x2="10" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/></g></svg>`,
+      dismissFloatingCardAnimated
     ));
     el.appendChild(createDecoratedCorner(
       cornerOff,
@@ -5022,7 +5025,7 @@
       "height:" + FLOATING_CARD_H + "px",
       "pointer-events:auto",
       "z-index:300",
-      "opacity:0"
+      "opacity:1"
     ].join(";");
     document.body.appendChild(el);
     _floatingCardEl = el;
@@ -5032,7 +5035,6 @@
     anim.to(el, {
       left: targetLeft,
       top: targetTop,
-      opacity: 1,
       scale: 1,
       duration: 0.4,
       ease: "back.out(1.3)"
@@ -5044,6 +5046,21 @@
       _floatingCardEl.remove();
       _floatingCardEl = null;
     }
+  }
+  function dismissFloatingCardAnimated() {
+    const el = _floatingCardEl;
+    if (!el) return;
+    anim.killTweensOf(el);
+    const tl = anim.timeline({
+      onComplete: () => {
+        if (_floatingCardEl === el) {
+          _floatingCardEl = null;
+          el.remove();
+        }
+      }
+    });
+    tl.to(el, { scale: 1.08, duration: 0.1, ease: "power2.out" });
+    tl.to(el, { scale: 0, duration: 0.2, ease: "power3.in" });
   }
   function openCardStack() {
     if (_state === "open" || _state === "opening") return;
@@ -5101,7 +5118,7 @@
   }
   function closeCardStack() {
     if (_state === "closed" || _state === "closing") return;
-    dismissFloatingCard();
+    dismissFloatingCardAnimated();
     if (_state === "opening" && _tl) {
       _state = "closing";
       _tl.reverse();
