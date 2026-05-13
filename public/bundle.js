@@ -4928,8 +4928,8 @@
     const [triPrev, triMain, triNext] = getTriple(_focusIndex, 1);
     const cornerSize = 20;
     const cornerOff = -10;
-    const rightOff = cornerOff + 6;
-    const bottomOff = cornerOff + 4;
+    const rightOff = cornerOff + 5;
+    const bottomOff = cornerOff + 3;
     el.appendChild(createDecoratedCorner(
       cornerOff,
       cornerOff,

@@ -263,8 +263,8 @@ export function launchFocusedCard(): void {
   // 四个角框
   const cornerSize = 20;
   const cornerOff = -10;
-  const rightOff = cornerOff + 6;
-  const bottomOff = cornerOff + 4;
+  const rightOff = cornerOff + 5;
+  const bottomOff = cornerOff + 3;
   // 左上 菱形
   el.appendChild(createDecoratedCorner(cornerOff, cornerOff, cornerSize, cornerSize, triPrev,
     '<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><polyline points="11,7 3,7 3,5" stroke="' + triPrev + '" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><polygon points="3,2 1,5 5,5" fill="' + triPrev + '"/></svg>'));
