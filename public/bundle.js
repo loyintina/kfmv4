@@ -4962,6 +4962,19 @@
       triNext,
       '<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><polygon points="8,4 6,6 10,6" fill="' + triNext + '"/><polygon points="8,12 6,10 10,10" fill="' + triNext + '"/><polygon points="4,8 6,6 6,10" fill="' + triNext + '"/><polygon points="12,8 10,6 10,10" fill="' + triNext + '"/></svg>'
     ));
+    const cardBg = document.createElement("div");
+    cardBg.style.cssText = [
+      "position:absolute",
+      "inset:0",
+      "border-radius:12px",
+      "border:1px solid transparent",
+      "border-left-width:3px",
+      "background: linear-gradient(" + CARD_BG + "," + CARD_BG + ") padding-box, linear-gradient(to bottom right, " + triPrev + " 0%, " + triMain + " 33%, " + triNext + " 50%) border-box",
+      "backdrop-filter:blur(16px)",
+      "-webkit-backdrop-filter:blur(16px)",
+      "pointer-events:none"
+    ].join(";");
+    el.appendChild(cardBg);
     const content = document.createElement("div");
     content.style.cssText = "position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:8px;pointer-events:none";
     if (iconClone) {
@@ -4978,12 +4991,6 @@
       "top:" + cardRect.top + "px",
       "width:" + FLOATING_CARD_W + "px",
       "height:" + FLOATING_CARD_H + "px",
-      "border-radius:12px",
-      "border:1px solid transparent",
-      "border-left-width:3px",
-      "background: linear-gradient(" + CARD_BG + "," + CARD_BG + ") padding-box, linear-gradient(to bottom right, " + triPrev + " 0%, " + triMain + " 33%, " + triNext + " 50%) border-box",
-      "backdrop-filter:blur(16px)",
-      "-webkit-backdrop-filter:blur(16px)",
       "pointer-events:auto",
       "z-index:300",
       "opacity:0"
