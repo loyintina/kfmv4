@@ -111,10 +111,10 @@ function createCard(index: number): HTMLElement {
     'width:155px',
     'height:' + CARD_HEIGHT + 'px',
     'border-radius:12px',
-    'padding:12px 14px',
+    'padding:4px 12px',
     'display:flex',
-    'align-items:center',
-    'gap:10px',
+    'align-items:flex-start',
+    'gap:6px',
     'backdrop-filter:blur(16px)',
     '-webkit-backdrop-filter:blur(16px)',
     'border:1px solid transparent',
@@ -130,12 +130,11 @@ function createCard(index: number): HTMLElement {
   ].join(';');
 
   el.innerHTML = ''
-    + '<div class="stack-card-icon" style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;background:' + color.iconBg + ';color:' + color.border + '">' + card.icon + '</div>'
+    + '<div class="stack-card-icon" style="width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;background:' + color.iconBg + ';color:' + color.border + '">' + String(index + 1).padStart(2, '0') + '</div>'
     + '<div class="stack-card-info" style="flex:1;min-width:0">'
-    + '  <div class="stack-card-name" style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + card.name + '</div>'
-    + '  <div class="stack-card-desc" style="font-size:11px;opacity:0.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px">' + card.desc + '</div>'
-    + '</div>'
-    + '<div class="stack-card-index" style="font-size:11px;font-weight:600;opacity:0.4;width:20px;text-align:center;flex-shrink:0">' + String(index + 1).padStart(2, '0') + '</div>';
+    + '  <div class="stack-card-name" style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + card.name + '</div>'
+    + '  <div class="stack-card-desc" style="font-size:10px;opacity:0.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:0px">' + card.desc + '</div>'
+    + '</div>';
 
   // 点击卡片切换焦点
   el.addEventListener("click", (e) => {
@@ -180,8 +179,6 @@ function updateFocus(): void {
       (el.style as any).webkitBackdropFilter = 'blur(16px)';
       el.style.background = 'linear-gradient(' + theme.stack.cardBg + ',' + theme.stack.cardBg + ') padding-box, ' + getBorderGradient(i, alpha) + ' border-box';
       el.style.boxShadow = theme.stack.focusShadow;
-      const idxEl = el.querySelector('.stack-card-index') as HTMLElement;
-      if (idxEl) idxEl.style.opacity = '0.8';
     } else {
       // 非聚焦：恢复随机旋转、普通阴影
       const randomRotate = parseFloat(el.dataset.randomRotate || '0');
@@ -193,8 +190,6 @@ function updateFocus(): void {
       (el.style as any).webkitBackdropFilter = 'blur(16px)';
       el.style.background = 'linear-gradient(' + theme.stack.cardBg + ',' + theme.stack.cardBg + ') padding-box, ' + getBorderGradient(i, alpha) + ' border-box';
       el.style.boxShadow = theme.stack.blurShadow;
-      const idxEl = el.querySelector('.stack-card-index') as HTMLElement;
-      if (idxEl) idxEl.style.opacity = '0.3';
     }
   }
 }
@@ -246,8 +241,7 @@ export function openCardStack(): void {
         (el.style as any).webkitBackdropFilter = 'blur(16px)';
         el.style.background = 'linear-gradient(' + theme.stack.cardBg + ',' + theme.stack.cardBg + ') padding-box, ' + getBorderGradient(i, alpha) + ' border-box';
         el.style.boxShadow = (i === _focusIndex) ? theme.stack.focusShadow : theme.stack.blurShadow;
-        const idxEl = el.querySelector('.stack-card-index') as HTMLElement;
-        if (idxEl) idxEl.style.opacity = (i === _focusIndex) ? '0.8' : '0.3';
+        // 已移除右侧序号
       }
     },
     onReverseComplete: () => { _state = 'closed'; _tl = null; }
