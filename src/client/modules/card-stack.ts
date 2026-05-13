@@ -233,7 +233,6 @@ export function openCardStack(): void {
   _tl = anim.timeline({
     onComplete: () => {
       _state = 'open'; _tl = null;
-      // 只应用样式，不做二次动画（卡片已在最终位置）
       const alpha = 0.85;
       for (let i = 0; i < _cardEls.length; i++) {
         const el = _cardEls[i];
@@ -241,7 +240,6 @@ export function openCardStack(): void {
         (el.style as any).webkitBackdropFilter = 'blur(16px)';
         el.style.background = 'linear-gradient(' + theme.stack.cardBg + ',' + theme.stack.cardBg + ') padding-box, ' + getBorderGradient(i, alpha) + ' border-box';
         el.style.boxShadow = (i === _focusIndex) ? theme.stack.focusShadow : theme.stack.blurShadow;
-        // 已移除右侧序号
       }
     },
     onReverseComplete: () => { _state = 'closed'; _tl = null; }
@@ -252,13 +250,13 @@ export function openCardStack(): void {
     const dur = 0.2 + Math.random() * 0.3;
     if (i === _focusIndex) {
       _tl.to(el, {
-        xPercent: 0, x: -28, scale: 1.04, rotation: 0,
+        x: -28, scale: 1.04, rotation: 0,
         duration: dur, ease: 'back.out(1.2)',
       }, 0);
     } else {
       const rot = parseFloat(el.dataset.randomRotate || '0');
       _tl.to(el, {
-        xPercent: 0, x: 0, scale: 1, rotation: rot,
+        x: 0, scale: 1, rotation: rot,
         duration: dur, ease: 'back.out(1.2)',
       }, 0);
     }

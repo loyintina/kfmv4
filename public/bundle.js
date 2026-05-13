@@ -4793,7 +4793,7 @@
     el.className = "stack-card";
     el.dataset.index = String(index);
     const topPx = Math.round(window.innerHeight * STACK_TOP_RATIO + index * CARD_GAP);
-    el.dataset.randomRight = "20";
+    el.dataset.randomRight = "0";
     el.dataset.randomRotate = "0";
     const alpha = 0.85;
     const borderGrad = getBorderGradient(index, alpha);
@@ -4802,15 +4802,15 @@
     ].join(",");
     el.style.cssText = [
       "position:fixed",
-      "right:20px",
+      "right:0px",
       "top:" + topPx + "px",
-      "width:min(85%, 260px)",
+      "width:155px",
       "height:" + CARD_HEIGHT + "px",
       "border-radius:12px",
-      "padding:12px 14px",
+      "padding:4px 12px",
       "display:flex",
-      "align-items:center",
-      "gap:10px",
+      "align-items:flex-start",
+      "gap:6px",
       "backdrop-filter:blur(16px)",
       "-webkit-backdrop-filter:blur(16px)",
       "border:1px solid transparent",
@@ -4824,7 +4824,7 @@
       "user-select:none",
       "-webkit-user-select:none"
     ].join(";");
-    el.innerHTML = '<div class="stack-card-icon" style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;background:' + color.iconBg + ";color:" + color.border + '">' + card.icon + '</div><div class="stack-card-info" style="flex:1;min-width:0">  <div class="stack-card-name" style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + card.name + '</div>  <div class="stack-card-desc" style="font-size:11px;opacity:0.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px">' + card.desc + '</div></div><div class="stack-card-index" style="font-size:11px;font-weight:600;opacity:0.4;width:20px;text-align:center;flex-shrink:0">' + String(index + 1).padStart(2, "0") + "</div>";
+    el.innerHTML = '<div class="stack-card-icon" style="width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;background:' + color.iconBg + ";color:" + color.border + '">' + String(index + 1).padStart(2, "0") + '</div><div class="stack-card-info" style="flex:1;min-width:0">  <div class="stack-card-name" style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + card.name + '</div>  <div class="stack-card-desc" style="font-size:10px;opacity:0.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:0px">' + card.desc + "</div></div>";
     el.addEventListener("click", (e) => {
       const idx = parseInt(el.dataset.index || "0", 10);
       if (idx !== _focusIndex) {
@@ -4853,7 +4853,7 @@
       const alpha = 0.85;
       if (dist === 0) {
         anim.to(el, {
-          xPercent: 48,
+          xPercent: 0,
           x: -28,
           scale: 1.04,
           rotation: 0,
@@ -4864,12 +4864,10 @@
         el.style.webkitBackdropFilter = "blur(16px)";
         el.style.background = "linear-gradient(" + currentTheme.stack.cardBg + "," + currentTheme.stack.cardBg + ") padding-box, " + getBorderGradient(i, alpha) + " border-box";
         el.style.boxShadow = currentTheme.stack.focusShadow;
-        const idxEl = el.querySelector(".stack-card-index");
-        if (idxEl) idxEl.style.opacity = "0.8";
       } else {
         const randomRotate = parseFloat(el.dataset.randomRotate || "0");
         anim.to(el, {
-          xPercent: 48,
+          xPercent: 0,
           x: 0,
           scale: 1,
           rotation: randomRotate,
@@ -4880,15 +4878,13 @@
         el.style.webkitBackdropFilter = "blur(16px)";
         el.style.background = "linear-gradient(" + currentTheme.stack.cardBg + "," + currentTheme.stack.cardBg + ") padding-box, " + getBorderGradient(i, alpha) + " border-box";
         el.style.boxShadow = currentTheme.stack.blurShadow;
-        const idxEl = el.querySelector(".stack-card-index");
-        if (idxEl) idxEl.style.opacity = "0.3";
       }
     }
   }
   function randomizeCards() {
     for (let i = 0; i < _cardEls.length; i++) {
       const el = _cardEls[i];
-      const right = 14 + Math.floor(Math.random() * 12);
+      const right = Math.floor(Math.random() * 14) - 4;
       const rot = (Math.random() - 0.5) * 4;
       el.dataset.randomRight = String(right);
       el.dataset.randomRotate = String(rot);
@@ -4920,8 +4916,6 @@
           el.style.webkitBackdropFilter = "blur(16px)";
           el.style.background = "linear-gradient(" + currentTheme.stack.cardBg + "," + currentTheme.stack.cardBg + ") padding-box, " + getBorderGradient(i, alpha) + " border-box";
           el.style.boxShadow = i === _focusIndex ? currentTheme.stack.focusShadow : currentTheme.stack.blurShadow;
-          const idxEl = el.querySelector(".stack-card-index");
-          if (idxEl) idxEl.style.opacity = i === _focusIndex ? "0.8" : "0.3";
         }
       },
       onReverseComplete: () => {
@@ -4934,7 +4928,6 @@
       const dur = 0.2 + Math.random() * 0.3;
       if (i === _focusIndex) {
         _tl.to(el, {
-          xPercent: 48,
           x: -28,
           scale: 1.04,
           rotation: 0,
@@ -4944,7 +4937,6 @@
       } else {
         const rot = parseFloat(el.dataset.randomRotate || "0");
         _tl.to(el, {
-          xPercent: 48,
           x: 0,
           scale: 1,
           rotation: rot,
