@@ -4726,6 +4726,27 @@
       cardGap: 36,
       cardHeight: 68
     },
+    /** 浮卡四角光球装饰 */
+    cornerOrb: {
+      size: 26,
+      cornerOff: -13,
+      rightOffAdj: 1,
+      bottomOffAdj: -1,
+      glowCenterAlpha: 0.85,
+      glowMidAlpha: 0.35,
+      glowPos: "30% 30%",
+      shadow1Blur: "10px 4px",
+      shadow1Alpha: 0.4,
+      shadow2Blur: "20px 8px",
+      shadow2Alpha: 0.15,
+      symAlpha: 0.95,
+      symStroke: 1.2,
+      symScale: 0.92,
+      symShift: 1,
+      symMaskAngle: "135deg",
+      symMaskCutoff: "#000 30%",
+      tlAlpha: 0.95
+    },
     extColors: {
       ts: "#3178c6",
       js: "#f7df1e",
@@ -4747,6 +4768,7 @@
   var currentTheme = nebula;
 
   // src/client/modules/card-stack.ts
+  var orbT = currentTheme.cornerOrb;
   var CARD_BG = currentTheme.stack.cardBg;
   var CARDS = [
     { id: "settings", icon: "\u2699", name: "\u8BBE\u7F6E", desc: "API Key \xB7 \u6A21\u578B\u9009\u62E9" },
@@ -4909,13 +4931,13 @@
       "pointer-events:none"
     ].join(";");
     const m = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
-    const glowC = m ? "rgba(" + m[1] + "," + m[2] + "," + m[3] + ",0.85)" : color;
-    const glowM = m ? "rgba(" + m[1] + "," + m[2] + "," + m[3] + ",0.35)" : color;
-    const shadowC1 = m ? "rgba(" + m[1] + "," + m[2] + "," + m[3] + ",0.4)" : color;
-    const shadowC2 = m ? "rgba(" + m[1] + "," + m[2] + "," + m[3] + ",0.15)" : color;
-    const symA = m && m[4] !== void 0 ? m[4] : "0.9";
+    const glowC = m ? "rgba(" + m[1] + "," + m[2] + "," + m[3] + "," + orbT.glowCenterAlpha + ")" : color;
+    const glowM = m ? "rgba(" + m[1] + "," + m[2] + "," + m[3] + "," + orbT.glowMidAlpha + ")" : color;
+    const shadowC1 = m ? "rgba(" + m[1] + "," + m[2] + "," + m[3] + "," + orbT.shadow1Alpha + ")" : color;
+    const shadowC2 = m ? "rgba(" + m[1] + "," + m[2] + "," + m[3] + "," + orbT.shadow2Alpha + ")" : color;
+    const symA = m && m[4] !== void 0 ? m[4] : String(orbT.symAlpha);
     const symC = m ? "rgba(" + m[1] + "," + m[2] + "," + m[3] + "," + symA + ")" : color;
-    box.innerHTML = '<div style="position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 30% 30%,' + glowC + "," + glowM + ",transparent 70%);box-shadow:0 0 10px 4px " + shadowC1 + ",0 0 20px 8px " + shadowC2 + '"></div><div style="display:flex;align-items:center;justify-content:center;color:' + symC + ';-webkit-mask:linear-gradient(135deg,#000 30%,transparent 100%);mask:linear-gradient(135deg,#000 30%,transparent 100%)">' + svgInner + "</div>";
+    box.innerHTML = '<div style="position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at ' + orbT.glowPos + "," + glowC + "," + glowM + ",transparent 70%);box-shadow:0 0 " + orbT.shadow1Blur + " " + shadowC1 + ",0 0 " + orbT.shadow2Blur + " " + shadowC2 + '"></div><div style="display:flex;align-items:center;justify-content:center;color:' + symC + ";-webkit-mask:linear-gradient(" + orbT.symMaskAngle + "," + orbT.symMaskCutoff + ",transparent 100%);mask:linear-gradient(" + orbT.symMaskAngle + "," + orbT.symMaskCutoff + ',transparent 100%)">' + svgInner + "</div>";
     return box;
   }
   function launchFocusedCard() {
@@ -4931,11 +4953,12 @@
     const iconClone = (_a = focusedCard.querySelector(".stack-card-icon")) == null ? void 0 : _a.cloneNode(true);
     const infoClone = (_b = focusedCard.querySelector(".stack-card-info")) == null ? void 0 : _b.cloneNode(true);
     const [triPrev, triMain, triNext] = getTriple(_focusIndex, 1);
-    const tlDim = triPrev.replace(/,\s*1\)$/, ",0.5)");
-    const cornerSize = 26;
-    const cornerOff = -13;
-    const rightOff = cornerOff + 1;
-    const bottomOff = cornerOff - 1;
+    const tlColor = triPrev.replace(/,\s*1\)$/, "," + orbT.tlAlpha + ")");
+    const cornerSize = orbT.size;
+    const cornerOff = orbT.cornerOff;
+    const rightOff = cornerOff + orbT.rightOffAdj;
+    const bottomOff = cornerOff + orbT.bottomOffAdj;
+    const s = orbT.symScale, c = 6 * (1 - s), sh = orbT.symShift;
     const cardBg = document.createElement("div");
     cardBg.style.cssText = [
       "position:absolute",
@@ -4964,8 +4987,8 @@
       cornerOff,
       cornerSize,
       cornerSize,
-      tlDim,
-      '<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(-0.52,-0.52) scale(0.92)"><path d="M6,10 L6,2 M6,2 L3,5 M6,2 L9,5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>'
+      tlColor,
+      `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c - sh},${c - sh}) scale(${s})"><path d="M6,10 L6,2 M6,2 L3,5 M6,2 L9,5" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`
     ));
     el.appendChild(createDecoratedCorner(
       FLOATING_CARD_W - rightOff - cornerSize,
@@ -4973,7 +4996,7 @@
       cornerSize,
       cornerSize,
       triMain,
-      '<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(1.48,-0.52) scale(0.92)"><line x1="4" y1="2" x2="10" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></g></svg>'
+      `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c + sh},${c - sh}) scale(${s})"><line x1="4" y1="2" x2="10" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/></g></svg>`
     ));
     el.appendChild(createDecoratedCorner(
       cornerOff,
@@ -4981,7 +5004,7 @@
       cornerSize,
       cornerSize,
       triMain,
-      '<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(-0.52,1.48) scale(0.92)"><path d="M6,2 L6,10 M6,10 L3,7 M6,10 L9,7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>'
+      `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c - sh},${c + sh}) scale(${s})"><path d="M6,2 L6,10 M6,10 L3,7 M6,10 L9,7" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`
     ));
     el.appendChild(createDecoratedCorner(
       FLOATING_CARD_W - rightOff - cornerSize,
@@ -4989,7 +5012,7 @@
       cornerSize,
       cornerSize,
       triNext,
-      '<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(1.48,1.48) scale(0.92)"><path d="M6,2 L6,10 M2,6 L10,6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>'
+      `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c + sh},${c + sh}) scale(${s})"><path d="M6,2 L6,10 M2,6 L10,6" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`
     ));
     el.style.cssText = [
       "position:fixed",

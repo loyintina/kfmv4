@@ -97,6 +97,28 @@ export interface ThemeConfig {
     cardHeight: number;
   };
 
+  /** 浮卡四角光球装饰 */
+  cornerOrb: {
+    size: number;               // 26 光球直径
+    cornerOff: number;          // -13 光球超出卡片边缘的距离（负值=向外突出）
+    rightOffAdj: number;        // +1 右侧光球偏移调整量（cornerOff + rightOffAdj）
+    bottomOffAdj: number;       // -1 底部光球偏移调整量（cornerOff + bottomOffAdj）
+    glowCenterAlpha: number;    // 0.85 光晕中心透明度
+    glowMidAlpha: number;       // 0.35 光晕中层透明度
+    glowPos: string;            // "30% 30%" 渐变中心位置
+    shadow1Blur: string;        // "10px 4px" 主阴影扩散
+    shadow1Alpha: number;       // 0.4 主阴影透明度
+    shadow2Blur: string;        // "20px 8px" 次阴影扩散
+    shadow2Alpha: number;       // 0.15 次阴影透明度
+    symAlpha: number;           // 0.95 符号默认透明度
+    symStroke: number;          // 1.2 符号线条宽度(SVG stroke-width)
+    symScale: number;           // 0.92 3D球面缩放
+    symShift: number;           // 1.0 3D球面向外位移(viewBox单位)
+    symMaskAngle: string;       // "135deg" 光照渐变角度
+    symMaskCutoff: string;      // "#000 30%" 光照截止点
+    tlAlpha: number;            // 0.95 左上角透明度覆盖值
+  };
+
   /** 文件扩展名 -> 颜色映射 */
   extColors: Record<string, string>;
 }
@@ -186,6 +208,28 @@ export const nebula: ThemeConfig = {
     cardBorderRadius: '12px',
     cardGap: 36,
     cardHeight: 68,
+  },
+
+  /** 浮卡四角光球装饰 */
+  cornerOrb: {
+    size: 26,
+    cornerOff: -13,
+    rightOffAdj: 1,
+    bottomOffAdj: -1,
+    glowCenterAlpha: 0.85,
+    glowMidAlpha: 0.35,
+    glowPos: '30% 30%',
+    shadow1Blur: '10px 4px',
+    shadow1Alpha: 0.4,
+    shadow2Blur: '20px 8px',
+    shadow2Alpha: 0.15,
+    symAlpha: 0.95,
+    symStroke: 1.2,
+    symScale: 0.92,
+    symShift: 1.0,
+    symMaskAngle: '135deg',
+    symMaskCutoff: '#000 30%',
+    tlAlpha: 0.95,
   },
 
   extColors: {

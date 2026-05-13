@@ -1,6 +1,7 @@
 import { gestures } from "./gesture-registry.js";
 import { anim, AnimTimeline } from './animation-registry.js';
 import { currentTheme as theme } from './theme.js';
+const orbT = theme.cornerOrb;
 
 /**
  * KFM v4 - 堆叠卡片面板
@@ -232,16 +233,16 @@ function createDecoratedCorner(
   ].join(';');
   // 从 rgba(r,g,b,alpha) 中提取 RGB 分量
   const m = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
-  const glowC = m ? 'rgba(' + m[1] + ',' + m[2] + ',' + m[3] + ',0.85)' : color;
-  const glowM = m ? 'rgba(' + m[1] + ',' + m[2] + ',' + m[3] + ',0.35)' : color;
-  const shadowC1 = m ? 'rgba(' + m[1] + ',' + m[2] + ',' + m[3] + ',0.4)' : color;
-  const shadowC2 = m ? 'rgba(' + m[1] + ',' + m[2] + ',' + m[3] + ',0.15)' : color;
-  const symA = m && m[4] !== undefined ? m[4] : '0.9';
+  const glowC = m ? 'rgba(' + m[1] + ',' + m[2] + ',' + m[3] + ',' + orbT.glowCenterAlpha + ')' : color;
+  const glowM = m ? 'rgba(' + m[1] + ',' + m[2] + ',' + m[3] + ',' + orbT.glowMidAlpha + ')' : color;
+  const shadowC1 = m ? 'rgba(' + m[1] + ',' + m[2] + ',' + m[3] + ',' + orbT.shadow1Alpha + ')' : color;
+  const shadowC2 = m ? 'rgba(' + m[1] + ',' + m[2] + ',' + m[3] + ',' + orbT.shadow2Alpha + ')' : color;
+  const symA = m && m[4] !== undefined ? m[4] : String(orbT.symAlpha);
   const symC = m ? 'rgba(' + m[1] + ',' + m[2] + ',' + m[3] + ',' + symA + ')' : color;
   // 光球背景 + 符号（使用 tri 色系）
   box.innerHTML =
-    '<div style="position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 30% 30%,' + glowC + ',' + glowM + ',transparent 70%);box-shadow:0 0 10px 4px ' + shadowC1 + ',0 0 20px 8px ' + shadowC2 + '"></div>' +
-    '<div style="display:flex;align-items:center;justify-content:center;color:' + symC + ';-webkit-mask:linear-gradient(135deg,#000 30%,transparent 100%);mask:linear-gradient(135deg,#000 30%,transparent 100%)">' + svgInner + '</div>';
+    '<div style="position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at ' + orbT.glowPos + ',' + glowC + ',' + glowM + ',transparent 70%);box-shadow:0 0 ' + orbT.shadow1Blur + ' ' + shadowC1 + ',0 0 ' + orbT.shadow2Blur + ' ' + shadowC2 + '"></div>' +
+    '<div style="display:flex;align-items:center;justify-content:center;color:' + symC + ';-webkit-mask:linear-gradient(' + orbT.symMaskAngle + ',' + orbT.symMaskCutoff + ',transparent 100%);mask:linear-gradient(' + orbT.symMaskAngle + ',' + orbT.symMaskCutoff + ',transparent 100%)">' + svgInner + '</div>';
   return box;
 }
 
@@ -268,13 +269,14 @@ export function launchFocusedCard(): void {
 
   // 四角装饰框颜色 — 与卡片左边框渐变的顶点同色
   const [triPrev, triMain, triNext] = getTriple(_focusIndex, 1);
-  const tlDim = triPrev.replace(/,\s*1\)$/, ',0.5)');
+  const tlColor = triPrev.replace(/,\s*1\)$/, ',' + orbT.tlAlpha + ')');
 
   // 四角光球 — 置于顶层（类似主光球在面板之上的逻辑）
-  const cornerSize = 26;
-  const cornerOff = -13;
-  const rightOff = cornerOff + 1;
-  const bottomOff = cornerOff - 1;
+  const cornerSize = orbT.size;
+  const cornerOff = orbT.cornerOff;
+  const rightOff = cornerOff + orbT.rightOffAdj;
+  const bottomOff = cornerOff + orbT.bottomOffAdj;
+  const s = orbT.symScale, c = 6 * (1 - s), sh = orbT.symShift;
 
   // 毛玻璃背景层（在内容之下）
   const cardBg = document.createElement('div');
@@ -304,14 +306,14 @@ export function launchFocusedCard(): void {
   el.appendChild(content);
 
   // 四角光球置于顶层（浮卡内容之上，与主光球在面板之上的逻辑一致）
-  el.appendChild(createDecoratedCorner(cornerOff, cornerOff, cornerSize, cornerSize, tlDim,
-    '<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(-0.52,-0.52) scale(0.92)"><path d="M6,10 L6,2 M6,2 L3,5 M6,2 L9,5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>'));
+  el.appendChild(createDecoratedCorner(cornerOff, cornerOff, cornerSize, cornerSize, tlColor,
+    `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c-sh},${c-sh}) scale(${s})"><path d="M6,10 L6,2 M6,2 L3,5 M6,2 L9,5" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`));
   el.appendChild(createDecoratedCorner(FLOATING_CARD_W - rightOff - cornerSize, cornerOff, cornerSize, cornerSize, triMain,
-    '<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(1.48,-0.52) scale(0.92)"><line x1="4" y1="2" x2="10" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></g></svg>'));
+    `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c+sh},${c-sh}) scale(${s})"><line x1="4" y1="2" x2="10" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/></g></svg>`));
   el.appendChild(createDecoratedCorner(cornerOff, FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, triMain,
-    '<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(-0.52,1.48) scale(0.92)"><path d="M6,2 L6,10 M6,10 L3,7 M6,10 L9,7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>'));
+    `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c-sh},${c+sh}) scale(${s})"><path d="M6,2 L6,10 M6,10 L3,7 M6,10 L9,7" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`));
   el.appendChild(createDecoratedCorner(FLOATING_CARD_W - rightOff - cornerSize, FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, triNext,
-    '<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(1.48,1.48) scale(0.92)"><path d="M6,2 L6,10 M2,6 L10,6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>'));
+    `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c+sh},${c+sh}) scale(${s})"><path d="M6,2 L6,10 M2,6 L10,6" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`));
 
   // 浮卡样式（毛玻璃移至 cardBg 子层）
   el.style.cssText = [
