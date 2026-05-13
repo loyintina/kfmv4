@@ -80,6 +80,10 @@ let _scrollStartFocus = 0;
 let _tl: AnimTimeline | null = null;
 let _floatingCardEl: HTMLElement | null = null;  // 浮卡（从卡片堆发射到中央）
 
+// 浮卡状态机：none → launching → active → dismissing → none
+type FloatingState = 'none' | 'launching' | 'active' | 'dismissing';
+let _floatingState: FloatingState = 'none';
+
 // ========== DOM 构建 ==========
 
 
@@ -217,7 +221,7 @@ const FLOATING_CARD_H = 68;
 /** 创建四角装饰框 — 不透明彩色边框 + 中心符号 */
 function createDecoratedCorner(
   x: number, y: number, w: number, h: number,
-  color: string, svgInner: string, onClick?: () => void,
+  color: string, svgInner: string,
 ): HTMLElement {
   const box = document.createElement('div');
   box.style.cssText = [
@@ -229,11 +233,9 @@ function createDecoratedCorner(
     'display:flex',
     'align-items:center',
     'justify-content:center',
-    onClick ? 'pointer-events:auto' : 'pointer-events:none',
-    onClick ? 'cursor:pointer' : '',
-  ].filter(Boolean).join(';');
+    'pointer-events:none',
+  ].join(';');
   // 从 rgba(r,g,b,alpha) 中提取 RGB 分量
-  if (onClick) box.addEventListener('click', onClick);
   const m = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
   const glowC = m ? 'rgba(' + m[1] + ',' + m[2] + ',' + m[3] + ',' + orbT.glowCenterAlpha + ')' : color;
   const glowM = m ? 'rgba(' + m[1] + ',' + m[2] + ',' + m[3] + ',' + orbT.glowMidAlpha + ')' : color;
@@ -248,10 +250,33 @@ function createDecoratedCorner(
   return box;
 }
 
+/** 卡片堆反馈：随机拉出一段距离后弹回 */
+function _animateStackPullFeedback(): void {
+  for (let i = 0; i < _cardEls.length; i++) {
+    const el = _cardEls[i];
+    const origX = i === _focusIndex ? -28 : 0;
+    const pullDist = -(Math.random() * 10 + 5);
+    const delay = Math.random() * 0.15;
+    anim.to(el, {
+      x: origX + pullDist,
+      duration: 0.2,
+      delay: delay,
+      ease: 'power2.out',
+      onComplete: () => {
+        anim.to(el, { x: origX, duration: 0.25, ease: 'back.out(1.2)' });
+      },
+    });
+  }
+}
+
 /** 发射聚焦卡片到屏幕中央成为浮卡 */
 export function launchFocusedCard(): void {
-  // 如果已有浮卡，先移除
-  dismissFloatingCard();
+  // 状态机守卫
+  if (_floatingState !== 'none') return;
+  _floatingState = 'launching';
+
+  // 卡片堆反馈：随机拉出后弹回
+  _animateStackPullFeedback();
 
   const focusedCard = _cardEls[_focusIndex];
   if (!focusedCard) return;
@@ -310,9 +335,12 @@ export function launchFocusedCard(): void {
   // 四角光球置于顶层（浮卡内容之上，与主光球在面板之上的逻辑一致）
   el.appendChild(createDecoratedCorner(cornerOff, cornerOff, cornerSize, cornerSize, tlColor,
     `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c-sh},${c-sh}) scale(${s})"><path d="M6,10 L6,2 M6,2 L3,5 M6,2 L9,5" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`));
-  el.appendChild(createDecoratedCorner(FLOATING_CARD_W - rightOff - cornerSize, cornerOff, cornerSize, cornerSize, triMain,
-    `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c+sh},${c-sh}) scale(${s})"><line x1="4" y1="2" x2="10" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/></g></svg>`,
-    dismissFloatingCardAnimated));
+  const trOrb = createDecoratedCorner(FLOATING_CARD_W - rightOff - cornerSize, cornerOff, cornerSize, cornerSize, triMain,
+    `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c+sh},${c-sh}) scale(${s})"><line x1="4" y1="2" x2="10" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/></g></svg>`);
+  trOrb.style.pointerEvents = 'auto';
+  trOrb.style.cursor = 'pointer';
+  trOrb.addEventListener('click', () => dismissFloatingCard(true));
+  el.appendChild(trOrb);
   el.appendChild(createDecoratedCorner(cornerOff, FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, triMain,
     `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c-sh},${c+sh}) scale(${s})"><path d="M6,2 L6,10 M6,10 L3,7 M6,10 L9,7" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`));
   el.appendChild(createDecoratedCorner(FLOATING_CARD_W - rightOff - cornerSize, FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, triNext,
@@ -345,38 +373,34 @@ export function launchFocusedCard(): void {
     scale: 1,
     duration: 0.4,
     ease: 'back.out(1.3)',
+    onComplete: () => { _floatingState = 'active'; },
   });
 }
 
-/** 销毁浮卡（立即） */
-export function dismissFloatingCard(): void {
-  if (_floatingCardEl) {
-    anim.killTweensOf(_floatingCardEl);
-    _floatingCardEl.remove();
-    _floatingCardEl = null;
-  }
-}
-
-/** 销毁浮卡（微膨胀→收缩消失动画） */
-function dismissFloatingCardAnimated(): void {
+/** 销毁浮卡（animated=true 时播放微膨胀→收缩消失动画） */
+export function dismissFloatingCard(animated?: boolean): void {
   const el = _floatingCardEl;
-  if (!el) return;
+  if (!el || _floatingState === 'none') return;
   anim.killTweensOf(el);
-  const tl = anim.timeline({
-    onComplete: () => {
-      if (_floatingCardEl === el) {
-        _floatingCardEl = null;
-        el.remove();
-      }
-    },
-  });
-  tl.to(el, { scale: 1.08, duration: 0.1, ease: 'power2.out' });
-  tl.to(el, { scale: 0, duration: 0.2, ease: 'power3.in' });
+  if (animated) {
+    _floatingState = 'dismissing';
+    const tl = anim.timeline({
+      onComplete: () => {
+        if (_floatingCardEl === el) {
+          _floatingCardEl = null; _floatingState = 'none'; el.remove();
+        }
+      },
+    });
+    tl.to(el, { scale: 1.08, duration: 0.1, ease: 'power2.out' });
+    tl.to(el, { scale: 0, duration: 0.2, ease: 'power3.in' });
+  } else {
+    _floatingCardEl = null; _floatingState = 'none'; el.remove();
+  }
 }
 
 /** 是否有浮卡 */
 export function hasFloatingCard(): boolean {
-  return _floatingCardEl !== null;
+  return _floatingState !== 'none';
 }
 
 export function openCardStack(): void {
@@ -437,7 +461,7 @@ export function closeCardStack(): void {
   if (_state === 'closed' || _state === 'closing') return;
 
   // 关闭时销毁浮卡（带动画）
-  dismissFloatingCardAnimated();
+  dismissFloatingCard(true);
 
   // 如果正在打开中 → reverse 回去
   if (_state === 'opening' && _tl) {

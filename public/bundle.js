@@ -4809,6 +4809,7 @@
   var _scrollStartFocus = 0;
   var _tl = null;
   var _floatingCardEl = null;
+  var _floatingState = "none";
   function createCard(index) {
     const card = CARDS[index];
     const color = CARD_COLORS[index];
@@ -4917,7 +4918,7 @@
   }
   var FLOATING_CARD_W = 155;
   var FLOATING_CARD_H = 68;
-  function createDecoratedCorner(x, y, w, h, color, svgInner, onClick) {
+  function createDecoratedCorner(x, y, w, h, color, svgInner) {
     const box = document.createElement("div");
     box.style.cssText = [
       "position:absolute",
@@ -4928,10 +4929,8 @@
       "display:flex",
       "align-items:center",
       "justify-content:center",
-      onClick ? "pointer-events:auto" : "pointer-events:none",
-      onClick ? "cursor:pointer" : ""
-    ].filter(Boolean).join(";");
-    if (onClick) box.addEventListener("click", onClick);
+      "pointer-events:none"
+    ].join(";");
     const m = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
     const glowC = m ? "rgba(" + m[1] + "," + m[2] + "," + m[3] + "," + orbT.glowCenterAlpha + ")" : color;
     const glowM = m ? "rgba(" + m[1] + "," + m[2] + "," + m[3] + "," + orbT.glowMidAlpha + ")" : color;
@@ -4942,9 +4941,28 @@
     box.innerHTML = '<div style="position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at ' + orbT.glowPos + "," + glowC + "," + glowM + ",transparent 70%);box-shadow:0 0 " + orbT.shadow1Blur + " " + shadowC1 + ",0 0 " + orbT.shadow2Blur + " " + shadowC2 + '"></div><div style="display:flex;align-items:center;justify-content:center;color:' + symC + ";-webkit-mask:linear-gradient(" + orbT.symMaskAngle + "," + orbT.symMaskCutoff + ",transparent 100%);mask:linear-gradient(" + orbT.symMaskAngle + "," + orbT.symMaskCutoff + ',transparent 100%)">' + svgInner + "</div>";
     return box;
   }
+  function _animateStackPullFeedback() {
+    for (let i = 0; i < _cardEls.length; i++) {
+      const el = _cardEls[i];
+      const origX = i === _focusIndex ? -28 : 0;
+      const pullDist = -(Math.random() * 10 + 5);
+      const delay = Math.random() * 0.15;
+      anim.to(el, {
+        x: origX + pullDist,
+        duration: 0.2,
+        delay,
+        ease: "power2.out",
+        onComplete: () => {
+          anim.to(el, { x: origX, duration: 0.25, ease: "back.out(1.2)" });
+        }
+      });
+    }
+  }
   function launchFocusedCard() {
     var _a, _b;
-    dismissFloatingCard();
+    if (_floatingState !== "none") return;
+    _floatingState = "launching";
+    _animateStackPullFeedback();
     const focusedCard = _cardEls[_focusIndex];
     if (!focusedCard) return;
     const cardRect = focusedCard.getBoundingClientRect();
@@ -4992,15 +5010,18 @@
       tlColor,
       `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c - sh},${c - sh}) scale(${s})"><path d="M6,10 L6,2 M6,2 L3,5 M6,2 L9,5" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`
     ));
-    el.appendChild(createDecoratedCorner(
+    const trOrb = createDecoratedCorner(
       FLOATING_CARD_W - rightOff - cornerSize,
       cornerOff,
       cornerSize,
       cornerSize,
       triMain,
-      `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c + sh},${c - sh}) scale(${s})"><line x1="4" y1="2" x2="10" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/></g></svg>`,
-      dismissFloatingCardAnimated
-    ));
+      `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c + sh},${c - sh}) scale(${s})"><line x1="4" y1="2" x2="10" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/></g></svg>`
+    );
+    trOrb.style.pointerEvents = "auto";
+    trOrb.style.cursor = "pointer";
+    trOrb.addEventListener("click", () => dismissFloatingCard(true));
+    el.appendChild(trOrb);
     el.appendChild(createDecoratedCorner(
       cornerOff,
       FLOATING_CARD_H - bottomOff - cornerSize,
@@ -5037,30 +5058,34 @@
       top: targetTop,
       scale: 1,
       duration: 0.4,
-      ease: "back.out(1.3)"
-    });
-  }
-  function dismissFloatingCard() {
-    if (_floatingCardEl) {
-      anim.killTweensOf(_floatingCardEl);
-      _floatingCardEl.remove();
-      _floatingCardEl = null;
-    }
-  }
-  function dismissFloatingCardAnimated() {
-    const el = _floatingCardEl;
-    if (!el) return;
-    anim.killTweensOf(el);
-    const tl = anim.timeline({
+      ease: "back.out(1.3)",
       onComplete: () => {
-        if (_floatingCardEl === el) {
-          _floatingCardEl = null;
-          el.remove();
-        }
+        _floatingState = "active";
       }
     });
-    tl.to(el, { scale: 1.08, duration: 0.1, ease: "power2.out" });
-    tl.to(el, { scale: 0, duration: 0.2, ease: "power3.in" });
+  }
+  function dismissFloatingCard(animated) {
+    const el = _floatingCardEl;
+    if (!el || _floatingState === "none") return;
+    anim.killTweensOf(el);
+    if (animated) {
+      _floatingState = "dismissing";
+      const tl = anim.timeline({
+        onComplete: () => {
+          if (_floatingCardEl === el) {
+            _floatingCardEl = null;
+            _floatingState = "none";
+            el.remove();
+          }
+        }
+      });
+      tl.to(el, { scale: 1.08, duration: 0.1, ease: "power2.out" });
+      tl.to(el, { scale: 0, duration: 0.2, ease: "power3.in" });
+    } else {
+      _floatingCardEl = null;
+      _floatingState = "none";
+      el.remove();
+    }
   }
   function openCardStack() {
     if (_state === "open" || _state === "opening") return;
@@ -5118,7 +5143,7 @@
   }
   function closeCardStack() {
     if (_state === "closed" || _state === "closing") return;
-    dismissFloatingCardAnimated();
+    dismissFloatingCard(true);
     if (_state === "opening" && _tl) {
       _state = "closing";
       _tl.reverse();
