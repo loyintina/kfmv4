@@ -77,6 +77,7 @@ let _focusIndex = 0;
 let _cardEls: HTMLElement[] = [];
 let _scrollStartFocus = 0;
 let _tl: AnimTimeline | null = null;
+let _floatingCardEl: HTMLElement | null = null;  // 浮卡（从卡片堆发射到中央）
 
 // ========== DOM 构建 ==========
 
@@ -207,7 +208,118 @@ function randomizeCards(): void {
   }
 }
 
-// ========== 公开 API ==========
+// ========== 浮卡（从卡片堆发射到中央） ==========
+
+const FLOATING_CARD_W = 280;
+const FLOATING_CARD_H = 280;
+
+/** 构建浮卡的四个角装饰框 */
+function createCornerBox(x: number, y: number, w: number, h: number, color: string): HTMLElement {
+  const box = document.createElement('div');
+  box.style.cssText = [
+    'position:absolute',
+    'left:' + x + 'px',
+    'top:' + y + 'px',
+    'width:' + w + 'px',
+    'height:' + h + 'px',
+    'border:1px solid ' + color,
+    'border-radius:2px',
+    'opacity:0.5',
+    'pointer-events:none',
+  ].join(';');
+  return box;
+}
+
+/** 发射聚焦卡片到屏幕中央成为浮卡 */
+export function launchFocusedCard(): void {
+  // 如果已有浮卡，先移除
+  dismissFloatingCard();
+
+  const focusedCard = _cardEls[_focusIndex];
+  if (!focusedCard) return;
+
+  // 获取聚焦卡当前位置（作为动画起点）
+  const cardRect = focusedCard.getBoundingClientRect();
+  const color = CARD_COLORS[_focusIndex];
+
+  // 创建浮卡容器
+  const el = document.createElement('div');
+  el.className = 'floating-card';
+  el.dataset.index = String(_focusIndex);
+
+  // 克隆卡片内容
+  const iconClone = focusedCard.querySelector('.stack-card-icon')?.cloneNode(true) as HTMLElement;
+  const infoClone = focusedCard.querySelector('.stack-card-info')?.cloneNode(true) as HTMLElement;
+
+  // 四角装饰框颜色
+  const cornerColor = hexToRgba(color.border, 0.4);
+
+  el.innerHTML = '';
+  // 四个角框
+  const cornerSize = 16;
+  const margin = 8;
+  el.appendChild(createCornerBox(margin, margin, cornerSize, cornerSize, cornerColor));           // 左上
+  el.appendChild(createCornerBox(FLOATING_CARD_W - margin - cornerSize, margin, cornerSize, cornerSize, cornerColor)); // 右上
+  el.appendChild(createCornerBox(margin, FLOATING_CARD_H - margin - cornerSize, cornerSize, cornerSize, cornerColor)); // 左下
+  el.appendChild(createCornerBox(FLOATING_CARD_W - margin - cornerSize, FLOATING_CARD_H - margin - cornerSize, cornerSize, cornerSize, cornerColor)); // 右下
+  // 数字+文字内容（居中）
+  const content = document.createElement('div');
+  content.style.cssText = 'position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:8px;pointer-events:none';
+  if (iconClone) {
+    iconClone.style.width = '36px';
+    iconClone.style.height = '36px';
+    iconClone.style.fontSize = '16px';
+    content.appendChild(iconClone);
+  }
+  if (infoClone) content.appendChild(infoClone);
+  el.appendChild(content);
+
+  // 浮卡样式
+  el.style.cssText = [
+    'position:fixed',
+    'left:' + cardRect.left + 'px',
+    'top:' + cardRect.top + 'px',
+    'width:' + FLOATING_CARD_W + 'px',
+    'height:' + FLOATING_CARD_H + 'px',
+    'border-radius:16px',
+    'background:transparent',
+    'pointer-events:auto',
+    'z-index:300',
+    'opacity:0',
+    'transform:scale(0.8)',
+  ].join(';');
+
+  document.body.appendChild(el);
+  _floatingCardEl = el;
+
+  // 计算目标位置：屏幕居中
+  const targetLeft = Math.round((window.innerWidth - FLOATING_CARD_W) / 2);
+  const targetTop = Math.round((window.innerHeight - FLOATING_CARD_H) / 2);
+
+  // GSAP 飞行动画
+  anim.to(el, {
+    left: targetLeft,
+    top: targetTop,
+    opacity: 1,
+    scale: 1,
+    duration: 0.4,
+    ease: 'back.out(1.3)',
+  });
+}
+
+/** 销毁浮卡 */
+export function dismissFloatingCard(): void {
+  if (_floatingCardEl) {
+    anim.killTweensOf(_floatingCardEl);
+    _floatingCardEl.remove();
+    _floatingCardEl = null;
+  }
+}
+
+/** 是否有浮卡 */
+export function hasFloatingCard(): boolean {
+  return _floatingCardEl !== null;
+}
 
 export function openCardStack(): void {
   // 状态机守卫
@@ -265,6 +377,9 @@ export function openCardStack(): void {
 
 export function closeCardStack(): void {
   if (_state === 'closed' || _state === 'closing') return;
+
+  // 关闭时销毁浮卡
+  dismissFloatingCard();
 
   // 如果正在打开中 → reverse 回去
   if (_state === 'opening' && _tl) {
@@ -329,7 +444,9 @@ export function initCardStack(): void {
       }
 
       if (_axisLock === 'horizontal') {
-        // 右滑（水平主导）：关闭卡片堆
+        // 左滑：发射聚焦卡到中央成为浮卡
+        if (dx < -50) { launchFocusedCard(); return; }
+        // 右滑：关闭卡片堆
         if (dx > 50) { closeCardStack(); return; }
       } else if (_axisLock === 'vertical') {
         // 上下滑动：连续平滑切卡

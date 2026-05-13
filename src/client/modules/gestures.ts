@@ -12,7 +12,7 @@
  *  - 一次手势只触发一个动作（_actionTaken 锁），防止竞态冒泡
  */
 import { openSidebar, closeSidebar } from './ui.js';
-import { openCardStack, closeCardStack, isCardStackOpen } from './card-stack.js';
+import { openCardStack, isCardStackOpen } from './card-stack.js';
 import { gestures } from './gesture-registry.js';
 import { DOM } from "./dom-refs.js";
 
@@ -52,9 +52,6 @@ export function initGestures(): void {
       if (_axisLock !== 'horizontal') return;
 
       switch (_snapshot) {
-        case 'cardstack-open':
-          if (dx > 50) { closeCardStack(); _actionTaken = true; }
-          break;
         case 'sidebar-open':
           if (dx < -60) { closeSidebar(); _actionTaken = true; }
           break;

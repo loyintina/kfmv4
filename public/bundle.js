@@ -4786,6 +4786,7 @@
   var _cardEls = [];
   var _scrollStartFocus = 0;
   var _tl = null;
+  var _floatingCardEl = null;
   function createCard(index) {
     const card = CARDS[index];
     const color = CARD_COLORS[index];
@@ -4892,6 +4893,86 @@
       el.style.top = Math.round(window.innerHeight * STACK_TOP_RATIO + i * CARD_GAP) + "px";
     }
   }
+  var FLOATING_CARD_W = 280;
+  var FLOATING_CARD_H = 280;
+  function createCornerBox(x, y, w, h, color) {
+    const box = document.createElement("div");
+    box.style.cssText = [
+      "position:absolute",
+      "left:" + x + "px",
+      "top:" + y + "px",
+      "width:" + w + "px",
+      "height:" + h + "px",
+      "border:1px solid " + color,
+      "border-radius:2px",
+      "opacity:0.5",
+      "pointer-events:none"
+    ].join(";");
+    return box;
+  }
+  function launchFocusedCard() {
+    var _a, _b;
+    dismissFloatingCard();
+    const focusedCard = _cardEls[_focusIndex];
+    if (!focusedCard) return;
+    const cardRect = focusedCard.getBoundingClientRect();
+    const color = CARD_COLORS[_focusIndex];
+    const el = document.createElement("div");
+    el.className = "floating-card";
+    el.dataset.index = String(_focusIndex);
+    const iconClone = (_a = focusedCard.querySelector(".stack-card-icon")) == null ? void 0 : _a.cloneNode(true);
+    const infoClone = (_b = focusedCard.querySelector(".stack-card-info")) == null ? void 0 : _b.cloneNode(true);
+    const cornerColor = hexToRgba(color.border, 0.4);
+    el.innerHTML = "";
+    const cornerSize = 16;
+    const margin = 8;
+    el.appendChild(createCornerBox(margin, margin, cornerSize, cornerSize, cornerColor));
+    el.appendChild(createCornerBox(FLOATING_CARD_W - margin - cornerSize, margin, cornerSize, cornerSize, cornerColor));
+    el.appendChild(createCornerBox(margin, FLOATING_CARD_H - margin - cornerSize, cornerSize, cornerSize, cornerColor));
+    el.appendChild(createCornerBox(FLOATING_CARD_W - margin - cornerSize, FLOATING_CARD_H - margin - cornerSize, cornerSize, cornerSize, cornerColor));
+    const content = document.createElement("div");
+    content.style.cssText = "position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:8px;pointer-events:none";
+    if (iconClone) {
+      iconClone.style.width = "36px";
+      iconClone.style.height = "36px";
+      iconClone.style.fontSize = "16px";
+      content.appendChild(iconClone);
+    }
+    if (infoClone) content.appendChild(infoClone);
+    el.appendChild(content);
+    el.style.cssText = [
+      "position:fixed",
+      "left:" + cardRect.left + "px",
+      "top:" + cardRect.top + "px",
+      "width:" + FLOATING_CARD_W + "px",
+      "height:" + FLOATING_CARD_H + "px",
+      "border-radius:16px",
+      "background:transparent",
+      "pointer-events:auto",
+      "z-index:300",
+      "opacity:0",
+      "transform:scale(0.8)"
+    ].join(";");
+    document.body.appendChild(el);
+    _floatingCardEl = el;
+    const targetLeft = Math.round((window.innerWidth - FLOATING_CARD_W) / 2);
+    const targetTop = Math.round((window.innerHeight - FLOATING_CARD_H) / 2);
+    anim.to(el, {
+      left: targetLeft,
+      top: targetTop,
+      opacity: 1,
+      scale: 1,
+      duration: 0.4,
+      ease: "back.out(1.3)"
+    });
+  }
+  function dismissFloatingCard() {
+    if (_floatingCardEl) {
+      anim.killTweensOf(_floatingCardEl);
+      _floatingCardEl.remove();
+      _floatingCardEl = null;
+    }
+  }
   function openCardStack() {
     if (_state === "open" || _state === "opening") return;
     if (_state === "closing" && _tl) {
@@ -4996,6 +5077,10 @@
           _axisLock = Math.abs(dx) > Math.abs(dy) ? "horizontal" : "vertical";
         }
         if (_axisLock === "horizontal") {
+          if (dx < -50) {
+            launchFocusedCard();
+            return;
+          }
           if (dx > 50) {
             closeCardStack();
             return;
@@ -12205,12 +12290,6 @@
         }
         if (_axisLock !== "horizontal") return;
         switch (_snapshot) {
-          case "cardstack-open":
-            if (dx > 50) {
-              closeCardStack();
-              _actionTaken = true;
-            }
-            break;
           case "sidebar-open":
             if (dx < -60) {
               closeSidebar();
