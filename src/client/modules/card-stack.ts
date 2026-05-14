@@ -70,6 +70,17 @@ const CARD_HEIGHT = theme.stack.cardHeight;
 /** 堆叠起始位置（距顶部比例） */
 const STACK_TOP_RATIO = 0.12;
 
+// ========== z-index 层级体系（从低到高） ==========
+// 中央网格线       → z:0      (Canvas Box 默认绘制)
+
+// 浮卡(含角光球) → z:50+    (每张递增，用 _nextFloatingZ 计算)
+// 当前卡片堆       → z:150~156 (Z_STACK_BASE + index，7张)
+// 光球面板         → z:205    (orb.ts 浅紫色 AI 聊天面板)
+// 主光球             → z:210    (orb.ts)
+// 召唤按钮           → z:230    (base.css, 左上/右上)
+// 调试面板         → z:295~300 (debug-panel.ts)
+const Z_FLOATING_BASE = 50;
+const Z_STACK_BASE = 150;
 // ========== 状态 ==========
 // 状态机：closed → opening → open → closing → closed
 type StackState = 'closed' | 'opening' | 'open' | 'closing';
@@ -78,11 +89,17 @@ let _focusIndex = 0;
 let _cardEls: HTMLElement[] = [];
 let _scrollStartFocus = 0;
 let _tl: AnimTimeline | null = null;
-let _floatingCardEl: HTMLElement | null = null;  // 浮卡（从卡片堆发射到中央）
-
-// 浮卡状态机：none → launching → active → dismissing → none
-type FloatingState = 'none' | 'launching' | 'active' | 'dismissing';
-let _floatingState: FloatingState = 'none';
+// 浮卡叠层：同时可有多张浮卡，通过左上/左下光球调节遮盖关系
+interface FloatingCardItem {
+  el: HTMLElement;
+  sourceIndex: number;
+  zIndex: number;
+  state: 'launching' | 'active' | 'dismissing';
+  tlOrb: HTMLElement;   // 上移一层按钮
+  blOrb: HTMLElement;   // 下移一层按钮
+}
+let _floatingCards: FloatingCardItem[] = [];
+let _nextFloatingZ = Z_FLOATING_BASE;
 
 // ========== DOM 构建 ==========
 
@@ -129,7 +146,7 @@ function createCard(index: number): HTMLElement {
     'box-shadow:' + shadow,
     'transform:rotate(0deg)',
     'cursor:pointer',
-    'z-index:' + (10 + index),
+    'z-index:' + (Z_STACK_BASE + index),
     'opacity:1',
     'user-select:none',
     '-webkit-user-select:none',
@@ -269,12 +286,41 @@ function _animateStackPullFeedback(): void {
   }
 }
 
+// ========== 浮卡叠层辅助 ==========
+
+/** 查找 z-index 比指定项目高的邻居（上一层） */
+function _cardAbove(item: FloatingCardItem): FloatingCardItem | null {
+  let best: FloatingCardItem | null = null;
+  for (const c of _floatingCards) {
+    if (c.zIndex > item.zIndex && (!best || c.zIndex < best.zIndex))
+      best = c;
+  }
+  return best;
+}
+
+/** 查找 z-index 比指定项目低的邻居（下一层） */
+function _cardBelow(item: FloatingCardItem): FloatingCardItem | null {
+  let best: FloatingCardItem | null = null;
+  for (const c of _floatingCards) {
+    if (c.zIndex < item.zIndex && (!best || c.zIndex > best.zIndex))
+      best = c;
+  }
+  return best;
+}
+
+/** 交换两张浮卡的 z-index */
+function _swapZIndex(a: FloatingCardItem, b: FloatingCardItem): void {
+  const tmp = a.zIndex;
+  a.zIndex = b.zIndex;
+  b.zIndex = tmp;
+  a.el.style.zIndex = String(a.zIndex);
+  b.el.style.zIndex = String(b.zIndex);
+}
+
+
+
 /** 发射聚焦卡片到屏幕中央成为浮卡 */
 export function launchFocusedCard(): void {
-  // 状态机守卫
-  if (_floatingState !== 'none') return;
-  _floatingState = 'launching';
-
   // 卡片堆反馈：随机拉出后弹回
   _animateStackPullFeedback();
 
@@ -298,7 +344,7 @@ export function launchFocusedCard(): void {
   const [triPrev, triMain, triNext] = getTriple(_focusIndex, 1);
   const tlColor = triPrev.replace(/,\s*1\)$/, ',' + orbT.tlAlpha + ')');
 
-  // 四角光球 — 置于顶层（类似主光球在面板之上的逻辑）
+  // 四角光球尺寸参数
   const cornerSize = orbT.size;
   const cornerOff = orbT.cornerOff;
   const rightOff = cornerOff + orbT.rightOffAdj;
@@ -332,21 +378,63 @@ export function launchFocusedCard(): void {
   if (infoClone) content.appendChild(infoClone);
   el.appendChild(content);
 
-  // 四角光球置于顶层（浮卡内容之上，与主光球在面板之上的逻辑一致）
-  el.appendChild(createDecoratedCorner(cornerOff, cornerOff, cornerSize, cornerSize, tlColor,
-    `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c-sh},${c-sh}) scale(${s})"><path d="M6,10 L6,2 M6,2 L3,5 M6,2 L9,5" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`));
+  // 创建 FloatingCardItem
+  const zIndex = _nextFloatingZ++;
+  const item: FloatingCardItem = {
+    el, sourceIndex: _focusIndex, zIndex, state: 'launching',
+    tlOrb: null as unknown as HTMLElement,
+    blOrb: null as unknown as HTMLElement,
+  };
+
+  // TL 光球 — 上移一层
+  const tlOrb = createDecoratedCorner(cornerOff, cornerOff, cornerSize, cornerSize, tlColor,
+    `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c-sh},${c-sh}) scale(${s})"><path d="M6,10 L6,2 M6,2 L3,5 M6,2 L9,5" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`);
+  tlOrb.style.pointerEvents = 'auto';
+  tlOrb.style.cursor = 'pointer';
+  tlOrb.title = '\u4e0a\u79fb\u4e00\u5c42';
+  tlOrb.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (item.state !== 'active') return;
+    const above = _cardAbove(item);
+    if (!above) return;
+    _swapZIndex(item, above);
+  });
+  el.appendChild(tlOrb);
+  item.tlOrb = tlOrb;
+
+  // TR 光球 — 关闭
   const trOrb = createDecoratedCorner(FLOATING_CARD_W - rightOff - cornerSize, cornerOff, cornerSize, cornerSize, triMain,
     `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c+sh},${c-sh}) scale(${s})"><line x1="4" y1="2" x2="10" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/></g></svg>`);
   trOrb.style.pointerEvents = 'auto';
   trOrb.style.cursor = 'pointer';
-  trOrb.addEventListener('click', () => dismissFloatingCard(true));
+  trOrb.title = '\u5173\u95ed';
+  trOrb.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dismissFloatingCard(true, el);
+  });
   el.appendChild(trOrb);
-  el.appendChild(createDecoratedCorner(cornerOff, FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, triMain,
-    `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c-sh},${c+sh}) scale(${s})"><path d="M6,2 L6,10 M6,10 L3,7 M6,10 L9,7" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`));
+
+  // BL 光球 — 下移一层
+  const blOrb = createDecoratedCorner(cornerOff, FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, triMain,
+    `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c-sh},${c+sh}) scale(${s})"><path d="M6,2 L6,10 M6,10 L3,7 M6,10 L9,7" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`);
+  blOrb.style.pointerEvents = 'auto';
+  blOrb.style.cursor = 'pointer';
+  blOrb.title = '\u4e0b\u79fb\u4e00\u5c42';
+  blOrb.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (item.state !== 'active') return;
+    const below = _cardBelow(item);
+    if (!below) return;
+    _swapZIndex(item, below);
+  });
+  el.appendChild(blOrb);
+  item.blOrb = blOrb;
+
+  // BR 光球 — 纯装饰
   el.appendChild(createDecoratedCorner(FLOATING_CARD_W - rightOff - cornerSize, FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, triNext,
     `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c+sh},${c+sh}) scale(${s})"><path d="M6,2 L6,10 M2,6 L10,6" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`));
 
-  // 浮卡样式（毛玻璃移至 cardBg 子层）
+  // 浮卡样式
   el.style.cssText = [
     'position:fixed',
     'left:' + cardRect.left + 'px',
@@ -354,12 +442,12 @@ export function launchFocusedCard(): void {
     'width:' + FLOATING_CARD_W + 'px',
     'height:' + FLOATING_CARD_H + 'px',
     'pointer-events:auto',
-    'z-index:300',
+    'z-index:' + zIndex,
     'opacity:1',
   ].join(';');
 
+  _floatingCards.push(item);
   document.body.appendChild(el);
-  _floatingCardEl = el;
 
   // 计算目标位置：屏幕居中
   const targetLeft = Math.round((window.innerWidth - FLOATING_CARD_W) / 2);
@@ -373,36 +461,50 @@ export function launchFocusedCard(): void {
     scale: 1,
     duration: 0.4,
     ease: 'back.out(1.3)',
-    onComplete: () => { _floatingState = 'active'; },
+    onComplete: () => { item.state = 'active'; },
   });
 }
 
-/** 销毁浮卡（animated=true 时播放微膨胀→收缩消失动画） */
-export function dismissFloatingCard(animated?: boolean): void {
-  const el = _floatingCardEl;
-  if (!el || _floatingState === 'none') return;
+/** 销毁浮卡（有 sourceEl 时销毁特定卡片，否则销毁全部） */
+export function dismissFloatingCard(animated?: boolean, sourceEl?: HTMLElement): void {
+  if (sourceEl) {
+    for (const item of _floatingCards) {
+      if (item.el === sourceEl) {
+        if (item.state === 'dismissing') return;
+        _dismissOne(item, animated);
+        return;
+      }
+    }
+  } else {
+    for (const item of [..._floatingCards]) {
+      if (item.state !== 'dismissing') _dismissOne(item, animated);
+    }
+  }
+}
+
+function _dismissOne(item: FloatingCardItem, animated?: boolean): void {
+  const el = item.el;
+  item.state = 'dismissing';
   anim.killTweensOf(el);
   if (animated) {
-    _floatingState = 'dismissing';
     const tl = anim.timeline({
       onComplete: () => {
-        if (_floatingCardEl === el) {
-          _floatingCardEl = null; _floatingState = 'none'; el.remove();
-        }
+        _floatingCards = _floatingCards.filter(fi => fi !== item);
+        el.remove();
       },
     });
     tl.to(el, { scale: 1.08, duration: 0.1, ease: 'power2.out' });
     tl.to(el, { scale: 0, duration: 0.2, ease: 'power3.in' });
   } else {
-    _floatingCardEl = null; _floatingState = 'none'; el.remove();
+    _floatingCards = _floatingCards.filter(fi => fi !== item);
+    el.remove();
   }
 }
 
 /** 是否有浮卡 */
 export function hasFloatingCard(): boolean {
-  return _floatingState !== 'none';
+  return _floatingCards.length > 0;
 }
-
 export function openCardStack(): void {
   // 状态机守卫
   if (_state === 'open' || _state === 'opening') return;
@@ -509,6 +611,7 @@ export function initCardStack(): void {
   // 轴向锁：一次手势只处理一个方向，避免斜滑误触
   type _AxisLock = 'none' | 'horizontal' | 'vertical';
   let _axisLock: _AxisLock = 'none';
+  let _prevDx = 0;
 
   gestures.register({
     id: 'card-stack-global',
@@ -518,6 +621,7 @@ export function initCardStack(): void {
     onStart: () => {
       _scrollStartFocus = _focusIndex;
       _axisLock = 'none';
+      _prevDx = 0;
     },
     onMove: (e, dx, dy) => {
       // 锁定轴向：首次移动超过阈值时判定主导方向
@@ -526,10 +630,11 @@ export function initCardStack(): void {
       }
 
       if (_axisLock === 'horizontal') {
-        // 左滑：发射聚焦卡到中央成为浮卡
-        if (dx < -50) { launchFocusedCard(); return; }
-        // 右滑：关闭卡片堆
-        if (dx > 50) { closeCardStack(); return; }
+        // 阈值穿越：仅首次越过 -50 时发射，非每帧持续触发
+        if (dx < -50 && _prevDx >= -50) { _prevDx = dx; launchFocusedCard(); return; }
+        // 阈值穿越：仅首次越过 50 时关闭
+        if (dx > 50 && _prevDx <= 50) { _prevDx = dx; closeCardStack(); return; }
+        _prevDx = dx;
       } else if (_axisLock === 'vertical') {
         // 上下滑动：连续平滑切卡
         const offset = Math.round(-dy / CARD_GAP);

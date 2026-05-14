@@ -4803,13 +4803,15 @@
   var CARD_GAP = currentTheme.stack.cardGap;
   var CARD_HEIGHT = currentTheme.stack.cardHeight;
   var STACK_TOP_RATIO = 0.12;
+  var Z_FLOATING_BASE = 50;
+  var Z_STACK_BASE = 150;
   var _state = "closed";
   var _focusIndex = 0;
   var _cardEls = [];
   var _scrollStartFocus = 0;
   var _tl = null;
-  var _floatingCardEl = null;
-  var _floatingState = "none";
+  var _floatingCards = [];
+  var _nextFloatingZ = Z_FLOATING_BASE;
   function createCard(index) {
     const card = CARDS[index];
     const color = CARD_COLORS[index];
@@ -4843,7 +4845,7 @@
       "box-shadow:" + shadow,
       "transform:rotate(0deg)",
       "cursor:pointer",
-      "z-index:" + (10 + index),
+      "z-index:" + (Z_STACK_BASE + index),
       "opacity:1",
       "user-select:none",
       "-webkit-user-select:none"
@@ -4958,10 +4960,31 @@
       });
     }
   }
+  function _cardAbove(item) {
+    let best = null;
+    for (const c of _floatingCards) {
+      if (c.zIndex > item.zIndex && (!best || c.zIndex < best.zIndex))
+        best = c;
+    }
+    return best;
+  }
+  function _cardBelow(item) {
+    let best = null;
+    for (const c of _floatingCards) {
+      if (c.zIndex < item.zIndex && (!best || c.zIndex > best.zIndex))
+        best = c;
+    }
+    return best;
+  }
+  function _swapZIndex(a, b) {
+    const tmp = a.zIndex;
+    a.zIndex = b.zIndex;
+    b.zIndex = tmp;
+    a.el.style.zIndex = String(a.zIndex);
+    b.el.style.zIndex = String(b.zIndex);
+  }
   function launchFocusedCard() {
     var _a, _b;
-    if (_floatingState !== "none") return;
-    _floatingState = "launching";
     _animateStackPullFeedback();
     const focusedCard = _cardEls[_focusIndex];
     if (!focusedCard) return;
@@ -5002,14 +5025,35 @@
     }
     if (infoClone) content.appendChild(infoClone);
     el.appendChild(content);
-    el.appendChild(createDecoratedCorner(
+    const zIndex = _nextFloatingZ++;
+    const item = {
+      el,
+      sourceIndex: _focusIndex,
+      zIndex,
+      state: "launching",
+      tlOrb: null,
+      blOrb: null
+    };
+    const tlOrb = createDecoratedCorner(
       cornerOff,
       cornerOff,
       cornerSize,
       cornerSize,
       tlColor,
       `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c - sh},${c - sh}) scale(${s})"><path d="M6,10 L6,2 M6,2 L3,5 M6,2 L9,5" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`
-    ));
+    );
+    tlOrb.style.pointerEvents = "auto";
+    tlOrb.style.cursor = "pointer";
+    tlOrb.title = "\u4E0A\u79FB\u4E00\u5C42";
+    tlOrb.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (item.state !== "active") return;
+      const above = _cardAbove(item);
+      if (!above) return;
+      _swapZIndex(item, above);
+    });
+    el.appendChild(tlOrb);
+    item.tlOrb = tlOrb;
     const trOrb = createDecoratedCorner(
       FLOATING_CARD_W - rightOff - cornerSize,
       cornerOff,
@@ -5020,16 +5064,32 @@
     );
     trOrb.style.pointerEvents = "auto";
     trOrb.style.cursor = "pointer";
-    trOrb.addEventListener("click", () => dismissFloatingCard(true));
+    trOrb.title = "\u5173\u95ED";
+    trOrb.addEventListener("click", (e) => {
+      e.stopPropagation();
+      dismissFloatingCard(true, el);
+    });
     el.appendChild(trOrb);
-    el.appendChild(createDecoratedCorner(
+    const blOrb = createDecoratedCorner(
       cornerOff,
       FLOATING_CARD_H - bottomOff - cornerSize,
       cornerSize,
       cornerSize,
       triMain,
       `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c - sh},${c + sh}) scale(${s})"><path d="M6,2 L6,10 M6,10 L3,7 M6,10 L9,7" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`
-    ));
+    );
+    blOrb.style.pointerEvents = "auto";
+    blOrb.style.cursor = "pointer";
+    blOrb.title = "\u4E0B\u79FB\u4E00\u5C42";
+    blOrb.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (item.state !== "active") return;
+      const below = _cardBelow(item);
+      if (!below) return;
+      _swapZIndex(item, below);
+    });
+    el.appendChild(blOrb);
+    item.blOrb = blOrb;
     el.appendChild(createDecoratedCorner(
       FLOATING_CARD_W - rightOff - cornerSize,
       FLOATING_CARD_H - bottomOff - cornerSize,
@@ -5045,11 +5105,11 @@
       "width:" + FLOATING_CARD_W + "px",
       "height:" + FLOATING_CARD_H + "px",
       "pointer-events:auto",
-      "z-index:300",
+      "z-index:" + zIndex,
       "opacity:1"
     ].join(";");
+    _floatingCards.push(item);
     document.body.appendChild(el);
-    _floatingCardEl = el;
     const targetLeft = Math.round((window.innerWidth - FLOATING_CARD_W) / 2);
     const targetTop = Math.round((window.innerHeight - FLOATING_CARD_H) / 2);
     anim.set(el, { scale: 0.8 });
@@ -5060,30 +5120,40 @@
       duration: 0.4,
       ease: "back.out(1.3)",
       onComplete: () => {
-        _floatingState = "active";
+        item.state = "active";
       }
     });
   }
-  function dismissFloatingCard(animated) {
-    const el = _floatingCardEl;
-    if (!el || _floatingState === "none") return;
+  function dismissFloatingCard(animated, sourceEl) {
+    if (sourceEl) {
+      for (const item of _floatingCards) {
+        if (item.el === sourceEl) {
+          if (item.state === "dismissing") return;
+          _dismissOne(item, animated);
+          return;
+        }
+      }
+    } else {
+      for (const item of [..._floatingCards]) {
+        if (item.state !== "dismissing") _dismissOne(item, animated);
+      }
+    }
+  }
+  function _dismissOne(item, animated) {
+    const el = item.el;
+    item.state = "dismissing";
     anim.killTweensOf(el);
     if (animated) {
-      _floatingState = "dismissing";
       const tl = anim.timeline({
         onComplete: () => {
-          if (_floatingCardEl === el) {
-            _floatingCardEl = null;
-            _floatingState = "none";
-            el.remove();
-          }
+          _floatingCards = _floatingCards.filter((fi) => fi !== item);
+          el.remove();
         }
       });
       tl.to(el, { scale: 1.08, duration: 0.1, ease: "power2.out" });
       tl.to(el, { scale: 0, duration: 0.2, ease: "power3.in" });
     } else {
-      _floatingCardEl = null;
-      _floatingState = "none";
+      _floatingCards = _floatingCards.filter((fi) => fi !== item);
       el.remove();
     }
   }
@@ -5178,6 +5248,7 @@
   function initCardStack() {
     buildCards();
     let _axisLock = "none";
+    let _prevDx = 0;
     gestures.register({
       id: "card-stack-global",
       targetFilter: () => true,
@@ -5186,20 +5257,24 @@
       onStart: () => {
         _scrollStartFocus = _focusIndex;
         _axisLock = "none";
+        _prevDx = 0;
       },
       onMove: (e, dx, dy) => {
         if (_axisLock === "none" && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
           _axisLock = Math.abs(dx) > Math.abs(dy) ? "horizontal" : "vertical";
         }
         if (_axisLock === "horizontal") {
-          if (dx < -50) {
+          if (dx < -50 && _prevDx >= -50) {
+            _prevDx = dx;
             launchFocusedCard();
             return;
           }
-          if (dx > 50) {
+          if (dx > 50 && _prevDx <= 50) {
+            _prevDx = dx;
             closeCardStack();
             return;
           }
+          _prevDx = dx;
         } else if (_axisLock === "vertical") {
           const offset = Math.round(-dy / CARD_GAP);
           const target = _scrollStartFocus + offset;
