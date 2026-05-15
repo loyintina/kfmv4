@@ -491,16 +491,22 @@ function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: n
   const el = _dragItem.el;
 
   if (_dragItem.state === 'editing') {
-    // BR 光球跟随手指自由移动（复刻主光球行为）
-    const orbAbsX = _dragStartOrbAbsX + dx;
-    const orbAbsY = _dragStartOrbAbsY + dy;
-    _dragItem.brOrb.style.left = (orbAbsX - _dragStartLeft) + 'px';
-    _dragItem.brOrb.style.top = (orbAbsY - _dragStartTop) + 'px';
-
-    // 卡片尺寸由光球位置决定：卡片右下角 = 光球当前位置
+    // 编辑模式：光球始终贴在卡片右下角（缩放手柄行为）
     const cSize = orbT.size;
     const rOff = orbT.cornerOff + orbT.rightOffAdj;
     const bOff = orbT.cornerOff + orbT.bottomOffAdj;
+
+    // 手指绝对位置
+    const fingerAbsX = _dragStartOrbAbsX + dx;
+    const fingerAbsY = _dragStartOrbAbsY + dy;
+
+    // 光球不能越过卡片最小尺寸的右下角（缩到最小时停在角上）
+    const minOrbAbsX = _dragStartLeft + FLOATING_CARD_W_MIN - rOff - cSize;
+    const minOrbAbsY = _dragStartTop + FLOATING_CARD_H_MIN - bOff - cSize;
+    const orbAbsX = Math.max(minOrbAbsX, fingerAbsX);
+    const orbAbsY = Math.max(minOrbAbsY, fingerAbsY);
+
+    // 卡片尺寸 = 光球位置 - 卡片左上 + 补偿
     const newW = Math.max(FLOATING_CARD_W_MIN, orbAbsX - _dragStartLeft + rOff + cSize);
     const newH = Math.max(FLOATING_CARD_H_MIN, orbAbsY - _dragStartTop + bOff + cSize);
     el.style.width = newW + 'px';
@@ -508,11 +514,13 @@ function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: n
     _dragItem.cardWidth = newW;
     _dragItem.cardHeight = newH;
 
-    // 其余光球（TR/BL）跟随新尺寸
+    // 所有光球贴在卡片右下角新位置
     const newRightX = newW - rOff - cSize;
     const newBottomY = newH - bOff - cSize;
     _dragItem.trOrb.style.left = newRightX + 'px';
     _dragItem.blOrb.style.top = newBottomY + 'px';
+    _dragItem.brOrb.style.left = newRightX + 'px';
+    _dragItem.brOrb.style.top = newBottomY + 'px';
   } else {
     const rawX = _dragStartLeft + dx;
     const rawY = _dragStartTop + dy;

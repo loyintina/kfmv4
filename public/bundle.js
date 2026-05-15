@@ -5417,13 +5417,15 @@
     if (!_dragIsDragging) return;
     const el = _dragItem.el;
     if (_dragItem.state === "editing") {
-      const orbAbsX = _dragStartOrbAbsX + dx;
-      const orbAbsY = _dragStartOrbAbsY + dy;
-      _dragItem.brOrb.style.left = orbAbsX - _dragStartLeft + "px";
-      _dragItem.brOrb.style.top = orbAbsY - _dragStartTop + "px";
       const cSize = orbT.size;
       const rOff = orbT.cornerOff + orbT.rightOffAdj;
       const bOff = orbT.cornerOff + orbT.bottomOffAdj;
+      const fingerAbsX = _dragStartOrbAbsX + dx;
+      const fingerAbsY = _dragStartOrbAbsY + dy;
+      const minOrbAbsX = _dragStartLeft + FLOATING_CARD_W_MIN - rOff - cSize;
+      const minOrbAbsY = _dragStartTop + FLOATING_CARD_H_MIN - bOff - cSize;
+      const orbAbsX = Math.max(minOrbAbsX, fingerAbsX);
+      const orbAbsY = Math.max(minOrbAbsY, fingerAbsY);
       const newW = Math.max(FLOATING_CARD_W_MIN, orbAbsX - _dragStartLeft + rOff + cSize);
       const newH = Math.max(FLOATING_CARD_H_MIN, orbAbsY - _dragStartTop + bOff + cSize);
       el.style.width = newW + "px";
@@ -5434,6 +5436,8 @@
       const newBottomY = newH - bOff - cSize;
       _dragItem.trOrb.style.left = newRightX + "px";
       _dragItem.blOrb.style.top = newBottomY + "px";
+      _dragItem.brOrb.style.left = newRightX + "px";
+      _dragItem.brOrb.style.top = newBottomY + "px";
     } else {
       const rawX = _dragStartLeft + dx;
       const rawY = _dragStartTop + dy;
@@ -14584,13 +14588,17 @@
     if (orbState === "editing") {
       const rawX = dragStartOrbX + dx;
       const rawY = dragStartOrbY + dy;
-      const clamped = clampOrbPosition(rawX, rawY);
-      const orbCX = clamped.x + ORB_HALF2;
-      const orbCY = clamped.y + ORB_HALF2;
+      const screenClamped = clampOrbPosition(rawX, rawY);
+      const minOrbX = dragStartPanelX + PANEL_MIN_WIDTH - ORB_HALF2;
+      const minOrbY = dragStartPanelY + PANEL_MIN_HEIGHT - ORB_HALF2;
+      const orbX = Math.max(minOrbX, screenClamped.x);
+      const orbY = Math.max(minOrbY, screenClamped.y);
+      const orbCX = orbX + ORB_HALF2;
+      const orbCY = orbY + ORB_HALF2;
       panelWidth = Math.max(PANEL_MIN_WIDTH, orbCX - dragStartPanelX);
       panelHeight = Math.max(PANEL_MIN_HEIGHT, orbCY - dragStartPanelY);
-      orbEl2.style.left = clamped.x + "px";
-      orbEl2.style.top = clamped.y + "px";
+      orbEl2.style.left = orbX + "px";
+      orbEl2.style.top = orbY + "px";
       orbEl2.style.right = "auto";
       orbEl2.style.bottom = "auto";
       updatePanelPosition2();

@@ -291,18 +291,24 @@ function handleDragMove(dx: number, dy: number): void {
   if (!orbEl) return;
 
   if (orbState === 'editing') {
-    // 编辑模式：左上角固定，拖动光球改变面板大小
+    // 编辑模式：光球始终贴在面板右下角（缩放手柄行为）
     const rawX = dragStartOrbX + dx;
     const rawY = dragStartOrbY + dy;
-    const clamped = clampOrbPosition(rawX, rawY);
+    const screenClamped = clampOrbPosition(rawX, rawY);
 
-    const orbCX = clamped.x + ORB_HALF;
-    const orbCY = clamped.y + ORB_HALF;
+    // 光球不能越过面板最小尺寸的右下角（缩到最小时停在角上）
+    const minOrbX = dragStartPanelX + PANEL_MIN_WIDTH - ORB_HALF;
+    const minOrbY = dragStartPanelY + PANEL_MIN_HEIGHT - ORB_HALF;
+    const orbX = Math.max(minOrbX, screenClamped.x);
+    const orbY = Math.max(minOrbY, screenClamped.y);
+
+    const orbCX = orbX + ORB_HALF;
+    const orbCY = orbY + ORB_HALF;
     panelWidth = Math.max(PANEL_MIN_WIDTH, orbCX - dragStartPanelX);
     panelHeight = Math.max(PANEL_MIN_HEIGHT, orbCY - dragStartPanelY);
 
-    orbEl.style.left = clamped.x + 'px';
-    orbEl.style.top = clamped.y + 'px';
+    orbEl.style.left = orbX + 'px';
+    orbEl.style.top = orbY + 'px';
     orbEl.style.right = 'auto';
     orbEl.style.bottom = 'auto';
 
