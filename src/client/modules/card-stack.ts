@@ -522,11 +522,45 @@ function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: n
     _dragItem.brOrb.style.left = newRightX + 'px';
     _dragItem.brOrb.style.top = newBottomY + 'px';
   } else {
-    const rawX = _dragStartLeft + dx;
-    const rawY = _dragStartTop + dy;
-    const clamped = _clampCardPosition(rawX, rawY, _dragItem.cardWidth, _dragItem.cardHeight);
-    el.style.left = clamped.left + 'px';
-    el.style.top = clamped.top + 'px';
+    // 普通拖拽 + 弹性边界：卡片撞到边界自动压缩，光球可脱离跟手
+    const cSize = orbT.size;
+    const rOff = orbT.cornerOff + orbT.rightOffAdj;
+    const bOff = orbT.cornerOff + orbT.bottomOffAdj;
+
+    // 光球绝对位置跟随手指
+    const orbAbsX = _dragStartOrbAbsX + dx;
+    const orbAbsY = _dragStartOrbAbsY + dy;
+
+    // 卡片左上角 = 光球 - 自然尺寸 + 补偿，夹到屏幕边界
+    const b = _calcFloatingSafeBounds();
+    const desiredLeft = Math.round(orbAbsX - _dragStartW + rOff + cSize);
+    const desiredTop = Math.round(orbAbsY - _dragStartH + bOff + cSize);
+    const clampedLeft = Math.max(b.safeL, Math.min(b.fullR - _dragStartW, desiredLeft));
+    const clampedTop = Math.max(b.safeT, Math.min(b.safeB - _dragStartH, desiredTop));
+    el.style.left = clampedLeft + 'px';
+    el.style.top = clampedTop + 'px';
+
+    // 卡片尺寸：以自然尺寸为上限，撞边界时从右下角压缩
+    const orbRelX = orbAbsX - clampedLeft;
+    const orbRelY = orbAbsY - clampedTop;
+    const newW = Math.max(FLOATING_CARD_W_MIN, Math.min(_dragStartW, orbRelX + rOff + cSize));
+    const newH = Math.max(FLOATING_CARD_H_MIN, Math.min(_dragStartH, orbRelY + bOff + cSize));
+
+    if (newW !== _dragItem.cardWidth || newH !== _dragItem.cardHeight) {
+      el.style.width = newW + 'px';
+      el.style.height = newH + 'px';
+      _dragItem.cardWidth = newW;
+      _dragItem.cardHeight = newH;
+    }
+
+    // 角光球始终在卡片右下角
+    const newRightX = newW - rOff - cSize;
+    const newBottomY = newH - bOff - cSize;
+    _dragItem.trOrb.style.left = newRightX + 'px';
+    _dragItem.blOrb.style.top = newBottomY + 'px';
+    // BR 光球：min(角上, 手指) → 手指越过右下角时脱离跟手
+    _dragItem.brOrb.style.left = Math.min(newRightX, orbRelX) + 'px';
+    _dragItem.brOrb.style.top = Math.min(newBottomY, orbRelY) + 'px';
   }
 }
 

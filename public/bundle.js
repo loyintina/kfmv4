@@ -5439,11 +5439,34 @@
       _dragItem.brOrb.style.left = newRightX + "px";
       _dragItem.brOrb.style.top = newBottomY + "px";
     } else {
-      const rawX = _dragStartLeft + dx;
-      const rawY = _dragStartTop + dy;
-      const clamped = _clampCardPosition(rawX, rawY, _dragItem.cardWidth, _dragItem.cardHeight);
-      el.style.left = clamped.left + "px";
-      el.style.top = clamped.top + "px";
+      const cSize = orbT.size;
+      const rOff = orbT.cornerOff + orbT.rightOffAdj;
+      const bOff = orbT.cornerOff + orbT.bottomOffAdj;
+      const orbAbsX = _dragStartOrbAbsX + dx;
+      const orbAbsY = _dragStartOrbAbsY + dy;
+      const b = _calcFloatingSafeBounds();
+      const desiredLeft = Math.round(orbAbsX - _dragStartW + rOff + cSize);
+      const desiredTop = Math.round(orbAbsY - _dragStartH + bOff + cSize);
+      const clampedLeft = Math.max(b.safeL, Math.min(b.fullR - _dragStartW, desiredLeft));
+      const clampedTop = Math.max(b.safeT, Math.min(b.safeB - _dragStartH, desiredTop));
+      el.style.left = clampedLeft + "px";
+      el.style.top = clampedTop + "px";
+      const orbRelX = orbAbsX - clampedLeft;
+      const orbRelY = orbAbsY - clampedTop;
+      const newW = Math.max(FLOATING_CARD_W_MIN, Math.min(_dragStartW, orbRelX + rOff + cSize));
+      const newH = Math.max(FLOATING_CARD_H_MIN, Math.min(_dragStartH, orbRelY + bOff + cSize));
+      if (newW !== _dragItem.cardWidth || newH !== _dragItem.cardHeight) {
+        el.style.width = newW + "px";
+        el.style.height = newH + "px";
+        _dragItem.cardWidth = newW;
+        _dragItem.cardHeight = newH;
+      }
+      const newRightX = newW - rOff - cSize;
+      const newBottomY = newH - bOff - cSize;
+      _dragItem.trOrb.style.left = newRightX + "px";
+      _dragItem.blOrb.style.top = newBottomY + "px";
+      _dragItem.brOrb.style.left = Math.min(newRightX, orbRelX) + "px";
+      _dragItem.brOrb.style.top = Math.min(newBottomY, orbRelY) + "px";
     }
   }
   function _endFloatingDrag() {
