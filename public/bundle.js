@@ -14505,8 +14505,12 @@
     const availBottom = screenBottom - orbCY;
     renderWidth = Math.max(PANEL_MIN_WIDTH, Math.min(panelWidth, availLeft));
     renderHeight = Math.max(PANEL_MIN_HEIGHT, Math.min(panelHeight, availTop));
-    const panelLeft = orbCX - renderWidth;
-    const panelTop = orbCY - renderHeight;
+    let panelLeft = orbCX - renderWidth;
+    let panelTop = orbCY - renderHeight;
+    if (orbState === "editing") {
+      panelLeft = dragStartPanelX;
+      panelTop = dragStartPanelY;
+    }
     panelEl2.style.left = Math.max(screenLeft, panelLeft) + "px";
     panelEl2.style.top = Math.max(screenTop, panelTop) + "px";
     panelEl2.style.width = renderWidth + "px";

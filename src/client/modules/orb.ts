@@ -196,9 +196,15 @@ function updatePanelPosition(): void {
   renderWidth = Math.max(PANEL_MIN_WIDTH, Math.min(panelWidth, availLeft));
   renderHeight = Math.max(PANEL_MIN_HEIGHT, Math.min(panelHeight, availTop));
 
-  // 面板定位：右下角对齐光球圆心
-  const panelLeft = orbCX - renderWidth;
-  const panelTop = orbCY - renderHeight;
+  // 面板定位：默认右下角对齐光球圆心
+  let panelLeft = orbCX - renderWidth;
+  let panelTop = orbCY - renderHeight;
+
+  // 编辑模式：左上角固定，只改变大小不改变位置
+  if (orbState === 'editing') {
+    panelLeft = dragStartPanelX;
+    panelTop = dragStartPanelY;
+  }
 
   panelEl.style.left = Math.max(screenLeft, panelLeft) + 'px';
   panelEl.style.top = Math.max(screenTop, panelTop) + 'px';
