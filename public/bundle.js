@@ -5294,10 +5294,6 @@
       const r = orbEl3.getBoundingClientRect();
       if (r.bottom > vh * 0.3) safeB = Math.min(safeB, r.top - PAD);
     }
-    const inputBar = document.getElementById("aiInputBar");
-    if (inputBar) {
-      safeB = Math.min(safeB, inputBar.getBoundingClientRect().top - PAD);
-    }
     const stackCards = document.querySelectorAll(".stack-card");
     const stackLeft = stackCards.length > 0 ? stackCards[0].getBoundingClientRect().left : fullR;
     return { safeL, safeT, safeB, fullR, stackLeft };
@@ -5408,6 +5404,7 @@
     }, 600);
   }
   function _handleFloatingDragMove(clientX, clientY, pointerId) {
+    var _a, _b, _c, _d;
     if (!_dragItem) return;
     if (_dragPointerId !== null && pointerId !== void 0 && pointerId !== _dragPointerId) return;
     const dx = clientX - _dragStartX;
@@ -5428,10 +5425,9 @@
       const fingerAbsY = _dragStartOrbAbsY + dy;
       const minOrbAbsX = _dragStartLeft + FLOATING_CARD_W_MIN - rOff - cSize;
       const minOrbAbsY = _dragStartTop + FLOATING_CARD_H_MIN - bOff - cSize;
-      const b = _calcFloatingSafeBounds();
-      const maxOrbAbsY = b.safeB - bOff - cSize;
       const orbAbsX = Math.max(minOrbAbsX, fingerAbsX);
-      const orbAbsY = Math.min(maxOrbAbsY, Math.max(minOrbAbsY, fingerAbsY));
+      const _maxOrbY = ((_b = (_a = document.getElementById("aiInputBar")) == null ? void 0 : _a.getBoundingClientRect().top) != null ? _b : window.innerHeight) - 16;
+      const orbAbsY = Math.min(_maxOrbY, Math.max(minOrbAbsY, fingerAbsY));
       const newW = Math.max(FLOATING_CARD_W_MIN, orbAbsX - _dragStartLeft + rOff + cSize);
       const newH = Math.max(FLOATING_CARD_H_MIN, orbAbsY - _dragStartTop + bOff + cSize);
       el.style.width = newW + "px";
@@ -5449,7 +5445,8 @@
       const rOff = orbT.cornerOff + orbT.rightOffAdj;
       const bOff = orbT.cornerOff + orbT.bottomOffAdj;
       const orbAbsX = _dragStartOrbAbsX + dx;
-      const orbAbsY = _dragStartOrbAbsY + dy;
+      const _maxOrbY = ((_d = (_c = document.getElementById("aiInputBar")) == null ? void 0 : _c.getBoundingClientRect().top) != null ? _d : window.innerHeight) - 16;
+      const orbAbsY = Math.min(_maxOrbY, _dragStartOrbAbsY + dy);
       const b = _calcFloatingSafeBounds();
       const tlFromOrbX = orbAbsX - _dragStartW + rOff + cSize;
       const tlFromOrbY = orbAbsY - _dragStartH + bOff + cSize;

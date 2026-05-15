@@ -328,11 +328,7 @@ function _calcFloatingSafeBounds(): FloatingSafeBounds {
     const r = orbEl.getBoundingClientRect();
     if (r.bottom > vh * 0.3) safeB = Math.min(safeB, r.top - PAD);
   }
-  // AI 输入栏底部边界：卡片和光球不能低于输入栏上沿
-  const inputBar = document.getElementById("aiInputBar");
-  if (inputBar) {
-    safeB = Math.min(safeB, inputBar.getBoundingClientRect().top - PAD);
-  }
+
 
   const stackCards = document.querySelectorAll(".stack-card");
   const stackLeft = stackCards.length > 0
@@ -505,13 +501,13 @@ function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: n
     const fingerAbsX = _dragStartOrbAbsX + dx;
     const fingerAbsY = _dragStartOrbAbsY + dy;
 
-    // 光球范围：最小尺寸右下角 ～ 底部输入栏上沿
+    // 光球不能越过卡片最小尺寸的右下角（缩到最小时停在角上）
     const minOrbAbsX = _dragStartLeft + FLOATING_CARD_W_MIN - rOff - cSize;
     const minOrbAbsY = _dragStartTop + FLOATING_CARD_H_MIN - bOff - cSize;
-    const b = _calcFloatingSafeBounds();
-    const maxOrbAbsY = b.safeB - bOff - cSize;
     const orbAbsX = Math.max(minOrbAbsX, fingerAbsX);
-    const orbAbsY = Math.min(maxOrbAbsY, Math.max(minOrbAbsY, fingerAbsY));
+    // 光球最低不能低于 AI 输入栏上沿
+    const _maxOrbY = (document.getElementById("aiInputBar")?.getBoundingClientRect().top ?? window.innerHeight) - 16;
+    const orbAbsY = Math.min(_maxOrbY, Math.max(minOrbAbsY, fingerAbsY));
 
     // 卡片尺寸 = 光球位置 - 卡片左上 + 补偿
     const newW = Math.max(FLOATING_CARD_W_MIN, orbAbsX - _dragStartLeft + rOff + cSize);
@@ -535,7 +531,8 @@ function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: n
 
     // 光球绝对位置跟随手指
     const orbAbsX = _dragStartOrbAbsX + dx;
-    const orbAbsY = _dragStartOrbAbsY + dy;
+    const _maxOrbY = (document.getElementById("aiInputBar")?.getBoundingClientRect().top ?? window.innerHeight) - 16;
+    const orbAbsY = Math.min(_maxOrbY, _dragStartOrbAbsY + dy);
 
     // 卡片左上角 = 光球 - 原始尺寸 + 补偿（撞边界时自动压缩，离开后恢复）
     const b = _calcFloatingSafeBounds();
