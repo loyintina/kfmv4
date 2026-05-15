@@ -328,6 +328,11 @@ function _calcFloatingSafeBounds(): FloatingSafeBounds {
     const r = orbEl.getBoundingClientRect();
     if (r.bottom > vh * 0.3) safeB = Math.min(safeB, r.top - PAD);
   }
+  // AI 输入栏底部边界：卡片和光球不能低于输入栏上沿
+  const inputBar = document.getElementById("aiInputBar");
+  if (inputBar) {
+    safeB = Math.min(safeB, inputBar.getBoundingClientRect().top - PAD);
+  }
 
   const stackCards = document.querySelectorAll(".stack-card");
   const stackLeft = stackCards.length > 0

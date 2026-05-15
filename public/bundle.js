@@ -5294,6 +5294,10 @@
       const r = orbEl3.getBoundingClientRect();
       if (r.bottom > vh * 0.3) safeB = Math.min(safeB, r.top - PAD);
     }
+    const inputBar = document.getElementById("aiInputBar");
+    if (inputBar) {
+      safeB = Math.min(safeB, inputBar.getBoundingClientRect().top - PAD);
+    }
     const stackCards = document.querySelectorAll(".stack-card");
     const stackLeft = stackCards.length > 0 ? stackCards[0].getBoundingClientRect().left : fullR;
     return { safeL, safeT, safeB, fullR, stackLeft };
