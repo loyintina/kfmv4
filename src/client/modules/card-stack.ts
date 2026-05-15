@@ -89,6 +89,7 @@ interface FloatingCardItem {
   zIndex: number;
   state: 'launching' | 'active' | 'dismissing' | 'editing';
   tlOrb: HTMLElement;
+  trOrb: HTMLElement;
   blOrb: HTMLElement;
   brOrb: HTMLElement;
   cardWidth: number;
@@ -468,6 +469,18 @@ function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: n
     el.style.height = newH + 'px';
     _dragItem.cardWidth = newW;
     _dragItem.cardHeight = newH;
+
+    // 四角光球跟随卡片新尺寸
+    const cOff = orbT.cornerOff;
+    const rOff = cOff + orbT.rightOffAdj;
+    const bOff = cOff + orbT.bottomOffAdj;
+    const cSize = orbT.size;
+    const newRightX = newW - rOff - cSize;
+    const newBottomY = newH - bOff - cSize;
+    _dragItem.trOrb.style.left = newRightX + 'px';
+    _dragItem.blOrb.style.top = newBottomY + 'px';
+    _dragItem.brOrb.style.left = newRightX + 'px';
+    _dragItem.brOrb.style.top = newBottomY + 'px';
   } else {
     const rawX = _dragStartLeft + dx;
     const rawY = _dragStartTop + dy;
@@ -595,6 +608,7 @@ export function launchFocusedCard(): void {
   const item: FloatingCardItem = {
     el, sourceIndex: _focusIndex, zIndex, state: 'launching',
     tlOrb: null as unknown as HTMLElement,
+    trOrb: null as unknown as HTMLElement,
     blOrb: null as unknown as HTMLElement,
     brOrb: null as unknown as HTMLElement,
     cardWidth: FLOATING_CARD_W,
@@ -628,6 +642,7 @@ export function launchFocusedCard(): void {
     dismissFloatingCard(true, el);
   });
   el.appendChild(trOrb);
+  item.trOrb = trOrb;
 
   // BL — 下移一层
   const blOrb = createDecoratedCorner(cornerOff, FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, triMain,

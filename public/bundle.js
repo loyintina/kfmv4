@@ -5401,6 +5401,16 @@
       el.style.height = newH + "px";
       _dragItem.cardWidth = newW;
       _dragItem.cardHeight = newH;
+      const cOff = orbT.cornerOff;
+      const rOff = cOff + orbT.rightOffAdj;
+      const bOff = cOff + orbT.bottomOffAdj;
+      const cSize = orbT.size;
+      const newRightX = newW - rOff - cSize;
+      const newBottomY = newH - bOff - cSize;
+      _dragItem.trOrb.style.left = newRightX + "px";
+      _dragItem.blOrb.style.top = newBottomY + "px";
+      _dragItem.brOrb.style.left = newRightX + "px";
+      _dragItem.brOrb.style.top = newBottomY + "px";
     } else {
       const rawX = _dragStartLeft + dx;
       const rawY = _dragStartTop + dy;
@@ -5508,6 +5518,7 @@
       zIndex,
       state: "launching",
       tlOrb: null,
+      trOrb: null,
       blOrb: null,
       brOrb: null,
       cardWidth: FLOATING_CARD_W,
@@ -5549,6 +5560,7 @@
       dismissFloatingCard(true, el);
     });
     el.appendChild(trOrb);
+    item.trOrb = trOrb;
     const blOrb = createDecoratedCorner(
       cornerOff,
       FLOATING_CARD_H - bottomOff - cornerSize,
