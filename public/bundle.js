@@ -5354,12 +5354,20 @@
     }
   }
   function _enterFloatingEditMode(item) {
+    const cardRect = item.el.getBoundingClientRect();
+    _dragStartLeft = cardRect.left;
+    _dragStartTop = cardRect.top;
+    _dragStartW = item.cardWidth;
+    _dragStartH = item.cardHeight;
+    const brRect = item.brOrb.getBoundingClientRect();
+    _dragStartOrbAbsX = brRect.left;
+    _dragStartOrbAbsY = brRect.top;
     item.state = "editing";
     const c = item.accentColor;
     if (c) {
-      item.el.style.boxShadow = "0 0 40px 20px " + c.replace(/,\s*1\)$/, ",0.55)") + ", 0 8px 32px rgba(0,0,0,0.5)";
+      item.el.style.boxShadow = "0 0 12px 3px " + hexToRgba(c, 0.2) + ", 0 1px 4px rgba(0,0,0,0.25)";
     } else {
-      item.el.style.boxShadow = currentTheme.aiChat.panelShadowEdit;
+      item.el.style.boxShadow = currentTheme.stack.blurShadow;
     }
     debugLog("FLOAT edit enter");
   }

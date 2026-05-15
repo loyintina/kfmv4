@@ -414,13 +414,24 @@ function _clearFloatingDragTimer(): void {
 }
 
 function _enterFloatingEditMode(item: FloatingCardItem): void {
+  // 进入编辑模式前重新读取当前位置（普通拖拽阶段已改变卡片位置）
+  const cardRect = item.el.getBoundingClientRect();
+  _dragStartLeft = cardRect.left;
+  _dragStartTop = cardRect.top;
+  _dragStartW = item.cardWidth;
+  _dragStartH = item.cardHeight;
+  const brRect = item.brOrb.getBoundingClientRect();
+  _dragStartOrbAbsX = brRect.left;
+  _dragStartOrbAbsY = brRect.top;
+
   item.state = 'editing';
-  // 使用卡片专属色生成编辑模式发光阴影，替代固定紫色
+
+  // 轻柔的卡片专属色发光阴影，不遮盖角光球
   const c = item.accentColor;
   if (c) {
-    item.el.style.boxShadow = '0 0 40px 20px ' + c.replace(/,\s*1\)$/, ',0.55)') + ', 0 8px 32px rgba(0,0,0,0.5)';
+    item.el.style.boxShadow = '0 0 12px 3px ' + hexToRgba(c, 0.2) + ', 0 1px 4px rgba(0,0,0,0.25)';
   } else {
-    item.el.style.boxShadow = theme.aiChat.panelShadowEdit;
+    item.el.style.boxShadow = theme.stack.blurShadow;
   }
   debugLog("FLOAT edit enter");
 }
