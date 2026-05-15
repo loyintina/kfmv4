@@ -443,7 +443,12 @@ function _exitFloatingEditMode(item: FloatingCardItem): void {
 }
 
 function _startFloatingDrag(item: FloatingCardItem, clientX: number, clientY: number, pointerId?: number): void {
-  if (_dragItem) return;
+  // 清除任何可能的残留拖拽状态（touchend 边缘丢失）
+  if (_dragItem) {
+    _clearFloatingDragTimer();
+    if (_dragItem.state === 'editing') _exitFloatingEditMode(_dragItem);
+    _dragItem = null;
+  }
   _dragItem = item;
   _dragPointerId = pointerId ?? null;
   _dragIsDragging = false;

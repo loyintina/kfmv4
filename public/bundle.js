@@ -5377,7 +5377,11 @@
     debugLog("FLOAT edit exit");
   }
   function _startFloatingDrag(item, clientX, clientY, pointerId) {
-    if (_dragItem) return;
+    if (_dragItem) {
+      _clearFloatingDragTimer();
+      if (_dragItem.state === "editing") _exitFloatingEditMode(_dragItem);
+      _dragItem = null;
+    }
     _dragItem = item;
     _dragPointerId = pointerId != null ? pointerId : null;
     _dragIsDragging = false;
