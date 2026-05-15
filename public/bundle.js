@@ -5426,7 +5426,7 @@
       const minOrbAbsX = _dragStartLeft + FLOATING_CARD_W_MIN - rOff - cSize;
       const minOrbAbsY = _dragStartTop + FLOATING_CARD_H_MIN - bOff - cSize;
       const orbAbsX = Math.max(minOrbAbsX, fingerAbsX);
-      const _maxOrbY = ((_b = (_a = document.getElementById("aiInputBar")) == null ? void 0 : _a.getBoundingClientRect().top) != null ? _b : window.innerHeight) - 16;
+      const _maxOrbY = ((_b = (_a = document.getElementById("aiInputBar")) == null ? void 0 : _a.getBoundingClientRect().top) != null ? _b : window.innerHeight) - 42;
       const orbAbsY = Math.min(_maxOrbY, Math.max(minOrbAbsY, fingerAbsY));
       const newW = Math.max(FLOATING_CARD_W_MIN, orbAbsX - _dragStartLeft + rOff + cSize);
       const newH = Math.max(FLOATING_CARD_H_MIN, orbAbsY - _dragStartTop + bOff + cSize);
@@ -5445,13 +5445,13 @@
       const rOff = orbT.cornerOff + orbT.rightOffAdj;
       const bOff = orbT.cornerOff + orbT.bottomOffAdj;
       const orbAbsX = _dragStartOrbAbsX + dx;
-      const _maxOrbY = ((_d = (_c = document.getElementById("aiInputBar")) == null ? void 0 : _c.getBoundingClientRect().top) != null ? _d : window.innerHeight) - 16;
+      const _maxOrbY = ((_d = (_c = document.getElementById("aiInputBar")) == null ? void 0 : _c.getBoundingClientRect().top) != null ? _d : window.innerHeight) - 42;
       const orbAbsY = Math.min(_maxOrbY, _dragStartOrbAbsY + dy);
       const b = _calcFloatingSafeBounds();
       const tlFromOrbX = orbAbsX - _dragStartW + rOff + cSize;
       const tlFromOrbY = orbAbsY - _dragStartH + bOff + cSize;
       const clampedLeft = Math.round(Math.max(b.safeL, Math.min(b.fullR - FLOATING_CARD_W_MIN, tlFromOrbX)));
-      const clampedTop = Math.round(Math.max(b.safeT, Math.min(b.safeB - FLOATING_CARD_H_MIN, tlFromOrbY)));
+      const clampedTop = Math.round(Math.max(b.safeT, tlFromOrbY));
       el.style.left = clampedLeft + "px";
       el.style.top = clampedTop + "px";
       const newW = Math.max(FLOATING_CARD_W_MIN, orbAbsX - clampedLeft + rOff + cSize);
