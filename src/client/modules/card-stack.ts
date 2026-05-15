@@ -423,7 +423,7 @@ function _enterFloatingEditMode(item: FloatingCardItem): void {
   // 轻柔的卡片专属色发光阴影，不遮盖角光球
   const c = item.accentColor;
   if (c) {
-    item.el.style.boxShadow = '0 0 12px 3px ' + hexToRgba(c, 0.2) + ', 0 1px 4px rgba(0,0,0,0.25)';
+    item.el.style.boxShadow = '0 0 18px 6px ' + hexToRgba(c, 0.35) + ', 0 2px 8px rgba(0,0,0,0.3)';
   } else {
     item.el.style.boxShadow = theme.stack.blurShadow;
   }

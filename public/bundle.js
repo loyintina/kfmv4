@@ -4732,13 +4732,13 @@
       cornerOff: -13,
       rightOffAdj: 1,
       bottomOffAdj: -1,
-      glowCenterAlpha: 0.85,
-      glowMidAlpha: 0.35,
+      glowCenterAlpha: 0.45,
+      glowMidAlpha: 0.18,
       glowPos: "30% 30%",
-      shadow1Blur: "10px 4px",
-      shadow1Alpha: 0.4,
-      shadow2Blur: "20px 8px",
-      shadow2Alpha: 0.15,
+      shadow1Blur: "6px 2px",
+      shadow1Alpha: 0.2,
+      shadow2Blur: "12px 4px",
+      shadow2Alpha: 0.08,
       symAlpha: 0.95,
       symStroke: 1.2,
       symScale: 0.92,
@@ -5361,7 +5361,7 @@
     item.state = "editing";
     const c = item.accentColor;
     if (c) {
-      item.el.style.boxShadow = "0 0 12px 3px " + hexToRgba(c, 0.2) + ", 0 1px 4px rgba(0,0,0,0.25)";
+      item.el.style.boxShadow = "0 0 18px 6px " + hexToRgba(c, 0.35) + ", 0 2px 8px rgba(0,0,0,0.3)";
     } else {
       item.el.style.boxShadow = currentTheme.stack.blurShadow;
     }
