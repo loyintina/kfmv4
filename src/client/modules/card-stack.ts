@@ -1,5 +1,6 @@
 import { gestures } from "./gesture-registry.js";
 import { anim, AnimTimeline } from './animation-registry.js';
+import { debugLog } from './debug-panel.js';
 import { currentTheme as theme } from './theme.js';
 const orbT = theme.cornerOrb;
 
@@ -100,7 +101,6 @@ interface FloatingCardItem {
 }
 let _floatingCards: FloatingCardItem[] = [];
 let _nextFloatingZ = Z_FLOATING_BASE;
-
 // ========== DOM 构建 ==========
 
 
@@ -319,6 +319,144 @@ function _swapZIndex(a: FloatingCardItem, b: FloatingCardItem): void {
 
 
 
+
+// ========== 浮卡位置：L形安全区网格填充 + 溢出堆叠 ==========
+
+/** 右下角光球延伸到卡片边缘外的距离 px（cornerOff = -13, cornerSize = 26） */
+const FLOATING_ORB_EXT = 13;
+/** 溢出堆叠时向左偏移量 px — 露出右上、右下光球 */
+const OVERLAP_X = 20;
+/** 溢出堆叠时向下偏移量 px — 露出左上光球 */
+const OVERLAP_Y = 15;
+
+function _calcSafeBoundaries(): {
+  safeL: number; safeT: number; safeB: number; fullR: number;
+  sL: number; sR: number; sT: number; sB: number; hasStack: boolean;
+} {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const PAD = 16;
+
+  const sideEl = document.getElementById("sidebar");
+  const safeL = (sideEl?.classList.contains("open")
+    ? sideEl.getBoundingClientRect().right : 0) + PAD;
+
+  const stackCards = document.querySelectorAll(".stack-card");
+  let sL = 0, sR = 0, sT = 0, sB = 0;
+  const hasStack = stackCards.length > 0;
+  if (hasStack) {
+    const fr = stackCards[0].getBoundingClientRect();
+    const lr = stackCards[stackCards.length - 1].getBoundingClientRect();
+    sL = fr.left; sR = fr.right; sT = fr.top; sB = lr.bottom;
+  }
+
+  const safeT = PAD + 24;
+  const orbEl = document.querySelector(".light-orb");
+  let safeB = vh - PAD;
+  if (orbEl) {
+    const r = orbEl.getBoundingClientRect();
+    if (r.bottom > vh * 0.3) safeB = Math.min(safeB, r.top - PAD);
+  }
+  const fullR = vw - PAD;
+
+  return { safeL, safeT, safeB, fullR, sL, sR, sT, sB, hasStack };
+}
+
+/** AABB 交集检测：卡片 (x,y,size) 是否与指定矩形重叠 */
+function _rectsOverlap(
+  x: number, y: number,
+  rect: { left: number; top: number; right: number; bottom: number },
+): boolean {
+  const cardR = x + FLOATING_CARD_W;
+  const cardB = y + FLOATING_CARD_H;
+  return x < rect.right && cardR > rect.left && y < rect.bottom && cardB > rect.top;
+}
+
+function _calcStackSafeRegion(): { left: number; top: number } {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const b = _calcSafeBoundaries();
+  const { safeL, safeT, safeB, fullR, sL, sR, sT, sB, hasStack } = b;
+
+  debugLog("FLOAT L" + Math.round(safeL) + " T" + Math.round(safeT)
+    + " B" + Math.round(safeB) + " fR" + Math.round(fullR)
+    + (hasStack ? " sL" + Math.round(sL) + " sR" + Math.round(sR)
+       + " sT" + Math.round(sT) + " sB" + Math.round(sB) : " noStack"));
+
+  // 构建已存在浮卡的 AABB 列表（不含光球延伸，卡片本体不相交即可）
+  const existingRects = _floatingCards.map(item => {
+    const r = item.el.getBoundingClientRect();
+    return { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+  });
+
+  /** 位置有效性：边界内 + 不含堆禁区 + 不与已有浮卡相交 */
+  function isValid(x: number, y: number): boolean {
+    if (x < safeL || x + FLOATING_CARD_W > fullR) return false;
+    if (y < safeT || y + FLOATING_CARD_H > safeB) return false;
+    // 卡片不完全在堆上方（至少部分在堆高度范围内）
+    if (hasStack && y + FLOATING_CARD_H <= sT) return false;
+    // 卡片（含光球延伸）不与堆 AABB 相交
+    if (hasStack) {
+      const cardR = x + FLOATING_CARD_W + FLOATING_ORB_EXT;
+      const cardB = y + FLOATING_CARD_H + FLOATING_ORB_EXT;
+      if (x < sR && cardR > sL && y < sB && cardB > sT) return false;
+    }
+    // 不与已有浮卡相交
+    for (const rect of existingRects) {
+      if (_rectsOverlap(x, y, rect)) return false;
+    }
+    return true;
+  }
+
+  // ========== Phase 1: L 形区域网格填充（互不相交） ==========
+  const COL_GAP = 8;
+  const ROW_GAP = 4;
+  const STEP_X = FLOATING_CARD_W + COL_GAP;   // 163
+  const STEP_Y = FLOATING_CARD_H + ROW_GAP;   // 72
+
+  // 确定可用列
+  const xPositions: number[] = [safeL];
+  const x2 = safeL + STEP_X;
+  if (x2 + FLOATING_CARD_W <= fullR) xPositions.push(x2);
+  const x3 = safeL + STEP_X * 2;
+  if (x3 + FLOATING_CARD_W <= fullR) xPositions.push(x3);
+
+  for (const x of xPositions) {
+    for (let y = safeT; y + FLOATING_CARD_H <= safeB; y += STEP_Y) {
+      if (isValid(Math.round(x), Math.round(y))) {
+        return { left: Math.round(x), top: Math.round(y) };
+      }
+    }
+  }
+
+  // ========== Phase 2: 溢出 — 从首卡位置向左下堆叠 ==========
+  if (existingRects.length > 0) {
+    const first = existingRects[0];
+    // 计算是第几轮溢出（每轮所有位置填满算一轮）
+    const totalSlots = xPositions.length * Math.max(1,
+      Math.floor((safeB - safeT) / STEP_Y));
+    const overflowRound = Math.max(0,
+      Math.floor((_floatingCards.length - totalSlots) / totalSlots) + 1);
+
+    const stackX = first.left - OVERLAP_X * overflowRound;
+    const stackY = first.top + OVERLAP_Y * overflowRound;
+
+    // 边界安全钳制
+    const clampedX = Math.max(safeL, stackX);
+    const clampedY = Math.min(safeB - FLOATING_CARD_H, Math.max(safeT, stackY));
+
+    debugLog("FLOAT stack c" + _floatingCards.length + " ovRound" + overflowRound
+      + " " + Math.round(clampedX) + "," + Math.round(clampedY));
+    return { left: Math.round(clampedX), top: Math.round(clampedY) };
+  }
+
+  // ========== Phase 3: 兜底居中 ==========
+  const cx = Math.round((vw - FLOATING_CARD_W) / 2);
+  const cy = Math.round((vh - FLOATING_CARD_H) / 2);
+  debugLog("FLOAT fallback " + cx + "," + cy);
+  return { left: cx, top: cy };
+}
+
 /** 发射聚焦卡片到屏幕中央成为浮卡 */
 export function launchFocusedCard(): void {
   // 卡片堆反馈：随机拉出后弹回
@@ -446,14 +584,21 @@ export function launchFocusedCard(): void {
     'opacity:1',
   ].join(';');
 
-  _floatingCards.push(item);
   document.body.appendChild(el);
 
-  // 计算目标位置：屏幕居中
-  const targetLeft = Math.round((window.innerWidth - FLOATING_CARD_W) / 2);
-  const targetTop = Math.round((window.innerHeight - FLOATING_CARD_H) / 2);
+  // L形安全区网格填充（互不相交）→ 溢出时从首卡向左下堆叠
+  const stackSafe = _calcStackSafeRegion();
+  _floatingCards.push(item);
+  const targetLeft = stackSafe.left;
+  const targetTop = stackSafe.top;
+  debugLog('FLOAT launch ' + _focusIndex + ' ' + targetLeft + ',' + targetTop);
 
-  // GSAP 飞行动画（从当前位置飞到屏幕中央）
+  // 发射时临时升到卡片堆之上，让飞行动画可见
+  // 完成后降回永久 z-index（低于卡片堆）
+  const LAUNCH_Z_ABOVE_STACK = Z_STACK_BASE + CARDS.length + 1;
+  el.style.zIndex = String(LAUNCH_Z_ABOVE_STACK);
+
+  // GSAP 飞行动画（从卡片当前位置飞到安全区目标位置）
   anim.set(el, { scale: 0.8 });
   anim.to(el, {
     left: targetLeft,
@@ -461,7 +606,10 @@ export function launchFocusedCard(): void {
     scale: 1,
     duration: 0.4,
     ease: 'back.out(1.3)',
-    onComplete: () => { item.state = 'active'; },
+    onComplete: () => {
+      item.state = 'active';
+      el.style.zIndex = String(zIndex);
+    },
   });
 }
 

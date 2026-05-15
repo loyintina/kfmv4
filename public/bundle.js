@@ -4767,6 +4767,290 @@
   };
   var currentTheme = nebula;
 
+  // src/client/modules/debug-panel.ts
+  var state = "collapsed";
+  var orbEl = null;
+  var panelEl = null;
+  var ORB_SIZE = 36;
+  var ORB_HALF = ORB_SIZE / 2;
+  var MARGIN = 8;
+  var PANEL_MIN_W = 200;
+  var PANEL_MIN_H = 120;
+  var LONG_PRESS_MS = 600;
+  var panelW = 300;
+  var panelH = 250;
+  var dragging = false;
+  var dragSX = 0;
+  var dragSY = 0;
+  var dragOrbX = 0;
+  var dragOrbY = 0;
+  var longPressTimer = null;
+  var longPressFired = false;
+  var MAX_LOG_LINES = 200;
+  var logLines = [];
+  function formatTime() {
+    const d = /* @__PURE__ */ new Date();
+    const h = String(d.getHours()).padStart(2, "0");
+    const m = String(d.getMinutes()).padStart(2, "0");
+    const s = String(d.getSeconds()).padStart(2, "0");
+    const ms = String(d.getMilliseconds()).padStart(3, "0");
+    return `${h}:${m}:${s}.${ms}`;
+  }
+  function debugLog(msg) {
+    logLines.push(`[${formatTime()}] ${msg}`);
+    if (logLines.length > MAX_LOG_LINES) logLines.shift();
+    flushLogUI();
+  }
+  function debugClear() {
+    logLines.length = 0;
+    flushLogUI();
+  }
+  function debugCopy() {
+    const text = logLines.join("\n");
+    const singleLine = text.replace(/\n/g, " \u2192 ");
+    navigator.clipboard.writeText(singleLine).then(() => {
+      debugLog("\u{1F4CB} \u65E5\u5FD7\u5DF2\u590D\u5236\uFF08\u5355\u884C\u6A21\u5F0F\uFF09");
+    }).catch(() => {
+      debugLog("\u274C \u590D\u5236\u5931\u8D25");
+    });
+  }
+  function flushLogUI() {
+    if (!panelEl) return;
+    const area = panelEl.querySelector(".debug-log-area");
+    if (area) {
+      area.textContent = logLines.length > 0 ? logLines.join("\n") : "(\u7A7A)";
+      area.scrollTop = area.scrollHeight;
+    }
+  }
+  function clampOrb(x, y) {
+    return {
+      x: Math.max(MARGIN, Math.min(window.innerWidth - ORB_SIZE - MARGIN, x)),
+      y: Math.max(MARGIN, Math.min(window.innerHeight - ORB_SIZE - MARGIN, y))
+    };
+  }
+  function createOrb() {
+    const el = document.createElement("div");
+    el.className = "debug-orb";
+    el.style.cssText = `
+    position: fixed;
+    width: ${ORB_SIZE}px;
+    height: ${ORB_SIZE}px;
+    border-radius: 50%;
+    background: ${currentTheme.debug.orbGradient};
+    box-shadow: ${currentTheme.debug.orbShadow};
+    z-index: 300;
+    cursor: pointer;
+    transition: box-shadow 0.2s;
+    right: 80px;
+    bottom: 80px;
+  `;
+    el.id = "debugOrb";
+    document.body.appendChild(el);
+    return el;
+  }
+  function createPanel() {
+    const panel = document.createElement("div");
+    panel.style.cssText = `
+    position: fixed;
+    background: ${currentTheme.debug.panelBgGradient} padding-box,
+                ${currentTheme.debug.panelBorderGradient} border-box;
+    backdrop-filter: blur(16px);
+    border: 1px solid transparent;
+    border-radius: 10px;
+    box-shadow: ${currentTheme.debug.panelShadow};
+    z-index: 295;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+    font-family: monospace;
+  `;
+    panel.id = "debugPanel";
+    document.body.appendChild(panel);
+    return panel;
+  }
+  function buildPanelContent() {
+    var _a, _b;
+    if (!panelEl) return;
+    panelEl.innerHTML = `
+    <div style="
+      padding:6px 10px;
+      border-bottom:1px solid ${currentTheme.debug.headerBorder};
+      display:flex;justify-content:space-between;align-items:center;
+      flex-shrink:0;
+    ">
+      <span style="font-size:12px;color:rgba(0,255,200,0.9);font-weight:600">\u{1F527} \u8C03\u8BD5\u9762\u677F</span>
+      <span style="display:flex;gap:6px">
+        <button class="debug-btn-clear" style="
+          font-size:11px;padding:3px 10px;
+          background:${currentTheme.debug.buttonBg};color:${currentTheme.debug.headerText};
+          border:1px solid ${currentTheme.debug.buttonBorder};border-radius:5px;
+          cursor:pointer;
+        ">\u6E05\u7A7A</button>
+        <button class="debug-btn-copy" style="
+          font-size:11px;padding:3px 10px;
+          background:${currentTheme.debug.buttonBg};color:${currentTheme.debug.headerText};
+          border:1px solid ${currentTheme.debug.buttonBorder};border-radius:5px;
+          cursor:pointer;
+        ">\u590D\u5236</button>
+      </span>
+    </div>
+    <pre class="debug-log-area" style="
+      flex:1;
+      overflow-y:auto;
+      padding:8px 10px;
+      margin:0;
+      font-size:11px;
+      line-height:1.5;
+      color:${currentTheme.debug.logText};
+      white-space:pre-wrap;
+      word-break:break-all;
+      min-height:0;
+    ">${logLines.length > 0 ? logLines.join("\n") : "(\u7A7A)"}</pre>
+  `;
+    (_a = panelEl.querySelector(".debug-btn-clear")) == null ? void 0 : _a.addEventListener("click", () => debugClear());
+    (_b = panelEl.querySelector(".debug-btn-copy")) == null ? void 0 : _b.addEventListener("click", () => debugCopy());
+  }
+  function updatePanelPosition() {
+    if (!orbEl || !panelEl) return;
+    const r = orbEl.getBoundingClientRect();
+    const cx = r.left + ORB_HALF;
+    const cy = r.top + ORB_HALF;
+    const w = Math.max(PANEL_MIN_W, Math.min(panelW, cx - MARGIN));
+    const h = Math.max(PANEL_MIN_H, Math.min(panelH, cy - MARGIN));
+    panelEl.style.left = Math.max(MARGIN, cx - w) + "px";
+    panelEl.style.top = Math.max(MARGIN, cy - h) + "px";
+    panelEl.style.width = w + "px";
+    panelEl.style.height = h + "px";
+  }
+  function expandPanel() {
+    if (!panelEl) panelEl = createPanel();
+    if (state === "collapsed") {
+      state = "expanded";
+      buildPanelContent();
+      updatePanelPosition();
+      panelEl.style.opacity = "1";
+      panelEl.style.pointerEvents = "auto";
+    }
+  }
+  function collapsePanel() {
+    if (state === "expanded") {
+      state = "collapsed";
+      if (panelEl) {
+        panelEl.style.opacity = "0";
+        panelEl.style.pointerEvents = "none";
+      }
+    }
+  }
+  function enterEdit() {
+    if (state !== "expanded") return;
+    state = "editing";
+    if (panelEl) panelEl.style.boxShadow = currentTheme.debug.panelShadowEdit;
+  }
+  function exitEdit() {
+    if (state !== "editing") return;
+    state = "expanded";
+    if (panelEl) panelEl.style.boxShadow = currentTheme.debug.panelShadow;
+  }
+  function toggle() {
+    if (state === "collapsed") expandPanel();
+    else if (state === "expanded") collapsePanel();
+  }
+  function startDrag(x, y) {
+    dragging = false;
+    longPressFired = false;
+    dragSX = x;
+    dragSY = y;
+    const r = orbEl.getBoundingClientRect();
+    dragOrbX = r.left;
+    dragOrbY = r.top;
+    longPressTimer = setTimeout(() => {
+      longPressFired = true;
+      if (state === "expanded") enterEdit();
+      else if (state === "editing") exitEdit();
+    }, LONG_PRESS_MS);
+  }
+  function moveDrag(x, y) {
+    const dx = x - dragSX;
+    const dy = y - dragSY;
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+      dragging = true;
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+    }
+    if (!dragging || !orbEl) return;
+    if (state === "editing") {
+      const raw = clampOrb(dragOrbX + dx, dragOrbY + dy);
+      orbEl.style.left = raw.x + "px";
+      orbEl.style.top = raw.y + "px";
+      orbEl.style.right = "auto";
+      orbEl.style.bottom = "auto";
+      const cx = raw.x + ORB_HALF;
+      const cy = raw.y + ORB_HALF;
+      panelW = Math.max(PANEL_MIN_W, cx - MARGIN);
+      panelH = Math.max(PANEL_MIN_H, cy - MARGIN);
+      updatePanelPosition();
+    } else {
+      const raw = clampOrb(dragOrbX + dx, dragOrbY + dy);
+      orbEl.style.left = raw.x + "px";
+      orbEl.style.top = raw.y + "px";
+      orbEl.style.right = "auto";
+      orbEl.style.bottom = "auto";
+      orbEl.style.transition = "none";
+      if (state === "expanded") updatePanelPosition();
+    }
+  }
+  function endDrag() {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
+    }
+    if (orbEl) orbEl.style.transition = "box-shadow 0.2s";
+    if (state === "editing") exitEdit();
+    if (!dragging && !longPressFired) toggle();
+    dragging = false;
+  }
+  var mouseOn = false;
+  function bindMouse() {
+    if (!orbEl) return;
+    orbEl.addEventListener("mousedown", (e) => {
+      e.stopPropagation();
+      mouseOn = true;
+      startDrag(e.clientX, e.clientY);
+    });
+    document.addEventListener("mousemove", (e) => {
+      if (!mouseOn) return;
+      moveDrag(e.clientX, e.clientY);
+    });
+    document.addEventListener("mouseup", () => {
+      if (!mouseOn) return;
+      mouseOn = false;
+      endDrag();
+    });
+  }
+  function initDebugPanel() {
+    orbEl = createOrb();
+    gestures.register({
+      id: "debug-orb",
+      targetFilter: "#debugOrb",
+      priority: 99,
+      stopPropagation: true,
+      onStart: (e) => {
+        e.preventDefault();
+        startDrag(e.touches[0].clientX, e.touches[0].clientY);
+      },
+      onMove: (e) => {
+        moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+      },
+      onEnd: () => endDrag()
+    });
+    bindMouse();
+    debugLog("\u{1F527} \u8C03\u8BD5\u9762\u677F\u5DF2\u542F\u52A8");
+  }
+
   // src/client/modules/card-stack.ts
   var orbT = currentTheme.cornerOrb;
   var CARD_BG = currentTheme.stack.cardBg;
@@ -4983,6 +5267,103 @@
     a.el.style.zIndex = String(a.zIndex);
     b.el.style.zIndex = String(b.zIndex);
   }
+  var FLOATING_ORB_EXT = 13;
+  var OVERLAP_X = 20;
+  var OVERLAP_Y = 15;
+  function _calcSafeBoundaries() {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const PAD = 16;
+    const sideEl = document.getElementById("sidebar");
+    const safeL = ((sideEl == null ? void 0 : sideEl.classList.contains("open")) ? sideEl.getBoundingClientRect().right : 0) + PAD;
+    const stackCards = document.querySelectorAll(".stack-card");
+    let sL = 0, sR = 0, sT = 0, sB = 0;
+    const hasStack = stackCards.length > 0;
+    if (hasStack) {
+      const fr = stackCards[0].getBoundingClientRect();
+      const lr = stackCards[stackCards.length - 1].getBoundingClientRect();
+      sL = fr.left;
+      sR = fr.right;
+      sT = fr.top;
+      sB = lr.bottom;
+    }
+    const safeT = PAD + 24;
+    const orbEl3 = document.querySelector(".light-orb");
+    let safeB = vh - PAD;
+    if (orbEl3) {
+      const r = orbEl3.getBoundingClientRect();
+      if (r.bottom > vh * 0.3) safeB = Math.min(safeB, r.top - PAD);
+    }
+    const fullR = vw - PAD;
+    return { safeL, safeT, safeB, fullR, sL, sR, sT, sB, hasStack };
+  }
+  function _rectsOverlap(x, y, rect) {
+    const cardR = x + FLOATING_CARD_W;
+    const cardB = y + FLOATING_CARD_H;
+    return x < rect.right && cardR > rect.left && y < rect.bottom && cardB > rect.top;
+  }
+  function _calcStackSafeRegion() {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const b = _calcSafeBoundaries();
+    const { safeL, safeT, safeB, fullR, sL, sR, sT, sB, hasStack } = b;
+    debugLog("FLOAT L" + Math.round(safeL) + " T" + Math.round(safeT) + " B" + Math.round(safeB) + " fR" + Math.round(fullR) + (hasStack ? " sL" + Math.round(sL) + " sR" + Math.round(sR) + " sT" + Math.round(sT) + " sB" + Math.round(sB) : " noStack"));
+    const existingRects = _floatingCards.map((item) => {
+      const r = item.el.getBoundingClientRect();
+      return { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+    });
+    function isValid(x, y) {
+      if (x < safeL || x + FLOATING_CARD_W > fullR) return false;
+      if (y < safeT || y + FLOATING_CARD_H > safeB) return false;
+      if (hasStack && y + FLOATING_CARD_H <= sT) return false;
+      if (hasStack) {
+        const cardR = x + FLOATING_CARD_W + FLOATING_ORB_EXT;
+        const cardB = y + FLOATING_CARD_H + FLOATING_ORB_EXT;
+        if (x < sR && cardR > sL && y < sB && cardB > sT) return false;
+      }
+      for (const rect of existingRects) {
+        if (_rectsOverlap(x, y, rect)) return false;
+      }
+      return true;
+    }
+    const COL_GAP = 8;
+    const ROW_GAP = 4;
+    const STEP_X = FLOATING_CARD_W + COL_GAP;
+    const STEP_Y = FLOATING_CARD_H + ROW_GAP;
+    const xPositions = [safeL];
+    const x2 = safeL + STEP_X;
+    if (x2 + FLOATING_CARD_W <= fullR) xPositions.push(x2);
+    const x3 = safeL + STEP_X * 2;
+    if (x3 + FLOATING_CARD_W <= fullR) xPositions.push(x3);
+    for (const x of xPositions) {
+      for (let y = safeT; y + FLOATING_CARD_H <= safeB; y += STEP_Y) {
+        if (isValid(Math.round(x), Math.round(y))) {
+          return { left: Math.round(x), top: Math.round(y) };
+        }
+      }
+    }
+    if (existingRects.length > 0) {
+      const first = existingRects[0];
+      const totalSlots = xPositions.length * Math.max(
+        1,
+        Math.floor((safeB - safeT) / STEP_Y)
+      );
+      const overflowRound = Math.max(
+        0,
+        Math.floor((_floatingCards.length - totalSlots) / totalSlots) + 1
+      );
+      const stackX = first.left - OVERLAP_X * overflowRound;
+      const stackY = first.top + OVERLAP_Y * overflowRound;
+      const clampedX = Math.max(safeL, stackX);
+      const clampedY = Math.min(safeB - FLOATING_CARD_H, Math.max(safeT, stackY));
+      debugLog("FLOAT stack c" + _floatingCards.length + " ovRound" + overflowRound + " " + Math.round(clampedX) + "," + Math.round(clampedY));
+      return { left: Math.round(clampedX), top: Math.round(clampedY) };
+    }
+    const cx = Math.round((vw - FLOATING_CARD_W) / 2);
+    const cy = Math.round((vh - FLOATING_CARD_H) / 2);
+    debugLog("FLOAT fallback " + cx + "," + cy);
+    return { left: cx, top: cy };
+  }
   function launchFocusedCard() {
     var _a, _b;
     _animateStackPullFeedback();
@@ -5108,10 +5489,14 @@
       "z-index:" + zIndex,
       "opacity:1"
     ].join(";");
-    _floatingCards.push(item);
     document.body.appendChild(el);
-    const targetLeft = Math.round((window.innerWidth - FLOATING_CARD_W) / 2);
-    const targetTop = Math.round((window.innerHeight - FLOATING_CARD_H) / 2);
+    const stackSafe = _calcStackSafeRegion();
+    _floatingCards.push(item);
+    const targetLeft = stackSafe.left;
+    const targetTop = stackSafe.top;
+    debugLog("FLOAT launch " + _focusIndex + " " + targetLeft + "," + targetTop);
+    const LAUNCH_Z_ABOVE_STACK = Z_STACK_BASE + CARDS.length + 1;
+    el.style.zIndex = String(LAUNCH_Z_ABOVE_STACK);
     anim.set(el, { scale: 0.8 });
     anim.to(el, {
       left: targetLeft,
@@ -5121,6 +5506,7 @@
       ease: "back.out(1.3)",
       onComplete: () => {
         item.state = "active";
+        el.style.zIndex = String(zIndex);
       }
     });
   }
@@ -9333,290 +9719,6 @@
       scrollable: true,
       rightMargin: rm
     });
-  }
-
-  // src/client/modules/debug-panel.ts
-  var state = "collapsed";
-  var orbEl = null;
-  var panelEl = null;
-  var ORB_SIZE = 36;
-  var ORB_HALF = ORB_SIZE / 2;
-  var MARGIN = 8;
-  var PANEL_MIN_W = 200;
-  var PANEL_MIN_H = 120;
-  var LONG_PRESS_MS = 600;
-  var panelW = 300;
-  var panelH = 250;
-  var dragging = false;
-  var dragSX = 0;
-  var dragSY = 0;
-  var dragOrbX = 0;
-  var dragOrbY = 0;
-  var longPressTimer = null;
-  var longPressFired = false;
-  var MAX_LOG_LINES = 200;
-  var logLines = [];
-  function formatTime() {
-    const d = /* @__PURE__ */ new Date();
-    const h = String(d.getHours()).padStart(2, "0");
-    const m = String(d.getMinutes()).padStart(2, "0");
-    const s = String(d.getSeconds()).padStart(2, "0");
-    const ms = String(d.getMilliseconds()).padStart(3, "0");
-    return `${h}:${m}:${s}.${ms}`;
-  }
-  function debugLog(msg) {
-    logLines.push(`[${formatTime()}] ${msg}`);
-    if (logLines.length > MAX_LOG_LINES) logLines.shift();
-    flushLogUI();
-  }
-  function debugClear() {
-    logLines.length = 0;
-    flushLogUI();
-  }
-  function debugCopy() {
-    const text = logLines.join("\n");
-    const singleLine = text.replace(/\n/g, " \u2192 ");
-    navigator.clipboard.writeText(singleLine).then(() => {
-      debugLog("\u{1F4CB} \u65E5\u5FD7\u5DF2\u590D\u5236\uFF08\u5355\u884C\u6A21\u5F0F\uFF09");
-    }).catch(() => {
-      debugLog("\u274C \u590D\u5236\u5931\u8D25");
-    });
-  }
-  function flushLogUI() {
-    if (!panelEl) return;
-    const area = panelEl.querySelector(".debug-log-area");
-    if (area) {
-      area.textContent = logLines.length > 0 ? logLines.join("\n") : "(\u7A7A)";
-      area.scrollTop = area.scrollHeight;
-    }
-  }
-  function clampOrb(x, y) {
-    return {
-      x: Math.max(MARGIN, Math.min(window.innerWidth - ORB_SIZE - MARGIN, x)),
-      y: Math.max(MARGIN, Math.min(window.innerHeight - ORB_SIZE - MARGIN, y))
-    };
-  }
-  function createOrb() {
-    const el = document.createElement("div");
-    el.className = "debug-orb";
-    el.style.cssText = `
-    position: fixed;
-    width: ${ORB_SIZE}px;
-    height: ${ORB_SIZE}px;
-    border-radius: 50%;
-    background: ${currentTheme.debug.orbGradient};
-    box-shadow: ${currentTheme.debug.orbShadow};
-    z-index: 300;
-    cursor: pointer;
-    transition: box-shadow 0.2s;
-    right: 80px;
-    bottom: 80px;
-  `;
-    el.id = "debugOrb";
-    document.body.appendChild(el);
-    return el;
-  }
-  function createPanel() {
-    const panel = document.createElement("div");
-    panel.style.cssText = `
-    position: fixed;
-    background: ${currentTheme.debug.panelBgGradient} padding-box,
-                ${currentTheme.debug.panelBorderGradient} border-box;
-    backdrop-filter: blur(16px);
-    border: 1px solid transparent;
-    border-radius: 10px;
-    box-shadow: ${currentTheme.debug.panelShadow};
-    z-index: 295;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    opacity: 0;
-    pointer-events: none;
-    font-family: monospace;
-  `;
-    panel.id = "debugPanel";
-    document.body.appendChild(panel);
-    return panel;
-  }
-  function buildPanelContent() {
-    var _a, _b;
-    if (!panelEl) return;
-    panelEl.innerHTML = `
-    <div style="
-      padding:6px 10px;
-      border-bottom:1px solid ${currentTheme.debug.headerBorder};
-      display:flex;justify-content:space-between;align-items:center;
-      flex-shrink:0;
-    ">
-      <span style="font-size:12px;color:rgba(0,255,200,0.9);font-weight:600">\u{1F527} \u8C03\u8BD5\u9762\u677F</span>
-      <span style="display:flex;gap:6px">
-        <button class="debug-btn-clear" style="
-          font-size:11px;padding:3px 10px;
-          background:${currentTheme.debug.buttonBg};color:${currentTheme.debug.headerText};
-          border:1px solid ${currentTheme.debug.buttonBorder};border-radius:5px;
-          cursor:pointer;
-        ">\u6E05\u7A7A</button>
-        <button class="debug-btn-copy" style="
-          font-size:11px;padding:3px 10px;
-          background:${currentTheme.debug.buttonBg};color:${currentTheme.debug.headerText};
-          border:1px solid ${currentTheme.debug.buttonBorder};border-radius:5px;
-          cursor:pointer;
-        ">\u590D\u5236</button>
-      </span>
-    </div>
-    <pre class="debug-log-area" style="
-      flex:1;
-      overflow-y:auto;
-      padding:8px 10px;
-      margin:0;
-      font-size:11px;
-      line-height:1.5;
-      color:${currentTheme.debug.logText};
-      white-space:pre-wrap;
-      word-break:break-all;
-      min-height:0;
-    ">${logLines.length > 0 ? logLines.join("\n") : "(\u7A7A)"}</pre>
-  `;
-    (_a = panelEl.querySelector(".debug-btn-clear")) == null ? void 0 : _a.addEventListener("click", () => debugClear());
-    (_b = panelEl.querySelector(".debug-btn-copy")) == null ? void 0 : _b.addEventListener("click", () => debugCopy());
-  }
-  function updatePanelPosition() {
-    if (!orbEl || !panelEl) return;
-    const r = orbEl.getBoundingClientRect();
-    const cx = r.left + ORB_HALF;
-    const cy = r.top + ORB_HALF;
-    const w = Math.max(PANEL_MIN_W, Math.min(panelW, cx - MARGIN));
-    const h = Math.max(PANEL_MIN_H, Math.min(panelH, cy - MARGIN));
-    panelEl.style.left = Math.max(MARGIN, cx - w) + "px";
-    panelEl.style.top = Math.max(MARGIN, cy - h) + "px";
-    panelEl.style.width = w + "px";
-    panelEl.style.height = h + "px";
-  }
-  function expandPanel() {
-    if (!panelEl) panelEl = createPanel();
-    if (state === "collapsed") {
-      state = "expanded";
-      buildPanelContent();
-      updatePanelPosition();
-      panelEl.style.opacity = "1";
-      panelEl.style.pointerEvents = "auto";
-    }
-  }
-  function collapsePanel() {
-    if (state === "expanded") {
-      state = "collapsed";
-      if (panelEl) {
-        panelEl.style.opacity = "0";
-        panelEl.style.pointerEvents = "none";
-      }
-    }
-  }
-  function enterEdit() {
-    if (state !== "expanded") return;
-    state = "editing";
-    if (panelEl) panelEl.style.boxShadow = currentTheme.debug.panelShadowEdit;
-  }
-  function exitEdit() {
-    if (state !== "editing") return;
-    state = "expanded";
-    if (panelEl) panelEl.style.boxShadow = currentTheme.debug.panelShadow;
-  }
-  function toggle() {
-    if (state === "collapsed") expandPanel();
-    else if (state === "expanded") collapsePanel();
-  }
-  function startDrag(x, y) {
-    dragging = false;
-    longPressFired = false;
-    dragSX = x;
-    dragSY = y;
-    const r = orbEl.getBoundingClientRect();
-    dragOrbX = r.left;
-    dragOrbY = r.top;
-    longPressTimer = setTimeout(() => {
-      longPressFired = true;
-      if (state === "expanded") enterEdit();
-      else if (state === "editing") exitEdit();
-    }, LONG_PRESS_MS);
-  }
-  function moveDrag(x, y) {
-    const dx = x - dragSX;
-    const dy = y - dragSY;
-    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
-      dragging = true;
-      if (longPressTimer) {
-        clearTimeout(longPressTimer);
-        longPressTimer = null;
-      }
-    }
-    if (!dragging || !orbEl) return;
-    if (state === "editing") {
-      const raw = clampOrb(dragOrbX + dx, dragOrbY + dy);
-      orbEl.style.left = raw.x + "px";
-      orbEl.style.top = raw.y + "px";
-      orbEl.style.right = "auto";
-      orbEl.style.bottom = "auto";
-      const cx = raw.x + ORB_HALF;
-      const cy = raw.y + ORB_HALF;
-      panelW = Math.max(PANEL_MIN_W, cx - MARGIN);
-      panelH = Math.max(PANEL_MIN_H, cy - MARGIN);
-      updatePanelPosition();
-    } else {
-      const raw = clampOrb(dragOrbX + dx, dragOrbY + dy);
-      orbEl.style.left = raw.x + "px";
-      orbEl.style.top = raw.y + "px";
-      orbEl.style.right = "auto";
-      orbEl.style.bottom = "auto";
-      orbEl.style.transition = "none";
-      if (state === "expanded") updatePanelPosition();
-    }
-  }
-  function endDrag() {
-    if (longPressTimer) {
-      clearTimeout(longPressTimer);
-      longPressTimer = null;
-    }
-    if (orbEl) orbEl.style.transition = "box-shadow 0.2s";
-    if (state === "editing") exitEdit();
-    if (!dragging && !longPressFired) toggle();
-    dragging = false;
-  }
-  var mouseOn = false;
-  function bindMouse() {
-    if (!orbEl) return;
-    orbEl.addEventListener("mousedown", (e) => {
-      e.stopPropagation();
-      mouseOn = true;
-      startDrag(e.clientX, e.clientY);
-    });
-    document.addEventListener("mousemove", (e) => {
-      if (!mouseOn) return;
-      moveDrag(e.clientX, e.clientY);
-    });
-    document.addEventListener("mouseup", () => {
-      if (!mouseOn) return;
-      mouseOn = false;
-      endDrag();
-    });
-  }
-  function initDebugPanel() {
-    orbEl = createOrb();
-    gestures.register({
-      id: "debug-orb",
-      targetFilter: "#debugOrb",
-      priority: 99,
-      stopPropagation: true,
-      onStart: (e) => {
-        e.preventDefault();
-        startDrag(e.touches[0].clientX, e.touches[0].clientY);
-      },
-      onMove: (e) => {
-        moveDrag(e.touches[0].clientX, e.touches[0].clientY);
-      },
-      onEnd: () => endDrag()
-    });
-    bindMouse();
-    debugLog("\u{1F527} \u8C03\u8BD5\u9762\u677F\u5DF2\u542F\u52A8");
   }
 
   // src/client/modules/char-rain.ts
