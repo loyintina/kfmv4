@@ -14550,6 +14550,11 @@
     if (orbState !== "expanded") return;
     orbState = "editing";
     if (panelEl2) {
+      const rect = orbEl2.getBoundingClientRect();
+      dragStartOrbX = rect.left;
+      dragStartOrbY = rect.top;
+      dragStartPanelX = parseFloat(panelEl2.style.left) || 0;
+      dragStartPanelY = parseFloat(panelEl2.style.top) || 0;
       panelEl2.style.boxShadow = currentTheme.aiChat.panelShadowEdit;
     }
     updateStateLabel();

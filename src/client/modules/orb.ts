@@ -250,7 +250,14 @@ function collapsePanel(): void {
 function enterEditMode(): void {
   if (orbState !== 'expanded') return;
   orbState = 'editing';
+
+  // 重新读取当前位置（普通拖拽阶段可能已改变）
   if (panelEl) {
+    const rect = orbEl!.getBoundingClientRect();
+    dragStartOrbX = rect.left;
+    dragStartOrbY = rect.top;
+    dragStartPanelX = parseFloat(panelEl.style.left) || 0;
+    dragStartPanelY = parseFloat(panelEl.style.top) || 0;
     panelEl.style.boxShadow = theme.aiChat.panelShadowEdit;
   }
   updateStateLabel();
