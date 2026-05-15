@@ -555,11 +555,9 @@ function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: n
     const newBottomY = newH - bOff - cSize;
     _dragItem.trOrb.style.left = newRightX + 'px';
     _dragItem.blOrb.style.top = newBottomY + 'px';
-    // BR 光球：min(角上, 手指位置) → 手指越过右下角时脱离跟手
-    const orbRelX = orbAbsX - clampedLeft;
-    const orbRelY = orbAbsY - clampedTop;
-    _dragItem.brOrb.style.left = Math.min(newRightX, orbRelX) + 'px';
-    _dragItem.brOrb.style.top = Math.min(newBottomY, orbRelY) + 'px';
+    // BR 光球始终贴在卡片右下角（不到最小值压缩 → 到最小值卡住 → 回来恢复）
+    _dragItem.brOrb.style.left = newRightX + 'px';
+    _dragItem.brOrb.style.top = newBottomY + 'px';
   }
 }
 

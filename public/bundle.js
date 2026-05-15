@@ -5463,10 +5463,8 @@
       const newBottomY = newH - bOff - cSize;
       _dragItem.trOrb.style.left = newRightX + "px";
       _dragItem.blOrb.style.top = newBottomY + "px";
-      const orbRelX = orbAbsX - clampedLeft;
-      const orbRelY = orbAbsY - clampedTop;
-      _dragItem.brOrb.style.left = Math.min(newRightX, orbRelX) + "px";
-      _dragItem.brOrb.style.top = Math.min(newBottomY, orbRelY) + "px";
+      _dragItem.brOrb.style.left = newRightX + "px";
+      _dragItem.brOrb.style.top = newBottomY + "px";
     }
   }
   function _endFloatingDrag() {
