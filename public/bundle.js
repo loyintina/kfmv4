@@ -5445,10 +5445,10 @@
       const orbAbsX = _dragStartOrbAbsX + dx;
       const orbAbsY = _dragStartOrbAbsY + dy;
       const b = _calcFloatingSafeBounds();
-      const desiredLeft = Math.round(orbAbsX - _dragStartW + rOff + cSize);
-      const desiredTop = Math.round(orbAbsY - _dragStartH + bOff + cSize);
-      const clampedLeft = Math.max(b.safeL, Math.min(b.fullR - _dragStartW, desiredLeft));
-      const clampedTop = Math.max(b.safeT, Math.min(b.safeB - _dragStartH, desiredTop));
+      const desiredLeft = Math.round(orbAbsX - _dragItem.cardWidth + rOff + cSize);
+      const desiredTop = Math.round(orbAbsY - _dragItem.cardHeight + bOff + cSize);
+      const clampedLeft = Math.max(b.safeL, Math.min(b.fullR - _dragItem.cardWidth, desiredLeft));
+      const clampedTop = Math.max(b.safeT, Math.min(b.safeB - _dragItem.cardHeight, desiredTop));
       el.style.left = clampedLeft + "px";
       el.style.top = clampedTop + "px";
       const orbRelX = orbAbsX - clampedLeft;
