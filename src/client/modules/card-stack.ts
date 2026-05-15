@@ -94,6 +94,8 @@ interface FloatingCardItem {
   brOrb: HTMLElement;
   cardWidth: number;
   cardHeight: number;
+  naturalWidth: number;
+  naturalHeight: number;
   accentColor: string;
 }
 let _floatingCards: FloatingCardItem[] = [];
@@ -418,8 +420,8 @@ function _enterFloatingEditMode(item: FloatingCardItem): void {
   const cardRect = item.el.getBoundingClientRect();
   _dragStartLeft = cardRect.left;
   _dragStartTop = cardRect.top;
-  _dragStartW = item.cardWidth;
-  _dragStartH = item.cardHeight;
+  _dragStartW = item.naturalWidth;
+  _dragStartH = item.naturalHeight;
   const brRect = item.brOrb.getBoundingClientRect();
   _dragStartOrbAbsX = brRect.left;
   _dragStartOrbAbsY = brRect.top;
@@ -459,8 +461,8 @@ function _startFloatingDrag(item: FloatingCardItem, clientX: number, clientY: nu
   const rect = item.el.getBoundingClientRect();
   _dragStartLeft = rect.left;
   _dragStartTop = rect.top;
-  _dragStartW = item.cardWidth;
-  _dragStartH = item.cardHeight;
+  _dragStartW = item.naturalWidth;
+  _dragStartH = item.naturalHeight;
   const brRect = item.brOrb.getBoundingClientRect();
   _dragStartOrbAbsX = brRect.left;
   _dragStartOrbAbsY = brRect.top;
@@ -513,6 +515,8 @@ function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: n
     el.style.height = newH + 'px';
     _dragItem.cardWidth = newW;
     _dragItem.cardHeight = newH;
+    _dragItem.naturalWidth = newW;
+    _dragItem.naturalHeight = newH;
 
     // 所有光球贴在卡片右下角新位置
     const newRightX = newW - rOff - cSize;
@@ -684,6 +688,8 @@ export function launchFocusedCard(): void {
     brOrb: null as unknown as HTMLElement,
     cardWidth: FLOATING_CARD_W,
     cardHeight: FLOATING_CARD_H,
+    naturalWidth: FLOATING_CARD_W,
+    naturalHeight: FLOATING_CARD_H,
     accentColor: color.border,
   };
 
