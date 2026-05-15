@@ -505,11 +505,13 @@ function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: n
     const fingerAbsX = _dragStartOrbAbsX + dx;
     const fingerAbsY = _dragStartOrbAbsY + dy;
 
-    // 光球不能越过卡片最小尺寸的右下角（缩到最小时停在角上）
+    // 光球范围：最小尺寸右下角 ～ 底部输入栏上沿
     const minOrbAbsX = _dragStartLeft + FLOATING_CARD_W_MIN - rOff - cSize;
     const minOrbAbsY = _dragStartTop + FLOATING_CARD_H_MIN - bOff - cSize;
+    const b = _calcFloatingSafeBounds();
+    const maxOrbAbsY = b.safeB - bOff - cSize;
     const orbAbsX = Math.max(minOrbAbsX, fingerAbsX);
-    const orbAbsY = Math.max(minOrbAbsY, fingerAbsY);
+    const orbAbsY = Math.min(maxOrbAbsY, Math.max(minOrbAbsY, fingerAbsY));
 
     // 卡片尺寸 = 光球位置 - 卡片左上 + 补偿
     const newW = Math.max(FLOATING_CARD_W_MIN, orbAbsX - _dragStartLeft + rOff + cSize);

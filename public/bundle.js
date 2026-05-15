@@ -5428,8 +5428,10 @@
       const fingerAbsY = _dragStartOrbAbsY + dy;
       const minOrbAbsX = _dragStartLeft + FLOATING_CARD_W_MIN - rOff - cSize;
       const minOrbAbsY = _dragStartTop + FLOATING_CARD_H_MIN - bOff - cSize;
+      const b = _calcFloatingSafeBounds();
+      const maxOrbAbsY = b.safeB - bOff - cSize;
       const orbAbsX = Math.max(minOrbAbsX, fingerAbsX);
-      const orbAbsY = Math.max(minOrbAbsY, fingerAbsY);
+      const orbAbsY = Math.min(maxOrbAbsY, Math.max(minOrbAbsY, fingerAbsY));
       const newW = Math.max(FLOATING_CARD_W_MIN, orbAbsX - _dragStartLeft + rOff + cSize);
       const newH = Math.max(FLOATING_CARD_H_MIN, orbAbsY - _dragStartTop + bOff + cSize);
       el.style.width = newW + "px";
