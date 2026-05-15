@@ -530,23 +530,21 @@ function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: n
     const orbAbsX = _dragStartOrbAbsX + dx;
     const orbAbsY = _dragStartOrbAbsY + dy;
 
-    // 卡片左上角与光球同 delta 移动（整卡刚体位移），与当前尺寸解耦
+    // 卡片左上角 = 光球 - 原始尺寸 + 补偿（撞边界时自动压缩，离开后恢复）
     const b = _calcFloatingSafeBounds();
-    const rawTlX = _dragStartLeft + dx;
-    const rawTlY = _dragStartTop + dy;
-    const clampedLeft = Math.round(Math.max(b.safeL, Math.min(b.fullR - FLOATING_CARD_W_MIN, rawTlX)));
-    const clampedTop = Math.round(Math.max(b.safeT, Math.min(b.safeB - FLOATING_CARD_H_MIN, rawTlY)));
+    const tlFromOrbX = orbAbsX - _dragStartW + rOff + cSize;
+    const tlFromOrbY = orbAbsY - _dragStartH + bOff + cSize;
+    const clampedLeft = Math.round(Math.max(b.safeL, Math.min(b.fullR - FLOATING_CARD_W_MIN, tlFromOrbX)));
+    const clampedTop = Math.round(Math.max(b.safeT, Math.min(b.safeB - FLOATING_CARD_H_MIN, tlFromOrbY)));
     el.style.left = clampedLeft + 'px';
     el.style.top = clampedTop + 'px';
 
-    // 卡片尺寸 = 光球到卡片左上角的距离，无上限（撞边界自动压缩，离开自动恢复）
+    // 卡片尺寸 = 光球到卡片左上角的距离，无上限
     const newW = Math.max(FLOATING_CARD_W_MIN, orbAbsX - clampedLeft + rOff + cSize);
     const newH = Math.max(FLOATING_CARD_H_MIN, orbAbsY - clampedTop + bOff + cSize);
     if (newW !== _dragItem.cardWidth || newH !== _dragItem.cardHeight) {
       el.style.width = newW + 'px';
       el.style.height = newH + 'px';
-      _dragItem.cardWidth = newW;
-      _dragItem.cardHeight = newH;
     }
 
     // 角光球始终在卡片右下角

@@ -5445,10 +5445,10 @@
       const orbAbsX = _dragStartOrbAbsX + dx;
       const orbAbsY = _dragStartOrbAbsY + dy;
       const b = _calcFloatingSafeBounds();
-      const rawTlX = _dragStartLeft + dx;
-      const rawTlY = _dragStartTop + dy;
-      const clampedLeft = Math.round(Math.max(b.safeL, Math.min(b.fullR - FLOATING_CARD_W_MIN, rawTlX)));
-      const clampedTop = Math.round(Math.max(b.safeT, Math.min(b.safeB - FLOATING_CARD_H_MIN, rawTlY)));
+      const tlFromOrbX = orbAbsX - _dragStartW + rOff + cSize;
+      const tlFromOrbY = orbAbsY - _dragStartH + bOff + cSize;
+      const clampedLeft = Math.round(Math.max(b.safeL, Math.min(b.fullR - FLOATING_CARD_W_MIN, tlFromOrbX)));
+      const clampedTop = Math.round(Math.max(b.safeT, Math.min(b.safeB - FLOATING_CARD_H_MIN, tlFromOrbY)));
       el.style.left = clampedLeft + "px";
       el.style.top = clampedTop + "px";
       const newW = Math.max(FLOATING_CARD_W_MIN, orbAbsX - clampedLeft + rOff + cSize);
@@ -5456,8 +5456,6 @@
       if (newW !== _dragItem.cardWidth || newH !== _dragItem.cardHeight) {
         el.style.width = newW + "px";
         el.style.height = newH + "px";
-        _dragItem.cardWidth = newW;
-        _dragItem.cardHeight = newH;
       }
       const newRightX = newW - rOff - cSize;
       const newBottomY = newH - bOff - cSize;
