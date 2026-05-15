@@ -94,8 +94,6 @@ interface FloatingCardItem {
   brOrb: HTMLElement;
   cardWidth: number;
   cardHeight: number;
-  naturalWidth: number;
-  naturalHeight: number;
   accentColor: string;
 }
 let _floatingCards: FloatingCardItem[] = [];
@@ -420,8 +418,8 @@ function _enterFloatingEditMode(item: FloatingCardItem): void {
   const cardRect = item.el.getBoundingClientRect();
   _dragStartLeft = cardRect.left;
   _dragStartTop = cardRect.top;
-  _dragStartW = item.naturalWidth;
-  _dragStartH = item.naturalHeight;
+  _dragStartW = item.cardWidth;
+  _dragStartH = item.cardHeight;
   const brRect = item.brOrb.getBoundingClientRect();
   _dragStartOrbAbsX = brRect.left;
   _dragStartOrbAbsY = brRect.top;
@@ -461,8 +459,8 @@ function _startFloatingDrag(item: FloatingCardItem, clientX: number, clientY: nu
   const rect = item.el.getBoundingClientRect();
   _dragStartLeft = rect.left;
   _dragStartTop = rect.top;
-  _dragStartW = item.naturalWidth;
-  _dragStartH = item.naturalHeight;
+  _dragStartW = item.cardWidth;
+  _dragStartH = item.cardHeight;
   const brRect = item.brOrb.getBoundingClientRect();
   _dragStartOrbAbsX = brRect.left;
   _dragStartOrbAbsY = brRect.top;
@@ -515,9 +513,6 @@ function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: n
     el.style.height = newH + 'px';
     _dragItem.cardWidth = newW;
     _dragItem.cardHeight = newH;
-    _dragItem.naturalWidth = newW;
-    _dragItem.naturalHeight = newH;
-
     // 所有光球贴在卡片右下角新位置
     const newRightX = newW - rOff - cSize;
     const newBottomY = newH - bOff - cSize;
@@ -544,9 +539,9 @@ function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: n
     el.style.left = clampedLeft + 'px';
     el.style.top = clampedTop + 'px';
 
-    // 卡片尺寸 = 光球到卡片左上角的距离，不依赖上一帧
-    const newW = Math.max(FLOATING_CARD_W_MIN, Math.min(_dragStartW, orbAbsX - clampedLeft + rOff + cSize));
-    const newH = Math.max(FLOATING_CARD_H_MIN, Math.min(_dragStartH, orbAbsY - clampedTop + bOff + cSize));
+    // 卡片尺寸 = 光球到卡片左上角的距离，无上限（撞边界自动压缩，离开自动恢复）
+    const newW = Math.max(FLOATING_CARD_W_MIN, orbAbsX - clampedLeft + rOff + cSize);
+    const newH = Math.max(FLOATING_CARD_H_MIN, orbAbsY - clampedTop + bOff + cSize);
     if (newW !== _dragItem.cardWidth || newH !== _dragItem.cardHeight) {
       el.style.width = newW + 'px';
       el.style.height = newH + 'px';
@@ -688,8 +683,6 @@ export function launchFocusedCard(): void {
     brOrb: null as unknown as HTMLElement,
     cardWidth: FLOATING_CARD_W,
     cardHeight: FLOATING_CARD_H,
-    naturalWidth: FLOATING_CARD_W,
-    naturalHeight: FLOATING_CARD_H,
     accentColor: color.border,
   };
 
