@@ -94,6 +94,7 @@ interface FloatingCardItem {
   brOrb: HTMLElement;
   cardWidth: number;
   cardHeight: number;
+  accentColor: string;
 }
 let _floatingCards: FloatingCardItem[] = [];
 let _nextFloatingZ = Z_FLOATING_BASE;
@@ -106,6 +107,8 @@ let _dragStartLeft = 0;
 let _dragStartTop = 0;
 let _dragStartW = 0;
 let _dragStartH = 0;
+let _dragStartOrbAbsX = 0;
+let _dragStartOrbAbsY = 0;
 let _dragIsDragging = false;
 let _dragLongPressFired = false;
 let _dragLongPressTimer: ReturnType<typeof setTimeout> | null = null;
@@ -412,7 +415,13 @@ function _clearFloatingDragTimer(): void {
 
 function _enterFloatingEditMode(item: FloatingCardItem): void {
   item.state = 'editing';
-  item.el.style.boxShadow = theme.aiChat.panelShadowEdit;
+  // 使用卡片专属色生成编辑模式发光阴影，替代固定紫色
+  const c = item.accentColor;
+  if (c) {
+    item.el.style.boxShadow = '0 0 40px 20px ' + c.replace(/,\s*1\)$/, ',0.55)') + ', 0 8px 32px rgba(0,0,0,0.5)';
+  } else {
+    item.el.style.boxShadow = theme.aiChat.panelShadowEdit;
+  }
   debugLog("FLOAT edit enter");
 }
 
@@ -436,6 +445,9 @@ function _startFloatingDrag(item: FloatingCardItem, clientX: number, clientY: nu
   _dragStartTop = rect.top;
   _dragStartW = item.cardWidth;
   _dragStartH = item.cardHeight;
+  const brRect = item.brOrb.getBoundingClientRect();
+  _dragStartOrbAbsX = brRect.left;
+  _dragStartOrbAbsY = brRect.top;
 
   _dragLongPressTimer = setTimeout(() => {
     _dragLongPressFired = true;
@@ -463,24 +475,28 @@ function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: n
   const el = _dragItem.el;
 
   if (_dragItem.state === 'editing') {
-    const newW = Math.max(FLOATING_CARD_W_MIN, _dragStartW + dx);
-    const newH = Math.max(FLOATING_CARD_H_MIN, _dragStartH + dy);
+    // BR 光球跟随手指自由移动（复刻主光球行为）
+    const orbAbsX = _dragStartOrbAbsX + dx;
+    const orbAbsY = _dragStartOrbAbsY + dy;
+    _dragItem.brOrb.style.left = (orbAbsX - _dragStartLeft) + 'px';
+    _dragItem.brOrb.style.top = (orbAbsY - _dragStartTop) + 'px';
+
+    // 卡片尺寸由光球位置决定：卡片右下角 = 光球当前位置
+    const cSize = orbT.size;
+    const rOff = orbT.cornerOff + orbT.rightOffAdj;
+    const bOff = orbT.cornerOff + orbT.bottomOffAdj;
+    const newW = Math.max(FLOATING_CARD_W_MIN, orbAbsX - _dragStartLeft + rOff + cSize);
+    const newH = Math.max(FLOATING_CARD_H_MIN, orbAbsY - _dragStartTop + bOff + cSize);
     el.style.width = newW + 'px';
     el.style.height = newH + 'px';
     _dragItem.cardWidth = newW;
     _dragItem.cardHeight = newH;
 
-    // 四角光球跟随卡片新尺寸
-    const cOff = orbT.cornerOff;
-    const rOff = cOff + orbT.rightOffAdj;
-    const bOff = cOff + orbT.bottomOffAdj;
-    const cSize = orbT.size;
+    // 其余光球（TR/BL）跟随新尺寸
     const newRightX = newW - rOff - cSize;
     const newBottomY = newH - bOff - cSize;
     _dragItem.trOrb.style.left = newRightX + 'px';
     _dragItem.blOrb.style.top = newBottomY + 'px';
-    _dragItem.brOrb.style.left = newRightX + 'px';
-    _dragItem.brOrb.style.top = newBottomY + 'px';
   } else {
     const rawX = _dragStartLeft + dx;
     const rawY = _dragStartTop + dy;
@@ -613,6 +629,7 @@ export function launchFocusedCard(): void {
     brOrb: null as unknown as HTMLElement,
     cardWidth: FLOATING_CARD_W,
     cardHeight: FLOATING_CARD_H,
+    accentColor: color.border,
   };
 
   // TL — 上移一层

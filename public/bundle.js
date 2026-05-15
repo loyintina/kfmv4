@@ -5108,6 +5108,8 @@
   var _dragStartTop = 0;
   var _dragStartW = 0;
   var _dragStartH = 0;
+  var _dragStartOrbAbsX = 0;
+  var _dragStartOrbAbsY = 0;
   var _dragIsDragging = false;
   var _dragLongPressFired = false;
   var _dragLongPressTimer = null;
@@ -5353,7 +5355,12 @@
   }
   function _enterFloatingEditMode(item) {
     item.state = "editing";
-    item.el.style.boxShadow = currentTheme.aiChat.panelShadowEdit;
+    const c = item.accentColor;
+    if (c) {
+      item.el.style.boxShadow = "0 0 40px 20px " + c.replace(/,\s*1\)$/, ",0.55)") + ", 0 8px 32px rgba(0,0,0,0.5)";
+    } else {
+      item.el.style.boxShadow = currentTheme.aiChat.panelShadowEdit;
+    }
     debugLog("FLOAT edit enter");
   }
   function _exitFloatingEditMode(item) {
@@ -5374,6 +5381,9 @@
     _dragStartTop = rect.top;
     _dragStartW = item.cardWidth;
     _dragStartH = item.cardHeight;
+    const brRect = item.brOrb.getBoundingClientRect();
+    _dragStartOrbAbsX = brRect.left;
+    _dragStartOrbAbsY = brRect.top;
     _dragLongPressTimer = setTimeout(() => {
       _dragLongPressFired = true;
       if (item.state === "active") {
@@ -5395,22 +5405,23 @@
     if (!_dragIsDragging) return;
     const el = _dragItem.el;
     if (_dragItem.state === "editing") {
-      const newW = Math.max(FLOATING_CARD_W_MIN, _dragStartW + dx);
-      const newH = Math.max(FLOATING_CARD_H_MIN, _dragStartH + dy);
+      const orbAbsX = _dragStartOrbAbsX + dx;
+      const orbAbsY = _dragStartOrbAbsY + dy;
+      _dragItem.brOrb.style.left = orbAbsX - _dragStartLeft + "px";
+      _dragItem.brOrb.style.top = orbAbsY - _dragStartTop + "px";
+      const cSize = orbT.size;
+      const rOff = orbT.cornerOff + orbT.rightOffAdj;
+      const bOff = orbT.cornerOff + orbT.bottomOffAdj;
+      const newW = Math.max(FLOATING_CARD_W_MIN, orbAbsX - _dragStartLeft + rOff + cSize);
+      const newH = Math.max(FLOATING_CARD_H_MIN, orbAbsY - _dragStartTop + bOff + cSize);
       el.style.width = newW + "px";
       el.style.height = newH + "px";
       _dragItem.cardWidth = newW;
       _dragItem.cardHeight = newH;
-      const cOff = orbT.cornerOff;
-      const rOff = cOff + orbT.rightOffAdj;
-      const bOff = cOff + orbT.bottomOffAdj;
-      const cSize = orbT.size;
       const newRightX = newW - rOff - cSize;
       const newBottomY = newH - bOff - cSize;
       _dragItem.trOrb.style.left = newRightX + "px";
       _dragItem.blOrb.style.top = newBottomY + "px";
-      _dragItem.brOrb.style.left = newRightX + "px";
-      _dragItem.brOrb.style.top = newBottomY + "px";
     } else {
       const rawX = _dragStartLeft + dx;
       const rawY = _dragStartTop + dy;
@@ -5522,7 +5533,8 @@
       blOrb: null,
       brOrb: null,
       cardWidth: FLOATING_CARD_W,
-      cardHeight: FLOATING_CARD_H
+      cardHeight: FLOATING_CARD_H,
+      accentColor: color.border
     };
     const tlOrb = createDecoratedCorner(
       cornerOff,
