@@ -338,16 +338,6 @@ function _calcFloatingSafeBounds(): FloatingSafeBounds {
   return { safeL, safeT, safeB, fullR, stackLeft };
 }
 
-function _clampCardPosition(
-  left: number, top: number, w: number, h: number
-): { left: number; top: number } {
-  const b = _calcFloatingSafeBounds();
-  return {
-    left: Math.max(b.safeL, Math.min(b.fullR - w, Math.round(left))),
-    top: Math.max(b.safeT, Math.min(b.safeB - h, Math.round(top))),
-  };
-}
-
 /**
  * 随机散落：在安全区内找一个不重叠的位置。
  * 最多尝试 30 次，失败则垂直堆叠在左侧。
@@ -368,7 +358,7 @@ function _scatterPosition(cardIndex: number): { left: number; top: number } {
   if (stackCards.length > 0) {
     const first = stackCards[0].getBoundingClientRect();
     const last = stackCards[stackCards.length - 1].getBoundingClientRect();
-    stackRect = new DOMRectReadOnly(first.left, first.top, first.width, last.bottom - first.top) as unknown as DOMRect;
+    stackRect = new DOMRect(first.left, first.top, first.width, last.bottom - first.top);
   }
 
   /** 检查位置 (x,y) 是否有效 */
@@ -400,7 +390,10 @@ function _scatterPosition(cardIndex: number): { left: number; top: number } {
   // 兜底：左侧垂直堆叠
   const fallbackX = b.safeL;
   const fallbackY = b.safeT + cardIndex * (h + 4);
-  const clamped = _clampCardPosition(fallbackX, fallbackY, w, h);
+  const clamped = {
+    left: Math.max(b.safeL, Math.min(b.fullR - w, Math.round(fallbackX))),
+    top: Math.max(b.safeT, Math.min(b.safeB - h, Math.round(fallbackY))),
+  };
   debugLog("FLOAT fallback c" + cardIndex + " " + clamped.left + "," + clamped.top);
   return clamped;
 }
@@ -491,32 +484,27 @@ function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: n
 
   const el = _dragItem.el;
 
+  // 共用参数：光球常量、手指原始位置、输入栏限制
+  const cSize = orbT.size;
+  const rOff = orbT.cornerOff + orbT.rightOffAdj;
+  const bOff = orbT.cornerOff + orbT.bottomOffAdj;
+  const rawOrbX = _dragStartOrbAbsX + dx;
+  const rawOrbY = _dragStartOrbAbsY + dy;
+  const maxOrbY = (document.getElementById("aiInputBar")?.getBoundingClientRect().top ?? window.innerHeight) - 42;
+
   if (_dragItem.state === 'editing') {
-    // 编辑模式：光球始终贴在卡片右下角（缩放手柄行为）
-    const cSize = orbT.size;
-    const rOff = orbT.cornerOff + orbT.rightOffAdj;
-    const bOff = orbT.cornerOff + orbT.bottomOffAdj;
-
-    // 手指绝对位置
-    const fingerAbsX = _dragStartOrbAbsX + dx;
-    const fingerAbsY = _dragStartOrbAbsY + dy;
-
-    // 光球不能越过卡片最小尺寸的右下角（缩到最小时停在角上）
     const minOrbAbsX = _dragStartLeft + FLOATING_CARD_W_MIN - rOff - cSize;
     const minOrbAbsY = _dragStartTop + FLOATING_CARD_H_MIN - bOff - cSize;
-    const orbAbsX = Math.max(minOrbAbsX, fingerAbsX);
-    // 光球最低不能低于 AI 输入栏上沿（光球高26px + 间距16px）
-    const _maxOrbY = (document.getElementById("aiInputBar")?.getBoundingClientRect().top ?? window.innerHeight) - 42;
-    const orbAbsY = Math.min(_maxOrbY, Math.max(minOrbAbsY, fingerAbsY));
+    const orbAbsX = Math.max(minOrbAbsX, rawOrbX);
+    const orbAbsY = Math.min(maxOrbY, Math.max(minOrbAbsY, rawOrbY));
 
-    // 卡片尺寸 = 光球位置 - 卡片左上 + 补偿
     const newW = Math.max(FLOATING_CARD_W_MIN, orbAbsX - _dragStartLeft + rOff + cSize);
     const newH = Math.max(FLOATING_CARD_H_MIN, orbAbsY - _dragStartTop + bOff + cSize);
     el.style.width = newW + 'px';
     el.style.height = newH + 'px';
     _dragItem.cardWidth = newW;
     _dragItem.cardHeight = newH;
-    // 所有光球贴在卡片右下角新位置
+
     const newRightX = newW - rOff - cSize;
     const newBottomY = newH - bOff - cSize;
     _dragItem.trOrb.style.left = newRightX + 'px';
@@ -524,17 +512,9 @@ function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: n
     _dragItem.brOrb.style.left = newRightX + 'px';
     _dragItem.brOrb.style.top = newBottomY + 'px';
   } else {
-    // 普通拖拽 + 弹性边界 —— 无尺寸前置依赖
-    const cSize = orbT.size;
-    const rOff = orbT.cornerOff + orbT.rightOffAdj;
-    const bOff = orbT.cornerOff + orbT.bottomOffAdj;
+    const orbAbsX = rawOrbX;
+    const orbAbsY = Math.min(maxOrbY, rawOrbY);
 
-    // 光球绝对位置跟随手指
-    const orbAbsX = _dragStartOrbAbsX + dx;
-    const _maxOrbY = (document.getElementById("aiInputBar")?.getBoundingClientRect().top ?? window.innerHeight) - 42;
-    const orbAbsY = Math.min(_maxOrbY, _dragStartOrbAbsY + dy);
-
-    // 卡片左上角 = 光球 - 原始尺寸 + 补偿（撞边界时自动压缩，离开后恢复）
     const b = _calcFloatingSafeBounds();
     const tlFromOrbX = orbAbsX - _dragStartW + rOff + cSize;
     const tlFromOrbY = orbAbsY - _dragStartH + bOff + cSize;
@@ -543,7 +523,6 @@ function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: n
     el.style.left = clampedLeft + 'px';
     el.style.top = clampedTop + 'px';
 
-    // 卡片尺寸 = 光球到卡片左上角的距离，无上限
     const newW = Math.max(FLOATING_CARD_W_MIN, orbAbsX - clampedLeft + rOff + cSize);
     const newH = Math.max(FLOATING_CARD_H_MIN, orbAbsY - clampedTop + bOff + cSize);
     if (newW !== _dragItem.cardWidth || newH !== _dragItem.cardHeight) {
@@ -551,12 +530,10 @@ function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: n
       el.style.height = newH + 'px';
     }
 
-    // 角光球始终在卡片右下角
     const newRightX = newW - rOff - cSize;
     const newBottomY = newH - bOff - cSize;
     _dragItem.trOrb.style.left = newRightX + 'px';
     _dragItem.blOrb.style.top = newBottomY + 'px';
-    // BR 光球始终贴在卡片右下角（不到最小值压缩 → 到最小值卡住 → 回来恢复）
     _dragItem.brOrb.style.left = newRightX + 'px';
     _dragItem.brOrb.style.top = newBottomY + 'px';
   }

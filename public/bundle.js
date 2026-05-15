@@ -5298,13 +5298,6 @@
     const stackLeft = stackCards.length > 0 ? stackCards[0].getBoundingClientRect().left : fullR;
     return { safeL, safeT, safeB, fullR, stackLeft };
   }
-  function _clampCardPosition(left, top, w, h) {
-    const b = _calcFloatingSafeBounds();
-    return {
-      left: Math.max(b.safeL, Math.min(b.fullR - w, Math.round(left))),
-      top: Math.max(b.safeT, Math.min(b.safeB - h, Math.round(top)))
-    };
-  }
   function _scatterPosition(cardIndex) {
     const b = _calcFloatingSafeBounds();
     const w = FLOATING_CARD_W;
@@ -5317,7 +5310,7 @@
     if (stackCards.length > 0) {
       const first = stackCards[0].getBoundingClientRect();
       const last = stackCards[stackCards.length - 1].getBoundingClientRect();
-      stackRect = new DOMRectReadOnly(first.left, first.top, first.width, last.bottom - first.top);
+      stackRect = new DOMRect(first.left, first.top, first.width, last.bottom - first.top);
     }
     function isValid(x, y) {
       if (x < b.safeL || x + w > b.fullR) return false;
@@ -5343,7 +5336,10 @@
     }
     const fallbackX = b.safeL;
     const fallbackY = b.safeT + cardIndex * (h + 4);
-    const clamped = _clampCardPosition(fallbackX, fallbackY, w, h);
+    const clamped = {
+      left: Math.max(b.safeL, Math.min(b.fullR - w, Math.round(fallbackX))),
+      top: Math.max(b.safeT, Math.min(b.safeB - h, Math.round(fallbackY)))
+    };
     debugLog("FLOAT fallback c" + cardIndex + " " + clamped.left + "," + clamped.top);
     return clamped;
   }
@@ -5404,7 +5400,7 @@
     }, 600);
   }
   function _handleFloatingDragMove(clientX, clientY, pointerId) {
-    var _a, _b, _c, _d;
+    var _a, _b;
     if (!_dragItem) return;
     if (_dragPointerId !== null && pointerId !== void 0 && pointerId !== _dragPointerId) return;
     const dx = clientX - _dragStartX;
@@ -5417,17 +5413,17 @@
     }
     if (!_dragIsDragging) return;
     const el = _dragItem.el;
+    const cSize = orbT.size;
+    const rOff = orbT.cornerOff + orbT.rightOffAdj;
+    const bOff = orbT.cornerOff + orbT.bottomOffAdj;
+    const rawOrbX = _dragStartOrbAbsX + dx;
+    const rawOrbY = _dragStartOrbAbsY + dy;
+    const maxOrbY = ((_b = (_a = document.getElementById("aiInputBar")) == null ? void 0 : _a.getBoundingClientRect().top) != null ? _b : window.innerHeight) - 42;
     if (_dragItem.state === "editing") {
-      const cSize = orbT.size;
-      const rOff = orbT.cornerOff + orbT.rightOffAdj;
-      const bOff = orbT.cornerOff + orbT.bottomOffAdj;
-      const fingerAbsX = _dragStartOrbAbsX + dx;
-      const fingerAbsY = _dragStartOrbAbsY + dy;
       const minOrbAbsX = _dragStartLeft + FLOATING_CARD_W_MIN - rOff - cSize;
       const minOrbAbsY = _dragStartTop + FLOATING_CARD_H_MIN - bOff - cSize;
-      const orbAbsX = Math.max(minOrbAbsX, fingerAbsX);
-      const _maxOrbY = ((_b = (_a = document.getElementById("aiInputBar")) == null ? void 0 : _a.getBoundingClientRect().top) != null ? _b : window.innerHeight) - 42;
-      const orbAbsY = Math.min(_maxOrbY, Math.max(minOrbAbsY, fingerAbsY));
+      const orbAbsX = Math.max(minOrbAbsX, rawOrbX);
+      const orbAbsY = Math.min(maxOrbY, Math.max(minOrbAbsY, rawOrbY));
       const newW = Math.max(FLOATING_CARD_W_MIN, orbAbsX - _dragStartLeft + rOff + cSize);
       const newH = Math.max(FLOATING_CARD_H_MIN, orbAbsY - _dragStartTop + bOff + cSize);
       el.style.width = newW + "px";
@@ -5441,12 +5437,8 @@
       _dragItem.brOrb.style.left = newRightX + "px";
       _dragItem.brOrb.style.top = newBottomY + "px";
     } else {
-      const cSize = orbT.size;
-      const rOff = orbT.cornerOff + orbT.rightOffAdj;
-      const bOff = orbT.cornerOff + orbT.bottomOffAdj;
-      const orbAbsX = _dragStartOrbAbsX + dx;
-      const _maxOrbY = ((_d = (_c = document.getElementById("aiInputBar")) == null ? void 0 : _c.getBoundingClientRect().top) != null ? _d : window.innerHeight) - 42;
-      const orbAbsY = Math.min(_maxOrbY, _dragStartOrbAbsY + dy);
+      const orbAbsX = rawOrbX;
+      const orbAbsY = Math.min(maxOrbY, rawOrbY);
       const b = _calcFloatingSafeBounds();
       const tlFromOrbX = orbAbsX - _dragStartW + rOff + cSize;
       const tlFromOrbY = orbAbsY - _dragStartH + bOff + cSize;
