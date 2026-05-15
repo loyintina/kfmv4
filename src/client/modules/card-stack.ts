@@ -13,7 +13,7 @@ const orbT = theme.cornerOrb;
  */
 
 // ========== 卡片内容定义 ==========
-const CARD_BG = theme.stack.cardBg;  // 深色毛玻璃底
+const CARD_BG = theme.stack.cardBg;
 
 interface CardDef {
   id: string;
@@ -23,19 +23,18 @@ interface CardDef {
 }
 
 const CARDS: CardDef[] = [
-  { id: 'settings', icon: '\u2699', name: '设置', desc: 'API Key \u00b7 模型选择' },
-  { id: 'files',    icon: '\uD83D\uDCC1', name: '文件管理', desc: '上传 \u00b7 下载 \u00b7 整理' },
-  { id: 'notes',    icon: '\uD83D\uDCDD', name: '笔记',     desc: '快速记录 \u00b7 草稿' },
-  { id: 'plugins',  icon: '\uD83D\uDD0C', name: '插件',     desc: '扩展 \u00b7 集成' },
-  { id: 'theme',    icon: '\uD83C\uDFA8', name: '主题',     desc: '外观 \u00b7 配色' },
-  { id: 'stats',    icon: '\uD83D\uDCCA', name: '统计',     desc: '使用数据 \u00b7 趋势' },
-  { id: 'about',    icon: '\uD83D\uDC8E', name: '关于',     desc: '版本 \u00b7 信息' },
+  { id: 'settings', icon: '\u2699', name: '\u8BBE\u7F6E', desc: 'API Key \u00B7 \u6A21\u578B\u9009\u62E9' },
+  { id: 'files',    icon: '\uD83D\uDCC1', name: '\u6587\u4EF6\u7BA1\u7406', desc: '\u4E0A\u4F20 \u00B7 \u4E0B\u8F7D \u00B7 \u6574\u7406' },
+  { id: 'notes',    icon: '\uD83D\uDCDD', name: '\u7B14\u8BB0',     desc: '\u5FEB\u901F\u8BB0\u5F55 \u00B7 \u8349\u7A3F' },
+  { id: 'plugins',  icon: '\uD83D\uDD0C', name: '\u63D2\u4EF6',     desc: '\u6269\u5C55 \u00B7 \u96C6\u6210' },
+  { id: 'theme',    icon: '\uD83C\uDFA8', name: '\u4E3B\u9898',     desc: '\u5916\u89C2 \u00B7 \u914D\u8272' },
+  { id: 'stats',    icon: '\uD83D\uDCCA', name: '\u7EDF\u8BA1',     desc: '\u4F7F\u7528\u6570\u636E \u00B7 \u8D8B\u52BF' },
+  { id: 'about',    icon: '\uD83D\uDC8E', name: '\u5173\u4E8E',     desc: '\u7248\u672C \u00B7 \u4FE1\u606F' },
 ];
 
-// ========== 星云配色 (Nebula) ==========
+// ========== 星云配色 ==========
 const CARD_COLORS = theme.cardAccents;
 
-// 颜色工具：hex → rgba（带 alpha）
 function hexToRgba(hex: string, alpha: number): string {
   const num = parseInt(hex.slice(1), 16);
   const r = (num >> 16) & 0xFF;
@@ -44,11 +43,9 @@ function hexToRgba(hex: string, alpha: number): string {
   return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
 }
 
-/** 获取卡片 i 的三色渐变 [前色, 主色, 后色]，全部 rgba 格式 */
 function getTriple(i: number, alpha: number): string[] {
   const n = CARD_COLORS.length;
   const mainRgba = hexToRgba(CARD_COLORS[i].border, alpha);
-  // 循环色谱：首尾相连，形成闭合色环
   const prevIdx = (i - 1 + n) % n;
   const nextIdx = (i + 1) % n;
   const prev = hexToRgba(CARD_COLORS[prevIdx].border, alpha);
@@ -56,53 +53,64 @@ function getTriple(i: number, alpha: number): string[] {
   return [prev, mainRgba, next];
 }
 
-/** 生成左边框垂直渐变：三色从上到下均匀过渡，卡片堆叠时可见区域三色均衡 */
 function getBorderGradient(i: number, alpha: number): string {
   const [c1, c2, c3] = getTriple(i, alpha);
-  // 对角线渐变：33%→上缘左1/3处过渡到c2，50%→左缘中点处过渡到c3
   return "linear-gradient(to bottom right, " + c1 + " 0%, " + c2 + " 33%, " + c3 + " 50%)";
 }
 
 // ========== 配置 ==========
-/** 卡片垂直间距 px */
 const CARD_GAP = theme.stack.cardGap;
-/** 卡片高度 px */
 const CARD_HEIGHT = theme.stack.cardHeight;
-/** 堆叠起始位置（距顶部比例） */
 const STACK_TOP_RATIO = 0.12;
 
-// ========== z-index 层级体系（从低到高） ==========
-// 中央网格线       → z:0      (Canvas Box 默认绘制)
-
-// 浮卡(含角光球) → z:50+    (每张递增，用 _nextFloatingZ 计算)
-// 当前卡片堆       → z:150~156 (Z_STACK_BASE + index，7张)
-// 光球面板         → z:205    (orb.ts 浅紫色 AI 聊天面板)
-// 主光球             → z:210    (orb.ts)
-// 召唤按钮           → z:230    (base.css, 左上/右上)
-// 调试面板         → z:295~300 (debug-panel.ts)
+// ========== z-index ==========
 const Z_FLOATING_BASE = 50;
 const Z_STACK_BASE = 150;
+
+const FLOATING_CARD_W = 90;
+const FLOATING_CARD_H = 39;
+
+// ========== 编辑模式最小尺寸 ==========
+const FLOATING_CARD_W_MIN = 60;
+const FLOATING_CARD_H_MIN = 28;
+const FLOATING_DRAG_THRESHOLD = 5;
+
 // ========== 状态 ==========
-// 状态机：closed → opening → open → closing → closed
 type StackState = 'closed' | 'opening' | 'open' | 'closing';
 let _state: StackState = 'closed';
 let _focusIndex = 0;
 let _cardEls: HTMLElement[] = [];
 let _scrollStartFocus = 0;
 let _tl: AnimTimeline | null = null;
-// 浮卡叠层：同时可有多张浮卡，通过左上/左下光球调节遮盖关系
+
 interface FloatingCardItem {
   el: HTMLElement;
   sourceIndex: number;
   zIndex: number;
-  state: 'launching' | 'active' | 'dismissing';
-  tlOrb: HTMLElement;   // 上移一层按钮
-  blOrb: HTMLElement;   // 下移一层按钮
+  state: 'launching' | 'active' | 'dismissing' | 'editing';
+  tlOrb: HTMLElement;
+  blOrb: HTMLElement;
+  brOrb: HTMLElement;
+  cardWidth: number;
+  cardHeight: number;
 }
 let _floatingCards: FloatingCardItem[] = [];
 let _nextFloatingZ = Z_FLOATING_BASE;
-// ========== DOM 构建 ==========
 
+// ========== 浮卡拖拽状态 ==========
+let _dragItem: FloatingCardItem | null = null;
+let _dragStartX = 0;
+let _dragStartY = 0;
+let _dragStartLeft = 0;
+let _dragStartTop = 0;
+let _dragStartW = 0;
+let _dragStartH = 0;
+let _dragIsDragging = false;
+let _dragLongPressFired = false;
+let _dragLongPressTimer: ReturnType<typeof setTimeout> | null = null;
+let _dragPointerId: number | null = null;
+
+// ========== DOM 构建 ==========
 
 function createCard(index: number): HTMLElement {
   const card = CARDS[index];
@@ -114,18 +122,11 @@ function createCard(index: number): HTMLElement {
 
   const topPx = Math.round(window.innerHeight * STACK_TOP_RATIO + index * CARD_GAP);
 
-  // 随机值由 randomizeCards() 在每次 open 前生成，初始设默认
   el.dataset.randomRight = '0';
   el.dataset.randomRotate = '0';
 
-  // 三色渐变边框
   const alpha = 0.85;
   const borderGrad = getBorderGradient(index, alpha);
-
-  // 多层阴影：立体感，像桌面上的物件
-  const shadow = [
-    theme.stack.blurShadow
-  ].join(',');
 
   el.style.cssText = [
     'position:fixed',
@@ -143,7 +144,7 @@ function createCard(index: number): HTMLElement {
     'border:1px solid transparent',
     'border-left-width:3px',
     'background: linear-gradient(' + CARD_BG + ',' + CARD_BG + ') padding-box, ' + borderGrad + ' border-box',
-    'box-shadow:' + shadow,
+    'box-shadow:' + theme.stack.blurShadow,
     'transform:rotate(0deg)',
     'cursor:pointer',
     'z-index:' + (Z_STACK_BASE + index),
@@ -159,7 +160,6 @@ function createCard(index: number): HTMLElement {
     + '  <div class="stack-card-desc" style="font-size:10px;opacity:0.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:0px">' + card.desc + '</div>'
     + '</div>';
 
-  // 点击卡片切换焦点
   el.addEventListener("click", (e) => {
     const idx = parseInt(el.dataset.index || "0", 10);
     if (idx !== _focusIndex) {
@@ -169,11 +169,11 @@ function createCard(index: number): HTMLElement {
   });
   return el;
 }
+
 function buildCards(): void {
   console.log("[CARD-STACK] buildCards called");
   for (let i = 0; i < CARDS.length; i++) {
     const card = createCard(i);
-    // 初始状态：屏幕外，不可交互
     card.style.transform = 'translateX(100vw)';
     card.style.pointerEvents = 'none';
     document.body.appendChild(card);
@@ -186,14 +186,10 @@ function updateFocus(): void {
   for (let i = 0; i < _cardEls.length; i++) {
     const el = _cardEls[i];
     const dist = Math.abs(i - _focusIndex);
-
-    // kill 旧 tween 防止竞态
     anim.killTweensOf(el);
-
     const alpha = 0.85;
 
     if (dist === 0) {
-      // 聚焦：左移更多、取消旋转、增强阴影
       anim.to(el, {
         xPercent: 0, x: -28, scale: 1.04, rotation: 0,
         duration: 0.35, ease: 'back.out(1.2)',
@@ -203,7 +199,6 @@ function updateFocus(): void {
       el.style.background = 'linear-gradient(' + theme.stack.cardBg + ',' + theme.stack.cardBg + ') padding-box, ' + getBorderGradient(i, alpha) + ' border-box';
       el.style.boxShadow = theme.stack.focusShadow;
     } else {
-      // 非聚焦：恢复随机旋转、普通阴影
       const randomRotate = parseFloat(el.dataset.randomRotate || '0');
       anim.to(el, {
         xPercent: 0, x: 0, scale: 1, rotation: randomRotate,
@@ -217,12 +212,11 @@ function updateFocus(): void {
   }
 }
 
-// ========== 窗口自适应 + 随机化 ==========
 function randomizeCards(): void {
   for (let i = 0; i < _cardEls.length; i++) {
     const el = _cardEls[i];
-    const right = Math.floor(Math.random() * 14) - 4;        // -4 ~ +10px（微错位）
-    const rot = (Math.random() - 0.5) * 4;                   // -2deg ~ +2deg
+    const right = Math.floor(Math.random() * 14) - 4;
+    const rot = (Math.random() - 0.5) * 4;
     el.dataset.randomRight = String(right);
     el.dataset.randomRotate = String(rot);
     el.style.right = right + 'px';
@@ -230,12 +224,8 @@ function randomizeCards(): void {
   }
 }
 
-// ========== 浮卡（从卡片堆发射到中央） ==========
+// ========== 浮卡 ==========
 
-const FLOATING_CARD_W = 155;
-const FLOATING_CARD_H = 68;
-
-/** 创建四角装饰框 — 不透明彩色边框 + 中心符号 */
 function createDecoratedCorner(
   x: number, y: number, w: number, h: number,
   color: string, svgInner: string,
@@ -252,7 +242,6 @@ function createDecoratedCorner(
     'justify-content:center',
     'pointer-events:none',
   ].join(';');
-  // 从 rgba(r,g,b,alpha) 中提取 RGB 分量
   const m = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
   const glowC = m ? 'rgba(' + m[1] + ',' + m[2] + ',' + m[3] + ',' + orbT.glowCenterAlpha + ')' : color;
   const glowM = m ? 'rgba(' + m[1] + ',' + m[2] + ',' + m[3] + ',' + orbT.glowMidAlpha + ')' : color;
@@ -260,14 +249,12 @@ function createDecoratedCorner(
   const shadowC2 = m ? 'rgba(' + m[1] + ',' + m[2] + ',' + m[3] + ',' + orbT.shadow2Alpha + ')' : color;
   const symA = m && m[4] !== undefined ? m[4] : String(orbT.symAlpha);
   const symC = m ? 'rgba(' + m[1] + ',' + m[2] + ',' + m[3] + ',' + symA + ')' : color;
-  // 光球背景 + 符号（使用 tri 色系）
   box.innerHTML =
     '<div style="position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at ' + orbT.glowPos + ',' + glowC + ',' + glowM + ',transparent 70%);box-shadow:0 0 ' + orbT.shadow1Blur + ' ' + shadowC1 + ',0 0 ' + orbT.shadow2Blur + ' ' + shadowC2 + '"></div>' +
     '<div style="display:flex;align-items:center;justify-content:center;color:' + symC + ';-webkit-mask:linear-gradient(' + orbT.symMaskAngle + ',' + orbT.symMaskCutoff + ',transparent 100%);mask:linear-gradient(' + orbT.symMaskAngle + ',' + orbT.symMaskCutoff + ',transparent 100%)">' + svgInner + '</div>';
   return box;
 }
 
-/** 卡片堆反馈：随机拉出一段距离后弹回 */
 function _animateStackPullFeedback(): void {
   for (let i = 0; i < _cardEls.length; i++) {
     const el = _cardEls[i];
@@ -288,7 +275,6 @@ function _animateStackPullFeedback(): void {
 
 // ========== 浮卡叠层辅助 ==========
 
-/** 查找 z-index 比指定项目高的邻居（上一层） */
 function _cardAbove(item: FloatingCardItem): FloatingCardItem | null {
   let best: FloatingCardItem | null = null;
   for (const c of _floatingCards) {
@@ -298,7 +284,6 @@ function _cardAbove(item: FloatingCardItem): FloatingCardItem | null {
   return best;
 }
 
-/** 查找 z-index 比指定项目低的邻居（下一层） */
 function _cardBelow(item: FloatingCardItem): FloatingCardItem | null {
   let best: FloatingCardItem | null = null;
   for (const c of _floatingCards) {
@@ -308,7 +293,6 @@ function _cardBelow(item: FloatingCardItem): FloatingCardItem | null {
   return best;
 }
 
-/** 交换两张浮卡的 z-index */
 function _swapZIndex(a: FloatingCardItem, b: FloatingCardItem): void {
   const tmp = a.zIndex;
   a.zIndex = b.zIndex;
@@ -317,22 +301,13 @@ function _swapZIndex(a: FloatingCardItem, b: FloatingCardItem): void {
   b.el.style.zIndex = String(b.zIndex);
 }
 
+// ========== 45° 层叠排布 ==========
 
+interface FloatingSafeBounds {
+  safeL: number; safeT: number; safeB: number; fullR: number; stackLeft: number;
+}
 
-
-// ========== 浮卡位置：L形安全区网格填充 + 溢出堆叠 ==========
-
-/** 右下角光球延伸到卡片边缘外的距离 px（cornerOff = -13, cornerSize = 26） */
-const FLOATING_ORB_EXT = 13;
-/** 溢出堆叠时向左偏移量 px — 露出右上、右下光球 */
-const OVERLAP_X = 20;
-/** 溢出堆叠时向下偏移量 px — 露出左上光球 */
-const OVERLAP_Y = 15;
-
-function _calcSafeBoundaries(): {
-  safeL: number; safeT: number; safeB: number; fullR: number;
-  sL: number; sR: number; sT: number; sB: number; hasStack: boolean;
-} {
+function _calcFloatingSafeBounds(): FloatingSafeBounds {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   const PAD = 16;
@@ -340,156 +315,255 @@ function _calcSafeBoundaries(): {
   const sideEl = document.getElementById("sidebar");
   const safeL = (sideEl?.classList.contains("open")
     ? sideEl.getBoundingClientRect().right : 0) + PAD;
-
-  const stackCards = document.querySelectorAll(".stack-card");
-  let sL = 0, sR = 0, sT = 0, sB = 0;
-  const hasStack = stackCards.length > 0;
-  if (hasStack) {
-    const fr = stackCards[0].getBoundingClientRect();
-    const lr = stackCards[stackCards.length - 1].getBoundingClientRect();
-    sL = fr.left; sR = fr.right; sT = fr.top; sB = lr.bottom;
-  }
-
   const safeT = PAD + 24;
+  const fullR = vw - PAD;
+
   const orbEl = document.querySelector(".light-orb");
   let safeB = vh - PAD;
   if (orbEl) {
     const r = orbEl.getBoundingClientRect();
     if (r.bottom > vh * 0.3) safeB = Math.min(safeB, r.top - PAD);
   }
-  const fullR = vw - PAD;
 
-  return { safeL, safeT, safeB, fullR, sL, sR, sT, sB, hasStack };
+  const stackCards = document.querySelectorAll(".stack-card");
+  const stackLeft = stackCards.length > 0
+    ? stackCards[0].getBoundingClientRect().left
+    : fullR;
+
+  return { safeL, safeT, safeB, fullR, stackLeft };
 }
 
-/** AABB 交集检测：卡片 (x,y,size) 是否与指定矩形重叠 */
-function _rectsOverlap(
-  x: number, y: number,
-  rect: { left: number; top: number; right: number; bottom: number },
-): boolean {
-  const cardR = x + FLOATING_CARD_W;
-  const cardB = y + FLOATING_CARD_H;
-  return x < rect.right && cardR > rect.left && y < rect.bottom && cardB > rect.top;
+function _clampCardPosition(
+  left: number, top: number, w: number, h: number
+): { left: number; top: number } {
+  const b = _calcFloatingSafeBounds();
+  return {
+    left: Math.max(b.safeL, Math.min(b.fullR - w, Math.round(left))),
+    top: Math.max(b.safeT, Math.min(b.safeB - h, Math.round(top))),
+  };
 }
 
-function _calcStackSafeRegion(): { left: number; top: number } {
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const b = _calcSafeBoundaries();
-  const { safeL, safeT, safeB, fullR, sL, sR, sT, sB, hasStack } = b;
+/**
+ * 随机散落：在安全区内找一个不重叠的位置。
+ * 最多尝试 30 次，失败则垂直堆叠在左侧。
+ */
+function _scatterPosition(cardIndex: number): { left: number; top: number } {
+  const b = _calcFloatingSafeBounds();
+  const w = FLOATING_CARD_W;
+  const h = FLOATING_CARD_H;
+  const maxX = b.fullR - w;
+  const maxY = b.safeB - h;
 
-  debugLog("FLOAT L" + Math.round(safeL) + " T" + Math.round(safeT)
-    + " B" + Math.round(safeB) + " fR" + Math.round(fullR)
-    + (hasStack ? " sL" + Math.round(sL) + " sR" + Math.round(sR)
-       + " sT" + Math.round(sT) + " sB" + Math.round(sB) : " noStack"));
+  // 已存在浮卡的位置列表
+  const existing = _floatingCards.map(item => item.el.getBoundingClientRect());
 
-  // 构建已存在浮卡的 AABB 列表（不含光球延伸，卡片本体不相交即可）
-  const existingRects = _floatingCards.map(item => {
-    const r = item.el.getBoundingClientRect();
-    return { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
-  });
+  // 卡片堆排除区域（右上角）
+  const stackCards = document.querySelectorAll(".stack-card");
+  let stackRect: DOMRect | null = null;
+  if (stackCards.length > 0) {
+    const first = stackCards[0].getBoundingClientRect();
+    const last = stackCards[stackCards.length - 1].getBoundingClientRect();
+    stackRect = new DOMRectReadOnly(first.left, first.top, first.width, last.bottom - first.top) as unknown as DOMRect;
+  }
 
-  /** 位置有效性：边界内 + 不含堆禁区 + 不与已有浮卡相交 */
+  /** 检查位置 (x,y) 是否有效 */
   function isValid(x: number, y: number): boolean {
-    if (x < safeL || x + FLOATING_CARD_W > fullR) return false;
-    if (y < safeT || y + FLOATING_CARD_H > safeB) return false;
-    // 卡片不完全在堆上方（至少部分在堆高度范围内）
-    if (hasStack && y + FLOATING_CARD_H <= sT) return false;
-    // 卡片（含光球延伸）不与堆 AABB 相交
-    if (hasStack) {
-      const cardR = x + FLOATING_CARD_W + FLOATING_ORB_EXT;
-      const cardB = y + FLOATING_CARD_H + FLOATING_ORB_EXT;
-      if (x < sR && cardR > sL && y < sB && cardB > sT) return false;
+    if (x < b.safeL || x + w > b.fullR) return false;
+    if (y < b.safeT || y + h > b.safeB) return false;
+    for (const r of existing) {
+      if (x < r.right && x + w > r.left && y < r.bottom && y + h > r.top)
+        return false;
     }
-    // 不与已有浮卡相交
-    for (const rect of existingRects) {
-      if (_rectsOverlap(x, y, rect)) return false;
+    if (stackRect) {
+      if (x < stackRect.right + 8 && x + w > stackRect.left - 8 &&
+          y < stackRect.bottom + 8 && y + h > stackRect.top - 8)
+        return false;
     }
     return true;
   }
 
-  // ========== Phase 1: L 形区域网格填充（互不相交） ==========
-  const COL_GAP = 8;
-  const ROW_GAP = 4;
-  const STEP_X = FLOATING_CARD_W + COL_GAP;   // 163
-  const STEP_Y = FLOATING_CARD_H + ROW_GAP;   // 72
-
-  // 确定可用列
-  const xPositions: number[] = [safeL];
-  const x2 = safeL + STEP_X;
-  if (x2 + FLOATING_CARD_W <= fullR) xPositions.push(x2);
-  const x3 = safeL + STEP_X * 2;
-  if (x3 + FLOATING_CARD_W <= fullR) xPositions.push(x3);
-
-  for (const x of xPositions) {
-    for (let y = safeT; y + FLOATING_CARD_H <= safeB; y += STEP_Y) {
-      if (isValid(Math.round(x), Math.round(y))) {
-        return { left: Math.round(x), top: Math.round(y) };
-      }
+  for (let attempt = 0; attempt < 30; attempt++) {
+    const x = b.safeL + Math.random() * (maxX - b.safeL);
+    const y = b.safeT + Math.random() * (maxY - b.safeT);
+    if (isValid(x, y)) {
+      const result = { left: Math.round(x), top: Math.round(y) };
+      debugLog("FLOAT scatter c" + cardIndex + " " + result.left + "," + result.top);
+      return result;
     }
   }
 
-  // ========== Phase 2: 溢出 — 从首卡位置向左下堆叠 ==========
-  if (existingRects.length > 0) {
-    const first = existingRects[0];
-    // 计算是第几轮溢出（每轮所有位置填满算一轮）
-    const totalSlots = xPositions.length * Math.max(1,
-      Math.floor((safeB - safeT) / STEP_Y));
-    const overflowRound = Math.max(0,
-      Math.floor((_floatingCards.length - totalSlots) / totalSlots) + 1);
-
-    const stackX = first.left - OVERLAP_X * overflowRound;
-    const stackY = first.top + OVERLAP_Y * overflowRound;
-
-    // 边界安全钳制
-    const clampedX = Math.max(safeL, stackX);
-    const clampedY = Math.min(safeB - FLOATING_CARD_H, Math.max(safeT, stackY));
-
-    debugLog("FLOAT stack c" + _floatingCards.length + " ovRound" + overflowRound
-      + " " + Math.round(clampedX) + "," + Math.round(clampedY));
-    return { left: Math.round(clampedX), top: Math.round(clampedY) };
-  }
-
-  // ========== Phase 3: 兜底居中 ==========
-  const cx = Math.round((vw - FLOATING_CARD_W) / 2);
-  const cy = Math.round((vh - FLOATING_CARD_H) / 2);
-  debugLog("FLOAT fallback " + cx + "," + cy);
-  return { left: cx, top: cy };
+  // 兜底：左侧垂直堆叠
+  const fallbackX = b.safeL;
+  const fallbackY = b.safeT + cardIndex * (h + 4);
+  const clamped = _clampCardPosition(fallbackX, fallbackY, w, h);
+  debugLog("FLOAT fallback c" + cardIndex + " " + clamped.left + "," + clamped.top);
+  return clamped;
 }
 
-/** 发射聚焦卡片到屏幕中央成为浮卡 */
+// ========== 浮卡拖拽/编辑状态机 ==========
+
+function _clearFloatingDragTimer(): void {
+  if (_dragLongPressTimer) {
+    clearTimeout(_dragLongPressTimer);
+    _dragLongPressTimer = null;
+  }
+}
+
+function _enterFloatingEditMode(item: FloatingCardItem): void {
+  item.state = 'editing';
+  item.el.style.boxShadow = theme.aiChat.panelShadowEdit;
+  debugLog("FLOAT edit enter");
+}
+
+function _exitFloatingEditMode(item: FloatingCardItem): void {
+  item.state = 'active';
+  item.el.style.boxShadow = theme.stack.blurShadow;
+  debugLog("FLOAT edit exit");
+}
+
+function _startFloatingDrag(item: FloatingCardItem, clientX: number, clientY: number, pointerId?: number): void {
+  if (_dragItem) return;
+  _dragItem = item;
+  _dragPointerId = pointerId ?? null;
+  _dragIsDragging = false;
+  _dragLongPressFired = false;
+  _dragStartX = clientX;
+  _dragStartY = clientY;
+
+  const rect = item.el.getBoundingClientRect();
+  _dragStartLeft = rect.left;
+  _dragStartTop = rect.top;
+  _dragStartW = item.cardWidth;
+  _dragStartH = item.cardHeight;
+
+  _dragLongPressTimer = setTimeout(() => {
+    _dragLongPressFired = true;
+    if (item.state === 'active') {
+      _enterFloatingEditMode(item);
+    }
+  }, 600);
+}
+
+function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: number): void {
+  if (!_dragItem) return;
+  if (_dragPointerId !== null && pointerId !== undefined && pointerId !== _dragPointerId) return;
+
+  const dx = clientX - _dragStartX;
+  const dy = clientY - _dragStartY;
+
+  if (Math.abs(dx) > FLOATING_DRAG_THRESHOLD || Math.abs(dy) > FLOATING_DRAG_THRESHOLD) {
+    if (!_dragIsDragging) {
+      _dragIsDragging = true;
+      _clearFloatingDragTimer();
+    }
+  }
+  if (!_dragIsDragging) return;
+
+  const el = _dragItem.el;
+
+  if (_dragItem.state === 'editing') {
+    const newW = Math.max(FLOATING_CARD_W_MIN, _dragStartW + dx);
+    const newH = Math.max(FLOATING_CARD_H_MIN, _dragStartH + dy);
+    el.style.width = newW + 'px';
+    el.style.height = newH + 'px';
+    _dragItem.cardWidth = newW;
+    _dragItem.cardHeight = newH;
+  } else {
+    const rawX = _dragStartLeft + dx;
+    const rawY = _dragStartTop + dy;
+    const clamped = _clampCardPosition(rawX, rawY, _dragItem.cardWidth, _dragItem.cardHeight);
+    el.style.left = clamped.left + 'px';
+    el.style.top = clamped.top + 'px';
+  }
+}
+
+function _endFloatingDrag(): void {
+  _clearFloatingDragTimer();
+  if (_dragItem) {
+    if (_dragItem.state === 'editing') {
+      _exitFloatingEditMode(_dragItem);
+    }
+    _dragItem = null;
+  }
+  _dragPointerId = null;
+  _dragIsDragging = false;
+  _dragLongPressFired = false;
+}
+
+function _bindBrDragEvents(brOrb: HTMLElement, item: FloatingCardItem): void {
+  brOrb.addEventListener('touchstart', (e: TouchEvent) => {
+    e.stopPropagation();
+    if (item.state !== 'active' && item.state !== 'editing') return;
+    const t = e.changedTouches[0];
+    _startFloatingDrag(item, t.clientX, t.clientY, t.identifier);
+  });
+
+  brOrb.addEventListener('touchmove', (e: TouchEvent) => {
+    if (!_dragItem || _dragItem !== item) return;
+    e.preventDefault();
+    for (const t of e.changedTouches) {
+      _handleFloatingDragMove(t.clientX, t.clientY, t.identifier);
+    }
+  });
+
+  brOrb.addEventListener('touchend', (e: TouchEvent) => {
+    if (!_dragItem || _dragItem !== item) return;
+    const stillActive = Array.from(e.touches).some(
+      t => t.identifier === _dragPointerId
+    );
+    if (!stillActive) _endFloatingDrag();
+  });
+
+  brOrb.addEventListener('mousedown', (e: MouseEvent) => {
+    e.stopPropagation();
+    if (item.state !== 'active' && item.state !== 'editing') return;
+    _startFloatingDrag(item, e.clientX, e.clientY);
+  });
+}
+
+// ========== 全局文档级拖动监听 ==========
+let _globalDragInitialized = false;
+
+function _ensureGlobalDragListeners(): void {
+  if (_globalDragInitialized) return;
+  _globalDragInitialized = true;
+
+  document.addEventListener('mousemove', (e: MouseEvent) => {
+    _handleFloatingDragMove(e.clientX, e.clientY);
+  });
+  document.addEventListener('mouseup', () => {
+    _endFloatingDrag();
+  });
+}
+
+// ========== 发射浮卡 ==========
+
 export function launchFocusedCard(): void {
-  // 卡片堆反馈：随机拉出后弹回
   _animateStackPullFeedback();
 
   const focusedCard = _cardEls[_focusIndex];
   if (!focusedCard) return;
 
-  // 获取聚焦卡当前位置（作为动画起点）
   const cardRect = focusedCard.getBoundingClientRect();
   const color = CARD_COLORS[_focusIndex];
 
-  // 创建浮卡容器
   const el = document.createElement('div');
   el.className = 'floating-card';
   el.dataset.index = String(_focusIndex);
 
-  // 克隆卡片内容
   const iconClone = focusedCard.querySelector('.stack-card-icon')?.cloneNode(true) as HTMLElement;
   const infoClone = focusedCard.querySelector('.stack-card-info')?.cloneNode(true) as HTMLElement;
 
-  // 四角装饰框颜色 — 与卡片左边框渐变的顶点同色
   const [triPrev, triMain, triNext] = getTriple(_focusIndex, 1);
   const tlColor = triPrev.replace(/,\s*1\)$/, ',' + orbT.tlAlpha + ')');
 
-  // 四角光球尺寸参数
   const cornerSize = orbT.size;
   const cornerOff = orbT.cornerOff;
   const rightOff = cornerOff + orbT.rightOffAdj;
   const bottomOff = cornerOff + orbT.bottomOffAdj;
   const s = orbT.symScale, c = 6 * (1 - s), sh = orbT.symShift;
 
-  // 毛玻璃背景层（在内容之下）
+  // 毛玻璃背景
   const cardBg = document.createElement('div');
   cardBg.style.cssText = [
     'position:absolute',
@@ -504,27 +578,30 @@ export function launchFocusedCard(): void {
   ].join(';');
   el.appendChild(cardBg);
 
-  // 数字+文字内容（居中）
+  // 内容区
   const content = document.createElement('div');
   content.style.cssText = 'position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:8px;pointer-events:none';
   if (iconClone) {
-    iconClone.style.width = '36px';
-    iconClone.style.height = '36px';
-    iconClone.style.fontSize = '16px';
+    iconClone.style.width = '22px';
+    iconClone.style.height = '22px';
+    iconClone.style.fontSize = '11px';
     content.appendChild(iconClone);
   }
   if (infoClone) content.appendChild(infoClone);
   el.appendChild(content);
 
-  // 创建 FloatingCardItem
+  // FloatingCardItem
   const zIndex = _nextFloatingZ++;
   const item: FloatingCardItem = {
     el, sourceIndex: _focusIndex, zIndex, state: 'launching',
     tlOrb: null as unknown as HTMLElement,
     blOrb: null as unknown as HTMLElement,
+    brOrb: null as unknown as HTMLElement,
+    cardWidth: FLOATING_CARD_W,
+    cardHeight: FLOATING_CARD_H,
   };
 
-  // TL 光球 — 上移一层
+  // TL — 上移一层
   const tlOrb = createDecoratedCorner(cornerOff, cornerOff, cornerSize, cornerSize, tlColor,
     `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c-sh},${c-sh}) scale(${s})"><path d="M6,10 L6,2 M6,2 L3,5 M6,2 L9,5" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`);
   tlOrb.style.pointerEvents = 'auto';
@@ -540,7 +617,7 @@ export function launchFocusedCard(): void {
   el.appendChild(tlOrb);
   item.tlOrb = tlOrb;
 
-  // TR 光球 — 关闭
+  // TR — 关闭
   const trOrb = createDecoratedCorner(FLOATING_CARD_W - rightOff - cornerSize, cornerOff, cornerSize, cornerSize, triMain,
     `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c+sh},${c-sh}) scale(${s})"><line x1="4" y1="2" x2="10" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/></g></svg>`);
   trOrb.style.pointerEvents = 'auto';
@@ -552,7 +629,7 @@ export function launchFocusedCard(): void {
   });
   el.appendChild(trOrb);
 
-  // BL 光球 — 下移一层
+  // BL — 下移一层
   const blOrb = createDecoratedCorner(cornerOff, FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, triMain,
     `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c-sh},${c+sh}) scale(${s})"><path d="M6,2 L6,10 M6,10 L3,7 M6,10 L9,7" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`);
   blOrb.style.pointerEvents = 'auto';
@@ -568,11 +645,18 @@ export function launchFocusedCard(): void {
   el.appendChild(blOrb);
   item.blOrb = blOrb;
 
-  // BR 光球 — 纯装饰
-  el.appendChild(createDecoratedCorner(FLOATING_CARD_W - rightOff - cornerSize, FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, triNext,
-    `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c+sh},${c+sh}) scale(${s})"><path d="M6,2 L6,10 M2,6 L10,6" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`));
+  // BR — 拖拽移动 + 长按编辑大小
+  const brOrb = createDecoratedCorner(FLOATING_CARD_W - rightOff - cornerSize,
+    FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, triNext,
+    `<svg width="14" height="14" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c+sh},${c+sh}) scale(${s})"><path d="M8,2 L8,14 M2,8 L14,8 M4,4 L8,2 L12,4 M4,12 L8,14 L12,12 M4,4 L2,8 L4,12 M12,4 L14,8 L12,12" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`);
+  brOrb.style.pointerEvents = 'auto';
+  brOrb.style.cursor = 'move';
+  brOrb.title = '\u62d6\u62fd\u79fb\u52a8 \u00B7 \u957F\u6309\u8C03\u6574\u5927\u5C0F';
+  _bindBrDragEvents(brOrb, item);
+  el.appendChild(brOrb);
+  item.brOrb = brOrb;
 
-  // 浮卡样式
+  // 初始样式
   el.style.cssText = [
     'position:fixed',
     'left:' + cardRect.left + 'px',
@@ -585,20 +669,19 @@ export function launchFocusedCard(): void {
   ].join(';');
 
   document.body.appendChild(el);
+  _ensureGlobalDragListeners();
 
-  // L形安全区网格填充（互不相交）→ 溢出时从首卡向左下堆叠
-  const stackSafe = _calcStackSafeRegion();
+  // 随机散落：在安全区内找不重叠位置（push 前调用）
+  const targetPos = _scatterPosition(_floatingCards.length);
   _floatingCards.push(item);
-  const targetLeft = stackSafe.left;
-  const targetTop = stackSafe.top;
+  const targetLeft = targetPos.left;
+  const targetTop = targetPos.top;
   debugLog('FLOAT launch ' + _focusIndex + ' ' + targetLeft + ',' + targetTop);
 
-  // 发射时临时升到卡片堆之上，让飞行动画可见
-  // 完成后降回永久 z-index（低于卡片堆）
+  // 发射时升到卡片堆之上以便飞行动画可见
   const LAUNCH_Z_ABOVE_STACK = Z_STACK_BASE + CARDS.length + 1;
   el.style.zIndex = String(LAUNCH_Z_ABOVE_STACK);
 
-  // GSAP 飞行动画（从卡片当前位置飞到安全区目标位置）
   anim.set(el, { scale: 0.8 });
   anim.to(el, {
     left: targetLeft,
@@ -613,7 +696,8 @@ export function launchFocusedCard(): void {
   });
 }
 
-/** 销毁浮卡（有 sourceEl 时销毁特定卡片，否则销毁全部） */
+// ========== 销毁浮卡 ==========
+
 export function dismissFloatingCard(animated?: boolean, sourceEl?: HTMLElement): void {
   if (sourceEl) {
     for (const item of _floatingCards) {
@@ -633,6 +717,16 @@ export function dismissFloatingCard(animated?: boolean, sourceEl?: HTMLElement):
 function _dismissOne(item: FloatingCardItem, animated?: boolean): void {
   const el = item.el;
   item.state = 'dismissing';
+
+  // 清理拖拽状态
+  if (_dragItem === item) {
+    _clearFloatingDragTimer();
+    _dragItem = null;
+    _dragPointerId = null;
+    _dragIsDragging = false;
+    _dragLongPressFired = false;
+  }
+
   anim.killTweensOf(el);
   if (animated) {
     const tl = anim.timeline({
@@ -649,15 +743,14 @@ function _dismissOne(item: FloatingCardItem, animated?: boolean): void {
   }
 }
 
-/** 是否有浮卡 */
 export function hasFloatingCard(): boolean {
   return _floatingCards.length > 0;
 }
-export function openCardStack(): void {
-  // 状态机守卫
-  if (_state === 'open' || _state === 'opening') return;
 
-  // 如果正在关闭中 → reverse 回去（从当前位置丝滑反弹）
+// ========== 卡片堆开/关 ==========
+
+export function openCardStack(): void {
+  if (_state === 'open' || _state === 'opening') return;
   if (_state === 'closing' && _tl) {
     _state = 'opening';
     _tl.reverse();
@@ -667,13 +760,11 @@ export function openCardStack(): void {
   _state = 'opening';
   randomizeCards();
 
-  // 设置初始状态：屏幕外
   for (let i = 0; i < _cardEls.length; i++) {
     const el = _cardEls[i];
     anim.set(el, { x: '100vw', opacity: 1, pointerEvents: 'auto' });
   }
 
-  // 构建 GSAP timeline：同时出发，随机速度 200-500ms，Q弹曲线
   _tl = anim.timeline({
     onComplete: () => {
       _state = 'open'; _tl = null;
@@ -693,27 +784,18 @@ export function openCardStack(): void {
     const el = _cardEls[i];
     const dur = 0.2 + Math.random() * 0.3;
     if (i === _focusIndex) {
-      _tl.to(el, {
-        x: -28, scale: 1.04, rotation: 0,
-        duration: dur, ease: 'back.out(1.2)',
-      }, 0);
+      _tl.to(el, { x: -28, scale: 1.04, rotation: 0, duration: dur, ease: 'back.out(1.2)' }, 0);
     } else {
       const rot = parseFloat(el.dataset.randomRotate || '0');
-      _tl.to(el, {
-        x: 0, scale: 1, rotation: rot,
-        duration: dur, ease: 'back.out(1.2)',
-      }, 0);
+      _tl.to(el, { x: 0, scale: 1, rotation: rot, duration: dur, ease: 'back.out(1.2)' }, 0);
     }
   }
 }
 
 export function closeCardStack(): void {
   if (_state === 'closed' || _state === 'closing') return;
-
-  // 关闭时销毁浮卡（带动画）
   dismissFloatingCard(true);
 
-  // 如果正在打开中 → reverse 回去
   if (_state === 'opening' && _tl) {
     _state = 'closing';
     _tl.reverse();
@@ -721,18 +803,13 @@ export function closeCardStack(): void {
   }
 
   _state = 'closing';
-
-  // 构建关闭 timeline
   _tl = anim.timeline({
     onComplete: () => { _state = 'closed'; _tl = null; },
     onReverseComplete: () => { _state = 'open'; _tl = null; updateFocus(); }
   });
 
   for (const el of _cardEls) {
-    _tl.to(el, {
-      x: '100vw',
-      duration: 0.3,
-      ease: 'power2.in',
+    _tl.to(el, { x: '100vw', duration: 0.3, ease: 'power2.in',
       onComplete: () => { el.style.pointerEvents = 'none'; }
     }, 0);
   }
@@ -754,9 +831,6 @@ export function focusPrev(): void {
 
 export function initCardStack(): void {
   buildCards();
-  // 全局切卡手势（通过 GestureRegistry 管理）
-  // 右滑关闭卡片堆、左滑预留、上下平滑切卡
-  // 轴向锁：一次手势只处理一个方向，避免斜滑误触
   type _AxisLock = 'none' | 'horizontal' | 'vertical';
   let _axisLock: _AxisLock = 'none';
   let _prevDx = 0;
@@ -772,19 +846,15 @@ export function initCardStack(): void {
       _prevDx = 0;
     },
     onMove: (e, dx, dy) => {
-      // 锁定轴向：首次移动超过阈值时判定主导方向
       if (_axisLock === 'none' && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
         _axisLock = Math.abs(dx) > Math.abs(dy) ? 'horizontal' : 'vertical';
       }
 
       if (_axisLock === 'horizontal') {
-        // 阈值穿越：仅首次越过 -50 时发射，非每帧持续触发
         if (dx < -50 && _prevDx >= -50) { _prevDx = dx; launchFocusedCard(); return; }
-        // 阈值穿越：仅首次越过 50 时关闭
         if (dx > 50 && _prevDx <= 50) { _prevDx = dx; closeCardStack(); return; }
         _prevDx = dx;
       } else if (_axisLock === 'vertical') {
-        // 上下滑动：连续平滑切卡
         const offset = Math.round(-dy / CARD_GAP);
         const target = _scrollStartFocus + offset;
         const clamped = ((target % CARDS.length) + CARDS.length) % CARDS.length;
@@ -799,4 +869,3 @@ export function initCardStack(): void {
     randomizeCards();
   });
 }
-

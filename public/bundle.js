@@ -5089,6 +5089,11 @@
   var STACK_TOP_RATIO = 0.12;
   var Z_FLOATING_BASE = 50;
   var Z_STACK_BASE = 150;
+  var FLOATING_CARD_W = 90;
+  var FLOATING_CARD_H = 39;
+  var FLOATING_CARD_W_MIN = 60;
+  var FLOATING_CARD_H_MIN = 28;
+  var FLOATING_DRAG_THRESHOLD = 5;
   var _state = "closed";
   var _focusIndex = 0;
   var _cardEls = [];
@@ -5096,6 +5101,17 @@
   var _tl = null;
   var _floatingCards = [];
   var _nextFloatingZ = Z_FLOATING_BASE;
+  var _dragItem = null;
+  var _dragStartX = 0;
+  var _dragStartY = 0;
+  var _dragStartLeft = 0;
+  var _dragStartTop = 0;
+  var _dragStartW = 0;
+  var _dragStartH = 0;
+  var _dragIsDragging = false;
+  var _dragLongPressFired = false;
+  var _dragLongPressTimer = null;
+  var _dragPointerId = null;
   function createCard(index) {
     const card = CARDS[index];
     const color = CARD_COLORS[index];
@@ -5107,9 +5123,6 @@
     el.dataset.randomRotate = "0";
     const alpha = 0.85;
     const borderGrad = getBorderGradient(index, alpha);
-    const shadow = [
-      currentTheme.stack.blurShadow
-    ].join(",");
     el.style.cssText = [
       "position:fixed",
       "right:0px",
@@ -5126,7 +5139,7 @@
       "border:1px solid transparent",
       "border-left-width:3px",
       "background: linear-gradient(" + CARD_BG + "," + CARD_BG + ") padding-box, " + borderGrad + " border-box",
-      "box-shadow:" + shadow,
+      "box-shadow:" + currentTheme.stack.blurShadow,
       "transform:rotate(0deg)",
       "cursor:pointer",
       "z-index:" + (Z_STACK_BASE + index),
@@ -5202,8 +5215,6 @@
       el.style.top = Math.round(window.innerHeight * STACK_TOP_RATIO + i * CARD_GAP) + "px";
     }
   }
-  var FLOATING_CARD_W = 155;
-  var FLOATING_CARD_H = 68;
   function createDecoratedCorner(x, y, w, h, color, svgInner) {
     const box = document.createElement("div");
     box.style.cssText = [
@@ -5267,102 +5278,186 @@
     a.el.style.zIndex = String(a.zIndex);
     b.el.style.zIndex = String(b.zIndex);
   }
-  var FLOATING_ORB_EXT = 13;
-  var OVERLAP_X = 20;
-  var OVERLAP_Y = 15;
-  function _calcSafeBoundaries() {
+  function _calcFloatingSafeBounds() {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const PAD = 16;
     const sideEl = document.getElementById("sidebar");
     const safeL = ((sideEl == null ? void 0 : sideEl.classList.contains("open")) ? sideEl.getBoundingClientRect().right : 0) + PAD;
-    const stackCards = document.querySelectorAll(".stack-card");
-    let sL = 0, sR = 0, sT = 0, sB = 0;
-    const hasStack = stackCards.length > 0;
-    if (hasStack) {
-      const fr = stackCards[0].getBoundingClientRect();
-      const lr = stackCards[stackCards.length - 1].getBoundingClientRect();
-      sL = fr.left;
-      sR = fr.right;
-      sT = fr.top;
-      sB = lr.bottom;
-    }
     const safeT = PAD + 24;
+    const fullR = vw - PAD;
     const orbEl3 = document.querySelector(".light-orb");
     let safeB = vh - PAD;
     if (orbEl3) {
       const r = orbEl3.getBoundingClientRect();
       if (r.bottom > vh * 0.3) safeB = Math.min(safeB, r.top - PAD);
     }
-    const fullR = vw - PAD;
-    return { safeL, safeT, safeB, fullR, sL, sR, sT, sB, hasStack };
+    const stackCards = document.querySelectorAll(".stack-card");
+    const stackLeft = stackCards.length > 0 ? stackCards[0].getBoundingClientRect().left : fullR;
+    return { safeL, safeT, safeB, fullR, stackLeft };
   }
-  function _rectsOverlap(x, y, rect) {
-    const cardR = x + FLOATING_CARD_W;
-    const cardB = y + FLOATING_CARD_H;
-    return x < rect.right && cardR > rect.left && y < rect.bottom && cardB > rect.top;
+  function _clampCardPosition(left, top, w, h) {
+    const b = _calcFloatingSafeBounds();
+    return {
+      left: Math.max(b.safeL, Math.min(b.fullR - w, Math.round(left))),
+      top: Math.max(b.safeT, Math.min(b.safeB - h, Math.round(top)))
+    };
   }
-  function _calcStackSafeRegion() {
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const b = _calcSafeBoundaries();
-    const { safeL, safeT, safeB, fullR, sL, sR, sT, sB, hasStack } = b;
-    debugLog("FLOAT L" + Math.round(safeL) + " T" + Math.round(safeT) + " B" + Math.round(safeB) + " fR" + Math.round(fullR) + (hasStack ? " sL" + Math.round(sL) + " sR" + Math.round(sR) + " sT" + Math.round(sT) + " sB" + Math.round(sB) : " noStack"));
-    const existingRects = _floatingCards.map((item) => {
-      const r = item.el.getBoundingClientRect();
-      return { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
-    });
+  function _scatterPosition(cardIndex) {
+    const b = _calcFloatingSafeBounds();
+    const w = FLOATING_CARD_W;
+    const h = FLOATING_CARD_H;
+    const maxX = b.fullR - w;
+    const maxY = b.safeB - h;
+    const existing = _floatingCards.map((item) => item.el.getBoundingClientRect());
+    const stackCards = document.querySelectorAll(".stack-card");
+    let stackRect = null;
+    if (stackCards.length > 0) {
+      const first = stackCards[0].getBoundingClientRect();
+      const last = stackCards[stackCards.length - 1].getBoundingClientRect();
+      stackRect = new DOMRectReadOnly(first.left, first.top, first.width, last.bottom - first.top);
+    }
     function isValid(x, y) {
-      if (x < safeL || x + FLOATING_CARD_W > fullR) return false;
-      if (y < safeT || y + FLOATING_CARD_H > safeB) return false;
-      if (hasStack && y + FLOATING_CARD_H <= sT) return false;
-      if (hasStack) {
-        const cardR = x + FLOATING_CARD_W + FLOATING_ORB_EXT;
-        const cardB = y + FLOATING_CARD_H + FLOATING_ORB_EXT;
-        if (x < sR && cardR > sL && y < sB && cardB > sT) return false;
+      if (x < b.safeL || x + w > b.fullR) return false;
+      if (y < b.safeT || y + h > b.safeB) return false;
+      for (const r of existing) {
+        if (x < r.right && x + w > r.left && y < r.bottom && y + h > r.top)
+          return false;
       }
-      for (const rect of existingRects) {
-        if (_rectsOverlap(x, y, rect)) return false;
+      if (stackRect) {
+        if (x < stackRect.right + 8 && x + w > stackRect.left - 8 && y < stackRect.bottom + 8 && y + h > stackRect.top - 8)
+          return false;
       }
       return true;
     }
-    const COL_GAP = 8;
-    const ROW_GAP = 4;
-    const STEP_X = FLOATING_CARD_W + COL_GAP;
-    const STEP_Y = FLOATING_CARD_H + ROW_GAP;
-    const xPositions = [safeL];
-    const x2 = safeL + STEP_X;
-    if (x2 + FLOATING_CARD_W <= fullR) xPositions.push(x2);
-    const x3 = safeL + STEP_X * 2;
-    if (x3 + FLOATING_CARD_W <= fullR) xPositions.push(x3);
-    for (const x of xPositions) {
-      for (let y = safeT; y + FLOATING_CARD_H <= safeB; y += STEP_Y) {
-        if (isValid(Math.round(x), Math.round(y))) {
-          return { left: Math.round(x), top: Math.round(y) };
-        }
+    for (let attempt = 0; attempt < 30; attempt++) {
+      const x = b.safeL + Math.random() * (maxX - b.safeL);
+      const y = b.safeT + Math.random() * (maxY - b.safeT);
+      if (isValid(x, y)) {
+        const result = { left: Math.round(x), top: Math.round(y) };
+        debugLog("FLOAT scatter c" + cardIndex + " " + result.left + "," + result.top);
+        return result;
       }
     }
-    if (existingRects.length > 0) {
-      const first = existingRects[0];
-      const totalSlots = xPositions.length * Math.max(
-        1,
-        Math.floor((safeB - safeT) / STEP_Y)
-      );
-      const overflowRound = Math.max(
-        0,
-        Math.floor((_floatingCards.length - totalSlots) / totalSlots) + 1
-      );
-      const stackX = first.left - OVERLAP_X * overflowRound;
-      const stackY = first.top + OVERLAP_Y * overflowRound;
-      const clampedX = Math.max(safeL, stackX);
-      const clampedY = Math.min(safeB - FLOATING_CARD_H, Math.max(safeT, stackY));
-      debugLog("FLOAT stack c" + _floatingCards.length + " ovRound" + overflowRound + " " + Math.round(clampedX) + "," + Math.round(clampedY));
-      return { left: Math.round(clampedX), top: Math.round(clampedY) };
+    const fallbackX = b.safeL;
+    const fallbackY = b.safeT + cardIndex * (h + 4);
+    const clamped = _clampCardPosition(fallbackX, fallbackY, w, h);
+    debugLog("FLOAT fallback c" + cardIndex + " " + clamped.left + "," + clamped.top);
+    return clamped;
+  }
+  function _clearFloatingDragTimer() {
+    if (_dragLongPressTimer) {
+      clearTimeout(_dragLongPressTimer);
+      _dragLongPressTimer = null;
     }
-    const cx = Math.round((vw - FLOATING_CARD_W) / 2);
-    const cy = Math.round((vh - FLOATING_CARD_H) / 2);
-    debugLog("FLOAT fallback " + cx + "," + cy);
-    return { left: cx, top: cy };
+  }
+  function _enterFloatingEditMode(item) {
+    item.state = "editing";
+    item.el.style.boxShadow = currentTheme.aiChat.panelShadowEdit;
+    debugLog("FLOAT edit enter");
+  }
+  function _exitFloatingEditMode(item) {
+    item.state = "active";
+    item.el.style.boxShadow = currentTheme.stack.blurShadow;
+    debugLog("FLOAT edit exit");
+  }
+  function _startFloatingDrag(item, clientX, clientY, pointerId) {
+    if (_dragItem) return;
+    _dragItem = item;
+    _dragPointerId = pointerId != null ? pointerId : null;
+    _dragIsDragging = false;
+    _dragLongPressFired = false;
+    _dragStartX = clientX;
+    _dragStartY = clientY;
+    const rect = item.el.getBoundingClientRect();
+    _dragStartLeft = rect.left;
+    _dragStartTop = rect.top;
+    _dragStartW = item.cardWidth;
+    _dragStartH = item.cardHeight;
+    _dragLongPressTimer = setTimeout(() => {
+      _dragLongPressFired = true;
+      if (item.state === "active") {
+        _enterFloatingEditMode(item);
+      }
+    }, 600);
+  }
+  function _handleFloatingDragMove(clientX, clientY, pointerId) {
+    if (!_dragItem) return;
+    if (_dragPointerId !== null && pointerId !== void 0 && pointerId !== _dragPointerId) return;
+    const dx = clientX - _dragStartX;
+    const dy = clientY - _dragStartY;
+    if (Math.abs(dx) > FLOATING_DRAG_THRESHOLD || Math.abs(dy) > FLOATING_DRAG_THRESHOLD) {
+      if (!_dragIsDragging) {
+        _dragIsDragging = true;
+        _clearFloatingDragTimer();
+      }
+    }
+    if (!_dragIsDragging) return;
+    const el = _dragItem.el;
+    if (_dragItem.state === "editing") {
+      const newW = Math.max(FLOATING_CARD_W_MIN, _dragStartW + dx);
+      const newH = Math.max(FLOATING_CARD_H_MIN, _dragStartH + dy);
+      el.style.width = newW + "px";
+      el.style.height = newH + "px";
+      _dragItem.cardWidth = newW;
+      _dragItem.cardHeight = newH;
+    } else {
+      const rawX = _dragStartLeft + dx;
+      const rawY = _dragStartTop + dy;
+      const clamped = _clampCardPosition(rawX, rawY, _dragItem.cardWidth, _dragItem.cardHeight);
+      el.style.left = clamped.left + "px";
+      el.style.top = clamped.top + "px";
+    }
+  }
+  function _endFloatingDrag() {
+    _clearFloatingDragTimer();
+    if (_dragItem) {
+      if (_dragItem.state === "editing") {
+        _exitFloatingEditMode(_dragItem);
+      }
+      _dragItem = null;
+    }
+    _dragPointerId = null;
+    _dragIsDragging = false;
+    _dragLongPressFired = false;
+  }
+  function _bindBrDragEvents(brOrb, item) {
+    brOrb.addEventListener("touchstart", (e) => {
+      e.stopPropagation();
+      if (item.state !== "active" && item.state !== "editing") return;
+      const t = e.changedTouches[0];
+      _startFloatingDrag(item, t.clientX, t.clientY, t.identifier);
+    });
+    brOrb.addEventListener("touchmove", (e) => {
+      if (!_dragItem || _dragItem !== item) return;
+      e.preventDefault();
+      for (const t of e.changedTouches) {
+        _handleFloatingDragMove(t.clientX, t.clientY, t.identifier);
+      }
+    });
+    brOrb.addEventListener("touchend", (e) => {
+      if (!_dragItem || _dragItem !== item) return;
+      const stillActive = Array.from(e.touches).some(
+        (t) => t.identifier === _dragPointerId
+      );
+      if (!stillActive) _endFloatingDrag();
+    });
+    brOrb.addEventListener("mousedown", (e) => {
+      e.stopPropagation();
+      if (item.state !== "active" && item.state !== "editing") return;
+      _startFloatingDrag(item, e.clientX, e.clientY);
+    });
+  }
+  var _globalDragInitialized = false;
+  function _ensureGlobalDragListeners() {
+    if (_globalDragInitialized) return;
+    _globalDragInitialized = true;
+    document.addEventListener("mousemove", (e) => {
+      _handleFloatingDragMove(e.clientX, e.clientY);
+    });
+    document.addEventListener("mouseup", () => {
+      _endFloatingDrag();
+    });
   }
   function launchFocusedCard() {
     var _a, _b;
@@ -5399,9 +5494,9 @@
     const content = document.createElement("div");
     content.style.cssText = "position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:8px;pointer-events:none";
     if (iconClone) {
-      iconClone.style.width = "36px";
-      iconClone.style.height = "36px";
-      iconClone.style.fontSize = "16px";
+      iconClone.style.width = "22px";
+      iconClone.style.height = "22px";
+      iconClone.style.fontSize = "11px";
       content.appendChild(iconClone);
     }
     if (infoClone) content.appendChild(infoClone);
@@ -5413,7 +5508,10 @@
       zIndex,
       state: "launching",
       tlOrb: null,
-      blOrb: null
+      blOrb: null,
+      brOrb: null,
+      cardWidth: FLOATING_CARD_W,
+      cardHeight: FLOATING_CARD_H
     };
     const tlOrb = createDecoratedCorner(
       cornerOff,
@@ -5471,14 +5569,20 @@
     });
     el.appendChild(blOrb);
     item.blOrb = blOrb;
-    el.appendChild(createDecoratedCorner(
+    const brOrb = createDecoratedCorner(
       FLOATING_CARD_W - rightOff - cornerSize,
       FLOATING_CARD_H - bottomOff - cornerSize,
       cornerSize,
       cornerSize,
       triNext,
-      `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c + sh},${c + sh}) scale(${s})"><path d="M6,2 L6,10 M2,6 L10,6" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`
-    ));
+      `<svg width="14" height="14" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c + sh},${c + sh}) scale(${s})"><path d="M8,2 L8,14 M2,8 L14,8 M4,4 L8,2 L12,4 M4,12 L8,14 L12,12 M4,4 L2,8 L4,12 M12,4 L14,8 L12,12" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`
+    );
+    brOrb.style.pointerEvents = "auto";
+    brOrb.style.cursor = "move";
+    brOrb.title = "\u62D6\u62FD\u79FB\u52A8 \xB7 \u957F\u6309\u8C03\u6574\u5927\u5C0F";
+    _bindBrDragEvents(brOrb, item);
+    el.appendChild(brOrb);
+    item.brOrb = brOrb;
     el.style.cssText = [
       "position:fixed",
       "left:" + cardRect.left + "px",
@@ -5490,10 +5594,11 @@
       "opacity:1"
     ].join(";");
     document.body.appendChild(el);
-    const stackSafe = _calcStackSafeRegion();
+    _ensureGlobalDragListeners();
+    const targetPos = _scatterPosition(_floatingCards.length);
     _floatingCards.push(item);
-    const targetLeft = stackSafe.left;
-    const targetTop = stackSafe.top;
+    const targetLeft = targetPos.left;
+    const targetTop = targetPos.top;
     debugLog("FLOAT launch " + _focusIndex + " " + targetLeft + "," + targetTop);
     const LAUNCH_Z_ABOVE_STACK = Z_STACK_BASE + CARDS.length + 1;
     el.style.zIndex = String(LAUNCH_Z_ABOVE_STACK);
@@ -5528,6 +5633,13 @@
   function _dismissOne(item, animated) {
     const el = item.el;
     item.state = "dismissing";
+    if (_dragItem === item) {
+      _clearFloatingDragTimer();
+      _dragItem = null;
+      _dragPointerId = null;
+      _dragIsDragging = false;
+      _dragLongPressFired = false;
+    }
     anim.killTweensOf(el);
     if (animated) {
       const tl = anim.timeline({
@@ -5578,22 +5690,10 @@
       const el = _cardEls[i];
       const dur = 0.2 + Math.random() * 0.3;
       if (i === _focusIndex) {
-        _tl.to(el, {
-          x: -28,
-          scale: 1.04,
-          rotation: 0,
-          duration: dur,
-          ease: "back.out(1.2)"
-        }, 0);
+        _tl.to(el, { x: -28, scale: 1.04, rotation: 0, duration: dur, ease: "back.out(1.2)" }, 0);
       } else {
         const rot = parseFloat(el.dataset.randomRotate || "0");
-        _tl.to(el, {
-          x: 0,
-          scale: 1,
-          rotation: rot,
-          duration: dur,
-          ease: "back.out(1.2)"
-        }, 0);
+        _tl.to(el, { x: 0, scale: 1, rotation: rot, duration: dur, ease: "back.out(1.2)" }, 0);
       }
     }
   }
