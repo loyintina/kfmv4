@@ -5445,16 +5445,14 @@
       const orbAbsX = _dragStartOrbAbsX + dx;
       const orbAbsY = _dragStartOrbAbsY + dy;
       const b = _calcFloatingSafeBounds();
-      const desiredLeft = Math.round(orbAbsX - _dragItem.cardWidth + rOff + cSize);
-      const desiredTop = Math.round(orbAbsY - _dragItem.cardHeight + bOff + cSize);
-      const clampedLeft = Math.max(b.safeL, Math.min(b.fullR - _dragItem.cardWidth, desiredLeft));
-      const clampedTop = Math.max(b.safeT, Math.min(b.safeB - _dragItem.cardHeight, desiredTop));
+      const rawTlX = _dragStartLeft + dx;
+      const rawTlY = _dragStartTop + dy;
+      const clampedLeft = Math.round(Math.max(b.safeL, Math.min(b.fullR - FLOATING_CARD_W_MIN, rawTlX)));
+      const clampedTop = Math.round(Math.max(b.safeT, Math.min(b.safeB - FLOATING_CARD_H_MIN, rawTlY)));
       el.style.left = clampedLeft + "px";
       el.style.top = clampedTop + "px";
-      const orbRelX = orbAbsX - clampedLeft;
-      const orbRelY = orbAbsY - clampedTop;
-      const newW = Math.max(FLOATING_CARD_W_MIN, Math.min(_dragStartW, orbRelX + rOff + cSize));
-      const newH = Math.max(FLOATING_CARD_H_MIN, Math.min(_dragStartH, orbRelY + bOff + cSize));
+      const newW = Math.max(FLOATING_CARD_W_MIN, Math.min(_dragStartW, orbAbsX - clampedLeft + rOff + cSize));
+      const newH = Math.max(FLOATING_CARD_H_MIN, Math.min(_dragStartH, orbAbsY - clampedTop + bOff + cSize));
       if (newW !== _dragItem.cardWidth || newH !== _dragItem.cardHeight) {
         el.style.width = newW + "px";
         el.style.height = newH + "px";
@@ -5465,6 +5463,8 @@
       const newBottomY = newH - bOff - cSize;
       _dragItem.trOrb.style.left = newRightX + "px";
       _dragItem.blOrb.style.top = newBottomY + "px";
+      const orbRelX = orbAbsX - clampedLeft;
+      const orbRelY = orbAbsY - clampedTop;
       _dragItem.brOrb.style.left = Math.min(newRightX, orbRelX) + "px";
       _dragItem.brOrb.style.top = Math.min(newBottomY, orbRelY) + "px";
     }

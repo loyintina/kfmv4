@@ -522,7 +522,7 @@ function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: n
     _dragItem.brOrb.style.left = newRightX + 'px';
     _dragItem.brOrb.style.top = newBottomY + 'px';
   } else {
-    // 普通拖拽 + 弹性边界：卡片撞到边界自动压缩，光球可脱离跟手
+    // 普通拖拽 + 弹性边界 —— 无尺寸前置依赖
     const cSize = orbT.size;
     const rOff = orbT.cornerOff + orbT.rightOffAdj;
     const bOff = orbT.cornerOff + orbT.bottomOffAdj;
@@ -531,22 +531,18 @@ function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: n
     const orbAbsX = _dragStartOrbAbsX + dx;
     const orbAbsY = _dragStartOrbAbsY + dy;
 
-    // 卡片左上角 = 光球 - 自然尺寸 + 补偿，夹到屏幕边界
-    // 位置钳制用当前实际尺寸（弹性压缩后自适应），不用自然尺寸
+    // 卡片左上角与光球同 delta 移动（整卡刚体位移），与当前尺寸解耦
     const b = _calcFloatingSafeBounds();
-    const desiredLeft = Math.round(orbAbsX - _dragItem.cardWidth + rOff + cSize);
-    const desiredTop = Math.round(orbAbsY - _dragItem.cardHeight + bOff + cSize);
-    const clampedLeft = Math.max(b.safeL, Math.min(b.fullR - _dragItem.cardWidth, desiredLeft));
-    const clampedTop = Math.max(b.safeT, Math.min(b.safeB - _dragItem.cardHeight, desiredTop));
+    const rawTlX = _dragStartLeft + dx;
+    const rawTlY = _dragStartTop + dy;
+    const clampedLeft = Math.round(Math.max(b.safeL, Math.min(b.fullR - FLOATING_CARD_W_MIN, rawTlX)));
+    const clampedTop = Math.round(Math.max(b.safeT, Math.min(b.safeB - FLOATING_CARD_H_MIN, rawTlY)));
     el.style.left = clampedLeft + 'px';
     el.style.top = clampedTop + 'px';
 
-    // 卡片尺寸：以自然尺寸为上限，撞边界时从右下角压缩
-    const orbRelX = orbAbsX - clampedLeft;
-    const orbRelY = orbAbsY - clampedTop;
-    const newW = Math.max(FLOATING_CARD_W_MIN, Math.min(_dragStartW, orbRelX + rOff + cSize));
-    const newH = Math.max(FLOATING_CARD_H_MIN, Math.min(_dragStartH, orbRelY + bOff + cSize));
-
+    // 卡片尺寸 = 光球到卡片左上角的距离，不依赖上一帧
+    const newW = Math.max(FLOATING_CARD_W_MIN, Math.min(_dragStartW, orbAbsX - clampedLeft + rOff + cSize));
+    const newH = Math.max(FLOATING_CARD_H_MIN, Math.min(_dragStartH, orbAbsY - clampedTop + bOff + cSize));
     if (newW !== _dragItem.cardWidth || newH !== _dragItem.cardHeight) {
       el.style.width = newW + 'px';
       el.style.height = newH + 'px';
@@ -559,7 +555,9 @@ function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: n
     const newBottomY = newH - bOff - cSize;
     _dragItem.trOrb.style.left = newRightX + 'px';
     _dragItem.blOrb.style.top = newBottomY + 'px';
-    // BR 光球：min(角上, 手指) → 手指越过右下角时脱离跟手
+    // BR 光球：min(角上, 手指位置) → 手指越过右下角时脱离跟手
+    const orbRelX = orbAbsX - clampedLeft;
+    const orbRelY = orbAbsY - clampedTop;
     _dragItem.brOrb.style.left = Math.min(newRightX, orbRelX) + 'px';
     _dragItem.brOrb.style.top = Math.min(newBottomY, orbRelY) + 'px';
   }
