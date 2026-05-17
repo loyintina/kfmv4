@@ -5089,10 +5089,10 @@
   var STACK_TOP_RATIO = 0.12;
   var Z_FLOATING_BASE = 50;
   var Z_STACK_BASE = 150;
-  var FLOATING_CARD_W = 100;
-  var FLOATING_CARD_H = 44;
-  var FLOATING_CARD_W_MIN = 65;
-  var FLOATING_CARD_H_MIN = 30;
+  var FLOATING_CARD_W = 155;
+  var FLOATING_CARD_H = 68;
+  var FLOATING_CARD_W_MIN = 100;
+  var FLOATING_CARD_H_MIN = 42;
   var FLOATING_DRAG_THRESHOLD = 5;
   var _state = "closed";
   var _focusIndex = 0;

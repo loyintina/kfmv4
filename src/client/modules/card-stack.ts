@@ -67,12 +67,12 @@ const STACK_TOP_RATIO = 0.12;
 const Z_FLOATING_BASE = 50;
 const Z_STACK_BASE = 150;
 
-const FLOATING_CARD_W = 100;
-const FLOATING_CARD_H = 44;
+const FLOATING_CARD_W = 155;
+const FLOATING_CARD_H = 68;
 
 // ========== 编辑模式最小尺寸 ==========
-const FLOATING_CARD_W_MIN = 65;
-const FLOATING_CARD_H_MIN = 30;
+const FLOATING_CARD_W_MIN = 100;
+const FLOATING_CARD_H_MIN = 42;
 const FLOATING_DRAG_THRESHOLD = 5;
 
 // ========== 状态 ==========
