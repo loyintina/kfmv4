@@ -661,12 +661,9 @@ export function launchFocusedCard(): void {
   // 背景层（内层毛玻璃，不覆盖外层壳的 padding 边框区）
   const bgLayer = document.createElement('div');
   bgLayer.style.cssText = [
-    'position:absolute',
-    'top:1px',
-    'right:1px',
-    'bottom:1px',
-    'left:3px',
     'border-radius:11px',
+    'width:100%',
+    'height:100%',
     'background:' + cardBg(),
     'backdrop-filter:blur(16px)',
     '-webkit-backdrop-filter:blur(16px)',
@@ -674,7 +671,7 @@ export function launchFocusedCard(): void {
   ].join(';');
   el.appendChild(bgLayer);
 
-  // 内容区
+  // 内容区（absolute 居中，与 flow 的内层毛玻璃不冲突）
   const content = document.createElement('div');
   content.style.cssText = 'position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:8px;pointer-events:none';
   if (iconClone) {

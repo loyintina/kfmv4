@@ -5555,12 +5555,9 @@
     const s = orbT.symScale, c = 6 * (1 - s), sh = orbT.symShift;
     const bgLayer = document.createElement("div");
     bgLayer.style.cssText = [
-      "position:absolute",
-      "top:1px",
-      "right:1px",
-      "bottom:1px",
-      "left:3px",
       "border-radius:11px",
+      "width:100%",
+      "height:100%",
       "background:" + cardBg(),
       "backdrop-filter:blur(16px)",
       "-webkit-backdrop-filter:blur(16px)",
