@@ -5053,7 +5053,6 @@
 
   // src/client/modules/card-stack.ts
   var orbT = currentTheme.cornerOrb;
-  var CARD_BG = currentTheme.stack.cardBg;
   var CARDS = [
     { id: "settings", icon: "\u2699", name: "\u8BBE\u7F6E", desc: "API Key \xB7 \u6A21\u578B\u9009\u62E9" },
     { id: "files", icon: "\u{1F4C1}", name: "\u6587\u4EF6\u7BA1\u7406", desc: "\u4E0A\u4F20 \xB7 \u4E0B\u8F7D \xB7 \u6574\u7406" },
@@ -5064,10 +5063,6 @@
     { id: "about", icon: "\u{1F48E}", name: "\u5173\u4E8E", desc: "\u7248\u672C \xB7 \u4FE1\u606F" }
   ];
   var _currentAccents = null;
-  var CARD_COLORS_FALLBACK = currentTheme.cardAccents;
-  function _useColors() {
-    return _currentAccents || CARD_COLORS_FALLBACK;
-  }
   function hslToHex(h, s, l) {
     h /= 360;
     s /= 100;
@@ -5081,20 +5076,6 @@
     const r = f(0), g = f(8), b = f(4);
     return "#" + [r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("");
   }
-  function _generateRandomAccents() {
-    const baseHue = Math.random() * 360;
-    const hueStep = 360 / 7;
-    const accents = [];
-    for (let i = 0; i < 7; i++) {
-      const hue = ((baseHue + i * hueStep + (Math.random() - 0.5) * 30) % 360 + 360) % 360;
-      const sat = 45 + Math.random() * 25;
-      const lit = 50 + Math.random() * 15;
-      const border = hslToHex(hue, sat, lit);
-      const iconBg = `hsla(${hue.toFixed(0)}, ${(sat + 10).toFixed(0)}%, ${(lit + 10).toFixed(0)}%, 0.25)`;
-      accents.push({ border, bg: "rgba(20,16,32,0.92)", iconBg });
-    }
-    _currentAccents = accents;
-  }
   function hexToRgba(hex, alpha) {
     const num = parseInt(hex.slice(1), 16);
     const r = num >> 16 & 255;
@@ -5102,18 +5083,34 @@
     const b = num & 255;
     return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
   }
-  function getTriple(i, alpha) {
-    const n = _useColors().length;
-    const mainRgba = hexToRgba(_useColors()[i].border, alpha);
-    const prevIdx = (i - 1 + n) % n;
-    const nextIdx = (i + 1) % n;
-    const prev = hexToRgba(_useColors()[prevIdx].border, alpha);
-    const next = hexToRgba(_useColors()[nextIdx].border, alpha);
-    return [prev, mainRgba, next];
+  function _generateRandomAccents() {
+    const accents = [];
+    for (let i = 0; i < 7; i++) {
+      const h1 = Math.random() * 360;
+      const h2 = Math.random() * 360;
+      const h3 = Math.random() * 360;
+      const sat = 45 + Math.random() * 25;
+      const lit = 50 + Math.random() * 15;
+      accents.push({
+        border: hslToHex(h1, sat, lit),
+        accent: hslToHex(h2, sat, lit),
+        accent2: hslToHex(h3, sat, lit)
+      });
+    }
+    _currentAccents = accents;
   }
-  function getBorderGradient(i, alpha) {
-    const [c1, c2, c3] = getTriple(i, alpha);
-    return "linear-gradient(to bottom right, " + c1 + " 0%, " + c2 + " 33%, " + c3 + " 50%)";
+  function cardGradient(i, alpha) {
+    const c = _currentAccents[i];
+    const a = hexToRgba(c.accent, alpha);
+    const b = hexToRgba(c.border, alpha);
+    const a2 = hexToRgba(c.accent2, alpha);
+    return "linear-gradient(to bottom right, " + a + " 0%, " + b + " 33%, " + a2 + " 50%)";
+  }
+  function cardBg(c) {
+    const base = "rgba(20,16,32,0.92)";
+    const borderRgba = hexToRgba(c.border, 0.08);
+    const mix = `linear-gradient(${base},${base}) padding-box, linear-gradient(135deg, ${borderRgba}, transparent 70%) border-box`;
+    return mix;
   }
   var CARD_GAP = currentTheme.stack.cardGap;
   var CARD_HEIGHT = currentTheme.stack.cardHeight;
@@ -5147,15 +5144,14 @@
   var _dragPointerId = null;
   function createCard(index) {
     const card = CARDS[index];
-    const color = _useColors()[index];
+    const cc = _currentAccents[index];
     const el = document.createElement("div");
     el.className = "stack-card";
     el.dataset.index = String(index);
     const topPx = Math.round(window.innerHeight * STACK_TOP_RATIO + index * CARD_GAP);
     el.dataset.randomRight = "0";
     el.dataset.randomRotate = "0";
-    const alpha = 0.85;
-    const borderGrad = getBorderGradient(index, alpha);
+    const grad = cardGradient(index, 0.85);
     el.style.cssText = [
       "position:fixed",
       "right:0px",
@@ -5171,7 +5167,7 @@
       "-webkit-backdrop-filter:blur(16px)",
       "border:1px solid transparent",
       "border-left-width:3px",
-      "background: linear-gradient(" + CARD_BG + "," + CARD_BG + ") padding-box, " + borderGrad + " border-box",
+      "background:" + cardBg(cc),
       "box-shadow:" + currentTheme.stack.blurShadow,
       "transform:rotate(0deg)",
       "cursor:pointer",
@@ -5180,7 +5176,7 @@
       "user-select:none",
       "-webkit-user-select:none"
     ].join(";");
-    el.innerHTML = '<div class="stack-card-icon" style="width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;background:' + color.iconBg + ";color:" + color.border + '">' + String(index + 1).padStart(2, "0") + '</div><div class="stack-card-info" style="flex:1;min-width:0">  <div class="stack-card-name" style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + card.name + '</div>  <div class="stack-card-desc" style="font-size:10px;opacity:0.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:0px">' + card.desc + "</div></div>";
+    el.innerHTML = '<div class="stack-card-icon" style="width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;background:' + hexToRgba(cc.border, 0.25) + ";color:" + cc.border + '">' + String(index + 1).padStart(2, "0") + '</div><div class="stack-card-info" style="flex:1;min-width:0">  <div class="stack-card-name" style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + card.name + '</div>  <div class="stack-card-desc" style="font-size:10px;opacity:0.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:0px">' + card.desc + "</div></div>";
     el.addEventListener("click", (e) => {
       const idx = parseInt(el.dataset.index || "0", 10);
       if (idx !== _focusIndex) {
@@ -5206,7 +5202,6 @@
       const el = _cardEls[i];
       const dist = Math.abs(i - _focusIndex);
       anim.killTweensOf(el);
-      const alpha = 0.85;
       if (dist === 0) {
         anim.to(el, {
           xPercent: 0,
@@ -5216,9 +5211,6 @@
           duration: 0.35,
           ease: "back.out(1.2)"
         });
-        el.style.backdropFilter = "blur(16px)";
-        el.style.webkitBackdropFilter = "blur(16px)";
-        el.style.background = "linear-gradient(" + currentTheme.stack.cardBg + "," + currentTheme.stack.cardBg + ") padding-box, " + getBorderGradient(i, alpha) + " border-box";
         el.style.boxShadow = currentTheme.stack.focusShadow;
       } else {
         const randomRotate = parseFloat(el.dataset.randomRotate || "0");
@@ -5230,9 +5222,6 @@
           duration: 0.35,
           ease: "back.out(1.2)"
         });
-        el.style.backdropFilter = "blur(16px)";
-        el.style.webkitBackdropFilter = "blur(16px)";
-        el.style.background = "linear-gradient(" + currentTheme.stack.cardBg + "," + currentTheme.stack.cardBg + ") padding-box, " + getBorderGradient(i, alpha) + " border-box";
         el.style.boxShadow = currentTheme.stack.blurShadow;
       }
     }
@@ -5547,32 +5536,30 @@
     const focusedCard = _cardEls[_focusIndex];
     if (!focusedCard) return;
     const cardRect = focusedCard.getBoundingClientRect();
-    const color = _useColors()[_focusIndex];
+    const cc = _currentAccents[_focusIndex];
     const el = document.createElement("div");
     el.className = "floating-card";
     el.dataset.index = String(_focusIndex);
     const iconClone = (_a = focusedCard.querySelector(".stack-card-icon")) == null ? void 0 : _a.cloneNode(true);
     const infoClone = (_b = focusedCard.querySelector(".stack-card-info")) == null ? void 0 : _b.cloneNode(true);
-    const [triPrev, triMain, triNext] = getTriple(_focusIndex, 1);
-    const tlColor = triPrev.replace(/,\s*1\)$/, "," + orbT.tlAlpha + ")");
     const cornerSize = orbT.size;
     const cornerOff = orbT.cornerOff;
     const rightOff = cornerOff + orbT.rightOffAdj;
     const bottomOff = cornerOff + orbT.bottomOffAdj;
     const s = orbT.symScale, c = 6 * (1 - s), sh = orbT.symShift;
-    const cardBg = document.createElement("div");
-    cardBg.style.cssText = [
+    const bgLayer = document.createElement("div");
+    bgLayer.style.cssText = [
       "position:absolute",
       "inset:0",
       "border-radius:12px",
       "border:1px solid transparent",
       "border-left-width:3px",
-      "background: linear-gradient(" + CARD_BG + "," + CARD_BG + ") padding-box, linear-gradient(to bottom right, " + triPrev + " 0%, " + triMain + " 33%, " + triNext + " 50%) border-box",
+      "background:" + cardBg(cc),
       "backdrop-filter:blur(16px)",
       "-webkit-backdrop-filter:blur(16px)",
       "pointer-events:none"
     ].join(";");
-    el.appendChild(cardBg);
+    el.appendChild(bgLayer);
     const content = document.createElement("div");
     content.style.cssText = "position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:8px;pointer-events:none";
     if (iconClone) {
@@ -5595,8 +5582,10 @@
       brOrb: null,
       cardWidth: FLOATING_CARD_W,
       cardHeight: FLOATING_CARD_H,
-      accentColor: color.border
+      accentColor: cc.border
     };
+    const borderRgba = hexToRgba(cc.border, 1);
+    const tlColor = hexToRgba(cc.border, orbT.tlAlpha);
     const tlOrb = createDecoratedCorner(
       cornerOff,
       cornerOff,
@@ -5622,7 +5611,7 @@
       cornerOff,
       cornerSize,
       cornerSize,
-      triMain,
+      borderRgba,
       `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c + sh},${c - sh}) scale(${s})"><line x1="4" y1="2" x2="10" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/></g></svg>`
     );
     trOrb.style.pointerEvents = "auto";
@@ -5639,7 +5628,7 @@
       FLOATING_CARD_H - bottomOff - cornerSize,
       cornerSize,
       cornerSize,
-      triMain,
+      borderRgba,
       `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c - sh},${c + sh}) scale(${s})"><path d="M6,2 L6,10 M6,10 L3,7 M6,10 L9,7" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`
     );
     blOrb.style.pointerEvents = "auto";
@@ -5659,7 +5648,7 @@
       FLOATING_CARD_H - bottomOff - cornerSize,
       cornerSize,
       cornerSize,
-      triNext,
+      borderRgba,
       `<svg width="14" height="14" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c + sh},${c + sh}) scale(${s})"><path d="M8,2 L8,14 M2,8 L14,8 M4,4 L8,2 L12,4 M4,12 L8,14 L12,12 M4,4 L2,8 L4,12 M12,4 L14,8 L12,12" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`
     );
     brOrb.style.pointerEvents = "auto";
@@ -5740,14 +5729,31 @@
       el.remove();
     }
   }
+  function _updateCardStyles() {
+    for (let i = 0; i < _cardEls.length; i++) {
+      const el = _cardEls[i];
+      const cc = _currentAccents[i];
+      el.style.backdropFilter = "blur(16px)";
+      el.style.webkitBackdropFilter = "blur(16px)";
+      el.style.background = cardBg(cc);
+      const icon = el.querySelector(".stack-card-icon");
+      if (icon) {
+        icon.style.background = hexToRgba(cc.border, 0.25);
+        icon.style.color = cc.border;
+      }
+    }
+  }
   function openCardStack() {
-    _generateRandomAccents();
     if (_state === "open" || _state === "opening") return;
     if (_state === "closing" && _tl) {
+      _generateRandomAccents();
+      _updateCardStyles();
       _state = "opening";
       _tl.reverse();
       return;
     }
+    _generateRandomAccents();
+    _updateCardStyles();
     _state = "opening";
     randomizeCards();
     for (let i = 0; i < _cardEls.length; i++) {
@@ -5758,12 +5764,8 @@
       onComplete: () => {
         _state = "open";
         _tl = null;
-        const alpha = 0.85;
         for (let i = 0; i < _cardEls.length; i++) {
           const el = _cardEls[i];
-          el.style.backdropFilter = "blur(16px)";
-          el.style.webkitBackdropFilter = "blur(16px)";
-          el.style.background = "linear-gradient(" + currentTheme.stack.cardBg + "," + currentTheme.stack.cardBg + ") padding-box, " + getBorderGradient(i, alpha) + " border-box";
           el.style.boxShadow = i === _focusIndex ? currentTheme.stack.focusShadow : currentTheme.stack.blurShadow;
         }
       },

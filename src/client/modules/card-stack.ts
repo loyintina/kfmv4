@@ -13,8 +13,6 @@ const orbT = theme.cornerOrb;
  */
 
 // ========== 卡片内容定义 ==========
-const CARD_BG = theme.stack.cardBg;
-
 interface CardDef {
   id: string;
   icon: string;
@@ -32,10 +30,8 @@ const CARDS: CardDef[] = [
   { id: 'about',    icon: '\uD83D\uDC8E', name: '\u5173\u4E8E',     desc: '\u7248\u672C \u00B7 \u4FE1\u606F' },
 ];
 
-// ========== 星云配色（每次召唤随机生成） ==========
-let _currentAccents: Array<{ border: string; bg: string; iconBg: string }> | null = null;
-const CARD_COLORS_FALLBACK = theme.cardAccents;
-function _useColors() { return _currentAccents || CARD_COLORS_FALLBACK; }
+// ========== 卡片配色：每张卡三个完全独立的色值 ==========
+let _currentAccents: Array<{ border: string; accent: string; accent2: string }> | null = null;
 
 /** HSL → hex （#rrggbb） */
 function hslToHex(h: number, s: number, l: number): string {
@@ -50,22 +46,6 @@ function hslToHex(h: number, s: number, l: number): string {
   return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
 }
 
-/** 每次召唤卡片堆时重新生成 7 张卡片的随机配色 */
-function _generateRandomAccents(): void {
-  const baseHue = Math.random() * 360;
-  const hueStep = 360 / 7;
-  const accents = [];
-  for (let i = 0; i < 7; i++) {
-    const hue = ((baseHue + i * hueStep + (Math.random() - 0.5) * 30) % 360 + 360) % 360;
-    const sat = 45 + Math.random() * 25;    // 45%–70%
-    const lit = 50 + Math.random() * 15;    // 50%–65%
-    const border = hslToHex(hue, sat, lit);
-    const iconBg = `hsla(${hue.toFixed(0)}, ${(sat + 10).toFixed(0)}%, ${(lit + 10).toFixed(0)}%, 0.25)`;
-    accents.push({ border, bg: 'rgba(20,16,32,0.92)', iconBg });
-  }
-  _currentAccents = accents;
-}
-
 function hexToRgba(hex: string, alpha: number): string {
   const num = parseInt(hex.slice(1), 16);
   const r = (num >> 16) & 0xFF;
@@ -74,19 +54,41 @@ function hexToRgba(hex: string, alpha: number): string {
   return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
 }
 
-function getTriple(i: number, alpha: number): string[] {
-  const n = _useColors().length;
-  const mainRgba = hexToRgba(_useColors()[i].border, alpha);
-  const prevIdx = (i - 1 + n) % n;
-  const nextIdx = (i + 1) % n;
-  const prev = hexToRgba(_useColors()[prevIdx].border, alpha);
-  const next = hexToRgba(_useColors()[nextIdx].border, alpha);
-  return [prev, mainRgba, next];
+/** 每张卡三色独立随机，饱和度/亮度锁定在优雅区间 */
+function _generateRandomAccents(): void {
+  const accents = [];
+  for (let i = 0; i < 7; i++) {
+    const h1 = Math.random() * 360;   // border
+    const h2 = Math.random() * 360;   // accent
+    const h3 = Math.random() * 360;   // accent2
+    const sat = 45 + Math.random() * 25;
+    const lit = 50 + Math.random() * 15;
+    accents.push({
+      border:   hslToHex(h1, sat, lit),
+      accent:   hslToHex(h2, sat, lit),
+      accent2:  hslToHex(h3, sat, lit),
+    });
+  }
+  _currentAccents = accents;
 }
 
-function getBorderGradient(i: number, alpha: number): string {
-  const [c1, c2, c3] = getTriple(i, alpha);
-  return "linear-gradient(to bottom right, " + c1 + " 0%, " + c2 + " 33%, " + c3 + " 50%)";
+/** 从单张卡取三色渐变（不再依赖相邻卡） */
+function cardGradient(i: number, alpha: number): string {
+  const c = _currentAccents![i];
+  const a  = hexToRgba(c.accent, alpha);
+  const b  = hexToRgba(c.border, alpha);
+  const a2 = hexToRgba(c.accent2, alpha);
+  return "linear-gradient(to bottom right, " + a + " 0%, " + b + " 33%, " + a2 + " 50%)";
+}
+
+/** 从单张卡的 border 派生卡片内部用色（边框/序号/毛玻璃） */
+function cardBg(c: { border: string; accent: string; accent2: string }): string {
+  const base = 'rgba(20,16,32,0.92)';
+  const borderRgba = hexToRgba(c.border, 0.08);
+  // 在深色底上叠一层极淡的主色，形成微弱的色调倾向
+  const mix = `linear-gradient(${base},${base}) padding-box, ` +
+    `linear-gradient(135deg, ${borderRgba}, transparent 70%) border-box`;
+  return mix;
 }
 
 // ========== 配置 ==========
@@ -101,7 +103,7 @@ const Z_STACK_BASE = 150;
 const FLOATING_CARD_W = 155;
 const FLOATING_CARD_H = 68;
 
-// ========== 编辑模式最小尺寸 ==========
+// ========== 编辑��式最小尺寸 ==========
 const FLOATING_CARD_W_MIN = 100;
 const FLOATING_CARD_H_MIN = 42;
 const FLOATING_DRAG_THRESHOLD = 5;
@@ -149,7 +151,7 @@ let _dragPointerId: number | null = null;
 
 function createCard(index: number): HTMLElement {
   const card = CARDS[index];
-  const color = _useColors()[index];
+  const cc = _currentAccents![index];
 
   const el = document.createElement('div');
   el.className = 'stack-card';
@@ -160,9 +162,9 @@ function createCard(index: number): HTMLElement {
   el.dataset.randomRight = '0';
   el.dataset.randomRotate = '0';
 
-  const alpha = 0.85;
-  const borderGrad = getBorderGradient(index, alpha);
+  const grad = cardGradient(index, 0.85);
 
+  // 所有颜色从 cc 派生：边框/渐变/mix 都基于 border/accent/accent2
   el.style.cssText = [
     'position:fixed',
     'right:0px',
@@ -178,7 +180,7 @@ function createCard(index: number): HTMLElement {
     '-webkit-backdrop-filter:blur(16px)',
     'border:1px solid transparent',
     'border-left-width:3px',
-    'background: linear-gradient(' + CARD_BG + ',' + CARD_BG + ') padding-box, ' + borderGrad + ' border-box',
+    'background:' + cardBg(cc),
     'box-shadow:' + theme.stack.blurShadow,
     'transform:rotate(0deg)',
     'cursor:pointer',
@@ -189,7 +191,7 @@ function createCard(index: number): HTMLElement {
   ].join(';');
 
   el.innerHTML = ''
-    + '<div class="stack-card-icon" style="width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;background:' + color.iconBg + ';color:' + color.border + '">' + String(index + 1).padStart(2, '0') + '</div>'
+    + '<div class="stack-card-icon" style="width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;background:' + hexToRgba(cc.border, 0.25) + ';color:' + cc.border + '">' + String(index + 1).padStart(2, '0') + '</div>'
     + '<div class="stack-card-info" style="flex:1;min-width:0">'
     + '  <div class="stack-card-name" style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + card.name + '</div>'
     + '  <div class="stack-card-desc" style="font-size:10px;opacity:0.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:0px">' + card.desc + '</div>'
@@ -222,16 +224,12 @@ function updateFocus(): void {
     const el = _cardEls[i];
     const dist = Math.abs(i - _focusIndex);
     anim.killTweensOf(el);
-    const alpha = 0.85;
 
     if (dist === 0) {
       anim.to(el, {
         xPercent: 0, x: -28, scale: 1.04, rotation: 0,
         duration: 0.35, ease: 'back.out(1.2)',
       });
-      el.style.backdropFilter = 'blur(16px)';
-      (el.style as any).webkitBackdropFilter = 'blur(16px)';
-      el.style.background = 'linear-gradient(' + theme.stack.cardBg + ',' + theme.stack.cardBg + ') padding-box, ' + getBorderGradient(i, alpha) + ' border-box';
       el.style.boxShadow = theme.stack.focusShadow;
     } else {
       const randomRotate = parseFloat(el.dataset.randomRotate || '0');
@@ -239,9 +237,6 @@ function updateFocus(): void {
         xPercent: 0, x: 0, scale: 1, rotation: randomRotate,
         duration: 0.35, ease: 'back.out(1.2)',
       });
-      el.style.backdropFilter = 'blur(16px)';
-      (el.style as any).webkitBackdropFilter = 'blur(16px)';
-      el.style.background = 'linear-gradient(' + theme.stack.cardBg + ',' + theme.stack.cardBg + ') padding-box, ' + getBorderGradient(i, alpha) + ' border-box';
       el.style.boxShadow = theme.stack.blurShadow;
     }
   }
@@ -451,7 +446,7 @@ function _enterFloatingEditMode(item: FloatingCardItem): void {
 
   item.state = 'editing';
 
-  // 轻柔的卡片专���色发光阴影，不遮盖角光球
+  // 轻柔的卡��专���色发光阴影，不遮盖角光球
   const c = item.accentColor;
   if (c) {
     item.el.style.boxShadow = '0 0 18px 6px ' + hexToRgba(c, 0.35) + ', 0 2px 8px rgba(0,0,0,0.3)';
@@ -638,7 +633,7 @@ export function launchFocusedCard(): void {
   if (!focusedCard) return;
 
   const cardRect = focusedCard.getBoundingClientRect();
-  const color = _useColors()[_focusIndex];
+  const cc = _currentAccents![_focusIndex];
 
   const el = document.createElement('div');
   el.className = 'floating-card';
@@ -647,29 +642,26 @@ export function launchFocusedCard(): void {
   const iconClone = focusedCard.querySelector('.stack-card-icon')?.cloneNode(true) as HTMLElement;
   const infoClone = focusedCard.querySelector('.stack-card-info')?.cloneNode(true) as HTMLElement;
 
-  const [triPrev, triMain, triNext] = getTriple(_focusIndex, 1);
-  const tlColor = triPrev.replace(/,\s*1\)$/, ',' + orbT.tlAlpha + ')');
-
   const cornerSize = orbT.size;
   const cornerOff = orbT.cornerOff;
   const rightOff = cornerOff + orbT.rightOffAdj;
   const bottomOff = cornerOff + orbT.bottomOffAdj;
   const s = orbT.symScale, c = 6 * (1 - s), sh = orbT.symShift;
 
-  // 毛玻璃背景
-  const cardBg = document.createElement('div');
-  cardBg.style.cssText = [
+  // 背景层：完整毛玻璃 + 三色渐变边框（不从相邻卡取色）
+  const bgLayer = document.createElement('div');
+  bgLayer.style.cssText = [
     'position:absolute',
     'inset:0',
     'border-radius:12px',
     'border:1px solid transparent',
     'border-left-width:3px',
-    'background: linear-gradient(' + CARD_BG + ',' + CARD_BG + ') padding-box, linear-gradient(to bottom right, ' + triPrev + ' 0%, ' + triMain + ' 33%, ' + triNext + ' 50%) border-box',
+    'background:' + cardBg(cc),
     'backdrop-filter:blur(16px)',
     '-webkit-backdrop-filter:blur(16px)',
     'pointer-events:none',
   ].join(';');
-  el.appendChild(cardBg);
+  el.appendChild(bgLayer);
 
   // 内容区
   const content = document.createElement('div');
@@ -693,10 +685,14 @@ export function launchFocusedCard(): void {
     brOrb: null as unknown as HTMLElement,
     cardWidth: FLOATING_CARD_W,
     cardHeight: FLOATING_CARD_H,
-    accentColor: color.border,
+    accentColor: cc.border,
   };
 
-  // TL — 上移一层
+  // 四个角光球全部用 border 主色（透明度微调区分层次）
+  const borderRgba = hexToRgba(cc.border, 1);
+
+  // TL — 上移一层（略暗，保留层次感）
+  const tlColor = hexToRgba(cc.border, orbT.tlAlpha);
   const tlOrb = createDecoratedCorner(cornerOff, cornerOff, cornerSize, cornerSize, tlColor,
     `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c-sh},${c-sh}) scale(${s})"><path d="M6,10 L6,2 M6,2 L3,5 M6,2 L9,5" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`);
   tlOrb.style.pointerEvents = 'auto';
@@ -713,7 +709,7 @@ export function launchFocusedCard(): void {
   item.tlOrb = tlOrb;
 
   // TR — 关闭
-  const trOrb = createDecoratedCorner(FLOATING_CARD_W - rightOff - cornerSize, cornerOff, cornerSize, cornerSize, triMain,
+  const trOrb = createDecoratedCorner(FLOATING_CARD_W - rightOff - cornerSize, cornerOff, cornerSize, cornerSize, borderRgba,
     `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c+sh},${c-sh}) scale(${s})"><line x1="4" y1="2" x2="10" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/></g></svg>`);
   trOrb.style.pointerEvents = 'auto';
   trOrb.style.cursor = 'pointer';
@@ -726,7 +722,7 @@ export function launchFocusedCard(): void {
   item.trOrb = trOrb;
 
   // BL — 下移一层
-  const blOrb = createDecoratedCorner(cornerOff, FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, triMain,
+  const blOrb = createDecoratedCorner(cornerOff, FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, borderRgba,
     `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c-sh},${c+sh}) scale(${s})"><path d="M6,2 L6,10 M6,10 L3,7 M6,10 L9,7" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`);
   blOrb.style.pointerEvents = 'auto';
   blOrb.style.cursor = 'pointer';
@@ -743,7 +739,7 @@ export function launchFocusedCard(): void {
 
   // BR — 拖拽移动 + 长按编辑大小
   const brOrb = createDecoratedCorner(FLOATING_CARD_W - rightOff - cornerSize,
-    FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, triNext,
+    FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, borderRgba,
     `<svg width="14" height="14" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c+sh},${c+sh}) scale(${s})"><path d="M8,2 L8,14 M2,8 L14,8 M4,4 L8,2 L12,4 M4,12 L8,14 L12,12 M4,4 L2,8 L4,12 M12,4 L14,8 L12,12" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`);
   brOrb.style.pointerEvents = 'auto';
   brOrb.style.cursor = 'move';
@@ -767,7 +763,7 @@ export function launchFocusedCard(): void {
   document.body.appendChild(el);
   _ensureGlobalDragListeners();
 
-  // 随机散落：在安全区内找不重叠位置（push 前调用）
+  // 随机散落���在安全区内找不重叠��置（push 前调用）
   const targetPos = _scatterPosition(_floatingCards.length);
   _floatingCards.push(item);
   const targetLeft = targetPos.left;
@@ -845,14 +841,36 @@ export function hasFloatingCard(): boolean {
 
 // ========== 卡片堆开/关 ==========
 
+/** 用 _currentAccents 更新所有已存在卡片的 DOM 颜色（动画前调用） */
+function _updateCardStyles(): void {
+  for (let i = 0; i < _cardEls.length; i++) {
+    const el = _cardEls[i];
+    const cc = _currentAccents![i];
+    // 卡片背景 + 毛玻璃（颜色在动画前就位）
+    el.style.backdropFilter = 'blur(16px)';
+    (el.style as any).webkitBackdropFilter = 'blur(16px)';
+    el.style.background = cardBg(cc);
+    // 序号数字颜色
+    const icon = el.querySelector('.stack-card-icon') as HTMLElement | null;
+    if (icon) {
+      icon.style.background = hexToRgba(cc.border, 0.25);
+      icon.style.color = cc.border;
+    }
+  }
+}
+
 export function openCardStack(): void {
-  _generateRandomAccents();
   if (_state === 'open' || _state === 'opening') return;
   if (_state === 'closing' && _tl) {
+    _generateRandomAccents();
+    _updateCardStyles();
     _state = 'opening';
     _tl.reverse();
     return;
   }
+
+  _generateRandomAccents();
+  _updateCardStyles();
 
   _state = 'opening';
   randomizeCards();
@@ -865,12 +883,8 @@ export function openCardStack(): void {
   _tl = anim.timeline({
     onComplete: () => {
       _state = 'open'; _tl = null;
-      const alpha = 0.85;
       for (let i = 0; i < _cardEls.length; i++) {
         const el = _cardEls[i];
-        el.style.backdropFilter = 'blur(16px)';
-        (el.style as any).webkitBackdropFilter = 'blur(16px)';
-        el.style.background = 'linear-gradient(' + theme.stack.cardBg + ',' + theme.stack.cardBg + ') padding-box, ' + getBorderGradient(i, alpha) + ' border-box';
         el.style.boxShadow = (i === _focusIndex) ? theme.stack.focusShadow : theme.stack.blurShadow;
       }
     },
