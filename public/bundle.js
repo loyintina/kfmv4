@@ -5106,11 +5106,29 @@
     const a2 = hexToRgba(c.accent2, alpha);
     return "linear-gradient(to bottom right, " + a + " 0%, " + b + " 33%, " + a2 + " 50%)";
   }
-  function cardBg(c) {
-    const base = "rgba(20,16,32,0.92)";
-    const borderRgba = hexToRgba(c.border, 0.08);
-    const mix = `linear-gradient(${base},${base}) padding-box, linear-gradient(135deg, ${borderRgba}, transparent 70%) border-box`;
-    return mix;
+  function cardBg() {
+    return "rgba(20,16,32,0.92)";
+  }
+  function applyCardBorder(container, grad, leftWidth = 3) {
+    const b = document.createElement("div");
+    b.style.cssText = [
+      "position:absolute",
+      "inset:0",
+      "border-radius:12px",
+      "pointer-events:none",
+      "background:" + grad + " border-box",
+      "border:1px solid transparent",
+      "border-left-width:" + leftWidth + "px",
+      "-webkit-mask:",
+      "linear-gradient(#000,#000) padding-box,",
+      "linear-gradient(#000,#000) border-box",
+      "-webkit-mask-composite:xor",
+      "mask:",
+      "linear-gradient(#000,#000) padding-box,",
+      "linear-gradient(#000,#000) border-box",
+      "mask-composite:exclude"
+    ].join(";");
+    container.appendChild(b);
   }
   var CARD_GAP = currentTheme.stack.cardGap;
   var CARD_HEIGHT = currentTheme.stack.cardHeight;
@@ -5165,9 +5183,7 @@
       "gap:6px",
       "backdrop-filter:blur(16px)",
       "-webkit-backdrop-filter:blur(16px)",
-      "border:1px solid transparent",
-      "border-left-width:3px",
-      "background:" + cardBg(cc),
+      "background:" + cardBg(),
       "box-shadow:" + currentTheme.stack.blurShadow,
       "transform:rotate(0deg)",
       "cursor:pointer",
@@ -5176,6 +5192,7 @@
       "user-select:none",
       "-webkit-user-select:none"
     ].join(";");
+    applyCardBorder(el, cardGradient(index, 0.85));
     el.innerHTML = '<div class="stack-card-icon" style="width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;background:' + hexToRgba(cc.border, 0.25) + ";color:" + cc.border + '">' + String(index + 1).padStart(2, "0") + '</div><div class="stack-card-info" style="flex:1;min-width:0">  <div class="stack-card-name" style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + card.name + '</div>  <div class="stack-card-desc" style="font-size:10px;opacity:0.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:0px">' + card.desc + "</div></div>";
     el.addEventListener("click", (e) => {
       const idx = parseInt(el.dataset.index || "0", 10);
@@ -5552,14 +5569,13 @@
       "position:absolute",
       "inset:0",
       "border-radius:12px",
-      "border:1px solid transparent",
-      "border-left-width:3px",
-      "background:" + cardBg(cc),
+      "background:" + cardBg(),
       "backdrop-filter:blur(16px)",
       "-webkit-backdrop-filter:blur(16px)",
       "pointer-events:none"
     ].join(";");
     el.appendChild(bgLayer);
+    applyCardBorder(el, cardGradient(_focusIndex, 0.85));
     const content = document.createElement("div");
     content.style.cssText = "position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:8px;pointer-events:none";
     if (iconClone) {
@@ -5735,7 +5751,9 @@
       const cc = _currentAccents[i];
       el.style.backdropFilter = "blur(16px)";
       el.style.webkitBackdropFilter = "blur(16px)";
-      el.style.background = cardBg(cc);
+      el.style.background = cardBg();
+      el.querySelectorAll(".card-border-layer").forEach((b) => b.remove());
+      applyCardBorder(el, cardGradient(i, 0.85));
       const icon = el.querySelector(".stack-card-icon");
       if (icon) {
         icon.style.background = hexToRgba(cc.border, 0.25);

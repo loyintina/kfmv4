@@ -82,13 +82,31 @@ function cardGradient(i: number, alpha: number): string {
 }
 
 /** 从单张卡的 border 派生卡片内部用色（边框/序号/毛玻璃） */
-function cardBg(c: { border: string; accent: string; accent2: string }): string {
-  const base = 'rgba(20,16,32,0.92)';
-  const borderRgba = hexToRgba(c.border, 0.08);
-  // 在深色底上叠一层极淡的主色，形成微弱的色调倾向
-  const mix = `linear-gradient(${base},${base}) padding-box, ` +
-    `linear-gradient(135deg, ${borderRgba}, transparent 70%) border-box`;
-  return mix;
+function cardBg(): string {
+  return 'rgba(20,16,32,0.92)';
+}
+
+/** 给卡片父元素添加独立的边框层（::before 伪元素模拟，mask-composite 排除内容区） */
+function applyCardBorder(container: HTMLElement, grad: string, leftWidth = 3): void {
+  const b = document.createElement('div');
+  b.style.cssText = [
+    'position:absolute',
+    'inset:0',
+    'border-radius:12px',
+    'pointer-events:none',
+    'background:' + grad + ' border-box',
+    'border:1px solid transparent',
+    'border-left-width:' + leftWidth + 'px',
+    '-webkit-mask:',
+      'linear-gradient(#000,#000) padding-box,',
+      'linear-gradient(#000,#000) border-box',
+    '-webkit-mask-composite:xor',
+    'mask:',
+      'linear-gradient(#000,#000) padding-box,',
+      'linear-gradient(#000,#000) border-box',
+    'mask-composite:exclude',
+  ].join(';');
+  container.appendChild(b);
 }
 
 // ========== 配置 ==========
@@ -164,7 +182,6 @@ function createCard(index: number): HTMLElement {
 
   const grad = cardGradient(index, 0.85);
 
-  // 所有颜色从 cc 派生：边框/渐变/mix 都基于 border/accent/accent2
   el.style.cssText = [
     'position:fixed',
     'right:0px',
@@ -178,9 +195,7 @@ function createCard(index: number): HTMLElement {
     'gap:6px',
     'backdrop-filter:blur(16px)',
     '-webkit-backdrop-filter:blur(16px)',
-    'border:1px solid transparent',
-    'border-left-width:3px',
-    'background:' + cardBg(cc),
+    'background:' + cardBg(),
     'box-shadow:' + theme.stack.blurShadow,
     'transform:rotate(0deg)',
     'cursor:pointer',
@@ -189,6 +204,9 @@ function createCard(index: number): HTMLElement {
     'user-select:none',
     '-webkit-user-select:none',
   ].join(';');
+
+  // 独立边框层（叠加在背景之上）
+  applyCardBorder(el, cardGradient(index, 0.85));
 
   el.innerHTML = ''
     + '<div class="stack-card-icon" style="width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;background:' + hexToRgba(cc.border, 0.25) + ';color:' + cc.border + '">' + String(index + 1).padStart(2, '0') + '</div>'
@@ -648,20 +666,20 @@ export function launchFocusedCard(): void {
   const bottomOff = cornerOff + orbT.bottomOffAdj;
   const s = orbT.symScale, c = 6 * (1 - s), sh = orbT.symShift;
 
-  // 背景层：完整毛玻璃 + 三色渐变边框（不从相邻卡取色）
+  // 背景层（纯毛玻璃，不含边框）
   const bgLayer = document.createElement('div');
   bgLayer.style.cssText = [
     'position:absolute',
     'inset:0',
     'border-radius:12px',
-    'border:1px solid transparent',
-    'border-left-width:3px',
-    'background:' + cardBg(cc),
+    'background:' + cardBg(),
     'backdrop-filter:blur(16px)',
     '-webkit-backdrop-filter:blur(16px)',
     'pointer-events:none',
   ].join(';');
   el.appendChild(bgLayer);
+  // 独立渐变边框层（叠加在背景之上，不干扰毛玻璃）
+  applyCardBorder(el, cardGradient(_focusIndex, 0.85));
 
   // 内容区
   const content = document.createElement('div');
@@ -688,7 +706,7 @@ export function launchFocusedCard(): void {
     accentColor: cc.border,
   };
 
-  // 四个角光球全部用 border 主色（透明度微调区分层次）
+  // 四个角光球全部用 border ���色（透明度微调区分层次）
   const borderRgba = hexToRgba(cc.border, 1);
 
   // TL — 上移一层（略暗，保留层次感）
@@ -846,10 +864,12 @@ function _updateCardStyles(): void {
   for (let i = 0; i < _cardEls.length; i++) {
     const el = _cardEls[i];
     const cc = _currentAccents![i];
-    // 卡片背景 + 毛玻璃（颜色在动画前就位）
     el.style.backdropFilter = 'blur(16px)';
     (el.style as any).webkitBackdropFilter = 'blur(16px)';
-    el.style.background = cardBg(cc);
+    el.style.background = cardBg();
+    // 移除旧边框层，添加新边框层
+    el.querySelectorAll('.card-border-layer').forEach(b => b.remove());
+    applyCardBorder(el, cardGradient(i, 0.85));
     // 序号数字颜色
     const icon = el.querySelector('.stack-card-icon') as HTMLElement | null;
     if (icon) {
