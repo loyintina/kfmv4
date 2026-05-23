@@ -32,8 +32,39 @@ const CARDS: CardDef[] = [
   { id: 'about',    icon: '\uD83D\uDC8E', name: '\u5173\u4E8E',     desc: '\u7248\u672C \u00B7 \u4FE1\u606F' },
 ];
 
-// ========== 星云配色 ==========
-const CARD_COLORS = theme.cardAccents;
+// ========== 星云配色（每次召唤随机生成） ==========
+let _currentAccents: Array<{ border: string; bg: string; iconBg: string }> | null = null;
+const CARD_COLORS_FALLBACK = theme.cardAccents;
+function _useColors() { return _currentAccents || CARD_COLORS_FALLBACK; }
+
+/** HSL → hex （#rrggbb） */
+function hslToHex(h: number, s: number, l: number): string {
+  h /= 360; s /= 100; l /= 100;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) => {
+    const k = (n + h * 12) % 12;
+    const c = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.round(255 * Math.max(0, Math.min(1, c)));
+  };
+  const r = f(0), g = f(8), b = f(4);
+  return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+}
+
+/** 每次召唤卡片堆时重新生成 7 张卡片的随机配色 */
+function _generateRandomAccents(): void {
+  const baseHue = Math.random() * 360;
+  const hueStep = 360 / 7;
+  const accents = [];
+  for (let i = 0; i < 7; i++) {
+    const hue = ((baseHue + i * hueStep + (Math.random() - 0.5) * 30) % 360 + 360) % 360;
+    const sat = 45 + Math.random() * 25;    // 45%–70%
+    const lit = 50 + Math.random() * 15;    // 50%–65%
+    const border = hslToHex(hue, sat, lit);
+    const iconBg = `hsla(${hue.toFixed(0)}, ${(sat + 10).toFixed(0)}%, ${(lit + 10).toFixed(0)}%, 0.25)`;
+    accents.push({ border, bg: 'rgba(20,16,32,0.92)', iconBg });
+  }
+  _currentAccents = accents;
+}
 
 function hexToRgba(hex: string, alpha: number): string {
   const num = parseInt(hex.slice(1), 16);
@@ -44,12 +75,12 @@ function hexToRgba(hex: string, alpha: number): string {
 }
 
 function getTriple(i: number, alpha: number): string[] {
-  const n = CARD_COLORS.length;
-  const mainRgba = hexToRgba(CARD_COLORS[i].border, alpha);
+  const n = _useColors().length;
+  const mainRgba = hexToRgba(_useColors()[i].border, alpha);
   const prevIdx = (i - 1 + n) % n;
   const nextIdx = (i + 1) % n;
-  const prev = hexToRgba(CARD_COLORS[prevIdx].border, alpha);
-  const next = hexToRgba(CARD_COLORS[nextIdx].border, alpha);
+  const prev = hexToRgba(_useColors()[prevIdx].border, alpha);
+  const next = hexToRgba(_useColors()[nextIdx].border, alpha);
   return [prev, mainRgba, next];
 }
 
@@ -118,7 +149,7 @@ let _dragPointerId: number | null = null;
 
 function createCard(index: number): HTMLElement {
   const card = CARDS[index];
-  const color = CARD_COLORS[index];
+  const color = _useColors()[index];
 
   const el = document.createElement('div');
   el.className = 'stack-card';
@@ -420,7 +451,7 @@ function _enterFloatingEditMode(item: FloatingCardItem): void {
 
   item.state = 'editing';
 
-  // 轻柔的卡片专属色发光阴影，不遮盖角光球
+  // 轻柔的卡片专���色发光阴影，不遮盖角光球
   const c = item.accentColor;
   if (c) {
     item.el.style.boxShadow = '0 0 18px 6px ' + hexToRgba(c, 0.35) + ', 0 2px 8px rgba(0,0,0,0.3)';
@@ -607,7 +638,7 @@ export function launchFocusedCard(): void {
   if (!focusedCard) return;
 
   const cardRect = focusedCard.getBoundingClientRect();
-  const color = CARD_COLORS[_focusIndex];
+  const color = _useColors()[_focusIndex];
 
   const el = document.createElement('div');
   el.className = 'floating-card';
@@ -815,6 +846,7 @@ export function hasFloatingCard(): boolean {
 // ========== 卡片堆开/关 ==========
 
 export function openCardStack(): void {
+  _generateRandomAccents();
   if (_state === 'open' || _state === 'opening') return;
   if (_state === 'closing' && _tl) {
     _state = 'opening';

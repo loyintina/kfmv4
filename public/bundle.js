@@ -5063,7 +5063,38 @@
     { id: "stats", icon: "\u{1F4CA}", name: "\u7EDF\u8BA1", desc: "\u4F7F\u7528\u6570\u636E \xB7 \u8D8B\u52BF" },
     { id: "about", icon: "\u{1F48E}", name: "\u5173\u4E8E", desc: "\u7248\u672C \xB7 \u4FE1\u606F" }
   ];
-  var CARD_COLORS = currentTheme.cardAccents;
+  var _currentAccents = null;
+  var CARD_COLORS_FALLBACK = currentTheme.cardAccents;
+  function _useColors() {
+    return _currentAccents || CARD_COLORS_FALLBACK;
+  }
+  function hslToHex(h, s, l) {
+    h /= 360;
+    s /= 100;
+    l /= 100;
+    const a = s * Math.min(l, 1 - l);
+    const f = (n) => {
+      const k = (n + h * 12) % 12;
+      const c = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+      return Math.round(255 * Math.max(0, Math.min(1, c)));
+    };
+    const r = f(0), g = f(8), b = f(4);
+    return "#" + [r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("");
+  }
+  function _generateRandomAccents() {
+    const baseHue = Math.random() * 360;
+    const hueStep = 360 / 7;
+    const accents = [];
+    for (let i = 0; i < 7; i++) {
+      const hue = ((baseHue + i * hueStep + (Math.random() - 0.5) * 30) % 360 + 360) % 360;
+      const sat = 45 + Math.random() * 25;
+      const lit = 50 + Math.random() * 15;
+      const border = hslToHex(hue, sat, lit);
+      const iconBg = `hsla(${hue.toFixed(0)}, ${(sat + 10).toFixed(0)}%, ${(lit + 10).toFixed(0)}%, 0.25)`;
+      accents.push({ border, bg: "rgba(20,16,32,0.92)", iconBg });
+    }
+    _currentAccents = accents;
+  }
   function hexToRgba(hex, alpha) {
     const num = parseInt(hex.slice(1), 16);
     const r = num >> 16 & 255;
@@ -5072,12 +5103,12 @@
     return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
   }
   function getTriple(i, alpha) {
-    const n = CARD_COLORS.length;
-    const mainRgba = hexToRgba(CARD_COLORS[i].border, alpha);
+    const n = _useColors().length;
+    const mainRgba = hexToRgba(_useColors()[i].border, alpha);
     const prevIdx = (i - 1 + n) % n;
     const nextIdx = (i + 1) % n;
-    const prev = hexToRgba(CARD_COLORS[prevIdx].border, alpha);
-    const next = hexToRgba(CARD_COLORS[nextIdx].border, alpha);
+    const prev = hexToRgba(_useColors()[prevIdx].border, alpha);
+    const next = hexToRgba(_useColors()[nextIdx].border, alpha);
     return [prev, mainRgba, next];
   }
   function getBorderGradient(i, alpha) {
@@ -5116,7 +5147,7 @@
   var _dragPointerId = null;
   function createCard(index) {
     const card = CARDS[index];
-    const color = CARD_COLORS[index];
+    const color = _useColors()[index];
     const el = document.createElement("div");
     el.className = "stack-card";
     el.dataset.index = String(index);
@@ -5516,7 +5547,7 @@
     const focusedCard = _cardEls[_focusIndex];
     if (!focusedCard) return;
     const cardRect = focusedCard.getBoundingClientRect();
-    const color = CARD_COLORS[_focusIndex];
+    const color = _useColors()[_focusIndex];
     const el = document.createElement("div");
     el.className = "floating-card";
     el.dataset.index = String(_focusIndex);
@@ -5710,6 +5741,7 @@
     }
   }
   function openCardStack() {
+    _generateRandomAccents();
     if (_state === "open" || _state === "opening") return;
     if (_state === "closing" && _tl) {
       _state = "opening";
