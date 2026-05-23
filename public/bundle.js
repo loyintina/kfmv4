@@ -5556,7 +5556,10 @@
     const bgLayer = document.createElement("div");
     bgLayer.style.cssText = [
       "position:absolute",
-      "inset:0",
+      "top:1px",
+      "right:1px",
+      "bottom:1px",
+      "left:3px",
       "border-radius:11px",
       "background:" + cardBg(),
       "backdrop-filter:blur(16px)",
