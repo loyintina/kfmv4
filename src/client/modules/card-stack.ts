@@ -82,33 +82,17 @@ function cardGradient(i: number, alpha: number): string {
 }
 
 /** 从单张卡的 border 派生卡片内部用色（边框/序号/毛玻璃） */
+/** 卡片纯背景 */
 function cardBg(): string {
   return 'rgba(20,16,32,0.92)';
 }
 
-/** 给卡片父元素添加独立的边框层（::before 伪元素模拟，mask-composite 排除内容区） */
-function applyCardBorder(container: HTMLElement, grad: string, leftWidth = 3): void {
-  const b = document.createElement('div');
-  b.style.cssText = [
-    'position:absolute',
-    'inset:0',
-    'border-radius:12px',
-    'pointer-events:none',
-    'background:' + grad + ' border-box',
-    'border:1px solid transparent',
-    'border-left-width:' + leftWidth + 'px',
-    '-webkit-mask:',
-      'linear-gradient(#000,#000) padding-box,',
-      'linear-gradient(#000,#000) border-box',
-    '-webkit-mask-composite:xor',
-    'mask:',
-      'linear-gradient(#000,#000) padding-box,',
-      'linear-gradient(#000,#000) border-box',
-    'mask-composite:exclude',
-  ].join(';');
-  container.appendChild(b);
-}
-
+/**
+ * 创建双层卡片容器：
+ *   外层 shell → background: 三色渐变, padding:1px (左3px) 挤出边框宽度
+ *   内层 shell → 毛玻璃纯色背景 + backdrop-filter + 内容
+ * 返回 { shell, inner } 供调用方填充内容
+ */
 // ========== 配置 ==========
 const CARD_GAP = theme.stack.cardGap;
 const CARD_HEIGHT = theme.stack.cardHeight;
@@ -170,18 +154,15 @@ let _dragPointerId: number | null = null;
 function createCard(index: number): HTMLElement {
   const card = CARDS[index];
   const cc = _currentAccents![index];
+  const grad = cardGradient(index, 0.85);
 
+  // 外层 shell —— 渐变背景 + 1px padding 挤出的边框
+  const topPx = Math.round(window.innerHeight * STACK_TOP_RATIO + index * CARD_GAP);
   const el = document.createElement('div');
   el.className = 'stack-card';
   el.dataset.index = String(index);
-
-  const topPx = Math.round(window.innerHeight * STACK_TOP_RATIO + index * CARD_GAP);
-
   el.dataset.randomRight = '0';
   el.dataset.randomRotate = '0';
-
-  const grad = cardGradient(index, 0.85);
-
   el.style.cssText = [
     'position:fixed',
     'right:0px',
@@ -189,13 +170,9 @@ function createCard(index: number): HTMLElement {
     'width:155px',
     'height:' + CARD_HEIGHT + 'px',
     'border-radius:12px',
-    'padding:4px 12px',
-    'display:flex',
-    'align-items:flex-start',
-    'gap:6px',
-    'backdrop-filter:blur(16px)',
-    '-webkit-backdrop-filter:blur(16px)',
-    'background:' + cardBg(),
+    'padding:1px',
+    'padding-left:3px',
+    'background:' + grad,
     'box-shadow:' + theme.stack.blurShadow,
     'transform:rotate(0deg)',
     'cursor:pointer',
@@ -205,15 +182,30 @@ function createCard(index: number): HTMLElement {
     '-webkit-user-select:none',
   ].join(';');
 
-  // 独立边框层（叠加在背景之上）
-  applyCardBorder(el, cardGradient(index, 0.85));
+  // 内层 —— 毛玻璃 + 布局 + 内容
+  const inner = document.createElement('div');
+  inner.style.cssText = [
+    'border-radius:11px',
+    'width:100%',
+    'height:100%',
+    'background:' + cardBg(),
+    'backdrop-filter:blur(16px)',
+    '-webkit-backdrop-filter:blur(16px)',
+    'display:flex',
+    'align-items:flex-start',
+    'padding:4px 12px',
+    'gap:6px',
+    'box-sizing:border-box',
+  ].join(';');
 
-  el.innerHTML = ''
+  inner.innerHTML = ''
     + '<div class="stack-card-icon" style="width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;background:' + hexToRgba(cc.border, 0.25) + ';color:' + cc.border + '">' + String(index + 1).padStart(2, '0') + '</div>'
     + '<div class="stack-card-info" style="flex:1;min-width:0">'
     + '  <div class="stack-card-name" style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + card.name + '</div>'
     + '  <div class="stack-card-desc" style="font-size:10px;opacity:0.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:0px">' + card.desc + '</div>'
     + '</div>';
+
+  el.appendChild(inner);
 
   el.addEventListener("click", (e) => {
     const idx = parseInt(el.dataset.index || "0", 10);
@@ -666,20 +658,18 @@ export function launchFocusedCard(): void {
   const bottomOff = cornerOff + orbT.bottomOffAdj;
   const s = orbT.symScale, c = 6 * (1 - s), sh = orbT.symShift;
 
-  // 背景层（纯毛玻璃，不含边框）
+  // 背景层（内层毛玻璃）
   const bgLayer = document.createElement('div');
   bgLayer.style.cssText = [
     'position:absolute',
     'inset:0',
-    'border-radius:12px',
+    'border-radius:11px',
     'background:' + cardBg(),
     'backdrop-filter:blur(16px)',
     '-webkit-backdrop-filter:blur(16px)',
     'pointer-events:none',
   ].join(';');
   el.appendChild(bgLayer);
-  // 独立渐变边框层（叠加在背景之上，不干扰毛玻璃）
-  applyCardBorder(el, cardGradient(_focusIndex, 0.85));
 
   // 内容区
   const content = document.createElement('div');
@@ -766,13 +756,17 @@ export function launchFocusedCard(): void {
   el.appendChild(brOrb);
   item.brOrb = brOrb;
 
-  // 初始样式
+  // 初始样式 —— el 作为外���壳（渐变边框 + padding 挤出边框宽度）
   el.style.cssText = [
     'position:fixed',
     'left:' + cardRect.left + 'px',
     'top:' + cardRect.top + 'px',
     'width:' + FLOATING_CARD_W + 'px',
     'height:' + FLOATING_CARD_H + 'px',
+    'border-radius:12px',
+    'padding:1px',
+    'padding-left:3px',
+    'background:' + cardGradient(_focusIndex, 0.85),
     'pointer-events:auto',
     'z-index:' + zIndex,
     'opacity:1',
@@ -864,13 +858,10 @@ function _updateCardStyles(): void {
   for (let i = 0; i < _cardEls.length; i++) {
     const el = _cardEls[i];
     const cc = _currentAccents![i];
-    el.style.backdropFilter = 'blur(16px)';
-    (el.style as any).webkitBackdropFilter = 'blur(16px)';
-    el.style.background = cardBg();
-    // 移除旧边框层，添加新边框层
-    el.querySelectorAll('.card-border-layer').forEach(b => b.remove());
-    applyCardBorder(el, cardGradient(i, 0.85));
-    // 序号数字颜色
+    // 更新外层渐变边框
+    el.style.background = cardGradient(i, 0.85);
+    // 内层的毛玻璃从未变过，不用改
+    // 内层中的图标颜色
     const icon = el.querySelector('.stack-card-icon') as HTMLElement | null;
     if (icon) {
       icon.style.background = hexToRgba(cc.border, 0.25);
@@ -925,7 +916,7 @@ export function openCardStack(): void {
 
 export function closeCardStack(): void {
   if (_state === 'closed' || _state === 'closing') return;
-  // 关闭卡片堆时不销毁已召唤的浮卡
+  // 关闭卡片堆时��销毁已召唤的浮卡
 
   if (_state === 'opening' && _tl) {
     _state = 'closing';

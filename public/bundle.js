@@ -5109,27 +5109,6 @@
   function cardBg() {
     return "rgba(20,16,32,0.92)";
   }
-  function applyCardBorder(container, grad, leftWidth = 3) {
-    const b = document.createElement("div");
-    b.style.cssText = [
-      "position:absolute",
-      "inset:0",
-      "border-radius:12px",
-      "pointer-events:none",
-      "background:" + grad + " border-box",
-      "border:1px solid transparent",
-      "border-left-width:" + leftWidth + "px",
-      "-webkit-mask:",
-      "linear-gradient(#000,#000) padding-box,",
-      "linear-gradient(#000,#000) border-box",
-      "-webkit-mask-composite:xor",
-      "mask:",
-      "linear-gradient(#000,#000) padding-box,",
-      "linear-gradient(#000,#000) border-box",
-      "mask-composite:exclude"
-    ].join(";");
-    container.appendChild(b);
-  }
   var CARD_GAP = currentTheme.stack.cardGap;
   var CARD_HEIGHT = currentTheme.stack.cardHeight;
   var STACK_TOP_RATIO = 0.12;
@@ -5163,13 +5142,13 @@
   function createCard(index) {
     const card = CARDS[index];
     const cc = _currentAccents[index];
+    const grad = cardGradient(index, 0.85);
+    const topPx = Math.round(window.innerHeight * STACK_TOP_RATIO + index * CARD_GAP);
     const el = document.createElement("div");
     el.className = "stack-card";
     el.dataset.index = String(index);
-    const topPx = Math.round(window.innerHeight * STACK_TOP_RATIO + index * CARD_GAP);
     el.dataset.randomRight = "0";
     el.dataset.randomRotate = "0";
-    const grad = cardGradient(index, 0.85);
     el.style.cssText = [
       "position:fixed",
       "right:0px",
@@ -5177,13 +5156,9 @@
       "width:155px",
       "height:" + CARD_HEIGHT + "px",
       "border-radius:12px",
-      "padding:4px 12px",
-      "display:flex",
-      "align-items:flex-start",
-      "gap:6px",
-      "backdrop-filter:blur(16px)",
-      "-webkit-backdrop-filter:blur(16px)",
-      "background:" + cardBg(),
+      "padding:1px",
+      "padding-left:3px",
+      "background:" + grad,
       "box-shadow:" + currentTheme.stack.blurShadow,
       "transform:rotate(0deg)",
       "cursor:pointer",
@@ -5192,8 +5167,22 @@
       "user-select:none",
       "-webkit-user-select:none"
     ].join(";");
-    applyCardBorder(el, cardGradient(index, 0.85));
-    el.innerHTML = '<div class="stack-card-icon" style="width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;background:' + hexToRgba(cc.border, 0.25) + ";color:" + cc.border + '">' + String(index + 1).padStart(2, "0") + '</div><div class="stack-card-info" style="flex:1;min-width:0">  <div class="stack-card-name" style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + card.name + '</div>  <div class="stack-card-desc" style="font-size:10px;opacity:0.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:0px">' + card.desc + "</div></div>";
+    const inner = document.createElement("div");
+    inner.style.cssText = [
+      "border-radius:11px",
+      "width:100%",
+      "height:100%",
+      "background:" + cardBg(),
+      "backdrop-filter:blur(16px)",
+      "-webkit-backdrop-filter:blur(16px)",
+      "display:flex",
+      "align-items:flex-start",
+      "padding:4px 12px",
+      "gap:6px",
+      "box-sizing:border-box"
+    ].join(";");
+    inner.innerHTML = '<div class="stack-card-icon" style="width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;background:' + hexToRgba(cc.border, 0.25) + ";color:" + cc.border + '">' + String(index + 1).padStart(2, "0") + '</div><div class="stack-card-info" style="flex:1;min-width:0">  <div class="stack-card-name" style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + card.name + '</div>  <div class="stack-card-desc" style="font-size:10px;opacity:0.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:0px">' + card.desc + "</div></div>";
+    el.appendChild(inner);
     el.addEventListener("click", (e) => {
       const idx = parseInt(el.dataset.index || "0", 10);
       if (idx !== _focusIndex) {
@@ -5568,14 +5557,13 @@
     bgLayer.style.cssText = [
       "position:absolute",
       "inset:0",
-      "border-radius:12px",
+      "border-radius:11px",
       "background:" + cardBg(),
       "backdrop-filter:blur(16px)",
       "-webkit-backdrop-filter:blur(16px)",
       "pointer-events:none"
     ].join(";");
     el.appendChild(bgLayer);
-    applyCardBorder(el, cardGradient(_focusIndex, 0.85));
     const content = document.createElement("div");
     content.style.cssText = "position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:8px;pointer-events:none";
     if (iconClone) {
@@ -5679,6 +5667,10 @@
       "top:" + cardRect.top + "px",
       "width:" + FLOATING_CARD_W + "px",
       "height:" + FLOATING_CARD_H + "px",
+      "border-radius:12px",
+      "padding:1px",
+      "padding-left:3px",
+      "background:" + cardGradient(_focusIndex, 0.85),
       "pointer-events:auto",
       "z-index:" + zIndex,
       "opacity:1"
@@ -5749,11 +5741,7 @@
     for (let i = 0; i < _cardEls.length; i++) {
       const el = _cardEls[i];
       const cc = _currentAccents[i];
-      el.style.backdropFilter = "blur(16px)";
-      el.style.webkitBackdropFilter = "blur(16px)";
-      el.style.background = cardBg();
-      el.querySelectorAll(".card-border-layer").forEach((b) => b.remove());
-      applyCardBorder(el, cardGradient(i, 0.85));
+      el.style.background = cardGradient(i, 0.85);
       const icon = el.querySelector(".stack-card-icon");
       if (icon) {
         icon.style.background = hexToRgba(cc.border, 0.25);
