@@ -5819,6 +5819,7 @@
     return _state === "open" || _state === "opening";
   }
   function initCardStack() {
+    _generateRandomAccents();
     buildCards();
     let _axisLock = "none";
     let _prevDx = 0;

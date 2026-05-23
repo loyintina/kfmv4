@@ -941,6 +941,7 @@ export function focusPrev(): void {
 }
 
 export function initCardStack(): void {
+  _generateRandomAccents();
   buildCards();
   type _AxisLock = 'none' | 'horizontal' | 'vertical';
   let _axisLock: _AxisLock = 'none';
