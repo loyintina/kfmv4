@@ -5753,7 +5753,6 @@
   }
   function closeCardStack() {
     if (_state === "closed" || _state === "closing") return;
-    dismissFloatingCard(true);
     if (_state === "opening" && _tl) {
       _state = "closing";
       _tl.reverse();

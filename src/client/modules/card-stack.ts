@@ -859,7 +859,7 @@ export function openCardStack(): void {
 
 export function closeCardStack(): void {
   if (_state === 'closed' || _state === 'closing') return;
-  dismissFloatingCard(true);
+  // 关闭卡片堆时不销毁已召唤的浮卡
 
   if (_state === 'opening' && _tl) {
     _state = 'closing';
