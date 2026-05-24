@@ -5521,7 +5521,11 @@
         item.state = "expanding";
         brOrb.title = cardName + " \xB7 \u70B9\u51FB\u6298\u53E0";
         _buildExpandedLayout(el, cc, cardName);
+        const curLeft = parseFloat(el.style.left) || targetPos.left;
+        const curTop = parseFloat(el.style.top) || targetPos.top;
         anim.to(el, {
+          left: curLeft + COMPACT_W - FLOATING_CARD_W,
+          top: curTop + COMPACT_H - FLOATING_CARD_H,
           width: FLOATING_CARD_W,
           height: FLOATING_CARD_H,
           duration: 0.3,
@@ -5616,7 +5620,11 @@
           bgLayer2.textContent = cardName;
         }
         brOrb.title = cardName + " \xB7 \u70B9\u51FB\u5C55\u5F00";
+        const expLeft = parseFloat(el.style.left) || 0;
+        const expTop = parseFloat(el.style.top) || 0;
         anim.to(el, {
+          left: expLeft + FLOATING_CARD_W - COMPACT_W,
+          top: expTop + FLOATING_CARD_H - COMPACT_H,
           width: COMPACT_W,
           height: COMPACT_H,
           duration: 0.3,
@@ -5675,20 +5683,17 @@
       }
     });
   }
-  function _buildExpandedLayout(el, cc, cardName) {
+  function _buildExpandedLayout(el, _cc, _cardName) {
     const bgLayer = el.firstElementChild;
     if (!bgLayer) return;
     bgLayer.style.justifyContent = "flex-start";
     bgLayer.style.alignItems = "stretch";
-    bgLayer.style.padding = "4px 4px 6px";
-    const titleEl = document.createElement("div");
-    titleEl.textContent = cardName;
-    titleEl.style.cssText = "font-size:11px;font-weight:500;color:rgba(224,224,224,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px";
-    const boxEl = document.createElement("div");
-    boxEl.style.cssText = "flex:1;border-radius:8px;overflow:hidden;background:linear-gradient(135deg," + hexToRgba(cc.color2, 0.25) + " 0%," + hexToRgba(cc.color1, 0.15) + " 100%);border:1px solid " + hexToRgba(cc.color1, 0.2) + ";";
+    bgLayer.style.padding = "0";
     bgLayer.innerHTML = "";
-    bgLayer.appendChild(titleEl);
-    bgLayer.appendChild(boxEl);
+    const content = document.createElement("div");
+    content.style.cssText = "flex:1;overflow-y:auto;padding:8px;font-size:11px;color:rgba(224,224,224,0.7)";
+    content.textContent = "\u5185\u5BB9\u533A";
+    bgLayer.appendChild(content);
   }
   function dismissFloatingCard(animated, sourceEl) {
     if (sourceEl) {
@@ -5849,9 +5854,8 @@
           }
           _prevDx = dx;
         } else if (_axisLock === "vertical") {
-          const offset = Math.round(-dy / CARD_GAP);
-          const target = _scrollStartFocus + offset;
-          const clamped = (target % CARDS.length + CARDS.length) % CARDS.length;
+          const rawTarget = _scrollStartFocus + -dy / CARD_GAP;
+          const clamped = (Math.round(rawTarget) % CARDS.length + CARDS.length) % CARDS.length;
           if (clamped !== _focusIndex) {
             _focusIndex = clamped;
             updateFocus();
