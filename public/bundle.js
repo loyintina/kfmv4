@@ -5179,7 +5179,7 @@
       "gap:6px",
       "box-sizing:border-box"
     ].join(";");
-    inner.innerHTML = '<div class="stack-card-icon" style="width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;background:' + hexToRgba(cc.color1, 0.25) + ";color:" + cc.color2 + '">' + String(index + 1).padStart(2, "0") + '</div><div class="stack-card-info" style="flex:1;min-width:0">  <div class="stack-card-name" style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + card.name + '</div>  <div class="stack-card-desc" style="font-size:10px;opacity:0.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:0px">' + card.desc + "</div></div>";
+    inner.innerHTML = '<div class="stack-card-icon" style="width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;background:' + hexToRgba(cc.color1, 0.15) + ";color:" + cc.color1 + '">' + String(index + 1).padStart(2, "0") + '</div><div class="stack-card-info" style="flex:1;min-width:0">  <div class="stack-card-name" style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + card.name + '</div>  <div class="stack-card-desc" style="font-size:10px;opacity:0.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:0px">' + card.desc + "</div></div>";
     el.appendChild(inner);
     el.addEventListener("click", (e) => {
       const idx = parseInt(el.dataset.index || "0", 10);
@@ -5743,8 +5743,8 @@
       el.style.background = cardGradient(i, 0.85);
       const icon = el.querySelector(".stack-card-icon");
       if (icon) {
-        icon.style.background = hexToRgba(cc.color1, 0.25);
-        icon.style.color = cc.color2;
+        icon.style.background = hexToRgba(cc.color1, 0.15);
+        icon.style.color = cc.color1;
       }
     }
   }
