@@ -1029,24 +1029,14 @@ export function initCardStack(): void {
         if (dx > 50 && _prevDx <= 50) { _prevDx = dx; closeCardStack(); return; }
         _prevDx = dx;
       } else if (_axisLock === 'vertical') {
-        // 手指跟踪：dy 直接偏移所有卡片 Y 位置（无动画）
-        for (const card of _cardEls) {
-          anim.killTweensOf(card);
-          anim.set(card, { y: -dy });
+        const offset = Math.round(-dy / CARD_GAP);
+        const target = _scrollStartFocus + offset;
+        const clamped = ((target % CARDS.length) + CARDS.length) % CARDS.length;
+        if (clamped !== _focusIndex) {
+          _focusIndex = clamped;
+          updateFocus();
         }
       }
-    },
-    onEnd: (_e, _dx, dy) => {
-      // 松手时快照到最近焦点
-      const offset = Math.round(-dy / CARD_GAP);
-      const target = _scrollStartFocus + offset;
-      const clamped = ((target % CARDS.length) + CARDS.length) % CARDS.length;
-      // 重置所有卡片的 y 偏移
-      for (const card of _cardEls) {
-        anim.killTweensOf(card);
-      }
-      _focusIndex = clamped;
-      updateFocus();
     },
   });
   window.addEventListener('resize', () => {

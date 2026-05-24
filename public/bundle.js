@@ -5854,21 +5854,14 @@
           }
           _prevDx = dx;
         } else if (_axisLock === "vertical") {
-          for (const card of _cardEls) {
-            anim.killTweensOf(card);
-            anim.set(card, { y: -dy });
+          const offset = Math.round(-dy / CARD_GAP);
+          const target = _scrollStartFocus + offset;
+          const clamped = (target % CARDS.length + CARDS.length) % CARDS.length;
+          if (clamped !== _focusIndex) {
+            _focusIndex = clamped;
+            updateFocus();
           }
         }
-      },
-      onEnd: (_e, _dx, dy) => {
-        const offset = Math.round(-dy / CARD_GAP);
-        const target = _scrollStartFocus + offset;
-        const clamped = (target % CARDS.length + CARDS.length) % CARDS.length;
-        for (const card of _cardEls) {
-          anim.killTweensOf(card);
-        }
-        _focusIndex = clamped;
-        updateFocus();
       }
     });
     window.addEventListener("resize", () => {
