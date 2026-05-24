@@ -234,7 +234,7 @@ npm run build   # 构建通过
 |------|------|------|------|
 | **主文档** | `CLAUDE.md` | 必读 | 项目总览、架构、构建、已知坑点 |
 | **本交接文档** | `docs/HANDOFF_AUDIT.md` | 必读 | 审计结论、接手指南、陷阱 |
-| **架构不变量** | `docs/KFM_V4_INVARIANTS.md` | 必读 | 项目专用架构约束 + 自查清单 |
+| **AI 修改约束协议** | `docs/KFM_V4_INVARIANTS.md` | 开工前必读 | 不变量 + 心法原则 + 自查清单 + 常见补丁 |
 | **卡片蓝图** | `docs/CARD_SYSTEM_DESIGN.md` | 参考 | 统一卡片系统设计方案（待实现） |
 | **通用方法论** | `docs/archive/AI_COLLABORATION_PRINCIPLES.md` | 参考 | AI 协作守则（任何项目可用） |
 | **Bug 修复原则** | `docs/archive/BUG_FIXING_PHILOSOPHY.md` | 参考 | 旧版（7 条守则） |
