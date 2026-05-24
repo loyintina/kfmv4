@@ -1,6 +1,6 @@
 {
   "name": "kfmv4",
-  "version": "4.0.1",
+  "version": "4.1.0",
   "description": "KFM v4 - TypeScript \u5168\u6808\u6587\u4ef6\u7ba1\u7406\u5668",
   "type": "module",
   "scripts": {
