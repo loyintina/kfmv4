@@ -1,23 +1,34 @@
 # KFM v4 项目交接文档
 
 > 写于 2026-05-09，基于对全部源代码的全面审计。
-> 最后更新：2026-05-12（v4.0.2 已标记，以下已完成项已标注）
+> 最后更新：2026-05-24（v4.1.0）
 
 ---
 
-## v4.0.2 状态更新
-
-以下审计条目已在 v4.0.1-v4.0.2 修复周期中处理：
+## v4.1.0 状态更新
 
 | 审计项 | 状态 | commit |
 |--------|------|--------|
 | 路径遍历漏洞 (P0) | ✅ `sanitizePath` 已部署 | d453a82 |
-| `canvas-cursor.ts` 依赖违规 (P1) | ✅ `getShift` 已移至 `style-registry.ts` | 重构期间自动解决 |
-| 死代码清理 (P1) | ✅ `scroll.ts` `gesture.ts` `GestureRecognizer.ts` `demo-leafer.ts` `js/` 均已不存在 | 重构期间自动清理 |
-| `FlatSubTarget.toggle` 死字段 (P3) | ✅ 接口已不含 toggle 字段 | 重构期间自动移除 |
-| `processClickQueue` 栈递归 | ✅ 已使用 `setTimeout(processClickQueue, 0)` | 重构期间已修正 |
+| `canvas-cursor.ts` 依赖违规 (P1) | ✅ `getShift` 已移至 `style-registry.ts` | 重构期间 |
+| 死代码清理 (P1) | ✅ 已清理 | 重构期间 |
+| `FlatSubTarget.toggle` 死字段 (P3) | ✅ 已移除 | 重构期间 |
+| `processClickQueue` 栈递归 | ✅ 已修 | 重构期间 |
+| 卡片配色：固定光谱 → 随机 HSL | ✅ 每张卡双色独立随机 + 双层 DOM 渐变边框 | cbf12f3..539a21a |
+| 浮卡系统：紧凑/展开双态 | ✅ 发射为 compact（120×36），点击展开为全尺寸（155×68） | c684331 |
+| BR 光球类型守卫 | ✅ `| null` 恢复 + 显式空值守卫 | 4b197ab |
+| 浮卡弹性边界 + 输入栏底部钳制 | ✅ 撞边界自动压缩，离开恢复 | 2888e2d..b76e25a |
+| 关闭卡片堆不销毁浮卡 | ✅ | ab2cd28 |
+| 文档归档 | ✅ 4 个过时文档移至 archive/ | f68a090 |
 
-尚未处理的继续项：`(as any)` 类型逃逸、`doExpand/triggerExpandAnimation` 去重、`orb/debug-panel` 拖动逻辑重复。
+### 尚未处理的继续项
+
+- `(as any)` 类型逃逸（P2）
+- `triggerExpandAnimation` / `doExpand` 约 60% 代码重复（P3）
+- `orb.ts` / `debug-panel.ts` 拖动逻辑约 60% 重复（P3）
+- 全局单例 DI 改造（P3）
+- 无认证 API 监听 0.0.0.0（P1—见附录 C）
+- 测试覆盖范围窄，GSAP mock 语义失真（观察项）
 
 ---
 
@@ -124,10 +135,10 @@ tree-render.ts           ← 文件树业务
 5. **死代码过多** ✅ 已清理 — `engine/v2/scroll.ts`、`engine/v2/gesture.ts`、`GestureRecognizer.ts`、`demo-leafer.ts`、`js/` 目录、`public/card-demo.html` 均已不存在。
 6. **`canvas-cursor.ts` 违反依赖方向** ✅ 已修复 — `getShift` 已移至 `style-registry.ts`，当前 `canvas-cursor.ts` 只导入 `style-registry.ts`。（查阅记录 `RENDERER_REFACTOR_HISTORY` 或 `style-registry.ts` 更新详情）
 
-### 🟢 低优先级
+### 🟢 低优先级 / 观察项
 
 7. `orbs.ts` 和 `debug-panel.ts` 大量重复拖动逻辑（约 60%）。
-8. 每帧 `setRoot` 调用过多（`onUpdate` 回调中）。
+8. ~~每帧 `setRoot` 调用过多~~ → **观察项**（见附录 C ④，多数是 rAF 循环固有行为，不是性能问题）
 9. `tsconfig.json` 使用 `ignoreDeprecations: "6.0"`。
 
 ---
@@ -162,22 +173,24 @@ npm run test     # 回归测试
 
 ### 第四步：按优先级推进
 
-| 优先级 | 工作项 | 预计影响 |
-|--------|--------|----------|
+| 优先级 | 工作项 | 状态 |
+|--------|--------|------|
 | P0 | 路径遍历漏洞修复 | ✅ 已修复 (d453a82) |
-| P0 | 全面检查所有 API 路由 | 安全 |
-| P1 | 清理死代码 | ✅ 已清洁 |
+| P0 | 全面检查所有 API 路由 | ⬜ |
+| P1 | 清理死代码 | ✅ 已完成 |
 | P1 | 修复 `canvas-cursor.ts` 依赖违规 | ✅ 已解决 |
-| P2 | 定义 `FileRowData` 类型，消除 `(as any)` | 类型安全 |
-| P2 | 动画性能优化（减少 `setRoot`） | 性能 |
-| P3 | `orb.ts` / `debug-panel.ts` 公共组件提取 | 代码复用 |
-| P3 | DI 改造单例 | 可测试性 |
+| P1 | 无认证 API 监听 0.0.0.0 | ⬜（见附录 C） |
+| P2 | 定义 `FileRowData` 类型，消除 `(as any)` | ⬜ |
+| P2 | ~~动画性能优化（`setRoot`）~~ | ➡ 改为观察项 |
+| P3 | `orb.ts` / `debug-panel.ts` 公共组件提取 | ⬜ |
+| P3 | DI 改造单例 | ⬜ |
+| P3 | `triggerExpandAnimation` / `doExpand` 去重 | ⬜ |
 
 ---
 
 ## 五、核心原则
 
-### Bug 修复原则（来自 BUG_FIXING_PHILOSOPHY.md）
+### Bug 修复原则（来自 docs/archive/BUG_FIXING_PHILOSOPHY.md 与 CLAUDE.md）
 
 > **禁止打补丁。排查到最深层根因，通过调整架构间接消除 bug。**
 
@@ -221,15 +234,20 @@ npm run build   # 构建通过
 |------|------|------|------|
 | **主文档** | `CLAUDE.md` | 必读 | 项目总览、架构、构建、已知坑点 |
 | **本交接文档** | `docs/HANDOFF_AUDIT.md` | 必读 | 审计结论、接手指南、陷阱 |
-| **Bug 修复原则** | `docs/BUG_FIXING_PHILOSOPHY.md` | 推荐 | 架构级 bug 修复哲学 |
-| **卡片配色设计** | `docs/STACK_CARDS_DESIGN.md` | 参考 | 暮光/琉璃/星云三套配色 |
+| **架构不变量** | `docs/KFM_V4_INVARIANTS.md` | 必读 | 项目专用架构约束 + 自查清单 |
+| **卡片蓝图** | `docs/CARD_SYSTEM_DESIGN.md` | 参考 | 统一卡片系统设计方案（待实现） |
+| **通用方法论** | `docs/archive/AI_COLLABORATION_PRINCIPLES.md` | 参考 | AI 协作守则（任何项目可用） |
+| **Bug 修复原则** | `docs/archive/BUG_FIXING_PHILOSOPHY.md` | 参考 | 旧版（7 条守则） |
+| **BR 守卫交接** | `docs/archive/HANDOFF_BRORB_FIX.md` | 历史 | BR 类型守卫修复（已完成） |
+| **动画方案** | `docs/archive/ANIMATION_REFINEMENT_PLAN.md` | 历史 | 动画优化设计（已过时，见 ⚠️） |
+| **卡片配色** | `docs/archive/STACK_CARDS_DESIGN.md` | 历史 | 暮光/琉璃/星云配色（代码已改为随机 HSL） |
 | **V2 存档** | `docs/archive/CLAUDE_v2.md` | 历史 | 上一版主文档 |
-| **竞态方案存档** | `docs/archive/RACE_CONDITION_PLAN.md` | 历史 | P1-P5 竞态方案（已实现） |
+| **竞态方案** | `docs/archive/RACE_CONDITION_PLAN.md` | 历史 | P1-P5 竞态方案（已实现） |
 | **蓝图存档** | `docs/archive/REFACTOR_THESIS_FULL.md` | 历史 | 愿景蓝图（大部分已过时） |
-| **AI 操作协议存档** | `docs/archive/AI_OPERATION_PROTOCOL.md` | 历史 | 未实现功能设计 |
-| **卡片堆叠交接存档** | `docs/archive/CARD-STACK-HANDOFF.md` | 历史 | 任务性交接（已完成） |
-| **字符雨 bug 存档** | `docs/archive/BUG_HANDOFF_ROOT_CHAR_RAIN.md` | 历史 | 具体 bug 交接 |
-| **P3 遗留存档** | `docs/archive/HANDOFF_P3_REMAINING.md` | 历史 | 具体任务单（已过时） |
+| **AI 操作协议** | `docs/archive/AI_OPERATION_PROTOCOL.md` | 历史 | 未实现功能设计 |
+| **卡片堆叠交接** | `docs/archive/CARD-STACK-HANDOFF.md` | 历史 | 任务性交接（已完成） |
+| **字符雨 bug** | `docs/archive/BUG_HANDOFF_ROOT_CHAR_RAIN.md` | 历史 | 具体 bug 交接（已修复） |
+| **P3 遗留** | `docs/archive/HANDOFF_P3_REMAINING.md` | 历史 | 具体任务单（已完成） |
 
 ---
 
