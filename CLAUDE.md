@@ -28,17 +28,20 @@ CLAUDE.md                          # 主文档（本文件）
 docs/
 ├── HANDOFF_AUDIT.md               # 项目交接 + 代码审计结论（新接手必读）
 ├── KFM_V4_INVARIANTS.md           # 项目专用架构不变量（开工前必读）
-├── AI_COLLABORATION_PRINCIPLES.md # 通用 AI 协作守则
-├── STACK_CARDS_DESIGN.md          # 堆叠卡片配色设计（暮光/琉璃/星云）
+├── CARD_SYSTEM_DESIGN.md          # 统一卡片系统设计蓝图（待实现）
 └── archive/
-    ├── BUG_FIXING_PHILOSOPHY.md   # 旧版 Bug 修复原则（已拆分为通用+专用）
-    ├── CLAUDE_v2.md               # 上一版 CLAUDE（已合并）
-    ├── RACE_CONDITION_PLAN.md     # P1-P5 竞态方案（已完成）
-    ├── REFACTOR_THESIS_FULL.md    # 愿景 + 架构蓝图（大部分已过时）
-    ├── AI_OPERATION_PROTOCOL.md   # AI 操作协议（未实现功能设计）
-    ├── CARD-STACK-HANDOFF.md      # 卡片面板交接笔记（已完成）
+    ├── AI_COLLABORATION_PRINCIPLES.md # 通用 AI 协作守则
+    ├── ANIMATION_REFINEMENT_PLAN.md   # 动画优化方案（已过时）
+    ├── STACK_CARDS_DESIGN.md          # 堆叠卡片配色设计（已改为随机 HSL）
+    ├── HANDOFF_BRORB_FIX.md           # BR 光球类型守卫交接（已完成）
+    ├── BUG_FIXING_PHILOSOPHY.md       # 旧版 Bug 修复原则
+    ├── CLAUDE_v2.md                   # 上一版 CLAUDE（已合并）
+    ├── RACE_CONDITION_PLAN.md         # P1-P5 竞态方案（已完成）
+    ├── REFACTOR_THESIS_FULL.md        # 愿景 + 架构蓝图（大部分已过时）
+    ├── AI_OPERATION_PROTOCOL.md       # AI 操作协议（未实现功能设计）
+    ├── CARD-STACK-HANDOFF.md          # 卡片面板交接笔记（已完成）
     ├── BUG_HANDOFF_ROOT_CHAR_RAIN.md  # 字符雨 bug 交接（已修复）
-    └── HANDOFF_P3_REMAINING.md    # P3 遗留任务单（任务已完成）
+    └── HANDOFF_P3_REMAINING.md        # P3 遗留任务单（已完成）
 ```
 
 ## 目录结构
