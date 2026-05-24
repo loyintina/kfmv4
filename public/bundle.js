@@ -5837,7 +5837,7 @@
         _axisLock = "none";
         _prevDx = 0;
       },
-      onMove: (e, dx, dy) => {
+      onMove: (_e, dx, dy) => {
         if (_axisLock === "none" && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
           _axisLock = Math.abs(dx) > Math.abs(dy) ? "horizontal" : "vertical";
         }
@@ -5854,13 +5854,21 @@
           }
           _prevDx = dx;
         } else if (_axisLock === "vertical") {
-          const rawTarget = _scrollStartFocus + -dy / CARD_GAP;
-          const clamped = (Math.round(rawTarget) % CARDS.length + CARDS.length) % CARDS.length;
-          if (clamped !== _focusIndex) {
-            _focusIndex = clamped;
-            updateFocus();
+          for (const card of _cardEls) {
+            anim.killTweensOf(card);
+            anim.set(card, { y: -dy });
           }
         }
+      },
+      onEnd: (_e, _dx, dy) => {
+        const offset = Math.round(-dy / CARD_GAP);
+        const target = _scrollStartFocus + offset;
+        const clamped = (target % CARDS.length + CARDS.length) % CARDS.length;
+        for (const card of _cardEls) {
+          anim.killTweensOf(card);
+        }
+        _focusIndex = clamped;
+        updateFocus();
       }
     });
     window.addEventListener("resize", () => {

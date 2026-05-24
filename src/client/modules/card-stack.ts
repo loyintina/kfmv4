@@ -1019,7 +1019,7 @@ export function initCardStack(): void {
       _axisLock = 'none';
       _prevDx = 0;
     },
-    onMove: (e, dx, dy) => {
+    onMove: (_e, dx, dy) => {
       if (_axisLock === 'none' && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
         _axisLock = Math.abs(dx) > Math.abs(dy) ? 'horizontal' : 'vertical';
       }
@@ -1029,14 +1029,24 @@ export function initCardStack(): void {
         if (dx > 50 && _prevDx <= 50) { _prevDx = dx; closeCardStack(); return; }
         _prevDx = dx;
       } else if (_axisLock === 'vertical') {
-        // 用 dy 连续追踪，Math.round 震荡时跳过
-        const rawTarget = _scrollStartFocus + (-dy / CARD_GAP);
-        const clamped = ((Math.round(rawTarget) % CARDS.length) + CARDS.length) % CARDS.length;
-        if (clamped !== _focusIndex) {
-          _focusIndex = clamped;
-          updateFocus();
+        // 手指跟踪：dy 直接偏移所有卡片 Y 位置（无动画）
+        for (const card of _cardEls) {
+          anim.killTweensOf(card);
+          anim.set(card, { y: -dy });
         }
       }
+    },
+    onEnd: (_e, _dx, dy) => {
+      // 松手时快照到最近焦点
+      const offset = Math.round(-dy / CARD_GAP);
+      const target = _scrollStartFocus + offset;
+      const clamped = ((target % CARDS.length) + CARDS.length) % CARDS.length;
+      // 重置所有卡片的 y 偏移
+      for (const card of _cardEls) {
+        anim.killTweensOf(card);
+      }
+      _focusIndex = clamped;
+      updateFocus();
     },
   });
   window.addEventListener('resize', () => {
