@@ -103,7 +103,7 @@ const Z_STACK_BASE = 150;
 
 const FLOATING_CARD_W = 155;
 const FLOATING_CARD_H = 68;
-const COMPACT_W = 120;
+const COMPACT_W = 36;
 const COMPACT_H = 36;
 
 // ========== 编辑��式最小尺寸 ==========
@@ -124,10 +124,10 @@ interface FloatingCardItem {
   sourceIndex: number;
   zIndex: number;
   state: 'launching' | 'compact' | 'expanding' | 'active' | 'dismissing' | 'editing';
-  tlOrb: HTMLElement;
-  trOrb: HTMLElement;
-  blOrb: HTMLElement;
-  brOrb: HTMLElement;
+  tlOrb: HTMLElement | null;
+  trOrb: HTMLElement | null;
+  blOrb: HTMLElement | null;
+  brOrb: HTMLElement | null;
   cardWidth: number;
   cardHeight: number;
   accentColor: string;
@@ -451,7 +451,7 @@ function _enterFloatingEditMode(item: FloatingCardItem): void {
   _dragStartTop = cardRect.top;
   _dragStartW = item.cardWidth;
   _dragStartH = item.cardHeight;
-  const brRect = item.brOrb.getBoundingClientRect();
+  const brRect = item.brOrb!.getBoundingClientRect();
   _dragStartOrbAbsX = brRect.left;
   _dragStartOrbAbsY = brRect.top;
 
@@ -492,7 +492,7 @@ function _startFloatingDrag(item: FloatingCardItem, clientX: number, clientY: nu
   _dragStartTop = rect.top;
   _dragStartW = item.cardWidth;
   _dragStartH = item.cardHeight;
-  const brRect = item.brOrb.getBoundingClientRect();
+  const brRect = item.brOrb!.getBoundingClientRect();
   _dragStartOrbAbsX = brRect.left;
   _dragStartOrbAbsY = brRect.top;
 
@@ -544,10 +544,10 @@ function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: n
 
     const newRightX = newW - rOff - cSize;
     const newBottomY = newH - bOff - cSize;
-    _dragItem.trOrb.style.left = newRightX + 'px';
-    _dragItem.blOrb.style.top = newBottomY + 'px';
-    _dragItem.brOrb.style.left = newRightX + 'px';
-    _dragItem.brOrb.style.top = newBottomY + 'px';
+    _dragItem.trOrb!.style.left = newRightX + 'px';
+    _dragItem.blOrb!.style.top = newBottomY + 'px';
+    _dragItem.brOrb!.style.left = newRightX + 'px';
+    _dragItem.brOrb!.style.top = newBottomY + 'px';
   } else {
     const orbAbsX = rawOrbX;
     const orbAbsY = Math.min(maxOrbY, rawOrbY);
@@ -569,10 +569,10 @@ function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: n
 
     const newRightX = newW - rOff - cSize;
     const newBottomY = newH - bOff - cSize;
-    _dragItem.trOrb.style.left = newRightX + 'px';
-    _dragItem.blOrb.style.top = newBottomY + 'px';
-    _dragItem.brOrb.style.left = newRightX + 'px';
-    _dragItem.brOrb.style.top = newBottomY + 'px';
+    _dragItem.trOrb!.style.left = newRightX + 'px';
+    _dragItem.blOrb!.style.top = newBottomY + 'px';
+    _dragItem.brOrb!.style.left = newRightX + 'px';
+    _dragItem.brOrb!.style.top = newBottomY + 'px';
   }
 }
 
@@ -664,7 +664,7 @@ export function launchFocusedCard(): void {
     'display:flex', 'align-items:center', 'justify-content:center',
     'box-sizing:border-box', 'padding:2px 6px',
     'font-size:11px', 'font-weight:500',
-    'color:' + cc.color2,
+    'color:rgba(224,224,224,0.9)',
     'white-space:nowrap', 'overflow:hidden', 'text-overflow:ellipsis',
   ].join(';');
   bgLayer.textContent = cardName;
@@ -691,59 +691,102 @@ export function launchFocusedCard(): void {
   brOrb.title = cardName + ' · 点击展开';
   brOrb.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (item.state !== 'compact') return;
-    item.state = 'expanding';
-    _buildExpandedLayout(el, cc, cardName);
-    anim.to(el, {
-      width: FLOATING_CARD_W, height: FLOATING_CARD_H,
-      duration: 0.3, ease: 'back.out(1.1)',
-      onUpdate: () => {
-        const w = parseFloat(el.style.width) || FLOATING_CARD_W;
-        const h = parseFloat(el.style.height) || FLOATING_CARD_H;
-        brOrb.style.left = (w - rightOff - cornerSize) + 'px';
-        brOrb.style.top = (h - bottomOff - cornerSize) + 'px';
-      },
-      onComplete: () => {
-        item.cardWidth = FLOATING_CARD_W;
-        item.cardHeight = FLOATING_CARD_H;
-        brOrb.style.left = (FLOATING_CARD_W - rightOff - cornerSize) + 'px';
-        brOrb.style.top = (FLOATING_CARD_H - bottomOff - cornerSize) + 'px';
-        // 创建 TL/TR/BL 光球
-        const tlColor = hexToRgba(cc.color1, orbT.tlAlpha);
-        const tlOrb = createDecoratedCorner(cornerOff, cornerOff, cornerSize, cornerSize, tlColor,
-          '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c - sh) + ',' + (c - sh) + ') scale(' + s + ')"><path d="M6,10 L6,2 M6,2 L3,5 M6,2 L9,5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>');
-        tlOrb.style.pointerEvents = 'auto'; tlOrb.style.cursor = 'pointer';
-        tlOrb.title = '\u4e0a\u79fb\u4e00\u5c42';
-        tlOrb.addEventListener('click', () => {
-          if (item.state !== 'active') return;
-          const above = _cardAbove(item);
-          if (above) _swapZIndex(item, above);
-        });
-        el.appendChild(tlOrb); item.tlOrb = tlOrb;
+    if (item.state === 'compact') {
+      // 展开：紧凑态 → 全尺寸
+      item.state = 'expanding';
+      _buildExpandedLayout(el, cc, cardName);
+      anim.to(el, {
+        width: FLOATING_CARD_W, height: FLOATING_CARD_H,
+        duration: 0.3, ease: 'back.out(1.1)',
+        onUpdate: () => {
+          const w = parseFloat(el.style.width) || FLOATING_CARD_W;
+          const h = parseFloat(el.style.height) || FLOATING_CARD_H;
+          brOrb.style.left = (w - rightOff - cornerSize) + 'px';
+          brOrb.style.top = (h - bottomOff - cornerSize) + 'px';
+        },
+        onComplete: () => {
+          item.cardWidth = FLOATING_CARD_W;
+          item.cardHeight = FLOATING_CARD_H;
+          brOrb.style.left = (FLOATING_CARD_W - rightOff - cornerSize) + 'px';
+          brOrb.style.top = (FLOATING_CARD_H - bottomOff - cornerSize) + 'px';
+          // 创建 TL/TR/BL 光球
+          const tlColor = hexToRgba(cc.color1, orbT.tlAlpha);
+          const tlOrb = createDecoratedCorner(cornerOff, cornerOff, cornerSize, cornerSize, tlColor,
+            '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c - sh) + ',' + (c - sh) + ') scale(' + s + ')"><path d="M6,10 L6,2 M6,2 L3,5 M6,2 L9,5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>');
+          tlOrb.style.pointerEvents = 'auto'; tlOrb.style.cursor = 'pointer';
+          tlOrb.title = '\u4e0a\u79fb\u4e00\u5c42';
+          tlOrb.addEventListener('click', () => {
+            if (item.state !== 'active') return;
+            const above = _cardAbove(item);
+            if (above) _swapZIndex(item, above);
+          });
+          el.appendChild(tlOrb); item.tlOrb = tlOrb;
 
-        const trOrb = createDecoratedCorner(FLOATING_CARD_W - rightOff - cornerSize, cornerOff, cornerSize, cornerSize, rightRgba,
-          '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c + sh) + ',' + (c - sh) + ') scale(' + s + ')"><line x1="4" y1="2" x2="10" y2="8" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></g></svg>');
-        trOrb.style.pointerEvents = 'auto'; trOrb.style.cursor = 'pointer';
-        trOrb.title = '\u5173\u95ed';
-        trOrb.addEventListener('click', () => dismissFloatingCard(true, el));
-        el.appendChild(trOrb); item.trOrb = trOrb;
+          const trOrb = createDecoratedCorner(FLOATING_CARD_W - rightOff - cornerSize, cornerOff, cornerSize, cornerSize, rightRgba,
+            '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c + sh) + ',' + (c - sh) + ') scale(' + s + ')"><line x1="4" y1="2" x2="10" y2="8" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></g></svg>');
+          trOrb.style.pointerEvents = 'auto'; trOrb.style.cursor = 'pointer';
+          trOrb.title = '\u5173\u95ed';
+          trOrb.addEventListener('click', () => dismissFloatingCard(true, el));
+          el.appendChild(trOrb); item.trOrb = trOrb;
 
-        const blOrb = createDecoratedCorner(cornerOff, FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, leftRgba,
-          '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c - sh) + ',' + (c + sh) + ') scale(' + s + ')"><path d="M6,2 L6,10 M6,10 L3,7 M6,10 L9,7" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>');
-        blOrb.style.pointerEvents = 'auto'; blOrb.style.cursor = 'pointer';
-        blOrb.title = '\u4e0b\u79fb\u4e00\u5c42';
-        blOrb.addEventListener('click', () => {
-          if (item.state !== 'active') return;
-          const below = _cardBelow(item);
-          if (below) _swapZIndex(item, below);
-        });
-        el.appendChild(blOrb); item.blOrb = blOrb;
+          const blOrb = createDecoratedCorner(cornerOff, FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, leftRgba,
+            '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c - sh) + ',' + (c + sh) + ') scale(' + s + ')"><path d="M6,2 L6,10 M6,10 L3,7 M6,10 L9,7" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>');
+          blOrb.style.pointerEvents = 'auto'; blOrb.style.cursor = 'pointer';
+          blOrb.title = '\u4e0b\u79fb\u4e00\u5c42';
+          blOrb.addEventListener('click', () => {
+            if (item.state !== 'active') return;
+            const below = _cardBelow(item);
+            if (below) _swapZIndex(item, below);
+          });
+          el.appendChild(blOrb); item.blOrb = blOrb;
 
-        item.state = 'active';
-        el.style.zIndex = String(zIndex);
-      }
-    });
-  });
+          item.state = 'active';
+          el.style.zIndex = String(zIndex);
+        }
+      });
+    } else if (item.state === 'active') {
+      // 折叠：全尺寸 → 紧凑态
+      item.state = 'expanding';
+      // 移除 TL/TR/BL 光球
+      item.tlOrb?.remove(); item.tlOrb = null;
+      item.trOrb?.remove(); item.trOrb = null;
+      item.blOrb?.remove(); item.blOrb = null;
+      // 反向缩放动画
+      anim.to(el, {
+        width: COMPACT_W, height: COMPACT_H,
+        duration: 0.3, ease: 'back.out(1.1)',
+        onUpdate: () => {
+          const w = parseFloat(el.style.width) || COMPACT_W;
+          const h = parseFloat(el.style.height) || COMPACT_H;
+          brOrb.style.left = (w - rightOff - cornerSize) + 'px';
+          brOrb.style.top = (h - bottomOff - cornerSize) + 'px';
+        },
+        onComplete: () => {
+          item.cardWidth = COMPACT_W;
+          item.cardHeight = COMPACT_H;
+          brOrb.style.left = (COMPACT_W - rightOff - cornerSize) + 'px';
+          brOrb.style.top = (COMPACT_H - bottomOff - cornerSize) + 'px';
+          // 重建紧凑态毛玻璃（文字居中）
+          const bgLayer = el.firstElementChild as HTMLElement;
+          if (bgLayer) {
+            bgLayer.innerHTML = '';
+            bgLayer.style.cssText = [
+              'border-radius:11px', 'width:100%','height:100%',
+              'background:' + cardBg(),
+              'backdrop-filter:blur(16px)', '-webkit-backdrop-filter:blur(16px)',
+              'display:flex', 'align-items:center', 'justify-content:center',
+              'box-sizing:border-box', 'padding:2px 6px',
+              'font-size:11px', 'font-weight:500',
+              'color:rgba(224,224,224,0.9)',
+              'white-space:nowrap', 'overflow:hidden', 'text-overflow:ellipsis',
+            ].join(';');
+            bgLayer.textContent = cardName;
+          }
+          item.state = 'compact';
+        }
+      });
+    }
+  });;
   el.appendChild(brOrb);
   item.brOrb = brOrb;
 
@@ -787,14 +830,24 @@ function _buildExpandedLayout(el: HTMLElement, cc: { color1: string; color2: str
   bgLayer.style.justifyContent = '';
   bgLayer.style.alignItems = '';
   bgLayer.style.padding = '0';
+  bgLayer.innerHTML = '';
+  // 反向渐变框（color2→color1），与外层壳间距：上8 右3 下6 左3
+  const boxEl = document.createElement('div');
+  boxEl.style.cssText = 'position:absolute;'
+    + 'top:8px;right:3px;bottom:6px;left:3px;'
+    + 'border-radius:8px;overflow:hidden;'
+    + 'background:linear-gradient(135deg,' + hexToRgba(cc.color2, 0.25) + ' 0%,' + hexToRgba(cc.color1, 0.15) + ' 100%);'
+    + 'border:1px solid ' + hexToRgba(cc.color1, 0.2) + ';';
+  bgLayer.appendChild(boxEl);
+  // 标题文字，绝对定位在 bgLayer 左上角，不影响内部框的左右间距
   const titleEl = document.createElement('div');
   titleEl.textContent = cardName;
-  titleEl.style.cssText = 'padding:6px 10px 2px;font-size:11px;font-weight:500;color:' + cc.color2 + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
-  const boxEl = document.createElement('div');
-  boxEl.style.cssText = 'margin:4px 3px 6px;border-radius:8px;flex:1;overflow:hidden;background:linear-gradient(135deg,' + hexToRgba(cc.color2, 0.25) + ' 0%,' + hexToRgba(cc.color1, 0.15) + ' 100%);border:1px solid ' + hexToRgba(cc.color1, 0.2) + ';';
-  bgLayer.innerHTML = '';
+  titleEl.style.cssText = 'position:absolute;'
+    + 'top:2px;left:3px;'
+    + 'font-size:11px;font-weight:500;color:rgba(224,224,224,0.9);'
+    + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'
+    + 'pointer-events:none;';
   bgLayer.appendChild(titleEl);
-  bgLayer.appendChild(boxEl);
 }
 
 export function dismissFloatingCard(animated?: boolean, sourceEl?: HTMLElement): void {
