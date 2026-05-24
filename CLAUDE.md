@@ -31,7 +31,7 @@ npm run dev      # ts-node ESM 模式直接运行
 CLAUDE.md                          # 主文档（本文件）
 docs/
 ├── HANDOFF_AUDIT.md               # 项目交接 + 代码审计结论（新接手必读）
-├── KFM_V4_INVARIANTS.md           # 项目专用架构不变量（开工前必读）
+├── KFM_V4_INVARIANTS.md           # AI 修改约束协议 / Harness（开工前必读）
 ├── CARD_SYSTEM_DESIGN.md          # 统一卡片系统设计蓝图（待实现）
 └── archive/
     ├── AI_COLLABORATION_PRINCIPLES.md # 通用 AI 协作守则
@@ -84,7 +84,7 @@ src/
 │       ├── ui.ts                  # 侧栏开关
 │       ├── gestures.ts            # 全局手势
 │       ├── orb.ts                 # 悬浮光球 + AI 对话面板
-│       ├── card-stack.ts          # 堆叠卡片面板（暮光配色）
+│       ├── card-stack.ts          # 堆叠卡片 + 浮卡系统（紧凑/展开双态）
 │       └── style-registry.ts      # 样式注册表（LINE_HEIGHT、配色等）
 ```
 
@@ -167,7 +167,7 @@ tree-render.ts 导出: markAnimatingPath, isAnimLocked, triggerExpandAnimation,
 - 修根因（"字符雨不显示 → 发现 overflow: hidden 裁剪 → 让 overlay 默认 overflow: visible"）
 - 每次修复后问自己：这个类别的 bug 以后还会出现吗？如果会，加类型、加断言、调架构，让它不可能出现。
 
-参见 `docs/BUG_FIXING_PHILOSOPHY.md` — 当前架构审计 + 已知风险 + 改进计划。
+详细原则与案例见 `docs/KFM_V4_INVARIANTS.md`（第三章：常见补丁模式）。
 
 ## 关键约定
 
