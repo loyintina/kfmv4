@@ -695,8 +695,9 @@ export function launchFocusedCard(): void {
     accentColor: cc.color2,
   };
 
-  // 四个角光球全部用 border ���色（透明度微调区分层次）
-  const mainRgba = hexToRgba(cc.color2, 1);
+  // 四角光球颜色对应接触的边框区域：左侧=color2(渐变终点)，右侧=color1(渐变起点)
+  const leftRgba = hexToRgba(cc.color2, 1);
+  const rightRgba = hexToRgba(cc.color1, 1);
 
   // TL — 上移一层（略暗，保留层次感）
   const tlColor = hexToRgba(cc.color2, orbT.tlAlpha);
@@ -716,7 +717,7 @@ export function launchFocusedCard(): void {
   item.tlOrb = tlOrb;
 
   // TR — 关闭
-  const trOrb = createDecoratedCorner(FLOATING_CARD_W - rightOff - cornerSize, cornerOff, cornerSize, cornerSize, mainRgba,
+  const trOrb = createDecoratedCorner(FLOATING_CARD_W - rightOff - cornerSize, cornerOff, cornerSize, cornerSize, rightRgba,
     `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c+sh},${c-sh}) scale(${s})"><line x1="4" y1="2" x2="10" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/></g></svg>`);
   trOrb.style.pointerEvents = 'auto';
   trOrb.style.cursor = 'pointer';
@@ -729,7 +730,7 @@ export function launchFocusedCard(): void {
   item.trOrb = trOrb;
 
   // BL — 下移一层
-  const blOrb = createDecoratedCorner(cornerOff, FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, mainRgba,
+  const blOrb = createDecoratedCorner(cornerOff, FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, leftRgba,
     `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c-sh},${c+sh}) scale(${s})"><path d="M6,2 L6,10 M6,10 L3,7 M6,10 L9,7" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`);
   blOrb.style.pointerEvents = 'auto';
   blOrb.style.cursor = 'pointer';
@@ -746,7 +747,7 @@ export function launchFocusedCard(): void {
 
   // BR — 拖拽移动 + 长按编辑大小
   const brOrb = createDecoratedCorner(FLOATING_CARD_W - rightOff - cornerSize,
-    FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, mainRgba,
+    FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, rightRgba,
     `<svg width="14" height="14" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c+sh},${c+sh}) scale(${s})"><path d="M8,2 L8,14 M2,8 L14,8 M4,4 L8,2 L12,4 M4,12 L8,14 L12,12 M4,4 L2,8 L4,12 M12,4 L14,8 L12,12" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`);
   brOrb.style.pointerEvents = 'auto';
   brOrb.style.cursor = 'move';

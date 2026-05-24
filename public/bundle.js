@@ -5586,7 +5586,8 @@
       cardHeight: FLOATING_CARD_H,
       accentColor: cc.color2
     };
-    const mainRgba = hexToRgba(cc.color2, 1);
+    const leftRgba = hexToRgba(cc.color2, 1);
+    const rightRgba = hexToRgba(cc.color1, 1);
     const tlColor = hexToRgba(cc.color2, orbT.tlAlpha);
     const tlOrb = createDecoratedCorner(
       cornerOff,
@@ -5613,7 +5614,7 @@
       cornerOff,
       cornerSize,
       cornerSize,
-      mainRgba,
+      rightRgba,
       `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c + sh},${c - sh}) scale(${s})"><line x1="4" y1="2" x2="10" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/></g></svg>`
     );
     trOrb.style.pointerEvents = "auto";
@@ -5630,7 +5631,7 @@
       FLOATING_CARD_H - bottomOff - cornerSize,
       cornerSize,
       cornerSize,
-      mainRgba,
+      leftRgba,
       `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c - sh},${c + sh}) scale(${s})"><path d="M6,2 L6,10 M6,10 L3,7 M6,10 L9,7" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`
     );
     blOrb.style.pointerEvents = "auto";
@@ -5650,7 +5651,7 @@
       FLOATING_CARD_H - bottomOff - cornerSize,
       cornerSize,
       cornerSize,
-      mainRgba,
+      rightRgba,
       `<svg width="14" height="14" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c + sh},${c + sh}) scale(${s})"><path d="M8,2 L8,14 M2,8 L14,8 M4,4 L8,2 L12,4 M4,12 L8,14 L12,12 M4,4 L2,8 L4,12 M12,4 L14,8 L12,12" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`
     );
     brOrb.style.pointerEvents = "auto";
