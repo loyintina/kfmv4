@@ -41,9 +41,9 @@
 ▎ 动画开始前 _activeOverlays.length === 0
 ▎ 动画结束后 _activeOverlays.length === 0
 ▎ rebuildTree() 被调用时 L.isAnimating 应为 false
-   例外：超过 3000ms 超时兜底，允许强制释放
+    例外：超过 3000ms 超时兜底，允许强制释放
 ▎ 每轮动画结束的 onComplete 回调中必须调用 _resetAnimTimeline()
-   ts.clear() + ts.time(0) + ts.reversed(false)
+    ts.clear() + ts.time(0) + ts.reversed(false)
 ```
 
 这些是"不可能为 false"的运行时条件。代码中已埋入 `assert()`，构建时不可禁用。
@@ -54,9 +54,9 @@
 ▎ Overlay 元数据用 (as Box & OverlayMeta) 访问，禁止 (as any)._xxx
 ▎ 已知遗留: _createVisualClone 中 (src as any).data 一处逃逸 (P2)
 ▎ char-rain.ts 不直接读取 (row as any)._targetY
-   rowTargetYs 通过显式参数传入
+    rowTargetYs 通过显式参数传入
 ▎ 所有 _ 前缀属性只在模块内访问
-   跨模块读写 _ 前缀属性应通过显式接口
+    跨模块读写 _ 前缀属性应通过显式接口
 ```
 
 ### 1.3 依赖方向
@@ -73,14 +73,13 @@ canvas-scroll.ts        ← 滚动，不导入 tree-*
 tree-render.ts          ← 文件树业务，可以导入任何 canvas-*
 ```
 
-
 ### 1.4 动画治理
 
 ```
 ▎ 所有 GSAP 调用必须通过 animation-registry.ts
 ▎ tree-render 内部的动画全部加到 ts = anim.scope('tree-render')
 ▎ char-rain 使用独立 timeline（anim.timeline()）
-   这意味 ts.clear() 不会杀 char-rain
+    这意味 ts.clear() 不会杀 char-rain
 ▎ 禁止直接 import gsap（构建时 check-anim.mjs 扫描白名单）
 ```
 
@@ -165,7 +164,7 @@ processClickQueue() 独占消费:
 ```
 问题: 文字在盒子回收前消失
 补丁: 拖慢行 Y 动画，和容器高度动画对齐
-根解: 行不作 Y ���画，让容器 overflow:hidden 自然裁剪
+根解: 行不作 Y 动画，让容器 overflow:hidden 自然裁剪
       行固定在其展开态位置，容器收缩时自动遮住
 ```
 
@@ -225,4 +224,3 @@ animation-registry.ts  — GSAP 隔离层
 click-queue.ts     — 事件队列
 debug-assert.ts    — 运行时断言
 ```
-
