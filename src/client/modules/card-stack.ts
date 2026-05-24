@@ -124,10 +124,10 @@ interface FloatingCardItem {
   sourceIndex: number;
   zIndex: number;
   state: 'launching' | 'compact' | 'expanding' | 'active' | 'dismissing' | 'editing';
-  tlOrb: HTMLElement;
-  trOrb: HTMLElement;
-  blOrb: HTMLElement;
-  brOrb: HTMLElement;
+  tlOrb: HTMLElement | null;
+  trOrb: HTMLElement | null;
+  blOrb: HTMLElement | null;
+  brOrb: HTMLElement | null;
   cardWidth: number;
   cardHeight: number;
   accentColor: string;
@@ -451,7 +451,9 @@ function _enterFloatingEditMode(item: FloatingCardItem): void {
   _dragStartTop = cardRect.top;
   _dragStartW = item.cardWidth;
   _dragStartH = item.cardHeight;
-  const brRect = item.brOrb.getBoundingClientRect();
+  const brEl = item.brOrb;
+  if (!brEl) return;
+  const brRect = brEl.getBoundingClientRect();
   _dragStartOrbAbsX = brRect.left;
   _dragStartOrbAbsY = brRect.top;
 
@@ -492,7 +494,9 @@ function _startFloatingDrag(item: FloatingCardItem, clientX: number, clientY: nu
   _dragStartTop = rect.top;
   _dragStartW = item.cardWidth;
   _dragStartH = item.cardHeight;
-  const brRect = item.brOrb.getBoundingClientRect();
+  const brEl2 = item.brOrb;
+  if (!brEl2) return;
+  const brRect = brEl2.getBoundingClientRect();
   _dragStartOrbAbsX = brRect.left;
   _dragStartOrbAbsY = brRect.top;
 
@@ -542,12 +546,16 @@ function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: n
     _dragItem.cardWidth = newW;
     _dragItem.cardHeight = newH;
 
+    const tr = _dragItem.trOrb;
+    const bl = _dragItem.blOrb;
+    const br = _dragItem.brOrb;
+    if (!tr || !bl || !br) return;
     const newRightX = newW - rOff - cSize;
     const newBottomY = newH - bOff - cSize;
-    _dragItem.trOrb.style.left = newRightX + 'px';
-    _dragItem.blOrb.style.top = newBottomY + 'px';
-    _dragItem.brOrb.style.left = newRightX + 'px';
-    _dragItem.brOrb.style.top = newBottomY + 'px';
+    tr.style.left = newRightX + 'px';
+    bl.style.top = newBottomY + 'px';
+    br.style.left = newRightX + 'px';
+    br.style.top = newBottomY + 'px';
   } else {
     const orbAbsX = rawOrbX;
     const orbAbsY = Math.min(maxOrbY, rawOrbY);
@@ -567,12 +575,16 @@ function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: n
       el.style.height = newH + 'px';
     }
 
+    const tr2 = _dragItem.trOrb;
+    const bl2 = _dragItem.blOrb;
+    const br2 = _dragItem.brOrb;
+    if (!tr2 || !bl2 || !br2) return;
     const newRightX = newW - rOff - cSize;
     const newBottomY = newH - bOff - cSize;
-    _dragItem.trOrb.style.left = newRightX + 'px';
-    _dragItem.blOrb.style.top = newBottomY + 'px';
-    _dragItem.brOrb.style.left = newRightX + 'px';
-    _dragItem.brOrb.style.top = newBottomY + 'px';
+    tr2.style.left = newRightX + 'px';
+    bl2.style.top = newBottomY + 'px';
+    br2.style.left = newRightX + 'px';
+    br2.style.top = newBottomY + 'px';
   }
 }
 

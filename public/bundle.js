@@ -5411,12 +5411,16 @@
       el.style.height = newH + "px";
       _dragItem.cardWidth = newW;
       _dragItem.cardHeight = newH;
+      const tr = _dragItem.trOrb;
+      const bl = _dragItem.blOrb;
+      const br = _dragItem.brOrb;
+      if (!tr || !bl || !br) return;
       const newRightX = newW - rOff - cSize;
       const newBottomY = newH - bOff - cSize;
-      _dragItem.trOrb.style.left = newRightX + "px";
-      _dragItem.blOrb.style.top = newBottomY + "px";
-      _dragItem.brOrb.style.left = newRightX + "px";
-      _dragItem.brOrb.style.top = newBottomY + "px";
+      tr.style.left = newRightX + "px";
+      bl.style.top = newBottomY + "px";
+      br.style.left = newRightX + "px";
+      br.style.top = newBottomY + "px";
     } else {
       const orbAbsX = rawOrbX;
       const orbAbsY = Math.min(maxOrbY, rawOrbY);
@@ -5433,12 +5437,16 @@
         el.style.width = newW + "px";
         el.style.height = newH + "px";
       }
+      const tr2 = _dragItem.trOrb;
+      const bl2 = _dragItem.blOrb;
+      const br2 = _dragItem.brOrb;
+      if (!tr2 || !bl2 || !br2) return;
       const newRightX = newW - rOff - cSize;
       const newBottomY = newH - bOff - cSize;
-      _dragItem.trOrb.style.left = newRightX + "px";
-      _dragItem.blOrb.style.top = newBottomY + "px";
-      _dragItem.brOrb.style.left = newRightX + "px";
-      _dragItem.brOrb.style.top = newBottomY + "px";
+      tr2.style.left = newRightX + "px";
+      bl2.style.top = newBottomY + "px";
+      br2.style.left = newRightX + "px";
+      br2.style.top = newBottomY + "px";
     }
   }
   function _endFloatingDrag() {
