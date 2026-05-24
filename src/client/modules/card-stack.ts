@@ -30,8 +30,8 @@ const CARDS: CardDef[] = [
   { id: 'about',    icon: '\uD83D\uDC8E', name: '\u5173\u4E8E',     desc: '\u7248\u672C \u00B7 \u4FE1\u606F' },
 ];
 
-// ========== 卡片配色：每张卡三个完全独立的色值 ==========
-let _currentAccents: Array<{ border: string; accent: string; accent2: string }> | null = null;
+// ========== 卡片配色：每张卡双色独立随机 ==========
+let _currentAccents: Array<{ color1: string; color2: string }> | null = null;
 
 /** HSL → hex （#rrggbb） */
 function hslToHex(h: number, s: number, l: number): string {
@@ -54,31 +54,30 @@ function hexToRgba(hex: string, alpha: number): string {
   return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
 }
 
-/** 每张卡三色独立随机，饱和度/亮度锁定在优雅区间 */
+/** 每张卡双色独立随机，两色保持一定色相差避免撞色 */
 function _generateRandomAccents(): void {
   const accents = [];
   for (let i = 0; i < 7; i++) {
-    const h1 = Math.random() * 360;   // border
-    const h2 = Math.random() * 360;   // accent
-    const h3 = Math.random() * 360;   // accent2
+    const h1 = Math.random() * 360;   // color1（渐变起点）
+    // color2 在色环上与 color1 保持 30°–120° 的偏差，避免过于接近或完全随机撞色
+    const offset = (30 + Math.random() * 90) * (Math.random() > 0.5 ? 1 : -1);
+    const h2 = ((h1 + offset) % 360 + 360) % 360;
     const sat = 45 + Math.random() * 25;
     const lit = 50 + Math.random() * 15;
     accents.push({
-      border:   hslToHex(h1, sat, lit),
-      accent:   hslToHex(h2, sat, lit),
-      accent2:  hslToHex(h3, sat, lit),
+      color1: hslToHex(h1, sat, lit),
+      color2: hslToHex(h2, sat, lit),
     });
   }
   _currentAccents = accents;
 }
 
-/** 从单张卡取三色渐变（不再依赖相邻卡） */
+/** 从单张卡取双色区域渐变（右上 30% → 左下 70%） */
 function cardGradient(i: number, alpha: number): string {
   const c = _currentAccents![i];
-  const a  = hexToRgba(c.accent, alpha);
-  const b  = hexToRgba(c.border, alpha);
-  const a2 = hexToRgba(c.accent2, alpha);
-  return "linear-gradient(to bottom right, " + a + " 0%, " + b + " 33%, " + a2 + " 50%)";
+  const a = hexToRgba(c.color1, alpha);
+  const b = hexToRgba(c.color2, alpha);
+  return "linear-gradient(135deg, " + a + " 30%, " + b + " 70%)";
 }
 
 /** 从单张卡的 border 派生卡片内部用色（边框/序号/毛玻璃） */
@@ -199,7 +198,7 @@ function createCard(index: number): HTMLElement {
   ].join(';');
 
   inner.innerHTML = ''
-    + '<div class="stack-card-icon" style="width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;background:' + hexToRgba(cc.border, 0.25) + ';color:' + cc.border + '">' + String(index + 1).padStart(2, '0') + '</div>'
+    + '<div class="stack-card-icon" style="width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;background:' + hexToRgba(cc.color1, 0.25) + ';color:' + cc.color2 + '">' + String(index + 1).padStart(2, '0') + '</div>'
     + '<div class="stack-card-info" style="flex:1;min-width:0">'
     + '  <div class="stack-card-name" style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + card.name + '</div>'
     + '  <div class="stack-card-desc" style="font-size:10px;opacity:0.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:0px">' + card.desc + '</div>'
@@ -693,14 +692,14 @@ export function launchFocusedCard(): void {
     brOrb: null as unknown as HTMLElement,
     cardWidth: FLOATING_CARD_W,
     cardHeight: FLOATING_CARD_H,
-    accentColor: cc.border,
+    accentColor: cc.color2,
   };
 
   // 四个角光球全部用 border ���色（透明度微调区分层次）
-  const borderRgba = hexToRgba(cc.border, 1);
+  const mainRgba = hexToRgba(cc.color2, 1);
 
   // TL — 上移一层（略暗，保留层次感）
-  const tlColor = hexToRgba(cc.border, orbT.tlAlpha);
+  const tlColor = hexToRgba(cc.color2, orbT.tlAlpha);
   const tlOrb = createDecoratedCorner(cornerOff, cornerOff, cornerSize, cornerSize, tlColor,
     `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c-sh},${c-sh}) scale(${s})"><path d="M6,10 L6,2 M6,2 L3,5 M6,2 L9,5" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`);
   tlOrb.style.pointerEvents = 'auto';
@@ -717,7 +716,7 @@ export function launchFocusedCard(): void {
   item.tlOrb = tlOrb;
 
   // TR — 关闭
-  const trOrb = createDecoratedCorner(FLOATING_CARD_W - rightOff - cornerSize, cornerOff, cornerSize, cornerSize, borderRgba,
+  const trOrb = createDecoratedCorner(FLOATING_CARD_W - rightOff - cornerSize, cornerOff, cornerSize, cornerSize, mainRgba,
     `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c+sh},${c-sh}) scale(${s})"><line x1="4" y1="2" x2="10" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/></g></svg>`);
   trOrb.style.pointerEvents = 'auto';
   trOrb.style.cursor = 'pointer';
@@ -730,7 +729,7 @@ export function launchFocusedCard(): void {
   item.trOrb = trOrb;
 
   // BL — 下移一层
-  const blOrb = createDecoratedCorner(cornerOff, FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, borderRgba,
+  const blOrb = createDecoratedCorner(cornerOff, FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, mainRgba,
     `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c-sh},${c+sh}) scale(${s})"><path d="M6,2 L6,10 M6,10 L3,7 M6,10 L9,7" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`);
   blOrb.style.pointerEvents = 'auto';
   blOrb.style.cursor = 'pointer';
@@ -747,7 +746,7 @@ export function launchFocusedCard(): void {
 
   // BR — 拖拽移动 + 长按编辑大小
   const brOrb = createDecoratedCorner(FLOATING_CARD_W - rightOff - cornerSize,
-    FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, borderRgba,
+    FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, mainRgba,
     `<svg width="14" height="14" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c+sh},${c+sh}) scale(${s})"><path d="M8,2 L8,14 M2,8 L14,8 M4,4 L8,2 L12,4 M4,12 L8,14 L12,12 M4,4 L2,8 L4,12 M12,4 L14,8 L12,12" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`);
   brOrb.style.pointerEvents = 'auto';
   brOrb.style.cursor = 'move';
@@ -864,8 +863,8 @@ function _updateCardStyles(): void {
     // 内层中的图标颜色
     const icon = el.querySelector('.stack-card-icon') as HTMLElement | null;
     if (icon) {
-      icon.style.background = hexToRgba(cc.border, 0.25);
-      icon.style.color = cc.border;
+      icon.style.background = hexToRgba(cc.color1, 0.25);
+      icon.style.color = cc.color2;
     }
   }
 }

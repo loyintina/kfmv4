@@ -5087,24 +5087,22 @@
     const accents = [];
     for (let i = 0; i < 7; i++) {
       const h1 = Math.random() * 360;
-      const h2 = Math.random() * 360;
-      const h3 = Math.random() * 360;
+      const offset = (30 + Math.random() * 90) * (Math.random() > 0.5 ? 1 : -1);
+      const h2 = ((h1 + offset) % 360 + 360) % 360;
       const sat = 45 + Math.random() * 25;
       const lit = 50 + Math.random() * 15;
       accents.push({
-        border: hslToHex(h1, sat, lit),
-        accent: hslToHex(h2, sat, lit),
-        accent2: hslToHex(h3, sat, lit)
+        color1: hslToHex(h1, sat, lit),
+        color2: hslToHex(h2, sat, lit)
       });
     }
     _currentAccents = accents;
   }
   function cardGradient(i, alpha) {
     const c = _currentAccents[i];
-    const a = hexToRgba(c.accent, alpha);
-    const b = hexToRgba(c.border, alpha);
-    const a2 = hexToRgba(c.accent2, alpha);
-    return "linear-gradient(to bottom right, " + a + " 0%, " + b + " 33%, " + a2 + " 50%)";
+    const a = hexToRgba(c.color1, alpha);
+    const b = hexToRgba(c.color2, alpha);
+    return "linear-gradient(135deg, " + a + " 30%, " + b + " 70%)";
   }
   function cardBg() {
     return "rgba(20,16,32,0.92)";
@@ -5181,7 +5179,7 @@
       "gap:6px",
       "box-sizing:border-box"
     ].join(";");
-    inner.innerHTML = '<div class="stack-card-icon" style="width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;background:' + hexToRgba(cc.border, 0.25) + ";color:" + cc.border + '">' + String(index + 1).padStart(2, "0") + '</div><div class="stack-card-info" style="flex:1;min-width:0">  <div class="stack-card-name" style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + card.name + '</div>  <div class="stack-card-desc" style="font-size:10px;opacity:0.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:0px">' + card.desc + "</div></div>";
+    inner.innerHTML = '<div class="stack-card-icon" style="width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;background:' + hexToRgba(cc.color1, 0.25) + ";color:" + cc.color2 + '">' + String(index + 1).padStart(2, "0") + '</div><div class="stack-card-info" style="flex:1;min-width:0">  <div class="stack-card-name" style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + card.name + '</div>  <div class="stack-card-desc" style="font-size:10px;opacity:0.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:0px">' + card.desc + "</div></div>";
     el.appendChild(inner);
     el.addEventListener("click", (e) => {
       const idx = parseInt(el.dataset.index || "0", 10);
@@ -5586,10 +5584,10 @@
       brOrb: null,
       cardWidth: FLOATING_CARD_W,
       cardHeight: FLOATING_CARD_H,
-      accentColor: cc.border
+      accentColor: cc.color2
     };
-    const borderRgba = hexToRgba(cc.border, 1);
-    const tlColor = hexToRgba(cc.border, orbT.tlAlpha);
+    const mainRgba = hexToRgba(cc.color2, 1);
+    const tlColor = hexToRgba(cc.color2, orbT.tlAlpha);
     const tlOrb = createDecoratedCorner(
       cornerOff,
       cornerOff,
@@ -5615,7 +5613,7 @@
       cornerOff,
       cornerSize,
       cornerSize,
-      borderRgba,
+      mainRgba,
       `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c + sh},${c - sh}) scale(${s})"><line x1="4" y1="2" x2="10" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round"/></g></svg>`
     );
     trOrb.style.pointerEvents = "auto";
@@ -5632,7 +5630,7 @@
       FLOATING_CARD_H - bottomOff - cornerSize,
       cornerSize,
       cornerSize,
-      borderRgba,
+      mainRgba,
       `<svg width="14" height="14" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c - sh},${c + sh}) scale(${s})"><path d="M6,2 L6,10 M6,10 L3,7 M6,10 L9,7" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`
     );
     blOrb.style.pointerEvents = "auto";
@@ -5652,7 +5650,7 @@
       FLOATING_CARD_H - bottomOff - cornerSize,
       cornerSize,
       cornerSize,
-      borderRgba,
+      mainRgba,
       `<svg width="14" height="14" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${c + sh},${c + sh}) scale(${s})"><path d="M8,2 L8,14 M2,8 L14,8 M4,4 L8,2 L12,4 M4,12 L8,14 L12,12 M4,4 L2,8 L4,12 M12,4 L14,8 L12,12" stroke="currentColor" stroke-width="${orbT.symStroke}" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>`
     );
     brOrb.style.pointerEvents = "auto";
@@ -5744,8 +5742,8 @@
       el.style.background = cardGradient(i, 0.85);
       const icon = el.querySelector(".stack-card-icon");
       if (icon) {
-        icon.style.background = hexToRgba(cc.border, 0.25);
-        icon.style.color = cc.border;
+        icon.style.background = hexToRgba(cc.color1, 0.25);
+        icon.style.color = cc.color2;
       }
     }
   }
