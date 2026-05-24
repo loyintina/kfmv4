@@ -11,16 +11,16 @@ export interface GestureHandler {
   /** 唯一标识（用于注销和调试） */
   id: string;
   /** 目标过滤：CSS 选择器或判定函数 */
-  targetFilter: string | ((target: HTMLElement, event: TouchEvent) => boolean);
+  targetFilter: string | ((target: HTMLElement, event: PointerEvent) => boolean);
   /** 运行时条件：返回 false 时跳过该处理器 */
   condition?: () => boolean;
   /** 优先级：数字越大越优先匹配 */
   priority: number;
-  /** touchstart 前调用，返回 false 可否决处理 */
-  onBeforeStart?: (event: TouchEvent) => boolean;
-  onStart?: (event: TouchEvent) => void;
-  onMove?: (event: TouchEvent, dx: number, dy: number, elapsed: number) => void;
-  onEnd?: (event: TouchEvent, dx: number, dy: number, elapsed: number) => void;
+  /** pointerdown 前调用，返回 false 可否决处理 */
+  onBeforeStart?: (event: PointerEvent) => boolean;
+  onStart?: (event: PointerEvent) => void;
+  onMove?: (event: PointerEvent, dx: number, dy: number, elapsed: number) => void;
+  onEnd?: (event: PointerEvent, dx: number, dy: number, elapsed: number) => void;
   /** stopPropagation 控制（默认不调用） */
   stopPropagation?: boolean | { start?: boolean; move?: boolean; end?: boolean };
 }
@@ -41,9 +41,9 @@ export class GestureRegistry {
   private _initialized = false;
 
   // 绑定的回调引用（用于 removeEventListener）
-  private _onStart: (e: TouchEvent) => void;
-  private _onMove: (e: TouchEvent) => void;
-  private _onEnd: (e: TouchEvent) => void;
+  private _onStart: (e: PointerEvent) => void;
+  private _onMove: (e: PointerEvent) => void;
+  private _onEnd: (e: PointerEvent) => void;
 
   constructor() {
     this._onStart = this._handleStart.bind(this);
@@ -98,23 +98,23 @@ export class GestureRegistry {
 
   // ========== 生命周期 ==========
 
-  /** 初始化：注册 document 级 touch 监听（在主入口调用一次） */
+  /** 初始化：注册 document 级 pointer 监听（在主入口调用一次） */
   init(): void {
     if (this._initialized) return;
     this._initialized = true;
-    // touchstart 用 passive:false 以支持 orb 的 preventDefault
-    document.addEventListener('touchstart', this._onStart, { passive: false });
-    document.addEventListener('touchmove', this._onMove, { passive: true });
-    document.addEventListener('touchend', this._onEnd, { passive: true });
-    document.addEventListener('touchcancel', this._onEnd, { passive: true });
+    // pointerdown 用 passive:false 以支持 preventDefault（主光球需要阻止滚动）
+    document.addEventListener('pointerdown', this._onStart, { passive: false });
+    document.addEventListener('pointermove', this._onMove, { passive: true });
+    document.addEventListener('pointerup', this._onEnd, { passive: true });
+    document.addEventListener('pointercancel', this._onEnd, { passive: true });
   }
 
   /** 销毁：移除所有监听 */
   destroy(): void {
-    document.removeEventListener('touchstart', this._onStart);
-    document.removeEventListener('touchmove', this._onMove);
-    document.removeEventListener('touchend', this._onEnd);
-    document.removeEventListener('touchcancel', this._onEnd);
+    document.removeEventListener('pointerdown', this._onStart);
+    document.removeEventListener('pointermove', this._onMove);
+    document.removeEventListener('pointerup', this._onEnd);
+    document.removeEventListener('pointercancel', this._onEnd);
     this._handlers = [];
     this._active = null;
     this._initialized = false;
@@ -122,7 +122,7 @@ export class GestureRegistry {
 
   // ========== 内部调度 ==========
 
-  private _matchTarget(handler: GestureHandler, target: HTMLElement, event: TouchEvent): boolean {
+  private _matchTarget(handler: GestureHandler, target: HTMLElement, event: PointerEvent): boolean {
     if (typeof handler.targetFilter === 'string') {
       return !!target.closest(handler.targetFilter);
     }
@@ -136,8 +136,10 @@ export class GestureRegistry {
     return false;
   }
 
-  private _handleStart(e: TouchEvent): void {
+  private _handleStart(e: PointerEvent): void {
     if (!this._enabled) return;
+    // 只响应主按钮（左键/触摸主触点）
+    if (e.button !== 0) return;
     // 清除上一个手势（防御性）
     this._active = null;
 
@@ -153,11 +155,10 @@ export class GestureRegistry {
       if (handler.onBeforeStart && !handler.onBeforeStart(e)) continue;
 
       // 锁定该处理器
-      const touch = e.touches[0];
       this._active = {
         handler,
-        startX: touch.clientX,
-        startY: touch.clientY,
+        startX: e.clientX,
+        startY: e.clientY,
         startTime: Date.now(),
       };
 
@@ -167,7 +168,7 @@ export class GestureRegistry {
     }
   }
 
-  private _handleMove(e: TouchEvent): void {
+  private _handleMove(e: PointerEvent): void {
     if (!this._enabled) return;
     const active = this._active;
     if (!active) return;
@@ -179,24 +180,21 @@ export class GestureRegistry {
       return;
     }
 
-    const touch = e.touches[0];
-    const dx = touch.clientX - active.startX;
-    const dy = touch.clientY - active.startY;
+    const dx = e.clientX - active.startX;
+    const dy = e.clientY - active.startY;
     const elapsed = Date.now() - active.startTime;
 
     if (this._shouldStop(active.handler, 'move')) e.stopPropagation();
     active.handler.onMove?.(e, dx, dy, elapsed);
   }
 
-  private _handleEnd(e: TouchEvent): void {
+  private _handleEnd(e: PointerEvent): void {
     if (!this._enabled) return;
     const active = this._active;
     if (!active) return;
 
-    // 从 changedTouches 获取最终触摸位置
-    const touch = e.changedTouches[0];
-    const dx = touch ? touch.clientX - active.startX : 0;
-    const dy = touch ? touch.clientY - active.startY : 0;
+    const dx = e.clientX - active.startX;
+    const dy = e.clientY - active.startY;
     const elapsed = Date.now() - active.startTime;
 
     if (this._shouldStop(active.handler, 'end')) e.stopPropagation();

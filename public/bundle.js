@@ -193,21 +193,21 @@
       return this._enabled;
     }
     // ========== 生命周期 ==========
-    /** 初始化：注册 document 级 touch 监听（在主入口调用一次） */
+    /** 初始化：注册 document 级 pointer 监听（在主入口调用一次） */
     init() {
       if (this._initialized) return;
       this._initialized = true;
-      document.addEventListener("touchstart", this._onStart, { passive: false });
-      document.addEventListener("touchmove", this._onMove, { passive: true });
-      document.addEventListener("touchend", this._onEnd, { passive: true });
-      document.addEventListener("touchcancel", this._onEnd, { passive: true });
+      document.addEventListener("pointerdown", this._onStart, { passive: false });
+      document.addEventListener("pointermove", this._onMove, { passive: true });
+      document.addEventListener("pointerup", this._onEnd, { passive: true });
+      document.addEventListener("pointercancel", this._onEnd, { passive: true });
     }
     /** 销毁：移除所有监听 */
     destroy() {
-      document.removeEventListener("touchstart", this._onStart);
-      document.removeEventListener("touchmove", this._onMove);
-      document.removeEventListener("touchend", this._onEnd);
-      document.removeEventListener("touchcancel", this._onEnd);
+      document.removeEventListener("pointerdown", this._onStart);
+      document.removeEventListener("pointermove", this._onMove);
+      document.removeEventListener("pointerup", this._onEnd);
+      document.removeEventListener("pointercancel", this._onEnd);
       this._handlers = [];
       this._active = null;
       this._initialized = false;
@@ -228,6 +228,7 @@
     _handleStart(e) {
       var _a;
       if (!this._enabled) return;
+      if (e.button !== 0) return;
       this._active = null;
       const target = e.target;
       if (!target) return;
@@ -235,11 +236,10 @@
         if (handler.condition && !handler.condition()) continue;
         if (!this._matchTarget(handler, target, e)) continue;
         if (handler.onBeforeStart && !handler.onBeforeStart(e)) continue;
-        const touch = e.touches[0];
         this._active = {
           handler,
-          startX: touch.clientX,
-          startY: touch.clientY,
+          startX: e.clientX,
+          startY: e.clientY,
           startTime: Date.now()
         };
         if (this._shouldStop(handler, "start")) e.stopPropagation();
@@ -257,9 +257,8 @@
         this._active = null;
         return;
       }
-      const touch = e.touches[0];
-      const dx = touch.clientX - active.startX;
-      const dy = touch.clientY - active.startY;
+      const dx = e.clientX - active.startX;
+      const dy = e.clientY - active.startY;
       const elapsed = Date.now() - active.startTime;
       if (this._shouldStop(active.handler, "move")) e.stopPropagation();
       (_d = (_c = active.handler).onMove) == null ? void 0 : _d.call(_c, e, dx, dy, elapsed);
@@ -269,9 +268,8 @@
       if (!this._enabled) return;
       const active = this._active;
       if (!active) return;
-      const touch = e.changedTouches[0];
-      const dx = touch ? touch.clientX - active.startX : 0;
-      const dy = touch ? touch.clientY - active.startY : 0;
+      const dx = e.clientX - active.startX;
+      const dy = e.clientY - active.startY;
       const elapsed = Date.now() - active.startTime;
       if (this._shouldStop(active.handler, "end")) e.stopPropagation();
       (_b = (_a = active.handler).onEnd) == null ? void 0 : _b.call(_a, e, dx, dy, elapsed);
@@ -5013,24 +5011,6 @@
     if (!dragging && !longPressFired) toggle();
     dragging = false;
   }
-  var mouseOn = false;
-  function bindMouse() {
-    if (!orbEl) return;
-    orbEl.addEventListener("mousedown", (e) => {
-      e.stopPropagation();
-      mouseOn = true;
-      startDrag(e.clientX, e.clientY);
-    });
-    document.addEventListener("mousemove", (e) => {
-      if (!mouseOn) return;
-      moveDrag(e.clientX, e.clientY);
-    });
-    document.addEventListener("mouseup", () => {
-      if (!mouseOn) return;
-      mouseOn = false;
-      endDrag();
-    });
-  }
   function initDebugPanel() {
     orbEl = createOrb();
     gestures.register({
@@ -5040,14 +5020,13 @@
       stopPropagation: true,
       onStart: (e) => {
         e.preventDefault();
-        startDrag(e.touches[0].clientX, e.touches[0].clientY);
+        startDrag(e.clientX, e.clientY);
       },
       onMove: (e) => {
-        moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+        moveDrag(e.clientX, e.clientY);
       },
       onEnd: () => endDrag()
     });
-    bindMouse();
     debugLog("\u{1F527} \u8C03\u8BD5\u9762\u677F\u5DF2\u542F\u52A8");
   }
 
@@ -14765,7 +14744,6 @@
     };
     requestAnimationFrame(check);
   }
-  var _mouseHandlers = null;
   function initOrb() {
     orbEl2 = DOM.lightOrb;
     if (!orbEl2) return;
@@ -14785,36 +14763,15 @@
       stopPropagation: true,
       onStart: (e) => {
         e.preventDefault();
-        startDrag2(e.touches[0].clientX, e.touches[0].clientY);
+        startDrag2(e.clientX, e.clientY);
       },
       onMove: (e) => {
-        moveDrag2(e.touches[0].clientX, e.touches[0].clientY);
+        moveDrag2(e.clientX, e.clientY);
       },
       onEnd: () => {
         endDrag2();
       }
     });
-    if (!_mouseHandlers) {
-      let mouseDragging = false;
-      const onMouseDown = (e) => {
-        e.stopPropagation();
-        mouseDragging = true;
-        startDrag2(e.clientX, e.clientY);
-      };
-      const onMouseMove = (e) => {
-        if (!mouseDragging) return;
-        moveDrag2(e.clientX, e.clientY);
-      };
-      const onMouseUp = () => {
-        if (!mouseDragging && !dragging2) return;
-        mouseDragging = false;
-        endDrag2();
-      };
-      orbEl2.addEventListener("mousedown", onMouseDown);
-      document.addEventListener("mousemove", onMouseMove);
-      document.addEventListener("mouseup", onMouseUp);
-      _mouseHandlers = { onMouseDown, onMouseMove, onMouseUp };
-    }
     initInputBarWatcher();
   }
 

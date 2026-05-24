@@ -289,47 +289,25 @@ function endDrag(): void {
   dragging = false;
 }
 
-// ========== 鼠标事件 ==========
-let mouseOn = false;
-
-function bindMouse(): void {
-  if (!orbEl) return;
-  orbEl.addEventListener('mousedown', (e: MouseEvent) => {
-    e.stopPropagation();
-    mouseOn = true;
-    startDrag(e.clientX, e.clientY);
-  });
-  document.addEventListener('mousemove', (e: MouseEvent) => {
-    if (!mouseOn) return;
-    moveDrag(e.clientX, e.clientY);
-  });
-  document.addEventListener('mouseup', () => {
-    if (!mouseOn) return;
-    mouseOn = false;
-    endDrag();
-  });
-}
-
 // ========== 初始化 ==========
 export function initDebugPanel(): void {
   orbEl = createOrb();
 
-  // Touch 事件 → GestureRegistry
+  // 统一输入事件 → GestureRegistry（PointerEvent 覆盖 touch + mouse）
   gestures.register({
     id: 'debug-orb',
     targetFilter: '#debugOrb',
     priority: 99,
     stopPropagation: true,
-    onStart: (e: TouchEvent) => {
+    onStart: (e: PointerEvent) => {
       e.preventDefault();
-      startDrag(e.touches[0].clientX, e.touches[0].clientY);
+      startDrag(e.clientX, e.clientY);
     },
-    onMove: (e: TouchEvent) => {
-      moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+    onMove: (e: PointerEvent) => {
+      moveDrag(e.clientX, e.clientY);
     },
     onEnd: () => endDrag(),
   });
 
-  bindMouse();
   debugLog('🔧 调试面板已启动');
 }

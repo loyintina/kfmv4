@@ -472,9 +472,6 @@ function initInputBarWatcher(): void {
   requestAnimationFrame(check);
 }
 
-// ========== 鼠标事件句柄（供清理） ==========
-let _mouseHandlers: { onMouseDown: (e: MouseEvent) => void; onMouseMove: (e: MouseEvent) => void; onMouseUp: () => void } | null = null;
-
 // ========== 初始化 ==========
 export function initOrb(): void {
   orbEl = DOM.lightOrb;
@@ -493,46 +490,23 @@ export function initOrb(): void {
   freeOrbX = clamped.x;
   freeOrbY = clamped.y;
 
-  // Touch 事件 -> GestureRegistry
+  // 统一输入事件 -> GestureRegistry（PointerEvent 覆盖 touch + mouse）
   gestures.register({
     id: "orb",
     targetFilter: ".light-orb",
     priority: 100,
     stopPropagation: true,
-    onStart: (e: TouchEvent) => {
+    onStart: (e: PointerEvent) => {
       e.preventDefault();
-      startDrag(e.touches[0].clientX, e.touches[0].clientY);
+      startDrag(e.clientX, e.clientY);
     },
-    onMove: (e: TouchEvent) => {
-      moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+    onMove: (e: PointerEvent) => {
+      moveDrag(e.clientX, e.clientY);
     },
     onEnd: () => {
       endDrag();
     },
   });
-
-  // Mouse 事件（桌面调试，可复用引用便于清理）
-  if (!_mouseHandlers) {
-    let mouseDragging = false;
-    const onMouseDown = (e: MouseEvent) => {
-      e.stopPropagation();
-      mouseDragging = true;
-      startDrag(e.clientX, e.clientY);
-    };
-    const onMouseMove = (e: MouseEvent) => {
-      if (!mouseDragging) return;
-      moveDrag(e.clientX, e.clientY);
-    };
-    const onMouseUp = () => {
-      if (!mouseDragging && !dragging) return;
-      mouseDragging = false;
-      endDrag();
-    };
-    orbEl.addEventListener('mousedown', onMouseDown);
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
-    _mouseHandlers = { onMouseDown, onMouseMove, onMouseUp };
-  }
 
   // 监听输入栏位置
   initInputBarWatcher();
