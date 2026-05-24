@@ -12754,6 +12754,10 @@
       targetFilter: (target) => {
         return !target.closest(".light-orb") && !target.closest(".stack-card");
       },
+      condition: () => {
+        if (isCardStackOpen()) return false;
+        return true;
+      },
       priority: 50,
       onStart: () => {
         var _a;

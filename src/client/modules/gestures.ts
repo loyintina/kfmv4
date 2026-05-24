@@ -29,6 +29,11 @@ export function initGestures(): void {
     targetFilter: (target) => {
       return !target.closest('.light-orb') && !target.closest('.stack-card');
     },
+    condition: () => {
+      // 卡片堆打开时，让 card-stack-global 全权接管所有触摸区域
+      if (isCardStackOpen()) return false;
+      return true;
+    },
     priority: 50,
     onStart: () => {
       // 在触摸开始时拍下状态快照，后续只读快照
