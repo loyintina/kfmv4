@@ -32,13 +32,14 @@ CLAUDE.md                          # 主文档（本文件）
 docs/
 ├── HANDOFF_AUDIT.md               # 项目交接 + 代码审计结论（新接手必读）
 ├── KFM_V4_INVARIANTS.md           # AI 修改约束协议 / Harness（开工前必读）
+├── BUG_AUDIT_REGISTRY.md          # 隐性契约 + 根因案例库（遇到 bug 时翻阅）
 ├── CARD_SYSTEM_DESIGN.md          # 统一卡片系统设计蓝图（待实现）
 └── archive/
-    ├── AI_COLLABORATION_PRINCIPLES.md # 通用 AI 协作守则
+    ├── AI_COLLABORATION_PRINCIPLES.md # 通用 AI 协作守则（被 KFM_V4_INVARIANTS.md 吸收）
     ├── ANIMATION_REFINEMENT_PLAN.md   # 动画优化方案（已过时）
     ├── STACK_CARDS_DESIGN.md          # 堆叠卡片配色设计（已改为随机 HSL）
     ├── HANDOFF_BRORB_FIX.md           # BR 光球类型守卫交接（已完成）
-    ├── BUG_FIXING_PHILOSOPHY.md       # 旧版 Bug 修复原则
+    ├── BUG_FIXING_PHILOSOPHY.md       # 旧版 Bug 修复原则（被 BUG_AUDIT_REGISTRY.md 取代）
     ├── CLAUDE_v2.md                   # 上一版 CLAUDE（已合并）
     ├── RACE_CONDITION_PLAN.md         # P1-P5 竞态方案（已完成）
     ├── REFACTOR_THESIS_FULL.md        # 愿景 + 架构蓝图（大部分已过时）
@@ -47,6 +48,14 @@ docs/
     ├── BUG_HANDOFF_ROOT_CHAR_RAIN.md  # 字符雨 bug 交接（已修复）
     └── HANDOFF_P3_REMAINING.md        # P3 遗留任务单（已完成）
 ```
+
+### 三份核心文档的分工
+
+| 文档 | 使用时机 | 职能 |
+|------|---------|------|
+| `KFM_V4_INVARIANTS.md` | **改代码前**必读 | 预防性——心法原则 + 架构约束 + 自查清单 |
+| `BUG_AUDIT_REGISTRY.md` | **遇到 bug 时**翻阅 | 诊断性——隐性契约 + 根因案例 + 排查路径 |
+| `HANDOFF_AUDIT.md` | **接手/交接时**同步 | 快照性——当前进度 + 未完成事项 |
 
 ## 目录结构
 
@@ -73,7 +82,7 @@ src/
 │       ├── canvas-scroll.ts       # 通用滚动系统
 │       ├── click-queue.ts         # 点击事件队列（P4 提取）
 │       ├── debug-assert.ts        # 运行时断言
-│       ├── debug-panel.ts         # 调试面板（青色，独立光球）
+│       ├── debug-panel.ts         # 调试面��（青色，独立光球）
 │       ├── app.ts                 # 全局初始化、日志、AI 输入栏
 │       ├── state.ts               # KFMState 统一状态层（发布-订阅 + beforeExpand Hook）
 │       ├── tree-model.ts          # Box 树构建（buildSidebarTree → buildExpanded）
