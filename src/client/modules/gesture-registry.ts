@@ -102,6 +102,8 @@ export class GestureRegistry {
   init(): void {
     if (this._initialized) return;
     this._initialized = true;
+    // 禁止浏览器接管触摸（否则 pointermove 会被提前终止）
+    document.body.style.touchAction = 'none';
     // pointerdown 用 passive:false 以支持 preventDefault（主光球需要阻止滚动）
     document.addEventListener('pointerdown', this._onStart, { passive: false });
     document.addEventListener('pointermove', this._onMove, { passive: true });

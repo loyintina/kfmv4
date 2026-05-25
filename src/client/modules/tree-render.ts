@@ -441,6 +441,7 @@ export function onSidebarOpen(): void {
   canvas.style.width = '100%';
   canvas.style.height = '100%';
   canvas.style.display = 'block';
+  canvas.style.touchAction = 'none';
 
   fileTree.innerHTML = '';          // 彻底销毁旧 DOM（包括旧 canvas）
   fileTree.appendChild(canvas);
@@ -540,6 +541,7 @@ export function initTreeRenderer(): void {
   canvas.style.width = '100%';
   canvas.style.height = '100%';
   canvas.style.display = 'block';
+  canvas.style.touchAction = 'none';
 
   fileTree.innerHTML = '';
   fileTree.appendChild(canvas);

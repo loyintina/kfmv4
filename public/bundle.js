@@ -197,6 +197,7 @@
     init() {
       if (this._initialized) return;
       this._initialized = true;
+      document.body.style.touchAction = "none";
       document.addEventListener("pointerdown", this._onStart, { passive: false });
       document.addEventListener("pointermove", this._onMove, { passive: true });
       document.addEventListener("pointerup", this._onEnd, { passive: true });
@@ -12116,6 +12117,7 @@
     canvas.style.width = "100%";
     canvas.style.height = "100%";
     canvas.style.display = "block";
+    canvas.style.touchAction = "none";
     fileTree.innerHTML = "";
     fileTree.appendChild(canvas);
     const dpr = window.devicePixelRatio || 1;
@@ -12200,6 +12202,7 @@
     canvas.style.width = "100%";
     canvas.style.height = "100%";
     canvas.style.display = "block";
+    canvas.style.touchAction = "none";
     fileTree.innerHTML = "";
     fileTree.appendChild(canvas);
     const dpr = window.devicePixelRatio || 1;
