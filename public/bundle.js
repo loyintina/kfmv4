@@ -5110,6 +5110,7 @@
   var _tl = null;
   var _floatingCards = [];
   var _nextFloatingZ = Z_FLOATING_BASE;
+  var _preEditState = "active";
   var _dragItem = null;
   var _dragStartX = 0;
   var _dragStartY = 0;
@@ -5360,7 +5361,7 @@
     }
   }
   function _exitFloatingEditMode(item) {
-    item.state = "active";
+    item.state = _preEditState;
     item.el.style.boxShadow = currentTheme.stack.blurShadow;
     debugLog("FLOAT edit exit");
   }
