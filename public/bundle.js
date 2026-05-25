@@ -229,9 +229,11 @@
       var _a;
       if (!this._enabled) return;
       if (e.button !== 0) return;
-      this._active = null;
       const target = e.target;
       if (!target) return;
+      if (this._active && this._active.handler.id === "card-stack-global") {
+      }
+      this._active = null;
       for (const handler of this._handlers) {
         if (handler.condition && !handler.condition()) continue;
         if (!this._matchTarget(handler, target, e)) continue;
@@ -268,6 +270,8 @@
       if (!this._enabled) return;
       const active = this._active;
       if (!active) return;
+      if (active.handler.id === "card-stack-global") {
+      }
       const dx = e.clientX - active.startX;
       const dy = e.clientY - active.startY;
       const elapsed = Date.now() - active.startTime;
@@ -5747,7 +5751,12 @@
       }
     }
   }
+  function _setSidebarTouchAreaEnabled(enabled) {
+    const box = document.getElementById("sidebarTouchArea");
+    if (box) box.style.pointerEvents = enabled ? "auto" : "none";
+  }
   function openCardStack() {
+    _setSidebarTouchAreaEnabled(false);
     if (_state === "open" || _state === "opening") return;
     if (_state === "closing" && _tl) {
       _generateRandomAccents();
@@ -5790,6 +5799,7 @@
     }
   }
   function closeCardStack() {
+    _setSidebarTouchAreaEnabled(true);
     if (_state === "closed" || _state === "closing") return;
     if (_state === "opening" && _tl) {
       _state = "closing";

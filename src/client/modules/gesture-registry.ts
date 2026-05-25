@@ -140,11 +140,15 @@ export class GestureRegistry {
     if (!this._enabled) return;
     // 只响应主按钮（左键/触摸主触点）
     if (e.button !== 0) return;
-    // 清除上一个手势（防御性）
-    this._active = null;
 
     const target = e.target as HTMLElement;
     if (!target) return;
+
+    if (this._active && this._active.handler.id === 'card-stack-global') {
+    }
+
+    // 清除上一个手势（防御性）
+    this._active = null;
 
     for (const handler of this._handlers) {
       // 条件检查
@@ -192,6 +196,9 @@ export class GestureRegistry {
     if (!this._enabled) return;
     const active = this._active;
     if (!active) return;
+
+    if (active.handler.id === 'card-stack-global') {
+    }
 
     const dx = e.clientX - active.startX;
     const dy = e.clientY - active.startY;

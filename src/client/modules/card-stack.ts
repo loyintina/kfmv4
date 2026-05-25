@@ -921,7 +921,15 @@ function _updateCardStyles(): void {
   }
 }
 
+
+/** 卡片堆打开时禁用 sidebarTouchArea 的触摸拦截 */
+function _setSidebarTouchAreaEnabled(enabled: boolean): void {
+  const box = document.getElementById('sidebarTouchArea');
+  if (box) box.style.pointerEvents = enabled ? 'auto' : 'none';
+}
+
 export function openCardStack(): void {
+  _setSidebarTouchAreaEnabled(false);
   if (_state === 'open' || _state === 'opening') return;
   if (_state === 'closing' && _tl) {
     _generateRandomAccents();
@@ -966,6 +974,7 @@ export function openCardStack(): void {
 }
 
 export function closeCardStack(): void {
+  _setSidebarTouchAreaEnabled(true);
   if (_state === 'closed' || _state === 'closing') return;
   // 关闭卡片堆时��销毁已召唤的浮卡
 
