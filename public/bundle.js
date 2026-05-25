@@ -5751,12 +5751,7 @@
       }
     }
   }
-  function _setSidebarTouchAreaEnabled(enabled) {
-    const box = document.getElementById("sidebarTouchArea");
-    if (box) box.style.pointerEvents = enabled ? "auto" : "none";
-  }
   function openCardStack() {
-    _setSidebarTouchAreaEnabled(false);
     if (_state === "open" || _state === "opening") return;
     if (_state === "closing" && _tl) {
       _generateRandomAccents();
@@ -5799,7 +5794,6 @@
     }
   }
   function closeCardStack() {
-    _setSidebarTouchAreaEnabled(true);
     if (_state === "closed" || _state === "closing") return;
     if (_state === "opening" && _tl) {
       _state = "closing";
@@ -11586,9 +11580,10 @@
     let cursorLastTouchY = 0;
     let cursorLastTouchTime = 0;
     let cursorVelocity = 0;
-    canvas.addEventListener("touchstart", (e) => {
+    canvas.addEventListener("pointerdown", (e) => {
       var _a, _b, _c;
-      const y = e.touches[0].clientY;
+      if (e.button !== 0) return;
+      const y = e.clientY;
       lastTouchY = y;
       lastTouchTime = performance.now();
       if (L._flingRaf) {
@@ -11629,9 +11624,9 @@
         }
       }
     }, { passive: true });
-    canvas.addEventListener("touchmove", (e) => {
+    canvas.addEventListener("pointermove", (e) => {
       var _a, _b;
-      const y = e.touches[0].clientY;
+      const y = e.clientY;
       const now = performance.now();
       if (_touchIsCursor) {
         const dy2 = cursorTouchStartY - y;
@@ -11704,7 +11699,7 @@
         }
       }
     }, { passive: true });
-    canvas.addEventListener("touchend", () => {
+    canvas.addEventListener("pointerup", () => {
       var _a, _b, _c;
       if (_touchIsCursor) {
         if (Math.abs(cursorVelocity) >= 0.5 && L._rowIndex.length > 0) {
@@ -12263,14 +12258,13 @@
     });
     ;
     let sx = 0, sy = 0;
-    box.addEventListener("touchstart", (e) => {
-      sx = e.touches[0].clientX;
-      sy = e.touches[0].clientY;
+    box.addEventListener("pointerdown", (e) => {
+      sx = e.clientX;
+      sy = e.clientY;
     }, { passive: true });
-    box.addEventListener("touchend", (e) => {
-      const touch = e.changedTouches[0];
-      const dx = sx - touch.clientX;
-      const dy = Math.abs(sy - touch.clientY);
+    box.addEventListener("pointerup", (e) => {
+      const dx = sx - e.clientX;
+      const dy = Math.abs(sy - e.clientY);
       if (dx > 60 && dx > dy * 1.5) closeSidebar();
     });
   }

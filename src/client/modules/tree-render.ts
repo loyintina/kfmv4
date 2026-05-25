@@ -609,14 +609,13 @@ function _createSidebarTouchArea(): void {
 
   // 右往左滑 → 关闭左栏（垂直主导时不触发，避免斜滑误触）
   let sx = 0, sy = 0;
-  box.addEventListener('touchstart', (e) => {
-    sx = e.touches[0].clientX;
-    sy = e.touches[0].clientY;
+  box.addEventListener('pointerdown', (e) => {
+    sx = e.clientX;
+    sy = e.clientY;
   }, { passive: true });
-  box.addEventListener('touchend', (e) => {
-    const touch = e.changedTouches[0];
-    const dx = sx - touch.clientX;             // 正 = 向左
-    const dy = Math.abs(sy - touch.clientY);   // 垂直移动距离
+  box.addEventListener('pointerup', (e) => {
+    const dx = sx - e.clientX;             // 正 = 向左
+    const dy = Math.abs(sy - e.clientY);   // 垂直移动距离
     if (dx > 60 && dx > dy * 1.5) closeSidebar();
   });
 }
@@ -1063,7 +1062,7 @@ function rebuildTree(): void {
     }
   }
 
-  // 保存当前滚动位置和����标行
+  // 保存��前滚动位置和����标行
   const prevScrollY = L.renderer.getRoot()?.scrollY ?? 0;
   const prevCursorRowId = L.cursorRowId;
 
@@ -1187,7 +1186,7 @@ function _ensureMetaFromExpandedState(root: Box): void {
   function walk(box: Box): void {
     for (const c of box.children) {
       if (c.id?.startsWith('expanded-')) {
-        // 防御性：如果 c.height 被渲染器重置为 0，从子元素推算
+        // 防御性：如果 c.height 被渲染器��置为 0，从子元素推算
         const h = c.height > 0 ? c.height
           : (c.children || []).reduce((s: number, ch: Box) => s + (ch.height > 0 ? ch.height : 0), 0);
         if (h > 0) {

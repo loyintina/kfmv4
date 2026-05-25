@@ -602,33 +602,21 @@ function _endFloatingDrag(): void {
 }
 
 function _bindBrDragEvents(brOrb: HTMLElement, item: FloatingCardItem): void {
-  brOrb.addEventListener('touchstart', (e: TouchEvent) => {
+  brOrb.addEventListener('pointerdown', (e: PointerEvent) => {
     e.stopPropagation();
     if (item.state !== 'active' && item.state !== 'editing') return;
-    const t = e.changedTouches[0];
-    _startFloatingDrag(item, t.clientX, t.clientY, t.identifier);
+    _startFloatingDrag(item, e.clientX, e.clientY, e.pointerId);
   });
 
-  brOrb.addEventListener('touchmove', (e: TouchEvent) => {
+  brOrb.addEventListener('pointermove', (e: PointerEvent) => {
     if (!_dragItem || _dragItem !== item) return;
     e.preventDefault();
-    for (const t of e.changedTouches) {
-      _handleFloatingDragMove(t.clientX, t.clientY, t.identifier);
-    }
+    _handleFloatingDragMove(e.clientX, e.clientY, e.pointerId);
   });
 
-  brOrb.addEventListener('touchend', (e: TouchEvent) => {
+  brOrb.addEventListener('pointerup', (_e: PointerEvent) => {
     if (!_dragItem || _dragItem !== item) return;
-    const stillActive = Array.from(e.touches).some(
-      t => t.identifier === _dragPointerId
-    );
-    if (!stillActive) _endFloatingDrag();
-  });
-
-  brOrb.addEventListener('mousedown', (e: MouseEvent) => {
-    e.stopPropagation();
-    if (item.state !== 'active' && item.state !== 'editing') return;
-    _startFloatingDrag(item, e.clientX, e.clientY);
+    _endFloatingDrag();
   });
 }
 
@@ -922,14 +910,7 @@ function _updateCardStyles(): void {
 }
 
 
-/** 卡片堆打开时禁用 sidebarTouchArea 的触摸拦截 */
-function _setSidebarTouchAreaEnabled(enabled: boolean): void {
-  const box = document.getElementById('sidebarTouchArea');
-  if (box) box.style.pointerEvents = enabled ? 'auto' : 'none';
-}
-
 export function openCardStack(): void {
-  _setSidebarTouchAreaEnabled(false);
   if (_state === 'open' || _state === 'opening') return;
   if (_state === 'closing' && _tl) {
     _generateRandomAccents();
@@ -974,7 +955,6 @@ export function openCardStack(): void {
 }
 
 export function closeCardStack(): void {
-  _setSidebarTouchAreaEnabled(true);
   if (_state === 'closed' || _state === 'closing') return;
   // 关闭卡片堆时��销毁已召唤的浮卡
 

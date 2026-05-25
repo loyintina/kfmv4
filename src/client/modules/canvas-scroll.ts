@@ -135,8 +135,9 @@ export function bindScrollEvents(canvas: HTMLElement): void {
   let cursorLastTouchTime = 0;
   let cursorVelocity = 0;
 
-  canvas.addEventListener('touchstart', (e) => {
-    const y = e.touches[0].clientY;
+  canvas.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    const y = e.clientY;
     lastTouchY = y;
     lastTouchTime = performance.now();
     // 取消所有进���中的 RAF
@@ -176,8 +177,8 @@ export function bindScrollEvents(canvas: HTMLElement): void {
     }
   }, { passive: true });
 
-  canvas.addEventListener('touchmove', (e) => {
-    const y = e.touches[0].clientY;
+  canvas.addEventListener('pointermove', (e) => {
+    const y = e.clientY;
     const now = performance.now();
 
     if (_touchIsCursor) {
@@ -260,7 +261,7 @@ export function bindScrollEvents(canvas: HTMLElement): void {
     }
   }, { passive: true });
 
-  canvas.addEventListener('touchend', () => {
+  canvas.addEventListener('pointerup', () => {
     if (_touchIsCursor) {
       if (Math.abs(cursorVelocity) >= 0.5 && L._rowIndex.length > 0) {
         // 将起点更新为当前光标位置，避免飞回 touchstart ����置
