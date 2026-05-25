@@ -5843,6 +5843,7 @@
         _prevDx = 0;
       },
       onMove: (_e, dx, dy) => {
+        debugLog("[cs] dy=" + Math.round(dy) + " axis=" + _axisLock + " focus=" + _focusIndex);
         if (_axisLock === "none" && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
           _axisLock = Math.abs(dx) > Math.abs(dy) ? "horizontal" : "vertical";
         }
