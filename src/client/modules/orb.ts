@@ -1,25 +1,30 @@
 /**
  * KFM v4 - 悬浮光球 + 召唤面板
  *
- * 基于 orb-template.ts 的用例：中央光球 = 通用模板的特例。
+ * 交互模式：
+ * - 点击光球 → 展开/收起面板
+ * - 拖动光球 → 移动位置（光球始终在面板右下角）
+ * - 长按进入编辑模式，拖动光球调整面板大小，松手自动退出
  *
- * 与模板的映射：
- * - compact（无卡片，只有光球）→ orbState='collapsed'
- * - expanded（有面板，隐藏 TL/TR/BL）→ orbState='expanded'
- * - editing（编辑面板大小）→ orbState='editing'
+ * 约束：
+ * - 光球始终在输入栏上方
+ * - 光球 z-index > 面板 z-index（光球压住面板）
+ * - 面板随光球移动，超出屏幕时自动压缩，回来时恢复
  */
 
 import { measureText, layoutLines } from '../engine/text-layout/index.js';
 import { gestures } from './gesture-registry.js';
 import { DOM } from "./dom-refs.js";
 import { currentTheme as theme } from './theme.js';
-import { createOrbTemplate, calcPanelTarget } from '../templates/orb-template.js';
 
 interface ChatMessage {
   role: 'user' | 'ai';
   text: string;
 }
 
+type OrbState = 'collapsed' | 'expanded' | 'editing';
+
+let orbState: OrbState = 'collapsed';
 let orbEl: HTMLDivElement | null = null;
 let panelEl: HTMLDivElement | null = null;
 
@@ -27,12 +32,28 @@ const PANEL_MIN_WIDTH = 120;
 const PANEL_MIN_HEIGHT = 100;
 const PANEL_DEFAULT_WIDTH = 300;
 const PANEL_DEFAULT_HEIGHT = 350;
-const ORB_SIZE = 36;
-const MARGIN = 8;
+let panelWidth = PANEL_DEFAULT_WIDTH;
+let panelHeight = PANEL_DEFAULT_HEIGHT;
 
 // 实际渲染尺寸（可能被压缩）
 let renderWidth = PANEL_DEFAULT_WIDTH;
 let renderHeight = PANEL_DEFAULT_HEIGHT;
+
+let dragging = false;
+let dragStartX = 0;
+let dragStartY = 0;
+let dragStartOrbX = 0;
+let dragStartOrbY = 0;
+let dragStartPanelX = 0;
+let dragStartPanelY = 0;
+
+let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+let longPressFired = false;
+const LONG_PRESS_MS = 600;
+
+const ORB_SIZE = 36;
+const ORB_HALF = ORB_SIZE / 2;
+const MARGIN = 8;
 
 const chatMessages: ChatMessage[] = [
   { role: 'ai', text: '你好，我是蔚然。有什么可以帮你的吗？' },
@@ -48,14 +69,26 @@ function getInputBarTop(): number {
 }
 
 
-// ========== 面板目标位置计算（基于模板的 calcPanelTarget） ==========
+// ========== 面板目标位置计算 ==========
 function getPanelTargetPosition(orbCX: number, orbCY: number): { left: number; top: number; width: number; height: number } {
-  const pw = _orbAPI ? _orbAPI.panelWidth : PANEL_DEFAULT_WIDTH;
-  const ph = _orbAPI ? _orbAPI.panelHeight : PANEL_DEFAULT_HEIGHT;
-  const target = calcPanelTarget(orbCX, orbCY, pw, ph, PANEL_MIN_WIDTH, PANEL_MIN_HEIGHT, MARGIN);
-  renderWidth = target.width;
-  renderHeight = target.height;
-  return target;
+  let w = panelWidth;
+  let h = panelHeight;
+  const availLeft = orbCX - MARGIN;
+  const availTop = orbCY - MARGIN;
+  if (availLeft < w) w = Math.max(PANEL_MIN_WIDTH, availLeft);
+  if (availTop < h) h = Math.max(PANEL_MIN_HEIGHT, availTop);
+  return { left: orbCX - w, top: orbCY - h, width: w, height: h };
+}
+// ========== 光球位置约束 ==========
+function clampOrbPosition(x: number, y: number): { x: number; y: number } {
+  const maxX = window.innerWidth - ORB_SIZE - MARGIN;
+  const minX = MARGIN;
+  const maxY = getInputBarTop() - ORB_SIZE - MARGIN;
+  const minY = MARGIN;
+  return {
+    x: Math.max(minX, Math.min(maxX, x)),
+    y: Math.max(minY, Math.min(maxY, y)),
+  };
 }
 
 // ========== 面板创建 ==========
@@ -137,6 +170,48 @@ function escapeHtml(str: string): string {
 }
 
 // ========== 面板布局（核心：光球在面板右下角，超出时压缩） ==========
+function updatePanelPosition(): void {
+  if (!orbEl || !panelEl) return;
+  const orbRect = orbEl.getBoundingClientRect();
+  const orbCX = orbRect.left + ORB_HALF;
+  const orbCY = orbRect.top + ORB_HALF;
+
+  // 面板理想位置：右下角 = 光球圆心
+  const idealLeft = orbCX - panelWidth;
+  const idealTop = orbCY - panelHeight;
+
+  // 边界约束：面板不能超出屏幕
+  const screenLeft = MARGIN;
+  const screenTop = MARGIN;
+  const screenRight = window.innerWidth - MARGIN;
+  const screenBottom = getInputBarTop() - MARGIN;
+
+  // 计算可用空间（从光球圆心往左和往上的最大距离）
+  const availLeft = orbCX - screenLeft;
+  const availTop = orbCY - screenTop;
+  const availRight = screenRight - orbCX;
+  const availBottom = screenBottom - orbCY;
+
+  // 面板实际渲染尺寸：尽可能接近设定值，但不能超出可用空间
+  renderWidth = Math.max(PANEL_MIN_WIDTH, Math.min(panelWidth, availLeft));
+  renderHeight = Math.max(PANEL_MIN_HEIGHT, Math.min(panelHeight, availTop));
+
+  // 面板定位：默认右下角对齐光球圆心
+  let panelLeft = orbCX - renderWidth;
+  let panelTop = orbCY - renderHeight;
+
+  // 编辑模式：左上角固定，只改变大小不改变位置
+  if (orbState === 'editing') {
+    panelLeft = dragStartPanelX;
+    panelTop = dragStartPanelY;
+  }
+
+  panelEl.style.left = Math.max(screenLeft, panelLeft) + 'px';
+  panelEl.style.top = Math.max(screenTop, panelTop) + 'px';
+  panelEl.style.width = renderWidth + 'px';
+  panelEl.style.height = renderHeight + 'px';
+}
+
 // ========== 面板内容 ==========
 function buildPanelContent(): void {
   if (!panelEl) return;
@@ -147,29 +222,250 @@ function buildPanelContent(): void {
   `;
 }
 
-// ========== 状态标签 ==========
-function updateStateLabel(state: string): void {
+// ========== 状态切换 ==========
+function expandPanel(): void {
+  if (!panelEl) panelEl = createPanel();
+  if (orbState === 'collapsed') {
+    orbState = 'expanded';
+    buildPanelContent();
+    updatePanelPosition();
+    renderChatContent();
+    panelEl.style.opacity = '1';
+    panelEl.style.pointerEvents = 'auto';
+    updateStateLabel();
+  }
+}
+
+function collapsePanel(): void {
+  if (orbState === 'expanded') {
+    orbState = 'collapsed';
+    if (panelEl) {
+      panelEl.style.opacity = '0';
+      panelEl.style.pointerEvents = 'none';
+    }
+    updateStateLabel();
+  }
+}
+
+function enterEditMode(): void {
+  if (orbState !== 'expanded') return;
+  orbState = 'editing';
+
+  // 重新读取当前位置（普通拖拽阶段可能已改变）
+  if (panelEl) {
+    const rect = orbEl!.getBoundingClientRect();
+    dragStartOrbX = rect.left;
+    dragStartOrbY = rect.top;
+    dragStartPanelX = parseFloat(panelEl.style.left) || 0;
+    dragStartPanelY = parseFloat(panelEl.style.top) || 0;
+    panelEl.style.boxShadow = theme.aiChat.panelShadowEdit;
+  }
+  updateStateLabel();
+}
+
+function exitEditMode(): void {
+  if (orbState !== 'editing') return;
+  orbState = 'expanded';
+  if (panelEl) {
+    panelEl.style.boxShadow = theme.aiChat.panelShadow;
+  }
+  renderChatContent();
+  updateStateLabel();
+}
+
+function togglePanel(): void {
+  if (orbState === 'collapsed') expandPanel();
+  else if (orbState === 'expanded') collapsePanel();
+}
+
+function updateStateLabel(): void {
   if (!panelEl) return;
   const label = DOM.orbPanelState(panelEl);
   if (!label) return;
-  const labels: Record<string, string> = { compact: '', expanded: '长按编辑大小', editing: '拖动调整大小 · 松手完成' };
-  label.textContent = labels[state] || '';
+  const labels: Record<OrbState, string> = { collapsed: '', expanded: '长按编辑大小', editing: '拖动调整大小 · 松手完成' };
+  label.textContent = labels[orbState];
 }
 
-// ========== 基于模板的交互内核 ==========
-let _orbAPI: ReturnType<typeof createOrbTemplate> | null = null;
+// ========== 拖动通用逻辑 ==========
+function handleDragMove(dx: number, dy: number): void {
+  if (!orbEl) return;
+
+  if (orbState === 'editing') {
+    // 编辑模式：光球始终贴在面板右下角（缩放手柄行为）
+    const rawX = dragStartOrbX + dx;
+    const rawY = dragStartOrbY + dy;
+    const screenClamped = clampOrbPosition(rawX, rawY);
+
+    // 光球不能越过面板最小尺寸的右下角（缩到最小时停在角上）
+    const minOrbX = dragStartPanelX + PANEL_MIN_WIDTH - ORB_HALF;
+    const minOrbY = dragStartPanelY + PANEL_MIN_HEIGHT - ORB_HALF;
+    const orbX = Math.max(minOrbX, screenClamped.x);
+    const orbY = Math.max(minOrbY, screenClamped.y);
+
+    const orbCX = orbX + ORB_HALF;
+    const orbCY = orbY + ORB_HALF;
+    panelWidth = Math.max(PANEL_MIN_WIDTH, orbCX - dragStartPanelX);
+    panelHeight = Math.max(PANEL_MIN_HEIGHT, orbCY - dragStartPanelY);
+
+    orbEl.style.left = orbX + 'px';
+    orbEl.style.top = orbY + 'px';
+    orbEl.style.right = 'auto';
+    orbEl.style.bottom = 'auto';
+
+    updatePanelPosition();
+    renderChatContent();
+  } else {
+    // 普通拖动
+    const rawX = dragStartOrbX + dx;
+    const rawY = dragStartOrbY + dy;
+    const clamped = clampOrbPosition(rawX, rawY);
+
+    orbEl.style.left = clamped.x + 'px';
+    orbEl.style.top = clamped.y + 'px';
+    orbEl.style.right = 'auto';
+    orbEl.style.bottom = 'auto';
+    orbEl.style.transition = 'none';
+
+    if (orbState === 'expanded' && panelEl) {
+      updatePanelPosition();
+      renderChatContent();
+    }
+  }
+}
+
+function startDrag(x: number, y: number): void {
+  dragging = false;
+  longPressFired = false;
+  dragStartX = x;
+  dragStartY = y;
+
+  const rect = orbEl!.getBoundingClientRect();
+  dragStartOrbX = rect.left;
+  dragStartOrbY = rect.top;
+
+  if (panelEl) {
+    dragStartPanelX = parseFloat(panelEl.style.left) || 0;
+    dragStartPanelY = parseFloat(panelEl.style.top) || 0;
+  }
+
+  longPressTimer = setTimeout(() => {
+    longPressFired = true;
+    if (orbState === 'expanded') enterEditMode();
+    else if (orbState === 'editing') exitEditMode();
+  }, LONG_PRESS_MS);
+}
+
+function moveDrag(x: number, y: number): void {
+  const dx = x - dragStartX;
+  const dy = y - dragStartY;
+  if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+    dragging = true;
+    if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+  }
+  if (!dragging) return;
+  handleDragMove(dx, dy);
+}
+
+function endDrag(): void {
+  if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+  if (orbEl) {
+    orbEl.style.transition = 'box-shadow .2s';
+    // 更新自由位置
+    const rect = orbEl.getBoundingClientRect();
+    freeOrbX = rect.left;
+    freeOrbY = rect.top;
+  }
+  // 松手时如果处于编辑模式，直接退出
+  if (orbState === 'editing') {
+    exitEditMode();
+  }
+  if (!dragging && !longPressFired) togglePanel();
+  dragging = false;
+}
 
 // ========== 监听输入栏位置变化（输入法弹出时光球跟随） ==========
-let _lastBarTop = -1;
-let _isOrbPushed = false;
+// 记录光球的"自由位置"（不受输入栏约束时的位置）
+let freeOrbX = -1;
+let freeOrbY = -1;
+let lastBarTop = -1;
+let isOrbPushed = false; // 光球是否因输入栏被挤压
 
 function initInputBarWatcher(): void {
   const check = () => {
-    if (!orbEl || !_orbAPI) { requestAnimationFrame(check); return; }
+    if (!orbEl) { requestAnimationFrame(check); return; }
     const barTop = getInputBarTop();
-    if (barTop !== _lastBarTop) {
-      _lastBarTop = barTop;
-      // 光球和面板会由模板的 constraintRect 自动适配
+
+    // 首次初始化自由位置
+    if (freeOrbX === -1) {
+      const rect = orbEl.getBoundingClientRect();
+      freeOrbX = rect.left;
+      freeOrbY = rect.top;
+      lastBarTop = barTop;
+    }
+
+    if (barTop !== lastBarTop) {
+      lastBarTop = barTop;
+
+      const clamped = clampOrbPosition(freeOrbX, freeOrbY);
+      const needsPush = (freeOrbY !== clamped.y);
+
+      const orbRect = orbEl.getBoundingClientRect();
+      const orbCurrentX = orbRect.left;
+      const orbCurrentY = orbRect.top;
+
+      let orbTargetX = orbCurrentX;
+      let orbTargetY = orbCurrentY;
+
+      if (needsPush) {
+        isOrbPushed = true;
+        orbTargetX = clamped.x;
+        orbTargetY = clamped.y;
+      } else if (isOrbPushed) {
+        isOrbPushed = false;
+        orbTargetX = freeOrbX;
+        orbTargetY = freeOrbY;
+      } else {
+        requestAnimationFrame(check);
+        return;
+      }
+
+      orbEl.style.right = 'auto';
+      orbEl.style.bottom = 'auto';
+
+      // 光球平滑动画
+      const orbAnim = orbEl.animate(
+        [
+          { left: orbCurrentX + 'px', top: orbCurrentY + 'px' },
+          { left: orbTargetX + 'px', top: orbTargetY + 'px' }
+        ],
+        { duration: 100, easing: 'cubic-bezier(.4,0,.2,1)' }
+      );
+      orbAnim.onfinish = () => {
+        orbEl!.style.left = orbTargetX + 'px';
+        orbEl!.style.top = orbTargetY + 'px';
+      };
+
+      // 面板同步平滑动画
+      if (panelEl && orbState !== 'collapsed') {
+        const panelRect = panelEl.getBoundingClientRect();
+        const panelTarget = getPanelTargetPosition(orbTargetX + ORB_HALF, orbTargetY + ORB_HALF);
+        const panelAnim = panelEl.animate(
+          [
+            { left: panelRect.left + 'px', top: panelRect.top + 'px', width: panelRect.width + 'px', height: panelRect.height + 'px' },
+            { left: panelTarget.left + 'px', top: panelTarget.top + 'px', width: panelTarget.width + 'px', height: panelTarget.height + 'px' }
+          ],
+          { duration: 100, easing: 'cubic-bezier(.4,0,.2,1)' }
+        );
+        panelAnim.onfinish = () => {
+          panelEl!.style.left = panelTarget.left + 'px';
+          panelEl!.style.top = panelTarget.top + 'px';
+          panelEl!.style.width = panelTarget.width + 'px';
+          panelEl!.style.height = panelTarget.height + 'px';
+          renderWidth = panelTarget.width;
+          renderHeight = panelTarget.height;
+          if (orbState === 'expanded') renderChatContent();
+        };
+      }
     }
     requestAnimationFrame(check);
   };
@@ -180,78 +476,38 @@ function initInputBarWatcher(): void {
 export function initOrb(): void {
   orbEl = DOM.lightOrb;
   if (!orbEl) return;
+
+  // 确保光球 z-index > 面板
   orbEl.style.zIndex = '210';
 
-  // 创建模板实例
-  _orbAPI = createOrbTemplate({
-    anchor: orbEl,
-    anchorSize: ORB_SIZE,
-    minWidth: PANEL_MIN_WIDTH,
-    minHeight: PANEL_MIN_HEIGHT,
-    defaultWidth: PANEL_DEFAULT_WIDTH,
-    defaultHeight: PANEL_DEFAULT_HEIGHT,
-    constraintRect: () => ({
-      top: 8,
-      left: 8,
-      right: window.innerWidth - 8,
-      bottom: getInputBarTop() - 8,
-    }),
-    clickToggle: () => {
-      if (_orbAPI!.state === 'compact') {
-        if (!panelEl) panelEl = createPanel();
-        panelEl.style.opacity = '1';
-        panelEl.style.pointerEvents = 'auto';
-        buildPanelContent();
-        _orbAPI!.panelWidth = PANEL_DEFAULT_WIDTH;
-        _orbAPI!.panelHeight = PANEL_DEFAULT_HEIGHT;
-        renderChatContent();
-        updateStateLabel('expanded');
-      } else {
-        if (panelEl) {
-          panelEl.style.opacity = '0';
-          panelEl.style.pointerEvents = 'none';
-        }
-        updateStateLabel('compact');
-      }
-    },
-    onUpdatePosition: (_s, cx, cy, _pw, _ph) => {
-      if (!panelEl) return;
-      const target = getPanelTargetPosition(cx, cy);
-      panelEl.style.left = target.left + 'px';
-      panelEl.style.top = target.top + 'px';
-      panelEl.style.width = target.width + 'px';
-      panelEl.style.height = target.height + 'px';
-    },
-    onEnterEdit: () => {
-      if (panelEl) panelEl.style.boxShadow = theme.aiChat.panelShadowEdit;
-      updateStateLabel('editing');
-    },
-    onExitEdit: () => {
-      if (panelEl) panelEl.style.boxShadow = theme.aiChat.panelShadow;
-      renderChatContent();
-      updateStateLabel('expanded');
-    },
-  });
+  // 初始位置约束
+  const initRect = orbEl.getBoundingClientRect();
+  const clamped = clampOrbPosition(initRect.left, initRect.top);
+  orbEl.style.left = clamped.x + 'px';
+  orbEl.style.top = clamped.y + 'px';
+  orbEl.style.right = 'auto';
+  orbEl.style.bottom = 'auto';
+  freeOrbX = clamped.x;
+  freeOrbY = clamped.y;
 
-  // 获取模板的 startDrag/moveDrag/endDrag
-  const { startDrag: s, moveDrag: m, endDrag: e } = _orbAPI;
-
+  // 统一输入事件 -> GestureRegistry（PointerEvent 覆盖 touch + mouse）
   gestures.register({
     id: "orb",
     targetFilter: ".light-orb",
     priority: 100,
     stopPropagation: true,
-    onStart: (ev: PointerEvent) => {
-      ev.preventDefault();
-      s(ev.clientX, ev.clientY);
+    onStart: (e: PointerEvent) => {
+      e.preventDefault();
+      startDrag(e.clientX, e.clientY);
     },
-    onMove: (ev: PointerEvent) => {
-      m(ev.clientX, ev.clientY);
+    onMove: (e: PointerEvent) => {
+      moveDrag(e.clientX, e.clientY);
     },
     onEnd: () => {
-      e();
+      endDrag();
     },
   });
 
+  // 监听输入栏位置
   initInputBarWatcher();
 }

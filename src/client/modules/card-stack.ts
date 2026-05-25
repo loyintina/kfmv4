@@ -134,6 +134,8 @@ interface FloatingCardItem {
 }
 let _floatingCards: FloatingCardItem[] = [];
 let _nextFloatingZ = Z_FLOATING_BASE;
+/** 记录进入编辑模式前的状态，退出时恢复 */
+let _preEditState: 'compact' | 'active' = 'active';
 
 // ========== 浮卡拖拽状态 ==========
 let _dragItem: FloatingCardItem | null = null;
@@ -445,6 +447,8 @@ function _clearFloatingDragTimer(): void {
 }
 
 function _enterFloatingEditMode(item: FloatingCardItem): void {
+  // 记录编辑前的状态，退出时恢复
+  _preEditState = item.state === 'compact' ? 'compact' : 'active';
   // 进入编辑模式前重新读取当前位置（普通拖拽阶段已改变卡片位置）
   const cardRect = item.el.getBoundingClientRect();
   _dragStartLeft = cardRect.left;
@@ -470,7 +474,7 @@ function _enterFloatingEditMode(item: FloatingCardItem): void {
 }
 
 function _exitFloatingEditMode(item: FloatingCardItem): void {
-  item.state = 'active';
+  item.state = _preEditState;
   item.el.style.boxShadow = theme.stack.blurShadow;
   debugLog("FLOAT edit exit");
 }
@@ -502,7 +506,7 @@ function _startFloatingDrag(item: FloatingCardItem, clientX: number, clientY: nu
 
   _dragLongPressTimer = setTimeout(() => {
     _dragLongPressFired = true;
-    if (item.state === 'active') {
+    if (item.state === 'compact' || item.state === 'active') {
       _enterFloatingEditMode(item);
     }
   }, 600);
@@ -604,7 +608,7 @@ function _endFloatingDrag(): void {
 function _bindBrDragEvents(brOrb: HTMLElement, item: FloatingCardItem): void {
   brOrb.addEventListener('pointerdown', (e: PointerEvent) => {
     e.stopPropagation();
-    if (item.state !== 'active' && item.state !== 'editing') return;
+    if (item.state !== 'compact' && item.state !== 'active' && item.state !== 'editing') return;
     _startFloatingDrag(item, e.clientX, e.clientY, e.pointerId);
   });
 
@@ -695,7 +699,7 @@ export function launchFocusedCard(): void {
       item.state = 'expanding';
       brOrb.title = cardName + ' · 点击折叠';
       _buildExpandedLayout(el, cc, cardName);
-      // 以右下角光球为锚点展开：卡片向左上扩展
+      // 以右下角光球为锚点展开���卡片向左上扩展
       const curLeft = parseFloat(el.style.left) || targetPos.left;
       const curTop = parseFloat(el.style.top) || targetPos.top;
       anim.to(el, {

@@ -14435,192 +14435,31 @@
     return lines.map((l) => ({ text: l.text, width: l.width }));
   }
 
-  // src/client/templates/orb-template.ts
-  function defaultConstraintRect() {
-    const inputBar = document.getElementById("aiInputBar");
-    const bottom = inputBar ? inputBar.getBoundingClientRect().top : window.innerHeight;
-    return {
-      top: 8,
-      left: 8,
-      right: window.innerWidth - 8,
-      bottom: bottom - 8
-    };
-  }
-  function createOrbTemplate(cfg) {
-    const {
-      anchor,
-      anchorSize,
-      minWidth,
-      minHeight,
-      defaultWidth,
-      defaultHeight,
-      clickToggle,
-      onUpdatePosition,
-      onEnterEdit,
-      onExitEdit,
-      constraintRect = defaultConstraintRect
-    } = cfg;
-    const ORB_HALF2 = anchorSize / 2;
-    const LONG_PRESS_MS2 = 600;
-    const DRAG_THRESHOLD = 5;
-    let _state2 = "compact";
-    let _panelWidth = defaultWidth;
-    let _panelHeight = defaultHeight;
-    let _dragging = false;
-    let _dragStartX2 = 0;
-    let _dragStartY2 = 0;
-    let _dragStartAnchorX = 0;
-    let _dragStartAnchorY = 0;
-    let _dragStartPanelLeft = 0;
-    let _dragStartPanelTop = 0;
-    let _longPressTimer = null;
-    let _longPressFired = false;
-    let _freeX = -1;
-    let _freeY = -1;
-    function clamp3(x, y) {
-      const rect = constraintRect();
-      return {
-        x: Math.max(rect.left, Math.min(rect.right - anchorSize, x)),
-        y: Math.max(rect.top, Math.min(rect.bottom - anchorSize, y))
-      };
-    }
-    function triggerPositionUpdate() {
-      const r = anchor.getBoundingClientRect();
-      const cx = r.left + ORB_HALF2;
-      const cy = r.top + ORB_HALF2;
-      onUpdatePosition(_state2, cx, cy, _panelWidth, _panelHeight);
-    }
-    function enterEdit2() {
-      if (_state2 !== "expanded") return;
-      _state2 = "editing";
-      const rect = anchor.getBoundingClientRect();
-      _dragStartAnchorX = rect.left;
-      _dragStartAnchorY = rect.top;
-      onEnterEdit == null ? void 0 : onEnterEdit();
-      triggerPositionUpdate();
-    }
-    function exitEdit2() {
-      if (_state2 !== "editing") return;
-      _state2 = "expanded";
-      onExitEdit == null ? void 0 : onExitEdit();
-    }
-    const api = {
-      get state() {
-        return _state2;
-      },
-      get panelWidth() {
-        return _panelWidth;
-      },
-      get panelHeight() {
-        return _panelHeight;
-      },
-      set panelWidth(v) {
-        _panelWidth = v;
-      },
-      set panelHeight(v) {
-        _panelHeight = v;
-      },
-      startDrag(clientX, clientY) {
-        _dragging = false;
-        _longPressFired = false;
-        _dragStartX2 = clientX;
-        _dragStartY2 = clientY;
-        const rect = anchor.getBoundingClientRect();
-        _dragStartAnchorX = rect.left;
-        _dragStartAnchorY = rect.top;
-        _dragStartPanelLeft = parseFloat(anchor.style.left) || rect.left;
-        _dragStartPanelTop = parseFloat(anchor.style.top) || rect.top;
-        _longPressTimer = setTimeout(() => {
-          _longPressFired = true;
-          if (_state2 === "expanded") enterEdit2();
-        }, LONG_PRESS_MS2);
-      },
-      moveDrag(clientX, clientY) {
-        const dx = clientX - _dragStartX2;
-        const dy = clientY - _dragStartY2;
-        if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
-          _dragging = true;
-          if (_longPressTimer) {
-            clearTimeout(_longPressTimer);
-            _longPressTimer = null;
-          }
-        }
-        if (!_dragging) return;
-        if (_state2 === "editing") {
-          const rawX = _dragStartAnchorX + dx;
-          const rawY = _dragStartAnchorY + dy;
-          const screenClamped = clamp3(rawX, rawY);
-          const minOrbX = _dragStartPanelLeft + minWidth - ORB_HALF2;
-          const minOrbY = _dragStartPanelTop + minHeight - ORB_HALF2;
-          const orbX = Math.max(minOrbX, screenClamped.x);
-          const orbY = Math.max(minOrbY, screenClamped.y);
-          const orbCX = orbX + ORB_HALF2;
-          const orbCY = orbY + ORB_HALF2;
-          _panelWidth = Math.max(minWidth, orbCX - _dragStartPanelLeft);
-          _panelHeight = Math.max(minHeight, orbCY - _dragStartPanelTop);
-          anchor.style.left = orbX + "px";
-          anchor.style.top = orbY + "px";
-          anchor.style.right = "auto";
-          anchor.style.bottom = "auto";
-          triggerPositionUpdate();
-        } else {
-          const rawX = _dragStartAnchorX + dx;
-          const rawY = _dragStartAnchorY + dy;
-          const clamped = clamp3(rawX, rawY);
-          anchor.style.left = clamped.x + "px";
-          anchor.style.top = clamped.y + "px";
-          anchor.style.right = "auto";
-          anchor.style.bottom = "auto";
-          anchor.style.transition = "none";
-          if (_state2 === "expanded") {
-            triggerPositionUpdate();
-          }
-        }
-      },
-      endDrag() {
-        if (_longPressTimer) {
-          clearTimeout(_longPressTimer);
-          _longPressTimer = null;
-        }
-        anchor.style.transition = "box-shadow .2s";
-        const rect = anchor.getBoundingClientRect();
-        _freeX = rect.left;
-        _freeY = rect.top;
-        if (_state2 === "editing") {
-          exitEdit2();
-        }
-        if (!_dragging && !_longPressFired) {
-          clickToggle();
-        }
-        _dragging = false;
-      }
-    };
-    const initRect = anchor.getBoundingClientRect();
-    _freeX = initRect.left;
-    _freeY = initRect.top;
-    return api;
-  }
-  function calcPanelTarget(cx, cy, panelW2, panelH2, minW, minH, margin = 8) {
-    let w = panelW2;
-    let h = panelH2;
-    const availLeft = cx - margin;
-    const availTop = cy - margin;
-    if (availLeft < w) w = Math.max(minW, availLeft);
-    if (availTop < h) h = Math.max(minH, availTop);
-    return { left: cx - w, top: cy - h, width: w, height: h };
-  }
-
   // src/client/modules/orb.ts
+  var orbState = "collapsed";
   var orbEl2 = null;
   var panelEl2 = null;
   var PANEL_MIN_WIDTH = 120;
   var PANEL_MIN_HEIGHT = 100;
   var PANEL_DEFAULT_WIDTH = 300;
   var PANEL_DEFAULT_HEIGHT = 350;
-  var ORB_SIZE2 = 36;
-  var MARGIN2 = 8;
+  var panelWidth = PANEL_DEFAULT_WIDTH;
+  var panelHeight = PANEL_DEFAULT_HEIGHT;
   var renderWidth = PANEL_DEFAULT_WIDTH;
   var renderHeight = PANEL_DEFAULT_HEIGHT;
+  var dragging2 = false;
+  var dragStartX = 0;
+  var dragStartY = 0;
+  var dragStartOrbX = 0;
+  var dragStartOrbY = 0;
+  var dragStartPanelX = 0;
+  var dragStartPanelY = 0;
+  var longPressTimer2 = null;
+  var longPressFired2 = false;
+  var LONG_PRESS_MS2 = 600;
+  var ORB_SIZE2 = 36;
+  var ORB_HALF2 = ORB_SIZE2 / 2;
+  var MARGIN2 = 8;
   var chatMessages = [
     { role: "ai", text: "\u4F60\u597D\uFF0C\u6211\u662F\u851A\u7136\u3002\u6709\u4EC0\u4E48\u53EF\u4EE5\u5E2E\u4F60\u7684\u5417\uFF1F" },
     { role: "user", text: "\u5E2E\u6211\u5206\u6790\u4E00\u4E0B\u5F53\u524D\u7684\u76EE\u5F55\u7ED3\u6784" },
@@ -14632,12 +14471,23 @@
     return bar.getBoundingClientRect().top;
   }
   function getPanelTargetPosition(orbCX, orbCY) {
-    const pw = _orbAPI ? _orbAPI.panelWidth : PANEL_DEFAULT_WIDTH;
-    const ph = _orbAPI ? _orbAPI.panelHeight : PANEL_DEFAULT_HEIGHT;
-    const target = calcPanelTarget(orbCX, orbCY, pw, ph, PANEL_MIN_WIDTH, PANEL_MIN_HEIGHT, MARGIN2);
-    renderWidth = target.width;
-    renderHeight = target.height;
-    return target;
+    let w = panelWidth;
+    let h = panelHeight;
+    const availLeft = orbCX - MARGIN2;
+    const availTop = orbCY - MARGIN2;
+    if (availLeft < w) w = Math.max(PANEL_MIN_WIDTH, availLeft);
+    if (availTop < h) h = Math.max(PANEL_MIN_HEIGHT, availTop);
+    return { left: orbCX - w, top: orbCY - h, width: w, height: h };
+  }
+  function clampOrbPosition(x, y) {
+    const maxX = window.innerWidth - ORB_SIZE2 - MARGIN2;
+    const minX = MARGIN2;
+    const maxY = getInputBarTop() - ORB_SIZE2 - MARGIN2;
+    const minY = MARGIN2;
+    return {
+      x: Math.max(minX, Math.min(maxX, x)),
+      y: Math.max(minY, Math.min(maxY, y))
+    };
   }
   function createPanel2() {
     const panel = document.createElement("div");
@@ -14705,6 +14555,34 @@
   function escapeHtml(str) {
     return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
+  function updatePanelPosition2() {
+    if (!orbEl2 || !panelEl2) return;
+    const orbRect = orbEl2.getBoundingClientRect();
+    const orbCX = orbRect.left + ORB_HALF2;
+    const orbCY = orbRect.top + ORB_HALF2;
+    const idealLeft = orbCX - panelWidth;
+    const idealTop = orbCY - panelHeight;
+    const screenLeft = MARGIN2;
+    const screenTop = MARGIN2;
+    const screenRight = window.innerWidth - MARGIN2;
+    const screenBottom = getInputBarTop() - MARGIN2;
+    const availLeft = orbCX - screenLeft;
+    const availTop = orbCY - screenTop;
+    const availRight = screenRight - orbCX;
+    const availBottom = screenBottom - orbCY;
+    renderWidth = Math.max(PANEL_MIN_WIDTH, Math.min(panelWidth, availLeft));
+    renderHeight = Math.max(PANEL_MIN_HEIGHT, Math.min(panelHeight, availTop));
+    let panelLeft = orbCX - renderWidth;
+    let panelTop = orbCY - renderHeight;
+    if (orbState === "editing") {
+      panelLeft = dragStartPanelX;
+      panelTop = dragStartPanelY;
+    }
+    panelEl2.style.left = Math.max(screenLeft, panelLeft) + "px";
+    panelEl2.style.top = Math.max(screenTop, panelTop) + "px";
+    panelEl2.style.width = renderWidth + "px";
+    panelEl2.style.height = renderHeight + "px";
+  }
   function buildPanelContent2() {
     if (!panelEl2) return;
     panelEl2.innerHTML = `
@@ -14713,24 +14591,215 @@
 "></div>
   `;
   }
-  function updateStateLabel(state2) {
+  function expandPanel2() {
+    if (!panelEl2) panelEl2 = createPanel2();
+    if (orbState === "collapsed") {
+      orbState = "expanded";
+      buildPanelContent2();
+      updatePanelPosition2();
+      renderChatContent();
+      panelEl2.style.opacity = "1";
+      panelEl2.style.pointerEvents = "auto";
+      updateStateLabel();
+    }
+  }
+  function collapsePanel2() {
+    if (orbState === "expanded") {
+      orbState = "collapsed";
+      if (panelEl2) {
+        panelEl2.style.opacity = "0";
+        panelEl2.style.pointerEvents = "none";
+      }
+      updateStateLabel();
+    }
+  }
+  function enterEditMode() {
+    if (orbState !== "expanded") return;
+    orbState = "editing";
+    if (panelEl2) {
+      const rect = orbEl2.getBoundingClientRect();
+      dragStartOrbX = rect.left;
+      dragStartOrbY = rect.top;
+      dragStartPanelX = parseFloat(panelEl2.style.left) || 0;
+      dragStartPanelY = parseFloat(panelEl2.style.top) || 0;
+      panelEl2.style.boxShadow = currentTheme.aiChat.panelShadowEdit;
+    }
+    updateStateLabel();
+  }
+  function exitEditMode() {
+    if (orbState !== "editing") return;
+    orbState = "expanded";
+    if (panelEl2) {
+      panelEl2.style.boxShadow = currentTheme.aiChat.panelShadow;
+    }
+    renderChatContent();
+    updateStateLabel();
+  }
+  function togglePanel() {
+    if (orbState === "collapsed") expandPanel2();
+    else if (orbState === "expanded") collapsePanel2();
+  }
+  function updateStateLabel() {
     if (!panelEl2) return;
     const label = DOM.orbPanelState(panelEl2);
     if (!label) return;
-    const labels = { compact: "", expanded: "\u957F\u6309\u7F16\u8F91\u5927\u5C0F", editing: "\u62D6\u52A8\u8C03\u6574\u5927\u5C0F \xB7 \u677E\u624B\u5B8C\u6210" };
-    label.textContent = labels[state2] || "";
+    const labels = { collapsed: "", expanded: "\u957F\u6309\u7F16\u8F91\u5927\u5C0F", editing: "\u62D6\u52A8\u8C03\u6574\u5927\u5C0F \xB7 \u677E\u624B\u5B8C\u6210" };
+    label.textContent = labels[orbState];
   }
-  var _orbAPI = null;
-  var _lastBarTop = -1;
+  function handleDragMove(dx, dy) {
+    if (!orbEl2) return;
+    if (orbState === "editing") {
+      const rawX = dragStartOrbX + dx;
+      const rawY = dragStartOrbY + dy;
+      const screenClamped = clampOrbPosition(rawX, rawY);
+      const minOrbX = dragStartPanelX + PANEL_MIN_WIDTH - ORB_HALF2;
+      const minOrbY = dragStartPanelY + PANEL_MIN_HEIGHT - ORB_HALF2;
+      const orbX = Math.max(minOrbX, screenClamped.x);
+      const orbY = Math.max(minOrbY, screenClamped.y);
+      const orbCX = orbX + ORB_HALF2;
+      const orbCY = orbY + ORB_HALF2;
+      panelWidth = Math.max(PANEL_MIN_WIDTH, orbCX - dragStartPanelX);
+      panelHeight = Math.max(PANEL_MIN_HEIGHT, orbCY - dragStartPanelY);
+      orbEl2.style.left = orbX + "px";
+      orbEl2.style.top = orbY + "px";
+      orbEl2.style.right = "auto";
+      orbEl2.style.bottom = "auto";
+      updatePanelPosition2();
+      renderChatContent();
+    } else {
+      const rawX = dragStartOrbX + dx;
+      const rawY = dragStartOrbY + dy;
+      const clamped = clampOrbPosition(rawX, rawY);
+      orbEl2.style.left = clamped.x + "px";
+      orbEl2.style.top = clamped.y + "px";
+      orbEl2.style.right = "auto";
+      orbEl2.style.bottom = "auto";
+      orbEl2.style.transition = "none";
+      if (orbState === "expanded" && panelEl2) {
+        updatePanelPosition2();
+        renderChatContent();
+      }
+    }
+  }
+  function startDrag2(x, y) {
+    dragging2 = false;
+    longPressFired2 = false;
+    dragStartX = x;
+    dragStartY = y;
+    const rect = orbEl2.getBoundingClientRect();
+    dragStartOrbX = rect.left;
+    dragStartOrbY = rect.top;
+    if (panelEl2) {
+      dragStartPanelX = parseFloat(panelEl2.style.left) || 0;
+      dragStartPanelY = parseFloat(panelEl2.style.top) || 0;
+    }
+    longPressTimer2 = setTimeout(() => {
+      longPressFired2 = true;
+      if (orbState === "expanded") enterEditMode();
+      else if (orbState === "editing") exitEditMode();
+    }, LONG_PRESS_MS2);
+  }
+  function moveDrag2(x, y) {
+    const dx = x - dragStartX;
+    const dy = y - dragStartY;
+    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+      dragging2 = true;
+      if (longPressTimer2) {
+        clearTimeout(longPressTimer2);
+        longPressTimer2 = null;
+      }
+    }
+    if (!dragging2) return;
+    handleDragMove(dx, dy);
+  }
+  function endDrag2() {
+    if (longPressTimer2) {
+      clearTimeout(longPressTimer2);
+      longPressTimer2 = null;
+    }
+    if (orbEl2) {
+      orbEl2.style.transition = "box-shadow .2s";
+      const rect = orbEl2.getBoundingClientRect();
+      freeOrbX = rect.left;
+      freeOrbY = rect.top;
+    }
+    if (orbState === "editing") {
+      exitEditMode();
+    }
+    if (!dragging2 && !longPressFired2) togglePanel();
+    dragging2 = false;
+  }
+  var freeOrbX = -1;
+  var freeOrbY = -1;
+  var lastBarTop = -1;
+  var isOrbPushed = false;
   function initInputBarWatcher() {
     const check = () => {
-      if (!orbEl2 || !_orbAPI) {
+      if (!orbEl2) {
         requestAnimationFrame(check);
         return;
       }
       const barTop = getInputBarTop();
-      if (barTop !== _lastBarTop) {
-        _lastBarTop = barTop;
+      if (freeOrbX === -1) {
+        const rect = orbEl2.getBoundingClientRect();
+        freeOrbX = rect.left;
+        freeOrbY = rect.top;
+        lastBarTop = barTop;
+      }
+      if (barTop !== lastBarTop) {
+        lastBarTop = barTop;
+        const clamped = clampOrbPosition(freeOrbX, freeOrbY);
+        const needsPush = freeOrbY !== clamped.y;
+        const orbRect = orbEl2.getBoundingClientRect();
+        const orbCurrentX = orbRect.left;
+        const orbCurrentY = orbRect.top;
+        let orbTargetX = orbCurrentX;
+        let orbTargetY = orbCurrentY;
+        if (needsPush) {
+          isOrbPushed = true;
+          orbTargetX = clamped.x;
+          orbTargetY = clamped.y;
+        } else if (isOrbPushed) {
+          isOrbPushed = false;
+          orbTargetX = freeOrbX;
+          orbTargetY = freeOrbY;
+        } else {
+          requestAnimationFrame(check);
+          return;
+        }
+        orbEl2.style.right = "auto";
+        orbEl2.style.bottom = "auto";
+        const orbAnim = orbEl2.animate(
+          [
+            { left: orbCurrentX + "px", top: orbCurrentY + "px" },
+            { left: orbTargetX + "px", top: orbTargetY + "px" }
+          ],
+          { duration: 100, easing: "cubic-bezier(.4,0,.2,1)" }
+        );
+        orbAnim.onfinish = () => {
+          orbEl2.style.left = orbTargetX + "px";
+          orbEl2.style.top = orbTargetY + "px";
+        };
+        if (panelEl2 && orbState !== "collapsed") {
+          const panelRect = panelEl2.getBoundingClientRect();
+          const panelTarget = getPanelTargetPosition(orbTargetX + ORB_HALF2, orbTargetY + ORB_HALF2);
+          const panelAnim = panelEl2.animate(
+            [
+              { left: panelRect.left + "px", top: panelRect.top + "px", width: panelRect.width + "px", height: panelRect.height + "px" },
+              { left: panelTarget.left + "px", top: panelTarget.top + "px", width: panelTarget.width + "px", height: panelTarget.height + "px" }
+            ],
+            { duration: 100, easing: "cubic-bezier(.4,0,.2,1)" }
+          );
+          panelAnim.onfinish = () => {
+            panelEl2.style.left = panelTarget.left + "px";
+            panelEl2.style.top = panelTarget.top + "px";
+            panelEl2.style.width = panelTarget.width + "px";
+            panelEl2.style.height = panelTarget.height + "px";
+            renderWidth = panelTarget.width;
+            renderHeight = panelTarget.height;
+            if (orbState === "expanded") renderChatContent();
+          };
+        }
       }
       requestAnimationFrame(check);
     };
@@ -14740,70 +14809,28 @@
     orbEl2 = DOM.lightOrb;
     if (!orbEl2) return;
     orbEl2.style.zIndex = "210";
-    _orbAPI = createOrbTemplate({
-      anchor: orbEl2,
-      anchorSize: ORB_SIZE2,
-      minWidth: PANEL_MIN_WIDTH,
-      minHeight: PANEL_MIN_HEIGHT,
-      defaultWidth: PANEL_DEFAULT_WIDTH,
-      defaultHeight: PANEL_DEFAULT_HEIGHT,
-      constraintRect: () => ({
-        top: 8,
-        left: 8,
-        right: window.innerWidth - 8,
-        bottom: getInputBarTop() - 8
-      }),
-      clickToggle: () => {
-        if (_orbAPI.state === "compact") {
-          if (!panelEl2) panelEl2 = createPanel2();
-          panelEl2.style.opacity = "1";
-          panelEl2.style.pointerEvents = "auto";
-          buildPanelContent2();
-          _orbAPI.panelWidth = PANEL_DEFAULT_WIDTH;
-          _orbAPI.panelHeight = PANEL_DEFAULT_HEIGHT;
-          renderChatContent();
-          updateStateLabel("expanded");
-        } else {
-          if (panelEl2) {
-            panelEl2.style.opacity = "0";
-            panelEl2.style.pointerEvents = "none";
-          }
-          updateStateLabel("compact");
-        }
-      },
-      onUpdatePosition: (_s, cx, cy, _pw, _ph) => {
-        if (!panelEl2) return;
-        const target = getPanelTargetPosition(cx, cy);
-        panelEl2.style.left = target.left + "px";
-        panelEl2.style.top = target.top + "px";
-        panelEl2.style.width = target.width + "px";
-        panelEl2.style.height = target.height + "px";
-      },
-      onEnterEdit: () => {
-        if (panelEl2) panelEl2.style.boxShadow = currentTheme.aiChat.panelShadowEdit;
-        updateStateLabel("editing");
-      },
-      onExitEdit: () => {
-        if (panelEl2) panelEl2.style.boxShadow = currentTheme.aiChat.panelShadow;
-        renderChatContent();
-        updateStateLabel("expanded");
-      }
-    });
-    const { startDrag: s, moveDrag: m, endDrag: e } = _orbAPI;
+    const initRect = orbEl2.getBoundingClientRect();
+    const clamped = clampOrbPosition(initRect.left, initRect.top);
+    orbEl2.style.left = clamped.x + "px";
+    orbEl2.style.top = clamped.y + "px";
+    orbEl2.style.right = "auto";
+    orbEl2.style.bottom = "auto";
+    freeOrbX = clamped.x;
+    freeOrbY = clamped.y;
     gestures.register({
       id: "orb",
       targetFilter: ".light-orb",
       priority: 100,
       stopPropagation: true,
-      onStart: (ev) => {
-        ev.preventDefault();
-        s(ev.clientX, ev.clientY);
+      onStart: (e) => {
+        e.preventDefault();
+        startDrag2(e.clientX, e.clientY);
       },
-      onMove: (ev) => {
-        m(ev.clientX, ev.clientY);
+      onMove: (e) => {
+        moveDrag2(e.clientX, e.clientY);
       },
       onEnd: () => {
-        e();
+        endDrag2();
       }
     });
     initInputBarWatcher();
