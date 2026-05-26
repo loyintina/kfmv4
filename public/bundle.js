@@ -5522,6 +5522,10 @@
       brOrb: null,
       cardWidth: COMPACT_W,
       cardHeight: COMPACT_H,
+      compactMemW: COMPACT_W,
+      compactMemH: COMPACT_H,
+      activeMemW: FLOATING_CARD_W,
+      activeMemH: FLOATING_CARD_H,
       accentColor: cc.color2
     };
     const brOrb = createDecoratedCorner(
@@ -5545,24 +5549,33 @@
         _buildExpandedLayout(el, cc, cardName);
         const curLeft = parseFloat(el.style.left) || targetPos.left;
         const curTop = parseFloat(el.style.top) || targetPos.top;
+        const targetW = item.activeMemW;
+        const targetH = item.activeMemH;
+        const MARGIN3 = 8;
+        const curW = item.cardWidth;
+        const curH = item.cardHeight;
+        const compressedW = Math.max(FLOATING_CARD_W_MIN, Math.min(targetW, curLeft + curW - MARGIN3));
+        const compressedH = Math.max(FLOATING_CARD_H_MIN, Math.min(targetH, curTop + curH - MARGIN3));
+        const targetLeft2 = curLeft + curW - compressedW;
+        const targetTop2 = curTop + curH - compressedH;
         anim.to(el, {
-          left: curLeft + COMPACT_W - FLOATING_CARD_W,
-          top: curTop + COMPACT_H - FLOATING_CARD_H,
-          width: FLOATING_CARD_W,
-          height: FLOATING_CARD_H,
+          left: targetLeft2,
+          top: targetTop2,
+          width: compressedW,
+          height: compressedH,
           duration: 0.3,
           ease: "back.out(1.1)",
           onUpdate: () => {
-            const w = parseFloat(el.style.width) || FLOATING_CARD_W;
-            const h = parseFloat(el.style.height) || FLOATING_CARD_H;
+            const w = parseFloat(el.style.width) || compressedW;
+            const h = parseFloat(el.style.height) || compressedH;
             brOrb.style.left = w - rightOff - cornerSize + "px";
             brOrb.style.top = h - bottomOff - cornerSize + "px";
           },
           onComplete: () => {
-            item.cardWidth = FLOATING_CARD_W;
-            item.cardHeight = FLOATING_CARD_H;
-            brOrb.style.left = FLOATING_CARD_W - rightOff - cornerSize + "px";
-            brOrb.style.top = FLOATING_CARD_H - bottomOff - cornerSize + "px";
+            item.cardWidth = compressedW;
+            item.cardHeight = compressedH;
+            brOrb.style.left = item.cardWidth - rightOff - cornerSize + "px";
+            brOrb.style.top = item.cardHeight - bottomOff - cornerSize + "px";
             const tlColor = hexToRgba(cc.color1, orbT.tlAlpha);
             const tlOrb = createDecoratedCorner(
               cornerOff,
@@ -5583,7 +5596,7 @@
             el.appendChild(tlOrb);
             item.tlOrb = tlOrb;
             const trOrb = createDecoratedCorner(
-              FLOATING_CARD_W - rightOff - cornerSize,
+              item.cardWidth - rightOff - cornerSize,
               cornerOff,
               cornerSize,
               cornerSize,
@@ -5598,7 +5611,7 @@
             item.trOrb = trOrb;
             const blOrb = createDecoratedCorner(
               cornerOff,
-              FLOATING_CARD_H - bottomOff - cornerSize,
+              item.cardHeight - bottomOff - cornerSize,
               cornerSize,
               cornerSize,
               leftRgba,
@@ -5644,24 +5657,35 @@
         brOrb.title = cardName + " \xB7 \u70B9\u51FB\u5C55\u5F00";
         const expLeft = parseFloat(el.style.left) || 0;
         const expTop = parseFloat(el.style.top) || 0;
+        const foldW = item.compactMemW;
+        const foldH = item.compactMemH;
+        const MARGIN_F = 8;
+        const expW = item.cardWidth;
+        const expH = item.cardHeight;
+        const anchorRight = expLeft + expW;
+        const anchorBottom = expTop + expH;
+        const clampedFoldW = Math.max(FLOATING_CARD_W_MIN, Math.min(foldW, anchorRight - MARGIN_F));
+        const clampedFoldH = Math.max(FLOATING_CARD_H_MIN, Math.min(foldH, anchorBottom - MARGIN_F));
+        const foldLeft = anchorRight - clampedFoldW;
+        const foldTop = anchorBottom - clampedFoldH;
         anim.to(el, {
-          left: expLeft + FLOATING_CARD_W - COMPACT_W,
-          top: expTop + FLOATING_CARD_H - COMPACT_H,
-          width: COMPACT_W,
-          height: COMPACT_H,
+          left: foldLeft,
+          top: foldTop,
+          width: clampedFoldW,
+          height: clampedFoldH,
           duration: 0.3,
           ease: "power2.in",
           onUpdate: () => {
-            const w = parseFloat(el.style.width) || COMPACT_W;
-            const h = parseFloat(el.style.height) || COMPACT_H;
+            const w = parseFloat(el.style.width) || foldW;
+            const h = parseFloat(el.style.height) || foldH;
             brOrb.style.left = w - rightOff - cornerSize + "px";
             brOrb.style.top = h - bottomOff - cornerSize + "px";
           },
           onComplete: () => {
-            item.cardWidth = COMPACT_W;
-            item.cardHeight = COMPACT_H;
-            brOrb.style.left = COMPACT_W - rightOff - cornerSize + "px";
-            brOrb.style.top = COMPACT_H - bottomOff - cornerSize + "px";
+            item.cardWidth = clampedFoldW;
+            item.cardHeight = clampedFoldH;
+            brOrb.style.left = clampedFoldW - rightOff - cornerSize + "px";
+            brOrb.style.top = clampedFoldH - bottomOff - cornerSize + "px";
             item.state = "compact";
           }
         });
@@ -5981,6 +6005,13 @@
           _fItem.el.style.height = newH + "px";
           _fItem.cardWidth = newW;
           _fItem.cardHeight = newH;
+          if (_fPreEdit === "compact") {
+            _fItem.compactMemW = newW;
+            _fItem.compactMemH = newH;
+          } else {
+            _fItem.activeMemW = newW;
+            _fItem.activeMemH = newH;
+          }
           _fSyncCorners(_fItem, newW, newH);
         } else {
           const rawX = _fStartOrbX + dx;
