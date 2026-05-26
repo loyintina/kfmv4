@@ -5629,6 +5629,8 @@
             item.blOrb = blOrb;
             item.state = "active";
             el.style.zIndex = String(zIndex);
+            const brSvgContainer = brOrb.children[1];
+            if (brSvgContainer) brSvgContainer.innerHTML = '<svg width="14" height="14" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" fill="none"/><line x1="6" y1="1.5" x2="6" y2="10.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="1.5" y1="6" x2="10.5" y2="6" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></svg>';
             brOrb.title = cardName + " \xB7 \u70B9\u51FB\u6298\u53E0";
           }
         });
@@ -5655,6 +5657,8 @@
           bgLayer2.textContent = cardName;
         }
         brOrb.title = cardName + " \xB7 \u70B9\u51FB\u5C55\u5F00";
+        const brSvg2 = brOrb.children[1];
+        if (brSvg2) brSvg2.innerHTML = "";
         const expLeft = parseFloat(el.style.left) || 0;
         const expTop = parseFloat(el.style.top) || 0;
         const foldW = item.compactMemW;
@@ -5974,7 +5978,10 @@
           _fStartCardT = parseFloat(_fItem.el.style.top) || 0;
           _fStartCardW = _fItem.cardWidth;
           _fStartCardH = _fItem.cardHeight;
-          _fItem.el.style.boxShadow = currentTheme.stack.focusShadow;
+          const glowDiv = orbEl3.firstElementChild;
+          if (glowDiv) glowDiv.dataset.initBoxShadow = glowDiv.style.boxShadow;
+          const editGlow = hexToRgba(_fItem.accentColor, 0.25);
+          _fItem.el.style.boxShadow = "0 0 24px 8px " + editGlow + ", 0 8px 32px rgba(0,0,0,0.5)";
         }, 600);
       },
       onMove: (e) => {
@@ -6035,7 +6042,7 @@
         }
       },
       onEnd: () => {
-        var _a;
+        var _a, _b;
         if (_fLPTimer) {
           clearTimeout(_fLPTimer);
           _fLPTimer = null;
@@ -6044,9 +6051,14 @@
           if (_fItem.state === "editing") {
             _fItem.state = _fPreEdit === "compact" ? "compact" : "active";
             _fItem.el.style.boxShadow = currentTheme.stack.blurShadow;
+            const gd = (_a = _fItem.brOrb) == null ? void 0 : _a.firstElementChild;
+            if (gd && gd.dataset.initBoxShadow !== void 0) {
+              gd.style.boxShadow = gd.dataset.initBoxShadow;
+              delete gd.dataset.initBoxShadow;
+            }
           }
           if (!_fDragging && !_fLPFired) {
-            (_a = _fItem.brOrb) == null ? void 0 : _a.click();
+            (_b = _fItem.brOrb) == null ? void 0 : _b.click();
           }
         }
         _fDragging = false;

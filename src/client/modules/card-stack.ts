@@ -784,6 +784,9 @@ export function launchFocusedCard(): void {
 
         item.state = 'active';
         el.style.zIndex = String(zIndex);
+        // BR 光球展开态图案（对角缩放箭头）
+        const brSvgContainer = brOrb.children[1] as HTMLElement;
+        if (brSvgContainer) brSvgContainer.innerHTML = '<svg width="14" height="14" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" fill="none"/><line x1="6" y1="1.5" x2="6" y2="10.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="1.5" y1="6" x2="10.5" y2="6" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></svg>';
         brOrb.title = cardName + ' · 点击折叠';
       }
     });
@@ -804,6 +807,9 @@ export function launchFocusedCard(): void {
       bgLayer.textContent = cardName;
     }
     brOrb.title = cardName + ' · 点击展开';
+    // 清除 BR 光球展开态图案
+    const brSvg2 = brOrb.children[1] as HTMLElement;
+    if (brSvg2) brSvg2.innerHTML = '';
     // 以右下角光球为锚点折叠：卡片向右下缩小
     const expLeft = parseFloat(el.style.left) || 0;
     const expTop = parseFloat(el.style.top) || 0;
@@ -1153,7 +1159,12 @@ export function initCardStack(): void {
         _fStartCardT = parseFloat(_fItem.el.style.top) || 0;
         _fStartCardW = _fItem.cardWidth;
         _fStartCardH = _fItem.cardHeight;
-        _fItem.el.style.boxShadow = theme.stack.focusShadow;
+        // 保存光球初始光晕，退出时恢复
+        const glowDiv = orbEl.firstElementChild as HTMLElement;
+        if (glowDiv) glowDiv.dataset.initBoxShadow = glowDiv.style.boxShadow;
+        // 编辑模式光晕（复刻 orb.ts panelShadowEdit，用 accentColor + 半透明）
+        const editGlow = hexToRgba(_fItem.accentColor, 0.25);
+        _fItem.el.style.boxShadow = '0 0 24px 8px ' + editGlow + ', 0 8px 32px rgba(0,0,0,0.5)';
       }, 600);
     },
     onMove: (e: PointerEvent) => {
@@ -1228,6 +1239,12 @@ export function initCardStack(): void {
         if (_fItem.state === 'editing') {
           _fItem.state = (_fPreEdit === 'compact' ? 'compact' : 'active') as any;
           _fItem.el.style.boxShadow = theme.stack.blurShadow;
+          // 恢复光球初始光晕
+          const gd = _fItem.brOrb?.firstElementChild as HTMLElement;
+          if (gd && gd.dataset.initBoxShadow !== undefined) {
+            gd.style.boxShadow = gd.dataset.initBoxShadow;
+            delete gd.dataset.initBoxShadow;
+          }
         }
         if (!_fDragging && !_fLPFired) {
           _fItem.brOrb?.click();
