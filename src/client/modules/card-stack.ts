@@ -103,12 +103,12 @@ const Z_STACK_BASE = 150;
 
 const FLOATING_CARD_W = 155;
 const FLOATING_CARD_H = 68;
-const COMPACT_W = 36;
-const COMPACT_H = 36;
+const COMPACT_W = 54;
+const COMPACT_H = 54;
 
 // ========== 编辑��式最小尺寸 ==========
-const FLOATING_CARD_W_MIN = 100;
-const FLOATING_CARD_H_MIN = 42;
+const FLOATING_CARD_W_MIN = 54;
+const FLOATING_CARD_H_MIN = 54;
 const FLOATING_DRAG_THRESHOLD = 5;
 
 // ========== 状态 ==========
@@ -134,8 +134,24 @@ interface FloatingCardItem {
 }
 let _floatingCards: FloatingCardItem[] = [];
 let _nextFloatingZ = Z_FLOATING_BASE;
+const _brOrbToItem = new WeakMap<HTMLElement, FloatingCardItem>();
 /** 记录进入编辑模式前的状态，退出时恢复 */
 let _preEditState: 'compact' | 'active' = 'active';
+
+// ========== 浮卡光球拖拽状态（复刻 orb.ts 的全局变量） ==========
+let _fItem: FloatingCardItem | null = null;
+let _fDragging = false;
+let _fStartX = 0;
+let _fStartY = 0;
+let _fStartOrbX = 0;
+let _fStartOrbY = 0;
+let _fStartCardL = 0;
+let _fStartCardT = 0;
+let _fStartCardW = 0;
+let _fStartCardH = 0;
+let _fLPTimer: ReturnType<typeof setTimeout> | null = null;
+let _fLPFired = false;
+let _fPreEdit: string = 'compact';
 
 // ========== 浮卡拖拽状态 ==========
 let _dragItem: FloatingCardItem | null = null;
@@ -692,6 +708,8 @@ export function launchFocusedCard(): void {
     COMPACT_H - bottomOff - cornerSize, cornerSize, cornerSize, rightRgba, '');
   brOrb.style.pointerEvents = 'auto';
   brOrb.style.cursor = 'pointer';
+  brOrb.classList.add("floating-br-orb");
+  _brOrbToItem.set(brOrb, item);
   brOrb.title = cardName + ' · 点击展开';
   brOrb.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -841,7 +859,7 @@ function _buildExpandedLayout(el: HTMLElement, _cc: { color1: string; color2: st
   bgLayer.innerHTML = '';
   const content = document.createElement('div');
   content.style.cssText = 'flex:1;overflow-y:auto;padding:8px;font-size:11px;color:rgba(224,224,224,0.7)';
-  content.textContent = '内容区';
+  content.textContent = '';
   bgLayer.appendChild(content);
 }
 
@@ -1032,6 +1050,158 @@ export function initCardStack(): void {
       }
     },
   });
+
+  // ========== 浮卡 BR 光球手势（复刻 orb.ts 的 gestures.register 模式） ==========
+  const _fRS = orbT.size;
+  const _fRH = _fRS / 2;
+  const _frOff = orbT.cornerOff + orbT.rightOffAdj;
+  const _fbOff = orbT.cornerOff + orbT.bottomOffAdj;
+  const _fMARGIN = 8;
+
+  function _fGetMaxY(): number {
+    const bar = document.getElementById('aiInputBar');
+    return (bar ? bar.getBoundingClientRect().top : window.innerHeight) - _fRS - _fMARGIN;
+  }
+
+  function _fClamp(x: number, y: number): { x: number; y: number } {
+    return {
+      x: Math.max(_fMARGIN, Math.min(window.innerWidth - _fRS - _fMARGIN, x)),
+      y: Math.max(_fMARGIN, Math.min(_fGetMaxY(), y)),
+    };
+  }
+
+  function _fSyncCorners(item: FloatingCardItem, w: number, h: number): void {
+    const rx = w - _frOff - _fRS;
+    const by = h - _fbOff - _fRS;
+    // BR 光球只要有就独立更新（紧缩态下 TL/TR/BL 为 null）
+    if (item.brOrb) {
+      item.brOrb.style.left = rx + 'px';
+      item.brOrb.style.top = by + 'px';
+    }
+    if (item.trOrb && item.blOrb) {
+      item.trOrb.style.left = rx + 'px';
+      item.blOrb.style.top = by + 'px';
+    }
+  }
+
+  gestures.register({
+    id: 'floating-orb',
+    targetFilter: '.floating-br-orb',
+    priority: 100,
+    stopPropagation: true,
+    onStart: (e: PointerEvent) => {
+      e.preventDefault();
+      const orbEl = (e.target as HTMLElement).closest('.floating-br-orb') as HTMLElement;
+      if (!orbEl) return;
+      const item = _brOrbToItem.get(orbEl);
+      if (!item) return;
+      if (item.state !== 'compact' && item.state !== 'active' && item.state !== 'editing') return;
+
+      _fItem = item;
+      _fDragging = false;
+      _fLPFired = false;
+      _fStartX = e.clientX;
+      _fStartY = e.clientY;
+      _fPreEdit = item.state;
+
+      const r = orbEl.getBoundingClientRect();
+      _fStartOrbX = r.left;
+      _fStartOrbY = r.top;
+      _fStartCardL = parseFloat(item.el.style.left) || 0;
+      _fStartCardT = parseFloat(item.el.style.top) || 0;
+      _fStartCardW = item.cardWidth;
+      _fStartCardH = item.cardHeight;
+
+      _fLPTimer = setTimeout(() => {
+        _fLPFired = true;
+        if (!_fItem) return;
+        _fPreEdit = _fItem.state;
+        _fItem.state = 'editing';
+        const r2 = orbEl.getBoundingClientRect();
+        _fStartOrbX = r2.left;
+        _fStartOrbY = r2.top;
+        _fStartCardL = parseFloat(_fItem.el.style.left) || 0;
+        _fStartCardT = parseFloat(_fItem.el.style.top) || 0;
+        _fStartCardW = _fItem.cardWidth;
+        _fStartCardH = _fItem.cardHeight;
+        _fItem.el.style.boxShadow = theme.stack.focusShadow;
+      }, 600);
+    },
+    onMove: (e: PointerEvent) => {
+      if (!_fItem) return;
+      const dx = e.clientX - _fStartX;
+      const dy = e.clientY - _fStartY;
+      if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+        _fDragging = true;
+        if (_fLPTimer) { clearTimeout(_fLPTimer); _fLPTimer = null; }
+      }
+      if (!_fDragging) return;
+
+      const orbEl = _fItem.brOrb;
+      if (!orbEl) return;
+
+      if (_fItem.state === 'editing') {
+        // 编辑模式：卡片左上角固定，BR光球当缩放手柄
+        const rawX = _fStartOrbX + dx;
+        const rawY = _fStartOrbY + dy;
+        const clamped = _fClamp(rawX, rawY);
+        const minX = _fStartCardL + FLOATING_CARD_W_MIN - _frOff - _fRS;
+        const minY = _fStartCardT + FLOATING_CARD_H_MIN - _fbOff - _fRS;
+        const ox = Math.max(minX, clamped.x);
+        const oy = Math.max(minY, clamped.y);
+
+        const newW = Math.max(FLOATING_CARD_W_MIN, ox - _fStartCardL + _frOff + _fRS);
+        const newH = Math.max(FLOATING_CARD_H_MIN, oy - _fStartCardT + _fbOff + _fRS);
+        _fItem.el.style.width = newW + 'px';
+        _fItem.el.style.height = newH + 'px';
+        _fItem.cardWidth = newW;
+        _fItem.cardHeight = newH;
+        _fSyncCorners(_fItem, newW, newH);
+      } else {
+        // 普通拖动：复刻 orb.ts 的 updatePanelPosition 逻辑
+        // 光球位置约束
+        const rawX = _fStartOrbX + dx;
+        const rawY = _fStartOrbY + dy;
+        const clamped = _fClamp(rawX, rawY);
+
+        // 光球中心
+        const orbCX = clamped.x + _fRH;
+        const orbCY = clamped.y + _fRH;
+
+        // 边界压缩：可用空间 = 光球中心到屏幕左/上的距离
+        const availLeft = orbCX - _fMARGIN;
+        const availTop = orbCY - _fMARGIN;
+        const renderW = Math.max(FLOATING_CARD_W_MIN, Math.min(_fStartCardW, availLeft));
+        const renderH = Math.max(FLOATING_CARD_H_MIN, Math.min(_fStartCardH, availTop));
+
+        // 卡片定位：右下角对齐光球中心
+        const left = Math.max(_fMARGIN, orbCX - renderW);
+        const top = Math.max(_fMARGIN, orbCY - renderH);
+        _fItem.el.style.left = left + 'px';
+        _fItem.el.style.top = top + 'px';
+        _fItem.el.style.width = renderW + 'px';
+        _fItem.el.style.height = renderH + 'px';
+        _fItem.cardWidth = renderW;
+        _fItem.cardHeight = renderH;
+        _fSyncCorners(_fItem, renderW, renderH);
+      }
+    },
+    onEnd: () => {
+      if (_fLPTimer) { clearTimeout(_fLPTimer); _fLPTimer = null; }
+      if (_fItem) {
+        if (_fItem.state === 'editing') {
+          _fItem.state = (_fPreEdit === 'compact' ? 'compact' : 'active') as any;
+          _fItem.el.style.boxShadow = theme.stack.blurShadow;
+        }
+        if (!_fDragging && !_fLPFired) {
+          _fItem.brOrb?.click();
+        }
+      }
+      _fDragging = false;
+      _fItem = null;
+    },
+  });
+
   window.addEventListener('resize', () => {
     randomizeCards();
   });

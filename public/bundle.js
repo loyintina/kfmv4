@@ -5098,10 +5098,10 @@
   var Z_STACK_BASE = 150;
   var FLOATING_CARD_W = 155;
   var FLOATING_CARD_H = 68;
-  var COMPACT_W = 36;
-  var COMPACT_H = 36;
-  var FLOATING_CARD_W_MIN = 100;
-  var FLOATING_CARD_H_MIN = 42;
+  var COMPACT_W = 54;
+  var COMPACT_H = 54;
+  var FLOATING_CARD_W_MIN = 54;
+  var FLOATING_CARD_H_MIN = 54;
   var FLOATING_DRAG_THRESHOLD = 5;
   var _state = "closed";
   var _focusIndex = 0;
@@ -5110,7 +5110,21 @@
   var _tl = null;
   var _floatingCards = [];
   var _nextFloatingZ = Z_FLOATING_BASE;
+  var _brOrbToItem = /* @__PURE__ */ new WeakMap();
   var _preEditState = "active";
+  var _fItem = null;
+  var _fDragging = false;
+  var _fStartX = 0;
+  var _fStartY = 0;
+  var _fStartOrbX = 0;
+  var _fStartOrbY = 0;
+  var _fStartCardL = 0;
+  var _fStartCardT = 0;
+  var _fStartCardW = 0;
+  var _fStartCardH = 0;
+  var _fLPTimer = null;
+  var _fLPFired = false;
+  var _fPreEdit = "compact";
   var _dragItem = null;
   var _dragStartX = 0;
   var _dragStartY = 0;
@@ -5520,6 +5534,8 @@
     );
     brOrb.style.pointerEvents = "auto";
     brOrb.style.cursor = "pointer";
+    brOrb.classList.add("floating-br-orb");
+    _brOrbToItem.set(brOrb, item);
     brOrb.title = cardName + " \xB7 \u70B9\u51FB\u5C55\u5F00";
     brOrb.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -5698,7 +5714,7 @@
     bgLayer.innerHTML = "";
     const content = document.createElement("div");
     content.style.cssText = "flex:1;overflow-y:auto;padding:8px;font-size:11px;color:rgba(224,224,224,0.7)";
-    content.textContent = "\u5185\u5BB9\u533A";
+    content.textContent = "";
     bgLayer.appendChild(content);
   }
   function dismissFloatingCard(animated, sourceEl) {
@@ -5868,6 +5884,142 @@
             updateFocus();
           }
         }
+      }
+    });
+    const _fRS = orbT.size;
+    const _fRH = _fRS / 2;
+    const _frOff = orbT.cornerOff + orbT.rightOffAdj;
+    const _fbOff = orbT.cornerOff + orbT.bottomOffAdj;
+    const _fMARGIN = 8;
+    function _fGetMaxY() {
+      const bar = document.getElementById("aiInputBar");
+      return (bar ? bar.getBoundingClientRect().top : window.innerHeight) - _fRS - _fMARGIN;
+    }
+    function _fClamp(x, y) {
+      return {
+        x: Math.max(_fMARGIN, Math.min(window.innerWidth - _fRS - _fMARGIN, x)),
+        y: Math.max(_fMARGIN, Math.min(_fGetMaxY(), y))
+      };
+    }
+    function _fSyncCorners(item, w, h) {
+      const rx = w - _frOff - _fRS;
+      const by = h - _fbOff - _fRS;
+      if (item.brOrb) {
+        item.brOrb.style.left = rx + "px";
+        item.brOrb.style.top = by + "px";
+      }
+      if (item.trOrb && item.blOrb) {
+        item.trOrb.style.left = rx + "px";
+        item.blOrb.style.top = by + "px";
+      }
+    }
+    gestures.register({
+      id: "floating-orb",
+      targetFilter: ".floating-br-orb",
+      priority: 100,
+      stopPropagation: true,
+      onStart: (e) => {
+        e.preventDefault();
+        const orbEl3 = e.target.closest(".floating-br-orb");
+        if (!orbEl3) return;
+        const item = _brOrbToItem.get(orbEl3);
+        if (!item) return;
+        if (item.state !== "compact" && item.state !== "active" && item.state !== "editing") return;
+        _fItem = item;
+        _fDragging = false;
+        _fLPFired = false;
+        _fStartX = e.clientX;
+        _fStartY = e.clientY;
+        _fPreEdit = item.state;
+        const r = orbEl3.getBoundingClientRect();
+        _fStartOrbX = r.left;
+        _fStartOrbY = r.top;
+        _fStartCardL = parseFloat(item.el.style.left) || 0;
+        _fStartCardT = parseFloat(item.el.style.top) || 0;
+        _fStartCardW = item.cardWidth;
+        _fStartCardH = item.cardHeight;
+        _fLPTimer = setTimeout(() => {
+          _fLPFired = true;
+          if (!_fItem) return;
+          _fPreEdit = _fItem.state;
+          _fItem.state = "editing";
+          const r2 = orbEl3.getBoundingClientRect();
+          _fStartOrbX = r2.left;
+          _fStartOrbY = r2.top;
+          _fStartCardL = parseFloat(_fItem.el.style.left) || 0;
+          _fStartCardT = parseFloat(_fItem.el.style.top) || 0;
+          _fStartCardW = _fItem.cardWidth;
+          _fStartCardH = _fItem.cardHeight;
+          _fItem.el.style.boxShadow = currentTheme.stack.focusShadow;
+        }, 600);
+      },
+      onMove: (e) => {
+        if (!_fItem) return;
+        const dx = e.clientX - _fStartX;
+        const dy = e.clientY - _fStartY;
+        if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+          _fDragging = true;
+          if (_fLPTimer) {
+            clearTimeout(_fLPTimer);
+            _fLPTimer = null;
+          }
+        }
+        if (!_fDragging) return;
+        const orbEl3 = _fItem.brOrb;
+        if (!orbEl3) return;
+        if (_fItem.state === "editing") {
+          const rawX = _fStartOrbX + dx;
+          const rawY = _fStartOrbY + dy;
+          const clamped = _fClamp(rawX, rawY);
+          const minX = _fStartCardL + FLOATING_CARD_W_MIN - _frOff - _fRS;
+          const minY = _fStartCardT + FLOATING_CARD_H_MIN - _fbOff - _fRS;
+          const ox = Math.max(minX, clamped.x);
+          const oy = Math.max(minY, clamped.y);
+          const newW = Math.max(FLOATING_CARD_W_MIN, ox - _fStartCardL + _frOff + _fRS);
+          const newH = Math.max(FLOATING_CARD_H_MIN, oy - _fStartCardT + _fbOff + _fRS);
+          _fItem.el.style.width = newW + "px";
+          _fItem.el.style.height = newH + "px";
+          _fItem.cardWidth = newW;
+          _fItem.cardHeight = newH;
+          _fSyncCorners(_fItem, newW, newH);
+        } else {
+          const rawX = _fStartOrbX + dx;
+          const rawY = _fStartOrbY + dy;
+          const clamped = _fClamp(rawX, rawY);
+          const orbCX = clamped.x + _fRH;
+          const orbCY = clamped.y + _fRH;
+          const availLeft = orbCX - _fMARGIN;
+          const availTop = orbCY - _fMARGIN;
+          const renderW = Math.max(FLOATING_CARD_W_MIN, Math.min(_fStartCardW, availLeft));
+          const renderH = Math.max(FLOATING_CARD_H_MIN, Math.min(_fStartCardH, availTop));
+          const left = Math.max(_fMARGIN, orbCX - renderW);
+          const top = Math.max(_fMARGIN, orbCY - renderH);
+          _fItem.el.style.left = left + "px";
+          _fItem.el.style.top = top + "px";
+          _fItem.el.style.width = renderW + "px";
+          _fItem.el.style.height = renderH + "px";
+          _fItem.cardWidth = renderW;
+          _fItem.cardHeight = renderH;
+          _fSyncCorners(_fItem, renderW, renderH);
+        }
+      },
+      onEnd: () => {
+        var _a;
+        if (_fLPTimer) {
+          clearTimeout(_fLPTimer);
+          _fLPTimer = null;
+        }
+        if (_fItem) {
+          if (_fItem.state === "editing") {
+            _fItem.state = _fPreEdit === "compact" ? "compact" : "active";
+            _fItem.el.style.boxShadow = currentTheme.stack.blurShadow;
+          }
+          if (!_fDragging && !_fLPFired) {
+            (_a = _fItem.brOrb) == null ? void 0 : _a.click();
+          }
+        }
+        _fDragging = false;
+        _fItem = null;
       }
     });
     window.addEventListener("resize", () => {
