@@ -5571,7 +5571,7 @@
         );
         tlOrb.style.pointerEvents = "auto";
         tlOrb.style.cursor = "pointer";
-        tlOrb.style.opacity = "0";
+        tlOrb.style.opacity = "1";
         el.appendChild(tlOrb);
         item.tlOrb = tlOrb;
         const trOrb = createDecoratedCorner(
@@ -5584,7 +5584,7 @@
         );
         trOrb.style.pointerEvents = "auto";
         trOrb.style.cursor = "pointer";
-        trOrb.style.opacity = "0";
+        trOrb.style.opacity = "1";
         el.appendChild(trOrb);
         item.trOrb = trOrb;
         const blOrb = createDecoratedCorner(
@@ -5597,7 +5597,7 @@
         );
         blOrb.style.pointerEvents = "auto";
         blOrb.style.cursor = "pointer";
-        blOrb.style.opacity = "0";
+        blOrb.style.opacity = "1";
         el.appendChild(blOrb);
         item.blOrb = blOrb;
         anim.to(el, {
@@ -5616,13 +5616,10 @@
             const p = Math.min(1, Math.max(0, (w - curW) / range));
             tlOrb.style.left = brX0 + (cornerOff - brX0) * p + "px";
             tlOrb.style.top = brY0 + (cornerOff - brY0) * p + "px";
-            tlOrb.style.opacity = String(p);
-            trOrb.style.left = brX0 + (w - rightOff - cornerSize - brX0) * p + "px";
+            trOrb.style.left = brX0 + (compressedW - rightOff - cornerSize - brX0) * p + "px";
             trOrb.style.top = brY0 + (cornerOff - brY0) * p + "px";
-            trOrb.style.opacity = String(p);
             blOrb.style.left = brX0 + (cornerOff - brX0) * p + "px";
-            blOrb.style.top = brY0 + (h - bottomOff - cornerSize - brY0) * p + "px";
-            blOrb.style.opacity = String(p);
+            blOrb.style.top = brY0 + (compressedH - bottomOff - cornerSize - brY0) * p + "px";
           },
           onComplete: () => {
             item.cardWidth = compressedW;
@@ -5697,24 +5694,21 @@
             const h = parseFloat(el.style.height) || foldH;
             brOrb.style.left = w - rightOff - cornerSize + "px";
             brOrb.style.top = h - bottomOff - cornerSize + "px";
-            const brX = w - rightOff - cornerSize;
-            const brY = h - bottomOff - cornerSize;
+            const brX_end = clampedFoldW - rightOff - cornerSize;
+            const brY_end = clampedFoldH - bottomOff - cornerSize;
             const fRange = expW - clampedFoldW || 1;
             const fp = Math.min(1, Math.max(0, (expW - w) / fRange));
             if (item.tlOrb) {
-              item.tlOrb.style.left = cornerOff + (brX - cornerOff) * fp + "px";
-              item.tlOrb.style.top = cornerOff + (brY - cornerOff) * fp + "px";
-              item.tlOrb.style.opacity = String(1 - fp);
+              item.tlOrb.style.left = cornerOff + (brX_end - cornerOff) * fp + "px";
+              item.tlOrb.style.top = cornerOff + (brY_end - cornerOff) * fp + "px";
             }
             if (item.trOrb) {
-              item.trOrb.style.left = expW - rightOff - cornerSize + (brX - (expW - rightOff - cornerSize)) * fp + "px";
-              item.trOrb.style.top = cornerOff + (brY - cornerOff) * fp + "px";
-              item.trOrb.style.opacity = String(1 - fp);
+              item.trOrb.style.left = expW - rightOff - cornerSize + (brX_end - (expW - rightOff - cornerSize)) * fp + "px";
+              item.trOrb.style.top = cornerOff + (brY_end - cornerOff) * fp + "px";
             }
             if (item.blOrb) {
-              item.blOrb.style.left = cornerOff + (brX - cornerOff) * fp + "px";
-              item.blOrb.style.top = expH - bottomOff - cornerSize + (brY - (expH - bottomOff - cornerSize)) * fp + "px";
-              item.blOrb.style.opacity = String(1 - fp);
+              item.blOrb.style.left = cornerOff + (brX_end - cornerOff) * fp + "px";
+              item.blOrb.style.top = expH - bottomOff - cornerSize + (brY_end - (expH - bottomOff - cornerSize)) * fp + "px";
             }
           },
           onComplete: () => {

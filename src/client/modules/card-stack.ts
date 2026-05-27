@@ -741,15 +741,15 @@ export function launchFocusedCard(): void {
       const tlColor = hexToRgba(cc.color1, orbT.tlAlpha);
       const tlOrb = createDecoratedCorner(brX0, brY0, cornerSize, cornerSize, tlColor,
         '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c - sh) + ',' + (c - sh) + ') scale(' + s + ')"><path d="M6,10 L6,2 M6,2 L3,5 M6,2 L9,5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>');
-      tlOrb.style.pointerEvents = 'auto'; tlOrb.style.cursor = 'pointer'; tlOrb.style.opacity = '0';
+      tlOrb.style.pointerEvents = 'auto'; tlOrb.style.cursor = 'pointer'; tlOrb.style.opacity = '1';
       el.appendChild(tlOrb); item.tlOrb = tlOrb;
       const trOrb = createDecoratedCorner(brX0, brY0, cornerSize, cornerSize, rightRgba,
         '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c + sh) + ',' + (c - sh) + ') scale(' + s + ')"><line x1="4" y1="2" x2="10" y2="8" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></g></svg>');
-      trOrb.style.pointerEvents = 'auto'; trOrb.style.cursor = 'pointer'; trOrb.style.opacity = '0';
+      trOrb.style.pointerEvents = 'auto'; trOrb.style.cursor = 'pointer'; trOrb.style.opacity = '1';
       el.appendChild(trOrb); item.trOrb = trOrb;
       const blOrb = createDecoratedCorner(brX0, brY0, cornerSize, cornerSize, leftRgba,
         '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c - sh) + ',' + (c + sh) + ') scale(' + s + ')"><path d="M6,2 L6,10 M6,10 L3,7 M6,10 L9,7" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>');
-      blOrb.style.pointerEvents = 'auto'; blOrb.style.cursor = 'pointer'; blOrb.style.opacity = '0';
+      blOrb.style.pointerEvents = 'auto'; blOrb.style.cursor = 'pointer'; blOrb.style.opacity = '1';
       el.appendChild(blOrb); item.blOrb = blOrb;
 
       anim.to(el, {
@@ -766,13 +766,10 @@ export function launchFocusedCard(): void {
           const p = Math.min(1, Math.max(0, (w - curW) / range));
           tlOrb.style.left = (brX0 + (cornerOff - brX0) * p) + 'px';
           tlOrb.style.top = (brY0 + (cornerOff - brY0) * p) + 'px';
-          tlOrb.style.opacity = String(p);
-          trOrb.style.left = (brX0 + ((w - rightOff - cornerSize) - brX0) * p) + 'px';
+          trOrb.style.left = (brX0 + ((compressedW - rightOff - cornerSize) - brX0) * p) + 'px';
           trOrb.style.top = (brY0 + (cornerOff - brY0) * p) + 'px';
-          trOrb.style.opacity = String(p);
           blOrb.style.left = (brX0 + (cornerOff - brX0) * p) + 'px';
-          blOrb.style.top = (brY0 + ((h - bottomOff - cornerSize) - brY0) * p) + 'px';
-          blOrb.style.opacity = String(p);
+          blOrb.style.top = (brY0 + ((compressedH - bottomOff - cornerSize) - brY0) * p) + 'px';
         },
         onComplete: () => {
           item.cardWidth = compressedW;
@@ -842,14 +839,14 @@ export function launchFocusedCard(): void {
         const h = parseFloat(el.style.height) || foldH;
         brOrb.style.left = (w - rightOff - cornerSize) + 'px';
         brOrb.style.top = (h - bottomOff - cornerSize) + 'px';
-        // TL/TR/BL slide toward BR
-        const brX = w - rightOff - cornerSize;
-        const brY = h - bottomOff - cornerSize;
+        // TL/TR/BL slide toward BR (fixed endpoints)
+        const brX_end = clampedFoldW - rightOff - cornerSize;
+        const brY_end = clampedFoldH - bottomOff - cornerSize;
         const fRange = expW - clampedFoldW || 1;
         const fp = Math.min(1, Math.max(0, (expW - w) / fRange));
-        if (item.tlOrb) { item.tlOrb.style.left = (cornerOff + (brX - cornerOff) * fp) + 'px'; item.tlOrb.style.top = (cornerOff + (brY - cornerOff) * fp) + 'px'; item.tlOrb.style.opacity = String(1 - fp); }
-        if (item.trOrb) { item.trOrb.style.left = ((expW - rightOff - cornerSize) + (brX - (expW - rightOff - cornerSize)) * fp) + 'px'; item.trOrb.style.top = (cornerOff + (brY - cornerOff) * fp) + 'px'; item.trOrb.style.opacity = String(1 - fp); }
-        if (item.blOrb) { item.blOrb.style.left = (cornerOff + (brX - cornerOff) * fp) + 'px'; item.blOrb.style.top = ((expH - bottomOff - cornerSize) + (brY - (expH - bottomOff - cornerSize)) * fp) + 'px'; item.blOrb.style.opacity = String(1 - fp); }
+        if (item.tlOrb) { item.tlOrb.style.left = (cornerOff + (brX_end - cornerOff) * fp) + 'px'; item.tlOrb.style.top = (cornerOff + (brY_end - cornerOff) * fp) + 'px'; }
+        if (item.trOrb) { item.trOrb.style.left = ((expW - rightOff - cornerSize) + (brX_end - (expW - rightOff - cornerSize)) * fp) + 'px'; item.trOrb.style.top = (cornerOff + (brY_end - cornerOff) * fp) + 'px'; }
+        if (item.blOrb) { item.blOrb.style.left = (cornerOff + (brX_end - cornerOff) * fp) + 'px'; item.blOrb.style.top = ((expH - bottomOff - cornerSize) + (brY_end - (expH - bottomOff - cornerSize)) * fp) + 'px'; }
       },
       onComplete: () => {
         item.cardWidth = clampedFoldW;
