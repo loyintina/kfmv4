@@ -130,7 +130,7 @@ setupApiRoutes(app.use('/api', express.Router()) && app);
 app.use('/api', (() => { const r = express.Router(); setupApiRoutes(r); return r; })());
 app.use('/kfmv4/api', (() => { const r = express.Router(); setupApiRoutes(r); return r; })());
 
-const PORT = 8021;
-app.listen(PORT, '0.0.0.0', () => {
+const PORT = parseInt(process.env.KFM_PORT || '8021', 10);
+app.listen(PORT, '127.0.0.1', () => {
   console.log(`KFM v4 server running at http://localhost:${PORT}`);
 });
