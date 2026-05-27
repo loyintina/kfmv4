@@ -128,6 +128,7 @@ interface FloatingCardItem {
   trOrb: HTMLElement | null;
   blOrb: HTMLElement | null;
   brOrb: HTMLElement | null;
+  contentEl: HTMLElement | null;
   cardWidth: number;
   cardHeight: number;
   compactMemW: number;
@@ -679,19 +680,19 @@ export function launchFocusedCard(): void {
   const bottomOff = cornerOff + orbT.bottomOffAdj;
   const s = orbT.symScale, c = 6 * (1 - s), sh = orbT.symShift;
 
-  // 内层毛玻璃（紧凑态：居中显示卡片名称）
+  // 内层毛玻璃容器
   const bgLayer = document.createElement('div');
   bgLayer.style.cssText = [
-    'border-radius:11px', 'width:100%','height:100%',
+    'border-radius:11px', 'width:100%', 'height:100%',
     'background:' + cardBg(),
     'backdrop-filter:blur(16px)', '-webkit-backdrop-filter:blur(16px)',
-    'display:flex', 'align-items:center', 'justify-content:center',
-    'box-sizing:border-box', 'padding:2px 6px',
-    'font-size:11px', 'font-weight:500',
-    'color:rgba(224,224,224,0.9)',
-    'white-space:nowrap', 'overflow:hidden', 'text-overflow:ellipsis',
+    'position:relative', 'overflow:hidden',
   ].join(';');
-  bgLayer.textContent = cardName;
+  // 内容层：所有展示内容都在这里，过渡时 opacity 淡入淡出
+  const contentEl = document.createElement('div');
+  contentEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:2px 6px;font-size:11px;font-weight:500;color:rgba(224,224,224,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:none';
+  bgLayer.appendChild(contentEl);
+  _renderFloatingContent(contentEl, 'compact', cardName);
   el.appendChild(bgLayer);
 
   // 四角光球颜色：左 color1，右 color2
@@ -701,7 +702,7 @@ export function launchFocusedCard(): void {
   const zIndex = _nextFloatingZ++;
   const item = {
     el, sourceIndex: _focusIndex, zIndex, state: 'launching',
-    tlOrb: null as any, trOrb: null as any, blOrb: null as any, brOrb: null as any,
+    tlOrb: null as any, trOrb: null as any, blOrb: null as any, brOrb: null as any, contentEl,
     cardWidth: COMPACT_W, cardHeight: COMPACT_H,
     compactMemW: COMPACT_W, compactMemH: COMPACT_H,
     activeMemW: FLOATING_CARD_W, activeMemH: FLOATING_CARD_H,
@@ -722,7 +723,13 @@ export function launchFocusedCard(): void {
     if (item.state === 'compact') {
       item.state = 'expanding';
       brOrb.title = cardName + ' · 点击折叠';
-      _buildExpandedLayout(el, cc, cardName);
+      // 内容淡出 → 切换为展开态内容 → 淡入（与展开动画并行）
+      if (item.contentEl) {
+        anim.to(item.contentEl, { opacity: 0, duration: 0.1, ease: 'none', onComplete: () => {
+          _buildExpandedLayout(el, cc, cardName);
+          anim.to(item.contentEl!, { opacity: 1, duration: 0.15, ease: 'none' });
+        }});
+      }
       // 以右下角光球为锚点展开���卡片向左上扩展
       const curLeft = parseFloat(el.style.left) || targetPos.left;
       const curTop = parseFloat(el.style.top) || targetPos.top;
@@ -749,7 +756,7 @@ export function launchFocusedCard(): void {
         '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c + sh) + ',' + (c - sh) + ') scale(' + s + ')"><line x1="4" y1="2" x2="10" y2="8" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></g></svg>');
       trOrb.style.pointerEvents = 'auto'; trOrb.style.cursor = 'pointer';
       trOrb.title = '\u5173\u95ed';
-      trOrb.addEventListener('click', () => dismissFloatingCard(true, el));
+      trOrb.addEventListener('click', () => { if (item.state !== 'active') return; dismissFloatingCard(true, el); });
       el.appendChild(trOrb); item.trOrb = trOrb;
       const blOrb = createDecoratedCorner(cornerOff, compressedH - bottomOff - cornerSize, cornerSize, cornerSize, leftRgba,
         '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c - sh) + ',' + (c + sh) + ') scale(' + s + ')"><path d="M6,2 L6,10 M6,10 L3,7 M6,10 L9,7" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>');
@@ -762,6 +769,9 @@ export function launchFocusedCard(): void {
       anim.set(trOrb, { x: brX0 - (compressedW - rightOff - cornerSize), y: brY0 - cornerOff });
       anim.set(blOrb, { x: brX0 - cornerOff, y: brY0 - (compressedH - bottomOff - cornerSize) });
 
+      // BR 光球展开态图案提前设置（与折叠清除对称）
+      const brSvgContainer = brOrb.children[1] as HTMLElement;
+      if (brSvgContainer) brSvgContainer.innerHTML = '<svg width="14" height="14" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" fill="none"/><line x1="6" y1="1.5" x2="6" y2="10.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="1.5" y1="6" x2="10.5" y2="6" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></svg>';
       // 卡片展开 + 三颗光球同步归零，相同 duration/ease
       anim.to(el, {
         left: targetLeft, top: targetTop,
@@ -780,8 +790,6 @@ export function launchFocusedCard(): void {
           brOrb.style.top = (item.cardHeight - bottomOff - cornerSize) + 'px';
           item.state = 'active';
           el.style.zIndex = String(zIndex);
-          const brSvgContainer = brOrb.children[1] as HTMLElement;
-          if (brSvgContainer) brSvgContainer.innerHTML = '<svg width="14" height="14" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" fill="none"/><line x1="6" y1="1.5" x2="6" y2="10.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="1.5" y1="6" x2="10.5" y2="6" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></svg>';
           brOrb.title = cardName + ' · 点击折叠';
         }
       });
@@ -791,15 +799,12 @@ export function launchFocusedCard(): void {
   } else if (item.state === 'active') {
     // 折叠回紧凑态
     item.state = 'dismissing';
-    // TL/TR/BL 光球会在折叠动画 onUpdate 中滑回 BR 位置
-    // 恢复紧凑态布局
-    const bgLayer = el.firstElementChild as HTMLElement;
-    if (bgLayer) {
-      bgLayer.style.justifyContent = 'center';
-      bgLayer.style.alignItems = 'center';
-      bgLayer.style.padding = '2px 6px';
-      bgLayer.innerHTML = '';
-      bgLayer.textContent = cardName;
+    // 内容淡出 → 切换为紧凑态内容 → 淡入（与折叠动画并行）
+    if (item.contentEl) {
+      anim.to(item.contentEl, { opacity: 0, duration: 0.1, ease: 'none', onComplete: () => {
+        if (item.contentEl) _renderFloatingContent(item.contentEl, 'compact', cardName);
+        anim.to(item.contentEl, { opacity: 1, duration: 0.15, ease: 'none' });
+      }});
     }
     brOrb.title = cardName + ' · 点击展开';
     // 清除 BR 光球展开态图案
@@ -822,7 +827,7 @@ export function launchFocusedCard(): void {
     const clampedFoldH = Math.max(FLOATING_CARD_H_MIN, Math.min(foldH, anchorBottom - MARGIN_F));
     const foldLeft = anchorRight - clampedFoldW;
     const foldTop = anchorBottom - clampedFoldH;
-    // TL/TR/BL 偏移到 BR 终点，与卡片折叠同步
+    // TL/TR/BL 偏移到 BR 终点���与卡片折叠同步
     const brX_end = clampedFoldW - rightOff - cornerSize;
     const brY_end = clampedFoldH - bottomOff - cornerSize;
     if (item.tlOrb) anim.to(item.tlOrb, { x: brX_end - cornerOff, y: brY_end - cornerOff, duration: 0.3, ease: 'power2.in' });
@@ -888,17 +893,20 @@ export function launchFocusedCard(): void {
 }
 
 /** 在 compact 态浮卡上构建展开态的滚动内容区 */
-function _buildExpandedLayout(el: HTMLElement, _cc: { color1: string; color2: string }, _cardName: string): void {
-  const bgLayer = el.firstElementChild as HTMLElement;
-  if (!bgLayer) return;
-  bgLayer.style.justifyContent = 'flex-start';
-  bgLayer.style.alignItems = 'stretch';
-  bgLayer.style.padding = '0';
-  bgLayer.innerHTML = '';
-  const content = document.createElement('div');
-  content.style.cssText = 'flex:1;overflow-y:auto;padding:8px;font-size:11px;color:rgba(224,224,224,0.7)';
-  content.textContent = '';
-  bgLayer.appendChild(content);
+function _renderFloatingContent(contentEl: HTMLElement, state: 'compact' | 'active', cardName: string): void {
+  if (state === 'compact') {
+    contentEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:2px 6px;font-size:11px;font-weight:500;color:rgba(224,224,224,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+    contentEl.textContent = cardName;
+  } else {
+    contentEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:flex-start;box-sizing:border-box;padding:8px;font-size:11px;color:rgba(224,224,224,0.7);overflow-y:auto';
+    contentEl.textContent = '';
+  }
+}
+
+function _buildExpandedLayout(el: HTMLElement, _cc: { color1: string; color2: string }, cardName: string): void {
+  const item = _floatingCards.find(i => i.el === el);
+  if (!item?.contentEl) return;
+  _renderFloatingContent(item.contentEl, 'active', cardName);
 }
 
 export function dismissFloatingCard(animated?: boolean, sourceEl?: HTMLElement): void {
@@ -921,7 +929,7 @@ function _dismissOne(item: FloatingCardItem, animated?: boolean): void {
   const el = item.el;
   item.state = 'dismissing';
 
-  // 清理拖拽状态
+  // 清理拖拽��态
   if (_dragItem === item) {
     _clearFloatingDragTimer();
     _dragItem = null;

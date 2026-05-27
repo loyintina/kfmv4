@@ -5494,19 +5494,13 @@
       "background:" + cardBg(),
       "backdrop-filter:blur(16px)",
       "-webkit-backdrop-filter:blur(16px)",
-      "display:flex",
-      "align-items:center",
-      "justify-content:center",
-      "box-sizing:border-box",
-      "padding:2px 6px",
-      "font-size:11px",
-      "font-weight:500",
-      "color:rgba(224,224,224,0.9)",
-      "white-space:nowrap",
-      "overflow:hidden",
-      "text-overflow:ellipsis"
+      "position:relative",
+      "overflow:hidden"
     ].join(";");
-    bgLayer.textContent = cardName;
+    const contentEl = document.createElement("div");
+    contentEl.style.cssText = "position:absolute;inset:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:2px 6px;font-size:11px;font-weight:500;color:rgba(224,224,224,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:none";
+    bgLayer.appendChild(contentEl);
+    _renderFloatingContent(contentEl, "compact", cardName);
     el.appendChild(bgLayer);
     const leftRgba = hexToRgba(cc.color1, 1);
     const rightRgba = hexToRgba(cc.color2, 1);
@@ -5520,6 +5514,7 @@
       trOrb: null,
       blOrb: null,
       brOrb: null,
+      contentEl,
       cardWidth: COMPACT_W,
       cardHeight: COMPACT_H,
       compactMemW: COMPACT_W,
@@ -5546,7 +5541,12 @@
       if (item.state === "compact") {
         item.state = "expanding";
         brOrb.title = cardName + " \xB7 \u70B9\u51FB\u6298\u53E0";
-        _buildExpandedLayout(el, cc, cardName);
+        if (item.contentEl) {
+          anim.to(item.contentEl, { opacity: 0, duration: 0.1, ease: "none", onComplete: () => {
+            _buildExpandedLayout(el, cc, cardName);
+            anim.to(item.contentEl, { opacity: 1, duration: 0.15, ease: "none" });
+          } });
+        }
         const curLeft = parseFloat(el.style.left) || targetPos.left;
         const curTop = parseFloat(el.style.top) || targetPos.top;
         const targetW = item.activeMemW;
@@ -5590,7 +5590,10 @@
         trOrb.style.pointerEvents = "auto";
         trOrb.style.cursor = "pointer";
         trOrb.title = "\u5173\u95ED";
-        trOrb.addEventListener("click", () => dismissFloatingCard(true, el));
+        trOrb.addEventListener("click", () => {
+          if (item.state !== "active") return;
+          dismissFloatingCard(true, el);
+        });
         el.appendChild(trOrb);
         item.trOrb = trOrb;
         const blOrb = createDecoratedCorner(
@@ -5614,6 +5617,8 @@
         anim.set(tlOrb, { x: brX0 - cornerOff, y: brY0 - cornerOff });
         anim.set(trOrb, { x: brX0 - (compressedW - rightOff - cornerSize), y: brY0 - cornerOff });
         anim.set(blOrb, { x: brX0 - cornerOff, y: brY0 - (compressedH - bottomOff - cornerSize) });
+        const brSvgContainer = brOrb.children[1];
+        if (brSvgContainer) brSvgContainer.innerHTML = '<svg width="14" height="14" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" fill="none"/><line x1="6" y1="1.5" x2="6" y2="10.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="1.5" y1="6" x2="10.5" y2="6" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></svg>';
         anim.to(el, {
           left: targetLeft2,
           top: targetTop2,
@@ -5634,8 +5639,6 @@
             brOrb.style.top = item.cardHeight - bottomOff - cornerSize + "px";
             item.state = "active";
             el.style.zIndex = String(zIndex);
-            const brSvgContainer = brOrb.children[1];
-            if (brSvgContainer) brSvgContainer.innerHTML = '<svg width="14" height="14" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" fill="none"/><line x1="6" y1="1.5" x2="6" y2="10.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="1.5" y1="6" x2="10.5" y2="6" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></svg>';
             brOrb.title = cardName + " \xB7 \u70B9\u51FB\u6298\u53E0";
           }
         });
@@ -5644,13 +5647,11 @@
         anim.to(blOrb, { x: 0, y: 0, duration: 0.3, ease: "back.out(1.1)" });
       } else if (item.state === "active") {
         item.state = "dismissing";
-        const bgLayer2 = el.firstElementChild;
-        if (bgLayer2) {
-          bgLayer2.style.justifyContent = "center";
-          bgLayer2.style.alignItems = "center";
-          bgLayer2.style.padding = "2px 6px";
-          bgLayer2.innerHTML = "";
-          bgLayer2.textContent = cardName;
+        if (item.contentEl) {
+          anim.to(item.contentEl, { opacity: 0, duration: 0.1, ease: "none", onComplete: () => {
+            if (item.contentEl) _renderFloatingContent(item.contentEl, "compact", cardName);
+            anim.to(item.contentEl, { opacity: 1, duration: 0.15, ease: "none" });
+          } });
         }
         brOrb.title = cardName + " \xB7 \u70B9\u51FB\u5C55\u5F00";
         const brSvg2 = brOrb.children[1];
@@ -5746,17 +5747,19 @@
       }
     });
   }
-  function _buildExpandedLayout(el, _cc, _cardName) {
-    const bgLayer = el.firstElementChild;
-    if (!bgLayer) return;
-    bgLayer.style.justifyContent = "flex-start";
-    bgLayer.style.alignItems = "stretch";
-    bgLayer.style.padding = "0";
-    bgLayer.innerHTML = "";
-    const content = document.createElement("div");
-    content.style.cssText = "flex:1;overflow-y:auto;padding:8px;font-size:11px;color:rgba(224,224,224,0.7)";
-    content.textContent = "";
-    bgLayer.appendChild(content);
+  function _renderFloatingContent(contentEl, state2, cardName) {
+    if (state2 === "compact") {
+      contentEl.style.cssText = "position:absolute;inset:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:2px 6px;font-size:11px;font-weight:500;color:rgba(224,224,224,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis";
+      contentEl.textContent = cardName;
+    } else {
+      contentEl.style.cssText = "position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:flex-start;box-sizing:border-box;padding:8px;font-size:11px;color:rgba(224,224,224,0.7);overflow-y:auto";
+      contentEl.textContent = "";
+    }
+  }
+  function _buildExpandedLayout(el, _cc, cardName) {
+    const item = _floatingCards.find((i) => i.el === el);
+    if (!(item == null ? void 0 : item.contentEl)) return;
+    _renderFloatingContent(item.contentEl, "active", cardName);
   }
   function dismissFloatingCard(animated, sourceEl) {
     if (sourceEl) {
