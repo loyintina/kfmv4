@@ -735,26 +735,36 @@ export function launchFocusedCard(): void {
       const compressedH = Math.max(FLOATING_CARD_H_MIN, Math.min(targetH, curTop + curH - MARGIN));
       const targetLeft = curLeft + curW - compressedW;
       const targetTop = curTop + curH - compressedH;
-      // TL/TR/BL: create at BR position, opacity=0
+      // TL/TR/BL: 创建在最终位置，用 GSAP x/y 偏移到 BR，动画归零
       const brX0 = curW - rightOff - cornerSize;
       const brY0 = curH - bottomOff - cornerSize;
       const tlColor = hexToRgba(cc.color1, orbT.tlAlpha);
-      const tlOrb = createDecoratedCorner(brX0, brY0, cornerSize, cornerSize, tlColor,
+      const tlOrb = createDecoratedCorner(cornerOff, cornerOff, cornerSize, cornerSize, tlColor,
         '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c - sh) + ',' + (c - sh) + ') scale(' + s + ')"><path d="M6,10 L6,2 M6,2 L3,5 M6,2 L9,5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>');
-      tlOrb.style.pointerEvents = 'auto'; tlOrb.style.cursor = 'pointer'; tlOrb.style.opacity = '1';
+      tlOrb.style.pointerEvents = 'auto'; tlOrb.style.cursor = 'pointer';
+      tlOrb.title = '\u4e0a\u79fb\u4e00\u5c42';
+      tlOrb.addEventListener('click', () => { if (item.state !== 'active') return; const above = _cardAbove(item); if (above) _swapZIndex(item, above); });
       el.appendChild(tlOrb); item.tlOrb = tlOrb;
-      const trOrb = createDecoratedCorner(brX0, brY0, cornerSize, cornerSize, rightRgba,
+      const trOrb = createDecoratedCorner(compressedW - rightOff - cornerSize, cornerOff, cornerSize, cornerSize, rightRgba,
         '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c + sh) + ',' + (c - sh) + ') scale(' + s + ')"><line x1="4" y1="2" x2="10" y2="8" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></g></svg>');
-      trOrb.style.pointerEvents = 'auto'; trOrb.style.cursor = 'pointer'; trOrb.style.opacity = '1';
+      trOrb.style.pointerEvents = 'auto'; trOrb.style.cursor = 'pointer';
+      trOrb.title = '\u5173\u95ed';
+      trOrb.addEventListener('click', () => dismissFloatingCard(true, el));
       el.appendChild(trOrb); item.trOrb = trOrb;
-      const blOrb = createDecoratedCorner(brX0, brY0, cornerSize, cornerSize, leftRgba,
+      const blOrb = createDecoratedCorner(cornerOff, compressedH - bottomOff - cornerSize, cornerSize, cornerSize, leftRgba,
         '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c - sh) + ',' + (c + sh) + ') scale(' + s + ')"><path d="M6,2 L6,10 M6,10 L3,7 M6,10 L9,7" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>');
-      blOrb.style.pointerEvents = 'auto'; blOrb.style.cursor = 'pointer'; blOrb.style.opacity = '1';
+      blOrb.style.pointerEvents = 'auto'; blOrb.style.cursor = 'pointer';
+      blOrb.title = '\u4e0b\u79fb\u4e00\u5c42';
+      blOrb.addEventListener('click', () => { if (item.state !== 'active') return; const below = _cardBelow(item); if (below) _swapZIndex(item, below); });
       el.appendChild(blOrb); item.blOrb = blOrb;
+      // 初始偏移到 BR 位置（GSAP x/y），动画结束归零
+      anim.set(tlOrb, { x: brX0 - cornerOff, y: brY0 - cornerOff });
+      anim.set(trOrb, { x: brX0 - (compressedW - rightOff - cornerSize), y: brY0 - cornerOff });
+      anim.set(blOrb, { x: brX0 - cornerOff, y: brY0 - (compressedH - bottomOff - cornerSize) });
 
+      // 卡片展开 + 三颗光球同步归零，相同 duration/ease
       anim.to(el, {
-        left: targetLeft,
-        top: targetTop,
+        left: targetLeft, top: targetTop,
         width: compressedW, height: compressedH,
         duration: 0.3, ease: 'back.out(1.1)',
         onUpdate: () => {
@@ -762,39 +772,22 @@ export function launchFocusedCard(): void {
           const h = parseFloat(el.style.height) || compressedH;
           brOrb.style.left = (w - rightOff - cornerSize) + 'px';
           brOrb.style.top = (h - bottomOff - cornerSize) + 'px';
-          const range = compressedW - curW || 1;
-          const p = Math.min(1, Math.max(0, (w - curW) / range));
-          tlOrb.style.left = (brX0 + (cornerOff - brX0) * p) + 'px';
-          tlOrb.style.top = (brY0 + (cornerOff - brY0) * p) + 'px';
-          trOrb.style.left = (brX0 + ((compressedW - rightOff - cornerSize) - brX0) * p) + 'px';
-          trOrb.style.top = (brY0 + (cornerOff - brY0) * p) + 'px';
-          blOrb.style.left = (brX0 + (cornerOff - brX0) * p) + 'px';
-          blOrb.style.top = (brY0 + ((compressedH - bottomOff - cornerSize) - brY0) * p) + 'px';
         },
         onComplete: () => {
           item.cardWidth = compressedW;
           item.cardHeight = compressedH;
           brOrb.style.left = (item.cardWidth - rightOff - cornerSize) + 'px';
           brOrb.style.top = (item.cardHeight - bottomOff - cornerSize) + 'px';
-          // TL/TR/BL 最终位置确认 + 事件绑定
-          tlOrb.style.left = cornerOff + 'px'; tlOrb.style.top = cornerOff + 'px'; tlOrb.style.opacity = '1';
-          tlOrb.title = '\u4e0a\u79fb\u4e00\u5c42';
-          tlOrb.addEventListener('click', () => { if (item.state !== 'active') return; const above = _cardAbove(item); if (above) _swapZIndex(item, above); });
-          trOrb.style.left = (item.cardWidth - rightOff - cornerSize) + 'px'; trOrb.style.top = cornerOff + 'px'; trOrb.style.opacity = '1';
-          trOrb.title = '\u5173\u95ed';
-          trOrb.addEventListener('click', () => dismissFloatingCard(true, el));
-          blOrb.style.left = cornerOff + 'px'; blOrb.style.top = (item.cardHeight - bottomOff - cornerSize) + 'px'; blOrb.style.opacity = '1';
-          blOrb.title = '\u4e0b\u79fb\u4e00\u5c42';
-          blOrb.addEventListener('click', () => { if (item.state !== 'active') return; const below = _cardBelow(item); if (below) _swapZIndex(item, below); });
-
-        item.state = 'active';
-        el.style.zIndex = String(zIndex);
-        // BR 光球展开态图案（对角缩放箭头）
-        const brSvgContainer = brOrb.children[1] as HTMLElement;
-        if (brSvgContainer) brSvgContainer.innerHTML = '<svg width="14" height="14" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" fill="none"/><line x1="6" y1="1.5" x2="6" y2="10.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="1.5" y1="6" x2="10.5" y2="6" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></svg>';
-        brOrb.title = cardName + ' · 点击折叠';
-      }
-    });
+          item.state = 'active';
+          el.style.zIndex = String(zIndex);
+          const brSvgContainer = brOrb.children[1] as HTMLElement;
+          if (brSvgContainer) brSvgContainer.innerHTML = '<svg width="14" height="14" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" fill="none"/><line x1="6" y1="1.5" x2="6" y2="10.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="1.5" y1="6" x2="10.5" y2="6" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></svg>';
+          brOrb.title = cardName + ' · 点击折叠';
+        }
+      });
+      anim.to(tlOrb, { x: 0, y: 0, duration: 0.3, ease: 'back.out(1.1)' });
+      anim.to(trOrb, { x: 0, y: 0, duration: 0.3, ease: 'back.out(1.1)' });
+      anim.to(blOrb, { x: 0, y: 0, duration: 0.3, ease: 'back.out(1.1)' });
   } else if (item.state === 'active') {
     // 折叠回紧凑态
     item.state = 'dismissing';
@@ -829,9 +822,14 @@ export function launchFocusedCard(): void {
     const clampedFoldH = Math.max(FLOATING_CARD_H_MIN, Math.min(foldH, anchorBottom - MARGIN_F));
     const foldLeft = anchorRight - clampedFoldW;
     const foldTop = anchorBottom - clampedFoldH;
+    // TL/TR/BL 偏移到 BR 终点，与卡片折叠同步
+    const brX_end = clampedFoldW - rightOff - cornerSize;
+    const brY_end = clampedFoldH - bottomOff - cornerSize;
+    if (item.tlOrb) anim.to(item.tlOrb, { x: brX_end - cornerOff, y: brY_end - cornerOff, duration: 0.3, ease: 'power2.in' });
+    if (item.trOrb) anim.to(item.trOrb, { x: brX_end - (expW - rightOff - cornerSize), y: brY_end - cornerOff, duration: 0.3, ease: 'power2.in' });
+    if (item.blOrb) anim.to(item.blOrb, { x: brX_end - cornerOff, y: brY_end - (expH - bottomOff - cornerSize), duration: 0.3, ease: 'power2.in' });
     anim.to(el, {
-      left: foldLeft,
-      top: foldTop,
+      left: foldLeft, top: foldTop,
       width: clampedFoldW, height: clampedFoldH,
       duration: 0.3, ease: 'power2.in',
       onUpdate: () => {
@@ -839,14 +837,6 @@ export function launchFocusedCard(): void {
         const h = parseFloat(el.style.height) || foldH;
         brOrb.style.left = (w - rightOff - cornerSize) + 'px';
         brOrb.style.top = (h - bottomOff - cornerSize) + 'px';
-        // TL/TR/BL slide toward BR (fixed endpoints)
-        const brX_end = clampedFoldW - rightOff - cornerSize;
-        const brY_end = clampedFoldH - bottomOff - cornerSize;
-        const fRange = expW - clampedFoldW || 1;
-        const fp = Math.min(1, Math.max(0, (expW - w) / fRange));
-        if (item.tlOrb) { item.tlOrb.style.left = (cornerOff + (brX_end - cornerOff) * fp) + 'px'; item.tlOrb.style.top = (cornerOff + (brY_end - cornerOff) * fp) + 'px'; }
-        if (item.trOrb) { item.trOrb.style.left = ((expW - rightOff - cornerSize) + (brX_end - (expW - rightOff - cornerSize)) * fp) + 'px'; item.trOrb.style.top = (cornerOff + (brY_end - cornerOff) * fp) + 'px'; }
-        if (item.blOrb) { item.blOrb.style.left = (cornerOff + (brX_end - cornerOff) * fp) + 'px'; item.blOrb.style.top = ((expH - bottomOff - cornerSize) + (brY_end - (expH - bottomOff - cornerSize)) * fp) + 'px'; }
       },
       onComplete: () => {
         item.cardWidth = clampedFoldW;
