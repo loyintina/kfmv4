@@ -11,7 +11,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '../../public')));
 app.use(express.static(path.join(__dirname, '../..')));
 
-const ROOT_DIR = '/root';
+const ROOT_DIR = process.env.KFM_ROOT || '.';
 const SAFE_ROOT = path.resolve(ROOT_DIR) + path.sep;
 
 /** 路径校验：确保用户路径不逃逸出 SAFE_ROOT */

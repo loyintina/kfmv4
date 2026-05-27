@@ -48,6 +48,6 @@ initTreeRenderer();
 initCardStack();
 
 // 加载根目录，然后启用懒加载（展开某文件夹时自动拉子文件）
-loadFileTree('/root').then(() => {
+loadFileTree('.').then(() => {
   initLazyLoader();
 }).catch(e => console.error('[main] loadFileTree failed:', e));

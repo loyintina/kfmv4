@@ -236,7 +236,6 @@ npm test   # 71 个测试，覆盖 10 个模块
 | 11 | 多层嵌套文件夹展开 | 子容器串行展开，字符雨正常 |
 | 12 | 展开后立即折叠 | 折叠动画流畅，文字自然被裁 |
 
-## 已知坑点
 
 - **esbuild**: `supported: { nullish-coalescing: false }` 要求 ES2019
 - **Canvas 初始化**: `clientWidth=0`，需在 `requestAnimationFrame` 回调里 `rebuildTree()`
