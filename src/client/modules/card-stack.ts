@@ -3,6 +3,10 @@ import { anim, AnimTimeline } from './animation-registry.js';
 import { debugLog } from './debug-panel.js';
 import { currentTheme as theme } from './theme.js';
 const orbT = theme.cornerOrb;
+const cornerSize = orbT.size;
+const cornerOff = orbT.cornerOff;
+const rightOff = cornerOff + orbT.rightOffAdj;
+const bottomOff = cornerOff + orbT.bottomOffAdj;
 
 /**
  * KFM v4 - 堆叠卡片面板
@@ -550,22 +554,20 @@ function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: n
 
   const el = _dragItem.el;
 
-  // 共用参数：光球常量、手指原始位置、输入栏限制
-  const cSize = orbT.size;
-  const rOff = orbT.cornerOff + orbT.rightOffAdj;
-  const bOff = orbT.cornerOff + orbT.bottomOffAdj;
+  // 共用参数：手指原始位置、输入栏限制
+  // cornerSize/rightOff/bottomOff 已提升为模块级常量
   const rawOrbX = _dragStartOrbAbsX + dx;
   const rawOrbY = _dragStartOrbAbsY + dy;
   const maxOrbY = (document.getElementById("aiInputBar")?.getBoundingClientRect().top ?? window.innerHeight) - 42;
 
   if (_dragItem.state === 'editing') {
-    const minOrbAbsX = _dragStartLeft + FLOATING_CARD_W_MIN - rOff - cSize;
-    const minOrbAbsY = _dragStartTop + FLOATING_CARD_H_MIN - bOff - cSize;
+    const minOrbAbsX = _dragStartLeft + FLOATING_CARD_W_MIN - rightOff - cornerSize;
+    const minOrbAbsY = _dragStartTop + FLOATING_CARD_H_MIN - bottomOff - cornerSize;
     const orbAbsX = Math.max(minOrbAbsX, rawOrbX);
     const orbAbsY = Math.min(maxOrbY, Math.max(minOrbAbsY, rawOrbY));
 
-    const newW = Math.max(FLOATING_CARD_W_MIN, orbAbsX - _dragStartLeft + rOff + cSize);
-    const newH = Math.max(FLOATING_CARD_H_MIN, orbAbsY - _dragStartTop + bOff + cSize);
+    const newW = Math.max(FLOATING_CARD_W_MIN, orbAbsX - _dragStartLeft + rightOff + cornerSize);
+    const newH = Math.max(FLOATING_CARD_H_MIN, orbAbsY - _dragStartTop + bottomOff + cornerSize);
     el.style.width = newW + 'px';
     el.style.height = newH + 'px';
     _dragItem.cardWidth = newW;
@@ -575,8 +577,8 @@ function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: n
     const bl = _dragItem.blOrb;
     const br = _dragItem.brOrb;
     if (!tr || !bl || !br) return;
-    const newRightX = newW - rOff - cSize;
-    const newBottomY = newH - bOff - cSize;
+    const newRightX = newW - rightOff - cornerSize;
+    const newBottomY = newH - bottomOff - cornerSize;
     tr.style.left = newRightX + 'px';
     bl.style.top = newBottomY + 'px';
     br.style.left = newRightX + 'px';
@@ -586,15 +588,15 @@ function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: n
     const orbAbsY = Math.min(maxOrbY, rawOrbY);
 
     const b = _calcFloatingSafeBounds();
-    const tlFromOrbX = orbAbsX - _dragStartW + rOff + cSize;
-    const tlFromOrbY = orbAbsY - _dragStartH + bOff + cSize;
+    const tlFromOrbX = orbAbsX - _dragStartW + rightOff + cornerSize;
+    const tlFromOrbY = orbAbsY - _dragStartH + bottomOff + cornerSize;
     const clampedLeft = Math.round(Math.max(b.safeL, Math.min(b.fullR - FLOATING_CARD_W_MIN, tlFromOrbX)));
     const clampedTop = Math.round(Math.max(b.safeT, tlFromOrbY));
     el.style.left = clampedLeft + 'px';
     el.style.top = clampedTop + 'px';
 
-    const newW = Math.max(FLOATING_CARD_W_MIN, orbAbsX - clampedLeft + rOff + cSize);
-    const newH = Math.max(FLOATING_CARD_H_MIN, orbAbsY - clampedTop + bOff + cSize);
+    const newW = Math.max(FLOATING_CARD_W_MIN, orbAbsX - clampedLeft + rightOff + cornerSize);
+    const newH = Math.max(FLOATING_CARD_H_MIN, orbAbsY - clampedTop + bottomOff + cornerSize);
     if (newW !== _dragItem.cardWidth || newH !== _dragItem.cardHeight) {
       el.style.width = newW + 'px';
       el.style.height = newH + 'px';
@@ -604,8 +606,8 @@ function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: n
     const bl2 = _dragItem.blOrb;
     const br2 = _dragItem.brOrb;
     if (!tr2 || !bl2 || !br2) return;
-    const newRightX = newW - rOff - cSize;
-    const newBottomY = newH - bOff - cSize;
+    const newRightX = newW - rightOff - cornerSize;
+    const newBottomY = newH - bottomOff - cornerSize;
     tr2.style.left = newRightX + 'px';
     bl2.style.top = newBottomY + 'px';
     br2.style.left = newRightX + 'px';
@@ -674,10 +676,7 @@ export function launchFocusedCard(): void {
   el.className = 'floating-card';
   el.dataset.index = String(_focusIndex);
 
-  const cornerSize = orbT.size;
-  const cornerOff = orbT.cornerOff;
-  const rightOff = cornerOff + orbT.rightOffAdj;
-  const bottomOff = cornerOff + orbT.bottomOffAdj;
+  // cornerSize/cornerOff/rightOff/bottomOff 已提升为模块级常量
   const s = orbT.symScale, c = 6 * (1 - s), sh = orbT.symShift;
 
   // 内层毛玻璃容器
@@ -822,7 +821,7 @@ export function launchFocusedCard(): void {
     // 右下角光球位置（锚点，不动）
     const anchorRight = expLeft + expW;
     const anchorBottom = expTop + expH;
-    // 边界压缩：如果折叠后左上角超出屏幕，压缩尺寸（��展开对称）
+    // 边界压��：如果折叠后左上角超出屏幕，压缩尺寸（�����开对称）
     const clampedFoldW = Math.max(FLOATING_CARD_W_MIN, Math.min(foldW, anchorRight - MARGIN_F));
     const clampedFoldH = Math.max(FLOATING_CARD_H_MIN, Math.min(foldH, anchorBottom - MARGIN_F));
     const foldLeft = anchorRight - clampedFoldW;
@@ -939,15 +938,23 @@ function _dismissOne(item: FloatingCardItem, animated?: boolean): void {
   }
 
   anim.killTweensOf(el);
+  [item.tlOrb, item.trOrb, item.blOrb, item.brOrb].forEach(o => { if (o) anim.killTweensOf(o); });
   if (animated) {
-    const tl = anim.timeline({
-      onComplete: () => {
-        _floatingCards = _floatingCards.filter(fi => fi !== item);
-        el.remove();
-      },
-    });
-    tl.to(el, { scale: 1.08, duration: 0.1, ease: 'power2.out' });
-    tl.to(el, { scale: 0, duration: 0.2, ease: 'power3.in' });
+    // TR 光球左上角坐标 = 收缩锚点
+    const trLeft = item.cardWidth - rightOff - cornerSize;
+    const trTop = cornerOff;
+    const trCx = trLeft + cornerSize / 2;
+    const trCy = trTop + cornerSize / 2;
+    el.style.transformOrigin = trCx + 'px ' + trCy + 'px';
+    const DUR = 0.25, EASE = 'power3.in';
+    if (item.tlOrb) anim.to(item.tlOrb, { left: trLeft, top: trTop, scale: 0, duration: DUR, ease: EASE });
+    if (item.trOrb) anim.to(item.trOrb, { scale: 0, duration: DUR, ease: EASE });
+    if (item.blOrb) anim.to(item.blOrb, { left: trLeft, top: trTop, scale: 0, duration: DUR, ease: EASE });
+    if (item.brOrb) anim.to(item.brOrb, { left: trLeft, top: trTop, scale: 0, duration: DUR, ease: EASE });
+    anim.to(el, { scale: 0, duration: DUR, ease: EASE, onComplete: () => {
+      _floatingCards = _floatingCards.filter(fi => fi !== item);
+      el.remove();
+    }});
   } else {
     _floatingCards = _floatingCards.filter(fi => fi !== item);
     el.remove();
@@ -1100,8 +1107,8 @@ export function initCardStack(): void {
   // ========== 浮卡 BR 光球手势（复刻 orb.ts 的 gestures.register 模式） ==========
   const _fRS = orbT.size;
   const _fRH = _fRS / 2;
-  const _frOff = orbT.cornerOff + orbT.rightOffAdj;
-  const _fbOff = orbT.cornerOff + orbT.bottomOffAdj;
+  const _frightOff = orbT.cornerOff + orbT.rightOffAdj;
+  const _fbottomOff = orbT.cornerOff + orbT.bottomOffAdj;
   const _fMARGIN = 8;
 
   function _fGetMaxY(): number {
@@ -1117,8 +1124,8 @@ export function initCardStack(): void {
   }
 
   function _fSyncCorners(item: FloatingCardItem, w: number, h: number): void {
-    const rx = w - _frOff - _fRS;
-    const by = h - _fbOff - _fRS;
+    const rx = w - _frightOff - _fRS;
+    const by = h - _fbottomOff - _fRS;
     // BR 光球只要有就独立更新（紧缩态下 TL/TR/BL 为 null）
     if (item.brOrb) {
       item.brOrb.style.left = rx + 'px';
@@ -1196,13 +1203,13 @@ export function initCardStack(): void {
         const rawX = _fStartOrbX + dx;
         const rawY = _fStartOrbY + dy;
         const clamped = _fClamp(rawX, rawY);
-        const minX = _fStartCardL + FLOATING_CARD_W_MIN - _frOff - _fRS;
-        const minY = _fStartCardT + FLOATING_CARD_H_MIN - _fbOff - _fRS;
+        const minX = _fStartCardL + FLOATING_CARD_W_MIN - _frightOff - _fRS;
+        const minY = _fStartCardT + FLOATING_CARD_H_MIN - _fbottomOff - _fRS;
         const ox = Math.max(minX, clamped.x);
         const oy = Math.max(minY, clamped.y);
 
-        const newW = Math.max(FLOATING_CARD_W_MIN, ox - _fStartCardL + _frOff + _fRS);
-        const newH = Math.max(FLOATING_CARD_H_MIN, oy - _fStartCardT + _fbOff + _fRS);
+        const newW = Math.max(FLOATING_CARD_W_MIN, ox - _fStartCardL + _frightOff + _fRS);
+        const newH = Math.max(FLOATING_CARD_H_MIN, oy - _fStartCardT + _fbottomOff + _fRS);
         _fItem.el.style.width = newW + 'px';
         _fItem.el.style.height = newH + 'px';
         _fItem.cardWidth = newW;

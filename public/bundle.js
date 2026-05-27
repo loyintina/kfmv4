@@ -5037,6 +5037,10 @@
 
   // src/client/modules/card-stack.ts
   var orbT = currentTheme.cornerOrb;
+  var cornerSize = orbT.size;
+  var cornerOff = orbT.cornerOff;
+  var rightOff = cornerOff + orbT.rightOffAdj;
+  var bottomOff = cornerOff + orbT.bottomOffAdj;
   var CARDS = [
     { id: "settings", icon: "\u2699", name: "\u8BBE\u7F6E", desc: "API Key \xB7 \u6A21\u578B\u9009\u62E9" },
     { id: "files", icon: "\u{1F4C1}", name: "\u6587\u4EF6\u7BA1\u7406", desc: "\u4E0A\u4F20 \xB7 \u4E0B\u8F7D \xB7 \u6574\u7406" },
@@ -5393,19 +5397,16 @@
     }
     if (!_dragIsDragging) return;
     const el = _dragItem.el;
-    const cSize = orbT.size;
-    const rOff = orbT.cornerOff + orbT.rightOffAdj;
-    const bOff = orbT.cornerOff + orbT.bottomOffAdj;
     const rawOrbX = _dragStartOrbAbsX + dx;
     const rawOrbY = _dragStartOrbAbsY + dy;
     const maxOrbY = ((_b = (_a = document.getElementById("aiInputBar")) == null ? void 0 : _a.getBoundingClientRect().top) != null ? _b : window.innerHeight) - 42;
     if (_dragItem.state === "editing") {
-      const minOrbAbsX = _dragStartLeft + FLOATING_CARD_W_MIN - rOff - cSize;
-      const minOrbAbsY = _dragStartTop + FLOATING_CARD_H_MIN - bOff - cSize;
+      const minOrbAbsX = _dragStartLeft + FLOATING_CARD_W_MIN - rightOff - cornerSize;
+      const minOrbAbsY = _dragStartTop + FLOATING_CARD_H_MIN - bottomOff - cornerSize;
       const orbAbsX = Math.max(minOrbAbsX, rawOrbX);
       const orbAbsY = Math.min(maxOrbY, Math.max(minOrbAbsY, rawOrbY));
-      const newW = Math.max(FLOATING_CARD_W_MIN, orbAbsX - _dragStartLeft + rOff + cSize);
-      const newH = Math.max(FLOATING_CARD_H_MIN, orbAbsY - _dragStartTop + bOff + cSize);
+      const newW = Math.max(FLOATING_CARD_W_MIN, orbAbsX - _dragStartLeft + rightOff + cornerSize);
+      const newH = Math.max(FLOATING_CARD_H_MIN, orbAbsY - _dragStartTop + bottomOff + cornerSize);
       el.style.width = newW + "px";
       el.style.height = newH + "px";
       _dragItem.cardWidth = newW;
@@ -5414,8 +5415,8 @@
       const bl = _dragItem.blOrb;
       const br = _dragItem.brOrb;
       if (!tr || !bl || !br) return;
-      const newRightX = newW - rOff - cSize;
-      const newBottomY = newH - bOff - cSize;
+      const newRightX = newW - rightOff - cornerSize;
+      const newBottomY = newH - bottomOff - cornerSize;
       tr.style.left = newRightX + "px";
       bl.style.top = newBottomY + "px";
       br.style.left = newRightX + "px";
@@ -5424,14 +5425,14 @@
       const orbAbsX = rawOrbX;
       const orbAbsY = Math.min(maxOrbY, rawOrbY);
       const b = _calcFloatingSafeBounds();
-      const tlFromOrbX = orbAbsX - _dragStartW + rOff + cSize;
-      const tlFromOrbY = orbAbsY - _dragStartH + bOff + cSize;
+      const tlFromOrbX = orbAbsX - _dragStartW + rightOff + cornerSize;
+      const tlFromOrbY = orbAbsY - _dragStartH + bottomOff + cornerSize;
       const clampedLeft = Math.round(Math.max(b.safeL, Math.min(b.fullR - FLOATING_CARD_W_MIN, tlFromOrbX)));
       const clampedTop = Math.round(Math.max(b.safeT, tlFromOrbY));
       el.style.left = clampedLeft + "px";
       el.style.top = clampedTop + "px";
-      const newW = Math.max(FLOATING_CARD_W_MIN, orbAbsX - clampedLeft + rOff + cSize);
-      const newH = Math.max(FLOATING_CARD_H_MIN, orbAbsY - clampedTop + bOff + cSize);
+      const newW = Math.max(FLOATING_CARD_W_MIN, orbAbsX - clampedLeft + rightOff + cornerSize);
+      const newH = Math.max(FLOATING_CARD_H_MIN, orbAbsY - clampedTop + bottomOff + cornerSize);
       if (newW !== _dragItem.cardWidth || newH !== _dragItem.cardHeight) {
         el.style.width = newW + "px";
         el.style.height = newH + "px";
@@ -5440,8 +5441,8 @@
       const bl2 = _dragItem.blOrb;
       const br2 = _dragItem.brOrb;
       if (!tr2 || !bl2 || !br2) return;
-      const newRightX = newW - rOff - cSize;
-      const newBottomY = newH - bOff - cSize;
+      const newRightX = newW - rightOff - cornerSize;
+      const newBottomY = newH - bottomOff - cornerSize;
       tr2.style.left = newRightX + "px";
       bl2.style.top = newBottomY + "px";
       br2.style.left = newRightX + "px";
@@ -5481,10 +5482,6 @@
     const el = document.createElement("div");
     el.className = "floating-card";
     el.dataset.index = String(_focusIndex);
-    const cornerSize = orbT.size;
-    const cornerOff = orbT.cornerOff;
-    const rightOff = cornerOff + orbT.rightOffAdj;
-    const bottomOff = cornerOff + orbT.bottomOffAdj;
     const s = orbT.symScale, c = 6 * (1 - s), sh = orbT.symShift;
     const bgLayer = document.createElement("div");
     bgLayer.style.cssText = [
@@ -5787,15 +5784,24 @@
       _dragLongPressFired = false;
     }
     anim.killTweensOf(el);
+    [item.tlOrb, item.trOrb, item.blOrb, item.brOrb].forEach((o) => {
+      if (o) anim.killTweensOf(o);
+    });
     if (animated) {
-      const tl = anim.timeline({
-        onComplete: () => {
-          _floatingCards = _floatingCards.filter((fi) => fi !== item);
-          el.remove();
-        }
-      });
-      tl.to(el, { scale: 1.08, duration: 0.1, ease: "power2.out" });
-      tl.to(el, { scale: 0, duration: 0.2, ease: "power3.in" });
+      const trLeft = item.cardWidth - rightOff - cornerSize;
+      const trTop = cornerOff;
+      const trCx = trLeft + cornerSize / 2;
+      const trCy = trTop + cornerSize / 2;
+      el.style.transformOrigin = trCx + "px " + trCy + "px";
+      const DUR = 0.25, EASE = "power3.in";
+      if (item.tlOrb) anim.to(item.tlOrb, { left: trLeft, top: trTop, scale: 0, duration: DUR, ease: EASE });
+      if (item.trOrb) anim.to(item.trOrb, { scale: 0, duration: DUR, ease: EASE });
+      if (item.blOrb) anim.to(item.blOrb, { left: trLeft, top: trTop, scale: 0, duration: DUR, ease: EASE });
+      if (item.brOrb) anim.to(item.brOrb, { left: trLeft, top: trTop, scale: 0, duration: DUR, ease: EASE });
+      anim.to(el, { scale: 0, duration: DUR, ease: EASE, onComplete: () => {
+        _floatingCards = _floatingCards.filter((fi) => fi !== item);
+        el.remove();
+      } });
     } else {
       _floatingCards = _floatingCards.filter((fi) => fi !== item);
       el.remove();
@@ -5932,8 +5938,8 @@
     });
     const _fRS = orbT.size;
     const _fRH = _fRS / 2;
-    const _frOff = orbT.cornerOff + orbT.rightOffAdj;
-    const _fbOff = orbT.cornerOff + orbT.bottomOffAdj;
+    const _frightOff = orbT.cornerOff + orbT.rightOffAdj;
+    const _fbottomOff = orbT.cornerOff + orbT.bottomOffAdj;
     const _fMARGIN = 8;
     function _fGetMaxY() {
       const bar = document.getElementById("aiInputBar");
@@ -5946,8 +5952,8 @@
       };
     }
     function _fSyncCorners(item, w, h) {
-      const rx = w - _frOff - _fRS;
-      const by = h - _fbOff - _fRS;
+      const rx = w - _frightOff - _fRS;
+      const by = h - _fbottomOff - _fRS;
       if (item.brOrb) {
         item.brOrb.style.left = rx + "px";
         item.brOrb.style.top = by + "px";
@@ -6018,12 +6024,12 @@
           const rawX = _fStartOrbX + dx;
           const rawY = _fStartOrbY + dy;
           const clamped = _fClamp(rawX, rawY);
-          const minX = _fStartCardL + FLOATING_CARD_W_MIN - _frOff - _fRS;
-          const minY = _fStartCardT + FLOATING_CARD_H_MIN - _fbOff - _fRS;
+          const minX = _fStartCardL + FLOATING_CARD_W_MIN - _frightOff - _fRS;
+          const minY = _fStartCardT + FLOATING_CARD_H_MIN - _fbottomOff - _fRS;
           const ox = Math.max(minX, clamped.x);
           const oy = Math.max(minY, clamped.y);
-          const newW = Math.max(FLOATING_CARD_W_MIN, ox - _fStartCardL + _frOff + _fRS);
-          const newH = Math.max(FLOATING_CARD_H_MIN, oy - _fStartCardT + _fbOff + _fRS);
+          const newW = Math.max(FLOATING_CARD_W_MIN, ox - _fStartCardL + _frightOff + _fRS);
+          const newH = Math.max(FLOATING_CARD_H_MIN, oy - _fStartCardT + _fbottomOff + _fRS);
           _fItem.el.style.width = newW + "px";
           _fItem.el.style.height = newH + "px";
           _fItem.cardWidth = newW;
