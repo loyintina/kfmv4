@@ -5558,6 +5558,48 @@
         const compressedH = Math.max(FLOATING_CARD_H_MIN, Math.min(targetH, curTop + curH - MARGIN3));
         const targetLeft2 = curLeft + curW - compressedW;
         const targetTop2 = curTop + curH - compressedH;
+        const brX0 = curW - rightOff - cornerSize;
+        const brY0 = curH - bottomOff - cornerSize;
+        const tlColor = hexToRgba(cc.color1, orbT.tlAlpha);
+        const tlOrb = createDecoratedCorner(
+          brX0,
+          brY0,
+          cornerSize,
+          cornerSize,
+          tlColor,
+          '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c - sh) + "," + (c - sh) + ") scale(" + s + ')"><path d="M6,10 L6,2 M6,2 L3,5 M6,2 L9,5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>'
+        );
+        tlOrb.style.pointerEvents = "auto";
+        tlOrb.style.cursor = "pointer";
+        tlOrb.style.opacity = "0";
+        el.appendChild(tlOrb);
+        item.tlOrb = tlOrb;
+        const trOrb = createDecoratedCorner(
+          brX0,
+          brY0,
+          cornerSize,
+          cornerSize,
+          rightRgba,
+          '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c + sh) + "," + (c - sh) + ") scale(" + s + ')"><line x1="4" y1="2" x2="10" y2="8" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></g></svg>'
+        );
+        trOrb.style.pointerEvents = "auto";
+        trOrb.style.cursor = "pointer";
+        trOrb.style.opacity = "0";
+        el.appendChild(trOrb);
+        item.trOrb = trOrb;
+        const blOrb = createDecoratedCorner(
+          brX0,
+          brY0,
+          cornerSize,
+          cornerSize,
+          leftRgba,
+          '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c - sh) + "," + (c + sh) + ") scale(" + s + ')"><path d="M6,2 L6,10 M6,10 L3,7 M6,10 L9,7" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>'
+        );
+        blOrb.style.pointerEvents = "auto";
+        blOrb.style.cursor = "pointer";
+        blOrb.style.opacity = "0";
+        el.appendChild(blOrb);
+        item.blOrb = blOrb;
         anim.to(el, {
           left: targetLeft2,
           top: targetTop2,
@@ -5570,63 +5612,46 @@
             const h = parseFloat(el.style.height) || compressedH;
             brOrb.style.left = w - rightOff - cornerSize + "px";
             brOrb.style.top = h - bottomOff - cornerSize + "px";
+            const range = compressedW - curW || 1;
+            const p = Math.min(1, Math.max(0, (w - curW) / range));
+            tlOrb.style.left = brX0 + (cornerOff - brX0) * p + "px";
+            tlOrb.style.top = brY0 + (cornerOff - brY0) * p + "px";
+            tlOrb.style.opacity = String(p);
+            trOrb.style.left = brX0 + (w - rightOff - cornerSize - brX0) * p + "px";
+            trOrb.style.top = brY0 + (cornerOff - brY0) * p + "px";
+            trOrb.style.opacity = String(p);
+            blOrb.style.left = brX0 + (cornerOff - brX0) * p + "px";
+            blOrb.style.top = brY0 + (h - bottomOff - cornerSize - brY0) * p + "px";
+            blOrb.style.opacity = String(p);
           },
           onComplete: () => {
             item.cardWidth = compressedW;
             item.cardHeight = compressedH;
             brOrb.style.left = item.cardWidth - rightOff - cornerSize + "px";
             brOrb.style.top = item.cardHeight - bottomOff - cornerSize + "px";
-            const tlColor = hexToRgba(cc.color1, orbT.tlAlpha);
-            const tlOrb = createDecoratedCorner(
-              cornerOff,
-              cornerOff,
-              cornerSize,
-              cornerSize,
-              tlColor,
-              '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c - sh) + "," + (c - sh) + ") scale(" + s + ')"><path d="M6,10 L6,2 M6,2 L3,5 M6,2 L9,5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>'
-            );
-            tlOrb.style.pointerEvents = "auto";
-            tlOrb.style.cursor = "pointer";
+            tlOrb.style.left = cornerOff + "px";
+            tlOrb.style.top = cornerOff + "px";
+            tlOrb.style.opacity = "1";
             tlOrb.title = "\u4E0A\u79FB\u4E00\u5C42";
             tlOrb.addEventListener("click", () => {
               if (item.state !== "active") return;
               const above = _cardAbove(item);
               if (above) _swapZIndex(item, above);
             });
-            el.appendChild(tlOrb);
-            item.tlOrb = tlOrb;
-            const trOrb = createDecoratedCorner(
-              item.cardWidth - rightOff - cornerSize,
-              cornerOff,
-              cornerSize,
-              cornerSize,
-              rightRgba,
-              '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c + sh) + "," + (c - sh) + ") scale(" + s + ')"><line x1="4" y1="2" x2="10" y2="8" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></g></svg>'
-            );
-            trOrb.style.pointerEvents = "auto";
-            trOrb.style.cursor = "pointer";
+            trOrb.style.left = item.cardWidth - rightOff - cornerSize + "px";
+            trOrb.style.top = cornerOff + "px";
+            trOrb.style.opacity = "1";
             trOrb.title = "\u5173\u95ED";
             trOrb.addEventListener("click", () => dismissFloatingCard(true, el));
-            el.appendChild(trOrb);
-            item.trOrb = trOrb;
-            const blOrb = createDecoratedCorner(
-              cornerOff,
-              item.cardHeight - bottomOff - cornerSize,
-              cornerSize,
-              cornerSize,
-              leftRgba,
-              '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c - sh) + "," + (c + sh) + ") scale(" + s + ')"><path d="M6,2 L6,10 M6,10 L3,7 M6,10 L9,7" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>'
-            );
-            blOrb.style.pointerEvents = "auto";
-            blOrb.style.cursor = "pointer";
+            blOrb.style.left = cornerOff + "px";
+            blOrb.style.top = item.cardHeight - bottomOff - cornerSize + "px";
+            blOrb.style.opacity = "1";
             blOrb.title = "\u4E0B\u79FB\u4E00\u5C42";
             blOrb.addEventListener("click", () => {
               if (item.state !== "active") return;
               const below = _cardBelow(item);
               if (below) _swapZIndex(item, below);
             });
-            el.appendChild(blOrb);
-            item.blOrb = blOrb;
             item.state = "active";
             el.style.zIndex = String(zIndex);
             const brSvgContainer = brOrb.children[1];
@@ -5636,18 +5661,6 @@
         });
       } else if (item.state === "active") {
         item.state = "dismissing";
-        if (item.tlOrb) {
-          item.tlOrb.remove();
-          item.tlOrb = null;
-        }
-        if (item.trOrb) {
-          item.trOrb.remove();
-          item.trOrb = null;
-        }
-        if (item.blOrb) {
-          item.blOrb.remove();
-          item.blOrb = null;
-        }
         const bgLayer2 = el.firstElementChild;
         if (bgLayer2) {
           bgLayer2.style.justifyContent = "center";
@@ -5684,12 +5697,43 @@
             const h = parseFloat(el.style.height) || foldH;
             brOrb.style.left = w - rightOff - cornerSize + "px";
             brOrb.style.top = h - bottomOff - cornerSize + "px";
+            const brX = w - rightOff - cornerSize;
+            const brY = h - bottomOff - cornerSize;
+            const fRange = expW - clampedFoldW || 1;
+            const fp = Math.min(1, Math.max(0, (expW - w) / fRange));
+            if (item.tlOrb) {
+              item.tlOrb.style.left = cornerOff + (brX - cornerOff) * fp + "px";
+              item.tlOrb.style.top = cornerOff + (brY - cornerOff) * fp + "px";
+              item.tlOrb.style.opacity = String(1 - fp);
+            }
+            if (item.trOrb) {
+              item.trOrb.style.left = expW - rightOff - cornerSize + (brX - (expW - rightOff - cornerSize)) * fp + "px";
+              item.trOrb.style.top = cornerOff + (brY - cornerOff) * fp + "px";
+              item.trOrb.style.opacity = String(1 - fp);
+            }
+            if (item.blOrb) {
+              item.blOrb.style.left = cornerOff + (brX - cornerOff) * fp + "px";
+              item.blOrb.style.top = expH - bottomOff - cornerSize + (brY - (expH - bottomOff - cornerSize)) * fp + "px";
+              item.blOrb.style.opacity = String(1 - fp);
+            }
           },
           onComplete: () => {
             item.cardWidth = clampedFoldW;
             item.cardHeight = clampedFoldH;
             brOrb.style.left = clampedFoldW - rightOff - cornerSize + "px";
             brOrb.style.top = clampedFoldH - bottomOff - cornerSize + "px";
+            if (item.tlOrb) {
+              item.tlOrb.remove();
+              item.tlOrb = null;
+            }
+            if (item.trOrb) {
+              item.trOrb.remove();
+              item.trOrb = null;
+            }
+            if (item.blOrb) {
+              item.blOrb.remove();
+              item.blOrb = null;
+            }
             item.state = "compact";
           }
         });
