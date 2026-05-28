@@ -25,13 +25,8 @@ interface CardDef {
 }
 
 const CARDS: CardDef[] = [
-  { id: 'settings', icon: '\u2699', name: '\u8BBE\u7F6E', desc: 'API Key \u00B7 \u6A21\u578B\u9009\u62E9' },
-  { id: 'files',    icon: '\uD83D\uDCC1', name: '\u6587\u4EF6\u7BA1\u7406', desc: '\u4E0A\u4F20 \u00B7 \u4E0B\u8F7D \u00B7 \u6574\u7406' },
-  { id: 'notes',    icon: '\uD83D\uDCDD', name: '\u7B14\u8BB0',     desc: '\u5FEB\u901F\u8BB0\u5F55 \u00B7 \u8349\u7A3F' },
-  { id: 'plugins',  icon: '\uD83D\uDD0C', name: '\u63D2\u4EF6',     desc: '\u6269\u5C55 \u00B7 \u96C6\u6210' },
-  { id: 'theme',    icon: '\uD83C\uDFA8', name: '\u4E3B\u9898',     desc: '\u5916\u89C2 \u00B7 \u914D\u8272' },
-  { id: 'stats',    icon: '\uD83D\uDCCA', name: '\u7EDF\u8BA1',     desc: '\u4F7F\u7528\u6570\u636E \u00B7 \u8D8B\u52BF' },
-  { id: 'about',    icon: '\uD83D\uDC8E', name: '\u5173\u4E8E',     desc: '\u7248\u672C \u00B7 \u4FE1\u606F' },
+  { id: 'settings', icon: '\u2699', name: '\u8BBE\u7F6E',        desc: '\u8BBE\u7F6E' },
+  { id: 'debug',    icon: '\uD83D\uDD27', name: '\u65E5\u5FD7\u7BA1\u7406', desc: '\u65E5\u5FD7\u7BA1\u7406' },
 ];
 
 // ========== 卡片配色：每张卡双色独立随机 ==========
@@ -61,7 +56,7 @@ function hexToRgba(hex: string, alpha: number): string {
 /** 每张卡双色独立随机，两色保持一定色相差避免撞色 */
 function _generateRandomAccents(): void {
   const accents = [];
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < CARDS.length; i++) {
     const h1 = Math.random() * 360;   // color1（渐变起点）
     // color2 在色环上与 color1 保持 30°–120° 的偏差，避免过于接近或完全随机撞色
     const offset = (30 + Math.random() * 90) * (Math.random() > 0.5 ? 1 : -1);
@@ -225,13 +220,9 @@ function createCard(index: number): HTMLElement {
     'gap:6px',
     'box-sizing:border-box',
   ].join(';');
-
   inner.innerHTML = ''
-    + '<div class="stack-card-icon" style="width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;background:' + hexToRgba(cc.color1, 0.15) + ';color:' + cc.color1 + '">' + String(index + 1).padStart(2, '0') + '</div>'
-    + '<div class="stack-card-info" style="flex:1;min-width:0">'
-    + '  <div class="stack-card-name" style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + card.name + '</div>'
-    + '  <div class="stack-card-desc" style="font-size:10px;opacity:0.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:0px">' + card.desc + '</div>'
-    + '</div>';
+    + '<div class="stack-card-icon" style="width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;background:' + hexToRgba(cc.color1, 0.15) + ';color:' + cc.color1 + '">' + String(index + 1).padStart(2, '0') + '</div>';
+
 
   el.appendChild(inner);
 
@@ -670,7 +661,7 @@ export function launchFocusedCard(): void {
   if (!focusedCard) return;
   const cardRect = focusedCard.getBoundingClientRect();
   const cc = _currentAccents![_focusIndex];
-  const cardName = CARDS[_focusIndex].name;
+
 
   const el = document.createElement('div');
   el.className = 'floating-card';
@@ -691,7 +682,7 @@ export function launchFocusedCard(): void {
   const contentEl = document.createElement('div');
   contentEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:2px 6px;font-size:11px;font-weight:500;color:rgba(224,224,224,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:none';
   bgLayer.appendChild(contentEl);
-  _renderFloatingContent(contentEl, 'compact', cardName);
+  _renderFloatingContent(contentEl, 'compact');
   el.appendChild(bgLayer);
 
   // 四角光球颜色：左 color1，右 color2
@@ -716,16 +707,16 @@ export function launchFocusedCard(): void {
   brOrb.style.cursor = 'pointer';
   brOrb.classList.add("floating-br-orb");
   _brOrbToItem.set(brOrb, item);
-  brOrb.title = cardName + ' · 点击展开';
+
   brOrb.addEventListener('click', (e) => {
     e.stopPropagation();
     if (item.state === 'compact') {
       item.state = 'expanding';
-      brOrb.title = cardName + ' · 点击折叠';
+
       // 内容淡出 → 切换为展开态内容 → 淡入（与展开动画并行）
       if (item.contentEl) {
         anim.to(item.contentEl, { opacity: 0, duration: 0.1, ease: 'none', onComplete: () => {
-          _buildExpandedLayout(el, cc, cardName);
+          _buildExpandedLayout(el, cc);
           anim.to(item.contentEl!, { opacity: 1, duration: 0.15, ease: 'none' });
         }});
       }
@@ -789,7 +780,7 @@ export function launchFocusedCard(): void {
           brOrb.style.top = (item.cardHeight - bottomOff - cornerSize) + 'px';
           item.state = 'active';
           el.style.zIndex = String(zIndex);
-          brOrb.title = cardName + ' · 点击折叠';
+
         }
       });
       anim.to(tlOrb, { x: 0, y: 0, duration: 0.3, ease: 'back.out(1.1)' });
@@ -801,11 +792,11 @@ export function launchFocusedCard(): void {
     // 内容淡出 → 切换为紧凑态内容 → 淡入（与折叠动画并行）
     if (item.contentEl) {
       anim.to(item.contentEl, { opacity: 0, duration: 0.1, ease: 'none', onComplete: () => {
-        if (item.contentEl) _renderFloatingContent(item.contentEl, 'compact', cardName);
+        if (item.contentEl) _renderFloatingContent(item.contentEl, 'compact');
         anim.to(item.contentEl, { opacity: 1, duration: 0.15, ease: 'none' });
       }});
     }
-    brOrb.title = cardName + ' · 点击展开';
+
     // 清除 BR 光球展开态图案
     const brSvg2 = brOrb.children[1] as HTMLElement;
     if (brSvg2) brSvg2.innerHTML = '';
@@ -891,21 +882,19 @@ export function launchFocusedCard(): void {
   });
 }
 
-/** 在 compact 态浮卡上构建展开态的滚动内容区 */
-function _renderFloatingContent(contentEl: HTMLElement, state: 'compact' | 'active', cardName: string): void {
+/** 在 compact 态浮卡上构建内容区 */
+function _renderFloatingContent(contentEl: HTMLElement, state: 'compact' | 'active'): void {
   if (state === 'compact') {
     contentEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:2px 6px;font-size:11px;font-weight:500;color:rgba(224,224,224,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
-    contentEl.textContent = cardName;
   } else {
     contentEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:flex-start;box-sizing:border-box;padding:8px;font-size:11px;color:rgba(224,224,224,0.7);overflow-y:auto';
-    contentEl.textContent = '';
   }
 }
 
-function _buildExpandedLayout(el: HTMLElement, _cc: { color1: string; color2: string }, cardName: string): void {
+function _buildExpandedLayout(el: HTMLElement, _cc: { color1: string; color2: string }): void {
   const item = _floatingCards.find(i => i.el === el);
   if (!item?.contentEl) return;
-  _renderFloatingContent(item.contentEl, 'active', cardName);
+  _renderFloatingContent(item.contentEl, 'active');
 }
 
 export function dismissFloatingCard(animated?: boolean, sourceEl?: HTMLElement): void {
