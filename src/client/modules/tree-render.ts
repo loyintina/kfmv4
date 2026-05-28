@@ -13,7 +13,7 @@ import { setupCharRainTweens, setupCharRainForSiblings, cleanupCharRain, type Ch
 import { closeSidebar } from './ui.js';
 import { Renderer } from '../engine/v2/renderer.js';
 import { L } from './renderer-lifecycle.js';
-import { debugLog } from './debug-panel.js';
+
 import { _rebuildRowIndex, findBoxById } from './canvas-utils.js';
 import { Box } from '../engine/v2/box.js';
 import { getCursorRowIndex, moveCursorTo, ensureCursorBox, _scrollToCenterCursor } from './canvas-cursor.js';
@@ -832,16 +832,16 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
 
   L.beginOp(path, 'expand');
   const animRoot = L.renderer!.getRoot()!;
-  debugLog(`[expand] BEGIN path=${path} animRoot.id=${animRoot.id} scrollY=${(container as any).scrollY ?? root.scrollY ?? '?'}`);
-  debugLog(`[expand] container=${container.id} children=[${container.children.map(c => c.id).join(', ')}]`);
-  debugLog(`[expand] parentOv.id=${pack.containerOverlay.id} parentOv.pos=(${pack.containerOverlay.x},${pack.containerOverlay.y})`);
-  debugLog(`[expand] container.absPos(y)=${container.getAbsolutePosition().y} topAbs(y)=${pack.containerOverlay.getAbsolutePosition().y}`);
-  debugLog(`[expand] rowOverlays=${pack.rowOverlays.map(r => r.id + '@y=' + r.y.toFixed(0)).join(' | ')}`);
-  debugLog(`[expand] siblingOverlays=${pack.siblingOverlays.map(s => s.id).join(',') || '(none)'}`);
-  debugLog(`[expand] subTargets=${subTargets.map(st => st.container.id + '(L' + st.level + ')').join(',') || '(none)'}`);
-  debugLog(`[expand] subPacks=${subPacks.length} _fullHeight=${(container as any)._fullHeight} _origYs=${JSON.stringify((container as any)._origYs)}`);
-  debugLog(`[expand] overlayRoot.id=${overlayRoot.id} overlayRoot.pos=(${overlayRoot.x},${overlayRoot.y})`);
-  debugLog(`[expand] charLayer parent=${charLayer.parent?.id} pos=(${charLayer.x.toFixed(0)},${charLayer.y.toFixed(0)})`);
+  ;
+  ;
+  ;
+  ;
+  ;
+  ;
+  ;
+  ;
+  ;
+  ;
 
   // 所有 overlay tween + 字符雨 cleanup 信息收集
   const charRainCleanups: CharRainCleanup[] = [];
@@ -858,7 +858,7 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
     pack.rowOverlays.map(r => r.y),
     ts, 0
   );
-  debugLog(`[expand] topCleanup=${topCleanup ? topCleanup.charBoxes.length + ' char boxes' : 'null'}`);
+  ;
   if (topCleanup) charRainCleanups.push(topCleanup);
 
   // 所有子容器 overlay + 字符雨，按层 staggered delay
@@ -891,12 +891,11 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
   // 用 onComplete 而非 ts.call：反向播放时 onComplete 不会被触发，
   // 不会与 processClickQueue 的 onReverseComplete 冲突。
   ts.eventCallback('onComplete', () => {
-    debugLog(`[expand] onComplete FIRED animRoot match=${L.renderer?.getRoot() === animRoot} charRainCleanups=${charRainCleanups.length} overlays=${_activeOverlays.length}`);
-    if (L.renderer?.getRoot() !== animRoot) { debugLog('[expand] onComplete SKIPPED (root changed)'); return; }
+    if (L.renderer?.getRoot() !== animRoot) { return; }
     for (const cu of charRainCleanups) cleanupCharRain(cu);
     _removeAllOverlays();
     L.renderer?.setOverlayRoot(null);  // 销毁动画树
-    debugLog('[expand] onComplete cleanup done');
+    ;
     // 恢复主树被隐藏的元素（展开动画：树已重建，元素仍在）
     for (const p of [pack, ...subPacks]) {
       if (p.hiddenContainer) p.hiddenContainer.opacity = 1;

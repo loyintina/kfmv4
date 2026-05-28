@@ -16,7 +16,7 @@ import { FONT, LINE_HEIGHT, MAX_LINES } from "./style-registry.js";
 import { prepareWithSegments, layoutWithLines } from "@chenglou/pretext";
 import type { AnimTimeline } from "./animation-registry.js";
 import { DOM } from "./dom-refs.js";
-import { debugLog } from "./debug-panel.js";
+
 
 // ============================================================
 // cleanup 信息（供外部在动画完成时清理字符 Box）
@@ -72,7 +72,7 @@ function _charRainCore(
     const rowExpandedY = rowTargetYs?.[rowIdx] ?? row.y;
     const label = row.children.find((c) => c.id?.startsWith("label-"));
     if (!label || !label.textStyle?.content) {
-      debugLog(`[charRain] SKIP row[${rowIdx}] id=${row.id} label=${!!label} content=${!!label?.textStyle?.content}`);
+
       continue;
     }
 
@@ -177,7 +177,7 @@ function _charRainCore(
         cx += charWidths[ci];
       }
     }
-    debugLog(`[charRain] row[${rowIdx}] id=${row.id} text="${text}" y=${rowExpandedY}`);
+
 
     // toggle 图标
     const toggleBox = row.children.find((c) => c.id?.startsWith("toggle-"));

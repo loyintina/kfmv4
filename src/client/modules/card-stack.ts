@@ -1,6 +1,7 @@
 import { gestures } from "./gesture-registry.js";
 import { anim, AnimTimeline } from './animation-registry.js';
-import { debugLog } from './debug-panel.js';
+import { getLogs, clearLogs, copyLogs, onLog } from './logger.js';
+
 import { currentTheme as theme } from './theme.js';
 const orbT = theme.cornerOrb;
 const cornerSize = orbT.size;
@@ -442,7 +443,7 @@ function _scatterPosition(cardIndex: number): { left: number; top: number } {
     const y = b.safeT + Math.random() * (maxY - b.safeT);
     if (isValid(x, y)) {
       const result = { left: Math.round(x), top: Math.round(y) };
-      debugLog("FLOAT scatter c" + cardIndex + " " + result.left + "," + result.top);
+
       return result;
     }
   }
@@ -454,7 +455,7 @@ function _scatterPosition(cardIndex: number): { left: number; top: number } {
     left: Math.max(b.safeL, Math.min(b.fullR - w, Math.round(fallbackX))),
     top: Math.max(b.safeT, Math.min(b.safeB - h, Math.round(fallbackY))),
   };
-  debugLog("FLOAT fallback c" + cardIndex + " " + clamped.left + "," + clamped.top);
+
   return clamped;
 }
 
@@ -491,13 +492,13 @@ function _enterFloatingEditMode(item: FloatingCardItem): void {
   } else {
     item.el.style.boxShadow = theme.stack.blurShadow;
   }
-  debugLog("FLOAT edit enter");
+
 }
 
 function _exitFloatingEditMode(item: FloatingCardItem): void {
   item.state = _preEditState;
   item.el.style.boxShadow = theme.stack.blurShadow;
-  debugLog("FLOAT edit exit");
+
 }
 
 function _startFloatingDrag(item: FloatingCardItem, clientX: number, clientY: number, pointerId?: number): void {
@@ -871,7 +872,7 @@ export function launchFocusedCard(): void {
   _floatingCards.push(item);
   const targetLeft = targetPos.left;
   const targetTop = targetPos.top;
-  debugLog('FLOAT launch compact ' + _focusIndex + ' ' + targetLeft + ',' + targetTop);
+
 
   const LAUNCH_Z_ABOVE_STACK = Z_STACK_BASE + CARDS.length + 1;
   el.style.zIndex = String(LAUNCH_Z_ABOVE_STACK);
@@ -896,11 +897,71 @@ function _renderFloatingContent(contentEl: HTMLElement, state: 'compact' | 'acti
   }
 }
 
+
 function _buildExpandedLayout(el: HTMLElement, _cc: { color1: string; color2: string }): void {
   const item = _floatingCards.find(i => i.el === el);
   if (!item?.contentEl) return;
+  const cardId = CARDS[item.sourceIndex]?.id;
+  if (cardId === 'debug') {
+    _renderDebugContent(item.contentEl);
+    return;
+  }
   _renderFloatingContent(item.contentEl, 'active');
 }
+
+let _debugUnsub: (() => void) | null = null;
+
+function _renderDebugContent(contentEl: HTMLElement): void {
+  // 清理之前的订阅
+  if (_debugUnsub) { _debugUnsub(); _debugUnsub = null; }
+
+  contentEl.style.cssText = [
+    'position:absolute', 'inset:0',
+    'display:flex', 'flex-direction:column',
+    'padding:4px', 'box-sizing:border-box',
+  ].join(';');
+
+  const logArea = document.createElement('div');
+  logArea.style.cssText = [
+    'flex:1', 'overflow-y:auto',
+    'font-family:monospace', 'font-size:10px',
+    'color:rgba(224,224,224,0.8)',
+    'white-space:pre-wrap', 'word-break:break-all',
+    'padding:4px', 'background:rgba(0,0,0,0.2)',
+    'border-radius:6px', 'margin-bottom:4px',
+  ].join(';');
+  contentEl.appendChild(logArea);
+
+  const btnBar = document.createElement('div');
+  btnBar.style.cssText = 'display:flex;gap:6px;justify-content:flex-end';
+  contentEl.appendChild(btnBar);
+  const clearBtn = _dbgBtn('清空', clearLogs);
+  btnBar.appendChild(clearBtn);
+  const copyBtn = _dbgBtn('复制', copyLogs);
+  btnBar.appendChild(copyBtn);
+
+  const refresh = () => {
+    const logs = getLogs();
+    logArea.textContent = logs.length > 0 ? logs.join('\n') : '(空)';
+    logArea.scrollTop = logArea.scrollHeight;
+  };
+  refresh();
+  _debugUnsub = onLog(refresh);
+}
+
+function _dbgBtn(text: string, onClick: () => void): HTMLElement {
+  const btn = document.createElement('button');
+  btn.textContent = text;
+  btn.style.cssText = [
+    'padding:2px 10px', 'font-size:10px',
+    'border:1px solid rgba(255,255,255,0.15)',
+    'border-radius:4px', 'background:rgba(255,255,255,0.05)',
+    'color:rgba(224,224,224,0.8)', 'cursor:pointer',
+  ].join(';');
+  btn.addEventListener('click', onClick);
+  return btn;
+}
+
 
 export function dismissFloatingCard(animated?: boolean, sourceEl?: HTMLElement): void {
   if (sourceEl) {
