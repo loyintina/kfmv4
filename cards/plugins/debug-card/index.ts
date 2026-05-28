@@ -4,6 +4,8 @@
  * 展开后显示日志面板。日志由 logger.ts 统一收集，本卡片只负责渲染。
  * 当前日志为空（所有 debugLog 已清除），只等将来接入。
  */
+// logger 当前在 src/client/modules/logger.ts（tsconfig rootDir 限制）。
+// 当 cards/ 目录纳入构建后，logger.ts 将迁回此处，import 路径自然可用。
 import { getLogs, clearLogs, copyLogs, onLog } from './logger.js';
 
 export const id = 'debug';

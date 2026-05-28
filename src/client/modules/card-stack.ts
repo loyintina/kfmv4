@@ -227,7 +227,8 @@ function createCard(index: number): HTMLElement {
     'box-sizing:border-box',
   ].join(';');
   inner.innerHTML = ''
-    + '<div class="stack-card-icon" style="width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;background:' + hexToRgba(cc.color1, 0.15) + ';color:' + cc.color1 + '">' + String(index + 1).padStart(2, '0') + '</div>';
+    + '<div class="stack-card-icon" style="width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;background:' + hexToRgba(cc.color1, 0.15) + ';color:' + cc.color1 + '">' + String(index + 1).padStart(2, '0') + '</div>'
+    + (card.name ? '<div class="stack-card-name" style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + card.name + '</div>' : '');
 
 
   el.appendChild(inner);
@@ -688,7 +689,7 @@ export function launchFocusedCard(): void {
   const contentEl = document.createElement('div');
   contentEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:2px 6px;font-size:11px;font-weight:500;color:rgba(224,224,224,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:none';
   bgLayer.appendChild(contentEl);
-  _renderFloatingContent(contentEl, 'compact');
+  _renderFloatingContent(contentEl, 'compact', CARDS[_focusIndex].name);
   el.appendChild(bgLayer);
 
   // 四角光球颜色：左 color1，右 color2
@@ -798,7 +799,7 @@ export function launchFocusedCard(): void {
     // 内容淡出 → 切换为紧凑态内容 → 淡入（与折叠动画并行）
     if (item.contentEl) {
       anim.to(item.contentEl, { opacity: 0, duration: 0.1, ease: 'none', onComplete: () => {
-        if (item.contentEl) _renderFloatingContent(item.contentEl, 'compact');
+        if (item.contentEl) _renderFloatingContent(item.contentEl, 'compact', CARDS[item.sourceIndex]?.name || '');
         anim.to(item.contentEl, { opacity: 1, duration: 0.15, ease: 'none' });
       }});
     }
@@ -889,9 +890,10 @@ export function launchFocusedCard(): void {
 }
 
 /** 在 compact 态浮卡上构建内容区 */
-function _renderFloatingContent(contentEl: HTMLElement, state: 'compact' | 'active'): void {
+function _renderFloatingContent(contentEl: HTMLElement, state: 'compact' | 'active', cardName?: string): void {
   if (state === 'compact') {
     contentEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:2px 6px;font-size:11px;font-weight:500;color:rgba(224,224,224,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+    contentEl.textContent = cardName || '';
   } else {
     contentEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:flex-start;box-sizing:border-box;padding:8px;font-size:11px;color:rgba(224,224,224,0.7);overflow-y:auto';
   }
@@ -915,6 +917,7 @@ function _renderDebugContent(contentEl: HTMLElement): void {
   // 清理之前的订阅
   if (_debugUnsub) { _debugUnsub(); _debugUnsub = null; }
 
+  contentEl.innerHTML = '';
   contentEl.style.cssText = [
     'position:absolute', 'inset:0',
     'display:flex', 'flex-direction:column',
