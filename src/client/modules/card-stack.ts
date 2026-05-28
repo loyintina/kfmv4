@@ -25,8 +25,13 @@ interface CardDef {
 }
 
 const CARDS: CardDef[] = [
-  { id: 'settings', icon: '\u2699', name: '\u8BBE\u7F6E',        desc: '\u8BBE\u7F6E' },
-  { id: 'debug',    icon: '\uD83D\uDD27', name: '\u65E5\u5FD7\u7BA1\u7406', desc: '\u65E5\u5FD7\u7BA1\u7406' },
+  { id: 'settings', icon: '\u2699', name: '\u8BBE\u7F6E',        desc: '' },
+  { id: 'debug',    icon: '\uD83D\uDD27', name: '\u65E5\u5FD7\u7BA1\u7406', desc: '' },
+  { id: 'card03',   icon: '',           name: '',                desc: '' },
+  { id: 'card04',   icon: '',           name: '',                desc: '' },
+  { id: 'card05',   icon: '',           name: '',                desc: '' },
+  { id: 'card06',   icon: '',           name: '',                desc: '' },
+  { id: 'card07',   icon: '',           name: '',                desc: '' },
 ];
 
 // ========== 卡片配色：每张卡双色独立随机 ==========
