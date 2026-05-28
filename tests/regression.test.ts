@@ -68,18 +68,18 @@ interface TestFileNode {
 }
 
 const singleFolder: TestFileNode[] = [
-  { name: 'src', path: '/root/src', isDir: true, children: [
-    { name: 'index.ts', path: '/root/src/index.ts', isDir: false },
+  { name: 'src', path: './src', isDir: true, children: [
+    { name: 'index.ts', path: './src/index.ts', isDir: false },
   ]},
 ];
 
 const nestedFolders: TestFileNode[] = [
-  { name: 'src', path: '/root/src', isDir: true, children: [
-    { name: 'lib', path: '/root/src/lib', isDir: true, children: [
-      { name: 'util.ts', path: '/root/src/lib/util.ts', isDir: false },
+  { name: 'src', path: './src', isDir: true, children: [
+    { name: 'lib', path: './src/lib', isDir: true, children: [
+      { name: 'util.ts', path: './src/lib/util.ts', isDir: false },
     ]},
   ]},
-  { name: 'README.md', path: '/root/README.md', isDir: false },
+  { name: 'README.md', path: './README.md', isDir: false },
 ];
 
 function seedState(files: Record<string, any>) {
@@ -188,7 +188,7 @@ test('cancelAllRafs clears handles', () => {
 group('tree-model');
 
 test('root is always wrapped in expanded container', () => {
-  seedState({ '/root': { name: 'root', path: '/root', isDir: true, children: singleFolder } });
+  seedState({ '.': { name: 'root', path: '.', isDir: true, children: singleFolder } });
   KFMState.expandedPaths = {};
   const tree = buildSidebarTree(295, 287);
   const containers = (tree.children || []).filter((c: any) => (c.id || '').startsWith('expanded-'));
@@ -196,8 +196,8 @@ test('root is always wrapped in expanded container', () => {
 });
 
 test('expanded folder has expanded container with height > 0', () => {
-  seedState({ '/root': { name: 'root', path: '/root', isDir: true, children: singleFolder } });
-  KFMState.expandedPaths = { '/root': true };
+  seedState({ '.': { name: 'root', path: '.', isDir: true, children: singleFolder } });
+  KFMState.expandedPaths = { '.': true };
   const tree = buildSidebarTree(295, 287);
   const containers = (tree.children || []).filter((c: any) => (c.id || '').startsWith('expanded-'));
   if (containers.length !== 1) throw new Error(`expected 1 container, got ${containers.length}`);
@@ -206,11 +206,11 @@ test('expanded folder has expanded container with height > 0', () => {
 
 test('nested expand produces nested containers', () => {
   seedState({
-    '/root': { name: 'root', path: '/root', isDir: true, children: nestedFolders },
-    '/root/src': { name: 'src', path: '/root/src', isDir: true, children: nestedFolders[0].children },
-    '/root/src/lib': { name: 'lib', path: '/root/src/lib', isDir: true, children: nestedFolders[0].children![0].children },
+    '.': { name: 'root', path: '.', isDir: true, children: nestedFolders },
+    './src': { name: 'src', path: './src', isDir: true, children: nestedFolders[0].children },
+    './src/lib': { name: 'lib', path: './src/lib', isDir: true, children: nestedFolders[0].children![0].children },
   });
-  KFMState.expandedPaths = { '/root': true, '/root/src': true };
+  KFMState.expandedPaths = { '.': true, './src': true };
   const tree = buildSidebarTree(295, 287);
   function countExpanded(box: any): number {
     let n = (box.id || '').startsWith('expanded-') ? 1 : 0;
@@ -219,7 +219,6 @@ test('nested expand produces nested containers', () => {
   }
   if (countExpanded(tree) !== 2) throw new Error('expected 2 expanded containers for nested expand');
 });
-
 // ==========================================================================
 // 4. debug-assert
 // ==========================================================================

@@ -166,9 +166,9 @@ export function buildTree(items: FileNode[], options: TreeOptions = {}): Box {
     id: 'file-tree-root', width: containerWidth, scrollable, scrollY: 0, height: 0, scrollbarVisible: false, overflow: 'hidden',
   });
 
-  // 把根目录所有内容包进 expanded-/root 容器，方便动画
+  // 把根目录所有内容包进 expanded-容器，方便动画
   const rootRelX = absX(baseDepth) + getShift(baseDepth);
-  const rootContainer = buildExpanded('/root', items, ctx, baseDepth, rootRelX);
+  const rootContainer = buildExpanded('.', items, ctx, baseDepth, rootRelX);
   rootContainer.y = 0;
   rootBox.addChild(rootContainer);
   rootBox.height = rootContainer.height;
@@ -221,7 +221,7 @@ function container_AddRootFileRow(parent: Box, item: FileNode, y: number, depth:
 export function buildSidebarTree(containerWidth?: number, rightMargin?: number): Box {
   const state = KFMState;
   const rm = rightMargin ?? (containerWidth ?? 295) - 8;
-  return buildTree(state.files['/root']?.children ?? [], {
+  return buildTree(state.files['.']?.children ?? [], {
     expandedPaths: state.expandedPaths, selectedFile: state.selectedFile,
     onDirToggle: (p, e) => state.setExpanded(p, e), onFileClick: () => {},
     baseDepth: 0, containerWidth: containerWidth ?? 280, scrollable: true, rightMargin: rm,
