@@ -27,9 +27,11 @@ npm run dev      # ts-node ESM 模式直接运行
 
 ## 文档结构
 
+
 ```
 CLAUDE.md                          # 主文档（本文件）
 docs/
+├── VISION_AND_ROADMAP.md          # 工作台愿景 + 卡片系统 + 路线图（方向文档）
 ├── HANDOFF_AUDIT.md               # 项目交接 + 代码审计结论（新接手必读）
 ├── KFM_V4_INVARIANTS.md           # AI 修改约束协议 / Harness（开工前必读）
 ├── BUG_AUDIT_REGISTRY.md          # 隐性契约 + 根因案例库（遇到 bug 时翻阅）
@@ -42,17 +44,19 @@ docs/
     ├── BUG_FIXING_PHILOSOPHY.md       # 旧版 Bug 修复原则（被 BUG_AUDIT_REGISTRY.md 取代）
     ├── CLAUDE_v2.md                   # 上一版 CLAUDE（已合并）
     ├── RACE_CONDITION_PLAN.md         # P1-P5 竞态方案（已完成）
-    ├── REFACTOR_THESIS_FULL.md        # 愿景 + 架构蓝图（大部分已过时）
+    ├── REFACTOR_THESIS_FULL.md        # 原始愿景蓝图（已合并入 VISION_AND_ROADMAP.md）
     ├── AI_OPERATION_PROTOCOL.md       # AI 操作协议（未实现功能设计）
     ├── CARD-STACK-HANDOFF.md          # 卡片面板交接笔记（已完成）
     ├── BUG_HANDOFF_ROOT_CHAR_RAIN.md  # 字符雨 bug 交接（已修复）
     └── HANDOFF_P3_REMAINING.md        # P3 遗留任务单（已完成）
 ```
 
+
 ### 三份核心文档的分工
 
 | 文档 | 使用时机 | 职能 |
 |------|---------|------|
+| `VISION_AND_ROADMAP.md` | **规划设计时**参考 | 方向性——核心理念 + 卡片系统 + 演进路线 |
 | `KFM_V4_INVARIANTS.md` | **改代码前**必读 | 预防性——心法原则 + 架构约束 + 自查清单 |
 | `BUG_AUDIT_REGISTRY.md` | **遇到 bug 时**翻阅 | 诊断性——隐性契约 + 根因案例 + 排查路径 |
 | `HANDOFF_AUDIT.md` | **接手/交接时**同步 | 快照性——当前进度 + 未完成事项 |
