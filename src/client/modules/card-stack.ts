@@ -34,8 +34,73 @@ const CARDS: CardDef[] = [
   { id: 'card06',   icon: '',           name: '',                desc: '' },
   { id: 'card07',   icon: '',           name: '',                desc: '' },
 ];
+// ========== 卡片内容生命周期 ==========
+// 每张卡片注册 activate/deactivate，展开时激活，折叠时停用。
+// 避免展开时重复创建 DOM / 订阅累积的根因级解法。
 
-// ========== 卡片配色：每张卡双色独立随机 ==========
+interface CardContentHandler {
+  activate: (contentEl: HTMLElement) => void;
+  deactivate: (contentEl: HTMLElement) => void;
+}
+
+const _cardHandlers = new Map<string, CardContentHandler>();
+// 每个 contentEl 对应一个取消订阅函数，WeakMap 自动随元素销毁回收
+const _activeSubs = new WeakMap<HTMLElement, () => void>();
+
+function _registerCardHandler(id: string, handler: CardContentHandler): void {
+  _cardHandlers.set(id, handler);
+}
+
+_registerCardHandler('debug', {
+  activate(contentEl) {
+    contentEl.innerHTML = '';
+    contentEl.style.cssText = [
+      'position:absolute', 'inset:0',
+      'display:flex', 'flex-direction:column',
+      'padding:4px', 'box-sizing:border-box',
+    ].join(';');
+
+    const logArea = document.createElement('div');
+    logArea.style.cssText = [
+      'flex:1', 'overflow-y:auto',
+      'font-family:monospace', 'font-size:10px',
+      'color:rgba(224,224,224,0.8)',
+      'white-space:pre-wrap', 'word-break:break-all',
+      'padding:4px', 'background:rgba(0,0,0,0.2)',
+      'border-radius:6px', 'margin-bottom:4px',
+    ].join(';');
+    contentEl.appendChild(logArea);
+
+    const btnBar = document.createElement('div');
+    btnBar.style.cssText = 'display:flex;gap:6px;justify-content:flex-end';
+    contentEl.appendChild(btnBar);
+
+    const clearBtn = document.createElement('button');
+    clearBtn.textContent = '\u6E05\u7A7A';
+    clearBtn.style.cssText = 'padding:2px 10px;font-size:10px;border:1px solid rgba(255,255,255,0.15);border-radius:4px;background:rgba(255,255,255,0.05);color:rgba(224,224,224,0.8);cursor:pointer';
+    clearBtn.addEventListener('click', clearLogs);
+    btnBar.appendChild(clearBtn);
+
+    const copyBtn = document.createElement('button');
+    copyBtn.textContent = '\u590D\u5236';
+    copyBtn.style.cssText = 'padding:2px 10px;font-size:10px;border:1px solid rgba(255,255,255,0.15);border-radius:4px;background:rgba(255,255,255,0.05);color:rgba(224,224,224,0.8);cursor:pointer';
+    copyBtn.addEventListener('click', copyLogs);
+    btnBar.appendChild(copyBtn);
+
+    const refresh = () => {
+      const logs = getLogs();
+      logArea.textContent = logs.length > 0 ? logs.join('\n') : '\uFF08\u7A7A\uFF09';
+      logArea.scrollTop = logArea.scrollHeight;
+    };
+    refresh();
+    _activeSubs.set(contentEl, onLog(refresh));
+  },
+  deactivate(contentEl) {
+    const unsub = _activeSubs.get(contentEl);
+    if (unsub) { unsub(); _activeSubs.delete(contentEl); }
+    contentEl.innerHTML = '';
+  },
+});
 let _currentAccents: Array<{ color1: string; color2: string }> | null = null;
 
 /** HSL → hex （#rrggbb） */
@@ -799,7 +864,11 @@ export function launchFocusedCard(): void {
     // 内容淡出 → 切换为紧凑态内容 → 淡入（与折叠动画并行）
     if (item.contentEl) {
       anim.to(item.contentEl, { opacity: 0, duration: 0.1, ease: 'none', onComplete: () => {
-        if (item.contentEl) _renderFloatingContent(item.contentEl, 'compact', CARDS[item.sourceIndex]?.name || '');
+        if (item.contentEl) {
+          const _id = CARDS[item.sourceIndex]?.id;
+          if (_id) _cardHandlers.get(_id)?.deactivate?.(item.contentEl);
+          _renderFloatingContent(item.contentEl, 'compact', CARDS[item.sourceIndex]?.name || '');
+        }
         anim.to(item.contentEl, { opacity: 1, duration: 0.15, ease: 'none' });
       }});
     }
@@ -889,7 +958,19 @@ export function launchFocusedCard(): void {
   });
 }
 
-/** 在 compact 态浮卡上构建内容区 */
+function _buildExpandedLayout(el: HTMLElement, _cc: { color1: string; color2: string }): void {
+  const item = _floatingCards.find(i => i.el === el);
+  if (!item?.contentEl) return;
+  const cardId = CARDS[item.sourceIndex]?.id;
+  const handler = cardId ? _cardHandlers.get(cardId) : undefined;
+  if (handler) {
+    handler.activate(item.contentEl);
+    return;
+  }
+  _renderFloatingContent(item.contentEl, 'active');
+}
+
+/** 在 compact/active 态浮卡上构建内容框架 */
 function _renderFloatingContent(contentEl: HTMLElement, state: 'compact' | 'active', cardName?: string): void {
   if (state === 'compact') {
     contentEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:2px 6px;font-size:11px;font-weight:500;color:rgba(224,224,224,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
@@ -897,72 +978,6 @@ function _renderFloatingContent(contentEl: HTMLElement, state: 'compact' | 'acti
   } else {
     contentEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:flex-start;box-sizing:border-box;padding:8px;font-size:11px;color:rgba(224,224,224,0.7);overflow-y:auto';
   }
-}
-
-
-function _buildExpandedLayout(el: HTMLElement, _cc: { color1: string; color2: string }): void {
-  const item = _floatingCards.find(i => i.el === el);
-  if (!item?.contentEl) return;
-  const cardId = CARDS[item.sourceIndex]?.id;
-  if (cardId === 'debug') {
-    _renderDebugContent(item.contentEl);
-    return;
-  }
-  _renderFloatingContent(item.contentEl, 'active');
-}
-
-let _debugUnsub: (() => void) | null = null;
-
-function _renderDebugContent(contentEl: HTMLElement): void {
-  // 清理之前的订阅
-  if (_debugUnsub) { _debugUnsub(); _debugUnsub = null; }
-
-  contentEl.innerHTML = '';
-  contentEl.style.cssText = [
-    'position:absolute', 'inset:0',
-    'display:flex', 'flex-direction:column',
-    'padding:4px', 'box-sizing:border-box',
-  ].join(';');
-
-  const logArea = document.createElement('div');
-  logArea.style.cssText = [
-    'flex:1', 'overflow-y:auto',
-    'font-family:monospace', 'font-size:10px',
-    'color:rgba(224,224,224,0.8)',
-    'white-space:pre-wrap', 'word-break:break-all',
-    'padding:4px', 'background:rgba(0,0,0,0.2)',
-    'border-radius:6px', 'margin-bottom:4px',
-  ].join(';');
-  contentEl.appendChild(logArea);
-
-  const btnBar = document.createElement('div');
-  btnBar.style.cssText = 'display:flex;gap:6px;justify-content:flex-end';
-  contentEl.appendChild(btnBar);
-  const clearBtn = _dbgBtn('清空', clearLogs);
-  btnBar.appendChild(clearBtn);
-  const copyBtn = _dbgBtn('复制', copyLogs);
-  btnBar.appendChild(copyBtn);
-
-  const refresh = () => {
-    const logs = getLogs();
-    logArea.textContent = logs.length > 0 ? logs.join('\n') : '(空)';
-    logArea.scrollTop = logArea.scrollHeight;
-  };
-  refresh();
-  _debugUnsub = onLog(refresh);
-}
-
-function _dbgBtn(text: string, onClick: () => void): HTMLElement {
-  const btn = document.createElement('button');
-  btn.textContent = text;
-  btn.style.cssText = [
-    'padding:2px 10px', 'font-size:10px',
-    'border:1px solid rgba(255,255,255,0.15)',
-    'border-radius:4px', 'background:rgba(255,255,255,0.05)',
-    'color:rgba(224,224,224,0.8)', 'cursor:pointer',
-  ].join(';');
-  btn.addEventListener('click', onClick);
-  return btn;
 }
 
 
