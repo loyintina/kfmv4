@@ -193,7 +193,7 @@ function _createVisualClone(
     zIndex: overrides?.zIndex ?? src.zIndex + OVERLAY_Z,
     overflow: 'visible',
     kfmStyle: src.kfmStyle ? { ...src.kfmStyle } : undefined,
-    data: { ...(src as any).data },
+    data: { ...src.data },
   });
   if (src.textStyle) {
     clone.textStyle = { ...src.textStyle };
