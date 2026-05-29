@@ -13,7 +13,6 @@ import { setupCharRainTweens, setupCharRainForSiblings, cleanupCharRain, type Ch
 import { closeSidebar } from './ui.js';
 import { Renderer } from '../engine/v2/renderer.js';
 import { L } from './renderer-lifecycle.js';
-import { createSidebarNav, destroySidebarNav } from './sidebar-nav.js';
 import { _rebuildRowIndex, findBoxById } from './canvas-utils.js';
 import { Box } from '../engine/v2/box.js';
 import { getCursorRowIndex, moveCursorTo, ensureCursorBox, _scrollToCenterCursor } from './canvas-cursor.js';
@@ -501,7 +500,6 @@ export function onSidebarOpen(): void {
     sidebar.addEventListener('transitionend', onEnd);
   }
   _createSidebarTouchArea();
-  createSidebarNav();
 }
 
 
@@ -529,7 +527,6 @@ export function onSidebarClose(): void {
   L.renderer?.stop();
   L.renderer = null;
   DOM.sidebarTouchArea?.remove();
-  destroySidebarNav();
   L.cancelAllRafs();
 }
 
