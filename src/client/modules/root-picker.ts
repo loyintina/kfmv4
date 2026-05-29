@@ -1,34 +1,42 @@
 /**
- * root-picker.ts — 文件树根目录切换器
+ * root-picker.ts — 文件树根目录切换器（Canvas 引擎版）
  *
- * 位于侧栏工具栏中央，显示当前文件树的根目录名称。
- * 点击弹出目录选择器，可从当前根向下逐级浏览并选择任意文件夹作为文件树新根。
- *
- * 设计原则：
- * - 不操作 overlay/动画系统，不调 setExpanded
- * - 切换根时先清 expandedPaths，再调 loadFileTree 完整重建
- * - 只有文件夹可供选择
- * - 所有选择器 UI 以左栏为基础，不脱离侧栏空间层级
+ * 用与文件树相同的 Renderer + Box 树渲染目录列表，
+ * 视觉和交互完全一致：同一套行高、字号、光标。
  */
 import { KFMState } from './state.js';
 import { loadFileTree } from './tree-loader.js';
 import { DOM } from './dom-refs.js';
 import { API } from './state.js';
-import { L } from './renderer-lifecycle.js';
+import { Renderer } from '../engine/v2/renderer.js';
+import { Box } from '../engine/v2/box.js';
+import { FONT, LINE_HEIGHT } from './style-registry.js';
 
-// ========== 常量 ==========
-// 服务端 ROOT_DIR = '.'（当前工作目录），受 SAFE_ROOT 限制
 const BASE_PATH = '.';
+const HEADER_H = LINE_HEIGHT + 8;
 
-// ========== 状态 ==========
+interface DirItem { name: string; path: string; isDir: boolean; }
+
 let _labelEl: HTMLElement | null = null;
-let _panelEl: HTMLElement | null = null;
-let _currentPath = BASE_PATH;     // 传给服务端的路径
-let _currentResolved = '';        // 服务端返回的解析后路径（用于显示）
+let _renderer: Renderer | null = null;
+let _container: HTMLElement | null = null;
+let _canvas: HTMLCanvasElement | null = null;
+let _confirmBtn: HTMLButtonElement | null = null;
+let _dirs: DirItem[] = [];
+let _cursorIdx = -1;
+let _currentPath = BASE_PATH;
+let _currentResolved = '';
+let _scrollY = 0;
+let _contentH = 0;
 
-// ========== 路径工具 ==========
+let _pointerId = -1;
+let _ptrStartY = 0;
+let _ptrStartScroll = 0;
+let _ptrLastY = 0;
+let _ptrLastTime = 0;
+let _velY = 0;
+let _flingId = 0;
 
-/** 从解析后路径提取显示名：/root/kfmv4 → kfmv4 */
 function _displayName(resolved: string): string {
   const parts = resolved.split('/').filter(Boolean);
   return parts.pop() || '';
@@ -41,12 +49,9 @@ function _parentPath(path: string): string | null {
   return path.substring(0, idx) || '.';
 }
 
-// ========== API 调用 ==========
-
-interface DirItem { name: string; path: string; isDir: boolean; }
-interface ListResult { resolvedPath: string; items: DirItem[]; }
-
-async function _fetchDirs(dirPath: string): Promise<ListResult | null> {
+async function _fetchDirs(dirPath: string): Promise<{
+  resolvedPath: string; items: DirItem[];
+} | null> {
   try {
     const res = await fetch(API + '/files/list', {
       method: 'POST',
@@ -59,165 +64,263 @@ async function _fetchDirs(dirPath: string): Promise<ListResult | null> {
       resolvedPath: data.path,
       items: (data.items || []).filter((item: DirItem) => item.isDir),
     };
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
-// ========== 标签 DOM ==========
+// ========== 标签 ==========
 
 export function createRootPicker(): void {
   if (_labelEl) return;
-
   const label = document.createElement('span');
   label.className = 'root-picker-label';
   label.textContent = '';
   label.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (_panelEl) { _closePanel(); return; }
+    if (_container) { _destroyPicker(); return; }
     _openPanel();
   });
-
   const tools = DOM.sidebar?.querySelector('.sidebar-tools');
   const closeBtn = DOM.closeSidebarBtn;
-  if (tools && closeBtn) {
-    tools.insertBefore(label, closeBtn);
-  }
+  if (tools && closeBtn) tools.insertBefore(label, closeBtn);
   _labelEl = label;
 
-  // 初始化标签文字：从 API 获取当前目录真实名
-  _fetchDirs(BASE_PATH).then(result => {
-    if (result && _labelEl) {
-      _currentResolved = result.resolvedPath;
-      _labelEl.textContent = _displayName(_currentResolved);
+  _fetchDirs(BASE_PATH).then(r => {
+    if (r && _labelEl) {
+      _currentResolved = r.resolvedPath;
+      _labelEl.textContent = _displayName(r.resolvedPath);
     }
   });
 }
 
 export function destroyRootPicker(): void {
-  _closePanel();
+  _destroyPicker();
   if (_labelEl) { _labelEl.remove(); _labelEl = null; }
 }
 
-// ========== 选择器面板 ==========
+// ========== 面板 ==========
 
 async function _openPanel(): Promise<void> {
-  if (_panelEl) return;
-
+  if (_container) return;
   _currentPath = BASE_PATH;
+  const result = await _fetchDirs(BASE_PATH);
+  if (!result) return;
+  _currentResolved = result.resolvedPath;
+  _dirs = result.items;
+  _cursorIdx = _dirs.length > 0 ? 0 : -1;
+  _scrollY = 0;
 
-  const overlay = document.createElement('div');
-  overlay.className = 'root-picker-overlay';
+  _container = document.createElement('div');
+  _container.className = 'sidebar-picker';
+  DOM.sidebar?.appendChild(_container);
 
-  const panel = document.createElement('div');
-  panel.className = 'root-picker-panel';
+  _canvas = document.createElement('canvas');
+  _canvas.style.width = '100%';
+  _canvas.style.height = '100%';
+  _canvas.style.display = 'block';
+  _canvas.style.touchAction = 'none';
+  _container.appendChild(_canvas);
 
-  const header = document.createElement('div');
-  header.className = 'root-picker-header';
-  header.textContent = '';
-  panel.appendChild(header);
+  const confirmBar = document.createElement('div');
+  confirmBar.className = 'root-picker-confirm-bar';
+  const btn = document.createElement('button');
+  btn.className = 'root-picker-confirm';
+  btn.textContent = '✅ 选此目录作为文件树';
+  btn.addEventListener('click', _doConfirm);
+  confirmBar.appendChild(btn);
+  _container.appendChild(confirmBar);
+  _confirmBtn = btn;
 
-  const list = document.createElement('div');
-  list.className = 'root-picker-list';
-  panel.appendChild(list);
+  requestAnimationFrame(() => _initRenderer());
+}
 
-  const footer = document.createElement('div');
-  footer.className = 'root-picker-footer';
-  const confirmBtn = document.createElement('button');
-  confirmBtn.className = 'root-picker-confirm';
-  confirmBtn.textContent = '✅ 选此目录作为文件树';
-  confirmBtn.disabled = true;
-  confirmBtn.addEventListener('click', _doConfirm);
-  footer.appendChild(confirmBtn);
-  panel.appendChild(footer);
+function _destroyPicker(): void {
+  cancelAnimationFrame(_flingId); _flingId = 0;
+  if (_renderer) { _renderer.stop(); _renderer = null; }
+  _canvas = null; _container?.remove(); _container = null;
+  _confirmBtn = null;
+  _dirs = []; _cursorIdx = -1; _scrollY = 0; _contentH = 0;
+  _velY = 0; _pointerId = -1;
+}
 
-  overlay.appendChild(panel);
-  document.body.appendChild(overlay);
-  _panelEl = panel;
+function _initRenderer(): void {
+  if (!_canvas || !_container) return;
+  const rect = _container.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  const w = rect.width;
+  const confirmH = _confirmBtn ? (_confirmBtn.parentElement?.offsetHeight || 44) : 0;
+  const h = rect.height - confirmH;
+  if (w <= 0 || h <= 0) return;
+  _canvas.width = w * dpr;
+  _canvas.height = h * dpr;
+  _canvas.style.width = w + 'px';
+  _canvas.style.height = h + 'px';
+  _contentH = h;
 
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) _closePanel();
+  _renderer = new Renderer(_canvas, { backgroundColor: 'rgba(10,10,15,0.85)', dpr });
+  _buildTree();
+  _renderer.start();
+  _bindEvents();
+}
+
+function _totalContentH(): number {
+  const hasUp = _parentPath(_currentPath) !== null;
+  return HEADER_H + (hasUp ? LINE_HEIGHT : 0) + _dirs.length * LINE_HEIGHT;
+}
+
+function _buildTree(): void {
+  if (!_renderer || !_canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const w = _canvas.width / dpr;
+  const totalH = _totalContentH();
+
+  const root = new Box({
+    id: 'picker-root', x: 0, y: 0, width: w,
+    height: Math.max(totalH, _contentH),
+    scrollable: true, scrollY: _scrollY,
   });
 
-  await _refreshList(list, header, confirmBtn, BASE_PATH);
-}
+  // 表头
+  const header = new Box({ id: 'picker-head', x: 0, y: 0, width: w, height: HEADER_H });
+  root.addChild(header);
 
-function _closePanel(): void {
-  if (!_panelEl) return;
-  const overlay = _panelEl.parentElement;
-  if (overlay) overlay.remove();
-  _panelEl = null;
-}
+  const dimColor = 'rgba(224,224,240,0.5)';
+  const rowColor = 'rgba(224,224,240,0.85)';
+  let y = HEADER_H;
 
-async function _refreshList(
-  listEl: HTMLElement,
-  headerEl: HTMLElement,
-  confirmBtn: HTMLButtonElement,
-  dirPath: string,
-): Promise<void> {
-  listEl.innerHTML = '';
-  headerEl.textContent = '';
-  confirmBtn.disabled = true;
-
-  const parent = _parentPath(dirPath);
-  if (parent) {
-    const upRow = document.createElement('div');
-    upRow.className = 'root-picker-item';
-    upRow.innerHTML = '<span class="picker-item-icon" style="opacity:0.5">📂</span> <span>..</span>';
-    upRow.addEventListener('click', () => {
-      _refreshList(listEl, headerEl, confirmBtn, parent);
-    });
-    listEl.appendChild(upRow);
+  // .. 行
+  if (_parentPath(_currentPath)) {
+    const isCur = _cursorIdx === -1;
+    const row = new Box({ id: 'row-up', x: 0, y, width: w, height: LINE_HEIGHT });
+    row.textStyle = { font: FONT, lineHeight: LINE_HEIGHT, align: 'left', verticalAlign: 'middle', overflow: 'ellipsis', maxLines: 2, content: '  ..', color: dimColor };
+    if (isCur) row.backgroundColor = 'rgba(46,213,163,0.12)';
+    root.addChild(row);
+    y += LINE_HEIGHT;
   }
 
-  const result = await _fetchDirs(dirPath);
-  if (!result) {
-    const empty = document.createElement('div');
-    empty.className = 'root-picker-empty';
-    empty.textContent = '（加载失败）';
-    listEl.appendChild(empty);
-    return;
+  // 目录行
+  for (let i = 0; i < _dirs.length; i++) {
+    const isCur = i === _cursorIdx;
+    const row = new Box({ id: `row-${i}`, x: 0, y, width: w, height: LINE_HEIGHT });
+    row.textStyle = { font: FONT, lineHeight: LINE_HEIGHT, align: 'left', verticalAlign: 'middle', overflow: 'ellipsis', maxLines: 2, content: '  ' + _dirs[i].name, color: isCur ? '#e0e0f0' : rowColor };
+    if (isCur) row.backgroundColor = 'rgba(46,213,163,0.12)';
+    root.addChild(row);
+    y += LINE_HEIGHT;
   }
 
-  // 更新路径和显示名
+  _renderer.setRoot(root);
+}
+
+// ========== 手势 ==========
+
+function _bindEvents(): void {
+  if (!_canvas) return;
+  _canvas.addEventListener('pointerdown', _onDown);
+  _canvas.addEventListener('pointermove', _onMove);
+  _canvas.addEventListener('pointerup', _onUp);
+  _canvas.addEventListener('pointercancel', _onUp);
+  _canvas.addEventListener('wheel', _onWheel, { passive: false });
+}
+
+function _rowAtY(localY: number): number {
+  let y = HEADER_H - _scrollY;
+  if (_parentPath(_currentPath)) {
+    if (localY >= y && localY < y + LINE_HEIGHT) return -2;
+    y += LINE_HEIGHT;
+  }
+  for (let i = 0; i < _dirs.length; i++) {
+    if (localY >= y && localY < y + LINE_HEIGHT) return i;
+    y += LINE_HEIGHT;
+  }
+  return -1;
+}
+
+function _clampScrollY(val: number): number {
+  return Math.max(0, Math.min(Math.max(_totalContentH() - _contentH, 0), val));
+}
+
+function _onDown(e: PointerEvent): void {
+  _pointerId = e.pointerId;
+  _ptrStartY = e.clientY;
+  _ptrStartScroll = _scrollY;
+  _ptrLastY = e.clientY;
+  _ptrLastTime = performance.now();
+  _velY = 0;
+  cancelAnimationFrame(_flingId); _flingId = 0;
+  _canvas?.setPointerCapture(e.pointerId);
+}
+
+function _onMove(e: PointerEvent): void {
+  if (_pointerId < 0 || e.pointerId !== _pointerId) return;
+  _scrollY = _clampScrollY(_ptrStartScroll + _ptrStartY - e.clientY);
+  const dt = performance.now() - _ptrLastTime;
+  if (dt > 0) _velY = ((e.clientY - _ptrLastY) / dt) * 16;
+  _ptrLastY = e.clientY;
+  _ptrLastTime = performance.now();
+  _buildTree();
+}
+
+function _onUp(e: PointerEvent): void {
+  if (_pointerId < 0 || e.pointerId !== _pointerId) return;
+  _canvas?.releasePointerCapture(e.pointerId);
+  _pointerId = -1;
+
+  if (Math.abs(e.clientY - _ptrStartY) < 8) {
+    const rect = _canvas?.getBoundingClientRect();
+    if (rect) {
+      const localY = e.clientY - rect.top;
+      const idx = _rowAtY(localY);
+      if (idx === -2) {
+        const p = _parentPath(_currentPath);
+        if (p) _navigateTo(p);
+      } else if (idx >= 0 && idx < _dirs.length) {
+        _navigateTo(_dirs[idx].path);
+      }
+    }
+  } else {
+    _startFling();
+  }
+}
+
+function _onWheel(e: WheelEvent): void {
+  e.preventDefault();
+  _scrollY = _clampScrollY(_scrollY + e.deltaY);
+  _buildTree();
+}
+
+function _startFling(): void {
+  cancelAnimationFrame(_flingId);
+  let v = _velY;
+  const step = () => {
+    v *= 0.92;
+    if (Math.abs(v) < 0.5) { _flingId = 0; return; }
+    _scrollY = _clampScrollY(_scrollY + v);
+    _buildTree();
+    _flingId = requestAnimationFrame(step);
+  };
+  _flingId = requestAnimationFrame(step);
+}
+
+// ========== 导航 ==========
+
+function _navigateTo(dirPath: string): void {
   _currentPath = dirPath;
-  _currentResolved = result.resolvedPath;
-  headerEl.textContent = _displayName(result.resolvedPath);
-  confirmBtn.disabled = false;
-
-  if (result.items.length === 0) {
-    const empty = document.createElement('div');
-    empty.className = 'root-picker-empty';
-    empty.textContent = '（无子文件夹）';
-    listEl.appendChild(empty);
-    return;
-  }
-
-  for (const dir of result.items) {
-    const row = document.createElement('div');
-    row.className = 'root-picker-item';
-    row.dataset.path = dir.path;
-    row.innerHTML = `<span class="picker-item-icon">📂</span> <span>${dir.name}</span>`;
-    row.addEventListener('click', () => {
-      _refreshList(listEl, headerEl, confirmBtn, dir.path);
-    });
-    listEl.appendChild(row);
-  }
+  _scrollY = 0;
+  _cursorIdx = 0;
+  _fetchDirs(dirPath).then(r => {
+    if (!r) return;
+    _currentResolved = r.resolvedPath;
+    _dirs = r.items;
+    if (_cursorIdx >= _dirs.length) _cursorIdx = _dirs.length > 0 ? 0 : -1;
+    _buildTree();
+  });
 }
 
-// ========== 确认切换 ==========
+// ========== 确认 ==========
 
 async function _doConfirm(): Promise<void> {
-  if (L.isAnimating) return;
-
   KFMState.expandedPaths = {};
   localStorage.setItem('expandedPaths', '{}');
-
-  _closePanel();
-
+  _destroyPicker();
   await loadFileTree(_currentPath);
-
-  if (_labelEl) {
-    _labelEl.textContent = _displayName(_currentResolved);
-  }
+  if (_labelEl) _labelEl.textContent = _displayName(_currentResolved);
 }
