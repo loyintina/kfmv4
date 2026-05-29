@@ -8,7 +8,7 @@
  * - 不操作 overlay/动画系统，不调 setExpanded
  * - 切换根时先清 expandedPaths，再调 loadFileTree 完整重建
  * - 只有文件夹可供选择
- * - 路径使用服务端理解的格式（相对于 ROOT_DIR），非绝对路径
+ * - 所有选择器 UI 以左栏为基础，不脱离侧栏空间层级
  */
 import { KFMState } from './state.js';
 import { loadFileTree } from './tree-loader.js';
@@ -17,8 +17,6 @@ import { API } from './state.js';
 import { L } from './renderer-lifecycle.js';
 
 // ========== 常量 ==========
-// 起点路径：服务端 ROOT_DIR = '.'（当前工作目录，/root/kfmv4）
-// 用户可向下进入子目录，但不能逃出项目根
 const BASE_PATH = '.';
 const BASE_NAME = '项目根';
 
@@ -47,8 +45,9 @@ function _parentPath(path: string): string | null {
 // ========== API 调用 ==========
 
 interface DirItem { name: string; path: string; isDir: boolean; }
+interface ListResult { resolvedPath: string; items: DirItem[]; }
 
-async function _fetchDirs(dirPath: string): Promise<DirItem[]> {
+async function _fetchDirs(dirPath: string): Promise<ListResult | null> {
   try {
     const res = await fetch(API + '/files/list', {
       method: 'POST',
@@ -56,10 +55,13 @@ async function _fetchDirs(dirPath: string): Promise<DirItem[]> {
       body: JSON.stringify({ path: dirPath }),
     });
     const data = await res.json();
-    if (data.error) return [];
-    return (data.items || []).filter((item: DirItem) => item.isDir);
+    if (data.error) return null;
+    return {
+      resolvedPath: data.path,
+      items: (data.items || []).filter((item: DirItem) => item.isDir),
+    };
   } catch {
-    return [];
+    return null;
   }
 }
 
@@ -70,14 +72,13 @@ export function createRootPicker(): void {
 
   const label = document.createElement('span');
   label.className = 'root-picker-label';
-  label.textContent = _displayName(BASE_PATH);
+  label.textContent = BASE_NAME; // 临时，打开面板后更新为真实名
   label.addEventListener('click', (e) => {
     e.stopPropagation();
     if (_panelEl) { _closePanel(); return; }
     _openPanel();
   });
 
-  // 插入到 toggleHiddenBtn 和 closeSidebarBtn 之间
   const tools = DOM.sidebar?.querySelector('.sidebar-tools');
   const closeBtn = DOM.closeSidebarBtn;
   if (tools && closeBtn) {
@@ -99,26 +100,21 @@ async function _openPanel(): Promise<void> {
 
   _currentPath = BASE_PATH;
 
-  // 创建遮罩
   const overlay = document.createElement('div');
   overlay.className = 'root-picker-overlay';
 
-  // 创建面板（宽度与侧栏一致）
   const panel = document.createElement('div');
   panel.className = 'root-picker-panel';
 
-  // 头部 — 当前路径
   const header = document.createElement('div');
   header.className = 'root-picker-header';
-  header.textContent = _displayName(BASE_PATH);
+  header.textContent = BASE_NAME;
   panel.appendChild(header);
 
-  // 列表容器
   const list = document.createElement('div');
   list.className = 'root-picker-list';
   panel.appendChild(list);
 
-  // 底部 — 确认按钮
   const footer = document.createElement('div');
   footer.className = 'root-picker-footer';
   const confirmBtn = document.createElement('button');
@@ -133,13 +129,16 @@ async function _openPanel(): Promise<void> {
   document.body.appendChild(overlay);
   _panelEl = panel;
 
-  // 点击遮罩关闭
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay) _closePanel();
   });
 
-  // 加载初始列表
-  await _refreshList(list, header, confirmBtn, BASE_PATH);
+  // 加载初始列表（获取真实路径名后更新标签）
+  const result = await _refreshList(list, header, confirmBtn, BASE_PATH);
+  if (result && result.resolvedPath && _labelEl) {
+    const name = result.resolvedPath.split('/').filter(Boolean).pop();
+    if (name) _labelEl.textContent = name;
+  }
 }
 
 function _closePanel(): void {
@@ -154,15 +153,12 @@ async function _refreshList(
   headerEl: HTMLElement,
   confirmBtn: HTMLButtonElement,
   dirPath: string,
-): Promise<void> {
+): Promise<ListResult | null> {
+  listEl.innerHTML = '';
   headerEl.textContent = _displayName(dirPath);
   _currentPath = dirPath;
   confirmBtn.disabled = false;
 
-  // 清空列表
-  listEl.innerHTML = '';
-
-  // ".." 上级（不能超过 BASE_PATH）
   const parent = _parentPath(dirPath);
   if (parent) {
     const upRow = document.createElement('div');
@@ -174,25 +170,26 @@ async function _refreshList(
     listEl.appendChild(upRow);
   }
 
-  // 加载子目录
-  const dirs = await _fetchDirs(dirPath);
-  if (dirs.length === 0) {
+  const result = await _fetchDirs(dirPath);
+  if (!result || result.items.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'root-picker-empty';
     empty.textContent = '（无子文件夹）';
     listEl.appendChild(empty);
-  } else {
-    for (const dir of dirs) {
-      const row = document.createElement('div');
-      row.className = 'root-picker-item';
-      row.dataset.path = dir.path;
-      row.innerHTML = `<span class="picker-item-icon">📂</span> <span>${dir.name}</span>`;
-      row.addEventListener('click', () => {
-        _refreshList(listEl, headerEl, confirmBtn, dir.path);
-      });
-      listEl.appendChild(row);
-    }
+    return result;
   }
+
+  for (const dir of result.items) {
+    const row = document.createElement('div');
+    row.className = 'root-picker-item';
+    row.dataset.path = dir.path;
+    row.innerHTML = `<span class="picker-item-icon">📂</span> <span>${dir.name}</span>`;
+    row.addEventListener('click', () => {
+      _refreshList(listEl, headerEl, confirmBtn, dir.path);
+    });
+    listEl.appendChild(row);
+  }
+  return result;
 }
 
 // ========== 确认切换 ==========
@@ -200,16 +197,13 @@ async function _refreshList(
 async function _doConfirm(): Promise<void> {
   if (L.isAnimating) return;
 
-  // 清空旧的展开状态
   KFMState.expandedPaths = {};
   localStorage.setItem('expandedPaths', '{}');
 
   _closePanel();
 
-  // 重建文件树
   await loadFileTree(_currentPath);
 
-  // 更新标签文字
   if (_labelEl) {
     _labelEl.textContent = _displayName(_currentPath);
   }
