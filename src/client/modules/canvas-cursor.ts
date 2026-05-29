@@ -25,7 +25,6 @@ import { currentTheme as theme } from './theme.js';
 import { getFileRowData } from './state.js';
 import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
 
-export function getSession(): number { return L._sessionId; }
 
 export function getRowIndexLength(): number { return L._rowIndex.length; }
 

@@ -50,20 +50,20 @@ function formatTime(): string {
 }
 
 /** 公开：追加日志 */
-export function debugLog(msg: string): void {
+function debugLog(msg: string): void {
   logLines.push(`[${formatTime()}] ${msg}`);
   if (logLines.length > MAX_LOG_LINES) logLines.shift();
   flushLogUI();
 }
 
 /** 公开：清空日志 */
-export function debugClear(): void {
+function debugClear(): void {
   logLines.length = 0;
   flushLogUI();
 }
 
 /** 公开：复制日志到剪贴板（单行模式：换行符替换为 →，防误提交） */
-export function debugCopy(): void {
+function debugCopy(): void {
   const text = logLines.join('\n');
   // 替换换行为 → 防止复制到聊天框时自动提交
   const singleLine = text.replace(/\n/g, ' → ');

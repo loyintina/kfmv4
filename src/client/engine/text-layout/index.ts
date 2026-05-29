@@ -47,28 +47,3 @@ export function layoutLines(
   const { lines } = layoutWithLines(prepared, maxWidth, lineHeight)
   return lines.map(l => ({ text: l.text, width: l.width }))
 }
-
-/**
- * Convenience: calculate the "shrinkwrap" width — the narrowest container
- * that fits the text without exceeding targetLineCount lines.
- */
-export function shrinkwrapWidth(
-  text: string,
-  font: string,
-  lineHeight: number,
-  targetLineCount: number,
-): number {
-  const prepared = prepare(text, font)
-  let lo = 0
-  let hi = 10000
-  for (let i = 0; i < 20; i++) {
-    const mid = (lo + hi) / 2
-    const result = layout(prepared, mid, lineHeight)
-    if (result.lineCount <= targetLineCount) {
-      hi = mid
-    } else {
-      lo = mid
-    }
-  }
-  return hi
-}
