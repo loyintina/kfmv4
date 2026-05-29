@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node --loader ts-node/esm src/server/index.ts",
-    "check": "sass public/css/:public/css/ && node check-anim.mjs --check-only && tsc --noEmit",
+    "check": "sass --no-source-map public/css/:public/css/ && node check-anim.mjs --check-only && tsc --noEmit",
     "build": "pkill -f 'tsc --noEmit$' 2>/dev/null; node check-anim.mjs && tsc --noEmit && node build.mjs",
     "start": "fuser -k 8021/tcp 2>/dev/null; node dist/server/index.js",
     "test": "npx tsx --import ./tests/register-hook.mjs --import ./tests/preload.mjs ./tests/regression.test.ts"
