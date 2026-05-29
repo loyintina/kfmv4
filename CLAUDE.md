@@ -10,6 +10,7 @@ AI 人机交互个人工作台，面向移动端浏览器。核心理念：**一
 
 - TypeScript (ES2022) + Express 服务器
 - Canvas 2D 自研渲染引擎（v2: Box → Renderer），非 LeaferJS
+- SCSS 编译（sass → CSS，语法校验 + 构建时编译）
 - GSAP 3.15.0 动画
 - esbuild 构建（TypeScript → dist/server/index.js + public/bundle.js）
 - `@chenglou/pretext` 文本测量（零 reflow 离屏测量）
@@ -17,8 +18,8 @@ AI 人机交互个人工作台，面向移动端浏览器。核心理念：**一
 ## 构建与运行
 
 ```bash
-npm run build    # tsc --noEmit → esbuild（类型不过不会打包）
-npm run check    # tsc --noEmit 快速类型检查（不构建，比 build 快）
+npm run build    # sass → tsc --noEmit → esbuild（类型不过不会打包）
+npm run check    # sass --no-source-map → 内存预检 → tsc --noEmit
 npm run start    # node dist/server/index.js  →  http://localhost:8021
 npm run dev      # ts-node ESM 模式直接运行
 ```
@@ -80,6 +81,12 @@ src/
 │   │   ├── animation.ts      # 缓动函数
 │   │   ├── BorderDrawer.ts   # 四边独立控制 + 宽度渐变边框
 │   │   ├── StyleConfig.ts    # 边框状态配置
+│   ├── engine/text-layout/   # 文本排版引擎（基于 @chenglou/pretext）
+│   │   ├── layout.ts         # 公开 API：prepare()/layout()
+│   │   ├── measurement.ts    # Canvas 文本测量 + 缓存
+│   │   ├── line-break.ts     # 自动换行（CJK 感知）
+│   │   ├── analysis.ts       # 文本分析：CJK 分类、空白归一化
+│   │   └── bidi.ts           # 双向文本辅助
 │   └── modules/
 │       ├── gesture-registry.ts    # 手势注册中心（优先级调度，独占执行）
 │       ├── renderer-lifecycle.ts  # 渲染器生命周期（状态机 + rAF/Listener 追踪）
@@ -89,7 +96,9 @@ src/
 │       ├── canvas-scroll.ts       # 通用滚动系统
 │       ├── click-queue.ts         # 点击事件队列（P4 提取）
 │       ├── debug-assert.ts        # 运行时断言
-│       ├── debug-panel.ts         # 调试面��（青色，独立光球）
+│       ├── debug-panel.ts         # 调试面板（青色，独立光球）
+│       ├── logger.ts              # 日志系统（卡片堆 #2 日志卡片调用）
+│       ├── theme.ts               # 主题配色系统
 │       ├── app.ts                 # 全局初始化、日志、AI 输入栏
 │       ├── state.ts               # KFMState 统一状态层（发布-订阅 + beforeExpand Hook）
 │       ├── tree-model.ts          # Box 树构建（buildSidebarTree → buildExpanded）
@@ -171,7 +180,7 @@ main.ts
   └─ initCardStack()       → gestures.register("card-stack-*")
 
 tree-render.ts 导出: markAnimatingPath, isAnimLocked, triggerExpandAnimation,
-  onSidebarOpen, onSidebarClose, forceRebuildTree
+  onSidebarOpen, onSidebarClose
 ```
 
 ## Bug 修复原则
@@ -288,4 +297,14 @@ eab3ca4 fix: 移除 toggle skip，三角动画不消失
 9ae5dd8 fix: 三个展开动画 bug + 消除跨模块隐式契约
 a455f36 fix: 折叠动画闪烁及癫痫
 1c171f4 fix: 展开无字符雨 + 折叠文字提前消失
+
+## 近期重构历史（续）
+
+```
+0f8d0b7  docs: SOP 新增'开发 vs 审计'流程区分
+43e376e  chore: 清理死 TS 导出 + 存档文档标记
+4c30fe0  chore: 文档-代码审计清理（-735行）
+9d6b1dc  chore: 清除废弃的 sidebar-nav 功能
+b5a2dbe  v5.0.0 feat: CSS 迁移至 SCSS（语法校验 + 编译管线）
+97df074  v4.3.1 fix: CSS 语法错误修复 + 体系完善
 ```
