@@ -20,8 +20,8 @@ import { bindScrollEvents } from './canvas-scroll.js';
 import { DOM } from "./dom-refs.js";
 import * as clickQueue from "./click-queue.js";
 import { assert, warn } from "./debug-assert.js";
+import { createRootPicker, destroyRootPicker } from './root-picker.js';
 const ts = anim.scope('tree-render');
-
 /** 重置动画时间线：清空 tween + 归零播放头 + 清除回调。正常动画结束时调用。 */
 function _resetAnimTimeline(): void {
   ts.clear();
@@ -500,6 +500,7 @@ export function onSidebarOpen(): void {
     sidebar.addEventListener('transitionend', onEnd);
   }
   _createSidebarTouchArea();
+  createRootPicker();
 }
 
 
@@ -527,6 +528,7 @@ export function onSidebarClose(): void {
   L.renderer?.stop();
   L.renderer = null;
   DOM.sidebarTouchArea?.remove();
+  destroyRootPicker();
   L.cancelAllRafs();
 }
 
