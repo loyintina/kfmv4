@@ -28,6 +28,7 @@ export interface KFMStateType {
   sidebarOpen: boolean;
   
   // 缓存
+  activePath: string;
   fileCache: { version: number; updated: number; tree: Record<string, any> };
   
   // 订阅机制
@@ -46,6 +47,7 @@ export interface KFMStateType {
   setSelectedFile(path: string): void;
   toggleHidden(): void;
   setSidebarOpen(open: boolean): void;
+  setActivePath(path: string): void;
   setViewport(v: Partial<ViewportState>): void;
 }
 
@@ -56,6 +58,7 @@ export const KFMState: KFMStateType = {
   showHidden: false,
   viewport: { scrollTop: 0, scrollLeft: 0 },
   sidebarOpen: false,
+  activePath: '.',
   fileCache: { version: 1, updated: 0, tree: {} },
   
   _listeners: [],
@@ -118,6 +121,10 @@ export const KFMState: KFMStateType = {
     this.notify();
   },
   
+  setActivePath(path) {
+    this.activePath = path;
+    this.notify();
+  },
   setViewport(v) {
     Object.assign(this.viewport, v);
     this.notify();
