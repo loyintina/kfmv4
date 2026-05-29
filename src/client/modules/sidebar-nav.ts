@@ -48,38 +48,22 @@ function _firstChildPath(path: string): string | null {
 export function createSidebarNav(): void {
   if (_navEl) return;
 
-  const nav = document.createElement('div');
-  nav.id = 'sidebar-nav';
-
-  const leftBtn = document.createElement('button');
-  leftBtn.className = 'sidebar-nav-btn';
-  leftBtn.innerHTML = '&#9664;';
-  leftBtn.title = '\u8DF3\u8F6C\u7236\u76EE\u5F55';
-  leftBtn.addEventListener('click', (e) => { e.stopPropagation(); _navToParent(); });
-  nav.appendChild(leftBtn);
-
-  const pathLabel = document.createElement('span');
-  pathLabel.className = 'sidebar-nav-label';
-  _refreshLabel(pathLabel);
-  pathLabel.addEventListener('click', (e) => {
+  const label = document.createElement('span');
+  label.className = 'sidebar-nav-label';
+  _refreshLabel(label);
+  label.addEventListener('click', (e) => {
     e.stopPropagation();
     if (_popupEl) { _closePopup(); return; }
     _openPopup();
   });
-  nav.appendChild(pathLabel);
 
-  const rightBtn = document.createElement('button');
-  rightBtn.className = 'sidebar-nav-btn';
-  rightBtn.innerHTML = '&#9654;';
-  rightBtn.title = '\u8DF3\u8F6C\u5B50\u76EE\u5F55';
-  rightBtn.addEventListener('click', (e) => { e.stopPropagation(); _navToChild(); });
-  nav.appendChild(rightBtn);
-
+  // 插入到 toggleHiddenBtn 和 closeSidebarBtn 之间
   const tools = DOM.sidebar?.querySelector('.sidebar-tools');
-  if (tools && DOM.sidebar) {
-    DOM.sidebar.insertBefore(nav, tools);
+  const closeBtn = DOM.closeSidebarBtn;
+  if (tools && closeBtn) {
+    tools.insertBefore(label, closeBtn);
   }
-  _navEl = nav;
+  _navEl = label;
 
   KFMState.subscribe(_onStateChange);
   _stateUnsub = () => KFMState.unsubscribe(_onStateChange);
@@ -161,12 +145,11 @@ function _renderPopup(): void {
     }
   }
   popup.appendChild(list);
-
   const footer = document.createElement('div');
   footer.className = 'sidebar-nav-popup-footer';
   const upBtn = document.createElement('button');
   upBtn.className = 'sidebar-nav-btn';
-  upBtn.innerHTML = '&#9650; ' + (_popupParentPath ? _displayName(_popupParentPath) : '');
+  upBtn.innerHTML = '\u25B2 ' + (_popupParentPath ? _displayName(_popupParentPath) : '');
   upBtn.title = '\u4E0A\u5C42\u76EE\u5F55';
   upBtn.disabled = !_popupParentPath;
   upBtn.addEventListener('click', (e) => { e.stopPropagation(); _navToUpLevel(); });
@@ -175,7 +158,7 @@ function _renderPopup(): void {
   const downBtn = document.createElement('button');
   downBtn.className = 'sidebar-nav-btn';
   const firstChild = _firstChildPath(KFMState.activePath || '.');
-  downBtn.innerHTML = '&#9660; ' + (firstChild ? _displayName(firstChild) : '');
+  downBtn.innerHTML = '\u25BC ' + (firstChild ? _displayName(firstChild) : '');
   downBtn.title = '\u4E0B\u5C42\u76EE\u5F55';
   downBtn.disabled = !firstChild;
   downBtn.addEventListener('click', (e) => { e.stopPropagation(); _navToDownLevel(); });
@@ -195,8 +178,6 @@ function _updatePopupCursor(): void {
   });
 }
 
-// ========== 导航动作 ==========
-
 function _navigateTo(path: string): void {
   const activePath = KFMState.activePath || '.';
   if (path === activePath) { _closePopup(); return; }
@@ -209,23 +190,6 @@ function _navigateTo(path: string): void {
   _closePopup();
 }
 
-function _navToParent(): void {
-  const cur = KFMState.activePath || '.';
-  const parent = _parentPath(cur);
-  if (!parent) return;
-  KFMState.setExpanded(parent, true);
-  if (cur !== '.') KFMState.setExpanded(cur, false);
-  KFMState.setActivePath(parent);
-}
-
-function _navToChild(): void {
-  const cur = KFMState.activePath || '.';
-  const child = _firstChildPath(cur);
-  if (!child) return;
-  KFMState.setExpanded(child, true);
-  KFMState.setExpanded(cur, true);
-  KFMState.setActivePath(child);
-}
 
 function _navToUpLevel(): void {
   if (!_popupParentPath) return;
