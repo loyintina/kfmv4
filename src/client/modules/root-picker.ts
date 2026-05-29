@@ -17,29 +17,28 @@ import { API } from './state.js';
 import { L } from './renderer-lifecycle.js';
 
 // ========== 常量 ==========
+// 服务端 ROOT_DIR = '.'（当前工作目录），受 SAFE_ROOT 限制
 const BASE_PATH = '.';
-const BASE_NAME = '项目根';
 
 // ========== 状态 ==========
 let _labelEl: HTMLElement | null = null;
 let _panelEl: HTMLElement | null = null;
-let _currentPath = BASE_PATH;
-let _stateUnsub: (() => void) | null = null;
+let _currentPath = BASE_PATH;     // 传给服务端的路径
+let _currentResolved = '';        // 服务端返回的解析后路径（用于显示）
 
 // ========== 路径工具 ==========
 
-function _displayName(path: string): string {
-  if (path === '.' || path === '' || path === BASE_PATH) return BASE_NAME;
-  const parts = path.split('/');
-  return parts[parts.length - 1] || BASE_NAME;
+/** 从解析后路径提取显示名：/root/kfmv4 → kfmv4 */
+function _displayName(resolved: string): string {
+  const parts = resolved.split('/').filter(Boolean);
+  return parts.pop() || '';
 }
 
 function _parentPath(path: string): string | null {
-  if (path === '.' || path === '' || path === BASE_PATH) return null;
+  if (path === '.' || path === '') return null;
   const idx = path.lastIndexOf('/');
   if (idx <= 0) return '.';
-  const parent = path.substring(0, idx);
-  return parent || '.';
+  return path.substring(0, idx) || '.';
 }
 
 // ========== API 调用 ==========
@@ -72,7 +71,7 @@ export function createRootPicker(): void {
 
   const label = document.createElement('span');
   label.className = 'root-picker-label';
-  label.textContent = BASE_NAME; // 临时，打开面板后更新为真实名
+  label.textContent = '';
   label.addEventListener('click', (e) => {
     e.stopPropagation();
     if (_panelEl) { _closePanel(); return; }
@@ -85,11 +84,18 @@ export function createRootPicker(): void {
     tools.insertBefore(label, closeBtn);
   }
   _labelEl = label;
+
+  // 初始化标签文字：从 API 获取当前目录真实名
+  _fetchDirs(BASE_PATH).then(result => {
+    if (result && _labelEl) {
+      _currentResolved = result.resolvedPath;
+      _labelEl.textContent = _displayName(_currentResolved);
+    }
+  });
 }
 
 export function destroyRootPicker(): void {
   _closePanel();
-  if (_stateUnsub) { _stateUnsub(); _stateUnsub = null; }
   if (_labelEl) { _labelEl.remove(); _labelEl = null; }
 }
 
@@ -108,7 +114,7 @@ async function _openPanel(): Promise<void> {
 
   const header = document.createElement('div');
   header.className = 'root-picker-header';
-  header.textContent = BASE_NAME;
+  header.textContent = '';
   panel.appendChild(header);
 
   const list = document.createElement('div');
@@ -133,12 +139,7 @@ async function _openPanel(): Promise<void> {
     if (e.target === overlay) _closePanel();
   });
 
-  // 加载初始列表（获取真实路径名后更新标签）
-  const result = await _refreshList(list, header, confirmBtn, BASE_PATH);
-  if (result && result.resolvedPath && _labelEl) {
-    const name = result.resolvedPath.split('/').filter(Boolean).pop();
-    if (name) _labelEl.textContent = name;
-  }
+  await _refreshList(list, header, confirmBtn, BASE_PATH);
 }
 
 function _closePanel(): void {
@@ -153,11 +154,10 @@ async function _refreshList(
   headerEl: HTMLElement,
   confirmBtn: HTMLButtonElement,
   dirPath: string,
-): Promise<ListResult | null> {
+): Promise<void> {
   listEl.innerHTML = '';
-  headerEl.textContent = _displayName(dirPath);
-  _currentPath = dirPath;
-  confirmBtn.disabled = false;
+  headerEl.textContent = '';
+  confirmBtn.disabled = true;
 
   const parent = _parentPath(dirPath);
   if (parent) {
@@ -171,12 +171,26 @@ async function _refreshList(
   }
 
   const result = await _fetchDirs(dirPath);
-  if (!result || result.items.length === 0) {
+  if (!result) {
+    const empty = document.createElement('div');
+    empty.className = 'root-picker-empty';
+    empty.textContent = '（加载失败）';
+    listEl.appendChild(empty);
+    return;
+  }
+
+  // 更新路径和显示名
+  _currentPath = dirPath;
+  _currentResolved = result.resolvedPath;
+  headerEl.textContent = _displayName(result.resolvedPath);
+  confirmBtn.disabled = false;
+
+  if (result.items.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'root-picker-empty';
     empty.textContent = '（无子文件夹）';
     listEl.appendChild(empty);
-    return result;
+    return;
   }
 
   for (const dir of result.items) {
@@ -189,7 +203,6 @@ async function _refreshList(
     });
     listEl.appendChild(row);
   }
-  return result;
 }
 
 // ========== 确认切换 ==========
@@ -205,6 +218,6 @@ async function _doConfirm(): Promise<void> {
   await loadFileTree(_currentPath);
 
   if (_labelEl) {
-    _labelEl.textContent = _displayName(_currentPath);
+    _labelEl.textContent = _displayName(_currentResolved);
   }
 }
