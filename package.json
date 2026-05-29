@@ -7,7 +7,7 @@
     "dev": "node --loader ts-node/esm src/server/index.ts",
     "check": "tsc --noEmit",
     "build": "node check-anim.mjs && tsc --noEmit && node build.mjs",
-    "start": "node dist/server/index.js",
+    "start": "fuser -k 8021/tcp 2>/dev/null; node dist/server/index.js",
     "test": "npx tsx --import ./tests/register-hook.mjs --import ./tests/preload.mjs ./tests/regression.test.ts"
   },
   "dependencies": {

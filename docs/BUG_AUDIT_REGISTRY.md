@@ -168,9 +168,37 @@ BR 光球的 click 事件只写了 `compact → expanding` 方向，没有写 `a
 在 BR 光球的 click 事件中增加 `else if (item.state === 'active')` 分支，实现反向动画（缩回紧凑态并移除 TL/TR/BL 光球）。
 
 #### 心法/自查关联
-- 隐性契约 1.4（BR 光球应双向切换）
 
 ---
+
+### B.A.R. #005 — 端口冲突 + `tsc` 僵尸进程耗尽服务器资源
+
+**日期**：2026-05-28  
+**根因类型**：环境冲突 / 资源管理  
+**症状关键词**：服务器卡死、构建超时、API 返回 HTML 而不是 JSON、CPU/内存 99%
+
+#### 症状
+`npm run build` 超时 60s 仍未完成，服务器 CPU 和内存占用 99%，API 请求返回 HTML 页面而非 JSON。
+
+#### 根因（一句话）
+一个误启动的 `npx serve public -l 8021` 进程抢占 8021 端口且不受 `kill -9` 影响，
+导致 Express 服务无法绑定正确端口。同时多次超时的 `tsc --noEmit` 进程在后台堆积，
+累积消耗全部 CPU 和内存。
+
+#### 排查关键发现
+1. `ss -tlnp` 显示 8021 端口有非 Express 进程占用
+2. `ps aux | grep serve` 发现 `npx serve public` 进程
+3. `pkill -f tsc` 后发现多个残留 tsc 进程
+4. `kill -9` 对 serve 进程无效（需 `fuser -k` 或等其自然退出）
+
+#### 解决方案
+1. 清除残留 serve 进程（`fuser -k 8021/tcp`）
+2. 在 `package.json` start 脚本中加入 `fuser -k 8021/tcp` 前置清理
+3. 在 `build.mjs` 开头加入 `pkill -f "tsc"` 清理残留 tsc
+
+#### 心法/自查关联
+- 自查清单"硬编码常量检查"：端口号 8021 不应隐式依赖
+- 新增建议：构建入口和启动入口应做资源清理前置
 
 ## 附录：根因类型索引
 
@@ -182,6 +210,8 @@ BR 光球的 click 事件只写了 `compact → expanding` 方向，没有写 `a
 | 全局模式误判 | 把全屏操作区域限定为局部 DOM | 检查 targetFilter 是否过于精确 |
 | 状态机不完整 | 交互只有一条路径 | 检查状态迁移图中是否有未实现的方向 |
 | CSS 配置冲突 | JS 逻辑正确但视觉效果不对 | 检查 touch-action / pointer-events / z-index |
+| 环境冲突/资源管理 | 构建超时、端口冲突、API 返回 HTML | 检查端口占用情况 + pkill 残留 tsc |
+
 ### 1.5 卡片背景和边框必须正交解耦
 
 **涉及模块**：`card-stack.ts`（双层 DOM 结构）

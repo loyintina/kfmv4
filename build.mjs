@@ -1,4 +1,8 @@
+import { execSync } from 'child_process';
 import { build } from 'esbuild';
+
+// 清理残留 tsc 进程（超时退出后可能堆积）
+try { execSync('pkill -f "tsc --noEmit"', { stdio: 'ignore' }); } catch {}
 
 // 服务端构建
 await build({
