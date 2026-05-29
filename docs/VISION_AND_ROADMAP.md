@@ -763,9 +763,9 @@ Agent 会话到期后，新 Agent 如何"接上"当前进度？
 AI 读到本文档后，按以下流程：
 
 1. 读第六章（CardDefinition 接口规范）
-2. 读 `src/client/cards/plugins/` 下已有的卡片代码作为参考
-3. 在 `src/client/cards/plugins/` 下新建目录 + `index.ts`
-4. 在 `src/client/cards/registry.ts` 中加一行 import + 注册
+2. 当前仅 `cards/plugins/debug-card/` 为实验参考（插件系统**尚未正式搭建**，以下流程为目标设计）
+3. 在 `cards/plugins/` 下新建目录 + `index.ts`
+4. 在卡片注册表（`cards/registry.ts`，待创建）中加一行 import + 注册
 5. 执行 `npm run build` 验证编译通过
 6. 验证卡片出现在卡片堆中并可正常交互
 7. `git add/commit/push`
