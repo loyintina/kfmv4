@@ -176,8 +176,8 @@
   border:1px solid transparent;
   border-radius:12px;
   background:
-    linear-gradient(rgba(18,18,26,.75), rgba(18,18,26,.75)) padding-box,
-    linear-gradient(90deg, rgba(0,212,255,.2), rgba(124,58,237,.15)) border-box;
+    linear-gradient(rgba(18,18,26,.85), rgba(18,18,26,.85)) padding-box,
+    linear-gradient(135deg, rgba(124,58,237,0.4), rgba(0,212,255,0.3)) border-box;
   backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
   cursor:pointer;
   font-size:13px;
@@ -195,9 +195,9 @@
 .sidebar-nav-label:hover{
   transform:translateY(-1px) scale(1.05);
   background:
-    linear-gradient(rgba(18,18,26,.75), rgba(18,18,26,.75)) padding-box,
-    linear-gradient(90deg, rgba(0,212,255,.5), rgba(124,58,237,.35)) border-box;
-  box-shadow:0 6px 24px rgba(124,58,237,.25),inset 0 1px 0 rgba(255,255,255,.1)
+    linear-gradient(rgba(18,18,26,.85), rgba(18,18,26,.85)) padding-box,
+    linear-gradient(135deg, rgba(124,58,237,0.6), rgba(0,212,255,0.5)) border-box;
+  box-shadow:0 6px 24px rgba(124,58,237,.35),inset 0 1px 0 rgba(255,255,255,.1)
 }
 .sidebar-nav-label:active{transform:scale(.92)}
 
