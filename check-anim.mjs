@@ -22,7 +22,27 @@ const WHITELIST = new Set([
   'demo-leafer.ts',
 ]);
 
-// ========== GSAP import 检测正则 ==========
+// ========== 内存预检 ==========
+
+const MEM_WARN = 300;   // MB，低于此值发警告
+const MEM_FAIL = 150;   // MB，低于此值中断构建
+
+function checkMemory() {
+  const meminfo = readFileSync('/proc/meminfo', 'utf-8');
+  const m = meminfo.match(/MemAvailable:\s+(\d+)\s+kB/);
+  if (!m) return;
+  const availMB = Math.round(parseInt(m[1], 10) / 1024);
+  if (availMB < MEM_FAIL) {
+    console.error(`[check-mem] 内存不足: ${availMB}MB 可用，低于 ${MEM_FAIL}MB 阈值`);
+    console.error(`[check-mem] 可能原因: browser 标签页未关闭 / 其他进程残留`);
+    console.error(`[check-mem] 请检查: ps aux --sort=-%mem | head`);
+    process.exit(1);
+  }
+  if (availMB < MEM_WARN) {
+    console.warn(`[check-mem] 警告: 仅 ${availMB}MB 内存可用，tsc 可能变慢`);
+  }
+}
+
 const GSAP_IMPORT_RE = /import\s+gsap\s+from\s+['"]gsap['"]/;
 const GSAP_NAMED_RE = /import\s+\{[^}]*\}\s+from\s+['"]gsap['"]/;
 
@@ -44,6 +64,8 @@ function* walk(dir) {
 
 function check() {
   let violations = 0;
+
+  checkMemory();
 
   for (const absPath of walk(SRC_DIR)) {
     // 跳过 declaration 文件
@@ -69,4 +91,11 @@ function check() {
   console.log('[check-anim] OK');
 }
 
-check();
+const CHECK_ONLY = process.argv.includes('--check-only');
+
+checkMemory();
+if (!CHECK_ONLY) {
+  check();
+} else {
+  console.log('[check-mem] OK');
+}

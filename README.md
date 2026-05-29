@@ -25,7 +25,7 @@
 
 ```bash
 # 克隆
-git clone https://github.com/<你的用户名>/kfmv4.git
+git clone https://github.com/loyintina/kfmv4.git
 cd kfmv4
 
 # 安装

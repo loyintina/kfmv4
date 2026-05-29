@@ -164,7 +164,8 @@
 .sidebar-close-btn span:last-child{transform:rotate(-45deg)}
 .sidebar-close-btn:hover span{
   opacity:1;
-  box-shadow:0 0 8px rgba(0,212,255,.3)
+  box-shadow:0 0 8px rgba(0,212,255,.3);
+}
 
 /* ========== 侧栏导航栏（在工具按钮栏内部） ========== */
 .sidebar-nav-label{
@@ -173,11 +174,9 @@
   display:flex;
   align-items:center;
   justify-content:center;
-  border:1px solid transparent;
+  border:1px solid rgba(124,58,237,0.6);
   border-radius:12px;
-  background:
-    linear-gradient(rgba(18,18,26,.85), rgba(18,18,26,.85)) padding-box,
-    linear-gradient(135deg, rgba(124,58,237,0.4), rgba(0,212,255,0.3)) border-box;
+  background:rgba(18,18,26,.85);
   backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
   cursor:pointer;
   font-size:13px;
@@ -194,9 +193,8 @@
 }
 .sidebar-nav-label:hover{
   transform:translateY(-1px) scale(1.05);
-  background:
-    linear-gradient(rgba(18,18,26,.85), rgba(18,18,26,.85)) padding-box,
-    linear-gradient(135deg, rgba(124,58,237,0.6), rgba(0,212,255,0.5)) border-box;
+  background:rgba(30,30,48,.9);
+  border-color:rgba(124,58,237,0.85);
   box-shadow:0 6px 24px rgba(124,58,237,.35),inset 0 1px 0 rgba(255,255,255,.1)
 }
 .sidebar-nav-label:active{transform:scale(.92)}

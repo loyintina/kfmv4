@@ -68,10 +68,71 @@
 
 ---
 
+## 诊断流程（视觉/CSS bug 快速排查）
+
+> 遇到视觉效果不符合预期时，先按这个顺序排查，不要跳步去改 CSS 值。
+
+### 第一步：CSS 解析检查
+- 在浏览器 DevTools 检查 `document.styleSheets`：争议规则是否存在于 `cssRules` 中？
+- 如果规则不存在 → **CSS 语法错误**：检查该规则前最近一条未闭合的 `{`/`(`/`[`
+- 如果规则存在但计算样式不匹配 → 检查 **CSS 优先级**（是否有更高优先级的规则覆盖）
+- 如果规则存在且优先级正确 → 检查 **选择器是否匹配**（className 拼写、空格/伪类/specificity）
+
+### 第二步：工具编辑安全
+- `edit` 工具替换行范围时，检查替换的最后一行是否包含了 `}`/`;`/`)` 等闭合字符
+- 如果替换范围外的下一行恰好是结束括号 → 修改替换范围将其纳入
+- 如果替换 CSS 块 → 始终在替换内容末尾显式写 `}`，即使原范围外也有
+
+### 第三步：浏览器二次确认
+- 修改后刷新页面，用 `getComputedStyle(el)` 验证争议属性的**计算值**
+- 不要只看 Elements 面板的 Styles 区——它有时显示的是级联规则而不是实际生效值
+
+---
+
 ## 第二章：根因案例库
 
 > 每条案例记录一次完整的 bug 诊断过程。
 > 遇到相似症状时，先按"根因类型"和"症状关键词"匹配。
+>
+> **新流程**: 在翻阅案例库之前，先按上面的诊断流程快速排查。
+
+---
+
+### B.A.R. #006 — `}` 缺失导致 `.sidebar-nav-label` 全部 CSS 规则被浏览器丢弃
+
+**日期**：2026-05-29  
+**根因类型**：CSS 语法错误 / 工具编辑遗漏  
+**症状关键词**：边框看不见、CSS 规则不生效、计算样式为默认值、样式表规则数量异常
+
+#### 症状
+`.sidebar-nav-label` 的边框、背景、display:flex、border-radius、flex:1 全部不生效。
+表现为无边框的扁平文字，完全不像 `sidebar-tools` 中的交互元素。
+左右两个 button 的样式正常（渐变边框可见）。
+
+#### 根因（一句话）
+`edit` 工具替换行范围 165-167 时，`.sidebar-close-btn:hover span{ opacity:1; box-shadow:... }` 的 `}` 在第 168 行（范围外），替换后被丢弃，规则未闭合。
+浏览器将此后的所有规则（`.sidebar-nav-label` ~ 文件尾）当作 CSS Nesting 嵌套语法处理，全部丢弃。
+
+#### 排查关键发现
+1. 服务器提供的 CSS 文件内容正确，`.sidebar-nav-label` 规则完整
+2. `document.styleSheets[1].cssRules` 仅 55 条，正常应为 69+ 条
+3. 最后一条规则为 `.sidebar-close-btn:hover span { & .sidebar-nav-label:hover { ...`（断裂）
+4. `getComputedStyle(.sidebar-nav-label)` 返回 border/background/display/borderRadius 全为默认值
+5. `.sidebar-tools button`（规则在第 54 条之前）样式正常
+
+#### 解决方案
+补上缺失的 `}` 和 `;`：
+
+```css
+.sidebar-close-btn:hover span{
+  opacity:1;
+  box-shadow:0 0 8px rgba(0,212,255,.3);
+}
+```
+
+#### 心法/自查关联
+- 新增"诊断流程"第一条：视觉 bug 先检查 CSS 解析，不要分析颜色/透明度
+- `edit` 工具行范围替换：替换 CSS 块末尾必须包含 `}`，或扩大替换范围
 
 ---
 
@@ -211,6 +272,7 @@ BR 光球的 click 事件只写了 `compact → expanding` 方向，没有写 `a
 | 状态机不完整 | 交互只有一条路径 | 检查状态迁移图中是否有未实现的方向 |
 | CSS 配置冲突 | JS 逻辑正确但视觉效果不对 | 检查 touch-action / pointer-events / z-index |
 | 环境冲突/资源管理 | 构建超时、端口冲突、API 返回 HTML | 检查端口占用情况 + pkill 残留 tsc |
+| CSS 语法错误 | 规则在 `styleSheets.cssRules` 中缺失 | 检查最近一条规则是否未闭合 `{`/`(`/`[` |
 
 ### 1.5 卡片背景和边框必须正交解耦
 
