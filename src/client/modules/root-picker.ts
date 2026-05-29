@@ -2,40 +2,46 @@
  * root-picker.ts — 文件树根目录切换器
  *
  * 位于侧栏工具栏中央，显示当前文件树的根目录名称。
- * 点击弹出目录选择器，可从 /root 下逐级浏览并选择任意文件夹作为文件树新根。
+ * 点击弹出目录选择器，可从当前根向下逐级浏览并选择任意文件夹作为文件树新根。
  *
  * 设计原则：
  * - 不操作 overlay/动画系统，不调 setExpanded
  * - 切换根时先清 expandedPaths，再调 loadFileTree 完整重建
  * - 只有文件夹可供选择
+ * - 路径使用服务端理解的格式（相对于 ROOT_DIR），非绝对路径
  */
-import { KFMState, type FileNode } from './state.js';
+import { KFMState } from './state.js';
 import { loadFileTree } from './tree-loader.js';
 import { DOM } from './dom-refs.js';
 import { API } from './state.js';
 import { L } from './renderer-lifecycle.js';
 
 // ========== 常量 ==========
-const SAFE_ROOT = '/root';
-const PICKER_H = 280; // 选择器面板高度（px）
+// 起点路径：服务端 ROOT_DIR = '.'（当前工作目录，/root/kfmv4）
+// 用户可向下进入子目录，但不能逃出项目根
+const BASE_PATH = '.';
+const BASE_NAME = '项目根';
 
 // ========== 状态 ==========
 let _labelEl: HTMLElement | null = null;
 let _panelEl: HTMLElement | null = null;
-let _currentPath = SAFE_ROOT;
+let _currentPath = BASE_PATH;
 let _stateUnsub: (() => void) | null = null;
 
 // ========== 路径工具 ==========
 
 function _displayName(path: string): string {
-  if (path === '.' || path === SAFE_ROOT) return '项目根';
+  if (path === '.' || path === '' || path === BASE_PATH) return BASE_NAME;
   const parts = path.split('/');
-  return parts[parts.length - 1] || path;
+  return parts[parts.length - 1] || BASE_NAME;
 }
 
 function _parentPath(path: string): string | null {
-  if (path === '.' || path === SAFE_ROOT) return null;
-  return path.split('/').slice(0, -1).join('/') || '.';
+  if (path === '.' || path === '' || path === BASE_PATH) return null;
+  const idx = path.lastIndexOf('/');
+  if (idx <= 0) return '.';
+  const parent = path.substring(0, idx);
+  return parent || '.';
 }
 
 // ========== API 调用 ==========
@@ -51,7 +57,6 @@ async function _fetchDirs(dirPath: string): Promise<DirItem[]> {
     });
     const data = await res.json();
     if (data.error) return [];
-    // 只返回文件夹，过滤掉文件
     return (data.items || []).filter((item: DirItem) => item.isDir);
   } catch {
     return [];
@@ -65,7 +70,7 @@ export function createRootPicker(): void {
 
   const label = document.createElement('span');
   label.className = 'root-picker-label';
-  label.textContent = _displayName(SAFE_ROOT);
+  label.textContent = _displayName(BASE_PATH);
   label.addEventListener('click', (e) => {
     e.stopPropagation();
     if (_panelEl) { _closePanel(); return; }
@@ -92,20 +97,20 @@ export function destroyRootPicker(): void {
 async function _openPanel(): Promise<void> {
   if (_panelEl) return;
 
-  _currentPath = SAFE_ROOT;
+  _currentPath = BASE_PATH;
 
   // 创建遮罩
   const overlay = document.createElement('div');
   overlay.className = 'root-picker-overlay';
 
-  // 创建面板
+  // 创建面板（宽度与侧栏一致）
   const panel = document.createElement('div');
   panel.className = 'root-picker-panel';
 
   // 头部 — 当前路径
   const header = document.createElement('div');
   header.className = 'root-picker-header';
-  header.textContent = SAFE_ROOT;
+  header.textContent = _displayName(BASE_PATH);
   panel.appendChild(header);
 
   // 列表容器
@@ -134,7 +139,7 @@ async function _openPanel(): Promise<void> {
   });
 
   // 加载初始列表
-  await _refreshList(list, header, confirmBtn, SAFE_ROOT);
+  await _refreshList(list, header, confirmBtn, BASE_PATH);
 }
 
 function _closePanel(): void {
@@ -150,14 +155,14 @@ async function _refreshList(
   confirmBtn: HTMLButtonElement,
   dirPath: string,
 ): Promise<void> {
-  headerEl.textContent = dirPath;
+  headerEl.textContent = _displayName(dirPath);
   _currentPath = dirPath;
   confirmBtn.disabled = false;
 
   // 清空列表
   listEl.innerHTML = '';
 
-  // ".." 上级（不能超过 SAFE_ROOT）
+  // ".." 上级（不能超过 BASE_PATH）
   const parent = _parentPath(dirPath);
   if (parent) {
     const upRow = document.createElement('div');
@@ -182,12 +187,9 @@ async function _refreshList(
       row.className = 'root-picker-item';
       row.dataset.path = dir.path;
       row.innerHTML = `<span class="picker-item-icon">📂</span> <span>${dir.name}</span>`;
-
-      // 左键点击 → 进入该目录
       row.addEventListener('click', () => {
         _refreshList(listEl, headerEl, confirmBtn, dir.path);
       });
-
       listEl.appendChild(row);
     }
   }
@@ -196,7 +198,6 @@ async function _refreshList(
 // ========== 确认切换 ==========
 
 async function _doConfirm(): Promise<void> {
-  // 动画中不允许切换
   if (L.isAnimating) return;
 
   // 清空旧的展开状态

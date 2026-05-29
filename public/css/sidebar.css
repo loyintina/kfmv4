@@ -187,9 +187,8 @@
 }
 
 .root-picker-panel {
-  width: 100%;
-  max-width: 400px;
-  max-height: 60vh;
+  width: min(75%, 360px);
+  min-width: 260px;
   background: rgba(20, 16, 32, 0.97);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
