@@ -1,11 +1,11 @@
 {
   "name": "kfmv4",
-  "version": "4.3.0",
-  "description": "KFM v4 - TypeScript \u5168\u6808\u6587\u4ef6\u7ba1\u7406\u5668",
+  "version": "5.0.0",
+  "description": "KFM v4 - TypeScript 全栈文件管理器",
   "type": "module",
   "scripts": {
     "dev": "node --loader ts-node/esm src/server/index.ts",
-    "check": "node check-anim.mjs --check-only && tsc --noEmit",
+    "check": "sass public/css/:public/css/ && node check-anim.mjs --check-only && tsc --noEmit",
     "build": "pkill -f 'tsc --noEmit$' 2>/dev/null; node check-anim.mjs && tsc --noEmit && node build.mjs",
     "start": "fuser -k 8021/tcp 2>/dev/null; node dist/server/index.js",
     "test": "npx tsx --import ./tests/register-hook.mjs --import ./tests/preload.mjs ./tests/regression.test.ts"
@@ -14,7 +14,8 @@
     "@chenglou/pretext": "^0.0.6",
     "express": "^4.22.1",
     "gsap": "^3.15.0",
-    "leafer-ui": "^2.1.0"
+    "leafer-ui": "^2.1.0",
+    "sass": "^1.100.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",

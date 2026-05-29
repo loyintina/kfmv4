@@ -1,6 +1,16 @@
 import { build } from 'esbuild';
+import { execSync } from 'child_process';
 
-// 服务端构建
+// SCSS 编译（语法校验 + 输出 .css）
+try {
+  execSync('sass --no-source-map public/css/:public/css/', { stdio: 'inherit' });
+} catch {
+  console.error('[sass] SCSS 编译失败，构建中断。');
+  process.exit(1);
+}
+console.log('[sass] OK');
+
+
 await build({
   entryPoints: ['src/server/index.ts'],
   bundle: true,
