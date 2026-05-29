@@ -2,6 +2,8 @@
  * KFM v4 - 统一状态层
  * Phase 8.0.1: 状态层基础设施
  */
+/** API 基础路径 */
+export const API = '/kfmv4/api';
 
 export interface FileNode {
   name: string;

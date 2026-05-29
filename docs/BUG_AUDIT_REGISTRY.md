@@ -84,9 +84,10 @@
 - 如果替换 CSS 块 → 始终在替换内容末尾显式写 `}`，即使原范围外也有
 
 ### 第三步：浏览器二次确认
-- 修改后刷新页面，用 `getComputedStyle(el)` 验证争议属性的**计算值**
+### 第三步：浏览器二次确认
+- 修改后强制无缓存刷新（DevTools Network 勾选 Disable cache，或 URL 加 `?v=timestamp`）
+- 用 `getComputedStyle(el)` 验证争议属性的**计算值**
 - 不要只看 Elements 面板的 Styles 区——它有时显示的是级联规则而不是实际生效值
-
 ---
 
 ## 第二章：根因案例库
@@ -273,7 +274,8 @@ BR 光球的 click 事件只写了 `compact → expanding` 方向，没有写 `a
 | CSS 配置冲突 | JS 逻辑正确但视觉效果不对 | 检查 touch-action / pointer-events / z-index |
 | 环境冲突/资源管理 | 构建超时、端口冲突、API 返回 HTML | 检查端口占用情况 + pkill 残留 tsc |
 | CSS 语法错误 | 规则在 `styleSheets.cssRules` 中缺失 | 检查最近一条规则是否未闭合 `{`/`(`/`[` |
-
+> **场景细分**：有残留进程 → `ps aux | grep tsc` + `pkill`；无残留但低内存 → `free -h` + `ps aux --sort=-%mem | head`，检查 browser/debug 工具是否未关闭
+>
 ### 1.5 卡片背景和边框必须正交解耦
 
 **涉及模块**：`card-stack.ts`（双层 DOM 结构）
@@ -326,3 +328,17 @@ BR 光球的 click 事件只写了 `compact → expanding` 方向，没有写 `a
 **违规后果**：页面加载时 `_currentAccents` 为 null，`createCard` 崩溃，卡片堆完全无法初始化。
 
 **历史案例**：2026-05-24（`_currentAccents` 初始化时序 bug，`ccaeaf3`）
+### 1.9 KFMState 通知机制：批量修改必须合并为一次 notify
+
+**涉及模块**：`state.ts`、`tree-render.ts`、任何调用 `setExpanded`/`setActivePath` 的模块
+
+**契约内容**：
+- `setExpanded()` 每次调用都触发 `notify()`，而 `_stateSub` 受 `L.isAnimating` 守卫
+- 连续调两次 `setExpanded()`，第二次的变更可能在动画守卫中被丢弃 → 状态丢失
+- 任何需要批量修改 expanded 状态的代码，必须用 `L.beginOp`/`L.endOp` 包裹，或确保在空闲时执行
+
+**违规后果**：展开/折叠动画执行到一半，部分状态丢失，出现幽灵图标（`tree-toggle` 的旋转状态与实际展开状态不一致）、兄弟元素延迟上移。
+
+**历史案例**：2026-05-29（sidebar-nav 三连 setExpanded 导致 ghost toggle + 动画断裂，已删除该模块）
+
+**改进方向**：未来可在 KFMState 上增加 `beginBatch()`/`endBatch()` 机制，将多次修改合并为一次 `notify()`，消除对 `L.isAnimating` 守卫的隐式依赖。

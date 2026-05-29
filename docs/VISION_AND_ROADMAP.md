@@ -268,10 +268,10 @@ Agent 之间的通信通过文件系统隐式完成：
 
 一张卡片 = 一个 `CardDefinition` + 内容插槽的实现。插件就是一个 `.ts` 文件，导出 `CardDefinition` 对象。
 
+卡片目录在项目根 `cards/plugins/` 下（不在 `src/client/` 内，受 tsconfig rootDir 限制）：
+
 ```
-src/client/cards/plugins/
-├── ai-chat-card/
-│   └── index.ts         ← export const definition: CardDefinition = { ... }
+cards/plugins/
 ├── debug-card/
 │   └── index.ts
 └── ...  // 加新插件 → 新建一个目录

@@ -64,6 +64,9 @@ docs/
 ## 目录结构
 
 ```
+cards/
+├── plugins/
+│   └── debug-card/       # 调试面板卡片插件（实验性，未与主应用连接）
 src/
 ├── server/index.ts           # Express 服务器（文件读写 API）
 ├── client/

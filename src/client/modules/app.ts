@@ -1,11 +1,10 @@
-import { KFMState } from './state.js';
+import { KFMState, API } from './state.js';
 import { DOM } from "./dom-refs.js";
 import { openCardStack, closeCardStack, isCardStackOpen } from './card-stack.js';
 /**
  * KFM v4 - 全局状态与初始化
  */
 
-export const API = '/kfmv4/api';
 
 // ========== Toast ==========
 export function showToast(msg: string): void {

@@ -7,10 +7,8 @@
  * - 后端根据 expandedPaths 参数，只返回展开路径上的节点
  */
 
-import { KFMState, type FileNode } from './state.js';
+import { KFMState, API, type FileNode } from './state.js';
 import { markAnimatingPath, isAnimLocked, triggerExpandAnimation } from './tree-render.js';
-
-const API = '/kfmv4/api';
 
 /** 休眠指定毫秒 */
 function sleep(ms: number): Promise<void> {
