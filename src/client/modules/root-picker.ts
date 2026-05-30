@@ -113,7 +113,6 @@ export function createRootPicker(): void {
   });
 }
 
-export function isPickerOpen(): boolean { return !!_container; }
 export function destroyRootPicker(): void {
   _destroyPicker();
   if (_labelEl) { _labelEl.remove(); _labelEl = null; }
@@ -139,6 +138,7 @@ async function _openPanel(): Promise<void> {
     priority: 110,
     stopPropagation: true,
   });
+
 
   _container = document.createElement('div');
   _container.className = 'sidebar-picker';

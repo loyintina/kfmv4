@@ -292,22 +292,5 @@ function endDrag(): void {
 // ========== 初始化 ==========
 export function initDebugPanel(): void {
   orbEl = createOrb();
-
-  // 统一输入事件 → GestureRegistry（PointerEvent 覆盖 touch + mouse）
-  gestures.register({
-    id: 'debug-orb',
-    targetFilter: '#debugOrb',
-    priority: 99,
-    stopPropagation: true,
-    onStart: (e: PointerEvent) => {
-      e.preventDefault();
-      startDrag(e.clientX, e.clientY);
-    },
-    onMove: (e: PointerEvent) => {
-      moveDrag(e.clientX, e.clientY);
-    },
-    onEnd: () => endDrag(),
-  });
-
   debugLog('🔧 调试面板已启动');
 }

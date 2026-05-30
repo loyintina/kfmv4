@@ -16,11 +16,11 @@ import { L } from './renderer-lifecycle.js';
 import { _rebuildRowIndex, findBoxById } from './canvas-utils.js';
 import { Box } from '../engine/v2/box.js';
 import { getCursorRowIndex, moveCursorTo, ensureCursorBox, _scrollToCenterCursor } from './canvas-cursor.js';
-import { bindScrollEvents } from './canvas-scroll.js';
+import { initScrollGesture, bindWheelEvents } from './canvas-scroll.js';
 import { DOM } from "./dom-refs.js";
 import * as clickQueue from "./click-queue.js";
 import { assert, warn } from "./debug-assert.js";
-import { createRootPicker, destroyRootPicker, isPickerOpen } from './root-picker.js';
+import { createRootPicker, destroyRootPicker } from './root-picker.js';
 const ts = anim.scope('tree-render');
 /** 重置动画时间线：清空 tween + 归零播放头 + 清除回调。正常动画结束时调用。 */
 function _resetAnimTimeline(): void {
@@ -483,7 +483,7 @@ export function onSidebarOpen(): void {
     _ensureSubscribed();
     window.addEventListener('resize', () => L.renderer?.resize());
 
-    bindScrollEvents(canvas);
+    bindWheelEvents(canvas);
     bindClickEvents(canvas, dpr);
 
     // 创建左栏右侧触摸盒子
@@ -539,6 +539,8 @@ export function initTreeRenderer(): void {
     return;
   }
 
+  initScrollGesture();
+
   const canvas = document.createElement('canvas');
   canvas.id = 'tree-canvas';
   canvas.style.width = '100%';
@@ -563,7 +565,7 @@ export function initTreeRenderer(): void {
   _ensureSubscribed();
   window.addEventListener('resize', () => L.renderer?.resize());
 
-  bindScrollEvents(canvas);
+  bindWheelEvents(canvas);
   bindClickEvents(canvas, dpr);
 }
 
@@ -583,7 +585,7 @@ function _createSidebarTouchArea(): void {
   document.body.appendChild(box);
 
   // 绑定��样的滚动事件（wheel + touch）
-  bindScrollEvents(box);
+  bindWheelEvents(box);
 
   // 点击任意位置 → 执行���前光标行的动作
   box.addEventListener('click', () => {
@@ -612,18 +614,6 @@ function _createSidebarTouchArea(): void {
   });
 ;
 
-  // 右往左滑 → 关闭左栏（垂直主导时不触发，避免斜滑误触）
-  let sx = 0, sy = 0;
-  box.addEventListener('pointerdown', (e) => {
-    sx = e.clientX;
-    sy = e.clientY;
-  }, { passive: true });
-  box.addEventListener('pointerup', (e) => {
-    if (isPickerOpen()) return;
-    const dx = sx - e.clientX;
-    const dy = Math.abs(sy - e.clientY);
-    if (dx > 60 && dx > dy * 1.5) closeSidebar();
-  });
 }
 
 function bindClickEvents(canvas: HTMLElement, _dpr: number): void {
