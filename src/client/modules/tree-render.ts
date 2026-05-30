@@ -20,7 +20,7 @@ import { initScrollGesture, bindWheelEvents } from './canvas-scroll.js';
 import { DOM } from "./dom-refs.js";
 import * as clickQueue from "./click-queue.js";
 import { assert, warn } from "./debug-assert.js";
-import { createRootPicker, destroyRootPicker } from './root-picker.js';
+import { createRootPicker, destroyRootPicker, isPickerOpen } from './root-picker.js';
 const ts = anim.scope('tree-render');
 /** 重置动画时间线：清空 tween + 归零播放头 + 清除回调。正常动画结束时调用。 */
 function _resetAnimTimeline(): void {
@@ -589,9 +589,9 @@ function _createSidebarTouchArea(): void {
 
   // 点击任意位置 → 执行���前光标行的动作
   box.addEventListener('click', () => {
+    if (isPickerOpen()) return;
     if (!L.cursorRowId || L._rowIndex.length === 0) return;
     const idx = getCursorRowIndex();
-    if (idx < 0 || !L._rowIndex[idx]) return;
     if (L._animBusy) {
       const hit = L._rowIndex[idx]!;
       const root = L.renderer?.getRoot();
@@ -618,8 +618,8 @@ function _createSidebarTouchArea(): void {
 
 function bindClickEvents(canvas: HTMLElement, _dpr: number): void {
   canvas.addEventListener('click', (e) => {
+    if (isPickerOpen()) return;
     if (!L.renderer) return;
-
     clickQueue.enqueue({ offsetX: e.offsetX, offsetY: e.offsetY });
     processClickQueue();
   });
