@@ -11,6 +11,7 @@ import { getCursorRowIndex, moveCursorTo, _snapCursorToCenter, _moveCursorByStep
 import { getShift, LINE_HEIGHT, MAX_LINES } from './style-registry.js';
 import { gestures } from './gesture-registry.js';
 import { closeSidebar } from './ui.js';
+import { isPickerOpen, pickerHandleClick } from './root-picker.js';
 
 // ========== 状态（模块级，不在 bind 函数闭包内） ==========
 let _touchIsCursor = false;
@@ -202,6 +203,11 @@ export function initScrollGesture(): void {
       }
     },
     onEnd(e, dx, dy) {
+      // picker 打开时：检测点击 → 切换目录，否则忽略手势（不关闭侧栏）
+      if (isPickerOpen()) {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) pickerHandleClick();
+        return;
+      }
       // 水平滑动检测 → 关闭侧栏
       const absDx = Math.abs(dx);
       const absDy = Math.abs(dy);

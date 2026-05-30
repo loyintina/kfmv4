@@ -13,9 +13,8 @@ import { API } from './state.js';
 import { Renderer } from '../engine/v2/renderer.js';
 import { Box } from '../engine/v2/box.js';
 import { LINE_HEIGHT } from './style-registry.js';
-import { gestures } from './gesture-registry.js';
 import { L } from './renderer-lifecycle.js';
-import { _rebuildRowIndex } from './canvas-utils.js';
+import { _rebuildRowIndex, getRootScrollY } from './canvas-utils.js';
 import { ensureCursorBox, moveCursorTo } from './canvas-cursor.js';
 import { bindWheelEvents } from './canvas-scroll.js';
 
@@ -35,21 +34,11 @@ let _currentPath = BASE_PATH;
 let _currentResolved = '';
 let _cachedDirs: DirItem[] = [];
 let _cursorIdx = 0;
-let _scrollY = 0;
-let _gestureUnreg: (() => void) | null = null;
 let _contentH = 0;
 
 let _savedFiles: Record<string, any> = {};
-let _ptrStartY = 0;
-
 let _savedRenderer: Renderer | null = null;
 let _savedRowIdx: Box[] = [];
-let _pointerId = -1;
-let _ptrStartScroll = 0;
-let _ptrLastY = 0;
-let _ptrLastTime = 0;
-let _velY = 0;
-let _flingId = 0;
 
 function _displayName(resolved: string): string {
   const parts = resolved.split('/').filter(Boolean);
@@ -105,6 +94,16 @@ export function createRootPicker(): void {
 
 export function isPickerOpen(): boolean { return !!_container; }
 
+/**
+ * 供 sidebar-scroll 在 picker 打开时调用：触发当前光标行的目录切换。
+ */
+export function pickerHandleClick(): void {
+  if (L._rowIndex.length <= _cursorIdx) return;
+  const box = L._rowIndex[_cursorIdx];
+  const d = getFileRowData(box.data);
+  if (d && d.isDir) _toggleDir(d.path, !d.isExpanded);
+}
+
 export function destroyRootPicker(): void {
   _destroyPicker();
   if (_labelEl) { _labelEl.remove(); _labelEl = null; }
@@ -120,17 +119,13 @@ async function _openPanel(): Promise<void> {
   _currentResolved = result.resolvedPath;
   _cachedDirs = result.items;
   _pickerExpanded = {};
-  _cursorIdx = 0; _scrollY = 0;
+  _cursorIdx = 0;
   // 保存 KFMState.files 快照，关闭时恢复
   _savedFiles = {};
   for (const key of Object.keys(KFMState.files)) {
     _savedFiles[key] = KFMState.files[key];
   }
-  _cursorIdx = 0; _scrollY = 0;
-  _gestureUnreg = gestures.register({
-    id: 'picker-lock', targetFilter: () => true, condition: () => !!_container, priority: 110, stopPropagation: true,
-  });
-
+  _cursorIdx = 0;
   _container = document.createElement('div');
   _container.className = 'sidebar-picker';
   const tools = DOM.sidebar?.querySelector('.sidebar-tools');
@@ -160,12 +155,16 @@ function _closeWithAnim(): void {
 }
 
 function _destroyPicker(): void {
-  cancelAnimationFrame(_flingId); _flingId = 0;
-  if (_gestureUnreg) { _gestureUnreg(); _gestureUnreg = null; }
   if (_renderer) { _renderer.stop(); _renderer = null; }
   _canvas = null; _container?.remove(); _container = null;
-  _velY = 0; _pointerId = -1; _pickerExpanded = {};
+  _pickerExpanded = {};
   if (_savedRenderer) { L.renderer = _savedRenderer; _savedRenderer = null; }
+  // 重建主树光标（覆盖 picker 遗留光标）
+  const root = L.renderer?.getRoot();
+  if (root) {
+    ensureCursorBox(root, window.innerHeight);
+    if (L._rowIndex.length > 0) moveCursorTo(L._rowIndex[0], false);
+  }
   // 恢复 KFMState.files 到 picker 打开前的状态
   for (const key of Object.keys(KFMState.files)) {
     if (!(key in _savedFiles)) delete KFMState.files[key];
@@ -196,7 +195,6 @@ function _initPicker(): void {
   _rebuildPicker();
   _renderer.start();
   bindWheelEvents(_canvas);
-  _bindPickerEvents();
 }
 
 // ========== Box 树构建（与主文件树相同的 toggle + label 结构） ==========
@@ -233,7 +231,7 @@ function _rebuildPicker(): void {
 
   // 包裹到可滚动的 picker 根容器
   const totalH = HEADER_H + (treeRoot.height || 0);
-  const pickerRoot = new Box({ id: 'picker-root', x: 0, y: 0, width: w, height: Math.max(totalH, _contentH), scrollable: true, scrollY: _scrollY });
+  const pickerRoot = new Box({ id: 'picker-root', x: 0, y: 0, width: w, height: Math.max(totalH, _contentH), scrollable: true, scrollY: getRootScrollY() ?? 0 });
   const header = new Box({ id: 'picker-head', x: 0, y: 0, width: w, height: HEADER_H });
   pickerRoot.addChild(header);
   treeRoot.y = HEADER_H;
@@ -274,79 +272,6 @@ async function _toggleDir(path: string, expand: boolean): Promise<void> {
     delete _pickerExpanded[path];
   }
   _rebuildPicker();
-}
-
-// ========== Canvas 事件 ==========
-
-function _bindPickerEvents(): void {
-  if (!_canvas) return;
-  _canvas.addEventListener('pointerdown', _onDown);
-  _canvas.addEventListener('pointermove', _onMove);
-  _canvas.addEventListener('pointerup', _onUp);
-  _canvas.addEventListener('pointercancel', _onUp);
-}
-
-function _rowAtY(localY: number): number {
-  const y0 = HEADER_H - _scrollY;
-  if (localY < y0) return -1;
-  return Math.floor((localY - y0) / LINE_HEIGHT);
-}
-
-function _onDown(e: PointerEvent): void {
-  _pointerId = e.pointerId;
-  _ptrStartY = e.clientY;
-  _ptrStartScroll = _scrollY;
-  _ptrLastY = e.clientY;
-  _ptrLastTime = performance.now();
-  _velY = 0;
-  cancelAnimationFrame(_flingId); _flingId = 0;
-  _canvas?.setPointerCapture(e.pointerId);
-}
-
-function _onMove(e: PointerEvent): void {
-  if (_pointerId < 0 || e.pointerId !== _pointerId) return;
-  _scrollY = Math.max(0, Math.min(_contentH > 0 ? Math.max(_rebuildPickerHeight() - _contentH, 0) : 0, _ptrStartScroll + _ptrStartY - e.clientY));
-  const dt = performance.now() - _ptrLastTime;
-  if (dt > 0) _velY = ((e.clientY - _ptrLastY) / dt) * 16;
-  _ptrLastY = e.clientY; _ptrLastTime = performance.now();
-  _rebuildPicker();
-}
-
-function _onUp(e: PointerEvent): void {
-  if (_pointerId < 0 || e.pointerId !== _pointerId) return;
-  _canvas?.releasePointerCapture(e.pointerId);
-  _pointerId = -1;
-  if (Math.abs(e.clientY - _ptrStartY) < 8) {
-    const rect = _canvas?.getBoundingClientRect();
-    if (rect) {
-      const localY = e.clientY - rect.top;
-      const rowIdx = _rowAtY(localY);
-      if (rowIdx >= 0 && rowIdx < L._rowIndex.length) {
-        const box = L._rowIndex[rowIdx];
-        const d = getFileRowData(box.data);
-        if (d && d.isDir) {
-          _cursorIdx = rowIdx;
-          _toggleDir(d.path, !d.isExpanded);
-          // 对非展开状态传 true 表示展开
-        }
-      }
-    }
-  } else {
-    _startFling();
-  }
-}
-
-function _startFling(): void {
-  cancelAnimationFrame(_flingId);
-  let v = _velY;
-  const step = () => {
-    v *= 0.92;
-    if (Math.abs(v) < 0.5) { _flingId = 0; return; }
-    _scrollY = Math.max(0, Math.min(_contentH > 0 ? Math.max(_rebuildPickerHeight() - _contentH, 0) : 0, _scrollY + v));
-    _rebuildPicker();
-    _flingId = requestAnimationFrame(step);
-  };
-  _flingId = requestAnimationFrame(step);
 }
 
 // ========== 确认 ==========

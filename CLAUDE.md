@@ -75,7 +75,7 @@ cards/
 ├── plugins/
 │   └── debug-card/       # 调试面板卡片插件（实验性，未与主应用连接）
 src/
-├── server/index.ts           # Express 服�����（文件读写 API）
+├── server/index.ts           # Express 服�������（文件读写 API）
 ├── client/
 │   ├── main.ts               # 入口：gestures.init() → App → UI → Orb → TreeRenderer → CardStack
 │   ├── engine/v2/            # Canvas 渲染引擎
@@ -209,7 +209,8 @@ tree-render.ts 导出: markAnimatingPath, isAnimLocked, triggerExpandAnimation,
 - Canvas 滚动/点击事件走元素级监听，不走 GestureRegistry
 - overlay 元数据用 `(as Box & OverlayMeta)` 访问，**禁止 (as any)._xxx**
 - 已知遗留: _createVisualClone 中 (src as any).data 一处逃逸（P2 FileRowData 类型化解决）
-- 向 `ts` 添加 tween 的函数，必须在 `ts.call` 回调里 `ts.clear()`
+- 向 `ts` 添加 tween 的函数，必须在 `ts.call` 回调里 `ts.clear()
+- 心法第 11 条：步骤 3 必须暴露所有已知缺口——不能自动继承的部分、为什么、填补方案`
 - 动画中 `_stateSub` 不会触发 `rebuildTree`（`L.isAnimating` 守卫）
 
 ## 完整性校验
@@ -249,7 +250,7 @@ npm test   # 71 个测试，覆盖 10 个模块
 | 1 | 打开页面 | 主页面正常，光球可见 |
 | 2 | 右滑 / 三横线 | 左栏打开，文件树完整 |
 | 3 | 左栏上下滑动 | 列表正常滚动 |
-| 4 | 点击文件��� | 展��/折叠动画正常，字符雨可见 |
+| 4 | 点击���件��� | 展��/折叠动画正常，字符雨可见 |
 | 5 | 快速连点同目录 | 展开��折叠正���切换，无闪烁 |
 | 6 | 左栏左滑 | 左栏关闭 |
 | 7 | 侧栏关闭时左滑 | 召唤卡堆 |
