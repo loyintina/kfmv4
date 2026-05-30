@@ -151,12 +151,17 @@ async function _openPanel(): Promise<void> {
   const tools = DOM.sidebar?.querySelector('.sidebar-tools');
   if (tools) DOM.sidebar?.insertBefore(_container, tools);
 
+  const inner = document.createElement('div');
+  inner.className = 'sidebar-picker-inner';
+  _container.appendChild(inner);
+
   _canvas = document.createElement('canvas');
   _canvas.style.width = '100%';
   _canvas.style.height = '100%';
   _canvas.style.display = 'block';
   _canvas.style.touchAction = 'none';
-  _container.appendChild(_canvas);
+  inner.appendChild(_canvas);
+
 
   const confirmBar = document.createElement('div');
   confirmBar.className = 'root-picker-confirm-bar';
@@ -165,7 +170,7 @@ async function _openPanel(): Promise<void> {
   btn.textContent = '✅ 选此目录作为文件树';
   btn.addEventListener('click', _doConfirm);
   confirmBar.appendChild(btn);
-  _container.appendChild(confirmBar);
+  inner.appendChild(confirmBar);
   _confirmBtn = btn;
 
   requestAnimationFrame(() => _initRenderer());
