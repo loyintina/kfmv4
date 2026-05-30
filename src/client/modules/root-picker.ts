@@ -137,6 +137,7 @@ async function _openPanel(): Promise<void> {
     condition: () => !!_container,
     priority: 110,
     stopPropagation: true,
+    onStart(e) { e.preventDefault(); },
   });
 
 
