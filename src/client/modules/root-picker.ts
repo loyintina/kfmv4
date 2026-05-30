@@ -1,8 +1,5 @@
 /**
  * root-picker.ts — 文件树根目录切换器（Canvas 引擎版）
- *
- * 用与文件树相同的 Renderer + Box 树渲染目录列表，
- * 视觉和交互完全一致：同一套行高、字号、光标。
  */
 import { KFMState } from './state.js';
 import { loadFileTree } from './tree-loader.js';
@@ -11,10 +8,10 @@ import { API } from './state.js';
 import { Renderer } from '../engine/v2/renderer.js';
 import { Box } from '../engine/v2/box.js';
 import { FONT, LINE_HEIGHT } from './style-registry.js';
+import { gestures } from './gesture-registry.js';
 
 const BASE_PATH = '.';
 const HEADER_H = LINE_HEIGHT + 8;
-
 interface DirItem { name: string; path: string; isDir: boolean; }
 
 let _labelEl: HTMLElement | null = null;
@@ -26,6 +23,7 @@ let _dirs: DirItem[] = [];
 let _cursorIdx = -1;
 let _currentPath = BASE_PATH;
 let _currentResolved = '';
+let _gestureUnreg: (() => void) | null = null;
 let _scrollY = 0;
 let _contentH = 0;
 
@@ -49,9 +47,7 @@ function _parentPath(path: string): string | null {
   return path.substring(0, idx) || '.';
 }
 
-async function _fetchDirs(dirPath: string): Promise<{
-  resolvedPath: string; items: DirItem[];
-} | null> {
+async function _fetchDirs(dirPath: string): Promise<{ resolvedPath: string; items: DirItem[] } | null> {
   try {
     const res = await fetch(API + '/files/list', {
       method: 'POST',
@@ -66,9 +62,9 @@ async function _fetchDirs(dirPath: string): Promise<{
     };
   } catch { return null; }
 }
+
 // ========== 标签（Canvas 渲染渐变文字） ==========
 
-/** 在 Canvas 上画渐变文字，渐变宽度 = 文字实际宽度 */
 function _renderLabel(text: string): void {
   if (!_labelEl) return;
   const canvas = _labelEl as HTMLCanvasElement;
@@ -81,20 +77,14 @@ function _renderLabel(text: string): void {
   canvas.height = h * dpr;
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
-
   ctx.scale(dpr, dpr);
-
   const fontSize = 13;
-  const font = `600 ${fontSize}px -apple-system, sans-serif`;
-  ctx.font = font;
+  ctx.font = `600 ${fontSize}px -apple-system, sans-serif`;
   const textW = ctx.measureText(text).width;
-
-  // 渐变 = 从文字左边缘到右边缘
   const textX = (w - textW) / 2;
   const grad = ctx.createLinearGradient(textX, 0, textX + textW, 0);
   grad.addColorStop(0, '#7c3aed');
   grad.addColorStop(1, '#00d4ff');
-
   ctx.fillStyle = grad;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
@@ -103,23 +93,18 @@ function _renderLabel(text: string): void {
 
 export function createRootPicker(): void {
   if (_labelEl) return;
-
   const canvas = document.createElement('canvas');
   canvas.className = 'root-picker-label';
-  canvas.style.width = '100%';
-  canvas.style.height = '40px';
-  canvas.style.display = 'block';
+  canvas.style.cssText = 'width:100%;height:40px;display:block';
   canvas.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (_container) { _destroyPicker(); return; }
+    if (_container) { _closeWithAnim(); return; }
     _openPanel();
   });
-
   const tools = DOM.sidebar?.querySelector('.sidebar-tools');
   const closeBtn = DOM.closeSidebarBtn;
   if (tools && closeBtn) tools.insertBefore(canvas, closeBtn);
   _labelEl = canvas;
-
   _fetchDirs(BASE_PATH).then(r => {
     if (r && _labelEl) {
       _currentResolved = r.resolvedPath;
@@ -128,6 +113,7 @@ export function createRootPicker(): void {
   });
 }
 
+export function isPickerOpen(): boolean { return !!_container; }
 export function destroyRootPicker(): void {
   _destroyPicker();
   if (_labelEl) { _labelEl.remove(); _labelEl = null; }
@@ -145,9 +131,17 @@ async function _openPanel(): Promise<void> {
   _cursorIdx = _dirs.length > 0 ? 0 : -1;
   _scrollY = 0;
 
+  // 手势锁：优先于所有手势拦截全局事件
+  _gestureUnreg = gestures.register({
+    id: 'picker-lock',
+    targetFilter: () => true,
+    condition: () => !!_container,
+    priority: 110,
+    stopPropagation: true,
+  });
+
   _container = document.createElement('div');
   _container.className = 'sidebar-picker';
-  // 插入到 sidebar-content 和 sidebar-tools 之间
   const tools = DOM.sidebar?.querySelector('.sidebar-tools');
   if (tools) DOM.sidebar?.insertBefore(_container, tools);
 
@@ -156,12 +150,8 @@ async function _openPanel(): Promise<void> {
   _container.appendChild(inner);
 
   _canvas = document.createElement('canvas');
-  _canvas.style.width = '100%';
-  _canvas.style.height = '100%';
-  _canvas.style.display = 'block';
-  _canvas.style.touchAction = 'none';
+  _canvas.style.cssText = 'width:100%;height:100%;display:block;touch-action:none';
   inner.appendChild(_canvas);
-
 
   const confirmBar = document.createElement('div');
   confirmBar.className = 'root-picker-confirm-bar';
@@ -176,8 +166,15 @@ async function _openPanel(): Promise<void> {
   requestAnimationFrame(() => _initRenderer());
 }
 
+function _closeWithAnim(): void {
+  if (!_container) return;
+  _container.classList.add('closing');
+  setTimeout(() => _destroyPicker(), 280);
+}
+
 function _destroyPicker(): void {
   cancelAnimationFrame(_flingId); _flingId = 0;
+  if (_gestureUnreg) { _gestureUnreg(); _gestureUnreg = null; }
   if (_renderer) { _renderer.stop(); _renderer = null; }
   _canvas = null; _container?.remove(); _container = null;
   _confirmBtn = null;
@@ -198,7 +195,6 @@ function _initRenderer(): void {
   _canvas.style.width = w + 'px';
   _canvas.style.height = h + 'px';
   _contentH = h;
-
   _renderer = new Renderer(_canvas, { backgroundColor: 'rgba(10,10,15,0.85)', dpr });
   _buildTree();
   _renderer.start();
@@ -215,22 +211,17 @@ function _buildTree(): void {
   const dpr = window.devicePixelRatio || 1;
   const w = _canvas.width / dpr;
   const totalH = _totalContentH();
-
   const root = new Box({
     id: 'picker-root', x: 0, y: 0, width: w,
     height: Math.max(totalH, _contentH),
     scrollable: true, scrollY: _scrollY,
   });
-
-  // 表头
   const header = new Box({ id: 'picker-head', x: 0, y: 0, width: w, height: HEADER_H });
   root.addChild(header);
-
   const dimColor = 'rgba(224,224,240,0.5)';
   const rowColor = 'rgba(224,224,240,0.85)';
   let y = HEADER_H;
 
-  // .. 行
   if (_parentPath(_currentPath)) {
     const isCur = _cursorIdx === -1;
     const row = new Box({ id: 'row-up', x: 0, y, width: w, height: LINE_HEIGHT });
@@ -239,8 +230,6 @@ function _buildTree(): void {
     root.addChild(row);
     y += LINE_HEIGHT;
   }
-
-  // 目录行
   for (let i = 0; i < _dirs.length; i++) {
     const isCur = i === _cursorIdx;
     const row = new Box({ id: `row-${i}`, x: 0, y, width: w, height: LINE_HEIGHT });
@@ -249,7 +238,6 @@ function _buildTree(): void {
     root.addChild(row);
     y += LINE_HEIGHT;
   }
-
   _renderer.setRoot(root);
 }
 
@@ -306,18 +294,13 @@ function _onUp(e: PointerEvent): void {
   if (_pointerId < 0 || e.pointerId !== _pointerId) return;
   _canvas?.releasePointerCapture(e.pointerId);
   _pointerId = -1;
-
   if (Math.abs(e.clientY - _ptrStartY) < 8) {
     const rect = _canvas?.getBoundingClientRect();
     if (rect) {
       const localY = e.clientY - rect.top;
       const idx = _rowAtY(localY);
-      if (idx === -2) {
-        const p = _parentPath(_currentPath);
-        if (p) _navigateTo(p);
-      } else if (idx >= 0 && idx < _dirs.length) {
-        _navigateTo(_dirs[idx].path);
-      }
+      if (idx === -2) { const p = _parentPath(_currentPath); if (p) _navigateTo(p); }
+      else if (idx >= 0 && idx < _dirs.length) { _navigateTo(_dirs[idx].path); }
     }
   } else {
     _startFling();
@@ -347,8 +330,7 @@ function _startFling(): void {
 
 function _navigateTo(dirPath: string): void {
   _currentPath = dirPath;
-  _scrollY = 0;
-  _cursorIdx = 0;
+  _scrollY = 0; _cursorIdx = 0;
   _fetchDirs(dirPath).then(r => {
     if (!r) return;
     _currentResolved = r.resolvedPath;
@@ -363,7 +345,7 @@ function _navigateTo(dirPath: string): void {
 async function _doConfirm(): Promise<void> {
   KFMState.expandedPaths = {};
   localStorage.setItem('expandedPaths', '{}');
-  _destroyPicker();
+  _closeWithAnim();
   await loadFileTree(_currentPath);
   if (_labelEl) _renderLabel(_displayName(_currentResolved));
 }

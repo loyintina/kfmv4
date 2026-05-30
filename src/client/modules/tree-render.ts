@@ -20,7 +20,7 @@ import { bindScrollEvents } from './canvas-scroll.js';
 import { DOM } from "./dom-refs.js";
 import * as clickQueue from "./click-queue.js";
 import { assert, warn } from "./debug-assert.js";
-import { createRootPicker, destroyRootPicker } from './root-picker.js';
+import { createRootPicker, destroyRootPicker, isPickerOpen } from './root-picker.js';
 const ts = anim.scope('tree-render');
 /** 重置动画时间线：清空 tween + 归零播放头 + 清除回调。正常动画结束时调用。 */
 function _resetAnimTimeline(): void {
@@ -619,8 +619,9 @@ function _createSidebarTouchArea(): void {
     sy = e.clientY;
   }, { passive: true });
   box.addEventListener('pointerup', (e) => {
-    const dx = sx - e.clientX;             // 正 = 向左
-    const dy = Math.abs(sy - e.clientY);   // 垂直移动距离
+    if (isPickerOpen()) return;
+    const dx = sx - e.clientX;
+    const dy = Math.abs(sy - e.clientY);
     if (dx > 60 && dx > dy * 1.5) closeSidebar();
   });
 }

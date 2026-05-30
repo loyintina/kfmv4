@@ -275,8 +275,8 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 104px;
-  max-height: 50vh;
+  bottom: 62px;
+  height: 65vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -291,17 +291,27 @@
   border: 1px solid transparent;
   background: linear-gradient(rgba(10, 10, 15, 0.95), rgba(10, 10, 15, 0.95)) padding-box, linear-gradient(135deg, rgba(0, 212, 255, 0.8), rgba(99, 102, 241, 0.7), rgba(124, 58, 237, 0.7)) border-box;
   overflow: hidden;
-  animation: picker-slide-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: picker-slide-in 0.12s ease-out both;
 }
 
 @keyframes picker-slide-in {
   from {
     transform: translateY(120%);
-    opacity: 0;
   }
   to {
     transform: translateY(0);
-    opacity: 1;
+  }
+}
+.sidebar-picker.closing .sidebar-picker-inner {
+  animation: picker-slide-out 0.25s cubic-bezier(0.5, 0, 0.7, 0.5) both;
+}
+
+@keyframes picker-slide-out {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
   }
 }
 .root-picker-confirm-bar {
