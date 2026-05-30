@@ -17,6 +17,7 @@ import { gestures } from './gesture-registry.js';
 import { L } from './renderer-lifecycle.js';
 import { _rebuildRowIndex } from './canvas-utils.js';
 import { ensureCursorBox, moveCursorTo } from './canvas-cursor.js';
+import { bindWheelEvents } from './canvas-scroll.js';
 
 const BASE_PATH = '.';
 const HEADER_H = LINE_HEIGHT + 8;
@@ -35,7 +36,6 @@ let _currentResolved = '';
 let _cachedDirs: DirItem[] = [];
 let _cursorIdx = 0;
 let _scrollY = 0;
-let _totalRows = 0;
 let _gestureUnreg: (() => void) | null = null;
 let _contentH = 0;
 
@@ -195,6 +195,7 @@ function _initPicker(): void {
   L.renderer = _renderer;
   _rebuildPicker();
   _renderer.start();
+  bindWheelEvents(_canvas);
   _bindPickerEvents();
 }
 
@@ -248,6 +249,12 @@ function _rebuildPicker(): void {
   if (L._rowIndex.length > 0) moveCursorTo(L._rowIndex[0], false);
 }
 
+function _rebuildPickerHeight(): number {
+  const r = _renderer?.getRoot();
+  if (!r) return 0;
+  return r.height || 0;
+}
+
 async function _toggleDir(path: string, expand: boolean): Promise<void> {
   if (expand) {
     _pickerExpanded[path] = true;
@@ -277,18 +284,12 @@ function _bindPickerEvents(): void {
   _canvas.addEventListener('pointermove', _onMove);
   _canvas.addEventListener('pointerup', _onUp);
   _canvas.addEventListener('pointercancel', _onUp);
-  _canvas.addEventListener('wheel', _onWheel, { passive: false });
 }
 
 function _rowAtY(localY: number): number {
   const y0 = HEADER_H - _scrollY;
   if (localY < y0) return -1;
   return Math.floor((localY - y0) / LINE_HEIGHT);
-}
-
-function _clampScrollY(val: number): number {
-  const totalH = HEADER_H + _totalRows * LINE_HEIGHT;
-  return Math.max(0, Math.min(Math.max(totalH - _contentH, 0), val));
 }
 
 function _onDown(e: PointerEvent): void {
@@ -304,7 +305,7 @@ function _onDown(e: PointerEvent): void {
 
 function _onMove(e: PointerEvent): void {
   if (_pointerId < 0 || e.pointerId !== _pointerId) return;
-  _scrollY = _clampScrollY(_ptrStartScroll + _ptrStartY - e.clientY);
+  _scrollY = Math.max(0, Math.min(_contentH > 0 ? Math.max(_rebuildPickerHeight() - _contentH, 0) : 0, _ptrStartScroll + _ptrStartY - e.clientY));
   const dt = performance.now() - _ptrLastTime;
   if (dt > 0) _velY = ((e.clientY - _ptrLastY) / dt) * 16;
   _ptrLastY = e.clientY; _ptrLastTime = performance.now();
@@ -335,19 +336,13 @@ function _onUp(e: PointerEvent): void {
   }
 }
 
-function _onWheel(e: WheelEvent): void {
-  e.preventDefault();
-  _scrollY = _clampScrollY(_scrollY + e.deltaY);
-  _rebuildPicker();
-}
-
 function _startFling(): void {
   cancelAnimationFrame(_flingId);
   let v = _velY;
   const step = () => {
     v *= 0.92;
     if (Math.abs(v) < 0.5) { _flingId = 0; return; }
-    _scrollY = _clampScrollY(_scrollY + v);
+    _scrollY = Math.max(0, Math.min(_contentH > 0 ? Math.max(_rebuildPickerHeight() - _contentH, 0) : 0, _scrollY + v));
     _rebuildPicker();
     _flingId = requestAnimationFrame(step);
   };
