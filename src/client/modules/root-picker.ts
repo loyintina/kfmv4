@@ -1,7 +1,11 @@
 /**
- * root-picker.ts — 文件树根目录切换器（Canvas 引擎版）
+ * root-picker.ts — 文件树根目录切换器（Renderer 替换模式）
+ *
+ * 打开时替换 L.renderer 指向 picker 的 Canvas，光标系统自动对齐。
+ * 展开/折叠由 picker 内部处理（无 overlay 动画）。
+ * 确认时恢复 L.renderer，loadFileTree 重建主树。
  */
-import { KFMState } from './state.js';
+import { KFMState, getFileRowData } from './state.js';
 import { loadFileTree } from './tree-loader.js';
 import { DOM } from './dom-refs.js';
 import { API } from './state.js';
@@ -9,23 +13,34 @@ import { Renderer } from '../engine/v2/renderer.js';
 import { Box } from '../engine/v2/box.js';
 import { FONT, LINE_HEIGHT } from './style-registry.js';
 import { gestures } from './gesture-registry.js';
+import { L } from './renderer-lifecycle.js';
+import { ensureCursorBox, moveCursorTo } from './canvas-cursor.js';
 
 const BASE_PATH = '.';
 const HEADER_H = LINE_HEIGHT + 8;
+const INDENT = 16;
+
 interface DirItem { name: string; path: string; isDir: boolean; }
+interface ListResult { resolvedPath: string; items: DirItem[]; }
 
 let _labelEl: HTMLElement | null = null;
 let _renderer: Renderer | null = null;
 let _container: HTMLElement | null = null;
 let _canvas: HTMLCanvasElement | null = null;
 let _confirmBtn: HTMLButtonElement | null = null;
-let _dirs: DirItem[] = [];
-let _cursorIdx = -1;
+let _pickerExpanded: Record<string, boolean> = {};
 let _currentPath = BASE_PATH;
 let _currentResolved = '';
 let _gestureUnreg: (() => void) | null = null;
-let _scrollY = 0;
 let _contentH = 0;
+let _cachedDirs: DirItem[] = [];
+let _cursorIdx = 0;
+let _scrollY = 0;
+let _totalRows = 0;
+
+// 保存/恢复 L 状态
+let _savedRenderer: Renderer | null = null;
+let _savedRowIdx: Box[] = [];
 
 let _pointerId = -1;
 let _ptrStartY = 0;
@@ -40,77 +55,49 @@ function _displayName(resolved: string): string {
   return parts.pop() || '';
 }
 
-function _parentPath(path: string): string | null {
-  if (path === '.' || path === '') return null;
-  const idx = path.lastIndexOf('/');
-  if (idx <= 0) return '.';
-  return path.substring(0, idx) || '.';
-}
-
-async function _fetchDirs(dirPath: string): Promise<{ resolvedPath: string; items: DirItem[] } | null> {
+async function _fetchDirs(dirPath: string): Promise<ListResult | null> {
   try {
     const res = await fetch(API + '/files/list', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ path: dirPath }),
     });
     const data = await res.json();
     if (data.error) return null;
-    return {
-      resolvedPath: data.path,
-      items: (data.items || []).filter((item: DirItem) => item.isDir),
-    };
+    return { resolvedPath: data.path, items: (data.items || []).filter((i: DirItem) => i.isDir) };
   } catch { return null; }
 }
 
-// ========== 标签（Canvas 渲染渐变文字） ==========
-
 function _renderLabel(text: string): void {
   if (!_labelEl) return;
-  const canvas = _labelEl as HTMLCanvasElement;
-  const rect = canvas.getBoundingClientRect();
+  const c = _labelEl as HTMLCanvasElement;
   const dpr = window.devicePixelRatio || 1;
-  const w = rect.width;
-  const h = rect.height;
+  const r = c.getBoundingClientRect();
+  const w = r.width, h = r.height;
   if (w <= 0 || h <= 0) return;
-  canvas.width = w * dpr;
-  canvas.height = h * dpr;
-  const ctx = canvas.getContext('2d');
+  c.width = w * dpr; c.height = h * dpr;
+  const ctx = c.getContext('2d');
   if (!ctx) return;
   ctx.scale(dpr, dpr);
-  const fontSize = 13;
-  ctx.font = `600 ${fontSize}px -apple-system, sans-serif`;
-  const textW = ctx.measureText(text).width;
-  const textX = (w - textW) / 2;
-  const grad = ctx.createLinearGradient(textX, 0, textX + textW, 0);
-  grad.addColorStop(0, '#7c3aed');
-  grad.addColorStop(1, '#00d4ff');
-  ctx.fillStyle = grad;
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(text, textX, h / 2);
+  ctx.font = '600 13px -apple-system, sans-serif';
+  const tw = ctx.measureText(text).width;
+  const tx = (w - tw) / 2;
+  const g = ctx.createLinearGradient(tx, 0, tx + tw, 0);
+  g.addColorStop(0, '#7c3aed'); g.addColorStop(1, '#00d4ff');
+  ctx.fillStyle = g; ctx.textBaseline = 'middle';
+  ctx.fillText(text, tx, h / 2);
 }
 
 export function createRootPicker(): void {
   if (_labelEl) return;
-  const canvas = document.createElement('canvas');
-  canvas.className = 'root-picker-label';
-  canvas.style.cssText = 'width:100%;height:40px;display:block';
-  canvas.addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (_container) { _closeWithAnim(); return; }
-    _openPanel();
-  });
+  const c = document.createElement('canvas');
+  c.className = 'root-picker-label';
+  c.style.cssText = 'width:100%;height:40px;display:block';
+  c.addEventListener('click', (e) => { e.stopPropagation(); if (_container) { _closeWithAnim(); return; } _openPanel(); });
   const tools = DOM.sidebar?.querySelector('.sidebar-tools');
-  const closeBtn = DOM.closeSidebarBtn;
-  if (tools && closeBtn) tools.insertBefore(canvas, closeBtn);
-  _labelEl = canvas;
-  _fetchDirs(BASE_PATH).then(r => {
-    if (r && _labelEl) {
-      _currentResolved = r.resolvedPath;
-      _renderLabel(_displayName(r.resolvedPath));
-    }
-  });
+  const btn = DOM.closeSidebarBtn;
+  if (tools && btn) tools.insertBefore(c, btn);
+  _labelEl = c;
+  _fetchDirs(BASE_PATH).then(r => { if (r && _labelEl) { _currentResolved = r.resolvedPath; _renderLabel(_displayName(r.resolvedPath)); } });
 }
 
 export function isPickerOpen(): boolean { return !!_container; }
@@ -120,27 +107,19 @@ export function destroyRootPicker(): void {
   if (_labelEl) { _labelEl.remove(); _labelEl = null; }
 }
 
-// ========== 面板 ==========
-
 async function _openPanel(): Promise<void> {
   if (_container) return;
   _currentPath = BASE_PATH;
   const result = await _fetchDirs(BASE_PATH);
   if (!result) return;
   _currentResolved = result.resolvedPath;
-  _dirs = result.items;
-  _cursorIdx = _dirs.length > 0 ? 0 : -1;
-  _scrollY = 0;
+  _cachedDirs = result.items;
+  _pickerExpanded = {};
+  _cursorIdx = 0; _scrollY = 0;
 
-  // 手势锁：优先于所有手势拦截全局事件
   _gestureUnreg = gestures.register({
-    id: 'picker-lock',
-    targetFilter: () => true,
-    condition: () => !!_container,
-    priority: 110,
-    stopPropagation: true,
+    id: 'picker-lock', targetFilter: () => true, condition: () => !!_container, priority: 110, stopPropagation: true,
   });
-
 
   _container = document.createElement('div');
   _container.className = 'sidebar-picker';
@@ -150,7 +129,6 @@ async function _openPanel(): Promise<void> {
   const inner = document.createElement('div');
   inner.className = 'sidebar-picker-inner';
   _container.appendChild(inner);
-
   _canvas = document.createElement('canvas');
   _canvas.style.cssText = 'width:100%;height:100%;display:block;touch-action:none';
   inner.appendChild(_canvas);
@@ -165,7 +143,7 @@ async function _openPanel(): Promise<void> {
   inner.appendChild(confirmBar);
   _confirmBtn = btn;
 
-  requestAnimationFrame(() => _initRenderer());
+  requestAnimationFrame(() => _initPicker());
 }
 
 function _closeWithAnim(): void {
@@ -179,12 +157,14 @@ function _destroyPicker(): void {
   if (_gestureUnreg) { _gestureUnreg(); _gestureUnreg = null; }
   if (_renderer) { _renderer.stop(); _renderer = null; }
   _canvas = null; _container?.remove(); _container = null;
-  _confirmBtn = null;
-  _dirs = []; _cursorIdx = -1; _scrollY = 0; _contentH = 0;
-  _velY = 0; _pointerId = -1;
+  _confirmBtn = null; _contentH = 0;
+  _velY = 0; _pointerId = -1; _pickerExpanded = {};
+  if (_savedRenderer) { L.renderer = _savedRenderer; _savedRenderer = null; }
+  L._rowIndex = _savedRowIdx as any;
+  _savedRowIdx = [];
 }
 
-function _initRenderer(): void {
+function _initPicker(): void {
   if (!_canvas || !_container) return;
   const rect = _container.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
@@ -192,60 +172,94 @@ function _initRenderer(): void {
   const confirmH = _confirmBtn ? (_confirmBtn.parentElement?.offsetHeight || 44) : 0;
   const h = rect.height - confirmH;
   if (w <= 0 || h <= 0) return;
-  _canvas.width = w * dpr;
-  _canvas.height = h * dpr;
-  _canvas.style.width = w + 'px';
-  _canvas.style.height = h + 'px';
+  _canvas.width = w * dpr; _canvas.height = h * dpr;
+  _canvas.style.width = w + 'px'; _canvas.style.height = h + 'px';
   _contentH = h;
+
+  _savedRenderer = L.renderer;
+  _savedRowIdx = L._rowIndex as any;
+
   _renderer = new Renderer(_canvas, { backgroundColor: 'rgba(10,10,15,0.85)', dpr });
-  _buildTree();
+  L.renderer = _renderer;
+  _buildPickerTree();
   _renderer.start();
-  _bindEvents();
+  _bindPickerEvents();
 }
 
-function _totalContentH(): number {
-  const hasUp = _parentPath(_currentPath) !== null;
-  return HEADER_H + (hasUp ? LINE_HEIGHT : 0) + _dirs.length * LINE_HEIGHT;
-}
+// ========== Box 树构建 ==========
 
-function _buildTree(): void {
+function _buildPickerTree(): void {
   if (!_renderer || !_canvas) return;
   const dpr = window.devicePixelRatio || 1;
   const w = _canvas.width / dpr;
-  const totalH = _totalContentH();
-  const root = new Box({
-    id: 'picker-root', x: 0, y: 0, width: w,
-    height: Math.max(totalH, _contentH),
-    scrollable: true, scrollY: _scrollY,
-  });
+
+  // 计算所有行的展开状态
+  const dirs = _cachedDirs;
+  _totalRows = _countRows(dirs);
+  const totalH = HEADER_H + _totalRows * LINE_HEIGHT;
+
+  const root = new Box({ id: 'picker-root', x: 0, y: 0, width: w, height: Math.max(totalH, _contentH), scrollable: true, scrollY: _scrollY });
   const header = new Box({ id: 'picker-head', x: 0, y: 0, width: w, height: HEADER_H });
   root.addChild(header);
-  const dimColor = 'rgba(224,224,240,0.5)';
-  const rowColor = 'rgba(224,224,240,0.85)';
-  let y = HEADER_H;
 
-  if (_parentPath(_currentPath)) {
-    const isCur = _cursorIdx === -1;
-    const row = new Box({ id: 'row-up', x: 0, y, width: w, height: LINE_HEIGHT });
-    row.textStyle = { font: FONT, lineHeight: LINE_HEIGHT, align: 'left', verticalAlign: 'middle', overflow: 'ellipsis', maxLines: 2, content: '  ..', color: dimColor };
+  let ry = HEADER_H;
+  const rows: Box[] = [];
+
+  function addDir(d: typeof dirs[0], depth: number): void {
+    const n = d.name;
+    const path = d.path;
+    const isExpanded = !!_pickerExpanded[path];
+    const isCur = rows.length === _cursorIdx;
+    const tri = isExpanded ? '▼' : '▶';
+    const text = '  '.repeat(depth + 1) + tri + '  ' + n;
+    const row = new Box({ id: `pr-${path}`, x: depth * INDENT, y: ry, width: w - depth * INDENT, height: LINE_HEIGHT });
+    row.data = { path, isDir: true, isExpanded, depth, lineCount: 1 } as any;
+    row.textStyle = { font: FONT, lineHeight: LINE_HEIGHT, align: 'left', verticalAlign: 'middle', overflow: 'ellipsis', maxLines: 2, content: text, color: isCur ? '#e0e0f0' : 'rgba(224,224,240,0.85)' };
     if (isCur) row.backgroundColor = 'rgba(46,213,163,0.12)';
     root.addChild(row);
-    y += LINE_HEIGHT;
+    rows.push(row);
+    ry += LINE_HEIGHT;
+
+    if (isExpanded) {
+      _addChildren(path, depth + 1);
+    }
   }
-  for (let i = 0; i < _dirs.length; i++) {
-    const isCur = i === _cursorIdx;
-    const row = new Box({ id: `row-${i}`, x: 0, y, width: w, height: LINE_HEIGHT });
-    row.textStyle = { font: FONT, lineHeight: LINE_HEIGHT, align: 'left', verticalAlign: 'middle', overflow: 'ellipsis', maxLines: 2, content: '  ' + _dirs[i].name, color: isCur ? '#e0e0f0' : rowColor };
-    if (isCur) row.backgroundColor = 'rgba(46,213,163,0.12)';
-    root.addChild(row);
-    y += LINE_HEIGHT;
+
+  function _addChildren(parentPath: string, depth: number): void {
+    // 子目录已缓存？如果没有，不展开
+    // 展开是在 _toggleDir 中通过 async fetch 预先加载数据的
   }
+
+  for (const d of dirs) addDir(d, 0);
+
   _renderer.setRoot(root);
+  L._rowIndex = rows as any;
+  ensureCursorBox(root, _contentH);
+  if (rows.length > 0 && _cursorIdx < rows.length) {
+    moveCursorTo(rows[_cursorIdx]);
+  }
 }
 
-// ========== 手势 ==========
+function _countRows(dirs: DirItem[]): number {
+  let c = 0;
+  for (const d of dirs) { c++; if (_pickerExpanded[d.path]) c += 0; } // 占位，子层展开后计入
+  return c;
+}
 
-function _bindEvents(): void {
+async function _toggleDir(path: string): Promise<void> {
+  const expand = !_pickerExpanded[path];
+  if (expand) {
+    _pickerExpanded[path] = true;
+    await _fetchDirs(path); // 预加载，获取子目录列表
+  } else {
+    delete _pickerExpanded[path];
+  }
+  _buildPickerTree();
+}
+
+// ========== Canvas 事件 ==========
+
+function _bindPickerEvents(): void {
   if (!_canvas) return;
   _canvas.addEventListener('pointerdown', _onDown);
   _canvas.addEventListener('pointermove', _onMove);
@@ -255,20 +269,14 @@ function _bindEvents(): void {
 }
 
 function _rowAtY(localY: number): number {
-  let y = HEADER_H - _scrollY;
-  if (_parentPath(_currentPath)) {
-    if (localY >= y && localY < y + LINE_HEIGHT) return -2;
-    y += LINE_HEIGHT;
-  }
-  for (let i = 0; i < _dirs.length; i++) {
-    if (localY >= y && localY < y + LINE_HEIGHT) return i;
-    y += LINE_HEIGHT;
-  }
-  return -1;
+  const y0 = HEADER_H - _scrollY;
+  if (localY < y0) return -1;
+  return Math.floor((localY - y0) / LINE_HEIGHT);
 }
 
 function _clampScrollY(val: number): number {
-  return Math.max(0, Math.min(Math.max(_totalContentH() - _contentH, 0), val));
+  const totalH = HEADER_H + _totalRows * LINE_HEIGHT;
+  return Math.max(0, Math.min(Math.max(totalH - _contentH, 0), val));
 }
 
 function _onDown(e: PointerEvent): void {
@@ -287,9 +295,8 @@ function _onMove(e: PointerEvent): void {
   _scrollY = _clampScrollY(_ptrStartScroll + _ptrStartY - e.clientY);
   const dt = performance.now() - _ptrLastTime;
   if (dt > 0) _velY = ((e.clientY - _ptrLastY) / dt) * 16;
-  _ptrLastY = e.clientY;
-  _ptrLastTime = performance.now();
-  _buildTree();
+  _ptrLastY = e.clientY; _ptrLastTime = performance.now();
+  _buildPickerTree();
 }
 
 function _onUp(e: PointerEvent): void {
@@ -300,9 +307,15 @@ function _onUp(e: PointerEvent): void {
     const rect = _canvas?.getBoundingClientRect();
     if (rect) {
       const localY = e.clientY - rect.top;
-      const idx = _rowAtY(localY);
-      if (idx === -2) { const p = _parentPath(_currentPath); if (p) _navigateTo(p); }
-      else if (idx >= 0 && idx < _dirs.length) { _navigateTo(_dirs[idx].path); }
+      const rowIdx = _rowAtY(localY);
+      if (rowIdx >= 0 && rowIdx < L._rowIndex.length) {
+        const box = L._rowIndex[rowIdx];
+        const d = getFileRowData(box.data);
+        if (d && d.isDir) {
+          _cursorIdx = rowIdx;
+          _toggleDir(d.path);
+        }
+      }
     }
   } else {
     _startFling();
@@ -312,7 +325,7 @@ function _onUp(e: PointerEvent): void {
 function _onWheel(e: WheelEvent): void {
   e.preventDefault();
   _scrollY = _clampScrollY(_scrollY + e.deltaY);
-  _buildTree();
+  _buildPickerTree();
 }
 
 function _startFling(): void {
@@ -322,32 +335,23 @@ function _startFling(): void {
     v *= 0.92;
     if (Math.abs(v) < 0.5) { _flingId = 0; return; }
     _scrollY = _clampScrollY(_scrollY + v);
-    _buildTree();
+    _buildPickerTree();
     _flingId = requestAnimationFrame(step);
   };
   _flingId = requestAnimationFrame(step);
 }
 
-// ========== 导航 ==========
-
-function _navigateTo(dirPath: string): void {
-  _currentPath = dirPath;
-  _scrollY = 0; _cursorIdx = 0;
-  _fetchDirs(dirPath).then(r => {
-    if (!r) return;
-    _currentResolved = r.resolvedPath;
-    _dirs = r.items;
-    if (_cursorIdx >= _dirs.length) _cursorIdx = _dirs.length > 0 ? 0 : -1;
-    _buildTree();
-  });
-}
-
 // ========== 确认 ==========
 
 async function _doConfirm(): Promise<void> {
+  let confirmPath = BASE_PATH;
+  if (_cursorIdx >= 0 && _cursorIdx < L._rowIndex.length) {
+    const d = getFileRowData(L._rowIndex[_cursorIdx].data);
+    if (d) confirmPath = d.path;
+  }
   KFMState.expandedPaths = {};
   localStorage.setItem('expandedPaths', '{}');
-  _closeWithAnim();
-  await loadFileTree(_currentPath);
-  if (_labelEl) _renderLabel(_displayName(_currentResolved));
+  _destroyPicker();
+  await loadFileTree(confirmPath);
+  if (_labelEl) _renderLabel(_displayName(confirmPath));
 }
