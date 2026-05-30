@@ -111,7 +111,9 @@ async function _openPanel(): Promise<void> {
 
   _container = document.createElement('div');
   _container.className = 'sidebar-picker';
-  DOM.sidebar?.appendChild(_container);
+  // 插入到 sidebar-content 和 sidebar-tools 之间
+  const tools = DOM.sidebar?.querySelector('.sidebar-tools');
+  if (tools) DOM.sidebar?.insertBefore(_container, tools);
 
   _canvas = document.createElement('canvas');
   _canvas.style.width = '100%';

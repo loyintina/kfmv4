@@ -340,5 +340,18 @@ BR 光球的 click 事件只写了 `compact → expanding` 方向，没有写 `a
 **违规后果**：展开/折叠动画执行到一半，部分状态丢失，出现幽灵图标（`tree-toggle` 的旋转状态与实际展开状态不一致）、兄弟元素延迟上移。
 
 **历史案例**：2026-05-29（sidebar-nav 三连 setExpanded 导致 ghost toggle + 动画断裂，已删除该模块）
-
 **改进方向**：未来可在 KFMState 上增加 `beginBatch()`/`endBatch()` 机制，将多次修改合并为一次 `notify()`，消除对 `L.isAnimating` 守卫的隐式依赖。
+### 1.10 侧栏布局方程：content + tools = 100dvh
+
+**涉及模块**：`sidebar.scss`、`tree-render.ts`（`onSidebarOpen` 中创建 canvas）、`root-picker.ts`
+
+**契约内容**：
+- `.sidebar-content`（文件树 Canvas）和 `.sidebar-tools`（工具栏）两等分侧栏高度
+- 等式：`.sidebar-content` 高度 = `calc(100% - 52px)`，`.sidebar-tools` 高度 = 52px
+- 任何新侧栏内元素（如目录选择器）必须用 `position:absolute`/`fixed` 覆盖，不参与流式布局
+- 禁止在 `.sidebar` 上设 `display:flex`，禁止改 `.sidebar-content` 的 `calc` 为 `flex:1`
+- `.sidebar-tools` 的 `position:sticky;bottom:0` 不能改为 `flex-shrink:0`
+
+**违规后果**：工具栏错位（被推离底部）、文件树 Canvas 尺寸计算错误（`clientWidth` 为 0 或负值，导致 `renderer.setRoot` 不渲染）、点击区域偏移。
+
+**历史案例**：2026-05-29（root-picker 重写时误改 sidebar 布局，工具条浮起、文件树 canvas 初始化失败）
