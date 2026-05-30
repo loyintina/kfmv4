@@ -28,7 +28,6 @@ let _labelEl: HTMLElement | null = null;
 let _renderer: Renderer | null = null;
 let _container: HTMLElement | null = null;
 let _canvas: HTMLCanvasElement | null = null;
-let _confirmBtn: HTMLButtonElement | null = null;
 let _pickerExpanded: Record<string, boolean> = {};
 let _currentPath = BASE_PATH;
 let _currentResolved = '';
@@ -136,22 +135,28 @@ async function _openPanel(): Promise<void> {
   _canvas = document.createElement('canvas');
   inner.appendChild(_canvas);
 
-  const confirmBar = document.createElement('div');
-  confirmBar.className = 'root-picker-confirm-bar';
-  const btn = document.createElement('button');
-  btn.className = 'root-picker-confirm';
-  btn.textContent = '✅ 选此目录作为文件树';
-  btn.addEventListener('click', _doConfirm);
-  confirmBar.appendChild(btn);
-  inner.appendChild(confirmBar);
-  _confirmBtn = btn;
   requestAnimationFrame(() => _initPicker());
 }
 
 function _closeWithAnim(): void {
   if (!_container) return;
+  // 确定光标所在目录路径
+  let targetPath = BASE_PATH;
+  if (_cursorIdx >= 0 && _cursorIdx < L._rowIndex.length) {
+    const d = getFileRowData(L._rowIndex[_cursorIdx].data);
+    if (d) targetPath = d.path;
+  }
+  const selectedLabel = _displayName(targetPath);
   _container.classList.add('closing');
-  setTimeout(() => _destroyPicker(), 280);
+  // 动画期间后台加载文件树
+  KFMState.expandedPaths = {};
+  localStorage.setItem('expandedPaths', '{}');
+  loadFileTree(targetPath).then(() => {
+    setTimeout(() => _destroyPicker(), 50);
+    if (_labelEl) _renderLabel(selectedLabel);
+  });
+  // 兜底：600ms 后强制关闭
+  setTimeout(() => { if (_container) _destroyPicker(); }, 600);
 }
 
 function _destroyPicker(): void {
@@ -181,8 +186,7 @@ function _initPicker(): void {
   const rect = _container.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
   const w = rect.width;
-  const confirmH = _confirmBtn ? (_confirmBtn.parentElement?.offsetHeight || 44) : 0;
-  const h = rect.height - confirmH;
+  const h = rect.height;
   if (w <= 0 || h <= 0) return;
   _canvas.width = w * dpr; _canvas.height = h * dpr;
   _canvas.style.width = w + 'px'; _canvas.style.height = h + 'px';
@@ -274,17 +278,3 @@ async function _toggleDir(path: string, expand: boolean): Promise<void> {
   _rebuildPicker();
 }
 
-// ========== 确认 ==========
-
-async function _doConfirm(): Promise<void> {
-  let confirmPath = BASE_PATH;
-  if (_cursorIdx >= 0 && _cursorIdx < L._rowIndex.length) {
-    const d = getFileRowData(L._rowIndex[_cursorIdx].data);
-    if (d) confirmPath = d.path;
-  }
-  KFMState.expandedPaths = {};
-  localStorage.setItem('expandedPaths', '{}');
-  _destroyPicker();
-  await loadFileTree(confirmPath);
-  if (_labelEl) _renderLabel(_displayName(confirmPath));
-}
