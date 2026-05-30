@@ -66,28 +66,64 @@ async function _fetchDirs(dirPath: string): Promise<{
     };
   } catch { return null; }
 }
+// ========== 标签（Canvas 渲染渐变文字） ==========
 
-// ========== 标签 ==========
+/** 在 Canvas 上画渐变文字，渐变宽度 = 文字实际宽度 */
+function _renderLabel(text: string): void {
+  if (!_labelEl) return;
+  const canvas = _labelEl as HTMLCanvasElement;
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  const w = rect.width;
+  const h = rect.height;
+  if (w <= 0 || h <= 0) return;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  ctx.scale(dpr, dpr);
+
+  const fontSize = 13;
+  const font = `600 ${fontSize}px -apple-system, sans-serif`;
+  ctx.font = font;
+  const textW = ctx.measureText(text).width;
+
+  // 渐变 = 从文字左边缘到右边缘
+  const textX = (w - textW) / 2;
+  const grad = ctx.createLinearGradient(textX, 0, textX + textW, 0);
+  grad.addColorStop(0, '#7c3aed');
+  grad.addColorStop(1, '#00d4ff');
+
+  ctx.fillStyle = grad;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, textX, h / 2);
+}
 
 export function createRootPicker(): void {
   if (_labelEl) return;
-  const label = document.createElement('span');
-  label.className = 'root-picker-label';
-  label.textContent = '';
-  label.addEventListener('click', (e) => {
+
+  const canvas = document.createElement('canvas');
+  canvas.className = 'root-picker-label';
+  canvas.style.width = '100%';
+  canvas.style.height = '40px';
+  canvas.style.display = 'block';
+  canvas.addEventListener('click', (e) => {
     e.stopPropagation();
     if (_container) { _destroyPicker(); return; }
     _openPanel();
   });
+
   const tools = DOM.sidebar?.querySelector('.sidebar-tools');
   const closeBtn = DOM.closeSidebarBtn;
-  if (tools && closeBtn) tools.insertBefore(label, closeBtn);
-  _labelEl = label;
+  if (tools && closeBtn) tools.insertBefore(canvas, closeBtn);
+  _labelEl = canvas;
 
   _fetchDirs(BASE_PATH).then(r => {
     if (r && _labelEl) {
       _currentResolved = r.resolvedPath;
-      _labelEl.textContent = _displayName(r.resolvedPath);
+      _renderLabel(_displayName(r.resolvedPath));
     }
   });
 }
@@ -324,5 +360,5 @@ async function _doConfirm(): Promise<void> {
   localStorage.setItem('expandedPaths', '{}');
   _destroyPicker();
   await loadFileTree(_currentPath);
-  if (_labelEl) _labelEl.textContent = _displayName(_currentResolved);
+  if (_labelEl) _renderLabel(_displayName(_currentResolved));
 }
