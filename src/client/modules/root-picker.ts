@@ -11,7 +11,7 @@ import { DOM } from './dom-refs.js';
 import { API } from './state.js';
 import { Renderer } from '../engine/v2/renderer.js';
 import { Box } from '../engine/v2/box.js';
-import { FONT, LINE_HEIGHT } from './style-registry.js';
+import { FONT, LINE_HEIGHT, DIMENSIONS } from './style-registry.js';
 import { gestures } from './gesture-registry.js';
 import { L } from './renderer-lifecycle.js';
 import { ensureCursorBox, moveCursorTo } from './canvas-cursor.js';
@@ -220,7 +220,7 @@ function _buildPickerTree(): void {
 
     // toggle 图标（▶，与主文件树同位置、同样式）
     const tog = new Box({ id: `tog-${path}`, x: T_OFF, y: 0, width: LINE_HEIGHT, height: LINE_HEIGHT });
-    tog.textStyle = { font: FONT, lineHeight: LINE_HEIGHT, align: 'center', verticalAlign: 'middle', overflow: 'ellipsis', maxLines: 2, content: '\u25b6', color: 'rgba(0,212,255,0.8)' };
+    tog.textStyle = { font: `${DIMENSIONS.TRIANGLE_SIZE}px system-ui, sans-serif`, lineHeight: LINE_HEIGHT, align: 'center', verticalAlign: 'middle', overflow: 'ellipsis', maxLines: 2, content: '\u25b6', color: 'rgba(0,212,255,0.8)' };
     if (isExpanded) tog.transform.rotate = Math.PI / 2;
     row.addChild(tog);
 
@@ -242,7 +242,7 @@ function _buildPickerTree(): void {
   _renderer.setRoot(root);
   L._rowIndex = rows as any;
   ensureCursorBox(root, _contentH);
-  if (rows.length > 0 && _cursorIdx < rows.length) moveCursorTo(rows[_cursorIdx]);
+  if (rows.length > 0 && _cursorIdx < rows.length) moveCursorTo(rows[_cursorIdx], false);
 }
 
 function _countRows(dirs: DirItem[]): number {
