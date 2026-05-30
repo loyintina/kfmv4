@@ -64,21 +64,7 @@ export interface ThemeConfig {
     orbGradient: string;         // radial-gradient(... 实际在 debug-orb 中硬编码了不同样式)
   };
 
-  /** 调试面板（青色） */
-  debug: {
-    orbGradient: string;          // radial-gradient(circle at 35% 35%, rgba(0,255,200,0.9), rgba(0,180,150,0.6))
-    orbShadow: string;            // 0 0 16px 4px rgba(0,255,200,0.4), 0 0 40px 12px rgba(0,200,160,0.2)
-    panelBgGradient: string;      // linear-gradient(rgba(8,20,18,0.94),rgba(8,20,18,0.94))
-    panelBorderGradient: string;  // linear-gradient(135deg,rgba(0,255,200,.7),rgba(0,180,150,.5))
-    panelShadow: string;          // 0 0 20px 6px rgba(0,255,200,0.2), 0 6px 24px rgba(0,0,0,0.5)
-    panelShadowEdit: string;      // 0 0 40px 20px rgba(0,255,200,0.45), 0 6px 24px rgba(0,0,0,0.5)
-    headerBorder: string;         // rgba(0,255,200,0.2)
-    headerText: string;           // rgba(0,255,200,0.9)
-    buttonBg: string;             // rgba(0,255,200,0.15)
-    buttonBorder: string;         // rgba(0,255,200,0.3)
-    logText: string;              // rgba(180,255,230,0.85)
-    accentColor: string;          // #00ffc8
-  };
+
 
   /** 工具卡片颜色（7 色星云光谱） */
   cardAccents: Array<{
@@ -176,20 +162,6 @@ export const nebula: ThemeConfig = {
     orbGradient: '',
   },
 
-  debug: {
-    orbGradient: 'radial-gradient(circle at 35% 35%, rgba(0,255,200,0.9), rgba(0,180,150,0.6))',
-    orbShadow: '0 0 16px 4px rgba(0,255,200,0.4), 0 0 40px 12px rgba(0,200,160,0.2)',
-    panelBgGradient: 'linear-gradient(rgba(8,20,18,0.94),rgba(8,20,18,0.94))',
-    panelBorderGradient: 'linear-gradient(135deg,rgba(0,255,200,.7),rgba(0,180,150,.5))',
-    panelShadow: '0 0 20px 6px rgba(0,255,200,0.2), 0 6px 24px rgba(0,0,0,0.5)',
-    panelShadowEdit: '0 0 40px 20px rgba(0,255,200,0.45), 0 6px 24px rgba(0,0,0,0.5)',
-    headerBorder: 'rgba(0,255,200,0.2)',
-    headerText: 'rgba(0,255,200,0.9)',
-    buttonBg: 'rgba(0,255,200,0.15)',
-    buttonBorder: 'rgba(0,255,200,0.3)',
-    logText: 'rgba(180,255,230,0.85)',
-    accentColor: '#00ffc8',
-  },
 
   cardAccents: [
     { border: '#B46478', bg: 'rgba(20,16,32,0.92)', iconBg: 'rgba(180,100,120,0.25)' },
