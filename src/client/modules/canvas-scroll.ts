@@ -7,7 +7,7 @@
 import { Box } from '../engine/v2/box.js';
 import { L } from './renderer-lifecycle.js';
 import { getRootScrollY, setRootScrollY, _rebuildRowIndex, findBoxById } from './canvas-utils.js';
-import { getCursorRowIndex, moveCursorTo, _snapCursorToCenter, _moveCursorBySteps } from './canvas-cursor.js';
+import { getCursorRowIndex, moveCursorTo, _snapCursorToCenter, _moveCursorBySteps, _isCursorMode, _getCenterRowIndex } from './canvas-cursor.js';
 import { getShift, LINE_HEIGHT, MAX_LINES } from './style-registry.js';
 import { gestures } from './gesture-registry.js';
 import { closeSidebar } from './ui.js';
@@ -26,29 +26,6 @@ let cursorTouchStartY = 0;
 let cursorLastTouchY = 0;
 let cursorLastTouchTime = 0;
 let cursorVelocity = 0;
-
-function _isCursorMode(): boolean {
-  if (!L.renderer) return false;
-  const root = L.renderer.getRoot();
-  if (!root) return false;
-  const viewH = L.renderer.height;
-  const totalH = root.height;
-  return totalH <= viewH + 2;
-}
-
-function _getCenterRowIndex(): number {
-  return _cursorIsAtCenter() ? getCursorRowIndex() : -1;
-}
-
-function _cursorIsAtCenter(): boolean {
-  if (!L.renderer || !L.cursorBox || !L.renderer.getRoot()) return false;
-  const root = L.renderer.getRoot()!;
-  const viewH = L.renderer.height;
-  const cursorAbs = L.cursorBox.getAbsolutePosition();
-  const cursorY = cursorAbs.y - root.scrollY;
-  const centerY = viewH / 2;
-  return Math.abs(cursorY - centerY) < LINE_HEIGHT;
-}
 
 // ========== wheel 事件（直接绑定，不走 gesture-registry） ==========
 
