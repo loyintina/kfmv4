@@ -5,21 +5,21 @@
  * 展开/折叠由 picker 内部处理（无 overlay 动画）。
  * 确认时恢复 L.renderer，loadFileTree 重建主树。
  */
-import { KFMState, getFileRowData } from './state.js';
+import { KFMState, type FileNode, getFileRowData } from './state.js';
 import { loadFileTree } from './tree-loader.js';
+import { buildTree, type TreeOptions } from './tree-model.js';
 import { DOM } from './dom-refs.js';
 import { API } from './state.js';
 import { Renderer } from '../engine/v2/renderer.js';
 import { Box } from '../engine/v2/box.js';
-import { FONT, LINE_HEIGHT, DIMENSIONS } from './style-registry.js';
+import { LINE_HEIGHT } from './style-registry.js';
 import { gestures } from './gesture-registry.js';
 import { L } from './renderer-lifecycle.js';
+import { _rebuildRowIndex } from './canvas-utils.js';
 import { ensureCursorBox, moveCursorTo } from './canvas-cursor.js';
 
 const BASE_PATH = '.';
 const HEADER_H = LINE_HEIGHT + 8;
-const T_OFF = 12;   // toggle 图标偏移（同 tree-model.ts）
-const TXT_L = 26;   // 文字起始偏移
 
 interface DirItem { name: string; path: string; isDir: boolean; }
 interface ListResult { resolvedPath: string; items: DirItem[]; }
@@ -30,21 +30,21 @@ let _container: HTMLElement | null = null;
 let _canvas: HTMLCanvasElement | null = null;
 let _confirmBtn: HTMLButtonElement | null = null;
 let _pickerExpanded: Record<string, boolean> = {};
-let _dirCache: Record<string, DirItem[]> = {};
 let _currentPath = BASE_PATH;
 let _currentResolved = '';
-let _gestureUnreg: (() => void) | null = null;
-let _contentH = 0;
 let _cachedDirs: DirItem[] = [];
 let _cursorIdx = 0;
 let _scrollY = 0;
 let _totalRows = 0;
+let _gestureUnreg: (() => void) | null = null;
+let _contentH = 0;
+
+let _savedFiles: Record<string, any> = {};
+let _ptrStartY = 0;
 
 let _savedRenderer: Renderer | null = null;
 let _savedRowIdx: Box[] = [];
-
 let _pointerId = -1;
-let _ptrStartY = 0;
 let _ptrStartScroll = 0;
 let _ptrLastY = 0;
 let _ptrLastTime = 0;
@@ -120,9 +120,13 @@ async function _openPanel(): Promise<void> {
   _currentResolved = result.resolvedPath;
   _cachedDirs = result.items;
   _pickerExpanded = {};
-  _dirCache = {};
   _cursorIdx = 0; _scrollY = 0;
-
+  // 保存 KFMState.files 快照，关闭时恢复
+  _savedFiles = {};
+  for (const key of Object.keys(KFMState.files)) {
+    _savedFiles[key] = KFMState.files[key];
+  }
+  _cursorIdx = 0; _scrollY = 0;
   _gestureUnreg = gestures.register({
     id: 'picker-lock', targetFilter: () => true, condition: () => !!_container, priority: 110, stopPropagation: true,
   });
@@ -135,7 +139,6 @@ async function _openPanel(): Promise<void> {
   inner.className = 'sidebar-picker-inner';
   _container.appendChild(inner);
   _canvas = document.createElement('canvas');
-  _canvas.style.cssText = 'width:100%;height:100%;display:block;touch-action:none';
   inner.appendChild(_canvas);
 
   const confirmBar = document.createElement('div');
@@ -161,9 +164,15 @@ function _destroyPicker(): void {
   if (_gestureUnreg) { _gestureUnreg(); _gestureUnreg = null; }
   if (_renderer) { _renderer.stop(); _renderer = null; }
   _canvas = null; _container?.remove(); _container = null;
-  _confirmBtn = null; _contentH = 0;
-  _velY = 0; _pointerId = -1; _pickerExpanded = {}; _dirCache = {};
+  _velY = 0; _pointerId = -1; _pickerExpanded = {};
   if (_savedRenderer) { L.renderer = _savedRenderer; _savedRenderer = null; }
+  // 恢复 KFMState.files 到 picker 打开前的状态
+  for (const key of Object.keys(KFMState.files)) {
+    if (!(key in _savedFiles)) delete KFMState.files[key];
+  }
+  for (const key of Object.keys(_savedFiles)) {
+    (KFMState.files as Record<string, any>)[key] = _savedFiles[key];
+  }
   L._rowIndex = _savedRowIdx as any;
   _savedRowIdx = [];
 }
@@ -184,84 +193,80 @@ function _initPicker(): void {
   _savedRowIdx = L._rowIndex as any;
   _renderer = new Renderer(_canvas, { backgroundColor: 'rgba(10,10,15,0.85)', dpr });
   L.renderer = _renderer;
-  _buildPickerTree();
+  _rebuildPicker();
   _renderer.start();
   _bindPickerEvents();
 }
 
 // ========== Box 树构建（与主文件树相同的 toggle + label 结构） ==========
 
-function _buildPickerTree(): void {
+// ========== 用 buildTree 构建目录树 ==========
+
+function _rebuildPicker(): void {
   if (!_renderer || !_canvas) return;
   const dpr = window.devicePixelRatio || 1;
   const w = _canvas.width / dpr;
-  const dirs = _cachedDirs;
-  _totalRows = _countRows(dirs);
-  const totalH = HEADER_H + _totalRows * LINE_HEIGHT;
 
-  const root = new Box({ id: 'picker-root', x: 0, y: 0, width: w, height: Math.max(totalH, _contentH), scrollable: true, scrollY: _scrollY });
+  // 构造根节点：当前目录自己作为根，子目录为 children
+  const rootName = _displayName(_currentResolved) || '项目';
+  const rootNode: FileNode = {
+    name: rootName, path: BASE_PATH, isDir: true, isLink: false,
+    children: _cachedDirs.map(d => ({ name: d.name, path: d.path, isDir: true, isLink: false })),
+  };
+
+  // 把 picker 的目录数据写入 KFMState.files（buildTree 内部会读它）
+  KFMState.files[BASE_PATH] = rootNode as any;
+  for (const d of _cachedDirs) {
+    if (KFMState.files[d.path] === undefined) {
+      KFMState.files[d.path] = { name: d.name, path: d.path, isDir: true, isLink: false, children: [] };
+    }
+  }
+
+  // buildTree 输出同款视觉
+  const treeRoot = buildTree([rootNode], {
+    expandedPaths: _pickerExpanded,
+    containerWidth: w,
+    onDirToggle: (path: string, expand: boolean) => { _toggleDir(path, expand); },
+    onFileClick: () => {},
+  });
+
+  // 包裹到可滚动的 picker 根容器
+  const totalH = HEADER_H + (treeRoot.height || 0);
+  const pickerRoot = new Box({ id: 'picker-root', x: 0, y: 0, width: w, height: Math.max(totalH, _contentH), scrollable: true, scrollY: _scrollY });
   const header = new Box({ id: 'picker-head', x: 0, y: 0, width: w, height: HEADER_H });
-  root.addChild(header);
+  pickerRoot.addChild(header);
+  treeRoot.y = HEADER_H;
+  pickerRoot.addChild(treeRoot);
+  if (treeRoot.height) pickerRoot.height = Math.max(HEADER_H + treeRoot.height, _contentH);
 
-  let ry = HEADER_H;
-  const rows: Box[] = [];
+  _renderer.setRoot(pickerRoot);
 
-  function addDir(name: string, path: string, depth: number): void {
-    const indent = depth * T_OFF;
-    const isExpanded = !!_pickerExpanded[path];
-    const isCur = rows.length === _cursorIdx;
-
-    // 行容器
-    const row = new Box({ id: `pr-${path}`, x: indent, y: ry, width: w - indent, height: LINE_HEIGHT });
-    row.data = { path, isDir: true, isExpanded, depth, lineCount: 1 } as any;
-    if (isCur) row.backgroundColor = 'rgba(46,213,163,0.12)';
-    root.addChild(row);
-    rows.push(row);
-
-    // toggle 图标（▶，与主文件树同位置、同样式）
-    const tog = new Box({ id: `tog-${path}`, x: T_OFF, y: 0, width: LINE_HEIGHT, height: LINE_HEIGHT });
-    tog.textStyle = { font: `${DIMENSIONS.TRIANGLE_SIZE}px system-ui, sans-serif`, lineHeight: LINE_HEIGHT, align: 'center', verticalAlign: 'middle', overflow: 'ellipsis', maxLines: 2, content: '\u25b6', color: 'rgba(0,212,255,0.8)' };
-    if (isExpanded) tog.transform.rotate = Math.PI / 2;
-    row.addChild(tog);
-
-    // 文件夹名文字标签
-    const label = new Box({ id: `lbl-${path}`, x: TXT_L, y: 0, width: w - indent - TXT_L - 4, height: LINE_HEIGHT });
-    label.textStyle = { font: FONT, lineHeight: LINE_HEIGHT, align: 'left', verticalAlign: 'middle', overflow: 'ellipsis', maxLines: 2, content: name, color: isCur ? '#e0e0f0' : 'rgba(224,224,240,0.85)' };
-    row.addChild(label);
-
-    ry += LINE_HEIGHT;
-
-    if (isExpanded) {
-      const subs = _dirCache[path] || [];
-      for (const sub of subs) addDir(sub.name, sub.path, depth + 1);
-    }
-  }
-
-  for (const d of dirs) addDir(d.name, d.path, 0);
-
-  _renderer.setRoot(root);
-  L._rowIndex = rows as any;
-  ensureCursorBox(root, _contentH);
-  if (rows.length > 0 && _cursorIdx < rows.length) moveCursorTo(rows[_cursorIdx], false);
+  // 行索引和光标
+  L._rowIndex = [];
+  _rebuildRowIndex(pickerRoot);
+  ensureCursorBox(pickerRoot, _contentH);
+  if (L._rowIndex.length > 0) moveCursorTo(L._rowIndex[0], false);
 }
 
-function _countRows(dirs: DirItem[]): number {
-  let c = 0;
-  for (const d of dirs) { c++; if (_pickerExpanded[d.path]) c += (_dirCache[d.path]?.length || 0); }
-  return c;
-}
-
-async function _toggleDir(path: string): Promise<void> {
-  if (_pickerExpanded[path]) {
-    delete _pickerExpanded[path];
-  } else {
+async function _toggleDir(path: string, expand: boolean): Promise<void> {
+  if (expand) {
     _pickerExpanded[path] = true;
-    if (!_dirCache[path]) {
+    // 如果 KFMState.files 中没有该目录的 children，从 API 获取
+    const existing = KFMState.files[path] as any as FileNode | undefined;
+    if (!existing?.children || existing.children.length === 0) {
       const result = await _fetchDirs(path);
-      if (result) _dirCache[path] = result.items;
+      if (result) {
+        const fileNode: FileNode = {
+          name: path.split('/').pop() || path, path, isDir: true, isLink: false,
+          children: result.items.map(d => ({ name: d.name, path: d.path, isDir: true, isLink: false })),
+        };
+        KFMState.files[path] = fileNode as any;
+      }
     }
+  } else {
+    delete _pickerExpanded[path];
   }
-  _buildPickerTree();
+  _rebuildPicker();
 }
 
 // ========== Canvas 事件 ==========
@@ -303,7 +308,7 @@ function _onMove(e: PointerEvent): void {
   const dt = performance.now() - _ptrLastTime;
   if (dt > 0) _velY = ((e.clientY - _ptrLastY) / dt) * 16;
   _ptrLastY = e.clientY; _ptrLastTime = performance.now();
-  _buildPickerTree();
+  _rebuildPicker();
 }
 
 function _onUp(e: PointerEvent): void {
@@ -320,7 +325,8 @@ function _onUp(e: PointerEvent): void {
         const d = getFileRowData(box.data);
         if (d && d.isDir) {
           _cursorIdx = rowIdx;
-          _toggleDir(d.path);
+          _toggleDir(d.path, !d.isExpanded);
+          // 对非展开状态传 true 表示展开
         }
       }
     }
@@ -332,7 +338,7 @@ function _onUp(e: PointerEvent): void {
 function _onWheel(e: WheelEvent): void {
   e.preventDefault();
   _scrollY = _clampScrollY(_scrollY + e.deltaY);
-  _buildPickerTree();
+  _rebuildPicker();
 }
 
 function _startFling(): void {
@@ -342,7 +348,7 @@ function _startFling(): void {
     v *= 0.92;
     if (Math.abs(v) < 0.5) { _flingId = 0; return; }
     _scrollY = _clampScrollY(_scrollY + v);
-    _buildPickerTree();
+    _rebuildPicker();
     _flingId = requestAnimationFrame(step);
   };
   _flingId = requestAnimationFrame(step);
