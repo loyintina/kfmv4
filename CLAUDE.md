@@ -5,6 +5,10 @@ AI 人机交互个人工作台，面向移动端浏览器。核心理念：**一
 > ⚠️ **开工前协议**：修改任何 `.ts` 文件前，AI **必须**先通读
 > [`docs/KFM_V4_INVARIANTS.md`](docs/KFM_V4_INVARIANTS.md)（AI 修改约束协议），
 > 内化其中的心法原则、核心约束和自查清单。未读协议就动手的修改大概率方向错误。
+>
+> **如果新开对话**：还需通读
+> [`docs/SESSION_MEMORY.md`](docs/SESSION_MEMORY.md)（会话状态快照）+
+> [`docs/HANDOFF_AUDIT.md`](docs/HANDOFF_AUDIT.md)（项目交接与审计结论）。
 
 ## 技术栈
 
@@ -37,6 +41,7 @@ docs/
 ├── KFM_V4_INVARIANTS.md           # AI 修改约束协议 / Harness（开工前必读）
 ├── BUG_AUDIT_REGISTRY.md          # 隐性契约 + 根因案例库（遇到 bug 时翻阅）
 ├── CARD_SYSTEM_DESIGN.md          # 统一卡片系统设计蓝图（待实现）
+├── SESSION_MEMORY.md              # 会话状态快照（新开对话必读）
 └── archive/
     ├── AI_COLLABORATION_PRINCIPLES.md # 通用 AI 协作守则（被 KFM_V4_INVARIANTS.md 吸收）
     ├── ANIMATION_REFINEMENT_PLAN.md   # 动画优化方案（已过时）
@@ -60,6 +65,7 @@ docs/
 | `VISION_AND_ROADMAP.md` | **规划设计时**参考 | 方向性——核心理念 + 卡片系统 + 演进路线 |
 | `KFM_V4_INVARIANTS.md` | **改代码前**必读 | 预防性——心法原则 + 架构约束 + 自查清单 |
 | `BUG_AUDIT_REGISTRY.md` | **遇到 bug 时**翻阅 | 诊断性——隐性契约 + 根因案例 + 排查路径 |
+| `SESSION_MEMORY.md` | **新开对话时**必读 | 全景性——当前焦点 + 已完成/进行中/未开始的改动 + 陷阱 |
 | `HANDOFF_AUDIT.md` | **接手/交接时**同步 | 快照性——当前进度 + 未完成事项 |
 
 ## 目录结构
@@ -69,13 +75,13 @@ cards/
 ├── plugins/
 │   └── debug-card/       # 调试面板卡片插件（实验性，未与主应用连接）
 src/
-├── server/index.ts           # Express 服务器（文件读写 API）
+├── server/index.ts           # Express 服�����（文件读写 API）
 ├── client/
 │   ├── main.ts               # 入口：gestures.init() → App → UI → Orb → TreeRenderer → CardStack
 │   ├── engine/v2/            # Canvas 渲染引擎
 │   │   ├── box.ts            # Box 数据结构（一切皆盒）
 │   │   ├── renderer.ts       # Canvas 2D 渲染器 + 主循环
-│   │   ├── types.ts          # 全部类型定义
+│   │   ├── types.ts          # 全部类型���义
 │   │   ├── flex.ts           # Flexbox 布局算法
 │   │   ├── utils.ts          # 通用工具函数
 │   │   ├── animation.ts      # 缓动函数
@@ -103,6 +109,7 @@ src/
 │       ├── state.ts               # KFMState 统一状态层（发布-订阅 + beforeExpand Hook）
 │       ├── tree-model.ts          # Box 树构建（buildSidebarTree → buildExpanded）
 │       ├── tree-render.ts         # 文件树渲染 + 动画 + 光标（~1211行）
+│       ├── root-picker.ts         # 文件树根目录切换器（Renderer 替换模式）
 │       ├── tree-loader.ts         # 懒加载（KFMState.addHook）
 │       ├── char-rain.ts           # 字符雨粒子动画（独立 GSAP 时间线）
 │       ├── animation-registry.ts  # GSAP scope 隔离（anim.scope + AnimTimeline）
@@ -136,15 +143,15 @@ src/
 
 overlay 模式:
   GSAP tween 只碰临时 overlay Box，不碰主树。
-  动画完成 → _removeAllOverlays() → 主树已是终端态。
-  中断: ts.clear() + _removeAllOverlays() → 安全回到稳态。
+  动画完成 → _removeAllOverlays() → 主树���是终端态。
+  中断: ts.clear() + _removeAllOverlays() → 安全回到稳���。
 
 scope 隔离:
   ts = anim.scope('tree-render')  — tree-render 专用时间线
   anim.timeline()                 — char-rain 独立时间线
   每轮动画结束 ts.call() 内调用 ts.clear() 清理残留 tween。
 
-overlay 元数据 (OverlayMeta 接口):
+overlay 元数��� (OverlayMeta 接口):
   _fullHeight, _origYs, _targetY
   全部通过 (as Box & OverlayMeta) 类型化访问，无 (as any) 隐式契约。
 ```
@@ -242,8 +249,8 @@ npm test   # 71 个测试，覆盖 10 个模块
 | 1 | 打开页面 | 主页面正常，光球可见 |
 | 2 | 右滑 / 三横线 | 左栏打开，文件树完整 |
 | 3 | 左栏上下滑动 | 列表正常滚动 |
-| 4 | 点击文件夹 | 展开/折叠动画正常，字符雨可见 |
-| 5 | 快速连点同目录 | 展开↔折叠正常切换，无闪烁 |
+| 4 | 点击文件��� | 展��/折叠动画正常，字符雨可见 |
+| 5 | 快速连点同目录 | 展开��折叠正���切换，无闪烁 |
 | 6 | 左栏左滑 | 左栏关闭 |
 | 7 | 侧栏关闭时左滑 | 召唤卡堆 |
 | 8 | 卡堆右滑 | 关闭卡堆 |
@@ -251,6 +258,11 @@ npm test   # 71 个测试，覆盖 10 个模块
 | 10 | 点击光球 | AI 面板打开 |
 | 11 | 多层嵌套文件夹展开 | 子容器串行展开，字符雨正常 |
 | 12 | 展开后立即折叠 | 折叠动画流畅，文字自然被裁 |
+| 13 | 紧凑态浮卡点击 BR 光球展开 | 三颗角光球从 BR 位置滑入，与卡片动画同步，无淡入淡出 |
+| 14 | 展开态浮卡点击 BR 光球折叠 | 三颗角光球滑回 BR 位置，卡片同步收缩，无淡入淡出 |
+| 15 | 展开态浮卡点击 TR 光球关闭 | 所有光球 + 卡片同步向 TR 圆心收缩消失，无淡入淡出 |
+| 16 | 快速点击展开态 TR 光球 | 展开动画期间误触不触发关闭（状态守卫） |
+| 17 | 展开后观察 BR 光球 SVG 图标 | 展开动画开始时图标已切换为十字+圈，折叠时同步清除 |
 
 
 - **esbuild**: `supported: { nullish-coalescing: false }` 要求 ES2019
@@ -307,4 +319,9 @@ a455f36 fix: 折叠动画闪烁及癫痫
 9d6b1dc  chore: 清除废弃的 sidebar-nav 功能
 b5a2dbe  v5.0.0 feat: CSS 迁移至 SCSS（语法校验 + 编译管线）
 97df074  v4.3.1 fix: CSS 语法错误修复 + 体系完善
+7eeb035  refactor: 三条事件绕过管道迁移到 gesture-registry
+550899e  chore: 删除青色调试光球 + cleanup
+bbe94d2  docs: SOP 步骤5 '改动前先说明' + 心法 ⑨⑩
+b85cde7  refactor: root-picker 使用 buildTree 替代手写 Box 树
+f4c95b5  refactor: 浮卡关闭动画改为向 TR 圆心收缩 + 光球布局常量模块级
 ```

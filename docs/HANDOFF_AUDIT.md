@@ -17,6 +17,11 @@
 | 文档-代码审计清理（-735 行死代码 + 文档修正） | ✅ 3 篇文档更新 + 68 行死 CSS + 死导出清理 | 4c30fe0 |
 | 内存预检 + 工具资源生命周期约束 | ✅ check-anim.mjs + 自查清单 | 97df074 |
 | KFMState 通知机制隐性契约 | ✅ BUG_AUDIT_REGISTRY.md 1.9 | 本次会话 |
+| 手势系统整合（3 条绕过管道迁移） | ✅ canvas-scroll / tree-render / debug-panel 全部走 PointerEvent | 7eeb035 |
+| 青色调试光球删除 | ✅ debug-panel.ts / theme.ts / main.ts 清理 | 550899e |
+| SOP 步骤5 + 心法 ⑨⑩（搬运原样复制 + 改动前先说明） | ✅ KFM_V4_INVARIANTS.md + CLAUDE.md 同步 | bbe94d2 |
+| root-picker buildTree 重构 | ✅ 替代手写 Box 树，Renderer 替换模式 | b85cde7 |
+| 浮卡关闭动画向 TR 圆心收缩 | ✅ 所有光球 + 卡片同步 scale:0，无淡入淡出 | f4c95b5 |
 
 ### 尚未处理的继续项（与 v4.1.0 相同，无变化）
 
@@ -359,7 +364,7 @@ npm run build   # 构建通过
 
 **② `triggerExpandAnimation` 和 `doExpand` 约 60% 代码重复** — ✅ 确实如此
 
-两者几乎一致，差异仅在于 `doExpand` 开头先调 `hit.gesture!.onTap!()`。应提取公共展开函数。新增至待办列表。
+两者几乎一致，差异仅在于 `doExpand` 开头先调 `hit.gesture!.onTap!()`。应提取公共展开函数。新增至待���列表。
 
 **③ `processClickQueue` 在光标穿透分支递归调用自身** — ✅ 有理论栈风险
 
