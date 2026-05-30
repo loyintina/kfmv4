@@ -146,7 +146,7 @@ function _closeWithAnim(): void {
     const d = getFileRowData(L._rowIndex[_cursorIdx].data);
     if (d) targetPath = d.path;
   }
-  const selectedLabel = _displayName(targetPath);
+  const selectedLabel = targetPath === BASE_PATH ? _displayName(_currentResolved) : _displayName(targetPath);
   _container.classList.add('closing');
   // 动画期间后台加载文件树
   KFMState.expandedPaths = {};
@@ -163,7 +163,14 @@ function _destroyPicker(): void {
   if (_renderer) { _renderer.stop(); _renderer = null; }
   _canvas = null; _container?.remove(); _container = null;
   _pickerExpanded = {};
-  if (_savedRenderer) { L.renderer = _savedRenderer; _savedRenderer = null; }
+  if (_savedRenderer) {
+    // 从旧 root 移除 picker 的光标，防止 ensureCursorBox 创建第二个
+    const oldRoot = L.renderer?.getRoot();
+    if (oldRoot && L.cursorBox && oldRoot.children.includes(L.cursorBox)) {
+      oldRoot.removeChild(L.cursorBox);
+    }
+    L.renderer = _savedRenderer; _savedRenderer = null;
+  }
   // 重建主树光标（覆盖 picker 遗留光标）
   const root = L.renderer?.getRoot();
   if (root) {
@@ -277,4 +284,3 @@ async function _toggleDir(path: string, expand: boolean): Promise<void> {
   }
   _rebuildPicker();
 }
-
