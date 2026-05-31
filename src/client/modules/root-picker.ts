@@ -147,16 +147,14 @@ function _closeWithAnim(): void {
     if (d) targetPath = d.path;
   }
   const selectedLabel = targetPath === BASE_PATH ? _displayName(_currentResolved) : _displayName(targetPath);
-  _container.classList.add('closing');
-  // 动画期间后台加载文件树
+  // 先销毁 picker，恢复主树渲染器（loadFileTree 的 rebuildTree 才能跑在正确渲染器上）
+  _destroyPicker();
+  // 再加载新目录数据
   KFMState.expandedPaths = {};
   localStorage.setItem('expandedPaths', '{}');
   loadFileTree(targetPath).then(() => {
-    setTimeout(() => _destroyPicker(), 50);
     if (_labelEl) _renderLabel(selectedLabel);
   });
-  // 兜底：600ms 后强制关闭
-  setTimeout(() => { if (_container) _destroyPicker(); }, 600);
 }
 
 function _destroyPicker(): void {
