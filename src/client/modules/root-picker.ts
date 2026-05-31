@@ -222,11 +222,10 @@ function _closeWithAnim(): void {
   const selectedLabel = targetPath === BASE_PATH ? _displayName(_currentResolved) : _displayName(targetPath);
   // 先销毁 picker，恢复主树渲染器（loadFileTree 的 rebuildTree 才能跑在正确渲染器上）
   _destroyPicker();
+  const savedCursorRowId = L.cursorRowId;  // 保存主树光标，新树保留原行时恢复
   // 设定新根目录，再加载数据（buildSidebarTree 读 files[currentRoot] 定位数据）
   KFMState.currentRoot = targetPath;
   localStorage.setItem('kfmv4_currentRoot', targetPath);
-  KFMState.expandedPaths = {};
-  localStorage.setItem('expandedPaths', '{}');
   // 清除旧光标位置，rebuildTree 无需尝试在新树中找旧行
   L.cursorRowId = null;
   loadFileTree(targetPath).then(() => {
@@ -238,6 +237,11 @@ function _closeWithAnim(): void {
       return;
     }
     // 切换根目录后光标定位到新树的第一个目录（目录不存在时兜底到首行）
+    if (savedCursorRowId) {
+      const root = L.renderer?.getRoot();
+      const target = root ? findBoxById(root, savedCursorRowId) : null;
+      if (target) { moveCursorTo(target, false); if (_labelEl) _renderLabel(selectedLabel); return; }
+    }
     const firstDir = L._rowIndex.find(r => { const d = getFileRowData(r.data); return d && d.isDir; });
     if (firstDir) moveCursorTo(firstDir, false);
     else if (L._rowIndex.length > 0) moveCursorTo(L._rowIndex[0], false);
