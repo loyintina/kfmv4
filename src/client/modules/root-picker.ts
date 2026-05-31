@@ -26,7 +26,6 @@ interface ListResult { resolvedPath: string; items: DirItem[]; }
 let _labelEl: HTMLElement | null = null;
 let _renderer: Renderer | null = null;
 let _container: HTMLElement | null = null;
-let _overlay: HTMLElement | null = null;
 let _canvas: HTMLCanvasElement | null = null;
 let _pickerExpanded: Record<string, boolean> = {};
 let _currentPath = BASE_PATH;
@@ -200,13 +199,8 @@ async function _openPanel(): Promise<void> {
   }
   _container = document.createElement('div');
   _container.className = 'sidebar-picker';
-  _overlay = document.createElement('div');
-  _overlay.className = 'sidebar-picker-overlay';
   const tools = DOM.sidebar?.querySelector('.sidebar-tools');
-  if (tools) {
-    DOM.sidebar?.insertBefore(_overlay, _container);
-    DOM.sidebar?.insertBefore(_container, tools);
-  }
+  if (tools) DOM.sidebar?.insertBefore(_container, tools);
   const inner = document.createElement('div');
   inner.className = 'sidebar-picker-inner';
   _container.appendChild(inner);
@@ -256,7 +250,7 @@ function _destroyPicker(): void {
   if (!_container) return;
   if (_cursorWatchRaf) { cancelAnimationFrame(_cursorWatchRaf); _cursorWatchRaf = 0; }
   if (_renderer) { _renderer.stop(); _renderer = null; }
-  _canvas = null; _overlay?.remove(); _overlay = null; _container?.remove(); _container = null;
+  _canvas = null; _container?.remove(); _container = null;
   _pickerExpanded = {}; // popContext 自动恢复主树的 renderer、rowIndex、cursorBox、cursorRowId
   L.popContext();
   // 重建主树光标（popContext 恢复了 cursorRowId，但 cursorBox 可能无效）
