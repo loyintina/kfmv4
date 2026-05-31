@@ -230,6 +230,8 @@ function _closeWithAnim(): void {
   // 清除旧光标位置，rebuildTree 无需尝试在新树中找旧行
   L.cursorRowId = null;
   loadFileTree(targetPath).then(() => {
+    // 加载成功后清除 _savedFiles，避免侧栏关闭时 _destroyPicker 二次恢复覆盖新数据
+    _savedFiles = {};
     // 加载失败（rowIndex 为空）时回退到默认根目录
     if (L._rowIndex.length === 0) {
       KFMState.currentRoot = BASE_PATH;
