@@ -213,9 +213,10 @@ function _closeWithAnim(): void {
   // 清除旧光标位置，rebuildTree 无需尝试在新树中找旧行
   L.cursorRowId = null;
   loadFileTree(targetPath).then(() => {
-    // 切换根目录后光标定位到新树的第一个目录（非第一个元素——可能是文件）
+    // 切换根目录后光标定位到新树的第一个目录（目录不存在时兜底到首行）
     const firstDir = L._rowIndex.find(r => { const d = getFileRowData(r.data); return d && d.isDir; });
     if (firstDir) moveCursorTo(firstDir, false);
+    else if (L._rowIndex.length > 0) moveCursorTo(L._rowIndex[0], false);
     if (_labelEl) _renderLabel(selectedLabel);
   });
 }
