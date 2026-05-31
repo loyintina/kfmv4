@@ -136,7 +136,8 @@ function _hitTest(box: Box, px: number, py: number): Box | null {
  * 第一击移动光标，第二击切换展开/折叠。
  */
 export function pickerHandleClick(e?: PointerEvent): void {
-  // 使用点击坐标查找目标行
+  // 忽略不在 picker canvas 上的触摸（如底栏 label 会先触发手势才触发 click）
+  if (!e || !_canvas || e.target !== _canvas) return;
   const root = L.renderer?.getRoot();
   const rect = _canvas?.getBoundingClientRect();
   if (root && rect && e) {
