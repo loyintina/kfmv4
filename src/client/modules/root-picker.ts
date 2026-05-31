@@ -146,12 +146,13 @@ export function pickerHandleClick(e?: PointerEvent): void {
     const hit = _hitTest(root, ox, oy);
     if (hit) {
       const hitIdx = L._rowIndex.indexOf(hit);
+      const targetPath = getFileRowData(hit.data)?.path ?? '';
       if (hitIdx >= 0 && hitIdx !== getCursorRowIndex()) {
-        const hd = getFileRowData(hit.data);
-        log('picker tap move to ' + (hd ? hd.path : '?') + ' idx=' + hitIdx);
+        log('picker tap move to ' + targetPath + ' idx=' + hitIdx + ' pos=' + ox + ',' + oy + ' sy=' + scrollY);
         moveCursorTo(hit);
         return;
       }
+      log('picker tap toggle ' + targetPath + ' idx=' + hitIdx + ' pos=' + ox + ',' + oy + ' sy=' + scrollY);
     }
   }
   // 点击目标就是光标位置 → 切换展开/折叠
