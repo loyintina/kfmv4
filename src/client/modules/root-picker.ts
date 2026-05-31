@@ -34,6 +34,8 @@ let _cachedDirs: DirItem[] = [];
 let _contentH = 0;
 
 let _savedFiles: Record<string, any> = {};
+let _cursorWatchRaf = 0;
+let _lastLabelPath = '';
 
 function _displayName(resolved: string): string {
   const parts = resolved.split('/').filter(Boolean);
@@ -214,6 +216,7 @@ function _closeWithAnim(): void {
 }
 
 function _destroyPicker(): void {
+  if (_cursorWatchRaf) { cancelAnimationFrame(_cursorWatchRaf); _cursorWatchRaf = 0; }
   if (_renderer) { _renderer.stop(); _renderer = null; }
   _canvas = null; _container?.remove(); _container = null;
   _pickerExpanded = {}; // popContext 自动恢复主树的 renderer、rowIndex、cursorBox、cursorRowId
@@ -259,6 +262,28 @@ function _initPicker(): void {
   }
   _renderer.start();
   bindWheelEvents(_canvas);
+  // 启动光标跟踪：每次光标移动时更新 label 显示当前目录名
+  _lastLabelPath = '';
+  _startCursorWatch();
+}
+
+/** rAF 循环：光标移动时更新 label 显示当前目录名 */
+function _startCursorWatch(): void {
+  _cursorWatchRaf = requestAnimationFrame(function tick() {
+    if (!_container) { _cursorWatchRaf = 0; return; }
+    const idx = getCursorRowIndex();
+    if (idx >= 0 && idx < L._rowIndex.length) {
+      const d = getFileRowData(L._rowIndex[idx].data);
+      if (d && d.isDir && _labelEl) {
+        const display = _displayName(d.path);
+        if (display !== _lastLabelPath) {
+          _lastLabelPath = display;
+          _renderLabel(display);
+        }
+      }
+    }
+    _cursorWatchRaf = requestAnimationFrame(tick);
+  });
 }
 
 // ========== Box 树构建（与主文件树相同的 toggle + label 结构） ==========
