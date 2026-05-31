@@ -12,14 +12,13 @@ import { DOM } from './dom-refs.js';
 import { API } from './state.js';
 import { Renderer } from '../engine/v2/renderer.js';
 import { Box } from '../engine/v2/box.js';
-import { LINE_HEIGHT } from './style-registry.js';
 import { L } from './renderer-lifecycle.js';
 import { _rebuildRowIndex, getRootScrollY, findBoxById } from './canvas-utils.js';
 import { ensureCursorBox, moveCursorTo, getCursorRowIndex } from './canvas-cursor.js';
 import { bindWheelEvents } from './canvas-scroll.js';
 
 const BASE_PATH = '.';
-const HEADER_H = LINE_HEIGHT + 8;
+const HEADER_H = 4;
 
 interface DirItem { name: string; path: string; isDir: boolean; }
 interface ListResult { resolvedPath: string; items: DirItem[]; }
