@@ -15,7 +15,7 @@ import { Box } from '../engine/v2/box.js';
 import { LINE_HEIGHT } from './style-registry.js';
 import { L } from './renderer-lifecycle.js';
 import { _rebuildRowIndex, getRootScrollY } from './canvas-utils.js';
-import { ensureCursorBox, moveCursorTo } from './canvas-cursor.js';
+import { ensureCursorBox, moveCursorTo, getCursorRowIndex } from './canvas-cursor.js';
 import { bindWheelEvents } from './canvas-scroll.js';
 
 const BASE_PATH = '.';
@@ -96,10 +96,12 @@ export function isPickerOpen(): boolean { return !!_container; }
 
 /**
  * 供 sidebar-scroll 在 picker 打开时调用：触发当前光标行的目录切换。
+ * 使用光标系统的实际位置（getCursorRowIndex），而非模块级 _cursorIdx。
  */
 export function pickerHandleClick(): void {
-  if (L._rowIndex.length <= _cursorIdx) return;
-  const box = L._rowIndex[_cursorIdx];
+  const idx = getCursorRowIndex();
+  if (idx < 0 || idx >= L._rowIndex.length) return;
+  const box = L._rowIndex[idx];
   const d = getFileRowData(box.data);
   if (d && d.isDir) _toggleDir(d.path, !d.isExpanded);
 }
@@ -118,9 +120,8 @@ async function _openPanel(): Promise<void> {
   if (!result) return;
   _currentResolved = result.resolvedPath;
   _cachedDirs = result.items;
-  _pickerExpanded = {};
+  _pickerExpanded = { [BASE_PATH]: true };
   _cursorIdx = 0;
-  // 保存 KFMState.files 快照，关闭时恢复
   _savedFiles = {};
   for (const key of Object.keys(KFMState.files)) {
     _savedFiles[key] = KFMState.files[key];
