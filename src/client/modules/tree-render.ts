@@ -453,6 +453,7 @@ export function onSidebarOpen(): void {
 
   // 等 CSS layout 完成后再 rebuildTree（canvas 刚创建时 clientWidth=0）
   requestAnimationFrame(() => {
+    try {
     _removeAllOverlays();
     rebuildTree();
     // rebuildTree 后强制恢复 scrollY（在所有可能覆盖它的逻辑之后）
@@ -488,6 +489,7 @@ export function onSidebarOpen(): void {
 
     // 创建左栏右侧触摸盒子
     _createSidebarTouchArea();
+    } catch (e) { console.error('[sidebar] open crash:', e); }
   });
 
   // 等侧栏 CSS 过渡结束后再 resize 一次
