@@ -275,7 +275,7 @@ function _startCursorWatch(): void {
     if (idx >= 0 && idx < L._rowIndex.length) {
       const d = getFileRowData(L._rowIndex[idx].data);
       if (d && d.isDir && _labelEl) {
-        const display = _displayName(d.path);
+        const display = d.path === BASE_PATH ? _displayName(_currentResolved) : _displayName(d.path);
         if (display !== _lastLabelPath) {
           _lastLabelPath = display;
           _renderLabel(display);
