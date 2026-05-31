@@ -344,6 +344,8 @@ function _startCursorWatch(): void {
 
 function _rebuildPicker(): void {
   if (!_renderer || !_canvas) return;
+  const was = L.cursorRowId;
+  log('rebuild start prev=' + was);
   const dpr = window.devicePixelRatio || 1;
   const w = _canvas.width / dpr;
 
@@ -394,10 +396,11 @@ function _rebuildPicker(): void {
   ensureCursorBox(pickerRoot, _contentH);
   if (prevCursorRowId) {
     const target = findBoxById(pickerRoot, prevCursorRowId);
-    if (target) { moveCursorTo(target, false); return; }
-    log('[picker] cursorLost prev=' + prevCursorRowId + ' rows=' + L._rowIndex.length + ' fb=' + Math.min(L._rowIndex.length - 1, Math.floor(L._rowIndex.length / 2)));
+    if (target) { moveCursorTo(target, false); log('rebuild restore same=' + was); return; }
+    log('rebuild lost prev=' + prevCursorRowId + ' fb=' + Math.min(L._rowIndex.length - 1, Math.floor(L._rowIndex.length / 2)));
   }
   if (L._rowIndex.length > 0) moveCursorTo(L._rowIndex[Math.min(L._rowIndex.length - 1, Math.floor(L._rowIndex.length / 2))], false);
+  log('rebuild end cursor=' + L.cursorRowId);
 }
 
 function _rebuildPickerHeight(): number {
