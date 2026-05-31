@@ -32,7 +32,6 @@ let _pickerExpanded: Record<string, boolean> = {};
 let _currentPath = BASE_PATH;
 let _currentResolved = '';
 let _cachedDirs: DirItem[] = [];
-let _cursorIdx = 0;
 let _contentH = 0;
 
 let _savedFiles: Record<string, any> = {};
@@ -96,7 +95,6 @@ export function isPickerOpen(): boolean { return !!_container; }
 
 /**
  * 供 sidebar-scroll 在 picker 打开时调用：触发当前光标行的目录切换。
- * 使用光标系统的实际位置（getCursorRowIndex），而非模块级 _cursorIdx。
  */
 export function pickerHandleClick(): void {
   const idx = getCursorRowIndex();
@@ -121,12 +119,10 @@ async function _openPanel(): Promise<void> {
   _currentResolved = result.resolvedPath;
   _cachedDirs = result.items;
   _pickerExpanded = { [BASE_PATH]: true };
-  _cursorIdx = 0;
   _savedFiles = {};
   for (const key of Object.keys(KFMState.files)) {
     _savedFiles[key] = KFMState.files[key];
   }
-  _cursorIdx = 0;
   _container = document.createElement('div');
   _container.className = 'sidebar-picker';
   const tools = DOM.sidebar?.querySelector('.sidebar-tools');
@@ -144,8 +140,9 @@ function _closeWithAnim(): void {
   if (!_container) return;
   // 确定光标所在目录路径
   let targetPath = BASE_PATH;
-  if (_cursorIdx >= 0 && _cursorIdx < L._rowIndex.length) {
-    const d = getFileRowData(L._rowIndex[_cursorIdx].data);
+  const cursorIdx = getCursorRowIndex();
+  if (cursorIdx >= 0 && cursorIdx < L._rowIndex.length) {
+    const d = getFileRowData(L._rowIndex[cursorIdx].data);
     if (d) targetPath = d.path;
   }
   const selectedLabel = targetPath === BASE_PATH ? _displayName(_currentResolved) : _displayName(targetPath);
