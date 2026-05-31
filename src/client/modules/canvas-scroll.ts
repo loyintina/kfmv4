@@ -47,7 +47,6 @@ export function bindWheelEvents(canvas: HTMLElement): void {
       const steps = Math.round(_wheelVel / LINE_HEIGHT);
       if (steps !== 0) {
         _moveCursorBySteps(steps);
-        _snapCursorToCenter();
         _wheelVel -= steps * LINE_HEIGHT;
         if (Math.abs(_wheelVel) < 1) _wheelVel = 0;
       }

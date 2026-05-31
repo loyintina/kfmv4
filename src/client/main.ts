@@ -45,7 +45,7 @@ initOrb();
 initTreeRenderer();
 initCardStack();
 
-// 加载根目录，然后启用懒加载（展开某文件夹时自动拉子文件）
-loadFileTree('.').then(() => {
+// 加载根目录（使用持久化的 currentRoot），然后启用懒加载
+loadFileTree(KFMState.currentRoot).then(() => {
   initLazyLoader();
 }).catch(e => console.error('[main] loadFileTree failed:', e));
