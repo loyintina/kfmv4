@@ -16,7 +16,6 @@ import { L } from './renderer-lifecycle.js';
 import { _rebuildRowIndex, getRootScrollY, findBoxById } from './canvas-utils.js';
 import { ensureCursorBox, moveCursorTo, getCursorRowIndex } from './canvas-cursor.js';
 import { bindWheelEvents } from './canvas-scroll.js';
-import { log } from './logger.js';
 
 const BASE_PATH = '.';
 const HEADER_H = 4;
@@ -218,10 +217,9 @@ function _closeWithAnim(): void {
   // 确定光标所在目录路径
   let targetPath = BASE_PATH;
   const cursorIdx = getCursorRowIndex();
-  log('picker confirm label=' + _lastLabelPath + ' cursorIdx=' + cursorIdx + ' total=' + L._rowIndex.length);
   if (cursorIdx >= 0 && cursorIdx < L._rowIndex.length) {
     const d = getFileRowData(L._rowIndex[cursorIdx].data);
-    if (d) { targetPath = d.path; log('picker confirm cursorIdx=' + cursorIdx + ' total=' + L._rowIndex.length + ' path=' + targetPath + ' rowId=' + L.cursorRowId); }
+    if (d) targetPath = d.path;
   }
   const selectedLabel = targetPath === BASE_PATH ? _displayName(_currentResolved) : _displayName(targetPath);
   // 先销毁 picker，恢复主树渲染器（loadFileTree 的 rebuildTree 才能跑在正确渲染器上）
@@ -236,7 +234,6 @@ function _closeWithAnim(): void {
   loadFileTree(targetPath).then(() => {
     // 加载失败（rowIndex 为空）时回退到默认根目录
     if (L._rowIndex.length === 0) {
-      log('picker loadFileTree returned no data for ' + targetPath + ', fallback to root');
       KFMState.currentRoot = BASE_PATH;
       localStorage.setItem('kfmv4_currentRoot', BASE_PATH);
       loadFileTree(BASE_PATH);
@@ -297,7 +294,6 @@ function _initPicker(): void {
 function _positionCursorToCurrentRoot(): void {
   let best: Box | null = null;
   let bestLen = -1;
-  log('positionCursor currentRoot=' + KFMState.currentRoot + ' rows=' + L._rowIndex.length);
   for (let i = 0; i < L._rowIndex.length; i++) {
     const d = getFileRowData(L._rowIndex[i].data);
     if (d && d.isDir) {
@@ -307,13 +303,10 @@ function _positionCursorToCurrentRoot(): void {
       if (match && d.path.length > bestLen) {
         best = L._rowIndex[i];
         bestLen = d.path.length;
-        log('positionCursor candidate=' + d.path + ' len=' + d.path.length);
       }
     }
   }
   if (best) {
-    const d = getFileRowData(best.data);
-    log('positionCursor final=' + (d ? d.path : '?') + ' bestLen=' + bestLen);
     moveCursorTo(best, false);
     // 滚动视口使光标居中
     const root = L.renderer?.getRoot();
@@ -401,7 +394,6 @@ function _rebuildPicker(): void {
   if (prevCursorRowId) {
     const target = findBoxById(pickerRoot, prevCursorRowId);
     if (target) { moveCursorTo(target, false); return; }
-    log('rebuildPicker cursor NOT found prev=' + prevCursorRowId + ' rows=' + L._rowIndex.length + ' fallbackTo=' + Math.min(L._rowIndex.length - 1, Math.floor(L._rowIndex.length / 2)));
   }
   if (L._rowIndex.length > 0) moveCursorTo(L._rowIndex[Math.min(L._rowIndex.length - 1, Math.floor(L._rowIndex.length / 2))], false);
 }
