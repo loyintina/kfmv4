@@ -21,6 +21,7 @@ import { DOM } from "./dom-refs.js";
 import * as clickQueue from "./click-queue.js";
 import { assert, warn } from "./debug-assert.js";
 import { createRootPicker, destroyRootPicker, isPickerOpen } from './root-picker.js';
+import { log } from './logger.js';
 const ts = anim.scope('tree-render');
 /** 重置动画时间线：清空 tween + 归零播放头 + 清除回调。正常动画结束时调用。 */
 function _resetAnimTimeline(): void {
@@ -489,7 +490,7 @@ export function onSidebarOpen(): void {
 
     // 创建左栏右侧触摸盒子
     _createSidebarTouchArea();
-    } catch (e) { console.error('[sidebar] open crash:', e); }
+    } catch (e) { log('[sidebar] open crash: ' + (e instanceof Error ? e.message + ' ' + (e.stack || '') : String(e))); }
   });
 
   // 等侧栏 CSS 过渡结束后再 resize 一次
