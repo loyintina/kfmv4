@@ -394,6 +394,7 @@ function _rebuildPicker(): void {
   if (prevCursorRowId) {
     const target = findBoxById(pickerRoot, prevCursorRowId);
     if (target) { moveCursorTo(target, false); return; }
+    console.log('[picker] cursorLost prev=' + prevCursorRowId + ' rows=' + L._rowIndex.length + ' fb=' + Math.min(L._rowIndex.length - 1, Math.floor(L._rowIndex.length / 2)));
   }
   if (L._rowIndex.length > 0) moveCursorTo(L._rowIndex[Math.min(L._rowIndex.length - 1, Math.floor(L._rowIndex.length / 2))], false);
 }
