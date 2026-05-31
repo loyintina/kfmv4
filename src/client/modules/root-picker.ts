@@ -15,6 +15,7 @@ import { Box } from '../engine/v2/box.js';
 import { L } from './renderer-lifecycle.js';
 import { _rebuildRowIndex, getRootScrollY, findBoxById } from './canvas-utils.js';
 import { ensureCursorBox, moveCursorTo, getCursorRowIndex } from './canvas-cursor.js';
+import { anim } from './animation-registry.js';
 import { bindWheelEvents } from './canvas-scroll.js';
 
 const BASE_PATH = '.';
@@ -238,6 +239,7 @@ function _closeWithAnim(): void {
       return;
     }
     // 切换根目录后光标定位到新树的第一个目录（目录不存在时兜底到首行）
+  if (L.cursorBox) anim.killTweensOf(L.cursorBox);
     const firstDir = L._rowIndex.find(r => { const d = getFileRowData(r.data); return d && d.isDir; });
     if (firstDir) moveCursorTo(firstDir, false);
     else if (L._rowIndex.length > 0) moveCursorTo(L._rowIndex[0], false);
