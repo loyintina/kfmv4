@@ -225,7 +225,7 @@ export function _scrollToCenterCursor(): void {
   if (L._restoreMode) return;  // 恢复期间跳过 GSAP
   const root = L.renderer?.getRoot();
   if (!root || L.cursorRowId === null) return;
-  const canvas = DOM.treeCanvas;
+  const canvas = L.renderer?.canvas ?? DOM.treeCanvas;
   const canvasH = canvas?.clientHeight ?? 618;
   const maxY = root.getMaxScroll().maxY;
   const idx = getCursorRowIndex();
