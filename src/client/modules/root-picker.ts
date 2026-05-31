@@ -260,7 +260,7 @@ function _initPicker(): void {
     if (d && d.isDir) {
       const match = KFMState.currentRoot === BASE_PATH
         ? d.path === BASE_PATH
-        : KFMState.currentRoot.startsWith(d.path);
+        : KFMState.currentRoot === d.path || KFMState.currentRoot.startsWith(d.path + '/');
       if (match) { moveCursorTo(L._rowIndex[i], false); break; }
     }
   }
