@@ -234,6 +234,14 @@ function _closeWithAnim(): void {
   // 清除旧光标位置，rebuildTree 无需尝试在新树中找旧行
   L.cursorRowId = null;
   loadFileTree(targetPath).then(() => {
+    // 加载失败（rowIndex 为空）时回退到默认根目录
+    if (L._rowIndex.length === 0) {
+      log('picker loadFileTree returned no data for ' + targetPath + ', fallback to root');
+      KFMState.currentRoot = BASE_PATH;
+      localStorage.setItem('kfmv4_currentRoot', BASE_PATH);
+      loadFileTree(BASE_PATH);
+      return;
+    }
     // 切换根目录后光标定位到新树的第一个目录（目录不存在时兜底到首行）
     const firstDir = L._rowIndex.find(r => { const d = getFileRowData(r.data); return d && d.isDir; });
     if (firstDir) moveCursorTo(firstDir, false);
