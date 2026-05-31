@@ -147,7 +147,8 @@ export function pickerHandleClick(e?: PointerEvent): void {
     if (hit) {
       const hitIdx = L._rowIndex.indexOf(hit);
       if (hitIdx >= 0 && hitIdx !== getCursorRowIndex()) {
-        // 点击目标与光标位置不同 → 移动光标，不展开
+        const hd = getFileRowData(hit.data);
+        log('picker tap move to ' + (hd ? hd.path : '?') + ' idx=' + hitIdx);
         moveCursorTo(hit);
         return;
       }
@@ -223,7 +224,7 @@ function _closeWithAnim(): void {
     if (d) targetPath = d.path;
   }
   const selectedLabel = targetPath === BASE_PATH ? _displayName(_currentResolved) : _displayName(targetPath);
-  log('picker confirm target=' + targetPath + ' rowId=' + L.cursorRowId);
+  log('picker confirm target=' + targetPath + ' rowId=' + L.cursorRowId + ' foundAt=' + cursorIdx + '/' + L._rowIndex.length);
   // 先销毁 picker，恢复主树渲染器（loadFileTree 的 rebuildTree 才能跑在正确渲染器上）
   _destroyPicker();
   // 设定新根目录，再加载数据（buildSidebarTree 读 files[currentRoot] 定位数据）
