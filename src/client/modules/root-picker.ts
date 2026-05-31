@@ -16,7 +16,6 @@ import { L } from './renderer-lifecycle.js';
 import { _rebuildRowIndex, getRootScrollY, findBoxById } from './canvas-utils.js';
 import { ensureCursorBox, moveCursorTo, getCursorRowIndex } from './canvas-cursor.js';
 import { bindWheelEvents } from './canvas-scroll.js';
-import { log } from './logger.js';
 
 const BASE_PATH = '.';
 const HEADER_H = 4;
@@ -136,8 +135,6 @@ function _hitTest(box: Box, px: number, py: number): Box | null {
  * 第一击移动光标，第二击切换展开/折叠。
  */
 export function pickerHandleClick(e?: PointerEvent): void {
-  // 忽略不在 picker canvas 上的触摸（如底栏 label 会先触发手势才触发 click）
-  if (!e || !_canvas || e.target !== _canvas) return;
   const root = L.renderer?.getRoot();
   const rect = _canvas?.getBoundingClientRect();
   if (root && rect && e) {
@@ -147,14 +144,11 @@ export function pickerHandleClick(e?: PointerEvent): void {
     const hit = _hitTest(root, ox, oy);
     if (hit) {
       const hitIdx = L._rowIndex.indexOf(hit);
-      const targetPath = getFileRowData(hit.data)?.path ?? '';
       if (hitIdx >= 0 && hitIdx !== getCursorRowIndex()) {
-        log('picker tap move to ' + targetPath + ' idx=' + hitIdx + ' pos=' + ox + ',' + oy + ' sy=' + scrollY);
         moveCursorTo(hit);
         return;
       }
-      log('picker tap toggle ' + targetPath + ' idx=' + hitIdx + ' pos=' + ox + ',' + oy + ' sy=' + scrollY);
-    }
+        }
   }
   // 点击目标就是光标位置 → 切换展开/折叠
   const idx = getCursorRowIndex();
@@ -226,7 +220,6 @@ function _closeWithAnim(): void {
     if (d) targetPath = d.path;
   }
   const selectedLabel = targetPath === BASE_PATH ? _displayName(_currentResolved) : _displayName(targetPath);
-  log('picker confirm target=' + targetPath + ' rowId=' + L.cursorRowId + ' foundAt=' + cursorIdx + '/' + L._rowIndex.length);
   // 先销毁 picker，恢复主树渲染器（loadFileTree 的 rebuildTree 才能跑在正确渲染器上）
   _destroyPicker();
   // 设定新根目录，再加载数据（buildSidebarTree 读 files[currentRoot] 定位数据）
@@ -348,8 +341,6 @@ function _startCursorWatch(): void {
 
 function _rebuildPicker(): void {
   if (!_renderer || !_canvas) return;
-  const was = L.cursorRowId;
-  log('rebuild start prev=' + was);
   const dpr = window.devicePixelRatio || 1;
   const w = _canvas.width / dpr;
 
@@ -400,11 +391,9 @@ function _rebuildPicker(): void {
   ensureCursorBox(pickerRoot, _contentH);
   if (prevCursorRowId) {
     const target = findBoxById(pickerRoot, prevCursorRowId);
-    if (target) { moveCursorTo(target, false); log('rebuild restore same=' + was); return; }
-    log('rebuild lost prev=' + prevCursorRowId + ' fb=' + Math.min(L._rowIndex.length - 1, Math.floor(L._rowIndex.length / 2)));
+    if (target) { moveCursorTo(target, false); return; }
   }
   if (L._rowIndex.length > 0) moveCursorTo(L._rowIndex[Math.min(L._rowIndex.length - 1, Math.floor(L._rowIndex.length / 2))], false);
-  log('rebuild end cursor=' + L.cursorRowId);
 }
 
 function _rebuildPickerHeight(): number {

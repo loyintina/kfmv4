@@ -203,9 +203,9 @@ export function initScrollGesture(): void {
       }
     },
     onEnd(e, dx, dy) {
-      // picker 打开时：检测点击 → 切换目录，否则忽略手势（不关闭侧栏）
+      // picker 打开时：仅在触摸位于 picker 容器内时才路由点击，不关闭侧栏也不启动 fling
       if (isPickerOpen()) {
-        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) pickerHandleClick(e);
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8 && (e.target as HTMLElement).closest?.('.sidebar-picker')) pickerHandleClick(e);
         return;
       }
       // 水平滑动检测 → 关闭侧栏
