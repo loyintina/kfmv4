@@ -103,7 +103,11 @@ export function createRootPicker(): void {
   const btn = DOM.closeSidebarBtn;
   if (tools && btn) tools.insertBefore(c, btn);
   _labelEl = c;
-  _fetchDirs(BASE_PATH).then(r => { if (r && _labelEl) { _currentResolved = r.resolvedPath; _renderLabel(_displayName(r.resolvedPath)); } });
+  _fetchDirs(BASE_PATH).then(r => { if (r && _labelEl) {
+    _currentResolved = r.resolvedPath;
+    const displayPath = KFMState.currentRoot !== BASE_PATH ? KFMState.currentRoot : r.resolvedPath;
+    _renderLabel(_displayName(displayPath));
+  } });
 }
 
 export function isPickerOpen(): boolean { return !!_container; }
@@ -208,6 +212,16 @@ function _initPicker(): void {
   _renderer = new Renderer(_canvas, { backgroundColor: 'rgba(10,10,15,0.85)', dpr });
   L.pushContext({ renderer: _renderer, rowIndex: [], cursorBox: null, cursorRowId: null });
   _rebuildPicker();
+  // 将光标定位到当前根目录对应的行（若 currentRoot 不是顶层目录则定位到其父级）
+  if (KFMState.currentRoot !== BASE_PATH) {
+    for (let i = 0; i < L._rowIndex.length; i++) {
+      const d = getFileRowData(L._rowIndex[i].data);
+      if (d && d.isDir && KFMState.currentRoot.startsWith(d.path)) {
+        moveCursorTo(L._rowIndex[i], false);
+        break;
+      }
+    }
+  }
   _renderer.start();
   bindWheelEvents(_canvas);
 }
