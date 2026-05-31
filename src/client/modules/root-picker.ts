@@ -210,7 +210,11 @@ function _closeWithAnim(): void {
   localStorage.setItem('kfmv4_currentRoot', targetPath);
   KFMState.expandedPaths = {};
   localStorage.setItem('expandedPaths', '{}');
+  // 清除旧光标位置，rebuildTree 无需尝试在新树中找旧行
+  L.cursorRowId = null;
   loadFileTree(targetPath).then(() => {
+    // 切换根目录后光标定位到第一行
+    if (L._rowIndex.length > 0) moveCursorTo(L._rowIndex[0], false);
     if (_labelEl) _renderLabel(selectedLabel);
   });
 }
