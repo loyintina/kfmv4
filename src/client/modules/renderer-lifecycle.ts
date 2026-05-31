@@ -17,19 +17,62 @@ interface ListenerRef {
   options?: AddEventListenerOptions | boolean;
 }
 
+// ========== RenderContext：渲染器相关的可变状态容器 ==========
+
+/** 属于一个渲染器的可变状态集合。替换渲染器时通过 pushContext/popContext 原子化切换。 */
+export interface RenderContext {
+  renderer: Renderer | null;
+  rowIndex: Box[];
+  cursorBox: Box | null;
+  cursorRowId: string | null;
+}
+
 // ========== 主类 ==========
 
 export class RendererLifecycle {
-  // ---- Renderer ----
-  renderer: Renderer | null = null;
+  /** 上下文栈，索引 0 为默认上下文 */
+  private _ctxStack: RenderContext[] = [{
+    renderer: null, rowIndex: [], cursorBox: null, cursorRowId: null,
+  }];
+
+  /** 当前上下文（栈顶） */
+  get ctx(): RenderContext { return this._ctxStack[this._ctxStack.length - 1]; }
+
+  // ---- 向后兼容：通过 this.ctx 委托的访问器 ----
+  get renderer(): Renderer | null { return this.ctx.renderer; }
+  set renderer(v: Renderer | null) { this.ctx.renderer = v; }
+  get _rowIndex(): Box[] { return this.ctx.rowIndex; }
+  set _rowIndex(v: Box[]) { this.ctx.rowIndex = v; }
+  get cursorBox(): Box | null { return this.ctx.cursorBox; }
+  set cursorBox(v: Box | null) { this.ctx.cursorBox = v; }
+  get cursorRowId(): string | null { return this.ctx.cursorRowId; }
+  set cursorRowId(v: string | null) { this.ctx.cursorRowId = v; }
+  // ---- 侧栏打开/关闭时暂存的光标位置（不属于 RenderContext） ----
+  _savedCursorRowId: string | null = null;
+
+  // ---- RenderContext 原子化切换 ----
+
+  /**
+   * 推入新上下文。未指定的字段从当前上下文继承。
+   * 返回当前上下文，调用方可引用它判断是否有变化。
+   */
+  pushContext(ctx: Partial<RenderContext>): void {
+    const cur = this.ctx;
+    this._ctxStack.push({
+      renderer: ctx.renderer ?? cur.renderer,
+      rowIndex: ctx.rowIndex ?? cur.rowIndex,
+      cursorBox: ctx.cursorBox ?? cur.cursorBox,
+      cursorRowId: ctx.cursorRowId ?? cur.cursorRowId,
+    });
+  }
+
+  /** 弹出当前上下文，恢复到上一个。至少保留一个默认上下文。 */
+  popContext(): void {
+    if (this._ctxStack.length > 1) this._ctxStack.pop();
+  }
 
   // ---- KFMState 订阅 ----
   _stateSub: ((state: any) => void) | null = null;
-
-  // ---- 光标 ----
-  cursorBox: Box | null = null;
-  cursorRowId: string | null = null;
-  _savedCursorRowId: string | null = null;
 
   // ---- 滚动 ----
   _savedScrollY = 0;
@@ -37,9 +80,6 @@ export class RendererLifecycle {
   _restoreMode = false;
   _sidebarClosed = true;
   _restoringFromSave = false;
-
-  // ---- 行索引 ----
-  _rowIndex: Box[] = [];
 
   // ---- 会话隔离 ----
   _sessionId = 0;
@@ -78,7 +118,6 @@ export class RendererLifecycle {
     if (!v && this._treeOp.kind === 'animating') {
       this._treeOp = { kind: 'idle' };
     }
-    // setting true is always preceded by animatingPath setter, so no-op here
   }
   get _animBusyAt(): number {
     return this._treeOp.kind === 'animating' ? this._treeOp.startedAt : 0;

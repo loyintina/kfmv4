@@ -35,9 +35,6 @@ let _cachedDirs: DirItem[] = [];
 let _contentH = 0;
 
 let _savedFiles: Record<string, any> = {};
-let _savedRenderer: Renderer | null = null;
-let _savedRowIdx: Box[] = [];
-let _savedCursorRowId: string | null = null;
 
 function _displayName(resolved: string): string {
   const parts = resolved.split('/').filter(Boolean);
@@ -161,31 +158,18 @@ function _destroyPicker(): void {
   if (_renderer) { _renderer.stop(); _renderer = null; }
   _canvas = null; _container?.remove(); _container = null;
   _pickerExpanded = {};
-  if (_savedRenderer) {
-    // 从旧 root 移除 picker 的光标，防止 ensureCursorBox 创建第二个
-    const oldRoot = L.renderer?.getRoot();
-    if (oldRoot && L.cursorBox && oldRoot.children.includes(L.cursorBox)) {
-      oldRoot.removeChild(L.cursorBox);
-    }
-    L.renderer = _savedRenderer; _savedRenderer = null;
-  }
-  // 重建主树光标（用保存的位置，避免跳动到 row 0）
+  // popContext 自动恢复主树的 renderer、rowIndex、cursorBox、cursorRowId
+  L.popContext();
+  // 重建主树光标（popContext 恢复了 cursorRowId，但 cursorBox 可能无效）
   const root = L.renderer?.getRoot();
-  if (root) {
-    ensureCursorBox(root, window.innerHeight);
-    if (_savedCursorRowId) {
-      L.cursorRowId = _savedCursorRowId;
-    }
-  }
-  // 恢复 KFMState.files 到 picker 打开前的状态
+  if (root) ensureCursorBox(root, window.innerHeight);
+  // 恢复 KFMState.files（不属于 RenderContext，手动处理）
   for (const key of Object.keys(KFMState.files)) {
     if (!(key in _savedFiles)) delete KFMState.files[key];
   }
   for (const key of Object.keys(_savedFiles)) {
     (KFMState.files as Record<string, any>)[key] = _savedFiles[key];
   }
-  L._rowIndex = _savedRowIdx as any;
-  _savedRowIdx = [];
 }
 
 function _initPicker(): void {
@@ -199,11 +183,9 @@ function _initPicker(): void {
   _canvas.style.width = w + 'px'; _canvas.style.height = h + 'px';
   _contentH = h;
 
-  _savedRenderer = L.renderer;
-  _savedRowIdx = L._rowIndex as any;
-  _savedCursorRowId = L.cursorRowId;  // 保存主树光标，关闭时恢复避免跳动
+  // pushContext 保存主树状态并切换到 picker 上下文
   _renderer = new Renderer(_canvas, { backgroundColor: 'rgba(10,10,15,0.85)', dpr });
-  L.renderer = _renderer;
+  L.pushContext({ renderer: _renderer, rowIndex: [], cursorBox: null, cursorRowId: null });
   _rebuildPicker();
   _renderer.start();
   bindWheelEvents(_canvas);
