@@ -66,13 +66,31 @@ function _renderLabel(text: string): void {
   const ctx = c.getContext('2d');
   if (!ctx) return;
   ctx.scale(dpr, dpr);
-  ctx.font = '600 13px -apple-system, sans-serif';
-  const tw = ctx.measureText(text).width;
+
+  // 根据文字宽度自适应字号：13px → 递减，必要时截断加省略号
+  const maxW = w - 16;  // 左右各 8px 内边距
+  let fontSize = 13;
+  let displayText = text;
+  for (; fontSize >= 8; fontSize--) {
+    ctx.font = `600 ${fontSize}px -apple-system, sans-serif`;
+    if (ctx.measureText(displayText).width <= maxW) break;
+  }
+  if (fontSize < 8) {
+    // 最小字号仍超宽：截断加省略号
+    fontSize = 8;
+    ctx.font = '600 8px -apple-system, sans-serif';
+    while (displayText.length > 1) {
+      displayText = displayText.slice(0, -1);
+      if (ctx.measureText(displayText + '…').width <= maxW) { displayText += '…'; break; }
+    }
+  }
+
+  const tw = ctx.measureText(displayText).width;
   const tx = (w - tw) / 2;
   const g = ctx.createLinearGradient(tx, 0, tx + tw, 0);
   g.addColorStop(0, '#7c3aed'); g.addColorStop(1, '#00d4ff');
   ctx.fillStyle = g; ctx.textBaseline = 'middle';
-  ctx.fillText(text, tx, h / 2);
+  ctx.fillText(displayText, tx, h / 2);
 }
 
 export function createRootPicker(): void {
@@ -147,6 +165,7 @@ function _closeWithAnim(): void {
   _destroyPicker();
   // 设定新根目录，再加载数据（buildSidebarTree 读 files[currentRoot] 定位数据）
   KFMState.currentRoot = targetPath;
+  localStorage.setItem('kfmv4_currentRoot', targetPath);
   KFMState.expandedPaths = {};
   localStorage.setItem('expandedPaths', '{}');
   loadFileTree(targetPath).then(() => {
@@ -163,12 +182,14 @@ function _destroyPicker(): void {
   // 重建主树光标（popContext 恢复了 cursorRowId，但 cursorBox 可能无效）
   const root = L.renderer?.getRoot();
   if (root) ensureCursorBox(root, window.innerHeight);
-  // 恢复 KFMState.files（不属于 RenderContext，手动处理）
-  for (const key of Object.keys(KFMState.files)) {
-    if (!(key in _savedFiles)) delete KFMState.files[key];
-  }
-  for (const key of Object.keys(_savedFiles)) {
-    (KFMState.files as Record<string, any>)[key] = _savedFiles[key];
+  // 恢复 KFMState.files（仅在 picker 曾成功打开时，避免 _savedFiles={} 时清空主树）
+  if (Object.keys(_savedFiles).length > 0) {
+    for (const key of Object.keys(KFMState.files)) {
+      if (!(key in _savedFiles)) delete KFMState.files[key];
+    }
+    for (const key of Object.keys(_savedFiles)) {
+      (KFMState.files as Record<string, any>)[key] = _savedFiles[key];
+    }
   }
 }
 

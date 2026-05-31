@@ -54,7 +54,7 @@ export interface KFMStateType {
 
 export const KFMState: KFMStateType = {
   files: {},
-  currentRoot: '.',
+  currentRoot: localStorage.getItem('kfmv4_currentRoot') || '.',
   expandedPaths: JSON.parse(localStorage.getItem('expandedPaths') || '{}'),
   selectedFile: '',
   showHidden: false,
