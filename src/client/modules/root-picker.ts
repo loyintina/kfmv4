@@ -34,6 +34,7 @@ let _cachedDirs: DirItem[] = [];
 let _contentH = 0;
 
 let _savedFiles: Record<string, any> = {};
+let _lastTapRowId: string | null = null;
 
 function _displayName(resolved: string): string {
   const parts = resolved.split('/').filter(Boolean);
@@ -119,7 +120,15 @@ export function pickerHandleClick(): void {
   if (idx < 0 || idx >= L._rowIndex.length) return;
   const box = L._rowIndex[idx];
   const d = getFileRowData(box.data);
-  if (d && d.isDir) _toggleDir(d.path, !d.isExpanded);
+  if (!d || !d.isDir) return;
+  // 第一击选择行，第二击切换（与 processClickQueue tree-render.ts:689 同模式）
+  if (_lastTapRowId !== box.id) {
+    _lastTapRowId = box.id;
+    moveCursorTo(box);
+    return;
+  }
+  _lastTapRowId = null;
+  _toggleDir(d.path, !d.isExpanded);
 }
 
 export function destroyRootPicker(): void {
@@ -137,6 +146,7 @@ async function _openPanel(): Promise<void> {
   _currentResolved = result.resolvedPath;
   _cachedDirs = result.items;
   _pickerExpanded = { [BASE_PATH]: true };
+  _lastTapRowId = null;
   _savedFiles = {};
   for (const key of Object.keys(KFMState.files)) {
     _savedFiles[key] = KFMState.files[key];
@@ -179,7 +189,7 @@ function _closeWithAnim(): void {
 function _destroyPicker(): void {
   if (_renderer) { _renderer.stop(); _renderer = null; }
   _canvas = null; _container?.remove(); _container = null;
-  _pickerExpanded = {};
+  _pickerExpanded = {}; _lastTapRowId = null;
   // popContext 自动恢复主树的 renderer、rowIndex、cursorBox、cursorRowId
   L.popContext();
   // 重建主树光标（popContext 恢复了 cursorRowId，但 cursorBox 可能无效）
