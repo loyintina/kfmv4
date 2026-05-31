@@ -205,7 +205,7 @@ export function initScrollGesture(): void {
     onEnd(e, dx, dy) {
       // picker 打开时：检测点击 → 切换目录，否则忽略手势（不关闭侧栏）
       if (isPickerOpen()) {
-        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) pickerHandleClick();
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) pickerHandleClick(e);
         return;
       }
       // 水平滑动检测 → 关闭侧栏
