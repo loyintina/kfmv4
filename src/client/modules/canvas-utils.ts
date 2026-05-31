@@ -49,6 +49,18 @@ export function _rebuildRowIndex(root: Box): void {
   });
 }
 
+/** 将当前渲染器树中 Box 的坐标转为屏幕坐标（不依赖具体 Canvas/上下文） */
+export function boxToScreen(box: Box): { x: number; y: number } | null {
+  const r = L.renderer;
+  if (!r || !r.canvas) return null;
+  const rect = r.canvas.getBoundingClientRect();
+  const abs = box.getAbsolutePosition();
+  return {
+    x: rect.left + abs.x,
+    y: rect.top + abs.y - (r.getRoot()?.scrollY ?? 0),
+  };
+}
+
 /** 在 root 子树中按 id 查找 Box */
 export function findBoxById(root: Box, id: string): Box | null {
   for (const child of root.children) {
