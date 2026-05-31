@@ -37,6 +37,11 @@ import { loadFileTree, initLazyLoader } from './modules/tree-loader.js';
 import { initCardStack } from './modules/card-stack.js';
 import { gestures } from './modules/gesture-registry.js';
 
+// 全局未捕获错误 → 调试卡
+import { log } from './modules/logger.js';
+window.addEventListener('error', e => log('GLOBAL error: ' + (e.error?.message || e.message) + ' ' + (e.error?.stack || e.filename + ':' + e.lineno)));
+window.addEventListener('unhandledrejection', e => log('GLOBAL unhandled: ' + (e.reason?.message || String(e.reason))));
+
 gestures.init();
 initApp();
 initUI();
