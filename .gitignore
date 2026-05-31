@@ -4,3 +4,4 @@ node_modules/
 dist/
 public/bundle.js
 *.css.map
+.github_token
