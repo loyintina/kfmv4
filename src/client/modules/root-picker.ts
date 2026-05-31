@@ -14,7 +14,7 @@ import { Renderer } from '../engine/v2/renderer.js';
 import { Box } from '../engine/v2/box.js';
 import { LINE_HEIGHT } from './style-registry.js';
 import { L } from './renderer-lifecycle.js';
-import { _rebuildRowIndex, getRootScrollY } from './canvas-utils.js';
+import { _rebuildRowIndex, getRootScrollY, findBoxById } from './canvas-utils.js';
 import { ensureCursorBox, moveCursorTo, getCursorRowIndex } from './canvas-cursor.js';
 import { bindWheelEvents } from './canvas-scroll.js';
 
@@ -255,10 +255,15 @@ function _rebuildPicker(): void {
 
   _renderer.setRoot(pickerRoot);
 
-  // 行索引和光标
+  // 行索引和光标（保存光标位置，重建后恢复，避免跳回 row 0）
+  const prevCursorRowId = L.cursorRowId;
   L._rowIndex = [];
   _rebuildRowIndex(pickerRoot);
   ensureCursorBox(pickerRoot, _contentH);
+  if (prevCursorRowId) {
+    const target = findBoxById(pickerRoot, prevCursorRowId);
+    if (target) { moveCursorTo(target, false); return; }
+  }
   if (L._rowIndex.length > 0) moveCursorTo(L._rowIndex[0], false);
 }
 
