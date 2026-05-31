@@ -257,14 +257,13 @@ function _rebuildPicker(): void {
     onFileClick: () => {},
   });
 
-  // 包裹到可滚动的 picker 根容器
+  // 包裹到可滚动的 picker 根容器（根高度固定为视口高，内容溢出时 maxY>0 进入滚动模式）
   const totalH = HEADER_H + (treeRoot.height || 0);
-  const pickerRoot = new Box({ id: 'picker-root', x: 0, y: 0, width: w, height: Math.max(totalH, _contentH), scrollable: true, scrollY: getRootScrollY() ?? 0 });
+  const pickerRoot = new Box({ id: 'picker-root', x: 0, y: 0, width: w, height: _contentH, scrollable: true, scrollY: getRootScrollY() ?? 0, overflow: 'hidden' });
   const header = new Box({ id: 'picker-head', x: 0, y: 0, width: w, height: HEADER_H });
   pickerRoot.addChild(header);
   treeRoot.y = HEADER_H;
   pickerRoot.addChild(treeRoot);
-  if (treeRoot.height) pickerRoot.height = Math.max(HEADER_H + treeRoot.height, _contentH);
 
   _renderer.setRoot(pickerRoot);
 
