@@ -255,8 +255,10 @@ function _rebuildPicker(): void {
 
   _renderer.setRoot(pickerRoot);
 
-  // 行索引和光标（保存光标位置，重建后恢复，避免跳回 row 0）
+  // 保存光标 → 重置 → 重建 → 恢复/居中（与 rebuildTree tree-render.ts:1062 同模式）
   const prevCursorRowId = L.cursorRowId;
+  L.cursorBox = null;
+  L.cursorRowId = null;
   L._rowIndex = [];
   _rebuildRowIndex(pickerRoot);
   ensureCursorBox(pickerRoot, _contentH);
@@ -264,7 +266,7 @@ function _rebuildPicker(): void {
     const target = findBoxById(pickerRoot, prevCursorRowId);
     if (target) { moveCursorTo(target, false); return; }
   }
-  if (L._rowIndex.length > 0) moveCursorTo(L._rowIndex[0], false);
+  if (L._rowIndex.length > 0) moveCursorTo(L._rowIndex[Math.min(L._rowIndex.length - 1, Math.floor(L._rowIndex.length / 2))], false);
 }
 
 function _rebuildPickerHeight(): number {
