@@ -223,6 +223,7 @@ function _closeWithAnim(): void {
     if (d) targetPath = d.path;
   }
   const selectedLabel = targetPath === BASE_PATH ? _displayName(_currentResolved) : _displayName(targetPath);
+  log('picker confirm target=' + targetPath + ' rowId=' + L.cursorRowId);
   // 先销毁 picker，恢复主树渲染器（loadFileTree 的 rebuildTree 才能跑在正确渲染器上）
   _destroyPicker();
   // 设定新根目录，再加载数据（buildSidebarTree 读 files[currentRoot] 定位数据）
