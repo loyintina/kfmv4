@@ -213,8 +213,9 @@ function _closeWithAnim(): void {
   // 清除旧光标位置，rebuildTree 无需尝试在新树中找旧行
   L.cursorRowId = null;
   loadFileTree(targetPath).then(() => {
-    // 切换根目录后光标定位到第一行
-    if (L._rowIndex.length > 0) moveCursorTo(L._rowIndex[0], false);
+    // 切换根目录后光标定位到新树的第一个目录（非第一个元素——可能是文件）
+    const firstDir = L._rowIndex.find(r => { const d = getFileRowData(r.data); return d && d.isDir; });
+    if (firstDir) moveCursorTo(firstDir, false);
     if (_labelEl) _renderLabel(selectedLabel);
   });
 }
@@ -307,10 +308,15 @@ function _rebuildPicker(): void {
   };
 
   // 把 picker 的目录数据写入 KFMState.files（buildTree 内部会读它）
+  // 注意：主树可能在 files 中存有含文件的完整数据，picker 仅需目录
   KFMState.files[BASE_PATH] = rootNode as any;
   for (const d of _cachedDirs) {
-    if (KFMState.files[d.path] === undefined) {
+    const existing = KFMState.files[d.path];
+    if (existing === undefined || existing.children === undefined) {
       KFMState.files[d.path] = { name: d.name, path: d.path, isDir: true, isLink: false, children: [] };
+    } else {
+      // 主树预填充的数据可能包含文件，Picker 只保留目录
+      KFMState.files[d.path] = { ...existing, children: existing.children.filter(c => c.isDir) };
     }
   }
 
