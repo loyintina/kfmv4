@@ -39,7 +39,7 @@ export function ensureCursorBox(root: Box, canvasH: number): Box {
     id: 'cursor-highlight',
     x: 0,
     y: canvasH / 2 - 14,
-    width: DOM.treeCanvas?.clientWidth || 280,
+    width: (L.renderer?.canvas?.clientWidth ?? DOM.treeCanvas?.clientWidth) || 280,
     height: 24,
     backgroundColor: theme.canvas.cursorBg,
     borderRadius: 0,
@@ -55,17 +55,17 @@ export function ensureCursorBox(root: Box, canvasH: number): Box {
 
 /** 移动光标到指定行（GSAP 平滑过渡） */
 export function moveCursorTo(hitBox: Box, animate = true): void {
-  if (!L.cursorBox) { const r = L.renderer?.getRoot(); if (!r) return; ensureCursorBox(r, r.height || (DOM.treeCanvas?.clientHeight ?? 618)); }
+  if (!L.cursorBox) { const r = L.renderer?.getRoot(); if (!r) return; ensureCursorBox(r, r.height || (L.renderer?.canvas?.clientHeight ?? DOM.treeCanvas?.clientHeight ?? 618)); }
   // 防崩溃：确认光标盒仍在树中，不在则重新挂载
   const root = L.renderer?.getRoot();
   if (root && !root.children.includes(L.cursorBox!)) {
-    ensureCursorBox(root, root.height || (DOM.treeCanvas?.clientHeight ?? 618));
+    ensureCursorBox(root, root.height || (L.renderer?.canvas?.clientHeight ?? DOM.treeCanvas?.clientHeight ?? 618));
   }
   let abs: { x: number; y: number };
   try {
     abs = hitBox.getAbsolutePosition();
   } catch { return; }
-  const canvas = DOM.treeCanvas;
+  const canvas = L.renderer?.canvas ?? DOM.treeCanvas;
 
   const depth = getFileRowData(hitBox.data)?.depth ?? 0;
   const shift = getShift(depth);
