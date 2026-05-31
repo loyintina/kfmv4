@@ -355,3 +355,22 @@ BR 光球的 click 事件只写了 `compact → expanding` 方向，没有写 `a
 **违规后果**：工具栏错位（被推离底部）、文件树 Canvas 尺寸计算错误（`clientWidth` 为 0 或负值，导致 `renderer.setRoot` 不渲染）、点击区域偏移。
 
 **历史案例**：2026-05-29（root-picker 重写时误改 sidebar 布局，工具条浮起、文件树 canvas 初始化失败）
+
+### 1.11 Canvas 尺寸数据源必须随渲染器上下文切换
+
+**涉及模块**：`canvas-cursor.ts`、`canvas-scroll.ts`、任何通过 `DOM.treeCanvas` 读取 Canvas 尺寸的代码
+
+**契约内容**：
+- 读取当前 Canvas 尺寸（`clientWidth`/`clientHeight`）时，**必须优先使用当前渲染器的 Canvas**
+- 数据源优先级：`L.renderer?.canvas ?? DOM.treeCanvas`
+- `L.renderer` 可能指向主树渲染器或 picker 等变体的渲染器，其 Canvas 尺寸不同
+- 硬编码 `DOM.treeCanvas` 意味着代码只在主树上下文中正确
+
+**违规后果**：
+- 光标宽度/高度用主树尺寸计算 → picker 中光标位置偏移或越界
+- `_getCenterRowIndex` 计算视口居中行时用了主树高度 → picker 中光标 snap 到错误行
+- `moveCursorTo` 的文字测量用了主树的 2d context → 光标线宽度错误
+
+**历史案例**：2026-05-31 B.A.R. #007（cursor 函数中 6 处 `DOM.treeCanvas` 硬编码，修复见 `ba19b40`+`1b16eb1`+`52de389`）
+
+**排查方法**：在项目中搜索 `DOM\.treeCanvas`，每次出现都应当判断是否需要替换为 `L.renderer?.canvas ?? DOM.treeCanvas`。
