@@ -285,7 +285,6 @@
   left: 0;
   right: 0;
   bottom: 62px;
-  z-index: 2;
   height: 65vh;
   overflow: hidden;
   display: flex;
