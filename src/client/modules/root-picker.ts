@@ -16,6 +16,7 @@ import { L } from './renderer-lifecycle.js';
 import { _rebuildRowIndex, getRootScrollY, findBoxById } from './canvas-utils.js';
 import { ensureCursorBox, moveCursorTo, getCursorRowIndex } from './canvas-cursor.js';
 import { bindWheelEvents } from './canvas-scroll.js';
+import { log } from './logger.js';
 
 const BASE_PATH = '.';
 const HEADER_H = 4;
@@ -219,7 +220,7 @@ function _closeWithAnim(): void {
   const cursorIdx = getCursorRowIndex();
   if (cursorIdx >= 0 && cursorIdx < L._rowIndex.length) {
     const d = getFileRowData(L._rowIndex[cursorIdx].data);
-    if (d) { targetPath = d.path; console.log('[picker] confirm targetPath=', targetPath); }
+    if (d) { targetPath = d.path; log('picker confirm targetPath=' + targetPath); }
   }
   const selectedLabel = targetPath === BASE_PATH ? _displayName(_currentResolved) : _displayName(targetPath);
   // 先销毁 picker，恢复主树渲染器（loadFileTree 的 rebuildTree 才能跑在正确渲染器上）
