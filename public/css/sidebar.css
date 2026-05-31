@@ -270,6 +270,15 @@
   transform: scale(0.97);
 }
 
+/* ========== 面板遮罩 ========== */
+.sidebar-picker-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 1;
+  pointer-events: none;
+}
+
 /* ========== 根目录选择器容器（左栏内展开） ========== */
 .sidebar-picker {
   position: absolute;
