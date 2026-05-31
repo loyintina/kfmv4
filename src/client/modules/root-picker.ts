@@ -256,16 +256,7 @@ function _initPicker(): void {
   _renderer = new Renderer(_canvas, { backgroundColor: 'rgba(10,10,15,0.85)', dpr });
   L.pushContext({ renderer: _renderer, rowIndex: [], cursorBox: null, cursorRowId: null });
   _rebuildPicker();
-  // 将光标定位到当前根目录对应的行（强绑定：label 显示什么，光标就在什么上）
-  for (let i = 0; i < L._rowIndex.length; i++) {
-    const d = getFileRowData(L._rowIndex[i].data);
-    if (d && d.isDir) {
-      const match = KFMState.currentRoot === BASE_PATH
-        ? d.path === BASE_PATH
-        : KFMState.currentRoot === d.path || KFMState.currentRoot.startsWith(d.path + '/');
-      if (match) { moveCursorTo(L._rowIndex[i], false); break; }
-    }
-  }
+  _positionCursorToCurrentRoot();
   _renderer.start();
   bindWheelEvents(_canvas);
   // 启动光标跟踪：每次光标移动时更新 label 显示当前目录名
@@ -298,14 +289,26 @@ async function _expandToCurrentRoot(): Promise<void> {
     }
     _rebuildPicker();
   }
-  // 光标定位到最深匹配行
+  _positionCursorToCurrentRoot();
+}
+
+/** 在行索引中找到与 currentRoot 路径最深匹配的目录行，移动光标到该行 */
+function _positionCursorToCurrentRoot(): void {
+  let best: Box | null = null;
+  let bestLen = -1;
   for (let i = 0; i < L._rowIndex.length; i++) {
     const d = getFileRowData(L._rowIndex[i].data);
     if (d && d.isDir) {
-      const match = KFMState.currentRoot === d.path || KFMState.currentRoot.startsWith(d.path + '/');
-      if (match) { moveCursorTo(L._rowIndex[i], false); break; }
+      const match = KFMState.currentRoot === BASE_PATH
+        ? d.path === BASE_PATH
+        : KFMState.currentRoot === d.path || KFMState.currentRoot.startsWith(d.path + '/');
+      if (match && d.path.length > bestLen) {
+        best = L._rowIndex[i];
+        bestLen = d.path.length;
+      }
     }
   }
+  if (best) moveCursorTo(best, false);
 }
 
 /** rAF 循环：光标移动时更新 label 显示当前目录名 */
