@@ -216,7 +216,7 @@
   border:1px solid transparent;
   background:
     linear-gradient(rgba(10,10,15,0.95), rgba(10,10,15,0.95)) padding-box,
-    linear-gradient(135deg, rgba(0,212,255,0.8), rgba(99,102,241,0.7), rgba(124,58,237,0.7)) border-box;
+    linear-gradient(135deg, rgba(124,58,237,0.8), rgba(99,102,241,0.7), rgba(0,212,255,0.7)) border-box;
   overflow:hidden;
   animation: picker-slide-in 0.12s ease-out both;
 }

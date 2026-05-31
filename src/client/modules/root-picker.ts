@@ -219,7 +219,7 @@ function _closeWithAnim(): void {
   const cursorIdx = getCursorRowIndex();
   if (cursorIdx >= 0 && cursorIdx < L._rowIndex.length) {
     const d = getFileRowData(L._rowIndex[cursorIdx].data);
-    if (d) targetPath = d.path;
+    if (d) { targetPath = d.path; console.log('[picker] confirm targetPath=', targetPath); }
   }
   const selectedLabel = targetPath === BASE_PATH ? _displayName(_currentResolved) : _displayName(targetPath);
   // 先销毁 picker，恢复主树渲染器（loadFileTree 的 rebuildTree 才能跑在正确渲染器上）
@@ -305,7 +305,8 @@ function _positionCursorToCurrentRoot(): void {
     const root = L.renderer?.getRoot();
     if (root) {
       const abs = best.getAbsolutePosition();
-      root.scrollY = Math.max(0, abs.y + best.height / 2 - _contentH / 2);
+      const maxY = root.getMaxScroll().maxY;
+      root.scrollY = Math.max(0, Math.min(abs.y + best.height / 2 - _contentH / 2, maxY));
     }
   }
 }
