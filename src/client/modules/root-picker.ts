@@ -38,6 +38,7 @@ let _contentH = 0;
 let _savedFiles: Record<string, any> = {};
 let _savedRenderer: Renderer | null = null;
 let _savedRowIdx: Box[] = [];
+let _savedCursorRowId: string | null = null;
 
 function _displayName(resolved: string): string {
   const parts = resolved.split('/').filter(Boolean);
@@ -153,6 +154,14 @@ function _closeWithAnim(): void {
   KFMState.expandedPaths = {};
   localStorage.setItem('expandedPaths', '{}');
   loadFileTree(targetPath).then(() => {
+    // 如果切换到子目录，将其数据映射到 '.' 以便 buildSidebarTree 读取
+    if (targetPath !== BASE_PATH) {
+      const src = KFMState.files[targetPath];
+      if (src) {
+        KFMState.files[BASE_PATH] = src;
+        KFMState.notify();
+      }
+    }
     if (_labelEl) _renderLabel(selectedLabel);
   });
 }
@@ -169,11 +178,13 @@ function _destroyPicker(): void {
     }
     L.renderer = _savedRenderer; _savedRenderer = null;
   }
-  // 重建主树光标（覆盖 picker 遗留光标）
+  // 重建主树光标（用保存的位置，避免跳动到 row 0）
   const root = L.renderer?.getRoot();
   if (root) {
     ensureCursorBox(root, window.innerHeight);
-    if (L._rowIndex.length > 0) moveCursorTo(L._rowIndex[0], false);
+    if (_savedCursorRowId) {
+      L.cursorRowId = _savedCursorRowId;
+    }
   }
   // 恢复 KFMState.files 到 picker 打开前的状态
   for (const key of Object.keys(KFMState.files)) {
@@ -199,6 +210,7 @@ function _initPicker(): void {
 
   _savedRenderer = L.renderer;
   _savedRowIdx = L._rowIndex as any;
+  _savedCursorRowId = L.cursorRowId;  // 保存主树光标，关闭时恢复避免跳动
   _renderer = new Renderer(_canvas, { backgroundColor: 'rgba(10,10,15,0.85)', dpr });
   L.renderer = _renderer;
   _rebuildPicker();
