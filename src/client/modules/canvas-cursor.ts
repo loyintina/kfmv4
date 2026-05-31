@@ -184,11 +184,11 @@ export function _isCursorMode(): boolean {
   return root.getMaxScroll().maxY <= 0;
 }
 
-/** 获取视口中央最近行的索引（在 L._rowIndex 中的位���） */
+/** 获取视口中央最近行的索引（在 L._rowIndex 中的位置） */
 export function _getCenterRowIndex(): number {
   const root = L.renderer?.getRoot();
   if (!root || L._rowIndex.length === 0) return -1;
-  const canvasH = (DOM.treeCanvas?.clientHeight ?? 0) || 618;
+  const canvasH = (L.renderer?.canvas?.clientHeight ?? DOM.treeCanvas?.clientHeight ?? 0) || 618;
   const scrollY = root.scrollY ?? 0;
   const centerY = scrollY + canvasH / 2;
   let closestIdx = -1;
