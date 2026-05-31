@@ -271,6 +271,41 @@ function _initPicker(): void {
   // 启动光标跟踪：每次光标移动时更新 label 显示当前目录名
   _lastLabelPath = '';
   _startCursorWatch();
+  // 异步展开到 currentRoot 路径并将光标定位到终点
+  _expandToCurrentRoot();
+}
+
+/**
+ * 递归展开 picker 中的目录直到匹配 currentRoot 的完整路径。
+ * 每展开一层重建树、定位光标到该层，最终光标落在最深匹配行。
+ */
+async function _expandToCurrentRoot(): Promise<void> {
+  if (KFMState.currentRoot === BASE_PATH) return;
+  const parts = KFMState.currentRoot.split('/').filter(Boolean);
+  for (let i = 1; i < parts.length; i++) {
+    const segmentPath = '/' + parts.slice(0, i + 1).join('/');
+    if (segmentPath === KFMState.currentRoot) break;
+    _pickerExpanded[segmentPath] = true;
+    const existing = KFMState.files[segmentPath];
+    if (!existing?.children || existing.children.length === 0) {
+      const result = await _fetchDirs(segmentPath);
+      if (result) {
+        KFMState.files[segmentPath] = {
+          name: parts[i], path: segmentPath, isDir: true, isLink: false,
+          children: result.items.map(d => ({ name: d.name, path: d.path, isDir: true, isLink: false })),
+        } as any;
+      }
+    }
+    _rebuildPicker();
+  }
+  // 光标定位到最深匹配行
+  for (let i = 0; i < L._rowIndex.length; i++) {
+    const d = getFileRowData(L._rowIndex[i].data);
+    if (d && d.isDir) {
+      const match = KFMState.currentRoot === d.path || KFMState.currentRoot.startsWith(d.path + '/');
+      if (match) { moveCursorTo(L._rowIndex[i], false); break; }
+    }
+  }
 }
 
 /** rAF 循环：光标移动时更新 label 显示当前目录名 */
