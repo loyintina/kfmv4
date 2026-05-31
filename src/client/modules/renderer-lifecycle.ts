@@ -59,10 +59,10 @@ export class RendererLifecycle {
   pushContext(ctx: Partial<RenderContext>): void {
     const cur = this.ctx;
     this._ctxStack.push({
-      renderer: ctx.renderer ?? cur.renderer,
-      rowIndex: ctx.rowIndex ?? cur.rowIndex,
-      cursorBox: ctx.cursorBox ?? cur.cursorBox,
-      cursorRowId: ctx.cursorRowId ?? cur.cursorRowId,
+      renderer: ctx.renderer !== undefined ? ctx.renderer : cur.renderer,
+      rowIndex: ctx.rowIndex !== undefined ? ctx.rowIndex : cur.rowIndex,
+      cursorBox: ctx.cursorBox !== undefined ? ctx.cursorBox : cur.cursorBox,
+      cursorRowId: ctx.cursorRowId !== undefined ? ctx.cursorRowId : cur.cursorRowId,
     });
   }
 
