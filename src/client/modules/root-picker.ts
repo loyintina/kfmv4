@@ -218,6 +218,7 @@ function _closeWithAnim(): void {
   // 确定光标所在目录路径
   let targetPath = BASE_PATH;
   const cursorIdx = getCursorRowIndex();
+  log('picker confirm label=' + _lastLabelPath + ' cursorIdx=' + cursorIdx + ' total=' + L._rowIndex.length);
   if (cursorIdx >= 0 && cursorIdx < L._rowIndex.length) {
     const d = getFileRowData(L._rowIndex[cursorIdx].data);
     if (d) { targetPath = d.path; log('picker confirm cursorIdx=' + cursorIdx + ' total=' + L._rowIndex.length + ' path=' + targetPath + ' rowId=' + L.cursorRowId); }
