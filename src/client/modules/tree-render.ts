@@ -1128,7 +1128,7 @@ function rebuildTree(): void {
 
 }
 
-function snapToCenterRow(root: Box, canvasH: number): void {
+function snapToCenterRow(root: Box, canvasH: number, animate = false): void {
   const scrollY = root.scrollY ?? 0;
   const centerY = scrollY + canvasH / 2;
   let closest: Box | null = null;
@@ -1151,7 +1151,7 @@ function snapToCenterRow(root: Box, canvasH: number): void {
   }
 
   walk(root);
-  if (closest) moveCursorTo(closest);
+  if (closest) moveCursorTo(closest, animate);
 }
 
 /**
