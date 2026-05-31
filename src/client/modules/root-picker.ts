@@ -180,6 +180,25 @@ async function _openPanel(): Promise<void> {
   for (const key of Object.keys(KFMState.files)) {
     _savedFiles[key] = KFMState.files[key];
   }
+  // 在渲染 picker 前预展开到 currentRoot 路径，避免异步竞态
+  if (KFMState.currentRoot !== BASE_PATH) {
+    const parts = KFMState.currentRoot.split('/').filter(Boolean);
+    for (let i = 1; i < parts.length; i++) {
+      const seg = '/' + parts.slice(0, i + 1).join('/');
+      if (seg === KFMState.currentRoot) break;
+      _pickerExpanded[seg] = true;
+      const exist = KFMState.files[seg];
+      if (!exist?.children || exist.children.length === 0) {
+        const r = await _fetchDirs(seg);
+        if (r) {
+          KFMState.files[seg] = {
+            name: parts[i], path: seg, isDir: true, isLink: false,
+            children: r.items.map(d => ({ name: d.name, path: d.path, isDir: true, isLink: false })),
+          } as any;
+        }
+      }
+    }
+  }
   _container = document.createElement('div');
   _container.className = 'sidebar-picker';
   const tools = DOM.sidebar?.querySelector('.sidebar-tools');
@@ -262,34 +281,6 @@ function _initPicker(): void {
   // 启动光标跟踪：每次光标移动时更新 label 显示当前目录名
   _lastLabelPath = '';
   _startCursorWatch();
-  // 异步展开到 currentRoot 路径并将光标定位到终点
-  _expandToCurrentRoot();
-}
-
-/**
- * 递归展开 picker 中的目录直到匹配 currentRoot 的完整路径。
- * 每展开一层重建树、定位光标到该层，最终光标落在最深匹配行。
- */
-async function _expandToCurrentRoot(): Promise<void> {
-  if (KFMState.currentRoot === BASE_PATH) return;
-  const parts = KFMState.currentRoot.split('/').filter(Boolean);
-  for (let i = 1; i < parts.length; i++) {
-    const segmentPath = '/' + parts.slice(0, i + 1).join('/');
-    if (segmentPath === KFMState.currentRoot) break;
-    _pickerExpanded[segmentPath] = true;
-    const existing = KFMState.files[segmentPath];
-    if (!existing?.children || existing.children.length === 0) {
-      const result = await _fetchDirs(segmentPath);
-      if (result) {
-        KFMState.files[segmentPath] = {
-          name: parts[i], path: segmentPath, isDir: true, isLink: false,
-          children: result.items.map(d => ({ name: d.name, path: d.path, isDir: true, isLink: false })),
-        } as any;
-      }
-    }
-    _rebuildPicker();
-  }
-  _positionCursorToCurrentRoot();
 }
 
 /** 在行索引中找到与 currentRoot 路径最深匹配的目录行，移动光标到该行 */
