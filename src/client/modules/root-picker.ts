@@ -13,11 +13,9 @@ import { API } from './state.js';
 import { Renderer } from '../engine/v2/renderer.js';
 import { Box } from '../engine/v2/box.js';
 import { L } from './renderer-lifecycle.js';
-import { _rebuildRowIndex, getRootScrollY, findBoxById, boxToScreen } from './canvas-utils.js';
+import { _rebuildRowIndex, getRootScrollY, findBoxById } from './canvas-utils.js';
 import { ensureCursorBox, moveCursorTo, getCursorRowIndex } from './canvas-cursor.js';
 import { bindWheelEvents } from './canvas-scroll.js';
-import { anim } from './animation-registry.js';
-import { currentTheme as theme } from './theme.js';
 
 const BASE_PATH = '.';
 const HEADER_H = 4;
@@ -222,14 +220,8 @@ function _closeWithAnim(): void {
     if (d) targetPath = d.path;
   }
   const selectedLabel = targetPath === BASE_PATH ? _displayName(_currentResolved) : _displayName(targetPath);
-  // 关闭前：捕获 picker 光标位置并隐藏
-  const pickerPos = L.cursorBox ? boxToScreen(L.cursorBox) : null;
-  if (L.cursorBox) L.cursorBox.visible = false;
   // 先销毁 picker，恢复主树渲染器（loadFileTree 的 rebuildTree 才能跑在正确渲染器上）
   _destroyPicker();
-  // 关闭后：捕获主树光标位置，做浮游过渡
-  const treePos = L.cursorBox ? boxToScreen(L.cursorBox) : null;
-  if (pickerPos && treePos) _floatCursor(pickerPos, treePos, () => { if (L.cursorBox) L.cursorBox.visible = true; });
   // 设定新根目录，再加载数据（buildSidebarTree 读 files[currentRoot] 定位数据）
   KFMState.currentRoot = targetPath;
   localStorage.setItem('kfmv4_currentRoot', targetPath);
@@ -275,20 +267,6 @@ function _destroyPicker(): void {
   }
 }
 
-/** 创建浮游 DOM 光标并 GSAP 动画到目标位置 */
-function _floatCursor(from: {x:number,y:number}, to: {x:number,y:number}, cb?: () => void): void {
-  const el = document.createElement('div');
-  const w = L.cursorBox?.width ?? 280;
-  el.style.cssText = `position:fixed;z-index:9999;pointer-events:none;
-    width:${w}px;height:24px;border-radius:0;
-    background:${theme.canvas.cursorBg};`;
-  el.style.left = from.x + 'px'; el.style.top = from.y + 'px';
-  document.body.appendChild(el);
-  anim.to(el, { left: to.x, top: to.y, duration: 0.25, ease: 'power2.out',
-    onComplete: () => { el.remove(); cb?.(); }
-  });
-}
-
 function _initPicker(): void {
   if (!_canvas || !_container) return;
   const rect = _container.getBoundingClientRect();
@@ -300,21 +278,11 @@ function _initPicker(): void {
   _canvas.style.width = w + 'px'; _canvas.style.height = h + 'px';
   _contentH = h;
 
-  // pushContext 前：捕获主树光标位置并隐藏
-  let fromPos = null;
-  if (L.cursorBox) { fromPos = boxToScreen(L.cursorBox); L.cursorBox.visible = false; }
-
   // pushContext 保存主树状态并切换到 picker 上下文
   _renderer = new Renderer(_canvas, { backgroundColor: 'rgba(10,10,15,0.85)', dpr });
   L.pushContext({ renderer: _renderer, rowIndex: [], cursorBox: null, cursorRowId: null });
   _rebuildPicker();
   _positionCursorToCurrentRoot();
-
-  // 捕获 picker 光标位置，隐藏后做浮游过渡
-  const toPos = L.cursorBox ? boxToScreen(L.cursorBox) : null;
-  if (L.cursorBox) L.cursorBox.visible = false;
-  if (fromPos && toPos) _floatCursor(fromPos, toPos, () => { if (L.cursorBox) L.cursorBox.visible = true; });
-
   _renderer.start();
   bindWheelEvents(_canvas);
   // 启动光标跟踪：每次光标移动时更新 label 显示当前目录名
