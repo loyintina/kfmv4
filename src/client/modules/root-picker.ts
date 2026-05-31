@@ -299,7 +299,15 @@ function _positionCursorToCurrentRoot(): void {
       }
     }
   }
-  if (best) moveCursorTo(best, false);
+  if (best) {
+    moveCursorTo(best, false);
+    // 滚动视口使光标居中
+    const root = L.renderer?.getRoot();
+    if (root) {
+      const abs = best.getAbsolutePosition();
+      root.scrollY = Math.max(0, abs.y + best.height / 2 - _contentH / 2);
+    }
+  }
 }
 
 /** rAF 循环：光标移动时更新 label 显示当前目录名 */
