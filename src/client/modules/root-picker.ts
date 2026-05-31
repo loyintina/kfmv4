@@ -220,7 +220,7 @@ function _closeWithAnim(): void {
   const cursorIdx = getCursorRowIndex();
   if (cursorIdx >= 0 && cursorIdx < L._rowIndex.length) {
     const d = getFileRowData(L._rowIndex[cursorIdx].data);
-    if (d) { targetPath = d.path; log('picker confirm targetPath=' + targetPath); }
+    if (d) { targetPath = d.path; log('picker confirm cursorIdx=' + cursorIdx + ' total=' + L._rowIndex.length + ' path=' + targetPath + ' rowId=' + L.cursorRowId); }
   }
   const selectedLabel = targetPath === BASE_PATH ? _displayName(_currentResolved) : _displayName(targetPath);
   // 先销毁 picker，恢复主树渲染器（loadFileTree 的 rebuildTree 才能跑在正确渲染器上）
@@ -288,6 +288,7 @@ function _initPicker(): void {
 function _positionCursorToCurrentRoot(): void {
   let best: Box | null = null;
   let bestLen = -1;
+  log('positionCursor currentRoot=' + KFMState.currentRoot + ' rows=' + L._rowIndex.length);
   for (let i = 0; i < L._rowIndex.length; i++) {
     const d = getFileRowData(L._rowIndex[i].data);
     if (d && d.isDir) {
@@ -297,10 +298,13 @@ function _positionCursorToCurrentRoot(): void {
       if (match && d.path.length > bestLen) {
         best = L._rowIndex[i];
         bestLen = d.path.length;
+        log('positionCursor candidate=' + d.path + ' len=' + d.path.length);
       }
     }
   }
   if (best) {
+    const d = getFileRowData(best.data);
+    log('positionCursor final=' + (d ? d.path : '?') + ' bestLen=' + bestLen);
     moveCursorTo(best, false);
     // 滚动视口使光标居中
     const root = L.renderer?.getRoot();
