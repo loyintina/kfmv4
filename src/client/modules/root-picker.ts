@@ -150,18 +150,11 @@ function _closeWithAnim(): void {
   const selectedLabel = targetPath === BASE_PATH ? _displayName(_currentResolved) : _displayName(targetPath);
   // 先销毁 picker，恢复主树渲染器（loadFileTree 的 rebuildTree 才能跑在正确渲染器上）
   _destroyPicker();
-  // 再加载新目录数据
+  // 设定新根目录，再加载数据（buildSidebarTree 读 files[currentRoot] 定位数据）
+  KFMState.currentRoot = targetPath;
   KFMState.expandedPaths = {};
   localStorage.setItem('expandedPaths', '{}');
   loadFileTree(targetPath).then(() => {
-    // 如果切换到子目录，将其数据映射到 '.' 以便 buildSidebarTree 读取
-    if (targetPath !== BASE_PATH) {
-      const src = KFMState.files[targetPath];
-      if (src) {
-        KFMState.files[BASE_PATH] = src;
-        KFMState.notify();
-      }
-    }
     if (_labelEl) _renderLabel(selectedLabel);
   });
 }

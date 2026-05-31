@@ -21,6 +21,7 @@ export interface ViewportState {
 export interface KFMStateType {
   // 文件系统
   files: Record<string, FileNode>;
+  currentRoot: string;             // 当前文件树根目录在 files 中的 key
   expandedPaths: Record<string, boolean>;
   selectedFile: string;
   showHidden: boolean;
@@ -53,6 +54,7 @@ export interface KFMStateType {
 
 export const KFMState: KFMStateType = {
   files: {},
+  currentRoot: '.',
   expandedPaths: JSON.parse(localStorage.getItem('expandedPaths') || '{}'),
   selectedFile: '',
   showHidden: false,
