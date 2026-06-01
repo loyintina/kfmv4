@@ -6,6 +6,7 @@
  */
 
 import { Box } from '../engine/v2/box.js';
+import type { BoxOptions } from '../engine/v2/box.js';
 import type { TextStyle, HighlightConfig } from '../engine/v2/types.js';
 import { KFMState } from "./state.js";
 import { currentTheme as theme } from './theme.js';
@@ -148,7 +149,7 @@ const templates: Record<string, Record<string, any>> = {
 
 
 export const styleRegistry = {
-  get(name: string): Record<string, any> | undefined {
+  get(name: string): Partial<BoxOptions> | undefined {
     const t = templates[name];
     return t ? { ...t } : undefined;
   },
@@ -205,17 +206,10 @@ export function getShift(depth: number): number { return SHIFT_TABLE[depth] ?? 2
 // 从模板创建 Box 的快捷工具
 // ============================================================
 
-export function createBox(templateName: string, overrides: Record<string, any>): Box {
+export function createBox(templateName: string, overrides: Partial<BoxOptions>): Box {
   if (!templates[templateName]) {
     console.warn(`[style-registry] unknown template: "${templateName}"`);
   }
-  const base = styleRegistry.get(templateName) || {};
-  return new Box({ ...base, ...overrides } as any);
-}
-
-if (typeof window !== 'undefined') {
-  window.styleRegistry = styleRegistry;
-  window.DIMENSIONS = DIMENSIONS;
-
-  window.TEXT_STYLES = TEXT_STYLES;
+  const base: Partial<BoxOptions> = styleRegistry.get(templateName) || {};
+  return new Box({ ...base, ...overrides });
 }

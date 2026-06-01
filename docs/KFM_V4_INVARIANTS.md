@@ -105,15 +105,24 @@
     ts.clear() + ts.time(0) + ts.reversed(false)
 ```
 
-### 1.2 类型安全
+### 1.2 类型安全 — 禁止 (as any)
 
 ```
-�� Overlay 元数据用 (as Box & OverlayMeta) 访问，禁止 (as any)._xxx
-▎ 已知遗留: _createVisualClone 中 (src as any).data 一处逃逸 (P2)
+▎ 禁止在新建代码中使用 (as any)。构建时会自动扫描（check-as-any.mjs），
+   新增逃逸 → 构建中断。
+▎ Box.data 必须通过 getFileRowData() 访问，禁止 (box as any).data.xxx
+   （已知白名单内逃逸共 11 处，登记在 check-as-any.mjs WHITELIST 中，
+   逐个修复后移除。构建时跑 --check-only 可查看当前白名单状态。）
+▎ 如果某处 (as any) 确因 TypeScript 类型定义缺失而无法避免，必须：
+   ① 在 check-as-any.mjs WHITELIST 中登记（写注释说明原因）
+   ② 在代码行上加 // P2: 备注目标准确根因
+▎ Overlay 元数据用 (as Box & OverlayMeta) 访问，禁止 (as any)._xxx
 ▎ 所有 _ 前缀属性只在模块内访问
-    跨模块读写 _ 前缀属性应通过显式接口
+     跨模块读写 _ 前缀属性应通过显式接口
 ▎ FloatingCardItem 的 orb 字段类型为 HTMLElement | null
-    紧凑态下 tl/tr/bl 确实为 null，访问前必须空值守卫
+     紧凑态下 tl/tr/bl 确实为 null，访问前必须空值守卫
+▎ KFMState.files 的写入/读取优先通过 FileRowData 守卫，
+     避免直接 as any 赋值
 ```
 
 ### 1.3 依赖方向
@@ -149,14 +158,18 @@ tree-render.ts          ← 可以导入任何 canvas-*
 ▎ 任何新的侧栏内交互组件，其视觉和定位逻辑必须先考虑"以侧栏为参考系"
 ```
 
-### 1.6 文件树的变体面板复用 Renderer 替换模式
+### 1.6 文件树的变体面板复用 RenderContext 上下文栈
 
 ```
 ▎ 当需要加一个"文件树的变体"（如只显示目录、只显示某类型、或筛选后子集）
    — 不创建新的手势/渲染/交互管线
-   — 临时替换 L.renderer 指向，复用完整的现有交互系统
-▎ 流程：保存 L.renderer → 设为变体 Renderer → 构建变体 Box 树 → 关闭时恢复
-▎ 手势拦截、光标、滚动、展开/折叠、自动居中、边界锁全部自动继承
+   — 通过 L.pushContext() 原子化切换到变体上下文，复用完整的现有交互系统
+▎ 流程：L.pushContext({ renderer, rowIndex: [], cursorBox: null, cursorRowId: null })
+        → 构建变体 Box 树
+        → 关闭时 L.popContext() 自动恢复主树的所有状态
+▎ 使用 pushContext/popContext 替换了原先手工保存/恢复 _savedRenderer 等变量的模式。
+   上下文栈自动隔离 renderer、rowIndex、cursorBox、cursorRowId，新变体不会污染主树状态。
+▎ KFMState.files 仍是全局的，不属于 RenderContext，变体写入的数据在关闭后需额外清理。
 ▎ 适合场景：侧栏根目录选择器、右栏卡片堆内的文件子集面板
 ▎ 不适合场景：完全不同的交互模型（如拖拽排序、图片浏览）
 ```

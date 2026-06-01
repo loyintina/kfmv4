@@ -155,7 +155,3 @@ declare global {
     KFMState: typeof KFMState;
   }
 }
-
-if (typeof window !== 'undefined') {
-  window.KFMState = KFMState;
-}

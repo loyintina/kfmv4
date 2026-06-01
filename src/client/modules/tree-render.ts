@@ -480,7 +480,6 @@ export function onSidebarOpen(): void {
     }
     L._restoringFromSave = false;
     L.renderer?.resize();
-    window.__treeRenderer = L.renderer;
 
     _ensureSubscribed();
     window.addEventListener('resize', () => L.renderer?.resize());
@@ -559,11 +558,7 @@ export function initTreeRenderer(): void {
     backgroundColor: 'rgba(10,10,15,0.85)',
     dpr,
   });
-
   rebuildTree();
-
-  // 暴露到 window 供调试
-  window.__treeRenderer = L.renderer;
 
   _ensureSubscribed();
   window.addEventListener('resize', () => L.renderer?.resize());

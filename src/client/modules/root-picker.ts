@@ -51,7 +51,7 @@ async function _fetchDirs(dirPath: string): Promise<ListResult | null> {
     const data = await res.json();
     if (data.error) return null;
     return { resolvedPath: data.path, items: (data.items || []).filter((i: DirItem) => i.isDir) };
-  } catch { return null; }
+  } catch { console.warn('[picker] _fetchDirs failed for', dirPath); return null; }
 }
 
 // ========== 标签（Canvas 渲染渐变文字） ==========

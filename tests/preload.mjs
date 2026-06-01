@@ -112,6 +112,10 @@ function makeElement(tag, overrides) {
         e => e.fn !== fn || e.opts !== opts
       );
     },
+    /** 移除所有事件监听（测试隔离用） */
+    _removeAllListeners() {
+      this._listeners = {};
+    },
     dispatchEvent(event) {
       const handlers = this._listeners[event.type] || [];
       for (const h of handlers) h.fn(event);
@@ -295,6 +299,12 @@ globalThis.document = {
   createEvent: (type) => ({ type }),
 };
 
+// ========== Test helpers ==========
+/** 清除 document 上所有事件监听（测试隔离用） */
+globalThis.__clearDocumentListeners = () => {
+  _docEl._removeAllListeners();
+};
+
 // ========== window ==========
 globalThis.window = globalThis;
 globalThis.window.innerWidth = 414;     // iPhone-ish
@@ -307,33 +317,7 @@ globalThis.window.visualViewport = {
   removeEventListener: () => {},
 };
 
-// ========== TouchEvent mock ==========
-class MockTouch {
-  constructor({ clientX, clientY, target }) {
-    this.clientX = clientX;
-    this.clientY = clientY;
-    this.target = target || _bodyEl;
-    this.identifier = Date.now() + Math.random();
-  }
-}
-
-class MockTouchEvent {
-  constructor(type, init = {}) {
-    this.type = type;
-    this.touches = (init.touches || []).map(t => new MockTouch(t));
-    this.changedTouches = (init.changedTouches || []).map(t => new MockTouch(t));
-    this.target = init.target || _bodyEl;
-    this._defaultPrevented = false;
-    this._propagationStopped = false;
-    this.bubbles = init.bubbles !== false;
-    this.cancelable = init.cancelable !== false;
-  }
-  preventDefault() { this._defaultPrevented = true; }
-  stopPropagation() { this._propagationStopped = true; }
-}
-
-globalThis.Touch = MockTouch;
-globalThis.TouchEvent = MockTouchEvent;
+// TouchEvent no longer needed — gesture-registry uses PointerEvent
 
 // ========== MouseEvent mock ==========
 class MockMouseEvent {
@@ -348,6 +332,23 @@ class MockMouseEvent {
 }
 
 globalThis.MouseEvent = MockMouseEvent;
+
+// ========== PointerEvent mock (gesture-registry uses pointer events) ==========
+class MockPointerEvent {
+  constructor(type, init = {}) {
+    this.type = type;
+    this.clientX = init.clientX || 0;
+    this.clientY = init.clientY || 0;
+    this.button = init.button ?? 0;
+    this.target = init.target || _bodyEl;
+    this.bubbles = init.bubbles !== false;
+    this._defaultPrevented = false;
+    this._propagationStopped = false;
+  }
+  preventDefault() { this._defaultPrevented = true; }
+  stopPropagation() { this._propagationStopped = true; }
+}
+globalThis.PointerEvent = MockPointerEvent;
 
 // ========== CSS ==========
 globalThis.CSS = {

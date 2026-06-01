@@ -1,7 +1,24 @@
 # KFM v4 项目交接文档
 
 > 写于 2026-05-09，基于对全部源代码的全面审计。
-> 最后更新：2026-05-29（v5.0.0）
+> 最后更新：2026-05-31（v5.2.0）
+
+---
+
+## 当前待办优先级总览
+
+> 本文档是项目**唯一的**待办总览数据源。
+> `SESSION_MEMORY.md` 已不再维护进度列表，做进度规划时以此为基准。
+
+| 优先级 | 事项 | 说明 | 状态 |
+|--------|------|------|------|
+| **🟠 P2** | 拆分 `card-stack.ts`（1352 行） | 卡片堆面板 + 浮卡系统两个职责混合，38 函数仅 9 导出 | ⬜ |
+| **🟠 P3** | 清理 `window` 全局变量（14 处，5 文件） | 隐式全局耦合，类型检查无效 | ✅ 已完成（v6.0.0） |
+| **🟡 P3** | 修复空 catch 块（4 处） | 静默吞错误，canvas-cursor.ts 为主 | ✅ 已完成（v6.0.0） |
+| **🟡 P3** | `(as any)` 白名单清理（11 处） | 已通过 `check-as-any.mjs` 控制增量 | ⬜ |
+| **🟢 Obs** | 测试基础设施 | mock 失真、无 UI/Canvas 覆盖 | 持续观察 |
+
+各优先级具体语境见下方版本章节。
 
 ---
 
@@ -53,7 +70,7 @@
 
 | 内容 | 优先级 | 说明 |
 |------|--------|--------|
-| **RenderContext 上下文隔离** | **P3** | 将 `L._rowIndex`、`L.cursorRowId`、`L.cursorBox` 封装进 `RenderContext`，通过 `pushContext/popContext` 原子化切换。详细方案见 `docs/P3_RENDER_CONTEXT_REFACTOR.md` |
+| **RenderContext 上下文隔离** | **P3** | 将 `L._rowIndex`、`L.cursorRowId`、`L.cursorBox` 封装进 `RenderContext`，通过 `pushContext/popContext` 原子化切换。详细方案见 `docs/archive/P3_RENDER_CONTEXT_REFACTOR_DONE.md` |
 
 ### 原有的待处理项（无变化）
 
@@ -66,6 +83,116 @@
 
 ---
 
+## v5.2.0 状态更新
+
+> 本次会话焦点：P3 RenderContext 上下文隔离实现 + root-picker 交互完整性修复
+
+### 新增完成项
+
+| 审计项 | 决策/状态 | commit |
+|--------|-----------|--------|
+| `RenderContext` 接口 + `pushContext/popContext` | 将 `L.renderer`、`L._rowIndex`、`L.cursorBox`、`L.cursorRowId` 封装进上下文栈。`L.ctx` 代理当前上下文，getter/setter 向后兼容 | `9aeac8b` |
+| root-picker 迁移至 `pushContext/popContext` | 消除 `_savedRenderer`、`_savedRowIdx`、`_savedCursorRowId` 手动保存逻辑。`_initPicker` 中 `L.pushContext(...)`，`_destroyPicker` 中 `L.popContext()` | `9aeac8b` |
+| `_destroyPicker` 幂等性守卫 | 防止 `onSidebarClose` 二次调用覆盖已加载的数据 | `8f66e73` |
+| 加载失败回退 | `loadFileTree` 失败时 `rowIndex` 为空，自动回退到默认根目录 | `127e78c` |
+| 浮游光标过渡（实验 + 回退） | 尝试在 open/close picker 时光标平滑移动。因太干扰最终 revert，换回无动画模式 | `415bfce` → `d5d98f9` |
+| 关闭 picker 后光标位置恢复 | 保存 `L.cursorRowId`，新树中用 `findBoxById` 恢复，保留原展开状态 | `22ed72c` |
+| `snapToCenterRow` 加 `animate` 参数 | `rebuildTree` 默认不带动画，避免每次重建时光标跳动 | `82c203f` |
+| 调试基础设施 | 全局 `window.onerror` + `unhandledrejection` 捕获，日志输出到调试卡。根因定位后调试日志已清理 | `de7b0ea`..`c2d9f11` |
+
+### 状态更新
+
+| 原待处理项 | 状态变更 |
+|-----------|---------|
+| **RenderContext 上下文隔离（P3）** | **已完成** — `pushContext/popContext` 已实现，picker 已迁移。`docs/archive/P3_RENDER_CONTEXT_REFACTOR_DONE.md` 步骤 1~3 已完成 |
+
+### 继续有效的待处理项
+
+- `(as any)` 类型逃逸（P2）
+- `triggerExpandAnimation` / `doExpand` 约 60% 代码重复（P3）
+- `orb.ts` / `card-stack.ts` 拖动逻辑约 60% 重复（P3）— debug-panel 已删，重复在 orb 和浮卡之间
+- 全局单例 DI 改造（P3）
+- ~~无认证 API 监听 0.0.0.0（P1）~~ → **已修**（commit 8da13be 绑定 127.0.0.1），降为观察项
+- 测试覆盖范围窄，GSAP mock 语义失真（观察项）
+
+---
+
+## v6.0.0 独立代码审计
+
+> 写于 2026-06-01，基于对当前源代码的独立扫描和阅读。
+> 本次审计与之前的版本无关，完全针对当前代码库（v5.2.0）的健康状态。
+> 目标：找出老审计遗漏的和新引入的问题，重新排优先级。
+
+### 审计发现
+
+#### 🟠 中优先级
+
+**① `card-stack.ts`（1352 行）过大，应拆分**
+第三大源文件（仅次于 renderer.ts 825 行 和 line-break.ts 763 行，它们是 lib/engine 级别，逻辑自然集中）。
+`card-stack.ts` 是业务模块，38 个函数只有 9 个导出。内部隐含了两个职责：
+- 卡片堆面板的打开/关闭/聚焦（~400 行）
+- 浮卡系统的生命周期、拖拽、状态机（~900 行）
+
+建议拆为 `card-panel.ts`（面板逻辑）和 `floating-card.ts`（浮卡逻辑），与 tree-render.ts/orb.ts 平级。
+
+**② `window` 全局变量泛滥（14 处，5 个文件）— 已清理**
+```
+app.ts:         window.API, window.KFMState, window.selectedFile, window.expandedPaths, window.showToast
+state.ts:       window.KFMState                          ← 重复赋值
+style-registry: window.styleRegistry, window.DIMENSIONS, window.TEXT_STYLES
+tree-render.ts: window.__treeRenderer                    ← 调试用途
+ui.ts:          window.openSidebar, window.closeSidebar, window.executeCursorAction
+```
+已于 2026-06-01 清理：15 处赋值全部移除，`openSidebar`/`closeSidebar` 改为 import 直接调用，调试用途的全局变量直接删除。
+
+#### 🟡 低优先级 / 代码健康
+
+**③ 空 catch 块（4 处）— 已修复**
+```
+canvas-cursor.ts:67   } catch { return; }
+canvas-cursor.ts:206  } catch { /* Box 被移除则跳过 */ }
+canvas-cursor.ts:243  } catch {}
+root-picker.ts:54     } catch { return null; }
+```
+`canvas-cursor.ts` 有 7 个 try/catch 块，其中 3 个是空的或退化为静默忽略。这在生产环境中遇到错误时完全不透明。
+已于 2026-06-01 修复：全部改为 `console.warn()` 输出上下文信息，附带 `console.log` 调试残留一并清理。
+
+**④ `orb.ts` 与 `card-stack.ts` 的拖动逻辑重复**
+两者各自实现了 pointerdown/move/up 拖动循环，结构相似但互不感知。
+`orb.ts`: 20 个函数，1 个导出；`card-stack.ts` 浮卡拖拽部分约 200 行。
+提取公共拖动 mixin 可减少 30% 的重复代码，但鉴于当前两者工作正常，优先级不高。
+
+#### 🟢 观察项
+
+**⑤ 测试基础设施脆弱**
+74 个测试只覆盖纯逻辑模块（click-queue、state 机、tree-model）。无 UI、动画、手势、Canvas 渲染路径。
+GSAP mock 仅 29 行（`tests/mocks/gsap.ts`），`tl.call(cb)` 同步执行回调，完全改变了 GSAP 动画时序。任何涉及动画时序的测试在此 mock 下无意义。
+
+**⑥ 归档文档膨胀**
+`docs/archive/` 有 13 个文件，共 ~5000 行。其中 `REFACTOR_THESIS_FULL.md`（779 行）和 `ANIMATION_REFINEMENT_PLAN.md`（334 行）等已是纯历史参考。虽然归档是好的习惯，但可在极端情况下考虑清理明显无价值的文件。
+
+#### ✅ 已确认健康的项目
+
+| 审计项 | 状态 |
+|--------|------|
+| `canvas-*` 依赖方向 | ✅ 零违规 — `canvas-cursor.ts`、`canvas-scroll.ts`、`canvas-utils.ts` 均未导入 `tree-*` |
+| 构建检查管线 | ✅ `check-anim.mjs` + `check-as-any.mjs` 双保险，挂入 `npm run check` 和 `npm run build` |
+| RenderContext 上下文栈 | ✅ `pushContext/popContext` 运行正常 |
+| 手势系统统一调度 | ✅ 所有触摸事件走 `gesture-registry.ts`，无绕过管道 |
+| 文档体系 | ✅ 7 份核心文档职责分离清晰，归档纪律良好 |
+
+### 更新后的优先级总览
+
+| 优先级 | 事项 | 状态 |
+|--------|------|------|
+| **🟠 P2** | **拆分 `card-stack.ts`（1352 行）** | ⬜ |
+| **🟠 P3** | **清理 `window` 全局变量（14 处，5 文件）** | ✅ 已完成（v6.0.0） |
+| **🟡 P3** | 修复空 catch 块（4 处） | ✅ 已完成（v6.0.0） |
+| **🟡 P3** | `(as any)` 类型逃逸白名单清理（10 处，活跃 3 处） | ⬜ |
+| **🟢 Obs** | 测试基础设施（mock 失真、无 UI 覆盖） | 持续观察 |
+| **🟢 Obs** | orb / card-stack 拖动逻辑重复 | 持续观察 |
+
+---
 
 ## v4.1.0 状态更新
 

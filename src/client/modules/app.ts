@@ -1,6 +1,7 @@
 import { KFMState, API } from './state.js';
 import { DOM } from "./dom-refs.js";
 import { openCardStack, closeCardStack, isCardStackOpen } from './card-stack.js';
+import { openSidebar, closeSidebar } from './ui.js';
 /**
  * KFM v4 - 全局状态与初始化
  */
@@ -15,23 +16,12 @@ export function showToast(msg: string): void {
   setTimeout(() => { toast.classList.remove('show'); }, 2000);
 }
 
-// ========== 暴露到 window ==========
-function exposeGlobals(): void {
-  window.API = API;
-  window.KFMState = KFMState;
-  window.selectedFile = KFMState.selectedFile;
-  window.expandedPaths = KFMState.expandedPaths;
-  Object.defineProperty(window, 'showHidden', { get: () => KFMState.showHidden, configurable: true });
-  window.showToast = showToast;
-}
-
 export async function initApp(): Promise<void> {
-  exposeGlobals();
 
   // AI输入栏跟随键盘平滑移动
   const bar = DOM.aiInputBar;
-  if (bar && (window as any).visualViewport) {
-    const vv = (window as any).visualViewport;
+  if (bar && window.visualViewport) {
+    const vv = window.visualViewport;
     const onResize = () => {
       const kh = window.innerHeight - vv.height;
       bar.style.bottom = kh + 'px';
@@ -53,7 +43,7 @@ export async function initApp(): Promise<void> {
   const closeBtn = DOM.closeSidebarBtn;
   if (closeBtn) {
     closeBtn.addEventListener('click', () => {
-      window.closeSidebar?.();
+      closeSidebar();
     });
   }
 
@@ -64,9 +54,9 @@ export async function initApp(): Promise<void> {
       const sidebar = DOM.sidebar;
       if (sidebar) {
         if (sidebar.classList.contains('open')) {
-          window.closeSidebar?.();
+          closeSidebar();
         } else {
-          window.openSidebar?.();
+          openSidebar();
         }
       }
     });

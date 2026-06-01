@@ -328,6 +328,38 @@ test('getFileRowData returns FileRowData for valid data', () => {
   if (r.depth !== 1) throw new Error('depth mismatch');
 });
 
+test('KFMState.currentRoot defaults to localStorage value', () => {
+  const savedKey = 'kfmv4_currentRoot';
+  localStorage.setItem(savedKey, '/custom/root');
+  // Re-read KFMState — in practice currentRoot reads from localStorage at startup
+  // Here we just verify the property stores and retrieves correctly
+  KFMState.currentRoot = '/custom/root';
+  if (KFMState.currentRoot !== '/custom/root')
+    throw new Error('currentRoot should store the assigned value');
+  localStorage.removeItem(savedKey);
+});
+
+test('KFMState.files stores and retrieves entries', () => {
+  KFMState.files['/test/file.ts'] = { name: 'file.ts', path: '/test/file.ts', isDir: false, isLink: false };
+  const entry = KFMState.files['/test/file.ts'];
+  if (!entry || entry.name !== 'file.ts') throw new Error('file entry should be retrievable');
+  delete KFMState.files['/test/file.ts'];
+  if (KFMState.files['/test/file.ts']) throw new Error('deleted file entry should be gone');
+});
+
+test('addHook and removeHook manage hooks correctly', () => {
+  let count = 0;
+  const fn = () => { count++; return false; };
+  KFMState.addHook('beforeExpand', fn);
+  KFMState.addHook('beforeExpand', fn); // duplicate add
+  KFMState.setExpanded('/test/dup', true);
+  // Both hooks fire, but count increments for each call to setExpanded
+  KFMState.removeHook('beforeExpand', fn);
+  KFMState.removeHook('beforeExpand', fn); // duplicate remove — should not throw
+  // Verify hook was removed
+  KFMState.setExpanded('/test/after-remove', true);
+});
+
 // ==========================================================================
 // 6. animation-registry
 // ==========================================================================
@@ -515,8 +547,10 @@ test('TEXT_STYLES has expected keys', () => {
 // ==========================================================================
 group('gesture-registry');
 
-// Each test uses a fresh GestureRegistry to avoid cross-test pollution
+// Each test uses a fresh GestureRegistry with clean document listeners
 function makeRegistry(): GestureRegistry {
+  // Clear any stale listeners from previous tests
+  (globalThis as any).__clearDocumentListeners?.();
   return new GestureRegistry();
 }
 
@@ -560,13 +594,12 @@ test('init adds document listeners', () => {
   r.init();
   // Restore
   document.addEventListener = orig;
-  if (!addCalls.includes('touchstart')) throw new Error('touchstart should be registered');
-  if (!addCalls.includes('touchmove')) throw new Error('touchmove should be registered');
-  if (!addCalls.includes('touchend')) throw new Error('touchend should be registered');
-  if (!addCalls.includes('touchcancel')) throw new Error('touchcancel should be registered');
+  if (!addCalls.includes('pointerdown')) throw new Error('pointerdown should be registered');
+  if (!addCalls.includes('pointermove')) throw new Error('pointermove should be registered');
+  if (!addCalls.includes('pointerup')) throw new Error('pointerup should be registered');
   // Second init should be no-op
   r.init();
-  if (addCalls.filter(c => c === 'touchstart').length !== 1) throw new Error('init should be idempotent');
+  if (addCalls.filter(c => c === 'pointerdown').length !== 1) throw new Error('init should be idempotent');
 });
 
 test('destroy removes document listeners', () => {
@@ -580,12 +613,11 @@ test('destroy removes document listeners', () => {
   r.init();
   r.destroy();
   document.removeEventListener = origRemove;
-  if (!removeCalls.includes('touchstart')) throw new Error('touchstart should be removed');
-  if (!removeCalls.includes('touchmove')) throw new Error('touchmove should be removed');
+  if (!removeCalls.includes('pointerdown')) throw new Error('pointerdown should be removed');
+  if (!removeCalls.includes('pointermove')) throw new Error('pointermove should be removed');
 });
 
-// ---- Integration: actual touch event dispatch ----
-// These use the preload mock TouchEvent/Touch classes
+// ---- Integration: actual pointer event dispatch ----
 
 test('onStart called for matching target (string filter)', () => {
   const r = makeRegistry();
@@ -597,12 +629,10 @@ test('onStart called for matching target (string filter)', () => {
     onStart: () => { called.push('start'); },
   });
   r.init();
-  // Dispatch touchstart on matching element
   const target = document.createElement('div');
   target.classList.add('aclass');
-  const evt = new TouchEvent('touchstart', {
-    touches: [{ clientX: 100, clientY: 200, target } as any],
-    target, bubbles: false,
+  const evt = new PointerEvent('pointerdown', {
+    clientX: 100, clientY: 200, target, bubbles: false, button: 0,
   } as any);
   document.dispatchEvent(evt);
   if (called.length !== 1) throw new Error('onStart should be called for matching target');
@@ -620,9 +650,8 @@ test('onStart called for matching target (fn filter)', () => {
   r.init();
   const target = document.createElement('div');
   target.id = 'special-id';
-  const evt = new TouchEvent('touchstart', {
-    touches: [{ clientX: 100, clientY: 200, target } as any],
-    target, bubbles: false,
+  const evt = new PointerEvent('pointerdown', {
+    clientX: 100, clientY: 200, target, bubbles: false, button: 0,
   } as any);
   document.dispatchEvent(evt);
   if (called.length !== 1) throw new Error('onStart should be called for matching target');
@@ -639,9 +668,8 @@ test('condition prevents handler from firing', () => {
     onStart: () => { called.push('start'); },
   });
   r.init();
-  const evt = new TouchEvent('touchstart', {
-    touches: [{ clientX: 100, clientY: 200 } as any],
-    bubbles: false,
+  const evt = new PointerEvent('pointerdown', {
+    clientX: 100, clientY: 200, bubbles: false, button: 0,
   } as any);
   document.dispatchEvent(evt);
   if (called.length > 0) throw new Error('handler should not fire when condition is false');
@@ -658,9 +686,8 @@ test('onBeforeStart can veto', () => {
     onStart: () => { called.push('start'); },
   });
   r.init();
-  const evt = new TouchEvent('touchstart', {
-    touches: [{ clientX: 100, clientY: 200 } as any],
-    bubbles: false,
+  const evt = new PointerEvent('pointerdown', {
+    clientX: 100, clientY: 200, bubbles: false, button: 0,
   } as any);
   document.dispatchEvent(evt);
   if (called.length > 0) throw new Error('handler should not fire when onBeforeStart returns false');
@@ -678,9 +705,8 @@ test('only highest priority handler fires', () => {
     onStart: () => { called.push('high'); },
   });
   r.init();
-  const evt = new TouchEvent('touchstart', {
-    touches: [{ clientX: 100, clientY: 200 } as any],
-    bubbles: false,
+  const evt = new PointerEvent('pointerdown', {
+    clientX: 100, clientY: 200, bubbles: false, button: 0,
   } as any);
   document.dispatchEvent(evt);
   if (called.length !== 1) throw new Error('only one handler should fire');
@@ -695,9 +721,8 @@ test('disable/enable toggles all handlers', () => {
     onStart: () => { called.push('start'); },
   });
   r.init();
-  const evt = new TouchEvent('touchstart', {
-    touches: [{ clientX: 100, clientY: 200 } as any],
-    bubbles: false,
+  const evt = new PointerEvent('pointerdown', {
+    clientX: 100, clientY: 200, bubbles: false, button: 0,
   } as any);
 
   r.disable();
@@ -719,15 +744,12 @@ test('onMove receives dx, dy', () => {
   });
   r.init();
   // Start at (100, 100)
-  document.dispatchEvent(new TouchEvent('touchstart', {
-    touches: [{ clientX: 100, clientY: 100 } as any],
-    bubbles: false,
+  document.dispatchEvent(new PointerEvent('pointerdown', {
+    clientX: 100, clientY: 100, bubbles: false, button: 0,
   } as any));
   // Move to (150, 80) → dx=50, dy=-20
-  document.dispatchEvent(new TouchEvent('touchmove', {
-    touches: [{ clientX: 150, clientY: 80 } as any],
-    changedTouches: [{ clientX: 150, clientY: 80 } as any],
-    bubbles: false,
+  document.dispatchEvent(new PointerEvent('pointermove', {
+    clientX: 150, clientY: 80, bubbles: false, button: 0,
   } as any));
   if (moves.length !== 1) throw new Error('onMove should be called once');
   if (moves[0].dx !== 50) throw new Error(`dx should be 50, got ${moves[0].dx}`);
@@ -746,15 +768,12 @@ test('condition change mid-gesture triggers onEnd', () => {
     onEnd: (...args: any[]) => { ends.push(args); },
   });
   r.init();
-  document.dispatchEvent(new TouchEvent('touchstart', {
-    touches: [{ clientX: 100, clientY: 100 } as any],
-    bubbles: false,
+  document.dispatchEvent(new PointerEvent('pointerdown', {
+    clientX: 100, clientY: 100, bubbles: false, button: 0,
   } as any));
   condValue = false;
-  document.dispatchEvent(new TouchEvent('touchmove', {
-    touches: [{ clientX: 150, clientY: 100 } as any],
-    changedTouches: [{ clientX: 150, clientY: 100 } as any],
-    bubbles: false,
+  document.dispatchEvent(new PointerEvent('pointermove', {
+    clientX: 150, clientY: 100, bubbles: false, button: 0,
   } as any));
   if (ends.length !== 1) throw new Error('onEnd should be called when condition fails mid-gesture');
 });

@@ -64,7 +64,7 @@ export function moveCursorTo(hitBox: Box, animate = true): void {
   let abs: { x: number; y: number };
   try {
     abs = hitBox.getAbsolutePosition();
-  } catch { return; }
+  } catch { console.warn('[cursor] getAbsolutePosition failed, box may be detached'); return; }
   const canvas = L.renderer?.canvas ?? DOM.treeCanvas;
 
   const depth = getFileRowData(hitBox.data)?.depth ?? 0;
@@ -203,7 +203,7 @@ export function _getCenterRowIndex(): number {
         closestDist = dist;
         closestIdx = i;
       }
-    } catch { /* Box 被移除则跳过 */ }
+    } catch { console.warn('[cursor] row box detached during snapToCenterRow'); /* Box 被移除则跳过 */ }
   }
   return closestIdx;
 }
@@ -233,13 +233,12 @@ export function _scrollToCenterCursor(): void {
   try {
     const abs = L._rowIndex[idx].getAbsolutePosition();
     const targetScrollY = Math.max(0, Math.min(maxY, abs.y + L._rowIndex[idx].height / 2 - canvasH / 2));
-    console.log('[GSAP-SCROLL] targetScrollY=', targetScrollY, 'from=', root.scrollY);
     anim.to(root, {
       scrollY: targetScrollY,
       duration: 0.35,
       ease: 'power2.inOut',
       overwrite: 'auto',
     });
-  } catch {}
+  } catch { console.warn('[cursor] GSAP scrollToRow failed'); }
 }
 

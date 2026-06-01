@@ -24,11 +24,7 @@ export function closeSidebar(): void {
 }
 
 export function initUI(): void {
-  window.openSidebar = openSidebar;
-  window.closeSidebar = closeSidebar;
-
-  // 保留 executeCursorAction 作为空壳
-  window.executeCursorAction = async function() {};
+  // openSidebar / closeSidebar 已通过 import 在 app.ts 中使用
 
   // overlay 点击关侧栏
   DOM.overlay?.addEventListener('click', () => {
