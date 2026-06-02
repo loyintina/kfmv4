@@ -56,24 +56,19 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 
 ## 二、当前会话状态
 
-> **最后更新**：2026-06-02（v6.1.0 — UI Registry 全面接入：file-tree 注册 + notifyStateChange 补全 + 三层 MANIFEST 验证）
+> **最后更新**：2026-06-02（v6.1.1 — Registry 对齐修正：DOM 可点击性 + orb-panel 状态语义 + 生成器语义 + 死代码清理）
 
 ### 当前焦点
 - `(as any)` 逃逸全部清理（白名单清空 ✅）
-- `ui-registry.ts` 已创建，11 个交互元素已注册 ✅
-- **所有 11 个交互元素已使用 `registerElement()` 注册** — 便捷方法自动配对 register + stateGetter，消除了遗漏 getter 的风险 ✅
-- **运行时状态变化主动推送** — `Registry.notifyStateChange()` 已加入各模块的状态切换点（sidebar/orb/card-stack/buttons），ws-channel 自动推送 snapshot ✅
-- **内容层已填充** — 3 个 ContentBlock（file-tree 已改用 `registerContentGenerator` 实时生成 ✅, card-stack-content, orb-chat）
-- **能力层已填充** — 3 个 Capability（file-search, file-read, file-write）
-- **服务端 ai-tools.ts 已创建** — 提供 /api/ui/snapshot、/api/capabilities、/api/ui/schema 端点
-- `check-docs.mjs` 已加入构建管线
-- `check-registry.mjs` 已验证 11 个元素全部注册，并新增参数完整性校验（检查 type/label/description/effect/enabled）
-- **新增交互元素时必须**：①在 init 函数调 `Registry.registerElement()`（推荐）或 `Registry.register()` + `registerStateGetter()` ②如状态会变化，传入 getter 回调 ③在 `check-registry.mjs` 的 ELEMENT_MANIFEST 追加 id
-- **新增内容块/能力时**：同样在 `check-registry.mjs` 的 CONTENT_MANIFEST / CAPABILITY_MANIFEST 追加 id
-- **tree-render.ts 已接入 Registry** — 注册 `file-tree` 交互元素，在展开/折叠/光标移动时推送 notifyStateChange ✅
-- **notifyStateChange 全面补全** — `operation-toast`（showToast 前后）、`orb-panel`（与 orb 同步）、`file-tree`（树重建/动画完成/光标移动）✅
-- **check-registry.mjs 扩展为三层 MANIFEST 验证** — 同时检查交互层、内容层、能力层 ✅
-- **UI_ELEMENT_REGISTRY_SPEC.md 已从归档恢复**为活跃文档
+- `orb-panel` 状态语义已修复：`panelState` 独立变量（`'closed'|'open'|'editing'`），不再与 `orbState` 共享 ✅
+- 4 个元素（`file-tree`、`orb-panel`、`card-stack`、`orb`）运行时带 `data-registry-id`，AI `click` 指令可定位 ✅
+- `registerContent()` 不再静默删除同 id 的生成器：生成器优先，静态内容作为 fallback ✅
+- `snapshot()` 不再有副作用（移除了运行时 `warn`） ✅
+- `window` 上 5 个死 `any` 声明已清除（`styleRegistry`、`DIMENSIONS`、`COLORS`、`TEXT_STYLES`、`__treeRenderer`）✅
+- `ws-channel.ts` 中 `window.KFMState` 改为直接引用 import 的 `KFMState`（`window.KFMState` 从未被赋值，原代码静默走 `'/'` fallback） ✅
+- 服务端路由注册已修复：消除 `app.use() && app` 表达式 bug（路由被注册到根级别无前缀） ✅
+- Box 类 31 个单元测试已添加（覆盖构造、树操作、几何、事件、状态、序列化、动画、滚动） ✅
+- `ui-registry.ts` 不再 import `debug-assert.js` ✅
 
 ### 已知陷阱
 1. **CSS 布局方程**：`.sidebar-content` + `.sidebar-tools` = 100dvh，禁止改用 flex
@@ -92,6 +87,8 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 ---
 
 ## 三、当前待办
+12. **Canvas 元素的 AI click 无坐标**：`file-tree` Canvas 通过 `data-registry-id` 可被 AI `click` 指令定位并触发 `click()`，但合成的 PointerEvent 坐标为 (0,0)，不一定命中预期的行<a id='trap-12'></a>
+13. **`registerContent()` 与生成器关系**：同一 id 下生成器优先，`registerContent()` 不会覆盖已注册的生成器。如需强制更新静态内容，先调 `registerContentGenerator(id, null)` 注销生成器<a id='trap-13'></a>
 
 ### 活跃待办
 
@@ -152,7 +149,7 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 ### 自动化测试
 
 ```bash
-npm test   # 74 个测试，覆盖 10 个模块
+npm test   # 105 个测试，覆盖 11 个模块（含 Box 引擎）
 ```
 
 ### 手动回归清单
@@ -207,4 +204,13 @@ npm test   # 74 个测试，覆盖 10 个模块
 - Canvas 滚动/点击走元素级监听，不走 GestureRegistry
 - overlay 元数据用 `(as Box & OverlayMeta)` 类型访问
 - 向 `ts` 加 tween 的函数，必须在 `ts.call` 回调里 `ts.clear()`
-- 动画中 `_stateSub` 不会触发 `rebuildTree`（`L.isAnimating` 守卫）
+
+### 交接（2026-06-02 本轮完成）
+
+**已完成的 5 项 Registry 对齐修正**详见 git log（`462fe49`）。关键结论留给下一位：
+
+- `generic click` 指令现在能定位 4 个动态/Canvas 元素（`file-tree`、`orb`、`orb-panel`、`card-stack`），但 `file-tree` 是 Canvas，合成 `click()` 坐标(0,0)不一定命中预期行。如需要精确定位，加坐标参数进 `click` 指令协议
+- `orb` 和 `orb-panel` 现在各自有独立状态变量（`orbState` / `panelState`），snapshot 语义正确
+- `registerContent()` 不会覆盖生成器——需要手动 `registerContentGenerator(id, null)` 先注销
+- `snapshot()` 现在零副作用（无 warn/assert 调用）
+- 待办仍维持：card-stack 拆分（P2）、动画锁 3000ms 超时根因（P3）、拖拽逻辑去重
