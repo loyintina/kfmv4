@@ -23,7 +23,8 @@
 // ========== 导入 ==========
 
 import { warn } from './debug-assert.js';
-import { KFMState } from './state.js';
+
+
 
 // ========== 类型定义 ==========
 
@@ -298,9 +299,4 @@ export class UIElementRegistry {
 /** 全局单例 */
 export const Registry = new UIElementRegistry();
 
-// 自动订阅 KFMState 变化：通过 KFMState 的状态变更会触发 Registry 通知，
-// 自动推送 snapshot 到服务端（ws-channel）。
-// 当前覆盖：KFMState.toggleHidden() → 'eye-btn'、KFMState.setExpanded() → 'file-tree'。
-// 不覆盖 GSAP 动画回调中的状态切换和直接 DOM classList 操作——这些路径仍需手动通知。
-// 即使覆盖有限，此订阅作为安全网可以确保任何未来新增的 KFMState 驱动变更自动可见。
-KFMState.subscribe(() => Registry.notifyStateChange());
+

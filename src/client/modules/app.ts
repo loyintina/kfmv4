@@ -126,11 +126,11 @@ export async function initApp(): Promise<void> {
     type: 'button',
     label: '关闭侧栏',
     description: '关闭左侧文件树侧栏',
-    state: 'enabled',
+    state: 'visible',
     enabled: true,
     effect: '点击关闭侧栏',
     source: 'app.ts',
-  }, () => DOM.sidebar?.classList.contains('open') ? 'enabled' : 'hidden');
+  }, () => DOM.sidebar?.classList.contains('open') ? 'visible' : 'hidden');
   Registry.registerElement({
     id: 'eye-btn',
     type: 'button',

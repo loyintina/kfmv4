@@ -1,10 +1,11 @@
+
 /**
  * KFM v4 — WebSocket 客户端通道
  *
  * 浏览器端 ↔ 服务端双向实时通信通道。
  * 职责：
  *   1. 连接服务端 WebSocket
- *   2. 自动推送 Registry snapshot 到服务端
+ *   2. 自动推送 Registry snapshot 到服务端（通过 Registry.onChange + KFMState.subscribe）
  *   3. 自动推送能力列表到服务端
  *   4. 接收并派发服务端指令（AI → UI 操作）
  *   5. 断线自动重连（指数退避）
@@ -17,6 +18,7 @@
  */
 
 import { Registry } from './ui-registry.js';
+import { KFMState } from './state.js';
 
 // ========== 配置 ==========
 
@@ -222,7 +224,7 @@ export function initWsChannel(): void {
   // 连接服务端
   wsChannel.connect();
 
-  // 通过 Registry.onChange 监听变化，自动推送 snapshot
+  // 通过 Registry.onChange 监听 Registry 内容变化（注册/注销/能力变更），自动推送
   Registry.onChange((changeType) => {
     if (changeType === 'capability') {
       wsChannel.pushCapabilities();
@@ -230,9 +232,11 @@ export function initWsChannel(): void {
     wsChannel.pushSnapshot();
   });
 
-  // 注册默认指令处理器（各模块可以覆盖或补充）
-  registerDefaultCommandHandlers();
+  // 通过 KFMState.subscribe 监听状态层变化（展开折叠/隐藏文件开关等），自动推送 snapshot
+  // 此订阅放在通信层（ws-channel）而非 Registry 自身，保持 Registry 的被动索引性质
+  KFMState.subscribe(() => wsChannel.pushSnapshot());
 
+  // 注册默认指令处理器（各模块可以覆盖或补充）
   console.log('[ws-channel] 初始化完成');
 }
 

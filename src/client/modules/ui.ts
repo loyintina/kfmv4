@@ -9,12 +9,14 @@ let sidebarContent: HTMLElement | null = null;
 
 import { onSidebarOpen, onSidebarClose } from './tree-render.js';
 import { Registry } from './ui-registry.js';
+import { KFMState } from './state.js';
 import { wsChannel } from './ws-channel.js';
 
 export function openSidebar(): void {
   DOM.sidebar?.classList.add('open');
   DOM.overlay?.classList.add('show');
   onSidebarOpen();
+  KFMState.setSidebarOpen(true);
   Registry.notifyStateChange('sidebar');
 }
 
@@ -24,8 +26,11 @@ export function closeSidebar(): void {
   DOM.sidebar?.classList.remove('open');
   DOM.overlay?.classList.remove('show');
   onSidebarClose();
+  KFMState.setSidebarOpen(false);
   Registry.notifyStateChange('sidebar');
 }
+
+
 
 export function initUI(): void {
   // openSidebar / closeSidebar 已通过 import 在 app.ts 中使用

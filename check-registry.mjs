@@ -46,6 +46,18 @@ const CAPABILITY_MANIFEST = [
   'file-write',           // main.ts / capability-executor.ts
 ];
 
+// ========== data-registry-id 覆盖验证 ==========
+// 在 index.html 中有 data-registry-id 属性，AI click 指令可以直接点击。
+// 不在列表中 = 必须有 data-registry-id（否则 AI 无法定位）。
+// Canvas 渲染、动态 DOM、或纯视觉反馈的元素在此声明豁免，并注明理由。
+const NO_DOM_TARGET = new Set([
+  'orb-panel',       // 动态 DOM（展开后创建），通过 expand-orb 命令操作
+  'sidebar',         // 容器 DOM（#sidebar）无 data-registry-id，通过 open/close-sidebar 命令
+  'card-stack',      // 动态 DOM（GSAP 创建），通过 open/close-card-stack 命令
+  'file-tree',       // Canvas 渲染，无 DOM 可点击
+  'operation-toast', // 纯视觉反馈 toast，非交互元素，AI 不可点击
+]);
+
 // 匹配 Registry.register({...}) 或 Registry.registerElement({...}, getter)
 // 兼容多行参数和多行 getter 回调
 const REGISTER_CALL_RE = /Registry\.register(?:Element)?\s*\(\s*\{[\s\S]*?id:\s*'([^']+)'/g;
@@ -115,6 +127,44 @@ function checkRegisterCompleteness() {
   return results;
 }
 
+/**
+ * 检查 data-registry-id 覆盖：MANIFEST 中每个需要 DOM 定位的元素
+ * 必须在 public/index.html 中有 data-registry-id 属性，反之亦然。
+ */
+function checkDataRegistryId() {
+  const htmlPath = 'public/index.html';
+  let html;
+  try {
+    html = readFileSync(htmlPath, 'utf-8');
+  } catch {
+    reportError(`无法读取 ${htmlPath}，跳过 data-registry-id 验证`);
+    return;
+  }
+
+  const DATA_RE = /data-registry-id="([^"]+)"/g;
+  const domIds = new Set();
+  let m;
+  while ((m = DATA_RE.exec(html)) !== null) {
+    domIds.add(m[1]);
+  }
+
+  // 检查 1：MANIFEST 中需要 DOM 定位但没有 data-registry-id 的元素
+  for (const id of ELEMENT_MANIFEST) {
+    if (!NO_DOM_TARGET.has(id) && !domIds.has(id)) {
+      reportError(`${id} 在 ELEMENT_MANIFEST 中但未在 public/index.html 中找到 data-registry-id 属性。`
+        + ` 如果在 DOM 中无对应元素，请将其 id 加入 NO_DOM_TARGET 并注明理由。`);
+    }
+  }
+
+  // 检查 2：HTML 中有 data-registry-id 但不在 ELEMENT_MANIFEST 中的元素（孤儿）
+  for (const id of domIds) {
+    if (!ELEMENT_MANIFEST.includes(id)) {
+      reportError(`${id} 在 public/index.html 中有 data-registry-id 属性但未在 ELEMENT_MANIFEST 中注册。`
+        + ` 如果这是新增元素，请先在 MANIFEST 中注册。如果这是多余的属性，请从 HTML 中移除。`);
+    }
+  }
+}
+
 function check() {
   const registeredElements = new Set();
   const registeredContents = new Set();
@@ -176,6 +226,8 @@ function check() {
     reportError(`${id}（${file}）缺少必需字段: ${missing.join(', ')}`);
   }
 
+  // ===== data-registry-id 覆盖验证 =====
+  checkDataRegistryId();
   // ===== 汇总 =====
   if (hasError) {
     console.error(`\n[check-registry] 缺失项见上，构建中断。`);
