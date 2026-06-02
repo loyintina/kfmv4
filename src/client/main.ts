@@ -36,6 +36,8 @@ import { initTreeRenderer } from './modules/tree-render.js';
 import { loadFileTree, initLazyLoader } from './modules/tree-loader.js';
 import { initCardStack } from './modules/card-stack.js';
 import { gestures } from './modules/gesture-registry.js';
+import { Registry } from './modules/ui-registry.js';
+import { initWsChannel } from './modules/ws-channel.js';
 
 // 全局未捕获错误 → 调试卡
 import { log } from './modules/logger.js';
@@ -49,6 +51,37 @@ initGestures();
 initOrb();
 initTreeRenderer();
 initCardStack();
+
+// ========== 注册能力层 ==========
+Registry.registerCapability({
+  id: 'file-search',
+  name: '文件搜索',
+  description: '在当前目录下搜索文件名匹配的文件',
+  parameters: [{ name: 'pattern', type: 'string' }],
+  entry: 'server.files.list',
+});
+Registry.registerCapability({
+  id: 'file-read',
+  name: '读取文件',
+  description: '读取指定路径的文件内容',
+  parameters: [{ name: 'path', type: 'string' }],
+  entry: 'server.files.read',
+});
+Registry.registerCapability({
+  id: 'file-write',
+  name: '写入文件',
+  description: '写入内容到指定路径的文件（可追加）',
+  parameters: [
+    { name: 'path', type: 'string' },
+    { name: 'content', type: 'string' },
+    { name: 'append', type: 'boolean' },
+  ],
+  entry: 'server.files.write',
+});
+
+// ========== 初始化 WebSocket 通道 ==========
+// 在所有 Registry 注册完成后初始化，建立服务端↔浏览器端双向通信
+initWsChannel();
 
 // 加载根目录（使用持久化的 currentRoot），然后启用懒加载
 loadFileTree(KFMState.currentRoot).then(() => {

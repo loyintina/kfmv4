@@ -14,7 +14,11 @@ export function showToast(msg: string): void {
   if (!toast) return;
   toast.textContent = msg;
   toast.classList.add('show');
-  setTimeout(() => { toast.classList.remove('show'); }, 2000);
+  Registry.notifyStateChange('operation-toast');
+  setTimeout(() => {
+    toast.classList.remove('show');
+    Registry.notifyStateChange('operation-toast');
+  }, 2000);
 }
 
 export async function initApp(): Promise<void> {
@@ -37,6 +41,7 @@ export async function initApp(): Promise<void> {
     eyeBtn.addEventListener('click', () => {
       KFMState.toggleHidden();
       eyeBtn.classList.toggle('active');
+      Registry.notifyStateChange('eye-btn');
     });
   }
 
@@ -45,6 +50,8 @@ export async function initApp(): Promise<void> {
   if (closeBtn) {
     closeBtn.addEventListener('click', () => {
       closeSidebar();
+      Registry.notifyStateChange('close-sidebar-btn');
+      Registry.notifyStateChange('sidebar');
     });
   }
 
@@ -60,6 +67,8 @@ export async function initApp(): Promise<void> {
           openSidebar();
         }
       }
+      Registry.notifyStateChange('sidebar-toggle-btn');
+      Registry.notifyStateChange('sidebar');
     });
   }
 
@@ -74,6 +83,8 @@ export async function initApp(): Promise<void> {
         openCardStack();
         cardBtn.classList.add('active');
       }
+      Registry.notifyStateChange('card-stack-toggle-btn');
+      Registry.notifyStateChange('card-stack');
     });
   }
 
@@ -99,6 +110,9 @@ export async function initApp(): Promise<void> {
     effect: '点击切换侧栏打开/关闭状态',
     source: 'app.ts',
   });
+  Registry.registerStateGetter('sidebar-toggle-btn', () =>
+    DOM.sidebar?.classList.contains('open') ? 'open' : 'closed'
+  );
   Registry.register({
     id: 'card-stack-toggle-btn',
     type: 'button',
@@ -109,6 +123,9 @@ export async function initApp(): Promise<void> {
     effect: '点击切换卡片堆打开/关闭状态',
     source: 'app.ts',
   });
+  Registry.registerStateGetter('card-stack-toggle-btn', () =>
+    isCardStackOpen() ? 'open' : 'closed'
+  );
   Registry.register({
     id: 'close-sidebar-btn',
     type: 'button',
@@ -119,6 +136,9 @@ export async function initApp(): Promise<void> {
     effect: '点击关闭侧栏',
     source: 'app.ts',
   });
+  Registry.registerStateGetter('close-sidebar-btn', () =>
+    DOM.sidebar?.classList.contains('open') ? 'enabled' : 'hidden'
+  );
   Registry.register({
     id: 'eye-btn',
     type: 'button',
@@ -129,6 +149,9 @@ export async function initApp(): Promise<void> {
     effect: '点击切换隐藏文件的显示状态',
     source: 'app.ts',
   });
+  Registry.registerStateGetter('eye-btn', () =>
+    KFMState.showHidden ? 'active' : 'inactive'
+  );
   Registry.register({
     id: 'input-bar',
     type: 'text-input',
@@ -139,6 +162,9 @@ export async function initApp(): Promise<void> {
     effect: '输入文字后点击发送或按 Enter 发送给 AI',
     source: 'app.ts',
   });
+  Registry.registerStateGetter('input-bar', () =>
+    DOM.aiInputBar?.style.display === 'none' ? 'hidden' : 'visible'
+  );
   Registry.register({
     id: 'operation-toast',
     type: 'icon',
@@ -149,4 +175,7 @@ export async function initApp(): Promise<void> {
     effect: '操作完成后自动显示 2 秒后消失',
     source: 'app.ts',
   });
+  Registry.registerStateGetter('operation-toast', () =>
+    DOM.operationToast?.classList.contains('show') ? 'visible' : 'hidden'
+  );
 }

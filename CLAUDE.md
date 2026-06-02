@@ -6,6 +6,7 @@ AI 人机交互个人工作台，面向移动端浏览器。核心理念：**一
 > **改代码前先读** `docs/KFM_V4_INVARIANTS.md`（修改约束协议）。
 > **日常干活翻** `docs/HANDBOOK.md`（架构+调试+待办+测试）。
 > **规划设计时参考** `docs/VISION_AND_ROADMAP.md`（远景）。
+> **做 UI Registry 相关改动的先读** `docs/UI_ELEMENT_REGISTRY_SPEC.md`（注册表设计讨论）。
 
 ---
 
@@ -35,6 +36,7 @@ docs/
 ├── HANDBOOK.md              # 工作手册：架构-调试-待办-测试（日常翻）
 ├── VISION_AND_ROADMAP.md    # 远景文档：核心理念+演进路线（规划设计时参考）
 ├── KFM_V4_INVARIANTS.md     # 修改约束协议：心法原则+自查清单（改代码前必读）
+├── UI_ELEMENT_REGISTRY_SPEC.md # UI Element Registry：设计讨论+产出定义+开放问题
 └── archive/                 # 历史归档（按类别分目录）
     ├── handoff/             # 版本交接记录
     ├── design/              # 过时的设计文档

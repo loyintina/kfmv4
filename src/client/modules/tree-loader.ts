@@ -9,6 +9,7 @@
 
 import { KFMState, API, type FileNode } from './state.js';
 import { markAnimatingPath, isAnimLocked, triggerExpandAnimation } from './tree-render.js';
+import { Registry } from './ui-registry.js';
 
 /** 休眠指定毫秒 */
 function sleep(ms: number): Promise<void> {
@@ -148,6 +149,12 @@ export async function loadFileTree(rootPath: string): Promise<void> {
   // 清理 animatingPath，防止后续操作读到脏值
   markAnimatingPath(null);
 
+  // 注册内容层：文件树摘要（使用生成器，每次 snapshot 返回实时状态）
+  Registry.registerContentGenerator('file-tree', () => ({
+    id: 'file-tree',
+    type: 'file-tree' as const,
+    summary: `根目录: ${KFMState.currentRoot}`,
+  }));
 }
 
 

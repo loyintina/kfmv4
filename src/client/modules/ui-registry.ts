@@ -8,6 +8,8 @@
  *
  * 使用方式：
  *   在模块的 init*() 函数末尾调用 Registry.register({...})。
+ *   如果元素的状态会变化，同时调用 Registry.registerStateGetter(id, getter)。
+ *   如果内容块需要动态生成，调用 Registry.registerContentGenerator(id, generator)。
  *   AI 通过 Registry.snapshot() 获取当前页面描述。
  *   npm run check 通过 MANIFEST 验证确保无遗漏。
  */
@@ -31,7 +33,9 @@ export type UIElementState =
   | 'editing'
   | 'focused'
   | 'open'
+  | 'opening'
   | 'closed'
+  | 'closing'
   | 'visible'
   | 'hidden'
   | 'enabled';
@@ -76,12 +80,27 @@ export interface PageDescription {
   timestamp: number;
 }
 
+// ========== 工具类型 ==========
+
+type StateGetter = () => UIElementState;
+type ContentGenerator = () => ContentBlock;
+
+/**
+ * 变更回调类型。
+ * 当 Registry 内容发生变化时调用，供外部（如 ws-channel）监听变化。
+ */
+export type RegistryChangeHandler = (changeType: 'register' | 'state-getter' | 'content' | 'content-generator' | 'capability' | 'unregister' | 'state-change', id: string) => void;
+
 // ========== Registry 类 ==========
 
 export class UIElementRegistry {
   private _elements = new Map<string, InteractiveElement>();
+  private _stateGetters = new Map<string, StateGetter>();
   private _content = new Map<string, ContentBlock>();
+  /** 内容生成器 —— 如果注册了 generator，snapshot 时优先调用它生成实时内容 */
+  private _contentGenerators = new Map<string, ContentGenerator>();
   private _capabilities = new Map<string, Capability>();
+  private _changeHandlers = new Set<RegistryChangeHandler>();
 
   /** 注册一个交互元素（由各模块在初始化时调用一次） */
   register(el: InteractiveElement): void {
@@ -89,19 +108,48 @@ export class UIElementRegistry {
       console.warn(`[ui-registry] 重复注册 UI 元素: ${el.id}，覆盖旧值`);
     }
     this._elements.set(el.id, el);
+    this._notifyChange('register', el.id);
   }
 
   /** 注销（元素不再存在时） */
   unregister(id: string): void {
     this._elements.delete(id);
+    this._stateGetters.delete(id);
+    this._notifyChange('unregister', id);
   }
 
-  /** 注册内容块 */
+  /**
+   * 注册一个状态 getter，使 snapshot() 能返回该元素的实时状态。
+   * 可选——如果不注册，snapshot() 返回 register() 时传入的静态 state 值。
+   */
+  registerStateGetter(id: string, getter: StateGetter): void {
+    this._stateGetters.set(id, getter);
+    this._notifyChange('state-getter', id);
+  }
+
+  /** 注册内容块（静态） */
   registerContent(block: ContentBlock): void {
     if (this._content.has(block.id)) {
       console.warn(`[ui-registry] 重复注册内容块: ${block.id}，覆盖旧值`);
     }
     this._content.set(block.id, block);
+    // 如果已有同 id 的 generator，移除（静态覆盖动态）
+    this._contentGenerators.delete(block.id);
+    this._notifyChange('content', block.id);
+  }
+
+  /**
+   * 注册内容生成器（v1.1 扩展）。
+   *
+   * 与 registerContent 的区别：
+   * - registerContent 是一次性注册静态 summary，snapshot 始终返回注册时的值
+   * - registerContentGenerator 注册一个回调函数，snapshot 时调用它获取实时内容
+   *
+   * 如果同一 id 同时有静态内容和生成器，生成器优先。
+   */
+  registerContentGenerator(id: string, generator: ContentGenerator): void {
+    this._contentGenerators.set(id, generator);
+    this._notifyChange('content-generator', id);
   }
 
   /** 注册扩展能力 */
@@ -110,26 +158,74 @@ export class UIElementRegistry {
       console.warn(`[ui-registry] 重复注册能力: ${cap.id}，覆盖旧值`);
     }
     this._capabilities.set(cap.id, cap);
+    this._notifyChange('capability', cap.id);
+  }
+
+  /**
+   * 注册变更回调。
+   * 当 Registry 内容（元素/内容/能力）发生变化时，调用 handler。
+   * 返回一个取消注册函数。
+   */
+  onChange(handler: RegistryChangeHandler): () => void {
+    this._changeHandlers.add(handler);
+    return () => {
+      this._changeHandlers.delete(handler);
+    };
   }
 
   /** 获取当前页面的完整描述（AI 主入口） */
   snapshot(): PageDescription {
+    const elements = Array.from(this._elements.values()).map(el => {
+      const getter = this._stateGetters.get(el.id);
+      if (getter) {
+        return { ...el, state: getter() };
+      }
+      return el;
+    });
+
+    // 内容层：优先使用生成器（实时），fallback 到静态内容
+    const content = Array.from(this._content.entries()).map(([id, block]) => {
+      const generator = this._contentGenerators.get(id);
+      if (generator) {
+        return generator();
+      }
+      return block;
+    });
+
+    // 追加只注册了生成器但没有静态内容的内容块
+    for (const [id, generator] of this._contentGenerators) {
+      if (!this._content.has(id)) {
+        content.push(generator());
+      }
+    }
+
     return {
-      elements: Array.from(this._elements.values()),
-      content: Array.from(this._content.values()),
+      elements,
+      content,
       capabilities: Array.from(this._capabilities.values()),
       timestamp: Date.now(),
     };
   }
 
-  /** 按 id 查询交互元素 */
+  /** 按 id 查询交互元素（返回实时状态） */
   get(id: string): InteractiveElement | undefined {
-    return this._elements.get(id);
+    const el = this._elements.get(id);
+    if (!el) return undefined;
+    const getter = this._stateGetters.get(id);
+    if (getter) {
+      return { ...el, state: getter() };
+    }
+    return el;
   }
 
   /** 返回所有已注册的交互元素 id */
   getRegisteredIds(): string[] {
     return Array.from(this._elements.keys());
+  }
+
+  /** 返回所有已注册的能力列表 */
+  getCapabilities(): Capability[] {
+    return Array.from(this._capabilities.values());
   }
 
   /**
@@ -139,6 +235,29 @@ export class UIElementRegistry {
   validate(manifest: string[]): string[] {
     const registered = new Set(this._elements.keys());
     return manifest.filter(id => !registered.has(id));
+  }
+
+  /**
+   * 通知 Registry 某个元素的状态在运行时发生了变化。
+   *
+   * 各模块在关键状态变化处调用此方法（如侧栏打开/关闭、光球展开/折叠），
+   * 触发 onChange 回调，从而让 ws-channel 等监听方自动推送最新 snapshot。
+   *
+   * @param id 可选。发生状态变化的元素 id，为空时表示通用状态变化。
+   */
+  notifyStateChange(id?: string): void {
+    this._notifyChange('state-change', id ?? '');
+  }
+
+  /** 通知所有变更回调 */
+  private _notifyChange(changeType: 'register' | 'state-getter' | 'content' | 'content-generator' | 'capability' | 'unregister' | 'state-change', id: string): void {
+    for (const handler of this._changeHandlers) {
+      try {
+        handler(changeType, id);
+      } catch (e) {
+        console.error('[ui-registry] 变更回调执行失败:', e);
+      }
+    }
   }
 }
 

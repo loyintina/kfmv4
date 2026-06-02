@@ -14,6 +14,7 @@ export function openSidebar(): void {
   DOM.sidebar?.classList.add('open');
   DOM.overlay?.classList.add('show');
   onSidebarOpen();
+  Registry.notifyStateChange('sidebar');
 }
 
 import { DOM } from "./dom-refs.js";
@@ -22,6 +23,7 @@ export function closeSidebar(): void {
   DOM.sidebar?.classList.remove('open');
   DOM.overlay?.classList.remove('show');
   onSidebarClose();
+  Registry.notifyStateChange('sidebar');
 }
 
 export function initUI(): void {
@@ -43,4 +45,7 @@ export function initUI(): void {
     effect: '打开后显示文件树，点击目录展开/折叠，左滑或点击遮罩关闭',
     source: 'ui.ts',
   });
+  Registry.registerStateGetter('sidebar', () =>
+    DOM.sidebar?.classList.contains('open') ? 'open' : 'closed'
+  );
 }

@@ -56,13 +56,24 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 
 ## 二、当前会话状态
 
-> **最后更新**：2026-06-02（v6.0.0 — UI Element Registry 已实现）
+> **最后更新**：2026-06-02（v6.1.0 — UI Registry 全面接入：file-tree 注册 + notifyStateChange 补全 + 三层 MANIFEST 验证）
 
 ### 当前焦点
 - `(as any)` 逃逸全部清理（白名单清空 ✅）
-- `ui-registry.ts` 已创建，10 个交互元素已注册
+- `ui-registry.ts` 已创建，10 个交互元素已注册 ✅
+- **所有 10 个元素均已有 `registerStateGetter`** — `close-sidebar-btn` 和 `input-bar` 已补全 ✅
+- **运行时状态变化主动推送** — `Registry.notifyStateChange()` 已加入各模块的状态切换点（sidebar/orb/card-stack/buttons），ws-channel 自动推送 snapshot ✅
+- **内容层已填充** — 3 个 ContentBlock（file-tree 已改用 `registerContentGenerator` 实时生成 ✅, card-stack-content, orb-chat）
+- **能力层已填充** — 3 个 Capability（file-search, file-read, file-write）
+- **服务端 ai-tools.ts 已创建** — 提供 /api/ui/snapshot、/api/capabilities、/api/ui/schema 端点
 - `check-docs.mjs` 已加入构建管线
-- **新增交互元素时必须**：①在 init 函数调 `Registry.register()` ②在 `check-registry.mjs` 的 MANIFEST 追加 id
+- `check-registry.mjs` 已验证 10 个元素全部注册
+- **新增交互元素时必须**：①在 init 函数调 `Registry.register()` ②如状态会变化，调 `registerStateGetter()` ③在 `check-registry.mjs` 的 ELEMENT_MANIFEST 追加 id
+- **新增内容块/能力时**：同样在 `check-registry.mjs` 的 CONTENT_MANIFEST / CAPABILITY_MANIFEST 追加 id
+- **tree-render.ts 已接入 Registry** — 注册 `file-tree` 交互元素，在展开/折叠/光标移动时推送 notifyStateChange ✅
+- **notifyStateChange 全面补全** — `operation-toast`（showToast 前后）、`orb-panel`（与 orb 同步）、`file-tree`（树重建/动画完成/光标移动）✅
+- **check-registry.mjs 扩展为三层 MANIFEST 验证** — 同时检查交互层、内容层、能力层 ✅
+- **UI_ELEMENT_REGISTRY_SPEC.md 已从归档恢复**为活跃文档
 
 ### 已知陷阱
 1. **CSS 布局方程**：`.sidebar-content` + `.sidebar-tools` = 100dvh，禁止改用 flex
@@ -70,11 +81,13 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 3. **`setExpanded` 多次 notify**：连续调用会触发多次 notify，动画守卫丢弃中间状态
 4. **拖拽 VS 重构搬运**（心法 9）：搬运代码必须 `git show` 原样复制后改，禁止重写
 5. **Registry MANIFEST**：新增交互元素必须同时注册 + 加入 MANIFEST
-6. **Canvas 初始化 `clientWidth=0`**：需在 rAF 回调里 `rebuildTree()`
-7. **事件冒泡**：侧栏触摸区事件冒泡到 document → GestureRegistry 误触发
-8. **动画锁超时**：`processClickQueue` 有 3000ms 超时释放，说明动画管理有设计缺陷
-9. **esbuild `nullish-coalescing` 禁用**：但源码大量使用 `??`，TS 6 编译时需确保正确降级
-10. **测试 mock 脆弱**：GSAP mock 中 `tl.call(cb)` 同步执行回调，改变了动画时序
+5b. **Registry state getter**：如果元素的 state 会在运行时变化（几乎所有交互元素都如此），注册后必须同时调 `registerStateGetter()`，否则 `snapshot()` 返回的是过时的静态 state
+6. **`notifyStateChange` 覆盖范围**：`Registry.notifyStateChange()` 只通知"状态发生了变化"，不传递状态值本身。snapshot 仍通过 `registerStateGetter` 读取实时状态。新增模块的状态变化如果漏调 `notifyStateChange()`，AI 看到的 snapshot 会滞后。
+7. **Canvas 初始化 `clientWidth=0`**：需在 rAF 回调里 `rebuildTree()`
+8. **事件冒泡**：侧栏触摸区事件冒泡到 document → GestureRegistry 误触发
+9. **动画锁超时**：`processClickQueue` 有 3000ms 超时释放，说明动画管理有设计缺陷
+10. **esbuild `nullish-coalescing` 禁用**：但源码大量使用 `??`，TS 6 编译时需确保正确降级
+11. **测试 mock 脆弱**：GSAP mock 中 `tl.call(cb)` 同步执行回调，改变了动画时序
 
 ---
 

@@ -6,7 +6,7 @@ archived_at: 2026-06-02
 # KFM v4 文档归档
 
 > 历史文档按类别归档，每份文件都有 status 标记。
-> 当前活跃文档仅 4 篇：`CLAUDE.md` + `HANDBOOK.md` + `VISION_AND_ROADMAP.md` + `KFM_V4_INVARIANTS.md`。
+> 当前活跃文档 5 篇：`CLAUDE.md` + `HANDBOOK.md` + `VISION_AND_ROADMAP.md` + `KFM_V4_INVARIANTS.md` + `UI_ELEMENT_REGISTRY_SPEC.md`。
 
 **状态说明**：
 - `completed`：任务已完成，留作记录
@@ -38,7 +38,7 @@ archived_at: 2026-06-02
 | `STACK_CARDS_DESIGN.md` | 📜 superseded | 配色设计（代码已改为随机 HSL）|
 | `CARD-STACK-HANDOFF.md` | 📜 superseded | 卡片堆交接（已完成）|
 | `CARD_SYSTEM_DESIGN.md` | 📜 superseded | 卡片系统设计蓝图（待实现）|
-| `UI_ELEMENT_REGISTRY_SPEC.md` | 📜 superseded | 注册表设计讨论（§S 已实现）|
+| `UI_ELEMENT_REGISTRY_SPEC.md` | 🔄 relocated | 误归档，已恢复 → `docs/UI_ELEMENT_REGISTRY_SPEC.md` |
 | `AI_OPERATION_PROTOCOL.md` | 📜 superseded | AI 操作协议（未实现）|
 
 ## 📂 plan/ — 已完成的计划

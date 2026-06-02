@@ -1065,6 +1065,7 @@ export function openCardStack(): void {
     _generateRandomAccents();
     _updateCardStyles();
     _state = 'opening';
+    Registry.notifyStateChange('card-stack');
     _tl.reverse();
     return;
   }
@@ -1073,6 +1074,7 @@ export function openCardStack(): void {
   _updateCardStyles();
 
   _state = 'opening';
+  Registry.notifyStateChange('card-stack');
   randomizeCards();
 
   for (let i = 0; i < _cardEls.length; i++) {
@@ -1083,12 +1085,13 @@ export function openCardStack(): void {
   _tl = anim.timeline({
     onComplete: () => {
       _state = 'open'; _tl = null;
+      Registry.notifyStateChange('card-stack');
       for (let i = 0; i < _cardEls.length; i++) {
         const el = _cardEls[i];
         el.style.boxShadow = (i === _focusIndex) ? theme.stack.focusShadow : theme.stack.blurShadow;
       }
     },
-    onReverseComplete: () => { _state = 'closed'; _tl = null; }
+    onReverseComplete: () => { _state = 'closed'; _tl = null; Registry.notifyStateChange('card-stack'); }
   });
 
   for (let i = 0; i < _cardEls.length; i++) {
@@ -1105,18 +1108,20 @@ export function openCardStack(): void {
 
 export function closeCardStack(): void {
   if (_state === 'closed' || _state === 'closing') return;
-  // 关闭卡片堆时��销毁已召唤的浮卡
+  // 关闭卡片堆时销毁已召唤的浮卡
 
   if (_state === 'opening' && _tl) {
     _state = 'closing';
+    Registry.notifyStateChange('card-stack');
     _tl.reverse();
     return;
   }
 
   _state = 'closing';
+  Registry.notifyStateChange('card-stack');
   _tl = anim.timeline({
-    onComplete: () => { _state = 'closed'; _tl = null; },
-    onReverseComplete: () => { _state = 'open'; _tl = null; updateFocus(); }
+    onComplete: () => { _state = 'closed'; _tl = null; Registry.notifyStateChange('card-stack'); },
+    onReverseComplete: () => { _state = 'open'; _tl = null; updateFocus(); Registry.notifyStateChange('card-stack'); }
   });
 
   for (const el of _cardEls) {
@@ -1361,5 +1366,13 @@ export function initCardStack(): void {
     enabled: true,
     effect: '打开后显示卡片堆，垂直滑动切换焦点卡片，水平滑动关闭',
     source: 'card-stack.ts',
+  });
+  Registry.registerStateGetter('card-stack', () => _state);
+
+  // 注册内容层：卡片堆当前焦点摘要
+  Registry.registerContent({
+    id: 'card-stack-content',
+    type: 'card-content',
+    summary: `当前焦点卡片: ${CARDS[_focusIndex]?.name || CARDS[_focusIndex]?.id || '无'}`,
   });
 }

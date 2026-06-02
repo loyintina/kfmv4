@@ -231,6 +231,8 @@ function expandPanel(): void {
     buildPanelContent();
     updatePanelPosition();
     renderChatContent();
+    Registry.notifyStateChange('orb');
+    Registry.notifyStateChange('orb-panel');
     panelEl.style.opacity = '1';
     panelEl.style.pointerEvents = 'auto';
     updateStateLabel();
@@ -245,12 +247,16 @@ function collapsePanel(): void {
       panelEl.style.pointerEvents = 'none';
     }
     updateStateLabel();
+    Registry.notifyStateChange('orb');
+    Registry.notifyStateChange('orb-panel');
   }
 }
 
 function enterEditMode(): void {
   if (orbState !== 'expanded') return;
   orbState = 'editing';
+  Registry.notifyStateChange('orb');
+  Registry.notifyStateChange('orb-panel');
 
   // 重新读取当前位置（普通拖拽阶段可能已改变）
   if (panelEl) {
@@ -270,6 +276,8 @@ function exitEditMode(): void {
   if (panelEl) {
     panelEl.style.boxShadow = theme.aiChat.panelShadow;
   }
+  Registry.notifyStateChange('orb');
+  Registry.notifyStateChange('orb-panel');
   renderChatContent();
   updateStateLabel();
 }
@@ -523,6 +531,7 @@ export function initOrb(): void {
     effect: '点击后展开光球，显示 AI 输入框和聊天记录',
     source: 'orb.ts',
   });
+  Registry.registerStateGetter('orb', () => orbState);
   Registry.register({
     id: 'orb-panel',
     type: 'panel',
@@ -532,5 +541,15 @@ export function initOrb(): void {
     enabled: true,
     effect: '展开后显示聊天消息，可输入文字与 AI 对话',
     source: 'orb.ts',
+  });
+  Registry.registerStateGetter('orb-panel', () => orbState);
+
+  // 注册内容层：AI 对话摘要
+  Registry.registerContent({
+    id: 'orb-chat',
+    type: 'text-output',
+    summary: chatMessages.length > 0
+      ? `最后一条消息: ${chatMessages[chatMessages.length - 1].role === 'user' ? '我' : 'AI'}说「${chatMessages[chatMessages.length - 1].text.slice(0, 40)}${chatMessages[chatMessages.length - 1].text.length > 40 ? '…' : ''}」`
+      : '暂无对话历史',
   });
 }

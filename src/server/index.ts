@@ -1,7 +1,10 @@
 import express from 'express';
+import http from 'http';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { setupAiTools } from './ai-tools.js';
+import { WsServer } from './ws-server.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -130,7 +133,14 @@ setupApiRoutes(app.use('/api', express.Router()) && app);
 app.use('/api', (() => { const r = express.Router(); setupApiRoutes(r); return r; })());
 app.use('/kfmv4/api', (() => { const r = express.Router(); setupApiRoutes(r); return r; })());
 
+// AI Tools 路由（挂载到 /api 和 /kfmv4/api 下）
 const PORT = parseInt(process.env.KFM_PORT || '8021', 10);
-app.listen(PORT, '127.0.0.1', () => {
+const httpServer = http.createServer(app);
+const wsServer = new WsServer(httpServer);
+app.use('/api', (() => { const r = express.Router(); setupAiTools(r, wsServer); return r; })());
+app.use('/kfmv4/api', (() => { const r = express.Router(); setupAiTools(r, wsServer); return r; })());
+
+httpServer.listen(PORT, '127.0.0.1', () => {
   console.log(`KFM v4 server running at http://localhost:${PORT}`);
+  console.log(`[ws-server] WebSocket available at ws://localhost:${PORT}/ws`);
 });

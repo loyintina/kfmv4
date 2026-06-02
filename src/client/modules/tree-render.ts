@@ -22,6 +22,7 @@ import * as clickQueue from "./click-queue.js";
 import { assert, warn } from "./debug-assert.js";
 import { createRootPicker, destroyRootPicker, isPickerOpen } from './root-picker.js';
 import { log } from './logger.js';
+import { Registry } from './ui-registry.js';
 const ts = anim.scope('tree-render');
 /** 重置动画时间线：清空 tween + 归零播放头 + 清除回调。正常动画结束时调用。 */
 function _resetAnimTimeline(): void {
@@ -489,6 +490,7 @@ export function onSidebarOpen(): void {
 
     // 创建左栏右侧触摸盒子
     _createSidebarTouchArea();
+    Registry.notifyStateChange('file-tree');
     } catch (e) { log('[sidebar] open crash: ' + (e instanceof Error ? e.message + ' ' + (e.stack || '') : String(e))); }
   });
 
@@ -514,6 +516,7 @@ export function onSidebarClose(): void {
   _resetAnimTimeline();
   L._sidebarClosed = true;  // 让wheel/touch的rAF循环自己退出
   L.endOp();
+  Registry.notifyStateChange('file-tree');
   
   L._restoringFromSave = true;
   // 直接保存当前 scrollY（动画停止后的稳定值）
@@ -565,6 +568,21 @@ export function initTreeRenderer(): void {
 
   bindWheelEvents(canvas);
   bindClickEvents(canvas, dpr);
+
+  // 注册 UI 元素：文件树 Canvas 区域
+  Registry.register({
+    id: 'file-tree',
+    type: 'panel',
+    label: '文件树',
+    description: 'Canvas 自渲染文件树，点击目录展开/折叠，点击文件选中',
+    state: DOM.sidebar?.classList.contains('open') ? 'visible' : 'hidden',
+    enabled: true,
+    effect: '点击目录切换展开/折叠状态，点击文件将其设为选中',
+    source: 'tree-render.ts',
+  });
+  Registry.registerStateGetter('file-tree', () =>
+    DOM.sidebar?.classList.contains('open') ? 'visible' : 'hidden'
+  );
 }
 
 
@@ -606,8 +624,10 @@ function _createSidebarTouchArea(): void {
     if (hitData.isDir) {
       if (hitData.isExpanded) { doCollapse(hit, hitData); }
       else { doExpand(hit, hitData); }
+      Registry.notifyStateChange('file-tree');
     } else {
       hit.gesture?.onTap?.();
+      Registry.notifyStateChange('file-tree');
     }
   });
 ;
@@ -626,7 +646,7 @@ function bindClickEvents(canvas: HTMLElement, _dpr: number): void {
 /**
  * 事件堆栈核心：逐一处理点击队列。
  * 每次处理一个点击，如果是展开/折叠则启动动画，
- * 动画�������成后自动处理队列中下一个点击。
+ * 动画完成后自动处理队列中下一个点击。
  */
 
 /** 在树中查找点击目标路径（用于 P2 状态机同路径判断） */
@@ -688,6 +708,7 @@ function processClickQueue(): void {
       clickQueue.dequeue();
       moveCursorTo(hit);
       _scrollToCenterCursor();
+      Registry.notifyStateChange('file-tree');
       setTimeout(processClickQueue, 0);
       return;
     }
@@ -760,6 +781,7 @@ function processClickQueue(): void {
       } else {
         moveCursorTo(hit);
         _scrollToCenterCursor();
+        Registry.notifyStateChange('file-tree');
       }
       break;
     }
@@ -900,6 +922,7 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
     const _root = L.renderer?.getRoot();
     if (_root) { _rebuildRowIndex(_root); }
     if (onTap) onTap();
+    Registry.notifyStateChange('file-tree');
     processClickQueue();
   });
 }
@@ -1009,6 +1032,7 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
     _resetAnimTimeline();
     L.endOp();
     hit.gesture!.onTap!();
+    Registry.notifyStateChange('file-tree');
     processClickQueue();
   });
 }
@@ -1037,6 +1061,7 @@ export function forceRebuildTree(): void {
   
   clickQueue.clear();
   rebuildTree();
+  Registry.notifyStateChange('file-tree');
 }
 
 function rebuildTree(): void {
@@ -1120,7 +1145,7 @@ function rebuildTree(): void {
   }
 
   // 清空 L.animatingPath，防止后续 rebuildTree 读到脏值
-
+  Registry.notifyStateChange('file-tree');
 }
 
 function snapToCenterRow(root: Box, canvasH: number, animate = false): void {
