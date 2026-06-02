@@ -131,7 +131,7 @@ export function setupAiTools(router: Router, wsServer: WsServer): void {
       return;
     }
 
-    // 静态清单
+    // 静态清单（entry 与 capability-executor.ts 保持一致）
     res.json({
       source: 'static',
       capabilities: [
@@ -140,14 +140,14 @@ export function setupAiTools(router: Router, wsServer: WsServer): void {
           name: '文件搜索',
           description: '在当前目录下搜索文件名匹配的文件',
           parameters: [{ name: 'pattern', type: 'string' }],
-          entry: 'server.files.list',
+          entry: 'capability-executor:file-search',
         },
         {
           id: 'file-read',
           name: '读取文件',
           description: '读取指定路径的文件内容',
           parameters: [{ name: 'path', type: 'string' }],
-          entry: 'server.files.read',
+          entry: 'capability-executor:file-read',
         },
         {
           id: 'file-write',
@@ -158,7 +158,7 @@ export function setupAiTools(router: Router, wsServer: WsServer): void {
             { name: 'content', type: 'string' },
             { name: 'append', type: 'boolean' },
           ],
-          entry: 'server.files.write',
+          entry: 'capability-executor:file-write',
         },
       ],
     });

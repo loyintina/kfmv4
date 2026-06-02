@@ -53,19 +53,20 @@ initTreeRenderer();
 initCardStack();
 
 // ========== 注册能力层 ==========
+// entry 字段与 capability-executor.ts 中的 id 保持一致，指向实际执行入口
 Registry.registerCapability({
   id: 'file-search',
   name: '文件搜索',
   description: '在当前目录下搜索文件名匹配的文件',
   parameters: [{ name: 'pattern', type: 'string' }],
-  entry: 'server.files.list',
+  entry: 'capability-executor:file-search',
 });
 Registry.registerCapability({
   id: 'file-read',
   name: '读取文件',
   description: '读取指定路径的文件内容',
   parameters: [{ name: 'path', type: 'string' }],
-  entry: 'server.files.read',
+  entry: 'capability-executor:file-read',
 });
 Registry.registerCapability({
   id: 'file-write',
@@ -76,7 +77,7 @@ Registry.registerCapability({
     { name: 'content', type: 'string' },
     { name: 'append', type: 'boolean' },
   ],
-  entry: 'server.files.write',
+  entry: 'capability-executor:file-write',
 });
 
 // ========== 初始化 WebSocket 通道 ==========

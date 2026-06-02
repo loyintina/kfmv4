@@ -272,6 +272,7 @@ const MANIFEST = [
   'card-stack',           // card-stack.ts — 堆叠卡片面板
   'input-bar',            // app.ts — AI 输入栏
   'operation-toast',      // app.ts — 操作提示
+  'file-tree',            // tree-render.ts — Canvas 文件树（v1.1 新增）
 ];
 
 const missing = Registry.validate(MANIFEST);

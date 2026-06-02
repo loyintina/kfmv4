@@ -17,6 +17,7 @@ import { gestures } from './gesture-registry.js';
 import { DOM } from "./dom-refs.js";
 import { currentTheme as theme } from './theme.js';
 import { Registry } from './ui-registry.js';
+import { wsChannel } from './ws-channel.js';
 
 interface ChatMessage {
   role: 'user' | 'ai';
@@ -544,12 +545,17 @@ export function initOrb(): void {
   });
   Registry.registerStateGetter('orb-panel', () => orbState);
 
-  // 注册内容层：AI 对话摘要
-  Registry.registerContent({
+  // 注册内容层：AI 对话摘要（使用生成器，每次 snapshot 返回最新消息）
+  Registry.registerContentGenerator('orb-chat', () => ({
     id: 'orb-chat',
     type: 'text-output',
     summary: chatMessages.length > 0
       ? `最后一条消息: ${chatMessages[chatMessages.length - 1].role === 'user' ? '我' : 'AI'}说「${chatMessages[chatMessages.length - 1].text.slice(0, 40)}${chatMessages[chatMessages.length - 1].text.length > 40 ? '…' : ''}」`
       : '暂无对话历史',
-  });
+  }));
+
+  // 注册 AI 指令处理器
+  wsChannel.onCommand('expand-orb', () => { if (orbState === 'collapsed') { expandPanel(); } });
+  wsChannel.onCommand('collapse-orb', () => { if (orbState === 'expanded') { collapsePanel(); } });
+  wsChannel.onCommand('toggle-orb', () => { togglePanel(); });
 }

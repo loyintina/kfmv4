@@ -2,6 +2,7 @@ import { gestures } from "./gesture-registry.js";
 import { anim, AnimTimeline } from './animation-registry.js';
 import { getLogs, clearLogs, copyLogs, onLog } from './logger.js';
 import { Registry } from './ui-registry.js';
+import { wsChannel } from './ws-channel.js';
 
 import { currentTheme as theme } from './theme.js';
 const orbT = theme.cornerOrb;
@@ -342,6 +343,8 @@ function updateFocus(): void {
       el.style.boxShadow = theme.stack.blurShadow;
     }
   }
+  // 焦点变化后通知 Registry，确保 ws-channel 推送最新 snapshot
+  Registry.notifyStateChange('card-stack');
 }
 
 function randomizeCards(): void {
@@ -1369,10 +1372,16 @@ export function initCardStack(): void {
   });
   Registry.registerStateGetter('card-stack', () => _state);
 
-  // 注册内容层：卡片堆当前焦点摘要
-  Registry.registerContent({
+  // 注册内容层：卡片堆当前焦点摘要（使用生成器，每次 snapshot 返回实时焦点）
+  Registry.registerContentGenerator('card-stack-content', () => ({
     id: 'card-stack-content',
     type: 'card-content',
     summary: `当前焦点卡片: ${CARDS[_focusIndex]?.name || CARDS[_focusIndex]?.id || '无'}`,
-  });
+  }));
+
+  // 注册 AI 指令处理器
+  wsChannel.onCommand('open-card-stack', () => { if (!isCardStackOpen()) openCardStack(); });
+  wsChannel.onCommand('close-card-stack', () => { if (isCardStackOpen()) closeCardStack(); });
+  wsChannel.onCommand('focus-next-card', () => { focusNext(); });
+  wsChannel.onCommand('focus-prev-card', () => { focusPrev(); });
 }

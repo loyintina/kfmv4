@@ -250,9 +250,12 @@ function registerDefaultCommandHandlers(): void {
       return;
     }
     console.log('[ws-channel] AI 指令: 点击', elementId);
-    // 通过元素 id 查找 DOM 节点并触发点击
-    // 这是通用 fallback——具体的模块应该注册更精确的处理器
-    const element = document.querySelector(`[data-registry-id="${elementId}"]`);
+    // 优先通过 data-registry-id 查找
+    let element = document.querySelector(`[data-registry-id="${elementId}"]`);
+    // fallback: 尝试通过 HTML id 查找
+    if (!element) {
+      element = document.getElementById(elementId);
+    }
     if (element instanceof HTMLElement) {
       element.click();
     } else {

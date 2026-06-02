@@ -11,7 +11,7 @@
 <div class="sidebar" id="sidebar">
 <div class="sidebar-content" id="fileTree"><div class="loading">加载中...</div></div>
 <div class="sidebar-tools">
-<button id="toggleHiddenBtn" title="显示隐藏文件">
+<button id="toggleHiddenBtn" data-registry-id="eye-btn" title="显示隐藏文件">
   <svg class="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
     <path d="M1 12s4-7.5 11-7.5 11 7.5 11 7.5-4 7.5-11 7.5-11-7.5-11-7.5z" stroke="url(#iconGrad)" stroke-width="1.5"/>
     <circle cx="12" cy="12" r="2.5" fill="url(#iconGrad)"/>
@@ -23,16 +23,16 @@
     </defs>
   </svg>
 </button>
-<button id="closeSidebarBtn" class="sidebar-close-btn" title="关闭侧栏"><span></span><span></span></button>
+<button id="closeSidebarBtn" class="sidebar-close-btn" data-registry-id="close-sidebar-btn" title="关闭侧栏"><span></span><span></span></button>
 </div>
 </div>
 <div class="overlay" id="overlay"></div>
 
 <main class="main" id="main">
-<button class="sidebar-toggle-btn" id="sidebarToggleBtn" title="打开文件树">
+<button class="sidebar-toggle-btn" id="sidebarToggleBtn" data-registry-id="sidebar-toggle-btn" title="打开文件树">
   <span></span><span></span><span></span>
 </button>
-<button class="sidebar-toggle-btn card-stack-toggle-btn" id="cardStackToggleBtn" title="打开卡片堆">
+<button class="sidebar-toggle-btn card-stack-toggle-btn" id="cardStackToggleBtn" data-registry-id="card-stack-toggle-btn" title="打开卡片堆">
   <svg class="stack-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
     <rect x="5" y="8" width="15" height="11" rx="2" stroke="url(#cardStackGrad)" stroke-width="1.5" opacity="0.5"/>
     <rect x="8" y="5" width="15" height="11" rx="2" stroke="url(#cardStackGrad)" stroke-width="1.5"/>
@@ -48,13 +48,13 @@
 </div>
 <!-- AI对话输入栏 -->
 <div class="ai-input-bar" id="aiInputBar">
-  <textarea class="ai-input" rows="1" id="aiInput" placeholder="输入消息..."></textarea>
-  <button class="ai-send-btn" id="aiSendBtn">发送</button>
+  <textarea class="ai-input" rows="1" id="aiInput" data-registry-id="input-bar" placeholder="输入消息..."></textarea>
+  <button class="ai-send-btn" id="aiSendBtn" data-registry-id="ai-send-btn">发送</button>
 </div>
 </main>
 
 <div class="operation-toast" id="operationToast"></div>
-<div class="light-orb" id="lightOrb"></div>
+<div class="light-orb" id="lightOrb" data-registry-id="orb"></div>
 
 <script src="bundle.js"></script>
 </body>

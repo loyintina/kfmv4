@@ -9,6 +9,7 @@ let sidebarContent: HTMLElement | null = null;
 
 import { onSidebarOpen, onSidebarClose } from './tree-render.js';
 import { Registry } from './ui-registry.js';
+import { wsChannel } from './ws-channel.js';
 
 export function openSidebar(): void {
   DOM.sidebar?.classList.add('open');
@@ -48,4 +49,12 @@ export function initUI(): void {
   Registry.registerStateGetter('sidebar', () =>
     DOM.sidebar?.classList.contains('open') ? 'open' : 'closed'
   );
+
+  // 注册 AI 指令处理器
+  wsChannel.onCommand('open-sidebar', () => { openSidebar(); Registry.notifyStateChange('sidebar'); });
+  wsChannel.onCommand('close-sidebar', () => { closeSidebar(); Registry.notifyStateChange('sidebar'); });
+  wsChannel.onCommand('toggle-sidebar', () => {
+    if (DOM.sidebar?.classList.contains('open')) { closeSidebar(); } else { openSidebar(); }
+    Registry.notifyStateChange('sidebar');
+  });
 }
