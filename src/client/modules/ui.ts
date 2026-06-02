@@ -36,7 +36,7 @@ export function initUI(): void {
   });
 
   // 注册 UI 元素
-  Registry.register({
+  Registry.registerElement({
     id: 'sidebar',
     type: 'panel',
     label: '文件树侧栏',
@@ -45,10 +45,7 @@ export function initUI(): void {
     enabled: true,
     effect: '打开后显示文件树，点击目录展开/折叠，左滑或点击遮罩关闭',
     source: 'ui.ts',
-  });
-  Registry.registerStateGetter('sidebar', () =>
-    DOM.sidebar?.classList.contains('open') ? 'open' : 'closed'
-  );
+  }, () => DOM.sidebar?.classList.contains('open') ? 'open' : 'closed');
 
   // 注册 AI 指令处理器
   wsChannel.onCommand('open-sidebar', () => { openSidebar(); Registry.notifyStateChange('sidebar'); });

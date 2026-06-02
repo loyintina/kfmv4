@@ -100,7 +100,8 @@ export async function initApp(): Promise<void> {
 
   // ========== UI Element Registry 注册 ==========
 
-  Registry.register({
+  // 使用 registerElement() 便捷方法：一步完成 register + registerStateGetter
+  Registry.registerElement({
     id: 'sidebar-toggle-btn',
     type: 'button',
     label: '侧栏开关',
@@ -109,11 +110,8 @@ export async function initApp(): Promise<void> {
     enabled: true,
     effect: '点击切换侧栏打开/关闭状态',
     source: 'app.ts',
-  });
-  Registry.registerStateGetter('sidebar-toggle-btn', () =>
-    DOM.sidebar?.classList.contains('open') ? 'open' : 'closed'
-  );
-  Registry.register({
+  }, () => DOM.sidebar?.classList.contains('open') ? 'open' : 'closed');
+  Registry.registerElement({
     id: 'card-stack-toggle-btn',
     type: 'button',
     label: '卡片堆开关',
@@ -122,11 +120,8 @@ export async function initApp(): Promise<void> {
     enabled: true,
     effect: '点击切换卡片堆打开/关闭状态',
     source: 'app.ts',
-  });
-  Registry.registerStateGetter('card-stack-toggle-btn', () =>
-    isCardStackOpen() ? 'open' : 'closed'
-  );
-  Registry.register({
+  }, () => isCardStackOpen() ? 'open' : 'closed');
+  Registry.registerElement({
     id: 'close-sidebar-btn',
     type: 'button',
     label: '关闭侧栏',
@@ -135,11 +130,8 @@ export async function initApp(): Promise<void> {
     enabled: true,
     effect: '点击关闭侧栏',
     source: 'app.ts',
-  });
-  Registry.registerStateGetter('close-sidebar-btn', () =>
-    DOM.sidebar?.classList.contains('open') ? 'enabled' : 'hidden'
-  );
-  Registry.register({
+  }, () => DOM.sidebar?.classList.contains('open') ? 'enabled' : 'hidden');
+  Registry.registerElement({
     id: 'eye-btn',
     type: 'button',
     label: '显示隐藏文件',
@@ -148,11 +140,8 @@ export async function initApp(): Promise<void> {
     enabled: true,
     effect: '点击切换隐藏文件的显示状态',
     source: 'app.ts',
-  });
-  Registry.registerStateGetter('eye-btn', () =>
-    KFMState.showHidden ? 'active' : 'inactive'
-  );
-  Registry.register({
+  }, () => KFMState.showHidden ? 'active' : 'inactive');
+  Registry.registerElement({
     id: 'input-bar',
     type: 'text-input',
     label: 'AI 输入栏',
@@ -161,11 +150,8 @@ export async function initApp(): Promise<void> {
     enabled: true,
     effect: '输入文字后点击发送或按 Enter 发送给 AI',
     source: 'app.ts',
-  });
-  Registry.registerStateGetter('input-bar', () =>
-    DOM.aiInputBar?.style.display === 'none' ? 'hidden' : 'visible'
-  );
-  Registry.register({
+  }, () => DOM.aiInputBar?.style.display === 'none' ? 'hidden' : 'visible');
+  Registry.registerElement({
     id: 'operation-toast',
     type: 'icon',
     label: '操作提示',
@@ -174,8 +160,5 @@ export async function initApp(): Promise<void> {
     enabled: true,
     effect: '操作完成后自动显示 2 秒后消失',
     source: 'app.ts',
-  });
-  Registry.registerStateGetter('operation-toast', () =>
-    DOM.operationToast?.classList.contains('show') ? 'visible' : 'hidden'
-  );
+  }, () => DOM.operationToast?.classList.contains('show') ? 'visible' : 'hidden');
 }

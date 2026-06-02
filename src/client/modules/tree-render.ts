@@ -570,7 +570,7 @@ export function initTreeRenderer(): void {
   bindClickEvents(canvas, dpr);
 
   // 注册 UI 元素：文件树 Canvas 区域
-  Registry.register({
+  Registry.registerElement({
     id: 'file-tree',
     type: 'panel',
     label: '文件树',
@@ -579,10 +579,7 @@ export function initTreeRenderer(): void {
     enabled: true,
     effect: '点击目录切换展开/折叠状态，点击文件将其设为选中',
     source: 'tree-render.ts',
-  });
-  Registry.registerStateGetter('file-tree', () =>
-    DOM.sidebar?.classList.contains('open') ? 'visible' : 'hidden'
-  );
+  }, () => DOM.sidebar?.classList.contains('open') ? 'visible' : 'hidden');
 }
 
 

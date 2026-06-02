@@ -522,7 +522,7 @@ export function initOrb(): void {
   initInputBarWatcher();
 
   // 注册 UI 元素
-  Registry.register({
+  Registry.registerElement({
     id: 'orb',
     type: 'floating-button',
     label: '光球',
@@ -531,9 +531,8 @@ export function initOrb(): void {
     enabled: true,
     effect: '点击后展开光球，显示 AI 输入框和聊天记录',
     source: 'orb.ts',
-  });
-  Registry.registerStateGetter('orb', () => orbState);
-  Registry.register({
+  }, () => orbState);
+  Registry.registerElement({
     id: 'orb-panel',
     type: 'panel',
     label: 'AI 对话面板',
@@ -542,8 +541,7 @@ export function initOrb(): void {
     enabled: true,
     effect: '展开后显示聊天消息，可输入文字与 AI 对话',
     source: 'orb.ts',
-  });
-  Registry.registerStateGetter('orb-panel', () => orbState);
+  }, () => orbState);
 
   // 注册内容层：AI 对话摘要（使用生成器，每次 snapshot 返回最新消息）
   Registry.registerContentGenerator('orb-chat', () => ({

@@ -46,9 +46,9 @@ const CAPABILITY_MANIFEST = [
   'file-write',           // main.ts / capability-executor.ts
 ];
 
-// 匹配 Registry.register({ id: '...' }) 或 Registry.register( { id: '...' } )
-// 兼容多行参数：Registry.register({ \n   id: '...', \n   ...
-const REGISTER_CALL_RE = /Registry\.register\s*\(\s*\{[\s\S]*?id:\s*'([^']+)'/g;
+// 匹配 Registry.register({...}) 或 Registry.registerElement({...}, getter)
+// 兼容多行参数和多行 getter 回调
+const REGISTER_CALL_RE = /Registry\.register(?:Element)?\s*\(\s*\{[\s\S]*?id:\s*'([^']+)'/g;
 
 // 匹配 Registry.registerContent({ id: '...' })
 const CONTENT_OBJ_RE = /Registry\.registerContent\s*\(\s*\{[\s\S]*?id:\s*'([^']+)'/g;
@@ -56,6 +56,9 @@ const CONTENT_OBJ_RE = /Registry\.registerContent\s*\(\s*\{[\s\S]*?id:\s*'([^']+
 const CONTENT_GEN_RE = /Registry\.registerContentGenerator\s*\(\s*'([^']+)'/g;
 // 匹配 Registry.registerCapability({ id: '...' })
 const CAPABILITY_CALL_RE = /Registry\.registerCapability\s*\(\s*\{[\s\S]*?id:\s*'([^']+)'/g;
+
+/** 注册调用中必须出现的字段列表 */
+const REQUIRED_REGISTER_FIELDS = ['type', 'label', 'description', 'effect', 'enabled'];
 
 // ========== 扫描 ==========
 
@@ -79,6 +82,37 @@ let hasError = false;
 function reportError(msg) {
   console.error(`[check-registry] ${msg}`);
   hasError = true;
+}
+
+/**
+ * 检查 Registry.register({...}) 的必需字段是否完整。
+ * 返回 { id, missing: string[] }[] 列表。
+ */
+function checkRegisterCompleteness() {
+  // 匹配整个 register 块（包含 id 和所有字段），兼容 register 和 registerElement
+  // 注意：register 以 ) 结尾，registerElement 以 , getter) 结尾
+  const BLOCK_RE = /Registry\.register(?:Element)?\s*\(\s*\{([\s\S]*?)\}\s*[,)]/g;
+  const results = [];
+
+  for (const absPath of walk(SRC_DIR)) {
+    if (absPath.endsWith('.d.ts') || absPath.endsWith('ui-registry.ts')) continue;
+    const content = readFileSync(absPath, 'utf-8');
+    let match;
+    while ((match = BLOCK_RE.exec(content)) !== null) {
+      const block = match[1];
+      const idMatch = block.match(/id:\s*'([^']+)'/);
+      if (!idMatch) continue; // 非标准格式，跳过
+      const id = idMatch[1];
+      const missing = REQUIRED_REGISTER_FIELDS.filter(field => {
+        const re = new RegExp(`\\b${field}:\\s*`);
+        return !re.test(block);
+      });
+      if (missing.length > 0) {
+        results.push({ id, missing, file: absPath });
+      }
+    }
+  }
+  return results;
 }
 
 function check() {
@@ -136,13 +170,19 @@ function check() {
     reportError(`以下能力在 CAPABILITY_MANIFEST 中但未注册：${missingCaps.join(', ')}`);
   }
 
+  // ===== 参数完整性检查 =====
+  const incomplete = checkRegisterCompleteness();
+  for (const { id, missing, file } of incomplete) {
+    reportError(`${id}（${file}）缺少必需字段: ${missing.join(', ')}`);
+  }
+
   // ===== 汇总 =====
   if (hasError) {
     console.error(`\n[check-registry] 缺失项见上，构建中断。`);
     process.exit(1);
   }
 
-  console.log(`[check-registry] OK — ${registeredElements.size} 个交互元素、${registeredContents.size} 个内容块、${registeredCapabilities.size} 个能力已注册，全部 MANIFEST 匹配`);
+  console.log(`[check-registry] OK — ${registeredElements.size} 个交互元素、${registeredContents.size} 个内容块、${registeredCapabilities.size} 个能力已注册，全部 MANIFEST 匹配，参数完整性检查通过`);
 }
 
 const CHECK_ONLY = process.argv.includes('--check-only');

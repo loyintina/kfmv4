@@ -292,26 +292,31 @@ if (missing.length > 0) {
 
 ### S.6 未来加功能时的代码增量
 
-| 场景 | 需要改的文件 | 行数 |
-|------|------------|------|
-| 新增一个按钮 | 按钮的模块（+1 行 register）+ MANIFEST（+1 行 id）| +2 |
-| 新增一个浮卡 | card-stack.ts（+1 行 register）+ MANIFEST（+1 行 id）| +2 |
-| 新增一个扩展能力 | 能力模块导出 + registry.registerCapability + MANIFEST | +3 |
-| 不需要注册的情况 | 纯视觉元素、非交互的 Canvas 内部元素 | 0 |
+> **注意**：以下行数为最小估算，实际增量因元素复杂度而异。`register()` 调用本身约 8 行（含 id/type/label/description/state/enabled/effect/source），`registerStateGetter()` 约 2-3 行，MANIFEST 1 行，`notifyStateChange` 调用视状态变化路径数而定（通常 1-3 处）。
 
-> **线性增长，步长固定。** 不存在"新增一个功能要改三个文件以上"的情况。
+| 场景 | 最小行数 | 典型行数 | 需要改的文件 |
+|------|---------|---------|------------|
+| 新增一个静态按钮（state 不变） | +9 | +9 | 模块（8 行 register）+ MANIFEST（1 行 id）|
+| 新增一个动态按钮（state 变化） | +12 | ~15 | 模块（8+3 行 register+stateGetter）+ MANIFEST（1 行）+ notifyStateChange 调用 |
+| 新增一个浮卡 | +12 | ~15 | card-stack.ts（register+stateGetter）+ MANIFEST + notifyStateChange |
+| 新增一个扩展能力 | +3 | +3 | 能力注册 + MANIFEST |
+| 不需要注册的情况 | 0 | 0 | 纯视觉元素、非交互的 Canvas 内部元素 |
+
+> **步长固定但基数不同。** 增量仍可控——新增一个动态元素需要改 2 个文件（模块 + MANIFEST），不需要跨 3 个以上文件。使用 `registerElement()` 便捷方法可将模块内的增量从 11 行压缩到 3 行（见代码实现）。
 
 ## §2 架构：Registry 作为索引（提议方案）
 
-### 2.1 核心原则：零耦合
+### 2.1 核心原则：轻耦合
 
 Registry 的设计原则：
 
-- **模块不知道 Registry 的存在。** 模块不需要调 `register()`、不需要调 `updateState()`、不需要知道"我注册了没有"。Registry 不依赖任何业务模块，业务模块也不依赖 Registry。
-- **Registry 是一个被动索引。** 它不监听任何事件、不订阅任何状态变化、不拦截任何操作。
-- **Registry 只在被查询时工作。** 没有 rAF 回调、没有定时器、没有订阅者。
+- **模块通过轻量回调注册自身。** 模块在 `init*()` 末尾调 `Registry.register({...})` 宣告自己的存在，如果状态会变化则同时调 `registerStateGetter(id, getter)`。这是模块对 Registry 的唯一感知——模块不需要知道 snapshot 机制、不需要调 `updateState()`、不需要管理注册后的生命周期。
+- **Registry 是一个被动索引。** 它不监听任何事件、不订阅任何状态变化、不拦截任何操作。它只在 `snapshot()` 被调用时通过 getter 回调读取模块的实时状态。
+- **Registry 只在被查询时工作。** 没有 rAF 回调、没有定时器、没有订阅者。`onChange` 回调是外部监听方（如 ws-channel）注册的，不是 Registry 自身发起的。
 
-这意味着什么：如果你删掉 Registry，**现有代码零行改动**。它完全是一层添加在之上的描述层。
+这与 v0.2 讨论中提出的"模块零耦合"理想目标不完全一致——实践证明模块至少需要一行 `register()` 来宣告存在。但耦合极轻：仅一个 id + 一组元数据 + 可选 getter 回调。**这种"轻耦合"是 §5.1 方案 B（模块注册回调）经过讨论后的有意选择。**
+
+> **关于"删掉 Registry 零行改动"**：这是 v0.2 讨论阶段提出的理想目标，实际实现中由于模块显式调用 `register()`，删除 Registry 会导致 6 个模块的编译错误。这种显式注册是故意设计的——它让每个 UI 元素的注册点在源码中肉眼可见，降低了 onboarding 和调试的心智负担。
 
 ### 2.2 三层模型
 
@@ -400,8 +405,9 @@ class UIElementRegistry {
   // （可选）按 id 查询（仅交互层，能力层通过 getCapabilities 查询）
   get(id: string): InteractiveElement | undefined;
 
-  // 自检：验证索引一致性
-  validate(): { valid: boolean; errors: string[] };
+  // 自检：验证 MANIFEST 一致性。返回缺失的 id 列表（空 = 全部通过）。
+  // 实际签名见 §S.3：validate(manifest: string[]): string[]
+  // 此处不再重复，以 §S.3 为准。
 }
 
 // snapshot 的输出 = 三层合并

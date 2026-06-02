@@ -7,12 +7,23 @@
  * 设计参见 docs/UI_ELEMENT_REGISTRY_SPEC.md §S（已定稿）。
  *
  * 使用方式：
- *   在模块的 init*() 函数末尾调用 Registry.register({...})。
- *   如果元素的状态会变化，同时调用 Registry.registerStateGetter(id, getter)。
- *   如果内容块需要动态生成，调用 Registry.registerContentGenerator(id, generator)。
+ *   在模块的 init*() 函数末尾调用：
+ *     Registry.registerElement({ id, type, label, ... }, () => getState());
+ *   如果元素不需要 state getter（纯静态），可拆分为：
+ *     Registry.register({ id, type, label, ... });
+ *   如果内容块需要动态生成，调用：
+ *     Registry.registerContentGenerator(id, generator);
  *   AI 通过 Registry.snapshot() 获取当前页面描述。
  *   npm run check 通过 MANIFEST 验证确保无遗漏。
+ *
+ * 推荐使用 registerElement() 便捷方法，它自动配对 register + registerStateGetter，
+ * 避免遗漏 state getter 导致 snapshot 返回过期状态。
  */
+
+// ========== 导入 ==========
+
+import { warn } from './debug-assert.js';
+import { KFMState } from './state.js';
 
 // ========== 类型定义 ==========
 
@@ -127,6 +138,26 @@ export class UIElementRegistry {
     this._notifyChange('state-getter', id);
   }
 
+  /**
+   * 便捷方法：一次完成 register + registerStateGetter。
+   *
+   * 大多数交互元素的 state 会在运行时变化，调用此方法可避免忘记配对的 registerStateGetter。
+   * 等价于：
+   *   Registry.register(el);
+   *   Registry.registerStateGetter(el.id, getter);
+   *
+   * @param el      交互元素定义
+   * @param getter  可选的状态 getter。不传则只注册，不设 getter。
+   * @returns 元素的 id，方便链式调用
+   */
+  registerElement(el: InteractiveElement, getter?: StateGetter): string {
+    this.register(el);
+    if (getter) {
+      this.registerStateGetter(el.id, getter);
+    }
+    return el.id;
+  }
+
   /** 注册内容块（静态） */
   registerContent(block: ContentBlock): void {
     if (this._content.has(block.id)) {
@@ -180,10 +211,13 @@ export class UIElementRegistry {
       if (getter) {
         return { ...el, state: getter() };
       }
+      // 开发时警告：元素没有注册 state getter，snapshot 可能返回过期状态
+      warn(`[ui-registry] "${el.id}" 没有注册 state getter，snapshot() 将返回注册时的静态值。建议注册 getter 或使用 Registry.registerElement()。`);
       return el;
     });
 
     // 内容层：优先使用生成器（实时），fallback 到静态内容
+    // 顺序：先按静态注册顺序排列（生成器覆盖同名静态），再追加仅有生成器的内容块
     const content = Array.from(this._content.entries()).map(([id, block]) => {
       const generator = this._contentGenerators.get(id);
       if (generator) {
@@ -263,3 +297,10 @@ export class UIElementRegistry {
 
 /** 全局单例 */
 export const Registry = new UIElementRegistry();
+
+// 自动订阅 KFMState 变化：通过 KFMState 的状态变更会触发 Registry 通知，
+// 自动推送 snapshot 到服务端（ws-channel）。
+// 当前覆盖：KFMState.toggleHidden() → 'eye-btn'、KFMState.setExpanded() → 'file-tree'。
+// 不覆盖 GSAP 动画回调中的状态切换和直接 DOM classList 操作——这些路径仍需手动通知。
+// 即使覆盖有限，此订阅作为安全网可以确保任何未来新增的 KFMState 驱动变更自动可见。
+KFMState.subscribe(() => Registry.notifyStateChange());

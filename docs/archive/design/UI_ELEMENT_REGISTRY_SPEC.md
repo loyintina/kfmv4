@@ -3,6 +3,11 @@ status: relocated
 relocated_to: docs/UI_ELEMENT_REGISTRY_SPEC.md
 note: 此文档被误归档，已恢复为活跃文档。详见 docs/UI_ELEMENT_REGISTRY_SPEC.md
 ---
+
+> **⚠️ 归档文档，非当前版本。**
+> 活跃版本在 `docs/UI_ELEMENT_REGISTRY_SPEC.md`（包含 §S 产出定义 + §1-§10 设计讨论 + 最新 v1.1 更新）。
+> 本文保留在此仅用于追溯设计演进历史，**不应用于指导代码修改**。
+
 # UI Element Registry 设计讨论
 
 > **版本**：v1.0（§S 已实现）

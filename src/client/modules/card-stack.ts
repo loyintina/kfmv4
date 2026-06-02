@@ -1360,7 +1360,7 @@ export function initCardStack(): void {
   });
 
   // 注册 UI 元素
-  Registry.register({
+  Registry.registerElement({
     id: 'card-stack',
     type: 'panel',
     label: '堆叠卡片面板',
@@ -1369,8 +1369,7 @@ export function initCardStack(): void {
     enabled: true,
     effect: '打开后显示卡片堆，垂直滑动切换焦点卡片，水平滑动关闭',
     source: 'card-stack.ts',
-  });
-  Registry.registerStateGetter('card-stack', () => _state);
+  }, () => _state);
 
   // 注册内容层：卡片堆当前焦点摘要（使用生成器，每次 snapshot 返回实时焦点）
   Registry.registerContentGenerator('card-stack-content', () => ({

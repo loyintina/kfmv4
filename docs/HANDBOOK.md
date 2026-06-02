@@ -60,15 +60,15 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 
 ### 当前焦点
 - `(as any)` 逃逸全部清理（白名单清空 ✅）
-- `ui-registry.ts` 已创建，10 个交互元素已注册 ✅
-- **所有 10 个元素均已有 `registerStateGetter`** — `close-sidebar-btn` 和 `input-bar` 已补全 ✅
+- `ui-registry.ts` 已创建，11 个交互元素已注册 ✅
+- **所有 11 个交互元素已使用 `registerElement()` 注册** — 便捷方法自动配对 register + stateGetter，消除了遗漏 getter 的风险 ✅
 - **运行时状态变化主动推送** — `Registry.notifyStateChange()` 已加入各模块的状态切换点（sidebar/orb/card-stack/buttons），ws-channel 自动推送 snapshot ✅
 - **内容层已填充** — 3 个 ContentBlock（file-tree 已改用 `registerContentGenerator` 实时生成 ✅, card-stack-content, orb-chat）
 - **能力层已填充** — 3 个 Capability（file-search, file-read, file-write）
 - **服务端 ai-tools.ts 已创建** — 提供 /api/ui/snapshot、/api/capabilities、/api/ui/schema 端点
 - `check-docs.mjs` 已加入构建管线
-- `check-registry.mjs` 已验证 10 个元素全部注册
-- **新增交互元素时必须**：①在 init 函数调 `Registry.register()` ②如状态会变化，调 `registerStateGetter()` ③在 `check-registry.mjs` 的 ELEMENT_MANIFEST 追加 id
+- `check-registry.mjs` 已验证 11 个元素全部注册，并新增参数完整性校验（检查 type/label/description/effect/enabled）
+- **新增交互元素时必须**：①在 init 函数调 `Registry.registerElement()`（推荐）或 `Registry.register()` + `registerStateGetter()` ②如状态会变化，传入 getter 回调 ③在 `check-registry.mjs` 的 ELEMENT_MANIFEST 追加 id
 - **新增内容块/能力时**：同样在 `check-registry.mjs` 的 CONTENT_MANIFEST / CAPABILITY_MANIFEST 追加 id
 - **tree-render.ts 已接入 Registry** — 注册 `file-tree` 交互元素，在展开/折叠/光标移动时推送 notifyStateChange ✅
 - **notifyStateChange 全面补全** — `operation-toast`（showToast 前后）、`orb-panel`（与 orb 同步）、`file-tree`（树重建/动画完成/光标移动）✅
@@ -81,8 +81,8 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 3. **`setExpanded` 多次 notify**：连续调用会触发多次 notify，动画守卫丢弃中间状态
 4. **拖拽 VS 重构搬运**（心法 9）：搬运代码必须 `git show` 原样复制后改，禁止重写
 5. **Registry MANIFEST**：新增交互元素必须同时注册 + 加入 MANIFEST
-5b. **Registry state getter**：如果元素的 state 会在运行时变化（几乎所有交互元素都如此），注册后必须同时调 `registerStateGetter()`，否则 `snapshot()` 返回的是过时的静态 state
-6. **`notifyStateChange` 覆盖范围**：`Registry.notifyStateChange()` 只通知"状态发生了变化"，不传递状态值本身。snapshot 仍通过 `registerStateGetter` 读取实时状态。新增模块的状态变化如果漏调 `notifyStateChange()`，AI 看到的 snapshot 会滞后。
+5b. **Registry state getter**：如果元素的 state 会在运行时变化（几乎所有交互元素都如此），注册后必须同时调 `registerStateGetter()`，否则 `snapshot()` 返回的是过时的静态 state。**推荐使用 `registerElement()` 便捷方法**——它一次完成 register + registerStateGetter，避免遗漏配对。
+6. **`notifyStateChange` 覆盖范围**：`Registry.notifyStateChange()` 只通知"状态发生了变化"，不传递状态值本身。snapshot 仍通过 `registerStateGetter` 读取实时状态。新增模块的状态变化如果漏调 `notifyStateChange()`，AI 看到的 snapshot 会滞后。**注意**：`check-registry.mjs` 现在会检查 `register()` 调用的必需字段完整性，但 notifyStateChange 的覆盖仍需人工保证。
 7. **Canvas 初始化 `clientWidth=0`**：需在 rAF 回调里 `rebuildTree()`
 8. **事件冒泡**：侧栏触摸区事件冒泡到 document → GestureRegistry 误触发
 9. **动画锁超时**：`processClickQueue` 有 3000ms 超时释放，说明动画管理有设计缺陷
@@ -195,6 +195,7 @@ npm test   # 74 个测试，覆盖 10 个模块
 | 10 | 写代码前先口述 | 要做什么、可选方案、选哪个、为什么 |
 | 11 | 步骤3暴露所有已知缺口 | 能继承的+不能继承的+填补方案 |
 | 12 | 发现补丁立即根除 | 不留给"以后"，补丁越久风险越大 |
+| 13 | 能自己做完就别留半截 | 理解成本 > 执行成本，5 分钟能做完的事不要留给别人花 20 分钟理解 |
 
 ### 关键约定速查
 
