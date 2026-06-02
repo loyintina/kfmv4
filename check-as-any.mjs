@@ -16,18 +16,8 @@ const SRC_DIR = 'src';
 
 // ========== 白名单 ==========
 // 格式：'相对路径:行号' —— 行号为文件中 (as any) 起始位置
-// 白名单（活跃逃逸 3 处）：逐个修复后从这里移除
-const WHITELIST = new Set([
-  // ---- canvas-cursor.ts ----
-  // canvas.getContext?.('2d') — canvas 类型为 unknown，TS 认不出 getContext
-  'client/modules/canvas-cursor.ts:85',
-  // L.cursorBox.data 读写动画元数据 — 应改用 getFileRowData()
-  'client/modules/canvas-cursor.ts:123',
-
-  // ---- renderer-lifecycle.ts ----
-  // (this as any)[key] = 0 — 动态 key 清零 rAF 句柄，TS 无法索引此模式
-  'client/modules/renderer-lifecycle.ts:147',
-]);
+// 白名单：全部已修复，保持空。新增逃逸会中断构建。
+const WHITELIST = new Set([]);
 
 const AS_ANY_RE = /\([\w.\[\]]+\s+as\s+any\)/;
 

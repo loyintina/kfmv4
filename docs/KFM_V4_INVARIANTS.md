@@ -111,8 +111,7 @@
 ▎ 禁止在新建代码中使用 (as any)。构建时会自动扫描（check-as-any.mjs），
    新增逃逸 → 构建中断。
 ▎ Box.data 必须通过 getFileRowData() 访问，禁止 (box as any).data.xxx
-   （已知白名单内逃逸共 11 处，登记在 check-as-any.mjs WHITELIST 中，
-   逐个修复后移除。构建时跑 --check-only 可查看当前白名单状态。）
+   （白名单已清空，零逃逸。新增逃逸会中断构建。）
 ▎ 如果某处 (as any) 确因 TypeScript 类型定义缺失而无法避免，必须：
    ① 在 check-as-any.mjs WHITELIST 中登记（写注释说明原因）
    ② 在代码行上加 // P2: 备注目标准确根因
@@ -333,7 +332,7 @@ rebuildTree() → 终端态主树
 
   **常见关联举例：**
   - 卡片堆卡片 ↔ 浮卡（同一视觉原型的不同状态）
-  - 光球（AI 聊天）↔ 光球（调试面板）（相同的交互模式）
+  - 光球（AI 聊天）↔ 浮卡 BR 光球（相同的交互模式）
   - 主树 overlay ↔ 子容器 overlay（相同的动画机制）
   - 侧栏触摸盒子 ↔ canvas 点击（相同的光标触发逻辑）
 
@@ -380,8 +379,8 @@ rebuildTree() → 终端态主树
 ## 六、关键文件职责
 
 ```
-tree-render.ts         — 文件树展开/折叠动画（~1211 行）
-card-stack.ts          — 堆叠卡片 + 浮卡系统（~1000 行）
+tree-render.ts         — 文件树展开/折叠动画（~1193 行）
+card-stack.ts          — 堆叠卡片 + 浮卡系统（~1364 行）
 orb.ts                 — 主光球 + AI 对话面板 + 编辑缩放
 renderer.ts            — Canvas 渲染引擎（Box 树 → Canvas 2D）
 animation-registry.ts  — GSAP 隔离层

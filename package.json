@@ -1,12 +1,12 @@
 {
   "name": "kfmv4",
-  "version": "5.0.0",
+  "version": "6.0.0",
   "description": "KFM v4 - TypeScript 全栈文件管理器",
   "type": "module",
   "scripts": {
     "dev": "node --loader ts-node/esm src/server/index.ts",
-    "check": "sass --no-source-map public/css/:public/css/ && node check-anim.mjs --check-only && node check-as-any.mjs --check-only && tsc --noEmit",
-    "build": "pkill -f 'tsc --noEmit$' 2>/dev/null; node check-anim.mjs && node check-as-any.mjs && tsc --noEmit && node build.mjs",
+    "check": "sass --no-source-map public/css/:public/css/ && node check-anim.mjs --check-only && node check-as-any.mjs --check-only && node check-registry.mjs --check-only && tsc --noEmit",
+    "build": "pkill -f 'tsc --noEmit$' 2>/dev/null; node check-anim.mjs && node check-as-any.mjs && node check-registry.mjs && tsc --noEmit && node build.mjs",
     "start": "fuser -k 8021/tcp 2>/dev/null; node dist/server/index.js",
     "test": "npx tsx --import ./tests/register-hook.mjs --import ./tests/preload.mjs ./tests/regression.test.ts"
   },

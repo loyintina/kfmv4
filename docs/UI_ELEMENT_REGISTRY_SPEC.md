@@ -1,8 +1,9 @@
 # UI Element Registry 设计讨论
 
-> **版本**：v0.2（讨论中）
-> **状态**：设计讨论阶段——本篇记录当前设计思路和未解决的问题，供后续 agent 继续讨论。
-> 本文件在达成共识前**不进入实现阶段**。
+> **版本**：v1.0（§S 已实现）
+> **状态**：§S（产出定义）已于 2026-06-02 实现。代码见 `src/client/modules/ui-registry.ts`，
+> MANIFEST 验证见 `check-registry.mjs`，已挂入 `npm run check` 管线。
+> §1-§9 的设计讨论仍为有效参考，开放问题（§5）待后续 agent 继续讨论。
 >
 > **关联文档**：
 > - `KFM_V4_INVARIANTS.md` — 本项目修改约束协议（本讨论引用的不变量来源）
@@ -637,3 +638,25 @@ AI → ai-tools.ts (注册在服务器端的 function calling 工具)
 **关于实现：先写 `ui-registry.ts`，再写 MANIFEST 验证，最后做集成。** 这个顺序有回退余地——核心文件写完了可以单独测试，MANIFEST 加上了就等于有了注册入口，集成是最后一步。
 
 **最可能翻车的地方**：内容层。内容层的 `summary` 从哪里来？谁负责更新？如果是文件树，它的摘要（目录路径、文件数）是 KFMState 管的，Registry 怎么读到？这其实回到 §5.1 的问题了。如果内容层实现不了，可以先砍掉它只做交互层+能力层，不影响核心架构。
+
+---
+
+### v0.3 → v1.0（2026-06-02，§S 已实现）
+
+**§S 核心已在代码中实现：**
+- `src/client/modules/ui-registry.ts` — 类型定义 + UIElementRegistry 类 + 全局 `Registry` 单例
+- `check-registry.mjs` — MANIFEST 硬编码 + 源码扫描验证
+- 10 个交互元素已注册（orb、orb-panel、sidebar、sidebar-toggle-btn、card-stack-toggle-btn、close-sidebar-btn、eye-btn、card-stack、input-bar、operation-toast）
+- `check-registry.mjs --check-only` 已挂入 `npm run check`（在 check-as-any 之后、tsc 之前）
+- 不带 `--check-only` 时挂入 `npm run build`
+- MANIFEST 验证采用白名单模式（同 check-as-any.mjs）：漏注册 → 构建中断
+
+**实现决策与文档 §S 的一致性：**
+- ✅ 类型定义完全匹配 §S.2（增补了 `inactive`/`visible`/`hidden`/`enabled` 到 UIElementState）
+- ✅ Registry 类方法完全匹配 §S.3
+- ✅ 模块在 `init*()` 中调 `Registry.register(...)`（§S.4）
+- ✅ MANIFEST 验证机制（§S.5）
+- ⬜ 内容层 + 能力层尚未注册（等待后续 agent 填充）
+- ⬜ §5 开放问题未解决（见 §5.5 通信通道、§5.1 getter 集成）
+
+**版本更新**：`package.json` → 6.0.0，`check-as-any.mjs` 白名单清空。

@@ -2,6 +2,7 @@ import { KFMState, API } from './state.js';
 import { DOM } from "./dom-refs.js";
 import { openCardStack, closeCardStack, isCardStackOpen } from './card-stack.js';
 import { openSidebar, closeSidebar } from './ui.js';
+import { Registry } from './ui-registry.js';
 /**
  * KFM v4 - 全局状态与初始化
  */
@@ -85,4 +86,67 @@ export async function initApp(): Promise<void> {
       aiInput.style.height = newHeight + 'px';
     });
   }
+
+  // ========== UI Element Registry 注册 ==========
+
+  Registry.register({
+    id: 'sidebar-toggle-btn',
+    type: 'button',
+    label: '侧栏开关',
+    description: '打开/关闭左侧文件树侧栏',
+    state: DOM.sidebar?.classList.contains('open') ? 'open' : 'closed',
+    enabled: true,
+    effect: '点击切换侧栏打开/关闭状态',
+    source: 'app.ts',
+  });
+  Registry.register({
+    id: 'card-stack-toggle-btn',
+    type: 'button',
+    label: '卡片堆开关',
+    description: '打开/关闭堆叠卡片面板',
+    state: 'closed',
+    enabled: true,
+    effect: '点击切换卡片堆打开/关闭状态',
+    source: 'app.ts',
+  });
+  Registry.register({
+    id: 'close-sidebar-btn',
+    type: 'button',
+    label: '关闭侧栏',
+    description: '关闭左侧文件树侧栏',
+    state: 'enabled',
+    enabled: true,
+    effect: '点击关闭侧栏',
+    source: 'app.ts',
+  });
+  Registry.register({
+    id: 'eye-btn',
+    type: 'button',
+    label: '显示隐藏文件',
+    description: '切换是否显示隐藏文件（以 . 开头的文件/目录）',
+    state: 'inactive',
+    enabled: true,
+    effect: '点击切换隐藏文件的显示状态',
+    source: 'app.ts',
+  });
+  Registry.register({
+    id: 'input-bar',
+    type: 'text-input',
+    label: 'AI 输入栏',
+    description: '输入消息与 AI 对话，支持 Tab 切换命令模式',
+    state: 'visible',
+    enabled: true,
+    effect: '输入文字后点击发送或按 Enter 发送给 AI',
+    source: 'app.ts',
+  });
+  Registry.register({
+    id: 'operation-toast',
+    type: 'icon',
+    label: '操作提示',
+    description: '短暂显示操作结果的浮动提示',
+    state: 'hidden',
+    enabled: true,
+    effect: '操作完成后自动显示 2 秒后消失',
+    source: 'app.ts',
+  });
 }

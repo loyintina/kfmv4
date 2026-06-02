@@ -8,6 +8,7 @@
 let sidebarContent: HTMLElement | null = null;
 
 import { onSidebarOpen, onSidebarClose } from './tree-render.js';
+import { Registry } from './ui-registry.js';
 
 export function openSidebar(): void {
   DOM.sidebar?.classList.add('open');
@@ -29,5 +30,17 @@ export function initUI(): void {
   // overlay 点击关侧栏
   DOM.overlay?.addEventListener('click', () => {
     closeSidebar();
+  });
+
+  // 注册 UI 元素
+  Registry.register({
+    id: 'sidebar',
+    type: 'panel',
+    label: '文件树侧栏',
+    description: '左侧文件浏览面板，显示当前目录的文件树和工具栏',
+    state: 'closed',
+    enabled: true,
+    effect: '打开后显示文件树，点击目录展开/折叠，左滑或点击遮罩关闭',
+    source: 'ui.ts',
   });
 }

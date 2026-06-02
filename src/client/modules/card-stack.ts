@@ -1,6 +1,7 @@
 import { gestures } from "./gesture-registry.js";
 import { anim, AnimTimeline } from './animation-registry.js';
 import { getLogs, clearLogs, copyLogs, onLog } from './logger.js';
+import { Registry } from './ui-registry.js';
 
 import { currentTheme as theme } from './theme.js';
 const orbT = theme.cornerOrb;
@@ -1348,5 +1349,17 @@ export function initCardStack(): void {
 
   window.addEventListener('resize', () => {
     randomizeCards();
+  });
+
+  // 注册 UI 元素
+  Registry.register({
+    id: 'card-stack',
+    type: 'panel',
+    label: '堆叠卡片面板',
+    description: '右侧边缘左滑唤出的堆叠卡片面板，展示信息和调试日志',
+    state: 'closed',
+    enabled: true,
+    effect: '打开后显示卡片堆，垂直滑动切换焦点卡片，水平滑动关闭',
+    source: 'card-stack.ts',
   });
 }

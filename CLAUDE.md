@@ -59,8 +59,8 @@ docs/
     ├── AI_OPERATION_PROTOCOL.md       # AI 操作协议（未实现功能设计）
     ├── CARD-STACK-HANDOFF.md          # 卡片面板交接笔记（已完成）
     ├── BUG_HANDOFF_ROOT_CHAR_RAIN.md  # 字符雨 bug 交接（已修复）
-├── HANDOFF_P3_REMAINING.md        # P3 遗留任务单（已完成）
-└── P3_RENDER_CONTEXT_REFACTOR_DONE.md # RenderContext 重构（已完成）
+    ├── HANDOFF_P3_REMAINING.md        # P3 遗留任务单（已完成）
+    └── P3_RENDER_CONTEXT_REFACTOR_DONE.md # RenderContext 重构（已完成）
 ```
 
 
@@ -110,13 +110,12 @@ src/
 │       ├── canvas-scroll.ts       # 通用滚动系统
 │       ├── click-queue.ts         # 点击事件队列（P4 提取）
 │       ├── debug-assert.ts        # 运行时断言
-│       ├── debug-panel.ts         # 调试面板（青色，独立光球）
 │       ├── logger.ts              # 日志系统（卡片堆 #2 日志卡片调用）
 │       ├── theme.ts               # 主题配色系统
 │       ├── app.ts                 # 全局初始化、日志、AI 输入栏
 │       ├── state.ts               # KFMState 统一状态层（发布-订阅 + beforeExpand Hook）
 │       ├── tree-model.ts          # Box 树构建（buildSidebarTree → buildExpanded）
-│       ├── tree-render.ts         # 文件树渲染 + 动画 + 光标（~1211行）
+│       ├── tree-render.ts         # 文件树渲染 + 动画 + 光标（~1193行）
 │       ├── root-picker.ts         # 文件树根目录切换器（RenderContext 上下文栈）
 │       ├── tree-loader.ts         # 懒加载（KFMState.addHook）
 │       ├── char-rain.ts           # 字符雨粒子动画（独立 GSAP 时间线）
@@ -162,7 +161,7 @@ src/
 - overlay 元数据用 `(as Box & OverlayMeta)` 访问，**禁止 (as any)._xxx**
 - **禁止在新建代码中使用 `(as any)`** — 构建时 `check-as-any.mjs` 会自动扫描，新增逃逸会中断构建
 - `Box.data` 必须通过 `getFileRowData()` 守卫访问，禁止 `(box as any).data`
-- 已知白名单内 10 处 `(as any)` 登记在 `check-as-any.mjs` WHITELIST 中（活跃逃逸 3 处）
+- `(as any)` 零逃逸 — 白名单已清空，构建时 `check-as-any.mjs` 扫描新增逃逸会中断构建
 - 向 `ts` 添加 tween 的函数，必须在 `ts.call` 回调里 `ts.clear()
 - 心法第 11 条：步骤 3 必须暴露所有已知缺口——不能自动继承的部分、为什么、填补方案`
 - 动画中 `_stateSub` 不会触发 `rebuildTree`（`L.isAnimating` 守卫）

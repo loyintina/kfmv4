@@ -82,7 +82,7 @@ export function moveCursorTo(hitBox: Box, animate = true): void {
   const label = hitBox.children.find(c => c.id?.startsWith('label-'));
   let textW = 0;
   if (label?.textStyle?.content) {
-    const ctx2d = (canvas as any)?.getContext?.('2d');
+    const ctx2d = canvas instanceof HTMLCanvasElement ? canvas.getContext?.('2d') : undefined;
     if (ctx2d) {
       const font = label.textStyle.font || '11px system-ui, sans-serif';
       const labelX = label.x || 0;
@@ -120,7 +120,7 @@ export function moveCursorTo(hitBox: Box, animate = true): void {
   const botLineW = totalLineW - topLineW;
 
   // 确保 data 对象存在（不替换，直接在属性上做动画）
-  const cdata = (L.cursorBox as any).data;
+  const cdata = L.cursorBox?.data;
   if (cdata) {
     cdata.cursorDynamicLines = true;
     cdata.color = theme.canvas.cursor;

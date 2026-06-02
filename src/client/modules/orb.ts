@@ -16,6 +16,7 @@ import { measureText, layoutLines } from '../engine/text-layout/index.js';
 import { gestures } from './gesture-registry.js';
 import { DOM } from "./dom-refs.js";
 import { currentTheme as theme } from './theme.js';
+import { Registry } from './ui-registry.js';
 
 interface ChatMessage {
   role: 'user' | 'ai';
@@ -510,4 +511,26 @@ export function initOrb(): void {
 
   // 监听输入栏位置
   initInputBarWatcher();
+
+  // 注册 UI 元素
+  Registry.register({
+    id: 'orb',
+    type: 'floating-button',
+    label: '光球',
+    description: 'AI 对话主入口',
+    state: 'collapsed',
+    enabled: true,
+    effect: '点击后展开光球，显示 AI 输入框和聊天记录',
+    source: 'orb.ts',
+  });
+  Registry.register({
+    id: 'orb-panel',
+    type: 'panel',
+    label: 'AI 对话面板',
+    description: 'AI 聊天对话面板',
+    state: 'collapsed',
+    enabled: true,
+    effect: '展开后显示聊天消息，可输入文字与 AI 对话',
+    source: 'orb.ts',
+  });
 }

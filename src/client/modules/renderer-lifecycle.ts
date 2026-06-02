@@ -144,7 +144,7 @@ export class RendererLifecycle {
     ] as const;
     for (const key of handles) {
       const id = this[key] as number;
-      if (id) { cancelAnimationFrame(id); (this as any)[key] = 0; }
+      if (id) { cancelAnimationFrame(id); (this as unknown as Record<string, number>)[key] = 0; }
     }
   }
 
