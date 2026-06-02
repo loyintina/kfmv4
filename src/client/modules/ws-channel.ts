@@ -288,7 +288,7 @@ function registerDefaultCommandHandlers(): void {
       const resp = await fetch('/api/files/list', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: window.KFMState?.currentRoot || '/', showHidden: true }),
+        body: JSON.stringify({ path: KFMState.currentRoot || '/', showHidden: true }),
       });
       const data = await resp.json();
       console.log('[ws-channel] 文件搜索结果:', data);

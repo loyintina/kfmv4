@@ -438,6 +438,7 @@ export function onSidebarOpen(): void {
   if (!fileTree) return;
 
   const canvas = document.createElement('canvas');
+  canvas.dataset.registryId = 'file-tree';
   canvas.id = 'tree-canvas';
   canvas.style.width = '100%';
   canvas.style.height = '100%';
@@ -547,6 +548,7 @@ export function initTreeRenderer(): void {
   initScrollGesture();
 
   const canvas = document.createElement('canvas');
+  canvas.dataset.registryId = 'file-tree';
   canvas.id = 'tree-canvas';
   canvas.style.width = '100%';
   canvas.style.height = '100%';

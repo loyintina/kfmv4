@@ -26,7 +26,10 @@ interface ChatMessage {
 
 type OrbState = 'collapsed' | 'expanded' | 'editing';
 
+type PanelState = 'closed' | 'open' | 'editing';
+
 let orbState: OrbState = 'collapsed';
+let panelState: PanelState = 'closed';
 let orbEl: HTMLDivElement | null = null;
 let panelEl: HTMLDivElement | null = null;
 
@@ -113,6 +116,7 @@ function createPanel(): HTMLDivElement {
     transition: opacity 0.3s ease;
     pointer-events: none;
   `;
+  panel.dataset.registryId = 'orb-panel';
   panel.id = 'orbPanel';
   document.body.appendChild(panel);
   return panel;
@@ -229,6 +233,7 @@ function expandPanel(): void {
   if (!panelEl) panelEl = createPanel();
   if (orbState === 'collapsed') {
     orbState = 'expanded';
+    panelState = 'open';
     buildPanelContent();
     updatePanelPosition();
     renderChatContent();
@@ -243,6 +248,7 @@ function expandPanel(): void {
 function collapsePanel(): void {
   if (orbState === 'expanded') {
     orbState = 'collapsed';
+    panelState = 'closed';
     if (panelEl) {
       panelEl.style.opacity = '0';
       panelEl.style.pointerEvents = 'none';
@@ -256,6 +262,7 @@ function collapsePanel(): void {
 function enterEditMode(): void {
   if (orbState !== 'expanded') return;
   orbState = 'editing';
+  panelState = 'editing';
   Registry.notifyStateChange('orb');
   Registry.notifyStateChange('orb-panel');
 
@@ -273,6 +280,7 @@ function enterEditMode(): void {
 
 function exitEditMode(): void {
   if (orbState !== 'editing') return;
+  panelState = 'open';
   orbState = 'expanded';
   if (panelEl) {
     panelEl.style.boxShadow = theme.aiChat.panelShadow;
@@ -541,7 +549,7 @@ export function initOrb(): void {
     enabled: true,
     effect: '展开后显示聊天消息，可输入文字与 AI 对话',
     source: 'orb.ts',
-  }, () => orbState);
+  }, () => panelState);
 
   // 注册内容层：AI 对话摘要（使用生成器，每次 snapshot 返回最新消息）
   Registry.registerContentGenerator('orb-chat', () => ({

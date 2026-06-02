@@ -129,16 +129,20 @@ function setupApiRoutes(router: express.Router) {
   });
 }
 
-setupApiRoutes(app.use('/api', express.Router()) && app);
-app.use('/api', (() => { const r = express.Router(); setupApiRoutes(r); return r; })());
-app.use('/kfmv4/api', (() => { const r = express.Router(); setupApiRoutes(r); return r; })());
+// API 路由（支持 /api 和 /kfmv4/api 两种前缀）
+const apiRoutes = express.Router();
+setupApiRoutes(apiRoutes);
+app.use('/api', apiRoutes);
+app.use('/kfmv4/api', apiRoutes);
 
 // AI Tools 路由（挂载到 /api 和 /kfmv4/api 下）
 const PORT = parseInt(process.env.KFM_PORT || '8021', 10);
 const httpServer = http.createServer(app);
 const wsServer = new WsServer(httpServer);
-app.use('/api', (() => { const r = express.Router(); setupAiTools(r, wsServer); return r; })());
-app.use('/kfmv4/api', (() => { const r = express.Router(); setupAiTools(r, wsServer); return r; })());
+const aiRoutes = express.Router();
+setupAiTools(aiRoutes, wsServer);
+app.use('/api', aiRoutes);
+app.use('/kfmv4/api', aiRoutes);
 
 httpServer.listen(PORT, '127.0.0.1', () => {
   console.log(`KFM v4 server running at http://localhost:${PORT}`);

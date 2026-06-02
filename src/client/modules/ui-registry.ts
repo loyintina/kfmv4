@@ -22,7 +22,6 @@
 
 // ========== 导入 ==========
 
-import { warn } from './debug-assert.js';
 
 
 
@@ -165,8 +164,10 @@ export class UIElementRegistry {
       console.warn(`[ui-registry] 重复注册内容块: ${block.id}，覆盖旧值`);
     }
     this._content.set(block.id, block);
-    // 如果已有同 id 的 generator，移除（静态覆盖动态）
-    this._contentGenerators.delete(block.id);
+    // 生成器优先：注册静态内容但不覆盖已有生成器
+    if (!this._contentGenerators.has(block.id)) {
+      this._contentGenerators.delete(block.id);
+    }
     this._notifyChange('content', block.id);
   }
 
@@ -212,8 +213,6 @@ export class UIElementRegistry {
       if (getter) {
         return { ...el, state: getter() };
       }
-      // 开发时警告：元素没有注册 state getter，snapshot 可能返回过期状态
-      warn(`[ui-registry] "${el.id}" 没有注册 state getter，snapshot() 将返回注册时的静态值。建议注册 getter 或使用 Registry.registerElement()。`);
       return el;
     });
 

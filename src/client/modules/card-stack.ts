@@ -258,6 +258,7 @@ function createCard(index: number): HTMLElement {
   el.className = 'stack-card';
   el.dataset.index = String(index);
   el.dataset.randomRight = '0';
+  el.dataset.registryId = 'card-stack';
   el.dataset.randomRotate = '0';
   el.style.cssText = [
     'position:fixed',
