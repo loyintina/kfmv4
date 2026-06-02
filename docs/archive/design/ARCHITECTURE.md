@@ -1,3 +1,8 @@
+---
+status: superseded
+archived_at: 2026-06-02
+superseded_by: docs/HANDBOOK.md
+---
 # KFM v4 架构参考
 
 > 本文档记录核心架构的详细设计。CLAUDE.md 是入口，本文档是深度参考。

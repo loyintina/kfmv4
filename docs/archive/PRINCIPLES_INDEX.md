@@ -1,3 +1,8 @@
+---
+status: superseded
+archived_at: 2026-06-02
+superseded_by: docs/HANDBOOK.md
+---
 # KFM v4 原则索引
 
 > 所有心法原则、架构约束、隐性契约的一站式查找表。

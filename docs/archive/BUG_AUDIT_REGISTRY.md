@@ -1,3 +1,8 @@
+---
+status: superseded
+archived_at: 2026-06-02
+superseded_by: docs/HANDBOOK.md
+---
 # KFM v4 Bug Audit Registry (B.A.R.)
 
 > **诊断手册**。遇到 bug 时先翻阅这里，而不是从头排查。

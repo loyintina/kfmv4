@@ -1,3 +1,8 @@
+---
+status: superseded
+archived_at: 2026-06-02
+superseded_by: docs/HANDBOOK.md
+---
 # KFM v4 调试标准操作规程（SOP）
 
 > 遇到视觉效果不符合预期时，先按此流程排查，不要跳步去改 CSS 值。

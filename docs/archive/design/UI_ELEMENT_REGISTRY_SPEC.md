@@ -1,3 +1,8 @@
+---
+status: superseded
+archived_at: 2026-06-02
+superseded_by: docs/HANDBOOK.md
+---
 # UI Element Registry 设计讨论
 
 > **版本**：v1.0（§S 已实现）

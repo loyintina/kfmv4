@@ -1,3 +1,8 @@
+---
+status: superseded
+archived_at: 2026-06-02
+superseded_by: docs/HANDBOOK.md
+---
 # KFM v4 项目交接文档
 
 > 最后更新：2026-06-02（v6.0.0）

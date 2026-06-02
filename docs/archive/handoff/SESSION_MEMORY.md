@@ -1,3 +1,8 @@
+---
+status: superseded
+archived_at: 2026-06-02
+superseded_by: docs/HANDBOOK.md
+---
 # KFM v4 会话记忆（2026-06-02）
 
 > **新会话必读。** 本文档是当前会话的实时快照——焦点、架构状态、陷阱。

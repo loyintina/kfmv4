@@ -1,3 +1,8 @@
+---
+status: superseded
+archived_at: 2026-06-02
+superseded_by: docs/HANDBOOK.md
+---
 # P3 重构计划：Renderer 上下文隔离
 
 > **已完成 · 已归档。** 完整方案（含推理链和实施细节）见 `docs/archive/P3_RENDER_CONTEXT_REFACTOR_DONE.md`。

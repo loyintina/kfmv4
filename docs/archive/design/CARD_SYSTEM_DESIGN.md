@@ -1,3 +1,8 @@
+---
+status: superseded
+archived_at: 2026-06-02
+superseded_by: docs/HANDBOOK.md
+---
 # KFM v4 卡片系统设计方案
 
 > 写于 2026-05-12，基于工作台（workbench）模式的统一卡片交互设计。
