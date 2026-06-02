@@ -2,129 +2,48 @@
 
 AI 人机交互个人工作台，面向移动端浏览器。核心理念：**一切皆盒子**。
 
-> ⚠️ **开工前协议**：修改任何 `.ts` 文件前，AI **必须**先通读
-> [`docs/KFM_V4_INVARIANTS.md`](docs/KFM_V4_INVARIANTS.md)（AI 修改约束协议），
-> 内化其中的心法原则、核心约束和自查清单。未读协议就动手的修改大概率方向错误。
->
-> **如果新开对话**：还需通读
-> [`docs/SESSION_MEMORY.md`](docs/SESSION_MEMORY.md)（会话状态快照）+
-> [`docs/HANDOFF_AUDIT.md`](docs/HANDOFF_AUDIT.md)（项目交接与待办总览）。
->
-> 深度架构参考见 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)（动画系统、依赖方向、调用链）。
+> ⏱ **TL;DR 给新来的 AI**：这是 AI 生成的个人工作台原型，Canvas 自研渲染引擎。
+> 改代码前必须先读 `docs/KFM_V4_INVARIANTS.md`（修改约束协议）。
+> 新开对话还需通读 `docs/SESSION_MEMORY.md` + `docs/HANDOFF_AUDIT.md`。
+> 架构参考见 `docs/ARCHITECTURE.md`，愿景见 `docs/VISION_AND_ROADMAP.md`。
+
+---
 
 ## 技术栈
 
-- TypeScript (ES2022) + Express 服务器
-- Canvas 2D 自研渲染引擎（v2: Box → Renderer），非 LeaferJS
+- TypeScript 6 (ES2022) + Express 4 服务端
+- Canvas 2D 自研渲染引擎（v2 Box → Renderer）
 - SCSS 编译（sass → CSS，语法校验 + 构建时编译）
-- GSAP 3.15.0 动画
-- esbuild 构建（TypeScript → dist/server/index.js + public/bundle.js）
-- `@chenglou/pretext` 文本测量（零 reflow 离屏测量）
+- GSAP 3.15 动画（通过 `animation-registry.ts` 隔离调用）
+- esbuild 构建（`tsc --noEmit` → esbuild bundle）
+- `@chenglou/pretext` 文本测量
 
 ## 构建与运行
 
 ```bash
-npm run build    # sass → tsc --noEmit → esbuild（类型不过不会打包）
-npm run check    # sass --no-source-map → 内存预检 → tsc --noEmit
-npm run start    # node dist/server/index.js  →  http://localhost:8021
-npm run dev      # ts-node ESM 模式直接运行
+npm run check    # sass → check-* → tsc --noEmit（必须零错误通过）
+npm run build    # check 通过后 esbuild 打包
+npm run start    # 启动 http://localhost:8021
+npm run dev      # ts-node ESM 直接运行
 ```
 
-**`npm run check` 必须零错误通过。** 全部历史类型错误已修复。如果报错 → 是改动引入的，必须修复。
-
-## 文档结构
-
+## 文档体系
 
 ```
-CLAUDE.md                          # 主文档（本文件）
+CLAUDE.md                          # 本文件——项目入口 + 快速参考
 docs/
+├── HANDOFF_AUDIT.md               # 待办总览 + 版本摘要（新对话/规划时必读）
+├── SESSION_MEMORY.md              # 当前会话快照（新开对话必读）
+├── KFM_V4_INVARIANTS.md           # AI 修改约束协议（改代码前必读）
 ├── ARCHITECTURE.md                # 架构参考（动画系统、依赖方向、调用链）
-├── VISION_AND_ROADMAP.md          # 工作台愿景 + 卡片系统 + 路线图（方向文档）
-├── HANDOFF_AUDIT.md               # 项目交接 + 待办总览（新接手/规划时必读）
-├── KFM_V4_INVARIANTS.md           # AI 修改约束协议 / Harness（开工前必读）
-├── BUG_AUDIT_REGISTRY.md          # 隐性契约 + 根因案例库（遇到 bug 时翻阅）
-├── DEBUG_SOP.md                   # 调试标准操作规程（CSS/视觉 bug 排查）
-├── UI_ELEMENT_REGISTRY_SPEC.md    # UI 元素注册表设计规范（草案，待审计）
-├── CARD_SYSTEM_DESIGN.md          # 统一卡片系统设计蓝图（待实现）
-├── SESSION_MEMORY.md              # 会话状态快照（新开对话必读）
-└── archive/
-    ├── AI_COLLABORATION_PRINCIPLES.md # 通用 AI 协作守则（被 KFM_V4_INVARIANTS.md 吸收）
-    ├── ANIMATION_REFINEMENT_PLAN.md   # 动画优化方案（已过时）
-    ├── STACK_CARDS_DESIGN.md          # 堆叠卡片配色设计（已改为随机 HSL）
-    ├── HANDOFF_BRORB_FIX.md           # BR 光球类型守卫交接（已完成）
-    ├── BUG_FIXING_PHILOSOPHY.md       # 旧版 Bug 修复原则（被 BUG_AUDIT_REGISTRY.md 取代）
-    ├── CLAUDE_v2.md                   # 上一版 CLAUDE（已合并）
-    ├── RACE_CONDITION_PLAN.md         # P1-P5 竞态方案（已完成）
-    ├── REFACTOR_THESIS_FULL.md        # 原始愿景蓝图（已合并入 VISION_AND_ROADMAP.md）
-    ├── AI_OPERATION_PROTOCOL.md       # AI 操作协议（未实现功能设计）
-    ├── CARD-STACK-HANDOFF.md          # 卡片面板交接笔记（已完成）
-    ├── BUG_HANDOFF_ROOT_CHAR_RAIN.md  # 字符雨 bug 交接（已修复）
-    ├── HANDOFF_P3_REMAINING.md        # P3 遗留任务单（已完成）
-    └── P3_RENDER_CONTEXT_REFACTOR_DONE.md # RenderContext 重构（已完成）
-```
-
-
-### 三份核心文档的分工
-
-| 文档 | 使用时机 | 职能 |
-|------|---------|------|
-| `VISION_AND_ROADMAP.md` | **规划设计时**参考 | 方向性——核心理念 + 卡片系统 + 演进路线 |
-| `KFM_V4_INVARIANTS.md` | **改代码前**必读 | 预防性——心法原则 + 架构约束 + 自查清单 |
-| `ARCHITECTURE.md` | **理解架构时**查阅 | 参考性——动画系统、依赖方向、调用链 |
-| `DEBUG_SOP.md` | **遇到 bug 时**先翻 | 流程性——标准排查路径 |
-| `BUG_AUDIT_REGISTRY.md` | **SOP 排查无果后**翻阅 | 诊断性——隐性契约 + 根因案例 |
-| `SESSION_MEMORY.md` | **新开对话时**必读 | 全景性——当前焦点 + 陷阱 + 架构快照 |
-| `HANDOFF_AUDIT.md` | **接手/规划时**同步 | 总览性——待办优先级 + 历史批次 |
-
-## 目录结构
-
-```
-cards/
-├── plugins/
-│   └── debug-card/       # 调试面板卡片插件（实验性，未与主应用连接）
-src/
-├── server/index.ts           # Express 服�������（文件读写 API）
-├── client/
-│   ├── main.ts               # 入口：gestures.init() → App → UI → Orb → TreeRenderer → CardStack
-│   ├── engine/v2/            # Canvas 渲染引擎
-│   │   ├── box.ts            # Box 数据结构（一切皆盒）
-│   │   ├── renderer.ts       # Canvas 2D 渲染器 + 主循环
-│   │   ├── types.ts          # 全部类型���义
-│   │   ├── flex.ts           # Flexbox 布局算法
-│   │   ├── utils.ts          # 通用工具函数
-│   │   ├── animation.ts      # 缓动函数
-│   │   ├── BorderDrawer.ts   # 四边独立控制 + 宽度渐变边框
-│   │   ├── StyleConfig.ts    # 边框状态配置
-│   ├── engine/text-layout/   # 文本排版引擎（基于 @chenglou/pretext）
-│   │   ├── layout.ts         # 公开 API：prepare()/layout()
-│   │   ├── measurement.ts    # Canvas 文本测量 + 缓存
-│   │   ├── line-break.ts     # 自动换行（CJK 感知）
-│   │   ├── analysis.ts       # 文本分析：CJK 分类、空白归一化
-│   │   └── bidi.ts           # 双向文本辅助
-│   └── modules/
-│       ├── gesture-registry.ts    # 手势注册中心（优先级调度，独占执行）
-│       ├── renderer-lifecycle.ts  # 渲染器生命周期（状态机 + rAF/Listener 追踪）
-│       ├── dom-refs.ts            # DOM 元素引用注册表
-│       ├── canvas-utils.ts        # 通用 Canvas 工具函数
-│       ├── canvas-cursor.ts       # 通用光标系统
-│       ├── canvas-scroll.ts       # 通用滚动系统
-│       ├── click-queue.ts         # 点击事件队列（P4 提取）
-│       ├── debug-assert.ts        # 运行时断言
-│       ├── logger.ts              # 日志系统（卡片堆 #2 日志卡片调用）
-│       ├── theme.ts               # 主题配色系统
-│       ├── app.ts                 # 全局初始化、日志、AI 输入栏
-│       ├── state.ts               # KFMState 统一状态层（发布-订阅 + beforeExpand Hook）
-│       ├── tree-model.ts          # Box 树构建（buildSidebarTree → buildExpanded）
-│       ├── tree-render.ts         # 文件树渲染 + 动画 + 光标（~1193行）
-│       ├── root-picker.ts         # 文件树根目录切换器（RenderContext 上下文栈）
-│       ├── tree-loader.ts         # 懒加载（KFMState.addHook）
-│       ├── char-rain.ts           # 字符雨粒子动画（独立 GSAP 时间线）
-│       ├── animation-registry.ts  # GSAP scope 隔离（anim.scope + AnimTimeline）
-│       ├── ui.ts                  # 侧栏开关
-│       ├── gestures.ts            # 全局手势
-│       ├── orb.ts                 # 悬浮光球 + AI 对话面板
-│       ├── card-stack.ts          # 堆叠卡片 + 浮卡系统（紧凑/展开双态）
-│       └── style-registry.ts      # 样式注册表（LINE_HEIGHT、配色等）
+├── VISION_AND_ROADMAP.md          # 核心理念 + 演进路线（规划设计时参考）
+├── DEBUG_SOP.md                   # 调试标准流程（遇到 bug 时先翻）
+├── BUG_AUDIT_REGISTRY.md          # 隐性契约 + 根因案例库（SOP 排查无果后翻阅）
+├── PRINCIPLES_INDEX.md            # 所有原则/约束/契约的索引表
+├── CARD_SYSTEM_DESIGN.md          # 统一卡片系统设计蓝图
+├── UI_ELEMENT_REGISTRY_SPEC.md    # UI 元素注册表设计规范
+├── TESTING.md                     # 回归检查清单
+└── archive/                       # 历史归档（按类别分目录）
 ```
 
 ## 核心架构
@@ -134,96 +53,64 @@ src/
 | 注册中心 | 文件 | 职责 |
 |----------|------|------|
 | `GestureRegistry` | `gesture-registry.ts` | document 级触摸事件统一调度 |
-| `RendererLifecycle` (`L`) | `renderer-lifecycle.ts` | tree-render 全部可变状态 + rAF/Listener 追踪 |
+| `RendererLifecycle` (L) | `renderer-lifecycle.ts` | 渲染器生命周期 + 状态机 |
 | `DOM` | `dom-refs.ts` | 全局 DOM 元素引用 |
+| `Registry` | `ui-registry.ts` | UI 元素注册表 |
 
-手势优先级: orb(100) > card-stack-panel(90) > card-stack-global(80) > page-swipe(50)
+手势优先级：`orb(100) > card-stack-panel(90) > card-stack-global(80) > picker-lock(110) > page-swipe(50)`
 
-> 动画系统、Canvas 依赖方向、关键调用链等深度架构内容见 `docs/ARCHITECTURE.md`。
+### 状态机
+
+```
+tree-render:        idle ⇄ animating (L.beginOp/endOp)
+card-stack:         closed ⇄ opening ⇄ open ⇄ closing
+floating-card:      compact → expanding → active ⇄ editing
+orb (main):         collapsed ⇄ expanding/collapsing ⇄ expanded ⇄ editing
+```
+
+### 依赖方向
+
+```
+renderer-lifecycle (L)
+  ↓
+canvas-utils.ts          ← 最底层，只依赖 L
+  ↓
+canvas-cursor.ts         ← 不导入 tree-*
+  ↓
+canvas-scroll.ts         ← 不导入 tree-*
+  ↓
+tree-render.ts           ← 可以导入任何 canvas-*
+```
 
 ## Bug 修复原则
 
 **禁止打补丁。排查到最深层根因，通过调整架构间接消除 bug。**
 
-具体来说：
-- 不修症状（"字符雨不显示 → 加个 setTimeout"）
-- 修根因（"字符雨不显示 → 发现 overflow: hidden 裁剪 → 让 overlay 默认 overflow: visible"）
-- 每次修复后问自己：这个类别的 bug 以后还会出现吗？如果会，加类型、加断言、调架构，让它不可能出现。
-
-详细原则与案例见 `docs/KFM_V4_INVARIANTS.md`（第三章：常见补丁模式）。
-
-## 关键约定
-
-- `_` 前缀 = 模块内私有
-- `L.renderer` 等通过 `renderer-lifecycle.ts` 单例访问
-- `KFMState` 发布-订阅，订阅后用 `_ensureSubscribed` 模式
-- Canvas 滚动/点击事件走元素级监听，不走 GestureRegistry
-- overlay 元数据用 `(as Box & OverlayMeta)` 访问，**禁止 (as any)._xxx**
-- **禁止在新建代码中使用 `(as any)`** — 构建时 `check-as-any.mjs` 会自动扫描，新增逃逸会中断构建
-- `Box.data` 必须通过 `getFileRowData()` 守卫访问，禁止 `(box as any).data`
-- `(as any)` 零逃逸 — 白名单已清空，构建时 `check-as-any.mjs` 扫描新增逃逸会中断构建
-- 向 `ts` 添加 tween 的函数，必须在 `ts.call` 回调里 `ts.clear()
-- 心法第 11 条：步骤 3 必须暴露所有已知缺口——不能自动继承的部分、为什么、填补方案`
-- 动画中 `_stateSub` 不会触发 `rebuildTree`（`L.isAnimating` 守卫）
+详见 `docs/KFM_V4_INVARIANTS.md`（第三章：常见补丁模式 + 自查清单）。
 
 ## 完整性校验
 
 ```bash
-npm run check   # TypeScript 类型检查 → 必须零错误
-npm run build   # esbuild 构建 → 必须通过
+npm run check   # sass + 3 个 check-*.mjs + tsc --noEmit，零错误
+npm run test    # 74 个回归测试，覆盖 10 个模块
 ```
 
-## 回归检查
+## 关键约定速查
 
-### 自动化回归测试
+- `_` 前缀 = 模块内私有
+- `L.renderer` 等通过 `renderer-lifecycle.ts` 单例访问
+- `(as any)` **零逃逸**（白名单已清空，`check-as-any.mjs` 扫描）
+- `Box.data` 必须通过 `getFileRowData()` 守卫访问
+- 所有 GSAP 调用通过 `animation-registry.ts`，禁止直接 `import gsap`
+- Canvas 滚动/点击走元素级监听，不走 GestureRegistry
+- overlay 元数据用 `(as Box & OverlayMeta)` 类型访问
+- 向 `ts` 加 tween 的函数，必须在 `ts.call` 回调里 `ts.clear()`
+- 动画中 `_stateSub` 不会触发 `rebuildTree`（`L.isAnimating` 守卫）
 
-```bash
-npm test   # 74 个测试，覆盖 10 个模块
-```
-
-| # | 测试组 | 覆盖模块 | 断言数 |
-|---|--------|----------|--------|
-| 1 | click-queue | click-queue.ts (入队/出队/peek/clear) | 4 |
-| 2 | state machine | renderer-lifecycle.ts (状态机/cancelAllRafs/resetForOpen) | 7 |
-| 3 | tree-model | tree-model.ts (容器嵌套/高度) | 3 |
-| 4 | debug-assert | debug-assert.ts (函数存在性) | 2 |
-| 5 | state (KFMState) | state.ts (订阅/expanded/hooks/toggle/setViewport/FileRowData) | 12 |
-| 6 | animation-registry | animation-registry.ts (scope/play/kill/reverse/killAll) | 11 |
-| 7 | style-registry | style-registry.ts (模板/缩进/颜色/createBox/patch) | 14 |
-| 8 | gesture-registry | gesture-registry.ts (优先级/过滤/条件/disable/事件模拟) | 14 |
-| 9 | card-stack | card-stack.ts (状态机/开-关-聚焦循环) | 6 |
-| 10 | overlay invariants | tree-render.ts (动画入口异常安全) | 2 |
-
-### 手动回归检查清单
-
-仍需要手动验证的交互（无法通过 CLI 自动化）：
-
-| # | 操作 | 预期结果 |
-|---|------|----------|
-| 1 | 打开页面 | 主页面正常，光球可见 |
-| 2 | 右滑 / 三横线 | 左栏打开，文件树完整 |
-| 3 | 左栏上下滑动 | 列表正常滚动 |
-| 4 | 点击���件��� | 展��/折叠动画正常，字符雨可见 |
-| 5 | 快速连点同目录 | 展开��折叠正���切换，无闪烁 |
-| 6 | 左栏左滑 | 左栏关闭 |
-| 7 | 侧栏关闭时左滑 | 召唤卡堆 |
-| 8 | 卡堆右滑 | 关闭卡堆 |
-| 9 | 卡堆上下滑 | 切换卡片，焦点保持 |
-| 10 | 点击光球 | AI 面板打开 |
-| 11 | 多层嵌套文件夹展开 | 子容器串行展开，字符雨正常 |
-| 12 | 展开后立即折叠 | 折叠动画流畅，文字自然被裁 |
-| 13 | 紧凑态浮卡点击 BR 光球展开 | 三颗角光球从 BR 位置滑入，与卡片动画同步，无淡入淡出 |
-| 14 | 展开态浮卡点击 BR 光球折叠 | 三颗角光球滑回 BR 位置，卡片同步收缩，无淡入淡出 |
-| 15 | 展开态浮卡点击 TR 光球关闭 | 所有光球 + 卡片同步向 TR 圆心收缩消失，无淡入淡出 |
-| 16 | 快速点击展开态 TR 光球 | 展开动画期间误触不触发关闭（状态守卫） |
-| 17 | 展开后观察 BR 光球 SVG 图标 | 展开动画开始时图标已切换为十字+圈，折叠时同步清除 |
-
+## 注意事项
 
 - **esbuild**: `supported: { nullish-coalescing: false }` 要求 ES2019
-- **Canvas 初始化**: `clientWidth=0`，需在 `requestAnimationFrame` 回调里 `rebuildTree()`
-- **服务端**: `nohup node dist/server/index.js &` 启动，`kill $(pgrep -f node.*dist/server)` 停止
+- **Canvas 初始化**: `clientWidth=0`，需在 rAF 回调里 `rebuildTree()`
 - **事件冒泡**: 侧栏触摸区事件冒泡到 document → GestureRegistry 误触发
 
-> 历史修复记录（v4.0.1—v4.0.2）和近期重构历史已在当前 CLAUDE.md 中清理。
-> 如需追溯，使用 `git log --oneline v4.0.0..HEAD` 查看完整记录。
-```
+> 历史修复记录（v4.0.0 前）已清理。如需追溯：`git log --oneline v4.0.0..HEAD`

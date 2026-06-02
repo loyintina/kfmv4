@@ -1,3 +1,7 @@
+---
+status: completed
+archived_at: 2026-06-02
+---
 # P3 交接文档：4 个遗留问题
 
 ## 当前架构概况

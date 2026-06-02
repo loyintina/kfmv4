@@ -1,3 +1,7 @@
+---
+status: superseded
+archived_at: 2026-06-02
+---
 # KFM v4 (Kaf Fee Mew / 咖啡猫)
 
 > ⚠️ **存档文档**。本文引用的部分源文件（`scroll.ts`、`GestureRecognizer.ts` 等）已从项目中删除，目录结构与当前代码不完全一致。仅供参考。

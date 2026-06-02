@@ -1,3 +1,7 @@
+---
+status: completed
+archived_at: 2026-06-02
+---
 # KFM v4 动画竞态根治方案
 
 ## 问题根源

@@ -1,3 +1,7 @@
+---
+status: superseded
+archived_at: 2026-06-02
+---
 # AI 协作守则
 
 > 通用版。任何项目可直接复制使用，无需修改。

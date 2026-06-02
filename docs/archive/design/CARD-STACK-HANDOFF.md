@@ -1,3 +1,7 @@
+---
+status: superseded
+archived_at: 2026-06-02
+---
 # 堆叠卡片面板 — 交接文档
 
 ## 项目概览

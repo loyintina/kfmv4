@@ -1,3 +1,7 @@
+---
+status: superseded
+archived_at: 2026-06-02
+---
 # Kaf Fee Mew — 技术架构与实施蓝图
 
 > ⚠️ **存档文档**。本文提到的 `debug-helper.ts`、`tree-render-legacy.ts` 等清理候选文件已从项目中删除，部分架构描述已过时。仅供参考。

@@ -1,3 +1,7 @@
+---
+status: superseded
+archived_at: 2026-06-02
+---
 # AI 操作协议 — AI 操作项目自身的能力
 
 > 让 AI 通过对话界面直接操作 kfmv4 项目：读/写文件、执行命令、自我修改。

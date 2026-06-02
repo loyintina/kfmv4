@@ -1,639 +1,73 @@
 # KFM v4 项目交接文档
 
-> 写于 2026-05-09，基于对全部源代码的全面审计。
 > 最后更新：2026-06-02（v6.0.0）
+> 本文档是项目**唯一的**待办总览数据源。`SESSION_MEMORY.md` 不维护进度列表。
+
+> ⏱ **TL;DR**：当前活跃待办仅 1 项（P2 拆分 card-stack.ts），其余为持续观察项。
+> 历史版本详情已归档至 `docs/archive/handoff/`，需要追溯时查阅。
 
 ---
 
-## 当前待办优先级总览
-
-> 本文档是项目**唯一的**待办总览数据源。
-> `SESSION_MEMORY.md` 已不再维护进度列表，做进度规划时以此为基准。
+## 当前待办
 
 | 优先级 | 事项 | 说明 | 状态 |
 |--------|------|------|------|
-| **🟠 P2** | 拆分 `card-stack.ts`（1352 行） | 卡片堆面板 + 浮卡系统两个职责混合，38 函数仅 9 导出 | ⬜ |
-| **🟠 P3** | 清理 `window` 全局变量（14 处，5 文件） | 隐式全局耦合，类型检查无效 | ✅ 已完成（v6.0.0） |
-| **🟡 P3** | 修复空 catch 块（4 处） | 静默吞错误，canvas-cursor.ts 为主 | ✅ 已完成（v6.0.0） |
-| **🟡 P3** | `(as any)` 白名单清理（11 处） | 已通过 `check-as-any.mjs` 控制增量 | ✅ 已完成（v6.0.0） |
-| **🟢 Obs** | 测试基础设施 | mock 失真、无 UI/Canvas 覆盖 | 持续观察 |
-
-各优先级具体语境见下方版本章节。
+| **🟠 P2** | 拆分 `card-stack.ts`（1352 行） | 面板逻辑 ~400 行 + 浮卡系统 ~900 行两职责混合 | ⬜ |
+| **🟢 Obs** | 测试基础设施 | GSAP mock 失真，无 UI/Canvas/手势覆盖 | 持续观察 |
+| **🟢 Obs** | orb / card-stack 拖动逻辑重复 | 各自实现 pointerdown/move/up 循环 | 持续观察 |
+| **🟢 Obs** | archive/ 文档健康度 | 已按分类重组，定期检查 | 持续观察 |
 
 ---
 
-## v5.0.0 状态更新
+## v6.0.0 版本摘要
 
-> 本次会话重点：CSS 语法安全保障 + 文档-代码审计 + 体系完善
+**核心变更**：UI Element Registry 实现 + 独立代码审计清理。
 
-| 审计项 | 状态 | commit |
-|--------|------|--------|
-| CSS 语法错误修复（缺失 } 导致 nav-label 样式不生效） | ✅ 已修复 + 新增诊断流程 B.A.R. #006 | 97df074 |
-| CSS 迁移至 SCSS（语法校验 + 编译管线） | ✅ source: .scss → compile → .css | b5a2dbe |
-| 废弃 sidebar-nav 功能清理 | ✅ 完整删除（模块、CSS、state 字段、DOM ref） | 9d6b1dc |
-| 文档-代码审计清理（-735 行死代码 + 文档修正） | ✅ 3 篇文档更新 + 68 行死 CSS + 死导出清理 | 4c30fe0 |
-| 内存预检 + 工具资源生命周期约束 | ✅ check-anim.mjs + 自查清单 | 97df074 |
-| KFMState 通知机制隐性契约 | ✅ BUG_AUDIT_REGISTRY.md 1.9 | 本次会话 |
-| 手势系统整合（3 条绕过管道迁移） | ✅ canvas-scroll / tree-render / debug-panel 全部走 PointerEvent | 7eeb035 |
-| 青色调试光球删除 | ✅ debug-panel.ts / theme.ts / main.ts 清理 | 550899e |
-| SOP 步骤5 + 心法 ⑨⑩（搬运原样复制 + 改动前先说明） | ✅ KFM_V4_INVARIANTS.md + CLAUDE.md 同步 | bbe94d2 |
-| root-picker buildTree 重构 | ✅ 替代手写 Box 树，Renderer 替换模式 | b85cde7 |
-| 浮卡关闭动画向 TR 圆心收缩 | ✅ 所有光球 + 卡片同步 scale:0，无淡入淡出 | f4c95b5 |
-
-### 尚未处理的继续项（与 v4.1.0 相同，无变化）
-
----
-
-## v5.1.0 状态更新
-
-> 本次会话焦点：root-picker 交互完整性修复 + 代码审计 + 重构计划
-
-### 已完成的审计项
-
-| 审计项 | 决策 | commit |
-|--------|------|--------|
-| `_closeWithAnim` 调用顺序 | 先 `_destroyPicker` 再 `loadFileTree`，确保 `rebuildTree` 跑在正确渲染器上 | `b034c30` |
-| 子目录路径映射 | 引入 `KFMState.currentRoot` 消除 `files['.']` 硬编码，替代 .then() 数据搬运补丁 | `baf9f34` |
-| 光标保存/恢复（关闭时） | `_destroyPicker` 恢复 `_savedCursorRowId` 替代 `moveCursorTo(row0)` | `63d7ea7` |
-| 点击定位继承 | `pickerHandleClick` 改用 `getCursorRowIndex()` 替代模块级 `_cursorIdx` | `fca18b0` |
-| 光标保存/恢复（重建时） | `_rebuildPicker` 重建前保存 `L.cursorRowId`，重建后 `findBoxById` 恢复 | `c1532a8` |
-| 清理 `_cursorIdx` 死代码 | 删除模块变量，`_closeWithAnim` 改用 `getCursorRowIndex()` | `df47d2b` |
-| 默认展开 root | `_pickerExpanded` 初始化为 `{ [BASE_PATH]: true }` | `fca18b0` |
-
-### 否定的审计项
-
-| 提议 | 结论 | 理由 |
-|------|------|------|
-| picker 中展开/折叠加字符雨动画 | 不做 | picker 是轻量目录浏览器，不是主文件树。引入 overlay 动画管线会带来不必要的复杂性 |
-
-### 新增的待处理项
-
-| 内容 | 优先级 | 说明 |
-|------|--------|--------|
-| **RenderContext 上下文隔离** | **P3** | 将 `L._rowIndex`、`L.cursorRowId`、`L.cursorBox` 封装进 `RenderContext`，通过 `pushContext/popContext` 原子化切换。详细方案见 `docs/archive/P3_RENDER_CONTEXT_REFACTOR_DONE.md` |
-
-### 原有的待处理项（无变化）
-
-- `(as any)` 类型逃逸（P2）
-- `triggerExpandAnimation` / `doExpand` 约 60% 代码重复（P3）
-- `orb.ts` / `card-stack.ts` 拖动逻辑约 60% 重复（P3）— debug-panel 已删，重复在 orb 和浮卡之间
-- 全局单例 DI 改造（P3）— RenderContext 方案是该任务的前置步骤
-- 无认证 API 监听 0.0.0.0（P1—见附录 C）
-- 测试覆盖范围窄，GSAP mock 语义失真（观察项）
-
----
-
-## v5.2.0 状态更新
-
-> 本次会话焦点：P3 RenderContext 上下文隔离实现 + root-picker 交互完整性修复
-
-### 新增完成项
-
-| 审计项 | 决策/状态 | commit |
-|--------|-----------|--------|
-| `RenderContext` 接口 + `pushContext/popContext` | 将 `L.renderer`、`L._rowIndex`、`L.cursorBox`、`L.cursorRowId` 封装进上下文栈。`L.ctx` 代理当前上下文，getter/setter 向后兼容 | `9aeac8b` |
-| root-picker 迁移至 `pushContext/popContext` | 消除 `_savedRenderer`、`_savedRowIdx`、`_savedCursorRowId` 手动保存逻辑。`_initPicker` 中 `L.pushContext(...)`，`_destroyPicker` 中 `L.popContext()` | `9aeac8b` |
-| `_destroyPicker` 幂等性守卫 | 防止 `onSidebarClose` 二次调用覆盖已加载的数据 | `8f66e73` |
-| 加载失败回退 | `loadFileTree` 失败时 `rowIndex` 为空，自动回退到默认根目录 | `127e78c` |
-| 浮游光标过渡（实验 + 回退） | 尝试在 open/close picker 时光标平滑移动。因太干扰最终 revert，换回无动画模式 | `415bfce` → `d5d98f9` |
-| 关闭 picker 后光标位置恢复 | 保存 `L.cursorRowId`，新树中用 `findBoxById` 恢复，保留原展开状态 | `22ed72c` |
-| `snapToCenterRow` 加 `animate` 参数 | `rebuildTree` 默认不带动画，避免每次重建时光标跳动 | `82c203f` |
-| 调试基础设施 | 全局 `window.onerror` + `unhandledrejection` 捕获，日志输出到调试卡。根因定位后调试日志已清理 | `de7b0ea`..`c2d9f11` |
-
-### 状态更新
-
-| 原待处理项 | 状态变更 |
-|-----------|---------|
-| **RenderContext 上下文隔离（P3）** | **已完成** — `pushContext/popContext` 已实现，picker 已迁移。`docs/archive/P3_RENDER_CONTEXT_REFACTOR_DONE.md` 步骤 1~3 已完成 |
-
-### 继续有效的待处理项
-
-- `(as any)` 类型逃逸（P2）
-- `triggerExpandAnimation` / `doExpand` 约 60% 代码重复（P3）
-- `orb.ts` / `card-stack.ts` 拖动逻辑约 60% 重复（P3）— debug-panel 已删，重复在 orb 和浮卡之间
-- 全局单例 DI 改造（P3）
-- ~~无认证 API 监听 0.0.0.0（P1）~~ → **已修**（commit 8da13be 绑定 127.0.0.1），降为观察项
-- 测试覆盖范围窄，GSAP mock 语义失真（观察项）
-
----
-
-## v6.0.0 独立代码审计
-
-> 写于 2026-06-01，基于对当前源代码的独立扫描和阅读。
-> 本次审计与之前的版本无关，完全针对当前代码库（v5.2.0）的健康状态。
-> 目标：找出老审计遗漏的和新引入的问题，重新排优先级。
-
-### 审计发现
-
-#### 🟠 中优先级
-
-**① `card-stack.ts`（1352 行）过大，应拆分**
-第三大源文件（仅次于 renderer.ts 825 行 和 line-break.ts 763 行，它们是 lib/engine 级别，逻辑自然集中）。
-`card-stack.ts` 是业务模块，38 个函数只有 9 个导出。内部隐含了两个职责：
-- 卡片堆面板的打开/关闭/聚焦（~400 行）
-- 浮卡系统的生命周期、拖拽、状态机（~900 行）
-
-建议拆为 `card-panel.ts`（面板逻辑）和 `floating-card.ts`（浮卡逻辑），与 tree-render.ts/orb.ts 平级。
-
-**② `window` 全局变量泛滥（14 处，5 个文件）— 已清理**
-```
-app.ts:         window.API, window.KFMState, window.selectedFile, window.expandedPaths, window.showToast
-state.ts:       window.KFMState                          ← 重复赋值
-style-registry: window.styleRegistry, window.DIMENSIONS, window.TEXT_STYLES
-tree-render.ts: window.__treeRenderer                    ← 调试用途
-ui.ts:          window.openSidebar, window.closeSidebar, window.executeCursorAction
-```
-已于 2026-06-01 清理：15 处赋值全部移除，`openSidebar`/`closeSidebar` 改为 import 直接调用，调试用途的全局变量直接删除。
-
-#### 🟡 低优先级 / 代码健康
-
-**③ 空 catch 块（4 处）— 已修复**
-```
-canvas-cursor.ts:67   } catch { return; }
-canvas-cursor.ts:206  } catch { /* Box 被移除则跳过 */ }
-canvas-cursor.ts:243  } catch {}
-root-picker.ts:54     } catch { return null; }
-```
-`canvas-cursor.ts` 有 7 个 try/catch 块，其中 3 个是空的或退化为静默忽略。这在生产环境中遇到错误时完全不透明。
-已于 2026-06-01 修复：全部改为 `console.warn()` 输出上下文信息，附带 `console.log` 调试残留一并清理。
-
-**④ `orb.ts` 与 `card-stack.ts` 的拖动逻辑重复**
-两者各自实现了 pointerdown/move/up 拖动循环，结构相似但互不感知。
-`orb.ts`: 20 个函数，1 个导出；`card-stack.ts` 浮卡拖拽部分约 200 行。
-提取公共拖动 mixin 可减少 30% 的重复代码，但鉴于当前两者工作正常，优先级不高。
-
-#### 🟢 观察项
-
-**⑤ 测试基础设施脆弱**
-74 个测试只覆盖纯逻辑模块（click-queue、state 机、tree-model）。无 UI、动画、手势、Canvas 渲染路径。
-GSAP mock 仅 29 行（`tests/mocks/gsap.ts`），`tl.call(cb)` 同步执行回调，完全改变了 GSAP 动画时序。任何涉及动画时序的测试在此 mock 下无意义。
-
-**⑥ 归档文档膨胀**
-`docs/archive/` 有 13 个文件，共 ~5000 行。其中 `REFACTOR_THESIS_FULL.md`（779 行）和 `ANIMATION_REFINEMENT_PLAN.md`（334 行）等已是纯历史参考。虽然归档是好的习惯，但可在极端情况下考虑清理明显无价值的文件。
-
-#### ✅ 已确认健康的项目
-
-| 审计项 | 状态 |
+| 完成项 | 状态 |
 |--------|------|
-| `canvas-*` 依赖方向 | ✅ 零违规 — `canvas-cursor.ts`、`canvas-scroll.ts`、`canvas-utils.ts` 均未导入 `tree-*` |
-| 构建检查管线 | ✅ `check-anim.mjs` + `check-as-any.mjs` 双保险，挂入 `npm run check` 和 `npm run build` |
-| RenderContext 上下文栈 | ✅ `pushContext/popContext` 运行正常 |
-| 手势系统统一调度 | ✅ 所有触摸事件走 `gesture-registry.ts`，无绕过管道 |
-| 文档体系 | ✅ 7 份核心文档职责分离清晰，归档纪律良好 |
+| `ui-registry.ts` 创建 + 10 个交互元素注册 | ✅ |
+| `check-registry.mjs` MANIFEST 验证挂入构建管线 | ✅ |
+| `(as any)` 白名单清零（3 处活跃 → 0 处） | ✅ |
+| `window` 全局变量清理（14 处，5 文件） | ✅ |
+| 空 catch 块修复（4 处） | ✅ |
 
-### 更新后的优先级总览
+**已知缺口**：
+- **Problem 5**：AI→浏览器通信通道未解决（Registry 只有"眼睛"没有"手"）
+- **动态状态更新未实现**：snapshot 只返回初始化时的静态状态
 
-| 优先级 | 事项 | 状态 |
-|--------|------|------|
-| **🟠 P2** | **拆分 `card-stack.ts`（1352 行）** | ⬜ |
-| **🟠 P3** | **清理 `window` 全局变量（14 处，5 文件）** | ✅ 已完成（v6.0.0） |
-| **🟡 P3** | 修复空 catch 块（4 处） | ✅ 已完成（v6.0.0） |
-| **🟡 P3** | `(as any)` 类型逃逸白名单清理 | ✅ 已完成（v6.0.0） |
-| **🟢 Obs** | 测试基础设施（mock 失真、无 UI 覆盖） | 持续观察 |
-| **🟢 Obs** | orb / card-stack 拖动逻辑重复 | 持续观察 |
+详情见 `docs/archive/handoff/v6.0.0-audit.md` 和 `docs/archive/handoff/v6.0.0-implementation.md`。
 
 ---
 
-## v6.0.0 实装：UI Element Registry
+## 历史版本归档
 
-> 本次会话重点：实现 UI Element Registry + 清理 `(as any)` 逃逸
-
-### 完成项
-
-| 审计项 | 状态 |
-|--------|------|
-| `(as any)` 类型逃逸白名单清理（3 处活跃 → 0 处） | ✅ 白名单清空 |
-| `ui-registry.ts` 核心（类型 + 类 + 全局单例） | ✅ 已创建 |
-| 交互元素注册：orb、orb-panel、sidebar、sidebar-toggle-btn、card-stack-toggle-btn、close-sidebar-btn、eye-btn、card-stack、input-bar、operation-toast | ✅ 10 个元素已注册 |
-| `check-registry.mjs` MANIFEST 验证 | ✅ 已挂入 `npm run check` + `npm run build` |
-| 文档同步（SESSION_MEMORY + HANDOFF_AUDIT） | ✅ 已更新 |
-
-### 已知缺口
-
-| # | 缺口 | 影响 | 对应文档 |
-|---|------|------|---------|
-| 1 | Problem 5：AI→浏览器通信通道未解决 | Registry 只有"眼睛"没有"手" | `UI_ELEMENT_REGISTRY_SPEC.md` §5.5 |
-| 2 | 动态状态更新未实现（getter 集成） | snapshot 返回初始化时的静态状态 | `UI_ELEMENT_REGISTRY_SPEC.md` §5.1 |
-
-### 继续有效的待处理项
-
-| 事项 | 优先级 | 说明 |
-|------|--------|------|
-| 拆分 `card-stack.ts`（1352 行） | **🟠 P2** | 两职责混合（面板逻辑 ~400 行 + 浮卡系统 ~900 行） |
-| 测试基础设施薄弱 | **🟢 Obs** | GSAP mock 失真，无 UI/Canvas/手势覆盖 |
-| orb/card-stack 拖动逻辑重复 | **🟢 Obs** | 各自实现 pointerdown/move/up 循环 |
+| 版本 | 焦点 | 归档位置 |
+|------|------|---------|
+| v5.0.0 | CSS 语法安全 + SCSS 迁移 + 文档审计 | `docs/archive/handoff/v5.0.0.md` |
+| v5.1.0 | root-picker 交互修复 + 代码审计 | `docs/archive/handoff/v5.1.0.md` |
+| v5.2.0 | RenderContext 上下文隔离实现 | `docs/archive/handoff/v5.2.0.md` |
+| v6.0.0 | UI Element Registry + 代码审计清理 | `docs/archive/handoff/v6.0.0-*.md` |
 
 ---
 
-## v4.1.0 状态更新
+## 已知陷阱
 
-| 审计项 | 状态 | commit |
-|--------|------|--------|
-| 路径遍历漏洞 (P0) | ✅ `sanitizePath` 已部署 | d453a82 |
-| `canvas-cursor.ts` 依赖违规 (P1) | ✅ `getShift` 已移至 `style-registry.ts` | 重构期间 |
-| 死代码清理 (P1) | ✅ 已清理 | 重构期间 |
-| `FlatSubTarget.toggle` 死字段 (P3) | ✅ 已移除 | 重构期间 |
-| `processClickQueue` 栈递归 | ✅ 已修 | 重构期间 |
-| 卡片配色：固定光谱 → 随机 HSL | ✅ 每张卡双色独立随机 + 双层 DOM 渐变边框 | cbf12f3..539a21a |
-| 浮卡系统：紧凑/展开双态 | ✅ 发射为 compact（120×36），点击展开为全尺寸（155×68） | c684331 |
-| BR 光球类型守卫 | ✅ `| null` 恢复 + 显式空值守卫 | 4b197ab |
-| 浮卡弹性边界 + 输入栏底部钳制 | ✅ 撞边界自动压缩，离开恢复 | 2888e2d..b76e25a |
-| 关闭卡片堆不销毁浮卡 | ✅ | ab2cd28 |
-| 文档归档 | ✅ 4 个过时文档移至 archive/ | f68a090 |
-
-### 尚未处理的继续项
-
-- `(as any)` 类型逃逸（P2）
-- `triggerExpandAnimation` / `doExpand` 约 60% 代码重复（P3）
-- `orb.ts` / `card-stack.ts` 拖动逻辑约 60% 重复（P3）— debug-panel 已删，重复在 orb 和浮卡之间
-- 全局单例 DI 改造（P3）
-- 无认证 API 监听 0.0.0.0（P1—见附录 C）
-- 测试覆盖范围窄，GSAP mock 语义失真（观察项）
-
----
-
-## 一、项目概况
-
-KFM v4（咖啡猫 / Kaf Fee Mew）是一个面向移动端浏览器的 **AI 人机交互个人工作台**。
-
-### 技术栈
-
-| 层 | 技术 | 说明 |
-|----|------|------|
-| 语言 | TypeScript 6 + ES2022 | 全栈 TypeScript |
-| 服务端 | Express 4 | 文件读写 API，监听 `127.0.0.1:8021` |
-| 客户端渲染 | Canvas 2D 自研引擎 (v2) | Box 树 → Renderer → Canvas |
-| 动画 | GSAP 3.15 | 通过 `animation-registry.ts` 隔离 |
-| 文本测量 | `@chenglou/pretext` | 零 reflow 离屏测量 |
-| 构建 | esbuild 0.28 | TypeScript → bundle |
-| 运行时 | Node ESM | 全项目 ESM 模式 |
-
-### 目录结构要点
-
-```
-/root/kfmv4/
-├── CLAUDE.md                   # 主文档（每个接手者必读）
-├── src/
-│   ├── server/index.ts         # Express 服务器
-│   └── client/
-│       ├── main.ts             # 入口
-│       ├── engine/v2/          # Canvas 渲染引擎（Box → Renderer）
-│       └── modules/            # 业务模块
-├── docs/                       # 设计文档
-├── tests/                      # 回归测试
-├── public/                     # 静态文件
-├── public/css/ # 样式（sidebar + base + z-index）
-```
-
----
-
-## 二、架构核心概念
-
-### 一切皆盒子（Box）
-
-`src/client/engine/v2/box.ts` — 项目中唯一的节点类型。Box 树构成整个视觉场景。
-
-```
-Box {
-  id, x, y, width, height,      // 几何
-  children, parent,              // 树形
-  backgroundColor, gradient,     // 视觉
-  textStyle,                     // 文本
-  transform,                     // 变换（scale, rotate, translate）
-  scrollable, scrollY,           // 滚动
-  gesture,                       // 手势回调
-  data,                          // 业务数据（类型不安全）
-}
-```
-
-### 注册中心模式
-
-三个核心注册中心，均以全局单例形式存在：
-
-| 注册中心 | 文件 | 职责 |
-|----------|------|------|
-| `gestures` | `gesture-registry.ts` | document 级触摸事件统一调度（按优先级匹配处理器） |
-| `L` (Lifecycle) | `renderer-lifecycle.ts` | 渲染器状态、光标状态、动画锁、rAF 句柄、DOM 监听器 |
-| `KFMState` | `state.ts` | 全局状态层（文件树、展开状态、发布-订阅） |
-
-### 动画系统
-
-```
-GSAP 的所有直接调用必须通过 animation-registry.ts，禁止直接 `import gsap`。
-
-anim.scope('tree-render') → ts    # 模块级 timeline，clear() 只影响本模块
-anim.timeline()                    # 独立 timeline（char-rain 用）
-```
-
-### 依赖方向
-
-```
-renderer-lifecycle.ts (L)
-       ↓
-canvas-utils.ts          ← 最底层工具
-       ↓
-canvas-cursor.ts         ← 光标移动/吸附
-       ↓
-canvas-scroll.ts         ← 滚轮/触摸/fling
-       ↓
-tree-render.ts           ← 文件树业务
-```
-
----
-
-## 三、代码审计结论（核心摘要）
-
-### 🔴 必须立即修复
-
-1. **服务端路径遍历漏洞** ✅ 已修复 (commit d453a82) — 添加了 `sanitizePath` 校验，拒绝所有逃逸出 SAFE_ROOT 的路径。
-2. **服务端无认证** — 所有 API 开放，监听 `127.0.0.1`（已绑定本地回环，commit 8da13be）。
-
-### 🟠 中优先级
-
-3. **全局单例导致难测试** — `KFMState`、`L`、`gestures`、`anim` 全部是模块级单例，无依赖注入。
-4. **`(as any)` 类型逃逸** — 多处违反 CLAUDE.md 约定，使用 `(as any).data.xxx`。
-5. **死代码过多** ✅ 已清理 — `engine/v2/scroll.ts`、`engine/v2/gesture.ts`、`GestureRecognizer.ts`、`demo-leafer.ts`、`js/` 目录、`public/card-demo.html` 均已不存在。
-6. **`canvas-cursor.ts` 违反依赖方向** ✅ 已修复 — `getShift` 已移至 `style-registry.ts`，当前 `canvas-cursor.ts` 只导入 `style-registry.ts`。（查阅记录 `RENDERER_REFACTOR_HISTORY` 或 `style-registry.ts` 更新详情）
-
-### 🟢 低优先级 / 观察项
-
-7. `orb.ts` 和浮卡拖拽逻辑有大量重复（约 60%）。debug-panel 已删除，重复现存在于 orb 和浮卡之间。
-8. ~~每帧 `setRoot` 调用过多~~ → **观察项**（见附录 C ④，多数是 rAF 循环固有行为，不是性能问题）
-9. `tsconfig.json` 使用 `ignoreDeprecations: "6.0"`。
-
----
-
-## 四、接手工作指南
-
-### 第一步：建立环境
-
-```bash
-npm run check    # tsc --noEmit 类型检查（必须零错误）
-npm run build    # 完整构建（check-anim → tsc → esbuild）
-npm run test     # 回归测试
-```
-
-### 第二步：理解核心文件
-
-按此顺序阅读：
-
-1. `CLAUDE.md` — 项目总览、架构、约定
-2. `src/client/main.ts` — 初始化流程（所有模块的启动顺序）
-3. `src/client/modules/state.ts` — 全局状态设计
-4. `src/client/modules/renderer-lifecycle.ts` — 生命周期注册中心
-5. `src/client/modules/gesture-registry.ts` — 手势调度
-6. `src/client/modules/tree-render.ts` — 文件树渲染（最重要的模块）
-7. `src/client/engine/v2/box.ts` + `renderer.ts` — 引擎核心
-8. `docs/HANDOFF_AUDIT.md` — 本文件（审计结论 + 陷阱）
-
-### 第三步：安全修复 ✅ 已完成
-
-路径遍历漏洞已在 commit d453a82 修复，`sanitizePath` 已部署到生产环境。
-无需重复操作。
-
-### 第四步：按优先级推进
-
-| 优先级 | 工作项 | 状态 |
-|--------|--------|------|
-| P0 | 路径遍历漏洞修复 | ✅ 已修复 (d453a82) |
-| P0 | 全面检查所有 API 路由 | ⬜ |
-| P1 | 清理死代码 | ✅ 已完成 |
-| P1 | 修复 `canvas-cursor.ts` 依赖违规 | ✅ 已解决 |
-| P1 | 无认证 API 监听 127.0.0.1（已绑定回环，commit 8da13be） | ✅ 已修复 |
-| P2 | 定义 `FileRowData` 类型，消除 `(as any)` | ⬜ |
-| P2 | ~~动画性能优化（`setRoot`）~~ | ➡ 改为观察项 |
-| P3 | `orb.ts` / 浮卡拖拽公共组件提取 | ⬜（debug-panel 已删，重复在 orb 和浮卡之间） |
-| P3 | DI 改造单例 | ⬜ |
-| P3 | `triggerExpandAnimation` / `doExpand` 去重 | ⬜ |
-
----
-
-## 五、核心原则
-
-### Bug 修复原则（来自 docs/archive/BUG_FIXING_PHILOSOPHY.md 与 CLAUDE.md）
-
-> **禁止打补丁。排查到最深层根因，通过调整架构间接消除 bug。**
-
-具体实践：
-- 不修症状（"字符雨不显示 → 加个 setTimeout"）
-- 修根因（"字符雨不显示 → overflow:hidden 裁剪 → overlay overflow:visible"）
-- 改完后代码应更短而非更长
-
-### 编码约定
-
-- `_` 前缀 = 模块内私有（目前被多处跨模块读写，需逐步修复）
-- 动画 tween 必须加到 `ts` scope 上，不准直接 `gsap.to()`
-- `ts.call` 回调内必须 `ts.clear()` 清理残留 tween
-- overlay 元数据用 `(as Box & OverlayMeta)` 访问，**禁止 `(as any)._xxx`**
-- `canvas-*` 模块不准导入 `tree-*` 模块
-
-### 验证标准
-
-任何改动后运行：
-```bash
-npm run check   # 类型检查零错误
-npm run build   # 构建通过
-```
-
----
-
-## 六、已知陷阱（每个接手者注意！）
-
-1. **Canvas 初始化时 `clientWidth = 0`** — 需在 `requestAnimationFrame` 回调里 `rebuildTree()`
-2. **esbuild 构建时 `nullish-coalescing` 被禁用** — 但源码大量使用了 `??`，TS 6 编译时需确保正确降级
+1. **Canvas 初始化 `clientWidth = 0`** — 需在 rAF 回调里 `rebuildTree()`
+2. **esbuild `nullish-coalescing` 禁用** — 但源码大量使用 `??`，TS 6 编译时需确保正确降级
 3. **事件冒泡** — 侧栏触摸区事件冒泡到 document → GestureRegistry 误触发
-4. **动画锁超时** — `processClickQueue` 有 3000ms 的超时释放机制，长期依赖此兜底说明动画管理有设计缺陷
+4. **动画锁超时** — `processClickQueue` 有 3000ms 超时释放，长期依赖说明动画管理有设计缺陷
 5. **测试 mock 脆弱** — GSAP mock 中 `tl.call(cb)` 同步执行回调，改变了动画时序
-6. **光球系统** — 主光球（AI 对话）和浮卡 BR 光球各自独立实现，拖拽逻辑有重复（详见 v6.0.0 审计）
 
 ---
 
-## 七、文档索引
+## 关联文档
 
-| 文档 | 位置 | 价值 | 说明 |
-|------|------|------|------|
-| **主文档** | `CLAUDE.md` | 必读 | 项目总览、架构、构建、已知坑点 |
-| **本交接文档** | `docs/HANDOFF_AUDIT.md` | 必读 | 审计结论、接手指南、陷阱 |
-| **AI 修改约束协议** | `docs/KFM_V4_INVARIANTS.md` | 开工前必读 | 不变量 + 心法原则 + 自查清单 + 常见补丁 |
-| **卡片蓝图** | `docs/CARD_SYSTEM_DESIGN.md` | 参考 | 统一卡片系统设计方案（待实现） |
-| **通用方法论** | `docs/archive/AI_COLLABORATION_PRINCIPLES.md` | 参考 | AI 协作守则（任何项目可用） |
-| **Bug 修复原则** | `docs/archive/BUG_FIXING_PHILOSOPHY.md` | 参考 | 旧版（7 条守则） |
-| **BR 守卫交接** | `docs/archive/HANDOFF_BRORB_FIX.md` | 历史 | BR 类型守卫修复（已完成） |
-| **动画方案** | `docs/archive/ANIMATION_REFINEMENT_PLAN.md` | 历史 | 动画优化设计（已过时，见 ⚠️） |
-| **卡片配色** | `docs/archive/STACK_CARDS_DESIGN.md` | 历史 | 暮光/琉璃/星云配色（代码已改为随机 HSL） |
-| **V2 存档** | `docs/archive/CLAUDE_v2.md` | 历史 | 上一版主文档 |
-| **竞态方案** | `docs/archive/RACE_CONDITION_PLAN.md` | 历史 | P1-P5 竞态方案（已实现） |
-| **蓝图存档** | `docs/archive/REFACTOR_THESIS_FULL.md` | 历史 | 愿景蓝图（大部分已过时） |
-| **AI 操作协议** | `docs/archive/AI_OPERATION_PROTOCOL.md` | 历史 | 未实现功能设计 |
-| **卡片堆叠交接** | `docs/archive/CARD-STACK-HANDOFF.md` | 历史 | 任务性交接（已完成） |
-| **字符雨 bug** | `docs/archive/BUG_HANDOFF_ROOT_CHAR_RAIN.md` | 历史 | 具体 bug 交接（已修复） |
-| **P3 遗留** | `docs/archive/HANDOFF_P3_REMAINING.md` | 历史 | 具体任务单（已完成） |
-
----
-
-## 附录 B：对本次审计的独立评审
-
-> 写于 2026-05-09，由另一视角对 HANDOFF_AUDIT.md 的结论和项目现状做交叉验证。
-
-### B.1 代码层面：P3 遗留修复 + 重构评估
-
-**P3 4 个遗留问题修复**（commit `5321e38`）—— ✅ 全部正确
-
-- **问题 #1**（`animateCharRain` 和 `_setupExpandOverlays` 顺序颠倒）：已在 `_unveilOverlaySubContainers` 中修复
-- **问题 #2**（缺少 `rowTargetYs` 参数）：已补传
-- **问题 #3**（doCollapse 双重光标定位）：当前代码已无冗余 `moveCursorTo`，注释清晰
-- **问题 #4**（rebuildTree 裸块）：当前代码已无空 `{}` 块
-
-**展开动画系统重构**（commit `08f6eae`）—— ✅ 架构方向正确
-
-| 改动 | 评估 | 说明 |
-|------|------|------|
-| `_flattenExpandTree` 替代递归 `_unveilOverlaySubContainers` | 优秀 | 100+ 行 async 递归 → 30 行纯函数 |
-| `treeAbort` 整文件删除（-30 行） | 正确 | 不再需要代际令牌，`ts.clear()` 一键清理 |
-| 子容器 staggered delay 并行展开 | 优于原设计 | 串行阻塞 → 层级级联，视觉更流畅 |
-| `_quickHitTest` 双层点击调度 | 有价值的 UX 提升 | 动画期间光标穿透 |
-| 字符雨从展开期间移到完成后触发 | 可接受的设计取舍 | 视觉风格改变，非 bug |
-
-**一个细微遗留**：`FlatSubTarget` 中的 `toggle` 字段（`tree-render.ts` 约 L1005）从未被消费。可删除。
-
-**净变更**：-251 行，类型检查通过，构建通过。
-
----
-
-### B.2 审计结论评审（逐条评估）
-
-#### ✅ 准确且有价值
-
-- **架构概述**（Box 树、注册中心模式、动画系统）—— 完全正确
-- **依赖方向违规**（`canvas-cursor.ts` 导入 `tree-model.ts`）—— 真实存在
-- **动画系统描述**（scope 隔离、overlay 模式）—— 准确
-- **调用链**（`main.ts` 初始化顺序）—— 精确
-- **回归检查清单**（14 条）—— 完整覆盖
-- **已知陷阱**（Canvas `clientWidth=0`、事件冒泡、动画锁超时）—— 都是真实坑点
-
-#### ⚠️ 存在偏差或需商榷
-
-**1. 服务端路径遍历漏洞标为 P0/严重**
-
-路径校验缺失是事实。但对于一个**个人移动端工作台**，绑定 `0.0.0.0` 且无认证是常见模式——攻击者需要先连接到同网络。建议降为 P2/P3，在功能稳定后再处理。
-
-**2. "零自动化测试"**
-
-审计称"整个项目唯一的测试是 npm run check"，但 `tests/` 目录已有 16 个回归测试（commit `321e366`、`0c4a9e6`），虽然 mock 脆弱但确实存在。审计未引用测试基础设施，是个遗漏。
-
-**3. "每帧 setRoot 调用过多"列为低优先级问题**
-
-这是 GSAP + Canvas 动画的标准模式——`onUpdate` 回调中调 `setRoot` 触发重新渲染是必要的。与其说是性能问题，不如说是 GSAP Canvas 渲染的固有代价。建议改为"观察"而非"问题"。
-
-**4. `engine/v2/scroll.ts` 标为死代码**
-
-需要确认它不被 `canvas-scroll.ts` 或 `renderer.ts` 间接引用才能断定。仅凭文件存在不能判定为死代码。
-
-#### 🟢 审计遗漏
-
-**5. 两个函数的代码重复**：`triggerExpandAnimation` 和 `doExpand` 在重构后约 60% 代码重复。修其中一个的 bug 时容易漏掉另一个。
-
-**6. `_quickHitTest` 的递归深度**：`processClickQueue` 在光标穿透分支调自身是递归的。0.3 秒动画窗口内实际风险低，但理论上栈可能增长。
-
----
-
-### B.3 综合意见
-
-本次审计的核心结论（架构风险、改进方向、接手指南）**质量很高**，可作为后续工作的可靠参考。上述偏差主要来自：
-
-1. **个人项目 vs 生产服务的视角差异**（安全优先级偏高）
-2. **未纳入已有测试基础设施的上下文**（测试文件存在但被忽略）
-3. **对 GSAP Canvas 渲染模式的熟悉程度**（`setRoot` 性能评估不够准确）
-
-不影响文档整体价值。
-
----
-
-## 附录 C：对独立评审的回应
-
-> 写于 2026-05-09，由原审计方对附录 B 的评审做逐条回应。
-
-### C.1 对方说得对的（我接受修正）
-
-**① `FlatSubTarget.toggle` 是死字段** — ✅ 确认无误
-
-`_flattenExpandTree` 第 1001 行费力查找 `toggle` 赋值，但 `triggerExpandAnimation` 和 `doExpand` 中的 `subTargets` 只用到了 `container`、`fullHeight`、`level`。`toggle` 字段和查找逻辑可安全删除（~5 行）。
-
-**② `triggerExpandAnimation` 和 `doExpand` 约 60% 代码重复** — ✅ 确实如此
-
-两者几乎一致，差异仅在于 `doExpand` 开头先调 `hit.gesture!.onTap!()`。应提取公共展开函数。新增至待���列表。
-
-**③ `processClickQueue` 在光标穿透分支递归调用自身** — ✅ 有理论栈风险
-
-第 618 行 `processClickQueue()` 是同帧递归调用。虽然 0.3s 动画窗口内实际风险低，但更安全的做法是改为 `setTimeout(processClickQueue, 0)` 或用循环模式。
-
-**④ `setRoot` 在 onUpdate 中并非总是冗余** — ⚠️ 部分接受
-
-对方说这是 GSAP Canvas 渲染的固有模式。我仔细复查后确认：**确实多数是冗余的** — GSAP 修改 Box 属性后，渲染器的 rAF 循环下一帧自动读取最新值。但有一个例外：当 GSAP 修改的是被 `onUpdate` 中别的代码新创建的 Box 时，需要 `setRoot` 让树感知新对象。**建议改为"观察项"而非"问题"**，这个分类改进我接受。
-
----
-
-### C.2 对方说得对，但我的立场有部分保留
-
-**⑤ 路径遍历漏洞建议降为 P2/P3** — 部分同意，折中为 **P1**
-
-对方理由（个人项目、需 LAN 访问）合理。但我的判断依据是 `/files/write` 无校验 = 写任意文件（包括 crontab、SSH authorized_keys、覆写 `node_modules/`）。一旦攻击者进入 LAN（Wi-Fi 非加密/访客网络），这就是完整的 RCE。折中方案：**P1** — 不是 P0（不必现在立刻就修），但在功能稳定后第一波安全加固中必须处理。
-
-**⑥ "零自动化测试"表述偏差** — 部分同意
-
-我原文写的是"测试覆盖率低"和"测试基础设施脆弱"，并非"没有测试"。对方指出的 16 个测试确实存在。但公正地说：
-- 16 个测试全部是纯逻辑测试（click-queue、状态机、tree-model 结构）
-- **没有覆盖 UI 交互、动画、手势、Canvas 渲染路径**
-- GSAP mock 语义失真（`tl.call(cb)` 同步执行）
-
-所以修正为：**测试框架存在但覆盖范围窄，mock 层有语义失真。**
-
----
-
-### C.3 对方理解有偏差的
-
-**⑦ `engine/v2/scroll.ts` 等文件标为死代码需要确认间接引用** — ❌ 已确认为死代码
-
-我做过完整的 import 搜索验证：
-
-| 文件 | 搜索结果 | 结论 |
-|------|---------|------|
-| `engine/v2/scroll.ts` | `ScrollHandler` 只在自身文件内引用。搜索 `import.*scroll\.js` 只命中 `canvas-scroll.ts`（一个完全不同的独立文件） | 100% 死代码 |
-| `engine/v2/gesture.ts` | `detectEdgeTouch`、`SlideState` 等函数零外部引用 | 100% 死代码 |
-| `engine/v2/GestureRecognizer.ts` | 零外部引用 | 100% 死代码 |
-
-仅凭文件存在不能判定死代码 — 这个原则正确。但我做了引用搜索，结论可靠。
-
-**⑧ "`setRoot` 是必要的，因为 GSAP 修改属性后要触发重渲染"** — ❌ 理解偏差
-
-这个判断混淆了两个机制：
-- **触发重渲染**：渲染器的 rAF 循环（`_render` → `_tickAndRender`）无论是否调用 `setRoot`，**每帧都在运行**。它自动读取 Box 的最新属性值。
-- **`setRoot` 的作用**：替换整个根 Box 引用。当 GSAP 修改的是树上**已有** Box 的属性时，无需 `setRoot`，因为 rAF 循环看到的引用没变。
-
-所以 `onUpdate` 中反复调用 `setRoot(root)`（同一个 root 对象）确实多数是冗余的。但对方说的"固有代价"在某些边界场景成立：比如 char-rain 创建的新字符 Box 需要通过 `setRoot` 让渲染器感知。
-
----
-
-### C.4 对方指明了我漏掉的问题
-
-**⑨ `FlatSubTarget.toggle` 死字段** — ✅ 已确认，已不存在（重构期间自动移除）
-**⑩ `triggerExpandAnimation` / `doExpand` 重复** — ✅ 已确认，拟提取公共函数
-**⑪ `processClickQueue` 递归** — ✅ 已确认，拟改为非递归
-
----
-
-### C.5 综合回应
-
-本次独立评审的质量很高——它找到了附录 B 中的渲染问题（commit hash 丢失）、指出了一个我漏掉的死字段、提供了"个人项目 vs 生产服务"的视角矫正。
-
-最值得采纳的改进建议：
-
-| 建议 | 处理 |
+| 文档 | 用途 |
 |------|------|
-| 引入"观察项"分类替代部分"低优先级问题" | 已采纳，将 `setRoot` 改为观察项 |
-| 路径遍历漏洞降为 P1 | 折中采纳 |
-| 测试描述修正"零测试"→"覆盖范围窄" | 已采纳 |
-| `FlatSubTarget.toggle` 死字段删除 | 拟执行 |
-| `processClickQueue` 栈风险 | 拟改为非递归 |
+| `CLAUDE.md` | 项目入口 + 架构速查 |
+| `SESSION_MEMORY.md` | 当前会话快照 |
+| `KFM_V4_INVARIANTS.md` | 修改约束协议（**改代码前必读**） |
+| `BUG_AUDIT_REGISTRY.md` | 隐性契约 + 根因案例 |
+| `PRINCIPLES_INDEX.md` | 所有原则/约束的索引 |
 
-独立的跨视角评审对这类审计工作的质量提升非常有价值。
+> 接手新对话的推荐阅读顺序：`CLAUDE.md` → `SESSION_MEMORY.md` → `KFM_V4_INVARIANTS.md` → 本文件待办区。

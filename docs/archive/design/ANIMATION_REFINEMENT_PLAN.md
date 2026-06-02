@@ -1,3 +1,7 @@
+---
+status: superseded
+archived_at: 2026-06-02
+---
 > ⚠️ **本文档描述的设计方案（单时间线 + char-rain 合并至 ts scope）已在 overlay 架构中改为不同实现。当前 char-rain 仍使用独立 anim.timeline()，不接受 ts 参数。本文留作设计思路参考，不建议作为实现依据。**
 
 # 动画系统优化方案
