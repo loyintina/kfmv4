@@ -55,7 +55,6 @@ export async function initApp(): Promise<void> {
     closeBtn.addEventListener('click', () => {
       closeSidebar();
       Registry.notifyStateChange('close-sidebar-btn');
-      Registry.notifyStateChange('sidebar');
     });
   }
 
@@ -72,7 +71,6 @@ export async function initApp(): Promise<void> {
         }
       }
       Registry.notifyStateChange('sidebar-toggle-btn');
-      Registry.notifyStateChange('sidebar');
     });
   }
 
@@ -168,5 +166,19 @@ export async function initApp(): Promise<void> {
     enabled: true,
     effect: '操作完成后自动显示 2 秒后消失',
     source: 'app.ts',
-  }, () => DOM.operationToast?.classList.contains('show') ? 'visible' : 'hidden');
+  });
+  Registry.registerElement({
+    id: 'ai-send-btn',
+    type: 'button',
+    label: '发送按钮',
+    description: '发送输入栏中的文字给 AI',
+    state: 'visible',
+    enabled: true,
+    effect: '点击后发送输入框中的文本给 AI 处理',
+    source: 'app.ts',
+  }, () => {
+    const el = DOM.aiInputBar;
+    return el && el.offsetParent !== null ? 'visible' : 'hidden';
+  });
+
 }

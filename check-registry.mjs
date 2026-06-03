@@ -30,6 +30,8 @@ const ELEMENT_MANIFEST = [
   'input-bar',            // app.ts / HTML — AI 输入栏
   'operation-toast',      // app.ts — 操作提示
   'file-tree',            // tree-render.ts — Canvas 文件树
+  'overlay',              // ui.ts — 遮罩层
+  'ai-send-btn',          // app.ts — 发送按钮
 ];
 
 // ========== CONTENT MANIFEST（权威清单 — 内容层） ==========

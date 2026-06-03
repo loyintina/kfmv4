@@ -51,10 +51,20 @@ export function initUI(): void {
     effect: '打开后显示文件树，点击目录展开/折叠，左滑或点击遮罩关闭。AI 可发送 open-sidebar/close-sidebar/toggle-sidebar 命令操作',
     source: 'ui.ts',
   }, () => DOM.sidebar?.classList.contains('open') ? 'open' : 'closed');
-
+  Registry.registerElement({
+    id: 'overlay',
+    type: 'button',
+    label: '遮罩层',
+    description: '侧栏打开时覆盖在主内容区的半透明遮罩，点击可关闭侧栏',
+    state: 'hidden',
+    enabled: true,
+    effect: '点击关闭侧栏',
+    source: 'ui.ts',
+  }, () => DOM.overlay?.classList.contains('show') ? 'visible' : 'hidden');
   // 注册 AI 指令处理器（openSidebar/closeSidebar 内部已触发 KFMState.notify，
   // 无需额外调 Registry.notifyStateChange）
   wsChannel.onCommand('open-sidebar', () => { openSidebar(); });
+
   wsChannel.onCommand('close-sidebar', () => { closeSidebar(); });
   wsChannel.onCommand('toggle-sidebar', () => {
     if (DOM.sidebar?.classList.contains('open')) { closeSidebar(); } else { openSidebar(); }
