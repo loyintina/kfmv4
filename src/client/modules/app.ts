@@ -3,6 +3,7 @@ import { DOM } from "./dom-refs.js";
 import { openCardStack, closeCardStack, isCardStackOpen } from './card-stack.js';
 import { openSidebar, closeSidebar } from './ui.js';
 import { Registry } from './ui-registry.js';
+import { wsChannel } from './ws-channel.js';
 /**
  * KFM v4 - 全局状态与初始化
  */
@@ -44,6 +45,11 @@ export async function initApp(): Promise<void> {
       Registry.notifyStateChange('eye-btn');
     });
   }
+  // AI 指令处理器：显式切换隐藏文件（绕过通用 click 的坐标问题）
+  wsChannel.onCommand('toggle-hidden-files', () => {
+    KFMState.toggleHidden();
+    Registry.notifyStateChange('eye-btn');
+  });
 
   // 关闭侧栏按钮
   const closeBtn = DOM.closeSidebarBtn;

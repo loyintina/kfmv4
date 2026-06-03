@@ -237,11 +237,10 @@ export function initWsChannel(): void {
   KFMState.subscribe(() => wsChannel.pushSnapshot());
 
   // 注册默认指令处理器（各模块可以覆盖或补充）
+  registerDefaultCommandHandlers();
   console.log('[ws-channel] 初始化完成');
 }
-
-/**
- * 注册默认的 AI 操作指令处理器。
+/** 注册默认的 AI 操作指令处理器。
  * 这些处理器将服务端发来的操作指令映射到具体的前端函数。
  * 各模块可以调用 wsChannel.onCommand() 注册更多处理器。
  */

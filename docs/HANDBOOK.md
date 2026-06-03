@@ -96,7 +96,8 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 ## 三、当前待办
 12. **Canvas 元素的 AI click 无坐标**：`file-tree` Canvas 通过 `data-registry-id` 可被 AI `click` 指令定位并触发 `click()`，但合成的 PointerEvent 坐标为 (0,0)，不一定命中预期的行。
     **v6.2 部分缓解**：新增 `expand-dir`/`collapse-dir`/`select-file` 专用命令绕过坐标问题，AI 应优先使用这些命令而非通用 `click`。<a id='trap-12'></a>
-13. **`registerContent()` 与生成器关系**：同一 id 下生成器优先，`registerContent()` 不会覆盖已注册的生成器。如需强制更新静态内容，先调 `registerContentGenerator(id, null)` 注销生成器<a id='trap-13'></a>
+13. **`registerContent()` 与生成器关系**：同一 id 下生成器优先，`registerContent()` 不会覆盖已注册的生成器。如需强制更新静态内容，先调 `registerContentGenerator(id, null)` 注销生成器。<a id='trap-13'></a>
+14. **`notifyStateChange()` 散布**：`notifyStateChange()` 当前散布在 6 个文件的 ~41 处调用中（card-stack.ts 9 处、orb.ts 8 处、tree-render.ts 10 处、其他 3+ 文件 10+ 处）。其中 GSAP 动画回调中的手动通知有合理存在理由，但 KFMState 订阅覆盖后未清理的冗余路径仍在。如能在 ws-channel 层建立自动覆盖检测，可逐步消除。<a id='trap-14'></a>
 
 ### 活跃待办
 

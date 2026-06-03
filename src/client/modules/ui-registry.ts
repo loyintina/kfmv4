@@ -160,14 +160,14 @@ export class UIElementRegistry {
 
   /** 注册内容块（静态） */
   registerContent(block: ContentBlock): void {
+    // 生成器优先：如果已注册生成器，静态内容不覆盖
+    if (this._contentGenerators.has(block.id)) {
+      return;
+    }
     if (this._content.has(block.id)) {
       console.warn(`[ui-registry] 重复注册内容块: ${block.id}，覆盖旧值`);
     }
     this._content.set(block.id, block);
-    // 生成器优先：注册静态内容但不覆盖已有生成器
-    if (!this._contentGenerators.has(block.id)) {
-      this._contentGenerators.delete(block.id);
-    }
     this._notifyChange('content', block.id);
   }
 
