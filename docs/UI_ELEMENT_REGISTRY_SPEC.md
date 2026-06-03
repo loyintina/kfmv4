@@ -436,8 +436,11 @@ interface PageDescription {
    → 服务端将指令通过 WebSocket 转发到浏览器端
    → ws-channel.ts 收到指令，查找 'expand-orb' 命令处理器
    → orb.ts 的处理器执行 expandPanel()
-   → 操作完成后，ws-channel 通过 Registry.onChange + KFMState.subscribe
-     自动推送最新 snapshot 回服务端
+   → expandPanel() 调 Registry.notifyStateChange('orb') 触发 onChange 回调
+   → ws-channel 在 initWsChannel() 中注册了两个推送钩子：
+     ① Registry.onChange → pushSnapshot（覆盖注册/注销/notifyStateChange）
+     ② KFMState.subscribe → pushSnapshot（覆盖 KFMState 数据变更）
+   → 自动推送最新 snapshot 回服务端
 
 3. AI 再次调用 GET /api/ui/snapshot → 拿到新的 PageDescription
    {

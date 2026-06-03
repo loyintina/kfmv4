@@ -43,13 +43,24 @@ export class CapabilityExecutor {
   /** 内置能力映射表（能力 id → 执行函数） */
   private _handlers = new Map<string, (params: Record<string, unknown>) => Promise<ExecutionResult>>();
 
+  /** 能力元数据（id → 名称+描述+参数），与 _handlers 同时维护 */
+  private _handlerMeta = new Map<string, { name: string; description: string; parameters: CapabilityParam[] }>();
+
+
   constructor() {
     this.registerBuiltin();
   }
 
   /** 注册内置能力 */
   private registerBuiltin(): void {
-    this._handlers.set('file-search', async (params) => {
+    this.registerCapability('file-search', {
+      name: '文件搜索',
+      description: '在当前目录下搜索文件名匹配的文件',
+      parameters: [
+        { name: 'pattern', type: 'string' },
+        { name: 'path', type: 'string' },
+      ],
+    }, async (params) => {
       const pattern = params.pattern as string;
       const dirPath = params.path as string || process.env.HOME || '/';
       if (!pattern) {
@@ -88,7 +99,13 @@ export class CapabilityExecutor {
       }
     });
 
-    this._handlers.set('file-read', async (params) => {
+    this.registerCapability('file-read', {
+      name: '读取文件',
+      description: '读取指定路径的文件内容',
+      parameters: [
+        { name: 'path', type: 'string' },
+      ],
+    }, async (params) => {
       const filePath = params.path as string;
       if (!filePath) {
         return { success: false, error: '缺少 path 参数', capabilityId: 'file-read' };
@@ -113,7 +130,15 @@ export class CapabilityExecutor {
       }
     });
 
-    this._handlers.set('file-write', async (params) => {
+    this.registerCapability('file-write', {
+      name: '写入文件',
+      description: '写入内容到指定路径的文件（可追加）',
+      parameters: [
+        { name: 'path', type: 'string' },
+        { name: 'content', type: 'string' },
+        { name: 'append', type: 'boolean' },
+      ],
+    }, async (params) => {
       const filePath = params.path as string;
       const content = params.content as string;
       const append = params.append as boolean || false;
@@ -148,6 +173,18 @@ export class CapabilityExecutor {
     this._handlers.set(id, handler);
   }
 
+
+  /** 注册能力（含元数据）。同时存储 handler 和描述信息。 */
+  registerCapability(
+    id: string,
+    meta: { name: string; description: string; parameters: CapabilityParam[] },
+    handler: (params: Record<string, unknown>) => Promise<ExecutionResult>,
+  ): void {
+    this._handlers.set(id, handler);
+    this._handlerMeta.set(id, meta);
+  }
+
+
   /** 执行一个能力 */
   async execute(capabilityId: string, params: Record<string, unknown>): Promise<ExecutionResult> {
     const handler = this._handlers.get(capabilityId);
@@ -165,38 +202,31 @@ export class CapabilityExecutor {
     }
   }
 
-  /** 列出所有已注册的能力定义 */
+  /** 列出所有已注册的能力定义（从 _handlers + _handlerMeta 动态生成） */
   listCapabilities(): CapabilityDef[] {
-    return [
-      {
-        id: 'file-search',
-        name: '文件搜索',
-        description: '在当前目录下搜索文件名匹配的文件',
-        parameters: [
-          { name: 'pattern', type: 'string' },
-          { name: 'path', type: 'string' },
-        ],
-        entry: 'capability-executor:file-search',
-      },
-      {
-        id: 'file-read',
-        name: '读取文件',
-        description: '读取指定路径的文件内容',
-        parameters: [{ name: 'path', type: 'string' }],
-        entry: 'capability-executor:file-read',
-      },
-      {
-        id: 'file-write',
-        name: '写入文件',
-        description: '写入内容到指定路径的文件（可追加）',
-        parameters: [
-          { name: 'path', type: 'string' },
-          { name: 'content', type: 'string' },
-          { name: 'append', type: 'boolean' },
-        ],
-        entry: 'capability-executor:file-write',
-      },
-    ];
+    const result: CapabilityDef[] = [];
+    for (const id of this._handlers.keys()) {
+      const meta = this._handlerMeta.get(id);
+      if (meta) {
+        result.push({
+          id,
+          name: meta.name,
+          description: meta.description,
+          parameters: meta.parameters,
+          entry: `capability-executor:${id}`,
+        });
+      } else {
+        // 通过旧的 register(id, handler) 注册的能力，没有元数据
+        result.push({
+          id,
+          name: id,
+          description: `能力: ${id}`,
+          parameters: [],
+          entry: `capability-executor:${id}`,
+        });
+      }
+    }
+    return result;
   }
 }
 

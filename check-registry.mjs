@@ -164,6 +164,73 @@ function checkDataRegistryId() {
   }
 }
 
+/**
+ * 检查能力注册的一致性：
+ * 1. 浏览器端 main.ts 中的 Registry.registerCapability({ entry }) 格式：entry 应为 'capability-executor:<id>'
+ * 2. 服务端 capability-executor.ts 中的 this.registerCapability('id') 都有对应的浏览器端注册
+ */
+function checkCapabilityConsistency() {
+  const executorFile = join('src', 'server', 'capability-executor.ts');
+  let executorContent;
+  try {
+    executorContent = readFileSync(executorFile, 'utf-8');
+  } catch {
+    reportError(`无法读取 ${executorFile}，跳过能力一致性检查`);
+    return;
+  }
+
+  // 从 capability-executor.ts 提取 this.registerCapability('id', ...) 中的 id
+  const EXECUTOR_REG_RE = /this\.registerCapability\s*\(\s*'([^']+)'/g;
+  const executorIds = new Set();
+  let m;
+  while ((m = EXECUTOR_REG_RE.exec(executorContent)) !== null) {
+    executorIds.add(m[1]);
+  }
+
+  const clientFile = join('src', 'client', 'main.ts');
+  let clientContent;
+  try {
+    clientContent = readFileSync(clientFile, 'utf-8');
+  } catch {
+    reportError(`无法读取 ${clientFile}，跳过能力一致性检查`);
+    return;
+  }
+
+  // 从 main.ts 提取 Registry.registerCapability({ id, entry }) 中的 id 和 entry
+  // 匹配整个 registerCapability 调用的 id 和 entry 字段
+  const CAP_REG_BLOCK_RE = /Registry\.registerCapability\s*\(\s*\{([\s\S]*?)\}\s*\)/g;
+  const clientEntries = [];
+  let mc;
+  while ((mc = CAP_REG_BLOCK_RE.exec(clientContent)) !== null) {
+    const block = mc[1];
+    const idMatch = block.match(/id:\s*'([^']+)'/);
+    const entryMatch = block.match(/entry:\s*'([^']+)'/);
+    if (idMatch) {
+      clientEntries.push({ id: idMatch[1], entry: entryMatch ? entryMatch[1] : null, file: clientFile });
+    }
+  }
+
+  for (const { id, entry } of clientEntries) {
+    // 检查 entry 格式：应为 capability-executor:<id>
+    const expectedEntry = `capability-executor:${id}`;
+    if (entry !== expectedEntry) {
+      reportError(`${clientFile}: 能力 "${id}" 的 entry 应为 "${expectedEntry}"，实际为 "${entry || '(无)'}"`);
+    }
+
+    // 检查服务端是否有对应 handler
+    if (!executorIds.has(id)) {
+      reportError(`${clientFile}: 能力 "${id}" 在 capability-executor.ts 中没有对应的 handler（未调用 registerCapability('${id}', ...)）`);
+    }
+  }
+
+  // 检查服务端有但浏览器端没有注册的能力
+  for (const id of executorIds) {
+    if (!clientEntries.some(e => e.id === id)) {
+      console.log(`[check-registry] 服务端有能力 "${id}" 的 handler 但浏览器端未注册（可能是新增能力）`);
+    }
+  }
+}
+
 function check() {
   const registeredElements = new Set();
   const registeredContents = new Set();
@@ -227,13 +294,15 @@ function check() {
 
   // ===== data-registry-id 覆盖验证 =====
   checkDataRegistryId();
+  // ===== 能力注册一致性验证 =====
+  checkCapabilityConsistency();
   // ===== 汇总 =====
   if (hasError) {
     console.error(`\n[check-registry] 缺失项见上，构建中断。`);
     process.exit(1);
   }
 
-  console.log(`[check-registry] OK — ${registeredElements.size} 个交互元素、${registeredContents.size} 个内容块、${registeredCapabilities.size} 个能力已注册，全部 MANIFEST 匹配，参数完整性检查通过`);
+  console.log(`[check-registry] OK — ${registeredElements.size} 个交互元素、${registeredContents.size} 个内容块、${registeredCapabilities.size} 个能力已注册，全部 MANIFEST 匹配，参数完整性和能力一致性检查通过`);
 }
 
 const CHECK_ONLY = process.argv.includes('--check-only');

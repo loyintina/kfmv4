@@ -151,12 +151,16 @@ export async function initApp(): Promise<void> {
     id: 'input-bar',
     type: 'text-input',
     label: 'AI 输入栏',
-    description: '输入消息与 AI 对话，支持 Tab 切换命令模式',
+    description: '底部常驻输入栏，输入文字后点击发送或按 Enter 发送给 AI',
     state: 'visible',
     enabled: true,
     effect: '输入文字后点击发送或按 Enter 发送给 AI',
     source: 'app.ts',
-  }, () => DOM.aiInputBar?.style.display === 'none' ? 'hidden' : 'visible');
+  }, () => {
+    const el = DOM.aiInputBar;
+    // 通过 offsetParent 检测显隐（支持 CSS class 或祖先节点隐藏）
+    return el && el.offsetParent !== null ? 'visible' : 'hidden';
+  });
   Registry.registerElement({
     id: 'operation-toast',
     type: 'icon',

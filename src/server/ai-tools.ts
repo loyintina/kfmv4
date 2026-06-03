@@ -109,7 +109,7 @@ export function setupAiTools(router: Router, wsServer: WsServer): void {
    * GET /api/capabilities
    *
    * 返回所有已注册的能力列表。
-   * 优先从 WebSocket 获取实时数据，fallback 到静态清单。
+   * 优先从 WebSocket 获取实时数据，fallback 到 CapabilityExecutor。
    */
   router.get('/capabilities', (_req, res) => {
     // 优先从 WebSocket 取实时数据
@@ -131,37 +131,18 @@ export function setupAiTools(router: Router, wsServer: WsServer): void {
       return;
     }
 
-    // 静态清单（entry 与 capability-executor.ts 保持一致）
-    res.json({
-      source: 'static',
-      capabilities: [
-        {
-          id: 'file-search',
-          name: '文件搜索',
-          description: '在当前目录下搜索文件名匹配的文件',
-          parameters: [{ name: 'pattern', type: 'string' }],
-          entry: 'capability-executor:file-search',
-        },
-        {
-          id: 'file-read',
-          name: '读取文件',
-          description: '读取指定路径的文件内容',
-          parameters: [{ name: 'path', type: 'string' }],
-          entry: 'capability-executor:file-read',
-        },
-        {
-          id: 'file-write',
-          name: '写入文件',
-          description: '写入内容到指定路径的文件（可追加）',
-          parameters: [
-            { name: 'path', type: 'string' },
-            { name: 'content', type: 'string' },
-            { name: 'append', type: 'boolean' },
-          ],
-          entry: 'capability-executor:file-write',
-        },
-      ],
-    });
+    // fallback: 从 CapabilityExecutor 读取（与 main.ts 注册的能力同源）
+    const executorCaps = capabilityExecutor.listCapabilities();
+    if (executorCaps.length > 0) {
+      res.json({
+        source: 'executor',
+        capabilities: executorCaps,
+      });
+      return;
+    }
+
+    // 无可用的能力数据
+    res.json({ source: 'none', capabilities: [], note: '无可用的能力数据' });
   });
 
   /**
