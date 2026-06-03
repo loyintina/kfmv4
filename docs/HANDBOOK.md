@@ -176,7 +176,7 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 ### 自动化测试
 
 ```bash
-npm test   # 106 个测试，覆盖 11 个模块（含 Box 引擎）
+npm test   # 105 个测试，覆盖 11 个模块（含 Box 引擎）
 ```
 
 ### 手动回归清单
@@ -250,7 +250,7 @@ npm test   # 106 个测试，覆盖 11 个模块（含 Box 引擎）
 - 用户与 AI 对称操作（v6.2.0 延续）：双击文件调 `KFMState.setSelectedFile()`
 - 内容层增强（v6.2.0 延续）：file-tree + card-stack-content 含实时摘要
 - 服务端路由注册已修复
-- Box 类 31 个单元测试 + 累计 106 个回归测试
+- Box 类 31 个单元测试 + 累计 105 个回归测试
 
 **关键结论留给下一位**：
 
