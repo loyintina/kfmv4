@@ -42,13 +42,11 @@ export async function initApp(): Promise<void> {
     eyeBtn.addEventListener('click', () => {
       KFMState.toggleHidden();
       eyeBtn.classList.toggle('active');
-      Registry.notifyStateChange('eye-btn');
     });
   }
   // AI 指令处理器：显式切换隐藏文件（绕过通用 click 的坐标问题）
   wsChannel.onCommand('toggle-hidden-files', () => {
     KFMState.toggleHidden();
-    Registry.notifyStateChange('eye-btn');
   });
 
   // 关闭侧栏按钮

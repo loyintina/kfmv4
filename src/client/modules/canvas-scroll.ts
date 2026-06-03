@@ -104,7 +104,7 @@ export function initScrollGesture(): void {
   const unreg = gestures.register({
     id: 'sidebar-scroll',
     targetFilter: () => true,
-    condition: () => !L._sidebarClosed && !!L.renderer,
+    condition: () => !L.isSidebarClosed() && !!L.renderer,
     priority: 60,
     onStart(e) {
       if (e.button !== 0) return;
@@ -236,7 +236,7 @@ export function initScrollGesture(): void {
       let flingIsTop = _boundIsTop;
       const flingMaxY = L.renderer?.getRoot()?.getMaxScroll().maxY ?? 0;
       function fling() {
-        if (L._sidebarClosed) { L._flingRaf = 0; return; }
+        if (L.isSidebarClosed()) { L._flingRaf = 0; return; }
         velocity *= 0.96;
         if (Math.abs(velocity) < 0.3) { L._flingRaf = 0; return; }
         if (flingPen > 0) {

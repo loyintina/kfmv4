@@ -150,18 +150,18 @@ export async function loadFileTree(rootPath: string): Promise<void> {
   markAnimatingPath(null);
 
   // 注册内容层：文件树摘要（使用生成器，每次 snapshot 返回实时状态）
-  Registry.registerContentGenerator('file-tree', () => ({
-    id: 'file-tree',
-    type: 'file-tree' as const,
-    summary: (() => {
-      const expanded = Object.keys(KFMState.expandedPaths);
-      const expandedStr = expanded.length > 0
-        ? `展开: ${expanded.slice(0, 5).join(', ')}${expanded.length > 5 ? ` +${expanded.length - 5}项` : ''}`
-        : '';
-      const selected = KFMState.selectedFile ? `选中: ${KFMState.selectedFile}` : '';
-      return [`根目录: ${KFMState.currentRoot}`, selected, expandedStr].filter(Boolean).join(' | ');
-    })(),
-  }));
+  Registry.registerContentGenerator('file-tree', () => {
+    const expanded = Object.keys(KFMState.expandedPaths);
+    const expandedStr = expanded.length > 0
+      ? `展开: ${expanded.slice(0, 5).join(', ')}${expanded.length > 5 ? ` +${expanded.length - 5}项` : ''}`
+      : '';
+    const selected = KFMState.selectedFile ? `选中: ${KFMState.selectedFile}` : '';
+    return {
+      id: 'file-tree',
+      type: 'file-tree' as const,
+      summary: [`根目录: ${KFMState.currentRoot}`, selected, expandedStr].filter(Boolean).join(' | '),
+    };
+  });
 }
 
 

@@ -545,7 +545,7 @@ export function initOrb(): void {
     type: 'panel',
     label: 'AI 对话面板',
     description: 'AI 聊天对话面板',
-    state: 'collapsed',
+    state: 'closed',
     enabled: true,
     effect: '展开后显示聊天消息，可输入文字与 AI 对话',
     source: 'orb.ts',

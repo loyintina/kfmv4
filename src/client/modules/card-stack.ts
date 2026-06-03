@@ -1373,17 +1373,17 @@ export function initCardStack(): void {
   }, () => _state);
 
   // 注册内容层：卡片堆当前焦点摘要（使用生成器，每次 snapshot 返回实时焦点）
-  Registry.registerContentGenerator('card-stack-content', () => ({
-    id: 'card-stack-content',
-    type: 'card-content',
-    summary: (() => {
-      const card = CARDS[_focusIndex];
-      const name = card?.name || card?.id || '无';
-      const total = CARDS.length;
-      const filled = CARDS.filter(c => c.name && c.name !== '').length;
-      return `卡片堆: [${_focusIndex + 1}/${total}] ${name}${filled < total ? ` (${filled}张已填充)` : ''}`;
-    })(),
-  }));
+  Registry.registerContentGenerator('card-stack-content', () => {
+    const card = CARDS[_focusIndex];
+    const name = card?.name || card?.id || '无';
+    const total = CARDS.length;
+    const filled = CARDS.filter(c => c.name && c.name !== '').length;
+    return {
+      id: 'card-stack-content',
+      type: 'card-content',
+      summary: `卡片堆: [${_focusIndex + 1}/${total}] ${name}${filled < total ? ` (${filled}张已填充)` : ''}`,
+    };
+  });
 
   // 注册 AI 指令处理器
   wsChannel.onCommand('open-card-stack', () => { if (!isCardStackOpen()) openCardStack(); });

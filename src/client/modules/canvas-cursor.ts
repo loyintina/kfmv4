@@ -222,7 +222,7 @@ export function _snapCursorToCenter(): void {
 /** 点击后滚动页面到光标居中位置（GSAP 平滑动画） */
 export function _scrollToCenterCursor(): void {
   if (_isCursorMode()) return;
-  if (L._restoreMode) return;  // 恢复期间跳过 GSAP
+  if (L.isRestoreMode()) return;  // 恢复期间跳过 GSAP
   const root = L.renderer?.getRoot();
   if (!root || L.cursorRowId === null) return;
   const canvas = L.renderer?.canvas ?? DOM.treeCanvas;

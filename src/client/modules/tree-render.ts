@@ -351,18 +351,25 @@ function _setupCollapseOverlays(container: Box, fullH: number, siblingCloneLabel
 
 /** 保存 KFMState 订阅引用，防止重复订阅 */
 function _ensureSubscribed(): void {
-  if (L._stateSub) KFMState.unsubscribe(L._stateSub);
-  L._stateSub = () => {
-    // state 变化（toggleHidden/expanded）是用户主动行为，跳过 L._animBusy 锁
+  const prev = L.getStateSub();
+
+
+  if (prev) KFMState.unsubscribe(prev);
+  const fn = () => {
+    // state 变化（toggleHidden/expanded）是用户主动行为，跳过 isAnimating 锁
     L.endOp();
     // 守卫：_stateSub 被调用时 L.isAnimating 必须已被 endOp() 清除。
     // 如果这里 isAnimating 仍为 true，说明有人在动画进行中调了 notify()。
-    if (L.isAnimating) warn('_stateSub fired while animation still active');
-
+    if (L.isAnimating) warn('stateSub fired while animation still active');
     rebuildTree();
   };
-  KFMState.subscribe(L._stateSub);
+  L.setStateSub(fn);
+  KFMState.subscribe(fn);
 }
+
+
+
+
 
 /** 外部使用：标记某路径正在做展开动画（懒加载专用） */
 export function markAnimatingPath(path: string | null): void {
@@ -469,9 +476,9 @@ export function onSidebarOpen(): void {
         // 实验日志：写到页面上可见
         const savedVal = root.scrollY;
         L._savedScrollY = 0;
-        L._restoreMode = true;
+        L.setRestoreMode(true);
         setTimeout(() => {
-          L._restoreMode = false;
+          L.setRestoreMode(false);
           // 最终检查：如果 scrollY 被覆盖了，强制恢复
           const r2 = L.renderer?.getRoot();
           if (r2 && Math.abs(r2.scrollY - savedVal) > 10) {
@@ -512,11 +519,11 @@ export function onSidebarOpen(): void {
 
 export function onSidebarClose(): void {
   // 幂等：侧栏已关闭时跳过（防 overlay + 关闭按钮同时触发）
-  if (L._sidebarClosed) return;
+  if (L.isSidebarClosed()) return;
   // 先停掉所有动画和独立rAF循环
   _removeAllOverlays();
   _resetAnimTimeline();
-  L._sidebarClosed = true;  // 让wheel/touch的rAF循环自己退出
+  L.setSidebarClosed(true);  // 让wheel/touch的rAF循环自己退出
   L.endOp();
   Registry.notifyStateChange('file-tree');
   
@@ -525,8 +532,7 @@ export function onSidebarClose(): void {
   const rootScrollY = L.renderer?.getRoot()?.scrollY ?? 0;
   // 关键：只有 L.renderer 存在时才保存，避免用 0/null 覆盖正确的值
   if (L.renderer && L.renderer.getRoot()) {
-    L._savedScrollY = rootScrollY;
-    L._savedCursorRowId = L.cursorRowId;
+    L.saveSidebarScrollState(rootScrollY, L.cursorRowId);
   }
   clickQueue.clear();
   L.cursorBox = null;
@@ -595,8 +601,7 @@ export function initTreeRenderer(): void {
     const path = params.path as string;
     if (!path) return;
     // 标记 AI 主动选择的文件路径，rebuildTree 后会自动移动光标并居中
-    L._pendingSelectFile = path;
-    KFMState.setSelectedFile(path);
+    L.setPendingSelectFile(path);
   });
 }
 
@@ -623,7 +628,7 @@ function _createSidebarTouchArea(): void {
     if (isPickerOpen()) return;
     if (!L.cursorRowId || L._rowIndex.length === 0) return;
     const idx = getCursorRowIndex();
-    if (L._animBusy) {
+    if (L.isAnimating) {
       const hit = L._rowIndex[idx]!;
       const root = L.renderer?.getRoot();
       if (!root) return;
@@ -706,7 +711,7 @@ function processClickQueue(): void {
 
   // === 规则：动画进行中 ===
   if (L.isAnimating) {
-    if (L._animBusyAt && Date.now() - L._animBusyAt > 3000) {
+    if (L.animElapsed > 3000) {
       L.endOp();
       clickQueue.clear();
       return;
@@ -1086,7 +1091,7 @@ function rebuildTree(): void {
     // 这是一个防御性守卫：如果走到这里说明 _stateSub 可能绕过了 endOp()。
     warn('rebuildTree called while animation still active — forcing release');
     // 超���兜底：超过 3000ms 自动释��
-    if (L._animBusyAt && Date.now() - L._animBusyAt > 3000) {
+    if (L.animElapsed > 3000) {
       L.endOp();
       
       clickQueue.clear();  // ����队列防死循环
@@ -1152,9 +1157,8 @@ function rebuildTree(): void {
 
     // AI 指令 select-file 后的光标定位：在标准光标恢复逻辑之后，检查是否有
     // 待选中的文件。如果有，覆盖光标指向选中的文件行并居中滚动。
-    if (L._pendingSelectFile) {
-      const pendingPath = L._pendingSelectFile;
-      L._pendingSelectFile = null;
+    const pendingPath = L.consumePendingSelectFile();
+    if (pendingPath) {
       const targetBox = findBoxById(newRoot, `file-${pendingPath}`)
         || findBoxById(newRoot, `title-${pendingPath}`);
       if (targetBox) {

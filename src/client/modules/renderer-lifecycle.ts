@@ -50,6 +50,40 @@ export class RendererLifecycle {
   // ---- 侧栏打开/关闭时暂存的光标位置（不属于 RenderContext） ----
   _savedCursorRowId: string | null = null;
   _pendingSelectFile: string | null = null;
+  // ---- 显式接口（替代跨模块 _ 前缀直接访问，符合 §1.2 约束） ----
+
+  /** 设置待选中的文件路径（AI select-file 命令使用） */
+  setPendingSelectFile(path: string): void { this._pendingSelectFile = path; }
+  /** 消费并清除待选中的文件路径，返回已保存值（无待选时返回 null） */
+  consumePendingSelectFile(): string | null {
+    const path = this._pendingSelectFile;
+    this._pendingSelectFile = null;
+    return path;
+  }
+
+  /** 保存侧栏关闭前的滚动位置和光标行（openSidebar 时通过 resetForOpen 恢复） */
+  saveSidebarScrollState(scrollY: number, cursorRowId: string | null): void {
+    this._savedScrollY = scrollY;
+    this._savedCursorRowId = cursorRowId;
+  }
+
+  /** 侧栏是否已关闭（scroll gesture 守卫） */
+  isSidebarClosed(): boolean { return this._sidebarClosed; }
+  setSidebarClosed(v: boolean): void { this._sidebarClosed = v; }
+
+  /** 恢复模式标记：恢复期间跳过 GSAP 滚动动画 */
+  isRestoreMode(): boolean { return this._restoreMode; }
+  setRestoreMode(v: boolean): void { this._restoreMode = v; }
+
+  /** KFMState 订阅引用管理 */
+  setStateSub(fn: ((state: any) => void) | null): void { this._stateSub = fn; }
+  getStateSub(): ((state: any) => void) | null { return this._stateSub; }
+
+  /** 返回当前动画已执行的毫秒数（无动画时返回 0） */
+  get animElapsed(): number {
+    return this._treeOp.kind === 'animating' ? Date.now() - this._treeOp.startedAt : 0;
+  }
+
 
   // ---- RenderContext 原子化切换 ----
 
