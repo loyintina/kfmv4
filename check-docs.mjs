@@ -51,6 +51,71 @@ function checkInternalLinks(filePath, content) {
     }
   }
 }
+// ============================================================
+// 3. Frontmatter 完整性校验
+// ============================================================
+
+const VALID_STATUSES = new Set(['active', 'draft', 'superseded', 'completed', 'relocated', 'proposal']);
+
+function checkFrontmatter(filePath) {
+  const content = fs.readFileSync(filePath, 'utf-8');
+  const relPath = path.relative(ROOT, filePath);
+
+  // 没有 frontmatter → 跳过（非规范性文档）
+  if (!content.startsWith('---')) {
+    // archive 下的文档必须有 frontmatter
+    if (relPath.startsWith('docs/archive')) {
+      error(`${relPath}: 归档文件缺少 status frontmatter（必须以 --- 开头）`);
+    }
+    return;
+  }
+
+  // 解析 frontmatter
+  const endIdx = content.indexOf('---', 3);
+  if (endIdx === -1) {
+    error(`${relPath}: frontmatter 未闭合（缺少结尾 ---）`);
+    return;
+  }
+
+  const fm = content.slice(3, endIdx).trim();
+  const lines = fm.split('\n');
+  const fields = {};
+  for (const line of lines) {
+    const colonIdx = line.indexOf(':');
+    if (colonIdx === -1) continue;
+    const key = line.slice(0, colonIdx).trim();
+    const value = line.slice(colonIdx + 1).trim().replace(/^(["'])(.*)\1$/, '$2');
+    fields[key] = value;
+  }
+  // status 字段必须存在且有效
+  if (!fields.status) {
+    error(`${relPath}: frontmatter 缺少 status 字段（应为 active / draft / superseded 之一）`);
+  } else if (!VALID_STATUSES.has(fields.status)) {
+    error(`${relPath}: status 值 "${fields.status}" 无效（应为 active / draft / superseded 之一）`);
+  }
+
+  // superseded 状态的文档必须有 superseded_by
+  if (fields.status === 'superseded') {
+    if (!fields.superseded_by) {
+      error(`${relPath}: status 为 superseded 但缺少 superseded_by 字段`);
+    } else {
+      // 验证 superseded_by 指向的文件存在，支持两种路径格式：
+      // 1. 文件相对路径（如 ../HANDBOOK.md）
+      // 2. 项目根相对路径（如 docs/HANDBOOK.md）
+      const supersedesTarget = fields.superseded_by.replace(/`/g, '');
+      const targetPathRel = path.resolve(path.dirname(filePath), supersedesTarget);
+      const targetPathRoot = path.resolve(ROOT, supersedesTarget);
+      if (!fs.existsSync(targetPathRel) && !fs.existsSync(targetPathRoot)) {
+        error(`${relPath}: superseded_by "${fields.superseded_by}" 指向的文件不存在`);
+      }
+    }
+  }
+
+  // 有 superseded_by 但 status 不是 superseded → warning
+  if (fields.superseded_by && fields.status && fields.status !== 'superseded') {
+    warn(`${relPath}: 有 superseded_by 但 status="${fields.status}"（应为 superseded）`);
+  }
+}
 
 // ============================================================
 // 2. 篇幅检查
@@ -91,14 +156,9 @@ for (const filePath of docFiles) {
   const relPath = path.relative(ROOT, filePath);
   const content = checkFileSize(filePath);
   checkInternalLinks(filePath, content);
-
-  // 3. 归档文件 status frontmatter 检查
-  if (relPath.startsWith('docs/archive')) {
-    if (!content.startsWith('---')) {
-      error(`${relPath}: missing status frontmatter (must start with ---)`);
-    }
-  }
+  checkFrontmatter(filePath);
 }
+
 
 // 4. CLAUDE.md 中引用的文档存在性检查
 const claudeContent = fs.readFileSync(path.join(ROOT, 'CLAUDE.md'), 'utf-8');

@@ -228,7 +228,7 @@ let _fStartCardW = 0;
 let _fStartCardH = 0;
 let _fLPTimer: ReturnType<typeof setTimeout> | null = null;
 let _fLPFired = false;
-let _fPreEdit: string = 'compact';
+let _fPreEdit: 'compact' | 'active' = 'compact';
 
 // ========== 浮卡拖拽状态 ==========
 let _dragItem: FloatingCardItem | null = null;
@@ -769,7 +769,7 @@ export function launchFocusedCard(): void {
   const zIndex = _nextFloatingZ++;
   const item = {
     el, sourceIndex: _focusIndex, zIndex, state: 'launching',
-    tlOrb: null as any, trOrb: null as any, blOrb: null as any, brOrb: null as any, contentEl,
+    tlOrb: null, trOrb: null, blOrb: null, brOrb: null, contentEl,
     cardWidth: COMPACT_W, cardHeight: COMPACT_H,
     compactMemW: COMPACT_W, compactMemH: COMPACT_H,
     activeMemW: FLOATING_CARD_W, activeMemH: FLOATING_CARD_H,
@@ -1238,7 +1238,7 @@ export function initCardStack(): void {
       _fLPFired = false;
       _fStartX = e.clientX;
       _fStartY = e.clientY;
-      _fPreEdit = item.state;
+      _fPreEdit = item.state as 'compact' | 'active';
 
       const r = orbEl.getBoundingClientRect();
       _fStartOrbX = r.left;
@@ -1251,7 +1251,7 @@ export function initCardStack(): void {
       _fLPTimer = setTimeout(() => {
         _fLPFired = true;
         if (!_fItem) return;
-        _fPreEdit = _fItem.state;
+        _fPreEdit = _fItem.state as 'compact' | 'active';
         _fItem.state = 'editing';
         const r2 = orbEl.getBoundingClientRect();
         _fStartOrbX = r2.left;
@@ -1338,7 +1338,7 @@ export function initCardStack(): void {
       if (_fLPTimer) { clearTimeout(_fLPTimer); _fLPTimer = null; }
       if (_fItem) {
         if (_fItem.state === 'editing') {
-          _fItem.state = (_fPreEdit === 'compact' ? 'compact' : 'active') as any;
+          _fItem.state = _fPreEdit;
           _fItem.el.style.boxShadow = theme.stack.blurShadow;
           // 恢复光球初始光晕
           const gd = _fItem.brOrb?.firstElementChild as HTMLElement;

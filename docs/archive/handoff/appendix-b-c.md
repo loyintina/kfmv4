@@ -1,7 +1,7 @@
 ---
-status: completed
+status: superseded
 archived_at: 2026-06-02
-superseded_by: docs/HANDOFF_AUDIT.md
+superseded_by: docs/HANDBOOK.md
 ---
 
 # 附录 B & C：独立审计评审与回应

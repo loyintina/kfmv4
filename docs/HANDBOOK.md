@@ -97,7 +97,7 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 12. **Canvas 元素的 AI click 无坐标**：`file-tree` Canvas 通过 `data-registry-id` 可被 AI `click` 指令定位并触发 `click()`，但合成的 PointerEvent 坐标为 (0,0)，不一定命中预期的行。
     **v6.2 部分缓解**：新增 `expand-dir`/`collapse-dir`/`select-file` 专用命令绕过坐标问题，AI 应优先使用这些命令而非通用 `click`。<a id='trap-12'></a>
 13. **`registerContent()` 与生成器关系**：同一 id 下生成器优先，`registerContent()` 不会覆盖已注册的生成器。如需强制更新静态内容，先调 `registerContentGenerator(id, null)` 注销生成器。<a id='trap-13'></a>
-14. **`notifyStateChange()` 散布**：`notifyStateChange()` 当前散布在 6 个文件的 ~41 处调用中（card-stack.ts 9 处、orb.ts 8 处、tree-render.ts 10 处、其他 3+ 文件 10+ 处）。其中 GSAP 动画回调中的手动通知有合理存在理由，但 KFMState 订阅覆盖后未清理的冗余路径仍在。如能在 ws-channel 层建立自动覆盖检测，可逐步消除。<a id='trap-14'></a>
+14. **`notifyStateChange()` 散布**：`notifyStateChange()` 散布在 6 个文件的 ~36 处调用（2026-06-03 审计后从约 41 处清理了 ui.ts 中 5 处冗余——openSidebar/closeSidebar 中的 2 处及 3 个命令处理器的冗余调用，均在 KFMState.setSidebarOpen 已覆盖后被标记为冗余并移除）。剩余 ~36 处均为合理存在：tree-render.ts ~10 处（Canvas 渲染状态变化）、card-stack.ts ~9 处（DOM/GSAP 生命周期状态）、orb.ts ~8 处（orbState/panelState 模块变量）、app.ts ~2 处（toast DOM 回调）、tree-render/rebuildTree 等。根解方向未变：在 ws-channel 层建立自动覆盖检测，识别被 KFMState 订阅覆盖的冗余通知。但需注意，绝大多数通知来自 KFMState 无法覆盖的路径（Canvas/GSAP 回调/模块变量），真正的冗余比例较低。<a id='trap-14'></a>
 
 ### 活跃待办
 

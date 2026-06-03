@@ -1,5 +1,6 @@
 ---
 status: superseded
+superseded_by: docs/KFM_V4_INVARIANTS.md
 archived_at: 2026-06-02
 ---
 # Bug 修复原则 & AI 协作守则

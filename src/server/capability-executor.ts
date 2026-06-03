@@ -15,6 +15,19 @@
 import fs from 'fs';
 import path from 'path';
 
+/** 安全根目录：避免路径逃逸 */
+const SAFE_ROOT = (() => {
+  const root = process.env.KFM_ROOT || process.env.HOME || '.';
+  return path.resolve(root) + path.sep;
+})();
+
+/** 路径校验：确保用户路径不逃逸出 SAFE_ROOT */
+function sanitizePath(userPath: string): string | null {
+  const resolved = path.resolve(SAFE_ROOT, userPath);
+  if (resolved !== SAFE_ROOT.slice(0, -1) && !resolved.startsWith(SAFE_ROOT)) return null;
+  return resolved;
+}
+
 // ========== 类型定义 ==========
 
 export interface CapabilityParam {
@@ -62,22 +75,25 @@ export class CapabilityExecutor {
       ],
     }, async (params) => {
       const pattern = params.pattern as string;
-      const dirPath = params.path as string || process.env.HOME || '/';
+      const dirPath = params.path as string;
       if (!pattern) {
         return { success: false, error: '缺少 pattern 参数', capabilityId: 'file-search' };
       }
       try {
-        const resolvedPath = path.resolve(dirPath);
+        const resolvedPath = dirPath ? sanitizePath(dirPath) : SAFE_ROOT.slice(0, -1);
+        if (!resolvedPath) {
+          return { success: false, error: `路径逃逸: ${dirPath}`, capabilityId: 'file-search' };
+        }
         if (!fs.existsSync(resolvedPath)) {
           return { success: false, error: `目录不存在: ${resolvedPath}`, capabilityId: 'file-search' };
         }
         const results: { name: string; path: string; isDir: boolean }[] = [];
         const searchInDir = (dir: string, depth: number) => {
-          if (depth > 5) return; // 限制递归深度
+          if (depth > 5) return;
           try {
             const entries = fs.readdirSync(dir, { withFileTypes: true });
             for (const entry of entries) {
-              if (entry.name.startsWith('.')) continue; // 跳过隐藏文件
+              if (entry.name.startsWith('.')) continue;
               const fullPath = path.join(dir, entry.name);
               if (entry.name.includes(pattern)) {
                 results.push({ name: entry.name, path: fullPath, isDir: entry.isDirectory() });
@@ -91,7 +107,7 @@ export class CapabilityExecutor {
         searchInDir(resolvedPath, 0);
         return {
           success: true,
-          data: { pattern, path: resolvedPath, matches: results.slice(0, 200) }, // 最多 200 条
+          data: { pattern, path: resolvedPath, matches: results.slice(0, 200) },
           capabilityId: 'file-search',
         };
       } catch (e: any) {
@@ -110,8 +126,11 @@ export class CapabilityExecutor {
       if (!filePath) {
         return { success: false, error: '缺少 path 参数', capabilityId: 'file-read' };
       }
+      const resolvedPath = sanitizePath(filePath);
+      if (!resolvedPath) {
+        return { success: false, error: `路径逃逸: ${filePath}`, capabilityId: 'file-read' };
+      }
       try {
-        const resolvedPath = path.resolve(filePath);
         if (!fs.existsSync(resolvedPath)) {
           return { success: false, error: `文件不存在: ${resolvedPath}`, capabilityId: 'file-read' };
         }
@@ -145,9 +164,11 @@ export class CapabilityExecutor {
       if (!filePath || content === undefined) {
         return { success: false, error: '缺少 path 或 content 参数', capabilityId: 'file-write' };
       }
+      const resolvedPath = sanitizePath(filePath);
+      if (!resolvedPath) {
+        return { success: false, error: `路径逃逸: ${filePath}`, capabilityId: 'file-write' };
+      }
       try {
-        const resolvedPath = path.resolve(filePath);
-        // 确保父目录存在
         const parentDir = path.dirname(resolvedPath);
         if (!fs.existsSync(parentDir)) {
           fs.mkdirSync(parentDir, { recursive: true });
@@ -216,7 +237,6 @@ export class CapabilityExecutor {
           entry: `capability-executor:${id}`,
         });
       } else {
-        // 通过旧的 register(id, handler) 注册的能力，没有元数据
         result.push({
           id,
           name: id,

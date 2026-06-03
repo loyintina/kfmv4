@@ -191,8 +191,10 @@ async function _openPanel(): Promise<void> {
         if (r) {
           KFMState.files[seg] = {
             name: parts[i], path: seg, isDir: true, isLink: false,
-            children: r.items.map(d => ({ name: d.name, path: d.path, isDir: true, isLink: false })),
-          } as any;
+            children: r.items.map(d => ({
+              name: d.name, path: d.path, isDir: true, isLink: false,
+            } as FileNode)),
+          } as FileNode;
         }
       }
     }
@@ -359,7 +361,7 @@ function _rebuildPicker(): void {
 
   // 把 picker 的目录数据写入 KFMState.files（buildTree 内部会读它）
   // 注意：主树可能在 files 中存有含文件的完整数据，picker 仅需目录
-  KFMState.files[BASE_PATH] = rootNode as any;
+  KFMState.files[BASE_PATH] = rootNode as FileNode;
   for (const d of _cachedDirs) {
     const existing = KFMState.files[d.path];
     if (existing === undefined || existing.children === undefined) {
@@ -412,7 +414,7 @@ async function _toggleDir(path: string, expand: boolean): Promise<void> {
   if (expand) {
     _pickerExpanded[path] = true;
     // 如果 KFMState.files 中没有该目录的 children，从 API 获取
-    const existing = KFMState.files[path] as any as FileNode | undefined;
+    const existing = KFMState.files[path] as FileNode | undefined;
     if (!existing?.children || existing.children.length === 0) {
       const result = await _fetchDirs(path);
       if (result) {
@@ -420,7 +422,7 @@ async function _toggleDir(path: string, expand: boolean): Promise<void> {
           name: path.split('/').pop() || path, path, isDir: true, isLink: false,
           children: result.items.map(d => ({ name: d.name, path: d.path, isDir: true, isLink: false })),
         };
-        KFMState.files[path] = fileNode as any;
+        KFMState.files[path] = fileNode;
       }
     }
   } else {

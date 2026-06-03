@@ -1,5 +1,6 @@
 ---
 status: superseded
+superseded_by: CLAUDE.md
 archived_at: 2026-06-02
 ---
 # KFM v4 (Kaf Fee Mew / 咖啡猫)

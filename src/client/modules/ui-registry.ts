@@ -216,12 +216,22 @@ export class UIElementRegistry {
       return el;
     });
 
+    /** 安全调用生成器，异常时返回 fallback */
+    function safeGenerate(generator: ContentGenerator, id: string): ContentBlock {
+      try {
+        return generator();
+      } catch (e) {
+        console.error(`[ui-registry] 内容生成器执行失败: ${id}`, e);
+        return { id, type: 'text-output', summary: `[内容生成失败: ${e}]` };
+      }
+    }
+    
     // 内容层：优先使用生成器（实时），fallback 到静态内容
     // 顺序：先按静态注册顺序排列（生成器覆盖同名静态），再追加仅有生成器的内容块
     const content = Array.from(this._content.entries()).map(([id, block]) => {
       const generator = this._contentGenerators.get(id);
       if (generator) {
-        return generator();
+        return safeGenerate(generator, id);
       }
       return block;
     });
@@ -229,7 +239,7 @@ export class UIElementRegistry {
     // 追加只注册了生成器但没有静态内容的内容块
     for (const [id, generator] of this._contentGenerators) {
       if (!this._content.has(id)) {
-        content.push(generator());
+        content.push(safeGenerate(generator, id));
       }
     }
 

@@ -1,5 +1,6 @@
 ---
 status: superseded
+superseded_by: docs/HANDBOOK.md
 archived_at: 2026-06-02
 ---
 # AI 操作协议 — AI 操作项目自身的能力

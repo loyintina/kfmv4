@@ -11,23 +11,23 @@ import { onSidebarOpen, onSidebarClose } from './tree-render.js';
 import { Registry } from './ui-registry.js';
 import { KFMState } from './state.js';
 import { wsChannel } from './ws-channel.js';
+import { DOM } from "./dom-refs.js";
 
 export function openSidebar(): void {
   DOM.sidebar?.classList.add('open');
   DOM.overlay?.classList.add('show');
   onSidebarOpen();
   KFMState.setSidebarOpen(true);
-  Registry.notifyStateChange('sidebar');
+  // 不主动调 Registry.notifyStateChange('sidebar')：
+  // KFMState.setSidebarOpen() → KFMState.notify() → ws-channel 自动推送 snapshot
 }
-
-import { DOM } from "./dom-refs.js";
 
 export function closeSidebar(): void {
   DOM.sidebar?.classList.remove('open');
   DOM.overlay?.classList.remove('show');
   onSidebarClose();
   KFMState.setSidebarOpen(false);
-  Registry.notifyStateChange('sidebar');
+  // 同上：KFMState.notify() 已覆盖推送
 }
 
 
@@ -48,15 +48,15 @@ export function initUI(): void {
     description: '左侧文件浏览面板，显示当前目录的文件树和工具栏',
     state: 'closed',
     enabled: true,
-    effect: '打开后显示文件树，点击目录展开/折叠，左滑或点击遮罩关闭',
+    effect: '打开后显示文件树，点击目录展开/折叠，左滑或点击遮罩关闭。AI 可发送 open-sidebar/close-sidebar/toggle-sidebar 命令操作',
     source: 'ui.ts',
   }, () => DOM.sidebar?.classList.contains('open') ? 'open' : 'closed');
 
-  // 注册 AI 指令处理器
-  wsChannel.onCommand('open-sidebar', () => { openSidebar(); Registry.notifyStateChange('sidebar'); });
-  wsChannel.onCommand('close-sidebar', () => { closeSidebar(); Registry.notifyStateChange('sidebar'); });
+  // 注册 AI 指令处理器（openSidebar/closeSidebar 内部已触发 KFMState.notify，
+  // 无需额外调 Registry.notifyStateChange）
+  wsChannel.onCommand('open-sidebar', () => { openSidebar(); });
+  wsChannel.onCommand('close-sidebar', () => { closeSidebar(); });
   wsChannel.onCommand('toggle-sidebar', () => {
     if (DOM.sidebar?.classList.contains('open')) { closeSidebar(); } else { openSidebar(); }
-    Registry.notifyStateChange('sidebar');
   });
 }

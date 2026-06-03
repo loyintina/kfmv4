@@ -19,7 +19,7 @@ const SRC_DIR = 'src';
 // 白名单：全部已修复，保持空。新增逃逸会中断构建。
 const WHITELIST = new Set([]);
 
-const AS_ANY_RE = /\([\w.\[\]]+\s+as\s+any\)/;
+const AS_ANY_RE = /\bas\s+any\b/;
 
 // ========== 扫描 ==========
 

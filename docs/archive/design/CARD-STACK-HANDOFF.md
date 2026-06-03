@@ -1,5 +1,6 @@
 ---
 status: superseded
+superseded_by: docs/HANDBOOK.md
 archived_at: 2026-06-02
 ---
 # 堆叠卡片面板 — 交接文档
