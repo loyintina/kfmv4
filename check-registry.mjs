@@ -67,9 +67,12 @@ const REGISTER_CALL_RE = /Registry\.register(?:Element)?\s*\(\s*\{[\s\S]*?id:\s*
 const CONTENT_OBJ_RE = /Registry\.registerContent\s*\(\s*\{[\s\S]*?id:\s*'([^']+)'/g;
 // 匹配 Registry.registerContentGenerator('id', ...)
 const CONTENT_GEN_RE = /Registry\.registerContentGenerator\s*\(\s*'([^']+)'/g;
+// 匹配 Registry.registerStateGetter('id', ...)
+const STATEGETTER_CALL_RE = /Registry\.registerStateGetter\s*\(\s*'([^']+)'/g;
 // 匹配 Registry.registerCapability({ id: '...' })
 const CAPABILITY_CALL_RE = /Registry\.registerCapability\s*\(\s*\{[\s\S]*?id:\s*'([^']+)'/g;
-
+// 匹配 wsChannel.onCommand('action', ...)
+const COMMAND_CALL_RE = /wsChannel\.onCommand\s*\(\s*'([^']+)'/g;
 /** 注册调用中必须出现的字段列表 */
 const REQUIRED_REGISTER_FIELDS = ['type', 'label', 'description', 'effect', 'enabled'];
 
@@ -233,6 +236,61 @@ function checkCapabilityConsistency() {
   }
 }
 
+/**
+ * 检查孤立 state getter：registerStateGetter('id') 是否有对应的 register({ id }) 或 registerElement({ id })。
+ * 没有对应元素的 getter 永远不会被调用，属于死代码或漏注册。
+ */
+function checkOrphanGetters() {
+  const registeredElements = new Set();
+  const stateGetterIds = new Set();
+
+  for (const absPath of walk(SRC_DIR)) {
+    if (absPath.endsWith('.d.ts') || absPath.endsWith('ui-registry.ts')) continue;
+    const content = readFileSync(absPath, 'utf-8');
+    let match;
+    while ((match = REGISTER_CALL_RE.exec(content)) !== null) {
+      registeredElements.add(match[1]);
+    }
+    while ((match = STATEGETTER_CALL_RE.exec(content)) !== null) {
+      stateGetterIds.add(match[1]);
+    }
+  }
+
+  for (const id of stateGetterIds) {
+    if (!registeredElements.has(id)) {
+      reportError(`孤立 state getter: registerStateGetter('${id}') 没有对应的 register/registerElement 调用。getter 永远不会被执行。`);
+    }
+  }
+}
+
+/**
+ * 检查命令注册重复：wsChannel.onCommand('action') 是否在多个文件中出现。
+ * 同一个 action 被多个模块注册会导致前一个被静默覆盖。
+ */
+function checkCommandDuplicates() {
+  const commandFiles = new Map(); // action → [file1, file2, ...]
+
+  for (const absPath of walk(SRC_DIR)) {
+    if (absPath.endsWith('.d.ts')) continue;
+    const content = readFileSync(absPath, 'utf-8');
+    let match;
+    while ((match = COMMAND_CALL_RE.exec(content)) !== null) {
+      const action = match[1];
+      if (!commandFiles.has(action)) {
+        commandFiles.set(action, []);
+      }
+      commandFiles.get(action).push(absPath);
+    }
+  }
+
+  for (const [action, files] of commandFiles) {
+    const uniqueFiles = [...new Set(files)];
+    if (uniqueFiles.length > 1) {
+      reportError(`命令 "${action}" 在多个文件中注册：${uniqueFiles.join(', ')}。后注册的会静默覆盖先注册的。`);
+    }
+  }
+}
+
 function check() {
   const registeredElements = new Set();
   const registeredContents = new Set();
@@ -298,6 +356,10 @@ function check() {
   checkDataRegistryId();
   // ===== 能力注册一致性验证 =====
   checkCapabilityConsistency();
+  // ===== 孤立 state getter 检查 =====
+  checkOrphanGetters();
+  // ===== 命令注册重复检查 =====
+  checkCommandDuplicates();
   // ===== 汇总 =====
   if (hasError) {
     console.error(`\n[check-registry] 缺失项见上，构建中断。`);

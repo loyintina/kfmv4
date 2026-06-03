@@ -248,7 +248,7 @@ Registry.registerElement({
 // Registry.register({ id: 'static-btn', ... });
 ```
 
-模块不存储注册后的引用，不调 `updateState()`，不知道自己被注册了。
+模块通过 `Registry.registerElement()` 显式宣告自己的存在，但不存储注册后的引用，不调 `updateState()`。注册是轻耦合的单向宣告——Registry 不反向 import 模块，模块也不需要管理注册后的生命周期。
 
 > **重要约定**：
 > 1. **推荐使用 `registerElement()` 便捷方法**，它一次完成 `register()` + `registerStateGetter()`，避免遗忘配对。如果元素的 `state` 会在运行时变化（绝大多数交互元素如此），必须使用 `registerElement()` 或分别调用 `register()` + `registerStateGetter()`。纯静态元素（state 永远不变）可以只用 `register()`。
@@ -263,10 +263,11 @@ Registry.registerElement({
 MANIFEST 清单（完整列表见 `check-registry.mjs`）：
 
 ```
-ELEMENT_MANIFEST = [          // 交互层（11 个）
+ELEMENT_MANIFEST = [          // 交互层（13 个）
   'orb', 'orb-panel', 'sidebar',
   'sidebar-toggle-btn', 'card-stack-toggle-btn', 'close-sidebar-btn',
   'eye-btn', 'card-stack', 'input-bar', 'operation-toast', 'file-tree',
+  'overlay', 'ai-send-btn',
 ];
 CONTENT_MANIFEST = [          // 内容层（3 个）
   'file-tree', 'card-stack-content', 'orb-chat',
@@ -376,32 +377,24 @@ interface Capability {
   id: string;
   name: string;
   description: string;
-  parameters: ParameterDef[];  // 参数定义
+  parameters: { name: string; type: string }[];  // 参数定义
   /** 能力对应的调用入口 */
-  entry: string;               // 如 "server.searchFiles", "KFMState.toggleExpanded"
+  entry: string;               // 如 "capability-executor:file-search", "capability-executor:file-read"
 }
 ```
 
 ### 2.3 Registry API（索引类）
+完整 API 列表见 §S.3（已定稿）。此处仅强调关键设计点：
 
 ```typescript
 class UIElementRegistry {
   // 注册一个交互元素（由各模块在初始化时调用）
   register(element: InteractiveElement): void;
 
-  // 注销（元素不再存在时）
-  unregister(id: string): void;
-
   // 获取当前页面的完整描述（AI 主入口）
   snapshot(): PageDescription;
-
-  // （可选）按 id 查询（仅交互层，能力层通过 getCapabilities 查询）
-  get(id: string): InteractiveElement | undefined;
-
-  // 自检：验证 MANIFEST 一致性。返回缺失的 id 列表（空 = 全部通过）。
-  // 实际签名见 §S.3：validate(manifest: string[]): string[]
-  // 此处不再重复，以 §S.3 为准。
 }
+```
 
 // snapshot 的输出 = 三层合并
 interface PageDescription {
@@ -412,6 +405,8 @@ interface PageDescription {
   timestamp: number;
 }
 ```
+
+> **说明**：上方的 `PageDescription` 接口在 §S.2 已有完整定义。此处列出供读者对照。
 
 **关键设计点**：
 
@@ -487,16 +482,16 @@ interface PageDescription {
 
 同上 §3.1。
 
-### 4.2 需迁移的现有硬编码（原 §4.2，待讨论哪些仍有效）
+### 4.2 需迁移的现有硬编码
 
-| 现有代码 | 位置 | 可能的迁移动作 |
-|---------|------|--------------|
-| `CARDS` 数组 | `card-stack.ts:28-36` | 推测：改为从 Registry 读取卡片元信息 |
-| 光球的存在和状态 | `orb.ts` | 推测：在 `initOrb()` 中加 `Registry.register(...)` |
-| 输入栏 | `app.ts` | 推测：在 `initApp()` 中加 `Registry.register(...)` |
-| 侧栏按钮 | `ui.ts` | 推测：在 `initUI()` 中加 `Registry.register(...)` |
+以下是在设计阶段识别出的可能迁移项。当前状态已更新：
 
-**注意**：这些迁移动作在 v0.1 中是基于"Registry 有大管家"假设写的。v0.2 改为"Registry 是索引"后，迁移方式可能不同。标记为 `[待讨论]`。
+ 现有代码 | 位置 | 状态 |
+---------|------|------|
+ `CARDS` 数组 | `card-stack.ts:30-38` | **待迁移** —— 仍为硬编码数据源，后续可改为从 Registry 或插件系统读取 |
+ 光球的存在和状态 | `orb.ts` | ✅ 已注册（`initOrb()` 中 `Registry.registerElement`） |
+ 输入栏 | `app.ts` | ✅ 已注册（`initApp()` 中 `Registry.registerElement`） |
+ 侧栏按钮 | `app.ts` / `ui.ts` | ✅ 已注册 |
 
 ### 4.3 不应该放进 Registry 的（原 §8.1，保留）
 

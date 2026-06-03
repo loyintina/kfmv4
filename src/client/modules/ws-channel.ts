@@ -19,6 +19,7 @@
 
 import { Registry } from './ui-registry.js';
 import { KFMState } from './state.js';
+import { DOM } from './dom-refs.js';
 
 // ========== 配置 ==========
 
@@ -126,6 +127,9 @@ class WsChannel {
 
   /** 注册命令处理器（供各模块注册它们能处理的指令） */
   onCommand(action: string, handler: CommandHandler): void {
+    if (this.commandHandlers.has(action)) {
+      console.warn(`[ws-channel] 命令处理器 "${action}" 被重复注册，覆盖旧处理器`);
+    }
     this.commandHandlers.set(action, handler);
   }
 
@@ -231,9 +235,10 @@ export function initWsChannel(): void {
     }
     wsChannel.pushSnapshot();
   });
-
   // 通过 KFMState.subscribe 监听状态层变化（展开折叠/隐藏文件开关等），自动推送 snapshot
   // 此订阅放在通信层（ws-channel）而非 Registry 自身，保持 Registry 的被动索引性质
+  // P3: 这是集中化替代方案——去掉后散布在 ~36 处的手动 notifyStateChange 调用不会消失。
+  //     真正的根解需要 KFMState 层统一广播而非通信层订阅。见 docs/HANDBOOK.md 陷阱 14。
   KFMState.subscribe(() => wsChannel.pushSnapshot());
 
   // 注册默认指令处理器（各模块可以覆盖或补充）
@@ -263,6 +268,15 @@ function registerDefaultCommandHandlers(): void {
       element.click();
     } else {
       console.warn('[ws-channel] 未找到可点击的元素:', elementId);
+      // Canvas 元素（如 file-tree）或动态 DOM 无法通过通用 click 定位，
+      // 应使用对应元素的专用命令（如 expand-dir/collapse-dir/select-file）
+      const toast = DOM.operationToast;
+      if (toast) {
+        toast.textContent = `click 指令无法定位 "${elementId}"，请使用专用命令`;
+        toast.classList.add('show');
+        Registry.notifyStateChange('operation-toast');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+      }
     }
   });
 

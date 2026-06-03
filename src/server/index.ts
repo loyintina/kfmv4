@@ -5,6 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { setupAiTools } from './ai-tools.js';
 import { WsServer } from './ws-server.js';
+import { ROOT_DIR, SAFE_ROOT, sanitizePath } from './path-utils.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -14,15 +15,6 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '../../public')));
 app.use(express.static(path.join(__dirname, '../..')));
 
-const ROOT_DIR = process.env.KFM_ROOT || process.env.HOME || '.';
-const SAFE_ROOT = path.resolve(ROOT_DIR) + path.sep;
-
-/** 路径校验：确保用户路径不逃逸出 SAFE_ROOT */
-function sanitizePath(userPath: string): string | null {
-  const resolved = path.resolve(SAFE_ROOT, userPath);
-  if (resolved !== SAFE_ROOT.slice(0, -1) && !resolved.startsWith(SAFE_ROOT)) return null;
-  return resolved;
-}
 
 interface FileItem {
   name: string;

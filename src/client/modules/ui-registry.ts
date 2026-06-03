@@ -134,34 +134,39 @@ export class UIElementRegistry {
    * 可选——如果不注册，snapshot() 返回 register() 时传入的静态 state 值。
    */
   registerStateGetter(id: string, getter: StateGetter): void {
+    if (!this._elements.has(id)) {
+      console.warn(`[ui-registry] 为不存在的元素注册 state getter: "${id}"。getter 不会被调用。`);
+    }
     this._stateGetters.set(id, getter);
     this._notifyChange('state-getter', id);
   }
 
   /**
-   * 便捷方法：一次完成 register + registerStateGetter。
+   * 便捷方法：一次完成 register + registerStateGetter（只触发一次 onChange 通知）。
    *
    * 大多数交互元素的 state 会在运行时变化，调用此方法可避免忘记配对的 registerStateGetter。
-   * 等价于：
-   *   Registry.register(el);
-   *   Registry.registerStateGetter(el.id, getter);
    *
    * @param el      交互元素定义
    * @param getter  可选的状态 getter。不传则只注册，不设 getter。
    * @returns 元素的 id，方便链式调用
    */
   registerElement(el: InteractiveElement, getter?: StateGetter): string {
-    this.register(el);
-    if (getter) {
-      this.registerStateGetter(el.id, getter);
+    if (this._elements.has(el.id)) {
+      console.warn(`[ui-registry] 重复注册 UI 元素: ${el.id}，覆盖旧值`);
     }
+    this._elements.set(el.id, el);
+    if (getter) {
+      this._stateGetters.set(el.id, getter);
+    }
+    this._notifyChange('register', el.id);
     return el.id;
   }
 
   /** 注册内容块（静态） */
   registerContent(block: ContentBlock): void {
-    // 生成器优先：如果已注册生成器，静态内容不覆盖
+    // 生成器优先：如果已注册生成器，静态内容不覆盖，但警告调用者
     if (this._contentGenerators.has(block.id)) {
+      console.warn(`[ui-registry] 内容块 "${block.id}" 已有生成器，静态内容被忽略。如需覆盖，先调 registerContentGenerator(id, null) 注销生成器。`);
       return;
     }
     if (this._content.has(block.id)) {
@@ -179,9 +184,14 @@ export class UIElementRegistry {
    * - registerContentGenerator 注册一个回调函数，snapshot 时调用它获取实时内容
    *
    * 如果同一 id 同时有静态内容和生成器，生成器优先。
+   * 传 null 可注销生成器并恢复静态内容（如果存在）。
    */
-  registerContentGenerator(id: string, generator: ContentGenerator): void {
-    this._contentGenerators.set(id, generator);
+  registerContentGenerator(id: string, generator: ContentGenerator | null): void {
+    if (generator === null) {
+      this._contentGenerators.delete(id);
+    } else {
+      this._contentGenerators.set(id, generator);
+    }
     this._notifyChange('content-generator', id);
   }
 
@@ -211,7 +221,12 @@ export class UIElementRegistry {
     const elements = Array.from(this._elements.values()).map(el => {
       const getter = this._stateGetters.get(el.id);
       if (getter) {
-        return { ...el, state: getter() };
+        try {
+          return { ...el, state: getter() };
+        } catch (e) {
+          console.error(`[ui-registry] 元素 "${el.id}" 的 state getter 执行失败:`, e);
+          return el;
+        }
       }
       return el;
     });
@@ -257,7 +272,12 @@ export class UIElementRegistry {
     if (!el) return undefined;
     const getter = this._stateGetters.get(id);
     if (getter) {
-      return { ...el, state: getter() };
+      try {
+        return { ...el, state: getter() };
+      } catch (e) {
+        console.error(`[ui-registry] 元素 "${id}" 的 state getter 执行失败:`, e);
+        return el;
+      }
     }
     return el;
   }

@@ -14,19 +14,7 @@
 
 import fs from 'fs';
 import path from 'path';
-
-/** 安全根目录：避免路径逃逸 */
-const SAFE_ROOT = (() => {
-  const root = process.env.KFM_ROOT || process.env.HOME || '.';
-  return path.resolve(root) + path.sep;
-})();
-
-/** 路径校验：确保用户路径不逃逸出 SAFE_ROOT */
-function sanitizePath(userPath: string): string | null {
-  const resolved = path.resolve(SAFE_ROOT, userPath);
-  if (resolved !== SAFE_ROOT.slice(0, -1) && !resolved.startsWith(SAFE_ROOT)) return null;
-  return resolved;
-}
+import { SAFE_ROOT, sanitizePath } from './path-utils.js';
 
 // ========== 类型定义 ==========
 
