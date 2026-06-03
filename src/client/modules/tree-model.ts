@@ -223,7 +223,7 @@ export function buildSidebarTree(containerWidth?: number, rightMargin?: number):
   const rm = rightMargin ?? (containerWidth ?? 295) - 8;
   return buildTree(state.files[state.currentRoot]?.children ?? [], {
     expandedPaths: state.expandedPaths, selectedFile: state.selectedFile,
-    onDirToggle: (p, e) => state.setExpanded(p, e), onFileClick: () => {},
+    onDirToggle: (p, e) => state.setExpanded(p, e), onFileClick: (p) => state.setSelectedFile(p),
     baseDepth: 0, containerWidth: containerWidth ?? 280, scrollable: true, rightMargin: rm,
   });
 }

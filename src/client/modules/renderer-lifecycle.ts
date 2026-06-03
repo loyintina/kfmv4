@@ -49,6 +49,7 @@ export class RendererLifecycle {
   set cursorRowId(v: string | null) { this.ctx.cursorRowId = v; }
   // ---- 侧栏打开/关闭时暂存的光标位置（不属于 RenderContext） ----
   _savedCursorRowId: string | null = null;
+  _pendingSelectFile: string | null = null;
 
   // ---- RenderContext 原子化切换 ----
 
@@ -180,6 +181,7 @@ export class RendererLifecycle {
     this._savedCursorRowId = null;
     this._rowIndex = [];
     this._sidebarClosed = false;
+    this._pendingSelectFile = null;
   }
 
 }

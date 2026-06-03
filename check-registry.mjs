@@ -52,7 +52,6 @@ const CAPABILITY_MANIFEST = [
 // Canvas 渲染、动态 DOM、或纯视觉反馈的元素在此声明豁免，并注明理由。
 const NO_DOM_TARGET = new Set([
   'orb-panel',       // 动态 DOM（展开后创建），通过 expand-orb 命令操作
-  'sidebar',         // 容器 DOM（#sidebar）无 data-registry-id，通过 open/close-sidebar 命令
   'card-stack',      // 动态 DOM（GSAP 创建），通过 open/close-card-stack 命令
   'file-tree',       // Canvas 渲染，无 DOM 可点击
   'operation-toast', // 纯视觉反馈 toast，非交互元素，AI 不可点击

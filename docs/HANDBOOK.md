@@ -56,19 +56,26 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 
 ## 二、当前会话状态
 
-> **最后更新**：2026-06-02（v6.1.1 — Registry 对齐修正：DOM 可点击性 + orb-panel 状态语义 + 生成器语义 + 死代码清理）
+> **最后更新**：2026-06-03（v6.2.0 — 文件树 AI 操作命令 + 内容层增强 + 人和 AI 对称操作修复）
 
 ### 当前焦点
-- `(as any)` 逃逸全部清理（白名单清空 ✅）
+- 文件树 AI 操作命令已添加：`expand-dir` / `collapse-dir` / `select-file` 通过 ws-channel 注册，AI 可远程操作文件树 ✅
+- `select-file` 命令自带光标定位 + 居中滚动，通过 `L._pendingSelectFile` 标记在 `rebuildTree` 中消费 ✅
+- 用户双击文件时 `KFMState.setSelectedFile()` 被正确调用（`onFileClick` 从无操作改为 `(p) => state.setSelectedFile(p)`），实现人和 AI 对称操作 ✅
+- 内容层增强：`file-tree` 摘要含选中文件路径和已展开目录列表；`card-stack-content` 含索引/总数/已填充数 ✅
+- `sidebar` 已加 `data-registry-id`，从 `NO_DOM_TARGET` 豁免表移出，通用 `click` 指令可定位 ✅
+- `file-tree` 交互元素的 `effect`/`description` 已更新注明 AI 命令能力 ✅
 - `orb-panel` 状态语义已修复：`panelState` 独立变量（`'closed'|'open'|'editing'`），不再与 `orbState` 共享 ✅
-- 4 个元素（`file-tree`、`orb-panel`、`card-stack`、`orb`）运行时带 `data-registry-id`，AI `click` 指令可定位 ✅
+- 4 个元素（`file-tree`、`orb-panel`、`card-stack`、`orb`）运行时带 `data-registry-id`，AI `click` 指令可定位（v6.2 新增 sidebar）✅
 - `registerContent()` 不再静默删除同 id 的生成器：生成器优先，静态内容作为 fallback ✅
 - `snapshot()` 不再有副作用（移除了运行时 `warn`） ✅
 - `window` 上 5 个死 `any` 声明已清除（`styleRegistry`、`DIMENSIONS`、`COLORS`、`TEXT_STYLES`、`__treeRenderer`）✅
-- `ws-channel.ts` 中 `window.KFMState` 改为直接引用 import 的 `KFMState`（`window.KFMState` 从未被赋值，原代码静默走 `'/'` fallback） ✅
-- 服务端路由注册已修复：消除 `app.use() && app` 表达式 bug（路由被注册到根级别无前缀） ✅
-- Box 类 31 个单元测试已添加（覆盖构造、树操作、几何、事件、状态、序列化、动画、滚动） ✅
+- `ws-channel.ts` 中 `window.KFMState` 改为直接引用 import 的 `KFMState` ✅
+- 服务端路由注册已修复：消除 `app.use() && app` 表达式 bug ✅
+- Box 类 31 个单元测试已添加（覆盖构造、树操作、几何、事件、状态、序列化、动画、滚动）✅
 - `ui-registry.ts` 不再 import `debug-assert.js` ✅
+
+- `(as any)` 逃逸全部清理（白名单清空 ✅）
 
 ### 已知陷阱
 1. **CSS 布局方程**：`.sidebar-content` + `.sidebar-tools` = 100dvh，禁止改用 flex
@@ -87,7 +94,8 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 ---
 
 ## 三、当前待办
-12. **Canvas 元素的 AI click 无坐标**：`file-tree` Canvas 通过 `data-registry-id` 可被 AI `click` 指令定位并触发 `click()`，但合成的 PointerEvent 坐标为 (0,0)，不一定命中预期的行<a id='trap-12'></a>
+12. **Canvas 元素的 AI click 无坐标**：`file-tree` Canvas 通过 `data-registry-id` 可被 AI `click` 指令定位并触发 `click()`，但合成的 PointerEvent 坐标为 (0,0)，不一定命中预期的行。
+    **v6.2 部分缓解**：新增 `expand-dir`/`collapse-dir`/`select-file` 专用命令绕过坐标问题，AI 应优先使用这些命令而非通用 `click`。<a id='trap-12'></a>
 13. **`registerContent()` 与生成器关系**：同一 id 下生成器优先，`registerContent()` 不会覆盖已注册的生成器。如需强制更新静态内容，先调 `registerContentGenerator(id, null)` 注销生成器<a id='trap-13'></a>
 
 ### 活跃待办
@@ -103,13 +111,14 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 
 ### 历史版本归档
 
-| 版本 | 焦点 | 归档位置 |
 |------|------|---------|
 | v4.1.0 | 卡片配色 + 浮卡系统 + BR 守卫 | `archive/handoff/v4.1.0.md` |
 | v5.0.0 | CSS 语法安全 + SCSS 迁移 | `archive/handoff/v5.0.0.md` |
 | v5.1.0 | root-picker 交互修复 | `archive/handoff/v5.1.0.md` |
 | v5.2.0 | RenderContext 上下文隔离 | `archive/handoff/v5.2.0.md` |
 | v6.0.0 | UI Element Registry + 代码审计 | `archive/handoff/v6.0.0-*.md` |
+| v6.1.1 | Registry 对齐修正 | 见 git log `462fe49` |
+| v6.2.0 | 文件树 AI 命令 + 内容层增强 + 对称操作修复 | 本轮 |
 
 ---
 
@@ -205,12 +214,20 @@ npm test   # 105 个测试，覆盖 11 个模块（含 Box 引擎）
 - overlay 元数据用 `(as Box & OverlayMeta)` 类型访问
 - 向 `ts` 加 tween 的函数，必须在 `ts.call` 回调里 `ts.clear()`
 
-### 交接（2026-06-02 本轮完成）
+### 交接（2026-06-03 v6.2.0 本轮完成）
 
-**已完成的 5 项 Registry 对齐修正**详见 git log（`462fe49`）。关键结论留给下一位：
+**本轮完成（v6.2.0）**：
 
-- `generic click` 指令现在能定位 4 个动态/Canvas 元素（`file-tree`、`orb`、`orb-panel`、`card-stack`），但 `file-tree` 是 Canvas，合成 `click()` 坐标(0,0)不一定命中预期行。如需要精确定位，加坐标参数进 `click` 指令协议
-- `orb` 和 `orb-panel` 现在各自有独立状态变量（`orbState` / `panelState`），snapshot 语义正确
-- `registerContent()` 不会覆盖生成器——需要手动 `registerContentGenerator(id, null)` 先注销
-- `snapshot()` 现在零副作用（无 warn/assert 调用）
-- 待办仍维持：card-stack 拆分（P2）、动画锁 3000ms 超时根因（P3）、拖拽逻辑去重
+- 文件树 AI 操作命令已添加：`expand-dir` / `collapse-dir` / `select-file` 通过 ws-channel 注册，AI 可远程操作文件树。`select-file` 自带光标定位 + 居中滚动
+- 用户双击文件时 `KFMState.setSelectedFile()` 被正确调用（`onFileClick` 从无操作改为 `(p) => state.setSelectedFile(p)`），实现人与 AI 对称操作
+- 内容层增强：`file-tree` 摘要含选中文件路径和已展开目录列表；`card-stack-content` 含索引/总数/已填充数
+- `sidebar` 已加 `data-registry-id`，通用 `click` 指令可定位（从 `NO_DOM_TARGET` 豁免表移出）
+- `file-tree` 交互元素的 `effect`/`description` 已更新注明 AI 命令能力
+
+**关键结论留给下一位**：
+
+- `generic click` 指令现在能定位 5 个 DOM 元素（新增 `sidebar`）+ 3 个动态/Canvas 元素。`file-tree` 仍是 Canvas，合成 `click()` 坐标(0,0)不一定命中预期行——**AI 应优先使用 `expand-dir`/`collapse-dir`/`select-file` 命令而非通用 `click`**
+- `select-file` 命令通过 `L._pendingSelectFile` 标记在 `rebuildTree` 中消费，`resetForOpen()` 时自动清理，上下文安全
+- `file-tree` 内容生成器现在包含选中文件路径和已展开目录列表，AI 通过 snapshot 即可知文件树状态
+- 用户双击文件的流程：第一次点击移动光标，第二次点击触发 `KFMState.setSelectedFile()` → `notify()` → `rebuildTree()`，选中高亮生效
+- 待办仍维持：card-stack 拆分（P2，已做可行性评估见本章§3备注）、动画锁 3000ms 超时根因（P3）、拖拽逻辑去重

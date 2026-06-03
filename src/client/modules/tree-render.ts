@@ -22,6 +22,7 @@ import * as clickQueue from "./click-queue.js";
 import { assert, warn } from "./debug-assert.js";
 import { createRootPicker, destroyRootPicker, isPickerOpen } from './root-picker.js';
 import { log } from './logger.js';
+import { wsChannel } from './ws-channel.js';
 import { Registry } from './ui-registry.js';
 const ts = anim.scope('tree-render');
 /** 重置动画时间线：清空 tween + 归零播放头 + 清除回调。正常动画结束时调用。 */
@@ -570,18 +571,33 @@ export function initTreeRenderer(): void {
 
   bindWheelEvents(canvas);
   bindClickEvents(canvas, dpr);
-
   // 注册 UI 元素：文件树 Canvas 区域
   Registry.registerElement({
     id: 'file-tree',
     type: 'panel',
     label: '文件树',
-    description: 'Canvas 自渲染文件树，点击目录展开/折叠，点击文件选中',
+    description: 'Canvas 自渲染文件树，点击目录展开/折叠，点击文件选中。AI 可通过 expand-dir/collapse-dir/select-file 命令操作',
     state: DOM.sidebar?.classList.contains('open') ? 'visible' : 'hidden',
     enabled: true,
-    effect: '点击目录切换展开/折叠状态，点击文件将其设为选中',
+    effect: '点击目录切换展开/折叠状态，点击文件将其设为选中。AI 可发送 expand-dir/collapse-dir/select-file 命令远程操作',
     source: 'tree-render.ts',
   }, () => DOM.sidebar?.classList.contains('open') ? 'visible' : 'hidden');
+  // 注册 AI 指令处理器：文件树操作
+  wsChannel.onCommand('expand-dir', (_action, params) => {
+    const path = params.path as string;
+    if (path) KFMState.setExpanded(path, true);
+  });
+  wsChannel.onCommand('collapse-dir', (_action, params) => {
+    const path = params.path as string;
+    if (path) KFMState.setExpanded(path, false);
+  });
+  wsChannel.onCommand('select-file', (_action, params) => {
+    const path = params.path as string;
+    if (!path) return;
+    // 标记 AI 主动选择的文件路径，rebuildTree 后会自动移动光标并居中
+    L._pendingSelectFile = path;
+    KFMState.setSelectedFile(path);
+  });
 }
 
 
@@ -1117,7 +1133,7 @@ function rebuildTree(): void {
     L._restoringFromSave = false;  // 只消耗标志，不消耗_savedScrollY
   }
 
-  // ���新创建光标
+  // 重新创建光标
   if (newRoot) {
     ensureCursorBox(newRoot, canvasH);
 
@@ -1133,7 +1149,20 @@ function rebuildTree(): void {
       // 初始状态：光标居中吸附
       snapToCenterRow(newRoot, canvasH);
     }
-  
+
+    // AI 指令 select-file 后的光标定位：在标准光标恢复逻辑之后，检查是否有
+    // 待选中的文件。如果有，覆盖光标指向选中的文件行并居中滚动。
+    if (L._pendingSelectFile) {
+      const pendingPath = L._pendingSelectFile;
+      L._pendingSelectFile = null;
+      const targetBox = findBoxById(newRoot, `file-${pendingPath}`)
+        || findBoxById(newRoot, `title-${pendingPath}`);
+      if (targetBox) {
+        moveCursorTo(targetBox, false);
+        snapToCenterRow(newRoot, canvasH, false);
+      }
+    }
+
     // 重建光标步进行索引
   }
 

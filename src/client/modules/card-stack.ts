@@ -1376,7 +1376,13 @@ export function initCardStack(): void {
   Registry.registerContentGenerator('card-stack-content', () => ({
     id: 'card-stack-content',
     type: 'card-content',
-    summary: `当前焦点卡片: ${CARDS[_focusIndex]?.name || CARDS[_focusIndex]?.id || '无'}`,
+    summary: (() => {
+      const card = CARDS[_focusIndex];
+      const name = card?.name || card?.id || '无';
+      const total = CARDS.length;
+      const filled = CARDS.filter(c => c.name && c.name !== '').length;
+      return `卡片堆: [${_focusIndex + 1}/${total}] ${name}${filled < total ? ` (${filled}张已填充)` : ''}`;
+    })(),
   }));
 
   // 注册 AI 指令处理器

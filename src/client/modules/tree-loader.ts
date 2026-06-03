@@ -153,7 +153,14 @@ export async function loadFileTree(rootPath: string): Promise<void> {
   Registry.registerContentGenerator('file-tree', () => ({
     id: 'file-tree',
     type: 'file-tree' as const,
-    summary: `根目录: ${KFMState.currentRoot}`,
+    summary: (() => {
+      const expanded = Object.keys(KFMState.expandedPaths);
+      const expandedStr = expanded.length > 0
+        ? `展开: ${expanded.slice(0, 5).join(', ')}${expanded.length > 5 ? ` +${expanded.length - 5}项` : ''}`
+        : '';
+      const selected = KFMState.selectedFile ? `选中: ${KFMState.selectedFile}` : '';
+      return [`根目录: ${KFMState.currentRoot}`, selected, expandedStr].filter(Boolean).join(' | ');
+    })(),
   }));
 }
 
