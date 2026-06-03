@@ -1,5 +1,7 @@
 ---
-status: active
+status: superseded
+superseded_by: docs/notes/HANDOFF_2026-06-03_AUDIT_FIX_DEEP.md
+archived_at: 2026-06-03
 created_at: 2026-06-03
 context: 三方对照审计 + 五项修复 + notifyStateChange 冗余清理 + 文档 frontmatter 全量修复
 supersedes: docs/notes/HANDOFF_2026-06-03_REGISTRY_AUDIT.md

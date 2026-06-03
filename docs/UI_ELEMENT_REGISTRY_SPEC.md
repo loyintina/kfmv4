@@ -1,14 +1,21 @@
 ---
 status: active
-version: v1.1
+version: v1.2
 ---
 # UI Element Registry 设计讨论
 
-> **版本**：v1.1
-> **状态**：§S（产出定义）已于 2026-06-02 实现。代码见 `src/client/modules/ui-registry.ts`，
+> **版本**：v1.2
+> **状态**：§S（产出定义）已实现，历经三轮代码审计（v6.3.x）后 spec-vs-code 缺口已收窄到 typo 级。§5 开放问题已全部解决。
 > MANIFEST 验证见 `check-registry.mjs`，已挂入 `npm run check` 管线。
 > §1-§9 的设计讨论仍为有效参考，开放问题（§5）待后续 agent 继续讨论。
 >
+|> **v1.1→v1.2 变更（2026-06-03，v6.3.x 审计周期）**：
+|> - 三轮 Registry 审计完成（doc-code 对齐、三方对照、深度审计），6 项偏差 + 6 个新问题全部修复
+|> - 新增 `registerElement()` 便捷方法，推荐替代 `register()` + `registerStateGetter()` 两步法
+|> - `check-registry.mjs` 新增参数完整性校验、孤立 getter 检测、data-registry-id 交叉验证、命令重复检测
+|> - 消除能力层 `entry` 硬编码，`capability-executor.ts` 路径逃逸守卫
+|> - §5 所有开放问题（通信通道、内容层动态化、能力层绑定、状态获取）均已实现
+|>
 > **v1.0→v1.1 变更（2026-06-02）**：
 > - 新增 `file-tree` 交互元素，`tree-render.ts` 接入 Registry
 > - `notifyStateChange` 覆盖补全：`operation-toast`、`orb-panel`、`file-tree`

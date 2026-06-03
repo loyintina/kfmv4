@@ -1,5 +1,7 @@
 ---
-status: active
+status: superseded
+superseded_by: docs/notes/HANDOFF_2026-06-03_REGISTRY_AUDIT.md
+archived_at: 2026-06-03
 created_at: 2026-06-03
 context: UI Registry 文档-代码偏差审计 + 心法 14 + CI 增强 + 五处代码修正
 ---

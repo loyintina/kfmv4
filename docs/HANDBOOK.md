@@ -56,9 +56,25 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 
 ## 二、当前会话状态
 
-> **最后更新**：2026-06-03（v6.2.0 — 文件树 AI 操作命令 + 内容层增强 + 人和 AI 对称操作修复）
+> **最后更新**：2026-06-03（v6.3.1 — 第三轮 Registry 深度审计 + 心法 LEVEL 分类 + CI 基线固化）
 
 ### 当前焦点
+### v6.3.x 新增（三轮审计 + CI 基线固化）
+- 第三轮深度审计发现 6 个新问题全部修复（state getter 异常保护、`registerContentGenerator(id, null)` crash、命令重复注册静默覆盖、孤立 getter 检测、`registerElement` 双发 onChange、click 失败 toast 反馈）✅
+- 心法原则加 LEVEL 1/2/3 分类，附冲突处理规则 ✅
+- CI 基线固化：`check-registry.mjs` 新增孤立 getter 检测 + 命令注册重复检测 ✅
+- 消除 `SAFE_ROOT`/`sanitizePath` 在 `index.ts` 和 `capability-executor.ts` 间的重复定义 ✅
+- `_` 前缀跨模块访问显式接口化：`RendererLifecycle` 新增 8 个方法 + `animElapsed` getter ✅
+- `orb-panel` 静态 state 从 `'collapsed'` 更正为 `'closed'`（与运行时 `panelState` 类型一致）✅
+- `check-as-any.mjs` 正则增强覆盖 `(expr) as any` 模式 ✅
+- `capability-executor.ts` 路径逃逸守卫（`SAFE_ROOT` + `sanitizePath`）✅
+- `sidebar` effect 字段补上 AI 命令说明 ✅
+- `snapshot()` 内容生成器加 try/catch 异常保护 ✅
+- `check-docs.mjs` 新增 frontmatter 完整性校验，修复 15 个归档文档前置元数据 ✅
+- 消除能力层 `entry` 硬编码 + `check-registry.mjs` 新增交叉验证 ✅
+- `ai-send-btn`、`overlay` 补注册，`sidebar` 冗余 notify 移除 ✅
+
+### 当前焦点（v6.2.0 延续仍有效）
 - 文件树 AI 操作命令已添加：`expand-dir` / `collapse-dir` / `select-file` 通过 ws-channel 注册，AI 可远程操作文件树 ✅
 - `select-file` 命令自带光标定位 + 居中滚动，通过 `L._pendingSelectFile` 标记在 `rebuildTree` 中消费 ✅
 - 用户双击文件时 `KFMState.setSelectedFile()` 被正确调用（`onFileClick` 从无操作改为 `(p) => state.setSelectedFile(p)`），实现人和 AI 对称操作 ✅
@@ -95,7 +111,7 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 
 ## 三、当前待办
 12. **Canvas 元素的 AI click 无坐标**：`file-tree` Canvas 通过 `data-registry-id` 可被 AI `click` 指令定位并触发 `click()`，但合成的 PointerEvent 坐标为 (0,0)，不一定命中预期的行。
-    **v6.2 部分缓解**：新增 `expand-dir`/`collapse-dir`/`select-file` 专用命令绕过坐标问题，AI 应优先使用这些命令而非通用 `click`。<a id='trap-12'></a>
+    **v6.3 部分缓解**：新增 `expand-dir`/`collapse-dir`/`select-file` 专用命令绕过坐标问题，AI 应优先使用这些命令而非通用 `click`。<a id='trap-12'></a>
 13. **`registerContent()` 与生成器关系**：同一 id 下生成器优先，`registerContent()` 不会覆盖已注册的生成器。如需强制更新静态内容，先调 `registerContentGenerator(id, null)` 注销生成器。<a id='trap-13'></a>
 14. **`notifyStateChange()` 散布**：`notifyStateChange()` 散布在 6 个文件的 ~36 处调用（2026-06-03 审计后从约 41 处清理了 ui.ts 中 5 处冗余——openSidebar/closeSidebar 中的 2 处及 3 个命令处理器的冗余调用，均在 KFMState.setSidebarOpen 已覆盖后被标记为冗余并移除）。剩余 ~36 处均为合理存在：tree-render.ts ~10 处（Canvas 渲染状态变化）、card-stack.ts ~9 处（DOM/GSAP 生命周期状态）、orb.ts ~8 处（orbState/panelState 模块变量）、app.ts ~2 处（toast DOM 回调）、tree-render/rebuildTree 等。根解方向未变：在 ws-channel 层建立自动覆盖检测，识别被 KFMState 订阅覆盖的冗余通知。但需注意，绝大多数通知来自 KFMState 无法覆盖的路径（Canvas/GSAP 回调/模块变量），真正的冗余比例较低。<a id='trap-14'></a>
 
@@ -103,13 +119,12 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 
 | 优先级 | 事项 | 说明 |
 |--------|------|------|
-| **🟠 P2** | 拆分 `card-stack.ts`（1352 行） | 面板 ~400 行 + 浮卡 ~900 行两职责混合 |
+| **🟠 P2** | 拆分 `card-stack.ts`（1392 行） | 面板 ~400 行 + 浮卡 ~900 行两职责混合，v6.3.x 审计净增 ~40 行 |
 
 ### 持续观察
 
 - 测试基础设施脆弱（GSAP mock 失真，无 UI/Canvas/手势覆盖）
 - orb / card-stack 拖动逻辑重复（各自实现 pointerdown/move/up 循环）
-
 ### 历史版本归档
 
 |------|------|---------|
@@ -118,9 +133,11 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 | v5.1.0 | root-picker 交互修复 | `archive/handoff/v5.1.0.md` |
 | v5.2.0 | RenderContext 上下文隔离 | `archive/handoff/v5.2.0.md` |
 | v6.0.0 | UI Element Registry + 代码审计 | `archive/handoff/v6.0.0-*.md` |
-| v6.1.1 | Registry 对齐修正 | 见 git log `462fe49` |
-| v6.2.0 | 文件树 AI 命令 + 内容层增强 + 对称操作修复 | 本轮 |
-
+| v6.1.0 | Registry 全面接入 + 三层 MANIFEST 验证 | git `25a295e` |
+| v6.1.1 | Registry 对齐修正 | git `462fe49` |
+| v6.2.0 | 文件树 AI 命令 + 内容层增强 + 对称操作修复 | git `87a025d` |
+| v6.3.0 | Registry 文档-代码对齐审计 + registerElement() 便捷方法 | git `47e82a2` |
+| **v6.3.1** | **第三轮深度审计 + 心法 LEVEL + CI 基线固化** | **HEAD** (`847e988`) |
 ---
 
 ## 四、调试与 Bug 排查
@@ -159,7 +176,7 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 ### 自动化测试
 
 ```bash
-npm test   # 105 个测试，覆盖 11 个模块（含 Box 引擎）
+npm test   # 106 个测试，覆盖 11 个模块（含 Box 引擎）
 ```
 
 ### 手动回归清单
@@ -215,20 +232,30 @@ npm test   # 105 个测试，覆盖 11 个模块（含 Box 引擎）
 - overlay 元数据用 `(as Box & OverlayMeta)` 类型访问
 - 向 `ts` 加 tween 的函数，必须在 `ts.call` 回调里 `ts.clear()`
 
-### 交接（2026-06-03 v6.2.0 本轮完成）
+### 交接（2026-06-03 v6.3.1 本轮完成）
 
-**本轮完成（v6.2.0）**：
+**本轮完成（v6.3.x 三轮审计 + CI 基线固化）**：
 
-- 文件树 AI 操作命令已添加：`expand-dir` / `collapse-dir` / `select-file` 通过 ws-channel 注册，AI 可远程操作文件树。`select-file` 自带光标定位 + 居中滚动
-- 用户双击文件时 `KFMState.setSelectedFile()` 被正确调用（`onFileClick` 从无操作改为 `(p) => state.setSelectedFile(p)`），实现人与 AI 对称操作
-- 内容层增强：`file-tree` 摘要含选中文件路径和已展开目录列表；`card-stack-content` 含索引/总数/已填充数
-- `sidebar` 已加 `data-registry-id`，通用 `click` 指令可定位（从 `NO_DOM_TARGET` 豁免表移出）
-- `file-tree` 交互元素的 `effect`/`description` 已更新注明 AI 命令能力
+- 第三轮深度审计发现 6 个新问题全部修复（state getter 异常保护、`registerContentGenerator(id, null)` crash、命令重复注册静默覆盖、孤立 getter 检测、`registerElement` 双发 onChange、click 失败 toast 反馈）
+- 心法原则加 LEVEL 1/2/3 分类 + 冲突处理规则
+- CI 基线固化：`check-registry.mjs` 新增孤立 getter 检测 + 命令注册重复检测（构建中断级）
+- `check-as-any.mjs` 正则增强覆盖 `(expr) as any` 模式
+- `capability-executor.ts` 路径逃逸守卫 + 消除 entry 硬编码
+- `RendererLifecycle` `_` 前缀显式接口化（8 个新方法 + `animElapsed` getter）
+- `check-docs.mjs` 新增 frontmatter 完整性校验，修复 15 个归档文档
+- `snapshot()` + `get()` try/catch 异常保护
+- `ui-registry.ts` 不再 import `debug-assert.js`
+- `(as any)` 逃逸全部清理（白名单清空）
+- 文件树 AI 操作命令（v6.2.0 延续）：`expand-dir` / `collapse-dir` / `select-file`
+- 用户与 AI 对称操作（v6.2.0 延续）：双击文件调 `KFMState.setSelectedFile()`
+- 内容层增强（v6.2.0 延续）：file-tree + card-stack-content 含实时摘要
+- 服务端路由注册已修复
+- Box 类 31 个单元测试 + 累计 106 个回归测试
 
 **关键结论留给下一位**：
 
-- `generic click` 指令现在能定位 5 个 DOM 元素（新增 `sidebar`）+ 3 个动态/Canvas 元素。`file-tree` 仍是 Canvas，合成 `click()` 坐标(0,0)不一定命中预期行——**AI 应优先使用 `expand-dir`/`collapse-dir`/`select-file` 命令而非通用 `click`**
-- `select-file` 命令通过 `L._pendingSelectFile` 标记在 `rebuildTree` 中消费，`resetForOpen()` 时自动清理，上下文安全
-- `file-tree` 内容生成器现在包含选中文件路径和已展开目录列表，AI 通过 snapshot 即可知文件树状态
-- 用户双击文件的流程：第一次点击移动光标，第二次点击触发 `KFMState.setSelectedFile()` → `notify()` → `rebuildTree()`，选中高亮生效
-- 待办仍维持：card-stack 拆分（P2，已做可行性评估见本章§3备注）、动画锁 3000ms 超时根因（P3）、拖拽逻辑去重
+- Registry 的 spec-vs-code 缺口已收窄到 typo 级，不需要做"第四轮审计"了
+- 下一个有意义的 P2 工作是 `CARDS` 数组迁移（`card-stack.ts:30-38` 的硬编码数据源，14 处引用）
+- 分支 `feat/central-only` 含中央模式预览功能，`save-before-rollback` 含动画优化，均未合并
+- 通用 `click` 指令能定位 5 个 DOM 元素 + 3 个 Canvas 元素；`file-tree` Canvas 元素仍优先使用 `expand-dir`/`collapse-dir`/`select-file` 命令
+- 待办维持：card-stack 拆分（P2，1392 行）、动画锁 3000ms 超时（P3）、拖拽逻辑去重、`feat/central-only` 合并评估

@@ -1,5 +1,6 @@
 ---
-status: active
+status: superseded
+archived_at: 2026-06-03
 created_at: 2026-06-03
 context: UI Registry 审计修复 + ws-channel 悬空函数修复 + 文档对齐
 supersedes: docs/notes/REGISTRY_AUDIT_2026-06-03.md（补充）
