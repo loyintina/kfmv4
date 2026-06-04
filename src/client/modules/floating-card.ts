@@ -57,10 +57,12 @@ export interface FloatingCardConfig {
   inputBarAvoid: boolean;
   accentColor: string;
   brOrbSize?: number;
+  /** 展开时保持光球屏幕位置不变（用于光球面板等紧凑态下光球突出的卡片） */
+  keepOrbFixed?: boolean;
 
   // 初始位置（设定了就跳过随机散落）
   initialPosition?: { right: number; bottom: number };
-
+  
   // 生命周期
   onActivate: (contentEl: HTMLElement) => void;
   onDeactivate: (contentEl: HTMLElement) => void;
@@ -417,9 +419,19 @@ export function createFloatingCard(config: FloatingCardConfig): void {
         item.blOrb = blOrb;
         anim.to(blOrb, { opacity: 1, duration: 0.2, ease: 'none', delay: 0.1 });
       }
+      if (cfg.keepOrbFixed && brOrb) {
+        // 保持光球屏幕位置不变（面板从光球位置展开，光球不移动）
+        const curOrbL = parseFloat(brOrb.style.left) || 0;
+        const curOrbT = parseFloat(brOrb.style.top) || 0;
+        const newOrbL = (curLeft + curOrbL) - expLeft;
+        const newOrbT = (curTop + curOrbT) - expTop;
+        anim.to(brOrb, { left: newOrbL, top: newOrbT, duration: 0.35, ease: 'back.out(1.2)' });
+      } else {
+        const brX = compressedW - rightOff - brSize;
+        const brY = compressedH - bottomOff - brSize;
+        anim.to(brOrb, { left: brX, top: brY, duration: 0.35, ease: 'back.out(1.2)' });
+      }
 
-      const brX = compressedW - rightOff - cornerSize;
-      const brY = compressedH - bottomOff - cornerSize;
       anim.to(el, {
         left: expLeft, top: expTop,
         width: compressedW, height: compressedH,
@@ -430,8 +442,6 @@ export function createFloatingCard(config: FloatingCardConfig): void {
           item.state = 'active';
         },
       });
-      anim.to(brOrb, { left: brX, top: brY, duration: 0.35, ease: 'back.out(1.2)' });
-
     } else if (item.state === 'active') {
       item.state = 'collapsing';
       _collapseCard(item);

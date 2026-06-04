@@ -89,12 +89,9 @@ export function initOrbCard(): void {
     inputBarAvoid: true,
     accentColor: '#7c3aed',
     brOrbSize: 36,
-
-    // 初始位置：BR 光球出现在屏幕右下角 (right:24, bottom:140)
-    // 卡片 0px，BR 光球在卡片内 left:-24, top:-22（compact=0, rightOff=-12, bottomOff=-14, brSize=36）
-    // 反推得 initialPosition.right = 36, bottom = 152
+    keepOrbFixed: true,
+    // 初始位置：BR 光球出现在右下角 (right:24, bottom:140)
     initialPosition: { right: 36, bottom: 152 },
-
     onPreExpand(el) {
       // 展开动画开始前设置面板样式（复刻旧 orb.ts createPanel 的视觉）
       el.style.padding = '1px';
