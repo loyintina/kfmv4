@@ -296,7 +296,7 @@ function _renderCompactContent(contentEl: HTMLElement, name: string): void {
 }
 
 function _renderActiveLayout(contentEl: HTMLElement): void {
-  contentEl.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;box-sizing:border-box;padding:8px;font-size:11px;color:rgba(224,224,224,0.7);overflow-y:auto';
+  contentEl.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;align-items:stretch;box-sizing:border-box;padding:8px;font-size:11px;color:rgba(224,224,224,0.7);overflow-y:auto';
 }
 
 // ========== 创建浮卡（统一入口）==========
@@ -781,9 +781,8 @@ export function initFloatingCards(): void {
 
         const availLeft = orbCX - _fMARGIN;
         const availTop = orbCY - _fMARGIN;
-        const renderW = Math.max(54, Math.min(_fStartCardW, availLeft));
-        const renderH = Math.max(54, Math.min(_fStartCardH, availTop));
-
+        const renderW = Math.max(0, Math.min(_fStartCardW, availLeft));
+        const renderH = Math.max(0, Math.min(_fStartCardH, availTop));
         const left = Math.max(_fMARGIN, orbCX - renderW);
         const top = Math.max(_fMARGIN, orbCY - renderH);
         _fItem.el.style.left = left + 'px';
