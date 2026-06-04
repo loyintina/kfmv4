@@ -13,7 +13,6 @@ export const DOM = {
   get aiInputBar()        { return document.getElementById("aiInputBar"); },
   get aiInput()           { return document.getElementById("aiInput") as HTMLTextAreaElement | null; },
   get aiSendBtn()         { return document.getElementById("aiSendBtn"); },
-  get lightOrb()          { return document.getElementById("lightOrb") as HTMLDivElement | null; },
   get operationToast()    { return document.getElementById("operationToast"); },
   get toggleHiddenBtn()   { return document.getElementById("toggleHiddenBtn"); },
   get closeSidebarBtn()   { return document.getElementById("closeSidebarBtn"); },

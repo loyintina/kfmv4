@@ -111,26 +111,6 @@ body {
   box-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
 }
 
-/* 悬浮光球 */
-.light-orb {
-  position: fixed;
-  width: 36px;
-  height: 36px;
-  background: radial-gradient(circle at 30% 30%, rgba(124, 58, 237, 0.9), rgba(124, 58, 237, 0.4), transparent 70%);
-  border-radius: 50%;
-  cursor: grab;
-  z-index: 210;
-  box-shadow: 0 0 16px 6px rgba(124, 58, 237, 0.5), 0 0 32px 12px rgba(124, 58, 237, 0.3);
-  transition: box-shadow 0.2s;
-  bottom: 140px;
-  right: 24px;
-  touch-action: none;
-}
-
-.light-orb:active {
-  cursor: grabbing;
-  box-shadow: 0 0 24px 10px rgba(124, 58, 237, 0.6), 0 0 48px 20px rgba(124, 58, 237, 0.4);
-} /* AI输入栏高级样式 */
 .ai-input-bar {
   position: fixed;
   bottom: 0;
@@ -271,16 +251,6 @@ body {
 .ai-send-btn:active {
   opacity: 0.85;
   transform: translateY(0) scale(0.98);
-}
-
-/* 光球面板内容区 — 隐藏滚动条，保留滚动 */
-.orb-panel-content {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.orb-panel-content::-webkit-scrollbar {
-  display: none;
 }
 
 /* 卡片堆召唤按钮（右上角） */

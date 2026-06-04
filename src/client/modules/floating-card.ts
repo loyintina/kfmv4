@@ -67,9 +67,7 @@ export interface FloatingCardConfig {
 
   // AI 命令
   onCommand?: (action: string, params: unknown) => void;
-
-  // Registry 注册
-  registryElement: InteractiveElement;
+  registryElement?: InteractiveElement;
   registryContent?: () => ContentBlock;
 }
 
@@ -483,9 +481,10 @@ export function createFloatingCard(config: FloatingCardConfig): void {
 
   // 创建回调
   cfg.onCreate?.(el);
-
   // Registry 注册
-  Registry.registerElement(cfg.registryElement);
+  if (cfg.registryElement) {
+    Registry.registerElement(cfg.registryElement);
+  }
 
   // AI 命令注册
   if (cfg.onCommand) {
@@ -591,10 +590,7 @@ export function launchFocusedCard(): void {
     alwaysOnTop: false,
     inputBarAvoid: false,
     accentColor: cc.color2,
-    initialPosition: {
-      right: window.innerWidth - cardRect.left,
-      bottom: window.innerHeight - cardRect.top,
-    },
+    initialPosition: { right: window.innerWidth - cardRect.left, bottom: window.innerHeight - cardRect.top },
     onActivate(contentEl) {
       const cardId = getCardId(focusIdx);
       if (cardId) getCardHandler(cardId)?.activate?.(contentEl);
@@ -602,16 +598,6 @@ export function launchFocusedCard(): void {
     onDeactivate(contentEl) {
       const cardId = getCardId(focusIdx);
       if (cardId) getCardHandler(cardId)?.deactivate?.(contentEl);
-    },
-    registryElement: {
-      id: 'card-' + focusIdx,
-      type: 'floating-card',
-      label: getCardName(focusIdx) || '浮卡',
-      description: '从卡片堆发射的浮动卡片',
-      state: 'compact',
-      enabled: true,
-      effect: '浮动的信息卡片，可拖动和缩放',
-      source: 'card-stack.ts',
     },
   });
 }

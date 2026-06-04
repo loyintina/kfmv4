@@ -52,6 +52,7 @@ const CAPABILITY_MANIFEST = [
 // 不在列表中 = 必须有 data-registry-id（否则 AI 无法定位）。
 // Canvas 渲染、动态 DOM、或纯视觉反馈的元素在此声明豁免，并注明理由。
 const NO_DOM_TARGET = new Set([
+  'orb',             // 动态 DOM（浮卡引擎创建），通过 expand/collapse-orb 命令操作
   'card-stack',      // 动态 DOM（GSAP 创建），通过 open/close-card-stack 命令
   'file-tree',       // Canvas 渲染，无 DOM 可点击
   'operation-toast', // 纯视觉反馈 toast，非交互元素，AI 不可点击
