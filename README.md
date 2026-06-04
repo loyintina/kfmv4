@@ -14,12 +14,12 @@
 
 | 功能 | 说明 |
 |------|------|
-| 文件树浏览 | Canvas 自研渲染引擎，支持展开/折叠动画 |
-| 堆叠卡片面板 | 右边缘左滑唤出，垂直滑动切换焦点 |
-| 浮卡系统 | 从卡片堆发射浮卡，支持拖拽/编辑模式 |
-| AI 对话面板 | 悬浮光球，支持编辑模式缩放 |
-| 调试面板 | 独立青色光球，实时日志 |
-| 字符雨 | 展开/折叠时的粒子散射动画 |
+| 文件树浏览 | Canvas 自研渲染引擎，支持展开/折叠动画 + 字符雨 |
+| 堆叠卡片面板 | 右边缘左滑唤出，垂直滑动切换焦点，左滑发射浮卡 |
+| 浮卡系统 | 统一的浮动卡片引擎，支持拖拽/缩放/编辑模式/四角光球 |
+| AI 对话面板 | 以浮卡形式存在，可展开对话、编辑缩放、输入法避让 |
+| 调试面板 | 独立浮卡，实时日志显示 |
+| UI Element Registry | 已归档 → 交互元素/内容层/能力层的索引机制 |
 
 ## 快速开始
 
@@ -48,10 +48,24 @@ npm run start
 ## 技术栈
 
 - TypeScript 6 + ES2022
-- Canvas 2D 自研渲染引擎
-- GSAP 3.15 动画
-- Express 4 服务端
-- esbuild 构建
+- Canvas 2D 自研渲染引擎（Box → Renderer v2）
+- GSAP 3.15 动画（通过 `animation-registry.ts` 隔离）
+- Express 4 服务端 + WebSocket 双向通道
+- esbuild 构建（`tsc --noEmit` → bundle）
+- `@chenglou/pretext` 零 reflow 文本测量
+
+## 项目结构
+
+```
+src/
+├── server/          Express + WebSocket + 能力执行引擎
+├── client/
+│   ├── engine/      Box 渲染引擎 + text-layout
+│   └── modules/     25 个模块（状态、手势、动画、Registry、UI 等）
+├── cards/plugins/   （预留）浮卡插件目录
+tests/               105 个回归测试
+docs/                设计文档体系
+```
 
 ## 协议
 
