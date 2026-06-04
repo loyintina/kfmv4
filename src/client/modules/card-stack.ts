@@ -27,7 +27,7 @@ interface CardDef {
   desc: string;
 }
 
-const CARDS: CardDef[] = [
+const _cards: CardDef[] = [
   { id: 'settings', icon: '\u2699', name: '\u8BBE\u7F6E',        desc: '' },
   { id: 'debug',    icon: '\uD83D\uDD27', name: '\u65E5\u5FD7\u7BA1\u7406', desc: '' },
   { id: 'card03',   icon: '',           name: '',                desc: '' },
@@ -36,6 +36,10 @@ const CARDS: CardDef[] = [
   { id: 'card06',   icon: '',           name: '',                desc: '' },
   { id: 'card07',   icon: '',           name: '',                desc: '' },
 ];
+function getCardCount(): number { return _cards.length; }
+function getCard(index: number): CardDef { return _cards[index]; }
+function getCardName(index: number): string { return _cards[index]?.name ?? ''; }
+function getCardId(index: number): string { return _cards[index]?.id ?? ''; }
 // ========== 卡片内容生命周期 ==========
 // 每张卡片注册 activate/deactivate，展开时激活，折叠时停用。
 // 避免展开时重复创建 DOM / 订阅累积的根因级解法。
@@ -129,7 +133,7 @@ function hexToRgba(hex: string, alpha: number): string {
 /** 每张卡双色独立随机，两色保持一定色相差避免撞色 */
 function _generateRandomAccents(): void {
   const accents = [];
-  for (let i = 0; i < CARDS.length; i++) {
+  for (let i = 0; i < getCardCount(); i++) {
     const h1 = Math.random() * 360;   // color1（渐变起点）
     // color2 在色环上与 color1 保持 30°–120° 的偏差，避免过于接近或完全随机撞色
     const offset = (30 + Math.random() * 90) * (Math.random() > 0.5 ? 1 : -1);
@@ -248,7 +252,7 @@ let _dragPointerId: number | null = null;
 // ========== DOM 构建 ==========
 
 function createCard(index: number): HTMLElement {
-  const card = CARDS[index];
+  const card = getCard(index);
   const cc = _currentAccents![index];
   const grad = cardGradient(index, 0.85);
 
@@ -313,7 +317,7 @@ function createCard(index: number): HTMLElement {
 
 function buildCards(): void {
   console.log("[CARD-STACK] buildCards called");
-  for (let i = 0; i < CARDS.length; i++) {
+  for (let i = 0; i < getCardCount(); i++) {
     const card = createCard(i);
     card.style.transform = 'translateX(100vw)';
     card.style.pointerEvents = 'none';
@@ -759,7 +763,7 @@ export function launchFocusedCard(): void {
   const contentEl = document.createElement('div');
   contentEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:2px 6px;font-size:11px;font-weight:500;color:rgba(224,224,224,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:none';
   bgLayer.appendChild(contentEl);
-  _renderFloatingContent(contentEl, 'compact', CARDS[_focusIndex].name);
+  _renderFloatingContent(contentEl, 'compact', getCardName(_focusIndex));
   el.appendChild(bgLayer);
 
   // 四角光球颜色：左 color1，右 color2
@@ -870,9 +874,9 @@ export function launchFocusedCard(): void {
     if (item.contentEl) {
       anim.to(item.contentEl, { opacity: 0, duration: 0.1, ease: 'none', onComplete: () => {
         if (item.contentEl) {
-          const _id = CARDS[item.sourceIndex]?.id;
+          const _id = getCardId(item.sourceIndex);
           if (_id) _cardHandlers.get(_id)?.deactivate?.(item.contentEl);
-          _renderFloatingContent(item.contentEl, 'compact', CARDS[item.sourceIndex]?.name || '');
+          _renderFloatingContent(item.contentEl, 'compact', getCardName(item.sourceIndex));
         }
         anim.to(item.contentEl, { opacity: 1, duration: 0.15, ease: 'none' });
       }});
@@ -949,7 +953,7 @@ export function launchFocusedCard(): void {
   const targetTop = targetPos.top;
 
 
-  const LAUNCH_Z_ABOVE_STACK = Z_STACK_BASE + CARDS.length + 1;
+  const LAUNCH_Z_ABOVE_STACK = Z_STACK_BASE + getCardCount() + 1;
   el.style.zIndex = String(LAUNCH_Z_ABOVE_STACK);
 
   anim.set(el, { scale: 0.8 });
@@ -966,7 +970,7 @@ export function launchFocusedCard(): void {
 function _buildExpandedLayout(el: HTMLElement, _cc: { color1: string; color2: string }): void {
   const item = _floatingCards.find(i => i.el === el);
   if (!item?.contentEl) return;
-  const cardId = CARDS[item.sourceIndex]?.id;
+  const cardId = getCardId(item.sourceIndex);
   const handler = cardId ? _cardHandlers.get(cardId) : undefined;
   if (handler) {
     handler.activate(item.contentEl);
@@ -1140,12 +1144,12 @@ export function isCardStackOpen(): boolean {
 }
 
 export function focusNext(): void {
-  _focusIndex = (_focusIndex + 1) % CARDS.length;
+  _focusIndex = (_focusIndex + 1) % getCardCount();
   updateFocus();
 }
 
 export function focusPrev(): void {
-  _focusIndex = (_focusIndex - 1 + CARDS.length) % CARDS.length;
+  _focusIndex = (_focusIndex - 1 + getCardCount()) % getCardCount();
   updateFocus();
 }
 
@@ -1178,7 +1182,7 @@ export function initCardStack(): void {
       } else if (_axisLock === 'vertical') {
         const offset = Math.round(-dy / CARD_GAP);
         const target = _scrollStartFocus + offset;
-        const clamped = ((target % CARDS.length) + CARDS.length) % CARDS.length;
+        const clamped = ((target % getCardCount()) + getCardCount()) % getCardCount();
         if (clamped !== _focusIndex) {
           _focusIndex = clamped;
           updateFocus();
@@ -1374,10 +1378,10 @@ export function initCardStack(): void {
 
   // 注册内容层：卡片堆当前焦点摘要（使用生成器，每次 snapshot 返回实时焦点）
   Registry.registerContentGenerator('card-stack-content', () => {
-    const card = CARDS[_focusIndex];
+    const card = getCard(_focusIndex);
     const name = card?.name || card?.id || '无';
-    const total = CARDS.length;
-    const filled = CARDS.filter(c => c.name && c.name !== '').length;
+    const total = getCardCount();
+    const filled = Array.from({ length: total }, (_, i) => getCardName(i)).filter(n => n !== '').length;
     return {
       id: 'card-stack-content',
       type: 'card-content',

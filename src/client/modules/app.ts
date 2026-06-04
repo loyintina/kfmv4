@@ -157,7 +157,7 @@ export async function initApp(): Promise<void> {
     // 通过 offsetParent 检测显隐（支持 CSS class 或祖先节点隐藏）
     return el && el.offsetParent !== null ? 'visible' : 'hidden';
   });
-  Registry.registerElement({
+Registry.registerElement({
     id: 'operation-toast',
     type: 'icon',
     label: '操作提示',
@@ -166,7 +166,7 @@ export async function initApp(): Promise<void> {
     enabled: true,
     effect: '操作完成后自动显示 2 秒后消失',
     source: 'app.ts',
-  });
+  }, () => DOM.operationToast?.classList.contains('show') ? 'visible' : 'hidden');
   Registry.registerElement({
     id: 'ai-send-btn',
     type: 'button',
