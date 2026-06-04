@@ -4,11 +4,15 @@
  * 统一浮卡引擎的配置示例。
  * 浮卡引擎管理状态机、拖拽和 BR 光球。
  * 插件通过 brOrbSize: 36 将 BR 光球从 10px 放大到 36px。
+ *
+ * 心法 9：聊天渲染代码从旧 orb.ts 原样复制（git show HEAD~6:src/client/modules/orb.ts）
  */
 
 import { createFloatingCard } from './floating-card.js';
 import { wsChannel } from './ws-channel.js';
 import { Registry } from './ui-registry.js';
+import { layoutLines } from '../engine/text-layout/index.js';
+import { currentTheme as theme } from './theme.js';
 
 interface ChatMessage {
   role: 'user' | 'ai';
@@ -24,24 +28,44 @@ export function initOrbCard(): void {
 
   let orbVisible = true;
 
-  function renderChat(contentEl: HTMLElement): void {
-    const w = contentEl.clientWidth - 24;
-    if (w < 50) return;
+  /** renderChatContent — 从旧 orb.ts 原样复制，仅将 panelEl/contentArea 改为参数 */
+  function renderChatContent(contentEl: HTMLElement): void {
+    const innerWidth = contentEl.clientWidth - 24;
+    if (innerWidth < 50) return;
+
     let html = '';
     for (const msg of chatMessages) {
       const isUser = msg.role === 'user';
+      const bgColor = isUser
+        ? `linear-gradient(${theme.surface.bgLight},${theme.surface.bgLight}) padding-box,${theme.aiChat.bubbleSelfGradient} border-box`
+        : `linear-gradient(rgba(10,15,30,0.88),rgba(10,15,30,0.88)) padding-box,${theme.aiChat.panelBorderGradient} border-box`;
+      const borderStyle = 'border:1px solid transparent;border-left-width:3px;';
       const align = isUser ? 'flex-end' : 'flex-start';
       const label = isUser ? '你' : '蔚然';
-      const bg = isUser
-        ? 'linear-gradient(rgba(124,58,237,0.15),rgba(124,58,237,0.15)) padding-box,linear-gradient(135deg,#7c3aed,#00d4ff) border-box'
-        : 'linear-gradient(rgba(10,15,30,0.88),rgba(10,15,30,0.88)) padding-box,linear-gradient(135deg,#7c3aed,#00d4ff) border-box';
-      html += `
-        <div style="display:flex;justify-content:${align};margin-bottom:8px;width:100%">
-          <div style="max-width:${w - 8}px;padding:6px 12px;background:${bg};border:1px solid transparent;border-left-width:3px;border-radius:8px">
-            <div style="font-size:10px;color:${isUser ? '#7c3aed' : '#00d4ff'};margin-bottom:2px;font-weight:600">${label}</div>
-            <div style="font-size:13px;color:rgba(224,224,224,0.9)">${escapeHtml(msg.text)}</div>
-          </div>
-        </div>`;
+      const labelColor = isUser ? theme.aiChat.bubbleLabelSelf : theme.aiChat.bubbleLabelAI;
+      const boxShadow = isUser ? theme.aiChat.bubbleSelfShadow : theme.aiChat.bubbleAIShadow;
+
+      const font = '13px sans-serif';
+      const lineHeight = 20;
+      try {
+        const lines = layoutLines(msg.text, font, innerWidth - 24, lineHeight);
+        const textHtml = lines.map(l => `<span style="display:block">${escapeHtml(l.text)}</span>`).join('');
+        html += `
+          <div style="display:flex;justify-content:${align};margin-bottom:8px">
+            <div style="max-width:${innerWidth - 8}px;padding:6px 12px;background:${bgColor};${borderStyle}border-radius:8px;box-shadow:${boxShadow}">
+              <div style="font-size:10px;color:${labelColor};margin-bottom:2px;font-weight:600">${label}</div>
+              <div style="font-family:sans-serif;font-size:13px;line-height:${lineHeight}px;color:${theme.aiChat.bubbleText}">${textHtml}</div>
+            </div>
+          </div>`;
+      } catch {
+        html += `
+          <div style="display:flex;justify-content:${align};margin-bottom:8px">
+            <div style="max-width:85%;padding:6px 12px;background:${bgColor};${borderStyle}border-radius:8px;box-shadow:${boxShadow}">
+              <div style="font-size:10px;color:${labelColor};margin-bottom:2px;font-weight:600">${label}</div>
+              <div style="font-size:13px;color:${theme.aiChat.bubbleText}">${escapeHtml(msg.text)}</div>
+            </div>
+          </div>`;
+      }
     }
     contentEl.innerHTML = html;
     contentEl.scrollTop = contentEl.scrollHeight;
@@ -51,8 +75,9 @@ export function initOrbCard(): void {
     id: 'orb',
     name: 'AI 对话',
 
-    compactWidth: 36,
-    compactHeight: 36,
+    // 紧缩态 1×1：卡片体不可见。BR 光球（36px）通过 rightOff=-12 延伸到卡片外。
+    compactWidth: 1,
+    compactHeight: 1,
     activeWidth: 300,
     activeHeight: 350,
     minWidth: 120,
@@ -66,36 +91,36 @@ export function initOrbCard(): void {
     inputBarAvoid: true,
     accentColor: '#7c3aed',
     brOrbSize: 36,
-    // 初始位置：使 36px 光球出现在屏幕右下角 (right:24, bottom:140)
-    // 卡片 36px，BR 光球在卡片内 left:12, top:14（因为 rightOff=-12, bottomOff=-14）
+
+    // 初始位置：使 BR 光球出现在屏幕右下角 (right:24, bottom:140)
+    // 卡片 1px，BR 光球在卡片内 left:-23, top:-21（rightOff=-12, bottomOff=-14, brSize=36）
     // 反推得 initialPosition.right = 36, bottom = 154
     initialPosition: { right: 36, bottom: 154 },
 
     onActivate(contentEl) {
       orbVisible = false;
       contentEl.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;box-sizing:border-box;padding:8px;overflow:hidden';
-      renderChat(contentEl);
+      renderChatContent(contentEl);
     },
     onDeactivate() {
       orbVisible = true;
     },
     onCreate(el) {
       el.dataset.registryId = 'orb';
-      el.style.background = 'none';
-      el.style.borderRadius = '0';
-      el.style.padding = '0';
-      el.style.border = 'none';
 
-      // 给 BR 光球应用独立光亮样式（覆盖 theme.cornerOrb 的弱装饰值）
+      // BR 光球样式 — 原样复制自旧 .light-orb CSS
       const orb = el.querySelector('.floating-br-orb') as HTMLElement;
       if (orb) {
         const glow = orb.firstElementChild as HTMLElement | null;
         if (glow) {
-          glow.style.background = 'radial-gradient(circle at 30% 30%, rgba(124,58,237,.9), rgba(124,58,237,.4), transparent 70%)';
-          glow.style.boxShadow = '0 0 16px 6px rgba(124,58,237,.5), 0 0 32px 12px rgba(124,58,237,.3)';
+          glow.style.background = 'radial-gradient(circle at 30% 30%, rgba(124, 58, 237, 0.9), rgba(124, 58, 237, 0.4), transparent 70%)';
+          glow.style.boxShadow = '0 0 16px 6px rgba(124, 58, 237, 0.5), 0 0 32px 12px rgba(124, 58, 237, 0.3)';
         }
+        orb.style.cursor = 'grab';
+        orb.style.touchAction = 'none';
       }
     },
+
     registryElement: {
       id: 'orb',
       type: 'panel',
