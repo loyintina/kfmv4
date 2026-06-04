@@ -66,11 +66,10 @@ export function initOrbCard(): void {
     inputBarAvoid: true,
     accentColor: '#7c3aed',
     brOrbSize: 36,
-
     // 初始位置：使 36px 光球出现在屏幕右下角 (right:24, bottom:140)
-    // 卡片 36px，BR 光球在卡片内 left: -12（因为 rightOff=12）
-    // 计算：initialPosition.right = 24 - 12 = 12
-    initialPosition: { right: 12, bottom: 140 },
+    // 卡片 36px，BR 光球在卡片内 left:12, top:14（因为 rightOff=-12, bottomOff=-14）
+    // 反推得 initialPosition.right = 36, bottom = 154
+    initialPosition: { right: 36, bottom: 154 },
 
     onActivate(contentEl) {
       orbVisible = false;
@@ -82,13 +81,21 @@ export function initOrbCard(): void {
     },
     onCreate(el) {
       el.dataset.registryId = 'orb';
-      // 隐藏卡片体背景（卡片只是状态容器）
       el.style.background = 'none';
       el.style.borderRadius = '0';
       el.style.padding = '0';
       el.style.border = 'none';
-    },
 
+      // 给 BR 光球应用独立光亮样式（覆盖 theme.cornerOrb 的弱装饰值）
+      const orb = el.querySelector('.floating-br-orb') as HTMLElement;
+      if (orb) {
+        const glow = orb.firstElementChild as HTMLElement | null;
+        if (glow) {
+          glow.style.background = 'radial-gradient(circle at 30% 30%, rgba(124,58,237,.9), rgba(124,58,237,.4), transparent 70%)';
+          glow.style.boxShadow = '0 0 16px 6px rgba(124,58,237,.5), 0 0 32px 12px rgba(124,58,237,.3)';
+        }
+      }
+    },
     registryElement: {
       id: 'orb',
       type: 'panel',
