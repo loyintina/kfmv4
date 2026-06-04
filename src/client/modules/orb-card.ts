@@ -74,15 +74,13 @@ export function initOrbCard(): void {
   createFloatingCard({
     id: 'orb',
     name: 'AI 对话',
-
-    // 紧缩态 1×1：卡片体不可见。BR 光球（36px）通过 rightOff=-12 延伸到卡片外。
-    compactWidth: 1,
-    compactHeight: 1,
+    // 紧缩态 0×0：卡片体不可见。BR 光球通过 rightOff=-12 延伸到卡片外。
+    compactWidth: 0,
+    compactHeight: 0,
     activeWidth: 300,
     activeHeight: 350,
     minWidth: 120,
     minHeight: 100,
-
     cornerTL: false,
     cornerTR: false,
     cornerBL: false,
@@ -92,11 +90,20 @@ export function initOrbCard(): void {
     accentColor: '#7c3aed',
     brOrbSize: 36,
 
-    // 初始位置：使 BR 光球出现在屏幕右下角 (right:24, bottom:140)
-    // 卡片 1px，BR 光球在卡片内 left:-23, top:-21（rightOff=-12, bottomOff=-14, brSize=36）
-    // 反推得 initialPosition.right = 36, bottom = 154
-    initialPosition: { right: 36, bottom: 154 },
+    // 初始位置：BR 光球出现在屏幕右下角 (right:24, bottom:140)
+    // 卡片 0px，BR 光球在卡片内 left:-24, top:-22（compact=0, rightOff=-12, bottomOff=-14, brSize=36）
+    // 反推得 initialPosition.right = 36, bottom = 152
+    initialPosition: { right: 36, bottom: 152 },
 
+    onPreExpand(el) {
+      // 展开动画开始前设置面板样式（复刻旧 orb.ts createPanel 的视觉）
+      el.style.padding = '1px';
+      el.style.border = '1px solid transparent';
+      el.style.borderLeftWidth = '3px';
+      el.style.borderRadius = '12px';
+      el.style.background = `linear-gradient(${theme.surface.bg},${theme.surface.bg}) padding-box, ${theme.aiChat.panelBorderGradient} border-box`;
+      el.style.boxShadow = theme.aiChat.panelShadow;
+    },
     onActivate(contentEl) {
       orbVisible = false;
       contentEl.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;box-sizing:border-box;padding:8px;overflow:hidden';
@@ -107,6 +114,12 @@ export function initOrbCard(): void {
     },
     onCreate(el) {
       el.dataset.registryId = 'orb';
+      // 紧缩态：隐藏卡片体
+      el.style.padding = '0';
+      el.style.border = 'none';
+      el.style.borderRadius = '0';
+      el.style.background = 'none';
+      el.style.boxShadow = 'none';
 
       // BR 光球样式 — 原样复制自旧 .light-orb CSS
       const orb = el.querySelector('.floating-br-orb') as HTMLElement;
@@ -120,7 +133,6 @@ export function initOrbCard(): void {
         orb.style.touchAction = 'none';
       }
     },
-
     registryElement: {
       id: 'orb',
       type: 'panel',

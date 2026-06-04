@@ -65,7 +65,8 @@ export interface FloatingCardConfig {
   onActivate: (contentEl: HTMLElement) => void;
   onDeactivate: (contentEl: HTMLElement) => void;
   onCreate?: (el: HTMLElement) => void;
-
+  /** 在展开动画开始前调用（用于设置卡片样式，避免 onActivate 的 0.1s 延迟） */
+  onPreExpand?: (el: HTMLElement) => void;
   // AI 命令
   onCommand?: (action: string, params: unknown) => void;
   registryElement?: InteractiveElement;
@@ -354,13 +355,13 @@ export function createFloatingCard(config: FloatingCardConfig): void {
   brOrb.style.cursor = 'pointer';
   brOrb.classList.add('floating-br-orb');
   _brOrbToItem.set(brOrb, item);
-
   // BR 点击：展开/折叠
   brOrb.addEventListener('click', (e) => {
     e.stopPropagation();
     const onlyBR = !cfg.cornerTL && !cfg.cornerTR && !cfg.cornerBL;
     if (item.state === 'compact') {
       item.state = 'expanding';
+      cfg.onPreExpand?.(el);
 
       anim.to(contentEl, { opacity: 0, duration: 0.1, ease: 'none', onComplete: () => {
         cfg.onActivate(contentEl);
