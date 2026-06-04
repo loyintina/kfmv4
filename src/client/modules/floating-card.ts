@@ -465,46 +465,72 @@ export function launchFocusedCard(): void {
         anim.to(contentEl, { opacity: 1, duration: 0.15, ease: 'none' });
       }});
 
-      // 卡片尺寸动画 + 角落光球渐入
+      // 卡片尺寸动画 + 角落光球
       const expW = item.activeMemW;
       const expH = item.activeMemH;
-      const anchorR = parseFloat(el.style.left) + COMPACT_W;
-      const anchorB = parseFloat(el.style.top) + COMPACT_H;
-      const expLeft = Math.max(8, anchorR - expW);
-      const expTop = Math.max(8, anchorB - expH);
+      const curLeft = parseFloat(el.style.left) || targetPos.left;
+      const curTop = parseFloat(el.style.top) || targetPos.top;
+      const targetW = expW;
+      const targetH = expH;
+      const MARGIN = 8;
+      const curW = item.cardWidth;
+      const curH = item.cardHeight;
+      const compressedW = Math.max(FLOATING_CARD_W_MIN, Math.min(expW, curLeft + curW - MARGIN));
+      const compressedH = Math.max(FLOATING_CARD_W_MIN, Math.min(expH, curTop + curH - MARGIN));
+      const expLeft = curLeft + curW - compressedW;
+      const expTop = curTop + curH - compressedH;
+      const brX0 = curW - rightOff - cornerSize;
+      const brY0 = curH - bottomOff - cornerSize;
+      const tlColor = hexToRgba(cc.color1, orbT.tlAlpha);
+      const tlOrb = createDecoratedCorner(cornerOff, cornerOff, cornerSize, cornerSize, tlColor,
+        '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c - sh) + ',' + (c - sh) + ') scale(' + s + ')"><path d="M6,10 L6,2 M6,2 L3,5 M6,2 L9,5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>');
+      tlOrb.style.pointerEvents = 'auto'; tlOrb.style.cursor = 'pointer';
+      tlOrb.title = '\u4e0a\u79fb\u4e00\u5c42';
+      tlOrb.addEventListener('click', () => { if (item.state !== 'active') return; const above = _cardAbove(item); if (above) _swapZIndex(item, above); });
+      el.appendChild(tlOrb); item.tlOrb = tlOrb;
+      const trOrb = createDecoratedCorner(compressedW - rightOff - cornerSize, cornerOff, cornerSize, cornerSize, rightRgba,
+        '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c + sh) + ',' + (c - sh) + ') scale(' + s + ')"><line x1="4" y1="2" x2="10" y2="8" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></g></svg>');
+      trOrb.style.pointerEvents = 'auto'; trOrb.style.cursor = 'pointer';
+      trOrb.title = '\u5173\u95ed';
+      trOrb.addEventListener('click', () => { if (item.state !== 'active') return; dismissFloatingCard(true, el); });
+      el.appendChild(trOrb); item.trOrb = trOrb;
+      const blOrb = createDecoratedCorner(cornerOff, compressedH - bottomOff - cornerSize, cornerSize, cornerSize, leftRgba,
+        '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c - sh) + ',' + (c + sh) + ') scale(' + s + ')"><path d="M6,2 L6,10 M6,10 L3,7 M6,10 L9,7" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>');
+      blOrb.style.pointerEvents = 'auto'; blOrb.style.cursor = 'pointer';
+      blOrb.title = '\u4e0b\u79fb\u4e00\u5c42';
+      blOrb.addEventListener('click', () => { if (item.state !== 'active') return; const below = _cardBelow(item); if (below) _swapZIndex(item, below); });
+      el.appendChild(blOrb); item.blOrb = blOrb;
+      // 初始偏移到 BR 位置（GSAP x/y），动画结束归零
+      anim.set(tlOrb, { x: brX0 - cornerOff, y: brY0 - cornerOff });
+      anim.set(trOrb, { x: brX0 - (compressedW - rightOff - cornerSize), y: brY0 - cornerOff });
+      anim.set(blOrb, { x: brX0 - cornerOff, y: brY0 - (compressedH - bottomOff - cornerSize) });
 
-      // 创建 TL/TR/BL 光球
-      const tlOrb = createDecoratedCorner(cornerOff, cornerOff, cornerSize, cornerSize, leftRgba, '');
-      tlOrb.style.opacity = '0';
-      el.appendChild(tlOrb);
-      item.tlOrb = tlOrb;
+      // BR 光球展开态图案
+      const brSvgContainer = brOrb.children[1] as HTMLElement;
+      if (brSvgContainer) brSvgContainer.innerHTML = '<svg width="14" height="14" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" fill="none"/><line x1="6" y1="1.5" x2="6" y2="10.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="1.5" y1="6" x2="10.5" y2="6" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></svg>';
 
-      const trOrb = createDecoratedCorner(expW - rightOff - cornerSize, cornerOff, cornerSize, cornerSize, rightRgba, '');
-      trOrb.style.opacity = '0';
-      el.appendChild(trOrb);
-      item.trOrb = trOrb;
-
-      const blOrb = createDecoratedCorner(cornerOff, expH - bottomOff - cornerSize, cornerSize, cornerSize, leftRgba, '');
-      blOrb.style.opacity = '0';
-      el.appendChild(blOrb);
-      item.blOrb = blOrb;
-
-      const brX = expW - rightOff - cornerSize;
-      const brY = expH - bottomOff - cornerSize;
       anim.to(el, {
         left: expLeft, top: expTop,
-        width: expW, height: expH,
-        duration: 0.35, ease: 'back.out(1.2)',
+        width: compressedW, height: compressedH,
+        duration: 0.3, ease: 'back.out(1.1)',
+        onUpdate: () => {
+          const w = parseFloat(el.style.width) || compressedW;
+          const h = parseFloat(el.style.height) || compressedH;
+          brOrb.style.left = (w - rightOff - cornerSize) + 'px';
+          brOrb.style.top = (h - bottomOff - cornerSize) + 'px';
+        },
         onComplete: () => {
-          item.cardWidth = expW;
-          item.cardHeight = expH;
+          item.cardWidth = compressedW;
+          item.cardHeight = compressedH;
+          brOrb.style.left = (item.cardWidth - rightOff - cornerSize) + 'px';
+          brOrb.style.top = (item.cardHeight - bottomOff - cornerSize) + 'px';
           item.state = 'active';
+          el.style.zIndex = String(zIndex);
         },
       });
-      anim.to(brOrb, { left: brX, top: brY, duration: 0.35, ease: 'back.out(1.2)' });
-      anim.to(tlOrb, { opacity: 1, duration: 0.2, ease: 'none' });
-      anim.to(trOrb, { opacity: 1, duration: 0.2, ease: 'none', delay: 0.05 });
-      anim.to(blOrb, { opacity: 1, duration: 0.2, ease: 'none', delay: 0.1 });
+      anim.to(tlOrb, { x: 0, y: 0, duration: 0.3, ease: 'back.out(1.1)' });
+      anim.to(trOrb, { x: 0, y: 0, duration: 0.3, ease: 'back.out(1.1)' });
+      anim.to(blOrb, { x: 0, y: 0, duration: 0.3, ease: 'back.out(1.1)' });
     } else if (item.state === 'active') {
       item.state = 'collapsing';
       // 内容淡出 → 切换为紧凑态内容 → 淡入
