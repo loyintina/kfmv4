@@ -30,8 +30,4 @@ export const DOM = {
   // ===== querySelector 模式（参数化，不走 getElementById） =====
   /** 卡片面板内的序号元素 */
   stackCardIndex(el: Element) { return el.querySelector(".stack-card-index") as HTMLElement | null; },
-  /** 光球面板内容区 */
-  orbPanelContent(el: Element) { return el.querySelector(".orb-panel-content") as HTMLElement | null; },
-  /** 光球面板状态标签 */
-  orbPanelState(el: Element) { return el.querySelector(".orb-panel-state") as HTMLElement | null; },
 };
