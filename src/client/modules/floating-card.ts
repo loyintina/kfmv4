@@ -1,22 +1,14 @@
 /**
- * KFM v4 - 统一浮卡引擎
+ * KFM v4 - 浮卡系统（从 card-stack.ts 拆分）
  *
- * 所有浮动面板（调试浮卡、AI 对话面板、未来的插件卡片）通过此引擎创建。
- *
- * 核心设计：
- *   一份状态机 + 一份拖拽逻辑（通过 gesture-registry）+ 可配置参数。
- *   新增一种浮卡 = 调一次 createFloatingCard(config)，不复制任何逻辑。
- *
- * 设计参见 docs/CARD_SYSTEM_UNIFICATION_SPEC.md
+ * 浮卡的发射、拖拽、缩放、状态机。
+ * 与 card-stack.ts（堆叠卡片面板）共享卡片定义和配色。
  */
 
 import { gestures } from "./gesture-registry.js";
 import { anim } from './animation-registry.js';
-import { Registry } from './ui-registry.js';
-import { wsChannel } from './ws-channel.js';
 import { currentTheme as theme } from './theme.js';
 
-// card-stack 依赖（用于从卡片堆发射的浮卡）
 import {
   getCardCount, getCardName, getCardId,
   getFocusIndex, getCurrentAccent, getCardHandler,
@@ -24,77 +16,23 @@ import {
   hexToRgba, cardGradient, cardBg,
 } from './card-stack.js';
 
-import type { InteractiveElement, ContentBlock } from './ui-registry.js';
-
 const orbT = theme.cornerOrb;
 const cornerSize = orbT.size;
 const cornerOff = orbT.cornerOff;
 const rightOff = cornerOff + orbT.rightOffAdj;
 const bottomOff = cornerOff + orbT.bottomOffAdj;
 
-// ========== 配置类型与默认值 ==========
-
-export interface FloatingCardConfig {
-  // 标识
-  id: string;
-  name: string;
-
-  // 几何
-  compactWidth: number;
-  compactHeight: number;
-  activeWidth: number;
-  activeHeight: number;
-  minWidth: number;
-  minHeight: number;
-
-  // 角光球
-  cornerTL: boolean;
-  cornerTR: boolean;
-  cornerBL: boolean;
-
-  // 行为
-  alwaysOnTop: boolean;
-  inputBarAvoid: boolean;
-  accentColor: string;
-  brOrbSize?: number;
-  /** 展开时保持光球屏幕位置不变（用于光球面板等紧凑态下光球突出的卡片） */
-  keepOrbFixed?: boolean;
-
-  // 初始位置（设定了就跳过随机散落）
-  initialPosition?: { right: number; bottom: number };
-  
-  // 生命周期
-  onActivate: (contentEl: HTMLElement) => void;
-  onDeactivate: (contentEl: HTMLElement) => void;
-  onCreate?: (el: HTMLElement) => void;
-  /** 在展开动画开始前调用（用于设置卡片样式，避免 onActivate 的 0.1s 延迟） */
-  onPreExpand?: (el: HTMLElement) => void;
-  // AI 命令
-  onCommand?: (action: string, params: unknown) => void;
-  registryElement?: InteractiveElement;
-  registryContent?: () => ContentBlock;
-}
-
-const DEFAULT_CONFIG: Partial<FloatingCardConfig> = {
-  compactWidth: 54,
-  compactHeight: 54,
-  activeWidth: 155,
-  activeHeight: 68,
-  minWidth: 54,
-  minHeight: 54,
-  cornerTL: true,
-  cornerTR: true,
-  cornerBL: true,
-  alwaysOnTop: false,
-  inputBarAvoid: false,
-  accentColor: '#7c3aed',
-  onActivate: () => {},
-  onDeactivate: () => {},
-};
-
-// ========== 引擎常量 ==========
-
+// ========== 配置 ==========
 const Z_FLOATING_BASE = 50;
+
+const FLOATING_CARD_W = 155;
+const FLOATING_CARD_H = 68;
+const COMPACT_W = 54;
+const COMPACT_H = 54;
+
+// ========== 编辑模式最小尺寸 ==========
+const FLOATING_CARD_W_MIN = 54;
+const FLOATING_CARD_H_MIN = 54;
 const FLOATING_DRAG_THRESHOLD = 5;
 
 // ========== 浮卡类型与状态 ==========
@@ -111,22 +49,20 @@ interface FloatingCardItem {
   contentEl: HTMLElement | null;
   cardWidth: number;
   cardHeight: number;
-  memW: number;             // 记忆尺寸（编辑模式更新，展开时使用）
-  memH: number;
-  compactW: number;          // 设计紧凑尺寸（不变）
-  compactH: number;
+  compactMemW: number;
+  compactMemH: number;
+  activeMemW: number;
+  activeMemH: number;
   accentColor: string;
-  minWidth: number;
-  minHeight: number;
-  onDeactivate?: (contentEl: HTMLElement) => void;
-  name: string;
 }
+
 let _floatingCards: FloatingCardItem[] = [];
 let _nextFloatingZ = Z_FLOATING_BASE;
 const _brOrbToItem = new WeakMap<HTMLElement, FloatingCardItem>();
+/** 记录进入编辑模式前的状态，退出时恢复 */
 let _preEditState: 'compact' | 'active' = 'active';
 
-// ========== 浮卡 BR 光球拖拽状态（gesture-registry 驱动） ==========
+// ========== 浮卡光球拖拽状态（复刻 orb.ts 的全局变量） ==========
 let _fItem: FloatingCardItem | null = null;
 let _fDragging = false;
 let _fStartX = 0;
@@ -141,9 +77,22 @@ let _fLPTimer: ReturnType<typeof setTimeout> | null = null;
 let _fLPFired = false;
 let _fPreEdit: 'compact' | 'active' = 'compact';
 
-// ========== 输入栏避让状态 ==========
-let _inputBarWatcherInitialized = false;
-// ========== 角光球创建 ==========
+// ========== 浮卡拖拽状态 ==========
+let _dragItem: FloatingCardItem | null = null;
+let _dragStartX = 0;
+let _dragStartY = 0;
+let _dragStartLeft = 0;
+let _dragStartTop = 0;
+let _dragStartW = 0;
+let _dragStartH = 0;
+let _dragStartOrbAbsX = 0;
+let _dragStartOrbAbsY = 0;
+let _dragIsDragging = false;
+let _dragLongPressFired = false;
+let _dragLongPressTimer: ReturnType<typeof setTimeout> | null = null;
+let _dragPointerId: number | null = null;
+
+// ========== 浮卡 ==========
 
 function createDecoratedCorner(
   x: number, y: number, w: number, h: number,
@@ -174,7 +123,43 @@ function createDecoratedCorner(
   return box;
 }
 
-// ========== 场景位置计算（随机散落和预置位置）==========
+// ========== 浮卡叠层辅助 ==========
+
+function _cardAbove(item: FloatingCardItem): FloatingCardItem | null {
+  let highest: FloatingCardItem | null = null;
+  for (const c of _floatingCards) {
+    if (c === item) continue;
+    if (c.zIndex > item.zIndex) {
+      if (!highest || c.zIndex > highest.zIndex) {
+        highest = c;
+      }
+    }
+  }
+  return highest;
+}
+
+function _cardBelow(item: FloatingCardItem): FloatingCardItem | null {
+  let lowest: FloatingCardItem | null = null;
+  for (const c of _floatingCards) {
+    if (c === item) continue;
+    if (c.zIndex < item.zIndex) {
+      if (!lowest || c.zIndex < lowest.zIndex) {
+        lowest = c;
+      }
+    }
+  }
+  return lowest;
+}
+
+function _swapZIndex(a: FloatingCardItem, b: FloatingCardItem): void {
+  const tmp = a.zIndex;
+  a.zIndex = b.zIndex;
+  b.zIndex = tmp;
+  a.el.style.zIndex = String(a.zIndex);
+  b.el.style.zIndex = String(b.zIndex);
+}
+
+// ========== 45° 层叠排布 ==========
 
 interface FloatingSafeBounds {
   safeL: number; safeT: number; safeB: number; fullR: number; stackLeft: number;
@@ -182,34 +167,37 @@ interface FloatingSafeBounds {
 
 function _calcFloatingSafeBounds(): FloatingSafeBounds {
   const safeL = 8;
-  const safeB = 56.5;
+  const safeB = 56.5; // 屏幕底部留给 AI 输入栏
   const safeT = 8;
   const fullR = window.innerWidth;
-  const stackLeft = (window.innerWidth * 0.7);
+  const stackLeft = (window.innerWidth * 0.7); // 卡堆左边界
   return { safeL, safeT, safeB, fullR, stackLeft };
 }
 
-function _scatterPosition(
-  cardIndex: number,
-  compactW: number,
-  compactH: number,
-): { left: number; top: number } {
+/**
+ * 随机散落：在安全区内找一个不重叠的位置。
+ * 最多尝试 30 次，失败则垂直堆叠在左侧。
+ */
+function _scatterPosition(cardIndex: number): { left: number; top: number } {
   const { safeL, safeT, safeB, stackLeft } = _calcFloatingSafeBounds();
-  const stackR = window.innerWidth - compactW;
+  const stackL = stackLeft;
+  const stackR = window.innerWidth - COMPACT_W;
   const stackT = safeT;
-  const stackBot = window.innerHeight - safeB - compactH;
-  const stackW = stackR - stackLeft;
+  const stackBot = window.innerHeight - safeB - COMPACT_H;
+  const stackW = stackR - stackL;
 
+  // 纵向堆叠：如果空间不够，依次向下排列
   const totalCards = _floatingCards.length;
   const verticalStep = 60;
   const stackCount = totalCards;
-  const baseL = stackLeft + (stackW / 2);
+  const baseL = stackL + (stackW / 2);
   const baseT = stackT + 20 + stackCount * verticalStep;
   const fallbackLeft = Math.max(safeL, Math.min(baseL, stackR));
   const fallbackTop = Math.max(safeT, Math.min(baseT, stackBot));
 
+  // 尝试横向散落在安全区域的左侧区域
   const spreadL = safeL;
-  const spreadR = stackLeft - compactW;
+  const spreadR = stackL - FLOATING_CARD_W;
   const spreadW = spreadR - spreadL;
   if (spreadW < 20) {
     return { left: fallbackLeft, top: fallbackTop };
@@ -217,14 +205,14 @@ function _scatterPosition(
 
   for (let attempt = 0; attempt < 30; attempt++) {
     const l = spreadL + Math.random() * spreadW;
-    const t = safeT + Math.random() * (window.innerHeight - safeB - safeT - compactH);
+    const t = safeT + Math.random() * (window.innerHeight - safeB - safeT - COMPACT_H);
     let overlap = false;
     for (const c of _floatingCards) {
       const cl = parseFloat(c.el.style.left) || 0;
       const ct = parseFloat(c.el.style.top) || 0;
       const cw = c.cardWidth;
       const ch = c.cardHeight;
-      if (l < cl + cw && l + compactW > cl && t < ct + ch && t + compactH > ct) {
+      if (l < cl + cw && l + COMPACT_W > cl && t < ct + ch && t + COMPACT_H > ct) {
         overlap = true;
         break;
       }
@@ -236,343 +224,178 @@ function _scatterPosition(
   return { left: fallbackLeft, top: fallbackTop };
 }
 
-// ========== 输入栏避让（从 orb.ts 搬运） ==========
+// ========== 浮卡拖拽/编辑状态机 ==========
 
-function initInputBarWatcher(cardEl: HTMLElement, getCardPos: () => { left: number; top: number }): void {
-  if (_inputBarWatcherInitialized) return;
-  _inputBarWatcherInitialized = true;
+function _clearFloatingDragTimer(): void {
+  if (_dragLongPressTimer) { clearTimeout(_dragLongPressTimer); _dragLongPressTimer = null; }
+}
 
-  let freeX = -1, freeY = -1;
-  let lastBarTop = -1;
-  let isPushed = false;
+function _enterFloatingEditMode(item: FloatingCardItem): void {
+  _preEditState = item.state as 'compact' | 'active';
+  item.state = 'editing';
+  item.el.style.boxShadow = '0 0 24px 8px ' + hexToRgba(item.accentColor, 0.25) + ', 0 8px 32px rgba(0,0,0,0.5)';
+}
 
-  function updatePosition(): void {
-    const bar = document.getElementById('aiInputBar');
-    if (!bar) return;
-    const barRect = bar.getBoundingClientRect();
-    const barTop = barRect.top;
+function _exitFloatingEditMode(item: FloatingCardItem): void {
+  item.state = _preEditState;
+  item.el.style.boxShadow = theme.stack.blurShadow;
+}
 
-    if (freeX < 0 || freeY < 0) {
-      const pos = getCardPos();
-      freeX = pos.left;
-      freeY = pos.top;
-      lastBarTop = barTop;
+function _startFloatingDrag(item: FloatingCardItem, clientX: number, clientY: number, pointerId?: number): void {
+  _dragItem = item;
+  _dragStartX = clientX;
+  _dragStartY = clientY;
+  _dragStartLeft = parseFloat(item.el.style.left) || 0;
+  _dragStartTop = parseFloat(item.el.style.top) || 0;
+  _dragStartW = item.cardWidth;
+  _dragStartH = item.cardHeight;
+  _dragIsDragging = false;
+  _dragLongPressFired = false;
+  _dragPointerId = pointerId ?? null;
+
+  // 长按进编辑模式
+  _dragLongPressTimer = setTimeout(() => {
+    if (!_dragItem) return;
+    _dragLongPressFired = true;
+    _startFloatingDrag(_dragItem, clientX, clientY, pointerId);
+    _enterFloatingEditMode(_dragItem);
+  }, 600);
+}
+
+function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: number): void {
+  if (!_dragItem) return;
+  if (_dragPointerId !== null && pointerId !== undefined && pointerId !== _dragPointerId) return;
+
+  const dx = clientX - _dragStartX;
+  const dy = clientY - _dragStartY;
+
+  if (Math.abs(dx) > FLOATING_DRAG_THRESHOLD || Math.abs(dy) > FLOATING_DRAG_THRESHOLD) {
+    if (!_dragIsDragging) {
+      _dragIsDragging = true;
+      if (_dragLongPressTimer) { clearTimeout(_dragLongPressTimer); _dragLongPressTimer = null; }
     }
-
-    if (barTop < lastBarTop) {
-      // 输入栏上移（输入法弹出）→ 压缩浮卡
-      const barRight = barRect.right;
-      const cardRight = freeX + (parseFloat(cardEl.style.width) || 0);
-      if (cardRight > barRight - 8) {
-        const newLeft = barRight - (parseFloat(cardEl.style.width) || 0) - 8;
-        cardEl.style.left = Math.max(8, newLeft) + 'px';
-        isPushed = true;
-      }
-      const cardBottom = freeY + (parseFloat(cardEl.style.height) || 0);
-      if (cardBottom > barTop - 8) {
-        const newTop = barTop - (parseFloat(cardEl.style.height) || 0) - 8;
-        cardEl.style.top = Math.max(8, newTop) + 'px';
-        isPushed = true;
-      }
-    } else if (barTop > lastBarTop && isPushed) {
-      // 输入栏恢复 → 回到自由位置
-      cardEl.style.left = freeX + 'px';
-      cardEl.style.top = freeY + 'px';
-      isPushed = false;
-    }
-    lastBarTop = barTop;
   }
 
-  const watcher = window.visualViewport;
-  if (watcher) {
-    watcher.addEventListener('resize', updatePosition);
+  if (!_dragIsDragging) return;
+
+  const { safeL, safeT, safeB } = _calcFloatingSafeBounds();
+
+  if (_dragItem.state === 'editing') {
+    // 编辑模式：左上角固定，拉伸右下角
+    const newW = Math.max(FLOATING_CARD_W_MIN, _dragStartW + dx);
+    const newH = Math.max(FLOATING_CARD_H_MIN, _dragStartH + dy);
+
+    // 边界钳制（右下角不超出屏幕）
+    const maxRight = window.innerWidth - safeL;
+    const maxBottom = window.innerHeight - safeB;
+    const clampedW = Math.min(newW, maxRight - _dragStartLeft);
+    const clampedH = Math.min(newH, maxBottom - _dragStartTop);
+
+    _dragItem.el.style.width = clampedW + 'px';
+    _dragItem.el.style.height = clampedH + 'px';
+    _dragItem.cardWidth = clampedW;
+    _dragItem.cardHeight = clampedH;
+
+    // 记忆当前尺寸
+    if (_dragItem.compactMemW < clampedW) _dragItem.compactMemW = clampedW;
+    if (_dragItem.compactMemH < clampedH) _dragItem.compactMemH = clampedH;
+    if (_dragItem.activeMemW < clampedW) _dragItem.activeMemW = clampedW;
+    if (_dragItem.activeMemH < clampedH) _dragItem.activeMemH = clampedH;
+
+    // 同步光球位置
+    const rx = clampedW - rightOff - cornerSize;
+    const by = clampedH - bottomOff - cornerSize;
+    if (_dragItem.brOrb) {
+      _dragItem.brOrb.style.left = rx + 'px';
+      _dragItem.brOrb.style.top = by + 'px';
+    }
+  } else {
+    // 普通拖动
+    const newL = _dragStartLeft + dx;
+    const newT = _dragStartTop + dy;
+    const clampedL = Math.max(safeL, Math.min(newL, window.innerWidth - _dragStartW - safeL));
+    const clampedT = Math.max(safeT, Math.min(newT, window.innerHeight - _dragStartH - safeB));
+    _dragItem.el.style.left = clampedL + 'px';
+    _dragItem.el.style.top = clampedT + 'px';
   }
 }
 
-// ========== 浮卡紧凑态内容渲染 ==========
-
-function _renderCompactContent(contentEl: HTMLElement, name: string): void {
-  contentEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:2px 6px;font-size:11px;font-weight:500;color:rgba(224,224,224,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
-  contentEl.textContent = name || '';
+function _endFloatingDrag(): void {
+  _clearFloatingDragTimer();
+  if (_dragItem && _dragLongPressFired) {
+    _exitFloatingEditMode(_dragItem);
+  }
+  if (_dragItem && !_dragIsDragging && !_dragLongPressFired) {
+    _dragItem.brOrb?.click();
+  }
+  _dragItem = null;
+  _dragIsDragging = false;
 }
 
-function _renderActiveLayout(contentEl: HTMLElement): void {
-  contentEl.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;align-items:stretch;box-sizing:border-box;padding:8px;font-size:11px;color:rgba(224,224,224,0.7);overflow-y:auto';
-}
+function _bindBrDragEvents(brOrb: HTMLElement, item: FloatingCardItem): void {
+  let pStartX = 0, pStartY = 0;
+  let pDragging = false;
+  let pLPFired = false;
+  let pLPTimer: ReturnType<typeof setTimeout> | null = null;
 
-// ========== 创建浮卡（统一入口）==========
+  brOrb.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    pStartX = e.clientX;
+    pStartY = e.clientY;
+    pDragging = false;
+    pLPFired = false;
 
-export function createFloatingCard(config: FloatingCardConfig): void {
-  const cfg = { ...DEFAULT_CONFIG, ...config } as Required<FloatingCardConfig>;
+    _startFloatingDrag(item, e.clientX, e.clientY, e.pointerId);
 
-  // 创建 DOM
-  const el = document.createElement('div');
-  el.className = 'floating-card';
-
-  const bgLayer = document.createElement('div');
-  bgLayer.style.cssText = [
-    'border-radius:11px', 'width:100%', 'height:100%',
-    'background:' + cardBg(),
-    'backdrop-filter:blur(16px)', '-webkit-backdrop-filter:blur(16px)',
-    'position:relative', 'overflow:hidden',
-  ].join(';');
-
-  const contentEl = document.createElement('div');
-  bgLayer.appendChild(contentEl);
-  el.appendChild(bgLayer);
-
-  const leftRgba = hexToRgba(cfg.accentColor, 1);
-  const rightRgba = hexToRgba(cfg.accentColor, 1);
-
-  const zIndex = cfg.alwaysOnTop ? 9999 : _nextFloatingZ++;
-  // 紧凑/展开尺寸
-  const item: FloatingCardItem = {
-    el, sourceIndex: -1, zIndex, state: 'compact',
-    tlOrb: null, trOrb: null, blOrb: null, brOrb: null,
-    contentEl,
-    cardWidth: cfg.compactWidth,
-    cardHeight: cfg.compactHeight,
-    memW: cfg.activeWidth,
-    memH: cfg.activeHeight,
-    compactW: cfg.compactWidth,
-    compactH: cfg.compactHeight,
-    accentColor: cfg.accentColor,
-    minWidth: cfg.minWidth,
-    minHeight: cfg.minHeight,
-    onDeactivate: cfg.onDeactivate,
-    name: cfg.name,
-  };
-
-  // BR 光球（始终创建。尺寸可配置：普通浮卡=10px，主光球=36px）
-  const brSize = cfg.brOrbSize ?? cornerSize;
-  const brOrb = createDecoratedCorner(
-    cfg.compactWidth - rightOff - brSize,
-    cfg.compactHeight - bottomOff - brSize,
-    brSize, brSize, rightRgba, '');
-  brOrb.style.pointerEvents = 'auto';
-  brOrb.style.cursor = 'pointer';
-  brOrb.classList.add('floating-br-orb');
-  _brOrbToItem.set(brOrb, item);
-  // BR 点击：展开/折叠
-  brOrb.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const onlyBR = !cfg.cornerTL && !cfg.cornerTR && !cfg.cornerBL;
-    if (item.state === 'compact') {
-      item.state = 'expanding';
-      cfg.onPreExpand?.(el);
-
-      anim.to(contentEl, { opacity: 0, duration: 0.1, ease: 'none', onComplete: () => {
-        if (item.contentEl) {
-          _renderActiveLayout(item.contentEl);
-        }
-        cfg.onActivate(contentEl);
-        anim.to(contentEl, { opacity: 1, duration: 0.15, ease: 'none' });
-      }});
-
-      const expW = item.memW;
-      const expH = item.memH;
-      const curLeft = parseFloat(el.style.left) || 0;
-      const curTop = parseFloat(el.style.top) || 0;
-      const curW = item.cardWidth;
-      const curH = item.cardHeight;
-      const MARGIN = 8;
-      const anchorR = curLeft + curW;
-      const anchorB = curTop + curH;
-      const compressedW = Math.max(cfg.minWidth, Math.min(expW, anchorR - MARGIN));
-      const compressedH = Math.max(cfg.minHeight, Math.min(expH, anchorB - MARGIN));
-      const expLeft = anchorR - compressedW;
-      const expTop = anchorB - compressedH;
-
-      // TL/TR/BL 角光球
-      if (cfg.cornerTL) {
-        const tlOrb = createDecoratedCorner(cornerOff, cornerOff, cornerSize, cornerSize, leftRgba, '');
-        tlOrb.style.opacity = '0';
-        el.appendChild(tlOrb);
-        item.tlOrb = tlOrb;
-        anim.to(tlOrb, { opacity: 1, duration: 0.2, ease: 'none' });
-      }
-      if (cfg.cornerTR) {
-        const trOrb = createDecoratedCorner(compressedW - rightOff - cornerSize, cornerOff, cornerSize, cornerSize, rightRgba, '');
-        trOrb.style.opacity = '0';
-        trOrb.style.pointerEvents = 'auto';
-        trOrb.style.cursor = 'pointer';
-        if (onlyBR) {
-          trOrb.addEventListener('click', () => {
-            if (item.state === 'active') {
-              item.state = 'collapsing';
-              _collapseCard(item);
-            }
-          });
-        }
-        el.appendChild(trOrb);
-        item.trOrb = trOrb;
-        anim.to(trOrb, { opacity: 1, duration: 0.2, ease: 'none', delay: 0.05 });
-      }
-      if (cfg.cornerBL) {
-        const blOrb = createDecoratedCorner(cornerOff, expH - bottomOff - cornerSize, cornerSize, cornerSize, leftRgba, '');
-        blOrb.style.opacity = '0';
-        el.appendChild(blOrb);
-        item.blOrb = blOrb;
-        anim.to(blOrb, { opacity: 1, duration: 0.2, ease: 'none', delay: 0.1 });
-      }
-      if (cfg.keepOrbFixed && brOrb) {
-        // 保持光球屏幕位置不变（面板从光球位置展开，光球不移动）
-        const curOrbL = parseFloat(brOrb.style.left) || 0;
-        const curOrbT = parseFloat(brOrb.style.top) || 0;
-        const newOrbL = (curLeft + curOrbL) - expLeft;
-        const newOrbT = (curTop + curOrbT) - expTop;
-        anim.to(brOrb, { left: newOrbL, top: newOrbT, duration: 0.35, ease: 'back.out(1.2)' });
-      } else {
-        const brX = compressedW - rightOff - brSize;
-        const brY = compressedH - bottomOff - brSize;
-        anim.to(brOrb, { left: brX, top: brY, duration: 0.35, ease: 'back.out(1.2)' });
-      }
-
-      anim.to(el, {
-        left: expLeft, top: expTop,
-        width: compressedW, height: compressedH,
-        duration: 0.35, ease: 'back.out(1.2)',
-        onComplete: () => {
-          item.cardWidth = compressedW;
-          item.cardHeight = compressedH;
-          item.state = 'active';
-        },
-      });
-    } else if (item.state === 'active') {
-      item.state = 'collapsing';
-      _collapseCard(item);
-    } else if (onlyBR && item.state === 'editing') {
-      // 只有 BR 光球时，编辑模式点击 BR 退出编辑
-      item.state = _preEditState;
-      item.el.style.boxShadow = theme.stack.blurShadow;
-      const gd = item.brOrb?.firstElementChild as HTMLElement;
-      if (gd && gd.dataset.initBoxShadow !== undefined) {
-        gd.style.boxShadow = gd.dataset.initBoxShadow;
-        delete gd.dataset.initBoxShadow;
-      }
-    }
+    pLPTimer = setTimeout(() => {
+      pLPFired = true;
+      _startFloatingDrag(item, pStartX, pStartY, e.pointerId);
+      _enterFloatingEditMode(item);
+    }, 600);
   });
 
-  el.appendChild(brOrb);
-  item.brOrb = brOrb;
+  document.addEventListener('pointermove', (e) => {
+    if (!pDragging && (Math.abs(e.clientX - pStartX) > FLOATING_DRAG_THRESHOLD || Math.abs(e.clientY - pStartY) > FLOATING_DRAG_THRESHOLD)) {
+      pDragging = true;
+      if (pLPTimer) { clearTimeout(pLPTimer); pLPTimer = null; }
+    }
+    _handleFloatingDragMove(e.clientX, e.clientY, e.pointerId);
+  });
 
-  // 初始内容
-  _renderCompactContent(contentEl, cfg.name);
+  document.addEventListener('pointerup', () => {
+    if (pLPTimer) { clearTimeout(pLPTimer); pLPTimer = null; }
+    if (_dragItem && pLPFired) {
+      _exitFloatingEditMode(_dragItem);
+    }
+    if (_dragItem && !pDragging && !pLPFired) {
+      _dragItem.brOrb?.click();
+    }
+    _dragItem = null;
+    _dragIsDragging = false;
+  }, { once: true });
+}
 
-  // 初始样式
-  const initLeft: number = cfg.initialPosition
-    ? window.innerWidth - cfg.initialPosition.right - cfg.compactWidth
-    : _scatterPosition(_floatingCards.length, cfg.compactWidth, cfg.compactHeight).left;
-  const initTop: number = cfg.initialPosition
-    ? window.innerHeight - cfg.initialPosition.bottom - cfg.compactHeight
-    : _scatterPosition(_floatingCards.length, cfg.compactWidth, cfg.compactHeight).top;
+// ========== 全局文档级拖动监听 ==========
+let _globalDragInitialized = false;
 
-  el.style.cssText = [
-    'position:fixed',
-    'left:' + initLeft + 'px', 'top:' + initTop + 'px',
-    'width:' + cfg.compactWidth + 'px', 'height:' + cfg.compactHeight + 'px',
-    'border-radius:12px', 'padding:1px', 'padding-left:3px',
-    'background:' + cardGradient(0, 0.85),
-    'pointer-events:auto', 'z-index:' + zIndex, 'opacity:1',
-  ].join(';');
+function _ensureGlobalDragListeners(): void {
+  if (_globalDragInitialized) return;
+  _globalDragInitialized = true;
 
-  document.body.appendChild(el);
-  _floatingCards.push(item);
+  document.addEventListener('pointermove', (e) => {
+    _handleFloatingDragMove(e.clientX, e.clientY, e.pointerId);
+  });
 
-  // 输入法避让
-  if (cfg.inputBarAvoid) {
-    initInputBarWatcher(el, () => ({
-      left: parseFloat(el.style.left) || 0,
-      top: parseFloat(el.style.top) || 0,
-    }));
-  }
+  document.addEventListener('pointerup', () => {
+    _endFloatingDrag();
+  });
 
-  // 创建回调
-  cfg.onCreate?.(el);
-  // Registry 注册
-  if (cfg.registryElement) {
-    Registry.registerElement(cfg.registryElement);
-  }
-
-  // AI 命令注册
-  if (cfg.onCommand) {
-    wsChannel.onCommand('card-' + cfg.id + '-activate', (_a, p) => cfg.onCommand!('activate', p));
-  }
-
-  // 内容生成器
-  if (cfg.registryContent) {
-    Registry.registerContentGenerator(cfg.id + '-content', cfg.registryContent);
-  }
-
-  // 发射动画
-  anim.set(el, { scale: 0.8 });
-  anim.to(el, {
-    left: initLeft, top: initTop, scale: 1,
-    duration: 0.4, ease: 'back.out(1.3)',
-    onComplete: () => {
-      item.state = 'compact';
-    },
+  document.addEventListener('pointercancel', () => {
+    _endFloatingDrag();
   });
 }
 
-/** 折叠浮卡内部的动画逻辑 */
-function _collapseCard(item: FloatingCardItem): void {
-  const el = item.el;
-  anim.to(item.contentEl, { opacity: 0, duration: 0.1, ease: 'none', onComplete: () => {
-    if (item.contentEl) {
-      item.onDeactivate?.(item.contentEl);
-      _renderCompactContent(item.contentEl, item.name);
-    }
-    anim.to(item.contentEl, { opacity: 1, duration: 0.15, ease: 'none' });
-  }});
-  const brSvg2 = item.brOrb?.children[1] as HTMLElement;
-  if (brSvg2) brSvg2.innerHTML = '';
-  const expLeft = parseFloat(el.style.left) || 0;
-  const expTop = parseFloat(el.style.top) || 0;
-  const foldW = item.compactW;
-  const foldH = item.compactH;
-  const MARGIN = 8;
-  const expW = item.cardWidth;
-  const expH = item.cardHeight;
-  const anchorRight = expLeft + expW;
-  const anchorBottom = expTop + expH;
-  const clampedFoldW = Math.max(item.compactW || 1, Math.min(foldW, anchorRight - MARGIN));
-  const clampedFoldH = Math.max(item.compactH || 1, Math.min(foldH, anchorBottom - MARGIN));
-  const foldLeft = anchorRight - clampedFoldW;
-  const foldTop = anchorBottom - clampedFoldH;
-  const brX_end = clampedFoldW - rightOff - cornerSize;
-  const brY_end = clampedFoldH - bottomOff - cornerSize;
-  if (item.tlOrb) anim.to(item.tlOrb, { x: brX_end - cornerOff, y: brY_end - cornerOff, duration: 0.3, ease: 'power2.in' });
-  if (item.trOrb) anim.to(item.trOrb, { x: brX_end - (expW - rightOff - cornerSize), y: brY_end - cornerOff, duration: 0.3, ease: 'power2.in' });
-  if (item.blOrb) anim.to(item.blOrb, { x: brX_end - cornerOff, y: brY_end - (expH - bottomOff - cornerSize), duration: 0.3, ease: 'power2.in' });
-  anim.to(el, {
-    left: foldLeft, top: foldTop,
-    width: clampedFoldW, height: clampedFoldH,
-    duration: 0.3, ease: 'power2.in',
-    onUpdate: () => {
-      const w = parseFloat(el.style.width) || foldW;
-      const h = parseFloat(el.style.height) || foldH;
-      if (item.brOrb) {
-        item.brOrb.style.left = (w - rightOff - cornerSize) + 'px';
-        item.brOrb.style.top = (h - bottomOff - cornerSize) + 'px';
-      }
-    },
-    onComplete: () => {
-      item.cardWidth = clampedFoldW;
-      item.cardHeight = clampedFoldH;
-      if (item.brOrb) {
-        item.brOrb.style.left = (clampedFoldW - rightOff - cornerSize) + 'px';
-        item.brOrb.style.top = (clampedFoldH - bottomOff - cornerSize) + 'px';
-      }
-      if (item.tlOrb) { item.tlOrb.remove(); item.tlOrb = null; }
-      if (item.trOrb) { item.trOrb.remove(); item.trOrb = null; }
-      if (item.blOrb) { item.blOrb.remove(); item.blOrb = null; }
-      item.state = 'compact';
-    },
-  });
-}
-
-// ========== 发射浮卡（从卡片堆）==========
+// ========== 发射浮卡 ==========
 
 export function launchFocusedCard(): void {
   animateStackPullFeedback();
@@ -582,34 +405,224 @@ export function launchFocusedCard(): void {
   const cc = getCurrentAccent(focusIdx);
   if (!cc) return;
 
-  createFloatingCard({
-    id: 'card-stack-' + focusIdx + '-' + Date.now(),
-    name: getCardName(focusIdx),
-    compactWidth: 54,
-    compactHeight: 54,
-    activeWidth: 155,
-    activeHeight: 68,
-    minWidth: 54,
-    minHeight: 54,
-    cornerTL: true,
-    cornerTR: true,
-    cornerBL: true,
-    alwaysOnTop: false,
-    inputBarAvoid: false,
+  const el = document.createElement('div');
+  el.className = 'floating-card';
+  el.dataset.index = String(focusIdx);
+
+  // cornerSize/cornerOff/rightOff/bottomOff 已提升为模块级常量
+  const s = orbT.symScale, c = 6 * (1 - s), sh = orbT.symShift;
+
+  // 内层毛玻璃容器
+  const bgLayer = document.createElement('div');
+  bgLayer.style.cssText = [
+    'border-radius:11px', 'width:100%', 'height:100%',
+    'background:' + cardBg(),
+    'backdrop-filter:blur(16px)', '-webkit-backdrop-filter:blur(16px)',
+    'position:relative', 'overflow:hidden',
+  ].join(';');
+  // 内容层：所有展示内容都在这里，过渡时 opacity 淡入淡出
+  const contentEl = document.createElement('div');
+  contentEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:2px 6px;font-size:11px;font-weight:500;color:rgba(224,224,224,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:none';
+  bgLayer.appendChild(contentEl);
+  _renderFloatingContent(contentEl, 'compact', getCardName(focusIdx));
+  el.appendChild(bgLayer);
+
+  // 四角光球颜色：左 color1，右 color2
+  const leftRgba = hexToRgba(cc.color1, 1);
+  const rightRgba = hexToRgba(cc.color2, 1);
+
+  const zIndex = _nextFloatingZ++;
+  const item = {
+    el, sourceIndex: focusIdx, zIndex, state: 'launching',
+    tlOrb: null, trOrb: null, blOrb: null, brOrb: null, contentEl,
+    cardWidth: COMPACT_W, cardHeight: COMPACT_H,
+    compactMemW: COMPACT_W, compactMemH: COMPACT_H,
+    activeMemW: FLOATING_CARD_W, activeMemH: FLOATING_CARD_H,
     accentColor: cc.color2,
-    initialPosition: { right: window.innerWidth - cardRect.left, bottom: window.innerHeight - cardRect.top },
-    onActivate(contentEl) {
-      const cardId = getCardId(focusIdx);
-      if (cardId) getCardHandler(cardId)?.activate?.(contentEl);
-    },
-    onDeactivate(contentEl) {
-      const cardId = getCardId(focusIdx);
-      if (cardId) getCardHandler(cardId)?.deactivate?.(contentEl);
+  } as FloatingCardItem;
+
+  // BR — 紧凑态唯一光球（无图标），点击触发展开
+  const brOrb = createDecoratedCorner(
+    COMPACT_W - rightOff - cornerSize,
+    COMPACT_H - bottomOff - cornerSize, cornerSize, cornerSize, rightRgba, '');
+  brOrb.style.pointerEvents = 'auto';
+  brOrb.style.cursor = 'pointer';
+  brOrb.classList.add("floating-br-orb");
+  _brOrbToItem.set(brOrb, item);
+
+  brOrb.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (item.state === 'compact') {
+      item.state = 'expanding';
+
+      // 内容淡出 → 切换为展开态内容 → 淡入（与展开动画并行）
+      anim.to(contentEl, { opacity: 0, duration: 0.1, ease: 'none', onComplete: () => {
+        if (item.contentEl) {
+          const cardId = getCardId(item.sourceIndex);
+          if (cardId) getCardHandler(cardId)?.activate?.(item.contentEl);
+          _renderFloatingContent(item.contentEl, 'active');
+        }
+        anim.to(contentEl, { opacity: 1, duration: 0.15, ease: 'none' });
+      }});
+
+      // 卡片尺寸动画 + 角落光球渐入
+      const expW = item.activeMemW;
+      const expH = item.activeMemH;
+      const anchorR = parseFloat(el.style.left) + COMPACT_W;
+      const anchorB = parseFloat(el.style.top) + COMPACT_H;
+      const expLeft = Math.max(8, anchorR - expW);
+      const expTop = Math.max(8, anchorB - expH);
+
+      // 创建 TL/TR/BL 光球
+      const tlOrb = createDecoratedCorner(cornerOff, cornerOff, cornerSize, cornerSize, leftRgba, '');
+      tlOrb.style.opacity = '0';
+      el.appendChild(tlOrb);
+      item.tlOrb = tlOrb;
+
+      const trOrb = createDecoratedCorner(expW - rightOff - cornerSize, cornerOff, cornerSize, cornerSize, rightRgba, '');
+      trOrb.style.opacity = '0';
+      el.appendChild(trOrb);
+      item.trOrb = trOrb;
+
+      const blOrb = createDecoratedCorner(cornerOff, expH - bottomOff - cornerSize, cornerSize, cornerSize, leftRgba, '');
+      blOrb.style.opacity = '0';
+      el.appendChild(blOrb);
+      item.blOrb = blOrb;
+
+      const brX = expW - rightOff - cornerSize;
+      const brY = expH - bottomOff - cornerSize;
+      anim.to(el, {
+        left: expLeft, top: expTop,
+        width: expW, height: expH,
+        duration: 0.35, ease: 'back.out(1.2)',
+        onComplete: () => {
+          item.cardWidth = expW;
+          item.cardHeight = expH;
+          item.state = 'active';
+        },
+      });
+      anim.to(brOrb, { left: brX, top: brY, duration: 0.35, ease: 'back.out(1.2)' });
+      anim.to(tlOrb, { opacity: 1, duration: 0.2, ease: 'none' });
+      anim.to(trOrb, { opacity: 1, duration: 0.2, ease: 'none', delay: 0.05 });
+      anim.to(blOrb, { opacity: 1, duration: 0.2, ease: 'none', delay: 0.1 });
+    } else if (item.state === 'active') {
+      item.state = 'collapsing';
+      // 内容淡出 → 切换为紧凑态内容 → 淡入
+      anim.to(item.contentEl, { opacity: 0, duration: 0.1, ease: 'none', onComplete: () => {
+        if (item.contentEl) {
+          const _id = getCardId(item.sourceIndex);
+          if (_id) getCardHandler(_id)?.deactivate?.(item.contentEl);
+          _renderFloatingContent(item.contentEl, 'compact', getCardName(item.sourceIndex));
+        }
+        anim.to(item.contentEl, { opacity: 1, duration: 0.15, ease: 'none' });
+      }});
+
+      // 清除 BR 光球展开态图案
+      const brSvg2 = brOrb.children[1] as HTMLElement;
+      if (brSvg2) brSvg2.innerHTML = '';
+      // 以右下角光球为锚点折叠：卡片向右下缩小
+      const expLeft = parseFloat(el.style.left) || 0;
+      const expTop = parseFloat(el.style.top) || 0;
+      const foldW = item.compactMemW;
+      const foldH = item.compactMemH;
+      const MARGIN_F = 8;
+      const expW = item.cardWidth;
+      const expH = item.cardHeight;
+      // 边界压缩（与展开对称）：折叠后右下角锚点不能超出屏幕
+      // 右下角光球位置（锚点，不动）
+      const anchorRight = expLeft + expW;
+      const anchorBottom = expTop + expH;
+      // 边界压缩：如果折叠后左上角超出屏幕，压缩尺寸（展开对称）
+      const clampedFoldW = Math.max(FLOATING_CARD_W_MIN, Math.min(foldW, anchorRight - MARGIN_F));
+      const clampedFoldH = Math.max(FLOATING_CARD_H_MIN, Math.min(foldH, anchorBottom - MARGIN_F));
+      const foldLeft = anchorRight - clampedFoldW;
+      const foldTop = anchorBottom - clampedFoldH;
+      // TL/TR/BL 偏移到 BR 终点，与卡片折叠同步
+      const brX_end = clampedFoldW - rightOff - cornerSize;
+      const brY_end = clampedFoldH - bottomOff - cornerSize;
+      if (item.tlOrb) anim.to(item.tlOrb, { x: brX_end - cornerOff, y: brY_end - cornerOff, duration: 0.3, ease: 'power2.in' });
+      if (item.trOrb) anim.to(item.trOrb, { x: brX_end - (expW - rightOff - cornerSize), y: brY_end - cornerOff, duration: 0.3, ease: 'power2.in' });
+      if (item.blOrb) anim.to(item.blOrb, { x: brX_end - cornerOff, y: brY_end - (expH - bottomOff - cornerSize), duration: 0.3, ease: 'power2.in' });
+      anim.to(el, {
+        left: foldLeft, top: foldTop,
+        width: clampedFoldW, height: clampedFoldH,
+        duration: 0.3, ease: 'power2.in',
+        onUpdate: () => {
+          const w = parseFloat(el.style.width) || foldW;
+          const h = parseFloat(el.style.height) || foldH;
+          brOrb.style.left = (w - rightOff - cornerSize) + 'px';
+          brOrb.style.top = (h - bottomOff - cornerSize) + 'px';
+        },
+        onComplete: () => {
+          item.cardWidth = clampedFoldW;
+          item.cardHeight = clampedFoldH;
+          brOrb.style.left = (clampedFoldW - rightOff - cornerSize) + 'px';
+          brOrb.style.top = (clampedFoldH - bottomOff - cornerSize) + 'px';
+          if (item.tlOrb) { item.tlOrb.remove(); item.tlOrb = null; }
+          if (item.trOrb) { item.trOrb.remove(); item.trOrb = null; }
+          if (item.blOrb) { item.blOrb.remove(); item.blOrb = null; }
+          item.state = 'compact';
+        },
+      });
+    }
+  });
+  el.appendChild(brOrb);
+  item.brOrb = brOrb;
+
+  // 紧凑态初始样式
+  el.style.cssText = [
+    'position:fixed',
+    'left:' + cardRect.left + 'px', 'top:' + cardRect.top + 'px',
+    'width:' + COMPACT_W + 'px', 'height:' + COMPACT_H + 'px',
+    'border-radius:12px', 'padding:1px', 'padding-left:3px',
+    'background:' + cardGradient(focusIdx, 0.85),
+    'pointer-events:auto', 'z-index:' + zIndex, 'opacity:1',
+  ].join(';');
+
+  document.body.appendChild(el);
+  _ensureGlobalDragListeners();
+
+  const targetPos = _scatterPosition(_floatingCards.length);
+  _floatingCards.push(item);
+  const targetLeft = targetPos.left;
+  const targetTop = targetPos.top;
+
+
+  const LAUNCH_Z_ABOVE_STACK = Z_FLOATING_BASE + getCardCount() + 1;
+  el.style.zIndex = String(LAUNCH_Z_ABOVE_STACK);
+
+  anim.set(el, { scale: 0.8 });
+  anim.to(el, {
+    left: targetLeft, top: targetTop, scale: 1,
+    duration: 0.4, ease: 'back.out(1.3)',
+    onComplete: () => {
+      item.state = 'compact';
     },
   });
 }
 
-// ========== 停用浮卡 ==========
+function _buildExpandedLayout(el: HTMLElement, _cc: { color1: string; color2: string }): void {
+  const item = _floatingCards.find(i => i.el === el);
+  if (!item?.contentEl) return;
+  const cardId = getCardId(item.sourceIndex);
+  const handler = cardId ? getCardHandler(cardId) : undefined;
+  if (handler) {
+    handler.activate(item.contentEl);
+    return;
+  }
+  _renderFloatingContent(item.contentEl, 'active');
+}
+
+/** 在 compact/active 态浮卡上构建内容框架 */
+function _renderFloatingContent(contentEl: HTMLElement, state: 'compact' | 'active', cardName?: string): void {
+  if (state === 'compact') {
+    contentEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:2px 6px;font-size:11px;font-weight:500;color:rgba(224,224,224,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+    contentEl.textContent = cardName || '';
+  } else {
+    contentEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:flex-start;box-sizing:border-box;padding:8px;font-size:11px;color:rgba(224,224,224,0.7);overflow-y:auto';
+  }
+}
+
 
 export function dismissFloatingCard(animated?: boolean, sourceEl?: HTMLElement): void {
   if (sourceEl) {
@@ -635,6 +648,10 @@ function _dismissOne(item: FloatingCardItem, animated?: boolean): void {
   }
   item.state = 'dismissing';
 
+  if (item.contentEl) {
+    const _id = getCardId(item.sourceIndex);
+    if (_id) getCardHandler(_id)?.deactivate?.(item.contentEl);
+  }
   if (animated !== false) {
     anim.to(el, {
       scale: 0.3, opacity: 0, duration: 0.2, ease: 'back.in(1.3)',
@@ -655,9 +672,9 @@ export function hasFloatingCard(): boolean {
   return _floatingCards.length > 0;
 }
 
-// ========== 初始化浮卡引擎 ==========
+// ========== 浮卡初始化 ==========
 
-/** 注册浮卡 BR 光球拖拽手势（gesture-registry 统一管理） */
+/** 注册浮卡的光球拖拽手势（从 card-stack.ts initCardStack 中拆分） */
 export function initFloatingCards(): void {
   const _fRS = orbT.size;
   const _fRH = _fRS / 2;
@@ -680,6 +697,7 @@ export function initFloatingCards(): void {
   function _fSyncCorners(item: FloatingCardItem, w: number, h: number): void {
     const rx = w - _frightOff - _fRS;
     const by = h - _fbottomOff - _fRS;
+    // BR 光球只要有就独立更新（紧缩态下 TL/TR/BL 为 null）
     if (item.brOrb) {
       item.brOrb.style.left = rx + 'px';
       item.brOrb.style.top = by + 'px';
@@ -730,8 +748,10 @@ export function initFloatingCards(): void {
         _fStartCardT = parseFloat(_fItem.el.style.top) || 0;
         _fStartCardW = _fItem.cardWidth;
         _fStartCardH = _fItem.cardHeight;
+        // 保存光球初始光晕，退出时恢复
         const glowDiv = orbEl.firstElementChild as HTMLElement;
         if (glowDiv) glowDiv.dataset.initBoxShadow = glowDiv.style.boxShadow;
+        // 编辑模式光晕（复刻 orb.ts panelShadowEdit，用 accentColor + 半透明）
         const editGlow = hexToRgba(_fItem.accentColor, 0.25);
         _fItem.el.style.boxShadow = '0 0 24px 8px ' + editGlow + ', 0 8px 32px rgba(0,0,0,0.5)';
       }, 600);
@@ -750,35 +770,47 @@ export function initFloatingCards(): void {
       if (!orbEl) return;
 
       if (_fItem.state === 'editing') {
+        // 编辑模式：卡片左上角固定，BR光球当缩放手柄
         const rawX = _fStartOrbX + dx;
         const rawY = _fStartOrbY + dy;
         const clamped = _fClamp(rawX, rawY);
-        const minX = _fStartCardL + (_fItem.minWidth || 54) - _frightOff - _fRS;
-        const minY = _fStartCardT + (_fItem.minHeight || 54) - _fbottomOff - _fRS;
+        const minX = _fStartCardL + FLOATING_CARD_W_MIN - _frightOff - _fRS;
+        const minY = _fStartCardT + FLOATING_CARD_H_MIN - _fbottomOff - _fRS;
         const ox = Math.max(minX, clamped.x);
         const oy = Math.max(minY, clamped.y);
 
-        const newW = Math.max(_fItem.minWidth || 54, ox - _fStartCardL + _frightOff + _fRS);
-        const newH = Math.max(_fItem.minHeight || 54, oy - _fStartCardT + _fbottomOff + _fRS);
+        const newW = Math.max(FLOATING_CARD_W_MIN, ox - _fStartCardL + _frightOff + _fRS);
+        const newH = Math.max(FLOATING_CARD_H_MIN, oy - _fStartCardT + _fbottomOff + _fRS);
         _fItem.el.style.width = newW + 'px';
         _fItem.el.style.height = newH + 'px';
         _fItem.cardWidth = newW;
         _fItem.cardHeight = newH;
-        _fItem.memW = newW;
-        _fItem.memH = newH;
+        if (_fPreEdit === 'compact') {
+          _fItem.compactMemW = newW;
+          _fItem.compactMemH = newH;
+        } else {
+          _fItem.activeMemW = newW;
+          _fItem.activeMemH = newH;
+        }
         _fSyncCorners(_fItem, newW, newH);
       } else {
+        // 普通拖动：复刻 orb.ts 的 updatePanelPosition 逻辑
+        // 光球位置约束
         const rawX = _fStartOrbX + dx;
         const rawY = _fStartOrbY + dy;
         const clamped = _fClamp(rawX, rawY);
 
+        // 光球中心
         const orbCX = clamped.x + _fRH;
         const orbCY = clamped.y + _fRH;
 
+        // 边界压缩：可用空间 = 光球中心到屏幕左/上的距离
         const availLeft = orbCX - _fMARGIN;
         const availTop = orbCY - _fMARGIN;
-        const renderW = Math.max(0, Math.min(_fStartCardW, availLeft));
-        const renderH = Math.max(0, Math.min(_fStartCardH, availTop));
+        const renderW = Math.max(FLOATING_CARD_W_MIN, Math.min(_fStartCardW, availLeft));
+        const renderH = Math.max(FLOATING_CARD_H_MIN, Math.min(_fStartCardH, availTop));
+
+        // 卡片定位：右下角对齐光球中心
         const left = Math.max(_fMARGIN, orbCX - renderW);
         const top = Math.max(_fMARGIN, orbCY - renderH);
         _fItem.el.style.left = left + 'px';
@@ -796,6 +828,7 @@ export function initFloatingCards(): void {
         if (_fItem.state === 'editing') {
           _fItem.state = _fPreEdit;
           _fItem.el.style.boxShadow = theme.stack.blurShadow;
+          // 恢复光球初始光晕
           const gd = _fItem.brOrb?.firstElementChild as HTMLElement;
           if (gd && gd.dataset.initBoxShadow !== undefined) {
             gd.style.boxShadow = gd.dataset.initBoxShadow;

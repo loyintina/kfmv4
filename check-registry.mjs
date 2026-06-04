@@ -19,7 +19,8 @@ const SRC_DIR = 'src';
 // 新增交互元素时，同时在此数组追加对应 id。
 // id 必须与 Registry.register({ id: '...' }) 中的值一致。
 const ELEMENT_MANIFEST = [
-  'orb',                  // orb-card.ts — AI 对话浮卡
+  'orb',                  // orb.ts — AI 对话光球
+  'orb-panel',            // orb.ts — AI 对话面板（光球展开后）
   'sidebar',              // ui.ts — 文件树侧栏
   'sidebar-toggle-btn',   // app.ts — 侧栏召唤按钮
   'card-stack-toggle-btn', // app.ts — 卡片堆召唤按钮
@@ -52,7 +53,7 @@ const CAPABILITY_MANIFEST = [
 // 不在列表中 = 必须有 data-registry-id（否则 AI 无法定位）。
 // Canvas 渲染、动态 DOM、或纯视觉反馈的元素在此声明豁免，并注明理由。
 const NO_DOM_TARGET = new Set([
-  'orb',             // 动态 DOM（浮卡引擎创建），通过 expand/collapse-orb 命令操作
+  'orb-panel',       // 动态 DOM（展开后创建），通过 expand-orb 命令操作
   'card-stack',      // 动态 DOM（GSAP 创建），通过 open/close-card-stack 命令
   'file-tree',       // Canvas 渲染，无 DOM 可点击
   'operation-toast', // 纯视觉反馈 toast，非交互元素，AI 不可点击
@@ -61,8 +62,7 @@ const NO_DOM_TARGET = new Set([
 // 匹配 Registry.register({...}) 或 Registry.registerElement({...}, getter)
 // 兼容多行参数和多行 getter 回调
 const REGISTER_CALL_RE = /Registry\.register(?:Element)?\s*\(\s*\{[\s\S]*?id:\s*'([^']+)'/g;
-// 匹配 createFloatingCard({ registryElement: { id: '...' } })
-const REGISTRY_ELEMENT_INLINE_RE = /registryElement:\s*\{[\s\S]*?id:\s*'([^']+)'/g;
+
 // 匹配 Registry.registerContent({ id: '...' })
 const CONTENT_OBJ_RE = /Registry\.registerContent\s*\(\s*\{[\s\S]*?id:\s*'([^']+)'/g;
 // 匹配 Registry.registerContentGenerator('id', ...)
@@ -251,9 +251,6 @@ function checkOrphanGetters() {
     while ((match = REGISTER_CALL_RE.exec(content)) !== null) {
       registeredElements.add(match[1]);
     }
-    while ((match = REGISTRY_ELEMENT_INLINE_RE.exec(content)) !== null) {
-      registeredElements.add(match[1]);
-    }
     while ((match = STATEGETTER_CALL_RE.exec(content)) !== null) {
       stateGetterIds.add(match[1]);
     }
@@ -304,11 +301,8 @@ function check() {
     const content = readFileSync(absPath, 'utf-8');
     let match;
 
-    // 扫描交互元素注册（直接注册 + 间接通过 createFloatingCard）
+    // 扫描交互元素注册
     while ((match = REGISTER_CALL_RE.exec(content)) !== null) {
-      registeredElements.add(match[1]);
-    }
-    while ((match = REGISTRY_ELEMENT_INLINE_RE.exec(content)) !== null) {
       registeredElements.add(match[1]);
     }
 

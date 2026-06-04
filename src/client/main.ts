@@ -26,7 +26,7 @@ declare global {
 import { initApp } from './modules/app.js';
 import { initUI } from './modules/ui.js';
 import { initGestures } from './modules/gestures.js';
-import { initOrbCard } from './modules/orb-card.js';
+import { initOrb } from './modules/orb.js';
 import { initTreeRenderer } from './modules/tree-render.js';
 import { loadFileTree, initLazyLoader } from './modules/tree-loader.js';
 import { initCardStack } from './modules/card-stack.js';
@@ -44,10 +44,12 @@ gestures.init();
 initApp();
 initUI();
 initGestures();
+initOrb();
 initTreeRenderer();
 initCardStack();
-initOrbCard();
 initFloatingCards();
+
+// ========== 注册能力层 ==========
 // entry 字段与 capability-executor.ts 中的 id 保持一致，指向实际执行入口
 Registry.registerCapability({
   id: 'file-search',
