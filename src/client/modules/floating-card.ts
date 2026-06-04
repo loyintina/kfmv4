@@ -111,17 +111,16 @@ interface FloatingCardItem {
   contentEl: HTMLElement | null;
   cardWidth: number;
   cardHeight: number;
-  compactMemW: number;
-  compactMemH: number;
-  activeMemW: number;
-  activeMemH: number;
+  memW: number;             // 记忆尺寸（编辑模式更新，展开时使用）
+  memH: number;
+  compactW: number;          // 设计紧凑尺寸（不变）
+  compactH: number;
   accentColor: string;
   minWidth: number;
   minHeight: number;
   onDeactivate?: (contentEl: HTMLElement) => void;
   name: string;
 }
-
 let _floatingCards: FloatingCardItem[] = [];
 let _nextFloatingZ = Z_FLOATING_BASE;
 const _brOrbToItem = new WeakMap<HTMLElement, FloatingCardItem>();
@@ -326,20 +325,17 @@ export function createFloatingCard(config: FloatingCardConfig): void {
   const rightRgba = hexToRgba(cfg.accentColor, 1);
 
   const zIndex = cfg.alwaysOnTop ? 9999 : _nextFloatingZ++;
-
-  // 紧凑/展开尺寸记忆
-  const compactMemW = cfg.compactWidth;
-  const compactMemH = cfg.compactHeight;
-
+  // 紧凑/展开尺寸
   const item: FloatingCardItem = {
     el, sourceIndex: -1, zIndex, state: 'compact',
     tlOrb: null, trOrb: null, blOrb: null, brOrb: null,
     contentEl,
     cardWidth: cfg.compactWidth,
     cardHeight: cfg.compactHeight,
-    compactMemW, compactMemH,
-    activeMemW: cfg.activeWidth,
-    activeMemH: cfg.activeHeight,
+    memW: cfg.activeWidth,
+    memH: cfg.activeHeight,
+    compactW: cfg.compactWidth,
+    compactH: cfg.compactHeight,
     accentColor: cfg.accentColor,
     minWidth: cfg.minWidth,
     minHeight: cfg.minHeight,
@@ -373,8 +369,8 @@ export function createFloatingCard(config: FloatingCardConfig): void {
         anim.to(contentEl, { opacity: 1, duration: 0.15, ease: 'none' });
       }});
 
-      const expW = item.activeMemW;
-      const expH = item.activeMemH;
+      const expW = item.memW;
+      const expH = item.memH;
       const curLeft = parseFloat(el.style.left) || 0;
       const curTop = parseFloat(el.style.top) || 0;
       const curW = item.cardWidth;
@@ -529,20 +525,19 @@ function _collapseCard(item: FloatingCardItem): void {
     }
     anim.to(item.contentEl, { opacity: 1, duration: 0.15, ease: 'none' });
   }});
-
   const brSvg2 = item.brOrb?.children[1] as HTMLElement;
   if (brSvg2) brSvg2.innerHTML = '';
   const expLeft = parseFloat(el.style.left) || 0;
   const expTop = parseFloat(el.style.top) || 0;
-  const foldW = item.compactMemW;
-  const foldH = item.compactMemH;
+  const foldW = item.compactW;
+  const foldH = item.compactH;
   const MARGIN = 8;
   const expW = item.cardWidth;
   const expH = item.cardHeight;
   const anchorRight = expLeft + expW;
   const anchorBottom = expTop + expH;
-  const clampedFoldW = Math.max(item.compactMemW || 1, Math.min(foldW, anchorRight - MARGIN));
-  const clampedFoldH = Math.max(item.compactMemH || 1, Math.min(foldH, anchorBottom - MARGIN));
+  const clampedFoldW = Math.max(item.compactW || 1, Math.min(foldW, anchorRight - MARGIN));
+  const clampedFoldH = Math.max(item.compactH || 1, Math.min(foldH, anchorBottom - MARGIN));
   const foldLeft = anchorRight - clampedFoldW;
   const foldTop = anchorBottom - clampedFoldH;
   const brX_end = clampedFoldW - rightOff - cornerSize;
@@ -639,11 +634,7 @@ function _dismissOne(item: FloatingCardItem, animated?: boolean): void {
     return;
   }
   item.state = 'dismissing';
-  if (item.contentEl) {
-    // 尝试通过 card-stack 的 handler 清理
-    const _id = getCardId?.(item.sourceIndex);
-    if (_id) getCardHandler?.(_id)?.deactivate?.(item.contentEl);
-  }
+
   if (animated !== false) {
     anim.to(el, {
       scale: 0.3, opacity: 0, duration: 0.2, ease: 'back.in(1.3)',
@@ -773,13 +764,8 @@ export function initFloatingCards(): void {
         _fItem.el.style.height = newH + 'px';
         _fItem.cardWidth = newW;
         _fItem.cardHeight = newH;
-        if (_fPreEdit === 'compact') {
-          _fItem.compactMemW = newW;
-          _fItem.compactMemH = newH;
-        } else {
-          _fItem.activeMemW = newW;
-          _fItem.activeMemH = newH;
-        }
+        _fItem.memW = newW;
+        _fItem.memH = newH;
         _fSyncCorners(_fItem, newW, newH);
       } else {
         const rawX = _fStartOrbX + dx;
