@@ -44,12 +44,10 @@ gestures.init();
 initApp();
 initUI();
 initGestures();
-initOrbCard();
 initTreeRenderer();
 initCardStack();
+initOrbCard();
 initFloatingCards();
-
-// ========== 注册能力层 ==========
 // entry 字段与 capability-executor.ts 中的 id 保持一致，指向实际执行入口
 Registry.registerCapability({
   id: 'file-search',
