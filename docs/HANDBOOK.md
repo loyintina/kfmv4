@@ -2,10 +2,8 @@
 
 > **日常开发参考**。改代码前先读 `KFM_V4_INVARIANTS.md`（修改约束协议），
 > 规划设计时参考 `VISION_AND_ROADMAP.md`（远景文档）。
+> 做浮卡统一化时参考 `CARD_SYSTEM_UNIFICATION_SPEC.md`（浮卡系统统一化规范）。
 > 本手册整合了架构速查、调试流程、隐性契约、当前状态、待办和测试指南。
-
-> ⏱ **TL;DR**：本文约 350 行，分六章。新接手者重点读 §2（当前状态）+ §3（待办）；
-> 遇到 bug 读 §4；写代码前读 §6（原则索引）；架构疑问读 §1。
 
 ---
 
@@ -52,17 +50,18 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
         → initTreeRenderer() → loadFileTree() → initLazyLoader() → initCardStack()
 ```
 
----
-
 ## 二、当前会话状态
 
-> **最后更新**：2026-06-03（v6.3.1 — 第三轮 Registry 深度审计 + 心法 LEVEL 分类 + CI 基线固化）
+> **最后更新**：2026-06-03（v6.3.1 — 新一轮周期开始）
 
 ### 当前焦点
-### v6.3.x 新增（三轮审计 + CI 基线固化）
-- 第三轮深度审计发现 6 个新问题全部修复（state getter 异常保护、`registerContentGenerator(id, null)` crash、命令重复注册静默覆盖、孤立 getter 检测、`registerElement` 双发 onChange、click 失败 toast 反馈）✅
-- 心法原则加 LEVEL 1/2/3 分类，附冲突处理规则 ✅
-- CI 基线固化：`check-registry.mjs` 新增孤立 getter 检测 + 命令注册重复检测 ✅
+**浮卡系统统一化**（见 `CARD_SYSTEM_UNIFICATION_SPEC.md`）
+- 三轮深度审计全部完成，spec-vs-code 缺口收窄到 typo 级
+- `(as any)` 零逃逸（白名单清空）
+- CI 基线固化（check-registry.mjs 三层验证 + 孤立 getter 检测 + 命令重复检测）
+- CARDS 数组迁移为访问函数
+- card-stack.ts 拆分为面板 + 浮卡两个文件
+
 - 消除 `SAFE_ROOT`/`sanitizePath` 在 `index.ts` 和 `capability-executor.ts` 间的重复定义 ✅
 - `_` 前缀跨模块访问显式接口化：`RendererLifecycle` 新增 8 个方法 + `animElapsed` getter ✅
 - `orb-panel` 静态 state 从 `'collapsed'` 更正为 `'closed'`（与运行时 `panelState` 类型一致）✅
@@ -119,10 +118,11 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 
 | 优先级 | 事项 | 说明 |
 |--------|------|------|
-| **🟠 P2** | 拆分 `card-stack.ts`（1392 行） | 面板 ~400 行 + 浮卡 ~900 行两职责混合，v6.3.x 审计净增 ~40 行 |
+| **🔴 P0** | 浮卡系统统一化 | `orb.ts` 整体删除，所有浮卡由 `floating-card.ts` 引擎 + 配置创建。见 `CARD_SYSTEM_UNIFICATION_SPEC.md` |
+| **🟠 P2** | `CARDS` 数组迁移 | ✅ 已完成 |
+| **🟠 P2** | 拆分 `card-stack.ts` | ✅ 已完成 |
 
 ### 持续观察
-
 - 测试基础设施脆弱（GSAP mock 失真，无 UI/Canvas/手势覆盖）
 - orb / card-stack 拖动逻辑重复（各自实现 pointerdown/move/up 循环）
 ### 历史版本归档

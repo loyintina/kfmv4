@@ -1,19 +1,26 @@
 ---
-status: relocated
-relocated_to: docs/UI_ELEMENT_REGISTRY_SPEC.md
-note: 此文档被误归档，已恢复为活跃文档。详见 docs/UI_ELEMENT_REGISTRY_SPEC.md
+status: active
+version: v1.2
 ---
-
-> **⚠️ 归档文档，非当前版本。**
-> 活跃版本在 `docs/UI_ELEMENT_REGISTRY_SPEC.md`（包含 §S 产出定义 + §1-§10 设计讨论 + 最新 v1.1 更新）。
-> 本文保留在此仅用于追溯设计演进历史，**不应用于指导代码修改**。
-
 # UI Element Registry 设计讨论
 
-> **版本**：v1.0（§S 已实现）
-> **状态**：§S（产出定义）已于 2026-06-02 实现。代码见 `src/client/modules/ui-registry.ts`，
+> **版本**：v1.2
+> **状态**：§S（产出定义）已实现，历经三轮代码审计（v6.3.x）后 spec-vs-code 缺口已收窄到 typo 级。§5 开放问题已全部解决。
 > MANIFEST 验证见 `check-registry.mjs`，已挂入 `npm run check` 管线。
 > §1-§9 的设计讨论仍为有效参考，开放问题（§5）待后续 agent 继续讨论。
+>
+|> **v1.1→v1.2 变更（2026-06-03，v6.3.x 审计周期）**：
+|> - 三轮 Registry 审计完成（doc-code 对齐、三方对照、深度审计），6 项偏差 + 6 个新问题全部修复
+|> - 新增 `registerElement()` 便捷方法，推荐替代 `register()` + `registerStateGetter()` 两步法
+|> - `check-registry.mjs` 新增参数完整性校验、孤立 getter 检测、data-registry-id 交叉验证、命令重复检测
+|> - 消除能力层 `entry` 硬编码，`capability-executor.ts` 路径逃逸守卫
+|> - §5 所有开放问题（通信通道、内容层动态化、能力层绑定、状态获取）均已实现
+|>
+> **v1.0→v1.1 变更（2026-06-02）**：
+> - 新增 `file-tree` 交互元素，`tree-render.ts` 接入 Registry
+> - `notifyStateChange` 覆盖补全：`operation-toast`、`orb-panel`、`file-tree`
+> - `check-registry.mjs` 扩展为三层 MANIFEST 验证（交互层 + 内容层 + 能力层）
+> - 修复 `orb-panel` 缺少独立状态通知的问题
 >
 > **关联文档**：
 > - `KFM_V4_INVARIANTS.md` — 本项目修改约束协议（本讨论引用的不变量来源）
@@ -124,7 +131,7 @@ Registry 产出的 snapshot（页面描述）不是一个"给 AI 看的静态报
 
 | 文件 | 用途 | 行数估计 |
 |------|------|---------|
-| `src/client/modules/ui-registry.ts` | Registry 类 + 全部类型定义 | ~80 行 |
+| `src/client/modules/ui-registry.ts` | Registry 类 + 全部类型定义 | ~253 行 |
 | 各 `init*()` 函数中加 1 行 `Registry.register(...)` | 注册具体元素 | 每元素 +1 行 |
 | `src/server/ai-tools.ts` | 将 snapshot 包装为 AI 可调用的 tool | ~50 行 |
 
@@ -140,14 +147,22 @@ Registry 产出的 snapshot（页面描述）不是一个"给 AI 看的静态报
 type UIElementType = 'button' | 'text-input' | 'floating-button'
                      | 'floating-card' | 'panel' | 'icon';
 
+/** 元素运行时状态（snapshot 时通过 getter 实时获取） */
+type UIElementState = 'collapsed' | 'expanded' | 'compact' | 'active'
+                    | 'inactive' | 'editing' | 'focused' | 'open'
+                    | 'opening' | 'closed' | 'closing' | 'visible'
+                    | 'hidden' | 'enabled';
+
 interface InteractiveElement {
   id: string;
   type: UIElementType;
   label: string;
   description: string;
-  state?: string;
+  state?: UIElementState;
   enabled: boolean;
+  /** 操作此元素后的预期效果（供 AI 理解操作后果） */
   effect: string;
+  /** 引用来源：该元素在哪个模块定义 */
   source?: string;
 }
 
@@ -155,8 +170,10 @@ interface InteractiveElement {
 
 interface ContentBlock {
   id: string;
-  type: string;
+  type: 'file-tree' | 'card-content' | 'text-output' | 'status-bar';  // 'status-bar' 当前未使用（v1.1）
   summary: string;
+  /** 详细内容（可选 —— 可能很大，需要单独请求） */
+  detail?: string | Record<string, unknown>;
 }
 
 // ========= 能力层（AI 能调用的扩展操作） =========
@@ -181,7 +198,7 @@ interface PageDescription {
 
 **不包含**以下在原提案中讨论过但已否定的字段/方法：
 ❌ `action()` — 不通过 Registry 操作 UI
-❌ `updateState()` — 状态留在各模块自己手里
+❌ `updateState()` — 状态留在各模块自己手里（改用 registerStateGetter 回调）
 ❌ `epoch` — 已删除
 ❌ `bounds` — 已删除（v1 不考虑）
 
@@ -190,13 +207,32 @@ interface PageDescription {
 ```typescript
 class UIElementRegistry {
   register(el: InteractiveElement): void;
+  /** 便捷方法：一次完成 register + registerStateGetter。推荐使用，避免遗漏配对。 */
+  registerElement(el: InteractiveElement, getter?: () => UIElementState): string;
   unregister(id: string): void;
+  registerStateGetter(id: string, getter: () => UIElementState): void;
   registerContent(block: ContentBlock): void;
+  registerContentGenerator(id: string, generator: () => ContentBlock): void;
   registerCapability(cap: Capability): void;
+  notifyStateChange(id?: string): void;
   snapshot(): PageDescription;
+  get(id: string): InteractiveElement | undefined;
+  getRegisteredIds(): string[];
+  getCapabilities(): Capability[];
+  onChange(handler: RegistryChangeHandler): () => void;
   validate(manifest: string[]): string[];
 }
 ```
+
+> **方法说明**：
+> - `registerElement()` — 便捷方法，一次调用完成 `register()` + `registerStateGetter()`。推荐用于所有动态交互元素，避免遗漏配对。不传 getter 时等价于 `register()`。
+> - `registerStateGetter()` — 可选的状态获取器。注册后 `snapshot()` 会调用 getter 获取实时 state，代替注册时的静态值。如果元素的 `state` 会在运行时变化，必须在 `register()` 之后立即调用此方法，或直接使用 `registerElement()`。
+> - `notifyStateChange()` — 通知 Registry 某个元素的状态发生了变化。各模块在 state getter 追踪不到的关键状态变化处调用，确保 ws-channel 能自动推送最新 snapshot。
+> - `get()` — 按 id 查询单个元素（返回实时状态）。
+> - `getRegisteredIds()` — 返回所有已注册的交互元素 id 列表（供 MANIFEST 验证用）。
+> - `getCapabilities()` — 返回所有已注册的能力列表（类型安全的替代 `_capabilities` 私有属性访问）。
+> - `registerContentGenerator()` — 内容生成器。注册一个回调函数，`snapshot()` 调用它获取实时内容块。与 `registerContent()` 的区别：后者注册一次性静态值，前者注册实时生成函数。如果同一 id 同时有静态内容和生成器，生成器优先。
+> - `onChange()` — 注册变更回调。当 Registry 内容（元素/内容/能力）发生变化时通知。返回一个取消注册函数。供 `ws-channel` 等模块监听变化自动推送 snapshot。
 
 ### S.4 注册方式
 
@@ -204,7 +240,8 @@ class UIElementRegistry {
 
 ```typescript
 // 举例：orb.ts 的 initOrb() 函数末尾
-Registry.register({
+// 推荐使用 registerElement() 便捷方法，自动配对 register + registerStateGetter
+Registry.registerElement({
   id: 'orb',
   type: 'floating-button',
   label: '光球',
@@ -213,63 +250,74 @@ Registry.register({
   enabled: true,
   effect: '点击后展开光球，显示 AI 输入框',
   source: 'orb.ts'
-});
+}, () => orbState);
+// 纯静态元素（state 不会变化）可以只用 register():
+// Registry.register({ id: 'static-btn', ... });
 ```
 
-模块不存储注册后的引用，不调 `updateState()`，不知道自己被注册了。
+模块通过 `Registry.registerElement()` 显式宣告自己的存在，但不存储注册后的引用，不调 `updateState()`。注册是轻耦合的单向宣告——Registry 不反向 import 模块，模块也不需要管理注册后的生命周期。
+
+> **重要约定**：
+> 1. **推荐使用 `registerElement()` 便捷方法**，它一次完成 `register()` + `registerStateGetter()`，避免遗忘配对。如果元素的 `state` 会在运行时变化（绝大多数交互元素如此），必须使用 `registerElement()` 或分别调用 `register()` + `registerStateGetter()`。纯静态元素（state 永远不变）可以只用 `register()`。
+> 2. 对于 state getter 无法覆盖的异步状态变化（如 GSAP 动画回调中的状态切换），在状态变化处调用 `Registry.notifyStateChange(id)`，触发 onChange 回调自动推送 snapshot。
 
 ### S.5 强制验证机制
 
 > **不注册 = 构建中断。**
 
-在 `npm run check`（或 `build.mjs`）中加一段验证：
+在 `npm run check`（或 `build.mjs`）中挂入 `check-registry.mjs`，通过正则扫描源码提取所有 `Registry.register()` / `Registry.registerElement()` 中的 id，与硬编码的权威清单 MANIFEST 对比。缺失则中断构建。
 
-```typescript
-// 权威清单——新增 UI 元素时，同时在清单里加 id
-const MANIFEST = [
-  'orb',
-  'sidebar-toggle',
-  'input-bar',
-  // ... 新增元素追加在这里
+MANIFEST 清单（完整列表见 `check-registry.mjs`）：
+
+```
+ELEMENT_MANIFEST = [          // 交互层（13 个）
+  'orb', 'orb-panel', 'sidebar',
+  'sidebar-toggle-btn', 'card-stack-toggle-btn', 'close-sidebar-btn',
+  'eye-btn', 'card-stack', 'input-bar', 'operation-toast', 'file-tree',
+  'overlay', 'ai-send-btn',
 ];
-
-const missing = Registry.validate(MANIFEST);
-if (missing.length > 0) {
-  console.error(`[ui-registry] 以下元素未注册：${missing.join(', ')}`);
-  process.exit(1);
-}
+CONTENT_MANIFEST = [          // 内容层（3 个）
+  'file-tree', 'card-stack-content', 'orb-chat',
+];
+CAPABILITY_MANIFEST = [       // 能力层（3 个）
+  'file-search', 'file-read', 'file-write',
+];
 ```
 
+> 实现方式为 **构建时正则扫描**（Node.js 脚本），非运行时调用 `Registry.validate()`。
+> 后者作为实例方法保留在 `ui-registry.ts` 中，供编程查询使用。
+
 **新增一个交互元素必须完成两件事**，缺一不可：
-1. 在模块的 `init*()` 中加 `Registry.register(...)`
-2. 在 `MANIFEST` 数组中加对应的 id
+1. 在模块的 `init*()` 中加 `Registry.registerElement(...)`（或 `Registry.register(...)`）
+2. 在 `check-registry.mjs` 的 `ELEMENT_MANIFEST` 中加对应的 id
 
 漏掉任一步 → `npm run check` 失败。
-
 此机制与 `check-as-any.mjs` 的白名单模式完全相同——清单本身就是强制契约。
-
 ### S.6 未来加功能时的代码增量
 
-| 场景 | 需要改的文件 | 行数 |
-|------|------------|------|
-| 新增一个按钮 | 按钮的模块（+1 行 register）+ MANIFEST（+1 行 id）| +2 |
-| 新增一个浮卡 | card-stack.ts（+1 行 register）+ MANIFEST（+1 行 id）| +2 |
-| 新增一个扩展能力 | 能力模块导出 + registry.registerCapability + MANIFEST | +3 |
-| 不需要注册的情况 | 纯视觉元素、非交互的 Canvas 内部元素 | 0 |
+> **注意**：以下行数为最小估算，实际增量因元素复杂度而异。使用 `registerElement()` 便捷方法时，模块内的增量约 6-8 行（含 element 字面量和 inline getter）；如用原始的 `register()` + `registerStateGetter()` 两步法则多 2-3 行。`notifyStateChange` 调用视状态变化路径数而定（通常 1-3 处）。
 
-> **线性增长，步长固定。** 不存在"新增一个功能要改三个文件以上"的情况。
+场景 | 最小行数 | 典型行数 | 需要改的文件 |
+----|---------|---------|------------|
+ 新增一个静态按钮（state 不变） | +8 | ~8 | 模块（7 行 registerElement）+ MANIFEST（1 行 id）|
+ 新增一个动态按钮（state 变化） | +10 | ~12 | 模块（7+1 行 registerElement 含 getter）+ MANIFEST（1 行）+ notifyStateChange |
+ 新增一个浮卡 | +12 | ~15 | card-stack.ts（registerElement 含 getter）+ MANIFEST + notifyStateChange |
+ 新增一个扩展能力 | +3 | +3 | 能力注册 + MANIFEST |
+ 不需要注册的情况 | 0 | 0 | 纯视觉元素、非交互的 Canvas 内部元素 |
 
 ## §2 架构：Registry 作为索引（提议方案）
 
-### 2.1 核心原则：零耦合
+### 2.1 核心原则：轻耦合
 
 Registry 的设计原则：
 
-- **模块不知道 Registry 的存在。** 模块不需要调 `register()`、不需要调 `updateState()`、不需要知道"我注册了没有"。Registry 不依赖任何业务模块，业务模块也不依赖 Registry。
-- **Registry 是一个被动索引。** 它不监听任何事件、不订阅任何状态变化、不拦截任何操作。
-- **Registry 只在被查询时工作。** 没有 rAF 回调、没有定时器、没有订阅者。
+- **模块通过轻量回调注册自身。** 模块在 `init*()` 末尾调 `Registry.registerElement({...}, getter?)` 宣告自己的存在——推荐使用便捷方法自动配对 register + stateGetter。这是模块对 Registry 的唯一感知：模块不需要知道 snapshot 机制、不需要调 `updateState()`、不需要管理注册后的生命周期。
+- **Registry 是一个被动索引。** 它不监听任何事件、不订阅任何状态变化、不拦截任何操作。它只在 `snapshot()` 被调用时通过 getter 回调读取模块的实时状态。
+- **Registry 只在被查询时工作。** 没有 rAF 回调、没有定时器、没有订阅者。`onChange` 回调是外部监听方（如 ws-channel）注册的，不是 Registry 自身发起的。
 
-这意味着什么：如果你删掉 Registry，**现有代码零行改动**。它完全是一层添加在之上的描述层。
+这与 v0.2 讨论中提出的"模块零耦合"理想目标不完全一致——实践证明模块至少需要一行 `register()` 来宣告存在。但耦合极轻：仅一个 id + 一组元数据 + 可选 getter 回调。**这种"轻耦合"是 §5.1 方案 B（模块注册回调）经过讨论后的有意选择。**
+
+> **关于"删掉 Registry 零行改动"**：这是 v0.2 讨论阶段提出的理想目标，实际实现中由于模块显式调用 `register()`，删除 Registry 会导致 6 个模块的编译错误。这种显式注册是故意设计的——它让每个 UI 元素的注册点在源码中肉眼可见，降低了 onboarding 和调试的心智负担。
 
 ### 2.2 三层模型
 
@@ -307,7 +355,7 @@ interface InteractiveElement {
   type: 'button' | 'text-input' | 'floating-button' | 'floating-card' | 'panel' | 'icon';
   label: string;        // 人类可读的名称
   description: string;  // 简短描述（供 AI 理解用途）
-  state?: 'collapsed' | 'expanded' | 'compact' | 'active' | 'editing' | 'focused' | 'open' | 'closed';
+  state?: 'collapsed' | 'expanded' | 'compact' | 'active' | 'inactive' | 'editing' | 'focused' | 'open' | 'opening' | 'closed' | 'closing' | 'visible' | 'hidden' | 'enabled';
   enabled: boolean;
   /** 操作此元素后的预期效果（供 AI 理解操作后果） */
   effect: string;        // 如 "点击后展开光球，显示 AI 输入框"
@@ -336,31 +384,24 @@ interface Capability {
   id: string;
   name: string;
   description: string;
-  parameters: ParameterDef[];  // 参数定义
+  parameters: { name: string; type: string }[];  // 参数定义
   /** 能力对应的调用入口 */
-  entry: string;               // 如 "server.searchFiles", "KFMState.toggleExpanded"
+  entry: string;               // 如 "capability-executor:file-search", "capability-executor:file-read"
 }
 ```
 
 ### 2.3 Registry API（索引类）
+完整 API 列表见 §S.3（已定稿）。此处仅强调关键设计点：
 
 ```typescript
 class UIElementRegistry {
   // 注册一个交互元素（由各模块在初始化时调用）
   register(element: InteractiveElement): void;
 
-  // 注销（元素不再存在时）
-  unregister(id: string): void;
-
   // 获取当前页面的完整描述（AI 主入口）
   snapshot(): PageDescription;
-
-  // （可选）按 id 查询
-  get(id: string): InteractiveElement | Capability | undefined;
-
-  // 自检：验证索引一致性
-  validate(): { valid: boolean; errors: string[] };
 }
+```
 
 // snapshot 的输出 = 三层合并
 interface PageDescription {
@@ -372,6 +413,8 @@ interface PageDescription {
 }
 ```
 
+> **说明**：上方的 `PageDescription` 接口在 §S.2 已有完整定义。此处列出供读者对照。
+
 **关键设计点**：
 
 - `snapshot()` 是只读操作——它不触发任何副作用，不修改任何状态，不产生事件
@@ -379,10 +422,10 @@ interface PageDescription {
 - 没有 `updateState()`——状态留在各模块自己手里，Registry 不做状态的二次存储
 - 没有 `action()`——AI 不通过 Registry 操作 UI，AI 直接调用模块导出函数
 
-### 2.4 AI 调用流程
+### 2.4 AI 调用流程（当前实现）
 
 ```
-1. AI 调用 ui_snapshot() → 拿到 PageDescription
+1. AI 调用 GET /api/ui/snapshot → 服务端通过 WebSocket 从浏览器端获取实时 PageDescription
    {
      elements: [ { id:'orb', type:'floating-button', state:'collapsed',
                    effect:'点击后展开光球，显示 AI 输入框' }, ... ],
@@ -390,10 +433,18 @@ interface PageDescription {
      capabilities: [ { id:'search', name:'全文搜索', ... } ]
    }
 
-2. AI 看到 orb 是 collapsed，`effect` 说明"点击后展开"
-   → AI 决定操作，直接调用 orb 模块的展开函数
+2. AI 看到 orb 是 collapsed，决定展开它
+   → AI 调用 POST /api/ui/command { action: 'expand-orb' }
+   → 服务端将指令通过 WebSocket 转发到浏览器端
+   → ws-channel.ts 收到指令，查找 'expand-orb' 命令处理器
+   → orb.ts 的处理器执行 expandPanel()
+   → expandPanel() 调 Registry.notifyStateChange('orb') 触发 onChange 回调
+   → ws-channel 在 initWsChannel() 中注册了两个推送钩子：
+     ① Registry.onChange → pushSnapshot（覆盖注册/注销/notifyStateChange）
+     ② KFMState.subscribe → pushSnapshot（覆盖 KFMState 数据变更）
+   → 自动推送最新 snapshot 回服务端
 
-3. AI 再次调用 ui_snapshot() → 拿到新的 PageDescription
+3. AI 再次调用 GET /api/ui/snapshot → 拿到新的 PageDescription
    {
      elements: [ { id:'orb', type:'floating-button', state:'expanded' }, ... ],
      ...
@@ -401,8 +452,9 @@ interface PageDescription {
    → 确认操作成功
 ```
 
-**注意**：第 2 步中 AI 如何"调用 orb 模块的展开函数"——这不是 Registry 的职责。它需要一个 AI-tools 层（`src/server/ai-tools.ts`）来包装模块导出函数为 AI 可调用的 tool。Registry 只负责提供"有什么"的查询。
-
+> **注意**：第 2 步中的指令分发路径通过 `ws-channel.ts` 注册的命令处理器实现，
+> 不是通过 Registry 的 `action()`（Registry 不参与操作调度）。
+> 各模块在 `init*()` 中注册自己的命令处理器，与 Registry 注册并列。
 ---
 
 ## §3 与现有系统的关系
@@ -419,15 +471,13 @@ interface PageDescription {
 
 ### 3.2 谁负责更新状态
 
-| 层 | 状态来源 | 怎么更新 |
-|----|---------|---------|
-| 交互层 | 各模块导出 `getState()` | Registry snapshot 时调用模块的 `getState()` 实时获取 |
-| 内容层 | KFMState / 各模块 | Registry snapshot 时从 KFMState 读取当前值 |
-| 能力层 | 静态定义（初始化时注册） | 几乎不变——能力是注册时就定义好了的 |
+层 | 状态来源 | 怎么更新 |
+----|---------|---------|
+ 交互层 | 各模块通过 `registerStateGetter` 注册回调 | Registry snapshot 时调用回调实时获取 |
+ 内容层 | 各模块通过 `registerContentGenerator` 注册生成器 | 生成器在 snapshot 时被调用，生成器内部可读取 KFMState 或模块私有状态 |
+ 能力层 | 静态定义（初始化时注册） | 几乎不变——能力是注册时就定义好了的 |
 
-**模块不需要知道 Registry 存在。** 它只需要导出自己的状态接口。Registry 在 snapshot 时主动读取。
-
-但这里有一个 trade-off：Registry 在 snapshot 时如果想获取某个模块的当前状态，需要 import 那个模块的 getter，或者模块通过注册回调的方式来暴露自己。**这需要进一步讨论（见 §5 开放问题）。**
+**关于耦合方向的说明**：模块通过 `registerElement()` / `registerContentGenerator()` 主动宣告自己到 Registry（轻耦合），而不是 Registry 反向 import 模块。这是 §5.1 讨论后的有意选择。详见 §2.1 "轻耦合" 原则。
 
 ---
 
@@ -439,16 +489,16 @@ interface PageDescription {
 
 同上 §3.1。
 
-### 4.2 需迁移的现有硬编码（原 §4.2，待讨论哪些仍有效）
+### 4.2 需迁移的现有硬编码
 
-| 现有代码 | 位置 | 可能的迁移动作 |
-|---------|------|--------------|
-| `CARDS` 数组 | `card-stack.ts:28-36` | 推测：改为从 Registry 读取卡片元信息 |
-| 光球的存在和状态 | `orb.ts` | 推测：在 `initOrb()` 中加 `Registry.register(...)` |
-| 输入栏 | `app.ts` | 推测：在 `initApp()` 中加 `Registry.register(...)` |
-| 侧栏按钮 | `ui.ts` | 推测：在 `initUI()` 中加 `Registry.register(...)` |
+以下是在设计阶段识别出的可能迁移项。当前状态已更新：
 
-**注意**：这些迁移动作在 v0.1 中是基于"Registry 有大管家"假设写的。v0.2 改为"Registry 是索引"后，迁移方式可能不同。标记为 `[待讨论]`。
+ 现有代码 | 位置 | 状态 |
+---------|------|------|
+ `CARDS` 数组 | `card-stack.ts:30-38` | **待迁移** —— 仍为硬编码数据源，后续可改为从 Registry 或插件系统读取 |
+ 光球的存在和状态 | `orb.ts` | ✅ 已注册（`initOrb()` 中 `Registry.registerElement`） |
+ 输入栏 | `app.ts` | ✅ 已注册（`initApp()` 中 `Registry.registerElement`） |
+ 侧栏按钮 | `app.ts` / `ui.ts` | ✅ 已注册 |
 
 ### 4.3 不应该放进 Registry 的（原 §8.1，保留）
 
@@ -474,7 +524,17 @@ interface PageDescription {
 > 以下问题是 v0.2 阶段未能达成共识、需要后续 agent 参与讨论的。
 > 每个问题标记了讨论状态：`[未解决]` / `[有倾向]` / `[已关闭]`
 
-### 问题 1：Registry 如何获取模块的当前状态？ `[未解决]`
+### 问题 1：Registry 如何获取模块的当前状态？ `[v1.0 已解决]`
+
+> **v1.0 决策**：采用 **方案 B（模块注册回调）**——即 `registerStateGetter(id, getter)`。
+> 
+> 理由：
+> - 方案 A（Registry import getter）虽然代码量最小，但会让 Registry 反向依赖业务模块，违背心法 3（不跨模块依赖）
+> - 方案 C（主动 updateState）运行时开销大，且需要模块在每次状态变化时通知 Registry
+> - 方案 D（纯静态）让 `state` 字段失去意义，违背 §1.5 "snapshot 必须是当前状态的精确投影"
+> - 方案 B 是折中：模块知道 Registry 存在（耦合不可避免），但耦合极轻——仅一个 getter 回调。新增 ~2 行代码，零运行时开销（getter 只在 snapshot 时调用）
+>
+> 实现见 §S.3 的 `registerStateGetter()` 方法和 §S.4 的注册约定。
 
 核心矛盾：
 - 如果 Registry 直接 import 模块的 getter → 违反了"Registry 不依赖业务模块"的原则
@@ -486,7 +546,7 @@ interface PageDescription {
 | 方案 | 耦合方向 | 代码量 | 运行时开销 |
 |------|---------|--------|-----------|
 | A. Registry import 模块 getter | Registry → 模块 | 最小（~1 行 import + 1 行调用） | 零（仅在 snapshot 时） |
-| B. 模块注册回调 | 模块 → Registry（注册时），Registry → 模块（调用时） | 中等（每个模块多 ~3 行） | 零 |
+| B. ✅ 模块注册回调（已采用） | 模块 → Registry（注册时），Registry → 模块（调用时） | 中等（每个模块多 ~2 行） | 零 |
 | C. 模块主动 updateState | 模块 → Registry（每次状态变化） | 大（每个状态变化路径多 1 行） | 每次状态变化都有 |
 | D. Registry 不做状态获取，只返回注册时的静态信息 | 无耦合 | 最小 | 零——但 `state` 字段变成了摆设 |
 
@@ -576,15 +636,15 @@ AI → ai-tools.ts (注册在服务器端的 function calling 工具)
 > 收集自各章开放问题，方便后续 agent 一次性看到全景。
 
 | # | 问题 | 优先级 | 当前状态 | 相关章节 |
-|---|------|--------|---------|---------|
-| 1 | Registry 如何获取模块实时状态？ | 高 | 未解决 | §5.1 |
-| 2 | 能力层的实现方式 | 中 | 未解决 | §5.2 |
-| 3 | 内容层的粒度控制 | 中 | 未解决 | §5.3 |
+|   |------|--------|---------|---------|
+| 1 | Registry 如何获取模块实时状态？ | 高 | ✅ 已解决（registerStateGetter 回调方案） | §5.1 |
+| 2 | 能力层的实现方式 | 中 | ✅ 已解决（CapabilityExecutor + POST /api/capabilities/execute） | §5.2 |
+| 3 | 内容层的粒度控制 | 中 | ✅ 已解决（registerContentGenerator 回调方案） | §5.3 |
 | 4 | `bounds` 是否需要？ | 低 | 砍掉（v1） | §5.4 |
-| 5 | AI-tools 层：服务端如何调浏览器端函数？ | 高 | 未解决 | §5.5 |
-| 6 | 内容层是否应暴露文件树全量？ | 低 | 未解决 | §5.3 |
-| 7 | `register()` 是手动调用还是自动扫描？ | 中 | 未解决 | §5.2（关联） |
-| 8 | Registry 是否应该成为一种"强制契约"（所有 UI 元素都必须注册，否则报错）？ | 低 | 未解决 | — |
+| 5 | AI-tools 层：服务端如何调浏览器端函数？ | 高 | ✅ 已解决（WebSocket 双向通道） | §5.5 |
+| 6 | 内容层是否应暴露文件树全量？ | 低 | 延期到 v2（snapshot 只返回摘要，全量通过单独 API 查询） | §5.3 |
+| 7 | `register()` 是手动调用还是自动扫描？ | 中 | 维持手动调用 + MANIFEST 验证（当前模式） | §5.2（关联） |
+| 8 | Registry 是否应该成为一种"强制契约"（所有 UI 元素都必须注册，否则报错）？ | 低 | ✅ 已实现（MANIFEST + check-registry.mjs，不注册 = 构建中断） | — |
 
 ---
 
@@ -663,10 +723,45 @@ AI → ai-tools.ts (注册在服务器端的 function calling 工具)
 
 **实现决策与文档 §S 的一致性：**
 - ✅ 类型定义完全匹配 §S.2（增补了 `inactive`/`visible`/`hidden`/`enabled` 到 UIElementState）
-- ✅ Registry 类方法完全匹配 §S.3
+- ✅ Registry 类方法完全匹配 §S.3（增补了 `registerStateGetter()` / `get()` 便利方法）
 - ✅ 模块在 `init*()` 中调 `Registry.register(...)`（§S.4）
+- ✅ 所有可变状态元素已注册 `registerStateGetter()` getter（§S.4 扩展）
 - ✅ MANIFEST 验证机制（§S.5）
-- ⬜ 内容层 + 能力层尚未注册（等待后续 agent 填充）
-- ⬜ §5 开放问题未解决（见 §5.5 通信通道、§5.1 getter 集成）
+- ✅ 内容层已填充（3 个 ContentBlock：file-tree, card-stack-content, orb-chat）
+- ✅ 能力层已填充（3 个 Capability：file-search, file-read, file-write）
+- ✅ `ai-tools.ts` 已创建（服务端包装层，初始提供 3 个端点）
+- ⬜ §5 开放问题未完全解决（见 §5.5 通信通道仍需架构级设计；§5.1 已通过 getter 回调方案解决）
 
-**版本更新**：`package.json` → 6.0.0，`check-as-any.mjs` 白名单清空。
+### v1.0 → v1.1（2026-06-02，§5 开放问题全部解决）
+
+**本轮完成的工作：**
+
+**🔴 §5.5 通信通道（WebSocket）**
+- 服务端：`src/server/ws-server.ts` — WsServer 类，封装 WebSocketServer，管理连接池、心跳、消息路由
+- 服务端入口：`src/server/index.ts` — 改用 `http.createServer(app)` + WsServer 附加到同一端口
+- 服务端 API：`src/server/ai-tools.ts` — 改造为接收 WsServer 实例，提供实时 snapshot 查询
+- 客户端：`src/client/modules/ws-channel.ts` — WsChannel 类，浏览器端自动连接、推送、重连
+- 依赖：新增 `ws` + `@types/ws`
+
+**🟡 §5.3 内容层动态化**
+- `ui-registry.ts` 新增 `registerContentGenerator(id, generator)` 方法
+- `snapshot()` 中生成器优先于静态内容
+- 同一 id 可同时注册静态内容和生成器，生成器覆盖
+
+**🟡 §5.2 能力层绑定**
+- 服务端：`src/server/capability-executor.ts` — CapabilityExecutor 类
+- 新增 `POST /api/capabilities/execute` 端点
+- 新增 `GET /api/capabilities/executor` 端点
+- 内置 3 个文件操作能力（file-search, file-read, file-write）
+
+**🏗️ Registry 核心增强**
+- 新增 `getCapabilities()` 方法（类型安全的能力列表访问）
+- 新增 `onChange()` 回调机制（供 ws-channel 等模块监听变化）
+- 移除 `ws-channel.ts` 中的 `as any` 逃逸
+
+**文档更新：**
+- `docs/notes/WEBSOCKET_CHANNEL_PROPOSAL.md` — WebSocket 方案提案
+- `docs/notes/REGISTRY_NEXT_AGENT_DISCUSSION.md` — 问题状态更新
+- `docs/UI_ELEMENT_REGISTRY_SPEC.md` — §S 新增 v1.1 扩展说明，§8 更新为全部已解决
+
+**版本更新**：`package.json` → 6.0.0（未变），`check-as-any.mjs` 白名单清空（未变）。

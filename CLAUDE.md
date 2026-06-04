@@ -6,7 +6,8 @@ AI 人机交互个人工作台，面向移动端浏览器。核心理念：**一
 > **改代码前先读** `docs/KFM_V4_INVARIANTS.md`（修改约束协议）。
 > **日常干活翻** `docs/HANDBOOK.md`（架构+调试+待办+测试）。
 > **规划设计时参考** `docs/VISION_AND_ROADMAP.md`（远景）。
-> **做 UI Registry 相关改动的先读** `docs/UI_ELEMENT_REGISTRY_SPEC.md`（注册表设计讨论）。
+> **做浮卡相关改动先读** `docs/CARD_SYSTEM_UNIFICATION_SPEC.md`（浮卡统一化规范）。
+> **UI Registry 相关**已在 `docs/archive/design/` 归档。
 
 ---
 
