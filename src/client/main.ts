@@ -30,6 +30,7 @@ import { initOrb } from './modules/orb.js';
 import { initTreeRenderer } from './modules/tree-render.js';
 import { loadFileTree, initLazyLoader } from './modules/tree-loader.js';
 import { initCardStack } from './modules/card-stack.js';
+import { initFloatingCards } from './modules/floating-card.js';
 import { gestures } from './modules/gesture-registry.js';
 import { Registry } from './modules/ui-registry.js';
 import { initWsChannel } from './modules/ws-channel.js';
@@ -46,6 +47,7 @@ initGestures();
 initOrb();
 initTreeRenderer();
 initCardStack();
+initFloatingCards();
 
 // ========== 注册能力层 ==========
 // entry 字段与 capability-executor.ts 中的 id 保持一致，指向实际执行入口
