@@ -1,8 +1,9 @@
 /**
  * KFM v4 - AI 对话浮卡（orb-card 插件）
  *
- * 浮卡引擎的统一配置示例。
- * 将旧 orb.ts 的光球面板重构为 createFloatingCard(config) 的插件。
+ * 统一浮卡引擎的配置示例。
+ * 浮卡引擎管理状态机、拖拽和 BR 光球。
+ * 插件通过 brOrbSize: 36 将 BR 光球从 10px 放大到 36px。
  */
 
 import { createFloatingCard } from './floating-card.js';
@@ -14,14 +15,14 @@ interface ChatMessage {
   text: string;
 }
 
-let active = false;  // 面板是否展开
-
 export function initOrbCard(): void {
   const chatMessages: ChatMessage[] = [
     { role: 'ai', text: '你好，我是蔚然。有什么可以帮你的吗？' },
     { role: 'user', text: '帮我分析一下当前的目录结构' },
     { role: 'ai', text: '好的，正在分析目录结构。当前目录下共有 12 个文件夹和 8 个文件。' },
   ];
+
+  let orbVisible = true;
 
   function renderChat(contentEl: HTMLElement): void {
     const w = contentEl.clientWidth - 24;
@@ -46,21 +47,17 @@ export function initOrbCard(): void {
     contentEl.scrollTop = contentEl.scrollHeight;
   }
 
-  let cardEl: HTMLElement | undefined;
-
   createFloatingCard({
     id: 'orb',
     name: 'AI 对话',
 
-    // 紧缩态 1×1（只有 BR 光球可见）
-    compactWidth: 1,
-    compactHeight: 1,
+    compactWidth: 36,
+    compactHeight: 36,
     activeWidth: 300,
     activeHeight: 350,
     minWidth: 120,
     minHeight: 100,
 
-    // 只有右下角 BR 光球
     cornerTL: false,
     cornerTR: false,
     cornerBL: false,
@@ -68,34 +65,35 @@ export function initOrbCard(): void {
     alwaysOnTop: true,
     inputBarAvoid: true,
     accentColor: '#7c3aed',
+    brOrbSize: 36,
 
-    // 初始位置：屏幕右下角
-    initialPosition: { right: 8, bottom: 8 },
+    // 初始位置：使 36px 光球出现在屏幕右下角 (right:24, bottom:140)
+    // 卡片 36px，BR 光球在卡片内 left: -12（因为 rightOff=12）
+    // 计算：initialPosition.right = 24 - 12 = 12
+    initialPosition: { right: 12, bottom: 140 },
 
     onActivate(contentEl) {
-      active = true;
+      orbVisible = false;
       contentEl.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;box-sizing:border-box;padding:8px;overflow:hidden';
       renderChat(contentEl);
     },
     onDeactivate() {
-      active = false;
+      orbVisible = true;
     },
     onCreate(el) {
-      cardEl = el;
       el.dataset.registryId = 'orb';
-    },
-    onCommand(action) {
-      if (action === 'activate') {
-        const brOrb = cardEl?.querySelector('.floating-br-orb') as HTMLElement;
-        brOrb?.click();
-      }
+      // 隐藏卡片体背景（卡片只是状态容器）
+      el.style.background = 'none';
+      el.style.borderRadius = '0';
+      el.style.padding = '0';
+      el.style.border = 'none';
     },
 
     registryElement: {
       id: 'orb',
       type: 'panel',
       label: 'AI 对话面板',
-      description: 'AI 聊天对话面板，点击右下角光球展开/收起',
+      description: 'AI 聊天对话面板',
       state: 'compact',
       enabled: true,
       effect: '点击右下角光球展开对话面板，可拖动和缩放',
@@ -103,7 +101,7 @@ export function initOrbCard(): void {
     },
   });
 
-  // 注册内容层生成器（覆盖原有 orb-chat）
+  // 注册内容层生成器
   Registry.registerContentGenerator('orb-chat', () => ({
     id: 'orb-chat',
     type: 'text-output',
@@ -113,18 +111,9 @@ export function initOrbCard(): void {
   }));
 
   // 兼容旧命令
-  wsChannel.onCommand('expand-orb', () => {
-    const brOrb = document.querySelector('.floating-br-orb') as HTMLElement;
-    if (!active) brOrb?.click();
-  });
-  wsChannel.onCommand('collapse-orb', () => {
-    const brOrb = document.querySelector('.floating-br-orb') as HTMLElement;
-    if (active) brOrb?.click();
-  });
-  wsChannel.onCommand('toggle-orb', () => {
-    const brOrb = document.querySelector('.floating-br-orb') as HTMLElement;
-    brOrb?.click();
-  });
+  wsChannel.onCommand('expand-orb', () => { if (!orbVisible) (document.querySelector('.floating-br-orb') as HTMLElement)?.click(); });
+  wsChannel.onCommand('collapse-orb', () => { if (orbVisible) (document.querySelector('.floating-br-orb') as HTMLElement)?.click(); });
+  wsChannel.onCommand('toggle-orb', () => { (document.querySelector('.floating-br-orb') as HTMLElement)?.click(); });
 }
 
 function escapeHtml(str: string): string {

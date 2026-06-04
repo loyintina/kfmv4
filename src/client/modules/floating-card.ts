@@ -56,6 +56,7 @@ export interface FloatingCardConfig {
   alwaysOnTop: boolean;
   inputBarAvoid: boolean;
   accentColor: string;
+  brOrbSize?: number;
 
   // 初始位置（设定了就跳过随机散落）
   initialPosition?: { right: number; bottom: number };
@@ -140,7 +141,6 @@ let _fPreEdit: 'compact' | 'active' = 'compact';
 
 // ========== 输入栏避让状态 ==========
 let _inputBarWatcherInitialized = false;
-
 // ========== 角光球创建 ==========
 
 function createDecoratedCorner(
@@ -344,11 +344,12 @@ export function createFloatingCard(config: FloatingCardConfig): void {
     name: cfg.name,
   };
 
-  // BR 光球（始终创建）
+  // BR 光球（始终创建。尺寸可配置：普通浮卡=10px，主光球=36px）
+  const brSize = cfg.brOrbSize ?? cornerSize;
   const brOrb = createDecoratedCorner(
-    cfg.compactWidth - rightOff - cornerSize,
-    cfg.compactHeight - bottomOff - cornerSize,
-    cornerSize, cornerSize, rightRgba, '');
+    cfg.compactWidth - rightOff - brSize,
+    cfg.compactHeight - bottomOff - brSize,
+    brSize, brSize, rightRgba, '');
   brOrb.style.pointerEvents = 'auto';
   brOrb.style.cursor = 'pointer';
   brOrb.classList.add('floating-br-orb');
