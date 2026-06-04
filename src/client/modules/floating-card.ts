@@ -296,7 +296,7 @@ function _renderCompactContent(contentEl: HTMLElement, name: string): void {
 }
 
 function _renderActiveLayout(contentEl: HTMLElement): void {
-  contentEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:flex-start;box-sizing:border-box;padding:8px;font-size:11px;color:rgba(224,224,224,0.7);overflow-y:auto';
+  contentEl.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;box-sizing:border-box;padding:8px;font-size:11px;color:rgba(224,224,224,0.7);overflow-y:auto';
 }
 
 // ========== 创建浮卡（统一入口）==========
@@ -364,10 +364,10 @@ export function createFloatingCard(config: FloatingCardConfig): void {
       cfg.onPreExpand?.(el);
 
       anim.to(contentEl, { opacity: 0, duration: 0.1, ease: 'none', onComplete: () => {
-        cfg.onActivate(contentEl);
         if (item.contentEl) {
           _renderActiveLayout(item.contentEl);
         }
+        cfg.onActivate(contentEl);
         anim.to(contentEl, { opacity: 1, duration: 0.15, ease: 'none' });
       }});
 

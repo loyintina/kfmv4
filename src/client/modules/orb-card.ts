@@ -106,7 +106,6 @@ export function initOrbCard(): void {
     },
     onActivate(contentEl) {
       orbVisible = false;
-      contentEl.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;box-sizing:border-box;padding:8px;overflow:hidden';
       renderChatContent(contentEl);
     },
     onDeactivate() {
