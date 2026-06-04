@@ -1,11 +1,15 @@
 ---
-status: active
-version: v0.1
+status: superseded
+superseded_by: （待下次实验）
+version: v0.2 (第一次实施尝试记录)
+archived_reason: v0.1 的假设在实际实施中暴露多个缺口，代码已回退到 v6.4.0
 ---
 # KFM v4 — 浮卡系统统一化规范
 
-> **版本**：v0.1（初始提案）
-> **状态**：§S（产出定义）待实现
+> **版本**：v0.2（第一次实施尝试记录）
+> **状态**：已归档——代码已回退到 v6.4.0
+>
+> **本次实验的教训**：方向是对的，但实施节奏错了。应该在每一步验证后再推进，而不是一次性全部改完。§8 记录了所有踩到的坑。
 
 > **关联文档**：
 > - `UI_ELEMENT_REGISTRY_SPEC.md`（已归档）— Registry 的核心理念（§1 人与 AI 对称操作）仍然是浮卡系统的设计约束
@@ -351,14 +355,68 @@ const DEFAULT_CONFIG: Partial<FloatingCardConfig> = {
 
 ---
 
-## §6 演进史
 
-### v0.1（本文）
-
-初始提案。基于三套拖拽系统（orb.ts + floating-card.ts BR 光球手势 + floating-card.ts 卡片体拖拽）的本质同一性，提出只保留一份引擎、所有浮卡通过配置创建。
 
 ---
 
-## §7 备选方案记录
+## §8 第一次实施尝试的记录（2026-06-03）
 
-*（暂无条目——v0.1 是第一个版本。后续在此追加）*
+> 本节记录 v0.1 提案在第一次实施中发现的缺口和教训。
+> 设计方向（一份引擎、配置化浮卡）仍然是正确的。
+> 实施节奏（一次性全部改、未逐步骤验证）是错误的。
+
+### 8.1 已知缺口（按严重性排序）
+
+| # | 缺口 | 现象 | 根因 | 修复方案 |
+|---|------|------|------|---------|
+| 1 | 紧缩态卡片体不可见 | card 有 `padding:1px`，即使 `compactWidth=0` 仍渲染 2×2 像素 | CSS `content-box` 下 padding 不占用 width 空间 | `onCreate` 中设 `padding:0; border:none` |
+| 2 | BR 光球定位算错 | 光球位置不在预期的右下角 | `rightOff = cornerOff + rightOffAdj = -13 + 1 = -12`（负值）。原以为正偏移，实际是负 | 用 `initialPosition.right = 36` 补偿 |
+| 3 | 角光球视觉太暗 | BR 光球只有微弱光晕，不像旧版光球 | `cornerOrb` 主题值是给 10px 装饰光球用的（alpha 0.45/0.18），不是给 36px 主光球（需要 0.9/0.4） | 在 `onCreate` 中覆盖 glow div 的 `background` 和 `boxShadow` |
+| 4 | `onActivate` 触发太晚 | 展开动画开始 0.1s 后才设置面板样式，导致视觉跳跃 | `onActivate` 在内容淡出动画的 `onComplete` 中，不是展开动画之前 | 新增 `onPreExpand` 回调，动画开始前调用 |
+| 5 | `_renderActiveLayout` 覆盖插件 CSS | 引擎在 `onActivate` 后自动调用 `_renderActiveLayout`，覆盖插件的布局设置，且默认是 `flex-direction:row` | 引擎为普通浮卡提供默认布局，但不应覆盖插件已设的值 | 交换调用顺序：先 `_renderActiveLayout` 设默认，再 `onActivate` 让插件覆盖。同时改为 `flex-direction:column` |
+| 6 | 手势拖拽硬编码最小尺寸 54px | 拖动 compactWidth=0 的 orb-card 时卡片被强制拉到 54px | 手势 `onMove` 中有 `Math.max(54, ...)` | 改为 `Math.max(0, ...)` |
+| 7 | 展开时光球移动 | 点击 BR 展开面板，光球跟着卡片走 | 引擎以卡片右下角为锚点扩展，光球在卡片内部 | 新增 `keepOrbFixed` 配置，展开时计算光球的固定屏幕位置 |
+| 8 | TL/TR/BL 丢失 SVG 和功能 | 浮卡展开后 TL/TR/BL 是空白光球，无图标、无点击功能 | 拆分提交 `7c4ecdc` 在搬运 `launchFocusedCard` 时丢失了 SVG 和 click handler | 从 `3253ee9` 原样复制回来（已在回退后补回） |
+| 9 | 编辑模式尺寸记忆不生效 | 编辑模式调整大小后，折叠再展开回到原始尺寸 | 编辑尺寸存到 `compactMemW/H`，但展开时读 `activeMemW/H` | 删 3 对变量，改 1 对 `memW/memH`（但此改动也在回退中） |
+| 10 | 气泡布局横排 | 聊天气泡排成一行不是垂直 | `_renderActiveLayout` 没设 `flex-direction:column` | 加上 `flex-direction:column` |
+| 11 | 动态字号全是最小值 | 字号被算成 10px 不是 13px | `contentEl.clientWidth` 在展开动画期间只有 ~100px，scale 被压到 0.77 | 用目标宽度（300px）代替当前宽度计算 scale |
+
+### 8.2 实施节奏的错误
+
+1. **一次性改了太多东西**：`orb.ts` 删除、`floating-card.ts` 重写、`orb-card.ts` 新建、`main.ts` 修改——全部在同一个 commit 中。出问题时无法定位哪一步错了。
+
+2. **代码改了没重建 bundle**：前几次用户"看不到效果"其实是因为 `public/bundle.js` 还是旧的。每次修改后必须 `npm run build`，且浏览器需要硬刷新（Ctrl+F5）。
+
+3. **没跑手动回归就去改下一个问题**：每一步改完只跑了 `npm run check` 和 `npm run test`，没有手动在浏览器里验证就继续改下一个。问题积累到最后全炸了。
+
+### 8.3 下次实施时的推荐顺序
+
+```
+Step 1: 只加 createFloatingCard()，不改任何现有行为
+Step 2: 写 orb-card.ts，但不启用（main.ts 注释掉）
+Step 3: 逐一验证引擎能力缺口（每验证一个就修一个）
+        a. compactWidth=0 的问题
+        b. BR 光球定位 + 样式
+        c. onActivate 时序
+        d. 编辑模式记忆
+Step 4: 等所有缺口都验证通过了，切换 initOrb() → initOrbCard()
+Step 5: 跑全部手动回归清单，确认无误后删 orb.ts
+```
+
+### 8.4 参考文献
+
+- commit `7c4ecdc` — card-stack.ts 拆分，丢失了 TL/TR/BL SVG 和功能（原始代码参考 `3253ee9`）
+- commit `1a9a3ec` — 回退 commit，撤销了从 `e7b3079`（引擎统一化）到 `163c7ea`（记忆路径统一）的全部变更
+- 回退后保留的提交：`7c4ecdc`（拆分）、`3253ee9`（CARDS 迁移、operation-toast 修复）
+
+---
+
+## §6 演进史
+
+### v0.1（本文初始版）
+
+初始提案。基于三套拖拽系统（orb.ts + floating-card.ts BR 光球手势 + floating-card.ts 卡片体拖拽）的本质同一性，提出只保留一份引擎、所有浮卡通过配置创建。
+
+### v0.2（2026-06-03，第一次实施尝试）
+
+实施中发现 v0.1 的多项假设有缺口（详见 §8），代码已回退到 v6.4.0。
