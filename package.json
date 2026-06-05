@@ -16,6 +16,7 @@
     "gsap": "^3.15.0",
     "leafer-ui": "^2.1.0",
     "sass": "^1.100.0",
+    "ts-node": "^10.9.2",
     "ws": "^8.21.0"
   },
   "devDependencies": {

@@ -1042,8 +1042,13 @@ function _engStartDrag(s: OrbCardState, x: number, y: number): void {
   }
   s.longPressTimer = setTimeout(() => {
     s.longPressFired = true;
-    if (s.state === 'expanded') s.state = 'editing';
-    else if (s.state === 'editing') s.state = 'expanded';
+    if (s.state === 'expanded') {
+      if (s.orbEl) { var r = s.orbEl.getBoundingClientRect(); s.dragStartOrbX = r.left; s.dragStartOrbY = r.top; }
+      if (s.panelEl) { s.dragStartPanelX = parseFloat(s.panelEl.style.left) || 0; s.dragStartPanelY = parseFloat(s.panelEl.style.top) || 0; }
+      s.state = 'editing';
+      if (s.panelEl) s.panelEl.style.boxShadow = theme.aiChat.panelShadowEdit;
+    }
+    else if (s.state === 'editing') { s.state = 'expanded'; if (s.panelEl) s.panelEl.style.boxShadow = theme.aiChat.panelShadow; }
   }, 600);
 }
 
@@ -1068,7 +1073,7 @@ function _engEndDrag(s: OrbCardState): void {
     s.freeX = r.left;
     s.freeY = r.top;
   }
-  if (s.state === 'editing') s.state = 'expanded';
+  if (s.state === 'editing') { s.state = 'expanded'; if (s.panelEl) s.panelEl.style.boxShadow = theme.aiChat.panelShadow; }
   if (!s.dragging && !s.longPressFired && s.config.mode === 'orb') {
     _engToggle(s);
   }
@@ -1080,15 +1085,15 @@ function _engExpand(s: OrbCardState): void {
   if (!s.panelEl) {
     const c = s.config;
     const panel = document.createElement('div');
-    panel.className = 'floating-panel';
+    panel.className = 'orb-panel';
     panel.style.cssText = [
       'position:fixed',
-      'background:linear-gradient(' + c.surfaceBg + ',' + c.surfaceBg + ') padding-box, linear-gradient(135deg,' + c.accentColor + ',transparent) border-box',
+      'background:linear-gradient(' + theme.surface.bg + ',' + theme.surface.bg + ') padding-box,' + theme.aiChat.panelBorderGradient + ' border-box',
       'backdrop-filter:blur(16px)',
       'border:1px solid transparent',
       'border-left-width:3px',
       'border-radius:12px',
-      'box-shadow:0 4px 24px rgba(0,0,0,0.3)',
+      'box-shadow:' + theme.aiChat.panelShadow,
       'z-index:' + (s.zIndex - 1),
       'display:flex',
       'flex-direction:column',
@@ -1097,10 +1102,12 @@ function _engExpand(s: OrbCardState): void {
       'transition:opacity 0.3s ease',
       'pointer-events:none',
     ].join(';');
+    panel.dataset.registryId = 'orb-panel';
+    panel.id = 'orbPanel';
     document.body.appendChild(panel);
     s.panelEl = panel;
     const contentEl = document.createElement('div');
-    contentEl.className = 'floating-panel-content';
+    contentEl.className = 'orb-panel-content';
     contentEl.style.cssText = 'flex:1;overflow-y:auto;padding:12px 14px;min-height:0';
     panel.appendChild(contentEl);
     s.contentEl = contentEl;
@@ -1112,6 +1119,7 @@ function _engExpand(s: OrbCardState): void {
     s.panelEl.style.opacity = '1';
     s.panelEl.style.pointerEvents = 'auto';
     s.state = 'expanded';
+    Registry.notifyStateChange(s.config.id);
   }
 }
 
@@ -1123,6 +1131,7 @@ function _engCollapse(s: OrbCardState): void {
       s.panelEl.style.pointerEvents = 'none';
     }
     s.state = 'collapsed';
+    Registry.notifyStateChange(s.config.id);
   }
 }
 
@@ -1209,21 +1218,6 @@ export function createFloatingCard(config: FloatingCardConfig): void {
   }
 
   // 光球视觉
-  const glowColor = hexToRgba(c.accentColor, 0.9);
-  const glowMid = hexToRgba(c.accentColor, 0.4);
-  const glowDiv = document.createElement('div');
-  glowDiv.style.cssText = [
-    'position:absolute', 'inset:0', 'border-radius:50%',
-    'background:radial-gradient(circle at 35% 35%,' + glowColor + ',' + glowMid + ',transparent 70%)',
-    'box-shadow:0 0 12px ' + hexToRgba(c.accentColor, 0.3) + ',0 0 24px ' + hexToRgba(c.accentColor, 0.15),
-  ].join(';');
-  orbEl.appendChild(glowDiv);
-
-  // SVG 图标层
-  const svgDiv = document.createElement('div');
-  svgDiv.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:' + hexToRgba(c.accentColor, 0.9);
-  svgDiv.innerHTML = '<svg width=16 height=16 viewBox=0 0 24 24 fill=none stroke=currentColor stroke-width=2><path d=M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5/></svg>';
-  orbEl.appendChild(svgDiv);
 
   document.body.appendChild(orbEl);
 
@@ -1270,7 +1264,7 @@ export function createFloatingCard(config: FloatingCardConfig): void {
   gestures.register({
     id: 'eng-orb-' + c.id,
     targetFilter: function(el: HTMLElement): boolean {
-      return el.classList.contains('new-engine-orb');
+      return !!el.closest('.new-engine-orb');
     },
     priority: 110,
     stopPropagation: true,
