@@ -1,6 +1,7 @@
 import { createFloatingCard } from "../../client/modules/floating-card.js";
 import { layoutLines } from "../../client/engine/text-layout/index.js";
 import { currentTheme as theme } from "../../client/modules/theme.js";
+import { DOM } from "../../client/modules/dom-refs.js";
 import { Registry } from "../../client/modules/ui-registry.js";
 import { wsChannel } from "../../client/modules/ws-channel.js";
 
@@ -13,6 +14,8 @@ var msgs = [
 function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
+
+var panelState: "closed" | "open" | "editing" = "closed";
 
 function render(el: HTMLElement, panelW: number): void {
   var innerWidth = Math.max(50, panelW - 24);
@@ -66,10 +69,16 @@ export function initOrbCard(): void {
     surfaceBg: "rgba(10,10,30,0.85)",
     initialPosition: { right: 8, bottom: 8 },
     onActivate(contentEl: HTMLElement) {
+      panelState = "open";
+      Registry.notifyStateChange("orb-panel");
       var w = contentEl.parentElement ? parseFloat(contentEl.parentElement.style.width) || 300 : 300;
       render(contentEl, w);
     },
-    onDeactivate(contentEl: HTMLElement) { contentEl.innerHTML = ""; },
+    onDeactivate(contentEl: HTMLElement) {
+      panelState = "closed";
+      Registry.notifyStateChange("orb-panel");
+      contentEl.innerHTML = "";
+    },
     onCreate(el: HTMLElement) {},
   });
 
@@ -82,7 +91,7 @@ export function initOrbCard(): void {
     enabled: true,
     effect: "展开后显示聊天消息，可输入文字与 AI 对话",
     source: "orb-card.ts",
-  });
+  }, function() { return panelState; });
 
   Registry.registerContentGenerator("orb-chat", function() {
     return {

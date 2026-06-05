@@ -26,7 +26,6 @@ declare global {
 import { initApp } from './modules/app.js';
 import { initUI } from './modules/ui.js';
 import { initGestures } from './modules/gestures.js';
-import { initOrb } from './modules/orb.js';
 import { initTreeRenderer } from './modules/tree-render.js';
 import { initOrbCard } from '../cards/plugins/orb-card.js';
 import { loadFileTree, initLazyLoader } from './modules/tree-loader.js';
@@ -45,7 +44,6 @@ gestures.init();
 initApp();
 initUI();
 initGestures();
-initOrb();
 initOrbCard();
 initTreeRenderer();
 initCardStack();
