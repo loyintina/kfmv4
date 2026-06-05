@@ -13,7 +13,6 @@ export const DOM = {
   get aiInputBar()        { return document.getElementById("aiInputBar"); },
   get aiInput()           { return document.getElementById("aiInput") as HTMLTextAreaElement | null; },
   get aiSendBtn()         { return document.getElementById("aiSendBtn"); },
-  get lightOrb()          { return document.getElementById("lightOrb") as HTMLDivElement | null; },
   get operationToast()    { return document.getElementById("operationToast"); },
   get toggleHiddenBtn()   { return document.getElementById("toggleHiddenBtn"); },
   get closeSidebarBtn()   { return document.getElementById("closeSidebarBtn"); },
@@ -31,7 +30,5 @@ export const DOM = {
   /** 卡片面板内的序号元素 */
   stackCardIndex(el: Element) { return el.querySelector(".stack-card-index") as HTMLElement | null; },
   /** 光球面板内容区 */
-  orbPanelContent(el: Element) { return el.querySelector(".orb-panel-content") as HTMLElement | null; },
   /** 光球面板状态标签 */
-  orbPanelState(el: Element) { return el.querySelector(".orb-panel-state") as HTMLElement | null; },
 };

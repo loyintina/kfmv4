@@ -83,7 +83,7 @@ export function initOrbCard(): void {
   });
 
   Registry.registerElement({
-    id: "orb-panel",
+    id: 'orb-panel',
     type: "panel",
     label: "AI 对话面板",
     description: "AI 聊天对话面板",
@@ -93,7 +93,7 @@ export function initOrbCard(): void {
     source: "orb-card.ts",
   }, function() { return panelState; });
 
-  Registry.registerContentGenerator("orb-chat", function() {
+  Registry.registerContentGenerator('orb-chat', function() {
     return {
       id: "orb-chat",
       type: "text-output",
