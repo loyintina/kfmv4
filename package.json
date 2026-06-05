@@ -1,6 +1,6 @@
 {
   "name": "kfmv4",
-  "version": "6.4.0",
+  "version": "6.5.0",
   "description": "KFM v4 - TypeScript 全栈文件管理器",
   "type": "module",
   "scripts": {
