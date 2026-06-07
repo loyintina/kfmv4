@@ -973,6 +973,16 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
   }
 
   const fullH = container.height;
+
+  // 空文件夹：height=0 的展开容器无需折叠动画，直接短路返回
+  if (fullH === 0) {
+    L.endOp();
+    hit.gesture!.onTap!();
+    Registry.notifyStateChange('file-tree');
+    processClickQueue();
+    return;
+  }
+
   assert(_activeOverlays.length === 0, 'overlays not empty before doCollapse');
 
   // 搭建折叠 overlay
