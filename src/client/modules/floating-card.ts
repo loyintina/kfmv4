@@ -9,6 +9,8 @@ import { gestures } from "./gesture-registry.js";
 import { anim } from './animation-registry.js';
 import { currentTheme as theme } from './theme.js';
 import { Registry } from './ui-registry.js';
+import { MARGIN, LONG_PRESS_MS, DRAG_THRESHOLD } from './interaction-constants.js';
+import type { InteractionCapability } from './interaction-types.js';
 
 import {
   getCardCount, getCardName, getCardId,
@@ -34,7 +36,6 @@ const COMPACT_H = 54;
 // ========== 编辑模式最小尺寸 ==========
 const FLOATING_CARD_W_MIN = 54;
 const FLOATING_CARD_H_MIN = 54;
-const FLOATING_DRAG_THRESHOLD = 5;
 
 // ========== 浮卡类型与状态 ==========
 
@@ -167,9 +168,9 @@ interface FloatingSafeBounds {
 }
 
 function _calcFloatingSafeBounds(): FloatingSafeBounds {
-  const safeL = 8;
+  const safeL = MARGIN;
   const safeB = 56.5; // 屏幕底部留给 AI 输入栏
-  const safeT = 8;
+  const safeT = MARGIN;
   const fullR = window.innerWidth;
   const stackLeft = (window.innerWidth * 0.7); // 卡堆左边界
   return { safeL, safeT, safeB, fullR, stackLeft };
@@ -260,7 +261,7 @@ function _startFloatingDrag(item: FloatingCardItem, clientX: number, clientY: nu
     _dragLongPressFired = true;
     _startFloatingDrag(_dragItem, clientX, clientY, pointerId);
     _enterFloatingEditMode(_dragItem);
-  }, 600);
+  }, LONG_PRESS_MS);
 }
 
 function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: number): void {
@@ -270,7 +271,7 @@ function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: n
   const dx = clientX - _dragStartX;
   const dy = clientY - _dragStartY;
 
-  if (Math.abs(dx) > FLOATING_DRAG_THRESHOLD || Math.abs(dy) > FLOATING_DRAG_THRESHOLD) {
+  if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
     if (!_dragIsDragging) {
       _dragIsDragging = true;
       if (_dragLongPressTimer) { clearTimeout(_dragLongPressTimer); _dragLongPressTimer = null; }
@@ -352,11 +353,11 @@ function _bindBrDragEvents(brOrb: HTMLElement, item: FloatingCardItem): void {
       pLPFired = true;
       _startFloatingDrag(item, pStartX, pStartY, e.pointerId);
       _enterFloatingEditMode(item);
-    }, 600);
+    }, LONG_PRESS_MS);
   });
 
   document.addEventListener('pointermove', (e) => {
-    if (!pDragging && (Math.abs(e.clientX - pStartX) > FLOATING_DRAG_THRESHOLD || Math.abs(e.clientY - pStartY) > FLOATING_DRAG_THRESHOLD)) {
+    if (!pDragging && (Math.abs(e.clientX - pStartX) > DRAG_THRESHOLD || Math.abs(e.clientY - pStartY) > DRAG_THRESHOLD)) {
       pDragging = true;
       if (pLPTimer) { clearTimeout(pLPTimer); pLPTimer = null; }
     }
@@ -473,7 +474,6 @@ export function launchFocusedCard(): void {
       const curTop = parseFloat(el.style.top) || targetPos.top;
       const targetW = expW;
       const targetH = expH;
-      const MARGIN = 8;
       const curW = item.cardWidth;
       const curH = item.cardHeight;
       const compressedW = Math.max(FLOATING_CARD_W_MIN, Math.min(expW, curLeft + curW - MARGIN));
@@ -707,7 +707,7 @@ export function initFloatingCards(): void {
   const _fRH = _fRS / 2;
   const _frightOff = orbT.cornerOff + orbT.rightOffAdj;
   const _fbottomOff = orbT.cornerOff + orbT.bottomOffAdj;
-  const _fMARGIN = 8;
+  const _fMARGIN = MARGIN;
 
   function _fGetMaxY(): number {
     const bar = document.getElementById('aiInputBar');
@@ -781,13 +781,13 @@ export function initFloatingCards(): void {
         // 编辑模式光晕（复刻 orb.ts panelShadowEdit，用 accentColor + 半透明）
         const editGlow = hexToRgba(_fItem.accentColor, 0.25);
         _fItem.el.style.boxShadow = '0 0 24px 8px ' + editGlow + ', 0 8px 32px rgba(0,0,0,0.5)';
-      }, 600);
+      }, LONG_PRESS_MS);
     },
     onMove: (e: PointerEvent) => {
       if (!_fItem) return;
       const dx = e.clientX - _fStartX;
       const dy = e.clientY - _fStartY;
-      if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+      if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
         _fDragging = true;
         if (_fLPTimer) { clearTimeout(_fLPTimer); _fLPTimer = null; }
       }
@@ -871,3 +871,33 @@ export function initFloatingCards(): void {
     },
   });
 }
+
+// ========== 交互能力声明（供路由层使用） ==========
+export const floatingCardCapability: InteractionCapability = {
+  id: 'floating-card',
+  drag: {
+    enabled: true,
+    area: () => {
+      if (_floatingCards.length === 0) return new DOMRect(0, 0, 0, 0);
+      const br = _floatingCards[_floatingCards.length - 1].brOrb;
+      return br?.getBoundingClientRect() ?? new DOMRect(0, 0, 0, 0);
+    },
+    mode: 'anchor-br',
+    minWidth: FLOATING_CARD_W_MIN,
+    minHeight: FLOATING_CARD_H_MIN,
+  },
+  longPress: {
+    enabled: true,
+    duration: LONG_PRESS_MS,
+    onEnterEdit: () => {
+      if (_dragItem) _enterFloatingEditMode(_dragItem);
+    },
+    onExitEdit: () => {
+      if (_dragItem) _exitFloatingEditMode(_dragItem);
+    },
+  },
+  boundary: {
+    inputBarId: 'aiInputBar',
+    decorSize: cornerSize,
+  },
+};

@@ -18,6 +18,8 @@ import { DOM } from "./dom-refs.js";
 import { currentTheme as theme } from './theme.js';
 import { Registry } from './ui-registry.js';
 import { wsChannel } from './ws-channel.js';
+import { MARGIN, LONG_PRESS_MS, DRAG_THRESHOLD } from './interaction-constants.js';
+import type { InteractionCapability } from './interaction-types.js';
 
 interface ChatMessage {
   role: 'user' | 'ai';
@@ -54,11 +56,9 @@ let dragStartPanelY = 0;
 
 let longPressTimer: ReturnType<typeof setTimeout> | null = null;
 let longPressFired = false;
-const LONG_PRESS_MS = 600;
 
 const ORB_SIZE = 36;
 const ORB_HALF = ORB_SIZE / 2;
-const MARGIN = 8;
 
 const chatMessages: ChatMessage[] = [
   { role: 'ai', text: '你好，我是蔚然。有什么可以帮你的吗？' },
@@ -376,7 +376,7 @@ function startDrag(x: number, y: number): void {
 function moveDrag(x: number, y: number): void {
   const dx = x - dragStartX;
   const dy = y - dragStartY;
-  if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+  if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
     dragging = true;
     if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
   }
@@ -565,3 +565,25 @@ export function initOrb(): void {
   wsChannel.onCommand('collapse-orb', () => { if (orbState === 'expanded') { collapsePanel(); } });
   wsChannel.onCommand('toggle-orb', () => { togglePanel(); });
 }
+
+// ========== 交互能力声明（供路由层使用） ==========
+export const orbCapability: InteractionCapability = {
+  id: 'orb',
+  drag: {
+    enabled: true,
+    area: () => orbEl?.getBoundingClientRect() ?? new DOMRect(0, 0, 0, 0),
+    mode: 'anchor-br',
+    minWidth: PANEL_MIN_WIDTH,
+    minHeight: PANEL_MIN_HEIGHT,
+  },
+  longPress: {
+    enabled: true,
+    duration: LONG_PRESS_MS,
+    onEnterEdit: enterEditMode,
+    onExitEdit: exitEditMode,
+  },
+  boundary: {
+    inputBarId: 'aiInputBar',
+    decorSize: ORB_SIZE,
+  },
+};

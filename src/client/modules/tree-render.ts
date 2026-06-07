@@ -995,7 +995,7 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
   // 构建独立动画树（折叠）
   const overlayRoot = _buildAndSetOverlayTree(pack, subTargets, subPacks, root);
 
-  // 字符雨层：与容器Ov平级，不受 overflow:hidden 裁剪
+  // 字符雨层：与容���Ov平级，不受 overflow:hidden 裁剪
   const charLayer = _createCharLayer(pack.containerOverlay.x, pack.containerOverlay.y, overlayRoot);
 
   const maxLevel = subTargets.length > 0 ? Math.max(...subTargets.map(st => st.level)) : 0;
@@ -1095,6 +1095,9 @@ export function forceRebuildTree(): void {
 }
 
 function rebuildTree(): void {
+  // 防御性清理：无论从哪里触发 rebuildTree，先丢弃旧的动画状态
+  _removeAllOverlays();
+  if (L.renderer) L.renderer.setOverlayRoot(null);
   if (!L.renderer) return;
   if (L.isAnimating) {
     // rebuildTree 被调用时动画应已完成或超时。
