@@ -19,6 +19,7 @@ const SRC_DIR = 'src';
 // 新增交互元素时，同时在此数组追加对应 id。
 // id 必须与 Registry.register({ id: '...' }) 中的值一致。
 const ELEMENT_MANIFEST = [
+  'orb',                  // orb.ts — 悬浮光球（AI Chat 入口）
   'orb-panel',            // orb.ts — AI 对话面板（光球展开后）
   'sidebar',              // ui.ts — 文件树侧栏
   'sidebar-toggle-btn',   // app.ts — 侧栏召唤按钮
@@ -52,7 +53,6 @@ const CAPABILITY_MANIFEST = [
 // 不在列表中 = 必须有 data-registry-id（否则 AI 无法定位）。
 // Canvas 渲染、动态 DOM、或纯视觉反馈的元素在此声明豁免，并注明理由。
 const NO_DOM_TARGET = new Set([
-  'orb',             // 动态 DOM（createFloatingCard 创建）
   'orb-panel',       // 动态 DOM（展开后创建），通过 expand-orb 命令操作
   'card-stack',      // 动态 DOM（GSAP 创建），通过 open/close-card-stack 命令
   'file-tree',       // Canvas 渲染，无 DOM 可点击
@@ -314,7 +314,7 @@ function check() {
       registeredContents.add(match[1]);
     }
 
-    // 扫描能力层注册
+    // 扫描能力层��册
     while ((match = CAPABILITY_CALL_RE.exec(content)) !== null) {
       registeredCapabilities.add(match[1]);
     }
