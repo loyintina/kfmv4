@@ -1,8 +1,8 @@
 ---
-status: active
+status: superseded
+superseded_by: CLAUDE.md
 version: v1.0
-last_updated: 2026-06-05
-archived_reason: ''
+last_updated: 2026-06-07
 ---
 
 # KFM v4 — 浮卡系统统一化规范
@@ -127,7 +127,7 @@ BR 始终可见。TL/TR/BL 按配置显示。
 
 ### Step 3 — 新旧并行验证
 
-用调试开关切换新旧 orb，逐项验证行为一致。
+用调试开关切换新旧 orb，逐项验��行为一致。
 
 ### Step 4 — 切换
 
