@@ -38,15 +38,20 @@ docs/
 ├── HANDBOOK.md              # 工作手册：架构-调试-待办-测试（日常翻）
 ├── VISION_AND_ROADMAP.md    # 远景文档：核心理念+演进路线（规划设计时参考）
 ├── KFM_V4_INVARIANTS.md     # 修改约束协议：心法原则+自查清单（改代码前必读）
+├── design/                  # 设计中（待实现的设计文档）
+│   ├── BOX_LOCATION_MAP_SPEC.md  # Canvas 内部眼睛（AI 坐标无关操作）
+│   └── WORKBENCH_SPEC.md        # 卡片工作台（购物车+顶栏+光标+编辑态）
+├── notes/                   # 项目笔记
+│   └── PROJECT_ASSESSMENT.md     # 项目把控理解与建议
 └── archive/                 # 历史归档
     ├── handoff/             # 版本交接记录
-    ├── design/              # 设计文档（含已归档的浮卡统一化规范）
+    ├── design/              # 已完成/已取代的设计文档
     ├── plan/                # 已完成计划
     ├── bug/                 # 已修复 Bug
     └── legacy/              # 旧版本文件
 ```
 
-> 接手新对话的推荐阅读顺序：`CLAUDE.md` → `HANDBOOK.md` §2（当前状态）→ `KFM_V4_INVARIANTS.md`（修改规则）→ `CARD_SYSTEM_UNIFICATION_SPEC.md`（当前方向）→ `HANDBOOK.md` §3（待办）。
+> 接手新对话的推荐阅读顺序：`CLAUDE.md` → `HANDBOOK.md` §2（当前状态）→ `KFM_V4_INVARIANTS.md`（修改规则）→ `docs/design/WORKBENCH_SPEC.md`（当前方向）→ `HANDBOOK.md` §3（待办）→ `HANDBOOK.md` §七（审计问题清单）。
 
 ## 完整性校验
 
@@ -61,7 +66,9 @@ npm run test    # 105 个回归测试，覆盖 11 个模块
 - `orb.ts`：光球 + AI 对话面板，从 HTML 读取 `#lightOrb` 元素
 - `floating-card.ts`：浮卡发射/拖拽/缩放/编辑，仅服务 02 日志卡
 
-统一化方案已放弃，详见 `docs/archive/design/CARD_SYSTEM_UNIFICATION_SPEC.md`。
+两模块通过交互共享层（`interaction-constants.ts` + `interaction-types.ts`）共享常量和类型，各自导出能力声明（`orbCapability` / `floatingCardCapability`）。统一化方案已放弃（两次回退），详见 `docs/archive/design/CARD_SYSTEM_UNIFICATION_SPEC.md`。
+
+完整模块清单见 HANDBOOK §七「客户端模块完整审计表」（29个模块 + 引擎层14个文件）。
 
 ## 注意事项
 

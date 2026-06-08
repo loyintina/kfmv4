@@ -52,15 +52,25 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 
 ## 二、当前会话状态
 
-> **最后更新**：2026-06-03（v6.3.1 — 新一轮周期开始）
+> **最后更新**：2026-06-08（v6.6.0 — 交互共享层 + overlay 根解 + 卡片工作台设计）
 
 ### 当前焦点
-**浮卡系统统一化**（见 `CARD_SYSTEM_UNIFICATION_SPEC.md`）
-- 三轮深度审计全部完成，spec-vs-code 缺口收窄到 typo 级
-- `(as any)` 零逃逸（白名单清空）
-- CI 基线固化（check-registry.mjs 三层验证 + 孤立 getter 检测 + 命令重复检测）
-- CARDS 数组迁移为访问函数
-- card-stack.ts 拆分为面板 + 浮卡两个文件
+**卡片工作台**（见 `docs/design/WORKBENCH_SPEC.md`）
+
+v6.6.0 之前的焦点「浮卡系统统一化」已两次尝试均回退放弃（详见 `docs/archive/design/CARD_SYSTEM_UNIFICATION_SPEC.md`）。当前方向改为「三层共享层」——常量层 + 类型层 + 能力声明层，可在不碰逻辑的前提下逐步统一。
+
+- **v6.6.0 已完成**：
+  - 交互共享层建立（`interaction-constants.ts` + `interaction-types.ts` + 能力声明导出）✅
+  - overlay 残留 bug 根解（`rebuildTree` 入口加防御性清理）✅
+  - Box 位置映射设计文档（`docs/design/BOX_LOCATION_MAP_SPEC.md`）✅
+  - 卡片工作台设计文档（`docs/design/WORKBENCH_SPEC.md`）✅
+
+<!-- v6.3.x CI 基线固化（历史） -->
+- 三轮深度审计全部完成，spec-vs-code 缺口收窄到 typo 级 ✅
+- `(as any)` 零逃逸（白名单清空）✅
+- CI 基线固化（check-registry.mjs 三层验证 + 孤立 getter 检测 + 命令重复检测）✅
+- CARDS 数组迁移为访问函数 ✅
+- card-stack.ts 拆分为面板 + 浮卡两个文件 ✅
 
 - 消除 `SAFE_ROOT`/`sanitizePath` 在 `index.ts` 和 `capability-executor.ts` 间的重复定义 ✅
 - `_` 前缀跨模块访问显式接口化：`RendererLifecycle` 新增 8 个方法 + `animElapsed` getter ✅
@@ -110,9 +120,9 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 
 ## 三、当前待办
 12. **Canvas 元素的 AI click 无坐标**：`file-tree` Canvas 通过 `data-registry-id` 可被 AI `click` 指令定位并触发 `click()`，但合成的 PointerEvent 坐标为 (0,0)，不一定命中预期的行。
-    **v6.3 部分缓解**：新增 `expand-dir`/`collapse-dir`/`select-file` 专用命令绕过坐标问题，AI 应优先使用这些命令而非通用 `click`。<a id='trap-12'></a>
+    **v6.3 部分缓解。**v6.6.0 进入设计阶段**：`docs/design/BOX_LOCATION_MAP_SPEC.md` 提出"内部眼睛"方案——通过 Box 位置映射让 AI 绕过坐标直接操作 Canvas，待实施**：新增 `expand-dir`/`collapse-dir`/`select-file` 专用命令绕过坐标问题，AI 应优先使用这些命令而非通用 `click`。<a id='trap-12'></a>
 13. **`registerContent()` 与生成器关系**：同一 id 下生成器优先，`registerContent()` 不会覆盖已注册的生成器。如需强制更新静态内容，先调 `registerContentGenerator(id, null)` 注销生成器。<a id='trap-13'></a>
-15. **文件树 overlay 残留导致滚动分裂**：开启显示隐藏文件后，展开空文件夹再折叠，滑动文件树时 overlay 遗留的半截树不跟随滚动。触发条件较特定（需 eye-btn + 空目录 + 展开折叠 + 滑动）。根源：`_activeOverlays` 清理或 `canvas-scroll` 对 overlay 树的处理存在缺口。<a id='trap-15'></a>
+15. **文件树 overlay 残留导致滚动分裂**：~~已根解（v6.6.0）~~：在 `rebuildTree` 入口加防御性清理 `_removeAllOverlays()` + `renderer.setOverlayRoot(null)`，确保无论从哪条路径触发，旧 overlay 都不会残留。~~原描述：开启显示隐藏文件后，展开空文件夹再折叠，滑动文件树时 overlay 遗留的半截树不跟随滚动。~~<a id='trap-15'></a>
 
 14. **`notifyStateChange()` 散布**：`notifyStateChange()` 散布在 6 个文件的 ~36 处调用（2026-06-03 审计后从约 41 处清理了 ui.ts 中 5 处冗余——openSidebar/closeSidebar 中的 2 处及 3 个命令处理器的冗余调用，均在 KFMState.setSidebarOpen 已覆盖后被标记为冗余并移除）。剩余 ~36 处均为合理存在：tree-render.ts ~10 处（Canvas 渲染状态变化）、card-stack.ts ~9 处（DOM/GSAP 生命周期状态）、orb.ts ~8 处（orbState/panelState 模块变量）、app.ts ~2 处（toast DOM 回调）、tree-render/rebuildTree 等。根解方向未变：在 ws-channel 层建立自动覆盖检测，识别被 KFMState 订阅覆盖的冗余通知。但需注意，绝大多数通知来自 KFMState 无法覆盖的路径（Canvas/GSAP 回调/模块变量），真正的冗余比例较低。<a id='trap-14'></a>
 
@@ -120,11 +130,14 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 
 | 优先级 | 事项 | 说明 |
 |--------|------|------|
-| **🔴 P0** | 浮卡系统统一化 | ✅ 已完成（v1.0） |
-| **🟠 P2** | `CARDS` 数组迁移 | ✅ 已完成 |
-| **🟠 P2** | 拆分 `card-stack.ts` | ✅ 已完成 |
-
-| **🟠 P2** | 文件树 overlay 残留 | 显示隐藏文件后展开空文件夹再折叠，滑动文件树时上半跟随移动、下半静止。根因疑似 overlay 清理不完整导致渲染树分裂。另见 HANDBOOK §3 陷阱 #15 |
+| **🔴 P0** | 卡片工作台 Phase 1 | 购物车模式 + 基本文件浮卡（见 `docs/design/WORKBENCH_SPEC.md` §9） |
+| **🔴 P0** | 文档-代码同步审计修复 | 见下方「文档审计问题清单」 |
+| **🟠 P1** | Box 位置映射实施 | AI 内部眼睛——让 AI 通过路径直接操作 Canvas（见 `docs/design/BOX_LOCATION_MAP_SPEC.md`） |
+| **🟠 P1** | 版本号同步为 v6.6.0 | `package.json`、HANDBOOK 历史表、CLAUDE.md |
+| ~~🔴 P0~~ | ~~浮卡系统统一化~~ | ❌ 两次尝试均回退放弃。当前方向：三层共享层（已完成 ✅） |
+| ~~🟠 P2~~ | ~~`CARDS` 数组迁移~~ | ✅ 已完成 |
+| ~~🟠 P2~~ | ~~拆分 `card-stack.ts`~~ | ✅ 已完成 |
+| ~~🟠 P2~~ | ~~文件树 overlay 残留~~ | ✅ v6.6.0 已根解（rebuildTree 入口防御性清理） |
 
 ### 持续观察
 - 测试基础设施脆弱（GSAP mock 失真，无 UI/Canvas/手势覆盖）
@@ -263,3 +276,79 @@ npm test   # 105 个测试，覆盖 11 个模块（含 Box 引擎）
 - 分支 `feat/central-only` 含中央模式预览功能，`save-before-rollback` 含动画优化，均未合并
 - 通用 `click` 指令能定位 5 个 DOM 元素 + 3 个 Canvas 元素；`file-tree` Canvas 元素仍优先使用 `expand-dir`/`collapse-dir`/`select-file` 命令
 - 待办维持：card-stack 拆分（P2，1392 行）、动画锁 3000ms 超时（P3）、拖拽逻辑去重、`feat/central-only` 合并评估
+
+---
+
+## 七、文档-代码审计（2026-06-08）
+
+> 本节记录项目全量审计发现的问题，供接手 agent 参考。
+
+### 文档审计问题清单
+
+| # | 优先级 | 问题 | 说明 |
+|---|--------|------|------|
+| 1 | 🔴 P0 | 版本号三处不一致 | `package.json`=6.5.0, HANDBOOK §2 曾=v6.3.1（已修正为v6.6.0）, git tag 最新=v6.5.0。应统一为 v6.6.0 |
+| 2 | 🔴 P0 | HANDBOOK §2 当前焦点严重过时 | 曾写"浮卡统一化"（已放弃），已修正为"卡片工作台" |
+| 3 | 🔴 P0 | HANDBOOK §3 待办表过时 | overlay #15 已修复但仍列在待办（已修正），统一化已放弃但标✅（已修正） |
+| 4 | 🔴 P0 | 8 个客户端模块零文档 | `theme`(7依赖)、`style-registry`(4依赖)、`tree-loader`、`tree-model`、`char-rain`、`click-queue`、`interaction-constants`、`interaction-types` |
+| 5 | 🔴 P0 | 引擎层零文档 | `engine/v2/`（8文件）和 `engine/text-layout/`（6文件）共14个文件，HANDBOOK 完全未提及 |
+| 6 | 🟠 P1 | CLAUDE.md 文档树缺 `design/` 和 `notes/` | 实际目录结构未反映 |
+| 7 | 🟠 P1 | CLAUDE.md 当前架构描述缺交互共享层 | orb.ts 和 floating-card.ts 现在有共享层 |
+| 8 | 🟠 P1 | `cards/` 目录零文档 | debug-card 插件目录无任何文档提及 |
+| 9 | 🟡 P2 | `.github_token` 在项目根目录 | 安全风险，应移入环境变量或 .gitignore |
+| 10 | 🟡 P2 | `sidebar-*.png` 临时截图 | 应 gitignore |
+| 11 | 🟡 P2 | `public/bundle.js` 590KB 构建产物 | 应 gitignore |
+| 12 | 🟡 P2 | HANDBOOK 陷阱 #12 描述需更新 | 已更新（加注设计阶段） |
+| 13 | 🟠 P1 | HANDBOOK §1 模块列表不完整 | 仅16个，实际29个 |
+| 14 | 🟠 P1 | `path-utils.ts` 无独立文档描述 | 服务端安全关键模块 |
+| 15 | 🟡 P2 | 服务端 5 个文件总体无架构文档 | HANDBOOK 有零星提及但无系统描述 |
+
+### 客户端模块完整审计表
+
+> HANDBOOK §1 注册中心表仅覆盖部分模块。以下是全部 29 个客户端模块的完整清单。
+
+| 模块 | 行数 | 被导入 | 文档覆盖 | 用途 |
+|------|------|--------|---------|------|
+| `app.ts` | 184 | 1 | ✅ 入口 | 初始化流程编排 |
+| `animation-registry.ts` | 134 | 5 | ✅ 提及 | GSAP 动画隔离层 |
+| `canvas-cursor.ts` | 244 | 3 | ✅ 提及 | Canvas 盒子光标系统 |
+| `canvas-scroll.ts` | 286 | 2 | ✅ 提及 | Canvas 盒子滚动系统 |
+| `canvas-utils.ts` | 60 | 4 | ✅ 依赖图 | Canvas 通用工具函数 |
+| `card-stack.ts` | 498 | 4 | ✅ 独立条目 | 堆叠卡片面板 |
+| `char-rain.ts` | 305 | 1 | ❌ 零提及 | 字符散落/回收动画 |
+| `click-queue.ts` | 38 | 1 | ❌ 零提及 | 点击事件队列 |
+| `debug-assert.ts` | 23 | 1 | ✅ 提及 | 运行时断言 |
+| `dom-refs.ts` | 36 | 9 | ✅ 注册表 | DOM 元素引用 |
+| `floating-card.ts` | 903 | 2 | ⚠️ 1次提及 | 浮卡系统（核心模块，文档不足） |
+| `gesture-registry.ts` | 215 | 6 | ✅ 独立条目 | 手势注册中心 |
+| `gestures.ts` | 69 | 1 | ✅ 提及 | 页面滑动手势配置 |
+| `interaction-constants.ts` | 15 | 2 | ❌ 零提及 | 交互常量共享层（v6.6.0 新增） |
+| `interaction-types.ts` | 79 | 2 | ❌ 零提及 | 交互类型共享层（v6.6.0 新增） |
+| `logger.ts` | 58 | 3 | ❌ 零提及 | KFM 日志系统（与 cards/debug-card 配套） |
+| `orb.ts` | 588 | 1 | ✅ 独立条目 | 光球 + AI 对话面板 |
+| `renderer-lifecycle.ts` | 224 | 5 | ✅ 注册表 | 渲染器生命周期单例 L |
+| `root-picker.ts` | 431 | 2 | ⚠️ 1次提及 | 文件树根目录切换器 |
+| `state.ts` | 157 | 10 | ✅ 注册表 | 全局状态层 KFMState |
+| `style-registry.ts` | 214 | 4 | ❌ 零提及 | 文件树样式唯一来源 |
+| `theme.ts` | 217 | 7 | ❌ 零提及 | 主题系统（颜色唯一来源） |
+| `tree-loader.ts` | 185 | 2 | ❌ 零提及 | 数据加载层（按需加载展开路径） |
+| `tree-model.ts` | 228 | 2 | ❌ 零提及 | 绝对深度布局模型 |
+| `tree-render.ts` | 1263 | 3 | ✅ 核心条目 | 文件树 Canvas 渲染 |
+| `ui-registry.ts` | 331 | 9 | ✅ 独立条目 | UI 元素注册表 |
+| `ui.ts` | 72 | 10 | ✅ 提及 | UI 初始化编排 |
+| `ws-channel.ts` | 317 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
+| **合计** | **7374** | | | |
+
+### 死代码检查
+
+**结论：无死代码。** 所有 29 个模块都被至少 1 个文件导入。`cards/` 目录下 2 个文件（`debug-card/index.ts` + `logger.ts`）未被任何代码导入，但因 tsconfig rootDir 限制处于"预留"状态——代码中有同款 `modules/logger.ts`（实际被使用），`cards/` 下的是未启用的副本。注释互相说"将来要迁过去"。
+
+### 引擎层清单（零文档）
+
+| 目录 | 文件数 | 用途 |
+|------|--------|------|
+| `engine/v2/` | 8 | Box 数据结构、Renderer、Flex 布局、动画工具、样式配置 |
+| `engine/text-layout/` | 6 | 文本测量、双向排版、行断算法 |
+
+这两个目录共 14 个文件是整个 Canvas 渲染管线的基础，但 HANDBOOK 的依赖方向图只画了模块层，未延伸到引擎层。任何需要修改渲染逻辑的 agent 都应该先读 `engine/v2/` 的头部注释。
+
