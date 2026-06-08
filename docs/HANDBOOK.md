@@ -50,6 +50,22 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
         → initTreeRenderer() → loadFileTree() → initLazyLoader() → initCardStack()
 ```
 
+### 模块职能分组（全 29 个模块）
+
+> 完整清单及依赖关系见 §七「客户端模块完整审计表」。此处按职能分组，方便快速定位。
+
+| 分组 | 模块 | 核心职责 |
+|------|------|---------|
+| **骨架** | `app.ts` `ui.ts` `dom-refs.ts` `state.ts` `renderer-lifecycle.ts` | 初始化编排、全局状态、渲染器单例 L |
+| **注册中心** | `ui-registry.ts` `gesture-registry.ts` `animation-registry.ts` | UI 元素、手势、动画的注册/调度 |
+| **文件树渲染** | `tree-render.ts` `tree-model.ts` `tree-loader.ts` `canvas-cursor.ts` `canvas-scroll.ts` `canvas-utils.ts` `root-picker.ts` | Canvas 文件树的构建、交互、加载 |
+| **文件树样式** | `style-registry.ts` `theme.ts` | 文件树尺寸/颜色/字体的唯一来源（改一处全局同步） |
+| **视觉效果** | `char-rain.ts` | 字符散落/回收动画（展开折叠时） |
+| **交互共享** | `interaction-constants.ts` `interaction-types.ts` `click-queue.ts` | 模块间共享的常量/类型/事件队列 |
+| **卡片系统** | `card-stack.ts` `floating-card.ts` | 卡片堆面板、浮卡发射/拖拽/缩放 |
+| **AI / 通信** | `orb.ts` `ws-channel.ts` `debug-assert.ts` `gestures.ts` | 光球面板、WebSocket、运行时断言、页面手势 |
+| **日志** | `logger.ts` | KFM 日志系统（debug-card 伴侣） |
+
 ## 二、当前会话状态
 
 > **最后更新**：2026-06-08（v6.6.0 — 交互共享层 + overlay 根解 + 卡片工作台设计）
@@ -205,11 +221,11 @@ npm test   # 105 个测试，覆盖 11 个模块（含 Box 引擎）
 | ~~1~~ | ~~🔴~~ ✅ | ~~版本号三处不一致~~ 已修复 | 已统一为 v6.6.0（package.json + git tag + HANDBOOK §2） + CI 检查脚本 `check-versions.mjs` 已加入管线 |
 | 2 | 🔴 P0 | HANDBOOK §2 当前焦点严重过时 | 曾写"浮卡统一化"（已放弃），已修正为"卡片工作台" |
 | 3 | 🔴 P0 | HANDBOOK §3 待办表过时 | overlay #15 已修复但仍列在待办（已修正），统一化已放弃但标✅（已修正） |
-| 4 | 🔴 P0 | 8 个客户端模块零文档 | `theme`(7依赖)、`style-registry`(4依赖)、`tree-loader`、`tree-model`、`char-rain`、`click-queue`、`interaction-constants`、`interaction-types` |
-| 5 | 🔴 P0 | 引擎层零文档 | `engine/v2/`（8文件）和 `engine/text-layout/`（6文件）共14个文件，HANDBOOK 完全未提及 |
+| 4 | 🔴 P0 | 8 个客户端模块零文档 | ✅ 已审计：全部有效，无死代码，无功能重叠。头部注释已有清晰用途说明。HANDBOOK §1 已补入模块职能分组表。仍需长期：引擎层架构文档 |
+| 5 | 🟠 P1 | 引擎层零文档 | `engine/v2/`（8文件）和 `engine/text-layout/`（6文件）共14个文件，头部注释有简要说明但无系统架构文档。当前大部分模块已有基础注释，暂不阻塞开发 |
 | 6 | 🟠 P1 | CLAUDE.md 文档树缺 `design/` 和 `notes/` | 实际目录结构未反映 |
 | 7 | 🟠 P1 | CLAUDE.md 当前架构描述缺交互共享层 | orb.ts 和 floating-card.ts 现在有共享层 |
-| 8 | 🟠 P1 | `cards/` 目录零文档 | debug-card 插件目录无任何文档提及 |
+| 8 | 🟠 P1 | `cards/` 目录零文档 | ✅ 已确认：预留的 debug-card 插件结构，2 个文件（index.ts + logger.ts）未被导入。`src/client/modules/logger.ts` 是实际使用的 logger。将来如需迁移，在文档中补充说明即可 |
 | 9 | 🟡 P2 | `.github_token` 在项目根目录 | 安全风险，应移入环境变量或 .gitignore |
 | 10 | 🟡 P2 | `sidebar-*.png` 临时截图 | 应 gitignore |
 | 11 | 🟡 P2 | `public/bundle.js` 590KB 构建产物 | 应 gitignore |
@@ -217,6 +233,7 @@ npm test   # 105 个测试，覆盖 11 个模块（含 Box 引擎）
 | 13 | 🟠 P1 | HANDBOOK §1 模块列表不完整 | 仅16个，实际29个 |
 | 14 | 🟠 P1 | `path-utils.ts` 无独立文档描述 | 服务端安全关键模块 |
 | 15 | 🟡 P2 | 服务端 5 个文件总体无架构文档 | HANDBOOK 有零星提及但无系统描述 |
+| 16 | ✅ 已排查 | 注册表遗漏 & 重复造轮子 | 交互层13=MANIFEST13、内容层3=MANIFEST3、能力层3=MANIFEST3，一一对应。类型共享无重复，点击队列无重复，缩进逻辑无重复。发现1处可修复的重复：`floating-card.ts:555` 局部定义 `MARGIN_F=8` 绕过共享常量 `MARGIN`—已修正 |
 
 ### 客户端模块完整审计表
 

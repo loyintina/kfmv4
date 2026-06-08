@@ -552,7 +552,7 @@ export function launchFocusedCard(): void {
       const expTop = parseFloat(el.style.top) || 0;
       const foldW = item.compactMemW;
       const foldH = item.compactMemH;
-      const MARGIN_F = 8;
+      const MARGIN_F = MARGIN;
       const expW = item.cardWidth;
       const expH = item.cardHeight;
       // 边界压缩（与展开对称）：折叠后右下角锚点不能超出屏幕
