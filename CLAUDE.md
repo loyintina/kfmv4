@@ -76,5 +76,6 @@ npm run test    # 105 个回归测试，覆盖 11 个模块
 - **Canvas 初始化**: `clientWidth=0`，需在 rAF 回调里 `rebuildTree()`
 - **事件冒泡**: 侧栏触摸区事件冒泡到 document → GestureRegistry 误触发
 - **全项目统一使用 PointerEvent** — 禁止 `addEventListener('touchstart/pointermove/pointerup')`，都走 `gesture-registry.ts`
+- **Git 推送认证**：项目根目录 `.env` 文件中配置了 `GITHUB_TOKEN` 环境变量（已 `.gitignore` 保护）。执行 `git push` 前先 `source .env` 或将该 token 加入 git credential。该 token 用于 agent 远程推送代码，不可删除。
 
 > 历史修复记录（v4.0.0 前）已清理。如需追溯：`git log --oneline v4.0.0..HEAD`
