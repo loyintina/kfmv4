@@ -1,6 +1,6 @@
 ---
 status: superseded
-superseded_by: docs/archive/design/VISION_AND_ROADMAP.md
+superseded_by: docs/design/VISION_AND_ROADMAP.md
 archived_at: 2026-06-02
 ---
 # Kaf Fee Mew — 技术架构与实施蓝图

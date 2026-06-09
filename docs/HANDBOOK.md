@@ -1,7 +1,7 @@
 # KFM v4 工作手册 (SOP)
 
 > **日常开发参考**。改代码前先读 `KFM_V4_INVARIANTS.md`（修改约束协议），
-> 规划设计时参考 `docs/archive/design/VISION_AND_ROADMAP.md`（远景文档）。
+> 规划设计时参考 `docs/design/VISION_AND_ROADMAP.md`（远景文档）。
 > 做浮卡统一化时参考 `CARD_SYSTEM_UNIFICATION_SPEC.md`（浮卡系统统一化规范）。
 > 本手册整合了架构速查、调试流程、隐性契约、当前状态、待办和测试指南。
 

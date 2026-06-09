@@ -12,7 +12,7 @@ docs/
 ├── AGENTS.md                   ← 本文。AI 文档维护指南
 ├── HANDBOOK.md                 ← 工作手册：架构、调试、待办、测试（日常翻）
 ├── KFM_V4_INVARIANTS.md       ← 修改约束：心法 + 自查清单（改代码前读）
-├── archive/design/VISION_AND_ROADMAP.md  ← 远景：核心理念 + 演进路线（规划时参考）
+├── design/VISION_AND_ROADMAP.md  ← 远景：核心理念 + 演进路线（规划时参考）
 ├── AGENTS.md                  ← 本文。AI 文档维护指南
 ├── design/                    ← 待实现的设计提案
 │   └── WORKBENCH_SPEC.md      ← 卡片工作台（唯一 active 设计提案）
@@ -31,7 +31,7 @@ docs/
 |------|------|--------|
 | `HANDBOOK.md` | 当前状态、待办、陷阱、架构速查、测试 | 每次改代码后同步 |
 | `KFM_V4_INVARIANTS.md` | 心法原则、约束、补丁模式、自查清单 | 发现新约束时追加 |
-| `archive/design/VISION_AND_ROADMAP.md` | 核心理念、演进路线、开放问题 | 做重大决策时更新 |
+| `design/VISION_AND_ROADMAP.md` | 核心理念、演进路线、开放问题 | 做重大决策时更新 |
 | `archive/design/ENGINE_ARCHITECTURE.md` | 引擎层 14 个文件的架构描述 | 改渲染逻辑后同步 |
 | `design/WORKBENCH_SPEC.md` | 唯一待实现的设计提案 | 定了方案才改 |
 
@@ -44,7 +44,7 @@ docs/
 
 2. **`CLAUDE.md` 中的文档体系图**（第 35-52 行）。加了新文档或移动后必须同步更新。
 
-3. **`archive/design/VISION_AND_ROADMAP.md` 不追实现细节**。它是方向性文档，具体实现记录在 HANDBOOK 中。
+3. **`design/VISION_AND_ROADMAP.md` 不追实现细节**。它是方向性文档，具体实现记录在 HANDBOOK 中。
 
 ## 三、archive 维护规则
 

@@ -30,6 +30,12 @@ export interface KFMStateType {
   viewport: ViewportState;
   sidebarOpen: boolean;
   
+  // 卡片工作台
+  openCards: OpenCard[];
+  focusedCardId: string | null;
+  cart: CartState;
+  config: CartConfig;
+  
   // 缓存
   fileCache: { version: number; updated: number; tree: Record<string, any> };
   
@@ -50,6 +56,16 @@ export interface KFMStateType {
   toggleHidden(): void;
   setSidebarOpen(open: boolean): void;
   setViewport(v: Partial<ViewportState>): void;
+
+  // 卡片工作台方法
+  cartAddEntry(entry: CartEntry): void;
+  cartRemoveEntry(id: string): void;
+  cartClear(): void;
+  cartSetOpen(open: boolean): void;
+  cartSetEditMode(edit: boolean): void;
+  addOpenCard(card: OpenCard): void;
+  removeOpenCard(id: string): void;
+  focusCard(id: string | null): void;
 }
 
 export const KFMState: KFMStateType = {
@@ -60,6 +76,10 @@ export const KFMState: KFMStateType = {
   showHidden: false,
   viewport: { scrollTop: 0, scrollLeft: 0 },
   sidebarOpen: false,
+  openCards: [],
+  focusedCardId: null,
+  cart: { entries: [], isOpen: false, editMode: false },
+  config: { allowDuplicates: false },
   fileCache: { version: 1, updated: 0, tree: {} },
   
   _listeners: [],
@@ -125,7 +145,41 @@ export const KFMState: KFMStateType = {
   setViewport(v) {
     Object.assign(this.viewport, v);
     this.notify();
-  }
+  },
+
+  cartAddEntry(entry) {
+    if (!this.config.allowDuplicates && this.cart.entries.some(e => e.path === entry.path && e.type === entry.type)) return;
+    this.cart.entries.push(entry);
+    this.notify();
+  },
+  cartRemoveEntry(id) {
+    this.cart.entries = this.cart.entries.filter(e => e.id !== id);
+    this.notify();
+  },
+  cartClear() {
+    this.cart.entries = [];
+    this.notify();
+  },
+  cartSetOpen(open) {
+    this.cart.isOpen = open;
+    this.notify();
+  },
+  cartSetEditMode(edit) {
+    this.cart.editMode = edit;
+    this.notify();
+  },
+  addOpenCard(card) {
+    this.openCards.push(card);
+    this.notify();
+  },
+  removeOpenCard(id) {
+    this.openCards = this.openCards.filter(c => c.id !== id);
+    this.notify();
+  },
+  focusCard(id) {
+    this.focusedCardId = id;
+    this.notify();
+  },
 };
 
 // ============================================================
@@ -147,6 +201,39 @@ export function getFileRowData(d: Record<string, unknown>): FileRowData | null {
     return d as unknown as FileRowData;
   }
   return null;
+}
+
+// ============================================================
+// 卡片工作台数据类型（WORKBENCH_SPEC.md §8）
+// ============================================================
+
+export interface OpenCard {
+  id: string;
+  type: 'file' | 'folder' | 'editor';
+  path: string;
+  name: string;
+  instanceIndex: number;
+  mode: 'preview' | 'detailed';
+  createdAt: number;
+}
+
+export interface CartEntry {
+  id: string;
+  type: 'file' | 'folder';
+  path: string;
+  name: string;
+  instanceIndex: number;
+  createdAt: number;
+}
+
+export interface CartState {
+  entries: CartEntry[];
+  isOpen: boolean;
+  editMode: boolean;
+}
+
+export interface CartConfig {
+  allowDuplicates: boolean;
 }
 
 // 挂载到 window 供跨模块访问
