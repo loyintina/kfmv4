@@ -97,6 +97,7 @@ export function bindWheelEvents(canvas: HTMLElement): void {
 let _gestureId = 0;
 let _gestureStartX = 0;
 let _gestureStartY = 0;
+let _swipeHorizontal = false;
 
 export function initScrollGesture(): void {
   if (_gestureId) return; // 只注册一次
@@ -110,6 +111,7 @@ export function initScrollGesture(): void {
       if (e.button !== 0) return;
       _gestureStartX = e.clientX;
       _gestureStartY = e.clientY;
+      _swipeHorizontal = false;
       const y = e.clientY;
       lastTouchY = y;
       lastTouchTime = performance.now();
@@ -144,7 +146,18 @@ export function initScrollGesture(): void {
         }
       }
     },
-    onMove(e) {
+    onMove(e, dx) {
+      // 轴向锁定：水平位移 > 垂直 → 抑制滚动/光标，待 onEnd 处理
+      const absDx = Math.abs(dx ?? (e.clientX - _gestureStartX));
+      if (absDx > 10) {
+        const absDy = Math.abs(e.clientY - _gestureStartY);
+        if (absDx > absDy * 1.5) {
+          _swipeHorizontal = true;
+          // 不阻断事件传播，仅跳过后续垂直处理
+        }
+      }
+      if (_swipeHorizontal) return;
+
       const y = e.clientY;
       const now = performance.now();
       if (_touchIsCursor) {
@@ -208,7 +221,20 @@ export function initScrollGesture(): void {
         if (Math.abs(dx) < 8 && Math.abs(dy) < 8 && (e.target as HTMLElement).closest?.('.sidebar-picker')) pickerHandleClick(e);
         return;
       }
-      // 水平滑动检测 → 关闭侧栏
+
+      if (_swipeHorizontal) {
+        if (dx > 50) {
+          _swipeHorizontal = false;
+          L.setSwipeGuard();
+          L.triggerRowSwipe(e.clientY);
+          return;
+        }
+        // 左滑关侧栏
+        if (dx < -60) { _swipeHorizontal = false; closeSidebar(); return; }
+        _swipeHorizontal = false;
+      }
+
+      // 水平滑动检测 → 关闭侧栏（兼容无轴向锁定的老路径）
       const absDx = Math.abs(dx);
       const absDy = Math.abs(dy);
       if (absDx > 60 && absDx > absDy * 1.5 && dx < -60) {

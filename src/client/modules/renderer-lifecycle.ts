@@ -54,6 +54,17 @@ export class RendererLifecycle {
 
   /** 设置待选中的文件路径（AI select-file 命令使用） */
   setPendingSelectFile(path: string): void { this._pendingSelectFile = path; }
+
+  /** 注册文件行右滑回调（tree-render 注册，canvas-scroll 调用，避免循环依赖） */
+  private _rowSwipeHandler: ((y: number) => void) | null = null;
+  setRowSwipeHandler(fn: ((y: number) => void) | null): void { this._rowSwipeHandler = fn; }
+  triggerRowSwipe(y: number): void { this._rowSwipeHandler?.(y); }
+  /** 右滑守卫：右滑结束后短时间内抑制 sidebarTouchArea 的点击误触 */
+  _swipeGuard = false;
+  setSwipeGuard(): void {
+    this._swipeGuard = true;
+    setTimeout(() => { this._swipeGuard = false; }, 300);
+  }
   /** 消费并清除待选中的文件路径，返回已保存值（无待选时返回 null） */
   consumePendingSelectFile(): string | null {
     const path = this._pendingSelectFile;
