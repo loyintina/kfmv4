@@ -5,7 +5,7 @@ AI 人机交互个人工作台，面向移动端浏览器。核心理念：**一
 > ⏱ **TL;DR**：这是 AI 生成的个人工作台原型，Canvas 自研渲染引擎。
 > **改代码前先读** `docs/KFM_V4_INVARIANTS.md`（修改约束协议）。
 > **日常干活翻** `docs/HANDBOOK.md`（架构+调试+待办+测试）。
-> **规划设计时参考** `docs/VISION_AND_ROADMAP.md`（远景）。
+> **规划设计时参考** `docs/archive/design/VISION_AND_ROADMAP.md`（远景）。
 > **做浮卡相关改动先读** `docs/archive/design/CARD_SYSTEM_UNIFICATION_SPEC.md`（已归档：统一化方案失败，当前为双模块架构）。
 > **UI Registry 相关**已归档到 `docs/archive/design/`。
 > **引擎层改动先读** `docs/archive/design/ENGINE_ARCHITECTURE.md`（v2 管线 + text-layout 排版引擎架构）。
@@ -38,7 +38,6 @@ CLAUDE.md                    # 本文件——项目入口
 docs/
 ├── AGENTS.md                # AI 专属：文档维护规则（改文档前读）
 ├── HANDBOOK.md              # 工作手册：架构-调试-待办-测试（日常翻）
-├── VISION_AND_ROADMAP.md    # 远景文档：核心理念+演进路线（规划设计时参考）
 ├── KFM_V4_INVARIANTS.md     # 修改约束协议：心法原则+自查清单（改代码前必读）
 ├── design/                  # 设计中（待实现的设计文档）
 │   └── WORKBENCH_SPEC.md        # 卡片工作台（购物车+顶栏+光标+编辑态）

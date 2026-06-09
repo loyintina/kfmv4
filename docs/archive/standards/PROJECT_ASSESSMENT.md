@@ -85,7 +85,7 @@ P4  完善卡片系统（填充 card03-card07）——提升功能完成度
 
 ### 3.2 如果是接其他工作
 
-- **做卡片系统**：先读 `docs/VISION_AND_ROADMAP.md` §6（卡片插件规范），现有的 card03-card07 等待填充
+- **做卡片系统**：先读 `docs/archive/design/VISION_AND_ROADMAP.md` §6（卡片插件规范），现有的 card03-card07 等待填充
 - **做动画优化**：先读 `HANDBOOK.md` §4（调试），注意 3000ms 超时这个已知设计缺陷
 - **写测试**：先读 `HANDBOOK.md` §5，注意 GSAP mock 失真问题
 
