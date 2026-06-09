@@ -6,9 +6,9 @@ AI 人机交互个人工作台，面向移动端浏览器。核心理念：**一
 > **改代码前先读** `docs/KFM_V4_INVARIANTS.md`（修改约束协议）。
 > **日常干活翻** `docs/HANDBOOK.md`（架构+调试+待办+测试）。
 > **规划设计时参考** `docs/VISION_AND_ROADMAP.md`（远景）。
-> **做浮卡相关改动先读** `docs/archive/card-system/CARD_SYSTEM_UNIFICATION_SPEC.md`（已归档：统一化方案失败，当前为双模块架构）。
-> **UI Registry 相关**已归档到 `docs/archive/ui-registry/`。
-> **引擎层改动先读** `docs/archive/engine/ENGINE_ARCHITECTURE.md`（v2 管线 + text-layout 排版引擎架构）。
+> **做浮卡相关改动先读** `docs/archive/design/CARD_SYSTEM_UNIFICATION_SPEC.md`（已归档：统一化方案失败，当前为双模块架构）。
+> **UI Registry 相关**已归档到 `docs/archive/design/`。
+> **引擎层改动先读** `docs/archive/design/ENGINE_ARCHITECTURE.md`（v2 管线 + text-layout 排版引擎架构）。
 
 ---
 
@@ -44,16 +44,13 @@ docs/
 │   └── WORKBENCH_SPEC.md        # 卡片工作台（购物车+顶栏+光标+编辑态）
 └── archive/                 # 历史归档
     ├── handoffs/            # 版本交接记录
-    ├── ui-registry/         # UI Element Registry 设计/审计（部分仍 active）
-    ├── card-system/         # 浮卡统一化尝试记录
-    ├── architecture-vision/ # 原始愿景蓝图与架构参考
-    ├── engine/              # 渲染引擎改造计划（已执行）
+    ├── design/              # 已完成的设计文档（Registry/卡片系统/引擎/愿景）
     ├── standards/           # 调试/Bug/测试规范
     ├── bugs/                # 已修复 Bug
     └── legacy/              # 旧版本文件
 ```
 
-> 接手新对话的推荐阅读顺序：`CLAUDE.md` → `HANDBOOK.md` §2（当前状态）→ `KFM_V4_INVARIANTS.md`（修改规则）→ `docs/design/WORKBENCH_SPEC.md`（当前方向）→ `HANDBOOK.md` §3（待办）→ `HANDBOOK.md` §七（审计问题清单）。引擎层改动前读 `docs/archive/engine/ENGINE_ARCHITECTURE.md`。
+> 接手新对话的推荐阅读顺序：`CLAUDE.md` → `HANDBOOK.md` §2（当前状态）→ `KFM_V4_INVARIANTS.md`（修改规则）→ `docs/design/WORKBENCH_SPEC.md`（当前方向）→ `HANDBOOK.md` §3（待办）→ `HANDBOOK.md` §七（审计问题清单）。引擎层改动前读 `docs/archive/design/ENGINE_ARCHITECTURE.md`。
 
 ## 完整性校验
 
@@ -68,7 +65,7 @@ npm run test    # 101 个回归测试，覆盖 11 个模块
 - `orb.ts`：光球 + AI 对话面板，从 HTML 读取 `#lightOrb` 元素
 - `floating-card.ts`：浮卡发射/拖拽/缩放/编辑，仅服务 02 日志卡
 
-两模块通过交互共享层（`interaction-constants.ts` + `interaction-types.ts`）共享常量和类型。统一化方案已放弃（两次回退），详见 `docs/archive/card-system/CARD_SYSTEM_UNIFICATION_SPEC.md`。浮卡拖拽完全通过 GestureRegistry 统一调度，无直接 addEventListener 逃逸。
+两模块通过交互共享层（`interaction-constants.ts` + `interaction-types.ts`）共享常量和类型。统一化方案已放弃（两次回退），详见 `docs/archive/design/CARD_SYSTEM_UNIFICATION_SPEC.md`。浮卡拖拽完全通过 GestureRegistry 统一调度，无直接 addEventListener 逃逸。
 
 完整模块清单见 HANDBOOK §七「客户端模块完整审计表」（29个模块 + 引擎层14个文件）。
 

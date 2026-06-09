@@ -19,10 +19,7 @@ docs/
 └── archive/                   ← 历史文档仓库
     ├── README.md              ← 子目录导览 + 每类什么时候值得翻
     ├── handoffs/              ← 版本交接记录
-    ├── ui-registry/           ← UI Element Registry 设计/审计
-    ├── card-system/           ← 浮卡统一化尝试记录
-    ├── architecture-vision/   ← 原始愿景蓝图
-    ├── engine/                ← 引擎层架构 + 渲染引擎改造计划（改渲染逻辑前读 ENGINE_ARCHITECTURE.md）
+    ├── design/                ← 已完成的设计文档（Registry/卡片系统/引擎/愿景）
     ├── standards/             ← 调试/Bug/测试规范
     ├── bugs/                  ← Bug 修复记录
     └── legacy/                ← 旧版本文档
@@ -35,7 +32,7 @@ docs/
 | `HANDBOOK.md` | 当前状态、待办、陷阱、架构速查、测试 | 每次改代码后同步 |
 | `KFM_V4_INVARIANTS.md` | 心法原则、约束、补丁模式、自查清单 | 发现新约束时追加 |
 | `VISION_AND_ROADMAP.md` | 核心理念、演进路线、开放问题 | 做重大决策时更新 |
-| `archive/engine/ENGINE_ARCHITECTURE.md` | 引擎层 14 个文件的架构描述 | 改渲染逻辑后同步 |
+| `archive/design/ENGINE_ARCHITECTURE.md` | 引擎层 14 个文件的架构描述 | 改渲染逻辑后同步 |
 | `design/WORKBENCH_SPEC.md` | 唯一待实现的设计提案 | 定了方案才改 |
 
 ### 根层文档维护规则
