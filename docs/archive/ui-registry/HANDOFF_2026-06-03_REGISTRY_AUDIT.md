@@ -1,6 +1,6 @@
 ---
 status: superseded
-superseded_by: docs/archive/design/HANDOFF_2026-06-03_TRIAGE_AUDIT_FIX.md
+superseded_by: docs/archive/ui-registry/HANDOFF_2026-06-03_TRIAGE_AUDIT_FIX.md
 archived_at: 2026-06-03
 created_at: 2026-06-03
 context: UI Registry 审计修复 + ws-channel 悬空函数修复 + 文档对齐

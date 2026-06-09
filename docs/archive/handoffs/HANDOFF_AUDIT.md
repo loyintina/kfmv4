@@ -9,7 +9,7 @@ superseded_by: docs/HANDBOOK.md
 > 本文档是项目**唯一的**待办总览数据源。`SESSION_MEMORY.md` 不维护进度列表。
 
 > ⏱ **TL;DR**：当前活跃待办仅 1 项（P2 拆分 card-stack.ts），其余为持续观察项。
-> 历史版本详情已归档至 `docs/archive/handoff/`，需要追溯时查阅。
+> 历史版本详情已归档至 `docs/archive/handoffs/`，需要追溯时查阅。
 
 ---
 
@@ -40,7 +40,7 @@ superseded_by: docs/HANDBOOK.md
 - **Problem 5**：AI→浏览器通信通道未解决（Registry 只有"眼睛"没有"手"）
 - **动态状态更新未实现**：snapshot 只返回初始化时的静态状态
 
-详情见 `docs/archive/handoff/v6.0.0-audit.md` 和 `docs/archive/handoff/v6.0.0-implementation.md`。
+详情见 `docs/archive/handoffs/v6.0.0-audit.md` 和 `docs/archive/handoffs/v6.0.0-implementation.md`。
 
 ---
 
@@ -48,10 +48,10 @@ superseded_by: docs/HANDBOOK.md
 
 | 版本 | 焦点 | 归档位置 |
 |------|------|---------|
-| v5.0.0 | CSS 语法安全 + SCSS 迁移 + 文档审计 | `docs/archive/handoff/v5.0.0.md` |
-| v5.1.0 | root-picker 交互修复 + 代码审计 | `docs/archive/handoff/v5.1.0.md` |
-| v5.2.0 | RenderContext 上下文隔离实现 | `docs/archive/handoff/v5.2.0.md` |
-| v6.0.0 | UI Element Registry + 代码审计清理 | `docs/archive/handoff/v6.0.0-*.md` |
+| v5.0.0 | CSS 语法安全 + SCSS 迁移 + 文档审计 | `docs/archive/handoffs/v5.0.0.md` |
+| v5.1.0 | root-picker 交互修复 + 代码审计 | `docs/archive/handoffs/v5.1.0.md` |
+| v5.2.0 | RenderContext 上下文隔离实现 | `docs/archive/handoffs/v5.2.0.md` |
+| v6.0.0 | UI Element Registry + 代码审计清理 | `docs/archive/handoffs/v6.0.0-*.md` |
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 status: superseded
-superseded_by: docs/archive/design/HANDOFF_2026-06-03_AUDIT_FIX_DEEP.md
+superseded_by: docs/archive/ui-registry/HANDOFF_2026-06-03_AUDIT_FIX_DEEP.md
 archived_at: 2026-06-03
 created_at: 2026-06-03
 context: 三方对照审计 + 五项修复 + notifyStateChange 冗余清理 + 文档 frontmatter 全量修复

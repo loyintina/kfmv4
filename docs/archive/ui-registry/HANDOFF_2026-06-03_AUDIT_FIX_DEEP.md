@@ -1,6 +1,6 @@
 ---
 status: superseded
-superseded_by: docs/archive/design/HANDOFF_2026-06-03_REGISTRY_DEEP_AUDIT.md
+superseded_by: docs/archive/ui-registry/HANDOFF_2026-06-03_REGISTRY_DEEP_AUDIT.md
 archived_at: 2026-06-03
 created_at: 2026-06-03
 context: 三方对照审计深度修复 — _ 前缀显式接口 + 状态纠偏 + IIFE 扁平化 + 冗余通知清理

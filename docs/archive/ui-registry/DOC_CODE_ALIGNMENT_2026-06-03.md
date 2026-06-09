@@ -54,7 +54,7 @@ context: UI Element Registry 文档-代码对齐 + 便捷方法 + CI 增强
 |---|------|------|-----------|
 | 1 | `notifyStateChange()` 散布——已在 KFMState 层加自动订阅 | 自动化缺口 | ✅ 已解决 |
 | 2 | 内容层 snapshot 的 ordering 没有契约定义 | 设计缺口 | P3 |
-| 3 | archive/design/ 下残留了旧版 UI_ELEMENT_REGISTRY_SPEC.md | 文档维护 | ✅ 已加醒目 warning |
+| 3 | archive/ui-registry/ 下残留了旧版 UI_ELEMENT_REGISTRY_SPEC.md | 文档维护 | ✅ 已加醒目 warning |
 | 4 | 全部 11 个元素已迁移至 registerElement() | 代码一致性 | ✅ |
 
 ### 缺口 1 的解决方案

@@ -1,74 +1,23 @@
 ---
 status: active
-archived_at: 2026-06-02
+last_updated: 2026-06-09
 ---
 
 # KFM v4 文档归档
 
-> 历史文档按类别归档，每份文件都有 status 标记。
-> 当前活跃文档 5 篇：`CLAUDE.md` + `HANDBOOK.md` + `VISION_AND_ROADMAP.md` + `KFM_V4_INVARIANTS.md` + `UI_ELEMENT_REGISTRY_SPEC.md`。
+> 按功能分类的历史文档。每份文件都有 status 标记，方便判断是否值得读。
 
-**状态说明**：
-- `completed`：任务已完成，留作记录
-- `superseded`：已被新版文档取代（内容已并入 `HANDBOOK.md`）
+**子目录导览：**
 
----
+| 目录 | 内容 | 什么时候值得翻 |
+|------|------|---------------|
+| `handoffs/` | 版本交接记录（按时间顺序） | 需要追溯某次改动的原始上下文时 |
+| `ui-registry/` | UI Element Registry 设计/审计（5 份仍 active） | 改 Registry 相关代码前必读 |
+| `card-system/` | 浮卡统一化尝试记录（两次失败） | 做浮卡改动前读 `CARD_SYSTEM_UNIFICATION_SPEC.md` |
+| `architecture-vision/` | 原始愿景蓝图与架构参考 | 想理解设计决策的历史背景时 |
+| `engine/` | 渲染引擎改造计划与动画方案（已执行） | 改引擎层代码时参考推理链 |
+| `standards/` | 调试/Bug/测试/原则规范 | 被 HANDBOOK 覆盖，`BUG_AUDIT_REGISTRY.md` Ch.2 含额外诊断细节 |
+| `bugs/` | 已修复 Bug 的根因分析 | 纯追究，排查同类问题时参考 |
+| `legacy/` | 已被替换的旧版本文档 | 基本不用翻 |
 
-## 📂 handoff/ — 版本交接记录
-
-| 文件 | 状态 | 说明 |
-|------|------|------|
-| `v4.1.0.md` | ✅ completed | 卡片配色 + 浮卡系统 + BR 守卫 |
-| `v5.0.0.md` | ✅ completed | CSS 语法安全 + SCSS 迁移 |
-| `v5.1.0.md` | ✅ completed | root-picker 交互修复 |
-| `v5.2.0.md` | ✅ completed | RenderContext 上下文隔离 |
-| `v6.0.0-audit.md` | ✅ completed | 独立代码审计 |
-| `v6.0.0-implementation.md` | ✅ completed | UI Element Registry 实装 |
-| `appendix-b-c.md` | ✅ completed | 独立审计评审与回应 |
-| `SESSION_MEMORY.md` | 📜 superseded | 会话快照 → 已并入 `HANDBOOK.md` §2 |
-| `HANDOFF_AUDIT.md` | 📜 superseded | 交接文档 → 已并入 `HANDBOOK.md` §3 |
-
-## 📂 design/ — 过时的设计文档
-
-| 文件 | 状态 | 说明 |
-|------|------|------|
-| `ARCHITECTURE.md` | 📜 superseded | 架构参考 → 已并入 `HANDBOOK.md` §1 |
-| `REFACTOR_THESIS_FULL.md` | 📜 superseded | 原始愿景蓝图 → 已并入 `VISION_AND_ROADMAP.md` |
-| `ANIMATION_REFINEMENT_PLAN.md` | 📜 superseded | 动画优化方案（已过时）|
-| `STACK_CARDS_DESIGN.md` | 📜 superseded | 配色设计（代码已改为随机 HSL）|
-| `CARD-STACK-HANDOFF.md` | 📜 superseded | 卡片堆交接（已完成）|
-| `CARD_SYSTEM_DESIGN.md` | 📜 superseded | 卡片系统设计蓝图（待实现）|
-| `UI_ELEMENT_REGISTRY_SPEC.md` | 🔄 relocated | 误归档，已恢复 → `docs/UI_ELEMENT_REGISTRY_SPEC.md` |
-| `AI_OPERATION_PROTOCOL.md` | 📜 superseded | AI 操作协议（未实现）|
-
-## 📂 plan/ — 已完成的计划
-
-| 文件 | 状态 | 说明 |
-|------|------|------|
-| `RACE_CONDITION_PLAN.md` | ✅ completed | 动画竞态根治方案 |
-| `HANDOFF_P3_REMAINING.md` | ✅ completed | P3 遗留问题交接 |
-| `P3_RENDER_CONTEXT_REFACTOR_DONE.md` | ✅ completed | RenderContext 重构方案 |
-
-## 📂 bug/ — 已修复的 Bug
-
-| 文件 | 状态 | 说明 |
-|------|------|------|
-| `HANDOFF_BRORB_FIX.md` | ✅ completed | BR 光球类型守卫修复 |
-
-## 📂 legacy/ — 旧版本文件
-
-| 文件 | 状态 | 说明 |
-|------|------|------|
-| `CLAUDE_v2.md` | 📜 superseded | 上一版主文档 |
-| `AI_COLLABORATION_PRINCIPLES.md` | 📜 superseded | 通用 AI 协作守则 |
-| `BUG_FIXING_PHILOSOPHY.md` | 📜 superseded | 旧版 Bug 修复原则 |
-
-## 📂 根目录归档
-
-| 文件 | 状态 | 说明 |
-|------|------|------|
-| `DEBUG_SOP.md` | 📜 superseded | 调试 SOP → 已并入 `HANDBOOK.md` §4 |
-| `BUG_AUDIT_REGISTRY.md` | 📜 superseded | Bug 注册表 → §1 隐性契约已并入 `HANDBOOK.md` §4 |
-| `TESTING.md` | 📜 superseded | 回归测试 → 已并入 `HANDBOOK.md` §5 |
-| `PRINCIPLES_INDEX.md` | 📜 superseded | 原则索引 → 已并入 `HANDBOOK.md` §6 |
-| `P3_RENDER_CONTEXT_REFACTOR.md` | 📜 superseded | 指向已完成重构 |
+**状态说明**：`active`=仍有效建议阅读，`superseded`=已被新版覆盖，`completed`=计划已执行完，`relocated`=已移至其他位置。
