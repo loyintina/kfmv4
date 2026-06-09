@@ -67,23 +67,30 @@ last_updated: 2026-06-09
 
 ## 四、改动清单
 
-### 4.1 右滑手势 — `tree-render.ts` + `gesture-registry.ts`
+### 4.1 右滑手势 — `canvas-scroll.ts` + `tree-render.ts`
 
-在 `#sidebarTouchArea` 上注册手势处理器：
+**手势触发条件**：侧栏打开时，在屏幕任意位置右滑 > 50px。
+**操作目标**：光标当前所在行（`L.cursorRowId`），不是坐标反查。
 
+**为什么要用光标行**：
+- 用户通过滑动/点击移动光标到目标行
+- 右滑时明确知道要操作的是哪一行（光标已高亮）
+- 避免坐标反查的不确定性
+
+**动画实现（双树 overlay 模式）**：
 ```
-id: 'sidebar-row-swipe',
-targetFilter: '#sidebarTouchArea',
-condition: () => DOM.sidebar?.classList.contains('open'),
-priority: 55,  // 介于 sidebar-scroll(60) 和 page-swipe(50) 之间
-onMove: 检测右滑 > 50px,
-onEnd: {
-  1. 通过 _boxLocationMap 反查当前光标所在行
-  2. GSAP ts.to(box, { x: 15, ease: back.out(2), yoyo: true, repeat: 1 })
-  3. 延迟后创建 DOM 克隆卡片
-  4. GSAP anim.to(domCard, { right: 0, ease: back.out }) 飞入右边缘
-}
+右滑检测 (sidebar-scroll 内水平轴向锁定)
+  → onEnd: dx > 50
+  → _bounceCursorRow()
+      → _createVisualClone() 克隆光标行
+      → 构建最小 overlayRoot，设到 renderer
+      → 主树该行 opacity=0
+      → GSAP ts.to(overlay, { x: 15, ease: back.out(2), yoyo, repeat })
+      → onComplete: _removeOverlay + setOverlayRoot(null) + 恢复主树 opacity
 ```
+
+**为什么不用坐标反查**：光标即目标。用户用光标选中行后右滑，语义清晰。
+**为什么用 overlay**：遵循双树设计——主树不动，独立 overlay 树负责瞬态动画，cleanup 自动恢复。```
 
 ### 4.2 行弹性动画 — `tree-render.ts`
 

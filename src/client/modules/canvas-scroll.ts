@@ -226,7 +226,7 @@ export function initScrollGesture(): void {
         if (dx > 50) {
           _swipeHorizontal = false;
           L.setSwipeGuard();
-          L.triggerRowSwipe(e.clientY);
+          L.triggerRowSwipe();
           return;
         }
         // 左滑关侧栏

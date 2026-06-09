@@ -478,35 +478,35 @@ export function isAnimLocked(): boolean {
 
 // ========== 文件行右滑：回弹 + 加入临时卡片堆 ==========
 
-/** 右滑时某行的视觉回弹动画：Box 右移 15px 然后弹回 */
-function _bounceRow(path: string): void {
-  const loc = _boxLocationMap.get(path);
-  if (!loc) return;
-  anim.killTweensOf(loc.box);
-  loc.box.x = 0;
-  anim.to(loc.box, {
-    x: 15, duration: 0.3, ease: 'back.out(2)',
-    yoyo: true, repeat: 1,
-    onComplete: () => { loc.box.x = 0; },
-  });
-}
-
-/** 由 initScrollGesture 通过 L.triggerRowSwipe 触发：按 Canvas Y 坐标反查文件行 → 回弹 */
-function _handleRowSwipe(canvasY: number): void {
+/**
+ * 右滑光标行：GSAP 直接动画 rowBox + cursorBox，瞬态结束后自动归位
+ * 不经过 overlay 系统——简单动画用简单方式，避免层级和光标同步问题
+ */
+function _bounceCursorRow(): void {
+  if (!L.cursorRowId) return;
   const root = L.renderer?.getRoot();
   if (!root) return;
-  const scrollY = root.scrollY ?? 0;
-  const adjustedY = canvasY + scrollY;
-  let closest: { path: string; dist: number } | null = null;
-  for (const [path, loc] of _boxLocationMap) {
-    const center = loc.screenRect.y + loc.screenRect.height / 2;
-    const dist = Math.abs(center - adjustedY);
-    if (!closest || dist < closest.dist) {
-      closest = { path, dist };
-    }
+  const rowBox = findBoxById(root, L.cursorRowId);
+  if (!rowBox || !rowBox.interactive) return;
+
+  const origX = rowBox.x;
+  const origCX = L.cursorBox?.x;
+
+  anim.to(rowBox, {
+    x: origX + 8, duration: 0.2, ease: 'power3.out',
+    yoyo: true, repeat: 1,
+  });
+  if (L.cursorBox) {
+    anim.to(L.cursorBox, {
+      x: (origCX ?? 0) + 8, duration: 0.2, ease: 'power3.out',
+      yoyo: true, repeat: 1,
+    });
   }
-  if (!closest) return;
-  _bounceRow(closest.path);
+}
+
+/** 由 canvas-scroll 通过 L.triggerRowSwipe 触发：回弹当前光标行 */
+function _handleRowSwipe(): void {
+  _bounceCursorRow();
 }
 
 // ============================================================
