@@ -54,7 +54,6 @@ export async function initApp(): Promise<void> {
   if (closeBtn) {
     closeBtn.addEventListener('click', () => {
       closeSidebar();
-      Registry.notifyStateChange('close-sidebar-btn');
     });
   }
 
@@ -70,7 +69,6 @@ export async function initApp(): Promise<void> {
           openSidebar();
         }
       }
-      Registry.notifyStateChange('sidebar-toggle-btn');
     });
   }
 
@@ -85,8 +83,7 @@ export async function initApp(): Promise<void> {
         openCardStack();
         cardBtn.classList.add('active');
       }
-      Registry.notifyStateChange('card-stack-toggle-btn');
-      Registry.notifyStateChange('card-stack');
+
     });
   }
 

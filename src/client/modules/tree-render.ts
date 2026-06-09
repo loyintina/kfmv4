@@ -41,6 +41,16 @@ interface OverlayMeta {
   _targetY?: number;
 }
 
+/** 文件路径 → Box 屏幕坐标的反向索引。rebuildTree 后自动重建。 */
+interface BoxLocation {
+  path: string;
+  box: Box;
+  rowIndex: number;
+  screenRect: { x: number; y: number; width: number; height: number };
+}
+
+const _boxLocationMap: Map<string, BoxLocation> = new Map();
+
 // ========== Overlay 管理 ==========
 const _activeOverlays: Box[] = [];
 
@@ -367,9 +377,51 @@ function _ensureSubscribed(): void {
   KFMState.subscribe(fn);
 }
 
+/** 遍历 Box 树，为每个可见文件行重建 _boxLocationMap */
+function _rebuildBoxLocationMap(root: Box): void {
+  _boxLocationMap.clear();
+  let rowIndex = 0;
+  function walk(box: Box): void {
+    for (const child of box.children) {
+      if (!child.visible || child.disabled) continue;
+      const data = getFileRowData(child.data);
+      if (data && child.gesture?.onTap) {
+        const abs = child.getAbsolutePosition();
+        _boxLocationMap.set(data.path, {
+          path: data.path,
+          box: child,
+          rowIndex,
+          screenRect: {
+            x: abs.x,
+            y: abs.y,
+            width: child.width,
+            height: child.height,
+          },
+        });
+        rowIndex++;
+      }
+      walk(child);
+    }
+  }
+  walk(root);
+}
 
+/** 根据文件路径返回 Box 中心坐标，不可见时返回 null */
+export function locateFileBox(path: string): { x: number; y: number } | null {
+  const loc = _boxLocationMap.get(path);
+  if (!loc) return null;
+  return {
+    x: loc.screenRect.x + loc.screenRect.width / 2,
+    y: loc.screenRect.y + loc.screenRect.height / 2,
+  };
+}
 
-
+/** 通过文件路径直接触发 Canvas 文件行操作（tap），路径不可见时静默失败 */
+export function executeOnPath(path: string, action: 'tap'): void {
+  const loc = _boxLocationMap.get(path);
+  if (!loc || action !== 'tap') return;
+  loc.box.gesture?.onTap?.();
+}
 
 /** 外部使用：标记某路径正在做展开动画（懒加载专用） */
 export function markAnimatingPath(path: string | null): void {
@@ -499,7 +551,6 @@ export function onSidebarOpen(): void {
 
     // 创建左栏右侧触摸盒子
     _createSidebarTouchArea();
-    Registry.notifyStateChange('file-tree');
     } catch (e) { log('[sidebar] open crash: ' + (e instanceof Error ? e.message + ' ' + (e.stack || '') : String(e))); }
   });
 
@@ -525,7 +576,6 @@ export function onSidebarClose(): void {
   _resetAnimTimeline();
   L.setSidebarClosed(true);  // 让wheel/touch的rAF循环自己退出
   L.endOp();
-  Registry.notifyStateChange('file-tree');
   
   L._restoringFromSave = true;
   // 直接保存当前 scrollY（动画停止后的稳定值）
@@ -582,10 +632,10 @@ export function initTreeRenderer(): void {
     id: 'file-tree',
     type: 'panel',
     label: '文件树',
-    description: 'Canvas 自渲染文件树，点击目录展开/折叠，点击文件选中。AI 可通过 expand-dir/collapse-dir/select-file 命令操作',
+    description: 'Canvas 自渲染文件树，点击目录展开/折叠，点击文件选中。AI 可通过 expand-dir/collapse-dir/select-file/click-path 命令操作',
     state: DOM.sidebar?.classList.contains('open') ? 'visible' : 'hidden',
     enabled: true,
-    effect: '点击目录切换展开/折叠状态，点击文件将其设为选中。AI 可发送 expand-dir/collapse-dir/select-file 命令远程操作',
+    effect: '点击目录切换展开/折叠状态，点击文件将其设为选中。AI 可发送 expand-dir/collapse-dir/select-file/click-path 命令远程操作',
     source: 'tree-render.ts',
   }, () => DOM.sidebar?.classList.contains('open') ? 'visible' : 'hidden');
   // 注册 AI 指令处理器：文件树操作
@@ -602,6 +652,12 @@ export function initTreeRenderer(): void {
     if (!path) return;
     // 标记 AI 主动选择的文件路径，rebuildTree 后会自动移动光标并居中
     L.setPendingSelectFile(path);
+  });
+  // Box 位置映射：AI 直接基于路径操作 Canvas 行，绕过坐标问题
+  wsChannel.onCommand('click-path', (_action, params) => {
+    const path = params.path as string;
+    if (!path) return;
+    executeOnPath(path, 'tap');
   });
 }
 
@@ -644,10 +700,8 @@ function _createSidebarTouchArea(): void {
     if (hitData.isDir) {
       if (hitData.isExpanded) { doCollapse(hit, hitData); }
       else { doExpand(hit, hitData); }
-      Registry.notifyStateChange('file-tree');
     } else {
       hit.gesture?.onTap?.();
-      Registry.notifyStateChange('file-tree');
     }
   });
 ;
@@ -1091,7 +1145,6 @@ export function forceRebuildTree(): void {
   
   clickQueue.clear();
   rebuildTree();
-  Registry.notifyStateChange('file-tree');
 }
 
 function rebuildTree(): void {
@@ -1184,6 +1237,7 @@ function rebuildTree(): void {
   }
 
   if (newRoot) _rebuildRowIndex(newRoot);
+  if (newRoot) _rebuildBoxLocationMap(newRoot);
 
   if (!L.renderer.isRunning) {
     L.renderer.start();

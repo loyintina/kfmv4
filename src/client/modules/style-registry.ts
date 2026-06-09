@@ -7,7 +7,7 @@
 
 import { Box } from '../engine/v2/box.js';
 import type { BoxOptions } from '../engine/v2/box.js';
-import type { TextStyle, HighlightConfig } from '../engine/v2/types.js';
+import type { TextStyle } from '../engine/v2/types.js';
 import { KFMState } from "./state.js";
 import { currentTheme as theme } from './theme.js';
 
@@ -82,8 +82,6 @@ export const TEXT_STYLES = {
 // 高亮常量（替代 border，因为引擎 _drawBorder 在 clip 之后被裁）
 // 用 highlight 画出 3px 宽的紫色色块，clip 不影响它
 // ============================================================
-
-const HIGHLIGHT: HighlightConfig = { color: theme.tree.dir, width: 2, side: 'all' };
 
 // ============================================================
 // 模板注册表

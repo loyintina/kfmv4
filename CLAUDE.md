@@ -8,6 +8,7 @@ AI 人机交互个人工作台，面向移动端浏览器。核心理念：**一
 > **规划设计时参考** `docs/VISION_AND_ROADMAP.md`（远景）。
 > **做浮卡相关改动先读** `docs/archive/design/CARD_SYSTEM_UNIFICATION_SPEC.md`（已归档：统一化方案失败，当前为双模块架构）。
 > **UI Registry 相关**已归档到 `docs/archive/design/`。
+> **引擎层改动先读** `docs/design/ENGINE_ARCHITECTURE.md`（v2 管线 + text-layout 排版引擎架构）。
 
 ---
 
@@ -38,9 +39,10 @@ docs/
 ├── HANDBOOK.md              # 工作手册：架构-调试-待办-测试（日常翻）
 ├── VISION_AND_ROADMAP.md    # 远景文档：核心理念+演进路线（规划设计时参考）
 ├── KFM_V4_INVARIANTS.md     # 修改约束协议：心法原则+自查清单（改代码前必读）
-├── design/                  # 设计中（待实现的设计文档）
-│   ├── BOX_LOCATION_MAP_SPEC.md  # Canvas 内部眼睛（AI 坐标无关操作）
-│   └── WORKBENCH_SPEC.md        # 卡片工作台（购物车+顶栏+光标+编辑态）
+├── design/                  # 设计文档
+│   ├── BOX_LOCATION_MAP_SPEC.md  # ✅ 已实现：Canvas 内部眼睛（AI 坐标无关操作）
+│   ├── WORKBENCH_SPEC.md        # 卡片工作台（购物车+顶栏+光标+编辑态）
+│   └── ENGINE_ARCHITECTURE.md   # 引擎层架构（v2 管线 + text-layout）
 ├── notes/                   # 项目笔记
 │   └── PROJECT_ASSESSMENT.md     # 项目把控理解与建议
 └── archive/                 # 历史归档
@@ -57,7 +59,7 @@ docs/
 
 ```bash
 npm run check   # sass + 4 个 check-*.mjs + tsc --noEmit，零错误
-npm run test    # 105 个回归测试，覆盖 11 个模块
+npm run test    # 101 个回归测试，覆盖 11 个模块
 ```
 
 ## 当前架构
@@ -66,7 +68,7 @@ npm run test    # 105 个回归测试，覆盖 11 个模块
 - `orb.ts`：光球 + AI 对话面板，从 HTML 读取 `#lightOrb` 元素
 - `floating-card.ts`：浮卡发射/拖拽/缩放/编辑，仅服务 02 日志卡
 
-两模块通过交互共享层（`interaction-constants.ts` + `interaction-types.ts`）共享常量和类型，各自导出能力声明（`orbCapability` / `floatingCardCapability`）。统一化方案已放弃（两次回退），详见 `docs/archive/design/CARD_SYSTEM_UNIFICATION_SPEC.md`。
+两模块通过交互共享层（`interaction-constants.ts` + `interaction-types.ts`）共享常量和类型。统一化方案已放弃（两次回退），详见 `docs/archive/design/CARD_SYSTEM_UNIFICATION_SPEC.md`。浮卡拖拽完全通过 GestureRegistry 统一调度，无直接 addEventListener 逃逸。
 
 完整模块清单见 HANDBOOK §七「客户端模块完整审计表」（29个模块 + 引擎层14个文件）。
 

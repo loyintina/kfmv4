@@ -6,7 +6,6 @@ import { Box } from '../engine/v2/box.js';
 import { KFMState, type FileNode } from './state.js';
 import { DIMENSIONS, TEXT_STYLES, getFileColor, createBox, LINE_HEIGHT, MAX_LINES, FONT, getShift } from './style-registry.js';
 import { currentTheme as theme } from './theme.js';
-import { DIMENSIONS as D } from './style-registry.js';
 import { resolveStyle } from '../engine/v2/StyleConfig.js';
 import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
 
@@ -174,48 +173,6 @@ export function buildTree(items: FileNode[], options: TreeOptions = {}): Box {
   rootBox.height = rootContainer.height;
   rootBox.scrollY = 0;
   return rootBox;
-}
-
-function container_AddRootFolderRow(parent: Box, item: FileNode, y: number, depth: number, cw: number, ctx: BuildCtx): Box {
-  const x = absX(depth);
-  const w = ctx.rightMargin - x;
-  const ex = !!ctx.expandedPaths[item.path];
-  const sel = ctx.selectedFile === item.path;
-  const maxWidth = w - TXT_L - 16;
-  const { lines: actualLines, height: rowHeight } = calcTextLayout(item.name, maxWidth);
-  
-  const row = createBox('folder-row', {
-    id: `title-${item.path}`, x, y, width: w, height: rowHeight,
-    backgroundColor: sel ? theme.tree.selectedBg : 'transparent',
-    data: { path: item.path, isDir: true, isExpanded: ex, depth, lineCount: actualLines },
-    gesture: { passive: true, onTap: () => ctx.onDirToggle(item.path, !ex) },
-  });
-  row.addChild(createToggle(item, rowHeight, ex));
-  const label = createBox('folder-label', { id: `label-${item.path}`, x: TXT_L, width: maxWidth, height: rowHeight });
-  label.textStyle = { ...TEXT_STYLES.folderLabel, content: item.name, color: theme.tree.label };
-  row.addChild(label);
-  parent.addChild(row);
-  return row;
-}
-
-function container_AddRootFileRow(parent: Box, item: FileNode, y: number, depth: number, cw: number, ctx: BuildCtx): Box {
-  const x = absX(depth);
-  const w = ctx.rightMargin - x;
-  const sel = ctx.selectedFile === item.path;
-  const maxWidth = w - TXT_L - 16;
-  const { lines: actualLines, height: rowHeight } = calcTextLayout(item.name, maxWidth);
-  
-  const row = createBox('file-row', {
-    id: `file-${item.path}`, x, y, width: w, height: rowHeight,
-    backgroundColor: sel ? theme.tree.selectedBg : 'transparent',
-    data: { path: item.path, isDir: false, depth, lineCount: actualLines },
-    gesture: { passive: true, onTap: () => ctx.onFileClick(item.path) },
-  });
-  const label = createBox('file-label', { id: `label-${item.path}`, x: TXT_L, width: maxWidth, height: rowHeight });
-  label.textStyle = { ...TEXT_STYLES.fileLabel, content: item.name, color: theme.tree.label };
-  row.addChild(label);
-  parent.addChild(row);
-  return row;
 }
 
 export function buildSidebarTree(containerWidth?: number, rightMargin?: number): Box {

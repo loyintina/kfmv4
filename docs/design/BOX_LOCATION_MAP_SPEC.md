@@ -1,7 +1,7 @@
 ---
-status: draft
+status: active
 version: v1.0
-last_updated: 2026-06-07
+last_updated: 2026-06-09
 ---
 
 # KFM v4 — Box 位置映射与精确操作协议

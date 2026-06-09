@@ -404,38 +404,6 @@ test('clearScope removes timeline', () => {
   if (typeof ts.to !== 'function') throw new Error('scope should recreate after clear');
 });
 
-test('play/kill named animation', () => {
-  const tl = anim.timeline();
-  anim.play('test-play', tl);
-  if (!anim.has('test-play')) throw new Error('has should return true after play');
-  anim.kill('test-play');
-  if (anim.has('test-play')) throw new Error('has should return false after kill');
-});
-
-test('play replaces old animation with same name', () => {
-  const tl1 = anim.timeline();
-  const tl2 = anim.timeline();
-  anim.play('test-replace', tl1);
-  anim.play('test-replace', tl2);
-  if (!anim.has('test-replace')) throw new Error('should exist after replace');
-  anim.kill('test-replace');
-});
-
-test('reverse returns false for non-existent', () => {
-  const result = anim.reverse('non-existent');
-  if (result !== false) throw new Error('reverse of non-existent should return false');
-});
-
-test('killAll cleans everything', () => {
-  anim.scope('clean-scope');
-  const tl = anim.timeline();
-  anim.play('clean-play', tl);
-  anim.killAll();
-  if (anim.has('clean-play')) throw new Error('clean-play should be killed');
-  const ts = anim.scope('clean-scope');
-  if (typeof ts.to !== 'function') throw new Error('should be reusable after killAll');
-});
-
 test('killTweensOf delegates', () => {
   // Should not throw
   anim.killTweensOf({});

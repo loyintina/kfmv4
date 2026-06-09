@@ -10,8 +10,6 @@ import { anim } from './animation-registry.js';
 import { currentTheme as theme } from './theme.js';
 import { Registry } from './ui-registry.js';
 import { MARGIN, LONG_PRESS_MS, DRAG_THRESHOLD } from './interaction-constants.js';
-import type { InteractionCapability } from './interaction-types.js';
-
 import {
   getCardCount, getCardName, getCardId,
   getFocusIndex, getCurrentAccent, getCardHandler,
@@ -61,9 +59,6 @@ interface FloatingCardItem {
 let _floatingCards: FloatingCardItem[] = [];
 let _nextFloatingZ = Z_FLOATING_BASE;
 const _brOrbToItem = new WeakMap<HTMLElement, FloatingCardItem>();
-/** 记录进入编辑模式前的状态，退出时恢复 */
-let _preEditState: 'compact' | 'active' = 'active';
-
 // ========== 浮卡光球拖拽状态（复刻 orb.ts 的全局变量） ==========
 let _fItem: FloatingCardItem | null = null;
 let _fDragging = false;
@@ -78,21 +73,6 @@ let _fStartCardH = 0;
 let _fLPTimer: ReturnType<typeof setTimeout> | null = null;
 let _fLPFired = false;
 let _fPreEdit: 'compact' | 'active' = 'compact';
-
-// ========== 浮卡拖拽状态 ==========
-let _dragItem: FloatingCardItem | null = null;
-let _dragStartX = 0;
-let _dragStartY = 0;
-let _dragStartLeft = 0;
-let _dragStartTop = 0;
-let _dragStartW = 0;
-let _dragStartH = 0;
-let _dragStartOrbAbsX = 0;
-let _dragStartOrbAbsY = 0;
-let _dragIsDragging = false;
-let _dragLongPressFired = false;
-let _dragLongPressTimer: ReturnType<typeof setTimeout> | null = null;
-let _dragPointerId: number | null = null;
 
 // ========== 浮卡 ==========
 
@@ -224,177 +204,6 @@ function _scatterPosition(cardIndex: number): { left: number; top: number } {
     }
   }
   return { left: fallbackLeft, top: fallbackTop };
-}
-
-// ========== 浮卡拖拽/编辑状态机 ==========
-
-function _clearFloatingDragTimer(): void {
-  if (_dragLongPressTimer) { clearTimeout(_dragLongPressTimer); _dragLongPressTimer = null; }
-}
-
-function _enterFloatingEditMode(item: FloatingCardItem): void {
-  _preEditState = item.state as 'compact' | 'active';
-  item.state = 'editing';
-  item.el.style.boxShadow = '0 0 24px 8px ' + hexToRgba(item.accentColor, 0.25) + ', 0 8px 32px rgba(0,0,0,0.5)';
-}
-
-function _exitFloatingEditMode(item: FloatingCardItem): void {
-  item.state = _preEditState;
-  item.el.style.boxShadow = theme.stack.blurShadow;
-}
-
-function _startFloatingDrag(item: FloatingCardItem, clientX: number, clientY: number, pointerId?: number): void {
-  _dragItem = item;
-  _dragStartX = clientX;
-  _dragStartY = clientY;
-  _dragStartLeft = parseFloat(item.el.style.left) || 0;
-  _dragStartTop = parseFloat(item.el.style.top) || 0;
-  _dragStartW = item.cardWidth;
-  _dragStartH = item.cardHeight;
-  _dragIsDragging = false;
-  _dragLongPressFired = false;
-  _dragPointerId = pointerId ?? null;
-
-  // 长按进编辑模式
-  _dragLongPressTimer = setTimeout(() => {
-    if (!_dragItem) return;
-    _dragLongPressFired = true;
-    _startFloatingDrag(_dragItem, clientX, clientY, pointerId);
-    _enterFloatingEditMode(_dragItem);
-  }, LONG_PRESS_MS);
-}
-
-function _handleFloatingDragMove(clientX: number, clientY: number, pointerId?: number): void {
-  if (!_dragItem) return;
-  if (_dragPointerId !== null && pointerId !== undefined && pointerId !== _dragPointerId) return;
-
-  const dx = clientX - _dragStartX;
-  const dy = clientY - _dragStartY;
-
-  if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
-    if (!_dragIsDragging) {
-      _dragIsDragging = true;
-      if (_dragLongPressTimer) { clearTimeout(_dragLongPressTimer); _dragLongPressTimer = null; }
-    }
-  }
-
-  if (!_dragIsDragging) return;
-
-  const { safeL, safeT, safeB } = _calcFloatingSafeBounds();
-
-  if (_dragItem.state === 'editing') {
-    // 编辑模式：左上角固定，拉伸右下角
-    const newW = Math.max(FLOATING_CARD_W_MIN, _dragStartW + dx);
-    const newH = Math.max(FLOATING_CARD_H_MIN, _dragStartH + dy);
-
-    // 边界钳制（右下角不超出屏幕）
-    const maxRight = window.innerWidth - safeL;
-    const maxBottom = window.innerHeight - safeB;
-    const clampedW = Math.min(newW, maxRight - _dragStartLeft);
-    const clampedH = Math.min(newH, maxBottom - _dragStartTop);
-
-    _dragItem.el.style.width = clampedW + 'px';
-    _dragItem.el.style.height = clampedH + 'px';
-    _dragItem.cardWidth = clampedW;
-    _dragItem.cardHeight = clampedH;
-
-    // 记忆当前尺寸
-    if (_dragItem.compactMemW < clampedW) _dragItem.compactMemW = clampedW;
-    if (_dragItem.compactMemH < clampedH) _dragItem.compactMemH = clampedH;
-    if (_dragItem.activeMemW < clampedW) _dragItem.activeMemW = clampedW;
-    if (_dragItem.activeMemH < clampedH) _dragItem.activeMemH = clampedH;
-
-    // 同步光球位置
-    const rx = clampedW - rightOff - cornerSize;
-    const by = clampedH - bottomOff - cornerSize;
-    if (_dragItem.brOrb) {
-      _dragItem.brOrb.style.left = rx + 'px';
-      _dragItem.brOrb.style.top = by + 'px';
-    }
-  } else {
-    // 普通拖动
-    const newL = _dragStartLeft + dx;
-    const newT = _dragStartTop + dy;
-    const clampedL = Math.max(safeL, Math.min(newL, window.innerWidth - _dragStartW - safeL));
-    const clampedT = Math.max(safeT, Math.min(newT, window.innerHeight - _dragStartH - safeB));
-    _dragItem.el.style.left = clampedL + 'px';
-    _dragItem.el.style.top = clampedT + 'px';
-  }
-}
-
-function _endFloatingDrag(): void {
-  _clearFloatingDragTimer();
-  if (_dragItem && _dragLongPressFired) {
-    _exitFloatingEditMode(_dragItem);
-  }
-  if (_dragItem && !_dragIsDragging && !_dragLongPressFired) {
-    _dragItem.brOrb?.click();
-  }
-  _dragItem = null;
-  _dragIsDragging = false;
-}
-
-function _bindBrDragEvents(brOrb: HTMLElement, item: FloatingCardItem): void {
-  let pStartX = 0, pStartY = 0;
-  let pDragging = false;
-  let pLPFired = false;
-  let pLPTimer: ReturnType<typeof setTimeout> | null = null;
-
-  brOrb.addEventListener('pointerdown', (e) => {
-    e.preventDefault();
-    pStartX = e.clientX;
-    pStartY = e.clientY;
-    pDragging = false;
-    pLPFired = false;
-
-    _startFloatingDrag(item, e.clientX, e.clientY, e.pointerId);
-
-    pLPTimer = setTimeout(() => {
-      pLPFired = true;
-      _startFloatingDrag(item, pStartX, pStartY, e.pointerId);
-      _enterFloatingEditMode(item);
-    }, LONG_PRESS_MS);
-  });
-
-  document.addEventListener('pointermove', (e) => {
-    if (!pDragging && (Math.abs(e.clientX - pStartX) > DRAG_THRESHOLD || Math.abs(e.clientY - pStartY) > DRAG_THRESHOLD)) {
-      pDragging = true;
-      if (pLPTimer) { clearTimeout(pLPTimer); pLPTimer = null; }
-    }
-    _handleFloatingDragMove(e.clientX, e.clientY, e.pointerId);
-  });
-
-  document.addEventListener('pointerup', () => {
-    if (pLPTimer) { clearTimeout(pLPTimer); pLPTimer = null; }
-    if (_dragItem && pLPFired) {
-      _exitFloatingEditMode(_dragItem);
-    }
-    if (_dragItem && !pDragging && !pLPFired) {
-      _dragItem.brOrb?.click();
-    }
-    _dragItem = null;
-    _dragIsDragging = false;
-  }, { once: true });
-}
-
-// ========== 全局文档级拖动监听 ==========
-let _globalDragInitialized = false;
-
-function _ensureGlobalDragListeners(): void {
-  if (_globalDragInitialized) return;
-  _globalDragInitialized = true;
-
-  document.addEventListener('pointermove', (e) => {
-    _handleFloatingDragMove(e.clientX, e.clientY, e.pointerId);
-  });
-
-  document.addEventListener('pointerup', () => {
-    _endFloatingDrag();
-  });
-
-  document.addEventListener('pointercancel', () => {
-    _endFloatingDrag();
-  });
 }
 
 // ========== 发射浮卡 ==========
@@ -552,7 +361,6 @@ export function launchFocusedCard(): void {
       const expTop = parseFloat(el.style.top) || 0;
       const foldW = item.compactMemW;
       const foldH = item.compactMemH;
-      const MARGIN_F = MARGIN;
       const expW = item.cardWidth;
       const expH = item.cardHeight;
       // 边界压缩（与展开对称）：折叠后右下角锚点不能超出屏幕
@@ -560,8 +368,8 @@ export function launchFocusedCard(): void {
       const anchorRight = expLeft + expW;
       const anchorBottom = expTop + expH;
       // 边界压缩：如果折叠后左上角超出屏幕，压缩尺寸（展开对称）
-      const clampedFoldW = Math.max(FLOATING_CARD_W_MIN, Math.min(foldW, anchorRight - MARGIN_F));
-      const clampedFoldH = Math.max(FLOATING_CARD_H_MIN, Math.min(foldH, anchorBottom - MARGIN_F));
+      const clampedFoldW = Math.max(FLOATING_CARD_W_MIN, Math.min(foldW, anchorRight - MARGIN));
+      const clampedFoldH = Math.max(FLOATING_CARD_H_MIN, Math.min(foldH, anchorBottom - MARGIN));
       const foldLeft = anchorRight - clampedFoldW;
       const foldTop = anchorBottom - clampedFoldH;
       // TL/TR/BL 偏移到 BR 终点，与卡片折叠同步
@@ -607,7 +415,6 @@ export function launchFocusedCard(): void {
   ].join(';');
 
   document.body.appendChild(el);
-  _ensureGlobalDragListeners();
 
   const targetPos = _scatterPosition(_floatingCards.length);
   _floatingCards.push(item);
@@ -872,32 +679,3 @@ export function initFloatingCards(): void {
   });
 }
 
-// ========== 交互能力声明（供路由层使用） ==========
-export const floatingCardCapability: InteractionCapability = {
-  id: 'floating-card',
-  drag: {
-    enabled: true,
-    area: () => {
-      if (_floatingCards.length === 0) return new DOMRect(0, 0, 0, 0);
-      const br = _floatingCards[_floatingCards.length - 1].brOrb;
-      return br?.getBoundingClientRect() ?? new DOMRect(0, 0, 0, 0);
-    },
-    mode: 'anchor-br',
-    minWidth: FLOATING_CARD_W_MIN,
-    minHeight: FLOATING_CARD_H_MIN,
-  },
-  longPress: {
-    enabled: true,
-    duration: LONG_PRESS_MS,
-    onEnterEdit: () => {
-      if (_dragItem) _enterFloatingEditMode(_dragItem);
-    },
-    onExitEdit: () => {
-      if (_dragItem) _exitFloatingEditMode(_dragItem);
-    },
-  },
-  boundary: {
-    inputBarId: 'aiInputBar',
-    decorSize: cornerSize,
-  },
-};

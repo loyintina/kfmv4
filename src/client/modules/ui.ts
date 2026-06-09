@@ -5,8 +5,6 @@
  * 光标、选中、手势等逻辑在侧栏重写时重新实现。
  */
 
-let sidebarContent: HTMLElement | null = null;
-
 import { onSidebarOpen, onSidebarClose } from './tree-render.js';
 import { Registry } from './ui-registry.js';
 import { KFMState } from './state.js';

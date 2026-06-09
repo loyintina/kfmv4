@@ -88,47 +88,6 @@ class AnimationRegistryClass {
     }
   }
 
-  // ========== 命名动画（有状态管理） ==========
-
-  /** 播放命名动画（自动 kill 同名旧动画） */
-  play(name: string, tl: gsap.core.Timeline): void {
-    this.kill(name);
-    this._entries.set(name, { name, tl });
-  }
-
-  /** 反向播放命名动画（如果存在且正在运行） */
-  reverse(name: string): boolean {
-    const entry = this._entries.get(name);
-    if (!entry) return false;
-    entry.tl.reverse();
-    return true;
-  }
-
-  /** Kill 指定命名动画 */
-  kill(name: string): void {
-    const entry = this._entries.get(name);
-    if (entry) {
-      entry.tl.kill();
-      this._entries.delete(name);
-    }
-  }
-
-  /** Kill 所有命名动画 + 所有 scope */
-  killAll(): void {
-    for (const [, entry] of this._entries) {
-      entry.tl.kill();
-    }
-    this._entries.clear();
-    for (const [, tl] of this._scopes) {
-      tl.clear();
-    }
-    this._scopes.clear();
-  }
-
-  /** 检查命名动画是否存在 */
-  has(name: string): boolean {
-    return this._entries.has(name);
-  }
 }
 
 export const anim = new AnimationRegistryClass();
