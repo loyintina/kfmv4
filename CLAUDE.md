@@ -8,7 +8,7 @@ AI 人机交互个人工作台，面向移动端浏览器。核心理念：**一
 > **规划设计时参考** `docs/VISION_AND_ROADMAP.md`（远景）。
 > **做浮卡相关改动先读** `docs/archive/card-system/CARD_SYSTEM_UNIFICATION_SPEC.md`（已归档：统一化方案失败，当前为双模块架构）。
 > **UI Registry 相关**已归档到 `docs/archive/ui-registry/`。
-> **引擎层改动先读** `docs/ENGINE_ARCHITECTURE.md`（v2 管线 + text-layout 排版引擎架构）。
+> **引擎层改动先读** `docs/archive/engine/ENGINE_ARCHITECTURE.md`（v2 管线 + text-layout 排版引擎架构）。
 
 ---
 
@@ -40,7 +40,6 @@ docs/
 ├── HANDBOOK.md              # 工作手册：架构-调试-待办-测试（日常翻）
 ├── VISION_AND_ROADMAP.md    # 远景文档：核心理念+演进路线（规划设计时参考）
 ├── KFM_V4_INVARIANTS.md     # 修改约束协议：心法原则+自查清单（改代码前必读）
-├── ENGINE_ARCHITECTURE.md   # 引擎层架构（v2 管线 + text-layout 排版引擎）
 ├── design/                  # 设计中（待实现的设计文档）
 │   └── WORKBENCH_SPEC.md        # 卡片工作台（购物车+顶栏+光标+编辑态）
 └── archive/                 # 历史归档
@@ -54,7 +53,7 @@ docs/
     └── legacy/              # 旧版本文件
 ```
 
-> 接手新对话的推荐阅读顺序：`CLAUDE.md` → `HANDBOOK.md` §2（当前状态）→ `KFM_V4_INVARIANTS.md`（修改规则）→ `docs/design/WORKBENCH_SPEC.md`（当前方向）→ `HANDBOOK.md` §3（待办）→ `HANDBOOK.md` §七（审计问题清单）。引擎层改动前读 `ENGINE_ARCHITECTURE.md`。
+> 接手新对话的推荐阅读顺序：`CLAUDE.md` → `HANDBOOK.md` §2（当前状态）→ `KFM_V4_INVARIANTS.md`（修改规则）→ `docs/design/WORKBENCH_SPEC.md`（当前方向）→ `HANDBOOK.md` §3（待办）→ `HANDBOOK.md` §七（审计问题清单）。引擎层改动前读 `docs/archive/engine/ENGINE_ARCHITECTURE.md`。
 
 ## 完整性校验
 

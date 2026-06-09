@@ -13,7 +13,7 @@ docs/
 ├── HANDBOOK.md                 ← 工作手册：架构、调试、待办、测试（日常翻）
 ├── KFM_V4_INVARIANTS.md       ← 修改约束：心法 + 自查清单（改代码前读）
 ├── VISION_AND_ROADMAP.md      ← 远景：核心理念 + 演进路线（规划时参考）
-├── ENGINE_ARCHITECTURE.md     ← 引擎层架构（改渲染逻辑前读）
+├── AGENTS.md                  ← 本文。AI 文档维护指南
 ├── design/                    ← 待实现的设计提案
 │   └── WORKBENCH_SPEC.md      ← 卡片工作台（唯一 active 设计提案）
 └── archive/                   ← 历史文档仓库
@@ -22,7 +22,7 @@ docs/
     ├── ui-registry/           ← UI Element Registry 设计/审计
     ├── card-system/           ← 浮卡统一化尝试记录
     ├── architecture-vision/   ← 原始愿景蓝图
-    ├── engine/                ← 渲染引擎改造计划
+    ├── engine/                ← 引擎层架构 + 渲染引擎改造计划（改渲染逻辑前读 ENGINE_ARCHITECTURE.md）
     ├── standards/             ← 调试/Bug/测试规范
     ├── bugs/                  ← Bug 修复记录
     └── legacy/                ← 旧版本文档
@@ -35,7 +35,7 @@ docs/
 | `HANDBOOK.md` | 当前状态、待办、陷阱、架构速查、测试 | 每次改代码后同步 |
 | `KFM_V4_INVARIANTS.md` | 心法原则、约束、补丁模式、自查清单 | 发现新约束时追加 |
 | `VISION_AND_ROADMAP.md` | 核心理念、演进路线、开放问题 | 做重大决策时更新 |
-| `ENGINE_ARCHITECTURE.md` | 引擎层 14 个文件的架构描述 | 改渲染逻辑后同步 |
+| `archive/engine/ENGINE_ARCHITECTURE.md` | 引擎层 14 个文件的架构描述 | 改渲染逻辑后同步 |
 | `design/WORKBENCH_SPEC.md` | 唯一待实现的设计提案 | 定了方案才改 |
 
 ### 根层文档维护规则
