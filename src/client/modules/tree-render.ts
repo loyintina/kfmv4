@@ -588,18 +588,28 @@ function _handleRowSwipe(): void {
   ].join('');
 
   document.body.appendChild(card);
-  _tempCardEls.push(card);
 
-  // 从顶向下堆叠所有卡片，新卡飞入，旧卡平滑推移
+  // 居中插入：新卡插入堆叠中间位置
+  const insertIdx = _tempCardEls.length === 0 ? 0 : Math.floor(_tempCardEls.length / 2);
+  _tempCardEls.splice(insertIdx, 0, card);
+
+  // 居中重排所有卡片（中心上移，考虑底部操作区）
+  const count = _tempCardEls.length;
+  const stackH = (count - 1) * _CARD_GAP;
+  const baseTop = Math.round(window.innerHeight * 0.35 - stackH / 2);
+  const baseZ = 1000;
   _tempCardEls.forEach((c, i) => {
-    const targetTop = Math.round(window.innerHeight * 0.12 + i * _CARD_GAP);
+    const targetTop = baseTop + i * _CARD_GAP;
+    const z = baseZ + i; // 底部卡片 z-index 最高
     if (c === card) {
+      c.style.zIndex = String(z);
       anim.set(card, { opacity: 0, scale: 0.7, rotation: randRot });
       anim.to(card, {
         left: toX, top: targetTop, opacity: 1, scale: 1, rotation: randRot,
         duration: 0.4, ease: 'back.out(1.3)',
       });
     } else {
+      c.style.zIndex = String(z);
       anim.to(c, { top: targetTop, duration: 0.3, ease: 'power2.out' });
     }
   });
