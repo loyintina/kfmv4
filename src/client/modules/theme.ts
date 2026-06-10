@@ -178,7 +178,7 @@ export const nebula: ThemeConfig = {
     blurShadow: '0 2px 4px rgba(0,0,0,0.3),0 8px 16px rgba(0,0,0,0.25),0 16px 32px rgba(0,0,0,0.2),-4px 4px 8px rgba(0,0,0,0.15)',
     cardBg: 'rgba(20,16,32,0.92)',
     cardBorderRadius: '12px',
-    cardGap: 36,
+    cardGap: 26,
     cardHeight: 68,
   },
 

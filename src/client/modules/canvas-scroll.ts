@@ -94,10 +94,12 @@ export function bindWheelEvents(canvas: HTMLElement): void {
 
 // ========== gesture-registry 指针事件处理 ==========
 
+type _AxisLock = 'none' | 'horizontal' | 'vertical';
+
 let _gestureId = 0;
 let _gestureStartX = 0;
 let _gestureStartY = 0;
-let _swipeHorizontal = false;
+let _gestureAxis: _AxisLock = 'none';
 
 export function initScrollGesture(): void {
   if (_gestureId) return; // 只注册一次
@@ -111,7 +113,7 @@ export function initScrollGesture(): void {
       if (e.button !== 0) return;
       _gestureStartX = e.clientX;
       _gestureStartY = e.clientY;
-      _swipeHorizontal = false;
+      _gestureAxis = 'none';
       const y = e.clientY;
       lastTouchY = y;
       lastTouchTime = performance.now();
@@ -147,16 +149,17 @@ export function initScrollGesture(): void {
       }
     },
     onMove(e, dx) {
-      // 轴向锁定：水平位移 > 垂直 → 抑制滚动/光标，待 onEnd 处理
-      const absDx = Math.abs(dx ?? (e.clientX - _gestureStartX));
-      if (absDx > 10) {
+      // 双向轴向锁定：首次判定主导方向后即锁定，另一方向永不触发
+      if (_gestureAxis === 'none') {
+        const absDx = Math.abs(dx ?? (e.clientX - _gestureStartX));
         const absDy = Math.abs(e.clientY - _gestureStartY);
-        if (absDx > absDy * 1.5) {
-          _swipeHorizontal = true;
-          // 不阻断事件传播，仅跳过后续垂直处理
+        if (absDx > 12 && absDx > absDy * 2) {
+          _gestureAxis = 'horizontal';
+        } else if (absDy > 12 && absDy > absDx * 2) {
+          _gestureAxis = 'vertical';
         }
       }
-      if (_swipeHorizontal) return;
+      if (_gestureAxis === 'horizontal') return;
 
       const y = e.clientY;
       const now = performance.now();
@@ -222,16 +225,15 @@ export function initScrollGesture(): void {
         return;
       }
 
-      if (_swipeHorizontal) {
+      if (_gestureAxis === 'horizontal') {
         if (dx > 50) {
-          _swipeHorizontal = false;
           L.setSwipeGuard();
           L.triggerRowSwipe();
-          return;
+        } else if (dx < -60) {
+          closeSidebar();
         }
-        // 左滑关侧栏
-        if (dx < -60) { _swipeHorizontal = false; closeSidebar(); return; }
-        _swipeHorizontal = false;
+        _gestureAxis = 'none';
+        return;
       }
 
       // 水平滑动检测 → 关闭侧栏（兼容无轴向锁定的老路径）

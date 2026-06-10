@@ -24,6 +24,7 @@ import { createRootPicker, destroyRootPicker, isPickerOpen } from './root-picker
 import { log } from './logger.js';
 import { wsChannel } from './ws-channel.js';
 import { Registry } from './ui-registry.js';
+import { currentTheme as theme } from './theme.js';
 const ts = anim.scope('tree-render');
 /** 重置动画时间线：清空 tween + 归零播放头 + 清除回调。正常动画结束时调用。 */
 function _resetAnimTimeline(): void {
@@ -504,9 +505,109 @@ function _bounceCursorRow(): void {
   }
 }
 
-/** 由 canvas-scroll 通过 L.triggerRowSwipe 触发：回弹当前光标行 */
+let _tempCardEls: HTMLElement[] = [];
+const _CARD_H = theme.stack.cardHeight;
+const _CARD_GAP = theme.stack.cardGap;
+
+const _HUE_BLUE = 220;
+const _HUE_PURPLE = 265;
+const _HUE_RANGE = 15;
+const _SAT = 62;
+const _LIT = 55;
+
+function _cardAccent(isDir: boolean): { color1: string; color2: string } {
+  const hBlue = _HUE_BLUE + (Math.random() - 0.5) * _HUE_RANGE * 2;
+  const hPurple = _HUE_PURPLE + (Math.random() - 0.5) * _HUE_RANGE * 2;
+  if (isDir) {
+    return { color1: _hslToHex(hPurple, _SAT, _LIT), color2: _hslToHex(hBlue, _SAT, _LIT) };
+  }
+  return { color1: _hslToHex(hBlue, _SAT, _LIT), color2: _hslToHex(hPurple, _SAT, _LIT) };
+}
+
+function _hslToHex(h: number, s: number, l: number): string {
+  h /= 360; s /= 100; l /= 100;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) => {
+    const k = (n + h * 12) % 12;
+    const c = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.round(255 * Math.max(0, Math.min(1, c)));
+  };
+  return '#' + [f(0), f(8), f(4)].map(v => v.toString(16).padStart(2, '0')).join('');
+}
+
+function _pathBasename(path: string): string {
+  const parts = path.replace(/\\/g, '/').split('/');
+  return parts[parts.length - 1] || path;
+}
+
+/** 由 canvas-scroll 通过 L.triggerRowSwipe 触发：回弹 → 创建临时卡片 */
 function _handleRowSwipe(): void {
   _bounceCursorRow();
+
+  if (!L.cursorRowId) return;
+  const root = L.renderer?.getRoot();
+  if (!root) return;
+  const rowBox = findBoxById(root, L.cursorRowId);
+  if (!rowBox) return;
+  const data = getFileRowData(rowBox.data);
+  if (!data) return;
+
+  const name = _pathBasename(data.path);
+  const isDir = data.isDir;
+
+  const cc = _cardAccent(isDir);
+  const grad = `linear-gradient(135deg, ${_rgba(cc.color1, 0.85)} 30%, ${_rgba(cc.color2, 0.85)} 70%)`;
+
+  // 从文件行位置飞入右侧堆叠
+  const abs = rowBox.getAbsolutePosition();
+  const scrollY = root.scrollY ?? 0;
+  const randRot = (Math.random() - 0.5) * 4;
+  const fromX = abs.x;
+  const fromY = abs.y - scrollY - (_CARD_H - rowBox.height) / 2;
+  const sidebarW = DOM.sidebar?.getBoundingClientRect().width ?? 295;
+  const toX = sidebarW + 20 + Math.floor(Math.random() * 14) - 4; // 左边缘离侧栏右边界 20px+
+
+  const card = document.createElement('div');
+  card.style.cssText = [
+    'position:fixed', 'left:' + fromX + 'px', 'top:' + fromY + 'px',
+    'width:155px', 'height:' + _CARD_H + 'px',
+    'border-radius:12px', 'padding:1px', 'padding-left:3px',
+    'background:' + grad,
+    'box-shadow:0 2px 4px rgba(0,0,0,0.3),0 8px 16px rgba(0,0,0,0.25),0 16px 32px rgba(0,0,0,0.2),-4px 4px 8px rgba(0,0,0,0.15)',
+    'cursor:pointer', 'z-index:1000', 'opacity:1',
+  ].join(';');
+
+  card.innerHTML = [
+    '<div style="border-radius:11px;width:100%;height:100%;',
+    'background:rgba(20,16,32,0.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);',
+    'display:flex;align-items:flex-start;padding:7px 12px 0;gap:6px;box-sizing:border-box">',
+    isDir ? '<span style="color:' + theme.canvas.accent + ';font-size:10px;flex-shrink:0;padding-top:1px">\u25b6</span>' : '',
+    '<div style="font-size:12px;font-weight:500;color:rgba(224,224,224,0.9);',
+    'white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + name + '</div>',
+    '</div>',
+  ].join('');
+
+  document.body.appendChild(card);
+  _tempCardEls.push(card);
+
+  // 从顶向下堆叠所有卡片，新卡飞入，旧卡平滑推移
+  _tempCardEls.forEach((c, i) => {
+    const targetTop = Math.round(window.innerHeight * 0.12 + i * _CARD_GAP);
+    if (c === card) {
+      anim.set(card, { opacity: 0, scale: 0.7, rotation: randRot });
+      anim.to(card, {
+        left: toX, top: targetTop, opacity: 1, scale: 1, rotation: randRot,
+        duration: 0.4, ease: 'back.out(1.3)',
+      });
+    } else {
+      anim.to(c, { top: targetTop, duration: 0.3, ease: 'power2.out' });
+    }
+  });
+}
+
+function _rgba(hex: string, alpha: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  return 'rgba(' + ((n >> 16) & 0xFF) + ',' + ((n >> 8) & 0xFF) + ',' + (n & 0xFF) + ',' + alpha + ')';
 }
 
 // ============================================================
@@ -607,6 +708,8 @@ export function onSidebarClose(): void {
   // 先停掉所有动画和独立rAF循环
   _removeAllOverlays();
   _resetAnimTimeline();
+  _tempCardEls.forEach(el => el.remove());
+  _tempCardEls = [];
   L.setSidebarClosed(true);  // 让wheel/touch的rAF循环自己退出
   L.endOp();
   
