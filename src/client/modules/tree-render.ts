@@ -579,7 +579,7 @@ function _handleRowSwipe(): void {
 
   card.innerHTML = [
     '<div style="border-radius:11px;width:100%;height:100%;',
-    'background:rgba(20,16,32,0.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);',
+    'background:rgba(20,16,32,0.95);',
     'display:flex;align-items:flex-start;padding:7px 12px 0;gap:6px;box-sizing:border-box">',
     isDir ? '<span style="color:' + theme.canvas.accent + ';font-size:10px;flex-shrink:0;padding-top:1px">\u25b6</span>' : '',
     '<div style="font-size:12px;font-weight:500;color:rgba(224,224,224,0.9);',
@@ -593,13 +593,17 @@ function _handleRowSwipe(): void {
   const insertIdx = _tempCardEls.length === 0 ? 0 : Math.floor(_tempCardEls.length / 2);
   _tempCardEls.splice(insertIdx, 0, card);
 
-  // 居中重排所有卡片（中心上移，考虑底部操作区）
+  // 居中重排所有卡片（中心上移，考虑底部操作区，超出时压缩 gap）
   const count = _tempCardEls.length;
-  const stackH = (count - 1) * _CARD_GAP;
+  const maxH = window.innerHeight * 0.7;
+  const gap = count > 1
+    ? Math.min(_CARD_GAP, (maxH - _CARD_H) / (count - 1))
+    : _CARD_GAP;
+  const stackH = _CARD_H + (count - 1) * gap;
   const baseTop = Math.round(window.innerHeight * 0.35 - stackH / 2);
   const baseZ = 1000;
   _tempCardEls.forEach((c, i) => {
-    const targetTop = baseTop + i * _CARD_GAP;
+    const targetTop = Math.round(baseTop + i * gap);
     const z = baseZ + i; // 底部卡片 z-index 最高
     if (c === card) {
       c.style.zIndex = String(z);
