@@ -596,7 +596,7 @@ function _handleRowSwipe(): void {
 
   // 居中重排所有卡片（中心上移，考虑底部操作区，超出时压缩 gap）
   const count = _tempCardEls.length;
-  const maxH = window.innerHeight * 0.7;
+  const maxH = window.innerHeight * 0.54;
   const gap = count > 1
     ? Math.min(_CARD_GAP, (maxH - _CARD_H) / (count - 1))
     : _CARD_GAP;
