@@ -58,7 +58,7 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 |------|------|---------|
 | **骨架** | `app.ts` `ui.ts` `dom-refs.ts` `state.ts` `renderer-lifecycle.ts` | 初始化编排、全局状态、渲染器单例 L |
 | **注册中心** | `ui-registry.ts` `gesture-registry.ts` `animation-registry.ts` | UI 元素、手势、动画的注册/调度 |
-| **文件树渲染** | `tree-render.ts` `tree-model.ts` `tree-loader.ts` `canvas-cursor.ts` `canvas-scroll.ts` `canvas-utils.ts` `root-picker.ts` | Canvas 文件树的构建、交互、加载 |
+| **文件树渲染** | `tree-render.ts` `tree-overlay.ts` `tree-swipe.ts` `tree-model.ts` `tree-loader.ts` `canvas-cursor.ts` `canvas-scroll.ts` `canvas-utils.ts` `root-picker.ts` | Canvas 文件树的构建、交互、加载 |
 | **文件树样式** | `style-registry.ts` `theme.ts` | 文件树尺寸/颜色/字体的唯一来源（改一处全局同步） |
 | **视觉效果** | `char-rain.ts` | 字符散落/回收动画（展开折叠时） |
 | **交互共享** | `interaction-constants.ts` `interaction-types.ts` `click-queue.ts` | 模块间共享的常量/类型/事件队列 |
@@ -345,11 +345,13 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `theme.ts` | 217 | 7 | ✅ 独立条目 | 主题系统（颜色唯一来源） |
 | `tree-loader.ts` | 185 | 2 | ✅ 分组表 | 数据加载层（按需加载展开路径） |
 | `tree-model.ts` | 185 | 2 | ✅ 分组表 | 绝对深度布局模型 |
-| `tree-render.ts` | 1485 | 3 | ✅ 核心条目 | 文件树 Canvas 渲染 |
+| `tree-overlay.ts` | 377 | 1 | ✅ 分组表 | Overlay 双树构建系统（从 tree-render 拆分） |
+| `tree-render.ts` | 979 | 3 | ✅ 核心条目 | 文件树 Canvas 渲染（编排层） |
+| `tree-swipe.ts` | 182 | 1 | ✅ 分组表 | 文件行右滑 → 卡片堆（从 tree-render 拆分） |
 | `ui-registry.ts` | 331 | 9 | ✅ 独立条目 | UI 元素注册表 |
 | `ui.ts` | 70 | 10 | ✅ 提及 | UI 初始化编排 |
 | `ws-channel.ts` | 317 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
-| **合计** | **7386** | | | |
+| **合计** | **7439** | | | |
 
 ### 死代码检查
 

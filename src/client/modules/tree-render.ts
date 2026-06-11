@@ -25,6 +25,15 @@ import { log } from './logger.js';
 import { wsChannel } from './ws-channel.js';
 import { Registry } from './ui-registry.js';
 import { currentTheme as theme } from './theme.js';
+import {
+  type OverlayMeta, type OverlayPack, type FlatSubTarget,
+  removeAllOverlays, createCharLayer, collectSiblingsAfter,
+  buildAndSetOverlayTree, createVisualClone,
+  setupExpandOverlays, setupCollapseOverlays,
+  flattenExpandTree, ensureMetaFromExpandedState,
+  activeOverlayCount,
+} from './tree-overlay.js';
+import { bounceCursorRow, handleRowSwipe, clearTempCards } from './tree-swipe.js';
 const ts = anim.scope('tree-render');
 /** 重置动画时间线：清空 tween + 归零播放头 + 清除回调。正常动画结束时调用。 */
 function _resetAnimTimeline(): void {
@@ -32,14 +41,6 @@ function _resetAnimTimeline(): void {
   ts.eventCallback('onComplete', null);
   ts.reversed(false);  // 清除反转状态，确保新加 tween 正向播放
   ts.time(0);
-}
-
-// ========== Overlay 元数据类型 ==========
-/** overlay Box 上挂载的动画元数据，替代 (as any) 隐式契约 */
-interface OverlayMeta {
-  _fullHeight?: number;
-  _origYs?: number[];
-  _targetY?: number;
 }
 
 /** 文件路径 → Box 屏幕坐标的反向索引。rebuildTree 后自动重建。 */
@@ -52,313 +53,6 @@ interface BoxLocation {
 
 const _boxLocationMap: Map<string, BoxLocation> = new Map();
 
-// ========== Overlay 管理 ==========
-const _activeOverlays: Box[] = [];
-
-const OVERLAY_Z = 200;
-
-function _addOverlay(overlay: Box): void {
-  _activeOverlays.push(overlay);
-  // debugLog(`[overlay] ADD ${overlay.id} total=${_activeOverlays.length}`);
-}
-
-function _removeOverlay(overlay: Box): void {
-  const idx = _activeOverlays.indexOf(overlay);
-  if (idx >= 0) _activeOverlays.splice(idx, 1);
-  if (overlay.parent) {
-    const pidx = overlay.parent.children.indexOf(overlay);
-    if (pidx >= 0) overlay.parent.children.splice(pidx, 1);
-  }
-  // debugLog(`[overlay] REMOVE ${overlay.id} total=${_activeOverlays.length}`);
-}
-
-function _removeAllOverlays(): void {
-  // debugLog(`[overlay] REMOVE_ALL start count=${_activeOverlays.length}`);
-  for (const ov of [..._activeOverlays]) {
-    _removeOverlay(ov);
-  }
-  _activeOverlays.length = 0;
-  // debugLog('[overlay] REMOVE_ALL done');
-}
-
-/** 创建字符雨层：与容器Ov平级的独立 Box，不受 overflow:hidden 裁剪 */
-function _createCharLayer(x: number, y: number, parent: Box): Box {
-  const layer = new Box({
-    id: 'char-layer',
-    x, y, width: 0, height: 0,
-    opacity: 1, visible: true,
-    backgroundColor: 'transparent', interactive: false,
-    overflow: 'visible',
-  });
-  parent.addChild(layer);
-  return layer;
-}
-
-/** 收集 container 在 parent 中之后的所有兄弟（排除 cursor-highlight） */
-function _collectSiblingsAfter(container: Box): Box[] {
-  const parent = container.parent;
-  if (!parent) return [];
-  const idx = parent.children.indexOf(container);
-  if (idx < 0) return [];
-  const result: Box[] = [];
-  for (let i = idx + 1; i < parent.children.length; i++) {
-    const sib = parent.children[i];
-    if (sib.id === 'cursor-highlight') continue;
-    if (_activeOverlays.includes(sib)) continue;
-    result.push(sib);
-  }
-  return result;
-}
-
-/**
- * 构建独立的动画树并设置到渲染器。
- * 双树渲染：overlay 节点不寄生在主树上，而是挂在独立的 _overlayRoot 下。
- * 主树的 opacity/overflow 完全不影响动画树。
- */
-function _buildAndSetOverlayTree(
-  pack: OverlayPack,
-  subTargets: FlatSubTarget[],
-  subPacks: OverlayPack[],
-  root: Box,
-): Box {
-  // === 关键修复：overlayRoot 的位置 ===
-  // overlay 树是扁平的（overlayRoot → 直接子节点），
-  // 但主树的容器和兄弟位于 rootedContainer 等中间祖先节点之下（有 x 偏移）。
-  // 捕获扣除 overlay 自身的 x/y 后的祖先偏移，赋给 overlayRoot，
-  // 这样 overlayRoot 下的直接子节点自动获得正确的绝对位置。
-  const topAbs = pack.containerOverlay.getAbsolutePosition();
-  const parentOffX = topAbs.x - pack.containerOverlay.x;
-  const parentOffY = topAbs.y - pack.containerOverlay.y;
-
-  const overlayRoot = new Box({
-    id: 'overlay-root',
-    x: parentOffX, y: parentOffY,
-    width: root.width, height: root.height,
-    scrollY: root.scrollY ?? 0,
-    scrollable: true,   // 与主树 rootBox 一致，让 renderer 应用 scroll 偏移
-    opacity: 1,
-    visible: true,
-    overflow: 'visible',  // 字符粒子可能在 clip 区外起始，不裁剪
-    backgroundColor: 'transparent',
-  });
-
-  // Top-level: container overlay + sibling overlays → direct children of overlayRoot
-  // overlayRoot 已有正确的祖先偏移，直接子的 x/y 保持相对值即可
-  overlayRoot.addChild(pack.containerOverlay);
-  for (const sibOv of pack.siblingOverlays) {
-    overlayRoot.addChild(sibOv);
-  }
-
-  // Map overlay id → overlay box for parent lookup
-  const ovById = new Map<string, Box>();
-  ovById.set(pack.containerOverlay.id ?? '', pack.containerOverlay);
-  for (let i = 0; i < subTargets.length; i++) {
-    ovById.set(subPacks[i].containerOverlay.id ?? '', subPacks[i].containerOverlay);
-  }
-
-  // Place each sub-pack's container overlays as children of their parent overlay
-  for (let i = 0; i < subTargets.length; i++) {
-    const st = subTargets[i];
-    const sp = subPacks[i];
-    const parentReal = st.container.parent;
-    const parentOvId = parentReal ? `ov-${parentReal.id}` : pack.containerOverlay.id;
-    const parentOv = parentOvId ? ovById.get(parentOvId) : null;
-    if (parentOv) {
-      parentOv.addChild(sp.containerOverlay);
-      for (const sibOv of sp.siblingOverlays) {
-        parentOv.addChild(sibOv);
-      }
-    } else {
-      overlayRoot.addChild(sp.containerOverlay);
-      for (const sibOv of sp.siblingOverlays) {
-        overlayRoot.addChild(sibOv);
-      }
-    }
-  }
-
-  L.renderer?.setOverlayRoot(overlayRoot);
-  return overlayRoot;
-}
-
-// ========== Box 视觉克隆器 ==========
-
-function _createVisualClone(
-  src: Box,
-  overrides?: Partial<{ x: number; y: number; width: number; height: number; opacity: number; zIndex: number; visible: boolean; id: string }>,
-  /** 是否克隆 label 子元素。行 overlay 不克隆（文字由字符雨提供），兄弟 overlay 需要克隆 */
-  cloneLabel = false,
-): Box {
-  const clone = new Box({
-    x: overrides?.x ?? src.x,
-    y: overrides?.y ?? src.y,
-    width: overrides?.width ?? src.width,
-    height: overrides?.height ?? src.height,
-    opacity: overrides?.opacity ?? src.opacity ?? 1,
-    visible: overrides?.visible ?? src.visible,
-    backgroundColor: src.backgroundColor || 'transparent',
-    borderRadius: src.borderRadius,
-    gradient: src.gradient ? { ...src.gradient } : undefined,
-    shadow: src.shadow ? { ...src.shadow } : undefined,
-    border: src.border ? { ...src.border } : undefined,
-    highlight: src.highlight ? { ...src.highlight } : undefined,
-    id: overrides?.id ?? `ov-${src.id || 'unknown'}`,
-    interactive: false,
-    zIndex: overrides?.zIndex ?? src.zIndex + OVERLAY_Z,
-    overflow: 'visible',
-    kfmStyle: src.kfmStyle ? { ...src.kfmStyle } : undefined,
-    data: { ...src.data },
-  });
-  if (src.textStyle) {
-    clone.textStyle = { ...src.textStyle };
-  }
-  if (src.transform) {
-    clone.transform = { ...src.transform };
-  }
-  // 递归克隆子 Box（行 overlay 需要克隆全部子元素）
-  // 到展开/折叠时主树子行被隐藏（opacity=0），overlay 中的 toggle 自然可见且无重影
-  for (const child of src.children) {
-    if (cloneLabel) {
-      const childClone = _createVisualClone(child, { id: child.id, zIndex: child.zIndex + OVERLAY_Z }, true);
-      clone.addChild(childClone);
-    }
-  }
-  return clone;
-}
-
-// ========== Overlay 搭建 ==========
-
-interface OverlayPack {
-  containerOverlay: Box;
-  rowOverlays: Box[];
-  siblingOverlays: Box[];
-  /** 被隐藏的容器（主树 expanded-* 自身） */
-  hiddenContainer: Box | null;
-  /** 被隐藏的真实兄弟 */
-  hiddenSiblings: Box[];
-  /** 被隐藏的容器内子行 */
-  hiddenChildren: Box[];
-}
-
-/** 搭建展开动画的 overlay 集合 */
-function _setupExpandOverlays(container: Box, fullHeight: number, siblingCloneLabels = true): OverlayPack {
-  const parent = container.parent!;
-
-  // 1. 容器 overlay (height=0, 即将动画到 fullHeight)
-  const containerOv = _createVisualClone(container, { id: `ov-${container.id || 'container'}`, height: 0, opacity: 1, zIndex: OVERLAY_Z });
-  containerOv.overflow = 'hidden';  // 裁剪子元素，height=0 时不可见
-  _addOverlay(containerOv);
-  // 由 _buildAndSetOverlayTree 统一构建 overlay 树
-  // 但暂时标记 parent 引用以便 getAbsolutePosition 能正确计算
-  containerOv.parent = parent;
-
-  // 隐藏主树容器自身（gradient/shadow/border 与 overlay 叠加会变亮）
-  container.opacity = 0;
-
-  // 2. 行 overlay（FROM=折叠态 y，TO=终端态 y）
-  //    跳过已展开的子容器（expanded-*），它们由独立的 setupExpandOverlays 处理
-  const rowOverlays: Box[] = [];
-  const hiddenChildren: Box[] = [];
-  // 行直接在最终位置（expandedY），不设 collapsedY。
-  // 容器 overlay 有 overflow:hidden，行被裁剪不显示。
-  // 容器高度从 0 增长到 fullHeight，行从顶部逐行显露。
-  const origYs = (container as Box & OverlayMeta)._origYs as number[] | undefined;
-  for (let j = 0; j < container.children.length; j++) {
-    const child = container.children[j];
-    if (!child.visible) continue;
-    if (child.id?.startsWith('expanded-')) continue;
-    const expandedY = origYs ? origYs[j] : child.y;
-    const rowOv = _createVisualClone(child, { id: child.id || (`row-${j}`), y: expandedY, opacity: 1, zIndex: OVERLAY_Z + 1 });
-    _addOverlay(rowOv);
-    containerOv.addChild(rowOv);
-    rowOverlays.push(rowOv);
-    // 隐藏主树真实行：动画期间只有 overlay 可见，防止两棵树重叠
-    child.opacity = 0;
-    hiddenChildren.push(child);
-  }
-
-  // 3. 兄弟 overlay（FROM=折叠态 y，TO=终端态 y）
-  //    最外层兄弟 cloneLabel=true（无字符雨），内部子层兄弟 cloneLabel=false
-  const siblingOverlays: Box[] = [];
-  const hiddenSiblings: Box[] = [];
-  const siblings = _collectSiblingsAfter(container);
-  for (const sib of siblings) {
-    if (!siblingCloneLabels && sib.id?.startsWith("expanded-")) continue;
-    const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || 'sib'}`, y: sib.y - fullHeight, opacity: 1, zIndex: OVERLAY_Z }, siblingCloneLabels);
-    (sibOv as Box & OverlayMeta)._targetY = sib.y;
-    _addOverlay(sibOv);
-    sibOv.parent = parent;
-    siblingOverlays.push(sibOv);
-    // 同上：隐藏主树真实兄弟
-    sib.opacity = 0;
-    hiddenSiblings.push(sib);
-  }
-
-  return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenContainer: container, hiddenSiblings, hiddenChildren };
-}
-
-/** 搭建折叠动画的 overlay 集合 */
-function _setupCollapseOverlays(container: Box, fullH: number, siblingCloneLabels = true): OverlayPack {
-  const parent = container.parent!;
-
-  // 1. 容器 overlay (height=fullH, 即将动画到 0)
-  const containerOv = _createVisualClone(container, { id: `ov-${container.id || 'container'}`, height: fullH, opacity: 1, zIndex: OVERLAY_Z });
-  containerOv.overflow = 'hidden';  // 裁剪子元素，折叠时子行逐行消失
-  _addOverlay(containerOv);
-  containerOv.parent = parent;
-
-  // 隐藏主树容器自身（gradient/shadow/border 与 overlay 叠加会变亮）
-  container.opacity = 0;
-
-  // 2. 行 overlay：固定在展开态 y
-  //    跳过已展开的子容器（expanded-*）
-  const rowOverlays: Box[] = [];
-  const hiddenChildren: Box[] = [];
-  for (let j = 0; j < container.children.length; j++) {
-    const child = container.children[j];
-    if (!child.visible) continue;
-    if (child.id?.startsWith('expanded-')) continue;
-    const rowOv = _createVisualClone(child, { id: child.id || (`row-${j}`), y: child.y, opacity: 1, zIndex: OVERLAY_Z + 1 });
-    _addOverlay(rowOv);
-    containerOv.addChild(rowOv);
-    rowOverlays.push(rowOv);
-    // 隐藏主树真实行：动画期间只有 overlay 可见
-    child.opacity = 0;
-    hiddenChildren.push(child);
-  }
-
-  // 行直接在最终位置（expandedY），不设 collapsedY。
-  // 容器 overlay 有 overflow:hidden，行被裁剪不显示。
-  // 容器高度从 fullH 缩到 0，行从底部逐行消失。
-
-  // 3. 兄弟 overlay
-  //    最外层兄弟 cloneLabel=true，内部子层兄弟 cloneLabel=false
-  const siblingOverlays: Box[] = [];
-  const hiddenSiblings: Box[] = [];
-  const siblings = _collectSiblingsAfter(container);
-  for (const sib of siblings) {
-    if (!siblingCloneLabels && sib.id?.startsWith("expanded-")) continue;
-    const sibOv = _createVisualClone(sib, { id: `ov-${sib.id || 'sib'}`, y: sib.y, opacity: 1, zIndex: OVERLAY_Z }, siblingCloneLabels);
-    (sibOv as Box & OverlayMeta)._targetY = sib.y - fullH;
-    _addOverlay(sibOv);
-    sibOv.parent = parent;
-    siblingOverlays.push(sibOv);
-    // 折叠时兄弟 overlay 的 toggle 设 0°（仅对 toggle 当前为 0° 的兄弟，
-    // 展开态 toggle 是 ~90°，折叠态是 0°，保持展开兄弟的 toggle 不动）
-    if (siblingCloneLabels) {
-      const origTc = sib.children.find(c => c.id?.startsWith('toggle-'));
-      const needsReset = !origTc || (origTc.transform?.rotate ?? 0) < 0.1;
-      if (needsReset) {
-        const tc = sibOv.children.find(c => c.id?.startsWith('toggle-'));
-        if (tc?.transform) tc.transform.rotate = 0;
-      }
-    }
-    // 隐藏主树真实兄弟
-    sib.opacity = 0;
-    hiddenSiblings.push(sib);
-  }
-
-  return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenContainer: container, hiddenSiblings, hiddenChildren };
-}
 
 /** 保存 KFMState 订阅引用，防止重复订阅 */
 function _ensureSubscribed(): void {
@@ -479,163 +173,6 @@ export function isAnimLocked(): boolean {
 
 // ========== 文件行右滑：回弹 + 加入临时卡片堆 ==========
 
-/**
- * 右滑光标行：GSAP 直接动画 rowBox + cursorBox，瞬态结束后自动归位
- * 不经过 overlay 系统——简单动画用简单方式，避免层级和光标同步问题
- */
-function _bounceCursorRow(): void {
-  if (!L.cursorRowId) return;
-  const root = L.renderer?.getRoot();
-  if (!root) return;
-  const rowBox = findBoxById(root, L.cursorRowId);
-  if (!rowBox || !rowBox.interactive) return;
-
-  const origX = rowBox.x;
-  const origCX = L.cursorBox?.x;
-
-  anim.to(rowBox, {
-    x: origX + 8, duration: 0.2, ease: 'power3.out',
-    yoyo: true, repeat: 1,
-  });
-  if (L.cursorBox) {
-    anim.to(L.cursorBox, {
-      x: (origCX ?? 0) + 8, duration: 0.2, ease: 'power3.out',
-      yoyo: true, repeat: 1,
-    });
-  }
-}
-
-let _tempCardEls: HTMLElement[] = [];
-const _CARD_H = theme.stack.cardHeight;
-const _CARD_GAP = theme.stack.cardGap;
-
-const _HUE_BLUE = 220;
-const _HUE_PURPLE = 265;
-const _HUE_RANGE = 15;
-const _SAT = 62;
-const _LIT = 55;
-
-function _cardAccent(isDir: boolean): { color1: string; color2: string } {
-  const hBlue = _HUE_BLUE + (Math.random() - 0.5) * _HUE_RANGE * 2;
-  const hPurple = _HUE_PURPLE + (Math.random() - 0.5) * _HUE_RANGE * 2;
-  if (isDir) {
-    return { color1: _hslToHex(hPurple, _SAT, _LIT), color2: _hslToHex(hBlue, _SAT, _LIT) };
-  }
-  return { color1: _hslToHex(hBlue, _SAT, _LIT), color2: _hslToHex(hPurple, _SAT, _LIT) };
-}
-
-function _hslToHex(h: number, s: number, l: number): string {
-  h /= 360; s /= 100; l /= 100;
-  const a = s * Math.min(l, 1 - l);
-  const f = (n: number) => {
-    const k = (n + h * 12) % 12;
-    const c = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-    return Math.round(255 * Math.max(0, Math.min(1, c)));
-  };
-  return '#' + [f(0), f(8), f(4)].map(v => v.toString(16).padStart(2, '0')).join('');
-}
-
-function _pathBasename(path: string): string {
-  const parts = path.replace(/\\/g, '/').split('/');
-  return parts[parts.length - 1] || path;
-}
-
-/** 由 canvas-scroll 通过 L.triggerRowSwipe 触发：回弹 → 创建临时卡片 */
-function _handleRowSwipe(): void {
-  _bounceCursorRow();
-
-  if (!L.cursorRowId) return;
-  const root = L.renderer?.getRoot();
-  if (!root) return;
-  const rowBox = findBoxById(root, L.cursorRowId);
-  if (!rowBox) return;
-  const data = getFileRowData(rowBox.data);
-  if (!data) return;
-
-  const name = _pathBasename(data.path);
-  const isDir = data.isDir;
-
-  const cc = _cardAccent(isDir);
-  const grad = `linear-gradient(135deg, ${_rgba(cc.color1, 0.85)} 30%, ${_rgba(cc.color2, 0.85)} 70%)`;
-
-  // 从文件行位置飞入右侧堆叠
-  const abs = rowBox.getAbsolutePosition();
-  const scrollY = root.scrollY ?? 0;
-  const fromX = abs.x;
-  const fromY = abs.y - scrollY - (_CARD_H - rowBox.height) / 2;
-  const sidebarW = DOM.sidebar?.getBoundingClientRect().width ?? 295;
-  const rx = sidebarW + 20 + Math.floor(Math.random() * 14) - 4; // 创建时固定随机 X
-  const rr = (Math.random() - 0.5) * 4;                           // 创建时固定随机旋转
-
-  const card = document.createElement('div');
-  const shadow = '0 2px 4px rgba(0,0,0,0.3),0 8px 16px rgba(0,0,0,0.25),0 16px 32px rgba(0,0,0,0.2),-4px 4px 8px rgba(0,0,0,0.15)';
-  card.style.cssText = [
-    'position:fixed', 'left:0', 'top:0', 'will-change:transform',
-    'width:155px', 'height:' + _CARD_H + 'px',
-    'border-radius:12px', 'padding:1px', 'padding-left:3px',
-    'background:' + grad,
-    'box-shadow:' + shadow,
-    'cursor:pointer', 'z-index:1000', 'opacity:1',
-  ].join(';');
-
-  card.innerHTML = [
-    '<div style="border-radius:11px;width:100%;height:100%;',
-    'background:rgba(20,16,32,0.95);',
-    'display:flex;align-items:flex-start;padding:7px 12px 0;gap:6px;box-sizing:border-box">',
-    isDir ? '<span style="color:' + theme.canvas.accent + ';font-size:10px;flex-shrink:0;padding-top:1px">\u25b6</span>' : '',
-    '<div style="font-size:12px;font-weight:500;color:rgba(224,224,224,0.9);',
-    'white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + name + '</div>',
-    '</div>',
-  ].join('');
-
-  document.body.appendChild(card);
-
-  // 居中插入：新卡插入堆叠中间位置
-  const insertIdx = _tempCardEls.length === 0 ? 0 : Math.floor(_tempCardEls.length / 2);
-  _tempCardEls.splice(insertIdx, 0, card);
-
-  // 居中重排所有卡片（中心上移，考虑底部操作区，超出时压缩 gap）
-  const count = _tempCardEls.length;
-  const maxH = window.innerHeight * 0.54;
-  const gap = count > 1
-    ? Math.min(_CARD_GAP, (maxH - _CARD_H) / (count - 1))
-    : _CARD_GAP;
-  const stackH = _CARD_H + (count - 1) * gap;
-  const baseTop = Math.round(window.innerHeight * 0.35 - stackH / 2);
-  card.dataset.rx = String(rx);
-  card.dataset.rr = String(rr);
-
-  const baseZ = 1000;
-
-  _tempCardEls.forEach((c, i) => {
-    const targetTop = Math.round(baseTop + i * gap);
-    const z = baseZ + i;
-    c.style.zIndex = String(z);
-    const crx = parseFloat(c.dataset.rx ?? '0');
-    const crr = parseFloat(c.dataset.rr ?? '0');
-    if (c === card) {
-      card.dataset.topY = String(targetTop);
-      anim.set(card, { x: fromX, y: fromY, opacity: 0, scale: 0.7, rotation: crr });
-      anim.to(card, {
-        x: crx, y: targetTop, opacity: 1, scale: 1, rotation: crr,
-        duration: 0.35, ease: 'power2.out',
-      });
-    } else {
-      const curY = parseFloat(c.dataset.topY ?? '0');
-      if (Math.abs(curY - targetTop) > 3) {
-        anim.to(c, { y: targetTop, duration: 0.25, ease: 'power2.out' });
-      } else {
-        c.style.transform = 'translate(' + crx + 'px,' + targetTop + 'px) rotate(' + crr + 'deg)';
-      }
-      c.dataset.topY = String(targetTop);
-    }
-  });
-}
-
-function _rgba(hex: string, alpha: number): string {
-  const n = parseInt(hex.slice(1), 16);
-  return 'rgba(' + ((n >> 16) & 0xFF) + ',' + ((n >> 8) & 0xFF) + ',' + (n & 0xFF) + ',' + alpha + ')';
-}
 
 // ============================================================
 // 光标状态
@@ -679,7 +216,7 @@ export function onSidebarOpen(): void {
   // 等 CSS layout 完成后再 rebuildTree（canvas 刚创建时 clientWidth=0）
   requestAnimationFrame(() => {
     try {
-    _removeAllOverlays();
+    removeAllOverlays();
     rebuildTree();
     // rebuildTree 后强制恢复 scrollY（在所有可能覆盖它的逻辑之后）
     if (L._savedScrollY > 0) {
@@ -734,10 +271,9 @@ export function onSidebarClose(): void {
   // 幂等：侧栏已关闭时跳过（防 overlay + 关闭按钮同时触发）
   if (L.isSidebarClosed()) return;
   // 先停掉所有动画和独立rAF循环
-  _removeAllOverlays();
+  removeAllOverlays();
   _resetAnimTimeline();
-  _tempCardEls.forEach(el => el.remove());
-  _tempCardEls = [];
+  clearTempCards();
   L.setSidebarClosed(true);  // 让wheel/touch的rAF循环自己退出
   L.endOp();
   
@@ -825,7 +361,7 @@ export function initTreeRenderer(): void {
     executeOnPath(path, 'tap');
   });
   // 文件行右滑回调（canvas-scroll 横向滑动手势 → 回弹，避免循环依赖）
-  L.setRowSwipeHandler(_handleRowSwipe);
+  L.setRowSwipeHandler(handleRowSwipe);
 }
 
 
@@ -982,7 +518,7 @@ function processClickQueue(): void {
     ts.reverse();
     ts.eventCallback('onReverseComplete', () => {
       L.endOp();
-      _removeAllOverlays();
+      removeAllOverlays();
       _resetAnimTimeline();  // ts.clear() + time(0) + 清除 onComplete
       KFMState.notify();    // 触发 _stateSub → rebuildTree
       processClickQueue();
@@ -1073,18 +609,18 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
   }
 
   // === overlay 模式 ===
-  assert(_activeOverlays.length === 0, 'overlays not empty before expand');
-  const pack = _setupExpandOverlays(container, fullHeight);
+  assert(activeOverlayCount() === 0, 'overlays not empty before expand');
+  const pack = setupExpandOverlays(container, fullHeight);
 
   // 扁平化收集所有子容器 target，一次性搭建 overlay
-  const subTargets = _flattenExpandTree(container, 1);
-  const subPacks = subTargets.map(st => _setupExpandOverlays(st.container, st.fullHeight, false));
+  const subTargets = flattenExpandTree(container, 1);
+  const subPacks = subTargets.map(st => setupExpandOverlays(st.container, st.fullHeight, false));
 
   // 构建独立动画树并设置到渲染器（双树渲染）
-  const overlayRoot = _buildAndSetOverlayTree(pack, subTargets, subPacks, root);
+  const overlayRoot = buildAndSetOverlayTree(pack, subTargets, subPacks, root);
 
   // 字符雨层：与容器Ov平级，不受 overflow:hidden 裁剪
-  const charLayer = _createCharLayer(pack.containerOverlay.x, pack.containerOverlay.y, overlayRoot);
+  const charLayer = createCharLayer(pack.containerOverlay.x, pack.containerOverlay.y, overlayRoot);
 
   L.beginOp(path, 'expand');
   const animRoot = L.renderer!.getRoot()!;
@@ -1132,7 +668,7 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
     const realContainer = subTargets.find(st => `ov-${st.container.id}` === sp.containerOverlay.id)?.container;
     if (realContainer) {
       const subParent = sp.containerOverlay.parent!;
-      const subCharLayer = _createCharLayer(sp.containerOverlay.x, sp.containerOverlay.y, subParent);
+      const subCharLayer = createCharLayer(sp.containerOverlay.x, sp.containerOverlay.y, subParent);
       // 容器内部行的字符雨
       const subCleanup = setupCharRainTweens(
         realContainer, subCharLayer, root,
@@ -1149,7 +685,7 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
   ts.eventCallback('onComplete', () => {
     if (L.renderer?.getRoot() !== animRoot) { return; }
     for (const cu of charRainCleanups) cleanupCharRain(cu);
-    _removeAllOverlays();
+    removeAllOverlays();
     L.renderer?.setOverlayRoot(null);  // 销毁动画树
     ;
     // 恢复主树被隐藏的元素（展开动画：树已重建，元素仍在）
@@ -1159,7 +695,7 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
       for (const sib of p.hiddenSiblings) sib.opacity = 1;
     }
     _resetAnimTimeline();
-    assert(_activeOverlays.length === 0, 'overlays leaked after expand');
+    assert(activeOverlayCount() === 0, 'overlays leaked after expand');
     L.endOp();
     const _root = L.renderer?.getRoot();
     if (_root) { _rebuildRowIndex(_root); }
@@ -1205,20 +741,20 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
     return;
   }
 
-  assert(_activeOverlays.length === 0, 'overlays not empty before doCollapse');
+  assert(activeOverlayCount() === 0, 'overlays not empty before doCollapse');
 
   // 搭建折叠 overlay
-  const pack = _setupCollapseOverlays(container, fullH);
+  const pack = setupCollapseOverlays(container, fullH);
 
   // 扁平化收集子容器
-  const subTargets = _flattenExpandTree(container, 1);
-  const subPacks = subTargets.map(st => _setupCollapseOverlays(st.container, st.fullHeight, false));
+  const subTargets = flattenExpandTree(container, 1);
+  const subPacks = subTargets.map(st => setupCollapseOverlays(st.container, st.fullHeight, false));
 
   // 构建独立动画树（折叠）
-  const overlayRoot = _buildAndSetOverlayTree(pack, subTargets, subPacks, root);
+  const overlayRoot = buildAndSetOverlayTree(pack, subTargets, subPacks, root);
 
   // 字符雨层：与容���Ov平级，不受 overflow:hidden 裁剪
-  const charLayer = _createCharLayer(pack.containerOverlay.x, pack.containerOverlay.y, overlayRoot);
+  const charLayer = createCharLayer(pack.containerOverlay.x, pack.containerOverlay.y, overlayRoot);
 
   const maxLevel = subTargets.length > 0 ? Math.max(...subTargets.map(st => st.level)) : 0;
   const charRainCleanups: CharRainCleanup[] = [];
@@ -1238,7 +774,7 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
     const realContainer = subTargets.find(st => `ov-${st.container.id}` === sp.containerOverlay.id)?.container;
     if (realContainer) {
       const subParent = sp.containerOverlay.parent!;
-      const subCharLayer = _createCharLayer(sp.containerOverlay.x, sp.containerOverlay.y, subParent);
+      const subCharLayer = createCharLayer(sp.containerOverlay.x, sp.containerOverlay.y, subParent);
       const subCleanup = setupCharRainTweens(
         realContainer, subCharLayer, root,
         sp.rowOverlays.map(r => r.y),
@@ -1278,9 +814,9 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
   ts.eventCallback('onComplete', () => {
     if (L.renderer?.getRoot() !== animRoot) return;
     for (const cu of charRainCleanups) cleanupCharRain(cu);
-    _removeAllOverlays();
+    removeAllOverlays();
     L.renderer?.setOverlayRoot(null);  // 销毁动画树
-    assert(_activeOverlays.length === 0, 'overlays leaked after doCollapse');
+    assert(activeOverlayCount() === 0, 'overlays leaked after doCollapse');
     _resetAnimTimeline();
     L.endOp();
     hit.gesture!.onTap!();
@@ -1308,7 +844,7 @@ function findTapTarget(box: Box, px: number, py: number): Box | null {
 
 /** 强制重建树（跳过 L._animBusy 锁，用于眼睛图标��用户主动行为） */
 export function forceRebuildTree(): void {
-  _removeAllOverlays();
+  removeAllOverlays();
   L.endOp();
   
   clickQueue.clear();
@@ -1317,7 +853,7 @@ export function forceRebuildTree(): void {
 
 function rebuildTree(): void {
   // 防御性清理：无论从哪里触发 rebuildTree，先丢弃旧的动画状态
-  _removeAllOverlays();
+  removeAllOverlays();
   if (L.renderer) L.renderer.setOverlayRoot(null);
   if (!L.renderer) return;
   if (L.isAnimating) {
@@ -1356,7 +892,7 @@ function rebuildTree(): void {
   L.renderer.setRoot(rootBox);
 
   // 为终端态树的所有 expanded-* 容器补元数据
-  _ensureMetaFromExpandedState(rootBox);
+  ensureMetaFromExpandedState(rootBox);
 
   // 恢复滚动位置（从关闭���态恢复时，L._savedScrollY 在下游统一处理，此处跳过）
   const newRoot = L.renderer.getRoot();
@@ -1441,46 +977,3 @@ function snapToCenterRow(root: Box, canvasH: number, animate = false): void {
   if (closest) moveCursorTo(closest, animate);
 }
 
-/**
- * 扁平化收集 container 下所有展开的子容器，按层分组。
- * 用于一次性搭建所有 overlay，替代递归 async _unveilOverlaySubContainers。
- */
-interface FlatSubTarget {
-  container: Box;
-  fullHeight: number;
-  level: number;
-}
-
-function _flattenExpandTree(container: Box, level: number = 0): FlatSubTarget[] {
-  const result: FlatSubTarget[] = [];
-  for (const c of container.children) {
-    if (!c.id?.startsWith('expanded-') || !c.height) continue;
-    result.push({
-      container: c,
-      fullHeight: c.height,
-      level,
-    });
-    result.push(..._flattenExpandTree(c, level + 1));
-  }
-  return result;
-}
-/** 为终端态树的所有 expanded-* 容器补元数据。
- * 在 rebuildTree setRoot 之后调用，确保元数据始终可用。
- * 捕获 _fullHeight, _origYs。 */
-function _ensureMetaFromExpandedState(root: Box): void {
-  function walk(box: Box): void {
-    for (const c of box.children) {
-      if (c.id?.startsWith('expanded-')) {
-        // 防御性：如果 c.height 被渲染器��置为 0，从子元素推算
-        const h = c.height > 0 ? c.height
-          : (c.children || []).reduce((s: number, ch: Box) => s + (ch.height > 0 ? ch.height : 0), 0);
-        if (h > 0) {
-          if (!(c as Box & OverlayMeta)._fullHeight) (c as Box & OverlayMeta)._fullHeight = h;
-          if (!(c as Box & OverlayMeta)._origYs) (c as Box & OverlayMeta)._origYs = c.children.map((ch: Box) => ch.y);
-        }
-      }
-      walk(c);
-    }
-  }
-  walk(root);
-}
