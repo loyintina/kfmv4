@@ -60,6 +60,15 @@ function _pathBasename(path: string): string {
 
 // ========== 公开 API ==========
 
+// 缓存光标的原始 x 位置，防止连续右滑时位置漂移（见 #bounce-drift）
+let _bounceOrigRowX: number | null = null;
+let _bounceOrigCursX: number | null = null;
+
+export function resetBounceOrigin(): void {
+  _bounceOrigRowX = null;
+  _bounceOrigCursX = null;
+}
+
 /** GSAP 回弹动画：光标行 + cursorBox 右移 8px 后弹回 */
 export function bounceCursorRow(): void {
   if (!L.cursorRowId) return;
@@ -68,16 +77,27 @@ export function bounceCursorRow(): void {
   const rowBox = findBoxById(root, L.cursorRowId);
   if (!rowBox || !rowBox.interactive) return;
 
-  const origX = rowBox.x;
-  const origCX = L.cursorBox?.x;
+  // 首次记录原始位置（rebuildTree 后 _bounceOrigRowX 被清空，下次 bounce 重新记录）
+  if (_bounceOrigRowX === null) {
+    _bounceOrigRowX = rowBox.x;
+  }
+  if (_bounceOrigCursX === null && L.cursorBox) {
+    _bounceOrigCursX = L.cursorBox.x;
+  }
+
+  // 杀旧动画并恢复到原始位置，防止连续右滑时位置漂移
+  anim.killTweensOf(rowBox);
+  anim.set(rowBox, { x: _bounceOrigRowX });
 
   anim.to(rowBox, {
-    x: origX + 8, duration: 0.2, ease: 'power3.out',
+    x: _bounceOrigRowX + 8, duration: 0.2, ease: 'power3.out',
     yoyo: true, repeat: 1,
   });
-  if (L.cursorBox) {
+  if (L.cursorBox && _bounceOrigCursX !== null) {
+    anim.killTweensOf(L.cursorBox);
+    anim.set(L.cursorBox, { x: _bounceOrigCursX });
     anim.to(L.cursorBox, {
-      x: (origCX ?? 0) + 8, duration: 0.2, ease: 'power3.out',
+      x: _bounceOrigCursX + 8, duration: 0.2, ease: 'power3.out',
       yoyo: true, repeat: 1,
     });
   }
