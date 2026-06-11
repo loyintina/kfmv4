@@ -19,7 +19,7 @@ import { getCursorRowIndex, moveCursorTo, ensureCursorBox, _scrollToCenterCursor
 import { initScrollGesture, bindWheelEvents } from './canvas-scroll.js';
 import { DOM } from "./dom-refs.js";
 import * as clickQueue from "./click-queue.js";
-import { assert, warn } from "./debug-assert.js";
+import { assert } from "./debug-assert.js";
 import { createRootPicker, destroyRootPicker, isPickerOpen } from './root-picker.js';
 import { log } from './logger.js';
 import { wsChannel } from './ws-channel.js';
@@ -62,10 +62,6 @@ function _ensureSubscribed(): void {
   if (prev) KFMState.unsubscribe(prev);
   const fn = () => {
     // state 变化（toggleHidden/expanded）是用户主动行为，跳过 isAnimating 锁
-    L.endOp();
-    // 守卫：_stateSub 被调用时 L.isAnimating 必须已被 endOp() 清除。
-    // 如果这里 isAnimating 仍为 true，说明有人在动画进行中调了 notify()。
-    if (L.isAnimating) warn('stateSub fired while animation still active');
     rebuildTree();
   };
   L.setStateSub(fn);
@@ -469,11 +465,6 @@ function processClickQueue(): void {
 
   // === 规则：动画进行中 ===
   if (L.isAnimating) {
-    if (L.animElapsed > 3000) {
-      L.endOp();
-      clickQueue.clear();
-      return;
-    }
     const next = clickQueue.peek();
     if (!next) return;
 
@@ -856,19 +847,7 @@ function rebuildTree(): void {
   removeAllOverlays();
   if (L.renderer) L.renderer.setOverlayRoot(null);
   if (!L.renderer) return;
-  if (L.isAnimating) {
-    // rebuildTree 被调用时动画应已完成或超时。
-    // 这是一个防御性守卫：如果走到这里说明 _stateSub 可能绕过了 endOp()。
-    warn('rebuildTree called while animation still active — forcing release');
-    // 超���兜底：超过 3000ms 自动释��
-    if (L.animElapsed > 3000) {
-      L.endOp();
-      
-      clickQueue.clear();  // ����队列防死循环
-    } else {
-      return;
-    }
-  }
+  L.endOp();
 
   // 保存��前滚动位置和����标行
   const prevScrollY = L.renderer.getRoot()?.scrollY ?? 0;
