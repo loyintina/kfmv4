@@ -16,6 +16,7 @@ import { L } from './renderer-lifecycle.js';
 import { _rebuildRowIndex, getRootScrollY, findBoxById } from './canvas-utils.js';
 import { ensureCursorBox, moveCursorTo, getCursorRowIndex } from './canvas-cursor.js';
 import { bindWheelEvents } from './canvas-scroll.js';
+import { currentTheme } from './theme.js';
 
 const BASE_PATH = '.';
 const HEADER_H = 4;
@@ -285,7 +286,7 @@ function _initPicker(): void {
   _contentH = h;
 
   // pushContext 保存主树状态并切换到 picker 上下文
-  _renderer = new Renderer(_canvas, { backgroundColor: 'rgba(10,10,15,0.85)', dpr });
+  _renderer = new Renderer(_canvas, { backgroundColor: 'rgba(10,10,15,0.85)', dpr, theme: currentTheme.canvas });
   L.pushContext({ renderer: _renderer, rowIndex: [], cursorBox: null, cursorRowId: null });
   _rebuildPicker();
   _positionCursorToCurrentRoot();

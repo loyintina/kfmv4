@@ -40,7 +40,9 @@ docs/
 ├── HANDBOOK.md              # 工作手册：架构-调试-待办-测试（日常翻）
 ├── KFM_V4_INVARIANTS.md     # 修改约束协议：心法原则+自查清单（改代码前必读）
 ├── design/                  # 设计中（待实现的设计文档）
-│   └── WORKBENCH_SPEC.md        # 卡片工作台（购物车+顶栏+光标+编辑态）
+│   ├── VISION_AND_ROADMAP.md    # 远景：核心理念 + 演进路线
+│   ├── WORKBENCH_SPEC.md        # 卡片工作台（购物车+顶栏+光标+编辑态）
+│   └── WORKBENCH_PHASE1.md      # 卡片工作台 Phase 1 实施设计
 └── archive/                 # 历史归档
     ├── handoffs/            # 版本交接记录
     ├── design/              # 已完成的设计文档（Registry/卡片系统/引擎/愿景）
@@ -55,7 +57,7 @@ docs/
 
 ```bash
 npm run check   # sass + 4 个 check-*.mjs + tsc --noEmit，零错误
-npm run test    # 101 个回归测试，覆盖 11 个模块
+npm run test    # 159 个回归测试，覆盖 23 个模块
 ```
 
 ## 当前架构

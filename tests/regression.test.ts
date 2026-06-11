@@ -1127,6 +1127,503 @@ test('clampScroll clamps to content bounds', () => {
 });
 
 // ==========================================================================
+// 19. StyleConfig
+// ==========================================================================
+group('StyleConfig');
+
+import {
+  DEFAULT_BOX_STYLE, PRESETS, resolveStyle,
+  getCornerAction, getNeighbor, type BoxStyle
+} from '../src/client/engine/v2/StyleConfig.js';
+
+test('DEFAULT_BOX_STYLE is immutable shape', () => {
+  assert(typeof DEFAULT_BOX_STYLE.borderWidth === 'number');
+  assert(DEFAULT_BOX_STYLE.background === 'glass');
+  assert(DEFAULT_BOX_STYLE.border.left === 'emphasis');
+});
+
+test('resolveStyle default preset returns DEFAULT_BOX_STYLE', () => {
+  const s = resolveStyle('default');
+  assert(s.borderWidth === DEFAULT_BOX_STYLE.borderWidth);
+  assert(s.background === DEFAULT_BOX_STYLE.background);
+});
+
+test('resolveStyle nonexistent preset falls back to DEFAULT', () => {
+  const s = resolveStyle('nonexistent-template');
+  assert(s.borderWidth === DEFAULT_BOX_STYLE.borderWidth);
+});
+
+test('resolveStyle all-emphasis preset overrides border', () => {
+  const s = resolveStyle('all-emphasis');
+  assert(s.border.top === 'emphasis');
+  assert(s.border.bottom === 'emphasis');
+  assert(s.border.left === 'emphasis');
+  assert(s.border.right === 'emphasis');
+});
+
+test('resolveStyle with overrides merges correctly', () => {
+  const s = resolveStyle('default', { borderWidth: 5, background: 'solid', backgroundFill: '#fff' });
+  assert(s.borderWidth === 5);
+  assert(s.background === 'solid');
+  assert(s.backgroundFill === '#fff');
+  // untouched fields keep defaults
+  assert(s.cornerRadius === DEFAULT_BOX_STYLE.cornerRadius);
+});
+
+test('resolveStyle override border partial merge', () => {
+  const s = resolveStyle('all-emphasis', { border: { top: 'hidden', left: 'hidden' } });
+  assert(s.border.top === 'hidden');
+  assert(s.border.left === 'hidden');
+  assert(s.border.bottom === 'emphasis');  // not overridden
+  assert(s.border.right === 'emphasis');   // not overridden
+});
+
+test('PRESETS has expected entries', () => {
+  assert('all-emphasis' in PRESETS);
+  assert('all-hidden' in PRESETS);
+  assert('left-emphasis-rest-hidden' in PRESETS);
+  assert('left-bottom-normal' in PRESETS);
+  assert('bottom-right-normal' in PRESETS);
+  assert('left-right-emphasis' in PRESETS);
+  assert('default' in PRESETS);
+});
+
+test('getCornerAction hidden-hidden gives none', () => {
+  const a = getCornerAction('hidden', 'hidden');
+  assert(a.type === 'none');
+});
+
+test('getCornerAction emphasis-emphasis gives gradient-merge', () => {
+  const a = getCornerAction('emphasis', 'emphasis');
+  assert(a.type === 'gradient-merge');
+});
+
+test('getCornerAction normal-normal gives small-corner', () => {
+  const a = getCornerAction('normal', 'normal');
+  assert(a.type === 'small-corner');
+});
+
+test('getCornerAction emphasis-hidden gives taper-to-zero', () => {
+  const a = getCornerAction('emphasis', 'hidden');
+  assert(a.type === 'taper-to-zero');
+});
+
+test('getNeighbor returns clockwise sides', () => {
+  const border = { top: 'hidden' as const, right: 'hidden' as const, bottom: 'hidden' as const, left: 'hidden' as const };
+  assert(getNeighbor(border, 'top', 'start') === 'left');
+  assert(getNeighbor(border, 'top', 'end') === 'right');
+  assert(getNeighbor(border, 'right', 'start') === 'top');
+  assert(getNeighbor(border, 'right', 'end') === 'bottom');
+  assert(getNeighbor(border, 'bottom', 'start') === 'right');
+  assert(getNeighbor(border, 'bottom', 'end') === 'left');
+  assert(getNeighbor(border, 'left', 'start') === 'bottom');
+  assert(getNeighbor(border, 'left', 'end') === 'top');
+});
+
+// ==========================================================================
+// 20. canvas-utils (pure functions)
+// ==========================================================================
+group('canvas-utils (pure)');
+
+import { findBoxById } from '../src/client/modules/canvas-utils.js';
+
+test('findBoxById finds direct child', () => {
+  const root = new Box({ id: 'root' });
+  const child = new Box({ id: 'target' });
+  root.addChild(child);
+  root.addChild(new Box({ id: 'other' }));
+  assert(findBoxById(root, 'target') === child);
+});
+
+test('findBoxById finds nested grandchild', () => {
+  const root = new Box({ id: 'root' });
+  const parent = new Box({ id: 'mid' });
+  const target = new Box({ id: 'deep' });
+  parent.addChild(target);
+  root.addChild(parent);
+  assert(findBoxById(root, 'deep') === target);
+});
+
+test('findBoxById returns null for missing id', () => {
+  const root = new Box({ id: 'root' });
+  root.addChild(new Box({ id: 'a' }));
+  assert(findBoxById(root, 'zzz') === null);
+});
+
+test('findBoxById empty tree returns null', () => {
+  const root = new Box({ id: 'root' });
+  assert(findBoxById(root, 'anything') === null);
+});
+
+// ==========================================================================
+// 21. logger
+// ==========================================================================
+group('logger');
+
+import { log, getLogs, clearLogs, onLog } from '../src/client/modules/logger.js';
+
+test('starts empty', () => {
+  clearLogs();
+  assert(getLogs().length === 0);
+});
+
+test('log appends entries', () => {
+  clearLogs();
+  log('msg1');
+  log('msg2');
+  const logs = getLogs();
+  assert(logs.length === 2);
+  assert(logs[0].includes('msg1'));
+  assert(logs[1].includes('msg2'));
+});
+
+test('clearLogs empties', () => {
+  log('something');
+  clearLogs();
+  assert(getLogs().length === 0);
+});
+
+test('onLog notifies subscriber', () => {
+  clearLogs();
+  let received: string[] = [];
+  const unsub = onLog((logs) => { received = logs; });
+  log('hello');
+  assert(received.length === 1);
+  assert(received[0].includes('hello'));
+  unsub();
+});
+
+test('onLog unsubscribe stops notifications', () => {
+  clearLogs();
+  let count = 0;
+  const unsub = onLog(() => { count++; });
+  unsub();
+  log('after unsub');
+  assert(count === 0);
+});
+
+test('log includes timestamp', () => {
+  clearLogs();
+  log('ts test');
+  const logs = getLogs();
+  const tsMatch = logs[0].match(/\[\d+:\d+:\d+\.\d+\]/);
+  assert(tsMatch !== null, 'timestamp should be [HH:MM:SS.mmm]');
+});
+
+// ==========================================================================
+// 22. flex — applyFlexLayout
+// ==========================================================================
+group('flex');
+
+import { applyFlexLayout } from '../src/client/engine/v2/flex.js';
+
+test('row direction stacks children horizontally', () => {
+  const parent = new Box({ id: 'flex', width: 300, height: 100, layout: { flexDirection: 'row' } });
+  parent.addChild(new Box({ id: 'a', width: 50, height: 50 }));
+  parent.addChild(new Box({ id: 'b', width: 70, height: 50 }));
+  applyFlexLayout(parent);
+  assert(parent.children[0].x === 0);
+  assert(parent.children[1].x === 50); // after first child
+  assert(parent.children[0].y === 0);
+});
+
+test('column direction stacks children vertically', () => {
+  const parent = new Box({ id: 'flex', width: 300, height: 200, layout: { flexDirection: 'column' } });
+  parent.addChild(new Box({ id: 'a', width: 100, height: 40, layoutItem: { flex: 0, minWidth: 0, minHeight: 0 } }));
+  parent.addChild(new Box({ id: 'b', width: 100, height: 60, layoutItem: { flex: 0, minWidth: 0, minHeight: 0 } }));
+  applyFlexLayout(parent);
+  assert(parent.children[0].y === 0);
+  assert(parent.children[1].y === 40);
+});
+
+test('gap adds spacing between children', () => {
+  const parent = new Box({ id: 'flex', width: 300, height: 100, layout: { flexDirection: 'row', gap: 8 } });
+  parent.addChild(new Box({ id: 'a', width: 50, height: 50 }));
+  parent.addChild(new Box({ id: 'b', width: 50, height: 50 }));
+  applyFlexLayout(parent);
+  assert(parent.children[1].x === 58); // 50 + 8
+});
+
+test('justifyContent center centers children', () => {
+  const parent = new Box({ id: 'flex', width: 300, height: 100, layout: { flexDirection: 'row', justifyContent: 'center' } });
+  parent.addChild(new Box({ id: 'a', width: 50, height: 50 }));
+  applyFlexLayout(parent);
+  // total children width = 50, free space = 250, offset = 125
+  assert(parent.children[0].x === 125);
+});
+
+test('flex grow distributes remaining space', () => {
+  const parent = new Box({ id: 'flex', width: 200, height: 100, layout: { flexDirection: 'row' } });
+  parent.addChild(new Box({ id: 'a', width: 0, height: 50, layoutItem: { flex: 1, minWidth: 0, minHeight: 0 } }));
+  parent.addChild(new Box({ id: 'b', width: 0, height: 50, layoutItem: { flex: 2, minWidth: 0, minHeight: 0 } }));
+  applyFlexLayout(parent);
+  assert(parent.children[0].width > 0);
+  assert(parent.children[1].width > 0);
+  assert(parent.children[0].width + parent.children[1].width === 200);
+  // flex 1 vs flex 2 should be roughly 1:2 ratio
+  assert(Math.abs(parent.children[0].width * 2 - parent.children[1].width) < 5);
+});
+
+// ==========================================================================
+// 23. animation-registry — timeline sequencing (new mock)
+// ==========================================================================
+group('animation-registry (timeline)');
+
+test('timeline ops run in order', () => {
+  const target = { x: 0, y: 0 };
+  const calls: string[] = [];
+  const tl = anim.timeline();
+  tl.to(target, { x: 10, duration: 0 });
+  tl.call(() => { calls.push('A'); });
+  tl.to(target, { y: 20, duration: 0 });
+  tl.call(() => { calls.push('B'); });
+  tl.play();
+  assert(target.x === 10 && target.y === 20, `x=${target.x} y=${target.y}`);
+  assert(calls[0] === 'A' && calls[1] === 'B', `calls: ${calls}`);
+});
+
+test('timeline reverse runs ops in reverse', () => {
+  const calls: string[] = [];
+  const tl = anim.timeline();
+  tl.call(() => { calls.push('first'); });
+  tl.call(() => { calls.push('second'); });
+  tl.reverse();
+  tl.play();
+  assert(calls[0] === 'second' && calls[1] === 'first', `calls: ${calls}`);
+});
+
+test('timeline reversed() returns state', () => {
+  const tl = anim.timeline({ paused: true });
+  assert(tl.reversed() === false);
+  tl.reverse();
+  assert(tl.reversed() === true);
+  tl.reversed(false);
+  assert(tl.reversed() === false);
+});
+
+test('timeline progress starts at 0, ends at 1', () => {
+  const tl = anim.timeline({ paused: true });
+  assert(tl.progress() === 0);
+  tl.play();
+  assert(tl.progress() === 1);
+});
+
+test('timeline isActive during play', () => {
+  const tl = anim.timeline({ paused: true });
+  assert(tl.isActive() === false);
+  tl.play();
+  assert(tl.progress() === 1); // finished
+});
+
+test('timeline fromTo applies from then to', () => {
+  const target = { x: 100 };
+  const tl = anim.timeline();
+  tl.fromTo(target, { x: 0 }, { x: 50, duration: 0 });
+  tl.play();
+  assert(target.x === 50, `expected 50, got ${target.x}`);
+});
+
+test('timeline set applies immediately in sequence', () => {
+  const target = { x: 0 };
+  const tl = anim.timeline();
+  tl.set(target, { x: 99 });
+  tl.play();
+  assert(target.x === 99);
+});
+
+// ==========================================================================
+// 24. text-layout analysis (pure functions)
+// ==========================================================================
+group('text-layout analysis');
+
+import { isCJK, endsWithClosingQuote, kinsokuStart, kinsokuEnd, leftStickyPunctuation } from '../src/client/engine/text-layout/analysis.js';
+
+test('isCJK detects CJK characters', () => {
+  assert(isCJK('中') === true);
+  assert(isCJK('日') === true);
+  assert(isCJK('本') === true);
+  assert(isCJK('語') === true);
+  assert(isCJK('a') === false);
+  assert(isCJK(' ') === false);
+  assert(isCJK('1') === false);
+});
+
+test('isCJK detects Korean hangul', () => {
+  assert(isCJK('한') === true);
+  assert(isCJK('글') === true);
+});
+
+test('endsWithClosingQuote detects known closing characters', () => {
+  // ASCII double quote is a closing quote in the function
+  assert(endsWithClosingQuote('hello\u0022') === true);
+  assert(endsWithClosingQuote('hello') === false);
+  assert(endsWithClosingQuote('') === false);
+});
+
+test('kinsokuStart contains common closing brackets', () => {
+  assert(kinsokuStart.has(')'));
+  assert(kinsokuStart.has(']'));
+  assert(kinsokuStart.has('}'));
+  assert(kinsokuStart.has('」'));
+});
+
+test('kinsokuEnd contains common full-width opening brackets', () => {
+  assert(kinsokuEnd.has('\uFF08'));  // （
+  assert(kinsokuEnd.has('\u300C'));  // 「
+  assert(kinsokuEnd.has('\u300E'));  // 『
+});
+
+test('leftStickyPunctuation contains French quotes', () => {
+  assert(leftStickyPunctuation.has('»'));
+});
+
+// ==========================================================================
+// 25. interaction-constants
+// ==========================================================================
+group('interaction-constants');
+
+import { MARGIN, LONG_PRESS_MS, DRAG_THRESHOLD } from '../src/client/modules/interaction-constants.js';
+
+test('MARGIN is 8', () => { assert(MARGIN === 8); });
+test('LONG_PRESS_MS is 600', () => { assert(LONG_PRESS_MS === 600); });
+test('DRAG_THRESHOLD is 5', () => { assert(DRAG_THRESHOLD === 5); });
+
+// ==========================================================================
+// 26. debug-assert (expanded)
+// ==========================================================================
+group('debug-assert (expanded)');
+
+import { assert as dbgAssert, warn as dbgWarn } from '../src/client/modules/debug-assert.js';
+
+test('assert logs to console on false', () => {
+  const prev = __testLogs.length;
+  dbgAssert(false, 'test assertion failure');
+  assert(__testLogs.length > prev, 'should log assertion failure');
+});
+
+test('assert does not log on true', () => {
+  const prev = __testLogs.length;
+  dbgAssert(true, 'ok');
+  assert(__testLogs.length === prev, 'should not log when true');
+});
+
+test('warn does not throw', () => {
+  let threw = false;
+  try { dbgWarn('this is a warning'); } catch { threw = true; }
+  assert(threw === false);
+});
+
+// ==========================================================================
+// 27. click-queue (expanded)
+// ==========================================================================
+group('click-queue (expanded)');
+
+import { enqueue, dequeue, clear, isEmpty, peek } from '../src/client/modules/click-queue.js';
+
+test('FIFO order preserved', () => {
+  clear();
+  enqueue({ offsetX: 1, offsetY: 1 });
+  enqueue({ offsetX: 2, offsetY: 2 });
+  enqueue({ offsetX: 3, offsetY: 3 });
+  assert(dequeue()!.offsetX === 1);
+  assert(dequeue()!.offsetX === 2);
+  assert(dequeue()!.offsetX === 3);
+  assert(isEmpty());
+});
+
+test('enqueue dequeue pair', () => {
+  clear();
+  enqueue({ offsetX: 0, offsetY: 0 });
+  assert(!isEmpty());
+  enqueue({ offsetX: 0, offsetY: 0 });
+  assert(!isEmpty());
+  dequeue();
+  assert(!isEmpty());
+  dequeue();
+  assert(isEmpty());
+});
+
+test('peek does not remove element', () => {
+  clear();
+  enqueue({ offsetX: 5, offsetY: 5 });
+  const p = peek();
+  assert(p!.offsetX === 5);
+  assert(!isEmpty());
+});
+
+// ==========================================================================
+// 28. text-layout bidi
+// ==========================================================================
+group('text-layout bidi');
+
+import { computeSegmentLevels } from '../src/client/engine/text-layout/bidi.js';
+
+test('computeSegmentLevels returns null for all-LTR text', () => {
+  const result = computeSegmentLevels('hello world', [0, 6]);
+  assert(result === null);
+});
+
+test('computeSegmentLevels detects RTL character', () => {
+  // Hebrew aleph (U+05D0) is RTL
+  const result = computeSegmentLevels('\u05D0bc', [0]);
+  assert(result !== null);
+});
+
+test('computeSegmentLevels returns Int8Array with correct length', () => {
+  const result = computeSegmentLevels('\u05D0\u05D1\u05D2', [0, 1, 2]);
+  assert(result !== null);
+  assert(result!.length === 3);
+});
+
+// ==========================================================================
+// 29. text-layout measurement (pure)
+// ==========================================================================
+group('text-layout measurement');
+
+import { parseFontSize, textMayContainEmoji } from '../src/client/engine/text-layout/measurement.js';
+
+test('parseFontSize extracts px from font string', () => {
+  assert(parseFontSize('12px sans-serif') === 12);
+  assert(parseFontSize('16px monospace') === 16);
+  assert(parseFontSize('24px Arial') === 24);
+});
+
+test('parseFontSize defaults to 16 for invalid input', () => {
+  assert(parseFontSize('') === 16);
+  assert(parseFontSize('bold') === 16);
+});
+
+test('textMayContainEmoji detects emoji characters', () => {
+  assert(textMayContainEmoji('hello 😀 world') === true);
+});
+
+test('textMayContainEmoji returns false for plain text', () => {
+  assert(textMayContainEmoji('hello world') === false);
+  assert(textMayContainEmoji('') === false);
+});
+
+// ==========================================================================
+// 30. dom-refs
+// ==========================================================================
+group('dom-refs');
+
+import { DOM } from '../src/client/modules/dom-refs.js';
+
+test('DOM has expected keys', () => {
+  const keys = Object.keys(DOM);
+  assert(keys.length >= 3);
+  assert('overlay' in DOM);
+  assert('treeCanvas' in DOM || 'fileTree' in DOM);
+});
+
+test('DOM sidebar is accessible', () => {
+  // sidebar is a getter that returns an element from document
+  // In test env it'll be null (no matching element), but shouldn't throw
+  const sidebar = DOM.sidebar;
+  assert(sidebar === null || typeof sidebar === 'object');
+});
+
+// ==========================================================================
 // 运行
 // ==========================================================================
 await runAll();

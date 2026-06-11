@@ -673,6 +673,7 @@ export function onSidebarOpen(): void {
   L.renderer = new Renderer(canvas, {
     backgroundColor: 'rgba(10,10,15,0.85)',
     dpr,
+    theme: theme.canvas,
   });
 
   // 等 CSS layout 完成后再 rebuildTree（canvas 刚创建时 clientWidth=0）
@@ -782,6 +783,7 @@ export function initTreeRenderer(): void {
   L.renderer = new Renderer(canvas, {
     backgroundColor: 'rgba(10,10,15,0.85)',
     dpr,
+    theme: theme.canvas,
   });
   rebuildTree();
 

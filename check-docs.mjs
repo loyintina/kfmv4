@@ -33,22 +33,52 @@ function warn(msg) {
 // ============================================================
 // 1. 内部链接有效性检查
 // ============================================================
+function verifyPath(filePath, rawHref) {
+  const href = rawHref.split('#')[0];
+  if (!href) return;
+  if (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:')) return;
+
+  // 以 ./ 或 ../ 开头 → 文档相对路径
+  if (href.startsWith('./') || href.startsWith('../')) {
+    const absPath = path.resolve(path.dirname(filePath), href);
+    if (!fs.existsSync(absPath)) {
+      error(`Broken ref in ${path.relative(ROOT, filePath)}: "${rawHref}" → ${path.relative(ROOT, absPath)} (not found)`);
+    }
+    return;
+  }
+
+  // 其他路径（如 src/、docs/、archive/）→ 尝试两个基准：
+  //   1. 项目根目录（适用于完整的 project-relative 路径）
+  //   2. 文档所在目录（适用于省略 docs/ 前缀的简写）
+  const fromRoot = path.resolve(ROOT, href);
+  const fromDoc = path.resolve(path.dirname(filePath), href);
+  const found = fs.existsSync(fromRoot) ? fromRoot : fs.existsSync(fromDoc) ? fromDoc : null;
+
+  if (!found) {
+    error(`Broken ref in ${path.relative(ROOT, filePath)}: "${rawHref}" → ${path.relative(ROOT, fromRoot)} (not found)`);
+  }
+}
+
 function checkInternalLinks(filePath, content) {
-  // 匹配 Markdown 链接 [text](path) 和图片 ![alt](path)
+  const relPath = path.relative(ROOT, filePath);
+
+  // 1. Markdown 链接 [text](path) 和图片 ![alt](path) — 全文档检查
   const linkRe = /\[([^\]]*)\]\(([^)]+)\)/g;
   let match;
   while ((match = linkRe.exec(content)) !== null) {
-    const href = match[2];
-    // 只检查相对路径（内部链接），跳过 http:// https:// # 锚点
-    if (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('#') || href.startsWith('mailto:')) continue;
-    // 处理锚点后缀
-    const targetPath = href.split('#')[0];
-    if (!targetPath) continue;
-    // 解析相对路径
-    const absPath = path.resolve(path.dirname(filePath), targetPath);
-    if (!fs.existsSync(absPath)) {
-      error(`Broken link in ${path.relative(ROOT, filePath)}: "${href}" → ${path.relative(ROOT, absPath)} (not found)`);
-    }
+    verifyPath(filePath, match[2]);
+  }
+
+  // 2. 反引号路径 `path/to/file.ext` — 仅活跃文档（archive 内引用的是历史快照，路径过期不算错）
+  if (relPath.startsWith('docs/archive/')) return;
+
+  const backtickRe = /`([^`\n]+\.[a-z]{2,5})`/g;
+  while ((match = backtickRe.exec(content)) !== null) {
+    const raw = match[1];
+    if (raw.startsWith('http://') || raw.startsWith('https://') || raw.includes('@')) continue;
+    if (raw.includes(' ')) continue;  // CLI 命令，非文件路径
+    if (!raw.includes('/')) continue;
+    verifyPath(filePath, raw);
   }
 }
 // ============================================================

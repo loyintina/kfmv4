@@ -421,3 +421,16 @@ export interface InputConfig {
   maxRows?: number;           // 最大行数（textarea 用）
   lineHeight?: number;        // 行高（textarea 用）
 }
+
+// ============================================================
+// 渲染器颜色注入（引擎不依赖应用层主题）
+// ============================================================
+
+/** 渲染器需要的颜色值。由应用层在创建 Renderer 时注入。 */
+export interface RenderTheme {
+  bg: string;         // 画布背景色，如 '#0a0a0f'
+  gridLine: string;   // 网格线颜色，如 '#2a2a3a'
+  text: string;       // 文字颜色，如 '#e0e0e0'
+  cursor: string;     // 光标颜色，如 'rgba(0,212,255,0.7)'
+  accent: string;     // 强调色，如 '#00d4ff'（不含 alpha，使用时自行拼接）
+}

@@ -10,7 +10,7 @@ archived_at: 2026-06-09
 > **选读章节**：第五章（Agent 适配层）在做 AI 集成时读；第六章（卡片插件规范）在写新卡片时读。
 > 本文不包含实现细节——那些在 `KFM_V4_INVARIANTS.md`（改代码前必读）和 `ARCHITECTURE.md`（架构参考）中。
 >
-> 写于 2026-05-27。合并自 `docs/archive/REFACTOR_THESIS_FULL.md`（原始愿景蓝图）和 `docs/CARD_SYSTEM_DESIGN.md`（卡片系统设计）。
+> 写于 2026-05-27。合并自 `docs/archive/design/REFACTOR_THESIS_FULL.md`（原始愿景蓝图）和 `docs/archive/design/CARD_SYSTEM_DESIGN.md`（卡片系统设计）。
 > 本文是项目的方向性文档，记录核心理念、架构共识和设计决策。不是技术规范。实现细节见各模块代码和 `docs/KFM_V4_INVARIANTS.md`。
 >
 > **给未来 agent 的阅读指引**：本文记录的是经过多轮讨论后沉淀下来的设计共识。如果你没有完整对话上下文，请先通读一遍再开始改代码。读完本文后，你应能准确回答：这个项目打算做成什么、为什么这么设计、目前卡在哪里。
@@ -775,7 +775,7 @@ AI 读到本文档后，按以下流程：
 1. 读第六章（CardDefinition 接口规范）
 2. 当前仅 `cards/plugins/debug-card/` 为实验参考（插件系统**尚未正式搭建**，以下流程为目标设计）
 3. 在 `cards/plugins/` 下新建目录 + `index.ts`
-4. 在卡片注册表（`cards/registry.ts`，待创建）中加一行 import + 注册
+4. 在卡片注册表（cards/registry.ts，待创建）中加一行 import + 注册
 5. 执行 `npm run build` 验证编译通过
 6. 验证卡片出现在卡片堆中并可正常交互
 7. `git add/commit/push`

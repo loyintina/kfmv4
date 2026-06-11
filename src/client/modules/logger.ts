@@ -3,9 +3,6 @@
  *
  * 唯一日志收集/分发入口。不主动记录任何日志，只等待外部调用 log()。
  * 卡片通过 getLogs() 读取历史日志，通过 onLog() 订阅实时更新。
- *
- * 将来插件系统搭好后，此文件将迁入 cards/plugins/debug-card/logger.ts
- * （目前 tsconfig rootDir 限制阻止从 src/ 外 import）。
  */
 type LogSubscriber = (logs: string[]) => void;
 
