@@ -561,19 +561,20 @@ function _handleRowSwipe(): void {
   // 从文件行位置飞入右侧堆叠
   const abs = rowBox.getAbsolutePosition();
   const scrollY = root.scrollY ?? 0;
-  const randRot = (Math.random() - 0.5) * 4;
   const fromX = abs.x;
   const fromY = abs.y - scrollY - (_CARD_H - rowBox.height) / 2;
   const sidebarW = DOM.sidebar?.getBoundingClientRect().width ?? 295;
-  const toX = sidebarW + 20 + Math.floor(Math.random() * 14) - 4; // 左边缘离侧栏右边界 20px+
+  const rx = sidebarW + 20 + Math.floor(Math.random() * 14) - 4; // 创建时固定随机 X
+  const rr = (Math.random() - 0.5) * 4;                           // 创建时固定随机旋转
 
   const card = document.createElement('div');
+  const shadow = '0 2px 4px rgba(0,0,0,0.3),0 8px 16px rgba(0,0,0,0.25),0 16px 32px rgba(0,0,0,0.2),-4px 4px 8px rgba(0,0,0,0.15)';
   card.style.cssText = [
-    'position:fixed', 'left:' + fromX + 'px', 'top:' + fromY + 'px',
+    'position:fixed', 'left:0', 'top:0', 'will-change:transform',
     'width:155px', 'height:' + _CARD_H + 'px',
     'border-radius:12px', 'padding:1px', 'padding-left:3px',
     'background:' + grad,
-    'box-shadow:0 2px 4px rgba(0,0,0,0.3),0 8px 16px rgba(0,0,0,0.25),0 16px 32px rgba(0,0,0,0.2),-4px 4px 8px rgba(0,0,0,0.15)',
+    'box-shadow:' + shadow,
     'cursor:pointer', 'z-index:1000', 'opacity:1',
   ].join(';');
 
@@ -601,20 +602,32 @@ function _handleRowSwipe(): void {
     : _CARD_GAP;
   const stackH = _CARD_H + (count - 1) * gap;
   const baseTop = Math.round(window.innerHeight * 0.35 - stackH / 2);
+  card.dataset.rx = String(rx);
+  card.dataset.rr = String(rr);
+
   const baseZ = 1000;
+
   _tempCardEls.forEach((c, i) => {
     const targetTop = Math.round(baseTop + i * gap);
-    const z = baseZ + i; // 底部卡片 z-index 最高
+    const z = baseZ + i;
+    c.style.zIndex = String(z);
+    const crx = parseFloat(c.dataset.rx ?? '0');
+    const crr = parseFloat(c.dataset.rr ?? '0');
     if (c === card) {
-      c.style.zIndex = String(z);
-      anim.set(card, { opacity: 0, scale: 0.7, rotation: randRot });
+      card.dataset.topY = String(targetTop);
+      anim.set(card, { x: fromX, y: fromY, opacity: 0, scale: 0.7, rotation: crr });
       anim.to(card, {
-        left: toX, top: targetTop, opacity: 1, scale: 1, rotation: randRot,
-        duration: 0.4, ease: 'back.out(1.3)',
+        x: crx, y: targetTop, opacity: 1, scale: 1, rotation: crr,
+        duration: 0.35, ease: 'power2.out',
       });
     } else {
-      c.style.zIndex = String(z);
-      anim.to(c, { top: targetTop, duration: 0.3, ease: 'power2.out' });
+      const curY = parseFloat(c.dataset.topY ?? '0');
+      if (Math.abs(curY - targetTop) > 3) {
+        anim.to(c, { y: targetTop, duration: 0.25, ease: 'power2.out' });
+      } else {
+        c.style.transform = 'translate(' + crx + 'px,' + targetTop + 'px) rotate(' + crr + 'deg)';
+      }
+      c.dataset.topY = String(targetTop);
     }
   });
 }
