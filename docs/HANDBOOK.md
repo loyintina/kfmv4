@@ -61,7 +61,8 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 | **文件树渲染** | `tree-render.ts` `tree-overlay.ts` `tree-swipe.ts` `tree-model.ts` `tree-loader.ts` `canvas-cursor.ts` `canvas-scroll.ts` `canvas-utils.ts` `root-picker.ts` | Canvas 文件树的构建、交互、加载 |
 | **文件树样式** | `style-registry.ts` `theme.ts` | 文件树尺寸/颜色/字体的唯一来源（改一处全局同步） |
 | **视觉效果** | `char-rain.ts` | 字符散落/回收动画（展开折叠时） |
-| **交互共享** | `interaction-constants.ts` `interaction-types.ts` `click-queue.ts` | 模块间共享的常量/类型/事件队列 |
+| **交互共享** | `interaction-constants.ts` `drag-handler.ts` `click-queue.ts` | 模块间共享的常量/类型/事件队列 |
+| `drag-handler.ts` | 999 | 2 | ✅ 分组表 | 共享拖动状态机（orb + floating-card 去重） |
 | **卡片系统** | `card-stack.ts` `floating-card.ts` | 卡片堆面板、浮卡发射/拖拽/缩放 |
 | **AI / 通信** | `orb.ts` `ws-channel.ts` `debug-assert.ts` `gestures.ts` | 光球面板、WebSocket、运行时断言、页面手势 |
 | **日志** | `logger.ts` | KFM 日志系统（debug-card 伴侣） |
@@ -138,7 +139,7 @@ index.ts (入口路由)
 v6.6.0 之前的焦点「浮卡系统统一化」已两次尝试均回退放弃（详见 `docs/archive/design/CARD_SYSTEM_UNIFICATION_SPEC.md`）。当前方向改为「三层共享层」——常量层 + 类型层 + 能力声明层，可在不碰逻辑的前提下逐步统一。
 
 - **v6.6.0 已完成**：
-  - 交互共享层建立（`interaction-constants.ts` + `interaction-types.ts`）✅
+  - 交互共享层建立（`interaction-constants.ts` + `drag-handler.ts`）✅
   - overlay 残留 bug 根解（`rebuildTree` 入口加防御性清理）✅
   - Box 位置映射设计文档（`docs/archive/design/BOX_LOCATION_MAP_SPEC.md`）✅
   - 卡片工作台设计文档（`docs/design/WORKBENCH_SPEC.md`）✅
@@ -331,13 +332,13 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `click-queue.ts` | 38 | 1 | ✅ 分组表 | 点击事件队列 |
 | `debug-assert.ts` | 23 | 1 | ✅ 提及 | 运行时断言 |
 | `dom-refs.ts` | 36 | 9 | ✅ 注册表 | DOM 元素引用 |
-| `floating-card.ts` | 681 | 2 | ✅ 独立条目 | 浮卡系统（核心模块） |
+| `floating-card.ts` | 646 | 2 | ✅ 独立条目 | 浮卡系统（核心模块） |
 | `gesture-registry.ts` | 215 | 6 | ✅ 独立条目 | 手势注册中心 |
 | `gestures.ts` | 69 | 1 | ✅ 提及 | 页面滑动手势配置 |
 | `interaction-constants.ts` | 15 | 2 | ✅ 分组表 | 交互常量共享层（v6.6.0 新增） |
-| `interaction-types.ts` | 79 | 2 | ✅ 分组表 | 交互类型共享层（v6.6.0 新增） |
+| `drag-handler.ts` | 130 | 2 | ✅ 分组表 | 共享拖动状态机（orb + floating-card 去重） |
 | `logger.ts` | 55 | 3 | ✅ 分组表 | KFM 日志系统 |
-| `orb.ts` | 567 | 1 | ✅ 独立条目 | 光球 + AI 对话面板 |
+| `orb.ts` | 508 | 1 | ✅ 独立条目 | 光球 + AI 对话面板 |
 | `renderer-lifecycle.ts` | 235 | 5 | ✅ 注册表 | 渲染器生命周期单例 L |
 | `root-picker.ts` | 432 | 2 | ✅ 独立条目 | 文件树根目录切换器 |
 | `state.ts` | 244 | 10 | ✅ 注册表 | 全局状态层 KFMState |
@@ -351,7 +352,7 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `ui-registry.ts` | 331 | 9 | ✅ 独立条目 | UI 元素注册表 |
 | `ui.ts` | 70 | 10 | ✅ 提及 | UI 初始化编排 |
 | `ws-channel.ts` | 317 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
-| **合计** | **7439** | | | |
+| **合计** | **7396** | | | |
 
 ### 死代码检查
 

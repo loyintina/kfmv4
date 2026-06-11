@@ -18,7 +18,8 @@ import { DOM } from "./dom-refs.js";
 import { currentTheme as theme } from './theme.js';
 import { Registry } from './ui-registry.js';
 import { wsChannel } from './ws-channel.js';
-import { MARGIN, LONG_PRESS_MS, DRAG_THRESHOLD } from './interaction-constants.js';
+import { MARGIN } from './interaction-constants.js';
+import { createDragHandler, type DragConfig } from './drag-handler.js';
 
 interface ChatMessage {
   role: 'user' | 'ai';
@@ -45,16 +46,9 @@ let panelHeight = PANEL_DEFAULT_HEIGHT;
 let renderWidth = PANEL_DEFAULT_WIDTH;
 let renderHeight = PANEL_DEFAULT_HEIGHT;
 
-let dragging = false;
-let dragStartX = 0;
-let dragStartY = 0;
-let dragStartOrbX = 0;
-let dragStartOrbY = 0;
-let dragStartPanelX = 0;
-let dragStartPanelY = 0;
-
-let longPressTimer: ReturnType<typeof setTimeout> | null = null;
-let longPressFired = false;
+// 编辑模式：面板左上角位置快照（进入编辑时锁定，松手后恢复）
+let savedPanelLeft = 0;
+let savedPanelTop = 0;
 
 const ORB_SIZE = 36;
 const ORB_HALF = ORB_SIZE / 2;
@@ -207,8 +201,8 @@ function updatePanelPosition(): void {
 
   // 编辑模式：左上角固定，只改变大小不改变位置
   if (orbState === 'editing') {
-    panelLeft = dragStartPanelX;
-    panelTop = dragStartPanelY;
+    panelLeft = savedPanelLeft;
+    panelTop = savedPanelTop;
   }
 
   panelEl.style.left = Math.max(screenLeft, panelLeft) + 'px';
@@ -265,13 +259,10 @@ function enterEditMode(): void {
   Registry.notifyStateChange('orb');
   Registry.notifyStateChange('orb-panel');
 
-  // 重新读取当前位置（普通拖拽阶段可能已改变）
+  // 快照面板位置（编辑模式下面板左上角固定）
   if (panelEl) {
-    const rect = orbEl!.getBoundingClientRect();
-    dragStartOrbX = rect.left;
-    dragStartOrbY = rect.top;
-    dragStartPanelX = parseFloat(panelEl.style.left) || 0;
-    dragStartPanelY = parseFloat(panelEl.style.top) || 0;
+    savedPanelLeft = parseFloat(panelEl.style.left) || 0;
+    savedPanelTop = parseFloat(panelEl.style.top) || 0;
     panelEl.style.boxShadow = theme.aiChat.panelShadowEdit;
   }
   updateStateLabel();
@@ -301,103 +292,6 @@ function updateStateLabel(): void {
   if (!label) return;
   const labels: Record<OrbState, string> = { collapsed: '', expanded: '长按编辑大小', editing: '拖动调整大小 · 松手完成' };
   label.textContent = labels[orbState];
-}
-
-// ========== 拖动通用逻辑 ==========
-function handleDragMove(dx: number, dy: number): void {
-  if (!orbEl) return;
-
-  if (orbState === 'editing') {
-    // 编辑模式：光球始终贴在面板右下角（缩放手柄行为）
-    const rawX = dragStartOrbX + dx;
-    const rawY = dragStartOrbY + dy;
-    const screenClamped = clampOrbPosition(rawX, rawY);
-
-    // 光球不能越过面板最小尺寸的右下角（缩到最小时停在角上）
-    const minOrbX = dragStartPanelX + PANEL_MIN_WIDTH - ORB_HALF;
-    const minOrbY = dragStartPanelY + PANEL_MIN_HEIGHT - ORB_HALF;
-    const orbX = Math.max(minOrbX, screenClamped.x);
-    const orbY = Math.max(minOrbY, screenClamped.y);
-
-    const orbCX = orbX + ORB_HALF;
-    const orbCY = orbY + ORB_HALF;
-    panelWidth = Math.max(PANEL_MIN_WIDTH, orbCX - dragStartPanelX);
-    panelHeight = Math.max(PANEL_MIN_HEIGHT, orbCY - dragStartPanelY);
-
-    orbEl.style.left = orbX + 'px';
-    orbEl.style.top = orbY + 'px';
-    orbEl.style.right = 'auto';
-    orbEl.style.bottom = 'auto';
-
-    updatePanelPosition();
-    renderChatContent();
-  } else {
-    // 普通拖动
-    const rawX = dragStartOrbX + dx;
-    const rawY = dragStartOrbY + dy;
-    const clamped = clampOrbPosition(rawX, rawY);
-
-    orbEl.style.left = clamped.x + 'px';
-    orbEl.style.top = clamped.y + 'px';
-    orbEl.style.right = 'auto';
-    orbEl.style.bottom = 'auto';
-    orbEl.style.transition = 'none';
-
-    if (orbState === 'expanded' && panelEl) {
-      updatePanelPosition();
-      renderChatContent();
-    }
-  }
-}
-
-function startDrag(x: number, y: number): void {
-  dragging = false;
-  longPressFired = false;
-  dragStartX = x;
-  dragStartY = y;
-
-  const rect = orbEl!.getBoundingClientRect();
-  dragStartOrbX = rect.left;
-  dragStartOrbY = rect.top;
-
-  if (panelEl) {
-    dragStartPanelX = parseFloat(panelEl.style.left) || 0;
-    dragStartPanelY = parseFloat(panelEl.style.top) || 0;
-  }
-
-  longPressTimer = setTimeout(() => {
-    longPressFired = true;
-    if (orbState === 'expanded') enterEditMode();
-    else if (orbState === 'editing') exitEditMode();
-  }, LONG_PRESS_MS);
-}
-
-function moveDrag(x: number, y: number): void {
-  const dx = x - dragStartX;
-  const dy = y - dragStartY;
-  if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
-    dragging = true;
-    if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
-  }
-  if (!dragging) return;
-  handleDragMove(dx, dy);
-}
-
-function endDrag(): void {
-  if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
-  if (orbEl) {
-    orbEl.style.transition = 'box-shadow .2s';
-    // 更新自由位置
-    const rect = orbEl.getBoundingClientRect();
-    freeOrbX = rect.left;
-    freeOrbY = rect.top;
-  }
-  // 松手时如果处于编辑模式，直接退出
-  if (orbState === 'editing') {
-    exitEditMode();
-  }
-  if (!dragging && !longPressFired) togglePanel();
-  dragging = false;
 }
 
 // ========== 监听输入栏位置变化（输入法弹出时光球跟随） ==========
@@ -507,22 +401,69 @@ export function initOrb(): void {
   freeOrbX = clamped.x;
   freeOrbY = clamped.y;
 
-  // 统一输入事件 -> GestureRegistry（PointerEvent 覆盖 touch + mouse）
+  // 统一输入事件 → GestureRegistry（由共享 drag-handler 封装状态机）
+  const dragCfg: DragConfig = {
+    getElement: () => orbEl,
+    canStart: () => true,
+    getOrbStartRect: () => orbEl!.getBoundingClientRect(),
+    minEditW: PANEL_MIN_WIDTH,
+    minEditH: PANEL_MIN_HEIGHT,
+    clamp: clampOrbPosition,
+    isEditing: () => orbState === 'editing',
+    onEnterEdit: enterEditMode,
+    onExitEdit: exitEditMode,
+    onTap: togglePanel,
+    onSavePosition: () => {
+      if (!orbEl) return;
+      const r = orbEl.getBoundingClientRect();
+      freeOrbX = r.left;
+      freeOrbY = r.top;
+    },
+    onMoveNormal({ dx, dy, startOrbX, startOrbY }) {
+      const rawX = startOrbX + dx;
+      const rawY = startOrbY + dy;
+      const clamped = clampOrbPosition(rawX, rawY);
+      orbEl!.style.left = clamped.x + 'px';
+      orbEl!.style.top = clamped.y + 'px';
+      orbEl!.style.right = 'auto';
+      orbEl!.style.bottom = 'auto';
+      orbEl!.style.transition = 'none';
+      if (orbState === 'expanded' && panelEl) {
+        updatePanelPosition();
+        renderChatContent();
+      }
+    },
+    onMoveEditing({ dx, dy, startOrbX, startOrbY }) {
+      if (!orbEl || !panelEl) return;
+      const rawX = startOrbX + dx;
+      const rawY = startOrbY + dy;
+      const screenClamped = clampOrbPosition(rawX, rawY);
+      const minOrbX = savedPanelLeft + PANEL_MIN_WIDTH - ORB_HALF;
+      const minOrbY = savedPanelTop + PANEL_MIN_HEIGHT - ORB_HALF;
+      const orbX = Math.max(minOrbX, screenClamped.x);
+      const orbY = Math.max(minOrbY, screenClamped.y);
+      const orbCX = orbX + ORB_HALF;
+      const orbCY = orbY + ORB_HALF;
+      panelWidth = Math.max(PANEL_MIN_WIDTH, orbCX - savedPanelLeft);
+      panelHeight = Math.max(PANEL_MIN_HEIGHT, orbCY - savedPanelTop);
+      orbEl.style.left = orbX + 'px';
+      orbEl.style.top = orbY + 'px';
+      orbEl.style.right = 'auto';
+      orbEl.style.bottom = 'auto';
+      updatePanelPosition();
+      renderChatContent();
+    },
+  };
+
+  const drag = createDragHandler(dragCfg);
   gestures.register({
     id: "orb",
     targetFilter: ".light-orb",
     priority: 100,
     stopPropagation: true,
-    onStart: (e: PointerEvent) => {
-      e.preventDefault();
-      startDrag(e.clientX, e.clientY);
-    },
-    onMove: (e: PointerEvent) => {
-      moveDrag(e.clientX, e.clientY);
-    },
-    onEnd: () => {
-      endDrag();
-    },
+    onStart: drag.onStart,
+    onMove: drag.onMove,
+    onEnd: drag.onEnd,
   });
 
   // 监听输入栏位置
