@@ -205,11 +205,17 @@ export class Renderer {
     this.ctx.save();
     this.ctx.globalAlpha = opacity;
 
-    // 变换
-    const bounds = box.getBounds();
+// 变换：bounds 只含绝对位置（不含 transform），transform 由 ctx.translate 处理
+    const pos = box.getAbsolutePosition();
+    const { scale, rotate, translateX, translateY } = box.transform;
+    const bounds: Rect = {
+      x: pos.x,
+      y: pos.y,
+      width: box.width * scale,
+      height: box.height * scale,
+    };
     const cx = bounds.x + bounds.width / 2;
     const cy = bounds.y + bounds.height / 2;
-    const { scale, rotate, translateX, translateY } = box.transform;
     if (translateX !== 0 || translateY !== 0) {
       this.ctx.translate(translateX, translateY);
     }
@@ -587,11 +593,6 @@ export class Renderer {
   }
   private _drawBorder(box: Box, b: Rect): void {
     // 优先使用 kfmStyle（高级边框）
-    const cdata = box.data;
-    if (cdata?.cursorDynamicLines) {
-      this._drawCursorBorder(b, cdata);
-      return;
-    }
     if (box.kfmStyle) {
       drawBorders(this.ctx, b.x, b.y, b.width, b.height, box.kfmStyle);
       return;
