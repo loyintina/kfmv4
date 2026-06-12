@@ -60,16 +60,6 @@ function _pathBasename(path: string): string {
 
 // ========== 公开 API ==========
 
-// 缓存光标行的原始 x 位置。首次 bounce 后记录，rebuildTree 时清空。
-// fromTo 的第一帧会强制拉回这个位置，确保多次右滑不会漂移。
-let _bounceOrigX: number | null = null;
-let _bounceOrigCX: number | null = null;
-
-export function resetBounceOrigin(): void {
-  _bounceOrigX = null;
-  _bounceOrigCX = null;
-}
-
 /** GSAP 回弹动画：光标行 + cursorBox 右移 8px 后弹回 */
 export function bounceCursorRow(): void {
   if (!L.cursorRowId) return;
@@ -78,21 +68,18 @@ export function bounceCursorRow(): void {
   const rowBox = findBoxById(root, L.cursorRowId);
   if (!rowBox || !rowBox.interactive) return;
 
-  // 首次调用时记录原始位置（rebuildTree 后缓存被清空，下次重建后重新记录）
-  if (_bounceOrigX === null) _bounceOrigX = rowBox.x;
-  if (_bounceOrigCX === null && L.cursorBox) _bounceOrigCX = L.cursorBox.x;
+  const origX = rowBox.x;
+  const origCX = L.cursorBox?.x;
 
-  // fromTo 首帧强设 rowBox.x 回原始位置，然后再动画到 +8、yoyo 弹回
-  anim.fromTo(rowBox,
-    { x: _bounceOrigX },
-    { x: _bounceOrigX + 8, duration: 0.2, ease: 'power3.out', yoyo: true, repeat: 1 },
-  );
-
-  if (L.cursorBox && _bounceOrigCX !== null) {
-    anim.fromTo(L.cursorBox,
-      { x: _bounceOrigCX },
-      { x: _bounceOrigCX + 8, duration: 0.2, ease: 'power3.out', yoyo: true, repeat: 1 },
-    );
+  anim.to(rowBox, {
+    x: origX + 8, duration: 0.2, ease: 'power3.out',
+    yoyo: true, repeat: 1,
+  });
+  if (L.cursorBox) {
+    anim.to(L.cursorBox, {
+      x: (origCX ?? 0) + 8, duration: 0.2, ease: 'power3.out',
+      yoyo: true, repeat: 1,
+    });
   }
 }
 
