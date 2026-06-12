@@ -132,8 +132,8 @@ export function handleRowSwipe(): void {
   const sidebarW = DOM.sidebar?.getBoundingClientRect().width ?? 295;
 
   // 聚焦：新卡比其他卡靠左约 35-45px，向中央方向突出
-  const focusRx = Math.round(sidebarW - 20 + (Math.random() * 10 - 5));
-  const normalRx = Math.round(sidebarW + 20 + (Math.random() * 14 - 4));
+  const focusRx = Math.round(sidebarW + 3 + (Math.random() * 8 - 4));  // sidebarW -1 到 sidebarW +7
+  const normalRx = Math.round(sidebarW + 20 + (Math.random() * 14 - 4)); // sidebarW +16 到 sidebarW +30
 
   // 上一张聚焦卡回复正常位置
   const prevFocused = _focusedCard;
