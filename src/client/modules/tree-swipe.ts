@@ -215,8 +215,8 @@ export function handleRowSwipe(): void {
       if (Math.abs(curY - targetTop) > 3) {
         anim.to(c, { y: targetTop, duration: 0.25, ease: 'power2.out' });
       } else {
-        c.style.transform = 'translate(' + crx + 'px,' + targetTop + 'px) rotate(' + crr + 'deg)';
-      }
+      anim.set(c, { x: crx, y: targetTop, rotation: crr });
+    }
       c.dataset.topY = String(targetTop);
     }
   });
