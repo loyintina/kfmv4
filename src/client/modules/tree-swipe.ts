@@ -8,7 +8,7 @@
  */
 
 import { L } from './renderer-lifecycle.js';
-import { anim } from './animation-registry.js';
+import { anim, type AnimTimeline } from './animation-registry.js';
 import { getFileRowData } from './state.js';
 import { findBoxById } from './canvas-utils.js';
 import { currentTheme as theme } from './theme.js';
@@ -58,9 +58,21 @@ function _pathBasename(path: string): string {
   return parts[parts.length - 1] || path;
 }
 
+// ========== 弹跳 timeline 引用（新弹跳时 kill 旧 timeline） ==========
+let _rowBounceTl: AnimTimeline | null = null;
+let _cursorBounceTl: AnimTimeline | null = null;
+
 // ========== 公开 API ==========
 
-/** GSAP 回弹动画：光标行 + cursorBox 右移 8px 后弹回 */
+/** GSAP 回弹动画：光标行 + cursorBox 右移 8px 后弹回
+ *
+ *  核心设计：
+ *    - 动画目标用 transform 对象的 translateX（与布局属性 x 完全隔离，
+ *      不受 moveCursorTo 等修改 x 的函数干扰，无漂移根因）
+ *    - 两步 timeline：当前位置 → +8 → 0
+ *      （被中断时 kill 旧 timeline 从当前 translateX 续走；不卡顿，不漂移）
+ *    - GSAP 直接 tween 普通对象 rowBox.transform，不走 Box 类
+ */
 export function bounceCursorRow(): void {
   if (!L.cursorRowId) return;
   const root = L.renderer?.getRoot();
@@ -68,17 +80,21 @@ export function bounceCursorRow(): void {
   const rowBox = findBoxById(root, L.cursorRowId);
   if (!rowBox || !rowBox.interactive) return;
 
-  const origX = rowBox.x;
-  const origCX = L.cursorBox?.x;
-
-  anim.to(rowBox, {
-    x: origX + 8, duration: 0.2, ease: 'power3.out',
-    yoyo: true, repeat: 1,
+  _rowBounceTl?.kill();
+  _rowBounceTl = anim.timeline();
+  _rowBounceTl.to(rowBox.transform, {
+    translateX: 8, duration: 0.2, ease: 'power3.out',
+  }).to(rowBox.transform, {
+    translateX: 0, duration: 0.2, ease: 'power3.in',
   });
+
   if (L.cursorBox) {
-    anim.to(L.cursorBox, {
-      x: (origCX ?? 0) + 8, duration: 0.2, ease: 'power3.out',
-      yoyo: true, repeat: 1,
+    _cursorBounceTl?.kill();
+    _cursorBounceTl = anim.timeline();
+    _cursorBounceTl.to(L.cursorBox.transform, {
+      translateX: 8, duration: 0.2, ease: 'power3.out',
+    }).to(L.cursorBox.transform, {
+      translateX: 0, duration: 0.2, ease: 'power3.in',
     });
   }
 }

@@ -508,7 +508,7 @@ function processClickQueue(): void {
     ts.eventCallback('onComplete', null);
     ts.reverse();
     ts.eventCallback('onReverseComplete', () => {
-      L.endOp();
+L.endOp();
       removeAllOverlays();
       _resetAnimTimeline();  // ts.clear() + time(0) + 清除 onComplete
       KFMState.notify();    // 触发 _stateSub → rebuildTree
