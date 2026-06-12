@@ -220,7 +220,26 @@ export function handleRowSwipe(): void {
   });
 
   _focusIndex = insertIdx;
-  updateFocus();
+
+  // 直接处理聚焦/失焦样式（不调 updateFocus，避免 killTweensOf 杀死 Y 排列 tween）
+  if (prevFocusIdx >= 0 && prevFocusIdx < _tempCardEls.length && _tempCardEls[prevFocusIdx] !== card) {
+    const oldEl = _tempCardEls[prevFocusIdx];
+    anim.to(oldEl, {
+      x: parseFloat(oldEl.dataset._normalRx ?? '0'),
+      scale: 1,
+      rotation: parseFloat(oldEl.dataset._normalRr ?? '0'),
+      duration: 0.35, ease: 'back.out(1.2)',
+      overwrite: 'auto',
+    });
+    oldEl.style.boxShadow = theme.stack.blurShadow;
+  }
+
+  anim.to(card, {
+    scale: 1.04, rotation: 0,
+    duration: 0.35, ease: 'back.out(1.2)',
+    overwrite: 'auto',
+  });
+  card.style.boxShadow = theme.stack.focusShadow;
 }
 
 // ========== 聚焦控制 ==========
@@ -244,14 +263,13 @@ export function updateFocus(): void {
         overwrite: 'auto',
       });
       el.style.boxShadow = theme.stack.focusShadow;
-      el.style.zIndex = '1010';
     } else {
+      anim.killTweensOf(el);
       const nx = parseFloat(el.dataset._normalRx ?? '0');
       const nr = parseFloat(el.dataset._normalRr ?? '0');
       anim.to(el, {
         x: nx, scale: 1, rotation: nr,
         duration: 0.35, ease: 'back.out(1.2)',
-        overwrite: 'auto',
       });
       el.style.boxShadow = theme.stack.blurShadow;
     }
