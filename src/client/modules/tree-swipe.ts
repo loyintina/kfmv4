@@ -307,8 +307,9 @@ export function dismissFocusedCard(): boolean {
   if (_dismissing) _completeCurrent();
   if (_tempCardEls.length === 0) return true;
 
-  // 上下交替：聚焦到目标端再撤
-  const targetIdx = _dismissFromTop ? 0 : _tempCardEls.length - 1;
+  // 上下交替：从上一次、下一次靠近聚焦卡的卡片开始撤
+  const offset = _dismissFromTop ? -1 : 1;
+  const targetIdx = Math.max(0, Math.min(_tempCardEls.length - 1, _focusIndex + offset));
   if (targetIdx !== _focusIndex) {
     _focusIndex = targetIdx;
     _prevFocusIndex = -1;
