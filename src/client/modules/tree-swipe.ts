@@ -13,6 +13,7 @@ import { getFileRowData } from './state.js';
 import { findBoxById } from './canvas-utils.js';
 import { currentTheme as theme } from './theme.js';
 import { DOM } from './dom-refs.js';
+import { Box } from '../engine/v2/box.js';
 
 // ========== 模块状态 ==========
 
@@ -61,17 +62,16 @@ function _pathBasename(path: string): string {
 // ========== 弹跳 timeline 引用（新弹跳时 kill 旧 timeline） ==========
 let _rowBounceTl: AnimTimeline | null = null;
 let _cursorBounceTl: AnimTimeline | null = null;
+let _bounceRowBox: Box | null = null;
 
 // ========== 公开 API ==========
 
 /** GSAP 回弹动画：光标行 + cursorBox 右移 8px 后弹回
  *
  *  核心设计：
- *    - 动画目标用 transform 对象的 translateX（与布局属性 x 完全隔离，
- *      不受 moveCursorTo 等修改 x 的函数干扰，无漂移根因）
+ *    - 动画目标用 transform.translateX（与布局属性 x 隔离）
  *    - 两步 timeline：当前位置 → +8 → 0
- *      （被中断时 kill 旧 timeline 从当前 translateX 续走；不卡顿，不漂移）
- *    - GSAP 直接 tween 普通对象 rowBox.transform，不走 Box 类
+ *    - 换行时 kill 旧 timeline，并重置旧行 translateX 为 0，消除残留偏移
  */
 export function bounceCursorRow(): void {
   if (!L.cursorRowId) return;
@@ -81,6 +81,11 @@ export function bounceCursorRow(): void {
   if (!rowBox || !rowBox.interactive) return;
 
   _rowBounceTl?.kill();
+  if (_bounceRowBox && _bounceRowBox !== rowBox) {
+    _bounceRowBox.transform.translateX = 0;
+  }
+
+  _bounceRowBox = rowBox;
   _rowBounceTl = anim.timeline();
   _rowBounceTl.to(rowBox.transform, {
     translateX: 8, duration: 0.2, ease: 'power3.out',
