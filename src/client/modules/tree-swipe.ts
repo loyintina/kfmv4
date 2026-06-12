@@ -23,6 +23,7 @@ let _focusIndex = -1;
 let _prevFocusIndex = -1;
 const _CARD_H = theme.stack.cardHeight;
 const _CARD_GAP = theme.stack.cardGap;
+let _lastGap = _CARD_GAP;
 
 const _HUE_BLUE = 220;
 const _HUE_PURPLE = 265;
@@ -179,6 +180,7 @@ export function handleRowSwipe(): void {
   const gap = count > 1
     ? Math.min(_CARD_GAP, (maxH - _CARD_H) / (count - 1))
     : _CARD_GAP;
+  _lastGap = gap;
   const stackH = _CARD_H + (count - 1) * gap;
   const baseTop = Math.round(window.innerHeight * 0.35 - stackH / 2);
   card.dataset.rx = String(focusRx);
@@ -222,26 +224,8 @@ export function handleRowSwipe(): void {
   });
 
   _focusIndex = insertIdx;
-  _prevFocusIndex = _focusIndex;
-
-  // 旧聚焦卡失焦（用 splice 前保存的引用，避免 splice 后重索引拿到错卡）
-  if (oldEl) {
-    anim.to(oldEl, {
-      x: parseFloat(oldEl.dataset._normalRx ?? '0'),
-      scale: 1,
-      rotation: parseFloat(oldEl.dataset._normalRr ?? '0'),
-      duration: 0.35, ease: 'back.out(1.2)',
-      overwrite: 'auto',
-    });
-    oldEl.style.boxShadow = theme.stack.blurShadow;
-  }
-
-  anim.to(card, {
-    scale: 1.04, rotation: 0,
-    duration: 0.35, ease: 'back.out(1.2)',
-    overwrite: 'auto',
-  });
-  card.style.boxShadow = theme.stack.focusShadow;
+  _prevFocusIndex = oldEl ? _tempCardEls.indexOf(oldEl) : -1;
+  updateFocus();
 }
 
 // ========== 聚焦控制 ==========
@@ -326,7 +310,7 @@ export function initTempCardGesture(): void {
         _swipeAxis = Math.abs(dx) > Math.abs(dy) ? 'horizontal' : 'vertical';
       }
       if (_swipeAxis !== 'vertical') return;
-      const offset = Math.round(-dy / _CARD_GAP);
+      const offset = Math.round(-dy / _lastGap);
       const target = _swipeStartFocus + offset;
       const clamped = ((target % _tempCardEls.length) + _tempCardEls.length) % _tempCardEls.length;
       if (clamped !== _focusIndex) {
