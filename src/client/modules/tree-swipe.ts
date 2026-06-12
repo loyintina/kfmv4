@@ -245,6 +245,7 @@ export function updateFocus(): void {
 
     if (i === _focusIndex) {
       const fx = parseFloat(el.dataset._focusRx ?? '0');
+      el.dataset.rx = String(fx);
       anim.to(el, {
         x: fx, scale: 1.04, rotation: 0,
         duration: 0.35, ease: 'back.out(1.2)',
@@ -254,6 +255,7 @@ export function updateFocus(): void {
     } else {
       const nx = parseFloat(el.dataset._normalRx ?? '0');
       const nr = parseFloat(el.dataset._normalRr ?? '0');
+      el.dataset.rx = String(nx);
       anim.to(el, {
         x: nx, scale: 1, rotation: nr,
         duration: 0.35, ease: 'back.out(1.2)',
