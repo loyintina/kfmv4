@@ -33,7 +33,7 @@ import {
   flattenExpandTree, ensureMetaFromExpandedState,
   activeOverlayCount,
 } from './tree-overlay.js';
-import { bounceCursorRow, handleRowSwipe, clearTempCards, initTempCardGesture, dismissFocusedCard } from './tree-swipe.js';
+import { bounceCursorRow, handleRowSwipe, clearTempCards, initTempCardGesture } from './tree-swipe.js';
 const ts = anim.scope('tree-render');
 /** 重置动画时间线：清空 tween + 归零播放头 + 清除回调。正常动画结束时调用。 */
 function _resetAnimTimeline(): void {
@@ -359,8 +359,6 @@ export function initTreeRenderer(): void {
   });
   // 文件行右滑回调（canvas-scroll 横向滑动手势 → 回弹，避免循环依赖）
   L.setRowSwipeHandler(handleRowSwipe);
-  // 全局左滑撤销临时卡片
-  L.setCardDismissHandler(dismissFocusedCard);
 }
 
 
