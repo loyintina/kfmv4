@@ -33,7 +33,7 @@ import {
   flattenExpandTree, ensureMetaFromExpandedState,
   activeOverlayCount,
 } from './tree-overlay.js';
-import { bounceCursorRow, handleRowSwipe, clearTempCards } from './tree-swipe.js';
+import { bounceCursorRow, handleRowSwipe, clearTempCards, initTempCardGesture } from './tree-swipe.js';
 const ts = anim.scope('tree-render');
 /** 重置动画时间线：清空 tween + 归零播放头 + 清除回调。正常动画结束时调用。 */
 function _resetAnimTimeline(): void {
@@ -299,6 +299,7 @@ export function initTreeRenderer(): void {
   }
 
   initScrollGesture();
+  initTempCardGesture();
 
   const canvas = document.createElement('canvas');
   canvas.dataset.registryId = 'file-tree';

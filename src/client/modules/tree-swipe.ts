@@ -14,12 +14,12 @@ import { findBoxById } from './canvas-utils.js';
 import { currentTheme as theme } from './theme.js';
 import { DOM } from './dom-refs.js';
 import { Box } from '../engine/v2/box.js';
+import { gestures } from './gesture-registry.js';
 
 // ========== 模块状态 ==========
 
 let _tempCardEls: HTMLElement[] = [];
-let _focusedCard: HTMLElement | null = null;
-let _focusedNormalRx = 0;
+let _focusIndex = -1;
 const _CARD_H = theme.stack.cardHeight;
 const _CARD_GAP = theme.stack.cardGap;
 
@@ -131,15 +131,9 @@ export function handleRowSwipe(): void {
   const fromY = abs.y - scrollY - (_CARD_H - rowBox.height) / 2;
   const sidebarW = DOM.sidebar?.getBoundingClientRect().width ?? 295;
 
-  // 聚焦：新卡比其他卡靠左约 35-45px，向中央方向突出
+  // 聚焦：新卡比其他卡靠左约 15-25px，向中央方向突出
   const focusRx = Math.round(sidebarW + 3 + (Math.random() * 8 - 4));  // sidebarW -1 到 sidebarW +7
   const normalRx = Math.round(sidebarW + 20 + (Math.random() * 14 - 4)); // sidebarW +16 到 sidebarW +30
-
-  // 上一张聚焦卡回复正常位置
-  const prevFocused = _focusedCard;
-  if (prevFocused) {
-    prevFocused.dataset.rx = String(_focusedNormalRx);
-  }
 
   const rr = (Math.random() - 0.5) * 4;                           // 创建时固定随机旋转
 
@@ -168,6 +162,13 @@ export function handleRowSwipe(): void {
 
   // 居中插入：新卡插入堆叠中间位置
   const insertIdx = _tempCardEls.length === 0 ? 0 : Math.floor(_tempCardEls.length / 2);
+  // 旧聚焦卡回复正常位置
+  const prevFocusIdx = _focusIndex;
+  if (prevFocusIdx >= 0 && prevFocusIdx < _tempCardEls.length && _tempCardEls[prevFocusIdx] !== card) {
+    const oldEl = _tempCardEls[prevFocusIdx];
+    oldEl.dataset.rx = oldEl.dataset._normalRx!;
+  }
+
   _tempCardEls.splice(insertIdx, 0, card);
 
   // 居中重排所有卡片（中心上移，考虑底部操作区，超出时压缩 gap）
@@ -180,13 +181,24 @@ export function handleRowSwipe(): void {
   const baseTop = Math.round(window.innerHeight * 0.35 - stackH / 2);
   card.dataset.rx = String(focusRx);
   card.dataset.rr = String(rr);
+  card.dataset._focusRx = String(focusRx);
+  card.dataset._normalRx = String(normalRx);
+  card.dataset._normalRr = String(rr);
+
+  card.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const idx = _tempCardEls.indexOf(card);
+    if (idx >= 0 && idx !== _focusIndex) {
+      _focusIndex = idx;
+      updateFocus();
+    }
+  });
 
   const baseZ = 1000;
 
   _tempCardEls.forEach((c, i) => {
     const targetTop = Math.round(baseTop + i * gap);
-    const z = baseZ + i;
-    c.style.zIndex = String(z);
+    c.style.zIndex = String(baseZ + i);
     const crx = parseFloat(c.dataset.rx ?? '0');
     const crr = parseFloat(c.dataset.rr ?? '0');
     if (c === card) {
@@ -198,13 +210,8 @@ export function handleRowSwipe(): void {
       });
     } else {
       const curY = parseFloat(c.dataset.topY ?? '0');
-      const isPrevFocus = c === prevFocused;
-      if (isPrevFocus || Math.abs(curY - targetTop) > 3) {
-        anim.to(c, {
-          y: targetTop,
-          ...(isPrevFocus ? { x: parseFloat(c.dataset.rx ?? '0') } : {}),
-          duration: 0.25, ease: 'power2.out',
-        });
+      if (Math.abs(curY - targetTop) > 3) {
+        anim.to(c, { y: targetTop, duration: 0.25, ease: 'power2.out' });
       } else {
         c.style.transform = 'translate(' + crx + 'px,' + targetTop + 'px) rotate(' + crr + 'deg)';
       }
@@ -212,13 +219,99 @@ export function handleRowSwipe(): void {
     }
   });
 
-  _focusedCard = card;
-  _focusedNormalRx = normalRx;
+  _focusIndex = insertIdx;
+  updateFocus();
+}
+
+// ========== 聚焦控制 ==========
+
+/** 更新所有卡片到对应的聚焦/非聚焦状态 */
+export function updateFocus(): void {
+  if (_tempCardEls.length === 0) return;
+  if (_focusIndex < 0 || _focusIndex >= _tempCardEls.length) {
+    _focusIndex = 0;
+  }
+
+  for (let i = 0; i < _tempCardEls.length; i++) {
+    const el = _tempCardEls[i];
+    const dist = Math.abs(i - _focusIndex);
+
+    if (dist === 0) {
+      // 聚焦卡：不杀 tween（保护飞入动画），只叠加 scale/rotation/shadow
+      anim.to(el, {
+        scale: 1.04, rotation: 0,
+        duration: 0.35, ease: 'back.out(1.2)',
+        overwrite: 'auto',
+      });
+      el.style.boxShadow = theme.stack.focusShadow;
+      el.style.zIndex = '1010';
+    } else {
+      anim.killTweensOf(el);
+      const nx = parseFloat(el.dataset._normalRx ?? '0');
+      const nr = parseFloat(el.dataset._normalRr ?? '0');
+      anim.to(el, {
+        x: nx, scale: 1, rotation: nr,
+        duration: 0.35, ease: 'back.out(1.2)',
+      });
+      el.style.boxShadow = theme.stack.blurShadow;
+    }
+  }
+}
+
+/** 聚焦上一张卡片（循环） */
+export function focusNext(): void {
+  if (_tempCardEls.length === 0) return;
+  _focusIndex = (_focusIndex + 1) % _tempCardEls.length;
+  updateFocus();
+}
+
+/** 聚焦下一张卡片（循环） */
+export function focusPrev(): void {
+  if (_tempCardEls.length === 0) return;
+  _focusIndex = (_focusIndex - 1 + _tempCardEls.length) % _tempCardEls.length;
+  updateFocus();
+}
+
+// ========== 卡片堆垂直滑动切换聚焦 ==========
+
+type _AxisLock = 'none' | 'horizontal' | 'vertical';
+
+let _swipeStartFocus = -1;
+let _swipeAxis: _AxisLock = 'none';
+let _gestureRegistered = false;
+
+export function initTempCardGesture(): void {
+  if (_gestureRegistered) return;
+  _gestureRegistered = true;
+
+  gestures.register({
+    id: 'temp-card-swipe',
+    targetFilter: () => true,
+    condition: () => _tempCardEls.length > 0,
+    priority: 80,
+    onStart() {
+      _swipeStartFocus = _focusIndex;
+      _swipeAxis = 'none';
+    },
+    onMove(_e, dx, dy) {
+      if (_swipeAxis === 'none' && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
+        _swipeAxis = Math.abs(dx) > Math.abs(dy) ? 'horizontal' : 'vertical';
+      }
+      if (_swipeAxis !== 'vertical') return;
+      const offset = Math.round(-dy / _CARD_GAP);
+      const target = _swipeStartFocus + offset;
+      const clamped = ((target % _tempCardEls.length) + _tempCardEls.length) % _tempCardEls.length;
+      if (clamped !== _focusIndex) {
+        _focusIndex = clamped;
+        updateFocus();
+      }
+    },
+  });
 }
 
 /** 移除所有临时卡片 DOM 并清空内部数组 */
 export function clearTempCards(): void {
   _tempCardEls.forEach(el => el.remove());
   _tempCardEls = [];
-  _focusedCard = null;
+  _focusIndex = -1;
 }
