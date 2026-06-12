@@ -286,7 +286,11 @@ export function initTempCardGesture(): void {
 
   gestures.register({
     id: 'temp-card-swipe',
-    targetFilter: () => true,
+    targetFilter: (_target, e) => _tempCardEls.some(el => {
+      const r = el.getBoundingClientRect();
+      return e.clientX >= r.left - 12 && e.clientX <= r.right + 12
+          && e.clientY >= r.top - 12 && e.clientY <= r.bottom + 12;
+    }),
     condition: () => _tempCardEls.length > 0,
     priority: 80,
     onStart() {
