@@ -33,7 +33,7 @@ import {
   flattenExpandTree, ensureMetaFromExpandedState,
   activeOverlayCount,
 } from './tree-overlay.js';
-import { bounceCursorRow, handleRowSwipe, clearTempCards } from './tree-swipe.js';
+import { bounceCursorRow, handleRowSwipe, clearTempCards, resetBounceOrigin } from './tree-swipe.js';
 const ts = anim.scope('tree-render');
 /** 重置动画时间线：清空 tween + 归零播放头 + 清除回调。正常动画结束时调用。 */
 function _resetAnimTimeline(): void {
@@ -508,7 +508,8 @@ function processClickQueue(): void {
     ts.eventCallback('onComplete', null);
     ts.reverse();
     ts.eventCallback('onReverseComplete', () => {
-      L.endOp();
+  L.endOp();
+  resetBounceOrigin();
       removeAllOverlays();
       _resetAnimTimeline();  // ts.clear() + time(0) + 清除 onComplete
       KFMState.notify();    // 触发 _stateSub → rebuildTree
