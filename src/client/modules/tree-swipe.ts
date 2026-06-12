@@ -237,21 +237,21 @@ export function updateFocus(): void {
     const dist = Math.abs(i - _focusIndex);
 
     if (dist === 0) {
-      // 聚焦卡：不杀 tween（保护飞入动画），只叠加 scale/rotation/shadow
+      const fx = parseFloat(el.dataset._focusRx ?? '0');
       anim.to(el, {
-        scale: 1.04, rotation: 0,
+        x: fx, scale: 1.04, rotation: 0,
         duration: 0.35, ease: 'back.out(1.2)',
         overwrite: 'auto',
       });
       el.style.boxShadow = theme.stack.focusShadow;
       el.style.zIndex = '1010';
     } else {
-      anim.killTweensOf(el);
       const nx = parseFloat(el.dataset._normalRx ?? '0');
       const nr = parseFloat(el.dataset._normalRr ?? '0');
       anim.to(el, {
         x: nx, scale: 1, rotation: nr,
         duration: 0.35, ease: 'back.out(1.2)',
+        overwrite: 'auto',
       });
       el.style.boxShadow = theme.stack.blurShadow;
     }
