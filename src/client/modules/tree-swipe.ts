@@ -415,7 +415,7 @@ export function initTempCardGesture(): void {
 
 // ========== 卡片堆背景 ==========
 
-const _BG_GRAD = theme.aiChat.panelBorderGradient;  // 经典蓝紫渐变
+function _bgGradient(): string { return theme.aiChat.panelBorderGradient; }
 
 function _ensureBg(): void {
   if (_bgCard) return;
@@ -424,7 +424,7 @@ function _ensureBg(): void {
     'position:fixed', 'right:0', 'top:0',
     'width:50vw', 'height:0px',
     'border-radius:16px 0 0 16px',
-    'background:' + _BG_GRAD,
+    'background:' + _bgGradient(),
     'opacity:0.12',
     'z-index:990',
     'pointer-events:none',
