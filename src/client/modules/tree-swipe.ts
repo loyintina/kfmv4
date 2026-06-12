@@ -60,10 +60,7 @@ function _pathBasename(path: string): string {
 
 // ========== 公开 API ==========
 
-/** GSAP 回弹动画：光标行 + cursorBox 右移 8px 后弹回
- *
- *  动画目标改为 transform.translateX 而非 box.x。
- *  这样布局真值 (x=0) 永不改变，无论动画如何打断都不会漂移。 */
+/** GSAP 回弹动画：光标行 + cursorBox 右移 8px 后弹回 */
 export function bounceCursorRow(): void {
   if (!L.cursorRowId) return;
   const root = L.renderer?.getRoot();
@@ -71,15 +68,16 @@ export function bounceCursorRow(): void {
   const rowBox = findBoxById(root, L.cursorRowId);
   if (!rowBox || !rowBox.interactive) return;
 
-  if (!rowBox.transform) rowBox.transform = { scale: 1, rotate: 0, translateX: 0, translateY: 0 };
-  anim.to(rowBox.transform, {
-    translateX: 8, duration: 0.2, ease: 'power3.out',
+  const origX = rowBox.x;
+  const origCX = L.cursorBox?.x;
+
+  anim.to(rowBox, {
+    x: origX + 8, duration: 0.2, ease: 'power3.out',
     yoyo: true, repeat: 1,
   });
   if (L.cursorBox) {
-    if (!L.cursorBox.transform) L.cursorBox.transform = { scale: 1, rotate: 0, translateX: 0, translateY: 0 };
-    anim.to(L.cursorBox.transform, {
-      translateX: 8, duration: 0.2, ease: 'power3.out',
+    anim.to(L.cursorBox, {
+      x: (origCX ?? 0) + 8, duration: 0.2, ease: 'power3.out',
       yoyo: true, repeat: 1,
     });
   }
