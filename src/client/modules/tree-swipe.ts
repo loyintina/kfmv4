@@ -60,22 +60,7 @@ function _pathBasename(path: string): string {
 
 // ========== 公开 API ==========
 
-// 缓存原始位置。首次 bounce 后记录，rebuildTree 时清空。
-let _bounceOrigX: number | null = null;
-let _bounceOrigCX: number | null = null;
-
-export function resetBounceOrigin(): void {
-  _bounceOrigX = null;
-  _bounceOrigCX = null;
-}
-
-/** GSAP 回弹动画：光标行 + cursorBox 右移 8px 后弹回。
- *
- *  不用 yoyo/repeat，改为两个嵌套 to + onComplete：
- *   向外: _bounceOrigX → _bounceOrigX + 8
- *   onComplete 强写回 _bounceOrigX（硬保证终点）
- *
- *  每次开始前杀旧 tween + 直接赋值复位，消除 GSAP 起点依赖。 */
+/** GSAP 回弹动画：光标行 + cursorBox 右移 8px 后弹回 */
 export function bounceCursorRow(): void {
   if (!L.cursorRowId) return;
   const root = L.renderer?.getRoot();
@@ -83,24 +68,17 @@ export function bounceCursorRow(): void {
   const rowBox = findBoxById(root, L.cursorRowId);
   if (!rowBox || !rowBox.interactive) return;
 
-  if (_bounceOrigX === null) _bounceOrigX = rowBox.x;
-  if (_bounceOrigCX === null && L.cursorBox) _bounceOrigCX = L.cursorBox.x;
+  const origX = rowBox.x;
+  const origCX = L.cursorBox?.x;
 
-  anim.killTweensOf(rowBox);
-  rowBox.x = _bounceOrigX;
   anim.to(rowBox, {
-    x: _bounceOrigX + 8, duration: 0.2, ease: 'power3.out',
-    overwrite: true,
-    onComplete() { anim.killTweensOf(rowBox); rowBox.x = _bounceOrigX!; },
+    x: origX + 8, duration: 0.2, ease: 'power3.out',
+    yoyo: true, repeat: 1,
   });
-
-  if (L.cursorBox && _bounceOrigCX !== null) {
-    anim.killTweensOf(L.cursorBox);
-    L.cursorBox.x = _bounceOrigCX;
+  if (L.cursorBox) {
     anim.to(L.cursorBox, {
-      x: _bounceOrigCX + 8, duration: 0.2, ease: 'power3.out',
-      overwrite: true,
-      onComplete() { anim.killTweensOf(L.cursorBox!); L.cursorBox!.x = _bounceOrigCX!; },
+      x: (origCX ?? 0) + 8, duration: 0.2, ease: 'power3.out',
+      yoyo: true, repeat: 1,
     });
   }
 }
