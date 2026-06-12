@@ -222,7 +222,7 @@ export function handleRowSwipe(): void {
   });
 
   _focusIndex = insertIdx;
-  _prevFocusIndex = oldEl ? _tempCardEls.indexOf(oldEl) : -1;
+  _prevFocusIndex = _focusIndex;
 
   // 旧聚焦卡失焦（用 splice 前保存的引用，避免 splice 后重索引拿到错卡）
   if (oldEl) {
