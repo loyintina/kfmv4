@@ -179,6 +179,8 @@ export function handleRowSwipe(): void {
   card.dataset._focusRx = String(focusRx);
   card.dataset._normalRx = String(normalRx);
   card.dataset._normalRr = String(rr);
+  card.dataset._fromX = String(fromX);
+  card.dataset._fromY = String(fromY);
 
 card.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -293,12 +295,43 @@ export function focusPrev(): void {
   updateFocus();
 }
 
+// ========== 卡片撤销 ==========
+
+/** 左滑撤回当前聚焦卡片：反向飞入动画 + 从堆中移除 */
+export function dismissFocusedCard(): void {
+  if (_tempCardEls.length === 0 || _focusIndex < 0) return;
+  const el = _tempCardEls[_focusIndex];
+  const fromX = parseFloat(el.dataset._fromX ?? '0');
+  const fromY = parseFloat(el.dataset._fromY ?? '0');
+  const rr = parseFloat(el.dataset.rr ?? '0');
+
+  anim.killTweensOf(el);
+  anim.to(el, {
+    x: fromX, y: fromY, opacity: 0, scale: 0.7, rotation: rr,
+    duration: 0.3, ease: 'power2.in',
+    onComplete() {
+      el.remove();
+      _tempCardEls.splice(_focusIndex, 1);
+      if (_tempCardEls.length === 0) {
+        _focusIndex = -1;
+        _prevFocusIndex = -1;
+      } else {
+        if (_focusIndex >= _tempCardEls.length) _focusIndex = _tempCardEls.length - 1;
+        _prevFocusIndex = -1;
+        _repositionCards();
+        updateFocus(false);
+      }
+    },
+  });
+}
+
 // ========== 卡片堆垂直滑动切换聚焦 ==========
 
 type _AxisLock = 'none' | 'horizontal' | 'vertical';
 
 let _swipeStartFocus = -1;
 let _swipeAxis: _AxisLock = 'none';
+let _swipePrevDx = 0;
 let _gestureRegistered = false;
 
 export function initTempCardGesture(): void {
@@ -317,18 +350,23 @@ export function initTempCardGesture(): void {
     onStart() {
       _swipeStartFocus = _focusIndex;
       _swipeAxis = 'none';
+      _swipePrevDx = 0;
     },
     onMove(_e, dx, dy) {
       if (_swipeAxis === 'none' && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
         _swipeAxis = Math.abs(dx) > Math.abs(dy) ? 'horizontal' : 'vertical';
       }
-      if (_swipeAxis !== 'vertical') return;
-      const offset = Math.round(-dy / _lastGap);
-      const target = _swipeStartFocus + offset;
-      const clamped = ((target % _tempCardEls.length) + _tempCardEls.length) % _tempCardEls.length;
-      if (clamped !== _focusIndex) {
-        _focusIndex = clamped;
-        updateFocus();
+      if (_swipeAxis === 'vertical') {
+        const offset = Math.round(-dy / _lastGap);
+        const target = _swipeStartFocus + offset;
+        const clamped = ((target % _tempCardEls.length) + _tempCardEls.length) % _tempCardEls.length;
+        if (clamped !== _focusIndex) {
+          _focusIndex = clamped;
+          updateFocus();
+        }
+      } else if (_swipeAxis === 'horizontal') {
+        if (dx < -50 && _swipePrevDx >= -50) { _swipePrevDx = dx; dismissFocusedCard(); return; }
+        _swipePrevDx = dx;
       }
     },
   });
