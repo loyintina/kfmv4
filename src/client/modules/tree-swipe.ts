@@ -174,25 +174,13 @@ export function handleRowSwipe(): void {
 
   _tempCardEls.splice(insertIdx, 0, card);
 
-  // 居中重排所有卡片（中心上移，考虑底部操作区，超出时压缩 gap）
-  const count = _tempCardEls.length;
-  const maxH = window.innerHeight * 0.54;
-  const gap = count > 1
-    ? Math.min(_CARD_GAP, (maxH - _CARD_H) / (count - 1))
-    : _CARD_GAP;
-  _lastGap = gap;
-
-  // 聚焦卡与下方相邻卡保持未压缩间距
-  const extraGap = count > 1 && gap < _CARD_GAP ? _CARD_GAP - gap : 0;
-  const stackH = _CARD_H + (count - 1) * gap + extraGap;
-  const baseTop = Math.round(window.innerHeight * 0.35 - stackH / 2);
   card.dataset.rx = String(focusRx);
   card.dataset.rr = String(rr);
   card.dataset._focusRx = String(focusRx);
   card.dataset._normalRx = String(normalRx);
   card.dataset._normalRr = String(rr);
 
-  card.addEventListener('click', (e) => {
+card.addEventListener('click', (e) => {
     e.stopPropagation();
     const idx = _tempCardEls.indexOf(card);
     if (idx >= 0 && idx !== _focusIndex) {
@@ -201,41 +189,59 @@ export function handleRowSwipe(): void {
     }
   });
 
-  const baseZ = 1000;
-
-  _tempCardEls.forEach((c, i) => {
-    const shift = i > insertIdx ? extraGap : 0;
-    const targetTop = Math.round(baseTop + i * gap + shift);
-    c.style.zIndex = String(baseZ + i);
-    const crx = parseFloat(c.dataset.rx ?? '0');
-    const crr = parseFloat(c.dataset.rr ?? '0');
-    if (c === card) {
-      card.dataset.topY = String(targetTop);
-      anim.set(card, { x: fromX, y: fromY, opacity: 0, scale: 0.7, rotation: crr });
-      anim.to(card, {
-        x: crx, y: targetTop, opacity: 1, scale: 1, rotation: crr,
-        duration: 0.35, ease: 'power2.out',
-      });
-    } else {
-      const curY = parseFloat(c.dataset.topY ?? '0');
-      if (Math.abs(curY - targetTop) > 3) {
-        anim.to(c, { y: targetTop, duration: 0.25, ease: 'power2.out' });
-      } else {
-      anim.set(c, { x: crx, y: targetTop, rotation: crr });
-    }
-      c.dataset.topY = String(targetTop);
-    }
-  });
-
   _focusIndex = insertIdx;
   _prevFocusIndex = oldEl ? _tempCardEls.indexOf(oldEl) : -1;
-  updateFocus();
+
+  // 重排所有卡片 Y 位置（含压缩 + 聚焦下方留白）
+  _repositionCards();
+
+  // 新卡飞入（覆盖 _repositionCards 设的 Y）
+  const crx = parseFloat(card.dataset.rx ?? '0');
+  const crr = parseFloat(card.dataset.rr ?? '0');
+  const cardTop = parseFloat(card.dataset.topY ?? '0');
+  anim.set(card, { x: fromX, y: fromY, opacity: 0, scale: 0.7, rotation: crr });
+  anim.to(card, {
+    x: crx, y: cardTop, opacity: 1, scale: 1, rotation: crr,
+    duration: 0.35, ease: 'power2.out',
+  });
+
+  updateFocus(false);
 }
 
 // ========== 聚焦控制 ==========
 
+/** 按当前 _focusIndex 重排所有卡片的 Y 位置（含压缩间距 + 聚焦位下方留白） */
+function _repositionCards(): void {
+  const count = _tempCardEls.length;
+  if (count === 0) return;
+
+  const maxH = window.innerHeight * 0.54;
+  const gap = count > 1
+    ? Math.min(_CARD_GAP, (maxH - _CARD_H) / (count - 1))
+    : _CARD_GAP;
+  _lastGap = gap;
+
+  const extraGap = count > 1 && gap < _CARD_GAP ? _CARD_GAP - gap : 0;
+  const stackH = _CARD_H + (count - 1) * gap + extraGap;
+  const baseTop = Math.round(window.innerHeight * 0.35 - stackH / 2);
+
+  _tempCardEls.forEach((c, i) => {
+    const shift = i > _focusIndex ? extraGap : 0;
+    const targetTop = Math.round(baseTop + i * gap + shift);
+    c.style.zIndex = String(1000 + i);
+
+    const curY = parseFloat(c.dataset.topY ?? '0');
+    if (Math.abs(curY - targetTop) > 3) {
+      anim.to(c, { y: targetTop, duration: 0.25, ease: 'power2.out' });
+    } else {
+      anim.set(c, { y: targetTop });
+    }
+    c.dataset.topY = String(targetTop);
+  });
+}
+
 /** 更新所有卡片到对应的聚焦/非聚焦状态（只动画状态变化的两张卡） */
-export function updateFocus(): void {
+export function updateFocus(reposition = true): void {
   if (_tempCardEls.length === 0) return;
   if (_focusIndex < 0 || _focusIndex >= _tempCardEls.length) {
     _focusIndex = 0;
@@ -270,6 +276,7 @@ export function updateFocus(): void {
   }
 
   _prevFocusIndex = _focusIndex;
+  if (reposition) _repositionCards();
 }
 
 /** 聚焦上一张卡片（循环） */
