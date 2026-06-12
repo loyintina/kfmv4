@@ -298,36 +298,52 @@ export function focusPrev(): void {
 
 // ========== 卡片撤销 ==========
 
-/** 左滑撤回当前聚焦卡片：反向飞入动画 + 从堆中移除 */
+/** 左滑撤回当前聚焦卡片。连撤时瞬杀当前卡，立刻开始撤下一张。 */
 export function dismissFocusedCard(): boolean {
-  if (_dismissing) return true;  // 上一次撤回动画中，阻止关侧栏
   if (_tempCardEls.length === 0 || _focusIndex < 0) return false;
+  if (_dismissing) _completeCurrent();
+  _startDismiss();
+  return true;
+}
+
+function _completeCurrent(): void {
   const el = _tempCardEls[_focusIndex];
+  if (el) { anim.killTweensOf(el); _removeCard(el); }
+}
+
+function _startDismiss(): void {
+  const el = _tempCardEls[_focusIndex];
+  if (!el) return;
+  _dismissing = true;
+
   const fromX = parseFloat(el.dataset._fromX ?? '0');
   const fromY = parseFloat(el.dataset._fromY ?? '0');
   const rr = parseFloat(el.dataset.rr ?? '0');
 
   anim.killTweensOf(el);
-  _dismissing = true;
   anim.to(el, {
     x: fromX, y: fromY, opacity: 0, scale: 0.7, rotation: rr,
-    duration: 0.3, ease: 'power2.in',
-    onComplete() {
-      _dismissing = false;
-      el.remove();
-      _tempCardEls.splice(_focusIndex, 1);
-      if (_tempCardEls.length === 0) {
-        _focusIndex = -1;
-        _prevFocusIndex = -1;
-      } else {
-        if (_focusIndex >= _tempCardEls.length) _focusIndex = _tempCardEls.length - 1;
-        _prevFocusIndex = -1;
-        _repositionCards();
-        updateFocus(false);
-      }
-    },
+    duration: 0.2, ease: 'power2.in',
+    onComplete() { _removeCard(el); },
   });
-  return true;
+}
+
+function _removeCard(el: HTMLElement): void {
+  _dismissing = false;
+  if (!document.contains(el)) return;
+  el.remove();
+  const idx = _tempCardEls.indexOf(el);
+  if (idx < 0) return;
+  _tempCardEls.splice(idx, 1);
+  if (_tempCardEls.length === 0) {
+    _focusIndex = -1;
+    _prevFocusIndex = -1;
+  } else {
+    if (_focusIndex >= _tempCardEls.length) _focusIndex = _tempCardEls.length - 1;
+    _prevFocusIndex = -1;
+    _repositionCards();
+    updateFocus(false);
+  }
 }
 
 // ========== 卡片堆垂直滑动切换聚焦 ==========
