@@ -22,6 +22,7 @@ let _tempCardEls: HTMLElement[] = [];
 let _focusIndex = -1;
 let _prevFocusIndex = -1;
 let _dismissing = false;
+let _dismissFromTop = true;  // 上下交替撤回
 const _CARD_H = theme.stack.cardHeight;
 const _CARD_GAP = theme.stack.cardGap;
 let _lastGap = _CARD_GAP;
@@ -301,7 +302,20 @@ export function focusPrev(): void {
 /** 左滑撤回当前聚焦卡片。连撤时瞬杀当前卡，立刻开始撤下一张。 */
 export function dismissFocusedCard(): boolean {
   if (_tempCardEls.length === 0 || _focusIndex < 0) return false;
+
+  // 正在撤：瞬杀当前卡
   if (_dismissing) _completeCurrent();
+  if (_tempCardEls.length === 0) return true;
+
+  // 上下交替：聚焦到目标端再撤
+  const targetIdx = _dismissFromTop ? 0 : _tempCardEls.length - 1;
+  if (targetIdx !== _focusIndex) {
+    _focusIndex = targetIdx;
+    _prevFocusIndex = -1;
+    updateFocus();
+  }
+  _dismissFromTop = !_dismissFromTop;
+
   _startDismiss();
   return true;
 }
