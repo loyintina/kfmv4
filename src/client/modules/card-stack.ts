@@ -269,14 +269,14 @@ function updateFocus(): void {
 
     if (dist === 0) {
       anim.to(el, {
-        xPercent: 0, x: -28, scale: 1.04, rotation: 0,
+        xPercent: 50, x: -28, scale: 1.04, rotation: 0,
         duration: 0.35, ease: 'back.out(1.2)',
       });
       el.style.boxShadow = theme.stack.focusShadow;
     } else {
       const randomRotate = parseFloat(el.dataset.randomRotate || '0');
       anim.to(el, {
-        xPercent: 0, x: 0, scale: 1, rotation: randomRotate,
+        xPercent: 50, x: 0, scale: 1, rotation: randomRotate,
         duration: 0.35, ease: 'back.out(1.2)',
       });
       el.style.boxShadow = theme.stack.blurShadow;
@@ -376,10 +376,10 @@ export function openCardStack(): void {
     const el = _cardEls[i];
     const dur = 0.2 + Math.random() * 0.3;
     if (i === _focusIndex) {
-      _tl.to(el, { x: -28, scale: 1.04, rotation: 0, duration: dur, ease: 'back.out(1.2)' }, 0);
+      _tl.to(el, { xPercent: 50, x: -28, scale: 1.04, rotation: 0, duration: dur, ease: 'back.out(1.2)' }, 0);
     } else {
       const rot = parseFloat(el.dataset.randomRotate || '0');
-      _tl.to(el, { x: 0, scale: 1, rotation: rot, duration: dur, ease: 'back.out(1.2)' }, 0);
+      _tl.to(el, { xPercent: 50, x: 0, scale: 1, rotation: rot, duration: dur, ease: 'back.out(1.2)' }, 0);
     }
   }
 }
