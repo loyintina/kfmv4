@@ -20,6 +20,7 @@ import { gestures } from './gesture-registry.js';
 
 let _tempCardEls: HTMLElement[] = [];
 let _focusIndex = -1;
+let _prevFocusIndex = -1;
 const _CARD_H = theme.stack.cardHeight;
 const _CARD_GAP = theme.stack.cardGap;
 
@@ -221,6 +222,7 @@ export function handleRowSwipe(): void {
   });
 
   _focusIndex = insertIdx;
+  _prevFocusIndex = prevFocusIdx;
 
   // 旧聚焦卡失焦（用 splice 前保存的引用，避免 splice 后重索引拿到错卡）
   if (oldEl) {
@@ -244,7 +246,7 @@ export function handleRowSwipe(): void {
 
 // ========== 聚焦控制 ==========
 
-/** 更新所有卡片到对应的聚焦/非聚焦状态 */
+/** 更新所有卡片到对应的聚焦/非聚焦状态（只动画状态变化的两张卡） */
 export function updateFocus(): void {
   if (_tempCardEls.length === 0) return;
   if (_focusIndex < 0 || _focusIndex >= _tempCardEls.length) {
@@ -253,9 +255,11 @@ export function updateFocus(): void {
 
   for (let i = 0; i < _tempCardEls.length; i++) {
     const el = _tempCardEls[i];
-    const dist = Math.abs(i - _focusIndex);
+    // 只动画聚焦状态实际变化的卡片（旧聚焦卡失焦、新聚焦卡聚焦）
+    if (i === _focusIndex && i === _prevFocusIndex) continue;
+    if (i !== _focusIndex && i !== _prevFocusIndex) continue;
 
-    if (dist === 0) {
+    if (i === _focusIndex) {
       const fx = parseFloat(el.dataset._focusRx ?? '0');
       anim.to(el, {
         x: fx, scale: 1.04, rotation: 0,
@@ -274,6 +278,8 @@ export function updateFocus(): void {
       el.style.boxShadow = theme.stack.blurShadow;
     }
   }
+
+  _prevFocusIndex = _focusIndex;
 }
 
 /** 聚焦上一张卡片（循环） */
@@ -336,4 +342,5 @@ export function clearTempCards(): void {
   _tempCardEls.forEach(el => el.remove());
   _tempCardEls = [];
   _focusIndex = -1;
+  _prevFocusIndex = -1;
 }
