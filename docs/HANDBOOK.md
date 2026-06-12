@@ -325,7 +325,7 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `app.ts` | 181 | 1 | ✅ 入口 | 初始化流程��排 |
 | `animation-registry.ts` | 93 | 5 | ✅ 提及 | GSAP 动画隔离层 |
 | `canvas-cursor.ts` | 244 | 3 | ✅ 提及 | Canvas 盒子光标系统 |
-| `canvas-scroll.ts` | 314 | 2 | ✅ 提及 | Canvas 盒子滚动系统 |
+| `canvas-scroll.ts` | 315 | 2 | ✅ 提及 | Canvas 盒子滚动系统 |
 | `canvas-utils.ts` | 60 | 4 | ✅ 依赖图 | Canvas 通用工具函数 |
 | `card-stack.ts` | 498 | 4 | ✅ 独立条目 | 堆叠卡片面板 |
 | `char-rain.ts` | 305 | 1 | ✅ 分组表 | 字符散落/回收动画 |
@@ -339,7 +339,7 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `drag-handler.ts` | 130 | 2 | ✅ 分组表 | 共享拖动状态机（orb + floating-card 去重） |
 | `logger.ts` | 55 | 3 | ✅ 分组表 | KFM 日志系统 |
 | `orb.ts` | 508 | 1 | ✅ 独立条目 | 光球 + AI 对话面板 |
-| `renderer-lifecycle.ts` | 235 | 5 | ✅ 注册表 | 渲染器生命周期单例 L |
+| `renderer-lifecycle.ts` | 242 | 5 | ✅ 注册表 | 渲染器生命周期单例 L |
 | `root-picker.ts` | 432 | 2 | ✅ 独立条目 | 文件树根目录切换器 |
 | `state.ts` | 244 | 10 | ✅ 注册表 | 全局状态层 KFMState |
 | `style-registry.ts` | 212 | 4 | ✅ 独立条目 | 文件树样式唯一来源 |
@@ -347,12 +347,12 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `tree-loader.ts` | 185 | 2 | ✅ 分组表 | 数据加载层（按需加载展开路径） |
 | `tree-model.ts` | 185 | 2 | ✅ 分组表 | 绝对深度布局模型 |
 | `tree-overlay.ts` | 377 | 1 | ✅ 分组表 | Overlay 双树构建系统（从 tree-render 拆分） |
-| `tree-render.ts` | 959 | 3 | ✅ 核心条目 | 文件树 Canvas 渲染（编排层） |
-| `tree-swipe.ts` | 381 | 1 | ✅ 分组表 | 文件行右滑 → 卡片堆（从 tree-render 拆分） |
+| `tree-render.ts` | 961 | 3 | ✅ 核心条目 | 文件树 Canvas 渲染（编排层） |
+| `tree-swipe.ts` | 382 | 1 | ✅ 分组表 | 文件行右滑 → 卡片堆（从 tree-render 拆分） |
 | `ui-registry.ts` | 331 | 9 | ✅ 独立条目 | UI 元素注册表 |
 | `ui.ts` | 70 | 10 | ✅ 提及 | UI 初始化编排 |
 | `ws-channel.ts` | 317 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
-| **合计** | **7575** | | | |
+| **合计** | **7586** | | | |
 
 ### 死代码检查
 

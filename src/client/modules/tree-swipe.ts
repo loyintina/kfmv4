@@ -298,8 +298,8 @@ export function focusPrev(): void {
 // ========== 卡片撤销 ==========
 
 /** 左滑撤回当前聚焦卡片：反向飞入动画 + 从堆中移除 */
-export function dismissFocusedCard(): void {
-  if (_tempCardEls.length === 0 || _focusIndex < 0) return;
+export function dismissFocusedCard(): boolean {
+  if (_tempCardEls.length === 0 || _focusIndex < 0) return false;
   const el = _tempCardEls[_focusIndex];
   const fromX = parseFloat(el.dataset._fromX ?? '0');
   const fromY = parseFloat(el.dataset._fromY ?? '0');
@@ -323,6 +323,7 @@ export function dismissFocusedCard(): void {
       }
     },
   });
+  return true;
 }
 
 // ========== 卡片堆垂直滑动切换聚焦 ==========
