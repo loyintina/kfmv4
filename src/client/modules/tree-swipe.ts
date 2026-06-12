@@ -162,10 +162,11 @@ export function handleRowSwipe(): void {
 
   // 居中插入：新卡插入堆叠中间位置
   const insertIdx = _tempCardEls.length === 0 ? 0 : Math.floor(_tempCardEls.length / 2);
-  // 旧聚焦卡回复正常位置
+  // 旧聚焦卡：记下引用 + 复位 rx（splice 前拿引用，splice 后数组已变不能重索引）
   const prevFocusIdx = _focusIndex;
+  let oldEl: HTMLElement | null = null;
   if (prevFocusIdx >= 0 && prevFocusIdx < _tempCardEls.length && _tempCardEls[prevFocusIdx] !== card) {
-    const oldEl = _tempCardEls[prevFocusIdx];
+    oldEl = _tempCardEls[prevFocusIdx];
     oldEl.dataset.rx = oldEl.dataset._normalRx!;
   }
 
@@ -221,9 +222,8 @@ export function handleRowSwipe(): void {
 
   _focusIndex = insertIdx;
 
-  // 直接处理聚焦/失焦样式（不调 updateFocus，避免 killTweensOf 杀死 Y 排列 tween）
-  if (prevFocusIdx >= 0 && prevFocusIdx < _tempCardEls.length && _tempCardEls[prevFocusIdx] !== card) {
-    const oldEl = _tempCardEls[prevFocusIdx];
+  // 旧聚焦卡失焦（用 splice 前保存的引用，避免 splice 后重索引拿到错卡）
+  if (oldEl) {
     anim.to(oldEl, {
       x: parseFloat(oldEl.dataset._normalRx ?? '0'),
       scale: 1,
