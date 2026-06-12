@@ -264,12 +264,12 @@ export function updateFocus(): void {
       });
       el.style.boxShadow = theme.stack.focusShadow;
     } else {
-      anim.killTweensOf(el);
       const nx = parseFloat(el.dataset._normalRx ?? '0');
       const nr = parseFloat(el.dataset._normalRr ?? '0');
       anim.to(el, {
         x: nx, scale: 1, rotation: nr,
         duration: 0.35, ease: 'back.out(1.2)',
+        overwrite: 'auto',
       });
       el.style.boxShadow = theme.stack.blurShadow;
     }
