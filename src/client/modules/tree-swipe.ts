@@ -23,6 +23,8 @@ let _focusIndex = -1;
 let _prevFocusIndex = -1;
 let _dismissing = false;
 let _dismissFromTop = true;  // 上下交替撤回
+let _bgCard: HTMLElement | null = null;  // 卡片堆背景
+let _bgMaxH = 0;  // 压缩起始时的高度上限
 const _CARD_H = theme.stack.cardHeight;
 const _CARD_GAP = theme.stack.cardGap;
 let _lastGap = _CARD_GAP;
@@ -195,6 +197,7 @@ card.addEventListener('click', (e) => {
 
   _focusIndex = insertIdx;
   _prevFocusIndex = oldEl ? _tempCardEls.indexOf(oldEl) : -1;
+  _ensureBg();
 
   // 重排所有卡片 Y 位置（含压缩 + 聚焦下方留白）
   _repositionCards();
@@ -242,6 +245,7 @@ function _repositionCards(): void {
     }
     c.dataset.topY = String(targetTop);
   });
+  _updateBg(stackH, gap);
 }
 
 /** 更新所有卡片到对应的聚焦/非聚焦状态（只动画状态变化的两张卡） */
@@ -353,6 +357,7 @@ function _removeCard(el: HTMLElement): void {
   if (_tempCardEls.length === 0) {
     _focusIndex = -1;
     _prevFocusIndex = -1;
+    _removeBg();
   } else {
     if (_focusIndex >= _tempCardEls.length) _focusIndex = _tempCardEls.length - 1;
     _prevFocusIndex = -1;
@@ -408,6 +413,54 @@ export function initTempCardGesture(): void {
   });
 }
 
+// ========== 卡片堆背景 ==========
+
+const _BG_GRAD = theme.aiChat.panelBorderGradient;  // 经典蓝紫渐变
+
+function _ensureBg(): void {
+  if (_bgCard) return;
+  _bgCard = document.createElement('div');
+  _bgCard.style.cssText = [
+    'position:fixed', 'right:0', 'top:0',
+    'width:50vw', 'height:0px',
+    'border-radius:16px 0 0 16px',
+    'background:' + _BG_GRAD,
+    'opacity:0.12',
+    'z-index:990',
+    'pointer-events:none',
+  ].join(';');
+  document.body.appendChild(_bgCard);
+
+  anim.set(_bgCard, { x: '100vw' });
+  anim.to(_bgCard, { x: 0, duration: 0.35, ease: 'power3.out' });
+}
+
+function _updateBg(stackH: number, gap: number): void {
+  if (!_bgCard) return;
+
+  // 高度随卡片数增长，压缩开始时锁定上限
+  if (_bgMaxH === 0 && gap < _CARD_GAP) _bgMaxH = stackH;
+  const h = _bgMaxH > 0 ? _bgMaxH : stackH;
+
+  const top = Math.round(window.innerHeight * 0.35 - h / 2);
+  anim.to(_bgCard, {
+    y: top, height: h, duration: 0.25, ease: 'power2.out',
+    overwrite: 'auto',
+  });
+}
+
+function _removeBg(): void {
+  if (!_bgCard) return;
+  const el = _bgCard;
+  _bgCard = null;
+  _bgMaxH = 0;
+  anim.killTweensOf(el);
+  anim.to(el, {
+    x: '100vw', duration: 0.3, ease: 'power2.in',
+    onComplete() { el.remove(); },
+  });
+}
+
 /** 移除所有临时卡片 DOM 并清空内部数组 */
 export function clearTempCards(): void {
   _tempCardEls.forEach(el => el.remove());
@@ -415,4 +468,5 @@ export function clearTempCards(): void {
   _focusIndex = -1;
   _prevFocusIndex = -1;
   _dismissing = false;
+  _removeBg();
 }
