@@ -181,7 +181,10 @@ export function handleRowSwipe(): void {
     ? Math.min(_CARD_GAP, (maxH - _CARD_H) / (count - 1))
     : _CARD_GAP;
   _lastGap = gap;
-  const stackH = _CARD_H + (count - 1) * gap;
+
+  // 聚焦卡与下方相邻卡保持未压缩间距
+  const extraGap = count > 1 && gap < _CARD_GAP ? _CARD_GAP - gap : 0;
+  const stackH = _CARD_H + (count - 1) * gap + extraGap;
   const baseTop = Math.round(window.innerHeight * 0.35 - stackH / 2);
   card.dataset.rx = String(focusRx);
   card.dataset.rr = String(rr);
@@ -201,7 +204,8 @@ export function handleRowSwipe(): void {
   const baseZ = 1000;
 
   _tempCardEls.forEach((c, i) => {
-    const targetTop = Math.round(baseTop + i * gap);
+    const shift = i > insertIdx ? extraGap : 0;
+    const targetTop = Math.round(baseTop + i * gap + shift);
     c.style.zIndex = String(baseZ + i);
     const crx = parseFloat(c.dataset.rx ?? '0');
     const crr = parseFloat(c.dataset.rr ?? '0');
