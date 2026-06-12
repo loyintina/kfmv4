@@ -339,7 +339,7 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `drag-handler.ts` | 130 | 2 | ✅ 分组表 | 共享拖动状态机（orb + floating-card 去重） |
 | `logger.ts` | 55 | 3 | ✅ 分组表 | KFM 日志系统 |
 | `orb.ts` | 508 | 1 | ✅ 独立条目 | 光球 + AI 对话面板 |
-| `renderer-lifecycle.ts` | 242 | 5 | ✅ 注册表 | 渲染器生命周期单例 L |
+| `renderer-lifecycle.ts` | 235 | 5 | ✅ 注册表 | 渲染器生命周期单例 L |
 | `root-picker.ts` | 432 | 2 | ✅ 独立条目 | 文件树根目录切换器 |
 | `state.ts` | 244 | 10 | ✅ 注册表 | 全局状态层 KFMState |
 | `style-registry.ts` | 212 | 4 | ✅ 独立条目 | 文件树样式唯一来源 |
@@ -352,7 +352,7 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `ui-registry.ts` | 331 | 9 | ✅ 独立条目 | UI 元素注册表 |
 | `ui.ts` | 70 | 10 | ✅ 提及 | UI 初始化编排 |
 | `ws-channel.ts` | 317 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
-| **合计** | **7673** | | | |
+| **合计** | **7666** | | | |
 
 ### 死代码检查
 
