@@ -21,6 +21,7 @@ import { gestures } from './gesture-registry.js';
 let _tempCardEls: HTMLElement[] = [];
 let _focusIndex = -1;
 let _prevFocusIndex = -1;
+let _dismissing = false;
 const _CARD_H = theme.stack.cardHeight;
 const _CARD_GAP = theme.stack.cardGap;
 let _lastGap = _CARD_GAP;
@@ -299,6 +300,7 @@ export function focusPrev(): void {
 
 /** 左滑撤回当前聚焦卡片：反向飞入动画 + 从堆中移除 */
 export function dismissFocusedCard(): boolean {
+  if (_dismissing) return true;  // 上一次撤回动画中，阻止关侧栏
   if (_tempCardEls.length === 0 || _focusIndex < 0) return false;
   const el = _tempCardEls[_focusIndex];
   const fromX = parseFloat(el.dataset._fromX ?? '0');
@@ -306,10 +308,12 @@ export function dismissFocusedCard(): boolean {
   const rr = parseFloat(el.dataset.rr ?? '0');
 
   anim.killTweensOf(el);
+  _dismissing = true;
   anim.to(el, {
     x: fromX, y: fromY, opacity: 0, scale: 0.7, rotation: rr,
     duration: 0.3, ease: 'power2.in',
     onComplete() {
+      _dismissing = false;
       el.remove();
       _tempCardEls.splice(_focusIndex, 1);
       if (_tempCardEls.length === 0) {
@@ -379,4 +383,5 @@ export function clearTempCards(): void {
   _tempCardEls = [];
   _focusIndex = -1;
   _prevFocusIndex = -1;
+  _dismissing = false;
 }
