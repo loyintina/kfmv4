@@ -18,6 +18,8 @@ import { Box } from '../engine/v2/box.js';
 // ========== 模块状态 ==========
 
 let _tempCardEls: HTMLElement[] = [];
+let _focusedCard: HTMLElement | null = null;
+let _focusedNormalRx = 0;
 const _CARD_H = theme.stack.cardHeight;
 const _CARD_GAP = theme.stack.cardGap;
 
@@ -128,7 +130,17 @@ export function handleRowSwipe(): void {
   const fromX = abs.x;
   const fromY = abs.y - scrollY - (_CARD_H - rowBox.height) / 2;
   const sidebarW = DOM.sidebar?.getBoundingClientRect().width ?? 295;
-  const rx = sidebarW + 20 + Math.floor(Math.random() * 14) - 4; // 创建时固定随机 X
+
+  // 聚焦：新卡比其他卡靠左约 35-45px，向中央方向突出
+  const focusRx = Math.round(sidebarW - 20 + (Math.random() * 10 - 5));
+  const normalRx = Math.round(sidebarW + 20 + (Math.random() * 14 - 4));
+
+  // 上一张聚焦卡回复正常位置
+  const prevFocused = _focusedCard;
+  if (prevFocused) {
+    prevFocused.dataset.rx = String(_focusedNormalRx);
+  }
+
   const rr = (Math.random() - 0.5) * 4;                           // 创建时固定随机旋转
 
   const card = document.createElement('div');
@@ -166,7 +178,7 @@ export function handleRowSwipe(): void {
     : _CARD_GAP;
   const stackH = _CARD_H + (count - 1) * gap;
   const baseTop = Math.round(window.innerHeight * 0.35 - stackH / 2);
-  card.dataset.rx = String(rx);
+  card.dataset.rx = String(focusRx);
   card.dataset.rr = String(rr);
 
   const baseZ = 1000;
@@ -186,18 +198,27 @@ export function handleRowSwipe(): void {
       });
     } else {
       const curY = parseFloat(c.dataset.topY ?? '0');
-      if (Math.abs(curY - targetTop) > 3) {
-        anim.to(c, { y: targetTop, duration: 0.25, ease: 'power2.out' });
+      const isPrevFocus = c === prevFocused;
+      if (isPrevFocus || Math.abs(curY - targetTop) > 3) {
+        anim.to(c, {
+          y: targetTop,
+          ...(isPrevFocus ? { x: parseFloat(c.dataset.rx ?? '0') } : {}),
+          duration: 0.25, ease: 'power2.out',
+        });
       } else {
         c.style.transform = 'translate(' + crx + 'px,' + targetTop + 'px) rotate(' + crr + 'deg)';
       }
       c.dataset.topY = String(targetTop);
     }
   });
+
+  _focusedCard = card;
+  _focusedNormalRx = normalRx;
 }
 
 /** 移除所有临时卡片 DOM 并清空内部数组 */
 export function clearTempCards(): void {
   _tempCardEls.forEach(el => el.remove());
   _tempCardEls = [];
+  _focusedCard = null;
 }
