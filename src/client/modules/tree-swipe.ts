@@ -22,7 +22,7 @@ let _tempCardEls: HTMLElement[] = [];
 let _focusIndex = -1;
 let _prevFocusIndex = -1;
 let _dismissing = false;
-let _dismissFromTop = true;  // 上下交替撤回
+let _lifoQueue: HTMLElement[] = [];  // 入卡顺序，撤卡时从尾部取（LIFO）
 let _bgCard: HTMLElement | null = null;  // 卡片堆背景
 let _bgMaxH = 0;  // 压缩起始时的高度上限
 const _CARD_H = theme.stack.cardHeight;
@@ -197,6 +197,7 @@ card.addEventListener('click', (e) => {
 
   _focusIndex = insertIdx;
   _prevFocusIndex = oldEl ? _tempCardEls.indexOf(oldEl) : -1;
+  _lifoQueue.push(card);
   _ensureBg();
 
   // 重排所有卡片 Y 位置（含压缩 + 聚焦下方留白）
@@ -303,23 +304,24 @@ export function focusPrev(): void {
 
 // ========== 卡片撤销 ==========
 
-/** 左滑撤回当前聚焦卡片。连撤时瞬杀当前卡，立刻开始撤下一张。 */
+/** 左滑撤回最新入卡的卡片（LIFO：后进先出）。连撤时瞬杀当前卡，立刻开始撤下一张。 */
 export function dismissFocusedCard(): boolean {
-  if (_tempCardEls.length === 0 || _focusIndex < 0) return false;
+  if (_tempCardEls.length === 0 || _lifoQueue.length === 0) return false;
 
   // 正在撤：瞬杀当前卡
   if (_dismissing) _completeCurrent();
   if (_tempCardEls.length === 0) return true;
 
-  // 上下交替：从上一次、下一次靠近聚焦卡的卡片开始撤
-  const offset = _dismissFromTop ? -1 : 1;
-  const targetIdx = Math.max(0, Math.min(_tempCardEls.length - 1, _focusIndex + offset));
-  if (targetIdx !== _focusIndex) {
-    _focusIndex = targetIdx;
+  // 从 _lifoQueue 尾部取最新入卡的卡片
+  const target = _lifoQueue.pop()!;
+  const idx = _tempCardEls.indexOf(target);
+  if (idx < 0) return false;  // 卡片已不在（防御）
+
+  if (idx !== _focusIndex) {
+    _focusIndex = idx;
     _prevFocusIndex = -1;
     updateFocus();
   }
-  _dismissFromTop = !_dismissFromTop;
 
   _startDismiss();
   return true;
@@ -351,6 +353,9 @@ function _removeCard(el: HTMLElement): void {
   _dismissing = false;
   if (!document.contains(el)) return;
   el.remove();
+  // 从 lifo 队列移除
+  const lIdx = _lifoQueue.indexOf(el);
+  if (lIdx >= 0) _lifoQueue.splice(lIdx, 1);
   const idx = _tempCardEls.indexOf(el);
   if (idx < 0) return;
   _tempCardEls.splice(idx, 1);
@@ -465,6 +470,7 @@ function _removeBg(): void {
 export function clearTempCards(): void {
   _tempCardEls.forEach(el => el.remove());
   _tempCardEls = [];
+  _lifoQueue = [];
   _focusIndex = -1;
   _prevFocusIndex = -1;
   _dismissing = false;
