@@ -584,8 +584,8 @@ export function initFloatingCards(): void {
       const orbCY = clamped.y + _fRH;
       const availLeft = orbCX - _fMARGIN;
       const availTop = orbCY - _fMARGIN;
-      const renderW = Math.max(FLOATING_CARD_W_MIN, Math.min(_fStartCardW, availLeft));
-      const renderH = Math.max(FLOATING_CARD_H_MIN, Math.min(_fStartCardH, availTop));
+      const renderW = Math.max(FLOATING_CARD_W_MIN, Math.min(_fItem.cardWidth, availLeft));
+      const renderH = Math.max(FLOATING_CARD_H_MIN, Math.min(_fItem.cardHeight, availTop));
       const left = Math.max(_fMARGIN, orbCX - renderW);
       const top = Math.max(_fMARGIN, orbCY - renderH);
       _fItem.el.style.left = left + 'px';
