@@ -429,8 +429,9 @@ function _ensureBg(): void {
     'position:fixed', 'right:0', 'top:0',
     'width:50vw', 'height:0px',
     'border-radius:16px 0 0 16px',
-    'background:' + _bgGradient(),
-    'opacity:0.12',
+    'border:1.5px solid transparent',
+    'background:linear-gradient(rgba(20,16,32,0.88),rgba(20,16,32,0.88)) padding-box,'
+      + _bgGradient() + ' border-box',
     'z-index:990',
     'pointer-events:none',
   ].join(';');
