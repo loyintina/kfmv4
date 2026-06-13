@@ -475,14 +475,16 @@ const _FILL = 'linear-gradient(rgba(18,18,26,0.75),rgba(18,18,26,0.75)) padding-
 // 按钮：点击后边框提亮，0.5s 渐变回暗
 function _setupBtn(btn: HTMLElement): void {
   btn.addEventListener('pointerdown', () => {
+    btn.style.transition = 'none';
     btn.style.background = _FILL + _BORDER_GLOW + ' border-box';
     btn.style.boxShadow = _HOVER_SHADOW;
   });
   btn.addEventListener('pointerup', () => {
     btn.style.transition = 'background 0.5s ease-out, box-shadow 0.5s ease-out';
-    btn.style.background = _FILL + _BORDER_DIM + ' border-box';
-    btn.style.boxShadow = _BASE_SHADOW;
-    setTimeout(() => { btn.style.transition = ''; }, 600);
+    requestAnimationFrame(() => {
+      btn.style.background = _FILL + _BORDER_DIM + ' border-box';
+      btn.style.boxShadow = _BASE_SHADOW;
+    });
   });
 }
 
