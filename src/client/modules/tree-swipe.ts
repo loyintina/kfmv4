@@ -453,7 +453,7 @@ function _ensureBg(sidebarW: number): void {
     'border-radius:16px 0 0 16px',
     'border:1px solid transparent',
     'background:linear-gradient(rgba(16,12,24,0.7),rgba(16,12,24,0.7)) padding-box,'
-      + 'linear-gradient(135deg,rgba(0,212,255,0.25),rgba(99,102,241,0.2),rgba(124,58,237,0.2)) border-box',
+      + 'linear-gradient(135deg,rgba(0,212,255,0.4),rgba(99,102,241,0.35),rgba(124,58,237,0.35)) border-box',
     'z-index:1000',
     'pointer-events:none',
   ].join(';');
