@@ -472,39 +472,17 @@ const _BORDER_DIM = 'linear-gradient(90deg,rgba(0,212,255,0.2),rgba(124,58,237,0
 const _BORDER_GLOW = 'linear-gradient(90deg,rgba(0,212,255,0.6),rgba(124,58,237,0.4))';
 const _FILL = 'linear-gradient(rgba(18,18,26,0.75),rgba(18,18,26,0.75)) padding-box,';
 
-function _setupBtn(btn: HTMLElement, glowRgba: string): void {
-  let _hover = false, _press = false;
-  const glowShadow = '0 0 28px 8px ' + glowRgba + ', ' + _BASE_SHADOW;
-
-  const toBase = () => {
-    anim.killTweensOf(btn);
-    anim.to(btn, { y: 0, scale: 1, boxShadow: _BASE_SHADOW, duration: 0.25, ease: 'power2.out' });
-    btn.style.background = _FILL + _BORDER_DIM + ' border-box';
-  };
-  const toHover = () => {
-    anim.killTweensOf(btn);
-    anim.to(btn, { y: -1, scale: 1.05, boxShadow: _HOVER_SHADOW, duration: 0.25, ease: 'power2.out' });
-    btn.style.background = _FILL + _BORDER_DIM + ' border-box';
-  };
-
-  btn.addEventListener('pointerenter', () => { _hover = true; if (!_press) toHover(); });
-  btn.addEventListener('pointerleave', () => { _hover = false; if (!_press) toBase(); });
-  btn.addEventListener('pointerdown', e => {
-    e.preventDefault(); _press = true;
-    anim.killTweensOf(btn);
-    anim.to(btn, { scale: 0.92, boxShadow: glowShadow, duration: 0.08, ease: 'power2.in' });
+// 按钮：点击后边框提亮，0.5s 渐变回暗
+function _setupBtn(btn: HTMLElement): void {
+  btn.addEventListener('pointerdown', () => {
     btn.style.background = _FILL + _BORDER_GLOW + ' border-box';
+    btn.style.boxShadow = _HOVER_SHADOW;
   });
   btn.addEventListener('pointerup', () => {
-    _press = false;
-    anim.killTweensOf(btn);
-    anim.to(btn, { scale: 1.12, boxShadow: _BASE_SHADOW, duration: 0.12, ease: 'back.out(2)' });
-    anim.to(btn, {
-      scale: _hover ? 1.05 : 1, y: _hover ? -1 : 0,
-      boxShadow: _hover ? _HOVER_SHADOW : _BASE_SHADOW,
-      duration: 0.15, ease: 'power2.out', delay: 0.12,
-    });
+    btn.style.transition = 'background 0.5s ease-out, box-shadow 0.5s ease-out';
     btn.style.background = _FILL + _BORDER_DIM + ' border-box';
+    btn.style.boxShadow = _BASE_SHADOW;
+    setTimeout(() => { btn.style.transition = ''; }, 600);
   });
 }
 
@@ -531,11 +509,11 @@ function _ensureBg(sidebarW: number): void {
   const okBtn = document.createElement('button');
   okBtn.innerHTML = _CHECK_SVG;
   okBtn.style.cssText = _BTN_CSS;
-  _setupBtn(okBtn, 'rgba(0,212,255,0.6)');
+  _setupBtn(okBtn);
   const cancelBtn = document.createElement('button');
   cancelBtn.innerHTML = _CLOSE_SVG;
   cancelBtn.style.cssText = _BTN_CSS;
-  _setupBtn(cancelBtn, 'rgba(124,58,237,0.6)');
+  _setupBtn(cancelBtn);
   _toolbar.appendChild(okBtn);
   _toolbar.appendChild(cancelBtn);
   document.body.appendChild(_toolbar);
