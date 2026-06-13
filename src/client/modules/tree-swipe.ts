@@ -397,7 +397,7 @@ export function deployAllCards(): void {
   const pad = 16;
   const topMin = 60;                    // 顶部按钮(16+40) 下方
   const leftMax = sw - cw - pad;        // 右侧不留额外余量（卡片在按钮之下）
-  const topMax = sh - 80 - ch;          // 输入栏上方
+  const topMax = sh - 120 - ch;            // 输入栏上方，留足间距
   cards.forEach(el => {
     anim.killTweensOf(el);
     el.style.zIndex = '20';
