@@ -451,9 +451,9 @@ function _ensureBg(sidebarW: number): void {
     'position:fixed', 'left:' + left + 'px', 'right:-12px', 'top:0',
     'height:0px',
     'border-radius:16px 0 0 16px',
-    'border:1.5px solid transparent',
-    'background:linear-gradient(rgba(20,16,32,0.88),rgba(20,16,32,0.88)) padding-box,'
-      + _bgGradient() + ' border-box',
+    'border:1px solid transparent',
+    'background:linear-gradient(rgba(16,12,24,0.7),rgba(16,12,24,0.7)) padding-box,'
+      + 'linear-gradient(135deg,rgba(0,212,255,0.25),rgba(99,102,241,0.2),rgba(124,58,237,0.2)) border-box',
     'z-index:1000',
     'pointer-events:none',
   ].join(';');
