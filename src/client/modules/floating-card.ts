@@ -550,7 +550,14 @@ export function initFloatingCards(): void {
     clamp: _fClamp,
     isEditing() { return _fItem?.state === 'editing'; },
     onTap() { _fItem?.brOrb?.click(); },
-    onSavePosition() { /* 浮卡不保存自由位置 */ },
+    onSavePosition() {
+      // 恢复 DOM 尺寸到真实值（onMoveNormal 可能边界压缩过）
+      if (_fItem && _fItem.state !== 'editing') {
+        _fItem.el.style.width = _fItem.cardWidth + 'px';
+        _fItem.el.style.height = _fItem.cardHeight + 'px';
+        _fSyncCorners(_fItem, _fItem.cardWidth, _fItem.cardHeight);
+      }
+    },
     onEnterEdit() {
       if (!_fItem) return;
       _fPreEdit = _fItem.state as 'compact' | 'active';
@@ -593,8 +600,6 @@ export function initFloatingCards(): void {
       _fItem.el.style.top = top + 'px';
       _fItem.el.style.width = renderW + 'px';
       _fItem.el.style.height = renderH + 'px';
-      _fItem.cardWidth = renderW;
-      _fItem.cardHeight = renderH;
       _fSyncCorners(_fItem, renderW, renderH);
     },
     onMoveEditing({ dx, dy, startOrbX, startOrbY }) {
