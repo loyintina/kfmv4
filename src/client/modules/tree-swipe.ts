@@ -432,7 +432,7 @@ function _ensureBg(): void {
     'border:1.5px solid transparent',
     'background:linear-gradient(rgba(20,16,32,0.88),rgba(20,16,32,0.88)) padding-box,'
       + _bgGradient() + ' border-box',
-    'z-index:990',
+    'z-index:1000',
     'pointer-events:none',
   ].join(';');
   document.body.appendChild(_bgCard);
@@ -446,7 +446,7 @@ function _updateBg(stackH: number, gap: number): void {
 
   // 高度随卡片数增长，压缩开始时锁定上限
   if (_bgMaxH === 0 && gap < _CARD_GAP) _bgMaxH = stackH;
-  const h = _bgMaxH > 0 ? _bgMaxH : stackH;
+  const h = (_bgMaxH > 0 ? _bgMaxH : stackH) + 24;  // 上下各留 12px 空白
 
   const top = Math.round(window.innerHeight * 0.35 - h / 2);
   anim.to(_bgCard, {
