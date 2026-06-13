@@ -583,11 +583,17 @@ export function initFloatingCards(): void {
       const clamped = _fClamp(rawX, rawY);
       const orbCX = clamped.x + _fRH;
       const orbCY = clamped.y + _fRH;
-      const left = orbCX - _fItem.cardWidth;
-      const top = orbCY - _fItem.cardHeight;
-      _fItem.el.style.left = Math.max(_fMARGIN, left) + 'px';
-      _fItem.el.style.top = Math.max(_fMARGIN, top) + 'px';
-      // 尺寸不变，无需 _fSyncCorners（光球相对位置不变）
+      const availLeft = orbCX - _fMARGIN;
+      const availTop = orbCY - _fMARGIN;
+      const renderW = Math.max(FLOATING_CARD_W_MIN, Math.min(_fStartCardW, availLeft));
+      const renderH = Math.max(FLOATING_CARD_H_MIN, Math.min(_fStartCardH, availTop));
+      const left = Math.max(_fMARGIN, orbCX - renderW);
+      const top = Math.max(_fMARGIN, orbCY - renderH);
+      _fItem.el.style.left = left + 'px';
+      _fItem.el.style.top = top + 'px';
+      _fItem.el.style.width = renderW + 'px';
+      _fItem.el.style.height = renderH + 'px';
+      _fSyncCorners(_fItem, renderW, renderH);
     },
     onMoveEditing({ dx, dy, startOrbX, startOrbY }) {
       if (!_fItem) return;
