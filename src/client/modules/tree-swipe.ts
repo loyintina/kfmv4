@@ -22,6 +22,7 @@ let _tempCardEls: HTMLElement[] = [];
 let _focusIndex = -1;
 let _prevFocusIndex = -1;
 let _dismissing = false;
+let _resetFocusToNewest = false;
 let _lifoQueue: HTMLElement[] = [];  // 入卡顺序，撤卡时从尾部取（LIFO）
 let _bgCard: HTMLElement | null = null;  // 卡片堆背景
 let _bgMaxH = 0;  // 压缩起始时的高度上限
@@ -305,8 +306,6 @@ export function focusPrev(): void {
 // ========== 卡片撤销 ==========
 
 /** 左滑撤卡：当前聚焦不是最新卡则收聚焦卡，否则 LIFO 收最新卡。 */
-let _resetFocusToNewest = false;
-
 export function dismissFocusedCard(): boolean {
   if (_tempCardEls.length === 0 || _lifoQueue.length === 0) return false;
 
@@ -336,6 +335,45 @@ export function dismissFocusedCard(): boolean {
   }
 
   _startDismiss();
+  return true;
+}
+
+/** 一键收回所有卡片：往左飞过屏幕后淡出 */
+export function dismissAllCards(): boolean {
+  if (_tempCardEls.length === 0) return false;
+
+  const sw = window.innerWidth;
+  const cards = [..._tempCardEls];  // 快照，后续清空
+
+  cards.forEach(el => {
+    anim.killTweensOf(el);
+    const curX = parseFloat(el.dataset.rx || '0');
+    const curY = parseFloat(el.dataset.topY || '0');
+    const dist = sw + 80 + Math.random() * 200;
+    const targetX = curX - dist;
+    const targetY = curY + (Math.random() - 0.5) * 60;
+    const dur = 0.45 + Math.random() * 0.2;
+
+    anim.to(el, {
+      x: targetX, y: targetY, rotation: parseFloat(el.dataset.rr || '0'),
+      duration: dur, ease: 'power2.in',
+    });
+    anim.to(el, {
+      opacity: 0,
+      duration: 0.2,
+      delay: dur * 0.5,
+      onComplete() { el.remove(); },
+    });
+  });
+
+  _tempCardEls = [];
+  _lifoQueue = [];
+  _focusIndex = -1;
+  _prevFocusIndex = -1;
+  _dismissing = false;
+  _resetFocusToNewest = false;
+  _removeBg();
+
   return true;
 }
 
@@ -512,6 +550,7 @@ function _ensureBg(sidebarW: number): void {
   cancelBtn.innerHTML = _CLOSE_SVG;
   cancelBtn.style.cssText = _BTN_CSS;
   _setupBtn(cancelBtn);
+  cancelBtn.addEventListener('click', dismissAllCards);
   _toolbar.appendChild(okBtn);
   _toolbar.appendChild(cancelBtn);
   document.body.appendChild(_toolbar);
