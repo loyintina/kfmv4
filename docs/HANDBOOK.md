@@ -327,12 +327,12 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `canvas-cursor.ts` | 244 | 3 | ✅ 提及 | Canvas 盒子光标系统 |
 | `canvas-scroll.ts` | 315 | 2 | ✅ 提及 | Canvas 盒子滚动系统 |
 | `canvas-utils.ts` | 60 | 4 | ✅ 依赖图 | Canvas 通用工具函数 |
-| `card-stack.ts` | 498 | 4 | ✅ 独立条目 | 堆叠卡片面板 |
+| `card-stack.ts` | 517 | 4 | ✅ 独立条目 | 堆叠卡片面板 |
 | `char-rain.ts` | 305 | 1 | ✅ 分组表 | 字符散落/回收动画 |
 | `click-queue.ts` | 38 | 1 | ✅ 分组表 | 点击事件队列 |
 | `debug-assert.ts` | 23 | 1 | ✅ 提及 | 运行时断言 |
 | `dom-refs.ts` | 36 | 9 | ✅ 注册表 | DOM 元素引用 |
-| `floating-card.ts` | 657 | 2 | ✅ 独立条目 | 浮卡系统（核心模块） |
+| `floating-card.ts` | 636 | 2 | ✅ 独立条目 | 浮卡系统（核心模块） |
 | `gesture-registry.ts` | 215 | 6 | ✅ 独立条目 | 手势注册中心 |
 | `gestures.ts` | 69 | 1 | ✅ 提及 | 页面滑动手势配置 |
 | `interaction-constants.ts` | 15 | 2 | ✅ 分组表 | 交互常量共享层（v6.6.0 新增） |
@@ -352,7 +352,7 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `ui-registry.ts` | 331 | 9 | ✅ 独立条目 | UI 元素注册表 |
 | `ui.ts` | 70 | 10 | ✅ 提及 | UI 初始化编排 |
 | `ws-channel.ts` | 317 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
-| **合计** | **7872** | | | |
+| **合计** | **7870** | | | |
 
 ### 死代码检查
 

@@ -5,7 +5,7 @@ import { Registry } from './ui-registry.js';
 import { wsChannel } from './ws-channel.js';
 
 import { currentTheme as theme } from './theme.js';
-import { launchFocusedCard } from './floating-card.js';
+import { createFloatingCard } from './floating-card.js';
 
 /**
  * KFM v4 - 堆叠卡片面板
@@ -163,6 +163,25 @@ export function getCurrentAccent(index: number): { color1: string; color2: strin
 export function getCardHandler(id: string): CardContentHandler | undefined { return _cardHandlers.get(id); }
 export function getFocusedCardRect(): DOMRect | undefined { return _cardEls[_focusIndex]?.getBoundingClientRect(); }
 export function animateStackPullFeedback(): void { _animateStackPullFeedback(); }
+
+/** 从卡片堆发射聚焦卡 → 浮卡模板 */
+export function launchFocusedCard(): void {
+  _animateStackPullFeedback();
+  const focusIdx = _focusIndex;
+  const cardRect = getFocusedCardRect();
+  if (!cardRect) return;
+  const cc = getCurrentAccent(focusIdx);
+  if (!cc) return;
+
+  createFloatingCard({
+    id: 'stack-' + focusIdx,
+    color1: cc.color1, color2: cc.color2,
+    name: getCardName(focusIdx),
+    sourceX: cardRect.left, sourceY: cardRect.top,
+    scatterBounds: { left: 8, top: 8, right: Math.round(window.innerWidth * 0.7), bottom: window.innerHeight - 56.5 },
+    contentHandler: _cardHandlers.get(getCardId(focusIdx)),
+  });
+}
 
 // ========== 配置 ==========
 // ========== 配置 ==========
