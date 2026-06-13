@@ -550,14 +550,7 @@ export function initFloatingCards(): void {
     clamp: _fClamp,
     isEditing() { return _fItem?.state === 'editing'; },
     onTap() { _fItem?.brOrb?.click(); },
-    onSavePosition() {
-      // 恢复 DOM 尺寸到真实值（onMoveNormal 可能边界压缩过）。展开/折叠/编辑中跳过
-      if (_fItem && _fItem.state !== 'editing' && _fItem.state !== 'expanding' && _fItem.state !== 'collapsing') {
-        _fItem.el.style.width = _fItem.cardWidth + 'px';
-        _fItem.el.style.height = _fItem.cardHeight + 'px';
-        _fSyncCorners(_fItem, _fItem.cardWidth, _fItem.cardHeight);
-      }
-    },
+    onSavePosition() { /* 浮卡不保存自由位置 */ },
     onEnterEdit() {
       if (!_fItem) return;
       _fPreEdit = _fItem.state as 'compact' | 'active';
@@ -590,17 +583,11 @@ export function initFloatingCards(): void {
       const clamped = _fClamp(rawX, rawY);
       const orbCX = clamped.x + _fRH;
       const orbCY = clamped.y + _fRH;
-      const availLeft = orbCX - _fMARGIN;
-      const availTop = orbCY - _fMARGIN;
-      const renderW = Math.max(FLOATING_CARD_W_MIN, Math.min(_fStartCardW, availLeft));
-      const renderH = Math.max(FLOATING_CARD_H_MIN, Math.min(_fStartCardH, availTop));
-      const left = Math.max(_fMARGIN, orbCX - renderW);
-      const top = Math.max(_fMARGIN, orbCY - renderH);
-      _fItem.el.style.left = left + 'px';
-      _fItem.el.style.top = top + 'px';
-      _fItem.el.style.width = renderW + 'px';
-      _fItem.el.style.height = renderH + 'px';
-      _fSyncCorners(_fItem, renderW, renderH);
+      const left = orbCX - _fItem.cardWidth;
+      const top = orbCY - _fItem.cardHeight;
+      _fItem.el.style.left = Math.max(_fMARGIN, left) + 'px';
+      _fItem.el.style.top = Math.max(_fMARGIN, top) + 'px';
+      // 尺寸不变，无需 _fSyncCorners（光球相对位置不变）
     },
     onMoveEditing({ dx, dy, startOrbX, startOrbY }) {
       if (!_fItem) return;
