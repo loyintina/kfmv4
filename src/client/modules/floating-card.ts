@@ -12,13 +12,21 @@ import { Registry } from './ui-registry.js';
 import { MARGIN } from './interaction-constants.js';
 import { createDragHandler, type DragConfig } from './drag-handler.js';
 import {
-  getCardCount, getCardName, getCardId,
-  getFocusIndex, getCurrentAccent, getCardHandler,
+  getCardCount, getCardName,
+  getFocusIndex, getCurrentAccent,
   getFocusedCardRect, animateStackPullFeedback,
-  hexToRgba, cardGradient, cardBg,
 } from './card-stack.js';
 
 const orbT = theme.cornerOrb;
+
+/** HSL → hex （#rrggbb） */
+function _hexToRgba(hex: string, alpha: number): string {
+  const num = parseInt(hex.slice(1), 16);
+  const r = (num >> 16) & 0xFF;
+  const g = (num >> 8) & 0xFF;
+  const b = num & 0xFF;
+  return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+}
 const cornerSize = orbT.size;
 const cornerOff = orbT.cornerOff;
 const rightOff = cornerOff + orbT.rightOffAdj;
@@ -36,11 +44,23 @@ const COMPACT_H = 54;
 const FLOATING_CARD_W_MIN = 54;
 const FLOATING_CARD_H_MIN = 54;
 
+// ========== 浮卡模板配置 ==========
+
+export interface FloatingCardConfig {
+  id: string;
+  color1: string; color2: string;  // hex 主/辅色
+  name: string;
+  sourceX: number; sourceY: number;  // 飞入起点
+  targetX?: number; targetY?: number;  // 不传则自动散落
+  scatterBounds?: { left: number; top: number; right: number; bottom: number };
+  contentHandler?: { activate: (el: HTMLElement) => void; deactivate: (el: HTMLElement) => void };
+}
+
 // ========== 浮卡类型与状态 ==========
 
 interface FloatingCardItem {
   el: HTMLElement;
-  sourceIndex: number;
+  config: FloatingCardConfig;
   zIndex: number;
   state: 'launching' | 'compact' | 'expanding' | 'active' | 'collapsing' | 'dismissing' | 'editing';
   tlOrb: HTMLElement | null;
@@ -216,7 +236,7 @@ export function launchFocusedCard(): void {
   const bgLayer = document.createElement('div');
   bgLayer.style.cssText = [
     'border-radius:11px', 'width:100%', 'height:100%',
-    'background:' + cardBg(),
+    'background:rgba(20,16,32,0.92)',
     'backdrop-filter:blur(16px)', '-webkit-backdrop-filter:blur(16px)',
     'position:relative', 'overflow:hidden',
   ].join(';');
@@ -228,12 +248,18 @@ export function launchFocusedCard(): void {
   el.appendChild(bgLayer);
 
   // 四角光球颜色：左 color1，右 color2
-  const leftRgba = hexToRgba(cc.color1, 1);
-  const rightRgba = hexToRgba(cc.color2, 1);
+  const leftRgba = _hexToRgba(cc.color1, 1);
+  const rightRgba = _hexToRgba(cc.color2, 1);
 
   const zIndex = _nextFloatingZ++;
+  const config: FloatingCardConfig = {
+    id: 'stack-' + focusIdx,
+    color1: cc.color1, color2: cc.color2,
+    name: getCardName(focusIdx),
+    sourceX: cardRect.left, sourceY: cardRect.top,
+  };
   const item = {
-    el, sourceIndex: focusIdx, zIndex, state: 'launching',
+    el, config, zIndex, state: 'launching',
     tlOrb: null, trOrb: null, blOrb: null, brOrb: null, contentEl,
     cardWidth: COMPACT_W, cardHeight: COMPACT_H,
     compactMemW: COMPACT_W, compactMemH: COMPACT_H,
@@ -258,8 +284,7 @@ export function launchFocusedCard(): void {
       // 内容淡出 → 切换为展开态内容 → 淡入（与展开动画并行）
       anim.to(contentEl, { opacity: 0, duration: 0.1, ease: 'none', onComplete: () => {
         if (item.contentEl) {
-          const cardId = getCardId(item.sourceIndex);
-          if (cardId) getCardHandler(cardId)?.activate?.(item.contentEl);
+          item.config.contentHandler?.activate?.(item.contentEl);
           _renderFloatingContent(item.contentEl, 'active');
         }
         anim.to(contentEl, { opacity: 1, duration: 0.15, ease: 'none' });
@@ -280,7 +305,7 @@ export function launchFocusedCard(): void {
       const expTop = curTop + curH - compressedH;
       const brX0 = curW - rightOff - cornerSize;
       const brY0 = curH - bottomOff - cornerSize;
-      const tlColor = hexToRgba(cc.color1, orbT.tlAlpha);
+      const tlColor = _hexToRgba(cc.color1, orbT.tlAlpha);
       const tlOrb = createDecoratedCorner(cornerOff, cornerOff, cornerSize, cornerSize, tlColor,
         '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c - sh) + ',' + (c - sh) + ') scale(' + s + ')"><path d="M6,10 L6,2 M6,2 L3,5 M6,2 L9,5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>');
       tlOrb.style.pointerEvents = 'auto'; tlOrb.style.cursor = 'pointer';
@@ -335,9 +360,8 @@ export function launchFocusedCard(): void {
       // 内容淡出 → 切换为紧凑态内容 → 淡入
       anim.to(item.contentEl, { opacity: 0, duration: 0.1, ease: 'none', onComplete: () => {
         if (item.contentEl) {
-          const _id = getCardId(item.sourceIndex);
-          if (_id) getCardHandler(_id)?.deactivate?.(item.contentEl);
-          _renderFloatingContent(item.contentEl, 'compact', getCardName(item.sourceIndex));
+          item.config.contentHandler?.deactivate?.(item.contentEl);
+          _renderFloatingContent(item.contentEl, 'compact', item.config.name);
         }
         anim.to(item.contentEl, { opacity: 1, duration: 0.15, ease: 'none' });
       }});
@@ -399,7 +423,7 @@ export function launchFocusedCard(): void {
     'left:' + cardRect.left + 'px', 'top:' + cardRect.top + 'px',
     'width:' + COMPACT_W + 'px', 'height:' + COMPACT_H + 'px',
     'border-radius:12px', 'padding:1px', 'padding-left:3px',
-    'background:' + cardGradient(focusIdx, 0.85),
+    'background:linear-gradient(135deg,' + _hexToRgba(cc.color1, 0.85) + ' 30%,' + _hexToRgba(cc.color2, 0.85) + ' 70%)',
     'pointer-events:auto', 'z-index:' + zIndex, 'opacity:1',
   ].join(';');
 
@@ -422,18 +446,6 @@ export function launchFocusedCard(): void {
       item.state = 'compact';
     },
   });
-}
-
-function _buildExpandedLayout(el: HTMLElement, _cc: { color1: string; color2: string }): void {
-  const item = _floatingCards.find(i => i.el === el);
-  if (!item?.contentEl) return;
-  const cardId = getCardId(item.sourceIndex);
-  const handler = cardId ? getCardHandler(cardId) : undefined;
-  if (handler) {
-    handler.activate(item.contentEl);
-    return;
-  }
-  _renderFloatingContent(item.contentEl, 'active');
 }
 
 /** 在 compact/active 态浮卡上构建内容框架 */
@@ -472,8 +484,7 @@ function _dismissOne(item: FloatingCardItem, animated?: boolean): void {
   item.state = 'dismissing';
 
   if (item.contentEl) {
-    const _id = getCardId(item.sourceIndex);
-    if (_id) getCardHandler(_id)?.deactivate?.(item.contentEl);
+    item.config.contentHandler?.deactivate?.(item.contentEl);
   }
   if (animated !== false) {
     anim.to(el, {
@@ -572,7 +583,7 @@ export function initFloatingCards(): void {
       _fStartCardH = _fItem.cardHeight;
       const glowDiv = orbEl.firstElementChild as HTMLElement;
       if (glowDiv) glowDiv.dataset.initBoxShadow = glowDiv.style.boxShadow;
-      const editGlow = hexToRgba(_fItem.accentColor, 0.25);
+      const editGlow = _hexToRgba(_fItem.accentColor, 0.25);
       _fItem.el.style.boxShadow = '0 0 24px 8px ' + editGlow + ', 0 8px 32px rgba(0,0,0,0.5)';
     },
     onExitEdit() {
