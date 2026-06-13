@@ -465,11 +465,48 @@ const _BTN_CSS = [
 const _CHECK_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="url(#checkGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><defs><linearGradient id="checkGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#7c3aed"/><stop offset="100%" stop-color="#00d4ff"/></linearGradient></defs><polyline points="20 6 9 17 4 12"/></svg>';
 const _CLOSE_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="url(#closeGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><defs><linearGradient id="closeGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#7c3aed"/><stop offset="100%" stop-color="#00d4ff"/></linearGradient></defs><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
 
-// hover 样式
-const _HOVER_ON  = 'background:linear-gradient(rgba(18,18,26,0.75),rgba(18,18,26,0.75)) padding-box,linear-gradient(90deg,rgba(0,212,255,0.5),rgba(124,58,237,0.35)) border-box;box-shadow:0 6px 24px rgba(124,58,237,0.25),inset 0 1px 0 rgba(255,255,255,0.1);transform:translateY(-1px) scale(1.05)';
-const _HOVER_OFF = 'background:linear-gradient(rgba(18,18,26,0.75),rgba(18,18,26,0.75)) padding-box,linear-gradient(90deg,rgba(0,212,255,0.2),rgba(124,58,237,0.15)) border-box;box-shadow:0 4px 16px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.08);transform:none';
-const _ACTIVE_ON = 'transform:scale(0.92)';
-const _ACTIVE_OFF = 'transform:none';
+// hover/active/glow 统一由 GSAP 管理
+const _BASE_SHADOW = '0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)';
+const _HOVER_SHADOW = '0 6px 24px rgba(124,58,237,0.25), inset 0 1px 0 rgba(255,255,255,0.1)';
+const _BORDER_DIM = 'linear-gradient(90deg,rgba(0,212,255,0.2),rgba(124,58,237,0.15))';
+const _BORDER_GLOW = 'linear-gradient(90deg,rgba(0,212,255,0.6),rgba(124,58,237,0.4))';
+const _FILL = 'linear-gradient(rgba(18,18,26,0.75),rgba(18,18,26,0.75)) padding-box,';
+
+function _setupBtn(btn: HTMLElement, glowRgba: string): void {
+  let _hover = false, _press = false;
+  const glowShadow = '0 0 28px 8px ' + glowRgba + ', ' + _BASE_SHADOW;
+
+  const toBase = () => {
+    anim.killTweensOf(btn);
+    anim.to(btn, { y: 0, scale: 1, boxShadow: _BASE_SHADOW, duration: 0.25, ease: 'power2.out' });
+    btn.style.background = _FILL + _BORDER_DIM + ' border-box';
+  };
+  const toHover = () => {
+    anim.killTweensOf(btn);
+    anim.to(btn, { y: -1, scale: 1.05, boxShadow: _HOVER_SHADOW, duration: 0.25, ease: 'power2.out' });
+    btn.style.background = _FILL + _BORDER_DIM + ' border-box';
+  };
+
+  btn.addEventListener('pointerenter', () => { _hover = true; if (!_press) toHover(); });
+  btn.addEventListener('pointerleave', () => { _hover = false; if (!_press) toBase(); });
+  btn.addEventListener('pointerdown', e => {
+    e.preventDefault(); _press = true;
+    anim.killTweensOf(btn);
+    anim.to(btn, { scale: 0.92, boxShadow: glowShadow, duration: 0.08, ease: 'power2.in' });
+    btn.style.background = _FILL + _BORDER_GLOW + ' border-box';
+  });
+  btn.addEventListener('pointerup', () => {
+    _press = false;
+    anim.killTweensOf(btn);
+    anim.to(btn, { scale: 1.12, boxShadow: _BASE_SHADOW, duration: 0.12, ease: 'back.out(2)' });
+    anim.to(btn, {
+      scale: _hover ? 1.05 : 1, y: _hover ? -1 : 0,
+      boxShadow: _hover ? _HOVER_SHADOW : _BASE_SHADOW,
+      duration: 0.15, ease: 'power2.out', delay: 0.12,
+    });
+    btn.style.background = _FILL + _BORDER_DIM + ' border-box';
+  });
+}
 
 function _toolbarPos(bgTop: number, bgH: number): void {
   if (!_toolbar) return;
@@ -494,17 +531,11 @@ function _ensureBg(sidebarW: number): void {
   const okBtn = document.createElement('button');
   okBtn.innerHTML = _CHECK_SVG;
   okBtn.style.cssText = _BTN_CSS;
-  okBtn.addEventListener('pointerenter', () => okBtn.style.cssText = _BTN_CSS + _HOVER_ON);
-  okBtn.addEventListener('pointerleave', () => okBtn.style.cssText = _BTN_CSS + _HOVER_OFF);
-  okBtn.addEventListener('pointerdown', () => okBtn.style.cssText = _BTN_CSS + _ACTIVE_ON);
-  okBtn.addEventListener('pointerup', () => okBtn.style.cssText = _BTN_CSS + _HOVER_ON);
+  _setupBtn(okBtn, 'rgba(0,212,255,0.6)');
   const cancelBtn = document.createElement('button');
   cancelBtn.innerHTML = _CLOSE_SVG;
   cancelBtn.style.cssText = _BTN_CSS;
-  cancelBtn.addEventListener('pointerenter', () => cancelBtn.style.cssText = _BTN_CSS + _HOVER_ON);
-  cancelBtn.addEventListener('pointerleave', () => cancelBtn.style.cssText = _BTN_CSS + _HOVER_OFF);
-  cancelBtn.addEventListener('pointerdown', () => cancelBtn.style.cssText = _BTN_CSS + _ACTIVE_ON);
-  cancelBtn.addEventListener('pointerup', () => cancelBtn.style.cssText = _BTN_CSS + _HOVER_ON);
+  _setupBtn(cancelBtn, 'rgba(124,58,237,0.6)');
   _toolbar.appendChild(okBtn);
   _toolbar.appendChild(cancelBtn);
   document.body.appendChild(_toolbar);
