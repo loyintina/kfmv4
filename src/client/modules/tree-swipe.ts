@@ -376,7 +376,9 @@ export function dismissAllCards(): boolean {
 export function deployAllCards(): void {
   if (_tempCardEls.length === 0) return;
 
-  // 保留卡片 DOM，但清空数组让 closeSidebar 的 clearTempCards 找不到
+  const cards = [..._tempCardEls];  // 保留引用用于动画
+
+  // 清空数组让 closeSidebar 的 clearTempCards 找不到
   _tempCardEls = [];
   _lifoQueue = [];
   _focusIndex = -1;
@@ -386,6 +388,22 @@ export function deployAllCards(): void {
 
   import('./ui.js').then(m => m.closeSidebar());
   _removeBg();
+
+  // 平滑移到中央页面随机位置
+  const sw = window.innerWidth;
+  const sh = window.innerHeight;
+  const cw = 155;
+  const ch = _CARD_H;
+  const pad = 12;
+  cards.forEach(el => {
+    anim.killTweensOf(el);
+    const tx = pad + Math.random() * (sw - cw - pad * 2);
+    const ty = pad + Math.random() * (sh - ch - pad * 2 - 56);
+    anim.to(el, {
+      x: tx, y: ty,
+      duration: 0.45 + Math.random() * 0.2, ease: 'power2.inOut',
+    });
+  });
 }
 
 function _completeCurrent(): void {
