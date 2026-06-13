@@ -716,12 +716,20 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
 
   const fullH = container.height;
 
-  // 空文件夹：height=0 的展开容器无需折叠动画，直接短路返回
+  // 空文件夹：高度为 0 无需折叠容器动画，但 toggle 旋转需要在旧树上播完再重建
   if (fullH === 0) {
-    L.endOp();
-    hit.gesture!.onTap!();
-    Registry.notifyStateChange('file-tree');
-    processClickQueue();
+    const tog = hit.children.find(c => c.id?.startsWith('toggle-'));
+    if (tog && tog.transform) {
+      ts.clear(); ts.time(0);
+      ts.to(tog.transform, { rotate: 0, duration: 0.25, ease: 'power2.in' }, 0);
+    }
+    ts.eventCallback('onComplete', () => {
+      _resetAnimTimeline();
+      L.endOp();
+      hit.gesture!.onTap!();
+      Registry.notifyStateChange('file-tree');
+      processClickQueue();
+    });
     return;
   }
 
