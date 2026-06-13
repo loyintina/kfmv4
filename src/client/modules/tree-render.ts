@@ -704,18 +704,8 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
   L.beginOp(hitData.path, 'collapse');
   const root = L.renderer!.getRoot()!;
   const container = findBoxById(root, `expanded-${hitData.path}`);
-  const tog = hit.children.find(c => c.id?.startsWith('toggle-'));
 
   const animRoot = L.renderer!.getRoot()!;
-
-  // toggle 旋转回收
-  if (tog) {
-    ts.to(tog.transform, {
-      rotate: 0,
-      duration: 0.25,
-      ease: 'power2.in',
-    }, 0);
-  }
 
   if (!container) {
     L.endOp();
@@ -736,6 +726,16 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
   }
 
   assert(activeOverlayCount() === 0, 'overlays not empty before doCollapse');
+
+  // toggle 旋转回收（在短路返回之后，确保动画播放完才 rebuildTree）
+  const tog = hit.children.find(c => c.id?.startsWith('toggle-'));
+  if (tog) {
+    ts.to(tog.transform, {
+      rotate: 0,
+      duration: 0.25,
+      ease: 'power2.in',
+    }, 0);
+  }
 
   // 搭建折叠 overlay
   const pack = setupCollapseOverlays(container, fullH);
