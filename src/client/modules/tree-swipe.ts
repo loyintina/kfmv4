@@ -443,7 +443,9 @@ export function initTempCardGesture(): void {
 
 function _bgGradient(): string { return theme.aiChat.panelBorderGradient; }
 
-const _BTN = [
+let _toolbar: HTMLElement | null = null;  // 背景卡底部工具栏
+
+const _BTN_CSS = [
   'pointer-events:auto',
   'width:36px', 'height:36px',
   'border:1px solid transparent',
@@ -455,14 +457,42 @@ const _BTN = [
   'display:flex', 'align-items:center', 'justify-content:center',
   'box-shadow:0 4px 16px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.08)',
   'transition:all 0.25s cubic-bezier(0.34,1.56,0.64,1)',
-  'color:rgba(224,224,240,0.85)', 'font-size:16px',
+  'color:rgba(224,224,240,0.85)',
   'font-family:system-ui,-apple-system,sans-serif',
 ].join(';');
 
+const _CHECK_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+const _CLOSE_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+
+function _toolbarPos(bgTop: number, bgH: number): void {
+  if (!_toolbar) return;
+  anim.set(_toolbar, { y: bgTop + bgH + 8 });
+}
+
 function _ensureBg(sidebarW: number): void {
   if (_bgCard) return;
+  const left = Math.round(sidebarW - 10);
+
+  // 工具栏（背景卡外部下方）
+  _toolbar = document.createElement('div');
+  _toolbar.style.cssText = [
+    'position:fixed', 'left:' + left + 'px', 'right:-12px',
+    'display:flex', 'justify-content:center', 'gap:12px',
+    'z-index:1000', 'pointer-events:none',
+  ].join(';');
+
+  const okBtn = document.createElement('button');
+  okBtn.innerHTML = _CHECK_SVG;
+  okBtn.style.cssText = _BTN_CSS;
+  const cancelBtn = document.createElement('button');
+  cancelBtn.innerHTML = _CLOSE_SVG;
+  cancelBtn.style.cssText = _BTN_CSS;
+  _toolbar.appendChild(okBtn);
+  _toolbar.appendChild(cancelBtn);
+  document.body.appendChild(_toolbar);
+
+  // 背景卡
   _bgCard = document.createElement('div');
-  const left = Math.round(sidebarW - 10);  // 比侧栏右沿略左，覆盖卡片聚焦区
   _bgCard.style.cssText = [
     'position:fixed', 'left:' + left + 'px', 'right:-12px', 'top:0',
     'height:0px',
@@ -473,24 +503,10 @@ function _ensureBg(sidebarW: number): void {
     'z-index:1000',
     'pointer-events:none',
   ].join(';');
-
-  // 工具栏（背景卡底部）
-  const bar = document.createElement('div');
-  bar.style.cssText = 'position:absolute;left:0;right:0;bottom:8px;display:flex;justify-content:center;gap:12px;pointer-events:none';
-  const okBtn = document.createElement('button');
-  okBtn.textContent = '\u2713';
-  okBtn.style.cssText = _BTN;
-  const cancelBtn = document.createElement('button');
-  cancelBtn.textContent = '\u2717';
-  cancelBtn.style.cssText = _BTN;
-  bar.appendChild(okBtn);
-  bar.appendChild(cancelBtn);
-  _bgCard.appendChild(bar);
-
   document.body.appendChild(_bgCard);
 
-  anim.set(_bgCard, { x: '100vw' });
-  anim.to(_bgCard, { x: 0, duration: 0.35, ease: 'power3.out' });
+  anim.set([_bgCard, _toolbar], { x: '100vw' });
+  anim.to([_bgCard, _toolbar], { x: 0, duration: 0.35, ease: 'power3.out' });
 }
 
 function _updateBg(stackH: number, gap: number): void {
@@ -505,17 +521,20 @@ function _updateBg(stackH: number, gap: number): void {
     y: top, height: h, duration: 0.25, ease: 'power2.out',
     overwrite: 'auto',
   });
+  _toolbarPos(top, h);
 }
 
 function _removeBg(): void {
   if (!_bgCard) return;
-  const el = _bgCard;
+  const bgEl = _bgCard;
+  const tbEl = _toolbar;
   _bgCard = null;
+  _toolbar = null;
   _bgMaxH = 0;
-  anim.killTweensOf(el);
-  anim.to(el, {
+  anim.killTweensOf([bgEl, tbEl]);
+  anim.to([bgEl, tbEl], {
     x: '100vw', duration: 0.3, ease: 'power2.in',
-    onComplete() { el.remove(); },
+    onComplete() { bgEl.remove(); tbEl?.remove(); },
   });
 }
 
@@ -528,5 +547,6 @@ export function clearTempCards(): void {
   _prevFocusIndex = -1;
   _dismissing = false;
   _resetFocusToNewest = false;
+  _toolbar = null;
   _removeBg();
 }
