@@ -151,7 +151,7 @@ export function handleRowSwipe(): void {
     'border-radius:12px', 'padding:1px', 'padding-left:3px',
     'background:' + grad,
     'box-shadow:' + shadow,
-    'cursor:pointer', 'z-index:1000', 'opacity:1',
+    'cursor:pointer', 'z-index:1001', 'opacity:1',
   ].join(';');
 
   card.innerHTML = [
@@ -236,7 +236,7 @@ function _repositionCards(): void {
   _tempCardEls.forEach((c, i) => {
     const shift = i > _focusIndex ? extraGap : 0;
     const targetTop = Math.round(baseTop + i * gap + shift);
-    c.style.zIndex = String(1000 + i);
+    c.style.zIndex = String(1001 + i);
 
     const curY = parseFloat(c.dataset.topY ?? '0');
     if (Math.abs(curY - targetTop) > 3) {
@@ -433,7 +433,7 @@ function _ensureBg(sidebarW: number): void {
     'border:1.5px solid transparent',
     'background:linear-gradient(rgba(20,16,32,0.88),rgba(20,16,32,0.88)) padding-box,'
       + _bgGradient() + ' border-box',
-    'z-index:995',
+    'z-index:1000',
     'pointer-events:none',
   ].join(';');
   document.body.appendChild(_bgCard);
