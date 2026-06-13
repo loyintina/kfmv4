@@ -550,7 +550,7 @@ function _ensureBg(sidebarW: number): void {
   _toolbar.style.cssText = [
     'position:fixed', 'left:' + left + 'px', 'right:-12px',
     'display:flex', 'justify-content:center', 'gap:12px',
-    'z-index:1000', 'pointer-events:none',
+    'z-index:1010', 'pointer-events:none',
   ].join(';');
 
   const okBtn = document.createElement('button');
