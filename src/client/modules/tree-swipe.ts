@@ -357,11 +357,6 @@ export function dismissAllCards(): boolean {
     anim.to(el, {
       x: targetX, y: targetY, rotation: parseFloat(el.dataset.rr || '0'),
       duration: dur, ease: 'power2.in',
-    });
-    anim.to(el, {
-      opacity: 0,
-      duration: 0.2,
-      delay: dur * 0.5,
       onComplete() { el.remove(); },
     });
   });

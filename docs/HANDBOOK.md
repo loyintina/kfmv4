@@ -348,11 +348,11 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `tree-model.ts` | 185 | 2 | ✅ 分组表 | 绝对深度布局模型 |
 | `tree-overlay.ts` | 377 | 1 | ✅ 分组表 | Overlay 双树构建系统（从 tree-render 拆分） |
 | `tree-render.ts` | 969 | 3 | ✅ 核心条目 | 文件树 Canvas 渲染（编排层） |
-| `tree-swipe.ts` | 615 | 1 | ✅ 分组表 | 文件行右滑 → 卡片堆（从 tree-render 拆分） |
+| `tree-swipe.ts` | 610 | 1 | ✅ 分组表 | 文件行右滑 → 卡片堆（从 tree-render 拆分） |
 | `ui-registry.ts` | 331 | 9 | ✅ 独立条目 | UI 元素注册表 |
 | `ui.ts` | 70 | 10 | ✅ 提及 | UI 初始化编排 |
 | `ws-channel.ts` | 317 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
-| **合计** | **7827** | | | |
+| **合计** | **7822** | | | |
 
 ### 死代码检查
 
