@@ -473,7 +473,10 @@ const _ACTIVE_OFF = 'transform:none';
 
 function _toolbarPos(bgTop: number, bgH: number): void {
   if (!_toolbar) return;
-  anim.set(_toolbar, { y: bgTop + bgH + 8 });
+  anim.to(_toolbar, {
+    y: bgTop + bgH + 8, duration: 0.25, ease: 'power2.out',
+    overwrite: 'auto',
+  });
 }
 
 function _ensureBg(sidebarW: number): void {
