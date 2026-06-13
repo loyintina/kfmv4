@@ -372,6 +372,22 @@ export function dismissAllCards(): boolean {
   return true;
 }
 
+/** ✓ 投放：清空卡片数组(防 closeSidebar 的 clearTempCards 误删)，关侧栏，背景滑出 */
+export function deployAllCards(): void {
+  if (_tempCardEls.length === 0) return;
+
+  // 保留卡片 DOM，但清空数组让 closeSidebar 的 clearTempCards 找不到
+  _tempCardEls = [];
+  _lifoQueue = [];
+  _focusIndex = -1;
+  _prevFocusIndex = -1;
+  _dismissing = false;
+  _resetFocusToNewest = false;
+
+  import('./ui.js').then(m => m.closeSidebar());
+  _removeBg();
+}
+
 function _completeCurrent(): void {
   const el = _tempCardEls[_focusIndex];
   if (el) { anim.killTweensOf(el); _removeCard(el); }
@@ -541,6 +557,7 @@ function _ensureBg(sidebarW: number): void {
   okBtn.innerHTML = _CHECK_SVG;
   okBtn.style.cssText = _BTN_CSS;
   _setupBtn(okBtn);
+  okBtn.addEventListener('click', deployAllCards);
   const cancelBtn = document.createElement('button');
   cancelBtn.innerHTML = _CLOSE_SVG;
   cancelBtn.style.cssText = _BTN_CSS;
