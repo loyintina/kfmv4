@@ -397,10 +397,11 @@ export function deployAllCards(): void {
   const pad = 12;
   cards.forEach(el => {
     anim.killTweensOf(el);
+    el.style.zIndex = '20';  // 低于侧栏(1000)和卡片堆(150+)
     const tx = pad + Math.random() * (sw - cw - pad * 2);
     const ty = pad + Math.random() * (sh - ch - pad * 2 - 56);
     anim.to(el, {
-      x: tx, y: ty,
+      x: tx, y: ty, rotation: 0,
       duration: 0.45 + Math.random() * 0.2, ease: 'power2.inOut',
     });
   });
