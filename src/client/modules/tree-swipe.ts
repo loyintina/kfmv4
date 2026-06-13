@@ -304,7 +304,9 @@ export function focusPrev(): void {
 
 // ========== 卡片撤销 ==========
 
-/** 左滑撤回最新入卡的卡片（LIFO：后进先出）。连撤时瞬杀当前卡，立刻开始撤下一张。 */
+/** 左滑撤卡：当前聚焦不是最新卡则收聚焦卡，否则 LIFO 收最新卡。 */
+let _resetFocusToNewest = false;
+
 export function dismissFocusedCard(): boolean {
   if (_tempCardEls.length === 0 || _lifoQueue.length === 0) return false;
 
@@ -312,10 +314,20 @@ export function dismissFocusedCard(): boolean {
   if (_dismissing) _completeCurrent();
   if (_tempCardEls.length === 0) return true;
 
-  // 从 _lifoQueue 尾部取最新入卡的卡片
+  const focusedEl = _tempCardEls[_focusIndex];
+  const newestCard = _lifoQueue[_lifoQueue.length - 1];
+
+  if (focusedEl && focusedEl !== newestCard) {
+    // 当前聚焦的不是最新卡 → 先收聚焦卡，收完后回正到最新卡
+    _resetFocusToNewest = true;
+    _startDismiss();
+    return true;
+  }
+
+  // 正常 LIFO：取最新卡
   const target = _lifoQueue.pop()!;
   const idx = _tempCardEls.indexOf(target);
-  if (idx < 0) return false;  // 卡片已不在（防御）
+  if (idx < 0) return false;
 
   if (idx !== _focusIndex) {
     _focusIndex = idx;
@@ -363,6 +375,15 @@ function _removeCard(el: HTMLElement): void {
     _focusIndex = -1;
     _prevFocusIndex = -1;
     _removeBg();
+  } else if (_resetFocusToNewest) {
+    // 收的不是最新卡 → 聚焦回正到最新卡
+    _resetFocusToNewest = false;
+    const newest = _lifoQueue[_lifoQueue.length - 1];
+    const ni = newest ? _tempCardEls.indexOf(newest) : -1;
+    _focusIndex = ni >= 0 ? ni : Math.min(_focusIndex, _tempCardEls.length - 1);
+    _prevFocusIndex = -1;
+    _repositionCards();
+    updateFocus(false);
   } else {
     if (_focusIndex >= _tempCardEls.length) _focusIndex = _tempCardEls.length - 1;
     _prevFocusIndex = -1;
@@ -476,5 +497,6 @@ export function clearTempCards(): void {
   _focusIndex = -1;
   _prevFocusIndex = -1;
   _dismissing = false;
+  _resetFocusToNewest = false;
   _removeBg();
 }
