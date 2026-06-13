@@ -565,6 +565,5 @@ export function clearTempCards(): void {
   _prevFocusIndex = -1;
   _dismissing = false;
   _resetFocusToNewest = false;
-  _toolbar = null;
   _removeBg();
 }
