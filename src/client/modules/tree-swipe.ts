@@ -472,19 +472,15 @@ const _BORDER_DIM = 'linear-gradient(90deg,rgba(0,212,255,0.2),rgba(124,58,237,0
 const _BORDER_GLOW = 'linear-gradient(90deg,rgba(0,212,255,0.6),rgba(124,58,237,0.4))';
 const _FILL = 'linear-gradient(rgba(18,18,26,0.75),rgba(18,18,26,0.75)) padding-box,';
 
-// 按钮：点击后边框提亮，0.5s 渐变回暗
+// 按钮：按下提亮，松开还原
 function _setupBtn(btn: HTMLElement): void {
   btn.addEventListener('pointerdown', () => {
-    btn.style.transition = 'none';
     btn.style.background = _FILL + _BORDER_GLOW + ' border-box';
     btn.style.boxShadow = _HOVER_SHADOW;
   });
   btn.addEventListener('pointerup', () => {
-    btn.style.transition = 'background 0.5s ease-out, box-shadow 0.5s ease-out';
-    requestAnimationFrame(() => {
-      btn.style.background = _FILL + _BORDER_DIM + ' border-box';
-      btn.style.boxShadow = _BASE_SHADOW;
-    });
+    btn.style.background = _FILL + _BORDER_DIM + ' border-box';
+    btn.style.boxShadow = _BASE_SHADOW;
   });
 }
 
