@@ -395,13 +395,14 @@ export function deployAllCards(): void {
   const cw = 155;
   const ch = _CARD_H;
   const pad = 16;
-  const leftMax = sw - cw - pad - 64;   // 右侧留 64px 避开光球浮卡区
-  const topMax = sh * 0.58 - ch;        // 下方 42% 留给输入栏和光球
+  const topMin = 60;                    // 顶部按钮(16+40) 下方
+  const leftMax = sw - cw - pad;        // 右侧不留额外余量（卡片在按钮之下）
+  const topMax = sh - 80 - ch;          // 输入栏上方
   cards.forEach(el => {
     anim.killTweensOf(el);
     el.style.zIndex = '20';
     const tx = pad + Math.random() * Math.max(0, leftMax - pad);
-    const ty = pad + Math.random() * Math.max(0, topMax - pad);
+    const ty = topMin + Math.random() * Math.max(0, topMax - topMin);
     anim.to(el, {
       x: tx, y: ty, rotation: 0,
       duration: 0.45 + Math.random() * 0.2, ease: 'power2.inOut',
