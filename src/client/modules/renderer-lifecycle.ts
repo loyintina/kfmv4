@@ -59,6 +59,13 @@ export class RendererLifecycle {
   private _rowSwipeHandler: (() => void) | null = null;
   setRowSwipeHandler(fn: (() => void) | null): void { this._rowSwipeHandler = fn; }
   triggerRowSwipe(): void { this._rowSwipeHandler?.(); }
+
+  /** 注册临时卡片撤销回调（tree-render 注册，canvas-scroll 调用） */
+  private _cardDismissHandler: (() => boolean) | null = null;
+  setCardDismissHandler(fn: (() => boolean) | null): void { this._cardDismissHandler = fn; }
+  triggerCardDismiss(): boolean {
+    return this._cardDismissHandler?.() ?? false;
+  }
   /** 右滑守卫：右滑结束后短时间内抑制 sidebarTouchArea 的点击误触 */
   _swipeGuard = false;
   setSwipeGuard(): void {

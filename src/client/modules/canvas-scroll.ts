@@ -230,7 +230,7 @@ export function initScrollGesture(): void {
           L.setSwipeGuard();
           L.triggerRowSwipe();
         } else if (dx < -60) {
-          closeSidebar();
+          L.triggerCardDismiss() || closeSidebar();
         }
         _gestureAxis = 'none';
         return;
@@ -240,6 +240,7 @@ export function initScrollGesture(): void {
       const absDx = Math.abs(dx);
       const absDy = Math.abs(dy);
       if (absDx > 60 && absDx > absDy * 1.5 && dx < -60) {
+        if (L.triggerCardDismiss()) return;
         closeSidebar();
         return;
       }
