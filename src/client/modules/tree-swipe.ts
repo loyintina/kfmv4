@@ -443,6 +443,22 @@ export function initTempCardGesture(): void {
 
 function _bgGradient(): string { return theme.aiChat.panelBorderGradient; }
 
+const _BTN = [
+  'pointer-events:auto',
+  'width:36px', 'height:36px',
+  'border:1px solid transparent',
+  'border-radius:10px',
+  'background:linear-gradient(rgba(18,18,26,0.75),rgba(18,18,26,0.75)) padding-box,'
+    + 'linear-gradient(90deg,rgba(0,212,255,0.2),rgba(124,58,237,0.15)) border-box',
+  'backdrop-filter:blur(8px)', '-webkit-backdrop-filter:blur(8px)',
+  'cursor:pointer',
+  'display:flex', 'align-items:center', 'justify-content:center',
+  'box-shadow:0 4px 16px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.08)',
+  'transition:all 0.25s cubic-bezier(0.34,1.56,0.64,1)',
+  'color:rgba(224,224,240,0.85)', 'font-size:16px',
+  'font-family:system-ui,-apple-system,sans-serif',
+].join(';');
+
 function _ensureBg(sidebarW: number): void {
   if (_bgCard) return;
   _bgCard = document.createElement('div');
@@ -457,6 +473,20 @@ function _ensureBg(sidebarW: number): void {
     'z-index:1000',
     'pointer-events:none',
   ].join(';');
+
+  // 工具栏（背景卡底部）
+  const bar = document.createElement('div');
+  bar.style.cssText = 'position:absolute;left:0;right:0;bottom:8px;display:flex;justify-content:center;gap:12px;pointer-events:none';
+  const okBtn = document.createElement('button');
+  okBtn.textContent = '\u2713';
+  okBtn.style.cssText = _BTN;
+  const cancelBtn = document.createElement('button');
+  cancelBtn.textContent = '\u2717';
+  cancelBtn.style.cssText = _BTN;
+  bar.appendChild(okBtn);
+  bar.appendChild(cancelBtn);
+  _bgCard.appendChild(bar);
+
   document.body.appendChild(_bgCard);
 
   anim.set(_bgCard, { x: '100vw' });
