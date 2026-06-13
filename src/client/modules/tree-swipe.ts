@@ -198,7 +198,7 @@ card.addEventListener('click', (e) => {
   _focusIndex = insertIdx;
   _prevFocusIndex = oldEl ? _tempCardEls.indexOf(oldEl) : -1;
   _lifoQueue.push(card);
-  _ensureBg();
+  _ensureBg(sidebarW);
 
   // 重排所有卡片 Y 位置（含压缩 + 聚焦下方留白）
   _repositionCards();
@@ -422,17 +422,18 @@ export function initTempCardGesture(): void {
 
 function _bgGradient(): string { return theme.aiChat.panelBorderGradient; }
 
-function _ensureBg(): void {
+function _ensureBg(sidebarW: number): void {
   if (_bgCard) return;
   _bgCard = document.createElement('div');
+  const left = Math.round(sidebarW - 10);  // 比侧栏右沿略左，覆盖卡片聚焦区
   _bgCard.style.cssText = [
-    'position:fixed', 'right:0', 'top:0',
-    'width:50vw', 'height:0px',
+    'position:fixed', 'left:' + left + 'px', 'right:-12px', 'top:0',
+    'height:0px',
     'border-radius:16px 0 0 16px',
     'border:1.5px solid transparent',
     'background:linear-gradient(rgba(20,16,32,0.88),rgba(20,16,32,0.88)) padding-box,'
       + _bgGradient() + ' border-box',
-    'z-index:1000',
+    'z-index:995',
     'pointer-events:none',
   ].join(';');
   document.body.appendChild(_bgCard);
