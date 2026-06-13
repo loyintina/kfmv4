@@ -15,6 +15,7 @@ import { currentTheme as theme } from './theme.js';
 import { DOM } from './dom-refs.js';
 import { Box } from '../engine/v2/box.js';
 import { gestures } from './gesture-registry.js';
+import { createFloatingCard } from './floating-card.js';
 
 // ========== 模块状态 ==========
 
@@ -186,6 +187,7 @@ export function handleRowSwipe(): void {
   card.dataset._normalRr = String(rr);
   card.dataset._fromX = String(fromX);
   card.dataset._fromY = String(fromY);
+  card.dataset._name = name;
 
 card.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -376,7 +378,7 @@ export function dismissAllCards(): boolean {
 export function deployAllCards(): void {
   if (_tempCardEls.length === 0) return;
 
-  const cards = [..._tempCardEls];  // 保留引用用于动画
+  const cards = [..._tempCardEls];
 
   // 清空数组让 closeSidebar 的 clearTempCards 找不到
   _tempCardEls = [];
@@ -389,24 +391,32 @@ export function deployAllCards(): void {
   import('./ui.js').then(m => m.closeSidebar());
   _removeBg();
 
-  // 平滑移到中央页面随机位置（避开底栏和右下角光球）
+  // 投放区域约束
   const sw = window.innerWidth;
   const sh = window.innerHeight;
   const cw = 155;
   const ch = _CARD_H;
   const pad = 16;
-  const topMin = 60;                    // 顶部按钮(16+40) 下方
-  const leftMax = sw - cw - pad;        // 右侧不留额外余量（卡片在按钮之下）
-  const topMax = sh - 120 - ch;            // 输入栏上方，留足间距
+  const topMin = 60;
+  const leftMax = sw - cw - pad;
+  const topMax = sh - 120 - ch;
+
   cards.forEach(el => {
-    anim.killTweensOf(el);
-    el.style.zIndex = '20';
+    const fromX = parseFloat(el.dataset.rx || '0');
+    const fromY = parseFloat(el.dataset.topY || '0');
     const tx = pad + Math.random() * Math.max(0, leftMax - pad);
     const ty = topMin + Math.random() * Math.max(0, topMax - topMin);
-    anim.to(el, {
-      x: tx, y: ty, rotation: 0,
-      duration: 0.45 + Math.random() * 0.2, ease: 'power2.inOut',
+
+    createFloatingCard({
+      id: 'temp-' + (el.dataset._name || ''),
+      color1: el.dataset._accent1 || '#7c3aed',
+      color2: el.dataset._accent2 || '#00d4ff',
+      name: el.dataset._name || '',
+      sourceX: fromX, sourceY: fromY,
+      targetX: tx, targetY: ty,
     });
+
+    el.remove();
   });
 }
 
