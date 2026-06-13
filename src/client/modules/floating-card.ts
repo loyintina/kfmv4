@@ -551,8 +551,8 @@ export function initFloatingCards(): void {
     isEditing() { return _fItem?.state === 'editing'; },
     onTap() { _fItem?.brOrb?.click(); },
     onSavePosition() {
-      // 恢复 DOM 尺寸到真实值（onMoveNormal 可能边界压缩过）
-      if (_fItem && _fItem.state !== 'editing') {
+      // 恢复 DOM 尺寸到真实值（onMoveNormal 可能边界压缩过）。展开/折叠/编辑中跳过
+      if (_fItem && _fItem.state !== 'editing' && _fItem.state !== 'expanding' && _fItem.state !== 'collapsing') {
         _fItem.el.style.width = _fItem.cardWidth + 'px';
         _fItem.el.style.height = _fItem.cardHeight + 'px';
         _fSyncCorners(_fItem, _fItem.cardWidth, _fItem.cardHeight);
