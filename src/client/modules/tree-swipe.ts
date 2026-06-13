@@ -389,17 +389,19 @@ export function deployAllCards(): void {
   import('./ui.js').then(m => m.closeSidebar());
   _removeBg();
 
-  // 平滑移到中央页面随机位置
+  // 平滑移到中央页面随机位置（避开底栏和右下角光球）
   const sw = window.innerWidth;
   const sh = window.innerHeight;
   const cw = 155;
   const ch = _CARD_H;
-  const pad = 12;
+  const pad = 16;
+  const leftMax = sw - cw - pad - 64;   // 右侧留 64px 避开光球浮卡区
+  const topMax = sh * 0.58 - ch;        // 下方 42% 留给输入栏和光球
   cards.forEach(el => {
     anim.killTweensOf(el);
-    el.style.zIndex = '20';  // 低于侧栏(1000)和卡片堆(150+)
-    const tx = pad + Math.random() * (sw - cw - pad * 2);
-    const ty = pad + Math.random() * (sh - ch - pad * 2 - 56);
+    el.style.zIndex = '20';
+    const tx = pad + Math.random() * Math.max(0, leftMax - pad);
+    const ty = pad + Math.random() * Math.max(0, topMax - pad);
     anim.to(el, {
       x: tx, y: ty, rotation: 0,
       duration: 0.45 + Math.random() * 0.2, ease: 'power2.inOut',
