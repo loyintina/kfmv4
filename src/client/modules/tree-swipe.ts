@@ -231,7 +231,7 @@ function _repositionCards(): void {
 
   const extraGap = count > 1 && gap < _CARD_GAP ? _CARD_GAP - gap : 0;
   const stackH = _CARD_H + (count - 1) * gap + extraGap;
-  const baseTop = Math.round(window.innerHeight * 0.35 - stackH / 2);
+  const baseTop = Math.round(window.innerHeight * 0.35 - stackH / 2 - 40);
 
   _tempCardEls.forEach((c, i) => {
     const shift = i > _focusIndex ? extraGap : 0;
@@ -534,7 +534,7 @@ function _updateBg(stackH: number, gap: number): void {
   if (_bgMaxH === 0 && gap < _CARD_GAP) _bgMaxH = stackH;
   const h = (_bgMaxH > 0 ? _bgMaxH : stackH) + 24;  // 上下各留 12px 空白
 
-  const top = Math.round(window.innerHeight * 0.35 - h / 2);
+  const top = Math.round(window.innerHeight * 0.35 - h / 2 - 40);
   anim.to(_bgCard, {
     y: top, height: h, duration: 0.25, ease: 'power2.out',
     overwrite: 'auto',
