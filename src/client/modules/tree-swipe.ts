@@ -614,25 +614,25 @@ function _ensureBg(sidebarW: number): void {
     'pointer-events:none',
   ].join(';');
 
-  const modeMeta: { key: string; color: string }[] = [
-    { key: 'copy',   color: '#10b981' },
-    { key: 'move',   color: '#f59e0b' },
-    { key: 'delete', color: '#ef4444' },
+  const modeMeta: { key: string; grad: string; iconColor: string }[] = [
+    { key: 'copy',   grad: 'linear-gradient(135deg,rgba(16,185,129,0.5),rgba(6,182,212,0.35))', iconColor: '#10b981' },
+    { key: 'move',   grad: 'linear-gradient(135deg,rgba(245,158,11,0.5),rgba(132,204,22,0.35))', iconColor: '#84cc16' },
+    { key: 'delete', grad: 'linear-gradient(135deg,rgba(244,114,182,0.5),rgba(251,146,60,0.35))', iconColor: '#f49fb6' },
   ];
-  for (const { key, color } of modeMeta) {
+  for (const { key, grad, iconColor } of modeMeta) {
     const btn = document.createElement('button');
     btn.innerHTML = _MODE_SVG[key];
     btn.style.cssText = [
       'pointer-events:auto',
       'width:26px', 'height:26px',
-      'border:1.5px solid ' + color,
+      'border:1px solid transparent',
       'border-radius:7px',
-      'background:rgba(16,12,24,0.8)',
+      'background:linear-gradient(rgba(16,12,24,0.85),rgba(16,12,24,0.85)) padding-box,'
+        + grad + ' border-box',
+      'backdrop-filter:blur(4px)', '-webkit-backdrop-filter:blur(4px)',
       'cursor:pointer',
       'display:flex', 'align-items:center', 'justify-content:center',
-      'color:' + color,
-      'font-size:11px', 'font-weight:600',
-      'font-family:system-ui,-apple-system,sans-serif',
+      'color:' + iconColor,
       'transition:all 0.2s',
     ].join(';');
     row2.appendChild(btn);
