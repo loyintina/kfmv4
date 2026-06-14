@@ -603,12 +603,38 @@ function _ensureBg(sidebarW: number): void {
   cancelBtn.addEventListener('click', dismissAllCards);
   _toolbar.appendChild(cancelBtn);
 
-  // 第 2 行：三个模式按钮（在 ✓✗ 下方 48px）
+  // 第 2 行：三个模式按钮（左右对齐 ✓ 左沿 ↔ ✗ 右沿）
+  const cancelLeft = Math.round(btnW + gap + D / 2);
+  const spanW = cancelLeft + btnW;
   const row2 = document.createElement('div');
-  row2.style.cssText = 'position:absolute;left:0;top:48px;display:flex;gap:8px;pointer-events:none';
-  for (const label of ['C', 'M', 'D']) {
+  row2.style.cssText = [
+    'position:absolute', 'left:0', 'top:48px',
+    'width:' + spanW + 'px',
+    'display:flex', 'justify-content:space-between',
+    'pointer-events:none',
+  ].join(';');
+
+  const modeMeta: { label: string; color: string }[] = [
+    { label: 'C', color: '#10b981' },
+    { label: 'M', color: '#f59e0b' },
+    { label: 'D', color: '#ef4444' },
+  ];
+  for (const { label, color } of modeMeta) {
     const btn = document.createElement('button');
     btn.textContent = label;
+    btn.style.cssText = [
+      'pointer-events:auto',
+      'width:26px', 'height:26px',
+      'border:1.5px solid ' + color,
+      'border-radius:7px',
+      'background:rgba(16,12,24,0.8)',
+      'cursor:pointer',
+      'display:flex', 'align-items:center', 'justify-content:center',
+      'color:' + color,
+      'font-size:11px', 'font-weight:600',
+      'font-family:system-ui,-apple-system,sans-serif',
+      'transition:all 0.2s',
+    ].join(';');
     row2.appendChild(btn);
   }
   _toolbar.appendChild(row2);
