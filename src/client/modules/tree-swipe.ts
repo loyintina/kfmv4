@@ -624,7 +624,7 @@ function _ensureBg(sidebarW: number): void {
     btn.innerHTML = _MODE_SVG[key];
     btn.style.cssText = [
       'pointer-events:auto',
-      'width:28px', 'height:28px',
+      'width:30px', 'height:30px',
       'border:1px solid transparent',
       'border-radius:7px',
       'background:linear-gradient(rgba(18,18,26,0.75),rgba(18,18,26,0.75)) padding-box,'
