@@ -587,18 +587,23 @@ function _ensureBg(sidebarW: number): void {
 
   // 第 1 行：✓ ✗
   const row1 = document.createElement('div');
-  row1.style.cssText = 'display:flex;gap:12px;pointer-events:none';
+  row1.style.cssText = 'position:relative;height:40px;pointer-events:none';
 
   const okBtn = document.createElement('button');
   okBtn.innerHTML = _CHECK_SVG;
-  okBtn.style.cssText = _BTN_CSS;
+  okBtn.style.cssText = _BTN_CSS + ';position:absolute;left:0';
   _setupBtn(okBtn);
   okBtn.addEventListener('click', deployAllCards);
   row1.appendChild(okBtn);
 
+  // ✗ 半距左移：对号移到左沿后，错号移动一半的距离
+  const tbW = window.innerWidth - left + 12;
+  const btnW = 40, gap = 12;
+  const D = Math.max(0, (tbW - btnW * 2 - gap) / 2);
+
   const cancelBtn = document.createElement('button');
   cancelBtn.innerHTML = _CLOSE_SVG;
-  cancelBtn.style.cssText = _BTN_CSS;
+  cancelBtn.style.cssText = _BTN_CSS + ';position:absolute;left:' + Math.round(btnW + gap + D / 2) + 'px';
   _setupBtn(cancelBtn);
   cancelBtn.addEventListener('click', dismissAllCards);
   row1.appendChild(cancelBtn);
