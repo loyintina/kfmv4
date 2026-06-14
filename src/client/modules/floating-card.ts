@@ -430,7 +430,7 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
 /** 在 compact/active 态浮卡上构建内容框架 */
 function _renderFloatingContent(contentEl: HTMLElement, state: 'compact' | 'active', cardName?: string): void {
   if (state === 'compact') {
-    contentEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:2px 6px;font-size:11px;font-weight:500;color:rgba(224,224,224,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+    contentEl.style.cssText = 'position:absolute;inset:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;-webkit-box-pack:center;-webkit-box-align:center;box-sizing:border-box;padding:4px 6px;font-size:11px;font-weight:500;color:rgba(224,224,224,0.9);overflow:hidden;text-overflow:ellipsis;text-align:center;word-break:break-all';
     contentEl.textContent = cardName || '';
   } else {
     contentEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:flex-start;box-sizing:border-box;padding:8px;font-size:11px;color:rgba(224,224,224,0.7);overflow-y:auto';
