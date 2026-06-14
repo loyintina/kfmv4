@@ -647,8 +647,13 @@ function _ensureBg(sidebarW: number): void {
     wrapper.appendChild(btn);
     wrapper.addEventListener('pointerdown', (e) => {
       e.stopPropagation();
+      e.preventDefault();
       _selectedMode = _selectedMode === key ? null : key;
       _updateModeSelection();
+    });
+    wrapper.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
     });
     _modeWrappers.push(wrapper);
     row2.appendChild(wrapper);
