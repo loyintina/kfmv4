@@ -40,6 +40,20 @@ const _LIT = 55;
 let _selectedMode: string | null = null;
 const _modeWrappers: HTMLElement[] = [];
 
+const _unregModeBtn = gestures.register({
+  id: 'mode-btn',
+  targetFilter: '[data-mode-btn]',
+  condition: () => _bgCard !== null,
+  priority: 90,
+  stopPropagation: { start: true },
+  onStart: (e) => {
+    const key = (e.target as HTMLElement).closest('[data-mode-btn]')?.getAttribute('data-mode-btn');
+    if (!key) return;
+    _selectedMode = _selectedMode === key ? null : key;
+    _updateModeSelection();
+  },
+});
+
 // ========== 内部函数 ==========
 
 function _rgba(hex: string, alpha: number): string {
@@ -614,7 +628,6 @@ function _ensureBg(sidebarW: number): void {
     'position:absolute', 'left:0', 'top:55px',
     'width:' + spanW + 'px',
     'display:flex', 'justify-content:space-between',
-    'pointer-events:none',
   ].join(';');
 
   const modeMeta: { key: string; grad: string }[] = [
@@ -625,7 +638,9 @@ function _ensureBg(sidebarW: number): void {
   _modeWrappers.length = 0;
   for (const { key, grad } of modeMeta) {
     const wrapper = document.createElement('div');
+    wrapper.setAttribute('data-mode-btn', key);
     wrapper.style.cssText = [
+      'pointer-events:auto',
       'width:34px', 'height:34px',
       'border:2px solid transparent',
       'border-radius:9px',
@@ -645,16 +660,6 @@ function _ensureBg(sidebarW: number): void {
       'display:flex', 'align-items:center', 'justify-content:center',
     ].join(';');
     wrapper.appendChild(btn);
-    wrapper.addEventListener('pointerdown', (e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      _selectedMode = _selectedMode === key ? null : key;
-      _updateModeSelection();
-    });
-    wrapper.addEventListener('click', (e) => {
-      e.stopPropagation();
-      e.preventDefault();
-    });
     _modeWrappers.push(wrapper);
     row2.appendChild(wrapper);
   }
