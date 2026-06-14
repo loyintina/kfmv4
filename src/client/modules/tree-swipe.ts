@@ -40,6 +40,7 @@ const _LIT = 55;
 let _selectedMode: string | null = null;
 const _modeWrappers: HTMLElement[] = [];
 
+// 模式按钮选中态（由 GestureRegistry 统一调度）
 const _unregModeBtn = gestures.register({
   id: 'mode-btn',
   targetFilter: '[data-mode-btn]',
@@ -51,6 +52,29 @@ const _unregModeBtn = gestures.register({
     if (!key) return;
     _selectedMode = _selectedMode === key ? null : key;
     _updateModeSelection();
+  },
+});
+
+// ✓/✗ 按钮按压反馈（由 GestureRegistry 统一调度）
+let _pressedBtn: HTMLElement | null = null;
+const _unregCheckBtns = gestures.register({
+  id: 'check-btns',
+  targetFilter: '[data-toolbar-btn]',
+  condition: () => _bgCard !== null,
+  priority: 95,
+  stopPropagation: { start: true },
+  onStart: (e) => {
+    const btn = e.target as HTMLElement;
+    if (!btn) return;
+    _pressedBtn = btn;
+    btn.style.background = _FILL + _BORDER_GLOW + ' border-box';
+    btn.style.boxShadow = _HOVER_SHADOW;
+  },
+  onEnd: () => {
+    if (!_pressedBtn) return;
+    _pressedBtn.style.background = _FILL + _BORDER_DIM + ' border-box';
+    _pressedBtn.style.boxShadow = _BASE_SHADOW;
+    _pressedBtn = null;
   },
 });
 
@@ -570,18 +594,6 @@ const _BORDER_DIM = 'linear-gradient(90deg,rgba(0,212,255,0.2),rgba(124,58,237,0
 const _BORDER_GLOW = 'linear-gradient(90deg,rgba(0,212,255,0.6),rgba(124,58,237,0.4))';
 const _FILL = 'linear-gradient(rgba(18,18,26,0.75),rgba(18,18,26,0.75)) padding-box,';
 
-// 按钮：按下提亮，松开还原
-function _setupBtn(btn: HTMLElement): void {
-  btn.addEventListener('pointerdown', () => {
-    btn.style.background = _FILL + _BORDER_GLOW + ' border-box';
-    btn.style.boxShadow = _HOVER_SHADOW;
-  });
-  btn.addEventListener('pointerup', () => {
-    btn.style.background = _FILL + _BORDER_DIM + ' border-box';
-    btn.style.boxShadow = _BASE_SHADOW;
-  });
-}
-
 function _toolbarPos(bgTop: number, bgH: number): void {
   if (!_toolbar) return;
   anim.to(_toolbar, {
@@ -605,7 +617,7 @@ function _ensureBg(sidebarW: number): void {
   const okBtn = document.createElement('button');
   okBtn.innerHTML = _CHECK_SVG;
   okBtn.style.cssText = _BTN_CSS + ';position:absolute;left:0;top:0';
-  _setupBtn(okBtn);
+  okBtn.setAttribute('data-toolbar-btn', 'ok');
   okBtn.addEventListener('click', deployAllCards);
   _toolbar.appendChild(okBtn);
 
@@ -616,7 +628,7 @@ function _ensureBg(sidebarW: number): void {
   const cancelBtn = document.createElement('button');
   cancelBtn.innerHTML = _CLOSE_SVG;
   cancelBtn.style.cssText = _BTN_CSS + ';position:absolute;left:' + Math.round(btnW + gap + D / 2) + 'px;top:0';
-  _setupBtn(cancelBtn);
+  cancelBtn.setAttribute('data-toolbar-btn', 'cancel');
   cancelBtn.addEventListener('click', dismissAllCards);
   _toolbar.appendChild(cancelBtn);
 
