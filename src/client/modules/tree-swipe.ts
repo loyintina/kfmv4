@@ -657,7 +657,7 @@ function _ensureBg(sidebarW: number): void {
       'border:2px solid transparent',
       'border-radius:9px',
       'display:flex', 'align-items:center', 'justify-content:center',
-      'transition:border-color 0.15s',
+      'transition:background 0.15s',
       'flex-shrink:0',
     ].join(';');
     const btn = document.createElement('button');
@@ -711,10 +711,24 @@ function _updateBg(stackH: number, gap: number): void {
   _toolbarPos(top, h);
 }
 
+const _MODE_BORDER_GRAD: Record<string, string> = {
+  copy:   'linear-gradient(135deg,rgba(16,185,129,0.6),rgba(6,182,212,0.4))',
+  move:   'linear-gradient(135deg,rgba(245,158,11,0.6),rgba(132,204,22,0.4))',
+  delete: 'linear-gradient(135deg,rgba(244,114,182,0.6),rgba(251,146,60,0.4))',
+};
+
 function _updateModeSelection(): void {
   const activeIdx = _selectedMode === 'copy' ? 0 : _selectedMode === 'move' ? 1 : _selectedMode === 'delete' ? 2 : -1;
   _modeWrappers.forEach((w, i) => {
-    w.style.borderColor = i === activeIdx ? 'rgba(255,255,255,0.7)' : 'transparent';
+    if (i === activeIdx) {
+      const grad = i === 0 ? _MODE_BORDER_GRAD.copy : i === 1 ? _MODE_BORDER_GRAD.move : _MODE_BORDER_GRAD.delete;
+      w.style.borderColor = 'transparent';
+      w.style.background = 'linear-gradient(rgba(18,18,26,0.75),rgba(18,18,26,0.75)) padding-box,'
+        + grad + ' border-box';
+    } else {
+      w.style.borderColor = 'transparent';
+      w.style.background = '';
+    }
   });
 }
 
