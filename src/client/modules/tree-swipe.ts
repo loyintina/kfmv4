@@ -614,14 +614,14 @@ function _ensureBg(sidebarW: number): void {
     'pointer-events:none',
   ].join(';');
 
-  const modeMeta: { label: string; color: string }[] = [
-    { label: 'C', color: '#10b981' },
-    { label: 'M', color: '#f59e0b' },
-    { label: 'D', color: '#ef4444' },
+  const modeMeta: { key: string; color: string }[] = [
+    { key: 'copy',   color: '#10b981' },
+    { key: 'move',   color: '#f59e0b' },
+    { key: 'delete', color: '#ef4444' },
   ];
-  for (const { label, color } of modeMeta) {
+  for (const { key, color } of modeMeta) {
     const btn = document.createElement('button');
-    btn.textContent = label;
+    btn.innerHTML = _MODE_SVG[key];
     btn.style.cssText = [
       'pointer-events:auto',
       'width:26px', 'height:26px',
@@ -672,6 +672,12 @@ function _updateBg(stackH: number, gap: number): void {
   });
   _toolbarPos(top, h);
 }
+
+const _MODE_SVG: Record<string, string> = {
+  copy:   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>',
+  move:   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/><line x1="12" y1="11" x2="12" y2="17"/><polyline points="9 14 12 17 15 14"/></svg>',
+  delete: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>',
+};
 
 function _removeBg(): void {
   if (!_bgCard) return;
