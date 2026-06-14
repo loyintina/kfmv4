@@ -661,7 +661,7 @@ function _updateBg(stackH: number, gap: number): void {
 
   // 高度随卡片数增长，压缩开始时锁定上限
   if (_bgMaxH === 0 && gap < _CARD_GAP) _bgMaxH = stackH;
-  const h = (_bgMaxH > 0 ? _bgMaxH : stackH) + 24;  // 上下各留 12px 空白
+  const h = (_bgMaxH > 0 ? _bgMaxH : stackH) + 40;  // 上下留白
 
   const top = Math.round(window.innerHeight * 0.35 - h / 2 - 40);
   anim.to(_bgCard, {
