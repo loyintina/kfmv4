@@ -581,22 +581,38 @@ function _ensureBg(sidebarW: number): void {
   _toolbar = document.createElement('div');
   _toolbar.style.cssText = [
     'position:fixed', 'left:' + left + 'px', 'right:-12px',
-    'display:flex', 'justify-content:center', 'gap:12px',
+    'display:flex', 'flex-direction:column', 'align-items:center', 'gap:8px',
     'z-index:1010', 'pointer-events:none',
   ].join(';');
+
+  // 第 1 行：✓ ✗
+  const row1 = document.createElement('div');
+  row1.style.cssText = 'display:flex;gap:12px;pointer-events:none';
 
   const okBtn = document.createElement('button');
   okBtn.innerHTML = _CHECK_SVG;
   okBtn.style.cssText = _BTN_CSS;
   _setupBtn(okBtn);
   okBtn.addEventListener('click', deployAllCards);
+  row1.appendChild(okBtn);
+
   const cancelBtn = document.createElement('button');
   cancelBtn.innerHTML = _CLOSE_SVG;
   cancelBtn.style.cssText = _BTN_CSS;
   _setupBtn(cancelBtn);
   cancelBtn.addEventListener('click', dismissAllCards);
-  _toolbar.appendChild(okBtn);
-  _toolbar.appendChild(cancelBtn);
+  row1.appendChild(cancelBtn);
+  _toolbar.appendChild(row1);
+
+  // 第 2 行：三个模式按钮
+  const row2 = document.createElement('div');
+  row2.style.cssText = 'display:flex;gap:8px;pointer-events:none';
+  for (const label of ['C', 'M', 'D']) {
+    const btn = document.createElement('button');
+    btn.textContent = label;
+    row2.appendChild(btn);
+  }
+  _toolbar.appendChild(row2);
   document.body.appendChild(_toolbar);
 
   // 背景卡
