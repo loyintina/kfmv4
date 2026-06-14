@@ -608,7 +608,7 @@ function _ensureBg(sidebarW: number): void {
   const spanW = cancelLeft + btnW;
   const row2 = document.createElement('div');
   row2.style.cssText = [
-    'position:absolute', 'left:0', 'top:48px',
+    'position:absolute', 'left:0', 'top:55px',
     'width:' + spanW + 'px',
     'display:flex', 'justify-content:space-between',
     'pointer-events:none',
