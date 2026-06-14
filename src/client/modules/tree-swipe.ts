@@ -581,37 +581,31 @@ function _ensureBg(sidebarW: number): void {
   _toolbar = document.createElement('div');
   _toolbar.style.cssText = [
     'position:fixed', 'left:' + left + 'px', 'right:-12px',
-    'display:flex', 'flex-direction:column', 'align-items:center', 'gap:8px',
     'z-index:1010', 'pointer-events:none',
   ].join(';');
 
-  // 第 1 行：✓ ✗
-  const row1 = document.createElement('div');
-  row1.style.cssText = 'position:relative;height:40px;pointer-events:none';
-
+  // ✓ — 贴工具栏左沿（= 背景卡左沿）
   const okBtn = document.createElement('button');
   okBtn.innerHTML = _CHECK_SVG;
-  okBtn.style.cssText = _BTN_CSS + ';position:absolute;left:0';
+  okBtn.style.cssText = _BTN_CSS + ';position:absolute;left:0;top:0';
   _setupBtn(okBtn);
   okBtn.addEventListener('click', deployAllCards);
-  row1.appendChild(okBtn);
+  _toolbar.appendChild(okBtn);
 
-  // ✗ 半距左移：对号移到左沿后，错号移动一半的距离
+  // ✗ — 半距左移
   const tbW = window.innerWidth - left + 12;
   const btnW = 40, gap = 12;
   const D = Math.max(0, (tbW - btnW * 2 - gap) / 2);
-
   const cancelBtn = document.createElement('button');
   cancelBtn.innerHTML = _CLOSE_SVG;
-  cancelBtn.style.cssText = _BTN_CSS + ';position:absolute;left:' + Math.round(btnW + gap + D / 2) + 'px';
+  cancelBtn.style.cssText = _BTN_CSS + ';position:absolute;left:' + Math.round(btnW + gap + D / 2) + 'px;top:0';
   _setupBtn(cancelBtn);
   cancelBtn.addEventListener('click', dismissAllCards);
-  row1.appendChild(cancelBtn);
-  _toolbar.appendChild(row1);
+  _toolbar.appendChild(cancelBtn);
 
-  // 第 2 行：三个模式按钮
+  // 第 2 行：三个模式按钮（在 ✓✗ 下方 48px）
   const row2 = document.createElement('div');
-  row2.style.cssText = 'display:flex;gap:8px;pointer-events:none';
+  row2.style.cssText = 'position:absolute;left:0;top:48px;display:flex;gap:8px;pointer-events:none';
   for (const label of ['C', 'M', 'D']) {
     const btn = document.createElement('button');
     btn.textContent = label;
