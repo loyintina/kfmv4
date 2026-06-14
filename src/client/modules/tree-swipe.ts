@@ -614,12 +614,12 @@ function _ensureBg(sidebarW: number): void {
     'pointer-events:none',
   ].join(';');
 
-  const modeMeta: { key: string; grad: string }[] = [
-    { key: 'copy',   grad: 'linear-gradient(135deg,rgba(16,185,129,0.25),rgba(6,182,212,0.18))' },
-    { key: 'move',   grad: 'linear-gradient(135deg,rgba(245,158,11,0.25),rgba(132,204,22,0.18))' },
-    { key: 'delete', grad: 'linear-gradient(135deg,rgba(244,114,182,0.25),rgba(251,146,60,0.18))' },
+  const modeMeta: { key: string; grad: string; color: string }[] = [
+    { key: 'copy',   grad: 'linear-gradient(135deg,rgba(16,185,129,0.25),rgba(6,182,212,0.18))', color: '#10b981' },
+    { key: 'move',   grad: 'linear-gradient(135deg,rgba(245,158,11,0.25),rgba(132,204,22,0.18))', color: '#84cc16' },
+    { key: 'delete', grad: 'linear-gradient(135deg,rgba(244,114,182,0.25),rgba(251,146,60,0.18))', color: '#f472b6' },
   ];
-  for (const { key, grad } of modeMeta) {
+  for (const { key, grad, color } of modeMeta) {
     const btn = document.createElement('button');
     btn.innerHTML = _MODE_SVG[key];
     btn.style.cssText = [
@@ -631,6 +631,7 @@ function _ensureBg(sidebarW: number): void {
         + grad + ' border-box',
       'cursor:pointer',
       'display:flex', 'align-items:center', 'justify-content:center',
+      'color:' + color,
       'transition:all 0.2s',
     ].join(';');
     row2.appendChild(btn);
@@ -672,9 +673,9 @@ function _updateBg(stackH: number, gap: number): void {
 }
 
 const _MODE_SVG: Record<string, string> = {
-  copy:   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="url(#copyGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><defs><linearGradient id="copyGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#06b6d4"/></linearGradient></defs><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>',
-  move:   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="url(#moveGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><defs><linearGradient id="moveGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#84cc16"/></linearGradient></defs><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/><line x1="12" y1="11" x2="12" y2="17"/><polyline points="9 14 12 17 15 14"/></svg>',
-  delete: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="url(#delGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><defs><linearGradient id="delGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#f472b6"/><stop offset="100%" stop-color="#fb923c"/></linearGradient></defs><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>',
+  copy:   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>',
+  move:   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/><line x1="12" y1="11" x2="12" y2="17"/><polyline points="9 14 12 17 15 14"/></svg>',
+  delete: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>',
 };
 
 function _removeBg(): void {
