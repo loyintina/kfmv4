@@ -67,6 +67,19 @@ export function ensureCursorBox(root: Box, canvasH: number): Box {
 }
 
 
+let _modeAccentColor: string | null = null;
+
+export function setModeAccent(color: string | null): void {
+  _modeAccentColor = color;
+  const root = L.renderer?.getRoot();
+  if (!root || !L.cursorRowId) return;
+  const row = findBoxById(root, L.cursorRowId);
+  const tog = row?.children.find(c => c.id?.startsWith('toggle-'));
+  if (tog) tog.textStyle = { ...tog.textStyle, color: color || theme.canvas.accent };
+}
+
+export function getModeAccentColor(): string | null { return _modeAccentColor; }
+
 /** 移动光标到指定行（GSAP 平滑过渡） */
 export function moveCursorTo(hitBox: Box, animate = true): void {
   if (!L.cursorBox) { const r = L.renderer?.getRoot(); if (!r) return; ensureCursorBox(r, r.height || (L.renderer?.canvas?.clientHeight ?? DOM.treeCanvas?.clientHeight ?? 618)); }
@@ -90,7 +103,25 @@ export function moveCursorTo(hitBox: Box, animate = true): void {
   const targetY = abs.y + 2;
   const targetW = rm - abs.x - offsetX;
   const targetH = hitBox.height - 4;
+  const prevRowId = L.cursorRowId;
   L.cursorRowId = hitBox.id || null;
+
+  // 模式联动：只有光标行的 toggle 箭头变色
+  if (_modeAccentColor) {
+    const newTog = hitBox.children.find(c => c.id?.startsWith('toggle-'));
+    if (newTog) newTog.textStyle = { ...newTog.textStyle, color: _modeAccentColor };
+    if (prevRowId && prevRowId !== hitBox.id) {
+      const r = root ?? L.renderer?.getRoot();
+      const prevRow = r ? findBoxById(r, prevRowId) : null;
+      const prevTog = prevRow?.children.find(c => c.id?.startsWith('toggle-'));
+      if (prevTog) prevTog.textStyle = { ...prevTog.textStyle, color: theme.canvas.accent };
+    }
+  } else if (prevRowId && prevRowId !== hitBox.id) {
+    const r = root ?? L.renderer?.getRoot();
+    const prevRow = r ? findBoxById(r, prevRowId) : null;
+    const prevTog = prevRow?.children.find(c => c.id?.startsWith('toggle-'));
+    if (prevTog) prevTog.textStyle = { ...prevTog.textStyle, color: theme.canvas.accent };
+  }
 
   // 测量文字宽度，计算上下线长度
   const label = hitBox.children.find(c => c.id?.startsWith('label-'));
