@@ -863,6 +863,8 @@ function _removeBg(): void {
   _bgMaxH = 0;
   _selectedMode = null;
   _modeWrappers.length = 0;
+  setCursorColor(null, null);
+  setModeAccent(null);
   anim.killTweensOf([bgEl, tbEl]);
   anim.to([bgEl, tbEl], {
     x: '100vw', duration: 0.3, ease: 'power2.in',
