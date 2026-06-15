@@ -29,6 +29,7 @@ export interface ThemeConfig {
       speed: number;      // 移动速度 px/s
       brightMul: number;  // 亮度 alpha 倍率
       radius: number;     // 段圆角半径 px
+      glowRadius: number; // 光晕半径 px
     };
   };
 
@@ -135,8 +136,9 @@ export const nebula: ThemeConfig = {
       count: 8,
       segLen: 2,
       speed: 80,
-      brightMul: 1.5,
+      brightMul: 2.5,
       radius: 1.5,
+      glowRadius: 4,
     },
   },
 

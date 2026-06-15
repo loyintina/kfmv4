@@ -440,5 +440,6 @@ export interface RenderTheme {
     speed: number;      // 移动速度 px/s
     brightMul: number;  // 亮度 alpha 倍率
     radius: number;     // 段圆角半径 px
+    glowRadius: number; // 光晕半径 px
   };
 }

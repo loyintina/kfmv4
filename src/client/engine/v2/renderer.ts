@@ -607,13 +607,23 @@ export class Renderer {
     const brightAlpha = Math.min(1, a * cfg.brightMul);
     const ctx = this.ctx;
     ctx.save();
-    ctx.fillStyle = `rgba(${r},${g},${b},${brightAlpha.toFixed(2)})`;
-    const sl = cfg.segLen, sr = cfg.radius;
+    const sl = cfg.segLen, sr = cfg.radius, gr = cfg.glowRadius;
+    const glowAlpha = Math.min(0.35, a * cfg.brightMul * 0.35);
     for (const s of segs) {
+      // 光晕
+      const grad = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, gr);
+      grad.addColorStop(0, `rgba(${r},${g},${b},${glowAlpha.toFixed(2)})`);
+      grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, gr, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 胶囊
       ctx.save();
       ctx.translate(s.x, s.y);
       ctx.rotate(s.angle);
-      // roundRect 胶囊
+      ctx.fillStyle = `rgba(${r},${g},${b},${brightAlpha.toFixed(2)})`;
       const hw = sl / 2, hh = s.w / 2;
       ctx.beginPath();
       ctx.moveTo(-hw + sr, -hh);
