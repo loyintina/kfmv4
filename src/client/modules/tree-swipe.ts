@@ -103,15 +103,17 @@ function _hslToHex(h: number, s: number, l: number): string {
   return '#' + [f(0), f(8), f(4)].map(v => v.toString(16).padStart(2, '0')).join('');
 }
 
-function _cardAccent(isDir: boolean, h1?: number, h2?: number): { color1: string; color2: string; off1: number; off2: number } {
+function _cardAccent(isDir: boolean, h1?: number, h2?: number, s?: number, l?: number): { color1: string; color2: string; off1: number; off2: number } {
   const base1 = h1 ?? _HUE_BLUE;
   const base2 = h2 ?? _HUE_PURPLE;
+  const sat = s ?? _SAT;
+  const lit = l ?? _LIT;
   const off1 = (Math.random() - 0.5) * _HUE_RANGE * 2;
   const off2 = (Math.random() - 0.5) * _HUE_RANGE * 2;
   if (isDir) {
-    return { color1: _hslToHex(base2 + off2, _SAT, _LIT), color2: _hslToHex(base1 + off1, _SAT, _LIT), off1, off2 };
+    return { color1: _hslToHex(base2 + off2, sat, lit), color2: _hslToHex(base1 + off1, sat, lit), off1, off2 };
   }
-  return { color1: _hslToHex(base1 + off1, _SAT, _LIT), color2: _hslToHex(base2 + off2, _SAT, _LIT), off1, off2 };
+  return { color1: _hslToHex(base1 + off1, sat, lit), color2: _hslToHex(base2 + off2, sat, lit), off1, off2 };
 }
 
 function _pathBasename(path: string): string {
@@ -181,7 +183,7 @@ export function handleRowSwipe(): void {
 
   const t = _selectedMode ? _MODE_THEME[_selectedMode] : null;
   const triColor = t ? (_MODE_TRI_COLOR[_selectedMode!]) : theme.canvas.accent;
-  const cc = _cardAccent(isDir, t?.hue1, t?.hue2);
+  const cc = _cardAccent(isDir, t?.hue1, t?.hue2, t?.sat, t?.lit);
   const grad = `linear-gradient(135deg, ${_rgba(cc.color1, 0.85)} 30%, ${_rgba(cc.color2, 0.85)} 70%)`;
 
   // 从文件行位置飞入右侧堆叠
@@ -745,9 +747,9 @@ const _MODE_TRI_COLOR: Record<string, string> = {
   delete: '#ef4444',
 };
 
-const _MODE_THEME: Record<string, { bgGrad: string; btnDim: string; btnGlow: string; svgStart: string; svgEnd: string; hue1: number; hue2: number }> = {
+const _MODE_THEME: Record<string, { bgGrad: string; btnDim: string; btnGlow: string; svgStart: string; svgEnd: string; hue1: number; hue2: number; sat?: number; lit?: number }> = {
   copy: {
-    hue1: 160, hue2: 85,
+    hue1: 160, hue2: 85, sat: 75, lit: 48,
     bgGrad: 'linear-gradient(135deg,rgba(132,204,22,0.4),rgba(16,185,129,0.35),rgba(15,118,110,0.35))',
     btnDim: 'linear-gradient(90deg,rgba(132,204,22,0.2),rgba(15,118,110,0.15))',
     btnGlow: 'linear-gradient(90deg,rgba(132,204,22,0.6),rgba(15,118,110,0.4))',
@@ -779,6 +781,8 @@ function _recolorCards(mode: string | null): void {
   const t = mode ? _MODE_THEME[mode] : null;
   const h1 = t?.hue1 ?? _HUE_BLUE;
   const h2 = t?.hue2 ?? _HUE_PURPLE;
+  const sat = t?.sat ?? _SAT;
+  const lit = t?.lit ?? _LIT;
   const triColor = mode ? _MODE_TRI_COLOR[mode] : '#00d4ff';
   _tempCardEls.forEach(card => {
     const tri = card.querySelector('[data-card-triangle]') as HTMLElement | null;
@@ -786,8 +790,8 @@ function _recolorCards(mode: string | null): void {
     const off1 = parseFloat(card.dataset._hueOff1 || '0');
     const off2 = parseFloat(card.dataset._hueOff2 || '0');
     const isDir = card.dataset._isDir === 'true';
-    const c1 = _hslToHex(h1 + off1, _SAT, _LIT);
-    const c2 = _hslToHex(h2 + off2, _SAT, _LIT);
+    const c1 = _hslToHex(h1 + off1, sat, lit);
+    const c2 = _hslToHex(h2 + off2, sat, lit);
     const [accent1, accent2] = isDir ? [c2, c1] : [c1, c2];
     card.style.background = `linear-gradient(135deg, ${_rgba(accent1, 0.85)} 30%, ${_rgba(accent2, 0.85)} 70%)`;
     card.dataset._accent1 = accent1;
