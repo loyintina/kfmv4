@@ -31,14 +31,45 @@ export function getRowIndexLength(): number { return L._rowIndex.length; }
 // 模式联动光标颜色（由 tree-swipe 的 _applyModeTheme 调用）
 let _cursorColor: string | null = null;
 let _cursorBgColor: string | null = null;
+let _pulseBase: string | null = null;
+let _pulseProxy: { a: number } | null = null;
+let _pulseTween: ReturnType<typeof anim.to> | null = null;
+
+function _stopPulse(): void {
+  if (_pulseTween) { _pulseTween.kill(); _pulseTween = null; }
+  _pulseBase = null;
+  _pulseProxy = null;
+}
 
 export function setCursorColor(color: string | null, bgColor: string | null): void {
   _cursorColor = color;
   _cursorBgColor = bgColor;
-  if (L.cursorBox) {
-    const cdata = L.cursorBox.data;
-    if (cdata) cdata.color = color || theme.canvas.cursor;
-    L.cursorBox.backgroundColor = bgColor || theme.canvas.cursorBg;
+  if (color) {
+    _stopPulse();
+    _pulseBase = color.replace(/[\d.]+\)$/, '');
+    _pulseProxy = { a: 0.7 };
+    _pulseTween = anim.to(_pulseProxy, {
+      a: 0.4,
+      duration: 0.9,
+      yoyo: true,
+      repeat: -1,
+      ease: 'sine.inOut',
+      onUpdate: () => {
+        if (L.cursorBox?.data && _pulseBase) {
+          L.cursorBox.data.color = _pulseBase + _pulseProxy!.a.toFixed(2) + ')';
+        }
+      },
+    });
+    if (L.cursorBox) {
+      L.cursorBox.backgroundColor = bgColor || theme.canvas.cursorBg;
+    }
+  } else {
+    _stopPulse();
+    if (L.cursorBox) {
+      const cdata = L.cursorBox.data;
+      if (cdata) cdata.color = theme.canvas.cursor;
+      L.cursorBox.backgroundColor = theme.canvas.cursorBg;
+    }
   }
 }
 
@@ -168,7 +199,7 @@ export function moveCursorTo(hitBox: Box, animate = true): void {
   const cdata = L.cursorBox?.data;
   if (cdata) {
     cdata.cursorDynamicLines = true;
-    cdata.color = _cursorColor || theme.canvas.cursor;
+    if (!_pulseBase) cdata.color = _cursorColor || theme.canvas.cursor;
   }
 
   if (animate && cdata) {
