@@ -180,6 +180,7 @@ export function handleRowSwipe(): void {
   const isDir = data.isDir;
 
   const t = _selectedMode ? _MODE_THEME[_selectedMode] : null;
+  const triColor = t?.svgStart ?? theme.canvas.accent;
   const cc = _cardAccent(isDir, t?.hue1, t?.hue2);
   const grad = `linear-gradient(135deg, ${_rgba(cc.color1, 0.85)} 30%, ${_rgba(cc.color2, 0.85)} 70%)`;
 
@@ -211,7 +212,7 @@ export function handleRowSwipe(): void {
     '<div style="border-radius:11px;width:100%;height:100%;',
     'background:rgba(20,16,32,0.95);',
     'display:flex;align-items:flex-start;padding:7px 12px 0;gap:6px;box-sizing:border-box">',
-    isDir ? '<span style="color:' + theme.canvas.accent + ';font-size:10px;flex-shrink:0;padding-top:1px">\u25b6</span>' : '',
+    isDir ? '<span data-card-triangle style="color:' + triColor + ';font-size:10px;flex-shrink:0;padding-top:1px">\u25b6</span>' : '',
     '<div style="font-size:12px;font-weight:500;color:rgba(224,224,224,0.9);',
     'white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + name + '</div>',
     '</div>',
@@ -772,7 +773,10 @@ function _recolorCards(mode: string | null): void {
   const t = mode ? _MODE_THEME[mode] : null;
   const h1 = t?.hue1 ?? _HUE_BLUE;
   const h2 = t?.hue2 ?? _HUE_PURPLE;
+  const triColor = t?.svgStart ?? '#00d4ff';
   _tempCardEls.forEach(card => {
+    const tri = card.querySelector('[data-card-triangle]') as HTMLElement | null;
+    if (tri) tri.style.color = triColor;
     const off1 = parseFloat(card.dataset._hueOff1 || '0');
     const off2 = parseFloat(card.dataset._hueOff2 || '0');
     const isDir = card.dataset._isDir === 'true';
