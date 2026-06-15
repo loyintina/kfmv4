@@ -181,6 +181,7 @@ export class Renderer {
       if (root.scrollY) b.y -= root.scrollY;
       if (root.scrollX) b.x -= root.scrollX;
       this._drawCursorBorder(b, cursorBox.data);
+      this._drawLiquidSegments(cursorBox);
     }
   }
 
@@ -591,6 +592,44 @@ export class Renderer {
     if (botW > 0) { ctx.lineWidth = NW; ctx.beginPath(); ctx.moveTo(x + R, y + h); ctx.lineTo(x + R + botW, y + h); ctx.stroke(); }
     ctx.restore();
   }
+
+  private _drawLiquidSegments(cursorBox: Box): void {
+    const data = cursorBox.data as any;
+    const segs = data?._liquidSegments as Array<{ x: number; y: number; angle: number; w: number }> | undefined;
+    const cfg = this._theme.cursorLiquid;
+    if (!segs || !segs.length || !cfg) return;
+    const color: string = data?.color || this._theme.cursor;
+    // 提取 rgba 基色并乘 brightMul
+    const m = color.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
+    if (!m) return;
+    const r = parseInt(m[1]), g = parseInt(m[2]), b = parseInt(m[3]), a = parseFloat(m[4]);
+    const brightAlpha = Math.min(1, a * cfg.brightMul);
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.fillStyle = `rgba(${r},${g},${b},${brightAlpha.toFixed(2)})`;
+    const sl = cfg.segLen, sr = cfg.radius;
+    for (const s of segs) {
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.rotate(s.angle);
+      // roundRect 胶囊
+      const hw = sl / 2, hh = s.w / 2;
+      ctx.beginPath();
+      ctx.moveTo(-hw + sr, -hh);
+      ctx.lineTo(hw - sr, -hh);
+      ctx.arcTo(hw, -hh, hw, -hh + sr, sr);
+      ctx.lineTo(hw, hh - sr);
+      ctx.arcTo(hw, hh, hw - sr, hh, sr);
+      ctx.lineTo(-hw + sr, hh);
+      ctx.arcTo(-hw, hh, -hw, hh - sr, sr);
+      ctx.lineTo(-hw, -hh + sr);
+      ctx.arcTo(-hw, -hh, -hw + sr, -hh, sr);
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
   private _drawBorder(box: Box, b: Rect): void {
     // 优先使用 kfmStyle（高级边框）
     if (box.kfmStyle) {

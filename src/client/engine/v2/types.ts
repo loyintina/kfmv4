@@ -430,7 +430,15 @@ export interface InputConfig {
 export interface RenderTheme {
   bg: string;         // 画布背景色，如 '#0a0a0f'
   gridLine: string;   // 网格线颜色，如 '#2a2a3a'
-  text: string;       // 文字颜色，如 '#e0e0e0'
+  text: string;       // 文字��色，如 '#e0e0e0'
   cursor: string;     // 光标颜色，如 'rgba(0,212,255,0.7)'
   accent: string;     // 强调色，如 '#00d4ff'（不含 alpha，使用时自行拼接）
+  /** 玻璃管液体光效（模式联动光标动态效果），undefined 则禁用 */
+  cursorLiquid?: {
+    count: number;      // 液体段数量
+    segLen: number;     // 每段沿路径长度 px
+    speed: number;      // 移动速度 px/s
+    brightMul: number;  // 亮度 alpha 倍率
+    radius: number;     // 段圆角半径 px
+  };
 }

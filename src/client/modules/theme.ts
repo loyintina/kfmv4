@@ -22,6 +22,14 @@ export interface ThemeConfig {
     cursor: string;          // rgba(0,212,255,0.7)
     cursorBg: string;        // rgba(46,213,163,0.15)
     accent: string;          // #00d4ff
+    /** 玻璃管液体光效（模式联动光标动态效果），undefined 则禁用 */
+    cursorLiquid?: {
+      count: number;      // 液体段数量
+      segLen: number;     // 每段沿路径长度 px
+      speed: number;      // 移动速度 px/s
+      brightMul: number;  // 亮度 alpha 倍率
+      radius: number;     // 段圆角半径 px
+    };
   };
 
   /** 文件树 */
@@ -123,6 +131,13 @@ export const nebula: ThemeConfig = {
     cursor: 'rgba(0,212,255,0.7)',
     cursorBg: 'rgba(46,213,163,0.15)',
     accent: '#00d4ff',
+    cursorLiquid: {
+      count: 8,
+      segLen: 2,
+      speed: 80,
+      brightMul: 1.5,
+      radius: 1.5,
+    },
   },
 
   tree: {

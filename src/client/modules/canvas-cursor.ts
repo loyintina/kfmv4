@@ -34,11 +34,61 @@ let _cursorBgColor: string | null = null;
 let _pulseBase: string | null = null;
 let _pulseProxy: { a: number } | null = null;
 let _pulseTween: ReturnType<typeof anim.to> | null = null;
+let _liquidProxy: { pos: number } | null = null;
+let _liquidTween: ReturnType<typeof anim.to> | null = null;
 
 function _stopPulse(): void {
   if (_pulseTween) { _pulseTween.kill(); _pulseTween = null; }
   _pulseBase = null;
   _pulseProxy = null;
+  if (_liquidTween) { _liquidTween.kill(); _liquidTween = null; }
+  _liquidProxy = null;
+  if (L.cursorBox?.data) (L.cursorBox.data as any)._liquidSegments = undefined;
+}
+
+function _emitLiquidSegments(): void {
+  const cb = L.cursorBox;
+  if (!cb || !_liquidProxy) return;
+  const d = cb.data;
+  const topW: number = (d as any).topLineW || 0;
+  const botW: number = (d as any).botLineW || 0;
+  const h = cb.height;
+  const root = L.renderer?.getRoot();
+  const scrollY = root?.scrollY ?? 0;
+  const bx = cb.x;
+  const by = cb.y - scrollY;
+  const R = 4;
+  const pathLen = topW + botW + (h - 2 * R) + Math.PI * R;
+  if (pathLen <= 0) return;
+  const cfg = theme.canvas.cursorLiquid;
+  if (!cfg) return;
+  const pos = _liquidProxy.pos % pathLen;
+  const segs: LiquidPoint[] = [];
+  for (let i = 0; i < cfg.count; i++) {
+    segs.push(_pointOnCursorPath(pos + (i * pathLen) / cfg.count, bx, by, h, topW, botW));
+  }
+  (d as any)._liquidSegments = segs;
+}
+
+function _startLiquidLoop(): void {
+  const cb = L.cursorBox;
+  if (!cb) return;
+  const cfg = theme.canvas.cursorLiquid;
+  if (!cfg) return;
+  const d = cb.data;
+  const topW: number = (d as any).topLineW || 0;
+  const botW: number = (d as any).botLineW || 0;
+  const pathLen = topW + botW + (cb.height - 2 * 4) + Math.PI * 4;
+  if (pathLen <= 0) return;
+  if (_liquidTween) _liquidTween.kill();
+  _liquidProxy = { pos: 0 };
+  _liquidTween = anim.to(_liquidProxy, {
+    pos: pathLen,
+    duration: pathLen / cfg.speed,
+    ease: 'none',
+    onComplete() { _startLiquidLoop(); },
+    onUpdate() { _emitLiquidSegments(); },
+  });
 }
 
 export function setCursorColor(color: string | null, bgColor: string | null): void {
@@ -60,6 +110,8 @@ export function setCursorColor(color: string | null, bgColor: string | null): vo
         }
       },
     });
+    // 玻璃管液体光效
+    _startLiquidLoop();
     if (L.cursorBox) {
       L.cursorBox.backgroundColor = bgColor || theme.canvas.cursorBg;
     }
@@ -110,6 +162,49 @@ export function setModeAccent(color: string | null): void {
 }
 
 export function getModeAccentColor(): string | null { return _modeAccentColor; }
+
+// ========== 玻璃管液体光效路径计算 ==========
+
+interface LiquidPoint { x: number; y: number; angle: number; w: number }
+
+function _pointOnCursorPath(t: number, x: number, y: number, h: number, topW: number, botW: number): LiquidPoint {
+  const R = 4;
+  const arcLen = Math.PI * R / 2;
+  const L1 = topW;
+  const L2 = arcLen;
+  const L3 = h - 2 * R;
+  const L4 = arcLen;
+  const L5 = botW;
+  const L = L1 + L2 + L3 + L4 + L5;
+  let rem = ((t % L) + L) % L;
+
+  // 1. 上线：右→左
+  if (rem < L1) return { x: x + R + topW - rem, y, angle: Math.PI, w: 1 };
+  rem -= L1;
+
+  // 2. 左上弧：π→3π/2
+  if (rem < L2) {
+    const f = rem / L2;
+    const a = Math.PI + f * (Math.PI / 2);
+    return { x: x + R + R * Math.cos(a), y: y + R + R * Math.sin(a), angle: a + Math.PI / 2, w: 1 + 2 * f };
+  }
+  rem -= L2;
+
+  // 3. 左强调条：上→下
+  if (rem < L3) return { x, y: y + R + rem, angle: Math.PI / 2, w: 3 };
+  rem -= L3;
+
+  // 4. 左下弧：π/2→π
+  if (rem < L4) {
+    const f = rem / L4;
+    const a = Math.PI / 2 + f * (Math.PI / 2);
+    return { x: x + R + R * Math.cos(a), y: y + h - R + R * Math.sin(a), angle: a + Math.PI / 2, w: 3 - 2 * f };
+  }
+  rem -= L4;
+
+  // 5. 下线：左→右
+  return { x: x + R + rem, y: y + h, angle: 0, w: 1 };
+}
 
 /** 移动光标到指定行（GSAP 平滑过渡） */
 export function moveCursorTo(hitBox: Box, animate = true): void {
