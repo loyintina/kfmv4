@@ -28,6 +28,20 @@ import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
 
 export function getRowIndexLength(): number { return L._rowIndex.length; }
 
+// 模式联动光标颜色（由 tree-swipe 的 _applyModeTheme 调用）
+let _cursorColor: string | null = null;
+let _cursorBgColor: string | null = null;
+
+export function setCursorColor(color: string | null, bgColor: string | null): void {
+  _cursorColor = color;
+  _cursorBgColor = bgColor;
+  if (L.cursorBox) {
+    const cdata = L.cursorBox.data;
+    if (cdata) cdata.color = color || theme.canvas.cursor;
+    L.cursorBox.backgroundColor = bgColor || theme.canvas.cursorBg;
+  }
+}
+
 /** 创建/获取光标 Box，保证它挂在 root 上 */
 export function ensureCursorBox(root: Box, canvasH: number): Box {
   if (L.cursorBox) {
@@ -41,11 +55,11 @@ export function ensureCursorBox(root: Box, canvasH: number): Box {
     y: canvasH / 2 - 14,
     width: (L.renderer?.canvas?.clientWidth ?? DOM.treeCanvas?.clientWidth) || 280,
     height: 24,
-    backgroundColor: theme.canvas.cursorBg,
+    backgroundColor: _cursorBgColor || theme.canvas.cursorBg,
     borderRadius: 0,
     interactive: false,
     visible: true,
-    data: { cursorDynamicLines: true, topLineW: 0, botLineW: 0, color: theme.canvas.cursor },
+    data: { cursorDynamicLines: true, topLineW: 0, botLineW: 0, color: _cursorColor || theme.canvas.cursor },
   });
 
   root.addChild(L.cursorBox);
@@ -123,7 +137,7 @@ export function moveCursorTo(hitBox: Box, animate = true): void {
   const cdata = L.cursorBox?.data;
   if (cdata) {
     cdata.cursorDynamicLines = true;
-    cdata.color = theme.canvas.cursor;
+    cdata.color = _cursorColor || theme.canvas.cursor;
   }
 
   if (animate && cdata) {

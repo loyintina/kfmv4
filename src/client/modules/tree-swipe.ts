@@ -11,6 +11,7 @@ import { L } from './renderer-lifecycle.js';
 import { anim, type AnimTimeline } from './animation-registry.js';
 import { getFileRowData } from './state.js';
 import { findBoxById } from './canvas-utils.js';
+import { setCursorColor } from './canvas-cursor.js';
 import { currentTheme as theme } from './theme.js';
 import { DOM } from './dom-refs.js';
 import { Box } from '../engine/v2/box.js';
@@ -801,6 +802,13 @@ function _recolorCards(mode: string | null): void {
 
 function _applyModeTheme(mode: string | null): void {
   _recolorCards(mode);
+  if (mode === 'copy') {
+    setCursorColor('rgba(34,197,94,0.7)', 'rgba(34,197,94,0.12)');
+  } else if (mode === 'move') {
+    setCursorColor('rgba(234,179,8,0.7)', 'rgba(234,179,8,0.12)');
+  } else {
+    setCursorColor(null, null);
+  }
   if (mode) {
     const t = _MODE_THEME[mode];
     _currentBtnDim = t.btnDim;
