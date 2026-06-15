@@ -40,6 +40,13 @@ const _LIT = 55;
 let _selectedMode: string | null = null;
 const _modeWrappers: HTMLElement[] = [];
 
+let _okBtn: HTMLElement | null = null;
+let _cancelBtn: HTMLElement | null = null;
+
+let _currentBtnDim = 'linear-gradient(90deg,rgba(0,212,255,0.2),rgba(124,58,237,0.15))';
+let _currentBtnGlow = 'linear-gradient(90deg,rgba(0,212,255,0.6),rgba(124,58,237,0.4))';
+let _currentBgGrad = 'linear-gradient(135deg,rgba(0,212,255,0.4),rgba(99,102,241,0.35),rgba(124,58,237,0.35))';
+
 // 模式按钮选中态（由 GestureRegistry 统一调度）
 const _unregModeBtn = gestures.register({
   id: 'mode-btn',
@@ -67,12 +74,12 @@ const _unregCheckBtns = gestures.register({
     const btn = e.target as HTMLElement;
     if (!btn) return;
     _pressedBtn = btn;
-    btn.style.background = _FILL + _BORDER_GLOW + ' border-box';
+    btn.style.background = _FILL + _currentBtnGlow + ' border-box';
     btn.style.boxShadow = _HOVER_SHADOW;
   },
   onEnd: () => {
     if (!_pressedBtn) return;
-    _pressedBtn.style.background = _FILL + _BORDER_DIM + ' border-box';
+    _pressedBtn.style.background = _FILL + _currentBtnDim + ' border-box';
     _pressedBtn.style.boxShadow = _BASE_SHADOW;
     _pressedBtn = null;
   },
@@ -583,9 +590,13 @@ const _BTN_CSS = [
   'font-family:system-ui,-apple-system,sans-serif',
 ].join(';');
 
-// SVG 渐变图标（紫→青，与侧栏眼睛图标同款）
-const _CHECK_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="url(#checkGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><defs><linearGradient id="checkGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#7c3aed"/><stop offset="100%" stop-color="#00d4ff"/></linearGradient></defs><polyline points="20 6 9 17 4 12"/></svg>';
-const _CLOSE_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="url(#closeGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><defs><linearGradient id="closeGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#7c3aed"/><stop offset="100%" stop-color="#00d4ff"/></linearGradient></defs><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+// SVG 渐变图标的颜色可随模式动态切换
+function _makeCheckSvg(start: string, end: string): string {
+  return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="url(#checkGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><defs><linearGradient id="checkGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="' + start + '"/><stop offset="100%" stop-color="' + end + '"/></linearGradient></defs><polyline points="20 6 9 17 4 12"/></svg>';
+}
+function _makeCloseSvg(start: string, end: string): string {
+  return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="url(#closeGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><defs><linearGradient id="closeGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="' + start + '"/><stop offset="100%" stop-color="' + end + '"/></linearGradient></defs><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+}
 
 // hover/active/glow 统一由 GSAP 管理
 const _BASE_SHADOW = '0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)';
@@ -615,22 +626,24 @@ function _ensureBg(sidebarW: number): void {
 
   // ✓ — 贴工具栏左沿（= 背景卡左沿）
   const okBtn = document.createElement('button');
-  okBtn.innerHTML = _CHECK_SVG;
+  okBtn.innerHTML = _makeCheckSvg('#7c3aed', '#00d4ff');
   okBtn.style.cssText = _BTN_CSS + ';position:absolute;left:0;top:0';
   okBtn.setAttribute('data-toolbar-btn', 'ok');
   okBtn.addEventListener('click', deployAllCards);
   _toolbar.appendChild(okBtn);
+  _okBtn = okBtn;
 
   // ✗ — 半距左移
   const tbW = window.innerWidth - left + 12;
   const btnW = 40, gap = 12;
   const D = Math.max(0, (tbW - btnW * 2 - gap) / 2);
   const cancelBtn = document.createElement('button');
-  cancelBtn.innerHTML = _CLOSE_SVG;
+  cancelBtn.innerHTML = _makeCloseSvg('#7c3aed', '#00d4ff');
   cancelBtn.style.cssText = _BTN_CSS + ';position:absolute;left:' + Math.round(btnW + gap + D / 2) + 'px;top:0';
   cancelBtn.setAttribute('data-toolbar-btn', 'cancel');
   cancelBtn.addEventListener('click', dismissAllCards);
   _toolbar.appendChild(cancelBtn);
+  _cancelBtn = cancelBtn;
 
   // 第 2 行：三个模式按钮（左右对齐 ✓ 左沿 ↔ ✗ 右沿）
   const cancelLeft = Math.round(btnW + gap + D / 2);
@@ -717,6 +730,52 @@ const _MODE_BORDER_GRAD: Record<string, string> = {
   delete: 'linear-gradient(135deg,rgba(249,115,22,0.6),rgba(131,24,67,0.4))',
 };
 
+const _MODE_THEME: Record<string, { bgGrad: string; btnDim: string; btnGlow: string; svgStart: string; svgEnd: string }> = {
+  copy: {
+    bgGrad: 'linear-gradient(135deg,rgba(132,204,22,0.4),rgba(16,185,129,0.35),rgba(15,118,110,0.35))',
+    btnDim: 'linear-gradient(90deg,rgba(132,204,22,0.2),rgba(15,118,110,0.15))',
+    btnGlow: 'linear-gradient(90deg,rgba(132,204,22,0.6),rgba(15,118,110,0.4))',
+    svgStart: '#84cc16',
+    svgEnd: '#0f766e',
+  },
+  move: {
+    bgGrad: 'linear-gradient(135deg,rgba(245,158,11,0.4),rgba(234,179,8,0.35),rgba(163,230,53,0.35))',
+    btnDim: 'linear-gradient(90deg,rgba(245,158,11,0.2),rgba(163,230,53,0.15))',
+    btnGlow: 'linear-gradient(90deg,rgba(245,158,11,0.6),rgba(163,230,53,0.4))',
+    svgStart: '#f59e0b',
+    svgEnd: '#a3e635',
+  },
+  delete: {
+    bgGrad: 'linear-gradient(135deg,rgba(249,115,22,0.4),rgba(244,114,182,0.35),rgba(131,24,67,0.35))',
+    btnDim: 'linear-gradient(90deg,rgba(249,115,22,0.2),rgba(131,24,67,0.15))',
+    btnGlow: 'linear-gradient(90deg,rgba(249,115,22,0.6),rgba(131,24,67,0.4))',
+    svgStart: '#f97316',
+    svgEnd: '#831843',
+  },
+};
+
+const _DEFAULT_SVG_START = '#7c3aed';
+const _DEFAULT_SVG_END = '#00d4ff';
+
+function _applyModeTheme(mode: string | null): void {
+  if (mode) {
+    const t = _MODE_THEME[mode];
+    _currentBtnDim = t.btnDim;
+    _currentBtnGlow = t.btnGlow;
+    _currentBgGrad = t.bgGrad;
+    if (_bgCard) _bgCard.style.background = 'linear-gradient(rgba(16,12,24,0.7),rgba(16,12,24,0.7)) padding-box,' + t.bgGrad + ' border-box';
+    if (_okBtn) { _okBtn.innerHTML = _makeCheckSvg(t.svgStart, t.svgEnd); _okBtn.style.background = _FILL + t.btnDim + ' border-box'; }
+    if (_cancelBtn) { _cancelBtn.innerHTML = _makeCloseSvg(t.svgStart, t.svgEnd); _cancelBtn.style.background = _FILL + t.btnDim + ' border-box'; }
+  } else {
+    _currentBtnDim = 'linear-gradient(90deg,rgba(0,212,255,0.2),rgba(124,58,237,0.15))';
+    _currentBtnGlow = 'linear-gradient(90deg,rgba(0,212,255,0.6),rgba(124,58,237,0.4))';
+    _currentBgGrad = 'linear-gradient(135deg,rgba(0,212,255,0.4),rgba(99,102,241,0.35),rgba(124,58,237,0.35))';
+    if (_bgCard) _bgCard.style.background = 'linear-gradient(rgba(16,12,24,0.7),rgba(16,12,24,0.7)) padding-box,' + _currentBgGrad + ' border-box';
+    if (_okBtn) { _okBtn.innerHTML = _makeCheckSvg(_DEFAULT_SVG_START, _DEFAULT_SVG_END); _okBtn.style.background = _FILL + _currentBtnDim + ' border-box'; }
+    if (_cancelBtn) { _cancelBtn.innerHTML = _makeCloseSvg(_DEFAULT_SVG_START, _DEFAULT_SVG_END); _cancelBtn.style.background = _FILL + _currentBtnDim + ' border-box'; }
+  }
+}
+
 function _updateModeSelection(): void {
   const activeIdx = _selectedMode === 'copy' ? 0 : _selectedMode === 'move' ? 1 : _selectedMode === 'delete' ? 2 : -1;
   _modeWrappers.forEach((w, i) => {
@@ -730,6 +789,7 @@ function _updateModeSelection(): void {
       w.style.background = '';
     }
   });
+  _applyModeTheme(_selectedMode);
 }
 
 const _MODE_SVG: Record<string, string> = {
@@ -744,6 +804,8 @@ function _removeBg(): void {
   const tbEl = _toolbar;
   _bgCard = null;
   _toolbar = null;
+  _okBtn = null;
+  _cancelBtn = null;
   _bgMaxH = 0;
   _selectedMode = null;
   _modeWrappers.length = 0;
