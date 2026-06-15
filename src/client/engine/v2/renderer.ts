@@ -63,6 +63,7 @@ export class Renderer {
       text: options.theme?.text ?? '#e0e0e0',
       cursor: options.theme?.cursor ?? 'rgba(0,212,255,0.7)',
       accent: options.theme?.accent ?? '#00d4ff',
+      cursorLiquid: options.theme?.cursorLiquid,
     };
     this.width = 0;
     this.height = 0;

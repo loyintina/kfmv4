@@ -24,7 +24,7 @@ const WHITELIST = new Set([
   'client/modules/canvas-cursor.ts:70',
   'client/modules/canvas-cursor.ts:79',
   'client/modules/canvas-cursor.ts:80',
-  'client/engine/v2/renderer.ts:597',
+  'client/engine/v2/renderer.ts:598',
 ]);
 
 const AS_ANY_RE = /\bas\s+any\b/;

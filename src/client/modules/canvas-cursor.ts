@@ -97,9 +97,9 @@ export function setCursorColor(color: string | null, bgColor: string | null): vo
   if (color) {
     _stopPulse();
     _pulseBase = color.replace(/[\d.]+\)$/, '');
-    _pulseProxy = { a: 0.7 };
+    _pulseProxy = { a: 0.85 };
     _pulseTween = anim.to(_pulseProxy, {
-      a: 0.4,
+      a: 0.5,
       duration: 0.9,
       yoyo: true,
       repeat: -1,
@@ -146,6 +146,7 @@ export function ensureCursorBox(root: Box, canvasH: number): Box {
   });
 
   root.addChild(L.cursorBox);
+  if (_cursorColor) _startLiquidLoop();
   return L.cursorBox;
 }
 
