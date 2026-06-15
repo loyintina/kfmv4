@@ -804,7 +804,7 @@ function _applyModeTheme(mode: string | null): void {
   _recolorCards(mode);
   if (mode === 'copy') {
     setCursorColor('rgba(34,197,94,0.7)', 'rgba(34,197,94,0.12)');
-    setModeAccent('#22c55e');
+    setModeAccent('#4ade80');
   } else if (mode === 'move') {
     setCursorColor('rgba(234,179,8,0.7)', 'rgba(234,179,8,0.12)');
     setModeAccent('#eab308');
