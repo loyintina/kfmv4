@@ -11,7 +11,7 @@ import { L } from './renderer-lifecycle.js';
 import { anim, type AnimTimeline } from './animation-registry.js';
 import { getFileRowData } from './state.js';
 import { findBoxById } from './canvas-utils.js';
-import { setCursorColor, setModeAccent } from './canvas-cursor.js';
+import { setCursorColor } from './canvas-cursor.js';
 import { currentTheme as theme } from './theme.js';
 import { DOM } from './dom-refs.js';
 import { Box } from '../engine/v2/box.js';
@@ -804,13 +804,10 @@ function _applyModeTheme(mode: string | null): void {
   _recolorCards(mode);
   if (mode === 'copy') {
     setCursorColor('rgba(34,197,94,0.7)', 'rgba(34,197,94,0.12)');
-    setModeAccent('#22c55e');
   } else if (mode === 'move') {
     setCursorColor('rgba(234,179,8,0.7)', 'rgba(234,179,8,0.12)');
-    setModeAccent('#eab308');
   } else {
     setCursorColor(null, null);
-    setModeAccent(null);
   }
   if (mode) {
     const t = _MODE_THEME[mode];

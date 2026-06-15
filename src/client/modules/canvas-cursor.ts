@@ -42,25 +42,6 @@ export function setCursorColor(color: string | null, bgColor: string | null): vo
   }
 }
 
-let _modeAccentColor: string | null = null;
-
-export function getModeAccentColor(): string | null { return _modeAccentColor; }
-
-function _walkToggleIcons(box: Box, color: string | null): void {
-  if (box.id?.startsWith('toggle-')) {
-    box.textStyle = { ...box.textStyle, color: color || theme.canvas.accent };
-  }
-  if (box.children) {
-    for (const child of box.children) _walkToggleIcons(child, color);
-  }
-}
-
-export function setModeAccent(color: string | null): void {
-  _modeAccentColor = color;
-  const root = L.renderer?.getRoot();
-  if (root) _walkToggleIcons(root, color);
-}
-
 /** 创建/获取光标 Box，保证它挂在 root 上 */
 export function ensureCursorBox(root: Box, canvasH: number): Box {
   if (L.cursorBox) {

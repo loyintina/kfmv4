@@ -6,7 +6,6 @@ import { Box } from '../engine/v2/box.js';
 import { KFMState, type FileNode } from './state.js';
 import { DIMENSIONS, TEXT_STYLES, getFileColor, createBox, LINE_HEIGHT, MAX_LINES, FONT, getShift } from './style-registry.js';
 import { currentTheme as theme } from './theme.js';
-import { getModeAccentColor } from './canvas-cursor.js';
 import { resolveStyle } from '../engine/v2/StyleConfig.js';
 import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
 
@@ -65,7 +64,7 @@ function calcTextLayout(name: string, maxWidth: number): { lines: number, height
 /** 创建 toggle-icon 并设置初始旋转状态 */
 function createToggle(item: FileNode, rowHeight: number, ex: boolean): Box {
   const tog = createBox('toggle-icon', { id: `toggle-${item.path}`, x: T_OFF, y: 0, height: rowHeight });
-  tog.textStyle = { ...TEXT_STYLES.toggleIcon, content: '\u25b6', color: getModeAccentColor() || theme.canvas.accent };
+  tog.textStyle = { ...TEXT_STYLES.toggleIcon, content: '\u25b6', color: theme.canvas.accent };
   if (ex) tog.transform.rotate = Math.PI / 2;  // 已展开时初始旋转 90°
   return tog;
 }
