@@ -757,7 +757,7 @@ const _MODE_THEME: Record<string, { bgGrad: string; btnDim: string; btnGlow: str
     svgEnd: '#0f766e',
   },
   move: {
-    hue1: 40, hue2: 80,
+    hue1: 40, hue2: 55,
     bgGrad: 'linear-gradient(135deg,rgba(245,158,11,0.4),rgba(234,179,8,0.35),rgba(163,230,53,0.35))',
     btnDim: 'linear-gradient(90deg,rgba(245,158,11,0.2),rgba(163,230,53,0.15))',
     btnGlow: 'linear-gradient(90deg,rgba(245,158,11,0.6),rgba(163,230,53,0.4))',
