@@ -743,7 +743,7 @@ const _MODE_BORDER_GRAD: Record<string, string> = {
 };
 
 const _MODE_TRI_COLOR: Record<string, string> = {
-  copy: '#22c55e',
+  copy: '#4ade80',
   move: '#eab308',
   delete: '#ef4444',
 };
@@ -803,7 +803,7 @@ function _recolorCards(mode: string | null): void {
 function _applyModeTheme(mode: string | null): void {
   _recolorCards(mode);
   if (mode === 'copy') {
-    setCursorColor('rgba(34,197,94,0.7)', 'rgba(34,197,94,0.12)');
+    setCursorColor('rgba(74,222,128,0.7)', 'rgba(74,222,128,0.12)');
     setModeAccent('#4ade80');
   } else if (mode === 'move') {
     setCursorColor('rgba(234,179,8,0.7)', 'rgba(234,179,8,0.12)');
