@@ -180,7 +180,7 @@ export function handleRowSwipe(): void {
   const isDir = data.isDir;
 
   const t = _selectedMode ? _MODE_THEME[_selectedMode] : null;
-  const triColor = t?.svgStart ?? theme.canvas.accent;
+  const triColor = t ? (_MODE_TRI_COLOR[_selectedMode!]) : theme.canvas.accent;
   const cc = _cardAccent(isDir, t?.hue1, t?.hue2);
   const grad = `linear-gradient(135deg, ${_rgba(cc.color1, 0.85)} 30%, ${_rgba(cc.color2, 0.85)} 70%)`;
 
@@ -739,6 +739,12 @@ const _MODE_BORDER_GRAD: Record<string, string> = {
   delete: 'linear-gradient(135deg,rgba(249,115,22,0.6),rgba(131,24,67,0.4))',
 };
 
+const _MODE_TRI_COLOR: Record<string, string> = {
+  copy: '#22c55e',
+  move: '#eab308',
+  delete: '#ef4444',
+};
+
 const _MODE_THEME: Record<string, { bgGrad: string; btnDim: string; btnGlow: string; svgStart: string; svgEnd: string; hue1: number; hue2: number }> = {
   copy: {
     hue1: 160, hue2: 85,
@@ -773,7 +779,7 @@ function _recolorCards(mode: string | null): void {
   const t = mode ? _MODE_THEME[mode] : null;
   const h1 = t?.hue1 ?? _HUE_BLUE;
   const h2 = t?.hue2 ?? _HUE_PURPLE;
-  const triColor = t?.svgStart ?? '#00d4ff';
+  const triColor = mode ? _MODE_TRI_COLOR[mode] : '#00d4ff';
   _tempCardEls.forEach(card => {
     const tri = card.querySelector('[data-card-triangle]') as HTMLElement | null;
     if (tri) tri.style.color = triColor;
