@@ -81,25 +81,46 @@ function _emitLiquidSegments(): void {
   if (!cfg) return;
   const vm = cfg.verticalMul ?? 1;
   const realVert = h - 2 * R;
-  // 路径空间总长（GSAP 匀速遍历用）
   const pathLen = topW + realVert * vm + botW;
   if (pathLen <= 0) return;
-  // 物理空间总长（粒子定位用）
-  const physTotal = topW + realVert + botW;
   const pos = _liquidProxy.pos % pathLen;
-  const hlDef = cfg.segLen / 2;
-  const segLenVert = cfg.segLenVertical ?? 4;
+  const segLenH = cfg.segLen;
+  const segLenV = cfg.segLenVertical ?? 4;
   const segs: LiquidPoint[] = [];
+
   for (let i = 0; i < cfg.count; i++) {
     const pathC = (pos + (i * pathLen) / cfg.count) % pathLen;
     const physC = _pathToPhysical(pathC, topW, realVert, vm);
-    let s = ((physC - hlDef) % physTotal + physTotal) % physTotal;
-    let e = ((physC + hlDef) % physTotal + physTotal) % physTotal;
-    if (s < e) {
-      for (const p of _rangeToPhysicalPoints(s, e, bx, by, h, topW, botW, segLenVert)) segs.push(p);
+
+    if (physC < topW) {
+      // 上线管道：右→左，w=1
+      const distL = physC;
+      const distR = topW - physC;
+      const len = Math.min(segLenH, 2 * Math.min(distL, distR));
+      const half = len / 2;
+      const cs = Math.max(0, physC - half);
+      const ce = Math.min(topW, physC + half);
+      if (ce > cs) segs.push({ x: bx + R + topW - (cs + ce) / 2, y: by, angle: Math.PI, w: 1, len: ce - cs });
+    } else if (physC < topW + realVert) {
+      // 竖线管道：上→下，w=3
+      const vert = physC - topW;
+      const distT = vert;
+      const distB = realVert - vert;
+      const len = Math.min(segLenV, 2 * Math.min(distT, distB));
+      const half = len / 2;
+      const cs = Math.max(0, vert - half);
+      const ce = Math.min(realVert, vert + half);
+      if (ce > cs) segs.push({ x: bx, y: by + R + (cs + ce) / 2, angle: Math.PI / 2, w: 3, len: ce - cs });
     } else {
-      for (const p of _rangeToPhysicalPoints(s, physTotal, bx, by, h, topW, botW, segLenVert)) segs.push(p);
-      for (const p of _rangeToPhysicalPoints(0, e, bx, by, h, topW, botW, segLenVert)) segs.push(p);
+      // 下线管道：左→右，w=1
+      const horiz = physC - topW - realVert;
+      const distL = horiz;
+      const distR = botW - horiz;
+      const len = Math.min(segLenH, 2 * Math.min(distL, distR));
+      const half = len / 2;
+      const cs = Math.max(0, horiz - half);
+      const ce = Math.min(botW, horiz + half);
+      if (ce > cs) segs.push({ x: bx + R + (cs + ce) / 2, y: by + h, angle: 0, w: 1, len: ce - cs });
     }
   }
   (cb.data as CData)._liquidSegments = segs;
@@ -215,46 +236,6 @@ function _pathToPhysical(t: number, topW: number, realVert: number, vm: number):
   const vPath = realVert * vm;
   if (t < vPath) return topW + t / vm;
   return topW + realVert + (t - vPath);
-}
-
-/** 物理区间 [s, e] 切分到上/竖/下三段，产物理坐标 LiquidPoint；竖线段 cap 到 segLenVert */
-function _rangeToPhysicalPoints(s: number, e: number, bx: number, by: number, h: number, topW: number, botW: number, segLenVert: number): LiquidPoint[] {
-  const R = 4;
-  const realVert = h - 2 * R;
-  const segBounds = [0, topW, topW + realVert, topW + realVert + botW];
-  const out: LiquidPoint[] = [];
-  for (let i = 0; i < 3; i++) {
-    const os = Math.max(s, segBounds[i]);
-    const oe = Math.min(e, segBounds[i + 1]);
-    if (oe <= os + 0.001) continue;
-
-    if (i === 0) {
-      const phyS = bx + R + topW - os;
-      const phyE = bx + R + topW - oe;
-      out.push({ x: (phyS + phyE) / 2, y: by, angle: Math.PI, w: 1, len: Math.abs(phyE - phyS) });
-    } else if (i === 1) {
-      const phyS = by + R + (os - topW);
-      const phyE = by + R + (oe - topW);
-      const rawLen = phyE - phyS;
-      // 仅全程在竖管时 cap；跨管走自然 overlap
-      if (s >= topW && e <= topW + realVert) {
-        const capLen = Math.min(rawLen, segLenVert);
-        const mid = (phyS + phyE) / 2;
-        const half = capLen / 2;
-        const cs = Math.max(phyS, mid - half);
-        const ce = Math.min(phyE, mid + half);
-        const finalLen = Math.max(0, ce - cs);
-        if (finalLen > 0) out.push({ x: bx, y: (cs + ce) / 2, angle: Math.PI / 2, w: 3, len: finalLen });
-      } else {
-        if (rawLen > 0) out.push({ x: bx, y: (phyS + phyE) / 2, angle: Math.PI / 2, w: 3, len: rawLen });
-      }
-    } else {
-      const phyS = bx + R + (os - topW - realVert);
-      const phyE = bx + R + (oe - topW - realVert);
-      out.push({ x: (phyS + phyE) / 2, y: by + h, angle: 0, w: 1, len: phyE - phyS });
-    }
-  }
-  return out;
 }
 
 /** 移动光标到指定行（GSAP 平滑过渡） */
