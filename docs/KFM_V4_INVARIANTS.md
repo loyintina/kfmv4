@@ -44,6 +44,9 @@
 判断标准：如果你在同一个问题上连续试了两次以上 CSS/配置层面的修正，说明选错了工具，
 应该换一个层面解决。
 
+> 案例：液体粒子 portal 系统。连续环+overlap拆分的模型产生了 15 个补丁提交（cap/锚点/margin）。
+> 换成三段独立管道模型后 1 个提交删除 22 行即可。详见 `docs/archive/design/CASE_STUDY_MODEL_CHOICE.md`。
+
 ### 9. 重构中搬运代码时，必须原样复制后再改，禁止凭记忆重写 [LEVEL 1]
 从旧位置迁移函数/逻辑时，先用 `git show` 或 `read` 取出原始代码，清理格式后粘贴到新位置，
 然后只改需要改的部分（如 `addEventListener` → `gestures.register`）。
