@@ -68,11 +68,14 @@ function _emitLiquidSegments(): void {
   // 物理空间总长（粒子定位用）
   const physTotal = topW + realVert + botW;
   const pos = _liquidProxy.pos % pathLen;
-  const hl = cfg.segLen / 2;
+  const hlDef = cfg.segLen / 2;
+  const hlVert = (cfg.segLenVertical ?? 4) / 2;
   const segs: LiquidPoint[] = [];
   for (let i = 0; i < cfg.count; i++) {
     const pathC = (pos + (i * pathLen) / cfg.count) % pathLen;
     const physC = _pathToPhysical(pathC, topW, realVert, vm);
+    const onVert = physC >= topW && physC < topW + realVert;
+    const hl = onVert ? hlVert : hlDef;
     let s = ((physC - hl) % physTotal + physTotal) % physTotal;
     let e = ((physC + hl) % physTotal + physTotal) % physTotal;
     if (s < e) {
