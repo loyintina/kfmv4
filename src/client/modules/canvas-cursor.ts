@@ -37,6 +37,7 @@ let _pulseTween: ReturnType<typeof anim.to> | null = null;
 let _liquidProxy: { pos: number } | null = null;
 let _liquidTween: ReturnType<typeof anim.to> | null = null;
 let _liquidColor: string | null = null;
+let _liquidPulseBase: string | null = null;
 
 export function setLiquidColor(color: string | null): void {
   _liquidColor = color;
@@ -46,6 +47,7 @@ export function setLiquidColor(color: string | null): void {
 function _stopPulse(): void {
   if (_pulseTween) { _pulseTween.kill(); _pulseTween = null; }
   _pulseBase = null;
+  _liquidPulseBase = null;
   _pulseProxy = null;
   if (_liquidTween) { _liquidTween.kill(); _liquidTween = null; }
   _liquidProxy = null;
@@ -121,6 +123,7 @@ export function setCursorColor(color: string | null, bgColor: string | null): vo
   if (color) {
     _stopPulse();
     _pulseBase = color.replace(/[\d.]+\)$/, '');
+    _liquidPulseBase = _liquidColor ? _liquidColor.replace(/[\d.]+\)$/, '') : null;
     _pulseProxy = { a: 0.82 };
     _pulseTween = anim.to(_pulseProxy, {
       a: 0.65,
@@ -131,6 +134,9 @@ export function setCursorColor(color: string | null, bgColor: string | null): vo
       onUpdate: () => {
         if (L.cursorBox?.data && _pulseBase) {
           L.cursorBox.data.color = _pulseBase + _pulseProxy!.a.toFixed(2) + ')';
+          if (_liquidPulseBase) {
+            (L.cursorBox.data as any).liquidColor = _liquidPulseBase + _pulseProxy!.a.toFixed(2) + ')';
+          }
         }
       },
     });

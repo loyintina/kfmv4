@@ -18,13 +18,14 @@ const SRC_DIR = 'src';
 // 格式：'相对路径:行号' —— 行号为文件中 (as any) 起始位置
 // 白名单：Box.data 类型为 any，访问自定义字段 _liquidSegments/topLineW/botLineW 需要类型断言
 const WHITELIST = new Set([
-  'client/modules/canvas-cursor.ts:43',
-  'client/modules/canvas-cursor.ts:52',
-  'client/modules/canvas-cursor.ts:59',
-  'client/modules/canvas-cursor.ts:60',
-  'client/modules/canvas-cursor.ts:92',
-  'client/modules/canvas-cursor.ts:101',
-  'client/modules/canvas-cursor.ts:102',
+  'client/modules/canvas-cursor.ts:44',
+  'client/modules/canvas-cursor.ts:54',
+  'client/modules/canvas-cursor.ts:61',
+  'client/modules/canvas-cursor.ts:62',
+  'client/modules/canvas-cursor.ts:94',
+  'client/modules/canvas-cursor.ts:103',
+  'client/modules/canvas-cursor.ts:104',
+  'client/modules/canvas-cursor.ts:138',
   'client/engine/v2/renderer.ts:598',
   'client/engine/v2/renderer.ts:602',
 ]);
