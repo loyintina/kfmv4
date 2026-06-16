@@ -438,7 +438,6 @@ export interface RenderTheme {
     count: number;      // 液体段数量
     segLen: number;     // 每段沿路径长度 px（上/下线默认）
     speed: number;      // 移动速度 px/s
-    brightMul: number;  // 亮度 alpha 倍率
     radius: number;     // 段圆角半径 px
     glowRadius: number; // 光晕半径 px
     /** 竖线路径倍率（>1=减慢竖线遍历速度，增大竖线段粒子密度），默认 1 */

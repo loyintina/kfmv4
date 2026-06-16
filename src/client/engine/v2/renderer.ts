@@ -603,11 +603,10 @@ export class Renderer {
     const m = color.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
     if (!m) return;
     const r = parseInt(m[1]), g = parseInt(m[2]), b = parseInt(m[3]), a = parseFloat(m[4]);
-    const brightAlpha = Math.min(1, a * cfg.brightMul);
     const ctx = this.ctx;
     ctx.save();
     const sr = cfg.radius, gr = cfg.glowRadius;
-    const glowAlpha = Math.min(0.35, a * cfg.brightMul * 0.35);
+    const glowAlpha = Math.min(0.35, a * 0.35);
     for (const s of segs) {
       const sl = s.len;
       if (sl <= 0) continue;
@@ -632,7 +631,7 @@ export class Renderer {
       ctx.save();
       ctx.translate(s.x, s.y);
       ctx.rotate(s.angle);
-      ctx.fillStyle = `rgba(${r},${g},${b},${brightAlpha.toFixed(2)})`;
+      ctx.fillStyle = `rgba(${r},${g},${b},${a.toFixed(2)})`;
       ctx.beginPath();
       ctx.moveTo(-hw + sr, -hh);
       ctx.lineTo(hw - sr, -hh);
