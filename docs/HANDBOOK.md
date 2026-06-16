@@ -329,7 +329,7 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 |------|------|--------|---------|------|
 | `app.ts` | 181 | 1 | ✅ 入口 | 初始化流程��排 |
 | `animation-registry.ts` | 93 | 5 | ✅ 提及 | GSAP 动画隔离层 |
-| `canvas-cursor.ts` | 439 | 3 | ✅ 提及 | Canvas 盒子光标系统 |
+| `canvas-cursor.ts` | 445 | 3 | ✅ 提及 | Canvas 盒子光标系统 |
 | `canvas-scroll.ts` | 315 | 2 | ✅ 提及 | Canvas 盒子滚动系统 |
 | `canvas-utils.ts` | 60 | 4 | ✅ 依赖图 | Canvas 通用工具函数 |
 | `card-stack.ts` | 517 | 4 | ✅ 独立条目 | 堆叠卡片面板 |
@@ -353,11 +353,11 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `tree-model.ts` | 185 | 2 | ✅ 分组表 | 绝对深度布局模型 |
 | `tree-overlay.ts` | 377 | 1 | ✅ 分组表 | Overlay 双树构建系统（从 tree-render 拆分） |
 | `tree-render.ts` | 969 | 3 | ✅ 核心条目 | 文件树 Canvas 渲染（编排层） |
-| `tree-swipe.ts` | 885 | 1 | ✅ 分组表 | 文件行右滑 → 卡片堆（从 tree-render 拆分） |
+| `tree-swipe.ts` | 888 | 1 | ✅ 分组表 | 文件行右滑 → 卡片堆（从 tree-render 拆分） |
 | `ui-registry.ts` | 331 | 9 | ✅ 独立条目 | UI 元素注册表 |
 | `ui.ts` | 70 | 10 | ✅ 提及 | UI 初始化编排 |
 | `ws-channel.ts` | 317 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
-| **合计** | **8331** | | | |
+| **合计** | **8340** | | | |
 
 ### 死代码检查
 

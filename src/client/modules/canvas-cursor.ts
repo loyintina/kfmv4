@@ -36,6 +36,12 @@ let _pulseProxy: { a: number } | null = null;
 let _pulseTween: ReturnType<typeof anim.to> | null = null;
 let _liquidProxy: { pos: number } | null = null;
 let _liquidTween: ReturnType<typeof anim.to> | null = null;
+let _liquidColor: string | null = null;
+
+export function setLiquidColor(color: string | null): void {
+  _liquidColor = color;
+  if (L.cursorBox?.data) (L.cursorBox.data as any).liquidColor = color || undefined;
+}
 
 function _stopPulse(): void {
   if (_pulseTween) { _pulseTween.kill(); _pulseTween = null; }
@@ -160,7 +166,7 @@ export function ensureCursorBox(root: Box, canvasH: number): Box {
     borderRadius: 0,
     interactive: false,
     visible: true,
-    data: { cursorDynamicLines: true, topLineW: 0, botLineW: 0, color: _cursorColor || theme.canvas.cursor },
+    data: { cursorDynamicLines: true, topLineW: 0, botLineW: 0, color: _cursorColor || theme.canvas.cursor, liquidColor: _liquidColor || undefined },
   });
 
   root.addChild(L.cursorBox);

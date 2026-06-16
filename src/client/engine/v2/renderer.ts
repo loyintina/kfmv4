@@ -599,7 +599,7 @@ export class Renderer {
     const segs = data?._liquidSegments as Array<{ x: number; y: number; angle: number; w: number; len: number }> | undefined;
     const cfg = this._theme.cursorLiquid;
     if (!segs || !segs.length || !cfg) return;
-    const color: string = data?.color || this._theme.cursor;
+    const color: string = (data as any)?.liquidColor || data?.color || this._theme.cursor;
     const m = color.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
     if (!m) return;
     const r = parseInt(m[1]), g = parseInt(m[2]), b = parseInt(m[3]), a = parseFloat(m[4]);
