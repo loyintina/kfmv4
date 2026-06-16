@@ -21,9 +21,9 @@ const WHITELIST = new Set([
   'client/modules/canvas-cursor.ts:46',
   'client/modules/canvas-cursor.ts:53',
   'client/modules/canvas-cursor.ts:54',
-  'client/modules/canvas-cursor.ts:73',
-  'client/modules/canvas-cursor.ts:82',
-  'client/modules/canvas-cursor.ts:83',
+  'client/modules/canvas-cursor.ts:80',
+  'client/modules/canvas-cursor.ts:89',
+  'client/modules/canvas-cursor.ts:90',
   'client/engine/v2/renderer.ts:598',
 ]);
 

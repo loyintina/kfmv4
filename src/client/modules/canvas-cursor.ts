@@ -61,14 +61,21 @@ function _emitLiquidSegments(): void {
   const cfg = theme.canvas.cursorLiquid;
   if (!cfg) return;
   const vm = cfg.verticalMul ?? 1;
-  const arcLen = Math.PI * R / 2;
-  // 传送门路径：上线 + 竖线(x倍率) + 下线，无弧段
-  const pathLen = topW + (h - 2 * R) * vm + botW;
-  if (pathLen <= 0) return;
-  const pos = _liquidProxy.pos % pathLen;
+  const totalLen = topW + (h - 2 * R) * vm + botW;
+  if (totalLen <= 0) return;
+  const pos = _liquidProxy.pos % totalLen;
+  const hl = cfg.segLen / 2;
   const segs: LiquidPoint[] = [];
   for (let i = 0; i < cfg.count; i++) {
-    segs.push(_pointOnCursorPath(pos + (i * pathLen) / cfg.count, cfg.segLen, bx, by, h, topW, botW, vm));
+    const c = (pos + (i * totalLen) / cfg.count) % totalLen;
+    let s = ((c - hl) % totalLen + totalLen) % totalLen;
+    let e = ((c + hl) % totalLen + totalLen) % totalLen;
+    if (s < e) {
+      for (const p of _rangeToPoints(s, e, bx, by, h, topW, botW, vm)) segs.push(p);
+    } else {
+      for (const p of _rangeToPoints(s, totalLen, bx, by, h, topW, botW, vm)) segs.push(p);
+      for (const p of _rangeToPoints(0, e, bx, by, h, topW, botW, vm)) segs.push(p);
+    }
   }
   (d as any)._liquidSegments = segs;
 }
@@ -169,57 +176,45 @@ export function setModeAccent(color: string | null): void {
 
 export function getModeAccentColor(): string | null { return _modeAccentColor; }
 
-// ========== 玻璃管液体光效路径计算（传送门：3直线，拐角截断）==========
+// ========== 玻璃管液体光效路径计算（传送门：3直线，拐角拆分）==========
 
 interface LiquidPoint { x: number; y: number; angle: number; w: number; len: number }
 
-function _pointOnCursorPath(t: number, len: number, x: number, y: number, h: number, topW: number, botW: number, verticalMul: number): LiquidPoint {
+/** 路径区间 s→e 映射到线段，产出若干子点；s/e 在 [0, total) 内 */
+function _rangeToPoints(s: number, e: number, bx: number, by: number, h: number, topW: number, botW: number, vm: number): LiquidPoint[] {
   const R = 4;
-  const arcLen = Math.PI * R / 2;
-  const L1 = topW;
-  const L2 = (h - 2 * R) * verticalMul;
-  const L3 = botW;
-  const L = L1 + L2 + L3;
-  let rem = ((t % L) + L) % L;
+  const realVert = h - 2 * R;
+  const vLen = realVert * vm;  // 竖线路径长度（缩放后）
+  const total = topW + vLen + botW;
 
-  // 1. 上线：右→左
-  if (rem < L1) {
-    // 拐角截断：粒子不超出 (x+R, y) 左端点
-    const hl = len / 2;
-    const px = x + R + topW - rem;
-    const clampedLeft = Math.max(x + R, px - hl);
-    const clampedRight = Math.min(x + R + topW, px + hl);
-    const sx = (clampedLeft + clampedRight) / 2;
-    const slen = clampedRight - clampedLeft;
-    return { x: sx, y, angle: Math.PI, w: 1, len: slen };
-  }
-  rem -= L1;
+  const segBounds = [0, topW, topW + vLen, total];
+  const out: LiquidPoint[] = [];
+  for (let i = 0; i < 3; i++) {
+    const segS = segBounds[i];
+    const segE = segBounds[i + 1];
+    const os = Math.max(s, segS);
+    const oe = Math.min(e, segE);
+    if (oe <= os + 0.001) continue;
 
-  // 2. 左竖线：上→下（w=3，加重）
-  if (rem < L2) {
-    const ratio = rem / L2;
-    const realRem = ratio * (h - 2 * R);
-    const py = y + R + realRem;
-    const hl = len / 2;
-    const clampedTop = Math.max(y + R, py - hl);
-    const clampedBot = Math.min(y + h - R, py + hl);
-    const sy = (clampedTop + clampedBot) / 2;
-    const slen = clampedBot - clampedTop;
-    return { x, y: sy, angle: Math.PI / 2, w: 3, len: slen };
+    if (i === 0) {
+      // 上线：右→左，1:1 映射
+      const phyS = bx + R + topW - os;
+      const phyE = bx + R + topW - oe;
+      out.push({ x: (phyS + phyE) / 2, y: by, angle: Math.PI, w: 1, len: Math.abs(phyE - phyS) });
+    } else if (i === 1) {
+      // 竖线：top→bottom，verticalMul 缩放
+      const phyS = by + R + (os - topW) / vm;
+      const phyE = by + R + (oe - topW) / vm;
+      out.push({ x: bx, y: (phyS + phyE) / 2, angle: Math.PI / 2, w: 3, len: phyE - phyS });
+    } else {
+      // 下线：左→右，1:1 映射
+      const segBase = topW + vLen;
+      const phyS = bx + R + (os - segBase);
+      const phyE = bx + R + (oe - segBase);
+      out.push({ x: (phyS + phyE) / 2, y: by + h, angle: 0, w: 1, len: phyE - phyS });
+    }
   }
-  rem -= L2;
-
-  // 3. 下线：左→右
-  {
-    const hl = len / 2;
-    const realRem = (rem / L3) * botW;
-    const px = x + R + realRem;
-    const clampedLeft = Math.max(x + R, px - hl);
-    const clampedRight = Math.min(x + R + botW, px + hl);
-    const sx = (clampedLeft + clampedRight) / 2;
-    const slen = clampedRight - clampedLeft;
-    return { x: sx, y: y + h, angle: 0, w: 1, len: slen };
-  }
+  return out;
 }
 
 /** 移动光标到指定行（GSAP 平滑过渡） */
