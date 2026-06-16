@@ -41,6 +41,7 @@ let _liquidPulseBase: string | null = null;
 
 export function setLiquidColor(color: string | null): void {
   _liquidColor = color;
+  _liquidPulseBase = color ? color.replace(/[\d.]+\)$/, '') : null;
   if (L.cursorBox?.data) (L.cursorBox.data as any).liquidColor = color || undefined;
 }
 
@@ -123,10 +124,9 @@ export function setCursorColor(color: string | null, bgColor: string | null): vo
   if (color) {
     _stopPulse();
     _pulseBase = color.replace(/[\d.]+\)$/, '');
-    _liquidPulseBase = _liquidColor ? _liquidColor.replace(/[\d.]+\)$/, '') : null;
-    _pulseProxy = { a: 0.82 };
+    _pulseProxy = { a: 0.85 };
     _pulseTween = anim.to(_pulseProxy, {
-      a: 0.65,
+      a: 0.4,
       duration: 0.9,
       yoyo: true,
       repeat: -1,
