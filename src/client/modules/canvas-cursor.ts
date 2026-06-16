@@ -74,10 +74,12 @@ function _emitLiquidSegments(): void {
   for (let i = 0; i < cfg.count; i++) {
     const pathC = (pos + (i * pathLen) / cfg.count) % pathLen;
     const physC = _pathToPhysical(pathC, topW, realVert, vm);
-    const onVert = physC >= topW && physC < topW + realVert;
-    const hl = onVert ? hlVert : hlDef;
-    let s = ((physC - hl) % physTotal + physTotal) % physTotal;
-    let e = ((physC + hl) % physTotal + physTotal) % physTotal;
+    let s = ((physC - hlDef) % physTotal + physTotal) % physTotal;
+    let e = ((physC + hlDef) % physTotal + physTotal) % physTotal;
+    if (s < e && s >= topW && e <= topW + realVert) {
+      s = ((physC - hlVert) % physTotal + physTotal) % physTotal;
+      e = ((physC + hlVert) % physTotal + physTotal) % physTotal;
+    }
     if (s < e) {
       for (const p of _rangeToPhysicalPoints(s, e, bx, by, h, topW, botW)) segs.push(p);
     } else {
