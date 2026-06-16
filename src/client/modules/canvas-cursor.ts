@@ -69,22 +69,18 @@ function _emitLiquidSegments(): void {
   const physTotal = topW + realVert + botW;
   const pos = _liquidProxy.pos % pathLen;
   const hlDef = cfg.segLen / 2;
-  const hlVert = (cfg.segLenVertical ?? 4) / 2;
+  const segLenVert = cfg.segLenVertical ?? 4;
   const segs: LiquidPoint[] = [];
   for (let i = 0; i < cfg.count; i++) {
     const pathC = (pos + (i * pathLen) / cfg.count) % pathLen;
     const physC = _pathToPhysical(pathC, topW, realVert, vm);
     let s = ((physC - hlDef) % physTotal + physTotal) % physTotal;
     let e = ((physC + hlDef) % physTotal + physTotal) % physTotal;
-    if (s < e && s >= topW && e <= topW + realVert) {
-      s = ((physC - hlVert) % physTotal + physTotal) % physTotal;
-      e = ((physC + hlVert) % physTotal + physTotal) % physTotal;
-    }
     if (s < e) {
-      for (const p of _rangeToPhysicalPoints(s, e, bx, by, h, topW, botW)) segs.push(p);
+      for (const p of _rangeToPhysicalPoints(s, e, bx, by, h, topW, botW, segLenVert)) segs.push(p);
     } else {
-      for (const p of _rangeToPhysicalPoints(s, physTotal, bx, by, h, topW, botW)) segs.push(p);
-      for (const p of _rangeToPhysicalPoints(0, e, bx, by, h, topW, botW)) segs.push(p);
+      for (const p of _rangeToPhysicalPoints(s, physTotal, bx, by, h, topW, botW, segLenVert)) segs.push(p);
+      for (const p of _rangeToPhysicalPoints(0, e, bx, by, h, topW, botW, segLenVert)) segs.push(p);
     }
   }
   (d as any)._liquidSegments = segs;
@@ -199,8 +195,8 @@ function _pathToPhysical(t: number, topW: number, realVert: number, vm: number):
   return topW + realVert + (t - vPath);
 }
 
-/** 物理区间 [s, e] 切分到上/竖/下三段，产出物理坐标 LiquidPoint */
-function _rangeToPhysicalPoints(s: number, e: number, bx: number, by: number, h: number, topW: number, botW: number): LiquidPoint[] {
+/** 物理区间 [s, e] 切分到上/竖/下三段，产物理坐标 LiquidPoint；竖线段 cap 到 segLenVert */
+function _rangeToPhysicalPoints(s: number, e: number, bx: number, by: number, h: number, topW: number, botW: number, segLenVert: number): LiquidPoint[] {
   const R = 4;
   const realVert = h - 2 * R;
   const segBounds = [0, topW, topW + realVert, topW + realVert + botW];
@@ -211,17 +207,21 @@ function _rangeToPhysicalPoints(s: number, e: number, bx: number, by: number, h:
     if (oe <= os + 0.001) continue;
 
     if (i === 0) {
-      // 上线：右→左
       const phyS = bx + R + topW - os;
       const phyE = bx + R + topW - oe;
       out.push({ x: (phyS + phyE) / 2, y: by, angle: Math.PI, w: 1, len: Math.abs(phyE - phyS) });
     } else if (i === 1) {
-      // 竖线：t→b，w=3
       const phyS = by + R + (os - topW);
       const phyE = by + R + (oe - topW);
-      out.push({ x: bx, y: (phyS + phyE) / 2, angle: Math.PI / 2, w: 3, len: phyE - phyS });
+      const rawLen = phyE - phyS;
+      const capLen = Math.min(rawLen, segLenVert);
+      const mid = (phyS + phyE) / 2;
+      const half = capLen / 2;
+      const cs = Math.max(phyS, mid - half);
+      const ce = Math.min(phyE, mid + half);
+      const finalLen = Math.max(0, ce - cs);
+      if (finalLen > 0) out.push({ x: bx, y: (cs + ce) / 2, angle: Math.PI / 2, w: 3, len: finalLen });
     } else {
-      // 下线：左→右
       const phyS = bx + R + (os - topW - realVert);
       const phyE = bx + R + (oe - topW - realVert);
       out.push({ x: (phyS + phyE) / 2, y: by + h, angle: 0, w: 1, len: phyE - phyS });
