@@ -236,19 +236,21 @@ function _rangeToPhysicalPoints(s: number, e: number, bx: number, by: number, h:
       const phyS = by + R + (os - topW);
       const phyE = by + R + (oe - topW);
       const rawLen = phyE - phyS;
-      const capLen = Math.min(rawLen, segLenVert);
-      const distTop = phyS - (by + R);
-      const distBot = (by + h - R) - phyE;
-      let cs: number, ce: number;
-      if (distTop <= distBot) {
-        cs = phyS;
-        ce = Math.min(phyE, cs + capLen);
+      const segTop = topW;
+      const segBot = topW + realVert;
+      // 仅当粒子深入竖管（距上下边界都 ≥ segLenVert）时才 cap 到 4px
+      if (os >= segTop + segLenVert && oe <= segBot - segLenVert) {
+        const capLen = Math.min(rawLen, segLenVert);
+        const mid = (phyS + phyE) / 2;
+        const half = capLen / 2;
+        const cs = Math.max(phyS, mid - half);
+        const ce = Math.min(phyE, mid + half);
+        const finalLen = Math.max(0, ce - cs);
+        if (finalLen > 0) out.push({ x: bx, y: (cs + ce) / 2, angle: Math.PI / 2, w: 3, len: finalLen });
       } else {
-        ce = phyE;
-        cs = Math.max(phyS, ce - capLen);
+        // 跨管 → 自然 overlap，w=3 不变
+        if (rawLen > 0) out.push({ x: bx, y: (phyS + phyE) / 2, angle: Math.PI / 2, w: 3, len: rawLen });
       }
-      const finalLen = Math.max(0, ce - cs);
-      if (finalLen > 0) out.push({ x: bx, y: (cs + ce) / 2, angle: Math.PI / 2, w: 3, len: finalLen });
     } else {
       const phyS = bx + R + (os - topW - realVert);
       const phyE = bx + R + (oe - topW - realVert);
