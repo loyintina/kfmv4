@@ -237,10 +237,16 @@ function _rangeToPhysicalPoints(s: number, e: number, bx: number, by: number, h:
       const phyE = by + R + (oe - topW);
       const rawLen = phyE - phyS;
       const capLen = Math.min(rawLen, segLenVert);
-      const mid = (phyS + phyE) / 2;
-      const half = capLen / 2;
-      const cs = Math.max(phyS, mid - half);
-      const ce = Math.min(phyE, mid + half);
+      const distTop = phyS - (by + R);
+      const distBot = (by + h - R) - phyE;
+      let cs: number, ce: number;
+      if (distTop <= distBot) {
+        cs = phyS;
+        ce = Math.min(phyE, cs + capLen);
+      } else {
+        ce = phyE;
+        cs = Math.max(phyS, ce - capLen);
+      }
       const finalLen = Math.max(0, ce - cs);
       if (finalLen > 0) out.push({ x: bx, y: (cs + ce) / 2, angle: Math.PI / 2, w: 3, len: finalLen });
     } else {
