@@ -30,6 +30,8 @@ export interface ThemeConfig {
       brightMul: number;  // 亮度 alpha 倍率
       radius: number;     // 段圆角半径 px
       glowRadius: number; // 光晕半径 px
+      /** 竖线路径倍率（>1=减慢竖线遍历速度，增大竖线段粒子密度），默认 1 */
+      verticalMul?: number;
     };
   };
 
@@ -134,11 +136,12 @@ export const nebula: ThemeConfig = {
     accent: '#00d4ff',
     cursorLiquid: {
       count: 8,
-      segLen: 2,
-      speed: 80,
+      segLen: 12,
+      speed: 30,
       brightMul: 2.5,
       radius: 1.5,
       glowRadius: 4,
+      verticalMul: 2.5,
     },
   },
 

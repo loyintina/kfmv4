@@ -596,35 +596,43 @@ export class Renderer {
 
   private _drawLiquidSegments(cursorBox: Box): void {
     const data = cursorBox.data as any;
-    const segs = data?._liquidSegments as Array<{ x: number; y: number; angle: number; w: number }> | undefined;
+    const segs = data?._liquidSegments as Array<{ x: number; y: number; angle: number; w: number; len: number }> | undefined;
     const cfg = this._theme.cursorLiquid;
     if (!segs || !segs.length || !cfg) return;
     const color: string = data?.color || this._theme.cursor;
-    // 提取 rgba 基色并乘 brightMul
     const m = color.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
     if (!m) return;
     const r = parseInt(m[1]), g = parseInt(m[2]), b = parseInt(m[3]), a = parseFloat(m[4]);
     const brightAlpha = Math.min(1, a * cfg.brightMul);
     const ctx = this.ctx;
     ctx.save();
-    const sl = cfg.segLen, sr = cfg.radius, gr = cfg.glowRadius;
+    const sr = cfg.radius, gr = cfg.glowRadius;
     const glowAlpha = Math.min(0.35, a * cfg.brightMul * 0.35);
     for (const s of segs) {
-      // 光晕
-      const grad = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, gr);
+      const sl = s.len;
+      if (sl <= 0) continue;
+      const hw = sl / 2, hh = s.w / 2;
+      const glowHw = hw + 2 * gr;
+      const glowHh = hh + 2 * gr;
+
+      // 光晕（椭圆形，跟随胶囊尺寸缩放）
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.rotate(s.angle);
+      const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, Math.max(gr, Math.sqrt(glowHw * glowHw + glowHh * glowHh) / 2));
       grad.addColorStop(0, `rgba(${r},${g},${b},${glowAlpha.toFixed(2)})`);
       grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
       ctx.fillStyle = grad;
       ctx.beginPath();
-      ctx.arc(s.x, s.y, gr, 0, Math.PI * 2);
+      ctx.ellipse(0, 0, glowHw, glowHh, 0, 0, Math.PI * 2);
       ctx.fill();
+      ctx.restore();
 
       // 胶囊
       ctx.save();
       ctx.translate(s.x, s.y);
       ctx.rotate(s.angle);
       ctx.fillStyle = `rgba(${r},${g},${b},${brightAlpha.toFixed(2)})`;
-      const hw = sl / 2, hh = s.w / 2;
       ctx.beginPath();
       ctx.moveTo(-hw + sr, -hh);
       ctx.lineTo(hw - sr, -hh);
