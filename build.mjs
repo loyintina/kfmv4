@@ -1,10 +1,37 @@
 import { build } from 'esbuild';
 import { execSync } from 'child_process';
-import { rmSync } from 'fs';
+import { statSync, readdirSync } from 'fs';
+import { join, extname } from 'path';
 
-// 清理旧产物，防止中断残留
-rmSync('public/bundle.js', { force: true });
-rmSync('dist/server/index.js', { force: true });
+// ========== 构建后校验 ==========
+
+/** 递归遍历目录，返回所有文件路径 */
+function* walkSync(dir) {
+  for (const name of readdirSync(dir)) {
+    if (name.startsWith('.') || name === 'node_modules') continue;
+    const full = join(dir, name);
+    const st = statSync(full);
+    if (st.isDirectory()) { yield* walkSync(full); }
+    else { yield full; }
+  }
+}
+
+/** 确保产物不比任何源文件旧（构建完整性校验） */
+function checkFreshness(outfile, label) {
+  if (!statSync(outfile, { throwIfNoEntry: false })) {
+    console.error(`[build] ${label} 不存在，构建不完整`);
+    process.exit(1);
+  }
+  const outTime = statSync(outfile).mtimeMs;
+  for (const f of walkSync('src')) {
+    if (extname(f) === '.ts' && statSync(f).mtimeMs > outTime) {
+      console.error(`[build] ${label} 产物 ${outTime} 早于源文件 ${f}，构建不完整`);
+      process.exit(1);
+    }
+  }
+}
+
+// ========== 构建 ==========
 
 // SCSS 编译（语法校验 + 输出 .css）
 try {
@@ -15,7 +42,7 @@ try {
 }
 console.log('[sass] OK');
 
-
+// 服务端
 await build({
   entryPoints: ['src/server/index.ts'],
   bundle: true,
@@ -25,7 +52,7 @@ await build({
   external: ['express','fs','path','os','ws','events'],
 });
 
-// 客户端构建（单 bundle）
+// 客户端
 await build({
   entryPoints: ['src/client/main.ts'],
   bundle: true,
@@ -34,5 +61,9 @@ await build({
   outfile: 'public/bundle.js',
   target: ['es2019'],
 });
+
+// 校验产物新鲜度
+checkFreshness('dist/server/index.js', 'server');
+checkFreshness('public/bundle.js', 'client');
 
 console.log('Build OK');

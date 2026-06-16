@@ -310,7 +310,7 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | 8 | ✅ 已处理 | `cards/` 目录零文档 | 已删除。2 个文件（index.ts + logger.ts）移除。实际使用的 logger 在 `src/client/modules/logger.ts`，不受影响 |
 | 9 | ✅ 已处理 | `.github_token` 安全风险 | 已迁移至 `.env` 文件（`GITHUB_TOKEN=...`），`.github_token` 已删除，`.gitignore` 已保护 `.env`。CLAUDE.md 已补充 Git 推送认证说明 |
 | 10 | ✅ 已处理 | `sidebar-*.png` 临时截图 | 已删除（两个文件无代码引用，调试残留） |
-| 11 | ✅ 已处理 | `public/bundle.js` 构建产物 | 已在 `.gitignore` 中保护，不会被提交 |
+| 11 | ✅ 已处理 | public/bundle.js 构建产物 | 已在 .gitignore 中保护，不会被提交 |
 | ~~12~~ | ~~🟡~~ ✅ | ~~HANDBOOK 陷阱 #12 描述需更新~~ 已更新 | 已加注设计阶段 |
 | ~~13~~ | ~~🟠~~ ✅ | ~~HANDBOOK §1 模块列表不完整~~ 已修复 | §1 已补全为 29 个模块的职能分组表 |
 | 14 | ✅ 已处理 | `path-utils.ts` 无独立文档描述 | 头部注释已补充安全约束+依赖方+环境变量说明 |
