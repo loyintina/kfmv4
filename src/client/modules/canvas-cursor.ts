@@ -39,10 +39,20 @@ let _liquidTween: ReturnType<typeof anim.to> | null = null;
 let _liquidColor: string | null = null;
 let _liquidPulseBase: string | null = null;
 
+// 光标 Box.data 自定义字段的类型定义
+type CData = Record<string, unknown> & {
+  cursorDynamicLines?: boolean;
+  topLineW?: number;
+  botLineW?: number;
+  color?: string;
+  liquidColor?: string;
+  _liquidSegments?: LiquidPoint[];
+};
+
 export function setLiquidColor(color: string | null): void {
   _liquidColor = color;
   _liquidPulseBase = color ? color.replace(/[\d.]+\)$/, '') : null;
-  if (L.cursorBox?.data) (L.cursorBox.data as any).liquidColor = color || undefined;
+  if (L.cursorBox?.data) (L.cursorBox.data as CData).liquidColor = color || undefined;
 }
 
 function _stopPulse(): void {
@@ -52,15 +62,15 @@ function _stopPulse(): void {
   _pulseProxy = null;
   if (_liquidTween) { _liquidTween.kill(); _liquidTween = null; }
   _liquidProxy = null;
-  if (L.cursorBox?.data) (L.cursorBox.data as any)._liquidSegments = undefined;
+  if (L.cursorBox?.data) (L.cursorBox.data as CData)._liquidSegments = undefined;
 }
 
 function _emitLiquidSegments(): void {
   const cb = L.cursorBox;
   if (!cb || !_liquidProxy) return;
-  const d = cb.data;
-  const topW: number = (d as any).topLineW || 0;
-  const botW: number = (d as any).botLineW || 0;
+  const d = cb.data as CData;
+  const topW = d.topLineW || 0;
+  const botW = d.botLineW || 0;
   const h = cb.height;
   const root = L.renderer?.getRoot();
   const scrollY = root?.scrollY ?? 0;
@@ -92,7 +102,7 @@ function _emitLiquidSegments(): void {
       for (const p of _rangeToPhysicalPoints(0, e, bx, by, h, topW, botW, segLenVert)) segs.push(p);
     }
   }
-  (d as any)._liquidSegments = segs;
+  (cb.data as CData)._liquidSegments = segs;
 }
 
 function _startLiquidLoop(): void {
@@ -100,9 +110,9 @@ function _startLiquidLoop(): void {
   if (!cb) return;
   const cfg = theme.canvas.cursorLiquid;
   if (!cfg) return;
-  const d = cb.data;
-  const topW: number = (d as any).topLineW || 0;
-  const botW: number = (d as any).botLineW || 0;
+  const d = cb.data as CData;
+  const topW = d.topLineW || 0;
+  const botW = d.botLineW || 0;
   const R = 4;
   const vm = cfg.verticalMul ?? 1;
   const pathLen = topW + (cb.height - 2 * R) * vm + botW;
@@ -135,7 +145,7 @@ export function setCursorColor(color: string | null, bgColor: string | null): vo
         if (L.cursorBox?.data && _pulseBase) {
           L.cursorBox.data.color = _pulseBase + _pulseProxy!.a.toFixed(2) + ')';
           if (_liquidPulseBase) {
-            (L.cursorBox.data as any).liquidColor = _liquidPulseBase + _pulseProxy!.a.toFixed(2) + ')';
+            (L.cursorBox.data as CData).liquidColor = _liquidPulseBase + _pulseProxy!.a.toFixed(2) + ')';
           }
         }
       },

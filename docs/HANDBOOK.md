@@ -329,7 +329,7 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 |------|------|--------|---------|------|
 | `app.ts` | 181 | 1 | ✅ 入口 | 初始化流程��排 |
 | `animation-registry.ts` | 93 | 5 | ✅ 提及 | GSAP 动画隔离层 |
-| `canvas-cursor.ts` | 451 | 3 | ✅ 提及 | Canvas 盒子光标系统 |
+| `canvas-cursor.ts` | 461 | 3 | ✅ 提及 | Canvas 盒子光标系统 |
 | `canvas-scroll.ts` | 315 | 2 | ✅ 提及 | Canvas 盒子滚动系统 |
 | `canvas-utils.ts` | 60 | 4 | ✅ 依赖图 | Canvas 通用工具函数 |
 | `card-stack.ts` | 517 | 4 | ✅ 独立条目 | 堆叠卡片面板 |
@@ -357,7 +357,7 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `ui-registry.ts` | 331 | 9 | ✅ 独立条目 | UI 元素注册表 |
 | `ui.ts` | 70 | 10 | ✅ 提及 | UI 初始化编排 |
 | `ws-channel.ts` | 317 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
-| **合计** | **8346** | | | |
+| **合计** | **8356** | | | |
 
 ### 死代码检查
 
