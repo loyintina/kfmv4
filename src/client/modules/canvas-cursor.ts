@@ -61,20 +61,25 @@ function _emitLiquidSegments(): void {
   const cfg = theme.canvas.cursorLiquid;
   if (!cfg) return;
   const vm = cfg.verticalMul ?? 1;
-  const totalLen = topW + (h - 2 * R) * vm + botW;
-  if (totalLen <= 0) return;
-  const pos = _liquidProxy.pos % totalLen;
+  const realVert = h - 2 * R;
+  // 路径空间总长（GSAP 匀速遍历用）
+  const pathLen = topW + realVert * vm + botW;
+  if (pathLen <= 0) return;
+  // 物理空间总长（粒子定位用）
+  const physTotal = topW + realVert + botW;
+  const pos = _liquidProxy.pos % pathLen;
   const hl = cfg.segLen / 2;
   const segs: LiquidPoint[] = [];
   for (let i = 0; i < cfg.count; i++) {
-    const c = (pos + (i * totalLen) / cfg.count) % totalLen;
-    let s = ((c - hl) % totalLen + totalLen) % totalLen;
-    let e = ((c + hl) % totalLen + totalLen) % totalLen;
+    const pathC = (pos + (i * pathLen) / cfg.count) % pathLen;
+    const physC = _pathToPhysical(pathC, topW, realVert, vm);
+    let s = ((physC - hl) % physTotal + physTotal) % physTotal;
+    let e = ((physC + hl) % physTotal + physTotal) % physTotal;
     if (s < e) {
-      for (const p of _rangeToPoints(s, e, bx, by, h, topW, botW, vm)) segs.push(p);
+      for (const p of _rangeToPhysicalPoints(s, e, bx, by, h, topW, botW)) segs.push(p);
     } else {
-      for (const p of _rangeToPoints(s, totalLen, bx, by, h, topW, botW, vm)) segs.push(p);
-      for (const p of _rangeToPoints(0, e, bx, by, h, topW, botW, vm)) segs.push(p);
+      for (const p of _rangeToPhysicalPoints(s, physTotal, bx, by, h, topW, botW)) segs.push(p);
+      for (const p of _rangeToPhysicalPoints(0, e, bx, by, h, topW, botW)) segs.push(p);
     }
   }
   (d as any)._liquidSegments = segs;
@@ -176,41 +181,44 @@ export function setModeAccent(color: string | null): void {
 
 export function getModeAccentColor(): string | null { return _modeAccentColor; }
 
-// ========== 玻璃管液体光效路径计算（传送门：3直线，拐角拆分）==========
+// ========== 玻璃管液体光效路径计算（传送门：3直线，物理空间拆分）==========
 
 interface LiquidPoint { x: number; y: number; angle: number; w: number; len: number }
 
-/** 路径区间 s→e 映射到线段，产出若干子点；s/e 在 [0, total) 内 */
-function _rangeToPoints(s: number, e: number, bx: number, by: number, h: number, topW: number, botW: number, vm: number): LiquidPoint[] {
+/** 路径坐标 → 物理坐标（竖线段用 vm 逆缩放） */
+function _pathToPhysical(t: number, topW: number, realVert: number, vm: number): number {
+  if (t < topW) return t;
+  t -= topW;
+  const vPath = realVert * vm;
+  if (t < vPath) return topW + t / vm;
+  return topW + realVert + (t - vPath);
+}
+
+/** 物理区间 [s, e] 切分到上/竖/下三段，产出物理坐标 LiquidPoint */
+function _rangeToPhysicalPoints(s: number, e: number, bx: number, by: number, h: number, topW: number, botW: number): LiquidPoint[] {
   const R = 4;
   const realVert = h - 2 * R;
-  const vLen = realVert * vm;  // 竖线路径长度（缩放后）
-  const total = topW + vLen + botW;
-
-  const segBounds = [0, topW, topW + vLen, total];
+  const segBounds = [0, topW, topW + realVert, topW + realVert + botW];
   const out: LiquidPoint[] = [];
   for (let i = 0; i < 3; i++) {
-    const segS = segBounds[i];
-    const segE = segBounds[i + 1];
-    const os = Math.max(s, segS);
-    const oe = Math.min(e, segE);
+    const os = Math.max(s, segBounds[i]);
+    const oe = Math.min(e, segBounds[i + 1]);
     if (oe <= os + 0.001) continue;
 
     if (i === 0) {
-      // 上线：右→左，1:1 映射
+      // 上线：右→左
       const phyS = bx + R + topW - os;
       const phyE = bx + R + topW - oe;
       out.push({ x: (phyS + phyE) / 2, y: by, angle: Math.PI, w: 1, len: Math.abs(phyE - phyS) });
     } else if (i === 1) {
-      // 竖线：top→bottom，verticalMul 缩放
-      const phyS = by + R + (os - topW) / vm;
-      const phyE = by + R + (oe - topW) / vm;
+      // 竖线：t→b，w=3
+      const phyS = by + R + (os - topW);
+      const phyE = by + R + (oe - topW);
       out.push({ x: bx, y: (phyS + phyE) / 2, angle: Math.PI / 2, w: 3, len: phyE - phyS });
     } else {
-      // 下线：左→右，1:1 映射
-      const segBase = topW + vLen;
-      const phyS = bx + R + (os - segBase);
-      const phyE = bx + R + (oe - segBase);
+      // 下线：左→右
+      const phyS = bx + R + (os - topW - realVert);
+      const phyE = bx + R + (oe - topW - realVert);
       out.push({ x: (phyS + phyE) / 2, y: by + h, angle: 0, w: 1, len: phyE - phyS });
     }
   }
