@@ -901,11 +901,11 @@ function _applyModeTheme(mode: string | null): void {
   _recolorCards(mode);
   if (mode === 'copy') {
     setCursorColor('rgba(74,222,128,0.7)', 'rgba(74,222,128,0.12)');
-    setLiquidColor('rgba(163,230,53,0.85)');
+    setLiquidColor('rgba(0,0,0,0.85)');
     setModeAccent('#4ade80');
   } else if (mode === 'move') {
     setCursorColor('rgba(234,179,8,0.7)', 'rgba(234,179,8,0.12)');
-    setLiquidColor('rgba(210,200,30,0.85)');
+    setLiquidColor('rgba(0,0,0,0.85)');
     setModeAccent('#eab308');
   } else {
     setCursorColor(null, null);
