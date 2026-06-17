@@ -220,7 +220,7 @@ export function setupExpandOverlays(container: Box, fullHeight: number, siblingC
   containerOv.parent = parent;
 
   // 隐藏主树容器自身（gradient/shadow/border 与 overlay 叠加会变亮）
-  container.opacity = 0;
+  container.visible = false;
 
   // 2. 行 overlay（FROM=折叠态 y，TO=终端态 y）
   //    跳过已展开的子容器（expanded-*），它们由独立的 setupExpandOverlays 处理
@@ -240,7 +240,7 @@ export function setupExpandOverlays(container: Box, fullHeight: number, siblingC
     containerOv.addChild(rowOv);
     rowOverlays.push(rowOv);
     // 隐藏主树真实行：动画期间只有 overlay 可见，防止两棵树重叠
-    child.opacity = 0;
+    child.visible = false;
     hiddenChildren.push(child);
   }
 
@@ -257,7 +257,7 @@ export function setupExpandOverlays(container: Box, fullHeight: number, siblingC
     sibOv.parent = parent;
     siblingOverlays.push(sibOv);
     // 同上：隐藏主树真实兄弟
-    sib.opacity = 0;
+    sib.visible = false;
     hiddenSiblings.push(sib);
   }
 
@@ -275,7 +275,7 @@ export function setupCollapseOverlays(container: Box, fullH: number, siblingClon
   containerOv.parent = parent;
 
   // 隐藏主树容器自身（gradient/shadow/border 与 overlay 叠加会变亮）
-  container.opacity = 0;
+  container.visible = false;
 
   // 2. 行 overlay：固定在展开态 y
   //    跳过已展开的子容器（expanded-*）
@@ -290,7 +290,7 @@ export function setupCollapseOverlays(container: Box, fullH: number, siblingClon
     containerOv.addChild(rowOv);
     rowOverlays.push(rowOv);
     // 隐藏主树真实行：动画期间只有 overlay 可见
-    child.opacity = 0;
+    child.visible = false;
     hiddenChildren.push(child);
   }
 
@@ -321,7 +321,7 @@ export function setupCollapseOverlays(container: Box, fullH: number, siblingClon
       }
     }
     // 隐藏主树真实兄弟
-    sib.opacity = 0;
+    sib.visible = false;
     hiddenSiblings.push(sib);
   }
 

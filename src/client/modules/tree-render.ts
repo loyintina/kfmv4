@@ -684,9 +684,9 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
     ;
     // 恢复主树被隐藏的元素（展开动画：树已重建，元素仍在）
     for (const p of [pack, ...subPacks]) {
-      if (p.hiddenContainer) p.hiddenContainer.opacity = 1;
-      for (const child of p.hiddenChildren) child.opacity = 1;
-      for (const sib of p.hiddenSiblings) sib.opacity = 1;
+      if (p.hiddenContainer) p.hiddenContainer.visible = true;
+      for (const child of p.hiddenChildren) child.visible = true;
+      for (const sib of p.hiddenSiblings) sib.visible = true;
     }
     _resetAnimTimeline();
     assert(activeOverlayCount() === 0, 'overlays leaked after expand');
