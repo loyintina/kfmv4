@@ -136,11 +136,11 @@ export const nebula: ThemeConfig = {
     accent: '#00d4ff',
     cursorLiquid: {
       count: 8,
-      segLen: 24,
+      segLen: 18,
       speed: 20,
       radius: 1.5,
       verticalMul: 2.5,
-      segLenVertical: 8,
+      segLenVertical: 6,
     },
   },
 
