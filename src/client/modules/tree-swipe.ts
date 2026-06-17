@@ -267,6 +267,7 @@ card.addEventListener('click', (e) => {
   _prevFocusIndex = oldEl ? _tempCardEls.indexOf(oldEl) : -1;
   _lifoQueue.push(card);
   _dimmedPaths.add(data.path);
+  rowBox.opacity = 0.25;
   _ensureBg(sidebarW);
 
   // 重排所有卡片 Y 位置（含压缩 + 聚焦下方留白）
