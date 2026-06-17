@@ -9,7 +9,7 @@
 
 import { L } from './renderer-lifecycle.js';
 import { anim, type AnimTimeline } from './animation-registry.js';
-import { getFileRowData, API } from './state.js';
+import { getFileRowData, API, KFMState } from './state.js';
 import { findBoxById } from './canvas-utils.js';
 import { setCursorColor, setModeAccent, setLiquidColor } from './canvas-cursor.js';
 import { currentTheme as theme } from './theme.js';
@@ -17,6 +17,7 @@ import { DOM } from './dom-refs.js';
 import { Box } from '../engine/v2/box.js';
 import { gestures } from './gesture-registry.js';
 import { createFloatingCard } from './floating-card.js';
+import { loadFileTree } from './tree-loader.js';
 
 export function isDimmed(path: string): boolean { return _dimmedPaths.has(path); }
 
@@ -452,6 +453,7 @@ async function _executeMode(): Promise<void> {
   _dismissing = false;
   _resetFocusToNewest = false;
   _removeBg();
+  await loadFileTree(KFMState.currentRoot);
 }
 
 async function _animateExecute(): Promise<void> {
