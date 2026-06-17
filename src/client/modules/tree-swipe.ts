@@ -495,6 +495,15 @@ async function _animateExecute(): Promise<void> {
   await new Promise(r => setTimeout(r, 400));
 }
 
+function _restoreDimmedRows(): void {
+  const root = L.renderer?.getRoot();
+  if (!root || _dimmedPaths.size === 0) return;
+  for (const path of _dimmedPaths) {
+    const box = findBoxById(root, `file-${path}`) || findBoxById(root, `title-${path}`);
+    if (box) box.opacity = 1;
+  }
+}
+
 /** 一键收回所有卡片：往左飞过屏幕后淡出 */
 export function dismissAllCards(): boolean {
   if (_tempCardEls.length === 0) return false;
@@ -520,6 +529,7 @@ export function dismissAllCards(): boolean {
 
   _tempCardEls = [];
   _lifoQueue = [];
+  _restoreDimmedRows();
   _dimmedPaths.clear();
   _focusIndex = -1;
   _prevFocusIndex = -1;
