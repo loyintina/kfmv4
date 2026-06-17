@@ -140,7 +140,7 @@ export const nebula: ThemeConfig = {
       segLen: 12,
       speed: 20,
       radius: 1.5,
-      glowRadius: 6,
+      glowRadius: 2,
       verticalMul: 2.5,
       segLenVertical: 4,
     },
