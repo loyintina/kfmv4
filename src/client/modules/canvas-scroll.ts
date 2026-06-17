@@ -149,16 +149,12 @@ export function initScrollGesture(): void {
       }
     },
     onMove(e, dx) {
-      // 轴向锁定：水平(≤45°)、竖(>63°)、盲区(24px后偏竖向)
+      // 45° 分界：dx>dy 锁水平、否则锁竖
       if (_gestureAxis === 'none') {
         const absDx = Math.abs(dx ?? (e.clientX - _gestureStartX));
         const absDy = Math.abs(e.clientY - _gestureStartY);
-        if (absDx > 12 && absDx >= absDy) {
-          _gestureAxis = 'horizontal';
-        } else if (absDy > 12 && absDy > absDx * 2) {
-          _gestureAxis = 'vertical';
-        } else if (absDx + absDy > 24) {
-          _gestureAxis = 'vertical';
+        if (absDx > 12 || absDy > 12) {
+          _gestureAxis = absDx > absDy ? 'horizontal' : 'vertical';
         }
       }
       if (_gestureAxis === 'horizontal') return;
