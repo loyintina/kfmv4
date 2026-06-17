@@ -605,29 +605,12 @@ export class Renderer {
     const r = parseInt(m[1]), g = parseInt(m[2]), b = parseInt(m[3]), a = parseFloat(m[4]);
     const ctx = this.ctx;
     ctx.save();
-    const sr = cfg.radius, gr = cfg.glowRadius;
-    const glowAlpha = Math.min(0.35, a * 0.35);
+    const sr = cfg.radius;
     for (const s of segs) {
       const sl = s.len;
       if (sl <= 0) continue;
       const hw = sl / 2, hh = s.w / 2;
-      const glowHw = hw + 2 * gr;
-      const glowHh = hh + 2 * gr;
 
-      // 光晕（椭圆形，跟随胶囊尺寸缩放）
-      ctx.save();
-      ctx.translate(s.x, s.y);
-      ctx.rotate(s.angle);
-      const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, Math.max(gr, Math.sqrt(glowHw * glowHw + glowHh * glowHh) / 2));
-      grad.addColorStop(0, `rgba(${r},${g},${b},${glowAlpha.toFixed(2)})`);
-      grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.ellipse(0, 0, glowHw, glowHh, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-
-      // 胶囊
       ctx.save();
       ctx.translate(s.x, s.y);
       ctx.rotate(s.angle);
