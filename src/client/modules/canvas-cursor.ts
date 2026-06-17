@@ -157,7 +157,7 @@ export function setCursorColor(color: string | null, bgColor: string | null): vo
     _pulseBase = color.replace(/[\d.]+\)$/, '');
     _pulseProxy = { a: 1.0 };
     _pulseTween = anim.to(_pulseProxy, {
-      a: 0.4,
+      a: 0.1,
       duration: 0.9,
       yoyo: true,
       repeat: -1,
