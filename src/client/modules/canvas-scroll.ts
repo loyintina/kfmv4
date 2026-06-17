@@ -149,13 +149,15 @@ export function initScrollGesture(): void {
       }
     },
     onMove(e, dx) {
-      // 双向轴向锁定：首次判定主导方向后即锁定，另一方向永不触发
+      // 轴向锁定：水平(≤45°)、竖(>63°)、盲区(24px后偏竖向)
       if (_gestureAxis === 'none') {
         const absDx = Math.abs(dx ?? (e.clientX - _gestureStartX));
         const absDy = Math.abs(e.clientY - _gestureStartY);
-        if (absDx > 12 && absDx > absDy * 2) {
+        if (absDx > 12 && absDx >= absDy) {
           _gestureAxis = 'horizontal';
         } else if (absDy > 12 && absDy > absDx * 2) {
+          _gestureAxis = 'vertical';
+        } else if (absDx + absDy > 24) {
           _gestureAxis = 'vertical';
         }
       }
