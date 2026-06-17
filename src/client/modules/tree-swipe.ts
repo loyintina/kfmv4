@@ -30,6 +30,7 @@ let _dismissing = false;
 let _resetFocusToNewest = false;
 let _lifoQueue: HTMLElement[] = [];  // 入卡顺序，撤卡时从尾部取（LIFO）
 let _dimmedPaths = new Set<string>();
+let _dimmedBoxes = new Map<string, Box>();
 let _bgCard: HTMLElement | null = null;  // 卡片堆背景
 let _bgMaxH = 0;  // 压缩起始时的高度上限
 const _CARD_H = theme.stack.cardHeight;
@@ -267,6 +268,7 @@ card.addEventListener('click', (e) => {
   _prevFocusIndex = oldEl ? _tempCardEls.indexOf(oldEl) : -1;
   _lifoQueue.push(card);
   _dimmedPaths.add(data.path);
+  _dimmedBoxes.set(data.path, rowBox);
   rowBox.opacity = 0.25;
   _ensureBg(sidebarW);
 
@@ -496,12 +498,8 @@ async function _animateExecute(): Promise<void> {
 }
 
 function _restoreDimmedRows(): void {
-  const root = L.renderer?.getRoot();
-  if (!root || _dimmedPaths.size === 0) return;
-  for (const path of _dimmedPaths) {
-    const box = findBoxById(root, `file-${path}`) || findBoxById(root, `title-${path}`);
-    if (box) box.opacity = 1;
-  }
+  for (const box of _dimmedBoxes.values()) box.opacity = 1;
+  _dimmedBoxes.clear();
 }
 
 /** 一键收回所有卡片：往左飞过屏幕后淡出 */
@@ -988,6 +986,8 @@ export function clearTempCards(): void {
   _tempCardEls.forEach(el => el.remove());
   _tempCardEls = [];
   _lifoQueue = [];
+  _restoreDimmedRows();
+  _dimmedPaths.clear();
   _focusIndex = -1;
   _prevFocusIndex = -1;
   _dismissing = false;
