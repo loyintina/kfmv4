@@ -609,6 +609,7 @@ function _startDismiss(): void {
 function _removeCard(el: HTMLElement): void {
   _dismissing = false;
   if (!document.contains(el)) return;
+  const path = el.dataset._path;
   el.remove();
   // 从 lifo 队列移除
   const lIdx = _lifoQueue.indexOf(el);
@@ -616,7 +617,16 @@ function _removeCard(el: HTMLElement): void {
   const idx = _tempCardEls.indexOf(el);
   if (idx < 0) return;
   _tempCardEls.splice(idx, 1);
+  // 该路径无剩余卡片 → 恢复行 dim
+  if (path && !_tempCardEls.some(c => c.dataset._path === path)) {
+    _dimmedPaths.delete(path);
+    const box = _dimmedBoxes.get(path);
+    if (box) box.opacity = 1;
+    _dimmedBoxes.delete(path);
+  }
   if (_tempCardEls.length === 0) {
+    _restoreDimmedRows();
+    _dimmedPaths.clear();
     _focusIndex = -1;
     _prevFocusIndex = -1;
     _removeBg();
