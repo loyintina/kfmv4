@@ -9,7 +9,7 @@
 
 import { L } from './renderer-lifecycle.js';
 import { anim, type AnimTimeline } from './animation-registry.js';
-import { getFileRowData } from './state.js';
+import { getFileRowData, API } from './state.js';
 import { findBoxById } from './canvas-utils.js';
 import { setCursorColor, setModeAccent, setLiquidColor } from './canvas-cursor.js';
 import { currentTheme as theme } from './theme.js';
@@ -17,6 +17,8 @@ import { DOM } from './dom-refs.js';
 import { Box } from '../engine/v2/box.js';
 import { gestures } from './gesture-registry.js';
 import { createFloatingCard } from './floating-card.js';
+
+export function isDimmed(path: string): boolean { return _dimmedPaths.has(path); }
 
 // ========== 模块状态 ==========
 
@@ -26,6 +28,7 @@ let _prevFocusIndex = -1;
 let _dismissing = false;
 let _resetFocusToNewest = false;
 let _lifoQueue: HTMLElement[] = [];  // 入卡顺序，撤卡时从尾部取（LIFO）
+let _dimmedPaths = new Set<string>();
 let _bgCard: HTMLElement | null = null;  // 卡片堆背景
 let _bgMaxH = 0;  // 压缩起始时的高度上限
 const _CARD_H = theme.stack.cardHeight;
@@ -242,6 +245,7 @@ export function handleRowSwipe(): void {
   card.dataset._normalRr = String(rr);
   card.dataset._fromX = String(fromX);
   card.dataset._fromY = String(fromY);
+  card.dataset._path = data.path;
   card.dataset._name = name;
   card.dataset._isDir = String(isDir);
   card.dataset._accent1 = cc.color1;
@@ -261,6 +265,7 @@ card.addEventListener('click', (e) => {
   _focusIndex = insertIdx;
   _prevFocusIndex = oldEl ? _tempCardEls.indexOf(oldEl) : -1;
   _lifoQueue.push(card);
+  _dimmedPaths.add(data.path);
   _ensureBg(sidebarW);
 
   // 重排所有卡片 Y 位置（含压缩 + 聚焦下方留白）
@@ -400,6 +405,93 @@ export function dismissFocusedCard(): boolean {
   return true;
 }
 
+function _getCursorDir(): string {
+  if (!L.cursorRowId) return '';
+  const root = L.renderer?.getRoot();
+  if (!root) return '';
+  const box = findBoxById(root, L.cursorRowId);
+  if (!box) return '';
+  const data = getFileRowData(box.data);
+  if (!data) return '';
+  return data.isDir ? data.path : data.path.substring(0, data.path.lastIndexOf('/')) || '/';
+}
+
+async function _executeMode(): Promise<void> {
+  const paths = [...new Set(_tempCardEls.map(e => e.dataset._path).filter(Boolean))];
+  if (!paths.length) return;
+
+  const dest = _getCursorDir();
+  const base = (s: string) => s.substring(s.lastIndexOf('/') + 1);
+
+  for (const src of paths) {
+    const destPath = dest + '/' + base(src!);
+    if (_selectedMode === 'copy') {
+      await fetch(API + '/files/copy', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source: src, dest: destPath }),
+      });
+    } else if (_selectedMode === 'move') {
+      await fetch(API + '/files/move', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source: src, dest: destPath }),
+      });
+    } else if (_selectedMode === 'delete') {
+      await fetch(API + '/files/delete', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: src }),
+      });
+    }
+  }
+
+  await _animateExecute();
+  _tempCardEls = [];
+  _lifoQueue = [];
+  _dimmedPaths.clear();
+  _focusIndex = -1;
+  _prevFocusIndex = -1;
+  _dismissing = false;
+  _resetFocusToNewest = false;
+  _removeBg();
+}
+
+async function _animateExecute(): Promise<void> {
+  const cards = [..._tempCardEls];
+  // 模式动画
+  for (const el of cards) {
+    anim.killTweensOf(el);
+    if (_selectedMode === 'delete') {
+      // 删除：变红 → 向中心收缩 → 碎散淡出
+      el.style.transition = 'filter 0.15s';
+      el.style.filter = 'brightness(1.3) saturate(0.5) hue-rotate(-30deg)';
+      await new Promise(r => setTimeout(r, 150));
+      const cx = parseFloat(el.dataset.rx || '0');
+      const cy = parseFloat(el.dataset.topY || '0');
+      anim.to(el, {
+        x: cx + 10, y: cy, scale: 0.3, opacity: 0, rotation: parseFloat(el.dataset.rr || '0') + 30,
+        duration: 0.35, ease: 'back.in(1.5)',
+        onComplete() { el.remove(); },
+      });
+    } else {
+      // copy/move：卡片向光标位置飞行 → 缩小淡出
+      const cursorBox = L.cursorBox;
+      const root = L.renderer?.getRoot();
+      const scrollY = root?.scrollY ?? 0;
+      let tx = cursorBox ? cursorBox.x + cursorBox.width / 2 : window.innerWidth * 0.3;
+      let ty = cursorBox ? cursorBox.y + cursorBox.height / 2 - scrollY : window.innerHeight * 0.3;
+      const cx = parseFloat(el.dataset.rx || '0');
+      const cy = parseFloat(el.dataset.topY || '0');
+      tx = cx + (tx - cx) * 0.5;
+      ty = cy + (ty - cy) * 0.5;
+      anim.to(el, {
+        x: tx, y: ty, scale: 0.5, opacity: 0,
+        duration: 0.5, ease: 'power2.in',
+        onComplete() { el.remove(); },
+      });
+    }
+  }
+  await new Promise(r => setTimeout(r, 400));
+}
+
 /** 一键收回所有卡片：往左飞过屏幕后淡出 */
 export function dismissAllCards(): boolean {
   if (_tempCardEls.length === 0) return false;
@@ -425,6 +517,7 @@ export function dismissAllCards(): boolean {
 
   _tempCardEls = [];
   _lifoQueue = [];
+  _dimmedPaths.clear();
   _focusIndex = -1;
   _prevFocusIndex = -1;
   _dismissing = false;
@@ -641,7 +734,9 @@ function _ensureBg(sidebarW: number): void {
   okBtn.innerHTML = _makeCheckSvg('#7c3aed', '#00d4ff');
   okBtn.style.cssText = _BTN_CSS + ';position:absolute;left:0;top:0';
   okBtn.setAttribute('data-toolbar-btn', 'ok');
-  okBtn.addEventListener('click', deployAllCards);
+  okBtn.addEventListener('click', () => {
+    if (_selectedMode) { _executeMode(); } else { deployAllCards(); }
+  });
   _toolbar.appendChild(okBtn);
   _okBtn = okBtn;
 

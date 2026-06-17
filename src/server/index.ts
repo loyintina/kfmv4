@@ -116,6 +116,53 @@ function setupApiRoutes(router: express.Router) {
     } catch (error: any) { res.json({ error: error.message }); }
   });
 
+  router.post('/files/copy', (req: express.Request, res: express.Response) => {
+    try {
+      const src = sanitizePath(req.body.source);
+      const dest = sanitizePath(req.body.dest);
+      if (!src || !dest) { res.json({ error: '路径不合法' }); return; }
+      if (!fs.existsSync(src)) { res.json({ error: '源路径不存在', path: src }); return; }
+      const stat = fs.statSync(src);
+      if (stat.isDirectory()) {
+        fs.cpSync(src, dest, { recursive: true });
+      } else {
+        fs.mkdirSync(path.dirname(dest), { recursive: true });
+        fs.cpSync(src, dest);
+      }
+      res.json({ success: true, source: src, dest });
+    } catch (e: any) { res.json({ error: e.message }); }
+  });
+
+  router.post('/files/move', (req: express.Request, res: express.Response) => {
+    try {
+      const src = sanitizePath(req.body.source);
+      const dest = sanitizePath(req.body.dest);
+      if (!src || !dest) { res.json({ error: '路径不合法' }); return; }
+      if (!fs.existsSync(src)) { res.json({ error: '源路径不存在', path: src }); return; }
+      try {
+        fs.mkdirSync(path.dirname(dest), { recursive: true });
+        fs.renameSync(src, dest);
+      } catch {
+        const stat = fs.statSync(src);
+        if (stat.isDirectory()) { fs.cpSync(src, dest, { recursive: true }); fs.rmSync(src, { recursive: true, force: true }); }
+        else { fs.cpSync(src, dest); fs.rmSync(src); }
+      }
+      res.json({ success: true, source: src, dest });
+    } catch (e: any) { res.json({ error: e.message }); }
+  });
+
+  router.post('/files/delete', (req: express.Request, res: express.Response) => {
+    try {
+      const target = sanitizePath(req.body.path);
+      if (!target) { res.json({ error: '路径不合法' }); return; }
+      if (!fs.existsSync(target)) { res.json({ error: '路径不存在', path: target }); return; }
+      const stat = fs.statSync(target);
+      if (stat.isDirectory()) { fs.rmSync(target, { recursive: true, force: true }); }
+      else { fs.rmSync(target); }
+      res.json({ success: true, path: target });
+    } catch (e: any) { res.json({ error: e.message }); }
+  });
+
   router.get('/system/info', (_req: express.Request, res: express.Response) => {
     res.json({ user: process.env.USER || 'root', home: ROOT_DIR, cwd: process.cwd() });
   });

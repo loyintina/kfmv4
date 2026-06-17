@@ -6,6 +6,7 @@ import { Box } from '../engine/v2/box.js';
 import { KFMState, type FileNode } from './state.js';
 import { DIMENSIONS, TEXT_STYLES, getFileColor, createBox, LINE_HEIGHT, MAX_LINES, FONT, getShift } from './style-registry.js';
 import { currentTheme as theme } from './theme.js';
+import { isDimmed } from './tree-swipe.js';
 import { resolveStyle } from '../engine/v2/StyleConfig.js';
 import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
 
@@ -72,12 +73,14 @@ function createToggle(item: FileNode, rowHeight: number, ex: boolean): Box {
 function innerFolderRow(item: FileNode, y: number, cw: number, ctx: BuildCtx, depth: number): Box {
   const ex = !!ctx.expandedPaths[item.path];
   const sel = ctx.selectedFile === item.path;
+  const dimmed = isDimmed(item.path);
   const maxWidth = cw - TXT_L - 16;
   const { lines: actualLines, height: rowHeight } = calcTextLayout(item.name, maxWidth);
   
   const row = createBox('folder-row', {
     id: `title-${item.path}`, x: 0, y, width: cw, height: rowHeight,
     backgroundColor: sel ? theme.tree.selectedBg : 'transparent',
+    opacity: dimmed ? 0.25 : 1,
     data: { path: item.path, isDir: true, isExpanded: ex, depth, lineCount: actualLines },
     gesture: { passive: true, onTap: () => ctx.onDirToggle(item.path, !ex) },
   });
@@ -90,12 +93,14 @@ function innerFolderRow(item: FileNode, y: number, cw: number, ctx: BuildCtx, de
 
 function innerFileRow(item: FileNode, y: number, cw: number, ctx: BuildCtx, depth: number): Box {
   const sel = ctx.selectedFile === item.path;
+  const dimmed = isDimmed(item.path);
   const maxWidth = cw - TXT_L - 16;
   const { lines: actualLines, height: rowHeight } = calcTextLayout(item.name, maxWidth);
   
   const row = createBox('file-row', {
     id: `file-${item.path}`, x: 0, y, width: cw, height: rowHeight,
     backgroundColor: sel ? theme.tree.selectedBg : 'transparent',
+    opacity: dimmed ? 0.25 : 1,
     data: { path: item.path, isDir: false, depth, lineCount: actualLines },
     gesture: { passive: true, onTap: () => ctx.onFileClick(item.path) },
   });
