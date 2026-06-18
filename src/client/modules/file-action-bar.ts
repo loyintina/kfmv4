@@ -78,7 +78,7 @@ function _createDrawer(): void {
   const contentH = Math.max(rect.height - 52, 300);
   const rowsH = ITEMS.length * ITEM_H + (ITEMS.length - 1) * GAP;
   const totalH = Math.round(contentH * 0.46);
-  const topPad = Math.max(16, Math.round((totalH - rowsH) / 2));
+  const topPad = 16;
 
   _drawer = document.createElement('div');
   _drawer.style.cssText = [
@@ -102,12 +102,12 @@ function _createDrawer(): void {
     const isLast = i === ITEMS.length - 1;
     row.style.cssText = [
       'height:' + ITEM_H + 'px',
-      'margin:0 ' + SIDE_MARGIN + 'px' + (isLast ? '' : ' ' + GAP + 'px 0'),
+      'margin:0 ' + SIDE_MARGIN + 'px ' + (isLast ? '0' : GAP + 'px') + ' ' + SIDE_MARGIN + 'px',
       'padding:0 14px',
       'background:' + ROW_BG,
       'border:1px solid transparent',
       'border-left-width:3px',
-      'border-radius:0 6px 6px 0',
+      'border-radius:8px',
       'display:flex',
       'align-items:center',
       'justify-content:space-between',
