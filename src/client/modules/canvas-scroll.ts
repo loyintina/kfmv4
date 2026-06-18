@@ -7,7 +7,7 @@
 import { Box } from '../engine/v2/box.js';
 import { L } from './renderer-lifecycle.js';
 import { getRootScrollY, setRootScrollY, _rebuildRowIndex, findBoxById } from './canvas-utils.js';
-import { getCursorRowIndex, moveCursorTo, _snapCursorToCenter, _moveCursorBySteps, _isCursorMode, _getCenterRowIndex } from './canvas-cursor.js';
+import { getCursorRowIndex, moveCursorTo, snapCursorToCenter, moveCursorBySteps, isCursorMode, getCenterRowIndex } from './canvas-cursor.js';
 import { getShift, LINE_HEIGHT, MAX_LINES } from './style-registry.js';
 import { gestures } from './gesture-registry.js';
 import { closeSidebar } from './ui.js';
@@ -42,11 +42,11 @@ export function bindWheelEvents(canvas: HTMLElement): void {
     const dt = now - _lastWheelTime;
     _lastWheelTime = now;
     const cur = getRootScrollY() ?? 0;
-    if (_isCursorMode()) {
+    if (isCursorMode()) {
       if (dt > 0 && dt < 500) _wheelVel += e.deltaY / dt * 16;
       const steps = Math.round(_wheelVel / LINE_HEIGHT);
       if (steps !== 0) {
-        _moveCursorBySteps(steps);
+        moveCursorBySteps(steps);
         _wheelVel -= steps * LINE_HEIGHT;
         if (Math.abs(_wheelVel) < 1) _wheelVel = 0;
       }
@@ -62,7 +62,7 @@ export function bindWheelEvents(canvas: HTMLElement): void {
     wheelTarget = cur + e.deltaY;
     if (!L._wheelRaf) {
       let wAcc = 0;
-      const wCenter = _getCenterRowIndex();
+      const wCenter = getCenterRowIndex();
       L._wheelRaf = requestAnimationFrame(function smooth() {
         const r = L.renderer?.getRoot();
         const cur2 = getRootScrollY() ?? 0;
@@ -84,7 +84,7 @@ export function bindWheelEvents(canvas: HTMLElement): void {
         } else {
           setRootScrollY(desired);
           L._lastUserScrollY = desired;
-          _snapCursorToCenter();
+          snapCursorToCenter();
         }
         L._wheelRaf = requestAnimationFrame(smooth);
       });
@@ -119,7 +119,7 @@ export function initScrollGesture(): void {
       lastTouchTime = performance.now();
       if (L._flingRaf) { cancelAnimationFrame(L._flingRaf); L._flingRaf = 0; }
       if (L._cursorFlingRaf) { cancelAnimationFrame(L._cursorFlingRaf); L._cursorFlingRaf = 0; }
-      _touchIsCursor = _isCursorMode();
+      _touchIsCursor = isCursorMode();
       if (_touchIsCursor) {
         cursorTouchBase = Math.max(0, getCursorRowIndex());
         cursorTouchStartY = y;
@@ -134,9 +134,9 @@ export function initScrollGesture(): void {
         _boundPen = 0;
         _boundIsTop = false;
         const root2 = L.renderer?.getRoot();
-        if (root2 && !_isCursorMode()) {
+        if (root2 && !isCursorMode()) {
           const maxY2 = root2.getMaxScroll().maxY ?? 0;
-          const centerIdx = _getCenterRowIndex();
+          const centerIdx = getCenterRowIndex();
           const cursorIdx = getCursorRowIndex();
           if (touchScrollY <= 0 && centerIdx >= 0 && cursorIdx >= 0 && cursorIdx < centerIdx) {
             _boundPen = (centerIdx - cursorIdx) * LINE_HEIGHT;
@@ -187,32 +187,32 @@ export function initScrollGesture(): void {
           touchScrollY = _boundIsTop ? 0 : maxY;
           touchStartY = y;
           setRootScrollY(touchScrollY);
-          _snapCursorToCenter();
+          snapCursorToCenter();
         } else {
           setRootScrollY(_boundIsTop ? 0 : maxY);
           const steps = Math.floor(_boundPen / LINE_HEIGHT);
-          const centerIdx = _getCenterRowIndex();
+          const centerIdx = getCenterRowIndex();
           if (centerIdx >= 0 && steps > 0) {
             const targetIdx = _boundIsTop ? Math.max(0, centerIdx - steps) : Math.min(L._rowIndex.length - 1, centerIdx + steps);
             if (L._rowIndex[targetIdx]) moveCursorTo(L._rowIndex[targetIdx]);
-          } else { _snapCursorToCenter(); }
+          } else { snapCursorToCenter(); }
         }
       } else {
         const desired = touchScrollY + dy;
         if (desired < 0 && maxY > 0) {
           _boundPen = -desired; _boundIsTop = true; setRootScrollY(0);
           const steps2 = Math.floor(_boundPen / LINE_HEIGHT);
-          const centerIdx2 = _getCenterRowIndex();
+          const centerIdx2 = getCenterRowIndex();
           if (centerIdx2 >= 0 && steps2 > 0) { const t2 = Math.max(0, centerIdx2 - steps2); if (L._rowIndex[t2]) moveCursorTo(L._rowIndex[t2]); }
         } else if (desired > maxY) {
           _boundPen = desired - maxY; _boundIsTop = false; setRootScrollY(maxY);
           const steps = Math.floor(_boundPen / LINE_HEIGHT);
-          const centerIdx = _getCenterRowIndex();
+          const centerIdx = getCenterRowIndex();
           if (centerIdx >= 0 && steps > 0) { const t = Math.min(L._rowIndex.length - 1, centerIdx + steps); if (L._rowIndex[t]) moveCursorTo(L._rowIndex[t]); }
         } else {
           setRootScrollY(desired);
           L._lastUserScrollY = desired;
-          _snapCursorToCenter();
+          snapCursorToCenter();
         }
       }
     },
@@ -270,11 +270,11 @@ export function initScrollGesture(): void {
           flingPen = Math.max(0, flingPen + (flingIsTop ? -velocity : velocity));
           if (flingPen === 0) {
             setRootScrollY(flingIsTop ? 0 : flingMaxY);
-            _snapCursorToCenter();
+            snapCursorToCenter();
           } else {
             setRootScrollY(flingIsTop ? 0 : flingMaxY);
             const steps = Math.floor(flingPen / LINE_HEIGHT);
-            const centerIdx = _getCenterRowIndex();
+            const centerIdx = getCenterRowIndex();
             if (centerIdx >= 0 && steps > 0) {
               const targetIdx = flingIsTop ? Math.max(0, centerIdx - steps) : Math.min(L._rowIndex.length - 1, centerIdx + steps);
               if (L._rowIndex[targetIdx]) moveCursorTo(L._rowIndex[targetIdx]);
@@ -285,7 +285,7 @@ export function initScrollGesture(): void {
           const desired = cur + velocity;
           if (desired < 0 && flingMaxY > 0) {
             flingPen = -desired; flingIsTop = true; setRootScrollY(0);
-            const centerIdx = _getCenterRowIndex();
+            const centerIdx = getCenterRowIndex();
             const steps = Math.floor(flingPen / LINE_HEIGHT);
             if (centerIdx >= 0 && steps > 0) {
               const targetIdx = Math.max(0, centerIdx - steps);
@@ -293,7 +293,7 @@ export function initScrollGesture(): void {
             }
           } else if (desired > flingMaxY) {
             flingPen = desired - flingMaxY; flingIsTop = false; setRootScrollY(flingMaxY);
-            const centerIdx = _getCenterRowIndex();
+            const centerIdx = getCenterRowIndex();
             const steps = Math.floor(flingPen / LINE_HEIGHT);
             if (centerIdx >= 0 && steps > 0) {
               const targetIdx = Math.min(L._rowIndex.length - 1, centerIdx + steps);
@@ -301,7 +301,7 @@ export function initScrollGesture(): void {
             }
           } else {
             setRootScrollY(desired);
-            _snapCursorToCenter();
+            snapCursorToCenter();
           }
         }
         L._flingRaf = requestAnimationFrame(fling);

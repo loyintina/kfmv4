@@ -56,6 +56,8 @@ export interface KFMStateType {
   toggleHidden(): void;
   setSidebarOpen(open: boolean): void;
   setViewport(v: Partial<ViewportState>): void;
+  setFile(path: string, node: FileNode): void;
+  deleteFile(path: string): void;
 
   // 卡片工作台方法
   cartAddEntry(entry: CartEntry): void;
@@ -144,6 +146,16 @@ export const KFMState: KFMStateType = {
   
   setViewport(v) {
     Object.assign(this.viewport, v);
+    this.notify();
+  },
+
+  setFile(path, node) {
+    this.files[path] = node;
+    this.notify();
+  },
+
+  deleteFile(path) {
+    delete this.files[path];
     this.notify();
   },
 

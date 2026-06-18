@@ -19,9 +19,11 @@ function _fmt(): string {
   return `${h}:${m}:${s}.${ms}`;
 }
 
-/** 追加一条日志 */
-export function log(msg: string): void {
+/** 追加一条日志（支持多参数，自动拼接） */
+export function log(...args: unknown[]): void {
+  const msg = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
   _logs.push(`[${_fmt()}] ${msg}`);
+  console.log(`[KFM] ${msg}`);
   if (_logs.length > MAX_LOG_LINES) _logs.shift();
   const snapshot = [..._logs];
   _subs.forEach(cb => { try { cb(snapshot); } catch { /* 安全的订阅者清理 */ } });

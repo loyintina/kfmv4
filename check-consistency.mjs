@@ -241,6 +241,33 @@ function checkTechStack() {
 }
 
 // ============================================================
+// 5. 依赖方向检查：引擎层禁止引用模块层
+// ============================================================
+
+function checkEngineDeps() {
+  const engineDir = join(ROOT, 'src', 'client', 'engine');
+
+  function walk(dir) {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isDirectory()) {
+        walk(join(dir, entry.name));
+      } else if (entry.name.endsWith('.ts')) {
+        const content = readFileSync(join(dir, entry.name), 'utf-8');
+        const lines = content.split('\n');
+        for (const line of lines) {
+          if (line.match(/from\s+['"].*modules\//)) {
+            const relPath = relative(ROOT, join(dir, entry.name));
+            error(`${relPath} 反向依赖 modules/: ${line.trim()}`);
+          }
+        }
+      }
+    }
+  }
+
+  walk(engineDir);
+}
+
+// ============================================================
 // Main
 // ============================================================
 
@@ -248,6 +275,7 @@ checkDocTree();
 checkNumericClaims();
 checkDeletedClaims();
 checkTechStack();
+checkEngineDeps();
 
 if (errors > 0) {
   console.error(`\n[check-consistency] ${errors} errors — BLOCKED`);

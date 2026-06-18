@@ -15,7 +15,7 @@ import { Renderer } from '../engine/v2/renderer.js';
 import { L } from './renderer-lifecycle.js';
 import { _rebuildRowIndex, findBoxById } from './canvas-utils.js';
 import { Box } from '../engine/v2/box.js';
-import { getCursorRowIndex, moveCursorTo, ensureCursorBox, _scrollToCenterCursor } from './canvas-cursor.js';
+import { getCursorRowIndex, moveCursorTo, ensureCursorBox, scrollToCenterCursor } from './canvas-cursor.js';
 import { initScrollGesture, bindWheelEvents } from './canvas-scroll.js';
 import { DOM } from "./dom-refs.js";
 import * as clickQueue from "./click-queue.js";
@@ -294,7 +294,7 @@ export function onSidebarClose(): void {
 export function initTreeRenderer(): void {
   const fileTree = DOM.fileTree;
   if (!fileTree) {
-    console.warn('[tree-render] #fileTree not found');
+    log('[warn] [tree-render] #fileTree not found');
     return;
   }
 
@@ -479,7 +479,7 @@ function processClickQueue(): void {
     if (hit && L.cursorRowId !== null && L.cursorRowId !== hit.id) {
       clickQueue.dequeue();
       moveCursorTo(hit);
-      _scrollToCenterCursor();
+      scrollToCenterCursor();
       Registry.notifyStateChange('file-tree');
       setTimeout(processClickQueue, 0);
       return;
@@ -540,10 +540,10 @@ L.endOp();
         const isExpanded = hitData.isExpanded;
         if (isDir) {
           if (isExpanded) {
-            console.log('[processClickQueue] doCollapse path=', hitData.path);
+            log('[processClickQueue] doCollapse path=' + hitData.path);
             doCollapse(hit, hitData);
           } else {
-            console.log('[processClickQueue] doExpand path=', hitData.path);
+            log('[processClickQueue] doExpand path=' + hitData.path);
             doExpand(hit, hitData);
           }
           return;  // 动画函数完成后会 processClickQueue()
@@ -552,7 +552,7 @@ L.endOp();
         }
       } else {
         moveCursorTo(hit);
-        _scrollToCenterCursor();
+        scrollToCenterCursor();
         Registry.notifyStateChange('file-tree');
       }
       break;
@@ -892,7 +892,7 @@ function rebuildTree(): void {
   }
 
   // 【关键】从关闭状态恢复时，先恢复 scrollY，再让光标逻辑基于恢复后的位置工作
-  // 注意：第一次rebuildTree时_isCursorMode=true,maxY=0,恢复会失败
+  // 注意：第一次rebuildTree时isCursorMode=true,maxY=0,恢复会失败
   // 不在这里消耗_savedScrollY，等rAF回调中的强制恢复
   if (L._restoringFromSave) {
     L._restoringFromSave = false;  // 只消耗标志，不消耗_savedScrollY

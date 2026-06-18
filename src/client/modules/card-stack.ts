@@ -3,9 +3,10 @@ import { anim, AnimTimeline } from './animation-registry.js';
 import { getLogs, clearLogs, copyLogs, onLog } from './logger.js';
 import { Registry } from './ui-registry.js';
 import { wsChannel } from './ws-channel.js';
-
 import { currentTheme as theme } from './theme.js';
 import { createFloatingCard } from './floating-card.js';
+import { FLOATING_CARD_W } from './interaction-constants.js';
+import { log } from './logger.js';
 
 /**
  * KFM v4 - 堆叠卡片面板
@@ -221,7 +222,7 @@ function createCard(index: number): HTMLElement {
     'position:fixed',
     'right:0px',
     'top:' + topPx + 'px',
-    'width:155px',
+    'width:' + FLOATING_CARD_W + 'px',
     'height:' + CARD_HEIGHT + 'px',
     'border-radius:12px',
     'padding:1px',
@@ -269,7 +270,7 @@ function createCard(index: number): HTMLElement {
 }
 
 function buildCards(): void {
-  console.log("[CARD-STACK] buildCards called");
+  log("[CARD-STACK] buildCards called");
   for (let i = 0; i < getCardCount(); i++) {
     const card = createCard(i);
     card.style.transform = 'translateX(100vw)';
@@ -277,7 +278,7 @@ function buildCards(): void {
     document.body.appendChild(card);
     _cardEls.push(card);
   }
-  console.log("[CARD-STACK] buildCards done, cards=", _cardEls.length);
+  log("[CARD-STACK] buildCards done, cards=" + _cardEls.length);
 }
 
 function updateFocus(): void {

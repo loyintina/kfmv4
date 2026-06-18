@@ -17,6 +17,7 @@ import { _rebuildRowIndex, getRootScrollY, findBoxById } from './canvas-utils.js
 import { ensureCursorBox, moveCursorTo, getCursorRowIndex } from './canvas-cursor.js';
 import { bindWheelEvents } from './canvas-scroll.js';
 import { currentTheme } from './theme.js';
+import { log } from './logger.js';
 
 const BASE_PATH = '.';
 const HEADER_H = 4;
@@ -52,7 +53,7 @@ async function _fetchDirs(dirPath: string): Promise<ListResult | null> {
     const data = await res.json();
     if (data.error) return null;
     return { resolvedPath: data.path, items: (data.items || []).filter((i: DirItem) => i.isDir) };
-  } catch { console.warn('[picker] _fetchDirs failed for', dirPath); return null; }
+  } catch { log('[warn] [picker] _fetchDirs failed for ' + dirPath); return null; }
 }
 
 // ========== 标签（Canvas 渲染渐变文字） ==========
@@ -190,12 +191,12 @@ async function _openPanel(): Promise<void> {
       if (!exist?.children || exist.children.length === 0) {
         const r = await _fetchDirs(seg);
         if (r) {
-          KFMState.files[seg] = {
+          KFMState.setFile(seg, {
             name: parts[i], path: seg, isDir: true, isLink: false,
             children: r.items.map(d => ({
               name: d.name, path: d.path, isDir: true, isLink: false,
             } as FileNode)),
-          } as FileNode;
+          } as FileNode);
         }
       }
     }
@@ -266,7 +267,7 @@ function _destroyPicker(): void {
   // 恢复 KFMState.files（仅在 picker 曾成功打开时，避免 _savedFiles={} 时清空主树）
   if (Object.keys(_savedFiles).length > 0) {
     for (const key of Object.keys(KFMState.files)) {
-      if (!(key in _savedFiles)) delete KFMState.files[key];
+      if (!(key in _savedFiles)) KFMState.deleteFile(key);
     }
     for (const key of Object.keys(_savedFiles)) {
       (KFMState.files as Record<string, any>)[key] = _savedFiles[key];
@@ -362,14 +363,14 @@ function _rebuildPicker(): void {
 
   // 把 picker 的目录数据写入 KFMState.files（buildTree 内部会读它）
   // 注意：主树可能在 files 中存有含文件的完整数据，picker 仅需目录
-  KFMState.files[BASE_PATH] = rootNode as FileNode;
+  KFMState.setFile(BASE_PATH, rootNode as FileNode);
   for (const d of _cachedDirs) {
     const existing = KFMState.files[d.path];
     if (existing === undefined || existing.children === undefined) {
-      KFMState.files[d.path] = { name: d.name, path: d.path, isDir: true, isLink: false, children: [] };
+      KFMState.setFile(d.path, { name: d.name, path: d.path, isDir: true, isLink: false, children: [] });
     } else {
       // 主树预填充的数据可能包含文件，Picker 只保留目录
-      KFMState.files[d.path] = { ...existing, children: existing.children.filter(c => c.isDir) };
+      KFMState.setFile(d.path, { ...existing, children: existing.children.filter(c => c.isDir) });
     }
   }
 
@@ -423,7 +424,7 @@ async function _toggleDir(path: string, expand: boolean): Promise<void> {
           name: path.split('/').pop() || path, path, isDir: true, isLink: false,
           children: result.items.map(d => ({ name: d.name, path: d.path, isDir: true, isLink: false })),
         };
-        KFMState.files[path] = fileNode;
+        KFMState.setFile(path, fileNode);
       }
     }
   } else {

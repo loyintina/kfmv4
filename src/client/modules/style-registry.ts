@@ -8,8 +8,8 @@
 import { Box } from '../engine/v2/box.js';
 import type { BoxOptions } from '../engine/v2/box.js';
 import type { TextStyle } from '../engine/v2/types.js';
-import { KFMState } from "./state.js";
 import { currentTheme as theme } from './theme.js';
+import { log } from './logger.js';
 
 // ============================================================
 // 尺寸常量
@@ -159,7 +159,6 @@ export const styleRegistry = {
     } else {
       Object.assign(templates[name], updates);
     }
-    KFMState.notify();
   },
 
   patch(patches: Record<string, Record<string, any>>): void {
@@ -171,17 +170,11 @@ export const styleRegistry = {
         Object.assign(templates[name], updates);
       }
     }
-    KFMState.notify();
-  },
-
-  subscribe(fn: (state: any) => void): void {
-    KFMState.subscribe(fn);
-  },
-
-  unsubscribe(fn: (state: any) => void): void {
-    KFMState.unsubscribe(fn);
   },
 };
+
+// ============================================================
+// 文件扩展名 → 颜色映射
 
 // ============================================================
 // 文件扩展名 → 颜色映射
@@ -206,7 +199,7 @@ export function getShift(depth: number): number { return SHIFT_TABLE[depth] ?? 2
 
 export function createBox(templateName: string, overrides: Partial<BoxOptions>): Box {
   if (!templates[templateName]) {
-    console.warn(`[style-registry] unknown template: "${templateName}"`);
+    log(`[warn] [style-registry] unknown template: "${templateName}"`);
   }
   const base: Partial<BoxOptions> = styleRegistry.get(templateName) || {};
   return new Box({ ...base, ...overrides });

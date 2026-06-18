@@ -13,9 +13,6 @@ import gsap from 'gsap';
 
 // ========== 导出类型（供其他模块使用，避免直接 import gsap） ==========
 export type AnimTimeline = gsap.core.Timeline;
-export type AnimTween = gsap.core.Tween;
-export type AnimTimelineVars = gsap.TimelineVars;
-export type AnimTweenVars = gsap.TweenVars;
 
 // ========== 内部类型 ==========
 

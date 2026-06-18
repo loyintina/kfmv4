@@ -24,6 +24,7 @@ import { getShift, LINE_HEIGHT, MAX_LINES } from './style-registry.js';
 import { currentTheme as theme } from './theme.js';
 import { getFileRowData } from './state.js';
 import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
+import { log } from './logger.js';
 
 
 export function getRowIndexLength(): number { return L._rowIndex.length; }
@@ -244,7 +245,7 @@ export function moveCursorTo(hitBox: Box, animate = true): void {
   let abs: { x: number; y: number };
   try {
     abs = hitBox.getAbsolutePosition();
-  } catch { console.warn('[cursor] getAbsolutePosition failed, box may be detached'); return; }
+  } catch { log('[warn] [cursor] getAbsolutePosition failed, box may be detached'); return; }
   const canvas = L.renderer?.canvas ?? DOM.treeCanvas;
 
   const depth = getFileRowData(hitBox.data)?.depth ?? 0;
@@ -366,7 +367,7 @@ export function getCursorRowIndex(): number {
 }
 
 /** 移���光标 N 步（正=向下，负=向上），自动 clamp */
-export function _moveCursorBySteps(steps: number): void {
+export function moveCursorBySteps(steps: number): void {
   if (L._rowIndex.length === 0) return;
   const oldIdx = getCursorRowIndex();
   const newIdx = ((oldIdx + steps) % L._rowIndex.length + L._rowIndex.length) % L._rowIndex.length;
@@ -376,14 +377,14 @@ export function _moveCursorBySteps(steps: number): void {
 }
 
 /** 判断��前是否���标模式（内容高度 <= 视口高度，无溢出） */
-export function _isCursorMode(): boolean {
+export function isCursorMode(): boolean {
   const root = L.renderer?.getRoot();
   if (!root) return false;
   return root.getMaxScroll().maxY <= 0;
 }
 
 /** 获取视口中央最近行的索引（在 L._rowIndex 中的位置） */
-export function _getCenterRowIndex(): number {
+export function getCenterRowIndex(): number {
   const root = L.renderer?.getRoot();
   if (!root || L._rowIndex.length === 0) return -1;
   const canvasH = (L.renderer?.canvas?.clientHeight ?? DOM.treeCanvas?.clientHeight ?? 0) || 618;
@@ -401,25 +402,25 @@ export function _getCenterRowIndex(): number {
         closestDist = dist;
         closestIdx = i;
       }
-    } catch { console.warn('[cursor] row box detached during snapToCenterRow'); /* Box 被移除则跳过 */ }
+    } catch { log('[warn] [cursor] row box detached during snapToCenterRow'); }
   }
   return closestIdx;
 }
 
 /** 滚���模式下，将光标吸附到视口中央最近的行 */
-export function _snapCursorToCenter(): void {
+export function snapCursorToCenter(): void {
   if (L.isAnimating) return;
-  const idx = _getCenterRowIndex();
+  const idx = getCenterRowIndex();
   if (idx >= 0 && L._rowIndex[idx] && L._rowIndex[idx]!.id !== L.cursorRowId) {
-    console.log('[snapCursorToCenter] snapping from', L.cursorRowId, 'to', L._rowIndex[idx]!.id, 'centerIdx=', idx);
+    log('[snapCursorToCenter] snapping from ' + L.cursorRowId + ' to ' + L._rowIndex[idx]!.id + ' centerIdx=' + idx);
     moveCursorTo(L._rowIndex[idx]!);
   }
 }
 
 
 /** 点击后滚动页面到光标居中位置（GSAP 平滑动画） */
-export function _scrollToCenterCursor(): void {
-  if (_isCursorMode()) return;
+export function scrollToCenterCursor(): void {
+  if (isCursorMode()) return;
   if (L.isRestoreMode()) return;  // 恢复期间跳过 GSAP
   const root = L.renderer?.getRoot();
   if (!root || L.cursorRowId === null) return;
@@ -437,6 +438,6 @@ export function _scrollToCenterCursor(): void {
       ease: 'power2.inOut',
       overwrite: 'auto',
     });
-  } catch { console.warn('[cursor] GSAP scrollToRow failed'); }
+  } catch { log('[warn] [cursor] GSAP scrollToRow failed'); }
 }
 

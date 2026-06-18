@@ -160,7 +160,7 @@ export class Renderer {
       try {
         this._manageInputs(this._root);
       } catch (e) {
-        console.error('_manageInputs error', e);
+        console.error('[renderer] _manageInputs error', e);
       }
     }
 

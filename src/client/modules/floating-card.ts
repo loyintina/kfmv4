@@ -9,7 +9,7 @@ import { gestures } from "./gesture-registry.js";
 import { anim } from './animation-registry.js';
 import { currentTheme as theme } from './theme.js';
 import { Registry } from './ui-registry.js';
-import { MARGIN } from './interaction-constants.js';
+import { MARGIN, FLOATING_CARD_W, FLOATING_CARD_H } from './interaction-constants.js';
 import { createDragHandler, type DragConfig } from './drag-handler.js';
 
 const orbT = theme.cornerOrb;
@@ -30,8 +30,6 @@ const bottomOff = cornerOff + orbT.bottomOffAdj;
 // ========== 配置 ==========
 const Z_FLOATING_BASE = 50;
 
-const FLOATING_CARD_W = 155;
-const FLOATING_CARD_H = 68;
 const COMPACT_W = 54;
 const COMPACT_H = 54;
 
@@ -76,7 +74,7 @@ let _floatingCards: FloatingCardItem[] = [];
 let _nextFloatingZ = Z_FLOATING_BASE;
 const _brOrbToItem = new WeakMap<HTMLElement, FloatingCardItem>();
 // ========== 浮卡光球拖拽状态（复刻 orb.ts 的全局变量） ==========
-let _fItem: FloatingCardItem | null = null;
+let dragItem: FloatingCardItem | null = null;
 
 // ========== 浮卡 ==========
 
@@ -497,27 +495,27 @@ export function hasFloatingCard(): boolean {
 
 /** 注册浮卡的光球拖拽手势（从 card-stack.ts initCardStack 中拆分） */
 export function initFloatingCards(): void {
-  const _fRS = orbT.size;
-  const _fRH = _fRS / 2;
-  const _frightOff = orbT.cornerOff + orbT.rightOffAdj;
-  const _fbottomOff = orbT.cornerOff + orbT.bottomOffAdj;
-  const _fMARGIN = MARGIN;
+  const rs = orbT.size;
+  const rh = rs / 2;
+  const rightOff = orbT.cornerOff + orbT.rightOffAdj;
+  const bottomOff = orbT.cornerOff + orbT.bottomOffAdj;
+  const margin = MARGIN;
 
-  function _fGetMaxY(): number {
+  function getMaxY(): number {
     const bar = document.getElementById('aiInputBar');
-    return (bar ? bar.getBoundingClientRect().top : window.innerHeight) - _fRS - _fMARGIN;
+    return (bar ? bar.getBoundingClientRect().top : window.innerHeight) - rs - margin;
   }
 
-  function _fClamp(x: number, y: number): { x: number; y: number } {
+  function fClamp(x: number, y: number): { x: number; y: number } {
     return {
-      x: Math.max(_fMARGIN, Math.min(window.innerWidth - _fRS - _fMARGIN, x)),
-      y: Math.max(_fMARGIN, Math.min(_fGetMaxY(), y)),
+      x: Math.max(margin, Math.min(window.innerWidth - rs - margin, x)),
+      y: Math.max(margin, Math.min(getMaxY(), y)),
     };
   }
 
-  function _fSyncCorners(item: FloatingCardItem, w: number, h: number): void {
-    const rx = w - _frightOff - _fRS;
-    const by = h - _fbottomOff - _fRS;
+  function fSyncCorners(item: FloatingCardItem, w: number, h: number): void {
+    const rx = w - rightOff - rs;
+    const by = h - bottomOff - rs;
     // BR 光球只要有就独立更新（紧缩态下 TL/TR/BL 为 null）
     if (item.brOrb) {
       item.brOrb.style.left = rx + 'px';
@@ -530,11 +528,11 @@ export function initFloatingCards(): void {
   }
 
   // 拖动共享状态（配置闭包内捕获）
-  let _fPreEdit: 'compact' | 'active' = 'compact';
-  let _fStartCardL = 0;
-  let _fStartCardT = 0;
-  let _fStartCardW = 0;
-  let _fStartCardH = 0;
+  let preEdit: 'compact' | 'active' = 'compact';
+  let startCardL = 0;
+  let startCardT = 0;
+  let startCardW = 0;
+  let startCardH = 0;
 
   const dragCfg: DragConfig = {
     getElement(e: PointerEvent) {
@@ -542,90 +540,90 @@ export function initFloatingCards(): void {
       if (!orbEl) return null;
       const item = _brOrbToItem.get(orbEl);
       if (!item) return null;
-      _fItem = item;
-      _fStartCardW = item.cardWidth; _fStartCardH = item.cardHeight;  // 每次交互起始捕获当前尺寸
+      dragItem = item;
+      startCardW = item.cardWidth; startCardH = item.cardHeight;  // 每次交互起始捕获当前尺寸
       return orbEl;
     },
     canStart() {
-      if (!_fItem) return false;
-      return _fItem.state === 'compact' || _fItem.state === 'active' || _fItem.state === 'editing';
+      if (!dragItem) return false;
+      return dragItem.state === 'compact' || dragItem.state === 'active' || dragItem.state === 'editing';
     },
     getOrbStartRect() {
-      return _fItem!.brOrb!.getBoundingClientRect();
+      return dragItem!.brOrb!.getBoundingClientRect();
     },
     minEditW: FLOATING_CARD_W_MIN,
     minEditH: FLOATING_CARD_H_MIN,
-    clamp: _fClamp,
-    isEditing() { return _fItem?.state === 'editing'; },
-    onTap() { _fItem?.brOrb?.click(); },
+    clamp: fClamp,
+    isEditing() { return dragItem?.state === 'editing'; },
+    onTap() { dragItem?.brOrb?.click(); },
     onSavePosition() { /* 浮卡不保存自由位置 */ },
     onEnterEdit() {
-      if (!_fItem) return;
-      _fPreEdit = _fItem.state as 'compact' | 'active';
-      _fItem.state = 'editing';
-      const orbEl = _fItem.brOrb!;
+      if (!dragItem) return;
+      preEdit = dragItem.state as 'compact' | 'active';
+      dragItem.state = 'editing';
+      const orbEl = dragItem.brOrb!;
       const r2 = orbEl.getBoundingClientRect();
-      _fStartCardL = parseFloat(_fItem.el.style.left) || 0;
-      _fStartCardT = parseFloat(_fItem.el.style.top) || 0;
-      _fStartCardW = _fItem.cardWidth;
-      _fStartCardH = _fItem.cardHeight;
+      startCardL = parseFloat(dragItem.el.style.left) || 0;
+      startCardT = parseFloat(dragItem.el.style.top) || 0;
+      startCardW = dragItem.cardWidth;
+      startCardH = dragItem.cardHeight;
       const glowDiv = orbEl.firstElementChild as HTMLElement;
       if (glowDiv) glowDiv.dataset.initBoxShadow = glowDiv.style.boxShadow;
-      const editGlow = _hexToRgba(_fItem.accentColor, 0.25);
-      _fItem.el.style.boxShadow = '0 0 24px 8px ' + editGlow + ', 0 8px 32px rgba(0,0,0,0.5)';
+      const editGlow = _hexToRgba(dragItem.accentColor, 0.25);
+      dragItem.el.style.boxShadow = '0 0 24px 8px ' + editGlow + ', 0 8px 32px rgba(0,0,0,0.5)';
     },
     onExitEdit() {
-      if (!_fItem) return;
-      _fItem.state = _fPreEdit;
-      _fItem.el.style.boxShadow = theme.stack.blurShadow;
-      const gd = _fItem.brOrb?.firstElementChild as HTMLElement;
+      if (!dragItem) return;
+      dragItem.state = preEdit;
+      dragItem.el.style.boxShadow = theme.stack.blurShadow;
+      const gd = dragItem.brOrb?.firstElementChild as HTMLElement;
       if (gd && gd.dataset.initBoxShadow !== undefined) {
         gd.style.boxShadow = gd.dataset.initBoxShadow;
         delete gd.dataset.initBoxShadow;
       }
     },
     onMoveNormal({ dx, dy, startOrbX, startOrbY }) {
-      if (!_fItem) return;
+      if (!dragItem) return;
       const rawX = startOrbX + dx;
       const rawY = startOrbY + dy;
-      const clamped = _fClamp(rawX, rawY);
-      const orbCX = clamped.x + _fRH;
-      const orbCY = clamped.y + _fRH;
-      const availLeft = orbCX - _fMARGIN;
-      const availTop = orbCY - _fMARGIN;
-      const renderW = Math.max(FLOATING_CARD_W_MIN, Math.min(_fStartCardW, availLeft));
-      const renderH = Math.max(FLOATING_CARD_H_MIN, Math.min(_fStartCardH, availTop));
-      const left = Math.max(_fMARGIN, orbCX - renderW);
-      const top = Math.max(_fMARGIN, orbCY - renderH);
-      _fItem.el.style.left = left + 'px';
-      _fItem.el.style.top = top + 'px';
-      _fItem.el.style.width = renderW + 'px';
-      _fItem.el.style.height = renderH + 'px';
-      _fSyncCorners(_fItem, renderW, renderH);
+      const clamped = fClamp(rawX, rawY);
+      const orbCX = clamped.x + rh;
+      const orbCY = clamped.y + rh;
+      const availLeft = orbCX - margin;
+      const availTop = orbCY - margin;
+      const renderW = Math.max(FLOATING_CARD_W_MIN, Math.min(startCardW, availLeft));
+      const renderH = Math.max(FLOATING_CARD_H_MIN, Math.min(startCardH, availTop));
+      const left = Math.max(margin, orbCX - renderW);
+      const top = Math.max(margin, orbCY - renderH);
+      dragItem.el.style.left = left + 'px';
+      dragItem.el.style.top = top + 'px';
+      dragItem.el.style.width = renderW + 'px';
+      dragItem.el.style.height = renderH + 'px';
+      fSyncCorners(dragItem, renderW, renderH);
     },
     onMoveEditing({ dx, dy, startOrbX, startOrbY }) {
-      if (!_fItem) return;
+      if (!dragItem) return;
       const rawX = startOrbX + dx;
       const rawY = startOrbY + dy;
-      const clamped = _fClamp(rawX, rawY);
-      const minX = _fStartCardL + FLOATING_CARD_W_MIN - _frightOff - _fRS;
-      const minY = _fStartCardT + FLOATING_CARD_H_MIN - _fbottomOff - _fRS;
+      const clamped = fClamp(rawX, rawY);
+      const minX = startCardL + FLOATING_CARD_W_MIN - rightOff - rs;
+      const minY = startCardT + FLOATING_CARD_H_MIN - bottomOff - rs;
       const ox = Math.max(minX, clamped.x);
       const oy = Math.max(minY, clamped.y);
-      const newW = Math.max(FLOATING_CARD_W_MIN, ox - _fStartCardL + _frightOff + _fRS);
-      const newH = Math.max(FLOATING_CARD_H_MIN, oy - _fStartCardT + _fbottomOff + _fRS);
-      _fItem.el.style.width = newW + 'px';
-      _fItem.el.style.height = newH + 'px';
-      _fItem.cardWidth = newW;
-      _fItem.cardHeight = newH;
-      if (_fPreEdit === 'compact') {
-        _fItem.compactMemW = newW;
-        _fItem.compactMemH = newH;
+      const newW = Math.max(FLOATING_CARD_W_MIN, ox - startCardL + rightOff + rs);
+      const newH = Math.max(FLOATING_CARD_H_MIN, oy - startCardT + bottomOff + rs);
+      dragItem.el.style.width = newW + 'px';
+      dragItem.el.style.height = newH + 'px';
+      dragItem.cardWidth = newW;
+      dragItem.cardHeight = newH;
+      if (preEdit === 'compact') {
+        dragItem.compactMemW = newW;
+        dragItem.compactMemH = newH;
       } else {
-        _fItem.activeMemW = newW;
-        _fItem.activeMemH = newH;
+        dragItem.activeMemW = newW;
+        dragItem.activeMemH = newH;
       }
-      _fSyncCorners(_fItem, newW, newH);
+      fSyncCorners(dragItem, newW, newH);
     },
   };
 

@@ -10,6 +10,7 @@
 import { KFMState, API, type FileNode } from './state.js';
 import { markAnimatingPath, isAnimLocked, triggerExpandAnimation } from './tree-render.js';
 import { Registry } from './ui-registry.js';
+import { log } from './logger.js';
 
 /** 休眠指定毫秒 */
 function sleep(ms: number): Promise<void> {
@@ -46,13 +47,13 @@ async function fetchDirRecursive(
     const tree: any[] = data.tree || [];
     if (tree.length === 0) {
       // 空目录也视为加载成功，缓存空的 children 以便后续展开/折叠动画
-      KFMState.files[dirPath] = {
+      KFMState.setFile(dirPath, {
         name: dirPath.split('/').pop() || dirPath,
         path: dirPath,
         isDir: true,
         isLink: false,
         children: [],
-      };
+      });
       return true;
     }
 
@@ -64,13 +65,13 @@ async function fetchDirRecursive(
         isDir: item.isDir,
         isLink: false,
       }));
-      KFMState.files[parentPath] = {
+      KFMState.setFile(parentPath, {
         name: parentPath.split('/').pop() || parentPath,
         path: parentPath,
         isDir: true,
         isLink: false,
         children,
-      };
+      });
       for (const item of items) {
         if (item.isDir && item.children && item.children.length > 0) {
           ingestTree(item.path, item.children);
@@ -80,7 +81,8 @@ async function fetchDirRecursive(
 
     ingestTree(dirPath, tree);
     return true;
-  } catch {
+  } catch (e) {
+    log('[tree-loader] fetchDirRecursive failed: ' + (e instanceof Error ? e.message : String(e)));
     return false;
   }
 }
@@ -176,7 +178,7 @@ export function initLazyLoader(): void {
       KFMState.expandedPaths[path] = true;
       localStorage.setItem('expandedPaths', JSON.stringify(KFMState.expandedPaths));
       loadAndAnimate(path).catch((err: any) => {
-        console.error(err);
+        log('[tree-loader] loadAndAnimate failed: ' + (err instanceof Error ? err.message : String(err)));
         markAnimatingPath(null);
       });
       return true;  // 返回 true 跳过默认 setExpanded（避免提前 notify）

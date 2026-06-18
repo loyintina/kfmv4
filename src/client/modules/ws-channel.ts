@@ -20,6 +20,7 @@
 import { Registry } from './ui-registry.js';
 import { KFMState } from './state.js';
 import { DOM } from './dom-refs.js';
+import { log } from './logger.js';
 
 // ========== 配置 ==========
 
@@ -65,13 +66,13 @@ class WsChannel {
     try {
       this.ws = new WebSocket(url);
     } catch (e) {
-      console.error('[ws-channel] 创建 WebSocket 失败:', e);
+      log('[error] [ws-channel] 创建 WebSocket 失败:', e);
       this.scheduleReconnect();
       return;
     }
 
     this.ws.onopen = () => {
-      console.log('[ws-channel] 已连接到服务端', url);
+      log('[ws-channel] 已连接到服务端', url);
       this._connected = true;
       this.reconnectDelay = RECONNECT_BASE_MS;
 
@@ -88,12 +89,12 @@ class WsChannel {
         const msg: WsMessage = JSON.parse(event.data);
         this.handleMessage(msg);
       } catch (e) {
-        console.error('[ws-channel] 消息解析失败:', e);
+        log('[error] [ws-channel] 消息解析失败:', e);
       }
     };
 
     this.ws.onclose = (event) => {
-      console.log(`[ws-channel] 连接已关闭 (code: ${event.code})`);
+      log(`[ws-channel] 连接已关闭 (code: ${event.code})`);
       this._connected = false;
       this.ws = null;
       if (!this._closed) {
@@ -102,7 +103,7 @@ class WsChannel {
     };
 
     this.ws.onerror = (event) => {
-      console.error('[ws-channel] 连接错误');
+      log('[error] [ws-channel] 连接错误');
       // onclose 会被自动调用，触发重连
     };
   }
@@ -128,7 +129,7 @@ class WsChannel {
   /** 注册命令处理器（供各模块注册它们能处理的指令） */
   onCommand(action: string, handler: CommandHandler): void {
     if (this.commandHandlers.has(action)) {
-      console.warn(`[ws-channel] 命令处理器 "${action}" 被重复注册，覆盖旧处理器`);
+      log('[warn] [ws-channel] 命令处理器 "' + action + '" 被重复注册，覆盖旧处理器');
     }
     this.commandHandlers.set(action, handler);
   }
@@ -182,17 +183,17 @@ class WsChannel {
         if (handler) {
           handler(cmd.action, cmd.params);
         } else {
-          console.warn('[ws-channel] 未注册的命令处理器:', cmd.action, '- 可用处理器:', [...this.commandHandlers.keys()]);
+          log('[warn] [ws-channel] 未注册的命令处理器:', cmd.action, '- 可用处理器:', [...this.commandHandlers.keys()]);
         }
         break;
       }
 
       case 'error':
-        console.warn('[ws-channel] 服务端错误:', msg.payload);
+        log('[warn] [ws-channel] 服务端错误:', msg.payload);
         break;
 
       default:
-        console.warn('[ws-channel] 未知消息类型:', msg.type);
+        log('[warn] [ws-channel] 未知消息类型:', msg.type);
     }
   }
 
@@ -201,7 +202,7 @@ class WsChannel {
     if (this._closed) return;
     if (this.reconnectTimer) return; // 已有重连计划
 
-    console.log(`[ws-channel] ${this.reconnectDelay}ms 后重连...`);
+    log(`[ws-channel] ${this.reconnectDelay}ms 后重连...`);
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
       this.connect();
@@ -243,7 +244,7 @@ export function initWsChannel(): void {
 
   // 注册默认指令处理器（各模块可以覆盖或补充）
   registerDefaultCommandHandlers();
-  console.log('[ws-channel] 初始化完成');
+  log('[ws-channel] 初始化完成');
 }
 /** 注册默认的 AI 操作指令处理器。
  * 这些处理器将服务端发来的操作指令映射到具体的前端函数。
@@ -254,10 +255,10 @@ function registerDefaultCommandHandlers(): void {
   wsChannel.onCommand('click', (_action, params) => {
     const elementId = params.elementId as string;
     if (!elementId) {
-      console.warn('[ws-channel] click 指令缺少 elementId');
+      log('[warn] [ws-channel] click 指令缺少 elementId');
       return;
     }
-    console.log('[ws-channel] AI 指令: 点击', elementId);
+    log('[ws-channel] AI 指令: 点击', elementId);
     // 优先通过 data-registry-id 查找
     let element = document.querySelector(`[data-registry-id="${elementId}"]`);
     // fallback: 尝试通过 HTML id 查找
@@ -267,7 +268,7 @@ function registerDefaultCommandHandlers(): void {
     if (element instanceof HTMLElement) {
       element.click();
     } else {
-      console.warn('[ws-channel] 未找到可点击的元素:', elementId);
+      log('[warn] [ws-channel] 未找到可点击的元素:', elementId);
       // Canvas 元素（如 file-tree）或动态 DOM 无法通过通用 click 定位，
       // 应使用对应元素的专用命令（如 expand-dir/collapse-dir/select-file）
       const toast = DOM.operationToast;
@@ -283,7 +284,7 @@ function registerDefaultCommandHandlers(): void {
   // 设置输入框值
   wsChannel.onCommand('set-input', (_action, params) => {
     const { elementId, value } = params as { elementId: string; value: string };
-    console.log('[ws-channel] AI 指令: 设置输入', elementId, '=', value);
+    log('[ws-channel] AI 指令: 设置输入', elementId, '=', value);
     const element = document.querySelector(`[data-registry-id="${elementId}"]`) as HTMLInputElement | null;
     if (element) {
       element.value = value;
@@ -296,7 +297,7 @@ function registerDefaultCommandHandlers(): void {
   wsChannel.onCommand('file-search', async (_action, params) => {
     const pattern = params.pattern as string;
     if (!pattern) return;
-    console.log('[ws-channel] AI 指令: 文件搜索', pattern);
+    log('[ws-channel] AI 指令: 文件搜索', pattern);
     try {
       const resp = await fetch('/api/files/list', {
         method: 'POST',
@@ -304,9 +305,9 @@ function registerDefaultCommandHandlers(): void {
         body: JSON.stringify({ path: KFMState.currentRoot || '/', showHidden: true }),
       });
       const data = await resp.json();
-      console.log('[ws-channel] 文件搜索结果:', data);
+      log('[ws-channel] 文件搜索结果:', data);
     } catch (e) {
-      console.error('[ws-channel] 文件搜索失败:', e);
+      log('[error] [ws-channel] 文件搜索失败:', e);
     }
   });
 

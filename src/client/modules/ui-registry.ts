@@ -22,6 +22,8 @@
 
 // ========== 导入 ==========
 
+import { log } from './logger.js';
+
 
 
 
@@ -116,7 +118,7 @@ export class UIElementRegistry {
   /** 注册一个交互元素（由各模块在初始化时调用一次） */
   register(el: InteractiveElement): void {
     if (this._elements.has(el.id)) {
-      console.warn(`[ui-registry] 重复注册 UI 元素: ${el.id}，覆盖旧值`);
+      log('[warn] [ui-registry] 重复注册 UI 元素: ' + el.id + '，覆盖旧值');
     }
     this._elements.set(el.id, el);
     this._notifyChange('register', el.id);
@@ -135,7 +137,7 @@ export class UIElementRegistry {
    */
   registerStateGetter(id: string, getter: StateGetter): void {
     if (!this._elements.has(id)) {
-      console.warn(`[ui-registry] 为不存在的元素注册 state getter: "${id}"。getter 不会被调用。`);
+      log('[warn] [ui-registry] 为不存在的元素注册 state getter: "' + id + '"。getter 不会被调用。');
     }
     this._stateGetters.set(id, getter);
     this._notifyChange('state-getter', id);
@@ -152,7 +154,7 @@ export class UIElementRegistry {
    */
   registerElement(el: InteractiveElement, getter?: StateGetter): string {
     if (this._elements.has(el.id)) {
-      console.warn(`[ui-registry] 重复注册 UI 元素: ${el.id}，覆盖旧值`);
+      log('[warn] [ui-registry] 重复注册 UI 元素: ' + el.id + '，覆盖旧值');
     }
     this._elements.set(el.id, el);
     if (getter) {
@@ -166,11 +168,11 @@ export class UIElementRegistry {
   registerContent(block: ContentBlock): void {
     // 生成器优先：如果已注册生成器，静态内容不覆盖，但警告调用者
     if (this._contentGenerators.has(block.id)) {
-      console.warn(`[ui-registry] 内容块 "${block.id}" 已有生成器，静态内容被忽略。如需覆盖，先调 registerContentGenerator(id, null) 注销生成器。`);
+      log('[warn] [ui-registry] 内容块 "' + block.id + '" 已有生成器，静态内容被忽略。如需覆盖，先调 registerContentGenerator(id, null) 注销生成器。');
       return;
     }
     if (this._content.has(block.id)) {
-      console.warn(`[ui-registry] 重复注册内容块: ${block.id}，覆盖旧值`);
+      log('[warn] [ui-registry] 重复注册内容块: ' + block.id + '，覆盖旧值');
     }
     this._content.set(block.id, block);
     this._notifyChange('content', block.id);
@@ -198,7 +200,7 @@ export class UIElementRegistry {
   /** 注册扩展能力 */
   registerCapability(cap: Capability): void {
     if (this._capabilities.has(cap.id)) {
-      console.warn(`[ui-registry] 重复注册能力: ${cap.id}，覆盖旧值`);
+      log('[warn] [ui-registry] 重复注册能力: ' + cap.id + '，覆盖旧值');
     }
     this._capabilities.set(cap.id, cap);
     this._notifyChange('capability', cap.id);
@@ -224,7 +226,7 @@ export class UIElementRegistry {
         try {
           return { ...el, state: getter() };
         } catch (e) {
-          console.error(`[ui-registry] 元素 "${el.id}" 的 state getter 执行失败:`, e);
+          log('[error] [ui-registry] 元素 "' + el.id + '" 的 state getter 执行失败:', e);
           return el;
         }
       }
@@ -236,7 +238,7 @@ export class UIElementRegistry {
       try {
         return generator();
       } catch (e) {
-        console.error(`[ui-registry] 内容生成器执行失败: ${id}`, e);
+        log('[error] [ui-registry] 内容生成器执行失败: ' + id, e);
         return { id, type: 'text-output', summary: `[内容生成失败: ${e}]` };
       }
     }
@@ -275,7 +277,7 @@ export class UIElementRegistry {
       try {
         return { ...el, state: getter() };
       } catch (e) {
-        console.error(`[ui-registry] 元素 "${id}" 的 state getter 执行失败:`, e);
+        log('[error] [ui-registry] 元素 "' + id + '" 的 state getter 执行失败:', e);
         return el;
       }
     }
@@ -319,7 +321,7 @@ export class UIElementRegistry {
       try {
         handler(changeType, id);
       } catch (e) {
-        console.error('[ui-registry] 变更回调执行失败:', e);
+        log('[error] [ui-registry] 变更回调执行失败:', e);
       }
     }
   }

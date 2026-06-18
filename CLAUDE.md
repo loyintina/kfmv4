@@ -39,8 +39,6 @@ docs/
 ├── AGENTS.md                # AI 专属：文档维护规则（改文档前读）
 ├── HANDBOOK.md              # 工作手册：架构-调试-待办-测试（日常翻）
 ├── KFM_V4_INVARIANTS.md     # 修改约束协议：心法原则+自查清单（改代码前必读）
-├── audits/                  # **当前审计追踪（活表）**
-│   └── AUDIT_TRACKER.md         # 本轮审计发现追踪表
 ├── design/                  # 设计中（待实现的设计文档）
 │   ├── VISION_AND_ROADMAP.md    # 远景：核心理念 + 演进路线
 │   ├── WORKBENCH_SPEC.md        # 卡片工作台（购物车+顶栏+光标+编辑态）
@@ -54,7 +52,7 @@ docs/
     └── legacy/              # 旧版本文件
 ```
 
-> 接手新对话的推荐阅读顺序：`CLAUDE.md` → `HANDBOOK.md` §2（当前状态）→ `KFM_V4_INVARIANTS.md`（修改规则）→ `docs/design/WORKBENCH_SPEC.md`（当前方向）→ `HANDBOOK.md` §3（待办）→ `HANDBOOK.md` §七（审计问题清单）→ `docs/audits/AUDIT_TRACKER.md`（当前审计发现）。引擎层改动前读 `docs/archive/design/ENGINE_ARCHITECTURE.md`。
+> 接手新对话的推荐阅读顺序：`CLAUDE.md` → `HANDBOOK.md` §2（当前状态）→ `KFM_V4_INVARIANTS.md`（修改规则）→ `docs/design/WORKBENCH_SPEC.md`（当前方向）→ `HANDBOOK.md` §3（待办）→ `HANDBOOK.md` §七（审计问题清单）→ `docs/archive/audits/v6.8-code-quality/AUDIT_TRACKER.md`（已完成审计记录）。引擎层改动前读 `docs/archive/design/ENGINE_ARCHITECTURE.md`。
 
 ## 完整性校验
 
@@ -74,8 +72,6 @@ npm run test    # 159 个回归测试，覆盖 23 个模块
 完整模块清单见 HANDBOOK §七「客户端模块完整审计表」（29个模块 + 引擎层14个文件）。
 
 ## 注意事项
-
-- **esbuild**: `supported: { nullish-coalescing: false }` 要求 ES2019
 - **Canvas 初始化**: `clientWidth=0`，需在 rAF 回调里 `rebuildTree()`
 - **事件冒泡**: 侧栏触摸区事件冒泡到 document → GestureRegistry 误触发
 - **全项目统一使用 PointerEvent** — 禁止 `addEventListener('touchstart/pointermove/pointerup')`，都走 `gesture-registry.ts`

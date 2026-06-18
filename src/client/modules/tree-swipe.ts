@@ -15,9 +15,12 @@ import { setCursorColor, setModeAccent, setLiquidColor } from './canvas-cursor.j
 import { currentTheme as theme } from './theme.js';
 import { DOM } from './dom-refs.js';
 import { Box } from '../engine/v2/box.js';
-import { gestures } from './gesture-registry.js';
 import { createFloatingCard } from './floating-card.js';
 import { loadFileTree } from './tree-loader.js';
+import { rgba, hslToHex, cardAccent, pathBasename } from './color-utils.js';
+import { initModeSystem, ensureBg, removeBg, updateBg, recolorCards, getSelectedMode, getModeTheme, getTriColor, applyModeTheme, updateModeSelection } from './mode-system.js';
+import { gestures } from './gesture-registry.js';
+import { FLOATING_CARD_W } from './interaction-constants.js';
 
 export function isDimmed(path: string): boolean { return _dimmedPaths.has(path); }
 
@@ -31,101 +34,11 @@ let _resetFocusToNewest = false;
 let _lifoQueue: HTMLElement[] = [];  // 入卡顺序，撤卡时从尾部取（LIFO）
 let _dimmedPaths = new Set<string>();
 let _dimmedBoxes = new Map<string, Box>();
-let _bgCard: HTMLElement | null = null;  // 卡片堆背景
-let _bgMaxH = 0;  // 压缩起始时的高度上限
 const _CARD_H = theme.stack.cardHeight;
 const _CARD_GAP = theme.stack.cardGap;
 let _lastGap = _CARD_GAP;
 
-const _HUE_BLUE = 220;
-const _HUE_PURPLE = 265;
-const _HUE_RANGE = 15;
-const _SAT = 62;
-const _LIT = 55;
-
-let _selectedMode: string | null = null;
-const _modeWrappers: HTMLElement[] = [];
-
-let _okBtn: HTMLElement | null = null;
-let _cancelBtn: HTMLElement | null = null;
-
-let _currentBtnDim = 'linear-gradient(90deg,rgba(0,212,255,0.2),rgba(124,58,237,0.15))';
-let _currentBtnGlow = 'linear-gradient(90deg,rgba(0,212,255,0.6),rgba(124,58,237,0.4))';
-let _currentBgGrad = 'linear-gradient(135deg,rgba(0,212,255,0.4),rgba(99,102,241,0.35),rgba(124,58,237,0.35))';
-
-// 模式按钮选中态（由 GestureRegistry 统一调度）
-const _unregModeBtn = gestures.register({
-  id: 'mode-btn',
-  targetFilter: '[data-mode-btn]',
-  condition: () => _bgCard !== null,
-  priority: 90,
-  stopPropagation: { start: true },
-  onStart: (e) => {
-    const key = (e.target as HTMLElement).closest('[data-mode-btn]')?.getAttribute('data-mode-btn');
-    if (!key) return;
-    _selectedMode = _selectedMode === key ? null : key;
-    _updateModeSelection();
-  },
-});
-
-// ✓/✗ 按钮按压反馈（由 GestureRegistry 统一调度）
-let _pressedBtn: HTMLElement | null = null;
-const _unregCheckBtns = gestures.register({
-  id: 'check-btns',
-  targetFilter: '[data-toolbar-btn]',
-  condition: () => _bgCard !== null,
-  priority: 95,
-  stopPropagation: { start: true },
-  onStart: (e) => {
-    const btn = e.target as HTMLElement;
-    if (!btn) return;
-    _pressedBtn = btn;
-    btn.style.background = _FILL + _currentBtnGlow + ' border-box';
-    btn.style.boxShadow = _HOVER_SHADOW;
-  },
-  onEnd: () => {
-    if (!_pressedBtn) return;
-    _pressedBtn.style.background = _FILL + _currentBtnDim + ' border-box';
-    _pressedBtn.style.boxShadow = _BASE_SHADOW;
-    _pressedBtn = null;
-  },
-});
-
 // ========== 内部函数 ==========
-
-function _rgba(hex: string, alpha: number): string {
-  const n = parseInt(hex.slice(1), 16);
-  return 'rgba(' + ((n >> 16) & 0xFF) + ',' + ((n >> 8) & 0xFF) + ',' + (n & 0xFF) + ',' + alpha + ')';
-}
-
-function _hslToHex(h: number, s: number, l: number): string {
-  h /= 360; s /= 100; l /= 100;
-  const a = s * Math.min(l, 1 - l);
-  const f = (n: number) => {
-    const k = (n + h * 12) % 12;
-    const c = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-    return Math.round(255 * Math.max(0, Math.min(1, c)));
-  };
-  return '#' + [f(0), f(8), f(4)].map(v => v.toString(16).padStart(2, '0')).join('');
-}
-
-function _cardAccent(isDir: boolean, h1?: number, h2?: number, s?: number, l?: number): { color1: string; color2: string; off1: number; off2: number } {
-  const base1 = h1 ?? _HUE_BLUE;
-  const base2 = h2 ?? _HUE_PURPLE;
-  const sat = s ?? _SAT;
-  const lit = l ?? _LIT;
-  const off1 = (Math.random() - 0.5) * _HUE_RANGE * 2;
-  const off2 = (Math.random() - 0.5) * _HUE_RANGE * 2;
-  if (isDir) {
-    return { color1: _hslToHex(base2 + off2, sat, lit), color2: _hslToHex(base1 + off1, sat, lit), off1, off2 };
-  }
-  return { color1: _hslToHex(base1 + off1, sat, lit), color2: _hslToHex(base2 + off2, sat, lit), off1, off2 };
-}
-
-function _pathBasename(path: string): string {
-  const parts = path.replace(/\\/g, '/').split('/');
-  return parts[parts.length - 1] || path;
-}
 
 // ========== 弹跳 timeline 引用（新弹跳时 kill 旧 timeline） ==========
 let _rowBounceTl: AnimTimeline | null = null;
@@ -184,13 +97,13 @@ export function handleRowSwipe(): void {
   const data = getFileRowData(rowBox.data);
   if (!data) return;
 
-  const name = _pathBasename(data.path);
+  const name = pathBasename(data.path);
   const isDir = data.isDir;
 
-  const t = _selectedMode ? _MODE_THEME[_selectedMode] : null;
-  const triColor = t ? (_MODE_TRI_COLOR[_selectedMode!]) : theme.canvas.accent;
-  const cc = _cardAccent(isDir, t?.hue1, t?.hue2, t?.sat, t?.lit);
-  const grad = `linear-gradient(135deg, ${_rgba(cc.color1, 0.85)} 30%, ${_rgba(cc.color2, 0.85)} 70%)`;
+  const t = getSelectedMode() ? getModeTheme(getSelectedMode()!) : null;
+  const triColor = t ? getTriColor(getSelectedMode()!) : theme.canvas.accent;
+  const cc = cardAccent(isDir, t?.hue1, t?.hue2, t?.sat, t?.lit);
+  const grad = `linear-gradient(135deg, ${rgba(cc.color1, 0.85)} 30%, ${rgba(cc.color2, 0.85)} 70%)`;
 
   // 从文件行位置飞入右侧堆叠
   const abs = rowBox.getAbsolutePosition();
@@ -209,7 +122,7 @@ export function handleRowSwipe(): void {
   const shadow = '0 2px 4px rgba(0,0,0,0.3),0 8px 16px rgba(0,0,0,0.25),0 16px 32px rgba(0,0,0,0.2),-4px 4px 8px rgba(0,0,0,0.15)';
   card.style.cssText = [
     'position:fixed', 'left:0', 'top:0', 'will-change:transform',
-    'width:155px', 'height:' + _CARD_H + 'px',
+    'width:' + FLOATING_CARD_W + 'px', 'height:' + _CARD_H + 'px',
     'border-radius:12px', 'padding:1px', 'padding-left:3px',
     'background:' + grad,
     'box-shadow:' + shadow,
@@ -270,7 +183,7 @@ card.addEventListener('click', (e) => {
   _dimmedPaths.add(data.path);
   _dimmedBoxes.set(data.path, rowBox);
   rowBox.opacity = 0.25;
-  _ensureBg(sidebarW);
+  ensureBg(sidebarW);
 
   // 重排所有卡片 Y 位置（含压缩 + 聚焦下方留白）
   _repositionCards();
@@ -318,7 +231,7 @@ function _repositionCards(): void {
     }
     c.dataset.topY = String(targetTop);
   });
-  _updateBg(stackH, gap);
+  updateBg(stackH, gap);
 }
 
 /** 更新所有卡片到对应的聚焦/非聚焦状态（只动画状态变化的两张卡） */
@@ -429,17 +342,17 @@ async function _executeMode(): Promise<void> {
 
   for (const src of paths) {
     const destPath = dest + '/' + base(src!);
-    if (_selectedMode === 'copy') {
+    if (getSelectedMode() === 'copy') {
       await fetch(API + '/files/copy', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ source: src, dest: destPath }),
       });
-    } else if (_selectedMode === 'move') {
+    } else if (getSelectedMode() === 'move') {
       await fetch(API + '/files/move', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ source: src, dest: destPath }),
       });
-    } else if (_selectedMode === 'delete') {
+    } else if (getSelectedMode() === 'delete') {
       await fetch(API + '/files/delete', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: src }),
@@ -455,7 +368,7 @@ async function _executeMode(): Promise<void> {
   _prevFocusIndex = -1;
   _dismissing = false;
   _resetFocusToNewest = false;
-  _removeBg();
+  removeBg();
   await loadFileTree(KFMState.currentRoot);
 }
 
@@ -464,7 +377,7 @@ async function _animateExecute(): Promise<void> {
   // 模式动画
   for (const el of cards) {
     anim.killTweensOf(el);
-    if (_selectedMode === 'delete') {
+    if (getSelectedMode() === 'delete') {
       // 删除：变红 → 向中心收缩 → 碎散淡出
       el.style.transition = 'filter 0.15s';
       el.style.filter = 'brightness(1.3) saturate(0.5) hue-rotate(-30deg)';
@@ -533,7 +446,7 @@ export function dismissAllCards(): boolean {
   _prevFocusIndex = -1;
   _dismissing = false;
   _resetFocusToNewest = false;
-  _removeBg();
+  removeBg();
 
   return true;
 }
@@ -553,12 +466,12 @@ export function deployAllCards(): void {
   _resetFocusToNewest = false;
 
   import('./ui.js').then(m => m.closeSidebar());
-  _removeBg();
+  removeBg();
 
   // 投放区域约束
   const sw = window.innerWidth;
   const sh = window.innerHeight;
-  const cw = 155;
+  const cw = FLOATING_CARD_W;
   const ch = _CARD_H;
   const pad = 16;
   const topMin = 60;
@@ -629,7 +542,7 @@ function _removeCard(el: HTMLElement): void {
     _dimmedPaths.clear();
     _focusIndex = -1;
     _prevFocusIndex = -1;
-    _removeBg();
+    removeBg();
   } else if (_resetFocusToNewest) {
     // 收的不是最新卡 → 聚焦回正到最新卡
     _resetFocusToNewest = false;
@@ -659,6 +572,12 @@ let _gestureRegistered = false;
 export function initTempCardGesture(): void {
   if (_gestureRegistered) return;
   _gestureRegistered = true;
+
+  initModeSystem({
+    deployCb: deployAllCards,
+    dismissCb: dismissAllCards,
+    executeCb: _executeMode,
+  });
 
   gestures.register({
     id: 'temp-card-swipe',
@@ -696,302 +615,6 @@ export function initTempCardGesture(): void {
 
 // ========== 卡片堆背景 ==========
 
-function _bgGradient(): string { return theme.aiChat.panelBorderGradient; }
-
-let _toolbar: HTMLElement | null = null;  // 背景卡底部工具栏
-
-const _BTN_CSS = [
-  'pointer-events:auto',
-  'width:40px', 'height:40px',
-  'border:1px solid transparent',
-  'border-radius:12px',
-  'background:linear-gradient(rgba(18,18,26,0.75),rgba(18,18,26,0.75)) padding-box,'
-    + 'linear-gradient(90deg,rgba(0,212,255,0.2),rgba(124,58,237,0.15)) border-box',
-  'backdrop-filter:blur(8px)', '-webkit-backdrop-filter:blur(8px)',
-  'cursor:pointer',
-  'display:flex', 'align-items:center', 'justify-content:center',
-  'box-shadow:0 4px 16px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.08)',
-  'color:rgba(224,224,240,0.85)',
-  'font-family:system-ui,-apple-system,sans-serif',
-].join(';');
-
-// SVG 渐变图标的颜色可随模式动态切换
-function _makeCheckSvg(start: string, end: string): string {
-  return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="url(#checkGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><defs><linearGradient id="checkGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="' + start + '"/><stop offset="100%" stop-color="' + end + '"/></linearGradient></defs><polyline points="20 6 9 17 4 12"/></svg>';
-}
-function _makeCloseSvg(start: string, end: string): string {
-  return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="url(#closeGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><defs><linearGradient id="closeGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="' + start + '"/><stop offset="100%" stop-color="' + end + '"/></linearGradient></defs><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
-}
-
-// hover/active/glow 统一由 GSAP 管理
-const _BASE_SHADOW = '0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)';
-const _HOVER_SHADOW = '0 6px 24px rgba(124,58,237,0.25), inset 0 1px 0 rgba(255,255,255,0.1)';
-const _BORDER_DIM = 'linear-gradient(90deg,rgba(0,212,255,0.2),rgba(124,58,237,0.15))';
-const _BORDER_GLOW = 'linear-gradient(90deg,rgba(0,212,255,0.6),rgba(124,58,237,0.4))';
-const _FILL = 'linear-gradient(rgba(18,18,26,0.75),rgba(18,18,26,0.75)) padding-box,';
-
-function _toolbarPos(bgTop: number, bgH: number): void {
-  if (!_toolbar) return;
-  anim.to(_toolbar, {
-    y: bgTop + bgH + 8, duration: 0.25, ease: 'power2.out',
-    overwrite: 'auto',
-  });
-}
-
-function _ensureBg(sidebarW: number): void {
-  if (_bgCard) return;
-  const left = Math.round(sidebarW - 10);
-
-  // 工具栏（背景卡外部下方）
-  _toolbar = document.createElement('div');
-  _toolbar.style.cssText = [
-    'position:fixed', 'left:' + left + 'px', 'right:-12px',
-    'z-index:1010', 'pointer-events:none',
-  ].join(';');
-
-  // ✓ — 贴工具栏左沿（= 背景卡左沿）
-  const okBtn = document.createElement('button');
-  okBtn.innerHTML = _makeCheckSvg('#7c3aed', '#00d4ff');
-  okBtn.style.cssText = _BTN_CSS + ';position:absolute;left:0;top:0';
-  okBtn.setAttribute('data-toolbar-btn', 'ok');
-  okBtn.addEventListener('click', () => {
-    if (_selectedMode) { _executeMode(); } else { deployAllCards(); }
-  });
-  _toolbar.appendChild(okBtn);
-  _okBtn = okBtn;
-
-  // ✗ — 半距左移
-  const tbW = window.innerWidth - left + 12;
-  const btnW = 40, gap = 12;
-  const D = Math.max(0, (tbW - btnW * 2 - gap) / 2);
-  const cancelBtn = document.createElement('button');
-  cancelBtn.innerHTML = _makeCloseSvg('#7c3aed', '#00d4ff');
-  cancelBtn.style.cssText = _BTN_CSS + ';position:absolute;left:' + Math.round(btnW + gap + D / 2) + 'px;top:0';
-  cancelBtn.setAttribute('data-toolbar-btn', 'cancel');
-  cancelBtn.addEventListener('click', dismissAllCards);
-  _toolbar.appendChild(cancelBtn);
-  _cancelBtn = cancelBtn;
-
-  // 第 2 行：三个模式按钮（左右对齐 ✓ 左沿 ↔ ✗ 右沿）
-  const cancelLeft = Math.round(btnW + gap + D / 2);
-  const spanW = cancelLeft + btnW;
-  const row2 = document.createElement('div');
-  row2.style.cssText = [
-    'position:absolute', 'left:0', 'top:55px',
-    'width:' + spanW + 'px',
-    'display:flex', 'justify-content:space-between',
-  ].join(';');
-
-  const modeMeta: { key: string; grad: string }[] = [
-    { key: 'copy',   grad: 'linear-gradient(135deg,rgba(132,204,22,0.25),rgba(15,118,110,0.18))' },
-    { key: 'move',   grad: 'linear-gradient(135deg,rgba(245,158,11,0.25),rgba(163,230,53,0.18))' },
-    { key: 'delete', grad: 'linear-gradient(135deg,rgba(249,115,22,0.25),rgba(131,24,67,0.18))' },
-  ];
-  _modeWrappers.length = 0;
-  for (const { key, grad } of modeMeta) {
-    const wrapper = document.createElement('div');
-    wrapper.setAttribute('data-mode-btn', key);
-    wrapper.style.cssText = [
-      'pointer-events:auto',
-      'width:34px', 'height:34px',
-      'border:2px solid transparent',
-      'border-radius:9px',
-      'display:flex', 'align-items:center', 'justify-content:center',
-      'flex-shrink:0',
-    ].join(';');
-    const btn = document.createElement('button');
-    btn.innerHTML = _MODE_SVG[key];
-    btn.style.cssText = [
-      'pointer-events:none',
-      'width:30px', 'height:30px',
-      'border:1px solid transparent',
-      'border-radius:7px',
-      'background:linear-gradient(rgba(18,18,26,0.75),rgba(18,18,26,0.75)) padding-box,'
-        + grad + ' border-box',
-      'display:flex', 'align-items:center', 'justify-content:center',
-    ].join(';');
-    wrapper.appendChild(btn);
-    _modeWrappers.push(wrapper);
-    row2.appendChild(wrapper);
-  }
-  _toolbar.appendChild(row2);
-  document.body.appendChild(_toolbar);
-
-  // 背景卡
-  _bgCard = document.createElement('div');
-  _bgCard.style.cssText = [
-    'position:fixed', 'left:' + left + 'px', 'right:-12px', 'top:0',
-    'height:0px',
-    'border-radius:16px 0 0 16px',
-    'border:1px solid transparent',
-    'background:linear-gradient(rgba(16,12,24,0.7),rgba(16,12,24,0.7)) padding-box,'
-      + 'linear-gradient(135deg,rgba(0,212,255,0.4),rgba(99,102,241,0.35),rgba(124,58,237,0.35)) border-box',
-    'z-index:1000',
-    'pointer-events:none',
-  ].join(';');
-  document.body.appendChild(_bgCard);
-
-  anim.set([_bgCard, _toolbar], { x: '100vw' });
-  anim.to([_bgCard, _toolbar], { x: 0, duration: 0.35, ease: 'power3.out' });
-}
-
-function _updateBg(stackH: number, gap: number): void {
-  if (!_bgCard) return;
-
-  // 高度随卡片数增长，压缩开始时锁定上限
-  if (_bgMaxH === 0 && gap < _CARD_GAP) _bgMaxH = stackH;
-  const h = (_bgMaxH > 0 ? _bgMaxH : stackH) + 40;  // 上下留白
-
-  const top = Math.round(window.innerHeight * 0.35 - h / 2 - 40);
-  anim.to(_bgCard, {
-    y: top, height: h, duration: 0.25, ease: 'power2.out',
-    overwrite: 'auto',
-  });
-  _toolbarPos(top, h);
-}
-
-const _MODE_BORDER_GRAD: Record<string, string> = {
-  copy:   'linear-gradient(135deg,rgba(132,204,22,0.6),rgba(15,118,110,0.4))',
-  move:   'linear-gradient(135deg,rgba(245,158,11,0.6),rgba(163,230,53,0.4))',
-  delete: 'linear-gradient(135deg,rgba(249,115,22,0.6),rgba(131,24,67,0.4))',
-};
-
-const _MODE_TRI_COLOR: Record<string, string> = {
-  copy: '#4ade80',
-  move: '#eab308',
-  delete: '#ef4444',
-};
-
-const _MODE_THEME: Record<string, { bgGrad: string; btnDim: string; btnGlow: string; svgStart: string; svgEnd: string; accent?: string; hue1: number; hue2: number; sat?: number; lit?: number; cursorColor?: string; cursorBg?: string }> = {
-  copy: {
-    hue1: 160, hue2: 85, sat: 75, lit: 48,
-    bgGrad: 'linear-gradient(135deg,rgba(132,204,22,0.4),rgba(16,185,129,0.35),rgba(15,118,110,0.35))',
-    btnDim: 'linear-gradient(90deg,rgba(132,204,22,0.2),rgba(15,118,110,0.15))',
-    btnGlow: 'linear-gradient(90deg,rgba(132,204,22,0.6),rgba(15,118,110,0.4))',
-    svgStart: '#84cc16',
-    svgEnd: '#0f766e',
-    accent: '#4ade80',
-    cursorColor: 'rgba(74,222,128,0.7)',
-    cursorBg: 'rgba(74,222,128,0.12)',
-  },
-  move: {
-    hue1: 40, hue2: 55,
-    bgGrad: 'linear-gradient(135deg,rgba(245,158,11,0.4),rgba(234,179,8,0.35),rgba(163,230,53,0.35))',
-    btnDim: 'linear-gradient(90deg,rgba(245,158,11,0.2),rgba(163,230,53,0.15))',
-    btnGlow: 'linear-gradient(90deg,rgba(245,158,11,0.6),rgba(163,230,53,0.4))',
-    svgStart: '#f59e0b',
-    svgEnd: '#a3e635',
-    accent: '#eab308',
-    cursorColor: 'rgba(234,179,8,0.7)',
-    cursorBg: 'rgba(234,179,8,0.12)',
-  },
-  delete: {
-    hue1: 20, hue2: 345,
-    bgGrad: 'linear-gradient(135deg,rgba(249,115,22,0.4),rgba(244,114,182,0.35),rgba(131,24,67,0.35))',
-    btnDim: 'linear-gradient(90deg,rgba(249,115,22,0.2),rgba(131,24,67,0.15))',
-    btnGlow: 'linear-gradient(90deg,rgba(249,115,22,0.6),rgba(131,24,67,0.4))',
-    svgStart: '#f97316',
-    svgEnd: '#831843',
-  },
-};
-
-const _DEFAULT_SVG_START = '#7c3aed';
-const _DEFAULT_SVG_END = '#00d4ff';
-
-function _recolorCards(mode: string | null): void {
-  const t = mode ? _MODE_THEME[mode] : null;
-  const h1 = t?.hue1 ?? _HUE_BLUE;
-  const h2 = t?.hue2 ?? _HUE_PURPLE;
-  const sat = t?.sat ?? _SAT;
-  const lit = t?.lit ?? _LIT;
-  const triColor = mode ? _MODE_TRI_COLOR[mode] : '#00d4ff';
-  _tempCardEls.forEach(card => {
-    const tri = card.querySelector('[data-card-triangle]') as HTMLElement | null;
-    if (tri) tri.style.color = triColor;
-    const off1 = parseFloat(card.dataset._hueOff1 || '0');
-    const off2 = parseFloat(card.dataset._hueOff2 || '0');
-    const isDir = card.dataset._isDir === 'true';
-    const c1 = _hslToHex(h1 + off1, sat, lit);
-    const c2 = _hslToHex(h2 + off2, sat, lit);
-    const [accent1, accent2] = isDir ? [c2, c1] : [c1, c2];
-    card.style.background = `linear-gradient(135deg, ${_rgba(accent1, 0.85)} 30%, ${_rgba(accent2, 0.85)} 70%)`;
-    card.dataset._accent1 = accent1;
-    card.dataset._accent2 = accent2;
-  });
-}
-
-function _applyModeTheme(mode: string | null): void {
-  _recolorCards(mode);
-  const t = mode ? _MODE_THEME[mode] : null;
-  if (t?.cursorColor) {
-    setCursorColor(t.cursorColor, t.cursorBg ?? null);
-    setLiquidColor('rgba(0,0,0,0.85)');
-    setModeAccent(t.accent ?? null);
-  } else {
-    setCursorColor(null, null);
-    setLiquidColor(null);
-    setModeAccent(null);
-  }
-  if (mode) {
-    const t = _MODE_THEME[mode];
-    _currentBtnDim = t.btnDim;
-    _currentBtnGlow = t.btnGlow;
-    _currentBgGrad = t.bgGrad;
-    if (_bgCard) _bgCard.style.background = 'linear-gradient(rgba(16,12,24,0.7),rgba(16,12,24,0.7)) padding-box,' + t.bgGrad + ' border-box';
-    if (_okBtn) { _okBtn.innerHTML = _makeCheckSvg(t.svgStart, t.svgEnd); _okBtn.style.background = _FILL + t.btnDim + ' border-box'; }
-    if (_cancelBtn) { _cancelBtn.innerHTML = _makeCloseSvg(t.svgStart, t.svgEnd); _cancelBtn.style.background = _FILL + t.btnDim + ' border-box'; }
-  } else {
-    _currentBtnDim = 'linear-gradient(90deg,rgba(0,212,255,0.2),rgba(124,58,237,0.15))';
-    _currentBtnGlow = 'linear-gradient(90deg,rgba(0,212,255,0.6),rgba(124,58,237,0.4))';
-    _currentBgGrad = 'linear-gradient(135deg,rgba(0,212,255,0.4),rgba(99,102,241,0.35),rgba(124,58,237,0.35))';
-    if (_bgCard) _bgCard.style.background = 'linear-gradient(rgba(16,12,24,0.7),rgba(16,12,24,0.7)) padding-box,' + _currentBgGrad + ' border-box';
-    if (_okBtn) { _okBtn.innerHTML = _makeCheckSvg(_DEFAULT_SVG_START, _DEFAULT_SVG_END); _okBtn.style.background = _FILL + _currentBtnDim + ' border-box'; }
-    if (_cancelBtn) { _cancelBtn.innerHTML = _makeCloseSvg(_DEFAULT_SVG_START, _DEFAULT_SVG_END); _cancelBtn.style.background = _FILL + _currentBtnDim + ' border-box'; }
-  }
-}
-
-function _updateModeSelection(): void {
-  const activeIdx = _selectedMode === 'copy' ? 0 : _selectedMode === 'move' ? 1 : _selectedMode === 'delete' ? 2 : -1;
-  _modeWrappers.forEach((w, i) => {
-    if (i === activeIdx) {
-      const grad = i === 0 ? _MODE_BORDER_GRAD.copy : i === 1 ? _MODE_BORDER_GRAD.move : _MODE_BORDER_GRAD.delete;
-      w.style.borderColor = 'transparent';
-      w.style.background = 'linear-gradient(rgba(18,18,26,0.75),rgba(18,18,26,0.75)) padding-box,'
-        + grad + ' border-box';
-    } else {
-      w.style.borderColor = 'transparent';
-      w.style.background = '';
-    }
-  });
-  _applyModeTheme(_selectedMode);
-}
-
-const _MODE_SVG: Record<string, string> = {
-  copy:   '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="url(#copyGrad)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><defs><linearGradient id="copyGrad" x1="2" y1="0" x2="22" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#84cc16"/><stop offset="100%" stop-color="#0f766e"/></linearGradient></defs><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>',
-  move:   '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="url(#moveGrad)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><defs><linearGradient id="moveGrad" x1="2" y1="0" x2="22" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#a3e635"/></linearGradient></defs><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/><line x1="12" y1="11" x2="12" y2="17"/><polyline points="9 14 12 17 15 14"/></svg>',
-  delete: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="url(#delGrad)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><defs><linearGradient id="delGrad" x1="3" y1="0" x2="21" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#f97316"/><stop offset="100%" stop-color="#831843"/></linearGradient></defs><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>',
-};
-
-function _removeBg(): void {
-  if (!_bgCard) return;
-  const bgEl = _bgCard;
-  const tbEl = _toolbar;
-  _bgCard = null;
-  _toolbar = null;
-  _okBtn = null;
-  _cancelBtn = null;
-  _bgMaxH = 0;
-  _selectedMode = null;
-  _modeWrappers.length = 0;
-  setCursorColor(null, null);
-  setModeAccent(null);
-  anim.killTweensOf([bgEl, tbEl]);
-  anim.to([bgEl, tbEl], {
-    x: '100vw', duration: 0.3, ease: 'power2.in',
-    onComplete() { bgEl.remove(); tbEl?.remove(); },
-  });
-}
-
 /** 移除所有临时卡片 DOM 并清空内部数组 */
 export function clearTempCards(): void {
   _tempCardEls.forEach(el => el.remove());
@@ -1003,5 +626,5 @@ export function clearTempCards(): void {
   _prevFocusIndex = -1;
   _dismissing = false;
   _resetFocusToNewest = false;
-  _removeBg();
+  removeBg();
 }
