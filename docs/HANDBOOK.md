@@ -342,7 +342,7 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `app.ts` | 181 | 1 | ✅ 入口 | 初始化流程��排 |
 | `animation-registry.ts` | 90 | 5 | ✅ 提及 | GSAP 动画隔离层 |
 | `canvas-cursor.ts` | 443 | 3 | ✅ 提及 | Canvas 盒子光标系统 |
-| `canvas-scroll.ts` | 313 | 2 | ✅ 提及 | Canvas 盒子滚动系统 |
+| `canvas-scroll.ts` | 343 | 2 | ✅ 提及 | Canvas 盒子滚动系统 |
 | `canvas-utils.ts` | 60 | 4 | ✅ 依赖图 | Canvas 通用工具函数 |
 | `card-stack.ts` | 518 | 4 | ✅ 独立条目 | 堆叠卡片面板 |
 | `char-rain.ts` | 305 | 1 | ✅ 分组表 | 字符散落/回收动画 |
@@ -351,7 +351,7 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `debug-assert.ts` | 23 | 1 | ✅ 提及 | 运行时断言 |
 | `dom-refs.ts` | 36 | 9 | ✅ 注册表 | DOM 元素引用 |
 | `floating-card.ts` | 641 | 2 | ✅ 独立条目 | 浮卡系统（核心模块） |
-| `gesture-registry.ts` | 215 | 6 | ✅ 独立条目 | 手势注册中心 |
+| `gesture-registry.ts` | 245 | 6 | ✅ 独立条目 | 手势注册中心 |
 | `gestures.ts` | 69 | 1 | ✅ 提及 | 页面滑动手势配置 |
 | `interaction-constants.ts` | 20 | 2 | ✅ 分组表 | 交互常量共享层（v6.6.0 新增） |
 | `drag-handler.ts` | 130 | 2 | ✅ 分组表 | 共享拖动状态机（orb + floating-card 去重） |
@@ -371,7 +371,7 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `ui-registry.ts` | 333 | 9 | ✅ 独立条目 | UI 元素注册表 |
 | `ui.ts` | 70 | 10 | ✅ 提及 | UI 初始化编排 |
 | `ws-channel.ts` | 318 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
-| **合计** | **8489** | | | |
+| **合计** | **8549** | | | |
 
 ### 死代码检查
 

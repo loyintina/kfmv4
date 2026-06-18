@@ -10,6 +10,9 @@ import { getRootScrollY, setRootScrollY, _rebuildRowIndex, findBoxById } from '.
 import { getCursorRowIndex, moveCursorTo, snapCursorToCenter, moveCursorBySteps, isCursorMode, getCenterRowIndex } from './canvas-cursor.js';
 import { getShift, LINE_HEIGHT, MAX_LINES } from './style-registry.js';
 import { gestures } from './gesture-registry.js';
+import { DOM } from './dom-refs.js';
+import { getFileRowData } from './state.js';
+import { log } from './logger.js';
 import { closeSidebar } from './ui.js';
 import { isPickerOpen, pickerHandleClick } from './root-picker.js';
 
@@ -100,6 +103,7 @@ let _gestureId = 0;
 let _gestureStartX = 0;
 let _gestureStartY = 0;
 let _gestureAxis: _AxisLock = 'none';
+let _touchRowPath: string | null = null;
 
 export function initScrollGesture(): void {
   if (_gestureId) return; // 只注册一次
@@ -109,11 +113,16 @@ export function initScrollGesture(): void {
     targetFilter: () => true,
     condition: () => !L.isSidebarClosed() && !!L.renderer,
     priority: 60,
+    longPressMs: 500,
+    onLongPress() {
+      if (_touchRowPath) log('[long-press]', _touchRowPath);
+    },
     onStart(e) {
       if (e.button !== 0) return;
       _gestureStartX = e.clientX;
       _gestureStartY = e.clientY;
       _gestureAxis = 'none';
+      _touchRowPath = _findRowAtPoint(e.clientX, e.clientY);
       const y = e.clientY;
       lastTouchY = y;
       lastTouchTime = performance.now();
@@ -311,4 +320,25 @@ export function initScrollGesture(): void {
   });
 
   _gestureId = 1;
+}
+
+/** 按屏幕坐标查找文件行路径 */
+function _findRowAtPoint(cx: number, cy: number): string | null {
+  const root = L.renderer?.getRoot();
+  const canvas = L.renderer?.canvas ?? DOM.treeCanvas;
+  if (!root || !canvas) return null;
+  const rect = canvas.getBoundingClientRect();
+  const tx = cx - rect.left + (root.scrollX ?? 0);
+  const ty = cy - rect.top + (root.scrollY ?? 0);
+  for (const row of L._rowIndex) {
+    try {
+      const pos = row.getAbsolutePosition();
+      if (tx >= pos.x && tx <= pos.x + row.width
+       && ty >= pos.y - 4 && ty <= pos.y + row.height + 4) {
+        const d = getFileRowData(row.data);
+        if (d) return d.path;
+      }
+    } catch { /* box detached */ }
+  }
+  return null;
 }

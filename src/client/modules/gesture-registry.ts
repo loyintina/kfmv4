@@ -21,6 +21,9 @@ export interface GestureHandler {
   onStart?: (event: PointerEvent) => void;
   onMove?: (event: PointerEvent, dx: number, dy: number, elapsed: number) => void;
   onEnd?: (event: PointerEvent, dx: number, dy: number, elapsed: number) => void;
+  /** 长按检测（ms），触发后设 longPressConsumed */
+  longPressMs?: number;
+  onLongPress?: (event: PointerEvent) => void;
   /** stopPropagation 控制（默认不调用） */
   stopPropagation?: boolean | { start?: boolean; move?: boolean; end?: boolean };
 }
@@ -30,6 +33,8 @@ interface ActiveGesture {
   startX: number;
   startY: number;
   startTime: number;
+  longPressTimer?: ReturnType<typeof setTimeout>;
+  longPressConsumed?: boolean;
 }
 
 // ========== Registry 实现 ==========
@@ -168,6 +173,16 @@ export class GestureRegistry {
         startTime: Date.now(),
       };
 
+      // 长按计时器
+      if (handler.longPressMs && handler.onLongPress) {
+        this._active.longPressTimer = setTimeout(() => {
+          if (!this._active || this._active.handler.id !== handler.id) return;
+          this._active.longPressConsumed = true;
+          this._active.longPressTimer = undefined;
+          handler.onLongPress!(e);
+        }, handler.longPressMs);
+      }
+
       if (this._shouldStop(handler, 'start')) e.stopPropagation();
       handler.onStart?.(e);
       return; // 只匹配优先级最高的一个
@@ -190,6 +205,12 @@ export class GestureRegistry {
     const dy = e.clientY - active.startY;
     const elapsed = Date.now() - active.startTime;
 
+    // 长按检测：移动超过 10px 取消计时器（让路给滑动/滚动）
+    if (active.longPressTimer && !active.longPressConsumed && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
+      clearTimeout(active.longPressTimer);
+      active.longPressTimer = undefined;
+    }
+
     if (this._shouldStop(active.handler, 'move')) e.stopPropagation();
     active.handler.onMove?.(e, dx, dy, elapsed);
   }
@@ -199,7 +220,16 @@ export class GestureRegistry {
     const active = this._active;
     if (!active) return;
 
-    if (active.handler.id === 'card-stack-global') {
+    // 清除长按计时器
+    if (active.longPressTimer) {
+      clearTimeout(active.longPressTimer);
+      active.longPressTimer = undefined;
+    }
+
+    // 长按已消费 → 跳过 onEnd（防止滚动/swipe 误触发）
+    if (active.longPressConsumed) {
+      this._active = null;
+      return;
     }
 
     const dx = e.clientX - active.startX;
