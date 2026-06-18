@@ -1,7 +1,7 @@
 ---
 status: draft
 version: v1.1
-last_updated: 2026-06-13
+last_updated: 2026-06-18
 ---
 
 # KFM v4 — 卡片工作台设计规范
@@ -216,7 +216,7 @@ interface CartState {
 - 卡片堆本身是临时的，关闭侧栏即清空
 - 浮卡系统已模板化（`createFloatingCard(config)`），可从任意模块调用
 
-**下一步**：扩展 ✓/✗ 下方的模式按钮（§8 模式系统），使 ✓ 的行为根据模式变为复制/移动/删除操作。
+**已完成（v6.8.0）**：模式按钮（③✓/✗ 下方的绿/黄/红按钮 + 色系切换 + 联动 API + 光标联动），详见 §6 Phase 6。
 
 ## §4 文件浮卡（File Card）
 
@@ -688,17 +688,17 @@ interface KFMState {
 
 ---
 
-### Phase 6 — 批量操作模式（待实现）
+### Phase 6 — 批量操作模式（✅ v6.8.0）
 
 **目标**：实现三个模式按钮（复制/移动/删除）+ 色系切换 + ✓ 按钮业务逻辑。
 
 | 步骤 | 文件 | 内容 | 代码量估 |
 |------|------|------|---------|
-| 6.1 | `tree-swipe.ts` | 三个模式按钮 UI（28×30，绿/黄/红） + 选中外框 | ~80 行 |
-| 6.2 | `tree-swipe.ts` | 色系切换逻辑（`_cardAccent` 按模式限制色相、背景/按钮跟随变色） | ~60 行 |
+| 6.1 | `mode-system.ts` | 三个模式按钮 UI（30×30，绿/黄/红） + 选中外框 | ~80 行 |
+| 6.2 | `mode-system.ts` + `color-utils.ts` | 色系切换逻辑（按模式限制色相、背景/按钮跟随变色） | ~60 行 |
 | 6.3 | `src/server/index.ts` | API 端点 `POST /api/files/copy`, `move`, `delete` | ~60 行 |
-| 6.4 | `tree-swipe.ts` | ✓ 按钮业务逻辑切换（deploy/copy/move/delete） | ~40 行 |
-| 6.5 | `canvas-cursor.ts` + `tree-render.ts` | 光标变色 + 呼吸脉冲联动 | ~40 行 |
+| 6.4 | `mode-system.ts` | ✓ 按钮业务逻辑切换（deploy/copy/move/delete） | ~40 行 |
+| 6.5 | `canvas-cursor.ts` + `mode-system.ts` | 光标变色 + 粒子效果 · v6.8.1 拆分为 `mode-system.ts` + `color-utils.ts` · 粒子不再脉冲 | ~40 行 |
 | | **合计** | | **~280 行** |
 
 **验证**：选择模式→背景/卡片变对应色→点✓→对应 API 调用成功。
@@ -732,6 +732,7 @@ interface KFMState {
 | 5 | 文件树编辑态（长按功能栏） | ~250 | 📝 设计完成 |
 | 6 | 批量操作模式（三按钮+色系+API） | ~280 | ✅ v6.8.0 |
 | — | 代码质量审计修复 | — | ✅ v6.8.1 |
+| — | 模块拆分（mode-system.ts + color-utils.ts） + console 治理 + 依赖方向检查 | — | ✅ v6.8.1 |
 | 7 | 长按功能栏（rename/copy path/delete） | ~160 | 📝 设计完成 |
 
 **总计**：约 1,560 行新代码 + 修改（含已实现的 365 行）
