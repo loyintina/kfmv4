@@ -70,7 +70,7 @@ npm run test    # 159 个回归测试，覆盖 23 个模块
 
 两模块通过交互共享层（`interaction-constants.ts` + `drag-handler.ts`）共享常量和类型。统一化方案已放弃（两次回退），详见 `docs/archive/design/CARD_SYSTEM_UNIFICATION_SPEC.md`。浮卡拖拽完全通过 GestureRegistry 统一调度，无直接 addEventListener 逃逸。
 
-完整模块清单见 HANDBOOK §七「客户端模块完整审计表」（31个模块 + 引擎层14个文件）。
+完整模块清单见 HANDBOOK §七「客户端模块完整审计表」（33个模块 + 引擎层14个文件）。
 
 ## 注意事项
 - **Canvas 初始化**: `clientWidth=0`，需在 rAF 回调里 `rebuildTree()`
