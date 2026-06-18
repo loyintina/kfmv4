@@ -1,7 +1,7 @@
 ---
-status: draft
-version: v0.2
-last_updated: 2026-06-09
+status: superseded
+superseded_by: docs/design/WORKBENCH_SPEC.md
+archived_at: 2026-06-18
 ---
 
 # 卡片工作台 Phase 1 — 实施设计
