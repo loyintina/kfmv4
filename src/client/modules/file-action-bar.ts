@@ -1,7 +1,8 @@
 /**
  * file-action-bar.ts — 文件行长按 → 底部抽屉操作栏
  *
- * Phase 7 §③：遮罩 + 侧栏底部抽屉 + 5 项文字列表。
+ * Phase 7 §③：遮罩 + 侧栏底部抽屉 + 5 项渐变边框行。
+ * 边框技法与 orb.ts 聊天气泡一致（padding-box/border-box）。
  */
 
 import { DOM } from './dom-refs.js';
@@ -13,15 +14,22 @@ let _dimmer: HTMLElement | null = null;
 let _drawer: HTMLElement | null = null;
 
 const ITEMS: { id: string; label: string; disabled?: boolean }[] = [
-  { id: 'rename', label: '\u91CD\u547D\u540D' },     // 重命名
-  { id: 'copy-path', label: '\u590D\u5236\u8DEF\u5F84' }, // 复制路径
-  { id: 'delete', label: '\u5220\u9664' },            // 删除
-  { id: 'new-folder', label: '\u65B0\u5EFA\u6587\u4EF6\u5939', disabled: true }, // 新建文件夹
-  { id: 'new-file', label: '\u65B0\u5EFA\u6587\u4EF6', disabled: true },          // 新建文件
+  { id: 'rename', label: '\u91CD\u547D\u540D' },
+  { id: 'copy-path', label: '\u590D\u5236\u8DEF\u5F84' },
+  { id: 'delete', label: '\u5220\u9664' },
+  { id: 'new-folder', label: '\u65B0\u5EFA\u6587\u4EF6\u5939', disabled: true },
+  { id: 'new-file', label: '\u65B0\u5EFA\u6587\u4EF6', disabled: true },
 ];
 
 const ITEM_H = 44;
-const PAD_Y = 12;
+const GAP = 8;
+const SIDE_MARGIN = 12;
+
+// 渐变——与 orb.ts panelBorderGradient 同体系
+const ROW_GRAD = 'linear-gradient(135deg,rgba(0,212,255,0.7),rgba(124,58,237,0.5))';
+const ROW_BG = 'linear-gradient(rgba(18,18,26,0.92),rgba(18,18,26,0.92)) padding-box,' + ROW_GRAD + ' border-box';
+const DRAWER_GRAD = 'linear-gradient(135deg,rgba(0,212,255,0.4),rgba(99,102,241,0.35),rgba(124,58,237,0.35))';
+const DRAWER_BG = 'linear-gradient(rgba(18,18,26,0.92),rgba(18,18,26,0.92)) padding-box,' + DRAWER_GRAD + ' border-box';
 
 // ========== 公开 API ==========
 
@@ -66,8 +74,11 @@ function _createDrawer(): void {
   const sidebar = DOM.sidebar;
   if (!sidebar) return;
   const rect = sidebar.getBoundingClientRect();
-
-  const totalH = ITEMS.length * ITEM_H + PAD_Y * 2;
+  // 侧栏内容区 = 侧栏高 - 底栏 52px；抽屉 44% 伸到文件树中央
+  const contentH = Math.max(rect.height - 52, 300);
+  const rowsH = ITEMS.length * ITEM_H + (ITEMS.length - 1) * GAP;
+  const totalH = Math.round(contentH * 0.46);
+  const topPad = Math.max(16, Math.round((totalH - rowsH) / 2));
 
   _drawer = document.createElement('div');
   _drawer.style.cssText = [
@@ -76,35 +87,38 @@ function _createDrawer(): void {
     'width:' + rect.width + 'px',
     'bottom:0',
     'z-index:1006',
-    'background:rgba(18,18,26,0.92)',
+    'background:' + DRAWER_BG,
     'backdrop-filter:blur(12px)',
     '-webkit-backdrop-filter:blur(12px)',
     'border-radius:16px 16px 0 0',
-    'border:2px solid rgba(0,212,255,0.4)',
+    'border:1px solid transparent',
     'height:' + totalH + 'px',
-    'padding:' + PAD_Y + 'px 0',
+    'padding-top:' + topPad + 'px',
     'pointer-events:auto',
   ].join(';');
 
   ITEMS.forEach((item, i) => {
     const row = document.createElement('div');
-    const isDisabled = item.disabled;
+    const isLast = i === ITEMS.length - 1;
     row.style.cssText = [
       'height:' + ITEM_H + 'px',
-      'padding:0 20px',
-      'box-shadow:inset 3px 0 0 0 rgba(0,212,255,0.85)',
+      'margin:0 ' + SIDE_MARGIN + 'px' + (isLast ? '' : ' ' + GAP + 'px 0'),
+      'padding:0 14px',
+      'background:' + ROW_BG,
+      'border:1px solid transparent',
+      'border-left-width:3px',
+      'border-radius:0 6px 6px 0',
       'display:flex',
       'align-items:center',
       'justify-content:space-between',
       'font-size:14px',
       'font-family:system-ui,-apple-system,sans-serif',
-      'color:' + (isDisabled ? 'rgba(224,224,240,0.35)' : 'rgba(224,224,240,0.85)'),
-      'cursor:' + (isDisabled ? 'default' : 'pointer'),
-      'pointer-events:' + (isDisabled ? 'none' : 'auto'),
+      'color:rgba(224,224,240,0.85)',
+      'cursor:pointer',
+      'pointer-events:' + (item.disabled ? 'none' : 'auto'),
       'user-select:none',
       '-webkit-user-select:none',
     ].join(';');
-    if (i > 0) row.style.borderTop = '1px solid rgba(255,255,255,0.06)';
 
     const label = document.createElement('span');
     label.textContent = item.label;
