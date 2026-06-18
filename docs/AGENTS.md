@@ -12,17 +12,17 @@ docs/
 ├── AGENTS.md                   ← 本文。AI 文档维护指南
 ├── HANDBOOK.md                 ← 工作手册：架构、调试、待办、测试（日常翻）
 ├── KFM_V4_INVARIANTS.md       ← 修改约束：心法 + 自查清单（改代码前读）
-├── design/VISION_AND_ROADMAP.md  ← 远景：核心理念 + 演进路线（规划时参考）
-├── AGENTS.md                  ← 本文。AI 文档维护指南
-├── design/                    ← 待实现的设计提案
-│   └── WORKBENCH_SPEC.md      ← 卡片工作台（唯一 active 设计提案）
-└── archive/                   ← 历史文档仓库
-    ├── README.md              ← 子目录导览 + 每类什么时候值得翻
-    ├── handoffs/              ← 版本交接记录
-    ├── design/                ← 已完成的设计文档（Registry/卡片系统/引擎/愿景）
-    ├── standards/             ← 调试/Bug/测试规范
-    ├── bugs/                  ← Bug 修复记录
-    └── legacy/                ← 旧版本文档
+├── design/                     ← 待实现的设计提案
+│   ├── VISION_AND_ROADMAP.md   ← 远景：核心理念 + 演进路线
+│   └── WORKBENCH_SPEC.md       ← 卡片工作台（唯一 active 设计提案）
+└── archive/                    ← 历史文档仓库
+    ├── README.md               ← 子目录导览 + 每类什么时候值得翻
+    ├── audits/                 ← 已完成的审计记录/修复
+    ├── bugs/                   ← Bug 修复记录
+    ├── design/                 ← 已完成的设计文档（Registry/卡片系统/引擎/愿景）
+    ├── handoffs/               ← 版本交接记录
+    ├── legacy/                 ← 旧版本文档
+    └── standards/              ← 调试/Bug/测试规范
 ```
 
 ## 二、根层文档职责（不可违反）

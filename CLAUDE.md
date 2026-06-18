@@ -43,6 +43,7 @@ docs/
 │   ├── VISION_AND_ROADMAP.md    # 远景：核心理念 + 演进路线
 │   └── WORKBENCH_SPEC.md        # 卡片工作台（购物车+顶栏+光标+编辑态）
 └── archive/                 # 历史归档
+    ├── README.md            # 子目录导览
     ├── handoffs/            # 版本交接记录
     ├── design/              # 已完成的设计文档（Registry/卡片系统/引擎/愿景）
     ├── standards/           # 调试/Bug/测试规范
