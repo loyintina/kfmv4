@@ -862,7 +862,7 @@ const _MODE_TRI_COLOR: Record<string, string> = {
   delete: '#ef4444',
 };
 
-const _MODE_THEME: Record<string, { bgGrad: string; btnDim: string; btnGlow: string; svgStart: string; svgEnd: string; hue1: number; hue2: number; sat?: number; lit?: number }> = {
+const _MODE_THEME: Record<string, { bgGrad: string; btnDim: string; btnGlow: string; svgStart: string; svgEnd: string; accent?: string; hue1: number; hue2: number; sat?: number; lit?: number; cursorColor?: string; cursorBg?: string }> = {
   copy: {
     hue1: 160, hue2: 85, sat: 75, lit: 48,
     bgGrad: 'linear-gradient(135deg,rgba(132,204,22,0.4),rgba(16,185,129,0.35),rgba(15,118,110,0.35))',
@@ -870,6 +870,9 @@ const _MODE_THEME: Record<string, { bgGrad: string; btnDim: string; btnGlow: str
     btnGlow: 'linear-gradient(90deg,rgba(132,204,22,0.6),rgba(15,118,110,0.4))',
     svgStart: '#84cc16',
     svgEnd: '#0f766e',
+    accent: '#4ade80',
+    cursorColor: 'rgba(74,222,128,0.7)',
+    cursorBg: 'rgba(74,222,128,0.12)',
   },
   move: {
     hue1: 40, hue2: 55,
@@ -878,6 +881,9 @@ const _MODE_THEME: Record<string, { bgGrad: string; btnDim: string; btnGlow: str
     btnGlow: 'linear-gradient(90deg,rgba(245,158,11,0.6),rgba(163,230,53,0.4))',
     svgStart: '#f59e0b',
     svgEnd: '#a3e635',
+    accent: '#eab308',
+    cursorColor: 'rgba(234,179,8,0.7)',
+    cursorBg: 'rgba(234,179,8,0.12)',
   },
   delete: {
     hue1: 20, hue2: 345,
@@ -916,12 +922,10 @@ function _recolorCards(mode: string | null): void {
 
 function _applyModeTheme(mode: string | null): void {
   _recolorCards(mode);
-  if (mode === 'copy') {
-    setCursorColor('rgba(74,222,128,0.7)', 'rgba(74,222,128,0.12)');
-    setModeAccent('#4ade80');
-  } else if (mode === 'move') {
-    setCursorColor('rgba(234,179,8,0.7)', 'rgba(234,179,8,0.12)');
-    setModeAccent('#eab308');
+  const t = mode ? _MODE_THEME[mode] : null;
+  if (t?.cursorColor) {
+    setCursorColor(t.cursorColor, t.cursorBg ?? null);
+    setModeAccent(t.accent ?? null);
   } else {
     setCursorColor(null, null);
     setModeAccent(null);
