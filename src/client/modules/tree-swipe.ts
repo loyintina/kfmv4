@@ -11,7 +11,7 @@ import { L } from './renderer-lifecycle.js';
 import { anim, type AnimTimeline } from './animation-registry.js';
 import { getFileRowData, API, KFMState } from './state.js';
 import { findBoxById } from './canvas-utils.js';
-import { setCursorColor, setModeAccent } from './canvas-cursor.js';
+import { setCursorColor, setModeAccent, setLiquidColor } from './canvas-cursor.js';
 import { currentTheme as theme } from './theme.js';
 import { DOM } from './dom-refs.js';
 import { Box } from '../engine/v2/box.js';
@@ -925,9 +925,11 @@ function _applyModeTheme(mode: string | null): void {
   const t = mode ? _MODE_THEME[mode] : null;
   if (t?.cursorColor) {
     setCursorColor(t.cursorColor, t.cursorBg ?? null);
+    setLiquidColor('rgba(0,0,0,0.85)');
     setModeAccent(t.accent ?? null);
   } else {
     setCursorColor(null, null);
+    setLiquidColor(null);
     setModeAccent(null);
   }
   if (mode) {

@@ -36,6 +36,7 @@ let _pulseProxy: { a: number } | null = null;
 let _pulseTween: ReturnType<typeof anim.to> | null = null;
 let _liquidProxy: { pos: number } | null = null;
 let _liquidTween: ReturnType<typeof anim.to> | null = null;
+let _liquidColor: string | null = null;
 
 // 光标 Box.data 自定义字段的类型定义
 type CData = Record<string, unknown> & {
@@ -47,6 +48,11 @@ type CData = Record<string, unknown> & {
   _liquidSegments?: LiquidPoint[];
 };
 
+
+export function setLiquidColor(color: string | null): void {
+  _liquidColor = color;
+  if (L.cursorBox?.data) (L.cursorBox.data as CData).liquidColor = color || undefined;
+}
 
 function _stopPulse(): void {
   if (_pulseTween) { _pulseTween.kill(); _pulseTween = null; }
@@ -164,7 +170,6 @@ export function setCursorColor(color: string | null, bgColor: string | null): vo
     _startLiquidLoop();
     if (L.cursorBox) {
       L.cursorBox.backgroundColor = bgColor || theme.canvas.cursorBg;
-      (L.cursorBox.data as CData).liquidColor = bgColor || undefined;
     }
   } else {
     _stopPulse();
@@ -172,7 +177,6 @@ export function setCursorColor(color: string | null, bgColor: string | null): vo
       const cdata = L.cursorBox.data;
       if (cdata) cdata.color = theme.canvas.cursor;
       L.cursorBox.backgroundColor = theme.canvas.cursorBg;
-      (L.cursorBox.data as CData).liquidColor = undefined;
     }
   }
 }
@@ -194,7 +198,7 @@ export function ensureCursorBox(root: Box, canvasH: number): Box {
     borderRadius: 0,
     interactive: false,
     visible: true,
-    data: { cursorDynamicLines: true, topLineW: 0, botLineW: 0, color: _cursorColor || theme.canvas.cursor, liquidColor: _cursorBgColor || undefined },
+    data: { cursorDynamicLines: true, topLineW: 0, botLineW: 0, color: _cursorColor || theme.canvas.cursor, liquidColor: _liquidColor || undefined },
   });
 
   root.addChild(L.cursorBox);
