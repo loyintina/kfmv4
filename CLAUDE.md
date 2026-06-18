@@ -39,6 +39,8 @@ docs/
 ├── AGENTS.md                # AI 专属：文档维护规则（改文档前读）
 ├── HANDBOOK.md              # 工作手册：架构-调试-待办-测试（日常翻）
 ├── KFM_V4_INVARIANTS.md     # 修改约束协议：心法原则+自查清单（改代码前必读）
+├── audits/                  # **当前审计追踪（活表）**
+│   └── AUDIT_TRACKER.md         # 本轮审计发现追踪表
 ├── design/                  # 设计中（待实现的设计文档）
 │   ├── VISION_AND_ROADMAP.md    # 远景：核心理念 + 演进路线
 │   ├── WORKBENCH_SPEC.md        # 卡片工作台（购物车+顶栏+光标+编辑态）
@@ -47,11 +49,12 @@ docs/
     ├── handoffs/            # 版本交接记录
     ├── design/              # 已完成的设计文档（Registry/卡片系统/引擎/愿景）
     ├── standards/           # 调试/Bug/测试规范
+    ├── audits/              # 已完成的审计记录/修复
     ├── bugs/                # 已修复 Bug
     └── legacy/              # 旧版本文件
 ```
 
-> 接手新对话的推荐阅读顺序：`CLAUDE.md` → `HANDBOOK.md` §2（当前状态）→ `KFM_V4_INVARIANTS.md`（修改规则）→ `docs/design/WORKBENCH_SPEC.md`（当前方向）→ `HANDBOOK.md` §3（待办）→ `HANDBOOK.md` §七（审计问题清单）。引擎层改动前读 `docs/archive/design/ENGINE_ARCHITECTURE.md`。
+> 接手新对话的推荐阅读顺序：`CLAUDE.md` → `HANDBOOK.md` §2（当前状态）→ `KFM_V4_INVARIANTS.md`（修改规则）→ `docs/design/WORKBENCH_SPEC.md`（当前方向）→ `HANDBOOK.md` §3（待办）→ `HANDBOOK.md` §七（审计问题清单）→ `docs/audits/AUDIT_TRACKER.md`（当前审计发现）。引擎层改动前读 `docs/archive/design/ENGINE_ARCHITECTURE.md`。
 
 ## 完整性校验
 

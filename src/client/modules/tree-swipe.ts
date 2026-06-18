@@ -11,7 +11,7 @@ import { L } from './renderer-lifecycle.js';
 import { anim, type AnimTimeline } from './animation-registry.js';
 import { getFileRowData, API, KFMState } from './state.js';
 import { findBoxById } from './canvas-utils.js';
-import { setCursorColor, setModeAccent, setLiquidColor } from './canvas-cursor.js';
+import { setCursorColor, setModeAccent } from './canvas-cursor.js';
 import { currentTheme as theme } from './theme.js';
 import { DOM } from './dom-refs.js';
 import { Box } from '../engine/v2/box.js';
@@ -711,7 +711,6 @@ const _BTN_CSS = [
   'cursor:pointer',
   'display:flex', 'align-items:center', 'justify-content:center',
   'box-shadow:0 4px 16px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.08)',
-  'transition:all 0.25s cubic-bezier(0.34,1.56,0.64,1)',
   'color:rgba(224,224,240,0.85)',
   'font-family:system-ui,-apple-system,sans-serif',
 ].join(';');
@@ -798,7 +797,6 @@ function _ensureBg(sidebarW: number): void {
       'border:2px solid transparent',
       'border-radius:9px',
       'display:flex', 'align-items:center', 'justify-content:center',
-      'transition:background 0.15s',
       'flex-shrink:0',
     ].join(';');
     const btn = document.createElement('button');
@@ -920,15 +918,12 @@ function _applyModeTheme(mode: string | null): void {
   _recolorCards(mode);
   if (mode === 'copy') {
     setCursorColor('rgba(74,222,128,0.7)', 'rgba(74,222,128,0.12)');
-    setLiquidColor('rgba(0,0,0,0.85)');
     setModeAccent('#4ade80');
   } else if (mode === 'move') {
     setCursorColor('rgba(234,179,8,0.7)', 'rgba(234,179,8,0.12)');
-    setLiquidColor('rgba(0,0,0,0.85)');
     setModeAccent('#eab308');
   } else {
     setCursorColor(null, null);
-    setLiquidColor(null);
     setModeAccent(null);
   }
   if (mode) {

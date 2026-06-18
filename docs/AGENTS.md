@@ -86,6 +86,7 @@ archived_at: 2026-06-09          # 归档日期
 | 引擎/渲染相关 | `archive/engine/` |
 | 操作规范/流程 | `archive/standards/` |
 | Bug 修复 | `archive/bugs/` |
+| **审计记录/修复** | **`archive/audits/`** |
 | 旧版替换文档 | `archive/legacy/` |
 
 ## 四、check-docs.mjs 维护
@@ -105,3 +106,17 @@ archived_at: 2026-06-09          # 归档日期
 2. 讨论确认后进入实施
 3. 实施完成后移入 `archive/` 下对应子目录，status 改为 `superseded`，加 `superseded_by` 指向代码或 HANDBOOK 对应章节
 4. 如果设计被放弃，直接改为 `superseded` 注明原因
+
+## 六、版本发布 SOP
+
+发版时必须按顺序完成以下步骤，缺一不可：
+
+1. **更新版本号** — `package.json` 中的 `version` 字段
+2. **更新文档** — HANDBOOK.md §2 版本历史表 + WORKBENCH_SPEC.md 状态表中的 `✅ vX.Y.Z` 标记
+3. **提交** — `git commit -m "release: vX.Y.Z — 一句话描述"`
+4. **打 tag** — `git tag vX.Y.Z`（如果不打 tag，`npm run check` 会中断构建）
+
+> **验证**：`npm run check` 必须零错误通过。`check-versions.mjs` 会自动检查：
+> - tag `vX.Y.Z` 是否存在
+> - HANDBOOK 版本历史表是否有当前版本的粗体条目
+> - WORKBENCH_SPEC 状态表是否有当前版本的 `✅` 标记
