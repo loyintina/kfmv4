@@ -12,7 +12,7 @@ import { getShift, LINE_HEIGHT, MAX_LINES } from './style-registry.js';
 import { gestures } from './gesture-registry.js';
 import { DOM } from './dom-refs.js';
 import { getFileRowData } from './state.js';
-import { log } from './logger.js';
+import { showFileActionBar, dismissFileActionBar, isFileActionBarOpen } from './file-action-bar.js';
 import { closeSidebar } from './ui.js';
 import { isPickerOpen, pickerHandleClick } from './root-picker.js';
 
@@ -115,10 +115,11 @@ export function initScrollGesture(): void {
     priority: 60,
     longPressMs: 500,
     onLongPress() {
-      if (_touchRowPath) log('[long-press]', _touchRowPath);
+      if (_touchRowPath) showFileActionBar(_touchRowPath);
     },
     onStart(e) {
       if (e.button !== 0) return;
+      if (isFileActionBarOpen()) { dismissFileActionBar(); }
       _gestureStartX = e.clientX;
       _gestureStartY = e.clientY;
       _gestureAxis = 'none';

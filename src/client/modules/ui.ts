@@ -10,6 +10,7 @@ import { Registry } from './ui-registry.js';
 import { KFMState } from './state.js';
 import { wsChannel } from './ws-channel.js';
 import { DOM } from "./dom-refs.js";
+import { dismissFileActionBar } from './file-action-bar.js';
 
 export function openSidebar(): void {
   DOM.sidebar?.classList.add('open');
@@ -21,6 +22,7 @@ export function openSidebar(): void {
 }
 
 export function closeSidebar(): void {
+  dismissFileActionBar();
   DOM.sidebar?.classList.remove('open');
   DOM.overlay?.classList.remove('show');
   onSidebarClose();
