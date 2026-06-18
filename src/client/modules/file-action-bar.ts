@@ -91,7 +91,7 @@ function _createDrawer(): void {
     row.style.cssText = [
       'height:' + ITEM_H + 'px',
       'padding:0 20px 0 17px',
-      'border-left:3px solid rgba(0,212,255,0.25)',
+      'border-left:3px solid rgba(0,212,255,0.6)',
       'display:flex',
       'align-items:center',
       'justify-content:space-between',
