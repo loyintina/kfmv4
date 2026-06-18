@@ -163,21 +163,6 @@ function setupApiRoutes(router: express.Router) {
     } catch (e: any) { res.json({ error: e.message }); }
   });
 
-  router.post('/files/rename', (req: express.Request, res: express.Response) => {
-    try {
-      const src = sanitizePath(req.body.path);
-      const newName = req.body.newName;
-      if (!src) { res.json({ error: '路径不合法' }); return; }
-      if (!newName || typeof newName !== 'string' || newName.includes('/')) { res.json({ error: '文件名不合法' }); return; }
-      if (!fs.existsSync(src)) { res.json({ error: '路径不存在', path: src }); return; }
-      const dir = path.dirname(src);
-      const dest = path.join(dir, newName);
-      if (fs.existsSync(dest)) { res.json({ error: '目标已存在', path: dest }); return; }
-      fs.renameSync(src, dest);
-      res.json({ success: true, source: src, dest });
-    } catch (e: any) { res.json({ error: e.message }); }
-  });
-
   router.get('/system/info', (_req: express.Request, res: express.Response) => {
     res.json({ user: process.env.USER || 'root', home: ROOT_DIR, cwd: process.cwd() });
   });
