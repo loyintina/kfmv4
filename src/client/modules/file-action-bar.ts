@@ -76,11 +76,10 @@ function _createDrawer(): void {
     'width:' + rect.width + 'px',
     'bottom:0',
     'z-index:1006',
-    'background:rgba(18,18,26,0.92)',
-    'backdrop-filter:blur(12px)',
-    '-webkit-backdrop-filter:blur(12px)',
+    'background:linear-gradient(rgba(18,18,26,0.92),rgba(18,18,26,0.92)) padding-box,'
+      + 'linear-gradient(135deg,rgba(0,212,255,0.4),rgba(99,102,241,0.35),rgba(124,58,237,0.35)) border-box',
     'border-radius:16px 16px 0 0',
-    'border:1px solid rgba(0,212,255,0.2)',
+    'border:1px solid transparent',
     'height:' + totalH + 'px',
     'padding:' + PAD_Y + 'px 0',
     'pointer-events:auto',
@@ -91,7 +90,8 @@ function _createDrawer(): void {
     const isDisabled = item.disabled;
     row.style.cssText = [
       'height:' + ITEM_H + 'px',
-      'padding:0 20px',
+      'padding:0 20px 0 17px',
+      'border-left:3px solid rgba(0,212,255,0.25)',
       'display:flex',
       'align-items:center',
       'justify-content:space-between',
