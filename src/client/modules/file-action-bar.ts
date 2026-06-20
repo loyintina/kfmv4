@@ -9,7 +9,7 @@ import { DOM } from './dom-refs.js';
 import { anim } from './animation-registry.js';
 import { gestures } from './gesture-registry.js';
 import { L } from './renderer-lifecycle.js';
-import { API, KFMState, getFileRowData } from './state.js';
+import { API, KFMState } from './state.js';
 import { loadFileTree } from './tree-loader.js';
 
 // ========== 状态 ==========
@@ -216,27 +216,26 @@ function _renameFile(): void {
 
   const root = L.renderer?.getRoot();
   const canvas = L.renderer?.canvas ?? DOM.treeCanvas;
-  if (!root || !canvas) return;
+  const cb = L.cursorBox;
+  if (!root || !canvas || !cb) return;
 
-  // 在 _rowIndex 中找目标行 Box（光标所在即目标行）
-  let rowBox: import('../engine/v2/box.js').Box | null = null;
-  for (const r of L._rowIndex) {
-    const d = getFileRowData(r.data);
-    if (d?.path === _targetPath) { rowBox = r; break; }
-  }
-  if (!rowBox) return;
-
-  const label = rowBox.children.find(c => c.id?.startsWith('label-'));
-  if (!label) return;
-
-  // 屏幕坐标：从 label 的 x 开始（保留三角 + 缩进）
-  const abs = rowBox.getAbsolutePosition();
+  // 光标盒 = 行位置（已含缩进）→ 以它为基准
+  const abs = cb.getAbsolutePosition();
   const scrollY = root.scrollY ?? 0;
   const rect = canvas.getBoundingClientRect();
-  const textX = rect.left + abs.x + (label.x || 0);
+  const textX = rect.left + abs.x;
   const textY = rect.top + abs.y - scrollY;
-  const textW = Math.max(label.width || (L.cursorBox?.width ?? 200) - (label.x || 0) - 8, 60);
-  const textH = rowBox.height;
+  const textW = Math.max(cb.width - 8, 60);
+  const textH = cb.height;
+
+  // 底部行检测：输入法弹出时可能遮掩 → 上滚到舒适区域
+  const viewH = window.innerHeight;
+  const inputBottom = textY + textH;
+  if (inputBottom > viewH * 0.6) {
+    const offset = inputBottom - viewH * 0.32;
+    const maxY = root.getMaxScroll().maxY;
+    root.scrollY = Math.min(maxY, (root.scrollY ?? 0) + offset);
+  }
 
   const parts = _targetPath.replace(/\\/g, '/').split('/');
   const oldName = parts[parts.length - 1] || '';
@@ -244,6 +243,7 @@ function _renameFile(): void {
   const input = document.createElement('input');
   input.type = 'text';
   input.value = oldName;
+  input.readOnly = true;
   input.style.cssText = [
     'position:fixed',
     'left:' + textX + 'px',
@@ -262,6 +262,8 @@ function _renameFile(): void {
   document.body.appendChild(input);
   input.focus();
   input.select();
+  // 绕开移动端 input.focus() 不唤键盘的限制
+  setTimeout(() => { input.readOnly = false; input.focus(); }, 50);
 
   async function submit() {
     const newName = input.value.trim();
