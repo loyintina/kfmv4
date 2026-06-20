@@ -216,7 +216,7 @@ async function _deleteFile(): Promise<void> {
     await fetch(API + '/files/delete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ paths: [p] }),
+      body: JSON.stringify({ path: p }),
     });
     forceRebuildTree();
   } catch { /* swallow */ }
