@@ -8,8 +8,8 @@
 import { DOM } from './dom-refs.js';
 import { anim } from './animation-registry.js';
 import { gestures } from './gesture-registry.js';
-import { API } from './state.js';
-import { forceRebuildTree } from './tree-render.js';
+import { API, KFMState } from './state.js';
+import { loadFileTree } from './tree-loader.js';
 
 // ========== 状态 ==========
 
@@ -218,6 +218,6 @@ async function _deleteFile(): Promise<void> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ path: p }),
     });
-    forceRebuildTree();
+    loadFileTree(KFMState.currentRoot);
   } catch { /* swallow */ }
 }
