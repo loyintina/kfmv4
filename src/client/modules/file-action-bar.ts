@@ -212,6 +212,7 @@ function _copyPath(): void {
 
 function _renameFile(): void {
   if (!_targetPath) return;
+  const p = _targetPath;           // dismiss 会置 null，先存
   dismissFileActionBar();
 
   const root = L.renderer?.getRoot();
@@ -237,7 +238,7 @@ function _renameFile(): void {
     root.scrollY = Math.min(maxY, (root.scrollY ?? 0) + offset);
   }
 
-  const parts = _targetPath.replace(/\\/g, '/').split('/');
+  const parts = p.replace(/\\/g, '/').split('/');
   const oldName = parts[parts.length - 1] || '';
 
   const input = document.createElement('input');
@@ -273,7 +274,7 @@ function _renameFile(): void {
       await fetch(API + '/files/rename', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: _targetPath, newName }),
+        body: JSON.stringify({ path: p, newName }),
       });
       loadFileTree(KFMState.currentRoot);
     } catch { /* swallow */ }
