@@ -7,11 +7,13 @@
 
 import { DOM } from './dom-refs.js';
 import { anim } from './animation-registry.js';
+import { gestures } from './gesture-registry.js';
 
 // ========== 状态 ==========
 
 let _dimmer: HTMLElement | null = null;
 let _drawer: HTMLElement | null = null;
+let _pressedRow: HTMLElement | null = null;
 
 const ITEMS: { id: string; label: string; disabled?: boolean }[] = [
   { id: 'rename', label: '\u91CD\u547D\u540D' },
@@ -30,11 +32,51 @@ const ROW_GRAD = 'linear-gradient(135deg,rgba(0,212,255,0.7),rgba(124,58,237,0.5
 const ROW_BG = 'linear-gradient(rgba(18,18,26,0.92),rgba(18,18,26,0.92)) padding-box,' + ROW_GRAD + ' border-box';
 const DRAWER_GRAD = 'linear-gradient(135deg,rgba(0,212,255,0.4),rgba(99,102,241,0.35),rgba(124,58,237,0.35))';
 const DRAWER_BG = 'linear-gradient(rgba(18,18,26,0.92),rgba(18,18,26,0.92)) padding-box,' + DRAWER_GRAD + ' border-box';
+const ROW_GRAD_PRESS = 'linear-gradient(135deg,rgba(0,212,255,1),rgba(124,58,237,0.8))';
+const ROW_BG_PRESS = 'linear-gradient(rgba(18,18,26,0.92),rgba(18,18,26,0.92)) padding-box,' + ROW_GRAD_PRESS + ' border-box';
+
+// ========== 区域手势拦截（一次性注册） ==========
+
+let _zoneRegistered = false;
+
+function _ensureZone(): void {
+  if (_zoneRegistered) return;
+  _zoneRegistered = true;
+  gestures.register({
+    id: 'action-bar-zone',
+    targetFilter: (target) =>
+      !!(_dimmer?.contains(target as HTMLElement) || _drawer?.contains(target as HTMLElement)),
+    condition: () => isFileActionBarOpen(),
+    priority: 70,
+    stopPropagation: { start: true },
+    onStart(e) {
+      const target = e.target as HTMLElement;
+      const row = target.closest<HTMLElement>('[data-action-row]');
+      if (row) {
+        _pressedRow = row;
+        row.style.background = ROW_BG_PRESS;
+      }
+    },
+    onEnd(e) {
+      // 恢复行高亮
+      if (_pressedRow) {
+        _pressedRow.style.background = ROW_BG;
+        _pressedRow = null;
+      }
+      // 点击遮罩（不在抽屉内）→ 关闭
+      const target = e.target as HTMLElement;
+      if (_dimmer?.contains(target) && !_drawer?.contains(target)) {
+        dismissFileActionBar();
+      }
+    },
+  });
+}
 
 // ========== 公开 API ==========
 
 export function showFileActionBar(_path: string): void {
   if (_drawer) return;
+  _ensureZone();
   _createDimmer();
   _createDrawer();
 }
@@ -65,7 +107,6 @@ function _createDimmer(): void {
     'background:rgba(0,0,0,0.45)',
     'pointer-events:auto',
   ].join(';');
-  _dimmer.addEventListener('click', dismissFileActionBar);
   document.body.appendChild(_dimmer);
   anim.fromTo(_dimmer, { opacity: 0 }, { opacity: 1, duration: 0.2 });
 }
@@ -99,6 +140,7 @@ function _createDrawer(): void {
 
   ITEMS.forEach((item, i) => {
     const row = document.createElement('div');
+    row.setAttribute('data-action-row', item.id);
     const isLast = i === ITEMS.length - 1;
     row.style.cssText = [
       'height:' + ITEM_H + 'px',
