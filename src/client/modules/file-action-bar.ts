@@ -89,6 +89,7 @@ export function showFileActionBar(path: string): void {
 export function dismissFileActionBar(): void {
   if (!_dimmer && !_drawer) return;
   _targetPath = null;
+  _copiedPaths.clear();
   const d = _dimmer;
   const w = _drawer;
   _dimmer = null;
@@ -176,7 +177,7 @@ function _createDrawer(): void {
     if (item.id === 'copy-path') {
       const check = document.createElement('span');
       check.id = 'act-chk-copy-path';
-      check.style.cssText = 'color:#4ade80;font-size:16px;display:' + (_copiedPaths.has(_targetPath!) ? 'inline' : 'none');
+      check.style.cssText = 'color:#4ade80;font-size:16px;display:none';
       check.textContent = '\u2713';
       row.appendChild(check);
     }
