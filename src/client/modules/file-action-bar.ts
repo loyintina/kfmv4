@@ -21,7 +21,7 @@ const ITEMS: { id: string; label: string; disabled?: boolean }[] = [
   { id: 'new-file', label: '\u65B0\u5EFA\u6587\u4EF6', disabled: true },
 ];
 
-const ITEM_H = 44;
+const ITEM_H = 38;
 const GAP = 8;
 const SIDE_MARGIN = 12;
 
