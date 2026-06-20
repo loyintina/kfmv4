@@ -8,7 +8,8 @@
 import { DOM } from './dom-refs.js';
 import { anim } from './animation-registry.js';
 import { gestures } from './gesture-registry.js';
-import { API, KFMState } from './state.js';
+import { L } from './renderer-lifecycle.js';
+import { API, KFMState, getFileRowData } from './state.js';
 import { loadFileTree } from './tree-loader.js';
 
 // ========== 状态 ==========
@@ -186,7 +187,8 @@ function _createDrawer(): void {
     if (!item.disabled) {
       row.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (item.id === 'copy-path') _copyPath();
+        if (item.id === 'rename') _renameFile();
+        else if (item.id === 'copy-path') _copyPath();
         else if (item.id === 'delete') _deleteFile();
       });
     }
@@ -206,6 +208,77 @@ function _copyPath(): void {
   _copiedPaths.add(_targetPath);
   const check = document.getElementById('act-chk-copy-path');
   if (check) check.style.display = 'inline';
+}
+
+function _renameFile(): void {
+  if (!_targetPath) return;
+  dismissFileActionBar();
+
+  const root = L.renderer?.getRoot();
+  const canvas = L.renderer?.canvas ?? DOM.treeCanvas;
+  if (!root || !canvas) return;
+
+  // 在 _rowIndex 中找目标行 Box（光标所在即目标行）
+  let rowBox: import('../engine/v2/box.js').Box | null = null;
+  for (const r of L._rowIndex) {
+    const d = getFileRowData(r.data);
+    if (d?.path === _targetPath) { rowBox = r; break; }
+  }
+  if (!rowBox) return;
+
+  const label = rowBox.children.find(c => c.id?.startsWith('label-'));
+  if (!label) return;
+
+  // 屏幕坐标：从 label 的 x 开始（保留三角 + 缩进）
+  const abs = rowBox.getAbsolutePosition();
+  const scrollY = root.scrollY ?? 0;
+  const rect = canvas.getBoundingClientRect();
+  const textX = rect.left + abs.x + (label.x || 0);
+  const textY = rect.top + abs.y - scrollY;
+  const textW = Math.max(label.width || (L.cursorBox?.width ?? 200) - (label.x || 0) - 8, 60);
+  const textH = rowBox.height;
+
+  const parts = _targetPath.replace(/\\/g, '/').split('/');
+  const oldName = parts[parts.length - 1] || '';
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = oldName;
+  input.style.cssText = [
+    'position:fixed',
+    'left:' + textX + 'px',
+    'top:' + textY + 'px',
+    'width:' + textW + 'px',
+    'height:' + textH + 'px',
+    'z-index:1007',
+    'background:transparent',
+    'border:none',
+    'outline:none',
+    'font-size:12px',
+    'font-family:system-ui,-apple-system,sans-serif',
+    'color:#e0e0e0',
+    'padding:0',
+  ].join(';');
+  document.body.appendChild(input);
+  input.focus();
+  input.select();
+
+  async function submit() {
+    const newName = input.value.trim();
+    input.remove();
+    if (!newName || newName === oldName) return;
+    try {
+      await fetch(API + '/files/rename', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: _targetPath, newName }),
+      });
+      loadFileTree(KFMState.currentRoot);
+    } catch { /* swallow */ }
+  }
+
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+  input.addEventListener('blur', submit);
 }
 
 async function _deleteFile(): Promise<void> {
