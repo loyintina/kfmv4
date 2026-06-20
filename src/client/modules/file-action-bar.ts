@@ -9,7 +9,7 @@ import { DOM } from './dom-refs.js';
 import { anim } from './animation-registry.js';
 import { gestures } from './gesture-registry.js';
 import { L } from './renderer-lifecycle.js';
-import { API, KFMState } from './state.js';
+import { API, KFMState, getFileRowData } from './state.js';
 import { loadFileTree } from './tree-loader.js';
 
 // ========== 状态 ==========
@@ -212,37 +212,62 @@ function _copyPath(): void {
 
 function _renameFile(): void {
   if (!_targetPath) return;
-  const p = _targetPath;           // dismiss 会置 null，先存
+  const p = _targetPath;
   dismissFileActionBar();
 
   const root = L.renderer?.getRoot();
   const canvas = L.renderer?.canvas ?? DOM.treeCanvas;
-  const cb = L.cursorBox;
-  if (!root || !canvas || !cb) return;
+  if (!root || !canvas) return;
 
-  // 光标盒 = 行位置（已含缩进）→ 以它为基准
-  const abs = cb.getAbsolutePosition();
+  // 在 _rowIndex 中定位目标行（用已存的 p，非 null 的 _targetPath）
+  let rowBox: import('../engine/v2/box.js').Box | null = null;
+  for (const r of L._rowIndex) {
+    const d = getFileRowData(r.data);
+    if (d?.path === p) { rowBox = r; break; }
+  }
+  if (!rowBox) return;
+
+  const label = rowBox.children.find(c => c.id?.startsWith('label-'));
+  if (!label) return;
+
+  // 隐藏 Canvas 文字（避免 input 透明背景下双层重叠）
+  const origContent = (label.textStyle as unknown as { content?: string })?.content ?? '';
+  label.textStyle = { ...label.textStyle, content: '' };
+
+  const abs = rowBox.getAbsolutePosition();
   const scrollY = root.scrollY ?? 0;
   const rect = canvas.getBoundingClientRect();
-  const textX = rect.left + abs.x;
-  const textY = rect.top + abs.y - scrollY;
-  const textW = Math.max(cb.width - 8, 60);
-  const textH = cb.height;
+  const INPUT_H = 18;                                // 单行输入固定高度（12px * 1.2 ≈ 14.4 + 上下留白）
+  const textX = rect.left + abs.x + (label.x || 0);
+  const textY = rect.top + abs.y - scrollY + (rowBox.height - INPUT_H) / 2;  // 垂直居中
+  const textW = Math.max(label.width || (rowBox.width - (label.x || 0) - 16), 60);
+  const textH = INPUT_H;
 
-  // 底部行检测：输入法弹出时可能遮掩 → 上滚到舒适区域
+  // 底部行检测：输入法弹出时可能遮掩 → 上滚
   const viewH = window.innerHeight;
-  const inputBottom = textY + textH;
-  if (inputBottom > viewH * 0.6) {
-    const offset = inputBottom - viewH * 0.32;
+  const rowBottom = rect.top + abs.y + rowBox.height - scrollY;
+  if (rowBottom > viewH * 0.6) {
+    const offset = rowBottom - viewH * 0.32;
     const maxY = root.getMaxScroll().maxY;
     root.scrollY = Math.min(maxY, (root.scrollY ?? 0) + offset);
   }
+
+  // 禁用树滚动（重命名期间不应响应文件树手势）
+  const treeCanvas = DOM.treeCanvas;
+  if (treeCanvas) treeCanvas.style.pointerEvents = 'none';
+
+  // ::selection 样式
+  const selStyle = document.createElement('style');
+  selStyle.id = 'kfm-rename-selection';
+  selStyle.textContent = '.kfm-rename-input::selection{background:rgba(0,212,255,0.35);color:#fff}.kfm-rename-input::-moz-selection{background:rgba(0,212,255,0.35);color:#fff}';
+  document.head.appendChild(selStyle);
 
   const parts = p.replace(/\\/g, '/').split('/');
   const oldName = parts[parts.length - 1] || '';
 
   const input = document.createElement('input');
   input.type = 'text';
+  input.className = 'kfm-rename-input';
   input.value = oldName;
   input.readOnly = true;
   input.style.cssText = [
@@ -256,19 +281,30 @@ function _renameFile(): void {
     'border:none',
     'outline:none',
     'font-size:12px',
-    'font-family:system-ui,-apple-system,sans-serif',
+    'font-family:system-ui,sans-serif',
+    'line-height:1.2',
     'color:#e0e0e0',
+    'caret-color:#e0e0e0',
     'padding:0',
   ].join(';');
   document.body.appendChild(input);
   input.focus();
   input.select();
-  // 绕开移动端 input.focus() 不唤键盘的限制
   setTimeout(() => { input.readOnly = false; input.focus(); }, 50);
+
+  const _label = label;
+  const _origContent = origContent;
+
+  function _cleanup() {
+    if (treeCanvas) treeCanvas.style.pointerEvents = '';
+    selStyle.remove();
+    _label.textStyle = { ..._label.textStyle, content: _origContent };
+  }
 
   async function submit() {
     const newName = input.value.trim();
     input.remove();
+    _cleanup();
     if (!newName || newName === oldName) return;
     try {
       await fetch(API + '/files/rename', {
