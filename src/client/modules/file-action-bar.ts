@@ -260,14 +260,14 @@ function _renameFile(): void {
 
   let textY = _computeTextY();
 
-  // 底部行：键盘弹出可能遮挡 → 上滚到 viewport 18% 处（键盘占 ~40%）
+  // 底部行：键盘弹出可能遮挡 → 行顶对齐 viewport 18%（键盘占 ~40%）
   const viewH = window.innerHeight;
-  const rowBottom = rect.top + abs.y + rowBox.height - scrollY;
-  if (rowBottom > viewH * 0.6) {
-    const offset = rowBottom - viewH * 0.18;
+  const rowTop = rect.top + abs.y - scrollY;
+  if (rowTop + rowBox.height > viewH * 0.6) {
+    const offset = rowTop - viewH * 0.18;
     const maxY = root.getMaxScroll().maxY;
     root.scrollY = Math.min(maxY, (root.scrollY ?? 0) + offset);
-    textY = _computeTextY(); // 重新算（滚动变了）
+    textY = _computeTextY();
   }
 
   // ::selection 样式
