@@ -8,12 +8,16 @@
 import { DOM } from './dom-refs.js';
 import { anim } from './animation-registry.js';
 import { gestures } from './gesture-registry.js';
+import { API } from './state.js';
+import { forceRebuildTree } from './tree-render.js';
 
 // ========== 状态 ==========
 
 let _dimmer: HTMLElement | null = null;
 let _drawer: HTMLElement | null = null;
 let _pressedRow: HTMLElement | null = null;
+let _targetPath: string | null = null;
+const _copiedPaths = new Set<string>();
 
 const ITEMS: { id: string; label: string; disabled?: boolean }[] = [
   { id: 'rename', label: '\u91CD\u547D\u540D' },
@@ -74,8 +78,9 @@ function _ensureZone(): void {
 
 // ========== 公开 API ==========
 
-export function showFileActionBar(_path: string): void {
+export function showFileActionBar(path: string): void {
   if (_drawer) return;
+  _targetPath = path;
   _ensureZone();
   _createDimmer();
   _createDrawer();
@@ -83,6 +88,7 @@ export function showFileActionBar(_path: string): void {
 
 export function dismissFileActionBar(): void {
   if (!_dimmer && !_drawer) return;
+  _targetPath = null;
   const d = _dimmer;
   const w = _drawer;
   _dimmer = null;
@@ -166,9 +172,51 @@ function _createDrawer(): void {
     label.textContent = item.label;
     row.appendChild(label);
 
+    // ✓ 占位（仅 copy-path）
+    if (item.id === 'copy-path') {
+      const check = document.createElement('span');
+      check.id = 'act-chk-copy-path';
+      check.style.cssText = 'color:#4ade80;font-size:16px;display:' + (_copiedPaths.has(_targetPath!) ? 'inline' : 'none');
+      check.textContent = '\u2713';
+      row.appendChild(check);
+    }
+
+    // click 监听（仅非 disabled）
+    if (!item.disabled) {
+      row.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (item.id === 'copy-path') _copyPath();
+        else if (item.id === 'delete') _deleteFile();
+      });
+    }
+
     _drawer!.appendChild(row);
   });
 
   document.body.appendChild(_drawer!);
   anim.fromTo(_drawer, { y: '100%' }, { y: '0%', duration: 0.3, ease: 'power3.out' });
+}
+
+// ========== 操作处理 ==========
+
+function _copyPath(): void {
+  if (!_targetPath) return;
+  navigator.clipboard.writeText(_targetPath).catch(() => {});
+  _copiedPaths.add(_targetPath);
+  const check = document.getElementById('act-chk-copy-path');
+  if (check) check.style.display = 'inline';
+}
+
+async function _deleteFile(): Promise<void> {
+  if (!_targetPath) return;
+  const p = _targetPath;
+  dismissFileActionBar();
+  try {
+    await fetch(API + '/files/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paths: [p] }),
+    });
+    forceRebuildTree();
+  } catch { /* swallow */ }
 }
