@@ -18,6 +18,7 @@ let _dimmer: HTMLElement | null = null;
 let _drawer: HTMLElement | null = null;
 let _pressedRow: HTMLElement | null = null;
 let _targetPath: string | null = null;
+let _renaming = false;
 const _copiedPaths = new Set<string>();
 
 const ITEMS: { id: string; label: string; disabled?: boolean }[] = [
@@ -103,6 +104,10 @@ export function dismissFileActionBar(): void {
 
 export function isFileActionBarOpen(): boolean {
   return _drawer !== null;
+}
+
+export function isRenaming(): boolean {
+  return _renaming;
 }
 
 // ========== 内部构建 ==========
@@ -234,27 +239,36 @@ function _renameFile(): void {
   const origContent = (label.textStyle as unknown as { content?: string })?.content ?? '';
   label.textStyle = { ...label.textStyle, content: '' };
 
+  _renaming = true;  // 禁文件树滚动手势
+
   const abs = rowBox.getAbsolutePosition();
   const scrollY = root.scrollY ?? 0;
   const rect = canvas.getBoundingClientRect();
-  const INPUT_H = 18;                                // 单行输入固定高度（12px * 1.2 ≈ 14.4 + 上下留白）
+  const INPUT_H = 18;
   const textX = rect.left + abs.x + (label.x || 0);
-  const textY = rect.top + abs.y - scrollY + (rowBox.height - INPUT_H) / 2;  // 垂直居中
   const textW = Math.max(label.width || (rowBox.width - (label.x || 0) - 16), 60);
   const textH = INPUT_H;
 
-  // 底部行检测：输入法弹出时可能遮掩 → 上滚
+  const _canvas = canvas;
+  const _root = root;
+
+  function _computeTextY(): string {
+    const r2 = _canvas.getBoundingClientRect();
+    const sy = _root.scrollY ?? 0;
+    return (r2.top + abs.y - sy + (rowBox!.height - INPUT_H) / 2).toFixed(1);
+  }
+
+  let textY = _computeTextY();
+
+  // 底部行：键盘弹出可能遮挡 → 上滚到 viewport 18% 处（键盘占 ~40%）
   const viewH = window.innerHeight;
   const rowBottom = rect.top + abs.y + rowBox.height - scrollY;
   if (rowBottom > viewH * 0.6) {
-    const offset = rowBottom - viewH * 0.32;
+    const offset = rowBottom - viewH * 0.18;
     const maxY = root.getMaxScroll().maxY;
     root.scrollY = Math.min(maxY, (root.scrollY ?? 0) + offset);
+    textY = _computeTextY(); // 重新算（滚动变了）
   }
-
-  // 禁用树滚动（重命名期间不应响应文件树手势）
-  const treeCanvas = DOM.treeCanvas;
-  if (treeCanvas) treeCanvas.style.pointerEvents = 'none';
 
   // ::selection 样式
   const selStyle = document.createElement('style');
@@ -280,7 +294,7 @@ function _renameFile(): void {
     'background:transparent',
     'border:none',
     'outline:none',
-    'font-size:12px',
+    'font-size:13px',
     'font-family:system-ui,sans-serif',
     'line-height:1.2',
     'color:#e0e0e0',
@@ -292,11 +306,18 @@ function _renameFile(): void {
   input.select();
   setTimeout(() => { input.readOnly = false; input.focus(); }, 50);
 
+  // 键盘弹出/收起时重定位（visualViewport 变化 → 重新算 textY）
+  function _onViewportChange() {
+    input.style.top = _computeTextY() + 'px';
+  }
+  window.visualViewport?.addEventListener('resize', _onViewportChange);
+
   const _label = label;
   const _origContent = origContent;
 
   function _cleanup() {
-    if (treeCanvas) treeCanvas.style.pointerEvents = '';
+    _renaming = false;
+    window.visualViewport?.removeEventListener('resize', _onViewportChange);
     selStyle.remove();
     _label.textStyle = { ..._label.textStyle, content: _origContent };
   }

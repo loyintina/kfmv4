@@ -12,7 +12,7 @@ import { getShift, LINE_HEIGHT, MAX_LINES } from './style-registry.js';
 import { gestures } from './gesture-registry.js';
 import { DOM } from './dom-refs.js';
 import { getFileRowData } from './state.js';
-import { showFileActionBar, dismissFileActionBar, isFileActionBarOpen } from './file-action-bar.js';
+import { showFileActionBar, dismissFileActionBar, isFileActionBarOpen, isRenaming } from './file-action-bar.js';
 import { closeSidebar } from './ui.js';
 import { isPickerOpen, pickerHandleClick } from './root-picker.js';
 
@@ -111,7 +111,7 @@ export function initScrollGesture(): void {
   const unreg = gestures.register({
     id: 'sidebar-scroll',
     targetFilter: () => true,
-    condition: () => !L.isSidebarClosed() && !!L.renderer,
+    condition: () => !L.isSidebarClosed() && !!L.renderer && !isRenaming(),
     priority: 60,
     longPressMs: 500,
     onLongPress() {
