@@ -243,6 +243,7 @@ function _renameFile(): void {
 
   const abs = rowBox.getAbsolutePosition();
   const scrollY = root.scrollY ?? 0;
+  const _origScrollY = scrollY;
   const rect = canvas.getBoundingClientRect();
   const INPUT_H = 18;
   const textX = rect.left + abs.x + (label.x || 0);
@@ -306,9 +307,21 @@ function _renameFile(): void {
   input.focus();
   input.select();
 
-  // 键盘弹出/收起时重定位（visualViewport 变化 → 重新算 textY）
+  // 键盘生命周期：打开→重定位，关闭→恢复原始滚动 + blur 提交
+  let _keyboardWasOpen = false;
   function _onViewportChange() {
-    input.style.top = _computeTextY() + 'px';
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const closed = Math.abs(vv.height - window.innerHeight) < 10;
+    if (_keyboardWasOpen && closed) {
+      _root.scrollPaddingBottom = 0;
+      _root.scrollY = Math.min(_origScrollY, _root.getMaxScroll().maxY);
+      input.style.top = _computeTextY() + 'px';
+      requestAnimationFrame(() => { if (document.activeElement === input) input.blur(); });
+    } else if (!closed) {
+      _keyboardWasOpen = true;
+      input.style.top = _computeTextY() + 'px';
+    }
   }
   window.visualViewport?.addEventListener('resize', _onViewportChange);
 
