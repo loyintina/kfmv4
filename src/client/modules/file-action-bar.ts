@@ -285,7 +285,6 @@ function _renameFile(): void {
   input.type = 'text';
   input.className = 'kfm-rename-input';
   input.value = oldName;
-  input.readOnly = true;
   input.style.cssText = [
     'position:fixed',
     'left:' + textX + 'px',
@@ -306,7 +305,6 @@ function _renameFile(): void {
   document.body.appendChild(input);
   input.focus();
   input.select();
-  setTimeout(() => { input.readOnly = false; input.focus(); }, 50);
 
   // 键盘弹出/收起时重定位（visualViewport 变化 → 重新算 textY）
   function _onViewportChange() {
