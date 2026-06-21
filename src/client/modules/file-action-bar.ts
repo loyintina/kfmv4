@@ -266,7 +266,9 @@ function _renameFile(): void {
   if (rowTop + rowBox.height > viewH * 0.6) {
     const offset = rowTop - viewH * 0.18;
     const maxY = root.getMaxScroll().maxY;
-    root.scrollY = Math.min(maxY, (root.scrollY ?? 0) + offset);
+    const target = (root.scrollY ?? 0) + offset;
+    if (target > maxY) root.scrollPaddingBottom = target - maxY;
+    root.scrollY = Math.max(0, target);
     textY = _computeTextY();
   }
 
@@ -317,6 +319,10 @@ function _renameFile(): void {
 
   function _cleanup() {
     _renaming = false;
+    // 清零 scrollPaddingBottom 前先 clamp scrollY 到合法范围，避免跳跃
+    const mx = _root.getMaxScroll().maxY - (_root.scrollPaddingBottom ?? 0);
+    _root.scrollY = Math.min(_root.scrollY, mx);
+    _root.scrollPaddingBottom = 0;
     window.visualViewport?.removeEventListener('resize', _onViewportChange);
     selStyle.remove();
     _label.textStyle = { ..._label.textStyle, content: _origContent };

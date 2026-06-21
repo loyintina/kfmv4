@@ -520,7 +520,7 @@ export class Renderer {
     // 垂直滚动条
     if (maxScroll.maxY > 0 && (box.scrollDirection === 'vertical' || box.scrollDirection === 'both')) {
       const trackHeight = viewportH;
-      const thumbHeight = Math.max(20, (viewportH / content.height) * trackHeight);
+      const thumbHeight = Math.max(20, (viewportH / (content.height + (box.scrollPaddingBottom ?? 0))) * trackHeight);
       const thumbY = b.y + box.padding.top + (box.scrollY / maxScroll.maxY) * (trackHeight - thumbHeight);
 
       this.ctx.fillStyle = this._theme.accent + '4d';

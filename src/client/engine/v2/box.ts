@@ -107,6 +107,7 @@ export interface BoxOptions {
   scrollY?: number;
   scrollDirection?: ScrollDirection;
   scrollbarVisible?: boolean;
+  scrollPaddingBottom?: number;  // 虚拟底部扩展（getMaxScroll 纳入，不改变 content）
 
   // KFM 边框样式（高级）
   kfmStyle?: KFMBoxStyle | null;
@@ -193,6 +194,7 @@ export class Box {
   scrollable: boolean;
   scrollX: number;
   scrollY: number;
+  scrollPaddingBottom: number;
   scrollDirection: ScrollDirection;
   scrollbarVisible: boolean;
 
@@ -299,6 +301,7 @@ export class Box {
     this.scrollable = options.scrollable ?? false;
     this.scrollX = options.scrollX ?? 0;
     this.scrollY = options.scrollY ?? 0;
+    this.scrollPaddingBottom = options.scrollPaddingBottom ?? 0;
     this.scrollDirection = options.scrollDirection ?? 'vertical';
     this.scrollbarVisible = options.scrollbarVisible ?? true;
 
@@ -406,7 +409,7 @@ export class Box {
     const viewportH = this.height - this.padding.top - this.padding.bottom;
     return {
       maxX: Math.max(0, content.width - viewportW),
-      maxY: Math.max(0, content.height - viewportH),
+      maxY: Math.max(0, content.height + this.scrollPaddingBottom - viewportH),
     };
   }
 
@@ -612,6 +615,7 @@ export class Box {
       scrollY: this.scrollY,
       scrollDirection: this.scrollDirection,
       scrollbarVisible: this.scrollbarVisible,
+      scrollPaddingBottom: this.scrollPaddingBottom,
       kfmStyle: this.kfmStyle ? { ...this.kfmStyle } : null,
       gesture: this.gesture ? { ...this.gesture } : null,
       shape: this.shape ? { ...this.shape, points: [...this.shape.points] } : null,
