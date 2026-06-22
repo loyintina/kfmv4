@@ -705,7 +705,7 @@ interface KFMState {
 
 ---
 
-### Phase 7 — 长按功能栏（待实现）
+### Phase 7 — 长按功能栏（✅ v6.9.0）
 
 **目标**：文件树行上长按弹出浮动功能栏，提供单文件操作（重命名、复制路径、删除）。
 
@@ -733,7 +733,7 @@ interface KFMState {
 | 6 | 批量操作模式（三按钮+色系+API） | ~280 | ✅ v6.8.0 |
 | — | 代码质量审计修复 | — | ✅ v6.8.1 |
 | — | 模块拆分（mode-system.ts + color-utils.ts） + console 治理 + 依赖方向检查 | — | ✅ v6.8.1 |
-| 7 | 长按功能栏（rename/copy path/delete） | ~160 | 📝 设计完成 |
+| 7 | 长按功能栏（rename/copy path/delete + 引擎 scrollPaddingBottom + 折叠祖先级联修复） | ~360 | ✅ v6.9.0 |
 
 **总计**：约 1,560 行新代码 + 修改（含已实现的 365 行）
 
