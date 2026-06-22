@@ -328,35 +328,21 @@ export function setupCollapseOverlays(container: Box, fullH: number, siblingClon
   return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenContainer: container, hiddenSiblings, hiddenChildren };
 }
 
-// ========== 祖先级联 overlay ==========
+// ========== 祖先级联偏移 ==========
 
-export interface AncestorSiblingOverlay {
-  overlay: Box;
-  original: Box;
-  targetY: number;
-}
-
-/** 沿祖先 expanded-* 链向上，为每层祖先后方兄弟创建 overlay。用于 collapse 时的级联偏移。 */
-export function setupAncestorSiblingOverlays(
+/** 沿祖先 expanded-* 链向上，收集每层祖先后方兄弟的原始 Box + 目标 Y。
+ *  不创建 overlay——直接在主树上用 GSAP 动画原件，rebuildTree 自然归位。 */
+export function collectAncestorSiblings(
   container: Box,
   fullH: number,
-): AncestorSiblingOverlay[] {
-  const result: AncestorSiblingOverlay[] = [];
+): { original: Box; targetY: number }[] {
+  const result: { original: Box; targetY: number }[] = [];
   let ancestor: Box | null = container.parent;
   while (ancestor) {
     if (!ancestor.id?.startsWith('expanded-')) break;
     const siblings = collectSiblingsAfter(ancestor);
     for (const sib of siblings) {
-      const sibOv = createVisualClone(sib, {
-        id: `ov-${sib.id || 'anc-sib'}`,
-        y: sib.y,
-        opacity: 1,
-        zIndex: OVERLAY_Z,
-      }, true);
-      _addOverlay(sibOv);
-      (sibOv as Box & OverlayMeta)._targetY = sib.y - fullH;
-      sib.visible = false;
-      result.push({ overlay: sibOv, original: sib, targetY: sib.y - fullH });
+      result.push({ original: sib, targetY: sib.y - fullH });
     }
     ancestor = ancestor.parent;
   }
