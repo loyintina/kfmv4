@@ -11,6 +11,7 @@ import { gestures } from './gesture-registry.js';
 import { L } from './renderer-lifecycle.js';
 import { API, KFMState, getFileRowData } from './state.js';
 import { loadFileTree } from './tree-loader.js';
+import { moveCursorTo } from './canvas-cursor.js';
 
 // ========== 状态 ==========
 
@@ -25,8 +26,8 @@ const ITEMS: { id: string; label: string; disabled?: boolean }[] = [
   { id: 'rename', label: '\u91CD\u547D\u540D' },
   { id: 'copy-path', label: '\u590D\u5236\u8DEF\u5F84' },
   { id: 'delete', label: '\u5220\u9664' },
-  { id: 'new-folder', label: '\u65B0\u5EFA\u6587\u4EF6\u5939', disabled: true },
-  { id: 'new-file', label: '\u65B0\u5EFA\u6587\u4EF6', disabled: true },
+  { id: 'new-folder', label: '\u65B0\u5EFA\u6587\u4EF6\u5939' },
+  { id: 'new-file', label: '\u65B0\u5EFA\u6587\u4EF6' },
 ];
 
 const ITEM_H = 38;
@@ -195,6 +196,8 @@ function _createDrawer(): void {
         if (item.id === 'rename') _renameFile();
         else if (item.id === 'copy-path') _copyPath();
         else if (item.id === 'delete') _deleteFile();
+        else if (item.id === 'new-folder') _createFolder();
+        else if (item.id === 'new-file') _createFile();
       });
     }
 
@@ -219,12 +222,17 @@ function _renameFile(): void {
   if (!_targetPath) return;
   const p = _targetPath;
   dismissFileActionBar();
+  _startRename(p);
+}
+
+/** 重命名核心：不负责 dismiss drawer、不负责修改 _targetPath。 */
+function _startRename(targetPath: string): void {
+  const p = targetPath;
 
   const root = L.renderer?.getRoot();
   const canvas = L.renderer?.canvas ?? DOM.treeCanvas;
   if (!root || !canvas) return;
 
-  // 在 _rowIndex 中定位目标行（用已存的 p，非 null 的 _targetPath）
   let rowBox: import('../engine/v2/box.js').Box | null = null;
   for (const r of L._rowIndex) {
     const d = getFileRowData(r.data);
@@ -235,11 +243,10 @@ function _renameFile(): void {
   const label = rowBox.children.find(c => c.id?.startsWith('label-'));
   if (!label) return;
 
-  // 隐藏 Canvas 文字（避免 input 透明背景下双层重叠）
   const origContent = (label.textStyle as unknown as { content?: string })?.content ?? '';
   label.textStyle = { ...label.textStyle, content: '' };
 
-  _renaming = true;  // 禁文件树滚动手势
+  _renaming = true;
 
   const abs = rowBox.getAbsolutePosition();
   const scrollY = root.scrollY ?? 0;
@@ -261,7 +268,6 @@ function _renameFile(): void {
 
   let textY = _computeTextY();
 
-  // 底部行：键盘弹出可能遮挡 → 行顶对齐 viewport 18%（键盘占 ~40%）
   const viewH = window.innerHeight;
   const rowTop = rect.top + abs.y - scrollY;
   if (rowTop + rowBox.height > viewH * 0.6) {
@@ -273,7 +279,6 @@ function _renameFile(): void {
     textY = _computeTextY();
   }
 
-  // ::selection 样式
   const selStyle = document.createElement('style');
   selStyle.id = 'kfm-rename-selection';
   selStyle.textContent = '.kfm-rename-input::selection{background:rgba(0,212,255,0.35);color:#fff}.kfm-rename-input::-moz-selection{background:rgba(0,212,255,0.35);color:#fff}';
@@ -307,7 +312,6 @@ function _renameFile(): void {
   input.focus();
   input.select();
 
-  // 键盘生命周期：打开→重定位，关闭→恢复原始滚动 + blur 提交
   let _keyboardWasOpen = false;
   function _onViewportChange() {
     const vv = window.visualViewport;
@@ -330,7 +334,6 @@ function _renameFile(): void {
 
   function _cleanup() {
     _renaming = false;
-    // 清零 scrollPaddingBottom 前先 clamp scrollY 到合法范围，避免跳跃
     const mx = _root.getMaxScroll().maxY - (_root.scrollPaddingBottom ?? 0);
     _root.scrollY = Math.min(_root.scrollY, mx);
     _root.scrollPaddingBottom = 0;
@@ -356,6 +359,66 @@ function _renameFile(): void {
 
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
   input.addEventListener('blur', submit);
+}
+
+async function _createFolder(): Promise<void> {
+  if (!_targetPath) return;
+  const source = _targetPath;
+  const isDir = KFMState.files[source]?.isDir ?? false;
+  // 策略 B：长按文件夹 → 在其内部创建 / 长按文件 → 在同级目录创建
+  const parentDir = isDir ? source : source.replace(/\\/g, '/').replace(/\/[^/]+$/, '');
+  dismissFileActionBar();
+  try {
+    const res = await fetch(API + '/files/create-folder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ parentDir }),
+    });
+    const data = await res.json();
+    if (!data.success || !data.path) return;
+    loadFileTree(KFMState.currentRoot);
+    requestAnimationFrame(() => {
+      for (const r of L._rowIndex) {
+        const d = getFileRowData(r.data);
+        if (d?.path === data.path) {
+          moveCursorTo(r);
+          _startRename(data.path);
+          return;
+        }
+      }
+      // fallback：树重建后没找到行也直接开 rename
+      _startRename(data.path);
+    });
+  } catch { /* swallow */ }
+}
+
+async function _createFile(): Promise<void> {
+  if (!_targetPath) return;
+  const source = _targetPath;
+  const isDir = KFMState.files[source]?.isDir ?? false;
+  const parentDir = isDir ? source : source.replace(/\\/g, '/').replace(/\/[^/]+$/, '');
+  dismissFileActionBar();
+  try {
+    const res = await fetch(API + '/files/create-file', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ parentDir }),
+    });
+    const data = await res.json();
+    if (!data.success || !data.path) return;
+    loadFileTree(KFMState.currentRoot);
+    requestAnimationFrame(() => {
+      for (const r of L._rowIndex) {
+        const d = getFileRowData(r.data);
+        if (d?.path === data.path) {
+          moveCursorTo(r);
+          _startRename(data.path);
+          return;
+        }
+      }
+      _startRename(data.path);
+    });
+  } catch { /* swallow */ }
 }
 
 async function _deleteFile(): Promise<void> {

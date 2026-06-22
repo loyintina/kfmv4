@@ -178,6 +178,38 @@ function setupApiRoutes(router: express.Router) {
     } catch (e: any) { res.json({ error: e.message }); }
   });
 
+  router.post('/files/create-folder', (req: express.Request, res: express.Response) => {
+    try {
+      const parentDir = sanitizePath(req.body.parentDir);
+      if (!parentDir) { res.json({ error: '路径不合法' }); return; }
+      if (!fs.existsSync(parentDir) || !fs.statSync(parentDir).isDirectory()) {
+        res.json({ error: '父目录不存在' }); return;
+      }
+      let name = '\u65B0\u5EFA\u6587\u4EF6\u5939';
+      let dest = path.join(parentDir, name);
+      let seq = 2;
+      while (fs.existsSync(dest)) { dest = path.join(parentDir, name + ' ' + seq); seq++; }
+      fs.mkdirSync(dest);
+      res.json({ success: true, path: dest });
+    } catch (e: any) { res.json({ error: e.message }); }
+  });
+
+  router.post('/files/create-file', (req: express.Request, res: express.Response) => {
+    try {
+      const parentDir = sanitizePath(req.body.parentDir);
+      if (!parentDir) { res.json({ error: '路径不合法' }); return; }
+      if (!fs.existsSync(parentDir) || !fs.statSync(parentDir).isDirectory()) {
+        res.json({ error: '父目录不存在' }); return; }
+      let base = '\u65B0\u5EFA\u6587\u4EF6';
+      let name = base + '.md';
+      let dest = path.join(parentDir, name);
+      let seq = 2;
+      while (fs.existsSync(dest)) { name = base + ' ' + seq + '.md'; dest = path.join(parentDir, name); seq++; }
+      fs.writeFileSync(dest, '');
+      res.json({ success: true, path: dest });
+    } catch (e: any) { res.json({ error: e.message }); }
+  });
+
   router.get('/system/info', (_req: express.Request, res: express.Response) => {
     res.json({ user: process.env.USER || 'root', home: ROOT_DIR, cwd: process.cwd() });
   });
