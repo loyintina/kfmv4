@@ -1,7 +1,8 @@
 ---
-status: draft
-version: v0.1
-last_updated: 2026-06-18
+status: superseded
+superseded_by: src/client/modules/file-action-bar.ts
+archived_at: 2026-06-22
+version: v1.0
 ---
 
 # 卡片工作台 Phase 7 — 长按抽屉栏

@@ -41,8 +41,7 @@ docs/
 ├── KFM_V4_INVARIANTS.md     # 修改约束协议：心法原则+自查清单（改代码前必读）
 ├── design/                  # 设计中（待实现的设计文档）
 │   ├── VISION_AND_ROADMAP.md    # 远景：核心理念 + 演进路线
-│   ├── WORKBENCH_SPEC.md        # 卡片工作台（购物车+顶栏+光标+编辑态）
-│   └── WORKBENCH_PHASE7.md      # Phase 7：长按抽屉栏（设计中）
+│   └── WORKBENCH_SPEC.md        # 卡片工作台（唯一 active 设计提案）
 └── archive/                 # 历史归档
     ├── README.md            # 子目录导览
     ├── handoffs/            # 版本交接记录
