@@ -328,6 +328,41 @@ export function setupCollapseOverlays(container: Box, fullH: number, siblingClon
   return { containerOverlay: containerOv, rowOverlays, siblingOverlays, hiddenContainer: container, hiddenSiblings, hiddenChildren };
 }
 
+// ========== 祖先级联 overlay ==========
+
+export interface AncestorSiblingOverlay {
+  overlay: Box;
+  original: Box;
+  targetY: number;
+}
+
+/** 沿祖先 expanded-* 链向上，为每层祖先后方兄弟创建 overlay。用于 collapse 时的级联偏移。 */
+export function setupAncestorSiblingOverlays(
+  container: Box,
+  fullH: number,
+): AncestorSiblingOverlay[] {
+  const result: AncestorSiblingOverlay[] = [];
+  let ancestor: Box | null = container.parent;
+  while (ancestor) {
+    if (!ancestor.id?.startsWith('expanded-')) break;
+    const siblings = collectSiblingsAfter(ancestor);
+    for (const sib of siblings) {
+      const sibOv = createVisualClone(sib, {
+        id: `ov-${sib.id || 'anc-sib'}`,
+        y: sib.y,
+        opacity: 1,
+        zIndex: OVERLAY_Z,
+      }, true);
+      _addOverlay(sibOv);
+      (sibOv as Box & OverlayMeta)._targetY = sib.y - fullH;
+      sib.visible = false;
+      result.push({ overlay: sibOv, original: sib, targetY: sib.y - fullH });
+    }
+    ancestor = ancestor.parent;
+  }
+  return result;
+}
+
 // ========== 子容器展开辅助 ==========
 
 export interface FlatSubTarget {

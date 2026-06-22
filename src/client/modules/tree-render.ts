@@ -26,10 +26,10 @@ import { wsChannel } from './ws-channel.js';
 import { Registry } from './ui-registry.js';
 import { currentTheme as theme } from './theme.js';
 import {
-  type OverlayMeta, type OverlayPack, type FlatSubTarget,
+  type OverlayMeta, type OverlayPack, type FlatSubTarget, type AncestorSiblingOverlay,
   removeAllOverlays, createCharLayer, collectSiblingsAfter,
   buildAndSetOverlayTree, createVisualClone,
-  setupExpandOverlays, setupCollapseOverlays,
+  setupExpandOverlays, setupCollapseOverlays, setupAncestorSiblingOverlays,
   flattenExpandTree, ensureMetaFromExpandedState,
   activeOverlayCount,
 } from './tree-overlay.js';
@@ -755,6 +755,13 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
   // 构建独立动画树（折叠）
   const overlayRoot = buildAndSetOverlayTree(pack, subTargets, subPacks, root);
 
+  // 祖先级联兄弟 overlay（叔叔辈）：沿 expanded-* 链向上，每层后方兄弟上移
+  const ancestorSibPacks = setupAncestorSiblingOverlays(container, fullH);
+  for (const ap of ancestorSibPacks) {
+    ap.overlay.parent = overlayRoot;
+    overlayRoot.addChild(ap.overlay);
+  }
+
   // 字符雨层：与容���Ov平级，不受 overflow:hidden 裁剪
   const charLayer = createCharLayer(pack.containerOverlay.x, pack.containerOverlay.y, overlayRoot);
 
@@ -796,6 +803,12 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
   for (const sibOv of pack.siblingOverlays) {
     ts.to(sibOv, {
       y: (sibOv as Box & OverlayMeta)._targetY!,
+      duration: 0.05, ease: 'power2.in',
+    }, topBoxDelay);
+  }
+  for (const ap of ancestorSibPacks) {
+    ts.to(ap.overlay, {
+      y: ap.targetY,
       duration: 0.05, ease: 'power2.in',
     }, topBoxDelay);
   }
