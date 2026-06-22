@@ -29,7 +29,7 @@ import {
   type OverlayMeta, type OverlayPack, type FlatSubTarget,
   removeAllOverlays, createCharLayer, collectSiblingsAfter,
   buildAndSetOverlayTree, createVisualClone,
-  setupExpandOverlays, setupCollapseOverlays, collectAncestorSiblings,
+  setupExpandOverlays, setupCollapseOverlays, collectAncestorSiblings, collectAncestorContainers,
   flattenExpandTree, ensureMetaFromExpandedState,
   activeOverlayCount,
 } from './tree-overlay.js';
@@ -758,6 +758,9 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
   // 祖先级联偏移（叔叔辈）：沿 expanded-* 链向上，GSAP 直接动画主树原件
   const ancestorSiblings = collectAncestorSiblings(container, fullH);
 
+  // 祖先容器盒子收缩（父容器的渐变边框/背景跟随内容同步缩小）
+  const ancestorContainers = collectAncestorContainers(container, fullH);
+
   // 字符雨层：与容���Ov平级，不受 overflow:hidden 裁剪
   const charLayer = createCharLayer(pack.containerOverlay.x, pack.containerOverlay.y, overlayRoot);
 
@@ -805,6 +808,12 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
   for (const as of ancestorSiblings) {
     ts.to(as.original, {
       y: as.targetY,
+      duration: 0.05, ease: 'power2.in',
+    }, topBoxDelay);
+  }
+  for (const ac of ancestorContainers) {
+    ts.to(ac.original, {
+      height: ac.targetHeight,
       duration: 0.05, ease: 'power2.in',
     }, topBoxDelay);
   }

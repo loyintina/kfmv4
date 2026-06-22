@@ -366,13 +366,13 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `theme.ts` | 236 | 7 | ✅ 独立条目 | 主题系统（颜色唯一来源） |
 | `tree-loader.ts` | 187 | 2 | ✅ 分组表 | 数据加载层（按需加载展开路径） |
 | `tree-model.ts` | 190 | 2 | ✅ 分组表 | 绝对深度布局模型 |
-| `tree-overlay.ts` | 398 | 1 | ✅ 分组表 | Overlay 双树构建系统（从 tree-render 拆分） |
-| `tree-render.ts` | 978 | 3 | ✅ 核心条目 | 文件树 Canvas 渲染（编排层） |
+| `tree-overlay.ts` | 413 | 1 | ✅ 分组表 | Overlay 双树构建系统（从 tree-render 拆分） |
+| `tree-render.ts` | 987 | 3 | ✅ 核心条目 | 文件树 Canvas 渲染（编排层） |
 | `tree-swipe.ts` | 630 | 1 | ✅ 分组表 | 文件行右滑 → 卡片堆（从 tree-render 拆分，v6.8.0 拆分为 color-utils + mode-system） |
 | `ui-registry.ts` | 333 | 9 | ✅ 独立条目 | UI 元素注册表 |
 | `ui.ts` | 70 | 10 | ✅ 提及 | UI 初始化编排 |
 | `ws-channel.ts` | 318 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
-| **合计** | **8953** | | | |
+| **合计** | **8977** | | | |
 
 ### 死代码检查
 

@@ -349,6 +349,21 @@ export function collectAncestorSiblings(
   return result;
 }
 
+/** 沿祖先 expanded-* 链向上，收集每层祖先容器盒子。collapse 时它们需要同步降低 height。 */
+export function collectAncestorContainers(
+  container: Box,
+  fullH: number,
+): { original: Box; targetHeight: number }[] {
+  const result: { original: Box; targetHeight: number }[] = [];
+  let ancestor: Box | null = container.parent;
+  while (ancestor) {
+    if (!ancestor.id?.startsWith('expanded-')) break;
+    result.push({ original: ancestor, targetHeight: ancestor.height - fullH });
+    ancestor = ancestor.parent;
+  }
+  return result;
+}
+
 // ========== 子容器展开辅助 ==========
 
 export interface FlatSubTarget {
