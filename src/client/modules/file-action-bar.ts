@@ -11,8 +11,6 @@ import { gestures } from './gesture-registry.js';
 import { L } from './renderer-lifecycle.js';
 import { API, KFMState, getFileRowData } from './state.js';
 import { loadFileTree } from './tree-loader.js';
-import { moveCursorTo } from './canvas-cursor.js';
-
 // ========== 状态 ==========
 
 let _dimmer: HTMLElement | null = null;
@@ -222,12 +220,6 @@ function _renameFile(): void {
   if (!_targetPath) return;
   const p = _targetPath;
   dismissFileActionBar();
-  _startRename(p);
-}
-
-/** 重命名核心：不负责 dismiss drawer、不负责修改 _targetPath。 */
-function _startRename(targetPath: string): void {
-  const p = targetPath;
 
   const root = L.renderer?.getRoot();
   const canvas = L.renderer?.canvas ?? DOM.treeCanvas;
@@ -365,7 +357,6 @@ async function _createFolder(): Promise<void> {
   if (!_targetPath) return;
   const source = _targetPath;
   const isDir = KFMState.files[source]?.isDir ?? false;
-  // 策略 B：长按文件夹 → 在其内部创建 / 长按文件 → 在同级目录创建
   const parentDir = isDir ? source : source.replace(/\\/g, '/').replace(/\/[^/]+$/, '');
   dismissFileActionBar();
   try {
@@ -375,20 +366,8 @@ async function _createFolder(): Promise<void> {
       body: JSON.stringify({ parentDir }),
     });
     const data = await res.json();
-    if (!data.success || !data.path) return;
-    loadFileTree(KFMState.currentRoot);
-    requestAnimationFrame(() => {
-      for (const r of L._rowIndex) {
-        const d = getFileRowData(r.data);
-        if (d?.path === data.path) {
-          moveCursorTo(r);
-          _startRename(data.path);
-          return;
-        }
-      }
-      // fallback：树重建后没找到行也直接开 rename
-      _startRename(data.path);
-    });
+    if (!data.success) return;
+    await loadFileTree(KFMState.currentRoot);
   } catch { /* swallow */ }
 }
 
@@ -405,19 +384,8 @@ async function _createFile(): Promise<void> {
       body: JSON.stringify({ parentDir }),
     });
     const data = await res.json();
-    if (!data.success || !data.path) return;
-    loadFileTree(KFMState.currentRoot);
-    requestAnimationFrame(() => {
-      for (const r of L._rowIndex) {
-        const d = getFileRowData(r.data);
-        if (d?.path === data.path) {
-          moveCursorTo(r);
-          _startRename(data.path);
-          return;
-        }
-      }
-      _startRename(data.path);
-    });
+    if (!data.success) return;
+    await loadFileTree(KFMState.currentRoot);
   } catch { /* swallow */ }
 }
 
