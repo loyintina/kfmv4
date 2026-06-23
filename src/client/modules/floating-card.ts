@@ -34,8 +34,8 @@ const COMPACT_W = 155;
 const COMPACT_H = 68;
 
 // ========== 编辑模式最小尺寸 ==========
-const FLOATING_CARD_W_MIN = 155;
-const FLOATING_CARD_H_MIN = 68;
+const FLOATING_CARD_W_MIN = 54;
+const FLOATING_CARD_H_MIN = 54;
 
 // ========== 浮卡模板配置 ==========
 
