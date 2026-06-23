@@ -351,7 +351,7 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `color-utils.ts` | 45 | 2 | ✅ 分组表 | 颜色工具函数（从 tree-swipe 拆分） |
 | `debug-assert.ts` | 23 | 1 | ✅ 提及 | 运行时断言 |
 | `dom-refs.ts` | 36 | 9 | ✅ 注册表 | DOM 元素引用 |
-| `floating-card.ts` | 636 | 2 | ✅ 独立条目 | 浮卡系统（核心模块） |
+| `floating-card.ts` | 621 | 2 | ✅ 独立条目 | 浮卡系统（核心模块） |
 | `gesture-registry.ts` | 245 | 6 | ✅ 独立条目 | 手势注册中心 |
 | `gestures.ts` | 69 | 1 | ✅ 提及 | 页面滑动手势配置 |
 | `interaction-constants.ts` | 20 | 2 | ✅ 分组表 | 交互常量共享层（v6.6.0 新增） |
@@ -370,11 +370,11 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `tree-overlay.ts` | 413 | 1 | ✅ 分组表 | Overlay 双树构建系统（从 tree-render 拆分） |
 | `tree-animation.ts` | 73 | 1 | ✅ 分组表 | 文件树插入/移除 GSAP 动画（新建/删除/复制/移动共享） |
 | `tree-render.ts` | 987 | 3 | ✅ 核心条目 | 文件树 Canvas 渲染（编排层） |
-| `tree-swipe.ts` | 660 | 1 | ✅ 分组表 | 文件行右滑 → 卡片堆（从 tree-render 拆分，v6.8.0 拆分为 color-utils + mode-system） |
+| `tree-swipe.ts` | 647 | 1 | ✅ 分组表 | 文件行右滑 → 卡片堆（从 tree-render 拆分，v6.8.0 拆分为 color-utils + mode-system） |
 | `ui-registry.ts` | 333 | 9 | ✅ 独立条目 | UI 元素注册表 |
 | `ui.ts` | 70 | 10 | ✅ 提及 | UI 初始化编排 |
 | `ws-channel.ts` | 318 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
-| **合计** | **9129** | | | |
+| **合计** | **9101** | | | |
 
 ### 死代码检查
 

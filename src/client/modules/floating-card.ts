@@ -163,45 +163,30 @@ function _calcFloatingSafeBounds(): FloatingSafeBounds {
  * 最多尝试 30 次，失败则垂直堆叠在左侧。
  */
 function _scatterPosition(cardIndex: number): { left: number; top: number } {
-  const { safeL, safeT, safeB, stackLeft } = _calcFloatingSafeBounds();
-  const stackL = stackLeft;
-  const stackR = window.innerWidth - COMPACT_W;
-  const stackT = safeT;
-  const stackBot = window.innerHeight - safeB - COMPACT_H;
-  const stackW = stackR - stackL;
+  const { safeL, safeT, safeB } = _calcFloatingSafeBounds();
+  const MIN_GAP = 54;
+  const pad = 16;
+  const topMin = 60;
+  const rightMax = window.innerWidth - COMPACT_W - pad;
+  const bottomMax = window.innerHeight - safeB - COMPACT_H;
 
-  // 纵向堆叠：如果空间不够，依次向下排列
-  const totalCards = _floatingCards.length;
-  const verticalStep = 60;
-  const stackCount = totalCards;
-  const baseL = stackL + (stackW / 2);
-  const baseT = stackT + 20 + stackCount * verticalStep;
-  const fallbackLeft = Math.max(safeL, Math.min(baseL, stackR));
-  const fallbackTop = Math.max(safeT, Math.min(baseT, stackBot));
-
-  // 尝试横向散落在安全区域的左侧区域
-  const spreadL = safeL;
-  const spreadR = stackL - FLOATING_CARD_W;
-  const spreadW = spreadR - spreadL;
-  if (spreadW < 20) {
-    return { left: fallbackLeft, top: fallbackTop };
-  }
+  // 纵向堆叠 fallback
+  const fallbackLeft = safeL;
+  const fallbackTop = safeT + 20 + _floatingCards.length * 60;
 
   for (let attempt = 0; attempt < 30; attempt++) {
-    const l = spreadL + Math.random() * spreadW;
-    const t = safeT + Math.random() * (window.innerHeight - safeB - safeT - COMPACT_H);
-    let overlap = false;
+    const l = pad + Math.random() * Math.max(0, rightMax - pad);
+    const t = topMin + Math.random() * Math.max(0, bottomMax - topMin);
+    let blocked = false;
     for (const c of _floatingCards) {
       const cl = parseFloat(c.el.style.left) || 0;
       const ct = parseFloat(c.el.style.top) || 0;
-      const cw = c.cardWidth;
-      const ch = c.cardHeight;
-      if (l < cl + cw && l + COMPACT_W > cl && t < ct + ch && t + COMPACT_H > ct) {
-        overlap = true;
+      if (Math.abs(l - cl) < MIN_GAP && Math.abs(t - ct) < MIN_GAP) {
+        blocked = true;
         break;
       }
     }
-    if (!overlap) {
+    if (!blocked) {
       return { left: l, top: t };
     }
   }
