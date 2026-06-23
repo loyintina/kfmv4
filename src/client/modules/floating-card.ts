@@ -196,7 +196,7 @@ function _scatterPosition(cardIndex: number): { left: number; top: number } {
       const ct = parseFloat(c.el.style.top) || 0;
       const cw = c.cardWidth;
       const ch = c.cardHeight;
-      if (l < cl + cw && l + COMPACT_W > cl && t < ct + ch && t + COMPACT_H > ct) {
+      if (l < cl + cw && l + 54 > cl && t < ct + ch && t + 54 > ct) {
         overlap = true;
         break;
       }
