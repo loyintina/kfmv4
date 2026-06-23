@@ -21,6 +21,7 @@ import { animateInsertion, animateRemoval } from './tree-animation.js';
 import { rgba, hslToHex, cardAccent, pathBasename } from './color-utils.js';
 import { initModeSystem, ensureBg, removeBg, updateBg, recolorCards, getSelectedMode, getModeTheme, getTriColor, applyModeTheme, updateModeSelection } from './mode-system.js';
 import { gestures } from './gesture-registry.js';
+import { createFileHandler } from './renderers/handler-factory.js';
 
 export function isDimmed(path: string): boolean { return _dimmedPaths.has(path); }
 
@@ -508,6 +509,7 @@ export function deployAllCards(): void {
       color2: el.dataset._accent2 || '#00d4ff',
       name: el.dataset._name || '',
       sourceX: fromX, sourceY: fromY,
+      contentHandler: createFileHandler(el.dataset._path || ''),
     });
 
     el.remove();
