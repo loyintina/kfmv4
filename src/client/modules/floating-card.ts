@@ -151,7 +151,7 @@ interface FloatingSafeBounds {
 
 function _calcFloatingSafeBounds(): FloatingSafeBounds {
   const safeL = MARGIN;
-  const safeB = 56.5; // 屏幕底部留给 AI 输入栏
+  const safeB = 100; // AI 输入栏视觉高度（76px 物理 + backdrop-filter 晕染）
   const safeT = MARGIN;
   const fullR = window.innerWidth;
   const stackLeft = (window.innerWidth * 0.7); // 卡堆左边界
