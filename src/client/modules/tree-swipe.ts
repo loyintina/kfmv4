@@ -498,9 +498,21 @@ export function deployAllCards(): void {
   import('./ui.js').then(m => m.closeSidebar());
   removeBg();
 
+  // 投放区域约束
+  const sw = window.innerWidth;
+  const sh = window.innerHeight;
+  const cw = _CARD_W;
+  const ch = _CARD_H;
+  const pad = 16;
+  const topMin = 60;
+  const leftMax = sw - cw - pad;
+  const topMax = sh - 120 - ch;
+
   cards.forEach(el => {
     const fromX = parseFloat(el.dataset.rx || '0');
     const fromY = parseFloat(el.dataset.topY || '0');
+    const tx = pad + Math.random() * Math.max(0, leftMax - pad);
+    const ty = topMin + Math.random() * Math.max(0, topMax - topMin);
 
     createFloatingCard({
       id: 'temp-' + (el.dataset._name || ''),
@@ -508,6 +520,7 @@ export function deployAllCards(): void {
       color2: el.dataset._accent2 || '#00d4ff',
       name: el.dataset._name || '',
       sourceX: fromX, sourceY: fromY,
+      targetX: tx, targetY: ty,
     });
 
     el.remove();
