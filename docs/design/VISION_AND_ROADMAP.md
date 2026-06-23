@@ -452,6 +452,26 @@ interface AgentConfig {
 
 **结论**：用适配层。Agent 引擎交给成熟方案。
 
+### 5.5 AI 可调用指针
+
+AI 需要一种方式"指给用户看"——不依赖卡片聚焦或状态联动，
+只是一个层面最高的独立视觉元素。
+
+**设计：**
+- 层级：`position: fixed; z-index: 9999; pointer-events: none`——不阻挡任何交互
+- 移动：GSAP `to(pointer, { x, y, duration: 0.35, ease: 'power3.out' })` 平滑过渡
+- 外观：待定（手指 SVG / 圆点+涟漪 / 手绘圈 / pin），可后续切换
+
+**AI 命令协议：**
+
+| 命令 | 参数 | 说明 |
+|------|------|------|
+| `point-to` | `x y` 或 `selector` | 指针移动到屏幕坐标或匹配元素中心 |
+| `hide-pointer` | — | 隐藏指针 |
+| `show-pointer` | — | 显示指针 |
+
+**依赖**：AI 工具管线就位后（ws-channel 命令通道 + 页面布局感知）方可实施。
+
 ---
 
 ## 六、视觉设计
