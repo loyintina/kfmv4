@@ -378,6 +378,61 @@ writeFileSync('src/client/cards/_generated.ts', `...`);
 - 通过 KFMState 的订阅机制？还是通过自定义事件？
 - 每张卡片是否能看到其他卡片的状态？
 
+### 4.6 文件渲染器与双模式（预览/编辑）
+
+**为什么需要双模式**：不同文件类型天然有不同的交互边界——
+
+- 文本/代码：可以"直接编辑"，预览即编辑面
+- Markdown：预览 = 渲染后的 HTML，编辑 = 源码。Obsidian 的双模式是参考
+- 图片/音频/视频：预览 = 查看器，编辑 = ✗（不在此系统职责内）
+- 二进制文档（docx/pptx/pdf）：预览 = 元信息 + 下载链接，编辑 = ✗
+
+将所有文件统一为"预览（只读）+ 编辑（读写）"两层，由渲染器声明自己支持哪些模式。
+
+#### 4.6.1 渲染器接口
+
+```typescript
+interface ContentRenderer {
+  /** 该渲染器支持的模式 */
+  modes: ('preview' | 'edit')[];
+
+  /** 渲染预览（只读） */
+  renderPreview(el: HTMLElement, content: string, metadata: FileMeta): void;
+
+  /** 渲染编辑（读写）。onSave 由调用方注入，调 API 持久化 */
+  renderEditor(el: HTMLElement, content: string, onSave: (s: string) => void): void;
+}
+```
+
+#### 4.6.2 类型路由表
+
+| 类型 | 扩展名 | 支持模式 | 说明 |
+|------|--------|---------|------|
+| text | `.txt` `.log` `.csv` | preview + edit | `<pre>` 纯文本，textarea 编辑 |
+| code | `.ts` `.js` `.py` `.json` `.go` `.rs` `.sh` `.css` `.html` `.yaml` `.xml` ... | preview + edit | monospace `<pre>`，textarea 编辑 |
+| markdown | `.md` | preview + edit | 渲染 HTML 预览 + 源码编辑 |
+| image | `.png` `.jpg` `.jpeg` `.gif` `.svg` `.webp` | preview | `<img>` 标签 |
+| media | `.mp3` `.wav` `.ogg` `.mp4` `.webm` | preview | `<audio>` / `<video>` 原生控件 |
+| binary | 以上未匹配的 | preview | 文件元信息 + 下载链接 |
+
+路由方式：扩展名 → 正则匹配 → 返回对应渲染器工厂函数。
+
+#### 4.6.3 模式切换
+
+浮卡 BR 光球单击循环：
+
+```
+compact → active(preview) → active(edit) → active(preview) → compact
+```
+
+如果当前类型不支持编辑模式，则跳过 edit 态，直接 compact ↔ preview。
+
+#### 4.6.4 未来：反向新建文件
+
+从卡片堆召唤空白编辑器 → `ContentRenderer` 的 edit 模式带空内容 → 用户编辑 → "保存到文件树" → 调用 `POST /api/files/create-file` + `write` → 树刷新。
+
+复用同一套渲染器，只初始内容为空、保存路径由用户指定。不增加新渲染器类型。
+
 ---
 
 ## 五、Agent 适配层
