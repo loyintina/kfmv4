@@ -92,6 +92,7 @@ export interface ThemeConfig {
     cardBorderRadius: string;
     cardGap: number;
     cardHeight: number;
+    cardWidth: number;
   };
 
   /** 浮卡四角光球装饰 */
@@ -199,6 +200,7 @@ export const nebula: ThemeConfig = {
     cardBorderRadius: '12px',
     cardGap: 26,
     cardHeight: 68,
+    cardWidth: 155,
   },
 
   /** 浮卡四角光球装饰 */

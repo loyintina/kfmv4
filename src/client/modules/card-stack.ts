@@ -5,7 +5,6 @@ import { Registry } from './ui-registry.js';
 import { wsChannel } from './ws-channel.js';
 import { currentTheme as theme } from './theme.js';
 import { createFloatingCard } from './floating-card.js';
-import { FLOATING_CARD_W } from './interaction-constants.js';
 import { log } from './logger.js';
 
 /**
@@ -222,7 +221,7 @@ function createCard(index: number): HTMLElement {
     'position:fixed',
     'right:0px',
     'top:' + topPx + 'px',
-    'width:' + FLOATING_CARD_W + 'px',
+    'width:' + theme.stack.cardWidth + 'px',
     'height:' + CARD_HEIGHT + 'px',
     'border-radius:12px',
     'padding:1px',

@@ -345,7 +345,7 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `canvas-cursor.ts` | 443 | 3 | ✅ 提及 | Canvas 盒子光标系统 |
 | `canvas-scroll.ts` | 344 | 2 | ✅ 提及 | Canvas 盒子滚动系统 |
 | `canvas-utils.ts` | 60 | 4 | ✅ 依赖图 | Canvas 通用工具函数 |
-| `card-stack.ts` | 518 | 4 | ✅ 独立条目 | 堆叠卡片面板 |
+| `card-stack.ts` | 517 | 4 | ✅ 独立条目 | 堆叠卡片面板 |
 | `char-rain.ts` | 305 | 1 | ✅ 分组表 | 字符散落/回收动画 |
 | `click-queue.ts` | 38 | 1 | ✅ 分组表 | 点击事件队列 |
 | `color-utils.ts` | 45 | 2 | ✅ 分组表 | 颜色工具函数（从 tree-swipe 拆分） |
@@ -364,7 +364,7 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `root-picker.ts` | 433 | 2 | ✅ 独立条目 | 文件树根目录切换器 |
 | `state.ts` | 256 | 10 | ✅ 注册表 | 全局状态层 KFMState |
 | `style-registry.ts` | 205 | 4 | ✅ 独立条目 | 文件树样式唯一来源 |
-| `theme.ts` | 236 | 7 | ✅ 独立条目 | 主题系统（颜色唯一来源） |
+| `theme.ts` | 238 | 7 | ✅ 独立条目 | 主题系统（颜色唯一来源） |
 | `tree-loader.ts` | 187 | 2 | ✅ 分组表 | 数据加载层（按需加载展开路径） |
 | `tree-model.ts` | 190 | 2 | ✅ 分组表 | 绝对深度布局模型 |
 | `tree-overlay.ts` | 413 | 1 | ✅ 分组表 | Overlay 双树构建系统（从 tree-render 拆分） |
@@ -374,7 +374,7 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `ui-registry.ts` | 333 | 9 | ✅ 独立条目 | UI 元素注册表 |
 | `ui.ts` | 70 | 10 | ✅ 提及 | UI 初始化编排 |
 | `ws-channel.ts` | 318 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
-| **合计** | **9133** | | | |
+| **合计** | **9134** | | | |
 
 ### 死代码检查
 

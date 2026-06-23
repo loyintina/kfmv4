@@ -15,6 +15,6 @@ export const LONG_PRESS_MS = 600;
 export const DRAG_THRESHOLD = 5;
 
 /** 浮卡展开态宽度 */
-export const FLOATING_CARD_W = 155;
-/** 浮卡展开态高度 */
-export const FLOATING_CARD_H = 68;
+export const FLOATING_CARD_W = 240;
+/** 浮卡展开态高度 (5:6 比例) */
+export const FLOATING_CARD_H = 288;

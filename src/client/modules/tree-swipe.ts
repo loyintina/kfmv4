@@ -21,7 +21,6 @@ import { animateInsertion, animateRemoval } from './tree-animation.js';
 import { rgba, hslToHex, cardAccent, pathBasename } from './color-utils.js';
 import { initModeSystem, ensureBg, removeBg, updateBg, recolorCards, getSelectedMode, getModeTheme, getTriColor, applyModeTheme, updateModeSelection } from './mode-system.js';
 import { gestures } from './gesture-registry.js';
-import { FLOATING_CARD_W } from './interaction-constants.js';
 
 export function isDimmed(path: string): boolean { return _dimmedPaths.has(path); }
 
@@ -36,6 +35,7 @@ let _lifoQueue: HTMLElement[] = [];  // 入卡顺序，撤卡时从尾部取（L
 let _dimmedPaths = new Set<string>();
 let _dimmedBoxes = new Map<string, Box>();
 const _CARD_H = theme.stack.cardHeight;
+const _CARD_W = theme.stack.cardWidth;
 const _CARD_GAP = theme.stack.cardGap;
 let _lastGap = _CARD_GAP;
 
@@ -123,7 +123,7 @@ export function handleRowSwipe(): void {
   const shadow = '0 2px 4px rgba(0,0,0,0.3),0 8px 16px rgba(0,0,0,0.25),0 16px 32px rgba(0,0,0,0.2),-4px 4px 8px rgba(0,0,0,0.15)';
   card.style.cssText = [
     'position:fixed', 'left:0', 'top:0', 'will-change:transform',
-    'width:' + FLOATING_CARD_W + 'px', 'height:' + _CARD_H + 'px',
+    'width:' + _CARD_W + 'px', 'height:' + _CARD_H + 'px',
     'border-radius:12px', 'padding:1px', 'padding-left:3px',
     'background:' + grad,
     'box-shadow:' + shadow,
@@ -501,7 +501,7 @@ export function deployAllCards(): void {
   // 投放区域约束
   const sw = window.innerWidth;
   const sh = window.innerHeight;
-  const cw = FLOATING_CARD_W;
+  const cw = _CARD_W;
   const ch = _CARD_H;
   const pad = 16;
   const topMin = 60;
