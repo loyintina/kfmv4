@@ -80,9 +80,11 @@ export function createFileHandler(filePath: string): { activate: (el: HTMLElemen
 
   return {
     async activate(contentEl: HTMLElement) {
-      contentEl.style.flexDirection = 'column';
-      contentEl.style.overflowY = 'hidden';
       contentEl.innerHTML = '';
+
+      // wrapper：独立 flex column，不受浮卡 contentEl 的 cssText 覆盖
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'display:flex;flex-direction:column;height:100%';
 
       // 标题栏
       _header = document.createElement('div');
@@ -130,9 +132,10 @@ export function createFileHandler(filePath: string): { activate: (el: HTMLElemen
       _body = document.createElement('div');
       _body.style.cssText = 'flex:1;overflow-x:hidden;overflow-y:auto';
 
-      contentEl.appendChild(_header);
-      contentEl.appendChild(line);
-      contentEl.appendChild(_body);
+      wrap.appendChild(_header);
+      wrap.appendChild(line);
+      wrap.appendChild(_body);
+      contentEl.appendChild(wrap);
 
       // 读文件内容
       try {
