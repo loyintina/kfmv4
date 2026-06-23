@@ -1,5 +1,3 @@
-const STYLE = 'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;color:rgba(224,224,240,0.7)';
-
 function _formatSize(bytes: number | undefined): string {
   if (!bytes) return '';
   if (bytes < 1024) return bytes + ' B';
@@ -8,12 +6,30 @@ function _formatSize(bytes: number | undefined): string {
 }
 
 export function renderBinaryInfo(el: HTMLElement, path: string, size?: number): void {
-  el.style.cssText = STYLE;
+  el.style.flexDirection = 'column';
+  el.innerHTML = '';
+
   const name = path.replace(/\\/g, '/').split('/').pop() || path;
-  const sizeStr = size ? _formatSize(size) : '';
-  el.innerHTML =
+
+  // 标题
+  const header = document.createElement('div');
+  header.style.cssText = 'padding:6px 0 4px;font-size:11px;font-weight:600;color:rgba(0,212,255,0.7);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+  header.textContent = name;
+
+  // 分隔线
+  const line = document.createElement('div');
+  line.style.cssText = 'height:1px;flex-shrink:0;background:linear-gradient(90deg,rgba(0,212,255,0.4),rgba(124,58,237,0.3))';
+
+  // 正文区（居中）
+  const body = document.createElement('div');
+  body.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;color:rgba(224,224,240,0.7)';
+  body.innerHTML =
     '<div style="font-size:48px;opacity:0.4">\uD83D\uDCC4</div>' +
     '<div style="font-size:13px;text-align:center;word-break:break-all">' + name + '</div>' +
-    (sizeStr ? '<div style="font-size:11px;opacity:0.5">' + sizeStr + '</div>' : '') +
+    (size ? '<div style="font-size:11px;opacity:0.5">' + _formatSize(size) + '</div>' : '') +
     '<div style="font-size:11px;opacity:0.35">\u4E0D\u652F\u6301\u9884\u89C8</div>';
+
+  el.appendChild(header);
+  el.appendChild(line);
+  el.appendChild(body);
 }

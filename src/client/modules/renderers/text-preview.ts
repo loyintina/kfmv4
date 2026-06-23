@@ -1,6 +1,23 @@
-const STYLE = 'font:11px monospace;white-space:pre-wrap;word-break:break-word;padding:8px;overflow-y:auto;color:#e0e0e0';
+export function renderTextPreview(el: HTMLElement, content: string, fileName: string): void {
+  el.style.flexDirection = 'column';
+  el.style.overflowY = 'hidden';
+  el.innerHTML = '';
 
-export function renderTextPreview(el: HTMLElement, content: string): void {
-  el.style.cssText = STYLE;
-  el.textContent = content || '\uFF08\u7A7A\u6587\u4EF6\uFF09';
+  // 标题
+  const header = document.createElement('div');
+  header.style.cssText = 'padding:6px 0 4px;font-size:11px;font-weight:600;color:rgba(0,212,255,0.7);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+  header.textContent = fileName;
+
+  // 分隔线
+  const line = document.createElement('div');
+  line.style.cssText = 'height:1px;flex-shrink:0;background:linear-gradient(90deg,rgba(0,212,255,0.4),rgba(124,58,237,0.3))';
+
+  // 正文区
+  const body = document.createElement('div');
+  body.style.cssText = 'flex:1;overflow-x:hidden;overflow-y:auto;padding:6px 0 0;font:11px monospace;white-space:pre-wrap;word-break:break-word;color:#e0e0e0';
+  body.textContent = content || '\uFF08\u7A7A\u6587\u4EF6\uFF09';
+
+  el.appendChild(header);
+  el.appendChild(line);
+  el.appendChild(body);
 }
