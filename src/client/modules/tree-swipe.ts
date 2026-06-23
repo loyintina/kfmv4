@@ -17,6 +17,7 @@ import { DOM } from './dom-refs.js';
 import { Box } from '../engine/v2/box.js';
 import { createFloatingCard } from './floating-card.js';
 import { loadFileTree } from './tree-loader.js';
+import { animateInsertion, animateRemoval } from './tree-animation.js';
 import { rgba, hslToHex, cardAccent, pathBasename } from './color-utils.js';
 import { initModeSystem, ensureBg, removeBg, updateBg, recolorCards, getSelectedMode, getModeTheme, getTriColor, applyModeTheme, updateModeSelection } from './mode-system.js';
 import { gestures } from './gesture-registry.js';
@@ -339,20 +340,37 @@ async function _executeMode(): Promise<void> {
 
   const dest = _getCursorDir();
   const base = (s: string) => s.substring(s.lastIndexOf('/') + 1);
+  const mode = getSelectedMode();
 
+  // 1. 移除动画（delete / move source）—— 与 API 并行
+  if (mode === 'delete' || mode === 'move') {
+    for (const src of paths) {
+      for (const r of L._rowIndex) {
+        const d = getFileRowData(r.data);
+        if (d?.path === src) { animateRemoval(r, r.height); break; }
+      }
+    }
+  }
+
+  // 2. API 执行 + 记录插入目标
+  const insertedPaths: string[] = [];
   for (const src of paths) {
     const destPath = dest + '/' + base(src!);
-    if (getSelectedMode() === 'copy') {
-      await fetch(API + '/files/copy', {
+    if (mode === 'copy') {
+      const res = await fetch(API + '/files/copy', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ source: src, dest: destPath }),
       });
-    } else if (getSelectedMode() === 'move') {
-      await fetch(API + '/files/move', {
+      const data = await res.json();
+      if (data.success && data.dest) insertedPaths.push(data.dest);
+    } else if (mode === 'move') {
+      const res = await fetch(API + '/files/move', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ source: src, dest: destPath }),
       });
-    } else if (getSelectedMode() === 'delete') {
+      const data = await res.json();
+      if (data.success && data.dest) insertedPaths.push(data.dest);
+    } else if (mode === 'delete') {
       await fetch(API + '/files/delete', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: src }),
@@ -370,6 +388,18 @@ async function _executeMode(): Promise<void> {
   _resetFocusToNewest = false;
   removeBg();
   await loadFileTree(KFMState.currentRoot);
+
+  // 3. 插入动画（copy / move target）
+  if (insertedPaths.length > 0) {
+    requestAnimationFrame(() => {
+      for (const ip of insertedPaths) {
+        for (const r of L._rowIndex) {
+          const d = getFileRowData(r.data);
+          if (d?.path === ip) { animateInsertion(r, r.height); break; }
+        }
+      }
+    });
+  }
 }
 
 async function _animateExecute(): Promise<void> {

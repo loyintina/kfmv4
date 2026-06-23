@@ -11,6 +11,7 @@ import { gestures } from './gesture-registry.js';
 import { L } from './renderer-lifecycle.js';
 import { API, KFMState, getFileRowData } from './state.js';
 import { loadFileTree } from './tree-loader.js';
+import { animateInsertion, animateRemoval } from './tree-animation.js';
 // ========== 状态 ==========
 
 let _dimmer: HTMLElement | null = null;
@@ -366,8 +367,15 @@ async function _createFolder(): Promise<void> {
       body: JSON.stringify({ parentDir }),
     });
     const data = await res.json();
-    if (!data.success) return;
+    if (!data.success || !data.path) return;
+    const createdPath: string = data.path;
     await loadFileTree(KFMState.currentRoot);
+    requestAnimationFrame(() => {
+      for (const r of L._rowIndex) {
+        const d = getFileRowData(r.data);
+        if (d?.path === createdPath) { animateInsertion(r, r.height); return; }
+      }
+    });
   } catch { /* swallow */ }
 }
 
@@ -384,8 +392,15 @@ async function _createFile(): Promise<void> {
       body: JSON.stringify({ parentDir }),
     });
     const data = await res.json();
-    if (!data.success) return;
+    if (!data.success || !data.path) return;
+    const createdPath: string = data.path;
     await loadFileTree(KFMState.currentRoot);
+    requestAnimationFrame(() => {
+      for (const r of L._rowIndex) {
+        const d = getFileRowData(r.data);
+        if (d?.path === createdPath) { animateInsertion(r, r.height); return; }
+      }
+    });
   } catch { /* swallow */ }
 }
 
@@ -394,11 +409,18 @@ async function _deleteFile(): Promise<void> {
   const p = _targetPath;
   dismissFileActionBar();
   try {
+    // 先找行，播放移除动画
+    let rowH = 0;
+    for (const r of L._rowIndex) {
+      const d = getFileRowData(r.data);
+      if (d?.path === p) { rowH = r.height; animateRemoval(r, rowH); break; }
+    }
+    // API 和动画并行
     await fetch(API + '/files/delete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ path: p }),
     });
-    loadFileTree(KFMState.currentRoot);
+    await loadFileTree(KFMState.currentRoot);
   } catch { /* swallow */ }
 }

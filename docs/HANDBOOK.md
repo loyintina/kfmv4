@@ -356,7 +356,7 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `gestures.ts` | 69 | 1 | ✅ 提及 | 页面滑动手势配置 |
 | `interaction-constants.ts` | 20 | 2 | ✅ 分组表 | 交互常量共享层（v6.6.0 新增） |
 | `drag-handler.ts` | 130 | 2 | ✅ 分组表 | 共享拖动状态机（orb + floating-card 去重） |
-| `file-action-bar.ts` | 404 | 2 | ✅ 分组表 | 文件行长按 → 底部抽屉操作栏 |
+| `file-action-bar.ts` | 426 | 2 | ✅ 分组表 | 文件行长按 → 底部抽屉操作栏 |
 | `logger.ts` | 57 | 3 | ✅ 分组表 | KFM 日志系统 |
 | `mode-system.ts` | 369 | 1 | ✅ 分组表 | 模式按钮系统（从 tree-swipe 拆分，v6.8.0 新增） |
 | `orb.ts` | 490 | 1 | ✅ 独立条目 | 光球 + AI 对话面板 |
@@ -368,16 +368,17 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `tree-loader.ts` | 187 | 2 | ✅ 分组表 | 数据加载层（按需加载展开路径） |
 | `tree-model.ts` | 190 | 2 | ✅ 分组表 | 绝对深度布局模型 |
 | `tree-overlay.ts` | 413 | 1 | ✅ 分组表 | Overlay 双树构建系统（从 tree-render 拆分） |
+| `tree-animation.ts` | 73 | 1 | ✅ 分组表 | 文件树插入/移除 GSAP 动画（新建/删除/复制/移动共享） |
 | `tree-render.ts` | 987 | 3 | ✅ 核心条目 | 文件树 Canvas 渲染（编排层） |
-| `tree-swipe.ts` | 630 | 1 | ✅ 分组表 | 文件行右滑 → 卡片堆（从 tree-render 拆分，v6.8.0 拆分为 color-utils + mode-system） |
+| `tree-swipe.ts` | 660 | 1 | ✅ 分组表 | 文件行右滑 → 卡片堆（从 tree-render 拆分，v6.8.0 拆分为 color-utils + mode-system） |
 | `ui-registry.ts` | 333 | 9 | ✅ 独立条目 | UI 元素注册表 |
 | `ui.ts` | 70 | 10 | ✅ 提及 | UI 初始化编排 |
 | `ws-channel.ts` | 318 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
-| **合计** | **9008** | | | |
+| **合计** | **9133** | | | |
 
 ### 死代码检查
 
-**结论：无死代码。** 所有 33 个模块都被至少 1 个文件导入。`src/cards/` 目录已彻底删除。实际使用的 logger 在 `src/client/modules/logger.ts`。
+**结论：无死代码。** 所有 34 个模块都被至少 1 个文件导入。`src/cards/` 目录已彻底删除。实际使用的 logger 在 `src/client/modules/logger.ts`。
 
 ### 引擎层清单（14 文件）
 
