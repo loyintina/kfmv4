@@ -38,6 +38,8 @@ export class Renderer {
   private _root: Box | null;
   /** 动画树根（可选，动画期间在主树上方独立渲染，互不影响） */
   private _overlayRoot: Box | null;
+  /** 光标 Box 引用（由应用层注入，避免每帧全树扫描 _findCursorBox） */
+  cursorBox: Box | null = null;
   private _rafId: number;
   private _lastTime: number;
   private _frameCount: number;
@@ -154,6 +156,10 @@ export class Renderer {
     this.ctx.fillStyle = this.backgroundColor;
     this.ctx.fillRect(0, 0, this.width, this.height);
 
+    // 动画 tick：整棵树一帧只 tick 一次——不在 _tickAndRender 内逐 Box 重复递归
+    if (this._root) this._root.tickAnimations(now);
+    if (this._overlayRoot) this._overlayRoot.tickAnimations(now);
+
     // 渲染主树
     if (this._root) {
       this._tickAndRender(this._root, now, 1);
@@ -175,7 +181,7 @@ export class Renderer {
 
   private _renderCursorPost(root: Box | null, now: number): void {
     if (!root) return;
-    const cursorBox = this._findCursorBox(root);
+    const cursorBox = this.cursorBox || this._findCursorBox(root);
     if (cursorBox) {
       const b = cursorBox.getBounds();
       // 减去 scrollY：getBounds() 返回 tree 坐标系，但 canvas context 无 scroll 偏移
@@ -196,9 +202,6 @@ export class Renderer {
   }
 
   private _tickAndRender(box: Box, now: number, parentOpacity: number, clipViewport?: { y1: number; y2: number }): void {
-    // 动画 tick
-    box.tickAnimations(now);
-
     if (!box.visible) return;
 
     const opacity = box.opacity * parentOpacity;

@@ -282,6 +282,7 @@ export function onSidebarClose(): void {
   }
   clickQueue.clear();
   L.cursorBox = null;
+  if (L.renderer) L.renderer.cursorBox = null;
   L.cursorRowId = null;
   L._rowIndex = [];
   L.renderer?.stop();
@@ -884,6 +885,7 @@ function rebuildTree(): void {
 
   // 重置光标实例（旧 root 销毁后 L.cursorBox ��向的 Box 已无���）
   L.cursorBox = null;
+  if (L.renderer) L.renderer.cursorBox = null;
   L.cursorRowId = null;
 
   const canvas = DOM.treeCanvas;
@@ -919,6 +921,7 @@ function rebuildTree(): void {
   // 重新创建光标
   if (newRoot) {
     ensureCursorBox(newRoot, canvasH);
+    if (L.renderer) L.renderer.cursorBox = L.cursorBox;
 
     if (prevCursorRowId) {
       // 尝试恢复光标到之前的行
