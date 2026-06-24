@@ -56,38 +56,47 @@ function _registerCardHandler(id: string, handler: CardContentHandler): void {
 _registerCardHandler('debug', {
   activate(contentEl) {
     contentEl.innerHTML = '';
-    contentEl.style.cssText = [
-      'position:absolute', 'inset:0',
-      'display:flex', 'flex-direction:column',
-      'padding:4px', 'box-sizing:border-box',
-    ].join(';');
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;flex-direction:column;height:100%';
 
-    const logArea = document.createElement('div');
-    logArea.style.cssText = [
-      'flex:1', 'overflow-y:auto',
-      'font-family:monospace', 'font-size:10px',
-      'color:rgba(224,224,224,0.8)',
-      'white-space:pre-wrap', 'word-break:break-all',
-      'padding:4px', 'background:rgba(0,0,0,0.2)',
-      'border-radius:6px', 'margin-bottom:4px',
-    ].join(';');
-    contentEl.appendChild(logArea);
+    // 标题栏
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:6px 0 4px;flex-shrink:0';
 
-    const btnBar = document.createElement('div');
-    btnBar.style.cssText = 'display:flex;gap:6px;justify-content:flex-end';
-    contentEl.appendChild(btnBar);
+    const title = document.createElement('div');
+    title.style.cssText = 'font-size:11px;font-weight:600;color:rgba(0,212,255,0.7)';
+    title.textContent = '\u8C03\u8BD5\u65E5\u5FD7';
+    header.appendChild(title);
 
-    const clearBtn = document.createElement('button');
-    clearBtn.textContent = '\u6E05\u7A7A';
-    clearBtn.style.cssText = 'padding:2px 10px;font-size:10px;border:1px solid rgba(255,255,255,0.15);border-radius:4px;background:rgba(255,255,255,0.05);color:rgba(224,224,224,0.8);cursor:pointer';
-    clearBtn.addEventListener('click', clearLogs);
-    btnBar.appendChild(clearBtn);
+    const btnWrap = document.createElement('div');
+    btnWrap.style.cssText = 'display:flex;gap:6px;flex-shrink:0;margin-left:8px';
 
     const copyBtn = document.createElement('button');
     copyBtn.textContent = '\u590D\u5236';
-    copyBtn.style.cssText = 'padding:2px 10px;font-size:10px;border:1px solid rgba(255,255,255,0.15);border-radius:4px;background:rgba(255,255,255,0.05);color:rgba(224,224,224,0.8);cursor:pointer';
+    copyBtn.style.cssText = 'font-size:10px;padding:2px 8px;border-radius:6px;cursor:pointer;border:1px solid rgba(0,212,255,0.2);background:transparent;color:rgba(0,212,255,0.55)';
     copyBtn.addEventListener('click', copyLogs);
-    btnBar.appendChild(copyBtn);
+    btnWrap.appendChild(copyBtn);
+
+    const clearBtn = document.createElement('button');
+    clearBtn.textContent = '\u6E05\u7A7A';
+    clearBtn.style.cssText = 'font-size:10px;padding:2px 8px;border-radius:6px;cursor:pointer;border:1px solid rgba(0,212,255,0.2);background:transparent;color:rgba(0,212,255,0.55)';
+    clearBtn.addEventListener('click', clearLogs);
+    btnWrap.appendChild(clearBtn);
+
+    header.appendChild(btnWrap);
+    wrap.appendChild(header);
+
+    // 分隔线
+    const line = document.createElement('div');
+    line.style.cssText = 'height:1px;flex-shrink:0;background:linear-gradient(90deg,rgba(0,212,255,0.4),rgba(124,58,237,0.3))';
+    wrap.appendChild(line);
+
+    // 日志区
+    const logArea = document.createElement('div');
+    logArea.style.cssText = 'flex:1;overflow-y:auto;font-family:monospace;font-size:10px;color:rgba(224,224,224,0.8);white-space:pre-wrap;word-break:break-all;padding:4px 0';
+    wrap.appendChild(logArea);
+
+    contentEl.appendChild(wrap);
 
     const refresh = () => {
       const logs = getLogs();
