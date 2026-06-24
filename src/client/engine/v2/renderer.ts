@@ -170,9 +170,9 @@ export class Renderer {
       }
     }
 
-    // 在主树之上渲染动画树（如果有）
+    // 在主树之上渲染动画树（如果有）—— 不裁剪，字符雨粒子需从视口外飞入
     if (this._overlayRoot) {
-      this._tickAndRender(this._overlayRoot, now, 1);
+      this._tickAndRender(this._overlayRoot, now, 1, undefined, true);
     }
 
     // 光标画在 overlay 之上：从主树找到光标 Box 重新画一次 border
@@ -201,7 +201,7 @@ export class Renderer {
     return null;
   }
 
-  private _tickAndRender(box: Box, now: number, parentOpacity: number, clipViewport?: { y1: number; y2: number }): void {
+  private _tickAndRender(box: Box, now: number, parentOpacity: number, clipViewport?: { y1: number; y2: number }, noCull?: boolean): void {
     if (!box.visible) return;
 
     const opacity = box.opacity * parentOpacity;
@@ -257,8 +257,8 @@ export class Renderer {
     if (box.scrollable) {
       this.ctx.save();
       this.ctx.translate(-box.scrollX, -box.scrollY);
-      _cvp = { y1: box.scrollY, y2: box.scrollY + box.height };
-    } else if (_cvp) {
+      if (!noCull) _cvp = { y1: box.scrollY, y2: box.scrollY + box.height };
+    } else if (_cvp && !noCull) {
       _cvp = { y1: _cvp.y1 - box.y, y2: _cvp.y2 - box.y };
     }
 
@@ -270,7 +270,7 @@ export class Renderer {
         const ch = child.height * child.transform.scale;
         if (cy + ch <= _cvp.y1 || cy >= _cvp.y2) continue;
       }
-      this._tickAndRender(child, now, opacity, _cvp);
+      this._tickAndRender(child, now, opacity, _cvp, noCull);
     }
 
     // 恢复滚动偏移 + 绘制滚动条
