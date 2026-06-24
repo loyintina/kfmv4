@@ -91,7 +91,7 @@ export function createFileHandler(filePath: string): { activate: (el: HTMLElemen
       _header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:6px 0 4px;flex-shrink:0';
 
       const label = document.createElement('div');
-      label.style.cssText = 'font-size:11px;font-weight:600;color:rgba(0,212,255,0.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0';
+      label.style.cssText = 'font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0';
       label.textContent = name;
       _header.appendChild(label);
 

@@ -13,7 +13,7 @@ export function renderBinaryInfo(el: HTMLElement, path: string, size?: number): 
   const name = path.replace(/\\/g, '/').split('/').pop() || path;
 
   const header = document.createElement('div');
-  header.style.cssText = 'padding:6px 0 4px;font-size:11px;font-weight:600;color:rgba(0,212,255,0.7);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+  header.style.cssText = 'padding:6px 0 4px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
   header.textContent = name;
 
   const line = document.createElement('div');

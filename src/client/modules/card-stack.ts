@@ -64,7 +64,7 @@ _registerCardHandler('debug', {
     header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:6px 0 4px;flex-shrink:0';
 
     const title = document.createElement('div');
-    title.style.cssText = 'font-size:11px;font-weight:600;color:rgba(0,212,255,0.7)';
+    title.style.cssText = 'font-size:11px;font-weight:600;color:rgba(255,255,255,0.85)';
     title.textContent = '\u8C03\u8BD5\u65E5\u5FD7';
     header.appendChild(title);
 
