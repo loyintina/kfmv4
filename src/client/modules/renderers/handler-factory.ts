@@ -84,7 +84,7 @@ export function createFileHandler(filePath: string): { activate: (el: HTMLElemen
 
       // wrapper：独立 flex column，不受浮卡 contentEl 的 cssText 覆盖
       const wrap = document.createElement('div');
-      wrap.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column';
+      wrap.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;padding:0 10px';
 
       // 标题栏
       _header = document.createElement('div');

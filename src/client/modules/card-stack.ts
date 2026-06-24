@@ -57,7 +57,7 @@ _registerCardHandler('debug', {
   activate(contentEl) {
     contentEl.innerHTML = '';
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column';
+    wrap.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;padding:0 10px';
 
     // 标题栏
     const header = document.createElement('div');
