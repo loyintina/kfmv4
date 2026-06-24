@@ -1,6 +1,7 @@
 import { getFileCategory } from './file-type.js';
 import { renderBinaryInfo } from './binary-fallback.js';
 import { preprocessMd } from './md-extensions.js';
+import { highlightAll } from './code-highlight.js';
 import { API } from '../state.js';
 
 function _fileName(p: string): string {
@@ -30,6 +31,7 @@ export function createFileHandler(filePath: string, accent?: string): { activate
   const editable = cat === 'text' || cat === 'code' || cat === 'markdown';
   let _rawContent = '';
   let _mode: 'preview' | 'edit' = 'preview';
+  let _scrollRatio = 0;
   let _header: HTMLElement;
   let _previewBtn: HTMLElement | null = null;
   let _editBtn: HTMLElement | null = null;
@@ -57,7 +59,9 @@ export function createFileHandler(filePath: string, accent?: string): { activate
     '.md-body ul{list-style-type:disc}.md-body ul ul{list-style-type:circle}.md-body ul ul ul{list-style-type:square}',
     '.md-body ol{list-style-type:decimal}.md-body ol ol{list-style-type:lower-alpha}',
     '.md-body li{margin:2px 0}',
-    '.md-body li::marker{color:rgba(0,212,255,0.5)}',
+    '.md-body li::marker{color:var(--card-accent)}',
+    '.md-body input[type=checkbox]{-webkit-appearance:none;appearance:none;width:14px;height:14px;border:2px solid var(--card-accent);border-radius:3px;vertical-align:middle;margin-right:6px;cursor:pointer;transition:all 0.15s;position:relative;top:2px}',
+    '.md-body input[type=checkbox]:checked{background:var(--card-accent);background-image:url("data:image/svg+xml,%3Csvg viewBox=%270 0 12 12%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cpath d=%27M2 6l3 3 5-5%27 stroke=%27white%27 stroke-width=%272%27 fill=%27none%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E");background-size:10px;background-position:center;background-repeat:no-repeat}',
     '.md-body blockquote{border-left:2px solid rgba(0,212,255,0.3);padding:4px 10px;margin:8px 0;opacity:0.88;background:rgba(0,212,255,0.04);border-radius:0 4px 4px 0}',
     '.md-body hr{border:none;border-top:1px solid rgba(0,212,255,0.15);margin:14px 0}',
     '.md-body table{border-collapse:collapse;width:100%;margin:8px 0;font-size:11px;overflow-x:auto;display:block}',
@@ -70,7 +74,6 @@ export function createFileHandler(filePath: string, accent?: string): { activate
     '.md-body pre code{background:none;padding:0;border-radius:0;font-size:10px}',
     '.md-body a{color:rgba(0,212,255,0.85);text-decoration:none}',
     '.md-body img{max-width:100%;border-radius:6px}',
-    '.md-body input[type=checkbox]{margin-right:6px;accent-color:rgba(0,212,255,0.7)}',
     '.md-body mark{background:rgba(255,235,59,0.25);color:#fff;padding:0 2px;border-radius:2px}',
     '.md-body .wikilink{color:rgba(0,212,255,0.75);font-weight:500;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px}',
     '.callout{border-radius:6px;padding:6px 12px;margin:8px 0;font-size:12px;line-height:1.6}',
@@ -84,6 +87,7 @@ export function createFileHandler(filePath: string, accent?: string): { activate
     '.callout-tip{background:rgba(0,188,212,0.08);border:1px solid rgba(0,188,212,0.2)}.callout-tip .callout-header{color:rgba(0,188,212,0.85)}',
     '.callout-question{background:rgba(255,152,0,0.08);border:1px solid rgba(255,152,0,0.2)}.callout-question .callout-header{color:rgba(255,152,0,0.85)}',
     '.callout-success{background:rgba(76,175,80,0.08);border:1px solid rgba(76,175,80,0.2)}.callout-success .callout-header{color:rgba(76,175,80,0.85)}',
+    '.hljs-keyword{color:#c792ea}.hljs-string{color:#ecc48d}.hljs-comment{color:#546e7a;font-style:italic}.hljs-number{color:#f78c6c}.hljs-title{color:#82aaff}.hljs-type{color:#ffcb6b}.hljs-attr{color:#c792ea}.hljs-built_in{color:#ffcb6b}.hljs-literal{color:#f78c6c}.hljs-function .hljs-title{color:#82aaff}.hljs-params{color:#a6accd}.hljs-meta{color:#89ddff}.hljs-tag{color:#f07178}.hljs-name{color:#f07178}.hljs-attribute{color:#c792ea}.hljs-selector-class{color:#ffcb6b}.hljs-selector-tag{color:#f07178}.hljs-addition{color:#c3e88d}.hljs-deletion{color:#f07178}',
   ].join('');
 
   function _renderPreview() {
@@ -96,10 +100,32 @@ export function createFileHandler(filePath: string, accent?: string): { activate
       import('marked').then(m => {
         const processed = preprocessMd(_rawContent);
         const html = m.marked.parse(processed, { gfm: true, breaks: true }) as string;
+        _body.style.setProperty('--card-accent', _toRgba(_accent, 0.7));
         const mdDiv = document.createElement('div');
         mdDiv.className = 'md-body';
         mdDiv.innerHTML = html;
         _body.appendChild(mdDiv);
+        // 代码高亮 + 复制按钮
+        highlightAll(mdDiv);
+        // 复选框点击交互
+        const cbs = mdDiv.querySelectorAll<HTMLInputElement>('input[type=checkbox]');
+        cbs.forEach(cb => {
+          cb.addEventListener('click', () => {
+            const checked = cb.checked;
+            // 同步到 _rawContent：- [ ] ↔ - [x]
+            const idx = Array.from(cbs).indexOf(cb);
+            let n = 0;
+            _rawContent = _rawContent.replace(/^(\s*-\s+)\[([ xX])\]/gm, (m, prefix) => {
+              if (n === idx) { n++; return prefix + '[' + (checked ? 'x' : ' ') + ']'; }
+              n++; return m;
+            });
+            _doSave(_rawContent);
+          });
+        });
+        // 滚动同步
+        if (_scrollRatio > 0) {
+          _body.scrollTop = _scrollRatio * (_body.scrollHeight - _body.clientHeight);
+        }
       });
     } else {
       _body.innerHTML = '';
@@ -125,6 +151,10 @@ export function createFileHandler(filePath: string, accent?: string): { activate
     _body.appendChild(ta);
     ta.focus();
     ta.setSelectionRange(ta.value.length, ta.value.length);
+    // 恢复滚动位置
+    if (_scrollRatio > 0) {
+      ta.scrollTop = _scrollRatio * Math.max(1, ta.scrollHeight - ta.clientHeight);
+    }
   }
 
   async function _doSave(newContent: string) {
@@ -167,6 +197,11 @@ export function createFileHandler(filePath: string, accent?: string): { activate
         _previewBtn.style.cssText = _btnStyle(_accent) + _btnActive(_accent);
         _previewBtn.addEventListener('click', () => {
           if (_mode === 'preview') return;
+          // 保存编辑区滚动位置
+          const ta = _body.firstElementChild;
+          if (ta?.tagName === 'TEXTAREA') {
+            _scrollRatio = ta.scrollTop / Math.max(1, ta.scrollHeight - ta.clientHeight);
+          }
           _mode = 'preview';
           _renderToolbar();
           _renderPreview();
@@ -177,6 +212,8 @@ export function createFileHandler(filePath: string, accent?: string): { activate
         _editBtn.style.cssText = _btnStyle(_accent);
         _editBtn.addEventListener('click', () => {
           if (_mode === 'edit') return;
+          const sh = _body.scrollHeight - _body.clientHeight;
+          _scrollRatio = sh > 0 ? _body.scrollTop / sh : 0;
           _mode = 'edit';
           _renderToolbar();
           _renderEdit();
