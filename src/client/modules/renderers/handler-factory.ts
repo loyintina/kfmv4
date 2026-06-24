@@ -6,10 +6,24 @@ function _fileName(p: string): string {
   return p.replace(/\\/g, '/').split('/').pop() || p;
 }
 
-const BTN_STYLE = 'font-size:10px;padding:2px 8px;border-radius:6px;cursor:pointer;border:1px solid rgba(0,212,255,0.2);background:transparent;color:rgba(0,212,255,0.55);transition:all 0.15s';
-const BTN_ACTIVE = 'background:rgba(0,212,255,0.15);color:rgba(0,212,255,0.9);border-color:rgba(0,212,255,0.5)';
+function _toRgba(hex: string, a: number): string {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.substring(0, 2), 16);
+  const g = parseInt(h.substring(2, 4), 16);
+  const b = parseInt(h.substring(4, 6), 16);
+  return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+}
 
-export function createFileHandler(filePath: string): { activate: (el: HTMLElement) => void; deactivate: (el: HTMLElement) => void } {
+function _btnStyle(accent: string): string {
+  return 'font-size:10px;padding:2px 8px;border-radius:6px;cursor:pointer;border:1px solid ' + _toRgba(accent, 0.3) + ';background:transparent;color:rgba(255,255,255,0.75);transition:all 0.15s';
+}
+
+function _btnActive(accent: string): string {
+  return 'background:' + _toRgba(accent, 0.15) + ';color:rgba(255,255,255,0.95);border-color:' + _toRgba(accent, 0.5);
+}
+
+export function createFileHandler(filePath: string, accent?: string): { activate: (el: HTMLElement) => void; deactivate: (el: HTMLElement) => void } {
+  const _accent = accent || '#00d4ff';
   const name = _fileName(filePath);
   const cat = getFileCategory(filePath);
   const editable = cat === 'text' || cat === 'code' || cat === 'markdown';
@@ -24,11 +38,11 @@ export function createFileHandler(filePath: string): { activate: (el: HTMLElemen
   function _renderToolbar() {
     if (!_previewBtn || !_editBtn) return;
     if (_mode === 'preview') {
-      _previewBtn.style.cssText = BTN_STYLE + BTN_ACTIVE;
-      _editBtn.style.cssText = BTN_STYLE;
+      _previewBtn.style.cssText = _btnStyle(_accent) + _btnActive(_accent);
+      _editBtn.style.cssText = _btnStyle(_accent);
     } else {
-      _previewBtn.style.cssText = BTN_STYLE;
-      _editBtn.style.cssText = BTN_STYLE + BTN_ACTIVE;
+      _previewBtn.style.cssText = _btnStyle(_accent);
+      _editBtn.style.cssText = _btnStyle(_accent) + _btnActive(_accent);
     }
   }
 
@@ -101,7 +115,7 @@ export function createFileHandler(filePath: string): { activate: (el: HTMLElemen
 
         _previewBtn = document.createElement('button');
         _previewBtn.textContent = '\u9884\u89C8';
-        _previewBtn.style.cssText = BTN_STYLE + BTN_ACTIVE;
+        _previewBtn.style.cssText = _btnStyle(_accent) + _btnActive(_accent);
         _previewBtn.addEventListener('click', () => {
           if (_mode === 'preview') return;
           _mode = 'preview';
@@ -111,7 +125,7 @@ export function createFileHandler(filePath: string): { activate: (el: HTMLElemen
 
         _editBtn = document.createElement('button');
         _editBtn.textContent = '\u7F16\u8F91';
-        _editBtn.style.cssText = BTN_STYLE;
+        _editBtn.style.cssText = _btnStyle(_accent);
         _editBtn.addEventListener('click', () => {
           if (_mode === 'edit') return;
           _mode = 'edit';

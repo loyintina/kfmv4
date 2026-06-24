@@ -73,13 +73,13 @@ _registerCardHandler('debug', {
 
     const copyBtn = document.createElement('button');
     copyBtn.textContent = '\u590D\u5236';
-    copyBtn.style.cssText = 'font-size:10px;padding:2px 8px;border-radius:6px;cursor:pointer;border:1px solid rgba(0,212,255,0.2);background:transparent;color:rgba(0,212,255,0.55)';
+    copyBtn.style.cssText = 'font-size:10px;padding:2px 8px;border-radius:6px;cursor:pointer;border:1px solid rgba(0,212,255,0.3);background:transparent;color:rgba(255,255,255,0.75)';
     copyBtn.addEventListener('click', copyLogs);
     btnWrap.appendChild(copyBtn);
 
     const clearBtn = document.createElement('button');
     clearBtn.textContent = '\u6E05\u7A7A';
-    clearBtn.style.cssText = 'font-size:10px;padding:2px 8px;border-radius:6px;cursor:pointer;border:1px solid rgba(0,212,255,0.2);background:transparent;color:rgba(0,212,255,0.55)';
+    clearBtn.style.cssText = 'font-size:10px;padding:2px 8px;border-radius:6px;cursor:pointer;border:1px solid rgba(0,212,255,0.3);background:transparent;color:rgba(255,255,255,0.75)';
     clearBtn.addEventListener('click', clearLogs);
     btnWrap.appendChild(clearBtn);
 

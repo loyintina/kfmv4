@@ -509,7 +509,7 @@ export function deployAllCards(): void {
       color2: el.dataset._accent2 || '#00d4ff',
       name: el.dataset._name || '',
       sourceX: fromX, sourceY: fromY,
-      contentHandler: createFileHandler(el.dataset._path || ''),
+      contentHandler: createFileHandler(el.dataset._path || '', el.dataset._accent1 || '#7c3aed'),
     });
 
     el.remove();
