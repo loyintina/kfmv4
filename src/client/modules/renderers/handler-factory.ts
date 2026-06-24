@@ -1,5 +1,6 @@
 import { getFileCategory } from './file-type.js';
 import { renderBinaryInfo } from './binary-fallback.js';
+import { preprocessMd } from './md-extensions.js';
 import { API } from '../state.js';
 
 function _fileName(p: string): string {
@@ -46,31 +47,59 @@ export function createFileHandler(filePath: string, accent?: string): { activate
     }
   }
 
+  const _mdCSS = [
+    '.md-body{font-size:13px;line-height:1.7;color:#e0e0e0;padding:6px 0;overflow-wrap:break-word;overflow-x:auto}',
+    '.md-body h1,.md-body h2,.md-body h3{margin:14px 0 4px;font-weight:600}',
+    '.md-body h1{font-size:15px}.md-body h2{font-size:13px}.md-body h3{font-size:12px}',
+    '.md-body h4,.md-body h5,.md-body h6{font-size:11px;margin:8px 0 2px;font-weight:600}',
+    '.md-body p{margin:4px 0}',
+    '.md-body ul,.md-body ol{padding-left:20px;margin:4px 0;list-style-position:outside}',
+    '.md-body ul{list-style-type:disc}.md-body ul ul{list-style-type:circle}.md-body ul ul ul{list-style-type:square}',
+    '.md-body ol{list-style-type:decimal}.md-body ol ol{list-style-type:lower-alpha}',
+    '.md-body li{margin:2px 0}',
+    '.md-body li::marker{color:rgba(0,212,255,0.5)}',
+    '.md-body blockquote{border-left:2px solid rgba(0,212,255,0.3);padding:4px 10px;margin:8px 0;opacity:0.88;background:rgba(0,212,255,0.04);border-radius:0 4px 4px 0}',
+    '.md-body hr{border:none;border-top:1px solid rgba(0,212,255,0.15);margin:14px 0}',
+    '.md-body table{border-collapse:collapse;width:100%;margin:8px 0;font-size:11px;overflow-x:auto;display:block}',
+    '.md-body thead,.md-body tbody{display:table;width:100%}',
+    '.md-body th,.md-body td{border:1px solid rgba(255,255,255,0.15);padding:4px 8px;text-align:left}',
+    '.md-body th{background:rgba(0,212,255,0.1);font-weight:600;border-bottom-width:2px}',
+    '.md-body tr:nth-child(even){background:rgba(255,255,255,0.03)}',
+    '.md-body code{background:rgba(0,0,0,0.25);padding:1px 5px;border-radius:4px;font-size:10px;font-family:monospace}',
+    '.md-body pre{padding:8px 10px;background:rgba(0,0,0,0.28);border-radius:6px;overflow-x:auto;margin:8px 0;font-size:10px;line-height:1.5;border:1px solid rgba(255,255,255,0.06)}',
+    '.md-body pre code{background:none;padding:0;border-radius:0;font-size:10px}',
+    '.md-body a{color:rgba(0,212,255,0.85);text-decoration:none}',
+    '.md-body img{max-width:100%;border-radius:6px}',
+    '.md-body input[type=checkbox]{margin-right:6px;accent-color:rgba(0,212,255,0.7)}',
+    '.md-body mark{background:rgba(255,235,59,0.25);color:#fff;padding:0 2px;border-radius:2px}',
+    '.md-body .wikilink{color:rgba(0,212,255,0.75);font-weight:500;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px}',
+    '.callout{border-radius:6px;padding:6px 12px;margin:8px 0;font-size:12px;line-height:1.6}',
+    '.callout-header{font-size:12px;font-weight:600;margin-bottom:2px}',
+    '.callout-body{font-size:11px;opacity:0.9}',
+    '.callout-info{background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.2)}.callout-info .callout-header{color:rgba(0,212,255,0.85)}',
+    '.callout-warning{background:rgba(255,193,7,0.08);border:1px solid rgba(255,193,7,0.2)}.callout-warning .callout-header{color:rgba(255,193,7,0.85)}',
+    '.callout-danger{background:rgba(244,67,54,0.08);border:1px solid rgba(244,67,54,0.2)}.callout-danger .callout-header{color:rgba(244,67,54,0.85)}',
+    '.callout-todo{background:rgba(156,39,176,0.08);border:1px solid rgba(156,39,176,0.2)}.callout-todo .callout-header{color:rgba(156,39,176,0.85)}',
+    '.callout-note{background:rgba(76,175,80,0.08);border:1px solid rgba(76,175,80,0.2)}.callout-note .callout-header{color:rgba(76,175,80,0.85)}',
+    '.callout-tip{background:rgba(0,188,212,0.08);border:1px solid rgba(0,188,212,0.2)}.callout-tip .callout-header{color:rgba(0,188,212,0.85)}',
+    '.callout-question{background:rgba(255,152,0,0.08);border:1px solid rgba(255,152,0,0.2)}.callout-question .callout-header{color:rgba(255,152,0,0.85)}',
+    '.callout-success{background:rgba(76,175,80,0.08);border:1px solid rgba(76,175,80,0.2)}.callout-success .callout-header{color:rgba(76,175,80,0.85)}',
+  ].join('');
+
   function _renderPreview() {
     if (cat === 'markdown') {
+      _body.innerHTML = '';
+      const style = document.createElement('style');
+      style.textContent = _mdCSS;
+      _body.appendChild(style);
+
       import('marked').then(m => {
-        const html = m.marked.parse(_rawContent) as string;
-        _body.innerHTML =
-          '<style>' +
-          '.md-body{font-size:13px;line-height:1.7;color:#e0e0e0;padding:6px 0;overflow-wrap:break-word}' +
-          '.md-body h1,.md-body h2,.md-body h3{margin:14px 0 4px;font-weight:600}' +
-          '.md-body h1{font-size:16px}.md-body h2{font-size:14px}.md-body h3{font-size:12px}' +
-          '.md-body p{margin:4px 0}' +
-          '.md-body ul,.md-body ol{padding-left:18px;margin:4px 0}' +
-          '.md-body li{margin:2px 0}' +
-          '.md-body blockquote{border-left:2px solid rgba(0,212,255,0.3);padding-left:8px;margin:8px 0;opacity:0.85}' +
-          '.md-body hr{border:none;border-top:1px solid rgba(255,255,255,0.12);margin:12px 0}' +
-          '.md-body table{border-collapse:collapse;width:100%;margin:8px 0;font-size:11px}' +
-          '.md-body th,.md-body td{border:1px solid rgba(255,255,255,0.15);padding:4px 8px;text-align:left}' +
-          '.md-body th{background:rgba(0,212,255,0.1);font-weight:600}' +
-          '.md-body tr:nth-child(even){background:rgba(255,255,255,0.03)}' +
-          '.md-body code{background:rgba(0,0,0,0.25);padding:1px 5px;border-radius:4px;font-size:11px;font-family:monospace}' +
-          '.md-body pre{padding:8px;background:rgba(0,0,0,0.25);border-radius:6px;overflow-x:auto;margin:8px 0;font-size:11px;line-height:1.5}' +
-          '.md-body pre code{background:none;padding:0;border-radius:0;font-size:11px}' +
-          '.md-body a{color:rgba(0,212,255,0.85);text-decoration:none}' +
-          '.md-body img{max-width:100%;border-radius:6px}' +
-          '</style>' +
-          '<div class="md-body">' + html + '</div>';
+        const processed = preprocessMd(_rawContent);
+        const html = m.marked.parse(processed, { gfm: true, breaks: true }) as string;
+        const mdDiv = document.createElement('div');
+        mdDiv.className = 'md-body';
+        mdDiv.innerHTML = html;
+        _body.appendChild(mdDiv);
       });
     } else {
       _body.innerHTML = '';
@@ -164,7 +193,7 @@ export function createFileHandler(filePath: string, accent?: string): { activate
 
       // 正文区
       _body = document.createElement('div');
-      _body.style.cssText = 'flex:1;overflow-x:hidden;overflow-y:auto;position:relative';
+      _body.style.cssText = 'flex:1;overflow:auto;position:relative';
 
       wrap.appendChild(_header);
       wrap.appendChild(line);
