@@ -50,7 +50,27 @@ export function createFileHandler(filePath: string, accent?: string): { activate
     if (cat === 'markdown') {
       import('marked').then(m => {
         const html = m.marked.parse(_rawContent) as string;
-        _body.innerHTML = '<div style="font-size:13px;line-height:1.7;color:#e0e0e0;padding:6px 0;overflow-wrap:break-word">' + html + '</div>';
+        _body.innerHTML =
+          '<style>' +
+          '.md-body{font-size:13px;line-height:1.7;color:#e0e0e0;padding:6px 0;overflow-wrap:break-word}' +
+          '.md-body h1,.md-body h2,.md-body h3{margin:14px 0 4px;font-weight:600}' +
+          '.md-body h1{font-size:16px}.md-body h2{font-size:14px}.md-body h3{font-size:12px}' +
+          '.md-body p{margin:4px 0}' +
+          '.md-body ul,.md-body ol{padding-left:18px;margin:4px 0}' +
+          '.md-body li{margin:2px 0}' +
+          '.md-body blockquote{border-left:2px solid rgba(0,212,255,0.3);padding-left:8px;margin:8px 0;opacity:0.85}' +
+          '.md-body hr{border:none;border-top:1px solid rgba(255,255,255,0.12);margin:12px 0}' +
+          '.md-body table{border-collapse:collapse;width:100%;margin:8px 0;font-size:11px}' +
+          '.md-body th,.md-body td{border:1px solid rgba(255,255,255,0.15);padding:4px 8px;text-align:left}' +
+          '.md-body th{background:rgba(0,212,255,0.1);font-weight:600}' +
+          '.md-body tr:nth-child(even){background:rgba(255,255,255,0.03)}' +
+          '.md-body code{background:rgba(0,0,0,0.25);padding:1px 5px;border-radius:4px;font-size:11px;font-family:monospace}' +
+          '.md-body pre{padding:8px;background:rgba(0,0,0,0.25);border-radius:6px;overflow-x:auto;margin:8px 0;font-size:11px;line-height:1.5}' +
+          '.md-body pre code{background:none;padding:0;border-radius:0;font-size:11px}' +
+          '.md-body a{color:rgba(0,212,255,0.85);text-decoration:none}' +
+          '.md-body img{max-width:100%;border-radius:6px}' +
+          '</style>' +
+          '<div class="md-body">' + html + '</div>';
       });
     } else {
       _body.innerHTML = '';
