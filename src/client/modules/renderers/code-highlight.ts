@@ -49,7 +49,7 @@ hljs.registerLanguage('java', java);
 hljs.registerLanguage('c', c);
 hljs.registerLanguage('cpp', cpp);
 
-const COPY_ICON = '\uD83D\uDCCB';
+const COPY_ICON = '\u590D\u5236';
 const CHECK_ICON = '\u2713';
 
 function _getLangFromClass(el: HTMLElement): string {
@@ -75,7 +75,7 @@ export function highlightAll(parent: HTMLElement): void {
     if (lang) {
       const tag = document.createElement('span');
       tag.textContent = lang;
-      tag.style.cssText = 'position:absolute;top:4px;left:10px;font-size:9px;text-transform:uppercase;color:rgba(0,212,255,0.45);pointer-events:none;font-family:system-ui,sans-serif';
+      tag.style.cssText = 'position:absolute;top:6px;left:10px;font-size:9px;text-transform:uppercase;color:rgba(0,212,255,0.45);pointer-events:none;font-family:system-ui,sans-serif';
       pre.appendChild(tag);
     }
 

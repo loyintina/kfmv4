@@ -70,7 +70,7 @@ export function createFileHandler(filePath: string, accent?: string): { activate
     '.md-body th{background:rgba(0,212,255,0.1);font-weight:600;border-bottom-width:2px}',
     '.md-body tr:nth-child(even){background:rgba(255,255,255,0.03)}',
     '.md-body code{background:rgba(0,0,0,0.25);padding:1px 5px;border-radius:4px;font-size:10px;font-family:monospace}',
-    '.md-body pre{padding:8px 10px;background:rgba(0,0,0,0.28);border-radius:6px;overflow-x:auto;margin:8px 0;font-size:10px;line-height:1.5;border:1px solid rgba(255,255,255,0.06)}',
+    '.md-body pre{padding:24px 10px 8px;background:rgba(0,0,0,0.28);border-radius:6px;overflow-x:auto;margin:8px 0;font-size:10px;line-height:1.5;border:1px solid rgba(255,255,255,0.06)}',
     '.md-body pre code{background:none;padding:0;border-radius:0;font-size:10px}',
     '.md-body a{color:rgba(0,212,255,0.85);text-decoration:none}',
     '.md-body img{max-width:100%;border-radius:6px}',
@@ -150,11 +150,15 @@ export function createFileHandler(filePath: string, accent?: string): { activate
     });
     _body.appendChild(ta);
     ta.focus();
-    ta.setSelectionRange(ta.value.length, ta.value.length);
-    // 恢复滚动位置
+    ta.setSelectionRange(0, 0);
     if (_scrollRatio > 0) {
       ta.scrollTop = _scrollRatio * Math.max(1, ta.scrollHeight - ta.clientHeight);
     }
+    requestAnimationFrame(() => {
+      if (_scrollRatio > 0) {
+        ta.scrollTop = _scrollRatio * Math.max(1, ta.scrollHeight - ta.clientHeight);
+      }
+    });
   }
 
   async function _doSave(newContent: string) {
