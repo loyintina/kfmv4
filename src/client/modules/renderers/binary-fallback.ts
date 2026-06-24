@@ -8,7 +8,7 @@ function _formatSize(bytes: number | undefined): string {
 export function renderBinaryInfo(el: HTMLElement, path: string, size?: number): void {
   el.innerHTML = '';
   const wrap = document.createElement('div');
-  wrap.style.cssText = 'display:flex;flex-direction:column;height:100%';
+  wrap.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column';
 
   const name = path.replace(/\\/g, '/').split('/').pop() || path;
 
