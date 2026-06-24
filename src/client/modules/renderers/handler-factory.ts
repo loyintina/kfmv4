@@ -137,6 +137,16 @@ export function createFileHandler(filePath: string, accent?: string): { activate
           _body.scrollTop = _scrollRatio * (_body.scrollHeight - _body.clientHeight);
         }
       });
+    } else if (cat === 'image') {
+      _body.innerHTML = '';
+      const div = document.createElement('div');
+      div.style.cssText = 'display:flex;align-items:center;justify-content:center;width:100%;height:100%;overflow:auto';
+      const img = document.createElement('img');
+      img.src = API + '/files/media?path=' + encodeURIComponent(filePath);
+      img.style.cssText = 'max-width:100%;max-height:100%;object-fit:contain;border-radius:6px';
+      img.alt = name;
+      div.appendChild(img);
+      _body.appendChild(div);
     } else {
       _body.innerHTML = '';
       const pre = document.createElement('pre');
@@ -147,6 +157,18 @@ export function createFileHandler(filePath: string, accent?: string): { activate
   }
 
   function _renderEdit() {
+    if (cat === 'image') {
+      _body.innerHTML = '';
+      const div = document.createElement('div');
+      div.style.cssText = 'display:flex;align-items:center;justify-content:center;width:100%;height:100%;overflow:auto';
+      const img = document.createElement('img');
+      img.src = API + '/files/media?path=' + encodeURIComponent(filePath);
+      img.style.cssText = 'max-width:100%;max-height:100%;object-fit:contain;border-radius:6px';
+      img.alt = name;
+      div.appendChild(img);
+      _body.appendChild(div);
+      return;
+    }
     _body.innerHTML = '';
     const ta = document.createElement('textarea');
     ta.style.cssText = 'position:absolute;inset:0;padding:6px 0 0;font:11px monospace;white-space:pre-wrap;word-break:break-word;color:#e0e0e0;background:transparent;border:none;outline:none;resize:none';

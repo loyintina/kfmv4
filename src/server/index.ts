@@ -105,6 +105,24 @@ function setupApiRoutes(router: express.Router) {
     } catch (error: any) { res.json({ error: error.message }); }
   });
 
+  router.get('/files/media', (req: express.Request, res: express.Response) => {
+    try {
+      const targetPath = sanitizePath(req.query.path as string);
+      if (!targetPath) { res.status(400).json({ error: '路径不合法' }); return; }
+      if (!fs.existsSync(targetPath)) { res.status(404).json({ error: '文件不存在' }); return; }
+      const ext = path.extname(targetPath).toLowerCase();
+      const mime: Record<string, string> = {
+        '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+        '.gif': 'image/gif', '.svg': 'image/svg+xml', '.webp': 'image/webp',
+        '.ico': 'image/x-icon',
+        '.mp4': 'video/mp4', '.webm': 'video/webm', '.ogg': 'video/ogg',
+        '.mp3': 'audio/mpeg', '.wav': 'audio/wav',
+      };
+      res.type(mime[ext] || 'application/octet-stream');
+      fs.createReadStream(targetPath).pipe(res);
+    } catch (error: any) { res.status(500).json({ error: error.message }); }
+  });
+
   router.post('/files/write', (req: express.Request, res: express.Response) => {
     try {
       const targetPath = sanitizePath(req.body.path);
