@@ -18,6 +18,8 @@ const SRC_DIR = 'src';
 // 格式：'相对路径:行号' —— 行号为文件中 (as any) 起始位置
 // 白名单：Box.data 类型为 any，访问自定义字段 _liquidSegments/topLineW/botLineW 需要类型断言
 const WHITELIST = new Set([
+  'client/modules/renderers/math-diagram.ts:67',   // window.katex CDN 加载
+  'client/modules/renderers/math-diagram.ts:102',  // window.mermaid CDN 加载
 ]);
 
 const AS_ANY_RE = /\bas\s+any\b/;

@@ -115,7 +115,7 @@ export function createFileHandler(filePath: string, accent?: string): { activate
         highlightAll(mdDiv);
         // KaTeX 数学公式 + Mermaid 图表
         await renderMath(mdDiv, mathData);
-        await renderMermaid(mdDiv);
+        await renderMermaid(mdDiv, _accent);
         // 复选框点击交互
         const cbs = mdDiv.querySelectorAll<HTMLInputElement>('input[type=checkbox]');
         cbs.forEach(cb => {

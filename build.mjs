@@ -60,6 +60,7 @@ await build({
   format: 'iife',
   outfile: 'public/bundle.js',
   target: ['es2019'],
+  external: ['katex', 'mermaid'],
 });
 
 // 校验产物新鲜度
