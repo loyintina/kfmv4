@@ -195,7 +195,7 @@ export class Renderer {
     return null;
   }
 
-  private _tickAndRender(box: Box, now: number, parentOpacity: number): void {
+  private _tickAndRender(box: Box, now: number, parentOpacity: number, clipViewport?: { y1: number; y2: number }): void {
     // 动画 tick
     box.tickAnimations(now);
 
@@ -249,16 +249,25 @@ export class Renderer {
       applyFlexLayout(box);
     }
 
-    // 滚动偏移（子元素层）
+    // 滚动偏移（子元素层）+ 视口裁剪窗口计算
+    let _cvp = clipViewport;
     if (box.scrollable) {
       this.ctx.save();
       this.ctx.translate(-box.scrollX, -box.scrollY);
+      _cvp = { y1: box.scrollY, y2: box.scrollY + box.height };
+    } else if (_cvp) {
+      _cvp = { y1: _cvp.y1 - box.y, y2: _cvp.y2 - box.y };
     }
 
     // 子元素渲染（按 zIndex 升序排序：小的先画，大的后画在上面）
     const sortedChildren = [...box.children].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
     for (const child of sortedChildren) {
-      this._tickAndRender(child, now, opacity);
+      if (_cvp) {
+        const cy = child.y;
+        const ch = child.height * child.transform.scale;
+        if (cy + ch <= _cvp.y1 || cy >= _cvp.y2) continue;
+      }
+      this._tickAndRender(child, now, opacity, _cvp);
     }
 
     // 恢复滚动偏移 + 绘制滚动条
@@ -277,6 +286,7 @@ export class Renderer {
   // ============================================================
 
   private _manageInputs(root: Box): void {
+    if (this._inputElements.size === 0 && !root.inputable?.enabled) return;
     // 收集所有 inputable Box
     const inputableBoxes = root.flatten().filter(b => b.inputable?.enabled);
     const seenIds = new Set<string>();
@@ -732,22 +742,26 @@ export class Renderer {
 
     if (maxWidth <= 0) return;
 
-    // 获取或创建 Pretext prepared
+    // 排版缓存：key 含 maxWidth 和 lineHeight，同一文本不同宽度下布局不同
     const key = this._getTextKey(style.content, style.font);
-    let prepared = this._pretextCache.get(key);
-    if (!prepared) {
-      try {
-        prepared = prepareWithSegments(style.content, style.font);
-        this._pretextCache.set(key, prepared);
-      } catch {
-        // Pretext 失败时回退到简单渲染
-        this._drawTextFallback(style, textX, textY, maxWidth, b, padding);
-        return;
+    const layoutKey = `${key}::${maxWidth.toFixed(0)}::${style.lineHeight}`;
+    let lines: any[] | undefined = this._pretextCache.get(layoutKey);
+    if (!lines) {
+      // prepared 缓存（key 不含 width，同文本跨宽度复用）
+      let prepared = this._pretextCache.get(key);
+      if (!prepared) {
+        try {
+          prepared = prepareWithSegments(style.content, style.font);
+          this._pretextCache.set(key, prepared);
+        } catch {
+          this._drawTextFallback(style, textX, textY, maxWidth, b, padding);
+          return;
+        }
       }
+      const layout = layoutWithLines(prepared, maxWidth, style.lineHeight);
+      lines = layout.lines;
+      this._pretextCache.set(layoutKey, lines);
     }
-
-    // 使用 layoutWithLines 获���排版结果
-    const { lines } = layoutWithLines(prepared, maxWidth, style.lineHeight);
     const maxL = style.maxLines > 0 ? style.maxLines : lines.length;
     const visibleLines = lines.slice(0, maxL);
 
