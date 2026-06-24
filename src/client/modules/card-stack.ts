@@ -74,7 +74,15 @@ _registerCardHandler('debug', {
     const copyBtn = document.createElement('button');
     copyBtn.textContent = '\u590D\u5236';
     copyBtn.style.cssText = 'font-size:10px;padding:2px 8px;border-radius:6px;cursor:pointer;border:1px solid rgba(0,212,255,0.3);background:transparent;color:rgba(255,255,255,0.75)';
-    copyBtn.addEventListener('click', copyLogs);
+    copyBtn.addEventListener('click', () => {
+      copyLogs();
+      copyBtn.textContent = '\u2713';
+      copyBtn.style.cssText = 'font-size:10px;padding:2px 8px;border-radius:6px;cursor:pointer;border:1px solid rgba(74,222,128,0.3);background:transparent;color:rgba(74,222,128,0.9)';
+      setTimeout(() => {
+        copyBtn.textContent = '\u590D\u5236';
+        copyBtn.style.cssText = 'font-size:10px;padding:2px 8px;border-radius:6px;cursor:pointer;border:1px solid rgba(0,212,255,0.3);background:transparent;color:rgba(255,255,255,0.75)';
+      }, 2000);
+    });
     btnWrap.appendChild(copyBtn);
 
     const clearBtn = document.createElement('button');
