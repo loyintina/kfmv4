@@ -84,7 +84,20 @@ export async function renderMermaid(el: HTMLElement): Promise<void> {
     const mod = await import('mermaid');
     const mermaid = mod.default || mod;
     if (!_mermaidReady) {
-      mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: 'base',
+        themeVariables: {
+          background: '#0a0a0f',
+          primaryColor: '#00d4ff',
+          primaryTextColor: '#e0e0e0',
+          primaryBorderColor: '#7c3aed',
+          lineColor: '#c792ea',
+          secondaryColor: '#1e1e3a',
+          tertiaryColor: '#2a2a3a',
+          fontSize: '13px',
+        },
+      });
       _mermaidReady = true;
     }
 

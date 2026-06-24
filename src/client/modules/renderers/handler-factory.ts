@@ -3,6 +3,7 @@ import { renderBinaryInfo } from './binary-fallback.js';
 import { preprocessMd } from './md-extensions.js';
 import { highlightAll } from './code-highlight.js';
 import { type MathData, renderMath, renderMermaid } from './math-diagram.js';
+import { KATEX_CSS } from './katex-css.js';
 import { API } from '../state.js';
 
 function _fileName(p: string): string {
@@ -88,8 +89,9 @@ export function createFileHandler(filePath: string, accent?: string): { activate
     '.callout-tip{background:rgba(0,188,212,0.08);border:1px solid rgba(0,188,212,0.2)}.callout-tip .callout-header{color:rgba(0,188,212,0.85)}',
     '.callout-question{background:rgba(255,152,0,0.08);border:1px solid rgba(255,152,0,0.2)}.callout-question .callout-header{color:rgba(255,152,0,0.85)}',
     '.callout-success{background:rgba(76,175,80,0.08);border:1px solid rgba(76,175,80,0.2)}.callout-success .callout-header{color:rgba(76,175,80,0.85)}',
-    '.katex-display{display:block;margin:1em 0;text-align:center;overflow-x:auto;overflow-y:hidden}.katex-inline{display:inline}.katex{font-size:1em}.katex .katex-mathml{display:none}.katex .katex-html>.newline{display:block}.katex .base{position:relative;white-space:nowrap;width:min-content}.katex .strut{display:inline-block}.katex .mord{color:#e0e0e0}',
+    KATEX_CSS,
     '.mermaid-container{display:flex;justify-content:center;margin:12px 0;overflow-x:auto}.mermaid-container svg{max-width:100%}',
+    '.mermaid-container svg .label{color:#e0e0e0!important}.mermaid-container svg .edgeLabel{background:rgba(10,10,15,0.85)!important}',
     '.hljs-keyword{color:#c792ea}.hljs-string{color:#ecc48d}.hljs-comment{color:#546e7a;font-style:italic}.hljs-number{color:#f78c6c}.hljs-title{color:#82aaff}.hljs-type{color:#ffcb6b}.hljs-attr{color:#c792ea}.hljs-built_in{color:#ffcb6b}.hljs-literal{color:#f78c6c}.hljs-function .hljs-title{color:#82aaff}.hljs-params{color:#a6accd}.hljs-meta{color:#89ddff}.hljs-tag{color:#f07178}.hljs-name{color:#f07178}.hljs-attribute{color:#c792ea}.hljs-selector-class{color:#ffcb6b}.hljs-selector-tag{color:#f07178}.hljs-addition{color:#c3e88d}.hljs-deletion{color:#f07178}',
   ].join('');
 
