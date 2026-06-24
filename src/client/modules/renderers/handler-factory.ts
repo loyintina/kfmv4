@@ -50,7 +50,7 @@ export function createFileHandler(filePath: string): { activate: (el: HTMLElemen
   function _renderEdit() {
     _body.innerHTML = '';
     const ta = document.createElement('textarea');
-    ta.style.cssText = 'flex:1;width:100%;height:100%;padding:6px 0 0;font:11px monospace;white-space:pre-wrap;word-break:break-word;color:#e0e0e0;background:transparent;border:none;outline:none;resize:none';
+    ta.style.cssText = 'position:absolute;inset:0;padding:6px 0 0;font:11px monospace;white-space:pre-wrap;word-break:break-word;color:#e0e0e0;background:transparent;border:none;outline:none;resize:none';
     ta.value = _rawContent;
     // ctrl+enter 保存
     ta.addEventListener('keydown', (e) => {
@@ -130,7 +130,7 @@ export function createFileHandler(filePath: string): { activate: (el: HTMLElemen
 
       // 正文区
       _body = document.createElement('div');
-      _body.style.cssText = 'flex:1;overflow-x:hidden;overflow-y:auto';
+      _body.style.cssText = 'flex:1;overflow-x:hidden;overflow-y:auto;position:relative';
 
       wrap.appendChild(_header);
       wrap.appendChild(line);
