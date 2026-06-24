@@ -60,8 +60,7 @@ export function createFileHandler(filePath: string, accent?: string): { activate
     '.md-body ol{list-style-type:decimal}.md-body ol ol{list-style-type:lower-alpha}',
     '.md-body li{margin:2px 0}',
     '.md-body li::marker{color:var(--card-accent)}',
-    '.md-body input[type=checkbox]{-webkit-appearance:none;appearance:none;width:14px;height:14px;border:2px solid var(--card-accent);border-radius:3px;vertical-align:middle;margin-right:6px;cursor:pointer;transition:all 0.15s;position:relative;top:2px}',
-    '.md-body input[type=checkbox]:checked{background:var(--card-accent);background-image:url("data:image/svg+xml,%3Csvg viewBox=%270 0 12 12%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cpath d=%27M2 6l3 3 5-5%27 stroke=%27white%27 stroke-width=%272%27 fill=%27none%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E");background-size:10px;background-position:center;background-repeat:no-repeat}',
+    '.md-body input[type=checkbox]{accent-color:var(--card-accent);width:15px;height:15px;margin-right:6px;vertical-align:middle;cursor:pointer}',
     '.md-body blockquote{border-left:2px solid rgba(0,212,255,0.3);padding:4px 10px;margin:8px 0;opacity:0.88;background:rgba(0,212,255,0.04);border-radius:0 4px 4px 0}',
     '.md-body hr{border:none;border-top:1px solid rgba(0,212,255,0.15);margin:14px 0}',
     '.md-body table{border-collapse:collapse;width:100%;margin:8px 0;font-size:11px;overflow-x:auto;display:block}',
@@ -149,16 +148,9 @@ export function createFileHandler(filePath: string, accent?: string): { activate
       }
     });
     _body.appendChild(ta);
+    const pos = Math.round(_rawContent.length * Math.min(_scrollRatio, 1));
     ta.focus();
-    ta.setSelectionRange(0, 0);
-    if (_scrollRatio > 0) {
-      ta.scrollTop = _scrollRatio * Math.max(1, ta.scrollHeight - ta.clientHeight);
-    }
-    requestAnimationFrame(() => {
-      if (_scrollRatio > 0) {
-        ta.scrollTop = _scrollRatio * Math.max(1, ta.scrollHeight - ta.clientHeight);
-      }
-    });
+    ta.setSelectionRange(pos, pos);
   }
 
   async function _doSave(newContent: string) {
