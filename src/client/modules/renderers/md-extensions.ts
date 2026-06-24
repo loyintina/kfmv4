@@ -9,6 +9,8 @@
  *   - 代码 token 着色（CSS-only 关键字/字符串/注释）
  */
 
+import { type MathData, preprocessMath } from './math-diagram.js';
+
 /** Obsidian callout 预处理：> [!type] ... → 样式化 div */
 function _preprocessCallouts(md: string): string {
   // 匹配形如: > [!info] Title\n> Content (Content 以 > 开头或结束于空行)
@@ -34,9 +36,10 @@ function _preprocessWikilinks(md: string): string {
   });
 }
 
-/** 综合预处理：callout + highlight + wikilinks */
-export function preprocessMd(md: string): string {
+/** 综合预处理：math → callout → highlight → wikilinks */
+export function preprocessMd(md: string, mathData?: MathData): string {
   let result = md;
+  if (mathData) result = preprocessMath(result, mathData);
   result = _preprocessCallouts(result);
   result = _preprocessHighlight(result);
   result = _preprocessWikilinks(result);
