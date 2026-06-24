@@ -102,19 +102,37 @@ export async function renderMermaid(el: HTMLElement, accent: string): Promise<vo
     const mermaid = (window as any).mermaid;
     if (!mermaid) return;
 
+    // accent hex → RGB → 生成多级透明度变体
+    const h = accent.replace('#', '');
+    const r = parseInt(h.substring(0, 2), 16);
+    const g = parseInt(h.substring(2, 4), 16);
+    const b = parseInt(h.substring(4, 6), 16);
+    const ac = (a: number) => 'rgba(' + r + ',' + g + ',' + b + ',' + a.toFixed(2) + ')';
+
     mermaid.initialize({
       startOnLoad: false,
       theme: 'base',
       themeVariables: {
-        background:          'transparent',
-        primaryColor:        accent,
-        primaryTextColor:    '#e0e0e0',
-        primaryBorderColor:  accent,
-        lineColor:           '#7c3aed',
-        secondaryColor:      'rgba(0,212,255,0.08)',
-        tertiaryColor:       'rgba(180,130,255,0.06)',
-        fontSize:            '12px',
-        fontFamily:          'system-ui, sans-serif',
+        background:           'transparent',
+        mainBkg:              ac(0.08),
+        secondBkg:            ac(0.12),
+        tertiaryBkg:          ac(0.05),
+        primaryColor:         accent,
+        secondaryColor:       ac(0.15),
+        tertiaryColor:        ac(0.10),
+        primaryTextColor:     '#ffffff',
+        secondaryTextColor:   '#e0e0e0',
+        tertiaryTextColor:    '#c0c0c0',
+        primaryBorderColor:   ac(0.40),
+        secondaryBorderColor: ac(0.25),
+        tertiaryBorderColor:  ac(0.15),
+        nodeBorder:           ac(0.40),
+        nodeTextColor:        '#ffffff',
+        lineColor:            accent,
+        signalColor:          accent,
+        edgeLabelBackground:  ac(0.15),
+        fontSize:             '12px',
+        fontFamily:           'system-ui, sans-serif',
       },
     });
 
