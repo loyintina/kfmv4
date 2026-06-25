@@ -12,7 +12,7 @@ export const MARGIN = 8;
 export const LONG_PRESS_MS = 600;
 
 /** 拖动激活的最小像素位移 */
-export const DRAG_THRESHOLD = 5;
+export const DRAG_THRESHOLD = 15;
 
 /** 浮卡展开态宽度 */
 export const FLOATING_CARD_W = 240;

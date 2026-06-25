@@ -11,7 +11,6 @@ import { currentTheme as theme } from './theme.js';
 import { Registry } from './ui-registry.js';
 import { MARGIN, FLOATING_CARD_W, FLOATING_CARD_H } from './interaction-constants.js';
 import { createDragHandler, type DragConfig } from './drag-handler.js';
-import { log } from './logger.js';
 
 const orbT = theme.cornerOrb;
 
@@ -270,8 +269,7 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
 
   brOrb.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (_suppressNextClick === item) { log('[BR] click SUPPRESSED'); _suppressNextClick = null; return; }
-    log('[BR] click state=' + item.state);
+    if (_suppressNextClick === item) { _suppressNextClick = null; return; }
     if (item.state === 'compact') {
       item.state = 'expanding';
       anim.to(contentEl, { opacity: 0, duration: 0.1, ease: 'none', onComplete: () => {
@@ -537,9 +535,7 @@ export function initFloatingCards(): void {
     },
     canStart() {
       if (!dragItem) return false;
-      const ok = dragItem.state === 'compact' || dragItem.state === 'active' || dragItem.state === 'editing';
-      if (!ok) log('[BR] canStart blocked state=' + dragItem.state);
-      return ok;
+      return dragItem.state === 'compact' || dragItem.state === 'active' || dragItem.state === 'editing';
     },
     getOrbStartRect() {
       return dragItem!.brOrb!.getBoundingClientRect();
@@ -548,11 +544,10 @@ export function initFloatingCards(): void {
     minEditH: FLOATING_CARD_H_MIN,
     clamp: fClamp,
     isEditing() { return dragItem?.state === 'editing'; },
-    onTap() { log('[BR] onTap'); dragItem?.brOrb?.click(); },
+    onTap() { dragItem?.brOrb?.click(); },
     onSavePosition() { /* 浮卡不保存自由位置 */ },
     onEnterEdit() {
       if (!dragItem) return;
-      log('[BR] onEnterEdit');
       preEdit = dragItem.state as 'compact' | 'active';
       dragItem.state = 'editing';
       const orbEl = dragItem.brOrb!;
@@ -568,7 +563,6 @@ export function initFloatingCards(): void {
     },
     onExitEdit() {
       if (!dragItem) return;
-      log('[BR] onExitEdit');
       _suppressNextClick = dragItem;
       dragItem.state = preEdit;
       dragItem.el.style.boxShadow = theme.stack.blurShadow;
