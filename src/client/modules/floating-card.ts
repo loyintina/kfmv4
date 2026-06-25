@@ -75,8 +75,6 @@ let _nextFloatingZ = Z_FLOATING_BASE;
 const _brOrbToItem = new WeakMap<HTMLElement, FloatingCardItem>();
 // ========== 浮卡光球拖拽状态（复刻 orb.ts 的全局变量） ==========
 let dragItem: FloatingCardItem | null = null;
-// 长按进入编辑模式后，原生 click 会趁虚而入触发收缩——用此标记跳过
-let _suppressNextClick: FloatingCardItem | null = null;
 
 // ========== 浮卡 ==========
 
@@ -267,105 +265,6 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
   blOrb.addEventListener('click', () => { const below = _cardBelow(item); if (below) _swapZIndex(item, below); });
   el.appendChild(blOrb); item.blOrb = blOrb;
 
-  brOrb.addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (_suppressNextClick === item) { _suppressNextClick = null; return; }
-    if (item.state === 'compact') {
-      item.state = 'expanding';
-      anim.to(contentEl, { opacity: 0, duration: 0.1, ease: 'none', onComplete: () => {
-        if (item.contentEl) {
-          item.config.contentHandler?.activate?.(item.contentEl);
-          _renderFloatingContent(item.contentEl, 'active');
-        }
-        anim.to(contentEl, { opacity: 1, duration: 0.15, ease: 'none' });
-      }});
-
-      const expW = item.activeMemW;
-      const expH = item.activeMemH;
-      const curLeft = parseFloat(el.style.left) || (config.targetX ?? 0);
-      const curTop = parseFloat(el.style.top) || (config.targetY ?? 0);
-      const curW = item.cardWidth;
-      const curH = item.cardHeight;
-      const compressedW = Math.max(FLOATING_CARD_W_MIN, Math.min(expW, curLeft + curW - MARGIN));
-      const compressedH = Math.max(FLOATING_CARD_H_MIN, Math.min(expH, curTop + curH - MARGIN));
-      const expLeft = curLeft + curW - compressedW;
-      const expTop = curTop + curH - compressedH;
-
-      const brSvgContainer = brOrb.children[1] as HTMLElement;
-      if (brSvgContainer) brSvgContainer.innerHTML = '<svg width="14" height="14" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" fill="none"/><line x1="6" y1="1.5" x2="6" y2="10.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="1.5" y1="6" x2="10.5" y2="6" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></svg>';
-
-      anim.to(el, {
-        left: expLeft, top: expTop,
-        width: compressedW, height: compressedH,
-        duration: 0.3, ease: 'back.out(1.1)',
-        onUpdate: () => {
-          const w = parseFloat(el.style.width) || compressedW;
-          const h = parseFloat(el.style.height) || compressedH;
-          brOrb.style.left = (w - rightOff - cornerSize) + 'px';
-          brOrb.style.top = (h - bottomOff - cornerSize) + 'px';
-          if (item.trOrb) item.trOrb.style.left = (w - rightOff - cornerSize) + 'px';
-          if (item.blOrb) item.blOrb.style.top = (h - bottomOff - cornerSize) + 'px';
-        },
-        onComplete: () => {
-          item.cardWidth = compressedW;
-          item.cardHeight = compressedH;
-          brOrb.style.left = (item.cardWidth - rightOff - cornerSize) + 'px';
-          brOrb.style.top = (item.cardHeight - bottomOff - cornerSize) + 'px';
-          if (item.trOrb) item.trOrb.style.left = (item.cardWidth - rightOff - cornerSize) + 'px';
-          if (item.blOrb) item.blOrb.style.top = (item.cardHeight - bottomOff - cornerSize) + 'px';
-          item.state = 'active';
-          el.style.zIndex = String(zIndex);
-        },
-      });
-      anim.to(tlOrb, { x: 0, y: 0, duration: 0.3, ease: 'back.out(1.1)' });
-    } else if (item.state === 'active') {
-      item.state = 'collapsing';
-      anim.to(item.contentEl, { opacity: 0, duration: 0.1, ease: 'none', onComplete: () => {
-        if (item.contentEl) {
-          item.config.contentHandler?.deactivate?.(item.contentEl);
-          _renderFloatingContent(item.contentEl, 'compact', item.config.name);
-        }
-        anim.to(item.contentEl, { opacity: 1, duration: 0.15, ease: 'none' });
-      }});
-
-      const brSvg2 = brOrb.children[1] as HTMLElement;
-      if (brSvg2) brSvg2.innerHTML = '';
-      const expLeft = parseFloat(el.style.left) || 0;
-      const expTop = parseFloat(el.style.top) || 0;
-      const foldW = item.compactMemW;
-      const foldH = item.compactMemH;
-      const expW = item.cardWidth;
-      const expH = item.cardHeight;
-      const anchorRight = expLeft + expW;
-      const anchorBottom = expTop + expH;
-      const clampedFoldW = Math.max(FLOATING_CARD_W_MIN, Math.min(foldW, anchorRight - MARGIN));
-      const clampedFoldH = Math.max(FLOATING_CARD_H_MIN, Math.min(foldH, anchorBottom - MARGIN));
-      const foldLeft = anchorRight - clampedFoldW;
-      const foldTop = anchorBottom - clampedFoldH;
-      anim.to(el, {
-        left: foldLeft, top: foldTop,
-        width: clampedFoldW, height: clampedFoldH,
-        duration: 0.3, ease: 'power2.in',
-        onUpdate: () => {
-          const w = parseFloat(el.style.width) || foldW;
-          const h = parseFloat(el.style.height) || foldH;
-          brOrb.style.left = (w - rightOff - cornerSize) + 'px';
-          brOrb.style.top = (h - bottomOff - cornerSize) + 'px';
-          if (item.trOrb) item.trOrb.style.left = (w - rightOff - cornerSize) + 'px';
-          if (item.blOrb) item.blOrb.style.top = (h - bottomOff - cornerSize) + 'px';
-        },
-        onComplete: () => {
-          item.cardWidth = clampedFoldW;
-          item.cardHeight = clampedFoldH;
-          brOrb.style.left = (clampedFoldW - rightOff - cornerSize) + 'px';
-          brOrb.style.top = (clampedFoldH - bottomOff - cornerSize) + 'px';
-          if (item.trOrb) item.trOrb.style.left = (clampedFoldW - rightOff - cornerSize) + 'px';
-          if (item.blOrb) item.blOrb.style.top = (clampedFoldH - bottomOff - cornerSize) + 'px';
-          item.state = 'compact';
-        },
-      });
-    }
-  });
   el.appendChild(brOrb);
   item.brOrb = brOrb;
 
@@ -523,6 +422,114 @@ export function initFloatingCards(): void {
   let startCardW = 0;
   let startCardH = 0;
 
+  // BR 光球展开/收缩逻辑（GestureRegistry onTap 调用，不再走原生 click）
+  const _toggleExpandCollapse = () => {
+    if (!dragItem) return;
+    const item = dragItem;
+    const el = item.el;
+    const config = item.config;
+    const brOrb = item.brOrb!;
+    const tlOrb = item.tlOrb!;
+    const contentEl = item.contentEl!;
+    const zIndex = item.zIndex;
+
+    if (item.state === 'compact') {
+      item.state = 'expanding';
+      anim.to(contentEl, { opacity: 0, duration: 0.1, ease: 'none', onComplete: () => {
+        if (item.contentEl) {
+          item.config.contentHandler?.activate?.(item.contentEl);
+          _renderFloatingContent(item.contentEl, 'active');
+        }
+        anim.to(contentEl, { opacity: 1, duration: 0.15, ease: 'none' });
+      }});
+
+      const expW = item.activeMemW;
+      const expH = item.activeMemH;
+      const curLeft = parseFloat(el.style.left) || (config.targetX ?? 0);
+      const curTop = parseFloat(el.style.top) || (config.targetY ?? 0);
+      const curW = item.cardWidth;
+      const curH = item.cardHeight;
+      const compressedW = Math.max(FLOATING_CARD_W_MIN, Math.min(expW, curLeft + curW - MARGIN));
+      const compressedH = Math.max(FLOATING_CARD_H_MIN, Math.min(expH, curTop + curH - MARGIN));
+      const expLeft = curLeft + curW - compressedW;
+      const expTop = curTop + curH - compressedH;
+
+      const brSvgContainer = brOrb.children[1] as HTMLElement;
+      if (brSvgContainer) brSvgContainer.innerHTML = '<svg width="14" height="14" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" fill="none"/><line x1="6" y1="1.5" x2="6" y2="10.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="1.5" y1="6" x2="10.5" y2="6" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></svg>';
+
+      anim.to(el, {
+        left: expLeft, top: expTop,
+        width: compressedW, height: compressedH,
+        duration: 0.3, ease: 'back.out(1.1)',
+        onUpdate: () => {
+          const w = parseFloat(el.style.width) || compressedW;
+          const h = parseFloat(el.style.height) || compressedH;
+          brOrb.style.left = (w - rightOff - cornerSize) + 'px';
+          brOrb.style.top = (h - bottomOff - cornerSize) + 'px';
+          if (item.trOrb) item.trOrb.style.left = (w - rightOff - cornerSize) + 'px';
+          if (item.blOrb) item.blOrb.style.top = (h - bottomOff - cornerSize) + 'px';
+        },
+        onComplete: () => {
+          item.cardWidth = compressedW;
+          item.cardHeight = compressedH;
+          brOrb.style.left = (item.cardWidth - rightOff - cornerSize) + 'px';
+          brOrb.style.top = (item.cardHeight - bottomOff - cornerSize) + 'px';
+          if (item.trOrb) item.trOrb.style.left = (item.cardWidth - rightOff - cornerSize) + 'px';
+          if (item.blOrb) item.blOrb.style.top = (item.cardHeight - bottomOff - cornerSize) + 'px';
+          item.state = 'active';
+          el.style.zIndex = String(zIndex);
+        },
+      });
+      anim.to(tlOrb, { x: 0, y: 0, duration: 0.3, ease: 'back.out(1.1)' });
+    } else if (item.state === 'active') {
+      item.state = 'collapsing';
+      anim.to(item.contentEl, { opacity: 0, duration: 0.1, ease: 'none', onComplete: () => {
+        if (item.contentEl) {
+          item.config.contentHandler?.deactivate?.(item.contentEl);
+          _renderFloatingContent(item.contentEl, 'compact', item.config.name);
+        }
+        anim.to(item.contentEl, { opacity: 1, duration: 0.15, ease: 'none' });
+      }});
+
+      const brSvg2 = brOrb.children[1] as HTMLElement;
+      if (brSvg2) brSvg2.innerHTML = '';
+      const expLeft = parseFloat(el.style.left) || 0;
+      const expTop = parseFloat(el.style.top) || 0;
+      const foldW = item.compactMemW;
+      const foldH = item.compactMemH;
+      const expW = item.cardWidth;
+      const expH = item.cardHeight;
+      const anchorRight = expLeft + expW;
+      const anchorBottom = expTop + expH;
+      const clampedFoldW = Math.max(FLOATING_CARD_W_MIN, Math.min(foldW, anchorRight - MARGIN));
+      const clampedFoldH = Math.max(FLOATING_CARD_H_MIN, Math.min(foldH, anchorBottom - MARGIN));
+      const foldLeft = anchorRight - clampedFoldW;
+      const foldTop = anchorBottom - clampedFoldH;
+      anim.to(el, {
+        left: foldLeft, top: foldTop,
+        width: clampedFoldW, height: clampedFoldH,
+        duration: 0.3, ease: 'power2.in',
+        onUpdate: () => {
+          const w = parseFloat(el.style.width) || foldW;
+          const h = parseFloat(el.style.height) || foldH;
+          brOrb.style.left = (w - rightOff - cornerSize) + 'px';
+          brOrb.style.top = (h - bottomOff - cornerSize) + 'px';
+          if (item.trOrb) item.trOrb.style.left = (w - rightOff - cornerSize) + 'px';
+          if (item.blOrb) item.blOrb.style.top = (h - bottomOff - cornerSize) + 'px';
+        },
+        onComplete: () => {
+          item.cardWidth = clampedFoldW;
+          item.cardHeight = clampedFoldH;
+          brOrb.style.left = (clampedFoldW - rightOff - cornerSize) + 'px';
+          brOrb.style.top = (clampedFoldH - bottomOff - cornerSize) + 'px';
+          if (item.trOrb) item.trOrb.style.left = (clampedFoldW - rightOff - cornerSize) + 'px';
+          if (item.blOrb) item.blOrb.style.top = (clampedFoldH - bottomOff - cornerSize) + 'px';
+          item.state = 'compact';
+        },
+      });
+    }
+  };
+
   const dragCfg: DragConfig = {
     getElement(e: PointerEvent) {
       const orbEl = (e.target as HTMLElement).closest('.floating-br-orb') as HTMLElement;
@@ -544,7 +551,7 @@ export function initFloatingCards(): void {
     minEditH: FLOATING_CARD_H_MIN,
     clamp: fClamp,
     isEditing() { return dragItem?.state === 'editing'; },
-    onTap() { dragItem?.brOrb?.click(); },
+    onTap() { _toggleExpandCollapse(); },
     onSavePosition() { /* 浮卡不保存自由位置 */ },
     onEnterEdit() {
       if (!dragItem) return;
@@ -563,7 +570,6 @@ export function initFloatingCards(): void {
     },
     onExitEdit() {
       if (!dragItem) return;
-      _suppressNextClick = dragItem;
       dragItem.state = preEdit;
       dragItem.el.style.boxShadow = theme.stack.blurShadow;
       const gd = dragItem.brOrb?.firstElementChild as HTMLElement;
