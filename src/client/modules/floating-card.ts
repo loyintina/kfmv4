@@ -167,8 +167,8 @@ function _scatterPosition(cardIndex: number): { left: number; top: number } {
   const MIN_GAP = 54;
   const pad = 16;
   const topMin = 60;
-  const rightMax = window.innerWidth - COMPACT_W - pad;
-  const bottomMax = window.innerHeight - safeB - COMPACT_H;
+  const rightMax = window.innerWidth - FLOATING_CARD_W - pad;
+  const bottomMax = window.innerHeight - safeB - FLOATING_CARD_H;
 
   // 纵向堆叠 fallback
   const fallbackLeft = safeL;
@@ -214,14 +214,13 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
   const contentEl = document.createElement('div');
   contentEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:2px 6px;font-size:11px;font-weight:500;color:rgba(224,224,224,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:none';
   bgLayer.appendChild(contentEl);
-  _renderFloatingContent(contentEl, 'compact', config.name);
   el.appendChild(bgLayer);
 
   const zIndex = _nextFloatingZ++;
   const item: FloatingCardItem = {
     el, config, zIndex, state: 'launching',
     tlOrb: null, trOrb: null, blOrb: null, brOrb: null, contentEl,
-    cardWidth: COMPACT_W, cardHeight: COMPACT_H,
+    cardWidth: FLOATING_CARD_W, cardHeight: FLOATING_CARD_H,
     compactMemW: COMPACT_W, compactMemH: COMPACT_H,
     activeMemW: FLOATING_CARD_W, activeMemH: FLOATING_CARD_H,
     accentColor: config.color2,
@@ -231,10 +230,11 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
   const leftRgba = _hexToRgba(config.color1, 1);
   const rightRgba = _hexToRgba(config.color2, 1);
 
-  // BR — 紧凑态唯一光球（无图标），点击触发展开
+  // BR — 展开态光球（+ 图标），点击触发收缩
   const brOrb = createDecoratedCorner(
-    COMPACT_W - rightOff - cornerSize,
-    COMPACT_H - bottomOff - cornerSize, cornerSize, cornerSize, rightRgba, '');
+    FLOATING_CARD_W - rightOff - cornerSize,
+    FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, rightRgba,
+    '<svg width="14" height="14" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" fill="none"/><line x1="6" y1="1.5" x2="6" y2="10.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="1.5" y1="6" x2="10.5" y2="6" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></svg>');
   brOrb.style.pointerEvents = 'auto';
   brOrb.style.cursor = 'pointer';
   brOrb.classList.add('floating-br-orb');
@@ -250,7 +250,7 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
   el.appendChild(tlOrb); item.tlOrb = tlOrb;
 
   // TR — 关闭
-  const trOrb = createDecoratedCorner(COMPACT_W - rightOff - cornerSize, cornerOff, cornerSize, cornerSize, rightRgba,
+  const trOrb = createDecoratedCorner(FLOATING_CARD_W - rightOff - cornerSize, cornerOff, cornerSize, cornerSize, rightRgba,
     '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c + sh) + ',' + (c - sh) + ') scale(' + s + ')"><line x1="4" y1="2" x2="10" y2="8" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></g></svg>');
   trOrb.style.pointerEvents = 'auto'; trOrb.style.cursor = 'pointer';
   trOrb.title = '\u5173\u95ed';
@@ -258,7 +258,7 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
   el.appendChild(trOrb); item.trOrb = trOrb;
 
   // BL — 下移一层
-  const blOrb = createDecoratedCorner(cornerOff, COMPACT_H - bottomOff - cornerSize, cornerSize, cornerSize, leftRgba,
+  const blOrb = createDecoratedCorner(cornerOff, FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, leftRgba,
     '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c - sh) + ',' + (c + sh) + ') scale(' + s + ')"><path d="M6,2 L6,10 M6,10 L3,7 M6,10 L9,7" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>');
   blOrb.style.pointerEvents = 'auto'; blOrb.style.cursor = 'pointer';
   blOrb.title = '\u4e0b\u79fb\u4e00\u5c42';
@@ -367,10 +367,16 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
   item.brOrb = brOrb;
 
   // 紧凑态初始样式
+  // 激活内容：文件浮卡直接进入展开态
+  if (config.contentHandler) {
+    config.contentHandler.activate(contentEl);
+    _renderFloatingContent(contentEl, 'active');
+  }
+
   el.style.cssText = [
     'position:fixed',
     'left:' + config.sourceX + 'px', 'top:' + config.sourceY + 'px',
-    'width:' + COMPACT_W + 'px', 'height:' + COMPACT_H + 'px',
+    'width:' + FLOATING_CARD_W + 'px', 'height:' + FLOATING_CARD_H + 'px',
     'border-radius:12px', 'padding:1px', 'padding-left:3px',
     'background:linear-gradient(135deg,' + _hexToRgba(config.color1, 0.85) + ' 30%,' + _hexToRgba(config.color2, 0.85) + ' 70%)',
     'pointer-events:auto', 'z-index:' + zIndex, 'opacity:1',
@@ -398,7 +404,7 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
     left: targetLeft, top: targetTop, scale: 1,
     duration: 0.4, ease: 'back.out(1.3)',
     onComplete: () => {
-      item.state = 'compact';
+      item.state = 'active';
     },
   });
 
