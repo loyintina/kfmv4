@@ -75,6 +75,8 @@ let _nextFloatingZ = Z_FLOATING_BASE;
 const _brOrbToItem = new WeakMap<HTMLElement, FloatingCardItem>();
 // ========== 浮卡光球拖拽状态（复刻 orb.ts 的全局变量） ==========
 let dragItem: FloatingCardItem | null = null;
+// 长按进入编辑模式后，原生 click 会趁虚而入触发收缩——用此标记跳过
+let _suppressNextClick: FloatingCardItem | null = null;
 
 // ========== 浮卡 ==========
 
@@ -246,7 +248,7 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
     '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c - sh) + ',' + (c - sh) + ') scale(' + s + ')"><path d="M6,10 L6,2 M6,2 L3,5 M6,2 L9,5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>');
   tlOrb.style.pointerEvents = 'auto'; tlOrb.style.cursor = 'pointer';
   tlOrb.title = '\u4e0a\u79fb\u4e00\u5c42';
-  tlOrb.addEventListener('click', () => { if (item.state !== 'active' && item.state !== 'compact') return; const above = _cardAbove(item); if (above) _swapZIndex(item, above); });
+  tlOrb.addEventListener('click', () => { const above = _cardAbove(item); if (above) _swapZIndex(item, above); });
   el.appendChild(tlOrb); item.tlOrb = tlOrb;
 
   // TR — 关闭
@@ -262,11 +264,12 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
     '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c - sh) + ',' + (c + sh) + ') scale(' + s + ')"><path d="M6,2 L6,10 M6,10 L3,7 M6,10 L9,7" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>');
   blOrb.style.pointerEvents = 'auto'; blOrb.style.cursor = 'pointer';
   blOrb.title = '\u4e0b\u79fb\u4e00\u5c42';
-  blOrb.addEventListener('click', () => { if (item.state !== 'active' && item.state !== 'compact') return; const below = _cardBelow(item); if (below) _swapZIndex(item, below); });
+  blOrb.addEventListener('click', () => { const below = _cardBelow(item); if (below) _swapZIndex(item, below); });
   el.appendChild(blOrb); item.blOrb = blOrb;
 
   brOrb.addEventListener('click', (e) => {
     e.stopPropagation();
+    if (_suppressNextClick === item) { _suppressNextClick = null; return; }
     if (item.state === 'compact') {
       item.state = 'expanding';
       anim.to(contentEl, { opacity: 0, duration: 0.1, ease: 'none', onComplete: () => {
@@ -560,6 +563,7 @@ export function initFloatingCards(): void {
     },
     onExitEdit() {
       if (!dragItem) return;
+      _suppressNextClick = dragItem;
       dragItem.state = preEdit;
       dragItem.el.style.boxShadow = theme.stack.blurShadow;
       const gd = dragItem.brOrb?.firstElementChild as HTMLElement;
