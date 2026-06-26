@@ -351,11 +351,11 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `color-utils.ts` | 45 | 2 | ✅ 分组表 | 颜色工具函数（从 tree-swipe 拆分） |
 | `debug-assert.ts` | 23 | 1 | ✅ 提及 | 运行时断言 |
 | `dom-refs.ts` | 36 | 9 | ✅ 注册表 | DOM 元素引用 |
-| `floating-card.ts` | 642 | 2 | ✅ 独立条目 | 浮卡系统（核心模块） |
+| `floating-card.ts` | 638 | 2 | ✅ 独立条目 | 浮卡系统（核心模块） |
 | `gesture-registry.ts` | 245 | 6 | ✅ 独立条目 | 手势注册中心 |
 | `gestures.ts` | 69 | 1 | ✅ 提及 | 页面滑动手势配置 |
 | `interaction-constants.ts` | 20 | 2 | ✅ 分组表 | 交互常量共享层（v6.6.0 新增） |
-| `drag-handler.ts` | 140 | 2 | ✅ 分组表 | 共享拖动状态机（orb + floating-card 去重） |
+| `drag-handler.ts` | 135 | 2 | ✅ 分组表 | 共享拖动状态机（orb + floating-card 去重） |
 | `file-action-bar.ts` | 426 | 2 | ✅ 分组表 | 文件行长按 → 底部抽屉操作栏 |
 | `logger.ts` | 57 | 3 | ✅ 分组表 | KFM 日志系统 |
 | `mode-system.ts` | 369 | 1 | ✅ 分组表 | 模式按钮系统（从 tree-swipe 拆分，v6.8.0 新增） |
@@ -374,7 +374,7 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `ui-registry.ts` | 333 | 9 | ✅ 独立条目 | UI 元素注册表 |
 | `ui.ts` | 70 | 10 | ✅ 提及 | UI 初始化编排 |
 | `ws-channel.ts` | 318 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
-| **合计** | **9154** | | | |
+| **合计** | **9145** | | | |
 
 ### 死代码检查
 

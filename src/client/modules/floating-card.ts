@@ -11,7 +11,6 @@ import { currentTheme as theme } from './theme.js';
 import { Registry } from './ui-registry.js';
 import { MARGIN, FLOATING_CARD_W, FLOATING_CARD_H } from './interaction-constants.js';
 import { createDragHandler, type DragConfig } from './drag-handler.js';
-import { log } from './logger.js';
 
 const orbT = theme.cornerOrb;
 
@@ -283,6 +282,7 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
     'border-radius:12px', 'padding:1px', 'padding-left:3px',
     'background:linear-gradient(135deg,' + _hexToRgba(config.color1, 0.85) + ' 30%,' + _hexToRgba(config.color2, 0.85) + ' 70%)',
     'pointer-events:auto', 'z-index:' + zIndex, 'opacity:1',
+    'user-select:none', '-webkit-user-select:none',
   ].join(';');
 
   document.body.appendChild(el);
@@ -534,7 +534,6 @@ export function initFloatingCards(): void {
   const dragCfg: DragConfig = {
     getElement(e: PointerEvent) {
       const orbEl = (e.target as HTMLElement).closest('.floating-br-orb') as HTMLElement;
-      log('[BR] getElement target=' + ((e.target as HTMLElement).tagName || '?') + ' closest=' + (orbEl ? 'OK' : 'NULL'));
       if (!orbEl) return null;
       const item = _brOrbToItem.get(orbEl);
       if (!item) return null;
@@ -544,9 +543,7 @@ export function initFloatingCards(): void {
     },
     canStart() {
       if (!dragItem) return false;
-      const ok = dragItem.state === 'compact' || dragItem.state === 'active' || dragItem.state === 'editing';
-      if (!ok) log('[BR] canStart BLOCKED state=' + dragItem.state);
-      return ok;
+      return dragItem.state === 'compact' || dragItem.state === 'active' || dragItem.state === 'editing';
     },
     getOrbStartRect() {
       return dragItem!.brOrb!.getBoundingClientRect();
@@ -628,13 +625,12 @@ export function initFloatingCards(): void {
   };
 
   const drag = createDragHandler(dragCfg);
-  const _origOnStart = drag.onStart;
   gestures.register({
     id: 'floating-orb',
     targetFilter: '.floating-br-orb',
     priority: 100,
     stopPropagation: true,
-    onStart(e: PointerEvent) { log('[BR] onStart'); _origOnStart(e); },
+    onStart: drag.onStart,
     onMove: drag.onMove,
     onEnd: drag.onEnd,
   });

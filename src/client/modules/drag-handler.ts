@@ -8,7 +8,6 @@
  */
 
 import { LONG_PRESS_MS, DRAG_THRESHOLD } from './interaction-constants.js';
-import { log } from './logger.js';
 
 export interface DragConfig {
   /** 从 PointerEvent 获取被拖拽的 DOM 元素。返回 null 则放弃。 */
@@ -94,18 +93,15 @@ export function createDragHandler(cfg: DragConfig) {
     s.startOrbY = rect.top;
 
     s.longPressTimer = setTimeout(() => {
-      log('[DRAG] timer FIRED');
       s.longPressFired = true;
       cfg.onEnterEdit();
     }, LONG_PRESS_MS);
-    log('[DRAG] timer set ' + LONG_PRESS_MS + 'ms');
   }
 
   function onMove(e: PointerEvent): void {
     const dx = e.clientX - s.startClientX;
     const dy = e.clientY - s.startClientY;
     if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
-      log('[DRAG] drag start dx=' + dx.toFixed(1) + ' dy=' + dy.toFixed(1));
       s.dragging = true;
       if (s.longPressTimer) { clearTimeout(s.longPressTimer); s.longPressTimer = null; }
     }
@@ -124,7 +120,6 @@ export function createDragHandler(cfg: DragConfig) {
       reset();
       return;
     }
-    log('[DRAG] onEnd drag=' + s.dragging + ' longFired=' + s.longPressFired + ' editing=' + cfg.isEditing());
     if (s.longPressTimer) { clearTimeout(s.longPressTimer); s.longPressTimer = null; }
     if (cfg.isEditing()) {
       cfg.onExitEdit();
