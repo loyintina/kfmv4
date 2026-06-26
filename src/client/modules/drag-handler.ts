@@ -118,7 +118,12 @@ export function createDragHandler(cfg: DragConfig) {
     }
   }
 
-  function onEnd(): void {
+  function onEnd(e?: PointerEvent): void {
+    if (e?.type === 'pointercancel') {
+      if (s.longPressTimer) { clearTimeout(s.longPressTimer); s.longPressTimer = null; }
+      reset();
+      return;
+    }
     log('[DRAG] onEnd drag=' + s.dragging + ' longFired=' + s.longPressFired + ' editing=' + cfg.isEditing());
     if (s.longPressTimer) { clearTimeout(s.longPressTimer); s.longPressTimer = null; }
     if (cfg.isEditing()) {
