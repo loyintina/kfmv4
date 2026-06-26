@@ -159,17 +159,17 @@ export function initScrollGesture(): void {
       }
     },
     onMove(e, dx) {
-      // 轴锁定：20px 触发，倾斜比超过 1.5:1 才锁定方向，居中手势继续采样
+      // 扇形分区：右侧 150°（±75° 以水平线为轴）→ 水平右滑，其余 → 竖向
       if (_gestureAxis === 'none') {
         const absDx = Math.abs(dx ?? (e.clientX - _gestureStartX));
         const absDy = Math.abs(e.clientY - _gestureStartY);
-        if (absDx > 20 || absDy > 20) {
-          if (absDx > absDy * 1.5) _gestureAxis = 'horizontal';
-          else if (absDy > absDx * 1.5) _gestureAxis = 'vertical';
+        if (absDx > 20) {
+          _gestureAxis = absDy < absDx * 3.73 ? 'horizontal' : 'vertical';
+        } else if (absDy > 20) {
+          _gestureAxis = 'vertical';
         }
       }
       if (_gestureAxis === 'horizontal') return;
-      if (_gestureAxis === 'none' && _touchIsCursor) return;
 
       const y = e.clientY;
       const now = performance.now();
@@ -235,21 +235,14 @@ export function initScrollGesture(): void {
         return;
       }
 
-      if (_gestureAxis === 'horizontal') {
-        if (dx > 50) {
-          L.setSwipeGuard();
-          L.triggerRowSwipe();
-        } else if (dx < -60) {
-          L.triggerCardDismiss() || closeSidebar();
-        }
+      if (_gestureAxis === 'horizontal' && dx > 50) {
+        L.setSwipeGuard();
+        L.triggerRowSwipe();
         _gestureAxis = 'none';
         return;
       }
-
-      // 右滑兜底：轴锁定误判为竖向时，只要最终 dx 远超 dy 依然生效
-      if (dx > 70 && dx > Math.abs(dy) * 2) {
-        L.setSwipeGuard();
-        L.triggerRowSwipe();
+      if (_gestureAxis === 'horizontal' && dx < -60) {
+        L.triggerCardDismiss() || closeSidebar();
         _gestureAxis = 'none';
         return;
       }
