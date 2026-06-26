@@ -645,36 +645,11 @@ interface KFMState {
 
 ---
 
-### Phase 4 — 文件渲染器与双模式预览/编辑
+### Phase 4 — 文件渲染器与双模式预览/编辑（✅ v6.9.1）
 
-> **设计文档**：`docs/design/VISION_AND_ROADMAP.md` §4.6。本节仅记录实施计划摘要。
+> 实施完成，详细记录见 `docs/archive/design/WORKBENCH_PHASE4.md`。
 
-**目标**：实现文件卡片的预览（只读）与编辑（读写）双模式。不同文件类型由独立渲染器处理。
-
-**架构**：`ContentRenderer` 接口 — `renderPreview()` + `renderEditor()`。类型路由表按扩展名匹配渲染器。模式切换通过 BR 光球单击循环：`compact → active(preview) → active(edit) → ...`
-
-| 阶段 | 内容 | 代码量估 |
-|------|------|---------|
-| A. 基础设施 | 类型路由表 + CardContentHandler 工厂 | ~50 |
-| B. 文本预览+编辑 | text/code 共用 preview 和 edit textarea + save API | ~50 |
-| C. 富媒体 + 二进制 | 图片查看器 + 文件元信息展示 | ~40 |
-| D. highlight.js 代码高亮 + 复制按钮 + 复选框自定义样式 | ~40 |
-| E. KaTeX 数学公式 + Mermaid 图表 | ~100 |
-| F. 图片预览（\<img\> 渲染 + /api/files/media 端点） | ~40 |
-| | **合计** | **~360 行** |
-
-**验证**：投放文件卡 → BR 光球展开 → 看到文件内容 → 点编辑 → 改写 → 保存 → 文件更新。
-
-#### Phase 4G — 反向新建文件（⏸️ 推迟）
-
-> **推迟理由**（2026-06-25）：当前 Phase 7 提供的文件树内"新建文件夹/新建文件"已覆盖日常需求。反向从卡片堆新建文件需要模板系统支撑，更适合与 Phase I（卡片插件系统）一起实施。
->
-> **设计方向**（已讨论，待实施）：
-> - 卡片堆预设模板列表（Markdown / TypeScript / JavaScript / 纯文本），每个模板指定默认后缀和图标
-> - 选择模板 → 弹出空白编辑器浮卡（直接进编辑模式）
-> - 底部保存栏：`[📁 选目录]`（复用文件树光标） + 文件名输入框（带后缀） + `[保存]`
-> - 保存后调用 `POST /api/files/create-file` + `POST /api/files/write`，卡片自动绑定文件路径，变为普通文件卡
-> - 未来扩展：图片/视频/Docx 等专用编辑器以新模板形式注册
+**已完成**：`handler-factory.ts` 工厂按文件类型路由预览/编辑双模式。支持 Markdown（marked + KaTeX 数学公式 + Mermaid 流程图）、代码高亮（highlight.js）、图片预览、二进制回退展示。4G（反向新建文件）推迟到 Phase I。
 
 ---
 
