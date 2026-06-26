@@ -159,18 +159,19 @@ export function initScrollGesture(): void {
       }
     },
     onMove(e, dx) {
-      // 扇形分区：右侧 150°（±75° 以水平线为轴）→ 水平右滑，其余 → 竖向
+      // 12px 死区后扇形分区：右侧 150°（±75°）→ 水平右滑，其余 → 竖向
+      // 纯竖向（dx<5px）dy>12px 时提前解锁，其余一律等 dx 到 12px 再判
       if (_gestureAxis === 'none') {
         const absDx = Math.abs(dx ?? (e.clientX - _gestureStartX));
         const absDy = Math.abs(e.clientY - _gestureStartY);
-        if (absDx > 20) {
+        if (absDx > 12) {
           _gestureAxis = absDy < absDx * 3.73 ? 'horizontal' : 'vertical';
-        } else if (absDy > 20) {
+        } else if (absDy > 12 && absDx < 5) {
           _gestureAxis = 'vertical';
         }
       }
       if (_gestureAxis === 'horizontal') return;
-      if (_gestureAxis === 'none' && _touchIsCursor) return;
+      if (_gestureAxis === 'none') return;
 
       const y = e.clientY;
       const now = performance.now();
