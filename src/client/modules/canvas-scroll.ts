@@ -169,6 +169,7 @@ export function initScrollGesture(): void {
         }
       }
       if (_gestureAxis === 'horizontal') return;
+      if (_gestureAxis === 'none' && _touchIsCursor) return;
 
       const y = e.clientY;
       const now = performance.now();
