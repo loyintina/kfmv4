@@ -159,12 +159,13 @@ export function initScrollGesture(): void {
       }
     },
     onMove(e, dx) {
-      // 45° 分界：dx>dy 锁水平、否则锁竖
+      // 轴锁定：20px 触发，倾斜比超过 1.5:1 才锁定方向，居中手势继续采样
       if (_gestureAxis === 'none') {
         const absDx = Math.abs(dx ?? (e.clientX - _gestureStartX));
         const absDy = Math.abs(e.clientY - _gestureStartY);
-        if (absDx > 12 || absDy > 12) {
-          _gestureAxis = absDx > absDy ? 'horizontal' : 'vertical';
+        if (absDx > 20 || absDy > 20) {
+          if (absDx > absDy * 1.5) _gestureAxis = 'horizontal';
+          else if (absDy > absDx * 1.5) _gestureAxis = 'vertical';
         }
       }
       if (_gestureAxis === 'horizontal') return;
@@ -240,6 +241,14 @@ export function initScrollGesture(): void {
         } else if (dx < -60) {
           L.triggerCardDismiss() || closeSidebar();
         }
+        _gestureAxis = 'none';
+        return;
+      }
+
+      // 右滑兜底：轴锁定误判为竖向时，只要最终 dx 远超 dy 依然生效
+      if (dx > 70 && dx > Math.abs(dy) * 2) {
+        L.setSwipeGuard();
+        L.triggerRowSwipe();
         _gestureAxis = 'none';
         return;
       }
