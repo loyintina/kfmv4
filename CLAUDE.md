@@ -41,7 +41,8 @@ docs/
 ├── KFM_V4_INVARIANTS.md     # 修改约束协议：心法原则+自查清单（改代码前必读）
 ├── design/                  # 设计中（待实现的设计文档）
 │   ├── VISION_AND_ROADMAP.md    # 远景：核心理念 + 演进路线
-│   └── WORKBENCH_SPEC.md        # 卡片工作台（唯一 active 设计提案）
+│   ├── WORKBENCH_SPEC.md        # 卡片工作台（active 设计提案）
+│   └── TERMINAL_CARD_SPEC.md    # 03 号终端卡设计（active 设计提案）
 └── archive/                 # 历史归档
     ├── README.md            # 子目录导览
     ├── handoffs/            # 版本交接记录
@@ -52,7 +53,7 @@ docs/
     └── legacy/              # 旧版本文件
 ```
 
-> 接手新对话的推荐阅读顺序：`CLAUDE.md` → `HANDBOOK.md` §2（当前状态）→ `KFM_V4_INVARIANTS.md`（修改规则）→ `docs/design/WORKBENCH_SPEC.md`（当前方向）→ `HANDBOOK.md` §3（待办）→ `HANDBOOK.md` §七（审计问题清单）→ `docs/archive/audits/v6.8-code-quality/AUDIT_TRACKER.md`（已完成审计记录）。引擎层改动前读 `docs/archive/design/ENGINE_ARCHITECTURE.md`。
+> 接手新对话的推荐阅读顺序：`CLAUDE.md` → `HANDBOOK.md` §2（当前状态）→ `KFM_V4_INVARIANTS.md`（修改规则）→ `docs/design/WORKBENCH_SPEC.md`（当前方向）→ `docs/design/TERMINAL_CARD_SPEC.md`（终端卡设计）→ `HANDBOOK.md` §3（待办）→ `HANDBOOK.md` §七（审计问题清单）→ `docs/archive/audits/v6.8-code-quality/AUDIT_TRACKER.md`（已完成审计记录）。引擎层改动前读 `docs/archive/design/ENGINE_ARCHITECTURE.md`。
 
 ## 完整性校验
 

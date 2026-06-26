@@ -67,7 +67,7 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 | **AI / 通信** | `orb.ts` `ws-channel.ts` `debug-assert.ts` `gestures.ts` | 光球面板、WebSocket、运行时断言、页面手势 |
 | **日志** | `logger.ts` | KFM 日志系统（debug-card 伴侣） |
 
-### 服务端模块（5 个）
+### 服务端模块（6 个）
 
 服务端是 Express 4 + WebSocket 服务，通过 `index.ts` 统一入口编排，架构流向如下：
 
@@ -76,6 +76,7 @@ index.ts (入口路由)
   ├── ai-tools.ts         — 从浏览器拉取 Registry snapshot（供 AI agent 查询页面状态）
   ├── capability-executor.ts  — 将 Registry 注册的能力映射为可执行函数（AI 工具调用端点）
   ├── path-utils.ts       — 安全路径守卫（所有用户路径逃逸校验，安全关键模块）
+  ├── terminal-pty.ts     — PTY 会话管理（Phase 8: 终端卡后端，占位）
   └── ws-server.ts        — WebSocket 通信通道（服务端↔浏览器双向实时通信）
 ```
 
@@ -85,6 +86,7 @@ index.ts (入口路由)
 | `ai-tools.ts` | 包装 Registry snapshot 为服务端 API 端点（GET/POST） |
 | `capability-executor.ts` | 维护能力名→执行函数映射，被 AI 命令调用 |
 | `path-utils.ts` | `SAFE_ROOT` + `sanitizePath()`，路径逃逸守卫 |
+| `terminal-pty.ts` | PTY 会话 spawn/write/resize/kill（Phase 8: 03 号终端卡后端） |
 | `ws-server.ts` | WebSocket 连接管理，接收推送的 snapshot |
 
 > 每个文件头部注释已有完整职责说明，此处仅列出架构概览。服务端不涉及复杂状态机，接手者读各自文件即可。
@@ -328,7 +330,7 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | ~~12~~ | ~~🟡~~ ✅ | ~~HANDBOOK 陷阱 #12 描述需更新~~ 已更新 | 已加注设计阶段 |
 | ~~13~~ | ~~🟠~~ ✅ | ~~HANDBOOK §1 模块列表不完整~~ 已修复 | §1 已补全为 29 个模块的职能分组表 |
 | 14 | ✅ 已处理 | `path-utils.ts` 无独立文档描述 | 头部注释已补充安全约束+依赖方+环境变量说明 |
-| 15 | ✅ 已处理 | 服务端 5 个文件总体无架构文档 | HANDBOOK §1「服务端模块」已补充架构概览 + 5 个模块职责表 + 调用流向图 |
+| 15 | ✅ 已处理 | 服务端 6 个文件总体无架构文档 | HANDBOOK §1「服务端模块」已补充架构概览 + 模块职责表 + 调用流向图 |
 | 16 | ✅ 已排查 | 注册表遗漏 & 重复造轮子 | 交互层13=MANIFEST13、内容层3=MANIFEST3、能力层3=MANIFEST3，一一对应。类型共享无重复，点击队列无重复，缩进逻辑无重复。发现1处可修复的重复：`floating-card.ts:555` 局部定义 `MARGIN_F=8` 绕过共享常量 `MARGIN`—已修正 |
 ### 审计总结（2026-06-08）
 
@@ -375,11 +377,13 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `ui-registry.ts` | 333 | 9 | ✅ 独立条目 | UI 元素注册表 |
 | `ui.ts` | 70 | 10 | ✅ 提及 | UI 初始化编排 |
 | `ws-channel.ts` | 318 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
-| **合计** | **9161** | | | |
+| `terminal-aux-bar.ts` | 2 | 0 | TERMINAL_CARD_SPEC | Phase 8: 终端全局辅助键盘栏（占位） |
+| `terminal-card.ts` | 2 | 0 | TERMINAL_CARD_SPEC | Phase 8: 03 号终端卡 ContentHandler（占位） |
+| **合计** | **9165** | | | |
 
 ### 死代码检查
 
-**结论：无死代码。** 所有 34 个模块都被至少 1 个文件导入。`src/cards/` 目录已彻底删除。实际使用的 logger 在 `src/client/modules/logger.ts`。
+**结论：无死代码。** 所有 36 个模块都被至少 1 个文件导入。`src/cards/` 目录已彻底删除。实际使用的 logger 在 `src/client/modules/logger.ts`。
 
 ### 引擎层清单（14 文件）
 

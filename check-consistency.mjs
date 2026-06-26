@@ -166,8 +166,8 @@ function checkNumericClaims() {
 
   // --- 服务端模块数量 ---
   const serverFiles = countTsFiles(join(ROOT, 'src', 'server'));
-  if (serverFiles !== 5) {
-    error(`服务端有 ${serverFiles} 个 .ts 文件，但文档声称 5 个`);
+  if (serverFiles !== 6) {
+    error(`服务端有 ${serverFiles} 个 .ts 文件，但文档声称 6 个`);
   }
 
   // --- 测试数量 ---
