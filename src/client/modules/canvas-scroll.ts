@@ -159,15 +159,26 @@ export function initScrollGesture(): void {
       }
     },
     onMove(e, dx) {
-      // 12px 死区后扇形分区：右侧 150°（±75°）→ 水平右滑，其余 → 竖向
+      // 12px 死区后扇形分区：右侧 130°（±65°）→ 水平右滑，其余 → 竖向
       // 纯竖向（dx<5px）dy>12px 时提前解锁，其余一律等 dx 到 12px 再判
       if (_gestureAxis === 'none') {
         const absDx = Math.abs(dx ?? (e.clientX - _gestureStartX));
         const absDy = Math.abs(e.clientY - _gestureStartY);
+        const prev = _gestureAxis;
         if (absDx > 12) {
-          _gestureAxis = absDy < absDx * 3.73 ? 'horizontal' : 'vertical';
+          _gestureAxis = absDy < absDx * 2.14 ? 'horizontal' : 'vertical';
         } else if (absDy > 12 && absDx < 5) {
           _gestureAxis = 'vertical';
+        }
+        // 轴从 none 转为 vertical 时，重置竖向跟踪变量，消去死区 12px 的瞬跳
+        if (prev === 'none' && _gestureAxis === 'vertical') {
+          if (_touchIsCursor) {
+            cursorTouchStartY = e.clientY;
+            cursorTouchBase = getCursorRowIndex();
+          } else {
+            touchStartY = e.clientY;
+            touchScrollY = getRootScrollY() ?? 0;
+          }
         }
       }
       if (_gestureAxis === 'horizontal') return;
