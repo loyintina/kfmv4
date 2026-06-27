@@ -53,7 +53,7 @@ export function createTerminalHandler(): {
     },
 
     deactivate(contentEl) {
-      _renderer = null;
+      if (_renderer) { _renderer.dispose(); _renderer = null; }
       contentEl.innerHTML = '';
     },
   };

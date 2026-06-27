@@ -62,6 +62,8 @@ export class TerminalRenderer {
   private _containerH = 0;
   private _cursorR = 0;
   private _cursorC = 0;
+  private _cursorVisible = true;
+  private _blinkTimer: ReturnType<typeof setInterval> | null = null;
 
   /** 在容器内创建 canvas 并初始化 */
   mount(containerEl: HTMLElement): void {
@@ -81,11 +83,13 @@ export class TerminalRenderer {
       this._layout();
       if (this._cols > 0 && this._rows > 0) {
         this.write('hello\r\nworld\r\n> ');
+        this._startBlink();
       } else {
         requestAnimationFrame(() => {
           this._layout();
           if (this._cols > 0 && this._rows > 0) {
             this.write('hello\r\nworld\r\n> ');
+            this._startBlink();
           }
         });
       }
@@ -129,6 +133,7 @@ export class TerminalRenderer {
   /** 往终端写入文本，处理 \n \r \b */
   write(text: string): void {
     if (this._cols <= 0 || this._rows <= 0) return;
+    this._cursorVisible = true;
     for (let i = 0; i < text.length; i++) {
       const ch = text[i];
       if (ch === '\r') {
@@ -181,6 +186,29 @@ export class TerminalRenderer {
     this._render();
   }
 
+  /** 启动光标闪烁定时器 */
+  private _startBlink(): void {
+    if (this._blinkTimer) return;
+    this._blinkTimer = setInterval(() => {
+      this._cursorVisible = !this._cursorVisible;
+      this._render();
+    }, 530);
+  }
+
+  /** 销毁渲染器 */
+  dispose(): void {
+    if (this._blinkTimer) {
+      clearInterval(this._blinkTimer);
+      this._blinkTimer = null;
+    }
+    if (this._canvas) {
+      this._canvas.remove();
+      this._canvas = null;
+      this._ctx = null;
+    }
+    this._cells = [];
+  }
+
   /** 绘制网格到 canvas */
   private _render(): void {
     if (!this._ctx) return;
@@ -208,6 +236,12 @@ export class TerminalRenderer {
         ctx.fillStyle = cell.fg;
         ctx.fillText(cell.char, c * cw, topPad + (r + 0.5) * ch);
       }
+    }
+
+    // 光标
+    if (this._cursorVisible && this._cursorR < this._rows && this._cursorC < this._cols) {
+      ctx.fillStyle = currentTheme.canvas.accent;
+      ctx.fillRect(this._cursorC * cw, topPad + this._cursorR * ch, cw, ch);
     }
   }
 
