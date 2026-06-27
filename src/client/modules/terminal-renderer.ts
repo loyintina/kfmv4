@@ -74,7 +74,19 @@ export class TerminalRenderer {
     this._canvas = canvas;
     this._ctx = canvas.getContext('2d')!;
 
-    this._layout();
+    // 推迟到下一帧：浏览器需要完成 DOM 布局后才能读到正确的 clientRect
+    requestAnimationFrame(() => {
+      this._layout();
+      if (this._cols > 0 && this._rows > 0) {
+        this.testRender();
+      } else {
+        // 偶发情况：一帧不够，再等一帧
+        requestAnimationFrame(() => {
+          this._layout();
+          this.testRender();
+        });
+      }
+    });
   }
 
   /** 重算 cols/rows 并重建网格 */

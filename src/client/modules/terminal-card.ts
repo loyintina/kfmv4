@@ -47,10 +47,9 @@ export function createTerminalHandler(): {
 
       contentEl.appendChild(wrap);
 
-      // 初始化渲染器
+      // 初始化渲染器（mount 内部用 rAF 延迟触发 testRender）
       _renderer = new TerminalRenderer();
       _renderer.mount(canvasContainer);
-      _renderer.testRender();
     },
 
     deactivate(contentEl) {
