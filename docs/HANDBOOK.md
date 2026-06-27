@@ -376,11 +376,11 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `tree-swipe.ts` | 649 | 1 | ✅ 分组表 | 文件行右滑 → 卡片堆（从 tree-render 拆分，v6.8.0 拆分为 color-utils + mode-system） |
 | `ui-registry.ts` | 333 | 9 | ✅ 独立条目 | UI 元素注册表 |
 | `ui.ts` | 70 | 10 | ✅ 提及 | UI 初始化编排 |
-| `ws-channel.ts` | 318 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
+| `ws-channel.ts` | 350 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
 | `terminal-aux-bar.ts` | 2 | 0 | TERMINAL_CARD_SPEC | Phase 8: 终端全局辅助键盘栏（占位） |
-| `terminal-card.ts` | 38 | 0 | TERMINAL_CARD_SPEC | Phase 8: 03 号终端卡 ContentHandler（占位） |
-| `terminal-renderer.ts` | 385 | 0 | TERMINAL_CARD_SPEC | Phase 8: Canvas 终端渲染器（占位） |
-| **合计** | **9630** | | | |
+| `terminal-card.ts` | 86 | 0 | TERMINAL_CARD_SPEC | Phase 8: 03 号终端卡 ContentHandler（占位） |
+| `terminal-renderer.ts` | 393 | 0 | TERMINAL_CARD_SPEC | Phase 8: Canvas 终端渲染器（占位） |
+| **合计** | **9718** | | | |
 
 ### 死代码检查
 

@@ -48,6 +48,7 @@ class WsChannel {
   private _connected = false;
   private _closed = false;
   private commandHandlers = new Map<string, CommandHandler>();
+  private messageHandlers = new Map<string, Array<(payload: unknown) => void>>();
 
   /** 是否已连接 */
   get connected(): boolean {
@@ -139,6 +140,27 @@ class WsChannel {
     this.commandHandlers.delete(action);
   }
 
+  /** 发送自定义消息 */
+  sendMessage(type: string, payload: unknown): void {
+    this.send(type, payload);
+  }
+
+  /** 注册消息处理器（按 type 分发） */
+  onMessage(type: string, handler: (payload: unknown) => void): void {
+    let handlers = this.messageHandlers.get(type);
+    if (!handlers) { handlers = []; this.messageHandlers.set(type, handlers); }
+    handlers.push(handler);
+  }
+
+  /** 取消注册消息处理器 */
+  offMessage(type: string, handler: (payload: unknown) => void): void {
+    const handlers = this.messageHandlers.get(type);
+    if (handlers) {
+      const idx = handlers.indexOf(handler);
+      if (idx >= 0) handlers.splice(idx, 1);
+    }
+  }
+
   /** 推送当前 snapshot 到服务端（带防抖） */
   pushSnapshot(): void {
     if (this.pushTimer) return; // 防抖：已有待推送，跳过
@@ -192,8 +214,18 @@ class WsChannel {
         log('[warn] [ws-channel] 服务端错误:', msg.payload);
         break;
 
-      default:
-        log('[warn] [ws-channel] 未知消息类型:', msg.type);
+      case 'terminal-opened':
+      case 'terminal-output':
+      case 'terminal-exit': {
+        const handlers = this.messageHandlers.get(msg.type);
+        if (handlers) for (const h of handlers) h(msg.payload);
+        break;
+      }
+
+      default: {
+        const handlers = this.messageHandlers.get(msg.type);
+        if (handlers) { for (const h of handlers) h(msg.payload); } else { log('[warn] [ws-channel] 未知消息类型:', msg.type); }
+      }
     }
   }
 

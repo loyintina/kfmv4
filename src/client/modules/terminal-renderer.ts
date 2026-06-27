@@ -99,6 +99,7 @@ export class TerminalRenderer {
   private _inEsc = false;
   private _savedR = 0;
   private _savedC = 0;
+  private _onInput: ((data: string) => void) | null = null;
 
   /** 在容器内创建 canvas 并初始化 */
   mount(containerEl: HTMLElement): void {
@@ -113,28 +114,32 @@ export class TerminalRenderer {
     this._canvas = canvas;
     this._ctx = canvas.getContext('2d')!;
 
+    // 键盘输入
+    canvas.tabIndex = 0;
+    canvas.addEventListener('click', () => canvas.focus());
+    canvas.addEventListener('keydown', (e) => {
+      if (!this._onInput) return;
+      if (e.key === 'Enter') { e.preventDefault(); this._onInput('\r'); return; }
+      if (e.key === 'Backspace') { e.preventDefault(); this._onInput('\b'); return; }
+      if (e.key === 'Tab') { e.preventDefault(); this._onInput('\t'); return; }
+      if (e.key === 'Escape') { e.preventDefault(); this._onInput('\x1b'); return; }
+      if (e.key === 'ArrowUp') { e.preventDefault(); this._onInput('\x1b[A'); return; }
+      if (e.key === 'ArrowDown') { e.preventDefault(); this._onInput('\x1b[B'); return; }
+      if (e.key === 'ArrowRight') { e.preventDefault(); this._onInput('\x1b[C'); return; }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); this._onInput('\x1b[D'); return; }
+      if (e.ctrlKey && e.key.length === 1) {
+        e.preventDefault();
+        this._onInput(String.fromCharCode(e.key.toLowerCase().charCodeAt(0) - 96));
+        return;
+      }
+      if (e.key.length === 1) { e.preventDefault(); this._onInput(e.key); }
+    });
+
     // 推迟到下一帧：浏览器需要完成 DOM 布局后才能读到正确的 clientRect
     requestAnimationFrame(() => {
       this._layout();
-      if (this._cols > 0 && this._rows > 0) {
-        this.write('\x1b[2J');
-        this.write('\x1b[31m红色\x1b[0m 正常\r\n');
-        this.write('\x1b[1;32m粗体绿\x1b[0m\r\n');
-        this.write('\x1b[3;10H★\r\n');
-        this.write('\x1b[44m\x1b[37m白字蓝底\x1b[0m\r\n');
-        this.write('> ');
-      } else {
-        requestAnimationFrame(() => {
-          this._layout();
-          if (this._cols > 0 && this._rows > 0) {
-            this.write('\x1b[2J');
-        this.write('\x1b[31m红色\x1b[0m 正常\r\n');
-        this.write('\x1b[1;32m粗体绿\x1b[0m\r\n');
-        this.write('\x1b[3;10H★\r\n');
-        this.write('\x1b[44m\x1b[37m白字蓝底\x1b[0m\r\n');
-        this.write('> ');
-          }
-        });
+      if (this._cols <= 0 || this._rows <= 0) {
+        requestAnimationFrame(() => this._layout());
       }
     });
   }
@@ -299,6 +304,9 @@ export class TerminalRenderer {
 
   /** 设置光标色（跟随卡片 accent） */
   setAccent(color: string): void { this._accent = color; }
+
+  /** 注册键盘输入回调（Phase 8.6: WebSocket 桥接用） */
+  onInput(fn: ((data: string) => void) | null): void { this._onInput = fn; }
 
   /** 绘制网格到 canvas */
   private _render(): void {
