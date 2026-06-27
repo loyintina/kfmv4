@@ -187,6 +187,11 @@ export class TerminalRenderer {
     const ctx = this._ctx;
     const cw = this._cellW;
     const ch = this._cellH;
+    const topPad = 4;
+
+    // 全画布填充背景
+    ctx.fillStyle = DEFAULT_BG;
+    ctx.fillRect(0, 0, this._containerW, this._containerH);
 
     ctx.font = FONT;
     ctx.textBaseline = 'middle';
@@ -195,15 +200,13 @@ export class TerminalRenderer {
       const row = this._cells[r];
       for (let c = 0; c < this._cols; c++) {
         const cell = row[c];
-        // 非默认背景：先画底色
         if (cell.bg !== DEFAULT_BG) {
           ctx.fillStyle = cell.bg;
-          ctx.fillRect(c * cw, r * ch, cw, ch);
+          ctx.fillRect(c * cw, topPad + r * ch, cw, ch);
         }
-        // 空格跳过
         if (cell.char === ' ') continue;
         ctx.fillStyle = cell.fg;
-        ctx.fillText(cell.char, c * cw, (r + 0.5) * ch);
+        ctx.fillText(cell.char, c * cw, topPad + (r + 0.5) * ch);
       }
     }
   }

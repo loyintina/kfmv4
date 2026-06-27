@@ -379,8 +379,8 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `ws-channel.ts` | 318 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
 | `terminal-aux-bar.ts` | 2 | 0 | TERMINAL_CARD_SPEC | Phase 8: 终端全局辅助键盘栏（占位） |
 | `terminal-card.ts` | 60 | 0 | TERMINAL_CARD_SPEC | Phase 8: 03 号终端卡 ContentHandler（占位） |
-| `terminal-renderer.ts` | 246 | 0 | TERMINAL_CARD_SPEC | Phase 8: Canvas 终端渲染器（占位） |
-| **合计** | **9473** | | | |
+| `terminal-renderer.ts` | 249 | 0 | TERMINAL_CARD_SPEC | Phase 8: Canvas 终端渲染器（占位） |
+| **合计** | **9476** | | | |
 
 ### 死代码检查
 
