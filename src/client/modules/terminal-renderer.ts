@@ -11,7 +11,7 @@ import { currentTheme } from './theme.js';
 
 // ========== 步骤 0：字体测量 ==========
 
-const FONT = '11px monospace';
+const FONT = '9px monospace';
 
 interface FontMetrics {
   cellW: number;
