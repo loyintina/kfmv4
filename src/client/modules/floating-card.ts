@@ -438,13 +438,7 @@ export function initFloatingCards(): void {
 
     if (item.state === 'compact') {
       item.state = 'expanding';
-      anim.to(contentEl, { opacity: 0, duration: 0.1, ease: 'none', onComplete: () => {
-        if (item.contentEl) {
-          item.config.contentHandler?.activate?.(item.contentEl);
-          _renderFloatingContent(item.contentEl, 'active');
-        }
-        anim.to(contentEl, { opacity: 1, duration: 0.15, ease: 'none' });
-      }});
+      anim.to(contentEl, { opacity: 0, duration: 0.1, ease: 'none' });
 
       const expW = item.activeMemW;
       const expH = item.activeMemH;
@@ -475,6 +469,12 @@ export function initFloatingCards(): void {
         onComplete: () => {
           item.cardWidth = compressedW;
           item.cardHeight = compressedH;
+          // 卡片已到全尺寸——此时 activate 安全，rAF 不会读到中间态
+          if (item.contentEl) {
+            item.config.contentHandler?.activate?.(item.contentEl);
+            _renderFloatingContent(item.contentEl, 'active');
+          }
+          anim.to(contentEl, { opacity: 1, duration: 0.15, ease: 'none' });
           brOrb.style.left = (item.cardWidth - rightOff - cornerSize) + 'px';
           brOrb.style.top = (item.cardHeight - bottomOff - cornerSize) + 'px';
           if (item.trOrb) item.trOrb.style.left = (item.cardWidth - rightOff - cornerSize) + 'px';
