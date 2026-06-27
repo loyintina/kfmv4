@@ -17,7 +17,9 @@ export function renderBinaryInfo(el: HTMLElement, path: string, size?: number): 
   header.textContent = name;
 
   const line = document.createElement('div');
-  line.style.cssText = 'height:1px;flex-shrink:0;background:linear-gradient(90deg,rgba(0,212,255,0.4),rgba(124,58,237,0.3))';
+  const c1 = el.style.getPropertyValue('--card-accent1') || '#00d4ff';
+  const c2 = el.style.getPropertyValue('--card-accent2') || '#7c3aed';
+  line.style.cssText = 'height:1px;flex-shrink:0;background:linear-gradient(90deg,' + c1 + ',' + c2 + ')';
 
   const body = document.createElement('div');
   body.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;color:rgba(224,224,240,0.7)';

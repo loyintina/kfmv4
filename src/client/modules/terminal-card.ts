@@ -1,12 +1,13 @@
 /**
  * terminal-card.ts — Phase 8: 03 号终端卡 ContentHandler
  *
- * 组装 Canvas 终端渲染器 + 卡片 DOM。
+ * 组装 Canvas 终端渲染器。布局骨架由 buildCardLayout 提供。
  *
  * 设计文档：docs/design/TERMINAL_CARD_SPEC.md
  */
 
 import { TerminalRenderer } from './terminal-renderer.js';
+import { buildCardLayout } from './floating-card.js';
 
 let _terminalCounter = 0;
 
@@ -20,36 +21,13 @@ export function createTerminalHandler(): {
 
   return {
     activate(contentEl) {
-      contentEl.innerHTML = '';
+      const c1 = contentEl.style.getPropertyValue('--card-accent1') || '#00d4ff';
+      const c2 = contentEl.style.getPropertyValue('--card-accent2') || '#7c3aed';
+      const { bodyEl } = buildCardLayout(contentEl, '> ' + terminalName, c1, c2);
 
-      // wrapper
-      const wrap = document.createElement('div');
-      wrap.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;padding:0 10px';
-
-      // 标题栏
-      const header = document.createElement('div');
-      header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:6px 0 4px;flex-shrink:0';
-      const label = document.createElement('div');
-      label.style.cssText = 'font-size:11px;font-weight:600;color:rgba(255,255,255,0.85)';
-      label.textContent = '> ' + terminalName;
-      header.appendChild(label);
-      wrap.appendChild(header);
-
-      // 分隔线
-      const line = document.createElement('div');
-      line.style.cssText = 'height:1px;flex-shrink:0;background:linear-gradient(90deg,rgba(0,212,255,0.4),rgba(124,58,237,0.3))';
-      wrap.appendChild(line);
-
-      // Canvas 容器
-      const canvasContainer = document.createElement('div');
-      canvasContainer.style.cssText = 'flex:1;overflow:hidden;border-radius:0 0 6px 6px';
-      wrap.appendChild(canvasContainer);
-
-      contentEl.appendChild(wrap);
-
-      // 初始化渲染器（mount 内部用 rAF 延迟触发 testRender）
       _renderer = new TerminalRenderer();
-      _renderer.mount(canvasContainer);
+      _renderer.setAccent(c1);
+      _renderer.mount(bodyEl);
     },
 
     deactivate(contentEl) {

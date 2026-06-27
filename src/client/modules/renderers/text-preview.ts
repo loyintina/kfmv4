@@ -10,7 +10,9 @@ export function renderTextPreview(el: HTMLElement, content: string, fileName: st
 
   // 分隔线
   const line = document.createElement('div');
-  line.style.cssText = 'height:1px;flex-shrink:0;background:linear-gradient(90deg,rgba(0,212,255,0.4),rgba(124,58,237,0.3))';
+  const c1 = el.style.getPropertyValue('--card-accent1') || '#00d4ff';
+  const c2 = el.style.getPropertyValue('--card-accent2') || '#7c3aed';
+  line.style.cssText = 'height:1px;flex-shrink:0;background:linear-gradient(90deg,' + c1 + ',' + c2 + ')';
 
   // 正文区
   const body = document.createElement('div');

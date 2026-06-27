@@ -271,6 +271,8 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
   // 紧凑态初始样式
   // 激活内容：文件浮卡直接进入展开态
   if (config.contentHandler) {
+    contentEl.style.setProperty('--card-accent1', config.color1);
+    contentEl.style.setProperty('--card-accent2', config.color2);
     config.contentHandler.activate(contentEl);
     _renderFloatingContent(contentEl, 'active');
   }
@@ -634,5 +636,41 @@ export function initFloatingCards(): void {
     onMove: drag.onMove,
     onEnd: drag.onEnd,
   });
+}
+
+// ========== 卡片布局骨架（共享样板） ==========
+
+/** 构建卡片内标题栏 + 分隔线 + body 区。返回 headerEl 和 bodyEl，调用方往里塞内容 */
+export function buildCardLayout(
+  contentEl: HTMLElement,
+  title: string,
+  accent1: string,
+  accent2: string,
+): { headerEl: HTMLElement; bodyEl: HTMLElement } {
+  contentEl.innerHTML = '';
+
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;padding:0 10px';
+
+  const header = document.createElement('div');
+  header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:6px 0 4px;flex-shrink:0';
+
+  const label = document.createElement('div');
+  label.style.cssText = 'font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0';
+  label.textContent = title;
+  header.appendChild(label);
+
+  const line = document.createElement('div');
+  line.style.cssText = 'height:1px;flex-shrink:0;background:linear-gradient(90deg,' + accent1 + ',' + accent2 + ')';
+
+  const body = document.createElement('div');
+  body.style.cssText = 'flex:1';
+
+  wrap.appendChild(header);
+  wrap.appendChild(line);
+  wrap.appendChild(body);
+  contentEl.appendChild(wrap);
+
+  return { headerEl: header, bodyEl: body };
 }
 

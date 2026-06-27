@@ -97,7 +97,9 @@ _registerCardHandler('debug', {
 
     // 分隔线
     const line = document.createElement('div');
-    line.style.cssText = 'height:1px;flex-shrink:0;background:linear-gradient(90deg,rgba(0,212,255,0.4),rgba(124,58,237,0.3))';
+    const c1 = contentEl.style.getPropertyValue('--card-accent1') || '#00d4ff';
+    const c2 = contentEl.style.getPropertyValue('--card-accent2') || '#7c3aed';
+    line.style.cssText = 'height:1px;flex-shrink:0;background:linear-gradient(90deg,' + c1 + ',' + c2 + ')';
     wrap.appendChild(line);
 
     // 日志区
