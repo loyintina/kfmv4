@@ -230,11 +230,25 @@ export class TerminalRenderer {
       ctx.fillRect(this._cursorC * cw, topPad + this._cursorR * ch, cw, ch);
     }
 
-    // DEBUG: 尺寸标注（左下角）
-    const dbg = this._cols + '\xd7' + this._rows + '  cw=' + cw.toFixed(1) + ' ch=' + ch.toFixed(1) + '  w=' + this._containerW.toFixed(0) + ' h=' + this._containerH.toFixed(0);
+    // DEBUG: DOM 链尺寸（左下角）
+    const cwEl = this._canvas?.parentElement;              // body
+    const wrapEl = cwEl?.parentElement;                    // wrapper
+    const contEl = wrapEl?.parentElement;                  // contentEl
+    const bglEl = contEl?.parentElement;                   // bgLayer
+    const cardEl = bglEl?.parentElement;                   // el (outer card)
+    const elW = cardEl?.getBoundingClientRect().width ?? 0;
+    const bgW = bglEl?.getBoundingClientRect().width ?? 0;
+    const ceW = contEl?.getBoundingClientRect().width ?? 0;
+    const wrW = wrapEl?.getBoundingClientRect().width ?? 0;
+    const lines = [
+      this._cols + '\xd7' + this._rows + ' cw=' + cw.toFixed(1) + ' ch=' + ch.toFixed(1),
+      'cvs=' + this._containerW.toFixed(0) + ' wr=' + Math.round(wrW) + ' ce=' + Math.round(ceW) + ' bg=' + Math.round(bgW) + ' el=' + Math.round(elW),
+    ];
     ctx.fillStyle = 'rgba(0,212,255,0.35)';
     ctx.font = '8px monospace';
-    ctx.fillText(dbg, 2, this._containerH - 3);
+    const dbgY = Math.max(2, this._containerH - 12);
+    ctx.fillText(lines[0], 2, dbgY);
+    ctx.fillText(lines[1], 2, dbgY + 9);
   }
 
   /** 步骤 1 验证：画棋盘格确认布局 */
