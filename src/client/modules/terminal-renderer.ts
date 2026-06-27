@@ -299,7 +299,9 @@ export class TerminalRenderer {
         const cell = row[c];
         if (cell.char === ' ' || cell.char === '') continue;
         ctx.fillStyle = cell.fg;
-        ctx.fillText(cell.char, c * cw, topPad + (r + 0.5) * ch);
+        const wide = _isFullWidth(cell.char);
+        const yOff = wide ? 1 : 0;
+        ctx.fillText(cell.char, c * cw, topPad + (r + 0.5) * ch + yOff);
       }
     }
 
