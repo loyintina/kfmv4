@@ -96,9 +96,9 @@ export class TerminalRenderer {
   /** 重算 cols/rows 并重建网格 */
   private _layout(): void {
     if (!this._canvas || !this._ctx) return;
-    const rect = this._canvas.getBoundingClientRect();
-    this._containerW = rect.width;
-    this._containerH = rect.height;
+    // clientWidth/Height 不受 CSS transform 影响，getBoundingClientRect 会
+    this._containerW = this._canvas.clientWidth;
+    this._containerH = this._canvas.clientHeight;
     if (this._containerW <= 0 || this._containerH <= 0) return;
 
     // DPR 处理
