@@ -97,6 +97,8 @@ export class TerminalRenderer {
   private _curBold = false;
   private _escBuf = '';
   private _inEsc = false;
+  private _savedR = 0;
+  private _savedC = 0;
 
   /** 在容器内创建 canvas 并初始化 */
   mount(containerEl: HTMLElement): void {
@@ -115,16 +117,20 @@ export class TerminalRenderer {
     requestAnimationFrame(() => {
       this._layout();
       if (this._cols > 0 && this._rows > 0) {
+        this.write('\x1b[2J');
         this.write('\x1b[31m红色\x1b[0m 正常\r\n');
         this.write('\x1b[1;32m粗体绿\x1b[0m\r\n');
+        this.write('\x1b[3;10H★\r\n');
         this.write('\x1b[44m\x1b[37m白字蓝底\x1b[0m\r\n');
         this.write('> ');
       } else {
         requestAnimationFrame(() => {
           this._layout();
           if (this._cols > 0 && this._rows > 0) {
-            this.write('\x1b[31m红色\x1b[0m 正常\r\n');
+            this.write('\x1b[2J');
+        this.write('\x1b[31m红色\x1b[0m 正常\r\n');
         this.write('\x1b[1;32m粗体绿\x1b[0m\r\n');
+        this.write('\x1b[3;10H★\r\n');
         this.write('\x1b[44m\x1b[37m白字蓝底\x1b[0m\r\n');
         this.write('> ');
           }
@@ -179,8 +185,7 @@ export class TerminalRenderer {
         if (ch === '[') continue;  // 跳过 CSI 引导符
         // CSI 终结符
         if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')) {
-          if (ch === 'm') this._applySgr(this._escBuf);
-          // 其他 CSI 终结符（H/A/B/C/D/J/K 等）→ 步骤 5 实现
+          this._handleCsi(ch, this._escBuf);
           this._inEsc = false;
           this._escBuf = '';
           continue;
@@ -238,6 +243,35 @@ export class TerminalRenderer {
       if (n >= 40 && n <= 47) { this._curBg = ANSI_COLORS[n - 40]; continue; }
       if (n >= 90 && n <= 97) { this._curFg = ANSI_BRIGHT[n - 90]; continue; }
       if (n >= 100 && n <= 107) { this._curBg = ANSI_BRIGHT[n - 100]; continue; }
+    }
+  }
+
+  /** CSI 序列分发 */
+  private _handleCsi(term: string, buf: string): void {
+    const n = buf ? parseInt(buf.split(';')[0], 10) || 1 : 1;
+    switch (term) {
+      case 'm': this._applySgr(buf); break;
+      case 'A': this._cursorR = Math.max(0, this._cursorR - n); break;
+      case 'B': this._cursorR = Math.min(this._rows - 1, this._cursorR + n); break;
+      case 'C': this._cursorC = Math.min(this._cols - 1, this._cursorC + n); break;
+      case 'D': this._cursorC = Math.max(0, this._cursorC - n); break;
+      case 'H': {
+        const parts = buf ? buf.split(';') : [];
+        const row = parseInt(parts[0], 10) || 1;
+        const col = parseInt(parts[1], 10) || 1;
+        this._cursorR = Math.min(this._rows - 1, Math.max(0, row - 1));
+        this._cursorC = Math.min(this._cols - 1, Math.max(0, col - 1));
+        break;
+      }
+      case 'J': if (n === 2) { for (let r = 0; r < this._rows; r++) for (let c = 0; c < this._cols; c++) { this._cells[r][c].char = ' '; this._cells[r][c].fg = DEFAULT_FG; this._cells[r][c].bg = DEFAULT_BG; } } break;
+      case 'K': {
+        const start = n === 2 ? 0 : this._cursorC;
+        const end = n === 1 ? (this._cursorC + 1) : this._cols;
+        for (let c = start; c < end && c < this._cols; c++) { this._cells[this._cursorR][c].char = ' '; this._cells[this._cursorR][c].fg = DEFAULT_FG; this._cells[this._cursorR][c].bg = DEFAULT_BG; }
+        break;
+      }
+      case 's': this._savedR = this._cursorR; this._savedC = this._cursorC; break;
+      case 'u': this._cursorR = this._savedR; this._cursorC = this._savedC; break;
     }
   }
 
