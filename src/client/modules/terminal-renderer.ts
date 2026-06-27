@@ -176,6 +176,7 @@ export class TerminalRenderer {
       // ANSI 转义状态机
       if (this._inEsc) {
         if (ch === '\x1b') { this._escBuf = ''; continue; }
+        if (ch === '[') continue;  // 跳过 CSI 引导符
         // CSI 终结符
         if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')) {
           if (ch === 'm') this._applySgr(this._escBuf);
