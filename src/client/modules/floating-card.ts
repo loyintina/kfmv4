@@ -271,8 +271,8 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
   // 紧凑态初始样式
   // 激活内容：文件浮卡直接进入展开态
   if (config.contentHandler) {
-    contentEl.style.setProperty('--card-accent1', config.color1);
-    contentEl.style.setProperty('--card-accent2', config.color2);
+    contentEl.dataset.cardAccent1 = config.color1;
+    contentEl.dataset.cardAccent2 = config.color2;
     config.contentHandler.activate(contentEl);
     _renderFloatingContent(contentEl, 'active');
   }

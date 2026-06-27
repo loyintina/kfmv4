@@ -97,8 +97,8 @@ _registerCardHandler('debug', {
 
     // 分隔线
     const line = document.createElement('div');
-    const c1 = contentEl.style.getPropertyValue('--card-accent1') || '#00d4ff';
-    const c2 = contentEl.style.getPropertyValue('--card-accent2') || '#7c3aed';
+    const c1 = contentEl.dataset.cardAccent1!;
+    const c2 = contentEl.dataset.cardAccent2!;
     line.style.cssText = 'height:1px;flex-shrink:0;background:linear-gradient(90deg,' + c1 + ',' + c2 + ')';
     wrap.appendChild(line);
 

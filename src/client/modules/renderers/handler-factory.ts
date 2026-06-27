@@ -255,8 +255,8 @@ export function createFileHandler(filePath: string, accent?: string): { activate
 
       // 分隔线
       const line = document.createElement('div');
-      const lc1 = contentEl.style.getPropertyValue('--card-accent1') || '#00d4ff';
-      const lc2 = contentEl.style.getPropertyValue('--card-accent2') || '#7c3aed';
+      const lc1 = contentEl.dataset.cardAccent1!;
+      const lc2 = contentEl.dataset.cardAccent2!;
       line.style.cssText = 'height:1px;flex-shrink:0;background:linear-gradient(90deg,' + lc1 + ',' + lc2 + ')';
 
       // 正文区

@@ -21,8 +21,8 @@ export function createTerminalHandler(): {
 
   return {
     activate(contentEl) {
-      const c1 = contentEl.style.getPropertyValue('--card-accent1') || '#00d4ff';
-      const c2 = contentEl.style.getPropertyValue('--card-accent2') || '#7c3aed';
+      const c1 = contentEl.dataset.cardAccent1!;
+      const c2 = contentEl.dataset.cardAccent2!;
       const { bodyEl } = buildCardLayout(contentEl, '> ' + terminalName, c1, c2);
 
       _renderer = new TerminalRenderer();
