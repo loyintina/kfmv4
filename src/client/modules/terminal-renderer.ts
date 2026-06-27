@@ -60,6 +60,24 @@ const ANSI_BRIGHT = [
   '#82aaff', '#c792ea', '#89ddff', '#ffffff',
 ];
 
+// ========== 全角字符检测 ==========
+
+function _isFullWidth(ch: string): boolean {
+  const c = ch.charCodeAt(0);
+  return c >= 0x1100 && (
+    c <= 0x115F ||
+    c === 0x2329 || c === 0x232A ||
+    (c >= 0x2E80 && c <= 0xA4CF) ||
+    (c >= 0xAC00 && c <= 0xD7A3) ||
+    (c >= 0xF900 && c <= 0xFAFF) ||
+    (c >= 0xFE10 && c <= 0xFE19) ||
+    (c >= 0xFE30 && c <= 0xFE6F) ||
+    (c >= 0xFF01 && c <= 0xFF60) ||
+    (c >= 0xFFE0 && c <= 0xFFE6) ||
+    (c >= 0x20000 && c <= 0x3FFFF)
+  );
+}
+
 export class TerminalRenderer {
   private _canvas: HTMLCanvasElement | null = null;
   private _ctx: CanvasRenderingContext2D | null = null;
@@ -181,13 +199,23 @@ export class TerminalRenderer {
 
       // 可打印字符 — 继承当前 SGR 状态
       if (this._cursorR < this._rows && this._cursorC < this._cols) {
+        const wide = _isFullWidth(ch);
         const cell = this._cells[this._cursorR][this._cursorC];
         cell.char = ch;
         cell.fg = this._curFg;
         cell.bg = this._curBg;
         cell.bold = this._curBold;
+        // 全角字符占 2 格：第二格标记为空，渲染时跳过
+        if (wide && this._cursorC + 1 < this._cols) {
+          const next = this._cells[this._cursorR][this._cursorC + 1];
+          next.char = '';
+          next.fg = this._curFg;
+          next.bg = this._curBg;
+        }
+        this._cursorC += wide ? 2 : 1;
+      } else {
+        this._cursorC++;
       }
-      this._cursorC++;
       if (this._cursorC >= this._cols) {
         this._cursorC = 0; this._cursorR++;
         if (this._cursorR >= this._rows) { this._scrollUp(); this._cursorR = this._rows - 1; }
@@ -260,7 +288,7 @@ export class TerminalRenderer {
           ctx.fillStyle = cell.bg;
           ctx.fillRect(c * cw, topPad + r * ch, cw, ch);
         }
-        if (cell.char === ' ') continue;
+        if (cell.char === ' ' || cell.char === '') continue;
         ctx.fillStyle = cell.fg;
         ctx.fillText(cell.char, c * cw, topPad + (r + 0.5) * ch);
       }
