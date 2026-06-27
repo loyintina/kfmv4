@@ -49,6 +49,17 @@ interface Cell {
 const DEFAULT_FG = currentTheme.canvas.text;   // '#e0e0e0'
 const DEFAULT_BG = currentTheme.canvas.bg;     // '#0a0a0f'
 
+// ========== 步骤 4：ANSI 颜色表 + SGR ==========
+
+const ANSI_COLORS = [
+  '#1a1a2e', '#f07178', '#50a880', '#b4aa50', // 0-3: 黑 红 绿 黄
+  '#5088c8', '#9650c8', '#00d4ff', '#e0e0e0', // 4-7: 蓝 品 青 白
+];
+const ANSI_BRIGHT = [
+  '#4a4a5e', '#f78c6c', '#6cdf9c', '#ffd54f', // 8-15: 亮色
+  '#82aaff', '#c792ea', '#89ddff', '#ffffff',
+];
+
 export class TerminalRenderer {
   private _canvas: HTMLCanvasElement | null = null;
   private _ctx: CanvasRenderingContext2D | null = null;
@@ -63,6 +74,11 @@ export class TerminalRenderer {
   private _cursorR = 0;
   private _cursorC = 0;
   private _accent = currentTheme.canvas.accent;
+  private _curFg = DEFAULT_FG;
+  private _curBg = DEFAULT_BG;
+  private _curBold = false;
+  private _escBuf = '';
+  private _inEsc = false;
 
   /** 在容器内创建 canvas 并初始化 */
   mount(containerEl: HTMLElement): void {
@@ -81,12 +97,18 @@ export class TerminalRenderer {
     requestAnimationFrame(() => {
       this._layout();
       if (this._cols > 0 && this._rows > 0) {
-        this.write('hello\r\nworld\r\n> ');
+        this.write('\x1b[31m红色\x1b[0m 正常\r\n');
+        this.write('\x1b[1;32m粗体绿\x1b[0m\r\n');
+        this.write('\x1b[44m\x1b[37m白字蓝底\x1b[0m\r\n');
+        this.write('> ');
       } else {
         requestAnimationFrame(() => {
           this._layout();
           if (this._cols > 0 && this._rows > 0) {
-            this.write('hello\r\nworld\r\n> ');
+            this.write('\x1b[31m红色\x1b[0m 正常\r\n');
+        this.write('\x1b[1;32m粗体绿\x1b[0m\r\n');
+        this.write('\x1b[44m\x1b[37m白字蓝底\x1b[0m\r\n');
+        this.write('> ');
           }
         });
       }
@@ -127,59 +149,79 @@ export class TerminalRenderer {
   get cols(): number { return this._cols; }
   get rows(): number { return this._rows; }
 
-  /** 往终端写入文本，处理 \n \r \b */
+  /** 往终端写入文本，处理 \n \r \b + ANSI 转义 */
   write(text: string): void {
     if (this._cols <= 0 || this._rows <= 0) return;
     for (let i = 0; i < text.length; i++) {
       const ch = text[i];
-      if (ch === '\r') {
-        this._cursorC = 0;
-        continue;
-      }
-      if (ch === '\n') {
-        this._cursorR++;
-        this._cursorC = 0;
-        if (this._cursorR >= this._rows) {
-          // 滚屏：上移一行
-          for (let r = 1; r < this._rows; r++) {
-            this._cells[r - 1] = this._cells[r];
-          }
-          // 新空行
-          const empty: Cell[] = [];
-          for (let c = 0; c < this._cols; c++) {
-            empty.push({ char: ' ', fg: DEFAULT_FG, bg: DEFAULT_BG, bold: false });
-          }
-          this._cells[this._rows - 1] = empty;
-          this._cursorR = this._rows - 1;
+
+      // ANSI 转义状态机
+      if (this._inEsc) {
+        if (ch === '\x1b') { this._escBuf = ''; continue; }
+        // CSI 终结符
+        if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')) {
+          if (ch === 'm') this._applySgr(this._escBuf);
+          // 其他 CSI 终结符（H/A/B/C/D/J/K 等）→ 步骤 5 实现
+          this._inEsc = false;
+          this._escBuf = '';
+          continue;
         }
+        this._escBuf += ch;
         continue;
       }
-      if (ch === '\b') {
-        if (this._cursorC > 0) this._cursorC--;
+      if (ch === '\x1b') { this._inEsc = true; this._escBuf = ''; continue; }
+
+      if (ch === '\r') { this._cursorC = 0; continue; }
+      if (ch === '\n') {
+        this._cursorR++; this._cursorC = 0;
+        if (this._cursorR >= this._rows) { this._scrollUp(); this._cursorR = this._rows - 1; }
         continue;
       }
-      // 可打印字符
+      if (ch === '\b') { if (this._cursorC > 0) this._cursorC--; continue; }
+
+      // 可打印字符 — 继承当前 SGR 状态
       if (this._cursorR < this._rows && this._cursorC < this._cols) {
-        this._cells[this._cursorR][this._cursorC].char = ch;
+        const cell = this._cells[this._cursorR][this._cursorC];
+        cell.char = ch;
+        cell.fg = this._curFg;
+        cell.bg = this._curBg;
+        cell.bold = this._curBold;
       }
       this._cursorC++;
       if (this._cursorC >= this._cols) {
-        this._cursorC = 0;
-        this._cursorR++;
-        if (this._cursorR >= this._rows) {
-          for (let r = 1; r < this._rows; r++) {
-            this._cells[r - 1] = this._cells[r];
-          }
-          const empty: Cell[] = [];
-          for (let c = 0; c < this._cols; c++) {
-            empty.push({ char: ' ', fg: DEFAULT_FG, bg: DEFAULT_BG, bold: false });
-          }
-          this._cells[this._rows - 1] = empty;
-          this._cursorR = this._rows - 1;
-        }
+        this._cursorC = 0; this._cursorR++;
+        if (this._cursorR >= this._rows) { this._scrollUp(); this._cursorR = this._rows - 1; }
       }
     }
     this._render();
+  }
+
+  /** SGR 参数应用 */
+  private _applySgr(params: string): void {
+    if (!params) { this._curFg = DEFAULT_FG; this._curBg = DEFAULT_BG; this._curBold = false; return; }
+    const nums = params.split(';');
+    for (const s of nums) {
+      const n = parseInt(s, 10);
+      if (isNaN(n)) continue;
+      if (n === 0) { this._curFg = DEFAULT_FG; this._curBg = DEFAULT_BG; this._curBold = false; continue; }
+      if (n === 1) { this._curBold = true; continue; }
+      if (n >= 30 && n <= 37) { const idx = n - 30; this._curFg = this._curBold ? ANSI_BRIGHT[idx] : ANSI_COLORS[idx]; continue; }
+      if (n >= 40 && n <= 47) { this._curBg = ANSI_COLORS[n - 40]; continue; }
+      if (n >= 90 && n <= 97) { this._curFg = ANSI_BRIGHT[n - 90]; continue; }
+      if (n >= 100 && n <= 107) { this._curBg = ANSI_BRIGHT[n - 100]; continue; }
+    }
+  }
+
+  /** 滚屏：上移一行 */
+  private _scrollUp(): void {
+    for (let r = 1; r < this._rows; r++) {
+      this._cells[r - 1] = this._cells[r];
+    }
+    const empty: Cell[] = [];
+    for (let c = 0; c < this._cols; c++) {
+      empty.push({ char: ' ', fg: DEFAULT_FG, bg: DEFAULT_BG, bold: false });
+    }
+    this._cells[this._rows - 1] = empty;
   }
 
   /** 销毁渲染器 */
