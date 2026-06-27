@@ -3,6 +3,7 @@ import { anim, AnimTimeline } from './animation-registry.js';
 import { getLogs, clearLogs, copyLogs, onLog } from './logger.js';
 import { Registry } from './ui-registry.js';
 import { wsChannel } from './ws-channel.js';
+import { createTerminalHandler } from './terminal-card.js';
 import { currentTheme as theme } from './theme.js';
 import { createFloatingCard } from './floating-card.js';
 import { log } from './logger.js';
@@ -26,7 +27,7 @@ interface CardDef {
 const _cards: CardDef[] = [
   { id: 'settings', icon: '\u2699', name: '\u8BBE\u7F6E',        desc: '' },
   { id: 'debug',    icon: '\uD83D\uDD27', name: '\u65E5\u5FD7\u7BA1\u7406', desc: '' },
-  { id: 'card03',   icon: '',           name: '',                desc: '' },
+  { id: 'card03',   icon: '>',         name: '终端',          desc: '' },
   { id: 'card04',   icon: '',           name: '',                desc: '' },
   { id: 'card05',   icon: '',           name: '',                desc: '' },
   { id: 'card06',   icon: '',           name: '',                desc: '' },
@@ -120,8 +121,11 @@ _registerCardHandler('debug', {
     contentEl.innerHTML = '';
   },
 });
-let _currentAccents: Array<{ color1: string; color2: string }> | null = null;
 
+// Phase 8: 03 号终端卡
+_registerCardHandler('card03', createTerminalHandler());
+
+let _currentAccents: Array<{ color1: string; color2: string }> | null = null;
 /** HSL → hex （#rrggbb） */
 function hslToHex(h: number, s: number, l: number): string {
   h /= 360; s /= 100; l /= 100;
