@@ -206,12 +206,12 @@ export class TerminalRenderer {
         cell.fg = this._curFg;
         cell.bg = this._curBg;
         cell.bold = this._curBold;
-        // 全角字符占 2 格：第二格不画背景，防覆盖右半字符
+        // 全角字符占 2 格：第二格标记为空，两遍渲染保证背景先画
         if (wide && this._cursorC + 1 < this._cols) {
           const next = this._cells[this._cursorR][this._cursorC + 1];
           next.char = '';
           next.fg = this._curFg;
-          next.bg = DEFAULT_BG;
+          next.bg = this._curBg;
         }
         this._cursorC += wide ? 2 : 1;
       } else {
@@ -281,6 +281,7 @@ export class TerminalRenderer {
     ctx.font = FONT;
     ctx.textBaseline = 'middle';
 
+    // 第一遍：所有背景（先画，防 CJK 第二格 fillRect 覆盖字符右半）
     for (let r = 0; r < this._rows; r++) {
       const row = this._cells[r];
       for (let c = 0; c < this._cols; c++) {
@@ -289,6 +290,13 @@ export class TerminalRenderer {
           ctx.fillStyle = cell.bg;
           ctx.fillRect(c * cw, topPad + r * ch, cw, ch);
         }
+      }
+    }
+    // 第二遍：所有文字（画在背景上方）
+    for (let r = 0; r < this._rows; r++) {
+      const row = this._cells[r];
+      for (let c = 0; c < this._cols; c++) {
+        const cell = row[c];
         if (cell.char === ' ' || cell.char === '') continue;
         ctx.fillStyle = cell.fg;
         ctx.fillText(cell.char, c * cw, topPad + (r + 0.5) * ch);
