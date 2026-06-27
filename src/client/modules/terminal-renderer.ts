@@ -60,6 +60,8 @@ export class TerminalRenderer {
   private _dpr = 1;
   private _containerW = 0;
   private _containerH = 0;
+  private _cursorR = 0;
+  private _cursorC = 0;
 
   /** 在容器内创建 canvas 并初始化 */
   mount(containerEl: HTMLElement): void {
@@ -78,12 +80,13 @@ export class TerminalRenderer {
     requestAnimationFrame(() => {
       this._layout();
       if (this._cols > 0 && this._rows > 0) {
-        this.testRender();
+        this.write('hello\r\nworld\r\n> ');
       } else {
-        // 偶发情况：一帧不够，再等一帧
         requestAnimationFrame(() => {
           this._layout();
-          this.testRender();
+          if (this._cols > 0 && this._rows > 0) {
+            this.write('hello\r\nworld\r\n> ');
+          }
         });
       }
     });
@@ -115,11 +118,95 @@ export class TerminalRenderer {
       }
       this._cells.push(row);
     }
+    this._cursorR = 0;
+    this._cursorC = 0;
   }
 
   /** 网格尺寸 */
   get cols(): number { return this._cols; }
   get rows(): number { return this._rows; }
+
+  /** 往终端写入文本，处理 \n \r \b */
+  write(text: string): void {
+    if (this._cols <= 0 || this._rows <= 0) return;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (ch === '\r') {
+        this._cursorC = 0;
+        continue;
+      }
+      if (ch === '\n') {
+        this._cursorR++;
+        this._cursorC = 0;
+        if (this._cursorR >= this._rows) {
+          // 滚屏：上移一行
+          for (let r = 1; r < this._rows; r++) {
+            this._cells[r - 1] = this._cells[r];
+          }
+          // 新空行
+          const empty: Cell[] = [];
+          for (let c = 0; c < this._cols; c++) {
+            empty.push({ char: ' ', fg: DEFAULT_FG, bg: DEFAULT_BG, bold: false });
+          }
+          this._cells[this._rows - 1] = empty;
+          this._cursorR = this._rows - 1;
+        }
+        continue;
+      }
+      if (ch === '\b') {
+        if (this._cursorC > 0) this._cursorC--;
+        continue;
+      }
+      // 可打印字符
+      if (this._cursorR < this._rows && this._cursorC < this._cols) {
+        this._cells[this._cursorR][this._cursorC].char = ch;
+      }
+      this._cursorC++;
+      if (this._cursorC >= this._cols) {
+        this._cursorC = 0;
+        this._cursorR++;
+        if (this._cursorR >= this._rows) {
+          for (let r = 1; r < this._rows; r++) {
+            this._cells[r - 1] = this._cells[r];
+          }
+          const empty: Cell[] = [];
+          for (let c = 0; c < this._cols; c++) {
+            empty.push({ char: ' ', fg: DEFAULT_FG, bg: DEFAULT_BG, bold: false });
+          }
+          this._cells[this._rows - 1] = empty;
+          this._cursorR = this._rows - 1;
+        }
+      }
+    }
+    this._render();
+  }
+
+  /** 绘制网格到 canvas */
+  private _render(): void {
+    if (!this._ctx) return;
+    const ctx = this._ctx;
+    const cw = this._cellW;
+    const ch = this._cellH;
+
+    ctx.font = FONT;
+    ctx.textBaseline = 'middle';
+
+    for (let r = 0; r < this._rows; r++) {
+      const row = this._cells[r];
+      for (let c = 0; c < this._cols; c++) {
+        const cell = row[c];
+        // 非默认背景：先画底色
+        if (cell.bg !== DEFAULT_BG) {
+          ctx.fillStyle = cell.bg;
+          ctx.fillRect(c * cw, r * ch, cw, ch);
+        }
+        // 空格跳过
+        if (cell.char === ' ') continue;
+        ctx.fillStyle = cell.fg;
+        ctx.fillText(cell.char, c * cw, (r + 0.5) * ch);
+      }
+    }
+  }
 
   /** 步骤 1 验证：画棋盘格确认布局 */
   testRender(): void {
