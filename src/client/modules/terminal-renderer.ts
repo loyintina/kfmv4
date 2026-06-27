@@ -206,12 +206,12 @@ export class TerminalRenderer {
         cell.fg = this._curFg;
         cell.bg = this._curBg;
         cell.bold = this._curBold;
-        // 全角字符占 2 格：第二格标记为空，渲染时跳过
+        // 全角字符占 2 格：第二格不画背景，防覆盖右半字符
         if (wide && this._cursorC + 1 < this._cols) {
           const next = this._cells[this._cursorR][this._cursorC + 1];
           next.char = '';
           next.fg = this._curFg;
-          next.bg = this._curBg;
+          next.bg = DEFAULT_BG;
         }
         this._cursorC += wide ? 2 : 1;
       } else {
