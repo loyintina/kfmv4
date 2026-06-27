@@ -379,11 +379,12 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `ws-channel.ts` | 318 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
 | `terminal-aux-bar.ts` | 2 | 0 | TERMINAL_CARD_SPEC | Phase 8: 终端全局辅助键盘栏（占位） |
 | `terminal-card.ts` | 2 | 0 | TERMINAL_CARD_SPEC | Phase 8: 03 号终端卡 ContentHandler（占位） |
-| **合计** | **9165** | | | |
+| `terminal-renderer.ts` | 2 | 0 | TERMINAL_CARD_SPEC | Phase 8: Canvas 终端渲染器（占位） |
+| **合计** | **9167** | | | |
 
 ### 死代码检查
 
-**结论：无死代码。** 所有 36 个模块都被至少 1 个文件导入。`src/cards/` 目录已彻底删除。实际使用的 logger 在 `src/client/modules/logger.ts`。
+**结论：无死代码。** 所有 37 个模块都被至少 1 个文件导入。`src/cards/` 目录已彻底删除。实际使用的 logger 在 `src/client/modules/logger.ts`。
 
 ### 引擎层清单（14 文件）
 
