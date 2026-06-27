@@ -301,7 +301,8 @@ export class TerminalRenderer {
         ctx.fillStyle = cell.fg;
         const wide = _isFullWidth(cell.char);
         const yOff = wide ? 1 : 0;
-        ctx.fillText(cell.char, c * cw, topPad + (r + 0.5) * ch + yOff);
+        const xOff = wide ? 1 : 0;
+        ctx.fillText(cell.char, c * cw + xOff, topPad + (r + 0.5) * ch + yOff);
       }
     }
 
