@@ -15,6 +15,7 @@
 
 import { Server as HttpServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
+import { PtyManager } from './terminal-pty.js';
 
 // ========== 类型定义 ==========
 
@@ -32,20 +33,30 @@ interface WsMessage {
   timestamp: number;
 }
 
+interface ClientState {
+  terminalSessions: Set<string>;
+}
+
 // ========== WsServer 类 ==========
 
 export class WsServer {
   private wss: WebSocketServer;
-  private clients = new Set<WebSocket>();
+  private clients = new Map<WebSocket, ClientState>();
   private _latestSnapshot: PageDescription | null = null;
   private _latestCapabilities: unknown[] | null = null;
+  private _ptyManager: PtyManager;
 
   constructor(server: HttpServer) {
+    this._ptyManager = new PtyManager(
+      (ws, sessionId, data) => this.send(ws, 'terminal-output', { sessionId, data }),
+      (ws, sessionId, code)  => this.send(ws, 'terminal-exit', { sessionId, code }),
+    );
+
     this.wss = new WebSocketServer({ server, path: '/ws' });
 
     this.wss.on('connection', (ws) => {
       console.log('[ws-server] 客户端已连接');
-      this.clients.add(ws);
+      this.clients.set(ws, { terminalSessions: new Set() });
 
       // 发送欢迎消息
       this.send(ws, 'ack', { received: 'hello', version: '1.0' });
@@ -62,21 +73,24 @@ export class WsServer {
 
       ws.on('close', () => {
         console.log('[ws-server] 客户端已断开');
+        this._ptyManager.killAll(ws);
         this.clients.delete(ws);
       });
 
       ws.on('error', (err) => {
         console.error('[ws-server] 连接错误:', err.message);
+        this._ptyManager.killAll(ws);
         this.clients.delete(ws);
       });
     });
 
     // 心跳检测：每 30s ping 所有连接
     const heartbeat = setInterval(() => {
-      for (const client of this.clients) {
+      for (const [client] of this.clients) {
         if (client.readyState === WebSocket.OPEN) {
           this.send(client, 'ping', null);
         } else {
+          this._ptyManager.killAll(client);
           this.clients.delete(client);
         }
       }
@@ -107,6 +121,36 @@ export class WsServer {
         this.send(ws, 'ack', { received: 'capabilities' });
         break;
 
+      // Phase 8: 终端 PTY 会话
+      case 'terminal-open': {
+        const p = msg.payload as { cwd?: string };
+        const sessionId = this._ptyManager.spawn(ws, p.cwd);
+        const client = this.clients.get(ws);
+        if (client) client.terminalSessions.add(sessionId);
+        this.send(ws, 'terminal-opened', { sessionId });
+        break;
+      }
+
+      case 'terminal-input': {
+        const p = msg.payload as { sessionId: string; input: string };
+        this._ptyManager.write(p.sessionId, p.input);
+        break;
+      }
+
+      case 'terminal-resize': {
+        const p = msg.payload as { sessionId: string; cols: number; rows: number };
+        this._ptyManager.resize(p.sessionId, p.cols, p.rows);
+        break;
+      }
+
+      case 'terminal-close': {
+        const p = msg.payload as { sessionId: string };
+        this._ptyManager.kill(p.sessionId);
+        const client = this.clients.get(ws);
+        if (client) client.terminalSessions.delete(p.sessionId);
+        break;
+      }
+
       default:
         console.warn('[ws-server] 未知消息类型:', msg.type);
         this.send(ws, 'error', { message: `未知消息类型: ${msg.type}` });
@@ -124,7 +168,7 @@ export class WsServer {
   broadcast(type: string, payload: unknown): void {
     const msg: WsMessage = { type, payload, timestamp: Date.now() };
     const data = JSON.stringify(msg);
-    for (const client of this.clients) {
+    for (const [client] of this.clients) {
       if (client.readyState === WebSocket.OPEN) {
         client.send(data);
       }
