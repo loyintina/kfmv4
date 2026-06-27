@@ -19,6 +19,7 @@
     "leafer-ui": "^2.1.0",
     "marked": "^18.0.5",
     "mermaid": "^11.15.0",
+    "node-pty-prebuilt-multiarch": "^0.10.1-pre.5",
     "sass": "^1.100.0",
     "ts-node": "^10.9.2",
     "ws": "^8.21.0"

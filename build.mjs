@@ -49,7 +49,7 @@ await build({
   platform: 'node',
   format: 'esm',
   outfile: 'dist/server/index.js',
-  external: ['express','fs','path','os','ws','events'],
+  external: ['express','fs','path','os','ws','events','node-pty-prebuilt-multiarch'],
 });
 
 // 客户端
@@ -60,7 +60,7 @@ await build({
   format: 'iife',
   outfile: 'public/bundle.js',
   target: ['es2019'],
-  external: ['katex', 'mermaid'],
+  external: ['katex', 'mermaid', 'xterm'],
 });
 
 // 校验产物新鲜度
