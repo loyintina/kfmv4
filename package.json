@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node --loader ts-node/esm src/server/index.ts",
-    "check": "node check-versions.mjs && sass --no-source-map public/css/:public/css/ && node check-anim.mjs --check-only && node check-as-any.mjs --check-only && node check-registry.mjs --check-only && node check-console.mjs && node check-docs.mjs && node check-linecount.mjs && node check-consistency.mjs && tsc --noEmit",
+    "check": "node check-versions.mjs && sass --no-source-map public/css/:public/css/ && node check-anim.mjs --check-only && node check-as-any.mjs --check-only && node check-registry.mjs --check-only && node check-console.mjs && node check-docs.mjs && node check-linecount.mjs && node check-consistency.mjs && node check-cards.mjs && tsc --noEmit",
     "build": "node check-versions.mjs && node check-anim.mjs && node check-as-any.mjs && node check-registry.mjs && node check-console.mjs && node check-docs.mjs && node check-linecount.mjs && node check-consistency.mjs && tsc --noEmit && node build.mjs",
     "start": "fuser -k 8021/tcp 2>/dev/null; node dist/server/index.js",
     "test": "npx tsx --import ./tests/register-hook.mjs --import ./tests/preload.mjs ./tests/regression.test.ts"
