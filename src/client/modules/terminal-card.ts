@@ -40,13 +40,18 @@ export function createTerminalHandler(_meta: Record<string, unknown>): {
         }
       });
 
-      // 尺寸变化 → WS
+      // 尺寸变化 → WS（防抖：拖拽停止 200ms 后发一次）
+      let resizeTimer: ReturnType<typeof setTimeout> | null = null;
       renderer.onResize((cols, rows) => {
-        if (card.meta.sessionId) {
-          wsChannel.sendMessage('terminal-resize', {
-            sessionId: card.meta.sessionId, cols, rows,
-          });
-        }
+        if (resizeTimer) clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+          if (card.meta.sessionId) {
+            wsChannel.sendMessage('terminal-resize', {
+              sessionId: card.meta.sessionId, cols, rows,
+            });
+          }
+          resizeTimer = null;
+        }, 200);
       });
 
       // WS error
