@@ -369,10 +369,10 @@ function _dismissOne(item: FloatingCardItem, animated?: boolean): void {
   item.state = 'dismissing';
   log('dismiss-one ' + item.config.id);
 
-  if (item.contentEl) {
-    const ci = cardRegistry.getInstance(item.instanceId);
-          if (ci) item.config.contentHandler?.deactivate?.(item.contentEl, ci, 'compact');
-  }
+    if (item.contentEl) {
+      const ci = cardRegistry.getInstance(item.instanceId);
+      if (ci) item.config.contentHandler?.deactivate?.(item.contentEl, ci, 'dismiss');
+    }
   if (animated !== false) {
     anim.to(el, {
       scale: 0.3, opacity: 0, duration: 0.2, ease: 'back.in(1.3)',
