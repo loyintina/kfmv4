@@ -378,10 +378,10 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `ui.ts` | 70 | 10 | ✅ 提及 | UI 初始化编排 |
 | `ws-channel.ts` | 347 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
 | `terminal-aux-bar.ts` | 2 | 0 | TERMINAL_CARD_SPEC | Phase 8: 终端全局辅助键盘栏（占位） |
-| `terminal-card.ts` | 112 | 0 | TERMINAL_CARD_SPEC | Phase 8: 03 号终端卡 ContentHandler（占位） |
-| `terminal-renderer.ts` | 411 | 0 | TERMINAL_CARD_SPEC | Phase 8: Canvas 终端渲染器（占位） |
+| `terminal-card.ts` | 121 | 0 | TERMINAL_CARD_SPEC | Phase 8: 03 号终端卡 ContentHandler（占位） |
+| `terminal-renderer.ts` | 430 | 0 | TERMINAL_CARD_SPEC | Phase 8: Canvas 终端渲染器（占位） |
 | `card-registry.ts` | 143 | 5 | CARD_REGISTRY_SPEC | 卡片注册表：类型声明 + 实例追踪 |
-| **合计** | **9918** | | | |
+| **合计** | **9946** | | | |
 
 ### 死代码检查
 

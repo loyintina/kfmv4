@@ -40,6 +40,15 @@ export function createTerminalHandler(_meta: Record<string, unknown>): {
         }
       });
 
+      // 尺寸变化 → WS
+      renderer.onResize((cols, rows) => {
+        if (card.meta.sessionId) {
+          wsChannel.sendMessage('terminal-resize', {
+            sessionId: card.meta.sessionId, cols, rows,
+          });
+        }
+      });
+
       // WS error
       wsChannel.onMessage('error', function onErr(p: unknown) {
         const d = p as { message: string };

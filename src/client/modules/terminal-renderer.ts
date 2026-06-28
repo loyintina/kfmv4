@@ -100,6 +100,7 @@ export class TerminalRenderer {
   private _savedR = 0;
   private _savedC = 0;
   private _onInput: ((data: string) => void) | null = null;
+  private _onResize: ((cols: number, rows: number) => void) | null = null;
   private _status = 'init';
 
   /** 在容器内创建 canvas 并初始化 */
@@ -151,36 +152,51 @@ export class TerminalRenderer {
         requestAnimationFrame(() => this._layout());
       }
     });
+
+    // 尺寸自适应：卡片 resize 时重建网格 + 通知 PTY
+    const observer = new ResizeObserver(() => {
+      this._layout();
+      if (this._onResize) this._onResize(this._cols, this._rows);
+    });
+    observer.observe(containerEl);
   }
 
   /** 重算 cols/rows 并重建网格 */
   private _layout(): void {
     if (!this._canvas || !this._ctx) return;
-    // clientWidth/Height 不受 CSS transform 影响，getBoundingClientRect 会
     this._containerW = this._canvas.clientWidth;
     this._containerH = this._canvas.clientHeight;
     if (this._containerW <= 0 || this._containerH <= 0) return;
 
-    // DPR 处理
     this._canvas.width = this._containerW * this._dpr;
     this._canvas.height = this._containerH * this._dpr;
     this._ctx.setTransform(this._dpr, 0, 0, this._dpr, 0, 0);
 
-    // 算行列
-    this._cols = Math.floor(this._containerW / this._cellW);
-    this._rows = Math.floor(this._containerH / this._cellH);
+    const newCols = Math.floor(this._containerW / this._cellW);
+    const newRows = Math.floor(this._containerH / this._cellH);
+    const oldCells = this._cells;
+    const oldCols = this._cols;
+    const oldRows = this._rows;
+    const isFirst = oldRows === 0;
 
-    // 建网格
-    this._cells = [];
-    for (let r = 0; r < this._rows; r++) {
+    this._cols = newCols;
+    this._rows = newRows;
+
+    // 建新网格，保留旧内容
+    const cells: Cell[][] = [];
+    for (let r = 0; r < newRows; r++) {
       const row: Cell[] = [];
-      for (let c = 0; c < this._cols; c++) {
-        row.push({ char: ' ', fg: DEFAULT_FG, bg: DEFAULT_BG, bold: false });
+      for (let c = 0; c < newCols; c++) {
+        if (r < oldRows && c < oldCols) {
+          row.push(oldCells[r][c]);
+        } else {
+          row.push({ char: ' ', fg: DEFAULT_FG, bg: DEFAULT_BG, bold: false });
+        }
       }
-      this._cells.push(row);
+      cells.push(row);
     }
-    this._cursorR = 0;
-    this._cursorC = 0;
+    this._cells = cells;
+    if (isFirst) { this._cursorR = 0; this._cursorC = 0; }
   }
 
   /** 网格尺寸 */
@@ -316,6 +332,9 @@ export class TerminalRenderer {
 
   /** 注册键盘输入回调（Phase 8.6: WebSocket 桥接用） */
   onInput(fn: ((data: string) => void) | null): void { this._onInput = fn; }
+
+  /** 注册尺寸变化回调（Phase 8.7: PTY resize 用） */
+  onResize(fn: ((cols: number, rows: number) => void) | null): void { this._onResize = fn; }
 
   /** 设置状态提示（右下角显示） */
   setStatus(s: string): void { this._status = s; this._render(); }
