@@ -120,6 +120,8 @@ export class TerminalRenderer {
   private _mainCursorC = 0;
   private _mainSavedR = 0;
   private _mainSavedC = 0;
+  private _scrollback: Cell[][] = [];
+  private _scrollOffset = 0;
   private _onInput: ((data: string) => void) | null = null;
   private _onResize: ((cols: number, rows: number) => void) | null = null;
   private _status = 'init';
@@ -142,6 +144,15 @@ export class TerminalRenderer {
     hiddenInput.style.cssText = 'position:absolute;opacity:0;width:0;height:0;border:0;padding:0;resize:none;overflow:hidden';
     containerEl.appendChild(hiddenInput);
     canvas.addEventListener('click', () => hiddenInput.focus());
+
+    // 滚动缓冲：滚轮/触控滑动
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const maxOff = this._scrollback.length;
+      if (e.deltaY > 0) this._scrollOffset = Math.min(maxOff, this._scrollOffset + 1);
+      else if (e.deltaY < 0) this._scrollOffset = Math.max(0, this._scrollOffset - 1);
+      this._render();
+    }, { passive: false });
     hiddenInput.addEventListener('keydown', (e) => {
       if (!this._onInput) return;
       if (e.key === 'Enter') { e.preventDefault(); hiddenInput.value = ''; this._onInput('\r'); return; }
@@ -228,6 +239,7 @@ export class TerminalRenderer {
   /** 往终端写入文本，处理 \n \r \b + ANSI 转义 */
   write(text: string): void {
     if (this._cols <= 0 || this._rows <= 0) return;
+    this._scrollOffset = 0;  // 新数据到达，回到底部
     for (let i = 0; i < text.length; i++) {
       const ch = text[i];
 
@@ -366,8 +378,9 @@ export class TerminalRenderer {
     this._mainCells = [];
   }
 
-  /** 滚屏：上移一行 */
+  /** 滚屏：上移一行，顶部行存入滚动缓冲 */
   private _scrollUp(): void {
+    this._scrollback.push(this._cells[0]);
     for (let r = 1; r < this._rows; r++) {
       this._cells[r - 1] = this._cells[r];
     }
@@ -376,6 +389,15 @@ export class TerminalRenderer {
       empty.push({ char: ' ', fg: DEFAULT_FG, bg: DEFAULT_BG, bold: false });
     }
     this._cells[this._rows - 1] = empty;
+  }
+
+  /** 按总行索引取行（合并 _scrollback + _cells） */
+  private _getRow(totalIdx: number): Cell[] | null {
+    if (totalIdx < 0) return null;
+    const sbLen = this._scrollback.length;
+    if (totalIdx < sbLen) return this._scrollback[totalIdx];
+    const cellIdx = totalIdx - sbLen;
+    return cellIdx < this._rows ? this._cells[cellIdx] : null;
   }
 
   /** 销毁渲染器 */
@@ -415,28 +437,33 @@ export class TerminalRenderer {
     ctx.font = FONT;
     ctx.textBaseline = 'middle';
 
-    // 第一遍：所有背景（先画，防 CJK 第二格 fillRect 覆盖字符右半）
-    for (let r = 0; r < this._rows; r++) {
-      const row = this._cells[r];
+    // 合并渲染：_scrollback + _cells，按 _scrollOffset 偏移
+    const totalRows = this._scrollback.length + this._rows;
+    const visibleStart = Math.max(0, totalRows - this._rows - this._scrollOffset);
+
+    // 第一遍：所有背景
+    for (let vr = 0; vr < this._rows; vr++) {
+      const row = this._getRow(visibleStart + vr);
+      if (!row) continue;
       for (let c = 0; c < this._cols; c++) {
         const cell = row[c];
-        if (cell.bg !== DEFAULT_BG) {
-          ctx.fillStyle = cell.bg;
-          ctx.fillRect(c * cw, topPad + r * ch, cw, ch);
-        }
+        if (!cell || cell.bg === DEFAULT_BG) continue;
+        ctx.fillStyle = cell.bg;
+        ctx.fillRect(c * cw, topPad + vr * ch, cw, ch);
       }
     }
-    // 第二遍：所有文字（画在背景上方）
-    for (let r = 0; r < this._rows; r++) {
-      const row = this._cells[r];
+    // 第二遍：所有文字
+    for (let vr = 0; vr < this._rows; vr++) {
+      const row = this._getRow(visibleStart + vr);
+      if (!row) continue;
       for (let c = 0; c < this._cols; c++) {
         const cell = row[c];
-        if (cell.char === ' ' || cell.char === '') continue;
+        if (!cell || cell.char === ' ' || cell.char === '') continue;
         ctx.fillStyle = cell.fg;
         const wide = _isFullWidth(cell.char);
         const yOff = wide ? 1 : 0;
         const xOff = wide ? 1 : 0;
-        ctx.fillText(cell.char, c * cw + xOff, topPad + (r + 0.5) * ch + yOff);
+        ctx.fillText(cell.char, c * cw + xOff, topPad + (vr + 0.5) * ch + yOff);
       }
     }
 
