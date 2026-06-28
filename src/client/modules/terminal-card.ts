@@ -15,19 +15,23 @@ import { gestures } from './gesture-registry.js';
 
 // 终端卡滚动手势：单指上下滑浏览历史
 const _scrollRenderers = new Map<HTMLElement, TerminalRenderer>();
-let _prevDy = 0;
+let _scrollStartY = 0;
 
 gestures.register({
   id: 'terminal-scroll',
   targetFilter: '.terminal-canvas',
   priority: 60,
-  onStart() { _prevDy = 0; },
+  onStart(e) {
+    _scrollStartY = e.clientY;
+  },
   onMove(e, _dx, dy) {
-    const inc = dy - _prevDy;
-    _prevDy = dy;
+    if (Math.abs(dy) < 4) return;
     const canvas = (e.target as HTMLElement).closest('.terminal-canvas') as HTMLElement | null;
     const renderer = canvas ? _scrollRenderers.get(canvas) : undefined;
-    if (renderer) renderer.scrollBy(inc);
+    if (renderer) {
+      renderer.scrollBy(dy > 0 ? 1 : -1);
+      _scrollStartY = e.clientY;
+    }
   },
   stopPropagation: true,
 });
