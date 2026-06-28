@@ -60,6 +60,20 @@ const ANSI_BRIGHT = [
   '#82aaff', '#c792ea', '#89ddff', '#ffffff',
 ];
 
+// ========== 步骤 8：256 色调色板 ==========
+
+const XTERM_256: string[] = [...ANSI_COLORS, ...ANSI_BRIGHT];
+// 16-231: 6×6×6 RGB 立方体
+for (let r = 0; r < 6; r++)
+  for (let g = 0; g < 6; g++)
+    for (let b = 0; b < 6; b++)
+      XTERM_256.push('#' + [r ? (r * 40 + 55).toString(16) : '00',
+                              g ? (g * 40 + 55).toString(16) : '00',
+                              b ? (b * 40 + 55).toString(16) : '00'].map(s => s.length === 1 ? '0' + s : s).join(''));
+// 232-255: 灰度
+for (let g = 0; g < 24; g++)
+  XTERM_256.push('#' + (g * 10 + 8).toString(16).padStart(2, '0').repeat(3));
+
 // ========== 全角字符检测 ==========
 
 function _isFullWidth(ch: string): boolean {
@@ -99,6 +113,13 @@ export class TerminalRenderer {
   private _inEsc = false;
   private _savedR = 0;
   private _savedC = 0;
+  private _cursorHidden = false;
+  private _altMode = false;
+  private _mainCells: Cell[][] = [];
+  private _mainCursorR = 0;
+  private _mainCursorC = 0;
+  private _mainSavedR = 0;
+  private _mainSavedC = 0;
   private _onInput: ((data: string) => void) | null = null;
   private _onResize: ((cols: number, rows: number) => void) | null = null;
   private _status = 'init';
@@ -214,6 +235,7 @@ export class TerminalRenderer {
       if (this._inEsc) {
         if (ch === '\x1b') { this._escBuf = ''; continue; }
         if (ch === '[') continue;  // 跳过 CSI 引导符
+        if (ch === '?') continue;  // 跳过 DEC 前缀
         // CSI 终结符
         if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')) {
           this._handleCsi(ch, this._escBuf);
@@ -265,11 +287,15 @@ export class TerminalRenderer {
   private _applySgr(params: string): void {
     if (!params) { this._curFg = DEFAULT_FG; this._curBg = DEFAULT_BG; this._curBold = false; return; }
     const nums = params.split(';');
-    for (const s of nums) {
-      const n = parseInt(s, 10);
+    for (let i = 0; i < nums.length; i++) {
+      const n = parseInt(nums[i], 10);
       if (isNaN(n)) continue;
       if (n === 0) { this._curFg = DEFAULT_FG; this._curBg = DEFAULT_BG; this._curBold = false; continue; }
       if (n === 1) { this._curBold = true; continue; }
+      // 256 色前景: 38;5;N
+      if (n === 38 && nums[i + 1] === '5') { const c = parseInt(nums[i + 2], 10); if (c >= 0 && c < 256) this._curFg = XTERM_256[c]; i += 2; continue; }
+      // 256 色背景: 48;5;N
+      if (n === 48 && nums[i + 1] === '5') { const c = parseInt(nums[i + 2], 10); if (c >= 0 && c < 256) this._curBg = XTERM_256[c]; i += 2; continue; }
       if (n >= 30 && n <= 37) { const idx = n - 30; this._curFg = this._curBold ? ANSI_BRIGHT[idx] : ANSI_COLORS[idx]; continue; }
       if (n >= 40 && n <= 47) { this._curBg = ANSI_COLORS[n - 40]; continue; }
       if (n >= 90 && n <= 97) { this._curFg = ANSI_BRIGHT[n - 90]; continue; }
@@ -282,6 +308,8 @@ export class TerminalRenderer {
     const n = buf ? parseInt(buf.split(';')[0], 10) || 1 : 1;
     switch (term) {
       case 'm': this._applySgr(buf); break;
+      case 'h': if (buf === '1049') { this._enterAltScreen(); } else if (buf === '25') { this._cursorHidden = false; } break;
+      case 'l': if (buf === '1049') { this._exitAltScreen(); } else if (buf === '25') { this._cursorHidden = true; } break;
       case 'A': this._cursorR = Math.max(0, this._cursorR - n); break;
       case 'B': this._cursorR = Math.min(this._rows - 1, this._cursorR + n); break;
       case 'C': this._cursorC = Math.min(this._cols - 1, this._cursorC + n); break;
@@ -304,6 +332,38 @@ export class TerminalRenderer {
       case 's': this._savedR = this._cursorR; this._savedC = this._cursorC; break;
       case 'u': this._cursorR = this._savedR; this._cursorC = this._savedC; break;
     }
+  }
+
+  /** 进入交替屏幕 */
+  private _enterAltScreen(): void {
+    if (this._altMode) return;
+    this._altMode = true;
+    this._mainCells = this._cells;
+    this._mainCursorR = this._cursorR;
+    this._mainCursorC = this._cursorC;
+    this._mainSavedR = this._savedR;
+    this._mainSavedC = this._savedC;
+    // 清屏为新网格
+    const cells: Cell[][] = [];
+    for (let r = 0; r < this._rows; r++) {
+      const row: Cell[] = [];
+      for (let c = 0; c < this._cols; c++) row.push({ char: ' ', fg: DEFAULT_FG, bg: DEFAULT_BG, bold: false });
+      cells.push(row);
+    }
+    this._cells = cells;
+    this._cursorR = 0; this._cursorC = 0;
+  }
+
+  /** 退出交替屏幕 */
+  private _exitAltScreen(): void {
+    if (!this._altMode) return;
+    this._altMode = false;
+    this._cells = this._mainCells;
+    this._cursorR = this._mainCursorR;
+    this._cursorC = this._mainCursorC;
+    this._savedR = this._mainSavedR;
+    this._savedC = this._mainSavedC;
+    this._mainCells = [];
   }
 
   /** 滚屏：上移一行 */
@@ -380,8 +440,8 @@ export class TerminalRenderer {
       }
     }
 
-    // 光标（常亮）
-    if (this._cursorR < this._rows && this._cursorC < this._cols) {
+    // 光标（常亮，受 ?25h/l 控制）
+    if (!this._cursorHidden && this._cursorR < this._rows && this._cursorC < this._cols) {
       ctx.fillStyle = this._accent;
       ctx.fillRect(this._cursorC * cw, topPad + this._cursorR * ch, cw, ch);
     }
