@@ -197,6 +197,7 @@ export class TerminalRenderer {
     }
     this._cells = cells;
     if (isFirst) { this._cursorR = 0; this._cursorC = 0; }
+    this._render();
   }
 
   /** 网格尺寸 */
