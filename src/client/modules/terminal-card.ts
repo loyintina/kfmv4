@@ -11,6 +11,7 @@ import { TerminalRenderer } from './terminal-renderer.js';
 import { buildCardLayout } from './floating-card.js';
 import { wsChannel } from './ws-channel.js';
 import { cardRegistry, type CardInstance } from './card-registry.js';
+import { log } from './logger.js';
 
 export function createTerminalHandler(_meta: Record<string, unknown>): {
   activate: (contentEl: HTMLElement, card: CardInstance, reason: 'init' | 'compact') => void;
@@ -86,6 +87,7 @@ export function createTerminalHandler(_meta: Record<string, unknown>): {
     },
 
     deactivate(contentEl, card, reason) {
+      log('td deactivate reason=' + reason + ' tid=' + card.meta.terminalId + ' sid=' + card.meta.sessionId);
       if (card.meta.sessionId) {
         wsChannel.sendMessage('terminal-close', { sessionId: card.meta.sessionId as string });
       }

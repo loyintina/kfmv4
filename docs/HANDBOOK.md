@@ -354,7 +354,7 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `color-utils.ts` | 45 | 2 | ✅ 分组表 | 颜色工具函数（从 tree-swipe 拆分） |
 | `debug-assert.ts` | 23 | 1 | ✅ 提及 | 运行时断言 |
 | `dom-refs.ts` | 36 | 9 | ✅ 注册表 | DOM 元素引用 |
-| `floating-card.ts` | 689 | 2 | ✅ 独立条目 | 浮卡系统（核心模块） |
+| `floating-card.ts` | 691 | 2 | ✅ 独立条目 | 浮卡系统（核心模块） |
 | `gesture-registry.ts` | 245 | 6 | ✅ 独立条目 | 手势注册中心 |
 | `gestures.ts` | 69 | 1 | ✅ 提及 | 页面滑动手势配置 |
 | `interaction-constants.ts` | 20 | 2 | ✅ 分组表 | 交互常量共享层（v6.6.0 新增） |
@@ -378,10 +378,10 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `ui.ts` | 70 | 10 | ✅ 提及 | UI 初始化编排 |
 | `ws-channel.ts` | 347 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
 | `terminal-aux-bar.ts` | 2 | 0 | TERMINAL_CARD_SPEC | Phase 8: 终端全局辅助键盘栏（占位） |
-| `terminal-card.ts` | 112 | 0 | TERMINAL_CARD_SPEC | Phase 8: 03 号终端卡 ContentHandler（占位） |
+| `terminal-card.ts` | 114 | 0 | TERMINAL_CARD_SPEC | Phase 8: 03 号终端卡 ContentHandler（占位） |
 | `terminal-renderer.ts` | 411 | 0 | TERMINAL_CARD_SPEC | Phase 8: Canvas 终端渲染器（占位） |
-| `card-registry.ts` | 143 | 5 | CARD_REGISTRY_SPEC | 卡片注册表：类型声明 + 实例追踪 |
-| **合计** | **9918** | | | |
+| `card-registry.ts` | 146 | 5 | CARD_REGISTRY_SPEC | 卡片注册表：类型声明 + 实例追踪 |
+| **合计** | **9925** | | | |
 
 ### 死代码检查
 

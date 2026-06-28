@@ -128,12 +128,15 @@ class CardRegistry {
     let id = 1;
     while (ids.has(id)) id++;
     ids.add(id);
+    log('cr allocId pool=' + pool + ' result=' + id + ' used=' + [...ids].join(','));
     return id;
   }
 
   /** 在指定池中释放编号 */
   freeId(pool: string, id: number): void {
     this._idPools.get(pool)?.delete(id);
+    const used = this._idPools.get(pool);
+    log('cr freeId pool=' + pool + ' id=' + id + ' remaining=' + (used ? [...used].join(',') : 'none'));
   }
 
   /** 当前活跃实例数 */

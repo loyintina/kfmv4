@@ -12,6 +12,7 @@ import { Registry } from './ui-registry.js';
 import { MARGIN, FLOATING_CARD_W, FLOATING_CARD_H } from './interaction-constants.js';
 import { createDragHandler, type DragConfig } from './drag-handler.js';
 import { cardRegistry, type CardContentHandler, type CardInstance } from './card-registry.js';
+import { log } from './logger.js';
 
 const orbT = theme.cornerOrb;
 
@@ -366,6 +367,7 @@ function _dismissOne(item: FloatingCardItem, animated?: boolean): void {
     return;
   }
   item.state = 'dismissing';
+  log('dismiss-one ' + item.config.id);
 
   if (item.contentEl) {
     const ci = cardRegistry.getInstance(item.instanceId);
@@ -501,7 +503,7 @@ export function initFloatingCards(): void {
       anim.to(item.contentEl, { opacity: 0, duration: 0.1, ease: 'none', onComplete: () => {
         if (item.contentEl) {
           const ci = cardRegistry.getInstance(item.instanceId);
-    if (ci) item.config.contentHandler?.deactivate?.(item.contentEl, ci, 'dismiss');
+          if (ci) item.config.contentHandler?.deactivate?.(item.contentEl, ci, 'compact');
           _renderFloatingContent(item.contentEl, 'compact', item.config.name);
         }
         anim.to(item.contentEl, { opacity: 1, duration: 0.15, ease: 'none' });
