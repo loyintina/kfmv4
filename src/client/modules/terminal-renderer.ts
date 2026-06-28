@@ -413,9 +413,9 @@ export class TerminalRenderer {
 
   /** 滚动缓冲区（deltaPx=像素，正=上滚历史，负=回底部） */
   scrollBy(deltaPx: number): void {
-    this._scrollOffset += deltaPx / this._cellH;
+    const rows = Math.round(deltaPx / this._cellH);
     const maxOff = this._scrollback.length;
-    this._scrollOffset = Math.max(0, Math.min(maxOff, this._scrollOffset));
+    this._scrollOffset = Math.max(0, Math.min(maxOff, this._scrollOffset + rows));
     this._render();
   }
 
@@ -445,28 +445,23 @@ export class TerminalRenderer {
 
     // 合并渲染：_scrollback + _cells，按 _scrollOffset 偏移
     const totalRows = this._scrollback.length + this._rows;
-    const baseOff = Math.floor(this._scrollOffset);
-    const visibleStart = Math.max(0, totalRows - this._rows - baseOff);
-    const pixelOff = (this._scrollOffset - baseOff) * ch;
-    const renderRows = this._rows + 1; // 多渲染一行覆盖分数偏移空白
+    const visibleStart = Math.max(0, totalRows - this._rows - this._scrollOffset);
 
     // 第一遍：所有背景
-    for (let vr = 0; vr < renderRows; vr++) {
+    for (let vr = 0; vr < this._rows; vr++) {
       const row = this._getRow(visibleStart + vr);
       if (!row) continue;
-      const py = topPad + vr * ch - pixelOff;
       for (let c = 0; c < this._cols; c++) {
         const cell = row[c];
         if (!cell || cell.bg === DEFAULT_BG) continue;
         ctx.fillStyle = cell.bg;
-        ctx.fillRect(c * cw, py, cw, ch);
+        ctx.fillRect(c * cw, topPad + vr * ch, cw, ch);
       }
     }
     // 第二遍：所有文字
-    for (let vr = 0; vr < renderRows; vr++) {
+    for (let vr = 0; vr < this._rows; vr++) {
       const row = this._getRow(visibleStart + vr);
       if (!row) continue;
-      const py = topPad + vr * ch - pixelOff;
       for (let c = 0; c < this._cols; c++) {
         const cell = row[c];
         if (!cell || cell.char === ' ' || cell.char === '') continue;
@@ -474,7 +469,7 @@ export class TerminalRenderer {
         const wide = _isFullWidth(cell.char);
         const yOff = wide ? 1 : 0;
         const xOff = wide ? 1 : 0;
-        ctx.fillText(cell.char, c * cw + xOff, py + ch * 0.5 + yOff);
+        ctx.fillText(cell.char, c * cw + xOff, topPad + (vr + 0.5) * ch + yOff);
       }
     }
 
