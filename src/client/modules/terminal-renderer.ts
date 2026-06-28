@@ -149,7 +149,7 @@ export class TerminalRenderer {
     // 滚动缓冲：滚轮
     canvas.addEventListener('wheel', (e) => {
       e.preventDefault();
-      this.scrollBy(e.deltaY > 0 ? 1 : -1);
+      this.scrollBy(e.deltaY);
     }, { passive: false });
     hiddenInput.addEventListener('keydown', (e) => {
       if (!this._onInput) return;
@@ -411,10 +411,11 @@ export class TerminalRenderer {
   /** 设置光标色（跟随卡片 accent） */
   setAccent(color: string): void { this._accent = color; }
 
-  /** 滚动缓冲区（正=上滚历史，负=回底部） */
-  scrollBy(delta: number): void {
+  /** 滚动缓冲区（deltaPx=像素，正=上滚历史，负=回底部） */
+  scrollBy(deltaPx: number): void {
+    const rows = Math.round(deltaPx / this._cellH);
     const maxOff = this._scrollback.length;
-    this._scrollOffset = Math.max(0, Math.min(maxOff, this._scrollOffset + delta));
+    this._scrollOffset = Math.max(0, Math.min(maxOff, this._scrollOffset + rows));
     this._render();
   }
 
