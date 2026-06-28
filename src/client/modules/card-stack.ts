@@ -7,6 +7,7 @@ import { createTerminalHandler } from './terminal-card.js';
 import { currentTheme as theme } from './theme.js';
 import { createFloatingCard } from './floating-card.js';
 import { log } from './logger.js';
+import { registerCardType, getCardType, type CardContentHandler, type CardInstance } from './card-registry.js';
 
 /**
  * KFM v4 - 堆叠卡片面板
@@ -38,24 +39,13 @@ export function getCard(index: number): CardDef { return _cards[index]; }
 export function getCardName(index: number): string { return _cards[index]?.name ?? ''; }
 export function getCardId(index: number): string { return _cards[index]?.id ?? ''; }
 // ========== 卡片内容生命周期 ==========
-// 每张卡片注册 activate/deactivate，展开时激活，折叠时停用。
-// 避免展开时重复创建 DOM / 订阅累积的根因级解法。
 
-interface CardContentHandler {
-  activate: (contentEl: HTMLElement) => void;
-  deactivate: (contentEl: HTMLElement) => void;
-}
-
-const _cardHandlers = new Map<string, CardContentHandler>();
-// 每个 contentEl 对应一个取消订阅函数，WeakMap 自动随元素销毁回收
 const _activeSubs = new WeakMap<HTMLElement, () => void>();
 
-function _registerCardHandler(id: string, handler: CardContentHandler): void {
-  _cardHandlers.set(id, handler);
-}
-
-_registerCardHandler('debug', {
-  activate(contentEl) {
+// 日志卡处理器工厂
+function createDebugHandler(): CardContentHandler {
+  return {
+    activate(contentEl, _card) {
     contentEl.innerHTML = '';
     const wrap = document.createElement('div');
     wrap.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;padding:0 10px';
@@ -122,10 +112,12 @@ _registerCardHandler('debug', {
     if (unsub) { unsub(); _activeSubs.delete(contentEl); }
     contentEl.innerHTML = '';
   },
-});
+  };
+}
 
-// Phase 8: 03 号终端卡
-_registerCardHandler('card03', createTerminalHandler());
+// 向注册表登记卡片类型
+registerCardType({ typeId: 'debug', icon: '\uD83D\uDD27', name: '日志管理', description: '', kind: 'tool', createHandler: createDebugHandler });
+registerCardType({ typeId: 'card03', icon: '>', name: '终端', description: '', kind: 'tool', createHandler: createTerminalHandler });
 
 let _currentAccents: Array<{ color1: string; color2: string }> | null = null;
 /** HSL → hex （#rrggbb） */
@@ -183,7 +175,7 @@ export function cardBg(): string {
 // ========== 访问器：供 floating-card.ts 读取本模块数据 ==========
 export function getFocusIndex(): number { return _focusIndex; }
 export function getCurrentAccent(index: number): { color1: string; color2: string } | undefined { return _currentAccents?.[index]; }
-export function getCardHandler(id: string): CardContentHandler | undefined { return _cardHandlers.get(id); }
+export function getCardHandler(id: string): CardContentHandler | undefined { return getCardType(id)?.createHandler(); }
 export function getFocusedCardRect(): DOMRect | undefined { return _cardEls[_focusIndex]?.getBoundingClientRect(); }
 export function animateStackPullFeedback(): void { _animateStackPullFeedback(); }
 
@@ -202,7 +194,7 @@ export function launchFocusedCard(): void {
     name: getCardName(focusIdx),
     sourceX: cardRect.left, sourceY: cardRect.top,
     scatterBounds: { left: 8, top: 8, right: Math.round(window.innerWidth * 0.7), bottom: window.innerHeight - 56.5 },
-    contentHandler: _cardHandlers.get(getCardId(focusIdx)),
+    contentHandler: getCardType(getCardId(focusIdx))?.createHandler(),
   });
 }
 

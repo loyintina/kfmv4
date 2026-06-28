@@ -348,13 +348,13 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `canvas-cursor.ts` | 443 | 3 | ✅ 提及 | Canvas 盒子光标系统 |
 | `canvas-scroll.ts` | 360 | 2 | ✅ 提及 | Canvas 盒子滚动系统 |
 | `canvas-utils.ts` | 60 | 4 | ✅ 依赖图 | Canvas 通用工具函数 |
-| `card-stack.ts` | 540 | 4 | ✅ 独立条目 | 堆叠卡片面板 |
+| `card-stack.ts` | 532 | 4 | ✅ 独立条目 | 堆叠卡片面板 |
 | `char-rain.ts` | 305 | 1 | ✅ 分组表 | 字符散落/回收动画 |
 | `click-queue.ts` | 38 | 1 | ✅ 分组表 | 点击事件队列 |
 | `color-utils.ts` | 45 | 2 | ✅ 分组表 | 颜色工具函数（从 tree-swipe 拆分） |
 | `debug-assert.ts` | 23 | 1 | ✅ 提及 | 运行时断言 |
 | `dom-refs.ts` | 36 | 9 | ✅ 注册表 | DOM 元素引用 |
-| `floating-card.ts` | 676 | 2 | ✅ 独立条目 | 浮卡系统（核心模块） |
+| `floating-card.ts` | 689 | 2 | ✅ 独立条目 | 浮卡系统（核心模块） |
 | `gesture-registry.ts` | 245 | 6 | ✅ 独立条目 | 手势注册中心 |
 | `gestures.ts` | 69 | 1 | ✅ 提及 | 页面滑动手势配置 |
 | `interaction-constants.ts` | 20 | 2 | ✅ 分组表 | 交互常量共享层（v6.6.0 新增） |
@@ -381,7 +381,7 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `terminal-card.ts` | 115 | 0 | TERMINAL_CARD_SPEC | Phase 8: 03 号终端卡 ContentHandler（占位） |
 | `terminal-renderer.ts` | 411 | 0 | TERMINAL_CARD_SPEC | Phase 8: Canvas 终端渲染器（占位） |
 | `card-registry.ts` | 143 | 0 | CARD_REGISTRY_SPEC | 卡片注册表：类型声明 + 实例追踪（占位） |
-| **合计** | **9905** | | | |
+| **合计** | **9910** | | | |
 
 ### 死代码检查
 

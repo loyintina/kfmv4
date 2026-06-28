@@ -11,6 +11,7 @@ import { currentTheme as theme } from './theme.js';
 import { Registry } from './ui-registry.js';
 import { MARGIN, FLOATING_CARD_W, FLOATING_CARD_H } from './interaction-constants.js';
 import { createDragHandler, type DragConfig } from './drag-handler.js';
+import { cardRegistry, type CardContentHandler, type CardInstance } from './card-registry.js';
 
 const orbT = theme.cornerOrb;
 
@@ -46,7 +47,7 @@ export interface FloatingCardConfig {
   sourceX: number; sourceY: number;  // 飞入起点
   targetX?: number; targetY?: number;  // 不传则自动散落
   scatterBounds?: { left: number; top: number; right: number; bottom: number };
-  contentHandler?: { activate: (el: HTMLElement) => void; deactivate: (el: HTMLElement) => void };
+  contentHandler?: CardContentHandler;
 }
 
 // ========== 浮卡类型与状态 ==========
@@ -54,6 +55,7 @@ export interface FloatingCardConfig {
 interface FloatingCardItem {
   el: HTMLElement;
   config: FloatingCardConfig;
+  instanceId: string;
   zIndex: number;
   state: 'launching' | 'compact' | 'expanding' | 'active' | 'collapsing' | 'dismissing' | 'editing';
   tlOrb: HTMLElement | null;
@@ -219,12 +221,19 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
   const zIndex = _nextFloatingZ++;
   const item: FloatingCardItem = {
     el, config, zIndex, state: 'launching',
+    instanceId: '',
     tlOrb: null, trOrb: null, blOrb: null, brOrb: null, contentEl,
     cardWidth: FLOATING_CARD_W, cardHeight: FLOATING_CARD_H,
     compactMemW: COMPACT_W, compactMemH: COMPACT_H,
     activeMemW: FLOATING_CARD_W, activeMemH: FLOATING_CARD_H,
     accentColor: config.color2,
   };
+
+  // 注册到运行时实例表
+  const cardInstance = cardRegistry.createInstance(
+    config.id, el, contentEl, { color1: config.color1, color2: config.color2 },
+  );
+  item.instanceId = cardInstance.instanceId;
 
   // 四角光球颜色：左 color1，右 color2
   const leftRgba = _hexToRgba(config.color1, 1);
@@ -271,9 +280,7 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
   // 紧凑态初始样式
   // 激活内容：文件浮卡直接进入展开态
   if (config.contentHandler) {
-    contentEl.dataset.cardAccent1 = config.color1;
-    contentEl.dataset.cardAccent2 = config.color2;
-    config.contentHandler.activate(contentEl);
+    config.contentHandler.activate(contentEl, cardInstance);
     _renderFloatingContent(contentEl, 'active');
   }
 
@@ -360,19 +367,22 @@ function _dismissOne(item: FloatingCardItem, animated?: boolean): void {
   item.state = 'dismissing';
 
   if (item.contentEl) {
-    item.config.contentHandler?.deactivate?.(item.contentEl);
+    const ci = cardRegistry.getInstance(item.instanceId);
+    if (ci) item.config.contentHandler?.deactivate?.(item.contentEl, ci);
   }
   if (animated !== false) {
     anim.to(el, {
       scale: 0.3, opacity: 0, duration: 0.2, ease: 'back.in(1.3)',
       onComplete: () => {
         el.remove();
+        cardRegistry.destroyInstance(item.instanceId);
         const idx = _floatingCards.indexOf(item);
         if (idx >= 0) _floatingCards.splice(idx, 1);
       },
     });
   } else {
     el.remove();
+    cardRegistry.destroyInstance(item.instanceId);
     const idx = _floatingCards.indexOf(item);
     if (idx >= 0) _floatingCards.splice(idx, 1);
   }
@@ -471,7 +481,9 @@ export function initFloatingCards(): void {
           item.cardHeight = compressedH;
           // 卡片已到全尺寸——此时 activate 安全，rAF 不会读到中间态
           if (item.contentEl) {
-            item.config.contentHandler?.activate?.(item.contentEl);
+            const ci = cardRegistry.getInstance(item.instanceId);
+            if (ci) cardRegistry.updateState(item.instanceId, 'active');
+            if (ci) item.config.contentHandler?.activate?.(item.contentEl, ci);
             _renderFloatingContent(item.contentEl, 'active');
           }
           anim.to(contentEl, { opacity: 1, duration: 0.15, ease: 'none' });
@@ -488,7 +500,8 @@ export function initFloatingCards(): void {
       item.state = 'collapsing';
       anim.to(item.contentEl, { opacity: 0, duration: 0.1, ease: 'none', onComplete: () => {
         if (item.contentEl) {
-          item.config.contentHandler?.deactivate?.(item.contentEl);
+          const ci = cardRegistry.getInstance(item.instanceId);
+          if (ci) item.config.contentHandler?.deactivate?.(item.contentEl, ci);
           _renderFloatingContent(item.contentEl, 'compact', item.config.name);
         }
         anim.to(item.contentEl, { opacity: 1, duration: 0.15, ease: 'none' });
