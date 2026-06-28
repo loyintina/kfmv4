@@ -22,6 +22,15 @@ import { rgba, hslToHex, cardAccent, pathBasename } from './color-utils.js';
 import { initModeSystem, ensureBg, removeBg, updateBg, recolorCards, getSelectedMode, getModeTheme, getTriColor, applyModeTheme, updateModeSelection } from './mode-system.js';
 import { gestures } from './gesture-registry.js';
 import { createFileHandler } from './renderers/handler-factory.js';
+import { registerCardType, getCardType } from './card-registry.js';
+
+// 向注册表登记文件卡片类型
+registerCardType({
+  typeId: 'file',
+  icon: '', name: '', description: '文件卡片',
+  kind: 'file',
+  createHandler: (meta) => createFileHandler(meta),
+});
 
 export function isDimmed(path: string): boolean { return _dimmedPaths.has(path); }
 
@@ -505,11 +514,12 @@ export function deployAllCards(): void {
 
     createFloatingCard({
       id: 'temp-' + (el.dataset._name || ''),
+      typeId: 'file',
       color1: el.dataset._accent1 || '#7c3aed',
       color2: el.dataset._accent2 || '#00d4ff',
       name: el.dataset._name || '',
       sourceX: fromX, sourceY: fromY,
-      contentHandler: createFileHandler(el.dataset._path || '', el.dataset._accent1 || '#7c3aed'),
+      contentHandler: getCardType('file')?.createHandler({ filePath: el.dataset._path || '', accent: el.dataset._accent1 || '#7c3aed' }),
     });
 
     el.remove();

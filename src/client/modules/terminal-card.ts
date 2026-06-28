@@ -12,7 +12,7 @@ import { buildCardLayout } from './floating-card.js';
 import { wsChannel } from './ws-channel.js';
 import { cardRegistry, type CardInstance } from './card-registry.js';
 
-export function createTerminalHandler(): {
+export function createTerminalHandler(_meta: Record<string, unknown>): {
   activate: (contentEl: HTMLElement, card: CardInstance) => void;
   deactivate: (contentEl: HTMLElement, card: CardInstance) => void;
 } {

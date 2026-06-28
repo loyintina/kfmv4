@@ -42,6 +42,7 @@ const FLOATING_CARD_H_MIN = 54;
 
 export interface FloatingCardConfig {
   id: string;
+  typeId: string;
   color1: string; color2: string;  // hex 主/辅色
   name: string;
   sourceX: number; sourceY: number;  // 飞入起点
@@ -231,7 +232,7 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
 
   // 注册到运行时实例表
   const cardInstance = cardRegistry.createInstance(
-    config.id, el, contentEl, { color1: config.color1, color2: config.color2 },
+    config.typeId, el, contentEl, { color1: config.color1, color2: config.color2 },
   );
   item.instanceId = cardInstance.instanceId;
 

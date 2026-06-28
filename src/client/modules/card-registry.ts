@@ -19,7 +19,7 @@ export interface CardTypeDef {
   name: string;
   description: string;
   kind: 'tool' | 'file';
-  createHandler: () => CardContentHandler;
+  createHandler: (meta: Record<string, unknown>) => CardContentHandler;
 }
 
 export interface CardContentHandler {

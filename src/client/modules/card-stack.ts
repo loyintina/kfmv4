@@ -43,7 +43,7 @@ export function getCardId(index: number): string { return _cards[index]?.id ?? '
 const _activeSubs = new WeakMap<HTMLElement, () => void>();
 
 // 日志卡处理器工厂
-function createDebugHandler(): CardContentHandler {
+function createDebugHandler(_meta: Record<string, unknown>): CardContentHandler {
   return {
     activate(contentEl, _card) {
     contentEl.innerHTML = '';
@@ -175,7 +175,7 @@ export function cardBg(): string {
 // ========== 访问器：供 floating-card.ts 读取本模块数据 ==========
 export function getFocusIndex(): number { return _focusIndex; }
 export function getCurrentAccent(index: number): { color1: string; color2: string } | undefined { return _currentAccents?.[index]; }
-export function getCardHandler(id: string): CardContentHandler | undefined { return getCardType(id)?.createHandler(); }
+export function getCardHandler(id: string): CardContentHandler | undefined { return getCardType(id)?.createHandler({}); }
 export function getFocusedCardRect(): DOMRect | undefined { return _cardEls[_focusIndex]?.getBoundingClientRect(); }
 export function animateStackPullFeedback(): void { _animateStackPullFeedback(); }
 
@@ -190,11 +190,12 @@ export function launchFocusedCard(): void {
 
   createFloatingCard({
     id: 'stack-' + focusIdx,
+    typeId: getCardId(focusIdx),
     color1: cc.color1, color2: cc.color2,
     name: getCardName(focusIdx),
     sourceX: cardRect.left, sourceY: cardRect.top,
     scatterBounds: { left: 8, top: 8, right: Math.round(window.innerWidth * 0.7), bottom: window.innerHeight - 56.5 },
-    contentHandler: getCardType(getCardId(focusIdx))?.createHandler(),
+    contentHandler: getCardType(getCardId(focusIdx))?.createHandler({}),
   });
 }
 

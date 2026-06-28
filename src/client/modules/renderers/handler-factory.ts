@@ -27,8 +27,9 @@ function _btnActive(accent: string): string {
   return 'background:' + _toRgba(accent, 0.15) + ';color:rgba(255,255,255,0.95);border-color:' + _toRgba(accent, 0.5);
 }
 
-export function createFileHandler(filePath: string, accent?: string): { activate: (contentEl: HTMLElement, card: CardInstance) => void | Promise<void>; deactivate: (contentEl: HTMLElement) => void } {
-  const _accent = accent || '#00d4ff';
+export function createFileHandler(meta: Record<string, unknown>): { activate: (contentEl: HTMLElement, card: CardInstance) => void | Promise<void>; deactivate: (contentEl: HTMLElement) => void } {
+  const filePath = meta.filePath as string;
+  const _accent = (meta.accent as string) || '#00d4ff';
   const name = _fileName(filePath);
   const cat = getFileCategory(filePath);
   const editable = cat === 'text' || cat === 'code' || cat === 'markdown';
