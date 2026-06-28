@@ -677,7 +677,7 @@ export function buildCardLayout(
   line.style.cssText = 'height:1px;flex-shrink:0;background:linear-gradient(90deg,' + accent1 + ',' + accent2 + ')';
 
   const body = document.createElement('div');
-  body.style.cssText = 'flex:1;overflow:hidden';
+  body.style.cssText = 'flex:1';
 
   wrap.appendChild(header);
   wrap.appendChild(line);
