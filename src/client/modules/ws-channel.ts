@@ -211,9 +211,6 @@ class WsChannel {
       }
 
       case 'error':
-        log('[warn] [ws-channel] 服务端错误:', msg.payload);
-        break;
-
       case 'terminal-opened':
       case 'terminal-output':
       case 'terminal-exit': {
