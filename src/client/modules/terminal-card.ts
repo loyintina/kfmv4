@@ -11,6 +11,30 @@ import { TerminalRenderer } from './terminal-renderer.js';
 import { buildCardLayout } from './floating-card.js';
 import { wsChannel } from './ws-channel.js';
 import { cardRegistry, type CardInstance } from './card-registry.js';
+import { gestures } from './gesture-registry.js';
+
+// 终端卡滚动手势：单指上下滑浏览历史
+const _scrollRenderers = new Map<HTMLElement, TerminalRenderer>();
+let _scrollStartY = 0;
+
+gestures.register({
+  id: 'terminal-scroll',
+  targetFilter: '.terminal-canvas',
+  priority: 60,
+  onStart(e) {
+    _scrollStartY = e.clientY;
+  },
+  onMove(e, _dx, dy) {
+    if (Math.abs(dy) < 4) return;
+    const canvas = (e.target as HTMLElement).closest('.terminal-canvas') as HTMLElement | null;
+    const renderer = canvas ? _scrollRenderers.get(canvas) : undefined;
+    if (renderer) {
+      renderer.scrollBy(dy > 0 ? 1 : -1);
+      _scrollStartY = e.clientY;
+    }
+  },
+  stopPropagation: true,
+});
 
 export function createTerminalHandler(_meta: Record<string, unknown>): {
   activate: (contentEl: HTMLElement, card: CardInstance, reason: 'init' | 'compact') => void;
@@ -30,6 +54,7 @@ export function createTerminalHandler(_meta: Record<string, unknown>): {
       const renderer = new TerminalRenderer();
       renderer.setAccent(c1);
       renderer.mount(bodyEl);
+      _scrollRenderers.set(bodyEl.querySelector('.terminal-canvas')!, renderer);
 
       // 键盘 → WS
       renderer.onInput((data: string) => {

@@ -135,6 +135,7 @@ export class TerminalRenderer {
 
     const canvas = document.createElement('canvas');
     canvas.style.cssText = 'display:block;width:100%;height:100%';
+    canvas.className = 'terminal-canvas';
     containerEl.appendChild(canvas);
     this._canvas = canvas;
     this._ctx = canvas.getContext('2d')!;
@@ -145,13 +146,10 @@ export class TerminalRenderer {
     containerEl.appendChild(hiddenInput);
     canvas.addEventListener('click', () => hiddenInput.focus());
 
-    // 滚动缓冲：滚轮/触控滑动
+    // 滚动缓冲：滚轮
     canvas.addEventListener('wheel', (e) => {
       e.preventDefault();
-      const maxOff = this._scrollback.length;
-      if (e.deltaY > 0) this._scrollOffset = Math.min(maxOff, this._scrollOffset + 1);
-      else if (e.deltaY < 0) this._scrollOffset = Math.max(0, this._scrollOffset - 1);
-      this._render();
+      this.scrollBy(e.deltaY > 0 ? 1 : -1);
     }, { passive: false });
     hiddenInput.addEventListener('keydown', (e) => {
       if (!this._onInput) return;
@@ -412,6 +410,13 @@ export class TerminalRenderer {
 
   /** 设置光标色（跟随卡片 accent） */
   setAccent(color: string): void { this._accent = color; }
+
+  /** 滚动缓冲区（正=上滚历史，负=回底部） */
+  scrollBy(delta: number): void {
+    const maxOff = this._scrollback.length;
+    this._scrollOffset = Math.max(0, Math.min(maxOff, this._scrollOffset + delta));
+    this._render();
+  }
 
   /** 注册键盘输入回调（Phase 8.6: WebSocket 桥接用） */
   onInput(fn: ((data: string) => void) | null): void { this._onInput = fn; }
