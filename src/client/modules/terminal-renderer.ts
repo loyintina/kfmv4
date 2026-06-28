@@ -487,11 +487,14 @@ export class TerminalRenderer {
     const pixelOff = (this._scrollOffset - baseOff) * ch;
     const renderRows = this._rows + 1;
 
+    ctx.save();
+    ctx.translate(0, -pixelOff);
+
     // 第一遍：所有背景
     for (let vr = 0; vr < renderRows; vr++) {
       const row = this._getRow(visibleStart + vr);
       if (!row) continue;
-      const py = topPad + vr * ch - pixelOff;
+      const py = topPad + vr * ch;
       for (let c = 0; c < this._cols; c++) {
         const cell = row[c];
         if (!cell || cell.bg === DEFAULT_BG) continue;
@@ -503,7 +506,7 @@ export class TerminalRenderer {
     for (let vr = 0; vr < renderRows; vr++) {
       const row = this._getRow(visibleStart + vr);
       if (!row) continue;
-      const py = topPad + vr * ch - pixelOff;
+      const py = topPad + vr * ch;
       for (let c = 0; c < this._cols; c++) {
         const cell = row[c];
         if (!cell || cell.char === ' ' || cell.char === '') continue;
@@ -514,6 +517,8 @@ export class TerminalRenderer {
         ctx.fillText(cell.char, c * cw + xOff, py + ch * 0.5 + yOff);
       }
     }
+
+    ctx.restore();
 
     // 光标（常亮，受 ?25h/l 控制）
     if (!this._cursorHidden && this._cursorR < this._rows && this._cursorC < this._cols) {
