@@ -122,6 +122,10 @@ export class TerminalRenderer {
   private _mainSavedC = 0;
   private _scrollback: Cell[][] = [];
   private _scrollOffset = 0;
+  private _scrollBaseline = 0;
+  private _scrollVelocity = 0;
+  private _flingRaf: number = 0;
+  private _lastRawY = 0;
   private _onInput: ((data: string) => void) | null = null;
   private _onResize: ((cols: number, rows: number) => void) | null = null;
   private _status = 'init';
@@ -135,6 +139,7 @@ export class TerminalRenderer {
 
     const canvas = document.createElement('canvas');
     canvas.style.cssText = 'display:block;width:100%;height:100%';
+    canvas.className = 'terminal-canvas';
     containerEl.appendChild(canvas);
     this._canvas = canvas;
     this._ctx = canvas.getContext('2d')!;
@@ -145,13 +150,10 @@ export class TerminalRenderer {
     containerEl.appendChild(hiddenInput);
     canvas.addEventListener('click', () => hiddenInput.focus());
 
-    // 滚动缓冲：滚轮/触控滑动
+    // 滚动缓冲：滚轮
     canvas.addEventListener('wheel', (e) => {
       e.preventDefault();
-      const maxOff = this._scrollback.length;
-      if (e.deltaY > 0) this._scrollOffset = Math.min(maxOff, this._scrollOffset + 1);
-      else if (e.deltaY < 0) this._scrollOffset = Math.max(0, this._scrollOffset - 1);
-      this._render();
+      this.scrollBy(e.deltaY);
     }, { passive: false });
     hiddenInput.addEventListener('keydown', (e) => {
       if (!this._onInput) return;
@@ -422,6 +424,47 @@ export class TerminalRenderer {
   /** 设置状态提示（右下角显示） */
   setStatus(s: string): void { this._status = s; this._render(); }
 
+  /** 滚轮滚动 */
+  scrollBy(deltaPx: number): void {
+    this._scrollBaseline = this._scrollOffset;
+    this._scrollOffset += deltaPx / this._cellH;
+    this._scrollOffset = Math.max(0, Math.min(this._scrollback.length, this._scrollOffset));
+    this._render();
+  }
+
+  /** 触摸滚动 onStart */
+  touchScrollStart(rawY: number): void {
+    if (this._flingRaf) { cancelAnimationFrame(this._flingRaf); this._flingRaf = 0; }
+    this._scrollBaseline = this._scrollOffset;
+    this._scrollVelocity = 0;
+    this._lastRawY = rawY;
+  }
+
+  /** 触摸滚动 onMove — deltaPx = startY - rawY（自然滚动：上滑看历史） */
+  touchScrollMove(rawY: number, startY: number): void {
+    const deltaPx = startY - rawY;
+    const frameDy = this._lastRawY - rawY;
+    this._lastRawY = rawY;
+    if (frameDy !== 0) this._scrollVelocity = frameDy / 16;
+
+    this._scrollOffset = this._scrollBaseline + deltaPx / this._cellH;
+    this._scrollOffset = Math.max(0, Math.min(this._scrollback.length, this._scrollOffset));
+    this._render();
+  }
+
+  /** 触摸滚动 onEnd — fling（×0.96 衰减） */
+  startFling(): void {
+    if (Math.abs(this._scrollVelocity) < 0.5) return;
+    if (this._flingRaf) return;
+    const step = () => {
+      this._scrollVelocity *= 0.96;
+      if (Math.abs(this._scrollVelocity) < 0.3) { this._flingRaf = 0; return; }
+      this.scrollBy(this._scrollVelocity);
+      this._flingRaf = requestAnimationFrame(step);
+    };
+    this._flingRaf = requestAnimationFrame(step);
+  }
+
   /** 绘制网格到 canvas */
   private _render(): void {
     if (!this._ctx) return;
@@ -439,23 +482,28 @@ export class TerminalRenderer {
 
     // 合并渲染：_scrollback + _cells，按 _scrollOffset 偏移
     const totalRows = this._scrollback.length + this._rows;
-    const visibleStart = Math.max(0, totalRows - this._rows - this._scrollOffset);
+    const baseOff = Math.floor(this._scrollOffset);
+    const visibleStart = Math.max(0, totalRows - this._rows - baseOff);
+    const pixelOff = (this._scrollOffset - baseOff) * ch;
+    const renderRows = this._rows + 1;
 
     // 第一遍：所有背景
-    for (let vr = 0; vr < this._rows; vr++) {
+    for (let vr = 0; vr < renderRows; vr++) {
       const row = this._getRow(visibleStart + vr);
       if (!row) continue;
+      const py = topPad + vr * ch - pixelOff;
       for (let c = 0; c < this._cols; c++) {
         const cell = row[c];
         if (!cell || cell.bg === DEFAULT_BG) continue;
         ctx.fillStyle = cell.bg;
-        ctx.fillRect(c * cw, topPad + vr * ch, cw, ch);
+        ctx.fillRect(c * cw, py, cw, ch);
       }
     }
     // 第二遍：所有文字
-    for (let vr = 0; vr < this._rows; vr++) {
+    for (let vr = 0; vr < renderRows; vr++) {
       const row = this._getRow(visibleStart + vr);
       if (!row) continue;
+      const py = topPad + vr * ch - pixelOff;
       for (let c = 0; c < this._cols; c++) {
         const cell = row[c];
         if (!cell || cell.char === ' ' || cell.char === '') continue;
@@ -463,7 +511,7 @@ export class TerminalRenderer {
         const wide = _isFullWidth(cell.char);
         const yOff = wide ? 1 : 0;
         const xOff = wide ? 1 : 0;
-        ctx.fillText(cell.char, c * cw + xOff, topPad + (vr + 0.5) * ch + yOff);
+        ctx.fillText(cell.char, c * cw + xOff, py + ch * 0.5 + yOff);
       }
     }
 
