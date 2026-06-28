@@ -20,7 +20,7 @@ let _prevDy = 0;
 gestures.register({
   id: 'terminal-scroll',
   targetFilter: '.terminal-canvas',
-  priority: 60,
+  priority: 61,
   onStart() { _prevDy = 0; },
   onMove(e, _dx, dy) {
     const inc = dy - _prevDy;
