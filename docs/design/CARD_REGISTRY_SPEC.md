@@ -1,13 +1,13 @@
 ---
-status: draft
-version: v1.0
-last_updated: 2026-06-27
+status: active
+version: v1.1
+last_updated: 2026-06-28
 ---
 
 # KFM v4 — 卡片注册表设计规范
 
-> **版本**：v1.0
-> **状态**：设计阶段（draft）
+> **版本**：v1.1
+> **状态**：已实施（active）
 >
 > 本文档描述 KFM v4 卡片运行时注册系统的三层架构设计。
 > 核心理念：所有卡片类型在一处声明，所有卡片实例在一处追踪，AI 通过同一注册表感知页面全部卡片。
@@ -70,7 +70,7 @@ Phase 8 终端卡的开发过程中，同一个缺口上打了多层补丁：
 │  │ typeId: 'debug' | 'card03' | 'file' | 'settings'  │ │
 │  │ icon / name / description                          │ │
 │  │ kind: 'tool' | 'file'                              │ │
-│  │ createHandler: () => CardContentHandler             │ │
+│  │ createHandler: (meta) => CardContentHandler        │ │
 │  │ registerCardType(def) — 这里是唯一入口              │ │
 │  └────────────────────────────────────────────────────┘ │
 └──────────────────────┬──────────────────────────────────┘
@@ -125,7 +125,7 @@ interface CardTypeDef {
   kind: 'tool' | 'file';
 
   /** 创建内容处理器 */
-  createHandler: () => CardContentHandler;
+  createHandler: (meta: Record<string, unknown>) => CardContentHandler;
 }
 ```
 
@@ -310,7 +310,13 @@ registerCardType({
 });
 registerCardType({
   typeId: 'card03', icon: '>', name: '终端', description: '',
-  kind: 'tool', createHandler: createTerminalHandler,
+  kind: 'tool', createHandler: (_meta) => createTerminalHandler(_meta),
+});
+
+// 文件卡类型由 tree-swipe.ts 注册：
+registerCardType({
+  typeId: 'file', icon: '', name: '', description: '',
+  kind: 'file', createHandler: (meta) => createFileHandler(meta),
 });
 ```
 
@@ -324,6 +330,8 @@ registerCardType({
 | `dismissFloatingCard()` | `CardRegistry.destroyInstance(instanceId)` |
 | `_toggleExpandCollapse()` 状态变化 | `CardRegistry.updateState(instanceId, newState)` |
 | `config.contentHandler.activate(contentEl)` | 改为 `activate(contentEl, instance)` |
+
+`FloatingCardConfig` 新增 `typeId: string` 字段。`createFloatingCard` 的所有调用方必须提供此字段（card-stack 用 `getCardId(idx)`，tree-swipe 用 `'file'`）。
 
 **CardContentHandler 新签名**：
 ```typescript
@@ -444,6 +452,8 @@ AI agent 通过 `GET /api/ui/snapshot` 可获取当前全部卡片。
 | 5 | `handler-factory.ts` | activate/deactivate 签名适配 +card 参数 | ~3 |
 | **净增** | | | **~133** |
 
+**实施状态**：步骤 1-5 全部完成。
+
 ### 依赖链
 
 ```
@@ -451,9 +461,21 @@ AI agent 通过 `GET /api/ui/snapshot` 可获取当前全部卡片。
   ├── 2（card-stack 改用 registerCardType）
   ├── 3（floating-card 接入实例注册）
   │     └── 4（terminal-card 切 card 参数）
-  │         └── 5（handler-factory 签名适配）
-  └── 4、5 可并行
+  ├── 4、5 可并行
+  └── 6（check-cards.mjs 校验）
 ```
+
+---
+
+### 构建验证：`check-cards.mjs`
+
+作为 `npm run check` 的第 9 个脚本，验证规则：
+
+> 每个 `getCardType('xxx')` 静态引用必须有对应的 `registerCardType({ typeId: 'xxx' })`。
+
+实现：正则扫描 `src/client/modules/` 下所有 `.ts` 文件，收集注册和引用的 typeId，取差集。差集非空时报错阻断 build。
+
+当前状态：3 个类型已注册（debug / card03 / file），1 个静态引用（`getCardType('file')`），零违规。
 
 ---
 
@@ -463,19 +485,22 @@ AI agent 通过 `GET /api/ui/snapshot` 可获取当前全部卡片。
 
 **问**：`card-registry.ts` 放 `src/client/modules/` 还是 `src/client/cards/`？
 
-**答**：放 `modules/`。`src/client/cards/` 目录目前不存在，建目录放一个文件是过度设计。等未来 card 相关文件超过 3 个（注册表 + 类型定义 + AI 适配层）再搬迁。
+**答**：放 `modules/`。`src/client/cards/` 目录目前不存在，建目录放一个文件是过度设计。等未来 card 相关文件超过 3 个再搬迁。
+**状态**：✅ 已决策，已实施。
 
 ### 8.2 allocId / freeId 放哪
 
 **问**：编号分配器放 CardRegistry 还是各卡片类型自己管？
 
-**答**：放 CardRegistry，作为按池（pool）分配的通用机制。池的 key 是 typeId。终端卡调 `allocId('card03')`，文件卡将来有需要就调 `allocId('file')`。不需要编号的卡类型不调即可。这消除了未来其他多实例卡片类型重复实现编号逻辑的可能性。
+**答**：放 CardRegistry，作为按池（pool）分配的通用机制。不存在不需要的卡片类型不调用。消除了未来其他多实例卡片类型重复实现编号逻辑的可能性。
+**状态**：✅ 已实施。
 
 ### 8.3 AI 层命令通道
 
 **问**：AI 层卡片命令是否共用 `wsChannel.onCommand`？
 
-**答**：是。已有 12 个命令处理器走此通道（`open-card-stack`、`close-card-stack`、`expand-dir`、`click` 等）。加 `focus-card`、`close-card`、`send-to-card` 三个即可，无需新协议。
+**答**：是。已有 12 个命令处理器走此通道。加 `focus-card`、`close-card`、`send-to-card` 三个即可，无需新协议。
+**状态**：📝 设计已定，留待 Phase AI 实施。
 
 ### 8.4 ContentHandler 签名兼容
 
