@@ -380,8 +380,8 @@ npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
 | `terminal-aux-bar.ts` | 2 | 0 | TERMINAL_CARD_SPEC | Phase 8: 终端全局辅助键盘栏（占位） |
 | `terminal-card.ts` | 115 | 0 | TERMINAL_CARD_SPEC | Phase 8: 03 号终端卡 ContentHandler（占位） |
 | `terminal-renderer.ts` | 411 | 0 | TERMINAL_CARD_SPEC | Phase 8: Canvas 终端渲染器（占位） |
-| `card-registry.ts` | 143 | 5 | CARD_REGISTRY_SPEC | 卡片注册表：类型声明 + 实例追踪 |
-| **合计** | **9922** | | | |
+| `card-registry.ts` | 151 | 5 | CARD_REGISTRY_SPEC | 卡片注册表：类型声明 + 实例追踪 |
+| **合计** | **9930** | | | |
 
 ### 死代码检查
 

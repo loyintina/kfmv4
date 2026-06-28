@@ -59,6 +59,14 @@ export function getAllCardTypes(): CardTypeDef[] {
 
 // ========== 运行时实例注册表 ==========
 
+/** UUID v4 生成（替代 crypto.randomUUID，兼容旧浏览器） */
+function _uuid(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+}
+
 class CardRegistry {
   private _instances = new Map<string, CardInstance>();
   private _byContentEl = new WeakMap<HTMLElement, CardInstance>();
@@ -72,7 +80,7 @@ class CardRegistry {
     accents: { color1: string; color2: string },
   ): CardInstance {
     const instance: CardInstance = {
-      instanceId: crypto.randomUUID(),
+      instanceId: _uuid(),
       typeId,
       el,
       contentEl,
