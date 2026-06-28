@@ -122,6 +122,9 @@ export class TerminalRenderer {
   private _mainSavedC = 0;
   private _scrollback: Cell[][] = [];
   private _scrollOffset = 0;
+  private _scrollBaseline = 0;
+  private _scrollVelocity = 0;
+  private _flingRaf: number = 0;
   private _onInput: ((data: string) => void) | null = null;
   private _onResize: ((cols: number, rows: number) => void) | null = null;
   private _status = 'init';
@@ -413,10 +416,40 @@ export class TerminalRenderer {
 
   /** 滚动缓冲区（deltaPx=像素，正=上滚历史，负=回底部） */
   scrollBy(deltaPx: number): void {
+    this._scrollBaseline = this._scrollOffset;
     this._scrollOffset += deltaPx / this._cellH;
     const maxOff = this._scrollback.length;
     this._scrollOffset = Math.max(0, Math.min(maxOff, this._scrollOffset));
     this._render();
+  }
+
+  /** 触摸滚动：记录基线、停止旧 fling（照搬 canvas-scroll onStart） */
+  touchScrollStart(): void {
+    if (this._flingRaf) { cancelAnimationFrame(this._flingRaf); this._flingRaf = 0; }
+    this._scrollBaseline = this._scrollOffset;
+    this._scrollVelocity = 0;
+  }
+
+  /** 触摸滚动：绝对偏移定位 + 记速度（照搬 canvas-scroll onMove） */
+  touchScrollMove(deltaPx: number, dt: number): void {
+    if (dt > 0) this._scrollVelocity = deltaPx / dt * 16 * 1.7;  // 同 canvas-scroll 公式
+    this._scrollOffset = this._scrollBaseline + deltaPx / this._cellH;
+    const maxOff = this._scrollback.length;
+    this._scrollOffset = Math.max(0, Math.min(maxOff, this._scrollOffset));
+    this._render();
+  }
+
+  /** 触摸滚动 fling：rAF ×0.96 衰减（照搬 canvas-scroll onEnd） */
+  startFling(): void {
+    if (Math.abs(this._scrollVelocity) < 0.5) return;
+    if (this._flingRaf) return;
+    const step = () => {
+      this._scrollVelocity *= 0.96;
+      if (Math.abs(this._scrollVelocity) < 0.3) { this._flingRaf = 0; return; }
+      this.scrollBy(this._scrollVelocity);
+      this._flingRaf = requestAnimationFrame(step);
+    };
+    this._flingRaf = requestAnimationFrame(step);
   }
 
   /** 注册键盘输入回调（Phase 8.6: WebSocket 桥接用） */

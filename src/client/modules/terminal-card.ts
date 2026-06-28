@@ -13,21 +13,31 @@ import { wsChannel } from './ws-channel.js';
 import { cardRegistry, type CardInstance } from './card-registry.js';
 import { gestures } from './gesture-registry.js';
 
-// 终端卡滚动手势：单指上下滑浏览历史
+// 终端卡滚动手势：照搬 canvas-scroll 模式（绝对偏移 + 速度 + fling）
 const _scrollRenderers = new Map<HTMLElement, TerminalRenderer>();
-let _prevDy = 0;
+let _activeRenderer: TerminalRenderer | null = null;
+let _scrollStartY = 0;
 
 gestures.register({
   id: 'terminal-scroll',
   targetFilter: '.terminal-canvas',
   priority: 61,
-  onStart() { _prevDy = 0; },
-  onMove(e, _dx, dy) {
-    const inc = dy - _prevDy;
-    _prevDy = dy;
+  onStart(e) {
     const canvas = (e.target as HTMLElement).closest('.terminal-canvas') as HTMLElement | null;
-    const renderer = canvas ? _scrollRenderers.get(canvas) : undefined;
-    if (renderer) renderer.scrollBy(inc);
+    const r = canvas ? _scrollRenderers.get(canvas) : undefined;
+    if (!r) return;
+    _activeRenderer = r;
+    _scrollStartY = e.clientY;
+    r.touchScrollStart();
+  },
+  onMove(e, _dx, dy) {
+    if (!_activeRenderer) return;
+    const deltaPx = _scrollStartY - e.clientY;
+    const dt = performance.now() - (e.timeStamp || 0);
+    _activeRenderer.touchScrollMove(deltaPx, dt);
+  },
+  onEnd() {
+    if (_activeRenderer) { _activeRenderer.startFling(); _activeRenderer = null; }
   },
   stopPropagation: true,
 });
