@@ -281,7 +281,7 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
   // 紧凑态初始样式
   // 激活内容：文件浮卡直接进入展开态
   if (config.contentHandler) {
-    config.contentHandler.activate(contentEl, cardInstance);
+    config.contentHandler.activate(contentEl, cardInstance, 'init');
     _renderFloatingContent(contentEl, 'active');
   }
 
@@ -369,7 +369,7 @@ function _dismissOne(item: FloatingCardItem, animated?: boolean): void {
 
   if (item.contentEl) {
     const ci = cardRegistry.getInstance(item.instanceId);
-    if (ci) item.config.contentHandler?.deactivate?.(item.contentEl, ci);
+          if (ci) item.config.contentHandler?.deactivate?.(item.contentEl, ci, 'compact');
   }
   if (animated !== false) {
     anim.to(el, {
@@ -483,8 +483,7 @@ export function initFloatingCards(): void {
           // 卡片已到全尺寸——此时 activate 安全，rAF 不会读到中间态
           if (item.contentEl) {
             const ci = cardRegistry.getInstance(item.instanceId);
-            if (ci) cardRegistry.updateState(item.instanceId, 'active');
-            if (ci) item.config.contentHandler?.activate?.(item.contentEl, ci);
+            if (ci) item.config.contentHandler?.activate?.(item.contentEl, ci, 'compact');
             _renderFloatingContent(item.contentEl, 'active');
           }
           anim.to(contentEl, { opacity: 1, duration: 0.15, ease: 'none' });
@@ -502,7 +501,7 @@ export function initFloatingCards(): void {
       anim.to(item.contentEl, { opacity: 0, duration: 0.1, ease: 'none', onComplete: () => {
         if (item.contentEl) {
           const ci = cardRegistry.getInstance(item.instanceId);
-          if (ci) item.config.contentHandler?.deactivate?.(item.contentEl, ci);
+    if (ci) item.config.contentHandler?.deactivate?.(item.contentEl, ci, 'dismiss');
           _renderFloatingContent(item.contentEl, 'compact', item.config.name);
         }
         anim.to(item.contentEl, { opacity: 1, duration: 0.15, ease: 'none' });

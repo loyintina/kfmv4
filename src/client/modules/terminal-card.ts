@@ -13,8 +13,8 @@ import { wsChannel } from './ws-channel.js';
 import { cardRegistry, type CardInstance } from './card-registry.js';
 
 export function createTerminalHandler(_meta: Record<string, unknown>): {
-  activate: (contentEl: HTMLElement, card: CardInstance) => void;
-  deactivate: (contentEl: HTMLElement, card: CardInstance) => void;
+  activate: (contentEl: HTMLElement, card: CardInstance, reason: 'init' | 'compact') => void;
+  deactivate: (contentEl: HTMLElement, card: CardInstance, reason: 'compact' | 'dismiss') => void;
 } {
   return {
     activate(contentEl, card) {
@@ -85,10 +85,7 @@ export function createTerminalHandler(_meta: Record<string, unknown>): {
       }
     },
 
-    deactivate(contentEl, card) {
-      const ci = cardRegistry.getInstance(card.instanceId);
-      const isDismissing = ci?.state === 'dismissing';
-
+    deactivate(contentEl, card, reason) {
       if (card.meta.sessionId) {
         wsChannel.sendMessage('terminal-close', { sessionId: card.meta.sessionId as string });
       }
@@ -99,7 +96,7 @@ export function createTerminalHandler(_meta: Record<string, unknown>): {
         wsChannel.offMessage('terminal-exit', card.meta._onExit as (p: unknown) => void);
       }
 
-      if (isDismissing) {
+      if (reason === 'dismiss') {
         // 卡片关闭：释放终端编号
         if (card.meta.terminalId) {
           cardRegistry.freeId('card03', card.meta.terminalId as number);
@@ -107,7 +104,7 @@ export function createTerminalHandler(_meta: Record<string, unknown>): {
         delete card.meta.sessionId;
         delete card.meta.terminalId;
       }
-      // 紧缩时不释放——编号和 PTY 都可以复用（但如果 PTY 已被 terminal-close 杀掉，重新打开会获新会话）
+      // 紧缩时不释放——编号和 PTY 都可以复用
 
       contentEl.innerHTML = '';
     },

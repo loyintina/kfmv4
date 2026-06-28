@@ -45,7 +45,7 @@ const _activeSubs = new WeakMap<HTMLElement, () => void>();
 // 日志卡处理器工厂
 function createDebugHandler(_meta: Record<string, unknown>): CardContentHandler {
   return {
-    activate(contentEl, _card) {
+    activate(contentEl, _card, _reason) {
     contentEl.innerHTML = '';
     const wrap = document.createElement('div');
     wrap.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;padding:0 10px';
@@ -107,7 +107,7 @@ function createDebugHandler(_meta: Record<string, unknown>): CardContentHandler 
     refresh();
     _activeSubs.set(contentEl, onLog(refresh));
   },
-  deactivate(contentEl) {
+  deactivate(contentEl, _card, _reason) {
     const unsub = _activeSubs.get(contentEl);
     if (unsub) { unsub(); _activeSubs.delete(contentEl); }
     contentEl.innerHTML = '';

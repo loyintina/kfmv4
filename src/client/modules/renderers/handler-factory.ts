@@ -27,7 +27,7 @@ function _btnActive(accent: string): string {
   return 'background:' + _toRgba(accent, 0.15) + ';color:rgba(255,255,255,0.95);border-color:' + _toRgba(accent, 0.5);
 }
 
-export function createFileHandler(meta: Record<string, unknown>): { activate: (contentEl: HTMLElement, card: CardInstance) => void | Promise<void>; deactivate: (contentEl: HTMLElement) => void } {
+export function createFileHandler(meta: Record<string, unknown>): { activate: (contentEl: HTMLElement, card: CardInstance, reason: 'init' | 'compact') => void | Promise<void>; deactivate: (contentEl: HTMLElement, _card: CardInstance, reason: string) => void } {
   const filePath = meta.filePath as string;
   const _accent = (meta.accent as string) || '#00d4ff';
   const name = _fileName(filePath);
@@ -203,7 +203,7 @@ export function createFileHandler(meta: Record<string, unknown>): { activate: (c
   }
 
   return {
-    async activate(contentEl: HTMLElement, card: CardInstance) {
+    async activate(contentEl: HTMLElement, card: CardInstance, _reason: 'init' | 'compact') {
       contentEl.innerHTML = '';
 
       // wrapper：独立 flex column，不受浮卡 contentEl 的 cssText 覆盖
@@ -288,7 +288,7 @@ export function createFileHandler(meta: Record<string, unknown>): { activate: (c
         renderBinaryInfo(contentEl, filePath, undefined, card?.accents?.color1, card?.accents?.color2);
       }
     },
-    deactivate(el: HTMLElement) {
+    deactivate(el: HTMLElement, _card: CardInstance, _reason: string) {
       el.innerHTML = '';
     },
   };

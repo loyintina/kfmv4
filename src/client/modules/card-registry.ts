@@ -23,8 +23,8 @@ export interface CardTypeDef {
 }
 
 export interface CardContentHandler {
-  activate(contentEl: HTMLElement, card: CardInstance): void | Promise<void>;
-  deactivate(contentEl: HTMLElement, card: CardInstance): void;
+  activate(contentEl: HTMLElement, card: CardInstance, reason: 'init' | 'compact'): void | Promise<void>;
+  deactivate(contentEl: HTMLElement, card: CardInstance, reason: 'compact' | 'dismiss'): void;
 }
 
 export interface CardInstance {
@@ -32,7 +32,6 @@ export interface CardInstance {
   typeId: string;
   el: HTMLElement;
   contentEl: HTMLElement;
-  state: 'compact' | 'active' | 'expanding' | 'collapsing' | 'editing' | 'dismissing';
   accents: { color1: string; color2: string };
   meta: Record<string, unknown>;
   createdAt: number;
@@ -84,7 +83,6 @@ class CardRegistry {
       typeId,
       el,
       contentEl,
-      state: 'active',
       accents,
       meta: {},
       createdAt: Date.now(),
@@ -121,12 +119,6 @@ class CardRegistry {
   /** 按类型筛选 */
   getByType(typeId: string): CardInstance[] {
     return this.getAll().filter(i => i.typeId === typeId);
-  }
-
-  /** 更新实例状态（由 floating-card.ts 调用） */
-  updateState(instanceId: string, state: CardInstance['state']): void {
-    const inst = this._instances.get(instanceId);
-    if (inst) inst.state = state;
   }
 
   /** 在指定池中分配最小可用编号 */
