@@ -125,6 +125,7 @@ export class TerminalRenderer {
   private _scrollBaseline = 0;
   private _scrollVelocity = 0;
   private _flingRaf: number = 0;
+  private _lastRawY = 0;
   private _onInput: ((data: string) => void) | null = null;
   private _onResize: ((cols: number, rows: number) => void) | null = null;
   private _status = 'init';
@@ -424,17 +425,24 @@ export class TerminalRenderer {
   }
 
   /** 触摸滚动：记录基线、停止旧 fling（照搬 canvas-scroll onStart） */
-  touchScrollStart(): void {
+  touchScrollStart(rawY: number): void {
     if (this._flingRaf) { cancelAnimationFrame(this._flingRaf); this._flingRaf = 0; }
     this._scrollBaseline = this._scrollOffset;
     this._scrollVelocity = 0;
+    this._lastRawY = rawY;
   }
 
   /** 触摸滚动：绝对偏移定位 + 记速度（照搬 canvas-scroll onMove） */
-  touchScrollMove(deltaPx: number, dt: number): void {
-    if (dt > 0) this._scrollVelocity = deltaPx / dt * 16 * 1.7;  // 同 canvas-scroll 公式
-    this._scrollOffset = this._scrollBaseline + deltaPx / this._cellH;
+  touchScrollMove(rawY: number, startY: number): void {
+    const deltaPx = rawY - startY;                      // 累计偏移（定位用）
+    const frameDy = this._lastRawY - rawY;              // 本帧增量（速度用）
+    this._lastRawY = rawY;
+
+    const now = performance.now();
+    if (frameDy !== 0) this._scrollVelocity = frameDy / 16 * 1.0;  // 约等于每帧 px 数
+
     const maxOff = this._scrollback.length;
+    this._scrollOffset = this._scrollBaseline + deltaPx / this._cellH;
     this._scrollOffset = Math.max(0, Math.min(maxOff, this._scrollOffset));
     this._render();
   }
