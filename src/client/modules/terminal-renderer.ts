@@ -115,12 +115,14 @@ export class TerminalRenderer {
     this._canvas = canvas;
     this._ctx = canvas.getContext('2d')!;
 
-    // 键盘输入
-    canvas.tabIndex = 0;
-    canvas.addEventListener('click', () => canvas.focus());
-    canvas.addEventListener('keydown', (e) => {
+    // 键盘输入：隐藏 textarea（触发手机虚拟键盘）
+    const hiddenInput = document.createElement('textarea');
+    hiddenInput.style.cssText = 'position:absolute;opacity:0;width:0;height:0;border:0;padding:0;resize:none;overflow:hidden';
+    containerEl.appendChild(hiddenInput);
+    canvas.addEventListener('click', () => hiddenInput.focus());
+    hiddenInput.addEventListener('keydown', (e) => {
       if (!this._onInput) return;
-      if (e.key === 'Enter') { e.preventDefault(); this._onInput('\r'); return; }
+      if (e.key === 'Enter') { e.preventDefault(); hiddenInput.value = ''; this._onInput('\r'); return; }
       if (e.key === 'Backspace') { e.preventDefault(); this._onInput('\b'); return; }
       if (e.key === 'Tab') { e.preventDefault(); this._onInput('\t'); return; }
       if (e.key === 'Escape') { e.preventDefault(); this._onInput('\x1b'); return; }
@@ -133,7 +135,11 @@ export class TerminalRenderer {
         this._onInput(String.fromCharCode(e.key.toLowerCase().charCodeAt(0) - 96));
         return;
       }
-      if (e.key.length === 1) { e.preventDefault(); this._onInput(e.key); }
+    });
+    hiddenInput.addEventListener('input', () => {
+      if (!this._onInput || !hiddenInput.value) return;
+      this._onInput(hiddenInput.value);
+      hiddenInput.value = '';
     });
 
     // 推迟到下一帧：浏览器需要完成 DOM 布局后才能读到正确的 clientRect
