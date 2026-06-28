@@ -42,6 +42,8 @@ export function createTerminalHandler(): {
         }
       });
 
+      _renderer.setStatus('connecting...');
+
       // WS → 终端输出
       _onOutput = (p: unknown) => {
         const d = p as { sessionId: string; data: string };
@@ -66,6 +68,7 @@ export function createTerminalHandler(): {
         const d = p as { sessionId: string };
         wsChannel.offMessage('terminal-opened', onOpened);
         _sessionId = d.sessionId;
+        _renderer?.setStatus('S' + d.sessionId.substring(0, 4));
         if (_renderer) {
           _renderer.write('\x1b[34mKFM 终端已连接 — ' + terminalName + '\x1b[0m\r\n');
         }

@@ -100,6 +100,7 @@ export class TerminalRenderer {
   private _savedR = 0;
   private _savedC = 0;
   private _onInput: ((data: string) => void) | null = null;
+  private _status = 'init';
 
   /** 在容器内创建 canvas 并初始化 */
   mount(containerEl: HTMLElement): void {
@@ -138,7 +139,9 @@ export class TerminalRenderer {
     // 推迟到下一帧：浏览器需要完成 DOM 布局后才能读到正确的 clientRect
     requestAnimationFrame(() => {
       this._layout();
-      if (this._cols <= 0 || this._rows <= 0) {
+      if (this._cols > 0 && this._rows > 0) {
+        this.write('> ');
+      } else {
         requestAnimationFrame(() => this._layout());
       }
     });
@@ -308,6 +311,9 @@ export class TerminalRenderer {
   /** 注册键盘输入回调（Phase 8.6: WebSocket 桥接用） */
   onInput(fn: ((data: string) => void) | null): void { this._onInput = fn; }
 
+  /** 设置状态提示（右下角显示） */
+  setStatus(s: string): void { this._status = s; this._render(); }
+
   /** 绘制网格到 canvas */
   private _render(): void {
     if (!this._ctx) return;
@@ -353,6 +359,12 @@ export class TerminalRenderer {
       ctx.fillStyle = this._accent;
       ctx.fillRect(this._cursorC * cw, topPad + this._cursorR * ch, cw, ch);
     }
+
+    // 状态（右下角）
+    ctx.fillStyle = 'rgba(0,212,255,0.3)';
+    ctx.font = '7px monospace';
+    const sw = ctx.measureText(this._status).width;
+    ctx.fillText(this._status, this._containerW - sw - 2, this._containerH - 2);
   }
 
   /** 步骤 1 验证：画棋盘格确认布局 */
