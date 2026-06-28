@@ -434,7 +434,7 @@ export class TerminalRenderer {
 
   /** 触摸滚动：绝对偏移定位 + 记速度（照搬 canvas-scroll onMove） */
   touchScrollMove(rawY: number, startY: number): void {
-    const deltaPx = rawY - startY;                      // 累计偏移（定位用）
+    const deltaPx = startY - rawY;                      // 累计偏移（定位用）
     const frameDy = this._lastRawY - rawY;              // 本帧增量（速度用）
     this._lastRawY = rawY;
 
