@@ -1,4 +1,4 @@
-export function renderTextPreview(el: HTMLElement, content: string, fileName: string): void {
+export function renderTextPreview(el: HTMLElement, content: string, fileName: string, accent1?: string, accent2?: string): void {
   el.style.flexDirection = 'column';
   el.style.overflowY = 'hidden';
   el.innerHTML = '';
@@ -10,8 +10,8 @@ export function renderTextPreview(el: HTMLElement, content: string, fileName: st
 
   // 分隔线
   const line = document.createElement('div');
-  const c1 = el.dataset.cardAccent1!;
-  const c2 = el.dataset.cardAccent2!;
+  const c1 = accent1 || '#00d4ff';
+  const c2 = accent2 || '#7c3aed';
   line.style.cssText = 'height:1px;flex-shrink:0;background:linear-gradient(90deg,' + c1 + ',' + c2 + ')';
 
   // 正文区

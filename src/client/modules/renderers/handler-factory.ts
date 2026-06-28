@@ -5,6 +5,7 @@ import { highlightAll } from './code-highlight.js';
 import { type MathData, renderMath, renderMermaid } from './math-diagram.js';
 import { KATEX_CSS } from './katex-css.js';
 import { API } from '../state.js';
+import { type CardInstance } from '../card-registry.js';
 
 function _fileName(p: string): string {
   return p.replace(/\\/g, '/').split('/').pop() || p;
@@ -26,7 +27,7 @@ function _btnActive(accent: string): string {
   return 'background:' + _toRgba(accent, 0.15) + ';color:rgba(255,255,255,0.95);border-color:' + _toRgba(accent, 0.5);
 }
 
-export function createFileHandler(filePath: string, accent?: string): { activate: (el: HTMLElement) => void; deactivate: (el: HTMLElement) => void } {
+export function createFileHandler(filePath: string, accent?: string): { activate: (contentEl: HTMLElement, card: CardInstance) => void | Promise<void>; deactivate: (contentEl: HTMLElement) => void } {
   const _accent = accent || '#00d4ff';
   const name = _fileName(filePath);
   const cat = getFileCategory(filePath);
@@ -201,7 +202,7 @@ export function createFileHandler(filePath: string, accent?: string): { activate
   }
 
   return {
-    async activate(contentEl: HTMLElement) {
+    async activate(contentEl: HTMLElement, card: CardInstance) {
       contentEl.innerHTML = '';
 
       // wrapper：独立 flex column，不受浮卡 contentEl 的 cssText 覆盖
@@ -253,10 +254,10 @@ export function createFileHandler(filePath: string, accent?: string): { activate
         _header.appendChild(btnWrap);
       }
 
-      // 分隔线
+      // 分隔线 — 从 CardInstance 取双色
       const line = document.createElement('div');
-      const lc1 = contentEl.dataset.cardAccent1!;
-      const lc2 = contentEl.dataset.cardAccent2!;
+      const lc1 = card?.accents?.color1 || _accent;
+      const lc2 = card?.accents?.color2 || _accent;
       line.style.cssText = 'height:1px;flex-shrink:0;background:linear-gradient(90deg,' + lc1 + ',' + lc2 + ')';
 
       // 正文区
@@ -280,10 +281,10 @@ export function createFileHandler(filePath: string, accent?: string): { activate
           _rawContent = data.content;
           _renderPreview();
         } else {
-          renderBinaryInfo(contentEl, filePath, data.size);
+          renderBinaryInfo(contentEl, filePath, data.size, card?.accents?.color1, card?.accents?.color2);
         }
       } catch {
-        renderBinaryInfo(contentEl, filePath);
+        renderBinaryInfo(contentEl, filePath, undefined, card?.accents?.color1, card?.accents?.color2);
       }
     },
     deactivate(el: HTMLElement) {

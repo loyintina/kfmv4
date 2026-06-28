@@ -5,7 +5,7 @@ function _formatSize(bytes: number | undefined): string {
   return (bytes / 1048576).toFixed(1) + ' MB';
 }
 
-export function renderBinaryInfo(el: HTMLElement, path: string, size?: number): void {
+export function renderBinaryInfo(el: HTMLElement, path: string, size?: number, accent1?: string, accent2?: string): void {
   el.innerHTML = '';
   const wrap = document.createElement('div');
   wrap.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;padding:0 10px';
@@ -17,8 +17,8 @@ export function renderBinaryInfo(el: HTMLElement, path: string, size?: number): 
   header.textContent = name;
 
   const line = document.createElement('div');
-  const c1 = el.dataset.cardAccent1!;
-  const c2 = el.dataset.cardAccent2!;
+  const c1 = accent1 || '#00d4ff';
+  const c2 = accent2 || '#7c3aed';
   line.style.cssText = 'height:1px;flex-shrink:0;background:linear-gradient(90deg,' + c1 + ',' + c2 + ')';
 
   const body = document.createElement('div');

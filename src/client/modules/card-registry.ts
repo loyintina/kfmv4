@@ -23,7 +23,7 @@ export interface CardTypeDef {
 }
 
 export interface CardContentHandler {
-  activate(contentEl: HTMLElement, card: CardInstance): void;
+  activate(contentEl: HTMLElement, card: CardInstance): void | Promise<void>;
   deactivate(contentEl: HTMLElement, card: CardInstance): void;
 }
 
