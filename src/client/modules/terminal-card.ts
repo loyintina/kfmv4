@@ -63,16 +63,25 @@ export function createTerminalHandler(): {
       wsChannel.onMessage('terminal-exit', _onExit);
 
       // 打开 PTY 会话
-      wsChannel.sendMessage('terminal-open', {});
-      wsChannel.onMessage('terminal-opened', function onOpened(p: unknown) {
-        const d = p as { sessionId: string };
-        wsChannel.offMessage('terminal-opened', onOpened);
-        _sessionId = d.sessionId;
-        _renderer?.setStatus('S' + d.sessionId.substring(0, 4));
-        if (_renderer) {
-          _renderer.write('\x1b[34mKFM 终端已连接 — ' + terminalName + '\x1b[0m\r\n');
-        }
-      });
+      if (!wsChannel.connected) {
+        _renderer?.setStatus('WS:off');
+      } else {
+        _renderer?.setStatus('connecting...');
+        wsChannel.sendMessage('terminal-open', {});
+        wsChannel.onMessage('terminal-opened', function onOpened(p: unknown) {
+          const d = p as { sessionId: string };
+          wsChannel.offMessage('terminal-opened', onOpened);
+          _sessionId = d.sessionId;
+          _renderer?.setStatus('S' + d.sessionId.substring(0, 4));
+          if (_renderer) {
+            _renderer.write('\x1b[34mKFM 终端已连接 — ' + terminalName + '\x1b[0m\r\n');
+          }
+        });
+        // 3s 超时
+        setTimeout(() => {
+          if (!_sessionId) _renderer?.setStatus('timeout');
+        }, 3000);
+      }
     },
 
     deactivate(contentEl) {
