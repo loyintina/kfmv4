@@ -495,7 +495,7 @@ export class TerminalRenderer {
     for (let vr = 0; vr < renderRows; vr++) {
       const row = this._getRow(visibleStart + vr);
       if (!row) continue;
-      const py = topPad + vr * ch + pixelOff;
+      const py = topPad + vr * ch - pixelOff;
       for (let c = 0; c < this._cols; c++) {
         const cell = row[c];
         if (!cell || cell.bg === DEFAULT_BG) continue;
@@ -507,7 +507,7 @@ export class TerminalRenderer {
     for (let vr = 0; vr < renderRows; vr++) {
       const row = this._getRow(visibleStart + vr);
       if (!row) continue;
-      const py = topPad + vr * ch + pixelOff;
+      const py = topPad + vr * ch - pixelOff;
       for (let c = 0; c < this._cols; c++) {
         const cell = row[c];
         if (!cell || cell.char === ' ' || cell.char === '') continue;
