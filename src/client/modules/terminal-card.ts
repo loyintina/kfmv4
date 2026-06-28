@@ -44,6 +44,12 @@ export function createTerminalHandler(): {
 
       _renderer.setStatus('connecting...');
 
+      // WS 错误监听
+      wsChannel.onMessage('error', (p) => {
+        const d = p as { message: string };
+        _renderer?.setStatus('err:' + (d?.message || '').substring(0, 24));
+      });
+
       // WS → 终端输出
       _onOutput = (p: unknown) => {
         const d = p as { sessionId: string; data: string };
