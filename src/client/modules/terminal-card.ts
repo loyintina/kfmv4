@@ -28,11 +28,13 @@ gestures.register({
     if (!r) return;
     _activeRenderer = r;
     _scrollStartY = e.clientY;
-    r.touchScrollStart(e.clientY);
+    r.touchScrollStart();
   },
-  onMove(e) {
+  onMove(e, _dx, dy) {
     if (!_activeRenderer) return;
-    _activeRenderer.touchScrollMove(e.clientY, _scrollStartY);
+    const deltaPx = _scrollStartY - e.clientY;
+    const dt = performance.now() - (e.timeStamp || 0);
+    _activeRenderer.touchScrollMove(deltaPx, dt);
   },
   onEnd() {
     if (_activeRenderer) { _activeRenderer.startFling(); _activeRenderer = null; }
