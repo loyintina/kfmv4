@@ -141,7 +141,7 @@ export class TerminalRenderer {
     this._dpr = window.devicePixelRatio || 1;
 
     const canvas = document.createElement('canvas');
-    canvas.style.cssText = 'display:block;width:100%;height:100%';
+    canvas.style.cssText = 'display:block;width:100%;height:100%;touch-action:none';
     canvas.className = 'terminal-canvas';
     containerEl.appendChild(canvas);
     this._canvas = canvas;
