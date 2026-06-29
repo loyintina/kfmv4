@@ -480,21 +480,19 @@ export class TerminalRenderer {
     ctx.font = FONT;
     ctx.textBaseline = 'middle';
 
-    // 合并渲染：_scrollback + _cells，按 _scrollOffset 偏移
+    // 单平移机制：scrollback + cells 画成连续长条，translate 整体平移
+    // _scrollOffset=0 → 最底 rows 行在视口内；_scrollOffset 增大 → 长条下移 → 顶部露出更早行
     const totalRows = this._scrollback.length + this._rows;
-    const baseOff = Math.floor(this._scrollOffset);
-    const visibleStart = Math.max(0, totalRows - this._rows - baseOff);
-    const pixelOff = (this._scrollOffset - baseOff) * ch;
-    const renderRows = this._rows + 1;
+    const yOff = this._scrollOffset * ch - (totalRows - this._rows) * ch;
 
     ctx.save();
-    ctx.translate(0, -pixelOff);
+    ctx.translate(0, yOff);
 
     // 第一遍：所有背景
-    for (let vr = 0; vr < renderRows; vr++) {
-      const row = this._getRow(visibleStart + vr);
+    for (let i = 0; i < totalRows; i++) {
+      const row = this._getRow(i);
       if (!row) continue;
-      const py = topPad + vr * ch;
+      const py = topPad + i * ch;
       for (let c = 0; c < this._cols; c++) {
         const cell = row[c];
         if (!cell || cell.bg === DEFAULT_BG) continue;
@@ -503,10 +501,10 @@ export class TerminalRenderer {
       }
     }
     // 第二遍：所有文字
-    for (let vr = 0; vr < renderRows; vr++) {
-      const row = this._getRow(visibleStart + vr);
+    for (let i = 0; i < totalRows; i++) {
+      const row = this._getRow(i);
       if (!row) continue;
-      const py = topPad + vr * ch;
+      const py = topPad + i * ch;
       for (let c = 0; c < this._cols; c++) {
         const cell = row[c];
         if (!cell || cell.char === ' ' || cell.char === '') continue;
@@ -520,8 +518,8 @@ export class TerminalRenderer {
 
     ctx.restore();
 
-    // 光标（常亮，受 ?25h/l 控制）
-    if (!this._cursorHidden && this._cursorR < this._rows && this._cursorC < this._cols) {
+    // 光标（常亮 — 滑到历史时隐藏，仅底部时显示）
+    if (!this._cursorHidden && this._scrollOffset < 0.5 && this._cursorR < this._rows && this._cursorC < this._cols) {
       ctx.fillStyle = this._accent;
       ctx.fillRect(this._cursorC * cw, topPad + this._cursorR * ch, cw, ch);
     }
