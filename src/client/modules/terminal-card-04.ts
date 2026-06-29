@@ -94,6 +94,7 @@ export function createTerminal04Handler(_meta: Record<string, unknown>): {
 
       const xtermEl = termEl.querySelector('.xterm') as HTMLElement;
       if (xtermEl) {
+        xtermEl.style.touchAction = 'none';
         _termMap.set(xtermEl, term);
       }
       fit.fit();

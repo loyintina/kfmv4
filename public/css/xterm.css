@@ -285,4 +285,4 @@
 }
 
 /* KFM override: hide xterm built-in scrollbar */
-.xterm .xterm-scroll-area{display:none!important}
+.xterm .xterm-scrollable-element > .scrollbar,.xterm .xterm-scrollable-element > .shadow{display:none!important}
