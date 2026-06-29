@@ -76,16 +76,14 @@ export function createTerminal04Handler(_meta: Record<string, unknown>): {
       const c1 = card.accents.color1;
       const c2 = card.accents.color2;
 
-      // 紧缩→展开：复用已有 Terminal，不重开 PTY
+      // 紧缩→展开：插回已有 DOM，不调 term.open()（xterm 只允许一次）
       if (card.meta._term) {
         const term = card.meta._term as Terminal;
         const fit = card.meta._fit as FitAddon;
-        const { bodyEl } = buildCardLayout(contentEl, '> ' + terminalName, c1, c2);
-        const termEl = document.createElement('div');
-        termEl.style.cssText = 'flex:1;overflow:hidden';
-        bodyEl.appendChild(termEl);
-        term.open(termEl);
+        const termEl = card.meta._termEl as HTMLElement;
         const xtermEl = termEl.querySelector('.xterm') as HTMLElement;
+        const { bodyEl } = buildCardLayout(contentEl, '> ' + terminalName, c1, c2);
+        bodyEl.appendChild(termEl);
         if (xtermEl) { xtermEl.style.touchAction = 'none'; _termMap.set(xtermEl, term); }
         fit.fit();
         card.meta._xtermEl = xtermEl;
@@ -124,6 +122,7 @@ export function createTerminal04Handler(_meta: Record<string, unknown>): {
       card.meta._term = term;
       card.meta._fit = fit;
       card.meta._xtermEl = xtermEl;
+      card.meta._termEl = termEl;
 
       // 键盘 → WS
       term.onData((data: string) => {
@@ -218,12 +217,16 @@ export function createTerminal04Handler(_meta: Record<string, unknown>): {
         delete card.meta._onOutput;
         delete card.meta._onExit;
       } else {
-        // compact: 保留 Terminal + WS，只清理 DOM
+        // compact: 保留 Terminal + WS，只拔 DOM 不销毁
         if (card.meta._observer) {
           (card.meta._observer as ResizeObserver).disconnect();
         }
         if (card.meta._xtermEl) {
           _termMap.delete(card.meta._xtermEl as HTMLElement);
+        }
+        const termEl = card.meta._termEl as HTMLElement | undefined;
+        if (termEl && termEl.parentNode) {
+          termEl.parentNode.removeChild(termEl);
         }
       }
       contentEl.innerHTML = '';
