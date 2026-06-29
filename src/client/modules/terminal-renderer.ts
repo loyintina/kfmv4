@@ -8,6 +8,7 @@
  */
 
 import { currentTheme } from './theme.js';
+import { log } from './logger.js';
 
 // ========== 步骤 0：字体测量 ==========
 
@@ -129,6 +130,8 @@ export class TerminalRenderer {
   private _onInput: ((data: string) => void) | null = null;
   private _onResize: ((cols: number, rows: number) => void) | null = null;
   private _status = 'init';
+  private _debugDelta = 0;
+  private _logThrottle = 0;
 
   /** 在容器内创建 canvas 并初始化 */
   mount(containerEl: HTMLElement): void {
@@ -438,6 +441,8 @@ export class TerminalRenderer {
     this._scrollBaseline = this._scrollOffset;
     this._scrollVelocity = 0;
     this._lastRawY = rawY;
+    this._logThrottle = 0;
+    log('[TERM] scrollStart sb=' + this._scrollback.length + ' rows=' + this._rows + ' cellH=' + this._cellH.toFixed(1) + ' base=' + this._scrollBaseline.toFixed(1));
   }
 
   /** 触摸滚动 onMove — deltaPx = startY - rawY（自然滚动：上滑看历史） */
@@ -449,6 +454,11 @@ export class TerminalRenderer {
 
     this._scrollOffset = this._scrollBaseline + deltaPx / this._cellH;
     this._scrollOffset = Math.max(0, Math.min(this._scrollback.length, this._scrollOffset));
+    this._debugDelta = deltaPx;
+    this._logThrottle++;
+    if (this._logThrottle % 8 === 0) {
+      log('[TERM] move off=' + this._scrollOffset.toFixed(1) + ' dy=' + deltaPx.toFixed(0) + ' cellH=' + this._cellH.toFixed(1));
+    }
     this._render();
   }
 
