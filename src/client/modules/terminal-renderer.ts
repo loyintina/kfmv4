@@ -431,7 +431,7 @@ export class TerminalRenderer {
   scrollBy(deltaPx: number): void {
     this._scrollBaseline = this._scrollOffset;
     this._scrollOffset += deltaPx / this._cellH;
-    this._scrollOffset = Math.max(0, Math.min(this._scrollback.length, this._scrollOffset));
+    this._scrollOffset = Math.min(this._scrollback.length, this._scrollOffset);
     this._render();
   }
 
@@ -445,30 +445,37 @@ export class TerminalRenderer {
     log('[TERM] scrollStart sb=' + this._scrollback.length + ' rows=' + this._rows + ' cellH=' + this._cellH.toFixed(1) + ' base=' + this._scrollBaseline.toFixed(1));
   }
 
-  /** 触摸滚动 onMove — deltaPx = startY - rawY（自然滚动：上滑看历史） */
+  /** 触摸滚动 onMove — deltaPx = rawY - startY（上滑 → off 减小 → 画面上移） */
   touchScrollMove(rawY: number, startY: number): void {
-    const deltaPx = startY - rawY;
+    const deltaPx = rawY - startY;
     const frameDy = this._lastRawY - rawY;
     this._lastRawY = rawY;
     if (frameDy !== 0) this._scrollVelocity = frameDy / 16;
 
     this._scrollOffset = this._scrollBaseline + deltaPx / this._cellH;
-    this._scrollOffset = Math.max(0, Math.min(this._scrollback.length, this._scrollOffset));
+    this._scrollOffset = Math.min(this._scrollback.length, this._scrollOffset);
     this._debugDelta = deltaPx;
     this._logThrottle++;
-    if (this._logThrottle % 8 === 0) {
+    if (this._logThrottle % 2 === 0) {
       log('[TERM] move off=' + this._scrollOffset.toFixed(1) + ' dy=' + deltaPx.toFixed(0) + ' cellH=' + this._cellH.toFixed(1));
     }
     this._render();
   }
 
-  /** 触摸滚动 onEnd — fling（×0.96 衰减） */
+  /** 触摸滚动 onEnd — fling（×0.96 衰减），结束后过滚弹回 */
   startFling(): void {
-    if (Math.abs(this._scrollVelocity) < 0.5) return;
+    if (Math.abs(this._scrollVelocity) < 0.5) {
+      if (this._scrollOffset < 0) { this._scrollOffset = 0; this._render(); }
+      return;
+    }
     if (this._flingRaf) return;
     const step = () => {
       this._scrollVelocity *= 0.96;
-      if (Math.abs(this._scrollVelocity) < 0.3) { this._flingRaf = 0; return; }
+      if (Math.abs(this._scrollVelocity) < 0.3) {
+        this._flingRaf = 0;
+        if (this._scrollOffset < 0) { this._scrollOffset = 0; this._render(); }
+        return;
+      }
       this.scrollBy(this._scrollVelocity);
       this._flingRaf = requestAnimationFrame(step);
     };
