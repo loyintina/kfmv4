@@ -429,3 +429,10 @@ npm test   # 159 个测试，覆盖 23 个模块
 | 16 | 快速点击展开态 TR 光球 | 展开动画期间误触不触发关闭（状态守卫） |
 | 17 | 展开后观察 BR 光球 SVG 图标 | 图标已切换为十字+圈，折叠时同步清除 |
 | 18 | 终端卡输入命令后滑动 | 内容跟手平移，日志卡显示连续 move 事件 |
+
+---
+
+## 附录 C：延伸阅读
+
+- `docs/archive/design/CASE_STUDY_MODEL_CHOICE.md` — 液体粒子 portal 系统模型选择错误案例（15 补丁 → 1 提交删 22 行）
+- `docs/archive/audits/REGISTRY_DEEP_AUDIT_2026-06-03.md` — UI Registry 第三轮深度审计记录

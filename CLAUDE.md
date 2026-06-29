@@ -8,7 +8,7 @@ AI 人机交互个人工作台，面向移动端浏览器。核心理念：**一
 > **规划设计时参考** `docs/design/VISION_AND_ROADMAP.md`（远景）。
 > **做浮卡相关改动先读** `docs/archive/design/CARD_SYSTEM_UNIFICATION_SPEC.md`（已归档：统一化方案失败，当前为双模块架构）。
 > **UI Registry 相关**已归档到 `docs/archive/design/`。
-> **引擎层改动先读** `docs/archive/design/ENGINE_ARCHITECTURE.md`（v2 管线 + text-layout 排版引擎架构）。
+> **引擎层改动先读** `docs/design/ENGINE_ARCHITECTURE.md`（v2 管线 + text-layout 排版引擎架构）。
 
 ---
 
@@ -30,6 +30,11 @@ npm run build    # check 通过后 esbuild 打包
 npm run start    # 启动 http://localhost:8021
 npm run dev      # ts-node ESM 直接运行
 ```
+> ⚠️ **`npm run dev` 只运行服务端，不重打客户端 bundle。** 改 `src/client/` 下文件后需手动重建：
+> ```
+> npx esbuild src/client/main.ts --bundle --platform=browser --format=iife --outfile=public/bundle.js --target=es2019 --external:katex --external:mermaid --external:xterm
+> ```
+> 详见 [`docs/DIAGNOSTICS.md` B.A.R. #007](./docs/DIAGNOSTICS.md)。
 
 ## 文档体系
 
@@ -41,22 +46,26 @@ docs/
 ├── KFM_V4_INVARIANTS.md     # 修改约束协议：心法原则+自查清单（改代码前必读）
 ├── DIAGNOSTICS.md           # 诊断手册：隐性契约 + 排查流程 + 根因案例库（遇到 bug 先翻）
 ├── PRINCIPLES.md            # 约束全表：心法 / 架构 / 契约一站查找
-├── design/                  # 设计中（待实现的设计文档）
-│   ├── VISION_AND_ROADMAP.md    # 远景：核心理念 + 演进路线
-│   ├── WORKBENCH_SPEC.md        # 卡片工作台（active 设计提案）
-│   ├── TERMINAL_CARD_SPEC.md    # 03 号终端卡设计（active 设计提案）
-│   └── CARD_REGISTRY_SPEC.md    # 卡片注册表设计（active 设计提案）
+├── PROJECT_ASSESSMENT.md    # 项目把控理解与建议
+├── design/                  # 设计文档（含活跃提案和长期参考）
+│   ├── VISION_AND_ROADMAP.md        # 远景：核心理念 + 演进路线
+│   ├── WORKBENCH_SPEC.md            # 卡片工作台（active 设计提案）
+│   ├── TERMINAL_CARD_SPEC.md        # 03 号终端卡设计（active 设计提案）
+│   ├── CARD_REGISTRY_SPEC.md        # 卡片注册表设计（active 设计提案）
+│   ├── UI_ELEMENT_REGISTRY_SPEC.md  # UI 元素注册表设计（活跃设计）
+│   ├── BOX_LOCATION_MAP_SPEC.md     # Box 位置映射协议（设计提案）
+│   └── ENGINE_ARCHITECTURE.md       # 引擎层架构（v2 管线 + text-layout）
 └── archive/                 # 历史归档
     ├── README.md            # 子目录导览
     ├── handoffs/            # 版本交接记录
-    ├── design/              # 已完成的设计文档（Registry/卡片系统/引擎/愿景）
-    ├── standards/           # 调试/Bug/测试规范（已迁出见 DIAGNOSTICS.md / PRINCIPLES.md）
+    ├── design/              # 已完成/过时的设计文档
+    ├── standards/           # 已迁出见 DIAGNOSTICS.md / PRINCIPLES.md
     ├── audits/              # 已完成的审计记录/修复
     ├── bugs/                # 已修复 Bug
     └── legacy/              # 旧版本文件
 ```
 
-> 接手新对话的推荐阅读顺序：`CLAUDE.md` → `HANDBOOK.md` §2（当前状态）→ `KFM_V4_INVARIANTS.md`（修改规则）→ `DIAGNOSTICS.md` §1-2（隐性契约+诊断流程，遇到 bug 先翻）→ `docs/design/WORKBENCH_SPEC.md`（当前方向）→ `docs/design/TERMINAL_CARD_SPEC.md`（终端卡设计）→ `HANDBOOK.md` §3（待办）→ `HANDBOOK.md` §七（审计问题清单）。全量约束速查见 `PRINCIPLES.md`。引擎层改动前读 `docs/archive/design/ENGINE_ARCHITECTURE.md`。
+> 接手新对话的推荐阅读顺序：`CLAUDE.md` → `HANDBOOK.md` §2（当前状态）→ `KFM_V4_INVARIANTS.md`（修改规则）→ `DIAGNOSTICS.md` §1-2（隐性契约+诊断流程，遇到 bug 先翻）→ `docs/design/WORKBENCH_SPEC.md`（当前方向）→ `docs/design/TERMINAL_CARD_SPEC.md`（终端卡设计）→ `HANDBOOK.md` §3（待办）→ `HANDBOOK.md` §七（审计问题清单）。全量约束速查见 `PRINCIPLES.md`。引擎层改动前读 `docs/design/ENGINE_ARCHITECTURE.md`。
 
 ## 完整性校验
 

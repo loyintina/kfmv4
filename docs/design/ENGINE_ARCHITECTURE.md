@@ -105,7 +105,7 @@ renderer._render(now)
 
 Box 上的 `gesture` 属性配置手势回调（`onTap`/`onLongPress`/`onSwipeLeft` 等），这是 D-013 决策的结果——手势属性化。
 
-**注意**：Box 级手势仅在 Renderer 的 `hitTest()` 中用于碰撞检测，实际的 PointerEvent 分发由 `modules/gesture-registry.ts` 统一管理。Box 级手势用于文件行点击等场景。
+**注意**：Box 级手势仅在 Renderer 的 `hitTest()` 中用于碰撞检测，实际的 PointerEvent 分发由 `src/client/modules/gesture-registry.ts` 统一管理。Box 级手势用于文件行点击等场景。
 
 ### 2.7 Flex 布局
 

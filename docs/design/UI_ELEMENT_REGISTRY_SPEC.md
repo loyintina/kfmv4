@@ -760,8 +760,8 @@ AI → ai-tools.ts (注册在服务器端的 function calling 工具)
 - 移除 `ws-channel.ts` 中的 `as any` 逃逸
 
 **文档更新：**
-- `docs/notes/WEBSOCKET_CHANNEL_PROPOSAL.md` — WebSocket 方案提案
-- `docs/notes/REGISTRY_NEXT_AGENT_DISCUSSION.md` — 问题状态更新
-- `docs/UI_ELEMENT_REGISTRY_SPEC.md` — §S 新增 v1.1 扩展说明，§8 更新为全部已解决
+- `docs/archive/design/WEBSOCKET_CHANNEL_PROPOSAL.md` — WebSocket 方案提案
+- `docs/archive/design/REGISTRY_NEXT_AGENT_DISCUSSION.md` — 问题状态更新
+- `docs/design/UI_ELEMENT_REGISTRY_SPEC.md` — §S 新增 v1.1 扩展说明，§8 更新为全部已解决
 
 **版本更新**：`package.json` → 6.0.0（未变），`check-as-any.mjs` 白名单清空（未变）。

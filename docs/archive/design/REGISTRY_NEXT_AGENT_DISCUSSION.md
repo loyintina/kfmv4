@@ -1,7 +1,8 @@
 ---
-status: active
+status: superseded
 created_at: 2026-06-02
-context: UI Element Registry §5 开放问题追踪
+archived_at: 2026-06-29
+superseded_by: docs/design/UI_ELEMENT_REGISTRY_SPEC.md
 ---
 
 # UI Element Registry — 下一轮讨论笔记

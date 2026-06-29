@@ -78,8 +78,8 @@ P4  完善卡片系统（填充 card03-card07）——提升功能完成度
 
 ### 3.1 如果是接 Registry 的工作
 
-1. **先读 `docs/UI_ELEMENT_REGISTRY_SPEC.md` §S（已实现部分）+ §5（开放问题）**
-2. **再读 `docs/notes/REGISTRY_NEXT_AGENT_DISCUSSION.md`**（本轮讨论笔记）
+1. **先读 `docs/design/UI_ELEMENT_REGISTRY_SPEC.md` §S（已实现部分）+ §5（开放问题）**
+2. **再读 `docs/archive/design/REGISTRY_NEXT_AGENT_DISCUSSION.md`**（本轮讨论笔记）
 3. **攻 §5.5 通信通道**——WebSocket 是最干净的方案，但需要项目 owner 确认
 4. **如果 WebSocket 暂不可行**——轮询方案也可以先跑起来：浏览器每 500ms 把 snapshot POST 到 `/api/ui/snapshot/push`
 

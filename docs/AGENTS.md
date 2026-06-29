@@ -33,7 +33,7 @@ docs/
 | `HANDBOOK.md` | 当前状态、待办、陷阱、架构速查、测试 | 每次改代码后同步 |
 | `KFM_V4_INVARIANTS.md` | 心法原则、约束、补丁模式、自查清单 | 发现新约束时追加 |
 | `design/VISION_AND_ROADMAP.md` | 核心理念、演进路线、开放问题 | 做重大决策时更新 |
-| `archive/design/ENGINE_ARCHITECTURE.md` | 引擎层 14 个文件的架构描述 | 改渲染逻辑后同步 |
+| `docs/design/ENGINE_ARCHITECTURE.md` | 引擎层 14 个文件的架构描述 | 改渲染逻辑后同步 |
 | `design/WORKBENCH_SPEC.md` | 唯一待实现的设计提案 | 定了方案才改 |
 
 ### 根层文档维护规则

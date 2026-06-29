@@ -1,7 +1,8 @@
 ---
-status: active
+status: superseded
 created_at: 2026-06-03
-context: UI Element Registry 文档-代码对齐 + 便捷方法 + CI 增强
+archived_at: 2026-06-29
+superseded_by: docs/design/UI_ELEMENT_REGISTRY_SPEC.md
 ---
 
 # 文档-代码对齐审计与修复
