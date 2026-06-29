@@ -124,6 +124,11 @@ function checkFrontmatter(filePath) {
     error(`${relPath}: status 值 "${fields.status}" 无效（应为 active / draft / superseded 之一）`);
   }
 
+  // active 文档不应在 archive 目录（archive 只放历史快照，README 除外）
+  if (fields.status === 'active' && relPath.startsWith('docs/archive/') && !relPath.endsWith('README.md')) {
+    error(`${relPath}: active 文档不应在 archive 目录（请迁到 docs/ 或改 status 为 superseded/completed）`);
+  }
+
   // superseded 状态的文档必须有 superseded_by
   if (fields.status === 'superseded') {
     if (!fields.superseded_by) {

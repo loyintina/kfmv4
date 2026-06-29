@@ -1,5 +1,5 @@
 ---
-status: active
+status: completed
 archived_at: 2026-06-17
 ---
 

@@ -1,8 +1,8 @@
 ---
-status: active
+status: completed
 created_at: 2026-06-03
-context: 第三轮深度审计 + 六项修复 + 心法层级分类 + CI 基线固化
-supersedes: docs/notes/HANDOFF_2026-06-03_TRIAGE_AUDIT_FIX.md
+archived_at: 2026-06-29
+---
 ---
 
 # 交接：第三轮深度审计 + CI 基线固化
