@@ -1,7 +1,7 @@
 /**
  * terminal-card-04.ts — 03 号终端卡 xterm.js 集成
  *
- * 使用 xterm.js 替代自研渲染器。
+ * 使用 xterm.js 替代自研渲染器。触控滚动走 GestureRegistry → term.scrollLines()。
  */
 
 import { Terminal } from '@xterm/xterm';
@@ -9,6 +9,7 @@ import { FitAddon } from '@xterm/addon-fit';
 import { buildCardLayout } from './floating-card.js';
 import { wsChannel } from './ws-channel.js';
 import { cardRegistry, type CardInstance } from './card-registry.js';
+import { gestures } from './gesture-registry.js';
 import { currentTheme } from './theme.js';
 
 // ========== 主题映射 ==========
@@ -19,24 +20,43 @@ function xtermTheme(cursor: string) {
     foreground: '#e0e0e0',
     cursor,
     selectionBackground: 'rgba(0,212,255,0.3)',
-    black: '#1a1a2e',
-    red: '#f07178',
-    green: '#50a880',
-    yellow: '#b4aa50',
-    blue: '#5088c8',
-    magenta: '#9650c8',
-    cyan: '#00d4ff',
-    white: '#e0e0e0',
-    brightBlack: '#4a4a5e',
-    brightRed: '#f78c6c',
-    brightGreen: '#6cdf9c',
-    brightYellow: '#ffd54f',
-    brightBlue: '#82aaff',
-    brightMagenta: '#c792ea',
-    brightCyan: '#89ddff',
-    brightWhite: '#ffffff',
+    black: '#1a1a2e', red: '#f07178', green: '#50a880', yellow: '#b4aa50',
+    blue: '#5088c8', magenta: '#9650c8', cyan: '#00d4ff', white: '#e0e0e0',
+    brightBlack: '#4a4a5e', brightRed: '#f78c6c', brightGreen: '#6cdf9c', brightYellow: '#ffd54f',
+    brightBlue: '#82aaff', brightMagenta: '#c792ea', brightCyan: '#89ddff', brightWhite: '#ffffff',
   };
 }
+
+// ========== 滚动手势 ==========
+
+const _termMap = new Map<HTMLElement, Terminal>();
+let _activeTerm: Terminal | null = null;
+let _startY = 0;
+
+gestures.register({
+  id: 'xterm-scroll',
+  targetFilter: '.xterm',
+  priority: 61,
+  onStart(e) {
+    const el = (e.target as HTMLElement).closest('.xterm') as HTMLElement | null;
+    const term = el ? _termMap.get(el) : undefined;
+    if (!term) return;
+    _activeTerm = term;
+    _startY = e.clientY;
+  },
+  onMove(e) {
+    if (!_activeTerm) return;
+    const dy = _startY - e.clientY;
+    if (Math.abs(dy) < 4) return;  // 小步死区，避免误触滚动
+    const lines = dy / 9;  // ch ≈ 9px
+    _activeTerm.scrollLines(-Math.round(lines));
+    _startY = e.clientY;  // 累进式：每次 move 重置基准
+  },
+  onEnd() {
+    _activeTerm = null;
+  },
+  stopPropagation: true,
+});
 
 // ========== Handler ==========
 
@@ -64,18 +84,27 @@ export function createTerminal04Handler(_meta: Record<string, unknown>): {
       const fit = new FitAddon();
       term.loadAddon(fit);
 
-      // 创建容器 mount xterm
       const termEl = document.createElement('div');
-      termEl.style.cssText = 'flex:1;overflow:hidden';
+      termEl.style.cssText = 'flex:1;overflow:hidden;-webkit-overflow-scrolling:touch';
       bodyEl.appendChild(termEl);
       term.open(termEl);
+
+      // 隐藏 xterm 自带的滚动条 + viewport 允许滚动手势穿透
+      const xtermEl = termEl.querySelector('.xterm') as HTMLElement;
+      if (xtermEl) {
+        const scrollEl = xtermEl.querySelector('.xterm-scroll') as HTMLElement;
+        if (scrollEl) scrollEl.style.display = 'none';
+        const viewportEl = xtermEl.querySelector('.xterm-viewport') as HTMLElement;
+        if (viewportEl) viewportEl.style.touchAction = 'none';
+        _termMap.set(xtermEl, term);
+      }
       fit.fit();
 
       card.meta._term = term;
       card.meta._fit = fit;
+      card.meta._xtermEl = xtermEl;
 
       // 键盘 → WS
-      let inputBuf = '';
       term.onData((data: string) => {
         if (card.meta.sessionId) {
           wsChannel.sendMessage('terminal-input', {
@@ -153,6 +182,9 @@ export function createTerminal04Handler(_meta: Record<string, unknown>): {
       }
       if (card.meta._observer) {
         (card.meta._observer as ResizeObserver).disconnect();
+      }
+      if (card.meta._xtermEl) {
+        _termMap.delete(card.meta._xtermEl as HTMLElement);
       }
       if (card.meta._term) {
         (card.meta._term as Terminal).dispose();
