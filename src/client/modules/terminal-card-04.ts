@@ -75,6 +75,28 @@ export function createTerminal04Handler(_meta: Record<string, unknown>): {
       const terminalName = '终端 ' + card.meta.terminalId;
       const c1 = card.accents.color1;
       const c2 = card.accents.color2;
+
+      // 紧缩→展开：复用已有 Terminal，不重开 PTY
+      if (card.meta._term) {
+        const term = card.meta._term as Terminal;
+        const fit = card.meta._fit as FitAddon;
+        const { bodyEl } = buildCardLayout(contentEl, '> ' + terminalName, c1, c2);
+        const termEl = document.createElement('div');
+        termEl.style.cssText = 'flex:1;overflow:hidden';
+        bodyEl.appendChild(termEl);
+        term.open(termEl);
+        const xtermEl = termEl.querySelector('.xterm') as HTMLElement;
+        if (xtermEl) { xtermEl.style.touchAction = 'none'; _termMap.set(xtermEl, term); }
+        fit.fit();
+        card.meta._xtermEl = xtermEl;
+        const observer = new ResizeObserver(() => {
+          try { fit.fit(); } catch {}
+        });
+        observer.observe(termEl);
+        card.meta._observer = observer;
+        return;
+      }
+
       const { bodyEl } = buildCardLayout(contentEl, '> ' + terminalName, c1, c2);
 
       const term = new Terminal({
@@ -88,7 +110,7 @@ export function createTerminal04Handler(_meta: Record<string, unknown>): {
       term.loadAddon(fit);
 
       const termEl = document.createElement('div');
-      termEl.style.cssText = 'flex:1;overflow:hidden;-webkit-overflow-scrolling:touch';
+      termEl.style.cssText = 'flex:1;overflow:hidden';
       bodyEl.appendChild(termEl);
       term.open(termEl);
 
@@ -155,7 +177,7 @@ export function createTerminal04Handler(_meta: Record<string, unknown>): {
       wsChannel.onMessage('terminal-exit', onExit);
       card.meta._onExit = onExit;
 
-      // 打开 PTY 会话
+      // 打开 PTY 会话（仅首次 init）
       if (!wsChannel.connected) {
         term.write('\x1b[31mWS:off\x1b[0m\r\n');
       } else {
@@ -170,33 +192,40 @@ export function createTerminal04Handler(_meta: Record<string, unknown>): {
     },
 
     deactivate(contentEl, card, reason) {
-      if (card.meta.sessionId) {
-        wsChannel.sendMessage('terminal-close', { sessionId: card.meta.sessionId as string });
-      }
-      if (card.meta._onOutput) {
-        wsChannel.offMessage('terminal-output', card.meta._onOutput as (p: unknown) => void);
-      }
-      if (card.meta._onExit) {
-        wsChannel.offMessage('terminal-exit', card.meta._onExit as (p: unknown) => void);
-      }
-      if (card.meta._observer) {
-        (card.meta._observer as ResizeObserver).disconnect();
-      }
-      if (card.meta._xtermEl) {
-        _termMap.delete(card.meta._xtermEl as HTMLElement);
-      }
-      if (card.meta._term) {
-        (card.meta._term as Terminal).dispose();
-      }
-
       if (reason === 'dismiss') {
+        if (card.meta.sessionId) {
+          wsChannel.sendMessage('terminal-close', { sessionId: card.meta.sessionId as string });
+        }
+        if (card.meta._onOutput) {
+          wsChannel.offMessage('terminal-output', card.meta._onOutput as (p: unknown) => void);
+        }
+        if (card.meta._onExit) {
+          wsChannel.offMessage('terminal-exit', card.meta._onExit as (p: unknown) => void);
+        }
+        if (card.meta._xtermEl) {
+          _termMap.delete(card.meta._xtermEl as HTMLElement);
+        }
+        if (card.meta._term) {
+          (card.meta._term as Terminal).dispose();
+        }
         if (card.meta.terminalId) {
           cardRegistry.freeId('card03', card.meta.terminalId as number);
         }
         delete card.meta.sessionId;
         delete card.meta.terminalId;
+        delete card.meta._term;
+        delete card.meta._fit;
+        delete card.meta._onOutput;
+        delete card.meta._onExit;
+      } else {
+        // compact: 保留 Terminal + WS，只清理 DOM
+        if (card.meta._observer) {
+          (card.meta._observer as ResizeObserver).disconnect();
+        }
+        if (card.meta._xtermEl) {
+          _termMap.delete(card.meta._xtermEl as HTMLElement);
+        }
       }
-
       contentEl.innerHTML = '';
     },
   };
