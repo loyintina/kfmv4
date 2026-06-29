@@ -1,7 +1,7 @@
 /**
- * terminal-card-04.ts — Phase 9: 04 号终端卡 xterm.js 集成（v3）
+ * terminal-card-04.ts — 03 号终端卡 xterm.js 集成
  *
- * 使用 xterm.js 替代自研渲染器。03 号卡保留自研实现。
+ * 使用 xterm.js 替代自研渲染器。
  */
 
 import { Terminal } from '@xterm/xterm';
@@ -47,9 +47,9 @@ export function createTerminal04Handler(_meta: Record<string, unknown>): {
   return {
     activate(contentEl, card) {
       if (!card.meta.terminalId) {
-        card.meta.terminalId = cardRegistry.allocId('card04');
+        card.meta.terminalId = cardRegistry.allocId('card03');
       }
-      const terminalName = 'xterm ' + card.meta.terminalId;
+      const terminalName = '终端 ' + card.meta.terminalId;
       const c1 = card.accents.color1;
       const c2 = card.accents.color2;
       const { bodyEl } = buildCardLayout(contentEl, '> ' + terminalName, c1, c2);
@@ -136,7 +136,7 @@ export function createTerminal04Handler(_meta: Record<string, unknown>): {
           const d = p as { sessionId: string };
           wsChannel.offMessage('terminal-opened', onOpened);
           card.meta.sessionId = d.sessionId;
-          term.write('\x1b[34mKFM xterm 终端已连接 — ' + terminalName + '\x1b[0m\r\n');
+          term.write('\x1b[34mKFM 终端已连接 — ' + terminalName + '\x1b[0m\r\n');
         });
       }
     },
@@ -160,7 +160,7 @@ export function createTerminal04Handler(_meta: Record<string, unknown>): {
 
       if (reason === 'dismiss') {
         if (card.meta.terminalId) {
-          cardRegistry.freeId('card04', card.meta.terminalId as number);
+          cardRegistry.freeId('card03', card.meta.terminalId as number);
         }
         delete card.meta.sessionId;
         delete card.meta.terminalId;

@@ -59,7 +59,7 @@ last_updated: 2026-06-28
 ```
 ┌─ 浏览器 ────────────────────────────────────────────────────┐
 │                                                              │
-│  [03 号浮卡]  terminal-renderer.ts + terminal-card.ts        │
+│  [03 号浮卡]  terminal-card-04.ts（xterm.js）        │
 │  ┌─────────────────────────────────┐                         │
 │  │ 标题栏: "> 终端 N"          [清屏] │                         │
 │  ├─────────────────────────────────┤                         │
@@ -240,8 +240,8 @@ interface ClientState {
 
 | 文件 | 职责 |
 |------|------|
-| `src/client/modules/terminal-renderer.ts` (新建) | Canvas 格子模型 + ANSI 解析器 + 光标 + 渲染循环 |
-| `src/client/modules/terminal-card.ts` (修改) | CardContentHandler，组装渲染器 + WebSocket 桥接 |
+| `src/client/modules/terminal-card-04.ts`（xterm.js 集成） (新建) | Canvas 格子模型 + ANSI 解析器 + 光标 + 渲染循环 |
+| `src/client/modules/terminal-card-04.ts` (修改) | CardContentHandler，组装渲染器 + WebSocket 桥接 |
 
 ### 4.3 字体测量（步骤 0）
 

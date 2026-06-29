@@ -448,7 +448,7 @@ AI agent 通过 `GET /api/ui/snapshot` 可获取当前全部卡片。
 | 1 | `src/client/modules/card-registry.ts`（新建） | `CardTypeDef` + `CardInstance` + `CardRegistry` 类 | ~80 |
 | 2 | `card-stack.ts` | `initCardTypes()` 集中调用 `registerCardType()`；`_cards` 从 registry 生成 | ~15 |
 | 3 | `floating-card.ts` | `createFloatingCard` 调 `createInstance`；`dismiss` 调 `destroyInstance`；handler 签名扩展 +card 参数；删 dataset 偷渡 | ~20 |
-| 4 | `terminal-card.ts` | 删 `_states` / `_terminalId` / dataset 读；从 `card` 取 state / accents / meta | ~15 |
+| 4 | `terminal-card-04.ts`（xterm.js 集成） | 删 `_states` / `_terminalId` / dataset 读；从 `card` 取 state / accents / meta | ~15 |
 | 5 | `handler-factory.ts` | activate/deactivate 签名适配 +card 参数 | ~3 |
 | **净增** | | | **~133** |
 
