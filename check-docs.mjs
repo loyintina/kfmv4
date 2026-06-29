@@ -150,10 +150,22 @@ function checkFrontmatter(filePath) {
 // ============================================================
 // 2. 篇幅检查
 // ============================================================
+
+// 已知大文件白名单：设计文档天然长，重复报警淹没真正的新增文件
+const LARGE_FILE_WHITELIST = new Set([
+  'docs/archive/design/REFACTOR_THESIS_FULL.md',
+  'docs/design/CARD_REGISTRY_SPEC.md',
+  'docs/design/TERMINAL_CARD_SPEC.md',
+  'docs/design/UI_ELEMENT_REGISTRY_SPEC.md',
+  'docs/design/VISION_AND_ROADMAP.md',
+  'docs/design/WORKBENCH_SPEC.md',
+  'docs/DIAGNOSTICS.md',
+]);
+
 function checkFileSize(filePath) {
   const content = fs.readFileSync(filePath, 'utf-8');
   const lines = content.split('\n').length;
-  if (lines > 500) {
+  if (lines > 500 && !LARGE_FILE_WHITELIST.has(path.relative(ROOT, filePath))) {
     warn(`${path.relative(ROOT, filePath)}: ${lines} lines (recommend splitting or adding TL;DR)`);
   }
   return content;
