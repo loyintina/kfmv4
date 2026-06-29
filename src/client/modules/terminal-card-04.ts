@@ -51,7 +51,7 @@ gestures.register({
     const dy = _startY - e.clientY;
     if (Math.abs(dy) < 4) return;
     const lines = dy / 9;
-    _activeTerm.scrollLines(-Math.round(lines));
+    _activeTerm.scrollLines(Math.round(lines));
     _startY = e.clientY;
     log(['xscr', 'move dy=' + dy.toFixed(0) + ' lines=' + lines.toFixed(1)]);
   },
