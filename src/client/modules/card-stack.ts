@@ -4,6 +4,7 @@ import { getLogs, clearLogs, copyLogs, onLog } from './logger.js';
 import { Registry } from './ui-registry.js';
 import { wsChannel } from './ws-channel.js';
 import { createTerminalHandler } from './terminal-card.js';
+import { createTerminal04Handler } from './terminal-card-04.js';
 import { currentTheme as theme } from './theme.js';
 import { createFloatingCard } from './floating-card.js';
 import { log } from './logger.js';
@@ -29,7 +30,7 @@ const _cards: CardDef[] = [
   { id: 'settings', icon: '\u2699', name: '\u8BBE\u7F6E',        desc: '' },
   { id: 'debug',    icon: '\uD83D\uDD27', name: '\u65E5\u5FD7\u7BA1\u7406', desc: '' },
   { id: 'card03',   icon: '>',         name: '终端',          desc: '' },
-  { id: 'card04',   icon: '',           name: '',                desc: '' },
+  { id: 'card04',   icon: '\u2B24',    name: 'v2终端',          desc: 'Row-with-Runs' },
   { id: 'card05',   icon: '',           name: '',                desc: '' },
   { id: 'card06',   icon: '',           name: '',                desc: '' },
   { id: 'card07',   icon: '',           name: '',                desc: '' },
@@ -118,6 +119,7 @@ function createDebugHandler(_meta: Record<string, unknown>): CardContentHandler 
 // 向注册表登记卡片类型
 registerCardType({ typeId: 'debug', icon: '\uD83D\uDD27', name: '日志管理', description: '', kind: 'tool', createHandler: createDebugHandler });
 registerCardType({ typeId: 'card03', icon: '>', name: '终端', description: '', kind: 'tool', createHandler: createTerminalHandler });
+registerCardType({ typeId: 'card04', icon: '\u2B24', name: 'v2终端', description: 'Row-with-Runs', kind: 'tool', createHandler: createTerminal04Handler });
 
 let _currentAccents: Array<{ color1: string; color2: string }> | null = null;
 /** HSL → hex （#rrggbb） */
