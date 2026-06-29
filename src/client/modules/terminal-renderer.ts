@@ -216,11 +216,6 @@ export class TerminalRenderer {
     const oldRows = this._rows;
     const isFirst = oldRows === 0;
 
-    // 非首次 resize → 捕获当前内容（文本行 + 当前行缓冲）
-    if (!isFirst) {
-      this._captureContent();
-    }
-
     this._cols = newCols;
     this._rows = newRows;
 
@@ -238,52 +233,25 @@ export class TerminalRenderer {
     this._scrollOffset = 0;
     this._scrollBaseline = 0;
 
-    // 回流：把 _logicalLines 文本按新列宽重排到网格中
-    if (!isFirst && this._logicalLines.length > 0) {
-      this._reflowLines();
-    }
+    // 回流：从真相源 _logicalLines（只读）重建派生视图 _cells
+    if (!isFirst) { this._reflowLines(); }
 
     if (isFirst) { this._cursorR = 0; this._cursorC = 0; }
     this._render();
   }
 
-  /** resize 前捕获所有文本内容到 _logicalLines */
-  private _captureContent(): void {
-    // 提交当前行缓冲（未以 \n 结尾的进行中行）
-    if (this._lineBuffer) {
-      this._logicalLines.push(this._lineBuffer);
-      this._lineBuffer = '';
-    }
-    // 把当前 cells 网格中尚未在 _logicalLines 的行也捕获
-    for (const row of this._cells) {
-      let text = '';
-      for (const cell of row) {
-        if (cell.char && cell.char !== ' ') {
-          text += cell.char;
-        } else if (text.length > 0) {
-          text += ' ';
-        }
-      }
-      const trimmed = text.trimEnd();
-      if (trimmed.length > 0 && trimmed !== this._logicalLines[this._logicalLines.length - 1]) {
-        this._logicalLines.push(trimmed);
-      }
-    }
-    // 清掉末尾空行
-    while (this._logicalLines.length > 0 && this._logicalLines[this._logicalLines.length - 1].length === 0) {
-      this._logicalLines.pop();
-    }
-  }
-
-  /** 把 _logicalLines 文本按当前 _cols 列宽回流到 _cells 和 _scrollback */
+  /** 把 _logicalLines + 当前未提交 _lineBuffer 按 _cols 列宽回流到 _cells */
   private _reflowLines(): void {
     const w = this._cols;
-    if (w <= 0) { this._logicalLines = []; return; }
+    if (w <= 0) return;
+
+    const allLines = [...this._logicalLines];
+    if (this._lineBuffer) allLines.push(this._lineBuffer);
 
     let curR = 0;
     let curC = 0;
 
-    for (const line of this._logicalLines) {
+    for (const line of allLines) {
       for (let i = 0; i < line.length; i++) {
         if (curR >= this._rows) {
           this._scrollUp();
@@ -311,7 +279,6 @@ export class TerminalRenderer {
     }
     this._cursorR = Math.max(0, curR);
     this._cursorC = Math.min(w - 1, curC);
-    this._logicalLines = [];
     this._scrollOffset = 0;
   }
 
