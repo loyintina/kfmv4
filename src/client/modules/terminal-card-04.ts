@@ -58,7 +58,7 @@ export function createTerminal04Handler(_meta: Record<string, unknown>): {
         fontSize: 9,
         fontFamily: 'monospace',
         theme: xtermTheme(c1),
-        cursorBlink: true,
+        cursorBlink: false,
         allowProposedApi: true,
       });
       const fit = new FitAddon();
