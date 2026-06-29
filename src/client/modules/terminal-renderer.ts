@@ -132,8 +132,7 @@ export class TerminalRenderer {
   private _status = 'init';
   private _debugDelta = 0;
   private _logThrottle = 0;
-  private _logicalLines: string[] = [];  // 每 \n 提交一行, resize 后回流用
-  private _lineBuffer = '';
+  private _logicalLines: string[] = [];  // 每 \n 时从 _cells 快照一行文本, resize 后回流用
 
   /** 在容器内创建 canvas 并初始化 */
   mount(containerEl: HTMLElement): void {
@@ -240,13 +239,32 @@ export class TerminalRenderer {
     this._render();
   }
 
+  /** 从一行格子中提取文本内容（忽略空格、去尾空） */
+  private _rowText(row: Cell[]): string {
+    let text = '';
+    for (const cell of row) {
+      if (cell.char && cell.char !== ' ') {
+        text += cell.char;
+      } else if (text.length > 0) {
+        text += ' ';
+      }
+    }
+    return text.trimEnd();
+  }
+
   /** 把 _logicalLines + 当前未提交 _lineBuffer 按 _cols 列宽回流到 _cells */
   private _reflowLines(): void {
     const w = this._cols;
     if (w <= 0) return;
 
     const allLines = [...this._logicalLines];
-    if (this._lineBuffer) allLines.push(this._lineBuffer);
+    // 追加当前未提交的最后一行（栅格中最后有内容的行）
+    let lastText = '';
+    for (let r = this._rows - 1; r >= 0; r--) {
+      const t = this._rowText(this._cells[r]);
+      if (t.length > 0) { lastText = t; break; }
+    }
+    if (lastText) allLines.push(lastText);
 
     let curR = 0;
     let curC = 0;
@@ -312,8 +330,7 @@ export class TerminalRenderer {
 
       if (ch === '\r') { this._cursorC = 0; continue; }
       if (ch === '\n') {
-        this._logicalLines.push(this._lineBuffer);
-        this._lineBuffer = '';
+        this._logicalLines.push(this._rowText(this._cells[this._cursorR]));
         this._cursorR++; this._cursorC = 0;
         if (this._cursorR >= this._rows) { this._scrollUp(); this._cursorR = this._rows - 1; }
         continue;
@@ -328,7 +345,6 @@ export class TerminalRenderer {
         cell.fg = this._curFg;
         cell.bg = this._curBg;
         cell.bold = this._curBold;
-        this._lineBuffer += ch;
         // 全角字符占 2 格：第二格标记为空，两遍渲染保证背景先画
         if (wide && this._cursorC + 1 < this._cols) {
           const next = this._cells[this._cursorR][this._cursorC + 1];
