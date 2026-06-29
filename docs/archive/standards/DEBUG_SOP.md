@@ -1,7 +1,7 @@
 ---
 status: superseded
-archived_at: 2026-06-02
-superseded_by: docs/HANDBOOK.md
+archived_at: 2026-06-29
+superseded_by: docs/DIAGNOSTICS.md
 ---
 # KFM v4 调试标准操作规程（SOP）
 

@@ -38,7 +38,9 @@ try {
 const DOCS = [
   'CLAUDE.md',
   'docs/HANDBOOK.md',
-  'docs/VISION_AND_ROADMAP.md',
+  'docs/DIAGNOSTICS.md',
+  'docs/PRINCIPLES.md',
+  'docs/design/VISION_AND_ROADMAP.md',
   'docs/KFM_V4_INVARIANTS.md',
   'docs/design/WORKBENCH_SPEC.md',
 ];

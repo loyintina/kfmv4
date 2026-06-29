@@ -90,6 +90,18 @@ archived_at: 2026-06-09          # 归档日期
 | **审计记录/修复** | **`archive/audits/`** |
 | 旧版替换文档 | `archive/legacy/` |
 
+### 3.5 superseded_by 内容核实（禁止假覆盖）
+
+标记 `superseded_by` 前，逐条核实目标文档是否真正覆盖了内容：
+
+- [ ] **概念覆盖**（concept parity）：目标文档是否提到了同一概念？
+- [ ] **细节覆盖**（detail parity）：目标文档是否提供了同一级别的细节？（案例级/步骤级的细节不能缩减为一句话）
+- [ ] **操作覆盖**（procedural parity）：目标文档是否给出了可操作的具体步骤/检查项？
+
+以上三条任一为"否"，**禁止标记 superseded**。优先选择：将内容合并到目标文档，而非标记 superseded。
+
+> **历史教训**：2026-06-02 批量标记 19 份文档 `superseded_by: HANDBOOK.md`，但 HANDBOOK 从未真正覆盖这些内容（隐性契约、根因案例库、诊断流程、回归清单）。2026-06-29 terminal 滚动 debug 耗时 15 轮，根因之一是诊断知识在 archive 中不可达。详见 `docs/DIAGNOSTICS.md` B.A.R. #007。
+
 ## 四、check-docs.mjs 维护
 
 `check-docs.mjs` 会自动扫描所有 `.md` 文件并检查：

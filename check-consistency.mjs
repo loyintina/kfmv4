@@ -104,6 +104,20 @@ function checkDocTree() {
       }
     }
   }
+
+  // 反向检查：docs/ 根目录下实际存在但文档树未列出的 .md 文件
+  const docsRoot = join(ROOT, 'docs');
+  if (existsSync(docsRoot)) {
+    const actualMd = readdirSync(docsRoot).filter(f => f.endsWith('.md'));
+    const listedRootDocs = new Set(
+      entries.filter(e => !e.isDir && !e.fullPath.includes('/')).map(e => e.fullPath)
+    );
+    for (const f of actualMd) {
+      if (!listedRootDocs.has(f)) {
+        error(`docs/${f} 存在但 CLAUDE.md 文档树中未列出`);
+      }
+    }
+  }
 }
 
 // ============================================================

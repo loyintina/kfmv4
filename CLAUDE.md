@@ -37,8 +37,10 @@ npm run dev      # ts-node ESM 直接运行
 CLAUDE.md                    # 本文件——项目入口
 docs/
 ├── AGENTS.md                # AI 专属：文档维护规则（改文档前读）
-├── HANDBOOK.md              # 工作手册：架构-调试-待办-测试（日常翻）
+├── HANDBOOK.md              # 工作手册：架构-状态-待办（日常翻）
 ├── KFM_V4_INVARIANTS.md     # 修改约束协议：心法原则+自查清单（改代码前必读）
+├── DIAGNOSTICS.md           # 诊断手册：隐性契约 + 排查流程 + 根因案例库（遇到 bug 先翻）
+├── PRINCIPLES.md            # 约束全表：心法 / 架构 / 契约一站查找
 ├── design/                  # 设计中（待实现的设计文档）
 │   ├── VISION_AND_ROADMAP.md    # 远景：核心理念 + 演进路线
 │   ├── WORKBENCH_SPEC.md        # 卡片工作台（active 设计提案）
@@ -48,13 +50,13 @@ docs/
     ├── README.md            # 子目录导览
     ├── handoffs/            # 版本交接记录
     ├── design/              # 已完成的设计文档（Registry/卡片系统/引擎/愿景）
-    ├── standards/           # 调试/Bug/测试规范
+    ├── standards/           # 调试/Bug/测试规范（已迁出见 DIAGNOSTICS.md / PRINCIPLES.md）
     ├── audits/              # 已完成的审计记录/修复
     ├── bugs/                # 已修复 Bug
     └── legacy/              # 旧版本文件
 ```
 
-> 接手新对话的推荐阅读顺序：`CLAUDE.md` → `HANDBOOK.md` §2（当前状态）→ `KFM_V4_INVARIANTS.md`（修改规则）→ `docs/design/WORKBENCH_SPEC.md`（当前方向）→ `docs/design/TERMINAL_CARD_SPEC.md`（终端卡设计）→ `HANDBOOK.md` §3（待办）→ `HANDBOOK.md` §七（审计问题清单）→ `docs/archive/audits/v6.8-code-quality/AUDIT_TRACKER.md`（已完成审计记录）。引擎层改动前读 `docs/archive/design/ENGINE_ARCHITECTURE.md`。
+> 接手新对话的推荐阅读顺序：`CLAUDE.md` → `HANDBOOK.md` §2（当前状态）→ `KFM_V4_INVARIANTS.md`（修改规则）→ `DIAGNOSTICS.md` §1-2（隐性契约+诊断流程，遇到 bug 先翻）→ `docs/design/WORKBENCH_SPEC.md`（当前方向）→ `docs/design/TERMINAL_CARD_SPEC.md`（终端卡设计）→ `HANDBOOK.md` §3（待办）→ `HANDBOOK.md` §七（审计问题清单）。全量约束速查见 `PRINCIPLES.md`。引擎层改动前读 `docs/archive/design/ENGINE_ARCHITECTURE.md`。
 
 ## 完整性校验
 
@@ -77,6 +79,8 @@ npm run test    # 159 个回归测试，覆盖 23 个模块
 - **Canvas 初始化**: `clientWidth=0`，需在 rAF 回调里 `rebuildTree()`
 - **事件冒泡**: 侧栏触摸区事件冒泡到 document → GestureRegistry 误触发
 - **全项目统一使用 PointerEvent** — 禁止 `addEventListener('touchstart/pointermove/pointerup')`，都走 `gesture-registry.ts`
+- **touch-action: none** — 所有自定义 Canvas 控件必须显式设置，否则浏览器接管触控导致 `pointercancel` 截断手势
 - **Git 推送认证**：项目根目录 `.env` 文件中配置了 `GITHUB_TOKEN` 环境变量（已 `.gitignore` 保护）。执行 `git push` 前先 `source .env` 或将该 token 加入 git credential。该 token 用于 agent 远程推送代码，不可删除。
+> 更多隐性契约见 `docs/DIAGNOSTICS.md` §一。
 
 > 历史修复记录（v4.0.0 前）已清理。如需追溯：`git log --oneline v4.0.0..HEAD`
