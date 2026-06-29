@@ -10,6 +10,7 @@ import { buildCardLayout } from './floating-card.js';
 import { wsChannel } from './ws-channel.js';
 import { cardRegistry, type CardInstance } from './card-registry.js';
 import { gestures } from './gesture-registry.js';
+import { log } from './logger.js';
 import { currentTheme } from './theme.js';
 
 // ========== 主题映射 ==========
@@ -39,6 +40,7 @@ gestures.register({
   priority: 61,
   onStart(e) {
     const el = (e.target as HTMLElement).closest('.xterm') as HTMLElement | null;
+    log(['xscr', 'start t=' + (e.target as HTMLElement).tagName + ' el=' + !!el + ' n=' + _termMap.size]);
     const term = el ? _termMap.get(el) : undefined;
     if (!term) return;
     _activeTerm = term;
@@ -47,10 +49,11 @@ gestures.register({
   onMove(e) {
     if (!_activeTerm) return;
     const dy = _startY - e.clientY;
-    if (Math.abs(dy) < 4) return;  // 小步死区，避免误触滚动
-    const lines = dy / 9;  // ch ≈ 9px
+    if (Math.abs(dy) < 4) return;
+    const lines = dy / 9;
     _activeTerm.scrollLines(-Math.round(lines));
-    _startY = e.clientY;  // 累进式：每次 move 重置基准
+    _startY = e.clientY;
+    log(['xscr', 'move dy=' + dy.toFixed(0) + ' lines=' + lines.toFixed(1)]);
   },
   onEnd() {
     _activeTerm = null;
@@ -89,13 +92,8 @@ export function createTerminal04Handler(_meta: Record<string, unknown>): {
       bodyEl.appendChild(termEl);
       term.open(termEl);
 
-      // 隐藏 xterm 自带的滚动条 + viewport 允许滚动手势穿透
       const xtermEl = termEl.querySelector('.xterm') as HTMLElement;
       if (xtermEl) {
-        const scrollEl = xtermEl.querySelector('.xterm-scroll') as HTMLElement;
-        if (scrollEl) scrollEl.style.display = 'none';
-        const viewportEl = xtermEl.querySelector('.xterm-viewport') as HTMLElement;
-        if (viewportEl) viewportEl.style.touchAction = 'none';
         _termMap.set(xtermEl, term);
       }
       fit.fit();
