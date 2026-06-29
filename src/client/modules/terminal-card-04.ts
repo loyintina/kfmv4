@@ -87,8 +87,18 @@ export function createTerminal04Handler(_meta: Record<string, unknown>): {
         if (xtermEl) { xtermEl.style.touchAction = 'none'; _termMap.set(xtermEl, term); }
         fit.fit();
         card.meta._xtermEl = xtermEl;
+        let resizeTimer: ReturnType<typeof setTimeout> | null = null;
         const observer = new ResizeObserver(() => {
           try { fit.fit(); } catch {}
+          if (resizeTimer) clearTimeout(resizeTimer);
+          resizeTimer = setTimeout(() => {
+            if (card.meta.sessionId) {
+              wsChannel.sendMessage('terminal-resize', {
+                sessionId: card.meta.sessionId, cols: term.cols, rows: term.rows,
+              });
+            }
+            resizeTimer = null;
+          }, 200);
         });
         observer.observe(termEl);
         card.meta._observer = observer;
