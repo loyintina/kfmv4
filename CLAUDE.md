@@ -32,7 +32,7 @@ npm run dev      # ts-node ESM 直接运行
 ```
 > ⚠️ **`npm run dev` 只运行服务端，不重打客户端 bundle。** 改 `src/client/` 下文件后需手动重建：
 > ```
-> npx esbuild src/client/main.ts --bundle --platform=browser --format=iife --outfile=public/bundle.js --target=es2019 --external:katex --external:mermaid --external:xterm
+> npx esbuild src/client/main.ts --bundle --platform=browser --format=iife --outfile=public/bundle.js --target=es2019 --external:katex --external:mermaid
 > ```
 > 详见 [`docs/DIAGNOSTICS.md` B.A.R. #007](./docs/DIAGNOSTICS.md)。
 

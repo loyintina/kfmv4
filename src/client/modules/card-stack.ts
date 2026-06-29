@@ -30,7 +30,7 @@ const _cards: CardDef[] = [
   { id: 'settings', icon: '\u2699', name: '\u8BBE\u7F6E',        desc: '' },
   { id: 'debug',    icon: '\uD83D\uDD27', name: '\u65E5\u5FD7\u7BA1\u7406', desc: '' },
   { id: 'card03',   icon: '>',         name: '终端',          desc: '' },
-  { id: 'card04',   icon: '\u2B24',    name: 'v2终端',          desc: 'Row-with-Runs' },
+  { id: 'card04',   icon: '\u25B6',    name: 'xterm终端',       desc: '' },
   { id: 'card05',   icon: '',           name: '',                desc: '' },
   { id: 'card06',   icon: '',           name: '',                desc: '' },
   { id: 'card07',   icon: '',           name: '',                desc: '' },
