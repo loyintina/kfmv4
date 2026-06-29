@@ -165,6 +165,7 @@ const LARGE_FILE_WHITELIST = new Set([
   'docs/design/VISION_AND_ROADMAP.md',
   'docs/design/WORKBENCH_SPEC.md',
   'docs/DIAGNOSTICS.md',
+  'docs/KFM_V4_INVARIANTS.md',
 ]);
 
 function checkFileSize(filePath) {
