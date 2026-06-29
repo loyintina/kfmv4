@@ -132,6 +132,8 @@ export class TerminalRenderer {
   private _status = 'init';
   private _debugDelta = 0;
   private _logThrottle = 0;
+  private _logicalLines: string[] = [];  // 每 \n 提交一行, resize 后回流用
+  private _lineBuffer = '';
 
   /** 在容器内创建 canvas 并初始化 */
   mount(containerEl: HTMLElement): void {
@@ -198,7 +200,7 @@ export class TerminalRenderer {
     observer.observe(containerEl);
   }
 
-  /** 重算 cols/rows 并重建网格 */
+  /** 重算 cols/rows 并重建网格（resize 时回流已有内容） */
   private _layout(): void {
     if (!this._canvas || !this._ctx) return;
     this._containerW = this._canvas.clientWidth;
@@ -211,30 +213,106 @@ export class TerminalRenderer {
 
     const newCols = Math.floor(this._containerW / this._cellW);
     const newRows = Math.floor(this._containerH / this._cellH);
-    const oldCells = this._cells;
-    const oldCols = this._cols;
     const oldRows = this._rows;
     const isFirst = oldRows === 0;
+
+    // 非首次 resize → 捕获当前内容（文本行 + 当前行缓冲）
+    if (!isFirst) {
+      this._captureContent();
+    }
 
     this._cols = newCols;
     this._rows = newRows;
 
-    // 建新网格，保留旧内容
+    // 建全新空网格
     const cells: Cell[][] = [];
     for (let r = 0; r < newRows; r++) {
       const row: Cell[] = [];
       for (let c = 0; c < newCols; c++) {
-        if (r < oldRows && c < oldCols) {
-          row.push(oldCells[r][c]);
-        } else {
-          row.push({ char: ' ', fg: DEFAULT_FG, bg: DEFAULT_BG, bold: false });
-        }
+        row.push({ char: ' ', fg: DEFAULT_FG, bg: DEFAULT_BG, bold: false });
       }
       cells.push(row);
     }
     this._cells = cells;
+    this._scrollback = [];
+    this._scrollOffset = 0;
+    this._scrollBaseline = 0;
+
+    // 回流：把 _logicalLines 文本按新列宽重排到网格中
+    if (!isFirst && this._logicalLines.length > 0) {
+      this._reflowLines();
+    }
+
     if (isFirst) { this._cursorR = 0; this._cursorC = 0; }
     this._render();
+  }
+
+  /** resize 前捕获所有文本内容到 _logicalLines */
+  private _captureContent(): void {
+    // 提交当前行缓冲（未以 \n 结尾的进行中行）
+    if (this._lineBuffer) {
+      this._logicalLines.push(this._lineBuffer);
+      this._lineBuffer = '';
+    }
+    // 把当前 cells 网格中尚未在 _logicalLines 的行也捕获
+    for (const row of this._cells) {
+      let text = '';
+      for (const cell of row) {
+        if (cell.char && cell.char !== ' ') {
+          text += cell.char;
+        } else if (text.length > 0) {
+          text += ' ';
+        }
+      }
+      const trimmed = text.trimEnd();
+      if (trimmed.length > 0 && trimmed !== this._logicalLines[this._logicalLines.length - 1]) {
+        this._logicalLines.push(trimmed);
+      }
+    }
+    // 清掉末尾空行
+    while (this._logicalLines.length > 0 && this._logicalLines[this._logicalLines.length - 1].length === 0) {
+      this._logicalLines.pop();
+    }
+  }
+
+  /** 把 _logicalLines 文本按当前 _cols 列宽回流到 _cells 和 _scrollback */
+  private _reflowLines(): void {
+    const w = this._cols;
+    if (w <= 0) { this._logicalLines = []; return; }
+
+    let curR = 0;
+    let curC = 0;
+
+    for (const line of this._logicalLines) {
+      for (let i = 0; i < line.length; i++) {
+        if (curR >= this._rows) {
+          this._scrollUp();
+          curR = this._rows - 1;
+        }
+        if (curC < w) {
+          const cell = this._cells[curR][curC];
+          cell.char = line[i];
+          cell.fg = DEFAULT_FG;
+          cell.bg = DEFAULT_BG;
+          cell.bold = false;
+        }
+        curC++;
+        if (curC >= w) { curC = 0; curR++; }
+      }
+      // 逻辑行结束 → 换行
+      curC = 0;
+      curR++;
+    }
+
+    // 光标放在最后位置
+    while (curR >= this._rows) {
+      this._scrollUp();
+      curR = this._rows - 1;
+    }
+    this._cursorR = Math.max(0, curR);
+    this._cursorC = Math.min(w - 1, curC);
+    this._logicalLines = [];
+    this._scrollOffset = 0;
   }
 
   /** 网格尺寸 */
@@ -267,6 +345,8 @@ export class TerminalRenderer {
 
       if (ch === '\r') { this._cursorC = 0; continue; }
       if (ch === '\n') {
+        this._logicalLines.push(this._lineBuffer);
+        this._lineBuffer = '';
         this._cursorR++; this._cursorC = 0;
         if (this._cursorR >= this._rows) { this._scrollUp(); this._cursorR = this._rows - 1; }
         continue;
@@ -281,6 +361,7 @@ export class TerminalRenderer {
         cell.fg = this._curFg;
         cell.bg = this._curBg;
         cell.bold = this._curBold;
+        this._lineBuffer += ch;
         // 全角字符占 2 格：第二格标记为空，两遍渲染保证背景先画
         if (wide && this._cursorC + 1 < this._cols) {
           const next = this._cells[this._cursorR][this._cursorC + 1];
