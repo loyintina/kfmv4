@@ -57,14 +57,13 @@ gestures.register({
     const proto = ms?.activeProtocol || '?';
     const enc = ms?.activeEncoding || '?';
     if (ms && proto !== 'NONE') {
-      // 同时发 X10 和 SGR 两种编码（xterm.js 内部两种都用）
       const btn = dy > 0 ? 64 : 65;
-      const x10 = '\x1b[M' + String.fromCharCode(btn) + '\x21\x21';
-      const sgr = '\x1b[<' + btn + ';1;1M';
-      const seq = x10 + sgr;
-      log(['xscr', 'mouse dy=' + dy.toFixed(0) + ' proto=' + proto + ' enc=' + enc + ' sid=' + (_activeSid ? 'Y' : 'N')]);
+      const cx = Math.max(1, Math.min(_activeTerm.cols, Math.round(_activeTerm.cols / 2)));
+      const cy = Math.max(1, Math.min(_activeTerm.rows, Math.round(_activeTerm.rows / 2)));
+      const sgr = '\x1b[<' + btn + ';' + cx + ';' + cy + 'M';
+      log(['xscr', 'mouse dy=' + dy.toFixed(0) + ' proto=' + proto + ' enc=' + enc + ' sid=' + (_activeSid ? 'Y' : 'N') + ' msg=' + sgr.replace(/\x1b/g,'^[')]);
       if (_activeSid) {
-        wsChannel.sendMessage('terminal-input', { sessionId: _activeSid, input: seq });
+        wsChannel.sendMessage('terminal-input', { sessionId: _activeSid, input: sgr });
       }
     } else {
       _activeTerm.scrollLines(Math.round(dy / 9));
