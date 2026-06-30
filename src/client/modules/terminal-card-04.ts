@@ -85,7 +85,7 @@ export function createTerminal04Handler(_meta: Record<string, unknown>): {
         const { bodyEl } = buildCardLayout(contentEl, '> ' + terminalName, c1, c2);
         bodyEl.appendChild(termEl);
         if (xtermEl) { xtermEl.style.touchAction = 'none'; _termMap.set(xtermEl, term); }
-        fit.fit();
+        requestAnimationFrame(() => { fit.fit(); });
         card.meta._xtermEl = xtermEl;
         let resizeTimer: ReturnType<typeof setTimeout> | null = null;
         const observer = new ResizeObserver(() => {
@@ -128,6 +128,7 @@ export function createTerminal04Handler(_meta: Record<string, unknown>): {
         _termMap.set(xtermEl, term);
       }
       fit.fit();
+      requestAnimationFrame(() => { fit.fit(); });
 
       card.meta._term = term;
       card.meta._fit = fit;
