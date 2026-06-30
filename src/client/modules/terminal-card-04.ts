@@ -57,7 +57,7 @@ gestures.register({
     const proto = ms?.activeProtocol || '?';
     const enc = ms?.activeEncoding || '?';
     if (ms && proto !== 'NONE') {
-      const btn = dy > 0 ? 64 : 65;
+      const btn = dy > 0 ? 65 : 64;
       const cx = Math.max(1, Math.min(_activeTerm.cols, Math.round(_activeTerm.cols / 2)));
       const cy = Math.max(1, Math.min(_activeTerm.rows, Math.round(_activeTerm.rows / 2)));
       const sgr = '\x1b[<' + btn + ';' + cx + ';' + cy + 'M';
