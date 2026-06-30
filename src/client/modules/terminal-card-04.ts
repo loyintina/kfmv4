@@ -31,7 +31,9 @@ function xtermTheme(cursor: string) {
 // ========== 滚动手势 ==========
 
 const _termMap = new Map<HTMLElement, Terminal>();
+const _sidMap = new Map<HTMLElement, string>();
 let _activeTerm: Terminal | null = null;
+let _activeSid = '';
 let _startY = 0;
 
 gestures.register({
@@ -40,23 +42,33 @@ gestures.register({
   priority: 61,
   onStart(e) {
     const el = (e.target as HTMLElement).closest('.xterm') as HTMLElement | null;
-    log(['xscr', 'start t=' + (e.target as HTMLElement).tagName + ' el=' + !!el + ' n=' + _termMap.size]);
     const term = el ? _termMap.get(el) : undefined;
+    const sid = el ? _sidMap.get(el) || '' : '';
     if (!term) return;
     _activeTerm = term;
+    _activeSid = sid;
     _startY = e.clientY;
   },
   onMove(e) {
     if (!_activeTerm) return;
     const dy = _startY - e.clientY;
     if (Math.abs(dy) < 4) return;
-    const lines = dy / 9;
-    _activeTerm.scrollLines(Math.round(lines));
+    // mouse mode 活跃（tmux/vim with mouse on）→ 发滚轮序列到 PTY
+    const ms = (_activeTerm as any)._core?.coreMouseService;
+    if (ms && ms.activeProtocol !== 'NONE') {
+      const seq = dy > 0 ? '\x1b[M\x60\x21\x21' : '\x1b[M\x41\x21\x21';
+      if (_activeSid) {
+        wsChannel.sendMessage('terminal-input', { sessionId: _activeSid, input: seq });
+      }
+    } else {
+      // 普通终端 → scrollLines
+      _activeTerm.scrollLines(Math.round(dy / 9));
+    }
     _startY = e.clientY;
-    log(['xscr', 'move dy=' + dy.toFixed(0) + ' lines=' + lines.toFixed(1)]);
   },
   onEnd() {
     _activeTerm = null;
+    _activeSid = '';
   },
   stopPropagation: true,
 });
@@ -196,6 +208,7 @@ export function createTerminal04Handler(_meta: Record<string, unknown>): {
           const d = p as { sessionId: string };
           wsChannel.offMessage('terminal-opened', onOpened);
           card.meta.sessionId = d.sessionId;
+          _sidMap.set(card.meta._xtermEl as HTMLElement, d.sessionId);
           term.write('\x1b[34mKFM 终端已连接 — ' + terminalName + '\x1b[0m\r\n');
         });
       }
@@ -214,6 +227,7 @@ export function createTerminal04Handler(_meta: Record<string, unknown>): {
         }
         if (card.meta._xtermEl) {
           _termMap.delete(card.meta._xtermEl as HTMLElement);
+          _sidMap.delete(card.meta._xtermEl as HTMLElement);
         }
         if (card.meta._term) {
           (card.meta._term as Terminal).dispose();
@@ -234,6 +248,7 @@ export function createTerminal04Handler(_meta: Record<string, unknown>): {
         }
         if (card.meta._xtermEl) {
           _termMap.delete(card.meta._xtermEl as HTMLElement);
+          _sidMap.delete(card.meta._xtermEl as HTMLElement);
         }
         const termEl = card.meta._termEl as HTMLElement | undefined;
         if (termEl && termEl.parentNode) {

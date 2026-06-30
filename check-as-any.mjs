@@ -20,6 +20,7 @@ const SRC_DIR = 'src';
 const WHITELIST = new Set([
   'client/modules/renderers/math-diagram.ts:67',   // window.katex CDN 加载
   'client/modules/renderers/math-diagram.ts:102',  // window.mermaid CDN 加载
+  'client/modules/terminal-card-04.ts:57',         // xterm._core 私有属性, 读 activeProtocol 判断 mouse mode
 ]);
 
 const AS_ANY_RE = /\bas\s+any\b/;
