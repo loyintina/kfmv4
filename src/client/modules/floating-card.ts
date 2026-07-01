@@ -7,6 +7,7 @@
 
 import { gestures } from "./gesture-registry.js";
 import { anim } from './animation-registry.js';
+import { log } from './logger.js';
 import { currentTheme as theme } from './theme.js';
 import { Registry } from './ui-registry.js';
 import { MARGIN, FLOATING_CARD_W, FLOATING_CARD_H } from './interaction-constants.js';
@@ -661,6 +662,8 @@ export function initFloatingCards(): void {
       const l = parseFloat(item.el.style.left) || 0;
       const t = parseFloat(item.el.style.top) || 0;
       const clamped = fClamp(l, t);
+      const vvH = window.visualViewport?.height ?? window.innerHeight;
+      log(['kbv2', 't=' + t + ' clampY=' + clamped.y + ' maxY=' + getMaxY() + ' vvH=' + vvH + ' cardH=' + item.cardHeight]);
       if (clamped.y !== t) anim.to(item.el, { top: clamped.y, duration: 0.15, ease: 'power2.out' });
     }
   });
