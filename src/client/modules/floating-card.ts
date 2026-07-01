@@ -12,6 +12,7 @@ import { Registry } from './ui-registry.js';
 import { MARGIN, FLOATING_CARD_W, FLOATING_CARD_H } from './interaction-constants.js';
 import { createDragHandler, type DragConfig } from './drag-handler.js';
 import { cardRegistry, type CardContentHandler, type CardInstance } from './card-registry.js';
+import { log } from './logger.js';
 
 const orbT = theme.cornerOrb;
 
@@ -609,6 +610,7 @@ export function initFloatingCards(): void {
       const availTop = orbCY - margin;
       const renderW = Math.max(FLOATING_CARD_W_MIN, Math.min(startCardW, availLeft));
       const renderH = Math.max(FLOATING_CARD_H_MIN, Math.min(startCardH, availTop));
+      if (dx === 0 && dy === 0) log('[drag] start: startOrbY=%d startCardH=%d getMaxY=%d availTop=%d renderH=%d cardHeight(item)=%d', startOrbY, startCardH, getMaxY(), availTop, renderH, dragItem.cardHeight);
       const left = Math.max(margin, orbCX - renderW);
       const top = Math.max(margin, orbCY - renderH);
       dragItem.el.style.left = left + 'px';
@@ -690,6 +692,8 @@ export function initFloatingCards(): void {
         const L = Math.max(margin, orbCX - rW);
         const T = Math.max(margin, orbCY - rH);
 
+        log('[kb] open: orbRect.top=%d clamped.y=%d s.orbTop=%d getMaxY=%d rH=%d T=%d', orbRect.top, clamped.y, s.orbTop, getMaxY(), rH, T);
+
         anim.to(item.el, {
           left: L, top: T, width: rW, height: rH,
           duration: 0.15, ease: 'power2.out',
@@ -697,12 +701,15 @@ export function initFloatingCards(): void {
             const w = parseFloat(item.el.style.width) || rW;
             const h = parseFloat(item.el.style.height) || rH;
             fSyncCorners(item, w, h);
+            log('[kb] fSync: w=%d h=%d orbTop(el)=%d', w, h, parseFloat(item.brOrb!.style.top)||0);
           },
         });
       } else if (_kbSaved.has(item)) {
         // 键盘收 → 回原位
         const s = _kbSaved.get(item)!;
         const t = parseFloat(item.el.style.top) || 0;
+        const h = parseFloat(item.el.style.height) || 0;
+        log('[kb] close: t=%d s.cardTop=%d h=%d s.cardH=%d _kbSaved.size=%d', t, s.cardTop, h, s.cardH, _kbSaved.size);
         if (Math.abs(t - s.cardTop) > 0.5) {
           anim.to(item.el, {
             left: s.cardLeft, top: s.cardTop,
