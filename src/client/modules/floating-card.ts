@@ -7,7 +7,6 @@
 
 import { gestures } from "./gesture-registry.js";
 import { anim } from './animation-registry.js';
-import { log } from './logger.js';
 import { currentTheme as theme } from './theme.js';
 import { Registry } from './ui-registry.js';
 import { MARGIN, FLOATING_CARD_W, FLOATING_CARD_H } from './interaction-constants.js';
@@ -655,16 +654,18 @@ export function initFloatingCards(): void {
     onEnd: drag.onEnd,
   });
 
-  // 键盘弹起/关闭：对声明 needsKeyboard 的卡片，通过 fClamp（唯一写入者）重算位置
+  // 键盘弹起/关闭：对 needsKeyboard 卡片重跑 fClamp(orb) → 推导 card top
+  // 与 onMoveNormal 同路径：orb → fClamp → card。只是触发源从 pointermove 换成 viewport resize。
   window.visualViewport?.addEventListener('resize', () => {
     for (const item of _floatingCards) {
-      if (!item.needsKeyboard) continue;
-      const l = parseFloat(item.el.style.left) || 0;
-      const t = parseFloat(item.el.style.top) || 0;
-      const clamped = fClamp(l, t);
-      const vvH = window.visualViewport?.height ?? window.innerHeight;
-      log(['kbv2', 't=' + t + ' clampY=' + clamped.y + ' maxY=' + getMaxY() + ' vvH=' + vvH + ' cardH=' + item.cardHeight]);
-      if (clamped.y !== t) anim.to(item.el, { top: clamped.y, duration: 0.15, ease: 'power2.out' });
+      if (!item.needsKeyboard || !item.brOrb) continue;
+      const orbRect = item.brOrb.getBoundingClientRect();
+      const clamped = fClamp(orbRect.left, orbRect.top);
+      if (clamped.y < orbRect.top) {
+        const t = parseFloat(item.el.style.top) || 0;
+        const delta = orbRect.top - clamped.y;
+        anim.to(item.el, { top: t - delta, duration: 0.15, ease: 'power2.out' });
+      }
     }
   });
 }
