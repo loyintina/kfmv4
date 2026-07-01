@@ -251,6 +251,8 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
   brOrb.style.cursor = 'pointer';
   brOrb.classList.add('floating-br-orb');
   _brOrbToItem.set(brOrb, item);
+  // 防止 touchstart 阶段浏览器自动聚焦卡内可聚焦元素（如 xterm textarea）
+  brOrb.addEventListener('touchstart', e => e.preventDefault());
 
   // TL — 上移一层（紧凑态也显示）
   const tlColor = _hexToRgba(config.color1, orbT.tlAlpha);
