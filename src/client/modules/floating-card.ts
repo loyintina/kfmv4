@@ -654,26 +654,68 @@ export function initFloatingCards(): void {
     onEnd: drag.onEnd,
   });
 
-  // 键盘避让：开时 fClamp(orb) 钳上移（同 onMoveNormal 路径），首次记原位；
-  // 关时 orb 不再被钳 → 回原位 → 清记录。
-  const _kbOrig = new Map<FloatingCardItem, number>();  // original card top
+  // 键盘避让：开时从 saved orb 重算 fClamp → derive card（同 onMoveNormal）；
+  // 关时回 saved 原位。
+  const _kbSaved = new Map<FloatingCardItem, {
+    orbLeft: number; orbTop: number;
+    cardLeft: number; cardTop: number;
+    cardW: number; cardH: number;
+  }>();
   window.visualViewport?.addEventListener('resize', () => {
     for (const item of _floatingCards) {
       if (!item.needsKeyboard || !item.brOrb) continue;
       const orbRect = item.brOrb.getBoundingClientRect();
       const clamped = fClamp(orbRect.left, orbRect.top);
+
       if (clamped.y < orbRect.top) {
-        if (!_kbOrig.has(item)) _kbOrig.set(item, parseFloat(item.el.style.top) || 0);
+        // 首次钳 → 记原始状态
+        if (!_kbSaved.has(item)) {
+          _kbSaved.set(item, {
+            orbLeft: orbRect.left, orbTop: orbRect.top,
+            cardLeft: parseFloat(item.el.style.left) || 0,
+            cardTop: parseFloat(item.el.style.top) || 0,
+            cardW: item.cardWidth, cardH: item.cardHeight,
+          });
+        }
+
+        // 从 saved orb 重算 clamped（防读取当前动画中值漂移）
+        const s = _kbSaved.get(item)!;
+        const cs = fClamp(s.orbLeft, s.orbTop);
+        const orbCX = cs.x + rh;
+        const orbCY = cs.y + rh;
+        const availLeft = orbCX - margin;
+        const availTop = orbCY - margin;
+        const rW = Math.max(FLOATING_CARD_W_MIN, Math.min(s.cardW, availLeft));
+        const rH = Math.max(FLOATING_CARD_H_MIN, Math.min(s.cardH, availTop));
+        const L = Math.max(margin, orbCX - rW);
+        const T = Math.max(margin, orbCY - rH);
+
+        anim.to(item.el, {
+          left: L, top: T, width: rW, height: rH,
+          duration: 0.15, ease: 'power2.out',
+          onUpdate() {
+            const w = parseFloat(item.el.style.width) || rW;
+            const h = parseFloat(item.el.style.height) || rH;
+            fSyncCorners(item, w, h);
+          },
+        });
+      } else if (_kbSaved.has(item)) {
+        // 键盘收 → 回原位
+        const s = _kbSaved.get(item)!;
         const t = parseFloat(item.el.style.top) || 0;
-        const delta = orbRect.top - clamped.y;
-        anim.to(item.el, { top: t - delta, duration: 0.15, ease: 'power2.out' });
-      } else if (_kbOrig.has(item)) {
-        const origTop = _kbOrig.get(item)!;
-        const t = parseFloat(item.el.style.top) || 0;
-        if (Math.abs(t - origTop) > 0.5) {
-          anim.to(item.el, { top: origTop, duration: 0.15, ease: 'power2.out' });
+        if (Math.abs(t - s.cardTop) > 0.5) {
+          anim.to(item.el, {
+            left: s.cardLeft, top: s.cardTop,
+            width: s.cardW, height: s.cardH,
+            duration: 0.15, ease: 'power2.out',
+            onUpdate() {
+              const w = parseFloat(item.el.style.width) || s.cardW;
+              const h = parseFloat(item.el.style.height) || s.cardH;
+              fSyncCorners(item, w, h);
+            },
+          });
         } else {
-          _kbOrig.delete(item);
+          _kbSaved.delete(item);
         }
       }
     }
