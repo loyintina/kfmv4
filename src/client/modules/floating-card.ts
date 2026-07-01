@@ -654,17 +654,27 @@ export function initFloatingCards(): void {
     onEnd: drag.onEnd,
   });
 
-  // 键盘弹起/关闭：对 needsKeyboard 卡片重跑 fClamp(orb) → 推导 card top
-  // 与 onMoveNormal 同路径：orb → fClamp → card。只是触发源从 pointermove 换成 viewport resize。
+  // 键盘避让：开时 fClamp(orb) 钳上移（同 onMoveNormal 路径），首次记原位；
+  // 关时 orb 不再被钳 → 回原位 → 清记录。
+  const _kbOrig = new Map<FloatingCardItem, number>();  // original card top
   window.visualViewport?.addEventListener('resize', () => {
     for (const item of _floatingCards) {
       if (!item.needsKeyboard || !item.brOrb) continue;
       const orbRect = item.brOrb.getBoundingClientRect();
       const clamped = fClamp(orbRect.left, orbRect.top);
       if (clamped.y < orbRect.top) {
+        if (!_kbOrig.has(item)) _kbOrig.set(item, parseFloat(item.el.style.top) || 0);
         const t = parseFloat(item.el.style.top) || 0;
         const delta = orbRect.top - clamped.y;
         anim.to(item.el, { top: t - delta, duration: 0.15, ease: 'power2.out' });
+      } else if (_kbOrig.has(item)) {
+        const origTop = _kbOrig.get(item)!;
+        const t = parseFloat(item.el.style.top) || 0;
+        if (Math.abs(t - origTop) > 0.5) {
+          anim.to(item.el, { top: origTop, duration: 0.15, ease: 'power2.out' });
+        } else {
+          _kbOrig.delete(item);
+        }
       }
     }
   });
