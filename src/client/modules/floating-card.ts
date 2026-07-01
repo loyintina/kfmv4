@@ -71,6 +71,7 @@ interface FloatingCardItem {
   activeMemW: number;
   activeMemH: number;
   accentColor: string;
+  needsKeyboard: boolean;
 }
 
 let _floatingCards: FloatingCardItem[] = [];
@@ -228,6 +229,7 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
     compactMemW: COMPACT_W, compactMemH: COMPACT_H,
     activeMemW: FLOATING_CARD_W, activeMemH: FLOATING_CARD_H,
     accentColor: config.color2,
+    needsKeyboard: config.typeId === 'card03',
   };
 
   // 注册到运行时实例表
@@ -404,8 +406,10 @@ export function initFloatingCards(): void {
   const margin = MARGIN;
 
   function getMaxY(): number {
+    const vvH = window.visualViewport?.height ?? window.innerHeight;
     const bar = document.getElementById('aiInputBar');
-    return (bar ? bar.getBoundingClientRect().top : window.innerHeight) - rs - margin;
+    const barY = bar ? bar.getBoundingClientRect().top : window.innerHeight;
+    return Math.min(vvH, barY) - rs - margin;
   }
 
   function fClamp(x: number, y: number): { x: number; y: number } {
@@ -648,6 +652,17 @@ export function initFloatingCards(): void {
     onStart: drag.onStart,
     onMove: drag.onMove,
     onEnd: drag.onEnd,
+  });
+
+  // 键盘弹起/关闭：对声明 needsKeyboard 的卡片，通过 fClamp（唯一写入者）重算位置
+  window.visualViewport?.addEventListener('resize', () => {
+    for (const item of _floatingCards) {
+      if (!item.needsKeyboard) continue;
+      const l = parseFloat(item.el.style.left) || 0;
+      const t = parseFloat(item.el.style.top) || 0;
+      const clamped = fClamp(l, t);
+      if (clamped.y !== t) anim.to(item.el, { top: clamped.y, duration: 0.15, ease: 'power2.out' });
+    }
   });
 }
 
