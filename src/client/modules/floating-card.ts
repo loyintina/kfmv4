@@ -445,6 +445,9 @@ export function initFloatingCards(): void {
   // BR 光球展开/收缩逻辑（GestureRegistry onTap 调用，不再走原生 click）
   const _toggleExpandCollapse = () => {
     if (!dragItem) return;
+    // 光球交互 = 用户离开卡内容 → 卡内焦点应移除
+    const ae = document.activeElement;
+    if (ae && dragItem.el.contains(ae)) (ae as HTMLElement).blur();
     const item = dragItem;
     const el = item.el;
     const config = item.config;
