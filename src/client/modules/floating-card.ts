@@ -12,7 +12,6 @@ import { Registry } from './ui-registry.js';
 import { MARGIN, FLOATING_CARD_W, FLOATING_CARD_H } from './interaction-constants.js';
 import { createDragHandler, type DragConfig } from './drag-handler.js';
 import { cardRegistry, type CardContentHandler, type CardInstance } from './card-registry.js';
-import { log } from './logger.js';
 
 const orbT = theme.cornerOrb;
 
@@ -610,7 +609,6 @@ export function initFloatingCards(): void {
       const availTop = orbCY - margin;
       const renderW = Math.max(FLOATING_CARD_W_MIN, Math.min(startCardW, availLeft));
       const renderH = Math.max(FLOATING_CARD_H_MIN, Math.min(startCardH, availTop));
-      if (dx === 0 && dy === 0) log('[drag] start: startOrbY=%d startCardH=%d getMaxY=%d availTop=%d renderH=%d cardHeight(item)=%d', startOrbY, startCardH, getMaxY(), availTop, renderH, dragItem.cardHeight);
       const left = Math.max(margin, orbCX - renderW);
       const top = Math.max(margin, orbCY - renderH);
       dragItem.el.style.left = left + 'px';
@@ -692,8 +690,6 @@ export function initFloatingCards(): void {
         const L = Math.max(margin, orbCX - rW);
         const T = Math.max(margin, orbCY - rH);
 
-        log('[kb] open: orbRect.top=%d clamped.y=%d s.orbTop=%d getMaxY=%d rH=%d T=%d', orbRect.top, clamped.y, s.orbTop, getMaxY(), rH, T);
-
         anim.to(item.el, {
           left: L, top: T, width: rW, height: rH,
           duration: 0.15, ease: 'power2.out',
@@ -701,7 +697,6 @@ export function initFloatingCards(): void {
             const w = parseFloat(item.el.style.width) || rW;
             const h = parseFloat(item.el.style.height) || rH;
             fSyncCorners(item, w, h);
-            log('[kb] fSync: w=%d h=%d orbTop(el)=%d', w, h, parseFloat(item.brOrb!.style.top)||0);
           },
         });
       } else if (_kbSaved.has(item)) {
@@ -715,8 +710,6 @@ export function initFloatingCards(): void {
         const L2 = Math.max(margin, orbCX2 - rW2);
         const T2 = Math.max(margin, orbCY2 - rH2);
 
-        log('[kb] close: t(e)=%d T2=%d h(e)=%d rH2=%d', parseFloat(item.el.style.top)||0, T2, parseFloat(item.el.style.height)||0, rH2);
-
         anim.to(item.el, {
           left: L2, top: T2, width: rW2, height: rH2,
           duration: 0.15, ease: 'power2.out',
@@ -727,7 +720,6 @@ export function initFloatingCards(): void {
             fSyncCorners(item, w, h);
             if (Math.abs(t - T2) < 0.5 && Math.abs(h - rH2) < 0.5) {
               _kbSaved.delete(item);
-              log('[kb] close: done, saved cleared');
             }
           },
         });
