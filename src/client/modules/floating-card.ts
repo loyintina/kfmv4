@@ -705,25 +705,32 @@ export function initFloatingCards(): void {
           },
         });
       } else if (_kbSaved.has(item)) {
-        // 键盘收 → 回原位
+        // 键盘收 → derive card 同开路径公式（不再读 saved cardTop/cardH，防过时）
         const s = _kbSaved.get(item)!;
-        const t = parseFloat(item.el.style.top) || 0;
-        const h = parseFloat(item.el.style.height) || 0;
-        log('[kb] close: t=%d s.cardTop=%d h=%d s.cardH=%d _kbSaved.size=%d', t, s.cardTop, h, s.cardH, _kbSaved.size);
-        if (Math.abs(t - s.cardTop) > 0.5) {
-          anim.to(item.el, {
-            left: s.cardLeft, top: s.cardTop,
-            width: s.cardW, height: s.cardH,
-            duration: 0.15, ease: 'power2.out',
-            onUpdate() {
-              const w = parseFloat(item.el.style.width) || s.cardW;
-              const h = parseFloat(item.el.style.height) || s.cardH;
-              fSyncCorners(item, w, h);
-            },
-          });
-        } else {
-          _kbSaved.delete(item);
-        }
+        const cs = fClamp(s.orbLeft, s.orbTop);
+        const orbCX2 = cs.x + rh;
+        const orbCY2 = cs.y + rh;
+        const rW2 = Math.max(FLOATING_CARD_W_MIN, Math.min(item.cardWidth, orbCX2 - margin));
+        const rH2 = Math.max(FLOATING_CARD_H_MIN, Math.min(item.cardHeight, orbCY2 - margin));
+        const L2 = Math.max(margin, orbCX2 - rW2);
+        const T2 = Math.max(margin, orbCY2 - rH2);
+
+        log('[kb] close: t(e)=%d T2=%d h(e)=%d rH2=%d', parseFloat(item.el.style.top)||0, T2, parseFloat(item.el.style.height)||0, rH2);
+
+        anim.to(item.el, {
+          left: L2, top: T2, width: rW2, height: rH2,
+          duration: 0.15, ease: 'power2.out',
+          onUpdate() {
+            const w = parseFloat(item.el.style.width) || rW2;
+            const h = parseFloat(item.el.style.height) || rH2;
+            const t = parseFloat(item.el.style.top) || 0;
+            fSyncCorners(item, w, h);
+            if (Math.abs(t - T2) < 0.5 && Math.abs(h - rH2) < 0.5) {
+              _kbSaved.delete(item);
+              log('[kb] close: done, saved cleared');
+            }
+          },
+        });
       }
     }
   });
