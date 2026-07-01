@@ -16,6 +16,7 @@
 import { Server as HttpServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { PtyManager } from './terminal-pty.js';
+import { execFile } from 'child_process';
 
 // ========== 类型定义 ==========
 
@@ -152,6 +153,37 @@ export class WsServer {
         this._ptyManager.kill(p.sessionId);
         const client = this.clients.get(ws);
         if (client) client.terminalSessions.delete(p.sessionId);
+        break;
+      }
+
+      case 'tmux-cmd': {
+        const p = msg.payload as { cmd: string; args: string[] };
+        const cmdMap: Record<string, string> = {
+          'list-sessions':  'list-sessions',
+          'list-windows':   'list-windows',
+          'new-window':     'new-window',
+          'select-window':  'select-window',
+        };
+        const tcmd = cmdMap[p.cmd];
+        if (!tcmd) { this.send(ws, 'tmux-result', { cmd: p.cmd, result: { stdout: '', stderr: 'unknown command', exitCode: 1 } }); break; }
+
+        const args = [tcmd];
+        if (p.cmd === 'list-sessions') {
+          args.push('-F', '#S');
+        } else if (p.cmd === 'list-windows') {
+          args.push('-t', p.args[0], '-F', '#I:#W:#{window_active}');
+        } else if (p.cmd === 'new-window') {
+          args.push('-t', p.args[0]);
+        } else if (p.cmd === 'select-window') {
+          args.push('-t', p.args[0] + ':' + p.args[1]);
+        }
+
+        execFile('tmux', args, { timeout: 5000 }, (err, stdout, stderr) => {
+          this.send(ws, 'tmux-result', {
+            cmd: p.cmd,
+            result: { stdout: stdout || '', stderr: stderr || '', exitCode: (err as { code?: string | number } | null)?.code ?? (err ? 1 : 0) },
+          });
+        });
         break;
       }
 

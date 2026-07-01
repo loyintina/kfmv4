@@ -305,7 +305,7 @@ v6.6.0 之前的焦点「浮卡系统统一化」已两次尝试均回退放弃�
 | `canvas-cursor.ts` | 443 | 3 | ✅ 提及 | Canvas 盒子光标系统 |
 | `canvas-scroll.ts` | 360 | 2 | ✅ 提及 | Canvas 盒子滚动系统 |
 | `canvas-utils.ts` | 60 | 4 | ✅ 依赖图 | Canvas 通用工具函数 |
-| `card-stack.ts` | 533 | 4 | ✅ 独立条目 | 堆叠卡片面板 |
+| `card-stack.ts` | 535 | 4 | ✅ 独立条目 | 堆叠卡片面板 |
 | `char-rain.ts` | 305 | 1 | ✅ 分组表 | 字符散落/回收动画 |
 | `click-queue.ts` | 38 | 1 | ✅ 分组表 | 点击事件队列 |
 | `color-utils.ts` | 45 | 2 | ✅ 分组表 | 颜色工具函数（从 tree-swipe 拆分） |
@@ -336,8 +336,9 @@ v6.6.0 之前的焦点「浮卡系统统一化」已两次尝试均回退放弃�
 | `ws-channel.ts` | 347 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
 | `terminal-aux-bar.ts` | 2 | 0 | TERMINAL_CARD_SPEC | Phase 8: 终端全局辅助键盘栏（占位） |
 | `terminal-card-04.ts` | 266 | 0 | TERMINAL_CARD_SPEC | 03 号终端卡 xterm.js 集成 |
+| `tmux-card.ts` | 124 | 0 | — | 04 号 tmux 窗口管理卡 |
 | `card-registry.ts` | 143 | 5 | CARD_REGISTRY_SPEC | 卡片注册表：类型声明 + 实例追踪 |
-| **合计** | **9743** | | | |
+| **合计** | **9745** | | | |
 
 ### 死代码检查
 
