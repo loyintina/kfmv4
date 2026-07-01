@@ -712,6 +712,8 @@ interface KFMState {
 | — | 代码质量审计修复 | — | ✅ v6.8.1 |
 | — | 模块拆分（mode-system.ts + color-utils.ts） + console 治理 + 依赖方向检查 | — | ✅ v6.8.1 |
 | 7 | 长按功能栏（rename/copy path/delete + 引擎 scrollPaddingBottom + 折叠祖先级联修复） | ~360 | ✅ v6.9.0 |
+| — | 滚动方向轴锁定重构 + BR orb 双click根除 + pointercancel 守卫 | — | ✅ v6.9.1 |
+| — | 键盘避让完整方案（orb→derive）+ BR orb 触控完善（touchstart/blur）+ SOP 心法回溯 | — | ✅ v6.10.0 |
 
 **总计**：约 1,560 行新代码 + 修改（含已实现的 365 行）
 
