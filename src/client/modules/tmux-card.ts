@@ -2,7 +2,8 @@
  * tmux-card.ts — 04 号 tmux 终端卡
  *
  * 复用 card03 的 xterm 核心（initTerminalCore），自动检测 tmux session，
- * 单 session 自动 attach，多 session 显示 picker。
+ * 单 session 自动 attach（spawn 直接启动 tmux attach，无回显），
+ * 多 session 显示 picker。
  */
 import { buildCardLayout } from './floating-card.js';
 import { wsChannel } from './ws-channel.js';
@@ -16,6 +17,7 @@ export function createTmuxCardHandler(): CardContentHandler {
   let _gid: string | null = null;
   let _resultHandler: ((payload: unknown) => void) | null = null;
   let _sessionId = '';
+  let _card: CardInstance | null = null;
 
   function renderPicker(sessions: string[]): void {
     if (!_picker) return;
@@ -30,6 +32,30 @@ export function createTmuxCardHandler(): CardContentHandler {
     }
   }
 
+  /** 向 PTY 发终端输入（attach 到指定 session） */
+  function attachViaInput(session: string): void {
+    if (_sessionId) {
+      wsChannel.sendMessage('terminal-input', {
+        sessionId: _sessionId,
+        input: 'tmux attach -t ' + session + '\n',
+      });
+    }
+  }
+
+  /** 关闭旧 PTY，用 command 参数打开新 PTY */
+  function reopenWithCommand(command: string): void {
+    if (_sessionId) {
+      wsChannel.sendMessage('terminal-close', { sessionId: _sessionId });
+    }
+    wsChannel.sendMessage('terminal-open', { command });
+    wsChannel.onMessage('terminal-opened', function onOpened(p: unknown) {
+      wsChannel.offMessage('terminal-opened', onOpened);
+      const d = p as { sessionId: string };
+      _sessionId = d.sessionId;
+      if (_card) _card.meta.sessionId = d.sessionId;
+    });
+  }
+
   const onResult = (payload: unknown): void => {
     const p = payload as { cmd: string; result: { stdout: string; stderr: string; exitCode: number } };
     if (p.result.exitCode !== 0) { renderPicker([]); return; }
@@ -39,11 +65,9 @@ export function createTmuxCardHandler(): CardContentHandler {
       if (sessions.length === 0) {
         renderPicker([]);
       } else if (sessions.length === 1) {
-        wsChannel.sendMessage('terminal-input', {
-          sessionId: _sessionId,
-          input: 'clear && tmux attach -t ' + sessions[0] + '\n',
-        });
+        reopenWithCommand('tmux attach -t ' + sessions[0]);
       } else {
+        reopenWithCommand('');
         renderPicker(sessions);
       }
     }
@@ -51,6 +75,7 @@ export function createTmuxCardHandler(): CardContentHandler {
 
   return {
     activate(contentEl: HTMLElement, card: CardInstance, _reason: 'init' | 'compact'): void {
+      _card = card;
       const c1 = card.accents.color1;
       const c2 = card.accents.color2;
       const { bodyEl } = buildCardLayout(contentEl, '\u25A3 tmux', c1, c2);
@@ -61,13 +86,11 @@ export function createTmuxCardHandler(): CardContentHandler {
       _picker.style.cssText = 'display:none;flex-wrap:wrap;gap:4px;padding:4px 0;flex-shrink:0';
       _bodyEl.appendChild(_picker);
 
-      // 注册 tmux 消息监听
       if (!_resultHandler) {
         _resultHandler = onResult;
         wsChannel.onMessage('tmux-result', onResult);
       }
 
-      // 注册手势（首次开或 compact→expanded 都需要）
       if (!_gid) {
         _gid = 'tmux-tap-' + card.instanceId;
         gestures.register({
@@ -79,22 +102,18 @@ export function createTmuxCardHandler(): CardContentHandler {
           onEnd(_e: PointerEvent, dx: number, dy: number) {
             if (Math.abs(dx) > 5 || Math.abs(dy) > 5) return;
             const btn = (_e.target as HTMLElement).closest('[data-session]') as HTMLElement | null;
-            if (!btn || !_sessionId) return;
-            const session = btn.getAttribute('data-session');
-            if (session) {
-              wsChannel.sendMessage('terminal-input', {
-                sessionId: _sessionId,
-                input: 'clear && tmux attach -t ' + session + '\n',
-              });
+            if (btn) {
+              attachViaInput(btn.getAttribute('data-session') || '');
             }
           },
         });
       }
 
-      initTerminalCore(_bodyEl, card, 'tmux', 'card04', (sid: string) => {
-        _sessionId = sid;
+      // autoOpen=false → 不立即开 PTY。onReady 通知终端 DOM 就绪，然后我们发 list-sessions
+      initTerminalCore(_bodyEl, card, 'tmux', 'card04', (_sid: string) => {
+        if (_sid) _sessionId = _sid;
         wsChannel.sendMessage('tmux-cmd', { cmd: 'list-sessions', args: [] });
-      });
+      }, false);
     },
 
     deactivate(contentEl: HTMLElement, card: CardInstance, reason: 'compact' | 'dismiss'): void {
@@ -108,6 +127,7 @@ export function createTmuxCardHandler(): CardContentHandler {
       _bodyEl = null;
       _picker = null;
       _sessionId = '';
+      _card = null;
       contentEl.innerHTML = '';
     },
   };

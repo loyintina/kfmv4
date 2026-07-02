@@ -88,6 +88,7 @@ export function initTerminalCore(
   terminalName: string,
   poolName: string,
   onReady?: (sessionId: string) => void,
+  autoOpen = true,
 ): void {
   if (!card.meta.terminalId) {
     card.meta.terminalId = cardRegistry.allocId(poolName);
@@ -199,7 +200,8 @@ export function initTerminalCore(
 
   if (!wsChannel.connected) {
     term.write('\x1b[31mWS:off\x1b[0m\r\n');
-  } else {
+    if (onReady) onReady('');
+  } else if (autoOpen) {
     wsChannel.sendMessage('terminal-open', {});
     wsChannel.onMessage('terminal-opened', function onOpened(p: unknown) {
       const d = p as { sessionId: string };
@@ -209,6 +211,9 @@ export function initTerminalCore(
       term.write('\x1b[34mKFM 终端已连接 — ' + terminalName + '\x1b[0m\r\n');
       if (onReady) onReady(d.sessionId);
     });
+  } else {
+    // 不自动 open，调用方负责发送 terminal-open + 监听 terminal-opened
+    if (onReady) onReady(''); // 通知调用方终端 DOM 就绪，可以开始操作
   }
 }
 

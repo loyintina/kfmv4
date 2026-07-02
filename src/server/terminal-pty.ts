@@ -36,14 +36,15 @@ export class PtyManager {
     this._shell = process.env.SHELL || 'zsh';
   }
 
-  /** 创建 PTY 会话，返回 sessionId */
-  spawn(ws: WebSocket, cwd?: string): string {
+  /** 创建 PTY 会话，返回 sessionId。command 为空则启动交互 shell */
+  spawn(ws: WebSocket, cwd?: string, command?: string): string {
     const sessionId = crypto.randomUUID();
     const dir = cwd || process.env.HOME || '/';
     const cols = 80;
     const rows = 24;
 
-    const term = pty.spawn(this._shell, [], {
+    const shellArgs = command ? ['-c', command] : [];
+    const term = pty.spawn(this._shell, shellArgs, {
       name: 'xterm-256color',
       cols,
       rows,

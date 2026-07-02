@@ -335,10 +335,10 @@ v6.6.0 之前的焦点「浮卡系统统一化」已两次尝试均回退放弃�
 | `ui.ts` | 70 | 10 | ✅ 提及 | UI 初始化编排 |
 | `ws-channel.ts` | 347 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
 | `terminal-aux-bar.ts` | 2 | 0 | TERMINAL_CARD_SPEC | Phase 8: 终端全局辅助键盘栏（占位） |
-| `terminal-card-04.ts` | 280 | 0 | TERMINAL_CARD_SPEC | 03 号终端卡 xterm.js 集成 |
-| `tmux-card.ts` | 114 | 0 | — | 04 号 tmux 窗口管理卡 |
+| `terminal-card-04.ts` | 285 | 0 | TERMINAL_CARD_SPEC | 03 号终端卡 xterm.js 集成 |
+| `tmux-card.ts` | 134 | 0 | — | 04 号 tmux 窗口管理卡 |
 | `card-registry.ts` | 143 | 5 | CARD_REGISTRY_SPEC | 卡片注册表：类型声明 + 实例追踪 |
-| **合计** | **9873** | | | |
+| **合计** | **9898** | | | |
 
 ### 死代码检查
 

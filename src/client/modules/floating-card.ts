@@ -229,7 +229,7 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
     compactMemW: COMPACT_W, compactMemH: COMPACT_H,
     activeMemW: FLOATING_CARD_W, activeMemH: FLOATING_CARD_H,
     accentColor: config.color2,
-    needsKeyboard: config.typeId === 'card03',
+    needsKeyboard: config.typeId === 'card03' || config.typeId === 'card04',
   };
 
   // 注册到运行时实例表
