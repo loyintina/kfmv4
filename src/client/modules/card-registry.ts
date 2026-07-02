@@ -70,6 +70,7 @@ class CardRegistry {
   private _instances = new Map<string, CardInstance>();
   private _byContentEl = new WeakMap<HTMLElement, CardInstance>();
   private _idPools = new Map<string, Set<number>>();
+  private _focusedId: string | null = null;
 
   /** 创建卡片实例（由 floating-card.ts 调用） */
   createInstance(
@@ -99,6 +100,7 @@ class CardRegistry {
       this._byContentEl.delete(inst.contentEl);
       this._instances.delete(instanceId);
     }
+    if (this._focusedId === instanceId) this._focusedId = null;
   }
 
   /** 按 instanceId 查询 */
@@ -119,6 +121,16 @@ class CardRegistry {
   /** 按类型筛选 */
   getByType(typeId: string): CardInstance[] {
     return this.getAll().filter(i => i.typeId === typeId);
+  }
+
+  /** 设置当前聚焦的卡片 instanceId */
+  focusCard(instanceId: string): void {
+    this._focusedId = instanceId;
+  }
+
+  /** 获取当前聚焦卡片的 instanceId */
+  get focusedInstanceId(): string | null {
+    return this._focusedId;
   }
 
   /** 在指定池中分配最小可用编号 */

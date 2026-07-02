@@ -731,6 +731,17 @@ export function initFloatingCards(): void {
       }
     }
   });
+
+  // 聚焦/上浮：任何对浮卡的触碰（含 orb、xterm、空白区）→ raise + focus
+  gestures.addPreMatchHook((e: PointerEvent) => {
+    const el = (e.target as HTMLElement).closest('.floating-card') as HTMLElement | null;
+    if (!el) return;
+    const item = _floatingCards.find(i => i.el === el);
+    if (!item || (item.state !== 'active' && item.state !== 'compact' && item.state !== 'editing')) return;
+    item.zIndex = _nextFloatingZ++;
+    item.el.style.zIndex = String(item.zIndex);
+    cardRegistry.focusCard(item.instanceId);
+  });
 }
 
 // ========== 卡片布局骨架（共享样板） ==========

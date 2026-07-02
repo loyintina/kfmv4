@@ -41,6 +41,7 @@ interface ActiveGesture {
 
 export class GestureRegistry {
   private _handlers: GestureHandler[] = [];
+  private _preMatchHooks: Array<(e: PointerEvent) => void> = [];
   private _active: ActiveGesture | null = null;
   private _enabled = true;
   private _initialized = false;
@@ -84,6 +85,16 @@ export class GestureRegistry {
 
   isRegistered(id: string): boolean {
     return this._handlers.some(h => h.id === id);
+  }
+
+  /** 注册 preMatch 钩子：每次 pointerdown 在 handler 匹配前执行（无优先级，无返回值） */
+  addPreMatchHook(fn: (e: PointerEvent) => void): void {
+    this._preMatchHooks.push(fn);
+  }
+
+  removePreMatchHook(fn: (e: PointerEvent) => void): void {
+    const idx = this._preMatchHooks.indexOf(fn);
+    if (idx >= 0) this._preMatchHooks.splice(idx, 1);
   }
 
   // ========== 全局控制 ==========
@@ -156,6 +167,9 @@ export class GestureRegistry {
 
     // 清除上一个手势（防御性）
     this._active = null;
+
+    // preMatch hooks: handler 匹配前全局执行
+    for (const fn of this._preMatchHooks) fn(e);
 
     for (const handler of this._handlers) {
       // 条件检查

@@ -311,8 +311,8 @@ v6.6.0 之前的焦点「浮卡系统统一化」已两次尝试均回退放弃�
 | `color-utils.ts` | 45 | 2 | ✅ 分组表 | 颜色工具函数（从 tree-swipe 拆分） |
 | `debug-assert.ts` | 23 | 1 | ✅ 提及 | 运行时断言 |
 | `dom-refs.ts` | 36 | 9 | ✅ 注册表 | DOM 元素引用 |
-| `floating-card.ts` | 771 | 2 | ✅ 独立条目 | 浮卡系统（核心模块） |
-| `gesture-registry.ts` | 245 | 6 | ✅ 独立条目 | 手势注册中心 |
+| `floating-card.ts` | 782 | 2 | ✅ 独立条目 | 浮卡系统（核心模块） |
+| `gesture-registry.ts` | 259 | 6 | ✅ 独立条目 | 手势注册中心 |
 | `gestures.ts` | 69 | 1 | ✅ 提及 | 页面滑动手势配置 |
 | `interaction-constants.ts` | 20 | 2 | ✅ 分组表 | 交互常量共享层（v6.6.0 新增） |
 | `drag-handler.ts` | 135 | 2 | ✅ 分组表 | 共享拖动状态机（orb + floating-card 去重） |
@@ -337,8 +337,8 @@ v6.6.0 之前的焦点「浮卡系统统一化」已两次尝试均回退放弃�
 | `terminal-aux-bar.ts` | 2 | 0 | TERMINAL_CARD_SPEC | Phase 8: 终端全局辅助键盘栏（占位） |
 | `terminal-card-04.ts` | 296 | 0 | TERMINAL_CARD_SPEC | 03 号终端卡 xterm.js 集成 |
 | `tmux-card.ts` | 133 | 0 | — | 04 号 tmux 窗口管理卡 |
-| `card-registry.ts` | 143 | 5 | CARD_REGISTRY_SPEC | 卡片注册表：类型声明 + 实例追踪 |
-| **合计** | **9908** | | | |
+| `card-registry.ts` | 155 | 5 | CARD_REGISTRY_SPEC | 卡片注册表：类型声明 + 实例追踪 |
+| **合计** | **9945** | | | |
 
 ### 死代码检查
 
