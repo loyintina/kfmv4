@@ -45,10 +45,13 @@ export function createTmuxCardHandler(): CardContentHandler {
 
   /** 关闭旧 PTY，用 command 参数打开新 PTY */
   function reopenWithCommand(command: string): void {
+    if (!_card) return;
     if (_sessionId) {
       wsChannel.sendMessage('terminal-close', { sessionId: _sessionId });
     }
-    wsChannel.sendMessage('terminal-open', { command });
+    const tag = _card.instanceId + '-' + Date.now();
+    _card.meta._openTag = tag;
+    wsChannel.sendMessage('terminal-open', { command, tag });
   }
 
   const onResult = (payload: unknown): void => {

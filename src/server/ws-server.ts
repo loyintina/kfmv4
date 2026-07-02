@@ -124,12 +124,12 @@ export class WsServer {
 
       // Phase 8: 终端 PTY 会话
       case 'terminal-open': {
-        const p = msg.payload as { cwd?: string; command?: string };
+        const p = msg.payload as { cwd?: string; command?: string; tag?: string };
         try {
           const sessionId = this._ptyManager.spawn(ws, p.cwd, p.command);
           const client = this.clients.get(ws);
           if (client) client.terminalSessions.add(sessionId);
-          this.send(ws, 'terminal-opened', { sessionId });
+          this.send(ws, 'terminal-opened', { sessionId, tag: p.tag });
         } catch (e: any) {
           this.send(ws, 'error', { message: 'PTY spawn failed: ' + (e?.message || String(e)) });
         }

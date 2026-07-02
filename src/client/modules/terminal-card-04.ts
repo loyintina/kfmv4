@@ -203,8 +203,10 @@ export function initTerminalCore(
     if (onReady) onReady('');
   } else {
     // terminal-opened handler 永久注册（card04 re-open 共用）
+    const tag = card.instanceId;
     const onOpened = (p: unknown) => {
-      const d = p as { sessionId: string };
+      const d = p as { sessionId: string; tag?: string };
+      if (d.tag !== card.meta._openTag) return; // 不是本卡发出的 terminal-open 回复
       card.meta.sessionId = d.sessionId;
       _sidMap.set(card.meta._xtermEl as HTMLElement, d.sessionId);
       if (!card.meta._welcomed) {
@@ -217,7 +219,9 @@ export function initTerminalCore(
     card.meta._onOpened = onOpened;
 
     if (autoOpen) {
-      wsChannel.sendMessage('terminal-open', {});
+      const t = tag + '-' + Date.now();
+      card.meta._openTag = t;
+      wsChannel.sendMessage('terminal-open', { tag: t });
     } else {
       if (onReady) onReady('');
     }
@@ -255,6 +259,7 @@ export function disposeTerminalCore(card: CardInstance, poolName: string): void 
   delete card.meta._onOutput;
   delete card.meta._onExit;
   delete card.meta._onOpened;
+  delete card.meta._openTag;
 }
 
 /** 紧缩态：保留 Terminal + WS，只拔 xterm DOM */
