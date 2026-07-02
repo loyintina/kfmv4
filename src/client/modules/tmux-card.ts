@@ -11,6 +11,7 @@ export function createTmuxCardHandler(): CardContentHandler {
   let _resultHandler: ((payload: unknown) => void) | null = null;
 
   function send(cmd: string, args: string[]): void {
+    log('[tmux] send: cmd=%s args=%s', cmd, args.join(','));
     wsChannel.sendMessage('tmux-cmd', { cmd, args });
   }
 
@@ -67,6 +68,7 @@ export function createTmuxCardHandler(): CardContentHandler {
       const c1 = card.accents.color1;
       const c2 = card.accents.color2;
       const { bodyEl } = buildCardLayout(contentEl, '\u25A3 tmux', c1, c2);
+      bodyEl.style.touchAction = 'none';
       _bodyEl = bodyEl;
 
       _resultHandler = onResult;
@@ -98,6 +100,7 @@ export function createTmuxCardHandler(): CardContentHandler {
         onEnd(_e: PointerEvent, dx: number, dy: number) {
           if (Math.abs(dx) > 5 || Math.abs(dy) > 5) return; // tap only
           const target = _e.target as HTMLElement;
+          log('[tmux] tap: target=%s className=%s', target.tagName, target.className);
           const row = target.closest('[data-window]') as HTMLElement | null;
           const btn = target.closest('[data-action]') as HTMLElement | null;
           if (row) {

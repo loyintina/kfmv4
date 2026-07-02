@@ -158,6 +158,7 @@ export class WsServer {
 
       case 'tmux-cmd': {
         const p = msg.payload as { cmd: string; args: string[] };
+        console.log('[tmux-cmd] %s args=%s', p.cmd, p.args.join(','));
         const cmdMap: Record<string, string> = {
           'list-sessions':  'list-sessions',
           'list-windows':   'list-windows',
