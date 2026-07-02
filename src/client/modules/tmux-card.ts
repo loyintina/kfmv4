@@ -18,6 +18,7 @@ export function createTmuxCardHandler(): CardContentHandler {
   let _resultHandler: ((payload: unknown) => void) | null = null;
   let _sessionId = '';
   let _card: CardInstance | null = null;
+  let _initDone = false;
 
   function renderPicker(sessions: string[]): void {
     if (!_picker) return;
@@ -48,12 +49,6 @@ export function createTmuxCardHandler(): CardContentHandler {
       wsChannel.sendMessage('terminal-close', { sessionId: _sessionId });
     }
     wsChannel.sendMessage('terminal-open', { command });
-    wsChannel.onMessage('terminal-opened', function onOpened(p: unknown) {
-      wsChannel.offMessage('terminal-opened', onOpened);
-      const d = p as { sessionId: string };
-      _sessionId = d.sessionId;
-      if (_card) _card.meta.sessionId = d.sessionId;
-    });
   }
 
   const onResult = (payload: unknown): void => {
@@ -112,7 +107,10 @@ export function createTmuxCardHandler(): CardContentHandler {
       // autoOpen=false → 不立即开 PTY。onReady 通知终端 DOM 就绪，然后我们发 list-sessions
       initTerminalCore(_bodyEl, card, 'tmux', 'card04', (_sid: string) => {
         if (_sid) _sessionId = _sid;
-        wsChannel.sendMessage('tmux-cmd', { cmd: 'list-sessions', args: [] });
+        if (!_initDone) {
+          _initDone = true;
+          wsChannel.sendMessage('tmux-cmd', { cmd: 'list-sessions', args: [] });
+        }
       }, false);
     },
 
@@ -128,6 +126,7 @@ export function createTmuxCardHandler(): CardContentHandler {
       _picker = null;
       _sessionId = '';
       _card = null;
+      _initDone = false;
       contentEl.innerHTML = '';
     },
   };

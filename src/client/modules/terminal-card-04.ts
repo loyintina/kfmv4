@@ -201,19 +201,26 @@ export function initTerminalCore(
   if (!wsChannel.connected) {
     term.write('\x1b[31mWS:off\x1b[0m\r\n');
     if (onReady) onReady('');
-  } else if (autoOpen) {
-    wsChannel.sendMessage('terminal-open', {});
-    wsChannel.onMessage('terminal-opened', function onOpened(p: unknown) {
+  } else {
+    // terminal-opened handler 永久注册（card04 re-open 共用）
+    const onOpened = (p: unknown) => {
       const d = p as { sessionId: string };
-      wsChannel.offMessage('terminal-opened', onOpened);
       card.meta.sessionId = d.sessionId;
       _sidMap.set(card.meta._xtermEl as HTMLElement, d.sessionId);
-      term.write('\x1b[34mKFM 终端已连接 — ' + terminalName + '\x1b[0m\r\n');
+      if (!card.meta._welcomed) {
+        card.meta._welcomed = true;
+        term.write('\x1b[34mKFM 终端已连接 — ' + terminalName + '\x1b[0m\r\n');
+      }
       if (onReady) onReady(d.sessionId);
-    });
-  } else {
-    // 不自动 open，调用方负责发送 terminal-open + 监听 terminal-opened
-    if (onReady) onReady(''); // 通知调用方终端 DOM 就绪，可以开始操作
+    };
+    wsChannel.onMessage('terminal-opened', onOpened);
+    card.meta._onOpened = onOpened;
+
+    if (autoOpen) {
+      wsChannel.sendMessage('terminal-open', {});
+    } else {
+      if (onReady) onReady('');
+    }
   }
 }
 
@@ -227,6 +234,9 @@ export function disposeTerminalCore(card: CardInstance, poolName: string): void 
   }
   if (card.meta._onExit) {
     wsChannel.offMessage('terminal-exit', card.meta._onExit as (p: unknown) => void);
+  }
+  if (card.meta._onOpened) {
+    wsChannel.offMessage('terminal-opened', card.meta._onOpened as (p: unknown) => void);
   }
   if (card.meta._xtermEl) {
     _termMap.delete(card.meta._xtermEl as HTMLElement);
@@ -244,6 +254,7 @@ export function disposeTerminalCore(card: CardInstance, poolName: string): void 
   delete card.meta._fit;
   delete card.meta._onOutput;
   delete card.meta._onExit;
+  delete card.meta._onOpened;
 }
 
 /** 紧缩态：保留 Terminal + WS，只拔 xterm DOM */
