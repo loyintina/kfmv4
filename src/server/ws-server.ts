@@ -158,28 +158,9 @@ export class WsServer {
 
       case 'tmux-cmd': {
         const p = msg.payload as { cmd: string; args: string[] };
-        console.log('[tmux-cmd] %s args=%s', p.cmd, p.args.join(','));
-        const cmdMap: Record<string, string> = {
-          'list-sessions':  'list-sessions',
-          'list-windows':   'list-windows',
-          'new-window':     'new-window',
-          'select-window':  'select-window',
-        };
-        const tcmd = cmdMap[p.cmd];
-        if (!tcmd) { this.send(ws, 'tmux-result', { cmd: p.cmd, result: { stdout: '', stderr: 'unknown command', exitCode: 1 } }); break; }
+        if (p.cmd !== 'list-sessions') { this.send(ws, 'tmux-result', { cmd: p.cmd, result: { stdout: '', stderr: 'unknown command', exitCode: 1 } }); break; }
 
-        const args = [tcmd];
-        if (p.cmd === 'list-sessions') {
-          args.push('-F', '#S');
-        } else if (p.cmd === 'list-windows') {
-          args.push('-t', p.args[0], '-F', '#I:#W:#{window_active}');
-        } else if (p.cmd === 'new-window') {
-          args.push('-t', p.args[0]);
-        } else if (p.cmd === 'select-window') {
-          args.push('-t', p.args[0] + ':' + p.args[1]);
-        }
-
-        execFile('tmux', args, { timeout: 5000 }, (err, stdout, stderr) => {
+        execFile('tmux', ['list-sessions', '-F', '#S'], { timeout: 5000 }, (err, stdout, stderr) => {
           this.send(ws, 'tmux-result', {
             cmd: p.cmd,
             result: { stdout: stdout || '', stderr: stderr || '', exitCode: (err as { code?: string | number } | null)?.code ?? (err ? 1 : 0) },
