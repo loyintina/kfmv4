@@ -1,8 +1,49 @@
 /**
  * terminal-card-04.ts — 03 号终端卡 xterm.js 集成
  *
- * 使用 xterm.js 替代自研渲染器。触控滚动走 GestureRegistry → term.scrollLines()。
- * 导出 initTerminalCore 供 card04（tmux）复用。
+ * 职责边界：
+ *   通用终端基础设施。负责 xterm.js 终端的全生命周期管理——创建、挂载、滚动、销毁。
+ *   不关心终端里跑的是什么（bash/tmux/其他）。业务逻辑层（如 tmux session 管理）在 card04 tmux-card.ts。
+ *
+ * 生命周期：
+ *   init（首次打开）
+ *     ↓ initTerminalCore()  → 新建 Terminal + FitAddon + WS 事件绑定
+ *   active
+ *     ↓ 点击 BR 光球 compact
+ *   compact（DOM 拔除 → Terminal 对象 + WS 连接保留）
+ *     ↓ 点击 BR 光球 activate
+ *   active（appendChild 插回 DOM → 重建 ResizeObserver）
+ *     ↓ 点击 TR 光球 dismiss
+ *   disposeTerminalCore() → 完整销毁
+ *
+ * 关键设计决策：
+ *   1. compact 只拔 DOM 不销毁终端对象——即缩回再展开时，输出不中断、连接不重连。
+ *   2. init 和 compact→active 两条路径走同一个入口 initTerminalCore()，
+ *      通过 card.meta._term 是否存在来区分（存在=复挂，不存在=新建）。
+ *   3. 滚动手势检测 xterm 内部的 coreMouseService：
+ *      - 若 tmux 已启用 mouse protocol（SGR/X10）→ 编码 SGR 序列发 WS，让 tmux 自己滚动
+ *      - 若 mouse protocol 为 NONE → 调 term.scrollLines() 直接滚动
+ *      这个判断是动态的——因为 tmux 接管后 scrollLines 不再有效。
+ *
+ * 导出接口：
+ *   initTerminalCore()    — card03 + card04 共用：init / compact→active 复挂
+ *   disposeTerminalCore() — dismiss 时完整销毁
+ *   compactTerminalCore() — active→compact：拔 DOM、断 observer，保留 Terminal + WS
+ *   createTerminal04Handler() — 注册 card03 的 CardContentHandler
+ *
+ * meta 字段（_ 前缀为内部用）：
+ *   terminalId: number     — cardRegistry.allocId('card03') 分配
+ *   sessionId: string      — WS 会话 ID
+ *   _term: Terminal        — xterm 实例
+ *   _fit: FitAddon         — 自动尺寸适配
+ *   _xtermEl: HTMLElement  — 挂 touch-action: none 的 .xterm 元素
+ *   _termEl: HTMLElement   — 终端 DOM 容器
+ *   _observer: ResizeObserver — 窗口/卡片大小变化时 fit()
+ *   _onOutput: function    — WS terminal-output 回调（offMessage 时用）
+ *   _onExit: function      — WS terminal-exit 回调
+ *   _onOpened: function    — WS terminal-opened 回调
+ *   _openTag: string       — terminal-open 请求标识（用于匹配回复）
+ *   _welcomed: boolean     — 欢迎语只打印一次
  */
 
 import { Terminal } from '@xterm/xterm';
@@ -13,6 +54,28 @@ import { cardRegistry, type CardInstance, type CardContentHandler } from './card
 import { gestures } from './gesture-registry.js';
 import { log } from './logger.js';
 import { currentTheme } from './theme.js';
+
+// ========== 终端卡 meta 类型定义 ==========
+
+export interface TerminalCardMeta {
+  terminalId?: number;
+  sessionId?: string;
+  _term?: Terminal;
+  _fit?: FitAddon;
+  _xtermEl?: HTMLElement;
+  _termEl?: HTMLElement;
+  _observer?: ResizeObserver;
+  _onOutput?: (p: unknown) => void;
+  _onExit?: (p: unknown) => void;
+  _onOpened?: (p: unknown) => void;
+  _openTag?: string;
+  _welcomed?: boolean;
+}
+
+/** 窄化守卫：将通用 CardInstance 窄化为 TerminalCardMeta 特化。全文件唯一 as 逃逸。 */
+function tcard(card: CardInstance): CardInstance<TerminalCardMeta> {
+  return card as CardInstance<TerminalCardMeta>;
+}
 
 // ========== 主题映射 ==========
 
@@ -90,36 +153,38 @@ export function initTerminalCore(
   onReady?: (sessionId: string) => void,
   autoOpen = true,
 ): void {
-  if (!card.meta.terminalId) {
-    card.meta.terminalId = cardRegistry.allocId(poolName);
+  const tc = tcard(card);
+
+  if (!tc.meta.terminalId) {
+    tc.meta.terminalId = cardRegistry.allocId(poolName);
   }
 
   // 紧缩→展开：插回已有 DOM
-  if (card.meta._term) {
-    const term = card.meta._term as Terminal;
-    const fit = card.meta._fit as FitAddon;
-    const termEl = card.meta._termEl as HTMLElement;
-    const xtermEl = termEl.querySelector('.xterm') as HTMLElement;
-    container.appendChild(termEl);
-    if (xtermEl) { xtermEl.style.touchAction = 'none'; _termMap.set(xtermEl, term); }
-    requestAnimationFrame(() => { fit.fit(); });
-    card.meta._xtermEl = xtermEl;
+  if (tc.meta._term) {
+    const term = tc.meta._term;
+    const fit = tc.meta._fit;
+    const termEl = tc.meta._termEl;
+    const xtermEl = termEl!.querySelector('.xterm') as HTMLElement;
+    container.appendChild(termEl!);
+    if (xtermEl) { xtermEl.style.touchAction = 'none'; _termMap.set(xtermEl, term!); }
+    requestAnimationFrame(() => { fit!.fit(); });
+    tc.meta._xtermEl = xtermEl;
     let resizeTimer: ReturnType<typeof setTimeout> | null = null;
     const observer = new ResizeObserver(() => {
-      try { fit.fit(); } catch {}
+      try { fit!.fit(); } catch {}
       if (resizeTimer) clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
-        if (card.meta.sessionId) {
+        if (tc.meta.sessionId) {
           wsChannel.sendMessage('terminal-resize', {
-            sessionId: card.meta.sessionId, cols: term.cols, rows: term.rows,
+            sessionId: tc.meta.sessionId, cols: term!.cols, rows: term!.rows,
           });
         }
         resizeTimer = null;
       }, 200);
     });
-    observer.observe(termEl);
-    card.meta._observer = observer;
-    if (onReady && card.meta.sessionId) onReady(card.meta.sessionId as string);
+    observer.observe(termEl!);
+    tc.meta._observer = observer;
+    if (onReady && tc.meta.sessionId) onReady(tc.meta.sessionId);
     return;
   }
 
@@ -146,15 +211,15 @@ export function initTerminalCore(
   fit.fit();
   requestAnimationFrame(() => { fit.fit(); });
 
-  card.meta._term = term;
-  card.meta._fit = fit;
-  card.meta._xtermEl = xtermEl;
-  card.meta._termEl = termEl;
+  tc.meta._term = term;
+  tc.meta._fit = fit;
+  tc.meta._xtermEl = xtermEl;
+  tc.meta._termEl = termEl;
 
   term.onData((data: string) => {
-    if (card.meta.sessionId) {
+    if (tc.meta.sessionId) {
       wsChannel.sendMessage('terminal-input', {
-        sessionId: card.meta.sessionId as string, input: data,
+        sessionId: tc.meta.sessionId, input: data,
       });
     }
   });
@@ -164,16 +229,16 @@ export function initTerminalCore(
     try { fit.fit(); } catch {}
     if (resizeTimer) clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
-      if (card.meta.sessionId) {
+      if (tc.meta.sessionId) {
         wsChannel.sendMessage('terminal-resize', {
-          sessionId: card.meta.sessionId, cols: term.cols, rows: term.rows,
+          sessionId: tc.meta.sessionId, cols: term.cols, rows: term.rows,
         });
       }
       resizeTimer = null;
     }, 200);
   });
   observer.observe(termEl);
-  card.meta._observer = observer;
+  tc.meta._observer = observer;
 
   wsChannel.onMessage('error', function onErr(p: unknown) {
     const d = p as { message: string };
@@ -182,21 +247,21 @@ export function initTerminalCore(
 
   const onOutput = (p: unknown) => {
     const d = p as { sessionId: string; data: string };
-    if (d.sessionId === card.meta.sessionId) {
+    if (d.sessionId === tc.meta.sessionId) {
       term.write(d.data);
     }
   };
   wsChannel.onMessage('terminal-output', onOutput);
-  card.meta._onOutput = onOutput;
+  tc.meta._onOutput = onOutput;
 
   const onExit = (p: unknown) => {
     const d = p as { sessionId: string; code: number };
-    if (d.sessionId === card.meta.sessionId) {
+    if (d.sessionId === tc.meta.sessionId) {
       term.write('\r\n\x1b[33m[进程已退出，码: ' + d.code + ']\x1b[0m\r\n');
     }
   };
   wsChannel.onMessage('terminal-exit', onExit);
-  card.meta._onExit = onExit;
+  tc.meta._onExit = onExit;
 
   if (!wsChannel.connected) {
     term.write('\x1b[31mWS:off\x1b[0m\r\n');
@@ -206,21 +271,23 @@ export function initTerminalCore(
     const tag = card.instanceId;
     const onOpened = (p: unknown) => {
       const d = p as { sessionId: string; tag?: string };
-      if (d.tag !== card.meta._openTag) return; // 不是本卡发出的 terminal-open 回复
-      card.meta.sessionId = d.sessionId;
-      _sidMap.set(card.meta._xtermEl as HTMLElement, d.sessionId);
-      if (!card.meta._welcomed) {
-        card.meta._welcomed = true;
+      if (d.tag !== tc.meta._openTag) return; // 不是本卡发出的 terminal-open 回复
+      tc.meta.sessionId = d.sessionId;
+      if (tc.meta._xtermEl) {
+        _sidMap.set(tc.meta._xtermEl, d.sessionId);
+      }
+      if (!tc.meta._welcomed) {
+        tc.meta._welcomed = true;
         term.write('\x1b[34mKFM 终端已连接 — ' + terminalName + '\x1b[0m\r\n');
       }
       if (onReady) onReady(d.sessionId);
     };
     wsChannel.onMessage('terminal-opened', onOpened);
-    card.meta._onOpened = onOpened;
+    tc.meta._onOpened = onOpened;
 
     if (autoOpen) {
       const t = tag + '-' + Date.now();
-      card.meta._openTag = t;
+      tc.meta._openTag = t;
       wsChannel.sendMessage('terminal-open', { tag: t });
     } else {
       if (onReady) onReady('');
@@ -230,48 +297,50 @@ export function initTerminalCore(
 
 /** 销毁终端：清理 WS、xterm、cardRegistry */
 export function disposeTerminalCore(card: CardInstance, poolName: string): void {
-  if (card.meta.sessionId) {
-    wsChannel.sendMessage('terminal-close', { sessionId: card.meta.sessionId as string });
+  const tc = tcard(card);
+  if (tc.meta.sessionId) {
+    wsChannel.sendMessage('terminal-close', { sessionId: tc.meta.sessionId });
   }
-  if (card.meta._onOutput) {
-    wsChannel.offMessage('terminal-output', card.meta._onOutput as (p: unknown) => void);
+  if (tc.meta._onOutput) {
+    wsChannel.offMessage('terminal-output', tc.meta._onOutput);
   }
-  if (card.meta._onExit) {
-    wsChannel.offMessage('terminal-exit', card.meta._onExit as (p: unknown) => void);
+  if (tc.meta._onExit) {
+    wsChannel.offMessage('terminal-exit', tc.meta._onExit);
   }
-  if (card.meta._onOpened) {
-    wsChannel.offMessage('terminal-opened', card.meta._onOpened as (p: unknown) => void);
+  if (tc.meta._onOpened) {
+    wsChannel.offMessage('terminal-opened', tc.meta._onOpened);
   }
-  if (card.meta._xtermEl) {
-    _termMap.delete(card.meta._xtermEl as HTMLElement);
-    _sidMap.delete(card.meta._xtermEl as HTMLElement);
+  if (tc.meta._xtermEl) {
+    _termMap.delete(tc.meta._xtermEl);
+    _sidMap.delete(tc.meta._xtermEl);
   }
-  if (card.meta._term) {
-    (card.meta._term as Terminal).dispose();
+  if (tc.meta._term) {
+    tc.meta._term.dispose();
   }
-  if (card.meta.terminalId) {
-    cardRegistry.freeId(poolName, card.meta.terminalId as number);
+  if (tc.meta.terminalId) {
+    cardRegistry.freeId(poolName, tc.meta.terminalId);
   }
-  delete card.meta.sessionId;
-  delete card.meta.terminalId;
-  delete card.meta._term;
-  delete card.meta._fit;
-  delete card.meta._onOutput;
-  delete card.meta._onExit;
-  delete card.meta._onOpened;
-  delete card.meta._openTag;
+  delete tc.meta.sessionId;
+  delete tc.meta.terminalId;
+  delete tc.meta._term;
+  delete tc.meta._fit;
+  delete tc.meta._onOutput;
+  delete tc.meta._onExit;
+  delete tc.meta._onOpened;
+  delete tc.meta._openTag;
 }
 
 /** 紧缩态：保留 Terminal + WS，只拔 xterm DOM */
 export function compactTerminalCore(card: CardInstance): void {
-  if (card.meta._observer) {
-    (card.meta._observer as ResizeObserver).disconnect();
+  const tc = tcard(card);
+  if (tc.meta._observer) {
+    tc.meta._observer.disconnect();
   }
-  if (card.meta._xtermEl) {
-    _termMap.delete(card.meta._xtermEl as HTMLElement);
-    _sidMap.delete(card.meta._xtermEl as HTMLElement);
+  if (tc.meta._xtermEl) {
+    _termMap.delete(tc.meta._xtermEl);
+    _sidMap.delete(tc.meta._xtermEl);
   }
-  const termEl = card.meta._termEl as HTMLElement | undefined;
+  const termEl = tc.meta._termEl;
   if (termEl && termEl.parentNode) {
     termEl.parentNode.removeChild(termEl);
   }

@@ -1,15 +1,59 @@
 /**
  * tmux-card.ts — 04 号 tmux 终端卡
  *
- * 复用 card03 的 xterm 核心（initTerminalCore），自动检测 tmux session，
- * 单 session 自动 attach（spawn 直接启动 tmux attach，无回显），
- * 多 session 显示 picker。
+ * 职责边界：
+ *   在 card03 终端基础设施之上实现 tmux session 管理。负责检测、选择、attach tmux session。
+ *   不关心终端的渲染/滚动/WS 通信——那些委托给 terminal-card-04 的 initTerminalCore()。
+ *
+ * 生命周期：
+ *   activate（init / compact→active）
+ *     ↓ buildCardLayout → 创建 picker 容器 → initTerminalCore(autoOpen=false)
+ *     ↓ WS 连接就绪 → onReady 回调发 tmux-cmd list-sessions
+ *     ↓ 服务端返回结果：
+ *       ├─ 0 session      → 显示 "no tmux sessions"
+ *       ├─ 1 session      → reopenWithCommand('tmux attach -t <session>')
+ *       └─ 多个 session    → reopenWithCommand('') 空 PTY + 显示 picker 按钮
+ *                              ↓ 用户点击 picker 按钮 → attachViaInput() 发输入
+ *   deactivate
+ *     ├─ compact → compactTerminalCore（拔 DOM，保留终端 + WS）
+ *     └─ dismiss → disposeTerminalCore（完整销毁）
+ *
+ * 关键设计决策：
+ *   1. 为什么单 session 用 reopenWithCommand 重新开 PTY，而不是在现有 PTY 里 attach？
+ *      因为自动 attach 需要干净的环境。在现有 PTY 里发 'tmux attach' 字符串可能受 shell
+ *      状态影响（如等待命令完成、prompt 不匹配）。重新 spawn 确保初始状态可控。
+ *   2. 为什么多 session 时先开空 PTY 再发输入 attach？
+ *      因为 tmux attach 有交互输出，需要已有的 WS 连接来展示结果。空 PTY 展示终端界面，
+ *      用户点击按钮时通过 PTY 输入 'tmux attach -t <session>' 完成 attach。
+ *   3. picker 的手势（tmux-tap-）在 activate 注册、deactivate 注销，不与 card03 的 xterm-scroll 冲突。
+ *
+ * 闭包状态（非 meta 字段，在 createTmuxCardHandler 的闭包中管理）：
+ *   _bodyEl: HTMLElement    — bodyEl 引用，用于 picker 挂载
+ *   _picker: HTMLElement    — session 选择器容器
+ *   _gid: string            — picker 手势 ID，deactivate 时注销
+ *   _sessionId: string      — 当前 WS 会话 ID
+ *   _card: CardInstance     — 当前卡片实例引用
+ *   _initDone: boolean      — 首次 list-sessions 只发一次
+ *   _resultHandler: function— WS tmux-result 回调引用
+ *
+ * card.meta 字段（继承自 terminal-card-04，由 initTerminalCore 写入）：
+ *   同 terminal-card-04 的 meta 字段清单（terminalId / sessionId / _term / _fit 等）
  */
 import { buildCardLayout } from './floating-card.js';
 import { wsChannel } from './ws-channel.js';
 import { gestures } from './gesture-registry.js';
 import { initTerminalCore, disposeTerminalCore, compactTerminalCore } from './terminal-card-04.js';
 import type { CardContentHandler, CardInstance } from './card-registry.js';
+
+// ========== tmux 卡 meta 类型定义 ==========
+
+export interface TmuxCardMeta {
+  _openTag?: string;
+}
+
+function tmcard(card: CardInstance): CardInstance<TmuxCardMeta> {
+  return card as CardInstance<TmuxCardMeta>;
+}
 
 export function createTmuxCardHandler(): CardContentHandler {
   let _bodyEl: HTMLElement | null = null;
@@ -50,7 +94,7 @@ export function createTmuxCardHandler(): CardContentHandler {
       wsChannel.sendMessage('terminal-close', { sessionId: _sessionId });
     }
     const tag = _card.instanceId + '-' + Date.now();
-    _card.meta._openTag = tag;
+    tmcard(_card).meta._openTag = tag;
     wsChannel.sendMessage('terminal-open', { command, tag });
   }
 

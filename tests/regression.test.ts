@@ -1620,6 +1620,231 @@ test('DOM sidebar is accessible', () => {
 });
 
 // ==========================================================================
+// 31. card-registry — focusCard + allocId/freeId
+// ==========================================================================
+group('card-registry');
+
+import { cardRegistry as _cr, type CardInstance } from '../src/client/modules/card-registry.js';
+
+let _instCount = 0;
+function _makeEl(): HTMLElement { return document.createElement('div'); }
+
+test('focusCard sets focusedInstanceId', () => {
+  const el = _makeEl();
+  const inst = _cr.createInstance('test-type', el, el, { color1: '#fff', color2: '#000' });
+  _cr.focusCard(inst.instanceId);
+  if (_cr.focusedInstanceId !== inst.instanceId) throw new Error('focusedInstanceId should match');
+  _cr.destroyInstance(inst.instanceId);
+});
+
+test('focusedInstanceId is null when no focus set', () => {
+  if (_cr.focusedInstanceId !== null) throw new Error('should be null without focus');
+});
+
+test('focusCard overwrites previous focus', () => {
+  const el1 = _makeEl(); const el2 = _makeEl();
+  const a = _cr.createInstance('t', el1, el1, { color1: '#fff', color2: '#000' });
+  const b = _cr.createInstance('t', el2, el2, { color1: '#fff', color2: '#000' });
+  _cr.focusCard(a.instanceId);
+  _cr.focusCard(b.instanceId);
+  if (_cr.focusedInstanceId !== b.instanceId) throw new Error('should point to b');
+  _cr.destroyInstance(a.instanceId);
+  _cr.destroyInstance(b.instanceId);
+});
+
+test('destroyInstance clears focus if it was the focused card', () => {
+  const el = _makeEl();
+  const inst = _cr.createInstance('t', el, el, { color1: '#fff', color2: '#000' });
+  _cr.focusCard(inst.instanceId);
+  _cr.destroyInstance(inst.instanceId);
+  if (_cr.focusedInstanceId !== null) throw new Error('focus should clear after destroy');
+});
+
+test('destroyInstance does not clear focus for other card', () => {
+  const el1 = _makeEl(); const el2 = _makeEl();
+  const a = _cr.createInstance('t', el1, el1, { color1: '#fff', color2: '#000' });
+  const b = _cr.createInstance('t', el2, el2, { color1: '#fff', color2: '#000' });
+  _cr.focusCard(a.instanceId);
+  _cr.destroyInstance(b.instanceId);
+  if (_cr.focusedInstanceId !== a.instanceId) throw new Error('focus should remain on a');
+  _cr.destroyInstance(a.instanceId);
+});
+
+test('allocId allocates sequential numbers per pool', () => {
+  const a1 = _cr.allocId('pool-A');
+  const a2 = _cr.allocId('pool-A');
+  if (a1 !== 1 || a2 !== 2) throw new Error('should be 1 then 2');
+  const b1 = _cr.allocId('pool-B');
+  if (b1 !== 1) throw new Error('pool-B should start at 1');
+});
+
+test('freeId recycles number', () => {
+  const id = _cr.allocId('pool-recycle');
+  if (id !== 1) throw new Error('first id should be 1');
+  _cr.freeId('pool-recycle', 1);
+  const id2 = _cr.allocId('pool-recycle');
+  if (id2 !== 1) throw new Error('after free, should recycle 1');
+  const id3 = _cr.allocId('pool-recycle');
+  if (id3 !== 2) throw new Error('next should be 2');
+});
+
+test('createInstance sets createdAt and accents', () => {
+  const el = _makeEl();
+  const inst = _cr.createInstance('test-k', el, el, { color1: '#f00', color2: '#0f0' });
+  if (!inst.createdAt || inst.createdAt <= 0) throw new Error('createdAt should be set');
+  if (inst.accents.color1 !== '#f00') throw new Error('color1 mismatch');
+  if (inst.accents.color2 !== '#0f0') throw new Error('color2 mismatch');
+  _cr.destroyInstance(inst.instanceId);
+});
+
+test('getAll returns all active instances', () => {
+  const el1 = _makeEl(); const el2 = _makeEl();
+  const a = _cr.createInstance('t', el1, el1, { color1: '#fff', color2: '#000' });
+  const b = _cr.createInstance('t', el2, el2, { color1: '#fff', color2: '#000' });
+  const all = _cr.getAll();
+  if (all.length < 2) throw new Error('should have at least 2 instances');
+  const ids = all.map(i => i.instanceId);
+  if (!ids.includes(a.instanceId) || !ids.includes(b.instanceId)) throw new Error('both ids should be present');
+  _cr.destroyInstance(a.instanceId);
+  _cr.destroyInstance(b.instanceId);
+});
+
+test('getByType filters correctly', () => {
+  const el1 = _makeEl(); const el2 = _makeEl();
+  const a = _cr.createInstance('type-x', el1, el1, { color1: '#fff', color2: '#000' });
+  const b = _cr.createInstance('type-y', el2, el2, { color1: '#fff', color2: '#000' });
+  const xs = _cr.getByType('type-x');
+  if (xs.length !== 1 || xs[0].instanceId !== a.instanceId) throw new Error('should find exactly type-x');
+  const ys = _cr.getByType('type-y');
+  if (ys.length !== 1 || ys[0].instanceId !== b.instanceId) throw new Error('should find exactly type-y');
+  _cr.destroyInstance(a.instanceId);
+  _cr.destroyInstance(b.instanceId);
+});
+
+test('getInstance returns instance by id', () => {
+  const el = _makeEl();
+  const inst = _cr.createInstance('t', el, el, { color1: '#fff', color2: '#000' });
+  const found = _cr.getInstance(inst.instanceId);
+  if (found !== inst) throw new Error('getInstance should return the same instance');
+  const missing = _cr.getInstance('nonexistent');
+  if (missing !== undefined) throw new Error('getInstance should return undefined for missing');
+  _cr.destroyInstance(inst.instanceId);
+});
+
+test('getInstanceByContentEl maps correctly', () => {
+  const el = _makeEl();
+  const inst = _cr.createInstance('t', el, el, { color1: '#fff', color2: '#000' });
+  const found = _cr.getInstanceByContentEl(el);
+  if (found !== inst) throw new Error('should find instance by contentEl');
+  _cr.destroyInstance(inst.instanceId);
+  const afterDestroy = _cr.getInstanceByContentEl(el);
+  if (afterDestroy !== undefined) throw new Error('should be gone after destroy');
+});
+
+test('count reflects active instance number', () => {
+  const before = _cr.count;
+  const el = _makeEl();
+  const inst = _cr.createInstance('t', el, el, { color1: '#fff', color2: '#000' });
+  if (_cr.count !== before + 1) throw new Error('count should increase by 1');
+  _cr.destroyInstance(inst.instanceId);
+  if (_cr.count !== before) throw new Error('count should return to before');
+});
+
+// ==========================================================================
+// 32. gesture-registry — preMatchHook
+// ==========================================================================
+group('gesture-registry (preMatchHook)');
+
+function _makeReg(): GestureRegistry {
+  // 清除文档事件监听残留
+  (globalThis as any).__clearDocumentListeners?.();
+  return new GestureRegistry();
+}
+
+function _clearReg(reg: GestureRegistry): void {
+  reg.destroy();
+}
+
+test('addPreMatchHook fires on pointerdown', () => {
+  const r = _makeReg();
+  const calls: number[] = [];
+  r.addPreMatchHook(() => { calls.push(1); });
+  r.init();
+  document.dispatchEvent(new PointerEvent('pointerdown', {
+    clientX: 0, clientY: 0, button: 0, bubbles: false,
+  } as any));
+  if (calls.length !== 1) throw new Error('hook should be called once');
+  _clearReg(r);
+});
+
+test('multiple hooks fire in registration order', () => {
+  const r = _makeReg();
+  const order: string[] = [];
+  r.addPreMatchHook(() => { order.push('A'); });
+  r.addPreMatchHook(() => { order.push('B'); });
+  r.init();
+  document.dispatchEvent(new PointerEvent('pointerdown', {
+    clientX: 0, clientY: 0, button: 0, bubbles: false,
+  } as any));
+  if (order[0] !== 'A' || order[1] !== 'B') throw new Error('hooks should fire in order');
+  _clearReg(r);
+});
+
+test('removePreMatchHook removes hook', () => {
+  const r = _makeReg();
+  let count = 0;
+  const fn = () => { count++; };
+  r.addPreMatchHook(fn);
+  r.removePreMatchHook(fn);
+  r.init();
+  document.dispatchEvent(new PointerEvent('pointerdown', {
+    clientX: 0, clientY: 0, button: 0, bubbles: false,
+  } as any));
+  if (count !== 0) throw new Error('removed hook should not fire');
+  _clearReg(r);
+});
+
+test('removePreMatchHook of unregistered fn is no-op', () => {
+  const r = _makeReg();
+  r.removePreMatchHook(() => {}); // should not throw
+  _clearReg(r);
+});
+
+test('addPreMatchHook hooks persist across gesture start/end', () => {
+  const r = _makeReg();
+  const calls: number[] = [];
+  r.addPreMatchHook(() => { calls.push(1); });
+  r.init();
+  // Three separate pointerdown events
+  for (let i = 0; i < 3; i++) {
+    document.dispatchEvent(new PointerEvent('pointerdown', {
+      clientX: 0, clientY: 0, button: 0, bubbles: false,
+    } as any));
+  }
+  if (calls.length !== 3) throw new Error('hook should fire on each pointerdown');
+  _clearReg(r);
+});
+
+// ==========================================================================
+// 33. tmux-card — 工厂函数结构
+// ==========================================================================
+group('tmux-card (factory)');
+
+import { createTmuxCardHandler } from '../src/client/modules/tmux-card.js';
+
+test('createTmuxCardHandler returns { activate, deactivate }', () => {
+  const handler = createTmuxCardHandler();
+  if (typeof handler.activate !== 'function') throw new Error('activate should be a function');
+  if (typeof handler.deactivate !== 'function') throw new Error('deactivate should be a function');
+});
+
+test('createTmuxCardHandler multiple calls return independent handlers', () => {
+  const h1 = createTmuxCardHandler();
+  const h2 = createTmuxCardHandler();
+  if (h1 === h2) throw new Error('each call should return a new handler');
+});
+
+// ==========================================================================
 // 运行
 // ==========================================================================
 await runAll();

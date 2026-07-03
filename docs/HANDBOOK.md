@@ -134,12 +134,12 @@ index.ts (入口路由)
 
 ## 二、当前会话状态
 
-> **最后更新**：2026-07-01（v6.10.0 — 键盘避让完整方案 + BR orb 触控完善 + SOP 心法回溯）
+> **最后更新**：2026-07-03（v6.10.1 — card.meta 类型化 + 测试补全 + 设计注释规约 + 构建工具强化）
 
 ### 当前焦点
 **卡片工作台**（见 `docs/design/WORKBENCH_SPEC.md`）
 
-v6.6.0 之前的焦点「浮卡系统统一化」已两次尝试均回退放弃（详见 `docs/archive/design/CARD_SYSTEM_UNIFICATION_SPEC.md`）。当前方向改为「三层共享层」——常量层 + 类型层 + 能力声明层，可在不碰逻辑的前提下逐步统一。
+v6.6.0 �����前的焦�����������「浮卡系统统一化」已两次尝试均回退放弃（详见 `docs/archive/design/CARD_SYSTEM_UNIFICATION_SPEC.md`）。当前方向改为「三层共享层」——常量层 + 类型层 + 能力声明层，可在不碰逻辑的前提下逐步统一。
 
 - **v6.6.0 已完成**：
   - 交互共享层建立（`interaction-constants.ts` + `drag-handler.ts`）✅
@@ -180,8 +180,8 @@ v6.6.0 之前的焦点「浮卡系统统一化」已两次尝试均回退放弃�
 8. **事件冒泡**：侧栏触摸区事件冒泡到 document → GestureRegistry 误触发
 9. **动画锁超时**：`processClickQueue` 有 3000ms 超时释放，说明动画管理有设计缺陷
 10. **esbuild `nullish-coalescing` 禁用**：但源码大量使用 `??`，TS 6 编译时需确保正确降级
-11. **测试 mock 脆弱**：GSAP mock 中 `tl.call(cb)` 同步执行回调，改变了动画时序
-12. **补丁链 = 模型错误信号**：同一问题超过 3 层补丁（cap→锚点→margin→边界修正），不是补丁不够准，是底层模型错了。停止修修补补，换上能自然满足所有约束的模型。案例：`docs/archive/design/CASE_STUDY_MODEL_CHOICE.md`。
+11. **测试 mock 脆弱**：GSAP mock 中 `tl.call(cb)` 同步执行回调，改变了动��时��
+12. **补���链 = 模型错误信号**：同一问题超过 3 层补丁（cap→锚点→margin→边界修正），不是补丁不够准，是底层模型错了。停止修修补补，换上能自然满足所有约束的模型。案例：`docs/archive/design/CASE_STUDY_MODEL_CHOICE.md`。
 
 ---
 
@@ -213,15 +213,15 @@ v6.6.0 之前的焦点「浮卡系统统一化」已两次尝试均回退放弃�
 | ~~🟠 P2~~ | ~~`CARDS` 数组迁移~~ | ✅ 已完成 |
 | ~~🟠 P2~~ | ~~拆分 `card-stack.ts`~~ | ✅ 已完成 |
 | ~~🟠 P2~~ | ~~文件树 overlay 残留~~ | ✅ v6.6.0 已根解（rebuildTree 入口防御性清理） |
-| 🟠 P1 | card04/tmux 收尾 | 紧缩态正确性测试 + card04 设计文档补全（当前无 .md 记录） |
-| 🟠 P2 | card.meta 类型化 | `Record<string,unknown>` → 30+ 处 `as string`/`as HTMLElement` 绕路，大版本专门拆 |
-| 🟠 P2 | 核心模块测试补全 | floating-card(键盘避让)/card-registry(focusCard)/preMatchHook/tmux-card 零覆盖 |
-| 🟡 P3 | terminal-aux-bar.ts 空占位 | 不 import 不影响任何事，可在其实现时删除或启用 |
-| 🟡 P3 | xterm _core 私有 API | `as any` 访问 `_core.coreMouseService`，xterm 升级时易崩（当前有兜底） |
+| ~~🟠 P1~~ | ~~card04/tmux 收尾~~ | ✅ 紧缩态测试确认（洛手动通过）+ 设计决策转为代码头部注释（设计注释规约 v2026-07-03） |
+| ~~🟠 P2~~ | ~~card.meta 类型化~~ | ✅ 泛型守卫 + `check-card-meta.mjs` 自动化检查 + 17 处 `as` 断言清除 |
+| ~~🟠 P2~~ | ~~核心模块测试补全~~ | ✅ 新增 19 个测试覆盖 card-registry(focusCard)/preMatchHook/tmux-card factory。floating-card 键盘避让因 DOM 依赖暂跳过 |
+| ~~🟡 P3~~ | ~~terminal-aux-bar.ts 空占位~~ | ✅ 已删除（2 行注释，无文件引用） |
+| ~~🟡 P3~~ | ~~xterm _core 私有 API~~ | ✅ 已锁定版本（`@xterm/xterm` `^6.0.0` → `6.0.0`，`@xterm/addon-fit` `^0.11.0` → `0.11.0`）。不升级就不会爆，P3 已消除 |
 
 ### 持续观察
 - 测试基础设施脆弱（GSAP mock 失真，无 UI/Canvas/手势覆盖）
-- orb / card-stack 拖动逻辑重复（各自实现 pointerdown/move/up 循环）
+- orb / card-stack 拖动逻辑��复（各自实现 pointerdown/move/up 循环）
 ### 历史版本归档
 
 |------|------|---------|
@@ -242,7 +242,8 @@ v6.6.0 之前的焦点「浮卡系统统一化」已两次尝试均回退放弃�
 | **v6.8.1** | **代码质量审计修复 + 模块拆分 + console 治理** | git `0061bb5` |
 | **v6.9.0** | **Phase 7 长按抽屉栏（重命名/复制/删除）+ 引擎 scrollPaddingBottom + 键盘生命周期 + 折叠祖先级联同步** | git `0d43f00` |
 | **v6.9.1** | **滚动方向轴锁定重构：12px死区+65°扇形分区+统一冻结 + BR光球双click根除 + pointercancel守卫 + 浮卡默认展开态** | git `5b9d0b8` |
-| **v6.10.0** | **键盘避让完整方案 + card04 tmux 终端 + card-registry 聚焦/实例 + preMatch 钩子 + BR orb 触控 + SOP 3a 心法回溯** | **HEAD** |
+| **v6.10.0** | **键盘避让完整方案 + card04 tmux 终端 + card-registry 聚焦/实例 + preMatch 钩子 + BR orb 触控 + SOP 3a 心法回溯** | `145136d` |
+| **v6.10.1** | **card.meta 类型化 + 测试补全 + 设计注释规约 + 构建工具强化 + xterm 版本锁定** | **HEAD** |
 ---
 
 ## 四、调试与 Bug 排查
@@ -259,7 +260,7 @@ v6.6.0 之前的焦点「浮卡系统统一化」已两次尝试均回退放弃�
 > 完整测试清单见 [`docs/DIAGNOSTICS.md` 附录 B](./DIAGNOSTICS.md#附录-b回归测试)。
 >
 > ```bash
-> npm test   # 159 个测试，覆盖 23 个模块（含 Box 引擎）
+> npm test   # 178 个测试，覆盖 23 个模块（含 Box 引擎）
 > ```
 
 ## 六、约束与原则
@@ -281,9 +282,9 @@ v6.6.0 之前的焦点「浮卡系统统一化」已两次尝试均回退放弃�
 | ~~1~~ | ~~🔴~~ ✅ | ~~版本号三处不一致~~ 已修复 | 已统一为 v6.8.1（package.json + git tag + HANDBOOK §2） + CI 检查脚本 `check-versions.mjs` 已加入管线，含 tag 检查和版本历史表完整性检查 |
 | ~~2~~ | ~~🔴~~ ✅ | ~~HANDBOOK §2 当前焦点严重过时~~ 已修复 | 已改为"卡片工作台"，版本已更新为 v6.6.0 |
 | ~~3~~ | ~~🔴~~ ✅ | ~~HANDBOOK §3 待办表过时~~ 已修复 | 待办表已更新：overlay 标记根解、统一化标记放弃、新增工作台 P0 |
-| 4 | 🔴 P0 | 8 个客户端模块零文档 | ✅ 已审计：全部有效，无死代码，无功能重叠。头部注释已有清晰用途说明。HANDBOOK §1 已补入模块职能分组表 |
+| 4 | 🔴 P0 | 8 个客户端模块零文��� | ��� 已审计：全部有效，无死代码，无功能重叠。头部注释已有清晰用途说明。HANDBOOK §1 已补入模块职��分组表 |
 | ~~5~~ | ~~🟠~~ ✅ | ~~引擎层零文档~~ | ✅ v6.6.1 已补充 `docs/design/ENGINE_ARCHITECTURE.md`（v2 渲染管线 + text-layout 排版引擎全架构） |
-| ~~6~~ | ~~🟠~~ ✅ | ~~CLAUDE.md 文档树缺 `design/` 和 `notes/`~~ 已修复 | 已在 CLAUDE.md 中补充 |
+| ~~6~~ | ~~🟠~~ ✅ | ~~CLAUDE.md 文���树缺 `design/` 和 `notes/`~~ 已修复 | 已在 CLAUDE.md 中补充 |
 | ~~7~~ | ~~🟠~~ ✅ | ~~CLAUDE.md 架构描述缺交互共享层~~ 已修复 | 已在架构描述中补充 |
 | 8 | ✅ 已处理 | `cards/` 目录零文档 | 已删除。2 个文件（index.ts + logger.ts）移除。实际使用的 logger 在 `src/client/modules/logger.ts`，不受影响 |
 | 9 | ✅ 已处理 | `.github_token` 安全风险 | 已迁移至 `.env` 文件（`GITHUB_TOKEN=...`），`.github_token` 已删除，`.gitignore` 已保护 `.env`。CLAUDE.md 已补充 Git 推送认证说明 |
@@ -328,9 +329,9 @@ v6.6.0 之前的焦点「浮卡系统统一化」已两次尝试均回退放弃�
 | `renderer-lifecycle.ts` | 242 | 5 | ✅ 注册表 | 渲染器生命周期单例 L |
 | `root-picker.ts` | 433 | 2 | ✅ 独立条目 | 文件树根目录切换器 |
 | `state.ts` | 256 | 10 | ✅ 注册表 | 全局状态层 KFMState |
-| `style-registry.ts` | 205 | 4 | ✅ 独立条目 | 文件树样式唯一来源 |
+| `style-registry.ts` | 205 | 4 | ✅ 独��条目 | 文件树样式唯一来源 |
 | `theme.ts` | 238 | 7 | ✅ 独立条目 | 主题系统（颜色唯一来源） |
-| `tree-loader.ts` | 187 | 2 | ✅ 分组表 | 数据加载层（按需加载展开路径） |
+| `tree-loader.ts` | 187 | 2 | ✅ 分组表 | 数据加载层（按需加载展���路径） |
 | `tree-model.ts` | 190 | 2 | ✅ 分组表 | 绝对深度布局模型 |
 | `tree-overlay.ts` | 413 | 1 | ✅ 分组表 | Overlay 双树构建系统（从 tree-render 拆分） |
 | `tree-animation.ts` | 73 | 1 | ✅ 分组表 | 文件树插入/移除 GSAP 动画（新建/删除/复制/移动共享） |
@@ -339,15 +340,14 @@ v6.6.0 之前的焦点「浮卡系统统一化」已两次尝试均回退放弃�
 | `ui-registry.ts` | 333 | 9 | ✅ 独立条目 | UI 元素注册表 |
 | `ui.ts` | 70 | 10 | ✅ 提及 | UI 初始化编排 |
 | `ws-channel.ts` | 347 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
-| `terminal-aux-bar.ts` | 2 | 0 | TERMINAL_CARD_SPEC | Phase 8: 终端全局辅助键盘栏（占位） |
 | `terminal-card-04.ts` | 301 | 0 | TERMINAL_CARD_SPEC | 03 号终端卡 xterm.js 集成 |
 | `tmux-card.ts` | 139 | 0 | — | 04 号 tmux 窗口管理卡 |
 | `card-registry.ts` | 155 | 5 | CARD_REGISTRY_SPEC | 卡片注册表：类型声明 + 实例追踪 |
-| **合计** | **9956** | | | |
+| **合计** | **9954** | | | |
 
 ### 死代码检查
 
-**结论：无死代码。** 所有 38 个模块都被至少 1 个文件导入。`src/cards/` 目录已彻底删除。实际使用的 logger 在 `src/client/modules/logger.ts`。
+**结论：无死代码。** 所有 37 个模块都被至少 1 个文件导入。`terminal-aux-bar.ts` 已删除（空占位，无任何引用）。`src/cards/` 目录已彻底删除。实际使用的 logger 在 `src/client/modules/logger.ts`。
 
 ### 引擎层清单（14 文件）
 

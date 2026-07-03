@@ -27,13 +27,13 @@ export interface CardContentHandler {
   deactivate(contentEl: HTMLElement, card: CardInstance, reason: 'compact' | 'dismiss'): void;
 }
 
-export interface CardInstance {
+export interface CardInstance<Meta = Record<string, unknown>> {
   instanceId: string;
   typeId: string;
   el: HTMLElement;
   contentEl: HTMLElement;
   accents: { color1: string; color2: string };
-  meta: Record<string, unknown>;
+  meta: Meta;
   createdAt: number;
 }
 
