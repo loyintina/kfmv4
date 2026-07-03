@@ -56,12 +56,15 @@ export function createTmuxCardHandler(): CardContentHandler {
 
   const onResult = (payload: unknown): void => {
     const p = payload as { cmd: string; result: { stdout: string; stderr: string; exitCode: number } };
-    if (p.result.exitCode !== 0) { renderPicker([]); return; }
+    if (p.result.exitCode !== 0) {
+      if (_picker) { _picker.innerHTML = '<span style="padding:2px 6px;color:rgba(224,224,224,0.45);font-size:10px">tmux not available</span>'; _picker.style.display = 'flex'; }
+      return;
+    }
 
     if (p.cmd === 'list-sessions') {
       const sessions = p.result.stdout.trim().split('\n').filter(Boolean);
       if (sessions.length === 0) {
-        renderPicker([]);
+        if (_picker) { _picker.innerHTML = '<span style="padding:2px 6px;color:rgba(224,224,224,0.45);font-size:10px">no tmux sessions</span>'; _picker.style.display = 'flex'; }
       } else if (sessions.length === 1) {
         reopenWithCommand('tmux attach -t ' + sessions[0]);
       } else {

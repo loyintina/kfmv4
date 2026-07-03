@@ -214,6 +214,10 @@ v6.6.0 之前的焦点「浮卡系统统一化」已两次尝试均回退放弃�
 | ~~🟠 P2~~ | ~~拆分 `card-stack.ts`~~ | ✅ 已完成 |
 | ~~🟠 P2~~ | ~~文件树 overlay 残留~~ | ✅ v6.6.0 已根解（rebuildTree 入口防御性清理） |
 | 🟠 P1 | card04/tmux 收尾 | 紧缩态正确性测试 + card04 设计文档补全（当前无 .md 记录） |
+| 🟠 P2 | card.meta 类型化 | `Record<string,unknown>` → 30+ 处 `as string`/`as HTMLElement` 绕路，大版本专门拆 |
+| 🟠 P2 | 核心模块测试补全 | floating-card(键盘避让)/card-registry(focusCard)/preMatchHook/tmux-card 零覆盖 |
+| 🟡 P3 | terminal-aux-bar.ts 空占位 | 不 import 不影响任何事，可在其实现时删除或启用 |
+| 🟡 P3 | xterm _core 私有 API | `as any` 访问 `_core.coreMouseService`，xterm 升级时易崩（当前有兜底） |
 
 ### 持续观察
 - 测试基础设施脆弱（GSAP mock 失真，无 UI/Canvas/手势覆盖）
@@ -337,9 +341,9 @@ v6.6.0 之前的焦点「浮卡系统统一化」已两次尝试均回退放弃�
 | `ws-channel.ts` | 347 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
 | `terminal-aux-bar.ts` | 2 | 0 | TERMINAL_CARD_SPEC | Phase 8: 终端全局辅助键盘栏（占位） |
 | `terminal-card-04.ts` | 301 | 0 | TERMINAL_CARD_SPEC | 03 号终端卡 xterm.js 集成 |
-| `tmux-card.ts` | 136 | 0 | — | 04 号 tmux 窗口管理卡 |
+| `tmux-card.ts` | 139 | 0 | — | 04 号 tmux 窗口管理卡 |
 | `card-registry.ts` | 155 | 5 | CARD_REGISTRY_SPEC | 卡片注册表：类型声明 + 实例追踪 |
-| **合计** | **9953** | | | |
+| **合计** | **9956** | | | |
 
 ### 死代码检查
 
