@@ -806,12 +806,8 @@ test('focusPrev cycles backward', () => {
 // ==========================================================================
 group('overlay invariants');
 
-test('forceRebuildTree does not crash', () => {
-  // Public entry point — should not throw even without renderer
-  // We already imported tree-render, but forceRebuildTree is exported separately
-  try { (globalThis as any).__treeRenderer = null; } catch {}
-  // Just verify it resolves without exploding incorrectly
-});
+
+
 
 test('triggerExpandAnimation does not crash without renderer', () => {
   try { triggerExpandAnimation('/root'); } catch (e: any) {
@@ -1486,7 +1482,7 @@ import { MARGIN, LONG_PRESS_MS, DRAG_THRESHOLD } from '../src/client/modules/int
 
 test('MARGIN is 8', () => { assert(MARGIN === 8); });
 test('LONG_PRESS_MS is 600', () => { assert(LONG_PRESS_MS === 600); });
-test('DRAG_THRESHOLD is 5', () => { assert(DRAG_THRESHOLD === 5); });
+test('DRAG_THRESHOLD is 15', () => { assert(DRAG_THRESHOLD === 15); });
 
 // ==========================================================================
 // 26. debug-assert (expanded)

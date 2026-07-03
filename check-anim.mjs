@@ -5,7 +5,7 @@
  *   除白名单外，所有文件不直接 import gsap，必须通过 animation-registry。
  *
  * 白名单逐步收紧：每迁移一个模块，就从白名单中移除。
- * 最终只有 animation-registry.ts 和 demo-leafer.ts 留在白名单。
+ * 最终只有 animation-registry.ts 留在白名单。
  */
 
 import { readFileSync, readdirSync, statSync } from 'fs';
@@ -18,8 +18,6 @@ const SRC_DIR = 'src/client';
 const WHITELIST = new Set([
   // 注册中心自身 —— 永久允许（唯一 GSAP 入口）
   'modules/animation-registry.ts',
-  // 演示文件 —— 不纳入管理
-  'demo-leafer.ts',
 ]);
 
 // ========== 内存预检 ==========
