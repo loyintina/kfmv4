@@ -918,21 +918,6 @@ export function initFloatingCards(): void {
     } else if (item.state === 'active') {
       item.state = 'collapsing';
       
-      // 调试日志：检查折叠前光球状态
-      log('[collapse-BEFORE] topMidOrb:', item.topMidOrb ? {
-        left: item.topMidOrb.style.left,
-        top: item.topMidOrb.style.top,
-        transform: item.topMidOrb.style.transform,
-        display: item.topMidOrb.style.display,
-        opacity: item.topMidOrb.style.opacity,
-        rect: item.topMidOrb.getBoundingClientRect(),
-      } : 'null');
-      log('[collapse-BEFORE] brOrb:', {
-        left: brOrb.style.left,
-        top: brOrb.style.top,
-        transform: brOrb.style.transform,
-      });
-      
       // topMidOrb 向右下角光球移动并淡出
       if (item.topMidOrb && item.brOrb) {
         const topMidLeft = parseFloat(item.topMidOrb.style.left) || 0;
@@ -942,18 +927,38 @@ export function initFloatingCards(): void {
         const dx = brLeft - topMidLeft;
         const dy = brTop - topMidTop;
         
+        // 调试日志：动画起点、终点、光球位置
+        log('[collapse-START] topMidOrb:', {
+          styleLeft: item.topMidOrb.style.left,
+          styleTop: item.topMidOrb.style.top,
+          styleTransform: item.topMidOrb.style.transform,
+          computedTransform: getComputedStyle(item.topMidOrb).transform,
+          rect: item.topMidOrb.getBoundingClientRect(),
+        });
+        log('[collapse-START] brOrb target:', { brLeft, brTop });
+        log('[collapse-START] dx, dy:', { dx, dy });
+        
+        // 清除 GSAP 内部状态，防止第二次折叠时瞬移
+        anim.killTweensOf(item.topMidOrb);
+        
         anim.to(item.topMidOrb, {
           x: dx, y: dy, opacity: 0,
           duration: 0.25, ease: 'power2.in',
-          onComplete: () => {
-            log('[collapse-onComplete] topMidOrb:', item.topMidOrb ? {
-              left: item.topMidOrb.style.left,
-              top: item.topMidOrb.style.top,
-              transform: item.topMidOrb.style.transform,
-              display: item.topMidOrb.style.display,
-              opacity: item.topMidOrb.style.opacity,
-            } : 'null');
+          onUpdate: () => {
+            // 调试日志：动画过程中的位置
             if (item.topMidOrb) {
+              log('[collapse-UPDATE] topMidOrb rect:', item.topMidOrb.getBoundingClientRect());
+            }
+          },
+          onComplete: () => {
+            // 调试日志：动画结束时的状态
+            if (item.topMidOrb) {
+              log('[collapse-END] topMidOrb:', {
+                styleLeft: item.topMidOrb.style.left,
+                styleTop: item.topMidOrb.style.top,
+                styleTransform: item.topMidOrb.style.transform,
+                computedTransform: getComputedStyle(item.topMidOrb).transform,
+              });
               item.topMidOrb.style.display = 'none';
               item.topMidOrb.style.opacity = '';
               item.topMidOrb.style.transform = '';
@@ -972,7 +977,7 @@ export function initFloatingCards(): void {
       }});
 
       const brSvg2 = brOrb.children[1] as HTMLElement;
-      if (brSvg2) brSvg2.innerHTML = '<svg width="14" height="14" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" fill="none"/><line x1="6" y1="1.5" x2="6" y2="10.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="1.5" y1="6" x2="10.5" y2="6" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></svg>';
+      if (brSvg2) brSvg2.innerHTML = '<svg width="14" height="14" viewBox="0 0 12 12"><line x1="6" y1="1.5" x2="6" y2="10.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="1.5" y1="6" x2="10.5" y2="6" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></svg>';
       const expLeft = parseFloat(el.style.left) || 0;
       const expTop = parseFloat(el.style.top) || 0;
       const foldW = item.compactMemW;

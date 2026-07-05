@@ -183,6 +183,7 @@ v6.6.0 �����前的焦�����������「浮卡系统�
 11. **测试 mock 脆弱**：GSAP mock 中 `tl.call(cb)` 同步执行回调，改变了动��时��
 12. **补���链 = 模型错误信号**：同一问题超过 3 层补丁（cap→锚点→margin→边界修正），不是补丁不够准，是底层模型错了。停止修修补补，换上能自然满足所有约束的模型。案例：`docs/archive/design/CASE_STUDY_MODEL_CHOICE.md`。
 16. **每次代码改动后立即提交**（心法 18）：禁止攒多个改动后一次性提交。写完一个函数/模块就 `git add` + `git commit`。历史教训：2026-07-05 全天浮卡功能改动未提交，一次 `git checkout --` 导致全部丢失。<a id='trap-16'></a>
+17. **`display:''` 会清除 inline style**：隐藏/显示元素时，如果元素原本有 `display:flex`（inline style），用 `display:''` 恢复会 revert 到 CSS 默认值（block），破坏 flex 布局。必须用 `display:'flex'` 恢复。历史案例：2026-07-05 光球 SVG 偏移 ~6px，排查耗时数小时。<a id='trap-17'></a>
 
 ---
 
@@ -318,7 +319,7 @@ v6.6.0 �����前的焦�����������「浮卡系统�
 | `color-utils.ts` | 45 | 2 | ✅ 分组表 | 颜色工具函数（从 tree-swipe 拆分） |
 | `debug-assert.ts` | 23 | 1 | ✅ 提及 | 运行时断言 |
 | `dom-refs.ts` | 36 | 9 | ✅ 注册表 | DOM 元素引用 |
-| `floating-card.ts` | 782 | 2 | ✅ 独立条目 | 浮卡系统（核心模块） |
+| `floating-card.ts` | 1266 | 2 | ✅ 独立条目 | 浮卡系统（核心模块） |
 | `gesture-registry.ts` | 259 | 6 | ✅ 独立条目 | 手势注册中心 |
 | `gestures.ts` | 69 | 1 | ✅ 提及 | 页面滑动手势配置 |
 | `interaction-constants.ts` | 20 | 2 | ✅ 分组表 | 交互常量共享层（v6.6.0 新增） |
@@ -336,7 +337,7 @@ v6.6.0 �����前的焦�����������「浮卡系统�
 | `tree-model.ts` | 190 | 2 | ✅ 分组表 | 绝对深度布局模型 |
 | `tree-overlay.ts` | 413 | 1 | ✅ 分组表 | Overlay 双树构建系统（从 tree-render 拆分） |
 | `tree-animation.ts` | 73 | 1 | ✅ 分组表 | 文件树插入/移除 GSAP 动画（新建/删除/复制/移动共享） |
-| `tree-render.ts` | 990 | 3 | ✅ 核心条目 | 文件树 Canvas 渲染（编排层） |
+| `tree-render.ts` | 1013 | 3 | ✅ 核心条目 | 文件树 Canvas 渲染（编排层） |
 | `tree-swipe.ts` | 659 | 1 | ✅ 分组表 | 文件行右滑 → 卡片堆（从 tree-render 拆分，v6.8.0 拆分为 color-utils + mode-system） |
 | `ui-registry.ts` | 333 | 9 | ✅ 独立条目 | UI 元素注册表 |
 | `ui.ts` | 70 | 10 | ✅ 提及 | UI 初始化编排 |
@@ -344,7 +345,7 @@ v6.6.0 �����前的焦�����������「浮卡系统�
 | `terminal-card-04.ts` | 369 | 0 | TERMINAL_CARD_SPEC | 03 号终端卡 xterm.js 集成 |
 | `tmux-card.ts` | 182 | 0 | — | 04 号 tmux 窗口管理卡 |
 | `card-registry.ts` | 154 | 5 | CARD_REGISTRY_SPEC | 卡片注册表：类型声明 + 实例追踪 |
-| **合计** | **10064** | | | |
+| **合计** | **10571** | | | |
 
 ### 死代码检查
 
