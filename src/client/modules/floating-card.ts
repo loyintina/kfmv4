@@ -94,7 +94,7 @@ let dragItem: FloatingCardItem | null = null;
 
 function createDecoratedCorner(
   x: number, y: number, w: number, h: number,
-  color: string, svgInner: string, debugId?: string,
+  color: string, svgInner: string,
 ): HTMLElement {
   const box = document.createElement('div');
   box.style.cssText = [
@@ -118,28 +118,6 @@ function createDecoratedCorner(
   box.innerHTML =
     '<div style="position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at ' + orbT.glowPos + ',' + glowC + ',' + glowM + ',transparent 70%);box-shadow:0 0 ' + orbT.shadow1Blur + ' ' + shadowC1 + ',0 0 ' + orbT.shadow2Blur + ' ' + shadowC2 + '"></div>' +
     '<div style="display:flex;align-items:center;justify-content:center;color:' + symC + ';-webkit-mask:linear-gradient(' + orbT.symMaskAngle + ',' + orbT.symMaskCutoff + ',transparent 100%);mask:linear-gradient(' + orbT.symMaskAngle + ',' + orbT.symMaskCutoff + ',transparent 100%)">' + svgInner + '</div>';
-  
-  // 调试日志：检查 SVG 在光球内的位置（需要在 DOM 中才能获取 rect）
-  if (debugId) {
-    requestAnimationFrame(() => {
-      const svgWrapper = box.children[1] as HTMLElement;
-      const svg = svgWrapper?.querySelector('svg');
-      const boxRect = box.getBoundingClientRect();
-      const wrapperRect = svgWrapper?.getBoundingClientRect();
-      const svgRect = svg?.getBoundingClientRect();
-      log('[createDecoratedCorner]', debugId, {
-        boxStyle: { left: box.style.left, top: box.style.top, width: box.style.width, height: box.style.height },
-        boxRect: { x: boxRect.x, y: boxRect.y, w: boxRect.width, h: boxRect.height },
-        wrapperRect: wrapperRect ? { x: wrapperRect.x, y: wrapperRect.y, w: wrapperRect.width, h: wrapperRect.height } : null,
-        svgRect: svgRect ? { x: svgRect.x, y: svgRect.y, w: svgRect.width, h: svgRect.height } : null,
-        // 计算 SVG 中心相对于光球中心的偏移
-        svgCenterOffset: svgRect && boxRect ? {
-          x: (svgRect.x + svgRect.width/2) - (boxRect.x + boxRect.width/2),
-          y: (svgRect.y + svgRect.height/2) - (boxRect.y + boxRect.height/2),
-        } : null,
-      });
-    });
-  }
   
   return box;
 }
@@ -290,8 +268,7 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
   const brOrb = createDecoratedCorner(
     FLOATING_CARD_W - rightOff - cornerSize,
     FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, rightRgba,
-    '<svg width="14" height="14" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" fill="none"/><line x1="6" y1="1.5" x2="6" y2="10.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="1.5" y1="6" x2="10.5" y2="6" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></svg>',
-    'BR');
+    '<svg width="14" height="14" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" fill="none"/><line x1="6" y1="1.5" x2="6" y2="10.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="1.5" y1="6" x2="10.5" y2="6" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></svg>');
   brOrb.style.pointerEvents = 'auto';
   brOrb.style.cursor = 'pointer';
   brOrb.classList.add('floating-br-orb');
@@ -302,8 +279,7 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
   // TL — 上移一层（紧凑态也显示）
   const tlColor = _hexToRgba(config.color1, orbT.tlAlpha);
   const tlOrb = createDecoratedCorner(cornerOff, cornerOff, cornerSize, cornerSize, tlColor,
-    '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c - sh) + ',' + (c - sh) + ') scale(' + s + ')"><path d="M6,10 L6,2 M6,2 L3,5 M6,2 L9,5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>',
-    'TL');
+    '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c - sh) + ',' + (c - sh) + ') scale(' + s + ')"><path d="M6,10 L6,2 M6,2 L3,5 M6,2 L9,5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>');
   tlOrb.style.pointerEvents = 'auto'; tlOrb.style.cursor = 'pointer';
   tlOrb.title = '\u4e0a\u79fb\u4e00\u5c42';
   tlOrb.addEventListener('click', () => { const above = _cardAbove(item); if (above) _swapZIndex(item, above); });
@@ -311,8 +287,7 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
 
   // TR — 关闭
   const trOrb = createDecoratedCorner(FLOATING_CARD_W - rightOff - cornerSize, cornerOff, cornerSize, cornerSize, rightRgba,
-    '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c + sh) + ',' + (c - sh) + ') scale(' + s + ')"><line x1="4" y1="2" x2="10" y2="8" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></g></svg>',
-    'TR');
+    '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c + sh) + ',' + (c - sh) + ') scale(' + s + ')"><line x1="4" y1="2" x2="10" y2="8" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></g></svg>');
   trOrb.style.pointerEvents = 'auto'; trOrb.style.cursor = 'pointer';
   trOrb.title = '\u5173\u95ed';
   trOrb.addEventListener('click', () => { if (item.state !== 'active' && item.state !== 'compact') return; dismissFloatingCard(true, el); });
@@ -320,8 +295,7 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
 
   // BL — 下移一层
   const blOrb = createDecoratedCorner(cornerOff, FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, leftRgba,
-    '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c - sh) + ',' + (c + sh) + ') scale(' + s + ')"><path d="M6,2 L6,10 M6,10 L3,7 M6,10 L9,7" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>',
-    'BL');
+    '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c - sh) + ',' + (c + sh) + ') scale(' + s + ')"><path d="M6,2 L6,10 M6,10 L3,7 M6,10 L9,7" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>');
   blOrb.style.pointerEvents = 'auto'; blOrb.style.cursor = 'pointer';
   blOrb.title = '\u4e0b\u79fb\u4e00\u5c42';
   blOrb.addEventListener('click', () => { const below = _cardBelow(item); if (below) _swapZIndex(item, below); });
@@ -337,8 +311,7 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
     cornerOff,  // 与其他光球一致：-13
     cornerSize, cornerSize,
     topMidColor,
-    '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + c + ',' + c + ') scale(' + s + ')"><path d="M1,3 L1,1 L3,1 M9,1 L11,1 L11,3 M11,9 L11,11 L9,11 M3,11 L1,11 L1,9" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>',
-    'TopMid'
+    '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + c + ',' + c + ') scale(' + s + ')"><path d="M1,3 L1,1 L3,1 M9,1 L11,1 L11,3 M11,9 L11,11 L9,11 M3,11 L1,11 L1,9" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>'
   );
   topMidOrb.style.pointerEvents = 'auto';
   topMidOrb.style.cursor = 'pointer';
@@ -536,9 +509,6 @@ function enterFullscreen(item: FloatingCardItem): void {
     headerEl.style.margin = '0 30px';
     if (lineEl) lineEl.style.margin = '0 30px';
     
-    // 按钮定位：相对于 contentWrap（与之前版本一致）
-    contentWrap.style.position = 'relative';
-    
     // 左侧按钮：窗口化（插入到 header 之前）
     const windowizeBtn = document.createElement('div');
     windowizeBtn.style.cssText = 'position:absolute;left:8px;top:6px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;z-index:1';
@@ -704,13 +674,18 @@ function exitFullscreen(item: FloatingCardItem): void {
         log('[exitFullscreen-onComplete] card padding:', item.el.style.padding);
         if (item.topMidOrb) {
           const svg = item.topMidOrb.querySelector('svg');
+          const svgRect = svg?.getBoundingClientRect();
+          const orbRect = item.topMidOrb.getBoundingClientRect();
           log('[exitFullscreen-onComplete] topMidOrb:', {
             left: item.topMidOrb.style.left,
             top: item.topMidOrb.style.top,
             transform: item.topMidOrb.style.transform,
-            svgTransform: svg?.getAttribute('transform'),
-            svgStyleTransform: svg?.style.transform,
-            rect: item.topMidOrb.getBoundingClientRect(),
+            orbRect: { x: orbRect.x, y: orbRect.y, w: orbRect.width, h: orbRect.height },
+            svgRect: svgRect ? { x: svgRect.x, y: svgRect.y, w: svgRect.width, h: svgRect.height } : null,
+            svgCenterOffset: svgRect ? {
+              x: (svgRect.x + svgRect.width/2) - (orbRect.x + orbRect.width/2),
+              y: (svgRect.y + svgRect.height/2) - (orbRect.y + orbRect.height/2),
+            } : null,
           });
         }
         if (item.brOrb) {
@@ -912,13 +887,18 @@ export function initFloatingCards(): void {
           log('[expand-onComplete] card padding:', el.style.padding);
           if (item.topMidOrb) {
             const svg = item.topMidOrb.querySelector('svg');
+            const svgRect = svg?.getBoundingClientRect();
+            const orbRect = item.topMidOrb.getBoundingClientRect();
             log('[expand-onComplete] topMidOrb:', {
               left: item.topMidOrb.style.left,
               top: item.topMidOrb.style.top,
               transform: item.topMidOrb.style.transform,
-              svgTransform: svg?.getAttribute('transform'),
-              svgStyleTransform: svg?.style.transform,
-              rect: item.topMidOrb.getBoundingClientRect(),
+              orbRect: { x: orbRect.x, y: orbRect.y, w: orbRect.width, h: orbRect.height },
+              svgRect: svgRect ? { x: svgRect.x, y: svgRect.y, w: svgRect.width, h: svgRect.height } : null,
+              svgCenterOffset: svgRect ? {
+                x: (svgRect.x + svgRect.width/2) - (orbRect.x + orbRect.width/2),
+                y: (svgRect.y + svgRect.height/2) - (orbRect.y + orbRect.height/2),
+              } : null,
             });
           }
           if (item.brOrb) {
@@ -961,8 +941,6 @@ export function initFloatingCards(): void {
         const brTop = parseFloat(item.brOrb.style.top) || 0;
         const dx = brLeft - topMidLeft;
         const dy = brTop - topMidTop;
-        
-        log('[collapse-CALC] positions:', { topMidLeft, topMidTop, brLeft, brTop, dx, dy });
         
         anim.to(item.topMidOrb, {
           x: dx, y: dy, opacity: 0,
@@ -1018,10 +996,7 @@ export function initFloatingCards(): void {
           brOrb.style.top = (h - bottomOff - cornerSize) + 'px';
           if (item.trOrb) item.trOrb.style.left = (w - rightOff - cornerSize) + 'px';
           if (item.blOrb) item.blOrb.style.top = (h - bottomOff - cornerSize) + 'px';
-          // 同步 topMidOrb 位置
-          if (item.topMidOrb) {
-            item.topMidOrb.style.left = (w / 2 - cornerSize / 2) + 'px';
-          }
+          // 折叠时不更新 topMidOrb 的 left，由 GSAP x/y 控制移动
         },
         onComplete: () => {
           item.cardWidth = clampedFoldW;
