@@ -12,6 +12,7 @@ import { Registry } from './ui-registry.js';
 import { MARGIN, FLOATING_CARD_W, FLOATING_CARD_H } from './interaction-constants.js';
 import { createDragHandler, type DragConfig } from './drag-handler.js';
 import { cardRegistry, type CardContentHandler, type CardInstance } from './card-registry.js';
+import { log } from './logger.js';
 
 const orbT = theme.cornerOrb;
 
@@ -485,28 +486,30 @@ function enterFullscreen(item: FloatingCardItem): void {
   // 查找标题栏：从 contentEl 内部查找（handler 创建的 wrap → header）
   const contentWrap = item.contentEl?.firstElementChild as HTMLElement | null;
   const headerEl = contentWrap?.firstElementChild as HTMLElement | null;
+  const lineEl = headerEl?.nextElementSibling as HTMLElement | null;
   if (contentWrap && headerEl) {
-    // 标题行变窄：只修改 header 的 margin，不影响内容区
+    // 标题行变窄：只修改 header 和 line 的 margin，不影响内容区
     headerEl.style.margin = '0 30px';
+    if (lineEl) lineEl.style.margin = '0 30px';
     
-    // 按钮定位：相对于 contentWrap
+    // 按钮定位：相对于 contentWrap（与之前版本一致）
     contentWrap.style.position = 'relative';
     
-    // 左侧按钮：窗口化
+    // 左侧按钮：窗口化（插入到 header 之前）
     const windowizeBtn = document.createElement('div');
-    windowizeBtn.style.cssText = 'position:absolute;left:10px;top:6px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;z-index:1';
+    windowizeBtn.style.cssText = 'position:absolute;left:8px;top:6px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;z-index:1';
     windowizeBtn.title = '\u7a97\u53e3\u5316';
     windowizeBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16"><rect x="2" y="4" width="12" height="8" rx="1" stroke="' + _hexToRgba(item.config.color1, 1) + '" stroke-width="1.5" fill="none"/><line x1="2" y1="6" x2="14" y2="6" stroke="' + _hexToRgba(item.config.color1, 1) + '" stroke-width="1.5"/></svg>';
     windowizeBtn.addEventListener('click', () => exitFullscreen(item));
     
-    // 右侧按钮：关闭
+    // 右侧按钮：关闭（插入到 header 之后）
     const closeBtn = document.createElement('div');
-    closeBtn.style.cssText = 'position:absolute;right:10px;top:6px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;z-index:1';
+    closeBtn.style.cssText = 'position:absolute;right:8px;top:6px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;z-index:1';
     closeBtn.title = '\u5173\u95ed';
     closeBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16"><line x1="4" y1="4" x2="12" y2="12" stroke="' + _hexToRgba(item.config.color2, 1) + '" stroke-width="1.5" stroke-linecap="round"/><line x1="12" y1="4" x2="4" y2="12" stroke="' + _hexToRgba(item.config.color2, 1) + '" stroke-width="1.5" stroke-linecap="round"/></svg>';
     closeBtn.addEventListener('click', () => dismissFullscreen(item));
     
-    contentWrap.appendChild(windowizeBtn);
+    contentWrap.insertBefore(windowizeBtn, headerEl);
     contentWrap.appendChild(closeBtn);
     item.fullscreenBtns = { windowize: windowizeBtn, close: closeBtn };
   }
@@ -565,11 +568,15 @@ function exitFullscreen(item: FloatingCardItem): void {
     item.fullscreenBtns = null;
   }
   
-  // 恢复标题行 margin
+  // 恢复标题行和分隔线 margin
   const contentWrap = item.contentEl?.firstElementChild as HTMLElement | null;
   const headerEl = contentWrap?.firstElementChild as HTMLElement | null;
+  const lineEl = headerEl?.nextElementSibling as HTMLElement | null;
   if (headerEl) {
     headerEl.style.margin = '';
+  }
+  if (lineEl) {
+    lineEl.style.margin = '';
   }
   
   // 显示四角光球 + topMidOrb
@@ -615,6 +622,31 @@ function exitFullscreen(item: FloatingCardItem): void {
       },
       onComplete: () => {
         item._fullscreenSaved = null;
+        
+        // 调试日志：检查退出全屏后光球和 SVG 位置
+        log('[exitFullscreen-onComplete] card padding:', item.el.style.padding);
+        if (item.topMidOrb) {
+          const svg = item.topMidOrb.querySelector('svg');
+          log('[exitFullscreen-onComplete] topMidOrb:', {
+            left: item.topMidOrb.style.left,
+            top: item.topMidOrb.style.top,
+            transform: item.topMidOrb.style.transform,
+            svgTransform: svg?.getAttribute('transform'),
+            svgStyleTransform: svg?.style.transform,
+            rect: item.topMidOrb.getBoundingClientRect(),
+          });
+        }
+        if (item.brOrb) {
+          const svg = item.brOrb.querySelector('svg');
+          log('[exitFullscreen-onComplete] brOrb:', {
+            left: item.brOrb.style.left,
+            top: item.brOrb.style.top,
+            transform: item.brOrb.style.transform,
+            svgTransform: svg?.getAttribute('transform'),
+            svgStyleTransform: svg?.style.transform,
+            rect: item.brOrb.getBoundingClientRect(),
+          });
+        }
       },
     });
   } else {
@@ -798,6 +830,31 @@ export function initFloatingCards(): void {
           }
           item.state = 'active';
           el.style.zIndex = String(zIndex);
+          
+          // 调试日志：检查光球和 SVG 位置
+          log('[expand-onComplete] card padding:', el.style.padding);
+          if (item.topMidOrb) {
+            const svg = item.topMidOrb.querySelector('svg');
+            log('[expand-onComplete] topMidOrb:', {
+              left: item.topMidOrb.style.left,
+              top: item.topMidOrb.style.top,
+              transform: item.topMidOrb.style.transform,
+              svgTransform: svg?.getAttribute('transform'),
+              svgStyleTransform: svg?.style.transform,
+              rect: item.topMidOrb.getBoundingClientRect(),
+            });
+          }
+          if (item.brOrb) {
+            const svg = item.brOrb.querySelector('svg');
+            log('[expand-onComplete] brOrb:', {
+              left: item.brOrb.style.left,
+              top: item.brOrb.style.top,
+              transform: item.brOrb.style.transform,
+              svgTransform: svg?.getAttribute('transform'),
+              svgStyleTransform: svg?.style.transform,
+              rect: item.brOrb.getBoundingClientRect(),
+            });
+          }
         },
       });
       anim.to(tlOrb, { x: 0, y: 0, duration: 0.3, ease: 'back.out(1.1)' });
