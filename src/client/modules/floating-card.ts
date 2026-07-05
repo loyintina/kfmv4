@@ -627,11 +627,11 @@ function exitFullscreen(item: FloatingCardItem): void {
   }
   
   // 显示四角光球 + topMidOrb
-  if (item.tlOrb) item.tlOrb.style.display = '';
-  if (item.trOrb) item.trOrb.style.display = '';
-  if (item.blOrb) item.blOrb.style.display = '';
-  if (item.brOrb) item.brOrb.style.display = '';
-  if (item.topMidOrb) item.topMidOrb.style.display = '';
+  if (item.tlOrb) item.tlOrb.style.display = 'flex';
+  if (item.trOrb) item.trOrb.style.display = 'flex';
+  if (item.blOrb) item.blOrb.style.display = 'flex';
+  if (item.brOrb) item.brOrb.style.display = 'flex';
+  if (item.topMidOrb) item.topMidOrb.style.display = 'flex';
   
   // 解锁 z-index
   item.zLocked = false;
@@ -843,7 +843,7 @@ export function initFloatingCards(): void {
 
       // 展开动画开始时显示 topMidOrb
       if (item.topMidOrb) {
-        item.topMidOrb.style.display = '';
+        item.topMidOrb.style.display = 'flex';
       }
       
       anim.to(el, {
@@ -972,7 +972,7 @@ export function initFloatingCards(): void {
       }});
 
       const brSvg2 = brOrb.children[1] as HTMLElement;
-      if (brSvg2) brSvg2.innerHTML = '';
+      if (brSvg2) brSvg2.innerHTML = '<svg width="14" height="14" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" fill="none"/><line x1="6" y1="1.5" x2="6" y2="10.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="1.5" y1="6" x2="10.5" y2="6" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></svg>';
       const expLeft = parseFloat(el.style.left) || 0;
       const expTop = parseFloat(el.style.top) || 0;
       const foldW = item.compactMemW;
