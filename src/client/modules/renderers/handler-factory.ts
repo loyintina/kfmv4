@@ -263,7 +263,7 @@ export function createFileHandler(meta: Record<string, unknown>): { activate: (c
 
       // 正文区
       _body = document.createElement('div');
-      _body.style.cssText = 'flex:1;overflow:auto;position:relative';
+      _body.style.cssText = 'flex:1;overflow:auto;position:relative;padding-top:4px';
 
       wrap.appendChild(_header);
       wrap.appendChild(line);

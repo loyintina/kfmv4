@@ -301,19 +301,19 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
 
   // TopMid — 上沿中间光球（全屏触发）
   // SVG：四边中央切断的正方形（四个直角围成的形状）
-  // 位置：top = -cornerSize/2，让卡片上沿线横穿 SVG 中央
+  // 坐标系：viewBox="0 0 12 12" 与其他光球一致
+  // 位置：top = cornerOff，与其他光球的上沿偏移一致
   const topMidColor = _hexToRgba(config.color1, orbT.tlAlpha);
   const topMidOrb = createDecoratedCorner(
     FLOATING_CARD_W / 2 - cornerSize / 2,
-    -cornerSize / 2,  // 上沿穿过 SVG 中央
+    cornerOff,  // 与其他光球一致：-13
     cornerSize, cornerSize,
     topMidColor,
-    '<svg width="14" height="14" viewBox="0 0 14 14"><path d="M1,4 L1,1 L4,1 M10,1 L13,1 L13,4 M13,10 L13,13 L10,13 M4,13 L1,13 L1,10" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>'
+    '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + c + ',' + c + ') scale(' + s + ')"><path d="M1,3 L1,1 L3,1 M9,1 L11,1 L11,3 M11,9 L11,11 L9,11 M3,11 L1,11 L1,9" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>'
   );
   topMidOrb.style.pointerEvents = 'auto';
   topMidOrb.style.cursor = 'pointer';
   topMidOrb.title = '\u5168\u5c4f';
-  topMidOrb.style.display = 'none';  // 初始隐藏，展开动画时显示
   el.appendChild(topMidOrb);
   item.topMidOrb = topMidOrb;
 
@@ -360,8 +360,6 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
     duration: 0.4, ease: 'back.out(1.3)',
     onComplete: () => {
       item.state = 'active';
-      // 显示 topMidOrb（全屏触发光球）
-      if (item.topMidOrb) item.topMidOrb.style.display = '';
     },
   });
 
@@ -484,27 +482,31 @@ function enterFullscreen(item: FloatingCardItem): void {
   
   // 创建全屏态标题栏按钮
   // 标题栏在 contentEl 内部（由 handler 创建），结构：wrap → header + line + body
+  // 查找标题栏：从 contentEl 内部查找（handler 创建的 wrap → header）
   const contentWrap = item.contentEl?.firstElementChild as HTMLElement | null;
   const headerEl = contentWrap?.firstElementChild as HTMLElement | null;
   if (contentWrap && headerEl) {
-    // 标题栏变窄：增加 wrap 的左右 padding
-    contentWrap.style.padding = '0 40px';
+    // 标题行变窄：只修改 header 的 margin，不影响内容区
+    headerEl.style.margin = '0 30px';
     
-    // 左侧按钮：窗口化（插入到 header 之前）
+    // 按钮定位：相对于 contentWrap
+    contentWrap.style.position = 'relative';
+    
+    // 左侧按钮：窗口化
     const windowizeBtn = document.createElement('div');
-    windowizeBtn.style.cssText = 'position:absolute;left:8px;top:6px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;z-index:1';
+    windowizeBtn.style.cssText = 'position:absolute;left:10px;top:6px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;z-index:1';
     windowizeBtn.title = '\u7a97\u53e3\u5316';
     windowizeBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16"><rect x="2" y="4" width="12" height="8" rx="1" stroke="' + _hexToRgba(item.config.color1, 1) + '" stroke-width="1.5" fill="none"/><line x1="2" y1="6" x2="14" y2="6" stroke="' + _hexToRgba(item.config.color1, 1) + '" stroke-width="1.5"/></svg>';
     windowizeBtn.addEventListener('click', () => exitFullscreen(item));
     
-    // 右侧按钮：关闭（插入到 header 之后）
+    // 右侧按钮：关闭
     const closeBtn = document.createElement('div');
-    closeBtn.style.cssText = 'position:absolute;right:8px;top:6px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;z-index:1';
+    closeBtn.style.cssText = 'position:absolute;right:10px;top:6px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;z-index:1';
     closeBtn.title = '\u5173\u95ed';
     closeBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16"><line x1="4" y1="4" x2="12" y2="12" stroke="' + _hexToRgba(item.config.color2, 1) + '" stroke-width="1.5" stroke-linecap="round"/><line x1="12" y1="4" x2="4" y2="12" stroke="' + _hexToRgba(item.config.color2, 1) + '" stroke-width="1.5" stroke-linecap="round"/></svg>';
     closeBtn.addEventListener('click', () => dismissFullscreen(item));
     
-    contentWrap.insertBefore(windowizeBtn, headerEl);
+    contentWrap.appendChild(windowizeBtn);
     contentWrap.appendChild(closeBtn);
     item.fullscreenBtns = { windowize: windowizeBtn, close: closeBtn };
   }
@@ -563,10 +565,11 @@ function exitFullscreen(item: FloatingCardItem): void {
     item.fullscreenBtns = null;
   }
   
-  // 恢复标题栏 padding
+  // 恢复标题行 margin
   const contentWrap = item.contentEl?.firstElementChild as HTMLElement | null;
-  if (contentWrap) {
-    contentWrap.style.padding = '0 10px';
+  const headerEl = contentWrap?.firstElementChild as HTMLElement | null;
+  if (headerEl) {
+    headerEl.style.margin = '';
   }
   
   // 显示四角光球 + topMidOrb
@@ -800,8 +803,28 @@ export function initFloatingCards(): void {
       anim.to(tlOrb, { x: 0, y: 0, duration: 0.3, ease: 'back.out(1.1)' });
     } else if (item.state === 'active') {
       item.state = 'collapsing';
-      // 立即隐藏 topMidOrb（不等动画完成）
-      if (item.topMidOrb) item.topMidOrb.style.display = 'none';
+      
+      // topMidOrb 向右下角光球移动并淡出
+      if (item.topMidOrb && item.brOrb) {
+        const topMidLeft = parseFloat(item.topMidOrb.style.left) || 0;
+        const topMidTop = parseFloat(item.topMidOrb.style.top) || 0;
+        const brLeft = parseFloat(item.brOrb.style.left) || 0;
+        const brTop = parseFloat(item.brOrb.style.top) || 0;
+        const dx = brLeft - topMidLeft;
+        const dy = brTop - topMidTop;
+        
+        anim.to(item.topMidOrb, {
+          x: dx, y: dy, opacity: 0,
+          duration: 0.25, ease: 'power2.in',
+          onComplete: () => {
+            if (item.topMidOrb) {
+              item.topMidOrb.style.display = 'none';
+              item.topMidOrb.style.opacity = '';
+              item.topMidOrb.style.transform = '';
+            }
+          },
+        });
+      }
       
       anim.to(item.contentEl, { opacity: 0, duration: 0.1, ease: 'none', onComplete: () => {
         if (item.contentEl) {
