@@ -927,41 +927,19 @@ export function initFloatingCards(): void {
         const dx = brLeft - topMidLeft;
         const dy = brTop - topMidTop;
         
-        // 调试日志：动画起点、终点、光球位置
-        log('[collapse-START] topMidOrb:', {
-          styleLeft: item.topMidOrb.style.left,
-          styleTop: item.topMidOrb.style.top,
-          styleTransform: item.topMidOrb.style.transform,
-          computedTransform: getComputedStyle(item.topMidOrb).transform,
-          rect: item.topMidOrb.getBoundingClientRect(),
-        });
-        log('[collapse-START] brOrb target:', { brLeft, brTop });
-        log('[collapse-START] dx, dy:', { dx, dy });
-        
         // 清除 GSAP 内部状态，防止第二次折叠时瞬移
         anim.killTweensOf(item.topMidOrb);
+        // 心法 #19：用 GSAP API 重置 GSAP 状态，保证内部状态一致
+        anim.set(item.topMidOrb, { x: 0, y: 0, opacity: 1 });
         
         anim.to(item.topMidOrb, {
           x: dx, y: dy, opacity: 0,
           duration: 0.25, ease: 'power2.in',
-          onUpdate: () => {
-            // 调试日志：动画过程中的位置
-            if (item.topMidOrb) {
-              log('[collapse-UPDATE] topMidOrb rect:', item.topMidOrb.getBoundingClientRect());
-            }
-          },
           onComplete: () => {
-            // 调试日志：动画结束时的状态
             if (item.topMidOrb) {
-              log('[collapse-END] topMidOrb:', {
-                styleLeft: item.topMidOrb.style.left,
-                styleTop: item.topMidOrb.style.top,
-                styleTransform: item.topMidOrb.style.transform,
-                computedTransform: getComputedStyle(item.topMidOrb).transform,
-              });
               item.topMidOrb.style.display = 'none';
-              item.topMidOrb.style.opacity = '';
-              item.topMidOrb.style.transform = '';
+              // 心法 #19：用 GSAP API 重置 GSAP 状态，不用 style.transform = ''
+              anim.set(item.topMidOrb, { x: 0, y: 0, opacity: 1 });
             }
           },
         });
