@@ -182,6 +182,7 @@ v6.6.0 �����前的焦�����������「浮卡系统�
 10. **esbuild `nullish-coalescing` 禁用**：但源码大量使用 `??`，TS 6 编译时需确保正确降级
 11. **测试 mock 脆弱**：GSAP mock 中 `tl.call(cb)` 同步执行回调，改变了动��时��
 12. **补���链 = 模型错误信号**：同一问题超过 3 层补丁（cap→锚点→margin→边界修正），不是补丁不够准，是底层模型错了。停止修修补补，换上能自然满足所有约束的模型。案例：`docs/archive/design/CASE_STUDY_MODEL_CHOICE.md`。
+16. **每次代码改动后立即提交**（心法 18）：禁止攒多个改动后一次性提交。写完一个函数/模块就 `git add` + `git commit`。历史教训：2026-07-05 全天浮卡功能改动未提交，一次 `git checkout --` 导致全部丢失。<a id='trap-16'></a>
 
 ---
 
@@ -340,10 +341,10 @@ v6.6.0 �����前的焦�����������「浮卡系统�
 | `ui-registry.ts` | 333 | 9 | ✅ 独立条目 | UI 元素注册表 |
 | `ui.ts` | 70 | 10 | ✅ 提及 | UI 初始化编排 |
 | `ws-channel.ts` | 347 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
-| `terminal-card-04.ts` | 301 | 0 | TERMINAL_CARD_SPEC | 03 号终端卡 xterm.js 集成 |
-| `tmux-card.ts` | 139 | 0 | — | 04 号 tmux 窗口管理卡 |
-| `card-registry.ts` | 155 | 5 | CARD_REGISTRY_SPEC | 卡片注册表：类型声明 + 实例追踪 |
-| **合计** | **9954** | | | |
+| `terminal-card-04.ts` | 369 | 0 | TERMINAL_CARD_SPEC | 03 号终端卡 xterm.js 集成 |
+| `tmux-card.ts` | 182 | 0 | — | 04 号 tmux 窗口管理卡 |
+| `card-registry.ts` | 154 | 5 | CARD_REGISTRY_SPEC | 卡片注册表：类型声明 + 实例追踪 |
+| **合计** | **10064** | | | |
 
 ### 死代码检查
 
