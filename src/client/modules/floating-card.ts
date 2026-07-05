@@ -228,43 +228,11 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
     'backdrop-filter:blur(16px)', '-webkit-backdrop-filter:blur(16px)',
     'position:relative', 'overflow:hidden',
   ].join(';');
-  // 标题栏：01卡（typeId='file'）和空白卡（无 contentHandler）统一添加
-  let headerEl: HTMLElement | null = null;
-  let contentEl: HTMLElement;
-  const needsTitleBar = config.typeId === 'file' || !config.contentHandler;
-  if (needsTitleBar) {
-    const titleWrap = document.createElement('div');
-    titleWrap.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;pointer-events:none';
-    
-    headerEl = document.createElement('div');
-    headerEl.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:6px 10px 4px;flex-shrink:0;pointer-events:none';
-    
-    const label = document.createElement('div');
-    label.style.cssText = 'font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0';
-    label.textContent = config.name || '';
-    headerEl.appendChild(label);
-    
-    const line = document.createElement('div');
-    line.style.cssText = 'height:1px;flex-shrink:0;background:linear-gradient(90deg,' + config.color1 + ',' + config.color2 + ')';
-    
-    const bodyEl = document.createElement('div');
-    bodyEl.style.cssText = 'flex:1;display:flex;flex-direction:column;overflow:hidden';
-    
-    titleWrap.appendChild(headerEl);
-    titleWrap.appendChild(line);
-    titleWrap.appendChild(bodyEl);
-    bgLayer.appendChild(titleWrap);
-    
-    // 内容区放在 bodyEl 内
-    contentEl = document.createElement('div');
-    contentEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:2px 6px;font-size:11px;font-weight:500;color:rgba(224,224,224,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:none';
-    bodyEl.appendChild(contentEl);
-  } else {
-    // 02/03/04 卡：已有标题栏，保持原结构
-    contentEl = document.createElement('div');
-    contentEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:2px 6px;font-size:11px;font-weight:500;color:rgba(224,224,224,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:none';
-    bgLayer.appendChild(contentEl);
-  }
+  // 标题栏由 handler 自己创建（buildCardLayout 或 inline），shell 不干预
+  const headerEl: HTMLElement | null = null;
+  const contentEl = document.createElement('div');
+  contentEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:2px 6px;font-size:11px;font-weight:500;color:rgba(224,224,224,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:none';
+  bgLayer.appendChild(contentEl);
   el.appendChild(bgLayer);
 
   const zIndex = _nextFloatingZ++;
@@ -332,13 +300,15 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
   el.appendChild(blOrb); item.blOrb = blOrb;
 
   // TopMid — 上沿中间光球（全屏触发）
+  // SVG：四边中央切断的正方形（四个直角围成的形状）
+  // 位置：top = -cornerSize/2，让卡片上沿线横穿 SVG 中央
   const topMidColor = _hexToRgba(config.color1, orbT.tlAlpha);
   const topMidOrb = createDecoratedCorner(
     FLOATING_CARD_W / 2 - cornerSize / 2,
-    cornerOff,
+    -cornerSize / 2,  // 上沿穿过 SVG 中央
     cornerSize, cornerSize,
     topMidColor,
-    '<svg width="14" height="14" viewBox="0 0 12 12"><rect x="1.5" y="1.5" width="9" height="9" rx="1" stroke="currentColor" stroke-width="' + orbT.symStroke + '" fill="none"/><line x1="1.5" y1="4" x2="10.5" y2="4" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></svg>'
+    '<svg width="14" height="14" viewBox="0 0 14 14"><path d="M1,4 L1,1 L4,1 M10,1 L13,1 L13,4 M13,10 L13,13 L10,13 M4,13 L1,13 L1,10" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>'
   );
   topMidOrb.style.pointerEvents = 'auto';
   topMidOrb.style.cursor = 'pointer';
@@ -390,6 +360,8 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
     duration: 0.4, ease: 'back.out(1.3)',
     onComplete: () => {
       item.state = 'active';
+      // 显示 topMidOrb（全屏触发光球）
+      if (item.topMidOrb) item.topMidOrb.style.display = '';
     },
   });
 
@@ -511,27 +483,29 @@ function enterFullscreen(item: FloatingCardItem): void {
   item.el.style.zIndex = String(Z_FULLSCREEN);
   
   // 创建全屏态标题栏按钮
-  if (item.headerEl) {
-    // 标题栏变窄：增加左右边距
-    item.headerEl.style.padding = '6px 10px 4px';
-    item.headerEl.style.justifyContent = 'flex-start';
+  // 标题栏在 contentEl 内部（由 handler 创建），结构：wrap → header + line + body
+  const contentWrap = item.contentEl?.firstElementChild as HTMLElement | null;
+  const headerEl = contentWrap?.firstElementChild as HTMLElement | null;
+  if (contentWrap && headerEl) {
+    // 标题栏变窄：增加 wrap 的左右 padding
+    contentWrap.style.padding = '0 40px';
     
-    // 左侧按钮：窗口化
+    // 左侧按钮：窗口化（插入到 header 之前）
     const windowizeBtn = document.createElement('div');
-    windowizeBtn.style.cssText = 'position:absolute;left:8px;top:50%;transform:translateY(-50%);width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;z-index:1';
+    windowizeBtn.style.cssText = 'position:absolute;left:8px;top:6px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;z-index:1';
     windowizeBtn.title = '\u7a97\u53e3\u5316';
     windowizeBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16"><rect x="2" y="4" width="12" height="8" rx="1" stroke="' + _hexToRgba(item.config.color1, 1) + '" stroke-width="1.5" fill="none"/><line x1="2" y1="6" x2="14" y2="6" stroke="' + _hexToRgba(item.config.color1, 1) + '" stroke-width="1.5"/></svg>';
     windowizeBtn.addEventListener('click', () => exitFullscreen(item));
     
-    // 右侧按钮：关闭
+    // 右侧按钮：关闭（插入到 header 之后）
     const closeBtn = document.createElement('div');
-    closeBtn.style.cssText = 'position:absolute;right:8px;top:50%;transform:translateY(-50%);width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;z-index:1';
+    closeBtn.style.cssText = 'position:absolute;right:8px;top:6px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;z-index:1';
     closeBtn.title = '\u5173\u95ed';
     closeBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16"><line x1="4" y1="4" x2="12" y2="12" stroke="' + _hexToRgba(item.config.color2, 1) + '" stroke-width="1.5" stroke-linecap="round"/><line x1="12" y1="4" x2="4" y2="12" stroke="' + _hexToRgba(item.config.color2, 1) + '" stroke-width="1.5" stroke-linecap="round"/></svg>';
     closeBtn.addEventListener('click', () => dismissFullscreen(item));
     
-    item.el.appendChild(windowizeBtn);
-    item.el.appendChild(closeBtn);
+    contentWrap.insertBefore(windowizeBtn, headerEl);
+    contentWrap.appendChild(closeBtn);
     item.fullscreenBtns = { windowize: windowizeBtn, close: closeBtn };
   }
   
@@ -589,10 +563,10 @@ function exitFullscreen(item: FloatingCardItem): void {
     item.fullscreenBtns = null;
   }
   
-  // 恢复标题栏
-  if (item.headerEl) {
-    item.headerEl.style.padding = '6px 10px 4px';
-    item.headerEl.style.justifyContent = 'space-between';
+  // 恢复标题栏 padding
+  const contentWrap = item.contentEl?.firstElementChild as HTMLElement | null;
+  if (contentWrap) {
+    contentWrap.style.padding = '0 10px';
   }
   
   // 显示四角光球 + topMidOrb
@@ -625,10 +599,16 @@ function exitFullscreen(item: FloatingCardItem): void {
         const h = parseFloat(item.el.style.height) || saved.height;
         item.cardWidth = w;
         item.cardHeight = h;
-        // 同步光球位置
+        // 同步所有光球位置
         if (item.topMidOrb) {
           item.topMidOrb.style.left = (w / 2 - cornerSize / 2) + 'px';
         }
+        if (item.brOrb) {
+          item.brOrb.style.left = (w - rightOff - cornerSize) + 'px';
+          item.brOrb.style.top = (h - bottomOff - cornerSize) + 'px';
+        }
+        if (item.trOrb) item.trOrb.style.left = (w - rightOff - cornerSize) + 'px';
+        if (item.blOrb) item.blOrb.style.top = (h - bottomOff - cornerSize) + 'px';
       },
       onComplete: () => {
         item._fullscreenSaved = null;
@@ -653,9 +633,16 @@ function exitFullscreen(item: FloatingCardItem): void {
         const h = parseFloat(item.el.style.height) || FLOATING_CARD_H;
         item.cardWidth = w;
         item.cardHeight = h;
+        // 同步所有光球位置
         if (item.topMidOrb) {
           item.topMidOrb.style.left = (w / 2 - cornerSize / 2) + 'px';
         }
+        if (item.brOrb) {
+          item.brOrb.style.left = (w - rightOff - cornerSize) + 'px';
+          item.brOrb.style.top = (h - bottomOff - cornerSize) + 'px';
+        }
+        if (item.trOrb) item.trOrb.style.left = (w - rightOff - cornerSize) + 'px';
+        if (item.blOrb) item.blOrb.style.top = (h - bottomOff - cornerSize) + 'px';
       },
     });
   }
@@ -813,6 +800,9 @@ export function initFloatingCards(): void {
       anim.to(tlOrb, { x: 0, y: 0, duration: 0.3, ease: 'back.out(1.1)' });
     } else if (item.state === 'active') {
       item.state = 'collapsing';
+      // 立即隐藏 topMidOrb（不等动画完成）
+      if (item.topMidOrb) item.topMidOrb.style.display = 'none';
+      
       anim.to(item.contentEl, { opacity: 0, duration: 0.1, ease: 'none', onComplete: () => {
         if (item.contentEl) {
           const ci = cardRegistry.getInstance(item.instanceId);
