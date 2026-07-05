@@ -3,7 +3,7 @@
  *
  * 用 kfmv3 v2 引擎渲染 Box 树到 Canvas。
  * 滚动事件 → 写 rootBox.scrollY → 引擎自动处理裁剪/偏移/滚动条。
- * 点击事件 → 光标优先：第一次点击移动光标，第二次点击同一行执行 onTap。
+ * 点击事件 → 点击即执行：文件夹展开/折叠，文件投放浮卡。
  */
 
 import { buildSidebarTree } from './tree-model.js';
@@ -25,6 +25,9 @@ import { log } from './logger.js';
 import { wsChannel } from './ws-channel.js';
 import { Registry } from './ui-registry.js';
 import { currentTheme as theme } from './theme.js';
+import { createFloatingCard } from './floating-card.js';
+import { getCardType } from './card-registry.js';
+import { cardAccent, pathBasename } from './color-utils.js';
 import {
   type OverlayMeta, type OverlayPack, type FlatSubTarget,
   removeAllOverlays, createCharLayer, collectSiblingsAfter,
@@ -533,28 +536,26 @@ L.endOp();
     if (!child.visible || child.disabled) continue;
     const hit = findTapTarget(child, px, py);
     if (hit?.gesture?.onTap) {
-      // 光标逻辑：第一次点击移动光标，第二次同一行才执行
-      if (L.cursorRowId !== null && L.cursorRowId === hit.id) {
-        const hitData = getFileRowData(hit.data);
-        if (!hitData) return;
-        const isDir = hitData.isDir;
-        const isExpanded = hitData.isExpanded;
-        if (isDir) {
-          if (isExpanded) {
-            log('[processClickQueue] doCollapse path=' + hitData.path);
-            doCollapse(hit, hitData);
-          } else {
-            log('[processClickQueue] doExpand path=' + hitData.path);
-            doExpand(hit, hitData);
-          }
-          return;  // 动画函数完成后会 processClickQueue()
-        } else {
-          hit.gesture.onTap();
-        }
-      } else {
+      const hitData = getFileRowData(hit.data);
+      if (!hitData) return;
+      // 光标不在该行 → 移动光标
+      if (L.cursorRowId !== hit.id) {
         moveCursorTo(hit);
         scrollToCenterCursor();
         Registry.notifyStateChange('file-tree');
+      }
+      // 立即执行动作
+      if (hitData.isDir) {
+        if (hitData.isExpanded) {
+          log('[processClickQueue] doCollapse path=' + hitData.path);
+          doCollapse(hit, hitData);
+        } else {
+          log('[processClickQueue] doExpand path=' + hitData.path);
+          doExpand(hit, hitData);
+        }
+        return;  // 动画函数完成后会 processClickQueue()
+      } else {
+        createFileFloatingCard(hit, hitData);
       }
       break;
     }
@@ -857,6 +858,28 @@ function findTapTarget(box: Box, px: number, py: number): Box | null {
     return box;
   }
   return null;
+}
+
+/** 点击文件行 → 投放浮卡 + 关闭侧栏 */
+function createFileFloatingCard(hit: Box, hitData: FileRowData): void {
+  const root = L.renderer?.getRoot();
+  if (!root) return;
+  const abs = hit.getAbsolutePosition();
+  const scrollY = root.scrollY ?? 0;
+  const cc = cardAccent(false);
+  const filePath = hitData.path;
+  const fileName = pathBasename(filePath);
+  createFloatingCard({
+    id: 'click-' + filePath + '-' + Date.now(),
+    typeId: 'file',
+    color1: cc.color1,
+    color2: cc.color2,
+    name: fileName,
+    sourceX: abs.x,
+    sourceY: abs.y - scrollY,
+    contentHandler: getCardType('file')?.createHandler({ filePath, accent: cc.color1 }),
+  });
+  closeSidebar();
 }
 
 // ============================================================
