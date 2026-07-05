@@ -94,7 +94,7 @@ let dragItem: FloatingCardItem | null = null;
 
 function createDecoratedCorner(
   x: number, y: number, w: number, h: number,
-  color: string, svgInner: string,
+  color: string, svgInner: string, debugId?: string,
 ): HTMLElement {
   const box = document.createElement('div');
   box.style.cssText = [
@@ -118,6 +118,29 @@ function createDecoratedCorner(
   box.innerHTML =
     '<div style="position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at ' + orbT.glowPos + ',' + glowC + ',' + glowM + ',transparent 70%);box-shadow:0 0 ' + orbT.shadow1Blur + ' ' + shadowC1 + ',0 0 ' + orbT.shadow2Blur + ' ' + shadowC2 + '"></div>' +
     '<div style="display:flex;align-items:center;justify-content:center;color:' + symC + ';-webkit-mask:linear-gradient(' + orbT.symMaskAngle + ',' + orbT.symMaskCutoff + ',transparent 100%);mask:linear-gradient(' + orbT.symMaskAngle + ',' + orbT.symMaskCutoff + ',transparent 100%)">' + svgInner + '</div>';
+  
+  // 调试日志：检查 SVG 在光球内的位置（需要在 DOM 中才能获取 rect）
+  if (debugId) {
+    requestAnimationFrame(() => {
+      const svgWrapper = box.children[1] as HTMLElement;
+      const svg = svgWrapper?.querySelector('svg');
+      const boxRect = box.getBoundingClientRect();
+      const wrapperRect = svgWrapper?.getBoundingClientRect();
+      const svgRect = svg?.getBoundingClientRect();
+      log('[createDecoratedCorner]', debugId, {
+        boxStyle: { left: box.style.left, top: box.style.top, width: box.style.width, height: box.style.height },
+        boxRect: { x: boxRect.x, y: boxRect.y, w: boxRect.width, h: boxRect.height },
+        wrapperRect: wrapperRect ? { x: wrapperRect.x, y: wrapperRect.y, w: wrapperRect.width, h: wrapperRect.height } : null,
+        svgRect: svgRect ? { x: svgRect.x, y: svgRect.y, w: svgRect.width, h: svgRect.height } : null,
+        // 计算 SVG 中心相对于光球中心的偏移
+        svgCenterOffset: svgRect && boxRect ? {
+          x: (svgRect.x + svgRect.width/2) - (boxRect.x + boxRect.width/2),
+          y: (svgRect.y + svgRect.height/2) - (boxRect.y + boxRect.height/2),
+        } : null,
+      });
+    });
+  }
+  
   return box;
 }
 
@@ -267,7 +290,8 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
   const brOrb = createDecoratedCorner(
     FLOATING_CARD_W - rightOff - cornerSize,
     FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, rightRgba,
-    '<svg width="14" height="14" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" fill="none"/><line x1="6" y1="1.5" x2="6" y2="10.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="1.5" y1="6" x2="10.5" y2="6" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></svg>');
+    '<svg width="14" height="14" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" fill="none"/><line x1="6" y1="1.5" x2="6" y2="10.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="1.5" y1="6" x2="10.5" y2="6" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></svg>',
+    'BR');
   brOrb.style.pointerEvents = 'auto';
   brOrb.style.cursor = 'pointer';
   brOrb.classList.add('floating-br-orb');
@@ -278,7 +302,8 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
   // TL — 上移一层（紧凑态也显示）
   const tlColor = _hexToRgba(config.color1, orbT.tlAlpha);
   const tlOrb = createDecoratedCorner(cornerOff, cornerOff, cornerSize, cornerSize, tlColor,
-    '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c - sh) + ',' + (c - sh) + ') scale(' + s + ')"><path d="M6,10 L6,2 M6,2 L3,5 M6,2 L9,5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>');
+    '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c - sh) + ',' + (c - sh) + ') scale(' + s + ')"><path d="M6,10 L6,2 M6,2 L3,5 M6,2 L9,5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>',
+    'TL');
   tlOrb.style.pointerEvents = 'auto'; tlOrb.style.cursor = 'pointer';
   tlOrb.title = '\u4e0a\u79fb\u4e00\u5c42';
   tlOrb.addEventListener('click', () => { const above = _cardAbove(item); if (above) _swapZIndex(item, above); });
@@ -286,7 +311,8 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
 
   // TR — 关闭
   const trOrb = createDecoratedCorner(FLOATING_CARD_W - rightOff - cornerSize, cornerOff, cornerSize, cornerSize, rightRgba,
-    '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c + sh) + ',' + (c - sh) + ') scale(' + s + ')"><line x1="4" y1="2" x2="10" y2="8" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></g></svg>');
+    '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c + sh) + ',' + (c - sh) + ') scale(' + s + ')"><line x1="4" y1="2" x2="10" y2="8" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="10" y1="2" x2="4" y2="8" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></g></svg>',
+    'TR');
   trOrb.style.pointerEvents = 'auto'; trOrb.style.cursor = 'pointer';
   trOrb.title = '\u5173\u95ed';
   trOrb.addEventListener('click', () => { if (item.state !== 'active' && item.state !== 'compact') return; dismissFloatingCard(true, el); });
@@ -294,7 +320,8 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
 
   // BL — 下移一层
   const blOrb = createDecoratedCorner(cornerOff, FLOATING_CARD_H - bottomOff - cornerSize, cornerSize, cornerSize, leftRgba,
-    '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c - sh) + ',' + (c + sh) + ') scale(' + s + ')"><path d="M6,2 L6,10 M6,10 L3,7 M6,10 L9,7" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>');
+    '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + (c - sh) + ',' + (c + sh) + ') scale(' + s + ')"><path d="M6,2 L6,10 M6,10 L3,7 M6,10 L9,7" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>',
+    'BL');
   blOrb.style.pointerEvents = 'auto'; blOrb.style.cursor = 'pointer';
   blOrb.title = '\u4e0b\u79fb\u4e00\u5c42';
   blOrb.addEventListener('click', () => { const below = _cardBelow(item); if (below) _swapZIndex(item, below); });
@@ -310,7 +337,8 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
     cornerOff,  // 与其他光球一致：-13
     cornerSize, cornerSize,
     topMidColor,
-    '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + c + ',' + c + ') scale(' + s + ')"><path d="M1,3 L1,1 L3,1 M9,1 L11,1 L11,3 M11,9 L11,11 L9,11 M3,11 L1,11 L1,9" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>'
+    '<svg width="14" height="14" viewBox="0 0 12 12"><g transform="translate(' + c + ',' + c + ') scale(' + s + ')"><path d="M1,3 L1,1 L3,1 M9,1 L11,1 L11,3 M11,9 L11,11 L9,11 M3,11 L1,11 L1,9" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g></svg>',
+    'TopMid'
   );
   topMidOrb.style.pointerEvents = 'auto';
   topMidOrb.style.cursor = 'pointer';
@@ -454,6 +482,22 @@ function _dismissOne(item: FloatingCardItem, animated?: boolean): void {
 function enterFullscreen(item: FloatingCardItem): void {
   if (item.state === 'fullscreen' || item.state === 'dismissing') return;
   
+  // 调试日志：检查进入全屏前的状态
+  log('[enterFullscreen-BEFORE]', {
+    typeId: item.config.typeId,
+    state: item.state,
+    cardWidth: item.cardWidth,
+    cardHeight: item.cardHeight,
+    elStyleWidth: item.el.style.width,
+    elStyleHeight: item.el.style.height,
+    elRect: item.el.getBoundingClientRect(),
+    contentElChildren: item.contentEl?.children.length,
+    contentWrap: item.contentEl?.firstElementChild ? {
+      tagName: (item.contentEl.firstElementChild as HTMLElement).tagName,
+      childCount: (item.contentEl.firstElementChild as HTMLElement).children.length,
+    } : 'null',
+  });
+  
   // 如果有其他全屏卡，先退出
   for (const other of _floatingCards) {
     if (other !== item && other.state === 'fullscreen') {
@@ -534,6 +578,39 @@ function enterFullscreen(item: FloatingCardItem): void {
       const h = parseFloat(item.el.style.height) || targetH;
       item.cardWidth = w;
       item.cardHeight = h;
+    },
+    onComplete: () => {
+      // 调试日志：检查全屏后的 DOM 结构
+      const contentWrap = item.contentEl?.firstElementChild as HTMLElement | null;
+      const headerEl = contentWrap?.firstElementChild as HTMLElement | null;
+      const bodyEl = contentWrap?.lastElementChild as HTMLElement | null;
+      log('[enterFullscreen-onComplete]', {
+        cardRect: item.el.getBoundingClientRect(),
+        contentWrap: contentWrap ? {
+          rect: contentWrap.getBoundingClientRect(),
+          style: {
+            position: contentWrap.style.position,
+            overflow: contentWrap.style.overflow,
+            display: contentWrap.style.display,
+            flexDirection: contentWrap.style.flexDirection,
+          },
+        } : 'null',
+        headerEl: headerEl ? {
+          rect: headerEl.getBoundingClientRect(),
+          style: {
+            flexShrink: headerEl.style.flexShrink,
+            margin: headerEl.style.margin,
+          },
+        } : 'null',
+        bodyEl: bodyEl ? {
+          rect: bodyEl.getBoundingClientRect(),
+          style: {
+            flex: bodyEl.style.flex,
+            overflow: bodyEl.style.overflow,
+            position: bodyEl.style.position,
+          },
+        } : 'null',
+      });
     },
   });
   
@@ -861,6 +938,21 @@ export function initFloatingCards(): void {
     } else if (item.state === 'active') {
       item.state = 'collapsing';
       
+      // 调试日志：检查折叠前光球状态
+      log('[collapse-BEFORE] topMidOrb:', item.topMidOrb ? {
+        left: item.topMidOrb.style.left,
+        top: item.topMidOrb.style.top,
+        transform: item.topMidOrb.style.transform,
+        display: item.topMidOrb.style.display,
+        opacity: item.topMidOrb.style.opacity,
+        rect: item.topMidOrb.getBoundingClientRect(),
+      } : 'null');
+      log('[collapse-BEFORE] brOrb:', {
+        left: brOrb.style.left,
+        top: brOrb.style.top,
+        transform: brOrb.style.transform,
+      });
+      
       // topMidOrb 向右下角光球移动并淡出
       if (item.topMidOrb && item.brOrb) {
         const topMidLeft = parseFloat(item.topMidOrb.style.left) || 0;
@@ -870,10 +962,19 @@ export function initFloatingCards(): void {
         const dx = brLeft - topMidLeft;
         const dy = brTop - topMidTop;
         
+        log('[collapse-CALC] positions:', { topMidLeft, topMidTop, brLeft, brTop, dx, dy });
+        
         anim.to(item.topMidOrb, {
           x: dx, y: dy, opacity: 0,
           duration: 0.25, ease: 'power2.in',
           onComplete: () => {
+            log('[collapse-onComplete] topMidOrb:', item.topMidOrb ? {
+              left: item.topMidOrb.style.left,
+              top: item.topMidOrb.style.top,
+              transform: item.topMidOrb.style.transform,
+              display: item.topMidOrb.style.display,
+              opacity: item.topMidOrb.style.opacity,
+            } : 'null');
             if (item.topMidOrb) {
               item.topMidOrb.style.display = 'none';
               item.topMidOrb.style.opacity = '';
