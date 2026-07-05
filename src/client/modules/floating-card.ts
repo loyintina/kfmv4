@@ -30,6 +30,8 @@ const bottomOff = cornerOff + orbT.bottomOffAdj;
 
 // ========== 配置 ==========
 const Z_FLOATING_BASE = 50;
+const Z_FULLSCREEN = 30;                  // 全屏卡固定 z-index（低于浮卡，高于背景）
+const TITLE_BAR_H = 28;                   // 标题栏高度
 
 const COMPACT_W = 155;
 const COMPACT_H = 68;
@@ -58,12 +60,14 @@ interface FloatingCardItem {
   config: FloatingCardConfig;
   instanceId: string;
   zIndex: number;
-  state: 'launching' | 'compact' | 'expanding' | 'active' | 'collapsing' | 'dismissing' | 'editing';
+  state: 'launching' | 'compact' | 'expanding' | 'active' | 'collapsing' | 'dismissing' | 'editing' | 'fullscreen';
   tlOrb: HTMLElement | null;
   trOrb: HTMLElement | null;
   blOrb: HTMLElement | null;
   brOrb: HTMLElement | null;
+  topMidOrb: HTMLElement | null;          // 上沿中间光球（全屏触发）
   contentEl: HTMLElement | null;
+  headerEl: HTMLElement | null;           // 标题栏元素
   cardWidth: number;
   cardHeight: number;
   compactMemW: number;
@@ -72,6 +76,11 @@ interface FloatingCardItem {
   activeMemH: number;
   accentColor: string;
   needsKeyboard: boolean;
+  isFullscreen: boolean;                  // 是否全屏态
+  _fullscreenSaved: { left: number; top: number; width: number; height: number } | null;
+  zLocked: boolean;                       // z-index 锁（全屏卡不参与焦点竞争）
+  fullscreenBtns: { windowize: HTMLElement; close: HTMLElement } | null;
+  _fsResizeHandler: (() => void) | null;  // 全屏键盘避让监听器
 }
 
 let _floatingCards: FloatingCardItem[] = [];
@@ -117,6 +126,7 @@ function _cardAbove(item: FloatingCardItem): FloatingCardItem | null {
   let highest: FloatingCardItem | null = null;
   for (const c of _floatingCards) {
     if (c === item) continue;
+    if (c.zLocked) continue;  // 跳过 z-index 锁定的卡片
     if (c.zIndex > item.zIndex) {
       if (!highest || c.zIndex > highest.zIndex) {
         highest = c;
@@ -130,6 +140,7 @@ function _cardBelow(item: FloatingCardItem): FloatingCardItem | null {
   let lowest: FloatingCardItem | null = null;
   for (const c of _floatingCards) {
     if (c === item) continue;
+    if (c.zLocked) continue;  // 跳过 z-index 锁定的卡片
     if (c.zIndex < item.zIndex) {
       if (!lowest || c.zIndex < lowest.zIndex) {
         lowest = c;
@@ -140,6 +151,8 @@ function _cardBelow(item: FloatingCardItem): FloatingCardItem | null {
 }
 
 function _swapZIndex(a: FloatingCardItem, b: FloatingCardItem): void {
+  // 不允许与 zLocked 卡片交换
+  if (a.zLocked || b.zLocked) return;
   const tmp = a.zIndex;
   a.zIndex = b.zIndex;
   b.zIndex = tmp;
@@ -215,21 +228,60 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
     'backdrop-filter:blur(16px)', '-webkit-backdrop-filter:blur(16px)',
     'position:relative', 'overflow:hidden',
   ].join(';');
-  const contentEl = document.createElement('div');
-  contentEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:2px 6px;font-size:11px;font-weight:500;color:rgba(224,224,224,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:none';
-  bgLayer.appendChild(contentEl);
+  // 标题栏：01卡（typeId='file'）和空白卡（无 contentHandler）统一添加
+  let headerEl: HTMLElement | null = null;
+  let contentEl: HTMLElement;
+  const needsTitleBar = config.typeId === 'file' || !config.contentHandler;
+  if (needsTitleBar) {
+    const titleWrap = document.createElement('div');
+    titleWrap.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;pointer-events:none';
+    
+    headerEl = document.createElement('div');
+    headerEl.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:6px 10px 4px;flex-shrink:0;pointer-events:none';
+    
+    const label = document.createElement('div');
+    label.style.cssText = 'font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0';
+    label.textContent = config.name || '';
+    headerEl.appendChild(label);
+    
+    const line = document.createElement('div');
+    line.style.cssText = 'height:1px;flex-shrink:0;background:linear-gradient(90deg,' + config.color1 + ',' + config.color2 + ')';
+    
+    const bodyEl = document.createElement('div');
+    bodyEl.style.cssText = 'flex:1;display:flex;flex-direction:column;overflow:hidden';
+    
+    titleWrap.appendChild(headerEl);
+    titleWrap.appendChild(line);
+    titleWrap.appendChild(bodyEl);
+    bgLayer.appendChild(titleWrap);
+    
+    // 内容区放在 bodyEl 内
+    contentEl = document.createElement('div');
+    contentEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:2px 6px;font-size:11px;font-weight:500;color:rgba(224,224,224,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:none';
+    bodyEl.appendChild(contentEl);
+  } else {
+    // 02/03/04 卡：已有标题栏，保持原结构
+    contentEl = document.createElement('div');
+    contentEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:2px 6px;font-size:11px;font-weight:500;color:rgba(224,224,224,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:none';
+    bgLayer.appendChild(contentEl);
+  }
   el.appendChild(bgLayer);
 
   const zIndex = _nextFloatingZ++;
   const item: FloatingCardItem = {
     el, config, zIndex, state: 'launching',
     instanceId: '',
-    tlOrb: null, trOrb: null, blOrb: null, brOrb: null, contentEl,
+    tlOrb: null, trOrb: null, blOrb: null, brOrb: null, topMidOrb: null, contentEl, headerEl,
     cardWidth: FLOATING_CARD_W, cardHeight: FLOATING_CARD_H,
     compactMemW: COMPACT_W, compactMemH: COMPACT_H,
     activeMemW: FLOATING_CARD_W, activeMemH: FLOATING_CARD_H,
     accentColor: config.color2,
     needsKeyboard: config.typeId === 'card03' || config.typeId === 'card04',
+    isFullscreen: false,
+    _fullscreenSaved: null,
+    zLocked: false,
+    fullscreenBtns: null,
+    _fsResizeHandler: null,
   };
 
   // 注册到运行时实例表
@@ -278,6 +330,22 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
   blOrb.title = '\u4e0b\u79fb\u4e00\u5c42';
   blOrb.addEventListener('click', () => { const below = _cardBelow(item); if (below) _swapZIndex(item, below); });
   el.appendChild(blOrb); item.blOrb = blOrb;
+
+  // TopMid — 上沿中间光球（全屏触发）
+  const topMidColor = _hexToRgba(config.color1, orbT.tlAlpha);
+  const topMidOrb = createDecoratedCorner(
+    FLOATING_CARD_W / 2 - cornerSize / 2,
+    cornerOff,
+    cornerSize, cornerSize,
+    topMidColor,
+    '<svg width="14" height="14" viewBox="0 0 12 12"><rect x="1.5" y="1.5" width="9" height="9" rx="1" stroke="currentColor" stroke-width="' + orbT.symStroke + '" fill="none"/><line x1="1.5" y1="4" x2="10.5" y2="4" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></svg>'
+  );
+  topMidOrb.style.pointerEvents = 'auto';
+  topMidOrb.style.cursor = 'pointer';
+  topMidOrb.title = '\u5168\u5c4f';
+  topMidOrb.style.display = 'none';  // 初始隐藏，展开动画时显示
+  el.appendChild(topMidOrb);
+  item.topMidOrb = topMidOrb;
 
   el.appendChild(brOrb);
   item.brOrb = brOrb;
@@ -369,6 +437,22 @@ function _dismissOne(item: FloatingCardItem, animated?: boolean): void {
     item.state = 'dismissing';
     return;
   }
+  
+  // 如果是全屏态，先清理全屏相关状态
+  if (item.state === 'fullscreen') {
+    const onResize = item._fsResizeHandler;
+    if (onResize) {
+      window.visualViewport?.removeEventListener('resize', onResize);
+      item._fsResizeHandler = null;
+    }
+    if (item.fullscreenBtns) {
+      item.fullscreenBtns.windowize.remove();
+      item.fullscreenBtns.close.remove();
+      item.fullscreenBtns = null;
+    }
+    item.zLocked = false;
+  }
+  
   item.state = 'dismissing';
 
   if (item.contentEl) {
@@ -391,6 +475,215 @@ function _dismissOne(item: FloatingCardItem, animated?: boolean): void {
     const idx = _floatingCards.indexOf(item);
     if (idx >= 0) _floatingCards.splice(idx, 1);
   }
+}
+
+// ========== 全屏逻辑 ==========
+
+/** 进入全屏态 */
+function enterFullscreen(item: FloatingCardItem): void {
+  if (item.state === 'fullscreen' || item.state === 'dismissing') return;
+  
+  // 如果有其他全屏卡，先退出
+  for (const other of _floatingCards) {
+    if (other !== item && other.state === 'fullscreen') {
+      exitFullscreen(other);
+    }
+  }
+  
+  // 保存当前位置/尺寸
+  item._fullscreenSaved = {
+    left: parseFloat(item.el.style.left) || 0,
+    top: parseFloat(item.el.style.top) || 0,
+    width: item.cardWidth,
+    height: item.cardHeight,
+  };
+  
+  // 隐藏四角光球 + topMidOrb
+  if (item.tlOrb) item.tlOrb.style.display = 'none';
+  if (item.trOrb) item.trOrb.style.display = 'none';
+  if (item.blOrb) item.blOrb.style.display = 'none';
+  if (item.brOrb) item.brOrb.style.display = 'none';
+  if (item.topMidOrb) item.topMidOrb.style.display = 'none';
+  
+  // 锁定 z-index
+  item.zLocked = true;
+  item.zIndex = Z_FULLSCREEN;
+  item.el.style.zIndex = String(Z_FULLSCREEN);
+  
+  // 创建全屏态标题栏按钮
+  if (item.headerEl) {
+    // 标题栏变窄：增加左右边距
+    item.headerEl.style.padding = '6px 10px 4px';
+    item.headerEl.style.justifyContent = 'flex-start';
+    
+    // 左侧按钮：窗口化
+    const windowizeBtn = document.createElement('div');
+    windowizeBtn.style.cssText = 'position:absolute;left:8px;top:50%;transform:translateY(-50%);width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;z-index:1';
+    windowizeBtn.title = '\u7a97\u53e3\u5316';
+    windowizeBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16"><rect x="2" y="4" width="12" height="8" rx="1" stroke="' + _hexToRgba(item.config.color1, 1) + '" stroke-width="1.5" fill="none"/><line x1="2" y1="6" x2="14" y2="6" stroke="' + _hexToRgba(item.config.color1, 1) + '" stroke-width="1.5"/></svg>';
+    windowizeBtn.addEventListener('click', () => exitFullscreen(item));
+    
+    // 右侧按钮：关闭
+    const closeBtn = document.createElement('div');
+    closeBtn.style.cssText = 'position:absolute;right:8px;top:50%;transform:translateY(-50%);width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;z-index:1';
+    closeBtn.title = '\u5173\u95ed';
+    closeBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16"><line x1="4" y1="4" x2="12" y2="12" stroke="' + _hexToRgba(item.config.color2, 1) + '" stroke-width="1.5" stroke-linecap="round"/><line x1="12" y1="4" x2="4" y2="12" stroke="' + _hexToRgba(item.config.color2, 1) + '" stroke-width="1.5" stroke-linecap="round"/></svg>';
+    closeBtn.addEventListener('click', () => dismissFullscreen(item));
+    
+    item.el.appendChild(windowizeBtn);
+    item.el.appendChild(closeBtn);
+    item.fullscreenBtns = { windowize: windowizeBtn, close: closeBtn };
+  }
+  
+  // 动画到全屏尺寸
+  const bar = document.getElementById('aiInputBar');
+  const barTop = bar ? bar.getBoundingClientRect().top : window.innerHeight;
+  const targetH = barTop - 2;  // 间距 2px
+  
+  item.state = 'fullscreen';
+  item.isFullscreen = true;
+  
+  anim.to(item.el, {
+    left: 0,
+    top: 0,
+    width: window.innerWidth,
+    height: targetH,
+    duration: 0.3,
+    ease: 'power2.out',
+    onUpdate: () => {
+      const w = parseFloat(item.el.style.width) || window.innerWidth;
+      const h = parseFloat(item.el.style.height) || targetH;
+      item.cardWidth = w;
+      item.cardHeight = h;
+    },
+  });
+  
+  // 键盘避让：监听 visualViewport 变化
+  const onResize = () => {
+    if (item.state !== 'fullscreen') return;
+    const bar2 = document.getElementById('aiInputBar');
+    const barTop2 = bar2 ? bar2.getBoundingClientRect().top : window.innerHeight;
+    const newH = barTop2 - 2;
+    item.el.style.height = newH + 'px';
+    item.cardHeight = newH;
+  };
+  window.visualViewport?.addEventListener('resize', onResize);
+  item._fsResizeHandler = onResize;
+}
+
+/** 退出全屏态，回到 active 浮卡 */
+function exitFullscreen(item: FloatingCardItem): void {
+  if (item.state !== 'fullscreen') return;
+  
+  // 移除键盘避让监听
+  const onResize = item._fsResizeHandler;
+  if (onResize) {
+    window.visualViewport?.removeEventListener('resize', onResize);
+    item._fsResizeHandler = null;
+  }
+  
+  // 移除全屏态按钮
+  if (item.fullscreenBtns) {
+    item.fullscreenBtns.windowize.remove();
+    item.fullscreenBtns.close.remove();
+    item.fullscreenBtns = null;
+  }
+  
+  // 恢复标题栏
+  if (item.headerEl) {
+    item.headerEl.style.padding = '6px 10px 4px';
+    item.headerEl.style.justifyContent = 'space-between';
+  }
+  
+  // 显示四角光球 + topMidOrb
+  if (item.tlOrb) item.tlOrb.style.display = '';
+  if (item.trOrb) item.trOrb.style.display = '';
+  if (item.blOrb) item.blOrb.style.display = '';
+  if (item.brOrb) item.brOrb.style.display = '';
+  if (item.topMidOrb) item.topMidOrb.style.display = '';
+  
+  // 解锁 z-index
+  item.zLocked = false;
+  item.zIndex = _nextFloatingZ++;
+  item.el.style.zIndex = String(item.zIndex);
+  
+  // 恢复到保存的位置/尺寸
+  const saved = item._fullscreenSaved;
+  if (saved) {
+    item.state = 'active';
+    item.isFullscreen = false;
+    
+    anim.to(item.el, {
+      left: saved.left,
+      top: saved.top,
+      width: saved.width,
+      height: saved.height,
+      duration: 0.3,
+      ease: 'power2.out',
+      onUpdate: () => {
+        const w = parseFloat(item.el.style.width) || saved.width;
+        const h = parseFloat(item.el.style.height) || saved.height;
+        item.cardWidth = w;
+        item.cardHeight = h;
+        // 同步光球位置
+        if (item.topMidOrb) {
+          item.topMidOrb.style.left = (w / 2 - cornerSize / 2) + 'px';
+        }
+      },
+      onComplete: () => {
+        item._fullscreenSaved = null;
+      },
+    });
+  } else {
+    // 没有保存位置，随机散落
+    item.state = 'active';
+    item.isFullscreen = false;
+    item._fullscreenSaved = null;
+    
+    const targetPos = _scatterPosition(_floatingCards.length);
+    anim.to(item.el, {
+      left: targetPos.left,
+      top: targetPos.top,
+      width: FLOATING_CARD_W,
+      height: FLOATING_CARD_H,
+      duration: 0.3,
+      ease: 'power2.out',
+      onUpdate: () => {
+        const w = parseFloat(item.el.style.width) || FLOATING_CARD_W;
+        const h = parseFloat(item.el.style.height) || FLOATING_CARD_H;
+        item.cardWidth = w;
+        item.cardHeight = h;
+        if (item.topMidOrb) {
+          item.topMidOrb.style.left = (w / 2 - cornerSize / 2) + 'px';
+        }
+      },
+    });
+  }
+}
+
+/** 完全关闭全屏卡 */
+function dismissFullscreen(item: FloatingCardItem): void {
+  if (item.state !== 'fullscreen') return;
+  
+  // 移除键盘避让监听
+  const onResize = item._fsResizeHandler;
+  if (onResize) {
+    window.visualViewport?.removeEventListener('resize', onResize);
+    item._fsResizeHandler = null;
+  }
+  
+  // 移除全屏态按钮
+  if (item.fullscreenBtns) {
+    item.fullscreenBtns.windowize.remove();
+    item.fullscreenBtns.close.remove();
+    item.fullscreenBtns = null;
+  }
+  
+  // 恢复 z-index 锁
+  item.zLocked = false;
+  
+  // 调用 _dismissOne 完全关闭
+  _dismissOne(item, true);
 }
 
 export function hasFloatingCard(): boolean {
@@ -474,6 +767,11 @@ export function initFloatingCards(): void {
       const brSvgContainer = brOrb.children[1] as HTMLElement;
       if (brSvgContainer) brSvgContainer.innerHTML = '<svg width="14" height="14" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" fill="none"/><line x1="6" y1="1.5" x2="6" y2="10.5" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/><line x1="1.5" y1="6" x2="10.5" y2="6" stroke="currentColor" stroke-width="' + orbT.symStroke + '" stroke-linecap="round"/></svg>';
 
+      // 展开动画开始时显示 topMidOrb
+      if (item.topMidOrb) {
+        item.topMidOrb.style.display = '';
+      }
+      
       anim.to(el, {
         left: expLeft, top: expTop,
         width: compressedW, height: compressedH,
@@ -485,6 +783,10 @@ export function initFloatingCards(): void {
           brOrb.style.top = (h - bottomOff - cornerSize) + 'px';
           if (item.trOrb) item.trOrb.style.left = (w - rightOff - cornerSize) + 'px';
           if (item.blOrb) item.blOrb.style.top = (h - bottomOff - cornerSize) + 'px';
+          // 同步 topMidOrb 位置
+          if (item.topMidOrb) {
+            item.topMidOrb.style.left = (w / 2 - cornerSize / 2) + 'px';
+          }
         },
         onComplete: () => {
           item.cardWidth = compressedW;
@@ -500,6 +802,10 @@ export function initFloatingCards(): void {
           brOrb.style.top = (item.cardHeight - bottomOff - cornerSize) + 'px';
           if (item.trOrb) item.trOrb.style.left = (item.cardWidth - rightOff - cornerSize) + 'px';
           if (item.blOrb) item.blOrb.style.top = (item.cardHeight - bottomOff - cornerSize) + 'px';
+          // 同步 topMidOrb 最终位置
+          if (item.topMidOrb) {
+            item.topMidOrb.style.left = (item.cardWidth / 2 - cornerSize / 2) + 'px';
+          }
           item.state = 'active';
           el.style.zIndex = String(zIndex);
         },
@@ -541,6 +847,10 @@ export function initFloatingCards(): void {
           brOrb.style.top = (h - bottomOff - cornerSize) + 'px';
           if (item.trOrb) item.trOrb.style.left = (w - rightOff - cornerSize) + 'px';
           if (item.blOrb) item.blOrb.style.top = (h - bottomOff - cornerSize) + 'px';
+          // 同步 topMidOrb 位置
+          if (item.topMidOrb) {
+            item.topMidOrb.style.left = (w / 2 - cornerSize / 2) + 'px';
+          }
         },
         onComplete: () => {
           item.cardWidth = clampedFoldW;
@@ -549,6 +859,10 @@ export function initFloatingCards(): void {
           brOrb.style.top = (clampedFoldH - bottomOff - cornerSize) + 'px';
           if (item.trOrb) item.trOrb.style.left = (clampedFoldW - rightOff - cornerSize) + 'px';
           if (item.blOrb) item.blOrb.style.top = (clampedFoldH - bottomOff - cornerSize) + 'px';
+          // 折叠完成时隐藏 topMidOrb
+          if (item.topMidOrb) {
+            item.topMidOrb.style.display = 'none';
+          }
           item.state = 'compact';
         },
       });
@@ -657,6 +971,25 @@ export function initFloatingCards(): void {
     onStart: drag.onStart,
     onMove: drag.onMove,
     onEnd: drag.onEnd,
+  });
+
+  // topMidOrb 点击处理：进入全屏
+  gestures.register({
+    id: 'floating-topmid-orb',
+    targetFilter: '[title="全屏"]',
+    priority: 101,
+    stopPropagation: true,
+    onEnd(event) {
+      const orbEl = (event.target as HTMLElement).closest('[title="全屏"]') as HTMLElement;
+      if (!orbEl) return;
+      // 找到对应的 item
+      for (const item of _floatingCards) {
+        if (item.topMidOrb === orbEl) {
+          enterFullscreen(item);
+          break;
+        }
+      }
+    },
   });
 
   // 键盘避让：开时从 saved orb 重算 fClamp → derive card（同 onMoveNormal）；
