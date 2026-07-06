@@ -244,7 +244,7 @@ export class GestureRegistry {
       if (handler.onBeforeStart && !handler.onBeforeStart(e)) continue;
 
       // 调试日志：检查哪个处理器匹配了触摸
-      log('[gesture] matched handler:', handler.id, 'target:', target.className, 'tagName:', target.tagName, 'touch-action:', getComputedStyle(target).touchAction);
+      log('[gesture] matched handler:', handler.id, 'target:', target.className, 'tagName:', target.tagName);
 
       // 锁定该处理器
       this._active = {
