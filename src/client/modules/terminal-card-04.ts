@@ -48,6 +48,7 @@
 
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
+import { WebglAddon } from '@xterm/addon-webgl';
 import { buildCardLayout } from './floating-card.js';
 import { wsChannel } from './ws-channel.js';
 import { cardRegistry, type CardInstance, type CardContentHandler } from './card-registry.js';
@@ -64,6 +65,7 @@ export interface TerminalCardMeta {
   sessionId?: string;
   _term?: Terminal;
   _fit?: FitAddon;
+  _webglAddon?: WebglAddon;
   _xtermEl?: HTMLElement;
   _termEl?: HTMLElement;
   _observer?: ResizeObserver;
@@ -236,6 +238,16 @@ export function initTerminalCore(
   termEl.style.cssText = 'flex:1;overflow:hidden';
   container.appendChild(termEl);
   term.open(termEl);
+
+  // 加载 WebGL 渲染器（替代 DOM 渲染器，避免布局回流）
+  try {
+    const webglAddon = new WebglAddon();
+    term.loadAddon(webglAddon);
+    tc.meta._webglAddon = webglAddon;
+  } catch (e) {
+    // WebGL 不可用，回退到 DOM 渲染器
+    log('[terminal] WebGL not available, falling back to DOM renderer');
+  }
 
   const xtermEl = termEl.querySelector('.xterm') as HTMLElement;
   if (xtermEl) {
