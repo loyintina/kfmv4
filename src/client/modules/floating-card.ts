@@ -233,6 +233,7 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
   // 标题栏由 handler 自己创建（buildCardLayout 或 inline），shell 不干预
   const headerEl: HTMLElement | null = null;
   const contentEl = document.createElement('div');
+  contentEl.className = 'card-content';
   contentEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:2px 6px;font-size:11px;font-weight:500;color:rgba(224,224,224,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:none';
   bgLayer.appendChild(contentEl);
   el.appendChild(bgLayer);
