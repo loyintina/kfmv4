@@ -47,6 +47,10 @@ created_at: 2026-06-29
 
 **历史案例**：B.A.R. #001（全局 touch-action）、B.A.R. #007（终端 Canvas 缺失 touch-action）
 
+**注意**：`touch-action` 不是 CSS 继承属性。即使父元素设为 `none`，子元素仍使用默认值 `auto`。
+全屏卡片需要通过 CSS 规则 `.floating-card.fullscreen * { touch-action: none }` 确保所有后代元素生效。
+历史案例：2026-07-06 全屏卡片手势被 pointercancel 截断，排查 4 轮才发现是非继承属性问题。
+
 ### 1.3 卡片堆是全局模式，不是局部组件
 
 **涉及模块**：`card-stack.ts`、`gestures.ts`

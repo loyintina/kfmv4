@@ -14,9 +14,9 @@ AI 人机交互个人工作台，面向移动端浏览器。核心理念：**一
 
 ## 技术栈
 
-- TypeScript 6 (ES2022) + Express 4 服务端
+- **源码语言**：TypeScript（非 JavaScript）— 所有 `.ts` 文件由 tsc 编译
+- **样式语言**：SCSS（非 CSS）— `sass base.scss → base.css`，直接改 `.css` 会被覆盖
 - Canvas 2D 自研渲染引擎（v2 Box → Renderer）
-- SCSS 编译（sass → CSS，语法校验 + 构建时编译）
 - GSAP 3.15 动画（通过 `animation-registry.ts` 隔离调用）
 - esbuild 构建（`tsc --noEmit` → esbuild bundle）
 - `@chenglou/pretext` 文本测量
@@ -53,6 +53,7 @@ docs/
 │   ├── TERMINAL_CARD_SPEC.md        # 03 号终端卡设计（active 设计提案）
 │   ├── CARD_REGISTRY_SPEC.md        # 卡片注册表设计（active 设计提案）
 │   ├── UI_ELEMENT_REGISTRY_SPEC.md  # UI 元素注册表设计（活跃设计）
+│   └── FULLSCREEN_CARD_SPEC.md         # 全屏卡片设计（活跃设计提案）
 │   ├── BOX_LOCATION_MAP_SPEC.md     # Box 位置映射协议（设计提案）
 │   └── ENGINE_ARCHITECTURE.md       # 引擎层架构（v2 管线 + text-layout）
 └── archive/                 # 历史归档
@@ -91,7 +92,7 @@ npm run test    # 178 个回归测试，覆盖 23 个模块
 - **touch-action: none** — 所有自定义 Canvas 控件必须显式设置，否则浏览器接管触控导致 `pointercancel` 截断手势
 - **Git 推送认证**：项目根目录 `.env` 文件中配置了 `GITHUB_TOKEN` 环境变量（已 `.gitignore` 保护）。执行 `git push` 前先 `source .env` 或将该 token 加入 git credential。该 token 用于 agent 远程推送代码，不可删除。
 - **代码注释约定**：设计决策写在所改动代码文件的头部注释块中，而非独立文档。
-  关键分支处必写"为什么走A不走B"。改到哪个文件注释就更新到哪个文件。详见 `docs/PRINCIPLES.md §设计注释规约`。
+  关键分支处必写"为什么走A不走B"。改到哪个文件注释就更新到哪个文件。详见 `docs/PRINCIPLES.md` 设计注释规约。
 > 更多隐性契约见 `docs/DIAGNOSTICS.md` §一。
 
 > 历史修复记录（v4.0.0 前）已清理。如需追溯：`git log --oneline v4.0.0..HEAD`
