@@ -212,3 +212,9 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 .card-stack-toggle-btn.active .stack-icon rect:last-child{
   filter:drop-shadow(0 0 6px rgba(0,212,255,.5));
 }
+
+/* 浮卡全屏模式：禁止浏览器接管触控，防止 pointercancel 截断手势 */
+.floating-card.fullscreen,
+.floating-card.fullscreen * {
+  touch-action: none;
+}
