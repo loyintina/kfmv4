@@ -54,6 +54,8 @@ import { cardRegistry, type CardInstance, type CardContentHandler } from './card
 import { gestures } from './gesture-registry.js';
 import { log } from './logger.js';
 import { currentTheme } from './theme.js';
+import { openSidebar } from './ui.js';
+import { openCardStack } from './card-stack.js';
 
 // ========== 终端卡 meta 类型定义 ==========
 
@@ -99,6 +101,8 @@ const _sidMap = new Map<HTMLElement, string>();
 let _activeTerm: Terminal | null = null;
 let _activeSid = '';
 let _startY = 0;
+let _startX = 0;
+let _actionTaken = false;
 
 gestures.register({
   id: 'xterm-scroll',
@@ -112,9 +116,26 @@ gestures.register({
     _activeTerm = term;
     _activeSid = sid;
     _startY = e.clientY;
+    _startX = e.clientX;
+    _actionTaken = false;
   },
   onMove(e) {
     if (!_activeTerm) return;
+    
+    // 全屏模式下检测水平滑动
+    const target = e.target as HTMLElement;
+    const card = target?.closest('.floating-card');
+    if (card?.classList.contains('fullscreen')) {
+      const dx = e.clientX - _startX;
+      const dy = e.clientY - _startY;
+      if (!_actionTaken && Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 2) {
+        if (dx > 0) openSidebar();
+        else openCardStack();
+        _actionTaken = true;
+        return;
+      }
+    }
+    
     const dy = _startY - e.clientY;
     if (Math.abs(dy) < 4) return;
     const ms = (_activeTerm as any)._core?.coreMouseService;
@@ -138,6 +159,7 @@ gestures.register({
   onEnd() {
     _activeTerm = null;
     _activeSid = '';
+    _actionTaken = false;
   },
   stopPropagation: true,
 });
