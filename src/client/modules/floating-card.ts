@@ -520,9 +520,8 @@ function enterFullscreen(item: FloatingCardItem): void {
   item.state = 'fullscreen';
   item.isFullscreen = true;
   
-  // 防止浏览器接管触控导致 pointercancel 截断手势（DIAGNOSTICS.md 隐性契约）
-  // 设置在 el 上确保所有子元素都能正确响应手势系统
-  item.el.style.touchAction = 'none';
+  // 添加全屏 CSS 类（通过 CSS 触发 touch-action: none，防止 pointercancel）
+  item.el.classList.add('fullscreen');
   
   anim.to(item.el, {
     left: 0,
@@ -584,8 +583,8 @@ function exitFullscreen(item: FloatingCardItem): void {
     lineEl.style.margin = '';
   }
   
-  // 恢复 touch-action（进入全屏时设为 'none' 防止 pointercancel）
-  item.el.style.touchAction = '';
+  // 移除全屏 CSS 类
+  item.el.classList.remove('fullscreen');
   
   // 显示四角光球 + topMidOrb
   if (item.tlOrb) item.tlOrb.style.display = 'flex';
