@@ -53,8 +53,9 @@ docs/
 │   ├── TERMINAL_CARD_SPEC.md        # 03 号终端卡设计（active 设计提案）
 │   ├── CARD_REGISTRY_SPEC.md        # 卡片注册表设计（active 设计提案）
 │   ├── UI_ELEMENT_REGISTRY_SPEC.md  # UI 元素注册表设计（活跃设计）
-│   └── FULLSCREEN_CARD_SPEC.md         # 全屏卡片设计（活跃设计提案）
+│   ├── FULLSCREEN_CARD_SPEC.md         # 全屏卡片设计（活跃设计提案）
 │   ├── BOX_LOCATION_MAP_SPEC.md     # Box 位置映射协议（设计提案）
+│   ├── GESTURE_ARCHITECTURE_SPEC.md # 手势识别架构改进（设计提案）
 │   └── ENGINE_ARCHITECTURE.md       # 引擎层架构（v2 管线 + text-layout）
 └── archive/                 # 历史归档
     ├── README.md            # 子目录导览
