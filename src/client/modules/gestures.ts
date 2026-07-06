@@ -71,11 +71,9 @@ function _applyFontSizeToContent(contentEl: HTMLElement, typeId: string, fontSiz
       if (term.options.fontSize !== newFontSize) {
         term.options.fontSize = newFontSize;
 
-        // 使用 requestAnimationFrame 批处理 fit.fit()
+        // 直接调用 fit.fit()，不使用 requestAnimationFrame（避免触摸事件中 rAF 被节流）
         if (instance.meta._fit) {
-          requestAnimationFrame(() => {
-            try { (instance.meta._fit as { fit: () => void }).fit(); } catch {}
-          });
+          try { (instance.meta._fit as { fit: () => void }).fit(); } catch {}
         }
       }
     }
