@@ -56,26 +56,45 @@ function _saveFontSize(typeId: string, fontSize: number): void {
   localStorage.setItem('kfm-fontsize-' + typeId, JSON.stringify({ fontSize }));
 }
 
-function _applyFontSizeToContent(contentEl: HTMLElement, typeId: string, fontSize: number, _isPinching: boolean): void {
-  // 所有卡片类型都设置 CSS 变量（统一行为）
+/** 应用字号到内容（实际更新，触发布局回流） */
+function _applyFontSizeToContent(contentEl: HTMLElement, typeId: string, fontSize: number): void {
   contentEl.style.setProperty('--card-font-size', fontSize + 'px');
 
   if (typeId === 'card03' || typeId === 'card04') {
-    // 终端卡：直接更新字号（不使用 CSS transform，避免视觉变形）
     const instance = cardRegistry.getInstanceByContentEl(contentEl);
     if (instance?.meta._term) {
-      const term = instance.meta._term as { options: { fontSize: number } };
+      const term = instance.meta._term as { options: { fontSize: number }; cols: number; rows: number };
       const newFontSize = Math.round(fontSize);
 
-      // 只在字号真正变化时才更新
       if (term.options.fontSize !== newFontSize) {
         term.options.fontSize = newFontSize;
-
-        // 直接调用 fit.fit()，不使用 requestAnimationFrame（避免触摸事件中 rAF 被节流）
         if (instance.meta._fit) {
           try { (instance.meta._fit as { fit: () => void }).fit(); } catch {}
         }
       }
+    }
+  }
+}
+
+/** 应用视觉缩放（CSS transform，不触发布局回流） */
+function _applyVisualScale(contentEl: HTMLElement, typeId: string, scale: number): void {
+  if (typeId === 'card03' || typeId === 'card04') {
+    const instance = cardRegistry.getInstanceByContentEl(contentEl);
+    if (instance?.meta._termEl) {
+      const termEl = instance.meta._termEl as HTMLElement;
+      termEl.style.transform = `scale(${scale})`;
+      termEl.style.transformOrigin = 'top left';
+    }
+  }
+}
+
+/** 移除视觉缩放 */
+function _removeVisualScale(contentEl: HTMLElement, typeId: string): void {
+  if (typeId === 'card03' || typeId === 'card04') {
+    const instance = cardRegistry.getInstanceByContentEl(contentEl);
+    if (instance?.meta._termEl) {
+      const termEl = instance.meta._termEl as HTMLElement;
+      termEl.style.transform = '';
     }
   }
 }
@@ -91,13 +110,14 @@ export function initGestures(): void {
   // ========== 双指缩放处理器 ==========
   let _pinchTypeId: string | null = null;
   let _pinchStartFontSize: number = 13;
+  let _pinchCurrentFontSize: number = 13;
 
   gestures.register({
     id: 'pinch-zoom',
     targetFilter: '.floating-card .card-content',
     priority: 90,
-    requireFailure: ['xterm-scroll'],  // 等待 xterm-scroll 失败后才能识别
-    recognizeTimeout: 150,  // 150ms 超时
+    requireFailure: ['xterm-scroll'],
+    recognizeTimeout: 150,
     onPinchStart: (e, _scale) => {
       const target = e.target as HTMLElement;
       const contentEl = target.closest('.card-content') as HTMLElement;
@@ -108,7 +128,7 @@ export function initGestures(): void {
 
       _pinchTypeId = instance.typeId;
       _pinchStartFontSize = _loadFontSize(_pinchTypeId);
-      log('[pinch-zoom] start, typeId:', _pinchTypeId, 'fontSize:', _pinchStartFontSize);
+      _pinchCurrentFontSize = _pinchStartFontSize;
     },
     onPinchMove: (_e, scale) => {
       if (!_pinchTypeId) return;
@@ -116,13 +136,14 @@ export function initGestures(): void {
       const config = _getFontSizeConfig(_pinchTypeId);
       const newFontSize = Math.max(config.min, Math.min(config.max, _pinchStartFontSize * scale));
 
-      // 找到所有同类型卡片的内容元素，应用字号
+      // 计算视觉缩放比例（相对于当前字号）
+      const visualScale = newFontSize / _pinchCurrentFontSize;
+
+      // 应用 CSS transform（只触发合成层更新，不触发布局回流）
       const instances = cardRegistry.getByType(_pinchTypeId);
       for (const inst of instances) {
-        _applyFontSizeToContent(inst.contentEl, _pinchTypeId, newFontSize, true);
+        _applyVisualScale(inst.contentEl, _pinchTypeId, visualScale);
       }
-
-      log('[pinch-zoom] move, scale:', scale.toFixed(2), 'fontSize:', newFontSize.toFixed(1));
     },
     onPinchEnd: (_e, scale) => {
       if (!_pinchTypeId) return;
@@ -133,13 +154,13 @@ export function initGestures(): void {
       // 保存字号偏好
       _saveFontSize(_pinchTypeId, finalFontSize);
 
-      // 应用最终字号（非 pinch 模式）
+      // 移除视觉缩放，更新实际字号
       const instances = cardRegistry.getByType(_pinchTypeId);
       for (const inst of instances) {
-        _applyFontSizeToContent(inst.contentEl, _pinchTypeId, finalFontSize, false);
+        _removeVisualScale(inst.contentEl, _pinchTypeId);
+        _applyFontSizeToContent(inst.contentEl, _pinchTypeId, finalFontSize);
       }
 
-      log('[pinch-zoom] end, typeId:', _pinchTypeId, 'fontSize:', finalFontSize.toFixed(1));
       _pinchTypeId = null;
     },
   });
@@ -167,9 +188,6 @@ export function initGestures(): void {
       }
       _actionTaken = false;
       _axisLock = 'none';
-      
-      // 调试日志
-      log('[page-swipe] onStart, snapshot:', _snapshot);
     },
     onMove: (_e, dx, dy) => {
       if (_actionTaken) return;
@@ -178,9 +196,6 @@ export function initGestures(): void {
       if (_axisLock === 'none' && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
         _axisLock = Math.abs(dx) > Math.abs(dy) ? 'horizontal' : 'vertical';
       }
-      
-      // 调试日志
-      log('[page-swipe] onMove, dx:', dx, 'dy:', dy, 'axis:', _axisLock);
       
       if (_axisLock !== 'horizontal') return;
 
