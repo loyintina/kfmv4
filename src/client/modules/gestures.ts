@@ -56,31 +56,26 @@ function _saveFontSize(typeId: string, fontSize: number): void {
   localStorage.setItem('kfm-fontsize-' + typeId, JSON.stringify({ fontSize }));
 }
 
-function _applyFontSizeToContent(contentEl: HTMLElement, typeId: string, fontSize: number, isPinching: boolean): void {
+function _applyFontSizeToContent(contentEl: HTMLElement, typeId: string, fontSize: number, _isPinching: boolean): void {
   // 所有卡片类型都设置 CSS 变量（统一行为）
   contentEl.style.setProperty('--card-font-size', fontSize + 'px');
 
   if (typeId === 'card03' || typeId === 'card04') {
-    // 终端卡：额外使用 CSS transform 提供即时反馈
-    const termEl = contentEl.querySelector('.xterm') as HTMLElement;
-    if (termEl) {
-      if (isPinching) {
-        const config = _getFontSizeConfig(typeId);
-        const scale = fontSize / config.default;
-        termEl.style.transform = `scale(${scale})`;
-        termEl.style.transformOrigin = 'top left';
-      } else {
-        termEl.style.transform = '';
-        // 获取 term 实例并调整字号
-        const instance = cardRegistry.getInstanceByContentEl(contentEl);
-        if (instance?.meta._term) {
-          const term = instance.meta._term as { options: { fontSize: number } };
-          term.options.fontSize = Math.round(fontSize);
-          if (instance.meta._fit) {
-            requestAnimationFrame(() => {
-              try { (instance.meta._fit as { fit: () => void }).fit(); } catch {}
-            });
-          }
+    // 终端卡：直接更新字号（不使用 CSS transform，避免视觉变形）
+    const instance = cardRegistry.getInstanceByContentEl(contentEl);
+    if (instance?.meta._term) {
+      const term = instance.meta._term as { options: { fontSize: number } };
+      const newFontSize = Math.round(fontSize);
+
+      // 只在字号真正变化时才更新
+      if (term.options.fontSize !== newFontSize) {
+        term.options.fontSize = newFontSize;
+
+        // 使用 requestAnimationFrame 批处理 fit.fit()
+        if (instance.meta._fit) {
+          requestAnimationFrame(() => {
+            try { (instance.meta._fit as { fit: () => void }).fit(); } catch {}
+          });
         }
       }
     }
