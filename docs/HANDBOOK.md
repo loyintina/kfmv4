@@ -185,6 +185,7 @@ v6.6.0 �����前的焦�����������「浮卡系统�
 16. **每次代码改动后立即提交**（心法 18）：禁止攒多个改动后一次性提交。写完一个函数/模块就 `git add` + `git commit`。历史教训：2026-07-05 全天浮卡功能改动未提交，一次 `git checkout --` 导致全部丢失。<a id='trap-16'></a>
 17. **`display:''` 会清除 inline style**：隐藏/显示元素时，如果元素原本有 `display:flex`（inline style），用 `display:''` 恢复会 revert 到 CSS 默认值（block），破坏 flex 布局。必须用 `display:'flex'` 恢复。历史案例：2026-07-05 光球 SVG 偏移 ~6px，排查耗时数小时。<a id='trap-17'></a>
 18. **修改 .css 前检查是否有 .scss 源文件**：项目使用 SCSS 编译，`sass base.scss → base.css`。直接修改 `.css` 文件会被下一次 `npm run check` 编译覆盖。所有样式修改必须在 `.scss` 文件中进行。历史案例：2026-07-06 全屏卡片 touch-action 规则加到 base.css 被覆盖，排查 1 轮。<a id='trap-18'></a>
+19. **第三方触摸库手势冲突**：集成有自己触摸处理的库（如 xterm.js、地图、画布等）时，如果库"全捕获"但只处理部分方向（如只处理垂直滚动），其他方向的手势（如水平滑动）会被静默丢弃。解决方案：在库的手势处理器中添加方向检测，将不处理的方向传递给其他处理器。历史案例：2026-07-06 终端卡全屏模式下水平滑动无法打开侧栏/卡片堆。<a id='trap-19'></a>
 
 ---
 
@@ -343,10 +344,10 @@ v6.6.0 �����前的焦�����������「浮卡系统�
 | `ui-registry.ts` | 333 | 9 | ✅ 独立条目 | UI 元素注册表 |
 | `ui.ts` | 70 | 10 | ✅ 提及 | UI 初始化编排 |
 | `ws-channel.ts` | 347 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
-| `terminal-card-04.ts` | 369 | 0 | TERMINAL_CARD_SPEC | 03 号终端卡 xterm.js 集成 |
+| `terminal-card-04.ts` | 391 | 0 | TERMINAL_CARD_SPEC | 03 号终端卡 xterm.js 集成 |
 | `tmux-card.ts` | 182 | 0 | — | 04 号 tmux 窗口管理卡 |
 | `card-registry.ts` | 154 | 5 | CARD_REGISTRY_SPEC | 卡片注册表：类型声明 + 实例追踪 |
-| **合计** | **10468** | | | |
+| **合计** | **10490** | | | |
 
 ### 死代码检查
 
