@@ -101,14 +101,14 @@ export function createTmuxCardHandler(): CardContentHandler {
   const onResult = (payload: unknown): void => {
     const p = payload as { cmd: string; result: { stdout: string; stderr: string; exitCode: number } };
     if (p.result.exitCode !== 0) {
-      if (_picker) { _picker.innerHTML = '<span style="padding:2px 6px;color:rgba(224,224,224,0.45);font-size:10px">tmux not available</span>'; _picker.style.display = 'flex'; }
+      if (_picker) { _picker.innerHTML = '<span style="padding:2px 6px;color:rgba(224,224,224,0.45);font-size:var(--card-font-size,10px)">tmux not available</span>'; _picker.style.display = 'flex'; }
       return;
     }
 
     if (p.cmd === 'list-sessions') {
       const sessions = p.result.stdout.trim().split('\n').filter(Boolean);
       if (sessions.length === 0) {
-        if (_picker) { _picker.innerHTML = '<span style="padding:2px 6px;color:rgba(224,224,224,0.45);font-size:10px">no tmux sessions</span>'; _picker.style.display = 'flex'; }
+        if (_picker) { _picker.innerHTML = '<span style="padding:2px 6px;color:rgba(224,224,224,0.45);font-size:var(--card-font-size,10px)">no tmux sessions</span>'; _picker.style.display = 'flex'; }
       } else if (sessions.length === 1) {
         reopenWithCommand('tmux attach -t ' + sessions[0]);
       } else {
@@ -123,6 +123,18 @@ export function createTmuxCardHandler(): CardContentHandler {
       _card = card;
       const c1 = card.accents.color1;
       const c2 = card.accents.color2;
+
+      // 加载并应用存储的字号偏好
+      const storedFontSize = localStorage.getItem('kfm-fontsize-card04');
+      if (storedFontSize) {
+        try {
+          const parsed = JSON.parse(storedFontSize);
+          if (typeof parsed.fontSize === 'number') {
+            contentEl.style.setProperty('--card-font-size', parsed.fontSize + 'px');
+          }
+        } catch { /* ignore */ }
+      }
+
       const { bodyEl } = buildCardLayout(contentEl, '\u25A3 tmux', c1, c2);
       _bodyEl = bodyEl;
 

@@ -57,8 +57,11 @@ function _saveFontSize(typeId: string, fontSize: number): void {
 }
 
 function _applyFontSizeToContent(contentEl: HTMLElement, typeId: string, fontSize: number, isPinching: boolean): void {
+  // 所有卡片类型都设置 CSS 变量（统一行为）
+  contentEl.style.setProperty('--card-font-size', fontSize + 'px');
+
   if (typeId === 'card03' || typeId === 'card04') {
-    // 终端卡：使用 CSS transform 提供即时反馈
+    // 终端卡：额外使用 CSS transform 提供即时反馈
     const termEl = contentEl.querySelector('.xterm') as HTMLElement;
     if (termEl) {
       if (isPinching) {
@@ -81,9 +84,6 @@ function _applyFontSizeToContent(contentEl: HTMLElement, typeId: string, fontSiz
         }
       }
     }
-  } else {
-    // 文件卡/其他：使用 CSS 变量
-    contentEl.style.setProperty('--card-font-size', fontSize + 'px');
   }
 }
 

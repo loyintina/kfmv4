@@ -48,6 +48,18 @@ function createDebugHandler(_meta: Record<string, unknown>): CardContentHandler 
   return {
     activate(contentEl, _card, _reason) {
     contentEl.innerHTML = '';
+
+    // 加载并应用存储的字号偏好
+    const storedFontSize = localStorage.getItem('kfm-fontsize-debug');
+    if (storedFontSize) {
+      try {
+        const parsed = JSON.parse(storedFontSize);
+        if (typeof parsed.fontSize === 'number') {
+          contentEl.style.setProperty('--card-font-size', parsed.fontSize + 'px');
+        }
+      } catch { /* ignore */ }
+    }
+
     const wrap = document.createElement('div');
     wrap.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;padding:0 10px';
 
@@ -95,7 +107,7 @@ function createDebugHandler(_meta: Record<string, unknown>): CardContentHandler 
 
     // 日志区
     const logArea = document.createElement('div');
-    logArea.style.cssText = 'flex:1;overflow-y:auto;font-family:monospace;font-size:10px;color:rgba(224,224,224,0.8);white-space:pre-wrap;word-break:break-all;padding:4px 0';
+    logArea.style.cssText = 'flex:1;overflow-y:auto;font-family:monospace;font-size:var(--card-font-size,10px);color:rgba(224,224,224,0.8);white-space:pre-wrap;word-break:break-all;padding:4px 0';
     wrap.appendChild(logArea);
 
     contentEl.appendChild(wrap);

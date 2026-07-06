@@ -388,6 +388,18 @@ export function createTerminal04Handler(_meta: Record<string, unknown>): CardCon
       const terminalName = '终端 ' + (card.meta.terminalId || '');
       const c1 = card.accents.color1;
       const c2 = card.accents.color2;
+
+      // 加载并应用存储的字号偏好
+      const storedFontSize = localStorage.getItem('kfm-fontsize-card03');
+      if (storedFontSize) {
+        try {
+          const parsed = JSON.parse(storedFontSize);
+          if (typeof parsed.fontSize === 'number') {
+            contentEl.style.setProperty('--card-font-size', parsed.fontSize + 'px');
+          }
+        } catch { /* ignore */ }
+      }
+
       const { bodyEl } = buildCardLayout(contentEl, '> ' + terminalName, c1, c2);
       initTerminalCore(bodyEl, card, terminalName, 'card03');
     },
