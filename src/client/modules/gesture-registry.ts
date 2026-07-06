@@ -26,6 +26,10 @@ export interface GestureHandler {
   /** 长按检测（ms），触发后设 longPressConsumed */
   longPressMs?: number;
   onLongPress?: (event: PointerEvent) => void;
+  /** 双指缩放回调 */
+  onPinchStart?: (event: PointerEvent, scale: number) => void;
+  onPinchMove?: (event: PointerEvent, scale: number) => void;
+  onPinchEnd?: (event: PointerEvent, scale: number) => void;
   /** stopPropagation 控制（默认不调用） */
   stopPropagation?: boolean | { start?: boolean; move?: boolean; end?: boolean };
 }
@@ -39,6 +43,13 @@ interface ActiveGesture {
   longPressConsumed?: boolean;
 }
 
+interface PinchState {
+  handler: GestureHandler;
+  initialDistance: number;
+  initialScale: number;
+  target: HTMLElement;
+}
+
 // ========== Registry 实现 ==========
 
 export class GestureRegistry {
@@ -47,6 +58,10 @@ export class GestureRegistry {
   private _active: ActiveGesture | null = null;
   private _enabled = true;
   private _initialized = false;
+
+  // 多指追踪
+  private _pointers: Map<number, PointerEvent> = new Map();
+  private _pinchState: PinchState | null = null;
 
   // 绑定的回调引用（用于 removeEventListener）
   private _onStart: (e: PointerEvent) => void;
@@ -156,9 +171,56 @@ export class GestureRegistry {
     return false;
   }
 
+  /** 计算两个指针之间的距离 */
+  private _calcDistance(p1: PointerEvent, p2: PointerEvent): number {
+    const dx = p1.clientX - p2.clientX;
+    const dy = p1.clientY - p2.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  /** 找到两个指针共同的最近祖先，用于确定 pinch 目标 */
+  private _findPinchTarget(p1: PointerEvent, p2: PointerEvent): HTMLElement | null {
+    const t1 = p1.target as HTMLElement;
+    const t2 = p2.target as HTMLElement;
+    if (!t1 || !t2) return null;
+    // 从 t1 向上找包含 t2 的最近祖先
+    let el: HTMLElement | null = t1;
+    while (el) {
+      if (el.contains(t2)) return el;
+      el = el.parentElement;
+    }
+    return null;
+  }
+
+  /** 尝试启动 pinch 手势（当有两个指针时调用） */
+  private _tryStartPinch(): void {
+    if (this._pointers.size !== 2 || this._pinchState) return;
+
+    const pointers = Array.from(this._pointers.values());
+    const distance = this._calcDistance(pointers[0], pointers[1]);
+    const target = this._findPinchTarget(pointers[0], pointers[1]);
+    if (!target) return;
+
+    // 按优先级找匹配的 pinch handler
+    for (const handler of this._handlers) {
+      if (!handler.onPinchStart) continue;
+      if (handler.condition && !handler.condition()) continue;
+      if (!this._matchTarget(handler, target, pointers[0])) continue;
+
+      log('[gesture] pinch start, handler:', handler.id, 'distance:', distance);
+      this._pinchState = { handler, initialDistance: distance, initialScale: 1, target };
+      handler.onPinchStart(pointers[0], 1);
+      return;
+    }
+  }
+
   private _handleStart(e: PointerEvent): void {
     if (!this._enabled) return;
-    // 只响应主按钮（左键/触摸主触点）
+
+    // 追踪所有指针（用于 pinch 检测）
+    this._pointers.set(e.pointerId, e);
+
+    // 只响应主按钮（左键/触摸主触点）的单指手势
     if (e.button !== 0) return;
 
     const target = e.target as HTMLElement;
@@ -204,12 +266,30 @@ export class GestureRegistry {
 
       if (this._shouldStop(handler, 'start')) e.stopPropagation();
       handler.onStart?.(e);
-      return; // 只匹配优先级最高的一个
+      break; // 只匹配优先级最高的一个
+    }
+
+    // 尝试启动 pinch（需要两个指针都在目标内）
+    if (this._pointers.size === 2) {
+      this._tryStartPinch();
     }
   }
 
   private _handleMove(e: PointerEvent): void {
     if (!this._enabled) return;
+
+    // 更新指针位置
+    this._pointers.set(e.pointerId, e);
+
+    // 处理 pinch 手势
+    if (this._pinchState && this._pointers.size === 2) {
+      const pointers = Array.from(this._pointers.values());
+      const currentDistance = this._calcDistance(pointers[0], pointers[1]);
+      const scale = currentDistance / this._pinchState.initialDistance;
+      this._pinchState.handler.onPinchMove?.(e, scale);
+      return; // pinch 期间不处理单指手势
+    }
+
     const active = this._active;
     if (!active) return;
 
@@ -239,6 +319,28 @@ export class GestureRegistry {
 
   private _handleEnd(e: PointerEvent): void {
     if (!this._enabled) return;
+
+    // 移除指针
+    this._pointers.delete(e.pointerId);
+
+    // 处理 pinch 结束
+    if (this._pinchState) {
+      if (this._pointers.size < 2) {
+        // 少于两个指针，结束 pinch
+        const pointers = Array.from(this._pointers.values());
+        let scale = 1;
+        if (pointers.length === 1) {
+          // 还剩一个指针，计算最终 scale
+          const remaining = pointers[0];
+          const distance = this._calcDistance(e, remaining);
+          scale = distance / this._pinchState.initialDistance;
+        }
+        this._pinchState.handler.onPinchEnd?.(e, scale);
+        this._pinchState = null;
+      }
+      return;
+    }
+
     const active = this._active;
     if (!active) return;
 
