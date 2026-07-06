@@ -210,8 +210,20 @@ export function initTerminalCore(
     return;
   }
 
+  // 加载存储的字号偏好
+  const storedFontSize = localStorage.getItem('kfm-fontsize-card03');
+  let initialFontSize = 9;
+  if (storedFontSize) {
+    try {
+      const parsed = JSON.parse(storedFontSize);
+      if (typeof parsed.fontSize === 'number') {
+        initialFontSize = Math.max(7, Math.min(14, parsed.fontSize));
+      }
+    } catch { /* ignore */ }
+  }
+
   const term = new Terminal({
-    fontSize: 9,
+    fontSize: initialFontSize,
     fontFamily: 'monospace',
     theme: xtermTheme(card.accents.color1),
     cursorBlink: false,
