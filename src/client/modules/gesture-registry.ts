@@ -5,6 +5,8 @@
  * 原则：优先匹配、独占执行 —— 同一时刻只有一个处理器响应手势。
  */
 
+import { log } from './logger.js';
+
 // ========== 类型定义 ==========
 
 export interface GestureHandler {
@@ -179,6 +181,9 @@ export class GestureRegistry {
       // 预处理钩子
       if (handler.onBeforeStart && !handler.onBeforeStart(e)) continue;
 
+      // 调试日志：检查哪个处理器匹配了触摸
+      log('[gesture] matched handler:', handler.id, 'target:', target.className, 'tagName:', target.tagName, 'touch-action:', getComputedStyle(target).touchAction);
+
       // 锁定该处理器
       this._active = {
         handler,
@@ -219,6 +224,9 @@ export class GestureRegistry {
     const dy = e.clientY - active.startY;
     const elapsed = Date.now() - active.startTime;
 
+    // 调试日志：检查手势移动
+    log('[gesture] MOVE, dx:', dx, 'dy:', dy, 'handler:', active.handler.id);
+
     // 长按检测：移动超过 10px 取消计时器（让路给滑动/滚动）
     if (active.longPressTimer && !active.longPressConsumed && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
       clearTimeout(active.longPressTimer);
@@ -249,6 +257,9 @@ export class GestureRegistry {
     const dx = e.clientX - active.startX;
     const dy = e.clientY - active.startY;
     const elapsed = Date.now() - active.startTime;
+
+    // 调试日志：检查手势结束类型
+    log('[gesture] END, type:', e.type, 'dx:', dx, 'dy:', dy, 'handler:', active.handler.id);
 
     if (this._shouldStop(active.handler, 'end')) e.stopPropagation();
     active.handler.onEnd?.(e, dx, dy, elapsed);

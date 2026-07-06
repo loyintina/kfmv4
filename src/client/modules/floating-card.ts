@@ -455,22 +455,6 @@ function _dismissOne(item: FloatingCardItem, animated?: boolean): void {
 function enterFullscreen(item: FloatingCardItem): void {
   if (item.state === 'fullscreen' || item.state === 'dismissing') return;
   
-  // 调试日志：检查进入全屏前的状态
-  log('[enterFullscreen-BEFORE]', {
-    typeId: item.config.typeId,
-    state: item.state,
-    cardWidth: item.cardWidth,
-    cardHeight: item.cardHeight,
-    elStyleWidth: item.el.style.width,
-    elStyleHeight: item.el.style.height,
-    elRect: item.el.getBoundingClientRect(),
-    contentElChildren: item.contentEl?.children.length,
-    contentWrap: item.contentEl?.firstElementChild ? {
-      tagName: (item.contentEl.firstElementChild as HTMLElement).tagName,
-      childCount: (item.contentEl.firstElementChild as HTMLElement).children.length,
-    } : 'null',
-  });
-  
   // 如果有其他全屏卡，先退出
   for (const other of _floatingCards) {
     if (other !== item && other.state === 'fullscreen') {
@@ -555,37 +539,7 @@ function enterFullscreen(item: FloatingCardItem): void {
       item.cardHeight = h;
     },
     onComplete: () => {
-      // 调试日志：检查全屏后的 DOM 结构
-      const contentWrap = item.contentEl?.firstElementChild as HTMLElement | null;
-      const headerEl = contentWrap?.firstElementChild as HTMLElement | null;
-      const bodyEl = contentWrap?.lastElementChild as HTMLElement | null;
-      log('[enterFullscreen-onComplete]', {
-        cardRect: item.el.getBoundingClientRect(),
-        contentWrap: contentWrap ? {
-          rect: contentWrap.getBoundingClientRect(),
-          style: {
-            position: contentWrap.style.position,
-            overflow: contentWrap.style.overflow,
-            display: contentWrap.style.display,
-            flexDirection: contentWrap.style.flexDirection,
-          },
-        } : 'null',
-        headerEl: headerEl ? {
-          rect: headerEl.getBoundingClientRect(),
-          style: {
-            flexShrink: headerEl.style.flexShrink,
-            margin: headerEl.style.margin,
-          },
-        } : 'null',
-        bodyEl: bodyEl ? {
-          rect: bodyEl.getBoundingClientRect(),
-          style: {
-            flex: bodyEl.style.flex,
-            overflow: bodyEl.style.overflow,
-            position: bodyEl.style.position,
-          },
-        } : 'null',
-      });
+      // 全屏动画完成
     },
   });
   
@@ -679,36 +633,6 @@ function exitFullscreen(item: FloatingCardItem): void {
       },
       onComplete: () => {
         item._fullscreenSaved = null;
-        
-        // 调试日志：检查退出全屏后光球和 SVG 位置
-        log('[exitFullscreen-onComplete] card padding:', item.el.style.padding);
-        if (item.topMidOrb) {
-          const svg = item.topMidOrb.querySelector('svg');
-          const svgRect = svg?.getBoundingClientRect();
-          const orbRect = item.topMidOrb.getBoundingClientRect();
-          log('[exitFullscreen-onComplete] topMidOrb:', {
-            left: item.topMidOrb.style.left,
-            top: item.topMidOrb.style.top,
-            transform: item.topMidOrb.style.transform,
-            orbRect: { x: orbRect.x, y: orbRect.y, w: orbRect.width, h: orbRect.height },
-            svgRect: svgRect ? { x: svgRect.x, y: svgRect.y, w: svgRect.width, h: svgRect.height } : null,
-            svgCenterOffset: svgRect ? {
-              x: (svgRect.x + svgRect.width/2) - (orbRect.x + orbRect.width/2),
-              y: (svgRect.y + svgRect.height/2) - (orbRect.y + orbRect.height/2),
-            } : null,
-          });
-        }
-        if (item.brOrb) {
-          const svg = item.brOrb.querySelector('svg');
-          log('[exitFullscreen-onComplete] brOrb:', {
-            left: item.brOrb.style.left,
-            top: item.brOrb.style.top,
-            transform: item.brOrb.style.transform,
-            svgTransform: svg?.getAttribute('transform'),
-            svgStyleTransform: svg?.style.transform,
-            rect: item.brOrb.getBoundingClientRect(),
-          });
-        }
       },
     });
   } else {
@@ -892,36 +816,6 @@ export function initFloatingCards(): void {
           }
           item.state = 'active';
           el.style.zIndex = String(zIndex);
-          
-          // 调试日志：检查光球和 SVG 位置
-          log('[expand-onComplete] card padding:', el.style.padding);
-          if (item.topMidOrb) {
-            const svg = item.topMidOrb.querySelector('svg');
-            const svgRect = svg?.getBoundingClientRect();
-            const orbRect = item.topMidOrb.getBoundingClientRect();
-            log('[expand-onComplete] topMidOrb:', {
-              left: item.topMidOrb.style.left,
-              top: item.topMidOrb.style.top,
-              transform: item.topMidOrb.style.transform,
-              orbRect: { x: orbRect.x, y: orbRect.y, w: orbRect.width, h: orbRect.height },
-              svgRect: svgRect ? { x: svgRect.x, y: svgRect.y, w: svgRect.width, h: svgRect.height } : null,
-              svgCenterOffset: svgRect ? {
-                x: (svgRect.x + svgRect.width/2) - (orbRect.x + orbRect.width/2),
-                y: (svgRect.y + svgRect.height/2) - (orbRect.y + orbRect.height/2),
-              } : null,
-            });
-          }
-          if (item.brOrb) {
-            const svg = item.brOrb.querySelector('svg');
-            log('[expand-onComplete] brOrb:', {
-              left: item.brOrb.style.left,
-              top: item.brOrb.style.top,
-              transform: item.brOrb.style.transform,
-              svgTransform: svg?.getAttribute('transform'),
-              svgStyleTransform: svg?.style.transform,
-              rect: item.brOrb.getBoundingClientRect(),
-            });
-          }
         },
       });
       anim.to(tlOrb, { x: 0, y: 0, duration: 0.3, ease: 'back.out(1.1)' });
