@@ -133,11 +133,16 @@ export function initGestures(): void {
       const config = _getFontSizeConfig(_pinchTypeId);
       const newFontSize = Math.max(config.min, Math.min(config.max, _pinchStartFontSize * scale));
 
-      // CSS transform 缩放（不触发布局回流）
-      const visualScale = newFontSize / _pinchStartFontSize;
       const instances = cardRegistry.getByType(_pinchTypeId);
       for (const inst of instances) {
-        _setVisualScale(inst.contentEl, _pinchTypeId, visualScale);
+        if (_pinchTypeId === 'card03' || _pinchTypeId === 'card04') {
+          // 终端卡：CSS transform（避免 fit.fit 触发布局回流）
+          const visualScale = newFontSize / _pinchStartFontSize;
+          _setVisualScale(inst.contentEl, _pinchTypeId, visualScale);
+        } else {
+          // 文件卡/日志卡：CSS 变量直接更新（实时重排）
+          _applyFontSize(inst.contentEl, _pinchTypeId, newFontSize);
+        }
       }
     },
     onPinchEnd: (_e, scale) => {
@@ -159,6 +164,32 @@ export function initGestures(): void {
       }
 
       _pinchTypeId = null;
+    },
+  });
+
+  // ========== 文件卡滚动手势 ==========
+  let _scrollContainer: HTMLElement | null = null;
+
+  gestures.register({
+    id: 'file-card-scroll',
+    targetFilter: (target) => {
+      // 匹配文件卡内容区，排除终端卡
+      const card = target.closest('.floating-card');
+      if (!card) return false;
+      return !card.querySelector('.xterm');
+    },
+    priority: 55,
+    onStart: (e) => {
+      const target = e.target as HTMLElement;
+      _scrollContainer = target.closest('[style*="overflow-y:auto"]') as HTMLElement
+        || target.closest('[style*="overflow:auto"]') as HTMLElement;
+    },
+    onMove: (_e, _dx, dy) => {
+      if (!_scrollContainer) return;
+      _scrollContainer.scrollTop -= dy;
+    },
+    onEnd: () => {
+      _scrollContainer = null;
     },
   });
 
