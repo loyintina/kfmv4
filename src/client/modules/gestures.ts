@@ -162,12 +162,14 @@ export function initGestures(): void {
         _applyFontSizeToContent(inst.contentEl, _pinchTypeId, finalFontSize);
       }
 
-      // 等待 Canvas 重绘完成，再移除 CSS transform（覆盖到正确位置）
+      // 等两帧让 Canvas 完成重绘，再移除 CSS transform
       const pinchTypeId = _pinchTypeId;
       requestAnimationFrame(() => {
-        for (const inst of instances) {
-          _removeVisualScale(inst.contentEl, pinchTypeId);
-        }
+        requestAnimationFrame(() => {
+          for (const inst of instances) {
+            _removeVisualScale(inst.contentEl, pinchTypeId);
+          }
+        });
       });
 
       _pinchTypeId = null;
