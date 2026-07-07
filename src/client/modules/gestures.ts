@@ -167,32 +167,6 @@ export function initGestures(): void {
     },
   });
 
-  // ========== 文件卡滚动手势 ==========
-  let _scrollContainer: HTMLElement | null = null;
-
-  gestures.register({
-    id: 'file-card-scroll',
-    targetFilter: (target) => {
-      // 匹配文件卡内容区，排除终端卡
-      const card = target.closest('.floating-card');
-      if (!card) return false;
-      return !card.querySelector('.xterm');
-    },
-    priority: 55,
-    onStart: (e) => {
-      const target = e.target as HTMLElement;
-      _scrollContainer = target.closest('[style*="overflow-y:auto"]') as HTMLElement
-        || target.closest('[style*="overflow:auto"]') as HTMLElement;
-    },
-    onMove: (_e, _dx, dy) => {
-      if (!_scrollContainer) return;
-      _scrollContainer.scrollTop -= dy;
-    },
-    onEnd: () => {
-      _scrollContainer = null;
-    },
-  });
-
   // ========== 页面滑动处理器 ==========
   gestures.register({
     id: 'gestures-page-swipe',

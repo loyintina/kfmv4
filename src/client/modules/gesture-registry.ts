@@ -243,8 +243,6 @@ export class GestureRegistry {
     for (const fn of this._preMatchHooks) fn(e);
 
     for (const handler of this._handlers) {
-      // 跳过纯双指处理器（只有 onPinch*，没有单指回调）
-      if (!handler.onStart && !handler.onMove && !handler.onEnd && !handler.onLongPress) continue;
       // 条件检查
       if (handler.condition && !handler.condition()) continue;
       // 目标匹配
