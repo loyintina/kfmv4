@@ -19,7 +19,7 @@ public/index.html
        │
 src/client/main.ts ← 入口
        │
-       ├── modules/         ← 29 个业务模块（tree-render, orb, floating-card...）
+       ├── modules/         ← 45 个源文件（含 renderers/ 渲染器）
        │       │                     依赖引擎层但不依赖引擎层内部结构
        │       ▼
        └── engine/          ← 渲染引擎（14 个文件，零外部依赖）

@@ -860,7 +860,7 @@ function findTapTarget(box: Box, px: number, py: number): Box | null {
   return null;
 }
 
-/** 点击文件行 → 投放浮卡 + 关闭侧栏 */
+/** 点击文件行 → 投放全屏浮卡 + 关闭侧栏 */
 function createFileFloatingCard(hit: Box, hitData: FileRowData): void {
   const root = L.renderer?.getRoot();
   if (!root) return;
@@ -877,6 +877,7 @@ function createFileFloatingCard(hit: Box, hitData: FileRowData): void {
     name: fileName,
     sourceX: abs.x,
     sourceY: abs.y - scrollY,
+    startInFullscreen: true,
     contentHandler: getCardType('file')?.createHandler({ filePath, accent: cc.color1 }),
   });
   closeSidebar();

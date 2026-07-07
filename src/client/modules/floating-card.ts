@@ -52,6 +52,8 @@ export interface FloatingCardConfig {
   targetX?: number; targetY?: number;  // 不传则自动散落
   scatterBounds?: { left: number; top: number; right: number; bottom: number };
   contentHandler?: CardContentHandler;
+  /** 跳过散落飞入，创建后直接进入全屏（文件树点击路径） */
+  startInFullscreen?: boolean;
 }
 
 // ========== 浮卡类型与状态 ==========
@@ -274,8 +276,10 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
   brOrb.style.cursor = 'pointer';
   brOrb.classList.add('floating-br-orb');
   _brOrbToItem.set(brOrb, item);
-  // 防止 touchstart 阶段浏览器自动聚焦卡内可聚焦元素（如 xterm textarea）
-  brOrb.addEventListener('touchstart', e => e.preventDefault());
+  // 通过 CSS 防止 touchstart 阶段浏览器自动聚焦卡内可聚焦元素
+  // 使用 `touch-action: none` + `pointer-events: auto` 组合替代 addEventListener('touchstart', preventDefault)
+  // 以遵守全项目事件系统统一通过 GestureRegistry 的约定（隐性契约 §1.1）
+  brOrb.style.touchAction = 'none';
 
   // TL — 上移一层（紧凑态也显示）
   const tlColor = _hexToRgba(config.color1, orbT.tlAlpha);
@@ -323,10 +327,11 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
   el.appendChild(brOrb);
   item.brOrb = brOrb;
 
-  // 紧凑态初始样式
   // 激活内容：文件浮卡直接进入展开态
+  let activatePromise: Promise<void> | undefined;
   if (config.contentHandler) {
-    config.contentHandler.activate(contentEl, cardInstance, 'init');
+    const result = config.contentHandler.activate(contentEl, cardInstance, 'init');
+    if (result instanceof Promise) activatePromise = result;
     _renderFloatingContent(contentEl, 'active');
   }
 
@@ -357,15 +362,31 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
     targetTop = targetPos.top;
   }
 
-  anim.set(el, { scale: 0.8 });
-  anim.to(el, {
-    left: targetLeft, top: targetTop, scale: 1,
-    duration: 0.4, ease: 'back.out(1.3)',
-    onComplete: () => {
-      item.state = 'active';
-    },
-  });
-
+  if (config.startInFullscreen) {
+    // 跳过散落飞入，直接从源位置进入全屏
+    anim.set(el, { scale: 1, opacity: 1 });
+    item.state = 'active';
+    enterFullscreen(item);
+    // 异步内容加载完成后，重新应用 touch-action: pan-y
+    // 因为 enterFullscreen 时异步加载的子元素还不存在
+    if (activatePromise) {
+      activatePromise.then(() => {
+        item.contentEl.style.touchAction = 'pan-y';
+        for (const child of item.contentEl.querySelectorAll<HTMLElement>('*')) {
+          child.style.touchAction = 'pan-y';
+        }
+      });
+    }
+  } else {
+    anim.set(el, { scale: 0.8 });
+    anim.to(el, {
+      left: targetLeft, top: targetTop, scale: 1,
+      duration: 0.4, ease: 'back.out(1.3)',
+      onComplete: () => {
+        item.state = 'active';
+      },
+    });
+  }
   return item;
 }
 
@@ -453,7 +474,7 @@ function _dismissOne(item: FloatingCardItem, animated?: boolean): void {
 // ========== 全屏逻辑 ==========
 
 /** 进入全屏态 */
-function enterFullscreen(item: FloatingCardItem): void {
+export function enterFullscreen(item: FloatingCardItem): void {
   if (item.state === 'fullscreen' || item.state === 'dismissing') return;
   
   // 如果有其他全屏卡，先退出
@@ -523,7 +544,12 @@ function enterFullscreen(item: FloatingCardItem): void {
   
   // 添加全屏 CSS 类（通过 CSS 触发 touch-action: none，防止 pointercancel）
   item.el.classList.add('fullscreen');
-  
+  // 恢复内容区的原生垂直滚动（全屏 CSS 设了 * { touch-action: none } 杀死了它）
+  // 需要覆盖 contentEl 及其所有后代，因为 * 选择器逐元素命中
+  item.contentEl.style.touchAction = 'pan-y';
+  for (const child of item.contentEl.querySelectorAll<HTMLElement>('*')) {
+    child.style.touchAction = 'pan-y';
+  }
   anim.to(item.el, {
     left: 0,
     top: 0,
@@ -584,9 +610,11 @@ function exitFullscreen(item: FloatingCardItem): void {
     lineEl.style.margin = '';
   }
   
-  // 移除全屏 CSS 类
-  item.el.classList.remove('fullscreen');
-  
+  // 恢复内容区及所有后代的 touch-action（全屏时设为 pan-y）
+  item.contentEl.style.touchAction = '';
+  for (const child of item.contentEl.querySelectorAll<HTMLElement>('*')) {
+    child.style.touchAction = '';
+  }
   // 显示四角光球 + topMidOrb
   if (item.tlOrb) item.tlOrb.style.display = 'flex';
   if (item.trOrb) item.trOrb.style.display = 'flex';
@@ -684,10 +712,11 @@ function dismissFullscreen(item: FloatingCardItem): void {
     item.fullscreenBtns = null;
   }
   
-  // 恢复 z-index 锁
-  item.zLocked = false;
-  
-  // 调用 _dismissOne 完全关闭
+  // 恢复内容区及所有后代的 touch-action（全屏时设为 pan-y）
+  item.contentEl.style.touchAction = '';
+  for (const child of item.contentEl.querySelectorAll<HTMLElement>('*')) {
+    child.style.touchAction = '';
+  }
   _dismissOne(item, true);
 }
 

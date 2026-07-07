@@ -143,35 +143,42 @@ function countTsFilesRecursive(dir) {
 }
 
 function checkNumericClaims() {
-  // --- 客户端模块数量 ---
-  const clientModules = countTsFiles(join(ROOT, 'src', 'client', 'modules'));
-  // 文档中声称 "29 个模块" — 检查 CLAUDE.md 和 HANDBOOK.md
-  for (const file of ['CLAUDE.md', 'docs/HANDBOOK.md']) {
+  // --- 客户端模块数量（递归，含 renderers/） ---
+  const clientModules = countTsFilesRecursive(join(ROOT, 'src', 'client', 'modules'));
+  // 文档中声称 "N 个模块" — 验证与实际数量一致
+  // 排除 "覆盖 N 个模块"（测试覆盖率声明）和 "N 个零文档"（审计历史）
+  for (const file of ['CLAUDE.md', 'docs/HANDBOOK.md', 'docs/design/ENGINE_ARCHITECTURE.md']) {
     const content = readFileSync(join(ROOT, file), 'utf-8');
-    const claims = content.match(/(\d+)\s*个(?:客户端)?模块/g) || [];
+    // 跳过删除线（~~）中的历史记录
+    const cleanContent = content.replace(/~~.*?~~/gs, '');
+    // 再移除包含 "历史数据" 的行（审计表中的历史声明）
+    const lines = cleanContent.split('\n').filter(l => !l.includes('历史数据'));
+    const filteredContent = lines.join('\n');
+    // 匹配 "N 个模块"、"N 个客户端模块"、"N 个业务模块"
+    // 不匹配： "覆盖 N 个模块"（测试覆盖）、"N 个零文档"（审计历史）
+    const claims = filteredContent.match(/(?<!\d)(?<!(?:覆盖|有) )(\d+)\s*个(?:客户端|业务)?模块(?!(?:零文档|，?\s*不含|、))/g) || [];
     for (const claim of claims) {
       const num = parseInt(claim.match(/\d+/)[0], 10);
-      if (num === 29 && clientModules !== 29) {
-        // 29 is correct, but only verify if it changed
-        // Actually, let's just report if it differs
+      if (num !== clientModules) {
+        error(`${file}: 声称 "${claim}"，但 src/client/modules/（递归）下有 ${clientModules} 个 .ts 文件`);
       }
     }
   }
+  
+
   // 只在 HANDBOOK §七 客户端模块完整审计表 内统计模块行
   const handbook = readFileSync(join(ROOT, 'docs/HANDBOOK.md'), 'utf-8');
-  const tableStart = handbook.indexOf('### 客户端模块完整审计表');
+  const tableStart  = handbook.indexOf('### 客户端模块完整审计表');
   const tableEnd = handbook.indexOf('### 死代码检查', tableStart);
   const tableSection = tableStart >= 0 && tableEnd > 0
     ? handbook.slice(tableStart, tableEnd)
     : handbook;
-
-  const moduleRows = (tableSection.match(/^\| `[^`]+\.ts` \| \d+ \|/gm) || []).length;
+  const moduleRows = (tableSection.match(/^\| `(?:[^`]+\/)?[^`]+\.ts` \| \d+ \|/gm) || []).length;
   if (moduleRows !== clientModules) {
-    error(`HANDBOOK.md 模块表有 ${moduleRows} 行模块，但 src/client/modules/ 下有 ${clientModules} 个 .ts 文件`);
+    error(`HANDBOOK.md 模块表有 ${moduleRows} 行模块，但 src/client/modules/（递归）下有 ${clientModules} 个 .ts 文件`);
   }
-
-  // --- 引擎文件数量 ---
   const engineV2Files = countTsFiles(join(ROOT, 'src', 'client', 'engine', 'v2'));
+
   const engineTextFiles = countTsFiles(join(ROOT, 'src', 'client', 'engine', 'text-layout'));
   const totalEngine = engineV2Files + engineTextFiles;
   if (totalEngine !== 14) {
@@ -185,20 +192,37 @@ function checkNumericClaims() {
   }
 
   // --- 测试数量 ---
-  // Check both 101 (CLAUDE.md) and 105 (HANDBOOK.md line 216)
   let testCount = 0;
   const testFile = join(ROOT, 'tests', 'regression.test.ts');
   if (existsSync(testFile)) {
     const testContent = readFileSync(testFile, 'utf-8');
     testCount = (testContent.match(/^\s*test\(/gm) || []).length;
   }
-  const handbookHas105 = handbook.includes('105 个测试');
-  if (handbookHas105 && testCount !== 105) {
-    error(`HANDBOOK.md 声称 "105 个测试"，但实际有 ${testCount} 个测试函数`);
+  for (const file of ['CLAUDE.md', 'docs/HANDBOOK.md', 'docs/DIAGNOSTICS.md', 'docs/PROJECT_ASSESSMENT.md', 'README.md', 'docs/archive/standards/TESTING.md']) {
+    if (!existsSync(join(ROOT, file))) continue;
+    const content = readFileSync(join(ROOT, file), 'utf-8');
+    const claims = content.match(/(?<!\d)(?<!(?:新增|覆盖|有) )(\d+)\s*个\s*(?:回归)?测试/g) || [];
+    for (const claim of claims) {
+      const num = parseInt(claim.match(/\d+/)[0], 10);
+      if (num !== testCount) {
+        error(`${file}: 声称 "${claim}"，但 tests/regression.test.ts 中有 ${testCount} 个测试函数`);
+      }
+    }
   }
 
-  // --- 检查 CLAUDE.md 项目核心约束中的关键数字 ---
-  // (不检查所有数字，只检查容易漂移的)
+  // --- 心法条数 ---
+  const principlesDoc = readFileSync(join(ROOT, 'docs/KFM_V4_INVARIANTS.md'), 'utf-8');
+  const principlesCount = (principlesDoc.match(/^### \d+\. /gm) || []).length;
+  for (const file of ['docs/PRINCIPLES.md', 'docs/KFM_V4_INVARIANTS.md']) {
+    const content = readFileSync(join(ROOT, file), 'utf-8');
+    const claims = content.match(/(\d+)\s*条\s*心法/g) || [];
+    for (const claim of claims) {
+      const num = parseInt(claim.match(/\d+/)[0], 10);
+      if (num !== principlesCount) {
+        error(`${file}: 声称 "${claim}"，但 KFM_V4_INVARIANTS.md 中有 ${principlesCount} 条心法原则`);
+      }
+    }
+  }
 }
 
 // ============================================================

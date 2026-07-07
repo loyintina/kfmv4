@@ -1,3 +1,14 @@
+/**
+ * KFM v4 服务端入口 — Express HTTP + WebSocket + API 路由
+ *
+ * 职责：
+ *   - Express 4 静态文件服务 + API 路由
+ *   - WebSocket 服务（服务端↔浏览器双向通信）
+ *   - AI Tools 路由层挂载
+ *   - 文件读写/复制/移动/删除/创建 REST API
+ *
+ * 路由前缀：/api 和 /kfmv4/api 双前缀支持
+ */
 import express from 'express';
 import http from 'http';
 import fs from 'fs';

@@ -70,7 +70,7 @@ last_updated: 2026-06-28
 │  │                                 │           │           │
 │  └─────────────────────────────────┘           │           │
 │                                                 │           │
-│  [全局辅助栏]  terminal-aux-bar.ts              │           │
+│  [全局辅助栏]  terminal-aux-bar (Phase 8, 待实现) │           │
 │  ┌─────────────────────────────────┐          │           │
 │  │ [ESC][TAB][CTRL][ALT][▲][|][-] │          │           │
 │  │ [◀][▼][▶][DEL][   ENTER    ]   │──VT序列─┘           │
@@ -379,7 +379,7 @@ _registerCardHandler('card03', createTerminalHandler());
 
 ### 5.1 模块定位
 
-`src/client/modules/terminal-aux-bar.ts` — 全局单例，固定在键盘上方、输入栏下方，仅当虚拟键盘弹出且终端聚焦时出现。
+`terminal-aux-bar` — 全局单例，固定在键盘上方、输入栏下方，仅当虚拟键盘弹出且终端聚焦时出现。Phase 8 功能，占位文件已移除，实现时新建。
 
 ### 5.2 触发逻辑
 

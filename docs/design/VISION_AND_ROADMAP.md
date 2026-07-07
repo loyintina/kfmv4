@@ -7,7 +7,7 @@ archived_at: 2026-06-09
 
 > ⏱ **TL;DR**：本文是项目的方向性文档（792 行）。如果你时间有限，按 §0 的阅读指引跳读。
 > **必读章节**：第一章（核心理念）+ 第二章（整体架构）。
-> **选读章节**：第五章（Agent 适配层）在做 AI 集成时读；第六章（卡片插件规范）在写新卡片时读。
+> **选读章节**：第五章（Agent 适配层）在做 AI 集成时读；第四章（卡片插件规范）在写新卡片时读。
 > 本文不包含实现细节——那些在 `KFM_V4_INVARIANTS.md`（改代码前必读）和 `ARCHITECTURE.md`（架构参考）中。
 >
 > 写于 2026-05-27。合并自 `docs/archive/design/REFACTOR_THESIS_FULL.md`（原始愿景蓝图）和 `docs/archive/design/CARD_SYSTEM_DESIGN.md`（卡片系统设计）。

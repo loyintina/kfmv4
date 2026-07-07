@@ -306,3 +306,9 @@ body {
 .floating-card.fullscreen * {
   touch-action: none;
 }
+
+/* 全屏卡片的内容区恢复垂直原生滚动（文件卡/代码卡/日志卡的内容溢出） */
+.floating-card.fullscreen .card-content,
+.floating-card.fullscreen .card-content * {
+  touch-action: pan-y;
+}

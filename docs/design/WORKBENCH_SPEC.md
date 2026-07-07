@@ -714,6 +714,7 @@ interface KFMState {
 | 7 | 长按功能栏（rename/copy path/delete + 引擎 scrollPaddingBottom + 折叠祖先级联修复） | ~360 | ✅ v6.9.0 |
 | — | 滚动方向轴锁定重构 + BR orb 双click根除 + pointercancel 守卫 | — | ✅ v6.9.1 |
 | — | 键盘避让完整方案（orb→derive）+ BR orb 触控完善（touchstart/blur）+ SOP 心法回溯 | — | ✅ v6.10.0 |
+| — | card.meta 类型化（泛型+守卫+自动化检查）+ 测试补全（+20） + 设计注释规约 + xterm 版本锁定 | — | ✅ v6.10.1 |
 
 **总计**：约 1,560 行新代码 + 修改（含已实现的 365 行）
 

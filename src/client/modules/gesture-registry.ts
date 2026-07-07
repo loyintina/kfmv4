@@ -243,6 +243,10 @@ export class GestureRegistry {
     for (const fn of this._preMatchHooks) fn(e);
 
     for (const handler of this._handlers) {
+      // 跳过纯双指处理器（只有 onPinch*，没有 onStart/onMove/onEnd），
+      // 它们通过 _tryStartPinch 激活。有 onEnd 无 onStart 的处理器（如全屏按钮点击）
+      // 需要被匹配，因为 onEnd 在松手时仍会触发。
+      if (!handler.onStart && !handler.onMove && !handler.onEnd) continue;
       // 条件检查
       if (handler.condition && !handler.condition()) continue;
       // 目标匹配
@@ -272,7 +276,7 @@ export class GestureRegistry {
       }
 
       if (this._shouldStop(handler, 'start')) e.stopPropagation();
-      handler.onStart?.(e);
+      handler.onStart(e);
       break; // 只匹配优先级最高的一个
     }
 

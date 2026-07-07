@@ -1,10 +1,24 @@
+---
+title: KFM v4 工作手册
+last_reviewed: 2026-07-07
+kfm_version: 6.10.1
+status: active
+maintainer: AI agent
+---
+
+
 # KFM v4 工作手册 (SOP)
 
 > **日常开发参考**。改代码前先读 `KFM_V4_INVARIANTS.md`（修改约束协议），
 > 规划设计时参考 `docs/design/VISION_AND_ROADMAP.md`（远景文档）。
-> 做浮卡统一化时参考 `CARD_SYSTEM_UNIFICATION_SPEC.md`（浮卡系统统一化规范）。
+> 做浮卡统一化时参考 `docs/archive/design/CARD_SYSTEM_UNIFICATION_SPEC.md`（浮卡系统统一化规范）。
 > 本手册记录架构速查、当前状态、待办和审计清单。
 > 诊断与 bug 排查见 `DIAGNOSTICS.md`，全量约束速查见 `PRINCIPLES.md`。
+>
+> **文档规范**：本文使用 YAML frontmatter（版本 + 最后审核日期）。构建管线
+> 中的 `check-versions.mjs` 会验证版本一致性，`check-doc-coverage.mjs` 会
+> 验证所有代码文件在 §七 审计表中有覆盖条目。新增客户端模块后必须同步更新
+> §七 表，否则 `npm run check` 会中断构建。
 
 ---
 
@@ -51,7 +65,7 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
         → initTreeRenderer() → loadFileTree() → initLazyLoader() → initCardStack()
 ```
 
-### 模块职能分组（全 38 个模块）
+### 模块职能分组（全 37 个模块，不含 renderers/ 渲染器）
 
 > 完整清单及依赖关系见 §七「客户端模块完整审计表」。此处按职能分组，方便快速定位。
 
@@ -63,7 +77,6 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 | **文件树样式** | `style-registry.ts` `theme.ts` | 文件树尺寸/颜色/字体的唯一来源（改一处全局同步） |
 | **视觉效果** | `char-rain.ts` | 字符散落/回收动画（展开折叠时） |
 | **交互共享** | `interaction-constants.ts` `drag-handler.ts` `click-queue.ts` | 模块间共享的常量/类型/事件队列 |
-| `drag-handler.ts` | 999 | 2 | ✅ 分组表 | 共享拖动状态机（orb + floating-card 去重） |
 | **卡片系统** | `card-stack.ts` `floating-card.ts` | 卡片堆面板、浮卡发射/拖拽/缩放 |
 | **AI / 通信** | `orb.ts` `ws-channel.ts` `debug-assert.ts` `gestures.ts` | 光球面板、WebSocket、运行时断言、页面手势 |
 | **日志** | `logger.ts` | KFM 日志系统（debug-card 伴侣） |
@@ -134,7 +147,7 @@ index.ts (入口路由)
 
 ## 二、当前会话状态
 
-> **最后更新**：2026-07-03（v6.10.1 — card.meta 类型化 + 测试补全 + 设计注释规约 + 构建工具强化）
+> **最后更新**：2026-07-07（v6.11.0 — gesture _handleStart 跳过纯双指处理器 + 全屏卡片原生滚动 + 文件点击直接全屏）
 
 ### 当前焦点
 **卡片工作台**（见 `docs/design/WORKBENCH_SPEC.md`）
@@ -248,6 +261,7 @@ v6.6.0 �����前的焦�����������「浮卡系统�
 | **v6.9.1** | **滚动方向轴锁定重构：12px死区+65°扇形分区+统一冻结 + BR光球双click根除 + pointercancel守卫 + 浮卡默认展开态** | git `5b9d0b8` |
 | **v6.10.0** | **键盘避让完整方案 + card04 tmux 终端 + card-registry 聚焦/实例 + preMatch 钩子 + BR orb 触控 + SOP 3a 心法回溯** | `145136d` |
 | **v6.10.1** | **card.meta 类型化 + 测试补全 + 设计注释规约 + 构建工具强化 + xterm 版本锁定** | **HEAD** |
+| **v6.11.0** | **_handleStart 跳过纯双指处理器 + 全屏卡片原生滚动 + 文件点击直接全屏** | **HEAD** |
 ---
 
 ## 四、调试与 Bug 排查
@@ -286,7 +300,7 @@ v6.6.0 �����前的焦�����������「浮卡系统�
 | ~~1~~ | ~~🔴~~ ✅ | ~~版本号三处不一致~~ 已修复 | 已统一为 v6.8.1（package.json + git tag + HANDBOOK §2） + CI 检查脚本 `check-versions.mjs` 已加入管线，含 tag 检查和版本历史表完整性检查 |
 | ~~2~~ | ~~🔴~~ ✅ | ~~HANDBOOK §2 当前焦点严重过时~~ 已修复 | 已改为"卡片工作台"，版本已更新为 v6.6.0 |
 | ~~3~~ | ~~🔴~~ ✅ | ~~HANDBOOK §3 待办表过时~~ 已修复 | 待办表已更新：overlay 标记根解、统一化标记放弃、新增工作台 P0 |
-| 4 | 🔴 P0 | 8 个客户端模块零文��� | ��� 已审计：全部有效，无死代码，无功能重叠。头部注释已有清晰用途说明。HANDBOOK §1 已补入模块职��分组表 |
+| 4 | 🔴 P0 | 8 个客户端模块零文档 | ✅ 已审计：全部有效，无死代码，无功能重叠。头部注释已有清晰用途说明。HANDBOOK §1 已补入模块职能分组表 |
 | ~~5~~ | ~~🟠~~ ✅ | ~~引擎层零文档~~ | ✅ v6.6.1 已补充 `docs/design/ENGINE_ARCHITECTURE.md`（v2 渲染管线 + text-layout 排版引擎全架构） |
 | ~~6~~ | ~~🟠~~ ✅ | ~~CLAUDE.md 文���树缺 `design/` 和 `notes/`~~ 已修复 | 已在 CLAUDE.md 中补充 |
 | ~~7~~ | ~~🟠~~ ✅ | ~~CLAUDE.md 架构描述缺交互共享层~~ 已修复 | 已在架构描述中补充 |
@@ -295,7 +309,7 @@ v6.6.0 �����前的焦�����������「浮卡系统�
 | 10 | ✅ 已处理 | `sidebar-*.png` 临时截图 | 已删除（两个文件无代码引用，调试残留） |
 | 11 | ✅ 已处理 | public/bundle.js 构建产物 | 已在 .gitignore 中保护，不会被提交 |
 | ~~12~~ | ~~🟡~~ ✅ | ~~HANDBOOK 陷阱 #12 描述需更新~~ 已更新 | 已加注设计阶段 |
-| ~~13~~ | ~~🟠~~ ✅ | ~~HANDBOOK §1 模块列表不完整~~ 已修复 | §1 已补全为 29 个模块的职能分组表 |
+| ~~13~~ | ~~🟠~~ ✅ | ~~HANDBOOK §1 模块列表不完整~~ 已修复 | §1 已补全为 29 个模块的职能分组表（历史数据，当前为 37 个模块 + 8 个渲染器） |
 | 14 | ✅ 已处理 | `path-utils.ts` 无独立文档描述 | 头部注释已补充安全约束+依赖方+环境变量说明 |
 | 15 | ✅ 已处理 | 服务端 6 个文件总体无架构文档 | HANDBOOK §1「服务端模块」已补充架构概览 + 模块职责表 + 调用流向图 |
 | 16 | ✅ 已排查 | 注册表遗漏 & 重复造轮子 | 交互层13=MANIFEST13、内容层3=MANIFEST3、能力层3=MANIFEST3，一一对应。类型共享无重复，点击队列无重复，缩进逻辑无重复。发现1处可修复的重复：`floating-card.ts:555` 局部定义 `MARGIN_F=8` 绕过共享常量 `MARGIN`—已修正 |
@@ -306,52 +320,60 @@ v6.6.0 �����前的焦�����������「浮卡系统�
 
 ### 客户端模块完整审计表
 
-> HANDBOOK §1 注册中心表仅覆盖部分模块。以下是全部 38 个客户端模块的完整清单。
+> HANDBOOK §1 注册中心表仅覆盖部分模块。以下是全部 45 个客户端源文件的完整清单（含 renderers/ 渲染器）。
 
 | 模块 | 行数 | 被导入 | 文档覆盖 | 用途 |
 |------|------|--------|---------|------|
-| `app.ts` | 181 | 1 | ✅ 入口 | 初始化流程��排 |
-| `animation-registry.ts` | 90 | 5 | ✅ 提及 | GSAP 动画隔离层 |
-| `canvas-cursor.ts` | 443 | 3 | ✅ 提及 | Canvas 盒子光标系统 |
-| `canvas-scroll.ts` | 360 | 2 | ✅ 提及 | Canvas 盒子滚动系统 |
-| `canvas-utils.ts` | 60 | 4 | ✅ 依赖图 | Canvas 通用工具函数 |
-| `card-stack.ts` | 535 | 4 | ✅ 独立条目 | 堆叠卡片面板 |
-| `char-rain.ts` | 305 | 1 | ✅ 分组表 | 字符散落/回收动画 |
-| `click-queue.ts` | 38 | 1 | ✅ 分组表 | 点击事件队列 |
-| `color-utils.ts` | 45 | 2 | ✅ 分组表 | 颜色工具函数（从 tree-swipe 拆分） |
-| `debug-assert.ts` | 23 | 1 | ✅ 提及 | 运行时断言 |
-| `dom-refs.ts` | 36 | 9 | ✅ 注册表 | DOM 元素引用 |
-| `floating-card.ts` | 1144 | 2 | ✅ 独立条目 | 浮卡系统（核心模块） |
-| `gesture-registry.ts` | 270 | 6 | ✅ 独立条目 | 手势注册中心 |
-| `gestures.ts` | 77 | 1 | ✅ 提及 | 页面滑动手势配置 |
-| `interaction-constants.ts` | 20 | 2 | ✅ 分组表 | 交互常量共享层（v6.6.0 新增） |
-| `drag-handler.ts` | 135 | 2 | ✅ 分组表 | 共享拖动状态机（orb + floating-card 去重） |
-| `file-action-bar.ts` | 426 | 2 | ✅ 分组表 | 文件行长按 → 底部抽屉操作栏 |
-| `logger.ts` | 57 | 3 | ✅ 分组表 | KFM 日志系统 |
-| `mode-system.ts` | 369 | 1 | ✅ 分组表 | 模式按钮系统（从 tree-swipe 拆分，v6.8.0 新增） |
-| `orb.ts` | 490 | 1 | ✅ 独立条目 | 光球 + AI 对话面板 |
-| `renderer-lifecycle.ts` | 242 | 5 | ✅ 注册表 | 渲染器生命周期单例 L |
-| `root-picker.ts` | 433 | 2 | ✅ 独立条目 | 文件树根目录切换器 |
-| `state.ts` | 256 | 10 | ✅ 注册表 | 全局状态层 KFMState |
-| `style-registry.ts` | 205 | 4 | ✅ 独��条目 | 文件树样式唯一来源 |
-| `theme.ts` | 238 | 7 | ✅ 独立条目 | 主题系统（颜色唯一来源） |
-| `tree-loader.ts` | 187 | 2 | ✅ 分组表 | 数据加载层（按需加载展���路径） |
-| `tree-model.ts` | 190 | 2 | ✅ 分组表 | 绝对深度布局模型 |
-| `tree-overlay.ts` | 413 | 1 | ✅ 分组表 | Overlay 双树构建系统（从 tree-render 拆分） |
-| `tree-animation.ts` | 73 | 1 | ✅ 分组表 | 文件树插入/移除 GSAP 动画（新建/删除/复制/移动共享） |
-| `tree-render.ts` | 1013 | 3 | ✅ 核心条目 | 文件树 Canvas 渲染（编排层） |
-| `tree-swipe.ts` | 659 | 1 | ✅ 分组表 | 文件行右滑 → 卡片堆（从 tree-render 拆分，v6.8.0 拆分为 color-utils + mode-system） |
-| `ui-registry.ts` | 333 | 9 | ✅ 独立条目 | UI 元素注册表 |
-| `ui.ts` | 70 | 10 | ✅ 提及 | UI 初始化编排 |
-| `ws-channel.ts` | 347 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
-| `terminal-card-04.ts` | 391 | 0 | TERMINAL_CARD_SPEC | 03 号终端卡 xterm.js 集成 |
-| `tmux-card.ts` | 182 | 0 | — | 04 号 tmux 窗口管理卡 |
-| `card-registry.ts` | 154 | 5 | CARD_REGISTRY_SPEC | 卡片注册表：类型声明 + 实例追踪 |
-| **合计** | **10490** | | | |
+| `app.ts` | 182 | 1 | ✅ 入口 | 初始化流程��排 |
+| `animation-registry.ts` | 91 | 5 | ✅ 提及 | GSAP 动画隔离层 |
+| `canvas-cursor.ts` | 444 | 3 | ✅ 提及 | Canvas 盒子光标系统 |
+| `canvas-scroll.ts` | 361 | 2 | ✅ 提及 | Canvas 盒子滚动系统 |
+| `canvas-utils.ts` | 61 | 4 | ✅ 依赖图 | Canvas 通用工具函数 |
+| `card-stack.ts` | 548 | 4 | ✅ 独立条目 | 堆叠卡片面板 |
+| `char-rain.ts` | 306 | 1 | ✅ 分组表 | 字符散落/回收动画 |
+| `click-queue.ts` | 39 | 1 | ✅ 分组表 | 点击事件队列 |
+| `color-utils.ts` | 46 | 2 | ✅ 分组表 | 颜色工具函数（从 tree-swipe 拆分） |
+| `debug-assert.ts` | 24 | 1 | ✅ 提及 | 运行时断言 |
+| `dom-refs.ts` | 37 | 9 | ✅ 注册表 | DOM 元素引用 |
+| `floating-card.ts` | 1148 | 2 | ✅ 独立条目 | 浮卡系统（核心模块） |
+| `gesture-registry.ts` | 380 | 6 | ✅ 独立条目 | 手势注册中心 |
+| `gestures.ts` | 215 | 1 | ✅ 提及 | 页面滑动手势配置 |
+| `interaction-constants.ts` | 21 | 2 | ✅ 分组表 | 交互常量共享层（v6.6.0 新增） |
+| `drag-handler.ts` | 136 | 2 | ✅ 分组表 | 共享拖动状态机（orb + floating-card 去重） |
+| `file-action-bar.ts` | 427 | 2 | ✅ 分组表 | 文件行长按 → 底部抽屉操作栏 |
+| `logger.ts` | 58 | 3 | ✅ 分组表 | KFM 日志系统 |
+| `mode-system.ts` | 370 | 1 | ✅ 分组表 | 模式按钮系统（从 tree-swipe 拆分，v6.8.0 新增） |
+| `orb.ts` | 491 | 1 | ✅ 独立条目 | 光球 + AI 对话面板 |
+| `renderer-lifecycle.ts` | 243 | 5 | ✅ 注册表 | 渲染器生命周期单例 L |
+| `root-picker.ts` | 434 | 2 | ✅ 独立条目 | 文件树根目录切换器 |
+| `state.ts` | 257 | 10 | ✅ 注册表 | 全局状态层 KFMState |
+| `style-registry.ts` | 206 | 4 | ✅ 独��条目 | 文件树样式唯一来源 |
+| `theme.ts` | 239 | 7 | ✅ 独立条目 | 主题系统（颜色唯一来源） |
+| `tree-loader.ts` | 188 | 2 | ✅ 分组表 | 数据加载层（按需加载展���路径） |
+| `tree-model.ts` | 191 | 2 | ✅ 分组表 | 绝对深度布局模型 |
+| `tree-overlay.ts` | 414 | 1 | ✅ 分组表 | Overlay 双树构建系统（从 tree-render 拆分） |
+| `tree-animation.ts` | 74 | 1 | ✅ 分组表 | 文件树插入/移除 GSAP 动画（新建/删除/复制/移动共享） |
+| `tree-render.ts` | 1014 | 3 | ✅ 核心条目 | 文件树 Canvas 渲染（编排层） |
+| `tree-swipe.ts` | 660 | 1 | ✅ 分组表 | 文件行右滑 → 卡片堆（从 tree-render 拆分，v6.8.0 拆分为 color-utils + mode-system） |
+| `ui-registry.ts` | 334 | 9 | ✅ 独立条目 | UI 元素注册表 |
+| `ui.ts` | 71 | 10 | ✅ 提及 | UI 初始化编排 |
+| `ws-channel.ts` | 348 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
+| `terminal-card-04.ts` | 428 | 0 | TERMINAL_CARD_SPEC | 03 号终端卡 xterm.js 集成 |
+| `tmux-card.ts` | 195 | 0 | — | 04 号 tmux 窗口管理卡 |
+| `card-registry.ts` | 155 | 5 | CARD_REGISTRY_SPEC | 卡片注册表：类型声明 + 实例追踪 |
+| **渲染器（renderers/）** | | | | |
+| `renderers/binary-fallback.ts` | 37 | 1 | — | 二进制文件回退渲染器（文字提示不可预览） |
+| `renderers/code-highlight.ts` | 100 | 1 | — | 代码语法高亮渲染器（highlight.js） |
+| `renderers/file-type.ts` | 17 | 1 | — | 文件类型图标映射 |
+| `renderers/handler-factory.ts` | 307 | 1 | — | 卡片内容处理器工厂（按 typeId 分发） |
+| `renderers/katex-css.ts` | 3 | 1 | — | KaTeX CSS 注入（CDN） |
+| `renderers/math-diagram.ts` | 153 | 1 | — | 数学公式/图表渲染器（KaTeX + Mermaid CDN） |
+| `renderers/md-extensions.ts` | 48 | 1 | — | Markdown 渲染扩展（链接、任务列表） |
+| `renderers/text-preview.ts` | 26 | 1 | — | 文本文件预览渲染器 |
+| **合计** | **11527** | | | |
 
 ### 死代码检查
-
-**结论：无死代码。** 所有 37 个模块都被至少 1 个文件导入。`terminal-aux-bar.ts` 已删除（空占位，无任何引用）。`src/cards/` 目录已彻底删除。实际使用的 logger 在 `src/client/modules/logger.ts`。
+**结论：无死代码。** 所有 37 个模块都被至少 1 个文件导入（`terminal-card-04.ts` 和 `tmux-card.ts` 被导入数为 0，但这是模块自身的特性：它们仅在用户侧打开卡片时由 `card-registry.ts` 的 `createHandler` 工厂按需实例化，属于动态加载。`terminal-aux-bar.ts` 已删除（空占位，无任何引用）。`src/cards/` 目录已彻底删除。实际使用的 logger 在 `src/client/modules/logger.ts`。
 
 ### 引擎层清单（14 文件）
 

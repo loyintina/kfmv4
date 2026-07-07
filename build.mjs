@@ -40,6 +40,14 @@ try {
   console.error('[sass] SCSS 编译失败，构建中断。');
   process.exit(1);
 }
+
+// card.meta 类型逃逸检查
+execSync('node check-card-meta.mjs', { stdio: 'inherit' });
+console.log('[check-card-meta] OK');
+
+// 卡片注册表完整性校验
+execSync('node check-cards.mjs', { stdio: 'inherit' });
+console.log('[check-cards] OK');
 console.log('[sass] OK');
 
 // 服务端

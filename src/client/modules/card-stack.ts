@@ -14,7 +14,7 @@ import { registerCardType, getCardType, type CardContentHandler, type CardInstan
  * KFM v4 - 堆叠卡片面板
  *
  * 全屏左滑唤出，7 张卡片按星云光谱堆叠。
- * 垂直滑动切换聚焦卡片，点击聚焦卡打开对应盒子（TODO）。
+ * 垂直滑动切换聚焦卡片，聚焦卡左滑投出为浮卡。
  * 无遮罩 + 卡片只露部分，像半开的抽屉。
  */
 
