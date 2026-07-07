@@ -63,7 +63,7 @@ function _applyFontSizeToContent(contentEl: HTMLElement, typeId: string, fontSiz
   if (typeId === 'card03' || typeId === 'card04') {
     const instance = cardRegistry.getInstanceByContentEl(contentEl);
     if (instance?.meta._term) {
-      const term = instance.meta._term as { options: { fontSize: number }; cols: number; rows: number };
+      const term = instance.meta._term as { options: { fontSize: number }; cols: number; rows: number; refresh: (start: number, end: number) => void };
       const newFontSize = Math.round(fontSize);
 
       if (term.options.fontSize !== newFontSize) {
@@ -71,6 +71,8 @@ function _applyFontSizeToContent(contentEl: HTMLElement, typeId: string, fontSiz
         if (instance.meta._fit) {
           try { (instance.meta._fit as { fit: () => void }).fit(); } catch {}
         }
+        // 强制重绘（fit.fit() 只在 cols/rows 变化时才调用 resize，需要显式 refresh）
+        try { term.refresh(0, term.rows - 1); } catch {}
       }
     }
   }
