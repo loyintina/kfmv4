@@ -30,10 +30,6 @@ export interface GestureHandler {
   onPinchStart?: (event: PointerEvent, scale: number) => void;
   onPinchMove?: (event: PointerEvent, scale: number) => void;
   onPinchEnd?: (event: PointerEvent, scale: number) => void;
-  /** 依赖关系：只有当指定的处理器失败时，当前处理器才能识别 */
-  requireFailure?: string[];
-  /** 延迟识别超时（ms），默认 100ms */
-  recognizeTimeout?: number;
   /** stopPropagation 控制（默认不调用） */
   stopPropagation?: boolean | { start?: boolean; move?: boolean; end?: boolean };
 }
@@ -54,15 +50,6 @@ interface PinchState {
   target: HTMLElement;
 }
 
-interface RecognizerState {
-  id: string;
-  state: 'idle' | 'possible' | 'began' | 'changed' | 'ended' | 'cancelled';
-  startTime: number;
-  startX: number;
-  startY: number;
-  timeoutTimer?: ReturnType<typeof setTimeout>;
-}
-
 // ========== Registry 实现 ==========
 
 export class GestureRegistry {
@@ -75,9 +62,6 @@ export class GestureRegistry {
   // 多指追踪
   private _pointers: Map<number, PointerEvent> = new Map();
   private _pinchState: PinchState | null = null;
-
-  // 处理器状态追踪（用于依赖关系）
-  private _recognizerStates: Map<string, RecognizerState> = new Map();
 
   // 绑定的回调引用（用于 removeEventListener）
   private _onStart: (e: PointerEvent) => void;
@@ -217,41 +201,17 @@ export class GestureRegistry {
     const target = this._findPinchTarget(pointers[0], pointers[1]);
     if (!target) return false;
 
+    // 中断当前单指手势
+    if (this._active) {
+      this._active.handler.onEnd?.(pointers[0], 0, 0, Date.now() - this._active.startTime);
+      this._active = null;
+    }
+
     // 按优先级找匹配的 pinch handler
     for (const handler of this._handlers) {
       if (!handler.onPinchStart) continue;
       if (handler.condition && !handler.condition()) continue;
       if (!this._matchTarget(handler, target, pointers[0])) continue;
-
-      // 检查依赖关系
-      if (handler.requireFailure && handler.requireFailure.length > 0) {
-        // 有依赖关系，检查依赖的处理器是否已经失败
-        const canRecognize = handler.requireFailure.every(depId => {
-          // 如果依赖的处理器不存在，可以识别
-          if (!this.isRegistered(depId)) return true;
-          // 如果依赖的处理器没有激活，可以识别
-          const isDepActive = this._active && this._active.handler.id === depId;
-          return !isDepActive;
-        });
-
-        if (!canRecognize) {
-          // 依赖的处理器还在激活状态，需要中断它
-          if (this._active) {
-            log('[gesture] interrupting single-finger for pinch:', this._active.handler.id);
-            this._active.handler.onEnd?.(pointers[0], 0, 0, Date.now() - this._active.startTime);
-            this._active = null;
-          }
-          // 清除依赖处理器的 recognizer 状态
-          for (const depId of handler.requireFailure) {
-            const depState = this._recognizerStates.get(depId);
-            if (depState) {
-              if (depState.timeoutTimer) clearTimeout(depState.timeoutTimer);
-              depState.state = 'cancelled';
-              this._recognizerStates.delete(depId);
-            }
-          }
-        }
-      }
 
       log('[gesture] pinch start, handler:', handler.id, 'distance:', distance);
       this._pinchState = { handler, initialDistance: distance, initialScale: 1, target };
@@ -259,44 +219,6 @@ export class GestureRegistry {
       return true;
     }
     return false;
-  }
-
-  /** 识别超时：如果依赖的处理器已经失败，可以识别当前处理器 */
-  private _onRecognizeTimeout(handlerId: string, e: PointerEvent): void {
-    const state = this._recognizerStates.get(handlerId);
-    if (!state || state.state !== 'possible') return;
-
-    const handler = this._handlers.find(h => h.id === handlerId);
-    if (!handler) return;
-
-    // 检查依赖的处理器是否已经失败（不在 active 状态，且没有 possible 状态）
-    const canRecognize = !handler.requireFailure ||
-      handler.requireFailure.every(depId => {
-        // 如果依赖的处理器不存在，可以识别
-        if (!this.isRegistered(depId)) return true;
-        // 如果依赖的处理器没有激活，可以识别
-        const depState = this._recognizerStates.get(depId);
-        const isDepActive = this._active && this._active.handler.id === depId;
-        return !isDepActive && (!depState || depState.state === 'idle' || depState.state === 'ended' || depState.state === 'cancelled');
-      });
-
-    if (canRecognize) {
-      // 可以识别
-      state.state = 'began';
-      this._active = {
-        handler,
-        startX: state.startX,
-        startY: state.startY,
-        startTime: state.startTime,
-      };
-      handler.onStart?.(e);
-      log('[gesture] recognized after timeout:', handlerId);
-    } else {
-      // 依赖的处理器还在等待，取消当前处理器
-      state.state = 'cancelled';
-      this._recognizerStates.delete(handlerId);
-      log('[gesture] cancelled due to dependency:', handlerId);
-    }
   }
 
   private _handleStart(e: PointerEvent): void {
@@ -320,97 +242,40 @@ export class GestureRegistry {
     // preMatch hooks: handler 匹配前全局执行
     for (const fn of this._preMatchHooks) fn(e);
 
-    // 收集所有匹配的处理器
-    const matchedHandlers: GestureHandler[] = [];
     for (const handler of this._handlers) {
+      // 跳过纯双指处理器（只有 onPinch*，没有单指回调）
+      if (!handler.onStart && !handler.onMove && !handler.onEnd && !handler.onLongPress) continue;
       // 条件检查
       if (handler.condition && !handler.condition()) continue;
       // 目标匹配
       if (!this._matchTarget(handler, target, e)) continue;
       // 预处理钩子
       if (handler.onBeforeStart && !handler.onBeforeStart(e)) continue;
-      matchedHandlers.push(handler);
-    }
 
-    // 检查是否有需要延迟识别的处理器
-    const hasRequireFailure = matchedHandlers.some(h => h.requireFailure && h.requireFailure.length > 0);
+      // 调试日志：检查哪个处理器匹配了触摸
+      log('[gesture] matched handler:', handler.id, 'target:', target.className, 'tagName:', target.tagName);
 
-    if (hasRequireFailure) {
-      // 有依赖关系的处理器，进入 possible 状态
-      for (const handler of matchedHandlers) {
-        if (handler.requireFailure && handler.requireFailure.length > 0) {
-          // 标记为 possible 状态
-          this._recognizerStates.set(handler.id, {
-            id: handler.id,
-            state: 'possible',
-            startTime: Date.now(),
-            startX: e.clientX,
-            startY: e.clientY,
-          });
+      // 锁定该处理器
+      this._active = {
+        handler,
+        startX: e.clientX,
+        startY: e.clientY,
+        startTime: Date.now(),
+      };
 
-          // 设置超时定时器
-          const timeout = handler.recognizeTimeout || 100;
-          const state = this._recognizerStates.get(handler.id)!;
-          state.timeoutTimer = setTimeout(() => {
-            this._onRecognizeTimeout(handler.id, e);
-          }, timeout);
-
-          log('[gesture] possible:', handler.id);
-        }
+      // 长按计时器
+      if (handler.longPressMs && handler.onLongPress) {
+        this._active.longPressTimer = setTimeout(() => {
+          if (!this._active || this._active.handler.id !== handler.id) return;
+          this._active.longPressConsumed = true;
+          this._active.longPressTimer = undefined;
+          handler.onLongPress!(e);
+        }, handler.longPressMs);
       }
 
-      // 如果有单指处理器（没有依赖关系），先匹配它
-      const singleFingerHandler = matchedHandlers.find(h => !h.requireFailure || h.requireFailure.length === 0);
-      if (singleFingerHandler) {
-        this._active = {
-          handler: singleFingerHandler,
-          startX: e.clientX,
-          startY: e.clientY,
-          startTime: Date.now(),
-        };
-
-        // 长按计时器
-        if (singleFingerHandler.longPressMs && singleFingerHandler.onLongPress) {
-          this._active.longPressTimer = setTimeout(() => {
-            if (!this._active || this._active.handler.id !== singleFingerHandler.id) return;
-            this._active.longPressConsumed = true;
-            this._active.longPressTimer = undefined;
-            singleFingerHandler.onLongPress!(e);
-          }, singleFingerHandler.longPressMs);
-        }
-
-        if (this._shouldStop(singleFingerHandler, 'start')) e.stopPropagation();
-        singleFingerHandler.onStart?.(e);
-        log('[gesture] matched single-finger:', singleFingerHandler.id);
-      }
-    } else {
-      // 没有依赖关系，正常匹配优先级最高的处理器
-      for (const handler of matchedHandlers) {
-        // 调试日志：检查哪个处理器匹配了触摸
-        log('[gesture] matched handler:', handler.id, 'target:', target.className, 'tagName:', target.tagName);
-
-        // 锁定该处理器
-        this._active = {
-          handler,
-          startX: e.clientX,
-          startY: e.clientY,
-          startTime: Date.now(),
-        };
-
-        // 长按计时器
-        if (handler.longPressMs && handler.onLongPress) {
-          this._active.longPressTimer = setTimeout(() => {
-            if (!this._active || this._active.handler.id !== handler.id) return;
-            this._active.longPressConsumed = true;
-            this._active.longPressTimer = undefined;
-            handler.onLongPress!(e);
-          }, handler.longPressMs);
-        }
-
-        if (this._shouldStop(handler, 'start')) e.stopPropagation();
-        handler.onStart?.(e);
-        break; // 只匹配优先级最高的一个
-      }
+      if (this._shouldStop(handler, 'start')) e.stopPropagation();
+      handler.onStart?.(e);
+      break; // 只匹配优先级最高的一个
     }
 
     // 尝试启动 pinch（需要两个指针都在目标内）

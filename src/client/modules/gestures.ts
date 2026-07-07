@@ -116,8 +116,6 @@ export function initGestures(): void {
     id: 'pinch-zoom',
     targetFilter: '.floating-card .card-content',
     priority: 90,
-    requireFailure: ['xterm-scroll'],
-    recognizeTimeout: 150,
     onPinchStart: (e, _scale) => {
       const target = e.target as HTMLElement;
       const contentEl = target.closest('.card-content') as HTMLElement;
