@@ -56,24 +56,8 @@ function _saveFontSize(typeId: string, fontSize: number): void {
   localStorage.setItem('kfm-fontsize-' + typeId, JSON.stringify({ fontSize }));
 }
 
-/** 触摸期间只更新字号（不调用 fit.fit，避免 getComputedStyle 触发布局回流） */
-function _applyFontSizeVisualOnly(contentEl: HTMLElement, typeId: string, fontSize: number): void {
-  contentEl.style.setProperty('--card-font-size', fontSize + 'px');
-
-  if (typeId === 'card03' || typeId === 'card04') {
-    const instance = cardRegistry.getInstanceByContentEl(contentEl);
-    if (instance?.meta._term) {
-      const term = instance.meta._term as { options: { fontSize: number } };
-      const newFontSize = Math.round(fontSize);
-      if (term.options.fontSize !== newFontSize) {
-        term.options.fontSize = newFontSize;
-      }
-    }
-  }
-}
-
-/** 触摸结束后更新字号 + 布局（调用 fit.fit 进行内容重排） */
-function _applyFontSizeWithLayout(contentEl: HTMLElement, typeId: string, fontSize: number): void {
+/** 应用字号 + 布局重排 */
+function _applyFontSize(contentEl: HTMLElement, typeId: string, fontSize: number): void {
   contentEl.style.setProperty('--card-font-size', fontSize + 'px');
 
   if (typeId === 'card03' || typeId === 'card04') {
@@ -85,11 +69,33 @@ function _applyFontSizeWithLayout(contentEl: HTMLElement, typeId: string, fontSi
       if (term.options.fontSize !== newFontSize) {
         term.options.fontSize = newFontSize;
       }
-      // 触摸结束，进行一次完整的布局重排
       if (instance.meta._fit) {
         try { (instance.meta._fit as { fit: () => void }).fit(); } catch {}
       }
       try { term.resize(term.cols, term.rows); } catch {}
+    }
+  }
+}
+
+/** 触摸期间：CSS transform 缩放（不触发布局回流） */
+function _setVisualScale(contentEl: HTMLElement, typeId: string, scale: number): void {
+  if (typeId === 'card03' || typeId === 'card04') {
+    const instance = cardRegistry.getInstanceByContentEl(contentEl);
+    if (instance?.meta._termEl) {
+      const termEl = instance.meta._termEl as HTMLElement;
+      termEl.style.transform = `scale(${scale})`;
+      termEl.style.transformOrigin = 'top left';
+    }
+  }
+}
+
+/** 触摸结束后：移除 CSS transform */
+function _clearVisualScale(contentEl: HTMLElement, typeId: string): void {
+  if (typeId === 'card03' || typeId === 'card04') {
+    const instance = cardRegistry.getInstanceByContentEl(contentEl);
+    if (instance?.meta._termEl) {
+      const termEl = instance.meta._termEl as HTMLElement;
+      termEl.style.transform = '';
     }
   }
 }
@@ -129,10 +135,11 @@ export function initGestures(): void {
       const config = _getFontSizeConfig(_pinchTypeId);
       const newFontSize = Math.max(config.min, Math.min(config.max, _pinchStartFontSize * scale));
 
-      // 触摸期间只更新字号，不调用 fit.fit（避免 getComputedStyle 触发布局回流）
+      // CSS transform 缩放（不触发布局回流）
+      const visualScale = newFontSize / _pinchStartFontSize;
       const instances = cardRegistry.getByType(_pinchTypeId);
       for (const inst of instances) {
-        _applyFontSizeVisualOnly(inst.contentEl, _pinchTypeId, newFontSize);
+        _setVisualScale(inst.contentEl, _pinchTypeId, visualScale);
       }
     },
     onPinchEnd: (_e, scale) => {
@@ -143,10 +150,14 @@ export function initGestures(): void {
 
       _saveFontSize(_pinchTypeId, finalFontSize);
 
-      // 触摸结束，进行一次完整的布局重排
+      // 先更新字号 + 重排（在 transform 遮罩下完成）
       const instances = cardRegistry.getByType(_pinchTypeId);
       for (const inst of instances) {
-        _applyFontSizeWithLayout(inst.contentEl, _pinchTypeId, finalFontSize);
+        _applyFontSize(inst.contentEl, _pinchTypeId, finalFontSize);
+      }
+      // 再移除 transform（内容已在正确位置）
+      for (const inst of instances) {
+        _clearVisualScale(inst.contentEl, _pinchTypeId);
       }
 
       _pinchTypeId = null;
