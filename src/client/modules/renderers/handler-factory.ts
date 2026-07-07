@@ -40,8 +40,7 @@ export function createFileHandler(meta: Record<string, unknown>): { activate: (c
   let _previewBtn: HTMLElement | null = null;
   let _editBtn: HTMLElement | null = null;
   let _body: HTMLElement;
-  let _saveBtn: HTMLElement | null = null;
-
+  let _saveTimer: ReturnType<typeof setTimeout> | null = null;
   function _renderToolbar() {
     if (!_previewBtn || !_editBtn) return;
     if (_mode === 'preview') {
@@ -175,10 +174,23 @@ export function createFileHandler(meta: Record<string, unknown>): { activate: (c
     const ta = document.createElement('textarea');
     ta.style.cssText = 'position:absolute;inset:0;padding:6px 0 0;font:var(--card-font-size,11px) monospace;white-space:pre-wrap;word-break:break-word;color:#e0e0e0;background:transparent;border:none;outline:none;resize:none';
     ta.value = _rawContent;
-    // ctrl+enter 保存
+
+    // 自动保存：输入时防抖（500ms），失焦时立即保存
+    ta.addEventListener('input', () => {
+      clearTimeout(_saveTimer);
+      _saveTimer = setTimeout(() => {
+        if (ta.value !== _rawContent) _doSave(ta.value);
+      }, 500);
+    });
+    ta.addEventListener('blur', () => {
+      clearTimeout(_saveTimer);
+      if (ta.value !== _rawContent) _doSave(ta.value);
+    });
+    // ctrl+enter 立即保存（同时清除防抖）
     ta.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
+        clearTimeout(_saveTimer);
         _doSave(ta.value);
       }
     });
@@ -300,6 +312,9 @@ export function createFileHandler(meta: Record<string, unknown>): { activate: (c
       }
     },
     deactivate(el: HTMLElement, _card: CardInstance, _reason: string) {
+      // 关闭卡片前保存未提交的更改
+      clearTimeout(_saveTimer);
+      _saveTimer = null;
       el.innerHTML = '';
     },
   };
