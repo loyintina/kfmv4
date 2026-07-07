@@ -156,12 +156,19 @@ export function initGestures(): void {
       // 保存字号偏好
       _saveFontSize(_pinchTypeId, finalFontSize);
 
-      // 移除视觉缩放，更新实际字号
+      // 先更新实际字号（CSS transform 作为"遮罩"仍在，用户看不到中间状态）
       const instances = cardRegistry.getByType(_pinchTypeId);
       for (const inst of instances) {
-        _removeVisualScale(inst.contentEl, _pinchTypeId);
         _applyFontSizeToContent(inst.contentEl, _pinchTypeId, finalFontSize);
       }
+
+      // 等待 Canvas 重绘完成，再移除 CSS transform（覆盖到正确位置）
+      const pinchTypeId = _pinchTypeId;
+      requestAnimationFrame(() => {
+        for (const inst of instances) {
+          _removeVisualScale(inst.contentEl, pinchTypeId);
+        }
+      });
 
       _pinchTypeId = null;
     },
