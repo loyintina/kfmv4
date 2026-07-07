@@ -56,8 +56,24 @@ function _saveFontSize(typeId: string, fontSize: number): void {
   localStorage.setItem('kfm-fontsize-' + typeId, JSON.stringify({ fontSize }));
 }
 
-/** 应用字号到内容（Canvas 渲染器直接重绘，无 DOM 布局回流） */
-function _applyFontSizeToContent(contentEl: HTMLElement, typeId: string, fontSize: number): void {
+/** 触摸期间只更新字号（不调用 fit.fit，避免 getComputedStyle 触发布局回流） */
+function _applyFontSizeVisualOnly(contentEl: HTMLElement, typeId: string, fontSize: number): void {
+  contentEl.style.setProperty('--card-font-size', fontSize + 'px');
+
+  if (typeId === 'card03' || typeId === 'card04') {
+    const instance = cardRegistry.getInstanceByContentEl(contentEl);
+    if (instance?.meta._term) {
+      const term = instance.meta._term as { options: { fontSize: number } };
+      const newFontSize = Math.round(fontSize);
+      if (term.options.fontSize !== newFontSize) {
+        term.options.fontSize = newFontSize;
+      }
+    }
+  }
+}
+
+/** 触摸结束后更新字号 + 布局（调用 fit.fit 进行内容重排） */
+function _applyFontSizeWithLayout(contentEl: HTMLElement, typeId: string, fontSize: number): void {
   contentEl.style.setProperty('--card-font-size', fontSize + 'px');
 
   if (typeId === 'card03' || typeId === 'card04') {
@@ -68,11 +84,12 @@ function _applyFontSizeToContent(contentEl: HTMLElement, typeId: string, fontSiz
 
       if (term.options.fontSize !== newFontSize) {
         term.options.fontSize = newFontSize;
-        if (instance.meta._fit) {
-          try { (instance.meta._fit as { fit: () => void }).fit(); } catch {}
-        }
-        try { term.resize(term.cols, term.rows); } catch {}
       }
+      // 触摸结束，进行一次完整的布局重排
+      if (instance.meta._fit) {
+        try { (instance.meta._fit as { fit: () => void }).fit(); } catch {}
+      }
+      try { term.resize(term.cols, term.rows); } catch {}
     }
   }
 }
@@ -112,10 +129,10 @@ export function initGestures(): void {
       const config = _getFontSizeConfig(_pinchTypeId);
       const newFontSize = Math.max(config.min, Math.min(config.max, _pinchStartFontSize * scale));
 
-      // Canvas 渲染器直接更新字号（不触发 DOM 布局回流）
+      // 触摸期间只更新字号，不调用 fit.fit（避免 getComputedStyle 触发布局回流）
       const instances = cardRegistry.getByType(_pinchTypeId);
       for (const inst of instances) {
-        _applyFontSizeToContent(inst.contentEl, _pinchTypeId, newFontSize);
+        _applyFontSizeVisualOnly(inst.contentEl, _pinchTypeId, newFontSize);
       }
     },
     onPinchEnd: (_e, scale) => {
@@ -126,9 +143,10 @@ export function initGestures(): void {
 
       _saveFontSize(_pinchTypeId, finalFontSize);
 
+      // 触摸结束，进行一次完整的布局重排
       const instances = cardRegistry.getByType(_pinchTypeId);
       for (const inst of instances) {
-        _applyFontSizeToContent(inst.contentEl, _pinchTypeId, finalFontSize);
+        _applyFontSizeWithLayout(inst.contentEl, _pinchTypeId, finalFontSize);
       }
 
       _pinchTypeId = null;
