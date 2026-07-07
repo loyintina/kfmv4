@@ -56,7 +56,7 @@ function _saveFontSize(typeId: string, fontSize: number): void {
   localStorage.setItem('kfm-fontsize-' + typeId, JSON.stringify({ fontSize }));
 }
 
-/** 应用字号到内容（实际更新，触发布局回流） */
+/** 应用字号到内容（Canvas 渲染器直接重绘，无 DOM 布局回流） */
 function _applyFontSizeToContent(contentEl: HTMLElement, typeId: string, fontSize: number): void {
   contentEl.style.setProperty('--card-font-size', fontSize + 'px');
 
@@ -71,32 +71,8 @@ function _applyFontSizeToContent(contentEl: HTMLElement, typeId: string, fontSiz
         if (instance.meta._fit) {
           try { (instance.meta._fit as { fit: () => void }).fit(); } catch {}
         }
-        // 触发 resize 事件强制 Canvas 渲染器重绘（term.refresh() 不保证立即重绘）
         try { term.resize(term.cols, term.rows); } catch {}
       }
-    }
-  }
-}
-
-/** 应用视觉缩放（CSS transform，不触发布局回流） */
-function _applyVisualScale(contentEl: HTMLElement, typeId: string, scale: number): void {
-  if (typeId === 'card03' || typeId === 'card04') {
-    const instance = cardRegistry.getInstanceByContentEl(contentEl);
-    if (instance?.meta._termEl) {
-      const termEl = instance.meta._termEl as HTMLElement;
-      termEl.style.transform = `scale(${scale})`;
-      termEl.style.transformOrigin = 'top left';
-    }
-  }
-}
-
-/** 移除视觉缩放 */
-function _removeVisualScale(contentEl: HTMLElement, typeId: string): void {
-  if (typeId === 'card03' || typeId === 'card04') {
-    const instance = cardRegistry.getInstanceByContentEl(contentEl);
-    if (instance?.meta._termEl) {
-      const termEl = instance.meta._termEl as HTMLElement;
-      termEl.style.transform = '';
     }
   }
 }
@@ -112,7 +88,6 @@ export function initGestures(): void {
   // ========== 双指缩放处理器 ==========
   let _pinchTypeId: string | null = null;
   let _pinchStartFontSize: number = 13;
-  let _pinchCurrentFontSize: number = 13;
 
   gestures.register({
     id: 'pinch-zoom',
@@ -130,7 +105,6 @@ export function initGestures(): void {
 
       _pinchTypeId = instance.typeId;
       _pinchStartFontSize = _loadFontSize(_pinchTypeId);
-      _pinchCurrentFontSize = _pinchStartFontSize;
     },
     onPinchMove: (_e, scale) => {
       if (!_pinchTypeId) return;
@@ -138,13 +112,10 @@ export function initGestures(): void {
       const config = _getFontSizeConfig(_pinchTypeId);
       const newFontSize = Math.max(config.min, Math.min(config.max, _pinchStartFontSize * scale));
 
-      // 计算视觉缩放比例（相对于当前字号）
-      const visualScale = newFontSize / _pinchCurrentFontSize;
-
-      // 应用 CSS transform（只触发合成层更新，不触发布局回流）
+      // Canvas 渲染器直接更新字号（不触发 DOM 布局回流）
       const instances = cardRegistry.getByType(_pinchTypeId);
       for (const inst of instances) {
-        _applyVisualScale(inst.contentEl, _pinchTypeId, visualScale);
+        _applyFontSizeToContent(inst.contentEl, _pinchTypeId, newFontSize);
       }
     },
     onPinchEnd: (_e, scale) => {
@@ -153,24 +124,12 @@ export function initGestures(): void {
       const config = _getFontSizeConfig(_pinchTypeId);
       const finalFontSize = Math.max(config.min, Math.min(config.max, _pinchStartFontSize * scale));
 
-      // 保存字号偏好
       _saveFontSize(_pinchTypeId, finalFontSize);
 
-      // 先更新实际字号（CSS transform 作为"遮罩"仍在，用户看不到中间状态）
       const instances = cardRegistry.getByType(_pinchTypeId);
       for (const inst of instances) {
         _applyFontSizeToContent(inst.contentEl, _pinchTypeId, finalFontSize);
       }
-
-      // 等两帧让 Canvas 完成重绘，再移除 CSS transform
-      const pinchTypeId = _pinchTypeId;
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          for (const inst of instances) {
-            _removeVisualScale(inst.contentEl, pinchTypeId);
-          }
-        });
-      });
 
       _pinchTypeId = null;
     },
