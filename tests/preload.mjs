@@ -7,9 +7,7 @@ globalThis.localStorage = {
   getItem: (k) => _store[k] ?? null,
   setItem: (k, v) => { _store[k] = v; },
   removeItem: (k) => { delete _store[k]; },
-  clear: () => { for (const k of Object.keys(_store)) delete _store[k]; },
-  get length() { return Object.keys(_store).length; },
-  key: (i) => Object.keys(_store)[i] ?? null,
+  clear: () => { Object.keys(_store).forEach(k => delete _store[k]); },
 };
 
 // ========== Timer wrappers ==========
@@ -29,7 +27,7 @@ console.log = (...args) => { __testLogs.push(args.join(' ')); _origLog(...args);
 console.warn = (...args) => { console.log('[WARN]', ...args); };
 console.error = (...args) => { console.log('[ERROR]', ...args); };
 
-// ========== Simple mock for element .style ==========
+// ========== Style mock ==========
 function makeStyle(initial) {
   const s = {
     _values: { ...initial },
@@ -69,8 +67,37 @@ function makeStyle(initial) {
   });
 }
 
-// ========== Element mock ==========
+// ========== Element mock with layout computation ==========
 function makeElement(tag, overrides) {
+  const children = [];
+
+  function _calcScrollHeight() {
+    if (children.length === 0) return 0;
+    let maxBottom = 0;
+    for (const c of children) {
+      const cRect = typeof c.getBoundingClientRect === 'function' ? c.getBoundingClientRect() : null;
+      const cH = (cRect && cRect.height) || c.offsetHeight || 0;
+      const cTop = c.offsetTop || 0;
+      maxBottom = Math.max(maxBottom, cTop + cH);
+    }
+    return maxBottom;
+  }
+
+  function _parsePx(val, fallback) {
+    if (typeof val === 'string' && val.endsWith('px')) return parseFloat(val) || fallback;
+    return fallback;
+  }
+
+  function _getStyleVal(name, fallback) {
+    const v = el.style?._values?.[name];
+    return v !== undefined && v !== '' ? _parsePx(v, fallback) : fallback;
+  }
+
+  function _isOverflowScrollY() {
+    const ov = el.style?._values?.overflowY || el.style?._values?.overflow || '';
+    return ov === 'auto' || ov === 'scroll';
+  }
+
   const el = {
     tagName: tag.toUpperCase(),
     id: '',
@@ -90,15 +117,12 @@ function makeElement(tag, overrides) {
     },
     textContent: '',
     innerHTML: '',
-    children: [],
+    children,
     parentElement: null,
     parentNode: null,
     firstChild: null,
     lastChild: null,
-    scrollTop: 0,
     scrollLeft: 0,
-    clientWidth: 295,
-    clientHeight: 618,
     offsetWidth: 295,
     offsetHeight: 618,
     _listeners: {},
@@ -108,49 +132,38 @@ function makeElement(tag, overrides) {
     },
     removeEventListener(type, fn, opts) {
       if (!this._listeners[type]) return;
-      this._listeners[type] = this._listeners[type].filter(
-        e => e.fn !== fn || e.opts !== opts
-      );
+      this._listeners[type] = this._listeners[type].filter(e => e.fn !== fn || e.opts !== opts);
     },
-    /** 移除所有事件监听（测试隔离用） */
     _removeAllListeners() {
       this._listeners = {};
     },
     dispatchEvent(event) {
       const handlers = this._listeners[event.type] || [];
       for (const h of handlers) h.fn(event);
-      // Bubbling
       if (event.bubbles !== false && this.parentElement) {
         this.parentElement.dispatchEvent(event);
       }
     },
     getBoundingClientRect() {
-      // Parse left/top from style if available
-      const left = parseInt(this.style._values?.left) || 0;
-      const top = parseInt(this.style._values?.top) || 0;
-      const w = parseInt(this.style._values?.width) || this.clientWidth || 0;
-      const h = parseInt(this.style._values?.height) || this.clientHeight || 0;
+      const left = _parsePx(this.style._values?.left, 0);
+      const top = _parsePx(this.style._values?.top, 0);
+      const w = _parsePx(this.style._values?.width, this.clientWidth || 0);
+      const h = _parsePx(this.style._values?.height, this.clientHeight || 0);
       return { left, top, right: left + w, bottom: top + h, width: w, height: h, x: left, y: top };
     },
     closest(selector) {
       if (!selector) return null;
-      let el = this;
-      while (el) {
-        if (el.matches?.(selector)) return el;
-        el = el.parentElement;
+      let e = this;
+      while (e) {
+        if (typeof e.matches === 'function' && e.matches(selector)) return e;
+        e = e.parentElement;
       }
       return null;
     },
     matches(selector) {
       if (!selector) return false;
-      // Simple class/id/tag matching for test environment
-      if (selector.startsWith('.')) {
-        const cls = selector.slice(1);
-        return this.classList.contains(cls);
-      }
-      if (selector.startsWith('#')) {
-        return this.id === selector.slice(1);
-      }
+      if (selector.startsWith('.')) return this.classList.contains(selector.slice(1));
+      if (selector.startsWith('#')) return this.id === selector.slice(1);
       return this.tagName === selector.toUpperCase();
     },
     querySelector(sel) {
@@ -161,7 +174,6 @@ function makeElement(tag, overrides) {
           const found = c.querySelector?.(sel);
           if (found) return found;
         }
-        return null;
       }
       return null;
     },
@@ -183,6 +195,7 @@ function makeElement(tag, overrides) {
       child.parentElement = this;
       child.parentNode = this;
       this.children.push(child);
+      // scrollHeight 是计算属性，自动更新
     },
     removeChild(child) {
       const i = this.children.indexOf(child);
@@ -233,8 +246,53 @@ function makeElement(tag, overrides) {
       }
       return null;
     },
+    // offsetTop: computed from parent
+    get offsetTop() {
+      if (!this.parentElement) return 0;
+      const parentRect = this.parentElement.getBoundingClientRect();
+      const myRect = this.getBoundingClientRect();
+      return myRect.top - parentRect.top;
+    },
     ...overrides,
   };
+
+  // Computed scroll properties
+  Object.defineProperty(el, 'scrollHeight', {
+    get: function () { return Math.max(_calcScrollHeight(), this.clientHeight); },
+    set: function () {},
+    enumerable: true,
+    configurable: true,
+  });
+
+  Object.defineProperty(el, 'clientHeight', {
+    get: function () { return _getStyleVal('height', 618); },
+    set: function (v) { this.style.height = String(v) + 'px'; },
+    enumerable: true,
+    configurable: true,
+  });
+
+  Object.defineProperty(el, 'clientWidth', {
+    get: function () { return _getStyleVal('width', 295); },
+    set: function (v) { this.style.width = String(v) + 'px'; },
+    enumerable: true,
+    configurable: true,
+  });
+
+  let _scrollTop = 0;
+  Object.defineProperty(el, 'scrollTop', {
+    get: function () {
+      if (!_isOverflowScrollY()) return 0;
+      return _scrollTop;
+    },
+    set: function (v) {
+      if (!_isOverflowScrollY()) return;
+      const maxScroll = Math.max(0, this.scrollHeight - this.clientHeight);
+      _scrollTop = Math.max(0, Math.min(maxScroll, v));
+    },
+    enumerable: true,
+    configurable: true,
+  });
+
   return el;
 }
 
@@ -246,102 +304,33 @@ _docEl.appendChild(_bodyEl);
 globalThis.document = {
   documentElement: _docEl,
   body: _bodyEl,
-  head: makeElement('head'),
-  dispatchEvent(event) {
-    // Forward to documentElement for event dispatch
-    return _docEl.dispatchEvent(event);
-  },
-  createElement: (tag) => {
-    if (tag === 'canvas') {
-      return makeElement('canvas', {
-        clientWidth: 295, clientHeight: 618,
-        getContext: (type) => {
-          if (type === '2d') {
-            return {
-              font: '',
-              measureText: (text) => ({ width: text.length * 7 }),
-              fillText: () => {}, strokeText: () => {},
-              save: () => {}, restore: () => {},
-              beginPath: () => {}, closePath: () => {},
-              fill: () => {}, stroke: () => {},
-              arc: () => {}, moveTo: () => {}, lineTo: () => {},
-              translate: () => {}, scale: () => {}, rotate: () => {},
-              clearRect: () => {},
-              fillRect: () => {},
-              strokeRect: () => {},
-              createLinearGradient: () => ({ addColorStop: () => {} }),
-              createRadialGradient: () => ({ addColorStop: () => {} }),
-            };
-          }
-          return null;
-        },
-      });
-    }
-    return makeElement(tag);
-  },
-  getElementById: (id) => {
-    function find(el) {
-      if (el.id === id) return el;
-      for (const c of el.children || []) {
-        const found = find(c);
-        if (found) return found;
-      }
-      return null;
-    }
-    return find(_docEl);
-  },
+  createElement: (tag) => makeElement(tag),
   querySelector: (sel) => _docEl.querySelector(sel),
   querySelectorAll: (sel) => _docEl.querySelectorAll(sel),
-  addEventListener(type, fn, opts) { _docEl.addEventListener(type, fn, opts); },
-  removeEventListener(type, fn, opts) { _docEl.removeEventListener(type, fn, opts); },
-  createTextNode: (text) => ({ nodeType: 3, textContent: text }),
-  // Event
-  createEvent: (type) => ({ type }),
-};
-
-// ========== Test helpers ==========
-/** 清除 document 上所有事件监听（测试隔离用） */
-globalThis.__clearDocumentListeners = () => {
-  _docEl._removeAllListeners();
+  getElementById: (id) => (id === 'documentElement' ? _docEl : id === 'bodyElement' ? _bodyEl : null),
+  createTextNode: (text) => ({ textContent: text, nodeType: 3 }),
+  head: makeElement('head'),
+  addEventListener: (type, fn) => _docEl.addEventListener(type, fn),
+  removeEventListener: (type, fn) => _docEl.removeEventListener(type, fn),
+  dispatchEvent: (event) => _docEl.dispatchEvent(event),
 };
 
 // ========== window ==========
 globalThis.window = globalThis;
 globalThis.window.innerWidth = 414;     // iPhone-ish
 globalThis.window.innerHeight = 896;
-globalThis.window.devicePixelRatio = 2;
-globalThis.window.visualViewport = {
-  height: 896,
-  width: 414,
-  addEventListener: () => {},
-  removeEventListener: () => {},
-};
-
-// TouchEvent no longer needed — gesture-registry uses PointerEvent
-
-// ========== MouseEvent mock ==========
-class MockMouseEvent {
-  constructor(type, init = {}) {
-    this.type = type;
-    this.clientX = init.clientX || 0;
-    this.clientY = init.clientY || 0;
-    this.target = init.target || _bodyEl;
-    this._propagationStopped = false;
-  }
-  stopPropagation() { this._propagationStopped = true; }
-}
-
-globalThis.MouseEvent = MockMouseEvent;
-
-// ========== PointerEvent mock (gesture-registry uses pointer events) ==========
+// PointerEvent mock (gesture-registry uses pointer events)
 class MockPointerEvent {
   constructor(type, init = {}) {
     this.type = type;
     this.clientX = init.clientX || 0;
     this.clientY = init.clientY || 0;
+    this.pointerId = init.pointerId || 1;
+    this.pointerType = init.pointerType || 'touch';
     this.button = init.button ?? 0;
-    this.target = init.target || _bodyEl;
     this.bubbles = init.bubbles !== false;
+    this.isPrimary = init.isPrimary ?? true;
+    this.target = init.target || _bodyEl;
     this._defaultPrevented = false;
     this._propagationStopped = false;
   }
@@ -349,9 +338,34 @@ class MockPointerEvent {
   stopPropagation() { this._propagationStopped = true; }
 }
 globalThis.PointerEvent = MockPointerEvent;
+// MouseEvent mock
+class MockMouseEvent {
+  constructor(type, init = {}) {
+    this.type = type;
+    this.clientX = init.clientX || 0;
+    this.clientY = init.clientY || 0;
+    this.button = init.button || 0;
+    this.bubbles = init.bubbles !== false;
+    this.target = init.target || null;
+  }
+}
+globalThis.MouseEvent = MockMouseEvent;
 
-// ========== CSS ==========
+
+// CSS
 globalThis.CSS = {
-  supports: () => true,
+  supports: () => false,
   escape: (s) => s,
+};
+
+// URL
+globalThis.URL = {
+  createObjectURL: () => '',
+  revokeObjectURL: () => {},
+};
+globalThis.Blob = class Blob {};
+
+// Test helpers
+globalThis.__clearDocumentListeners = () => {
+  _docEl._removeAllListeners();
 };
