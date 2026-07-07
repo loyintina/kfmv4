@@ -230,6 +230,10 @@ function makeElement(tag, overrides) {
       if (type === '2d') {
         return {
           font: '',
+          globalAlpha: 1,
+          fillStyle: '#000',
+          strokeStyle: '#000',
+          lineWidth: 1,
           measureText: (text) => ({ width: text.length * 7 }),
           fillText: () => {}, strokeText: () => {},
           save: () => {}, restore: () => {},
@@ -237,11 +241,14 @@ function makeElement(tag, overrides) {
           fill: () => {}, stroke: () => {},
           arc: () => {}, moveTo: () => {}, lineTo: () => {},
           translate: () => {}, scale: () => {}, rotate: () => {},
+          setTransform: () => {}, transform: () => {},
           clearRect: () => {},
           fillRect: () => {},
           strokeRect: () => {},
           createLinearGradient: () => ({ addColorStop: () => {} }),
           createRadialGradient: () => ({ addColorStop: () => {} }),
+          clip: () => {},
+          rect: () => {},
         };
       }
       return null;

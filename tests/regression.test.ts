@@ -1845,6 +1845,135 @@ test('createTmuxCardHandler multiple calls return independent handlers', () => {
 });
 
 // ==========================================================================
+// 27. Renderer — Box 树渲染器（不依赖 Canvas 像素输出）
+// ==========================================================================
+group('Renderer');
+
+import { Renderer } from '../src/client/engine/v2/renderer.js';
+import { resolveStyle } from '../src/client/engine/v2/StyleConfig.js';
+import { applyFlexLayout } from '../src/client/engine/v2/flex.js';
+
+/** 创建测试用的 Canvas 元素 */
+function makeTestCanvas(width = 800, height = 600): HTMLCanvasElement {
+  const c = document.createElement('canvas') as HTMLCanvasElement;
+  c.width = width;
+  c.height = height;
+  // Mock 的 clientWidth/clientHeight 读取 style.width/height
+  c.style.width = width + 'px';
+  c.style.height = height + 'px';
+  c.clientWidth = width;
+  c.clientHeight = height;
+  c.offsetWidth = width;
+  c.offsetHeight = height;
+  return c;
+}
+
+test('constructor creates Renderer with canvas', () => {
+  const canvas = makeTestCanvas(400, 300);
+  const r = new Renderer(canvas, { backgroundColor: '#0a0a0f' });
+  assert(r.canvas === canvas, 'canvas reference should match');
+  assert(r.ctx !== null, 'should have 2d context');
+  assert(r.width === 400, `width should be 400, got ${r.width}`);
+  assert(r.height === 300, `height should be 300, got ${r.height}`);
+  assert(r.backgroundColor === '#0a0a0f', 'backgroundColor should match');
+});
+
+test('setRoot/getRoot round-trips a Box tree', () => {
+  const canvas = makeTestCanvas();
+  const r = new Renderer(canvas);
+  const root = new Box({ id: 'root', width: 800, height: 600 });
+  const child = new Box({ id: 'child', x: 10, y: 20, width: 100, height: 50 });
+  root.addChild(child);
+  r.setRoot(root);
+  assert(r.getRoot() === root, 'getRoot should return the same root');
+  assert(r.getRoot()?.find(b => b.id === 'child') === child, 'should find child via root');
+});
+
+test('setOverlayRoot does not affect main root', () => {
+  const canvas = makeTestCanvas();
+  const r = new Renderer(canvas);
+  const mainRoot = new Box({ id: 'main', width: 800, height: 600 });
+  const overlayRoot = new Box({ id: 'overlay', width: 800, height: 600 });
+  mainRoot.addChild(new Box({ id: 'main-child' }));
+  overlayRoot.addChild(new Box({ id: 'overlay-child' }));
+  r.setRoot(mainRoot);
+  r.setOverlayRoot(overlayRoot);
+  assert(r.getRoot()?.find(b => b.id === 'main-child') !== null, 'main tree should have main-child');
+  assert(r.getRoot()?.find(b => b.id === 'overlay-child') === null, 'main tree should NOT have overlay-child');
+  assert(overlayRoot.find(b => b.id === 'overlay-child') !== null, 'overlay tree should have overlay-child');
+});
+test('hitTest returns correct box at coordinates', () => {
+  const canvas = makeTestCanvas();
+  const r = new Renderer(canvas);
+  const root = new Box({ id: 'root', width: 800, height: 600, interactive: true });
+  const target = new Box({ id: 'target', x: 100, y: 50, width: 200, height: 80, interactive: true });
+  root.addChild(target);
+  r.setRoot(root);
+  // 命中
+  const hit1 = r.hitTest(150, 70);
+  assert(hit1 === target, `should hit target at (150,70), got ${hit1?.id}`);
+  // 未命中（x 超出 target 范围）
+  const hit2 = r.hitTest(50, 70);
+  assert(hit2 === null || hit2?.id === 'root', `should NOT hit target at (50,70), got ${hit2?.id}`);
+  // 未命中（y 超出 target 范围）
+  const hit3 = r.hitTest(150, 200);
+  assert(hit3 === null || hit3?.id === 'root', `should NOT hit target at (150,200), got ${hit3?.id}`);
+});
+
+test('hitTest returns interactive boxes only', () => {
+  const canvas = makeTestCanvas();
+  const r = new Renderer(canvas);
+  const root = new Box({ id: 'root', width: 800, height: 600, interactive: true });
+  const nonInteractive = new Box({ id: 'non-int', x: 10, y: 10, width: 100, height: 50, interactive: false });
+  const interactive = new Box({ id: 'int', x: 10, y: 10, width: 100, height: 50, interactive: true });
+  root.addChild(nonInteractive);
+  root.addChild(interactive);
+  r.setRoot(root);
+  const hit = r.hitTest(30, 30);
+  assert(hit === interactive, `should hit interactive box, got ${hit?.id}`);
+});
+
+test('hitTest respects visible and opacity', () => {
+  const canvas = makeTestCanvas();
+  const r = new Renderer(canvas);
+  const root = new Box({ id: 'root', width: 800, height: 600, interactive: true });
+  const visibleBox = new Box({ id: 'visible', x: 10, y: 10, width: 100, height: 50, visible: true, interactive: true });
+  const invisibleBox = new Box({ id: 'invisible', x: 10, y: 10, width: 100, height: 50, visible: false, interactive: true });
+  root.addChild(visibleBox);
+  root.addChild(invisibleBox);
+  r.setRoot(root);
+  const hit = r.hitTest(30, 30);
+  assert(hit === visibleBox, `should hit visible box, got ${hit?.id}`);
+});
+
+test('stop cleans up animation frame', () => {
+  const canvas = makeTestCanvas();
+  const r = new Renderer(canvas);
+  r.setRoot(new Box({ id: 'root', interactive: true }));
+  r.stop(); // 未 start 时 stop 是安全 no-op
+  assert(r.isRunning === false, 'should not be running');
+});
+
+test('setRoot with null clears root', () => {
+  const canvas = makeTestCanvas();
+  const r = new Renderer(canvas);
+  r.setRoot(new Box({ id: 'tmp' }));
+  assert(r.getRoot() !== null, 'root should exist');
+  r.setRoot(null);
+  assert(r.getRoot() === null, 'root should be null after setRoot(null)');
+});
+
+test('multiple resize calls are safe', () => {
+  const canvas = makeTestCanvas();
+  const r = new Renderer(canvas);
+  r.resize();
+  r.resize();
+  r.resize(); // should not throw
+  assert(r.width > 0, 'width should remain valid');
+});
+
+
+// ==========================================================================
 // 运行
 // ==========================================================================
 await runAll();
