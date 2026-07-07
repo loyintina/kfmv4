@@ -1,7 +1,7 @@
 ---
 title: KFM v4 工作手册
 last_reviewed: 2026-07-07
-kfm_version: 6.10.1
+kfm_version: 6.11.0
 status: active
 maintainer: AI agent
 ---
@@ -147,10 +147,28 @@ index.ts (入口路由)
 
 ## 二、当前会话状态
 
-> **最后更新**：2026-07-07（v6.11.0 — gesture _handleStart 跳过纯双指处理器 + 全屏卡片原生滚动 + 文件点击直接全屏）
+> **最后更新**：2026-07-07（v6.11.0 — 测试基础设施阶段 A-D + 终端卡手势 + 全屏卡片）
 
 ### 当前焦点
-**卡片工作台**（见 `docs/design/WORKBENCH_SPEC.md`）
+**测试基础设施与卡片交互完善**
+
+卡片工作台模式系统已是之前阶段的成果。当前方向为：加固测试基础设施（GSAP mock 时序修正 + DOM mock 布局增强 + Canvas 层测试 + 交互测试）和终端卡双指缩放/全屏卡片原生滚动。
+
+- **v6.11.0 已完成**：
+  - 测试基础设施阶段 A：GSAP mock 时序修正（时间线位置驱动模型）✅
+  - 测试基础设施阶段 B：DOM mock 布局增强（scrollHeight/clientHeight/scrollTop 联动 + overflow）✅
+  - 测试基础设施阶段 C：Canvas 渲染层测试（hitTest/双树/stop/resize）✅
+  - 测试基础设施阶段 D：交互测试补全（浮卡状态机 + DOM mock querySelector + className 同步）✅
+  - 测试基础设施设计文档：`docs/design/TEST_INFRASTRUCTURE_SPEC.md` ✅
+  - 终端卡双指缩放：双缓冲渲染实时反馈 → 降级 xterm.js v5 Canvas 渲染器 → 按卡类型区分双指处理器 ✅
+  - 全屏卡片原生滚动：`file-card-scroll` 移除 + `_handleStart` 逻辑恢复 ✅
+  - GestureRegistry `requireFailure` 依赖关系机制 ✅
+  - checkout 权限修复：.githooks/pre-push + check-versions.mjs 版本验证 ✅
+  - check-checks.mjs 元检查器：验证所有 check 脚本已集成到管线 ✅
+  - check-doc-coverage.mjs 文档覆盖强制 ✅
+  - docs/AGENT_PROMPT_REFERENCES.md — 外部提示词参考归档 ✅
+  - docs/design/GESTURE_ARCHITECTURE_SPEC.md — 手势识别架构改进设计规范 ✅
+  - docs/design/FULLSCREEN_CARD_SPEC.md — 全屏卡片设计规范 ✅
 
 v6.6.0 �����前的焦�����������「浮卡系统统一化」已两次尝试均回退放弃（详见 `docs/archive/design/CARD_SYSTEM_UNIFICATION_SPEC.md`）。当前方向改为「三层共享层」——常量层 + 类型层 + 能力声明层，可在不碰逻辑的前提下逐步统一。
 
