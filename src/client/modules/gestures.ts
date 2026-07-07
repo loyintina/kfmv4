@@ -160,6 +160,8 @@ export function initGestures(): void {
       const instances = cardRegistry.getByType(_pinchTypeId);
       for (const inst of instances) {
         _removeVisualScale(inst.contentEl, _pinchTypeId);
+        // 强制同步布局回流（确保 CSS transform 移除被处理）
+        void inst.contentEl.offsetHeight;
         _applyFontSizeToContent(inst.contentEl, _pinchTypeId, finalFontSize);
       }
 
