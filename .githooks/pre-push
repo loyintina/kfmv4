@@ -1,0 +1,15 @@
+#!/bin/sh
+# KFM v4 — pre-push hook
+# 在 git push 前运行 npm run check，确保文档-代码一致性
+# 安装：git config core.hooksPath .githooks
+
+echo "=== [pre-push] 运行构建检查... ==="
+cd "$(dirname "$0")/.." || exit 1
+
+npm run check
+if [ $? -ne 0 ]; then
+  echo "=== [pre-push] ❌ 检查失败，推送已阻止。请修复后重试。 ==="
+  exit 1
+fi
+
+echo "=== [pre-push] ✅ 检查通过 ==="

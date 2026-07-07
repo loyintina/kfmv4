@@ -43,6 +43,7 @@ const DOCS = [
   'docs/design/VISION_AND_ROADMAP.md',
   'docs/KFM_V4_INVARIANTS.md',
   'docs/design/WORKBENCH_SPEC.md',
+  'README.md',
 ];
 
 let markerChecks = 0;

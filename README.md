@@ -1,6 +1,8 @@
-# KFM v4（咖啡猫）
+# KFM v4（咖啡猫）v6.11.0
 
 > AI 人机交互个人工作台原型，面向移动端浏览器。核心理念：**一切皆卡片**。
+>
+> 当前版本：**v6.11.0** | 构建管线：**12 个 check-* 脚本 + 178 个回归测试**
 
 ## 这是什么
 
@@ -11,12 +13,13 @@
 | 功能 | 说明 |
 |------|------|
 | Canvas 文件树 | 自研渲染引擎，展开/折叠动画 + 字符雨 + 文件行右滑加入临时卡片堆 |
-| 终端（xterm.js） | 支持 tmux mouse mode、触控滚动、键盘自动避让 |
-| 卡片工作台 | 统一的浮动卡片引擎，拖拽/缩放/编辑模式/四角光球 |
+| 终端（xterm.js） | 支持 tmux mouse mode、触控滚动、键盘自动避让、双指缩放 |
+| 卡片工作台 | 统一的浮动卡片引擎，拖拽/缩放/编辑模式/四角光球/全屏模式 |
 | 模式按钮系统 | copy/move/delete 批量操作，色系联动光标 + 卡片 |
 | 光标液体粒子 | GSAP 驱动的玻璃管传送门粒子效果 |
 | 调试面板 | 独立浮卡，实时日志显示 |
-| 自动化检查管线 | 12 个 check-* 脚本，构建时零错误，178 个回归测试 |
+| 文档覆盖强制 | `check-doc-coverage.mjs` 确保新增代码文件必须同步更新文档，否则构建中断 |
+| 自动化检查管线 | 12 个 check-* 脚本 + 元检查器 + 文档-代码一致性验证，构建时零错误，178 个回归测试 |
 
 ## 快速开始
 
@@ -37,7 +40,7 @@ npm run start        # http://localhost:8021
 
 ## 技术栈
 
-TypeScript 6 + Canvas 2D 自研渲染引擎 + GSAP 3.15 + Express 4 + WebSocket + esbuild
+TypeScript 6 + Canvas 2D 自研渲染引擎（v2 Box → Renderer）+ GSAP 3.15 + Express 4 + WebSocket + esbuild + xterm.js
 
 ## 文档
 
@@ -46,8 +49,9 @@ TypeScript 6 + Canvas 2D 自研渲染引擎 + GSAP 3.15 + Express 4 + WebSocket 
 | 文档 | 用途 |
 |------|------|
 | [`CLAUDE.md`](CLAUDE.md) | 项目入口，文档导航 |
-| [`docs/HANDBOOK.md`](docs/HANDBOOK.md) | 架构 + 调试 + 待办 |
-| [`docs/KFM_V4_INVARIANTS.md`](docs/KFM_V4_INVARIANTS.md) | 修改约束协议 |
+| [`docs/HANDBOOK.md`](docs/HANDBOOK.md) | 架构 + 调试 + 待办 + 模块清单 |
+| [`docs/KFM_V4_INVARIANTS.md`](docs/KFM_V4_INVARIANTS.md) | 修改约束协议（19 条心法 + 自查清单） |
+| [`docs/DIAGNOSTICS.md`](docs/DIAGNOSTICS.md) | 诊断手册（隐性契约 + 根因案例库） |
 | [`docs/design/VISION_AND_ROADMAP.md`](docs/design/VISION_AND_ROADMAP.md) | 远景 + 路线图 |
 
 ## 协议
