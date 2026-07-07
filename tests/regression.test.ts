@@ -1974,6 +1974,107 @@ test('multiple resize calls are safe', () => {
 
 
 // ==========================================================================
+// 28. floating-card 浮卡状态机
+// ==========================================================================
+group('floating-card');
+
+import { createFloatingCard, enterFullscreen, dismissFloatingCard, hasFloatingCard } from '../src/client/modules/floating-card.js';
+import { registerCardType } from '../src/client/modules/card-registry.js';
+
+// 注册文件卡片类型（在 tree-swipe.ts 中也有注册，但测试环境隔离不冲突）
+registerCardType({
+  typeId: 'test-file',
+  icon: '', name: '', description: '测试文件卡片',
+  kind: 'file',
+  createHandler: (meta) => ({
+    activate: (contentEl) => {
+      const d = document.createElement('div');
+      d.style.cssText = 'height:1000px;width:100%;overflow:auto';
+      d.textContent = meta._testContent as string || 'test content';
+      contentEl.appendChild(d);
+    },
+    deactivate: () => {},
+  }),
+});
+
+test('createFloatingCard creates card in active state', () => {
+  const card = createFloatingCard({
+    id: 'test-fc-1',
+    typeId: 'test-file',
+    color1: '#7c3aed', color2: '#00d4ff',
+    name: 'test',
+    sourceX: 100, sourceY: 200,
+    contentHandler: null,
+  });
+  assert(card !== null, 'card should be created');
+  if (!card) return;
+  // 同步 mock 中动画立即完成，state 为 active
+  assert(card.state === 'active', `state should be active, got ${card.state}`);
+  assert(card.el.classList.contains('floating-card'), 'should have floating-card class');
+  assert(card.contentEl !== null, 'should have content element');
+});
+
+test('createFloatingCard with contentHandler activates content', () => {
+  const card = createFloatingCard({
+    id: 'test-fc-2',
+    typeId: 'test-file',
+    color1: '#7c3aed', color2: '#00d4ff',
+    name: 'content-test',
+    sourceX: 100, sourceY: 200,
+    contentHandler: {
+      activate: (contentEl) => {
+        const d = document.createElement('div');
+        d.textContent = 'hello';
+        d.id = 'test-content-div';
+        contentEl.appendChild(d);
+      },
+      deactivate: () => {},
+    },
+  });
+  assert(card !== null, 'card should be created');
+  if (!card) return;
+  const found = card.contentEl.querySelector('#test-content-div');
+  assert(found !== null, `content should be activated, innerHTML=${card.contentEl.innerHTML}`);
+});
+
+test('enterFullscreen transitions to fullscreen state', () => {
+  const card = createFloatingCard({
+    id: 'test-fc-4',
+    typeId: 'test-file',
+    color1: '#7c3aed', color2: '#00d4ff',
+    name: 'fs-test',
+    sourceX: 100, sourceY: 200,
+  });
+  assert(card !== null, 'card should be created');
+  if (!card) return;
+  assert(card.state === 'active', `should be active before fullscreen, got ${card.state}`);
+  enterFullscreen(card);
+  assert(card.state === 'fullscreen', `state should be fullscreen, got ${card.state}`);
+  assert(card.isFullscreen === true, 'isFullscreen should be true');
+  assert(card.el.classList.contains('fullscreen'), 'should have fullscreen class');
+  assert(card.contentEl.style.touchAction === 'pan-y', `contentEl should have pan-y touch-action, got "${card.contentEl.style.touchAction}"`);
+});
+
+test('dismissFloatingCard removes card', () => {
+  // 清理所有残留浮卡
+  while (hasFloatingCard()) dismissFloatingCard(false);
+  const card = createFloatingCard({
+    id: 'test-fc-5',
+    typeId: 'test-file',
+    color1: '#7c3aed', color2: '#00d4ff',
+    name: 'dismiss-test',
+    sourceX: 100, sourceY: 200,
+  });
+  assert(card !== null, 'card should be created');
+  if (!card) return;
+  assert(hasFloatingCard(), 'should have floating card after creation');
+  dismissFloatingCard(false, card.el);
+  assert(!hasFloatingCard(), 'should NOT have floating card after dismiss');
+  while (hasFloatingCard()) dismissFloatingCard(false);
+});
+
+
+// ==========================================================================
 // 运行
 // ==========================================================================
 await runAll();

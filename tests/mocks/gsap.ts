@@ -277,9 +277,7 @@ function mockTl(vars?: TimelineVars): TimelineMock {
 /** 独立的 gsap.to/fromTo/set（非 timeline 版本）：立即应用到目标 */
 function standaloneTo(target: Record<string, unknown>, vars: TweenVars): { kill: () => void } {
   applyVars(target, vars);
-  if (vars.duration === 0 || vars.duration === undefined) {
-    fireCallback(vars, 'onComplete');
-  }
+  fireCallback(vars, 'onComplete');
   return { kill: noop };
 }
 

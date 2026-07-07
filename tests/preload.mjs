@@ -174,6 +174,17 @@ function makeElement(tag, overrides) {
           const found = c.querySelector?.(sel);
           if (found) return found;
         }
+      } else if (sel.startsWith('#')) {
+        const id = sel.slice(1);
+        function walk(el) {
+          for (const c of el.children || []) {
+            if (c.id === id) return c;
+            const found = walk(c);
+            if (found) return found;
+          }
+          return null;
+        }
+        return walk(this);
       }
       return null;
     },
@@ -195,11 +206,11 @@ function makeElement(tag, overrides) {
       child.parentElement = this;
       child.parentNode = this;
       this.children.push(child);
-      // scrollHeight 是计算属性，自动更新
     },
     removeChild(child) {
-      const i = this.children.indexOf(child);
-      if (i >= 0) this.children.splice(i, 1);
+      const arr = this.children;
+      const i = arr.indexOf(child);
+      if (i >= 0) arr.splice(i, 1);
       child.parentElement = null;
       child.parentNode = null;
     },
@@ -225,6 +236,12 @@ function makeElement(tag, overrides) {
       currentTime: 0,
       playbackRate: 1,
     }),
+    remove() {
+      if (this.parentElement) {
+        this.parentElement.removeChild(this);
+      }
+    },
+
     // Canvas context mock for text measurement
     getContext(type) {
       if (type === '2d') {
@@ -295,6 +312,18 @@ function makeElement(tag, overrides) {
       if (!_isOverflowScrollY()) return;
       const maxScroll = Math.max(0, this.scrollHeight - this.clientHeight);
       _scrollTop = Math.max(0, Math.min(maxScroll, v));
+    },
+    enumerable: true,
+    configurable: true,
+  });
+
+  // className 设置时同步到 classList
+  let _className = '';
+  Object.defineProperty(el, 'className', {
+    get: function () { return _className; },
+    set: function (v) {
+      _className = v;
+      this.classList._classes = v ? v.split(/\s+/) : [];
     },
     enumerable: true,
     configurable: true,
