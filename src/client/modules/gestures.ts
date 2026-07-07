@@ -63,7 +63,7 @@ function _applyFontSizeToContent(contentEl: HTMLElement, typeId: string, fontSiz
   if (typeId === 'card03' || typeId === 'card04') {
     const instance = cardRegistry.getInstanceByContentEl(contentEl);
     if (instance?.meta._term) {
-      const term = instance.meta._term as { options: { fontSize: number }; cols: number; rows: number; refresh: (start: number, end: number) => void };
+      const term = instance.meta._term as { options: { fontSize: number }; cols: number; rows: number; resize: (cols: number, rows: number) => void };
       const newFontSize = Math.round(fontSize);
 
       if (term.options.fontSize !== newFontSize) {
@@ -71,8 +71,8 @@ function _applyFontSizeToContent(contentEl: HTMLElement, typeId: string, fontSiz
         if (instance.meta._fit) {
           try { (instance.meta._fit as { fit: () => void }).fit(); } catch {}
         }
-        // 强制重绘（fit.fit() 只在 cols/rows 变化时才调用 resize，需要显式 refresh）
-        try { term.refresh(0, term.rows - 1); } catch {}
+        // 触发 resize 事件强制 Canvas 渲染器重绘（term.refresh() 不保证立即重绘）
+        try { term.resize(term.cols, term.rows); } catch {}
       }
     }
   }
@@ -160,8 +160,6 @@ export function initGestures(): void {
       const instances = cardRegistry.getByType(_pinchTypeId);
       for (const inst of instances) {
         _removeVisualScale(inst.contentEl, _pinchTypeId);
-        // 强制同步布局回流（确保 CSS transform 移除被处理）
-        void inst.contentEl.offsetHeight;
         _applyFontSizeToContent(inst.contentEl, _pinchTypeId, finalFontSize);
       }
 
