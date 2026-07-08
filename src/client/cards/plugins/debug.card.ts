@@ -1,5 +1,5 @@
 /**
- * debug.card.ts — 日志管理卡
+ * debug.card.ts — 日志卡
  *
  * 显示 KFM 调试日志，支持复制和清空。
  * 注册为 'debug' 类型，显示在卡片堆中。
@@ -103,7 +103,7 @@ function createDebugHandler(_meta: Record<string, unknown>): CardContentHandler 
 registerCardType({
   typeId: 'debug',
   icon: '\uD83D\uDD27',
-  name: '\u65E5\u5FD7\u7BA1\u7406',
+  name: '\u65E5\u5FD7',
   description: '',
   kind: 'tool',
   createHandler: createDebugHandler,
