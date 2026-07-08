@@ -407,8 +407,8 @@ const accent = card?.accents?.color1;                         // 卡片主色
 ```typescript
 import { currentTheme as theme } from '../../modules/theme.js';
 
-const bg = theme.colors.surface;        // 背景色
-const accent = card?.accents?.color1;   // 卡片主色
+const bg = theme.surface?.bgLight || 'rgba(10,10,15,0.85)';  // 背景色
+const accent = card?.accents?.color1;                         // 卡片主色
 ```
 
 卡片注册时从 `card-registry` 获得 `accents`（`color1`/`color2`），作为标题、边框、高亮的来源。
@@ -437,3 +437,18 @@ const accent = card?.accents?.color1;   // 卡片主色
 | 卡片实例状态 | `card.meta` | `meta.terminalId` |
 | 全局状态变更 | `KFMState.notify()` | — |
 | AI 可见状态 | `Registry.registerElement()` | — |
+
+### 10.6 边框
+
+卡片的容器边框由浮卡外壳提供（1px padding + 渐变色背景），内容 handler 不需要自己加边框。
+
+如果内容区需要内部分组卡片，使用渐变边框模拟：
+
+```css
+border-radius: 10px;
+border: 1px solid transparent;
+background: linear-gradient(rgba(255,255,255,0.03), rgba(255,255,255,0.03)) padding-box,
+            linear-gradient(135deg, {color1}40, {color2}30) border-box;
+```
+
+这样内部卡片有同系的渐变边框，与浮卡外壳的渐变边框视觉一致。

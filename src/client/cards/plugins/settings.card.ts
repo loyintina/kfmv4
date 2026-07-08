@@ -74,13 +74,13 @@ function createSettingsHandler(_meta: Record<string, unknown>): CardContentHandl
       const scrollArea = document.createElement('div');
       scrollArea.style.cssText = 'flex:1;overflow-y:auto;overflow-x:hidden;touch-action:pan-y';
 
-      const cardEls: HTMLElement[] = [];
       const fieldInputs: Record<string, HTMLInputElement | HTMLSelectElement> = {};
+      const cardEls: HTMLElement[] = [];
 
       TABS.forEach(tab => {
         const card = document.createElement('div');
         card.dataset.tab = tab;
-        card.style.cssText = 'border-radius:10px;padding:10px 12px;margin-bottom:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06)';
+        card.style.cssText = `border-radius:10px;padding:10px 12px;margin-bottom:10px;background:linear-gradient(rgba(255,255,255,0.03),rgba(255,255,255,0.03)) padding-box,linear-gradient(135deg,${c1}40,${c2}30) border-box;border:1px solid transparent`;
 
         const cardTitle = document.createElement('div');
         cardTitle.textContent = tab;
