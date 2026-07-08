@@ -82,7 +82,10 @@ function getPanelTargetPosition(orbCX: number, orbCY: number): { left: number; t
 function clampOrbPosition(x: number, y: number): { x: number; y: number } {
   const maxX = window.innerWidth - ORB_SIZE - MARGIN;
   const minX = MARGIN;
-  const maxY = getInputBarTop() - ORB_SIZE - MARGIN;
+  // 终端全屏辅助栏高度补偿（42px aux bar + 4px gap）
+  const auxBarEl = document.getElementById('terminal-aux-bar');
+  const auxBarH = (auxBarEl && auxBarEl.style.display === 'flex') ? 46 : 0;
+  const maxY = getInputBarTop() - ORB_SIZE - MARGIN - auxBarH;
   const minY = MARGIN;
   return {
     x: Math.max(minX, Math.min(maxX, x)),
