@@ -122,7 +122,7 @@ export class WsServer {
         this.send(ws, 'ack', { received: 'capabilities' });
         break;
 
-      // Phase 8: 终端 PTY 会话
+      // 终端 PTY 会话（terminal-open → PtyManager.spawn）
       case 'terminal-open': {
         const p = msg.payload as { cwd?: string; command?: string; tag?: string };
         try {

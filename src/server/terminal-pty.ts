@@ -1,5 +1,5 @@
 /**
- * KFM v4 — PTY 会话管理（Phase 8: 03 号终端卡后端）
+ * KFM v4 — PTY 会话管理（03 号终端卡后端）
  *
  * 管理 node-pty 伪终端进程的生命周期：
  * spawn / write / resize / kill / killAll

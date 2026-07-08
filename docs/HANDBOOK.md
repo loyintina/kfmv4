@@ -90,7 +90,7 @@ index.ts (入口路由)
   ├── ai-tools.ts         — 从浏览器拉取 Registry snapshot（供 AI agent 查询页面状态）
   ├── capability-executor.ts  — 将 Registry 注册的能力映射为可执行函数（AI 工具调用端点）
   ├── path-utils.ts       — 安全路径守卫（所有用户路径逃逸校验，安全关键模块）
-  ├── terminal-pty.ts     — PTY 会话管理（Phase 8: 终端卡后端，占位）
+  ├── terminal-pty.ts     — PTY 会话管理（PtyManager: spawn/write/resize/kill）
   └── ws-server.ts        — WebSocket 通信通道（服务端↔浏览器双向实时通信）
 ```
 
@@ -100,7 +100,7 @@ index.ts (入口路由)
 | `ai-tools.ts` | 包装 Registry snapshot 为服务端 API 端点（GET/POST） |
 | `capability-executor.ts` | 维护能力名→执行函数映射，被 AI 命令调用 |
 | `path-utils.ts` | `SAFE_ROOT` + `sanitizePath()`，路径逃逸守卫 |
-| `terminal-pty.ts` | PTY 会话 spawn/write/resize/kill（Phase 8: 03 号终端卡后端） |
+| `terminal-pty.ts` | PTY 会话 spawn/write/resize/kill（通过 WebSocket 与前端 xterm.js 通信） |
 | `ws-server.ts` | WebSocket 连接管理，接收推送的 snapshot |
 
 > 每个文件头部注释已有完整职责说明，此处仅列出架构概览。服务端不涉及复杂状态机，接手者读各自文件即可。
