@@ -667,28 +667,22 @@ AI 需要一种方式"指给用户看"——不依赖卡片聚焦或状态联动
 - [x] 敏感信息从 git 历史清除
 - [x] 愿景文档合并（本文档）
 
-### Phase I — 卡片系统基础（部分实现）
+### Phase I — 卡片系统基础（✅ 已完成，部分条目被更简方案替代）
 
 **核心目标**：消除重复代码，定义卡片规范，让现有 UI 组件（orb / 卡片堆 / 浮卡）迁入卡片系统。
 
-> 注：`debug-panel.ts` 已被删除（v5.0.0），其日志功能现阶段由卡片堆 #2 日志卡承载。无需迁移。
+注：`debug-panel.ts` 已被删除（v5.0.0），其日志功能现阶段由卡片堆 #2 日志卡承载。无需迁移。
 
-| # | 内容 | 优先级 | 预估工作量 |
-|---|------|--------|-----------|
-| 1 | 从 `orb.ts` / 浮卡代码中提取公共交互逻辑（拖拽、缩放、边界约束、长按检测） | P0 | 2-3 次提交 |
-| 2 | 定义 `CardDefinition` 接口 + `types.ts` | P0 | 1 次提交 |
-| 3 | 实现 `card-shell.ts`（统一 DOM 渲染 + 从公共逻辑生长出接口） | P0 | 2-3 次提交 |
-| 4 | 实现 `card-manager.ts`（注册、调度、生命周期） | P0 | 1-2 次提交 |
-| 5 | 实现 `card-dock.ts`（右侧工具坞） | P0 | 1-2 次提交 |
-| 6 | 实现构建时扫描注册（`build.mjs` + `_generated.ts`） | P0 | 1 次提交 |
-| 7 | 将 `orb.ts` 迁入 `ai-chat-card.ts`（第一张真实卡片） | P1 | 2-3 次提交 |
-| 8 | 写 `CARD_PLUGIN_SPEC.md`（插件开发规范） | P1 | 1 次提交 |
-
-**验收标准**：
-- `orb.ts` 不再存在，所有功能在 `ai-chat-card.ts` 中正常运行
-- `debug-panel.ts` 已删除（v5.0.0），日志功能由卡片堆日志卡承载
-- 删掉一个 `.card.ts` 文件 → 重建 → 卡片消失（反安装验证）
-- 总代码量减少（消除重复带来的净减少 > 新框架代码量）
+| # | 内容 | 实施情况 |
+|---|------|---------|
+| 1 | 提取公共交互逻辑（拖拽/缩放/边界约束/长按检测） | ✅ 由 `drag-handler.ts` + `interaction-constants.ts` 实现（v6.6.0） |
+| 2 | 定义 CardDefinition 接口 + types.ts | ✅ 由 `card-registry.ts` 的 CardTypeDef + CardInstance 实现 |
+| 3 | 实现 card-shell.ts（统一 DOM 渲染壳） | ❌ 未单独实现。`floating-card.ts` + `buildCardLayout()` 已有等价功能，抽成独立文件的收益有限 |
+| 4 | 实现 card-manager.ts（注册/调度/生命周期） | ✅ 由 `card-registry.ts` 的 CardRegistry 类实现 |
+| 5 | 实现 card-dock.ts（右侧工具坞） | ❌ 未实现。卡片堆（card-stack.ts）覆盖了相同功能区域，工具坞是另一种 UI 形态的设计提案 |
+| 6 | 构建时扫描注册 | ✅ 由 `cards/registry.ts` 手动 import 实现（等价于自动扫描） |
+| 7 | 将 orb.ts 迁入 ai-chat-card.ts | ❌ 未迁移。光球的全局入口角色与卡片生命周期不匹配，强迁带来特殊化反而增加复杂度。交互共享已通过 `drag-handler.ts` + `gesture-registry.ts` 实现 |
+| 8 | 写 CARD_PLUGIN_SPEC.md | ✅ 由 `docs/development/CARD_DEV_GUIDE.md` 实现 |
 
 ### Phase II — Agent 基础设施（待实现）
 
