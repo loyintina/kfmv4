@@ -11,6 +11,7 @@ maintainer: AI agent
 
 > **日常开发参考**。改代码前先读 `KFM_V4_INVARIANTS.md`（修改约束协议），
 > 规划设计时参考 `docs/design/VISION_AND_ROADMAP.md`（远景文档）。
+> **加新卡片前先读** `docs/development/CARD_DEV_GUIDE.md`（卡片插件开发指南）。
 > 做浮卡统一化时参考 `docs/archive/design/CARD_SYSTEM_UNIFICATION_SPEC.md`（浮卡系统统一化规范）。
 > 本手册记录架构速查、当前状态、待办和审计清单。
 > 诊断与 bug 排查见 `DIAGNOSTICS.md`，全量约束速查见 `PRINCIPLES.md`。
