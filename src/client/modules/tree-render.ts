@@ -679,12 +679,12 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
   // 用 onComplete 而非 ts.call：反向播放时 onComplete 不会被触发，
   // 不会与 processClickQueue 的 onReverseComplete 冲突。
   ts.eventCallback('onComplete', () => {
+    // 先释放锁（无论 root 是否已变，锁必须释放，否则 3s 超时）
+    L.endOp();
     if (L.renderer?.getRoot() !== animRoot) { return; }
     for (const cu of charRainCleanups) cleanupCharRain(cu);
     removeAllOverlays();
-    L.renderer?.setOverlayRoot(null);  // 销毁动画树
-    ;
-    // 恢复主树被隐藏的元素（展开动画：树已重建，元素仍在）
+    L.renderer?.setOverlayRoot(null);
     for (const p of [pack, ...subPacks]) {
       if (p.hiddenContainer) p.hiddenContainer.visible = true;
       for (const child of p.hiddenChildren) child.visible = true;
@@ -692,7 +692,6 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
     }
     _resetAnimTimeline();
     assert(activeOverlayCount() === 0, 'overlays leaked after expand');
-    L.endOp();
     const _root = L.renderer?.getRoot();
     if (_root) { _rebuildRowIndex(_root); }
     if (onTap) onTap();
@@ -834,13 +833,14 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
 
   // 用 onComplete：反向播放时不被触发，由 onReverseComplete 接管。
   ts.eventCallback('onComplete', () => {
+    // 先释放锁（无论 root 是否已变，锁必须释放，否则 3s 超时）
+    L.endOp();
     if (L.renderer?.getRoot() !== animRoot) return;
     for (const cu of charRainCleanups) cleanupCharRain(cu);
     removeAllOverlays();
-    L.renderer?.setOverlayRoot(null);  // 销毁动画树
+    L.renderer?.setOverlayRoot(null);
     assert(activeOverlayCount() === 0, 'overlays leaked after doCollapse');
     _resetAnimTimeline();
-    L.endOp();
     hit.gesture!.onTap!();
     Registry.notifyStateChange('file-tree');
     processClickQueue();

@@ -208,8 +208,7 @@ v6.6.0 �����前的焦�����������「浮卡系统�
 5b. **Registry state getter**：如果元素的 state 会在运行时变化（几乎所有交互元素都如此），注册后必须同时调 `registerStateGetter()`，否则 `snapshot()` 返回的是过时的静态 state。**推荐使用 `registerElement()` 便捷方法**——它一次完成 register + registerStateGetter，避免遗漏配对。
 6. **`notifyStateChange` 覆盖范围**：`Registry.notifyStateChange()` 只通知"状态发生了变化"，不传递状态值本身。snapshot 仍通过 `registerStateGetter` 读取实时状态。新增模块的状态变化如果漏调 `notifyStateChange()`，AI 看到的 snapshot 会滞后。**注意**：`check-registry.mjs` 现在会检查 `register()` 调用的必需字段完整性，但 notifyStateChange 的覆盖仍需人工保证。
 7. **Canvas 初始化 `clientWidth=0`**：需在 rAF 回调里 `rebuildTree()`
-8. **事件冒泡**：侧栏触摸区事件冒泡到 document → GestureRegistry 误触发
-9. **动画锁超时**：`processClickQueue` 有 3000ms 超时释放，说明动画管理有设计缺陷
+9. **动画锁超时**（`tree-loader.ts` `waitForAnimUnlock` 3s 兜底）— ~~说明动画管理有设计缺陷~~ ✅ **已根解（v6.11.0+）**：展开/折叠动画的 `onComplete` 中 `L.endOp()` 在 `root !== animRoot` 的早期 return 前执行，不再因 root 变更而漏释放。
 10. **esbuild `nullish-coalescing` 禁用**：但源码大量使用 `??`，TS 6 编译时需确保正确降级
 11. **测试 mock 脆弱**：GSAP mock 中 `tl.call(cb)` 同步执行回调，改变了动��时��
 12. **补���链 = 模型错误信号**：同一问题超过 3 层补丁（cap→锚点→margin→边界修正），不是补丁不够准，是底层模型错了。停止修修补补，换上能自然满足所有约束的模型。案例：`docs/archive/design/CASE_STUDY_MODEL_CHOICE.md`。
