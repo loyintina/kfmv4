@@ -50,27 +50,27 @@ docs/
 ├── DIAGNOSTICS.md           # 诊断手册：隐性契约 + 排查流程 + 根因案例库（遇到 bug 先翻）
 ├── PRINCIPLES.md            # 约束全表：心法 / 架构 / 契约一站查找
 ├── PROJECT_ASSESSMENT.md    # 项目把控理解与建议
-├── design/                  # 设计文档（含活跃提案和长期参考）
-│   ├── VISION_AND_ROADMAP.md        # 远景：核心理念 + 演进路线
-│   ├── WORKBENCH_SPEC.md            # 卡片工作台（active 设计提案）
-│   └── UI_ELEMENT_REGISTRY_SPEC.md  # UI 元素注册表设计（活跃设计）
+├── design/                  # 设计文档
+│   ├── VISION_AND_ROADMAP.md        # 远景：核心理念 + 演进路线（保留）
+│   └── UI_ELEMENT_REGISTRY_SPEC.md  # UI 元素注册表设计
 └── archive/                 # 历史归档
     ├── README.md            # 子目录导览
     ├── handoffs/            # 版本交接记录
     ├── design/              # 已完成/过时的设计文档
-    │   ├── BOX_LOCATION_MAP_SPEC.md     # Box 位置映射 ✅已实施
-    │   ├── CARD_REGISTRY_SPEC.md        # 卡片注册表 ✅已实施
-    │   ├── ENGINE_ARCHITECTURE.md       # 引擎层架构 ✅已实施
-    │   ├── TEST_INFRASTRUCTURE_SPEC.md  # 测试基础设施 ✅已实施
-    │   ├── TERMINAL_CARD_SPEC.md        # 终端卡 ✅已实施
-    │   ├── FULLSCREEN_CARD_SPEC.md      # 全屏卡片 ✅已实施
-    │   └── GESTURE_ARCHITECTURE_SPEC.md # 手势架构（已用更简方案解决）
+    │   ├── BOX_LOCATION_MAP_SPEC.md     # Box 位置映射 ✅
+    │   ├── CARD_REGISTRY_SPEC.md        # 卡片注册表 ✅
+    │   ├── ENGINE_ARCHITECTURE.md       # 引擎层架构 ✅
+    │   ├── TEST_INFRASTRUCTURE_SPEC.md  # 测试基础设施 ✅
+    │   ├── TERMINAL_CARD_SPEC.md        # 终端卡 ✅
+    │   ├── FULLSCREEN_CARD_SPEC.md      # 全屏卡片 ✅
+    │   ├── GESTURE_ARCHITECTURE_SPEC.md # 手势架构（已用更简方案解决）
+    │   └── WORKBENCH_SPEC.md            # 卡片工作台（全部 Phase 已完成/废弃）
     ├── standards/           # 已迁出见 DIAGNOSTICS.md / PRINCIPLES.md
     ├── audits/              # 已完成的审计记录/修复
     ├── bugs/                # 已修复 Bug
     └── legacy/              # 旧版本文件
 
-> 接手新对话的推荐阅读顺序：`CLAUDE.md` → `HANDBOOK.md` §2（当前状态）→ `KFM_V4_INVARIANTS.md`（修改规则）→ `docs/development/CARD_DEV_GUIDE.md`（卡片插件开发）→ `DIAGNOSTICS.md` §1-2（隐性契约+诊断流程，遇到 bug 先翻）→ `docs/design/WORKBENCH_SPEC.md`（当前方向）→ `HANDBOOK.md` §3（待办）→ `HANDBOOK.md` §七（审计问题清单）。全量约束速查见 `PRINCIPLES.md`。终端卡设计见 `docs/archive/design/TERMINAL_CARD_SPEC.md`。
+> 接手新对话的推荐阅读顺序：`CLAUDE.md` → `HANDBOOK.md` §2（当前状态）→ `KFM_V4_INVARIANTS.md`（修改规则）→ `docs/development/CARD_DEV_GUIDE.md`（卡片插件开发）→ `DIAGNOSTICS.md` §1-2（隐性契约+诊断流程，遇到 bug 先翻）→ `HANDBOOK.md` §3（待办）→ `HANDBOOK.md` §七（审计问题清单）。全量约束速查见 `PRINCIPLES.md`。卡片工作台设计见 `docs/archive/design/WORKBENCH_SPEC.md`。
 
 ## 完整性校验
 
