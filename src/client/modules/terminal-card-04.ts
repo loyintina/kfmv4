@@ -509,31 +509,11 @@ function initAuxBar(container: HTMLElement, term: Terminal): void {
 
   container.appendChild(bar);
 
-  // 键盘弹出/收起检测：visualViewport
-  let keyboardUp = false;
-  const VV = window.visualViewport;
-  const screenH = window.screen.height;
-  if (VV) {
-    VV.addEventListener('resize', () => {
-      const newKeyboardUp = VV.height < screenH * 0.85;
-      if (newKeyboardUp !== keyboardUp) {
-        keyboardUp = newKeyboardUp;
-        updateAuxBarVisibility();
-      }
-    });
-  }
-
+  // 显隐逻辑：全屏模式下始终可见。退全屏隐藏。
   function updateAuxBarVisibility(): void {
     const inFullscreen = !!container.closest('.fullscreen');
-    bar.style.display = (inFullscreen && keyboardUp) ? 'flex' : 'none';
+    bar.style.display = inFullscreen ? 'flex' : 'none';
   }
-
-  // 专注/失焦也触发显隐检测
-  container.addEventListener('focusin', updateAuxBarVisibility);
-  container.addEventListener('focusout', () => {
-    // 失焦后延迟检测（可能 focus 转移到另一个输入元素）
-    setTimeout(updateAuxBarVisibility, 200);
-  });
 
   // 观察全屏态变化
   const fsObserver = new MutationObserver(updateAuxBarVisibility);
@@ -542,6 +522,6 @@ function initAuxBar(container: HTMLElement, term: Terminal): void {
     fsObserver.observe(cardEl, { attributes: true, attributeFilter: ['class'] });
   }
 
-  // 初始态：全屏 + 键盘可能已弹出
+  // 初始态
   updateAuxBarVisibility();
 }
