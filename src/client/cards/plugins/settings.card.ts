@@ -37,7 +37,7 @@ function createSettingsHandler(_meta: Record<string, unknown>): CardContentHandl
 
       // 内卡（渐变边框 + 标题）
       const inner = document.createElement('div');
-      inner.style.cssText = `border-radius:10px;padding:10px 12px 12px;background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,linear-gradient(135deg,${c2} 30%,${c1} 70%) border-box;border:1px solid transparent;border-left-width:3px`;
+      inner.style.cssText = `border-radius:10px;padding:10px 12px 12px;margin-top:6px;background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,linear-gradient(135deg,${c2} 30%,${c1} 70%) border-box;border:1px solid transparent;border-left-width:3px`;
 
       const title = document.createElement('div');
       title.textContent = 'AI';
