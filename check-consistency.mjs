@@ -147,7 +147,7 @@ function checkNumericClaims() {
   const clientModules = countTsFilesRecursive(join(ROOT, 'src', 'client', 'modules'));
   // 文档中声称 "N 个模块" — 验证与实际数量一致
   // 排除 "覆盖 N 个模块"（测试覆盖率声明）和 "N 个零文档"（审计历史）
-  for (const file of ['CLAUDE.md', 'docs/HANDBOOK.md', 'docs/design/ENGINE_ARCHITECTURE.md']) {
+  for (const file of ['CLAUDE.md', 'docs/HANDBOOK.md', 'docs/archive/design/ENGINE_ARCHITECTURE.md']) {
     const content = readFileSync(join(ROOT, file), 'utf-8');
     // 跳过删除线（~~）中的历史记录
     const cleanContent = content.replace(/~~.*?~~/gs, '');
@@ -193,10 +193,13 @@ function checkNumericClaims() {
 
   // --- 测试数量 ---
   let testCount = 0;
-  const testFile = join(ROOT, 'tests', 'regression.test.ts');
-  if (existsSync(testFile)) {
-    const testContent = readFileSync(testFile, 'utf-8');
-    testCount = (testContent.match(/^\s*test\(/gm) || []).length;
+  const testDir = join(ROOT, 'tests');
+  if (existsSync(testDir)) {
+    for (const entry of readdirSync(testDir)) {
+      if (!entry.endsWith('.test.ts') && !entry.endsWith('.test.mjs')) continue;
+      const testContent = readFileSync(join(testDir, entry), 'utf-8');
+      testCount += (testContent.match(/^\s*test\(/gm) || []).length;
+    }
   }
   for (const file of ['CLAUDE.md', 'docs/HANDBOOK.md', 'docs/DIAGNOSTICS.md', 'docs/PROJECT_ASSESSMENT.md', 'README.md', 'docs/archive/standards/TESTING.md']) {
     if (!existsSync(join(ROOT, file))) continue;
@@ -205,7 +208,7 @@ function checkNumericClaims() {
     for (const claim of claims) {
       const num = parseInt(claim.match(/\d+/)[0], 10);
       if (num !== testCount) {
-        error(`${file}: 声称 "${claim}"，但 tests/regression.test.ts 中有 ${testCount} 个测试函数`);
+        error(`${file}: 声称 "${claim}"，但 tests/*.test.ts 中共有 ${testCount} 个测试函数`);
       }
     }
   }

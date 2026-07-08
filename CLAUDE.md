@@ -43,6 +43,7 @@ npm run dev      # ts-node ESM 直接运行
 CLAUDE.md                    # 本文件——项目入口
 docs/
 ├── AGENTS.md                # AI 专属：文档维护规则（改文档前读）
+├── AGENT_PROMPT_REFERENCES.md # Agent 提示词设计参考资料
 ├── HANDBOOK.md              # 工作手册：架构-状态-待办（日常翻）
 ├── development/             # 开发指南
 │   └── CARD_DEV_GUIDE.md    # 卡片插件开发指南（加新卡前读）
@@ -62,7 +63,7 @@ docs/
     │   ├── TEST_INFRASTRUCTURE_SPEC.md  # 测试基础设施 ✅
     │   ├── TERMINAL_CARD_SPEC.md        # 终端卡 ✅
     │   ├── FULLSCREEN_CARD_SPEC.md      # 全屏卡片 ✅
-    │   ├── GESTURE_ARCHITECTURE_SPEC.md # 手势架构（已用更简方案解决）
+    │   ├── GESTURE_ARCHITECTURE_SPEC.md # 手势架构 ✅
     │   ├── WORKBENCH_SPEC.md            # 卡片工作台 ✅
     │   └── UI_ELEMENT_REGISTRY_SPEC.md  # UI 元素注册表 ✅
     ├── audits/              # 已完成的审计记录/修复
@@ -74,10 +75,9 @@ docs/
 ## 完整性校验
 
 ```bash
-npm run check   # sass + 9 个 check-*.mjs + tsc --noEmit，零错误
-npm run test    # 178 个回归测试，覆盖 23 个模块
+npm run check   # sass + 13 个 check-*.mjs + tsc --noEmit，零错误
+npm run test    # 191 个回归测试，覆盖 23 个模块
 ```
-
 ## 当前架构
 
 光球（orb.ts）和浮卡（floating-card.ts）是两个独立模块，各管各的：

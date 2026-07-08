@@ -66,9 +66,11 @@ function updateHandbook(counts) {
   const remaining = new Set(Object.keys(counts));
 
   for (let i = tableStart; i < tableEnd; i++) {
-    const m = lines[i].match(/^\| `((?:[^`]+\/)?[^`]+\.ts)` \| (\d+) \|/);
+    const m = lines[i].match(/^\| `([^`]+\.ts)` \| (\d+) \|/);
     if (!m) continue;
-    const name = m[1];
+    let name = m[1];
+    // 允许 ../src/client/modules/ 前缀
+    name = name.replace(/^(?:\.\.\/)?src\/client\/modules\//, '');
     const oldCount = parseInt(m[2], 10);
     const realCount = counts[name];
     if (realCount === undefined) {

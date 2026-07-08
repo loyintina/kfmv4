@@ -294,7 +294,7 @@ v6.6.0 �����前的焦�����������「浮卡系统�
 > 完整测试清单见 [`docs/DIAGNOSTICS.md` 附录 B](./DIAGNOSTICS.md#附录-b回归测试)。
 >
 > ```bash
-> npm test   # 178 个测试，覆盖 23 个模块（含 Box 引擎）
+> npm test   # 191 个测试，覆盖 23 个模块（含 Box 引擎）
 > ```
 
 ## 六、约束与原则
@@ -345,21 +345,21 @@ v6.6.0 �����前的焦�����������「浮卡系统�
 | `canvas-cursor.ts` | 444 | 3 | ✅ 提及 | Canvas 盒子光标系统 |
 | `canvas-scroll.ts` | 361 | 2 | ✅ 提及 | Canvas 盒子滚动系统 |
 | `canvas-utils.ts` | 61 | 4 | ✅ 依赖图 | Canvas 通用工具函数 |
-| `card-stack.ts` | 548 | 4 | ✅ 独立条目 | 堆叠卡片面板 |
+| `card-stack.ts` | 441 | 4 | ✅ 独立条目 | 堆叠卡片面板 |
 | `char-rain.ts` | 306 | 1 | ✅ 分组表 | 字符散落/回收动画 |
 | `click-queue.ts` | 39 | 1 | ✅ 分组表 | 点击事件队列 |
 | `color-utils.ts` | 46 | 2 | ✅ 分组表 | 颜色工具函数（从 tree-swipe 拆分） |
 | `debug-assert.ts` | 24 | 1 | ✅ 提及 | 运行时断言 |
 | `dom-refs.ts` | 37 | 9 | ✅ 注册表 | DOM 元素引用 |
-| `floating-card.ts` | 1148 | 2 | ✅ 独立条目 | 浮卡系统（核心模块） |
-| `gesture-registry.ts` | 380 | 6 | ✅ 独立条目 | 手势注册中心 |
+| `floating-card.ts` | 1182 | 2 | ✅ 独立条目 | 浮卡系统（核心模块） |
+| `gesture-registry.ts` | 384 | 6 | ✅ 独立条目 | 手势注册中心 |
 | `gestures.ts` | 215 | 1 | ✅ 提及 | 页面滑动手势配置 |
 | `interaction-constants.ts` | 21 | 2 | ✅ 分组表 | 交互常量共享层（v6.6.0 新增） |
 | `drag-handler.ts` | 136 | 2 | ✅ 分组表 | 共享拖动状态机（orb + floating-card 去重） |
 | `file-action-bar.ts` | 427 | 2 | ✅ 分组表 | 文件行长按 → 底部抽屉操作栏 |
 | `logger.ts` | 58 | 3 | ✅ 分组表 | KFM 日志系统 |
 | `mode-system.ts` | 370 | 1 | ✅ 分组表 | 模式按钮系统（从 tree-swipe 拆分，v6.8.0 新增） |
-| `orb.ts` | 491 | 1 | ✅ 独立条目 | 光球 + AI 对话面板 |
+| `orb.ts` | 494 | 1 | ✅ 独立条目 | 光球 + AI 对话面板 |
 | `renderer-lifecycle.ts` | 243 | 5 | ✅ 注册表 | 渲染器生命周期单例 L |
 | `root-picker.ts` | 434 | 2 | ✅ 独立条目 | 文件树根目录切换器 |
 | `state.ts` | 257 | 10 | ✅ 注册表 | 全局状态层 KFMState |
@@ -369,24 +369,24 @@ v6.6.0 �����前的焦�����������「浮卡系统�
 | `tree-model.ts` | 191 | 2 | ✅ 分组表 | 绝对深度布局模型 |
 | `tree-overlay.ts` | 414 | 1 | ✅ 分组表 | Overlay 双树构建系统（从 tree-render 拆分） |
 | `tree-animation.ts` | 74 | 1 | ✅ 分组表 | 文件树插入/移除 GSAP 动画（新建/删除/复制/移动共享） |
-| `tree-render.ts` | 1014 | 3 | ✅ 核心条目 | 文件树 Canvas 渲染（编排层） |
-| `tree-swipe.ts` | 660 | 1 | ✅ 分组表 | 文件行右滑 → 卡片堆（从 tree-render 拆分，v6.8.0 拆分为 color-utils + mode-system） |
+| `tree-render.ts` | 1015 | 3 | ✅ 核心条目 | 文件树 Canvas 渲染（编排层） |
+| `tree-swipe.ts` | 652 | 1 | ✅ 分组表 | 文件行右滑 → 卡片堆（从 tree-render 拆分，v6.8.0 拆分为 color-utils + mode-system） |
 | `ui-registry.ts` | 334 | 9 | ✅ 独立条目 | UI 元素注册表 |
 | `ui.ts` | 71 | 10 | ✅ 提及 | UI 初始化编排 |
 | `ws-channel.ts` | 348 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
-| `terminal-card-04.ts` | 428 | 0 | TERMINAL_CARD_SPEC | 03 号终端卡 xterm.js 集成 |
+| `terminal-card-04.ts` | 527 | 0 | TERMINAL_CARD_SPEC | 03 号终端卡 xterm.js 集成 |
 | `tmux-card.ts` | 195 | 0 | — | 04 号 tmux 窗口管理卡 |
 | `card-registry.ts` | 155 | 5 | CARD_REGISTRY_SPEC | 卡片注册表：类型声明 + 实例追踪 |
 | **渲染器（renderers/）** | | | | |
-| `renderers/binary-fallback.ts` | 37 | 1 | — | 二进制文件回退渲染器（文字提示不可预览） |
-| `renderers/code-highlight.ts` | 100 | 1 | — | 代码语法高亮渲染器（highlight.js） |
-| `renderers/file-type.ts` | 17 | 1 | — | 文件类型图标映射 |
-| `renderers/handler-factory.ts` | 307 | 1 | — | 卡片内容处理器工厂（按 typeId 分发） |
-| `renderers/katex-css.ts` | 3 | 1 | — | KaTeX CSS 注入（CDN） |
-| `renderers/math-diagram.ts` | 153 | 1 | — | 数学公式/图表渲染器（KaTeX + Mermaid CDN） |
-| `renderers/md-extensions.ts` | 48 | 1 | — | Markdown 渲染扩展（链接、任务列表） |
-| `renderers/text-preview.ts` | 26 | 1 | — | 文本文件预览渲染器 |
-| **合计** | **11527** | | | |
+| `../src/client/modules/renderers/binary-fallback.ts` | 37 | 1 | — | 二进制文件回退渲染器（文字提示不可预览） |
+| `../src/client/modules/renderers/code-highlight.ts` | 100 | 1 | — | 代码语法高亮渲染器（highlight.js） |
+| `../src/client/modules/renderers/file-type.ts` | 17 | 1 | — | 文件类型图标映射 |
+| `../src/client/modules/renderers/handler-factory.ts` | 322 | 1 | — | 卡片内容处理器工厂（按 typeId 分发） |
+| `../src/client/modules/renderers/katex-css.ts` | 3 | 1 | — | KaTeX CSS 注入（CDN） |
+| `../src/client/modules/renderers/math-diagram.ts` | 153 | 1 | — | 数学公式/图表渲染器（KaTeX + Mermaid CDN） |
+| `../src/client/modules/renderers/md-extensions.ts` | 48 | 1 | — | Markdown 渲染扩展（链接、任务列表） |
+| `../src/client/modules/renderers/text-preview.ts` | 26 | 1 | — | 文本文件预览渲染器 |
+| **合计** | **11568** | | | |
 
 ### 死代码检查
 **结论：无死代码。** 所有 37 个模块都被至少 1 个文件导入（`terminal-card-04.ts` 和 `tmux-card.ts` 被导入数为 0，但这是模块自身的特性：它们仅在用户侧打开卡片时由 `card-registry.ts` 的 `createHandler` 工厂按需实例化，属于动态加载。`terminal-aux-bar.ts` 已删除（空占位，无任何引用）。`src/cards/` 目录已彻底删除。实际使用的 logger 在 `src/client/modules/logger.ts`。

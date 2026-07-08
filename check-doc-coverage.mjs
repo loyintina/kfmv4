@@ -51,10 +51,14 @@ const tblEnd = handbook.indexOf('### 死代码检查', tblStart);
 const tblSection = (tblStart >= 0 && tblEnd > 0) ? handbook.slice(tblStart, tblEnd) : '';
 
 const tableFiles = new Set();
-const rowRe = /^\| `((?:[^`]+\/)?[^`]+\.ts)` \|/gm;
+const rowRe = /^\| `([^`]+\.ts)` \|/gm;
 let m;
-while ((m = rowRe.exec(tblSection)) !== null) tableFiles.add(m[1]);
-
+while ((m = rowRe.exec(tblSection)) !== null) {
+  let p = m[1];
+  // 允许 ../src/client/modules/ 前缀（完整路径引用）
+  p = p.replace(/^(?:\.\.\/)?src\/client\/modules\//, '');
+  tableFiles.add(p);
+}
 const modDir = join(ROOT, 'src', 'client', 'modules');
 let undocumented = 0;
 for (const fp of collectTsFiles(modDir)) {

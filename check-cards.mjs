@@ -14,6 +14,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SRC_DIR = join(__dirname, 'src', 'client', 'modules');
+const PLUGINS_DIR = join(__dirname, 'src', 'client', 'cards', 'plugins');
 
 let errCount = 0;
 function error(msg) { console.error('[check-cards] ' + msg); errCount++; }
@@ -47,6 +48,14 @@ for (const f of walk(SRC_DIR)) {
     const id = m[1];
     if (!referenced.has(id)) referenced.set(id, []);
     referenced.get(id).push(relative(SRC_DIR, f));
+  }
+}
+
+for (const f of walk(PLUGINS_DIR)) {
+  const content = readFileSync(f, 'utf-8');
+  let m;
+  while ((m = regTypeRe.exec(content)) !== null) {
+    registered.add(m[1]);
   }
 }
 
