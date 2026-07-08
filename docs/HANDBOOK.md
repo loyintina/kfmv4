@@ -1,7 +1,7 @@
 ---
 title: KFM v4 工作手册
 last_reviewed: 2026-07-07
-kfm_version: 6.11.1
+kfm_version: 6.11.2
 status: active
 maintainer: AI agent
 ---
@@ -147,7 +147,7 @@ index.ts (入口路由)
 - **规则**：选择器锁 (priority 110) 在手势优先级最高，打开后外部滑动手势全部被拦截。关闭时必须调 `L.popContext()` 恢复上下文。
 
 ## 二、当前会话状态
-> **最后更新**：2026-07-07（v6.11.1 — 心法重组 + 动画锁3s根因 + 测试拆分 + 卡片插件系统）
+> **最后更新**：2026-07-07（v6.11.2 — 终端全屏辅助栏 + 光球避开辅助栏 + TERMINAL_CARD_SPEC 归档）
 
 ### 当前焦点
 **测试基础设施与卡片交互完善**
@@ -278,10 +278,9 @@ v6.6.0 �����前的焦�����������「浮卡系统�
 | **v6.10.0** | **键盘避让完整方案 + card04 tmux 终端 + card-registry 聚焦/实例 + preMatch 钩子 + BR orb 触控 + SOP 3a 心法回溯** | `145136d` |
 | **v6.10.1** | **card.meta 类型化 + 测试补全 + 设计注释规约 + 构建工具强化 + xterm 版本锁定** | git `f8d3e2a` |
 | **v6.11.0** | **_handleStart 跳过纯双指处理器 + 全屏卡片原生滚动 + 文件点击直接全屏** | git `53dcf21` |
-| **v6.11.1** | **心法重组（22条+6偏差组）+ 动画锁3s根因修复 + 测试拆分7文件 + 卡片插件系统 + _cards统一 + check-handbook-sync** | **HEAD** |
+| **v6.11.1** | **心法重组（22条+6偏差组）+ 动画锁3s根因修复 + 测试拆分7文件 + 卡片插件系统 + _cards统一 + check-handbook-sync** | git `fedab31` |
+| **v6.11.2** | **终端全屏辅助栏（aux bar）+ 光球避开辅助栏 + TERMINAL_CARD_SPEC 归档** | **HEAD** |
 ---
-
-## 四、调试与 Bug 排查
 
 > 完整诊断手册见 [`docs/DIAGNOSTICS.md`](./DIAGNOSTICS.md)，包含：
 > - **隐性契约（11 条）** — 破坏会出 bug 的隐藏约束
