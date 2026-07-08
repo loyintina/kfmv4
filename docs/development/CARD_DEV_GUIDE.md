@@ -453,27 +453,44 @@ const accent = card?.accents?.color1;                         // 卡片主色
 | AI 可见状态 | `Registry.registerElement()` | — |
 
 ### 10.6 边框
-如果内容区需要内部分组卡片，使用同色系左边框 + 暗色背景：
+
+卡片的容器边框使用左粗三边设计：左边 3px，其他三边 1px。均使用渐变色。
+
+#### 浮卡外壳（由 `floating-card.ts` 自动处理）
+
+```css
+padding: 1px;
+padding-left: 3px;
+background: linear-gradient(135deg, {color1} 30%, {color2} 70%);
+```
+
+内容 handler 不需要处理外壳边框。
+
+#### 内容区内部卡片
+
+如果内容区需要内部分组卡片，使用同款渐变边框 + 暗色填充（颜色反转，同饱和度）：
 
 ```css
 border-radius: 10px;
-padding: 8px 10px 8px 12px;
-background: rgba(255,255,255,0.04);
-border-left: 3px solid {color2}60;
+border: 1px solid transparent;
+border-left-width: 3px;
+background:
+  linear-gradient(rgba(10,10,15,0.92), rgba(10,10,15,0.92)) padding-box,
+  linear-gradient(135deg, {color2} 30%, {color1} 70%) border-box;
+padding: 8px 10px;
 ```
 
-颜色反转规则：外壳是 `color1→color2`，内部卡片用 `color2` 为主色。多级嵌套时每层反转一次（见 §10.7）。
-文字保持白色，颜色信息通过左边框传达。
+颜色反转规则：`{color1}` 和 `{color2}` 交换位置。**透明度不降**——内外卡保持相同的饱和度和视觉重量。
 
 ### 10.7 多级嵌套的颜色交替
 
 当内容区需要多级卡片嵌套时，边框颜色逐层交替：
 
-| 层级 | 边框配色 | opacity |
-|------|---------|---------|
-| 0（浮卡外壳） | `color1→color2` | 85% |
-| 1（内卡） | `color2→color1`（反转） | 60% |
-| 2（子卡） | `color1→color2`（还原） | 45% |
-| 3（孙卡） | `color2→color1`（反转） | 30% |
+| 层级 | 边框配色 |
+|------|---------|
+| 0（浮卡外壳） | `color1→color2` |
+| 1（内卡） | `color2→color1`（反转） |
+| 2（子卡） | `color1→color2`（还原） |
+| 3（孙卡） | `color2→color1`（反转） |
 
-每下一层，左 padding 增加 4px、opacity 递减 15%。这样即使 4 层叠在一起，每层边界也清晰可辨。
+**透明度不随层级变化**——所有层级保持相同的饱和度和视觉重量。交替仅通过色相位置（color1/color2 交换）实现，不改变 opacity 或边框粗细。
