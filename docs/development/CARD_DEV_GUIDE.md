@@ -16,6 +16,7 @@
 7. [数据接入](#7-数据接入)
 8. [卡片类型与 UI 位置](#8-卡片类型与-ui-位置)
 9. [检核清单](#9-检核清单)
+10. [卡片的视觉规范](#10-卡片的视觉规范)
 
 ---
 
@@ -260,10 +261,9 @@ gestures.register({
 ```typescript
 import { currentTheme as theme } from '../../modules/theme.js';
 
-// 使用主题色
-const orbColor = theme.cornerOrb.color;      // 光球色
-const bgColor = theme.colors.surface;         // 背景色
-const accent = card?.accents?.color1;         // 卡片主色（来自运行时实例）
+const orbColor = theme.cornerOrb.color;          // 光球色
+const bgColor = theme.surface.bgLight;            // 背景色
+const accent = card?.accents?.color1;             // 卡片主色（来自运行时实例）
 ```
 
 **规则**：新增颜色只能在 `theme.ts` 中定义，禁止在卡片 handler 中硬编码色值。
@@ -364,3 +364,76 @@ registerCardType({
 > **版本**：v1.0（随卡片插件系统首次发布）
 >
 > **与代码同步**：如接口变更，先更新本文档再改代码。
+
+## 10. 卡片的视觉规范
+
+新卡片必须与现有卡片视觉一致。以下规则确保卡片堆里不会出现格格不入的卡片。
+
+### 10.1 内容结构
+
+必须使用 `buildCardLayout()` 创建标准布局：
+
+```typescript
+import { buildCardLayout } from '../../modules/floating-card.js';
+
+function createMyHandler(meta): CardContentHandler {
+  return {
+    activate(contentEl, card, reason) {
+      const c1 = card?.accents?.color1 || '#00d4ff';
+      const c2 = card?.accents?.color2 || '#7c3aed';
+      const { bodyEl } = buildCardLayout(contentEl, title, c1, c2);
+      // bodyEl 里放你的内容
+    },
+  };
+const bg = theme.surface?.bgLight || 'rgba(10,10,15,0.85)';  // 背景色
+const accent = card?.accents?.color1;                         // 卡片主色
+```
+
+`buildCardLayout()` 产出三层结构：
+
+```
+┌─ header ──────────────────┐  ← 标题栏 11px 600w
+├─ divider（渐变分隔线）─────┤  ← 取自卡片 accent 色
+│  body                     │  ← flex:1 你的内容区域
+└───────────────────────────┘
+```
+
+禁止自建标题栏——否则点击/长按/拖拽手势路径会错过卡片框架。
+
+### 10.2 主题色引用
+
+所有颜色引用自 `theme.ts`，禁止硬编码十六进制色值：
+
+```typescript
+import { currentTheme as theme } from '../../modules/theme.js';
+
+const bg = theme.colors.surface;        // 背景色
+const accent = card?.accents?.color1;   // 卡片主色
+```
+
+卡片注册时从 `card-registry` 获得 `accents`（`color1`/`color2`），作为标题、边框、高亮的来源。
+
+### 10.3 间距与字号
+
+| 属性 | 值 | 说明 |
+|------|-----|------|
+| 标题字号 | `11px` `600` | header 文字 |
+| 正文字号 | `10px`–`12px` | 内容区建议范围 |
+| 内部圆角 | `6px`–`10px` | 卡片内控件 |
+| 行间距 | `6px`–`10px` | 纵向排列间距 |
+| body 内边距 | `0 10px` | `buildCardLayout` 自带 |
+
+### 10.4 滚动与手势
+
+- 内容区滚动：`overflow-y: auto; touch-action: pan-y`
+- `pan-y` 确保横滑透传给全局手势（唤侧栏/卡片堆）
+- 独立横滑区域（标签栏）：`overflow-x: auto; touch-action: pan-x`，高度 ~30px
+
+### 10.5 数据存储
+
+| 场景 | 存储方式 | 示例 |
+|------|---------|------|
+| 用户配置 | `localStorage` key 前缀 `kfm-` | `kfm-ai.apiUrl` |
+| 卡片实例状态 | `card.meta` | `meta.terminalId` |
+| 全局状态变更 | `KFMState.notify()` | — |
+| AI 可见状态 | `Registry.registerElement()` | — |
