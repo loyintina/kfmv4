@@ -17,6 +17,7 @@
 8. [卡片类型与 UI 位置](#8-卡片类型与-ui-位置)
 9. [检核清单](#9-检核清单)
 10. [卡片的视觉规范](#10-卡片的视觉规范)
+    - [10.6 边框](#106-边框)
 
 ---
 
@@ -440,15 +441,30 @@ const accent = card?.accents?.color1;                         // 卡片主色
 
 ### 10.6 边框
 
-卡片的容器边框由浮卡外壳提供（1px padding + 渐变色背景），内容 handler 不需要自己加边框。
+卡片的容器边框使用左粗三边设计：左边 3px，其他三边 1px。
 
-如果内容区需要内部分组卡片，使用渐变边框模拟：
+#### 浮卡外壳（由 `floating-card.ts` 自动处理）
+
+```css
+padding: 1px;
+padding-left: 3px;
+background: linear-gradient(135deg, {color1} 30%, {color2} 70%);
+```
+
+内容 handler 不需要处理外壳边框。
+
+#### 内容区内部卡片
+
+如果内容区需要内部分组卡片，同系渐变边框（颜色反转，低 opacity）：
 
 ```css
 border-radius: 10px;
+padding: 8px 10px 8px 12px;
 border: 1px solid transparent;
+border-left: 3px solid transparent;
 background: linear-gradient(rgba(255,255,255,0.03), rgba(255,255,255,0.03)) padding-box,
-            linear-gradient(135deg, {color1}40, {color2}30) border-box;
+            linear-gradient(135deg, {color2}60, {color1}40) border-box;
 ```
 
+颜色反转规则：`{color1}` 和 `{color2}` 交换位置。opacity 用 `60`/`40` 比外壳的 `85` 低，形成层次感。
 这样内部卡片有同系的渐变边框，与浮卡外壳的渐变边框视觉一致。

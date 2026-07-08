@@ -79,8 +79,7 @@ function createSettingsHandler(_meta: Record<string, unknown>): CardContentHandl
 
       TABS.forEach(tab => {
         const card = document.createElement('div');
-        card.dataset.tab = tab;
-        card.style.cssText = `border-radius:10px;padding:10px 12px;margin-bottom:10px;background:linear-gradient(rgba(255,255,255,0.03),rgba(255,255,255,0.03)) padding-box,linear-gradient(135deg,${c1}40,${c2}30) border-box;border:1px solid transparent`;
+        card.style.cssText = `border-radius:10px;padding:8px 10px 8px 12px;margin-bottom:10px;background:linear-gradient(rgba(255,255,255,0.03),rgba(255,255,255,0.03)) padding-box,linear-gradient(135deg,${c2}60,${c1}40) border-box;border:1px solid transparent;border-left:3px solid transparent`;
 
         const cardTitle = document.createElement('div');
         cardTitle.textContent = tab;
