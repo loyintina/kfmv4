@@ -3,14 +3,10 @@
  *
  * API 地址 / API Key / 模型选择。
  * 数据存储于 localStorage（前缀 kfm-）。
- *
- * 视觉规范：buildCardLayout() + 渐变边框（左 3px / 上右下 1px）。
  */
 
 import { registerCardType, type CardContentHandler } from '../../modules/card-registry.js';
 import { buildCardLayout } from '../../modules/floating-card.js';
-
-// ========== 设置项 ==========
 
 interface SettingsField {
   key: string;
@@ -21,9 +17,9 @@ interface SettingsField {
 }
 
 const SETTINGS: SettingsField[] = [
-  { key: 'ai.apiUrl',  label: 'API 地址', type: 'text',     placeholder: 'https://api.openai.com/v1' },
-  { key: 'ai.apiKey',  label: 'API Key',   type: 'password', placeholder: 'sk-...' },
-  { key: 'ai.model',   label: '模型',       type: 'select',   options: [
+  { key: 'ai.apiUrl',  label: 'API \u5730\u5740', type: 'text',     placeholder: 'https://api.openai.com/v1' },
+  { key: 'ai.apiKey',  label: 'API Key',           type: 'password', placeholder: 'sk-...' },
+  { key: 'ai.model',   label: '\u6A21\u578B',       type: 'select',   options: [
     { label: 'deepseek-chat',   value: 'deepseek-chat' },
     { label: 'gpt-4o',          value: 'gpt-4o' },
     { label: 'gpt-4o-mini',     value: 'gpt-4o-mini' },
@@ -31,19 +27,22 @@ const SETTINGS: SettingsField[] = [
   ]},
 ];
 
-// ========== 内容处理器 ==========
-
 function createSettingsHandler(_meta: Record<string, unknown>): CardContentHandler {
   return {
     activate(contentEl, card) {
       const c1 = card?.accents?.color1 || '#00d4ff';
       const c2 = card?.accents?.color2 || '#7c3aed';
-      const { bodyEl } = buildCardLayout(contentEl, 'AI 设置', c1, c2);
+      const { bodyEl } = buildCardLayout(contentEl, 'AI \u8BBE\u7F6E', c1, c2);
       bodyEl.style.cssText = 'flex:1;overflow-y:auto;touch-action:pan-y;padding:0 10px';
 
-      // 内卡容器（渐变边框：左 3px + 上右下 1px，颜色反转同饱和度）
+      // 内卡（渐变边框 + 标题）
       const inner = document.createElement('div');
-      inner.style.cssText = `border-radius:10px;padding:10px 12px;background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,linear-gradient(135deg,${c2} 30%,${c1} 70%) border-box;border:1px solid transparent;border-left-width:3px`;
+      inner.style.cssText = `border-radius:10px;padding:10px 12px 12px;background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,linear-gradient(135deg,${c2} 30%,${c1} 70%) border-box;border:1px solid transparent;border-left-width:3px`;
+
+      const title = document.createElement('div');
+      title.textContent = 'AI';
+      title.style.cssText = 'font-size:11px;font-weight:700;color:rgba(255,255,255,0.85);margin-bottom:8px;letter-spacing:0.5px';
+      inner.appendChild(title);
 
       SETTINGS.forEach(f => {
         const row = document.createElement('div');
