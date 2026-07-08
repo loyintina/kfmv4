@@ -237,6 +237,8 @@ export function initTerminalCore(
   container.appendChild(termEl);
   term.open(termEl);
 
+
+  initAuxBar(container, term);
   // 动态加载 Canvas 渲染器（替代 DOM 渲染器，避免布局回流）
   import('@xterm/addon-canvas').then(({ CanvasAddon }) => {
     try {
@@ -425,4 +427,121 @@ export function createTerminal04Handler(_meta: Record<string, unknown>): CardCon
       contentEl.innerHTML = '';
     },
   };
+}
+
+// ========== 全屏终端辅助栏（terminal-aux-bar） ==========
+
+interface AuxBarKey {
+  label: string;
+  value: string;          // 输出序列
+  ctrlSeq?: string;       // CTRL+key 输出序列
+  altSeq?: string;        // ALT+key 输出序列
+  ctrlAltSeq?: string;    // CTRL+ALT+key 输出序列
+}
+
+const AUX_KEYS: AuxBarKey[] = [
+  { label: 'ESC', value: '\x1b' },
+  { label: 'TAB', value: '\t' },
+  { label: 'CTRL', value: '' },
+  { label: 'ALT', value: '' },
+  { label: '\u25B2',  value: '\x1b[A',   ctrlSeq: '\x1b[1;5A', altSeq: '\x1b[1;3A', ctrlAltSeq: '\x1b[1;7A' },
+  { label: '\u25C0',  value: '\x1b[D',   ctrlSeq: '\x1b[1;5D', altSeq: '\x1b[1;3D', ctrlAltSeq: '\x1b[1;7D' },
+  { label: '\u25B6',  value: '\x1b[C',   ctrlSeq: '\x1b[1;5C', altSeq: '\x1b[1;3C', ctrlAltSeq: '\x1b[1;7C' },
+  { label: '\u25BC',  value: '\x1b[B',   ctrlSeq: '\x1b[1;5B', altSeq: '\x1b[1;3B', ctrlAltSeq: '\x1b[1;7B' },
+];
+
+/** 在全屏终端容器底部创建辅助按键栏。仅在 fullscreen 模式下可见。 */
+function initAuxBar(container: HTMLElement, term: Terminal): void {
+  const bar = document.createElement('div');
+  bar.id = 'terminal-aux-bar';
+  bar.style.cssText = 'display:none;height:42px;flex-shrink:0;align-items:center;justify-content:space-around;padding:0 4px;background:rgba(10,10,15,0.92);border-top:1px solid rgba(255,255,255,0.06)';
+
+  let ctrlOn = false;
+  let altOn = false;
+
+  for (const key of AUX_KEYS) {
+    const btn = document.createElement('div');
+    btn.textContent = key.label;
+
+    // CTRL/ALT 是开关按钮
+    if (key.label === 'CTRL' || key.label === 'ALT') {
+      const isCtrl = key.label === 'CTRL';
+      btn.style.cssText = 'height:30px;min-width:40px;display:flex;align-items:center;justify-content:center;border-radius:6px;font-size:10px;font-weight:700;color:rgba(255,255,255,0.7);cursor:pointer;user-select:none;-webkit-user-select:none;background:transparent;transition:all 0.15s';
+      btn.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        if (isCtrl) {
+          ctrlOn = !ctrlOn;
+          btn.style.background = ctrlOn ? 'rgba(0,212,255,0.2)' : 'transparent';
+          btn.style.color = ctrlOn ? 'rgba(0,212,255,1)' : 'rgba(255,255,255,0.7)';
+          btn.style.boxShadow = ctrlOn ? '0 0 6px rgba(0,212,255,0.3)' : 'none';
+        } else {
+          altOn = !altOn;
+          btn.style.background = altOn ? 'rgba(124,58,237,0.2)' : 'transparent';
+          btn.style.color = altOn ? 'rgba(124,58,237,1)' : 'rgba(255,255,255,0.7)';
+          btn.style.boxShadow = altOn ? '0 0 6px rgba(124,58,237,0.3)' : 'none';
+        }
+      });
+      bar.appendChild(btn);
+      continue;
+    }
+
+    // 普通按键
+    btn.style.cssText = 'height:30px;min-width:36px;display:flex;align-items:center;justify-content:center;border-radius:6px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);cursor:pointer;user-select:none;-webkit-user-select:none;background:transparent;transition:background 0.1s';
+
+    btn.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      // 按下时给视觉反馈
+      btn.style.background = 'rgba(255,255,255,0.12)';
+      setTimeout(() => { btn.style.background = 'transparent'; }, 80);
+
+      if (ctrlOn && altOn && key.ctrlAltSeq) {
+        term.input(key.ctrlAltSeq);
+      } else if (ctrlOn && key.ctrlSeq) {
+        term.input(key.ctrlSeq);
+      } else if (altOn && key.altSeq) {
+        term.input(key.altSeq);
+      } else {
+        term.input(key.value);
+      }
+    });
+    bar.appendChild(btn);
+  }
+
+  container.appendChild(bar);
+
+  // 键盘弹出/收起检测：visualViewport
+  let keyboardUp = false;
+  const VV = window.visualViewport;
+  const screenH = window.screen.height;
+  if (VV) {
+    VV.addEventListener('resize', () => {
+      const newKeyboardUp = VV.height < screenH * 0.85;
+      if (newKeyboardUp !== keyboardUp) {
+        keyboardUp = newKeyboardUp;
+        updateAuxBarVisibility();
+      }
+    });
+  }
+
+  function updateAuxBarVisibility(): void {
+    const inFullscreen = !!container.closest('.fullscreen');
+    bar.style.display = (inFullscreen && keyboardUp) ? 'flex' : 'none';
+  }
+
+  // 专注/失焦也触发显隐检测
+  container.addEventListener('focusin', updateAuxBarVisibility);
+  container.addEventListener('focusout', () => {
+    // 失焦后延迟检测（可能 focus 转移到另一个输入元素）
+    setTimeout(updateAuxBarVisibility, 200);
+  });
+
+  // 观察全屏态变化
+  const fsObserver = new MutationObserver(updateAuxBarVisibility);
+  const cardEl = container.closest('.floating-card');
+  if (cardEl) {
+    fsObserver.observe(cardEl, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  // 初始态：全屏 + 键盘可能已弹出
+  updateAuxBarVisibility();
 }
