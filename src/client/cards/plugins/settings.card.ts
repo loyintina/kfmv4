@@ -37,11 +37,10 @@ function createSettingsHandler(_meta: Record<string, unknown>): CardContentHandl
 
       // 标签栏
       const tabBar = document.createElement('div');
-      tabBar.style.cssText = 'display:flex;gap:6px;overflow-x:auto;flex-shrink:0;padding:6px 0 8px;scrollbar-width:none;touch-action:pan-x';
-
+      tabBar.style.cssText = 'display:flex;gap:6px;overflow-x:auto;flex-shrink:0;padding:4px 0 8px;scrollbar-width:none;touch-action:pan-x';
       const tabBtn = document.createElement('div');
       tabBtn.textContent = 'AI';
-      tabBtn.style.cssText = `padding:4px 14px;border-radius:14px;font-size:11px;font-weight:600;cursor:pointer;user-select:none;flex-shrink:0;background:${c1}30;color:${c1};border:1px solid ${c1}40`;
+      tabBtn.style.cssText = `border-radius:6px;padding:2px 10px 2px 12px;font-size:10px;font-weight:600;cursor:pointer;user-select:none;flex-shrink:0;background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,linear-gradient(135deg,${c2} 30%,${c1} 70%) border-box;border:1px solid transparent;border-left-width:2px;color:rgba(255,255,255,0.8)`;
       tabBar.appendChild(tabBtn);
 
       // 内容区
