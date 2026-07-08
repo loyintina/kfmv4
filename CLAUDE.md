@@ -53,9 +53,7 @@ docs/
 ├── design/                  # 设计文档（含活跃提案和长期参考）
 │   ├── VISION_AND_ROADMAP.md        # 远景：核心理念 + 演进路线
 │   ├── WORKBENCH_SPEC.md            # 卡片工作台（active 设计提案）
-│   ├── UI_ELEMENT_REGISTRY_SPEC.md  # UI 元素注册表设计（活跃设计）
-│   ├── FULLSCREEN_CARD_SPEC.md      # 全屏卡片设计（active 设计提案）
-│   └── GESTURE_ARCHITECTURE_SPEC.md # 手势识别架构改进（draft 设计提案）
+│   └── UI_ELEMENT_REGISTRY_SPEC.md  # UI 元素注册表设计（活跃设计）
 └── archive/                 # 历史归档
     ├── README.md            # 子目录导览
     ├── handoffs/            # 版本交接记录
@@ -64,7 +62,9 @@ docs/
     │   ├── CARD_REGISTRY_SPEC.md        # 卡片注册表 ✅已实施
     │   ├── ENGINE_ARCHITECTURE.md       # 引擎层架构 ✅已实施
     │   ├── TEST_INFRASTRUCTURE_SPEC.md  # 测试基础设施 ✅已实施
-    │   └── TERMINAL_CARD_SPEC.md        # 终端卡 ✅已实施（含 aux bar）
+    │   ├── TERMINAL_CARD_SPEC.md        # 终端卡 ✅已实施
+    │   ├── FULLSCREEN_CARD_SPEC.md      # 全屏卡片 ✅已实施
+    │   └── GESTURE_ARCHITECTURE_SPEC.md # 手势架构（已用更简方案解决）
     ├── standards/           # 已迁出见 DIAGNOSTICS.md / PRINCIPLES.md
     ├── audits/              # 已完成的审计记录/修复
     ├── bugs/                # 已修复 Bug
