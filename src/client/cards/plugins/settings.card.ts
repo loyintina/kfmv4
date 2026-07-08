@@ -17,12 +17,12 @@ interface SettingsField {
 }
 
 const SETTINGS: SettingsField[] = [
-  { key: 'ai.apiUrl',  label: 'API \u5730\u5740', type: 'text',     placeholder: 'https://api.openai.com/v1' },
-  { key: 'ai.apiKey',  label: 'API Key',           type: 'password', placeholder: 'sk-...' },
-  { key: 'ai.model',   label: '\u6A21\u578B',       type: 'select',   options: [
+  { key: 'ai.apiUrl',  label: 'API 地址', type: 'text',     placeholder: 'https://api.openai.com/v1' },
+  { key: 'ai.apiKey',  label: 'API Key',   type: 'password', placeholder: 'sk-...' },
+  { key: 'ai.model',   label: '模型',       type: 'select',   options: [
     { label: 'deepseek-chat',   value: 'deepseek-chat' },
-    { label: 'gpt-4o',          value: 'gpt-4o' },
-    { label: 'gpt-4o-mini',     value: 'gpt-4o-mini' },
+    { label: 'gpt-4o',        value: 'gpt-4o' },
+    { label: 'gpt-4o-mini',   value: 'gpt-4o-mini' },
     { label: 'gemini-2.0-flash', value: 'gemini-2.0-flash' },
   ]},
 ];
@@ -32,12 +32,25 @@ function createSettingsHandler(_meta: Record<string, unknown>): CardContentHandl
     activate(contentEl, card) {
       const c1 = card?.accents?.color1 || '#00d4ff';
       const c2 = card?.accents?.color2 || '#7c3aed';
-      const { bodyEl } = buildCardLayout(contentEl, 'AI \u8BBE\u7F6E', c1, c2);
-      bodyEl.style.cssText = 'flex:1;overflow-y:auto;touch-action:pan-y;padding:0 10px';
+      const { bodyEl } = buildCardLayout(contentEl, 'AI 设置', c1, c2);
+      bodyEl.style.cssText = 'flex:1;display:flex;flex-direction:column;overflow:hidden;padding:0 10px';
 
-      // 内卡（渐变边框 + 标题）
+      // 标签栏
+      const tabBar = document.createElement('div');
+      tabBar.style.cssText = 'display:flex;gap:6px;overflow-x:auto;flex-shrink:0;padding:6px 0 8px;scrollbar-width:none;touch-action:pan-x';
+
+      const tabBtn = document.createElement('div');
+      tabBtn.textContent = 'AI';
+      tabBtn.style.cssText = `padding:4px 14px;border-radius:14px;font-size:11px;font-weight:600;cursor:pointer;user-select:none;flex-shrink:0;background:${c1}30;color:${c1};border:1px solid ${c1}40`;
+      tabBar.appendChild(tabBtn);
+
+      // 内容区
+      const scrollArea = document.createElement('div');
+      scrollArea.style.cssText = 'flex:1;overflow-y:auto;overflow-x:hidden;touch-action:pan-y';
+
+      // 内卡（渐变边框 + 标题行 + 设置项）
       const inner = document.createElement('div');
-      inner.style.cssText = `border-radius:10px;padding:10px 12px 12px;margin-top:6px;background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,linear-gradient(135deg,${c2} 30%,${c1} 70%) border-box;border:1px solid transparent;border-left-width:3px`;
+      inner.style.cssText = `border-radius:10px;padding:10px 12px 12px;background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,linear-gradient(135deg,${c2} 30%,${c1} 70%) border-box;border:1px solid transparent;border-left-width:3px`;
 
       const title = document.createElement('div');
       title.textContent = 'AI';
@@ -79,7 +92,9 @@ function createSettingsHandler(_meta: Record<string, unknown>): CardContentHandl
         inner.appendChild(row);
       });
 
-      bodyEl.appendChild(inner);
+      scrollArea.appendChild(inner);
+      bodyEl.appendChild(tabBar);
+      bodyEl.appendChild(scrollArea);
     },
 
     deactivate(contentEl) {
@@ -91,8 +106,8 @@ function createSettingsHandler(_meta: Record<string, unknown>): CardContentHandl
 registerCardType({
   typeId: 'settings',
   icon: '\u2699',
-  name: '\u8BBE\u7F6E',
-  description: 'AI \u8BBE\u7F6E',
+  name: '设置',
+  description: 'AI 设置',
   kind: 'tool',
   createHandler: createSettingsHandler,
 });
