@@ -5,37 +5,24 @@ import { wsChannel } from './ws-channel.js';
 import { currentTheme as theme } from './theme.js';
 import { createFloatingCard } from './floating-card.js';
 import { log } from './logger.js';
-import { getCardType, type CardContentHandler } from './card-registry.js';
+import { getCardType, getAllCardTypes, type CardContentHandler } from './card-registry.js';
 
 /**
  * KFM v4 - 堆叠卡片面板
  *
- * 全屏左滑唤出，7 张卡片按星云光谱堆叠。
- * 垂直滑动切换聚焦卡片，聚焦卡左滑投出为浮卡。
+ * 全屏左滑唤出，所有已注册的 kind:'tool' 卡片按注册顺序堆叠。
  * 无遮罩 + 卡片只露部分，像半开的抽屉。
  */
 
-// ========== 卡片内容定义 ==========
-interface CardDef {
-  id: string;
-  icon: string;
-  name: string;
-  desc: string;
-}
+// ========== 卡片堆显示列表 ==========
+// 从注册表读取所有 kind:'tool' 的卡片类型，决定卡片堆的显示顺序。
+// 顺序由 registerCardType() 的调用顺序决定（registry.ts 的 import 顺序）。
+function _stackCards() { return getAllCardTypes().filter(t => t.kind === 'tool'); }
 
-const _cards: CardDef[] = [
-  { id: 'settings', icon: '\u2699', name: '\u8BBE\u7F6E',        desc: '' },
-  { id: 'debug',    icon: '\uD83D\uDD27', name: '\u65E5\u5FD7\u7BA1\u7406', desc: '' },
-  { id: 'card03',   icon: '>',         name: '终端',          desc: '' },
-  { id: 'card04',   icon: '\u25A3',     name: 'tmux',              desc: 'tmux窗口管理' },
-  { id: 'card05',   icon: '',           name: '',                desc: '' },
-  { id: 'card06',   icon: '',           name: '',                desc: '' },
-  { id: 'card07',   icon: '',           name: '',                desc: '' },
-];
-export function getCardCount(): number { return _cards.length; }
-export function getCard(index: number): CardDef { return _cards[index]; }
-export function getCardName(index: number): string { return _cards[index]?.name ?? ''; }
-export function getCardId(index: number): string { return _cards[index]?.id ?? ''; }
+export function getCardCount(): number { return _stackCards().length; }
+export function getCard(index: number) { return _stackCards()[index]; }
+export function getCardName(index: number): string { return getCard(index)?.name ?? ''; }
+export function getCardId(index: number): string { return getCard(index)?.typeId ?? ''; }
 // ========== 卡片内容生命周期 ==========
 
 
@@ -436,7 +423,7 @@ export function initCardStack(): void {
   // 注册内容层：卡片堆当前焦点摘要（使用生成器，每次 snapshot 返回实时焦点）
   Registry.registerContentGenerator('card-stack-content', () => {
     const card = getCard(_focusIndex);
-    const name = card?.name || card?.id || '无';
+    const name = card?.name || card?.typeId || '无';
     const total = getCardCount();
     const filled = Array.from({ length: total }, (_, i) => getCardName(i)).filter(n => n !== '').length;
     return {
