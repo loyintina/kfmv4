@@ -22,15 +22,7 @@ import { rgba, hslToHex, cardAccent, pathBasename } from './color-utils.js';
 import { initModeSystem, ensureBg, removeBg, updateBg, recolorCards, getSelectedMode, getModeTheme, getTriColor, applyModeTheme, updateModeSelection } from './mode-system.js';
 import { gestures } from './gesture-registry.js';
 import { createFileHandler } from './renderers/handler-factory.js';
-import { registerCardType, getCardType } from './card-registry.js';
-
-// 向注册表登记文件卡片类型
-registerCardType({
-  typeId: 'file',
-  icon: '', name: '', description: '文件卡片',
-  kind: 'file',
-  createHandler: (meta) => createFileHandler(meta),
-});
+import { getCardType } from './card-registry.js';
 
 export function isDimmed(path: string): boolean { return _dimmedPaths.has(path); }
 

@@ -34,6 +34,7 @@ import { initFloatingCards } from './modules/floating-card.js';
 import { gestures } from './modules/gesture-registry.js';
 import { Registry } from './modules/ui-registry.js';
 import { initWsChannel } from './modules/ws-channel.js';
+import './cards/registry.js';
 
 // 全局未捕获错误 → 调试卡
 import { log } from './modules/logger.js';
