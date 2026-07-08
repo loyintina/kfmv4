@@ -411,8 +411,21 @@ import { currentTheme as theme } from '../../modules/theme.js';
 const bg = theme.surface?.bgLight || 'rgba(10,10,15,0.85)';  // 背景色
 const accent = card?.accents?.color1;                         // 卡片主色
 ```
-
 卡片注册时从 `card-registry` 获得 `accents`（`color1`/`color2`），作为标题、边框、高亮的来源。
+
+#### 10.2.1 文字颜色的可读性
+
+**accent 色只用于边框和装饰，不用于文字。** accent 色是动态分配的，可能落在亮色区间，与白色背景冲突。
+
+文字一律用白色系：
+
+| 用途 | 颜色 |
+|------|------|
+| 标题 | `rgba(255,255,255,0.85)` |
+| 正文 | `rgba(255,255,255,0.75)` |
+| 次级 | `rgba(255,255,255,0.5)` |
+
+颜色信息通过边框/装饰线传达，不依赖文字颜色。
 
 ### 10.3 间距与字号
 

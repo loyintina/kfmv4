@@ -82,8 +82,7 @@ function createSettingsHandler(_meta: Record<string, unknown>): CardContentHandl
         card.style.cssText = `border-radius:10px;padding:8px 10px 8px 12px;margin-bottom:10px;background:linear-gradient(rgba(255,255,255,0.03),rgba(255,255,255,0.03)) padding-box,linear-gradient(135deg,${c2}60,${c1}40) border-box;border:1px solid transparent;border-left:3px solid transparent`;
 
         const cardTitle = document.createElement('div');
-        cardTitle.textContent = tab;
-        cardTitle.style.cssText = `font-size:11px;font-weight:700;color:${c1};margin-bottom:8px;letter-spacing:0.5px`;
+        cardTitle.style.cssText = 'font-size:11px;font-weight:700;color:rgba(255,255,255,0.85);margin-bottom:8px;letter-spacing:0.5px';
         card.appendChild(cardTitle);
 
         const fields = SETTINGS.filter(f => f.tab === tab);
