@@ -44,6 +44,8 @@ CLAUDE.md                    # 本文件——项目入口
 docs/
 ├── AGENTS.md                # AI 专属：文档维护规则（改文档前读）
 ├── HANDBOOK.md              # 工作手册：架构-状态-待办（日常翻）
+├── development/             # 开发指南
+│   └── CARD_DEV_GUIDE.md    # 卡片插件开发指南（加新卡前读）
 ├── KFM_V4_INVARIANTS.md     # 修改约束协议：心法原则+自查清单（改代码前必读）
 ├── DIAGNOSTICS.md           # 诊断手册：隐性契约 + 排查流程 + 根因案例库（遇到 bug 先翻）
 ├── PRINCIPLES.md            # 约束全表：心法 / 架构 / 契约一站查找
