@@ -256,7 +256,7 @@ v6.6.0 �����前的焦�����������「浮卡系统�
 
 ### 持续观察
 - 测试基础设施脆弱（GSAP mock 失真，无 UI/Canvas/手势覆盖）
-- orb / card-stack 拖动逻辑��复（各自实现 pointerdown/move/up 循环）
+- ~~orb / card-stack 拖动逻辑重复~~ ✅ 已统一。`orb.ts` 和 `floating-card.ts` 均通过共享 `drag-handler.ts` + `gesture-registry.ts` 注册。`card-stack.ts` 的轴锁定翻页是不同交互模式，不适用 `createDragHandler`。
 ### 历史版本归档
 
 |------|------|---------|
