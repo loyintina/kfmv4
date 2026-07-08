@@ -453,35 +453,16 @@ const accent = card?.accents?.color1;                         // 卡片主色
 | AI 可见状态 | `Registry.registerElement()` | — |
 
 ### 10.6 边框
-
-卡片的容器边框使用左粗三边设计：左边 3px，其他三边 1px。
-
-#### 浮卡外壳（由 `floating-card.ts` 自动处理）
-
-```css
-padding: 1px;
-padding-left: 3px;
-background: linear-gradient(135deg, {color1} 30%, {color2} 70%);
-```
-
-内容 handler 不需要处理外壳边框。
-
-#### 内容区内部卡片
-
-如果内容区需要内部分组卡片，同系渐变边框（颜色反转，低 opacity）：
+如果内容区需要内部分组卡片，使用同色系左边框 + 暗色背景：
 
 ```css
 border-radius: 10px;
 padding: 8px 10px 8px 12px;
-border: 1px solid transparent;
-border-left: 3px solid transparent;
-background: linear-gradient(rgba(255,255,255,0.03), rgba(255,255,255,0.03)) padding-box,
-            linear-gradient(135deg, {color2}60, {color1}40) border-box;
+background: rgba(255,255,255,0.04);
+border-left: 3px solid {color2}60;
 ```
 
-颜色反转规则：`{color1}` 和 `{color2}` 交换位置。opacity 用 `60`/`40` 比外壳的 `85` 低，形成层次感。
-这样内部卡片有同系的渐变边框，与浮卡外壳的渐变边框视觉一致。
-
+颜色反转规则：`{color1}` 和 `{color2}` 交换位置。左 3px 边框传达颜色信息，文字保持白色。
 ### 10.7 多级嵌套的颜色交替
 
 当内容区需要多级卡片嵌套时，边框颜色逐层交替：
