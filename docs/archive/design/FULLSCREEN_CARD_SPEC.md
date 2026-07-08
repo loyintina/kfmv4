@@ -1,5 +1,5 @@
 ---
-status: active
+status: completed
 version: v0.1
 last_updated: 2026-07-03
 ---

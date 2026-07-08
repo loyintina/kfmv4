@@ -680,7 +680,7 @@ AI 需要一种方式"指给用户看"——不依赖卡片聚焦或状态联动
 | 3 | 实现 card-shell.ts（统一 DOM 渲染壳） | ❌ 未单独实现。`floating-card.ts` + `buildCardLayout()` 已有等价功能，抽成独立文件的收益有限 |
 | 4 | 实现 card-manager.ts（注册/调度/生命周期） | ✅ 由 `card-registry.ts` 的 CardRegistry 类实现 |
 | 5 | 实现 card-dock.ts（右侧工具坞） | ❌ 未实现。卡片堆（card-stack.ts）覆盖了相同功能区域，工具坞是另一种 UI 形态的设计提案 |
-| 6 | 构建时扫描注册 | ✅ 由 `cards/registry.ts` 手动 import 实现（等价于自动扫描） |
+| 6 | 构建时扫描注册 | ✅ 由 `src/client/cards/registry.ts` 手动 import 实现（等价于自动扫描） |
 | 7 | 将 orb.ts 迁入 ai-chat-card.ts | ❌ 未迁移。光球的全局入口角色与卡片生命周期不匹配，强迁带来特殊化反而增加复杂度。交互共享已通过 `drag-handler.ts` + `gesture-registry.ts` 实现 |
 | 8 | 写 CARD_PLUGIN_SPEC.md | ✅ 由 `docs/development/CARD_DEV_GUIDE.md` 实现 |
 
@@ -844,7 +844,7 @@ AI 读到本文档后，按以下流程：
 1. 读第六章（CardDefinition 接口规范）
 2. 当前仅 `cards/plugins/debug-card/` 为实验参考（插件系统**尚未正式搭建**，以下流程为目标设计）
 3. 在 `cards/plugins/` 下新建目录 + `index.ts`
-4. 在卡片注册表（cards/registry.ts，待创建）中加一行 import + 注册
+4. 在卡片注册表（src/client/cards/registry.ts，待创建）中加一行 import + 注册
 5. 执行 `npm run build` 验证编译通过
 6. 验证卡片出现在卡片堆中并可正常交互
 7. `git add/commit/push`

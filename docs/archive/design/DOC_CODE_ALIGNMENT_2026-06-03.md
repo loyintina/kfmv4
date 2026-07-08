@@ -2,7 +2,7 @@
 status: superseded
 created_at: 2026-06-03
 archived_at: 2026-06-29
-superseded_by: docs/design/UI_ELEMENT_REGISTRY_SPEC.md
+superseded_by: docs/archive/design/UI_ELEMENT_REGISTRY_SPEC.md
 ---
 
 # 文档-代码对齐审计与修复

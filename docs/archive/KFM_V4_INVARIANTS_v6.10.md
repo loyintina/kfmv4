@@ -1,3 +1,8 @@
+---
+status: superseded
+archived_at: 2026-07-07
+superseded_by: docs/KFM_V4_INVARIANTS.md
+---
 # KFM v4 — AI 修改约束协议（Harness）
 
 > **在修改任何 .ts 文件前，AI 必须逐条通读本文档并内化所有约束。**

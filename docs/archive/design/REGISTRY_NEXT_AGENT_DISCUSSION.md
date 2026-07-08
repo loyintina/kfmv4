@@ -2,7 +2,7 @@
 status: superseded
 created_at: 2026-06-02
 archived_at: 2026-06-29
-superseded_by: docs/design/UI_ELEMENT_REGISTRY_SPEC.md
+superseded_by: docs/archive/design/UI_ELEMENT_REGISTRY_SPEC.md
 ---
 
 # UI Element Registry — 下一轮讨论笔记

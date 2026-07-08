@@ -1,5 +1,5 @@
 ---
-status: active
+status: completed
 version: v1.2
 ---
 # UI Element Registry 设计讨论

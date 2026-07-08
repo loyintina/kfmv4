@@ -9,7 +9,7 @@ AI 人机交互个人工作台，面向移动端浏览器。核心理念：**一
 > **做浮卡相关改动先读** `docs/archive/design/CARD_SYSTEM_UNIFICATION_SPEC.md`（已归档：统一化方案失败，当前为双模块架构）。
 > **加新卡片前先读** `docs/development/CARD_DEV_GUIDE.md`（卡片插件开发指南）。
 > **UI Registry 相关**已归档到 `docs/archive/design/`。
-> **引擎层改动先读** `docs/design/ENGINE_ARCHITECTURE.md`（v2 管线 + text-layout 排版引擎架构）。
+> **引擎层改动先读** `docs/archive/design/ENGINE_ARCHITECTURE.md`（v2 管线 + text-layout 排版引擎架构）。
 
 ---
 
@@ -69,7 +69,7 @@ docs/
     ├── bugs/                # 已修复 Bug
     └── legacy/              # 旧版本文件
 
-> 接手新对话的推荐阅读顺序：`CLAUDE.md` → `HANDBOOK.md` §2（当前状态）→ `KFM_V4_INVARIANTS.md`（修改规则）→ `docs/development/CARD_DEV_GUIDE.md`（卡片插件开发）→ `DIAGNOSTICS.md` §1-2（隐性契约+诊断流程，遇到 bug 先翻）→ `HANDBOOK.md` §3（待办）→ `HANDBOOK.md` §七（审计问题清单）。全量约束速查见 `PRINCIPLES.md`。卡片工作台设计见 `docs/archive/design/WORKBENCH_SPEC.md`。
+> 接手新对话的推荐阅读顺序：`CLAUDE.md` → `HANDBOOK.md` §2（当前状态）→ `KFM_V4_INVARIANTS.md`（修改规则）→ `docs/development/CARD_DEV_GUIDE.md`（卡片插件开发）→ `DIAGNOSTICS.md` §1-2（隐性契约+诊断流程，遇到 bug 先翻）→ `HANDBOOK.md` §3（待办）→ `HANDBOOK.md` §七（审计问题清单）。全量约束速查见 `PRINCIPLES.md`。引擎层设计见 `docs/archive/design/ENGINE_ARCHITECTURE.md`。卡片工作台设计见 `docs/archive/design/WORKBENCH_SPEC.md`。
 
 ## 完整性校验
 

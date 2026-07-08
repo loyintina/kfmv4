@@ -1,6 +1,6 @@
 ---
 status: superseded
-superseded_by: docs/design/WORKBENCH_SPEC.md
+superseded_by: docs/archive/design/WORKBENCH_SPEC.md
 archived_at: 2026-06-26
 ---
 

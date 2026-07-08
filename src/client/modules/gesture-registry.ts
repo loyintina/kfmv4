@@ -276,7 +276,7 @@ export class GestureRegistry {
       }
 
       if (this._shouldStop(handler, 'start')) e.stopPropagation();
-      handler.onStart(e);
+      handler.onStart?.(e);
       break; // 只匹配优先级最高的一个
     }
 

@@ -159,7 +159,7 @@ index.ts (入口路由)
   - 测试基础设施阶段 B：DOM mock 布局增强（scrollHeight/clientHeight/scrollTop 联动 + overflow）✅
   - 测试基础设施阶段 C：Canvas 渲染层测试（hitTest/双树/stop/resize）✅
   - 测试基础设施阶段 D：交互测试补全（浮卡状态机 + DOM mock querySelector + className 同步）✅
-  - 测试基础设施设计文档：`docs/design/TEST_INFRASTRUCTURE_SPEC.md` ✅
+  - 测试基础设施设计文档：`docs/archive/design/TEST_INFRASTRUCTURE_SPEC.md` ✅
   - 终端卡双指缩放：双缓冲渲染实时反馈 → 降级 xterm.js v5 Canvas 渲染器 → 按卡类型区分双指处理器 ✅
   - 全屏卡片原生滚动：`file-card-scroll` 移除 + `_handleStart` 逻辑恢复 ✅
   - GestureRegistry `requireFailure` 依赖关系机制 ✅
@@ -167,16 +167,16 @@ index.ts (入口路由)
   - check-checks.mjs 元检查器：验证所有 check 脚本已集成到管线 ✅
   - check-doc-coverage.mjs 文档覆盖强制 ✅
   - docs/AGENT_PROMPT_REFERENCES.md — 外部提示词参考归档 ✅
-  - docs/design/GESTURE_ARCHITECTURE_SPEC.md — 手势识别架构改进设计规范 ✅
-  - docs/design/FULLSCREEN_CARD_SPEC.md — 全屏卡片设计规范 ✅
+  - docs/archive/design/GESTURE_ARCHITECTURE_SPEC.md — 手势识别架构改进设计规范 ✅
+  - docs/archive/design/FULLSCREEN_CARD_SPEC.md — 全屏卡片设计规范 ✅
 
 v6.6.0 �����前的焦�����������「浮卡系统统一化」已两次尝试均回退放弃（详见 `docs/archive/design/CARD_SYSTEM_UNIFICATION_SPEC.md`）。当前方向改为「三层共享层」——常量层 + 类型层 + 能力声明层，可在不碰逻辑的前提下逐步统一。
 
 - **v6.6.0 已完成**：
   - 交互共享层建立（`interaction-constants.ts` + `drag-handler.ts`）✅
   - overlay 残留 bug 根解（`rebuildTree` 入口加防御性清理）✅
-  - Box 位置映射设计文档（`docs/design/BOX_LOCATION_MAP_SPEC.md`）✅
-  - 卡片工作台设计文档（`docs/design/WORKBENCH_SPEC.md`）✅
+  - Box 位置映射设计文档（`docs/archive/design/BOX_LOCATION_MAP_SPEC.md`）✅
+  - 卡片工作台设计文档（`docs/archive/design/WORKBENCH_SPEC.md`）✅
 - **v6.8.0 已完成**：
   - 卡片工作台模式系统：copy/move/delete 按钮 + ✓ 执行 API + 卡片动画 ✅
   - 传送门液体粒子：三段独立管道 + 物理/路径双坐标分离 + 粒子长度自适应 ✅
@@ -191,7 +191,7 @@ v6.6.0 �����前的焦�����������「浮卡系统�
   - WORKBENCH_SPEC.md 更新：模式系统 + 长按功能栏设计 ✅
 - **v6.6.1 已完成**：
   - Box 位置映射实施（`click-path` 命令 + `_boxLocationMap`）✅
-  - 引擎层架构文档（`docs/design/ENGINE_ARCHITECTURE.md`）✅
+  - 引擎层架构文档（`docs/archive/design/ENGINE_ARCHITECTURE.md`）✅
   - 死代码清理（~300 行：两套拖拽系统、`*Capability`、`anim.play/kill` API、遗留函数）✅
   - `notifyStateChange` 散布分类审计（35 处，26/35 必要，9 冗余）✅
 
@@ -220,7 +220,7 @@ v6.6.0 �����前的焦�����������「浮卡系统�
 ---
 
 ## 三、当前待办
-12. **Canvas 元素的 AI click 无坐标**：~~v6.3 部分缓解。v6.6.0 进入设计阶段。~~ ✅ **已根解（v6.6.1）**：Box 位置映射实施完成。AI 可通过 `click-path` 命令直接按路径操作 Canvas 文件行，不再依赖合成坐标。`expand-dir`/`collapse-dir`/`select-file` 保持保留。详见 `docs/design/BOX_LOCATION_MAP_SPEC.md`。<a id='trap-12'></a>
+12. **Canvas 元素的 AI click 无坐标**：~~v6.3 部分缓解。v6.6.0 进入设计阶段。~~ ✅ **已根解（v6.6.1）**：Box 位置映射实施完成。AI 可通过 `click-path` 命令直接按路径操作 Canvas 文件行，不再依赖合成坐标。`expand-dir`/`collapse-dir`/`select-file` 保持保留。详见 `docs/archive/design/BOX_LOCATION_MAP_SPEC.md`。<a id='trap-12'></a>
 13. **`registerContent()` 与生成器关系**：同一 id 下生成器优先，`registerContent()` 不会覆盖已注册的生成器。如需强制更新静态内容，先调 `registerContentGenerator(id, null)` 注销生成器。<a id='trap-13'></a>
 15. **文件树 overlay 残留导致滚动分裂**：~~已根解（v6.6.0）~~：在 `rebuildTree` 入口加防御性清理 `_removeAllOverlays()` + `renderer.setOverlayRoot(null)`，确保无论从哪条路径触发，旧 overlay 都不会残留。~~原描述：开启显示隐藏文件后，展开空文件夹再折叠，滑动文件树时 overlay 遗留的半截树不跟随滚动。~~<a id='trap-15'></a>
 
@@ -239,9 +239,9 @@ v6.6.0 �����前的焦�����������「浮卡系统�
 
 | 优先级 | 事项 | 说明 |
 |--------|------|------|
-| ~~🔴 P0~~ | ~~卡片工作台 Phase 1~~ | ✅ v6.7.0 购物车模式 + 基本文件浮卡（临时卡片堆 + ✓/✗ 投放撤销，见 `docs/design/WORKBENCH_SPEC.md` §11） |
+| ~~🔴 P0~~ | ~~卡片工作台 Phase 1~~ | ✅ v6.7.0 购物车模式 + 基本文件浮卡（临时卡片堆 + ✓/✗ 投放撤销，见 `docs/archive/design/WORKBENCH_SPEC.md` §11） |
 | ~~🔴 P0~~ | ~~文档-代码同步审计修复~~ | ✅ 全部 16 项已处理（见下方审计表） |
-| ~~🟠 P1~~ | ~~Box 位置映射实施~~ | ✅ v6.6.1 已实施（`click-path` 命令 + `_boxLocationMap` 反向索引，见 `docs/design/BOX_LOCATION_MAP_SPEC.md`） |
+| ~~🟠 P1~~ | ~~Box 位置映射实施~~ | ✅ v6.6.1 已实施（`click-path` 命令 + `_boxLocationMap` 反向索引，见 `docs/archive/design/BOX_LOCATION_MAP_SPEC.md`） |
 | ~~🟠 P1~~ | ~~版本号同步~~ | ✅ v6.6.1 |
 | ~~🔴 P0~~ | ~~浮卡系统统一化~~ | ❌ 两次尝试均回退放弃。当前方向：三层共享层（已完成 ✅） |
 | ~~🟠 P2~~ | ~~`CARDS` 数组迁移~~ | ✅ 已完成 |
@@ -317,7 +317,7 @@ v6.6.0 �����前的焦�����������「浮卡系统�
 | ~~2~~ | ~~🔴~~ ✅ | ~~HANDBOOK §2 当前焦点严重过时~~ 已修复 | 已改为"卡片工作台"，版本已更新为 v6.6.0 |
 | ~~3~~ | ~~🔴~~ ✅ | ~~HANDBOOK §3 待办表过时~~ 已修复 | 待办表已更新：overlay 标记根解、统一化标记放弃、新增工作台 P0 |
 | 4 | 🔴 P0 | 8 个客户端模块零文档 | ✅ 已审计：全部有效，无死代码，无功能重叠。头部注释已有清晰用途说明。HANDBOOK §1 已补入模块职能分组表 |
-| ~~5~~ | ~~🟠~~ ✅ | ~~引擎层零文档~~ | ✅ v6.6.1 已补充 `docs/design/ENGINE_ARCHITECTURE.md`（v2 渲染管线 + text-layout 排版引擎全架构） |
+| ~~5~~ | ~~🟠~~ ✅ | ~~引擎层零文档~~ | ✅ v6.6.1 已补充 `docs/archive/design/ENGINE_ARCHITECTURE.md`（v2 渲染管线 + text-layout 排版引擎全架构） |
 | ~~6~~ | ~~🟠~~ ✅ | ~~CLAUDE.md 文���树缺 `design/` 和 `notes/`~~ 已修复 | 已在 CLAUDE.md 中补充 |
 | ~~7~~ | ~~🟠~~ ✅ | ~~CLAUDE.md 架构描述缺交互共享层~~ 已修复 | 已在架构描述中补充 |
 | 8 | ✅ 已处理 | `cards/` 目录零文档 | 已删除。2 个文件（index.ts + logger.ts）移除。实际使用的 logger 在 `src/client/modules/logger.ts`，不受影响 |
@@ -393,7 +393,7 @@ v6.6.0 �����前的焦�����������「浮卡系统�
 
 ### 引擎层清单（14 文件）
 
-> 完整架构见 `docs/design/ENGINE_ARCHITECTURE.md`。
+> 完整架构见 `docs/archive/design/ENGINE_ARCHITECTURE.md`。
 
 #### engine/v2 — Canvas 渲染引擎（8 文件）
 

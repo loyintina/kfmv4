@@ -371,6 +371,7 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
     // 因为 enterFullscreen 时异步加载的子元素还不存在
     if (activatePromise) {
       activatePromise.then(() => {
+        if (!item.contentEl) return;
         item.contentEl.style.touchAction = 'pan-y';
         for (const child of item.contentEl.querySelectorAll<HTMLElement>('*')) {
           child.style.touchAction = 'pan-y';
@@ -546,9 +547,11 @@ export function enterFullscreen(item: FloatingCardItem): void {
   item.el.classList.add('fullscreen');
   // 恢复内容区的原生垂直滚动（全屏 CSS 设了 * { touch-action: none } 杀死了它）
   // 需要覆盖 contentEl 及其所有后代，因为 * 选择器逐元素命中
-  item.contentEl.style.touchAction = 'pan-y';
-  for (const child of item.contentEl.querySelectorAll<HTMLElement>('*')) {
-    child.style.touchAction = 'pan-y';
+  if (item.contentEl) {
+    item.contentEl.style.touchAction = 'pan-y';
+    for (const child of item.contentEl.querySelectorAll<HTMLElement>('*')) {
+      child.style.touchAction = 'pan-y';
+    }
   }
   anim.to(item.el, {
     left: 0,
@@ -611,9 +614,11 @@ function exitFullscreen(item: FloatingCardItem): void {
   }
   
   // 恢复内容区及所有后代的 touch-action（全屏时设为 pan-y）
-  item.contentEl.style.touchAction = '';
-  for (const child of item.contentEl.querySelectorAll<HTMLElement>('*')) {
-    child.style.touchAction = '';
+  if (item.contentEl) {
+    item.contentEl.style.touchAction = '';
+    for (const child of item.contentEl.querySelectorAll<HTMLElement>('*')) {
+      child.style.touchAction = '';
+    }
   }
   // 显示四角光球 + topMidOrb
   if (item.tlOrb) item.tlOrb.style.display = 'flex';
@@ -713,9 +718,11 @@ function dismissFullscreen(item: FloatingCardItem): void {
   }
   
   // 恢复内容区及所有后代的 touch-action（全屏时设为 pan-y）
-  item.contentEl.style.touchAction = '';
-  for (const child of item.contentEl.querySelectorAll<HTMLElement>('*')) {
-    child.style.touchAction = '';
+  if (item.contentEl) {
+    item.contentEl.style.touchAction = '';
+    for (const child of item.contentEl.querySelectorAll<HTMLElement>('*')) {
+      child.style.touchAction = '';
+    }
   }
   _dismissOne(item, true);
 }
