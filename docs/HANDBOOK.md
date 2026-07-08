@@ -254,8 +254,7 @@ v6.6.0 �����前的焦�����������「浮卡系统�
 | ~~🟡 P3~~ | ~~xterm _core 私有 API~~ | ✅ 已锁定版本（`@xterm/xterm` `^6.0.0` → `6.0.0`，`@xterm/addon-fit` `^0.11.0` → `0.11.0`）。不升级就不会爆，P3 已消除 |
 
 ### 持续观察
-- 测试基础设施脆弱（GSAP mock 失真，无 UI/Canvas/手势覆盖）
-- ~~orb / card-stack 拖动逻辑重复~~ ✅ 已统一。`orb.ts` 和 `floating-card.ts` 均通过共享 `drag-handler.ts` + `gesture-registry.ts` 注册。`card-stack.ts` 的轴锁定翻页是不同交互模式，不适用 `createDragHandler`。
+- ~~测试基础设施脆弱（GSAP mock 失真，无 UI/Canvas/手势覆盖）~~ ✅ 测试基础设施阶段 A-D 已完成。GSAP mock 时序修正 + DOM mock 布局增强 + Canvas 渲染层测试 + 浮卡状态机测试均已覆盖。浏览器级手势集成测试（Playwright）延后评估。
 ### 历史版本归档
 
 |------|------|---------|
