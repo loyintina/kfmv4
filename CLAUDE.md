@@ -51,8 +51,7 @@ docs/
 ├── PRINCIPLES.md            # 约束全表：心法 / 架构 / 契约一站查找
 ├── PROJECT_ASSESSMENT.md    # 项目把控理解与建议
 ├── design/                  # 设计文档
-│   ├── VISION_AND_ROADMAP.md        # 远景：核心理念 + 演进路线（保留）
-│   └── UI_ELEMENT_REGISTRY_SPEC.md  # UI 元素注册表设计
+│   └── VISION_AND_ROADMAP.md        # 远景：核心理念 + 演进路线（方向性，保留）
 └── archive/                 # 历史归档
     ├── README.md            # 子目录导览
     ├── handoffs/            # 版本交接记录
@@ -64,8 +63,8 @@ docs/
     │   ├── TERMINAL_CARD_SPEC.md        # 终端卡 ✅
     │   ├── FULLSCREEN_CARD_SPEC.md      # 全屏卡片 ✅
     │   ├── GESTURE_ARCHITECTURE_SPEC.md # 手势架构（已用更简方案解决）
-    │   └── WORKBENCH_SPEC.md            # 卡片工作台（全部 Phase 已完成/废弃）
-    ├── standards/           # 已迁出见 DIAGNOSTICS.md / PRINCIPLES.md
+    │   ├── WORKBENCH_SPEC.md            # 卡片工作台 ✅
+    │   └── UI_ELEMENT_REGISTRY_SPEC.md  # UI 元素注册表 ✅
     ├── audits/              # 已完成的审计记录/修复
     ├── bugs/                # 已修复 Bug
     └── legacy/              # 旧版本文件
