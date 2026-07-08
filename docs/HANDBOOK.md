@@ -252,7 +252,7 @@ v6.6.0 �����前的焦�����������「浮卡系统�
 | ~~🟠 P2~~ | ~~核心模块测试补全~~ | ✅ 新增 19 个测试覆盖 card-registry(focusCard)/preMatchHook/tmux-card factory。floating-card 键盘避让因 DOM 依赖暂跳过 |
 | ~~🟡 P3~~ | ~~terminal-aux-bar.ts 空占位~~ | ✅ 已删除（2 行注释，无文件引用） |
 | ~~🟡 P3~~ | ~~xterm _core 私有 API~~ | ✅ 已锁定版本（`@xterm/xterm` `^6.0.0` → `6.0.0`，`@xterm/addon-fit` `^0.11.0` → `0.11.0`）。不升级就不会爆，P3 已消除 |
-
+| 🟡 P3 | 手势系统研究与全局交互区域分权 | 浮卡/卡片堆/设置卡内容区与全局左右滑手势的交互边界需要重新梳理。当前 GestureRegistry 的 targetFilter 方式能解决大部分问题，但 touch-action 分区策略需要文档化并确保一致性。见对话记录。 |
 ### 持续观察
 - ~~测试基础设施脆弱（GSAP mock 失真，无 UI/Canvas/手势覆盖）~~ ✅ 测试基础设施阶段 A-D 已完成。GSAP mock 时序修正 + DOM mock 布局增强 + Canvas 渲染层测试 + 浮卡状态机测试均已覆盖。浏览器级手势集成测试（Playwright）延后评估。
 ### 历史版本归档
