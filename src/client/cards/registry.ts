@@ -13,4 +13,4 @@ import './plugins/debug.card.js';
 import './plugins/terminal.card.js';
 import './plugins/tmux.card.js';
 import './plugins/file.card.js';
-import './plugins/settings.card.js';
+import './plugins/api.card.js';
