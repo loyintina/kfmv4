@@ -119,7 +119,7 @@ function uid(): string {
 function inputStyle(): Record<string, string> {
   return {
     fontSize: 'var(--card-font-size, 11px)',
-    padding: '4px 8px',
+    padding: '0.35em 0.7em',
     borderRadius: '6px',
     border: '1px solid rgba(255,255,255,0.1)',
     background: 'rgba(255,255,255,0.06)',
@@ -144,7 +144,7 @@ function mkRow(label: string): { row: HTMLElement; inputWrap: HTMLElement } {
 }
 
 function btnStyle(color: string): string {
-  return `padding:3px 10px;border-radius:6px;font-size:var(--card-font-size,10px);font-weight:600;cursor:pointer;user-select:none;border:1px solid ${color}40;color:${color};background:transparent;flex:1;text-align:center`;
+  return `padding:0.3em 0.8em;border-radius:6px;font-size:var(--card-font-size,10px);font-weight:600;cursor:pointer;user-select:none;border:1px solid ${color}40;color:${color};background:transparent;flex:1;text-align:center`;
 }
 
 // ====== Handler ======
@@ -445,7 +445,7 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
       const selWrapper = document.createElement('div');
       selWrapper.style.cssText = 'position:relative;flex:1;min-width:0';
       selTriggerEl = document.createElement('div');
-      selTriggerEl.style.cssText = 'font-size:var(--card-font-size,11px);padding:3px 6px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.85);cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between';
+      selTriggerEl.style.cssText = 'font-size:var(--card-font-size,11px);padding:0.3em 0.6em;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.85);cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between';
       selTriggerText = document.createElement('span');
       selTriggerText.textContent = '(无)';
       const selArrow = document.createElement('span');
@@ -558,7 +558,7 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
       };
       const addBtn = document.createElement('span');
       addBtn.textContent = '+';
-      addBtn.style.cssText = `font-size:var(--card-font-size,14px);cursor:pointer;color:${c1};padding:2px 8px;border-radius:6px;border:1px solid ${c1}40;flex-shrink:0`;
+      addBtn.style.cssText = `font-size:var(--card-font-size,14px);cursor:pointer;color:${c1};padding:0.2em 0.6em;border-radius:6px;border:1px solid ${c1}40;flex-shrink:0`;
       addBtn.onclick = addModel;
       mar.appendChild(modelInput);
       mar.appendChild(addBtn);
