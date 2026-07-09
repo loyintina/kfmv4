@@ -145,7 +145,27 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
     });
   }
 
-  function addModel(): void {
+  async function fetchAvailableModels(): Promise<string[]> {
+    const url = urlEl.value.trim();
+    const key = keyEl.value.trim();
+    if (!url || !key) return [];
+    try {
+      const res = await fetch(url + '/models', {
+        headers: { 'Authorization': `Bearer ${key}` },
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!res.ok) return [];
+      const data = await res.json();
+      // OpenAI format: { data: [{ id: string }, ...] }
+      // DeepSeek format: same
+      if (data?.data && Array.isArray(data.data)) {
+        return data.data.map((m: { id: string }) => m.id).filter(Boolean);
+      }
+      return [];
+    } catch { return []; }
+  }
+
+  async function addModel(): Promise<void> {
     let cur = getCurrent();
     if (!cur) {
       commitCurrent();
@@ -161,13 +181,44 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
       }
     }
     const v = modelInput.value.trim();
-    if (!v) return;
-    if (!cur.models.includes(v)) {
-      cur.models.push(v);
+    if (v) {
+      // Manual add: typed a model name
+      if (!cur.models.includes(v)) {
+        cur.models.push(v);
+        renderModels(cur.models);
+      }
+      modelInput.value = '';
+      modelInput.focus();
+    } else {
+      // Auto-fetch: input empty, try to get models from API
+      modelInput.placeholder = '⏳ 获取模型列表...';
+      modelInput.style.borderColor = `${c1}60`;
+      const models = await fetchAvailableModels();
+      if (models.length === 0) {
+        modelInput.placeholder = '⚠ 未能获取模型列表，请手动输入';
+        modelInput.style.borderColor = 'rgba(255,160,0,0.5)';
+        setTimeout(() => {
+          modelInput.placeholder = '输入模型名，回车添加';
+          modelInput.style.borderColor = 'rgba(255,255,255,0.1)';
+        }, 3000);
+        return;
+      }
+      // Merge new models
+      let added = 0;
+      models.forEach(m => {
+        if (!cur!.models.includes(m)) {
+          cur!.models.push(m);
+          added++;
+        }
+      });
       renderModels(cur.models);
+      modelInput.placeholder = added > 0 ? `✓ 添加了 ${added} 个模型` : '✓ 模型已是最新';
+      modelInput.style.borderColor = 'rgba(0,212,80,0.4)';
+      setTimeout(() => {
+        modelInput.placeholder = '输入模型名，回车添加';
+        modelInput.style.borderColor = 'rgba(255,255,255,0.1)';
+      }, 2000);
     }
-    modelInput.value = '';
-    modelInput.focus();
   }
 
   function rebuildPool(): void {
