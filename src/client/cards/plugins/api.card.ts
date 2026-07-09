@@ -15,28 +15,72 @@ interface Provider {
   apiKey: string;
   models: string[];
 }
+const PROVIDERS_PATH = '.kfmv4/providers.json';
+const STATE_PATH = '.kfmv4/state.json';
 
-// ====== 工具函数 ======
+// ====== 持久化（文件优先，localStorage 缓存） ======
 
-function uid(): string {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+async function readFile(path: string): Promise<string | null> {
+  try {
+    const res = await fetch('/api/read', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path }),
+    });
+    const data = await res.json();
+    return data.content ?? null;
+  } catch { return null; }
 }
 
-function loadProviders(): Provider[] {
+async function writeFile(path: string, content: string): Promise<void> {
+  try {
+    await fetch('/api/write', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path, content }),
+    });
+  } catch { /* silent */ }
+}
+
+async function loadProviders(): Promise<Provider[]> {
+  const content = await readFile(PROVIDERS_PATH);
+  if (content) {
+    try {
+      const ps: Provider[] = JSON.parse(content);
+      localStorage.setItem('kfm-providers', JSON.stringify(ps));
+      return ps;
+    } catch {}
+  }
   try { return JSON.parse(localStorage.getItem('kfm-providers') || '[]'); }
   catch { return []; }
 }
 
-function saveProviders(ps: Provider[]): void {
+async function saveProviders(ps: Provider[]): Promise<void> {
   localStorage.setItem('kfm-providers', JSON.stringify(ps));
+  await writeFile(PROVIDERS_PATH, JSON.stringify(ps, null, 2));
 }
 
-function loadCurrentId(): string {
+async function loadCurrentId(): Promise<string> {
+  const content = await readFile(STATE_PATH);
+  if (content) {
+    try {
+      const s = JSON.parse(content);
+      if (s.currentId) {
+        localStorage.setItem('kfm-api-current', s.currentId);
+        return s.currentId;
+      }
+    } catch {}
+  }
   return localStorage.getItem('kfm-api-current') || '';
 }
 
-function saveCurrentId(id: string): void {
+async function saveCurrentId(id: string): Promise<void> {
   localStorage.setItem('kfm-api-current', id);
+  await writeFile(STATE_PATH, JSON.stringify({ currentId: id }));
+}
+
+function uid(): string {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 }
 
 // ====== DOM 辅助 ======
@@ -95,20 +139,19 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
     return providers.find(p => p.id === currentId);
   }
 
-  function commitCurrent(): void {
+  async function commitCurrent(): Promise<void> {
     let cur = getCurrent();
     if (!cur) {
-      // Auto-create a provider from current field values
       cur = { id: uid(), name: nameEl.value.trim(), baseUrl: urlEl.value.trim(), apiKey: keyEl.value.trim(), models: [] };
       providers.push(cur);
       currentId = cur.id;
-      saveCurrentId(currentId);
+      await saveCurrentId(currentId);
     } else {
       cur.name = nameEl.value.trim();
       cur.baseUrl = urlEl.value.trim();
       cur.apiKey = keyEl.value.trim();
     }
-    saveProviders(providers);
+    await saveProviders(providers);
   }
 
   function fillEditor(p: Provider | null): void {
@@ -170,7 +213,7 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
   async function addModel(): Promise<void> {
     let cur = getCurrent();
     if (!cur) {
-      commitCurrent();
+      await commitCurrent();
       cur = getCurrent();
       if (!cur) {
         modelInput.placeholder = '⚠ 请先填写名称和地址';
@@ -336,7 +379,7 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
   }
 
   return {
-    activate(contentEl, card) {
+    async activate(contentEl, card) {
       c1 = card?.accents?.color1 || '#00d4ff';
       c2 = card?.accents?.color2 || '#7c3aed';
       const { bodyEl } = buildCardLayout(contentEl, 'API', c1, c2);
@@ -536,11 +579,11 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
       scrollArea.appendChild(poolEl);
 
       // === Init ===
-      providers = loadProviders();
-      currentId = loadCurrentId();
+      providers = await loadProviders();
+      currentId = await loadCurrentId();
       if (!currentId && providers.length > 0) {
         currentId = providers[0].id;
-        saveCurrentId(currentId);
+        await saveCurrentId(currentId);
       }
       rebuildPool();
       fillEditor(getCurrent() || null);
