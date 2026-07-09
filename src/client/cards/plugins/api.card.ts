@@ -118,7 +118,7 @@ function uid(): string {
 
 function inputStyle(): Record<string, string> {
   return {
-    fontSize: '11px',
+    fontSize: 'var(--card-font-size, 11px)',
     padding: '4px 8px',
     borderRadius: '6px',
     border: '1px solid rgba(255,255,255,0.1)',
