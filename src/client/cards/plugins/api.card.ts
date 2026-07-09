@@ -273,14 +273,14 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
       c1 = card?.accents?.color1 || '#00d4ff';
       c2 = card?.accents?.color2 || '#7c3aed';
       const { bodyEl } = buildCardLayout(contentEl, 'API', c1, c2);
-      bodyEl.style.cssText = 'flex:1;display:flex;flex-direction:column;overflow:hidden;padding:0 10px';
+      bodyEl.style.cssText = 'flex:1;display:flex;flex-direction:column;overflow:hidden;padding:8px 10px 4px';
 
       const scrollArea = document.createElement('div');
       scrollArea.style.cssText = 'flex:1;overflow-y:auto;overflow-x:hidden;touch-action:pan-y';
 
       // === Editor Card ===
       const inner = document.createElement('div');
-      inner.style.cssText = `border-radius:10px;padding:10px 12px 12px;background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,linear-gradient(135deg,${c2} 30%,${c1} 70%) border-box;border:1px solid transparent;border-left-width:3px`;
+      inner.style.cssText = `border-radius:10px;padding:10px 12px 12px;margin-top:6px;background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,linear-gradient(135deg,${c2} 30%,${c1} 70%) border-box;border:1px solid transparent;border-left-width:3px`;
 
       // --- Current Provider Selector ---
       const selRow = document.createElement('div');
@@ -399,7 +399,7 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
 
       // === Divider ===
       const dv = document.createElement('div');
-      dv.style.cssText = `height:1px;background:linear-gradient(90deg,${c1} 0%,${c2} 100%);margin:10px 0;flex-shrink:0`;
+      dv.style.cssText = `height:1px;background:linear-gradient(90deg,${c1} 0%,${c2} 100%);margin-top:25px;margin-bottom:10px;flex-shrink:0`;
       scrollArea.appendChild(dv);
 
       // === Provider Pool Header ===
