@@ -80,7 +80,9 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
   let c1 = '#00d4ff', c2 = '#7c3aed';
 
   // DOM refs
-  let selEl!: HTMLSelectElement;
+  let selTriggerEl!: HTMLDivElement;
+  let selPanelEl!: HTMLDivElement;
+  let selTriggerText!: HTMLSpanElement;
   let nameEl!: HTMLInputElement;
   let urlEl!: HTMLInputElement;
   let keyEl!: HTMLInputElement;
@@ -223,16 +225,11 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
 
   function rebuildPool(): void {
     poolEl.innerHTML = '';
-    selEl.innerHTML = '';
+    // Update trigger text
+    const cur = getCurrent();
+    selTriggerText.textContent = cur?.name || '(无)';
 
     providers.forEach(p => {
-      // Selector option
-      const opt = document.createElement('option');
-      opt.value = p.id;
-      opt.textContent = p.name || '(unnamed)';
-      if (p.id === currentId) opt.selected = true;
-      selEl.appendChild(opt);
-
       // Pool row
       const row = document.createElement('div');
       row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-radius:6px;margin-bottom:3px;background:rgba(255,255,255,0.03)';
@@ -358,19 +355,75 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
       const selLabel = document.createElement('div');
       selLabel.textContent = '当前 Provider';
       selLabel.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.75);flex-shrink:0;margin-right:8px';
-      selEl = document.createElement('select');
-      Object.assign(selEl.style, {
-        fontSize: '11px', padding: '3px 6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)',
-        background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.85)', outline: 'none', flex: '1', minWidth: '0', maxWidth: '200px',
-      });
-      selEl.onchange = () => {
-        currentId = selEl.value;
+      selRow.appendChild(selLabel);
+
+      // Custom dropdown trigger
+      const selWrapper = document.createElement('div');
+      selWrapper.style.cssText = 'position:relative;flex:1;min-width:0';
+      selTriggerEl = document.createElement('div');
+      selTriggerEl.style.cssText = 'font-size:11px;padding:3px 6px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.85);cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between';
+      selTriggerText = document.createElement('span');
+      selTriggerText.textContent = '(无)';
+      const selArrow = document.createElement('span');
+      selArrow.textContent = '▾';
+      selArrow.style.cssText = 'font-size:8px;opacity:0.5;margin-left:4px';
+      selTriggerEl.appendChild(selTriggerText);
+      selTriggerEl.appendChild(selArrow);
+
+      // Dropdown panel (fixed position, appears below trigger)
+      selPanelEl = document.createElement('div');
+      selPanelEl.style.cssText = 'position:fixed;z-index:9999;display:none;border-radius:8px;padding:4px;background:rgba(20,16,32,0.96);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.1);overflow:hidden;min-width:120px';
+      bodyEl.appendChild(selPanelEl);
+
+      let panelOpen = false;
+      const openPanel = () => {
+        selPanelEl.innerHTML = '';
+        providers.forEach(p => {
+          const item = document.createElement('div');
+          const isCur = p.id === currentId;
+          item.style.cssText = `padding:5px 8px;border-radius:4px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;color:${isCur ? c1 : 'rgba(255,255,255,0.8)'}`;
+          item.onmouseenter = () => { item.style.background = 'rgba(255,255,255,0.06)'; };
+          item.onmouseleave = () => { item.style.background = ''; };
+          const ns = document.createElement('span');
+          ns.textContent = p.name || '(unnamed)';
+          item.appendChild(ns);
+          if (isCur) {
+            const ck = document.createElement('span');
+            ck.textContent = '✓';
+            ck.style.cssText = `font-size:9px;color:${c1}`;
+            item.appendChild(ck);
+          }
+          item.onclick = (ev: PointerEvent) => { ev.stopPropagation(); selectProvider(p.id); };
+          selPanelEl.appendChild(item);
+        });
+        const r = selTriggerEl.getBoundingClientRect();
+        selPanelEl.style.left = r.left + 'px';
+        selPanelEl.style.top = r.bottom + 'px';
+        selPanelEl.style.minWidth = Math.max(r.width, 120) + 'px';
+        selPanelEl.style.display = 'block';
+        panelOpen = true;
+      };
+      const closePanel = () => { selPanelEl.style.display = 'none'; panelOpen = false; };
+      const selectProvider = (id: string) => {
+        currentId = id;
         saveCurrentId(currentId);
         fillEditor(getCurrent() || null);
         rebuildPool();
+        closePanel();
       };
-      selRow.appendChild(selLabel);
-      selRow.appendChild(selEl);
+
+      selTriggerEl.onclick = (e: PointerEvent) => {
+        e.stopPropagation();
+        panelOpen ? closePanel() : openPanel();
+      };
+      document.addEventListener('pointerdown', (e: PointerEvent) => {
+        if (panelOpen && !selPanelEl.contains(e.target as Node) && e.target !== selTriggerEl) {
+          closePanel();
+        }
+      });
+
+      selWrapper.appendChild(selTriggerEl);
+      selRow.appendChild(selWrapper);
       inner.appendChild(selRow);
 
       // --- Name ---
