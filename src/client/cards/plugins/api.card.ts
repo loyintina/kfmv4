@@ -21,11 +21,13 @@ const STATE_PATH = 'kfmv4/.kfmv4/state.json';
 // ====== 持久化（文件优先，localStorage 缓存） ======
 
 // Detect API prefix for nginx reverse proxy support
-// When accessed via /kfmv4/, the API is at /kfmv4/api/files/read instead of /api/files/read
-const API_FILES_PREFIX = (() => {
+// When accessed via /kfmv4/, APIs are at /kfmv4/api/... instead of /api/...
+const API_BASE = (() => {
   const base = window.location.pathname.replace(/\/+$/, '');
-  return base + '/api/files/';
+  return base + '/api/';
 })();
+const API_FILES_PREFIX = API_BASE + 'files/';
+const API_PROXY = API_BASE + 'proxy/fetch';
 
 async function readFile(path: string): Promise<string | null> {
   try {
@@ -226,7 +228,7 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
     const key = keyEl.value.trim();
     if (!baseUrl || !key) return [];
     try {
-      const res = await fetch('/api/proxy/fetch', {
+      const res = await fetch(API_PROXY, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -388,7 +390,7 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
     testBtn.textContent = '⏳ 测试中...';
     testBtn.style.cssText = `padding:3px 10px;border-radius:6px;font-size:var(--card-font-size,10px);font-weight:600;cursor:default;user-select:none;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.4);background:transparent;flex:1;text-align:center`;
     try {
-      const res = await fetch('/api/proxy/fetch', {
+      const res = await fetch(API_PROXY, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -420,20 +422,17 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
       c1 = card?.accents?.color1 || '#00d4ff';
       c2 = card?.accents?.color2 || '#7c3aed';
       const { bodyEl } = buildCardLayout(contentEl, 'API', c1, c2);
-      bodyEl.style.cssText = 'flex:1;display:flex;flex-direction:column;overflow:hidden;padding:8px 10px 4px';
-
-      const scrollArea = document.createElement('div');
-      scrollArea.style.cssText = 'flex:1;overflow-y:auto;overflow-x:hidden;touch-action:pan-y';
-      // 加载存储的字号偏好
+      // 加载存储的字号偏好（设在 bodyEl 上，避免 _renderFloatingContent 覆盖 contentEl.style）
       const storedFontSize = localStorage.getItem('kfm-fontsize-api');
       if (storedFontSize) {
         try {
           const parsed = JSON.parse(storedFontSize);
           if (typeof parsed.fontSize === 'number') {
-            contentEl.style.setProperty('--card-font-size', parsed.fontSize + 'px');
+            bodyEl.style.setProperty('--card-font-size', parsed.fontSize + 'px');
           }
         } catch { /* ignore */ }
       }
+
 
       // === Editor Card ===
       const inner = document.createElement('div');
