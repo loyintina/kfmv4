@@ -222,22 +222,22 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
   }
 
   async function fetchAvailableModels(): Promise<string[]> {
-    const url = urlEl.value.trim();
+    const baseUrl = urlEl.value.trim();
     const key = keyEl.value.trim();
-    if (!url || !key) return [];
+    if (!baseUrl || !key) return [];
     try {
-      const res = await fetch(url + '/models', {
-        headers: { 'Authorization': `Bearer ${key}` },
-        signal: AbortSignal.timeout(5000),
+      const res = await fetch('/api/proxy/fetch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: baseUrl + '/models',
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${key}` },
+        }),
       });
-      if (!res.ok) return [];
-      const data = await res.json();
-      // OpenAI format: { data: [{ id: string }, ...] }
-      // DeepSeek format: same
-      if (data?.data && Array.isArray(data.data)) {
-        return data.data.map((m: { id: string }) => m.id).filter(Boolean);
-      }
-      return [];
+      const result = await res.json();
+      if (!result.ok || !result.data?.data) return [];
+      return result.data.data.map((m: { id: string }) => m.id).filter(Boolean);
     } catch { return []; }
   }
 
@@ -388,15 +388,21 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
     testBtn.textContent = '⏳ 测试中...';
     testBtn.style.cssText = `padding:3px 10px;border-radius:6px;font-size:var(--card-font-size,10px);font-weight:600;cursor:default;user-select:none;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.4);background:transparent;flex:1;text-align:center`;
     try {
-      const res = await fetch(url + '/models', {
-        headers: { 'Authorization': `Bearer ${key}` },
-        signal: AbortSignal.timeout(5000),
+      const res = await fetch('/api/proxy/fetch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: url + '/models',
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${key}` },
+        }),
       });
-      if (res.ok) {
+      const result = await res.json();
+      if (result.ok) {
         testBtn.textContent = '✓ 连接成功';
         testBtn.style.cssText = `padding:3px 10px;border-radius:6px;font-size:var(--card-font-size,10px);font-weight:600;cursor:default;user-select:none;border:1px solid rgba(0,212,80,0.4);color:rgba(0,212,80,0.9);background:transparent;flex:1;text-align:center`;
       } else {
-        testBtn.textContent = `✗ ${res.status} ${res.statusText}`;
+        testBtn.textContent = `✗ ${result.status} ${result.data?.error?.message || ''}`;
         testBtn.style.cssText = `padding:3px 10px;border-radius:6px;font-size:var(--card-font-size,10px);font-weight:600;cursor:default;user-select:none;border:1px solid rgba(255,80,80,0.4);color:rgba(255,80,80,0.9);background:transparent;flex:1;text-align:center`;
       }
     } catch {

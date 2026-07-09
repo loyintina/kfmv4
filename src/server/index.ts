@@ -242,7 +242,31 @@ function setupApiRoutes(router: express.Router) {
   router.get('/system/info', (_req: express.Request, res: express.Response) => {
     res.json({ user: process.env.USER || 'root', home: ROOT_DIR, cwd: process.cwd() });
   });
+
+  // AI API 代理：绕过浏览器跨域限制
+  router.post('/proxy/fetch', async (req: express.Request, res: express.Response) => {
+    try {
+      const { url, method, headers, body } = req.body;
+      if (!url) { res.json({ error: '缺少 url 参数' }); return; }
+      if (method === 'GET') {
+        const response = await fetch(url, { headers });
+        const data = await response.json();
+        res.json({ status: response.status, ok: response.ok, data });
+      } else {
+        const response = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json', ...headers },
+          body: typeof body === 'string' ? body : JSON.stringify(body),
+        });
+        const data = await response.json();
+        res.json({ status: response.status, ok: response.ok, data });
+      }
+    } catch (e: any) {
+      res.json({ error: e.message || '代理请求失败', status: 0, ok: false });
+    }
+  });
 }
+
 
 // API 路由（支持 /api 和 /kfmv4/api 两种前缀）
 const apiRoutes = express.Router();

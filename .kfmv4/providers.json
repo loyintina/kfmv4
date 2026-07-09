@@ -4,6 +4,19 @@
     "name": "OpenCode Go",
     "baseUrl": "https://opencode.ai/zen/go/v1",
     "apiKey": "sk-uazf8oopxYT29Apb9ZMWQ19imyJfRQRSRWxkzKImK6fsFcn4mpZfsZFTdhyCBPDf",
-    "models": ["deepseek-v4-flash", "deepseek-v4-pro", "glm-5.1", "glm-5.2", "kimi-k2.6", "kimi-k2.7-code", "mimo-v2.5", "mimo-v2.5-pro", "minimax-m2.7", "minimax-m3", "qwen3.6-plus", "qwen3.7-max", "qwen3.7-plus"]
+    "models": [
+      "deepseek-v4-flash",
+      "deepseek-v4-pro",
+      "glm-5.1",
+      "glm-5.2",
+      "kimi-k2.6",
+      "kimi-k2.7-code",
+      "mimo-v2.5",
+      "mimo-v2.5-pro",
+      "minimax-m2.7",
+      "minimax-m3",
+      "qwen3.7-max",
+      "qwen3.7-plus"
+    ]
   }
 ]
