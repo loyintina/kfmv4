@@ -20,31 +20,40 @@ const STATE_PATH = 'kfmv4/.kfmv4/state.json';
 
 // ====== 持久化（文件优先，localStorage 缓存） ======
 
+// Detect API prefix for nginx reverse proxy support
+// When accessed via /kfmv4/, the API is at /kfmv4/api/files/read instead of /api/files/read
+const API_FILES_PREFIX = (() => {
+  const base = window.location.pathname.replace(/\/+$/, '');
+  return base + '/api/files/';
+})();
+
 async function readFile(path: string): Promise<string | null> {
   try {
-    const res = await fetch('/api/files/read', {
+    const url = API_FILES_PREFIX + 'read';
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ path }),
     });
     const data = await res.json();
-    if (data.content) { log('[API] readFile OK:', path, 'size:', data.content.length); return data.content; }
-    log('[API] readFile: no content for', path);
+    if (data.content) { log('[API] readFile OK:', url, 'size:', data.content.length); return data.content; }
+    log('[API] readFile: no content for', url);
     return null;
-  } catch (e) { log('[API] readFile error:', path, e); return null; }
+  } catch (e) { log('[API] readFile error:', e); return null; }
 }
 
 async function writeFile(path: string, content: string): Promise<void> {
   try {
-    const res = await fetch('/api/files/write', {
+    const url = API_FILES_PREFIX + 'write';
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ path, content }),
     });
     const data = await res.json();
-    if (data.success) log('[API] writeFile OK:', path, 'size:', content.length);
-    else log('[API] writeFile failed:', path, data);
-  } catch (e) { log('[API] writeFile error:', path, e); }
+    if (data.success) log('[API] writeFile OK:', url, 'size:', content.length);
+    else log('[API] writeFile failed:', url, data);
+  } catch (e) { log('[API] writeFile error:', e); }
 }
 
 async function loadProviders(): Promise<Provider[]> {
