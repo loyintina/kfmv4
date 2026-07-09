@@ -121,7 +121,7 @@ kfm-preset-contexts ← 文件路径列表
 | 卡片 | 职责 | 阶段 |
 |------|------|------|
 | **对话卡**（现有 orb 面板） | 发消息、渲染回复、管理上下文池 | 立即做 |
-| **API 配置卡**（现有 settings.card） | 管理 Provider(url+key+模型列表) | 当前 |
+| **API 配置卡**（现有 api.card） | 管理 Provider(url+key+模型列表) | 当前 |
 | **Agent 设置卡**（待建） | 选当前用哪个模型、加载哪些预设上下文 | Phase II |
 | **工具卡**（待建） | 展示 AI 可用工具集 | Phase II |
 | **历史卡**（待建） | 浏览/搜索对话历史 | Phase III |
