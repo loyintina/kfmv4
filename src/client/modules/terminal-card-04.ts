@@ -444,10 +444,10 @@ const AUX_KEYS: AuxBarKey[] = [
   { label: 'TAB', value: '\t' },
   { label: 'CTRL', value: '' },
   { label: 'ALT', value: '' },
-  { label: '\u25B2',  value: '\x1b[A',   ctrlSeq: '\x1b[1;5A', altSeq: '\x1b[1;3A', ctrlAltSeq: '\x1b[1;7A' },
   { label: '\u25C0',  value: '\x1b[D',   ctrlSeq: '\x1b[1;5D', altSeq: '\x1b[1;3D', ctrlAltSeq: '\x1b[1;7D' },
-  { label: '\u25B6',  value: '\x1b[C',   ctrlSeq: '\x1b[1;5C', altSeq: '\x1b[1;3C', ctrlAltSeq: '\x1b[1;7C' },
+  { label: '\u25B2',  value: '\x1b[A',   ctrlSeq: '\x1b[1;5A', altSeq: '\x1b[1;3A', ctrlAltSeq: '\x1b[1;7A' },
   { label: '\u25BC',  value: '\x1b[B',   ctrlSeq: '\x1b[1;5B', altSeq: '\x1b[1;3B', ctrlAltSeq: '\x1b[1;7B' },
+  { label: '\u25B6',  value: '\x1b[C',   ctrlSeq: '\x1b[1;5C', altSeq: '\x1b[1;3C', ctrlAltSeq: '\x1b[1;7C' },
 ];
 
 /** 在全屏终端容器底部创建辅助按键栏。仅在 fullscreen 模式下可见。 */

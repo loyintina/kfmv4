@@ -359,6 +359,8 @@ registerCardType({
 - [ ] `npm run check` 通过？
 - [ ] `npm test` 通过？
 - [ ] 卡片在浏览器中可正确交互？
+- [ ] 所有文字是否使用 `var(--card-font-size,Xpx)` 替代硬编码 `font-size:Xpx`？（否则双指缩放无效）
+
 
 ---
 
@@ -436,6 +438,21 @@ const accent = card?.accents?.color1;                         // 卡片主色
 | 内部圆角 | `6px`–`10px` | 卡片内控件 |
 | 行间距 | `6px`–`10px` | 纵向排列间距 |
 | body 内边距 | `0 10px` | `buildCardLayout` 自带 |
+| 双指缩放字号 | `font-size:var(--card-font-size,Xpx)` | 替代硬编码 `font-size:Xpx`，使内容响应双指缩放手势 |
+
+> **必须**：卡片内所有文字字号使用 `var(--card-font-size,Xpx)` 替代硬编码 `font-size:Xpx`。X 是 fallback 默认值。
+> 全局双指缩放手势（`gestures.ts` 中的 `pinch-zoom`）通过 CSS 变量 `--card-font-size` 调节所有卡片字号。
+> 不使用 `--card-font-size` 的卡片（如 API 卡曾犯的错误）双指缩放无效。
+>
+> 加载存储字号：
+> ```typescript
+> const stored = localStorage.getItem('kfm-fontsize-' + typeId);
+> if (stored) {
+>   const parsed = JSON.parse(stored);
+>   if (typeof parsed.fontSize === 'number')
+>     contentEl.style.setProperty('--card-font-size', parsed.fontSize + 'px');
+> }
+> ```
 
 ### 10.4 滚动与手势
 

@@ -135,7 +135,7 @@ function mkRow(label: string): { row: HTMLElement; inputWrap: HTMLElement } {
   row.style.cssText = 'display:flex;align-items:center;margin-bottom:8px';
   const lbl = document.createElement('div');
   lbl.textContent = label;
-  lbl.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.75);flex-shrink:0;margin-right:8px;width:52px';
+  lbl.style.cssText = 'font-size:var(--card-font-size,11px);color:rgba(255,255,255,0.75);flex-shrink:0;margin-right:8px;width:52px';
   const wrap = document.createElement('div');
   wrap.style.cssText = 'display:flex;flex:1;min-width:0';
   row.appendChild(lbl);
@@ -144,7 +144,7 @@ function mkRow(label: string): { row: HTMLElement; inputWrap: HTMLElement } {
 }
 
 function btnStyle(color: string): string {
-  return `padding:3px 10px;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;user-select:none;border:1px solid ${color}40;color:${color};background:transparent;flex:1;text-align:center`;
+  return `padding:3px 10px;border-radius:6px;font-size:var(--card-font-size,10px);font-weight:600;cursor:pointer;user-select:none;border:1px solid ${color}40;color:${color};background:transparent;flex:1;text-align:center`;
 }
 
 // ====== Handler ======
@@ -203,13 +203,13 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
     modelTagsEl.innerHTML = '';
     models.forEach(m => {
       const tag = document.createElement('span');
-      tag.style.cssText = `display:inline-flex;align-items:center;gap:2px;padding:1px 5px;border-radius:4px;font-size:10px;background:${c1}20;color:rgba(255,255,255,0.8);margin:2px 4px 2px 0`;
+      tag.style.cssText = `display:inline-flex;align-items:center;gap:2px;padding:1px 5px;border-radius:4px;font-size:var(--card-font-size,10px);background:${c1}20;color:rgba(255,255,255,0.8);margin:2px 4px 2px 0`;
       const label = document.createElement('span');
       label.textContent = m;
       tag.appendChild(label);
       const x = document.createElement('span');
       x.textContent = '×';
-      x.style.cssText = 'cursor:pointer;opacity:0.5;font-size:12px;line-height:1;margin-left:2px;padding:0 1px';
+      x.style.cssText = 'cursor:pointer;opacity:0.5;font-size:var(--card-font-size,12px);line-height:1;margin-left:2px;padding:0 1px';
       x.onclick = () => {
         const cur = getCurrent();
         if (!cur) return;
@@ -313,17 +313,17 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
 
       const dot = document.createElement('span');
       dot.textContent = p.id === currentId ? '◉' : '○';
-      dot.style.cssText = `font-size:9px;flex-shrink:0;color:${p.id === currentId ? c1 : 'rgba(255,255,255,0.25)'}`;
+      dot.style.cssText = `font-size:var(--card-font-size,9px);flex-shrink:0;color:${p.id === currentId ? c1 : 'rgba(255,255,255,0.25)'}`;
       left.appendChild(dot);
 
       const nm = document.createElement('span');
       nm.textContent = p.name || '(unnamed)';
-      nm.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.8);overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+      nm.style.cssText = 'font-size:var(--card-font-size,11px);color:rgba(255,255,255,0.8);overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
       left.appendChild(nm);
 
       const cnt = document.createElement('span');
       cnt.textContent = `${p.models.length} 模型`;
-      cnt.style.cssText = 'font-size:9px;color:rgba(255,255,255,0.35);flex-shrink:0';
+      cnt.style.cssText = 'font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.35);flex-shrink:0';
       left.appendChild(cnt);
 
       const actions = document.createElement('div');
@@ -332,7 +332,7 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
       if (p.id !== currentId) {
         const setBtn = document.createElement('span');
         setBtn.textContent = '设为当前';
-        setBtn.style.cssText = `font-size:9px;cursor:pointer;color:${c1};padding:1px 4px;border-radius:3px`;
+        setBtn.style.cssText = `font-size:var(--card-font-size,9px);cursor:pointer;color:${c1};padding:1px 4px;border-radius:3px`;
         setBtn.onclick = () => {
           currentId = p.id;
           saveCurrentId(currentId);
@@ -344,7 +344,7 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
 
       const editBtn = document.createElement('span');
       editBtn.textContent = '编辑模型';
-      editBtn.style.cssText = 'font-size:9px;cursor:pointer;color:rgba(255,255,255,0.5);padding:1px 4px;border-radius:3px';
+      editBtn.style.cssText = 'font-size:var(--card-font-size,9px);cursor:pointer;color:rgba(255,255,255,0.5);padding:1px 4px;border-radius:3px';
       editBtn.onclick = () => {
         currentId = p.id;
         saveCurrentId(currentId);
@@ -357,7 +357,7 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
 
       const delBtn = document.createElement('span');
       delBtn.textContent = '删除';
-      delBtn.style.cssText = 'font-size:9px;cursor:pointer;color:rgba(255,80,80,0.7);padding:1px 4px;border-radius:3px';
+      delBtn.style.cssText = 'font-size:var(--card-font-size,9px);cursor:pointer;color:rgba(255,80,80,0.7);padding:1px 4px;border-radius:3px';
       delBtn.onclick = () => {
         providers = providers.filter(pp => pp.id !== p.id);
         if (currentId === p.id) {
@@ -381,12 +381,12 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
     const key = keyEl.value.trim();
     if (!url || !key) {
       testBtn.textContent = '⚠ 请先填地址和 Key';
-      testBtn.style.cssText = `padding:3px 10px;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;user-select:none;border:1px solid rgba(255,160,0,0.4);color:rgba(255,160,0,0.9);background:transparent;flex:1;text-align:center`;
+      testBtn.style.cssText = `padding:3px 10px;border-radius:6px;font-size:var(--card-font-size,10px);font-weight:600;cursor:pointer;user-select:none;border:1px solid rgba(255,160,0,0.4);color:rgba(255,160,0,0.9);background:transparent;flex:1;text-align:center`;
       setTimeout(() => { testBtn.style.cssText = btnStyle(c1); testBtn.textContent = '🔗 测试'; }, 2500);
       return;
     }
     testBtn.textContent = '⏳ 测试中...';
-    testBtn.style.cssText = `padding:3px 10px;border-radius:6px;font-size:10px;font-weight:600;cursor:default;user-select:none;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.4);background:transparent;flex:1;text-align:center`;
+    testBtn.style.cssText = `padding:3px 10px;border-radius:6px;font-size:var(--card-font-size,10px);font-weight:600;cursor:default;user-select:none;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.4);background:transparent;flex:1;text-align:center`;
     try {
       const res = await fetch(url + '/models', {
         headers: { 'Authorization': `Bearer ${key}` },
@@ -394,14 +394,14 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
       });
       if (res.ok) {
         testBtn.textContent = '✓ 连接成功';
-        testBtn.style.cssText = `padding:3px 10px;border-radius:6px;font-size:10px;font-weight:600;cursor:default;user-select:none;border:1px solid rgba(0,212,80,0.4);color:rgba(0,212,80,0.9);background:transparent;flex:1;text-align:center`;
+        testBtn.style.cssText = `padding:3px 10px;border-radius:6px;font-size:var(--card-font-size,10px);font-weight:600;cursor:default;user-select:none;border:1px solid rgba(0,212,80,0.4);color:rgba(0,212,80,0.9);background:transparent;flex:1;text-align:center`;
       } else {
         testBtn.textContent = `✗ ${res.status} ${res.statusText}`;
-        testBtn.style.cssText = `padding:3px 10px;border-radius:6px;font-size:10px;font-weight:600;cursor:default;user-select:none;border:1px solid rgba(255,80,80,0.4);color:rgba(255,80,80,0.9);background:transparent;flex:1;text-align:center`;
+        testBtn.style.cssText = `padding:3px 10px;border-radius:6px;font-size:var(--card-font-size,10px);font-weight:600;cursor:default;user-select:none;border:1px solid rgba(255,80,80,0.4);color:rgba(255,80,80,0.9);background:transparent;flex:1;text-align:center`;
       }
     } catch {
       testBtn.textContent = '✗ 连接失败';
-      testBtn.style.cssText = `padding:3px 10px;border-radius:6px;font-size:10px;font-weight:600;cursor:default;user-select:none;border:1px solid rgba(255,80,80,0.4);color:rgba(255,80,80,0.9);background:transparent;flex:1;text-align:center`;
+      testBtn.style.cssText = `padding:3px 10px;border-radius:6px;font-size:var(--card-font-size,10px);font-weight:600;cursor:default;user-select:none;border:1px solid rgba(255,80,80,0.4);color:rgba(255,80,80,0.9);background:transparent;flex:1;text-align:center`;
     }
     setTimeout(() => {
       testBtn.style.cssText = btnStyle(c1);
@@ -418,6 +418,16 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
 
       const scrollArea = document.createElement('div');
       scrollArea.style.cssText = 'flex:1;overflow-y:auto;overflow-x:hidden;touch-action:pan-y';
+      // 加载存储的字号偏好
+      const storedFontSize = localStorage.getItem('kfm-fontsize-api');
+      if (storedFontSize) {
+        try {
+          const parsed = JSON.parse(storedFontSize);
+          if (typeof parsed.fontSize === 'number') {
+            contentEl.style.setProperty('--card-font-size', parsed.fontSize + 'px');
+          }
+        } catch { /* ignore */ }
+      }
 
       // === Editor Card ===
       const inner = document.createElement('div');
@@ -428,19 +438,19 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
       selRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:8px';
       const selLabel = document.createElement('div');
       selLabel.textContent = '当前 Provider';
-      selLabel.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.75);flex-shrink:0;margin-right:8px';
+      selLabel.style.cssText = 'font-size:var(--card-font-size,11px);color:rgba(255,255,255,0.75);flex-shrink:0;margin-right:8px';
       selRow.appendChild(selLabel);
 
       // Custom dropdown trigger
       const selWrapper = document.createElement('div');
       selWrapper.style.cssText = 'position:relative;flex:1;min-width:0';
       selTriggerEl = document.createElement('div');
-      selTriggerEl.style.cssText = 'font-size:11px;padding:3px 6px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.85);cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between';
+      selTriggerEl.style.cssText = 'font-size:var(--card-font-size,11px);padding:3px 6px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.85);cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between';
       selTriggerText = document.createElement('span');
       selTriggerText.textContent = '(无)';
       const selArrow = document.createElement('span');
       selArrow.textContent = '▾';
-      selArrow.style.cssText = 'font-size:8px;opacity:0.5;margin-left:4px';
+      selArrow.style.cssText = 'font-size:var(--card-font-size,8px);opacity:0.5;margin-left:4px';
       selTriggerEl.appendChild(selTriggerText);
       selTriggerEl.appendChild(selArrow);
 
@@ -455,7 +465,7 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
         providers.forEach(p => {
           const item = document.createElement('div');
           const isCur = p.id === currentId;
-          item.style.cssText = `padding:5px 8px;border-radius:4px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;color:${isCur ? c1 : 'rgba(255,255,255,0.8)'}`;
+          item.style.cssText = `padding:5px 8px;border-radius:4px;font-size:var(--card-font-size,11px);cursor:pointer;display:flex;align-items:center;justify-content:space-between;color:${isCur ? c1 : 'rgba(255,255,255,0.8)'}`;
           item.onmouseenter = () => { item.style.background = 'rgba(255,255,255,0.06)'; };
           item.onmouseleave = () => { item.style.background = ''; };
           const ns = document.createElement('span');
@@ -464,7 +474,7 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
           if (isCur) {
             const ck = document.createElement('span');
             ck.textContent = '✓';
-            ck.style.cssText = `font-size:9px;color:${c1}`;
+            ck.style.cssText = `font-size:var(--card-font-size,9px);color:${c1}`;
             item.appendChild(ck);
           }
           item.onclick = (ev: PointerEvent) => { ev.stopPropagation(); selectProvider(p.id); };
@@ -530,7 +540,7 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
       // --- Models ---
       const ml = document.createElement('div');
       ml.textContent = '模型';
-      ml.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.75);margin-bottom:4px';
+      ml.style.cssText = 'font-size:var(--card-font-size,11px);color:rgba(255,255,255,0.75);margin-bottom:4px';
       inner.appendChild(ml);
 
       modelTagsEl = document.createElement('div');
@@ -548,7 +558,7 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
       };
       const addBtn = document.createElement('span');
       addBtn.textContent = '+';
-      addBtn.style.cssText = `font-size:14px;cursor:pointer;color:${c1};padding:2px 8px;border-radius:6px;border:1px solid ${c1}40;flex-shrink:0`;
+      addBtn.style.cssText = `font-size:var(--card-font-size,14px);cursor:pointer;color:${c1};padding:2px 8px;border-radius:6px;border:1px solid ${c1}40;flex-shrink:0`;
       addBtn.onclick = addModel;
       mar.appendChild(modelInput);
       mar.appendChild(addBtn);
@@ -602,7 +612,7 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
       // === Provider Pool Header ===
       const pt = document.createElement('div');
       pt.textContent = 'Provider 池';
-      pt.style.cssText = 'font-size:11px;font-weight:700;color:rgba(255,255,255,0.85);margin-bottom:6px;flex-shrink:0';
+      pt.style.cssText = 'font-size:var(--card-font-size,11px);font-weight:700;color:rgba(255,255,255,0.85);margin-bottom:6px;flex-shrink:0';
       scrollArea.appendChild(pt);
 
       poolEl = document.createElement('div');
