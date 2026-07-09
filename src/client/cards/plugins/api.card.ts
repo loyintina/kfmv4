@@ -15,14 +15,14 @@ interface Provider {
   apiKey: string;
   models: string[];
 }
-const PROVIDERS_PATH = '.kfmv4/providers.json';
-const STATE_PATH = '.kfmv4/state.json';
+const PROVIDERS_PATH = 'kfmv4/.kfmv4/providers.json';
+const STATE_PATH = 'kfmv4/.kfmv4/state.json';
 
 // ====== 持久化（文件优先，localStorage 缓存） ======
 
 async function readFile(path: string): Promise<string | null> {
   try {
-    const res = await fetch('/api/read', {
+    const res = await fetch('/api/files/read', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ path }),
@@ -34,7 +34,7 @@ async function readFile(path: string): Promise<string | null> {
 
 async function writeFile(path: string, content: string): Promise<void> {
   try {
-    await fetch('/api/write', {
+    await fetch('/api/files/write', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ path, content }),
