@@ -87,7 +87,7 @@ export function getFocusedCardRect(): DOMRect | undefined { return _cardEls[_foc
 export function animateStackPullFeedback(): void { _animateStackPullFeedback(); }
 
 /** 从卡片堆发射聚焦卡 → 浮卡模板 */
-export function launchFocusedCard(fullscreen?: boolean): void {
+export function launchFocusedCard(): void {
   _animateStackPullFeedback();
   const focusIdx = _focusIndex;
   const cardRect = getFocusedCardRect();
@@ -103,11 +103,7 @@ export function launchFocusedCard(fullscreen?: boolean): void {
     sourceX: cardRect.left, sourceY: cardRect.top,
     scatterBounds: { left: 8, top: 8, right: Math.round(window.innerWidth * 0.7), bottom: window.innerHeight - 56.5 },
     contentHandler: getCardType(getCardId(focusIdx))?.createHandler({}),
-    ...(fullscreen ? { startInFullscreen: true } : {}),
   });
-  
-  // 全屏发射时收起卡片堆
-  if (fullscreen) closeCardStack();
 }
 
 // ========== 配置 ==========
@@ -181,14 +177,16 @@ function createCard(index: number): HTMLElement {
   inner.innerHTML = ''
     + '<div class="stack-card-icon" style="width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;background:' + hexToRgba(cc.color1, 0.15) + ';color:' + cc.color1 + '">' + String(index + 1).padStart(2, '0') + '</div>'
     + (card.name ? '<div class="stack-card-name" style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + card.name + '</div>' : '');
+
+
+  el.appendChild(inner);
+
   el.addEventListener("click", (e) => {
     const idx = parseInt(el.dataset.index || "0", 10);
     if (idx !== _focusIndex) {
       _focusIndex = idx;
       updateFocus();
     }
-    // 点击直接发射全屏卡 + 收起卡片堆
-    launchFocusedCard(true);
   });
   return el;
 }
@@ -388,8 +386,9 @@ export function initCardStack(): void {
       if (_axisLock === 'none' && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
         _axisLock = Math.abs(dx) > Math.abs(dy) ? 'horizontal' : 'vertical';
       }
+
       if (_axisLock === 'horizontal') {
-        if (dx < -50 && _prevDx >= -50) { _prevDx = dx; launchFocusedCard(true); return; }
+        if (dx < -50 && _prevDx >= -50) { _prevDx = dx; launchFocusedCard(); return; }
         if (dx > 50 && _prevDx <= 50) { _prevDx = dx; closeCardStack(); return; }
         _prevDx = dx;
       } else if (_axisLock === 'vertical') {
