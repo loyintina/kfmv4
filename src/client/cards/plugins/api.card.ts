@@ -7,7 +7,7 @@
 
 import { registerCardType, type CardContentHandler } from '../../modules/card-registry.js';
 import { buildCardLayout } from '../../modules/floating-card.js';
-
+import { log } from '../../modules/logger.js';
 interface Provider {
   id: string;
   name: string;
@@ -28,55 +28,77 @@ async function readFile(path: string): Promise<string | null> {
       body: JSON.stringify({ path }),
     });
     const data = await res.json();
-    return data.content ?? null;
-  } catch { return null; }
+    if (data.content) { log('[API] readFile OK:', path, 'size:', data.content.length); return data.content; }
+    log('[API] readFile: no content for', path);
+    return null;
+  } catch (e) { log('[API] readFile error:', path, e); return null; }
 }
 
 async function writeFile(path: string, content: string): Promise<void> {
   try {
-    await fetch('/api/files/write', {
+    const res = await fetch('/api/files/write', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ path, content }),
     });
-  } catch { /* silent */ }
+    const data = await res.json();
+    if (data.success) log('[API] writeFile OK:', path, 'size:', content.length);
+    else log('[API] writeFile failed:', path, data);
+  } catch (e) { log('[API] writeFile error:', path, e); }
 }
 
 async function loadProviders(): Promise<Provider[]> {
+  log('[API] loadProviders: reading file');
   const content = await readFile(PROVIDERS_PATH);
   if (content) {
     try {
       const ps: Provider[] = JSON.parse(content);
       localStorage.setItem('kfm-providers', JSON.stringify(ps));
+      log('[API] loadProviders: from file, count:', ps.length);
       return ps;
-    } catch {}
+    } catch (e) { log('[API] loadProviders: parse error', e); }
   }
-  try { return JSON.parse(localStorage.getItem('kfm-providers') || '[]'); }
-  catch { return []; }
+  log('[API] loadProviders: falling back to localStorage');
+  try {
+    const ls = localStorage.getItem('kfm-providers');
+    if (ls) { const ps: Provider[] = JSON.parse(ls); log('[API] loadProviders: from localStorage, count:', ps.length); return ps; }
+    log('[API] loadProviders: localStorage also empty');
+    return [];
+  } catch { log('[API] loadProviders: localStorage parse error'); return []; }
 }
 
 async function saveProviders(ps: Provider[]): Promise<void> {
+  log('[API] saveProviders: count:', ps.length);
   localStorage.setItem('kfm-providers', JSON.stringify(ps));
+  log('[API] saveProviders: localStorage written');
   await writeFile(PROVIDERS_PATH, JSON.stringify(ps, null, 2));
+  log('[API] saveProviders: file written');
 }
 
 async function loadCurrentId(): Promise<string> {
+  log('[API] loadCurrentId: reading file');
   const content = await readFile(STATE_PATH);
   if (content) {
     try {
       const s = JSON.parse(content);
       if (s.currentId) {
         localStorage.setItem('kfm-api-current', s.currentId);
+        log('[API] loadCurrentId: from file:', s.currentId);
         return s.currentId;
       }
-    } catch {}
+    } catch (e) { log('[API] loadCurrentId: parse error', e); }
   }
-  return localStorage.getItem('kfm-api-current') || '';
+  log('[API] loadCurrentId: falling back to localStorage');
+  const id = localStorage.getItem('kfm-api-current') || '';
+  log('[API] loadCurrentId:', id || '(empty)');
+  return id;
 }
 
 async function saveCurrentId(id: string): Promise<void> {
+  log('[API] saveCurrentId:', id);
   localStorage.setItem('kfm-api-current', id);
   await writeFile(STATE_PATH, JSON.stringify({ currentId: id }));
+  log('[API] saveCurrentId: done');
 }
 
 function uid(): string {
@@ -578,9 +600,10 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
       poolEl.style.cssText = 'flex-shrink:0';
       scrollArea.appendChild(poolEl);
 
-      // === Init ===
+      log('[API] activate: starting init');
       providers = await loadProviders();
       currentId = await loadCurrentId();
+      log('[API] activate: loaded', providers.length, 'providers, current:', currentId);
       if (!currentId && providers.length > 0) {
         currentId = providers[0].id;
         await saveCurrentId(currentId);
