@@ -94,11 +94,18 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
   }
 
   function commitCurrent(): void {
-    const cur = getCurrent();
-    if (!cur) return;
-    cur.name = nameEl.value.trim();
-    cur.baseUrl = urlEl.value.trim();
-    cur.apiKey = keyEl.value.trim();
+    let cur = getCurrent();
+    if (!cur) {
+      // Auto-create a provider from current field values
+      cur = { id: uid(), name: nameEl.value.trim(), baseUrl: urlEl.value.trim(), apiKey: keyEl.value.trim(), models: [] };
+      providers.push(cur);
+      currentId = cur.id;
+      saveCurrentId(currentId);
+    } else {
+      cur.name = nameEl.value.trim();
+      cur.baseUrl = urlEl.value.trim();
+      cur.apiKey = keyEl.value.trim();
+    }
     saveProviders(providers);
   }
 
@@ -139,15 +146,19 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
   }
 
   function addModel(): void {
-    const cur = getCurrent();
+    let cur = getCurrent();
     if (!cur) {
-      modelInput.placeholder = '⚠ 请先选择或新建 Provider';
-      modelInput.style.borderColor = 'rgba(255,160,0,0.5)';
-      setTimeout(() => {
-        modelInput.placeholder = '输入模型名，回车添加';
-        modelInput.style.borderColor = 'rgba(255,255,255,0.1)';
-      }, 2000);
-      return;
+      commitCurrent();
+      cur = getCurrent();
+      if (!cur) {
+        modelInput.placeholder = '⚠ 请先填写名称和地址';
+        modelInput.style.borderColor = 'rgba(255,160,0,0.5)';
+        setTimeout(() => {
+          modelInput.placeholder = '输入模型名，回车添加';
+          modelInput.style.borderColor = 'rgba(255,255,255,0.1)';
+        }, 2000);
+        return;
+      }
     }
     const v = modelInput.value.trim();
     if (!v) return;
