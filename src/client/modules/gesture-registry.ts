@@ -213,7 +213,7 @@ export class GestureRegistry {
       if (handler.condition && !handler.condition()) continue;
       if (!this._matchTarget(handler, target, pointers[0])) continue;
 
-      log('[gesture] pinch start, handler:', handler.id, 'distance:', distance);
+      // log('[gesture] pinch start, handler:', handler.id, 'distance:', distance);
       this._pinchState = { handler, initialDistance: distance, initialScale: 1, target };
       handler.onPinchStart(pointers[0], 1);
       return true;
@@ -255,7 +255,7 @@ export class GestureRegistry {
       if (handler.onBeforeStart && !handler.onBeforeStart(e)) continue;
 
       // 调试日志：检查哪个处理器匹配了触摸
-      log('[gesture] matched handler:', handler.id, 'target:', target.className, 'tagName:', target.tagName);
+      // log('[gesture] matched handler:', handler.id, 'target:', target.className, 'tagName:', target.tagName);
 
       // 锁定该处理器
       this._active = {
@@ -316,7 +316,7 @@ export class GestureRegistry {
     const elapsed = Date.now() - active.startTime;
 
     // 调试日志：检查手势移动
-    log('[gesture] MOVE, dx:', dx, 'dy:', dy, 'handler:', active.handler.id);
+      // log('[gesture] MOVE, dx:', dx, 'dy:', dy, 'handler:', active.handler.id);
 
     // 长按检测：移动超过 10px 取消计时器（让路给滑动/滚动）
     if (active.longPressTimer && !active.longPressConsumed && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
@@ -372,7 +372,7 @@ export class GestureRegistry {
     const elapsed = Date.now() - active.startTime;
 
     // 调试日志：检查手势结束类型
-    log('[gesture] END, type:', e.type, 'dx:', dx, 'dy:', dy, 'handler:', active.handler.id);
+      // log('[gesture] END, type:', e.type, 'dx:', dx, 'dy:', dy, 'handler:', active.handler.id);
 
     if (this._shouldStop(active.handler, 'end')) e.stopPropagation();
     active.handler.onEnd?.(e, dx, dy, elapsed);
