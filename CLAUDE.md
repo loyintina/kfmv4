@@ -50,9 +50,9 @@ docs/
 ├── KFM_V4_INVARIANTS.md     # 修改约束协议：心法原则+自查清单（改代码前必读）
 ├── DIAGNOSTICS.md           # 诊断手册：隐性契约 + 排查流程 + 根因案例库（遇到 bug 先翻）
 ├── PRINCIPLES.md            # 约束全表：心法 / 架构 / 契约一站查找
-├── PROJECT_ASSESSMENT.md    # 项目把控理解与建议
 ├── design/                  # 设计文档
-│   └── VISION_AND_ROADMAP.md        # 远景：核心理念 + 演进路线（方向性，保留）
+│   ├── VISION_AND_ROADMAP.md        # 远景：核心理念 + 演进路线（方向性，保留）
+│   └── CONTEXT_ASSEMBLY_SPEC.md     # 上下文拼接与 AI 工作空间（draft）
 └── archive/                 # 历史归档
     ├── README.md            # 子目录导览
     ├── handoffs/            # 版本交接记录
