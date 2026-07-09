@@ -139,10 +139,18 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
   }
 
   function addModel(): void {
+    const cur = getCurrent();
+    if (!cur) {
+      modelInput.placeholder = '⚠ 请先选择或新建 Provider';
+      modelInput.style.borderColor = 'rgba(255,160,0,0.5)';
+      setTimeout(() => {
+        modelInput.placeholder = '输入模型名，回车添加';
+        modelInput.style.borderColor = 'rgba(255,255,255,0.1)';
+      }, 2000);
+      return;
+    }
     const v = modelInput.value.trim();
     if (!v) return;
-    const cur = getCurrent();
-    if (!cur) return;
     if (!cur.models.includes(v)) {
       cur.models.push(v);
       renderModels(cur.models);
