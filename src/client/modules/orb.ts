@@ -530,11 +530,10 @@ export function initOrb(): void {
             url: p.baseUrl + '/chat/completions',
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + p.apiKey, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
               model: p.models[0] || 'deepseek-v4-flash',
               messages: [{ role: 'user', content: text }],
-              max_tokens: 2048,
-            }),
+              max_tokens: 8192,
+              reasoning_effort: 'max',
           }),
         });
         const result = await apiRes.json();
