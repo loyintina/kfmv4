@@ -450,14 +450,14 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
 
       // Custom dropdown trigger
       const selWrapper = document.createElement('div');
-      selWrapper.style.cssText = 'position:relative;flex:1;min-width:0';
+      selWrapper.style.cssText = 'position:relative;flex-shrink:0';
       selTriggerEl = document.createElement('div');
       selTriggerEl.style.cssText = 'font-size:var(--card-font-size,11px);padding:0.3em 0.6em;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.85);cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between';
       selTriggerText = document.createElement('span');
       selTriggerText.textContent = '(无)';
       const selArrow = document.createElement('span');
       selArrow.textContent = '\u25BC';
-      selArrow.style.cssText = 'font-size:var(--card-font-size,14px);opacity:0.65;margin-left:6px';
+      selArrow.style.cssText = 'font-size:var(--card-font-size,10px);opacity:0.6;margin-left:4px';
       selTriggerEl.appendChild(selTriggerText);
       selTriggerEl.appendChild(selArrow);
 
@@ -616,15 +616,17 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
       dv.style.cssText = `height:1px;background:linear-gradient(90deg,${c1} 0%,${c2} 100%);margin-top:25px;margin-bottom:10px;flex-shrink:0`;
       scrollArea.appendChild(dv);
 
-      // === Provider Pool Header ===
+      // === Provider Pool Card ===
+      const poolCard = document.createElement('div');
+      poolCard.style.cssText = `border-radius:10px;padding:8px 12px;background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,linear-gradient(135deg,${c2} 30%,${c1} 70%) border-box;border:1px solid transparent;border-left-width:3px`;
       const pt = document.createElement('div');
       pt.textContent = 'Provider 池';
       pt.style.cssText = 'font-size:var(--card-font-size,11px);font-weight:700;color:rgba(255,255,255,0.85);margin-bottom:6px;flex-shrink:0';
-      scrollArea.appendChild(pt);
-
+      poolCard.appendChild(pt);
       poolEl = document.createElement('div');
       poolEl.style.cssText = 'flex-shrink:0';
-      scrollArea.appendChild(poolEl);
+      poolCard.appendChild(poolEl);
+      scrollArea.appendChild(poolCard);
 
       log('[API] activate: starting init');
       providers = await loadProviders();
