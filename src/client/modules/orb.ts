@@ -222,7 +222,61 @@ function buildPanelContent(): void {
 <div class="orb-panel-content" style="
   flex:1;overflow-y:auto;padding:12px 14px;min-height:0
 "></div>
+<div class="orb-model-bar" style="
+  display:flex;gap:6px;padding:6px 10px;flex-shrink:0;
+  border-top:1px solid rgba(255,255,255,0.06)
+">
+  <select id="orb-provider-select" style="
+    flex:1;font-size:10px;padding:3px 4px;border-radius:6px;
+    border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);
+    color:rgba(255,255,255,0.85);outline:none;min-width:0
+  "></select>
+  <select id="orb-model-select" style="
+    flex:1;font-size:10px;padding:3px 4px;border-radius:6px;
+    border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);
+    color:rgba(255,255,255,0.85);outline:none;min-width:0
+  "></select>
+</div>
   `;
+
+  // 填充下拉框
+  const base = window.location.pathname.replace(/\/+$/, '') + '/api/';
+  const provSel = document.getElementById('orb-provider-select') as HTMLSelectElement | null;
+  const modelSel = document.getElementById('orb-model-select') as HTMLSelectElement | null;
+  if (!provSel || !modelSel) return;
+
+  fetch(base + 'files/read', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: 'kfmv4/.kfmv4/providers.json' }),
+  }).then(r => r.json()).then(data => {
+    const providers = data.content ? JSON.parse(data.content) : [];
+    const saved = (() => { try { return JSON.parse(localStorage.getItem('kfm-chat-config') || '{}'); } catch { return {}; } })();
+    let selectedProv = saved.providerId || '';
+    let selectedModel = saved.modelId || '';
+
+    provSel.innerHTML = providers.map((p: any) =>
+      '<option value="' + p.id + '"' + (p.id === selectedProv ? ' selected' : '') + '>' + (p.name || p.id) + '</option>'
+    ).join('');
+
+    function updateModels(): void {
+      const prov = providers.find((p: any) => p.id === provSel!.value);
+      if (!prov) { modelSel!.innerHTML = '<option>—</option>'; return; }
+      modelSel!.innerHTML = (prov.models || []).map((m: string) =>
+        '<option value="' + m + '"' + (m === selectedModel ? ' selected' : '') + '>' + m + '</option>'
+      ).join('');
+      if (!selectedModel && prov.models?.length) selectedModel = prov.models[0];
+    }
+    updateModels();
+
+    provSel.onchange = () => { selectedModel = ''; updateModels(); save(); };
+    modelSel.onchange = () => save();
+    function save(): void {
+      localStorage.setItem('kfm-chat-config', JSON.stringify({
+        providerId: provSel!.value,
+        modelId: modelSel!.value,
+      }));
+    }
+  }).catch(() => {});
 }
 
 // ========== 状态切换 ==========
@@ -507,7 +561,8 @@ export function initOrb(): void {
       renderChatContent();
 
       try {
-        // 读当前 Provider
+        // 读当前 Provider 和模型选择
+        const config = (() => { try { return JSON.parse(localStorage.getItem('kfm-chat-config') || '{}'); } catch { return {}; } })();
         const res = await fetch(base + 'files/read', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -515,12 +570,13 @@ export function initOrb(): void {
         });
         const data = await res.json();
         const providers = data.content ? JSON.parse(data.content) : [];
-        const p = providers[0];
+        const p = providers.find((prov: any) => prov.id === config.providerId) || providers[0];
         if (!p) {
           chatMessages.push({ role: 'ai', text: '⚠ 未配置 API Provider，请先在 API 卡中添加。' });
           renderChatContent();
           return;
         }
+        const model = config.modelId || p.models[0] || 'deepseek-v4-flash';
 
         // 发消息到 API
         const apiRes = await fetch(base + 'proxy/fetch', {
@@ -530,10 +586,12 @@ export function initOrb(): void {
             url: p.baseUrl + '/chat/completions',
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + p.apiKey, 'Content-Type': 'application/json' },
-              model: p.models[0] || 'deepseek-v4-flash',
+            body: JSON.stringify({
+              model,
               messages: [{ role: 'user', content: text }],
               max_tokens: 8192,
               reasoning_effort: 'max',
+            }),
           }),
         });
         const result = await apiRes.json();
