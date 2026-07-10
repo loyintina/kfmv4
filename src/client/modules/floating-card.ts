@@ -629,13 +629,13 @@ function exitFullscreen(item: FloatingCardItem): void {
     lineEl.style.margin = '';
   }
   
-  // 恢复内容区及后代的 touch-action（全屏时设为 pan-y）
+  // 恢复内容区及后代的 touch-action（全屏/浮卡统一使用 none，避免 pointercancel）
   // 跳过 .xterm 元素——它的 touch-action: none 由终端模块管理
   if (item.contentEl) {
-    item.contentEl.style.touchAction = '';
+    item.contentEl.style.touchAction = 'none';
     for (const child of item.contentEl.querySelectorAll<HTMLElement>('*')) {
       if (child.classList?.contains('xterm')) continue;
-      child.style.touchAction = '';
+      child.style.touchAction = 'none';
     }
   }
   item.el.classList.remove('fullscreen');
@@ -736,13 +736,13 @@ function dismissFullscreen(item: FloatingCardItem): void {
     item.fullscreenBtns = null;
   }
   
-  // 恢复内容区及后代的 touch-action（全屏时设为 pan-y）
-  // 跳过 .xterm 元素——它的 touch-action: none 由终端模块管理
+  // 恢复内容区及后代的 touch-action（全屏/浮卡统一使用 none）
+  // 跳过 .xterm 元素
   if (item.contentEl) {
-    item.contentEl.style.touchAction = '';
+    item.contentEl.style.touchAction = 'none';
     for (const child of item.contentEl.querySelectorAll<HTMLElement>('*')) {
       if (child.classList?.contains('xterm')) continue;
-      child.style.touchAction = '';
+      child.style.touchAction = 'none';
     }
   }
   item.el.classList.remove('fullscreen');
