@@ -42,6 +42,8 @@ created_at: 2026-06-29
 - 任何自定义 Canvas 控件（如终端卡、canvas-scroll 区域）必须在 Canvas 元素上显式设 `touch-action: none`
 - **不要**使用 `touch-action: pan-y` 或 `auto`——本项目没有浏览器原生滚动，所有滚动由代码实现
 
+**额外陷阱**：`exitFullscreen()` 和 `dismissFullscreen()` 在 `floating-card.ts` 中会遍历 `contentEl` 的所有后代并清空 `touch-action`（设为 `''` → 默认 `auto`）。这会使退出全屏的浮卡重新被浏览器接管，`pointercancel` 再现。
+修复：这两个函数中应设 `touch-action: 'none'` 而非清空。
 **违规后果**：浏览器检测到垂直滑动后接管触摸，停止派发 `pointermove`，导致手势在外部区域或 Canvas 控件上失效。
 每手势仅 1-2 帧 move 就被 `pointercancel` 截断，画面几乎不动。
 
