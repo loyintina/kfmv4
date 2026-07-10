@@ -25,7 +25,7 @@ import { log } from './logger.js';
 
 interface ChatMessage {
   role: 'user' | 'ai';
-  text: string;
+  reasoning?: string;
 }
 
 type OrbState = 'collapsed' | 'expanded' | 'editing';
@@ -55,11 +55,7 @@ let savedPanelTop = 0;
 const ORB_SIZE = 36;
 const ORB_HALF = ORB_SIZE / 2;
 
-const chatMessages: ChatMessage[] = [
-  { role: 'ai', text: '你好，我是蔚然。有什么可以帮你的吗？' },
-  { role: 'user', text: '帮我分析一下当前的目录结构' },
-  { role: 'ai', text: '好的，正在分析目录结构。当前目录下共有 12 个文件夹和 8 个文件。' },
-];
+const chatMessages: ChatMessage[] = [];
 
 // ========== 获取输入栏上边界 ==========
 function getInputBarTop(): number {
@@ -129,40 +125,44 @@ function renderChatContent(): void {
   if (innerWidth < 50) return;
 
   let html = '';
+  let idx = 0;
   for (const msg of chatMessages) {
     const isUser = msg.role === 'user';
     const bgColor = isUser
       ? `linear-gradient(${theme.surface.bgLight},${theme.surface.bgLight}) padding-box,${theme.aiChat.bubbleSelfGradient} border-box`
       : `linear-gradient(rgba(10,15,30,0.88),rgba(10,15,30,0.88)) padding-box,${theme.aiChat.panelBorderGradient} border-box`;
-    const borderStyle = isUser
-      ? 'border:1px solid transparent;border-left-width:3px;'
-      : 'border:1px solid transparent;border-left-width:3px;';
+    const borderStyle = 'border:1px solid transparent;border-left-width:3px;';
     const align = isUser ? 'flex-end' : 'flex-start';
     const label = isUser ? '你' : '蔚然';
     const labelColor = isUser ? theme.aiChat.bubbleLabelSelf : theme.aiChat.bubbleLabelAI;
     const boxShadow = isUser ? theme.aiChat.bubbleSelfShadow : theme.aiChat.bubbleAIShadow;
+
+    let bubbleHtml = `<div style="font-size:10px;color:${labelColor};margin-bottom:2px;font-weight:600">${label}</div>`;
+
+    // 思考内容（可折叠）
+    if (!isUser && msg.reasoning) {
+      const rid = 'r' + idx;
+      bubbleHtml += `<div onclick="var p=document.getElementById('${rid}');p.style.display=p.style.display==='none'?'':'none'" style="font-size:9px;color:rgba(0,212,255,0.5);cursor:pointer;margin-bottom:2px;user-select:none">💭 已思考 <span style="font-size:7px">▼</span></div>`;
+      bubbleHtml += `<div id="${rid}" style="display:none;font-size:10px;line-height:16px;color:rgba(255,255,255,0.45);margin-bottom:4px;padding:4px 6px;border-radius:4px;background:rgba(0,0,0,0.2);white-space:pre-wrap">${escapeHtml(msg.reasoning)}</div>`;
+    }
 
     const font = '13px sans-serif';
     const lineHeight = 20;
     try {
       const lines = layoutLines(msg.text, font, innerWidth - 24, lineHeight);
       const textHtml = lines.map(l => `<span style="display:block">${escapeHtml(l.text)}</span>`).join('');
-      html += `
-        <div style="display:flex;justify-content:${align};margin-bottom:8px">
-          <div style="max-width:${innerWidth - 8}px;padding:6px 12px;background:${bgColor};${borderStyle}border-radius:8px;box-shadow:${boxShadow}">
-            <div style="font-size:10px;color:${labelColor};margin-bottom:2px;font-weight:600">${label}</div>
-            <div style="font-family:sans-serif;font-size:13px;line-height:${lineHeight}px;color:${theme.aiChat.bubbleText}">${textHtml}</div>
-          </div>
-        </div>`;
+      bubbleHtml += `<div style="font-family:sans-serif;font-size:13px;line-height:${lineHeight}px;color:${theme.aiChat.bubbleText}">${textHtml}</div>`;
     } catch {
-      html += `
-        <div style="display:flex;justify-content:${align};margin-bottom:8px">
-          <div style="max-width:85%;padding:6px 12px;background:${bgColor};${borderStyle}border-radius:8px;box-shadow:${boxShadow}">
-            <div style="font-size:10px;color:${labelColor};margin-bottom:2px;font-weight:600">${label}</div>
-            <div style="font-size:13px;color:${theme.aiChat.bubbleText}">${escapeHtml(msg.text)}</div>
-          </div>
-        </div>`;
+      bubbleHtml += `<div style="font-size:13px;color:${theme.aiChat.bubbleText}">${escapeHtml(msg.text)}</div>`;
     }
+
+    html += `
+      <div style="display:flex;justify-content:${align};margin-bottom:8px">
+        <div style="max-width:${innerWidth - 8}px;padding:6px 12px;background:${bgColor};${borderStyle}border-radius:8px;box-shadow:${boxShadow}">
+          ${bubbleHtml}
+        </div>
+      </div>`;
+    idx++;
   }
   contentArea.innerHTML = html;
   contentArea.scrollTop = contentArea.scrollHeight;
@@ -658,8 +658,10 @@ export function initOrb(): void {
           }),
         });
         const result = await apiRes.json();
-        const reply = result?.data?.choices?.[0]?.message?.content || '⚠ 未获取到回复';
-        chatMessages.push({ role: 'ai', text: reply });
+        const msg = result?.data?.choices?.[0]?.message || {};
+        const reply = msg.content || '⚠ 未获取到回复';
+        const reasoning = msg.reasoning_content || '';
+        chatMessages.push({ role: 'ai', text: reply, reasoning });
       } catch (e) {
         chatMessages.push({ role: 'ai', text: '⚠ 请求失败: ' + (e instanceof Error ? e.message : '未知错误') });
       }

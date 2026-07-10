@@ -3,7 +3,7 @@
     "id": "opencode-go",
     "name": "OpenCode Go",
     "baseUrl": "https://opencode.ai/zen/go/v1",
-    "apiKey": "sk-uazf8oopxYT29Apb9ZMWQ19imyJfRQRSRWxkzKImK6fsFcn4mpZfsZFTdhyCBPDf",
+    "apiKey": "sk-B49tten09UajLGCqh8npESDtojZ5AmIhKd8GgseuRMGtkOu10jkfWRfNDOrXAmdx",
     "models": [
       "deepseek-v4-flash",
       "deepseek-v4-pro",
