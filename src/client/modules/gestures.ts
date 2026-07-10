@@ -114,56 +114,56 @@ export function initGestures(): void {
 
   gestures.register({
     id: 'pinch-zoom',
-    targetFilter: '.floating-card .card-content',
+    targetFilter: (target: HTMLElement) => {
+      return !!target.closest('.orb-panel') || !!target.closest('.floating-card .card-content');
+    },
     priority: 90,
     onPinchStart: (e, _scale) => {
       const target = e.target as HTMLElement;
+      // Orb 面板
+      if (target.closest('.orb-panel')) {
+        _pinchTypeId = 'orb';
+        _pinchStartFontSize = _loadFontSize('orb');
+        return;
+      }
+      // 浮卡
       const contentEl = target.closest('.card-content') as HTMLElement;
       if (!contentEl) return;
-
       const instance = cardRegistry.getInstanceByContentEl(contentEl);
       if (!instance) return;
-
       _pinchTypeId = instance.typeId;
       _pinchStartFontSize = _loadFontSize(_pinchTypeId);
-      log('[pinch] start type:', _pinchTypeId, 'fontSize:', _pinchStartFontSize);
     },
     onPinchMove: (_e, scale) => {
       if (!_pinchTypeId) return;
-
       const config = _getFontSizeConfig(_pinchTypeId);
       const newFontSize = Math.max(config.min, Math.min(config.max, _pinchStartFontSize * scale));
-
-      const instances = cardRegistry.getByType(_pinchTypeId);
-      for (const inst of instances) {
-        if (_pinchTypeId === 'card03' || _pinchTypeId === 'card04') {
-          // 终端卡：CSS transform（避免 fit.fit 触发布局回流）
-          const visualScale = newFontSize / _pinchStartFontSize;
-          _setVisualScale(inst.contentEl, _pinchTypeId, visualScale);
-        } else {
-          // 文件卡/日志卡：CSS 变量直接更新（实时重排）
-          _applyFontSize(inst.contentEl, _pinchTypeId, newFontSize);
-        }
+      if (_pinchTypeId === 'orb') {
+        const panel = document.querySelector('.orb-panel') as HTMLElement | null;
+        if (panel) panel.style.setProperty('--card-font-size', newFontSize + 'px');
+      } else if (_pinchTypeId === 'card03' || _pinchTypeId === 'card04') {
+        const visualScale = newFontSize / _pinchStartFontSize;
+        const instances = cardRegistry.getByType(_pinchTypeId);
+        for (const inst of instances) _setVisualScale(inst.contentEl, _pinchTypeId, visualScale);
+      } else {
+        const instances = cardRegistry.getByType(_pinchTypeId);
+        for (const inst of instances) _applyFontSize(inst.contentEl, _pinchTypeId, newFontSize);
       }
     },
     onPinchEnd: (_e, scale) => {
       if (!_pinchTypeId) return;
-
       const config = _getFontSizeConfig(_pinchTypeId);
       const finalFontSize = Math.max(config.min, Math.min(config.max, _pinchStartFontSize * scale));
-
       _saveFontSize(_pinchTypeId, finalFontSize);
-
-      // 先更新字号 + 重排（在 transform 遮罩下完成）
-      const instances = cardRegistry.getByType(_pinchTypeId);
-      for (const inst of instances) {
-        _applyFontSize(inst.contentEl, _pinchTypeId, finalFontSize);
+      // 应用最终字号
+      if (_pinchTypeId === 'orb') {
+        const panel = document.querySelector('.orb-panel') as HTMLElement | null;
+        if (panel) panel.style.setProperty('--card-font-size', finalFontSize + 'px');
+      } else {
+        const instances = cardRegistry.getByType(_pinchTypeId);
+        for (const inst of instances) _applyFontSize(inst.contentEl, _pinchTypeId, finalFontSize);
+        for (const inst of instances) _clearVisualScale(inst.contentEl, _pinchTypeId);
       }
-      // 再移除 transform（内容已在正确位置）
-      for (const inst of instances) {
-        _clearVisualScale(inst.contentEl, _pinchTypeId);
-      }
-      log('[pinch] end type:', _pinchTypeId, 'fontSize:', finalFontSize);
       _pinchTypeId = null;
     },
   });

@@ -653,7 +653,13 @@ export function initOrb(): void {
         }
         const model = config.modelId || p.models[0] || 'deepseek-v4-flash';
 
-        // 发消息到 API
+        // 流式发送
+        chatMessages.push({ role: 'ai', text: '', reasoning: '' });
+        renderChatContent();
+        const msgIdx = chatMessages.length - 1;
+        let reasoningBuf = '';
+        let contentBuf = '';
+
         const apiRes = await fetch(base + 'proxy/fetch', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -666,14 +672,45 @@ export function initOrb(): void {
               messages: [{ role: 'user', content: text }],
               max_tokens: 8192,
               reasoning_effort: 'max',
+              stream: true,
             }),
           }),
         });
-        const result = await apiRes.json();
-        const msg = result?.data?.choices?.[0]?.message || {};
-        const reply = msg.content || '⚠ 未获取到回复';
-        const reasoning = msg.reasoning_content || '';
-        chatMessages.push({ role: 'ai', text: reply, reasoning });
+
+        // 读取流式 SSE 响应
+        const reader = apiRes.body?.getReader();
+        if (!reader) throw new Error('无响应体');
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const jsonStr = line.slice(6).trim();
+            if (jsonStr === '[DONE]') continue;
+            try {
+              const chunk = JSON.parse(jsonStr);
+              const delta = chunk?.choices?.[0]?.delta || {};
+              if (delta.reasoning_content) {
+                reasoningBuf += delta.reasoning_content;
+                chatMessages[msgIdx].reasoning = reasoningBuf;
+              }
+              if (delta.content) {
+                contentBuf += delta.content;
+                chatMessages[msgIdx].text = contentBuf;
+              }
+              renderChatContent();
+            } catch {}
+          }
+        }
+        chatMessages[msgIdx].text = contentBuf || '⚠ 未获取到回复';
+        chatMessages[msgIdx].reasoning = reasoningBuf || undefined;
+        renderChatContent();
       } catch (e) {
         chatMessages.push({ role: 'ai', text: '⚠ 请求失败: ' + (e instanceof Error ? e.message : '未知错误') });
       }

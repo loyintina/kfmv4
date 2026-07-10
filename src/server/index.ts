@@ -243,20 +243,58 @@ function setupApiRoutes(router: express.Router) {
     res.json({ user: process.env.USER || 'root', home: ROOT_DIR, cwd: process.cwd() });
   });
 
-  // AI API 代理：绕过浏览器跨域限制
+  // AI API 代理：绕过浏览器跨域限制（支持流式和非流式）
   router.post('/proxy/fetch', async (req: express.Request, res: express.Response) => {
     try {
       const { url, method, headers, body } = req.body;
       if (!url) { res.json({ error: '缺少 url 参数' }); return; }
-      if (method === 'GET') {
+
+      // 如果请求体含 stream:true，设为流式模式（去除 stream 字段后转发）
+      let reqBody = body;
+      let isStream = false;
+      if (typeof reqBody === 'object' && reqBody?.stream) {
+        isStream = true;
+        reqBody = { ...reqBody };
+        delete reqBody.stream;
+      }
+
+      if (isStream) {
+        // 流式模式：用 readable stream pipe 到客户端
+        const response = await fetch(url, {
+          method: method || 'POST',
+          headers: { 'Content-Type': 'application/json', ...headers },
+          body: JSON.stringify({ ...reqBody, stream: true }),
+        });
+        if (!response.ok) {
+          res.json({ status: response.status, ok: false, error: '上游请求失败' });
+          return;
+        }
+        // 转发 SSE 头
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        // 用 Node.js 的管道转发响应体
+        const nodeReader = (response.body as any).getReader();
+        const decoder = new TextDecoder();
+        function pump(): void {
+          nodeReader.read().then(({ done, value }: { done: boolean; value: Uint8Array }) => {
+            if (done) { res.end(); return; }
+            res.write(decoder.decode(value, { stream: !done }));
+            pump();
+          }).catch(() => res.end());
+        }
+        pump();
+      } else if (method === 'GET') {
+        // 非流式 GET
         const response = await fetch(url, { headers });
         const data = await response.json();
         res.json({ status: response.status, ok: response.ok, data });
       } else {
+        // 非流式 POST
         const response = await fetch(url, {
           method,
           headers: { 'Content-Type': 'application/json', ...headers },
-          body: typeof body === 'string' ? body : JSON.stringify(body),
+          body: typeof reqBody === 'string' ? reqBody : JSON.stringify(reqBody),
         });
         const data = await response.json();
         res.json({ status: response.status, ok: response.ok, data });
