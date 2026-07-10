@@ -140,19 +140,27 @@ gestures.register({
     
     const dy = _startY - e.clientY;
     if (Math.abs(dy) < 4) return;
-    const ms = (_activeTerm as any)._core?.coreMouseService;
-    const proto = ms?.activeProtocol || '?';
-    const enc = ms?.activeEncoding || '?';
-
-    // 累积手势距离，按 9px/行滚动
     _sgrAccum += dy;
     const absAccum = Math.abs(_sgrAccum);
     if (absAccum >= 9) {
       const lines = Math.floor(absAccum / 9);
       const dir = _sgrAccum > 0 ? 1 : -1;
 
-      // 直接调 xterm scrollLines 滚动缓冲区，不依赖 SGR 协议（tmux 只处理第 1 个 SGR 事件）
-      _activeTerm.scrollLines(dir * lines);
+      if (_activeSid) {
+        // 通过 WS 发送 SGR 鼠标事件给 tmux——每条触发一行滚动
+        // 不合并成一条消息发送（tmux 只处理第 1 个），逐条通过 WS 发
+        const btn = dir > 0 ? 65 : 64;
+        const term = _activeTerm;
+        const cx = Math.max(1, Math.min(term.cols, Math.round(term.cols / 2)));
+        const cy = Math.max(1, Math.min(term.rows, Math.round(term.rows / 2)));
+        const sgr = '\x1b[<' + btn + ';' + cx + ';' + cy + 'M';
+        for (let i = 0; i < lines; i++) {
+          wsChannel.sendMessage('terminal-input', { sessionId: _activeSid, input: sgr });
+        }
+      } else {
+        // 无会话：直接调 xterm scrollLines 滚动缓冲区
+        _activeTerm.scrollLines(dir * lines);
+      }
 
       _sgrAccum -= lines * 9 * dir;
     }
@@ -166,10 +174,6 @@ gestures.register({
   },
   stopPropagation: true,
 });
-
-// ========== 共享终端核心 — card03 + card04 共用 ==========
-
-/** 在给定容器中初始化 xterm.js 终端（首次 init）或重新挂载 DOM（compact→active） */
 export function initTerminalCore(
   container: HTMLElement,
   card: CardInstance,
