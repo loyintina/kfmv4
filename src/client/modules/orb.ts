@@ -218,65 +218,116 @@ function updatePanelPosition(): void {
 // ========== 面板内容 ==========
 function buildPanelContent(): void {
   if (!panelEl) return;
+
+  // 渐变配色（跟浮卡内卡反转规则一致：内卡 c2→c1 而非 c1→c2）
+  const c1 = 'rgba(0,212,255,0.8)';
+  const c2 = 'rgba(124,58,237,0.7)';
+
   panelEl.innerHTML = `
 <div class="orb-panel-content" style="
   flex:1;overflow-y:auto;padding:12px 14px;min-height:0
 "></div>
+<div style="height:1px;flex-shrink:0;background:linear-gradient(90deg,${c1},${c2})"></div>
 <div class="orb-model-bar" style="
-  display:flex;gap:6px;padding:6px 10px;flex-shrink:0;
-  border-top:1px solid rgba(255,255,255,0.06)
+  display:flex;gap:8px;padding:6px 10px;flex-shrink:0
 ">
-  <select id="orb-provider-select" style="
-    flex:1;font-size:10px;padding:3px 4px;border-radius:6px;
-    border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);
-    color:rgba(255,255,255,0.85);outline:none;min-width:0
-  "></select>
-  <select id="orb-model-select" style="
-    flex:1;font-size:10px;padding:3px 4px;border-radius:6px;
-    border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);
-    color:rgba(255,255,255,0.85);outline:none;min-width:0
-  "></select>
+  <div class="orb-opt-trigger" id="orb-prov-trigger" style="
+    flex:1;font-size:10px;padding:4px 6px;border-radius:6px;
+    background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,
+      linear-gradient(135deg,${c2} 30%,${c1} 70%) border-box;
+    border:1px solid transparent;border-left-width:2px;
+    color:rgba(255,255,255,0.8);cursor:pointer;user-select:none;
+    display:flex;align-items:center;justify-content:space-between
+  "><span class="orb-opt-text" id="orb-prov-text">—</span><span style="font-size:8px;opacity:0.5;margin-left:4px">▾</span></div>
+  <div class="orb-opt-trigger" id="orb-model-trigger" style="
+    flex:1;font-size:10px;padding:4px 6px;border-radius:6px;
+    background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,
+      linear-gradient(135deg,${c2} 30%,${c1} 70%) border-box;
+    border:1px solid transparent;border-left-width:2px;
+    color:rgba(255,255,255,0.8);cursor:pointer;user-select:none;
+    display:flex;align-items:center;justify-content:space-between
+  "><span class="orb-opt-text" id="orb-model-text">—</span><span style="font-size:8px;opacity:0.5;margin-left:4px">▾</span></div>
 </div>
   `;
 
-  // 填充下拉框
+  // 加载数据 + 绑定
   const base = window.location.pathname.replace(/\/+$/, '') + '/api/';
-  const provSel = document.getElementById('orb-provider-select') as HTMLSelectElement | null;
-  const modelSel = document.getElementById('orb-model-select') as HTMLSelectElement | null;
-  if (!provSel || !modelSel) return;
+  const provTrig = document.getElementById('orb-prov-trigger') as HTMLDivElement | null;
+  const modelTrig = document.getElementById('orb-model-trigger') as HTMLDivElement | null;
+  const provText = document.getElementById('orb-prov-text') as HTMLSpanElement | null;
+  const modelText = document.getElementById('orb-model-text') as HTMLSpanElement | null;
+  if (!provTrig || !modelTrig || !provText || !modelText) return;
+
+  let providers: any[] = [];
+  const saved = (() => { try { return JSON.parse(localStorage.getItem('kfm-chat-config') || '{}'); } catch { return {}; } })();
+
+  function saveConfig(): void {
+    localStorage.setItem('kfm-chat-config', JSON.stringify({
+      providerId: provText.textContent === '—' ? '' : providers.find((p: any) => (p.name || p.id) === provText.textContent)?.id || '',
+      modelId: modelText.textContent === '—' ? '' : modelText.textContent,
+    }));
+  }
+
+  function showDropdown(trigger: HTMLDivElement, items: { label: string; value: string }[], onPick: (value: string) => void): void {
+    const existing = document.querySelector('.orb-dropdown-panel');
+    if (existing) existing.remove();
+    const panel = document.createElement('div');
+    panel.className = 'orb-dropdown-panel';
+    panel.style.cssText = 'position:fixed;z-index:9999;border-radius:6px;padding:3px;background:rgba(20,16,32,0.96);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.1);overflow:hidden;min-width:100px';
+    items.forEach(item => {
+      const row = document.createElement('div');
+      row.textContent = item.label;
+      row.style.cssText = 'padding:4px 8px;border-radius:4px;font-size:10px;cursor:pointer;color:rgba(255,255,255,0.8)';
+      row.onmouseenter = () => { row.style.background = 'rgba(255,255,255,0.06)'; };
+      row.onmouseleave = () => { row.style.background = ''; };
+      row.onclick = (ev: PointerEvent) => { ev.stopPropagation(); onPick(item.value); panel.remove(); };
+      panel.appendChild(row);
+    });
+    const r = trigger.getBoundingClientRect();
+    panel.style.left = r.left + 'px';
+    panel.style.top = r.bottom + 'px';
+    panel.style.minWidth = Math.max(r.width, 100) + 'px';
+    document.body.appendChild(panel);
+    const close = (e: PointerEvent) => {
+      if (!panel.contains(e.target as Node) && e.target !== trigger) {
+        panel.remove(); document.removeEventListener('pointerdown', close);
+      }
+    };
+    document.addEventListener('pointerdown', close);
+  }
 
   fetch(base + 'files/read', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ path: 'kfmv4/.kfmv4/providers.json' }),
   }).then(r => r.json()).then(data => {
-    const providers = data.content ? JSON.parse(data.content) : [];
-    const saved = (() => { try { return JSON.parse(localStorage.getItem('kfm-chat-config') || '{}'); } catch { return {}; } })();
-    let selectedProv = saved.providerId || '';
-    let selectedModel = saved.modelId || '';
-
-    provSel.innerHTML = providers.map((p: any) =>
-      '<option value="' + p.id + '"' + (p.id === selectedProv ? ' selected' : '') + '>' + (p.name || p.id) + '</option>'
-    ).join('');
-
-    function updateModels(): void {
-      const prov = providers.find((p: any) => p.id === provSel!.value);
-      if (!prov) { modelSel!.innerHTML = '<option>—</option>'; return; }
-      modelSel!.innerHTML = (prov.models || []).map((m: string) =>
-        '<option value="' + m + '"' + (m === selectedModel ? ' selected' : '') + '>' + m + '</option>'
-      ).join('');
-      if (!selectedModel && prov.models?.length) selectedModel = prov.models[0];
-    }
-    updateModels();
-
-    provSel.onchange = () => { selectedModel = ''; updateModels(); save(); };
-    modelSel.onchange = () => save();
-    function save(): void {
-      localStorage.setItem('kfm-chat-config', JSON.stringify({
-        providerId: provSel!.value,
-        modelId: modelSel!.value,
-      }));
+    providers = data.content ? JSON.parse(data.content) : [];
+    const curProv = providers.find((p: any) => p.id === saved.providerId) || providers[0];
+    if (curProv) {
+      provText.textContent = curProv.name || curProv.id;
+      modelText.textContent = saved.modelId || curProv.models?.[0] || '—';
     }
   }).catch(() => {});
+
+  provTrig.onclick = (e: MouseEvent) => {
+    e.stopPropagation();
+    showDropdown(provTrig, providers.map((p: any) => ({ label: p.name || p.id, value: p.id })), (id) => {
+      const p = providers.find((x: any) => x.id === id);
+      if (!p) return;
+      provText.textContent = p.name || p.id;
+      modelText.textContent = p.models?.[0] || '—';
+      saveConfig();
+    });
+  };
+
+  modelTrig.onclick = (e: MouseEvent) => {
+    e.stopPropagation();
+    const curProv = providers.find((p: any) => (p.name || p.id) === provText.textContent);
+    if (!curProv) return;
+    showDropdown(modelTrig, (curProv.models || []).map((m: string) => ({ label: m, value: m })), (model) => {
+      modelText.textContent = model;
+      saveConfig();
+    });
+  };
 }
 
 // ========== 状态切换 ==========
