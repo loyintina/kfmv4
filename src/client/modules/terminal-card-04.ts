@@ -492,15 +492,13 @@ function initAuxBar(container: HTMLElement, term: Terminal): void {
       continue;
     }
 
-    // 普通按键
+    // 普通按键（含方向键）：单击触发，长按 300ms 后以 80ms 间隔重复
     btn.style.cssText = 'height:30px;min-width:36px;display:flex;align-items:center;justify-content:center;border-radius:6px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);cursor:pointer;user-select:none;-webkit-user-select:none;background:transparent;transition:background 0.1s';
 
-    btn.addEventListener('pointerdown', (e) => {
-      e.preventDefault();
-      // 按下时给视觉反馈
-      btn.style.background = 'rgba(255,255,255,0.12)';
-      setTimeout(() => { btn.style.background = 'transparent'; }, 80);
+    let repeatTimer: ReturnType<typeof setTimeout> | null = null;
+    let repeatInterval: ReturnType<typeof setInterval> | null = null;
 
+    function fireKey(): void {
       if (ctrlOn && altOn && key.ctrlAltSeq) {
         term.input(key.ctrlAltSeq);
       } else if (ctrlOn && key.ctrlSeq) {
@@ -510,7 +508,25 @@ function initAuxBar(container: HTMLElement, term: Terminal): void {
       } else {
         term.input(key.value);
       }
+    }
+
+    function stopRepeat(): void {
+      if (repeatInterval) { clearInterval(repeatInterval); repeatInterval = null; }
+      if (repeatTimer) { clearTimeout(repeatTimer); repeatTimer = null; }
+      btn.style.background = 'transparent';
+    }
+
+    btn.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      btn.style.background = 'rgba(255,255,255,0.12)';
+      fireKey();
+      repeatTimer = setTimeout(() => {
+        repeatInterval = setInterval(fireKey, 80);
+      }, 300);
     });
+
+    btn.addEventListener('pointerup', stopRepeat);
+    btn.addEventListener('pointerleave', stopRepeat);
     bar.appendChild(btn);
   }
 
