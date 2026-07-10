@@ -399,6 +399,41 @@ BR 光球的 click 事件只写了 `compact → expanding` 方向，没有写 `a
 2. 在 `package.json` start 脚本中加入 `fuser -k 8021/tcp` 前置清理
 3. 在 `build.mjs` 开头加入 `pkill -f "tsc"` 清理残留 tsc
 
+
+---
+
+### B.A.R. #006 — SGR 鼠标事件批量发送被 tmux 忽略
+
+**日期**：2026-07-09
+**根因类型**：协议假设错误 — 假设终端会逐条处理输入缓冲区中的全部 SGR 序列
+**症状关键词**：tmux、滚动、只能滚动一行、手势距离无关
+
+#### 症状
+在 tmux 卡中上下滑动，无论手势动作多大，终端只滚动 1 行。
+
+#### 根因（一句话）
+将 `lines` 条 SGR 鼠标滚轮事件（`\x1b[<64/65;cx;cyM`）拼接成一条字符串通过 WebSocket 发送时，tmux 只处理缓冲区中的第一条 SGR 序列，后续的被忽略。
+
+#### 排查关键发现
+1. xterm 内部 `coreMouseService.activeProtocol` 为 `'SGR'`，代码进入 SGR 分支
+2. 每帧发送的 SGR 数量通过累积手势距离计算（`lines = floor(absAccum / 9)`），理论值 > 1
+3. 实测 `xterm.scrollLines(lines)` 在 tmux 中不可见（tmux 管理自己的滚动缓冲区）
+4. 将 SGR 序列拆成独立 WebSocket 消息逐条发送后，tmux 处理全部序列，滚动量恢复正常
+
+#### 解决方案
+不要将多条 SGR 序列合并为一条字符串发送。对每个需要发送的 SGR 事件，分别调用 `wsChannel.sendMessage()`。
+
+```typescript
+// ❌ 错误：合并成一条
+const batch = Array.from({ length: lines }, (_, i) => '\x1b[<' + btn + ';' + cx + ';' + (baseCy + i) + 'M').join('');
+wsChannel.sendMessage('terminal-input', { sessionId, input: batch });
+
+// ✅ 正确：逐条发送
+const sgr = '\x1b[<' + btn + ';' + cx + ';' + baseCy + 'M';
+for (let i = 0; i < lines; i++) {
+  wsChannel.sendMessage('terminal-input', { sessionId, input: sgr });
+}
+```
 ---
 
 ## 附录 A：根因类型索引
@@ -418,6 +453,7 @@ BR 光球的 click 事件只写了 `compact → expanding` 方向，没有写 `a
 
 ---
 
+| 协议假设错误 | 假设下游会逐条处理输入缓冲区内容 | 检查协议规范 + 实测单条 vs 批量行为 |
 ## 附录 B：回归测试
 
 ### 自动化测试
