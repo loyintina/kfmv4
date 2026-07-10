@@ -422,16 +422,6 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
       c1 = card?.accents?.color1 || '#00d4ff';
       c2 = card?.accents?.color2 || '#7c3aed';
       const { bodyEl } = buildCardLayout(contentEl, 'API', c1, c2);
-      // 加载存储的字号偏好（设在 bodyEl 上，避免 _renderFloatingContent 覆盖 contentEl.style）
-      const storedFontSize = localStorage.getItem('kfm-fontsize-api');
-      if (storedFontSize) {
-        try {
-          const parsed = JSON.parse(storedFontSize);
-          if (typeof parsed.fontSize === 'number') {
-            bodyEl.style.setProperty('--card-font-size', parsed.fontSize + 'px');
-          }
-        } catch { /* ignore */ }
-      }
 
 
       const scrollArea = document.createElement('div');
@@ -629,6 +619,16 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
       scrollArea.appendChild(poolCard);
 
       log('[API] activate: starting init');
+      // 异步阶段加载字号偏好（此时 _renderFloatingContent 已完成，contentEl.style 不再被覆盖）
+      const storedFontSize = localStorage.getItem('kfm-fontsize-api');
+      if (storedFontSize) {
+        try {
+          const parsed = JSON.parse(storedFontSize);
+          if (typeof parsed.fontSize === 'number') {
+            contentEl.style.setProperty('--card-font-size', parsed.fontSize + 'px');
+          }
+        } catch { /* ignore */ }
+      }
       providers = await loadProviders();
       currentId = await loadCurrentId();
       log('[API] activate: loaded', providers.length, 'providers, current:', currentId);

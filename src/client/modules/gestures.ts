@@ -126,6 +126,7 @@ export function initGestures(): void {
 
       _pinchTypeId = instance.typeId;
       _pinchStartFontSize = _loadFontSize(_pinchTypeId);
+      log('[pinch] start type:', _pinchTypeId, 'fontSize:', _pinchStartFontSize);
     },
     onPinchMove: (_e, scale) => {
       if (!_pinchTypeId) return;
@@ -162,7 +163,7 @@ export function initGestures(): void {
       for (const inst of instances) {
         _clearVisualScale(inst.contentEl, _pinchTypeId);
       }
-
+      log('[pinch] end type:', _pinchTypeId, 'fontSize:', finalFontSize);
       _pinchTypeId = null;
     },
   });
