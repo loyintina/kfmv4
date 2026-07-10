@@ -214,6 +214,15 @@ function _scatterPosition(cardIndex: number): { left: number; top: number } {
   return { left: fallbackLeft, top: fallbackTop };
 }
 
+/** 将浮卡的 _fullscreenSaved 更新为随机散落位置（卡片堆发射全屏卡后调用） */
+export function updateFullscreenSavedPosition(item: FloatingCardItem): void {
+  const pos = _scatterPosition(_floatingCards.length);
+  if (item._fullscreenSaved) {
+    item._fullscreenSaved.left = pos.left;
+    item._fullscreenSaved.top = pos.top;
+  }
+}
+
 // ========== 浮卡模板 ==========
 
 /** 创建浮卡模板入口：接受配置，返回 FloatingCardItem */

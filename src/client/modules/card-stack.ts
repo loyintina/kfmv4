@@ -3,7 +3,7 @@ import { anim, AnimTimeline } from './animation-registry.js';
 import { Registry } from './ui-registry.js';
 import { wsChannel } from './ws-channel.js';
 import { currentTheme as theme } from './theme.js';
-import { createFloatingCard } from './floating-card.js';
+import { createFloatingCard, updateFullscreenSavedPosition } from './floating-card.js';
 import { log } from './logger.js';
 import { getCardType, getAllCardTypes, type CardContentHandler } from './card-registry.js';
 
@@ -87,15 +87,16 @@ export function getFocusedCardRect(): DOMRect | undefined { return _cardEls[_foc
 export function animateStackPullFeedback(): void { _animateStackPullFeedback(); }
 
 /** 从卡片堆发射聚焦卡 → 浮卡模板 */
-export function launchFocusedCard(): void {
-  _animateStackPullFeedback();
+export function launchFocusedCard(fullscreen?: boolean): void {
+  // 全屏发射时不启动拉动动画（即将关堆，无意义）
+  if (!fullscreen) _animateStackPullFeedback();
   const focusIdx = _focusIndex;
   const cardRect = getFocusedCardRect();
   if (!cardRect) return;
   const cc = getCurrentAccent(focusIdx);
   if (!cc) return;
 
-  createFloatingCard({
+  const item = createFloatingCard({
     id: 'stack-' + focusIdx,
     typeId: getCardId(focusIdx),
     color1: cc.color1, color2: cc.color2,
@@ -103,7 +104,11 @@ export function launchFocusedCard(): void {
     sourceX: cardRect.left, sourceY: cardRect.top,
     scatterBounds: { left: 8, top: 8, right: Math.round(window.innerWidth * 0.7), bottom: window.innerHeight - 56.5 },
     contentHandler: getCardType(getCardId(focusIdx))?.createHandler({}),
+    ...(fullscreen ? { startInFullscreen: true } : {}),
   });
+
+  // 全屏发射时，将保存位置改为随机散落位置（避免退出全屏回到右侧）
+  if (fullscreen && item) updateFullscreenSavedPosition(item);
 }
 
 // ========== 配置 ==========
@@ -180,7 +185,6 @@ function createCard(index: number): HTMLElement {
 
 
   el.appendChild(inner);
-
   el.addEventListener("click", (e) => {
     const idx = parseInt(el.dataset.index || "0", 10);
     if (idx !== _focusIndex) {
@@ -388,7 +392,7 @@ export function initCardStack(): void {
       }
 
       if (_axisLock === 'horizontal') {
-        if (dx < -50 && _prevDx >= -50) { _prevDx = dx; launchFocusedCard(); return; }
+        if (dx < -50 && _prevDx >= -50) { _prevDx = dx; launchFocusedCard(true); closeCardStack(); return; }
         if (dx > 50 && _prevDx <= 50) { _prevDx = dx; closeCardStack(); return; }
         _prevDx = dx;
       } else if (_axisLock === 'vertical') {

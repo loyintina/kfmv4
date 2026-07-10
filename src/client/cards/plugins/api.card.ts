@@ -456,8 +456,8 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
       selTriggerText = document.createElement('span');
       selTriggerText.textContent = '(无)';
       const selArrow = document.createElement('span');
-      selArrow.textContent = '▾';
-      selArrow.style.cssText = 'font-size:var(--card-font-size,8px);opacity:0.5;margin-left:4px';
+      selArrow.textContent = '\u25BC';
+      selArrow.style.cssText = 'font-size:var(--card-font-size,14px);opacity:0.65;margin-left:6px';
       selTriggerEl.appendChild(selTriggerText);
       selTriggerEl.appendChild(selArrow);
 

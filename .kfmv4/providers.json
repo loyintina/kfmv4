@@ -26,5 +26,15 @@
       "mimo-v2-omni",
       "hy3-preview"
     ]
+  },
+  {
+    "id": "mre8s5ywncu2",
+    "name": "deepseek",
+    "baseUrl": "https://api.deepseek.com",
+    "apiKey": "sk-e3eab68f855142248b94d75bdcfadb35",
+    "models": [
+      "deepseek-v4-flash",
+      "deepseek-v4-pro"
+    ]
   }
 ]
