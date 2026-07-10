@@ -267,10 +267,19 @@ function buildPanelContent(): void {
       modelId: modelText!.textContent === '—' ? '' : modelText!.textContent,
     }));
   }
+  let _openTrig: HTMLDivElement | null = null;
 
-  function showDropdown(trigger: HTMLDivElement, items: { label: string; value: string }[], onPick: (value: string) => void): void {
+  function closeDropdown(): void {
     const existing = document.querySelector('.orb-dropdown-panel');
     if (existing) existing.remove();
+    _openTrig = null;
+  }
+
+  function showDropdown(trigger: HTMLDivElement, items: { label: string; value: string }[], onPick: (value: string) => void): void {
+    // 点击同一个触发器 → 收起
+    if (_openTrig === trigger) { closeDropdown(); return; }
+    closeDropdown();
+    _openTrig = trigger;
     const panel = document.createElement('div');
     panel.className = 'orb-dropdown-panel';
     panel.style.cssText = 'position:fixed;z-index:9999;border-radius:6px;padding:3px;background:rgba(20,16,32,0.96);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.1);overflow:hidden;min-width:100px';
@@ -280,23 +289,22 @@ function buildPanelContent(): void {
       row.style.cssText = 'padding:4px 8px;border-radius:4px;font-size:10px;cursor:pointer;color:rgba(255,255,255,0.8)';
       row.onmouseenter = () => { row.style.background = 'rgba(255,255,255,0.06)'; };
       row.onmouseleave = () => { row.style.background = ''; };
-      row.onclick = (ev: PointerEvent) => { ev.stopPropagation(); onPick(item.value); panel.remove(); };
+      row.onclick = (ev: PointerEvent) => { ev.stopPropagation(); onPick(item.value); closeDropdown(); };
       panel.appendChild(row);
     });
     const r = trigger.getBoundingClientRect();
     panel.style.left = r.left + 'px';
-    panel.style.top = (r.top - 4) + 'px'; // 临时位置，下面修正
+    panel.style.top = (r.top - 4) + 'px';
     panel.style.minWidth = Math.max(r.width, 100) + 'px';
     document.body.appendChild(panel);
-    // 向上弹出（面板顶部 = 触发器顶部 - 面板高度）
     const panelH = panel.getBoundingClientRect().height;
     panel.style.top = Math.max(4, r.top - panelH) + 'px';
-    const close = (e: PointerEvent) => {
+    document.addEventListener('pointerdown', function onBg(e: PointerEvent) {
       if (!panel.contains(e.target as Node) && e.target !== trigger) {
-        panel.remove(); document.removeEventListener('pointerdown', close);
+        document.removeEventListener('pointerdown', onBg);
+        closeDropdown();
       }
-    };
-    document.addEventListener('pointerdown', close);
+    });
   }
 
   fetch(base + 'files/read', {
