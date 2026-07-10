@@ -227,7 +227,7 @@ function buildPanelContent(): void {
 <div class="orb-panel-content" style="
   flex:1;overflow-y:auto;padding:12px 14px;min-height:0
 "></div>
-<div style="height:1px;flex-shrink:0;background:linear-gradient(90deg,${c1},${c2})"></div>
+<div style="height:1px;flex-shrink:0;margin:0 10px;background:linear-gradient(90deg,${c1},${c2})"></div>
 <div class="orb-model-bar" style="
   display:flex;gap:8px;padding:6px 10px;flex-shrink:0
 ">
@@ -238,7 +238,7 @@ function buildPanelContent(): void {
     border:1px solid transparent;border-left-width:2px;
     color:rgba(255,255,255,0.8);cursor:pointer;user-select:none;
     display:flex;align-items:center;justify-content:space-between
-  "><span class="orb-opt-text" id="orb-prov-text">—</span><span style="font-size:8px;opacity:0.5;margin-left:4px">▾</span></div>
+  "><span class="orb-opt-text" id="orb-prov-text">—</span><span style="font-size:10px;opacity:0.6;margin-left:4px">▼</span></div>
   <div class="orb-opt-trigger" id="orb-model-trigger" style="
     flex:1;font-size:10px;padding:4px 6px;border-radius:6px;
     background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,
@@ -246,7 +246,7 @@ function buildPanelContent(): void {
     border:1px solid transparent;border-left-width:2px;
     color:rgba(255,255,255,0.8);cursor:pointer;user-select:none;
     display:flex;align-items:center;justify-content:space-between
-  "><span class="orb-opt-text" id="orb-model-text">—</span><span style="font-size:8px;opacity:0.5;margin-left:4px">▾</span></div>
+  "><span class="orb-opt-text" id="orb-model-text">—</span><span style="font-size:10px;opacity:0.6;margin-left:4px">▼</span></div>
 </div>
   `;
 
@@ -285,9 +285,12 @@ function buildPanelContent(): void {
     });
     const r = trigger.getBoundingClientRect();
     panel.style.left = r.left + 'px';
-    panel.style.top = r.bottom + 'px';
+    panel.style.top = (r.top - 4) + 'px'; // 临时位置，下面修正
     panel.style.minWidth = Math.max(r.width, 100) + 'px';
     document.body.appendChild(panel);
+    // 向上弹出（面板顶部 = 触发器顶部 - 面板高度）
+    const panelH = panel.getBoundingClientRect().height;
+    panel.style.top = Math.max(4, r.top - panelH) + 'px';
     const close = (e: PointerEvent) => {
       if (!panel.contains(e.target as Node) && e.target !== trigger) {
         panel.remove(); document.removeEventListener('pointerdown', close);
