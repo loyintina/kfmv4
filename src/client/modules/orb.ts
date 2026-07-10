@@ -25,6 +25,7 @@ import { log } from './logger.js';
 
 interface ChatMessage {
   role: 'user' | 'ai';
+  text: string;
   reasoning?: string;
 }
 
@@ -136,24 +137,22 @@ function renderChatContent(): void {
     const label = isUser ? '你' : '蔚然';
     const labelColor = isUser ? theme.aiChat.bubbleLabelSelf : theme.aiChat.bubbleLabelAI;
     const boxShadow = isUser ? theme.aiChat.bubbleSelfShadow : theme.aiChat.bubbleAIShadow;
-
     let bubbleHtml = `<div style="font-size:10px;color:${labelColor};margin-bottom:2px;font-weight:600">${label}</div>`;
 
     // 思考内容（可折叠）
     if (!isUser && msg.reasoning) {
       const rid = 'r' + idx;
       bubbleHtml += `<div onclick="var p=document.getElementById('${rid}');p.style.display=p.style.display==='none'?'':'none'" style="font-size:9px;color:rgba(0,212,255,0.5);cursor:pointer;margin-bottom:2px;user-select:none">💭 已思考 <span style="font-size:7px">▼</span></div>`;
-      bubbleHtml += `<div id="${rid}" style="display:none;font-size:10px;line-height:16px;color:rgba(255,255,255,0.45);margin-bottom:4px;padding:4px 6px;border-radius:4px;background:rgba(0,0,0,0.2);white-space:pre-wrap">${escapeHtml(msg.reasoning)}</div>`;
+      bubbleHtml += `<div id="${rid}" style="display:none;font-size:var(--card-font-size,10px);line-height:16px;color:rgba(255,255,255,0.45);margin-bottom:4px;padding:4px 6px;border-radius:4px;background:rgba(0,0,0,0.2);white-space:pre-wrap">${escapeHtml(msg.reasoning)}</div>`;
     }
 
     const font = '13px sans-serif';
     const lineHeight = 20;
     try {
       const lines = layoutLines(msg.text, font, innerWidth - 24, lineHeight);
-      const textHtml = lines.map(l => `<span style="display:block">${escapeHtml(l.text)}</span>`).join('');
-      bubbleHtml += `<div style="font-family:sans-serif;font-size:13px;line-height:${lineHeight}px;color:${theme.aiChat.bubbleText}">${textHtml}</div>`;
+      bubbleHtml += `<div style="font-family:sans-serif;font-size:var(--card-font-size,13px);line-height:${lineHeight}px;color:${theme.aiChat.bubbleText}">${textHtml}</div>`;
     } catch {
-      bubbleHtml += `<div style="font-size:13px;color:${theme.aiChat.bubbleText}">${escapeHtml(msg.text)}</div>`;
+      bubbleHtml += `<div style="font-size:var(--card-font-size,13px);color:${theme.aiChat.bubbleText}">${escapeHtml(msg.text)}</div>`;
     }
 
     html += `
@@ -350,6 +349,16 @@ function expandPanel(): void {
     panelState = 'open';
     buildPanelContent();
     updatePanelPosition();
+    // 加载存储的字号偏好
+    const stored = localStorage.getItem('kfm-fontsize-orb');
+    if (stored) {
+      try {
+        const p = JSON.parse(stored);
+        if (typeof p.fontSize === 'number' && panelEl) {
+          panelEl.style.setProperty('--card-font-size', p.fontSize + 'px');
+        }
+      } catch {}
+    }
     renderChatContent();
     Registry.notifyStateChange('orb');
     Registry.notifyStateChange('orb-panel');
@@ -618,6 +627,8 @@ export function initOrb(): void {
       const text = inputEl!.value.trim();
       if (!text) return;
       inputEl!.value = '';
+      // 如果光球折叠，自动展开
+      if (orbState === 'collapsed') expandPanel();
       inputEl!.style.height = 'auto';
 
       chatMessages.push({ role: 'user', text });
