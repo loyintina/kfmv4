@@ -3,9 +3,10 @@
  *
  * 从 package.json 读取权威版本号，检查：
  *  1. git tag "v{version}" 是否存在（防止忘打 tag）
- *  2. 各文档中"最后更新/当前版本"标记的行是否一致
- *  3. 版本历史表中 **vX.Y.Z** 的粗体标记行是否含当前版本
- *  4. WORKBENCH_SPEC 状态表中的 ✅ vX.Y.Z 标记是否更新
+ *  2. HANDBOOK.md 的 last_reviewed 新鲜度（最新提交是否超过 last_reviewed）
+ *  3. 各文档中"最后更新/当前版本"标记的行是否一致
+ *  4. 版本历史表中 **vX.Y.Z** 的粗体标记行是否含当前版本
+ *  5. WORKBENCH_SPEC 状态表中的 ✅ vX.Y.Z 标记是否更新
  *
  * 挂入 npm run check，不一致 = 构建中断。
  */
@@ -33,7 +34,44 @@ try {
   errors++;
 }
 
-// ========== 检查 2: 文档中的版本号标记 ==========
+// ========== 检查 2: HANDBOOK last_reviewed 新鲜度 ==========
+
+const handbookContent = (() => {
+  try { return readFileSync('docs/HANDBOOK.md', 'utf-8'); } catch { return ''; }
+})();
+
+const frontMatch = handbookContent.match(/^---\n([\s\S]*?)\n---/);
+if (frontMatch) {
+  const frontFields = {};
+  for (const line of frontMatch[1].split('\n')) {
+    const idx = line.indexOf(':');
+    if (idx > 0) frontFields[line.slice(0, idx).trim()] = line.slice(idx + 1).trim();
+  }
+
+  const lastReviewed = frontFields.last_reviewed;
+  if (lastReviewed) {
+    try {
+      const latestCommit = execSync(
+        `git log -1 --format="%ci" -- 'src/' 'tests/' 'docs/' '*.mjs' -- ':!docs/HANDBOOK.md'`,
+        { encoding: 'utf-8' }
+      ).trim();
+      if (latestCommit) {
+        const commitDate = new Date(latestCommit.slice(0, 10) + 'T00:00:00');
+        const reviewDate = new Date(lastReviewed + 'T00:00:00');
+        if (commitDate > reviewDate) {
+          console.error(`[HANDBOOK OUTDATED] docs/HANDBOOK.md frontmatter last_reviewed=${lastReviewed}`);
+          console.error(`  最新提交日期: ${latestCommit.slice(0, 10)}`);
+          console.error(`  请更新 last_reviewed 并同步 §二「当前会话状态」`);
+          errors++;
+        }
+      }
+    } catch {
+      // git 不可用时跳过
+    }
+  }
+}
+
+// ========== 检查 3: 文档中的版本号标记 ==========
 
 const DOCS = [
   'CLAUDE.md',
@@ -58,7 +96,7 @@ for (const docPath of DOCS) {
 
   const lines = content.split('\n');
 
-  // 2a) "最后更新"或"当前版本"行中的版本号
+  // 3a) "最后更新"或"当前版本"行中的版本号
   for (const line of lines) {
     if (!/最后更新|当前版本/.test(line)) continue;
     const match = line.match(/\bv(\d+\.\d+\.\d+)\b/);
@@ -73,7 +111,7 @@ for (const docPath of DOCS) {
     }
   }
 
-  // 2b) 版本历史表中的粗体标记 **vX.Y.Z** 含当前版本
+  // 3b) 版本历史表中的粗体标记 **vX.Y.Z** 含当前版本
   //     只检查 docs/HANDBOOK.md（版本历史表所在文件）
   if (docPath === 'docs/HANDBOOK.md') {
     const boldVersions = lines
@@ -89,7 +127,7 @@ for (const docPath of DOCS) {
     markerChecks++;
   }
 
-  // 2c) WORKBENCH_SPEC 状态表中的 ✅ vX.Y.Z
+  // 3c) WORKBENCH_SPEC 状态表中的 ✅ vX.Y.Z
   if (docPath === 'docs/design/WORKBENCH_SPEC.md') {
     const statusVersions = lines
       .map(l => l.match(/✅\s*v(\d+\.\d+\.\d+)/))

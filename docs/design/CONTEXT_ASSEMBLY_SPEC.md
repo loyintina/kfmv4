@@ -34,9 +34,9 @@
 | 来源 | 示例 | 用途 |
 |------|------|------|
 | 心法文档 | `docs/KFM_V4_INVARIANTS.md` | 技术约束 |
-| 角色卡 | `角色卡/卡萝.md` | 人格设定（L1） |
+| 角色卡 | `角色卡`（概念，如卡萝/空谷） | 人格设定（L1） |
 | 项目手册 | `docs/HANDBOOK.md` | 项目知识 |
-| 开发指南 | `docs/CARD_DEV_GUIDE.md` | 规范参考 |
+| 开发指南 | `docs/development/CARD_DEV_GUIDE.md` | 规范参考 |
 
 **问题**：选中的文件应该存为路径列表。存哪？当前方案倾向 localStorage 或 `.kfmv4/` 工作区目录。
 

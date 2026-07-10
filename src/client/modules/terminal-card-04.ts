@@ -103,6 +103,7 @@ let _activeSid = '';
 let _startY = 0;
 let _startX = 0;
 let _actionTaken = false;
+let _sgrAccum = 0;
 
 gestures.register({
   id: 'xterm-scroll',
@@ -118,6 +119,7 @@ gestures.register({
     _startY = e.clientY;
     _startX = e.clientX;
     _actionTaken = false;
+    _sgrAccum = 0;
   },
   onMove(e) {
     if (!_activeTerm) return;
@@ -141,18 +143,18 @@ gestures.register({
     const ms = (_activeTerm as any)._core?.coreMouseService;
     const proto = ms?.activeProtocol || '?';
     const enc = ms?.activeEncoding || '?';
-    if (ms && proto !== 'NONE') {
-      const btn = dy > 0 ? 65 : 64;
-      const cx = Math.max(1, Math.min(_activeTerm.cols, Math.round(_activeTerm.cols / 2)));
-      const cy = Math.max(1, Math.min(_activeTerm.rows, Math.round(_activeTerm.rows / 2)));
-      const sgr = '\x1b[<' + btn + ';' + cx + ';' + cy + 'M';
-      log(['xscr', 'mouse dy=' + dy.toFixed(0) + ' proto=' + proto + ' enc=' + enc + ' sid=' + (_activeSid ? 'Y' : 'N') + ' msg=' + sgr.replace(/\x1b/g,'^[')]);
-      if (_activeSid) {
-        wsChannel.sendMessage('terminal-input', { sessionId: _activeSid, input: sgr });
-      }
-    } else {
-      _activeTerm.scrollLines(Math.round(dy / 9));
-      log(['xscr', 'scroll dy=' + dy.toFixed(0) + ' proto=' + proto]);
+
+    // 累积手势距离，按 9px/行滚动
+    _sgrAccum += dy;
+    const absAccum = Math.abs(_sgrAccum);
+    if (absAccum >= 9) {
+      const lines = Math.floor(absAccum / 9);
+      const dir = _sgrAccum > 0 ? 1 : -1;
+
+      // 直接调 xterm scrollLines 滚动缓冲区，不依赖 SGR 协议（tmux 只处理第 1 个 SGR 事件）
+      _activeTerm.scrollLines(dir * lines);
+
+      _sgrAccum -= lines * 9 * dir;
     }
     _startY = e.clientY;
   },
@@ -160,6 +162,7 @@ gestures.register({
     _activeTerm = null;
     _activeSid = '';
     _actionTaken = false;
+    _sgrAccum = 0;
   },
   stopPropagation: true,
 });

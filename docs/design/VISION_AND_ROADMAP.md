@@ -46,7 +46,7 @@ KFM 不是一个"文件管理器"，也不是一个"AI 聊天客户端"。它是
 
 **功能卡**（有 UI 交互的组件）：
 - 终端、日志面板、设置卡、文件预览
-- 通过 `cards/plugins/*.card.ts` 注册
+- 通过 `src/client/cards/plugins/` 下的 `.card.ts` 文件注册
 - 交互：拖拽、缩放、点击
 
 **上下文卡**（作为 AI 对话参考材料的文本块）：
@@ -137,7 +137,7 @@ L2（技术约束/心法）     ← 决定专业能力，22 条约束、代码�
 
 #### 项目即工作区
 
-KFM 项目本身就是一个完整的工作区。`docs/` 是共享记忆库，`src/` 是可读可写的代码库，`cards/plugins/` 是可插拔的功能库。AI 不需要额外的工作区目录——它工作的地方就是项目本身。
+KFM 项目本身就是一个完整的工作区。`docs/` 是共享记忆库，`src/` 是可读可写的代码库，`src/client/cards/plugins/` 是可插拔的功能库。AI 不需要额外的工作区目录——它工作的地方就是项目本身。
 - CardManager + 插件系统一旦完成，AI 应该能直接通过它来创建新卡片、注册到工具坞、验证构建
 - KFM 本身的改进可以由 KFM 自己完成
 - 你的设计文档和规范（本章）是 AI 理解如何操作这个循环的唯一起点
@@ -296,10 +296,10 @@ Agent 之间的通信通过文件系统隐式完成：
 
 一张卡片 = 一个 `CardDefinition` + 内容插槽的实现。插件就是一个 `.ts` 文件，导出 `CardDefinition` 对象。
 
-卡片目录在项目根 `cards/plugins/` 下（不在 `src/client/` 内，受 tsconfig rootDir 限制）：
+卡片目录在 `src/client/cards/plugins/` 下：
 
 ```
-cards/plugins/
+src/client/cards/plugins/
 ├── debug-card/
 │   └── index.ts
 └── ...  // 加新插件 → 新建一个目录
@@ -869,9 +869,9 @@ Agent 会话到期后，新 Agent 如何"接上"当前进度？
 AI 读到本文档后，按以下流程：
 
 1. 读第六章（CardDefinition 接口规范）
-2. 当前仅 `cards/plugins/debug-card/` 为实验参考（插件系统**尚未正式搭建**，以下流程为目标设计）
-3. 在 `cards/plugins/` 下新建目录 + `index.ts`
-4. 在卡片注册表（src/client/cards/registry.ts，待创建）中加一行 import + 注册
+2. 当前仅 `src/client/cards/plugins/debug-card/` 为实验参考（插件系统**尚未正式搭建**，以下流程为目标设计）
+3. 在 `src/client/cards/plugins/` 下新建目录 + `index.ts`
+4. 在卡片注册表（`src/client/cards/registry.ts`）中加一行 import + 注册
 5. 执行 `npm run build` 验证编译通过
 6. 验证卡片出现在卡片堆中并可正常交互
 7. `git add/commit/push`
@@ -879,7 +879,7 @@ AI 读到本文档后，按以下流程：
 ### 10.2 人类用户安装社区插件
 
 1. 从社区下载 `xxx.card.ts`
-2. 放到项目根目录的 `cards/` 下
+2. 放到 `src/client/cards/plugins/` 下
 3. `npm run build`
 4. 刷新浏览器 → 卡片已在卡片堆中
 

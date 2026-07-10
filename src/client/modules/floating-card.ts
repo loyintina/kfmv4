@@ -385,6 +385,9 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
         for (const child of item.contentEl.querySelectorAll<HTMLElement>('*')) {
           child.style.touchAction = 'pan-y';
         }
+        for (const xtermEl of item.contentEl.querySelectorAll<HTMLElement>('.xterm')) {
+          xtermEl.style.touchAction = 'none';
+        }
       });
     }
   } else {
@@ -556,10 +559,14 @@ export function enterFullscreen(item: FloatingCardItem): void {
   item.el.classList.add('fullscreen');
   // 恢复内容区的原生垂直滚动（全屏 CSS 设了 * { touch-action: none } 杀死了它）
   // 需要覆盖 contentEl 及其所有后代，因为 * 选择器逐元素命中
+  // 但 xterm 元素必须保留 touch-action: none（终端自定义滚动需要）
   if (item.contentEl) {
     item.contentEl.style.touchAction = 'pan-y';
     for (const child of item.contentEl.querySelectorAll<HTMLElement>('*')) {
       child.style.touchAction = 'pan-y';
+    }
+    for (const xtermEl of item.contentEl.querySelectorAll<HTMLElement>('.xterm')) {
+      xtermEl.style.touchAction = 'none';
     }
   }
   anim.to(item.el, {
@@ -622,13 +629,16 @@ function exitFullscreen(item: FloatingCardItem): void {
     lineEl.style.margin = '';
   }
   
-  // 恢复内容区及所有后代的 touch-action（全屏时设为 pan-y）
+  // 恢复内容区及后代的 touch-action（全屏时设为 pan-y）
+  // 跳过 .xterm 元素——它的 touch-action: none 由终端模块管理
   if (item.contentEl) {
     item.contentEl.style.touchAction = '';
     for (const child of item.contentEl.querySelectorAll<HTMLElement>('*')) {
+      if (child.classList?.contains('xterm')) continue;
       child.style.touchAction = '';
     }
   }
+  item.el.classList.remove('fullscreen');
   // 显示四角光球 + topMidOrb
   if (item.tlOrb) item.tlOrb.style.display = 'flex';
   if (item.trOrb) item.trOrb.style.display = 'flex';
@@ -726,13 +736,16 @@ function dismissFullscreen(item: FloatingCardItem): void {
     item.fullscreenBtns = null;
   }
   
-  // 恢复内容区及所有后代的 touch-action（全屏时设为 pan-y）
+  // 恢复内容区及后代的 touch-action（全屏时设为 pan-y）
+  // 跳过 .xterm 元素——它的 touch-action: none 由终端模块管理
   if (item.contentEl) {
     item.contentEl.style.touchAction = '';
     for (const child of item.contentEl.querySelectorAll<HTMLElement>('*')) {
+      if (child.classList?.contains('xterm')) continue;
       child.style.touchAction = '';
     }
   }
+  item.el.classList.remove('fullscreen');
   _dismissOne(item, true);
 }
 

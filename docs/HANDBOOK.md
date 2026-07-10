@@ -1,6 +1,6 @@
 ---
 title: KFM v4 工作手册
-last_reviewed: 2026-07-07
+last_reviewed: 2026-07-10
 kfm_version: 7.0.0
 status: active
 maintainer: AI agent
@@ -147,30 +147,32 @@ index.ts (入口路由)
 - **规则**：选择器锁 (priority 110) 在手势优先级最高，打开后外部滑动手势全部被拦截。关闭时必须调 `L.popContext()` 恢复上下文。
 
 ## 二、当前会话状态
-> **最后更新**：2026-07-07（v7.0.0 — Phase 0+I 完成，进入 Agent 阶段）
+> **最后更新**：2026-07-10（v7.0.0 — 后 v7.0.0 阶段：API 卡 + Provider 管理 + 服务端代理）
 
 ### 当前焦点
-**测试基础设施与卡片交互完善**
+**API 卡 Provider 管理 + 服务端 CORS 代理**
 
-卡片工作台模式系统已是之前阶段的成果。当前方向为：加固测试基础设施（GSAP mock 时序修正 + DOM mock 布局增强 + Canvas 层测试 + 交互测试）和终端卡双指缩放/全屏卡片原生滚动。
+卡片插件系统基础（card-registry + plugins/）已在 v7.0.0 奠定。当前阶段的工作重⼼转移到：
+1. **API 卡（原设置卡）** — Provider 多实例管理（编辑/测试/选择）、`.kfmv4/providers.json` 文件持久化
+2. **服务端 CORS 代理** — `/api/proxy/fetch` 端点，AI API 请求走服务端避开 CORS
+3. **卡片视觉规范** — CARD_DEV_GUIDE §10 边框/颜色/嵌套规范 + theme.ts 对齐
 
-- **v6.11.0 已完成**：
-  - 测试基础设施阶段 A：GSAP mock 时序修正（时间线位置驱动模型）✅
-  - 测试基础设施阶段 B：DOM mock 布局增强（scrollHeight/clientHeight/scrollTop 联动 + overflow）✅
-  - 测试基础设施阶段 C：Canvas 渲染层测试（hitTest/双树/stop/resize）✅
-  - 测试基础设施阶段 D：交互测试补全（浮卡状态机 + DOM mock querySelector + className 同步）✅
-  - 测试基础设施设计文档：`docs/archive/design/TEST_INFRASTRUCTURE_SPEC.md` ✅
-  - 终端卡双指缩放：双缓冲渲染实时反馈 → 降级 xterm.js v5 Canvas 渲染器 → 按卡类型区分双指处理器 ✅
-  - 全屏卡片原生滚动：`file-card-scroll` 移除 + `_handleStart` 逻辑恢复 ✅
-  - GestureRegistry `requireFailure` 依赖关系机制 ✅
-  - checkout 权限修复：.githooks/pre-push + check-versions.mjs 版本验证 ✅
-  - check-checks.mjs 元检查器：验证所有 check 脚本已集成到管线 ✅
-  - check-doc-coverage.mjs 文档覆盖强制 ✅
-  - docs/AGENT_PROMPT_REFERENCES.md — 外部提示词参考归档 ✅
-  - docs/archive/design/GESTURE_ARCHITECTURE_SPEC.md — 手势识别架构改进设计规范 ✅
-  - docs/archive/design/FULLSCREEN_CARD_SPEC.md — 全屏卡片设计规范 ✅
+- **v7.0.0 后已完成**：
+  - 设置卡 → API 卡重构：Provider 管理界面（多 Provider 编辑/测试/选择/模型自动拉取）✅
+  - `.kfmv4/providers.json` 文件持久化（取代 localStorage）+ 异步数据加载 ✅
+  - 服务端 CORS 代理 `/api/proxy/fetch` 端点（AI API 请求走服务端）✅
+  - 自定义 Provider 下拉面板（取代原生 select，浮在卡片上方）✅
+  - 卡片样式规范落地：CARD_DEV_GUIDE §10.6 边框规范 + §10.7 多级嵌套颜色交替 + §10.2.1 文字颜色可读性 ✅
+  - 设置卡视觉迭���（buildCardLayout + theme.ts 对齐、渐变边框、纯暗色背景、accent 标签栏）✅
+  - 卡片堆点击/左滑发射全屏卡 + 收起堆（含 revert + GSAP 冲突修复）✅
+  - 构建管线加固：预存 tsc 13 错误消除（floating-card/handler-factory/gesture-registry）✅
+  - 文档归档对齐：43 份文档 frontmatter + 交叉引用修复 ✅
+  - CONTEXT_ASSEMBLY_SPEC — AI 上下文拼接与工作空间设计 draft ✅
+  - API 卡路径适配 nginx 反代（自动检测前缀）✅
+  - 输入框/按钮排版统⼀（em 单位、`--card-font-size` CSS 变量）✅
+  - 终端方向键左上下右修复 ✅
 
-v6.6.0 �����前的焦�����������「浮卡系统统一化」已两次尝试均回退放弃（详见 `docs/archive/design/CARD_SYSTEM_UNIFICATION_SPEC.md`）。当前方向改为「三层共享层」——常量层 + 类型层 + 能力声明层，可在不碰逻辑的前提下逐步统一。
+v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放弃（详见 `docs/archive/design/CARD_SYSTEM_UNIFICATION_SPEC.md`）。当前方向改为「三层共享层」——常量层 + 类型层 + 能力声明层，可在不碰逻辑的前提下逐步统一。
 
 - **v6.6.0 已完成**：
   - 交互共享层建立（`interaction-constants.ts` + `drag-handler.ts`）✅
@@ -195,7 +197,7 @@ v6.6.0 �����前的焦�����������「浮卡系统�
   - 死代码清理（~300 行：两套拖拽系统、`*Capability`、`anim.play/kill` API、遗留函数）✅
   - `notifyStateChange` 散布分类审计（35 处，26/35 必要，9 冗余）✅
 
-> **v6.3.x 历史成就**：三轮深度审计 + CI 基线固化 + `(as any)` 零逃逸 + 能�����������层解耦 + 文档质量自动化。详见 `archive/handoffs/v6.3.1` 交接记录。
+> **v6.3.x 历史成就**：三轮深度审计 + CI 基线固化 + `(as any)` 零逃逸 + 能力层解耦 + 文档质量自动化。详见 `archive/handoffs/v6.3.1` 交接记录。
 
 > **v6.2.0 历史成就**：AI 操作命令体系（expand-dir/collapse-dir/select-file）+ 用户与 AI 对称操作 + Registry 内容层增强 + Box 引擎完善。详见 `archive/handoffs/v6.2.0` 交接记录。
 
@@ -280,7 +282,8 @@ v6.6.0 �����前的焦�����������「浮卡系统�
 | **v6.11.0** | **_handleStart 跳过纯双指处理器 + 全屏卡片原生滚动 + 文件点击直接全屏** | git `53dcf21` |
 | **v6.11.1** | **心法重组（22条+6偏差组）+ 动画锁3s根因修复 + 测试拆分7文件 + 卡片插件系统 + _cards统一 + check-handbook-sync** | git `fedab31` |
 | **v6.11.2** | **终端全屏辅助栏（aux bar）+ 光球避开辅助栏 + TERMINAL_CARD_SPEC 归档** | git `c386da3` |
-| **v7.0.0** | **Phase 0+I 完成 — 心法/测试/插件/文档全部清理，进入 Agent 阶段** | **HEAD** |
+| **v7.0.0** | **Phase 0+I 完成 — 心法/测试/插件/文档全部清理，进入 Agent 阶段** | git `9de2a8c` |
+| **后 v7.0.0** | **API 卡 Provider 管理 + 服务端 CORS 代理 + 卡片视觉规范 + providers.json 持久化** | **HEAD** |
 
 > 完整诊断手册见 [`docs/DIAGNOSTICS.md`](./DIAGNOSTICS.md)，包含：
 > - **隐性契约（11 条）** — 破坏会出 bug 的隐藏约束
@@ -345,13 +348,13 @@ v6.6.0 �����前的焦�����������「浮卡系统�
 | `canvas-cursor.ts` | 444 | 3 | ✅ 提及 | Canvas 盒子光标系统 |
 | `canvas-scroll.ts` | 361 | 2 | ✅ 提及 | Canvas 盒子滚动系统 |
 | `canvas-utils.ts` | 61 | 4 | ✅ 依赖图 | Canvas 通用工具函数 |
-| `card-stack.ts` | 441 | 4 | ✅ 独立条目 | 堆叠卡片面板 |
+| `card-stack.ts` | 445 | 4 | ✅ 独立条目 | 堆叠卡片面板 |
 | `char-rain.ts` | 306 | 1 | ✅ 分组表 | 字符散落/回收动画 |
 | `click-queue.ts` | 39 | 1 | ✅ 分组表 | 点击事件队列 |
 | `color-utils.ts` | 46 | 2 | ✅ 分组表 | 颜色工具函数（从 tree-swipe 拆分） |
 | `debug-assert.ts` | 24 | 1 | ✅ 提及 | 运行时断言 |
 | `dom-refs.ts` | 37 | 9 | ✅ 注册表 | DOM 元素引用 |
-| `floating-card.ts` | 1182 | 2 | ✅ 独立条目 | 浮卡系统（核心模块） |
+| `floating-card.ts` | 1204 | 2 | ✅ 独立条目 | 浮卡系统（核心模块） |
 | `gesture-registry.ts` | 384 | 6 | ✅ 独立条目 | 手势注册中心 |
 | `gestures.ts` | 215 | 1 | ✅ 提及 | 页面滑动手势配置 |
 | `interaction-constants.ts` | 21 | 2 | ✅ 分组表 | 交互常量共享层（v6.6.0 新增） |
@@ -374,7 +377,7 @@ v6.6.0 �����前的焦�����������「浮卡系统�
 | `ui-registry.ts` | 334 | 9 | ✅ 独立条目 | UI 元素注册表 |
 | `ui.ts` | 71 | 10 | ✅ 提及 | UI 初始化编排 |
 | `ws-channel.ts` | 348 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
-| `terminal-card-04.ts` | 527 | 0 | TERMINAL_CARD_SPEC | 03 号终端卡 xterm.js 集成 |
+| `terminal-card-04.ts` | 539 | 0 | TERMINAL_CARD_SPEC | 03 号终端卡 xterm.js 集成 |
 | `tmux-card.ts` | 195 | 0 | — | 04 号 tmux 窗口管理卡 |
 | `card-registry.ts` | 155 | 5 | CARD_REGISTRY_SPEC | 卡片注册表：类型声明 + 实例追踪 |
 | **渲染器（renderers/）** | | | | |
@@ -386,7 +389,7 @@ v6.6.0 �����前的焦�����������「浮卡系统�
 | `../src/client/modules/renderers/math-diagram.ts` | 153 | 1 | — | 数学公式/图表渲染器（KaTeX + Mermaid CDN） |
 | `../src/client/modules/renderers/md-extensions.ts` | 48 | 1 | — | Markdown 渲染扩展（链接、任务列表） |
 | `../src/client/modules/renderers/text-preview.ts` | 26 | 1 | — | 文本文件预览渲染器 |
-| **合计** | **11568** | | | |
+| **合计** | **11606** | | | |
 
 ### 死代码检查
 **结论：无死代码。** 所有 37 个模块都被至少 1 个文件导入（`terminal-card-04.ts` 和 `tmux-card.ts` 被导入数为 0，但这是模块自身的特性：它们仅在用户侧打开卡片时由 `card-registry.ts` 的 `createHandler` 工厂按需实例化，属于动态加载。`terminal-aux-bar.ts` 已删除（空占位，无任何引用）。`src/cards/` 目录已彻底删除。实际使用的 logger 在 `src/client/modules/logger.ts`。
