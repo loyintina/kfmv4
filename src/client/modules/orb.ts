@@ -495,18 +495,20 @@ export function initOrb(): void {
   const inputEl = DOM.aiInput;
   const sendBtn = DOM.aiSendBtn;
   if (inputEl && sendBtn) {
+    const base = window.location.pathname.replace(/\/+$/, '') + '/api/';
+
     async function doSend(): Promise<void> {
-      const text = inputEl.value.trim();
+      const text = inputEl!.value.trim();
       if (!text) return;
-      inputEl.value = '';
-      inputEl.style.height = 'auto';
+      inputEl!.value = '';
+      inputEl!.style.height = 'auto';
 
       chatMessages.push({ role: 'user', text });
       renderChatContent();
 
-      // 读当前 Provider
       try {
-        const res = await fetch('/api/files/read', {
+        // 读当前 Provider
+        const res = await fetch(base + 'files/read', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ path: 'kfmv4/.kfmv4/providers.json' }),
@@ -520,7 +522,8 @@ export function initOrb(): void {
           return;
         }
 
-        const apiRes = await fetch('/api/proxy/fetch', {
+        // 发消息到 API
+        const apiRes = await fetch(base + 'proxy/fetch', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -549,5 +552,4 @@ export function initOrb(): void {
     sendBtn.addEventListener('click', () => doSend());
   }
  }
-}
 
