@@ -263,8 +263,8 @@ function buildPanelContent(): void {
 
   function saveConfig(): void {
     localStorage.setItem('kfm-chat-config', JSON.stringify({
-      providerId: provText.textContent === '—' ? '' : providers.find((p: any) => (p.name || p.id) === provText.textContent)?.id || '',
-      modelId: modelText.textContent === '—' ? '' : modelText.textContent,
+      providerId: provText!.textContent === '—' ? '' : providers.find((p: any) => (p.name || p.id) === provText!.textContent)?.id || '',
+      modelId: modelText!.textContent === '—' ? '' : modelText!.textContent,
     }));
   }
 
