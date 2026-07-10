@@ -21,6 +21,7 @@ import { wsChannel } from './ws-channel.js';
 import { MARGIN } from './interaction-constants.js';
 import { createDragHandler, type DragConfig } from './drag-handler.js';
 import { anim } from './animation-registry.js';
+import { log } from './logger.js';
 
 interface ChatMessage {
   role: 'user' | 'ai';
@@ -489,5 +490,64 @@ export function initOrb(): void {
   wsChannel.onCommand('expand-orb', () => { if (orbState === 'collapsed') { expandPanel(); } });
   wsChannel.onCommand('collapse-orb', () => { if (orbState === 'expanded') { collapsePanel(); } });
   wsChannel.onCommand('toggle-orb', () => { togglePanel(); });
+
+  // ========== 聊发送绑定 ==========
+  const inputEl = DOM.aiInput;
+  const sendBtn = DOM.aiSendBtn;
+  if (inputEl && sendBtn) {
+    async function doSend(): Promise<void> {
+      const text = inputEl.value.trim();
+      if (!text) return;
+      inputEl.value = '';
+      inputEl.style.height = 'auto';
+
+      chatMessages.push({ role: 'user', text });
+      renderChatContent();
+
+      // 读当前 Provider
+      try {
+        const res = await fetch('/api/files/read', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: 'kfmv4/.kfmv4/providers.json' }),
+        });
+        const data = await res.json();
+        const providers = data.content ? JSON.parse(data.content) : [];
+        const p = providers[0];
+        if (!p) {
+          chatMessages.push({ role: 'ai', text: '⚠ 未配置 API Provider，请先在 API 卡中添加。' });
+          renderChatContent();
+          return;
+        }
+
+        const apiRes = await fetch('/api/proxy/fetch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            url: p.baseUrl + '/chat/completions',
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + p.apiKey, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: p.models[0] || 'deepseek-v4-flash',
+              messages: [{ role: 'user', content: text }],
+              max_tokens: 2048,
+            }),
+          }),
+        });
+        const result = await apiRes.json();
+        const reply = result?.data?.choices?.[0]?.message?.content || '⚠ 未获取到回复';
+        chatMessages.push({ role: 'ai', text: reply });
+      } catch (e) {
+        chatMessages.push({ role: 'ai', text: '⚠ 请求失败: ' + (e instanceof Error ? e.message : '未知错误') });
+      }
+      renderChatContent();
+    }
+
+    inputEl.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend(); }
+    });
+    sendBtn.addEventListener('click', () => doSend());
+  }
+ }
 }
 
