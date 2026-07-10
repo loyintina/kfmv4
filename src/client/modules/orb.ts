@@ -301,7 +301,7 @@ function buildPanelContent(): void {
     const panelH = panel.getBoundingClientRect().height;
     panel.style.top = Math.max(4, r.top - panelH) + 'px';
     _closeHandler = (e: PointerEvent) => {
-      if (!panel.contains(e.target as Node) && e.target !== trigger) {
+      if (!panel.contains(e.target as Node) && !trigger.contains(e.target as Node)) {
         closeDropdown();
       }
     };

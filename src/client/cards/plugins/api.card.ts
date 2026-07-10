@@ -498,7 +498,7 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
         panelOpen ? closePanel() : openPanel();
       };
       document.addEventListener('pointerdown', (e: PointerEvent) => {
-        if (panelOpen && !selPanelEl.contains(e.target as Node) && e.target !== selTriggerEl) {
+        if (panelOpen && !selPanelEl.contains(e.target as Node) && !selTriggerEl.contains(e.target as Node)) {
           closePanel();
         }
       });
