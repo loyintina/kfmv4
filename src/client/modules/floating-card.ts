@@ -416,7 +416,7 @@ function _renderFloatingContent(contentEl: HTMLElement, state: 'compact' | 'acti
     }
     label.textContent = cardName || '';
   } else {
-    contentEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:flex-start;box-sizing:border-box;padding:8px;font-size:11px;color:rgba(224,224,224,0.7);overflow-y:auto';
+    contentEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:flex-start;box-sizing:border-box;padding:8px;font-size:11px;color:rgba(224,224,224,0.7);overflow-y:auto;touch-action:none';
     const old = contentEl.querySelector('.fc-compact-label');
     if (old) old.remove();
   }
