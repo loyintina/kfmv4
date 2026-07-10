@@ -150,6 +150,7 @@ function renderChatContent(): void {
     const lineHeight = 20;
     try {
       const lines = layoutLines(msg.text, font, innerWidth - 24, lineHeight);
+      const textHtml = lines.map(l => `<span style="display:block">${escapeHtml(l.text)}</span>`).join('');
       bubbleHtml += `<div style="font-family:sans-serif;font-size:var(--card-font-size,13px);line-height:${lineHeight}px;color:${theme.aiChat.bubbleText}">${textHtml}</div>`;
     } catch {
       bubbleHtml += `<div style="font-size:var(--card-font-size,13px);color:${theme.aiChat.bubbleText}">${escapeHtml(msg.text)}</div>`;
