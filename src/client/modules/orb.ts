@@ -268,15 +268,16 @@ function buildPanelContent(): void {
     }));
   }
   let _openTrig: HTMLDivElement | null = null;
+  let _closeHandler: ((e: PointerEvent) => void) | null = null;
 
   function closeDropdown(): void {
     const existing = document.querySelector('.orb-dropdown-panel');
     if (existing) existing.remove();
+    if (_closeHandler) { document.removeEventListener('pointerdown', _closeHandler); _closeHandler = null; }
     _openTrig = null;
   }
 
   function showDropdown(trigger: HTMLDivElement, items: { label: string; value: string }[], onPick: (value: string) => void): void {
-    // 点击同一个触发器 → 收起
     if (_openTrig === trigger) { closeDropdown(); return; }
     closeDropdown();
     _openTrig = trigger;
@@ -285,8 +286,8 @@ function buildPanelContent(): void {
     panel.style.cssText = 'position:fixed;z-index:9999;border-radius:6px;padding:3px;background:rgba(20,16,32,0.96);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.1);overflow:hidden;min-width:100px';
     items.forEach(item => {
       const row = document.createElement('div');
-      row.textContent = item.label;
       row.style.cssText = 'padding:4px 8px;border-radius:4px;font-size:10px;cursor:pointer;color:rgba(255,255,255,0.8)';
+      row.textContent = item.label;
       row.onmouseenter = () => { row.style.background = 'rgba(255,255,255,0.06)'; };
       row.onmouseleave = () => { row.style.background = ''; };
       row.onclick = (ev: PointerEvent) => { ev.stopPropagation(); onPick(item.value); closeDropdown(); };
@@ -299,12 +300,12 @@ function buildPanelContent(): void {
     document.body.appendChild(panel);
     const panelH = panel.getBoundingClientRect().height;
     panel.style.top = Math.max(4, r.top - panelH) + 'px';
-    document.addEventListener('pointerdown', function onBg(e: PointerEvent) {
+    _closeHandler = (e: PointerEvent) => {
       if (!panel.contains(e.target as Node) && e.target !== trigger) {
-        document.removeEventListener('pointerdown', onBg);
         closeDropdown();
       }
-    });
+    };
+    document.addEventListener('pointerdown', _closeHandler);
   }
 
   fetch(base + 'files/read', {
