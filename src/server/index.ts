@@ -274,12 +274,12 @@ function setupApiRoutes(router: express.Router) {
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
         // 用 Node.js 的管道转发响应体
-        const nodeReader = (response.body as any).getReader();
+        const nodeReader = response.body!.getReader();
         const decoder = new TextDecoder();
         function pump(): void {
-          nodeReader.read().then(({ done, value }: { done: boolean; value: Uint8Array }) => {
-            if (done) { res.end(); return; }
-            res.write(decoder.decode(value, { stream: !done }));
+          nodeReader.read().then((result) => {
+            if (result.done) { res.end(); return; }
+            res.write(decoder.decode(result.value, { stream: true }));
             pump();
           }).catch(() => res.end());
         }
