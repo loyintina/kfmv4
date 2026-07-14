@@ -114,6 +114,7 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
   let activeSessionId = '';
   let _c1 = '#00d4ff', _c2 = '#7c3aed';
   let _sessionSelect: ReturnType<typeof createCustomSelect> | null = null;
+  let _nameInput: HTMLInputElement | null = null;
 
   function getActiveSession(): Session | null {
     return sessions.find(s => s.id === activeSessionId) || null;
@@ -352,6 +353,7 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
   let _bubbleContainer: HTMLElement | null = null;
 
   function renderAll(): void {
+    if (_nameInput) { const s = getActiveSession(); _nameInput!.value = s?.title || ''; }
     if (_poolListEl) renderSessionList(_poolListEl);
     if (_bubbleContainer) renderBubbles(_bubbleContainer, getActiveSession());
   }
@@ -397,17 +399,70 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
       );
       previewHeader.appendChild(sessionLabel);
       previewHeader.appendChild(_sessionSelect.element);
+
+      // 名称编辑
+      const nameRow = document.createElement('div');
+      nameRow.style.cssText = 'display:flex;align-items:center;margin-bottom:6px';
+      const nameLabel = document.createElement('span');
+      nameLabel.style.cssText = 'font-size:var(--card-font-size,11px);color:rgba(255,255,255,0.75);flex-shrink:0;margin-right:8px';
+      _nameInput = document.createElement('input');
+      _nameInput!.type = 'text';
+      _nameInput!.style.cssText = 'flex:1;min-width:0;padding:3px 6px;border-radius:4px;font-size:var(--card-font-size,11px);color:rgba(255,255,255,0.85);background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);outline:none';
+      nameRow.appendChild(nameLabel);
+      nameRow.appendChild(_nameInput);
+
+      const fillName = () => {
+        const s = getActiveSession();
+        _nameInput!.value = s?.title || '';
+      };
+      fillName();
+
+      // 操作按钮
+      const btnRow = document.createElement('div');
+      btnRow.style.cssText = 'display:flex;gap:6px;margin-bottom:6px';
+
+      const saveBtn = document.createElement('button');
+      saveBtn.textContent = '保存';
+      saveBtn.style.cssText = `flex:1;padding:0.3em 0;border-radius:6px;font-size:var(--card-font-size,10px);font-weight:600;cursor:pointer;border:1px solid ${c1}40;color:${c1};background:transparent`;
+      saveBtn.onclick = async () => {
+        const s = getActiveSession();
+        if (!s) return;
+        s.title = _nameInput!.value.trim() || s.title;
+        s.manuallyNamed = true;
+        s.updatedAt = new Date().toISOString();
+        await saveSession(s);
+        await loadSessions().then(res => { sessions = res; });
+        renderAll();
+        _sessionSelect?.updateItems(sessions.map(s => ({ label: s.title, value: s.id })), activeSessionId);
+      };
+
+      const newBtn = document.createElement('button');
+      newBtn.textContent = '新建';
+      newBtn.style.cssText = `flex:1;padding:0.3em 0;border-radius:6px;font-size:var(--card-font-size,10px);font-weight:600;cursor:pointer;border:1px solid ${c2}40;color:${c2};background:transparent`;
+      newBtn.onclick = async () => {
+        const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+        const newSession: Session = {
+          id, title: '新会话', manuallyNamed: false,
+          createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+          messages: [],
+        };
+        await saveSession(newSession);
+        sessions = await loadSessions();
+        activeSessionId = id;
+        fillName();
+        renderAll();
+        _sessionSelect?.updateItems(sessions.map(s => ({ label: s.title, value: s.id })), activeSessionId);
+        window.dispatchEvent(new CustomEvent('kfm-session-change', { detail: { sessionId: id } }));
+      };
+
+      btnRow.appendChild(saveBtn);
+      btnRow.appendChild(newBtn);
+
       previewCard.appendChild(previewHeader);
+      previewCard.appendChild(nameRow);
+      previewCard.appendChild(btnRow);
 
       // 气泡区（三层框，正向渐变，半屏高可滚动）
-      const bubbleFrame = document.createElement('div');
-      bubbleFrame.style.cssText = `flex:1;overflow-y:auto;min-height:80px;max-height:50vh;border-radius:8px;padding:8px;background:linear-gradient(rgba(10,10,15,0.94),rgba(10,10,15,0.94)) padding-box,linear-gradient(135deg,${c1} 30%,${c2} 70%) border-box;border:1px solid transparent;border-left-width:3px`;
-      _bubbleContainer = document.createElement('div');
-      _bubbleContainer.style.cssText = 'display:flex;flex-direction:column';
-      bubbleFrame.appendChild(_bubbleContainer);
-      previewCard.appendChild(bubbleFrame);
-
-      bodyEl.appendChild(previewCard);
 
       // ===== 池框（二层反色） =====
       const poolCard = document.createElement('div');
