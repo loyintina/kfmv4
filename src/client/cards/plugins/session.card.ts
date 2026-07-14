@@ -463,6 +463,14 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
       previewCard.appendChild(btnRow);
 
       // 气泡区（三层框，正向渐变，半屏高可滚动）
+      const bubbleFrame = document.createElement('div');
+      bubbleFrame.style.cssText = `flex:1;overflow-y:auto;min-height:80px;max-height:50vh;border-radius:8px;padding:8px;background:linear-gradient(rgba(10,10,15,0.94),rgba(10,10,15,0.94)) padding-box,linear-gradient(135deg,${c1} 30%,${c2} 70%) border-box;border:1px solid transparent;border-left-width:3px`;
+      _bubbleContainer = document.createElement('div');
+      _bubbleContainer.style.cssText = 'display:flex;flex-direction:column';
+      bubbleFrame.appendChild(_bubbleContainer);
+      previewCard.appendChild(bubbleFrame);
+
+      bodyEl.appendChild(previewCard);
 
       // ===== 池框（二层反色） =====
       const poolCard = document.createElement('div');
