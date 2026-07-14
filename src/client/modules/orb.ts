@@ -191,8 +191,12 @@ function renderChatContent(): void {
       </div>`;
     idx++;
   }
+  // 保存滚动位置
+  const scrollTop = contentArea.scrollTop;
+  const wasAtBottom = scrollTop + contentArea.clientHeight >= contentArea.scrollHeight - 80;
   contentArea.innerHTML = html;
-  contentArea.scrollTop = contentArea.scrollHeight;
+  if (wasAtBottom) { contentArea.scrollTop = contentArea.scrollHeight; }
+  else { contentArea.scrollTop = scrollTop; }
   // 异步渲染 markdown
   const msgEls = contentArea.querySelectorAll<HTMLElement>('.orb-msg-text');
   for (const el of msgEls) {
