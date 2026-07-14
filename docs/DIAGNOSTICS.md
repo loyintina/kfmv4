@@ -32,26 +32,27 @@ created_at: 2026-06-29
 
 **历史案例**：B.A.R. #001（Touch → PointerEvent 迁移断裂）
 
-### 1.2 touch-action：全屏单页应用必须全局设为 none
+### 1.2 touch-action 分层策略
 
-**涉及模块**：`public/css/base.css`、所有 `position:fixed` 的覆盖层、所有自定义 Canvas 控件
+**涉及模块**：`public/css/base.css`、`floating-card.ts`、所有自定义 Canvas 控件
 
-**契约内容**：
+**基础层 — 全局 `none`**：
 - `body`、`.main`、所有全屏覆盖层必须设 `touch-action: none`
 - 任何新添加的 `position:fixed` 元素如果覆盖了触摸区域，必须同步设 `touch-action: none`
 - 任何自定义 Canvas 控件（如终端卡、canvas-scroll 区域）必须在 Canvas 元素上显式设 `touch-action: none`
-- **不要**使用 `touch-action: pan-y` 或 `auto`——本项目没有浏览器原生滚动，所有滚动由代码实现
 
-**额外陷阱**：`exitFullscreen()` 和 `dismissFullscreen()` 在 `floating-card.ts` 中会遍历 `contentEl` 的所有后代并清空 `touch-action`（设为 `''` → 默认 `auto`）。这会使退出全屏的浮卡重新被浏览器接管，`pointercancel` 再现。
-修复：这两个函数中应设 `touch-action: 'none'` 而非清空。
-**违规后果**：浏览器检测到垂直滑动后接管触摸，停止派发 `pointermove`，导致手势在外部区域或 Canvas 控件上失效。
-每手势仅 1-2 帧 move 就被 `pointercancel` 截断，画面几乎不动。
+**内容层 — 卡片内容区 `pan-y`**：
+- 卡片内容区（`.card-content` 及有 `overflow-y: auto` 的滚动容器）设 `touch-action: pan-y`
+- 浮卡外层容器（`.floating-card`）设 `touch-action: pan-y`，让触摸事件能渗透到内部滚动区
+- `pan-y` 允许浏览器原生垂直滚动，同时横滑仍透传给全局手势系统
+- 卡片开发规范见 `CARD_DEV_GUIDE.md` §10.4
+
+**违规后果**：
+- 卡片内容区设 `touch-action: none` → 浮卡内无法滚动
+- 全局设 `touch-action: auto` → 浏览器接管所有手势 → `pointercancel` 截断全局手势
 
 **历史案例**：B.A.R. #001（全局 touch-action）、B.A.R. #007（终端 Canvas 缺失 touch-action）
-
-**注意**：`touch-action` 不是 CSS 继承属性。即使父元素设为 `none`，子元素仍使用默认值 `auto`。
-全屏卡片需要通过 CSS 规则 `.floating-card.fullscreen * { touch-action: none }` 确保所有后代元素生效。
-历史案例：2026-07-06 全屏卡片手势被 pointercancel 截断，排查 4 轮才发现是非继承属性问题。
+2026-07-14：浮卡滚动失效，根因是 `_renderFloatingContent` active 态误用 `none` 而非 `pan-y`，且浮卡外层 `el` 未设 `touch-action`，继承 `body` 的 `none`。
 
 ### 1.3 卡片堆是全局模式，不是局部组件
 
@@ -254,8 +255,8 @@ created_at: 2026-06-29
 **教训 1：先确认事件是否完整到达，再改处理事件的代码。**
 病灶在触控事件层（`touch-action` 缺失 → `pointercancel`），但我一开始就往渲染层追（`pixelOff` 符号、`ctx.translate` 方向、`visibleStart` 跳变）。如果先看日志卡中 `scrollStart` vs `scrollMove` 的比例——每条 gesture 只有 1-2 帧 move——立刻就能定位是事件截断。
 
-**教训 2：`npm run dev` 不打包客户端。**
-改完源码后浏览器拿到的是旧 `public/bundle.js`。应该 `npx esbuild` 手动重打。这个盲区让至少一半的测试轮次白跑。
+**教训 2：`npm run dev` 现在会自动先跑 `bundle`（SCSS + esbuild）再启服务端。**
+改客户端代码后刷新浏览器即可生效。如果 dev 已在跑，只需 `npm run bundle` 增量重编，无需重启服务端。
 
 **教训 3：诊断手段要选对。**
 `console.log` 手机不可见 → 浪费时间。Canvas 7px 小字不可见 → 浪费第二轮。`log()` 推日志卡 → 拿到真实数据 → 立刻定位。先用对的管道，再分析数据。
@@ -436,6 +437,83 @@ for (let i = 0; i < lines; i++) {
   wsChannel.sendMessage('terminal-input', { sessionId, input: sgr });
 }
 ```
+
+### B.A.R. #008 — 浮卡内原生滚动失效：exitFullscreen 批量覆盖 touch-action
+
+**日期**：2026-07-14
+**根因类型**：CSS 配置冲突 + 隐藏覆盖
+**症状关键词**：浮卡、滚动、touch-action、pan-y、querySelectorAll、inline style 残留
+
+#### 症状
+浮卡（非全屏态）内无法上下滚动。全屏卡正常。日志显示 `[swipe]` 手势持续触发 `gestures-page-swipe`，axis 为 `vertical`，浏览器未接管滚动。
+
+#### 根因（三重叠）
+
+1. **`exitFullscreen` / `dismissFullscreen` 用 `querySelectorAll('*')` 批量设 `touchAction = 'none'`**
+   退出全屏时，代码遍历 `contentEl` 的所有后代元素，逐元素设置 `elem.style.touchAction = 'none'`。这包括卡片内容区内的 `scrollArea`（`overflow-y: auto` 的滚动容器）。一旦设为 inline `none`，该元素永远无法再通过继承拿到父级的 `pan-y`。
+
+2. **`passive: false` 阻止浏览器提前决策**
+   `gesture-registry` 以 `{ passive: false }` 注册 `pointerdown` 监听。浏览器必须等 JS 返回后才决定是否接管滚动。即使 `touch-action` 正确，浏览器也不敢动。
+
+3. **文档自相矛盾，开发者按错误规则"修复"**
+   `DIAGNOSTICS.md` §1.2 声称"`touch-action` 不是继承属性"和"不要使用 `pan-y`"，导致开发者用 `querySelectorAll('*')` 批量设 `none` 来"确保全屏手势不被截断"。这些 inline style 残留到退出全屏后，杀死了浮卡滚动。
+
+#### 诊断过程
+
+在 `_handleStart` 中加 `getComputedStyle(target).touchAction` 日志后，发现 `scrollArea` 的实际值为 `none` 而非预期的 `pan-y`。追踪到 `floating-card.ts` 的退出全屏路径：
+
+```typescript
+// ❌ 退出全屏时批量设 none，破坏继承链
+for (const child of item.contentEl.querySelectorAll('*')) {
+  child.style.touchAction = 'none';
+}
+```
+
+#### 解决方案
+
+1. `gesture-registry`: `passive: false` → `passive: true` — 浏览器无需等 JS
+2. `floating-card.ts`: 外层 `el` + `contentEl` 设 `touch-action: pan-y`
+3. `exitFullscreen` / `dismissFullscreen`: 删除后代遍历，只设 `contentEl.style.touchAction = 'pan-y'`
+4. 文档修正：`DIAGNOSTICS.md` §1.2 改为分层策略（全局 `none`，卡片内容区 `pan-y`）
+
+#### 关键教训
+
+1. **`querySelectorAll('*')` + inline style = 继承链毒药。** 一旦给后代元素设了 inline `touch-action: none`，该值会永久粘住，父级改什么值都传不下去。永远不要用这种方式覆盖继承属性。
+
+2. **`touch-action` 是继承属性。** CSS 规范明确标注 inherited: yes。之前的文档写反了。
+
+3. **`getComputedStyle()` 是诊断利器。** 不要猜某元素的有效 CSS 值——直接打印出来。
+
+4. **`passive: true` 不等于放弃手势控制。** 浏览器只在 `touch-action` 允许的方向接管；不允许的方向仍然发 `pointermove` 给 JS。手势系统和原生滚动可以共存。
+
+5. **inline style 是最高优先级，但也是最难清理的。** `innerHTML = ''` 只清子元素，不碰 style。`style.cssText = '...'` 全量覆盖但容易丢字段。对继承属性的批量赋值尤其危险。
+
+#### 自查清单
+
+修改 `touch-action` 相关代码时：
+- [ ] 是否用 `querySelectorAll('*')` 遍历设值？→ 改为只设容器元素
+- [ ] 是否在退出某个状态时"清理" touch-action？→ 改为恢复为该状态应有的值
+- [ ] 新加的卡片内容区是否有 `overflow-y: auto`？→ 必须配套 `touch-action: pan-y`
+- [ ] 全屏 ↔ 浮卡态切换时是否残留了全屏态的 inline style？→ 用 `getComputedStyle` 验证
+
+#### 相关原理
+
+`passive: true` + `touch-action: pan-y` 的组合语义：
+
+```
+触摸在 pan-y 区域垂直滑动:
+  → 浏览器直接接管 → 原生滚动 → JS 收到 pointercancel
+
+触摸在 pan-y 区域横向滑动:
+  → 浏览器不接管（只允许 pan-y）→ 持续发 pointermove → JS 手势系统处理
+
+触摸在 none 区域:
+  → 浏览器完全不干预 → 所有 pointer 事件发给 JS
+```
+
+---
+
+
 ---
 
 ## 附录 A：根因类型索引
@@ -495,3 +573,118 @@ npm test   # 191 个测试，覆盖 23 个模块
 
 - `docs/archive/design/CASE_STUDY_MODEL_CHOICE.md` — 液体粒子 portal 系统模型选择错误案例（15 补丁 → 1 提交删 22 行）
 - `docs/archive/audits/REGISTRY_DEEP_AUDIT_2026-06-03.md` — UI Registry 第三轮深度审计记录
+
+---
+
+## 四、补充原则（流程建议）
+
+> 以下原则是流程建议，推荐遵循，但在时效性优先时可在注释中说明后跳过。
+> 这些原则不适合放在核心心法中，但对提高代码质量有帮助。
+
+### 4.1 状态在展示前就位 [LEVEL 3]
+
+**涉及模块**：所有 UI 模块
+
+**原则内容**：
+- 不要让用户看到"变化的过程"
+- 状态应该在展示前就位，而不是在展示过程中变化
+
+**案例**：
+- ❌ 用户看到加载动画，然后内容突然出现
+- ✅ 内容准备好后再展示，或者使用骨架屏
+
+**深层问题**：AI 倾向于"先展示再加载"，但用户体验更好的是"准备好再展示"。
+
+### 4.2 写代码前先口述 [LEVEL 3]
+
+**涉及模块**：所有模块
+
+**原则内容**：
+- 写代码前先口述"我要做 X，只因为……"
+- 明确：要做什么、可选方案、选的哪一个、为什么
+
+**案例**：
+- ❌ 直接开始写代码，没有明确目标
+- ✅ 先口述目标和方案，再开始写代码
+
+**深层问题**：AI 倾向于"快速产出可见结果"，但没有明确目标的代码往往方向错误。
+
+### 4.3 步骤 3 必须暴露所有已知缺口 [LEVEL 3]
+
+**涉及模块**：所有模块
+
+**原则内容**：
+- 每次步骤 3 的设计描述必须包含三部分：
+  - 能自动继承的部分——什么系统会自然接管，不需要额外代码
+  - 不能自动继承的缺口——哪个系统不会自然接管，缺口在哪儿
+  - 填补缺口的方案——至少一个填补路径，含你倾向哪一个以及原因
+
+**案例**：
+- ❌ 设计描述只说了"能自动继承的部分"
+- ✅ 设计描述包含三部分，明确缺口和填补方案
+
+**深层问题**：AI 倾向于"隐藏不确定性"，但暴露缺口可以帮助提前发现问题。
+
+### 4.4 状态管理的一致性 [LEVEL 3]
+
+**涉及模块**：所有状态管理模块
+
+**原则内容**：
+- 消费端用库的 API 重置内部状态，不清 CSS
+- 状态管理应该在源头修复，而不是在消费端打补丁
+
+**案例**：
+- ❌ 在消费端用 CSS 覆盖状态
+- ✅ 在源头用 API 修复状态
+
+**深层问题**：AI 倾向于"在消费端打补丁"，但状态管理应该在源头解决。
+
+### 4.5 回归测试 [LEVEL 3]
+
+**涉及模块**：所有模块
+
+**原则内容**：
+- 为每个已实现的功能添加自动化测试
+- 修改后运行测试确保不破坏现有功能
+
+**案例**：
+- ❌ 修改代码后没有运行测试，导致功能失效
+- ✅ 修改代码后运行测试，确保不破坏现有功能
+
+**深层问题**：AI 倾向于"快速修改"，但没有回归测试的修改容易破坏现有功能。
+
+
+---
+
+## 五、Bug 案例库
+
+> 记录已发生过的 bug 及根因，防止重复踩坑。
+
+### 5.1 幽灵卡片堆：GSAP 动画冲突导致关闭后重新出现
+
+**模块**：`card-stack.ts` → `createCard()` 点击事件
+
+**症状**：点击卡片堆中的卡片投卡后，卡片堆关闭，但立刻又出现一个幽灵卡片堆。
+
+**根因**：点击非聚焦卡时调用了 `updateFocus()`，触发 GSAP 动画（0.35s）。紧接着又调用 `launchFocusedCard(true)` + `closeCardStack()`。两个动画同时作用于同一组 DOM 元素，GSAP 冲突导致 `closeCardStack()` 的 `onComplete` 回调异常，状态机卡在 `'closing'` 或 `'open'`，幽灵卡片堆出现。
+
+**正确逻辑**：聚焦动画 + 投全屏卡同时开始，聚焦动画完成后关闭卡片堆：
+```typescript
+el.addEventListener("click", (e) => {
+  const idx = parseInt(el.dataset.index || "0", 10);
+  if (idx !== _focusIndex) {
+    _focusIndex = idx;
+    // 聚焦动画 + 投全屏卡同时开始，聚焦动画完成后关闭卡片堆
+    launchFocusedCard(true);
+    updateFocus(() => { closeCardStack(); });
+  } else {
+    // 已聚焦 → 直接投卡 + 关闭
+    launchFocusedCard(true);
+    closeCardStack();
+  }
+});
+```
+
+**关键规则**：`updateFocus(onComplete)` 支持完成回调。不要在 `updateFocus()` 之后立即调用 `closeCardStack()`，应通过回调延迟关闭。
+
+**历史案例**：2026-07-12 卡片堆点击投卡功能开发时发现。

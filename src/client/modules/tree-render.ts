@@ -36,7 +36,8 @@ import {
   flattenExpandTree, ensureMetaFromExpandedState,
   activeOverlayCount,
 } from './tree-overlay.js';
-import { bounceCursorRow, handleRowSwipe, clearTempCards, initTempCardGesture, dismissFocusedCard } from './tree-swipe.js';
+import { bounceCursorRow, handleRowSwipe, clearTempCards, initTempCardGesture, dismissFocusedCard, promptSelectSingle } from './tree-swipe.js';
+import { getSelectedMode } from './mode-system.js';
 const ts = anim.scope('tree-render');
 /** 重置动画时间线：清空 tween + 归零播放头 + 清除回调。正常动画结束时调用。 */
 function _resetAnimTimeline(): void {
@@ -553,7 +554,10 @@ L.endOp();
           log('[processClickQueue] doExpand path=' + hitData.path);
           doExpand(hit, hitData);
         }
-        return;  // 动画函数完成后会 processClickQueue()
+      } else if (getSelectedMode() === 'prompt') {
+        // 提示词模式：点击文件直接加入角色卡，关闭侧栏
+        promptSelectSingle(hitData.path);
+        return;
       } else {
         createFileFloatingCard(hit, hitData);
       }

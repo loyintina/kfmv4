@@ -24,6 +24,9 @@ export const ROOT_DIR = process.env.KFM_ROOT || process.env.HOME || '.';
 /** 安全根目录：所有用户路径不得逃逸出此目录 */
 export const SAFE_ROOT = path.resolve(ROOT_DIR) + path.sep;
 
+/** KFM 数据目录：所有 .kfmv4/ 配置文件存储在此 */
+export const KFM_DATA_DIR = path.join(ROOT_DIR, '.kfmv4');
+
 /** 路径校验：确保用户路径不逃逸出 SAFE_ROOT */
 export function sanitizePath(userPath: string): string | null {
   const resolved = path.resolve(SAFE_ROOT, userPath);

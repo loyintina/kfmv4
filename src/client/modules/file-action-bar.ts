@@ -12,6 +12,7 @@ import { L } from './renderer-lifecycle.js';
 import { API, KFMState, getFileRowData } from './state.js';
 import { loadFileTree } from './tree-loader.js';
 import { animateInsertion, animateRemoval } from './tree-animation.js';
+import { log } from './logger.js';
 // ========== 状态 ==========
 
 let _dimmer: HTMLElement | null = null;
@@ -346,8 +347,7 @@ function _renameFile(): void {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: p, newName }),
       });
-      loadFileTree(KFMState.currentRoot);
-    } catch { /* swallow */ }
+    } catch (e) { log('[action-bar] 重命名失败: ' + (e instanceof Error ? e.message : String(e))); }
   }
 
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
@@ -376,7 +376,7 @@ async function _createFolder(): Promise<void> {
         if (d?.path === createdPath) { animateInsertion(r, r.height); return; }
       }
     });
-  } catch { /* swallow */ }
+  } catch (e) { log('[action-bar] 创建文件夹失败: ' + (e instanceof Error ? e.message : String(e))); }
 }
 
 async function _createFile(): Promise<void> {
@@ -401,7 +401,7 @@ async function _createFile(): Promise<void> {
         if (d?.path === createdPath) { animateInsertion(r, r.height); return; }
       }
     });
-  } catch { /* swallow */ }
+  } catch (e) { log('[action-bar] 创建文件失败: ' + (e instanceof Error ? e.message : String(e))); }
 }
 
 async function _deleteFile(): Promise<void> {
@@ -422,5 +422,5 @@ async function _deleteFile(): Promise<void> {
       body: JSON.stringify({ path: p }),
     });
     await loadFileTree(KFMState.currentRoot);
-  } catch { /* swallow */ }
+  } catch (e) { log('[action-bar] 删除失败: ' + (e instanceof Error ? e.message : String(e))); }
 }

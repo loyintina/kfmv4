@@ -19,7 +19,9 @@ import { createFloatingCard } from './floating-card.js';
 import { loadFileTree } from './tree-loader.js';
 import { animateInsertion, animateRemoval } from './tree-animation.js';
 import { rgba, hslToHex, cardAccent, pathBasename } from './color-utils.js';
-import { initModeSystem, ensureBg, removeBg, updateBg, recolorCards, getSelectedMode, getModeTheme, getTriColor, applyModeTheme, updateModeSelection } from './mode-system.js';
+import { initModeSystem, ensureBg, removeBg, updateBg, recolorCards, getSelectedMode, getModeTheme, getTriColor, applyModeTheme, updateModeSelection, enterPromptMode, exitPromptMode } from './mode-system.js';
+import { getFileCategory } from './renderers/file-type.js';
+import { showCardToast } from './card-toast.js';
 import { gestures } from './gesture-registry.js';
 import { createFileHandler } from './renderers/handler-factory.js';
 import { getCardType } from './card-registry.js';
@@ -36,6 +38,7 @@ let _resetFocusToNewest = false;
 let _lifoQueue: HTMLElement[] = [];  // 入卡顺序，撤卡时从尾部取（LIFO）
 let _dimmedPaths = new Set<string>();
 let _dimmedBoxes = new Map<string, Box>();
+let _promptCallback: ((paths: string[]) => void) | null = null;
 const _CARD_H = theme.stack.cardHeight;
 const _CARD_W = theme.stack.cardWidth;
 const _CARD_GAP = theme.stack.cardGap;
@@ -102,6 +105,19 @@ export function handleRowSwipe(): void {
 
   const name = pathBasename(data.path);
   const isDir = data.isDir;
+
+  // 提示词模式：拦截不支持的文件类型
+  if (getSelectedMode() === 'prompt') {
+    if (isDir) {
+      showCardToast('文件夹不能作为提示词');
+      return;
+    }
+    const cat = getFileCategory(data.path);
+    if (cat === 'image' || cat === 'media' || cat === 'binary') {
+      showCardToast('只支持文本文件');
+      return;
+    }
+  }
 
   const t = getSelectedMode() ? getModeTheme(getSelectedMode()!) : null;
   const triColor = t ? getTriColor(getSelectedMode()!) : theme.canvas.accent;
@@ -186,7 +202,7 @@ card.addEventListener('click', (e) => {
   _dimmedPaths.add(data.path);
   _dimmedBoxes.set(data.path, rowBox);
   rowBox.opacity = 0.25;
-  ensureBg(sidebarW);
+  if (getSelectedMode() !== 'prompt') ensureBg(sidebarW);
 
   // 重排所有卡片 Y 位置（含压缩 + 聚焦下方留白）
   _repositionCards();
@@ -449,7 +465,14 @@ function _restoreDimmedRows(): void {
 
 /** 一键收回所有卡片：往左飞过屏幕后淡出 */
 export function dismissAllCards(): boolean {
-  if (_tempCardEls.length === 0) return false;
+  if (_tempCardEls.length === 0) {
+    if (getSelectedMode() === 'prompt') {
+      _promptCallback = null;
+      import('./ui.js').then(m => m.closeSidebar());
+      exitPromptMode();
+    }
+    return false;
+  }
 
   const sw = window.innerWidth;
   const cards = [..._tempCardEls];  // 快照，后续清空
@@ -478,7 +501,13 @@ export function dismissAllCards(): boolean {
   _prevFocusIndex = -1;
   _dismissing = false;
   _resetFocusToNewest = false;
-  removeBg();
+  _promptCallback = null;
+  if (getSelectedMode() === 'prompt') {
+    import('./ui.js').then(m => m.closeSidebar());
+    exitPromptMode();
+  } else {
+    removeBg();
+  }
 
   return true;
 }
@@ -486,6 +515,31 @@ export function dismissAllCards(): boolean {
 /** ✓ 投放：清空卡片数组(防 closeSidebar 的 clearTempCards 误删)，关侧栏，背景滑出 */
 export function deployAllCards(): void {
   if (_tempCardEls.length === 0) return;
+
+  // 提示词模式：返回选中路径给回调
+  if (getSelectedMode() === 'prompt') {
+    const paths = [...new Set(_tempCardEls.map(e => e.dataset._path).filter(Boolean))] as string[];
+    const cb = _promptCallback;
+    _promptCallback = null;
+
+    // 清理
+    _tempCardEls.forEach(el => {
+      _dimmedPaths.delete(el.dataset._path || '');
+      _dimmedBoxes.delete(el.dataset._path || '');
+      el.remove();
+    });
+    _tempCardEls = [];
+    _lifoQueue = [];
+    _focusIndex = -1;
+    _prevFocusIndex = -1;
+    _dismissing = false;
+    _resetFocusToNewest = false;
+
+    import('./ui.js').then(m => m.closeSidebar());
+    exitPromptMode();
+    cb?.(paths);
+    return;
+  }
 
   const cards = [..._tempCardEls];
 
@@ -589,6 +643,25 @@ let _swipeStartFocus = -1;
 let _swipeAxis: _AxisLock = 'none';
 let _swipePrevDx = 0;
 let _gestureRegistered = false;
+
+// ========== 提示词选择模式 ==========
+
+/** 进入提示词选择模式：打开侧栏 + 工具栏 + 文件类型过滤 */
+export function selectFilesForPrompt(callback: (paths: string[]) => void, c1: string, c2: string): void {
+  _promptCallback = callback;
+  const sidebarW = DOM.sidebar?.getBoundingClientRect().width ?? 295;
+  import('./ui.js').then(m => m.openSidebar());
+  enterPromptMode(sidebarW, c1, c2);
+}
+
+/** 提示词模式点击单文件：直接回调 + 关侧栏 + 退出模式 */
+export function promptSelectSingle(filePath: string): void {
+  const cb = _promptCallback;
+  _promptCallback = null;
+  import('./ui.js').then(m => m.closeSidebar());
+  exitPromptMode();
+  cb?.([filePath]);
+}
 
 export function initTempCardGesture(): void {
   if (_gestureRegistered) return;

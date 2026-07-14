@@ -26,16 +26,16 @@ AI 人机交互个人工作台，面向移动端浏览器。核心理念：**一
 ## 构建与运行
 
 ```bash
-npm run check    # sass → 9 个 check-*.mjs → tsc --noEmit（必须零错误通过）
-npm run build    # check 通过后 esbuild 打包
-npm run start    # 启动 http://localhost:8021
-npm run dev      # ts-node ESM 直接运行
+npm run dev      # 重编客户端 SCSS+bundle + 启动服务端（日常开发用这个）
+npm run bundle   # 仅重编客户端（改 src/client/ 后，如果 dev 已在跑）
+npm run check    # sass + 13 个 check-*.mjs + tsc --noEmit（必须零错误通过）
+npm run build    # check 通过后 esbuild 打包（提交前跑）
+npm run start    # 启动生产构建 http://localhost:8021
+npm run test     # 191 个回归测试
 ```
-> ⚠️ **`npm run dev` 只运行服务端，不重打客户端 bundle。** 改 `src/client/` 下文件后需手动重建：
-> ```
-> npx esbuild src/client/main.ts --bundle --platform=browser --format=iife --outfile=public/bundle.js --target=es2019 --external:katex --external:mermaid
-> ```
-> 详见 [`docs/DIAGNOSTICS.md` B.A.R. #007](./docs/DIAGNOSTICS.md)。
+
+> `npm run dev` 会自动先跑 `bundle`（SCSS + esbuild）再启服务端，改客户端代码刷新浏览器即可生效，无需手动重建。
+> 改服务端代码需重启 dev。
 
 ## 文档体系
 
@@ -52,6 +52,7 @@ docs/
 ├── DIAGNOSTICS.md           # 诊断手册：隐性契约 + 排查流程 + 根因案例库（遇到 bug 先翻）
 ├── PRINCIPLES.md            # 约束全表：心法 / 架构 / 契约一站查找
 ├── design/                  # 设计文档
+│   ├── AI_ARCHITECTURE.md          # AI 架构设计（基于 omp）
 │   ├── VISION_AND_ROADMAP.md        # 远景：核心理念 + 演进路线（方向性，保留）
 │   └── CONTEXT_ASSEMBLY_SPEC.md     # 上下文拼接与 AI 工作空间（draft）
 └── archive/                 # 历史归档
@@ -94,6 +95,9 @@ npm run test    # 191 个回归测试，覆盖 23 个模块
 - **事件冒泡**: 侧栏触摸区事件冒泡到 document → GestureRegistry 误触发
 - **全项目统一使用 PointerEvent** — 禁止 `addEventListener('touchstart/pointermove/pointerup')`，都走 `gesture-registry.ts`
 - **touch-action: none** — 所有自定义 Canvas 控件必须显式设置，否则浏览器接管触控导致 `pointercancel` 截断手势
+- **数据目录**：运行时配置/会话/角色数据存储在 `$HOME/.kfmv4/`（由 `src/server/path-utils.ts` 的 `KFM_DATA_DIR` 定义）。
+  客户端通过 `/api/files/*` 端点以相对路径 `.kfmv4/...` 访问，服务端 `sanitizePath()` 解析到 `SAFE_ROOT` 下。
+  原项目根目录下的 `.kfmv4/` 已废弃删除。
 - **Git 推送认证**：项目根目录 `.env` 文件中配置了 `GITHUB_TOKEN` 环境变量（已 `.gitignore` 保护）。执行 `git push` 前先 `source .env` 或将该 token 加入 git credential。该 token 用于 agent 远程推送代码，不可删除。
 - **代码注释约定**：设计决策写在所改动代码文件的头部注释块中，而非独立文档。
   关键分支处必写"为什么走A不走B"。改到哪个文件注释就更新到哪个文件。详见 `docs/PRINCIPLES.md` 设计注释规约。

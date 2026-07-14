@@ -14,3 +14,6 @@ import './plugins/terminal.card.js';
 import './plugins/tmux.card.js';
 import './plugins/file.card.js';
 import './plugins/api.card.js';
+import './plugins/session.card.js';
+import './plugins/config.card.js';
+import './plugins/role.card.js';

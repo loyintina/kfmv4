@@ -79,7 +79,7 @@ export function createDragHandler(cfg: DragConfig) {
   }
 
   function onStart(e: PointerEvent): void {
-    e.preventDefault();
+    // touch-action:none on orb already prevents browser scrolling — no need for preventDefault
     const el = cfg.getElement(e);
     if (!el) return;
     if (!cfg.canStart()) return;

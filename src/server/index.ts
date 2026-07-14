@@ -15,8 +15,9 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { setupAiTools } from './ai-tools.js';
+import { setupAiRoutes } from './ai/routes.js';
 import { WsServer } from './ws-server.js';
-import { ROOT_DIR, SAFE_ROOT, sanitizePath } from './path-utils.js';
+import { ROOT_DIR, SAFE_ROOT, sanitizePath, KFM_DATA_DIR } from './path-utils.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -139,6 +140,7 @@ function setupApiRoutes(router: express.Router) {
       const targetPath = sanitizePath(req.body.path);
       if (!targetPath) { res.json({ error: '路径不合法' }); return; }
       const content: string = req.body.content;
+      fs.mkdirSync(path.dirname(targetPath), { recursive: true });
       if (req.body.append) fs.appendFileSync(targetPath, content, 'utf-8');
       else fs.writeFileSync(targetPath, content, 'utf-8');
       res.json({ success: true, path: targetPath });
@@ -249,6 +251,22 @@ function setupApiRoutes(router: express.Router) {
       const { url, method, headers, body } = req.body;
       if (!url) { res.json({ error: '缺少 url 参数' }); return; }
 
+      // 仅允许转发到已配置 Provider 的 baseUrl
+      try {
+        const providers: Array<{ baseUrl: string }> = JSON.parse(
+          fs.readFileSync(path.join(KFM_DATA_DIR, 'providers.json'), 'utf-8')
+        );
+        const allowed = providers.some(p => url.startsWith(p.baseUrl));
+        if (!allowed) {
+          res.status(403).json({ error: '不允许的请求地址' });
+          return;
+        }
+      } catch {
+        // providers.json 不存在或为空 → 拒绝所有代理请求
+        res.status(403).json({ error: '未配置 Provider' });
+        return;
+      }
+
       // 如果请求体含 stream:true，设为流式模式（去除 stream 字段后转发）
       let reqBody = body;
       let isStream = false;
@@ -280,6 +298,10 @@ function setupApiRoutes(router: express.Router) {
           nodeReader.read().then((result) => {
             if (result.done) { res.end(); return; }
             res.write(decoder.decode(result.value, { stream: true }));
+            // Express Response extends http.ServerResponse; flush() exists for SSE
+            // but @types/express omits it, so we narrow through unknown.
+            const httpRes = res as unknown as { flush?(): void };
+            httpRes.flush?.();
             pump();
           }).catch(() => res.end());
         }
@@ -320,6 +342,12 @@ const aiRoutes = express.Router();
 setupAiTools(aiRoutes, wsServer);
 app.use('/api', aiRoutes);
 app.use('/kfmv4/api', aiRoutes);
+
+// AI 对话路由
+const aiChatRoutes = express.Router();
+setupAiRoutes(aiChatRoutes, wsServer);
+app.use('/api', aiChatRoutes);
+app.use('/kfmv4/api', aiChatRoutes);;
 
 httpServer.listen(PORT, '127.0.0.1', () => {
   console.log(`KFM v4 server running at http://localhost:${PORT}`);

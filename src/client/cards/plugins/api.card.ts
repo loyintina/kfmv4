@@ -2,12 +2,14 @@
  * api.card.ts — API 接入设置卡
  *
  * 管理 Provider（地址/Key/模型列表）的编辑、测试、选择。
- * 数据存储于 localStorage（kfm-providers / kfm-api-current）。
+ * 数据存储于 .kfmv4/providers.json，当前选中存储于 .kfmv4/active.json。
  */
 
 import { registerCardType, type CardContentHandler } from '../../modules/card-registry.js';
 import { buildCardLayout } from '../../modules/floating-card.js';
 import { log } from '../../modules/logger.js';
+import { createCustomSelect, type CustomSelect } from '../../modules/custom-select.js';
+import { showConfirm } from '../../modules/confirm-dialog.js';
 interface Provider {
   id: string;
   name: string;
@@ -15,10 +17,10 @@ interface Provider {
   apiKey: string;
   models: string[];
 }
-const PROVIDERS_PATH = 'kfmv4/.kfmv4/providers.json';
-const STATE_PATH = 'kfmv4/.kfmv4/state.json';
+const PROVIDERS_PATH = '.kfmv4/providers.json';
+const ACTIVE_PATH = '.kfmv4/active.json';
 
-// ====== 持久化（文件优先，localStorage 缓存） ======
+// ====== 持久化（文件系统） ======
 
 // Detect API prefix for nginx reverse proxy support
 // When accessed via /kfmv4/, APIs are at /kfmv4/api/... instead of /api/...
@@ -64,53 +66,20 @@ async function loadProviders(): Promise<Provider[]> {
   if (content) {
     try {
       const ps: Provider[] = JSON.parse(content);
-      localStorage.setItem('kfm-providers', JSON.stringify(ps));
       log('[API] loadProviders: from file, count:', ps.length);
       return ps;
     } catch (e) { log('[API] loadProviders: parse error', e); }
   }
-  log('[API] loadProviders: falling back to localStorage');
-  try {
-    const ls = localStorage.getItem('kfm-providers');
-    if (ls) { const ps: Provider[] = JSON.parse(ls); log('[API] loadProviders: from localStorage, count:', ps.length); return ps; }
-    log('[API] loadProviders: localStorage also empty');
-    return [];
-  } catch { log('[API] loadProviders: localStorage parse error'); return []; }
+  log('[API] loadProviders: file not found, returning empty');
+  return [];
 }
 
 async function saveProviders(ps: Provider[]): Promise<void> {
   log('[API] saveProviders: count:', ps.length);
-  localStorage.setItem('kfm-providers', JSON.stringify(ps));
-  log('[API] saveProviders: localStorage written');
   await writeFile(PROVIDERS_PATH, JSON.stringify(ps, null, 2));
   log('[API] saveProviders: file written');
 }
 
-async function loadCurrentId(): Promise<string> {
-  log('[API] loadCurrentId: reading file');
-  const content = await readFile(STATE_PATH);
-  if (content) {
-    try {
-      const s = JSON.parse(content);
-      if (s.currentId) {
-        localStorage.setItem('kfm-api-current', s.currentId);
-        log('[API] loadCurrentId: from file:', s.currentId);
-        return s.currentId;
-      }
-    } catch (e) { log('[API] loadCurrentId: parse error', e); }
-  }
-  log('[API] loadCurrentId: falling back to localStorage');
-  const id = localStorage.getItem('kfm-api-current') || '';
-  log('[API] loadCurrentId:', id || '(empty)');
-  return id;
-}
-
-async function saveCurrentId(id: string): Promise<void> {
-  log('[API] saveCurrentId:', id);
-  localStorage.setItem('kfm-api-current', id);
-  await writeFile(STATE_PATH, JSON.stringify({ currentId: id }));
-  log('[API] saveCurrentId: done');
-}
 
 function uid(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -155,11 +124,6 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
   let providers: Provider[] = [];
   let currentId = '';
   let c1 = '#00d4ff', c2 = '#7c3aed';
-
-  // DOM refs
-  let selTriggerEl!: HTMLDivElement;
-  let selPanelEl!: HTMLDivElement;
-  let selTriggerText!: HTMLSpanElement;
   let nameEl!: HTMLInputElement;
   let urlEl!: HTMLInputElement;
   let keyEl!: HTMLInputElement;
@@ -167,22 +131,42 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
   let modelInput!: HTMLInputElement;
   let poolEl!: HTMLDivElement;
   let testBtn!: HTMLDivElement;
+  let _providerSelect: CustomSelect | null = null;
 
   function getCurrent(): Provider | undefined {
     return providers.find(p => p.id === currentId);
   }
 
   async function commitCurrent(): Promise<void> {
+    const name = nameEl.value.trim();
+    if (!name) {
+      nameEl.style.borderColor = 'rgba(255,100,100,0.6)';
+      nameEl.placeholder = '⚠ 名称不能为空';
+      setTimeout(() => { nameEl.style.borderColor = ''; nameEl.placeholder = 'OpenAI'; }, 2000);
+      return;
+    }
+    // 检查重名（排除自身）
+    const dup = providers.find(p => p.name === name && p.id !== currentId);
+    if (dup) {
+      nameEl.style.borderColor = 'rgba(255,100,100,0.6)';
+      nameEl.placeholder = '⚠ 名称已存在';
+      setTimeout(() => { nameEl.style.borderColor = ''; nameEl.placeholder = 'OpenAI'; }, 2000);
+      return;
+    }
     let cur = getCurrent();
     if (!cur) {
-      cur = { id: uid(), name: nameEl.value.trim(), baseUrl: urlEl.value.trim(), apiKey: keyEl.value.trim(), models: [] };
+      cur = { id: name, name, baseUrl: urlEl.value.trim(), apiKey: keyEl.value.trim(), models: [] };
       providers.push(cur);
       currentId = cur.id;
-      await saveCurrentId(currentId);
     } else {
-      cur.name = nameEl.value.trim();
+      const oldId = cur.id;
+      cur.name = name;
       cur.baseUrl = urlEl.value.trim();
       cur.apiKey = keyEl.value.trim();
+      if (cur.id !== name) {
+        cur.id = name;
+        if (currentId === oldId) currentId = name;
+      }
     }
     await saveProviders(providers);
   }
@@ -201,11 +185,12 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
     }
   }
 
+
   function renderModels(models: string[]): void {
     modelTagsEl.innerHTML = '';
     models.forEach(m => {
       const tag = document.createElement('span');
-      tag.style.cssText = `display:inline-flex;align-items:center;gap:2px;padding:1px 5px;border-radius:4px;font-size:var(--card-font-size,10px);background:${c1}20;color:rgba(255,255,255,0.8);margin:2px 4px 2px 0`;
+      tag.style.cssText = `padding:0 4px 1px 4px;position:relative;top:1px;gap:2px;padding:1px 5px;border-radius:4px;font-size:var(--card-font-size,10px);background:${c1}20;color:rgba(255,255,255,0.8);margin:2px 4px 2px 0`;
       const label = document.createElement('span');
       label.textContent = m;
       tag.appendChild(label);
@@ -240,9 +225,12 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
       const result = await res.json();
       if (!result.ok || !result.data?.data) return [];
       return result.data.data.map((m: { id: string }) => m.id).filter(Boolean);
-    } catch { return []; }
-  }
+    } catch (e) {
+      log('[API] 模型列表加载操作失败: ' + (e instanceof Error ? e.message : String(e)));
+      return [];
+    }
 
+  }
   async function addModel(): Promise<void> {
     let cur = getCurrent();
     if (!cur) {
@@ -301,81 +289,82 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
 
   function rebuildPool(): void {
     poolEl.innerHTML = '';
-    // Update trigger text
-    const cur = getCurrent();
-    selTriggerText.textContent = cur?.name || '(无)';
 
     providers.forEach(p => {
-      // Pool row
-      const row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-radius:6px;margin-bottom:3px;background:rgba(255,255,255,0.03)';
+      const item = document.createElement('div');
+      item.style.cssText = `padding:6px 8px;margin-bottom:4px;border-radius:6px;cursor:pointer;border:1px solid transparent;border-left-width:3px;background:rgba(255,255,255,0.03);transition:all 0.15s;position:relative`;
 
-      const left = document.createElement('div');
-      left.style.cssText = 'display:flex;align-items:center;gap:5px;flex:1;min-width:0';
-
-      const dot = document.createElement('span');
-      dot.textContent = p.id === currentId ? '◉' : '○';
-      dot.style.cssText = `font-size:var(--card-font-size,9px);flex-shrink:0;color:${p.id === currentId ? c1 : 'rgba(255,255,255,0.25)'}`;
-      left.appendChild(dot);
-
-      const nm = document.createElement('span');
-      nm.textContent = p.name || '(unnamed)';
-      nm.style.cssText = 'font-size:var(--card-font-size,11px);color:rgba(255,255,255,0.8);overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
-      left.appendChild(nm);
-
-      const cnt = document.createElement('span');
-      cnt.textContent = `${p.models.length} 模型`;
-      cnt.style.cssText = 'font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.35);flex-shrink:0';
-      left.appendChild(cnt);
-
-      const actions = document.createElement('div');
-      actions.style.cssText = 'display:flex;gap:4px;flex-shrink:0;align-items:center';
-
-      if (p.id !== currentId) {
-        const setBtn = document.createElement('span');
-        setBtn.textContent = '设为当前';
-        setBtn.style.cssText = `font-size:var(--card-font-size,9px);cursor:pointer;color:${c1};padding:1px 4px;border-radius:3px`;
-        setBtn.onclick = () => {
-          currentId = p.id;
-          saveCurrentId(currentId);
-          rebuildPool();
-          fillEditor(p);
-        };
-        actions.appendChild(setBtn);
+      if (p.id === currentId) {
+        item.style.background = `linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,linear-gradient(135deg,${c1} 30%,${c2} 70%) border-box`;
+        item.style.borderColor = 'transparent';
       }
 
-      const editBtn = document.createElement('span');
-      editBtn.textContent = '编辑模型';
-      editBtn.style.cssText = 'font-size:var(--card-font-size,9px);cursor:pointer;color:rgba(255,255,255,0.5);padding:1px 4px;border-radius:3px';
-      editBtn.onclick = () => {
-        currentId = p.id;
-        saveCurrentId(currentId);
-        fillEditor(p);
-        rebuildPool();
-        setTimeout(() => modelInput.focus(), 50);
-        nameEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      };
-      actions.appendChild(editBtn);
+      const titleRow = document.createElement('div');
+      titleRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between';
+
+      const title = document.createElement('div');
+      title.style.cssText = 'font-size:var(--card-font-size,11px);color:rgba(255,255,255,0.85);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1';
+      title.textContent = p.name || '(unnamed)';
 
       const delBtn = document.createElement('span');
-      delBtn.textContent = '删除';
-      delBtn.style.cssText = 'font-size:var(--card-font-size,9px);cursor:pointer;color:rgba(255,80,80,0.7);padding:1px 4px;border-radius:3px';
-      delBtn.onclick = () => {
-        providers = providers.filter(pp => pp.id !== p.id);
-        if (currentId === p.id) {
-          currentId = providers.length > 0 ? providers[0].id : '';
-          saveCurrentId(currentId);
+      delBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12"><line x1="3" y1="3" x2="9" y2="9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="9" y1="3" x2="3" y2="9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+      delBtn.style.cssText = 'position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:12px;color:rgba(255,100,100,0.6);cursor:pointer';
+      delBtn.onmouseenter = () => { delBtn.style.color = 'rgba(255,100,100,1)'; };
+      delBtn.onmouseleave = () => { delBtn.style.color = 'rgba(255,100,100,0.6)'; };
+      delBtn.onclick = async (e: MouseEvent) => {
+        e.stopPropagation();
+        const confirmed = await showConfirm({
+          title: '删除 Provider',
+          message: '确定删除 Provider「' + p.name + '」？',
+          accent: c1,
+          accent2: c2,
+          confirmText: '删除',
+          cancelText: '取消',
+        });
+        if (confirmed) {
+          providers = providers.filter(pp => pp.id !== p.id);
+          if (currentId === p.id) {
+            currentId = providers.length > 0 ? providers[0].id : '';
+          }
+          saveProviders(providers);
+          rebuildPool();
+          fillEditor(getCurrent() || null);
         }
-        saveProviders(providers);
-        rebuildPool();
-        fillEditor(getCurrent() || null);
       };
-      actions.appendChild(delBtn);
 
-      row.appendChild(left);
-      row.appendChild(actions);
-      poolEl.appendChild(row);
+      titleRow.appendChild(title);
+      titleRow.appendChild(delBtn);
+
+      const metaRow = document.createElement('div');
+      metaRow.style.cssText = 'display:flex;gap:8px;font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.5)';
+      const desc = document.createElement('span');
+      desc.textContent = `${p.models.length} 模型`;
+      metaRow.appendChild(desc);
+
+      item.appendChild(titleRow);
+      item.appendChild(metaRow);
+
+      item.onmouseenter = () => {
+        if (p.id !== currentId) { item.style.background = 'rgba(255,255,255,0.06)'; }
+      };
+      item.onmouseleave = () => {
+        if (p.id !== currentId) { item.style.background = 'rgba(255,255,255,0.03)'; }
+      };
+      item.onclick = () => {
+        if (p.id === currentId) return;
+        currentId = p.id;
+        fillEditor(p);
+        rebuildPool();
+        nameEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      };
+
+      poolEl.appendChild(item);
     });
+    // 同步下拉框
+    _providerSelect?.updateItems(
+      providers.map(p => ({ label: p.name || '(unnamed)', value: p.id })),
+      currentId
+    );
   }
 
   async function testConnection(): Promise<void> {
@@ -403,11 +392,16 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
       if (result.ok) {
         testBtn.textContent = '✓ 连接成功';
         testBtn.style.cssText = `padding:3px 10px;border-radius:6px;font-size:var(--card-font-size,10px);font-weight:600;cursor:default;user-select:none;border:1px solid rgba(0,212,80,0.4);color:rgba(0,212,80,0.9);background:transparent;flex:1;text-align:center`;
+      } else if (result.error) {
+        // 代理或其他服务端错误
+        testBtn.textContent = `✗ ${result.error}`;
+        testBtn.style.cssText = `padding:3px 10px;border-radius:6px;font-size:var(--card-font-size,10px);font-weight:600;cursor:default;user-select:none;border:1px solid rgba(255,80,80,0.4);color:rgba(255,80,80,0.9);background:transparent;flex:1;text-align:center`;
       } else {
-        testBtn.textContent = `✗ ${result.status} ${result.data?.error?.message || ''}`;
+        testBtn.textContent = `✗ ${result.status || '?'} ${result.data?.error?.message || ''}`;
         testBtn.style.cssText = `padding:3px 10px;border-radius:6px;font-size:var(--card-font-size,10px);font-weight:600;cursor:default;user-select:none;border:1px solid rgba(255,80,80,0.4);color:rgba(255,80,80,0.9);background:transparent;flex:1;text-align:center`;
       }
-    } catch {
+    } catch (e) {
+      log('[API] testConnection: fetch failed: ' + (e instanceof Error ? e.message : String(e)));
       testBtn.textContent = '✗ 连接失败';
       testBtn.style.cssText = `padding:3px 10px;border-radius:6px;font-size:var(--card-font-size,10px);font-weight:600;cursor:default;user-select:none;border:1px solid rgba(255,80,80,0.4);color:rgba(255,80,80,0.9);background:transparent;flex:1;text-align:center`;
     }
@@ -425,89 +419,32 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
 
 
       const scrollArea = document.createElement('div');
-      scrollArea.style.cssText = 'flex:1;overflow-y:auto;overflow-x:hidden;touch-action:none';
+      scrollArea.style.cssText = 'flex:1;overflow-y:auto;overflow-x:hidden';
+      scrollArea.setAttribute('data-scroll', 'api');
       // === Editor Card ===
       const inner = document.createElement('div');
       inner.style.cssText = `border-radius:10px;padding:10px 12px 12px;margin-top:6px;background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,linear-gradient(135deg,${c2} 30%,${c1} 70%) border-box;border:1px solid transparent;border-left-width:3px`;
 
-      // --- Current Provider Selector ---
+      // --- Provider 选择器（仅聚焦编辑目标，不写入 active.json） ---
       const selRow = document.createElement('div');
       selRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:8px';
       const selLabel = document.createElement('div');
-      selLabel.textContent = '当前 Provider';
+      selLabel.textContent = 'Provider';
       selLabel.style.cssText = 'font-size:var(--card-font-size,11px);color:rgba(255,255,255,0.75);flex-shrink:0;margin-right:8px';
       selRow.appendChild(selLabel);
 
-      // Custom dropdown trigger
-      const selWrapper = document.createElement('div');
-      selWrapper.style.cssText = 'position:relative;flex-shrink:0';
-      selTriggerEl = document.createElement('div');
-      selTriggerEl.style.cssText = 'font-size:var(--card-font-size,11px);padding:0.3em 0.6em;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.85);cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between';
-      selTriggerText = document.createElement('span');
-      selTriggerText.textContent = '(无)';
-      const selArrow = document.createElement('span');
-      selArrow.textContent = '\u25BC';
-      selArrow.style.cssText = 'font-size:var(--card-font-size,10px);opacity:0.6;margin-left:4px';
-      selTriggerEl.appendChild(selTriggerText);
-      selTriggerEl.appendChild(selArrow);
-
-      // Dropdown panel (fixed position, appears below trigger)
-      selPanelEl = document.createElement('div');
-      selPanelEl.style.cssText = 'position:fixed;z-index:9999;display:none;border-radius:8px;padding:4px;background:rgba(20,16,32,0.96);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.1);overflow:hidden;min-width:120px';
-      bodyEl.appendChild(selPanelEl);
-
-      let panelOpen = false;
-      const openPanel = () => {
-        selPanelEl.innerHTML = '';
-        providers.forEach(p => {
-          const item = document.createElement('div');
-          const isCur = p.id === currentId;
-          item.style.cssText = `padding:5px 8px;border-radius:4px;font-size:var(--card-font-size,11px);cursor:pointer;display:flex;align-items:center;justify-content:space-between;color:${isCur ? c1 : 'rgba(255,255,255,0.8)'}`;
-          item.onmouseenter = () => { item.style.background = 'rgba(255,255,255,0.06)'; };
-          item.onmouseleave = () => { item.style.background = ''; };
-          const ns = document.createElement('span');
-          ns.textContent = p.name || '(unnamed)';
-          item.appendChild(ns);
-          if (isCur) {
-            const ck = document.createElement('span');
-            ck.textContent = '✓';
-            ck.style.cssText = `font-size:var(--card-font-size,9px);color:${c1}`;
-            item.appendChild(ck);
-          }
-          item.onclick = (ev: PointerEvent) => { ev.stopPropagation(); selectProvider(p.id); };
-          selPanelEl.appendChild(item);
-        });
-        const r = selTriggerEl.getBoundingClientRect();
-        selPanelEl.style.left = r.left + 'px';
-        selPanelEl.style.top = r.bottom + 'px';
-        selPanelEl.style.minWidth = Math.max(r.width, 120) + 'px';
-        selPanelEl.style.display = 'block';
-        panelOpen = true;
-      };
-      const closePanel = () => { selPanelEl.style.display = 'none'; panelOpen = false; };
-      const selectProvider = (id: string) => {
-        currentId = id;
-        saveCurrentId(currentId);
-        fillEditor(getCurrent() || null);
-        rebuildPool();
-        closePanel();
-      };
-
-      selTriggerEl.onclick = (e: PointerEvent) => {
-        e.stopPropagation();
-        panelOpen ? closePanel() : openPanel();
-      };
-      document.addEventListener('pointerdown', (e: PointerEvent) => {
-        if (panelOpen && !selPanelEl.contains(e.target as Node) && !selTriggerEl.contains(e.target as Node)) {
-          closePanel();
-        }
+      _providerSelect = createCustomSelect({
+        accent: c1,
+        placeholder: '(无)',
+        minWidth: 120,
+        onSelect: (id) => {
+          currentId = id;
+          fillEditor(getCurrent() || null);
+          rebuildPool();
+        },
       });
-
-      selWrapper.appendChild(selTriggerEl);
-      selRow.appendChild(selWrapper);
+      selRow.appendChild(_providerSelect.element);
       inner.appendChild(selRow);
-
-      // --- Name ---
       const nr = mkRow('名称');
       nameEl = document.createElement('input');
       nameEl.type = 'text';
@@ -572,7 +509,6 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
         const p: Provider = { id: uid(), name: '', baseUrl: '', apiKey: '', models: [] };
         providers.push(p);
         currentId = p.id;
-        saveCurrentId(currentId);
         saveProviders(providers);
         rebuildPool();
         fillEditor(p);
@@ -601,10 +537,6 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
       inner.appendChild(ar);
       scrollArea.appendChild(inner);
 
-      // === Divider ===
-      const dv = document.createElement('div');
-      dv.style.cssText = `height:1px;background:linear-gradient(90deg,${c1} 0%,${c2} 100%);margin-top:25px;margin-bottom:10px;flex-shrink:0`;
-      scrollArea.appendChild(dv);
 
       // === Provider Pool Card ===
       const poolCard = document.createElement('div');
@@ -627,15 +559,19 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
           if (typeof parsed.fontSize === 'number') {
             contentEl.style.setProperty('--card-font-size', parsed.fontSize + 'px');
           }
-        } catch { /* ignore */ }
+        } catch (e) {
+          log('[API] 字号偏好读取操作失败: ' + (e instanceof Error ? e.message : String(e)));
+        }
       }
       providers = await loadProviders();
-      currentId = await loadCurrentId();
-      log('[API] activate: loaded', providers.length, 'providers, current:', currentId);
-      if (!currentId && providers.length > 0) {
-        currentId = providers[0].id;
-        await saveCurrentId(currentId);
-      }
+      // 仅聚焦第一个 Provider（不写入 active.json）
+      currentId = providers.length > 0 ? providers[0].id : '';
+      log('[API] activate: loaded', providers.length, 'providers, focus:', currentId);
+      // Update the select with providers
+      _providerSelect.updateItems(
+        providers.map(p => ({ label: p.name || '(unnamed)', value: p.id })),
+        currentId
+      );
       rebuildPool();
       fillEditor(getCurrent() || null);
 

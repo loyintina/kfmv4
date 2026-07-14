@@ -18,6 +18,8 @@ import { rgba, hslToHex } from './color-utils.js';
 
 let _selectedMode: string | null = null;
 const _modeWrappers: HTMLElement[] = [];
+let _modeRow: HTMLElement | null = null;
+let _promptLabel: HTMLElement | null = null;
 let _okBtn: HTMLElement | null = null;
 let _cancelBtn: HTMLElement | null = null;
 let _toolbar: HTMLElement | null = null;
@@ -101,7 +103,7 @@ export function ensureBg(sidebarW: number): void {
   okBtn.style.cssText = _BTN_CSS + ';position:absolute;left:0;top:0';
   okBtn.setAttribute('data-toolbar-btn', 'ok');
   okBtn.addEventListener('click', () => {
-    if (_selectedMode) { _callbacks?.executeCb(); } else { _callbacks?.deployCb(); }
+    if (_selectedMode && _selectedMode !== 'prompt') { _callbacks?.executeCb(); } else { _callbacks?.deployCb(); }
   });
   _toolbar.appendChild(okBtn);
   _okBtn = okBtn;
@@ -120,12 +122,12 @@ export function ensureBg(sidebarW: number): void {
   const cancelLeft = Math.round(btnW + gap + D / 2);
   const spanW = cancelLeft + btnW;
   const row2 = document.createElement('div');
+  _modeRow = row2;
   row2.style.cssText = [
     'position:absolute', 'left:0', 'top:55px',
     'width:' + spanW + 'px',
     'display:flex', 'justify-content:space-between',
   ].join(';');
-
   const modeMeta: { key: string; grad: string }[] = [
     { key: 'copy',   grad: 'linear-gradient(135deg,rgba(132,204,22,0.25),rgba(15,118,110,0.18))' },
     { key: 'move',   grad: 'linear-gradient(135deg,rgba(245,158,11,0.25),rgba(163,230,53,0.18))' },
@@ -159,6 +161,23 @@ export function ensureBg(sidebarW: number): void {
     row2.appendChild(wrapper);
   }
   _toolbar.appendChild(row2);
+
+  // 提示词模式标签（默认隐藏）
+  _promptLabel = document.createElement('div');
+  _promptLabel.style.cssText = [
+    'position:absolute', 'left:0', 'top:55px',
+    'width:' + spanW + 'px',
+    'pointer-events:none',
+    'padding:8px 12px', 'border-radius:10px',
+    'text-align:center', 'font-size:11px', 'font-weight:600',
+    'color:rgba(255,255,255,0.7)',
+    'background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,' +
+      'linear-gradient(135deg,rgba(124,58,237,0.3),rgba(0,212,255,0.3)) border-box',
+    'border:1px solid transparent', 'border-left-width:3px',
+    'display:none',
+  ].join(';');
+  _promptLabel.textContent = '\u9009\u62E9\u63D0\u793A\u8BCD';
+  _toolbar.appendChild(_promptLabel);
   document.body.appendChild(_toolbar);
 
   _bgCard = document.createElement('div');
@@ -189,6 +208,8 @@ export function removeBg(): void {
   _bgMaxH = 0;
   _selectedMode = null;
   _modeWrappers.length = 0;
+  _promptLabel = null;
+  _modeRow = null;
   setCursorColor(null, null);
   setModeAccent(null);
   anim.killTweensOf([bgEl, tbEl]);
@@ -196,6 +217,58 @@ export function removeBg(): void {
     x: '100vw', duration: 0.3, ease: 'power2.in',
     onComplete() { bgEl.remove(); tbEl?.remove(); },
   });
+}
+
+// ========== 提示词选择模式 ==========
+
+/** 进入提示词模式：复用现有工具栏，隐藏模式按钮，显示提示词标签 */
+export function enterPromptMode(sidebarW: number, c1: string, c2: string): void {
+  ensureBg(sidebarW);
+  _selectedMode = 'prompt';
+
+  // 切换显示：隐藏模式按钮，显示提示词标签
+  _modeWrappers.forEach(w => { w.style.display = 'none'; });
+  if (_promptLabel) {
+    _promptLabel.style.display = '';
+    _promptLabel.style.background =
+      'linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,' +
+      'linear-gradient(135deg,' + c2 + '30,' + c1 + '30) border-box';
+  }
+
+  // 更新主题色
+  const t = _MODE_THEME.prompt;
+  _currentBtnDim = 'linear-gradient(90deg,' + c1 + '30,' + c2 + '20)';
+  _currentBtnGlow = 'linear-gradient(90deg,' + c1 + '80,' + c2 + '60)';
+  if (_bgCard) _bgCard.style.background = 'linear-gradient(rgba(16,12,24,0.7),rgba(16,12,24,0.7)) padding-box,' +
+    'linear-gradient(135deg,' + c1 + '40,' + c2 + '35) border-box';
+  if (_okBtn) { _okBtn.innerHTML = _makeCheckSvg(c1, c2); _okBtn.style.background = _FILL + _currentBtnDim + ' border-box'; }
+  if (_cancelBtn) { _cancelBtn.innerHTML = _makeCloseSvg(c1, c2); _cancelBtn.style.background = _FILL + _currentBtnDim + ' border-box'; }
+
+  // 光标颜色 — setCursorColor 需要 rgba 格式
+  let cursorColor = c1;
+  let cursorBg = c1 + '20';
+  if (c1.startsWith('#')) {
+    const num = parseInt(c1.replace('#', ''), 16);
+    cursorColor = 'rgba(' + ((num >> 16) & 0xFF) + ',' + ((num >> 8) & 0xFF) + ',' + (num & 0xFF) + ',0.7)';
+    cursorBg = 'rgba(' + ((num >> 16) & 0xFF) + ',' + ((num >> 8) & 0xFF) + ',' + (num & 0xFF) + ',0.12)';
+  }
+  setCursorColor(cursorColor, cursorBg);
+  setLiquidColor('rgba(0,0,0,0.85)');
+  setModeAccent(c1);
+
+  // 初始化背景板位置 — 与 updateBg(1张卡) 完全一致的公式
+  if (_bgCard) {
+    const stackH = 68; // theme.stack.cardHeight (_CARD_H)
+    const h = stackH + 40;
+    const top = Math.round(window.innerHeight * 0.35 - h / 2 - 40);
+    anim.set(_bgCard, { y: top, height: h });
+    _toolbarPos(top, h);
+  }
+}
+
+/** 退出提示词模式（复用 removeBg 清理） */
+export function exitPromptMode(): void {
+  removeBg();
 }
 
 export function updateBg(stackH: number, gap: number): void {
@@ -233,6 +306,7 @@ export function recolorCards(mode: string | null, cards: HTMLElement[]): void {
 }
 
 export function applyModeTheme(mode: string | null, cards: HTMLElement[]): void {
+  if (mode === 'prompt') return; // 颜色由 enterPromptMode 直接设置
   recolorCards(mode, cards);
   const t = mode ? _MODE_THEME[mode] : null;
   if (t?.cursorColor) {

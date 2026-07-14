@@ -137,8 +137,8 @@ export class GestureRegistry {
     this._initialized = true;
     // 禁止浏览器接管触摸（否则 pointermove 会被提前终止）
     document.body.style.touchAction = 'none';
-    // pointerdown 用 passive:false 以支持 preventDefault（主光球需要阻止滚动）
-    document.addEventListener('pointerdown', this._onStart, { passive: false });
+    // pointerdown 用 passive:true — 浏览器无需等待 JS，可直接根据 touch-action 接管原生滚动
+    document.addEventListener('pointerdown', this._onStart, { passive: true });
     document.addEventListener('pointermove', this._onMove, { passive: true });
     document.addEventListener('pointerup', this._onEnd, { passive: true });
     document.addEventListener('pointercancel', this._onEnd, { passive: true });
@@ -232,6 +232,7 @@ export class GestureRegistry {
 
     const target = e.target as HTMLElement;
     if (!target) return;
+
 
     if (this._active && this._active.handler.id === 'card-stack-global') {
     }
@@ -330,7 +331,6 @@ export class GestureRegistry {
 
   private _handleEnd(e: PointerEvent): void {
     if (!this._enabled) return;
-
     // 移除指针
     this._pointers.delete(e.pointerId);
 

@@ -1,6 +1,6 @@
 ---
 title: KFM v4 工作手册
-last_reviewed: 2026-07-10
+last_reviewed: 2026-07-11
 kfm_version: 7.0.0
 status: active
 maintainer: AI agent
@@ -153,13 +153,18 @@ index.ts (入口路由)
 **API 卡 Provider 管理 + 服务端 CORS 代理**
 
 卡片插件系统基础（card-registry + plugins/）已在 v7.0.0 奠定。当前阶段的工作重⼼转移到：
-1. **API 卡（原设置卡）** — Provider 多实例管理（编辑/测试/选择）、`.kfmv4/providers.json` 文件持久化
+1. **API 卡（原设置卡）** — Provider 多实例管理（编辑/测试/选择）、数据持久化到 `$HOME/.kfmv4/`（providers.json）
 2. **服务端 CORS 代理** — `/api/proxy/fetch` 端点，AI API 请求走服务端避开 CORS
 3. **卡片视觉规范** — CARD_DEV_GUIDE §10 边框/颜色/嵌套规范 + theme.ts 对齐
 
+> **数据目录**：v7.0.0 后将 `.kfmv4/` 从项目根目录迁移到 `$HOME/.kfmv4/`（由 `path-utils.ts` 的 `KFM_DATA_DIR` 定义）。
+> 包含：`providers.json`、`active.json`、`sessions/`、`roles/`、`configs/`。
+> 客户端通过 API 端点（`/api/files/read`、`/api/files/write`、`/api/files/list`）以相对路径 `.kfmv4/...` 访问，
+> 服务端 `sanitizePath()` 将其解析到 `SAFE_ROOT`（`$HOME`）下。
+
 - **v7.0.0 后已完成**：
   - 设置卡 → API 卡重构：Provider 管理界面（多 Provider 编辑/测试/选择/模型自动拉取）✅
-  - `.kfmv4/providers.json` 文件持久化（取代 localStorage）+ 异步数据加载 ✅
+  - `$HOME/.kfmv4/` 文件持久化（providers.json，取代 localStorage）+ 异步数据加载 ✅
   - 服务端 CORS 代理 `/api/proxy/fetch` 端点（AI API 请求走服务端）✅
   - 自定义 Provider 下拉面板（取代原生 select，浮在卡片上方）✅
   - 卡片样式规范落地：CARD_DEV_GUIDE §10.6 边框规范 + §10.7 多级嵌套颜色交替 + §10.2.1 文字颜色可读性 ✅
@@ -218,6 +223,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 17. **`display:''` 会清除 inline style**：隐藏/显示元素时，如果元素原本有 `display:flex`（inline style），用 `display:''` 恢复会 revert 到 CSS 默认值（block），破坏 flex 布局。必须用 `display:'flex'` 恢复。历史案例：2026-07-05 光球 SVG 偏移 ~6px，排查耗时数小时。<a id='trap-17'></a>
 18. **修改 .css 前检查是否有 .scss 源文件**：项目使用 SCSS 编译，`sass base.scss → base.css`。直接修改 `.css` 文件会被下一次 `npm run check` 编译覆盖。所有样式修改必须在 `.scss` 文件中进行。历史案例：2026-07-06 全屏卡片 touch-action 规则加到 base.css 被覆盖，排查 1 轮。<a id='trap-18'></a>
 19. **第三方触摸库手势冲突**：集成有自己触摸处理的库（如 xterm.js、地图、画布等）时，如果库"全捕获"但只处理部分方向（如只处理垂直滚动），其他方向的手势（如水平滑动）会被静默丢弃。解决方案：在库的手势处理器中添加方向检测，将不处理的方向传递给其他处理器。历史案例：2026-07-06 终端卡全屏模式下水平滑动无法打开侧栏/卡片堆。<a id='trap-19'></a>
+20. **`querySelectorAll('*')` + inline style 是继承链毒药**：`touch-action` 是 CSS 继承属性。对后代逐元素设 `elem.style.touchAction = 'none'` 后，该值永久粘住，父级改 `pan-y` 也传不下去。退出全屏/浮卡态时，只改容器元素的 `touchAction`，不要遍历后代。历史案例：2026-07-14 浮卡滚动失效（B.A.R. #008），排查 2 小时，根因是 `exitFullscreen` 的 `querySelectorAll('*')` 覆盖。<a id='trap-20'></a>
 
 ---
 
@@ -302,8 +308,9 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 
 ## 六、约束与原则
 
-> 全量约束交叉引用见 [`docs/PRINCIPLES.md`](./PRINCIPLES.md)（心法 17 条 + 架构约束 6 条 + 隐性契约 11 条 + 关键约定速查）。
+> 全量约束交叉引用见 [`docs/PRINCIPLES.md`](./PRINCIPLES.md)（心法 18 条 + 架构约束 6 条 + 隐性契约 11 条 + 关键约定速查）。
 > 修改代码前必读 [`docs/KFM_V4_INVARIANTS.md`](./KFM_V4_INVARIANTS.md)（修改约束协议）。
+> 补充原则（流程建议）见 [`docs/DIAGNOSTICS.md`](./DIAGNOSTICS.md) §四。
 
 ---
 
@@ -348,21 +355,25 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `canvas-cursor.ts` | 444 | 3 | ✅ 提及 | Canvas 盒子光标系统 |
 | `canvas-scroll.ts` | 361 | 2 | ✅ 提及 | Canvas 盒子滚动系统 |
 | `canvas-utils.ts` | 61 | 4 | ✅ 依赖图 | Canvas 通用工具函数 |
-| `card-stack.ts` | 445 | 4 | ✅ 独立条目 | 堆叠卡片面板 |
+| `card-stack.ts` | 452 | 4 | ✅ 独立条目 | 堆叠卡片面板 |
+| `card-toast.ts` | 52 | 1 | ✅ 分组表 | 卡片风格轻量提示 |
 | `char-rain.ts` | 306 | 1 | ✅ 分组表 | 字符散落/回收动画 |
 | `click-queue.ts` | 39 | 1 | ✅ 分组表 | 点击事件队列 |
+| `custom-select.ts` | 236 | 1 | ✅ 分组表 | 可复用的自定义下拉框组件 |
+| `confirm-dialog.ts` | 222 | 1 | ✅ 分组表 | 可复用的自定义确认对话框 |
 | `color-utils.ts` | 46 | 2 | ✅ 分组表 | 颜色工具函数（从 tree-swipe 拆分） |
 | `debug-assert.ts` | 24 | 1 | ✅ 提及 | 运行时断言 |
 | `dom-refs.ts` | 37 | 9 | ✅ 注册表 | DOM 元素引用 |
 | `floating-card.ts` | 1204 | 2 | ✅ 独立条目 | 浮卡系统（核心模块） |
-| `gesture-registry.ts` | 384 | 6 | ✅ 独立条目 | 手势注册中心 |
-| `gestures.ts` | 215 | 1 | ✅ 提及 | 页面滑动手势配置 |
+| `gesture-registry.ts` | 385 | 6 | ✅ 独立条目 | 手势注册中心 |
+| `gestures.ts` | 217 | 1 | ✅ 提及 | 页面滑动手势配置 |
 | `interaction-constants.ts` | 21 | 2 | ✅ 分组表 | 交互常量共享层（v6.6.0 新增） |
 | `drag-handler.ts` | 136 | 2 | ✅ 分组表 | 共享拖动状态机（orb + floating-card 去重） |
 | `file-action-bar.ts` | 427 | 2 | ✅ 分组表 | 文件行长按 → 底部抽屉操作栏 |
 | `logger.ts` | 58 | 3 | ✅ 分组表 | KFM 日志系统 |
-| `mode-system.ts` | 370 | 1 | ✅ 分组表 | 模式按钮系统（从 tree-swipe 拆分，v6.8.0 新增） |
-| `orb.ts` | 494 | 1 | ✅ 独立条目 | 光球 + AI 对话面板 |
+| `mode-system.ts` | 444 | 1 | ✅ 分组表 | 模式按钮系统（从 tree-swipe 拆分，v6.8.0 新增） |
+| `orb.ts` | 980 | 1 | ✅ 独立条目 | 光球 + AI 对话面板 |
+| `session-store.ts` | 283 | 1 | — | 会话持久化统一存储（替代 orb.ts 散布的会话逻辑） |
 | `renderer-lifecycle.ts` | 243 | 5 | ✅ 注册表 | 渲染器生命周期单例 L |
 | `root-picker.ts` | 434 | 2 | ✅ 独立条目 | 文件树根目录切换器 |
 | `state.ts` | 257 | 10 | ✅ 注册表 | 全局状态层 KFMState |
@@ -372,12 +383,12 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `tree-model.ts` | 191 | 2 | ✅ 分组表 | 绝对深度布局模型 |
 | `tree-overlay.ts` | 414 | 1 | ✅ 分组表 | Overlay 双树构建系统（从 tree-render 拆分） |
 | `tree-animation.ts` | 74 | 1 | ✅ 分组表 | 文件树插入/移除 GSAP 动画（新建/删除/复制/移动共享） |
-| `tree-render.ts` | 1015 | 3 | ✅ 核心条目 | 文件树 Canvas 渲染（编排层） |
-| `tree-swipe.ts` | 652 | 1 | ✅ 分组表 | 文件行右滑 → 卡片堆（从 tree-render 拆分，v6.8.0 拆分为 color-utils + mode-system） |
+| `tree-render.ts` | 1019 | 3 | ✅ 核心条目 | 文件树 Canvas 渲染（编排层） |
+| `tree-swipe.ts` | 725 | 1 | ✅ 分组表 | 文件行右滑 → 卡片堆（从 tree-render 拆分，v6.8.0 拆分为 color-utils + mode-system） |
 | `ui-registry.ts` | 334 | 9 | ✅ 独立条目 | UI 元素注册表 |
 | `ui.ts` | 71 | 10 | ✅ 提及 | UI 初始化编排 |
 | `ws-channel.ts` | 348 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
-| `terminal-card-04.ts` | 539 | 0 | TERMINAL_CARD_SPEC | 03 号终端卡 xterm.js 集成 |
+| `terminal-card-04.ts` | 550 | 0 | TERMINAL_CARD_SPEC | 03 号终端卡 xterm.js 集成 |
 | `tmux-card.ts` | 195 | 0 | — | 04 号 tmux 窗口管理卡 |
 | `card-registry.ts` | 155 | 5 | CARD_REGISTRY_SPEC | 卡片注册表：类型声明 + 实例追踪 |
 | **渲染器（renderers/）** | | | | |
@@ -389,7 +400,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `../src/client/modules/renderers/math-diagram.ts` | 153 | 1 | — | 数学公式/图表渲染器（KaTeX + Mermaid CDN） |
 | `../src/client/modules/renderers/md-extensions.ts` | 48 | 1 | — | Markdown 渲染扩展（链接、任务列表） |
 | `../src/client/modules/renderers/text-preview.ts` | 26 | 1 | — | 文本文件预览渲染器 |
-| **合计** | **11606** | | | |
+| **合计** | **13057** | | | |
 
 ### 死代码检查
 **结论：无死代码。** 所有 37 个模块都被至少 1 个文件导入（`terminal-card-04.ts` 和 `tmux-card.ts` 被导入数为 0，但这是模块自身的特性：它们仅在用户侧打开卡片时由 `card-registry.ts` 的 `createHandler` 工厂按需实例化，属于动态加载。`terminal-aux-bar.ts` 已删除（空占位，无任何引用）。`src/cards/` 目录已彻底删除。实际使用的 logger 在 `src/client/modules/logger.ts`。

@@ -189,7 +189,13 @@ function createCard(index: number): HTMLElement {
     const idx = parseInt(el.dataset.index || "0", 10);
     if (idx !== _focusIndex) {
       _focusIndex = idx;
-      updateFocus();
+      // 聚焦动画 + 投全屏卡同时开始，聚焦动画完成后关闭卡片堆
+      launchFocusedCard(true);
+      updateFocus(() => { closeCardStack(); });
+    } else {
+      // 已聚焦 → 直接投卡 + 关闭
+      launchFocusedCard(true);
+      closeCardStack();
     }
   });
   return el;
@@ -207,7 +213,7 @@ function buildCards(): void {
   log("[CARD-STACK] buildCards done, cards=" + _cardEls.length);
 }
 
-function updateFocus(): void {
+function updateFocus(onComplete?: () => void): void {
   for (let i = 0; i < _cardEls.length; i++) {
     const el = _cardEls[i];
     const dist = Math.abs(i - _focusIndex);
@@ -217,6 +223,7 @@ function updateFocus(): void {
       anim.to(el, {
         xPercent: 50, x: -28, scale: 1.04, rotation: 0,
         duration: 0.35, ease: 'back.out(1.2)',
+        onComplete: onComplete,
       });
       el.style.boxShadow = theme.stack.focusShadow;
     } else {

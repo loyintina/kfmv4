@@ -352,6 +352,7 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
     'background:linear-gradient(135deg,' + _hexToRgba(config.color1, 0.85) + ' 30%,' + _hexToRgba(config.color2, 0.85) + ' 70%)',
     'pointer-events:auto', 'z-index:' + zIndex, 'opacity:1',
     'user-select:none', '-webkit-user-select:none',
+    'touch-action:pan-y',
   ].join(';');
 
   document.body.appendChild(el);
@@ -416,7 +417,7 @@ function _renderFloatingContent(contentEl: HTMLElement, state: 'compact' | 'acti
     }
     label.textContent = cardName || '';
   } else {
-    contentEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:flex-start;box-sizing:border-box;padding:8px;font-size:11px;color:rgba(224,224,224,0.7);overflow-y:auto;touch-action:none';
+    contentEl.style.cssText = 'position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:flex-start;box-sizing:border-box;padding:8px;font-size:11px;color:rgba(224,224,224,0.7);overflow:hidden;touch-action:pan-y';
     const old = contentEl.querySelector('.fc-compact-label');
     if (old) old.remove();
   }
@@ -629,14 +630,9 @@ function exitFullscreen(item: FloatingCardItem): void {
     lineEl.style.margin = '';
   }
   
-  // 恢复内容区及后代的 touch-action（全屏/浮卡统一使用 none，避免 pointercancel）
-  // 跳过 .xterm 元素——它的 touch-action: none 由终端模块管理
+  // 恢复浮卡态 touch-action（pan-y 允许内容区原生滚动）
   if (item.contentEl) {
-    item.contentEl.style.touchAction = 'none';
-    for (const child of item.contentEl.querySelectorAll<HTMLElement>('*')) {
-      if (child.classList?.contains('xterm')) continue;
-      child.style.touchAction = 'none';
-    }
+    item.contentEl.style.touchAction = 'pan-y';
   }
   item.el.classList.remove('fullscreen');
   // 显示四角光球 + topMidOrb
@@ -736,21 +732,12 @@ function dismissFullscreen(item: FloatingCardItem): void {
     item.fullscreenBtns = null;
   }
   
-  // 恢复内容区及后代的 touch-action（全屏/浮卡统一使用 none）
-  // 跳过 .xterm 元素
+  // 恢复浮卡态 touch-action（pan-y 允许内容区原生滚动）
   if (item.contentEl) {
-    item.contentEl.style.touchAction = 'none';
-    for (const child of item.contentEl.querySelectorAll<HTMLElement>('*')) {
-      if (child.classList?.contains('xterm')) continue;
-      child.style.touchAction = 'none';
-    }
+    item.contentEl.style.touchAction = 'pan-y';
   }
   item.el.classList.remove('fullscreen');
   _dismissOne(item, true);
-}
-
-export function hasFloatingCard(): boolean {
-  return _floatingCards.length > 0;
 }
 
 // ========== 浮卡初始化 ==========
@@ -1163,6 +1150,10 @@ export function initFloatingCards(): void {
     item.el.style.zIndex = String(item.zIndex);
     cardRegistry.focusCard(item.instanceId);
   });
+}
+
+export function hasFloatingCard(): boolean {
+  return _floatingCards.length > 0;
 }
 
 // ========== 卡片布局骨架（共享样板） ==========

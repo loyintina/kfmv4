@@ -71,8 +71,8 @@ export function createTmuxCardHandler(): CardContentHandler {
     for (const s of sessions) {
       const btn = document.createElement('button');
       btn.className = 'tmux-session-btn';
+      btn.style.touchAction = 'none';
       btn.setAttribute('data-session', s);
-      btn.textContent = s;
       _picker.appendChild(btn);
     }
   }

@@ -22,6 +22,37 @@ import { MARGIN } from './interaction-constants.js';
 import { createDragHandler, type DragConfig } from './drag-handler.js';
 import { anim } from './animation-registry.js';
 import { log } from './logger.js';
+import { sessionStore } from './session-store.js';
+import { createCustomSelect, type CustomSelect } from './custom-select.js';
+
+const API_BASE = window.location.pathname.replace(/\/+$/, '') + '/api/';
+
+async function readActiveConfig(): Promise<Record<string, string>> {
+  try {
+    const res = await fetch(API_BASE + 'files/read', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: '.kfmv4/active.json' }),
+    });
+    const data = await res.json();
+    return data.content ? JSON.parse(data.content) : {};
+  } catch { return {}; }
+}
+
+async function patchActiveConfig(patch: Record<string, string>): Promise<void> {
+  const current = await readActiveConfig();
+  const merged = { ...current, ...patch };
+  fetch(API_BASE + 'files/write', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: '.kfmv4/active.json', content: JSON.stringify(merged) }),
+  }).catch(() => {});
+}
+
+interface Provider {
+  id: string;
+  name: string;
+  baseUrl: string;
+  models: string[];
+}
 
 interface ChatMessage {
   role: 'user' | 'ai';
@@ -32,11 +63,11 @@ interface ChatMessage {
 type OrbState = 'collapsed' | 'expanded' | 'editing';
 
 type PanelState = 'closed' | 'open' | 'editing';
-
 let orbState: OrbState = 'collapsed';
 let panelState: PanelState = 'closed';
 let orbEl: HTMLDivElement | null = null;
 let panelEl: HTMLDivElement | null = null;
+let _orbSessionSelect: ReturnType<typeof import('./custom-select.js').createCustomSelect> | null = null;
 
 const PANEL_MIN_WIDTH = 120;
 const PANEL_MIN_HEIGHT = 100;
@@ -45,7 +76,6 @@ const PANEL_DEFAULT_HEIGHT = 350;
 let panelWidth = PANEL_DEFAULT_WIDTH;
 let panelHeight = PANEL_DEFAULT_HEIGHT;
 
-// 实际渲染尺寸（可能被压缩）
 let renderWidth = PANEL_DEFAULT_WIDTH;
 let renderHeight = PANEL_DEFAULT_HEIGHT;
 
@@ -219,11 +249,18 @@ function updatePanelPosition(): void {
 function buildPanelContent(): void {
   if (!panelEl) return;
 
-  // 渐变配色（跟浮卡内卡反转规则一致：内卡 c2→c1 而非 c1→c2）
   const c1 = 'rgba(0,212,255,0.8)';
   const c2 = 'rgba(124,58,237,0.7)';
 
   panelEl.innerHTML = `
+<div class="orb-header-bar" style="
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 14px;flex-shrink:0;
+  border-bottom:1px solid rgba(255,255,255,0.06)
+">
+  <div id="orb-role-select-container"></div>
+  <div id="orb-session-select-container"></div>
+</div>
 <div class="orb-panel-content" style="
   flex:1;overflow-y:auto;padding:12px 14px;min-height:0
 "></div>
@@ -231,115 +268,141 @@ function buildPanelContent(): void {
 <div class="orb-model-bar" style="
   display:flex;gap:8px;padding:6px 10px;flex-shrink:0
 ">
-  <div class="orb-opt-trigger" id="orb-prov-trigger" style="
-    flex:1;font-size:10px;padding:4px 6px;border-radius:6px;
-    background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,
-      linear-gradient(135deg,${c2} 30%,${c1} 70%) border-box;
-    border:1px solid transparent;border-left-width:2px;
-    color:rgba(255,255,255,0.8);cursor:pointer;user-select:none;
-    display:flex;align-items:center;justify-content:space-between
-  "><span class="orb-opt-text" id="orb-prov-text">—</span><span style="font-size:10px;opacity:0.6;margin-left:4px">▼</span></div>
-  <div class="orb-opt-trigger" id="orb-model-trigger" style="
-    flex:1;font-size:10px;padding:4px 6px;border-radius:6px;
-    background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,
-      linear-gradient(135deg,${c2} 30%,${c1} 70%) border-box;
-    border:1px solid transparent;border-left-width:2px;
-    color:rgba(255,255,255,0.8);cursor:pointer;user-select:none;
-    display:flex;align-items:center;justify-content:space-between
-  "><span class="orb-opt-text" id="orb-model-text">—</span><span style="font-size:10px;opacity:0.6;margin-left:4px">▼</span></div>
+  <div id="orb-prov-container" style="flex:1;min-width:0"></div>
+  <div id="orb-model-container" style="flex:1;min-width:0"></div>
 </div>
   `;
 
-  // 加载数据 + 绑定
   const base = window.location.pathname.replace(/\/+$/, '') + '/api/';
-  const provTrig = document.getElementById('orb-prov-trigger') as HTMLDivElement | null;
-  const modelTrig = document.getElementById('orb-model-trigger') as HTMLDivElement | null;
-  const provText = document.getElementById('orb-prov-text') as HTMLSpanElement | null;
-  const modelText = document.getElementById('orb-model-text') as HTMLSpanElement | null;
-  if (!provTrig || !modelTrig || !provText || !modelText) return;
-
-  let providers: any[] = [];
-  const saved = (() => { try { return JSON.parse(localStorage.getItem('kfm-chat-config') || '{}'); } catch { return {}; } })();
+  let providers: Provider[] = [];
 
   function saveConfig(): void {
-    localStorage.setItem('kfm-chat-config', JSON.stringify({
-      providerId: provText!.textContent === '—' ? '' : providers.find((p: any) => (p.name || p.id) === provText!.textContent)?.id || '',
-      modelId: modelText!.textContent === '—' ? '' : modelText!.textContent,
-    }));
-  }
-  let _openTrig: HTMLDivElement | null = null;
-  let _closeHandler: ((e: PointerEvent) => void) | null = null;
-
-  function closeDropdown(): void {
-    const existing = document.querySelector('.orb-dropdown-panel');
-    if (existing) existing.remove();
-    if (_closeHandler) { document.removeEventListener('pointerdown', _closeHandler); _closeHandler = null; }
-    _openTrig = null;
+    const provId = provSelect?.getValue() || '';
+    const modelId = modelSelect?.getValue() || '';
+    patchActiveConfig({ providerId: provId, modelId: modelId });
   }
 
-  function showDropdown(trigger: HTMLDivElement, items: { label: string; value: string }[], onPick: (value: string) => void): void {
-    if (_openTrig === trigger) { closeDropdown(); return; }
-    closeDropdown();
-    _openTrig = trigger;
-    const panel = document.createElement('div');
-    panel.className = 'orb-dropdown-panel';
-    panel.style.cssText = 'position:fixed;z-index:9999;border-radius:6px;padding:3px;background:rgba(20,16,32,0.96);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.1);overflow:hidden;min-width:100px';
-    items.forEach(item => {
-      const row = document.createElement('div');
-      row.style.cssText = 'padding:4px 8px;border-radius:4px;font-size:10px;cursor:pointer;color:rgba(255,255,255,0.8)';
-      row.textContent = item.label;
-      row.onmouseenter = () => { row.style.background = 'rgba(255,255,255,0.06)'; };
-      row.onmouseleave = () => { row.style.background = ''; };
-      row.onclick = (ev: PointerEvent) => { ev.stopPropagation(); onPick(item.value); closeDropdown(); };
-      panel.appendChild(row);
+  let provSelect: CustomSelect | null = null;
+  let modelSelect: CustomSelect | null = null;
+
+  async function updateProviderSelect(): Promise<void> {
+    if (!provSelect || !modelSelect) return;
+    const active = await readActiveConfig();
+    const curProv = active.providerId
+      ? providers.find((p: Provider) => p.id === active.providerId)
+      : undefined;
+    provSelect.updateItems(
+      providers.map((p: Provider) => ({ label: p.name || p.id, value: p.id })),
+      curProv?.id || ''
+    );
+    if (curProv) {
+      modelSelect.updateItems(
+        (curProv.models || []).map((m: string) => ({ label: m, value: m })),
+        active.modelId || ''
+      );
+    }
+  }
+
+  const roleContainer = document.getElementById('orb-role-select-container');
+  if (roleContainer) {
+    const roleSelect = createCustomSelect({
+      accent: c1, accent2: c2, placeholder: '角色', minWidth: 70, maxWidth: 110,
+      onSelect: async (roleFile) => {
+        await patchActiveConfig({ roleFile });
+        window.dispatchEvent(new CustomEvent('kfm-role-change', { detail: { roleId: roleFile } }));
+      },
     });
-    const r = trigger.getBoundingClientRect();
-    panel.style.left = r.left + 'px';
-    panel.style.top = (r.top - 4) + 'px';
-    panel.style.minWidth = Math.max(r.width, 100) + 'px';
-    document.body.appendChild(panel);
-    const panelH = panel.getBoundingClientRect().height;
-    panel.style.top = Math.max(4, r.top - panelH) + 'px';
-    _closeHandler = (e: PointerEvent) => {
-      if (!panel.contains(e.target as Node) && !trigger.contains(e.target as Node)) {
-        closeDropdown();
-      }
-    };
-    document.addEventListener('pointerdown', _closeHandler);
+    roleContainer.appendChild(roleSelect.element);
+    (async () => {
+      let roleFiles: string[] = [];
+      try {
+        const res = await fetch(base + 'files/list', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: '.kfmv4/roles' }),
+        });
+        const data = await res.json();
+        roleFiles = (data.items || []).map((f: { name: string }) => f.name.replace('.json', '')).filter((n: string) => n);
+      } catch {}
+      const active = await readActiveConfig();
+      const currentRole = active.roleFile || (roleFiles[0] || '');
+      roleSelect.updateItems(roleFiles.map((n: string) => ({ label: n, value: n })), currentRole);
+    })();
+    window.addEventListener('kfm-role-change', ((e: CustomEvent) => {
+      if (e.detail?.roleId) roleSelect.setValue(e.detail.roleId);
+    }) as EventListener);
+  }
+
+  const sessionContainer = document.getElementById('orb-session-select-container');
+  if (sessionContainer) {
+    const sessionSelect = createCustomSelect({
+      accent: c1, accent2: c2, placeholder: '选择会话', minWidth: 80, maxWidth: 120,
+      onSelect: (sessionId) => { sessionStore.switchTo(sessionId); },
+    });
+    sessionContainer.appendChild(sessionSelect.element);
+    sessionSelect.updateItems(
+      sessionStore.list.map(s => ({ label: s.title, value: s.id })),
+      sessionStore.activeId || sessionStore.list[0]?.id || ''
+    );
+    _orbSessionSelect = sessionSelect;
+  }
+
+  const provSelectContainer = document.getElementById('orb-prov-container') as HTMLDivElement | null;
+  const modelSelectContainer = document.getElementById('orb-model-container') as HTMLDivElement | null;
+  if (provSelectContainer && modelSelectContainer) {
+    provSelect = createCustomSelect({
+      accent: c1, accent2: c2, placeholder: '—', minWidth: 80, direction: 'up',
+      onSelect: (id) => {
+        const p = providers.find((x: Provider) => x.id === id);
+        if (!p) return;
+        modelSelect?.updateItems((p.models || []).map((m: string) => ({ label: m, value: m })), p.models?.[0] || '');
+        saveConfig();
+        window.dispatchEvent(new CustomEvent('kfm-provider-change', { detail: { providerId: id, modelId: p.models?.[0] || '' } }));
+      },
+    });
+    provSelectContainer.appendChild(provSelect.element);
+    modelSelect = createCustomSelect({
+      accent: c1, accent2: c2, placeholder: '—', minWidth: 80, direction: 'up',
+      onSelect: (model) => {
+        saveConfig();
+        window.dispatchEvent(new CustomEvent('kfm-model-change', { detail: { modelId: model } }));
+      },
+    });
+    modelSelectContainer.appendChild(modelSelect.element);
   }
 
   fetch(base + 'files/read', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ path: 'kfmv4/.kfmv4/providers.json' }),
+    body: JSON.stringify({ path: '.kfmv4/providers.json' }),
   }).then(r => r.json()).then(data => {
-    providers = data.content ? JSON.parse(data.content) : [];
-    const curProv = providers.find((p: any) => p.id === saved.providerId) || providers[0];
-    if (curProv) {
-      provText.textContent = curProv.name || curProv.id;
-      modelText.textContent = saved.modelId || curProv.models?.[0] || '—';
-    }
+    const raw: Array<Record<string, unknown>> = data.content ? JSON.parse(data.content) : [];
+    providers = raw.map(p => ({ id: p.id as string, name: p.name as string, baseUrl: p.baseUrl as string, models: p.models as string[] }));
+    updateProviderSelect();
   }).catch(() => {});
 
-  provTrig.onclick = (e: MouseEvent) => {
-    e.stopPropagation();
-    showDropdown(provTrig, providers.map((p: any) => ({ label: p.name || p.id, value: p.id })), (id) => {
-      const p = providers.find((x: any) => x.id === id);
-      if (!p) return;
-      provText.textContent = p.name || p.id;
-      modelText.textContent = p.models?.[0] || '—';
-      saveConfig();
-    });
-  };
-
-  modelTrig.onclick = (e: MouseEvent) => {
-    e.stopPropagation();
-    const curProv = providers.find((p: any) => (p.name || p.id) === provText.textContent);
-    if (!curProv) return;
-    showDropdown(modelTrig, (curProv.models || []).map((m: string) => ({ label: m, value: m })), (model) => {
-      modelText.textContent = model;
-      saveConfig();
-    });
-  };
+  window.addEventListener('kfm-provider-change', ((e: CustomEvent) => {
+    if (e.detail?.providerId) {
+      const p = providers.find((x: Provider) => x.id === e.detail.providerId);
+      if (p) {
+        provSelect?.setValue(e.detail.providerId);
+        modelSelect?.updateItems((p.models || []).map((m: string) => ({ label: m, value: m })), e.detail.modelId || p.models?.[0] || '');
+      }
+    }
+  }) as EventListener);
+  window.addEventListener('kfm-model-change', ((e: CustomEvent) => {
+    if (e.detail?.modelId) modelSelect?.setValue(e.detail.modelId);
+  }) as EventListener);
+  window.addEventListener('kfm-config-change', ((e: CustomEvent) => {
+    const d = e.detail;
+    if (!d) return;
+    if (d.providerId) {
+      const p = providers.find((x: Provider) => x.id === d.providerId);
+      if (p) {
+        provSelect?.setValue(d.providerId);
+        modelSelect?.updateItems((p.models || []).map((m: string) => ({ label: m, value: m })), d.modelId || p.models?.[0] || '');
+      }
+    }
+    patchActiveConfig({ providerId: d.providerId || '', modelId: d.modelId || '', sessionId: d.sessionId || '' });
+  }) as EventListener);
 }
 
 // ========== 状态切换 ==========
@@ -496,8 +559,7 @@ function initInputBarWatcher(): void {
   window.visualViewport?.addEventListener('resize', onResize);
 }
 
-// ========== 初始化 ==========
-export function initOrb(): void {
+export async function initOrb(): Promise<void> {
   orbEl = DOM.lightOrb;
   if (!orbEl) return;
 
@@ -623,66 +685,86 @@ export function initOrb(): void {
   const sendBtn = DOM.aiSendBtn;
   if (inputEl && sendBtn) {
     const base = window.location.pathname.replace(/\/+$/, '') + '/api/';
+    sessionStore.init(base);
+    await sessionStore.load();
+
+    // 加载活跃会话的历史消息
+    if (sessionStore.activeId) {
+      const msgs = await sessionStore.getMessages(sessionStore.activeId);
+      chatMessages.length = 0;
+      chatMessages.push(...msgs.map(m => ({ role: m.role as 'user' | 'ai', text: m.text, reasoning: m.reasoning })));
+      renderChatContent();
+    }
+
+    let abortCtrl: AbortController | null = null;
+    function setSending(on: boolean): void {
+      if (on) { sendBtn!.classList.add('sending'); }
+      else { sendBtn!.classList.remove('sending'); abortCtrl = null; }
+    }
+
+    // 监听会话切换 → 重载消息
+    window.addEventListener('kfm-session-change', (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!detail?.sessionId) return;
+      sessionStore.activeId = detail.sessionId;
+      sessionStore.getMessages(detail.sessionId).then(msgs => {
+        chatMessages.length = 0;
+        chatMessages.push(...msgs.map(m => ({ role: m.role as 'user' | 'ai', text: m.text, reasoning: m.reasoning })));
+        renderChatContent();
+        _orbSessionSelect?.updateItems(
+          sessionStore.list.map(s => ({ label: s.title, value: s.id })),
+          detail.sessionId
+        );
+      });
+    });
 
     async function doSend(): Promise<void> {
+      if (abortCtrl) { abortCtrl.abort(); setSending(false); return; }
       const text = inputEl!.value.trim();
       if (!text) return;
       inputEl!.value = '';
-      // 如果光球折叠，自动展开
       if (orbState === 'collapsed') expandPanel();
       inputEl!.style.height = 'auto';
 
       chatMessages.push({ role: 'user', text });
       renderChatContent();
 
+      const config = await readActiveConfig();
+      if (!config.providerId) {
+        chatMessages.push({ role: 'ai', text: '未配置 Provider，请先在 API 卡中添加并选择一个 Provider。' });
+        renderChatContent(); return;
+      }
+      if (!config.modelId) {
+        chatMessages.push({ role: 'ai', text: '未选择 Model，请先在 API 卡或光球面板底部选择一个 Model。' });
+        renderChatContent(); return;
+      }
       try {
-        // 读当前 Provider 和模型选择
-        const config = (() => { try { return JSON.parse(localStorage.getItem('kfm-chat-config') || '{}'); } catch { return {}; } })();
-        const res = await fetch(base + 'files/read', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ path: 'kfmv4/.kfmv4/providers.json' }),
-        });
-        const data = await res.json();
-        const providers = data.content ? JSON.parse(data.content) : [];
-        const p = providers.find((prov: any) => prov.id === config.providerId) || providers[0];
-        if (!p) {
-          chatMessages.push({ role: 'ai', text: '⚠ 未配置 API Provider，请先在 API 卡中添加。' });
-          renderChatContent();
-          return;
-        }
-        const model = config.modelId || p.models[0] || 'deepseek-v4-flash';
-
-        // 流式发送
+        const model = config.modelId;
+        const provider = config.providerId;
         chatMessages.push({ role: 'ai', text: '', reasoning: '' });
         renderChatContent();
         const msgIdx = chatMessages.length - 1;
-        let reasoningBuf = '';
-        let contentBuf = '';
+        let reasoningBuf = ''; let contentBuf = '';
 
-        const apiRes = await fetch(base + 'proxy/fetch', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        abortCtrl = new AbortController();
+        setSending(true);
+
+        const apiRes = await fetch(base + 'ai/chat', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            url: p.baseUrl + '/chat/completions',
-            method: 'POST',
-            headers: { 'Authorization': 'Bearer ' + p.apiKey, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              model,
-              messages: [{ role: 'user', content: text }],
-              max_tokens: 8192,
-              reasoning_effort: 'max',
-              stream: true,
-            }),
+            messages: chatMessages.slice(0, -1).map(m => ({
+              role: m.role === 'ai' ? 'assistant' : m.role,
+              content: m.text,
+            })),
+            model, provider,
           }),
+          signal: abortCtrl.signal,
         });
 
-        // 读取流式 SSE 响应
         const reader = apiRes.body?.getReader();
         if (!reader) throw new Error('无响应体');
         const decoder = new TextDecoder();
         let buffer = '';
-
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
@@ -694,32 +776,32 @@ export function initOrb(): void {
             const jsonStr = line.slice(6).trim();
             if (jsonStr === '[DONE]') continue;
             try {
-              const chunk = JSON.parse(jsonStr);
-              const delta = chunk?.choices?.[0]?.delta || {};
-              if (delta.reasoning_content) {
-                reasoningBuf += delta.reasoning_content;
-                chatMessages[msgIdx].reasoning = reasoningBuf;
-              }
-              if (delta.content) {
-                contentBuf += delta.content;
-                chatMessages[msgIdx].text = contentBuf;
+              const event = JSON.parse(jsonStr);
+              switch (event.type) {
+                case 'thinking': reasoningBuf += event.content || ''; chatMessages[msgIdx].reasoning = reasoningBuf; break;
+                case 'text': contentBuf += event.content || ''; chatMessages[msgIdx].text = contentBuf; break;
+                case 'tool_call': contentBuf += '\n\n[调用工具: ' + event.toolName + '...]'; chatMessages[msgIdx].text = contentBuf; break;
+                case 'error': contentBuf += '\n\n[错误: ' + event.content + ']'; chatMessages[msgIdx].text = contentBuf; break;
               }
               renderChatContent();
             } catch {}
           }
         }
-        chatMessages[msgIdx].text = contentBuf || '⚠ 未获取到回复';
+        chatMessages[msgIdx].text = contentBuf || '未获取到回复';
         chatMessages[msgIdx].reasoning = reasoningBuf || undefined;
         renderChatContent();
+        await sessionStore.saveMessages(chatMessages, config.modelId, config.providerId);
       } catch (e) {
-        chatMessages.push({ role: 'ai', text: '⚠ 请求失败: ' + (e instanceof Error ? e.message : '未知错误') });
+        if (e instanceof DOMException && e.name === 'AbortError') {
+          chatMessages[chatMessages.length - 1].text = '已取消';
+        } else {
+          chatMessages.push({ role: 'ai', text: '请求失败: ' + (e instanceof Error ? e.message : '未知错误') });
+        }
       }
+      setSending(false);
       renderChatContent();
     }
 
-    inputEl.addEventListener('keydown', (e: KeyboardEvent) => {
-      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend(); }
-    });
     sendBtn.addEventListener('click', () => doSend());
   }
  }

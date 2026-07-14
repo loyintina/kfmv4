@@ -364,13 +364,115 @@ registerCardType({
 
 ---
 
+## 11. 可复用组件
+
+项目提供了一组可复用的 UI 组件，可在所有卡片中使用。使用这些组件可以保持视觉一致性，并方便未来统一修改样式。
+
+### 11.1 自定义下拉框 (`custom-select.ts`)
+
+用于替代原生 `<select>` 元素，提供统一的下拉框样式。
+
+```typescript
+import { createCustomSelect, type CustomSelect } from '../../modules/custom-select.js';
+
+const select = createCustomSelect({
+  accent: '#00d4ff',           // 主题色
+  placeholder: '请选择',       // 占位文本
+  minWidth: 100,               // 最小宽度（默认 80）
+  maxWidth: 200,               // 最大宽度（默认 200）
+  onSelect: (value) => {       // 选择回调
+    log('selected:', value);
+  },
+});
+
+// 更新选项
+select.updateItems([
+  { label: '选项1', value: '1' },
+  { label: '选项2', value: '2' },
+], '1');  // 第二个参数为默认选中值
+
+// 添加到 DOM
+parent.appendChild(select.element);
+
+// 获取/设置值
+const value = select.getValue();
+select.setValue('2');
+
+// 销毁（在 deactivate 中调用）
+select.destroy();
+```
+
+**样式特点**：
+- 触发器：圆角 6px，背景 `rgba(255,255,255,0.06)`，边框 `rgba(255,255,255,0.1)`
+- 下拉面板：固定定位，圆角 8px，背景 `rgba(20,16,32,0.96)`，毛玻璃效果
+- 选项：悬停高亮，选中项显示 ✓ 标记
+- 宽度：自适应内容，不超过 `maxWidth`
+
+### 11.2 确认对话框 (`confirm-dialog.ts`)
+
+用于替代原生 `confirm()` 函数，提供符合卡片风格的确认对话框。
+
+```typescript
+import { showConfirm } from '../../modules/confirm-dialog.js';
+
+const confirmed = await showConfirm({
+  title: '删除配置',                    // 标题
+  message: '确定删除配置「主会话」？',    // 消息
+  accent: '#00d4ff',                    // 主题色1（c1）
+  accent2: '#7c3aed',                   // 主题色2（c2），用于双色渐变边框
+  confirmText: '删除',                  // 确认按钮文本
+  cancelText: '取消',                   // 取消按钮文本
+});
+  // 执行操作
+}
+```
+
+**样式特点**：
+- 遮罩层：半透明黑色（`rgba(0,0,0,0.5)`），毛玻璃效果
+- 对话框：双色渐变边框（`linear-gradient(135deg, c1, c2)`），与卡片二层框同款，暗色背景，圆角 12px
+- 键盘：Enter 确认，Escape 取消
+
+### 11.3 使用建议
+
+1. **在 `activate()` 中创建组件**，在 `deactivate()` 中销毁
+2. **使用 `card?.accents?.color1` 作为 accent 色**，保持与卡片主题一致
+3. **不要硬编码颜色**，使用主题色或 accent 色
+4. **组件会自动处理事件监听**，无需手动清理
+
+---
+
 > **版本**：v1.0（随卡片插件系统首次发布）
 >
 > **与代码同步**：如接口变更，先更新本文档再改代码。
 
 ## 10. 卡片的视觉规范
 
-新卡片必须与现有卡片视觉一致。以下规则确保卡片堆里不会出现格格不入的卡片。
+### 10.0 层级归属原则
+
+**卡片内没有"裸元素"。** 每个可见元素必须归属于某一层卡片框。同层元素统一使用同款边框、同款间距、同款渐变方向。
+
+```
+┌─ 外壳（一层 c1→c2）                         floating-card.ts 自动处理
+│  ┌─ 编辑器/预览框（二层 c2→c1 反色）         margin-top:6px 与标题线留间距
+│  │  选择器、编辑字段、操作按钮               btnStyle 全宽 flex:1
+│  └─────────────────────────────────────
+│  ┌─ 池框（二层 c2→c1 反色）                 直接衔接，不用分隔线
+│  │  ┌─ 行（默认）────────────────── ✕ ─┐   
+│  │  ├─ 行（选中，三层 c1→c2 渐变）─── ✕ ┤   三层正向渐变边框
+│  │  └─ 行（默认）────────────────── ✕ ─┘   
+│  └─────────────────────────────────────
+└─────────────────────────────────────────
+```
+
+**约束**：
+- 按钮必须在编辑器框内部，不能悬在框之间
+- 两个二层框直接衔接，无需分隔线——外层边框已足够区隔
+- 首个二层框必须设 `margin-top:6px`，与 `buildCardLayout` 的标题分隔线留出标准间距
+- 所有同层元素的 `border-radius`、`padding`、`border-left-width` 保持一致
+- **提示文本不使用 emoji 图标**：所有错误提示、状态消息使用纯文本，禁止使用 ⚠/🔧/✓/✗/⏹ 等 emoji。用方括号标记状态即可（如 `[错误: ...]`、`[已取消]`）。
+
+新卡片必须遵守此骨架。
+---
 
 ### 10.1 内容结构
 
@@ -399,9 +501,24 @@ const accent = card?.accents?.color1;                         // 卡片主色
 ├─ divider（渐变分隔线）─────┤  ← 取自卡片 accent 色
 │  body                     │  ← flex:1 你的内容区域
 └───────────────────────────┘
+
+**覆写 `bodyEl.style` 的强制规则**：如果需要自定义 bodyEl 样式，必须保留 `flex:1` 和 `overflow-y:auto`：
+
+```typescript
+// ❌ 错误：丢了 flex:1 和 overflow
+bodyEl.style.cssText = 'display:flex;flex-direction:column;gap:8px;padding:0 10px';
+
+// ✅ 正确：保留 buildCardLayout 的关键属性
+bodyEl.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:8px;padding:0 10px;overflow-y:auto';
+```
+
+缺少 `flex:1` → bodyEl 高度坍缩为内容高度，永不溢出。缺少 `overflow-y:auto` → 内容超出不可滚。
 ```
 
 禁止自建标题栏——否则点击/长按/拖拽手势路径会错过卡片框架。
+
+**内卡与标题线的间距**：内卡（编辑区）顶部必须设 `margin-top:6px`，与标题分隔线留出标准间距。
+**选择器位置**：顶部选择器必须放在内卡内部的第一行（作为 `mkRow` 的一个字段），禁止独立于内卡之外。
 
 ### 10.2 主题色引用
 
@@ -460,7 +577,25 @@ const accent = card?.accents?.color1;                         // 卡片主色
 - `pan-y` 确保横滑透传给全局手势（唤侧栏/卡片堆）
 - 独立横滑区域（标签栏）：`overflow-x: auto; touch-action: pan-x`，高度 ~30px
 
-### 10.5 数据存储
+### 10.4.1 操作按钮
+
+**所有卡片底部的操作按钮（保存/新建/删除等）必须全宽铺满。**
+
+容器：
+```typescript
+btnRow.style.cssText = 'display:flex;gap:6px';
+```
+
+按钮样式（`btnStyle` 函数）：
+```
+padding:0.3em 0.8em; border-radius:6px; flex:1; text-align:center; ...
+```
+
+关键：`flex: 1` 确保按钮均分容器宽度。禁止出现短按钮（无 `flex:1` 的按钮会收缩到内容宽度）。
+
+按钮数量与宽度关系：
+- 2 个按钮：各占 50%
+- 3 个按钮：各占 33%
 
 | 场景 | 存储方式 | 示例 |
 |------|---------|------|
@@ -510,4 +645,71 @@ padding: 8px 10px;
 | 2（子卡） | `color1→color2`（还原） |
 | 3（孙卡） | `color2→color1`（反转） |
 
-**透明度不随层级变化**——所有层级保持相同的饱和度和视觉重量。交替仅通过色相位置（color1/color2 交换）实现，不改变 opacity 或边框粗细。
+**池列表内选中行的渐变**属于第 2 层（子卡），使用还原方向：
+
+```css
+/* 池列表行 — 默认态 */
+padding: 6px 8px; margin-bottom: 4px; border-radius: 6px;
+border: 1px solid transparent; border-left-width: 3px;
+background: rgba(255,255,255,0.03);
+
+/* 池列表行 — 选中态（渐变边框，正向） */
+border-color: transparent;
+background:
+  linear-gradient(rgba(10,10,15,0.92), rgba(10,10,15,0.92)) padding-box,
+  linear-gradient(135deg, {color1} 30%, {color2} 70%) border-box;
+
+/* 池列表行 — hover 态 */
+background: rgba(255,255,255,0.06);
+```
+
+**池列表行布局**：双行结构，标题行 + 元信息行。
+
+```html
+┌──────────────────────────────┐
+│  OpenCode Go            ✕   │  ← 标题行（font-weight:600, color:0.85）
+│  20 模型                     │  ← 元信息行（font-size:9px, color:0.5）
+└──────────────────────────────┘
+```
+
+- 标题：`font-size:var(--card-font-size,11px); color:rgba(255,255,255,0.85); font-weight:600`
+- 元信息：`font-size:var(--card-font-size,9px); color:rgba(255,255,255,0.5)`
+- 删除按钮：红色 `✕`（`color:rgba(255,100,100,0.6)`，hover 变亮至 `1`）
+- 整行可点击切换选中，`e.stopPropagation()` 防止删除按钮触发行选中
+- 删除前必须弹确认框（`showConfirm`）
+- 选中行需同步更新顶部下拉框（`select.updateItems()`）
+
+---
+
+## 12. 开发教训
+
+### 12.1 下拉框开发 Checklist
+
+开发自定义下拉框时，逐条确认：
+
+- [ ] **方向**：底部栏的下拉框向上弹出（`direction: 'up'`），顶部栏向下弹出（`direction: 'down'`）
+- [ ] **面板定位**：`position:fixed` 的面板必须附加到 `document.body`，不能附加到 `position:relative` 的容器内
+- [ ] **字号规范**：使用 `var(--card-font-size,Xpx)` 替代硬编码 `font-size:Xpx`
+- [ ] **作用域**：变量需要在使用前定义，函数需要在调用前声明
+- [ ] **事件绑定**：在元素存在后才能绑定事件，不能在元素创建前绑定
+- [ ] **增量验证**：每修改一个地方就验证一次，不要一次修改多个地方
+
+### 12.2 隐式契约
+
+以下规则没有明确写在文档中，但应该遵守：
+
+| 规则 | 说明 |
+|------|------|
+| 下拉方向 | 底部栏向上，顶部栏向下 |
+| 面板定位 | `position:fixed` 附加到 `body` |
+| 字号规范 | 使用 CSS 变量 |
+| 作用域 | 变量在使用前定义 |
+| 事件绑定 | 元素存在后绑定 |
+
+### 12.3 开发流程
+
+1. **先研究现有实现**：查看类似功能的代码，理解设计模式
+2. **理解隐式契约**：不确定时先问，不要假设
+3. **增量开发**：一次只改一个地方，验证后再改下一个
+4. **遵循文档**：严格按照文档规范，不要自创规则
+

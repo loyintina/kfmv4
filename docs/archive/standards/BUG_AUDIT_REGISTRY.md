@@ -32,18 +32,20 @@ superseded_by: docs/DIAGNOSTICS.md
 
 **历史案例**：2026-05-25 B.A.R. #001
 
-### 1.2 touch-action：全屏单页应用必须全局设为 none
+### 1.2 touch-action 分层策略
 
-**涉及模块**：`public/css/base.css`、所有 `position:fixed` 的覆盖层
+**涉及模块**：`public/css/base.css`、`floating-card.ts`、所有 `position:fixed` 的覆盖层
 
-**契约内容**：
+**基础层 — 全局 `none`**：
 - `body`、`.main`、所有全屏覆盖层必须设 `touch-action: none`
 - 任何新添加的 `position:fixed` 元素如果覆盖了触摸区域，必须同步设 `touch-action: none`
-- **不要**使用 `touch-action: pan-y` 或 `auto`——本项目没有浏览器原生滚动，所有滚动由代码实现
 
-**违规后果**：浏览器检测到垂直滑动后接管触摸，停止派发 `pointermove`，导致手势在外部区域失效。
+**内容层 — 卡片内容区 `pan-y`**：
+- 卡片内容区（有 `overflow-y: auto` 的滚动容器）设 `touch-action: pan-y`
+- 浮卡外层容器设 `touch-action: pan-y`
+- 详见 `DIAGNOSTICS.md` §1.2 + `CARD_DEV_GUIDE.md` §10.4
 
-**历史案例**：2026-05-25 B.A.R. #001
+**违规后果**：卡片内容区设 `touch-action: none` → 浮卡内无法滚动。全局设 `auto/pan-y` → 浏览器接管手势 → `pointercancel` 截断。
 
 ### 1.3 卡片堆是全局模式，不是局部组件
 
