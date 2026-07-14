@@ -520,7 +520,7 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
 
       // === Provider Pool Card ===
       const poolCard = document.createElement('div');
-      poolCard.style.cssText = `border-radius:10px;padding:8px 12px;background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,linear-gradient(135deg,${c2} 30%,${c1} 70%) border-box;border:1px solid transparent;border-left-width:3px`;
+      poolCard.style.cssText = `border-radius:10px;padding:8px 12px;margin-top:8px;background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,linear-gradient(135deg,${c2} 30%,${c1} 70%) border-box;border:1px solid transparent;border-left-width:3px`;
       const pt = document.createElement('div');
       pt.textContent = 'Provider 池';
       pt.style.cssText = 'font-size:var(--card-font-size,11px);font-weight:700;color:rgba(255,255,255,0.85);margin-bottom:6px;flex-shrink:0';
