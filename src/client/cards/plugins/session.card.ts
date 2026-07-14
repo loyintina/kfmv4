@@ -460,7 +460,6 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
 
       previewCard.appendChild(previewHeader);
       previewCard.appendChild(nameRow);
-      previewCard.appendChild(btnRow);
 
       // 气泡区（三层框，正向渐变，半屏高可滚动）
       const bubbleFrame = document.createElement('div');
@@ -469,6 +468,9 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
       _bubbleContainer.style.cssText = 'display:flex;flex-direction:column';
       bubbleFrame.appendChild(_bubbleContainer);
       previewCard.appendChild(bubbleFrame);
+
+      // 按钮放在内容区下方
+      previewCard.appendChild(btnRow);
 
       bodyEl.appendChild(previewCard);
 
