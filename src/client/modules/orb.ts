@@ -14,6 +14,7 @@
 
 import { measureText, layoutLines } from '../engine/text-layout/index.js';
 import { gestures } from './gesture-registry.js';
+import { marked } from 'marked';
 import { DOM } from "./dom-refs.js";
 import { currentTheme as theme } from './theme.js';
 import { Registry } from './ui-registry.js';
@@ -176,19 +177,13 @@ function renderChatContent(): void {
       bubbleHtml += `<div id="${rid}" style="display:none;font-size:var(--card-font-size,10px);line-height:16px;color:rgba(255,255,255,0.45);margin-bottom:4px;padding:4px 6px;border-radius:4px;background:rgba(0,0,0,0.2);white-space:pre-wrap">${escapeHtml(msg.reasoning)}</div>`;
     }
 
-    const font = '13px sans-serif';
     const lineHeight = 20;
-    try {
-      const lines = layoutLines(msg.text, font, innerWidth - 24, lineHeight);
-      const textHtml = lines.map(l => `<span style="display:block">${escapeHtml(l.text)}</span>`).join('');
-      bubbleHtml += `<div style="font-family:sans-serif;font-size:var(--card-font-size,13px);line-height:${lineHeight}px;color:${theme.aiChat.bubbleText}">${textHtml}</div>`;
-    } catch {
-      bubbleHtml += `<div style="font-size:var(--card-font-size,13px);color:${theme.aiChat.bubbleText}">${escapeHtml(msg.text)}</div>`;
-    }
+    bubbleHtml += `<div class="orb-msg-text" data-msg-idx="${idx}" style="font-family:sans-serif;font-size:var(--card-font-size,13px);line-height:${lineHeight}px;color:${theme.aiChat.bubbleText};white-space:pre-wrap;word-break:break-word">${renderMarkdown(msg.text)}</div>`;
 
+    const maxWidth = isUser ? Math.min(innerWidth - 8, innerWidth * 0.85) : innerWidth - 8;
     html += `
       <div style="display:flex;justify-content:${align};margin-bottom:8px">
-        <div style="max-width:${innerWidth - 8}px;padding:6px 12px;background:${bgColor};${borderStyle}border-radius:8px;box-shadow:${boxShadow}">
+        <div style="max-width:${maxWidth}px;padding:6px 12px;background:${bgColor};${borderStyle}border-radius:8px;box-shadow:${boxShadow}">
           ${bubbleHtml}
         </div>
       </div>`;
@@ -196,12 +191,54 @@ function renderChatContent(): void {
   }
   contentArea.innerHTML = html;
   contentArea.scrollTop = contentArea.scrollHeight;
+  // 异步渲染 markdown
+  const msgEls = contentArea.querySelectorAll<HTMLElement>('.orb-msg-text');
+  for (const el of msgEls) {
+    const i = parseInt(el.dataset.msgIdx || '-1', 10);
+    if (i >= 0 && i < chatMessages.length && chatMessages[i].role !== 'user') {
+      const text = chatMessages[i].text;
+      if (text && text.length > 0) {
+        renderMarkdownAsync(text).then(mdHtml => {
+          el.innerHTML = mdHtml;
+          highlightAll(el);
+        });
+      }
+    }
+  }
 }
 
 function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+// highlight.js CDN 加载
+let _hljsReady = false;
+function _loadHljs(): void {
+  if (_hljsReady || document.querySelector('link[href*="highlight.js"]')) return;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css';
+  document.head.appendChild(link);
+  const script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js';
+  script.onload = () => { _hljsReady = true; };
+  document.head.appendChild(script);
+}
+
+async function renderMarkdownAsync(text: string): Promise<string> {
+  return await marked.parse(text);
+}
+
+function renderMarkdown(text: string): string {
+  return escapeHtml(text);
+}
+
+function highlightAll(el: HTMLElement): void {
+  _loadHljs();
+  el.querySelectorAll('pre code').forEach((block) => {
+    try { (window as any).hljs?.highlightElement(block as HTMLElement); } catch {}
+  });
+}
 // ========== 面板布局（核心：光球在面板右下角，超出时压缩） ==========
 function updatePanelPosition(): void {
   if (!orbEl || !panelEl) return;
