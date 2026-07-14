@@ -329,7 +329,7 @@ function createRoleHandler(meta: Record<string, unknown>): CardContentHandler {
       
       // 编辑表单（内卡样式）
       const formSection = document.createElement('div');
-      formSection.style.cssText = innerCardStyle(c1, c2) + ';margin-top:6px';
+      formSection.style.cssText = innerCardStyle(c1, c2) + ';margin-top:6px;display:flex;flex-direction:column;max-height:70vh';
       
       // 顶部选择器（在卡片内部）
       const { row: roleRow, wrap: roleWrap } = mkRow('\u89D2\u8272');
@@ -343,8 +343,10 @@ function createRoleHandler(meta: Record<string, unknown>): CardContentHandler {
           renderPoolList(poolListEl, c1, c2);
         },
       });
+      const formScroll = document.createElement('div');
+      formScroll.style.cssText = 'flex:1;overflow-y:auto;min-height:0';
       roleWrap.appendChild(roleSelect.element);
-      formSection.appendChild(roleRow);
+      formScroll.appendChild(roleRow);
       
       // 角色名
       const { row: nameRow, wrap: nameWrap } = mkRow('名称');
@@ -352,7 +354,7 @@ function createRoleHandler(meta: Record<string, unknown>): CardContentHandler {
       _nameInput.style.cssText = inputStyle();
       _nameInput.placeholder = '角色名称';
       nameWrap.appendChild(_nameInput);
-      formSection.appendChild(nameRow);
+      formScroll.appendChild(nameRow);
       
       // 标签
       const promptLabel = document.createElement('div');
@@ -559,15 +561,15 @@ function createRoleHandler(meta: Record<string, unknown>): CardContentHandler {
         );
       };
 
-      formSection.appendChild(promptLabel);
-      formSection.appendChild(promptFilesEl);
-      formSection.appendChild(addPromptBtn);
+      formScroll.appendChild(promptLabel);
+      formScroll.appendChild(promptFilesEl);
+      formScroll.appendChild(addPromptBtn);
       _renderPromptFiles = renderPromptFiles;
       renderPromptFiles();
 
       // 操作按钮（在 formSection 内部）
       const btnRow = document.createElement('div');
-      btnRow.style.cssText = 'display:flex;gap:6px;margin-top:8px';
+      btnRow.style.cssText = 'display:flex;gap:6px;margin-top:8px;flex-shrink:0';
 
       const saveBtn = document.createElement('button');
       saveBtn.style.cssText = btnStyle(c1);
@@ -607,6 +609,7 @@ function createRoleHandler(meta: Record<string, unknown>): CardContentHandler {
 
       btnRow.appendChild(saveBtn);
       btnRow.appendChild(newBtn);
+      formSection.appendChild(formScroll);
       formSection.appendChild(btnRow);
 
       bodyEl.appendChild(formSection);

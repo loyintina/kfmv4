@@ -299,7 +299,7 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
       
       // 配置表单（内卡样式）
       const formSection = document.createElement('div');
-      formSection.style.cssText = `border-radius:10px;padding:8px 12px;margin-top:6px;background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,linear-gradient(135deg,${c2} 30%,${c1} 70%) border-box;border:1px solid transparent;border-left-width:3px`;
+      formSection.style.cssText = `border-radius:10px;padding:8px 12px;margin-top:6px;background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,linear-gradient(135deg,${c2} 30%,${c1} 70%) border-box;border:1px solid transparent;border-left-width:3px;display:flex;flex-direction:column;max-height:70vh`;
       
       // 顶部选择器（自定义下拉，在卡片内部）
       const { row: configRow, wrap: configWrap } = mkRow('配置');
@@ -321,8 +321,10 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
           renderPoolList(poolListEl, c1, c2);
         },
       });
+      const formScroll = document.createElement('div');
+      formScroll.style.cssText = 'flex:1;overflow-y:auto;min-height:0';
       configWrap.appendChild(configSelect.element);
-      formSection.appendChild(configRow);
+      formScroll.appendChild(configRow);
       
       // 名称
       const { row: nameRow, wrap: nameWrap } = mkRow('名称');
@@ -331,7 +333,7 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
       nameInput.style.cssText = inputStyle();
       nameInput.placeholder = '配置名称';
       nameWrap.appendChild(nameInput);
-      formSection.appendChild(nameRow);
+      formScroll.appendChild(nameRow);
       
       // Provider（自定义下拉）
       const { row: provRow, wrap: provWrap } = mkRow('Provider');
@@ -350,7 +352,7 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
         },
       });
       provWrap.appendChild(provSelect.element);
-      formSection.appendChild(provRow);
+      formScroll.appendChild(provRow);
       
       // Model（自定义下拉）
       const { row: modelRow, wrap: modelWrap } = mkRow('Model');
@@ -364,7 +366,7 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
         },
       });
       modelWrap.appendChild(modelSelect.element);
-      formSection.appendChild(modelRow);
+      formScroll.appendChild(modelRow);
       
       const { row: sessionRow, wrap: sessionWrap } = mkRow('会话');
       sessionSelect = createCustomSelect({
@@ -380,11 +382,11 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
         },
       });
       sessionWrap.appendChild(sessionSelect.element);
-      formSection.appendChild(sessionRow);
+      formScroll.appendChild(sessionRow);
 
       // 操作按钮（在 formSection 内部）
       const btnRow = document.createElement('div');
-      btnRow.style.cssText = 'display:flex;gap:6px;margin-top:8px';
+      btnRow.style.cssText = 'display:flex;gap:6px;margin-top:8px;flex-shrink:0';
 
       const saveBtn = document.createElement('button');
       saveBtn.style.cssText = btnStyle(c1);
@@ -429,6 +431,7 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
 
       btnRow.appendChild(saveBtn);
       btnRow.appendChild(newBtn);
+      formSection.appendChild(formScroll);
       formSection.appendChild(btnRow);
 
       bodyEl.appendChild(formSection);

@@ -372,7 +372,7 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
 
       // ===== 预览框（二层反色） =====
       const previewCard = document.createElement('div');
-      previewCard.style.cssText = `border-radius:10px;padding:8px 12px;margin-top:6px;background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,linear-gradient(135deg,${c2} 30%,${c1} 70%) border-box;border:1px solid transparent;border-left-width:3px;display:flex;flex-direction:column;max-height:55%;min-height:120px`;
+      previewCard.style.cssText = `border-radius:10px;padding:8px 12px;margin-top:6px;background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,linear-gradient(135deg,${c2} 30%,${c1} 70%) border-box;border:1px solid transparent;border-left-width:3px;display:flex;flex-direction:column;max-height:70%;min-height:120px`;
 
       // 顶栏：会话选择器
       const previewHeader = document.createElement('div');

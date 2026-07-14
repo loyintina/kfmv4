@@ -423,7 +423,10 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
       scrollArea.setAttribute('data-scroll', 'api');
       // === Editor Card ===
       const inner = document.createElement('div');
-      inner.style.cssText = `border-radius:10px;padding:10px 12px 12px;margin-top:6px;background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,linear-gradient(135deg,${c2} 30%,${c1} 70%) border-box;border:1px solid transparent;border-left-width:3px`;
+      inner.style.cssText = `border-radius:10px;padding:10px 12px 12px;margin-top:6px;background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,linear-gradient(135deg,${c2} 30%,${c1} 70%) border-box;border:1px solid transparent;border-left-width:3px;display:flex;flex-direction:column;max-height:70vh`;
+
+      const innerScroll = document.createElement('div');
+      innerScroll.style.cssText = 'flex:1;overflow-y:auto;min-height:0';
 
       // --- Provider 选择器（仅聚焦编辑目标，不写入 active.json） ---
       const selRow = document.createElement('div');
@@ -434,85 +437,64 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
       selRow.appendChild(selLabel);
 
       _providerSelect = createCustomSelect({
-        accent: c1,
-        placeholder: '(无)',
-        minWidth: 120,
-        onSelect: (id) => {
-          currentId = id;
-          fillEditor(getCurrent() || null);
-          rebuildPool();
-        },
+        accent: c1, placeholder: '(无)', minWidth: 120,
+        onSelect: (id) => { currentId = id; fillEditor(getCurrent() || null); rebuildPool(); },
       });
       selRow.appendChild(_providerSelect.element);
-      inner.appendChild(selRow);
+      innerScroll.appendChild(selRow);
       const nr = mkRow('名称');
       nameEl = document.createElement('input');
-      nameEl.type = 'text';
-      nameEl.placeholder = 'OpenAI';
+      nameEl.type = 'text'; nameEl.placeholder = 'OpenAI';
       Object.assign(nameEl.style, inputStyle());
       nr.inputWrap.appendChild(nameEl);
-      inner.appendChild(nr.row);
+      innerScroll.appendChild(nr.row);
 
-      // --- API 地址 ---
       const ur = mkRow('API 地址');
       urlEl = document.createElement('input');
-      urlEl.type = 'text';
-      urlEl.placeholder = 'https://api.openai.com/v1';
+      urlEl.type = 'text'; urlEl.placeholder = 'https://api.openai.com/v1';
       Object.assign(urlEl.style, inputStyle());
       ur.inputWrap.appendChild(urlEl);
-      inner.appendChild(ur.row);
+      innerScroll.appendChild(ur.row);
 
-      // --- API Key ---
       const kr = mkRow('API Key');
       keyEl = document.createElement('input');
-      keyEl.type = 'password';
-      keyEl.placeholder = 'sk-...';
+      keyEl.type = 'password'; keyEl.placeholder = 'sk-...';
       Object.assign(keyEl.style, inputStyle());
       kr.inputWrap.appendChild(keyEl);
-      inner.appendChild(kr.row);
+      innerScroll.appendChild(kr.row);
 
-      // --- Models ---
       const ml = document.createElement('div');
       ml.textContent = '模型';
       ml.style.cssText = 'font-size:var(--card-font-size,11px);color:rgba(255,255,255,0.75);margin-bottom:4px';
-      inner.appendChild(ml);
-
+      innerScroll.appendChild(ml);
       modelTagsEl = document.createElement('div');
       modelTagsEl.style.cssText = 'display:flex;flex-wrap:wrap;gap:2px;margin-bottom:4px;min-height:16px';
-      inner.appendChild(modelTagsEl);
-
+      innerScroll.appendChild(modelTagsEl);
       const mar = document.createElement('div');
       mar.style.cssText = 'display:flex;gap:4px;margin-bottom:8px';
       modelInput = document.createElement('input');
-      modelInput.type = 'text';
-      modelInput.placeholder = '输入模型名，回车添加';
+      modelInput.type = 'text'; modelInput.placeholder = '输入模型名，回车添加';
       Object.assign(modelInput.style, { ...inputStyle(), flex: '1', minWidth: '0' });
-      modelInput.onkeydown = (e: KeyboardEvent) => {
-        if (e.key === 'Enter') { e.preventDefault(); addModel(); }
-      };
+      modelInput.onkeydown = (e: KeyboardEvent) => { if (e.key === 'Enter') { e.preventDefault(); addModel(); } };
       const addBtn = document.createElement('span');
       addBtn.textContent = '+';
       addBtn.style.cssText = `font-size:var(--card-font-size,14px);cursor:pointer;color:${c1};padding:0.2em 0.6em;border-radius:6px;border:1px solid ${c1}40;flex-shrink:0`;
       addBtn.onclick = addModel;
-      mar.appendChild(modelInput);
-      mar.appendChild(addBtn);
-      inner.appendChild(mar);
+      mar.appendChild(modelInput); mar.appendChild(addBtn);
+      innerScroll.appendChild(mar);
+      inner.appendChild(innerScroll);
 
-      // --- Action Buttons ---
+      // --- Action Buttons（粘性底部） ---
       const ar = document.createElement('div');
-      ar.style.cssText = 'display:flex;gap:6px;margin-top:2px';
+      ar.style.cssText = 'display:flex;gap:6px;margin-top:8px;flex-shrink:0';
 
       const newBtn = document.createElement('div');
       newBtn.textContent = '新建';
       newBtn.style.cssText = btnStyle(c1);
       newBtn.onclick = () => {
         const p: Provider = { id: uid(), name: '', baseUrl: '', apiKey: '', models: [] };
-        providers.push(p);
-        currentId = p.id;
-        saveProviders(providers);
-        rebuildPool();
-        fillEditor(p);
-        nameEl.focus();
+        providers.push(p); currentId = p.id;
+        saveProviders(providers); rebuildPool(); fillEditor(p); nameEl.focus();
       };
       ar.appendChild(newBtn);
 
@@ -520,10 +502,8 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
       saveBtn.textContent = '保存';
       saveBtn.style.cssText = btnStyle(c1);
       saveBtn.onclick = () => {
-        commitCurrent();
-        rebuildPool();
-        saveBtn.textContent = '✓ 已保存';
-        saveBtn.style.color = 'rgba(0,212,80,0.9)';
+        commitCurrent(); rebuildPool();
+        saveBtn.textContent = '✓ 已保存'; saveBtn.style.color = 'rgba(0,212,80,0.9)';
         setTimeout(() => { saveBtn.textContent = '保存'; saveBtn.style.color = c1; }, 1500);
       };
       ar.appendChild(saveBtn);
