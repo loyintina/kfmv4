@@ -173,7 +173,8 @@ function renderChatContent(): void {
     // 思考内容（可折叠）
     if (!isUser && msg.reasoning) {
       const rid = 'r' + idx;
-      bubbleHtml += `<div onclick="var p=document.getElementById('${rid}');p.style.display=p.style.display==='none'?'':'none'" style="font-size:9px;color:rgba(0,212,255,0.5);cursor:pointer;margin-bottom:2px;user-select:none">💭 已思考 <span style="font-size:7px">▼</span></div>`;
+      const rlabel = msg.text ? '已思考' : '思考中...';
+      bubbleHtml += `<div onclick="var p=document.getElementById('${rid}');p.style.display=p.style.display==='none'?'':'none'" style="font-size:9px;color:rgba(0,212,255,0.5);cursor:pointer;margin-bottom:2px;user-select:none">${rlabel} <span style="font-size:7px">▼</span></div>`;
       bubbleHtml += `<div id="${rid}" style="display:none;font-size:var(--card-font-size,10px);line-height:16px;color:rgba(255,255,255,0.45);margin-bottom:4px;padding:4px 6px;border-radius:4px;background:rgba(0,0,0,0.2);white-space:pre-wrap">${escapeHtml(msg.reasoning)}</div>`;
     }
 
