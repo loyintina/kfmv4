@@ -1,8 +1,11 @@
 # KFM v4 (Kaf Fee Mew / 咖啡猫)
 
-AI 人机交互个人工作台，面向移动端浏览器。核心理念：**一切皆盒子**。
 
-> ⏱ **TL;DR**：这是 AI 生成的个人工作台原型，Canvas 自研渲染引擎。
+> ⚠️ **改动后立即 `git add -A && git commit`。** 未提交的改动没有安全网。
+> `git checkout -- <file>` 会永久回退该文件到上一次 commit——无法从 bundle 恢复。
+> 历史：2026-07-05 浮卡全天工作丢失；2026-07-14 orb.ts ~200 行 AI 集成丢失。
+> 违反此规则的 agent 需重做全部丢失工作。见 INVARIANTS 心法 14。
+
 > **改代码前先读** `docs/KFM_V4_INVARIANTS.md`（修改约束协议）。
 > **日常干活翻** `docs/HANDBOOK.md`（架构+调试+待办+测试）。
 > **规划设计时参考** `docs/design/VISION_AND_ROADMAP.md`（远景）。
