@@ -108,7 +108,6 @@ export class Renderer {
 
   /** 设置动画树根（在主树之上独立渲染） */
   setOverlayRoot(box: Box | null): this {
-    console.log(`[renderer] setOverlayRoot: ${box ? box.id : 'null'} (was: ${this._overlayRoot ? this._overlayRoot.id : 'null'})`);
     this._overlayRoot = box;
     return this;
   }
@@ -388,7 +387,6 @@ export class Renderer {
   private _drawShadow(box: Box, b: Rect): void {
     const shadow = box.shadow;
     if (!shadow) return;
-    // console.log("DRAW SHADOW:", box.id, shadow, b);
     this.ctx.save();
     
     this.ctx.beginPath();
@@ -493,7 +491,6 @@ export class Renderer {
     if (this._frameCount === 1) {
       const vLines = Math.floor(b.width / cellSize) + 1;
       const hLines = Math.floor(b.height / cellSize) + 1;
-      // console.log(`[Box网格] ${box.id}: ${b.width}x${b.height}, 垂直=${vLines}, 水平=${hLines}, 单元格=${cellSize}px ✅`);
     }
   }
 
