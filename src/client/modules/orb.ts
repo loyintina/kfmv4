@@ -14,7 +14,6 @@
 
 import { measureText, layoutLines } from '../engine/text-layout/index.js';
 import { gestures } from './gesture-registry.js';
-import { marked } from 'marked';
 import { DOM } from "./dom-refs.js";
 import { currentTheme as theme } from './theme.js';
 import { Registry } from './ui-registry.js';
@@ -25,6 +24,8 @@ import { anim } from './animation-registry.js';
 import { log } from './logger.js';
 import { sessionStore } from './session-store.js';
 import { createCustomSelect, type CustomSelect } from './custom-select.js';
+import { marked } from 'marked';
+import { highlightAll } from './renderers/code-highlight.js';
 
 const API_BASE = window.location.pathname.replace(/\/+$/, '') + '/api/';
 
@@ -217,34 +218,14 @@ function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-// highlight.js CDN 加载
-let _hljsReady = false;
-function _loadHljs(): void {
-  if (_hljsReady || document.querySelector('link[href*="highlight.js"]')) return;
-  const link = document.createElement('link');
-  link.rel = 'stylesheet';
-  link.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css';
-  document.head.appendChild(link);
-  const script = document.createElement('script');
-  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js';
-  script.onload = () => { _hljsReady = true; };
-  document.head.appendChild(script);
-}
-
 async function renderMarkdownAsync(text: string): Promise<string> {
-  return await marked.parse(text);
+  return await marked.parse(text, { gfm: true, breaks: true }) as string;
 }
 
 function renderMarkdown(text: string): string {
   return escapeHtml(text);
 }
 
-function highlightAll(el: HTMLElement): void {
-  _loadHljs();
-  el.querySelectorAll('pre code').forEach((block) => {
-    try { (window as any).hljs?.highlightElement(block as HTMLElement); } catch {}
-  });
-}
 // ========== 面板布局（核心：光球在面板右下角，超出时压缩） ==========
 function updatePanelPosition(): void {
   if (!orbEl || !panelEl) return;
