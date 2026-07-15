@@ -26,7 +26,9 @@ import { sessionStore } from './session-store.js';
 import { createCustomSelect, type CustomSelect } from './custom-select.js';
 import { marked } from 'marked';
 import { highlightAll } from './renderers/code-highlight.js';
-
+import { preprocessMd } from './renderers/md-extensions.js';
+import { renderMath, renderMermaid, type MathData } from './renderers/math-diagram.js';
+import { KATEX_CSS } from './renderers/katex-css.js';
 const API_BASE = window.location.pathname.replace(/\/+$/, '') + '/api/';
 
 async function readActiveConfig(): Promise<Record<string, string>> {
@@ -198,6 +200,13 @@ function renderChatContent(): void {
   contentArea.innerHTML = html;
   if (wasAtBottom) { contentArea.scrollTop = contentArea.scrollHeight; }
   else { contentArea.scrollTop = scrollTop; }
+  // 注入 CSS（仅一次）
+  if (!contentArea.querySelector('.orb-md-css')) {
+    const style = document.createElement('style');
+    style.className = 'orb-md-css';
+    style.textContent = _mdCSS;
+    contentArea.appendChild(style);
+  }
   // 异步渲染 markdown
   const msgEls = contentArea.querySelectorAll<HTMLElement>('.orb-msg-text');
   for (const el of msgEls) {
@@ -205,25 +214,33 @@ function renderChatContent(): void {
     if (i >= 0 && i < chatMessages.length && chatMessages[i].role !== 'user') {
       const text = chatMessages[i].text;
       if (text && text.length > 0) {
-        renderMarkdownAsync(text).then(mdHtml => {
+        const mathData: MathData = { display: [], inline: [] };
+        const processed = preprocessMd(text, mathData);
+        Promise.resolve(marked.parse(processed, { gfm: true, breaks: true }) as string).then((mdHtml: string) => {
           el.innerHTML = mdHtml;
           highlightAll(el);
+          renderMath(el, mathData);
+          renderMermaid(el, '#00d4ff');
         });
       }
     }
   }
 }
-
 function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-async function renderMarkdownAsync(text: string): Promise<string> {
-  return await marked.parse(text, { gfm: true, breaks: true }) as string;
-}
-
 function renderMarkdown(text: string): string {
   return escapeHtml(text);
+}
+
+// Markdown CSS（与文件卡 _mdCSS 同步）
+const _mdCSS = 'table{border-collapse:collapse;width:100%;margin:8px 0}th,td{border:1px solid rgba(255,255,255,0.15);padding:4px 8px;text-align:left}th{background:rgba(255,255,255,0.05);font-weight:600}blockquote{border-left:3px solid rgba(0,212,255,0.5);padding:4px 10px;margin:6px 0;color:rgba(255,255,255,0.6);background:rgba(0,0,0,0.1)}pre{background:rgba(0,0,0,0.3);border-radius:6px;padding:10px;overflow-x:auto;margin:8px 0}code{font-family:monospace;font-size:12px}:not(pre)>code{background:rgba(255,255,255,0.08);padding:1px 4px;border-radius:3px}ul,ol{padding-left:20px;margin:4px 0}li{margin:2px 0}.callout{background:rgba(0,188,212,0.06);border:1px solid rgba(0,188,212,0.15);border-radius:8px;padding:8px 12px;margin:8px 0}.callout-header{font-weight:600;font-size:11px;margin-bottom:4px}mark{background:rgba(255,235,59,0.25);color:inherit;padding:0 2px;border-radius:2px}.wikilink{color:rgba(0,212,255,0.7);text-decoration:underline;cursor:pointer}' + KATEX_CSS;
+
+async function renderMarkdownAsync(text: string): Promise<string> {
+  const mathData: MathData = { display: [], inline: [] };
+  const processed = preprocessMd(text, mathData);
+  return await marked.parse(processed, { gfm: true, breaks: true }) as string;
 }
 
 // ========== 面板布局（核心：光球在面板右下角，超出时压缩） ==========
