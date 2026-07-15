@@ -66,7 +66,7 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
         → initTreeRenderer() → loadFileTree() → initLazyLoader() → initCardStack()
 ```
 
-### 模块职能分组（全 41 个模块，不含 renderers/ 渲染器）
+### 模块职能分组（全 46 个模块，不含 renderers/ 渲染器）
 
 > 完整清单及依赖关系见 §七「客户端模块完整审计表」。此处按职能分组，方便快速定位。
 

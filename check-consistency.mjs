@@ -226,6 +226,51 @@ function checkNumericClaims() {
       }
     }
   }
+
+  // --- 测试覆盖模块数：文档间交叉验证 ---
+  var testModuleNames = new Set();
+  for (var _i = 0, _entries = readdirSync(testDir); _i < _entries.length; _i++) {
+    var entry = _entries[_i];
+    if (!entry.endsWith('.ts')) continue;
+    var content = readFileSync(join(testDir, entry), 'utf-8');
+    var groups = content.match(/group\('(.+?)'\)/g) || [];
+    for (var _j = 0; _j < groups.length; _j++) {
+      var g = groups[_j];
+      var name = g.replace(/^group\('/, '').replace(/'\)$/, '').replace(/ \(.*\)$/, '');
+      testModuleNames.add(name);
+    }
+  }
+  var actualTestModules = testModuleNames.size;
+  var moduleCoverageFiles = ['CLAUDE.md', 'docs/HANDBOOK.md', 'docs/DIAGNOSTICS.md', 'docs/archive/standards/TESTING.md'];
+  var coverageNums = new Set();
+  for (var _k = 0; _k < moduleCoverageFiles.length; _k++) {
+    var file = moduleCoverageFiles[_k];
+    if (!existsSync(join(ROOT, file))) continue;
+    var fileContent = readFileSync(join(ROOT, file), 'utf-8');
+    var claims = fileContent.match(/(?:覆盖)\s*(\d+)\s*个模块/g) || [];
+    for (var _m = 0; _m < claims.length; _m++) {
+      coverageNums.add(parseInt(claims[_m].match(/\d+/)[0], 10));
+    }
+  }
+  if (coverageNums.size > 1) {
+    error('测试覆盖模块数不一致: 文档声称不同数字 ' + [...coverageNums].join(' vs '));
+  }
+  var firstCoverage = [...coverageNums][0];
+  if (firstCoverage !== undefined && firstCoverage !== actualTestModules) {
+    console.log('[check-consistency] 注意: 文档声称覆盖 ' + firstCoverage + ' 个模块，测试组 ' + actualTestModules + ' 个（子模块分组差异可能合法）');
+  }
+
+  // --- HANDBOOK 客户端模块总数（不含 renderers/，与职能分组表对齐） ---
+  var totalClientMods = countTsFiles(join(ROOT, 'src', 'client', 'modules'));
+  var handbookTotal2 = readFileSync(join(ROOT, 'docs/HANDBOOK.md'), 'utf-8');
+  var totalClaims2 = handbookTotal2.match(/(?<!\d)全\s*(\d+)\s*个模块(?!\s*零文档)/g) || [];
+  for (var _n2 = 0; _n2 < totalClaims2.length; _n2++) {
+    var claim2 = totalClaims2[_n2];
+    var totalNum2 = parseInt(claim2.match(/\d+/)[0], 10);
+    if (totalNum2 !== totalClientMods) {
+      error('docs/HANDBOOK.md: 声称 "' + claim2 + '"，但 src/client/modules/ 下有 ' + totalClientMods + ' 个 .ts 文件（不含 renderers/ 子目录）');
+    }
+  }
 }
 
 // ============================================================

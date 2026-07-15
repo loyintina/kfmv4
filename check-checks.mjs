@@ -100,6 +100,21 @@ if (readmeMatch) {
   }
 }
 
+// ========== 5. 验证 CLAUDE.md 中的 check 脚本计数 ==========
+
+const claudeContent2 = readFileSync(join(ROOT, 'CLAUDE.md'), 'utf-8');
+const claudeMatch = claudeContent2.match(/(\d+)\s*个\s*check-\*\.mjs/g);
+if (claudeMatch) {
+  for (const claim of claudeMatch) {
+    const claudeCount = parseInt(claim.match(/\d+/)[0], 10);
+    // 含自身，所以显示 count = checkScripts.length + 1
+    const actualDisplayCount = checkScripts.length + 1;
+    if (claudeCount !== actualDisplayCount) {
+      error(`CLAUDE.md 声称 "${claim}"，实际有 ${actualDisplayCount} 个（${checkScripts.length} 个检查 + check-checks.mjs 自身）`);
+    }
+  }
+}
+
 // ========== 汇总 ==========
 
 if (hasError) {
