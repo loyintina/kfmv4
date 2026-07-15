@@ -5,7 +5,7 @@
  *
  * 检查项：
  *   1. 所有 docs/*.md 中 [text](path) 的内部链接是否有效
- *   2. 单篇 > 500 行的 .md 文件提出 warning
+ *   2. 单篇 > 2000 行的文件报错阻断（职责边界膨胀信号）
  *   3. docs/archive/ 下所有文件是否有 status frontmatter
  *   4. CLAUDE.md 中引用的文档是否实际存在
  */
@@ -156,23 +156,15 @@ function checkFrontmatter(filePath) {
 // 2. 篇幅检查
 // ============================================================
 
-// 已知大文件白名单：设计文档天然长，重复报警淹没真正的新增文件
-const LARGE_FILE_WHITELIST = new Set([
-  'docs/archive/design/REFACTOR_THESIS_FULL.md',
-  'docs/design/CARD_REGISTRY_SPEC.md',
-  'docs/design/TERMINAL_CARD_SPEC.md',
-  'docs/design/UI_ELEMENT_REGISTRY_SPEC.md',
-  'docs/design/VISION_AND_ROADMAP.md',
-  'docs/design/WORKBENCH_SPEC.md',
-  'docs/DIAGNOSTICS.md',
-  'docs/KFM_V4_INVARIANTS.md',
-]);
+// 超过 2000 行视为职责边界膨胀信号，阻断构建。
+// 不设白名单：2000 行是硬上限，任何文件超过都应处理。
+const MAX_DOC_LINES = 2000;
 
 function checkFileSize(filePath) {
   const content = fs.readFileSync(filePath, 'utf-8');
   const lines = content.split('\n').length;
-  if (lines > 500 && !LARGE_FILE_WHITELIST.has(path.relative(ROOT, filePath))) {
-    warn(`${path.relative(ROOT, filePath)}: ${lines} lines (recommend splitting or adding TL;DR)`);
+  if (lines > MAX_DOC_LINES) {
+    error(`${path.relative(ROOT, filePath)}: ${lines} lines (超过 ${MAX_DOC_LINES} 行上限，需拆分或缩减)`);
   }
   return content;
 }
