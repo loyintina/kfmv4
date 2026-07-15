@@ -1,6 +1,7 @@
 import { build } from 'esbuild';
 import { execSync } from 'child_process';
 import { statSync, readdirSync, readFileSync } from 'fs';
+import { join, extname } from 'path';
 
 // ========== 构建后校验 ==========
 
@@ -34,6 +35,9 @@ function checkFreshness(outfile, label) {
 
 // 全量代码质量检查（对齐 npm run check，零错误通过才构建）
 execSync('node check-versions.mjs', { stdio: 'inherit' });
+
+// 未提交提醒（不阻断）
+try { execSync('node check-uncommitted.mjs', { stdio: 'inherit' }); } catch {}
 execSync('node check-checks.mjs', { stdio: 'inherit' });
 execSync('node check-doc-coverage.mjs', { stdio: 'inherit' });
 
@@ -83,6 +87,7 @@ checkFreshness('dist/server/index.js', 'server');
 checkFreshness('public/bundle.js', 'client');
 
 // 冒烟：验证 HTML 引用了 bundle.js 且 bundle.js 非空
+const html2 = readFileSync('public/index.html', 'utf-8');
 if (!html2.includes('bundle.js')) { console.error('[smoke] ❌ public/index.html 未引用 bundle.js'); process.exit(1); }
 if (statSync('public/bundle.js').size < 100) { console.error('[smoke] ❌ public/bundle.js 异常小（可能构建失败）'); process.exit(1); }
 console.log('[smoke] ✅ index.html 引用 bundle.js, 大小 ' + statSync('public/bundle.js').size + ' bytes');

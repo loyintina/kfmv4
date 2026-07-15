@@ -120,9 +120,30 @@ gestures.register({
     _startX = e.clientX;
     _actionTaken = false;
     _sgrAccum = 0;
+    _xEl = el!;
+    _lp = setTimeout(() => {
+      if (!_activeTerm || _actionTaken) return;
+      _dismiss(); _sel = true;
+      const p = _cp(el!, _startX, _startY, _activeTerm.cols, _activeTerm.rows);
+      _sCol = _eCol = p.col; _sRow = _eRow = p.row;
+      _activeTerm.select(p.col, p.row, 1);
+      _ballL = _mkBall('left'); _ballR = _mkBall('right');
+      _stemL = _mkStem(); _stemR = _mkStem();
+      _sync(el!, _activeTerm.cols, _activeTerm.rows);
+    }, 400);
   },
   onMove(e) {
     if (!_activeTerm) return;
+    if (_sel) {
+      _actionTaken = true;
+      const p = _cp(_xEl!, e.clientX, e.clientY, _activeTerm.cols, _activeTerm.rows);
+      _showMag(_xEl!, e.clientX, e.clientY, _activeTerm.cols, _activeTerm.rows);
+      _eCol = p.col; _eRow = p.row;
+      _as(_activeTerm, _activeTerm.cols);
+      _sync(_xEl!, _activeTerm.cols, _activeTerm.rows);
+      if (_cpBtn) { _cpBtn.remove(); _cpBtn = null; }
+      return;
+    }
     
     // 全屏模式下检测水平滑动
     const target = e.target as HTMLElement;
@@ -130,6 +151,9 @@ gestures.register({
     if (card?.classList.contains('fullscreen')) {
       const dx = e.clientX - _startX;
       const dy = e.clientY - _startY;
+      if (!_actionTaken && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
+        if (_lp) { clearTimeout(_lp); _lp = null; }
+      }
       if (!_actionTaken && Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 2) {
         if (dx > 0) openSidebar();
         else openCardStack();
@@ -167,13 +191,131 @@ gestures.register({
     _startY = e.clientY;
   },
   onEnd() {
-    _activeTerm = null;
-    _activeSid = '';
-    _actionTaken = false;
-    _sgrAccum = 0;
+    if (_lp) { clearTimeout(_lp); _lp = null; }
+    _hideMag();
+    if (_sel && _activeTerm && _xEl) _showCopy(_xEl, _activeTerm.rows);
+    if (!_sel) { _activeTerm = null; _activeSid = ''; _actionTaken = false; _sgrAccum = 0; }
   },
   stopPropagation: true,
 });
+
+// ========== 选择模式 ==========
+
+let _sel = false, _sCol = 0, _sRow = 0, _eCol = 0, _eRow = 0;
+let _ballL: HTMLElement | null = null, _ballR: HTMLElement | null = null;
+let _stemL: HTMLElement | null = null, _stemR: HTMLElement | null = null;
+let _cpBtn: HTMLElement | null = null, _lp: ReturnType<typeof setTimeout> | null = null;
+let _hSC = 0, _hSR = 0, _hOC = 0, _hOR = 0, _hOC2 = 0, _hOR2 = 0;
+let _xEl: HTMLElement | null = null, _mag: HTMLElement | null = null;
+
+
+function _cp(el: HTMLElement, cx: number, cy: number, cols: number, rows: number) {
+  const r = el.getBoundingClientRect(), cw = r.width / cols, rh = r.height / rows;
+  return { col: Math.max(0, Math.min(cols - 1, Math.floor((cx - r.left) / cw))), row: Math.max(0, Math.min(rows - 1, Math.floor((cy - r.top) / rh))) };
+}
+function _as(term: Terminal, cols: number) {
+  const si = _sRow * cols + _sCol, ei = _eRow * cols + _eCol;
+  term.select(si <= ei ? _sCol : _eCol, si <= ei ? _sRow : _eRow, Math.abs(ei - si) + 1);
+}
+function _sz(el: HTMLElement, rows: number) {
+  const rh = el.getBoundingClientRect().height / rows;
+  return { bD: Math.round(rh * 1.5), sH: Math.round(rh * 1.2), rh };
+}
+function _mkBall(side: string) {
+  const d = document.createElement('div');
+  d.style.cssText = 'position:fixed;z-index:9998;border-radius:50%;background:rgba(0,212,255,0.9);box-shadow:0 0 6px rgba(0,212,255,0.4);pointer-events:auto;cursor:grab';
+  d.dataset.selH = side; document.body.appendChild(d); return d;
+}
+function _mkStem() {
+  const s = document.createElement('div');
+  s.style.cssText = 'position:fixed;z-index:9997;width:2px;background:rgba(0,212,255,0.5);pointer-events:none';
+  document.body.appendChild(s); return s;
+}
+function _sync(el: HTMLElement, cols: number, rows: number) {
+  if (!_ballL || !_ballR || !_stemL || !_stemR || !_sel) return;
+  const r = el.getBoundingClientRect(), cw = r.width / cols;
+  const { bD, sH, rh } = _sz(el, rows);
+  const le = _sRow * cols + _sCol <= _eRow * cols + _eCol;
+  const lc = le ? _sCol : _eCol, lr = le ? _sRow : _eRow;
+  const rc = le ? _eCol : _sCol, rr = le ? _eRow : _sRow;
+  const rx = r.left + (rc + 1) * cw - cw * 1.17;
+  _ballL.style.width = _ballL.style.height = bD + 'px';
+  _ballL.style.left = (r.left + lc * cw - bD / 2) + 'px';
+  _ballL.style.top = (r.top + lr * rh - bD) + 'px';
+  _stemL.style.left = (r.left + lc * cw - cw * 0.5) + 'px';
+  _stemL.style.top = (r.top + lr * rh) + 'px';
+  _stemL.style.height = sH + 'px';
+  _stemR.style.left = (rx - 1) + 'px';
+  _stemR.style.top = (r.top + rr * rh) + 'px';
+  _stemR.style.height = sH + 'px';
+  _ballR.style.width = _ballR.style.height = bD + 'px';
+  _ballR.style.left = (rx - bD / 2) + 'px';
+  _ballR.style.top = (r.top + rr * rh + rh) + 'px';
+}
+function _dismiss() {
+  _sel = false;
+  if (_ballL) { _ballL.remove(); _ballL = null; }
+  if (_ballR) { _ballR.remove(); _ballR = null; }
+  if (_stemL) { _stemL.remove(); _stemL = null; }
+  if (_stemR) { _stemR.remove(); _stemR = null; }
+  if (_cpBtn) { _cpBtn.remove(); _cpBtn = null; }
+  if (_mag) { _mag.remove(); _mag = null; }
+  if (_activeTerm) _activeTerm.clearSelection();
+}
+function _showMag(el: HTMLElement, cx: number, cy: number, cols: number, rows: number) {
+  if (!_mag) { _mag = document.createElement('div'); _mag.style.cssText = 'position:fixed;z-index:10000;padding:3px 6px;border-radius:4px;font-size:10px;font-family:monospace;color:#fff;background:rgba(0,0,0,0.8);pointer-events:none;white-space:nowrap'; document.body.appendChild(_mag); }
+  const p = _cp(el, cx, cy, cols, rows);
+  _mag.textContent = (p.col + 1) + ':' + (p.row + 1);
+  _mag.style.left = Math.max(0, Math.min(window.innerWidth - 40, cx - 20)) + 'px';
+  _mag.style.top = (cy - 30) + 'px';
+}
+function _hideMag() { if (_mag) { _mag.remove(); _mag = null; } }
+function _showCopy(el: HTMLElement, rows: number) {
+  if (_cpBtn) _cpBtn.remove();
+  const t = _activeTerm?.getSelection() || ''; if (!t) return;
+  const r = el.getBoundingClientRect(), rh = r.height / rows;
+  const btnY = Math.min(_sRow, _eRow) * rh + r.top;
+  const top = btnY > r.top + 60 ? btnY - 32 : btnY + Math.abs(_eRow - _sRow + 1) * rh + r.top + 4;
+  const b = document.createElement('div'); b.textContent = '复制';
+  b.style.cssText = `position:fixed;left:${r.left+r.width/2-28}px;top:${top}px;z-index:9999;padding:3px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;color:#fff;background:rgba(0,0,0,0.85);border:1px solid rgba(0,212,255,0.5);pointer-events:auto`;
+  b.onclick = (ev) => { ev.stopPropagation(); navigator.clipboard?.writeText(t); _dismiss(); };
+  document.body.appendChild(b); _cpBtn = b;
+}
+
+document.addEventListener('pointerdown', (e) => {
+  if (!_sel) return;
+  const t = e.target as HTMLElement;
+  if (t.closest('.xterm') || t.closest('[data-sel-h]') || t === _cpBtn) return;
+  _dismiss();
+});
+
+gestures.register({
+  id: 'xterm-sel-handle',
+  targetFilter: '[data-sel-h]',
+  priority: 105,
+  onStart(e) {
+    if (!_xEl || !_activeTerm) return;
+    const p = _cp(_xEl, e.clientX, e.clientY, _activeTerm.cols, _activeTerm.rows);
+    _hSC = p.col; _hSR = p.row;
+    _hOC = _sCol; _hOR = _sRow;
+    _hOC2 = _eCol; _hOR2 = _eRow;
+  },
+  onMove(e) {
+    if (!_xEl || !_activeTerm) return;
+    const p = _cp(_xEl, e.clientX, e.clientY, _activeTerm.cols, _activeTerm.rows);
+    const h = (e.target as HTMLElement).closest('[data-sel-h]') as HTMLElement;
+    if (!h) return;
+    const dCol = p.col - _hSC;
+    const dRow = p.row - _hSR;
+    if (h.dataset.selH === 'left') { _sCol = _hOC + dCol; _sRow = _hOR + dRow; }
+    else { _eCol = _hOC2 + dCol; _eRow = _hOR2 + dRow; }
+    _as(_activeTerm, _activeTerm.cols);
+    _sync(_xEl, _activeTerm.cols, _activeTerm.rows);
+    if (_cpBtn) { _cpBtn.remove(); _cpBtn = null; }
+  },
+  onEnd() { if (_sel && _xEl && _activeTerm) _showCopy(_xEl, _activeTerm.rows); },
+});
+
 export function initTerminalCore(
   container: HTMLElement,
   card: CardInstance,

@@ -29,16 +29,17 @@
 ## 构建与运行
 
 ```bash
-npm run dev      # 全量检查 + 构建 client+server + 启动（唯一开发入口）
-npm run bundle   # 仅重编客户端 SCSS+bundle（dev 已跑时热更新用）
-npm run check    # sass + 15 个 check-*.mjs + tsc --noEmit（零错误，不产出构建物）
-npm run build    # check 全过 → esbuild client+server（同 dev 前半段）
+npm run dev      # 全链路（check → esbuild client+server → smoke → 启动）
+npm run bundle   # 同 build.mjs（全链路，零快捷方式）
+npm run watch    # 全链路通过后 → 持续监听、快速重编（开发时一直开着）
+npm run check    # 15 个 check-*.mjs + tsc --noEmit（仅检查，不构建）
+npm run build    # 同 bundle（全链路）
 npm run start    # 启动生产构建 http://localhost:8021
 npm run test     # 214 个回归测试
 ```
 
-> `npm run dev` = `build.mjs`（全部 15 项检查 + SCSS + esbuild client+server）→ `start`。一步到位，不过不启动。改客户端代码刷新浏览器即可，改服务端代码需重启 dev。
-
+> **没有快捷方式**。`bundle`/`build`/`dev` 全部走 `build.mjs` 全链路。`watch` 初检不过不进 watch。
+> 日常：终端 1 `npm run dev`，终端 2 `npm run watch`。改源码 → 自动重编 → 刷新。
 ## 文档体系
 
 ```

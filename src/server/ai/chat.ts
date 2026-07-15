@@ -47,38 +47,6 @@ function loadProviders(): ApiProvider[] {
   }
 }
 
-/** 构建系统提示词：基础提示词 + 角色卡的 promptFiles */
-function buildSystemPrompt(): string {
-  // 1. 读取基础系统提示词
-  let basePrompt = '';
-  try {
-    const basePath = join(KFM_DATA_DIR, '..', 'kfmv4', 'src', 'server', 'prompts', 'system', 'base.md');
-    basePrompt = readFileSync(basePath, 'utf-8');
-  } catch {
-    // 构建后 base.md 可能不在源路径，使用硬编码后备
-    basePrompt = `你是 kfmv4 项目的 AI 开发助手。\n\n正确性优先，从源头修复问题。`;
-  }
-
-  // 2. 读取活跃角色
-  let rolePrompt = '';
-  try {
-    const activePath = join(KFM_DATA_DIR, 'active.json');
-    const active = JSON.parse(readFileSync(activePath, 'utf-8'));
-    const roleFile = active.roleFile;
-    if (roleFile) {
-      const rolePath = join(KFM_DATA_DIR, 'roles', `${roleFile}.json`);
-      const role = JSON.parse(readFileSync(rolePath, 'utf-8'));
-      const promptFiles: string[] = role.promptFiles || [];
-      for (const pf of promptFiles) {
-        try {
-          rolePrompt += readFileSync(pf, 'utf-8') + '\n\n';
-        } catch { /* 跳过不可读的提示词文件 */ }
-      }
-    }
-  } catch { /* 角色未配置，使用纯基础提示词 */ }
-
-  return rolePrompt ? `${rolePrompt}\n---\n${basePrompt}` : basePrompt;
-}
 /** 流式对话 */
 export async function* streamChat(
   messages: ChatMessage[],
@@ -86,7 +54,6 @@ export async function* streamChat(
   provider: string,
   wsServer: WsServer
 ): AsyncGenerator<StreamEvent> {
-  const systemPrompt = buildSystemPrompt();
   const tools = getToolDefinitions();
   
   // 构建工具上下文
@@ -143,13 +110,10 @@ export async function* streamChat(
   
   // 调用真正的 LLM API
   try {
-    const apiMessages = [
-      { role: 'system', content: systemPrompt },
-      ...messages.map(m => ({
-        role: m.role === 'assistant' ? 'assistant' : m.role,
-        content: m.content,
-      })),
-    ];
+    const apiMessages = messages.map(m => ({
+      role: m.role === 'assistant' ? 'assistant' : (m.role === 'system' ? 'system' : 'user'),
+      content: m.content,
+    }));
     
     const requestBody = {
       model: model || apiProvider.models[0] || 'deepseek-v4-flash',

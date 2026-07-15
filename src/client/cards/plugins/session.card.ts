@@ -419,7 +419,7 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
 
       // 操作按钮
       const btnRow = document.createElement('div');
-      btnRow.style.cssText = 'display:flex;gap:6px;margin-bottom:6px';
+      btnRow.style.cssText = 'display:flex;gap:6px;margin-top:8px;margin-bottom:6px';
 
       const saveBtn = document.createElement('button');
       saveBtn.textContent = '保存';

@@ -140,6 +140,34 @@ export async function doSend(
   if (!config.providerId) { onConfigMissing('未配置 Provider，请先在 API 卡中添加并选择一个 Provider。'); return; }
   if (!config.modelId) { onConfigMissing('未选择 Model，请先在 API 卡或光球面板底部选择一个 Model。'); return; }
 
+  // 加载活跃角色：prompt 字段 + promptFiles 文件内容
+  let systemPrompt = '';
+  if (config.roleFile) {
+    try {
+      const roleRes = await fetch(apiBase + 'files/read', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: '.kfmv4/roles/' + config.roleFile + '.json' }),
+      });
+      const roleData = await roleRes.json();
+      if (roleData.content) {
+        const role = JSON.parse(roleData.content);
+        const parts: string[] = [];
+        if (role.prompt) parts.push(role.prompt);
+        for (const pf of (role.promptFiles || [])) {
+          try {
+            const fileRes = await fetch(apiBase + 'files/read', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ path: pf }),
+            });
+            const fileData = await fileRes.json();
+            if (fileData.content) parts.push(fileData.content);
+          } catch {}
+        }
+        systemPrompt = parts.join('\n\n');
+      }
+    } catch {}
+  }
+
   try {
     const model = config.modelId;
     const provider = config.providerId;
@@ -148,15 +176,15 @@ export async function doSend(
     const msgIdx = messages.length - 1;
     let reasoningBuf = ''; let contentBuf = '';
 
+    const apiMessages: Array<{ role: string; content: string }> = [];
+    if (systemPrompt) apiMessages.push({ role: 'system', content: systemPrompt });
+    for (const m of messages.slice(0, -1)) {
+      apiMessages.push({ role: m.role === 'ai' ? 'assistant' : m.role, content: m.text });
+    }
+
     const apiRes = await fetch(apiBase + 'ai/chat', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messages: messages.slice(0, -1).map(m => ({
-          role: m.role === 'ai' ? 'assistant' : m.role,
-          content: m.text,
-        })),
-        model, provider,
-      }),
+      body: JSON.stringify({ messages: apiMessages, model, provider }),
       signal,
     });
 
