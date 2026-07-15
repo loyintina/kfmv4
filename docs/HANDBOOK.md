@@ -1,7 +1,7 @@
 ---
 title: KFM v4 工作手册
-last_reviewed: 2026-07-11
-kfm_version: 7.0.0
+last_reviewed: 2026-07-15
+kfm_version: 7.1.0
 status: active
 maintainer: AI agent
 ---
@@ -66,7 +66,7 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
         → initTreeRenderer() → loadFileTree() → initLazyLoader() → initCardStack()
 ```
 
-### 模块职能分组（全 37 个模块，不含 renderers/ 渲染器）
+### 模块职能分组（全 41 个模块，不含 renderers/ 渲染器）
 
 > 完整清单及依赖关系见 §七「客户端模块完整审计表」。此处按职能分组，方便快速定位。
 
@@ -78,31 +78,44 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 | **文件树样式** | `style-registry.ts` `theme.ts` | 文件树尺寸/颜色/字体的唯一来源（改一处全局同步） |
 | **视觉效果** | `char-rain.ts` | 字符散落/回收动画（展开折叠时） |
 | **交互共享** | `interaction-constants.ts` `drag-handler.ts` `click-queue.ts` | 模块间共享的常量/类型/事件队列 |
-| **卡片系统** | `card-stack.ts` `floating-card.ts` | 卡片堆面板、浮卡发射/拖拽/缩放 |
-| **AI / 通信** | `orb.ts` `ws-channel.ts` `debug-assert.ts` `gestures.ts` | 光球面板、WebSocket、运行时断言、页面手势 |
+| **卡片系统** | `card-registry.ts` `card-stack.ts` `floating-card.ts` `floating-shared.ts` `floating-fullscreen.ts` | 统一注册表（类型/实例）+ 堆叠抽屉 UI + 浮卡拖拽/全屏 UI |
+| **AI / 通信** | `orb.ts` `orb-chat.ts` `orb-panel.ts` `ws-channel.ts` `session-store.ts` `debug-assert.ts` `gestures.ts` | 光球面板、下拉框、AI 消息/流式、WebSocket、会话持久化 |
 | **日志** | `logger.ts` | KFM 日志系统（debug-card 伴侣） |
 
-### 服务端模块（6 个）
+### 服务端模块（10 个）
 
-服务端是 Express 4 + WebSocket 服务，通过 `index.ts` 统一入口编排，架构流向如下：
+服务端是 Express 4 + WebSocket 服务，通过 `index.ts` 统一入口编排。路由层已拆分到 `routes/`：
 
 ```
-index.ts (入口路由)
+index.ts (入口路由 + 静态文件)
+  ├── routes/files.ts     — 文件 CRUD API（list/read/write/copy/move/delete/rename/create）+ /system/info
+  ├── routes/proxy.ts     — CORS 代理 /proxy/fetch（流式 SSE pipe + 非流式 JSON）
   ├── ai-tools.ts         — 从浏览器拉取 Registry snapshot（供 AI agent 查询页面状态）
   ├── capability-executor.ts  — 将 Registry 注册的能力映射为可执行函数（AI 工具调用端点）
   ├── path-utils.ts       — 安全路径守卫（所有用户路径逃逸校验，安全关键模块）
   ├── terminal-pty.ts     — PTY 会话管理（PtyManager: spawn/write/resize/kill）
-  └── ws-server.ts        — WebSocket 通信通道（服务端↔浏览器双向实时通信）
+  ├── ws-server.ts        — WebSocket 通信通道（服务端↔浏览器双向实时通信）
+  ├── ai/                 — AI 对话子系统（v7.0.0 新增）
+  │   ├── chat.ts         — SSE 流式对话核心（Provider/Model/SystemPrompt/ToolCall）
+  │   ├── routes.ts       — AI 对话 HTTP 端点（/ai/chat、/ai/generate-title）
+  │   └── tools/          — AI 工具定义与执行（kfm-exec/snapshot/logs）
+  └── prompts/            — 提示词模板（system/base.md + tools/）
 ```
 
 | 模块 | 核心职责 |
 |------|---------|
-| `index.ts` | Express 入口 + HTTP 路由注册 + 静态文件服务 |
+| `index.ts` | Express 入口 + 路由装配 + 静态文件 + 启动（协调层） |
+| `src/server/routes/files.ts` | 文件 CRUD：list / read / write / copy / move / delete / rename / create / media + system/info |
+| `src/server/routes/proxy.ts` | CORS 代理：POST /proxy/fetch（流式 SSE + 非流式 JSON） |
 | `ai-tools.ts` | 包装 Registry snapshot 为服务端 API 端点（GET/POST） |
 | `capability-executor.ts` | 维护能力名→执行函数映射，被 AI 命令调用 |
 | `path-utils.ts` | `SAFE_ROOT` + `sanitizePath()`，路径逃逸守卫 |
-| `terminal-pty.ts` | PTY 会话 spawn/write/resize/kill（通过 WebSocket 与前端 xterm.js 通信） |
+| `terminal-pty.ts` | PTY 会话 spawn/write/resize/kill |
 | `ws-server.ts` | WebSocket 连接管理，接收推送的 snapshot |
+| `src/server/ai/chat.ts` | SSE 流式对话核心：Provider 加载、SystemPrompt 拼接、Tool Call |
+| `src/server/ai/routes.ts` | AI 对话 HTTP 端点：/ai/chat（流式）、/ai/generate-title |
+| `src/server/ai/tools/` | AI 工具定义（types→index→kfm-exec/snapshot/logs） |
+| `src/server/prompts/` | 提示词模板：system/base.md（基础角色）+ tools/（工具描述） |
 
 > 每个文件头部注释已有完整职责说明，此处仅列出架构概览。服务端不涉及复杂状态机，接手者读各自文件即可。
 
@@ -127,9 +140,8 @@ index.ts (入口路由)
 
 #### floating-card.ts — 浮卡系统
 
-`floating-card.ts` 管理浮卡发射、拖拽、缩放和编辑模式。浮卡从卡片堆的日志卡（02 日志卡）发射，
-经过 compact → expanding → active → editing 四态状态机。拖拽完全通过 GestureRegistry 统一调度。
-
+`floating-card.ts` 管理浮卡发射、拖拽、缩放和编辑模式。浮卡从卡片堆的聚焦卡片发射，
+经过 compact → expanding → active → editing 四态状态机，支持全屏切换。拖拽完全通过 GestureRegistry 统一调度。
 - **出口**：`initFloatingCards()`、`launchFocusedCard()`、`dismissFloatingCard()`、`hasFloatingCard()`
 - **状态机**：`compact(120×36, 仅 BR 光球) → expanding(GSAP tween) → active(155×68, 四角光球) ⇄ editing(长按 BR 光球 600ms → 右下角缩放手柄)`
 - **消费者**：`card-stack.ts`（发射入口）、`main.ts`（初始化）
@@ -147,15 +159,17 @@ index.ts (入口路由)
 - **规则**：选择器锁 (priority 110) 在手势优先级最高，打开后外部滑动手势全部被拦截。关闭时必须调 `L.popContext()` 恢复上下文。
 
 ## 二、当前会话状态
-> **最后更新**：2026-07-10（v7.0.0 — 后 v7.0.0 阶段：API 卡 + Provider 管理 + 服务端代理）
+> **最后更新**：2026-07-15（v7.1.0 — orb/floating-card/server 拆分 + 构建加固 + 214 测试）
 
 ### 当前焦点
-**API 卡 Provider 管理 + 服务端 CORS 代理**
+**orb.ts AI 面板强化 + 会话卡管理 + 构建管线对齐**
 
-卡片插件系统基础（card-registry + plugins/）已在 v7.0.0 奠定。当前阶段的工作重⼼转移到：
-1. **API 卡（原设置卡）** — Provider 多实例管理（编辑/测试/选择）、数据持久化到 `$HOME/.kfmv4/`（providers.json）
-2. **服务端 CORS 代理** — `/api/proxy/fetch` 端点，AI API 请求走服务端避开 CORS
-3. **卡片视觉规范** — CARD_DEV_GUIDE §10 边框/颜色/嵌套规范 + theme.ts 对齐
+卡片插件系统基础（card-registry + plugins/）已在 v7.0.0 奠定。当前阶段的工作重心：
+1. **orb.ts AI 面板** — 复用完整 markdown 管线（marked + preprocessMd + code-highlight + math + mermaid），流式 reasoning 折叠，滚动位置保持
+2. **会话卡** — 名称编辑框 + 保存/新建按钮 + 气泡区重构，按钮移至气泡区下方
+3. **管理卡** — 编辑器框限高 70vh + 内容区可滚动 + 按钮粘性底部
+4. **构建管线** — build.mjs 全量 check 对齐 npm run check + check-handbook-sync 过期阻断
+
 
 > **数据目录**：v7.0.0 后将 `.kfmv4/` 从项目根目录迁移到 `$HOME/.kfmv4/`（由 `path-utils.ts` 的 `KFM_DATA_DIR` 定义）。
 > 包含：`providers.json`、`active.json`、`sessions/`、`roles/`、`configs/`。
@@ -176,6 +190,14 @@ index.ts (入口路由)
   - API 卡路径适配 nginx 反代（自动检测前缀）✅
   - 输入框/按钮排版统⼀（em 单位、`--card-font-size` CSS 变量）✅
   - 终端方向键左上下右修复 ✅
+  - orb.ts markdown 管线复用（marked + preprocessMd + code-highlight + math + mermaid）✅
+  - 流式输出 reasoning 默认展开、完成后折叠，移除 emoji 改为纯文本标签 ✅
+  - renderChatContent 滚动位置保持（仅用户已在底部时自动滚底）✅
+  - 会话卡名称编辑框 + 保存/新建按钮 + 气泡区重构 ✅
+  - 管理卡编辑器限高 70vh + 内容区可滚动 + 按钮粘性底部 ✅
+  - api 卡池框间距修复 ✅
+  - build.mjs 全量检查对齐 npm run check（补全 15 步检查管线）✅
+  - check-handbook-sync.mjs 过期时 exit(1) 阻断构建 ✅
 
 v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放弃（详见 `docs/archive/design/CARD_SYSTEM_UNIFICATION_SPEC.md`）。当前方向改为「三层共享层」——常量层 + 类型层 + 能力声明层，可在不碰逻辑的前提下逐步统一。
 
@@ -289,7 +311,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | **v6.11.1** | **心法重组（22条+6偏差组）+ 动画锁3s根因修复 + 测试拆分7文件 + 卡片插件系统 + _cards统一 + check-handbook-sync** | git `fedab31` |
 | **v6.11.2** | **终端全屏辅助栏（aux bar）+ 光球避开辅助栏 + TERMINAL_CARD_SPEC 归档** | git `c386da3` |
 | **v7.0.0** | **Phase 0+I 完成 — 心法/测试/插件/文档全部清理，进入 Agent 阶段** | git `9de2a8c` |
-| **后 v7.0.0** | **API 卡 Provider 管理 + 服务端 CORS 代理 + 卡片视觉规范 + providers.json 持久化** | **HEAD** |
+| **v7.1.0** | **orb/floating-card 拆分（848→524 + 1195→780）+ server 路由拆分（355→60）+ MD CSS/MARKED_OPTS/marked 统一 + 构建管线加固 + 214 测试 + 2 ADR** | git `3deb88b` |
 
 > 完整诊断手册见 [`docs/DIAGNOSTICS.md`](./DIAGNOSTICS.md)，包含：
 > - **隐性契约（11 条）** — 破坏会出 bug 的隐藏约束
@@ -303,7 +325,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 > 完整测试清单见 [`docs/DIAGNOSTICS.md` 附录 B](./DIAGNOSTICS.md#附录-b回归测试)。
 >
 > ```bash
-> npm test   # 191 个测试，覆盖 23 个模块（含 Box 引擎）
+> npm test   # 214 个测试，覆盖 23 个模块（含 Box 引擎）
 > ```
 
 ## 六、约束与原则
@@ -335,7 +357,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | 10 | ✅ 已处理 | `sidebar-*.png` 临时截图 | 已删除（两个文件无代码引用，调试残留） |
 | 11 | ✅ 已处理 | public/bundle.js 构建产物 | 已在 .gitignore 中保护，不会被提交 |
 | ~~12~~ | ~~🟡~~ ✅ | ~~HANDBOOK 陷阱 #12 描述需更新~~ 已更新 | 已加注设计阶段 |
-| ~~13~~ | ~~🟠~~ ✅ | ~~HANDBOOK §1 模块列表不完整~~ 已修复 | §1 已补全为 29 个模块的职能分组表（历史数据，当前为 37 个模块 + 8 个渲染器） |
+| ~~13~~ | ~~🟠~~ ✅ | ~~HANDBOOK §1 模块列表不完整~~ 已修复 | §1 已补全为 29 个模块的职能分组表（历史数据，当前为 41 个模块 + 8 个渲染器） |
 | 14 | ✅ 已处理 | `path-utils.ts` 无独立文档描述 | 头部注释已补充安全约束+依赖方+环境变量说明 |
 | 15 | ✅ 已处理 | 服务端 6 个文件总体无架构文档 | HANDBOOK §1「服务端模块」已补充架构概览 + 模块职责表 + 调用流向图 |
 | 16 | ✅ 已排查 | 注册表遗漏 & 重复造轮子 | 交互层13=MANIFEST13、内容层3=MANIFEST3、能力层3=MANIFEST3，一一对应。类型共享无重复，点击队列无重复，缩进逻辑无重复。发现1处可修复的重复：`floating-card.ts:555` 局部定义 `MARGIN_F=8` 绕过共享常量 `MARGIN`—已修正 |
@@ -346,7 +368,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 
 ### 客户端模块完整审计表
 
-> HANDBOOK §1 注册中心表仅覆盖部分模块。以下是全部 45 个客户端源文件的完整清单（含 renderers/ 渲染器）。
+> HANDBOOK §1 注册中心表仅覆盖部分模块。以下是全部 49 个客户端源文件的完整清单（含 renderers/ 渲染器）。
 
 | 模块 | 行数 | 被导入 | 文档覆盖 | 用途 |
 |------|------|--------|---------|------|
@@ -355,16 +377,18 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `canvas-cursor.ts` | 444 | 3 | ✅ 提及 | Canvas 盒子光标系统 |
 | `canvas-scroll.ts` | 361 | 2 | ✅ 提及 | Canvas 盒子滚动系统 |
 | `canvas-utils.ts` | 61 | 4 | ✅ 依赖图 | Canvas 通用工具函数 |
-| `card-stack.ts` | 452 | 4 | ✅ 独立条目 | 堆叠卡片面板 |
 | `card-toast.ts` | 52 | 1 | ✅ 分组表 | 卡片风格轻量提示 |
-| `char-rain.ts` | 306 | 1 | ✅ 分组表 | 字符散落/回收动画 |
+| `char-rain.ts` | 306 | 2 | ✅ 分组表 | 字符散落/回收动画 |
+| `card-stack.ts` | 452 | 4 | ✅ 独立条目 | 堆叠卡片面板（消费 card-registry，按注册表动态构建） |
 | `click-queue.ts` | 39 | 1 | ✅ 分组表 | 点击事件队列 |
 | `custom-select.ts` | 236 | 1 | ✅ 分组表 | 可复用的自定义下拉框组件 |
-| `confirm-dialog.ts` | 222 | 1 | ✅ 分组表 | 可复用的自定义确认对话框 |
+| `confirm-dialog.ts` | 190 | 1 | ✅ 分组表 | 可复用的自定义确认对话框 |
 | `color-utils.ts` | 46 | 2 | ✅ 分组表 | 颜色工具函数（从 tree-swipe 拆分） |
 | `debug-assert.ts` | 24 | 1 | ✅ 提及 | 运行时断言 |
 | `dom-refs.ts` | 37 | 9 | ✅ 注册表 | DOM 元素引用 |
-| `floating-card.ts` | 1204 | 2 | ✅ 独立条目 | 浮卡系统（核心模块） |
+| `floating-card.ts` | 782 | 3 | ✅ 独立条目 | 浮卡创建/状态机/手势（核心模块） |
+| `floating-shared.ts` | 172 | 1 | ✅ 分组表 | 浮卡共享类型/常量/状态/工具（从 floating-card 拆分） |
+| `floating-fullscreen.ts` | 214 | 1 | ✅ 分组表 | 浮卡全屏/退出/关闭逻辑（从 floating-card 拆分） |
 | `gesture-registry.ts` | 385 | 6 | ✅ 独立条目 | 手势注册中心 |
 | `gestures.ts` | 217 | 1 | ✅ 提及 | 页面滑动手势配置 |
 | `interaction-constants.ts` | 21 | 2 | ✅ 分组表 | 交互常量共享层（v6.6.0 新增） |
@@ -372,8 +396,11 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `file-action-bar.ts` | 427 | 2 | ✅ 分组表 | 文件行长按 → 底部抽屉操作栏 |
 | `logger.ts` | 58 | 3 | ✅ 分组表 | KFM 日志系统 |
 | `mode-system.ts` | 444 | 1 | ✅ 分组表 | 模式按钮系统（从 tree-swipe 拆分，v6.8.0 新增） |
-| `orb.ts` | 980 | 1 | ✅ 独立条目 | 光球 + AI 对话面板 |
-| `session-store.ts` | 283 | 1 | — | 会话持久化统一存储（替代 orb.ts 散布的会话逻辑） |
+| `orb.ts` | 527 | 2 | ✅ 独立条目 | 光球 UI + 拖拽手势 + 面板状态机（协调层） |
+| `orb-chat.ts` | 223 | 1 | ✅ 分组表 | AI 消息渲染 + SSE 流式通信（从 orb.ts 拆分） |
+| `orb-panel.ts` | 196 | 1 | ✅ 分组表 | 面板 Provider/Session/Model/Role 下拉框（从 orb.ts 拆分） |
+| `orb-state.ts` | 17 | 0 | ✅ 分组表 | orb 状态机纯逻辑（零依赖，从 orb.ts 拆分，可脱离浏览器测试） |
+| `session-store.ts` | 318 | 1 | ✅ 分组表 | 会话持久化统一存储（替代 orb.ts 散布的会话逻辑） |
 | `renderer-lifecycle.ts` | 243 | 5 | ✅ 注册表 | 渲染器生命周期单例 L |
 | `root-picker.ts` | 434 | 2 | ✅ 独立条目 | 文件树根目录切换器 |
 | `state.ts` | 257 | 10 | ✅ 注册表 | 全局状态层 KFMState |
@@ -395,15 +422,16 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `../src/client/modules/renderers/binary-fallback.ts` | 37 | 1 | — | 二进制文件回退渲染器（文字提示不可预览） |
 | `../src/client/modules/renderers/code-highlight.ts` | 100 | 1 | — | 代码语法高亮渲染器（highlight.js） |
 | `../src/client/modules/renderers/file-type.ts` | 17 | 1 | — | 文件类型图标映射 |
-| `../src/client/modules/renderers/handler-factory.ts` | 322 | 1 | — | 卡片内容处理器工厂（按 typeId 分发） |
+| `../src/client/modules/renderers/handler-factory.ts` | 279 | 1 | — | 卡片内容处理器工厂（按 typeId 分发） |
 | `../src/client/modules/renderers/katex-css.ts` | 3 | 1 | — | KaTeX CSS 注入（CDN） |
 | `../src/client/modules/renderers/math-diagram.ts` | 153 | 1 | — | 数学公式/图表渲染器（KaTeX + Mermaid CDN） |
-| `../src/client/modules/renderers/md-extensions.ts` | 48 | 1 | — | Markdown 渲染扩展（链接、任务列表） |
+| `../src/client/modules/renderers/md-extensions.ts` | 51 | 1 | — | Markdown 渲染扩展（链接、任务列表） |
+| `../src/client/modules/renderers/md-css.ts` | 57 | 2 | ✅ 分组表 | Markdown 渲染 CSS（全局唯一来源，orb + handler-factory 共享） |
 | `../src/client/modules/renderers/text-preview.ts` | 26 | 1 | — | 文本文件预览渲染器 |
-| **合计** | **13057** | | | |
+| **合计** | **13024** | | | |
 
 ### 死代码检查
-**结论：无死代码。** 所有 37 个模块都被至少 1 个文件导入（`terminal-card-04.ts` 和 `tmux-card.ts` 被导入数为 0，但这是模块自身的特性：它们仅在用户侧打开卡片时由 `card-registry.ts` 的 `createHandler` 工厂按需实例化，属于动态加载。`terminal-aux-bar.ts` 已删除（空占位，无任何引用）。`src/cards/` 目录已彻底删除。实际使用的 logger 在 `src/client/modules/logger.ts`。
+**结论：无死代码。** 所有 41 个模块都被至少 1 个文件导入（`terminal-card-04.ts` 和 `tmux-card.ts` 被导入数为 0，但这是模块自身的特性：它们仅在用户侧打开卡片时由 `card-registry.ts` 的 `createHandler` 工厂按需实例化，属于动态加载。`terminal-aux-bar.ts` 已删除（空占位，无任何引用）。`src/cards/` 目录已彻底删除。实际使用的 logger 在 `src/client/modules/logger.ts`。
 
 ### 引擎层清单（14 文件）
 

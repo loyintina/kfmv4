@@ -4,8 +4,8 @@
  * 检查 HANDBOOK.md §二「当前会话状态」是否与 git 提交历史同步。
  * 原理：比对 frontmatter 中 last_reviewed 日期与最近 src/tests 提交日期。
  * 如果最近有源码改动但 HANDBOOK 未更新，打印显式提醒。
+ * 这是阻断性检查（exit 1）：过期时中断构建，要求 AI 先更新 HANDBOOK。
  *
- * 这不是阻断性检查（exit 0），但提醒足够显眼，
  * 确保执行检查的 AI 在输出中看到并采取行动。
  *
  * 挂入 npm run check，在构建管线末尾运行。
@@ -120,4 +120,4 @@ console.log('║  2. frontmatter last_reviewed  → 设为当前日期          
 console.log('╚══════════════════════════════════════════════════════════════╝');
 console.log('');
 
-process.exit(0);
+process.exit(1);

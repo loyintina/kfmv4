@@ -12,7 +12,6 @@
  * - 面板随光球移动，超出屏幕时自动压缩，回来时恢复
  */
 
-import { measureText, layoutLines } from '../engine/text-layout/index.js';
 import { gestures } from './gesture-registry.js';
 import { DOM } from "./dom-refs.js";
 import { currentTheme as theme } from './theme.js';
@@ -23,12 +22,9 @@ import { createDragHandler, type DragConfig } from './drag-handler.js';
 import { anim } from './animation-registry.js';
 import { log } from './logger.js';
 import { sessionStore } from './session-store.js';
-import { createCustomSelect, type CustomSelect } from './custom-select.js';
-import { marked } from 'marked';
-import { highlightAll } from './renderers/code-highlight.js';
-import { preprocessMd } from './renderers/md-extensions.js';
-import { renderMath, renderMermaid, type MathData } from './renderers/math-diagram.js';
-import { KATEX_CSS } from './renderers/katex-css.js';
+import { buildPanelContent } from './orb-panel.js';
+import { renderChatContent, doSend, type ChatMessage } from './orb-chat.js';
+import type { OrbState } from './orb-state.js';
 const API_BASE = window.location.pathname.replace(/\/+$/, '') + '/api/';
 
 async function readActiveConfig(): Promise<Record<string, string>> {
@@ -51,20 +47,7 @@ async function patchActiveConfig(patch: Record<string, string>): Promise<void> {
   }).catch(() => {});
 }
 
-interface Provider {
-  id: string;
-  name: string;
-  baseUrl: string;
-  models: string[];
-}
 
-interface ChatMessage {
-  role: 'user' | 'ai';
-  text: string;
-  reasoning?: string;
-}
-
-type OrbState = 'collapsed' | 'expanded' | 'editing';
 
 type PanelState = 'closed' | 'open' | 'editing';
 let orbState: OrbState = 'collapsed';
@@ -97,6 +80,12 @@ function getInputBarTop(): number {
   const bar = DOM.aiInputBar;
   if (!bar) return window.innerHeight;
   return bar.getBoundingClientRect().top;
+}
+
+// 模块级聊天渲染桥接（renderChatContent 来自 orb-chat.ts）
+function _renderChat(): void {
+  if (!panelEl) return;
+  renderChatContent({ panelEl, messages: chatMessages, renderWidth, apiBase: API_BASE });
 }
 
 
@@ -150,98 +139,8 @@ function createPanel(): HTMLDivElement {
   return panel;
 }
 
-// ========== Pretext 文本排版 ==========
-function renderChatContent(): void {
-  if (!panelEl) return;
-  const contentArea = DOM.orbPanelContent(panelEl);
-  if (!contentArea) return;
 
-  const innerWidth = renderWidth - 24;
-  if (innerWidth < 50) return;
 
-  let html = '';
-  let idx = 0;
-  for (const msg of chatMessages) {
-    const isUser = msg.role === 'user';
-    const bgColor = isUser
-      ? `linear-gradient(${theme.surface.bgLight},${theme.surface.bgLight}) padding-box,${theme.aiChat.bubbleSelfGradient} border-box`
-      : `linear-gradient(rgba(10,15,30,0.88),rgba(10,15,30,0.88)) padding-box,${theme.aiChat.panelBorderGradient} border-box`;
-    const borderStyle = 'border:1px solid transparent;border-left-width:3px;';
-    const align = isUser ? 'flex-end' : 'flex-start';
-    const label = isUser ? '你' : '蔚然';
-    const labelColor = isUser ? theme.aiChat.bubbleLabelSelf : theme.aiChat.bubbleLabelAI;
-    const boxShadow = isUser ? theme.aiChat.bubbleSelfShadow : theme.aiChat.bubbleAIShadow;
-    let bubbleHtml = `<div style="font-size:10px;color:${labelColor};margin-bottom:2px;font-weight:600">${label}</div>`;
-
-    // 思考内容（可折叠）
-    if (!isUser && msg.reasoning) {
-      const rid = 'r' + idx;
-      const rlabel = msg.text ? '已思考' : '思考中...';
-      bubbleHtml += `<div onclick="var p=document.getElementById('${rid}');p.style.display=p.style.display==='none'?'':'none'" style="font-size:9px;color:rgba(0,212,255,0.5);cursor:pointer;margin-bottom:2px;user-select:none">${rlabel} <span style="font-size:7px">▼</span></div>`;
-      const displayStyle = msg.text ? 'display:none' : 'display:block';
-      bubbleHtml += `<div id="${rid}" style="${displayStyle};font-size:var(--card-font-size,10px);line-height:16px;color:rgba(255,255,255,0.45);margin-bottom:4px;padding:4px 6px;border-radius:4px;background:rgba(0,0,0,0.2);white-space:pre-wrap">${escapeHtml(msg.reasoning)}</div>`;
-    }
-
-    const lineHeight = 20;
-    bubbleHtml += `<div class="orb-msg-text" data-msg-idx="${idx}" style="font-family:sans-serif;font-size:var(--card-font-size,13px);line-height:${lineHeight}px;color:${theme.aiChat.bubbleText};white-space:pre-wrap;word-break:break-word">${renderMarkdown(msg.text)}</div>`;
-
-    const maxWidth = isUser ? Math.min(innerWidth - 8, innerWidth * 0.85) : innerWidth - 8;
-    html += `
-      <div style="display:flex;justify-content:${align};margin-bottom:8px">
-        <div style="max-width:${maxWidth}px;padding:6px 12px;background:${bgColor};${borderStyle}border-radius:8px;box-shadow:${boxShadow}">
-          ${bubbleHtml}
-        </div>
-      </div>`;
-    idx++;
-  }
-  // 保存滚动位置
-  const scrollTop = contentArea.scrollTop;
-  const wasAtBottom = scrollTop + contentArea.clientHeight >= contentArea.scrollHeight - 80;
-  contentArea.innerHTML = html;
-  if (wasAtBottom) { contentArea.scrollTop = contentArea.scrollHeight; }
-  else { contentArea.scrollTop = scrollTop; }
-  // 注入 CSS（仅一次）
-  if (!contentArea.querySelector('.orb-md-css')) {
-    const style = document.createElement('style');
-    style.className = 'orb-md-css';
-    style.textContent = _mdCSS;
-    contentArea.appendChild(style);
-  }
-  // 异步渲染 markdown
-  const msgEls = contentArea.querySelectorAll<HTMLElement>('.orb-msg-text');
-  for (const el of msgEls) {
-    const i = parseInt(el.dataset.msgIdx || '-1', 10);
-    if (i >= 0 && i < chatMessages.length && chatMessages[i].role !== 'user') {
-      const text = chatMessages[i].text;
-      if (text && text.length > 0) {
-        const mathData: MathData = { display: [], inline: [] };
-        const processed = preprocessMd(text, mathData);
-        Promise.resolve(marked.parse(processed, { gfm: true, breaks: true }) as string).then((mdHtml: string) => {
-          el.innerHTML = mdHtml;
-          highlightAll(el);
-          renderMath(el, mathData);
-          renderMermaid(el, '#00d4ff');
-        });
-      }
-    }
-  }
-}
-function escapeHtml(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
-function renderMarkdown(text: string): string {
-  return escapeHtml(text);
-}
-
-// Markdown CSS（与文件卡 _mdCSS 同步）
-const _mdCSS = 'table{border-collapse:collapse;width:100%;margin:8px 0}th,td{border:1px solid rgba(255,255,255,0.15);padding:4px 8px;text-align:left}th{background:rgba(255,255,255,0.05);font-weight:600}blockquote{border-left:3px solid rgba(0,212,255,0.5);padding:4px 10px;margin:6px 0;color:rgba(255,255,255,0.6);background:rgba(0,0,0,0.1)}pre{background:rgba(0,0,0,0.3);border-radius:6px;padding:10px;overflow-x:auto;margin:8px 0}code{font-family:monospace;font-size:12px}:not(pre)>code{background:rgba(255,255,255,0.08);padding:1px 4px;border-radius:3px}ul,ol{padding-left:20px;margin:4px 0}li{margin:2px 0}.callout{background:rgba(0,188,212,0.06);border:1px solid rgba(0,188,212,0.15);border-radius:8px;padding:8px 12px;margin:8px 0}.callout-header{font-weight:600;font-size:11px;margin-bottom:4px}mark{background:rgba(255,235,59,0.25);color:inherit;padding:0 2px;border-radius:2px}.wikilink{color:rgba(0,212,255,0.7);text-decoration:underline;cursor:pointer}.mermaid-container{display:flex;justify-content:center;margin:12px 0;overflow-x:auto}.mermaid-container svg{max-width:100%}.mermaid-container svg .label{color:#e0e0e0!important}.mermaid-container svg .edgeLabel{background:rgba(10,10,15,0.85)!important}' + '.hljs-keyword{color:#c792ea}.hljs-string{color:#ecc48d}.hljs-comment{color:#546e7a;font-style:italic}.hljs-number{color:#f78c6c}.hljs-title{color:#82aaff}.hljs-type{color:#ffcb6b}.hljs-attr{color:#c792ea}.hljs-built_in{color:#ffcb6b}.hljs-literal{color:#f78c6c}.hljs-function .hljs-title{color:#82aaff}.hljs-params{color:#a6accd}.hljs-meta{color:#89ddff}.hljs-tag{color:#f07178}.hljs-name{color:#f07178}.hljs-attribute{color:#c792ea}.hljs-selector-class{color:#ffcb6b}.hljs-selector-tag{color:#f07178}.hljs-addition{color:#c3e88d}.hljs-deletion{color:#f07178}' + KATEX_CSS;
-
-async function renderMarkdownAsync(text: string): Promise<string> {
-  const mathData: MathData = { display: [], inline: [] };
-  const processed = preprocessMd(text, mathData);
-  return await marked.parse(processed, { gfm: true, breaks: true }) as string;
-}
 
 // ========== 面板布局（核心：光球在面板右下角，超出时压缩） ==========
 function updatePanelPosition(): void {
@@ -287,172 +186,16 @@ function updatePanelPosition(): void {
 }
 
 // ========== 面板内容 ==========
-function buildPanelContent(): void {
-  if (!panelEl) return;
-
-  const c1 = 'rgba(0,212,255,0.8)';
-  const c2 = 'rgba(124,58,237,0.7)';
-
-  panelEl.innerHTML = `
-<div class="orb-header-bar" style="
-  display:flex;align-items:center;justify-content:space-between;
-  padding:8px 14px;flex-shrink:0;
-  border-bottom:1px solid rgba(255,255,255,0.06)
-">
-  <div id="orb-role-select-container"></div>
-  <div id="orb-session-select-container"></div>
-</div>
-<div class="orb-panel-content" style="
-  flex:1;overflow-y:auto;padding:12px 14px;min-height:0
-"></div>
-<div style="height:1px;flex-shrink:0;margin:0 10px;background:linear-gradient(90deg,${c1},${c2})"></div>
-<div class="orb-model-bar" style="
-  display:flex;gap:8px;padding:6px 10px;flex-shrink:0
-">
-  <div id="orb-prov-container" style="flex:1;min-width:0"></div>
-  <div id="orb-model-container" style="flex:1;min-width:0"></div>
-</div>
-  `;
-
-  const base = window.location.pathname.replace(/\/+$/, '') + '/api/';
-  let providers: Provider[] = [];
-
-  function saveConfig(): void {
-    const provId = provSelect?.getValue() || '';
-    const modelId = modelSelect?.getValue() || '';
-    patchActiveConfig({ providerId: provId, modelId: modelId });
-  }
-
-  let provSelect: CustomSelect | null = null;
-  let modelSelect: CustomSelect | null = null;
-
-  async function updateProviderSelect(): Promise<void> {
-    if (!provSelect || !modelSelect) return;
-    const active = await readActiveConfig();
-    const curProv = active.providerId
-      ? providers.find((p: Provider) => p.id === active.providerId)
-      : undefined;
-    provSelect.updateItems(
-      providers.map((p: Provider) => ({ label: p.name || p.id, value: p.id })),
-      curProv?.id || ''
-    );
-    if (curProv) {
-      modelSelect.updateItems(
-        (curProv.models || []).map((m: string) => ({ label: m, value: m })),
-        active.modelId || ''
-      );
-    }
-  }
-
-  const roleContainer = document.getElementById('orb-role-select-container');
-  if (roleContainer) {
-    const roleSelect = createCustomSelect({
-      accent: c1, accent2: c2, placeholder: '角色', minWidth: 70, maxWidth: 110,
-      onSelect: async (roleFile) => {
-        await patchActiveConfig({ roleFile });
-        window.dispatchEvent(new CustomEvent('kfm-role-change', { detail: { roleId: roleFile } }));
-      },
-    });
-    roleContainer.appendChild(roleSelect.element);
-    (async () => {
-      let roleFiles: string[] = [];
-      try {
-        const res = await fetch(base + 'files/list', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ path: '.kfmv4/roles' }),
-        });
-        const data = await res.json();
-        roleFiles = (data.items || []).map((f: { name: string }) => f.name.replace('.json', '')).filter((n: string) => n);
-      } catch {}
-      const active = await readActiveConfig();
-      const currentRole = active.roleFile || (roleFiles[0] || '');
-      roleSelect.updateItems(roleFiles.map((n: string) => ({ label: n, value: n })), currentRole);
-    })();
-    window.addEventListener('kfm-role-change', ((e: CustomEvent) => {
-      if (e.detail?.roleId) roleSelect.setValue(e.detail.roleId);
-    }) as EventListener);
-  }
-
-  const sessionContainer = document.getElementById('orb-session-select-container');
-  if (sessionContainer) {
-    const sessionSelect = createCustomSelect({
-      accent: c1, accent2: c2, placeholder: '选择会话', minWidth: 80, maxWidth: 120,
-      onSelect: (sessionId) => { sessionStore.switchTo(sessionId); },
-    });
-    sessionContainer.appendChild(sessionSelect.element);
-    sessionSelect.updateItems(
-      sessionStore.list.map(s => ({ label: s.title, value: s.id })),
-      sessionStore.activeId || sessionStore.list[0]?.id || ''
-    );
-    _orbSessionSelect = sessionSelect;
-  }
-
-  const provSelectContainer = document.getElementById('orb-prov-container') as HTMLDivElement | null;
-  const modelSelectContainer = document.getElementById('orb-model-container') as HTMLDivElement | null;
-  if (provSelectContainer && modelSelectContainer) {
-    provSelect = createCustomSelect({
-      accent: c1, accent2: c2, placeholder: '—', minWidth: 80, direction: 'up',
-      onSelect: (id) => {
-        const p = providers.find((x: Provider) => x.id === id);
-        if (!p) return;
-        modelSelect?.updateItems((p.models || []).map((m: string) => ({ label: m, value: m })), p.models?.[0] || '');
-        saveConfig();
-        window.dispatchEvent(new CustomEvent('kfm-provider-change', { detail: { providerId: id, modelId: p.models?.[0] || '' } }));
-      },
-    });
-    provSelectContainer.appendChild(provSelect.element);
-    modelSelect = createCustomSelect({
-      accent: c1, accent2: c2, placeholder: '—', minWidth: 80, direction: 'up',
-      onSelect: (model) => {
-        saveConfig();
-        window.dispatchEvent(new CustomEvent('kfm-model-change', { detail: { modelId: model } }));
-      },
-    });
-    modelSelectContainer.appendChild(modelSelect.element);
-  }
-
-  fetch(base + 'files/read', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ path: '.kfmv4/providers.json' }),
-  }).then(r => r.json()).then(data => {
-    const raw: Array<Record<string, unknown>> = data.content ? JSON.parse(data.content) : [];
-    providers = raw.map(p => ({ id: p.id as string, name: p.name as string, baseUrl: p.baseUrl as string, models: p.models as string[] }));
-    updateProviderSelect();
-  }).catch(() => {});
-
-  window.addEventListener('kfm-provider-change', ((e: CustomEvent) => {
-    if (e.detail?.providerId) {
-      const p = providers.find((x: Provider) => x.id === e.detail.providerId);
-      if (p) {
-        provSelect?.setValue(e.detail.providerId);
-        modelSelect?.updateItems((p.models || []).map((m: string) => ({ label: m, value: m })), e.detail.modelId || p.models?.[0] || '');
-      }
-    }
-  }) as EventListener);
-  window.addEventListener('kfm-model-change', ((e: CustomEvent) => {
-    if (e.detail?.modelId) modelSelect?.setValue(e.detail.modelId);
-  }) as EventListener);
-  window.addEventListener('kfm-config-change', ((e: CustomEvent) => {
-    const d = e.detail;
-    if (!d) return;
-    if (d.providerId) {
-      const p = providers.find((x: Provider) => x.id === d.providerId);
-      if (p) {
-        provSelect?.setValue(d.providerId);
-        modelSelect?.updateItems((p.models || []).map((m: string) => ({ label: m, value: m })), d.modelId || p.models?.[0] || '');
-      }
-    }
-    patchActiveConfig({ providerId: d.providerId || '', modelId: d.modelId || '', sessionId: d.sessionId || '' });
-  }) as EventListener);
-}
 
 // ========== 状态切换 ==========
+
+export { nextOrbState, type OrbState } from './orb-state.js';
 function expandPanel(): void {
   if (!panelEl) panelEl = createPanel();
   if (orbState === 'collapsed') {
     orbState = 'expanded';
     panelState = 'open';
-    buildPanelContent();
+    buildPanelContent({ panelEl: panelEl!, setOrbSessionSelect: (s) => { _orbSessionSelect = s; }, readActiveConfig, patchActiveConfig });
     updatePanelPosition();
     // 加载存储的字号偏好
     const stored = localStorage.getItem('kfm-fontsize-orb');
@@ -464,7 +207,7 @@ function expandPanel(): void {
         }
       } catch {}
     }
-    renderChatContent();
+    _renderChat();
     Registry.notifyStateChange('orb');
     Registry.notifyStateChange('orb-panel');
     panelEl.style.pointerEvents = 'auto';
@@ -514,7 +257,7 @@ function exitEditMode(): void {
   }
   Registry.notifyStateChange('orb');
   Registry.notifyStateChange('orb-panel');
-  renderChatContent();
+  _renderChat();
   updateStateLabel();
 }
 
@@ -591,7 +334,7 @@ function initInputBarWatcher(): void {
         onComplete: () => {
           renderWidth = panelTarget.width;
           renderHeight = panelTarget.height;
-          if (orbState === 'expanded') renderChatContent();
+          if (orbState === 'expanded') _renderChat();
         },
       });
     }
@@ -646,7 +389,7 @@ export async function initOrb(): Promise<void> {
       orbEl!.style.transition = 'none';
       if (orbState === 'expanded' && panelEl) {
         updatePanelPosition();
-        renderChatContent();
+        _renderChat();
       }
     },
     onMoveEditing({ dx, dy, startOrbX, startOrbY }) {
@@ -667,7 +410,7 @@ export async function initOrb(): Promise<void> {
       orbEl.style.right = 'auto';
       orbEl.style.bottom = 'auto';
       updatePanelPosition();
-      renderChatContent();
+      _renderChat();
     },
   };
 
@@ -726,6 +469,7 @@ export async function initOrb(): Promise<void> {
   const sendBtn = DOM.aiSendBtn;
   if (inputEl && sendBtn) {
     const base = window.location.pathname.replace(/\/+$/, '') + '/api/';
+    const _renderChat = () => { if (panelEl) renderChatContent({ panelEl, messages: chatMessages, renderWidth, apiBase: base }); };
     sessionStore.init(base);
     await sessionStore.load();
 
@@ -734,14 +478,10 @@ export async function initOrb(): Promise<void> {
       const msgs = await sessionStore.getMessages(sessionStore.activeId);
       chatMessages.length = 0;
       chatMessages.push(...msgs.map(m => ({ role: m.role as 'user' | 'ai', text: m.text, reasoning: m.reasoning })));
-      renderChatContent();
+      _renderChat();
     }
 
     let abortCtrl: AbortController | null = null;
-    function setSending(on: boolean): void {
-      if (on) { sendBtn!.classList.add('sending'); }
-      else { sendBtn!.classList.remove('sending'); abortCtrl = null; }
-    }
 
     // 监听会话切换 → 重载消息
     window.addEventListener('kfm-session-change', (e: Event) => {
@@ -751,7 +491,7 @@ export async function initOrb(): Promise<void> {
       sessionStore.getMessages(detail.sessionId).then(msgs => {
         chatMessages.length = 0;
         chatMessages.push(...msgs.map(m => ({ role: m.role as 'user' | 'ai', text: m.text, reasoning: m.reasoning })));
-        renderChatContent();
+        _renderChat();
         _orbSessionSelect?.updateItems(
           sessionStore.list.map(s => ({ label: s.title, value: s.id })),
           detail.sessionId
@@ -759,91 +499,28 @@ export async function initOrb(): Promise<void> {
       });
     });
 
-    async function doSend(): Promise<void> {
-      if (abortCtrl) { abortCtrl.abort(); setSending(false); return; }
+    async function handleSend(): Promise<void> {
+      if (abortCtrl) { abortCtrl.abort(); abortCtrl = null; sendBtn!.classList.remove('sending'); return; }
       const text = inputEl!.value.trim();
       if (!text) return;
       inputEl!.value = '';
       if (orbState === 'collapsed') expandPanel();
       inputEl!.style.height = 'auto';
 
-      chatMessages.push({ role: 'user', text });
-      renderChatContent();
+      abortCtrl = new AbortController();
+      sendBtn!.classList.add('sending');
 
-      const config = await readActiveConfig();
-      if (!config.providerId) {
-        chatMessages.push({ role: 'ai', text: '未配置 Provider，请先在 API 卡中添加并选择一个 Provider。' });
-        renderChatContent(); return;
-      }
-      if (!config.modelId) {
-        chatMessages.push({ role: 'ai', text: '未选择 Model，请先在 API 卡或光球面板底部选择一个 Model。' });
-        renderChatContent(); return;
-      }
-      try {
-        const model = config.modelId;
-        const provider = config.providerId;
-        chatMessages.push({ role: 'ai', text: '', reasoning: '' });
-        renderChatContent();
-        const msgIdx = chatMessages.length - 1;
-        let reasoningBuf = ''; let contentBuf = '';
-
-        abortCtrl = new AbortController();
-        setSending(true);
-
-        const apiRes = await fetch(base + 'ai/chat', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            messages: chatMessages.slice(0, -1).map(m => ({
-              role: m.role === 'ai' ? 'assistant' : m.role,
-              content: m.text,
-            })),
-            model, provider,
-          }),
-          signal: abortCtrl.signal,
-        });
-
-        const reader = apiRes.body?.getReader();
-        if (!reader) throw new Error('无响应体');
-        const decoder = new TextDecoder();
-        let buffer = '';
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
-          for (const line of lines) {
-            if (!line.startsWith('data: ')) continue;
-            const jsonStr = line.slice(6).trim();
-            if (jsonStr === '[DONE]') continue;
-            try {
-              const event = JSON.parse(jsonStr);
-              switch (event.type) {
-                case 'thinking': reasoningBuf += event.content || ''; chatMessages[msgIdx].reasoning = reasoningBuf; break;
-                case 'text': contentBuf += event.content || ''; chatMessages[msgIdx].text = contentBuf; break;
-                case 'tool_call': contentBuf += '\n\n[调用工具: ' + event.toolName + '...]'; chatMessages[msgIdx].text = contentBuf; break;
-                case 'error': contentBuf += '\n\n[错误: ' + event.content + ']'; chatMessages[msgIdx].text = contentBuf; break;
-              }
-              renderChatContent();
-            } catch {}
-          }
-        }
-        chatMessages[msgIdx].text = contentBuf || '未获取到回复';
-        chatMessages[msgIdx].reasoning = reasoningBuf || undefined;
-        renderChatContent();
-        await sessionStore.saveMessages(chatMessages, config.modelId, config.providerId);
-      } catch (e) {
-        if (e instanceof DOMException && e.name === 'AbortError') {
-          chatMessages[chatMessages.length - 1].text = '已取消';
-        } else {
-          chatMessages.push({ role: 'ai', text: '请求失败: ' + (e instanceof Error ? e.message : '未知错误') });
-        }
-      }
-      setSending(false);
-      renderChatContent();
+      await doSend(text, chatMessages, base, abortCtrl.signal,
+        () => {},
+        _renderChat,
+        (msg) => { chatMessages.push({ role: 'ai', text: msg }); _renderChat(); },
+      );
+      abortCtrl = null;
+      sendBtn!.classList.remove('sending');
+      _renderChat();
     }
 
-    sendBtn.addEventListener('click', () => doSend());
+    sendBtn.addEventListener('click', () => handleSend());
   }
  }
 

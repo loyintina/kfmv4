@@ -9,6 +9,9 @@
  *   - 代码 token 着色（CSS-only 关键字/字符串/注释）
  */
 
+/** marked.parse() 统一配置 — 全项目共享，改一处全局同步 */
+export const MARKED_OPTS = { gfm: true, breaks: true } as const;
+
 import { type MathData, preprocessMath } from './math-diagram.js';
 
 /** Obsidian callout 预处理：> [!type] ... → 样式化 div */

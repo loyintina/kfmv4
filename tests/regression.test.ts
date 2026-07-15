@@ -27,6 +27,8 @@ import './gesture-registry.test.js';
 import './cards.test.js';
 import './text-layout.test.js';
 import './engine.test.js';
+import './orb-state.test.js';
+import './floating-state.test.js';
 
 function seedState(files: Record<string, any>) {
   KFMState.files = {};

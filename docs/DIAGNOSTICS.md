@@ -539,7 +539,7 @@ for (const child of item.contentEl.querySelectorAll('*')) {
 ### 自动化测试
 
 ```bash
-npm test   # 191 个测试，覆盖 23 个模块
+npm test   # 214 个测试，覆盖 23 个模块
 ```
 
 ### 手动回归检查清单

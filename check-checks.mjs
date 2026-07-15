@@ -43,16 +43,27 @@ const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf-8'));
 const checkScript = pkg.scripts.check || '';
 const buildScript = pkg.scripts.build || '';
 
+// 如果 build 命令委托给 build.mjs，检查 build.mjs 内容而非 npm script 字符串
+const buildDelegatesToMjs = buildScript.includes('build.mjs');
+let buildMjsContent = '';
+if (buildDelegatesToMjs) {
+  const buildMjsPath2 = join(ROOT, 'build.mjs');
+  if (existsSync(buildMjsPath2)) {
+    buildMjsContent = readFileSync(buildMjsPath2, 'utf-8');
+  }
+}
+
 for (const script of checkScripts) {
-  // 在 npm script 中用脚本名或去掉后缀的名字引用
   const inCheck = checkScript.includes(script) || checkScript.includes(script.replace('.mjs', ''));
-  const inBuild = buildScript.includes(script) || buildScript.includes(script.replace('.mjs', ''));
+  const inBuild = buildDelegatesToMjs
+    ? buildMjsContent.includes(script)
+    : buildScript.includes(script) || buildScript.includes(script.replace('.mjs', ''));
 
   if (!inCheck) {
     error(`${script} 未在 package.json "check" 命令中找到。请添加。`);
   }
   if (!inBuild) {
-    error(`${script} 未在 package.json "build" 命令中找到。所有检查脚本必须在构建时也运行。`);
+    error(`${script} 未在构建管线中找到（${buildDelegatesToMjs ? 'build.mjs' : 'package.json "build"'}）。所有检查脚本必须在构建时也运行。`);
   }
 }
 

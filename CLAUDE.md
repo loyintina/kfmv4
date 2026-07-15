@@ -9,7 +9,7 @@
 > **改代码前先读** `docs/KFM_V4_INVARIANTS.md`（修改约束协议）。
 > **日常干活翻** `docs/HANDBOOK.md`（架构+调试+待办+测试）。
 > **规划设计时参考** `docs/design/VISION_AND_ROADMAP.md`（远景）。
-> **做浮卡相关改动先读** `docs/archive/design/CARD_SYSTEM_UNIFICATION_SPEC.md`（已归档：统一化方案失败，当前为双模块架构）。
+> **做浮卡相关改动先读** `docs/archive/design/CARD_SYSTEM_UNIFICATION_SPEC.md`（已归档：统一化方案失败，当前为 card-registry 数据层 + card-stack/floating-card UI 层）。
 > **加新卡片前先读** `docs/development/CARD_DEV_GUIDE.md`（卡片插件开发指南）。
 > **UI Registry 相关**已归档到 `docs/archive/design/`。
 > **引擎层改动先读** `docs/archive/design/ENGINE_ARCHITECTURE.md`（v2 管线 + text-layout 排版引擎架构）。
@@ -29,16 +29,15 @@
 ## 构建与运行
 
 ```bash
-npm run dev      # 重编客户端 SCSS+bundle + 启动服务端（日常开发用这个）
-npm run bundle   # 仅重编客户端（改 src/client/ 后，如果 dev 已在跑）
-npm run check    # sass + 13 个 check-*.mjs + tsc --noEmit（必须零错误通过）
-npm run build    # check 通过后 esbuild 打包（提交前跑）
+npm run dev      # 全量检查 + 构建 client+server + 启动（唯一开发入口）
+npm run bundle   # 仅重编客户端 SCSS+bundle（dev 已跑时热更新用）
+npm run check    # sass + 15 个 check-*.mjs + tsc --noEmit（零错误，不产出构建物）
+npm run build    # check 全过 → esbuild client+server（同 dev 前半段）
 npm run start    # 启动生产构建 http://localhost:8021
-npm run test     # 191 个回归测试
+npm run test     # 214 个回归测试
 ```
 
-> `npm run dev` 会自动先跑 `bundle`（SCSS + esbuild）再启服务端，改客户端代码刷新浏览器即可生效，无需手动重建。
-> 改服务端代码需重启 dev。
+> `npm run dev` = `build.mjs`（全部 15 项检查 + SCSS + esbuild client+server）→ `start`。一步到位，不过不启动。改客户端代码刷新浏览器即可，改服务端代码需重启 dev。
 
 ## 文档体系
 
@@ -80,18 +79,26 @@ docs/
 ## 完整性校验
 
 ```bash
-npm run check   # sass + 13 个 check-*.mjs + tsc --noEmit，零错误
-npm run test    # 191 个回归测试，覆盖 23 个模块
+npm run check   # sass + 15 个 check-*.mjs + tsc --noEmit，零错误
+npm run build   # check 全过 → esbuild client+server → smoke test
+npm run test    # 214 个回归测试，覆盖 25 个模块
 ```
-## 当前架构
 
-光球（orb.ts）和浮卡（floating-card.ts）是两个独立模块，各管各的：
-- `orb.ts`：光球 + AI 对话面板，从 HTML 读取 `#lightOrb` 元素
-- `floating-card.ts`：浮卡发射/拖拽/缩放/编辑，仅服务 02 日志卡
+卡片系统是三层结构：
+```
+cards/plugins/*.card.ts          ← 卡片定义（registerCardType 自注册）
+        ↓
+card-registry.ts                 ← 统一注册表（类型 + 实例 + 生命周期）
+   ↙              ↘
+card-stack.ts          floating-card.ts
+（堆叠抽屉 UI）        （浮卡拖拽 UI）
+```
 
-两模块通过交互共享层（`interaction-constants.ts` + `drag-handler.ts`）共享常量和类型。统一化方案已放弃（两次回退），详见 `docs/archive/design/CARD_SYSTEM_UNIFICATION_SPEC.md`。浮卡拖拽完全通过 GestureRegistry 统一调度，无直接 addEventListener 逃逸。
+- **card-registry.ts**: 数据层。所有卡片类型在此注册，card-stack 和 floating-card 通过 `getAllCardTypes()` 动态读取。
+- **card-stack.ts**: UI 层。右侧边缘左滑唤出的堆叠抽屉，按注册顺序展示 `kind:'tool'` 卡片。
+- **floating-card.ts**: UI 层。单张卡片浮卡发射/拖拽/缩放/全屏，已拆为 floating-card + floating-shared + floating-fullscreen。
 
-*完整模块清单见 HANDBOOK §七「客户端模块完整审计表」（45 个源文件，含 renderers/ 渲染器）。
+orb.ts 和 floating-card.ts 通过交互共享层共享常量。统一化方案已放弃（两次回退），详见 `docs/decisions/adr-001-orb-floating-card-independent.md`。
 
 ## 注意事项
 - **Canvas 初始化**: `clientWidth=0`，需在 rAF 回调里 `rebuildTree()`

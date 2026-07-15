@@ -1,7 +1,6 @@
 import { build } from 'esbuild';
 import { execSync } from 'child_process';
-import { statSync, readdirSync } from 'fs';
-import { join, extname } from 'path';
+import { statSync, readdirSync, readFileSync } from 'fs';
 
 // ========== 构建后校验 ==========
 
@@ -33,6 +32,11 @@ function checkFreshness(outfile, label) {
 
 // ========== 构建 ==========
 
+// 全量代码质量检查（对齐 npm run check，零错误通过才构建）
+execSync('node check-versions.mjs', { stdio: 'inherit' });
+execSync('node check-checks.mjs', { stdio: 'inherit' });
+execSync('node check-doc-coverage.mjs', { stdio: 'inherit' });
+
 // SCSS 编译（语法校验 + 输出 .css）
 try {
   execSync('npx sass --no-source-map public/css/:public/css/', { stdio: 'inherit' });
@@ -41,14 +45,17 @@ try {
   process.exit(1);
 }
 
-// card.meta 类型逃逸检查
+execSync('node check-anim.mjs --check-only', { stdio: 'inherit' });
+execSync('node check-as-any.mjs --check-only', { stdio: 'inherit' });
 execSync('node check-card-meta.mjs', { stdio: 'inherit' });
-console.log('[check-card-meta] OK');
-
-// 卡片注册表完整性校验
+execSync('node check-registry.mjs --check-only', { stdio: 'inherit' });
+execSync('node check-console.mjs', { stdio: 'inherit' });
+execSync('node check-docs.mjs', { stdio: 'inherit' });
+execSync('node check-linecount.mjs', { stdio: 'inherit' });
+execSync('node check-consistency.mjs', { stdio: 'inherit' });
 execSync('node check-cards.mjs', { stdio: 'inherit' });
-console.log('[check-cards] OK');
-console.log('[sass] OK');
+execSync('node check-handbook-sync.mjs', { stdio: 'inherit' });
+execSync('npx tsc --noEmit', { stdio: 'inherit' });
 
 // 服务端
 await build({
@@ -74,5 +81,10 @@ await build({
 // 校验产物新鲜度
 checkFreshness('dist/server/index.js', 'server');
 checkFreshness('public/bundle.js', 'client');
+
+// 冒烟：验证 HTML 引用了 bundle.js 且 bundle.js 非空
+if (!html2.includes('bundle.js')) { console.error('[smoke] ❌ public/index.html 未引用 bundle.js'); process.exit(1); }
+if (statSync('public/bundle.js').size < 100) { console.error('[smoke] ❌ public/bundle.js 异常小（可能构建失败）'); process.exit(1); }
+console.log('[smoke] ✅ index.html 引用 bundle.js, 大小 ' + statSync('public/bundle.js').size + ' bytes');
 
 console.log('Build OK');
