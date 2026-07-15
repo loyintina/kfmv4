@@ -9,7 +9,7 @@ created_at: 2026-06-29
 >
 > 关联文档：
 > - `docs/KFM_V4_INVARIANTS.md` — 修改代码前的自查清单（预防性）
-> - `docs/PRINCIPLES.md` — 约束全表（一站式查找）
+> - `docs/KFM_V4_INVARIANTS.md` — 约束全表（一站式查找）
 > - `CLAUDE.md` — 项目总入口
 
 ---

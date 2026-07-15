@@ -1,7 +1,7 @@
 ---
 status: superseded
 archived_at: 2026-06-29
-superseded_by: docs/PRINCIPLES.md
+superseded_by: docs/KFM_V4_INVARIANTS.md
 ---
 # KFM v4 原则索引
 

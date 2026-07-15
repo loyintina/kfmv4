@@ -1,6 +1,6 @@
 ---
 title: KFM v4 工作手册
-last_reviewed: 2026-07-15
+last_reviewed: 2026-07-16
 kfm_version: 7.1.0
 status: active
 maintainer: AI agent
@@ -14,7 +14,7 @@ maintainer: AI agent
 > **加新卡片前先读** `docs/development/CARD_DEV_GUIDE.md`（卡片插件开发指南）。
 > 做浮卡统一化时参考 `docs/archive/design/CARD_SYSTEM_UNIFICATION_SPEC.md`（浮卡系统统一化规范）。
 > 本手册记录架构速查、当前状态、待办和审计清单。
-> 诊断与 bug 排查见 `DIAGNOSTICS.md`，全量约束速查见 `PRINCIPLES.md`。
+> 诊断与 bug 排查见 `DIAGNOSTICS.md`，全量约束速查见 `docs/KFM_V4_INVARIANTS.md`。
 >
 > **文档规范**：本文使用 YAML frontmatter（版本 + 最后审核日期）。构建管线
 > 中的 `check-versions.mjs` 会验证版本一致性，`check-doc-coverage.mjs` 会
@@ -330,7 +330,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 
 ## 六、约束与原则
 
-> 全量约束交叉引用见 [`docs/PRINCIPLES.md`](./PRINCIPLES.md)（心法 18 条 + 架构约束 6 条 + 隐性契约 11 条 + 关键约定速查）。
+> 全量约束交叉引用见 [`docs/KFM_V4_INVARIANTS.md`](./KFM_V4_INVARIANTS.md)（心法 18 条 + 架构约束 + 隐性契约 + 关键约定速查）。
 > 修改代码前必读 [`docs/KFM_V4_INVARIANTS.md`](./KFM_V4_INVARIANTS.md)（修改约束协议）。
 > 补充原则（流程建议）见 [`docs/DIAGNOSTICS.md`](./DIAGNOSTICS.md) §四。
 

@@ -215,8 +215,8 @@ function checkNumericClaims() {
 
   // --- 心法条数 ---
   const principlesDoc = readFileSync(join(ROOT, 'docs/KFM_V4_INVARIANTS.md'), 'utf-8');
-  const principlesCount = (principlesDoc.match(/^### \d+\. /gm) || []).length;
-  for (const file of ['docs/PRINCIPLES.md', 'docs/KFM_V4_INVARIANTS.md']) {
+  const principlesCount = (principlesDoc.match(/^#### \d+\. /gm) || []).length;
+  for (const file of ['docs/KFM_V4_INVARIANTS.md']) {
     const content = readFileSync(join(ROOT, file), 'utf-8');
     const claims = content.match(/(\d+)\s*条\s*心法/g) || [];
     for (const claim of claims) {

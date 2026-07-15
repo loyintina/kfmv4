@@ -53,7 +53,6 @@ docs/
 │   └── CARD_DEV_GUIDE.md    # 卡片插件开发指南（加新卡前读）
 ├── KFM_V4_INVARIANTS.md     # 修改约束协议：心法原则+自查清单（改代码前必读）
 ├── DIAGNOSTICS.md           # 诊断手册：隐性契约 + 排查流程 + 根因案例库（遇到 bug 先翻）
-├── PRINCIPLES.md            # 约束全表：心法 / 架构 / 契约一站查找
 ├── design/                  # 设计文档
 │   ├── AI_ARCHITECTURE.md          # AI 架构设计（基于 omp）
 │   ├── VISION_AND_ROADMAP.md        # 远景：核心理念 + 演进路线（方向性，保留）
@@ -75,7 +74,7 @@ docs/
     ├── bugs/                # 已修复 Bug
     └── legacy/              # 旧版本文件
 
-> 接手新对话的推荐阅读顺序：`CLAUDE.md` → `HANDBOOK.md` §2（当前状态）→ `KFM_V4_INVARIANTS.md`（修改规则）→ `docs/development/CARD_DEV_GUIDE.md`（卡片插件开发）→ `DIAGNOSTICS.md` §1-2（隐性契约+诊断流程，遇到 bug 先翻）→ `HANDBOOK.md` §3（待办）→ `HANDBOOK.md` §七（审计问题清单）。全量约束速查见 `PRINCIPLES.md`。引擎层设计见 `docs/archive/design/ENGINE_ARCHITECTURE.md`。卡片工作台设计见 `docs/archive/design/WORKBENCH_SPEC.md`。
+> 接手新对话的推荐阅读顺序：`CLAUDE.md` → `HANDBOOK.md` §2（当前状态）→ `KFM_V4_INVARIANTS.md`（修改规则）→ `docs/development/CARD_DEV_GUIDE.md`（卡片插件开发）→ `DIAGNOSTICS.md` §1-2（隐性契约+诊断流程，遇到 bug 先翻）→ `HANDBOOK.md` §3（待办）→ `HANDBOOK.md` §七（审计问题清单）。全量约束速查见 `docs/KFM_V4_INVARIANTS.md`。引擎层设计见 `docs/archive/design/ENGINE_ARCHITECTURE.md`。卡片工作台设计见 `docs/archive/design/WORKBENCH_SPEC.md`。
 
 ## 完整性校验
 
@@ -111,7 +110,7 @@ orb.ts 和 floating-card.ts 通过交互共享层共享常量。统一化方案�
   原项目根目录下的 `.kfmv4/` 已废弃删除。
 - **Git 推送认证**：项目根目录 `.env` 文件中配置了 `GITHUB_TOKEN` 环境变量（已 `.gitignore` 保护）。执行 `git push` 前先 `source .env` 或将该 token 加入 git credential。该 token 用于 agent 远程推送代码，不可删除。
 - **代码注释约定**：设计决策写在所改动代码文件的头部注释块中，而非独立文档。
-  关键分支处必写"为什么走A不走B"。改到哪个文件注释就更新到哪个文件。详见 `docs/PRINCIPLES.md` 设计注释规约。
+  关键分支处必写"为什么走A不走B"。改到哪个文件注释就更新到哪个文件。详见 `docs/KFM_V4_INVARIANTS.md` §八（设计注释规约）。
 > 更多隐性契约见 `docs/DIAGNOSTICS.md` §一。
 
 > 历史修复记录（v4.0.0 前）已清理。如需追溯：`git log --oneline v4.0.0..HEAD`

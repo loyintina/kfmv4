@@ -10,7 +10,7 @@ status: active
 |----------|---------|
 | `BUG_AUDIT_REGISTRY.md` | `docs/DIAGNOSTICS.md` §一/§三 |
 | `DEBUG_SOP.md` | `docs/DIAGNOSTICS.md` §二 |
-| `PRINCIPLES_INDEX.md` | `docs/PRINCIPLES.md` |
+| `PRINCIPLES_INDEX.md` | `docs/KFM_V4_INVARIANTS.md` |
 | `TESTING.md` | `docs/DIAGNOSTICS.md` 附录 B |
 | `PROJECT_ASSESSMENT.md` | `docs/PROJECT_ASSESSMENT.md` |
 | `AI_OPERATION_PROTOCOL.md` | `docs/archive/design/AI_OPERATION_PROTOCOL.md` |
