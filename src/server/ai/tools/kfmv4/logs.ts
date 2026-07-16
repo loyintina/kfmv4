@@ -5,7 +5,7 @@
  * 通过 WebSocket 获取实时日志
  */
 
-import type { KfmTool, ToolResult } from './types.js';
+import type { KfmTool, ToolResult } from '../types.js';
 
 export const kfmLogsTool: KfmTool = {
   name: 'kfm-logs',
@@ -69,7 +69,7 @@ export const kfmLogsTool: KfmTool = {
 
 /** 从 WebSocket 获取日志内容 */
 async function getLogsFromWebSocket(
-  wsServer: import('../../ws-server.js').WsServer,
+  wsServer: import('../../../ws-server.js').WsServer,
   cardId: string | undefined,
   lines: number
 ): Promise<string[]> {

@@ -5,7 +5,7 @@
  * 包装现有的 WebSocket snapshot 功能
  */
 
-import type { KfmTool, ToolResult } from './types.js';
+import type { KfmTool, ToolResult } from '../types.js';
 
 export const kfmSnapshotTool: KfmTool = {
   name: 'kfm-snapshot',
