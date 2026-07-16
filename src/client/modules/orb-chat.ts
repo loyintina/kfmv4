@@ -64,7 +64,14 @@ export function renderChatContent(state: ChatState): void {
     const label = isUser ? '你' : '蔚然';
     const labelColor = isUser ? theme.aiChat.bubbleLabelSelf : theme.aiChat.bubbleLabelAI;
     const boxShadow = isUser ? theme.aiChat.bubbleSelfShadow : theme.aiChat.bubbleAIShadow;
-    let bubbleHtml = `<div style="font-size:10px;color:${labelColor};margin-bottom:2px;font-weight:600">${label}</div>`;
+    let bubbleHtml = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+      <span style="font-size:10px;color:${labelColor};font-weight:600">${label}</span>
+      <span class="orb-msg-actions" data-idx="${idx}" style="display:flex;gap:2px">
+        <button class="orb-act-btn" data-action="copy" style="padding:0 2px;border:none;background:transparent;color:rgba(0,212,255,0.25);font-size:8px;cursor:pointer;line-height:1;font-family:inherit" onmouseenter="this.style.color='rgba(0,212,255,0.85)'" onmouseleave="this.style.color='rgba(0,212,255,0.25)'">复制</button>
+        <button class="orb-act-btn" data-action="edit" style="padding:0 2px;border:none;background:transparent;color:rgba(0,212,255,0.25);font-size:8px;cursor:pointer;line-height:1;font-family:inherit" onmouseenter="this.style.color='rgba(0,212,255,0.85)'" onmouseleave="this.style.color='rgba(0,212,255,0.25)'">编辑</button>
+        <button class="orb-act-btn" data-action="del"  style="padding:0 2px;border:none;background:transparent;color:rgba(255,100,100,0.25);font-size:8px;cursor:pointer;line-height:1;font-family:inherit" onmouseenter="this.style.color='rgba(255,100,100,0.85)'" onmouseleave="this.style.color='rgba(255,100,100,0.25)'">删除</button>
+      </span>
+    </div>`;
 
     // 思考内容（可折叠）
     if (!isUser && msg.reasoning) {
@@ -91,6 +98,33 @@ export function renderChatContent(state: ChatState): void {
   const scrollTop = contentArea.scrollTop;
   const wasAtBottom = scrollTop + contentArea.clientHeight >= contentArea.scrollHeight - 80;
   contentArea.innerHTML = html;
+  // 消息操作按钮事件绑定
+  contentArea.querySelectorAll('.orb-act-btn').forEach(btn => {
+    btn.addEventListener('pointerdown', (e: Event) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const el = btn as HTMLElement;
+      const actionsEl = el.parentElement!;
+      const idx = parseInt(actionsEl.dataset.idx || '-1', 10);
+      if (idx < 0 || idx >= messages.length) return;
+      const msg = messages[idx];
+      const action = el.dataset.action;
+      if (action === 'copy') {
+        navigator.clipboard?.writeText(msg.text).then(() => {
+          el.textContent = '✓';
+          setTimeout(() => { el.textContent = '复制'; }, 1000);
+        }).catch(() => {});
+      } else if (action === 'edit') {
+        window.dispatchEvent(new CustomEvent('kfm-message-edit', {
+          detail: { message: { role: msg.role, text: msg.text }, sessionId: sessionStore.activeId }
+        }));
+      } else if (action === 'del') {
+        window.dispatchEvent(new CustomEvent('kfm-message-delete', {
+          detail: { message: { role: msg.role, text: msg.text }, sessionId: sessionStore.activeId }
+        }));
+      }
+    });
+  });
   if (wasAtBottom) { contentArea.scrollTop = contentArea.scrollHeight; }
   else { contentArea.scrollTop = scrollTop; }
   // 注入 CSS（仅一次）

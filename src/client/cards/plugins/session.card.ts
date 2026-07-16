@@ -107,6 +107,147 @@ function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+// ====== 消息编辑器（模块级，供 orb 面板通过事件调用） ======
+
+function showMessageEditor(
+  message: { role: string; text: string },
+  onSave: (newText: string) => void,
+  c1: string,
+  c2: string,
+): void {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding-top:50px;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px)';
+
+  const dialog = document.createElement('div');
+  dialog.style.cssText = `width:calc(94vw - 20px);max-width:460px;border-radius:12px;padding:0;background:linear-gradient(rgba(20,16,32,0.98),rgba(20,16,32,0.98)) padding-box,linear-gradient(135deg,${c1} 30%,${c2} 70%) border-box;border:1px solid transparent;border-left-width:3px;display:flex;flex-direction:column;max-height:85vh;min-height:50vh`;
+
+  // 上行：复制 + 删除
+  const topBar = document.createElement('div');
+  topBar.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0`;
+
+  const topLabel = document.createElement('span');
+  topLabel.style.cssText = `font-size:11px;font-weight:600;color:rgba(255,255,255,0.75)`;
+  topLabel.textContent = message.role === 'user' ? '你的消息' : 'AI 回复';
+
+  const topActions = document.createElement('div');
+  topActions.style.cssText = 'display:flex;gap:6px';
+
+  const copyBtn = document.createElement('button');
+  copyBtn.textContent = '复制';
+  copyBtn.style.cssText = `padding:3px 10px;border-radius:4px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid ${c1}40;color:${c1};background:transparent`;
+  copyBtn.onclick = () => {
+    navigator.clipboard?.writeText(message.text).then(() => {
+      copyBtn.textContent = '✓ 已复制';
+      setTimeout(() => { copyBtn.textContent = '复制'; }, 1500);
+    }).catch(() => {});
+  };
+
+  const delBtn = document.createElement('button');
+  delBtn.textContent = '删除';
+  delBtn.style.cssText = `padding:3px 10px;border-radius:4px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid rgba(255,100,100,0.4);color:rgba(255,100,100,0.8);background:transparent`;
+  delBtn.onclick = async () => {
+    const confirmed = await showConfirm({
+      title: '删除消息',
+      message: '确定删除这条消息？',
+      accent: c1,
+      accent2: c2,
+      confirmText: '删除',
+      cancelText: '取消',
+    });
+    if (confirmed) {
+      onSave('');
+      overlay.remove();
+    }
+  };
+
+  topActions.appendChild(copyBtn);
+  topActions.appendChild(delBtn);
+  topBar.appendChild(topLabel);
+  topBar.appendChild(topActions);
+
+  // 编辑区
+  const ta = document.createElement('textarea');
+  ta.style.cssText = 'flex:1;min-height:180px;border:none;padding:12px 14px;font-size:var(--card-font-size,13px);color:rgba(255,255,255,0.85);background:transparent;resize:none;font-family:inherit;line-height:1.6;outline:none';
+  ta.value = message.text;
+
+  // 底栏：取消 + 保存
+  const bottomBar = document.createElement('div');
+  bottomBar.style.cssText = 'display:flex;gap:8px;padding:10px 14px;border-top:1px solid rgba(255,255,255,0.06);flex-shrink:0';
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.textContent = '取消';
+  cancelBtn.style.cssText = `flex:1;padding:0.5em 0;border-radius:6px;font-size:var(--card-font-size,12px);font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.6);background:transparent`;
+  cancelBtn.onclick = () => overlay.remove();
+
+  const saveBtn = document.createElement('button');
+  saveBtn.textContent = '保存';
+  saveBtn.style.cssText = `flex:1;padding:0.5em 0;border-radius:6px;font-size:var(--card-font-size,12px);font-weight:600;cursor:pointer;border:1px solid ${c1}40;color:${c1};background:transparent`;
+  saveBtn.onclick = () => {
+    onSave(ta.value);
+    overlay.remove();
+  };
+
+  bottomBar.appendChild(cancelBtn);
+  bottomBar.appendChild(saveBtn);
+
+  dialog.appendChild(topBar);
+  dialog.appendChild(ta);
+  dialog.appendChild(bottomBar);
+  overlay.appendChild(dialog);
+
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  document.body.appendChild(overlay);
+  setTimeout(() => ta.focus(), 100);
+}
+
+// orb 面板 → 会话卡的消息编辑/删除事件
+window.addEventListener('kfm-message-edit', ((e: CustomEvent) => {
+  const { message, sessionId } = e.detail || {};
+  if (!message || !sessionId) return;
+  showMessageEditor(message, async (newText) => {
+    const content = await readFile(`${SESSIONS_PATH}/${sessionId}.json`);
+    if (!content) return;
+    const session: Session = JSON.parse(content);
+    const idx = session.messages.findIndex(m => m.role === message.role && m.text === message.text);
+    if (idx >= 0) {
+      if (!newText.trim()) {
+        session.messages.splice(idx, 1);
+      } else {
+        session.messages[idx].text = newText;
+      }
+      session.updatedAt = new Date().toISOString();
+      await writeFile(`${SESSIONS_PATH}/${sessionId}.json`, JSON.stringify(session, null, 2));
+      window.dispatchEvent(new CustomEvent('kfm-session-change', { detail: { sessionId } }));
+    }
+  }, '#00d4ff', '#7c3aed');
+}) as EventListener);
+
+window.addEventListener('kfm-message-delete', ((e: CustomEvent) => {
+  const { message, sessionId } = e.detail || {};
+  if (!message || !sessionId) return;
+  (async () => {
+    const confirmed = await showConfirm({
+      title: '删除消息',
+      message: '确定删除这条消息？',
+      accent: '#00d4ff',
+      accent2: '#7c3aed',
+      confirmText: '删除',
+      cancelText: '取消',
+    });
+    if (!confirmed) return;
+    const content = await readFile(`${SESSIONS_PATH}/${sessionId}.json`);
+    if (!content) return;
+    const session: Session = JSON.parse(content);
+    const idx = session.messages.findIndex(m => m.role === message.role && m.text === message.text);
+    if (idx >= 0) {
+      session.messages.splice(idx, 1);
+      session.updatedAt = new Date().toISOString();
+      await writeFile(`${SESSIONS_PATH}/${sessionId}.json`, JSON.stringify(session, null, 2));
+      window.dispatchEvent(new CustomEvent('kfm-session-change', { detail: { sessionId } }));
+    }
+  })();
+}) as EventListener);
+
 // ====== 卡片处理器 ======
 
 function createSessionHandler(meta: Record<string, unknown>): CardContentHandler {
@@ -118,96 +259,6 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
 
   function getActiveSession(): Session | null {
     return sessions.find(s => s.id === activeSessionId) || null;
-  }
-
-  // ---- 编辑弹窗 ----
-  function showMessageEditor(
-    message: { role: string; text: string },
-    onSave: (newText: string) => void,
-  ): void {
-    const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding-top:50px;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px)';
-
-    const dialog = document.createElement('div');
-    dialog.style.cssText = `width:calc(94vw - 20px);max-width:460px;border-radius:12px;padding:0;background:linear-gradient(rgba(20,16,32,0.98),rgba(20,16,32,0.98)) padding-box,linear-gradient(135deg,${_c1} 30%,${_c2} 70%) border-box;border:1px solid transparent;border-left-width:3px;display:flex;flex-direction:column;max-height:85vh;min-height:50vh`;
-
-    // 上行：复制 + 删除
-    const topBar = document.createElement('div');
-    topBar.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0`;
-
-    const topLabel = document.createElement('span');
-    topLabel.style.cssText = `font-size:11px;font-weight:600;color:rgba(255,255,255,0.75)`;
-    topLabel.textContent = message.role === 'user' ? '你的消息' : 'AI 回复';
-
-    const topActions = document.createElement('div');
-    topActions.style.cssText = 'display:flex;gap:6px';
-
-    const copyBtn = document.createElement('button');
-    copyBtn.textContent = '复制';
-    copyBtn.style.cssText = `padding:3px 10px;border-radius:4px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid ${_c1}40;color:${_c1};background:transparent`;
-    copyBtn.onclick = () => {
-      navigator.clipboard?.writeText(message.text).then(() => {
-        copyBtn.textContent = '✓ 已复制';
-        setTimeout(() => { copyBtn.textContent = '复制'; }, 1500);
-      }).catch(() => {});
-    };
-
-    const delBtn = document.createElement('button');
-    delBtn.textContent = '删除';
-    delBtn.style.cssText = `padding:3px 10px;border-radius:4px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid rgba(255,100,100,0.4);color:rgba(255,100,100,0.8);background:transparent`;
-    delBtn.onclick = async () => {
-      const confirmed = await showConfirm({
-        title: '删除消息',
-        message: '确定删除这条消息？',
-        accent: _c1,
-        accent2: _c2,
-        confirmText: '删除',
-        cancelText: '取消',
-      });
-      if (confirmed) {
-        onSave('');
-        overlay.remove();
-      }
-    };
-
-    topActions.appendChild(copyBtn);
-    topActions.appendChild(delBtn);
-    topBar.appendChild(topLabel);
-    topBar.appendChild(topActions);
-
-    // 编辑区
-    const ta = document.createElement('textarea');
-    ta.style.cssText = 'flex:1;min-height:180px;border:none;padding:12px 14px;font-size:var(--card-font-size,13px);color:rgba(255,255,255,0.85);background:transparent;resize:none;font-family:inherit;line-height:1.6;outline:none';
-    ta.value = message.text;
-
-    // 底栏：取消 + 保存
-    const bottomBar = document.createElement('div');
-    bottomBar.style.cssText = 'display:flex;gap:8px;padding:10px 14px;border-top:1px solid rgba(255,255,255,0.06);flex-shrink:0';
-
-    const cancelBtn = document.createElement('button');
-    cancelBtn.textContent = '取消';
-    cancelBtn.style.cssText = `flex:1;padding:0.5em 0;border-radius:6px;font-size:var(--card-font-size,12px);font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.6);background:transparent`;
-    cancelBtn.onclick = () => overlay.remove();
-
-    const saveBtn = document.createElement('button');
-    saveBtn.textContent = '保存';
-    saveBtn.style.cssText = `flex:1;padding:0.5em 0;border-radius:6px;font-size:var(--card-font-size,12px);font-weight:600;cursor:pointer;border:1px solid ${_c1}40;color:${_c1};background:transparent`;
-    saveBtn.onclick = () => {
-      onSave(ta.value);
-      overlay.remove();
-    };
-
-    bottomBar.appendChild(cancelBtn);
-    bottomBar.appendChild(saveBtn);
-
-    dialog.appendChild(topBar);
-    dialog.appendChild(ta);
-    dialog.appendChild(bottomBar);
-    overlay.appendChild(dialog);
-
-    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
-    document.body.appendChild(overlay);
-    setTimeout(() => ta.focus(), 100);
   }
 
   // ---- 会话列表渲染 ----
@@ -341,7 +392,7 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
             await saveSession(session);
             renderAll();
           }
-        });
+        }, _c1, _c2);
       };
 
       container.appendChild(bubble);
