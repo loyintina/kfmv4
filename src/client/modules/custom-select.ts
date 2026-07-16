@@ -158,6 +158,7 @@ export function createCustomSelect(options: CustomSelectOptions): CustomSelect {
         closePanel();
       };
 
+      panel.appendChild(el);
     });
 
     // 底部额外元素（如"新建"按钮）
