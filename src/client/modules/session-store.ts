@@ -278,40 +278,23 @@ export const sessionStore = {
 
   // ========== 内部方法 ==========
 
-  /** 调用 AI 生成会话标题 */
+  /** 用第一条用户消息的前 18 字生成会话标题 */
   async _generateTitle(session: Session): Promise<void> {
-    try {
-      const userMsg = session.messages.find(m => m.role === 'user')?.text || '';
-      const aiMsg = session.messages.find(m => m.role === 'ai')?.text || '';
-
-      const res = await fetch(this._apiBase + 'ai/generate-title', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userMessage: userMsg,
-          aiResponse: aiMsg,
-          model: session.modelId,
-          provider: session.providerId,
-        }),
-      });
-      const data = await res.json();
-
-      if (data.title) {
-        session.title = data.title;
-        await fetch(this._apiBase + 'files/write', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            path: `.kfmv4/sessions/${this.activeId}.json`,
-            content: JSON.stringify(session, null, 2),
-          }),
-        });
-        window.dispatchEvent(
-          new CustomEvent('kfm-session-change', { detail: { sessionId: this.activeId } }),
-        );
-      }
-    } catch (e) {
-      log('生成标题失败: ' + (e instanceof Error ? e.message : 'unknown'));
-    }
+    const userMsg = session.messages.find(m => m.role === 'user')?.text || '';
+    const cleaned = userMsg.trim();
+    if (!cleaned) return;
+    const MAX = 18;
+    session.title = cleaned.length <= MAX ? cleaned : cleaned.slice(0, MAX) + '...';
+    await fetch(this._apiBase + 'files/write', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        path: `.kfmv4/sessions/${this.activeId}.json`,
+        content: JSON.stringify(session, null, 2),
+      }),
+    });
+    window.dispatchEvent(
+      new CustomEvent('kfm-session-change', { detail: { sessionId: this.activeId } }),
+    );
   },
 };
