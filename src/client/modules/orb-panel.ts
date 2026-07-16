@@ -120,16 +120,19 @@ export function buildPanelContent(cfg: PanelConfig): void {
   // --- Session 下拉 ---
   const sessionContainer = document.getElementById('orb-session-select-container');
   if (sessionContainer) {
-    const sessionSelect = createCustomSelect({
+    // 新建会话的 + 按钮
+    var newBtn = document.createElement('div');
+    newBtn.textContent = '+ 新建会话';
+    newBtn.style.cssText = 'padding:6px 8px;border-radius:4px;font-size:var(--card-font-size,11px);cursor:pointer;text-align:center;color:rgba(0,212,255,0.85);border-top:1px solid rgba(255,255,255,0.06);margin-top:2px';
+    newBtn.onmouseenter = function() { newBtn.style.background = 'rgba(0,212,255,0.1)'; };
+    newBtn.onmouseleave = function() { newBtn.style.background = ''; };
+    newBtn.onclick = async function(ev) { ev.stopPropagation(); await sessionStore.create(); sessionSelect.updateItems(sessionStore.list.map(function(s) { return { label: s.title, value: s.id }; }), sessionStore.activeId || ''); sessionSelect.panel.style.display = 'none'; };
+
+    var sessionSelect = createCustomSelect({
       accent: c1, accent2: c2, placeholder: '选择会话', minWidth: 80, maxWidth: 120,
-      onSelect: (sessionId) => { sessionStore.switchTo(sessionId); },
+      onSelect: function(sessionId) { sessionStore.switchTo(sessionId); },
+      footerElement: newBtn,
     });
-    sessionContainer.appendChild(sessionSelect.element);
-    sessionSelect.updateItems(
-      sessionStore.list.map(s => ({ label: s.title, value: s.id })),
-      sessionStore.activeId || sessionStore.list[0]?.id || ''
-    );
-    setOrbSessionSelect(sessionSelect);
   }
 
   // --- Provider / Model 下拉 ---

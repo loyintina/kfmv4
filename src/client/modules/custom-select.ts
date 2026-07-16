@@ -30,12 +30,14 @@ export interface SelectItem {
 
 export interface CustomSelectOptions {
   accent: string;
-  accent2?: string;  // 第二个颜色，用于渐变
+  accent2?: string;
   placeholder?: string;
   onSelect: (value: string) => void;
   minWidth?: number;
   maxWidth?: number;
-  direction?: 'up' | 'down';  // 下拉方向，默认 'down'
+  direction?: 'up' | 'down';
+  /** 下拉面板底部的额外元素（如"新建"按钮） */
+  footerElement?: HTMLElement;
 }
 
 export interface CustomSelect {
@@ -58,8 +60,8 @@ export function createCustomSelect(options: CustomSelectOptions): CustomSelect {
     minWidth = 80,
     maxWidth = 200,
     direction = 'down',
+    footerElement,
   } = options;
-
   let items: SelectItem[] = [];
   let selectedValue = '';
   let panelOpen = false;
@@ -155,8 +157,13 @@ export function createCustomSelect(options: CustomSelectOptions): CustomSelect {
         onSelect(item.value);
         closePanel();
       };
-      panel.appendChild(el);
+
     });
+
+    // 底部额外元素（如"新建"按钮）
+    if (footerElement) {
+      panel.appendChild(footerElement);
+    }
 
     // 定位面板（根据方向）
     const r = trigger.getBoundingClientRect();
