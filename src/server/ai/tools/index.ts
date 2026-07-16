@@ -3,7 +3,7 @@
  *
  * 注册所有可用的 AI 工具：
  * - kfmv4 专用工具（snapshot, logs, exec）
- * - omp 工具（bash, grep, glob, todo, ask, checkpoint, rewind）
+ * - omp 工具（bash, read, write, edit, grep, glob, todo, eval, ask, checkpoint, rewind, browser, debug, github, web_search）
  */
 
 import type { KfmTool, ToolContext, ToolResult, ToolUpdate, ContentBlock } from './types.js';
@@ -13,14 +13,26 @@ import { kfmSnapshotTool } from './kfmv4/snapshot.js';
 import { kfmLogsTool } from './kfmv4/logs.js';
 import { kfmExecTool } from './kfmv4/exec.js';
 
-// omp 工具
+// omp 核心文件工具
 import { ompBashTool } from './omp/bash.js';
+import { ompReadTool } from './omp/read.js';
+import { ompWriteTool } from './omp/write.js';
+import { ompEditTool } from './omp/edit.js';
 import { ompGrepTool } from './omp/grep.js';
 import { ompGlobTool } from './omp/glob.js';
+
+// omp 扩展工具
+import { ompEvalTool } from './omp/eval.js';
 import { ompTodoTool } from './omp/todo.js';
 import { ompAskTool } from './omp/ask.js';
 import { ompCheckpointTool } from './omp/checkpoint.js';
 import { ompRewindTool } from './omp/rewind.js';
+
+// omp 待配置工具
+import { ompBrowserTool } from './omp/browser.js';
+import { ompDebugTool } from './omp/debug.js';
+import { ompGithubTool } from './omp/github.js';
+import { ompWebSearchTool } from './omp/web-search.js';
 
 const tools = new Map<string, KfmTool>();
 
@@ -33,14 +45,26 @@ registerTool(kfmSnapshotTool);
 registerTool(kfmLogsTool);
 registerTool(kfmExecTool);
 
-// omp
+// omp 核心文件
 registerTool(ompBashTool);
+registerTool(ompReadTool);
+registerTool(ompWriteTool);
+registerTool(ompEditTool);
 registerTool(ompGrepTool);
 registerTool(ompGlobTool);
+
+// omp 扩展
+registerTool(ompEvalTool);
 registerTool(ompTodoTool);
 registerTool(ompAskTool);
 registerTool(ompCheckpointTool);
 registerTool(ompRewindTool);
+
+// omp 待配置
+registerTool(ompBrowserTool);
+registerTool(ompDebugTool);
+registerTool(ompGithubTool);
+registerTool(ompWebSearchTool);
 
 export function getAllTools(): KfmTool[] {
   return Array.from(tools.values());
