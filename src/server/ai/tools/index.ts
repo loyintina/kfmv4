@@ -38,11 +38,13 @@ export function getAllTools(): KfmTool[] {
 export function getToolDefinitions(): Array<{
   name: string;
   description: string;
+  category: string;
   parameters: Record<string, unknown>;
 }> {
   return getAllTools().map(tool => ({
     name: tool.name,
     description: tool.description,
+    category: tool.category,
     parameters: tool.parameters,
   }));
 }

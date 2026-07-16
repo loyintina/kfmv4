@@ -10,6 +10,7 @@ import type { KfmTool, ToolResult } from './types.js';
 export const kfmSnapshotTool: KfmTool = {
   name: 'kfm-snapshot',
   description: '获取 kfmv4 页面完整状态（所有卡片、元素、能力）。用于了解当前页面布局和各卡片状态。',
+  category: 'kfmv4',
   parameters: {
     type: 'object',
     properties: {},

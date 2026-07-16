@@ -1,11 +1,12 @@
 /**
  * kfmv4 AI 路由
  *
- * 提供 SSE 流式对话端点
+ * 提供 SSE 流式对话端点与工具列表端点
  */
 
 import { Router } from 'express';
 import { streamChat } from './chat.js';
+import { getToolDefinitions } from './tools/index.js';
 import type { WsServer } from '../ws-server.js';
 
 export function setupAiRoutes(router: Router, wsServer: WsServer) {
@@ -46,6 +47,18 @@ export function setupAiRoutes(router: Router, wsServer: WsServer) {
     }
     
     res.end();
+  });
+
+  /**
+   * GET /api/ai/tools
+   *
+   * 返回所有已注册的 AI 工具（按分类分组）
+   * 响应: { categories: string[], tools: Array<{ name, description, category, parameters }> }
+   */
+  router.get('/ai/tools', (_req, res) => {
+    const tools = getToolDefinitions();
+    const categories = [...new Set(tools.map(t => t.category))];
+    res.json({ categories, tools });
   });
 }
 

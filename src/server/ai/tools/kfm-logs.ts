@@ -10,6 +10,7 @@ import type { KfmTool, ToolResult } from './types.js';
 export const kfmLogsTool: KfmTool = {
   name: 'kfm-logs',
   description: '读取 kfmv4 日志卡的内容。用于查看运行日志、错误信息、调试输出。',
+  category: 'kfmv4',
   parameters: {
     type: 'object',
     properties: {

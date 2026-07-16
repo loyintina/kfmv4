@@ -14,6 +14,7 @@ const execFileAsync = promisify(execFile);
 export const kfmExecTool: KfmTool = {
   name: 'kfm-exec',
   description: '在 kfmv4 项目目录执行命令。用于运行构建检查、测试、git 命令等。',
+  category: 'kfmv4',
   parameters: {
     type: 'object',
     properties: {

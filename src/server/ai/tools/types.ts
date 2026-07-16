@@ -36,6 +36,7 @@ export interface ToolContext {
 export interface KfmTool {
   name: string;
   description: string;
+  category: string;
   parameters: Record<string, unknown>; // JSON Schema
   execute(
     params: Record<string, unknown>,

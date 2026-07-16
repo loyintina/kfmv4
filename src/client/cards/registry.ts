@@ -17,3 +17,4 @@ import './plugins/api.card.js';
 import './plugins/session.card.js';
 import './plugins/config.card.js';
 import './plugins/role.card.js';
+import './plugins/tools.card.js';
