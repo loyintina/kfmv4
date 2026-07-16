@@ -133,6 +133,12 @@ export function buildPanelContent(cfg: PanelConfig): void {
       onSelect: function(sessionId) { sessionStore.switchTo(sessionId); },
       footerElement: newBtn,
     });
+    sessionContainer.appendChild(sessionSelect.element);
+    sessionSelect.updateItems(
+      sessionStore.list.map(function(s) { return { label: s.title, value: s.id }; }),
+      sessionStore.activeId || sessionStore.list[0]?.id || ''
+    );
+    setOrbSessionSelect(sessionSelect);
   }
 
   // --- Provider / Model 下拉 ---
