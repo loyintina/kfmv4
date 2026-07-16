@@ -3,13 +3,24 @@
  *
  * 注册所有可用的 AI 工具：
  * - kfmv4 专用工具（snapshot, logs, exec）
+ * - omp 工具（bash, grep, glob, todo, ask, checkpoint, rewind）
  */
 
 import type { KfmTool, ToolContext, ToolResult, ToolUpdate, ContentBlock } from './types.js';
 
+// kfmv4 专用工具
 import { kfmSnapshotTool } from './kfmv4/snapshot.js';
 import { kfmLogsTool } from './kfmv4/logs.js';
 import { kfmExecTool } from './kfmv4/exec.js';
+
+// omp 工具
+import { ompBashTool } from './omp/bash.js';
+import { ompGrepTool } from './omp/grep.js';
+import { ompGlobTool } from './omp/glob.js';
+import { ompTodoTool } from './omp/todo.js';
+import { ompAskTool } from './omp/ask.js';
+import { ompCheckpointTool } from './omp/checkpoint.js';
+import { ompRewindTool } from './omp/rewind.js';
 
 const tools = new Map<string, KfmTool>();
 
@@ -17,9 +28,19 @@ function registerTool(tool: KfmTool): void {
   tools.set(tool.name, tool);
 }
 
+// kfmv4
 registerTool(kfmSnapshotTool);
 registerTool(kfmLogsTool);
 registerTool(kfmExecTool);
+
+// omp
+registerTool(ompBashTool);
+registerTool(ompGrepTool);
+registerTool(ompGlobTool);
+registerTool(ompTodoTool);
+registerTool(ompAskTool);
+registerTool(ompCheckpointTool);
+registerTool(ompRewindTool);
 
 export function getAllTools(): KfmTool[] {
   return Array.from(tools.values());

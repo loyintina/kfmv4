@@ -1,93 +1,39 @@
 /**
- * kfm-exec 工具
+ * kfmv4/exec.ts — 命令执行工具
  *
- * 在 kfmv4 项目目录执行命令
- * 使用 omp 的 bash 执行器（通过 Bun 子进程）
+ * 通过 pi-natives executeShell 直调 Rust 执行引擎，无需 Bun 子进程。
  */
-
-import { execFile } from 'child_process';
-import { promisify } from 'util';
 import type { KfmTool, ToolResult } from '../types.js';
-
-const execFileAsync = promisify(execFile);
+import { executeShell } from '../omp/native.js';
 
 export const kfmExecTool: KfmTool = {
   name: 'kfm-exec',
-  description: '在 kfmv4 项目目录执行命令。用于运行构建检查、测试、git 命令等。',
+  description: '在项目目录执行命令。用于运行构建检查、测试、git 等。支持超时。',
   category: 'kfmv4',
   parameters: {
     type: 'object',
     properties: {
-      command: {
-        type: 'string',
-        description: '要执行的命令',
-      },
-      timeout: {
-        type: 'number',
-        description: '超时秒数，默认 30，最大 300',
-      },
-      cwd: {
-        type: 'string',
-        description: '工作目录，默认 /root/kfmv4',
-      },
+      command: { type: 'string', description: '要执行的命令' },
+      timeout: { type: 'number', description: '超时秒数，默认 30，最大 300' },
+      cwd: { type: 'string', description: '工作目录，默认 /root/kfmv4' },
     },
     required: ['command'],
   },
-
-  async execute(params, ctx, onUpdate): Promise<ToolResult> {
+  async execute(params, ctx): Promise<ToolResult> {
     const command = params.command as string;
-    const timeout = Math.min(Math.max(1, (params.timeout as number) || 30), 300);
-    const cwd = (params.cwd as string) || '/root/kfmv4';
-
-    if (!command) {
-      return {
-        content: [{ type: 'text', text: '缺少 command 参数' }],
-        isError: true,
-      };
-    }
-
+    const timeoutSec = Math.min(Math.max(1, (params.timeout as number) || 30), 300);
+    const cwd = (params.cwd as string) || ctx.cwd;
+    if (!command) return { content: [{ type: 'text', text: '缺少 command 参数' }], isError: true };
     try {
-      // 使用 Bun 子进程执行 omp 的 bash 工具
-      const wrapperPath = new URL('../../kfm-exec-wrapper.ts', import.meta.url).pathname;
-      const { stdout, stderr } = await execFileAsync('/root/.npm-global/bin/bun', [
-        'run',
-        wrapperPath,
-        command,
-        cwd,
-        timeout.toString(),
-      ], {
-        timeout: (timeout + 5) * 1000, // 额外 5 秒超时
-        maxBuffer: 10 * 1024 * 1024, // 10MB
-      });
-
-      if (stderr) {
-        return {
-          content: [{ type: 'text', text: `错误: ${stderr}` }],
-          isError: true,
-        };
-      }
-
-      // 解析 JSON 结果
-      const result = JSON.parse(stdout);
-      
+      const result = await executeShell({ command, cwd, timeoutMs: timeoutSec * 1000 });
+      const exitCode = result.exitCode;
+      const ok = !result.cancelled && !result.timedOut && (exitCode === 0 || exitCode === undefined);
       return {
-        content: [{ type: 'text', text: result.output || '(no output)' }],
-        details: {
-          exitCode: result.exitCode,
-          wallTimeMs: result.totalBytes,
-          truncated: result.truncated,
-          totalLines: result.totalLines,
-        },
-        isError: result.exitCode !== undefined && result.exitCode !== 0,
+        content: [{ type: 'text', text: ok ? '(命令执行成功)' : `(退出码: ${exitCode ?? 'N/A'}, 取消: ${result.cancelled}, 超时: ${result.timedOut})` }],
+        isError: result.cancelled || result.timedOut || (exitCode !== undefined && exitCode !== 0),
       };
-    } catch (error) {
-      return {
-        content: [{
-          type: 'text',
-          text: `命令执行失败: ${error instanceof Error ? error.message : '未知错误'}`,
-        }],
-        isError: true,
-      };
+    } catch (e) {
+      return { content: [{ type: 'text', text: `命令执行失败: ${e instanceof Error ? e.message : '未知错误'}` }], isError: true };
     }
   },
 };
