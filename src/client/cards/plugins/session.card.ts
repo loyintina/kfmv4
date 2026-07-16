@@ -391,6 +391,7 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
             }
             await saveSession(session);
             renderAll();
+            window.dispatchEvent(new CustomEvent('kfm-session-change', { detail: { sessionId: session.id } }));
           }
         }, _c1, _c2);
       };
@@ -553,11 +554,16 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
 
       // 监听外部会话变化
       window.addEventListener('kfm-session-change', ((e: CustomEvent) => {
-        if (e.detail?.sessionId && e.detail.sessionId !== activeSessionId) {
-          activeSessionId = e.detail.sessionId;
+        const sid = e.detail?.sessionId;
+        if (!sid) return;
+        (async () => {
+          sessions = await loadSessions();
+          if (sid !== activeSessionId) {
+            activeSessionId = sid;
+          }
           _sessionSelect?.updateItems(sessions.map(s => ({ label: s.title, value: s.id })), activeSessionId);
           renderAll();
-        }
+        })();
       }) as EventListener);
     },
 
