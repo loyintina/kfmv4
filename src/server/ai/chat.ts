@@ -4,12 +4,37 @@
  * 使用 kfmv4 的 API 卡配置和 proxy 端点实现流式对话
  */
 
-import { readFileSync } from 'fs';
+import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { KFM_DATA_DIR } from '../path-utils.js';
 import type { WsServer } from '../ws-server.js';
 import { getToolDefinitions, executeTool } from './tools/index.js';
 import type { KfmTool, ToolContext } from './tools/types.js';
+
+/** 从 prompts/tools/*.md 加载工具描述 */
+const PROMPTS_DIR = join(process.cwd(), 'src', 'server', 'prompts', 'tools');
+const toolDocs = new Map<string, string>();
+function loadToolDocs(): void {
+  try {
+    const files = readdirSync(PROMPTS_DIR).filter(f => f.endsWith('.md'));
+    for (const f of files) {
+      const name = f.replace('.md', '');
+      toolDocs.set(name, readFileSync(join(PROMPTS_DIR, f), 'utf-8'));
+    }
+  } catch (e) {
+    console.error('[chat] loadToolDocs failed:', e instanceof Error ? e.message : e);
+  }
+}
+loadToolDocs();
+
+function buildToolDocsPrompt(): string {
+  if (toolDocs.size === 0) return '';
+  let text = '\n\n## 可用工具\n\n';
+  for (const [name, doc] of toolDocs) {
+    text += `### ${name}\n\n${doc}\n\n`;
+  }
+  return text;
+}
 
 /** 聊天消息 */
 export interface ChatMessage {
@@ -114,6 +139,11 @@ export async function* streamChat(
       role: m.role === 'assistant' ? 'assistant' : (m.role === 'system' ? 'system' : 'user'),
       content: m.content,
     }));
+
+    const toolDocsPrompt = buildToolDocsPrompt();
+    if (toolDocsPrompt) {
+      apiMessages.push({ role: 'system', content: toolDocsPrompt });
+    }
     
     const requestBody = {
       model: model || apiProvider.models[0] || 'deepseek-v4-flash',
