@@ -405,6 +405,9 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
 
   function renderAll(): void {
     if (_nameInput) { const s = getActiveSession(); _nameInput!.value = s?.title || ''; }
+    if (_sessionSelect) {
+      _sessionSelect.updateItems(sessions.map(s => ({ label: s.title, value: s.id })), activeSessionId);
+    }
     if (_poolListEl) renderSessionList(_poolListEl);
     if (_bubbleContainer) renderBubbles(_bubbleContainer, getActiveSession());
   }

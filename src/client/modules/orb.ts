@@ -484,18 +484,19 @@ export async function initOrb(): Promise<void> {
     let abortCtrl: AbortController | null = null;
 
     // 监听会话切换 → 重载消息
-    window.addEventListener('kfm-session-change', (e: Event) => {
+    window.addEventListener('kfm-session-change', async (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (!detail?.sessionId) return;
+      await sessionStore.load();
       sessionStore.activeId = detail.sessionId;
+      _orbSessionSelect?.updateItems(
+        sessionStore.list.map(s => ({ label: s.title, value: s.id })),
+        detail.sessionId
+      );
       sessionStore.getMessages(detail.sessionId).then(msgs => {
         chatMessages.length = 0;
         chatMessages.push(...msgs.map(m => ({ role: m.role as 'user' | 'ai', text: m.text, reasoning: m.reasoning })));
         _renderChat();
-        _orbSessionSelect?.updateItems(
-          sessionStore.list.map(s => ({ label: s.title, value: s.id })),
-          detail.sessionId
-        );
       });
     });
 
