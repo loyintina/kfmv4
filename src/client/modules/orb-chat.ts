@@ -135,22 +135,32 @@ export function renderChatContent(state: ChatState): void {
         if (!tc.color1) { const a = randomToolAccent(); tc.color1 = a.color1; tc.color2 = a.color2; }
         const c1 = tc.color1!, c2 = tc.color2!;
         const tid = 'tc' + idx + '_' + (msg.toolCalls!.indexOf(tc));
-        const hasResult = tc.result;
+        const hasResult = !!tc.result;
+        const isExecuting = !hasResult;
         const isError = hasResult && tc.result!.isError;
-        const statusLabel = !hasResult ? '执行中' : (isError ? '失败' : '成功');
-        const statusColor = !hasResult ? 'rgba(255,255,255,0.4)' : (isError ? 'rgba(255,100,100,0.8)' : 'rgba(0,212,115,0.8)');
+        const statusLabel = isExecuting ? '执行中' : (isError ? '失败' : '成功');
+        const statusColor = isExecuting ? 'rgba(255,255,255,0.4)' : (isError ? 'rgba(255,100,100,0.8)' : 'rgba(0,212,115,0.8)');
+        // 显示参数（执行中或完成后都显示）
+        const paramsText = Object.keys(tc.params).length > 0 ? JSON.stringify(tc.params, null, 2) : '';
         const resultText = hasResult ? (tc.result!.content?.[0]?.text || '') : '';
+        // 执行中显示参数 + 执行中提示，完成后显示结果
+        const contentText = isExecuting
+          ? (paramsText ? '参数:\n' + paramsText + '\n\n执行中...' : '执行中...')
+          : (resultText || '(无结果)');
+        // 执行中默认展开，完成后默认折叠
+        const defaultDisplay = isExecuting ? 'block' : 'none';
+        const defaultArrow = isExecuting ? '▼' : '▶';
         const gradientBorder = `linear-gradient(rgba(10,15,30,0.75),rgba(10,15,30,0.75)) padding-box,linear-gradient(135deg,${hexToRgba(c2, 0.55)} 30%,${hexToRgba(c1, 0.55)} 70%) border-box`;
         html += `
           <div style="display:flex;justify-content:flex-start;margin-bottom:6px">
             <div class="orb-tool-card" style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:${gradientBorder};border:1px solid transparent;border-left-width:3px;border-left-color:${hexToRgba(c1, 0.7)};font-size:var(--card-font-size,10px)">
               <div onclick="var p=document.getElementById('${tid}');var s=p.style.display==='none'?'block':'none';p.style.display=s;this.querySelector('.orb-tc-arrow').textContent=s==='block'?'▼':'▶'" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
-                <span class="orb-tc-arrow" style="font-size:7px;color:rgba(255,255,255,0.5)">▶</span>
+                <span class="orb-tc-arrow" style="font-size:7px;color:rgba(255,255,255,0.5)">${defaultArrow}</span>
                 <span style="color:${hexToRgba(c1, 0.9)};font-weight:600">${escapeHtml(tc.name)}</span>
                 <span style="color:${statusColor};font-size:var(--card-font-size,9px);font-weight:600">${statusLabel}</span>
               </div>
-              <div id="${tid}" style="display:none;margin-top:4px">
-                <pre style="font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.6);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0 0 2px 0;font-family:inherit;background:rgba(0,0,0,0.2);padding:4px 6px;border-radius:4px">${escapeHtml(resultText || '(无内容)')}</pre>
+              <div id="${tid}" style="display:${defaultDisplay};margin-top:4px">
+                <pre style="font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.6);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0 0 2px 0;font-family:inherit;background:rgba(0,0,0,0.2);padding:4px 6px;border-radius:4px">${escapeHtml(contentText)}</pre>
               </div>
             </div>
           </div>`;
@@ -274,6 +284,9 @@ export async function doSend(
     onRender();
     let msgIdx = messages.length - 1;
     let reasoningBuf = ''; let contentBuf = '';
+    // pendingToolCalls: 追踪未完成的工具调用数量
+    // tool_call 时 +1，tool_result 时 -1，归零后收到 text 才推新消息
+    let pendingToolCalls = 0;
 
     const apiMessages: Array<{ role: string; content: string }> = [];
     if (systemPrompt) apiMessages.push({ role: 'system', content: systemPrompt });
@@ -307,19 +320,28 @@ export async function doSend(
           const event = JSON.parse(jsonStr);
           switch (event.type) {
             case 'thinking': reasoningBuf += event.content || ''; messages[msgIdx].reasoning = reasoningBuf; break;
-            case 'text': contentBuf += event.content || ''; messages[msgIdx].text = contentBuf; break;
-            case 'tool_call':
-              if (!messages[msgIdx].toolCalls) messages[msgIdx].toolCalls = [];
-              messages[msgIdx].toolCalls!.push({ name: event.toolName || 'unknown', params: event.toolParams || {} });
-              break;
-            case 'tool_result':
-              if (messages[msgIdx].toolCalls) {
-                const cur = messages[msgIdx].toolCalls![messages[msgIdx].toolCalls!.length - 1];
-                if (cur) cur.result = event.toolResult;
+            case 'text':
+              // 收到文本时，如果当前消息有已完成的工具调用且 pendingToolCalls 归零，推入新消息
+              if (pendingToolCalls === 0 && messages[msgIdx].toolCalls && messages[msgIdx].toolCalls!.length > 0) {
                 messages.push({ role: 'ai', text: '', reasoning: '' });
                 msgIdx = messages.length - 1;
                 contentBuf = '';
                 reasoningBuf = '';
+              }
+              contentBuf += event.content || '';
+              messages[msgIdx].text = contentBuf;
+              break;
+            case 'tool_call':
+              if (!messages[msgIdx].toolCalls) messages[msgIdx].toolCalls = [];
+              messages[msgIdx].toolCalls!.push({ name: event.toolName || 'unknown', params: event.toolParams || {} });
+              pendingToolCalls++;
+              break;
+            case 'tool_result':
+              if (messages[msgIdx].toolCalls) {
+                // 找到第一个没有 result 的工具调用，设置结果
+                const pending = messages[msgIdx].toolCalls!.find(tc => !tc.result);
+                if (pending) pending.result = event.toolResult;
+                pendingToolCalls--;
               }
               break;
             case 'error': contentBuf += '\n\n[错误: ' + event.content + ']'; messages[msgIdx].text = contentBuf; break;
