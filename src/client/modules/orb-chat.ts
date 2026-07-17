@@ -18,10 +18,20 @@ import { renderMath, renderMermaid, type MathData } from './renderers/math-diagr
 
 // ========== 类型 ==========
 
+export interface ToolCallRecord {
+  name: string;
+  params: Record<string, unknown>;
+  result?: { content: Array<{ type: string; text?: string }>; isError?: boolean };
+  // 随机配色（渲染时生成，不做持久化）
+  color1?: string;
+  color2?: string;
+}
+
 export interface ChatMessage {
   role: 'user' | 'ai';
   text: string;
   reasoning?: string;
+  toolCalls?: ToolCallRecord[];
 }
 
 export interface ChatState {
@@ -39,6 +49,32 @@ function escapeHtml(str: string): string {
 
 function renderPlainText(text: string): string {
   return escapeHtml(text);
+}
+
+function hslToHex(h: number, s: number, l: number): string {
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) => { const k = (n + h / 30) % 12; return Math.round((l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1)) * 255); };
+  const r = f(0).toString(16).padStart(2, '0');
+  const g = f(8).toString(16).padStart(2, '0');
+  const b = f(4).toString(16).padStart(2, '0');
+  return '#' + r + g + b;
+}
+
+function hexToRgba(hex: string, alpha: number): string {
+  const num = parseInt(hex.slice(1), 16);
+  const r = (num >> 16) & 0xFF;
+  const g = (num >> 8) & 0xFF;
+  const b = num & 0xFF;
+  return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+}
+
+function randomToolAccent(): { color1: string; color2: string } {
+  const h1 = Math.random() * 360;
+  const offset = (30 + Math.random() * 90) * (Math.random() > 0.5 ? 1 : -1);
+  const h2 = ((h1 + offset) % 360 + 360) % 360;
+  const sat = 45 + Math.random() * 25;
+  const lit = 50 + Math.random() * 15;
+  return { color1: hslToHex(h1, sat, lit), color2: hslToHex(h2, sat, lit) };
 }
 
 // ========== 核心：消息气泡渲染 ==========
@@ -92,6 +128,35 @@ export function renderChatContent(state: ChatState): void {
           ${bubbleHtml}
         </div>
       </div>`;
+
+    // 工具调用卡片（气泡外，独立块）
+    if (!isUser && msg.toolCalls && msg.toolCalls.length > 0) {
+      for (const tc of msg.toolCalls) {
+        if (!tc.color1) { const a = randomToolAccent(); tc.color1 = a.color1; tc.color2 = a.color2; }
+        const c1 = tc.color1!, c2 = tc.color2!;
+        const tid = 'tc' + idx + '_' + (msg.toolCalls!.indexOf(tc));
+        const hasResult = tc.result;
+        const isError = hasResult && tc.result!.isError;
+        const statusLabel = !hasResult ? '...' : (isError ? '失败' : '成功');
+        const statusColor = !hasResult ? 'rgba(255,255,255,0.3)' : (isError ? 'rgba(255,100,100,0.7)' : 'rgba(0,212,115,0.7)');
+        const resultText = hasResult ? (tc.result!.content?.[0]?.text || '') : '';
+        const gradientBorder = `linear-gradient(rgba(10,15,30,0.7),rgba(10,15,30,0.7)) padding-box,linear-gradient(135deg,${hexToRgba(c2, 0.5)} 30%,${hexToRgba(c1, 0.5)} 70%) border-box`;
+        html += `
+          <div style="display:flex;justify-content:flex-start;margin-bottom:4px">
+            <div class="orb-tool-card" style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:${gradientBorder};border:1px solid transparent;border-left-width:3px;border-left-color:${hexToRgba(c1, 0.6)};font-size:var(--card-font-size,10px)">
+              <div onclick="var p=document.getElementById('${tid}');var s=p.style.display==='none'?'block':'none';p.style.display=s;this.querySelector('.orb-tc-arrow').textContent=s==='block'?'▼':'▶'" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
+                <span class="orb-tc-arrow" style="font-size:7px;color:rgba(255,255,255,0.4)">▶</span>
+                <span style="color:${hexToRgba(c1, 0.85)};font-weight:600">${escapeHtml(tc.name)}</span>
+                <span style="color:${statusColor};font-size:var(--card-font-size,9px)">${statusLabel}</span>
+              </div>
+              <div id="${tid}" style="display:none;margin-top:4px">
+                <pre style="font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.5);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0 0 4px 0;font-family:inherit;background:rgba(0,0,0,0.15);padding:4px 6px;border-radius:4px">${escapeHtml(resultText || '(无内容)')}</pre>
+              </div>
+            </div>
+          </div>`;
+      }
+    }
+
     idx++;
   }
   // 保存滚动位置
@@ -241,7 +306,16 @@ export async function doSend(
           switch (event.type) {
             case 'thinking': reasoningBuf += event.content || ''; messages[msgIdx].reasoning = reasoningBuf; break;
             case 'text': contentBuf += event.content || ''; messages[msgIdx].text = contentBuf; break;
-            case 'tool_call': contentBuf += '\n\n[调用工具: ' + event.toolName + '...]'; messages[msgIdx].text = contentBuf; break;
+            case 'tool_call':
+              if (!messages[msgIdx].toolCalls) messages[msgIdx].toolCalls = [];
+              messages[msgIdx].toolCalls!.push({ name: event.toolName || 'unknown', params: event.toolParams || {} });
+              break;
+            case 'tool_result':
+              if (messages[msgIdx].toolCalls) {
+                const cur = messages[msgIdx].toolCalls![messages[msgIdx].toolCalls!.length - 1];
+                if (cur) cur.result = event.toolResult;
+              }
+              break;
             case 'error': contentBuf += '\n\n[错误: ' + event.content + ']'; messages[msgIdx].text = contentBuf; break;
           }
           onRender();
