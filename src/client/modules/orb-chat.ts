@@ -282,11 +282,10 @@ export async function doSend(
     const provider = config.providerId;
     messages.push({ role: 'ai', text: '', reasoning: '' });
     onRender();
-    let msgIdx = messages.length - 1;
+    let msgIdx = messages.length - 1; // 当前写入气泡的索引（工具卡片挂这里）
     let reasoningBuf = ''; let contentBuf = '';
-    // pendingToolCalls: 追踪未完成的工具调用数量
-    // tool_call 时 +1，tool_result 时 -1，归零后收到 text 才推新消息
-    let pendingToolCalls = 0;
+    // replyMsgIdx: 首次收到 tool_call 时推入的新气泡，工具完成后 LLM 回复写入此槽位
+    let replyMsgIdx = -1;
 
     const apiMessages: Array<{ role: string; content: string }> = [];
     if (systemPrompt) apiMessages.push({ role: 'system', content: systemPrompt });
@@ -320,36 +319,40 @@ export async function doSend(
           const event = JSON.parse(jsonStr);
           switch (event.type) {
             case 'message_start':
-              // 服务端已确保 message_start 仅在工具全部完成后发出，直接创建新气泡
-              messages.push({ role: 'ai', text: '', reasoning: '' });
-              msgIdx = messages.length - 1;
-              contentBuf = '';
-              reasoningBuf = '';
+              // message_start 不再需要：工具调用时已推入 replyMsgIdx 槽位
               break;
             case 'thinking':
+              // thinking 写入当前活跃气泡：工具调用后写入 replyMsgIdx，否则写入 msgIdx
+              const thinkingTarget = replyMsgIdx >= 0 ? replyMsgIdx : msgIdx;
               reasoningBuf += event.content || '';
-              messages[msgIdx].reasoning = reasoningBuf;
+              messages[thinkingTarget].reasoning = reasoningBuf;
               break;
             case 'text':
+              // text 同理：工具调用后写入 replyMsgIdx
+              const textTarget = replyMsgIdx >= 0 ? replyMsgIdx : msgIdx;
               contentBuf += event.content || '';
-              messages[msgIdx].text = contentBuf;
+              messages[textTarget].text = contentBuf;
               break;
             case 'tool_call':
+              // 首次 tool_call：推入新气泡作为后续 LLM 回复的槽位
+              if (replyMsgIdx < 0) {
+                messages.push({ role: 'ai', text: '', reasoning: '' });
+                replyMsgIdx = messages.length - 1;
+              }
+              // 工具调用挂在当前气泡（msgIdx，不是 replyMsgIdx）
               if (!messages[msgIdx].toolCalls) messages[msgIdx].toolCalls = [];
               messages[msgIdx].toolCalls!.push({ name: event.toolName || 'unknown', params: event.toolParams || {} });
-              pendingToolCalls++;
               break;
             case 'tool_result':
               if (messages[msgIdx].toolCalls) {
-                // 找到第一个没有 result 的工具调用，设置结果
                 const pending = messages[msgIdx].toolCalls!.find(tc => !tc.result);
                 if (pending) pending.result = event.toolResult;
-                pendingToolCalls--;
               }
               break;
             case 'error':
+              const errorTarget = replyMsgIdx >= 0 ? replyMsgIdx : msgIdx;
               contentBuf += '\n\n[错误: ' + event.content + ']';
-              messages[msgIdx].text = contentBuf;
+              messages[errorTarget].text = contentBuf;
               break;
           }
           throttledRender();
@@ -357,8 +360,10 @@ export async function doSend(
       }
     }
     onRender();
-    messages[msgIdx].text = contentBuf || '未获取到回复';
-    messages[msgIdx].reasoning = reasoningBuf || undefined;
+    // 流结束：写入最终文本到正确的目标（有工具调用时是 replyMsgIdx，否则是 msgIdx）
+    const finalTarget = replyMsgIdx >= 0 ? replyMsgIdx : msgIdx;
+    messages[finalTarget].text = contentBuf || '未获取到回复';
+    messages[finalTarget].reasoning = reasoningBuf || undefined;
     await sessionStore.saveMessages(messages, config.modelId, config.providerId);
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') {
