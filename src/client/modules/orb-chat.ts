@@ -118,7 +118,7 @@ export function renderChatContent(state: ChatState): void {
       bubbleHtml += `<div id="${rid}" style="${displayStyle};font-size:var(--card-font-size,10px);line-height:16px;color:rgba(255,255,255,0.45);margin-bottom:4px;padding:4px 6px;border-radius:4px;background:rgba(0,0,0,0.2);white-space:pre-wrap">${escapeHtml(msg.reasoning)}</div>`;
     }
 
-    const lineHeight = 20;
+    const lineHeight = 16;
     bubbleHtml += `<div class="orb-msg-text" data-msg-idx="${idx}" style="font-family:sans-serif;font-size:var(--card-font-size,13px);line-height:${lineHeight}px;color:${theme.aiChat.bubbleText};white-space:pre-wrap;word-break:break-word">${renderPlainText(msg.text)}</div>`;
 
     const maxWidth = isUser ? Math.min(innerWidth - 8, innerWidth * 0.85) : innerWidth - 8;
@@ -137,20 +137,20 @@ export function renderChatContent(state: ChatState): void {
         const tid = 'tc' + idx + '_' + (msg.toolCalls!.indexOf(tc));
         const hasResult = tc.result;
         const isError = hasResult && tc.result!.isError;
-        const statusLabel = !hasResult ? '...' : (isError ? '失败' : '成功');
-        const statusColor = !hasResult ? 'rgba(255,255,255,0.3)' : (isError ? 'rgba(255,100,100,0.7)' : 'rgba(0,212,115,0.7)');
+        const statusLabel = !hasResult ? '执行中' : (isError ? '失败' : '成功');
+        const statusColor = !hasResult ? 'rgba(255,255,255,0.4)' : (isError ? 'rgba(255,100,100,0.8)' : 'rgba(0,212,115,0.8)');
         const resultText = hasResult ? (tc.result!.content?.[0]?.text || '') : '';
-        const gradientBorder = `linear-gradient(rgba(10,15,30,0.7),rgba(10,15,30,0.7)) padding-box,linear-gradient(135deg,${hexToRgba(c2, 0.5)} 30%,${hexToRgba(c1, 0.5)} 70%) border-box`;
+        const gradientBorder = `linear-gradient(rgba(10,15,30,0.75),rgba(10,15,30,0.75)) padding-box,linear-gradient(135deg,${hexToRgba(c2, 0.55)} 30%,${hexToRgba(c1, 0.55)} 70%) border-box`;
         html += `
-          <div style="display:flex;justify-content:flex-start;margin-bottom:4px">
-            <div class="orb-tool-card" style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:${gradientBorder};border:1px solid transparent;border-left-width:3px;border-left-color:${hexToRgba(c1, 0.6)};font-size:var(--card-font-size,10px)">
+          <div style="display:flex;justify-content:flex-start;margin-bottom:6px">
+            <div class="orb-tool-card" style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:${gradientBorder};border:1px solid transparent;border-left-width:3px;border-left-color:${hexToRgba(c1, 0.7)};font-size:var(--card-font-size,10px)">
               <div onclick="var p=document.getElementById('${tid}');var s=p.style.display==='none'?'block':'none';p.style.display=s;this.querySelector('.orb-tc-arrow').textContent=s==='block'?'▼':'▶'" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
-                <span class="orb-tc-arrow" style="font-size:7px;color:rgba(255,255,255,0.4)">▶</span>
-                <span style="color:${hexToRgba(c1, 0.85)};font-weight:600">${escapeHtml(tc.name)}</span>
-                <span style="color:${statusColor};font-size:var(--card-font-size,9px)">${statusLabel}</span>
+                <span class="orb-tc-arrow" style="font-size:7px;color:rgba(255,255,255,0.5)">▶</span>
+                <span style="color:${hexToRgba(c1, 0.9)};font-weight:600">${escapeHtml(tc.name)}</span>
+                <span style="color:${statusColor};font-size:var(--card-font-size,9px);font-weight:600">${statusLabel}</span>
               </div>
               <div id="${tid}" style="display:none;margin-top:4px">
-                <pre style="font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.5);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0 0 4px 0;font-family:inherit;background:rgba(0,0,0,0.15);padding:4px 6px;border-radius:4px">${escapeHtml(resultText || '(无内容)')}</pre>
+                <pre style="font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.6);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0 0 2px 0;font-family:inherit;background:rgba(0,0,0,0.2);padding:4px 6px;border-radius:4px">${escapeHtml(resultText || '(无内容)')}</pre>
               </div>
             </div>
           </div>`;
