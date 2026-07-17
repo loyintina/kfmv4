@@ -93,6 +93,7 @@ export function renderChatContent(state: ChatState): void {
   let idx = 0;
   for (const msg of messages) {
     const isUser = msg.role === 'user';
+    if (!isUser && msg.toolCalls) log('[render] AI消息有 toolCalls:', msg.toolCalls.length, msg.toolCalls.map(t => t.name).join(','));
     const bgColor = isUser
       ? `linear-gradient(${theme.surface.bgLight},${theme.surface.bgLight}) padding-box,${theme.aiChat.bubbleSelfGradient} border-box`
       : `linear-gradient(rgba(10,15,30,0.88),rgba(10,15,30,0.88)) padding-box,${theme.aiChat.panelBorderGradient} border-box`;
@@ -309,6 +310,7 @@ export async function doSend(
             case 'thinking': reasoningBuf += event.content || ''; messages[msgIdx].reasoning = reasoningBuf; break;
             case 'text': contentBuf += event.content || ''; messages[msgIdx].text = contentBuf; break;
             case 'tool_call':
+              log('[sse] 收到 tool_call:', event.toolName);
               if (!messages[msgIdx].toolCalls) messages[msgIdx].toolCalls = [];
               messages[msgIdx].toolCalls!.push({ name: event.toolName || 'unknown', params: event.toolParams || {} });
               break;
