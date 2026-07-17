@@ -114,3 +114,5 @@ orb.ts 和 floating-card.ts 通过交互共享层共享常量。统一化方案�
 > 更多隐性契约见 `docs/DIAGNOSTICS.md` §一。
 
 > 历史修复记录（v4.0.0 前）已清理。如需追溯：`git log --oneline v4.0.0..HEAD`
+>
+> 🧪 蔚然工具测试标记 — 此 edit 将在 rewind 后消失

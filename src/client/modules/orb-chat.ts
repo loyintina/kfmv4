@@ -272,7 +272,7 @@ export async function doSend(
     const provider = config.providerId;
     messages.push({ role: 'ai', text: '', reasoning: '' });
     onRender();
-    const msgIdx = messages.length - 1;
+    let msgIdx = messages.length - 1;
     let reasoningBuf = ''; let contentBuf = '';
 
     const apiMessages: Array<{ role: string; content: string }> = [];
@@ -316,6 +316,8 @@ export async function doSend(
               if (messages[msgIdx].toolCalls) {
                 const cur = messages[msgIdx].toolCalls![messages[msgIdx].toolCalls!.length - 1];
                 if (cur) cur.result = event.toolResult;
+                messages.push({ role: 'ai', text: '', reasoning: '' });
+                msgIdx = messages.length - 1;
               }
               break;
             case 'error': contentBuf += '\n\n[错误: ' + event.content + ']'; messages[msgIdx].text = contentBuf; break;
