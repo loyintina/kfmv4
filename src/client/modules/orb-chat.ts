@@ -119,7 +119,7 @@ export function renderChatContent(state: ChatState): void {
     }
 
     const lineHeight = 16;
-    bubbleHtml += `<div class="orb-msg-text" data-msg-idx="${idx}" style="font-family:sans-serif;font-size:var(--card-font-size,13px);line-height:${lineHeight}px;color:${theme.aiChat.bubbleText};white-space:pre-wrap;word-break:break-word">${renderPlainText(msg.text)}</div>`;
+    bubbleHtml += `<div class="orb-msg-text" data-msg-idx="${idx}" style="font-family:sans-serif;font-size:var(--card-font-size,13px);line-height:${lineHeight}px;color:${theme.aiChat.bubbleText};word-break:break-word">${renderPlainText(msg.text)}</div>`;
 
     const maxWidth = isUser ? Math.min(innerWidth - 8, innerWidth * 0.85) : innerWidth - 8;
     html += `
@@ -319,15 +319,20 @@ export async function doSend(
         try {
           const event = JSON.parse(jsonStr);
           switch (event.type) {
-            case 'thinking': reasoningBuf += event.content || ''; messages[msgIdx].reasoning = reasoningBuf; break;
-            case 'text':
-              // 收到文本时，如果当前消息有已完成的工具调用且 pendingToolCalls 归零，推入新消息
+            case 'message_start':
+              // P0: 工具执行后明确创建新 AI 消息气泡
               if (pendingToolCalls === 0 && messages[msgIdx].toolCalls && messages[msgIdx].toolCalls!.length > 0) {
                 messages.push({ role: 'ai', text: '', reasoning: '' });
                 msgIdx = messages.length - 1;
                 contentBuf = '';
                 reasoningBuf = '';
               }
+              break;
+            case 'thinking':
+              reasoningBuf += event.content || '';
+              messages[msgIdx].reasoning = reasoningBuf;
+              break;
+            case 'text':
               contentBuf += event.content || '';
               messages[msgIdx].text = contentBuf;
               break;
@@ -344,7 +349,10 @@ export async function doSend(
                 pendingToolCalls--;
               }
               break;
-            case 'error': contentBuf += '\n\n[错误: ' + event.content + ']'; messages[msgIdx].text = contentBuf; break;
+            case 'error':
+              contentBuf += '\n\n[错误: ' + event.content + ']';
+              messages[msgIdx].text = contentBuf;
+              break;
           }
           throttledRender();
         } catch {}

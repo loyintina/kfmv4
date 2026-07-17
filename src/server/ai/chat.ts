@@ -44,11 +44,11 @@ export interface ChatMessage {
 
 /** 流式事件 */
 export interface StreamEvent {
-  type: 'thinking' | 'text' | 'tool_call' | 'tool_result' | 'error' | 'done';
+  type: 'message_start' | 'thinking' | 'text' | 'tool_call' | 'tool_result' | 'error' | 'done';
   content?: string;
   toolName?: string;
-  toolParams?: unknown;
-  toolResult?: unknown;
+  toolParams?: Record<string, unknown>;
+  toolResult?: { content: Array<{ type: string; text?: string }>; isError?: boolean };
 }
 
 /** API Provider 配置 */
@@ -115,6 +115,7 @@ export async function* streamChat(
   // 工具调用循环（最多 10 轮，防止无限循环）
   const MAX_TURNS = 10;
   const apiMessages: Array<Record<string, unknown>> = [...baseMessages];
+  let toolFailureCount = 0; // P1: 工具失败计数
 
   for (let turn = 0; turn < MAX_TURNS; turn++) {
     const requestBody: Record<string, unknown> = {
@@ -150,6 +151,7 @@ export async function* streamChat(
     const toolCallBufs = new Map<number, { id: string; name: string; args: string }>();
     let finishReason = '';
     let contentBuf = '';
+    let thinkingBuf = ''; // P1: 收集 thinking
 
     while (true) {
       const { done, value } = await reader.read();
@@ -177,8 +179,14 @@ export async function* streamChat(
             }
           }
 
-          if (delta.reasoning_content) yield { type: 'thinking', content: delta.reasoning_content as string };
-          if (delta.content) { contentBuf += delta.content as string; yield { type: 'text', content: delta.content as string }; }
+          if (delta.reasoning_content) {
+            thinkingBuf += delta.reasoning_content as string;
+            yield { type: 'thinking', content: delta.reasoning_content as string };
+          }
+          if (delta.content) {
+            contentBuf += delta.content as string;
+            yield { type: 'text', content: delta.content as string };
+          }
         } catch { /* skip malformed chunks */ }
       }
     }
@@ -198,18 +206,43 @@ export async function* streamChat(
       }
       assistantMsg.tool_calls = toolCalls;
       apiMessages.push(assistantMsg);
+
+      // P0: 执行工具前 yield message_start，告知客户端创建新气泡
+      yield { type: 'message_start' };
+
       for (const t of todo) {
         yield { type: 'tool_call', toolName: t.name, toolParams: t.params };
-        const result = await executeTool(t.name, t.params, toolCtx);
+        let result;
+        try {
+          result = await executeTool(t.name, t.params, toolCtx);
+          toolFailureCount = 0; // 成功后重置计数
+        } catch (err) {
+          // P1: 工具失败计数
+          toolFailureCount++;
+          result = {
+            content: [{ type: 'text', text: `工具执行失败: ${err instanceof Error ? err.message : String(err)}` }],
+            isError: true,
+          };
+          if (toolFailureCount >= 3) {
+            yield { type: 'error', content: '工具连续失败 3 次，终止对话' };
+            return;
+          }
+        }
         yield { type: 'tool_result', toolResult: result };
         apiMessages.push({ role: 'tool', content: JSON.stringify(result), tool_call_id: t.tcId });
       }
       continue; // 下一轮：让 LLM 处理工具结果
     }
 
+    // P1: 循环结束前 yield 所有内容块（text + thinking）
+    if (thinkingBuf) yield { type: 'thinking', content: thinkingBuf };
+    if (contentBuf) yield { type: 'text', content: contentBuf };
+
     yield { type: 'done' };
     return;
   }
+  // MAX_TURNS 耗尽
+  yield { type: 'error', content: '达到最大对话轮次（10 轮），终止对话' };
 }
 
 function safeParseJson(s: string): Record<string, unknown> {
