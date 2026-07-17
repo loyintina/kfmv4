@@ -10,7 +10,6 @@
 import { DOM } from './dom-refs.js';
 import { currentTheme as theme } from './theme.js';
 import { sessionStore } from './session-store.js';
-import { log } from './logger.js';
 import { MD_CSS } from './renderers/md-css.js';
 import { marked } from 'marked';
 import { preprocessMd, MARKED_OPTS } from './renderers/md-extensions.js';
@@ -93,7 +92,6 @@ export function renderChatContent(state: ChatState): void {
   let idx = 0;
   for (const msg of messages) {
     const isUser = msg.role === 'user';
-    if (!isUser && msg.toolCalls) log('[render] AI消息有 toolCalls:', msg.toolCalls.length, msg.toolCalls.map(t => t.name).join(','));
     const bgColor = isUser
       ? `linear-gradient(${theme.surface.bgLight},${theme.surface.bgLight}) padding-box,${theme.aiChat.bubbleSelfGradient} border-box`
       : `linear-gradient(rgba(10,15,30,0.88),rgba(10,15,30,0.88)) padding-box,${theme.aiChat.panelBorderGradient} border-box`;
@@ -133,7 +131,6 @@ export function renderChatContent(state: ChatState): void {
 
     // 工具调用卡片（气泡外，独立块）
     if (!isUser && msg.toolCalls && msg.toolCalls.length > 0) {
-      log(`[tool-card] 渲染 ${msg.toolCalls.length} 个工具调用, msgIdx=${idx}: ${msg.toolCalls.map(t => t.name).join(', ')}`);
       for (const tc of msg.toolCalls) {
         if (!tc.color1) { const a = randomToolAccent(); tc.color1 = a.color1; tc.color2 = a.color2; }
         const c1 = tc.color1!, c2 = tc.color2!;
@@ -294,6 +291,8 @@ export async function doSend(
     if (!reader) throw new Error('无响应体');
     const decoder = new TextDecoder();
     let buffer = '';
+    let lastRender = 0;
+    const throttledRender = () => { const now = Date.now(); if (now - lastRender > 80) { lastRender = now; onRender(); } };
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -310,7 +309,6 @@ export async function doSend(
             case 'thinking': reasoningBuf += event.content || ''; messages[msgIdx].reasoning = reasoningBuf; break;
             case 'text': contentBuf += event.content || ''; messages[msgIdx].text = contentBuf; break;
             case 'tool_call':
-              log('[sse] 收到 tool_call:', event.toolName);
               if (!messages[msgIdx].toolCalls) messages[msgIdx].toolCalls = [];
               messages[msgIdx].toolCalls!.push({ name: event.toolName || 'unknown', params: event.toolParams || {} });
               break;
@@ -322,13 +320,13 @@ export async function doSend(
               break;
             case 'error': contentBuf += '\n\n[错误: ' + event.content + ']'; messages[msgIdx].text = contentBuf; break;
           }
-          onRender();
+          throttledRender();
         } catch {}
       }
     }
+    onRender();
     messages[msgIdx].text = contentBuf || '未获取到回复';
     messages[msgIdx].reasoning = reasoningBuf || undefined;
-    onRender();
     await sessionStore.saveMessages(messages, config.modelId, config.providerId);
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') {

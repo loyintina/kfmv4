@@ -186,13 +186,16 @@ export async function* streamChat(
     if (finishReason === 'tool_calls' && toolCallBufs.size > 0) {
       const assistantMsg: Record<string, unknown> = { role: 'assistant', content: null };
       const toolCalls: Array<Record<string, unknown>> = [];
+      let tcIdx = 0;
       for (const [, buf] of toolCallBufs) {
+        const tcId = buf.id || `call_${turn}_${tcIdx}`;
         const params = safeParseJson(buf.args);
-        toolCalls.push({ id: buf.id, type: 'function', function: { name: buf.name, arguments: buf.args } });
+        toolCalls.push({ id: tcId, type: 'function', function: { name: buf.name, arguments: buf.args } });
         yield { type: 'tool_call', toolName: buf.name, toolParams: params };
         const result = await executeTool(buf.name, params, toolCtx);
         yield { type: 'tool_result', toolResult: result };
-        apiMessages.push({ role: 'tool', content: JSON.stringify(result), tool_call_id: buf.id });
+        apiMessages.push({ role: 'tool', content: JSON.stringify(result), tool_call_id: tcId });
+        tcIdx++;
       }
       assistantMsg.tool_calls = toolCalls;
       apiMessages.push(assistantMsg);
