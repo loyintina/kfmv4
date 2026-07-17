@@ -551,7 +551,7 @@ L.endOp();
           log('[processClickQueue] doCollapse path=' + hitData.path);
           doCollapse(hit, hitData);
         } else {
-          log('[processClickQueue] doExpand path=' + hitData.path);
+          // log('[processClickQueue] doExpand path=' + hitData.path);
           doExpand(hit, hitData);
         }
       } else if (getSelectedMode() === 'prompt') {

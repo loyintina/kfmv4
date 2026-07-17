@@ -372,7 +372,7 @@ export class GestureRegistry {
     const elapsed = Date.now() - active.startTime;
 
       // 调试日志：检查手势结束类型
-      log('[gesture] END, type:', e.type, 'handler:', active.handler.id, 'dx:', dx.toFixed(0));
+      // log('[gesture] END, type:', e.type, 'handler:', active.handler.id, 'dx:', dx.toFixed(0));
       // log('[gesture] END, type:', e.type, 'dx:', dx, 'dy:', dy, 'handler:', active.handler.id);
 
     if (this._shouldStop(active.handler, 'end')) e.stopPropagation();

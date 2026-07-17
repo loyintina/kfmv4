@@ -194,7 +194,7 @@ export function initGestures(): void {
     },
     onMove: (_e, dx, dy) => {
       if (_actionTaken) return;
-      log('[swipe] dx:', dx.toFixed(0), 'axis:', _axisLock, 'snap:', _snapshot);
+      // log('[swipe] dx:', dx.toFixed(0), 'axis:', _axisLock, 'snap:', _snapshot);
 
       // 轴向锁定：首次移动判定主导方向，锁定后只处理水平手势
       if (_axisLock === 'none' && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {

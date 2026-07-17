@@ -10,6 +10,7 @@
 import { DOM } from './dom-refs.js';
 import { currentTheme as theme } from './theme.js';
 import { sessionStore } from './session-store.js';
+import { log } from './logger.js';
 import { MD_CSS } from './renderers/md-css.js';
 import { marked } from 'marked';
 import { preprocessMd, MARKED_OPTS } from './renderers/md-extensions.js';
@@ -131,6 +132,7 @@ export function renderChatContent(state: ChatState): void {
 
     // 工具调用卡片（气泡外，独立块）
     if (!isUser && msg.toolCalls && msg.toolCalls.length > 0) {
+      log(`[tool-card] 渲染 ${msg.toolCalls.length} 个工具调用, msgIdx=${idx}: ${msg.toolCalls.map(t => t.name).join(', ')}`);
       for (const tc of msg.toolCalls) {
         if (!tc.color1) { const a = randomToolAccent(); tc.color1 = a.color1; tc.color2 = a.color2; }
         const c1 = tc.color1!, c2 = tc.color2!;
