@@ -19,15 +19,18 @@ export const ompBashTool: KfmTool = {
   },
   async execute(params, ctx): Promise<ToolResult> {
     const timeoutMs = (params.timeout as number) ? (params.timeout as number) * 1000 : undefined;
+    let output = '';
     const result = await executeShell({
       command: params.command as string,
       cwd: (params.cwd as string) || ctx.cwd,
       timeoutMs,
+    }, (err, chunk) => {
+      if (!err) output += chunk;
     });
     const exitCode = result.exitCode;
-    const ok = !result.cancelled && !result.timedOut && (exitCode === 0 || exitCode === undefined);
+    const text = output.trim() || ((exitCode === 0 || exitCode === undefined) ? '(命令执行成功)' : `(退出码: ${exitCode})`);
     return {
-      content: [{ type: 'text', text: ok ? '(命令执行成功)' : `(退出码: ${exitCode ?? 'N/A'}, 取消: ${result.cancelled}, 超时: ${result.timedOut})` }],
+      content: [{ type: 'text', text }],
       isError: result.cancelled || result.timedOut || (exitCode !== undefined && exitCode !== 0),
     };
   },

@@ -25,11 +25,14 @@ export const kfmExecTool: KfmTool = {
     const cwd = (params.cwd as string) || ctx.cwd;
     if (!command) return { content: [{ type: 'text', text: '缺少 command 参数' }], isError: true };
     try {
-      const result = await executeShell({ command, cwd, timeoutMs: timeoutSec * 1000 });
+      let output = '';
+      const result = await executeShell({ command, cwd, timeoutMs: timeoutSec * 1000 }, (err, chunk) => {
+        if (!err) output += chunk;
+      });
       const exitCode = result.exitCode;
-      const ok = !result.cancelled && !result.timedOut && (exitCode === 0 || exitCode === undefined);
+      const text = output.trim() || ((exitCode === 0 || exitCode === undefined) ? '(命令执行成功)' : `(退出码: ${exitCode})`);
       return {
-        content: [{ type: 'text', text: ok ? '(命令执行成功)' : `(退出码: ${exitCode ?? 'N/A'}, 取消: ${result.cancelled}, 超时: ${result.timedOut})` }],
+        content: [{ type: 'text', text }],
         isError: result.cancelled || result.timedOut || (exitCode !== undefined && exitCode !== 0),
       };
     } catch (e) {

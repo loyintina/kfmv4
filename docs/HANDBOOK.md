@@ -1,6 +1,6 @@
 ---
 title: KFM v4 工作手册
-last_reviewed: 2026-07-16
+last_reviewed: 2026-07-17
 kfm_version: 7.1.0
 status: active
 maintainer: AI agent
