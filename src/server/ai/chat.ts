@@ -149,6 +149,7 @@ export async function* streamChat(
     let buffer = '';
     const toolCallBufs = new Map<number, { id: string; name: string; args: string }>();
     let finishReason = '';
+    let contentBuf = '';
 
     while (true) {
       const { done, value } = await reader.read();
@@ -177,14 +178,14 @@ export async function* streamChat(
           }
 
           if (delta.reasoning_content) yield { type: 'thinking', content: delta.reasoning_content as string };
-          if (delta.content) yield { type: 'text', content: delta.content as string };
+          if (delta.content) { contentBuf += delta.content as string; yield { type: 'text', content: delta.content as string }; }
         } catch { /* skip malformed chunks */ }
       }
     }
 
     // 检查是否需要执行工具
     if (finishReason === 'tool_calls' && toolCallBufs.size > 0) {
-      const assistantMsg: Record<string, unknown> = { role: 'assistant', content: null };
+      const assistantMsg: Record<string, unknown> = { role: 'assistant', content: contentBuf || null };
       const toolCalls: Array<Record<string, unknown>> = [];
       const todo: Array<{ name: string; params: Record<string, unknown>; tcId: string }> = [];
       let tcIdx = 0;
