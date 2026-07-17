@@ -186,19 +186,23 @@ export async function* streamChat(
     if (finishReason === 'tool_calls' && toolCallBufs.size > 0) {
       const assistantMsg: Record<string, unknown> = { role: 'assistant', content: null };
       const toolCalls: Array<Record<string, unknown>> = [];
+      const todo: Array<{ name: string; params: Record<string, unknown>; tcId: string }> = [];
       let tcIdx = 0;
       for (const [, buf] of toolCallBufs) {
         const tcId = buf.id || `call_${turn}_${tcIdx}`;
         const params = safeParseJson(buf.args);
         toolCalls.push({ id: tcId, type: 'function', function: { name: buf.name, arguments: buf.args } });
-        yield { type: 'tool_call', toolName: buf.name, toolParams: params };
-        const result = await executeTool(buf.name, params, toolCtx);
-        yield { type: 'tool_result', toolResult: result };
-        apiMessages.push({ role: 'tool', content: JSON.stringify(result), tool_call_id: tcId });
+        todo.push({ name: buf.name, params, tcId });
         tcIdx++;
       }
       assistantMsg.tool_calls = toolCalls;
       apiMessages.push(assistantMsg);
+      for (const t of todo) {
+        yield { type: 'tool_call', toolName: t.name, toolParams: t.params };
+        const result = await executeTool(t.name, t.params, toolCtx);
+        yield { type: 'tool_result', toolResult: result };
+        apiMessages.push({ role: 'tool', content: JSON.stringify(result), tool_call_id: t.tcId });
+      }
       continue; // 下一轮：让 LLM 处理工具结果
     }
 
