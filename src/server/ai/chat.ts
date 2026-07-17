@@ -207,31 +207,35 @@ export async function* streamChat(
       assistantMsg.tool_calls = toolCalls;
       apiMessages.push(assistantMsg);
 
-      // P0: 执行工具前 yield message_start，告知客户端创建新气泡
-      yield { type: 'message_start' };
-
+      // 先 yield 所有工具调用和结果（挂在当前气泡），再继续到下一轮
       for (const t of todo) {
         yield { type: 'tool_call', toolName: t.name, toolParams: t.params };
         let result;
         try {
           result = await executeTool(t.name, t.params, toolCtx);
-          toolFailureCount = 0; // 成功后重置计数
         } catch (err) {
-          // P1: 工具失败计数
-          toolFailureCount++;
           result = {
             content: [{ type: 'text', text: `工具执行失败: ${err instanceof Error ? err.message : String(err)}` }],
             isError: true,
           };
+        }
+        // P1: 检查 isError（executeTool 内部通常不抛异常，用 isError 标记失败）
+        if (result.isError) {
+          toolFailureCount++;
           if (toolFailureCount >= 3) {
+            yield { type: 'tool_result', toolResult: result };
             yield { type: 'error', content: '工具连续失败 3 次，终止对话' };
             return;
           }
+        } else {
+          toolFailureCount = 0;
         }
         yield { type: 'tool_result', toolResult: result };
         apiMessages.push({ role: 'tool', content: JSON.stringify(result), tool_call_id: t.tcId });
       }
-      continue; // 下一轮：让 LLM 处理工具结果
+      // 工具全部执行完毕后，通知客户端创建新气泡，再进入下一轮 LLM 调用
+      yield { type: 'message_start' };
+      continue;
     }
 
     // P1: 循环结束前 yield 所有内容块（text + thinking）

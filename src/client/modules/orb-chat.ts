@@ -320,13 +320,11 @@ export async function doSend(
           const event = JSON.parse(jsonStr);
           switch (event.type) {
             case 'message_start':
-              // P0: 工具执行后明确创建新 AI 消息气泡
-              if (pendingToolCalls === 0 && messages[msgIdx].toolCalls && messages[msgIdx].toolCalls!.length > 0) {
-                messages.push({ role: 'ai', text: '', reasoning: '' });
-                msgIdx = messages.length - 1;
-                contentBuf = '';
-                reasoningBuf = '';
-              }
+              // 服务端已确保 message_start 仅在工具全部完成后发出，直接创建新气泡
+              messages.push({ role: 'ai', text: '', reasoning: '' });
+              msgIdx = messages.length - 1;
+              contentBuf = '';
+              reasoningBuf = '';
               break;
             case 'thinking':
               reasoningBuf += event.content || '';
