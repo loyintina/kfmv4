@@ -318,6 +318,8 @@ export async function doSend(
                 if (cur) cur.result = event.toolResult;
                 messages.push({ role: 'ai', text: '', reasoning: '' });
                 msgIdx = messages.length - 1;
+                contentBuf = '';
+                reasoningBuf = '';
               }
               break;
             case 'error': contentBuf += '\n\n[错误: ' + event.content + ']'; messages[msgIdx].text = contentBuf; break;
