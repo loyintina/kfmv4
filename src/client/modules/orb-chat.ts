@@ -151,13 +151,23 @@ export function renderChatContent(state: ChatState): void {
           <span style="font-size:10px;color:${labelColor};font-weight:600">${label}</span>
         </div>`;
 
-        // 思考内容
+        // 思考内容：独立全宽块（与工具框同宽），置于正文气泡上方
         if (reasoning) {
           const rid = 'r' + idx;
           const rlabel = reasoningDone ? '已思考' : '思考中...';
           const displayStyle = reasoningDone ? 'display:none' : 'display:block';
-          bubbleHtml += `<div onclick="var p=document.getElementById('${rid}');p.style.display=p.style.display==='none'?'':'none'" style="font-size:9px;color:rgba(0,212,255,0.5);cursor:pointer;margin-bottom:2px;user-select:none">${rlabel} <span style="font-size:7px">▼</span></div>`;
-          bubbleHtml += `<div id="${rid}" style="${displayStyle};font-size:var(--card-font-size,10px);line-height:16px;color:rgba(255,255,255,0.45);margin-bottom:4px;padding:4px 6px;border-radius:4px;background:rgba(0,0,0,0.2);white-space:pre-wrap">${escapeHtml(reasoning)}</div>`;
+          html += `
+            <div style="display:flex;justify-content:flex-start;margin-bottom:4px">
+              <div style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:linear-gradient(rgba(10,15,30,0.75),rgba(10,15,30,0.75)) padding-box,${theme.aiChat.panelBorderGradient} border-box;border:1px solid transparent;border-left-width:3px;font-size:var(--card-font-size,10px)">
+                <div onclick="var p=document.getElementById('${rid}');var s=p.style.display==='none'?'block':'none';p.style.display=s;this.querySelector('.rt-arrow').textContent=s==='block'?'▼':'▶'" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
+                  <span class="rt-arrow" style="font-size:7px;color:rgba(0,212,255,0.5)">${reasoningDone ? '▶' : '▼'}</span>
+                  <span style="color:rgba(0,212,255,0.6);font-weight:600">${rlabel}</span>
+                </div>
+                <div id="${rid}" style="${displayStyle};margin-top:4px">
+                  <pre style="font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.45);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;background:rgba(0,0,0,0.15);padding:4px 6px;border-radius:4px">${escapeHtml(reasoning)}</pre>
+                </div>
+              </div>
+            </div>`;
         }
 
         // 正文
