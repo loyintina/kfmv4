@@ -118,12 +118,13 @@ export async function* streamChat(
     baseMessages.push({ role: 'system', content: alwaysApplyPrompt });
   }
 
-  // 工具调用循环（最多 50 轮）
-  const MAX_TURNS = 50;
+  // 工具调用循环（无轮次上限，连续失败 3 次则截断）
   const apiMessages: Array<Record<string, unknown>> = [...baseMessages];
-  let toolFailureCount = 0; // P1: 工具失败计数
+  let toolFailureCount = 0;
+  let turn = 0;
 
-  for (let turn = 0; turn < MAX_TURNS; turn++) {
+  while (true) {
+    turn++;
     const requestBody: Record<string, unknown> = {
       model: model || apiProvider.models[0] || 'deepseek-v4-flash',
       messages: apiMessages,
@@ -261,8 +262,6 @@ export async function* streamChat(
     yield { type: 'done' };
     return;
   }
-  // MAX_TURNS 耗尽
-  yield { type: 'error', content: '达到最大对话轮次（50 轮），终止对话' };
 }
 
 function safeParseJson(s: string): Record<string, unknown> {
