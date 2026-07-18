@@ -380,7 +380,7 @@ function _createSidebarTouchArea(): void {
   const box = document.createElement('div');
   box.id = 'sidebarTouchArea';
   const w = sidebar.getBoundingClientRect().width;
-  box.style.cssText = `position:fixed;top:0;bottom:0;right:0;z-index:999;touch-action:none;left:${w}px;`;
+  box.style.cssText = `position:fixed;top:0;bottom:0;right:0;z-index:199;touch-action:none;left:${w}px;`;
   document.body.appendChild(box);
 
   // 绑定��样的滚动事件（wheel + touch）
