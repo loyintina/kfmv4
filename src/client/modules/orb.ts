@@ -85,7 +85,8 @@ function getInputBarTop(): number {
 // 模块级聊天渲染桥接（renderChatContent 来自 orb-chat.ts）
 function _renderChat(): void {
   if (!panelEl) return;
-  renderChatContent({ panelEl, messages: chatMessages, renderWidth, apiBase: API_BASE });
+  // resize / 拖拽调整大小时保留用户滚动位置
+  renderChatContent({ panelEl, messages: chatMessages, renderWidth, apiBase: API_BASE, scrollMode: 'preserve' });
 }
 
 
@@ -469,7 +470,7 @@ export async function initOrb(): Promise<void> {
   const sendBtn = DOM.aiSendBtn;
   if (inputEl && sendBtn) {
     const base = window.location.pathname.replace(/\/+$/, '') + '/api/';
-    const _renderChat = () => { if (panelEl) renderChatContent({ panelEl, messages: chatMessages, renderWidth, apiBase: base }); };
+    const _renderChat = (scrollMode: 'follow' | 'preserve' | 'auto' = 'auto') => { if (panelEl) renderChatContent({ panelEl, messages: chatMessages, renderWidth, apiBase: base, scrollMode }); };
     sessionStore.init(base);
     await sessionStore.load();
 
@@ -513,8 +514,8 @@ export async function initOrb(): Promise<void> {
 
       await doSend(text, chatMessages, base, abortCtrl.signal,
         () => {},
-        _renderChat,
-        (msg) => { chatMessages.push({ role: 'ai', text: msg }); _renderChat(); },
+        () => _renderChat('follow'), // 发送后首次渲染强制滚底
+        (msg) => { chatMessages.push({ role: 'ai', text: msg }); _renderChat(); }, // 后续流式更新用 auto
       );
       abortCtrl = null;
       sendBtn!.classList.remove('sending');

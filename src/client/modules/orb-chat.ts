@@ -39,6 +39,8 @@ export interface ChatState {
   messages: ChatMessage[];
   renderWidth: number;
   apiBase: string;
+  /** 'follow'  = 强制滚到底（发送时），'preserve' = 保留位置（resize 时），'auto' = 默认启发式 */
+  scrollMode?: 'follow' | 'preserve' | 'auto';
 }
 
 // ========== 工具函数 ==========
@@ -77,10 +79,8 @@ function randomToolAccent(): { color1: string; color2: string } {
   return { color1: hslToHex(h1, sat, lit), color2: hslToHex(h2, sat, lit) };
 }
 
-// ========== 核心：消息气泡渲染 ==========
-
 export function renderChatContent(state: ChatState): void {
-  const { panelEl, messages, renderWidth } = state;
+  const { panelEl, messages, renderWidth, scrollMode = 'auto' } = state;
   if (!panelEl) return;
   const contentArea = DOM.orbPanelContent(panelEl);
   if (!contentArea) return;
@@ -167,11 +167,10 @@ export function renderChatContent(state: ChatState): void {
       }
     }
 
-    idx++;
   }
   // 保存滚动位置
   const scrollTop = contentArea.scrollTop;
-  const wasAtBottom = scrollTop + contentArea.clientHeight >= contentArea.scrollHeight - 80;
+  const wasAtBottom = scrollTop + contentArea.clientHeight >= contentArea.scrollHeight - 200; // 阈值 80→200，一个气泡高度
   contentArea.innerHTML = html;
   // 消息操作按钮事件绑定
   contentArea.querySelectorAll('.orb-act-btn').forEach(btn => {
@@ -200,8 +199,16 @@ export function renderChatContent(state: ChatState): void {
       }
     });
   });
-  if (wasAtBottom) { contentArea.scrollTop = contentArea.scrollHeight; }
-  else { contentArea.scrollTop = scrollTop; }
+  // 滚动策略：follow 强制底部，preserve 保留位置，auto 启发式
+  if (scrollMode === 'follow') {
+    contentArea.scrollTop = contentArea.scrollHeight;
+  } else if (scrollMode === 'preserve') {
+    contentArea.scrollTop = scrollTop;
+  } else {
+    // auto: 原来在底部才追底
+    if (wasAtBottom) { contentArea.scrollTop = contentArea.scrollHeight; }
+    else { contentArea.scrollTop = scrollTop; }
+  }
   // 注入 CSS（仅一次）
   if (!contentArea.querySelector('.orb-md-css')) {
     const style = document.createElement('style');
