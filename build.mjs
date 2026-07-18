@@ -1,6 +1,6 @@
 import { build } from 'esbuild';
 import { execSync } from 'child_process';
-import { statSync, readdirSync, readFileSync } from 'fs';
+import { statSync, readdirSync, readFileSync, writeFileSync } from 'fs';
 import { join, extname } from 'path';
 
 // ========== 构建后校验 ==========
@@ -90,6 +90,10 @@ checkFreshness('public/bundle.js', 'client');
 const html2 = readFileSync('public/index.html', 'utf-8');
 if (!html2.includes('bundle.js')) { console.error('[smoke] ❌ public/index.html 未引用 bundle.js'); process.exit(1); }
 if (statSync('public/bundle.js').size < 100) { console.error('[smoke] ❌ public/bundle.js 异常小（可能构建失败）'); process.exit(1); }
+// 自动更新 bundle.js 版本号（防止浏览器缓存旧 bundle）
+const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+const html3 = html2.replace(/bundle\.js\?v=\d+/, `bundle.js?v=${today}`);
+if (html3 !== html2) writeFileSync('public/index.html', html3);
 console.log('[smoke] ✅ index.html 引用 bundle.js, 大小 ' + statSync('public/bundle.js').size + ' bytes');
 
 console.log('Build OK');
