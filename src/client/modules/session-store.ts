@@ -20,15 +20,27 @@ import { log } from './logger.js';
 
 // ========== 类型 ==========
 
-export interface SessionMessage {
-  role: string;
+// ========== Content Block 类型（与 orb-chat.ts 共享语义）==========
+
+export interface TextBlock {
+  type: 'text';
   text: string;
   reasoning?: string;
-  toolCalls?: Array<{
-    name: string;
-    params: Record<string, unknown>;
-    result?: { content: Array<{ type: string; text?: string }>; isError?: boolean };
-  }>;
+}
+
+export interface ToolBlock {
+  type: 'tool';
+  id: string;
+  name: string;
+  input: Record<string, unknown>;
+  result?: { content: Array<{ type: string; text?: string }>; isError?: boolean };
+}
+
+export type ContentBlock = TextBlock | ToolBlock;
+
+export interface SessionMessage {
+  role: 'user' | 'ai';
+  content: ContentBlock[];
 }
 
 export interface Session {
@@ -251,18 +263,10 @@ export const sessionStore = {
             messages: [],
           };
 
+      // content block 格式直接序列化，无需转换
       session.messages = messages.map(m => ({
         role: m.role,
-        text: m.text,
-        reasoning: m.reasoning,
-        // toolCalls：持久化时去掉渲染专用的 color1/color2
-        ...(m.toolCalls && m.toolCalls.length > 0 ? {
-          toolCalls: m.toolCalls.map(tc => ({
-            name: tc.name,
-            params: tc.params,
-            result: tc.result,
-          })),
-        } : {}),
+        content: m.content,
       }));
       session.updatedAt = new Date().toISOString();
       if (modelId) session.modelId = modelId;
@@ -293,7 +297,8 @@ export const sessionStore = {
 
   /** 用第一条用户消息的前 18 字生成会话标题 */
   async _generateTitle(session: Session): Promise<void> {
-    const userMsg = session.messages.find(m => m.role === 'user')?.text || '';
+    const userMsg = session.messages.find(m => m.role === 'user')
+      ?.content.find((b): b is TextBlock => b.type === 'text')?.text || '';
     const cleaned = userMsg.trim();
     if (!cleaned) return;
     const MAX = 18;
