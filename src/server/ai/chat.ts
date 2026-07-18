@@ -118,8 +118,8 @@ export async function* streamChat(
     baseMessages.push({ role: 'system', content: alwaysApplyPrompt });
   }
 
-  // 工具调用循环（最多 10 轮，防止无限循环）
-  const MAX_TURNS = 10;
+  // 工具调用循环（最多 50 轮）
+  const MAX_TURNS = 50;
   const apiMessages: Array<Record<string, unknown>> = [...baseMessages];
   let toolFailureCount = 0; // P1: 工具失败计数
 
@@ -262,7 +262,7 @@ export async function* streamChat(
     return;
   }
   // MAX_TURNS 耗尽
-  yield { type: 'error', content: '达到最大对话轮次（10 轮），终止对话' };
+  yield { type: 'error', content: '达到最大对话轮次（50 轮），终止对话' };
 }
 
 function safeParseJson(s: string): Record<string, unknown> {
