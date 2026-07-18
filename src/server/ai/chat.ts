@@ -43,13 +43,41 @@ export interface ChatMessage {
   content: string;
 }
 
-/** 流式事件 */
+/** 流式事件（content block 协议）
+ *
+ * 协议结构（按 SSE 顺序）：
+ *   message_start                        ← 新一轮 LLM 消息开始（客户端推新气泡）
+ *   content_block_start  index type      ← 创建 block（text / tool_use）
+ *   content_block_delta  index delta     ← 增量更新 block 内容
+ *   content_block_stop   index           ← block 完成
+ *   tool_result          toolUseId       ← 工具执行结果（填入对应 ToolBlock）
+ *   message_stop                         ← 本轮消息结束
+ *   done                                 ← 全部结束
+ *   error                                ← 错误
+ */
 export interface StreamEvent {
-  type: 'message_start' | 'thinking' | 'text' | 'tool_call' | 'tool_result' | 'error' | 'done' | 'rule_warning';
-  content?: string;
+  type:
+    | 'message_start'
+    | 'content_block_start'
+    | 'content_block_delta'
+    | 'content_block_stop'
+    | 'tool_result'
+    | 'message_stop'
+    | 'error'
+    | 'done'
+    | 'rule_warning';
+  // content_block_start
+  index?: number;
+  blockType?: 'text' | 'tool_use';
+  toolUseId?: string;
   toolName?: string;
-  toolParams?: Record<string, unknown>;
+  // content_block_delta
+  deltaType?: 'text_delta' | 'thinking_delta' | 'input_json_delta';
+  deltaText?: string;
+  // tool_result
   toolResult?: { content: Array<{ type: string; text?: string }>; isError?: boolean };
+  // error / rule_warning
+  content?: string;
 }
 
 /** API Provider 配置 */
@@ -158,7 +186,13 @@ export async function* streamChat(
     const toolCallBufs = new Map<number, { id: string; name: string; args: string }>();
     let finishReason = '';
     let contentBuf = '';
-    let thinkingBuf = ''; // P1: 收集 thinking
+    // block index 计数：text block 固定 index=0，tool_use block 从 1 开始
+    let blockIndex = 0;
+    let hasTextBlock = false;
+    let hasThinkingBlock = false;
+
+    // 本轮 message_start（第一轮不需要，已在外层 while 前 yield 过）
+    yield { type: 'message_start' };
 
     while (true) {
       const { done, value } = await reader.read();
@@ -178,7 +212,9 @@ export async function* streamChat(
           if (delta.tool_calls) {
             for (const tc of (delta.tool_calls as Array<Record<string, unknown>>)) {
               const idx = (tc.index as number) ?? 0;
-              if (!toolCallBufs.has(idx)) toolCallBufs.set(idx, { id: '', name: '', args: '' });
+              if (!toolCallBufs.has(idx)) {
+                toolCallBufs.set(idx, { id: '', name: '', args: '' });
+              }
               const buf = toolCallBufs.get(idx)!;
               if (tc.id) buf.id = tc.id as string;
               if ((tc.function as Record<string, string>)?.name) buf.name += (tc.function as Record<string, string>).name;
@@ -186,75 +222,110 @@ export async function* streamChat(
             }
           }
 
+          // thinking delta → thinking_delta 事件
           if (delta.reasoning_content) {
-            thinkingBuf += delta.reasoning_content as string;
-            yield { type: 'thinking', content: delta.reasoning_content as string };
+            if (!hasThinkingBlock) {
+              hasThinkingBlock = true;
+              yield { type: 'content_block_start', index: blockIndex, blockType: 'text' };
+            }
+            yield { type: 'content_block_delta', index: blockIndex, deltaType: 'thinking_delta', deltaText: delta.reasoning_content as string };
           }
+
+          // text delta → text_delta 事件
           if (delta.content) {
             contentBuf += delta.content as string;
-            yield { type: 'text', content: delta.content as string };
+            if (!hasTextBlock) {
+              // 如果之前有 thinking block，先关闭它再开新 text block
+              if (hasThinkingBlock) {
+                yield { type: 'content_block_stop', index: blockIndex };
+                blockIndex++;
+              }
+              hasTextBlock = true;
+              yield { type: 'content_block_start', index: blockIndex, blockType: 'text' };
+            }
+            yield { type: 'content_block_delta', index: blockIndex, deltaType: 'text_delta', deltaText: delta.content as string };
           }
         } catch { /* skip malformed chunks */ }
       }
+    }
+
+    // 关闭当前 text/thinking block
+    if (hasTextBlock || hasThinkingBlock) {
+      yield { type: 'content_block_stop', index: blockIndex };
+      blockIndex++;
     }
 
     // 检查是否需要执行工具
     if (finishReason === 'tool_calls' && toolCallBufs.size > 0) {
       const assistantMsg: Record<string, unknown> = { role: 'assistant', content: contentBuf || null };
       const toolCalls: Array<Record<string, unknown>> = [];
-      const todo: Array<{ name: string; params: Record<string, unknown>; tcId: string }> = [];
+      const todo: Array<{ name: string; params: Record<string, unknown>; tcId: string; blockIdx: number }> = [];
       let tcIdx = 0;
       for (const [, buf] of toolCallBufs) {
         const tcId = buf.id || `call_${turn}_${tcIdx}`;
         const params = safeParseJson(buf.args);
         toolCalls.push({ id: tcId, type: 'function', function: { name: buf.name, arguments: buf.args } });
-        todo.push({ name: buf.name, params, tcId });
+        // 每个工具调用占一个 block index
+        todo.push({ name: buf.name, params, tcId, blockIdx: blockIndex + tcIdx });
         tcIdx++;
       }
       assistantMsg.tool_calls = toolCalls;
       apiMessages.push(assistantMsg);
 
-      // 先 yield 所有工具调用和结果（挂在当前气泡），再继续到下一轮
+      // yield tool_use block（先全部 start，并行工具同时可见）
       const pendingWarnings: string[] = [];
       for (const t of todo) {
-        // 规则检查：工具调用前扫描，违规收集（不在 assistant/tool 序列中间插入）
         const ruleWarning = checkToolCallRules(t.name, t.params);
         if (ruleWarning) {
           pendingWarnings.push(ruleWarning);
           yield { type: 'rule_warning', content: ruleWarning };
         }
-        yield { type: 'tool_call', toolName: t.name, toolParams: t.params };
-        let result;
+        yield { type: 'content_block_start', index: t.blockIdx, blockType: 'tool_use', toolUseId: t.tcId, toolName: t.name };
+        yield { type: 'content_block_delta', index: t.blockIdx, deltaType: 'input_json_delta', deltaText: JSON.stringify(t.params) };
+        yield { type: 'content_block_stop', index: t.blockIdx };
+      }
+
+      // 并行执行所有工具
+      const results = await Promise.all(todo.map(async t => {
         try {
-          result = await executeTool(t.name, t.params, toolCtx);
+          return await executeTool(t.name, t.params, toolCtx);
         } catch (err) {
-          result = {
+          return {
             content: [{ type: 'text', text: `工具执行失败: ${err instanceof Error ? err.message : String(err)}` }],
             isError: true,
           };
         }
+      }));
+
+      // yield tool_result，同时推入 apiMessages
+      for (let i = 0; i < todo.length; i++) {
+        const t = todo[i];
+        const result = results[i];
         if (result.isError) {
           toolFailureCount++;
           if (toolFailureCount >= 3) {
-            yield { type: 'tool_result', toolResult: result };
+            yield { type: 'tool_result', toolUseId: t.tcId, toolResult: result };
             yield { type: 'error', content: '工具连续失败 3 次，终止对话' };
             return;
           }
         } else {
           toolFailureCount = 0;
         }
-        yield { type: 'tool_result', toolResult: result };
+        yield { type: 'tool_result', toolUseId: t.tcId, toolResult: result };
         apiMessages.push({ role: 'tool', content: JSON.stringify(result), tool_call_id: t.tcId });
       }
-      // 所有 tool result 推完后，再注入 warning（用 user 角色避免 400）
+
+      // 注入 warning
       if (pendingWarnings.length > 0) {
         apiMessages.push({ role: 'user', content: pendingWarnings.join('\n\n---\n\n') });
       }
-      // 工具全部执行完毕后，通知客户端创建新气泡，再进入下一轮 LLM 调用
-      yield { type: 'message_start' };
+
+      // 本轮消息结束，进入下一轮（下一轮 while 开头会 yield message_start）
+      yield { type: 'message_stop' };
       continue;
     }
 
+    yield { type: 'message_stop' };
     yield { type: 'done' };
     return;
   }
