@@ -255,10 +255,6 @@ export async function* streamChat(
       continue;
     }
 
-    // P1: 循环结束前 yield 所有内容块（text + thinking）
-    if (thinkingBuf) yield { type: 'thinking', content: thinkingBuf };
-    if (contentBuf) yield { type: 'text', content: contentBuf };
-
     yield { type: 'done' };
     return;
   }

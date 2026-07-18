@@ -371,8 +371,9 @@ export async function doSend(
           const event = JSON.parse(jsonStr);
           switch (event.type) {
             case 'message_start':
-              // 新轮次开始：重置当前气泡内容（不推新消息，避免重复）
-              messages[msgIdx] = { role: 'ai', text: '', reasoning: '' };
+              // 新轮次开始：推新气泡，msgIdx 前进，重置 buf
+              messages.push({ role: 'ai', text: '', reasoning: '' });
+              msgIdx = messages.length - 1;
               reasoningBuf = '';
               contentBuf = '';
               break;
