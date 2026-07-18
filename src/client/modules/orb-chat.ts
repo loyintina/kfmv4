@@ -110,25 +110,47 @@ export function renderChatContent(state: ChatState): void {
       </span>
     </div>`;
 
-    // 思考内容（可折叠）
+    // 思考内容
+    const hasToolCalls = !isUser && msg.toolCalls && msg.toolCalls.length > 0;
+    const reasoningDone = !!(msg.text || hasToolCalls); // 有正文或有工具调用 = 思考已完成
     if (!isUser && msg.reasoning) {
       const rid = 'r' + idx;
-      const rlabel = msg.text ? '已思考' : '思考中...';
+      const rlabel = reasoningDone ? '已思考' : '思考中...';
+      const displayStyle = reasoningDone ? 'display:none' : 'display:block';
       bubbleHtml += `<div onclick="var p=document.getElementById('${rid}');p.style.display=p.style.display==='none'?'':'none'" style="font-size:9px;color:rgba(0,212,255,0.5);cursor:pointer;margin-bottom:2px;user-select:none">${rlabel} <span style="font-size:7px">▼</span></div>`;
-      const displayStyle = msg.text ? 'display:none' : 'display:block';
       bubbleHtml += `<div id="${rid}" style="${displayStyle};font-size:var(--card-font-size,10px);line-height:16px;color:rgba(255,255,255,0.45);margin-bottom:4px;padding:4px 6px;border-radius:4px;background:rgba(0,0,0,0.2);white-space:pre-wrap">${escapeHtml(msg.reasoning)}</div>`;
     }
 
     const lineHeight = 16;
     bubbleHtml += `<div class="orb-msg-text" data-msg-idx="${idx}" style="font-family:sans-serif;font-size:var(--card-font-size,13px);line-height:${lineHeight}px;color:${theme.aiChat.bubbleText};word-break:break-word">${renderPlainText(msg.text)}</div>`;
 
-    const maxWidth = isUser ? Math.min(innerWidth - 8, innerWidth * 0.85) : innerWidth - 8;
-    html += `
-      <div style="display:flex;justify-content:${align};margin-bottom:8px">
-        <div style="max-width:${maxWidth}px;padding:6px 12px;background:${bgColor};${borderStyle}border-radius:8px;box-shadow:${boxShadow}">
-          ${bubbleHtml}
-        </div>
-      </div>`;
+    // 纯思考气泡（无正文、无工具调用）→ 全宽独立块，样式同工具卡片
+    const reasoningOnly = !isUser && msg.reasoning && !msg.text && !hasToolCalls;
+    if (reasoningOnly) {
+      const rid2 = 'r' + idx;
+      const rlabel2 = reasoningDone ? '已思考' : '思考中...';
+      const displayStyle2 = reasoningDone ? 'display:none' : 'display:block';
+      html += `
+        <div style="display:flex;justify-content:flex-start;margin-bottom:8px">
+          <div style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:linear-gradient(rgba(10,15,30,0.75),rgba(10,15,30,0.75)) padding-box,${theme.aiChat.panelBorderGradient} border-box;border:1px solid transparent;border-left-width:3px;font-size:var(--card-font-size,10px)">
+            <div onclick="var p=document.getElementById('${rid2}');var s=p.style.display==='none'?'block':'none';p.style.display=s;this.querySelector('.rt-arrow').textContent=s==='block'?'▼':'▶'" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
+              <span class="rt-arrow" style="font-size:7px;color:rgba(0,212,255,0.5)">${reasoningDone ? '▶' : '▼'}</span>
+              <span style="color:rgba(0,212,255,0.6);font-weight:600">${rlabel2}</span>
+            </div>
+            <div id="${rid2}" style="${displayStyle2};margin-top:4px">
+              <pre style="font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.45);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;background:rgba(0,0,0,0.15);padding:4px 6px;border-radius:4px">${escapeHtml(msg.reasoning ?? '')}</pre>
+            </div>
+          </div>
+        </div>`;
+    } else {
+      const maxWidth = isUser ? Math.min(innerWidth - 8, innerWidth * 0.85) : innerWidth - 8;
+      html += `
+        <div style="display:flex;justify-content:${align};margin-bottom:8px">
+          <div style="max-width:${maxWidth}px;padding:6px 12px;background:${bgColor};${borderStyle}border-radius:8px;box-shadow:${boxShadow}">
+            ${bubbleHtml}
+          </div>
+        </div>`;
+    }
 
     // 工具调用卡片（气泡外，独立块）
     if (!isUser && msg.toolCalls && msg.toolCalls.length > 0) {
@@ -396,10 +418,11 @@ export async function doSend(
       }
     }
     onRender();
-    // 流结束：写入最终文本到正确的目标（有工具调用时是 replyMsgIdx，否则是 msgIdx）
+    // 流结束：仅在目标消息为空时兜底（正常情况流式已逐 token 写入，不重复覆盖）
     const finalTarget = replyMsgIdx >= 0 ? replyMsgIdx : msgIdx;
-    messages[finalTarget].text = contentBuf || '未获取到回复';
-    messages[finalTarget].reasoning = reasoningBuf || undefined;
+    if (!messages[finalTarget].text && contentBuf) messages[finalTarget].text = contentBuf;
+    if (!messages[finalTarget].reasoning && reasoningBuf) messages[finalTarget].reasoning = reasoningBuf;
+    if (!messages[finalTarget].text && !messages[finalTarget].reasoning) messages[finalTarget].text = '未获取到回复';
     await sessionStore.saveMessages(messages, config.modelId, config.providerId);
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') {
