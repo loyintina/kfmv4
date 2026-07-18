@@ -478,7 +478,7 @@ export async function initOrb(): Promise<void> {
     if (sessionStore.activeId) {
       const msgs = await sessionStore.getMessages(sessionStore.activeId);
       chatMessages.length = 0;
-      chatMessages.push(...msgs.map(m => ({ role: m.role as 'user' | 'ai', text: m.text, reasoning: m.reasoning })));
+      chatMessages.push(...msgs.map(m => ({ role: m.role as 'user' | 'ai', text: m.text, reasoning: m.reasoning, toolCalls: m.toolCalls })));
       _renderChat();
     }
 
@@ -496,7 +496,7 @@ export async function initOrb(): Promise<void> {
       );
       sessionStore.getMessages(detail.sessionId).then(msgs => {
         chatMessages.length = 0;
-        chatMessages.push(...msgs.map(m => ({ role: m.role as 'user' | 'ai', text: m.text, reasoning: m.reasoning })));
+        chatMessages.push(...msgs.map(m => ({ role: m.role as 'user' | 'ai', text: m.text, reasoning: m.reasoning, toolCalls: m.toolCalls })));
         _renderChat();
       });
     });
@@ -511,11 +511,12 @@ export async function initOrb(): Promise<void> {
 
       abortCtrl = new AbortController();
       sendBtn!.classList.add('sending');
-
+      // 发送前立即滚到底部（一次性），后续流式更新用 auto 避免覆盖 markdown
+      _renderChat('follow');
       await doSend(text, chatMessages, base, abortCtrl.signal,
         () => {},
-        () => _renderChat('follow'), // 发送后首次渲染强制滚底
-        (msg) => { chatMessages.push({ role: 'ai', text: msg }); _renderChat(); }, // 后续流式更新用 auto
+        _renderChat, // auto 模式：已在底部则追底，否则保持位置
+        (msg) => { chatMessages.push({ role: 'ai', text: msg }); _renderChat(); },
       );
       abortCtrl = null;
       sendBtn!.classList.remove('sending');

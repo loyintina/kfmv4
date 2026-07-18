@@ -24,6 +24,11 @@ export interface SessionMessage {
   role: string;
   text: string;
   reasoning?: string;
+  toolCalls?: Array<{
+    name: string;
+    params: Record<string, unknown>;
+    result?: { content: Array<{ type: string; text?: string }>; isError?: boolean };
+  }>;
 }
 
 export interface Session {
@@ -154,7 +159,7 @@ export const sessionStore = {
   },
 
   /** 获取指定会话的消息列表 */
-  async getMessages(id: string): Promise<Array<{ role: string; text: string; reasoning?: string }>> {
+  async getMessages(id: string): Promise<SessionMessage[]> {
     try {
       const res = await fetch(this._apiBase + 'files/read', {
         method: 'POST',
@@ -208,7 +213,7 @@ export const sessionStore = {
 
   /** 保存当前消息到活跃会话，首次对话自动生成标题 */
   async saveMessages(
-    messages: Array<{ role: string; text: string; reasoning?: string }>,
+    messages: SessionMessage[],
     modelId?: string,
     providerId?: string,
   ): Promise<void> {
@@ -250,6 +255,14 @@ export const sessionStore = {
         role: m.role,
         text: m.text,
         reasoning: m.reasoning,
+        // toolCalls：持久化时去掉渲染专用的 color1/color2
+        ...(m.toolCalls && m.toolCalls.length > 0 ? {
+          toolCalls: m.toolCalls.map(tc => ({
+            name: tc.name,
+            params: tc.params,
+            result: tc.result,
+          })),
+        } : {}),
       }));
       session.updatedAt = new Date().toISOString();
       if (modelId) session.modelId = modelId;
