@@ -1,13 +1,10 @@
 /**
- * readable.ts — HTML → 可读文本/Markdown 提取
+ * readable.ts — HTML → 可读文本提取
  *
- * 移植自 omp browser/readable.ts。
- * 依赖：@mozilla/readability（已在 kfmv4 node_modules）、linkedom（同上）。
- * htmlToBasicMarkdown 替换为内联的简单 HTML strip（够用）。
+ * 简化版，不依赖 @mozilla/readability 或 linkedom。
+ * 使用 regex 基础的 HTML tag 剥离 + 结构化提取。
+ * 对 AI 消费足够用。
  */
-
-import { Readability } from '@mozilla/readability';
-import { parseHTML } from 'linkedom';
 
 export type ReadableFormat = 'text' | 'markdown';
 
@@ -28,15 +25,19 @@ function normalize(text: string | null | undefined): string | undefined {
 }
 
 /**
- * Minimal HTML → plain text: strip tags, collapse whitespace.
- * Not a full markdown converter, but sufficient for AI consumption.
+ * 基础 HTML → 文本转换：strip tags，保留结构。
  */
 function htmlToText(html: string): string {
   return html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<\/p>/gi, '\n\n')
+    .replace(/<\/div>/gi, '\n')
     .replace(/<\/li>/gi, '\n')
     .replace(/<\/h[1-6]>/gi, '\n\n')
+    .replace(/<li[^>]*>/gi, '• ')
+    .replace(/<h[1-6][^>]*>/gi, '\n')
     .replace(/<[^>]+>/g, '')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
@@ -45,79 +46,65 @@ function htmlToText(html: string): string {
     .replace(/&#39;/g, "'")
     .replace(/&nbsp;/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]+/g, ' ')
     .trim();
 }
 
+/** 从 HTML 中提取 title */
+function extractTitle(html: string): string | undefined {
+  const m = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  return m ? normalize(m[1]) : undefined;
+}
+
+/** 从 HTML 中提取 <meta name="description"> */
+function extractDescription(html: string): string | undefined {
+  const m = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([\s\S]*?)["']/i);
+  return m ? normalize(m[1]) : undefined;
+}
+
+/** 从 HTML 中提取主要文本内容（跳过 script/style/nav） */
+function extractMainContent(html: string): string {
+  // 尝试找 <article> 或 <main> 内容
+  const articleMatch = html.match(/<article[^>]*>([\s\S]*?)<\/article>/i);
+  if (articleMatch) return htmlToText(articleMatch[1]);
+
+  const mainMatch = html.match(/<main[^>]*>([\s\S]*?)<\/main>/i);
+  if (mainMatch) return htmlToText(mainMatch[1]);
+
+  // 回退：提取 <body> 内容
+  const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  if (bodyMatch) return htmlToText(bodyMatch[1]);
+
+  // 最后回退：全文 strip
+  return htmlToText(html);
+}
+
 /**
- * Extract readable content from raw HTML.
- * Tries Readability (article-isolation scoring) first, then falls back to a
- * CSS selector chain over the same pre-parsed DOM.
+ * 从原始 HTML 提取可读内容。
+ * 简化实现，不依赖 Readability/linkedom。
  */
-export async function extractReadableFromHtml(
+export function extractReadableFromHtml(
   html: string,
   url: string,
   format: ReadableFormat,
-): Promise<ReadableResult | null> {
-  const { document } = parseHTML(html);
-
-  // Primary: Readability article extraction
-  const article = new Readability(document as unknown as Document).parse();
-  if (article) {
-    const result = toReadableResult(url, format, article.textContent, article.content, {
-      title: article.title,
-      byline: article.byline,
-      excerpt: article.excerpt,
-      length: article.length,
-    });
-    if (result) return result;
-  }
-
-  // Fallback: CSS selector chain
-  const candidates = [
-    document.querySelector('[data-pagefind-body]'),
-    document.querySelector('main article'),
-    document.querySelector('article'),
-    document.querySelector('main'),
-    document.querySelector("[role='main']"),
-    document.body,
-  ];
-  for (const el of candidates) {
-    if (!el) continue;
-    const innerHTML = (el as unknown as { innerHTML?: string }).innerHTML?.trim();
-    const textContent = el.textContent?.trim();
-    if (!innerHTML || !textContent) continue;
-    const result = toReadableResult(url, format, textContent, innerHTML, {
-      title: document.title,
-      excerpt: textContent.slice(0, 240),
-      length: textContent.length,
-    });
-    if (result) return result;
-  }
-
-  return null;
-}
-
-/** Shared builder for both extraction paths. */
-function toReadableResult(
-  url: string,
-  format: ReadableFormat,
-  textContent: string | null | undefined,
-  htmlContent: string | null | undefined,
-  meta: { title?: string | null; byline?: string | null; excerpt?: string | null; length?: number | null },
 ): ReadableResult | null {
-  const text = normalize(textContent);
-  const markdown = format === 'markdown'
-    ? (normalize(htmlToText(htmlContent ?? '')) ?? text)
-    : undefined;
-  const normalizedText = format === 'text' ? text : undefined;
-  if (!normalizedText && !markdown) return null;
-  return {
-    url,
-    title: normalize(meta.title),
-    byline: normalize(meta.byline),
-    excerpt: normalize(meta.excerpt),
-    contentLength: meta.length ?? text?.length ?? markdown?.length ?? 0,
-    text: normalizedText,
-    markdown,
-  };
+  const title = extractTitle(html);
+  const description = extractDescription(html);
+  const mainText = extractMainContent(html);
+
+  if (!mainText || mainText.length < 50) return null;
+
+  const text = mainText;
+  const contentLength = text.length;
+  const excerpt = description ?? text.slice(0, 240);
+
+  if (format === 'markdown') {
+    // 简单的 markdown：保留基本结构
+    const markdown = text
+      .replace(/\n\n+/g, '\n\n')
+      .trim();
+    return { url, title, excerpt, contentLength, markdown };
+  }
+
+  return { url, title, excerpt, contentLength, text };
 }
