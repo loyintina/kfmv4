@@ -381,7 +381,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `canvas-utils.ts` | 61 | 4 | ✅ 依赖图 | Canvas 通用工具函数 |
 | `card-toast.ts` | 52 | 1 | ✅ 分组表 | 卡片风格轻量提示 |
 | `char-rain.ts` | 306 | 2 | ✅ 分组表 | 字符散落/回收动画 |
-| `card-stack.ts` | 452 | 4 | ✅ 独立条目 | 堆叠卡片面板（消费 card-registry，按注册表动态构建） |
+| `card-stack.ts` | 457 | 4 | ✅ 独立条目 | 堆叠卡片面板（消费 card-registry，按注册表动态构建） |
 | `click-queue.ts` | 39 | 1 | ✅ 分组表 | 点击事件队列 |
 | `custom-select.ts` | 244 | 1 | ✅ 分组表 | 可复用的自定义下拉框组件 |
 | `confirm-dialog.ts` | 190 | 1 | ✅ 分组表 | 可复用的自定义确认对话框 |
@@ -430,7 +430,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `../src/client/modules/renderers/md-extensions.ts` | 51 | 1 | — | Markdown 渲染扩展（链接、任务列表） |
 | `../src/client/modules/renderers/md-css.ts` | 57 | 2 | ✅ 分组表 | Markdown 渲染 CSS（全局唯一来源，orb + handler-factory 共享） |
 | `../src/client/modules/renderers/text-preview.ts` | 26 | 1 | — | 文本文件预览渲染器 |
-| **合计** | **13446** | | | |
+| **合计** | **13451** | | | |
 
 ### 死代码检查
 **结论：无死代码。** 所有 41 个模块都被至少 1 个文件导入（`terminal-card-04.ts` 和 `tmux-card.ts` 被导入数为 0，但这是模块自身的特性：它们仅在用户侧打开卡片时由 `card-registry.ts` 的 `createHandler` 工厂按需实例化，属于动态加载。`terminal-aux-bar.ts` 已删除（空占位，无任何引用）。`src/cards/` 目录已彻底删除。实际使用的 logger 在 `src/client/modules/logger.ts`。

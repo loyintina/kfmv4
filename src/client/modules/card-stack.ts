@@ -385,7 +385,12 @@ export function initCardStack(): void {
 
   gestures.register({
     id: 'card-stack-global',
-    targetFilter: () => true,
+    targetFilter: (target: HTMLElement) => {
+      // 放行：卡片内容区内有 cursor:grab 的拖拽柄（角色卡文件排序等）
+      const inCard = target.closest('.stack-card');
+      if (inCard && target.closest('[style*="cursor:grab"]')) return false;
+      return true;
+    },
     condition: () => isCardStackOpen(),
     priority: 80,
     onStart: () => {
