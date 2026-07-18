@@ -180,18 +180,21 @@ export async function* streamChat(
       yield { type: 'error', content: '无响应体' };
       return;
     }
-
     const decoder = new TextDecoder();
     let buffer = '';
     const toolCallBufs = new Map<number, { id: string; name: string; args: string }>();
     let finishReason = '';
     let contentBuf = '';
-    // block index 计数：text block 固定 index=0，tool_use block 从 1 开始
+    // text block（含 reasoning）始终在 index=0，tool_use block 从 index=1 开始
+    // 设计决策：thinking(reasoning_content) 和 text(content) 合并到同一个 TextBlock，
+    // 不拆成两个 block。客户端 content[0] 同时持有 reasoning 和 text，
+    // renderChatContent 取 textBlocks[0] 即可正确渲染两者。
+    // 历史问题：曾经 thinking 开 index=0，text 再 stop/reopen 到 index=1，
+    // 导致 renderChatContent 的 textBlocks[0].text 永远为空。
     let blockIndex = 0;
-    let hasTextBlock = false;
-    let hasThinkingBlock = false;
+    let hasTextBlock = false; // 已 yield content_block_start index=0
 
-    // 本轮 message_start（第一轮不需要，已在外层 while 前 yield 过）
+    // 本轮 message_start
     yield { type: 'message_start' };
 
     while (true) {
@@ -222,37 +225,32 @@ export async function* streamChat(
             }
           }
 
-          // thinking delta → thinking_delta 事件
+          // thinking delta → 写入 index=0 block 的 reasoning 字段
           if (delta.reasoning_content) {
-            if (!hasThinkingBlock) {
-              hasThinkingBlock = true;
-              yield { type: 'content_block_start', index: blockIndex, blockType: 'text' };
+            if (!hasTextBlock) {
+              hasTextBlock = true;
+              yield { type: 'content_block_start', index: 0, blockType: 'text' };
             }
-            yield { type: 'content_block_delta', index: blockIndex, deltaType: 'thinking_delta', deltaText: delta.reasoning_content as string };
+            yield { type: 'content_block_delta', index: 0, deltaType: 'thinking_delta', deltaText: delta.reasoning_content as string };
           }
 
-          // text delta → text_delta 事件
+          // text delta → 写入同一个 index=0 block 的 text 字段
           if (delta.content) {
             contentBuf += delta.content as string;
             if (!hasTextBlock) {
-              // 如果之前有 thinking block，先关闭它再开新 text block
-              if (hasThinkingBlock) {
-                yield { type: 'content_block_stop', index: blockIndex };
-                blockIndex++;
-              }
               hasTextBlock = true;
-              yield { type: 'content_block_start', index: blockIndex, blockType: 'text' };
+              yield { type: 'content_block_start', index: 0, blockType: 'text' };
             }
-            yield { type: 'content_block_delta', index: blockIndex, deltaType: 'text_delta', deltaText: delta.content as string };
+            yield { type: 'content_block_delta', index: 0, deltaType: 'text_delta', deltaText: delta.content as string };
           }
         } catch { /* skip malformed chunks */ }
       }
     }
 
-    // 关闭当前 text/thinking block
-    if (hasTextBlock || hasThinkingBlock) {
-      yield { type: 'content_block_stop', index: blockIndex };
-      blockIndex++;
+    // 关闭 text/thinking block（如果开过）
+    if (hasTextBlock) {
+      yield { type: 'content_block_stop', index: 0 };
+      blockIndex = 1; // tool_use block 从 1 开始
     }
 
     // 检查是否需要执行工具

@@ -121,9 +121,9 @@ export function renderChatContent(state: ChatState): void {
       const warningBlocks = msg.content.filter(b => b.type === 'rule_warning') as Array<{ type: 'rule_warning'; content: string }>;
 
       const hasContent = msg.content.length > 0;
-      const firstText = textBlocks[0];
-      const reasoning = firstText?.reasoning || '';
-      const mainText = firstText?.text || '';
+      // 合并所有 TextBlock 的 text 和 reasoning（通常只有一个，但合并更鲁棒）
+      const reasoning = textBlocks.map(b => b.reasoning || '').join('');
+      const mainText = textBlocks.map(b => b.text || '').join('');
       const hasToolCalls = toolBlocks.length > 0;
       const reasoningDone = !!(mainText || hasToolCalls);
 
@@ -282,8 +282,9 @@ export function renderChatContent(state: ChatState): void {
   for (const el of msgEls) {
     const i = parseInt(el.dataset.msgIdx || '-1', 10);
     if (i >= 0 && i < messages.length && messages[i].role !== 'user') {
-      const textBlock = messages[i].content.find((b): b is TextBlock => b.type === 'text');
-      const text = textBlock?.text || '';
+      const text = messages[i].content
+        .filter((b): b is TextBlock => b.type === 'text')
+        .map(b => b.text || '').join('');
       if (text.length > 0) {
         const mathData: MathData = { display: [], inline: [] };
         const processed = preprocessMd(text, mathData);
