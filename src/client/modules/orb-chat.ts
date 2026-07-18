@@ -363,10 +363,12 @@ export async function doSend(
               messages[textTarget].text = contentBuf;
               break;
             case 'tool_call':
-              // 首次 tool_call：推入新气泡作为后续 LLM 回复的槽位
+              // 首次 tool_call：推入新气泡，重置 buf（第一轮 reasoning/text 已写入 messages[msgIdx]）
               if (replyMsgIdx < 0) {
                 messages.push({ role: 'ai', text: '', reasoning: '' });
                 replyMsgIdx = messages.length - 1;
+                reasoningBuf = '';
+                contentBuf = '';
               }
               // 工具调用挂在当前气泡（msgIdx，不是 replyMsgIdx）
               if (!messages[msgIdx].toolCalls) messages[msgIdx].toolCalls = [];
