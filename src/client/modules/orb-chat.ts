@@ -32,6 +32,7 @@ export interface ChatMessage {
   text: string;
   reasoning?: string;
   toolCalls?: ToolCallRecord[];
+  ruleWarnings?: string[];
 }
 
 export interface ChatState {
@@ -161,6 +162,26 @@ export function renderChatContent(state: ChatState): void {
               </div>
               <div id="${tid}" style="display:${defaultDisplay};margin-top:4px">
                 <pre style="font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.6);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0 0 2px 0;font-family:inherit;background:rgba(0,0,0,0.2);padding:4px 6px;border-radius:4px">${escapeHtml(contentText)}</pre>
+              </div>
+            </div>
+          </div>`;
+      }
+    }
+
+    // 规则警告框（红色，工具卡片后）
+    if (!isUser && msg.ruleWarnings && msg.ruleWarnings.length > 0) {
+      for (const warning of msg.ruleWarnings) {
+        const shortName = warning.match(/\[规则警告: ([^\]]+)\]/)?.[1] || '规则警告';
+        const wid = 'rw' + idx + '_' + msg.ruleWarnings.indexOf(warning);
+        html += `
+          <div style="display:flex;justify-content:flex-start;margin-bottom:6px">
+            <div style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:linear-gradient(rgba(10,15,30,0.85),rgba(10,15,30,0.85)) padding-box,linear-gradient(135deg,rgba(255,60,60,0.5),rgba(255,120,0,0.5)) border-box;border:1px solid transparent;border-left-width:3px;border-left-color:rgba(255,60,60,0.8);font-size:var(--card-font-size,10px)">
+              <div onclick="var p=document.getElementById('${wid}');var s=p.style.display==='none'?'block':'none';p.style.display=s;this.querySelector('.rw-arrow').textContent=s==='block'?'▼':'▶'" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
+                <span class="rw-arrow" style="font-size:7px;color:rgba(255,100,100,0.7)">▶</span>
+                <span style="color:rgba(255,80,80,0.95);font-weight:600">⚠ ${escapeHtml(shortName)}</span>
+              </div>
+              <div id="${wid}" style="display:none;margin-top:4px">
+                <pre style="font-size:var(--card-font-size,9px);color:rgba(255,200,200,0.8);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;background:rgba(255,0,0,0.06);padding:4px 6px;border-radius:4px">${escapeHtml(warning)}</pre>
               </div>
             </div>
           </div>`;
@@ -358,8 +379,9 @@ export async function doSend(
               }
               break;
             case 'rule_warning':
-              // 规则警告：显示为系统提示气泡（不影响 AI 回复区域）
-              // 仅记录日志，不修改 messages（服务端已注入到 LLM 上下文）
+              // 警告挂在当前气泡（工具调用所在的 msgIdx）
+              if (!messages[msgIdx].ruleWarnings) messages[msgIdx].ruleWarnings = [];
+              messages[msgIdx].ruleWarnings!.push(event.content || '');
               break;
             case 'error':
               const errorTarget = replyMsgIdx >= 0 ? replyMsgIdx : msgIdx;

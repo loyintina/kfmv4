@@ -214,11 +214,12 @@ export async function* streamChat(
       apiMessages.push(assistantMsg);
 
       // 先 yield 所有工具调用和结果（挂在当前气泡），再继续到下一轮
+      const pendingWarnings: string[] = [];
       for (const t of todo) {
-        // 规则检查：工具调用前扫描，违规则注入 warning 让 LLM 重新思考
+        // 规则检查：工具调用前扫描，违规收集（不在 assistant/tool 序列中间插入）
         const ruleWarning = checkToolCallRules(t.name, t.params);
         if (ruleWarning) {
-          apiMessages.push({ role: 'system', content: ruleWarning });
+          pendingWarnings.push(ruleWarning);
           yield { type: 'rule_warning', content: ruleWarning };
         }
         yield { type: 'tool_call', toolName: t.name, toolParams: t.params };
@@ -231,7 +232,6 @@ export async function* streamChat(
             isError: true,
           };
         }
-        // P1: 检查 isError（executeTool 内部通常不抛异常，用 isError 标记失败）
         if (result.isError) {
           toolFailureCount++;
           if (toolFailureCount >= 3) {
@@ -244,6 +244,10 @@ export async function* streamChat(
         }
         yield { type: 'tool_result', toolResult: result };
         apiMessages.push({ role: 'tool', content: JSON.stringify(result), tool_call_id: t.tcId });
+      }
+      // 所有 tool result 推完后，再注入 warning（用 user 角色避免 400）
+      if (pendingWarnings.length > 0) {
+        apiMessages.push({ role: 'user', content: pendingWarnings.join('\n\n---\n\n') });
       }
       // 工具全部执行完毕后，通知客户端创建新气泡，再进入下一轮 LLM 调用
       yield { type: 'message_start' };
