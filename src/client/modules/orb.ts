@@ -462,7 +462,7 @@ export async function initOrb(): Promise<void> {
     id: 'orb-chat',
     type: 'text-output',
     summary: chatMessages.length > 0
-      ? `最后一条消息: ${chatMessages[chatMessages.length - 1].role === 'user' ? '我' : 'AI'}说「${chatMessages[chatMessages.length - 1].text.slice(0, 40)}${chatMessages[chatMessages.length - 1].text.length > 40 ? '…' : ''}」`
+      ? `最后一条消息: ${chatMessages[chatMessages.length - 1].role === 'user' ? '我' : 'AI'}说「${(chatMessages[chatMessages.length - 1].content.find((b) => b.type === 'text') as { type: 'text'; text: string } | undefined)?.text?.slice(0, 40) || ''}${((chatMessages[chatMessages.length - 1].content.find((b) => b.type === 'text') as { type: 'text'; text: string } | undefined)?.text?.length ?? 0) > 40 ? '…' : ''}」`
       : '暂无对话历史',
   }));
 
@@ -484,7 +484,7 @@ export async function initOrb(): Promise<void> {
     if (sessionStore.activeId) {
       const msgs = await sessionStore.getMessages(sessionStore.activeId);
       chatMessages.length = 0;
-      chatMessages.push(...msgs.map(m => ({ role: m.role as 'user' | 'ai', text: m.text, reasoning: m.reasoning, toolCalls: m.toolCalls })));
+      chatMessages.push(...msgs.map(m => ({ role: m.role as 'user' | 'ai', content: m.content || [] })));
       _renderChat();
     }
 
@@ -502,7 +502,7 @@ export async function initOrb(): Promise<void> {
       );
       sessionStore.getMessages(detail.sessionId).then(msgs => {
         chatMessages.length = 0;
-        chatMessages.push(...msgs.map(m => ({ role: m.role as 'user' | 'ai', text: m.text, reasoning: m.reasoning, toolCalls: m.toolCalls })));
+        chatMessages.push(...msgs.map(m => ({ role: m.role as 'user' | 'ai', content: m.content || [] })));
         _renderChat();
       });
     });
@@ -535,7 +535,7 @@ export async function initOrb(): Promise<void> {
       await doSend(text, chatMessages, base, abortCtrl.signal,
         () => {},
         () => _renderChat(userScrolled ? 'preserve' : 'follow'),
-        (msg) => { chatMessages.push({ role: 'ai', text: msg }); _renderChat(userScrolled ? 'preserve' : 'follow'); },
+        (msg) => { chatMessages.push({ role: 'ai', content: [{ type: 'text', text: msg }] }); _renderChat(userScrolled ? 'preserve' : 'follow'); },
       );
 
       contentArea?.removeEventListener('scroll', onScroll);

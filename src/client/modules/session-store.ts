@@ -34,9 +34,17 @@ export interface ToolBlock {
   name: string;
   input: Record<string, unknown>;
   result?: { content: Array<{ type: string; text?: string }>; isError?: boolean };
+  // UI-only（渲染时生成，不做持久化）
+  color1?: string;
+  color2?: string;
 }
 
-export type ContentBlock = TextBlock | ToolBlock;
+export interface RuleWarningBlock {
+  type: 'rule_warning';
+  content: string;
+}
+
+export type ContentBlock = TextBlock | ToolBlock | RuleWarningBlock;
 
 export interface SessionMessage {
   role: 'user' | 'ai';

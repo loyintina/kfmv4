@@ -4,12 +4,17 @@
  * 从 orb.ts 拆分出聊天相关逻辑。orb.ts 负责光球 UI / 手势 / 面板状态机，
  * 本模块负责消息气泡渲染、Markdown 管线和 SSE 流式请求。
  *
- * 所有状态通过参数传入，不持有模块级可变状态。
+ * 消息采用 content block 数组模型（对齐 Claude/OpenAI 标准）：
+ *   ChatMessage.content = Array<TextBlock | ToolBlock | RuleWarningBlock>
+ *
+ * SSE 协议（服务端 → 客户端）：
+ *   message_start → content_block_start/delta/stop → tool_result → message_stop
  */
 
 import { DOM } from './dom-refs.js';
 import { currentTheme as theme } from './theme.js';
 import { sessionStore } from './session-store.js';
+import type { ContentBlock, TextBlock, ToolBlock, RuleWarningBlock } from './session-store.js';
 import { MD_CSS } from './renderers/md-css.js';
 import { marked } from 'marked';
 import { preprocessMd, MARKED_OPTS } from './renderers/md-extensions.js';
@@ -18,21 +23,12 @@ import { renderMath, renderMermaid, type MathData } from './renderers/math-diagr
 
 // ========== 类型 ==========
 
-export interface ToolCallRecord {
-  name: string;
-  params: Record<string, unknown>;
-  result?: { content: Array<{ type: string; text?: string }>; isError?: boolean };
-  // 随机配色（渲染时生成，不做持久化）
-  color1?: string;
-  color2?: string;
-}
+export type { ContentBlock, TextBlock, ToolBlock, RuleWarningBlock } from './session-store.js';
 
+/** 消息结构：content 是 block 数组，一次 AI 回复 = 一条消息 = 多个 block */
 export interface ChatMessage {
   role: 'user' | 'ai';
-  text: string;
-  reasoning?: string;
-  toolCalls?: ToolCallRecord[];
-  ruleWarnings?: string[];
+  content: ContentBlock[];
 }
 
 export interface ChatState {
@@ -80,6 +76,8 @@ function randomToolAccent(): { color1: string; color2: string } {
   return { color1: hslToHex(h1, sat, lit), color2: hslToHex(h2, sat, lit) };
 }
 
+// ========== 渲染 ==========
+
 export function renderChatContent(state: ChatState): void {
   const { panelEl, messages, renderWidth, scrollMode = 'auto' } = state;
   if (!panelEl) return;
@@ -101,76 +99,96 @@ export function renderChatContent(state: ChatState): void {
     const label = isUser ? '你' : '蔚然';
     const labelColor = isUser ? theme.aiChat.bubbleLabelSelf : theme.aiChat.bubbleLabelAI;
     const boxShadow = isUser ? theme.aiChat.bubbleSelfShadow : theme.aiChat.bubbleAIShadow;
-    let bubbleHtml = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
-      <span style="font-size:10px;color:${labelColor};font-weight:600">${label}</span>
-      <span class="orb-msg-actions" data-idx="${idx}" style="display:flex;gap:2px">
-        <button class="orb-act-btn" data-action="copy" style="padding:0 2px;border:none;background:transparent;color:rgba(0,212,255,0.25);font-size:8px;cursor:pointer;line-height:1;font-family:inherit" onmouseenter="this.style.color='rgba(0,212,255,0.85)'" onmouseleave="this.style.color='rgba(0,212,255,0.25)'">复制</button>
-        <button class="orb-act-btn" data-action="edit" style="padding:0 2px;border:none;background:transparent;color:rgba(0,212,255,0.25);font-size:8px;cursor:pointer;line-height:1;font-family:inherit" onmouseenter="this.style.color='rgba(0,212,255,0.85)'" onmouseleave="this.style.color='rgba(0,212,255,0.25)'">编辑</button>
-        <button class="orb-act-btn" data-action="del"  style="padding:0 2px;border:none;background:transparent;color:rgba(255,100,100,0.25);font-size:8px;cursor:pointer;line-height:1;font-family:inherit" onmouseenter="this.style.color='rgba(255,100,100,0.85)'" onmouseleave="this.style.color='rgba(255,100,100,0.25)'">删除</button>
-      </span>
-    </div>`;
 
-    // 思考内容
-    const hasToolCalls = !isUser && msg.toolCalls && msg.toolCalls.length > 0;
-    const reasoningDone = !!(msg.text || hasToolCalls); // 有正文或有工具调用 = 思考已完成
-    if (!isUser && msg.reasoning) {
-      const rid = 'r' + idx;
-      const rlabel = reasoningDone ? '已思考' : '思考中...';
-      const displayStyle = reasoningDone ? 'display:none' : 'display:block';
-      bubbleHtml += `<div onclick="var p=document.getElementById('${rid}');p.style.display=p.style.display==='none'?'':'none'" style="font-size:9px;color:rgba(0,212,255,0.5);cursor:pointer;margin-bottom:2px;user-select:none">${rlabel} <span style="font-size:7px">▼</span></div>`;
-      bubbleHtml += `<div id="${rid}" style="${displayStyle};font-size:var(--card-font-size,10px);line-height:16px;color:rgba(255,255,255,0.45);margin-bottom:4px;padding:4px 6px;border-radius:4px;background:rgba(0,0,0,0.2);white-space:pre-wrap">${escapeHtml(msg.reasoning)}</div>`;
-    }
-
-    const lineHeight = 16;
-    bubbleHtml += `<div class="orb-msg-text" data-msg-idx="${idx}" style="font-family:sans-serif;font-size:var(--card-font-size,13px);line-height:${lineHeight}px;color:${theme.aiChat.bubbleText};word-break:break-word">${renderPlainText(msg.text)}</div>`;
-
-    // 纯思考气泡（无正文、无工具调用）→ 全宽独立块，样式同工具卡片
-    const reasoningOnly = !isUser && msg.reasoning && !msg.text && !hasToolCalls;
-    if (reasoningOnly) {
-      const rid2 = 'r' + idx;
-      const rlabel2 = reasoningDone ? '已思考' : '思考中...';
-      const displayStyle2 = reasoningDone ? 'display:none' : 'display:block';
-      html += `
-        <div style="display:flex;justify-content:flex-start;margin-bottom:8px">
-          <div style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:linear-gradient(rgba(10,15,30,0.75),rgba(10,15,30,0.75)) padding-box,${theme.aiChat.panelBorderGradient} border-box;border:1px solid transparent;border-left-width:3px;font-size:var(--card-font-size,10px)">
-            <div onclick="var p=document.getElementById('${rid2}');var s=p.style.display==='none'?'block':'none';p.style.display=s;this.querySelector('.rt-arrow').textContent=s==='block'?'▼':'▶'" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
-              <span class="rt-arrow" style="font-size:7px;color:rgba(0,212,255,0.5)">${reasoningDone ? '▶' : '▼'}</span>
-              <span style="color:rgba(0,212,255,0.6);font-weight:600">${rlabel2}</span>
-            </div>
-            <div id="${rid2}" style="${displayStyle2};margin-top:4px">
-              <pre style="font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.45);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;background:rgba(0,0,0,0.15);padding:4px 6px;border-radius:4px">${escapeHtml(msg.reasoning ?? '')}</pre>
-            </div>
-          </div>
-        </div>`;
-    } else {
-      const maxWidth = isUser ? Math.min(innerWidth - 8, innerWidth * 0.85) : innerWidth - 8;
+    if (isUser) {
+      // 用户消息：单 text block
+      const userText = msg.content.find((b): b is TextBlock => b.type === 'text')?.text || '';
+      const maxWidth = Math.min(innerWidth - 8, innerWidth * 0.85);
+      let bubbleHtml = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+        <span style="font-size:10px;color:${labelColor};font-weight:600">${label}</span>
+      </div>`;
+      bubbleHtml += `<div class="orb-msg-text" data-msg-idx="${idx}" style="font-family:sans-serif;font-size:var(--card-font-size,13px);line-height:16px;color:${theme.aiChat.bubbleText};word-break:break-word">${renderPlainText(userText)}</div>`;
       html += `
         <div style="display:flex;justify-content:${align};margin-bottom:8px">
           <div style="max-width:${maxWidth}px;padding:6px 12px;background:${bgColor};${borderStyle}border-radius:8px;box-shadow:${boxShadow}">
             ${bubbleHtml}
           </div>
         </div>`;
-    }
+    } else {
+      // AI 消息：从 content 数组渲染每个 block
+      const textBlocks = msg.content.filter((b): b is TextBlock => b.type === 'text');
+      const toolBlocks = msg.content.filter((b): b is ToolBlock => b.type === 'tool');
+      const warningBlocks = msg.content.filter(b => b.type === 'rule_warning') as Array<{ type: 'rule_warning'; content: string }>;
 
-    // 工具调用卡片（气泡外，独立块）
-    if (!isUser && msg.toolCalls && msg.toolCalls.length > 0) {
-      for (const tc of msg.toolCalls) {
+      const hasContent = msg.content.length > 0;
+      const firstText = textBlocks[0];
+      const reasoning = firstText?.reasoning || '';
+      const mainText = firstText?.text || '';
+      const hasToolCalls = toolBlocks.length > 0;
+      const reasoningDone = !!(mainText || hasToolCalls);
+
+      // 仅思考（无正文、无工具调用）→ 全宽独立块
+      const reasoningOnly = reasoning && !mainText && !hasToolCalls;
+      if (reasoningOnly) {
+        const rid2 = 'r' + idx;
+        const rlabel2 = reasoningDone ? '已思考' : '思考中...';
+        const displayStyle2 = reasoningDone ? 'display:none' : 'display:block';
+        html += `
+          <div style="display:flex;justify-content:flex-start;margin-bottom:8px">
+            <div style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:linear-gradient(rgba(10,15,30,0.75),rgba(10,15,30,0.75)) padding-box,${theme.aiChat.panelBorderGradient} border-box;border:1px solid transparent;border-left-width:3px;font-size:var(--card-font-size,10px)">
+              <div onclick="var p=document.getElementById('${rid2}');var s=p.style.display==='none'?'block':'none';p.style.display=s;this.querySelector('.rt-arrow').textContent=s==='block'?'▼':'▶'" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
+                <span class="rt-arrow" style="font-size:7px;color:rgba(0,212,255,0.5)">${reasoningDone ? '▶' : '▼'}</span>
+                <span style="color:rgba(0,212,255,0.6);font-weight:600">${rlabel2}</span>
+              </div>
+              <div id="${rid2}" style="${displayStyle2};margin-top:4px">
+                <pre style="font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.45);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;background:rgba(0,0,0,0.15);padding:4px 6px;border-radius:4px">${escapeHtml(reasoning)}</pre>
+              </div>
+            </div>
+          </div>`;
+      } else if (hasContent || !isUser) {
+        // 正文气泡
+        let bubbleHtml = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+          <span style="font-size:10px;color:${labelColor};font-weight:600">${label}</span>
+        </div>`;
+
+        // 思考内容
+        if (reasoning) {
+          const rid = 'r' + idx;
+          const rlabel = reasoningDone ? '已思考' : '思考中...';
+          const displayStyle = reasoningDone ? 'display:none' : 'display:block';
+          bubbleHtml += `<div onclick="var p=document.getElementById('${rid}');p.style.display=p.style.display==='none'?'':'none'" style="font-size:9px;color:rgba(0,212,255,0.5);cursor:pointer;margin-bottom:2px;user-select:none">${rlabel} <span style="font-size:7px">▼</span></div>`;
+          bubbleHtml += `<div id="${rid}" style="${displayStyle};font-size:var(--card-font-size,10px);line-height:16px;color:rgba(255,255,255,0.45);margin-bottom:4px;padding:4px 6px;border-radius:4px;background:rgba(0,0,0,0.2);white-space:pre-wrap">${escapeHtml(reasoning)}</div>`;
+        }
+
+        // 正文
+        const lineHeight = 16;
+        bubbleHtml += `<div class="orb-msg-text" data-msg-idx="${idx}" style="font-family:sans-serif;font-size:var(--card-font-size,13px);line-height:${lineHeight}px;color:${theme.aiChat.bubbleText};word-break:break-word">${renderPlainText(mainText)}</div>`;
+
+        const maxWidth = innerWidth - 8;
+        html += `
+          <div style="display:flex;justify-content:${align};margin-bottom:8px">
+            <div style="max-width:${maxWidth}px;padding:6px 12px;background:${bgColor};${borderStyle}border-radius:8px;box-shadow:${boxShadow}">
+              ${bubbleHtml}
+            </div>
+          </div>`;
+      }
+
+      // 工具调用卡片（气泡外，独立块）
+      for (let ti = 0; ti < toolBlocks.length; ti++) {
+        const tc = toolBlocks[ti];
         if (!tc.color1) { const a = randomToolAccent(); tc.color1 = a.color1; tc.color2 = a.color2; }
         const c1 = tc.color1!, c2 = tc.color2!;
-        const tid = 'tc' + idx + '_' + (msg.toolCalls!.indexOf(tc));
+        const tid = 'tc' + idx + '_' + ti;
         const hasResult = !!tc.result;
         const isExecuting = !hasResult;
         const isError = hasResult && tc.result!.isError;
         const statusLabel = isExecuting ? '执行中' : (isError ? '失败' : '成功');
         const statusColor = isExecuting ? 'rgba(255,255,255,0.4)' : (isError ? 'rgba(255,100,100,0.8)' : 'rgba(0,212,115,0.8)');
-        // 显示参数（执行中或完成后都显示）
-        const paramsText = Object.keys(tc.params).length > 0 ? JSON.stringify(tc.params, null, 2) : '';
+        const paramsText = Object.keys(tc.input).length > 0 ? JSON.stringify(tc.input, null, 2) : '';
         const resultText = hasResult ? (tc.result!.content?.[0]?.text || '') : '';
-        // 执行中显示参数 + 执行中提示，完成后显示结果
         const contentText = isExecuting
           ? (paramsText ? '参数:\n' + paramsText + '\n\n执行中...' : '执行中...')
           : (resultText || '(无结果)');
-        // 执行中默认展开，完成后默认折叠
         const defaultDisplay = isExecuting ? 'block' : 'none';
         const defaultArrow = isExecuting ? '▼' : '▶';
         const gradientBorder = `linear-gradient(rgba(10,15,30,0.75),rgba(10,15,30,0.75)) padding-box,linear-gradient(135deg,${hexToRgba(c2, 0.55)} 30%,${hexToRgba(c1, 0.55)} 70%) border-box`;
@@ -188,13 +206,12 @@ export function renderChatContent(state: ChatState): void {
             </div>
           </div>`;
       }
-    }
 
-    // 规则警告框（红色，工具卡片后）
-    if (!isUser && msg.ruleWarnings && msg.ruleWarnings.length > 0) {
-      for (const warning of msg.ruleWarnings) {
+      // 规则警告框（红色）
+      for (let wi = 0; wi < warningBlocks.length; wi++) {
+        const warning = warningBlocks[wi].content;
         const shortName = warning.match(/\[规则警告: ([^\]]+)\]/)?.[1] || '规则警告';
-        const wid = 'rw' + idx + '_' + msg.ruleWarnings.indexOf(warning);
+        const wid = 'rw' + idx + '_' + wi;
         html += `
           <div style="display:flex;justify-content:flex-start;margin-bottom:6px">
             <div style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:linear-gradient(rgba(10,15,30,0.85),rgba(10,15,30,0.85)) padding-box,linear-gradient(135deg,rgba(255,60,60,0.5),rgba(255,120,0,0.5)) border-box;border:1px solid transparent;border-left-width:3px;border-left-color:rgba(255,60,60,0.8);font-size:var(--card-font-size,10px)">
@@ -224,22 +241,23 @@ export function renderChatContent(state: ChatState): void {
       e.preventDefault();
       const el = btn as HTMLElement;
       const actionsEl = el.parentElement!;
-      const idx = parseInt(actionsEl.dataset.idx || '-1', 10);
-      if (idx < 0 || idx >= messages.length) return;
-      const msg = messages[idx];
+      const msgIdx = parseInt(actionsEl.dataset.idx || '-1', 10);
+      if (msgIdx < 0 || msgIdx >= messages.length) return;
+      const msg = messages[msgIdx];
       const action = el.dataset.action;
+      const plainText = extractText(msg);
       if (action === 'copy') {
-        navigator.clipboard?.writeText(msg.text).then(() => {
+        navigator.clipboard?.writeText(plainText).then(() => {
           el.textContent = '✓';
           setTimeout(() => { el.textContent = '复制'; }, 1000);
         }).catch(() => {});
       } else if (action === 'edit') {
         window.dispatchEvent(new CustomEvent('kfm-message-edit', {
-          detail: { message: { role: msg.role, text: msg.text }, sessionId: sessionStore.activeId }
+          detail: { message: { role: msg.role, text: plainText }, sessionId: sessionStore.activeId }
         }));
       } else if (action === 'del') {
         window.dispatchEvent(new CustomEvent('kfm-message-delete', {
-          detail: { message: { role: msg.role, text: msg.text }, sessionId: sessionStore.activeId }
+          detail: { message: { role: msg.role, text: plainText }, sessionId: sessionStore.activeId }
         }));
       }
     });
@@ -248,8 +266,6 @@ export function renderChatContent(state: ChatState): void {
   if (scrollMode === 'preserve') {
     contentArea.scrollTop = scrollTop;
   } else if (scrollMode === 'follow' || (scrollMode === 'auto' && wasAtBottom)) {
-    // rAF 延迟一帧：innerHTML 重建后布局未完成，scrollHeight 还是旧值
-    // 等浏览器 layout 完成再设 scrollTop，确保真正到底
     requestAnimationFrame(() => { contentArea.scrollTop = contentArea.scrollHeight; });
   } else {
     contentArea.scrollTop = scrollTop;
@@ -261,14 +277,14 @@ export function renderChatContent(state: ChatState): void {
     style.textContent = MD_CSS;
     contentArea.appendChild(style);
   }
-  // 同步渲染 markdown（仅 AI 消息）
-  // 注意：marked.parse 本身同步，Promise 包装会导致后续 renderChatContent 调用覆盖结果
+  // 同步渲染 markdown（仅 AI 消息中的 text block）
   const msgEls = contentArea.querySelectorAll<HTMLElement>('.orb-msg-text');
   for (const el of msgEls) {
     const i = parseInt(el.dataset.msgIdx || '-1', 10);
     if (i >= 0 && i < messages.length && messages[i].role !== 'user') {
-      const text = messages[i].text;
-      if (text && text.length > 0) {
+      const textBlock = messages[i].content.find((b): b is TextBlock => b.type === 'text');
+      const text = textBlock?.text || '';
+      if (text.length > 0) {
         const mathData: MathData = { display: [], inline: [] };
         const processed = preprocessMd(text, mathData);
         const mdHtml = marked.parse(processed, MARKED_OPTS) as string;
@@ -282,6 +298,14 @@ export function renderChatContent(state: ChatState): void {
   }
 }
 
+/** 从 ChatMessage 中提取纯文本 */
+function extractText(msg: ChatMessage): string {
+  return msg.content
+    .filter((b): b is TextBlock => b.type === 'text')
+    .map(b => b.text)
+    .join('');
+}
+
 // ========== SSE 流式请求 ==========
 
 export async function doSend(
@@ -293,7 +317,8 @@ export async function doSend(
   onRender: () => void,
   onConfigMissing: (msg: string) => void,
 ): Promise<void> {
-  messages.push({ role: 'user', text });
+  // 推用户消息（content block 格式）
+  messages.push({ role: 'user', content: [{ type: 'text', text }] });
   onBeforeSend();
   onRender();
 
@@ -301,7 +326,7 @@ export async function doSend(
   if (!config.providerId) { onConfigMissing('未配置 Provider，请先在 API 卡中添加并选择一个 Provider。'); return; }
   if (!config.modelId) { onConfigMissing('未选择 Model，请先在 API 卡或光球面板底部选择一个 Model。'); return; }
 
-  // 加载活跃角色：prompt 字段 + promptFiles 文件内容
+  // 加载活跃角色
   let systemPrompt = '';
   if (config.roleFile) {
     try {
@@ -332,17 +357,15 @@ export async function doSend(
   try {
     const model = config.modelId;
     const provider = config.providerId;
-    messages.push({ role: 'ai', text: '', reasoning: '' });
-    onRender();
-    // msgIdx: 当前轮次的气泡（挂工具卡片、当轮思考）
-    let msgIdx = messages.length - 1;
-    let reasoningBuf = '';
-    let contentBuf = '';
 
+    // 构建发给 API 的消息（content → text 压平）
     const apiMessages: Array<{ role: string; content: string }> = [];
     if (systemPrompt) apiMessages.push({ role: 'system', content: systemPrompt });
-    for (const m of messages.slice(0, -1)) {
-      apiMessages.push({ role: m.role === 'ai' ? 'assistant' : m.role, content: m.text });
+    for (const m of messages) {
+      apiMessages.push({
+        role: m.role === 'ai' ? 'assistant' : m.role,
+        content: extractText(m),
+      });
     }
 
     const apiRes = await fetch(apiBase + 'ai/chat', {
@@ -355,8 +378,10 @@ export async function doSend(
     if (!reader) throw new Error('无响应体');
     const decoder = new TextDecoder();
     let buffer = '';
+    let msgIdx = -1;
     let lastRender = 0;
     const throttledRender = () => { const now = Date.now(); if (now - lastRender > 80) { lastRender = now; onRender(); } };
+
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -370,55 +395,93 @@ export async function doSend(
         try {
           const event = JSON.parse(jsonStr);
           switch (event.type) {
-            case 'message_start':
-              // 新轮次开始：推新气泡，msgIdx 前进，重置 buf
-              messages.push({ role: 'ai', text: '', reasoning: '' });
+            case 'message_start': {
+              // 新轮次：推空 AI 消息
+              messages.push({ role: 'ai', content: [] });
               msgIdx = messages.length - 1;
-              reasoningBuf = '';
-              contentBuf = '';
               break;
-            case 'thinking':
-              reasoningBuf += event.content || '';
-              messages[msgIdx].reasoning = reasoningBuf;
-              break;
-            case 'text':
-              contentBuf += event.content || '';
-              messages[msgIdx].text = contentBuf;
-              break;
-            case 'tool_call':
-              if (!messages[msgIdx].toolCalls) messages[msgIdx].toolCalls = [];
-              messages[msgIdx].toolCalls!.push({ name: event.toolName || 'unknown', params: event.toolParams || {} });
-              break;
-            case 'tool_result':
-              if (messages[msgIdx].toolCalls) {
-                const pending = messages[msgIdx].toolCalls!.find(tc => !tc.result);
-                if (pending) pending.result = event.toolResult;
+            }
+            case 'content_block_start': {
+              if (msgIdx < 0) break;
+              const { index, blockType, toolUseId, toolName } = event;
+              if (blockType === 'text') {
+                messages[msgIdx].content[index] = { type: 'text', text: '', reasoning: '' };
+              } else if (blockType === 'tool_use') {
+                messages[msgIdx].content[index] = {
+                  type: 'tool', id: toolUseId || '', name: toolName || 'unknown', input: {},
+                };
               }
               break;
-            case 'rule_warning':
-              if (!messages[msgIdx].ruleWarnings) messages[msgIdx].ruleWarnings = [];
-              messages[msgIdx].ruleWarnings!.push(event.content || '');
+            }
+            case 'content_block_delta': {
+              if (msgIdx < 0) break;
+              const { index, deltaType, deltaText } = event;
+              const block = messages[msgIdx].content[index];
+              if (!block) break;
+              if (deltaType === 'text_delta' && block.type === 'text') {
+                block.text += deltaText || '';
+              } else if (deltaType === 'thinking_delta' && block.type === 'text') {
+                block.reasoning = (block.reasoning || '') + (deltaText || '');
+              } else if (deltaType === 'input_json_delta' && block.type === 'tool') {
+                // 累积 JSON 片段（临时缓冲，不存入类型定义）
+                (block as ToolBlock & { _jsonBuf?: string })._jsonBuf =
+                  ((block as ToolBlock & { _jsonBuf?: string })._jsonBuf || '') + (deltaText || '');
+              }
               break;
-            case 'error':
-              contentBuf += '\n\n[错误: ' + event.content + ']';
-              messages[msgIdx].text = contentBuf;
+            }
+            case 'content_block_stop': {
+              // tool block：解析累积的 JSON
+              if (msgIdx < 0) break;
+              const { index } = event;
+              const block = messages[msgIdx].content[index];
+              if (block?.type === 'tool' && (block as ToolBlock & { _jsonBuf?: string })._jsonBuf) {
+                try { block.input = JSON.parse((block as ToolBlock & { _jsonBuf: string })._jsonBuf); } catch {}
+                delete (block as ToolBlock & { _jsonBuf?: string })._jsonBuf;
+              }
               break;
+            }
+            case 'tool_result': {
+              if (msgIdx < 0) break;
+              const toolBlock = messages[msgIdx].content.find(
+                (b): b is ToolBlock => b.type === 'tool' && b.id === event.toolUseId
+              );
+              if (toolBlock) toolBlock.result = event.toolResult;
+              break;
+            }
+            case 'rule_warning': {
+              if (msgIdx < 0) break;
+              messages[msgIdx].content.push({ type: 'rule_warning', content: event.content || '' } as RuleWarningBlock);
+              break;
+            }
+            case 'error': {
+              if (msgIdx < 0) break;
+              const tb = messages[msgIdx].content.find((b): b is TextBlock => b.type === 'text');
+              if (tb) {
+                tb.text += '\n\n[错误: ' + event.content + ']';
+              } else {
+                messages[msgIdx].content.push({ type: 'text', text: '[错误: ' + event.content + ']' });
+              }
+              break;
+            }
           }
           throttledRender();
         } catch {}
       }
     }
-    // 兜底：流结束时目标为空则填入
-    if (!messages[msgIdx].text && contentBuf) messages[msgIdx].text = contentBuf;
-    if (!messages[msgIdx].reasoning && reasoningBuf) messages[msgIdx].reasoning = reasoningBuf;
-    if (!messages[msgIdx].text && !messages[msgIdx].reasoning) messages[msgIdx].text = '未获取到回复';
+    // 兜底：流结束时目标为空
+    if (msgIdx >= 0 && messages[msgIdx].content.length === 0) {
+      messages[msgIdx].content.push({ type: 'text', text: '未获取到回复' });
+    }
     onRender();
     await sessionStore.saveMessages(messages, config.modelId, config.providerId);
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') {
-      messages[messages.length - 1].text = '已取消';
+      const lastMsg = messages[messages.length - 1];
+      const tb = lastMsg?.content?.find((b): b is TextBlock => b.type === 'text');
+      if (tb) tb.text = '已取消';
+      else if (lastMsg) lastMsg.content = [{ type: 'text', text: '已取消' }];
     } else {
-      messages.push({ role: 'ai', text: '请求失败: ' + (e instanceof Error ? e.message : '未知错误') });
+      messages.push({ role: 'ai', content: [{ type: 'text', text: '请求失败: ' + (e instanceof Error ? e.message : '未知错误') }] });
     }
   }
   onRender();
