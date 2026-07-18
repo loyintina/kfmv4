@@ -60,8 +60,6 @@ export function createFileHandler(meta: Record<string, unknown>): { activate: (c
       const style = document.createElement('style');
       style.textContent = MD_CSS;
       _body.appendChild(style);
-
-
       (async () => {
         const mathData: MathData = { display: [], inline: [] };
         const processed = preprocessMd(_rawContent, mathData);
@@ -71,12 +69,9 @@ export function createFileHandler(meta: Record<string, unknown>): { activate: (c
         mdDiv.className = 'md-body';
         mdDiv.innerHTML = html;
         _body.appendChild(mdDiv);
-        // 代码高亮 + 复制按钮
         highlightAll(mdDiv);
-        // KaTeX 数学公式 + Mermaid 图表
         await renderMath(mdDiv, mathData);
         await renderMermaid(mdDiv, _accent);
-        // 复选框点击交互
         const cbs = mdDiv.querySelectorAll<HTMLInputElement>('input[type=checkbox]');
         cbs.forEach(cb => {
           cb.removeAttribute('disabled');
@@ -91,11 +86,11 @@ export function createFileHandler(meta: Record<string, unknown>): { activate: (c
             _doSave(_rawContent);
           });
         });
-        // 滚动同步
         if (_scrollRatio > 0) {
           _body.scrollTop = _scrollRatio * (_body.scrollHeight - _body.clientHeight);
         }
       })();
+    } else if (cat === 'image') {
       _body.innerHTML = '';
       const div = document.createElement('div');
       div.style.cssText = 'display:flex;align-items:center;justify-content:center;width:100%;height:100%;overflow:auto';

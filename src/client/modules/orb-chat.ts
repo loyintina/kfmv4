@@ -216,7 +216,8 @@ export function renderChatContent(state: ChatState): void {
     style.textContent = MD_CSS;
     contentArea.appendChild(style);
   }
-  // 异步渲染 markdown（仅 AI 消息）
+  // 同步渲染 markdown（仅 AI 消息）
+  // 注意：marked.parse 本身同步，Promise 包装会导致后续 renderChatContent 调用覆盖结果
   const msgEls = contentArea.querySelectorAll<HTMLElement>('.orb-msg-text');
   for (const el of msgEls) {
     const i = parseInt(el.dataset.msgIdx || '-1', 10);
@@ -225,13 +226,12 @@ export function renderChatContent(state: ChatState): void {
       if (text && text.length > 0) {
         const mathData: MathData = { display: [], inline: [] };
         const processed = preprocessMd(text, mathData);
-        Promise.resolve(marked.parse(processed, MARKED_OPTS) as string).then((mdHtml: string) => {
-          el.innerHTML = '<div class="md-body">' + mdHtml + '</div>';
-          const mdBody = el.querySelector('.md-body') as HTMLElement;
-          highlightAll(mdBody);
-          renderMath(mdBody, mathData);
-          renderMermaid(mdBody, '#00d4ff');
-        });
+        const mdHtml = marked.parse(processed, MARKED_OPTS) as string;
+        el.innerHTML = '<div class="md-body">' + mdHtml + '</div>';
+        const mdBody = el.querySelector('.md-body') as HTMLElement;
+        highlightAll(mdBody);
+        renderMath(mdBody, mathData);
+        renderMermaid(mdBody, '#00d4ff');
       }
     }
   }
