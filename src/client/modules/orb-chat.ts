@@ -167,6 +167,7 @@ export function renderChatContent(state: ChatState): void {
       }
     }
 
+    idx++;
   }
   // 保存滚动位置
   const scrollTop = contentArea.scrollTop;
