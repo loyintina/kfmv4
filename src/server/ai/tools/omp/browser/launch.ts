@@ -223,6 +223,17 @@ function systemChromiumCandidates(): string[] {
         '/usr/bin/chromium', '/usr/bin/chromium-browser',
         '/snap/bin/chromium',
       );
+      // Also check omp and kfmv4 puppeteer cache directories
+      const ompPuppeteer = path.join(home, '.omp', 'puppeteer');
+      const kfmv4Puppeteer = path.join(home, '.kfmv4', 'puppeteer');
+      for (const cacheDir of [ompPuppeteer, kfmv4Puppeteer]) {
+        try {
+          for (const entry of fs.readdirSync(path.join(cacheDir, 'chrome'))) {
+            const chromePath = path.join(cacheDir, 'chrome', entry, 'chrome-linux64', 'chrome');
+            if (fs.existsSync(chromePath)) candidates.push(chromePath);
+          }
+        } catch { /* dir may not exist */ }
+      }
       break;
     }
     case 'win32': {
