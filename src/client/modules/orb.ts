@@ -209,6 +209,12 @@ function expandPanel(): void {
       } catch {}
     }
     _renderChat();
+    // 面板打开时跳到最新消息
+    requestAnimationFrame(() => {
+      if (!panelEl) return;
+      const ca = DOM.orbPanelContent(panelEl);
+      if (ca) ca.scrollTop = ca.scrollHeight;
+    });
     Registry.notifyStateChange('orb');
     Registry.notifyStateChange('orb-panel');
     panelEl.style.pointerEvents = 'auto';
