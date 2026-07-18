@@ -29,7 +29,7 @@ import { ompCheckpointTool } from './omp/checkpoint.js';
 import { ompRewindTool } from './omp/rewind.js';
 
 // omp 待配置工具
-import { ompBrowserTool } from './omp/browser.js';
+import { browserTool } from './omp/browser.js';
 import { ompDebugTool } from './omp/debug.js';
 import { ompGithubTool } from './omp/github.js';
 import { ompWebSearchTool } from './omp/web-search.js';
@@ -61,7 +61,7 @@ registerTool(ompCheckpointTool);
 registerTool(ompRewindTool);
 
 // omp 待配置
-registerTool(ompBrowserTool);
+registerTool(browserTool);
 registerTool(ompDebugTool);
 registerTool(ompGithubTool);
 registerTool(ompWebSearchTool);
