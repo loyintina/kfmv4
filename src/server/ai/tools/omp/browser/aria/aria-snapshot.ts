@@ -1,3 +1,9 @@
+/**
+ * aria-snapshot.ts — Playwright ARIA 快照引擎
+ *
+ * 从页面 DOM 提取无障碍树快照，生成可操作的 [ref=eN] 元素 ID。
+ * 移植自 omp browser/aria/aria-snapshot.ts。
+ */
 import type { ElementHandle, JSHandle, Page } from "puppeteer-core";
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';

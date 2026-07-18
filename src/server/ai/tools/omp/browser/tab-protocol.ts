@@ -1,3 +1,9 @@
+/**
+ * tab-protocol.ts — Worker 线程通信协议
+ *
+ * 定义 WorkerInbound / WorkerOutbound 消息类型、
+ * SessionSnapshot / ReadyInfo / RunResultOk 等数据结构。
+ */
 type ImageContent = { type: 'image'; data: string; mimeType: string };
 type TextContent = { type: 'text'; text: string };
 

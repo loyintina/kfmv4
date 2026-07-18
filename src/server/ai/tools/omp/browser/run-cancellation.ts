@@ -1,3 +1,9 @@
+/**
+ * run-cancellation.ts — 浏览器运行取消工具
+ *
+ * 提供 untilAborted / markHandled / waitForBrowserRun 等工具函数，
+ * 确保浏览器操作在 AbortSignal 触发时正确取消。
+ */
 import { throwIfAborted } from '../../types.js';
 
 function untilAborted<T>(signal: AbortSignal | undefined | null, pr: Promise<T> | (() => Promise<T>)): Promise<T> {
