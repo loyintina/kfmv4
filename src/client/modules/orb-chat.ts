@@ -214,7 +214,7 @@ export function renderChatContent(state: ChatState): void {
   }
   // 保存滚动位置（在重建 innerHTML 之前）
   const scrollTop = contentArea.scrollTop;
-  const atBottomThreshold = Math.max(200, contentArea.clientHeight * 0.5);
+  const atBottomThreshold = Math.max(200, contentArea.clientHeight * 0.33);
   const wasAtBottom = scrollTop + contentArea.clientHeight >= contentArea.scrollHeight - atBottomThreshold;
   contentArea.innerHTML = html;
   // 消息操作按钮事件绑定
