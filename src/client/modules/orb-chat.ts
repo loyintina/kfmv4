@@ -234,34 +234,6 @@ export function renderChatContent(state: ChatState): void {
   const atBottomThreshold = Math.max(200, contentArea.clientHeight * 0.33);
   const wasAtBottom = scrollTop + contentArea.clientHeight >= contentArea.scrollHeight - atBottomThreshold;
   contentArea.innerHTML = html;
-  // 消息操作按钮事件绑定
-  contentArea.querySelectorAll('.orb-act-btn').forEach(btn => {
-    btn.addEventListener('pointerdown', (e: Event) => {
-      e.stopPropagation();
-      e.preventDefault();
-      const el = btn as HTMLElement;
-      const actionsEl = el.parentElement!;
-      const msgIdx = parseInt(actionsEl.dataset.idx || '-1', 10);
-      if (msgIdx < 0 || msgIdx >= messages.length) return;
-      const msg = messages[msgIdx];
-      const action = el.dataset.action;
-      const plainText = extractText(msg);
-      if (action === 'copy') {
-        navigator.clipboard?.writeText(plainText).then(() => {
-          el.textContent = '✓';
-          setTimeout(() => { el.textContent = '复制'; }, 1000);
-        }).catch(() => {});
-      } else if (action === 'edit') {
-        window.dispatchEvent(new CustomEvent('kfm-message-edit', {
-          detail: { message: { role: msg.role, text: plainText }, sessionId: sessionStore.activeId }
-        }));
-      } else if (action === 'del') {
-        window.dispatchEvent(new CustomEvent('kfm-message-delete', {
-          detail: { message: { role: msg.role, text: plainText }, sessionId: sessionStore.activeId }
-        }));
-      }
-    });
-  });
   // 滚动策略
   if (scrollMode === 'preserve') {
     contentArea.scrollTop = scrollTop;
