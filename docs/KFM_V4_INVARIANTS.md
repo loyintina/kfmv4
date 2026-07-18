@@ -455,6 +455,29 @@ tree-render.ts          ← 可以导入任何 canvas-*
 
 **通用判断标准**：如果你为了修一个 bug 而新增的代码行数 > 你能用一句话说清的逻辑，那你很可能在打补丁。
 
+### ❌ 修改 JS 全局原型的注入脚本（stealth patches）
+
+```
+问题: applyStealthPatches 注入的脚本 patch 了 Function.prototype.toString
+症状: puppeteer 的 page.evaluate() 在 worker 线程里序列化函数时得到空字符串,
+      Chrome 报 "Unexpected end of input"
+根因: 任何修改 JS 全局原型的脚本都可能破坏依赖序列化的工具（puppeteer evaluate）
+根解: headless 模式跳过 stealth（不需要反检测）；如需 stealth，用 CDP 层面实现
+```
+
+**判断标准**：如果你要注入脚本到页面且该脚本修改了 `Function.prototype`、`Object.defineProperty`
+等全局原型——停下来。这会影响所有后续的 `evaluate()` 调用，包括 puppeteer 自身的内部通信。
+
+### ❌ TypeScript 参数属性在 Node.js strip-only 模式
+
+```
+问题: class Foo { constructor(readonly bar: string) {} }
+症状: Node.js 22.6+ 的 --experimental-strip-only 报
+      "TypeScript parameter property is not supported in strip-only mode"
+根因: Node.js 内置 TS strip 不支持 readonly/public/private 参数属性语法
+根解: 改为普通属性 + 构造函数体内赋值
+```
+
 ---
 
 ## §五 修改代码前的自查清单

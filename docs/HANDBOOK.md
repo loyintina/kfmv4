@@ -114,7 +114,9 @@ index.ts (入口路由 + 静态文件)
 | `ws-server.ts` | WebSocket 连接管理，接收推送的 snapshot |
 | `src/server/ai/chat.ts` | SSE 流式对话核心：Provider 加载、SystemPrompt 拼接、Tool Call |
 | `src/server/ai/routes.ts` | AI 对话 HTTP 端点：/ai/chat（流式）、/ai/generate-title |
-| `src/server/ai/tools/` | AI 工具定义（types→index→kfm-exec/snapshot/logs） |
+| `src/server/ai/tools/` | AI 工具定义（types→index→kfm-exec/snapshot/logs/browser） |
+| `src/server/ai/tools/omp/browser.ts` | Browser 工具入口：open/run/close，封装 tab-supervisor |
+| `src/server/ai/tools/omp/browser/` | Browser 核心：WorkerCore(puppeteer) + tab-supervisor + launch + aria |
 | `src/server/prompts/` | 提示词模板：system/base.md（基础角色）+ tools/（工具描述） |
 
 > 每个文件头部注释已有完整职责说明，此处仅列出架构概览。服务端不涉及复杂状态机，接手者读各自文件即可。
@@ -473,3 +475,103 @@ types / StyleConfig（纯数据，无项目导入）
 
 > 唯一反向耦合：`src/client/engine/v2/renderer.ts` → `src/client/modules/theme.ts`（`currentTheme`）。
 > 其余 13 个引擎文件零项目导入，完全自包含。
+
+---
+
+## 八、Browser 工具移植记录（2026-07-18）
+
+> 从 omp 的 `@oh-my-pi/pi-coding-agent/src/tools/browser/` 移植到 kfmv4 的完整经验。
+
+### 架构
+
+```
+browser.ts (KfmTool 入口: open/run/close)
+    ↓
+tab-supervisor.ts (tab 生命周期, node:worker_threads)
+    ↓ 启动 Worker
+[Node.js worker_thread]
+    ↓
+tab-worker.ts WorkerCore (~900 行, puppeteer page 操作)
+    ↓ 通过 CDP
+Chromium (headless)
+```
+
+**cmux 路径已删除**（只用于附着真实 Chrome，kfmv4 不需要）。
+
+### 移植踩坑记录
+
+#### 1. stealth patches 破坏 page.evaluate()（🔴 关键）
+
+`applyStealthPatches` 注入的脚本 patch 了 `Function.prototype.toString`，导致 puppeteer
+在 worker 线程里序列化函数时得到空字符串，Chrome 报 `Unexpected end of input`。
+
+**症状**：`page.title()` 和 `page.evaluate(() => ...)` 在 worker 里全部失败，但直接用
+`new Worker()` 不经过 tab-supervisor 就正常。
+
+**解决方案**：headless 模式跳过 `applyStealthPatches`。stealth 只在需要反检测时有用，
+kfmv4 的 browser 工具用于 AI 自主浏览，不需要伪装。
+
+**教训**：任何修改 JS 全局原型的注入脚本都可能破坏依赖序列化的工具（如 puppeteer evaluate）。
+
+#### 2. Node.js 22 strip-only 模式不支持 TypeScript 参数属性（🟡）
+
+```typescript
+// ❌ Node.js 22 的 --experimental-strip-only 不支持
+class ToolError extends Error {
+  constructor(message: string, readonly context?: Record<string, unknown>) { ... }
+}
+
+// ✅ 改为普通属性
+class ToolError extends Error {
+  context?: Record<string, unknown>;
+  constructor(message: string, context?: Record<string, unknown>) {
+    super(message);
+    this.context = context;
+  }
+}
+```
+
+**触发条件**：当 tsx worker 线程加载包含参数属性的 TypeScript 文件时。
+Node.js 22.6+ 内置 TypeScript strip-only 支持，`readonly`/`public`/`private` 等
+参数属性语法不在支持范围内。
+
+#### 3. tsx worker 线程 execArgv 冲突（🟡）
+
+tsx 在 `process.execArgv` 里注入 `--require`/`--import` loader 参数，但也会包含
+`--eval` 脚本。传给 worker 时必须过滤掉 `--eval`，否则 worker 会尝试执行主进程的
+eval 脚本而非 worker 文件。
+
+**最终方案**：用 esbuild 预编译 `tab-worker-entry.ts` → `tab-worker-entry.js`（单文件
+bundle，external puppeteer-core），worker 直接加载 .js 文件，不需要 tsx loader。
+
+#### 4. Promise.withResolvers 在 ES2022 不可用（🟢）
+
+kfmv4 的 tsconfig target 是 ES2022，`Promise.withResolvers()` 是 ES2024。
+替换为内联模式：
+
+```typescript
+let resolve!: (value: T) => void;
+let reject!: (reason?: unknown) => void;
+const promise = new Promise<T>((res, rej) => { resolve = res; reject = rej; });
+```
+
+#### 5. @mozilla/readability 和 linkedom 不在 kfmv4 依赖中（🟢）
+
+这两个包是 omp 的依赖，kfmv4 的 node_modules 里没有。`readable.ts` 改用 regex
+基础的 HTML tag 剥离 + article/main 提取，对 AI 消费足够用。
+
+### 文件依赖图
+
+```
+browser.ts
+  └→ tab-supervisor.ts
+       ├→ launch.ts (Chromium 启动 + UA override)
+       ├→ tab-worker-entry.js (编译后)
+       │    └→ tab-worker.ts (WorkerCore)
+       │         ├→ launch.ts (loadPuppeteerInWorker)
+       │         ├→ aria/aria-snapshot.ts
+       │         ├→ readable.ts
+       │         ├→ run-cancellation.ts
+       │         └→ tab-protocol.ts (类型)
+       └→ ../../types.ts (ToolError, ToolAbortError)
+```
