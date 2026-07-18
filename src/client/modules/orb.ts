@@ -520,7 +520,8 @@ export async function initOrb(): Promise<void> {
       const contentArea = panelEl ? panelEl.querySelector('.orb-panel-content') : null;
       const onScroll = () => {
         if (!contentArea) return;
-        const atBottom = contentArea.scrollTop + contentArea.clientHeight >= contentArea.scrollHeight - 60;
+        const threshold = Math.max(200, contentArea.clientHeight * 0.5);
+        const atBottom = contentArea.scrollTop + contentArea.clientHeight >= contentArea.scrollHeight - threshold;
         userScrolled = !atBottom;
       };
       contentArea?.addEventListener('scroll', onScroll, { passive: true });

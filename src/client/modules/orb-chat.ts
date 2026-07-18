@@ -212,9 +212,10 @@ export function renderChatContent(state: ChatState): void {
 
     idx++;
   }
-  // 保存滚动位置
+  // 保存滚动位置（在重建 innerHTML 之前）
   const scrollTop = contentArea.scrollTop;
-  const wasAtBottom = scrollTop + contentArea.clientHeight >= contentArea.scrollHeight - 200; // 阈值 80→200，一个气泡高度
+  const atBottomThreshold = Math.max(200, contentArea.clientHeight * 0.5);
+  const wasAtBottom = scrollTop + contentArea.clientHeight >= contentArea.scrollHeight - atBottomThreshold;
   contentArea.innerHTML = html;
   // 消息操作按钮事件绑定
   contentArea.querySelectorAll('.orb-act-btn').forEach(btn => {
@@ -243,15 +244,15 @@ export function renderChatContent(state: ChatState): void {
       }
     });
   });
-  // 滚动策略：follow 强制底部，preserve 保留位置，auto 启发式
-  if (scrollMode === 'follow') {
-    contentArea.scrollTop = contentArea.scrollHeight;
-  } else if (scrollMode === 'preserve') {
+  // 滚动策略
+  if (scrollMode === 'preserve') {
     contentArea.scrollTop = scrollTop;
+  } else if (scrollMode === 'follow' || (scrollMode === 'auto' && wasAtBottom)) {
+    // rAF 延迟一帧：innerHTML 重建后布局未完成，scrollHeight 还是旧值
+    // 等浏览器 layout 完成再设 scrollTop，确保真正到底
+    requestAnimationFrame(() => { contentArea.scrollTop = contentArea.scrollHeight; });
   } else {
-    // auto: 原来在底部才追底
-    if (wasAtBottom) { contentArea.scrollTop = contentArea.scrollHeight; }
-    else { contentArea.scrollTop = scrollTop; }
+    contentArea.scrollTop = scrollTop;
   }
   // 注入 CSS（仅一次）
   if (!contentArea.querySelector('.orb-md-css')) {
