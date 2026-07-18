@@ -511,16 +511,31 @@ export async function initOrb(): Promise<void> {
 
       abortCtrl = new AbortController();
       sendBtn!.classList.add('sending');
-      // 发送前立即滚到底部（一次性），后续流式更新用 auto 避免覆盖 markdown
+
+      // 发送时强制追底
       _renderChat('follow');
+
+      // 用户滚动感知：上滑则停止追底，滑回底部才恢复
+      let userScrolled = false;
+      const contentArea = panelEl ? panelEl.querySelector('.orb-panel-content') : null;
+      const onScroll = () => {
+        if (!contentArea) return;
+        const atBottom = contentArea.scrollTop + contentArea.clientHeight >= contentArea.scrollHeight - 60;
+        userScrolled = !atBottom;
+      };
+      contentArea?.addEventListener('scroll', onScroll, { passive: true });
+
       await doSend(text, chatMessages, base, abortCtrl.signal,
         () => {},
-        _renderChat, // auto 模式：已在底部则追底，否则保持位置
-        (msg) => { chatMessages.push({ role: 'ai', text: msg }); _renderChat(); },
+        () => _renderChat(userScrolled ? 'preserve' : 'follow'),
+        (msg) => { chatMessages.push({ role: 'ai', text: msg }); _renderChat(userScrolled ? 'preserve' : 'follow'); },
       );
+
+      contentArea?.removeEventListener('scroll', onScroll);
       abortCtrl = null;
       sendBtn!.classList.remove('sending');
-      _renderChat();
+      // 流结束后最终渲染一次，使用 auto（用户上滑了就不强制到底）
+      _renderChat(userScrolled ? 'auto' : 'follow');
     }
 
     sendBtn.addEventListener('click', () => handleSend());

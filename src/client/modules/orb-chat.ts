@@ -333,10 +333,10 @@ export async function doSend(
     const provider = config.providerId;
     messages.push({ role: 'ai', text: '', reasoning: '' });
     onRender();
-    let msgIdx = messages.length - 1; // 当前写入气泡的索引（工具卡片挂这里）
-    let reasoningBuf = ''; let contentBuf = '';
-    // replyMsgIdx: 首次收到 tool_call 时推入的新气泡，工具完成后 LLM 回复写入此槽位
-    let replyMsgIdx = -1;
+    // msgIdx: 当前轮次的气泡（挂工具卡片、当轮思考）
+    let msgIdx = messages.length - 1;
+    let reasoningBuf = '';
+    let contentBuf = '';
 
     const apiMessages: Array<{ role: string; content: string }> = [];
     if (systemPrompt) apiMessages.push({ role: 'system', content: systemPrompt });
@@ -370,29 +370,21 @@ export async function doSend(
           const event = JSON.parse(jsonStr);
           switch (event.type) {
             case 'message_start':
-              // message_start 不再需要：工具调用时已推入 replyMsgIdx 槽位
+              // 新轮次开始：推新气泡，msgIdx 前进，重置 buf
+              messages.push({ role: 'ai', text: '', reasoning: '' });
+              msgIdx = messages.length - 1;
+              reasoningBuf = '';
+              contentBuf = '';
               break;
             case 'thinking':
-              // thinking 写入当前活跃气泡：工具调用后写入 replyMsgIdx，否则写入 msgIdx
-              const thinkingTarget = replyMsgIdx >= 0 ? replyMsgIdx : msgIdx;
               reasoningBuf += event.content || '';
-              messages[thinkingTarget].reasoning = reasoningBuf;
+              messages[msgIdx].reasoning = reasoningBuf;
               break;
             case 'text':
-              // text 同理：工具调用后写入 replyMsgIdx
-              const textTarget = replyMsgIdx >= 0 ? replyMsgIdx : msgIdx;
               contentBuf += event.content || '';
-              messages[textTarget].text = contentBuf;
+              messages[msgIdx].text = contentBuf;
               break;
             case 'tool_call':
-              // 首次 tool_call：推入新气泡，重置 buf（第一轮 reasoning/text 已写入 messages[msgIdx]）
-              if (replyMsgIdx < 0) {
-                messages.push({ role: 'ai', text: '', reasoning: '' });
-                replyMsgIdx = messages.length - 1;
-                reasoningBuf = '';
-                contentBuf = '';
-              }
-              // 工具调用挂在当前气泡（msgIdx，不是 replyMsgIdx）
               if (!messages[msgIdx].toolCalls) messages[msgIdx].toolCalls = [];
               messages[msgIdx].toolCalls!.push({ name: event.toolName || 'unknown', params: event.toolParams || {} });
               break;
@@ -403,26 +395,23 @@ export async function doSend(
               }
               break;
             case 'rule_warning':
-              // 警告挂在当前气泡（工具调用所在的 msgIdx）
               if (!messages[msgIdx].ruleWarnings) messages[msgIdx].ruleWarnings = [];
               messages[msgIdx].ruleWarnings!.push(event.content || '');
               break;
             case 'error':
-              const errorTarget = replyMsgIdx >= 0 ? replyMsgIdx : msgIdx;
               contentBuf += '\n\n[错误: ' + event.content + ']';
-              messages[errorTarget].text = contentBuf;
+              messages[msgIdx].text = contentBuf;
               break;
           }
           throttledRender();
         } catch {}
       }
     }
+    // 兜底：流结束时目标为空则填入
+    if (!messages[msgIdx].text && contentBuf) messages[msgIdx].text = contentBuf;
+    if (!messages[msgIdx].reasoning && reasoningBuf) messages[msgIdx].reasoning = reasoningBuf;
+    if (!messages[msgIdx].text && !messages[msgIdx].reasoning) messages[msgIdx].text = '未获取到回复';
     onRender();
-    // 流结束：仅在目标消息为空时兜底（正常情况流式已逐 token 写入，不重复覆盖）
-    const finalTarget = replyMsgIdx >= 0 ? replyMsgIdx : msgIdx;
-    if (!messages[finalTarget].text && contentBuf) messages[finalTarget].text = contentBuf;
-    if (!messages[finalTarget].reasoning && reasoningBuf) messages[finalTarget].reasoning = reasoningBuf;
-    if (!messages[finalTarget].text && !messages[finalTarget].reasoning) messages[finalTarget].text = '未获取到回复';
     await sessionStore.saveMessages(messages, config.modelId, config.providerId);
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') {
