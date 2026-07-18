@@ -46,6 +46,7 @@ export class WsServer {
   private _latestSnapshot: PageDescription | null = null;
   private _latestCapabilities: unknown[] | null = null;
   private _ptyManager: PtyManager;
+  private _evalPending = new Map<string, { resolve(v: unknown): void; reject(e: Error): void }>();
 
   constructor(server: HttpServer) {
     this._ptyManager = new PtyManager(
@@ -169,6 +170,17 @@ export class WsServer {
         break;
       }
 
+      case 'browser-eval-result': {
+        const p = msg.payload as { id: string; result?: unknown; error?: string };
+        const pending = this._evalPending.get(p.id);
+        if (pending) {
+          this._evalPending.delete(p.id);
+          if (p.error !== undefined) pending.reject(new Error(p.error));
+          else pending.resolve(p.result);
+        }
+        break;
+      }
+
       default:
         console.warn('[ws-server] 未知消息类型:', msg.type);
         this.send(ws, 'error', { message: `未知消息类型: ${msg.type}` });
@@ -211,6 +223,25 @@ export class WsServer {
   /** 当前连接数 */
   get connectionCount(): number {
     return this.clients.size;
+  }
+
+  /** 在连接的浏览器里执行 JS，返回结果（用于 AI 工具 browser_eval） */
+  evalInBrowser(code: string, timeoutMs = 10_000): Promise<unknown> {
+    if (this.clients.size === 0) return Promise.reject(new Error('没有已连接的浏览器'));
+    const id = crypto.randomUUID();
+    let resolve!: (v: unknown) => void;
+    let reject!: (e: Error) => void;
+    const promise = new Promise<unknown>((res, rej) => { resolve = res; reject = rej; });
+    const timer = setTimeout(() => {
+      this._evalPending.delete(id);
+      reject(new Error(`browser_eval 超时（${timeoutMs}ms）`));
+    }, timeoutMs);
+    this._evalPending.set(id, {
+      resolve: (v) => { clearTimeout(timer); resolve(v); },
+      reject:  (e) => { clearTimeout(timer); reject(e); },
+    });
+    this.broadcast('browser-eval', { id, code });
+    return promise;
   }
 
   /** 关闭 WebSocket 服务 */

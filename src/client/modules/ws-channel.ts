@@ -219,6 +219,29 @@ class WsChannel {
         break;
       }
 
+      case 'browser-eval': {
+        const req = msg.payload as { id: string; code: string };
+        void (async () => {
+          try {
+            // AsyncFunction — 支持 return 和 await，在 window 作用域执行
+            // eslint-disable-next-line @typescript-eslint/no-implied-eval
+            const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor as new (...a: string[]) => () => Promise<unknown>;
+            const fn = new AsyncFunction(req.code);
+            const result = await fn.call(window);
+            this.sendMessage('browser-eval-result', {
+              id: req.id,
+              result: result !== undefined ? JSON.parse(JSON.stringify(result, null, 2)) : null,
+            });
+          } catch (err) {
+            this.sendMessage('browser-eval-result', {
+              id: req.id,
+              error: err instanceof Error ? err.message : String(err),
+            });
+          }
+        })();
+        break;
+      }
+
       default: {
         const handlers = this.messageHandlers.get(msg.type);
         if (handlers) { for (const h of handlers) h(msg.payload); } else { log('[warn] [ws-channel] 未知消息类型:', msg.type); }
