@@ -21,7 +21,6 @@ import type {
 } from './tab-protocol.js';
 import { ToolError } from '../../types.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // ---------------------------------------------------------------------------
 // Types
@@ -261,8 +260,17 @@ function handleTabMessage(session: WorkerTabSession, msg: WorkerOutbound): void 
 
 async function spawnTabWorker(): Promise<WorkerHandle> {
   try {
-    const workerPath = path.join(__dirname, 'tab-worker-entry.js');
-    const worker = new NodeWorker(workerPath);
+    // Use tsx loader for worker thread (handles TypeScript imports)
+    const workerDir = path.dirname(fileURLToPath(import.meta.url));
+    const workerPath = path.join(workerDir, 'tab-worker-entry.ts');
+    // Extract tsx loader args from process.execArgv, filter out --eval/-e and the eval script
+    // Use tsx to run the worker entry (handles .ts imports without interfering with CDP)
+    const tsxBin = process.argv[0]; // node binary
+    const tsxLoader = process.execArgv.find(a => a.includes('tsx/dist/loader'));
+    const tsxRequire = process.execArgv.find(a => a.includes('tsx/dist/preflight'));
+    const worker = new NodeWorker(workerPath, {
+      execArgv: tsxRequire && tsxLoader ? [tsxRequire, tsxLoader] : [],
+    });
     return wrapNodeWorker(worker);
   } catch (err) {
     return spawnInlineWorker();

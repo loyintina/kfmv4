@@ -49,12 +49,12 @@ export interface KfmTool {
  * Base error for tool execution failures.
  */
 export class ToolError extends Error {
-  constructor(
-    message: string,
-    readonly context?: Record<string, unknown>,
-  ) {
+  context?: Record<string, unknown>;
+
+  constructor(message: string, context?: Record<string, unknown>) {
     super(message);
     this.name = 'ToolError';
+    this.context = context;
   }
 
   render(): string {

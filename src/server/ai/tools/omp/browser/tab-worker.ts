@@ -22,7 +22,7 @@ import type {
 import {
   captureAriaSnapshot, parseAriaRefSelector, resolveAriaRefHandle,
 } from './aria/aria-snapshot.js';
-import { applyStealthPatches, applyViewport, BROWSER_PROTOCOL_TIMEOUT_MS, DEFAULT_VIEWPORT, loadPuppeteerInWorker } from './launch.js';
+import { applyViewport, BROWSER_PROTOCOL_TIMEOUT_MS, DEFAULT_VIEWPORT } from './launch.js';
 import { extractReadableFromHtml, type ReadableFormat } from './readable.js';
 import { markHandled, waitForBrowserRun } from './run-cancellation.js';
 import {
@@ -373,7 +373,8 @@ export class WorkerCore {
   async #init(payload: WorkerInitPayload): Promise<void> {
     try {
       this.#mode = payload.mode;
-      const puppeteer = await loadPuppeteerInWorker(payload.safeDir);
+      // Direct import avoids loadPuppeteerInWorker's process.cwd patch
+      const puppeteer = (await import('puppeteer-core')).default;
       this.#browser = await puppeteer.connect({
         browserWSEndpoint: payload.browserWSEndpoint,
         defaultViewport: null,
@@ -381,7 +382,8 @@ export class WorkerCore {
       });
       if (payload.mode === 'headless') {
         this.#page = await this.#browser.newPage();
-        await applyStealthPatches(this.#browser, this.#page, { browserSession: null, override: null });
+        // Stealth patches disabled: they break page.evaluate() in worker context
+        // await applyStealthPatches(this.#browser, this.#page, { browserSession: null, override: null });
         await applyViewport(this.#page, payload.viewport);
         if (payload.dialogs) this.#applyDialogPolicy(payload.dialogs);
         if (payload.url) {
@@ -509,8 +511,21 @@ export class WorkerCore {
     const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor as new (...args: string[]) => (...a: unknown[]) => Promise<unknown>;
     const keys = Object.keys(globals);
     const values = Object.values(globals);
+    process.stderr.write(`[bw] creating fn with ${keys.length} args, code=${JSON.stringify(code?.slice(0,50))}
+`);
     const fn = new AsyncFunction(...keys, code);
-    return await fn(...values);
+    process.stderr.write(`[bw] fn created, calling...
+`);
+    try {
+      const result = await fn(...values);
+      process.stderr.write(`[bw] fn returned: ${JSON.stringify(result)?.slice(0,100)}
+`);
+      return result;
+    } catch (e) {
+      process.stderr.write(`[bw] fn threw: ${e instanceof Error ? e.message : String(e)} stack=${e instanceof Error ? e.stack?.slice(0,200) : 'none'}
+`);
+      throw e;
+    }
   }
 
   async #postReadyInfo(): Promise<void> {
