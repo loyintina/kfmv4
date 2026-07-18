@@ -10,6 +10,7 @@ import { KFM_DATA_DIR } from '../path-utils.js';
 import type { WsServer } from '../ws-server.js';
 import { getToolDefinitions, executeTool } from './tools/index.js';
 import type { KfmTool, ToolContext } from './tools/types.js';
+import { buildAlwaysApplyPrompt, checkToolCallRules } from './rule-engine.js';
 
 /** 从 prompts/tools/*.md 加载工具描述 */
 const PROMPTS_DIR = join(process.cwd(), 'src', 'server', 'prompts', 'tools');
@@ -44,7 +45,7 @@ export interface ChatMessage {
 
 /** 流式事件 */
 export interface StreamEvent {
-  type: 'message_start' | 'thinking' | 'text' | 'tool_call' | 'tool_result' | 'error' | 'done';
+  type: 'message_start' | 'thinking' | 'text' | 'tool_call' | 'tool_result' | 'error' | 'done' | 'rule_warning';
   content?: string;
   toolName?: string;
   toolParams?: Record<string, unknown>;
@@ -110,6 +111,11 @@ export async function* streamChat(
   const toolDocsPrompt = buildToolDocsPrompt();
   if (toolDocsPrompt) {
     baseMessages.push({ role: 'system', content: toolDocsPrompt });
+  }
+  // 注入 alwaysApply 规则到 system prompt
+  const alwaysApplyPrompt = buildAlwaysApplyPrompt();
+  if (alwaysApplyPrompt) {
+    baseMessages.push({ role: 'system', content: alwaysApplyPrompt });
   }
 
   // 工具调用循环（最多 10 轮，防止无限循环）
@@ -209,6 +215,12 @@ export async function* streamChat(
 
       // 先 yield 所有工具调用和结果（挂在当前气泡），再继续到下一轮
       for (const t of todo) {
+        // 规则检查：工具调用前扫描，违规则注入 warning 让 LLM 重新思考
+        const ruleWarning = checkToolCallRules(t.name, t.params);
+        if (ruleWarning) {
+          apiMessages.push({ role: 'system', content: ruleWarning });
+          yield { type: 'rule_warning', content: ruleWarning };
+        }
         yield { type: 'tool_call', toolName: t.name, toolParams: t.params };
         let result;
         try {

@@ -357,6 +357,10 @@ export async function doSend(
                 if (pending) pending.result = event.toolResult;
               }
               break;
+            case 'rule_warning':
+              // 规则警告：显示为系统提示气泡（不影响 AI 回复区域）
+              // 仅记录日志，不修改 messages（服务端已注入到 LLM 上下文）
+              break;
             case 'error':
               const errorTarget = replyMsgIdx >= 0 ? replyMsgIdx : msgIdx;
               contentBuf += '\n\n[错误: ' + event.content + ']';
