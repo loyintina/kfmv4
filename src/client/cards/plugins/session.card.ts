@@ -12,16 +12,14 @@ import { buildCardLayout } from '../../modules/floating-card.js';
 import { log } from '../../modules/logger.js';
 import { showConfirm } from '../../modules/confirm-dialog.js';
 import { createCustomSelect } from '../../modules/custom-select.js';
+import type { Session, TextBlock } from '../../modules/session-store.js';
 
-interface Session {
-  id: string;
-  title: string;
-  manuallyNamed?: boolean;
-  createdAt: string;
-  updatedAt: string;
-  providerId?: string;
-  modelId?: string;
-  messages: Array<{ role: string; text: string; reasoning?: string }>;
+/** 从 SessionMessage.content 提取所有 TextBlock 的纯文本 */
+function extractMsgText(msg: Session['messages'][number]): string {
+  return (msg.content || [])
+    .filter((b): b is TextBlock => b.type === 'text')
+    .map(b => b.text || '')
+    .join('');
 }
 
 const SESSIONS_PATH = '.kfmv4/sessions';
@@ -200,53 +198,6 @@ function showMessageEditor(
   setTimeout(() => ta.focus(), 100);
 }
 
-// orb 面板 → 会话卡的消息编辑/删除事件
-window.addEventListener('kfm-message-edit', ((e: CustomEvent) => {
-  const { message, sessionId } = e.detail || {};
-  if (!message || !sessionId) return;
-  showMessageEditor(message, async (newText) => {
-    const content = await readFile(`${SESSIONS_PATH}/${sessionId}.json`);
-    if (!content) return;
-    const session: Session = JSON.parse(content);
-    const idx = session.messages.findIndex(m => m.role === message.role && m.text === message.text);
-    if (idx >= 0) {
-      if (!newText.trim()) {
-        session.messages.splice(idx, 1);
-      } else {
-        session.messages[idx].text = newText;
-      }
-      session.updatedAt = new Date().toISOString();
-      await writeFile(`${SESSIONS_PATH}/${sessionId}.json`, JSON.stringify(session, null, 2));
-      window.dispatchEvent(new CustomEvent('kfm-session-change', { detail: { sessionId } }));
-    }
-  }, '#00d4ff', '#7c3aed');
-}) as EventListener);
-
-window.addEventListener('kfm-message-delete', ((e: CustomEvent) => {
-  const { message, sessionId } = e.detail || {};
-  if (!message || !sessionId) return;
-  (async () => {
-    const confirmed = await showConfirm({
-      title: '删除消息',
-      message: '确定删除这条消息？',
-      accent: '#00d4ff',
-      accent2: '#7c3aed',
-      confirmText: '删除',
-      cancelText: '取消',
-    });
-    if (!confirmed) return;
-    const content = await readFile(`${SESSIONS_PATH}/${sessionId}.json`);
-    if (!content) return;
-    const session: Session = JSON.parse(content);
-    const idx = session.messages.findIndex(m => m.role === message.role && m.text === message.text);
-    if (idx >= 0) {
-      session.messages.splice(idx, 1);
-      session.updatedAt = new Date().toISOString();
-      await writeFile(`${SESSIONS_PATH}/${sessionId}.json`, JSON.stringify(session, null, 2));
-      window.dispatchEvent(new CustomEvent('kfm-session-change', { detail: { sessionId } }));
-    }
-  })();
-}) as EventListener);
 
 // ====== 卡片处理器 ======
 
@@ -373,7 +324,7 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
 
       const text = document.createElement('div');
       text.style.cssText = `font-size:var(--card-font-size,11px);line-height:1.5;color:rgba(255,255,255,0.75);white-space:pre-wrap;word-break:break-word;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;overflow:hidden`;
-      text.textContent = msg.text;
+      text.textContent = extractMsgText(msg);
 
       bubble.appendChild(label);
       bubble.appendChild(text);
@@ -381,13 +332,17 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
       // 点击气泡 → 编辑
       bubble.style.cursor = 'pointer';
       bubble.onclick = () => {
-        showMessageEditor(msg, async (newText) => {
+        const plainText = extractMsgText(msg);
+        showMessageEditor({ role: msg.role, text: plainText }, async (newText) => {
           const idx = session.messages.indexOf(msg);
           if (idx >= 0) {
             if (!newText.trim()) {
               session.messages.splice(idx, 1);
             } else {
-              session.messages[idx].text = newText;
+              // 写回第一个 text block，保留其余 block
+              const tb = session.messages[idx].content.find(b => b.type === 'text');
+              if (tb && tb.type === 'text') { tb.text = newText; }
+              else { session.messages[idx].content.unshift({ type: 'text', text: newText }); }
             }
             await saveSession(session);
             renderAll();
