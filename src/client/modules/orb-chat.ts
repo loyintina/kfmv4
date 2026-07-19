@@ -174,12 +174,19 @@ export function renderChatContent(state: ChatState): void {
         const statusLabel = isExecuting ? '执行中' : (isError ? '失败' : '成功');
         const statusColor = isExecuting ? 'rgba(255,255,255,0.4)' : (isError ? 'rgba(255,100,100,0.8)' : 'rgba(0,212,115,0.8)');
         const paramsText = Object.keys(tc.input).length > 0 ? JSON.stringify(tc.input, null, 2) : '';
-        const resultText = hasResult ? (tc.result!.content?.[0]?.text || '') : '';
+        // _animText 存在时显示动画进度文字，否则显示完整结果
+        type AnimBlock = ToolBlock & { _animText?: string };
+        const ab = tc as AnimBlock;
+        const isAnimating = ab._animText !== undefined;
+        const resultText = hasResult
+          ? (isAnimating ? ab._animText! : (tc.result!.content?.[0]?.text || ''))
+          : '';
         const contentText = isExecuting
           ? (paramsText ? '参数:\n' + paramsText + '\n\n执行中...' : '执行中...')
           : (resultText || '(无结果)');
-        const defaultDisplay = 'block'; // 始终展开，让用户看到内容，可手动折叠
-        const defaultArrow = '▼';
+        // 执行中或动画中展开；动画结束后折叠（用户可手动展开查看完整结果）
+        const defaultDisplay = (isExecuting || isAnimating) ? 'block' : 'none';
+        const defaultArrow = (isExecuting || isAnimating) ? '▼' : '▶';
         const gradientBorder = `linear-gradient(rgba(10,15,30,0.75),rgba(10,15,30,0.75)) padding-box,linear-gradient(135deg,${hexToRgba(c2, 0.55)} 30%,${hexToRgba(c1, 0.55)} 70%) border-box`;
         html += `
           <div style="display:flex;justify-content:flex-start;margin-bottom:6px">
@@ -407,7 +414,30 @@ export async function doSend(
               const toolBlock = messages[msgIdx].content.find(
                 (b): b is ToolBlock => b.type === 'tool' && b.id === event.toolUseId
               );
-              if (toolBlock) toolBlock.result = event.toolResult;
+              if (toolBlock) {
+                toolBlock.result = event.toolResult;
+                // 打字机动画：总时长约 1.5s，字数多则快，字数少则慢
+                // _animText 临时附加在 ToolBlock 上，saveMessages 前已清除，不持久化。
+                // renderChatContent 检测 _animText 存在时展开卡片、显示动画文字；
+                // 动画结束后删除 _animText，最后一次 onRender() 触发折叠。
+                const fullText = event.toolResult?.content?.[0]?.text || '';
+                if (fullText.length > 0) {
+                  const TICKS = 90; // ~1.5s at 16ms/tick
+                  const charsPerTick = Math.max(1, Math.ceil(fullText.length / TICKS));
+                  type AnimBlock = ToolBlock & { _animText?: string };
+                  (toolBlock as AnimBlock)._animText = '';
+                  let pos = 0;
+                  const iv = setInterval(() => {
+                    pos = Math.min(pos + charsPerTick, fullText.length);
+                    (toolBlock as AnimBlock)._animText = fullText.slice(0, pos);
+                    if (pos >= fullText.length) {
+                      clearInterval(iv);
+                      delete (toolBlock as AnimBlock)._animText;
+                    }
+                    onRender();
+                  }, 16);
+                }
+              }
               break;
             }
             case 'rule_warning': {
