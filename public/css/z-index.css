@@ -49,7 +49,6 @@
   --z-terminal-handle: 6410;
   --z-terminal-copy-btn: 6420;
   --z-terminal-magnifier: 6430;
-  --z-terminal-panel: 6500;
   --z-operation-toast: 6600;
   --z-card-toast: 6700;
   --z-modal-dialog: 6800;
@@ -78,7 +77,6 @@
 
 /* ===== L6 弹窗层 ===== */
 .operation-toast { z-index: var(--z-operation-toast); }
-.terminal-panel { z-index: var(--z-terminal-panel); }
 
 /* ===== L7 AI 核心（全局最高，无例外） ===== */
 .orb-panel { z-index: var(--z-orb-panel); }

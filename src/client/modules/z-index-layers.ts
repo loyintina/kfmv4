@@ -73,8 +73,6 @@ export const Z = {
   TERMINAL_HANDLE: 6410,
   TERMINAL_COPY_BTN: 6420,
   TERMINAL_MAGNIFIER: 6430,
-  /** 终端面板 */
-  TERMINAL_PANEL: 6500,
   /** 操作提示 toast */
   OPERATION_TOAST: 6600,
   /** 卡片 toast */
