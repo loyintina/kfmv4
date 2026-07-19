@@ -376,6 +376,7 @@ export async function doSend(
   // 推用户消息（content block 格式）
   messages.push({ role: 'user', content: [{ type: 'text', text }] });
   onBeforeSend();
+  // onRender 在这里只是为了让用户消息气泡先出现，不影响 hint（hint 在 orb.ts 里 startWaitingIndicator 之后追加）
   onRender();
 
   const config = await readActiveConfig(apiBase);

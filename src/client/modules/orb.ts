@@ -518,9 +518,8 @@ export async function initOrb(): Promise<void> {
       abortCtrl = new AbortController();
       sendBtn!.classList.add('sending');
 
-      // 发送时强制追底，然后启动等待提示动画
+      // 发送时强制追底（渲染用户消息气泡）
       _renderChat('follow');
-      let stopHint: (() => void) | null = panelEl ? startWaitingIndicator(panelEl) : null;
 
       // 用户滚动感知：上滑则停止追底，滑回底部才恢复
       let userScrolled = false;
@@ -533,12 +532,25 @@ export async function initOrb(): Promise<void> {
       };
       contentArea?.addEventListener('scroll', onScroll, { passive: true });
 
+      // 等待提示动画：doSend 内部第一个 onRender（用户消息入队后立刻触发）后启动
+      // 设计决策：不在 doSend 调用前启动，因为 doSend 进入时会先 onRender 一次（渲染用户消息），
+      // 这次 onRender 对应 handleSend 里的 onRender 回调，会触发 stopHint，hint 还没出现就被关掉了。
+      // 解决方案：用 firstRender flag，第一次 onRender 时启动 hint，第二次（message_start 后）时关掉。
+      let stopHint: ((() => void) | null) = null;
+      let firstRenderDone = false;
+
       await doSend(text, chatMessages, base, abortCtrl.signal,
         () => {},
         () => {
-          // 第一次 onRender（message_start 后）停掉提示动画
-          if (stopHint) { stopHint(); stopHint = null; }
-          _renderChat(userScrolled ? 'preserve' : 'follow');
+          if (!firstRenderDone) {
+            // 第一次 onRender = 用户消息渲染完，此时启动 hint
+            firstRenderDone = true;
+            stopHint = panelEl ? startWaitingIndicator(panelEl) : null;
+          } else {
+            // 第二次及以后 onRender = message_start 或 delta 到达，停掉 hint
+            if (stopHint) { stopHint(); stopHint = null; }
+            _renderChat(userScrolled ? 'preserve' : 'follow');
+          }
         },
         (msg) => {
           if (stopHint) { stopHint(); stopHint = null; }
@@ -548,7 +560,7 @@ export async function initOrb(): Promise<void> {
       );
 
       // 流结束时确保提示动画已停（静默断流兜底）
-      if (stopHint) { stopHint(); stopHint = null; }
+      if (stopHint != null) { (stopHint as () => void)(); stopHint = null; }
       contentArea?.removeEventListener('scroll', onScroll);
       abortCtrl = null;
       sendBtn!.classList.remove('sending');
