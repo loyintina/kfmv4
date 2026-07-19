@@ -627,14 +627,18 @@ export async function doSend(
               break;
             }
           }
-          // 结构性事件（新卡片出现/结果到达）绕过 throttle 立即渲染；
-          // content delta 节流（避免高频重绘）。
-          // 设计决策：message_start/content_block_start(tool)/tool_result/rule_warning 是
-          // 视觉结构变化，必须即时可见；text/thinking/input_json delta 可节流。
+          // 结构性事件绕过 throttle 立即渲染；content delta 节流（避免高频重绘）。
+          // 设计决策：
+          //   message_start — AI 消息容器出现
+          //   content_block_start(tool) — 工具卡出现（带摸鱼提示）
+          //   content_block_stop(tool) — 输入参数解析完成（必须立即可见，与提示同时出现）
+          //   tool_result — 执行结果到达
+          //   rule_warning — 警告框出现
           if (
             event.type === 'message_start' ||
             (event.type === 'content_block_start' && event.blockType === 'tool_use') ||
-            event.type === 'content_block_stop' ||
+            event.type === 'tool_result' ||
+            (event.type === 'content_block_stop' && messages[msgIdx]?.content[event.index]?.type === 'tool') ||
             event.type === 'rule_warning'
           ) {
             lastRender = Date.now();
