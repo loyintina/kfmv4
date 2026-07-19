@@ -187,8 +187,7 @@ function clearToolHint(toolId: string): void {
   _toolHints.delete(toolId);
 }
 
-// 跟踪输入参数打字机动画的 intervalId，用于输出到达时提前终止
-const _inputAnimTimers = new Map<string, ReturnType<typeof setInterval>>();
+// （已删除 _inputAnimTimers — 输入参数改为实时流式展示，不再需要提前终止逻辑）
 
 // ========== 滚动追底状态 ==========
 // 用显式 followBottom 标志替代旧的 wasAtBottom 启发式 + rAF 竞态。
@@ -567,14 +566,15 @@ export async function doSend(
               } else if (deltaType === 'thinking_delta' && block.type === 'text') {
                 block.reasoning = (block.reasoning || '') + (deltaText || '');
               } else if (deltaType === 'input_json_delta' && block.type === 'tool') {
-                // 累积 JSON 片段（临时缓冲，不存入类型定义）
-                (block as ToolBlock & { _jsonBuf?: string })._jsonBuf =
-                  ((block as ToolBlock & { _jsonBuf?: string })._jsonBuf || '') + (deltaText || '');
+                // 累积 JSON 片段 + 实时流式展示（复用 _animInput）
+                const buf = ((block as ToolBlock & { _jsonBuf?: string })._jsonBuf || '') + (deltaText || '');
+                (block as ToolBlock & { _jsonBuf?: string })._jsonBuf = buf;
+                (block as ToolBlock & { _animInput?: string })._animInput = buf;
               }
               break;
             }
             case 'content_block_stop': {
-              // tool block：解析累积的 JSON + 启动输入参数打字机动画
+              // tool block：解析累积的 JSON，设置 block.input（输入参数已通过 content_block_delta 实时流式展示）
               if (msgIdx < 0) break;
               const { index } = event;
               const block = messages[msgIdx].content[index];
@@ -583,28 +583,7 @@ export async function doSend(
                 try { parsed = JSON.parse((block as ToolBlock & { _jsonBuf: string })._jsonBuf); } catch {}
                 block.input = parsed;
                 delete (block as ToolBlock & { _jsonBuf?: string })._jsonBuf;
-                // 启动输入参数打字机动画（自适应速度：短命令快、长命令有上限）
-                const fullJson = JSON.stringify(parsed, null, 2);
-                type AnimBlock = ToolBlock & { _animText?: string; _animInput?: string };
-                if (fullJson && fullJson !== '{}') {
-                  const animBlock = block as AnimBlock;
-                  const duration = Math.max(300, Math.min(1200, fullJson.length * 20));
-                  const totalTicks = Math.round(duration / 16);
-                  const charsPerTick = Math.max(1, Math.ceil(fullJson.length / totalTicks));
-                  animBlock._animInput = '';
-                  let pos = 0;
-                  const iv = setInterval(() => {
-                    pos = Math.min(pos + charsPerTick, fullJson.length);
-                    animBlock._animInput = fullJson.slice(0, pos);
-                    if (pos >= fullJson.length) {
-                      clearInterval(iv);
-                      _inputAnimTimers.delete((block as ToolBlock).id);
-                      delete animBlock._animInput;
-                    }
-                    onRender();
-                  }, 16);
-                  _inputAnimTimers.set((block as ToolBlock).id, iv);
-                }
+                delete (block as ToolBlock & { _animInput?: string })._animInput;
               }
               break;
             }
@@ -614,13 +593,6 @@ export async function doSend(
                 (b): b is ToolBlock => b.type === 'tool' && b.id === event.toolUseId
               );
               if (toolBlock) {
-                // 输出到达 → 提前终止输入参数打字机动画，直接跳到完成态
-                const inputTimer = _inputAnimTimers.get(toolBlock.id);
-                if (inputTimer !== undefined) {
-                  clearInterval(inputTimer);
-                  _inputAnimTimers.delete(toolBlock.id);
-                  delete (toolBlock as ToolBlock & { _animInput?: string })._animInput;
-                }
                 toolBlock.result = event.toolResult;
                 clearToolHint(toolBlock.id);
                 const fullText = event.toolResult?.content?.[0]?.text || '';
@@ -667,9 +639,9 @@ export async function doSend(
           // 设计决策：
           //   message_start — AI 消息容器出现
           //   content_block_start(tool) — 工具卡出现（带摸鱼提示）
-          //   content_block_stop(tool) — 输入参数解析完成（必须立即可见，与提示同时出现）
           //   tool_result — 执行结果到达
           //   rule_warning — 警告框出现
+          //   input_json_delta — 输入参数实时流式展示（走节流渲染，不需要立即渲染）
           if (
             event.type === 'message_start' ||
             (event.type === 'content_block_start' && event.blockType === 'tool_use') ||
