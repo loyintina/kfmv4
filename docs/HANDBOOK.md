@@ -66,7 +66,7 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
         → initTreeRenderer() → loadFileTree() → initLazyLoader() → initCardStack()
 ```
 
-### 模块职能分组（全 46 个模块，不含 renderers/ 渲染器）
+### 模块职能分组（全 47 个模块，不含 renderers/ 渲染器）
 
 > 完整清单及依赖关系见 §七「客户端模块完整审计表」。此处按职能分组，方便快速定位。
 
@@ -77,7 +77,7 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 | **文件树渲染** | `tree-render.ts` `tree-overlay.ts` `tree-swipe.ts` `tree-model.ts` `tree-loader.ts` `canvas-cursor.ts` `canvas-scroll.ts` `canvas-utils.ts` `root-picker.ts` | Canvas 文件树的构建、交互、加载 |
 | **文件树样式** | `style-registry.ts` `theme.ts` | 文件树尺寸/颜色/字体的唯一来源（改一处全局同步） |
 | **视觉效果** | `char-rain.ts` | 字符散落/回收动画（展开折叠时） |
-| **交互共享** | `interaction-constants.ts` `drag-handler.ts` `click-queue.ts` | 模块间共享的常量/类型/事件队列 |
+| **交互共享** | `interaction-constants.ts` `drag-handler.ts` `click-queue.ts` `z-index-layers.ts` | 模块间共享的常量/类型/事件队列/层级注册表 |
 | **卡片系统** | `card-registry.ts` `card-stack.ts` `floating-card.ts` `floating-shared.ts` `floating-fullscreen.ts` | 统一注册表（类型/实例）+ 堆叠抽屉 UI + 浮卡拖拽/全屏 UI |
 | **AI / 通信** | `orb.ts` `orb-chat.ts` `orb-panel.ts` `ws-channel.ts` `session-store.ts` `debug-assert.ts` `gestures.ts` | 光球面板、下拉框、AI 消息/流式、WebSocket、会话持久化 |
 | **日志** | `logger.ts` | KFM 日志系统（debug-card 伴侣） |
@@ -372,25 +372,26 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `canvas-cursor.ts` | 444 | 3 | ✅ 提及 | Canvas 盒子光标系统 |
 | `canvas-scroll.ts` | 361 | 2 | ✅ 提及 | Canvas 盒子滚动系统 |
 | `canvas-utils.ts` | 61 | 4 | ✅ 依赖图 | Canvas 通用工具函数 |
-| `card-toast.ts` | 52 | 1 | ✅ 分组表 | 卡片风格轻量提示 |
+| `card-toast.ts` | 53 | 1 | ✅ 分组表 | 卡片风格轻量提示 |
 | `char-rain.ts` | 306 | 2 | ✅ 分组表 | 字符散落/回收动画 |
-| `card-stack.ts` | 457 | 4 | ✅ 独立条目 | 堆叠卡片面板（消费 card-registry，按注册表动态构建） |
+| `card-stack.ts` | 458 | 4 | ✅ 独立条目 | 堆叠卡片面板（消费 card-registry，按注册表动态构建） |
 | `click-queue.ts` | 39 | 1 | ✅ 分组表 | 点击事件队列 |
-| `custom-select.ts` | 244 | 1 | ✅ 分组表 | 可复用的自定义下拉框组件 |
-| `confirm-dialog.ts` | 190 | 1 | ✅ 分组表 | 可复用的自定义确认对话框 |
+| `custom-select.ts` | 246 | 1 | ✅ 分组表 | 可复用的自定义下拉框组件 |
+| `confirm-dialog.ts` | 192 | 1 | ✅ 分组表 | 可复用的自定义确认对话框 |
 | `color-utils.ts` | 46 | 2 | ✅ 分组表 | 颜色工具函数（从 tree-swipe 拆分） |
 | `debug-assert.ts` | 24 | 1 | ✅ 提及 | 运行时断言 |
 | `dom-refs.ts` | 37 | 9 | ✅ 注册表 | DOM 元素引用 |
 | `floating-card.ts` | 785 | 3 | ✅ 独立条目 | 浮卡创建/状态机/手势（核心模块） |
-| `floating-shared.ts` | 172 | 1 | ✅ 分组表 | 浮卡共享类型/常量/状态/工具（从 floating-card 拆分） |
+| `floating-shared.ts` | 173 | 1 | ✅ 分组表 | 浮卡共享类型/常量/状态/工具（从 floating-card 拆分） |
 | `floating-fullscreen.ts` | 214 | 1 | ✅ 分组表 | 浮卡全屏/退出/关闭逻辑（从 floating-card 拆分） |
 | `gesture-registry.ts` | 385 | 6 | ✅ 独立条目 | 手势注册中心 |
 | `gestures.ts` | 217 | 1 | ✅ 提及 | 页面滑动手势配置 |
 | `interaction-constants.ts` | 21 | 2 | ✅ 分组表 | 交互常量共享层（v6.6.0 新增） |
+| `z-index-layers.ts` | 95 | 11 | ✅ 分组表 | Z-Index 层级权威注册表（JS 侧，与 z-index.css 镜像，check-zindex 校验） |
 | `drag-handler.ts` | 136 | 2 | ✅ 分组表 | 共享拖动状态机（orb + floating-card 去重） |
-| `file-action-bar.ts` | 427 | 2 | ✅ 分组表 | 文件行长按 → 底部抽屉操作栏 |
+| `file-action-bar.ts` | 428 | 2 | ✅ 分组表 | 文件行长按 → 底部抽屉操作栏 |
 | `logger.ts` | 58 | 3 | ✅ 分组表 | KFM 日志系统 |
-| `mode-system.ts` | 444 | 1 | ✅ 分组表 | 模式按钮系统（从 tree-swipe 拆分，v6.8.0 新增） |
+| `mode-system.ts` | 445 | 1 | ✅ 分组表 | 模式按钮系统（从 tree-swipe 拆分，v6.8.0 新增） |
 | `orb.ts` | 557 | 2 | ✅ 独立条目 | 光球 UI + 拖拽手势 + 面板状态机（协调层） |
 | `orb-chat.ts` | 689 | 1 | ✅ 分组表 | AI 消息渲染 + SSE 流式通信（从 orb.ts 拆分） |
 | `orb-panel.ts` | 205 | 1 | ✅ 分组表 | 面板 Provider/Session/Model/Role 下拉框（从 orb.ts 拆分） |
@@ -406,11 +407,11 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `tree-overlay.ts` | 414 | 1 | ✅ 分组表 | Overlay 双树构建系统（从 tree-render 拆分） |
 | `tree-animation.ts` | 74 | 1 | ✅ 分组表 | 文件树插入/移除 GSAP 动画（新建/删除/复制/移动共享） |
 | `tree-render.ts` | 1021 | 3 | ✅ 核心条目 | 文件树 Canvas 渲染（编排层） |
-| `tree-swipe.ts` | 725 | 1 | ✅ 分组表 | 文件行右滑 → 卡片堆（从 tree-render 拆分，v6.8.0 拆分为 color-utils + mode-system） |
+| `tree-swipe.ts` | 726 | 1 | ✅ 分组表 | 文件行右滑 → 卡片堆（从 tree-render 拆分，v6.8.0 拆分为 color-utils + mode-system） |
 | `ui-registry.ts` | 334 | 9 | ✅ 独立条目 | UI 元素注册表 |
 | `ui.ts` | 71 | 10 | ✅ 提及 | UI 初始化编排 |
 | `ws-channel.ts` | 371 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
-| `terminal-card-04.ts` | 692 | 0 | TERMINAL_CARD_SPEC | 03 号终端卡 xterm.js 集成 |
+| `terminal-card-04.ts` | 693 | 0 | TERMINAL_CARD_SPEC | 03 号终端卡 xterm.js 集成 |
 | `tmux-card.ts` | 195 | 0 | — | 04 号 tmux 窗口管理卡 |
 | `card-registry.ts` | 155 | 5 | CARD_REGISTRY_SPEC | 卡片注册表：类型声明 + 实例追踪 |
 | **渲染器（renderers/）** | | | | |
@@ -423,7 +424,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `../src/client/modules/renderers/md-extensions.ts` | 51 | 1 | — | Markdown 渲染扩展（链接、任务列表） |
 | `../src/client/modules/renderers/md-css.ts` | 57 | 2 | ✅ 分组表 | Markdown 渲染 CSS（全局唯一来源，orb + handler-factory 共享） |
 | `../src/client/modules/renderers/text-preview.ts` | 26 | 1 | — | 文本文件预览渲染器 |
-| **合计** | **13723** | | | |
+| **合计** | **13829** | | | |
 
 ### 死代码检查
 **结论：无死代码。** 所有 41 个模块都被至少 1 个文件导入（`terminal-card-04.ts` 和 `tmux-card.ts` 被导入数为 0，但这是模块自身的特性：它们仅在用户侧打开卡片时由 `card-registry.ts` 的 `createHandler` 工厂按需实例化，属于动态加载。`terminal-aux-bar.ts` 已删除（空占位，无任何引用）。`src/cards/` 目录已彻底删除。实际使用的 logger 在 `src/client/modules/logger.ts`。

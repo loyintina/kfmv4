@@ -1,0 +1,94 @@
+/**
+ * KFM v4 — Z-Index 层级权威注册表（JS 侧）
+ *
+ * ⚠️ 全站唯一 z-index 真相源。任何 DOM 层级必须引用本表的常量，
+ *    禁止散落硬编码数字。CSS 侧镜像见 public/css/z-index.css 的 :root 变量
+ *    （两者数值必须一致，check-zindex.mjs 强制校验）。
+ *
+ * 层级图景（自底向上）——对应产品设计：
+ *
+ *   L7  AI 核心      面板 / 输入栏 / 光球 / 发送按钮
+ *                    ↑ 凌驾一切 UI，核心高频功能，保证 AI 未来能工作
+ *   L6  弹窗层        模态对话框 / 确认框 / toast / 终端 / 放大镜 / 下拉 / 底部操作栏
+ *   L5  文件树 + 遮罩  左侧 canvas 文件树、伴随遮罩（遮住浮卡层及以下）
+ *   L4  卡片堆        右滑召唤，需盖在浮卡层整体之上
+ *   L3  动态浮卡      点击哪个浮到本层最高（层内动态分配）
+ *   L2  全屏卡        可交互背景 / 主操作区，有锁防止盖住浮卡
+ *   L1  中央内容      预留（未来摞在网格上的内容）
+ *   L0  网格背景      最底层
+ *
+ * 每层留 1000 间距，层内动态元素（浮卡/卡片堆）用 BASE + index 递增，
+ * 上限不得越过下一层 BASE。
+ */
+
+export const Z = {
+  /** L0 网格背景 */
+  GRID_BG: 10,
+
+  /** L1 中央内容层（预留） */
+  CENTER_CONTENT: 100,
+
+  /** L1 召唤按钮（文件树/卡片堆入口，中央内容之上、遮罩之下） */
+  SUMMON_BTN: 200,
+
+  /** L2 全屏卡（有锁的可交互背景/主操作区） */
+  FULLSCREEN: 1000,
+
+  /** L3 动态浮卡基数：实际 z = FLOATING_BASE + 卡片序号，点击浮顶重分配 */
+  FLOATING_BASE: 2000,
+
+  /** L4 右滑卡片堆基数：实际 z = STACK_BASE + 卡片序号 */
+  STACK_BASE: 3000,
+
+  /** L5 文件树 + 遮罩层 */
+  SIDEBAR: 4000,
+  /** 文件树右侧触摸捕获盒（高于遮罩使右侧点击=光标动作，低于 AI 核心） */
+  SIDEBAR_TOUCH: 4100,
+  /** 文件树光标高亮 */
+  TREE_CURSOR: 4200,
+  /** 文件树内联输入框 */
+  TREE_INPUT: 4300,
+  /** 文件树内联输入框（overlay 态） */
+  TREE_INPUT_OVERLAY: 4400,
+  /** 文件树临时卡片（右滑撤销等） */
+  TREE_TEMP_CARD: 4500,
+  /** 模式系统背景卡（在文件树上层，工具栏之下） */
+  MODE_SYSTEM_BG: 4590,
+  /** 模式系统工具栏 / 确认条 */
+  MODE_SYSTEM: 4600,
+  /** 伴随文件树的遮罩（遮住浮卡层及以下，低于文件树自身交互元素） */
+  SIDEBAR_OVERLAY: 3900,
+  /** 日志面板 */
+  LOG_PANEL: 4700,
+  /** 文件树根目录选择器面板 */
+  ROOT_PICKER: 4800,
+
+  /** L6 弹窗层 */
+  /** 底部操作栏遮罩 / 抽屉 / 输入 */
+  ACTION_BAR_SCRIM: 6000,
+  ACTION_BAR_DRAWER: 6100,
+  ACTION_BAR_INPUT: 6200,
+  /** 自定义下拉浮层 */
+  CUSTOM_SELECT: 6300,
+  /** 终端选择手柄 / 茎 / 放大镜 / 复制按钮 */
+  TERMINAL_STEM: 6400,
+  TERMINAL_HANDLE: 6410,
+  TERMINAL_COPY_BTN: 6420,
+  TERMINAL_MAGNIFIER: 6430,
+  /** 终端面板 */
+  TERMINAL_PANEL: 6500,
+  /** 操作提示 toast */
+  OPERATION_TOAST: 6600,
+  /** 卡片 toast */
+  CARD_TOAST: 6700,
+  /** 模态对话框（会话卡/工具卡弹窗、确认框） */
+  MODAL_DIALOG: 6800,
+
+  /** L7 AI 核心（全局最高，无例外） */
+  ORB_PANEL: 9000,
+  AI_INPUT_BAR: 9100,
+  AI_SEND_BTN: 9200,
+  LIGHT_ORB: 9200,
+} as const;
+
+export type ZLayer = keyof typeof Z;

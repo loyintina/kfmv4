@@ -19,6 +19,8 @@
  *   if (confirmed) { // 执行删除 }
  */
 
+import { Z } from './z-index-layers.js';
+
 export interface ConfirmOptions {
   title: string;
   message: string;
@@ -50,7 +52,7 @@ export function showConfirm(options: ConfirmOptions): Promise<boolean> {
       bottom: 0;
       background: rgba(0, 0, 0, 0.5);
       backdrop-filter: blur(4px);
-      z-index: 10000;
+      z-index: ${Z.MODAL_DIALOG};
       display: flex;
       align-items: center;
       justify-content: center;

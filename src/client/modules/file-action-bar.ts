@@ -13,6 +13,7 @@ import { API, KFMState, getFileRowData } from './state.js';
 import { loadFileTree } from './tree-loader.js';
 import { animateInsertion, animateRemoval } from './tree-animation.js';
 import { log } from './logger.js';
+import { Z } from './z-index-layers.js';
 // ========== 状态 ==========
 
 let _dimmer: HTMLElement | null = null;
@@ -117,7 +118,7 @@ function _createDimmer(): void {
   _dimmer = document.createElement('div');
   _dimmer.style.cssText = [
     'position:fixed', 'inset:0',
-    'z-index:1005',
+    'z-index:' + Z.ACTION_BAR_SCRIM,
     'background:rgba(0,0,0,0.45)',
     'pointer-events:auto',
   ].join(';');
@@ -141,7 +142,7 @@ function _createDrawer(): void {
     'left:' + rect.left + 'px',
     'width:' + rect.width + 'px',
     'bottom:0',
-    'z-index:1006',
+    'z-index:' + Z.ACTION_BAR_DRAWER,
     'background:' + DRAWER_BG,
     'backdrop-filter:blur(12px)',
     '-webkit-backdrop-filter:blur(12px)',
@@ -291,7 +292,7 @@ function _renameFile(): void {
     'top:' + textY + 'px',
     'width:' + textW + 'px',
     'height:' + textH + 'px',
-    'z-index:1007',
+    'z-index:' + Z.ACTION_BAR_INPUT,
     'background:transparent',
     'border:none',
     'outline:none',

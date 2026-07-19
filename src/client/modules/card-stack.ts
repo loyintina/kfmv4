@@ -6,6 +6,7 @@ import { currentTheme as theme } from './theme.js';
 import { createFloatingCard, updateFullscreenSavedPosition } from './floating-card.js';
 import { log } from './logger.js';
 import { getCardType, getAllCardTypes, type CardContentHandler } from './card-registry.js';
+import { Z } from './z-index-layers.js';
 
 /**
  * KFM v4 - 堆叠卡片面板
@@ -118,7 +119,7 @@ const CARD_HEIGHT = theme.stack.cardHeight;
 const STACK_TOP_RATIO = 0.12;
 
 // ========== z-index ==========
-const Z_STACK_BASE = 150;
+const Z_STACK_BASE = Z.STACK_BASE;
 
 // ========== 状态 ==========
 type StackState = 'closed' | 'opening' | 'open' | 'closing';

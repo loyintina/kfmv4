@@ -10,6 +10,7 @@
  */
 
 import { currentTheme as theme } from './theme.js';
+import { Z } from './z-index-layers.js';
 
 export function showCardToast(message: string, accent: string = '#00d4ff'): void {
   const toast = document.createElement('div');
@@ -27,7 +28,7 @@ export function showCardToast(message: string, accent: string = '#00d4ff'): void
     'border:1px solid transparent',
     'border-left-width:3px',
     'box-shadow:0 4px 16px rgba(0,0,0,0.4)',
-    'z-index:11000',
+    'z-index:' + Z.CARD_TOAST,
     'pointer-events:none',
     'opacity:0',
     'transition:opacity 0.25s, transform 0.25s',

@@ -11,6 +11,7 @@ import { KFMState, getFileRowData, type FileRowData } from './state.js';
 import { anim } from './animation-registry.js';
 import { setupCharRainTweens, setupCharRainForSiblings, cleanupCharRain, type CharRainCleanup } from "./char-rain.js";
 import { closeSidebar } from './ui.js';
+import { Z } from './z-index-layers.js';
 import { Renderer } from '../engine/v2/renderer.js';
 import { L } from './renderer-lifecycle.js';
 import { _rebuildRowIndex, findBoxById } from './canvas-utils.js';
@@ -380,9 +381,8 @@ function _createSidebarTouchArea(): void {
   const box = document.createElement('div');
   box.id = 'sidebarTouchArea';
   const w = sidebar.getBoundingClientRect().width;
-  // z:600 高于 overlay(500) 使右侧点击=执行光标行动作而非被 overlay 拦截关侧栏；
-  // 远低于输入栏(12000)，输入栏区域点击仍归输入栏
-  box.style.cssText = `position:fixed;top:0;bottom:0;right:0;z-index:600;touch-action:none;left:${w}px;`;
+  // SIDEBAR_TOUCH 高于遮罩使右侧点击=执行光标行动作而非被遮罩拦截关侧栏；低于 AI 核心
+  box.style.cssText = `position:fixed;top:0;bottom:0;right:0;z-index:${Z.SIDEBAR_TOUCH};touch-action:none;left:${w}px;`;
   document.body.appendChild(box);
 
   // 绑定��样的滚动事件（wheel + touch）

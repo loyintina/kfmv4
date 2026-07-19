@@ -7,7 +7,7 @@
     "bundle": "node build.mjs",
     "watch": "node build.mjs && (sass --no-source-map --watch public/css/:public/css/ & npx esbuild src/client/main.ts --bundle --platform=browser --format=iife --outfile=public/bundle.js --target=es2019 --external:katex --external:mermaid --watch)",
     "dev": "node build.mjs && npm run start",
-    "check": "node check-uncommitted.mjs && node check-versions.mjs && node check-checks.mjs && node check-doc-coverage.mjs && sass --no-source-map public/css/:public/css/ && node check-anim.mjs --check-only && node check-as-any.mjs --check-only && node check-card-meta.mjs && node check-registry.mjs --check-only && node check-console.mjs && node check-docs.mjs && node check-linecount.mjs && node check-consistency.mjs && node check-cards.mjs && node check-handbook-sync.mjs && tsc --noEmit",
+    "check": "node check-uncommitted.mjs && node check-versions.mjs && node check-checks.mjs && node check-doc-coverage.mjs && sass --no-source-map public/css/:public/css/ && node check-anim.mjs --check-only && node check-as-any.mjs --check-only && node check-card-meta.mjs && node check-registry.mjs --check-only && node check-zindex.mjs && node check-console.mjs && node check-docs.mjs && node check-linecount.mjs && node check-consistency.mjs && node check-cards.mjs && node check-handbook-sync.mjs && tsc --noEmit",
     "build": "node build.mjs",
     "start": "fuser -k 8021/tcp 2>/dev/null; node dist/server/index.js",
     "test": "npx tsx --import ./tests/register-hook.mjs --import ./tests/preload.mjs ./tests/regression.test.ts"

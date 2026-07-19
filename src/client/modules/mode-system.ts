@@ -13,6 +13,7 @@ import { currentTheme as theme } from './theme.js';
 import { gestures } from './gesture-registry.js';
 import { setCursorColor, setModeAccent, setLiquidColor } from './canvas-cursor.js';
 import { rgba, hslToHex } from './color-utils.js';
+import { Z } from './z-index-layers.js';
 
 // ========== 模块状态 ==========
 
@@ -95,7 +96,7 @@ export function ensureBg(sidebarW: number): void {
   _toolbar = document.createElement('div');
   _toolbar.style.cssText = [
     'position:fixed', 'left:' + left + 'px', 'right:-12px',
-    'z-index:1010', 'pointer-events:none',
+    'z-index:' + Z.MODE_SYSTEM, 'pointer-events:none',
   ].join(';');
 
   const okBtn = document.createElement('button');
@@ -188,7 +189,7 @@ export function ensureBg(sidebarW: number): void {
     'border:1px solid transparent',
     'background:linear-gradient(rgba(16,12,24,0.7),rgba(16,12,24,0.7)) padding-box,'
       + 'linear-gradient(135deg,rgba(0,212,255,0.4),rgba(99,102,241,0.35),rgba(124,58,237,0.35)) border-box',
-    'z-index:1000',
+    'z-index:' + Z.MODE_SYSTEM_BG,
     'pointer-events:none',
   ].join(';');
   document.body.appendChild(_bgCard);

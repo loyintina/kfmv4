@@ -56,6 +56,7 @@ import { log } from './logger.js';
 import { currentTheme } from './theme.js';
 import { openSidebar } from './ui.js';
 import { openCardStack } from './card-stack.js';
+import { Z } from './z-index-layers.js';
 
 // ========== 终端卡 meta 类型定义 ==========
 
@@ -223,12 +224,12 @@ function _sz(el: HTMLElement, rows: number) {
 }
 function _mkBall(side: string) {
   const d = document.createElement('div');
-  d.style.cssText = 'position:fixed;z-index:9998;border-radius:50%;background:rgba(0,212,255,0.9);box-shadow:0 0 6px rgba(0,212,255,0.4);pointer-events:auto;cursor:grab';
+  d.style.cssText = 'position:fixed;z-index:' + Z.TERMINAL_HANDLE + ';border-radius:50%;background:rgba(0,212,255,0.9);box-shadow:0 0 6px rgba(0,212,255,0.4);pointer-events:auto;cursor:grab';
   d.dataset.selH = side; document.body.appendChild(d); return d;
 }
 function _mkStem() {
   const s = document.createElement('div');
-  s.style.cssText = 'position:fixed;z-index:9997;width:2px;background:rgba(0,212,255,0.5);pointer-events:none';
+  s.style.cssText = 'position:fixed;z-index:' + Z.TERMINAL_STEM + ';width:2px;background:rgba(0,212,255,0.5);pointer-events:none';
   document.body.appendChild(s); return s;
 }
 function _sync(el: HTMLElement, cols: number, rows: number) {
@@ -263,7 +264,7 @@ function _dismiss() {
   if (_activeTerm) _activeTerm.clearSelection();
 }
 function _showMag(el: HTMLElement, cx: number, cy: number, cols: number, rows: number) {
-  if (!_mag) { _mag = document.createElement('div'); _mag.style.cssText = 'position:fixed;z-index:10000;padding:3px 6px;border-radius:4px;font-size:10px;font-family:monospace;color:#fff;background:rgba(0,0,0,0.8);pointer-events:none;white-space:nowrap'; document.body.appendChild(_mag); }
+  if (!_mag) { _mag = document.createElement('div'); _mag.style.cssText = 'position:fixed;z-index:' + Z.TERMINAL_MAGNIFIER + ';padding:3px 6px;border-radius:4px;font-size:10px;font-family:monospace;color:#fff;background:rgba(0,0,0,0.8);pointer-events:none;white-space:nowrap'; document.body.appendChild(_mag); }
   const p = _cp(el, cx, cy, cols, rows);
   _mag.textContent = (p.col + 1) + ':' + (p.row + 1);
   _mag.style.left = Math.max(0, Math.min(window.innerWidth - 40, cx - 20)) + 'px';
@@ -277,7 +278,7 @@ function _showCopy(el: HTMLElement, rows: number) {
   const btnY = Math.min(_sRow, _eRow) * rh + r.top;
   const top = btnY > r.top + 60 ? btnY - 32 : btnY + Math.abs(_eRow - _sRow + 1) * rh + r.top + 4;
   const b = document.createElement('div'); b.textContent = '复制';
-  b.style.cssText = `position:fixed;left:${r.left+r.width/2-28}px;top:${top}px;z-index:9999;padding:3px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;color:#fff;background:rgba(0,0,0,0.85);border:1px solid rgba(0,212,255,0.5);pointer-events:auto`;
+  b.style.cssText = `position:fixed;left:${r.left+r.width/2-28}px;top:${top}px;z-index:${Z.TERMINAL_COPY_BTN};padding:3px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;color:#fff;background:rgba(0,0,0,0.85);border:1px solid rgba(0,212,255,0.5);pointer-events:auto`;
   b.onclick = (ev) => { ev.stopPropagation(); navigator.clipboard?.writeText(t); _dismiss(); };
   document.body.appendChild(b); _cpBtn = b;
 }

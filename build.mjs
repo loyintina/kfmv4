@@ -53,6 +53,7 @@ execSync('node check-anim.mjs --check-only', { stdio: 'inherit' });
 execSync('node check-as-any.mjs --check-only', { stdio: 'inherit' });
 execSync('node check-card-meta.mjs', { stdio: 'inherit' });
 execSync('node check-registry.mjs --check-only', { stdio: 'inherit' });
+execSync('node check-zindex.mjs', { stdio: 'inherit' });
 execSync('node check-console.mjs', { stdio: 'inherit' });
 execSync('node check-docs.mjs', { stdio: 'inherit' });
 execSync('node check-linecount.mjs', { stdio: 'inherit' });

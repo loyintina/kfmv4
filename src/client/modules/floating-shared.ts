@@ -1,3 +1,4 @@
+import { Z } from './z-index-layers.js';
 
 // ========== 状态机（纯逻辑，可脱离浏览器测试） ==========
 
@@ -59,8 +60,8 @@ export const _cornerLayout = {
 
 // ========== 常量 ==========
 
-export const Z_FLOATING_BASE = 50;
-export const Z_FULLSCREEN = 30;
+export const Z_FLOATING_BASE = Z.FLOATING_BASE;
+export const Z_FULLSCREEN = Z.FULLSCREEN;
 export const TITLE_BAR_H = 28;
 export const COMPACT_W = 155;
 export const COMPACT_H = 68;

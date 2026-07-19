@@ -23,6 +23,8 @@
  *   parent.appendChild(select.element);
  */
 
+import { Z } from './z-index-layers.js';
+
 export interface SelectItem {
   label: string;
   value: string;
@@ -107,7 +109,7 @@ export function createCustomSelect(options: CustomSelectOptions): CustomSelect {
   const panel = document.createElement('div');
   panel.style.cssText = `
     position:fixed;
-    z-index:9999;
+    z-index:${Z.CUSTOM_SELECT};
     display:none;
     border-radius:8px;
     padding:4px;

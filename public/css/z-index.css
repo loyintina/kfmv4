@@ -1,57 +1,87 @@
-/* ========== KFM v4 u5c42u7ea7u7cfbu7edf ==========
- * 
- * u5c42u7ea7u67b6u6784uff08u4eceu4f4eu5230u9ad8uff09uff1a
- * 
- * 1-9:      u57fau7840u5c42
- * 10-99:    u4e2du592eu9875u9762u7fa4u7ec4 - u5e95u5c42uff08u7f51u683cu80ccu666fuff09
- * 100-199:  u4e2du592eu9875u9762u7fa4u7ec4 - u5185u5bb9u5c42uff08u6d6eu5361/UXu5143u7d20uff09
- * 200-299:  u4e2du592eu9875u9762u7fa4u7ec4 - u9876u5c42uff08AIu680f/u5149u7403/u9762u677fuff09
- * 230:      u53ecu5524u6309u94aeuff08u4fa7u680f/u5361u7247u5806uff0cu5728u5149u7403u9762u677fu4e4bu4e0auff09
- * 300-499:  u53f3u680fu7fa4u7ec4uff08u9884u7559uff09
- * 500-999:  u906eu7f69u5c42uff08u5728u4e2du592eu4e4bu4e0auff0cu5de6u680fu4e4bu4e0buff09
- * 1000+:    u5de6u680fu7fa4u7ec4
+/* ========== KFM v4 — Z-Index 层级权威注册表（CSS 侧） ==========
+ *
+ * ⚠️ 全站唯一 z-index 真相源（CSS 侧）。所有 DOM 元素的 z-index 必须来自本表。
+ *    JS 侧镜像见 src/client/modules/z-index-layers.ts（数值必须一致，
+ *    check-zindex.mjs 强制校验）。新增需要层级的元素 = 必须在此注册，否则构建中断。
+ *
+ * 层级图景（自底向上）——对应产品设计：
+ *
+ *   L7  AI 核心      面板 / 输入栏 / 光球 / 发送按钮  ← 凌驾一切，核心高频功能
+ *   L6  弹窗层        模态框 / 确认框 / toast / 终端 / 下拉 / 底部操作栏
+ *   L5  文件树 + 遮罩  左侧 canvas 文件树，伴随遮罩（遮住浮卡层及以下）
+ *   L4  卡片堆        右滑召唤，盖在浮卡层整体之上
+ *   L3  动态浮卡      点击浮顶（层内动态，JS 分配）
+ *   L2  全屏卡        可交互背景/主操作区，有锁防盖浮卡
+ *   L1  中央内容      预留
+ *   L0  网格背景      最底层
  */
 
-/* ===== 中央页面群组 - 底层 (10-99) ===== */
-/* 网格背景 - 最底层 */
-.grid-bg{z-index:10}
+:root {
+  /* L0 */
+  --z-grid-bg: 10;
+  /* L1 中央内容层 */
+  --z-center-content: 100;
+  /* L1 召唤按钮（文件树/卡片堆入口，在中央内容之上、遮罩之下） */
+  --z-summon-btn: 200;
+  /* L2 全屏卡（JS 侧 Box→DOM 分配，此处仅记录基数） */
+  --z-fullscreen: 1000;
+  /* L3 浮卡基数（JS 分配） */
+  --z-floating-base: 2000;
+  /* L4 卡片堆基数（JS 分配） */
+  --z-stack-base: 3000;
+  /* L5 文件树 + 遮罩 */
+  --z-sidebar-overlay: 3900;
+  --z-sidebar: 4000;
+  --z-sidebar-touch: 4100;
+  --z-tree-cursor: 4200;
+  --z-tree-input: 4300;
+  --z-tree-input-overlay: 4400;
+  --z-tree-temp-card: 4500;
+  --z-mode-system-bg: 4590;
+  --z-mode-system: 4600;
+  --z-log-panel: 4700;
+  --z-root-picker: 4800;
+  /* L6 弹窗层 */
+  --z-action-bar-scrim: 6000;
+  --z-action-bar-drawer: 6100;
+  --z-action-bar-input: 6200;
+  --z-custom-select: 6300;
+  --z-terminal-stem: 6400;
+  --z-terminal-handle: 6410;
+  --z-terminal-copy-btn: 6420;
+  --z-terminal-magnifier: 6430;
+  --z-terminal-panel: 6500;
+  --z-operation-toast: 6600;
+  --z-card-toast: 6700;
+  --z-modal-dialog: 6800;
+  /* L7 AI 核心（全局最高，无例外） */
+  --z-orb-panel: 9000;
+  --z-ai-input-bar: 9100;
+  --z-ai-send-btn: 9200;
+  --z-light-orb: 9200;
+}
 
-/* ===== 中央页面群组 - 内容层 (100-199) ===== */
-/* 预留用于中央页面动态内容 */
+/* ===== L0 网格背景 ===== */
+.grid-bg { z-index: var(--z-grid-bg); }
 
-/* ===== 中央顶层：输入栏 / 发送按钮 / 光球 / 面板 (12000+) =====
- * 设计约束：这四者是全局最高层，无例外——任何其他 UI（文件树 1000、
- * 日志 1400、toast 1500、终端 1600、内联 dialog 10000、card-toast 11000）
- * 都必须被它们遮挡。改动其他层级时不得越过 12000。
- */
-.ai-input-bar{z-index:12000}
-.light-orb{z-index:12010}
-.ai-send-btn{z-index:12010}
-/* 光球召唤的面板 */
-.orb-panel{z-index:11990}
+/* ===== L1 召唤按钮 ===== */
+.sidebar-toggle-btn { z-index: var(--z-summon-btn); }
 
-/* ===== 右栏群组 (300-499) ===== */
-/* 预留 */
+/* ===== L5 文件树 + 遮罩 ===== */
+.overlay { z-index: var(--z-sidebar-overlay); }
+.sidebar { z-index: var(--z-sidebar); }
+.cursor-highlight { z-index: var(--z-tree-cursor); }
+.tree-input-wrap { z-index: var(--z-tree-input); }
+.tree-input-wrap.tree-input-overlay { z-index: var(--z-tree-input-overlay); }
+.log-panel { z-index: var(--z-log-panel); }
+.root-picker-overlay { z-index: var(--z-root-picker); }
 
-/* ===== 遮罩层 (500-999) ===== */
-/* 在中央群组之上，左栏之下 */
-.overlay{z-index:500}
+/* ===== L6 弹窗层 ===== */
+.operation-toast { z-index: var(--z-operation-toast); }
+.terminal-panel { z-index: var(--z-terminal-panel); }
 
-/* ===== 左栏群组 (1000+) ===== */
-/* 左栏基础层 */
-.sidebar{z-index:1000}
-/* 左栏光标 */
-.cursor-highlight{z-index:1050}
-/* 左栏输入框 */
-.tree-input-wrap{z-index:1010}
-.tree-input-wrap.tree-input-overlay{z-index:1300}
-/* 日志面板 */
-.log-panel{z-index:1400}
-
-/* ===== 其他元素（待分类） ===== */
-/* 操作提示 */
-.operation-toast{z-index:1500}
-/* 终端面板 */
-.terminal-panel{z-index:1600}
-/* 操作面板 - 需要确认是否属于右栏 */
-.actions-panel{z-index:350}
+/* ===== L7 AI 核心（全局最高，无例外） ===== */
+.orb-panel { z-index: var(--z-orb-panel); }
+.ai-input-bar { z-index: var(--z-ai-input-bar); }
+.ai-send-btn { z-index: var(--z-ai-send-btn); }
+.light-orb { z-index: var(--z-light-orb); }

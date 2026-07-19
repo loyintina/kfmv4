@@ -21,6 +21,7 @@ import { animateInsertion, animateRemoval } from './tree-animation.js';
 import { rgba, hslToHex, cardAccent, pathBasename } from './color-utils.js';
 import { initModeSystem, ensureBg, removeBg, updateBg, recolorCards, getSelectedMode, getModeTheme, getTriColor, applyModeTheme, updateModeSelection, enterPromptMode, exitPromptMode } from './mode-system.js';
 import { getFileCategory } from './renderers/file-type.js';
+import { Z } from './z-index-layers.js';
 import { showCardToast } from './card-toast.js';
 import { gestures } from './gesture-registry.js';
 import { createFileHandler } from './renderers/handler-factory.js';
@@ -145,7 +146,7 @@ export function handleRowSwipe(): void {
     'border-radius:12px', 'padding:1px', 'padding-left:3px',
     'background:' + grad,
     'box-shadow:' + shadow,
-    'cursor:pointer', 'z-index:1001', 'opacity:1',
+    'cursor:pointer', 'z-index:' + Z.TREE_TEMP_CARD, 'opacity:1',
   ].join(';');
 
   card.innerHTML = [

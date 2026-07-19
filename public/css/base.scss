@@ -3,7 +3,7 @@
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;touch-action:none}
 
-.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:500;opacity:0;pointer-events:none;transition:opacity .25s cubic-bezier(.34,1.2,.5,1.4)}
+.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .25s cubic-bezier(.34,1.2,.5,1.4)}
 .overlay.show{opacity:1;pointer-events:auto}
 
 /* 主区域 */
@@ -24,7 +24,6 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
   position:fixed;
   top:16px;
   left:16px;
-  z-index:230;
   width:40px;
   height:40px;
   border:1px solid transparent;
@@ -68,7 +67,7 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 }
 
 /* 悬浮光球 */
-.light-orb{position:fixed;width:36px;height:36px;background:radial-gradient(circle at 30% 30%,rgba(124,58,237,.9),rgba(124,58,237,.4),transparent 70%);border-radius:50%;cursor:grab;z-index:12010;box-shadow:0 0 16px 6px rgba(124,58,237,.5),0 0 32px 12px rgba(124,58,237,.3);transition:box-shadow .2s;bottom:140px;right:24px;touch-action:none}
+.light-orb{position:fixed;width:36px;height:36px;background:radial-gradient(circle at 30% 30%,rgba(124,58,237,.9),rgba(124,58,237,.4),transparent 70%);border-radius:50%;cursor:grab;box-shadow:0 0 16px 6px rgba(124,58,237,.5),0 0 32px 12px rgba(124,58,237,.3);transition:box-shadow .2s;bottom:140px;right:24px;touch-action:none}
 .light-orb:active{cursor:grabbing;box-shadow:0 0 24px 10px rgba(124,58,237,.6),0 0 48px 20px rgba(124,58,237,.4)}/* AI输入栏高级样式 */
 .ai-input-bar{
   position:fixed;
@@ -83,7 +82,6 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
   padding:16px 20px;
   display:flex;
   gap:16px;
-  z-index:12000;
   align-items:center;
   transition:bottom .25s cubic-bezier(.4,0,.2,1)
 }
@@ -125,7 +123,6 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
   align-self:center;
   flex-shrink:0;
   box-shadow:0 4px 12px rgba(124,58,237,.3),inset 0 1px 0 rgba(255,255,255,.15);
-  z-index:12010;
   .send-icon-play,.send-icon-pause{flex-shrink:0}
   .send-icon-pause{display:none}
 }

@@ -13,6 +13,7 @@ import { log } from '../../modules/logger.js';
 import { showConfirm } from '../../modules/confirm-dialog.js';
 import { createCustomSelect } from '../../modules/custom-select.js';
 import type { Session, TextBlock } from '../../modules/session-store.js';
+import { Z } from '../../modules/z-index-layers.js';
 
 /** 从 SessionMessage.content 提取所有 TextBlock 的纯文本 */
 function extractMsgText(msg: Session['messages'][number]): string {
@@ -114,7 +115,7 @@ function showMessageEditor(
   c2: string,
 ): void {
   const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding-top:50px;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px)';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:' + Z.MODAL_DIALOG + ';display:flex;align-items:flex-start;justify-content:center;padding-top:50px;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px)';
 
   const dialog = document.createElement('div');
   dialog.style.cssText = `width:calc(94vw - 20px);max-width:460px;border-radius:12px;padding:0;background:linear-gradient(rgba(20,16,32,0.98),rgba(20,16,32,0.98)) padding-box,linear-gradient(135deg,${c1} 30%,${c2} 70%) border-box;border:1px solid transparent;border-left-width:3px;display:flex;flex-direction:column;max-height:85vh;min-height:50vh`;

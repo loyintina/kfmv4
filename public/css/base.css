@@ -33,7 +33,6 @@ body {
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 500;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.25s cubic-bezier(0.34, 1.2, 0.5, 1.4);
@@ -68,7 +67,6 @@ body {
   position: fixed;
   top: 16px;
   left: 16px;
-  z-index: 230;
   width: 40px;
   height: 40px;
   border: 1px solid transparent;
@@ -119,7 +117,6 @@ body {
   background: radial-gradient(circle at 30% 30%, rgba(124, 58, 237, 0.9), rgba(124, 58, 237, 0.4), transparent 70%);
   border-radius: 50%;
   cursor: grab;
-  z-index: 12010;
   box-shadow: 0 0 16px 6px rgba(124, 58, 237, 0.5), 0 0 32px 12px rgba(124, 58, 237, 0.3);
   transition: box-shadow 0.2s;
   bottom: 140px;
@@ -144,7 +141,6 @@ body {
   padding: 16px 20px;
   display: flex;
   gap: 16px;
-  z-index: 12000;
   align-items: center;
   transition: bottom 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -192,7 +188,6 @@ body {
   align-self: center;
   flex-shrink: 0;
   box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15);
-  z-index: 12010;
 }
 .ai-send-btn .send-icon-play, .ai-send-btn .send-icon-pause {
   flex-shrink: 0;
