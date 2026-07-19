@@ -271,7 +271,7 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
 
       const metaRow = document.createElement('div');
       metaRow.style.cssText = 'display:flex;gap:8px;font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.5)';
-      metaRow.innerHTML = `<span>${formatDate(session.updatedAt)}</span><span>${session.messages.length} 条消息</span>`;
+      metaRow.innerHTML = `<span>${formatDate(session.updatedAt)}</span><span>${session.messages.filter(m => extractMsgText(m).trim()).length} 条消息</span>`;
       if (session.providerId) metaRow.innerHTML += `<span>${session.providerId}</span>`;
 
       item.appendChild(titleRow);
@@ -296,7 +296,7 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
   // ---- 对话气泡预览 ----
   function renderBubbles(container: HTMLElement, session: Session | null): void {
     container.innerHTML = '';
-    if (!session || session.messages.length === 0) {
+    if (!session || !session.messages.some(m => extractMsgText(m).trim())) {
       const empty = document.createElement('div');
       empty.style.cssText = 'font-size:var(--card-font-size,11px);color:rgba(255,255,255,0.4);text-align:center;padding:20px 0';
       empty.textContent = '暂无对话';
@@ -502,7 +502,7 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
 
       const statsEl = document.createElement('span');
       statsEl.style.cssText = 'font-size:var(--card-font-size,10px);color:rgba(255,255,255,0.5)';
-      statsEl.textContent = `共 ${sessions.length} 个会话，${sessions.reduce((n, s) => n + s.messages.length, 0)} 条消息`;
+      statsEl.textContent = `共 ${sessions.length} 个会话，${sessions.reduce((n, s) => n + s.messages.filter(m => extractMsgText(m).trim()).length, 0)} 条消息`;
       poolHeader.appendChild(statsEl);
       poolCard.appendChild(poolHeader);
 
