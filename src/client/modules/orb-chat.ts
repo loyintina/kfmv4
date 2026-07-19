@@ -116,64 +116,43 @@ export function renderChatContent(state: ChatState): void {
         </div>`;
     } else {
       // AI 消息：从 content 数组渲染每个 block
+      // 设计决策：reasoning / 正文气泡 / 工具卡片 / 警告框各自独立条件渲染，
+      // 不再用 reasoningOnly 分支——reasoning 块始终全宽，气泡仅在有正文时出现。
       const textBlocks = msg.content.filter((b): b is TextBlock => b.type === 'text');
       const toolBlocks = msg.content.filter((b): b is ToolBlock => b.type === 'tool');
       const warningBlocks = msg.content.filter(b => b.type === 'rule_warning') as Array<{ type: 'rule_warning'; content: string }>;
-
-      const hasContent = msg.content.length > 0;
-      // 合并所有 TextBlock 的 text 和 reasoning（通常只有一个，但合并更鲁棒）
       const reasoning = textBlocks.map(b => b.reasoning || '').join('');
       const mainText = textBlocks.map(b => b.text || '').join('');
       const hasToolCalls = toolBlocks.length > 0;
       const reasoningDone = !!(mainText || hasToolCalls);
 
-      // 仅思考（无正文、无工具调用）→ 全宽独立块
-      const reasoningOnly = reasoning && !mainText && !hasToolCalls;
-      if (reasoningOnly) {
-        const rid2 = 'r' + idx;
-        const rlabel2 = reasoningDone ? '已思考' : '思考中...';
-        const displayStyle2 = reasoningDone ? 'display:none' : 'display:block';
+      // 思考块：独立全宽行，与工具框同宽
+      if (reasoning) {
+        const rid = 'r' + idx;
+        const rlabel = reasoningDone ? '已思考' : '思考中...';
+        const displayStyle = reasoningDone ? 'display:none' : 'display:block';
         html += `
-          <div style="display:flex;justify-content:flex-start;margin-bottom:8px">
+          <div style="display:flex;justify-content:flex-start;margin-bottom:4px">
             <div style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:linear-gradient(rgba(10,15,30,0.75),rgba(10,15,30,0.75)) padding-box,${theme.aiChat.panelBorderGradient} border-box;border:1px solid transparent;border-left-width:3px;font-size:var(--card-font-size,10px)">
-              <div onclick="var p=document.getElementById('${rid2}');var s=p.style.display==='none'?'block':'none';p.style.display=s;this.querySelector('.rt-arrow').textContent=s==='block'?'▼':'▶'" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
+              <div onclick="var p=document.getElementById('${rid}');var s=p.style.display==='none'?'block':'none';p.style.display=s;this.querySelector('.rt-arrow').textContent=s==='block'?'▼':'▶'" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
                 <span class="rt-arrow" style="font-size:7px;color:rgba(0,212,255,0.5)">${reasoningDone ? '▶' : '▼'}</span>
-                <span style="color:rgba(0,212,255,0.6);font-weight:600">${rlabel2}</span>
+                <span style="color:rgba(0,212,255,0.6);font-weight:600">${rlabel}</span>
               </div>
-              <div id="${rid2}" style="${displayStyle2};margin-top:4px">
+              <div id="${rid}" style="${displayStyle};margin-top:4px">
                 <pre style="font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.45);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;background:rgba(0,0,0,0.15);padding:4px 6px;border-radius:4px">${escapeHtml(reasoning)}</pre>
               </div>
             </div>
           </div>`;
-      } else if (hasContent || !isUser) {
-        // 正文气泡
-        let bubbleHtml = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
-          <span style="font-size:10px;color:${labelColor};font-weight:600">${label}</span>
-        </div>`;
+      }
 
-        // 思考内容：独立全宽块（与工具框同宽），置于正文气泡上方
-        if (reasoning) {
-          const rid = 'r' + idx;
-          const rlabel = reasoningDone ? '已思考' : '思考中...';
-          const displayStyle = reasoningDone ? 'display:none' : 'display:block';
-          html += `
-            <div style="display:flex;justify-content:flex-start;margin-bottom:4px">
-              <div style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:linear-gradient(rgba(10,15,30,0.75),rgba(10,15,30,0.75)) padding-box,${theme.aiChat.panelBorderGradient} border-box;border:1px solid transparent;border-left-width:3px;font-size:var(--card-font-size,10px)">
-                <div onclick="var p=document.getElementById('${rid}');var s=p.style.display==='none'?'block':'none';p.style.display=s;this.querySelector('.rt-arrow').textContent=s==='block'?'▼':'▶'" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
-                  <span class="rt-arrow" style="font-size:7px;color:rgba(0,212,255,0.5)">${reasoningDone ? '▶' : '▼'}</span>
-                  <span style="color:rgba(0,212,255,0.6);font-weight:600">${rlabel}</span>
-                </div>
-                <div id="${rid}" style="${displayStyle};margin-top:4px">
-                  <pre style="font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.45);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;background:rgba(0,0,0,0.15);padding:4px 6px;border-radius:4px">${escapeHtml(reasoning)}</pre>
-                </div>
-              </div>
-            </div>`;
-        }
-
-        // 正文
+      // 正文气泡：仅在有正文时渲染（无正文时不渲染空气泡）
+      if (mainText) {
         const lineHeight = 16;
-        bubbleHtml += `<div class="orb-msg-text" data-msg-idx="${idx}" style="font-family:sans-serif;font-size:var(--card-font-size,13px);line-height:${lineHeight}px;color:${theme.aiChat.bubbleText};word-break:break-word">${renderPlainText(mainText)}</div>`;
-
+        const bubbleHtml = `
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+            <span style="font-size:10px;color:${labelColor};font-weight:600">${label}</span>
+          </div>
+          <div class="orb-msg-text" data-msg-idx="${idx}" style="font-family:sans-serif;font-size:var(--card-font-size,13px);line-height:${lineHeight}px;color:${theme.aiChat.bubbleText};word-break:break-word">${renderPlainText(mainText)}</div>`;
         const maxWidth = innerWidth - 8;
         html += `
           <div style="display:flex;justify-content:${align};margin-bottom:8px">

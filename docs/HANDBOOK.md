@@ -1,6 +1,6 @@
 ---
 title: KFM v4 工作手册
-last_reviewed: 2026-07-18
+last_reviewed: 2026-07-19
 kfm_version: 7.1.0
 status: active
 maintainer: AI agent
@@ -161,16 +161,14 @@ index.ts (入口路由 + 静态文件)
 - **规则**：选择器锁 (priority 110) 在手势优先级最高，打开后外部滑动手势全部被拦截。关闭时必须调 `L.popContext()` 恢复上下文。
 
 ## 二、当前会话状态
-> **最后更新**：2026-07-15（v7.1.0 — orb/floating-card/server 拆分 + 构建加固 + 214 测试）
+> **最后更新**：2026-07-19（AI 对话面板 content block 协议修复 + rendering 清理）
 
 ### 当前焦点
-**orb.ts AI 面板强化 + 会话卡管理 + 构建管线对齐**
+**orb-chat.ts AI 对话渲染修复与清理**
 
-卡片插件系统基础（card-registry + plugins/）已在 v7.0.0 奠定。当前阶段的工作重心：
-1. **orb.ts AI 面板** — 复用完整 markdown 管线（marked + preprocessMd + code-highlight + math + mermaid），流式 reasoning 折叠，滚动位置保持
-2. **会话卡** — 名称编辑框 + 保存/新建按钮 + 气泡区重构，按钮移至气泡区下方
-3. **管理卡** — 编辑器框限高 70vh + 内容区可滚动 + 按钮粘性底部
-4. **构建管线** — build.mjs 全量 check 对齐 npm run check + check-handbook-sync 过期阻断
+- content block 协议对齐（thinking+text 合并到同一 index=0 block）✅
+- renderChatContent 渲染逻辑简化（reasoning/气泡/工具框三路独立条件）✅
+- build.mjs 自动更新 bundle.js 版本号（防浏览器缓存）✅
 
 
 > **数据目录**：v7.0.0 后将 `.kfmv4/` 从项目根目录迁移到 `$HOME/.kfmv4/`（由 `path-utils.ts` 的 `KFM_DATA_DIR` 定义）。
@@ -399,7 +397,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `logger.ts` | 58 | 3 | ✅ 分组表 | KFM 日志系统 |
 | `mode-system.ts` | 444 | 1 | ✅ 分组表 | 模式按钮系统（从 tree-swipe 拆分，v6.8.0 新增） |
 | `orb.ts` | 552 | 2 | ✅ 独立条目 | 光球 UI + 拖拽手势 + 面板状态机（协调层） |
-| `orb-chat.ts` | 511 | 1 | ✅ 分组表 | AI 消息渲染 + SSE 流式通信（从 orb.ts 拆分） |
+| `orb-chat.ts` | 472 | 1 | ✅ 分组表 | AI 消息渲染 + SSE 流式通信（从 orb.ts 拆分） |
 | `orb-panel.ts` | 205 | 1 | ✅ 分组表 | 面板 Provider/Session/Model/Role 下拉框（从 orb.ts 拆分） |
 | `orb-state.ts` | 17 | 0 | ✅ 分组表 | orb 状态机纯逻辑（零依赖，从 orb.ts 拆分，可脱离浏览器测试） |
 | `session-store.ts` | 327 | 1 | ✅ 分组表 | 会话持久化统一存储（替代 orb.ts 散布的会话逻辑） |
@@ -430,7 +428,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `../src/client/modules/renderers/md-extensions.ts` | 51 | 1 | — | Markdown 渲染扩展（链接、任务列表） |
 | `../src/client/modules/renderers/md-css.ts` | 57 | 2 | ✅ 分组表 | Markdown 渲染 CSS（全局唯一来源，orb + handler-factory 共享） |
 | `../src/client/modules/renderers/text-preview.ts` | 26 | 1 | — | 文本文件预览渲染器 |
-| **合计** | **13528** | | | |
+| **合计** | **13489** | | | |
 
 ### 死代码检查
 **结论：无死代码。** 所有 41 个模块都被至少 1 个文件导入（`terminal-card-04.ts` 和 `tmux-card.ts` 被导入数为 0，但这是模块自身的特性：它们仅在用户侧打开卡片时由 `card-registry.ts` 的 `createHandler` 工厂按需实例化，属于动态加载。`terminal-aux-bar.ts` 已删除（空占位，无任何引用）。`src/cards/` 目录已彻底删除。实际使用的 logger 在 `src/client/modules/logger.ts`。
