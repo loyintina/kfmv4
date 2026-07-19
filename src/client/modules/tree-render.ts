@@ -380,7 +380,9 @@ function _createSidebarTouchArea(): void {
   const box = document.createElement('div');
   box.id = 'sidebarTouchArea';
   const w = sidebar.getBoundingClientRect().width;
-  box.style.cssText = `position:fixed;top:0;bottom:0;right:0;z-index:199;touch-action:none;left:${w}px;`;
+  // z:600 高于 overlay(500) 使右侧点击=执行光标行动作而非被 overlay 拦截关侧栏；
+  // 远低于输入栏(12000)，输入栏区域点击仍归输入栏
+  box.style.cssText = `position:fixed;top:0;bottom:0;right:0;z-index:600;touch-action:none;left:${w}px;`;
   document.body.appendChild(box);
 
   // 绑定��样的滚动事件（wheel + touch）

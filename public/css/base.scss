@@ -68,7 +68,7 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 }
 
 /* 悬浮光球 */
-.light-orb{position:fixed;width:36px;height:36px;background:radial-gradient(circle at 30% 30%,rgba(124,58,237,.9),rgba(124,58,237,.4),transparent 70%);border-radius:50%;cursor:grab;z-index:210;box-shadow:0 0 16px 6px rgba(124,58,237,.5),0 0 32px 12px rgba(124,58,237,.3);transition:box-shadow .2s;bottom:140px;right:24px;touch-action:none}
+.light-orb{position:fixed;width:36px;height:36px;background:radial-gradient(circle at 30% 30%,rgba(124,58,237,.9),rgba(124,58,237,.4),transparent 70%);border-radius:50%;cursor:grab;z-index:12010;box-shadow:0 0 16px 6px rgba(124,58,237,.5),0 0 32px 12px rgba(124,58,237,.3);transition:box-shadow .2s;bottom:140px;right:24px;touch-action:none}
 .light-orb:active{cursor:grabbing;box-shadow:0 0 24px 10px rgba(124,58,237,.6),0 0 48px 20px rgba(124,58,237,.4)}/* AI输入栏高级样式 */
 .ai-input-bar{
   position:fixed;
@@ -83,7 +83,7 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
   padding:16px 20px;
   display:flex;
   gap:16px;
-  z-index:200;
+  z-index:12000;
   align-items:center;
   transition:bottom .25s cubic-bezier(.4,0,.2,1)
 }
@@ -125,6 +125,7 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
   align-self:center;
   flex-shrink:0;
   box-shadow:0 4px 12px rgba(124,58,237,.3),inset 0 1px 0 rgba(255,255,255,.15);
+  z-index:12010;
   .send-icon-play,.send-icon-pause{flex-shrink:0}
   .send-icon-pause{display:none}
 }
