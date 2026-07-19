@@ -598,21 +598,26 @@ export async function doSend(
                 const fullText = event.toolResult?.content?.[0]?.text || '';
                 type AnimBlock = ToolBlock & { _animText?: string };
                 requestAnimationFrame(() => {
-                  if (fullText.length > 0) {
-                    const TICKS = 90;
-                    const charsPerTick = Math.max(1, Math.ceil(fullText.length / TICKS));
+                  if (fullText.length > 500) {
+                    // > 500 chars: animate first 500, then auto-collapse (full text on expand)
+                    // Speed: ~80 chars/sec, duration capped at 2s
+                    const ANIMATE_MAX = 500;
+                    const targetMs = Math.min(2000, Math.max(300, ANIMATE_MAX / 80 * 1000));
+                    const totalTicks = Math.max(1, Math.round(targetMs / 16));
+                    const cpt = Math.max(1, Math.ceil(ANIMATE_MAX / totalTicks));
                     (toolBlock as AnimBlock)._animText = '';
                     let pos = 0;
                     const iv = setInterval(() => {
-                      pos = Math.min(pos + charsPerTick, fullText.length);
+                      pos = Math.min(pos + cpt, ANIMATE_MAX);
                       (toolBlock as AnimBlock)._animText = fullText.slice(0, pos);
-                      if (pos >= fullText.length) {
+                      if (pos >= ANIMATE_MAX) {
                         clearInterval(iv);
                         delete (toolBlock as AnimBlock)._animText;
                       }
                       onRender();
                     }, 16);
                   } else {
+                    // ≤ 500 chars: show directly, auto-collapse
                     onRender();
                   }
                 });
