@@ -1,7 +1,7 @@
 ---
 title: KFM v4 工作手册
 last_reviewed: 2026-07-19
-kfm_version: 7.1.0
+kfm_version: 7.2.0
 status: active
 maintainer: AI agent
 ---
@@ -161,43 +161,38 @@ index.ts (入口路由 + 静态文件)
 - **规则**：选择器锁 (priority 110) 在手势优先级最高，打开后外部滑动手势全部被拦截。关闭时必须调 `L.popContext()` 恢复上下文。
 
 ## 二、当前会话状态
-> **最后更新**：2026-07-19（AI 对话面板 content block 协议修复 + rendering 清理）
+> **最后更新**：2026-07-19（v7.2.0 — AI 对话面板 content block 协议 + 流式渲染 + 等待提示 + 角色卡拖拽修复）
 
 ### 当前焦点
-**orb-chat.ts AI 对话渲染修复与清理**
+**v7.2.0 已发布 — AI 对话面板全面修复与增强**
 
-- content block 协议对齐（thinking+text 合并到同一 index=0 block）✅
-- renderChatContent 渲染逻辑简化（reasoning/气泡/工具框三路独立条件）✅
-- build.mjs 自动更新 bundle.js 版本号（防浏览器缓存）✅
-
+本次版本核心工作：
+1. **content block 协议对齐** — thinking+text 合并到同一 index=0 block，服务端 SSE 协议完整重构
+2. **renderChatContent 渲染统一** — reasoning/气泡/工具框/警告框四路独立条件渲染，删 reasoningOnly 分支
+3. **工具调用流式体验** — 结构性事件绕过 80ms 节流立即渲染，打字机动画显示结果（~1.5s），完成后自动折叠
+4. **等待期无厘头提示** — `src/client/data/waiting-hints.ts` 独立文件，100 条提示，发送后随机循环播放，`message_start` 到达后消失
+5. **静默断流修复** — provider 静默断流时不再什么都不显示，推 "[未收到回复，请重试]"
+6. **session.card 适配 content block 格式** — 气泡预览、编辑器、消息计数全部从旧 `{text}` 格式迁移到 `{content: ContentBlock[]}`
+7. **角色卡拖拽修复** — `floating-card.ts` 的 `querySelectorAll('*')` 不再覆盖 `touch-action:none`，拖拽回移不再瞬移
+8. **build.mjs 缓存防护** — 每次 build 自动更新 `bundle.js?v=YYYYMMDD`，浏览器缓存失效
+9. **死代码清理** — orb-chat 消息操作按钮绑定块、session.card kfm-message-edit/delete 监听器
 
 > **数据目录**：v7.0.0 后将 `.kfmv4/` 从项目根目录迁移到 `$HOME/.kfmv4/`（由 `path-utils.ts` 的 `KFM_DATA_DIR` 定义）。
 > 包含：`providers.json`、`active.json`、`sessions/`、`roles/`、`configs/`。
 > 客户端通过 API 端点（`/api/files/read`、`/api/files/write`、`/api/files/list`）以相对路径 `.kfmv4/...` 访问，
 > 服务端 `sanitizePath()` 将其解析到 `SAFE_ROOT`（`$HOME`）下。
 
-- **v7.0.0 后已完成**：
-  - 设置卡 → API 卡重构：Provider 管理界面（多 Provider 编辑/测试/选择/模型自动拉取）✅
-  - `$HOME/.kfmv4/` 文件持久化（providers.json，取代 localStorage）+ 异步数据加载 ✅
-  - 服务端 CORS 代理 `/api/proxy/fetch` 端点（AI API 请求走服务端）✅
-  - 自定义 Provider 下拉面板（取代原生 select，浮在卡片上方）✅
-  - 卡片样式规范落地：CARD_DEV_GUIDE §10.6 边框规范 + §10.7 多级嵌套颜色交替 + §10.2.1 文字颜色可读性 ✅
-  - 设置卡视觉迭���（buildCardLayout + theme.ts 对齐、渐变边框、纯暗色背景、accent 标签栏）✅
-  - 卡片堆点击/左滑发射全屏卡 + 收起堆（含 revert + GSAP 冲突修复）✅
-  - 构建管线加固：预存 tsc 13 错误消除（floating-card/handler-factory/gesture-registry）✅
-  - 文档归档对齐：43 份文档 frontmatter + 交叉引用修复 ✅
-  - CONTEXT_ASSEMBLY_SPEC — AI 上下文拼接与工作空间设计 draft ✅
-  - API 卡路径适配 nginx 反代（自动检测前缀）✅
-  - 输入框/按钮排版统⼀（em 单位、`--card-font-size` CSS 变量）✅
-  - 终端方向键左上下右修复 ✅
-  - orb.ts markdown 管线复用（marked + preprocessMd + code-highlight + math + mermaid）✅
-  - 流式输出 reasoning 默认展开、完成后折叠，移除 emoji 改为纯文本标签 ✅
-  - renderChatContent 滚动位置保持（仅用户已在底部时自动滚底）✅
-  - 会话卡名称编辑框 + 保存/新建按钮 + 气泡区重构 ✅
-  - 管理卡编辑器限高 70vh + 内容区可滚动 + 按钮粘性底部 ✅
-  - api 卡池框间距修复 ✅
-  - build.mjs 全量检查对齐 npm run check（补全 15 步检查管线）✅
-  - check-handbook-sync.mjs 过期时 exit(1) 阻断构建 ✅
+- **v7.1.0 后已完成（v7.2.0）**：
+  - content block 协议修复：thinking+text 合并到同一 block ✅
+  - renderChatContent 渲染逻辑简化（reasoning/气泡/工具框/警告框独立条件）✅
+  - 工具框流式渲染（结构性事件绕过节流）+ 打字机结果动画 ✅
+  - 等待期无厘头提示系统（`src/client/data/waiting-hints.ts`，100 条）✅
+  - 静默断流 bug 修复（推 "[未收到回复，请重试]"）✅
+  - session.card 适配 content block 格式 ✅
+  - 角色卡拖拽修复（touch-action:none 不被覆盖 + 回移过渡动画）✅
+  - build.mjs 自动更新 bundle.js 版本号 ✅
+  - 死代码清理（orb-chat 消息操作按钮 + session.card 事件监听器）✅
+
 
 v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放弃（详见 `docs/archive/design/CARD_SYSTEM_UNIFICATION_SPEC.md`）。当前方向改为「三层共享层」——常量层 + 类型层 + 能力声明层，可在不碰逻辑的前提下逐步统一。
 
@@ -316,8 +311,8 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 > 完整诊断手册见 [`docs/DIAGNOSTICS.md`](./DIAGNOSTICS.md)，包含：
 > - **隐性契约（11 条）** — 破坏会出 bug 的隐藏约束
 > - **诊断流程** — 触控/手势、CSS/视觉、渲染/Canvas、构建/Bundle 四类排查路径
-> - **根因案例库（#001–#007）** — 每次 bug 的完整诊断过程
->
+| **v7.1.0** | **orb/floating-card 拆分（848→524 + 1195→780）+ server 路由拆分（355→60）+ MD CSS/MARKED_OPTS/marked 统一 + 构建管线加固 + 214 测试 + 2 ADR** | git `3deb88b` |
+| **v7.2.0** | **AI 对话面板 content block 协议修复 + 流式渲染统一 + 等待提示 + session.card 适配 + 角色卡拖拽修复 + 死代码清理** | git `16b374b` |
 > 速查：遇到 bug 先确认事件是否完整到达（用 `log()` 推日志卡），再查处理逻辑。
 
 ## 五、回归测试
@@ -386,7 +381,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `color-utils.ts` | 46 | 2 | ✅ 分组表 | 颜色工具函数（从 tree-swipe 拆分） |
 | `debug-assert.ts` | 24 | 1 | ✅ 提及 | 运行时断言 |
 | `dom-refs.ts` | 37 | 9 | ✅ 注册表 | DOM 元素引用 |
-| `floating-card.ts` | 782 | 3 | ✅ 独立条目 | 浮卡创建/状态机/手势（核心模块） |
+| `floating-card.ts` | 785 | 3 | ✅ 独立条目 | 浮卡创建/状态机/手势（核心模块） |
 | `floating-shared.ts` | 172 | 1 | ✅ 分组表 | 浮卡共享类型/常量/状态/工具（从 floating-card 拆分） |
 | `floating-fullscreen.ts` | 214 | 1 | ✅ 分组表 | 浮卡全屏/退出/关闭逻辑（从 floating-card 拆分） |
 | `gesture-registry.ts` | 385 | 6 | ✅ 独立条目 | 手势注册中心 |
@@ -396,8 +391,8 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `file-action-bar.ts` | 427 | 2 | ✅ 分组表 | 文件行长按 → 底部抽屉操作栏 |
 | `logger.ts` | 58 | 3 | ✅ 分组表 | KFM 日志系统 |
 | `mode-system.ts` | 444 | 1 | ✅ 分组表 | 模式按钮系统（从 tree-swipe 拆分，v6.8.0 新增） |
-| `orb.ts` | 552 | 2 | ✅ 独立条目 | 光球 UI + 拖拽手势 + 面板状态机（协调层） |
-| `orb-chat.ts` | 472 | 1 | ✅ 分组表 | AI 消息渲染 + SSE 流式通信（从 orb.ts 拆分） |
+| `orb.ts` | 575 | 2 | ✅ 独立条目 | 光球 UI + 拖拽手势 + 面板状态机（协调层） |
+| `orb-chat.ts` | 613 | 1 | ✅ 分组表 | AI 消息渲染 + SSE 流式通信（从 orb.ts 拆分） |
 | `orb-panel.ts` | 205 | 1 | ✅ 分组表 | 面板 Provider/Session/Model/Role 下拉框（从 orb.ts 拆分） |
 | `orb-state.ts` | 17 | 0 | ✅ 分组表 | orb 状态机纯逻辑（零依赖，从 orb.ts 拆分，可脱离浏览器测试） |
 | `session-store.ts` | 327 | 1 | ✅ 分组表 | 会话持久化统一存储（替代 orb.ts 散布的会话逻辑） |
@@ -428,7 +423,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `../src/client/modules/renderers/md-extensions.ts` | 51 | 1 | — | Markdown 渲染扩展（链接、任务列表） |
 | `../src/client/modules/renderers/md-css.ts` | 57 | 2 | ✅ 分组表 | Markdown 渲染 CSS（全局唯一来源，orb + handler-factory 共享） |
 | `../src/client/modules/renderers/text-preview.ts` | 26 | 1 | — | 文本文件预览渲染器 |
-| **合计** | **13489** | | | |
+| **合计** | **13656** | | | |
 
 ### 死代码检查
 **结论：无死代码。** 所有 41 个模块都被至少 1 个文件导入（`terminal-card-04.ts` 和 `tmux-card.ts` 被导入数为 0，但这是模块自身的特性：它们仅在用户侧打开卡片时由 `card-registry.ts` 的 `createHandler` 工厂按需实例化，属于动态加载。`terminal-aux-bar.ts` 已删除（空占位，无任何引用）。`src/cards/` 目录已彻底删除。实际使用的 logger 在 `src/client/modules/logger.ts`。
