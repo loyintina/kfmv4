@@ -160,6 +160,32 @@ export function startWaitingIndicator(panelEl: HTMLDivElement): () => void {
   };
 }
 
+// ========== 工具执行期随机提示（每工具独立打乱列表） ==========
+// 设计：与等待提示共用 WAITING_HINTS 数据源，但每个工具调用有自己的随机打乱顺序。
+// 渲染时带脉冲圆点动画，与 startWaitingIndicator 同款视觉风格。
+// tool_result 到达后由 doSend 调 clearToolHint 清除对应条目。
+
+const _toolHints = new Map<string, { pool: string[]; start: number }>();
+
+function getToolHint(toolId: string): { text: string; dotHtml: string } {
+  let h = _toolHints.get(toolId);
+  if (!h) {
+    h = { pool: [...WAITING_HINTS].sort(() => Math.random() - 0.5), start: Date.now() };
+    _toolHints.set(toolId, h);
+  }
+  const elapsed = Date.now() - h.start;
+  const interval = elapsed < 2000 ? 2000 : 1500;
+  const idx = Math.floor(elapsed / interval) % h.pool.length;
+  return {
+    text: h.pool[idx],
+    dotHtml: '<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:rgba(0,212,255,0.6);animation:orb-hint-pulse 1.2s ease-in-out infinite;vertical-align:middle;margin-right:5px"></span>',
+  };
+}
+
+function clearToolHint(toolId: string): void {
+  _toolHints.delete(toolId);
+}
+
 // ========== 渲染 ==========
 
 export function renderChatContent(state: ChatState): void {
@@ -255,23 +281,29 @@ export function renderChatContent(state: ChatState): void {
         const hasResult = !!tc.result;
         const isExecuting = !hasResult;
         const isError = hasResult && tc.result!.isError;
-        const statusLabel = isExecuting ? '执行中' : (isError ? '失败' : '成功');
+        const statusLabel = isExecuting ? '忙碌中' : (isError ? '失败' : '成功');
         const statusColor = isExecuting ? 'rgba(255,255,255,0.4)' : (isError ? 'rgba(255,100,100,0.8)' : 'rgba(0,212,115,0.8)');
         const paramsText = Object.keys(tc.input).length > 0 ? JSON.stringify(tc.input, null, 2) : '';
-        // _animText 存在时显示动画进度文字，否则显示完整结果
         type AnimBlock = ToolBlock & { _animText?: string };
         const ab = tc as AnimBlock;
         const isAnimating = ab._animText !== undefined;
         const resultText = hasResult
           ? (isAnimating ? ab._animText! : (tc.result!.content?.[0]?.text || ''))
           : '';
-        const contentText = isExecuting
-          ? (paramsText ? '参数:\n' + paramsText + '\n\n执行中...' : '执行中...')
-          : (resultText || '(无结果)');
-        // 执行中或动画中展开；动画结束后折叠（用户可手动展开查看完整结果）
         const defaultDisplay = (isExecuting || isAnimating) ? 'block' : 'none';
         const defaultArrow = (isExecuting || isAnimating) ? '▼' : '▶';
         const gradientBorder = `linear-gradient(rgba(10,15,30,0.75),rgba(10,15,30,0.75)) padding-box,linear-gradient(135deg,${hexToRgba(c2, 0.55)} 30%,${hexToRgba(c1, 0.55)} 70%) border-box`;
+        // 内容区：执行中用脉冲点 + 随机提示（innerHTML），完成/动画用 escapeHtml
+        let contentHtml: string;
+        if (isExecuting) {
+          const hint = getToolHint(tc.id);
+          const hintLine = hint.dotHtml + escapeHtml(hint.text);
+          contentHtml = paramsText
+            ? `<span style="color:rgba(255,255,255,0.4)">${escapeHtml('参数:\n' + paramsText)}</span>\n\n${hintLine}`
+            : hintLine;
+        } else {
+          contentHtml = escapeHtml(resultText || '(无结果)');
+        }
         html += `
           <div style="display:flex;justify-content:flex-start;margin-bottom:6px">
             <div class="orb-tool-card" style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:${gradientBorder};border:1px solid transparent;border-left-width:3px;border-left-color:${hexToRgba(c1, 0.7)};font-size:var(--card-font-size,10px)">
@@ -281,7 +313,7 @@ export function renderChatContent(state: ChatState): void {
                 <span style="color:${statusColor};font-size:var(--card-font-size,9px);font-weight:600">${statusLabel}</span>
               </div>
               <div id="${tid}" style="display:${defaultDisplay};margin-top:4px">
-                <pre style="font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.6);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0 0 2px 0;font-family:inherit;background:rgba(0,0,0,0.2);padding:4px 6px;border-radius:4px">${escapeHtml(contentText)}</pre>
+                <pre style="font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.6);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0 0 2px 0;font-family:inherit;background:rgba(0,0,0,0.2);padding:4px 6px;border-radius:4px">${contentHtml}</pre>
               </div>
             </div>
           </div>`;
@@ -504,15 +536,12 @@ export async function doSend(
               );
               if (toolBlock) {
                 toolBlock.result = event.toolResult;
-                // 打字机动画：延迟到下一帧启动，确保 "执行中" 状态先被浏览器画出来。
-                // 设计决策：tool_result 不再是 structural 事件（不在立即渲染列表里），
-                // 避免和 content_block_start(tool_use) 在同一 JS task 内连续 onRender
-                // 导致浏览器只画最后一帧、"执行中" 状态被跳过。
+                clearToolHint(toolBlock.id);
                 const fullText = event.toolResult?.content?.[0]?.text || '';
                 type AnimBlock = ToolBlock & { _animText?: string };
                 requestAnimationFrame(() => {
                   if (fullText.length > 0) {
-                    const TICKS = 90; // ~1.5s at 16ms/tick
+                    const TICKS = 90;
                     const charsPerTick = Math.max(1, Math.ceil(fullText.length / TICKS));
                     (toolBlock as AnimBlock)._animText = '';
                     let pos = 0;
@@ -526,7 +555,6 @@ export async function doSend(
                       onRender();
                     }, 16);
                   } else {
-                    // 结果无文本内容，直接触发一次渲染（折叠卡片）
                     onRender();
                   }
                 });
