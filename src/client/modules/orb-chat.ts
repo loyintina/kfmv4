@@ -672,7 +672,6 @@ export async function doSend(
         }
       }
     }
-    _inputAnimTimers.clear();
     await sessionStore.saveMessages(messages, config.modelId, config.providerId);
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') {
