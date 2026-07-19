@@ -187,6 +187,9 @@ function clearToolHint(toolId: string): void {
   _toolHints.delete(toolId);
 }
 
+// 跟踪输入参数打字机动画的 intervalId，用于输出到达时提前终止
+const _inputAnimTimers = new Map<string, ReturnType<typeof setInterval>>();
+
 // ========== 滚动追底状态 ==========
 // 用显式 followBottom 标志替代旧的 wasAtBottom 启发式 + rAF 竞态。
 // 用户主动上滑（scroll 事件，且非程序化）→ 关闭追底；滑回底部 → 重新追底。
@@ -580,13 +583,14 @@ export async function doSend(
                 try { parsed = JSON.parse((block as ToolBlock & { _jsonBuf: string })._jsonBuf); } catch {}
                 block.input = parsed;
                 delete (block as ToolBlock & { _jsonBuf?: string })._jsonBuf;
-                // 启动输入参数打字机动画（与输出结果同款逻辑）
+                // 启动输入参数打字机动画（自适应速度：短命令快、长命令有上限）
                 const fullJson = JSON.stringify(parsed, null, 2);
                 type AnimBlock = ToolBlock & { _animText?: string; _animInput?: string };
                 if (fullJson && fullJson !== '{}') {
                   const animBlock = block as AnimBlock;
-                  const TICKS = 60;
-                  const charsPerTick = Math.max(1, Math.ceil(fullJson.length / TICKS));
+                  const duration = Math.max(300, Math.min(1200, fullJson.length * 20));
+                  const totalTicks = Math.round(duration / 16);
+                  const charsPerTick = Math.max(1, Math.ceil(fullJson.length / totalTicks));
                   animBlock._animInput = '';
                   let pos = 0;
                   const iv = setInterval(() => {
@@ -594,10 +598,12 @@ export async function doSend(
                     animBlock._animInput = fullJson.slice(0, pos);
                     if (pos >= fullJson.length) {
                       clearInterval(iv);
+                      _inputAnimTimers.delete((block as ToolBlock).id);
                       delete animBlock._animInput;
                     }
                     onRender();
                   }, 16);
+                  _inputAnimTimers.set((block as ToolBlock).id, iv);
                 }
               }
               break;
@@ -608,6 +614,13 @@ export async function doSend(
                 (b): b is ToolBlock => b.type === 'tool' && b.id === event.toolUseId
               );
               if (toolBlock) {
+                // 输出到达 → 提前终止输入参数打字机动画，直接跳到完成态
+                const inputTimer = _inputAnimTimers.get(toolBlock.id);
+                if (inputTimer !== undefined) {
+                  clearInterval(inputTimer);
+                  _inputAnimTimers.delete(toolBlock.id);
+                  delete (toolBlock as ToolBlock & { _animInput?: string })._animInput;
+                }
                 toolBlock.result = event.toolResult;
                 clearToolHint(toolBlock.id);
                 const fullText = event.toolResult?.content?.[0]?.text || '';
@@ -678,7 +691,7 @@ export async function doSend(
       messages[msgIdx].content.push({ type: 'text', text: '[未收到回复，请重试]' });
     }
     onRender();
-    // saveMessages 前清除所有 _animText（打字机动画可能仍在运行），防止污染持久化数据
+    // saveMessages 前清除所有 _animText/_animInput（打字机动画可能仍在运行），防止污染持久化数据
     for (const m of messages) {
       for (const b of m.content) {
         if (b.type === 'tool') {
@@ -687,6 +700,7 @@ export async function doSend(
         }
       }
     }
+    _inputAnimTimers.clear();
     await sessionStore.saveMessages(messages, config.modelId, config.providerId);
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') {
