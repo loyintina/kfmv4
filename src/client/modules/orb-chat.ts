@@ -310,8 +310,8 @@ export function renderChatContent(state: ChatState): void {
         const isError = hasResult && tc.result!.isError;
         const statusLabel = isExecuting ? '忙碌中' : (isError ? '失败' : '成功');
         const statusColor = isExecuting ? 'rgba(255,255,255,0.4)' : (isError ? 'rgba(255,100,100,0.8)' : 'rgba(0,212,115,0.8)');
-        const paramsText = Object.keys(tc.input).length > 0 ? JSON.stringify(tc.input, null, 2) : '';
-        type AnimBlock = ToolBlock & { _animText?: string };
+        const paramsFull = Object.keys(tc.input).length > 0 ? JSON.stringify(tc.input, null, 2) : '';
+        type AnimBlock = ToolBlock & { _animText?: string; _animInput?: string };
         const ab = tc as AnimBlock;
         const isAnimating = ab._animText !== undefined;
         const resultText = hasResult
@@ -324,10 +324,12 @@ export function renderChatContent(state: ChatState): void {
         // 分隔线复用工具卡的随机双色 c1/c2，视觉上标记"这次交互是独特的"（Fi 审美）。
         // 无参数的工具（如 kfm-snapshot）不渲染输入区和分隔线，直接显示输出区。
         const preStyle = 'font-size:var(--card-font-size,9px);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;background:rgba(0,0,0,0.2);padding:4px 6px;border-radius:4px';
-        const inputHtml = paramsText
-          ? `<pre style="${preStyle};color:rgba(255,255,255,0.45)">${escapeHtml(paramsText)}</pre>`
+        const isInputAnimating = ab._animInput !== undefined;
+        const paramsDisplay = isInputAnimating ? ab._animInput! : paramsFull;
+        const inputHtml = paramsDisplay
+          ? `<pre style="${preStyle};color:rgba(255,255,255,0.45)">${escapeHtml(paramsDisplay)}</pre>`
           : '';
-        const dividerHtml = inputHtml
+        const dividerHtml = paramsFull
           ? `<div style="height:1px;margin:5px 0;border-radius:1px;background:linear-gradient(90deg,${hexToRgba(c1, 0.7)},${hexToRgba(c2, 0.7)})"></div>`
           : '';
         let outputHtml: string;
@@ -569,13 +571,34 @@ export async function doSend(
               break;
             }
             case 'content_block_stop': {
-              // tool block：解析累积的 JSON
+              // tool block：解析累积的 JSON + 启动输入参数打字机动画
               if (msgIdx < 0) break;
               const { index } = event;
               const block = messages[msgIdx].content[index];
               if (block?.type === 'tool' && (block as ToolBlock & { _jsonBuf?: string })._jsonBuf) {
-                try { block.input = JSON.parse((block as ToolBlock & { _jsonBuf: string })._jsonBuf); } catch {}
+                let parsed: Record<string, unknown> = {};
+                try { parsed = JSON.parse((block as ToolBlock & { _jsonBuf: string })._jsonBuf); } catch {}
+                block.input = parsed;
                 delete (block as ToolBlock & { _jsonBuf?: string })._jsonBuf;
+                // 启动输入参数打字机动画（与输出结果同款逻辑）
+                const fullJson = JSON.stringify(parsed, null, 2);
+                type AnimBlock = ToolBlock & { _animText?: string; _animInput?: string };
+                if (fullJson && fullJson !== '{}') {
+                  const animBlock = block as AnimBlock;
+                  const TICKS = 60;
+                  const charsPerTick = Math.max(1, Math.ceil(fullJson.length / TICKS));
+                  animBlock._animInput = '';
+                  let pos = 0;
+                  const iv = setInterval(() => {
+                    pos = Math.min(pos + charsPerTick, fullJson.length);
+                    animBlock._animInput = fullJson.slice(0, pos);
+                    if (pos >= fullJson.length) {
+                      clearInterval(iv);
+                      delete animBlock._animInput;
+                    }
+                    onRender();
+                  }, 16);
+                }
               }
               break;
             }
@@ -638,7 +661,6 @@ export async function doSend(
             event.type === 'message_start' ||
             (event.type === 'content_block_start' && event.blockType === 'tool_use') ||
             event.type === 'tool_result' ||
-            (event.type === 'content_block_stop' && messages[msgIdx]?.content[event.index]?.type === 'tool') ||
             event.type === 'rule_warning'
           ) {
             lastRender = Date.now();
@@ -659,7 +681,10 @@ export async function doSend(
     // saveMessages 前清除所有 _animText（打字机动画可能仍在运行），防止污染持久化数据
     for (const m of messages) {
       for (const b of m.content) {
-        if (b.type === 'tool') delete (b as ToolBlock & { _animText?: string })._animText;
+        if (b.type === 'tool') {
+          delete (b as ToolBlock & { _animText?: string })._animText;
+          delete (b as ToolBlock & { _animInput?: string })._animInput;
+        }
       }
     }
     await sessionStore.saveMessages(messages, config.modelId, config.providerId);
