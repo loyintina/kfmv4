@@ -150,8 +150,9 @@ export function startWaitingIndicator(panelEl: HTMLDivElement): () => void {
   pos++;
   timerId = setTimeout(next, 800 + Math.random() * 1400);
 
-  // 滚到底部让提示可见
-  requestAnimationFrame(() => { contentArea.scrollTop = contentArea.scrollHeight; });
+  // 滚到底部让提示可见（发送场景默认追底）
+  followBottom = true;
+  scrollToBottom(contentArea);
 
   return function stop(): void {
     stopped = true;
@@ -184,6 +185,30 @@ function getToolHint(toolId: string): { text: string; dotHtml: string } {
 
 function clearToolHint(toolId: string): void {
   _toolHints.delete(toolId);
+}
+
+// ========== 滚动追底状态 ==========
+// 用显式 followBottom 标志替代旧的 wasAtBottom 启发式 + rAF 竞态。
+// 用户主动上滑（scroll 事件，且非程序化）→ 关闭追底；滑回底部 → 重新追底。
+// 程序化设置 scrollTop 期间 suppressScroll=true，避免 innerHTML 重建/自身滚动误翻标志。
+let followBottom = true;
+let suppressScroll = false;
+
+function attachScrollWatch(ca: HTMLElement): void {
+  const tagged = ca as HTMLElement & { _scrollWatch?: boolean };
+  if (tagged._scrollWatch) return;
+  tagged._scrollWatch = true;
+  ca.addEventListener('scroll', () => {
+    if (suppressScroll) return;
+    const dist = ca.scrollHeight - ca.scrollTop - ca.clientHeight;
+    followBottom = dist < 40;
+  }, { passive: true });
+}
+
+function scrollToBottom(ca: HTMLElement): void {
+  suppressScroll = true;
+  ca.scrollTop = ca.scrollHeight;
+  requestAnimationFrame(() => { suppressScroll = false; });
 }
 
 // ========== 渲染 ==========
@@ -342,21 +367,13 @@ export function renderChatContent(state: ChatState): void {
     idx++;
   }
   // 保存滚动位置（在重建 innerHTML 之前）
-  const scrollTop = contentArea.scrollTop;
-  const atBottomThreshold = Math.max(200, contentArea.clientHeight * 0.33);
-  const wasAtBottom = scrollTop + contentArea.clientHeight >= contentArea.scrollHeight - atBottomThreshold;
+  const prevScrollTop = contentArea.scrollTop;
   // 等待提示节点在 innerHTML 重建后需要恢复（它是独立 DOM 节点，不在 html 字符串里）
   const hintEl = contentArea.querySelector('#' + HINT_ID) as HTMLElement | null;
+  attachScrollWatch(contentArea);
+  suppressScroll = true;
   contentArea.innerHTML = html;
   if (hintEl) contentArea.appendChild(hintEl);
-  // 滚动策略
-  if (scrollMode === 'preserve') {
-    contentArea.scrollTop = scrollTop;
-  } else if (scrollMode === 'follow' || (scrollMode === 'auto' && wasAtBottom)) {
-    requestAnimationFrame(() => { contentArea.scrollTop = contentArea.scrollHeight; });
-  } else {
-    contentArea.scrollTop = scrollTop;
-  }
   // 注入 CSS（仅一次）
   if (!contentArea.querySelector('.orb-md-css')) {
     const style = document.createElement('style');
@@ -384,6 +401,17 @@ export function renderChatContent(state: ChatState): void {
       }
     }
   }
+  // 滚动策略（在 markdown 渲染后同步执行：读 scrollHeight 强制 reflow 得到真实高度，
+  // 不用 rAF 以消除竞态；suppressScroll 防止程序化滚动误翻 followBottom）
+  if (scrollMode === 'follow') {
+    followBottom = true;
+    contentArea.scrollTop = contentArea.scrollHeight;
+  } else if (scrollMode === 'preserve') {
+    contentArea.scrollTop = prevScrollTop;
+  } else {
+    contentArea.scrollTop = followBottom ? contentArea.scrollHeight : prevScrollTop;
+  }
+  requestAnimationFrame(() => { suppressScroll = false; });
 }
 
 /** 从 ChatMessage 中提取纯文本 */
