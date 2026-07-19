@@ -208,6 +208,7 @@ let _stemL: HTMLElement | null = null, _stemR: HTMLElement | null = null;
 let _cpBtn: HTMLElement | null = null, _lp: ReturnType<typeof setTimeout> | null = null;
 let _hSC = 0, _hSR = 0, _hOC = 0, _hOR = 0, _hOC2 = 0, _hOR2 = 0;
 let _xEl: HTMLElement | null = null, _mag: HTMLElement | null = null;
+let _magCv: HTMLCanvasElement | null = null, _magTxt: HTMLElement | null = null;
 
 
 function _cp(el: HTMLElement, cx: number, cy: number, cols: number, rows: number) {
@@ -260,17 +261,58 @@ function _dismiss() {
   if (_stemL) { _stemL.remove(); _stemL = null; }
   if (_stemR) { _stemR.remove(); _stemR = null; }
   if (_cpBtn) { _cpBtn.remove(); _cpBtn = null; }
-  if (_mag) { _mag.remove(); _mag = null; }
+  _hideMag();
   if (_activeTerm) _activeTerm.clearSelection();
 }
+// 横胶囊视觉放大镜：采样 xterm canvas 手指下方区域放大绘制，叠十字准星 + 角标行列
+const MAG_W = 132, MAG_H = 56, MAG_ZOOM = 2;
 function _showMag(el: HTMLElement, cx: number, cy: number, cols: number, rows: number) {
-  if (!_mag) { _mag = document.createElement('div'); _mag.style.cssText = 'position:fixed;z-index:' + Z.TERMINAL_MAGNIFIER + ';padding:3px 6px;border-radius:4px;font-size:10px;font-family:monospace;color:#fff;background:rgba(0,0,0,0.8);pointer-events:none;white-space:nowrap'; document.body.appendChild(_mag); }
+  // 取 xterm 渲染 canvas（Canvas 渲染器）；取不到则回退纯坐标气泡
+  const srcCv = el.querySelector('canvas') as HTMLCanvasElement | null;
   const p = _cp(el, cx, cy, cols, rows);
-  _mag.textContent = (p.col + 1) + ':' + (p.row + 1);
-  _mag.style.left = Math.max(0, Math.min(window.innerWidth - 40, cx - 20)) + 'px';
-  _mag.style.top = (cy - 30) + 'px';
+  if (!_mag) {
+    _mag = document.createElement('div');
+    _mag.style.cssText = 'position:fixed;z-index:' + Z.TERMINAL_MAGNIFIER + ';width:' + MAG_W + 'px;height:' + MAG_H + 'px;border-radius:' + (MAG_H / 2) + 'px;overflow:hidden;background:#0a0a0f;border:1.5px solid rgba(0,212,255,0.7);box-shadow:0 4px 16px rgba(0,0,0,0.5);pointer-events:none';
+    _magCv = document.createElement('canvas');
+    _magCv.width = MAG_W; _magCv.height = MAG_H;
+    _magCv.style.cssText = 'width:100%;height:100%;display:block';
+    _mag.appendChild(_magCv);
+    _magTxt = document.createElement('div');
+    _magTxt.style.cssText = 'position:absolute;right:8px;bottom:3px;font-size:9px;font-family:monospace;color:rgba(0,212,255,0.9);text-shadow:0 1px 2px #000;pointer-events:none';
+    _mag.appendChild(_magTxt);
+    document.body.appendChild(_mag);
+  }
+  _magTxt!.textContent = (p.col + 1) + ':' + (p.row + 1);
+  const ctx = _magCv!.getContext('2d');
+  if (ctx && srcCv) {
+    // 源采样：以手指为中心，宽 = MAG_W/ZOOM 的 CSS 像素，换算到 canvas 内部像素（含 DPR）
+    const r = srcCv.getBoundingClientRect();
+    const scaleX = srcCv.width / r.width, scaleY = srcCv.height / r.height;
+    const swCss = MAG_W / MAG_ZOOM, shCss = MAG_H / MAG_ZOOM;
+    const sx = (cx - r.left - swCss / 2) * scaleX;
+    const sy = (cy - r.top - shCss / 2) * scaleY;
+    const sw = swCss * scaleX, sh = shCss * scaleY;
+    ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = '#0a0a0f';
+    ctx.fillRect(0, 0, MAG_W, MAG_H);
+    try { ctx.drawImage(srcCv, sx, sy, sw, sh, 0, 0, MAG_W, MAG_H); } catch {}
+    // 十字准星（当前采样中心）
+    ctx.strokeStyle = 'rgba(0,212,255,0.55)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(MAG_W / 2, 0); ctx.lineTo(MAG_W / 2, MAG_H);
+    ctx.moveTo(0, MAG_H / 2); ctx.lineTo(MAG_W, MAG_H / 2);
+    ctx.stroke();
+  } else if (ctx) {
+    // 无 canvas 源（DOM 渲染器回退）：仅显示坐标
+    ctx.fillStyle = '#0a0a0f';
+    ctx.fillRect(0, 0, MAG_W, MAG_H);
+  }
+  // 定位：手指上方，左右钳制不出屏
+  _mag.style.left = Math.max(4, Math.min(window.innerWidth - MAG_W - 4, cx - MAG_W / 2)) + 'px';
+  _mag.style.top = Math.max(4, cy - MAG_H - 24) + 'px';
 }
-function _hideMag() { if (_mag) { _mag.remove(); _mag = null; } }
+function _hideMag() { if (_mag) { _mag.remove(); _mag = null; _magCv = null; _magTxt = null; } }
 function _showCopy(el: HTMLElement, rows: number) {
   if (_cpBtn) _cpBtn.remove();
   const t = _activeTerm?.getSelection() || ''; if (!t) return;
