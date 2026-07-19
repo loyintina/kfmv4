@@ -597,28 +597,43 @@ export async function doSend(
                 clearToolHint(toolBlock.id);
                 const fullText = event.toolResult?.content?.[0]?.text || '';
                 type AnimBlock = ToolBlock & { _animText?: string };
+                // 输出流式策略：固定速率上限 × 时间上限 = 最大展示字符数
+                // 短输出（≤STREAM_MAX）→ 按 SPEED 字/秒流完，再折叠
+                // 长输出（>STREAM_MAX）→ 流到 STREAM_MAX 就直接折叠，不等剩下内容
+                const SPEED = 60;        // 字/秒
+                const TIME_CAP = 3;     // 秒
+                const STREAM_MAX = SPEED * TIME_CAP; // 180 字
                 requestAnimationFrame(() => {
-                  if (fullText.length > 500) {
-                    // > 500 chars: animate first 500, then auto-collapse (full text on expand)
-                    // Speed: ~80 chars/sec, duration capped at 2s
-                    const ANIMATE_MAX = 500;
-                    const targetMs = Math.min(2000, Math.max(300, ANIMATE_MAX / 80 * 1000));
-                    const totalTicks = Math.max(1, Math.round(targetMs / 16));
-                    const cpt = Math.max(1, Math.ceil(ANIMATE_MAX / totalTicks));
+                  if (fullText.length > STREAM_MAX) {
+                    // 长输出：流到 STREAM_MAX 就折叠
+                    const totalTicks = Math.max(1, Math.round(TIME_CAP * 1000 / 16));
+                    const cpt = Math.max(1, Math.ceil(STREAM_MAX / totalTicks));
                     (toolBlock as AnimBlock)._animText = '';
                     let pos = 0;
                     const iv = setInterval(() => {
-                      pos = Math.min(pos + cpt, ANIMATE_MAX);
+                      pos = Math.min(pos + cpt, STREAM_MAX);
                       (toolBlock as AnimBlock)._animText = fullText.slice(0, pos);
-                      if (pos >= ANIMATE_MAX) {
+                      if (pos >= STREAM_MAX) {
                         clearInterval(iv);
                         delete (toolBlock as AnimBlock)._animText;
                       }
                       onRender();
                     }, 16);
                   } else {
-                    // ≤ 500 chars: show directly, auto-collapse
-                    onRender();
+                    // 短输出：按 SPEED 流完
+                    const totalTicks = Math.max(1, Math.round(fullText.length / SPEED * 1000 / 16));
+                    const cpt = Math.max(1, Math.ceil(fullText.length / totalTicks));
+                    (toolBlock as AnimBlock)._animText = '';
+                    let pos = 0;
+                    const iv = setInterval(() => {
+                      pos = Math.min(pos + cpt, fullText.length);
+                      (toolBlock as AnimBlock)._animText = fullText.slice(0, pos);
+                      if (pos >= fullText.length) {
+                        clearInterval(iv);
+                        delete (toolBlock as AnimBlock)._animText;
+                      }
+                      onRender();
+                    }, 16);
                   }
                 });
               }
