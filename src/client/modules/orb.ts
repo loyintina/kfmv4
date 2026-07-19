@@ -518,24 +518,7 @@ export async function initOrb(): Promise<void> {
       abortCtrl = new AbortController();
       sendBtn!.classList.add('sending');
 
-      // 发送时强制追底（渲染用户消息气泡）
-      _renderChat('follow');
-
-      // 用户滚动感知：上滑则停止追底，滑回底部才恢复
-      let userScrolled = false;
-      const contentArea = panelEl ? panelEl.querySelector('.orb-panel-content') : null;
-      const onScroll = () => {
-        if (!contentArea) return;
-        const threshold = Math.max(200, contentArea.clientHeight * 0.33);
-        const atBottom = contentArea.scrollTop + contentArea.clientHeight >= contentArea.scrollHeight - threshold;
-        userScrolled = !atBottom;
-      };
-      contentArea?.addEventListener('scroll', onScroll, { passive: true });
-
       // 等待提示动画：doSend 内部第一个 onRender（用户消息入队后立刻触发）后启动
-      // 设计决策：不在 doSend 调用前启动，因为 doSend 进入时会先 onRender 一次（渲染用户消息），
-      // 这次 onRender 对应 handleSend 里的 onRender 回调，会触发 stopHint，hint 还没出现就被关掉了。
-      // 解决方案：用 firstRender flag，第一次 onRender 时启动 hint，第二次（message_start 后）时关掉。
       let stopHint: ((() => void) | null) = null;
       let firstRenderDone = false;
 
@@ -543,29 +526,30 @@ export async function initOrb(): Promise<void> {
         () => {},
         () => {
           if (!firstRenderDone) {
-            // 第一次 onRender = 用户消息渲染完，此时启动 hint
+            // 第一次 onRender = 用户消息已入队，强制追底显示用户消息 + 启动 hint
             firstRenderDone = true;
             stopHint = panelEl ? startWaitingIndicator(panelEl) : null;
+            _renderChat('follow');
           } else {
-            // 第二次及以后 onRender = message_start 或 delta 到达，停掉 hint
+            // 后续 onRender = message_start 或 delta 到达，停 hint
             if (stopHint) { stopHint(); stopHint = null; }
-            _renderChat(userScrolled ? 'preserve' : 'follow');
+            // 用 auto：renderChatContent 内部的 wasAtBottom 启发式判断
+            // 用户上滑离开底部 → preserve，滑回底部 → follow
+            _renderChat('auto');
           }
         },
         (msg) => {
           if (stopHint) { stopHint(); stopHint = null; }
           chatMessages.push({ role: 'ai', content: [{ type: 'text', text: msg }] });
-          _renderChat(userScrolled ? 'preserve' : 'follow');
+          _renderChat('auto');
         },
       );
 
       // 流结束时确保提示动画已停（静默断流兜底）
       if (stopHint != null) { (stopHint as () => void)(); stopHint = null; }
-      contentArea?.removeEventListener('scroll', onScroll);
       abortCtrl = null;
       sendBtn!.classList.remove('sending');
-      // 流结束后最终渲染一次，使用 auto（用户上滑了就不强制到底）
-      _renderChat(userScrolled ? 'auto' : 'follow');
+      _renderChat('auto');
     }
 
     sendBtn.addEventListener('click', () => handleSend());
