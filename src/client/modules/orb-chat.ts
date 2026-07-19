@@ -313,7 +313,10 @@ export function renderChatContent(state: ChatState): void {
   const scrollTop = contentArea.scrollTop;
   const atBottomThreshold = Math.max(200, contentArea.clientHeight * 0.33);
   const wasAtBottom = scrollTop + contentArea.clientHeight >= contentArea.scrollHeight - atBottomThreshold;
+  // 等待提示节点在 innerHTML 重建后需要恢复（它是独立 DOM 节点，不在 html 字符串里）
+  const hintEl = contentArea.querySelector('#' + HINT_ID) as HTMLElement | null;
   contentArea.innerHTML = html;
+  if (hintEl) contentArea.appendChild(hintEl);
   // 滚动策略
   if (scrollMode === 'preserve') {
     contentArea.scrollTop = scrollTop;
