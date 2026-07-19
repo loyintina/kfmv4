@@ -45,7 +45,6 @@
   --z-action-bar-scrim: 6000;
   --z-action-bar-drawer: 6100;
   --z-action-bar-input: 6200;
-  --z-custom-select: 6300;
   --z-terminal-stem: 6400;
   --z-terminal-handle: 6410;
   --z-terminal-copy-btn: 6420;
@@ -56,6 +55,7 @@
   --z-modal-dialog: 6800;
   /* L7 AI 核心（全局最高，无例外） */
   --z-orb-panel: 9000;
+  --z-custom-select: 9050;
   --z-ai-input-bar: 9100;
   --z-ai-send-btn: 9200;
   --z-light-orb: 9200;

@@ -68,8 +68,6 @@ export const Z = {
   ACTION_BAR_SCRIM: 6000,
   ACTION_BAR_DRAWER: 6100,
   ACTION_BAR_INPUT: 6200,
-  /** 自定义下拉浮层 */
-  CUSTOM_SELECT: 6300,
   /** 终端选择手柄 / 茎 / 放大镜 / 复制按钮 */
   TERMINAL_STEM: 6400,
   TERMINAL_HANDLE: 6410,
@@ -86,6 +84,8 @@ export const Z = {
 
   /** L7 AI 核心（全局最高，无例外） */
   ORB_PANEL: 9000,
+  /** 自定义下拉浮层：附着于面板/卡片，必须高于其最高宿主 orb-panel(9000)，低于输入栏/光球 */
+  CUSTOM_SELECT: 9050,
   AI_INPUT_BAR: 9100,
   AI_SEND_BTN: 9200,
   LIGHT_ORB: 9200,
