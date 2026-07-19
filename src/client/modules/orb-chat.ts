@@ -504,27 +504,32 @@ export async function doSend(
               );
               if (toolBlock) {
                 toolBlock.result = event.toolResult;
-                // 打字机动画：总时长约 1.5s，字数多则快，字数少则慢
-                // _animText 临时附加在 ToolBlock 上，saveMessages 前已清除，不持久化。
-                // renderChatContent 检测 _animText 存在时展开卡片、显示动画文字；
-                // 动画结束后删除 _animText，最后一次 onRender() 触发折叠。
+                // 打字机动画：延迟到下一帧启动，确保 "执行中" 状态先被浏览器画出来。
+                // 设计决策：tool_result 不再是 structural 事件（不在立即渲染列表里），
+                // 避免和 content_block_start(tool_use) 在同一 JS task 内连续 onRender
+                // 导致浏览器只画最后一帧、"执行中" 状态被跳过。
                 const fullText = event.toolResult?.content?.[0]?.text || '';
-                if (fullText.length > 0) {
-                  const TICKS = 90; // ~1.5s at 16ms/tick
-                  const charsPerTick = Math.max(1, Math.ceil(fullText.length / TICKS));
-                  type AnimBlock = ToolBlock & { _animText?: string };
-                  (toolBlock as AnimBlock)._animText = '';
-                  let pos = 0;
-                  const iv = setInterval(() => {
-                    pos = Math.min(pos + charsPerTick, fullText.length);
-                    (toolBlock as AnimBlock)._animText = fullText.slice(0, pos);
-                    if (pos >= fullText.length) {
-                      clearInterval(iv);
-                      delete (toolBlock as AnimBlock)._animText;
-                    }
+                type AnimBlock = ToolBlock & { _animText?: string };
+                requestAnimationFrame(() => {
+                  if (fullText.length > 0) {
+                    const TICKS = 90; // ~1.5s at 16ms/tick
+                    const charsPerTick = Math.max(1, Math.ceil(fullText.length / TICKS));
+                    (toolBlock as AnimBlock)._animText = '';
+                    let pos = 0;
+                    const iv = setInterval(() => {
+                      pos = Math.min(pos + charsPerTick, fullText.length);
+                      (toolBlock as AnimBlock)._animText = fullText.slice(0, pos);
+                      if (pos >= fullText.length) {
+                        clearInterval(iv);
+                        delete (toolBlock as AnimBlock)._animText;
+                      }
+                      onRender();
+                    }, 16);
+                  } else {
+                    // 结果无文本内容，直接触发一次渲染（折叠卡片）
                     onRender();
-                  }, 16);
-                }
+                  }
+                });
               }
               break;
             }
@@ -552,7 +557,6 @@ export async function doSend(
             event.type === 'message_start' ||
             (event.type === 'content_block_start' && event.blockType === 'tool_use') ||
             event.type === 'content_block_stop' ||
-            event.type === 'tool_result' ||
             event.type === 'rule_warning'
           ) {
             lastRender = Date.now();
