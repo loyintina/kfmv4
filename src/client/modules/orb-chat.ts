@@ -20,6 +20,7 @@ import { marked } from 'marked';
 import { preprocessMd, MARKED_OPTS } from './renderers/md-extensions.js';
 import { highlightAll } from './renderers/code-highlight.js';
 import { renderMath, renderMermaid, type MathData } from './renderers/math-diagram.js';
+import { WAITING_HINTS } from '../data/waiting-hints.js';
 
 // ========== 类型 ==========
 
@@ -74,6 +75,89 @@ function randomToolAccent(): { color1: string; color2: string } {
   const sat = 45 + Math.random() * 25;
   const lit = 50 + Math.random() * 15;
   return { color1: hslToHex(h1, sat, lit), color2: hslToHex(h2, sat, lit) };
+}
+
+// ========== 等待提示动画 ==========
+// 设计：attach 到 orb-panel-content 尾部的独立 DOM 节点，不走 renderChatContent 的 innerHTML 重建。
+// start() 返回 stop 函数；message_start 到达后 orb.ts 调 stop() 移除节点。
+
+const HINT_ID = 'orb-waiting-hint';
+
+export function startWaitingIndicator(panelEl: HTMLDivElement): () => void {
+  const contentArea = DOM.orbPanelContent(panelEl);
+  if (!contentArea) return () => {};
+
+  // 移除可能残留的旧节点
+  contentArea.querySelector('#' + HINT_ID)?.remove();
+
+  const el = document.createElement('div');
+  el.id = HINT_ID;
+  el.style.cssText = [
+    'display:flex;align-items:center;gap:6px',
+    'padding:5px 10px;margin-bottom:6px',
+    'border-radius:8px',
+    'background:linear-gradient(rgba(10,15,30,0.6),rgba(10,15,30,0.6)) padding-box,' +
+      'linear-gradient(135deg,rgba(0,212,255,0.18),rgba(124,58,237,0.18)) border-box',
+    'border:1px solid transparent;border-left-width:3px',
+    'font-size:var(--card-font-size,10px)',
+  ].join(';');
+
+  const dot = document.createElement('span');
+  dot.style.cssText = [
+    'width:5px;height:5px;border-radius:50%;flex-shrink:0',
+    'background:rgba(0,212,255,0.6)',
+    'animation:orb-hint-pulse 1.2s ease-in-out infinite',
+  ].join(';');
+
+  const txt = document.createElement('span');
+  txt.style.cssText = 'color:rgba(255,255,255,0.35);transition:opacity 0.3s';
+
+  el.appendChild(dot);
+  el.appendChild(txt);
+  contentArea.appendChild(el);
+
+  // 注入脉冲 CSS（仅一次）
+  if (!document.getElementById('orb-hint-css')) {
+    const style = document.createElement('style');
+    style.id = 'orb-hint-css';
+    style.textContent = '@keyframes orb-hint-pulse{0%,100%{opacity:0.4;transform:scale(1)}50%{opacity:1;transform:scale(1.3)}}';
+    document.head.appendChild(style);
+  }
+
+  // 随机打乱提示顺序，循环播放
+  const pool = [...WAITING_HINTS].sort(() => Math.random() - 0.5);
+  let pos = 0;
+  let timerId: ReturnType<typeof setTimeout> | null = null;
+  let stopped = false;
+
+  function next(): void {
+    if (stopped) return;
+    txt.style.opacity = '0';
+    setTimeout(() => {
+      if (stopped) return;
+      txt.textContent = pool[pos % pool.length];
+      pos++;
+      txt.style.opacity = '1';
+    }, 150);
+    // 随机间隔 800-2200ms，看起来忙碌但不规律
+    const delay = 800 + Math.random() * 1400;
+    timerId = setTimeout(next, delay);
+  }
+
+  // 第一条立即显示
+  txt.textContent = pool[pos % pool.length];
+  txt.style.opacity = '1';
+  pos++;
+  timerId = setTimeout(next, 800 + Math.random() * 1400);
+
+  // 滚到底部让提示可见
+  requestAnimationFrame(() => { contentArea.scrollTop = contentArea.scrollHeight; });
+
+  return function stop(): void {
+    stopped = true;
+    if (timerId !== null) clearTimeout(timerId);
+    el.remove();
+  };
 }
 
 // ========== 渲染 ==========
@@ -475,9 +559,11 @@ export async function doSend(
         } catch {}
       }
     }
-    // 兜底：流结束时目标为空
-    if (msgIdx >= 0 && messages[msgIdx].content.length === 0) {
-      messages[msgIdx].content.push({ type: 'text', text: '未获取到回复' });
+    // 兜底：流结束但 message_start 从未收到（provider 静默断流）
+    if (msgIdx < 0) {
+      messages.push({ role: 'ai', content: [{ type: 'text', text: '[未收到回复，请重试]' }] });
+    } else if (messages[msgIdx].content.length === 0) {
+      messages[msgIdx].content.push({ type: 'text', text: '[未收到回复，请重试]' });
     }
     onRender();
     // saveMessages 前清除所有 _animText（打字机动画可能仍在运行），防止污染持久化数据

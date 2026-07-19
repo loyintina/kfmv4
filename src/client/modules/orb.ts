@@ -23,7 +23,7 @@ import { anim } from './animation-registry.js';
 import { log } from './logger.js';
 import { sessionStore } from './session-store.js';
 import { buildPanelContent } from './orb-panel.js';
-import { renderChatContent, doSend, type ChatMessage } from './orb-chat.js';
+import { renderChatContent, doSend, startWaitingIndicator, type ChatMessage } from './orb-chat.js';
 import type { OrbState } from './orb-state.js';
 const API_BASE = window.location.pathname.replace(/\/+$/, '') + '/api/';
 
@@ -518,8 +518,9 @@ export async function initOrb(): Promise<void> {
       abortCtrl = new AbortController();
       sendBtn!.classList.add('sending');
 
-      // 发送时强制追底
+      // 发送时强制追底，然后启动等待提示动画
       _renderChat('follow');
+      let stopHint: (() => void) | null = panelEl ? startWaitingIndicator(panelEl) : null;
 
       // 用户滚动感知：上滑则停止追底，滑回底部才恢复
       let userScrolled = false;
@@ -534,10 +535,20 @@ export async function initOrb(): Promise<void> {
 
       await doSend(text, chatMessages, base, abortCtrl.signal,
         () => {},
-        () => _renderChat(userScrolled ? 'preserve' : 'follow'),
-        (msg) => { chatMessages.push({ role: 'ai', content: [{ type: 'text', text: msg }] }); _renderChat(userScrolled ? 'preserve' : 'follow'); },
+        () => {
+          // 第一次 onRender（message_start 后）停掉提示动画
+          if (stopHint) { stopHint(); stopHint = null; }
+          _renderChat(userScrolled ? 'preserve' : 'follow');
+        },
+        (msg) => {
+          if (stopHint) { stopHint(); stopHint = null; }
+          chatMessages.push({ role: 'ai', content: [{ type: 'text', text: msg }] });
+          _renderChat(userScrolled ? 'preserve' : 'follow');
+        },
       );
 
+      // 流结束时确保提示动画已停（静默断流兜底）
+      if (stopHint) { stopHint(); stopHint = null; }
       contentArea?.removeEventListener('scroll', onScroll);
       abortCtrl = null;
       sendBtn!.classList.remove('sending');
