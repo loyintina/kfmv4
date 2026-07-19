@@ -91,8 +91,9 @@ const html2 = readFileSync('public/index.html', 'utf-8');
 if (!html2.includes('bundle.js')) { console.error('[smoke] ❌ public/index.html 未引用 bundle.js'); process.exit(1); }
 if (statSync('public/bundle.js').size < 100) { console.error('[smoke] ❌ public/bundle.js 异常小（可能构建失败）'); process.exit(1); }
 // 自动更新 bundle.js 版本号（防止浏览器缓存旧 bundle）
-const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-const html3 = html2.replace(/bundle\.js\?v=\d+/, `bundle.js?v=${today}`);
+// 用完整时间戳而非仅日期——同一天内多次构建也必须刷新缓存
+const buildStamp = Date.now();
+const html3 = html2.replace(/bundle\.js\?v=\d+/, `bundle.js?v=${buildStamp}`);
 if (html3 !== html2) writeFileSync('public/index.html', html3);
 console.log('[smoke] ✅ index.html 引用 bundle.js, 大小 ' + statSync('public/bundle.js').size + ' bytes');
 
