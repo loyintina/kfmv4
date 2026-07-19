@@ -191,8 +191,8 @@ export async function* streamChat(
     // renderChatContent 取 textBlocks[0] 即可正确渲染两者。
     // 历史问题：曾经 thinking 开 index=0，text 再 stop/reopen 到 index=1，
     // 导致 renderChatContent 的 textBlocks[0].text 永远为空。
-    let blockIndex = 0;
     let hasTextBlock = false; // 已 yield content_block_start index=0
+    const toolStarted = new Set<number>(); // 已 yield content_block_start 的工具 index
 
     // 本轮 message_start
     yield { type: 'message_start' };
@@ -212,6 +212,9 @@ export async function* streamChat(
           const delta = chunk?.choices?.[0]?.delta || {};
           if (chunk.choices?.[0]?.finish_reason) finishReason = chunk.choices[0].finish_reason;
 
+          // 工具调用：流式累积 + 即时 yield content_block_start/delta
+          // 设计决策：工具名一出现就 yield start（客户端立刻渲染卡片），参数片段到了就 yield delta。
+          // 之前是等 LLM 整个响应结束后才一次性 yield 所有事件，导致工具卡出现有延迟。
           if (delta.tool_calls) {
             for (const tc of (delta.tool_calls as Array<Record<string, unknown>>)) {
               const idx = (tc.index as number) ?? 0;
@@ -222,6 +225,27 @@ export async function* streamChat(
               if (tc.id) buf.id = tc.id as string;
               if ((tc.function as Record<string, string>)?.name) buf.name += (tc.function as Record<string, string>).name;
               if ((tc.function as Record<string, string>)?.arguments) buf.args += (tc.function as Record<string, string>).arguments;
+
+              // 工具名出现即 yield start（客户端立刻显示工具卡片）
+              if (!toolStarted.has(idx) && buf.name) {
+                toolStarted.add(idx);
+                yield {
+                  type: 'content_block_start',
+                  index: idx + 1,
+                  blockType: 'tool_use',
+                  toolUseId: buf.id || `call_${turn}_${idx}`,
+                  toolName: buf.name,
+                };
+              }
+              // 参数片段到了即 yield delta（客户端流式显示参数）
+              if (tc.function && (tc.function as Record<string, string>).arguments) {
+                yield {
+                  type: 'content_block_delta',
+                  index: idx + 1,
+                  deltaType: 'input_json_delta',
+                  deltaText: (tc.function as Record<string, string>).arguments,
+                };
+              }
             }
           }
 
@@ -250,7 +274,10 @@ export async function* streamChat(
     // 关闭 text/thinking block（如果开过）
     if (hasTextBlock) {
       yield { type: 'content_block_stop', index: 0 };
-      blockIndex = 1; // tool_use block 从 1 开始
+    }
+    // 关闭已 start 的工具 block
+    for (const idx of toolStarted) {
+      yield { type: 'content_block_stop', index: idx + 1 };
     }
 
     // 检查是否需要执行工具
@@ -263,14 +290,13 @@ export async function* streamChat(
         const tcId = buf.id || `call_${turn}_${tcIdx}`;
         const params = safeParseJson(buf.args);
         toolCalls.push({ id: tcId, type: 'function', function: { name: buf.name, arguments: buf.args } });
-        // 每个工具调用占一个 block index
-        todo.push({ name: buf.name, params, tcId, blockIdx: blockIndex + tcIdx });
+        todo.push({ name: buf.name, params, tcId, blockIdx: tcIdx + 1 });
         tcIdx++;
       }
       assistantMsg.tool_calls = toolCalls;
       apiMessages.push(assistantMsg);
 
-      // yield tool_use block（先全部 start，并行工具同时可见）
+      // 规则检查
       const pendingWarnings: string[] = [];
       for (const t of todo) {
         const ruleWarning = checkToolCallRules(t.name, t.params);
@@ -278,9 +304,6 @@ export async function* streamChat(
           pendingWarnings.push(ruleWarning);
           yield { type: 'rule_warning', content: ruleWarning };
         }
-        yield { type: 'content_block_start', index: t.blockIdx, blockType: 'tool_use', toolUseId: t.tcId, toolName: t.name };
-        yield { type: 'content_block_delta', index: t.blockIdx, deltaType: 'input_json_delta', deltaText: JSON.stringify(t.params) };
-        yield { type: 'content_block_stop', index: t.blockIdx };
       }
 
       // 并行执行所有工具
@@ -318,7 +341,7 @@ export async function* streamChat(
         apiMessages.push({ role: 'user', content: pendingWarnings.join('\n\n---\n\n') });
       }
 
-      // 本轮消息结束，进入下一轮（下一轮 while 开头会 yield message_start）
+      // 本轮消息结束，进入下一轮
       yield { type: 'message_stop' };
       continue;
     }
