@@ -480,6 +480,12 @@ export async function doSend(
       messages[msgIdx].content.push({ type: 'text', text: '未获取到回复' });
     }
     onRender();
+    // saveMessages 前清除所有 _animText（打字机动画可能仍在运行），防止污染持久化数据
+    for (const m of messages) {
+      for (const b of m.content) {
+        if (b.type === 'tool') delete (b as ToolBlock & { _animText?: string })._animText;
+      }
+    }
     await sessionStore.saveMessages(messages, config.modelId, config.providerId);
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') {
