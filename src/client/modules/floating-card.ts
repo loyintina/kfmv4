@@ -272,7 +272,10 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
         if (!item.contentEl) return;
         item.contentEl.style.touchAction = 'pan-y';
         for (const child of item.contentEl.querySelectorAll<HTMLElement>('*')) {
-          child.style.touchAction = 'pan-y';
+          // 拖拽柄已显式设置 touch-action:none（角色卡文件排序等），不覆盖
+          if (!child.style.touchAction || child.style.touchAction === 'pan-y') {
+            child.style.touchAction = 'pan-y';
+          }
         }
         for (const xtermEl of item.contentEl.querySelectorAll<HTMLElement>('.xterm')) {
           xtermEl.style.touchAction = 'none';
