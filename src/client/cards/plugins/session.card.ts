@@ -304,8 +304,8 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
       return;
     }
 
-    // 过滤：只显示有正文的消息（工具调用、纯思考气泡跳过）
-    const msgs = session.messages.filter(m => extractMsgText(m).trim()).slice(-20);
+    // 过滤：只显示有正文的消息（工具调用、纯思考气泡跳过）；渲染全部，不截断
+    const msgs = session.messages.filter(m => extractMsgText(m).trim());
     if (msgs.length === 0) {
       const empty = document.createElement('div');
       empty.style.cssText = 'font-size:var(--card-font-size,11px);color:rgba(255,255,255,0.4);text-align:center;padding:20px 0';
