@@ -178,8 +178,8 @@ export function renderChatContent(state: ChatState): void {
         const contentText = isExecuting
           ? (paramsText ? '参数:\n' + paramsText + '\n\n执行中...' : '执行中...')
           : (resultText || '(无结果)');
-        const defaultDisplay = isExecuting ? 'block' : 'none';
-        const defaultArrow = isExecuting ? '▼' : '▶';
+        const defaultDisplay = 'block'; // 始终展开，让用户看到内容，可手动折叠
+        const defaultArrow = '▼';
         const gradientBorder = `linear-gradient(rgba(10,15,30,0.75),rgba(10,15,30,0.75)) padding-box,linear-gradient(135deg,${hexToRgba(c2, 0.55)} 30%,${hexToRgba(c1, 0.55)} 70%) border-box`;
         html += `
           <div style="display:flex;justify-content:flex-start;margin-bottom:6px">
@@ -426,7 +426,22 @@ export async function doSend(
               break;
             }
           }
-          throttledRender();
+          // 结构性事件（新卡片出现/结果到达）绕过 throttle 立即渲染；
+          // content delta 节流（避免高频重绘）。
+          // 设计决策：message_start/content_block_start(tool)/tool_result/rule_warning 是
+          // 视觉结构变化，必须即时可见；text/thinking/input_json delta 可节流。
+          if (
+            event.type === 'message_start' ||
+            (event.type === 'content_block_start' && event.blockType === 'tool_use') ||
+            event.type === 'content_block_stop' ||
+            event.type === 'tool_result' ||
+            event.type === 'rule_warning'
+          ) {
+            lastRender = Date.now();
+            onRender();
+          } else {
+            throttledRender();
+          }
         } catch {}
       }
     }
