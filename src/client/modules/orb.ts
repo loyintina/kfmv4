@@ -127,7 +127,6 @@ function createPanel(): HTMLDivElement {
     border-left-width: 3px;
     border-radius: 12px;
     box-shadow: ${theme.aiChat.panelShadow};
-    z-index: 205;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -354,8 +353,7 @@ export async function initOrb(): Promise<void> {
   orbEl = DOM.lightOrb;
   if (!orbEl) return;
 
-  // 确保光球 z-index > 面板
-  orbEl.style.zIndex = '210';
+  // 光球 z-index 由 z-index.css 的 .light-orb 统一管理（全局最高层，> 面板）
 
   // 初始位置约束
   const initRect = orbEl.getBoundingClientRect();

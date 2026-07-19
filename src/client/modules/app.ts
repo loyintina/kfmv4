@@ -24,16 +24,23 @@ export function showToast(msg: string): void {
 
 export async function initApp(): Promise<void> {
 
-  // AI输入栏跟随键盘平滑移动
+  // AI输入栏跟随键盘平滑移动；文件树底部同步抬到输入栏之上（含输入法避让）
   const bar = DOM.aiInputBar;
+  const sidebar = DOM.sidebar;
   if (bar && window.visualViewport) {
     const vv = window.visualViewport;
-    const onResize = () => {
+    const syncLayout = () => {
       const kh = window.innerHeight - vv.height;
       bar.style.bottom = kh + 'px';
+      // 文件树底部收缩到输入栏之上（rAF 确保读取到 textarea 自增长后的最终高度）
+      if (sidebar) requestAnimationFrame(() => {
+        sidebar.style.bottom = (kh + bar.offsetHeight) + 'px';
+      });
     };
-    vv.addEventListener('resize', onResize);
-    onResize();
+    vv.addEventListener('resize', syncLayout);
+    // 输入栏高度变化（textarea 自增长）时也要重新同步文件树底部
+    if (DOM.aiInput) DOM.aiInput.addEventListener('input', syncLayout);
+    syncLayout();
   }
 
   // 眼睛按钮：显示/隐藏隐藏文件
