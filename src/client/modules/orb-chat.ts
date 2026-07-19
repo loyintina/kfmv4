@@ -320,16 +320,22 @@ export function renderChatContent(state: ChatState): void {
         const defaultDisplay = (isExecuting || isAnimating) ? 'block' : 'none';
         const defaultArrow = (isExecuting || isAnimating) ? '▼' : '▶';
         const gradientBorder = `linear-gradient(rgba(10,15,30,0.75),rgba(10,15,30,0.75)) padding-box,linear-gradient(135deg,${hexToRgba(c2, 0.55)} 30%,${hexToRgba(c1, 0.55)} 70%) border-box`;
-        // 内容区：执行中用脉冲点 + 随机提示（innerHTML），完成/动画用 escapeHtml
-        let contentHtml: string;
+        // 展开态三段结构：输入参数 → 渐变分隔线 → 输出区（执行中为摸鱼提示，完成为结果）。
+        // 分隔线复用工具卡的随机双色 c1/c2，视觉上标记"这次交互是独特的"（Fi 审美）。
+        // 无参数的工具（如 kfm-snapshot）不渲染输入区和分隔线，直接显示输出区。
+        const preStyle = 'font-size:var(--card-font-size,9px);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;background:rgba(0,0,0,0.2);padding:4px 6px;border-radius:4px';
+        const inputHtml = paramsText
+          ? `<pre style="${preStyle};color:rgba(255,255,255,0.45)">${escapeHtml(paramsText)}</pre>`
+          : '';
+        const dividerHtml = inputHtml
+          ? `<div style="height:1px;margin:5px 0;border-radius:1px;background:linear-gradient(90deg,${hexToRgba(c1, 0.7)},${hexToRgba(c2, 0.7)})"></div>`
+          : '';
+        let outputHtml: string;
         if (isExecuting) {
           const hint = getToolHint(tc.id);
-          const hintLine = hint.dotHtml + escapeHtml(hint.text);
-          contentHtml = paramsText
-            ? `<span style="color:rgba(255,255,255,0.4)">${escapeHtml('参数:\n' + paramsText)}</span>\n\n${hintLine}`
-            : hintLine;
+          outputHtml = `<div style="color:rgba(255,255,255,0.4);font-size:var(--card-font-size,9px);line-height:1.4;padding:2px 0">${hint.dotHtml}${escapeHtml(hint.text)}</div>`;
         } else {
-          contentHtml = escapeHtml(resultText || '(无结果)');
+          outputHtml = `<pre style="${preStyle};color:rgba(255,255,255,0.6)">${escapeHtml(resultText || '(无结果)')}</pre>`;
         }
         html += `
           <div style="display:flex;justify-content:flex-start;margin-bottom:6px">
@@ -340,7 +346,7 @@ export function renderChatContent(state: ChatState): void {
                 <span style="color:${statusColor};font-size:var(--card-font-size,9px);font-weight:600">${statusLabel}</span>
               </div>
               <div id="${tid}" style="display:${defaultDisplay};margin-top:4px">
-                <pre style="font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.6);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0 0 2px 0;font-family:inherit;background:rgba(0,0,0,0.2);padding:4px 6px;border-radius:4px">${contentHtml}</pre>
+                ${inputHtml}${dividerHtml}${outputHtml}
               </div>
             </div>
           </div>`;
