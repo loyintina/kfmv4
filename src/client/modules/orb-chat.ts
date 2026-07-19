@@ -645,7 +645,13 @@ export async function doSend(
               break;
             }
             case 'error': {
-              if (msgIdx < 0) break;
+              // 上游/服务错误：即使 message_start 未到达（msgIdx<0）也要显示，
+              // 否则用户只看到静默断流。无 AI 消息则新建一条承载错误。
+              if (msgIdx < 0) {
+                messages.push({ role: 'ai', content: [{ type: 'text', text: '[错误: ' + event.content + ']' }] });
+                msgIdx = messages.length - 1;
+                break;
+              }
               const tb = messages[msgIdx].content.find((b): b is TextBlock => b.type === 'text');
               if (tb) {
                 tb.text += '\n\n[错误: ' + event.content + ']';

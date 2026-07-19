@@ -209,6 +209,13 @@ export async function* streamChat(
         if (jsonStr === '[DONE]') continue;
         try {
           const chunk = JSON.parse(jsonStr);
+          // 上游错误块（配额/限流/内部错误）：非 OpenAI chunk 格式，无 choices。
+          // 必须显式上抛，否则流静默结束——用户只看到思考后戛然而止、工具调用"被截断"。
+          if (chunk?.error || chunk?.type === 'error') {
+            const em = chunk.error?.message || chunk.message || '上游服务错误';
+            yield { type: 'error', content: `模型服务错误：${em}` };
+            return;
+          }
           const delta = chunk?.choices?.[0]?.delta || {};
           if (chunk.choices?.[0]?.finish_reason) finishReason = chunk.choices[0].finish_reason;
 
