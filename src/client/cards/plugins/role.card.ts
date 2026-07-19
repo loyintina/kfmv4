@@ -393,15 +393,19 @@ function createRoleHandler(meta: Record<string, unknown>): CardContentHandler {
             Math.round((dragOrigIdx * cardH + dragOffY) / cardH)));
           cards.forEach((c, i) => {
             if (c === dragCard) return;
-            if (dragOrigIdx < targetIdx && i > dragOrigIdx && i <= targetIdx) {
-              c.style.transform = 'translateY(-' + cardH + 'px)';
+            const shouldShift =
+              (dragOrigIdx < targetIdx && i > dragOrigIdx && i <= targetIdx) ||
+              (dragOrigIdx > targetIdx && i < dragOrigIdx && i >= targetIdx);
+            if (shouldShift) {
+              const dir = dragOrigIdx < targetIdx ? -cardH : cardH;
+              // 先设 transition 再设 transform：浏览器确保下一帧能看到动画
               c.style.transition = 'transform 0.15s';
-            } else if (dragOrigIdx > targetIdx && i < dragOrigIdx && i >= targetIdx) {
-              c.style.transform = 'translateY(' + cardH + 'px)';
-              c.style.transition = 'transform 0.15s';
+              c.style.transform = 'translateY(' + dir + 'px)';
             } else {
+              // 回到原位：先清 transform（触发动画），再用 rAF 之后清 transition
+              // 若直接同帧清掉 transition，浏览器会把 transform 的变化当瞬移处理
+              c.style.transition = 'transform 0.15s';
               c.style.transform = '';
-              c.style.transition = '';
             }
           });
         }
