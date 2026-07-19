@@ -304,7 +304,15 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
       return;
     }
 
-    const msgs = session.messages.slice(-20); // 最多显示最近 20 条
+    // 过滤：只显示有正文的消息（工具调用、纯思考气泡跳过）
+    const msgs = session.messages.filter(m => extractMsgText(m).trim()).slice(-20);
+    if (msgs.length === 0) {
+      const empty = document.createElement('div');
+      empty.style.cssText = 'font-size:var(--card-font-size,11px);color:rgba(255,255,255,0.4);text-align:center;padding:20px 0';
+      empty.textContent = '暂无对话';
+      container.appendChild(empty);
+      return;
+    }
     for (let i = 0; i < msgs.length; i++) {
       const msg = msgs[i];
       const isUser = msg.role === 'user';
