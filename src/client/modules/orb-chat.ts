@@ -239,8 +239,9 @@ export function renderChatContent(state: ChatState): void {
       // 用户消息：单 text block
       const userText = msg.content.find((b): b is TextBlock => b.type === 'text')?.text || '';
       const maxWidth = Math.min(innerWidth - 8, innerWidth * 0.85);
-      let bubbleHtml = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+      let bubbleHtml = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;gap:8px">
         <span style="font-size:10px;color:${labelColor};font-weight:600">${label}</span>
+        <span class="orb-copy-btn" data-copy-idx="${idx}" style="font-size:9px;color:rgba(255,255,255,0.35);cursor:pointer;flex-shrink:0;user-select:none">复制</span>
       </div>`;
       bubbleHtml += `<div class="orb-msg-text" data-msg-idx="${idx}" style="font-family:sans-serif;font-size:var(--card-font-size,13px);line-height:16px;color:${theme.aiChat.bubbleText};word-break:break-word">${renderPlainText(userText)}</div>`;
       html += `
@@ -284,8 +285,9 @@ export function renderChatContent(state: ChatState): void {
       if (mainText) {
         const lineHeight = 16;
         const bubbleHtml = `
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;gap:8px">
             <span style="font-size:10px;color:${labelColor};font-weight:600">${label}</span>
+            <span class="orb-copy-btn" data-copy-idx="${idx}" style="font-size:9px;color:rgba(255,255,255,0.35);cursor:pointer;flex-shrink:0;user-select:none">复制</span>
           </div>
           <div class="orb-msg-text" data-msg-idx="${idx}" style="font-family:sans-serif;font-size:var(--card-font-size,13px);line-height:${lineHeight}px;color:${theme.aiChat.bubbleText};word-break:break-word">${renderPlainText(mainText)}</div>`;
         const maxWidth = innerWidth - 8;
@@ -400,6 +402,20 @@ export function renderChatContent(state: ChatState): void {
         renderMermaid(mdBody, '#00d4ff');
       }
     }
+  }
+  // 复制按钮：复用会话卡逻辑（writeText + "✓ 已复制" 1.5s 回弹）
+  const copyEls = contentArea.querySelectorAll<HTMLElement>('.orb-copy-btn');
+  for (const btn of copyEls) {
+    const i = parseInt(btn.dataset.copyIdx || '-1', 10);
+    if (i < 0 || i >= messages.length) continue;
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const txt = extractText(messages[i]);
+      navigator.clipboard?.writeText(txt).then(() => {
+        btn.textContent = '✓ 已复制';
+        setTimeout(() => { btn.textContent = '复制'; }, 1500);
+      }).catch(() => {});
+    };
   }
   // 滚动策略（在 markdown 渲染后同步执行：读 scrollHeight 强制 reflow 得到真实高度，
   // 不用 rAF 以消除竞态；suppressScroll 防止程序化滚动误翻 followBottom）
