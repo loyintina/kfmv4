@@ -603,14 +603,20 @@ export async function doSend(
             }
             case 'content_block_start': {
               if (msgIdx < 0) break;
-              // 新 block 到达 → 立即结束未完成的打字机动画（装饰不应阻塞信息展示）
+              // 新 block 到达 → 清理已完成的工具动画，但不中断正在运行的打字机。
+              // 正在打字的工具（_animText !== undefined）保持运行：其 tick timer 继续推进，
+              // 每次 onRender() 重建 DOM 后 animPres.scrollTop 仍然追底。
+              // 只有已完成的工具（有 _foldPhase）需要清理残留状态。
               for (const b of messages[msgIdx].content) {
                 if (b.type === 'tool') {
-                  delete (b as { _animText?: string })._animText;
-                  delete (b as { _foldPhase?: string })._foldPhase;
+                  const ab = b as ToolBlock & { _animText?: string; _foldPhase?: string };
+                  if (ab._animText === undefined) {
+                    // 工具已完成或未开始动画 → 清理折叠残留
+                    delete ab._foldPhase;
+                  }
+                  // 正在打字的工具（_animText 存在）→ 不动，让 typewriter 自然完成
                 }
               }
-              clearAllAnimTimers();
               _activeFoldAnims.clear();
               const { index, blockType, toolUseId, toolName } = event;
               if (blockType === 'text') {
