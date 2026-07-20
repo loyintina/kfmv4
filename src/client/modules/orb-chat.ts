@@ -203,6 +203,22 @@ function clearAllAnimTimers(): void {
 const _activeFoldAnims = new Map<string, number>(); // tid → start timestamp
 let _lastRenderState: ChatState | null = null;
 
+// Markdown 渲染缓存：源文本 → 渲染好的 HTML 字符串。
+// 流式回复时 renderChatContent 每帧全量重建 innerHTML，历史消息内容不变却每帧
+// 重跑 marked+highlight+math+mermaid 管线（O(n) 条消息 × 每帧 = O(n²) 卡顿）。
+// 缓存后：文本未变的消息直接注入缓存 HTML，只有正在流式的那条跑完整管线。
+// 上限 200 条，超出按插入序淘汰最旧，防止长会话内存无限增长。
+const _mdCache = new Map<string, string>();
+const MD_CACHE_MAX = 200;
+function _mdCacheGet(text: string): string | undefined { return _mdCache.get(text); }
+function _mdCacheSet(text: string, html: string): void {
+  if (_mdCache.size >= MD_CACHE_MAX) {
+    const oldest = _mdCache.keys().next().value;
+    if (oldest !== undefined) _mdCache.delete(oldest);
+  }
+  _mdCache.set(text, html);
+}
+
 // ========== 滚动追底状态 ==========
 // 用显式 followBottom 标志替代旧的 wasAtBottom 启发式 + rAF 竞态。
 // 用户主动上滑（scroll 事件，且非程序化）→ 关闭追底；滑回底部 → 重新追底。
@@ -430,6 +446,8 @@ export function renderChatContent(state: ChatState): void {
     contentArea.appendChild(style);
   }
   // 同步渲染 markdown（仅 AI 消息中的 text block）
+  // 性能：命中缓存直接注入 HTML，跳过 marked+highlight+math+mermaid 全套管线。
+  // 只有正在流式（文本每帧变化）的那条会缓存未命中 → 跑完整管线；历史消息 O(1)。
   const msgEls = contentArea.querySelectorAll<HTMLElement>('.orb-msg-text');
   for (const el of msgEls) {
     const i = parseInt(el.dataset.msgIdx || '-1', 10);
@@ -438,6 +456,11 @@ export function renderChatContent(state: ChatState): void {
         .filter((b): b is TextBlock => b.type === 'text')
         .map(b => b.text || '').join('');
       if (text.length > 0) {
+        const cached = _mdCacheGet(text);
+        if (cached !== undefined) {
+          el.innerHTML = cached;
+          continue;
+        }
         const mathData: MathData = { display: [], inline: [] };
         const processed = preprocessMd(text, mathData);
         const mdHtml = marked.parse(processed, MARKED_OPTS) as string;
@@ -446,6 +469,8 @@ export function renderChatContent(state: ChatState): void {
         highlightAll(mdBody);
         renderMath(mdBody, mathData);
         renderMermaid(mdBody, '#00d4ff');
+        // mermaid 异步渲染，其 SVG 此刻可能未就绪 → 含 mermaid 的不缓存，避免缓存半成品
+        if (!/```mermaid/.test(text)) _mdCacheSet(text, el.innerHTML);
       }
     }
   }
