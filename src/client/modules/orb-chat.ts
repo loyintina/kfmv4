@@ -189,11 +189,11 @@ function clearToolHint(toolId: string): void {
 
 // 打字机动画 interval 追踪：新 content block 到达时立即结束未完成的动画，
 // 避免用户在 AI 已开始回复时还要等 3 秒装饰动画跑完。
-const _activeAnimIntervals = new Set<ReturnType<typeof setInterval>>();
+const _activeAnimTimers = new Set<ReturnType<typeof setTimeout>>();
 
-function clearAllAnimIntervals(): void {
-  for (const iv of _activeAnimIntervals) clearInterval(iv);
-  _activeAnimIntervals.clear();
+function clearAllAnimTimers(): void {
+  for (const t of _activeAnimTimers) clearTimeout(t);
+  _activeAnimTimers.clear();
 }
 
 // ========== 滚动追底状态 ==========
@@ -558,7 +558,7 @@ export async function doSend(
               for (const b of messages[msgIdx].content) {
                 if (b.type === 'tool' && '_animText' in b) delete (b as { _animText?: string })._animText;
               }
-              clearAllAnimIntervals();
+              clearAllAnimTimers();
               const { index, blockType, toolUseId, toolName } = event;
               if (blockType === 'text') {
                 messages[msgIdx].content[index] = { type: 'text', text: '', reasoning: '' };
@@ -619,15 +619,14 @@ export async function doSend(
                 (toolBlock as AnimBlock)._animText = '';
                 let pos = 0;
                 requestAnimationFrame(() => {
-                  const iv = setInterval(() => {
+                  const tick = (): void => {
                     pos = Math.min(pos + cpt, fullText.length);
                     (toolBlock as AnimBlock)._animText = fullText.slice(0, pos);
                     onRender();
                     if (pos >= fullText.length) {
-                      clearInterval(iv);
-                      _activeAnimIntervals.delete(iv);
                       // Phase 2: 等待 340ms，然后折叠
-                      setTimeout(() => {
+                      const t2 = setTimeout(() => {
+                        _activeAnimTimers.delete(t2);
                         // Phase 3: 折叠动画（直接操作 DOM，300ms）
                         const blockIdx = messages[msgIdx].content.indexOf(toolBlock);
                         const ti = messages[msgIdx].content.slice(0, blockIdx).filter(b => b.type === 'tool').length;
@@ -640,21 +639,27 @@ export async function doSend(
                             el.style.transition = 'height 300ms ease-out';
                             el.style.height = '0px';
                           });
-                          const cleanup = () => {
+                          const cleanup = (): void => {
                             el.removeEventListener('transitionend', cleanup);
                             delete (toolBlock as AnimBlock)._animText;
                             onRender();
                           };
                           el.addEventListener('transitionend', cleanup, { once: true });
-                          setTimeout(cleanup, 400); // 兜底
+                          const t3 = setTimeout(cleanup, 400); // 兜底
+                          _activeAnimTimers.add(t3);
                         } else {
                           delete (toolBlock as AnimBlock)._animText;
                           onRender();
                         }
                       }, WAIT);
+                      _activeAnimTimers.add(t2);
+                    } else {
+                      const t1 = setTimeout(tick, INTERVAL);
+                      _activeAnimTimers.add(t1);
                     }
-                  }, INTERVAL);
-                  _activeAnimIntervals.add(iv);
+                  };
+                  const t0 = setTimeout(tick, INTERVAL);
+                  _activeAnimTimers.add(t0);
                 });
               }
               break;
