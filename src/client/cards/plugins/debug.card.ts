@@ -77,7 +77,7 @@ function createDebugHandler(_meta: Record<string, unknown>): CardContentHandler 
 
       // 日志区
       const logArea = document.createElement('div');
-      logArea.style.cssText = 'flex:1;overflow-y:auto;font-family:monospace;font-size:var(--card-font-size,10px);color:rgba(224,224,224,0.8);white-space:pre-wrap;word-break:break-all;padding:4px 0';
+      logArea.style.cssText = 'flex:1;overflow-y:auto;font-family:monospace;font-size:var(--card-font-size,10px);color:rgba(224,224,224,0.8);white-space:pre-wrap;word-break:break-all;padding:4px 0;touch-action:pan-y';
       wrap.appendChild(logArea);
 
       contentEl.appendChild(wrap);

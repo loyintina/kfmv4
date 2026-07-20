@@ -46,7 +46,7 @@ export function buildPanelContent(cfg: PanelConfig): void {
   <div id="orb-session-select-container"></div>
 </div>
 <div class="orb-panel-content" style="
-  flex:1;overflow-y:auto;padding:12px 14px;min-height:0
+  flex:1;overflow-y:auto;padding:12px 14px;min-height:0;touch-action:pan-y
 "></div>
 <div style="height:1px;flex-shrink:0;margin:0 10px;background:linear-gradient(90deg,${c1},${c2})"></div>
 <div class="orb-model-bar" style="

@@ -307,7 +307,7 @@ function createRoleHandler(meta: Record<string, unknown>): CardContentHandler {
       _c2 = c2;
       const { bodyEl } = buildCardLayout(contentEl, '\u89D2\u8272\u7BA1\u7406', c1, c2);
       
-      bodyEl.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:8px;padding:0 10px;overflow-y:auto';
+      bodyEl.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:8px;padding:0 10px;overflow-y:auto;touch-action:pan-y';
       
       // 加载角色列表，聚焦第一个
       roles = await loadRoles();
@@ -344,7 +344,7 @@ function createRoleHandler(meta: Record<string, unknown>): CardContentHandler {
         },
       });
       const formScroll = document.createElement('div');
-      formScroll.style.cssText = 'flex:1;overflow-y:auto;min-height:0';
+      formScroll.style.cssText = 'flex:1;overflow-y:auto;min-height:0;touch-action:pan-y';
       roleWrap.appendChild(roleSelect.element);
       formScroll.appendChild(roleRow);
       

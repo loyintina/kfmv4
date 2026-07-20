@@ -16,7 +16,7 @@ export function renderTextPreview(el: HTMLElement, content: string, fileName: st
 
   // 正文区
   const body = document.createElement('div');
-  body.style.cssText = 'flex:1;overflow-x:hidden;overflow-y:auto;padding:6px 0 0;font:11px monospace;white-space:pre-wrap;word-break:break-word;color:#e0e0e0';
+  body.style.cssText = 'flex:1;overflow-x:hidden;overflow-y:auto;padding:6px 0 0;font:11px monospace;white-space:pre-wrap;word-break:break-word;color:#e0e0e0;touch-action:pan-y';
   body.textContent = content || '\uFF08\u7A7A\u6587\u4EF6\uFF09';
 
   el.appendChild(header);

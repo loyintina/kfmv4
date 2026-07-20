@@ -49,7 +49,7 @@ function showToolDetail(tool: ToolDef, c1: string, c2: string): void {
 
   // 内容区
   const body = document.createElement('div');
-  body.style.cssText = 'flex:1;overflow-y:auto;padding:12px 14px;min-height:0';
+  body.style.cssText = 'flex:1;overflow-y:auto;padding:12px 14px;min-height:0;touch-action:pan-y';
 
   const descEl = document.createElement('div');
   descEl.style.cssText = 'font-size:var(--card-font-size,12px);color:rgba(255,255,255,0.75);line-height:1.6;margin-bottom:14px';
@@ -220,7 +220,7 @@ function createToolsHandler(_meta: Record<string, unknown>): CardContentHandler 
       }
 
       const { bodyEl } = buildCardLayout(contentEl, 'tool', c1, c2);
-      bodyEl.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:8px;padding:0 10px;overflow-y:auto';
+      bodyEl.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:8px;padding:0 10px;overflow-y:auto;touch-action:pan-y';
 
       // ===== 上方：类工具卡（二层 c2→c1 反色） =====
       const toolCard = document.createElement('div');
@@ -248,7 +248,7 @@ function createToolsHandler(_meta: Record<string, unknown>): CardContentHandler 
       toolHeader.appendChild(_categorySelect.element);
 
       _toolListEl = document.createElement('div');
-      _toolListEl.style.cssText = 'flex:1;overflow-y:auto;min-height:0';
+      _toolListEl.style.cssText = 'flex:1;overflow-y:auto;min-height:0;touch-action:pan-y';
 
       toolCard.appendChild(toolHeader);
       toolCard.appendChild(_toolListEl);
@@ -268,7 +268,7 @@ function createToolsHandler(_meta: Record<string, unknown>): CardContentHandler 
       poolCard.appendChild(poolHeader);
 
       const listEl = document.createElement('div');
-      listEl.style.cssText = 'flex:1;overflow-y:auto;min-height:0';
+      listEl.style.cssText = 'flex:1;overflow-y:auto;min-height:0;touch-action:pan-y';
       _poolListEl = listEl;
       poolCard.appendChild(listEl);
       bodyEl.appendChild(poolCard);

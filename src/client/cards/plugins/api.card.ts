@@ -419,14 +419,14 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
 
 
       const scrollArea = document.createElement('div');
-      scrollArea.style.cssText = 'flex:1;overflow-y:auto;overflow-x:hidden';
+      scrollArea.style.cssText = 'flex:1;overflow-y:auto;overflow-x:hidden;touch-action:pan-y';
       scrollArea.setAttribute('data-scroll', 'api');
       // === Editor Card ===
       const inner = document.createElement('div');
       inner.style.cssText = `border-radius:10px;padding:10px 12px 12px;margin-top:6px;background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,linear-gradient(135deg,${c2} 30%,${c1} 70%) border-box;border:1px solid transparent;border-left-width:3px;display:flex;flex-direction:column;max-height:70vh`;
 
       const innerScroll = document.createElement('div');
-      innerScroll.style.cssText = 'flex:1;overflow-y:auto;min-height:0';
+      innerScroll.style.cssText = 'flex:1;overflow-y:auto;min-height:0;touch-action:pan-y';
 
       // --- Provider 选择器（仅聚焦编辑目标，不写入 active.json） ---
       const selRow = document.createElement('div');
