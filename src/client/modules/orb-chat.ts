@@ -346,7 +346,8 @@ export function renderChatContent(state: ChatState): void {
           const hint = getToolHint(tc.id);
           outputHtml = `<div style="color:rgba(255,255,255,0.4);font-size:var(--card-font-size,9px);line-height:1.4;padding:2px 0">${hint.dotHtml}${escapeHtml(hint.text)}</div>`;
         } else {
-          outputHtml = `<pre style="${preStyle};color:rgba(255,255,255,0.6)">${escapeHtml(resultText || '(无结果)')}</pre>`;
+          const animClip = isAnimating ? 'max-height:80px;overflow:hidden;' : '';
+          outputHtml = `<pre style="${preStyle};color:rgba(255,255,255,0.6);${animClip}">${escapeHtml(resultText || '(无结果)')}</pre>`;
         }
         html += `
           <div style="display:flex;justify-content:flex-start;margin-bottom:6px">
@@ -609,46 +610,51 @@ export async function doSend(
                 clearToolHint(toolBlock.id);
                 const fullText = event.toolResult?.content?.[0]?.text || '';
                 type AnimBlock = ToolBlock & { _animText?: string };
-                // 输出流式策略：固定速率上限 × 时间上限 = 最大展示字符数
-                // 短输出（≤STREAM_MAX）→ 按 SPEED 字/秒流完，再折叠
-                // 长输出（>STREAM_MAX）→ 流到 STREAM_MAX 就直接折叠，不等剩下内容
-                const SPEED = 180;       // 字/秒
-                const TIME_CAP = 3;     // 秒
-                const STREAM_MAX = SPEED * TIME_CAP; // 180 字
+                // 输出动画：500ms 流完 → 340ms 等待 → 300ms 折叠过渡
+                const DURATION = 500; // ms，打字机动画时长
+                const WAIT = 340;     // ms，流完后等待
+                const INTERVAL = 16;  // ms，帧间隔
+                const totalTicks = Math.max(1, Math.round(DURATION / INTERVAL));
+                const cpt = Math.max(1, Math.ceil(fullText.length / totalTicks));
+                (toolBlock as AnimBlock)._animText = '';
+                let pos = 0;
                 requestAnimationFrame(() => {
-                  if (fullText.length > STREAM_MAX) {
-                    // 长输出：流到 STREAM_MAX 就折叠
-                    const totalTicks = Math.max(1, Math.round(TIME_CAP * 1000 / 16));
-                    const cpt = Math.max(1, Math.ceil(STREAM_MAX / totalTicks));
-                    (toolBlock as AnimBlock)._animText = '';
-                    let pos = 0;
-                    const iv = setInterval(() => {
-                      pos = Math.min(pos + cpt, STREAM_MAX);
-                      (toolBlock as AnimBlock)._animText = fullText.slice(0, pos);
-                      if (pos >= STREAM_MAX) {
-                        clearInterval(iv);
-                        delete (toolBlock as AnimBlock)._animText;
-                      }
-                      onRender();
-                    }, 16);
-                    _activeAnimIntervals.add(iv);
-                  } else {
-                    // 短输出：按 SPEED 流完
-                    const totalTicks = Math.max(1, Math.round(fullText.length / SPEED * 1000 / 16));
-                    const cpt = Math.max(1, Math.ceil(fullText.length / totalTicks));
-                    (toolBlock as AnimBlock)._animText = '';
-                    let pos = 0;
-                    const iv = setInterval(() => {
-                      pos = Math.min(pos + cpt, fullText.length);
-                      (toolBlock as AnimBlock)._animText = fullText.slice(0, pos);
-                      if (pos >= fullText.length) {
-                        clearInterval(iv);
-                        delete (toolBlock as AnimBlock)._animText;
-                      }
-                      onRender();
-                    }, 16);
-                    _activeAnimIntervals.add(iv);
-                  }
+                  const iv = setInterval(() => {
+                    pos = Math.min(pos + cpt, fullText.length);
+                    (toolBlock as AnimBlock)._animText = fullText.slice(0, pos);
+                    onRender();
+                    if (pos >= fullText.length) {
+                      clearInterval(iv);
+                      _activeAnimIntervals.delete(iv);
+                      // Phase 2: 等待 340ms，然后折叠
+                      setTimeout(() => {
+                        // Phase 3: 折叠动画（直接操作 DOM，300ms）
+                        const blockIdx = messages[msgIdx].content.indexOf(toolBlock);
+                        const ti = messages[msgIdx].content.slice(0, blockIdx).filter(b => b.type === 'tool').length;
+                        const el = document.getElementById('tc' + msgIdx + '_' + ti);
+                        if (el) {
+                          const h = el.scrollHeight;
+                          el.style.height = h + 'px';
+                          el.style.overflow = 'hidden';
+                          requestAnimationFrame(() => {
+                            el.style.transition = 'height 300ms ease-out';
+                            el.style.height = '0px';
+                          });
+                          const cleanup = () => {
+                            el.removeEventListener('transitionend', cleanup);
+                            delete (toolBlock as AnimBlock)._animText;
+                            onRender();
+                          };
+                          el.addEventListener('transitionend', cleanup, { once: true });
+                          setTimeout(cleanup, 400); // 兜底
+                        } else {
+                          delete (toolBlock as AnimBlock)._animText;
+                          onRender();
+                        }
+                      }, WAIT);
+                    }
+                  }, INTERVAL);
+                  _activeAnimIntervals.add(iv);
                 });
               }
               break;
