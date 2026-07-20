@@ -192,7 +192,18 @@ export async function* streamChat(
     // 历史问题：曾经 thinking 开 index=0，text 再 stop/reopen 到 index=1，
     // 导致 renderChatContent 的 textBlocks[0].text 永远为空。
     let hasTextBlock = false; // 已 yield content_block_start index=0
-    const toolStarted = new Set<number>(); // 已 yield content_block_start 的工具 index
+    const toolStarted = new Set<number>(); // 已 yield content_block_start 的工具 provider idx
+    // provider 的 tc.index → 客户端连续块索引（text=0，工具从 1 起按首见顺序递增）。
+    // 必须连续：Claude 等 provider 的 tc.index 可能不从 0 起（如 1），若直接 idx+1
+    // 会在客户端 content 数组留下 undefined 空洞，.filter(b=>b.type) 读空洞即崩
+    // "Cannot read properties of undefined (reading 'type')"。
+    const toolBlockIdx = new Map<number, number>();
+    let nextToolBlock = 1;
+    const clientIdx = (providerIdx: number): number => {
+      let ci = toolBlockIdx.get(providerIdx);
+      if (ci === undefined) { ci = nextToolBlock++; toolBlockIdx.set(providerIdx, ci); }
+      return ci;
+    };
 
     // 本轮 message_start
     yield { type: 'message_start' };
@@ -238,7 +249,7 @@ export async function* streamChat(
                 toolStarted.add(idx);
                 yield {
                   type: 'content_block_start',
-                  index: idx + 1,
+                  index: clientIdx(idx),
                   blockType: 'tool_use',
                   toolUseId: buf.id || `call_${turn}_${idx}`,
                   toolName: buf.name,
@@ -248,7 +259,7 @@ export async function* streamChat(
               if (tc.function && (tc.function as Record<string, string>).arguments) {
                 yield {
                   type: 'content_block_delta',
-                  index: idx + 1,
+                  index: clientIdx(idx),
                   deltaType: 'input_json_delta',
                   deltaText: (tc.function as Record<string, string>).arguments,
                 };
@@ -284,7 +295,7 @@ export async function* streamChat(
     }
     // 关闭已 start 的工具 block
     for (const idx of toolStarted) {
-      yield { type: 'content_block_stop', index: idx + 1 };
+      yield { type: 'content_block_stop', index: clientIdx(idx) };
     }
 
     // 检查是否需要执行工具

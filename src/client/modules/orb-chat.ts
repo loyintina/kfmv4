@@ -334,9 +334,9 @@ export function renderChatContent(state: ChatState): void {
       // AI 消息：从 content 数组渲染每个 block
       // 设计决策：reasoning / 正文气泡 / 工具卡片 / 警告框各自独立条件渲染，
       // 不再用 reasoningOnly 分支——reasoning 块始终全宽，气泡仅在有正文时出现。
-      const textBlocks = msg.content.filter((b): b is TextBlock => b.type === 'text');
-      const toolBlocks = msg.content.filter((b): b is ToolBlock => b.type === 'tool');
-      const warningBlocks = msg.content.filter(b => b.type === 'rule_warning') as Array<{ type: 'rule_warning'; content: string }>;
+      const textBlocks = msg.content.filter((b): b is TextBlock => b?.type === 'text');
+      const toolBlocks = msg.content.filter((b): b is ToolBlock => b?.type === 'tool');
+      const warningBlocks = msg.content.filter(b => b?.type === 'rule_warning') as Array<{ type: 'rule_warning'; content: string }>;
       const reasoning = textBlocks.map(b => b.reasoning || '').join('');
       const mainText = textBlocks.map(b => b.text || '').join('');
       const hasToolCalls = toolBlocks.length > 0;
@@ -628,7 +628,7 @@ export function renderChatContent(state: ChatState): void {
 /** 从 ChatMessage 中提取纯文本 */
 function extractText(msg: ChatMessage): string {
   return msg.content
-    .filter((b): b is TextBlock => b.type === 'text')
+    .filter((b): b is TextBlock => b?.type === 'text')
     .map(b => b.text)
     .join('');
 }
