@@ -326,15 +326,21 @@ export function renderChatContent(state: ChatState): void {
       const reasoningDone = !!(mainText || hasToolCalls);
 
       // 思考块：独立全宽行，与工具框同宽
+      // 折叠状态持久化：默认思考完成后折叠；用户点击展开/折叠写回首个 text block 的
+      // _reasonExpanded，跨重渲染保持（否则正文/工具到达后 reasoningDone 变 true 会强制折叠）。
       if (reasoning) {
         const rid = 'r' + idx;
         const rlabel = reasoningDone ? '已思考' : '思考中...';
-        const displayStyle = reasoningDone ? 'display:none' : 'display:block';
+        const firstTb = textBlocks[0] as (TextBlock & { _reasonExpanded?: boolean }) | undefined;
+        const re = firstTb?._reasonExpanded;
+        // 思考中默认展开；完成后默认折叠；用户显式操作优先
+        const reasonOpen = re !== undefined ? re : !reasoningDone;
+        const displayStyle = reasonOpen ? 'display:block' : 'display:none';
         html += `
           <div style="display:flex;justify-content:flex-start;margin-bottom:4px">
             <div style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:linear-gradient(rgba(10,15,30,0.75),rgba(10,15,30,0.75)) padding-box,${theme.aiChat.panelBorderGradient} border-box;border:1px solid transparent;border-left-width:3px;font-size:var(--card-font-size,10px)">
-              <div onclick="var p=document.getElementById('${rid}');var s=p.style.display==='none'?'block':'none';p.style.display=s;this.querySelector('.rt-arrow').textContent=s==='block'?'▼':'▶'" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
-                <span class="rt-arrow" style="font-size:7px;color:rgba(0,212,255,0.5)">${reasoningDone ? '▶' : '▼'}</span>
+              <div data-msg="${idx}" onclick="var p=document.getElementById('${rid}');var s=p.style.display==='none'?'block':'none';p.style.display=s;this.querySelector('.rt-arrow').textContent=s==='block'?'▼':'▶';var m=this.dataset.msg;if(window.__orbMsgs&&m>=0){var t=window.__orbMsgs[m]?.content?.filter(function(x){return x.type==='text'})[0];if(t)t._reasonExpanded=(s==='block')}" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
+                <span class="rt-arrow" style="font-size:7px;color:rgba(0,212,255,0.5)">${reasonOpen ? '▼' : '▶'}</span>
                 <span style="color:rgba(0,212,255,0.6);font-weight:600">${rlabel}</span>
               </div>
               <div id="${rid}" style="${displayStyle};margin-top:4px">
@@ -414,7 +420,7 @@ export function renderChatContent(state: ChatState): void {
         const defaultArrow = isOpen ? '▼' : '▶';
         // 展开态两区结构：输入区 + 分隔线 + 输出区，各自限高可滚动。
         // 内容少时以内容高度为准；内容多时撑到 max-height 并内部滚动（不撑爆卡片）。
-        const INPUT_MAX_H = 120, OUTPUT_MAX_H = 200;
+        const INPUT_MAX_H = 80, OUTPUT_MAX_H = 80;
         const inputHtml = paramsDisplay
           ? `<pre class="orb-tool-input-pre" style="${preStyle};color:rgba(255,255,255,0.45);max-height:${INPUT_MAX_H}px;overflow-y:auto">${escapeHtml(paramsDisplay)}</pre>`
           : '';
@@ -877,6 +883,9 @@ export async function doSend(
           delete (b as ToolBlock & { _animInput?: string })._animInput;
           delete (b as ToolBlock & { _foldPhase?: string })._foldPhase;
           delete (b as ToolBlock & { _userExpanded?: boolean })._userExpanded;
+        }
+        if (b.type === 'text') {
+          delete (b as TextBlock & { _reasonExpanded?: boolean })._reasonExpanded;
         }
       }
     }
