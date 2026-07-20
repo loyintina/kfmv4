@@ -339,8 +339,24 @@ export function renderChatContent(state: ChatState): void {
         const preStyle = 'font-size:var(--card-font-size,9px);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;background:rgba(0,0,0,0.2);padding:4px 6px;border-radius:4px';
         const isInputAnimating = ab._animInput !== undefined;
         const paramsDisplay = isInputAnimating ? ab._animInput! : paramsFull;
-        const isCollapsible = hasResult && paramsDisplay; // 有输出+有参数 → 容器整体折叠
+        const isCollapsible = hasResult && paramsDisplay; // 有输出+有参数 → 整体容器折叠
         const isFolding = isAnimating || (!!ab._foldPhase && !isCollapsible);
+        // 容器级折叠动画：无论 isCollapsible 与否，都在容器 <div> 上做 max-height/opacity 过渡。
+        // 这样输入参数也会跟着折叠，而非只有输出 <pre> 折叠。
+        let containerFoldClip = '';
+        if (ab._foldPhase === 'fold') {
+          const fStart = _activeFoldAnims.get(tid);
+          if (fStart !== undefined) {
+            const elapsed = Date.now() - fStart;
+            const progress = Math.min(elapsed / 300, 1);
+            const eased = 1 - (1 - progress) * (1 - progress);
+            containerFoldClip = `max-height:${80 * (1 - eased)}px;overflow:hidden;opacity:${1 - eased};`;
+            if (progress >= 1) {
+              _activeFoldAnims.delete(tid);
+              delete ab._foldPhase;
+            }
+          }
+        }
         const resultText = hasResult
           ? (isAnimating ? ab._animText! : (tc.result!.content?.[0]?.text || ''))
           : '';
@@ -352,27 +368,6 @@ export function renderChatContent(state: ChatState): void {
         const dividerHtml = paramsFull
           ? `<div style="height:1px;margin:5px 0;border-radius:1px;background:linear-gradient(90deg,${hexToRgba(c1, 0.7)},${hexToRgba(c2, 0.7)})"></div>`
           : '';
-        // 折叠动画：可折叠工具（有输出+有参数）在容器级别折叠，整个内容区一起收起。
-        // 不可折叠工具（无输出或无参数）在输出 <pre> 级别折叠。
-        let containerFoldClip = '';
-        if (isCollapsible && ab._foldPhase === 'fold') {
-          const fStart = _activeFoldAnims.get(tid);
-          if (fStart !== undefined) {
-            const elapsed = Date.now() - fStart;
-            const progress = Math.min(elapsed / 300, 1);
-            const eased = 1 - (1 - progress) * (1 - progress);
-            const mh = 80 * (1 - eased);
-            const op = 1 - eased;
-            containerFoldClip = `max-height:${mh}px;overflow:hidden;opacity:${op};`;
-            if (progress >= 1) {
-              _activeFoldAnims.delete(tid);
-              // 保留 _foldPhase 作为"已折叠"标记，让 defaultDisplay='none' 保持容器隐藏
-            }
-          } else {
-            // 动画已完成，保持折叠态
-            containerFoldClip = 'max-height:0;overflow:hidden;opacity:0;';
-          }
-        }
         let outputHtml: string;
         if (isExecuting) {
           const hint = getToolHint(tc.id);
@@ -385,7 +380,7 @@ export function renderChatContent(state: ChatState): void {
         html += `
           <div style="display:flex;justify-content:flex-start;margin-bottom:6px">
             <div class="orb-tool-card" style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:${gradientBorder};border:1px solid transparent;border-left-width:3px;border-left-color:${hexToRgba(c1, 0.7)};font-size:var(--card-font-size,10px)">
-              <div data-msg="${msgIdx}" data-ti="${ti}" onclick="var p=document.getElementById('${tid}');var s=p.style.display==='none'?'block':'none';p.style.display=s;this.querySelector('.orb-tc-arrow').textContent=s==='block'?'▼':'▶';if(s==='block'){p.style.maxHeight='';p.style.overflow='';p.style.opacity='';var m=this.dataset.msg,t=this.dataset.ti;if(window.__orbMsgs&&m>=0){var b=window.__orbMsgs[m]?.content?.filter(function(x){return x.type==='tool'})[t];if(b)delete b._foldPhase}}" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
+              <div data-msg="${idx}" data-ti="${ti}" onclick="var p=document.getElementById('${tid}');var s=p.style.display==='none'?'block':'none';p.style.display=s;this.querySelector('.orb-tc-arrow').textContent=s==='block'?'▼':'▶';if(s==='block'){p.style.maxHeight='';p.style.overflow='';p.style.opacity='';var m=this.dataset.msg,t=this.dataset.ti;if(window.__orbMsgs&&m>=0){var b=window.__orbMsgs[m]?.content?.filter(function(x){return x.type==='tool'})[t];if(b)delete b._foldPhase}}" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
                 <span class="orb-tc-arrow" style="font-size:7px;color:rgba(255,255,255,0.5)">${defaultArrow}</span>
                 <span style="color:${hexToRgba(c1, 0.9)};font-weight:600">${escapeHtml(tc.name)}</span>
                 <span style="color:${statusColor};font-size:var(--card-font-size,9px);font-weight:600">${statusLabel}</span>
@@ -605,17 +600,25 @@ export async function doSend(
               // 正在打字的工具（_animText !== undefined）保持运行：其 tick timer 继续推进，
               // 每次 onRender() 重建 DOM 后 animPres.scrollTop 仍然追底。
               // 只有已完成的工具（有 _foldPhase）需要清理残留状态。
+              // 新 block 到达 → 清除旧 timer，finalize 进行中的 typewriter。
+              // 不中断打字机：立即完成文本 + 启动折叠动画，避免 clearAllAnimTimers 杀掉 tick timer 导致卡住。
+              _activeFoldAnims.clear();
               for (const b of messages[msgIdx].content) {
                 if (b.type === 'tool') {
                   const ab = b as ToolBlock & { _animText?: string; _foldPhase?: string };
-                  if (ab._animText === undefined) {
+                  if (ab._animText !== undefined) {
+                    // Typewriter in progress → finalize: 完成文本 + 立即启动折叠
+                    delete ab._animText;
+                    ab._foldPhase = 'fold';
+                    const ti = messages[msgIdx].content.filter(x => x.type === 'tool').indexOf(b);
+                    if (ti >= 0) _activeFoldAnims.set('tc' + msgIdx + '_' + ti, Date.now());
+                  } else {
                     // 工具已完成或未开始动画 → 清理折叠残留
                     delete ab._foldPhase;
                   }
-                  // 正在打字的工具（_animText 存在）→ 不动，让 typewriter 自然完成
                 }
               }
-              _activeFoldAnims.clear();
+              clearAllAnimTimers();
               const { index, blockType, toolUseId, toolName } = event;
               if (blockType === 'text') {
                 messages[msgIdx].content[index] = { type: 'text', text: '', reasoning: '' };
