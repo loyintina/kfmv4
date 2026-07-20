@@ -237,6 +237,7 @@ export function renderChatContent(state: ChatState): void {
   _lastRenderState = state;
 
   const innerWidth = renderWidth - 24;
+  (window as unknown as Record<string, unknown>).__orbMsgs = messages;
   if (innerWidth < 50) return;
 
   let html = '';
@@ -331,12 +332,6 @@ export function renderChatContent(state: ChatState): void {
         type AnimBlock = ToolBlock & { _animText?: string; _animInput?: string; _foldPhase?: 'out' | 'fold' };
         const ab = tc as AnimBlock;
         const isAnimating = ab._animText !== undefined;
-        const isFolding = isAnimating || !!ab._foldPhase;
-        const resultText = hasResult
-          ? (isAnimating ? ab._animText! : (tc.result!.content?.[0]?.text || ''))
-          : '';
-        const defaultDisplay = (isExecuting || isFolding) ? 'block' : 'none';
-        const defaultArrow = (isExecuting || isFolding) ? '▼' : '▶';
         const gradientBorder = `linear-gradient(rgba(10,15,30,0.75),rgba(10,15,30,0.75)) padding-box,linear-gradient(135deg,${hexToRgba(c2, 0.55)} 30%,${hexToRgba(c1, 0.55)} 70%) border-box`;
         // 展开态三段结构：输入参数 → 渐变分隔线 → 输出区（执行中为摸鱼提示，完成为结果）。
         // 分隔线复用工具卡的随机双色 c1/c2，视觉上标记"这次交互是独特的"（Fi 审美）。
@@ -344,55 +339,58 @@ export function renderChatContent(state: ChatState): void {
         const preStyle = 'font-size:var(--card-font-size,9px);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;background:rgba(0,0,0,0.2);padding:4px 6px;border-radius:4px';
         const isInputAnimating = ab._animInput !== undefined;
         const paramsDisplay = isInputAnimating ? ab._animInput! : paramsFull;
+        const isCollapsible = hasResult && paramsDisplay; // 有输出+有参数 → 容器整体折叠
+        const isFolding = isAnimating || (!!ab._foldPhase && !isCollapsible);
+        const resultText = hasResult
+          ? (isAnimating ? ab._animText! : (tc.result!.content?.[0]?.text || ''))
+          : '';
+        const defaultDisplay = (isExecuting || isAnimating || isCollapsible) ? 'block' : (isFolding ? 'block' : 'none');
+        const defaultArrow = (isExecuting || isAnimating || isCollapsible || isFolding) ? '▼' : '▶';
         const inputHtml = paramsDisplay
           ? `<pre style="${preStyle};color:rgba(255,255,255,0.45)">${escapeHtml(paramsDisplay)}</pre>`
           : '';
         const dividerHtml = paramsFull
           ? `<div style="height:1px;margin:5px 0;border-radius:1px;background:linear-gradient(90deg,${hexToRgba(c1, 0.7)},${hexToRgba(c2, 0.7)})"></div>`
           : '';
+        // 折叠动画：可折叠工具（有输出+有参数）在容器级别折叠，整个内容区一起收起。
+        // 不可折叠工具（无输出或无参数）在输出 <pre> 级别折叠。
+        let containerFoldClip = '';
+        if (isCollapsible && ab._foldPhase === 'fold') {
+          const fStart = _activeFoldAnims.get(tid);
+          if (fStart !== undefined) {
+            const elapsed = Date.now() - fStart;
+            const progress = Math.min(elapsed / 300, 1);
+            const eased = 1 - (1 - progress) * (1 - progress);
+            const mh = 80 * (1 - eased);
+            const op = 1 - eased;
+            containerFoldClip = `max-height:${mh}px;overflow:hidden;opacity:${op};`;
+            if (progress >= 1) {
+              _activeFoldAnims.delete(tid);
+              // 保留 _foldPhase 作为"已折叠"标记，让 defaultDisplay='none' 保持容器隐藏
+            }
+          } else {
+            // 动画已完成，保持折叠态
+            containerFoldClip = 'max-height:0;overflow:hidden;opacity:0;';
+          }
+        }
         let outputHtml: string;
         if (isExecuting) {
           const hint = getToolHint(tc.id);
           outputHtml = `<div style="color:rgba(255,255,255,0.4);font-size:var(--card-font-size,9px);line-height:1.4;padding:2px 0">${hint.dotHtml}${escapeHtml(hint.text)}</div>`;
         } else {
-          // 折叠动画：从 _activeFoldAnims 的时间戳计算当前 max-height/opacity。
-          // 不使用 CSS transition（innerHTML 重建销毁旧元素，transition 无法执行）。
-          // 不持有 element 引用（innerHTML 会销毁），用时间戳在模板中直接计算。
-          const foldStart = ab._foldPhase === 'fold' ? _activeFoldAnims.get(tid) : undefined;
-          const isFoldAnimating = foldStart !== undefined;
-          const isFoldDone = ab._foldPhase === 'fold' && !isFoldAnimating; // 动画完成，保持折叠
-          let animClip: string;
-          if (isAnimating) {
-            animClip = 'max-height:80px;overflow-y:auto;';
-          } else if (isFoldAnimating) {
-            const elapsed = Date.now() - foldStart!;
-            const progress = Math.min(elapsed / 300, 1); // 300ms
-            const eased = 1 - (1 - progress) * (1 - progress); // ease-out
-            const mh = 80 * (1 - eased);
-            const op = 1 - eased;
-            animClip = `max-height:${mh}px;overflow:hidden;opacity:${op};`;
-            if (progress >= 1) {
-              _activeFoldAnims.delete(tid);
-              delete ab._foldPhase; // 清理状态 → isFolding=false → container display:none
-            }
-          } else if (isFoldDone) {
-            animClip = 'max-height:0;overflow:hidden;opacity:0;'; // 兜底：动画完成但 _foldPhase 未清理
-          } else {
-            animClip = '';
-          }
-          // 自动滚动 class：打字机阶段和折叠阶段都保持追底
-          const animClass = (isAnimating || isFoldAnimating) ? ' class="orb-tool-anim-pre"' : '';
+          const animClip = isAnimating ? 'max-height:80px;overflow-y:auto;' : '';
+          const animClass = isAnimating ? ' class="orb-tool-anim-pre"' : '';
           outputHtml = `<pre${animClass} style="${preStyle};color:rgba(255,255,255,0.6);${animClip}">${escapeHtml(resultText || '(无结果)')}</pre>`;
         }
         html += `
           <div style="display:flex;justify-content:flex-start;margin-bottom:6px">
             <div class="orb-tool-card" style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:${gradientBorder};border:1px solid transparent;border-left-width:3px;border-left-color:${hexToRgba(c1, 0.7)};font-size:var(--card-font-size,10px)">
-              <div onclick="var p=document.getElementById('${tid}');var s=p.style.display==='none'?'block':'none';p.style.display=s;this.querySelector('.orb-tc-arrow').textContent=s==='block'?'▼':'▶'" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
+              <div data-msg="${msgIdx}" data-ti="${ti}" onclick="var p=document.getElementById('${tid}');var s=p.style.display==='none'?'block':'none';p.style.display=s;this.querySelector('.orb-tc-arrow').textContent=s==='block'?'▼':'▶';if(s==='block'){p.style.maxHeight='';p.style.overflow='';p.style.opacity='';var m=this.dataset.msg,t=this.dataset.ti;if(window.__orbMsgs&&m>=0){var b=window.__orbMsgs[m]?.content?.filter(function(x){return x.type==='tool'})[t];if(b)delete b._foldPhase}}" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
                 <span class="orb-tc-arrow" style="font-size:7px;color:rgba(255,255,255,0.5)">${defaultArrow}</span>
                 <span style="color:${hexToRgba(c1, 0.9)};font-weight:600">${escapeHtml(tc.name)}</span>
                 <span style="color:${statusColor};font-size:var(--card-font-size,9px);font-weight:600">${statusLabel}</span>
               </div>
-              <div id="${tid}" style="display:${defaultDisplay};margin-top:4px">
+              <div id="${tid}" style="display:${defaultDisplay};margin-top:4px;${containerFoldClip}">
                 ${inputHtml}${dividerHtml}${outputHtml}
               </div>
             </div>
