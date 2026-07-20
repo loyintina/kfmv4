@@ -219,6 +219,34 @@ function _mdCacheSet(text: string, html: string): void {
   _mdCache.set(text, html);
 }
 
+// 视口裁剪（虚拟滚动）：长会话时只渲染视口附近的消息，其余用等高占位撑住滚动条。
+// 仅当消息数 > CULL_THRESHOLD 时启用；短会话走全量渲染，零回归。
+// 高度表按绝对消息索引缓存实测高度，占位块用它撑出正确的滚动高度。
+const CULL_THRESHOLD = 40;   // 消息数超过才启用裁剪
+const CULL_BUFFER_PX = 1200; // 视口上下各多渲染的缓冲高度
+const _msgHeights = new Map<number, number>(); // 绝对索引 → 实测高度(px)
+const DEFAULT_MSG_H = 80;    // 未测量消息的高度估计
+
+// 裁剪滚动监听：用户滚动进入被占位的区域时，重渲染以物化该区间消息。
+// rAF 节流；preserve 模式保持滚动位置不跳。
+let _cullRafPending = false;
+function _attachCullScroll(ca: HTMLElement): void {
+  const tagged = ca as HTMLElement & { _cullScroll?: boolean };
+  if (tagged._cullScroll) return;
+  tagged._cullScroll = true;
+  ca.addEventListener('scroll', () => {
+    if (_cullRafPending) return;
+    _cullRafPending = true;
+    requestAnimationFrame(() => {
+      _cullRafPending = false;
+      const st = _lastRenderState;
+      if (st && st.messages.length > CULL_THRESHOLD) {
+        renderChatContent({ ...st, scrollMode: 'preserve' });
+      }
+    });
+  }, { passive: true });
+}
+
 // ========== 滚动追底状态 ==========
 // 用显式 followBottom 标志替代旧的 wasAtBottom 启发式 + rAF 竞态。
 // 用户主动上滑（scroll 事件，且非程序化）→ 关闭追底；滑回底部 → 重新追底。
@@ -256,9 +284,10 @@ export function renderChatContent(state: ChatState): void {
   (window as unknown as Record<string, unknown>).__orbMsgs = messages;
   if (innerWidth < 50) return;
 
-  let html = '';
+  const msgHtmls: string[] = [];  // 每条消息一个 HTML 片段（视口裁剪按条替换为占位）
   let idx = 0;
   for (const msg of messages) {
+    let html = '';  // 本条消息的片段
     const isUser = msg.role === 'user';
     const bgColor = isUser
       ? `linear-gradient(${theme.surface.bgLight},${theme.surface.bgLight}) padding-box,${theme.aiChat.bubbleSelfGradient} border-box`
@@ -428,14 +457,53 @@ export function renderChatContent(state: ChatState): void {
       }
     }
 
+    msgHtmls.push('<div class="orb-msg" data-mi="' + idx + '">' + html + '</div>');
     idx++;
   }
   // 保存滚动位置（在重建 innerHTML 之前）
   const prevScrollTop = contentArea.scrollTop;
+  const viewportH = contentArea.clientHeight || 400;
   // 等待提示节点在 innerHTML 重建后需要恢复（它是独立 DOM 节点，不在 html 字符串里）
   const hintEl = contentArea.querySelector('#' + HINT_ID) as HTMLElement | null;
   attachScrollWatch(contentArea);
   suppressScroll = true;
+
+  // ===== 视口裁剪：决定渲染窗口 =====
+  const cull = messages.length > CULL_THRESHOLD;
+  let html: string;
+  if (!cull) {
+    html = msgHtmls.join('');
+  } else {
+    // 追底时窗口锚在末尾；否则按 scrollTop 用高度表定位可见区间
+    const h = (i: number) => _msgHeights.get(i) ?? DEFAULT_MSG_H;
+    // 累积偏移，找到 [top-buffer, top+viewport+buffer] 覆盖的消息区间
+    const top = followBottom ? Number.MAX_SAFE_INTEGER : prevScrollTop;
+    const winTop = top - CULL_BUFFER_PX;
+    const winBot = (followBottom ? Number.MAX_SAFE_INTEGER : prevScrollTop + viewportH) + CULL_BUFFER_PX;
+    let firstVisible = messages.length, lastVisible = -1;
+    let acc = 0;
+    for (let i = 0; i < msgHtmls.length; i++) {
+      const hi = h(i);
+      const elemTop = acc, elemBot = acc + hi;
+      if (elemBot >= winTop && elemTop <= winBot) {
+        if (i < firstVisible) firstVisible = i;
+        if (i > lastVisible) lastVisible = i;
+      }
+      acc += hi;
+    }
+    // 追底场景：强制包含末尾若干条（流式消息必须在窗口内）
+    if (followBottom) { lastVisible = msgHtmls.length - 1; firstVisible = Math.min(firstVisible, Math.max(0, lastVisible - 12)); }
+    if (lastVisible < 0) { firstVisible = 0; lastVisible = msgHtmls.length - 1; }
+    // 上下占位高度
+    let topPad = 0, botPad = 0;
+    for (let i = 0; i < firstVisible; i++) topPad += h(i);
+    for (let i = lastVisible + 1; i < msgHtmls.length; i++) botPad += h(i);
+    const parts: string[] = [];
+    if (topPad > 0) parts.push('<div class="orb-cull-pad" style="height:' + topPad + 'px"></div>');
+    for (let i = firstVisible; i <= lastVisible; i++) parts.push(msgHtmls[i]);
+    if (botPad > 0) parts.push('<div class="orb-cull-pad" style="height:' + botPad + 'px"></div>');
+    html = parts.join('');
+  }
   contentArea.innerHTML = html;
   if (hintEl) contentArea.appendChild(hintEl);
   // 注入 CSS（仅一次）
@@ -492,6 +560,15 @@ export function renderChatContent(state: ChatState): void {
   const animPres = contentArea.querySelectorAll<HTMLElement>(".orb-tool-anim-pre");
   for (const pre of animPres) {
     pre.scrollTop = pre.scrollHeight;
+  }
+  // 测量已渲染消息的真实高度存入高度表，供下次裁剪的占位块撑出正确滚动高度
+  if (messages.length > CULL_THRESHOLD) {
+    const rendered = contentArea.querySelectorAll<HTMLElement>('.orb-msg');
+    for (const el of rendered) {
+      const mi = parseInt(el.dataset.mi || '-1', 10);
+      if (mi >= 0) { const hgt = el.offsetHeight; if (hgt > 0) _msgHeights.set(mi, hgt); }
+    }
+    _attachCullScroll(contentArea);
   }
   // 折叠动画 RAF：时间戳驱动，每帧重新渲染计算当前 max-height。
   // _activeFoldAnims 中的动画在上面的模板渲染中根据 elapsed 计算并清理。
