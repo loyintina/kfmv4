@@ -196,15 +196,12 @@ function clearAllAnimTimers(): void {
   _activeAnimTimers.clear();
 }
 
-// 折叠动画追踪：用 RAF 驱动 max-height/opacity 过渡，替代 CSS transition。
+// 折叠动画追踪：用时间戳驱动 max-height/opacity 过渡，替代 CSS transition。
 // 原因：renderChatContent 通过 innerHTML 重建 DOM，CSS transition 只在已有元素
 // 改变样式时工作——新创建的元素 max-height 直接是 0，没有过渡可执行。
-const _activeFoldAnims = new Map<string, { el: HTMLElement; start: number }>();
+// 不持有 element 引用（innerHTML 会销毁元素导致 isConnected=false），只存 tid → 开始时间。
+const _activeFoldAnims = new Map<string, number>(); // tid → start timestamp
 let _lastRenderState: ChatState | null = null;
-
-function clearFoldAnimations(): void {
-  _activeFoldAnims.clear();
-}
 
 // ========== 滚动追底状态 ==========
 // 用显式 followBottom 标志替代旧的 wasAtBottom 启发式 + rAF 竞态。
@@ -358,12 +355,33 @@ export function renderChatContent(state: ChatState): void {
           const hint = getToolHint(tc.id);
           outputHtml = `<div style="color:rgba(255,255,255,0.4);font-size:var(--card-font-size,9px);line-height:1.4;padding:2px 0">${hint.dotHtml}${escapeHtml(hint.text)}</div>`;
         } else {
-          // 折叠动画期间（_foldPhase='fold'）禁用内联样式——RAF 循环直接操作 DOM 元素的 inline style。
-          // 不使用 CSS transition，因为 innerHTML 重建会销毁旧元素创建新元素，transition 无法执行。
-          const isFoldAnimating = ab._foldPhase === 'fold' && _activeFoldAnims.has(tid);
-          const animClip = isAnimating ? 'max-height:80px;overflow-y:auto;' : '';
-          // 自动滚动 class：打字机阶段 + 折叠动画进行中，都保持追底
-          const animClass = (isAnimating || isFoldAnimating) ? ' class="orb-tool-anim-pre"' : '';
+          // 折叠动画：从 _activeFoldAnims 的时间戳计算当前 max-height/opacity。
+          // 不使用 CSS transition（innerHTML 重建销毁旧元素，transition 无法执行）。
+          // 不持有 element 引用（innerHTML 会销毁），用时间戳在模板中直接计算。
+          const foldStart = ab._foldPhase === 'fold' ? _activeFoldAnims.get(tid) : undefined;
+          const isFoldAnimating = foldStart !== undefined;
+          const isFoldDone = ab._foldPhase === 'fold' && !isFoldAnimating; // 动画完成，保持折叠
+          let animClip: string;
+          if (isAnimating) {
+            animClip = 'max-height:80px;overflow-y:auto;';
+          } else if (isFoldAnimating) {
+            const elapsed = Date.now() - foldStart!;
+            const progress = Math.min(elapsed / 300, 1); // 300ms
+            const eased = 1 - (1 - progress) * (1 - progress); // ease-out
+            const mh = 80 * (1 - eased);
+            const op = 1 - eased;
+            animClip = `max-height:${mh}px;overflow:hidden;opacity:${op};`;
+            if (progress >= 1) {
+              _activeFoldAnims.delete(tid);
+              delete ab._foldPhase; // 清理状态 → isFolding=false → container display:none
+            }
+          } else if (isFoldDone) {
+            animClip = 'max-height:0;overflow:hidden;opacity:0;'; // 兜底：动画完成但 _foldPhase 未清理
+          } else {
+            animClip = '';
+          }
+          // 自动滚动 class：打字机阶段保持追底（折叠阶段不需要追底）
+          const animClass = isAnimating ? ' class="orb-tool-anim-pre"' : '';
           outputHtml = `<pre${animClass} style="${preStyle};color:rgba(255,255,255,0.6);${animClip}">${escapeHtml(resultText || '(无结果)')}</pre>`;
         }
         html += `
@@ -457,21 +475,9 @@ export function renderChatContent(state: ChatState): void {
   for (const pre of animPres) {
     pre.scrollTop = pre.scrollHeight;
   }
-  // 折叠动画 RAF 驱动：直接操作 DOM 元素的 inline style，绕过 innerHTML 重建。
-  // CSS transition 在此场景下无法工作（新元素 max-height 从 0 开始，无过渡可执行）。
-  for (const [tid, anim] of _activeFoldAnims) {
-    const el = anim.el;
-    if (!el || !el.isConnected) { _activeFoldAnims.delete(tid); continue; }
-    const elapsed = Date.now() - anim.start;
-    const progress = Math.min(elapsed / 300, 1); // 300ms
-    const eased = 1 - (1 - progress) * (1 - progress); // ease-out
-    el.style.maxHeight = (80 * (1 - eased)) + 'px';
-    el.style.opacity = String(1 - eased);
-    el.style.overflow = 'hidden';
-    el.style.transition = 'none';
-    if (progress >= 1) _activeFoldAnims.delete(tid);
-  }
-  // 如果有活跃折叠动画，下一帧继续
+  // 折叠动画 RAF：时间戳驱动，每帧重新渲染计算当前 max-height。
+  // _activeFoldAnims 中的动画在上面的模板渲染中根据 elapsed 计算并清理。
+  // 如有未完成的动画，下一帧继续渲染。
   if (_activeFoldAnims.size > 0) {
     requestAnimationFrame(() => {
       const state = _lastRenderState;
@@ -605,7 +611,7 @@ export async function doSend(
                 }
               }
               clearAllAnimTimers();
-              clearFoldAnimations();
+              _activeFoldAnims.clear();
               const { index, blockType, toolUseId, toolName } = event;
               if (blockType === 'text') {
                 messages[msgIdx].content[index] = { type: 'text', text: '', reasoning: '' };
@@ -674,31 +680,15 @@ export async function doSend(
                       // Phase 2: 等待 340ms，然后折叠
                       const t2 = setTimeout(() => {
                         _activeAnimTimers.delete(t2);
-                        // Phase 3: RAF 驱动折叠动画（替代 CSS transition）
+                        // Phase 3: 时间戳驱动折叠动画（替代 CSS transition）。
                         // CSS transition 无法工作：innerHTML 重建创建新元素，max-height 从 0 开始。
+                        // 不持有 element 引用（innerHTML 会销毁），用 tid → 时间戳映射。
                         delete (toolBlock as AnimBlock)._animText;
                         (toolBlock as AnimBlock)._foldPhase = 'fold';
-                        // 计算 tid（与 renderChatContent 中的生成逻辑一致）
                         const ti3 = messages[msgIdx].content.filter(b => b.type === 'tool').indexOf(toolBlock);
                         const tid3 = 'tc' + msgIdx + '_' + ti3;
+                        _activeFoldAnims.set(tid3, Date.now());
                         onRender();
-                        // onRender() 重建了 DOM，查找新创建的 <pre> 元素并注册折叠动画
-                        const preEl = document.getElementById(tid3)?.querySelector('pre') as HTMLElement | null;
-                        if (preEl) {
-                          _activeFoldAnims.set(tid3, { el: preEl, start: Date.now() });
-                          preEl.style.maxHeight = '80px'; // 动画起始值
-                          preEl.style.opacity = '1';
-                          preEl.style.overflow = 'hidden';
-                          // 触发下一帧 RAF 驱动
-                          requestAnimationFrame(() => {
-                            const state = _lastRenderState;
-                            if (state && _activeFoldAnims.has(tid3)) renderChatContent(state);
-                          });
-                        } else {
-                          // 元素未找到，直接清理
-                          delete (toolBlock as AnimBlock)._foldPhase;
-                          onRender();
-                        }
                       }, WAIT);
                       _activeAnimTimers.add(t2);
                     } else {
