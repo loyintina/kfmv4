@@ -207,6 +207,7 @@ function expandPanel(): void {
         }
       } catch {}
     }
+    panelEl.style.pointerEvents = 'auto';
     _renderChat();
     // 面板打开时跳到最新消息
     requestAnimationFrame(() => {

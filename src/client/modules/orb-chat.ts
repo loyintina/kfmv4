@@ -203,6 +203,20 @@ function clearAllAnimTimers(): void {
 const _activeFoldAnims = new Map<string, number>(); // tid → start timestamp
 let _lastRenderState: ChatState | null = null;
 
+// rAF 合批渲染调度器：并行工具的多个打字机/折叠动画各自 tick 时，若直接调 onRender，
+// 12 个动画 = 每帧 12 次全量重渲染 → 卡死。改为标记脏 + 单个 rAF 每帧最多渲染一次。
+// 关闭面板后不再自我调度，避免后台空转。
+let _renderCb: (() => void) | null = null;
+let _renderScheduled = false;
+function scheduleRender(): void {
+  if (_renderScheduled) return;
+  _renderScheduled = true;
+  requestAnimationFrame(() => {
+    _renderScheduled = false;
+    if (_renderCb) _renderCb();
+  });
+}
+
 // Markdown 渲染缓存：源文本 → 渲染好的 HTML 字符串。
 // 流式回复时 renderChatContent 每帧全量重建 innerHTML，历史消息内容不变却每帧
 // 重跑 marked+highlight+math+mermaid 管线（O(n) 条消息 × 每帧 = O(n²) 卡顿）。
@@ -278,6 +292,9 @@ export function renderChatContent(state: ChatState): void {
   if (!panelEl) return;
   const contentArea = DOM.orbPanelContent(panelEl);
   if (!contentArea) return;
+  // 面板关闭/隐藏时跳过昂贵渲染：动画 timer 仍在更新消息数据，重开面板时会全量重绘。
+  // （关闭面板后并行工具动画每帧全量重渲染是"关了还卡"的元凶。）
+  if (panelEl.style.pointerEvents === 'none') { _lastRenderState = state; return; }
   _lastRenderState = state;
 
   const innerWidth = renderWidth - 24;
@@ -625,6 +642,8 @@ export async function doSend(
   onRender: () => void,
   onConfigMissing: (msg: string) => void,
 ): Promise<void> {
+  // 注册渲染回调供 scheduleRender 合批调用（并行动画共用一个 rAF）
+  _renderCb = onRender;
   // 推用户消息（content block 格式）
   messages.push({ role: 'user', content: [{ type: 'text', text }] });
   onBeforeSend();
@@ -798,7 +817,7 @@ export async function doSend(
                   const tick = (): void => {
                     pos = Math.min(pos + cpt, fullText.length);
                     (toolBlock as AnimBlock)._animText = fullText.slice(0, pos);
-                    onRender();
+                    scheduleRender();
                     if (pos >= fullText.length) {
                       // Phase 2: 等待 340ms，然后折叠
                       const t2 = setTimeout(() => {
@@ -811,7 +830,7 @@ export async function doSend(
                         const ti3 = messages[msgIdx].content.filter(b => b.type === 'tool').indexOf(toolBlock);
                         const tid3 = 'tc' + msgIdx + '_' + ti3;
                         _activeFoldAnims.set(tid3, Date.now());
-                        onRender();
+                        scheduleRender();
                       }, WAIT);
                       _activeAnimTimers.add(t2);
                     } else {
