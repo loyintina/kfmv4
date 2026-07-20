@@ -612,7 +612,7 @@ export async function doSend(
                 // 输出流式策略：固定速率上限 × 时间上限 = 最大展示字符数
                 // 短输出（≤STREAM_MAX）→ 按 SPEED 字/秒流完，再折叠
                 // 长输出（>STREAM_MAX）→ 流到 STREAM_MAX 就直接折叠，不等剩下内容
-                const SPEED = 60;        // 字/秒
+                const SPEED = 180;       // 字/秒
                 const TIME_CAP = 3;     // 秒
                 const STREAM_MAX = SPEED * TIME_CAP; // 180 字
                 requestAnimationFrame(() => {
