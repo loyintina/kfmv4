@@ -405,8 +405,13 @@ export function renderChatContent(state: ChatState): void {
         const resultText = hasResult
           ? (isAnimating ? ab._animText! : (tc.result!.content?.[0]?.text || ''))
           : '';
-        const defaultDisplay = (isExecuting || isAnimating || isCollapsible) ? 'block' : (isFolding ? 'block' : 'none');
-        const defaultArrow = (isExecuting || isAnimating || isCollapsible || isFolding) ? '▼' : '▶';
+        // 折叠状态持久化：完成的工具卡默认折叠。执行中/动画中强制展开；
+        // 否则由 block._userExpanded 决定（用户点击展开/折叠会写回此标志，跨重渲染保持）。
+        const ue = (tc as ToolBlock & { _userExpanded?: boolean })._userExpanded;
+        const forceOpen = isExecuting || isAnimating || isFolding;
+        const isOpen = forceOpen || ue === true;
+        const defaultDisplay = isOpen ? 'block' : 'none';
+        const defaultArrow = isOpen ? '▼' : '▶';
         const inputHtml = paramsDisplay
           ? `<pre style="${preStyle};color:rgba(255,255,255,0.45)">${escapeHtml(paramsDisplay)}</pre>`
           : '';
@@ -425,7 +430,7 @@ export function renderChatContent(state: ChatState): void {
         html += `
           <div style="display:flex;justify-content:flex-start;margin-bottom:6px">
             <div class="orb-tool-card" style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:${gradientBorder};border:1px solid transparent;border-left-width:3px;border-left-color:${hexToRgba(c1, 0.7)};font-size:var(--card-font-size,10px)">
-              <div data-msg="${idx}" data-ti="${ti}" onclick="var p=document.getElementById('${tid}');var s=p.style.display==='none'?'block':'none';p.style.display=s;this.querySelector('.orb-tc-arrow').textContent=s==='block'?'▼':'▶';if(s==='block'){p.style.maxHeight='';p.style.overflow='';p.style.opacity='';var m=this.dataset.msg,t=this.dataset.ti;if(window.__orbMsgs&&m>=0){var b=window.__orbMsgs[m]?.content?.filter(function(x){return x.type==='tool'})[t];if(b)delete b._foldPhase}}" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
+              <div data-msg="${idx}" data-ti="${ti}" onclick="var p=document.getElementById('${tid}');var s=p.style.display==='none'?'block':'none';p.style.display=s;this.querySelector('.orb-tc-arrow').textContent=s==='block'?'▼':'▶';var m=this.dataset.msg,t=this.dataset.ti;if(window.__orbMsgs&&m>=0){var b=window.__orbMsgs[m]?.content?.filter(function(x){return x.type==='tool'})[t];if(b){b._userExpanded=(s==='block');if(s==='block'){delete b._foldPhase}}}if(s==='block'){p.style.maxHeight='';p.style.overflow='';p.style.opacity=''}" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
                 <span class="orb-tc-arrow" style="font-size:7px;color:rgba(255,255,255,0.5)">${defaultArrow}</span>
                 <span style="color:${hexToRgba(c1, 0.9)};font-weight:600">${escapeHtml(tc.name)}</span>
                 <span style="color:${statusColor};font-size:var(--card-font-size,9px);font-weight:600">${statusLabel}</span>
@@ -868,6 +873,7 @@ export async function doSend(
           delete (b as ToolBlock & { _animText?: string })._animText;
           delete (b as ToolBlock & { _animInput?: string })._animInput;
           delete (b as ToolBlock & { _foldPhase?: string })._foldPhase;
+          delete (b as ToolBlock & { _userExpanded?: boolean })._userExpanded;
         }
       }
     }
