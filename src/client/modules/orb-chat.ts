@@ -347,8 +347,9 @@ export function renderChatContent(state: ChatState): void {
           const hint = getToolHint(tc.id);
           outputHtml = `<div style="color:rgba(255,255,255,0.4);font-size:var(--card-font-size,9px);line-height:1.4;padding:2px 0">${hint.dotHtml}${escapeHtml(hint.text)}</div>`;
         } else {
-          const animClip = isAnimating ? 'max-height:80px;overflow:hidden;' : (ab._foldPhase ? 'max-height:0;overflow:hidden;opacity:0;transition:max-height 300ms ease-out,opacity 200ms ease-out;will-change:max-height,opacity;' : '');
-          outputHtml = `<pre style="${preStyle};color:rgba(255,255,255,0.6);${animClip}">${escapeHtml(resultText || '(无结果)')}</pre>`;
+          const animClip = isAnimating ? 'max-height:80px;overflow-y:auto;' : (ab._foldPhase ? 'max-height:0;overflow:hidden;opacity:0;transition:max-height 300ms ease-out,opacity 200ms ease-out;will-change:max-height,opacity;' : '');
+          const animClass = isAnimating ? ' class="orb-tool-anim-pre"' : '';
+          outputHtml = `<pre${animClass} style="${preStyle};color:rgba(255,255,255,0.6);${animClip}">${escapeHtml(resultText || '(无结果)')}</pre>`;
         }
         html += `
           <div style="display:flex;justify-content:flex-start;margin-bottom:6px">
@@ -435,6 +436,11 @@ export function renderChatContent(state: ChatState): void {
         setTimeout(() => { btn.textContent = '复制'; }, 1500);
       }).catch(() => {});
     };
+  }
+  // 打字机阶段自动滚动：让超出 80px 的工具结果始终显示最新输出
+  const animPres = contentArea.querySelectorAll<HTMLElement>(".orb-tool-anim-pre");
+  for (const pre of animPres) {
+    pre.scrollTop = pre.scrollHeight;
   }
   // 滚动策略（在 markdown 渲染后同步执行：读 scrollHeight 强制 reflow 得到真实高度，
   // 不用 rAF 以消除竞态；suppressScroll 防止程序化滚动误翻 followBottom）
