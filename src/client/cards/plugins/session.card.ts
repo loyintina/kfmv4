@@ -384,7 +384,7 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
       _c1 = c1;
       _c2 = c2;
       const { bodyEl } = buildCardLayout(contentEl, '会话管理', c1, c2);
-      bodyEl.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:8px;padding:0 10px;overflow-y:auto';
+      bodyEl.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:8px;padding:0 10px;overflow-y:auto;touch-action:pan-y';
 
       sessions = await loadSessions();
       if (!activeSessionId && sessions.length > 0) activeSessionId = sessions[0].id;
@@ -482,7 +482,7 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
 
       // 气泡区（三层框，正向渐变，半屏高可滚动）
       const bubbleFrame = document.createElement('div');
-      bubbleFrame.style.cssText = `flex:1;overflow-y:auto;min-height:80px;max-height:50vh;border-radius:8px;padding:8px;background:linear-gradient(rgba(10,10,15,0.94),rgba(10,10,15,0.94)) padding-box,linear-gradient(135deg,${c1} 30%,${c2} 70%) border-box;border:1px solid transparent;border-left-width:3px`;
+      bubbleFrame.style.cssText = `flex:1;overflow-y:auto;min-height:80px;max-height:50vh;touch-action:pan-y;border-radius:8px;padding:8px;background:linear-gradient(rgba(10,10,15,0.94),rgba(10,10,15,0.94)) padding-box,linear-gradient(135deg,${c1} 30%,${c2} 70%) border-box;border:1px solid transparent;border-left-width:3px`;
       _bubbleContainer = document.createElement('div');
       _bubbleContainer.style.cssText = 'display:flex;flex-direction:column';
       bubbleFrame.appendChild(_bubbleContainer);
@@ -509,7 +509,7 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
 
       // 列表区
       const listEl = document.createElement('div');
-      listEl.style.cssText = 'flex:1;overflow-y:auto;min-height:0';
+      listEl.style.cssText = 'flex:1;overflow-y:auto;min-height:0;touch-action:pan-y';
       _poolListEl = listEl;
       poolCard.appendChild(listEl);
       bodyEl.appendChild(poolCard);

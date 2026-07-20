@@ -259,7 +259,7 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
       const c2 = card?.accents?.color2 || '#7c3aed';
       const { bodyEl } = buildCardLayout(contentEl, 'AI 配置', c1, c2);
       
-      bodyEl.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:8px;padding:0 10px;overflow-y:auto';
+      bodyEl.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:8px;padding:0 10px;overflow-y:auto;touch-action:pan-y';
       
       // 并行加载数据
       const [providersResult, sessionsResult, configsResult, activeConfigFile] = await Promise.all([
@@ -322,7 +322,7 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
         },
       });
       const formScroll = document.createElement('div');
-      formScroll.style.cssText = 'flex:1;overflow-y:auto;min-height:0';
+      formScroll.style.cssText = 'flex:1;overflow-y:auto;min-height:0;touch-action:pan-y';
       configWrap.appendChild(configSelect.element);
       formScroll.appendChild(configRow);
       
