@@ -731,29 +731,12 @@ export async function doSend(
             }
             case 'content_block_start': {
               if (msgIdx < 0) break;
-              // 新 block 到达 → 清理已完成的工具动画，但不中断正在运行的打字机。
-              // 正在打字的工具（_animText !== undefined）保持运行：其 tick timer 继续推进，
-              // 每次 onRender() 重建 DOM 后 animPres.scrollTop 仍然追底。
-              // 只有已完成的工具（有 _foldPhase）需要清理残留状态。
-              // 新 block 到达 → 清除旧 timer，finalize 进行中的 typewriter。
-              // 不中断打字机：立即完成文本 + 启动折叠动画，避免 clearAllAnimTimers 杀掉 tick timer 导致卡住。
-              _activeFoldAnims.clear();
-              for (const b of messages[msgIdx].content) {
-                if (b.type === 'tool') {
-                  const ab = b as ToolBlock & { _animText?: string; _foldPhase?: string };
-                  if (ab._animText !== undefined) {
-                    // Typewriter in progress → finalize: 完成文本 + 立即启动折叠
-                    delete ab._animText;
-                    ab._foldPhase = 'fold';
-                    const ti = messages[msgIdx].content.filter(x => x.type === 'tool').indexOf(b);
-                    if (ti >= 0) _activeFoldAnims.set('tc' + msgIdx + '_' + ti, Date.now());
-                  } else {
-                    // 工具已完成或未开始动画 → 清理折叠残留
-                    delete ab._foldPhase;
-                  }
-                }
-              }
-              clearAllAnimTimers();
+              // 新 block 到达：不打扰正在运行的工具动画。
+              // 每个工具的打字机/折叠动画各自独立跑到完成并自动收起（tick 链自终止、
+              // 折叠 300ms 自清理），新 block 只在下方独立渲染自己的内容。
+              // 历史 bug：这里曾 finalize 所有进行中的打字机 + clearAllAnimTimers()，
+              // 导致上方正在滚动流式的工具框被杀掉 tick timer → 卡住不动、也收不回去。
+              // 现在只做无害的容器插槽初始化，动画状态一律保留。
               const { index, blockType, toolUseId, toolName } = event;
               if (blockType === 'text') {
                 messages[msgIdx].content[index] = { type: 'text', text: '', reasoning: '' };
@@ -894,6 +877,10 @@ export async function doSend(
       messages[msgIdx].content.push({ type: 'text', text: '[未收到回复，请重试]' });
     }
     onRender();
+    // 流结束：清掉所有仍挂着的打字机/折叠 tick timer，否则它们会在下面 cleanup
+    // 删除 _animText 后又 fire、把动画状态写回并触发渲染（动画"复活"）。
+    clearAllAnimTimers();
+    _activeFoldAnims.clear();
     // saveMessages 前清除所有 _animText/_animInput（打字机动画可能仍在运行），防止污染持久化数据
     for (const m of messages) {
       for (const b of m.content) {
