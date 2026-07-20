@@ -187,7 +187,14 @@ function clearToolHint(toolId: string): void {
   _toolHints.delete(toolId);
 }
 
-// （已删除 _inputAnimTimers — 输入参数改为实时流式展示，不再需要提前终止逻辑）
+// 打字机动画 interval 追踪：新 content block 到达时立即结束未完成的动画，
+// 避免用户在 AI 已开始回复时还要等 3 秒装饰动画跑完。
+const _activeAnimIntervals = new Set<ReturnType<typeof setInterval>>();
+
+function clearAllAnimIntervals(): void {
+  for (const iv of _activeAnimIntervals) clearInterval(iv);
+  _activeAnimIntervals.clear();
+}
 
 // ========== 滚动追底状态 ==========
 // 用显式 followBottom 标志替代旧的 wasAtBottom 启发式 + rAF 竞态。
@@ -546,6 +553,11 @@ export async function doSend(
             }
             case 'content_block_start': {
               if (msgIdx < 0) break;
+              // 新 block 到达 → 立即结束未完成的打字机动画（装饰不应阻塞信息展示）
+              for (const b of messages[msgIdx].content) {
+                if (b.type === 'tool' && '_animText' in b) delete (b as { _animText?: string })._animText;
+              }
+              clearAllAnimIntervals();
               const { index, blockType, toolUseId, toolName } = event;
               if (blockType === 'text') {
                 messages[msgIdx].content[index] = { type: 'text', text: '', reasoning: '' };
@@ -619,6 +631,7 @@ export async function doSend(
                       }
                       onRender();
                     }, 16);
+                    _activeAnimIntervals.add(iv);
                   } else {
                     // 短输出：按 SPEED 流完
                     const totalTicks = Math.max(1, Math.round(fullText.length / SPEED * 1000 / 16));
@@ -634,6 +647,7 @@ export async function doSend(
                       }
                       onRender();
                     }, 16);
+                    _activeAnimIntervals.add(iv);
                   }
                 });
               }
