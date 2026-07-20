@@ -438,8 +438,10 @@ export function renderChatContent(state: ChatState): void {
         // 展开态两区结构：输入区 + 分隔线 + 输出区，各自限高可滚动。
         // 内容少时以内容高度为准；内容多时撑到 max-height 并内部滚动（不撑爆卡片）。
         const INPUT_MAX_H = 80, OUTPUT_MAX_H = 80;
+        // 输入区流式时（_animInput）标记 orb-tool-anim-pre 使其自动滚到底显示最新参数
+        const inputAnimClass = isInputAnimating ? ' orb-tool-anim-pre' : '';
         const inputHtml = paramsDisplay
-          ? `<pre class="orb-tool-input-pre" style="${preStyle};color:rgba(255,255,255,0.45);max-height:${INPUT_MAX_H}px;overflow-y:auto">${escapeHtml(paramsDisplay)}</pre>`
+          ? `<pre class="orb-tool-input-pre${inputAnimClass}" style="${preStyle};color:rgba(255,255,255,0.45);max-height:${INPUT_MAX_H}px;overflow-y:auto">${escapeHtml(paramsDisplay)}</pre>`
           : '';
         const dividerHtml = paramsFull
           ? `<div style="height:1px;margin:5px 0;border-radius:1px;background:linear-gradient(90deg,${hexToRgba(c1, 0.7)},${hexToRgba(c2, 0.7)})"></div>`
