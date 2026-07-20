@@ -320,14 +320,15 @@ export function renderChatContent(state: ChatState): void {
         const statusLabel = isExecuting ? '忙碌中' : (isError ? '失败' : '成功');
         const statusColor = isExecuting ? 'rgba(255,255,255,0.4)' : (isError ? 'rgba(255,100,100,0.8)' : 'rgba(0,212,115,0.8)');
         const paramsFull = Object.keys(tc.input).length > 0 ? JSON.stringify(tc.input, null, 2) : '';
-        type AnimBlock = ToolBlock & { _animText?: string; _animInput?: string };
+        type AnimBlock = ToolBlock & { _animText?: string; _animInput?: string; _foldPhase?: 'out' | 'fold' };
         const ab = tc as AnimBlock;
         const isAnimating = ab._animText !== undefined;
+        const isFolding = isAnimating || !!ab._foldPhase;
         const resultText = hasResult
           ? (isAnimating ? ab._animText! : (tc.result!.content?.[0]?.text || ''))
           : '';
-        const defaultDisplay = (isExecuting || isAnimating) ? 'block' : 'none';
-        const defaultArrow = (isExecuting || isAnimating) ? '▼' : '▶';
+        const defaultDisplay = (isExecuting || isFolding) ? 'block' : 'none';
+        const defaultArrow = (isExecuting || isFolding) ? '▼' : '▶';
         const gradientBorder = `linear-gradient(rgba(10,15,30,0.75),rgba(10,15,30,0.75)) padding-box,linear-gradient(135deg,${hexToRgba(c2, 0.55)} 30%,${hexToRgba(c1, 0.55)} 70%) border-box`;
         // 展开态三段结构：输入参数 → 渐变分隔线 → 输出区（执行中为摸鱼提示，完成为结果）。
         // 分隔线复用工具卡的随机双色 c1/c2，视觉上标记"这次交互是独特的"（Fi 审美）。
@@ -346,7 +347,7 @@ export function renderChatContent(state: ChatState): void {
           const hint = getToolHint(tc.id);
           outputHtml = `<div style="color:rgba(255,255,255,0.4);font-size:var(--card-font-size,9px);line-height:1.4;padding:2px 0">${hint.dotHtml}${escapeHtml(hint.text)}</div>`;
         } else {
-          const animClip = isAnimating ? 'max-height:80px;overflow:hidden;' : '';
+          const animClip = isAnimating ? 'max-height:80px;overflow:hidden;' : (ab._foldPhase ? 'max-height:0;overflow:hidden;opacity:0;transition:max-height 300ms ease-out,opacity 200ms ease-out;will-change:max-height,opacity;' : '');
           outputHtml = `<pre style="${preStyle};color:rgba(255,255,255,0.6);${animClip}">${escapeHtml(resultText || '(无结果)')}</pre>`;
         }
         html += `
@@ -556,7 +557,10 @@ export async function doSend(
               if (msgIdx < 0) break;
               // 新 block 到达 → 立即结束未完成的打字机动画（装饰不应阻塞信息展示）
               for (const b of messages[msgIdx].content) {
-                if (b.type === 'tool' && '_animText' in b) delete (b as { _animText?: string })._animText;
+                if (b.type === 'tool') {
+                  delete (b as { _animText?: string })._animText;
+                  delete (b as { _foldPhase?: string })._foldPhase;
+                }
               }
               clearAllAnimTimers();
               const { index, blockType, toolUseId, toolName } = event;
@@ -609,8 +613,8 @@ export async function doSend(
                 toolBlock.result = event.toolResult;
                 clearToolHint(toolBlock.id);
                 const fullText = event.toolResult?.content?.[0]?.text || '';
-                type AnimBlock = ToolBlock & { _animText?: string };
-                // 输出动画：500ms 流完 → 340ms 等待 → 300ms 折叠过渡
+                type AnimBlock = ToolBlock & { _animText?: string; _foldPhase?: 'out' | 'fold' };
+                // 输出动画：500ms 流完 → 340ms 等待 → CSS transition 300ms 折叠
                 const DURATION = 500; // ms，打字机动画时长
                 const WAIT = 340;     // ms，流完后等待
                 const INTERVAL = 16;  // ms，帧间隔
@@ -627,30 +631,17 @@ export async function doSend(
                       // Phase 2: 等待 340ms，然后折叠
                       const t2 = setTimeout(() => {
                         _activeAnimTimers.delete(t2);
-                        // Phase 3: 折叠动画（直接操作 DOM，300ms）
-                        const blockIdx = messages[msgIdx].content.indexOf(toolBlock);
-                        const ti = messages[msgIdx].content.slice(0, blockIdx).filter(b => b.type === 'tool').length;
-                        const el = document.getElementById('tc' + msgIdx + '_' + ti);
-                        if (el) {
-                          const h = el.scrollHeight;
-                          el.style.height = h + 'px';
-                          el.style.overflow = 'hidden';
-                          requestAnimationFrame(() => {
-                            el.style.transition = 'height 300ms ease-out';
-                            el.style.height = '0px';
-                          });
-                          const cleanup = (): void => {
-                            el.removeEventListener('transitionend', cleanup);
-                            delete (toolBlock as AnimBlock)._animText;
-                            onRender();
-                          };
-                          el.addEventListener('transitionend', cleanup, { once: true });
-                          const t3 = setTimeout(cleanup, 400); // 兜底
-                          _activeAnimTimers.add(t3);
-                        } else {
-                          delete (toolBlock as AnimBlock)._animText;
+                        // Phase 3: 通过 renderChatContent 的 CSS transition 折叠
+                        delete (toolBlock as AnimBlock)._animText;
+                        (toolBlock as AnimBlock)._foldPhase = 'fold';
+                        onRender();
+                        // 等 transition 结束后清理状态
+                        const cleanup = (): void => {
+                          delete (toolBlock as AnimBlock)._foldPhase;
                           onRender();
-                        }
+                        };
+                        const t3 = setTimeout(cleanup, 350); // 300ms transition + 50ms margin
+                        _activeAnimTimers.add(t3);
                       }, WAIT);
                       _activeAnimTimers.add(t2);
                     } else {
@@ -720,6 +711,7 @@ export async function doSend(
         if (b.type === 'tool') {
           delete (b as ToolBlock & { _animText?: string })._animText;
           delete (b as ToolBlock & { _animInput?: string })._animInput;
+          delete (b as ToolBlock & { _foldPhase?: string })._foldPhase;
         }
       }
     }
