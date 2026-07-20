@@ -380,8 +380,8 @@ export function renderChatContent(state: ChatState): void {
           } else {
             animClip = '';
           }
-          // 自动滚动 class：打字机阶段保持追底（折叠阶段不需要追底）
-          const animClass = isAnimating ? ' class="orb-tool-anim-pre"' : '';
+          // 自动滚动 class：打字机阶段和折叠阶段都保持追底
+          const animClass = (isAnimating || isFoldAnimating) ? ' class="orb-tool-anim-pre"' : '';
           outputHtml = `<pre${animClass} style="${preStyle};color:rgba(255,255,255,0.6);${animClip}">${escapeHtml(resultText || '(无结果)')}</pre>`;
         }
         html += `
