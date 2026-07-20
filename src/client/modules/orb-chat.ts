@@ -643,6 +643,7 @@ export async function doSend(
   onBeforeSend: () => void,
   onRender: () => void,
   onConfigMissing: (msg: string) => void,
+  onWait?: (waiting: boolean) => void,
 ): Promise<void> {
   // 注册渲染回调供 scheduleRender 合批调用（并行动画共用一个 rAF）
   _renderCb = onRender;
@@ -726,9 +727,18 @@ export async function doSend(
           const event = JSON.parse(jsonStr);
           switch (event.type) {
             case 'message_start': {
+              // 新轮次开始：AI 已开始输出，停等待提示
+              onWait?.(false);
               // 新轮次：推空 AI 消息
               messages.push({ role: 'ai', content: [] });
               msgIdx = messages.length - 1;
+              break;
+            }
+            case 'message_stop': {
+              // 本轮结束。若后面还有一轮（工具调用后 AI 再次请求），服务端会在
+              // 重新调 LLM 期间静默——这里先起等待提示，下一轮 message_start 再停。
+              // 若这是最后一轮，流很快 done，提示存活极短无副作用；流结束兜底会停。
+              onWait?.(true);
               break;
             }
             case 'content_block_start': {
@@ -908,6 +918,8 @@ export async function doSend(
       messages.push({ role: 'ai', content: [{ type: 'text', text: '请求失败: ' + (e instanceof Error ? e.message : '未知错误') }] });
     }
   }
+  // 流彻底结束（成功/错误/取消）：确保等待提示已停
+  onWait?.(false);
   onRender();
 }
 

@@ -517,35 +517,42 @@ export async function initOrb(): Promise<void> {
       abortCtrl = new AbortController();
       sendBtn!.classList.add('sending');
 
-      // 等待提示动画：doSend 内部第一个 onRender（用户消息入队后立刻触发）后启动
-      let stopHint: ((() => void) | null) = null;
+      // 等待提示动画：由 doSend 的 onWait 显式控制——
+      //   发送后 / 每轮 message_stop 后（工具调用后 AI 再次请求的空档）起提示，
+      //   message_start 到达即停。覆盖工具轮次之间的等待，不再只在首次请求时显示。
+      let stopHint: (() => void) | null = null;
       let firstRenderDone = false;
+      const setWait = (waiting: boolean) => {
+        if (waiting) {
+          if (!stopHint && panelEl) stopHint = startWaitingIndicator(panelEl);
+        } else {
+          if (stopHint) { stopHint(); stopHint = null; }
+        }
+      };
+      // 发送即起提示（用户消息入队前）
+      setWait(true);
 
       await doSend(text, chatMessages, base, abortCtrl.signal,
         () => {},
         () => {
           if (!firstRenderDone) {
-            // 第一次 onRender = 用户消息已入队，强制追底显示用户消息 + 启动 hint
+            // 第一次 onRender = 用户消息已入队，强制追底显示用户消息
             firstRenderDone = true;
-            stopHint = panelEl ? startWaitingIndicator(panelEl) : null;
             _renderChat('follow');
           } else {
-            // 后续 onRender = message_start 或 delta 到达，停 hint
-            if (stopHint) { stopHint(); stopHint = null; }
-            // 用 auto：renderChatContent 内部的 wasAtBottom 启发式判断
-            // 用户上滑离开底部 → preserve，滑回底部 → follow
             _renderChat('auto');
           }
         },
         (msg) => {
-          if (stopHint) { stopHint(); stopHint = null; }
+          setWait(false);
           chatMessages.push({ role: 'ai', content: [{ type: 'text', text: msg }] });
           _renderChat('auto');
         },
+        setWait,
       );
 
-      // 流结束时确保提示动画已停（静默断流兜底）
-      if (stopHint != null) { (stopHint as () => void)(); stopHint = null; }
+      // 流结束兜底：确保提示已停
+      setWait(false);
       abortCtrl = null;
       sendBtn!.classList.remove('sending');
       _renderChat('auto');
