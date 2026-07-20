@@ -412,8 +412,11 @@ export function renderChatContent(state: ChatState): void {
         const isOpen = forceOpen || ue === true;
         const defaultDisplay = isOpen ? 'block' : 'none';
         const defaultArrow = isOpen ? '▼' : '▶';
+        // 展开态两区结构：输入区 + 分隔线 + 输出区，各自限高可滚动。
+        // 内容少时以内容高度为准；内容多时撑到 max-height 并内部滚动（不撑爆卡片）。
+        const INPUT_MAX_H = 120, OUTPUT_MAX_H = 200;
         const inputHtml = paramsDisplay
-          ? `<pre style="${preStyle};color:rgba(255,255,255,0.45)">${escapeHtml(paramsDisplay)}</pre>`
+          ? `<pre class="orb-tool-input-pre" style="${preStyle};color:rgba(255,255,255,0.45);max-height:${INPUT_MAX_H}px;overflow-y:auto">${escapeHtml(paramsDisplay)}</pre>`
           : '';
         const dividerHtml = paramsFull
           ? `<div style="height:1px;margin:5px 0;border-radius:1px;background:linear-gradient(90deg,${hexToRgba(c1, 0.7)},${hexToRgba(c2, 0.7)})"></div>`
@@ -423,9 +426,9 @@ export function renderChatContent(state: ChatState): void {
           const hint = getToolHint(tc.id);
           outputHtml = `<div style="color:rgba(255,255,255,0.4);font-size:var(--card-font-size,9px);line-height:1.4;padding:2px 0">${hint.dotHtml}${escapeHtml(hint.text)}</div>`;
         } else {
-          const animClip = isAnimating ? 'max-height:80px;overflow-y:auto;' : '';
-          const animClass = isAnimating ? ' class="orb-tool-anim-pre"' : '';
-          outputHtml = `<pre${animClass} style="${preStyle};color:rgba(255,255,255,0.6);${animClip}">${escapeHtml(resultText || '(无结果)')}</pre>`;
+          // 输出区始终限高可滚动；动画中标记 orb-tool-anim-pre 使其自动滚到底显示最新
+          const animClass = isAnimating ? ' orb-tool-anim-pre' : '';
+          outputHtml = `<pre class="orb-tool-output-pre${animClass}" style="${preStyle};color:rgba(255,255,255,0.6);max-height:${OUTPUT_MAX_H}px;overflow-y:auto">${escapeHtml(resultText || '(无结果)')}</pre>`;
         }
         html += `
           <div style="display:flex;justify-content:flex-start;margin-bottom:6px">
