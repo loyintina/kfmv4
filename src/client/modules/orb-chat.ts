@@ -196,6 +196,16 @@ function clearAllAnimTimers(): void {
   _activeAnimTimers.clear();
 }
 
+// 折叠动画追踪：用 RAF 驱动 max-height/opacity 过渡，替代 CSS transition。
+// 原因：renderChatContent 通过 innerHTML 重建 DOM，CSS transition 只在已有元素
+// 改变样式时工作——新创建的元素 max-height 直接是 0，没有过渡可执行。
+const _activeFoldAnims = new Map<string, { el: HTMLElement; start: number }>();
+let _lastRenderState: ChatState | null = null;
+
+function clearFoldAnimations(): void {
+  _activeFoldAnims.clear();
+}
+
 // ========== 滚动追底状态 ==========
 // 用显式 followBottom 标志替代旧的 wasAtBottom 启发式 + rAF 竞态。
 // 用户主动上滑（scroll 事件，且非程序化）→ 关闭追底；滑回底部 → 重新追底。
@@ -227,6 +237,7 @@ export function renderChatContent(state: ChatState): void {
   if (!panelEl) return;
   const contentArea = DOM.orbPanelContent(panelEl);
   if (!contentArea) return;
+  _lastRenderState = state;
 
   const innerWidth = renderWidth - 24;
   if (innerWidth < 50) return;
@@ -347,8 +358,12 @@ export function renderChatContent(state: ChatState): void {
           const hint = getToolHint(tc.id);
           outputHtml = `<div style="color:rgba(255,255,255,0.4);font-size:var(--card-font-size,9px);line-height:1.4;padding:2px 0">${hint.dotHtml}${escapeHtml(hint.text)}</div>`;
         } else {
-          const animClip = isAnimating ? 'max-height:80px;overflow-y:auto;' : (ab._foldPhase ? 'max-height:0;overflow:hidden;opacity:0;transition:max-height 300ms ease-out,opacity 200ms ease-out;will-change:max-height,opacity;' : '');
-          const animClass = isAnimating ? ' class="orb-tool-anim-pre"' : '';
+          // 折叠动画期间（_foldPhase='fold'）禁用内联样式——RAF 循环直接操作 DOM 元素的 inline style。
+          // 不使用 CSS transition，因为 innerHTML 重建会销毁旧元素创建新元素，transition 无法执行。
+          const isFoldAnimating = ab._foldPhase === 'fold' && _activeFoldAnims.has(tid);
+          const animClip = isAnimating ? 'max-height:80px;overflow-y:auto;' : '';
+          // 自动滚动 class：打字机阶段 + 折叠动画进行中，都保持追底
+          const animClass = (isAnimating || isFoldAnimating) ? ' class="orb-tool-anim-pre"' : '';
           outputHtml = `<pre${animClass} style="${preStyle};color:rgba(255,255,255,0.6);${animClip}">${escapeHtml(resultText || '(无结果)')}</pre>`;
         }
         html += `
@@ -437,10 +452,31 @@ export function renderChatContent(state: ChatState): void {
       }).catch(() => {});
     };
   }
-  // 打字机阶段自动滚动：让超出 80px 的工具结果始终显示最新输出
+  // 打字机/折叠阶段自动滚动：让超出 80px 的工具结果始终显示最新输出
   const animPres = contentArea.querySelectorAll<HTMLElement>(".orb-tool-anim-pre");
   for (const pre of animPres) {
     pre.scrollTop = pre.scrollHeight;
+  }
+  // 折叠动画 RAF 驱动：直接操作 DOM 元素的 inline style，绕过 innerHTML 重建。
+  // CSS transition 在此场景下无法工作（新元素 max-height 从 0 开始，无过渡可执行）。
+  for (const [tid, anim] of _activeFoldAnims) {
+    const el = anim.el;
+    if (!el || !el.isConnected) { _activeFoldAnims.delete(tid); continue; }
+    const elapsed = Date.now() - anim.start;
+    const progress = Math.min(elapsed / 300, 1); // 300ms
+    const eased = 1 - (1 - progress) * (1 - progress); // ease-out
+    el.style.maxHeight = (80 * (1 - eased)) + 'px';
+    el.style.opacity = String(1 - eased);
+    el.style.overflow = 'hidden';
+    el.style.transition = 'none';
+    if (progress >= 1) _activeFoldAnims.delete(tid);
+  }
+  // 如果有活跃折叠动画，下一帧继续
+  if (_activeFoldAnims.size > 0) {
+    requestAnimationFrame(() => {
+      const state = _lastRenderState;
+      if (state && _activeFoldAnims.size > 0) renderChatContent(state);
+    });
   }
   // 滚动策略（在 markdown 渲染后同步执行：读 scrollHeight 强制 reflow 得到真实高度，
   // 不用 rAF 以消除竞态；suppressScroll 防止程序化滚动误翻 followBottom）
@@ -569,6 +605,7 @@ export async function doSend(
                 }
               }
               clearAllAnimTimers();
+              clearFoldAnimations();
               const { index, blockType, toolUseId, toolName } = event;
               if (blockType === 'text') {
                 messages[msgIdx].content[index] = { type: 'text', text: '', reasoning: '' };
@@ -637,17 +674,31 @@ export async function doSend(
                       // Phase 2: 等待 340ms，然后折叠
                       const t2 = setTimeout(() => {
                         _activeAnimTimers.delete(t2);
-                        // Phase 3: 通过 renderChatContent 的 CSS transition 折叠
+                        // Phase 3: RAF 驱动折叠动画（替代 CSS transition）
+                        // CSS transition 无法工作：innerHTML 重建创建新元素，max-height 从 0 开始。
                         delete (toolBlock as AnimBlock)._animText;
                         (toolBlock as AnimBlock)._foldPhase = 'fold';
+                        // 计算 tid（与 renderChatContent 中的生成逻辑一致）
+                        const ti3 = messages[msgIdx].content.filter(b => b.type === 'tool').indexOf(toolBlock);
+                        const tid3 = 'tc' + msgIdx + '_' + ti3;
                         onRender();
-                        // 等 transition 结束后清理状态
-                        const cleanup = (): void => {
+                        // onRender() 重建了 DOM，查找新创建的 <pre> 元素并注册折叠动画
+                        const preEl = document.getElementById(tid3)?.querySelector('pre') as HTMLElement | null;
+                        if (preEl) {
+                          _activeFoldAnims.set(tid3, { el: preEl, start: Date.now() });
+                          preEl.style.maxHeight = '80px'; // 动画起始值
+                          preEl.style.opacity = '1';
+                          preEl.style.overflow = 'hidden';
+                          // 触发下一帧 RAF 驱动
+                          requestAnimationFrame(() => {
+                            const state = _lastRenderState;
+                            if (state && _activeFoldAnims.has(tid3)) renderChatContent(state);
+                          });
+                        } else {
+                          // 元素未找到，直接清理
                           delete (toolBlock as AnimBlock)._foldPhase;
                           onRender();
-                        };
-                        const t3 = setTimeout(cleanup, 350); // 300ms transition + 50ms margin
-                        _activeAnimTimers.add(t3);
+                        }
                       }, WAIT);
                       _activeAnimTimers.add(t2);
                     } else {
