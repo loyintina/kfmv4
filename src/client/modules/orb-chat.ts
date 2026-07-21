@@ -678,7 +678,9 @@ function _applyEvent(event: any, ctx: RunConsumeCtx): void {
   let msgIdx = ctx.getMsgIdx();
   switch (event.type) {
     case 'message_start': {
-      onWait?.(false);
+      // 不在此处停等待提示：推理模型（如 deepseek-v4-pro）message_start 后
+      // 首个 thinking_delta 可能延迟很久，过早停提示会留下空白。改为首个
+      // 实际内容（正文/思考 delta 或工具块）到达时才停（见下方各 case）。
       messages.push({ role: 'ai', content: [] });
       ctx.setMsgIdx(messages.length - 1);
       break;
@@ -690,6 +692,7 @@ function _applyEvent(event: any, ctx: RunConsumeCtx): void {
       if (blockType === 'text') {
         messages[msgIdx].content[index] = { type: 'text', text: '', reasoning: '' };
       } else if (blockType === 'tool_use') {
+        onWait?.(false); // 工具块到达 = 有实际内容，停等待提示
         messages[msgIdx].content[index] = { type: 'tool', id: toolUseId || '', name: toolName || 'unknown', input: {} };
       }
       break;
@@ -700,8 +703,10 @@ function _applyEvent(event: any, ctx: RunConsumeCtx): void {
       const block = messages[msgIdx].content[index];
       if (!block) break;
       if (deltaType === 'text_delta' && block.type === 'text') {
+        onWait?.(false); // 首个正文 delta = 内容开始，停等待提示
         block.text += deltaText || '';
       } else if (deltaType === 'thinking_delta' && block.type === 'text') {
+        onWait?.(false); // 首个思考 delta = 推理开始，停等待提示（推理模型关键路径）
         block.reasoning = (block.reasoning || '') + (deltaText || '');
       } else if (deltaType === 'input_json_delta' && block.type === 'tool') {
         const buf = ((block as ToolBlock & { _jsonBuf?: string })._jsonBuf || '') + (deltaText || '');
@@ -1029,7 +1034,10 @@ export async function doSend(
     }
 
     // 先落盘用户消息，保证刷新/切后台后能恢复（AI 回复由重连续读补齐）
+    // saveMessages 会在 activeId 为空时自动新建会话——同步回 _sendSessionId，
+    // 否则删除最后一个会话后再发送会带空 sessionId 触发服务端 400。
     await sessionStore.saveMessages(messages, model, provider);
+    if (!_sendSessionId) _sendSessionId = sessionStore.activeId;
 
     // 后台启动生成任务（服务端挂机），拿 runId
     const startRes = await fetch(apiBase + 'ai/chat/start', {
