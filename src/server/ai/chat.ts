@@ -106,7 +106,8 @@ export async function* streamChat(
   messages: ChatMessage[],
   model: string,
   provider: string,
-  wsServer: WsServer
+  wsServer: WsServer,
+  signal?: AbortSignal,
 ): AsyncGenerator<StreamEvent> {
   const tools = getToolDefinitions();
 
@@ -152,6 +153,7 @@ export async function* streamChat(
   let turn = 0;
 
   while (true) {
+    if (signal?.aborted) { yield { type: 'error', content: '已取消' }; return; }
     turn++;
     const requestBody: Record<string, unknown> = {
       model: model || apiProvider.models[0] || 'deepseek-v4-flash',
@@ -168,6 +170,7 @@ export async function* streamChat(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(requestBody),
+      signal,
     });
 
     if (!response.ok) {

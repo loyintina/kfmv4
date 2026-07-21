@@ -635,6 +635,257 @@ function extractText(msg: ChatMessage): string {
 
 // ========== SSE 流式请求 ==========
 
+// ========== 持久化挂机运行态 ==========
+// 当前活跃 runId（服务端后台生成任务）。刷新/切后台后据此重连续读。
+let _activeRunId: string | null = null;
+let _activeCursor = 0; // 已消费到的事件 index（重连从此续读）
+let _sendSessionId = ''; // doSend 时传入的 sessionId
+export function getActiveRunId(): string | null { return _activeRunId; }
+export function getActiveCursor(): number { return _activeCursor; }
+
+// sessionStorage 持久化：{sessionId, runId, cursor} —— 刷新后 orb.ts 据此重连
+const RUN_KEY = 'kfm-active-run';
+function _persistActiveRun(sessionId: string, runId: string | null): void {
+  try {
+    if (runId) sessionStorage.setItem(RUN_KEY, JSON.stringify({ sessionId, runId, cursor: _activeCursor }));
+    else sessionStorage.removeItem(RUN_KEY);
+  } catch { /* ignore */ }
+}
+/** 读取上次未完成的 run（供 orb.ts 页面恢复时重连）。 */
+export function readPersistedRun(): { sessionId: string; runId: string; cursor: number } | null {
+  try {
+    const raw = sessionStorage.getItem(RUN_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+export function clearPersistedRun(): void {
+  try { sessionStorage.removeItem(RUN_KEY); } catch { /* ignore */ }
+}
+
+/** 流消费上下文：把事件应用到 messages 所需的回调与状态 */
+interface RunConsumeCtx {
+  messages: ChatMessage[];
+  onRender: () => void;
+  onWait?: (waiting: boolean) => void;
+  getMsgIdx: () => number;
+  setMsgIdx: (i: number) => void;
+}
+
+/** 把单个 StreamEvent 应用到 messages（纯状态变更 + 动画调度，不含渲染节流） */
+function _applyEvent(event: any, ctx: RunConsumeCtx): void {
+  const { messages, onWait } = ctx;
+  let msgIdx = ctx.getMsgIdx();
+  switch (event.type) {
+    case 'message_start': {
+      onWait?.(false);
+      messages.push({ role: 'ai', content: [] });
+      ctx.setMsgIdx(messages.length - 1);
+      break;
+    }
+    case 'message_stop': { onWait?.(true); break; }
+    case 'content_block_start': {
+      if (msgIdx < 0) break;
+      const { index, blockType, toolUseId, toolName } = event;
+      if (blockType === 'text') {
+        messages[msgIdx].content[index] = { type: 'text', text: '', reasoning: '' };
+      } else if (blockType === 'tool_use') {
+        messages[msgIdx].content[index] = { type: 'tool', id: toolUseId || '', name: toolName || 'unknown', input: {} };
+      }
+      break;
+    }
+    case 'content_block_delta': {
+      if (msgIdx < 0) break;
+      const { index, deltaType, deltaText } = event;
+      const block = messages[msgIdx].content[index];
+      if (!block) break;
+      if (deltaType === 'text_delta' && block.type === 'text') {
+        block.text += deltaText || '';
+      } else if (deltaType === 'thinking_delta' && block.type === 'text') {
+        block.reasoning = (block.reasoning || '') + (deltaText || '');
+      } else if (deltaType === 'input_json_delta' && block.type === 'tool') {
+        const buf = ((block as ToolBlock & { _jsonBuf?: string })._jsonBuf || '') + (deltaText || '');
+        (block as ToolBlock & { _jsonBuf?: string })._jsonBuf = buf;
+        (block as ToolBlock & { _animInput?: string })._animInput = buf;
+      }
+      break;
+    }
+    case 'content_block_stop': {
+      if (msgIdx < 0) break;
+      const { index } = event;
+      const block = messages[msgIdx].content[index];
+      if (block?.type === 'tool' && (block as ToolBlock & { _jsonBuf?: string })._jsonBuf) {
+        let parsed: Record<string, unknown> = {};
+        try { parsed = JSON.parse((block as ToolBlock & { _jsonBuf: string })._jsonBuf); } catch {}
+        block.input = parsed;
+        delete (block as ToolBlock & { _jsonBuf?: string })._jsonBuf;
+        delete (block as ToolBlock & { _animInput?: string })._animInput;
+      }
+      break;
+    }
+    case 'tool_result': {
+      if (msgIdx < 0) break;
+      const toolBlock = messages[msgIdx].content.find(
+        (b): b is ToolBlock => b?.type === 'tool' && b.id === event.toolUseId
+      );
+      if (toolBlock) {
+        toolBlock.result = event.toolResult;
+        clearToolHint(toolBlock.id);
+        const fullText = event.toolResult?.content?.[0]?.text || '';
+        type AnimBlock = ToolBlock & { _animText?: string; _foldPhase?: 'out' | 'fold' };
+        const DURATION = 500, WAIT = 340, INTERVAL = 16;
+        const totalTicks = Math.max(1, Math.round(DURATION / INTERVAL));
+        const cpt = Math.max(1, Math.ceil(fullText.length / totalTicks));
+        (toolBlock as AnimBlock)._animText = '';
+        let pos = 0;
+        const capturedMsgIdx = msgIdx;
+        requestAnimationFrame(() => {
+          const tick = (): void => {
+            pos = Math.min(pos + cpt, fullText.length);
+            (toolBlock as AnimBlock)._animText = fullText.slice(0, pos);
+            scheduleRender();
+            if (pos >= fullText.length) {
+              const t2 = setTimeout(() => {
+                _activeAnimTimers.delete(t2);
+                delete (toolBlock as AnimBlock)._animText;
+                (toolBlock as AnimBlock)._foldPhase = 'fold';
+                const ti3 = messages[capturedMsgIdx].content.filter(b => b.type === 'tool').indexOf(toolBlock);
+                const tid3 = 'tc' + capturedMsgIdx + '_' + ti3;
+                _activeFoldAnims.set(tid3, Date.now());
+                scheduleRender();
+              }, WAIT);
+              _activeAnimTimers.add(t2);
+            } else {
+              const t1 = setTimeout(tick, INTERVAL);
+              _activeAnimTimers.add(t1);
+            }
+          };
+          const t0 = setTimeout(tick, INTERVAL);
+          _activeAnimTimers.add(t0);
+        });
+      }
+      break;
+    }
+    case 'rule_warning': {
+      if (msgIdx < 0) break;
+      messages[msgIdx].content.push({ type: 'rule_warning', content: event.content || '' } as RuleWarningBlock);
+      break;
+    }
+    case 'error': {
+      if (msgIdx < 0) {
+        messages.push({ role: 'ai', content: [{ type: 'text', text: '[错误: ' + event.content + ']' }] });
+        ctx.setMsgIdx(messages.length - 1);
+        break;
+      }
+      const tb = messages[msgIdx].content.find((b): b is TextBlock => b?.type === 'text');
+      if (tb) tb.text += '\n\n[错误: ' + event.content + ']';
+      else messages[msgIdx].content.push({ type: 'text', text: '[错误: ' + event.content + ']' });
+      break;
+    }
+  }
+}
+
+/**
+ * 消费一个 run 的 SSE 续读流（{index,event} 信封）。
+ * 从服务端补齐 fromIndex 起的事件 + 实时尾随，更新 _activeCursor。
+ * 客户端断开（signal abort / 页面关闭）不影响服务端后台生成。
+ * 返回 'done'（生成完成）| 'disconnected'（本次连接中断，run 可能仍在跑）。
+ */
+async function _consumeRun(
+  apiBase: string, runId: string, fromIndex: number,
+  signal: AbortSignal, ctx: RunConsumeCtx,
+): Promise<'done' | 'disconnected'> {
+  const res = await fetch(apiBase + 'ai/chat/' + runId + '/stream?from=' + fromIndex, { signal });
+  const reader = res.body?.getReader();
+  if (!reader) throw new Error('无响应体');
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let lastRender = 0;
+  const throttledRender = () => { const now = Date.now(); if (now - lastRender > 80) { lastRender = now; ctx.onRender(); } };
+  _activeCursor = fromIndex;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) return 'disconnected';
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const jsonStr = line.slice(6).trim();
+      if (!jsonStr) continue;
+      try {
+        const env = JSON.parse(jsonStr);
+        if (env.type === '__end__') return 'done';
+        const event = env.event;
+        if (typeof env.index === 'number') _activeCursor = env.index + 1;
+        _applyEvent(event, ctx);
+        if (
+          event.type === 'message_start' ||
+          (event.type === 'content_block_start' && event.blockType === 'tool_use') ||
+          event.type === 'tool_result' ||
+          event.type === 'rule_warning'
+        ) { lastRender = Date.now(); ctx.onRender(); }
+        else throttledRender();
+      } catch {}
+    }
+  }
+}
+
+/** 生成完成后的收尾：清动画 timer + 去除临时字段 + 落盘 */
+async function _finalizeRun(messages: ChatMessage[], msgIdx: number, model: string, provider: string): Promise<void> {
+  if (msgIdx < 0) {
+    messages.push({ role: 'ai', content: [{ type: 'text', text: '[未收到回复，请重试]' }] });
+  } else if (messages[msgIdx] && messages[msgIdx].content.length === 0) {
+    messages[msgIdx].content.push({ type: 'text', text: '[未收到回复，请重试]' });
+  }
+  clearAllAnimTimers();
+  _activeFoldAnims.clear();
+  for (const m of messages) {
+    for (const b of m.content) {
+      if (b?.type === 'tool') {
+        delete (b as ToolBlock & { _animText?: string })._animText;
+        delete (b as ToolBlock & { _animInput?: string })._animInput;
+        delete (b as ToolBlock & { _foldPhase?: string })._foldPhase;
+        delete (b as ToolBlock & { _userExpanded?: boolean })._userExpanded;
+      }
+      if (b?.type === 'text') delete (b as TextBlock & { _reasonExpanded?: boolean })._reasonExpanded;
+    }
+  }
+  await sessionStore.saveMessages(messages, model, provider);
+}
+
+/**
+ * 重连一个已存在的后台 run（页面刷新/切后台恢复后调用）。
+ * 从 fromIndex 续读补齐已错过的事件 + 实时尾随到完成。
+ */
+export async function resumeRun(
+  apiBase: string, runId: string, fromIndex: number,
+  messages: ChatMessage[], signal: AbortSignal,
+  onRender: () => void, onWait?: (waiting: boolean) => void,
+  model = '', provider = '',
+): Promise<void> {
+  _renderCb = onRender;
+  _activeRunId = runId;
+  let msgIdx = -1;
+  // 重连时 messages 已含历史；新 AI 消息由 message_start 追加。msgIdx 从末尾 AI 消息推断。
+  const ctx: RunConsumeCtx = {
+    messages, onRender, onWait,
+    getMsgIdx: () => msgIdx, setMsgIdx: (i) => { msgIdx = i; },
+  };
+  try {
+    const result = await _consumeRun(apiBase, runId, fromIndex, signal, ctx);
+    if (result === 'done') {
+      _activeRunId = null;
+      await _finalizeRun(messages, msgIdx, model, provider);
+    }
+  } catch (e) {
+    if (!(e instanceof DOMException && e.name === 'AbortError')) {
+      _activeRunId = null;
+    }
+  }
+  onWait?.(false);
+  onRender();
+}
+
 export async function doSend(
   text: string,
   messages: ChatMessage[],
@@ -644,7 +895,9 @@ export async function doSend(
   onRender: () => void,
   onConfigMissing: (msg: string) => void,
   onWait?: (waiting: boolean) => void,
+  sessionId = '',
 ): Promise<void> {
+  _sendSessionId = sessionId;
   // 注册渲染回调供 scheduleRender 合批调用（并行动画共用一个 rAF）
   _renderCb = onRender;
   // 推用户消息（content block 格式）
@@ -693,223 +946,41 @@ export async function doSend(
     const apiMessages: Array<{ role: string; content: string }> = [];
     if (systemPrompt) apiMessages.push({ role: 'system', content: systemPrompt });
     for (const m of messages) {
-      apiMessages.push({
-        role: m.role === 'ai' ? 'assistant' : m.role,
-        content: extractText(m),
-      });
+      apiMessages.push({ role: m.role === 'ai' ? 'assistant' : m.role, content: extractText(m) });
     }
 
-    const apiRes = await fetch(apiBase + 'ai/chat', {
+    // 先落盘用户消息，保证刷新/切后台后能恢复（AI 回复由重连续读补齐）
+    await sessionStore.saveMessages(messages, model, provider);
+
+    // 后台启动生成任务（服务端挂机），拿 runId
+    const startRes = await fetch(apiBase + 'ai/chat/start', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: apiMessages, model, provider }),
+      body: JSON.stringify({ sessionId: _sendSessionId, messages: apiMessages, model, provider }),
       signal,
     });
+    const startData = await startRes.json();
+    if (!startData.runId) { throw new Error(startData.error || '启动生成失败'); }
+    _activeRunId = startData.runId;
+    _persistActiveRun(_sendSessionId, startData.runId);
 
-    const reader = apiRes.body?.getReader();
-    if (!reader) throw new Error('无响应体');
-    const decoder = new TextDecoder();
-    let buffer = '';
     let msgIdx = -1;
-    let lastRender = 0;
-    const throttledRender = () => { const now = Date.now(); if (now - lastRender > 80) { lastRender = now; onRender(); } };
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const jsonStr = line.slice(6).trim();
-        if (jsonStr === '[DONE]') continue;
-        try {
-          const event = JSON.parse(jsonStr);
-          switch (event.type) {
-            case 'message_start': {
-              // 新轮次开始：AI 已开始输出，停等待提示
-              onWait?.(false);
-              // 新轮次：推空 AI 消息
-              messages.push({ role: 'ai', content: [] });
-              msgIdx = messages.length - 1;
-              break;
-            }
-            case 'message_stop': {
-              // 本轮结束。若后面还有一轮（工具调用后 AI 再次请求），服务端会在
-              // 重新调 LLM 期间静默——这里先起等待提示，下一轮 message_start 再停。
-              // 若这是最后一轮，流很快 done，提示存活极短无副作用；流结束兜底会停。
-              onWait?.(true);
-              break;
-            }
-            case 'content_block_start': {
-              if (msgIdx < 0) break;
-              // 新 block 到达：不打扰正在运行的工具动画。
-              // 每个工具的打字机/折叠动画各自独立跑到完成并自动收起（tick 链自终止、
-              // 折叠 300ms 自清理），新 block 只在下方独立渲染自己的内容。
-              // 历史 bug：这里曾 finalize 所有进行中的打字机 + clearAllAnimTimers()，
-              // 导致上方正在滚动流式的工具框被杀掉 tick timer → 卡住不动、也收不回去。
-              // 现在只做无害的容器插槽初始化，动画状态一律保留。
-              const { index, blockType, toolUseId, toolName } = event;
-              if (blockType === 'text') {
-                messages[msgIdx].content[index] = { type: 'text', text: '', reasoning: '' };
-              } else if (blockType === 'tool_use') {
-                messages[msgIdx].content[index] = {
-                  type: 'tool', id: toolUseId || '', name: toolName || 'unknown', input: {},
-                };
-              }
-              break;
-            }
-            case 'content_block_delta': {
-              if (msgIdx < 0) break;
-              const { index, deltaType, deltaText } = event;
-              const block = messages[msgIdx].content[index];
-              if (!block) break;
-              if (deltaType === 'text_delta' && block.type === 'text') {
-                block.text += deltaText || '';
-              } else if (deltaType === 'thinking_delta' && block.type === 'text') {
-                block.reasoning = (block.reasoning || '') + (deltaText || '');
-              } else if (deltaType === 'input_json_delta' && block.type === 'tool') {
-                // 累积 JSON 片段 + 实时流式展示（复用 _animInput）
-                const buf = ((block as ToolBlock & { _jsonBuf?: string })._jsonBuf || '') + (deltaText || '');
-                (block as ToolBlock & { _jsonBuf?: string })._jsonBuf = buf;
-                (block as ToolBlock & { _animInput?: string })._animInput = buf;
-              }
-              break;
-            }
-            case 'content_block_stop': {
-              // tool block：解析累积的 JSON，设置 block.input（输入参数已通过 content_block_delta 实时流式展示）
-              if (msgIdx < 0) break;
-              const { index } = event;
-              const block = messages[msgIdx].content[index];
-              if (block?.type === 'tool' && (block as ToolBlock & { _jsonBuf?: string })._jsonBuf) {
-                let parsed: Record<string, unknown> = {};
-                try { parsed = JSON.parse((block as ToolBlock & { _jsonBuf: string })._jsonBuf); } catch {}
-                block.input = parsed;
-                delete (block as ToolBlock & { _jsonBuf?: string })._jsonBuf;
-                delete (block as ToolBlock & { _animInput?: string })._animInput;
-              }
-              break;
-            }
-            case 'tool_result': {
-              if (msgIdx < 0) break;
-              const toolBlock = messages[msgIdx].content.find(
-                (b): b is ToolBlock => b.type === 'tool' && b.id === event.toolUseId
-              );
-              if (toolBlock) {
-                toolBlock.result = event.toolResult;
-                clearToolHint(toolBlock.id);
-                const fullText = event.toolResult?.content?.[0]?.text || '';
-                type AnimBlock = ToolBlock & { _animText?: string; _foldPhase?: 'out' | 'fold' };
-                // 输出动画：500ms 流完 → 340ms 等待 → CSS transition 300ms 折叠
-                const DURATION = 500; // ms，打字机动画时长
-                const WAIT = 340;     // ms，流完后等待
-                const INTERVAL = 16;  // ms，帧间隔
-                const totalTicks = Math.max(1, Math.round(DURATION / INTERVAL));
-                const cpt = Math.max(1, Math.ceil(fullText.length / totalTicks));
-                (toolBlock as AnimBlock)._animText = '';
-                let pos = 0;
-                requestAnimationFrame(() => {
-                  const tick = (): void => {
-                    pos = Math.min(pos + cpt, fullText.length);
-                    (toolBlock as AnimBlock)._animText = fullText.slice(0, pos);
-                    scheduleRender();
-                    if (pos >= fullText.length) {
-                      // Phase 2: 等待 340ms，然后折叠
-                      const t2 = setTimeout(() => {
-                        _activeAnimTimers.delete(t2);
-                        // Phase 3: 时间戳驱动折叠动画（替代 CSS transition）。
-                        // CSS transition 无法工作：innerHTML 重建创建新元素，max-height 从 0 开始。
-                        // 不持有 element 引用（innerHTML 会销毁），用 tid → 时间戳映射。
-                        delete (toolBlock as AnimBlock)._animText;
-                        (toolBlock as AnimBlock)._foldPhase = 'fold';
-                        const ti3 = messages[msgIdx].content.filter(b => b.type === 'tool').indexOf(toolBlock);
-                        const tid3 = 'tc' + msgIdx + '_' + ti3;
-                        _activeFoldAnims.set(tid3, Date.now());
-                        scheduleRender();
-                      }, WAIT);
-                      _activeAnimTimers.add(t2);
-                    } else {
-                      const t1 = setTimeout(tick, INTERVAL);
-                      _activeAnimTimers.add(t1);
-                    }
-                  };
-                  const t0 = setTimeout(tick, INTERVAL);
-                  _activeAnimTimers.add(t0);
-                });
-              }
-              break;
-            }
-            case 'rule_warning': {
-              if (msgIdx < 0) break;
-              messages[msgIdx].content.push({ type: 'rule_warning', content: event.content || '' } as RuleWarningBlock);
-              break;
-            }
-            case 'error': {
-              // 上游/服务错误：即使 message_start 未到达（msgIdx<0）也要显示，
-              // 否则用户只看到静默断流。无 AI 消息则新建一条承载错误。
-              if (msgIdx < 0) {
-                messages.push({ role: 'ai', content: [{ type: 'text', text: '[错误: ' + event.content + ']' }] });
-                msgIdx = messages.length - 1;
-                break;
-              }
-              const tb = messages[msgIdx].content.find((b): b is TextBlock => b.type === 'text');
-              if (tb) {
-                tb.text += '\n\n[错误: ' + event.content + ']';
-              } else {
-                messages[msgIdx].content.push({ type: 'text', text: '[错误: ' + event.content + ']' });
-              }
-              break;
-            }
-          }
-          // 结构性事件绕过 throttle 立即渲染；content delta 节流（避免高频重绘）。
-          // 设计决策：
-          //   message_start — AI 消息容器出现
-          //   content_block_start(tool) — 工具卡出现（带摸鱼提示）
-          //   tool_result — 执行结果到达
-          //   rule_warning — 警告框出现
-          //   input_json_delta — 输入参数实时流式展示（走节流渲染，不需要立即渲染）
-          if (
-            event.type === 'message_start' ||
-            (event.type === 'content_block_start' && event.blockType === 'tool_use') ||
-            event.type === 'tool_result' ||
-            event.type === 'rule_warning'
-          ) {
-            lastRender = Date.now();
-            onRender();
-          } else {
-            throttledRender();
-          }
-        } catch {}
-      }
+    const ctx: RunConsumeCtx = {
+      messages, onRender, onWait,
+      getMsgIdx: () => msgIdx, setMsgIdx: (i) => { msgIdx = i; },
+    };
+    const result = await _consumeRun(apiBase, startData.runId, startData.fromIndex || 0, signal, ctx);
+    if (result === 'done') {
+      _activeRunId = null;
+      _persistActiveRun(_sendSessionId, null);
+      await _finalizeRun(messages, msgIdx, model, provider);
     }
-    // 兜底：流结束但 message_start 从未收到（provider 静默断流）
-    if (msgIdx < 0) {
-      messages.push({ role: 'ai', content: [{ type: 'text', text: '[未收到回复，请重试]' }] });
-    } else if (messages[msgIdx].content.length === 0) {
-      messages[msgIdx].content.push({ type: 'text', text: '[未收到回复，请重试]' });
-    }
-    onRender();
-    // 流结束：清掉所有仍挂着的打字机/折叠 tick timer，否则它们会在下面 cleanup
-    // 删除 _animText 后又 fire、把动画状态写回并触发渲染（动画"复活"）。
-    clearAllAnimTimers();
-    _activeFoldAnims.clear();
-    // saveMessages 前清除所有 _animText/_animInput（打字机动画可能仍在运行），防止污染持久化数据
-    for (const m of messages) {
-      for (const b of m.content) {
-        if (b.type === 'tool') {
-          delete (b as ToolBlock & { _animText?: string })._animText;
-          delete (b as ToolBlock & { _animInput?: string })._animInput;
-          delete (b as ToolBlock & { _foldPhase?: string })._foldPhase;
-          delete (b as ToolBlock & { _userExpanded?: boolean })._userExpanded;
-        }
-        if (b.type === 'text') {
-          delete (b as TextBlock & { _reasonExpanded?: boolean })._reasonExpanded;
-        }
-      }
-    }
-    await sessionStore.saveMessages(messages, config.modelId, config.providerId);
+    // result==='disconnected'：本次连接断了但后台可能还在跑——不清 _activeRunId，
+    // 由 orb.ts 重连逻辑续读（此处正常返回，等待提示交给 onWait 收尾）
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') {
+      // 用户主动取消：通知服务端取消后台 run
+      if (_activeRunId) { fetch(apiBase + 'ai/chat/' + _activeRunId + '/cancel', { method: 'POST' }).catch(() => {}); _activeRunId = null; }
+      _persistActiveRun(_sendSessionId, null);
       const lastMsg = messages[messages.length - 1];
       const tb = lastMsg?.content?.find((b): b is TextBlock => b.type === 'text');
       if (tb) tb.text = '已取消';

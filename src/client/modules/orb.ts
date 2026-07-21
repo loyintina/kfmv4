@@ -23,7 +23,7 @@ import { anim } from './animation-registry.js';
 import { log } from './logger.js';
 import { sessionStore } from './session-store.js';
 import { buildPanelContent } from './orb-panel.js';
-import { renderChatContent, doSend, startWaitingIndicator, type ChatMessage } from './orb-chat.js';
+import { renderChatContent, doSend, resumeRun, readPersistedRun, clearPersistedRun, startWaitingIndicator, type ChatMessage } from './orb-chat.js';
 import type { OrbState } from './orb-state.js';
 const API_BASE = window.location.pathname.replace(/\/+$/, '') + '/api/';
 
@@ -487,6 +487,34 @@ export async function initOrb(): Promise<void> {
       _renderChat();
     }
 
+    // 页面恢复（刷新/切后台回来）：若上次有未完成的后台 run 且属于当前会话，
+    // 自动重连续读——补齐刷新期间错过的输出并继续实时尾随。这是"挂机持久化"入口。
+    let reconnectAbort: AbortController | null = null;
+    (async () => {
+      const persisted = readPersistedRun();
+      if (!persisted || persisted.sessionId !== sessionStore.activeId) { if (persisted) clearPersistedRun(); return; }
+      // 校验服务端该 run 是否还在（进程重启后运行态已丢）
+      try {
+        const chk = await fetch(base + 'ai/chat/active?sessionId=' + encodeURIComponent(persisted.sessionId)).then(r => r.json());
+        if (!chk.runId || chk.runId !== persisted.runId) { clearPersistedRun(); return; }
+      } catch { clearPersistedRun(); return; }
+      if (orbState === 'collapsed') expandPanel();
+      reconnectAbort = new AbortController();
+      let stopHint2: (() => void) | null = null;
+      const setWait2 = (w: boolean) => {
+        if (w) { if (!stopHint2 && panelEl) stopHint2 = startWaitingIndicator(panelEl); }
+        else if (stopHint2) { stopHint2(); stopHint2 = null; }
+      };
+      // 从头续读：服务端缓冲了本轮全部事件，from=0 全量重放重建 AI 回复
+      await resumeRun(base, persisted.runId, 0, chatMessages, reconnectAbort.signal,
+        () => _renderChat('auto'), setWait2,
+        sessionStore.list.find(s => s.id === persisted.sessionId)?.modelId || '',
+        sessionStore.list.find(s => s.id === persisted.sessionId)?.providerId || '',
+      );
+      setWait2(false);
+      clearPersistedRun();
+    })();
+
     let abortCtrl: AbortController | null = null;
 
     // 监听会话切换 → 重载消息
@@ -549,6 +577,7 @@ export async function initOrb(): Promise<void> {
           _renderChat('auto');
         },
         setWait,
+        sessionStore.activeId || '',
       );
 
       // 流结束兜底：确保提示已停
