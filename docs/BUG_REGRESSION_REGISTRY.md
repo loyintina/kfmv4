@@ -8,7 +8,7 @@ maintainer: AI agent
 
 > **把 687 个历史 `fix` 蒸馏成「该不该测 / 测了没」的追踪地图。**
 >
-> 配套设计文档：`docs/design/REGRESSION_TESTING_SYSTEM.md`（方法论与实施步骤）。
+> 配套设计文档：`docs/archive/design/REGRESSION_TESTING_SYSTEM.md`（方法论与实施步骤，已归档）。
 > 编号体系复用 `docs/archive/standards/BUG_AUDIT_REGISTRY.md` 的 B.A.R. 命名空间。
 > 隐性契约相关条目与 `docs/DIAGNOSTICS.md` §一 一一呼应。
 
@@ -72,4 +72,4 @@ maintainer: AI agent
 ---
 
 > 新 bug 修复后：补一个回归钉子 → 在此登记 → 状态置「已钉」。见
-> `docs/design/REGRESSION_TESTING_SYSTEM.md` §3 微循环。
+> `docs/archive/design/REGRESSION_TESTING_SYSTEM.md` §3 微循环。

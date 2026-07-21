@@ -1,17 +1,19 @@
 ---
-status: draft
+status: completed
 version: v1.0
 last_updated: 2026-07-21
+archived_at: 2026-07-21
 maintainer: AI agent
 ---
 
 # KFM v4 — 回归测试体系建设设计规范
 
 > **版本**：v1.0
-> **状态**：设计阶段（draft）
+> **状态**：已完成并归档（completed）
 >
 > 本文档定义 KFM v4 从「零散手动验证」迁移到「分层自动化回归体系」的方法论、
-> 分层策略、实施步骤与验收标准。实施完成后归档到 `docs/archive/design/`。
+> 分层策略、实施步骤与验收标准。8 阶段全部完成，归档为历史参考。
+> 日常维护入口见 `docs/BUG_REGRESSION_REGISTRY.md`。
 
 ## 关联文档
 
@@ -321,24 +323,46 @@ run-manager 原本直接 `import { streamChat }`，无法离线测（会打 prov
 
 ---
 
-## §6 开放问题
+## §6 开放问题（已随实施解决）
 
 ### 6.1 revert 验证如何自动化？
 
-手动 `git revert` → 跑 → 恢复很繁琐。是否需要一个脚本：给定 commit + 测试名，自动
-临时回退、跑指定测试、断言其失败、再恢复？**建议**：阶段 A 手动做，若发现高频再脚本化。
+**结论：暂不脚本化，手动足够。** 全程 6 个批次的 revert 验证都是手动「改一行 →
+跑 → 恢复」，单次成本低、频率不高，未达到脚本化的门槛。若未来批量补钉，可再评估。
 
 ### 6.2 冒烟层是否进 `npm run check` 主管线？
 
-浏览器测试慢且需要环境。**建议**：独立脚本 `npm run smoke`，不进 `check`/`build` 主
-管线；CI 单独定期跑。
+**结论：不进。** 独立 `npm run smoke`（~9s，需 Chromium）。`npm test`（287 测试，~1.3s）
+与 `npm run check` 保持飞快，日常反馈不受影响。CI 可单独定期跑 smoke。
 
 ### 6.3 登记表最终去向
 
-`BUG_REGRESSION_REGISTRY.md` 是活跃追踪表。**建议**：全部批次完成后，作为「测试体系
-建设成果」归档，并在 HANDBOOK 留一个「新 bug → 补钉子 → 登记」的常驻流程指引。
+**结论：`docs/BUG_REGRESSION_REGISTRY.md` 保持活跃**（不归档）——它是「新 bug → 补钉子
+→ 登记」的常驻账本。本设计文档归档后，登记表仍是日常维护入口。
 
 ---
 
-> **本文档与代码同步。实现过程中如发现设计漏洞或新决策，先更新本文再改代码。**
-> **实施完毕后归档到 `docs/archive/design/`，并更新 CLAUDE.md 文档树与 HANDBOOK。**
+## §7 完成总结（2026-07-21）
+
+8 个阶段全部完成。测试 **214 → 287**（+73 自动化）**+ 11 条浏览器冒烟**。
+
+| 层 | 数量 | 手段 |
+|----|------|------|
+| 单元/集成回归钉子 | run-manager 9 + 服务端 32 + 客户端 14 + 液体几何 10 | 依赖注入 + revert 验证 |
+| 不变量 | 8（每类 200-500 次种子随机迭代） | 确定性 PRNG |
+| 冒烟 | 11 | puppeteer headless，独立 `npm run smoke` |
+
+**已钉历史 bug**：BAR-101/102/103/104/106/201 + 路径安全 6 项。**剥离出的纯模块**：
+`createClientIdxMapper`（chat.ts）、`countTextMessages`/`extractMessageText`
+（session-store）、`liquid-geometry.ts`（新）、`StreamFn`/`StartRunFn` 注入点。
+
+**方法论沉淀**（§5 可复制模板）：依赖注入优先于 mock hack；等待信号必须独立于被测
+对象；每个钉子必过 revert 验证；不变量压组合爆炸；冒烟克制在个位到二十几条。
+
+**范围诚实性**：滚动折叠过滤归为死代码（Canvas 重写后 _rowIndex 天然只含可见行）；
+液体适配器接线由 tsc 保证、未单测（已在登记表标注）——不假装覆盖。
+
+---
+
+> 本文档记录回归测试体系从零到八阶段的完整方法论与实施。体系已建成并绿灯运行，
+> 归档为历史参考。日常维护入口见 `docs/BUG_REGRESSION_REGISTRY.md`。
