@@ -419,13 +419,13 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `../src/client/modules/renderers/binary-fallback.ts` | 37 | 1 | — | 二进制文件回退渲染器（文字提示不可预览） |
 | `../src/client/modules/renderers/code-highlight.ts` | 100 | 1 | — | 代码语法高亮渲染器（highlight.js） |
 | `../src/client/modules/renderers/file-type.ts` | 17 | 1 | — | 文件类型图标映射 |
-| `../src/client/modules/renderers/handler-factory.ts` | 274 | 1 | — | 卡片内容处理器工厂（按 typeId 分发） |
+| `../src/client/modules/renderers/handler-factory.ts` | 284 | 1 | — | 卡片内容处理器工厂（按 typeId 分发） |
 | `../src/client/modules/renderers/katex-css.ts` | 3 | 1 | — | KaTeX CSS 注入（CDN） |
 | `../src/client/modules/renderers/math-diagram.ts` | 153 | 1 | — | 数学公式/图表渲染器（KaTeX + Mermaid CDN） |
 | `../src/client/modules/renderers/md-extensions.ts` | 51 | 1 | — | Markdown 渲染扩展（链接、任务列表） |
 | `../src/client/modules/renderers/md-css.ts` | 57 | 2 | ✅ 分组表 | Markdown 渲染 CSS（全局唯一来源，orb + handler-factory 共享） |
 | `../src/client/modules/renderers/text-preview.ts` | 26 | 1 | — | 文本文件预览渲染器 |
-| **合计** | **14134** | | | |
+| **合计** | **14144** | | | |
 
 ### 死代码检查
 **结论：无死代码。** 所有 41 个模块都被至少 1 个文件导入（`terminal-card-04.ts` 和 `tmux-card.ts` 被导入数为 0，但这是模块自身的特性：它们仅在用户侧打开卡片时由 `card-registry.ts` 的 `createHandler` 工厂按需实例化，属于动态加载。`terminal-aux-bar.ts` 已删除（空占位，无任何引用）。`src/cards/` 目录已彻底删除。实际使用的 logger 在 `src/client/modules/logger.ts`。

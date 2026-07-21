@@ -152,6 +152,7 @@ export function createFileHandler(meta: Record<string, unknown>): { activate: (c
     ta.setSelectionRange(pos, pos);
   }
 
+  // 静默保存：只持久化，不切换模式、不重渲染（否则会毁掉正在编辑的 textarea + 关输入法）
   async function _doSave(newContent: string) {
     try {
       await fetch(API + '/files/write', {
@@ -161,6 +162,11 @@ export function createFileHandler(meta: Record<string, unknown>): { activate: (c
       });
       _rawContent = newContent;
     } catch { /* swallow */ }
+  }
+
+  // 保存并切到预览（供预览按钮/失焦等显式退出编辑时用）
+  async function _saveAndPreview(newContent: string) {
+    await _doSave(newContent);
     _mode = 'preview';
     _renderToolbar();
     _renderPreview();
@@ -203,11 +209,15 @@ export function createFileHandler(meta: Record<string, unknown>): { activate: (c
         _previewBtn.style.cssText = _btnStyle(_accent) + _btnActive(_accent);
         _previewBtn.addEventListener('click', () => {
           if (_mode === 'preview') return;
+          const ta = _body.firstElementChild as HTMLTextAreaElement | null;
           // 保存编辑区滚动位置
-          const ta = _body.firstElementChild;
           if (ta?.tagName === 'TEXTAREA') {
             _scrollRatio = ta.scrollTop / Math.max(1, ta.scrollHeight - ta.clientHeight);
           }
+          // 切预览前刷掉待保存的防抖，落盘当前内容
+          if (_saveTimer !== undefined) { clearTimeout(_saveTimer); _saveTimer = undefined; }
+          const val = ta?.tagName === 'TEXTAREA' ? ta.value : _rawContent;
+          if (val !== _rawContent) { _saveAndPreview(val); return; }
           _mode = 'preview';
           _renderToolbar();
           _renderPreview();
