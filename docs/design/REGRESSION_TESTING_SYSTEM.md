@@ -259,7 +259,7 @@ z-index、光标/滚动、WS 重连）几乎零覆盖。
 | 4 | 第二批：客户端纯逻辑 | ✅ 已完成（14 测试：消息计数/模式着色/buildTree，剥离 countTextMessages，revert 验证） | 阶段 0 |
 | 5 | 第三批：剥离渲染后钉（canvas-cursor/scroll） | ✅ 已完成（10 测试：剥离 liquid-geometry，BAR-201 平移协变 revert 验证。滚动折叠过滤属旧 DOM 时代，Canvas 重写后 _rowIndex 已只含可见行 → 归为死代码，不钉） | 阶段 4 |
 | 6 | 不变量层 | ✅ 已完成（8 测试，5 类不变量：flex 无重叠/填满、liquid 有界平移、clientIdx 连续幂等、Box 树指针一致；确定性 PRNG，每类 200-500 次随机迭代） | 阶段 4 |
-| 7 | 冒烟层（Playwright） | ⬜ 待开始 | 全部逻辑层稳定后 |
+| 7 | 冒烟层（真浏览器） | ✅ 已完成（11 条，puppeteer-core headless，~9s；独立 `npm run smoke`，不进主管线。用 computed z-index 数值断言而非截图，避免假红） | 全部逻辑层稳定后 |
 
 > 状态列随实施推进更新（⬜ 待开始 / 🔄 进行中 / ✅ 已完成）。
 
