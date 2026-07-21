@@ -12,6 +12,7 @@ docs/
 ├── AGENTS.md                   ← 本文。AI 文档维护指南
 ├── HANDBOOK.md                 ← 工作手册：架构、调试、待办、测试（日常翻）
 ├── KFM_V4_INVARIANTS.md       ← 修改约束：心法 + 自查清单（改代码前读）
+├── development/                ← 开发指南（CARD_DEV_GUIDE 加卡；SPEC_DRIVEN_WORKFLOW 做带文档的大改动）
 ├── design/                     ← 待实现的设计提案
 │   ├── VISION_AND_ROADMAP.md   ← 远景：核心理念 + 演进路线
 │   ├── WORKBENCH_SPEC.md       ← 卡片工作台（active 设计提案）

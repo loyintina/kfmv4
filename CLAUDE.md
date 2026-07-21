@@ -9,6 +9,7 @@
 > **改代码前先读** `docs/KFM_V4_INVARIANTS.md`（修改约束协议）。
 > **日常干活翻** `docs/HANDBOOK.md`（架构+调试+待办+测试）。
 > **规划设计时参考** `docs/design/VISION_AND_ROADMAP.md`（远景）。
+> **做带文档的大改动前先读** `docs/development/SPEC_DRIVEN_WORKFLOW.md`（设计→分阶段执行→追加约束→判断归档的元工作流）。
 > **做浮卡相关改动先读** `docs/archive/design/CARD_SYSTEM_UNIFICATION_SPEC.md`（已归档：统一化方案失败，当前为 card-registry 数据层 + card-stack/floating-card UI 层）。
 > **加新卡片前先读** `docs/development/CARD_DEV_GUIDE.md`（卡片插件开发指南）。
 > **改 AI 对话流式/挂机/WS 重连/终端恢复先读** `docs/design/AI_CHAT_RUNTIME.md`（后台挂机运行时架构 + 跨 10 文件的隐式时序契约）。
@@ -52,7 +53,8 @@ docs/
 ├── PROJECT_ASSESSMENT.md    # 项目把控理解与建议（整体认知参考）
 ├── HANDBOOK.md              # 工作手册：架构-状态-待办（日常翻）
 ├── development/             # 开发指南
-│   └── CARD_DEV_GUIDE.md    # 卡片插件开发指南（加新卡前读）
+│   ├── CARD_DEV_GUIDE.md    # 卡片插件开发指南（加新卡前读）
+│   └── SPEC_DRIVEN_WORKFLOW.md # 规范驱动工作流：怎么做带文档的大改动（大改动前读）
 ├── KFM_V4_INVARIANTS.md     # 修改约束协议：心法原则+自查清单（改代码前必读）
 ├── DIAGNOSTICS.md           # 诊断手册：隐性契约 + 排查流程 + 根因案例库（遇到 bug 先翻）
 ├── BUG_REGRESSION_REGISTRY.md # Bug 回归登记表：687 fix 蒸馏成「该不该测/测了没」追踪表
