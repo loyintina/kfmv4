@@ -643,23 +643,24 @@ let _sendSessionId = ''; // doSend 时传入的 sessionId
 export function getActiveRunId(): string | null { return _activeRunId; }
 export function getActiveCursor(): number { return _activeCursor; }
 
-// sessionStorage 持久化：{sessionId, runId, cursor} —— 刷新后 orb.ts 据此重连
+// localStorage 持久化：{sessionId, runId} —— 跨刷新/切后台/杀浏览器重启后据此重连。
+// 用 localStorage 而非 sessionStorage：后者随标签页/浏览器关闭清空，杀浏览器就丢了。
 const RUN_KEY = 'kfm-active-run';
 function _persistActiveRun(sessionId: string, runId: string | null): void {
   try {
-    if (runId) sessionStorage.setItem(RUN_KEY, JSON.stringify({ sessionId, runId, cursor: _activeCursor }));
-    else sessionStorage.removeItem(RUN_KEY);
+    if (runId) localStorage.setItem(RUN_KEY, JSON.stringify({ sessionId, runId }));
+    else localStorage.removeItem(RUN_KEY);
   } catch { /* ignore */ }
 }
 /** 读取上次未完成的 run（供 orb.ts 页面恢复时重连）。 */
-export function readPersistedRun(): { sessionId: string; runId: string; cursor: number } | null {
+export function readPersistedRun(): { sessionId: string; runId: string } | null {
   try {
-    const raw = sessionStorage.getItem(RUN_KEY);
+    const raw = localStorage.getItem(RUN_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch { return null; }
 }
 export function clearPersistedRun(): void {
-  try { sessionStorage.removeItem(RUN_KEY); } catch { /* ignore */ }
+  try { localStorage.removeItem(RUN_KEY); } catch { /* ignore */ }
 }
 
 /** 流消费上下文：把事件应用到 messages 所需的回调与状态 */
@@ -801,9 +802,16 @@ async function _consumeRun(
   let buffer = '';
   let lastRender = 0;
   const throttledRender = () => { const now = Date.now(); if (now - lastRender > 80) { lastRender = now; ctx.onRender(); } };
-  _activeCursor = fromIndex;
   while (true) {
-    const { done, value } = await reader.read();
+    let chunk: ReadableStreamReadResult<Uint8Array>;
+    try {
+      chunk = await reader.read();
+    } catch (e) {
+      // 网络中断（切后台被挂起/断网）→ 视为断连，交给上层重连，不当硬错误
+      if (signal.aborted) throw e; // 用户主动取消，照常上抛
+      return 'disconnected';
+    }
+    const { done, value } = chunk;
     if (done) return 'disconnected';
     buffer += decoder.decode(value, { stream: true });
     const lines = buffer.split('\n');
@@ -827,6 +835,48 @@ async function _consumeRun(
         else throttledRender();
       } catch {}
     }
+  }
+}
+
+/**
+ * 带自动重连的续读：断连（切后台/网络抖动）后，只要服务端该 run 仍存活，
+ * 就从当前 cursor 续读补齐，最多重试若干次（指数退避）。用户主动取消或 run
+ * 已消失则停止。返回最终状态。
+ */
+async function _consumeWithReconnect(
+  apiBase: string, runId: string, startFrom: number,
+  signal: AbortSignal, ctx: RunConsumeCtx,
+): Promise<'done' | 'gone'> {
+  let from = startFrom;
+  let attempt = 0;
+  while (true) {
+    if (signal.aborted) return 'gone';
+    let result: 'done' | 'disconnected';
+    try {
+      result = await _consumeRun(apiBase, runId, from, signal, ctx);
+    } catch (e) {
+      if (signal.aborted) throw e;
+      result = 'disconnected';
+    }
+    if (result === 'done') return 'done';
+    // 断连：从已消费到的 cursor 续读
+    from = _activeCursor;
+    // 校验服务端 run 是否还在
+    try {
+      const chk = await fetch(apiBase + 'ai/chat/' + runId + '/status').then(r => r.json());
+      if (chk.done) {
+        // 已完成：再补一次剩余事件即返回
+        await _consumeRun(apiBase, runId, from, signal, ctx).catch(() => {});
+        return 'done';
+      }
+      if (!chk.exists) return 'gone';
+    } catch {
+      if (++attempt > 5) return 'gone';
+    }
+    // 指数退避重连（0.3s、0.6s、1.2s… 上限 3s）
+    const delay = Math.min(300 * 2 ** attempt, 3000);
+    attempt++;
+    await new Promise(r => setTimeout(r, delay));
   }
 }
 
@@ -872,15 +922,14 @@ export async function resumeRun(
     getMsgIdx: () => msgIdx, setMsgIdx: (i) => { msgIdx = i; },
   };
   try {
-    const result = await _consumeRun(apiBase, runId, fromIndex, signal, ctx);
+    const result = await _consumeWithReconnect(apiBase, runId, fromIndex, signal, ctx);
+    _activeRunId = null;
     if (result === 'done') {
-      _activeRunId = null;
+      _persistActiveRun('', null);
       await _finalizeRun(messages, msgIdx, model, provider);
     }
   } catch (e) {
-    if (!(e instanceof DOMException && e.name === 'AbortError')) {
-      _activeRunId = null;
-    }
+    if (!(e instanceof DOMException && e.name === 'AbortError')) _activeRunId = null;
   }
   onWait?.(false);
   onRender();
@@ -968,14 +1017,13 @@ export async function doSend(
       messages, onRender, onWait,
       getMsgIdx: () => msgIdx, setMsgIdx: (i) => { msgIdx = i; },
     };
-    const result = await _consumeRun(apiBase, startData.runId, startData.fromIndex || 0, signal, ctx);
+    const result = await _consumeWithReconnect(apiBase, startData.runId, startData.fromIndex || 0, signal, ctx);
+    _activeRunId = null;
+    _persistActiveRun(_sendSessionId, null);
     if (result === 'done') {
-      _activeRunId = null;
-      _persistActiveRun(_sendSessionId, null);
       await _finalizeRun(messages, msgIdx, model, provider);
     }
-    // result==='disconnected'：本次连接断了但后台可能还在跑——不清 _activeRunId，
-    // 由 orb.ts 重连逻辑续读（此处正常返回，等待提示交给 onWait 收尾）
+    // result==='gone'：run 在服务端消失（进程重启/淘汰），停止；已渲染的内容保留
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') {
       // 用户主动取消：通知服务端取消后台 run

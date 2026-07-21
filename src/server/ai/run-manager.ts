@@ -57,8 +57,10 @@ export function getRun(runId: string): Run | null {
 }
 
 /**
- * 启动一个后台生成任务。若该 session 已有未完成 run，直接返回它（幂等）。
- * 生成在后台跑，不依赖任何客户端连接。
+ * 启动一个后台生成任务。startRun 只在用户显式发送新消息时调用——
+ * 若该 session 已有旧 run（无论是否完成），一律取消并以新消息启动全新 run，
+ * 保证新消息不会被丢弃、也不会错误地"接上"旧 run 的上下文。
+ * （重连续读走 getActiveRun/attachRun，不经过这里。）
  */
 export function startRun(
   sessionId: string,
@@ -67,9 +69,14 @@ export function startRun(
   provider: string,
   wsServer: WsServer,
 ): Run {
-  // 已有活跃 run（未完成）→ 复用，避免重复生成
-  const existing = getActiveRun(sessionId);
-  if (existing && !existing.done) return existing;
+  // 取消该 session 的旧 run（若仍在跑），新消息取代之
+  const prev = getActiveRun(sessionId);
+  if (prev) {
+    if (!prev.done) prev.abort.abort();
+    if (prev.evictTimer) clearTimeout(prev.evictTimer);
+    _runs.delete(prev.id);
+    _bySession.delete(sessionId);
+  }
 
   const run: Run = {
     id: _newRunId(),

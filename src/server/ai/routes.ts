@@ -10,7 +10,7 @@
 
 import { Router } from 'express';
 import { getToolDefinitions } from './tools/index.js';
-import { startRun, attachRun, cancelRun, getActiveRun } from './run-manager.js';
+import { startRun, attachRun, cancelRun, getActiveRun, getRun } from './run-manager.js';
 import type { WsServer } from '../ws-server.js';
 
 export function setupAiRoutes(router: Router, wsServer: WsServer) {
@@ -69,6 +69,12 @@ export function setupAiRoutes(router: Router, wsServer: WsServer) {
   router.post('/ai/chat/:runId/cancel', (req, res) => {
     const ok = cancelRun(req.params.runId);
     res.json({ ok });
+  });
+
+  /** GET /ai/chat/:runId/status — 重连前探活：{ exists, done } */
+  router.get('/ai/chat/:runId/status', (req, res) => {
+    const run = getRun(req.params.runId);
+    res.json(run ? { exists: true, done: run.done, eventCount: run.events.length } : { exists: false, done: false });
   });
 
   /** GET /ai/chat/active?sessionId=X — 查询该 session 是否有活跃 run（重连入口） */
