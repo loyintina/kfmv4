@@ -64,3 +64,40 @@ export function sanitizePath(userPath: string): string | null {
 
   return resolved;
 }
+
+/**
+ * 判断 URL hostname 是否为本地回环。用于 WS 与文件写删接口的 Origin 校验。
+ *
+ * 注意 IPv6：`new URL('http://[::1]:80').hostname` 返回带方括号的 `[::1]`，
+ * 故两种写法都接受。
+ */
+export function isLoopbackHost(host: string): boolean {
+  return host === 'localhost' || host === '127.0.0.1' || host === '::1' || host === '[::1]';
+}
+
+/**
+ * Express 中间件：写删类文件接口的 drive-by 防护（安全关键）。
+ *
+ * 变更类接口（write/copy/move/delete/rename/create-*）能改用户磁盘。服务虽绑
+ * 127.0.0.1，但用户访问的恶意网页可从浏览器向 http://localhost 发跨源写请求
+ * （drive-by）。浏览器发起时会自动带上发起页面的真实 Origin 头，且 JS 无法伪造它，
+ * 因此校验 Origin 为本地回环即可挡住外部网站的跨源写删。
+ *
+ * 放行规则（与 ws-server._verifyOrigin 一致）：
+ *   - 无 Origin 头（非浏览器客户端：本地脚本/curl/测试）→ 放行
+ *   - Origin 的 host 是 localhost / 127.0.0.1 / [::1] → 放行
+ *   - 其余（任何外部网站）→ 403 拒绝
+ */
+export function verifyLocalOrigin(
+  req: { headers: Record<string, string | string[] | undefined> },
+  res: { status(code: number): { json(body: unknown): void } },
+  next: () => void,
+): void {
+  const originHeader = req.headers['origin'];
+  const origin = Array.isArray(originHeader) ? originHeader[0] : originHeader;
+  if (!origin) { next(); return; } // 非浏览器客户端不带 Origin
+  try {
+    if (isLoopbackHost(new URL(origin).hostname)) { next(); return; }
+  } catch { /* 无法解析 → 落到下面拒绝 */ }
+  res.status(403).json({ error: '跨源写操作被拒绝' });
+}

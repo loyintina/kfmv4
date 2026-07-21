@@ -8,7 +8,7 @@
 import type { Router } from 'express';
 import fs from 'fs';
 import path from 'path';
-import { ROOT_DIR, sanitizePath } from '../path-utils.js';
+import { ROOT_DIR, sanitizePath, verifyLocalOrigin } from '../path-utils.js';
 
 // ========== 类型 ==========
 
@@ -109,104 +109,90 @@ export function setupFileRoutes(router: Router): void {
     } catch (error: any) { res.status(500).json({ error: error.message }); }
   });
 
-  router.post('/files/write', (req, res) => {
-    try {
-      const targetPath = sanitizePath(req.body.path);
-      if (!targetPath) { res.json({ error: '路径不合法' }); return; }
-      const content: string = req.body.content;
-      fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-      if (req.body.append) fs.appendFileSync(targetPath, content, 'utf-8');
-      else fs.writeFileSync(targetPath, content, 'utf-8');
-      res.json({ success: true, path: targetPath });
-    } catch (error: any) { res.json({ error: error.message }); }
-  });
+  router.post('/files/write', verifyLocalOrigin, (req, res) => { try {
+    const targetPath = sanitizePath(req.body.path);
+    if (!targetPath) { res.json({ error: '路径不合法' }); return; }
+    const content: string = req.body.content;
+    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+    if (req.body.append) fs.appendFileSync(targetPath, content, 'utf-8');
+    else fs.writeFileSync(targetPath, content, 'utf-8');
+    res.json({ success: true, path: targetPath });
+  } catch (error: any) { res.json({ error: error.message }); } });
 
-  router.post('/files/copy', (req, res) => {
-    try {
-      const src = sanitizePath(req.body.source);
-      const dest = sanitizePath(req.body.dest);
-      if (!src || !dest) { res.json({ error: '路径不合法' }); return; }
-      if (!fs.existsSync(src)) { res.json({ error: '源路径不存在', path: src }); return; }
-      const stat = fs.statSync(src);
-      if (stat.isDirectory()) { fs.cpSync(src, dest, { recursive: true }); }
-      else { fs.mkdirSync(path.dirname(dest), { recursive: true }); fs.cpSync(src, dest); }
-      res.json({ success: true, source: src, dest });
-    } catch (e: any) { res.json({ error: e.message }); }
-  });
+  router.post('/files/copy', verifyLocalOrigin, (req, res) => { try {
+    const src = sanitizePath(req.body.source);
+    const dest = sanitizePath(req.body.dest);
+    if (!src || !dest) { res.json({ error: '路径不合法' }); return; }
+    if (!fs.existsSync(src)) { res.json({ error: '源路径不存在', path: src }); return; }
+    const stat = fs.statSync(src);
+    if (stat.isDirectory()) { fs.cpSync(src, dest, { recursive: true }); }
+    else { fs.mkdirSync(path.dirname(dest), { recursive: true }); fs.cpSync(src, dest); }
+    res.json({ success: true, source: src, dest });
+  } catch (e: any) { res.json({ error: e.message }); } });
 
-  router.post('/files/move', (req, res) => {
+  router.post('/files/move', verifyLocalOrigin, (req, res) => { try {
+    const src = sanitizePath(req.body.source);
+    const dest = sanitizePath(req.body.dest);
+    if (!src || !dest) { res.json({ error: '路径不合法' }); return; }
+    if (!fs.existsSync(src)) { res.json({ error: '源路径不存在', path: src }); return; }
     try {
-      const src = sanitizePath(req.body.source);
-      const dest = sanitizePath(req.body.dest);
-      if (!src || !dest) { res.json({ error: '路径不合法' }); return; }
-      if (!fs.existsSync(src)) { res.json({ error: '源路径不存在', path: src }); return; }
-      try {
-        fs.mkdirSync(path.dirname(dest), { recursive: true });
-        fs.renameSync(src, dest);
-      } catch {
-        const stat = fs.statSync(src);
-        if (stat.isDirectory()) { fs.cpSync(src, dest, { recursive: true }); fs.rmSync(src, { recursive: true, force: true }); }
-        else { fs.cpSync(src, dest); fs.rmSync(src); }
-      }
-      res.json({ success: true, source: src, dest });
-    } catch (e: any) { res.json({ error: e.message }); }
-  });
-
-  router.post('/files/delete', (req, res) => {
-    try {
-      const target = sanitizePath(req.body.path);
-      if (!target) { res.json({ error: '路径不合法' }); return; }
-      if (!fs.existsSync(target)) { res.json({ error: '路径不存在', path: target }); return; }
-      const stat = fs.statSync(target);
-      if (stat.isDirectory()) { fs.rmSync(target, { recursive: true, force: true }); }
-      else { fs.rmSync(target); }
-      res.json({ success: true, path: target });
-    } catch (e: any) { res.json({ error: e.message }); }
-  });
-
-  router.post('/files/rename', (req, res) => {
-    try {
-      const src = sanitizePath(req.body.path);
-      const newName = req.body.newName;
-      if (!src) { res.json({ error: '路径不合法' }); return; }
-      if (!newName || typeof newName !== 'string' || newName.includes('/')) { res.json({ error: '文件名不合法' }); return; }
-      if (!fs.existsSync(src)) { res.json({ error: '路径不存在', path: src }); return; }
-      const dir = path.dirname(src);
-      const dest = path.join(dir, newName);
-      if (fs.existsSync(dest)) { res.json({ error: '目标已存在', path: dest }); return; }
+      fs.mkdirSync(path.dirname(dest), { recursive: true });
       fs.renameSync(src, dest);
-      res.json({ success: true, source: src, dest });
-    } catch (e: any) { res.json({ error: e.message }); }
-  });
+    } catch {
+      const stat = fs.statSync(src);
+      if (stat.isDirectory()) { fs.cpSync(src, dest, { recursive: true }); fs.rmSync(src, { recursive: true, force: true }); }
+      else { fs.cpSync(src, dest); fs.rmSync(src); }
+    }
+    res.json({ success: true, source: src, dest });
+  } catch (e: any) { res.json({ error: e.message }); } });
 
-  router.post('/files/create-folder', (req, res) => {
-    try {
-      const parentDir = sanitizePath(req.body.parentDir);
-      if (!parentDir) { res.json({ error: '路径不合法' }); return; }
-      if (!fs.existsSync(parentDir) || !fs.statSync(parentDir).isDirectory()) { res.json({ error: '父目录不存在' }); return; }
-      let name = '\u65B0\u5EFA\u6587\u4EF6\u5939';
-      let dest = path.join(parentDir, name);
-      let seq = 2;
-      while (fs.existsSync(dest)) { dest = path.join(parentDir, name + ' ' + seq); seq++; }
-      fs.mkdirSync(dest);
-      res.json({ success: true, path: dest });
-    } catch (e: any) { res.json({ error: e.message }); }
-  });
+  router.post('/files/delete', verifyLocalOrigin, (req, res) => { try {
+    const target = sanitizePath(req.body.path);
+    if (!target) { res.json({ error: '路径不合法' }); return; }
+    if (!fs.existsSync(target)) { res.json({ error: '路径不存在', path: target }); return; }
+    const stat = fs.statSync(target);
+    if (stat.isDirectory()) { fs.rmSync(target, { recursive: true, force: true }); }
+    else { fs.rmSync(target); }
+    res.json({ success: true, path: target });
+  } catch (e: any) { res.json({ error: e.message }); } });
 
-  router.post('/files/create-file', (req, res) => {
-    try {
-      const parentDir = sanitizePath(req.body.parentDir);
-      if (!parentDir) { res.json({ error: '路径不合法' }); return; }
-      if (!fs.existsSync(parentDir) || !fs.statSync(parentDir).isDirectory()) { res.json({ error: '父目录不存在' }); return; }
-      let base = '\u65B0\u5EFA\u6587\u4EF6';
-      let name = base + '.md';
-      let dest = path.join(parentDir, name);
-      let seq = 2;
-      while (fs.existsSync(dest)) { name = base + ' ' + seq + '.md'; dest = path.join(parentDir, name); seq++; }
-      fs.writeFileSync(dest, '');
-      res.json({ success: true, path: dest });
-    } catch (e: any) { res.json({ error: e.message }); }
-  });
+  router.post('/files/rename', verifyLocalOrigin, (req, res) => { try {
+    const src = sanitizePath(req.body.path);
+    const newName = req.body.newName;
+    if (!src) { res.json({ error: '路径不合法' }); return; }
+    if (!newName || typeof newName !== 'string' || newName.includes('/')) { res.json({ error: '文件名不合法' }); return; }
+    if (!fs.existsSync(src)) { res.json({ error: '路径不存在', path: src }); return; }
+    const dir = path.dirname(src);
+    const dest = path.join(dir, newName);
+    if (fs.existsSync(dest)) { res.json({ error: '目标已存在', path: dest }); return; }
+    fs.renameSync(src, dest);
+    res.json({ success: true, source: src, dest });
+  } catch (e: any) { res.json({ error: e.message }); } });
+
+  router.post('/files/create-folder', verifyLocalOrigin, (req, res) => { try {
+    const parentDir = sanitizePath(req.body.parentDir);
+    if (!parentDir) { res.json({ error: '路径不合法' }); return; }
+    if (!fs.existsSync(parentDir) || !fs.statSync(parentDir).isDirectory()) { res.json({ error: '父目录不存在' }); return; }
+    let name = '\u65B0\u5EFA\u6587\u4EF6\u5939';
+    let dest = path.join(parentDir, name);
+    let seq = 2;
+    while (fs.existsSync(dest)) { dest = path.join(parentDir, name + ' ' + seq); seq++; }
+    fs.mkdirSync(dest);
+    res.json({ success: true, path: dest });
+  } catch (e: any) { res.json({ error: e.message }); } });
+
+  router.post('/files/create-file', verifyLocalOrigin, (req, res) => { try {
+    const parentDir = sanitizePath(req.body.parentDir);
+    if (!parentDir) { res.json({ error: '路径不合法' }); return; }
+    if (!fs.existsSync(parentDir) || !fs.statSync(parentDir).isDirectory()) { res.json({ error: '父目录不存在' }); return; }
+    let base = '\u65B0\u5EFA\u6587\u4EF6';
+    let name = base + '.md';
+    let dest = path.join(parentDir, name);
+    let seq = 2;
+    while (fs.existsSync(dest)) { name = base + ' ' + seq + '.md'; dest = path.join(parentDir, name); seq++; }
+    fs.writeFileSync(dest, '');
+    res.json({ success: true, path: dest });
+  } catch (e: any) { res.json({ error: e.message }); } });
 
   router.get('/system/info', (_req, res) => {
     res.json({ user: process.env.USER || 'root', home: ROOT_DIR, cwd: process.cwd() });

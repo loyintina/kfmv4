@@ -12,7 +12,7 @@
  * 失败 = 构建中断。
  */
 
-import { readFileSync, readdirSync, existsSync, statSync } from 'fs';
+import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from 'fs';
 import { join, relative, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -352,11 +352,67 @@ function checkEngineDeps() {
 
   walk(engineDir);
 }
+// ============================================================
+// 0. 计数自动同步（单一真相源：代码 → 文档）
+//
+// 心法 17：派生数字（测试数、心法条数）的真相源是代码，文档只是消费者。
+// 与其让人每次手改 6 处文档再靠 checkNumericClaims 报错拦截，不如在此
+// 就地把文档数字改成代码实际值——和 check-linecount 自动写回行数表同一范式。
+// 同步后 checkNumericClaims 自然通过；仍保留它作为"同步遗漏"的兜底断言。
+// ============================================================
+
+/** 统计 tests/ 下 test()/regression() 函数总数 */
+function actualTestCount() {
+  let n = 0;
+  const testDir = join(ROOT, 'tests');
+  if (!existsSync(testDir)) return 0;
+  for (const entry of readdirSync(testDir)) {
+    if (!entry.endsWith('.test.ts') && !entry.endsWith('.test.mjs')) continue;
+    const c = readFileSync(join(testDir, entry), 'utf-8');
+    n += (c.match(/^\s*(?:test|regression)\(/gm) || []).length;
+  }
+  return n;
+}
+
+/** 统计 INVARIANTS §一 心法条数 */
+function actualPrinciplesCount() {
+  const doc = readFileSync(join(ROOT, 'docs/KFM_V4_INVARIANTS.md'), 'utf-8');
+  return (doc.match(/^#### \d+\. /gm) || []).length;
+}
+
+function syncCounts() {
+  const testCount = actualTestCount();
+  const principlesCount = actualPrinciplesCount();
+  let synced = 0;
+
+  // 测试数：改写 "N 个测试" / "N 个回归测试"（排除 "新增/覆盖/有 N 个测试" 语境）
+  const testFiles = ['CLAUDE.md', 'docs/HANDBOOK.md', 'docs/DIAGNOSTICS.md', 'docs/PROJECT_ASSESSMENT.md', 'README.md', 'docs/archive/standards/TESTING.md'];
+  for (const file of testFiles) {
+    const path = join(ROOT, file);
+    if (!existsSync(path)) continue;
+    const before = readFileSync(path, 'utf-8');
+    const after = before.replace(/(?<!\d)(?<!(?:新增|覆盖|有) )(\d+)(\s*个\s*(?:回归)?测试)/g,
+      (m, num, tail) => (parseInt(num, 10) === testCount ? m : `${testCount}${tail}`));
+    if (after !== before) { writeFileSync(path, after); synced++; }
+  }
+
+  // 心法条数：改写 INVARIANTS 里 "N 条心法" / "心法原则（N 条）"
+  const invPath = join(ROOT, 'docs/KFM_V4_INVARIANTS.md');
+  const invBefore = readFileSync(invPath, 'utf-8');
+  const invAfter = invBefore
+    .replace(/(\d+)(\s*条\s*心法)/g, (m, num, tail) => (parseInt(num, 10) === principlesCount ? m : `${principlesCount}${tail}`))
+    .replace(/(心法原则（)(\d+)(\s*条）)/g, (m, pre, num, tail) => (parseInt(num, 10) === principlesCount ? m : `${pre}${principlesCount}${tail}`));
+  if (invAfter !== invBefore) { writeFileSync(invPath, invAfter); synced++; }
+
+  if (synced > 0) console.log(`[check-consistency] 计数已自动同步（${testCount} 测试 / ${principlesCount} 心法）→ ${synced} 处文档`);
+}
+
 
 // ============================================================
 // Main
 // ============================================================
 
+syncCounts();
 checkDocTree();
 checkNumericClaims();
 checkDeletedClaims();

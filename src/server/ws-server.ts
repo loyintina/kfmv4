@@ -16,6 +16,7 @@
 import { Server as HttpServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { PtyManager } from './terminal-pty.js';
+import { isLoopbackHost } from './path-utils.js';
 import { execFile } from 'child_process';
 
 // ========== 类型定义 ==========
@@ -64,8 +65,7 @@ export class WsServer {
     const origin = info.origin;
     if (!origin) return true; // 非浏览器客户端不带 Origin
     try {
-      const host = new URL(origin).hostname;
-      return host === 'localhost' || host === '127.0.0.1' || host === '::1';
+      return isLoopbackHost(new URL(origin).hostname);
     } catch {
       return false; // Origin 存在但无法解析 → 可疑，拒绝
     }

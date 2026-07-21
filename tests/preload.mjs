@@ -394,11 +394,9 @@ globalThis.CSS = {
   escape: (s) => s,
 };
 
-// URL
-globalThis.URL = {
-  createObjectURL: () => '',
-  revokeObjectURL: () => {},
-};
+// URL：保留原生构造/解析能力，仅补上 jsdom 没有的 createObjectURL/revokeObjectURL
+globalThis.URL.createObjectURL = () => '';
+globalThis.URL.revokeObjectURL = () => {};
 globalThis.Blob = class Blob {};
 
 // Test helpers
