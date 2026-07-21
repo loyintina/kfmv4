@@ -38,15 +38,19 @@ maintainer: AI agent
 | BAR | commit | 症状 | 类别 | 状态 | 测试位置 |
 |-----|--------|------|------|------|---------|
 | BAR-101 | `a5bf0c4` | 生成结束后 `__end__` 不发，发送按钮卡死 + 残留等待框（run.done finally 时序） | I | ✅ 已钉（revert 验证） | `tests/run-manager.test.ts` |
-| BAR-102 | `f46a551` | 推理模型等待提示留白 + 删会话后再发送 400（空 sessionId） | I | 待钉 | — |
+| BAR-102 | `f46a551` | 推理模型等待提示留白 + 删会话后再发送 400（空 sessionId） | I | ✅ 已钉（102a-e，服务端校验，revert 验证） | `tests/server-routes.test.ts` |
 | BAR-103 | `1d9fdbc` | 删最后一个会话后统计行不更新 + 光球面板不清空 | L | 待钉 | — |
 | BAR-104 | `d4a60f7` | 挂机重连：已完成 run 补齐续读 / fromIndex 续读 / supersede 取代 | I | ✅ 已钉（104a/b/c，revert 验证） | `tests/run-manager.test.ts` |
 | BAR-105 | `da39891` | 取消时未完成工具卡卡在「忙碌中」 | L | 待钉 | — |
-| BAR-106 | `7ac8f47` | Claude 工具块非零起始 index → content 空洞 → `reading type` 崩溃 | L | 待钉 | — |
+| BAR-106 | `7ac8f47` | Claude 工具块非零起始 index → content 空洞 → `reading type` 崩溃 | L | ✅ 已钉（106a-d，剥离 createClientIdxMapper，revert 验证） | `tests/chat-protocol.test.ts` |
 
 ### 第二批：服务端 + 安全边界
 
-> 待步骤 3 填充（path-utils 路径逃逸、files 路由校验等）。
+| BAR | commit | 症状/契约 | 类别 | 状态 | 测试位置 |
+|-----|--------|-----------|------|------|---------|
+| BAR-SEC-01…06 | `path-utils` | sanitizePath 路径逃逸守卫（目录遍历/绝对路径/前缀绕过/多段遍历） | L | ✅ 已钉（安全关键） | `tests/path-utils.test.ts` |
+
+> files 路由 CRUD 校验待后续补充。
 
 ### 第三批：客户端逻辑
 

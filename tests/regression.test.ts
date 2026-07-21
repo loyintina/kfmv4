@@ -31,6 +31,9 @@ import './engine.test.js';
 import './orb-state.test.js';
 import './floating-state.test.js';
 import './run-manager.test.js';
+import './server-routes.test.js';
+import './path-utils.test.js';
+import './chat-protocol.test.js';
 
 function seedState(files: Record<string, any>) {
   KFMState.files = {};

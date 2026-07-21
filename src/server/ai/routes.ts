@@ -13,7 +13,10 @@ import { getToolDefinitions } from './tools/index.js';
 import { startRun, attachRun, cancelRun, getActiveRun, getRun } from './run-manager.js';
 import type { WsServer } from '../ws-server.js';
 
-export function setupAiRoutes(router: Router, wsServer: WsServer) {
+/** 可注入的 startRun 签名（测试用，生产走默认值） */
+export type StartRunFn = typeof startRun;
+
+export function setupAiRoutes(router: Router, wsServer: WsServer, startRunFn: StartRunFn = startRun) {
   /**
    * POST /ai/chat/start
    * body: { sessionId, messages, model, provider }
@@ -26,7 +29,7 @@ export function setupAiRoutes(router: Router, wsServer: WsServer) {
       res.status(400).json({ error: '缺少 sessionId 或 messages 参数' });
       return;
     }
-    const run = startRun(
+    const run = startRunFn(
       sessionId, messages,
       model || 'deepseek-v4-flash',
       provider || 'opencode-go',
