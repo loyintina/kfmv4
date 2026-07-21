@@ -198,7 +198,7 @@ function checkNumericClaims() {
     for (const entry of readdirSync(testDir)) {
       if (!entry.endsWith('.test.ts') && !entry.endsWith('.test.mjs')) continue;
       const testContent = readFileSync(join(testDir, entry), 'utf-8');
-      testCount += (testContent.match(/^\s*test\(/gm) || []).length;
+      testCount += (testContent.match(/^\s*(?:test|regression)\(/gm) || []).length;
     }
   }
   for (const file of ['CLAUDE.md', 'docs/HANDBOOK.md', 'docs/DIAGNOSTICS.md', 'docs/PROJECT_ASSESSMENT.md', 'README.md', 'docs/archive/standards/TESTING.md']) {
