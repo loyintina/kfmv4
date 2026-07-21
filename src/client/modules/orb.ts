@@ -524,14 +524,20 @@ export async function initOrb(): Promise<void> {
     // 监听会话切换 → 重载消息
     window.addEventListener('kfm-session-change', async (e: Event) => {
       const detail = (e as CustomEvent).detail;
-      if (!detail?.sessionId) return;
       await sessionStore.load();
-      sessionStore.activeId = detail.sessionId;
+      const sid: string = detail?.sessionId ?? '';
+      sessionStore.activeId = sid;
       _orbSessionSelect?.updateItems(
         sessionStore.list.map(s => ({ label: s.title, value: s.id })),
-        detail.sessionId
+        sid
       );
-      sessionStore.getMessages(detail.sessionId).then(msgs => {
+      if (!sid) {
+        // 最后一个会话被删除 → 清空聊天面板
+        chatMessages.length = 0;
+        _renderChat();
+        return;
+      }
+      sessionStore.getMessages(sid).then(msgs => {
         chatMessages.length = 0;
         chatMessages.push(...msgs.map(m => ({ role: m.role as 'user' | 'ai', content: m.content || [] })));
         _renderChat();

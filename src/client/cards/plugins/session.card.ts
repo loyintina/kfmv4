@@ -367,8 +367,12 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
   // ---- 全量刷新 ----
   let _poolListEl: HTMLElement | null = null;
   let _bubbleContainer: HTMLElement | null = null;
+  let _statsEl: HTMLSpanElement | null = null;
 
   function renderAll(): void {
+    if (_statsEl) {
+      _statsEl.textContent = `共 ${sessions.length} 个会话，${sessions.reduce((n, s) => n + s.messages.filter(m => extractMsgText(m).trim()).length, 0)} 条消息`;
+    }
     if (_nameInput) { const s = getActiveSession(); _nameInput!.value = s?.title || ''; }
     if (_sessionSelect) {
       _sessionSelect.updateItems(sessions.map(s => ({ label: s.title, value: s.id })), activeSessionId);
@@ -504,6 +508,7 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
       const statsEl = document.createElement('span');
       statsEl.style.cssText = 'font-size:var(--card-font-size,10px);color:rgba(255,255,255,0.5)';
       statsEl.textContent = `共 ${sessions.length} 个会话，${sessions.reduce((n, s) => n + s.messages.filter(m => extractMsgText(m).trim()).length, 0)} 条消息`;
+      _statsEl = statsEl;
       poolHeader.appendChild(statsEl);
       poolCard.appendChild(poolHeader);
 
@@ -534,6 +539,7 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
     deactivate(contentEl) {
       _poolListEl = null;
       _bubbleContainer = null;
+      _statsEl = null;
       contentEl.innerHTML = '';
     },
   };
