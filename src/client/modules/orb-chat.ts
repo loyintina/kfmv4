@@ -21,6 +21,7 @@ import { preprocessMd, MARKED_OPTS } from './renderers/md-extensions.js';
 import { highlightAll } from './renderers/code-highlight.js';
 import { renderMath, renderMermaid, type MathData } from './renderers/math-diagram.js';
 import { WAITING_HINTS } from '../data/waiting-hints.js';
+import { hslToHex } from './color-utils.js';
 
 // ========== 类型 ==========
 
@@ -51,14 +52,6 @@ function renderPlainText(text: string): string {
   return escapeHtml(text);
 }
 
-function hslToHex(h: number, s: number, l: number): string {
-  const a = s * Math.min(l, 1 - l);
-  const f = (n: number) => { const k = (n + h / 30) % 12; return Math.round((l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1)) * 255); };
-  const r = f(0).toString(16).padStart(2, '0');
-  const g = f(8).toString(16).padStart(2, '0');
-  const b = f(4).toString(16).padStart(2, '0');
-  return '#' + r + g + b;
-}
 
 function hexToRgba(hex: string, alpha: number): string {
   const num = parseInt(hex.slice(1), 16);
@@ -298,7 +291,7 @@ export function renderChatContent(state: ChatState): void {
   _lastRenderState = state;
 
   const innerWidth = renderWidth - 24;
-  (window as unknown as Record<string, unknown>).__orbMsgs = messages;
+  (window as unknown as Record<string, unknown>).__orbMsgs = messages; // escape-ok: 挂到 window 供内联 onclick 读取，DOM 全局无类型
   if (innerWidth < 50) return;
 
   const msgHtmls: string[] = [];  // 每条消息一个 HTML 片段（视口裁剪按条替换为占位）
@@ -909,18 +902,23 @@ async function _finalizeRun(messages: ChatMessage[], msgIdx: number, model: stri
 }
 
 /**
- * 取消时收尾：给所有仍处于"执行中"（无 result）的工具块打上已取消结果，
- * 使其从"忙碌中"变为完成态 → 自动折叠，不再卡住。同时清动画状态。
+ * 取消收尾的纯逻辑（BAR-105 核心，抽出为可测函数）：给所有仍处于"执行中"
+ * （无 result）的工具块打上已取消结果，使其从"忙碌中"变完成态。
+ * 已有 result 的工具块不覆盖。返回被标记为取消的工具块数。
+ *
+ * 纯函数：只改 content 数组里工具块的 result + 清 UI-only 动画字段，
+ * 不碰计时器/toolHint（那些 DOM 副作用留在 _cancelPendingTools）。
  */
-function _cancelPendingTools(messages: ChatMessage[]): void {
-  clearAllAnimTimers();
-  _activeFoldAnims.clear();
+export function cancelPendingToolBlocks(messages: ChatMessage[]): number {
+  let cancelled = 0;
   for (const m of messages) {
     for (const b of m.content) {
       if (b?.type === 'tool') {
         const tb = b as ToolBlock;
-        if (!tb.result) tb.result = { content: [{ type: 'text', text: '(已取消)' }], isError: true };
-        clearToolHint(tb.id);
+        if (!tb.result) {
+          tb.result = { content: [{ type: 'text', text: '(已取消)' }], isError: true };
+          cancelled++;
+        }
         delete (b as ToolBlock & { _animText?: string })._animText;
         delete (b as ToolBlock & { _animInput?: string })._animInput;
         delete (b as ToolBlock & { _foldPhase?: string })._foldPhase;
@@ -928,6 +926,21 @@ function _cancelPendingTools(messages: ChatMessage[]): void {
       }
     }
   }
+  return cancelled;
+}
+
+/**
+ * 取消时收尾：清动画计时器/toolHint（DOM 副作用），再调纯函数标记未完成工具块。
+ */
+function _cancelPendingTools(messages: ChatMessage[]): void {
+  clearAllAnimTimers();
+  _activeFoldAnims.clear();
+  for (const m of messages) {
+    for (const b of m.content) {
+      if (b?.type === 'tool') clearToolHint((b as ToolBlock).id);
+    }
+  }
+  cancelPendingToolBlocks(messages);
 }
 
 /**

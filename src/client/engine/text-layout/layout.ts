@@ -133,9 +133,9 @@ function createEmptyPrepared(includeSegments: boolean): InternalPreparedText | P
     chunks: [],
   }
   if (includeSegments) {
-    return { ...base, segments: [] } as unknown as PreparedTextWithSegments
+    return { ...base, segments: [] } as unknown as PreparedTextWithSegments // escape-ok: 内部构造的 prepared 对象，字段结构与目标类型一致，TS 无法推断联合分支
   }
-  return base as unknown as InternalPreparedText
+  return base as unknown as InternalPreparedText // escape-ok: 同上，联合返回类型的分支收窄
 }
 
 function measureAnalysis(
@@ -260,13 +260,13 @@ function measureAnalysis(
       widths, lineEndFitAdvances, lineEndPaintAdvances, kinds,
       simpleLineWalkFastPath, segLevels, breakableWidths, breakablePrefixWidths,
       discretionaryHyphenWidth, tabStopAdvance, chunks, segments,
-    } as unknown as PreparedTextWithSegments
+    } as unknown as PreparedTextWithSegments // escape-ok: 内部构造的 prepared 对象，字段与目标类型一致
   }
   return {
     widths, lineEndFitAdvances, lineEndPaintAdvances, kinds,
     simpleLineWalkFastPath, segLevels, breakableWidths, breakablePrefixWidths,
     discretionaryHyphenWidth, tabStopAdvance, chunks,
-  } as unknown as InternalPreparedText
+  } as unknown as InternalPreparedText // escape-ok: 同上，联合返回类型分支收窄
 }
 
 function mapAnalysisChunksToPreparedChunks(

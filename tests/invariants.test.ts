@@ -11,11 +11,12 @@
 // ==========================================================================
 
 import assert from 'assert';
-import { group, test } from './runner.js';
+import { group, test, regression } from './runner.js';
 import { Box } from '../src/client/engine/v2/box.js';
 import { applyFlexLayout } from '../src/client/engine/v2/flex.js';
 import { computeLiquidSegments, liquidPathLen } from '../src/client/modules/liquid-geometry.js';
 import { createClientIdxMapper } from '../src/server/ai/chat.js';
+import { Z } from '../src/client/modules/z-index-layers.js';
 
 // ---- 确定性 PRNG（mulberry32）：种子化，可复现 ----
 function prng(seed: number): () => number {
@@ -209,5 +210,35 @@ test('随机 addChild/removeChild → parent 指针与 children 数组始终一�
         assert(node.parent.children.includes(node), `iter${iter}: parent 指针与 children 不一致`);
       }
     }
+  }
+});
+
+// ==========================================================================
+// 不变量 6：右滑临时卡组 z-index 层级（BAR-202, 9cb6622）
+//
+// 根因：_repositionCards 曾用硬编码 String(1001+i) 覆写 z-index，把批量卡
+// 降到文件树(SIDEBAR=4000)/侧栏遮罩(3900)之下 → 卡组视觉上埋在背景里。
+// 修复：改用 Z.TREE_TEMP_CARD + i。这里钉住层级关系不变量——只要有人把
+// 临时卡基数改回低于文件树、或工具栏跌到卡下，即失败。
+// ==========================================================================
+
+group('invariant — 临时卡组 z-index 层级（BAR-202）');
+
+regression('BAR-202a', '9cb6622', '临时卡组基数高于文件树与侧栏遮罩', () => {
+  assert(Z.TREE_TEMP_CARD > Z.SIDEBAR, `临时卡(${Z.TREE_TEMP_CARD})须高于文件树(${Z.SIDEBAR})`);
+  assert(Z.TREE_TEMP_CARD > Z.SIDEBAR_OVERLAY, `临时卡(${Z.TREE_TEMP_CARD})须高于侧栏遮罩(${Z.SIDEBAR_OVERLAY})`);
+  assert(Z.TREE_TEMP_CARD > Z.MODE_SYSTEM_BG, `临时卡(${Z.TREE_TEMP_CARD})须高于底衬面板(${Z.MODE_SYSTEM_BG})`);
+});
+
+regression('BAR-202b', '9cb6622', '模式工具栏(✓/✗)在临时卡之上，整个子带不越界 L6', () => {
+  assert(Z.MODE_SYSTEM > Z.TREE_TEMP_CARD, `工具栏(${Z.MODE_SYSTEM})须在临时卡(${Z.TREE_TEMP_CARD})之上`);
+  // 整个临时卡子带（含堆叠序号，实际上限约 TREE_TEMP_CARD+N）不得侵入 L6 终端带(6400)
+  assert(Z.MODE_SYSTEM < Z.TERMINAL_STEM, `临时卡子带须留在 L5，不侵入 L6(${Z.TERMINAL_STEM})`);
+});
+
+regression('BAR-202c', '9cb6622', '堆叠 N 张卡（基数+序号）仍全高于文件树', () => {
+  // _repositionCards 用 Z.TREE_TEMP_CARD + i；即使 i 很大也不能跌破文件树
+  for (let i = 0; i < 50; i++) {
+    assert(Z.TREE_TEMP_CARD + i > Z.SIDEBAR, `第${i}张卡 z=${Z.TREE_TEMP_CARD + i} 须高于文件树`);
   }
 });

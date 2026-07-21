@@ -66,7 +66,7 @@ export function setupProxyRoutes(router: Router): void {
           nodeReader.read().then((result) => {
             if (result.done) { res.end(); return; }
             res.write(decoder.decode(result.value, { stream: true }));
-            const httpRes = res as unknown as { flush?(): void };
+            const httpRes = res as unknown as { flush?(): void }; // escape-ok: express Response 无 flush 类型，compression 中间件注入；as-unknown-as 因结构不兼容必须
             httpRes.flush?.();
             pump();
           }).catch(() => res.end());

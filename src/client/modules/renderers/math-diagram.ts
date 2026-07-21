@@ -64,7 +64,8 @@ export async function renderMath(el: HTMLElement, data: MathData): Promise<void>
       await _loadScript(KATEX_CDN);
       _katexLoaded = true;
     }
-    const katex = (window as any).katex;
+    const w = window as unknown as { katex?: { render(tex: string, el: HTMLElement, opts?: unknown): void; renderToString(tex: string, opts?: unknown): string } }; // escape-ok: CDN 动态加载的全局，无类型定义
+    const katex = w.katex;
     if (!katex) return;
 
     for (const div of el.querySelectorAll<HTMLElement>('.katex-display')) {
@@ -99,7 +100,8 @@ export async function renderMermaid(el: HTMLElement, accent: string): Promise<vo
       await _loadScript(MERMAID_CDN);
       _mermaidLoaded = true;
     }
-    const mermaid = (window as any).mermaid;
+    const w = window as unknown as { mermaid?: { initialize(cfg: unknown): void; render(id: string, text: string): Promise<{ svg: string }> } }; // escape-ok: CDN 动态加载的全局，无类型定义
+    const mermaid = w.mermaid;
     if (!mermaid) return;
 
     // accent hex → RGB → 生成多级透明度变体

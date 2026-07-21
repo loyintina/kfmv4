@@ -210,7 +210,7 @@ export interface FileRowData {
 /** 从 Box.data 中安全读取 FileRowData */
 export function getFileRowData(d: Record<string, unknown>): FileRowData | null {
   if (typeof d.path === 'string' && typeof d.isDir === 'boolean') {
-    return d as unknown as FileRowData;
+    return d as unknown as FileRowData; // escape-ok: 已通过 typeof 守卫验证 path+isDir 字段，TS 不会从 Record<string,unknown> 收窄到具名接口
   }
   return null;
 }

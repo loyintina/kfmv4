@@ -158,25 +158,10 @@ export class RendererLifecycle {
     return this._treeOp.kind === 'animating' ? this._treeOp.direction : null;
   }
 
-  // ---- 向后兼容：旧代码仍可读取 animatingPath / _animBusy / _animBusyAt ----
-  // 写入请用 beginOp() / endOp()；读取用 isAnimating / animatingDir / animatingPath
+  // ---- 向后兼容：animatingPath 只读访问器（tree-render 仍读它判断同路径点击）----
+  // 写入走 beginOp(path, direction)；读取用 isAnimating / animatingDir / animatingPath
   get animatingPath(): string | null {
     return this._treeOp.kind === 'animating' ? this._treeOp.path : null;
-  }
-  // animatingPath setter 已删除 — 所有写入走 beginOp(path, direction)
-  get _animBusy(): boolean {
-    return this._treeOp.kind !== 'idle';
-  }
-  set _animBusy(v: boolean) {
-    if (!v && this._treeOp.kind === 'animating') {
-      this._treeOp = { kind: 'idle' };
-    }
-  }
-  get _animBusyAt(): number {
-    return this._treeOp.kind === 'animating' ? this._treeOp.startedAt : 0;
-  }
-  set _animBusyAt(_v: number) {
-    // no-op, startedAt is set when the op begins
   }
 
   // ---- rAF 句柄 ----
@@ -192,12 +177,8 @@ export class RendererLifecycle {
 
   /** 取消所有已注册的 rAF 循环 */
   cancelAllRafs(): void {
-    const handles = [
-      "_cursorWheelDecayRaf", "_wheelRaf", "_cursorFlingRaf", "_flingRaf"
-    ] as const;
-    for (const key of handles) {
-      const id = this[key] as number;
-      if (id) { cancelAnimationFrame(id); (this as unknown as Record<string, number>)[key] = 0; }
+    for (const key of ['_cursorWheelDecayRaf', '_wheelRaf', '_cursorFlingRaf', '_flingRaf'] as const) {
+      if (this[key]) { cancelAnimationFrame(this[key]); this[key] = 0; }
     }
   }
 

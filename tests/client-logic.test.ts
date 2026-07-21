@@ -143,3 +143,33 @@ test('折叠目录不展开子节点（expandedPaths 未含该路径）', () => 
   const count = (b: any): number => 1 + (b.children || []).reduce((n: number, c: any) => n + count(c), 0);
   assert(count(expanded) > count(collapsed), '展开态盒子数应多于折叠态');
 }, { tag: 'integration' });
+
+// ==========================================================================
+// color-utils hslToHex — 合法 HSL 恒产出合法 6 位 hex
+//
+// 背景：orb-chat 曾有一份本地 hslToHex 副本，缺 s/=100;l/=100 归一化与
+// clamp，对 sat/lit=0-100 的输入产出损坏字符串（如 "#ab83d-a4aa..."）。
+// 合并到 color-utils 规范版时修复。此钉子钉住不变量：任意合法 HSL →
+// 恰好 "#" + 6 位十六进制，防止任何副本或改动再次违反。
+// ==========================================================================
+
+import { hslToHex } from '../src/client/modules/color-utils.js';
+
+group('color-utils — hslToHex 合法 hex 不变量');
+
+regression('BAR-COLOR-01', 'color-utils', 'sat/lit 用 0-100 范围 → 合法 #rrggbb', () => {
+  const hexRe = /^#[0-9a-f]{6}$/;
+  // orb-chat randomToolAccent 的实际取值范围：h=0-360, sat=45-70, lit=50-65
+  for (const [h, s, l] of [[0, 45, 50], [120, 50, 55], [220, 60, 57], [300, 70, 65], [360, 62, 55]] as const) {
+    const hex = hslToHex(h, s, l);
+    assert(hexRe.test(hex), `hslToHex(${h},${s},${l})=${hex} 应为合法 #rrggbb`);
+  }
+});
+
+regression('BAR-COLOR-02', 'color-utils', '边界 HSL（黑/白/全饱和）→ 合法 hex', () => {
+  const hexRe = /^#[0-9a-f]{6}$/;
+  for (const [h, s, l] of [[0, 0, 0], [0, 0, 100], [0, 100, 50], [359, 100, 50]] as const) {
+    const hex = hslToHex(h, s, l);
+    assert(hexRe.test(hex), `边界 hslToHex(${h},${s},${l})=${hex} 应合法`);
+  }
+});

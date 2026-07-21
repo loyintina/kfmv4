@@ -31,7 +31,7 @@ export const kfmSnapshotTool: KfmTool = {
     }
 
     // 格式化输出
-    const formatted = formatSnapshot(snapshot as unknown as Record<string, unknown>);
+    const formatted = formatSnapshot(snapshot as unknown as Record<string, unknown>); // escape-ok: PageDescription 接口无索引签名，无法结构化赋给 Record，字段实为动态
     return {
       content: [{ type: 'text', text: formatted }],
       details: { timestamp: snapshot.timestamp },

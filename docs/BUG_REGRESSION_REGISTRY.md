@@ -41,7 +41,7 @@ maintainer: AI agent
 | BAR-102 | `f46a551` | 推理模型等待提示留白 + 删会话后再发送 400（空 sessionId） | I | ✅ 已钉（102a-e，服务端校验，revert 验证） | `tests/server-routes.test.ts` |
 | BAR-103 | `1d9fdbc` | 删最后一个会话后统计行不更新（消息计数口径） | L | ✅ 已钉（103a-c 计数 + 103d/e 着色，剥离 countTextMessages，revert 验证） | `tests/client-logic.test.ts` |
 | BAR-104 | `d4a60f7` | 挂机重连：已完成 run 补齐续读 / fromIndex 续读 / supersede 取代 | I | ✅ 已钉（104a/b/c，revert 验证） | `tests/run-manager.test.ts` |
-| BAR-105 | `da39891` | 取消时未完成工具卡卡在「忙碌中」 | L | 待钉 | — |
+| BAR-105 | `da39891` | 取消时未完成工具卡卡在「忙碌中」 | L | ✅ 已钉（105a-c，剥离 cancelPendingToolBlocks，revert 验证） | `tests/chat-protocol.test.ts` |
 | BAR-106 | `7ac8f47` | Claude 工具块非零起始 index → content 空洞 → `reading type` 崩溃 | L | ✅ 已钉（106a-d，剥离 createClientIdxMapper，revert 验证） | `tests/chat-protocol.test.ts` |
 
 ### 第二批：服务端 + 安全边界
@@ -67,7 +67,7 @@ maintainer: AI agent
 | BAR | commit | 症状 | 类别 | 状态 | 测试位置 |
 |-----|--------|------|------|------|---------|
 | BAR-201 | `d4f658a` | 液体粒子不跟随光标右滑回弹（坐标系不含 transform.translateX） | L | ✅ 已钉（剥离 liquid-geometry，201a/b 平移协变，revert 验证）<br>注：适配器 `bx=cb.x+transform.translateX` 的接线由 tsc 保证，未单测（DOM 耦合） | `tests/liquid-geometry.test.ts` |
-| BAR-202 | `9cb6622` | 右滑临时卡组 z-index 埋在文件树之下 | L | 待钉 | — |
+| BAR-202 | `9cb6622` | 右滑临时卡组 z-index 埋在文件树之下 | L | ✅ 已钉（202a-c，z-index 层级不变量，revert 验证） | `tests/invariants.test.ts` |
 
 ---
 

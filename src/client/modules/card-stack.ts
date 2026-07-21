@@ -7,6 +7,7 @@ import { createFloatingCard, updateFullscreenSavedPosition } from './floating-ca
 import { log } from './logger.js';
 import { getCardType, getAllCardTypes, type CardContentHandler } from './card-registry.js';
 import { Z } from './z-index-layers.js';
+import { hslToHex } from './color-utils.js';
 
 /**
  * KFM v4 - 堆叠卡片面板
@@ -28,18 +29,6 @@ export function getCardId(index: number): string { return getCard(index)?.typeId
 
 
 let _currentAccents: Array<{ color1: string; color2: string }> | null = null;
-/** HSL → hex （#rrggbb） */
-function hslToHex(h: number, s: number, l: number): string {
-  h /= 360; s /= 100; l /= 100;
-  const a = s * Math.min(l, 1 - l);
-  const f = (n: number) => {
-    const k = (n + h * 12) % 12;
-    const c = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-    return Math.round(255 * Math.max(0, Math.min(1, c)));
-  };
-  const r = f(0), g = f(8), b = f(4);
-  return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
-}
 
 export function hexToRgba(hex: string, alpha: number): string {
   const num = parseInt(hex.slice(1), 16);

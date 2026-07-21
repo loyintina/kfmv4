@@ -238,7 +238,7 @@ function _renameFile(): void {
   const label = rowBox.children.find(c => c.id?.startsWith('label-'));
   if (!label) return;
 
-  const origContent = (label.textStyle as unknown as { content?: string })?.content ?? '';
+  const origContent = label.textStyle.content;
   label.textStyle = { ...label.textStyle, content: '' };
 
   _renaming = true;

@@ -70,3 +70,50 @@ test('独立 mapper 实例互不干扰', () => {
   // b 是全新实例，首见从 1 起
   assert(b.clientIdx(99) === 1, '新实例应从 1 起，不受其他实例影响');
 }, { tag: 'integration' });
+
+// ==========================================================================
+// BAR-105 (da39891): 取消时未完成工具卡卡在「忙碌中」
+// 根因：取消分支只改文本块，未处理无 result 的工具块 → 渲染判定 isExecuting
+// 一直转。修复：cancelPendingToolBlocks 给无 result 工具块打 {已取消, isError}。
+// ==========================================================================
+
+import { cancelPendingToolBlocks } from '../src/client/modules/orb-chat.js';
+import type { ChatMessage } from '../src/client/modules/orb-chat.js';
+
+group('orb-chat — 取消收尾（BAR-105）');
+
+regression('BAR-105a', 'da39891', '无 result 工具块 → 打上 {已取消, isError} 结果', () => {
+  const messages: ChatMessage[] = [
+    { role: 'ai', content: [{ type: 'tool', id: 't1', name: 'bash', input: {} }] },
+  ];
+  const n = cancelPendingToolBlocks(messages);
+  const tb = messages[0].content[0] as { type: 'tool'; result?: { isError?: boolean } };
+  assert(n === 1, `应标记 1 个未完成工具块，得 ${n}`);
+  assert(tb.result !== undefined, '无 result 工具块取消后必须有 result（否则渲染仍判 isExecuting 卡住）');
+  assert(tb.result?.isError === true, '取消结果应 isError=true');
+});
+
+regression('BAR-105b', 'da39891', '已有 result 的工具块 → 不覆盖', () => {
+  const done = { content: [{ type: 'text', text: '真实结果' }], isError: false };
+  const messages: ChatMessage[] = [
+    { role: 'ai', content: [{ type: 'tool', id: 't1', name: 'bash', input: {}, result: done }] },
+  ];
+  const n = cancelPendingToolBlocks(messages);
+  const tb = messages[0].content[0] as { type: 'tool'; result?: { content: Array<{ text?: string }> } };
+  assert(n === 0, `已完成工具块不应被计入取消，得 ${n}`);
+  assert(tb.result?.content[0].text === '真实结果', '已有 result 不能被取消结果覆盖');
+});
+
+regression('BAR-105c', 'da39891', '混合消息：只取消未完成的，文本块不受影响', () => {
+  const messages: ChatMessage[] = [
+    { role: 'ai', content: [
+      { type: 'text', text: '正文' },
+      { type: 'tool', id: 't1', name: 'a', input: {} },
+      { type: 'tool', id: 't2', name: 'b', input: {}, result: { content: [{ type: 'text', text: 'ok' }] } },
+    ] },
+  ];
+  const n = cancelPendingToolBlocks(messages);
+  const text = messages[0].content[0] as { type: 'text'; text: string };
+  assert(n === 1, `只应取消 1 个未完成工具块，得 ${n}`);
+  assert(text.text === '正文', '文本块不应被触碰');
+});
