@@ -332,11 +332,18 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 
 ## 五、回归测试
 
-> 完整测试清单见 [`docs/DIAGNOSTICS.md` 附录 B](./DIAGNOSTICS.md#附录-b回归测试)。
+> 分层体系（方法论见 [`docs/archive/design/REGRESSION_TESTING_SYSTEM.md`](./archive/design/REGRESSION_TESTING_SYSTEM.md)，
+> bug 账本见 [`docs/BUG_REGRESSION_REGISTRY.md`](./BUG_REGRESSION_REGISTRY.md)）：
 >
 > ```bash
-> npm test   # 287 个测试，覆盖 23 个模块（含 Box 引擎）
+> npm test    # 287 个测试（单元/集成/回归钉子/不变量），~1.3s，进主管线
+> npm run smoke  # 11 条浏览器冒烟（puppeteer headless），~9s，独立于主管线
 > ```
+>
+> **分层**：L1 不变量（种子随机压组合爆炸）· L2 单元 · L3 集成 · L4 冒烟（只验「活着」）。
+> **纪律（改代码前必读，见 INVARIANTS 心法 24）**：修 bug → 补 `regression()` 钉子 +
+> 登记 + **revert 验证**（回退修复必须让测试变红）；写逻辑 → 逻辑/渲染分离 + 依赖注入，
+> 不 mock hack；测试不用墙钟计时器。AI 改 `src/` 时触发 `kfmv4-regression-discipline` 规则提醒。
 
 ## 六、约束与原则
 

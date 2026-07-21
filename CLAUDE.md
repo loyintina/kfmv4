@@ -12,6 +12,7 @@
 > **做浮卡相关改动先读** `docs/archive/design/CARD_SYSTEM_UNIFICATION_SPEC.md`（已归档：统一化方案失败，当前为 card-registry 数据层 + card-stack/floating-card UI 层）。
 > **加新卡片前先读** `docs/development/CARD_DEV_GUIDE.md`（卡片插件开发指南）。
 > **改 AI 对话流式/挂机/WS 重连/终端恢复先读** `docs/design/AI_CHAT_RUNTIME.md`（后台挂机运行时架构 + 跨 10 文件的隐式时序契约）。
+> **改代码/修 bug 前先读回归纪律** `docs/BUG_REGRESSION_REGISTRY.md` + INVARIANTS 心法 24（修 bug 补钉子+登记+revert 验证；测试分层见 `docs/archive/design/REGRESSION_TESTING_SYSTEM.md`）。
 > **UI Registry 相关**已归档到 `docs/archive/design/`。
 > **引擎层改动先读** `docs/archive/design/ENGINE_ARCHITECTURE.md`（v2 管线 + text-layout 排版引擎架构）。
 
