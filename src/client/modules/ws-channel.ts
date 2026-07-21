@@ -53,6 +53,8 @@ class WsChannel {
   // 存活看门狗：服务端每 30s 发 ping；超过 WATCHDOG_MS 未收到任何消息 → 判定
   // 连接已死（半开：onclose 不会触发），主动关闭并重连。
   private watchdogTimer: ReturnType<typeof setTimeout> | null = null;
+  // WS 重连回调：重连成功（onopen）后调用，供终端卡重新打开 PTY
+  private reconnectHandlers: Array<() => void> = [];
 
   /** 是否已连接 */
   get connected(): boolean {
@@ -77,6 +79,7 @@ class WsChannel {
     }
 
     this.ws.onopen = () => {
+      const wasConnected = this._connected;
       log('[ws-channel] 已连接到服务端', url);
       this._connected = true;
       this.reconnectDelay = RECONNECT_BASE_MS;
@@ -88,6 +91,11 @@ class WsChannel {
       // 连接后立即推送当前状态
       this.pushSnapshot();
       this.pushCapabilities();
+
+      // 重连成功（不是首次连接）→ 通知已注册的终端卡重新开 PTY
+      if (wasConnected === false && this.reconnectHandlers.length > 0) {
+        for (const h of this.reconnectHandlers) { try { h(); } catch { /* ignore */ } }
+      }
     };
 
     this.ws.onmessage = (event) => {
@@ -289,6 +297,17 @@ class WsChannel {
 
     // 指数退避，上限 30s
     this.reconnectDelay = Math.min(this.reconnectDelay * 2, RECONNECT_MAX_MS);
+  }
+
+  /** 注册重连成功回调（WS 断线重连后调用，供终端卡重新打开 PTY） */
+  onReconnect(handler: () => void): void {
+    if (!this.reconnectHandlers.includes(handler)) this.reconnectHandlers.push(handler);
+  }
+
+  /** 注销重连成功回调 */
+  offReconnect(handler: () => void): void {
+    const i = this.reconnectHandlers.indexOf(handler);
+    if (i >= 0) this.reconnectHandlers.splice(i, 1);
   }
 }
 

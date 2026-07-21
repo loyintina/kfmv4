@@ -60,10 +60,11 @@ export function createTmuxCardHandler(): CardContentHandler {
   let _picker: HTMLElement | null = null;
   let _gid: string | null = null;
   let _resultHandler: ((payload: unknown) => void) | null = null;
+  let _onWsReconnect: (() => void) | null = null;
   let _sessionId = '';
   let _card: CardInstance | null = null;
   let _initDone = false;
-
+  let _lastCommand = ''; // WS 重连后用此命令重新 attach
   function renderPicker(sessions: string[]): void {
     if (!_picker) return;
     _picker.innerHTML = '';
@@ -90,6 +91,7 @@ export function createTmuxCardHandler(): CardContentHandler {
   /** 关闭旧 PTY，用 command 参数打开新 PTY */
   function reopenWithCommand(command: string): void {
     if (!_card) return;
+    _lastCommand = command; // 记录最后一次打开命令，WS 重连后据此恢复
     if (_sessionId) {
       wsChannel.sendMessage('terminal-close', { sessionId: _sessionId });
     }
@@ -167,6 +169,21 @@ export function createTmuxCardHandler(): CardContentHandler {
       }
 
       // autoOpen=false → 不立即开 PTY。onReady 通知终端 DOM 就绪，然后我们发 list-sessions
+      // WS 重连后自动重新 attach 上次的 tmux session（切后台/锁屏后 WS 断线恢复）
+      if (_onWsReconnect) wsChannel.offReconnect(_onWsReconnect);
+      _onWsReconnect = () => {
+        _sessionId = '';   // terminal-card-04 的 onReconnect 会重新 spawn PTY 并触发 onReady
+        _initDone = false; // onReady 回调将重新 list-sessions → 若 _lastCommand 非空直接 reopen
+        if (_lastCommand) {
+          // 有上次的 attach 命令 → 直接重连，不必重新 list-sessions
+          setTimeout(() => {
+            if (_lastCommand) reopenWithCommand(_lastCommand);
+          }, 300); // 稍等 PTY spawn 完成
+        }
+      };
+      wsChannel.onReconnect(_onWsReconnect);
+
+      // autoOpen=false → 不立即开 PTY。onReady 通知终端 DOM 就绪，然后我们发 list-sessions
       initTerminalCore(_bodyEl, card, 'tmux', 'card04', (_sid: string) => {
         if (_sid) _sessionId = _sid;
         if (!_initDone) {
@@ -179,8 +196,10 @@ export function createTmuxCardHandler(): CardContentHandler {
     deactivate(contentEl: HTMLElement, card: CardInstance, reason: 'compact' | 'dismiss'): void {
       if (_gid) { gestures.unregister(_gid); _gid = null; }
       if (_resultHandler) { wsChannel.offMessage('tmux-result', _resultHandler); _resultHandler = null; }
+      if (_onWsReconnect) { wsChannel.offReconnect(_onWsReconnect); _onWsReconnect = null; }
       if (reason === 'dismiss') {
         disposeTerminalCore(card, 'card04');
+        _lastCommand = '';
       } else {
         compactTerminalCore(card);
       }

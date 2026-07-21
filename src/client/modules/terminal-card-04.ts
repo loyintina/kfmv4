@@ -71,6 +71,7 @@ export interface TerminalCardMeta {
   _onOutput?: (p: unknown) => void;
   _onExit?: (p: unknown) => void;
   _onOpened?: (p: unknown) => void;
+  _onReconnect?: () => void;   // WS 重连后重新打开 PTY 的回调
   _openTag?: string;
   _welcomed?: boolean;
 }
@@ -503,12 +504,27 @@ export function initTerminalCore(
   wsChannel.onMessage('terminal-exit', onExit);
   tc.meta._onExit = onExit;
 
+  // WS 重连后自动重新打开 PTY：WS 断线重连 → 旧 PTY/sessionId 在服务端已消失，
+  // 必须重新 terminal-open 拿新 sessionId，否则终端变死（无法输入/无输出）。
+  // 取消旧的重连回调（deactivate 时 dispose 会注销，这里先清旧的防重复）
+  if (tc.meta._onReconnect) wsChannel.offReconnect(tc.meta._onReconnect);
+  const onReconnect = () => {
+    // WS 刚重连：服务端是全新状态，旧 sessionId 无效，重新 spawn 基础 PTY。
+    // tmux 卡的重连回调由 tmux-card.ts 的 _onWsReconnect 另行处理（发 tmux attach）。
+    delete tc.meta.sessionId;
+    term.write('\r\n\x1b[33m[WS 已重连，自动恢复终端]\x1b[0m\r\n');
+    const t = card.instanceId + '-' + Date.now();
+    tc.meta._openTag = t;
+    wsChannel.sendMessage('terminal-open', { tag: t });
+  };
+  tc.meta._onReconnect = onReconnect;
+  wsChannel.onReconnect(onReconnect);
+
   if (!wsChannel.connected) {
     term.write('\x1b[31mWS:off\x1b[0m\r\n');
     if (onReady) onReady('');
   } else {
     // terminal-opened handler 永久注册（card04 re-open 共用）
-    const tag = card.instanceId;
     const onOpened = (p: unknown) => {
       const d = p as { sessionId: string; tag?: string };
       if (d.tag !== tc.meta._openTag) return; // 不是本卡发出的 terminal-open 回复
@@ -526,7 +542,7 @@ export function initTerminalCore(
     tc.meta._onOpened = onOpened;
 
     if (autoOpen) {
-      const t = tag + '-' + Date.now();
+      const t = card.instanceId + '-' + Date.now();
       tc.meta._openTag = t;
       wsChannel.sendMessage('terminal-open', { tag: t });
     } else {
@@ -549,6 +565,10 @@ export function disposeTerminalCore(card: CardInstance, poolName: string): void 
   }
   if (tc.meta._onOpened) {
     wsChannel.offMessage('terminal-opened', tc.meta._onOpened);
+  }
+  if (tc.meta._onReconnect) {
+    wsChannel.offReconnect(tc.meta._onReconnect);
+    delete tc.meta._onReconnect;
   }
   if (tc.meta._xtermEl) {
     _termMap.delete(tc.meta._xtermEl);
