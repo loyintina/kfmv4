@@ -37,6 +37,8 @@ interface ModeCallbacks {
   deployCb: () => void;
   dismissCb: () => void;
   executeCb: () => Promise<void>;
+  /** 返回当前临时卡片 DOM 列表（供切换模式时重新着色；_tempCardEls 是 tree-swipe 私有） */
+  cardsCb: () => HTMLElement[];
 }
 
 let _callbacks: ModeCallbacks | null = null;
@@ -349,7 +351,7 @@ export function updateModeSelection(): void {
       w.style.background = '';
     }
   });
-  applyModeTheme(_selectedMode, []);
+  applyModeTheme(_selectedMode, _callbacks?.cardsCb() ?? []);
 }
 
 // ========== 内部函数 / 常量 ==========

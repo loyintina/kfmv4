@@ -672,6 +672,7 @@ export function initTempCardGesture(): void {
     deployCb: deployAllCards,
     dismissCb: dismissAllCards,
     executeCb: _executeMode,
+    cardsCb: () => _tempCardEls,
   });
 
   gestures.register({
