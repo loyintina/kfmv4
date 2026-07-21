@@ -66,7 +66,7 @@ export function sanitizePath(userPath: string): string | null {
 }
 
 /**
- * 判断 URL hostname 是否为本地回环。用于 WS 与文件写删接口的 Origin 校验。
+ * 判断 URL hostname 是否为本地回环。
  *
  * 注意 IPv6：`new URL('http://[::1]:80').hostname` 返回带方括号的 `[::1]`，
  * 故两种写法都接受。
@@ -76,28 +76,52 @@ export function isLoopbackHost(host: string): boolean {
 }
 
 /**
+ * 判断请求是否可信（非跨源）——WS 握手与文件写删接口共用的 drive-by 判据。
+ *
+ * drive-by 攻击的本质是**跨源**：恶意网页的 Origin host 与本服务的 host 不同。
+ * 因此正确判据是「同源」——Origin 的 host 等于请求实际到达的 Host 头。这样无论
+ * 用户从 localhost、局域网 IP 还是反向代理域名访问，同源请求都放行；只有 host
+ * 不匹配的外部网站被拒。loopback 作为额外兜底（Host 头缺失等边界情形）。
+ *
+ * @param origin  请求的 Origin 头（无则视为非浏览器客户端）
+ * @param hostHeader  请求的 Host 头（服务实际被访问的 host:port）
+ * @returns true=可信放行，false=跨源拒绝
+ */
+export function isTrustedOrigin(origin: string | undefined, hostHeader: string | undefined): boolean {
+  if (!origin) return true; // 非浏览器客户端（脚本/curl/测试）不带 Origin
+  let originHost: string;
+  try {
+    originHost = new URL(origin).hostname;
+  } catch {
+    return false; // Origin 存在但无法解析 → 可疑，拒绝
+  }
+  // 同源：Origin 的 host（含端口）与 Host 头一致 → 放行
+  if (hostHeader) {
+    // Host 头形如 "example.com:8021" 或 "example.com"；Origin 的 host 亦含端口。
+    const originHostPort = (() => { try { return new URL(origin).host; } catch { return ''; } })();
+    if (originHostPort === hostHeader) return true;
+    // 仅 hostname 匹配（端口差异，如代理改写端口）也视为同源
+    const hostHeaderName = hostHeader.replace(/:\d+$/, '');
+    if (originHost === hostHeaderName) return true;
+  }
+  // 兜底：loopback 始终可信
+  return isLoopbackHost(originHost);
+}
+
+/**
  * Express 中间件：写删类文件接口的 drive-by 防护（安全关键）。
  *
- * 变更类接口（write/copy/move/delete/rename/create-*）能改用户磁盘。服务虽绑
- * 127.0.0.1，但用户访问的恶意网页可从浏览器向 http://localhost 发跨源写请求
- * （drive-by）。浏览器发起时会自动带上发起页面的真实 Origin 头，且 JS 无法伪造它，
- * 因此校验 Origin 为本地回环即可挡住外部网站的跨源写删。
- *
- * 放行规则（与 ws-server._verifyOrigin 一致）：
- *   - 无 Origin 头（非浏览器客户端：本地脚本/curl/测试）→ 放行
- *   - Origin 的 host 是 localhost / 127.0.0.1 / [::1] → 放行
- *   - 其余（任何外部网站）→ 403 拒绝
+ * 变更类接口（write/copy/move/delete/rename/create-*）能改用户磁盘。用户访问的
+ * 恶意网页可从浏览器向本服务发跨源写请求（drive-by）。浏览器发起时自动带真实
+ * Origin 头且 JS 无法伪造，故校验「同源」即可挡住外部网站的跨源写删（见
+ * isTrustedOrigin）。同源/无 Origin/loopback 放行，跨源 403。
  */
 export function verifyLocalOrigin(
   req: { headers: Record<string, string | string[] | undefined> },
   res: { status(code: number): { json(body: unknown): void } },
   next: () => void,
 ): void {
-  const originHeader = req.headers['origin'];
-  const origin = Array.isArray(originHeader) ? originHeader[0] : originHeader;
-  if (!origin) { next(); return; } // 非浏览器客户端不带 Origin
-  try {
-    if (isLoopbackHost(new URL(origin).hostname)) { next(); return; }
-  } catch { /* 无法解析 → 落到下面拒绝 */ }
+  const pick = (h: string | string[] | undefined) => Array.isArray(h) ? h[0] : h;
+  if (isTrustedOrigin(pick(req.headers['origin']), pick(req.headers['host']))) { next(); return; }
   res.status(403).json({ error: '跨源写操作被拒绝' });
 }

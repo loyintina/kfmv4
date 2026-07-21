@@ -142,35 +142,51 @@ import { verifyLocalOrigin } from '../src/server/path-utils.js';
 group('path-utils — verifyLocalOrigin 跨源写守卫');
 
 /** 调 verifyLocalOrigin，返回 { passed, status }：passed=next 是否被调用 */
-function runOriginGuard(origin?: string) {
+function runOriginGuard(origin?: string, host?: string) {
   let passed = false;
   const r = { statusCode: 0, body: null as unknown };
-  const req = { headers: origin === undefined ? {} : { origin } };
+  const headers: Record<string, string> = {};
+  if (origin !== undefined) headers.origin = origin;
+  if (host !== undefined) headers.host = host;
+  const req = { headers };
   const res = { status(n: number) { r.statusCode = n; return { json(b: unknown) { r.body = b; } }; } };
   verifyLocalOrigin(req, res, () => { passed = true; });
   return { passed, status: r.statusCode };
 }
 
-regression('BAR-SEC-09', 'path-utils', '外部 Origin 写 → 403 拒绝', () => {
-  const { passed, status } = runOriginGuard('https://evil.example.com');
-  assert(!passed, '外部 Origin 不应通过');
+regression('BAR-SEC-09', 'path-utils', '跨源 Origin（host 不匹配）写 → 403 拒绝', () => {
+  const { passed, status } = runOriginGuard('https://evil.example.com', 'myapp.local:8021');
+  assert(!passed, '跨源 Origin 不应通过');
   assert(status === 403, `应 403，得 ${status}`);
 });
 
 regression('BAR-SEC-10', 'path-utils', '本地回环 Origin → 放行', () => {
   for (const o of ['http://localhost:8021', 'http://127.0.0.1:8021', 'http://[::1]:8021']) {
-    const { passed } = runOriginGuard(o);
+    const { passed } = runOriginGuard(o, 'localhost:8021');
     assert(passed, `本地 Origin ${o} 应放行`);
   }
 });
 
 regression('BAR-SEC-11', 'path-utils', '无 Origin（脚本/curl）→ 放行', () => {
-  const { passed } = runOriginGuard(undefined);
+  const { passed } = runOriginGuard(undefined, 'localhost:8021');
   assert(passed, '无 Origin 的非浏览器客户端应放行');
 });
 
 regression('BAR-SEC-12', 'path-utils', '畸形 Origin → 拒绝（不放行）', () => {
-  const { passed, status } = runOriginGuard('not a url');
+  const { passed, status } = runOriginGuard('not a url', 'localhost:8021');
   assert(!passed, '无法解析的 Origin 不应放行');
   assert(status === 403, `应 403，得 ${status}`);
+});
+
+// 关键回归：同源但非 loopback 访问（局域网 IP / 反向代理域名）必须放行。
+// 旧实现只认 loopback，导致手机/代理访问时 WS 与写删接口全被 403（ws:off，1006 无限重连）。
+regression('BAR-SEC-13', 'path-utils', '同源非 loopback（局域网/代理）→ 放行', () => {
+  // 局域网 IP 访问：Origin host == Host 头
+  assert(runOriginGuard('http://192.168.1.50:8021', '192.168.1.50:8021').passed, '局域网 IP 同源应放行');
+  // 反向代理域名访问
+  assert(runOriginGuard('https://kfm.example.com', 'kfm.example.com').passed, '代理域名同源应放行');
+  // 端口差异（代理改写端口）仍视为同源（hostname 匹配）
+  assert(runOriginGuard('https://kfm.example.com', 'kfm.example.com:8021').passed, '同 host 不同端口应放行');
+  // 但 host 不匹配的外部站点仍拒绝
+  assert(!runOriginGuard('https://evil.com', 'kfm.example.com').passed, '不同 host 的外部站点应拒绝');
 });

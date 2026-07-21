@@ -16,7 +16,7 @@
 import { Server as HttpServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { PtyManager } from './terminal-pty.js';
-import { isLoopbackHost } from './path-utils.js';
+import { isTrustedOrigin } from './path-utils.js';
 import { execFile } from 'child_process';
 
 // ========== 类型定义 ==========
@@ -52,23 +52,15 @@ export class WsServer {
   /**
    * WebSocket 握手 origin 校验（安全关键）。
    *
-   * WS 端点提供终端 PTY（任意命令执行）。浏览器发起 WS 连接时会自动带上
-   * 发起页面的真实 Origin 头，且 JS 无法伪造它——因此校验 Origin 为本地回环
-   * 即可挡住"用户访问的恶意网页偷偷连 ws://localhost 拿 shell"的 drive-by 攻击。
-   *
-   * 放行规则：
-   *   - 无 Origin 头（非浏览器客户端，如本地脚本/测试）→ 放行
-   *   - Origin 的 host 是 localhost / 127.0.0.1 / [::1] → 放行
-   *   - 其余（任何外部网站）→ 拒绝握手
+   * WS 端点提供终端 PTY（任意命令执行）。用户访问的恶意网页可从浏览器偷偷连本服务
+   * 的 ws 端点拿 shell（drive-by）。浏览器发起时自动带真实 Origin 头且 JS 无法伪造，
+   * 故校验「同源」即可挡住跨源攻击（见 isTrustedOrigin）：Origin 的 host 与握手请求
+   * 的 Host 头一致则放行——无论从 localhost、局域网 IP 还是反向代理域名访问都工作。
+   * 无 Origin（非浏览器客户端）与 loopback 兜底放行；跨源拒绝握手。
    */
-  private static _verifyOrigin(info: { origin?: string }): boolean {
-    const origin = info.origin;
-    if (!origin) return true; // 非浏览器客户端不带 Origin
-    try {
-      return isLoopbackHost(new URL(origin).hostname);
-    } catch {
-      return false; // Origin 存在但无法解析 → 可疑，拒绝
-    }
+  private static _verifyOrigin(info: { origin?: string; req?: { headers?: Record<string, string | string[] | undefined> } }): boolean {
+    const hostHeader = info.req?.headers?.['host'];
+    return isTrustedOrigin(info.origin, Array.isArray(hostHeader) ? hostHeader[0] : hostHeader);
   }
 
   constructor(server: HttpServer) {
