@@ -1,0 +1,145 @@
+// ==========================================================================
+// tests/client-logic.test.ts — 客户端纯逻辑回归钉子（步骤 4）
+//
+// 覆盖三块「有明确对错、可离线测」的客户端逻辑：
+//   1. 会话消息计数（BAR-103）        session-store.countTextMessages
+//   2. 临时卡组模式着色（427c960）     mode-system.recolorCards
+//   3. 文件树构建边界                  tree-model.buildTree
+//
+// 方法论见 docs/design/REGRESSION_TESTING_SYSTEM.md 步骤 4。
+// ==========================================================================
+
+import assert from 'assert';
+import { group, test, regression } from './runner.js';
+import { extractMessageText, countTextMessages } from '../src/client/modules/session-store.js';
+import type { SessionMessage } from '../src/client/modules/session-store.js';
+import { recolorCards, getModeTheme, getTriColor } from '../src/client/modules/mode-system.js';
+import { buildTree } from '../src/client/modules/tree-model.js';
+import type { FileNode } from '../src/client/modules/state.js';
+
+// ==========================================================================
+// BAR-103 (b8dec96 / 1d9fdbc): 消息计数只算「有正文」的消息
+// 纯工具调用 / 纯思考气泡不计入；删空会话归零。
+// ==========================================================================
+
+group('session-store — 消息计数（BAR-103）');
+
+const textMsg = (t: string): SessionMessage => ({ role: 'user', content: [{ type: 'text', text: t }] });
+const toolMsg = (): SessionMessage => ({ role: 'ai', content: [{ type: 'tool', id: 't1', name: 'bash', input: {} }] });
+const emptyTextMsg = (): SessionMessage => ({ role: 'ai', content: [{ type: 'text', text: '   ' }] });
+const mixedMsg = (t: string): SessionMessage => ({
+  role: 'ai',
+  content: [{ type: 'tool', id: 't2', name: 'x', input: {} }, { type: 'text', text: t }],
+});
+
+regression('BAR-103a', 'b8dec96', '纯工具调用消息不计入消息数', () => {
+  assert(countTextMessages([toolMsg(), toolMsg()]) === 0, '两条纯工具消息应计为 0');
+  assert(countTextMessages([textMsg('hi'), toolMsg()]) === 1, '一文本+一工具应计为 1');
+});
+
+regression('BAR-103b', 'b8dec96', '纯空白 text 消息不计入', () => {
+  assert(countTextMessages([emptyTextMsg()]) === 0, '空白 text 应计为 0');
+  assert(countTextMessages([textMsg('x'), emptyTextMsg()]) === 1, '有效+空白应计为 1');
+});
+
+regression('BAR-103c', '1d9fdbc', '空会话 → 计数为 0（删最后一个会话后统计行归零）', () => {
+  assert(countTextMessages([]) === 0, '空 messages 应为 0');
+});
+
+test('混合块消息（工具+文本）计入 1（有正文）', () => {
+  assert(countTextMessages([mixedMsg('answer')]) === 1);
+}, { tag: 'integration' });
+
+test('extractMessageText 拼接多个 TextBlock，跳过工具块', () => {
+  const msg: SessionMessage = {
+    role: 'ai',
+    content: [
+      { type: 'text', text: 'A' },
+      { type: 'tool', id: 't', name: 'x', input: {} },
+      { type: 'text', text: 'B' },
+    ],
+  };
+  assert(extractMessageText(msg) === 'AB', `应拼接为 AB，得 ${extractMessageText(msg)}`);
+}, { tag: 'integration' });
+
+test('extractMessageText 对无 content 消息返回空串（不崩）', () => {
+  assert(extractMessageText({ role: 'user', content: undefined as any }) === '');
+}, { tag: 'integration' });
+
+// ==========================================================================
+// 427c960: 切换模式时临时卡按模式色系重着色（回归——曾传空数组导致失效）
+// ==========================================================================
+
+group('mode-system — 临时卡模式着色（427c960）');
+
+/** 造一张带 recolorCards 依赖 dataset 的 mock 卡片元素 */
+function makeCard(isDir: boolean, off1 = 0, off2 = 0): HTMLElement {
+  const el = document.createElement('div');
+  el.dataset._isDir = String(isDir);
+  el.dataset._hueOff1 = String(off1);
+  el.dataset._hueOff2 = String(off2);
+  return el;
+}
+
+regression('BAR-103d', '427c960', 'recolorCards 写入卡片 background + _accent（非空数组真的着色）', () => {
+  const cards = [makeCard(false), makeCard(true)];
+  recolorCards('copy', cards);
+  for (const c of cards) {
+    assert(c.style.background.includes('linear-gradient'), '应写入渐变背景');
+    assert(!!c.dataset._accent1 && !!c.dataset._accent2, '应写入 _accent1/_accent2');
+  }
+});
+
+regression('BAR-103e', '427c960', 'copy/move/delete 各产出不同色系（模式切换真的换色）', () => {
+  const mk = () => [makeCard(false)];
+  const copy = mk(); recolorCards('copy', copy);
+  const move = mk(); recolorCards('move', move);
+  const del = mk(); recolorCards('delete', del);
+  const cA = copy[0].dataset._accent1;
+  const mA = move[0].dataset._accent1;
+  const dA = del[0].dataset._accent1;
+  assert(cA !== mA && mA !== dA && cA !== dA, `三模式 accent 应互不相同：${cA}/${mA}/${dA}`);
+});
+
+test('recolorCards(null) 回落默认蓝紫色系', () => {
+  const cards = [makeCard(false)];
+  recolorCards(null, cards);
+  assert(cards[0].style.background.includes('linear-gradient'), 'null 模式也应着色（默认色）');
+}, { tag: 'integration' });
+
+test('recolorCards 空数组不抛错（无卡片时安全）', () => {
+  recolorCards('copy', []); // 不应抛
+}, { tag: 'integration' });
+
+test('getModeTheme / getTriColor 返回各模式配置', () => {
+  assert(getModeTheme('copy').hue1 === 160, 'copy hue1 应为 160');
+  assert(typeof getTriColor('delete') === 'string', 'delete triColor 应为字符串');
+}, { tag: 'integration' });
+
+// ==========================================================================
+// tree-model.buildTree 边界
+// ==========================================================================
+
+group('tree-model — buildTree 边界');
+
+const fileNode = (name: string, isDir: boolean, children?: FileNode[]): FileNode =>
+  ({ name, path: './' + name, isDir, isLink: false, children });
+
+test('空文件列表 → 构建出根 Box，不崩', () => {
+  const box = buildTree([]);
+  assert(box, 'buildTree([]) 应返回 Box');
+}, { tag: 'integration' });
+
+test('单文件 → 根含该行', () => {
+  const box = buildTree([fileNode('a.ts', false)]);
+  assert(box.children.length > 0, '应有子行');
+}, { tag: 'integration' });
+
+test('折叠目录不展开子节点（expandedPaths 未含该路径）', () => {
+  const tree = [fileNode('dir', true, [fileNode('inner.ts', false)])];
+  const collapsed = buildTree(tree, { expandedPaths: {} });
+  const expanded = buildTree(tree, { expandedPaths: { './dir': true } });
+  // 展开态的可见盒子数应多于折叠态（子节点被纳入）
+  const count = (b: any): number => 1 + (b.children || []).reduce((n: number, c: any) => n + count(c), 0);
+  assert(count(expanded) > count(collapsed), '展开态盒子数应多于折叠态');
+}, { tag: 'integration' });

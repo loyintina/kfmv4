@@ -62,6 +62,22 @@ export interface Session {
   messages: SessionMessage[];
 }
 
+// ========== 纯函数：消息正文提取 / 计数（无副作用，可单测） ==========
+
+/** 提取一条消息所有 TextBlock 的纯文本（跳过工具块、警告块）。 */
+export function extractMessageText(msg: SessionMessage): string {
+  return (msg.content || [])
+    .filter((b): b is TextBlock => b.type === 'text')
+    .map(b => b.text || '')
+    .join('');
+}
+
+/** 统计「有正文」的消息数——纯工具调用 / 纯思考气泡（无 text 或 text 全空白）不计。
+ *  BAR-103：会话统计行「N 条消息」的正确口径，删除最后一个会话后归零。 */
+export function countTextMessages(messages: SessionMessage[]): number {
+  return messages.filter(m => extractMessageText(m).trim()).length;
+}
+
 type Listener = () => void;
 
 // ========== Helpers ==========

@@ -12,16 +12,9 @@ import { buildCardLayout } from '../../modules/floating-card.js';
 import { log } from '../../modules/logger.js';
 import { showConfirm } from '../../modules/confirm-dialog.js';
 import { createCustomSelect } from '../../modules/custom-select.js';
-import type { Session, TextBlock } from '../../modules/session-store.js';
+import type { Session } from '../../modules/session-store.js';
+import { extractMessageText as extractMsgText, countTextMessages } from '../../modules/session-store.js';
 import { Z } from '../../modules/z-index-layers.js';
-
-/** 从 SessionMessage.content 提取所有 TextBlock 的纯文本 */
-function extractMsgText(msg: Session['messages'][number]): string {
-  return (msg.content || [])
-    .filter((b): b is TextBlock => b.type === 'text')
-    .map(b => b.text || '')
-    .join('');
-}
 
 const SESSIONS_PATH = '.kfmv4/sessions';
 
@@ -272,7 +265,7 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
 
       const metaRow = document.createElement('div');
       metaRow.style.cssText = 'display:flex;gap:8px;font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.5)';
-      metaRow.innerHTML = `<span>${formatDate(session.updatedAt)}</span><span>${session.messages.filter(m => extractMsgText(m).trim()).length} 条消息</span>`;
+      metaRow.innerHTML = `<span>${formatDate(session.updatedAt)}</span><span>${countTextMessages(session.messages)} 条消息</span>`;
       if (session.providerId) metaRow.innerHTML += `<span>${session.providerId}</span>`;
 
       item.appendChild(titleRow);
@@ -371,7 +364,7 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
 
   function renderAll(): void {
     if (_statsEl) {
-      _statsEl.textContent = `共 ${sessions.length} 个会话，${sessions.reduce((n, s) => n + s.messages.filter(m => extractMsgText(m).trim()).length, 0)} 条消息`;
+      _statsEl.textContent = `共 ${sessions.length} 个会话，${sessions.reduce((n, s) => n + countTextMessages(s.messages), 0)} 条消息`;
     }
     if (_nameInput) { const s = getActiveSession(); _nameInput!.value = s?.title || ''; }
     if (_sessionSelect) {
@@ -507,7 +500,7 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
 
       const statsEl = document.createElement('span');
       statsEl.style.cssText = 'font-size:var(--card-font-size,10px);color:rgba(255,255,255,0.5)';
-      statsEl.textContent = `共 ${sessions.length} 个会话，${sessions.reduce((n, s) => n + s.messages.filter(m => extractMsgText(m).trim()).length, 0)} 条消息`;
+      statsEl.textContent = `共 ${sessions.length} 个会话，${sessions.reduce((n, s) => n + countTextMessages(s.messages), 0)} 条消息`;
       _statsEl = statsEl;
       poolHeader.appendChild(statsEl);
       poolCard.appendChild(poolHeader);

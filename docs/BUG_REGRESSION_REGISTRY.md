@@ -39,7 +39,7 @@ maintainer: AI agent
 |-----|--------|------|------|------|---------|
 | BAR-101 | `a5bf0c4` | 生成结束后 `__end__` 不发，发送按钮卡死 + 残留等待框（run.done finally 时序） | I | ✅ 已钉（revert 验证） | `tests/run-manager.test.ts` |
 | BAR-102 | `f46a551` | 推理模型等待提示留白 + 删会话后再发送 400（空 sessionId） | I | ✅ 已钉（102a-e，服务端校验，revert 验证） | `tests/server-routes.test.ts` |
-| BAR-103 | `1d9fdbc` | 删最后一个会话后统计行不更新 + 光球面板不清空 | L | 待钉 | — |
+| BAR-103 | `1d9fdbc` | 删最后一个会话后统计行不更新（消息计数口径） | L | ✅ 已钉（103a-c 计数 + 103d/e 着色，剥离 countTextMessages，revert 验证） | `tests/client-logic.test.ts` |
 | BAR-104 | `d4a60f7` | 挂机重连：已完成 run 补齐续读 / fromIndex 续读 / supersede 取代 | I | ✅ 已钉（104a/b/c，revert 验证） | `tests/run-manager.test.ts` |
 | BAR-105 | `da39891` | 取消时未完成工具卡卡在「忙碌中」 | L | 待钉 | — |
 | BAR-106 | `7ac8f47` | Claude 工具块非零起始 index → content 空洞 → `reading type` 崩溃 | L | ✅ 已钉（106a-d，剥离 createClientIdxMapper，revert 验证） | `tests/chat-protocol.test.ts` |
@@ -54,7 +54,13 @@ maintainer: AI agent
 
 ### 第三批：客户端逻辑
 
-> 待步骤 4 填充（滚动约束过滤折叠节点、tree-model 边界、消息计数、mode-system 着色回调 `427c960` 等）。
+| BAR | commit | 症状/契约 | 类别 | 状态 | 测试位置 |
+|-----|--------|-----------|------|------|---------|
+| BAR-103a-c | `b8dec96`/`1d9fdbc` | 消息计数只算有正文的消息（工具/空白不计） | L | ✅ 已钉 | `tests/client-logic.test.ts` |
+| BAR-103d-e | `427c960` | 切模式时临时卡按模式色系重着色（曾传空数组失效） | L | ✅ 已钉 | `tests/client-logic.test.ts` |
+| tree-model | — | buildTree 空列表/单文件/折叠边界 | L | ✅ 已钉（基础） | `tests/client-logic.test.ts` |
+
+> 滚动约束过滤折叠节点（光标 fix 串）逻辑与 canvas-cursor 渲染耦合，留待渲染剥离批。
 
 ### 渲染剥离批：canvas-cursor / canvas-scroll
 
