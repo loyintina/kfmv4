@@ -241,7 +241,7 @@ function _repositionCards(): void {
   _tempCardEls.forEach((c, i) => {
     const shift = i > _focusIndex ? extraGap : 0;
     const targetTop = Math.round(baseTop + i * gap + shift);
-    c.style.zIndex = String(1001 + i);
+    c.style.zIndex = String(Z.TREE_TEMP_CARD + i);
 
     const curY = parseFloat(c.dataset.topY ?? '0');
     if (Math.abs(curY - targetTop) > 3) {
