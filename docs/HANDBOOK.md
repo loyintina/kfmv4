@@ -1,7 +1,7 @@
 ---
 title: KFM v4 工作手册
 last_reviewed: 2026-07-21
-kfm_version: 7.2.1
+kfm_version: 7.3.0
 status: active
 maintainer: AI agent
 ---
@@ -82,7 +82,7 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 | **AI / 通信** | `orb.ts` `orb-chat.ts` `orb-panel.ts` `ws-channel.ts` `session-store.ts` `debug-assert.ts` `gestures.ts` | 光球面板、下拉框、AI 消息/流式、WebSocket、会话持久化 |
 | **日志** | `logger.ts` | KFM 日志系统（debug-card 伴侣） |
 
-### 服务端模块（10 个）
+### 服务端模块（11 个）
 
 服务端是 Express 4 + WebSocket 服务，通过 `index.ts` 统一入口编排。路由层已拆分到 `routes/`：
 
@@ -95,9 +95,10 @@ index.ts (入口路由 + 静态文件)
   ├── path-utils.ts       — 安全路径守卫（所有用户路径逃逸校验，安全关键模块）
   ├── terminal-pty.ts     — PTY 会话管理（PtyManager: spawn/write/resize/kill）
   ├── ws-server.ts        — WebSocket 通信通道（服务端↔浏览器双向实时通信）
-  ├── ai/                 — AI 对话子系统（v7.0.0 新增）
+  ├── ai/                 — AI 对话子系统（v7.0.0 新增，v7.3.0 加挂机运行时）
   │   ├── chat.ts         — SSE 流式对话核心（Provider/Model/SystemPrompt/ToolCall）
-  │   ├── routes.ts       — AI 对话 HTTP 端点（/ai/chat、/ai/generate-title）
+  │   ├── run-manager.ts  — 后台挂机运行时（runId/事件缓冲/订阅/5min淘汰，v7.3.0 新增）
+  │   ├── routes.ts       — AI 对话 HTTP 端点（start/stream/cancel/active/status）
   │   └── tools/          — AI 工具定义与执行（kfm-exec/snapshot/logs）
   └── prompts/            — 提示词模板（system/base.md + tools/）
 ```
@@ -110,10 +111,10 @@ index.ts (入口路由 + 静态文件)
 | `ai-tools.ts` | 包装 Registry snapshot 为服务端 API 端点（GET/POST） |
 | `capability-executor.ts` | 维护能力名→执行函数映射，被 AI 命令调用 |
 | `path-utils.ts` | `SAFE_ROOT` + `sanitizePath()`，路径逃逸守卫 |
-| `terminal-pty.ts` | PTY 会话 spawn/write/resize/kill |
-| `ws-server.ts` | WebSocket 连接管理，接收推送的 snapshot |
-| `src/server/ai/chat.ts` | SSE 流式对话核心：Provider 加载、SystemPrompt 拼接、Tool Call |
-| `src/server/ai/routes.ts` | AI 对话 HTTP 端点：/ai/chat（流式）、/ai/generate-title |
+| `ws-server.ts` | WebSocket 连接管理，接收推送的 snapshot；30s 协议级 ping 半开检测 → killAll 清 PTY |
+| `src/server/ai/chat.ts` | SSE 流式对话核心：Provider 加载、SystemPrompt 拼接、Tool Call、事件协议源头 |
+| `src/server/ai/run-manager.ts` | 后台挂机运行时：runId 分配、事件缓冲、订阅广播、5min 淘汰（详见 `docs/design/AI_CHAT_RUNTIME.md`） |
+| `src/server/ai/routes.ts` | AI 对话 HTTP 端点：start / stream?from=N / cancel / active / status |
 | `src/server/ai/tools/` | AI 工具定义（types→index→kfm-exec/snapshot/logs/browser） |
 | `src/server/ai/tools/omp/browser.ts` | Browser 工具入口：open/run/close，封装 tab-supervisor |
 | `src/server/ai/tools/omp/browser/` | Browser 核心：WorkerCore(puppeteer) + tab-supervisor + launch + aria |
@@ -161,21 +162,33 @@ index.ts (入口路由 + 静态文件)
 - **规则**：选择器锁 (priority 110) 在手势优先级最高，打开后外部滑动手势全部被拦截。关闭时必须调 `L.popContext()` 恢复上下文。
 
 ## 二、当前会话状态
-> **最后更新**：2026-07-20（v7.2.1 — 工具卡两区可滚动 + 渲染性能三层优化 + Claude 索引修复 + 浮卡滚动修复 + 摸鱼提示覆盖工具轮次）
+> **最后更新**：2026-07-21（v7.3.0 — AI 对话后台挂机持久化 + 重连续读 + WebSocket 真心跳 + Z-Index L8 焦点层）
 
 ### 当前焦点
-**v7.2.1 已发布 — AI 对话面板性能与体验修复**
+**v7.3.0 已发布 — AI 对话运行时（后台挂机 / 重连 / WS 存活）**
+
+> **本版核心是一个新子系统，有专属架构文档：`docs/design/AI_CHAT_RUNTIME.md`。**
+> 改动流式对话、挂机、WS 重连、终端恢复前必读——它集中记录了跨 10 个文件的
+> 隐式时序契约（破坏后症状为"看起来没错、跑起来卡死"）。
 
 本次版本核心工作：
-1. **content block 协议对齐** — thinking+text 合并到同一 index=0 block，服务端 SSE 协议完整重构
-2. **renderChatContent 渲染统一** — reasoning/气泡/工具框/警告框四路独立条件渲染，删 reasoningOnly 分支
-3. **工具调用流式体验** — 结构性事件绕过 80ms 节流立即渲染，打字机动画显示结果（~1.5s），完成后自动折叠
-4. **等待期无厘头提示** — `src/client/data/waiting-hints.ts` 独立文件，100 条提示，发送后随机循环播放，`message_start` 到达后消失
-5. **静默断流修复** — provider 静默断流时不再什么都不显示，推 "[未收到回复，请重试]"
-6. **session.card 适配 content block 格式** — 气泡预览、编辑器、消息计数全部从旧 `{text}` 格式迁移到 `{content: ContentBlock[]}`
-7. **角色卡拖拽修复** — `floating-card.ts` 的 `querySelectorAll('*')` 不再覆盖 `touch-action:none`，拖拽回移不再瞬移
-8. **build.mjs 缓存防护** — 每次 build 自动更新 `bundle.js?v=YYYYMMDD`，浏览器缓存失效
-9. **死代码清理** — orb-chat 消息操作按钮绑定块、session.card kfm-message-edit/delete 监听器
+1. **后台挂机持久化** — 生成任务在服务端独立于客户端连接运行（tmux 式）。新增
+   `src/server/ai/run-manager.ts`：runId 分配 + 事件缓冲 + 订阅 + 5min 淘汰。断开=退订不取消，
+   回来可从任意事件索引续读。localStorage 持久化 `{sessionId,runId}` 跨浏览器重启。
+2. **重连续读三处修复** — 切后台/杀浏览器/发送竞态；`startRun` 语义为"取代"，重连走
+   `attachRun`；`_consumeWithReconnect` 退避重试 + `/status` 探活。
+3. **WebSocket 真心跳** — 服务端 30s 协议级 `ws.ping()` + `_isAlive` 半开检测 →
+   `killAll` 清 PTY；客户端 `WATCHDOG_MS=75s` 看门狗。根治后台冻结导致的 tmux 卡死。
+4. **WS 重连恢复终端（三层）** — ws-channel `onReconnect` API → terminal-card-04 重开
+   PTY → tmux-card 用 `_lastCommand` 自动 re-attach。
+5. **结束态修复** — run 收尾必须在 `finally` 显式触发订阅者 `onDone`（`run.done` 时序
+   陷阱），否则 `__end__` 不发 → 发送按钮卡死 + 残留等待框。
+6. **推理模型等待提示** — `onWait(false)` 从 `message_start` 移到首个实际内容（含
+   `thinking_delta`），消除推理模型的白屏空档。
+7. **会话删除同步** — 删最后一个会话：统计行更新（`_statsEl` 提级）+ 光球面板清空
+   （处理空 sessionId）+ 再发送自动建会话（回填 `_sendSessionId`，不再 400）。
+8. **Z-Index L8 焦点交互层** — 模态框/确认框/下拉/toast 提到 AI 核心之上（10000+），
+   弹窗=专注操作不可被输入栏遮挡；`CUSTOM_SELECT`>`MODAL_DIALOG`（下拉在弹窗内）。
 
 > **数据目录**：v7.0.0 后将 `.kfmv4/` 从项目根目录迁移到 `$HOME/.kfmv4/`（由 `path-utils.ts` 的 `KFM_DATA_DIR` 定义）。
 > 包含：`providers.json`、`active.json`、`sessions/`、`roles/`、`configs/`。
@@ -309,11 +322,12 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | **v7.1.0** | **orb/floating-card 拆分（848→524 + 1195→780）+ server 路由拆分（355→60）+ MD CSS/MARKED_OPTS/marked 统一 + 构建管线加固 + 214 测试 + 2 ADR** | git `3deb88b` |
 
 > 完整诊断手册见 [`docs/DIAGNOSTICS.md`](./DIAGNOSTICS.md)，包含：
-> - **隐性契约（11 条）** — 破坏会出 bug 的隐藏约束
+> - **隐性契约（13 条）** — 破坏会出 bug 的隐藏约束（含 §1.12 AI 对话运行时、§1.13 WS 半开检测）
 > - **诊断流程** — 触控/手势、CSS/视觉、渲染/Canvas、构建/Bundle 四类排查路径
 | **v7.1.0** | **orb/floating-card 拆分（848→524 + 1195→780）+ server 路由拆分（355→60）+ MD CSS/MARKED_OPTS/marked 统一 + 构建管线加固 + 214 测试 + 2 ADR** | git `3deb88b` |
 | **v7.2.0** | **AI 对话面板 content block 协议修复 + 流式渲染统一 + 等待提示 + session.card 适配 + 角色卡拖拽修复 + 死代码清理** | git `16b374b` |
 | **v7.2.1** | **工具卡展开态两区可滚动 + 渲染性能三层优化（markdown 缓存/视口裁剪/渲染合批）+ Claude 工具块索引连续化 + 上游错误上抛 + 浮卡滚动 touch-action 修复 + 摸鱼提示覆盖工具轮次 + 折叠状态持久化** | git `ff5173b` |
+| **v7.3.0** | **AI 对话后台挂机持久化（run-manager）+ 重连续读 + WebSocket 真心跳半开检测 + WS 重连恢复终端（三层）+ 结束态/推理模型等待提示修复 + 会话删除同步 + Z-Index L8 焦点交互层 + AI_CHAT_RUNTIME 架构文档** | git `cb9624f` |
 > 速查：遇到 bug 先确认事件是否完整到达（用 `log()` 推日志卡），再查处理逻辑。
 
 ## 五、回归测试
@@ -393,11 +407,11 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `file-action-bar.ts` | 428 | 2 | ✅ 分组表 | 文件行长按 → 底部抽屉操作栏 |
 | `logger.ts` | 58 | 3 | ✅ 分组表 | KFM 日志系统 |
 | `mode-system.ts` | 445 | 1 | ✅ 分组表 | 模式按钮系统（从 tree-swipe 拆分，v6.8.0 新增） |
-| `orb.ts` | 604 | 2 | ✅ 独立条目 | 光球 UI + 拖拽手势 + 面板状态机（协调层） |
-| `orb-chat.ts` | 1106 | 1 | ✅ 分组表 | AI 消息渲染 + SSE 流式通信（从 orb.ts 拆分） |
+| `orb.ts` | 604 | 2 | ✅ 独立条目 | 光球 UI + 拖拽手势 + 面板状态机 + 挂机重连 IIFE（协调层，见 AI_CHAT_RUNTIME） |
+| `orb-chat.ts` | 1106 | 1 | ✅ 分组表 | AI 消息渲染 + 挂机 start/续读/取消 + 事件状态机（见 AI_CHAT_RUNTIME） |
 | `orb-panel.ts` | 205 | 1 | ✅ 分组表 | 面板 Provider/Session/Model/Role 下拉框（从 orb.ts 拆分） |
 | `orb-state.ts` | 17 | 0 | ✅ 分组表 | orb 状态机纯逻辑（零依赖，从 orb.ts 拆分，可脱离浏览器测试） |
-| `session-store.ts` | 327 | 1 | ✅ 分组表 | 会话持久化统一存储（替代 orb.ts 散布的会话逻辑） |
+| `session-store.ts` | 327 | 1 | ✅ 分组表 | 会话持久化统一存储 + saveMessages 自动建会话（见 AI_CHAT_RUNTIME §4.6） |
 | `renderer-lifecycle.ts` | 243 | 5 | ✅ 注册表 | 渲染器生命周期单例 L |
 | `root-picker.ts` | 434 | 2 | ✅ 独立条目 | 文件树根目录切换器 |
 | `state.ts` | 257 | 10 | ✅ 注册表 | 全局状态层 KFMState |
@@ -411,9 +425,9 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `tree-swipe.ts` | 726 | 1 | ✅ 分组表 | 文件行右滑 → 卡片堆（从 tree-render 拆分，v6.8.0 拆分为 color-utils + mode-system） |
 | `ui-registry.ts` | 334 | 9 | ✅ 独立条目 | UI 元素注册表 |
 | `ui.ts` | 71 | 10 | ✅ 提及 | UI 初始化编排 |
-| `ws-channel.ts` | 417 | 6 | ✅ 独立条目 | WebSocket 通信通道 |
-| `terminal-card-04.ts` | 755 | 0 | TERMINAL_CARD_SPEC | 03 号终端卡 xterm.js 集成 |
-| `tmux-card.ts` | 214 | 0 | — | 04 号 tmux 窗口管理卡 |
+| `ws-channel.ts` | 417 | 6 | ✅ 独立条目 | WebSocket 通信通道 + 重连看门狗 + onReconnect API（见 AI_CHAT_RUNTIME §5-6） |
+| `terminal-card-04.ts` | 755 | 0 | TERMINAL_CARD_SPEC | 03 号终端卡 xterm.js 集成 + WS 重连重开 PTY |
+| `tmux-card.ts` | 214 | 0 | AI_CHAT_RUNTIME §6 | 04 号 tmux 卡 + WS 重连自动 re-attach（_lastCommand） |
 | `card-registry.ts` | 155 | 5 | CARD_REGISTRY_SPEC | 卡片注册表：类型声明 + 实例追踪 |
 | **渲染器（renderers/）** | | | | |
 | `../src/client/modules/renderers/binary-fallback.ts` | 37 | 1 | — | 二进制文件回退渲染器（文字提示不可预览） |

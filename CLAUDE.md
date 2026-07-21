@@ -11,6 +11,7 @@
 > **规划设计时参考** `docs/design/VISION_AND_ROADMAP.md`（远景）。
 > **做浮卡相关改动先读** `docs/archive/design/CARD_SYSTEM_UNIFICATION_SPEC.md`（已归档：统一化方案失败，当前为 card-registry 数据层 + card-stack/floating-card UI 层）。
 > **加新卡片前先读** `docs/development/CARD_DEV_GUIDE.md`（卡片插件开发指南）。
+> **改 AI 对话流式/挂机/WS 重连/终端恢复先读** `docs/design/AI_CHAT_RUNTIME.md`（后台挂机运行时架构 + 跨 10 文件的隐式时序契约）。
 > **UI Registry 相关**已归档到 `docs/archive/design/`。
 > **引擎层改动先读** `docs/archive/design/ENGINE_ARCHITECTURE.md`（v2 管线 + text-layout 排版引擎架构）。
 
@@ -55,6 +56,7 @@ docs/
 ├── DIAGNOSTICS.md           # 诊断手册：隐性契约 + 排查流程 + 根因案例库（遇到 bug 先翻）
 ├── design/                  # 设计文档
 │   ├── AI_ARCHITECTURE.md          # AI 架构设计（基于 omp）
+│   ├── AI_CHAT_RUNTIME.md          # AI 对话运行时：后台挂机/重连/WS存活（改流式对话前必读）
 │   ├── VISION_AND_ROADMAP.md        # 远景：核心理念 + 演进路线（方向性，保留）
 │   └── CONTEXT_ASSEMBLY_SPEC.md     # 上下文拼接与 AI 工作空间（draft）
 └── archive/                 # 历史归档

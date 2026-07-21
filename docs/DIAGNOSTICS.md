@@ -173,6 +173,51 @@ created_at: 2026-06-29
 
 **历史案例**：2026-05-31 B.A.R. #007（6 处 `DOM.treeCanvas` 硬编码修复）
 
+### 1.12 AI 对话运行时：跨文件时序契约
+
+**涉及模块**：`orb-chat.ts`、`orb.ts`、`ws-channel.ts`、`tmux-card.ts`、`terminal-card-04.ts`、`session-store.ts`、`src/server/ai/run-manager.ts`、`src/server/ai/routes.ts`、`src/server/ai/chat.ts`、`ws-server.ts`
+
+> **完整架构 + 全部契约见 `docs/design/AI_CHAT_RUNTIME.md`。** 此处只列最容易踩、
+> 且症状为"看起来没错、跑起来卡死"的几条速查。
+
+**契约内容（速查）**：
+- **run 收尾在 finally 显式触发**：`run.done` 在生成器 `finally` 才置 true，派发最后
+  一个 `done` 事件时它仍是 false。实时订阅者的 `onDone`（发 `__end__` + `res.end()`）
+  必须在 `finally` 里 `run.done=true` 之后显式遍历 `subscribers` 调用。依赖
+  `onEvent` 内 `if(run.done)` 永远不触发 → 客户端死等 `__end__` → 发送按钮卡死 +
+  等待框残留。（AI_CHAT_RUNTIME §4.1）
+- **等待提示停在"首个实际内容"**：`onWait(false)` 挂 `text_delta`/`thinking_delta`
+  首个 delta 或 `tool_use` block start，**不挂** `message_start`。否则推理模型
+  出现"提示消失→白屏→思考框才出现"。最后一轮 `message_stop` 打开的提示由 `doSend`
+  返回后主动清。（§4.2 / §4.3）
+- **空 sessionId → 服务端 400**：删除最后一个会话后 `activeId=''`，`doSend` 必须在
+  `saveMessages`（自动建会话）后回填 `_sendSessionId`；`orb.ts` 的
+  `kfm-session-change` 监听器必须处理空串（清空面板），不能 `if(!sessionId)return`。
+  （§4.6 / §4.7）
+- **持久化用 localStorage**：run 的 `{sessionId,runId}` 存 localStorage 才能跨浏览器
+  重启重连（配 5min 服务端缓冲）。sessionStorage 会丢。（§4.5）
+
+**违规后果**：发送按钮永久卡"发送中"、多余等待框、删会话后再发送 400、切后台回来
+丢失挂机生成。
+
+**历史案例**：2026-07-19 commit `a5bf0c4`/`f46a551`/`1d9fdbc`（挂机运行时一系列修复）。
+
+### 1.13 WebSocket 半开检测必须用协议级 ping，不是应用层 JSON ping
+
+**涉及模块**：`ws-server.ts`、`ws-channel.ts`
+
+**契约内容**：
+- 浏览器后台冻结 JS → WS 冻结 → TCP 可能半开（已断无 FIN）→ `onclose` 不触发 →
+  服务端 `readyState` 仍 OPEN → 往死 socket 写 PTY 输出 → tmux 卡死。
+- 服务端 30s 一轮 `ws.ping()`（**协议级**，浏览器自动 pong），`_isAlive` 标记探活；
+  上一轮没回 pong → `killAll` 清 PTY + `terminate()`。
+- 客户端 `WATCHDOG_MS=75s` 看门狗，任何消息重置；超时强制重连。
+- **不能用应用层 JSON ping 做探活**：客户端会忽略、不回，无法检测半开。
+
+**违规后果**：切后台/锁屏后 tmux 卡死，重连后终端哑火。
+
+**历史案例**：2026-07-19 commit `e477264`（真心跳）+ `b2f74bc`（WS 重连三层恢复终端）。
+
 ---
 
 ## 二、诊断流程
