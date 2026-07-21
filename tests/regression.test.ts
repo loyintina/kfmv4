@@ -36,6 +36,7 @@ import './path-utils.test.js';
 import './chat-protocol.test.js';
 import './client-logic.test.js';
 import './liquid-geometry.test.js';
+import './invariants.test.js';
 
 function seedState(files: Record<string, any>) {
   KFMState.files = {};
