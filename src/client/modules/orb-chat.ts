@@ -904,6 +904,28 @@ async function _finalizeRun(messages: ChatMessage[], msgIdx: number, model: stri
 }
 
 /**
+ * 取消时收尾：给所有仍处于"执行中"（无 result）的工具块打上已取消结果，
+ * 使其从"忙碌中"变为完成态 → 自动折叠，不再卡住。同时清动画状态。
+ */
+function _cancelPendingTools(messages: ChatMessage[]): void {
+  clearAllAnimTimers();
+  _activeFoldAnims.clear();
+  for (const m of messages) {
+    for (const b of m.content) {
+      if (b?.type === 'tool') {
+        const tb = b as ToolBlock;
+        if (!tb.result) tb.result = { content: [{ type: 'text', text: '(已取消)' }], isError: true };
+        clearToolHint(tb.id);
+        delete (b as ToolBlock & { _animText?: string })._animText;
+        delete (b as ToolBlock & { _animInput?: string })._animInput;
+        delete (b as ToolBlock & { _foldPhase?: string })._foldPhase;
+        delete (b as ToolBlock & { _userExpanded?: boolean })._userExpanded;
+      }
+    }
+  }
+}
+
+/**
  * 重连一个已存在的后台 run（页面刷新/切后台恢复后调用）。
  * 从 fromIndex 续读补齐已错过的事件 + 实时尾随到完成。
  */
@@ -933,9 +955,9 @@ export async function resumeRun(
       // 用户在重连态点暂停 → 通知服务端取消后台 run（彻底停止生成）
       fetch(apiBase + 'ai/chat/' + runId + '/cancel', { method: 'POST' }).catch(() => {});
       _persistActiveRun('', null);
+      _cancelPendingTools(messages);
       const lastMsg = messages[messages.length - 1];
-      const tb = lastMsg?.content?.find((b): b is TextBlock => b?.type === 'text');
-      if (tb) tb.text += '\n\n[已取消]';
+      if (lastMsg?.role === 'ai') lastMsg.content.push({ type: 'text', text: '[已取消]' });
     }
     _activeRunId = null;
   }
@@ -1037,10 +1059,10 @@ export async function doSend(
       // 用户主动取消：通知服务端取消后台 run
       if (_activeRunId) { fetch(apiBase + 'ai/chat/' + _activeRunId + '/cancel', { method: 'POST' }).catch(() => {}); _activeRunId = null; }
       _persistActiveRun(_sendSessionId, null);
+      // 收尾未完成的工具卡（从"忙碌中"→已取消→折叠），并追加取消标注
+      _cancelPendingTools(messages);
       const lastMsg = messages[messages.length - 1];
-      const tb = lastMsg?.content?.find((b): b is TextBlock => b.type === 'text');
-      if (tb) tb.text = '已取消';
-      else if (lastMsg) lastMsg.content = [{ type: 'text', text: '已取消' }];
+      if (lastMsg?.role === 'ai') lastMsg.content.push({ type: 'text', text: '[已取消]' });
     } else {
       messages.push({ role: 'ai', content: [{ type: 'text', text: '请求失败: ' + (e instanceof Error ? e.message : '未知错误') }] });
     }
