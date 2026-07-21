@@ -59,6 +59,9 @@ export class WsServer {
     this.wss.on('connection', (ws) => {
       console.log('[ws-server] 客户端已连接');
       this.clients.set(ws, { terminalSessions: new Set() });
+      // 协议级心跳存活标记：每轮心跳前若上一轮的 pong 未回 → 判定为死连接
+      (ws as WebSocket & { _isAlive?: boolean })._isAlive = true;
+      ws.on('pong', () => { (ws as WebSocket & { _isAlive?: boolean })._isAlive = true; });
 
       // 发送欢迎消息
       this.send(ws, 'ack', { received: 'hello', version: '1.0' });
@@ -86,15 +89,28 @@ export class WsServer {
       });
     });
 
-    // 心跳检测：每 30s ping 所有连接
+    // 心跳检测：每 30s 一轮。用 WebSocket 协议级 ping/pong 检测真实存活——
+    // 上一轮 ping 后没回 pong 的连接判定为死连接（半开：TCP 已断但无 FIN），
+    // terminate 强制关闭并清理其 PTY。仅查 readyState 无法发现半开连接，
+    // 会导致 tmux 输出写进死 socket → 卡住。
     const heartbeat = setInterval(() => {
       for (const [client] of this.clients) {
-        if (client.readyState === WebSocket.OPEN) {
-          this.send(client, 'ping', null);
-        } else {
+        const c = client as WebSocket & { _isAlive?: boolean };
+        if (client.readyState !== WebSocket.OPEN) {
           this._ptyManager.killAll(client);
           this.clients.delete(client);
+          continue;
         }
+        if (c._isAlive === false) {
+          // 上一轮没回 pong → 死连接，强制终止
+          this._ptyManager.killAll(client);
+          this.clients.delete(client);
+          try { client.terminate(); } catch { /* ignore */ }
+          continue;
+        }
+        c._isAlive = false;       // 标记待验证，收到 pong 会置回 true
+        try { client.ping(); } catch { /* ignore */ }
+        this.send(client, 'ping', null); // 兼容旧的应用层 ping（无害）
       }
     }, 30000);
 

@@ -27,6 +27,7 @@ import { log } from './logger.js';
 const RECONNECT_BASE_MS = 1000;   // 初始重连间隔
 const RECONNECT_MAX_MS = 30000;   // 最大重连间隔
 const PUSH_DEBOUNCE_MS = 100;     // snapshot 推送防抖间隔
+const WATCHDOG_MS = 75000;        // 超过此时长未收到任何服务端消息 → 判定死连接重连（服务端 30s 一 ping）
 
 // ========== 类型定义 ==========
 
@@ -49,6 +50,9 @@ class WsChannel {
   private _closed = false;
   private commandHandlers = new Map<string, CommandHandler>();
   private messageHandlers = new Map<string, Array<(payload: unknown) => void>>();
+  // 存活看门狗：服务端每 30s 发 ping；超过 WATCHDOG_MS 未收到任何消息 → 判定
+  // 连接已死（半开：onclose 不会触发），主动关闭并重连。
+  private watchdogTimer: ReturnType<typeof setTimeout> | null = null;
 
   /** 是否已连接 */
   get connected(): boolean {
@@ -76,6 +80,7 @@ class WsChannel {
       log('[ws-channel] 已连接到服务端', url);
       this._connected = true;
       this.reconnectDelay = RECONNECT_BASE_MS;
+      this.resetWatchdog();
 
       // 发送 hello
       this.send('hello', { version: '1.0', userAgent: navigator.userAgent });
@@ -86,6 +91,7 @@ class WsChannel {
     };
 
     this.ws.onmessage = (event) => {
+      this.resetWatchdog(); // 任何消息都算存活信号
       try {
         const msg: WsMessage = JSON.parse(event.data);
         this.handleMessage(msg);
@@ -98,6 +104,7 @@ class WsChannel {
       log(`[ws-channel] 连接已关闭 (code: ${event.code})`);
       this._connected = false;
       this.ws = null;
+      this.clearWatchdog();
       if (!this._closed) {
         this.scheduleReconnect();
       }
@@ -124,6 +131,7 @@ class WsChannel {
       this.ws.close();
       this.ws = null;
     }
+    this.clearWatchdog();
     this._connected = false;
   }
 
@@ -247,6 +255,25 @@ class WsChannel {
         if (handlers) { for (const h of handlers) h(msg.payload); } else { log('[warn] [ws-channel] 未知消息类型:', msg.type); }
       }
     }
+  }
+
+  /** 重置存活看门狗：WATCHDOG_MS 内没有任何服务端消息就强制重连（应对半开死连接） */
+  private resetWatchdog(): void {
+    this.clearWatchdog();
+    this.watchdogTimer = setTimeout(() => {
+      log('[warn] [ws-channel] 心跳超时，判定连接已死，强制重连');
+      // 主动关闭当前（可能半开的）连接并重连
+      if (this.ws) {
+        try { this.ws.onclose = null; this.ws.close(); } catch { /* ignore */ }
+        this.ws = null;
+      }
+      this._connected = false;
+      this.scheduleReconnect();
+    }, WATCHDOG_MS);
+  }
+
+  private clearWatchdog(): void {
+    if (this.watchdogTimer) { clearTimeout(this.watchdogTimer); this.watchdogTimer = null; }
   }
 
   /** 调度重连（指数退避） */
