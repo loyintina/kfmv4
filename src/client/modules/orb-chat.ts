@@ -1056,6 +1056,9 @@ export async function doSend(
       getMsgIdx: () => msgIdx, setMsgIdx: (i) => { msgIdx = i; },
     };
     const result = await _consumeWithReconnect(apiBase, startData.runId, startData.fromIndex || 0, signal, ctx);
+    // 流结束：最后一轮 message_stop 会把等待提示打开，此处立即关闭，
+    // 避免 _finalizeRun 的落盘网络往返期间残留一个多余的等待框。
+    onWait?.(false);
     _activeRunId = null;
     _persistActiveRun(_sendSessionId, null);
     if (result === 'done') {

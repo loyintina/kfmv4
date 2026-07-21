@@ -20,7 +20,10 @@
 import { streamChat, type ChatMessage, type StreamEvent } from './chat.js';
 import type { WsServer } from '../ws-server.js';
 
-type Subscriber = (event: StreamEvent) => void;
+interface Subscriber {
+  onEvent: (event: StreamEvent) => void;
+  onDone: () => void;
+}
 
 interface Run {
   id: string;
@@ -97,7 +100,7 @@ export function startRun(
       for await (const event of streamChat(messages, model, provider, wsServer, run.abort.signal)) {
         run.events.push(event);
         for (const sub of run.subscribers) {
-          try { sub(event); } catch { /* 订阅者写失败不影响生成 */ }
+          try { sub.onEvent(event); } catch { /* 订阅者写失败不影响生成 */ }
         }
       }
     } catch (e) {
@@ -105,9 +108,12 @@ export function startRun(
       run.error = msg;
       const errEvent: StreamEvent = { type: 'error', content: msg };
       run.events.push(errEvent);
-      for (const sub of run.subscribers) { try { sub(errEvent); } catch { /* ignore */ } }
+      for (const sub of run.subscribers) { try { sub.onEvent(errEvent); } catch { /* ignore */ } }
     } finally {
       run.done = true;
+      // 通知所有实时订阅者流已结束（onEvent 循环里 run.done 尚为 false，
+      // 最后一个 done/error 事件派发时不会触发 onDone，必须在此显式收尾）。
+      for (const sub of run.subscribers) { try { sub.onDone(); } catch { /* ignore */ } }
       _scheduleEvict(run);
     }
   })();
@@ -135,12 +141,11 @@ export function attachRun(
 
   // 2) 已完成 → 无需实时订阅
   if (run.done) { onDone(); return () => {}; }
-
   // 3) 实时订阅后续事件
   let idx = run.events.length;
-  const sub: Subscriber = (event) => {
-    onEvent(event, idx++);
-    if (run.done) onDone();
+  const sub: Subscriber = {
+    onEvent: (event) => { onEvent(event, idx++); },
+    onDone,
   };
   run.subscribers.add(sub);
   return () => { run.subscribers.delete(sub); };

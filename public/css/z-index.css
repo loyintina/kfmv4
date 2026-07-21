@@ -6,8 +6,9 @@
  *
  * 层级图景（自底向上）——对应产品设计：
  *
- *   L7  AI 核心      面板 / 输入栏 / 光球 / 发送按钮  ← 凌驾一切，核心高频功能
- *   L6  弹窗层        模态框 / 确认框 / toast / 终端 / 下拉 / 底部操作栏
+ *   L8  焦点交互层    模态框 / 确认框 / 下拉 / toast / 底部文件操作栏  ← 高于 AI 核心
+ *   L7  AI 核心      面板 / 输入栏 / 光球 / 发送按钮  ← 凌驾除焦点弹窗外一切
+ *   L6  终端交互      终端手柄 / 茎 / 放大镜 / 复制按钮（卡片作用域）
  *   L5  文件树 + 遮罩  左侧 canvas 文件树，伴随遮罩（遮住浮卡层及以下）
  *   L4  卡片堆        右滑召唤，盖在浮卡层整体之上
  *   L3  动态浮卡      点击浮顶（层内动态，JS 分配）
@@ -41,23 +42,24 @@
   --z-mode-system: 4600;
   --z-log-panel: 4700;
   --z-root-picker: 4800;
-  /* L6 弹窗层 */
-  --z-action-bar-scrim: 6000;
-  --z-action-bar-drawer: 6100;
-  --z-action-bar-input: 6200;
+  /* L6 终端交互（卡片作用域，低于 AI 核心） */
   --z-terminal-stem: 6400;
   --z-terminal-handle: 6410;
   --z-terminal-copy-btn: 6420;
   --z-terminal-magnifier: 6430;
-  --z-operation-toast: 6600;
-  --z-card-toast: 6700;
-  --z-modal-dialog: 6800;
-  /* L7 AI 核心（全局最高，无例外） */
+  /* L7 AI 核心（凌驾除焦点弹窗外的一切 UI） */
   --z-orb-panel: 9000;
-  --z-custom-select: 9050;
   --z-ai-input-bar: 9100;
   --z-ai-send-btn: 9200;
   --z-light-orb: 9200;
+  /* L8 焦点交互层（高于 AI 核心：弹窗=专注操作，不可被打断/遮挡） */
+  --z-action-bar-scrim: 10000;
+  --z-action-bar-drawer: 10100;
+  --z-action-bar-input: 10200;
+  --z-operation-toast: 10600;
+  --z-card-toast: 10700;
+  --z-modal-dialog: 10800;
+  --z-custom-select: 10900;
 }
 
 /* ===== L0 网格背景 ===== */
@@ -75,7 +77,7 @@
 .log-panel { z-index: var(--z-log-panel); }
 .root-picker-overlay { z-index: var(--z-root-picker); }
 
-/* ===== L6 弹窗层 ===== */
+/* ===== L8 焦点交互层（operation-toast 高于 AI 核心） ===== */
 .operation-toast { z-index: var(--z-operation-toast); }
 
 /* ===== L7 AI 核心（全局最高，无例外） ===== */

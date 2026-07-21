@@ -7,9 +7,12 @@
  *
  * 层级图景（自底向上）——对应产品设计：
  *
+ *   L8  焦点交互层    模态对话框 / 确认框 / 下拉 / toast / 底部文件操作栏
+ *                    ↑ 凌驾 AI 核心：弹窗=用户正专注的操作（确认删除等），
+ *                      不应被任何东西打断或遮挡
  *   L7  AI 核心      面板 / 输入栏 / 光球 / 发送按钮
- *                    ↑ 凌驾一切 UI，核心高频功能，保证 AI 未来能工作
- *   L6  弹窗层        模态对话框 / 确认框 / toast / 终端 / 放大镜 / 下拉 / 底部操作栏
+ *                    ↑ 常驻高频功能，凌驾除焦点弹窗外的一切 UI
+ *   L6  终端交互      终端选择手柄 / 茎 / 放大镜 / 复制按钮（卡片作用域）
  *   L5  文件树 + 遮罩  左侧 canvas 文件树、伴随遮罩（遮住浮卡层及以下）
  *   L4  卡片堆        右滑召唤，需盖在浮卡层整体之上
  *   L3  动态浮卡      点击哪个浮到本层最高（层内动态分配）
@@ -19,6 +22,10 @@
  *
  * 每层留 1000 间距，层内动态元素（浮卡/卡片堆）用 BASE + index 递增，
  * 上限不得越过下一层 BASE。
+ *
+ * ⚠️ 焦点弹窗（L8）高于 AI 核心（L7）：这是刻意设计。确认框/模态框出现即代表
+ *    用户正专注于一次操作，必须能盖住输入栏/发送按钮/光球，避免误触打断。
+ *    下拉框（CUSTOM_SELECT）又高于模态框，因为下拉常在模态框内部弹出。
  */
 
 export const Z = {
@@ -63,30 +70,32 @@ export const Z = {
   /** 文件树根目录选择器面板 */
   ROOT_PICKER: 4800,
 
-  /** L6 弹窗层 */
-  /** 底部操作栏遮罩 / 抽屉 / 输入 */
-  ACTION_BAR_SCRIM: 6000,
-  ACTION_BAR_DRAWER: 6100,
-  ACTION_BAR_INPUT: 6200,
+  /** L6 终端交互（卡片作用域，低于 AI 核心） */
   /** 终端选择手柄 / 茎 / 放大镜 / 复制按钮 */
   TERMINAL_STEM: 6400,
   TERMINAL_HANDLE: 6410,
   TERMINAL_COPY_BTN: 6420,
   TERMINAL_MAGNIFIER: 6430,
-  /** 操作提示 toast */
-  OPERATION_TOAST: 6600,
-  /** 卡片 toast */
-  CARD_TOAST: 6700,
-  /** 模态对话框（会话卡/工具卡弹窗、确认框） */
-  MODAL_DIALOG: 6800,
 
-  /** L7 AI 核心（全局最高，无例外） */
+  /** L7 AI 核心（凌驾除焦点弹窗外的一切 UI） */
   ORB_PANEL: 9000,
-  /** 自定义下拉浮层：附着于面板/卡片，必须高于其最高宿主 orb-panel(9000)，低于输入栏/光球 */
-  CUSTOM_SELECT: 9050,
   AI_INPUT_BAR: 9100,
   AI_SEND_BTN: 9200,
   LIGHT_ORB: 9200,
+
+  /** L8 焦点交互层（高于 AI 核心：弹窗=用户正专注的操作，不可被打断/遮挡） */
+  /** 底部文件操作栏遮罩 / 抽屉 / 输入 */
+  ACTION_BAR_SCRIM: 10000,
+  ACTION_BAR_DRAWER: 10100,
+  ACTION_BAR_INPUT: 10200,
+  /** 操作提示 toast */
+  OPERATION_TOAST: 10600,
+  /** 卡片 toast */
+  CARD_TOAST: 10700,
+  /** 模态对话框（会话卡/工具卡弹窗、确认框） */
+  MODAL_DIALOG: 10800,
+  /** 自定义下拉浮层：常在模态框内部弹出，故必须高于 MODAL_DIALOG */
+  CUSTOM_SELECT: 10900,
 } as const;
 
 export type ZLayer = keyof typeof Z;
