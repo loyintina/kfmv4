@@ -37,10 +37,10 @@ maintainer: AI agent
 
 | BAR | commit | 症状 | 类别 | 状态 | 测试位置 |
 |-----|--------|------|------|------|---------|
-| BAR-101 | `a5bf0c4` | 生成结束后 `__end__` 不发，发送按钮卡死 + 残留等待框（run.done finally 时序） | I | 待钉 | — |
+| BAR-101 | `a5bf0c4` | 生成结束后 `__end__` 不发，发送按钮卡死 + 残留等待框（run.done finally 时序） | I | ✅ 已钉（revert 验证） | `tests/run-manager.test.ts` |
 | BAR-102 | `f46a551` | 推理模型等待提示留白 + 删会话后再发送 400（空 sessionId） | I | 待钉 | — |
 | BAR-103 | `1d9fdbc` | 删最后一个会话后统计行不更新 + 光球面板不清空 | L | 待钉 | — |
-| BAR-104 | `d4a60f7` | 挂机重连三处：切后台/杀浏览器/发送竞态 | I | 待钉 | — |
+| BAR-104 | `d4a60f7` | 挂机重连：已完成 run 补齐续读 / fromIndex 续读 / supersede 取代 | I | ✅ 已钉（104a/b/c，revert 验证） | `tests/run-manager.test.ts` |
 | BAR-105 | `da39891` | 取消时未完成工具卡卡在「忙碌中」 | L | 待钉 | — |
 | BAR-106 | `7ac8f47` | Claude 工具块非零起始 index → content 空洞 → `reading type` 崩溃 | L | 待钉 | — |
 

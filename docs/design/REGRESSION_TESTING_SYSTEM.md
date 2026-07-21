@@ -250,12 +250,11 @@ z-index、光标/滚动、WS 重连）几乎零覆盖。
 ## §4 实施计划
 
 ### 4.1 阶段划分
-
 | 阶段 | 内容 | 状态 | 前置 |
 |------|------|------|------|
-| 0 | 测试基础设施升级（隔离/标签/钉子命名） | ⬜ 待开始 | 无 |
-| 1 | Bug 回归登记表（分类蒸馏，滚动填充） | ⬜ 待开始 | 无 |
-| A | 垂直切片样板：run-manager 时序 | ⬜ 待开始 | 阶段 0 |
+| 0 | 测试基础设施升级（隔离/标签/钉子命名） | ✅ 已完成 | 无 |
+| 1 | Bug 回归登记表（分类蒸馏，滚动填充） | 🔄 进行中（骨架+第一批已登记） | 无 |
+| A | 垂直切片样板：run-manager 时序 | ✅ 已完成（9 测试，BAR-101/104a-c revert 验证通过） | 阶段 0 |
 | 3 | 第一批：服务端 + 运行时逻辑 | ⬜ 待开始 | 阶段 A |
 | 4 | 第二批：客户端纯逻辑 | ⬜ 待开始 | 阶段 0 |
 | 5 | 第三批：剥离渲染后钉（canvas-cursor/scroll） | ⬜ 待开始 | 阶段 4 |
@@ -278,10 +277,47 @@ z-index、光标/滚动、WS 重连）几乎零覆盖。
 
 ---
 
-## §5 可复制模板（阶段 A 完成后填充）
+## §5 可复制模板（阶段 A 已跑通）
 
-> 阶段 A 跑通后，把「一个子系统从零到钉住」的标准动作固化在这里，供后续批次套用。
-> 当前为占位，待阶段 A 实施后回填真实样板代码与命令。
+阶段 A（run-manager）已验证下面这套「子系统从零到钉住」的标准动作，后续批次照套。
+
+### 5.1 让被测逻辑可离线运行 —— 依赖注入优先于 mock hack
+
+run-manager 原本直接 `import { streamChat }`，无法离线测（会打 provider + 网络）。
+**给 `startRun` 加一个可选参数** `streamFn: StreamFn = streamChat`：默认值让所有生产
+调用零改动，测试注入受控 mock 生成器。这是设计改进，不是测试 hack。
+
+> 优先级：依赖注入（改一个默认参数）> ESM resolve hook mock（`gsap-hook.mjs` 那套，
+> 只适合 bare specifier，相对 `./x.js` 导入很别扭）。
+
+### 5.2 无墙钟等待 —— await 代码真正的信号（rule ts-no-test-timers）
+
+禁止 `setTimeout` 猜时长。两个确定性等待模式：
+- **有界微任务轮询**：`awaitRunDone(run)` 反复 `await Promise.resolve()` 直到
+  `run.done`（它在 `finally` 翻转，独立于被测的 onDone 修复），有轮数上限。
+- **关键：等待信号必须独立于被测对象**。BAR-101 测的就是「onDone 是否触发」，
+  所以不能用 onDone 当等待信号（循环论证）——用独立的 `run.done` 轮询，让 bug
+  以「断言失败」而非「挂死」暴露。
+
+### 5.3 回归钉子的微循环（每个钉子都走）
+
+```
+1. git show <commit>            读懂当时错在哪、怎么修（心法 9/10：不凭记忆）
+2. regression('BAR-xxx', commit, 名称, fn)   写测试，断言 = 修复的可执行规格
+3. 【灵魂】临时回退该 fix（改一行 → void 0 / if(false)）→ 跑 → 必须变红
+   若测试仍绿 = 假测试，它没在测那个 bug
+4. 恢复 fix → 转绿
+5. 更新 BUG_REGRESSION_REGISTRY 状态为 ✅ 已钉（revert 验证）
+```
+
+阶段 A 实证：禁用 `a5bf0c4` 的 finally onDone → BAR-101/101b 变红（`onDone 必须
+被触发` 失败，不挂）；禁用 supersede abort → BAR-104c 变红（`旧 run 应被 abort`）。
+
+### 5.4 分类与隔离
+
+- 回归钉子用 `regression()`（默认 `tag='regression'` + `reset=true`）。
+- 编排类多步测试用 `test(name, fn, { tag: 'integration' })`。
+- 共享单例污染由 `reset-hooks.ts` 的 `beforeEach` 统一清（KFMState/cardRegistry/gestures）。
 
 ---
 

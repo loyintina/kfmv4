@@ -65,12 +65,21 @@ export function getRun(runId: string): Run | null {
  * 保证新消息不会被丢弃、也不会错误地"接上"旧 run 的上下文。
  * （重连续读走 getActiveRun/attachRun，不经过这里。）
  */
+export type StreamFn = (
+  messages: ChatMessage[],
+  model: string,
+  provider: string,
+  wsServer: WsServer,
+  signal: AbortSignal,
+) => AsyncGenerator<StreamEvent>;
+
 export function startRun(
   sessionId: string,
   messages: ChatMessage[],
   model: string,
   provider: string,
   wsServer: WsServer,
+  streamFn: StreamFn = streamChat,
 ): Run {
   // 取消该 session 的旧 run（若仍在跑），新消息取代之
   const prev = getActiveRun(sessionId);
@@ -94,10 +103,10 @@ export function startRun(
   _runs.set(run.id, run);
   _bySession.set(sessionId, run.id);
 
-  // 后台驱动生成器：与请求连接解耦
+  // 后台驱动生成器：与请求连接解耦。streamFn 默认 streamChat，测试可注入 mock。
   (async () => {
     try {
-      for await (const event of streamChat(messages, model, provider, wsServer, run.abort.signal)) {
+      for await (const event of streamFn(messages, model, provider, wsServer, run.abort.signal)) {
         run.events.push(event);
         for (const sub of run.subscribers) {
           try { sub.onEvent(event); } catch { /* 订阅者写失败不影响生成 */ }

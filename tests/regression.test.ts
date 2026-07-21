@@ -30,6 +30,7 @@ import './text-layout.test.js';
 import './engine.test.js';
 import './orb-state.test.js';
 import './floating-state.test.js';
+import './run-manager.test.js';
 
 function seedState(files: Record<string, any>) {
   KFMState.files = {};
