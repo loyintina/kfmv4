@@ -66,7 +66,7 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
         → initTreeRenderer() → loadFileTree() → initLazyLoader() → initCardStack()
 ```
 
-### 模块职能分组（全 47 个模块，不含 renderers/ 渲染器）
+### 模块职能分组（全 48 个模块，不含 renderers/ 渲染器）
 
 > 完整清单及依赖关系见 §七「客户端模块完整审计表」。此处按职能分组，方便快速定位。
 
@@ -74,7 +74,7 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 |------|------|---------|
 | **骨架** | `app.ts` `ui.ts` `dom-refs.ts` `state.ts` `renderer-lifecycle.ts` | 初始化编排、全局状态、渲染器单例 L |
 | **注册中心** | `ui-registry.ts` `gesture-registry.ts` `animation-registry.ts` | UI 元素、手势、动画的注册/调度 |
-| **文件树渲染** | `tree-render.ts` `tree-overlay.ts` `tree-swipe.ts` `tree-model.ts` `tree-loader.ts` `canvas-cursor.ts` `canvas-scroll.ts` `canvas-utils.ts` `root-picker.ts` | Canvas 文件树的构建、交互、加载 |
+| **文件树渲染** | `tree-render.ts` `tree-overlay.ts` `tree-swipe.ts` `tree-model.ts` `tree-loader.ts` `canvas-cursor.ts` `liquid-geometry.ts` `canvas-scroll.ts` `canvas-utils.ts` `root-picker.ts` | Canvas 文件树的构建、交互、加载 |
 | **文件树样式** | `style-registry.ts` `theme.ts` | 文件树尺寸/颜色/字体的唯一来源（改一处全局同步） |
 | **视觉效果** | `char-rain.ts` | 字符散落/回收动画（展开折叠时） |
 | **交互共享** | `interaction-constants.ts` `drag-handler.ts` `click-queue.ts` `z-index-layers.ts` | 模块间共享的常量/类型/事件队列/层级注册表 |
@@ -335,7 +335,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 > 完整测试清单见 [`docs/DIAGNOSTICS.md` 附录 B](./DIAGNOSTICS.md#附录-b回归测试)。
 >
 > ```bash
-> npm test   # 269 个测试，覆盖 23 个模块（含 Box 引擎）
+> npm test   # 279 个测试，覆盖 23 个模块（含 Box 引擎）
 > ```
 
 ## 六、约束与原则
@@ -384,7 +384,8 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 |------|------|--------|---------|------|
 | `app.ts` | 189 | 1 | ✅ 入口 | 初始化流程��排 |
 | `animation-registry.ts` | 91 | 5 | ✅ 提及 | GSAP 动画隔离层 |
-| `canvas-cursor.ts` | 446 | 3 | ✅ 提及 | Canvas 盒子光标系统 |
+| `canvas-cursor.ts` | 397 | 3 | ✅ 提及 | Canvas 盒子光标系统 |
+| `liquid-geometry.ts` | 109 | 1 | ✅ 分组表 | 光标液体粒子纯几何（从 canvas-cursor 剥离，可单测，BAR-201） |
 | `canvas-scroll.ts` | 361 | 2 | ✅ 提及 | Canvas 盒子滚动系统 |
 | `canvas-utils.ts` | 61 | 4 | ✅ 依赖图 | Canvas 通用工具函数 |
 | `card-toast.ts` | 53 | 1 | ✅ 分组表 | 卡片风格轻量提示 |
@@ -411,7 +412,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `orb-chat.ts` | 1106 | 1 | ✅ 分组表 | AI 消息渲染 + 挂机 start/续读/取消 + 事件状态机（见 AI_CHAT_RUNTIME） |
 | `orb-panel.ts` | 205 | 1 | ✅ 分组表 | 面板 Provider/Session/Model/Role 下拉框（从 orb.ts 拆分） |
 | `orb-state.ts` | 17 | 0 | ✅ 分组表 | orb 状态机纯逻辑（零依赖，从 orb.ts 拆分，可脱离浏览器测试） |
-| `session-store.ts` | 327 | 1 | ✅ 分组表 | 会话持久化统一存储 + saveMessages 自动建会话（见 AI_CHAT_RUNTIME §4.6） |
+| `session-store.ts` | 343 | 1 | ✅ 分组表 | 会话持久化统一存储 + saveMessages 自动建会话（见 AI_CHAT_RUNTIME §4.6） |
 | `renderer-lifecycle.ts` | 243 | 5 | ✅ 注册表 | 渲染器生命周期单例 L |
 | `root-picker.ts` | 434 | 2 | ✅ 独立条目 | 文件树根目录切换器 |
 | `state.ts` | 257 | 10 | ✅ 注册表 | 全局状态层 KFMState |
@@ -439,7 +440,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `../src/client/modules/renderers/md-extensions.ts` | 51 | 1 | — | Markdown 渲染扩展（链接、任务列表） |
 | `../src/client/modules/renderers/md-css.ts` | 57 | 2 | ✅ 分组表 | Markdown 渲染 CSS（全局唯一来源，orb + handler-factory 共享） |
 | `../src/client/modules/renderers/text-preview.ts` | 26 | 1 | — | 文本文件预览渲染器 |
-| **合计** | **14442** | | | |
+| **合计** | **14518** | | | |
 
 ### 死代码检查
 **结论：无死代码。** 所有 41 个模块都被至少 1 个文件导入（`terminal-card-04.ts` 和 `tmux-card.ts` 被导入数为 0，但这是模块自身的特性：它们仅在用户侧打开卡片时由 `card-registry.ts` 的 `createHandler` 工厂按需实例化，属于动态加载。`terminal-aux-bar.ts` 已删除（空占位，无任何引用）。`src/cards/` 目录已彻底删除。实际使用的 logger 在 `src/client/modules/logger.ts`。

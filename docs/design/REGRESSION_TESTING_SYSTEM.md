@@ -257,7 +257,7 @@ z-index、光标/滚动、WS 重连）几乎零覆盖。
 | A | 垂直切片样板：run-manager 时序 | ✅ 已完成（9 测试，BAR-101/104a-c revert 验证通过） | 阶段 0 |
 | 3 | 第一批：服务端 + 运行时逻辑 | ✅ 已完成（32 测试：路由校验/路径逃逸/工具块索引，revert 验证） | 阶段 A |
 | 4 | 第二批：客户端纯逻辑 | ✅ 已完成（14 测试：消息计数/模式着色/buildTree，剥离 countTextMessages，revert 验证） | 阶段 0 |
-| 5 | 第三批：剥离渲染后钉（canvas-cursor/scroll） | ⬜ 待开始 | 阶段 4 |
+| 5 | 第三批：剥离渲染后钉（canvas-cursor/scroll） | ✅ 已完成（10 测试：剥离 liquid-geometry，BAR-201 平移协变 revert 验证。滚动折叠过滤属旧 DOM 时代，Canvas 重写后 _rowIndex 已只含可见行 → 归为死代码，不钉） | 阶段 4 |
 | 6 | 不变量层 | ⬜ 待开始 | 阶段 4 |
 | 7 | 冒烟层（Playwright） | ⬜ 待开始 | 全部逻辑层稳定后 |
 

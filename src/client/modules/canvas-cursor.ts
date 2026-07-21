@@ -25,6 +25,7 @@ import { currentTheme as theme } from './theme.js';
 import { getFileRowData } from './state.js';
 import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
 import { log } from './logger.js';
+import { computeLiquidSegments, type LiquidPoint } from './liquid-geometry.js';
 
 
 export function getRowIndexLength(): number { return L._rowIndex.length; }
@@ -68,62 +69,25 @@ function _emitLiquidSegments(): void {
   const cb = L.cursorBox;
   if (!cb || !_liquidProxy) return;
   const d = cb.data as CData;
-  const topW = d.topLineW || 0;
-  const botW = d.botLineW || 0;
-  const h = cb.height;
-  const root = L.renderer?.getRoot();
-  const scrollY = root?.scrollY ?? 0;
-  // 加上 transform.translateX/Y：右滑回弹动画走 transform 层（与布局 x 隔离），
-  // 边框重绘用 getBounds() 已含 translate，液体粒子也必须同步，否则粒子不跟随光标移动。
-  const bx = cb.x + cb.transform.translateX;
-  const by = cb.y - scrollY + cb.transform.translateY;
-  const R = 4;
   const cfg = theme.canvas.cursorLiquid;
   if (!cfg) return;
-  const vm = cfg.verticalMul ?? 1;
-  const realVert = h - 2 * R;
-  const pathLen = topW + realVert * vm + botW;
-  if (pathLen <= 0) return;
-  const pos = _liquidProxy.pos % pathLen;
-  const segLenH = cfg.segLen;
-  const segLenV = cfg.segLenVertical ?? 4;
-  const segs: LiquidPoint[] = [];
-
-  for (let i = 0; i < cfg.count; i++) {
-    const pathC = (pos + (i * pathLen) / cfg.count) % pathLen;
-    const physC = _pathToPhysical(pathC, topW, realVert, vm);
-
-    if (physC < topW) {
-      // 上线管道：右→左，w=1
-      const distL = physC;
-      const distR = topW - physC;
-      const len = Math.min(segLenH, 2 * Math.min(distL, distR));
-      const half = len / 2;
-      const cs = Math.max(0, physC - half);
-      const ce = Math.min(topW, physC + half);
-      if (ce > cs) segs.push({ x: bx + R + topW - (cs + ce) / 2, y: by, angle: Math.PI, w: 1, len: ce - cs });
-    } else if (physC < topW + realVert) {
-      // 竖线管道：上→下，w=3
-      const vert = physC - topW;
-      const distT = vert;
-      const distB = realVert - vert;
-      const len = Math.min(segLenV, 2 * Math.min(distT, distB));
-      const half = len / 2;
-      const cs = Math.max(0, vert - half);
-      const ce = Math.min(realVert, vert + half);
-      if (ce > cs) segs.push({ x: bx, y: by + R + (cs + ce) / 2, angle: Math.PI / 2, w: 3, len: ce - cs });
-    } else {
-      // 下线管道：左→右，w=1
-      const horiz = physC - topW - realVert;
-      const distL = horiz;
-      const distR = botW - horiz;
-      const len = Math.min(segLenH, 2 * Math.min(distL, distR));
-      const half = len / 2;
-      const cs = Math.max(0, horiz - half);
-      const ce = Math.min(botW, horiz + half);
-      if (ce > cs) segs.push({ x: bx + R + (cs + ce) / 2, y: by + h, angle: 0, w: 1, len: ce - cs });
-    }
-  }
+  const root = L.renderer?.getRoot();
+  const scrollY = root?.scrollY ?? 0;
+  // 收集纯几何输入。bx/by 含 transform.translateX/Y：右滑回弹走 transform 层
+  // （与布局 x 隔离），边框重绘用 getBounds() 已含 translate，粒子必须同步（BAR-201）。
+  const segs = computeLiquidSegments({
+    bx: cb.x + cb.transform.translateX,
+    by: cb.y - scrollY + cb.transform.translateY,
+    h: cb.height,
+    topW: d.topLineW || 0,
+    botW: d.botLineW || 0,
+    R: 4,
+    pos: _liquidProxy.pos,
+    count: cfg.count,
+    segLenH: cfg.segLen,
+    segLenV: cfg.segLenVertical ?? 4,
+    vm: cfg.verticalMul ?? 1,
+  });
   (cb.data as CData)._liquidSegments = segs;
 }
 
@@ -222,19 +186,6 @@ export function setModeAccent(color: string | null): void {
 }
 
 export function getModeAccentColor(): string | null { return _modeAccentColor; }
-
-// ========== 玻璃管液体光效路径计算（传送门：3直线，物理空间拆分）==========
-
-interface LiquidPoint { x: number; y: number; angle: number; w: number; len: number }
-
-/** 路径坐标 → 物理坐标（竖线段用 vm 逆缩放） */
-function _pathToPhysical(t: number, topW: number, realVert: number, vm: number): number {
-  if (t < topW) return t;
-  t -= topW;
-  const vPath = realVert * vm;
-  if (t < vPath) return topW + t / vm;
-  return topW + realVert + (t - vPath);
-}
 
 /** 移动光标到指定行（GSAP 平滑过渡） */
 export function moveCursorTo(hitBox: Box, animate = true): void {

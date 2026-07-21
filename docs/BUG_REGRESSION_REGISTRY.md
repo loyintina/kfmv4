@@ -66,7 +66,7 @@ maintainer: AI agent
 
 | BAR | commit | 症状 | 类别 | 状态 | 测试位置 |
 |-----|--------|------|------|------|---------|
-| BAR-201 | `d4f658a` | 液体粒子不跟随光标右滑回弹（坐标系不含 transform.translateX） | L | 待钉（需先剥离纯函数） | — |
+| BAR-201 | `d4f658a` | 液体粒子不跟随光标右滑回弹（坐标系不含 transform.translateX） | L | ✅ 已钉（剥离 liquid-geometry，201a/b 平移协变，revert 验证）<br>注：适配器 `bx=cb.x+transform.translateX` 的接线由 tsc 保证，未单测（DOM 耦合） | `tests/liquid-geometry.test.ts` |
 | BAR-202 | `9cb6622` | 右滑临时卡组 z-index 埋在文件树之下 | L | 待钉 | — |
 
 ---
