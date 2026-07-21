@@ -929,7 +929,15 @@ export async function resumeRun(
       await _finalizeRun(messages, msgIdx, model, provider);
     }
   } catch (e) {
-    if (!(e instanceof DOMException && e.name === 'AbortError')) _activeRunId = null;
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      // 用户在重连态点暂停 → 通知服务端取消后台 run（彻底停止生成）
+      fetch(apiBase + 'ai/chat/' + runId + '/cancel', { method: 'POST' }).catch(() => {});
+      _persistActiveRun('', null);
+      const lastMsg = messages[messages.length - 1];
+      const tb = lastMsg?.content?.find((b): b is TextBlock => b?.type === 'text');
+      if (tb) tb.text += '\n\n[已取消]';
+    }
+    _activeRunId = null;
   }
   onWait?.(false);
   onRender();

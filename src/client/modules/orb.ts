@@ -487,9 +487,10 @@ export async function initOrb(): Promise<void> {
       _renderChat();
     }
 
+    let abortCtrl: AbortController | null = null;
+
     // 页面恢复（刷新/切后台回来）：若上次有未完成的后台 run 且属于当前会话，
     // 自动重连续读——补齐刷新期间错过的输出并继续实时尾随。这是"挂机持久化"入口。
-    let reconnectAbort: AbortController | null = null;
     (async () => {
       const persisted = readPersistedRun();
       if (!persisted || persisted.sessionId !== sessionStore.activeId) { if (persisted) clearPersistedRun(); return; }
@@ -497,25 +498,28 @@ export async function initOrb(): Promise<void> {
       try {
         const chk = await fetch(base + 'ai/chat/active?sessionId=' + encodeURIComponent(persisted.sessionId)).then(r => r.json());
         if (!chk.runId || chk.runId !== persisted.runId) { clearPersistedRun(); return; }
+        if (chk.done) { clearPersistedRun(); return; } // 已完成无需重连（终态由续读或历史呈现）
       } catch { clearPersistedRun(); return; }
       if (orbState === 'collapsed') expandPanel();
-      reconnectAbort = new AbortController();
+      // 复用 handleSend 的 abortCtrl + 按钮态：重连期间按钮显示"发送中"，点击=中断
+      abortCtrl = new AbortController();
+      sendBtn!.classList.add('sending');
       let stopHint2: (() => void) | null = null;
       const setWait2 = (w: boolean) => {
         if (w) { if (!stopHint2 && panelEl) stopHint2 = startWaitingIndicator(panelEl); }
         else if (stopHint2) { stopHint2(); stopHint2 = null; }
       };
       // 从头续读：服务端缓冲了本轮全部事件，from=0 全量重放重建 AI 回复
-      await resumeRun(base, persisted.runId, 0, chatMessages, reconnectAbort.signal,
+      await resumeRun(base, persisted.runId, 0, chatMessages, abortCtrl.signal,
         () => _renderChat('auto'), setWait2,
         sessionStore.list.find(s => s.id === persisted.sessionId)?.modelId || '',
         sessionStore.list.find(s => s.id === persisted.sessionId)?.providerId || '',
       );
       setWait2(false);
+      abortCtrl = null;
+      sendBtn!.classList.remove('sending');
       clearPersistedRun();
     })();
-
-    let abortCtrl: AbortController | null = null;
 
     // 监听会话切换 → 重载消息
     window.addEventListener('kfm-session-change', async (e: Event) => {
