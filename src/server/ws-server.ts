@@ -48,13 +48,36 @@ export class WsServer {
   private _ptyManager: PtyManager;
   private _evalPending = new Map<string, { resolve(v: unknown): void; reject(e: Error): void }>();
 
+  /**
+   * WebSocket 握手 origin 校验（安全关键）。
+   *
+   * WS 端点提供终端 PTY（任意命令执行）。浏览器发起 WS 连接时会自动带上
+   * 发起页面的真实 Origin 头，且 JS 无法伪造它——因此校验 Origin 为本地回环
+   * 即可挡住"用户访问的恶意网页偷偷连 ws://localhost 拿 shell"的 drive-by 攻击。
+   *
+   * 放行规则：
+   *   - 无 Origin 头（非浏览器客户端，如本地脚本/测试）→ 放行
+   *   - Origin 的 host 是 localhost / 127.0.0.1 / [::1] → 放行
+   *   - 其余（任何外部网站）→ 拒绝握手
+   */
+  private static _verifyOrigin(info: { origin?: string }): boolean {
+    const origin = info.origin;
+    if (!origin) return true; // 非浏览器客户端不带 Origin
+    try {
+      const host = new URL(origin).hostname;
+      return host === 'localhost' || host === '127.0.0.1' || host === '::1';
+    } catch {
+      return false; // Origin 存在但无法解析 → 可疑，拒绝
+    }
+  }
+
   constructor(server: HttpServer) {
     this._ptyManager = new PtyManager(
       (ws, sessionId, data) => this.send(ws, 'terminal-output', { sessionId, data }),
       (ws, sessionId, code)  => this.send(ws, 'terminal-exit', { sessionId, code }),
     );
 
-    this.wss = new WebSocketServer({ server, path: '/ws' });
+    this.wss = new WebSocketServer({ server, path: '/ws', verifyClient: WsServer._verifyOrigin });
 
     this.wss.on('connection', (ws) => {
       console.log('[ws-server] 客户端已连接');

@@ -16,12 +16,26 @@ export function setupProxyRoutes(router: Router): void {
       const { url, method, headers, body } = req.body;
       if (!url) { res.json({ error: '缺少 url 参数' }); return; }
 
-      // 仅允许转发到已配置 Provider 的 baseUrl
+      // 仅允许转发到已配置 Provider 的 baseUrl。
+      // 安全：用 URL.origin 精确比对，而非 startsWith 前缀匹配——
+      // 否则 "https://api.deepseek.com.attacker.example" 会通过
+      // startsWith("https://api.deepseek.com") 校验，把带 API key 的请求
+      // 转发到攻击者域名。同时要求请求路径落在 baseUrl 的路径前缀内。
       try {
         const providers: Array<{ baseUrl: string }> = JSON.parse(
           fs.readFileSync(path.join(KFM_DATA_DIR, 'providers.json'), 'utf-8')
         );
-        const allowed = providers.some(p => url.startsWith(p.baseUrl));
+        let target: URL;
+        try { target = new URL(url); }
+        catch { res.status(400).json({ error: '无效的 url' }); return; }
+        const allowed = providers.some(p => {
+          let base: URL;
+          try { base = new URL(p.baseUrl); } catch { return false; }
+          if (base.origin !== target.origin) return false;
+          // 路径前缀在 "/" 边界上匹配，避免 /v1 匹配到 /v1abc
+          const basePath = base.pathname.replace(/\/$/, '');
+          return target.pathname === basePath || target.pathname.startsWith(basePath + '/');
+        });
         if (!allowed) { res.status(403).json({ error: '不允许的请求地址' }); return; }
       } catch {
         res.status(403).json({ error: '未配置 Provider' });

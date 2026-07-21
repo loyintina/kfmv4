@@ -102,11 +102,33 @@ test('sanitizePath 是函数', () => {
 });
 
 test('sanitizePath 合法子路径返回非 null', () => {
-  // 任意合法路径：相对路径 ".kfmv4/test" 会解析到 HOME/.kfmv4/test
-  const r = sanitizePath('.kfmv4/test');
-  assert(r !== null, 'sanitizePath(".kfmv4/test") 应返回非 null');
+  // 任意合法路径：相对路径 "docs/test" 会解析到 HOME/docs/test
+  const r = sanitizePath('docs/test');
+  assert(r !== null, 'sanitizePath("docs/test") 应返回非 null');
 });
 
 test('sanitizePath "../../etc/passwd" 返回 null', () => {
   assert(sanitizePath('../../etc/passwd') === null, '目录遍历应被拒绝');
+});
+
+// ---- 安全加固回归钉子（2026-07-21 审计四洞修复）----
+// 这些测真实模块的 sanitizePath，覆盖 realpath 软链解析 + .kfmv4 敏感区。
+// 依赖真实 HOME 作 SAFE_ROOT（ACTUAL_ROOT），用 /tmp 外的软链验证逃逸拦截。
+import fs from 'fs';
+import os from 'os';
+
+regression('BAR-SEC-07', 'path-utils', '.kfmv4/ 敏感区（含 API key）→ null', () => {
+  assert(sanitizePath('.kfmv4/providers.json') === null, '.kfmv4 配置目录应被拒绝');
+  assert(sanitizePath('.kfmv4') === null, '.kfmv4 目录本身应被拒绝');
+});
+
+regression('BAR-SEC-08', 'path-utils', 'SAFE_ROOT 内指向外部的软链 → null（realpath 逃逸）', () => {
+  const linkName = '.kfm-sec-test-' + Date.now();
+  const linkPath = path.join(os.homedir(), linkName);
+  try {
+    fs.symlinkSync('/etc/passwd', linkPath);
+    assert(sanitizePath(linkName) === null, '指向 /etc/passwd 的软链应被 realpath 拦截');
+  } finally {
+    try { fs.unlinkSync(linkPath); } catch { /* ignore */ }
+  }
 });
