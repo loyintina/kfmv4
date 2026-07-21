@@ -288,7 +288,7 @@ run-manager 原本直接 `import { streamChat }`，无法离线测（会打 prov
 调用零改动，测试注入受控 mock 生成器。这是设计改进，不是测试 hack。
 
 > 优先级：依赖注入（改一个默认参数）> ESM resolve hook mock（`gsap-hook.mjs` 那套，
-> 只适合 bare specifier，相对 `./x.js` 导入很别扭）。
+> 只适合 bare specifier，相对路径导入（`./模块名`）很别扭）。
 
 ### 5.2 无墙钟等待 —— await 代码真正的信号（rule ts-no-test-timers）
 
