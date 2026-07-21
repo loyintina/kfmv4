@@ -61,19 +61,8 @@ for (const [varName, val] of cssEntries) {
 }
 
 // ========== 校验 2：零散落 DOM z-index 字面量 ==========
-// 白名单：文件:行 → 该行的字面量是合法例外
-const LITERAL_WHITELIST = new Set([
-  // 引擎 Box.zIndex（canvas 内部渲染层级，非 DOM 层级表管辖）
-  'src/client/modules/char-rain.ts:133',
-  'src/client/modules/char-rain.ts:159',
-  'src/client/modules/char-rain.ts:201',
-  'src/client/modules/char-rain.ts:225',
-  // 卡内相对定位按钮（全屏卡标题栏按钮，局部 stacking，非全局层）
-  'src/client/modules/floating-fullscreen.ts:58',
-  'src/client/modules/floating-fullscreen.ts:64',
-  // 角色卡 prompt 文件拖拽：被拖项在兄弟列表内抬升（局部 stacking，非全局层）
-  'src/client/cards/plugins/role.card.ts:466',
-]);
+// 合法例外用行内 `// zindex-ok` 标记豁免（局部 stacking 等）——
+// 弃用旧的「文件:行号」白名单：行号随代码移动必然过期（与 check-as-any 同源教训）。
 
 // 匹配 DOM z-index 字面量：'z-index:数字'、"z-index: 数字"、`z-index:数字`、zIndex = 数字（DOM）
 // 不匹配引用形式（Z.* / var(--z-*)）
@@ -104,8 +93,7 @@ for (const file of walk(SRC_DIR)) {
     const line = lines[i];
     if (!DOM_Z_LITERAL_RE.test(line)) continue;
     if (REF_RE.test(line)) continue; // 引用注册表 = 合法
-    const key = `${rel}:${i + 1}`;
-    if (LITERAL_WHITELIST.has(key)) continue;
+    if (/\/\/\s*zindex-ok/.test(line)) continue; // 行内标记豁免（局部 stacking 等合法例外）
     console.error(`[check-zindex] ❌ 未注册的散落 z-index 字面量: ${key}`);
     console.error(`             → ${line.trim()}`);
     console.error(`             改为引用 Z.* (JS) 或 var(--z-*) (CSS)，并在 z-index-layers.ts + z-index.css 注册`);

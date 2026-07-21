@@ -310,7 +310,7 @@ export function renderChatContent(state: ChatState): void {
 
     if (isUser) {
       // 用户消息：单 text block
-      const userText = msg.content.find((b): b is TextBlock => b.type === 'text')?.text || '';
+      const userText = msg.content.find((b): b is TextBlock => b?.type === 'text')?.text || '';
       const maxWidth = Math.min(innerWidth - 8, innerWidth * 0.85);
       let bubbleHtml = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;gap:8px">
         <span style="font-size:10px;color:${labelColor};font-weight:600">${label}</span>
@@ -349,7 +349,7 @@ export function renderChatContent(state: ChatState): void {
         html += `
           <div style="display:flex;justify-content:flex-start;margin-bottom:4px">
             <div style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:linear-gradient(rgba(10,15,30,0.75),rgba(10,15,30,0.75)) padding-box,${theme.aiChat.panelBorderGradient} border-box;border:1px solid transparent;border-left-width:3px;font-size:var(--card-font-size,10px)">
-              <div data-msg="${idx}" onclick="var p=document.getElementById('${rid}');var s=p.style.display==='none'?'block':'none';p.style.display=s;this.querySelector('.rt-arrow').textContent=s==='block'?'▼':'▶';var m=this.dataset.msg;if(window.__orbMsgs&&m>=0){var t=window.__orbMsgs[m]?.content?.filter(function(x){return x.type==='text'})[0];if(t)t._reasonExpanded=(s==='block')}" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
+              <div data-msg="${idx}" onclick="var p=document.getElementById('${rid}');var s=p.style.display==='none'?'block':'none';p.style.display=s;this.querySelector('.rt-arrow').textContent=s==='block'?'▼':'▶';var m=this.dataset.msg;if(window.__orbMsgs&&m>=0){var t=window.__orbMsgs[m]?.content?.filter(function(x){return x&&x.type==='text'})[0];if(t)t._reasonExpanded=(s==='block')}" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
                 <span class="rt-arrow" style="font-size:7px;color:rgba(0,212,255,0.5)">${reasonOpen ? '▼' : '▶'}</span>
                 <span style="color:rgba(0,212,255,0.6);font-weight:600">${rlabel}</span>
               </div>
@@ -451,7 +451,7 @@ export function renderChatContent(state: ChatState): void {
         html += `
           <div style="display:flex;justify-content:flex-start;margin-bottom:6px">
             <div class="orb-tool-card" style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:${gradientBorder};border:1px solid transparent;border-left-width:3px;border-left-color:${hexToRgba(c1, 0.7)};font-size:var(--card-font-size,10px)">
-              <div data-msg="${idx}" data-ti="${ti}" onclick="var p=document.getElementById('${tid}');var s=p.style.display==='none'?'block':'none';p.style.display=s;this.querySelector('.orb-tc-arrow').textContent=s==='block'?'▼':'▶';var m=this.dataset.msg,t=this.dataset.ti;if(window.__orbMsgs&&m>=0){var b=window.__orbMsgs[m]?.content?.filter(function(x){return x.type==='tool'})[t];if(b){b._userExpanded=(s==='block');if(s==='block'){delete b._foldPhase}}}if(s==='block'){p.style.maxHeight='';p.style.overflow='';p.style.opacity=''}" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
+              <div data-msg="${idx}" data-ti="${ti}" onclick="var p=document.getElementById('${tid}');var s=p.style.display==='none'?'block':'none';p.style.display=s;this.querySelector('.orb-tc-arrow').textContent=s==='block'?'▼':'▶';var m=this.dataset.msg,t=this.dataset.ti;if(window.__orbMsgs&&m>=0){var b=window.__orbMsgs[m]?.content?.filter(function(x){return x&&x.type==='tool'})[t];if(b){b._userExpanded=(s==='block');if(s==='block'){delete b._foldPhase}}}if(s==='block'){p.style.maxHeight='';p.style.overflow='visible'}else{p.style.maxHeight='';p.style.overflow=''}" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;margin-bottom:2px">
                 <span class="orb-tc-arrow" style="font-size:7px;color:rgba(255,255,255,0.5)">${defaultArrow}</span>
                 <span style="color:${hexToRgba(c1, 0.9)};font-weight:600">${escapeHtml(tc.name)}</span>
                 <span style="color:${statusColor};font-size:var(--card-font-size,9px);font-weight:600">${statusLabel}</span>
@@ -547,7 +547,7 @@ export function renderChatContent(state: ChatState): void {
     const i = parseInt(el.dataset.msgIdx || '-1', 10);
     if (i >= 0 && i < messages.length && messages[i].role !== 'user') {
       const text = messages[i].content
-        .filter((b): b is TextBlock => b.type === 'text')
+        .filter((b): b is TextBlock => b?.type === 'text')
         .map(b => b.text || '').join('');
       if (text.length > 0) {
         const cached = _mdCacheGet(text);
@@ -747,7 +747,7 @@ function _applyEvent(event: any, ctx: RunConsumeCtx): void {
                 _activeAnimTimers.delete(t2);
                 delete (toolBlock as AnimBlock)._animText;
                 (toolBlock as AnimBlock)._foldPhase = 'fold';
-                const ti3 = messages[capturedMsgIdx].content.filter(b => b.type === 'tool').indexOf(toolBlock);
+                const ti3 = messages[capturedMsgIdx].content.filter(b => b?.type === 'tool').indexOf(toolBlock);
                 const tid3 = 'tc' + capturedMsgIdx + '_' + ti3;
                 _activeFoldAnims.set(tid3, Date.now());
                 scheduleRender();
@@ -887,14 +887,12 @@ async function _finalizeRun(messages: ChatMessage[], msgIdx: number, model: stri
   }
   clearAllAnimTimers();
   _activeFoldAnims.clear();
+  // 收尾任何仍无 result 的工具块（流已结束，如上游 error 中断时工具未返回结果）——
+  // 否则渲染判 isExecuting=!result 会让工具卡永久卡"忙碌中"（BAR-105 同类，error 触发路径）。
+  settlePendingToolBlocks(messages, '(未完成)');
   for (const m of messages) {
     for (const b of m.content) {
-      if (b?.type === 'tool') {
-        delete (b as ToolBlock & { _animText?: string })._animText;
-        delete (b as ToolBlock & { _animInput?: string })._animInput;
-        delete (b as ToolBlock & { _foldPhase?: string })._foldPhase;
-        delete (b as ToolBlock & { _userExpanded?: boolean })._userExpanded;
-      }
+      if (b?.type === 'tool') clearToolHint((b as ToolBlock).id);
       if (b?.type === 'text') delete (b as TextBlock & { _reasonExpanded?: boolean })._reasonExpanded;
     }
   }
@@ -902,22 +900,24 @@ async function _finalizeRun(messages: ChatMessage[], msgIdx: number, model: stri
 }
 
 /**
- * 取消收尾的纯逻辑（BAR-105 核心，抽出为可测函数）：给所有仍处于"执行中"
- * （无 result）的工具块打上已取消结果，使其从"忙碌中"变完成态。
- * 已有 result 的工具块不覆盖。返回被标记为取消的工具块数。
+ * 收尾纯逻辑（BAR-105 核心，抽出为可测函数）：给所有仍处于"执行中"
+ * （无 result）的工具块打上结果，使其从"忙碌中"变完成态（渲染判 isExecuting=!result）。
+ * 已有 result 的工具块不覆盖。返回被标记的工具块数。
+ *
+ * @param label 收尾文案：取消路径传 "(已取消)"，流结束/中断路径传 "(未完成)"。
  *
  * 纯函数：只改 content 数组里工具块的 result + 清 UI-only 动画字段，
- * 不碰计时器/toolHint（那些 DOM 副作用留在 _cancelPendingTools）。
+ * 不碰计时器/toolHint（那些 DOM 副作用留在调用方）。
  */
-export function cancelPendingToolBlocks(messages: ChatMessage[]): number {
-  let cancelled = 0;
+export function settlePendingToolBlocks(messages: ChatMessage[], label: string): number {
+  let settled = 0;
   for (const m of messages) {
     for (const b of m.content) {
       if (b?.type === 'tool') {
         const tb = b as ToolBlock;
         if (!tb.result) {
-          tb.result = { content: [{ type: 'text', text: '(已取消)' }], isError: true };
-          cancelled++;
+          tb.result = { content: [{ type: 'text', text: label }], isError: true };
+          settled++;
         }
         delete (b as ToolBlock & { _animText?: string })._animText;
         delete (b as ToolBlock & { _animInput?: string })._animInput;
@@ -926,7 +926,7 @@ export function cancelPendingToolBlocks(messages: ChatMessage[]): number {
       }
     }
   }
-  return cancelled;
+  return settled;
 }
 
 /**
@@ -940,7 +940,7 @@ function _cancelPendingTools(messages: ChatMessage[]): void {
       if (b?.type === 'tool') clearToolHint((b as ToolBlock).id);
     }
   }
-  cancelPendingToolBlocks(messages);
+  settlePendingToolBlocks(messages, '(已取消)');
 }
 
 /**

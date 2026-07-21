@@ -130,7 +130,7 @@ function _charRainCore(
             opacity: 1,
             backgroundColor: "transparent",
             interactive: false,
-            zIndex: 99,
+            zIndex: 99, // zindex-ok: Box canvas 内部渲染层级，非 DOM 层级表管辖
             overflow: "visible",
           });
           box.textStyle = {
@@ -156,7 +156,7 @@ function _charRainCore(
             opacity: 0,
             backgroundColor: "transparent",
             interactive: false,
-            zIndex: 99,
+            zIndex: 99, // zindex-ok: Box canvas 内部渲染层级，非 DOM 层级表管辖
             overflow: "visible",
           });
           box.textStyle = {
@@ -198,7 +198,7 @@ function _charRainCore(
           width: toggleBox.width, height: toggleBox.height || LINE_HEIGHT,
           opacity: 1,
           backgroundColor: "transparent",
-          interactive: false, zIndex: 99, overflow: "visible",
+          interactive: false, zIndex: 99, overflow: "visible", // zindex-ok: Box canvas 内部渲染层级
         });
         tBox.textStyle = { ...toggleBox.textStyle, overflow: "visible", maxLines: 1 };
         // 折叠 toggle 从主树当前旋转开始（展开态是 PI/2）
@@ -222,7 +222,7 @@ function _charRainCore(
           width: toggleBox.width, height: toggleBox.height || LINE_HEIGHT,
           opacity: 0,
           backgroundColor: "transparent",
-          interactive: false, zIndex: 99, overflow: "visible",
+          interactive: false, zIndex: 99, overflow: "visible", // zindex-ok: Box canvas 内部渲染层级
         });
         tBox.textStyle = { ...toggleBox.textStyle, overflow: "visible", maxLines: 1 };
         overlayContainer.addChild(tBox);

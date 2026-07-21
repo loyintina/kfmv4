@@ -463,7 +463,7 @@ function createRoleHandler(meta: Record<string, unknown>): CardContentHandler {
             card.style.transition = 'transform 0.12s ease-out';
             card.style.transform = 'scale(1.04)';
             card.style.boxShadow = '0 8px 32px rgba(0,0,0,0.55),0 0 0 1px ' + c1 + '30';
-            card.style.zIndex = '10';
+            card.style.zIndex = '10'; // zindex-ok: 拖拽项在兄弟列表内抬升，局部 stacking 非全局层
             card.style.cursor = 'grabbing';
           });
           handle.addEventListener('pointermove', onPointerMove);
