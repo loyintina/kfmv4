@@ -54,9 +54,11 @@ docs/
 │   └── CARD_DEV_GUIDE.md    # 卡片插件开发指南（加新卡前读）
 ├── KFM_V4_INVARIANTS.md     # 修改约束协议：心法原则+自查清单（改代码前必读）
 ├── DIAGNOSTICS.md           # 诊断手册：隐性契约 + 排查流程 + 根因案例库（遇到 bug 先翻）
+├── BUG_REGRESSION_REGISTRY.md # Bug 回归登记表：687 fix 蒸馏成「该不该测/测了没」追踪表
 ├── design/                  # 设计文档
 │   ├── AI_ARCHITECTURE.md          # AI 架构设计（基于 omp）
 │   ├── AI_CHAT_RUNTIME.md          # AI 对话运行时：后台挂机/重连/WS存活（改流式对话前必读）
+│   ├── REGRESSION_TESTING_SYSTEM.md # 回归测试体系建设方法论与实施计划（draft，做测试前读）
 │   ├── VISION_AND_ROADMAP.md        # 远景：核心理念 + 演进路线（方向性，保留）
 │   └── CONTEXT_ASSEMBLY_SPEC.md     # 上下文拼接与 AI 工作空间（draft）
 └── archive/                 # 历史归档
