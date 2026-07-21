@@ -19,6 +19,7 @@ import * as sr from '../src/client/modules/style-registry.js';
 import { triggerExpandAnimation } from '../src/client/modules/tree-render.js';
 
 import { test, group, runAll, singleFolder, nestedFolders } from './runner.js';
+import './reset-hooks.js'; // 注册 beforeEach 隔离钩子（供 reset:true 的回归钉子使用）
 
 // ========== 导入拆分后的测试文件（注册 test() 调用作为副作用） ==========
 import './box.test.js';

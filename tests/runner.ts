@@ -1,34 +1,13 @@
-// ========== 极简测试运行器 ==========
-let passed = 0;
-let failed = 0;
-const failures: string[] = [];
-const _tests: { name: string; fn: () => void }[] = [];
-let _currentGroup = '';
+// ==========================================================================
+// tests/runner.ts — 测试运行器入口
+//
+// 核心逻辑已迁移到 harness.ts（隔离/分类标签/回归钉子，见
+// docs/design/REGRESSION_TESTING_SYSTEM.md 步骤 0）。本文件保持向后兼容的
+// 再导出 + 测试数据夹具，现有 import 路径不变。
+// ==========================================================================
 
-export function test(name: string, fn: () => void): void {
-  _tests.push({ name, fn });
-}
-
-export function group(name: string): void {
-  _currentGroup = name;
-  console.log(`\n--- ${name} ---`);
-}
-
-export async function runAll(): Promise<void> {
-  for (const t of _tests) {
-    try {
-      await t.fn();
-      passed++;
-    } catch (e: any) {
-      failed++;
-      failures.push(`FAIL ${t.name}: ${e.message}`);
-    }
-  }
-  console.log();
-  for (const f of failures) console.error(f);
-  console.log(`\n${passed} passed, ${failed} failed`);
-  process.exit(failed > 0 ? 1 : 0);
-}
+export { test, group, runAll, regression, beforeEach } from './harness.js';
+export type { TestTag, TestOpts } from './harness.js';
 
 // ========== 测试数据 ==========
 
