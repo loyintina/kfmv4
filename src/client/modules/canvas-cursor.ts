@@ -73,8 +73,10 @@ function _emitLiquidSegments(): void {
   const h = cb.height;
   const root = L.renderer?.getRoot();
   const scrollY = root?.scrollY ?? 0;
-  const bx = cb.x;
-  const by = cb.y - scrollY;
+  // 加上 transform.translateX/Y：右滑回弹动画走 transform 层（与布局 x 隔离），
+  // 边框重绘用 getBounds() 已含 translate，液体粒子也必须同步，否则粒子不跟随光标移动。
+  const bx = cb.x + cb.transform.translateX;
+  const by = cb.y - scrollY + cb.transform.translateY;
   const R = 4;
   const cfg = theme.canvas.cursorLiquid;
   if (!cfg) return;
