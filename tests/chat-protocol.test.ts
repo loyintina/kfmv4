@@ -131,3 +131,38 @@ regression('BAR-105d', 'da39891', '流结束路径用 "(未完成)" 收尾未返
   assert(tb.result?.content[0].text === '(未完成)', '流结束收尾文案应为 (未完成)');
   assert(tb.result?.isError === true, '未完成结果应 isError=true');
 });
+
+// ==========================================================================
+// 工具执行循环结构保护（v7.3.1 三次回归的教训）
+//
+// chat.ts 的工具执行循环在 v7.3.1 中反复被改坏：
+//   1. filesChanged 只在成功时设 → bash 复合命令失败但文件已删时不刷新
+//   2. 循环里没有 yield tool_result → 客户端收不到事件
+//   3. } 缩进错位 → continue 丢失，AI 只能调一次工具
+//
+// 这三个都是同一段代码的结构问题，源码级检查防止回归。
+// ==========================================================================
+
+import { readFileSync } from 'fs';
+
+group('chat.ts 工具执行循环结构保护');
+
+regression('BAR-CHAT-LOOP-01', 'chat.ts', 'filesChanged 无条件设（无论 isError）', () => {
+  const src = readFileSync('src/server/ai/chat.ts', 'utf-8');
+  const lines = src.split('\n');
+  const changedLine = lines.findIndex(l => l.includes('filesChanged = true'));
+  assert(changedLine >= 0, '应有 filesChanged = true');
+  // 检查前面 5 行没有 if (!result.isError)
+  const context = lines.slice(Math.max(0, changedLine - 5), changedLine).join('\n');
+  assert(!context.includes('!result.isError'), 'filesChanged 不应在 !isError 条件内');
+});
+
+regression('BAR-CHAT-LOOP-02', 'chat.ts', '每个工具都 yield tool_result（循环内有 yield）', () => {
+  const src = readFileSync('src/server/ai/chat.ts', 'utf-8');
+  assert(src.includes("type: 'tool_result'"), '应有 yield tool_result');
+});
+
+regression('BAR-CHAT-LOOP-03', 'chat.ts', '工具执行后 continue 回循环', () => {
+  const src = readFileSync('src/server/ai/chat.ts', 'utf-8');
+  assert(src.includes('continue'), '工具执行后应 continue 回 while 循环');
+});

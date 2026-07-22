@@ -78,6 +78,9 @@ maintainer: AI agent
 | BAR-TREE-HIDDEN-03 | `0f240ec` | fetchDirRecursive 始终传 showHidden:true（源码检查，防止 toggle 变慢回归） | L | ✅ 已钉（revert 验证） | `tests/client-logic.test.ts` |
 | BAR-SEC-07 | `7af0792` | .kfmv4/ 不再屏蔽（用户个人配置，不在仓库中） | L | ✅ 已钉（providers.json/sessions/roles 放行验证） | `tests/path-utils.test.ts` |
 | BAR-TREE-HIDDEN-04 | `state` | showHidden 状态刷新后丢失（未持久化到 localStorage） | L | ✅ 已钉（源码检查，排除注释行，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-CHAT-LOOP-01 | `chat.ts` | filesChanged 只在成功时设 → bash 复合命令失败但文件已删时不刷新 | L | ✅ 已钉（源码检查：filesChanged 不在 !isError 条件内） | `tests/chat-protocol.test.ts` |
+| BAR-CHAT-LOOP-02 | `chat.ts` | 循环里没有 yield tool_result → 客户端收不到事件 | L | ✅ 已钉（源码检查：循环内有 yield tool_result） | `tests/chat-protocol.test.ts` |
+| BAR-CHAT-LOOP-03 | `chat.ts` | } 缩进错位 → continue 丢失 → AI 只能调一次工具 | L | ✅ 已钉（源码检查：有 continue） | `tests/chat-protocol.test.ts` |
 
 > 新 bug 修复后：补一个回归钉子 → 在此登记 → 状态置「已钉」。见
 > `docs/archive/design/REGRESSION_TESTING_SYSTEM.md` §3 微循环。
