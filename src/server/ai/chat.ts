@@ -37,10 +37,12 @@ function buildToolDocsPrompt(): string {
   return text;
 }
 
-/** 聊天消息 */
+/** 聊天消息（支持 OpenAI 格式：tool_calls + tool_call_id） */
 export interface ChatMessage {
-  role: 'user' | 'assistant' | 'system';
-  content: string;
+  role: 'user' | 'assistant' | 'system' | 'tool';
+  content: string | null;
+  tool_calls?: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }>;
+  tool_call_id?: string;
 }
 
 /** 流式事件（content block 协议）
@@ -152,12 +154,16 @@ export async function* streamChat(
     type: 'function' as const,
     function: { name: t.name, description: t.description, parameters: t.parameters },
   })) : undefined;
-
-  // 基础消息
-  const baseMessages: Array<Record<string, unknown>> = messages.map(m => ({
-    role: m.role === 'assistant' ? 'assistant' : (m.role === 'system' ? 'system' : 'user'),
-    content: m.content,
-  }));
+  // 基础消息：透传 OpenAI 格式字段（tool_calls / tool_call_id）
+  const baseMessages: Array<Record<string, unknown>> = messages.map(m => {
+    const out: Record<string, unknown> = {
+      role: m.role === 'assistant' ? 'assistant' : (m.role === 'system' ? 'system' : m.role),
+      content: m.content,
+    };
+    if (m.tool_calls) out.tool_calls = m.tool_calls;
+    if (m.tool_call_id) out.tool_call_id = m.tool_call_id;
+    return out;
+  });
   const toolDocsPrompt = buildToolDocsPrompt();
   if (toolDocsPrompt) {
     baseMessages.push({ role: 'system', content: toolDocsPrompt });
