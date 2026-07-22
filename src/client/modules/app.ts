@@ -1,4 +1,5 @@
 import { KFMState, API } from './state.js';
+import { loadFileTree } from './tree-loader.js';
 import { DOM } from "./dom-refs.js";
 import { openCardStack, closeCardStack, isCardStackOpen } from './card-stack.js';
 import { openSidebar, closeSidebar } from './ui.js';
@@ -49,11 +50,12 @@ export async function initApp(): Promise<void> {
     eyeBtn.addEventListener('click', () => {
       KFMState.toggleHidden();
       eyeBtn.classList.toggle('active');
+      loadFileTree(KFMState.currentRoot);
     });
   }
-  // AI 指令处理器：显式切换隐藏文件（绕过通用 click 的坐标问题）
   wsChannel.onCommand('toggle-hidden-files', () => {
     KFMState.toggleHidden();
+    loadFileTree(KFMState.currentRoot);
   });
 
   // 关闭侧栏按钮
