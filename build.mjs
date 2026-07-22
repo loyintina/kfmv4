@@ -1,6 +1,6 @@
 import { build } from 'esbuild';
 import { execSync } from 'child_process';
-import { statSync, readdirSync, readFileSync, writeFileSync } from 'fs';
+import { statSync, readdirSync, readFileSync, writeFileSync, cpSync, mkdirSync } from 'fs';
 import { join, extname } from 'path';
 
 // ========== 构建后校验 ==========
@@ -61,6 +61,12 @@ execSync('node check-consistency.mjs', { stdio: 'inherit' });
 execSync('node check-cards.mjs', { stdio: 'inherit' });
 execSync('node check-handbook-sync.mjs', { stdio: 'inherit' });
 execSync('npx tsc --noEmit', { stdio: 'inherit' });
+
+// 复制 stealth 脚本到 dist（launch.ts 在运行时读取这些文件）
+const puppeteerSrc = 'src/server/ai/tools/omp/browser/puppeteer';
+const puppeteerDst = 'dist/server/puppeteer';
+mkdirSync(puppeteerDst, { recursive: true });
+cpSync(puppeteerSrc, puppeteerDst, { recursive: true });
 
 // 服务端
 await build({
