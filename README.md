@@ -1,8 +1,8 @@
-# KFM v4（咖啡猫）v7.2.1
+# KFM v4（咖啡猫）v7.3.1
 
 > AI 人机交互个人工作台原型，面向移动端浏览器。核心理念：**一切皆卡片**。
 >
-> 当前版本：**v7.3.1** | 构建管线：**15 个 check-* 脚本 + 307 个回归测试**
+> 当前版本：**v7.3.1** | 构建管线：**15 个 check-* 脚本 + 310 个回归测试**
 
 ## 这是什么
 
@@ -16,8 +16,8 @@
 | 终端（xterm.js） | 支持 tmux mouse mode、触控滚动、键盘自动避让、双指缩放 |
 | 卡片工作台 | 统一的浮动卡片引擎，拖拽/缩放/编辑模式/四角光球/全屏模式 |
 | 模式按钮系统 | copy/move/delete 批量操作，色系联动光标 + 卡片 |
-| AI 对话面板 | content block 协议（对齐 Claude/OpenAI 标准）+ 流式思考/正文/工具调用渲染 + 打字机工具结果动画 + 等待期无厘头提示 + Markdown/Math/Mermaid 完整管线 |
-| 自动化检查管线 | 15 个 check-* 脚本 + 元检查器 + 文档-代码一致性验证 + HANDBOOK 同步检查，构建时零错误，307 个回归测试 |
+| AI 对话运行时 | 后台挂机持久化（run-manager）+ 重连续读 + WebSocket 真心跳半开检测 + WS 重连三层恢复终端 + content block 协议（Claude/OpenAI 标准）流式思考/工具调用渲染 + 打字机结果动画 + 等待期无厘头提示 + 会话持久化 localStorage + Z-Index L8 焦点交互层 |
+| 自动化检查管线 | 15 个 check-* 脚本 + 元检查器 + 文档-代码一致性验证 + HANDBOOK 同步检查，构建时零错误，310 个回归测试 |
 
 ## 快速开始
 
@@ -48,8 +48,9 @@ TypeScript 6 + Canvas 2D 自研渲染引擎（v2 Box → Renderer）+ GSAP 3.15 
 |------|------|
 | [`CLAUDE.md`](CLAUDE.md) | 项目入口，文档导航 |
 | [`docs/HANDBOOK.md`](docs/HANDBOOK.md) | 架构 + 调试 + 待办 + 模块清单 |
-| [`docs/KFM_V4_INVARIANTS.md`](docs/KFM_V4_INVARIANTS.md) | 修改约束协议（19 条心法 + 自查清单） |
+| [`docs/KFM_V4_INVARIANTS.md`](docs/KFM_V4_INVARIANTS.md) | 修改约束协议（24 条心法 + 自查清单 + SOP） |
 | [`docs/DIAGNOSTICS.md`](docs/DIAGNOSTICS.md) | 诊断手册（隐性契约 + 根因案例库） |
+| [`docs/design/AI_CHAT_RUNTIME.md`](docs/design/AI_CHAT_RUNTIME.md) | AI 对话运行时架构（后台挂机 / WS 重连 / 跨文件契约） |
 | [`docs/design/VISION_AND_ROADMAP.md`](docs/design/VISION_AND_ROADMAP.md) | 远景 + 路线图 |
 
 ## 协议
