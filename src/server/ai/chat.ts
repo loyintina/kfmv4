@@ -389,7 +389,9 @@ export async function* streamChat(
         apiMessages.push({ role: 'user', content: '你的工具调用已连续失败 3 次。请停止调用工具，直接用文字回复用户，说明当前情况。' });
         toolFailureCount = 0; // 重置，避免下一轮立即触发
       }
-
+      // 本轮消息结束，进入下一轮
+      yield { type: 'message_stop' };
+      continue;
     }
 
     yield { type: 'message_stop' };
