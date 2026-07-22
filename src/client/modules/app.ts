@@ -58,8 +58,12 @@ export async function initApp(): Promise<void> {
     loadFileTree(KFMState.currentRoot);
   });
   // AI 工具修改文件后，服务端广播 file-tree-changed，客户端刷新文件树
-  wsChannel.onMessage('file-tree-changed', () => {
-    loadFileTree(KFMState.currentRoot);
+  let _treeLoadLock = false;
+  wsChannel.onMessage('file-tree-changed', async () => {
+    if (_treeLoadLock) return;
+    _treeLoadLock = true;
+    try { await loadFileTree(KFMState.currentRoot); }
+    finally { _treeLoadLock = false; }
   });
 
   // 关闭侧栏按钮
