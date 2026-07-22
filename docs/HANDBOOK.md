@@ -162,7 +162,7 @@ index.ts (入口路由 + 静态文件)
 - **规则**：选择器锁 (priority 110) 在手势优先级最高，打开后外部滑动手势全部被拦截。关闭时必须调 `L.popContext()` 恢复上下文。
 
 ## 二、当前会话状态
-> **最后更新**：2026-07-22（文档同步 — PROJECT_ASSESSMENT 归档；VISION_AND_ROADMAP Phase II/III 更新；安全审计 + 同类缺陷扫描修复）
+> **最后更新**：2026-07-22（v7.4.0 — sanitizePath 放行 + AI 工具历史修复 + 文件树刷新 + 隐藏文件瞬间切换）
 
 ### 当前焦点
 **v7.3.0 已发布 — AI 对话运行时（后台挂机 / 重连 / WS 存活）**
@@ -328,6 +328,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | **v7.2.0** | **AI 对话面板 content block 协议修复 + 流式渲染统一 + 等待提示 + session.card 适配 + 角色卡拖拽修复 + 死代码清理** | git `16b374b` |
 | **v7.2.1** | **工具卡展开态两区可滚动 + 渲染性能三层优化（markdown 缓存/视口裁剪/渲染合批）+ Claude 工具块索引连续化 + 上游错误上抛 + 浮卡滚动 touch-action 修复 + 摸鱼提示覆盖工具轮次 + 折叠状态持久化** | git `ff5173b` |
 | **v7.3.0** | **AI 对话后台挂机持久化（run-manager）+ 重连续读 + WebSocket 真心跳半开检测 + WS 重连恢复终端（三层）+ 结束态/推理模型等待提示修复 + 会话删除同步 + Z-Index L8 焦点交互层 + AI_CHAT_RUNTIME 架构文档** | git `1404b15` |
+| **v7.4.0** | **sanitizePath .kfmv4 放行 + eye button 瞬间切换 + AI 工具历史消息保留 tool_calls + 目录指纹文件树刷新 + stealth txt 构建修复 + 306 测试** | git `0f240ec` |
 > 速查：遇到 bug 先确认事件是否完整到达（用 `log()` 推日志卡），再查处理逻辑。
 
 ## 五、回归测试
@@ -336,7 +337,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 > bug 账本见 [`docs/BUG_REGRESSION_REGISTRY.md`](./BUG_REGRESSION_REGISTRY.md)）：
 >
 > ```bash
-> npm test    # 303 个测试（单元/集成/回归钉子/不变量），~1.3s，进主管线
+> npm test    # 306 个测试（单元/集成/回归钉子/不变量），~1.3s，进主管线
 > npm run smoke  # 11 条浏览器冒烟（puppeteer headless），~9s，独立于主管线
 > ```
 >

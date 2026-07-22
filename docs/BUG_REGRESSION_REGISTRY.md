@@ -69,7 +69,14 @@ maintainer: AI agent
 | BAR-201 | `d4f658a` | 液体粒子不跟随光标右滑回弹（坐标系不含 transform.translateX） | L | ✅ 已钉（剥离 liquid-geometry，201a/b 平移协变，revert 验证）<br>注：适配器 `bx=cb.x+transform.translateX` 的接线由 tsc 保证，未单测（DOM 耦合） | `tests/liquid-geometry.test.ts` |
 | BAR-202 | `9cb6622` | 右滑临时卡组 z-index 埋在文件树之下 | L | ✅ 已钉（202a-c，z-index 层级不变量，revert 验证） | `tests/invariants.test.ts` |
 
----
+### 第四批：文件树 + AI 对话修复（v7.4.0）
+
+| BAR | commit | 症状/契约 | 类别 | 状态 | 测试位置 |
+|-----|--------|-----------|------|------|---------|
+| BAR-TREE-HIDDEN-01 | `0f240ec` | showHidden=false 时隐藏文件不出现（节点数严格少于 true） | L | ✅ 已钉（revert 验证） | `tests/client-logic.test.ts` |
+| BAR-TREE-HIDDEN-02 | `0f240ec` | showHidden=true 展开后包含隐藏文件（节点数 >=4） | L | ✅ 已钉（revert 验证） | `tests/client-logic.test.ts` |
+| BAR-TREE-HIDDEN-03 | `0f240ec` | fetchDirRecursive 始终传 showHidden:true（源码检查，防止 toggle 变慢回归） | L | ✅ 已钉（revert 验证） | `tests/client-logic.test.ts` |
+| BAR-SEC-07 | `7af0792` | .kfmv4/ 不再屏蔽（用户个人配置，不在仓库中） | L | ✅ 已钉（providers.json/sessions/roles 放行验证） | `tests/path-utils.test.ts` |
 
 > 新 bug 修复后：补一个回归钉子 → 在此登记 → 状态置「已钉」。见
 > `docs/archive/design/REGRESSION_TESTING_SYSTEM.md` §3 微循环。
