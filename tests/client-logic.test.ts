@@ -15,7 +15,7 @@ import { extractMessageText, countTextMessages } from '../src/client/modules/ses
 import type { SessionMessage } from '../src/client/modules/session-store.js';
 import { recolorCards, getModeTheme, getTriColor } from '../src/client/modules/mode-system.js';
 import { buildTree } from '../src/client/modules/tree-model.js';
-import type { FileNode } from '../src/client/modules/state.js';
+import { KFMState, type FileNode } from '../src/client/modules/state.js';
 
 // ==========================================================================
 // BAR-103 (b8dec96 / 1d9fdbc): 消息计数只算「有正文」的消息
@@ -145,6 +145,54 @@ test('折叠目录不展开子节点（expandedPaths 未含该路径）', () => 
 }, { tag: 'integration' });
 
 // ==========================================================================
+// 隐藏文件过滤（buildTree + buildExpanded）
+//
+// 契约：fetchDirRecursive 始终传 showHidden:true（服务端返回全部文件），
+// tree-model.ts 的 buildExpanded 根据 KFMState.showHidden 决定是否过滤。
+// toggle 时只翻转标志 + notify，瞬间 rebuild，无需网络请求。
+// ==========================================================================
+
+group('tree-model — 隐藏文件过滤');
+
+const hiddenTree = [
+  fileNode('.hidden-dir', true, [fileNode('secret.ts', false)]),
+  fileNode('visible.ts', false),
+  fileNode('.hidden-file', false),
+];
+
+regression('BAR-TREE-HIDDEN-01', 'tree-model', 'showHidden=false → 隐藏文件不出现在构建结果中', () => {
+  const saved = KFMState.showHidden;
+  try {
+    const count = (b: any): number => 1 + (b.children || []).reduce((n: number, c: any) => n + count(c), 0);
+    KFMState.showHidden = true;
+    const visibleCount = count(buildTree(hiddenTree, { expandedPaths: { './.hidden-dir': true } }));
+    KFMState.showHidden = false;
+    const hiddenCount = count(buildTree(hiddenTree, { expandedPaths: { './.hidden-dir': true } }));
+    // 过滤后节点数应严格少于未过滤
+    assert(hiddenCount < visibleCount, `showHidden=false(${hiddenCount}) 应少于 true(${visibleCount})`);
+  } finally { KFMState.showHidden = saved; }
+});
+
+regression('BAR-TREE-HIDDEN-02', 'tree-model', 'showHidden=true → 隐藏文件出现在构建结果中', () => {
+  const saved = KFMState.showHidden;
+  KFMState.showHidden = true;
+  try {
+    const box = buildTree(hiddenTree, { expandedPaths: { './.hidden-dir': true } });
+    const count = (b: any): number => 1 + (b.children || []).reduce((n: number, c: any) => n + count(c), 0);
+    // 应有：根 + .hidden-dir + secret.ts + visible.ts + .hidden-file = 5
+    assert(count(box) >= 4, `showHidden=true 展开后应包含隐藏文件，实际 ${count(box)}`);
+  } finally { KFMState.showHidden = saved; }
+});
+
+// fetchDirRecursive 源码级检查：始终传 showHidden:true
+import { readFileSync } from 'fs';
+
+regression('BAR-TREE-HIDDEN-03', 'tree-loader', 'fetchDirRecursive 始终传 showHidden:true（源码检查）', () => {
+  const src = readFileSync('src/client/modules/tree-loader.ts', 'utf-8');
+  assert(src.includes('showHidden: true'), 'fetchDirRecursive 应始终传 showHidden: true');
+  assert(!src.includes('showHidden: KFMState.showHidden'), '不应传 KFMState.showHidden（会导致 toggle 需要网络请求）');
+});
+
 // color-utils hslToHex — 合法 HSL 恒产出合法 6 位 hex
 //
 // 背景：orb-chat 曾有一份本地 hslToHex 副本，缺 s/=100;l/=100 归一化与
