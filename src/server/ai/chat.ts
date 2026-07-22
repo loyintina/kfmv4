@@ -376,15 +376,12 @@ export async function* streamChat(
         } else {
           toolFailureCount = 0;
         }
-        // 文件工具无论成败都标记 filesChanged——bash 可能在"失败"时已改文件系统
-        // （如 rm -rf /path && ls /path，ls 失败但文件已删）
+        // 文件工具无论成败都标记 filesChanged
         if (t.name in FILE_TOOLS) filesChanged = true;
+        // 每个工具都 yield tool_result（客户端需要收到每个事件更新动画）
+        // 最后一个带 filesChanged 标记
+        yield { type: 'tool_result', toolUseId: t.tcId, toolResult: result, filesChanged: i === todo.length - 1 ? filesChanged : undefined };
         apiMessages.push({ role: 'tool', content: JSON.stringify(result), tool_call_id: t.tcId });
-      }
-      // 最后一个 tool_result 带 filesChanged 标记（客户端收到后刷新文件树）
-      if (todo.length > 0) {
-        const last = todo.length - 1;
-        yield { type: 'tool_result', toolUseId: todo[last].tcId, toolResult: results[last], filesChanged };
       }
 
       // 注入 warning
