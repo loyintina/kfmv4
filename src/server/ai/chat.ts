@@ -346,13 +346,8 @@ export async function* streamChat(
         }
       }
 
-      // 工具执行前后目录指纹对比，检测文件系统变更
+      // 文件工具成功执行 → 标记 filesChanged（bash 可改任意路径，指纹覆盖不了子目录）
       const FILE_TOOLS: Record<string, true> = { write: true, edit: true, bash: true };
-      const hasFileTool = todo.some(t => t.name in FILE_TOOLS);
-      let dirFingerprintBefore = '';
-      if (hasFileTool) {
-        try { dirFingerprintBefore = readdirSync(toolCtx.cwd).sort().join('\n'); } catch { /* ignore */ }
-      }
 
       // 并行执行所有工具
       const results = await Promise.all(todo.map(async t => {
@@ -366,32 +361,28 @@ export async function* streamChat(
         }
       }));
 
-      // 工具执行后再次对比目录指纹
-      let filesChanged = false;
-      if (hasFileTool) {
-        try {
-          const after = readdirSync(toolCtx.cwd).sort().join('\n');
-          filesChanged = after !== dirFingerprintBefore;
-        } catch { filesChanged = true; } // 目录不可读也算变化
-      }
-
       // yield tool_result，同时推入 apiMessages
+      let filesChanged = false;
       for (let i = 0; i < todo.length; i++) {
         const t = todo[i];
         const result = results[i];
         if (result.isError) {
           toolFailureCount++;
           if (toolFailureCount >= 3) {
-            yield { type: 'tool_result', toolUseId: t.tcId, toolResult: result, filesChanged: i === todo.length - 1 ? filesChanged : undefined };
+            yield { type: 'tool_result', toolUseId: t.tcId, toolResult: result };
             yield { type: 'error', content: '工具连续失败 3 次，终止对话' };
             return;
           }
         } else {
           toolFailureCount = 0;
+          if (t.name in FILE_TOOLS) filesChanged = true;
         }
-        // 最后一个 tool_result 带 filesChanged 标记（客户端收到后刷新文件树）
-        yield { type: 'tool_result', toolUseId: t.tcId, toolResult: result, filesChanged: i === todo.length - 1 ? filesChanged : undefined };
         apiMessages.push({ role: 'tool', content: JSON.stringify(result), tool_call_id: t.tcId });
+      }
+      // 最后一个 tool_result 带 filesChanged 标记（客户端收到后刷新文件树）
+      if (todo.length > 0) {
+        const last = todo.length - 1;
+        yield { type: 'tool_result', toolUseId: todo[last].tcId, toolResult: results[last], filesChanged };
       }
 
       // 注入 warning
