@@ -11,6 +11,8 @@
  *   message_start → content_block_start/delta/stop → tool_result → message_stop
  */
 
+import { KFMState } from './state.js';
+import { loadFileTree } from './tree-loader.js';
 import { DOM } from './dom-refs.js';
 import { currentTheme as theme } from './theme.js';
 import { sessionStore } from './session-store.js';
@@ -761,6 +763,10 @@ function _applyEvent(event: any, ctx: RunConsumeCtx): void {
           const t0 = setTimeout(tick, INTERVAL);
           _activeAnimTimers.add(t0);
         });
+      }
+      // 服务端目录指纹检测到文件系统变化 → 刷新文件树
+      if (event.filesChanged) {
+        loadFileTree(KFMState.currentRoot);
       }
       break;
     }

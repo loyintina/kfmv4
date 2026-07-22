@@ -78,6 +78,7 @@ export interface StreamEvent {
   deltaText?: string;
   // tool_result
   toolResult?: { content: Array<{ type: string; text?: string }>; isError?: boolean };
+  filesChanged?: boolean; // 工具执行后文件系统有变化，客户端应刷新文件树
   // error / rule_warning
   content?: string;
 }
@@ -345,6 +346,14 @@ export async function* streamChat(
         }
       }
 
+      // 工具执行前后目录指纹对比，检测文件系统变更
+      const FILE_TOOLS: Record<string, true> = { write: true, edit: true, bash: true };
+      const hasFileTool = todo.some(t => t.name in FILE_TOOLS);
+      let dirFingerprintBefore = '';
+      if (hasFileTool) {
+        try { dirFingerprintBefore = readdirSync(toolCtx.cwd).sort().join('\n'); } catch { /* ignore */ }
+      }
+
       // 并行执行所有工具
       const results = await Promise.all(todo.map(async t => {
         try {
@@ -357,29 +366,32 @@ export async function* streamChat(
         }
       }));
 
-      // yield tool_result，同时推入 apiMessages；检测文件系统变更
-      const FILE_TOOLS: Record<string, true> = { write: true, edit: true, bash: true };
+      // 工具执行后再次对比目录指纹
       let filesChanged = false;
+      if (hasFileTool) {
+        try {
+          const after = readdirSync(toolCtx.cwd).sort().join('\n');
+          filesChanged = after !== dirFingerprintBefore;
+        } catch { filesChanged = true; } // 目录不可读也算变化
+      }
+
+      // yield tool_result，同时推入 apiMessages
       for (let i = 0; i < todo.length; i++) {
         const t = todo[i];
         const result = results[i];
         if (result.isError) {
           toolFailureCount++;
           if (toolFailureCount >= 3) {
-            yield { type: 'tool_result', toolUseId: t.tcId, toolResult: result };
+            yield { type: 'tool_result', toolUseId: t.tcId, toolResult: result, filesChanged: i === todo.length - 1 ? filesChanged : undefined };
             yield { type: 'error', content: '工具连续失败 3 次，终止对话' };
             return;
           }
         } else {
           toolFailureCount = 0;
-          if (t.name in FILE_TOOLS) filesChanged = true;
         }
-        yield { type: 'tool_result', toolUseId: t.tcId, toolResult: result };
+        // 最后一个 tool_result 带 filesChanged 标记（客户端收到后刷新文件树）
+        yield { type: 'tool_result', toolUseId: t.tcId, toolResult: result, filesChanged: i === todo.length - 1 ? filesChanged : undefined };
         apiMessages.push({ role: 'tool', content: JSON.stringify(result), tool_call_id: t.tcId });
-      }
-      // 文件系统变更 → 通知客户端刷新文件树
-      if (filesChanged) {
-        wsServer.broadcast('file-tree-changed', {});
       }
 
       // 注入 warning
