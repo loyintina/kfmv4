@@ -351,7 +351,9 @@ export async function* streamChat(
         }
       }));
 
-      // yield tool_result，同时推入 apiMessages
+      // yield tool_result，同时推入 apiMessages；检测文件系统变更
+      const FILE_TOOLS: Record<string, true> = { write: true, edit: true, bash: true };
+      let filesChanged = false;
       for (let i = 0; i < todo.length; i++) {
         const t = todo[i];
         const result = results[i];
@@ -364,9 +366,14 @@ export async function* streamChat(
           }
         } else {
           toolFailureCount = 0;
+          if (t.name in FILE_TOOLS) filesChanged = true;
         }
         yield { type: 'tool_result', toolUseId: t.tcId, toolResult: result };
         apiMessages.push({ role: 'tool', content: JSON.stringify(result), tool_call_id: t.tcId });
+      }
+      // 文件系统变更 → 通知客户端刷新文件树
+      if (filesChanged) {
+        wsServer.broadcast('file-tree-changed', {});
       }
 
       // 注入 warning

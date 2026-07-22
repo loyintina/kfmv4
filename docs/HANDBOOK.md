@@ -389,7 +389,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 
 | 模块 | 行数 | 被导入 | 文档覆盖 | 用途 |
 |------|------|--------|---------|------|
-| `app.ts` | 191 | 1 | ✅ 入口 | 初始化流程��排 |
+| `app.ts` | 195 | 1 | ✅ 入口 | 初始化流程��排 |
 | `animation-registry.ts` | 91 | 5 | ✅ 提及 | GSAP 动画隔离层 |
 | `canvas-cursor.ts` | 397 | 3 | ✅ 提及 | Canvas 盒子光标系统 |
 | `liquid-geometry.ts` | 109 | 1 | ✅ 分组表 | 光标液体粒子纯几何（从 canvas-cursor 剥离，可单测，BAR-201） |
@@ -447,7 +447,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `../src/client/modules/renderers/md-extensions.ts` | 51 | 1 | — | Markdown 渲染扩展（链接、任务列表） |
 | `../src/client/modules/renderers/md-css.ts` | 57 | 2 | ✅ 分组表 | Markdown 渲染 CSS（全局唯一来源，orb + handler-factory 共享） |
 | `../src/client/modules/renderers/text-preview.ts` | 26 | 1 | — | 文本文件预览渲染器 |
-| **合计** | **14505** | | | |
+| **合计** | **14509** | | | |
 
 ### 死代码检查
 **结论：无死代码。** 所有 41 个模块都被至少 1 个文件导入（`terminal-card-04.ts` 和 `tmux-card.ts` 被导入数为 0，但这是模块自身的特性：它们仅在用户侧打开卡片时由 `card-registry.ts` 的 `createHandler` 工厂按需实例化，属于动态加载。`terminal-aux-bar.ts` 已删除（空占位，无任何引用）。`src/cards/` 目录已彻底删除。实际使用的 logger 在 `src/client/modules/logger.ts`。
