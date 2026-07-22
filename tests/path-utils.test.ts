@@ -117,9 +117,11 @@ test('sanitizePath "../../etc/passwd" 返回 null', () => {
 import fs from 'fs';
 import os from 'os';
 
-regression('BAR-SEC-07', 'path-utils', '.kfmv4/ 敏感区（含 API key）→ null', () => {
-  assert(sanitizePath('.kfmv4/providers.json') === null, '.kfmv4 配置目录应被拒绝');
-  assert(sanitizePath('.kfmv4') === null, '.kfmv4 目录本身应被拒绝');
+regression('BAR-SEC-07', 'path-utils', '.kfmv4/providers.json 敏感文件（含 API key）→ null', () => {
+  assert(sanitizePath('.kfmv4/providers.json') === null, 'providers.json 含 API key 应被拒绝');
+  // .kfmv4 目录本身及 sessions/roles/configs/active.json 允许访问（用户数据）
+  assert(sanitizePath('.kfmv4/active.json') !== null, 'active.json 是用户数据，应放行');
+  assert(sanitizePath('.kfmv4/sessions') !== null, 'sessions 目录是用户数据，应放行');
 });
 
 regression('BAR-SEC-08', 'path-utils', 'SAFE_ROOT 内指向外部的软链 → null（realpath 逃逸）', () => {

@@ -47,6 +47,7 @@ export function setupFileRoutes(router: Router): void {
       const targetPath = req.body.path || ROOT_DIR;
       const maxDepth = req.body.depth || 20;
       const expandedPaths: Record<string, boolean> = req.body.expandedPaths || {};
+      const showHidden = req.body.showHidden || false;
       const resolvedPath = sanitizePath(targetPath === '~' ? ROOT_DIR : targetPath);
       if (!resolvedPath) { res.json({ error: '路径不合法' }); return; }
       if (!fs.existsSync(resolvedPath)) { res.json({ error: '路径不存在', path: resolvedPath }); return; }
@@ -60,6 +61,7 @@ export function setupFileRoutes(router: Router): void {
         if (depth <= 0) return [];
         try {
           return fs.readdirSync(dirPath)
+            .filter(name => showHidden || !name.startsWith('.'))
             .map(name => {
               const fullPath = path.join(dirPath, name);
               try {

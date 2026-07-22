@@ -36,16 +36,17 @@ export const KFM_DATA_DIR = path.join(ROOT_DIR, '.kfmv4');
  *   2. 符号链接层：对目标（或新建时的最深已存在祖先）做 realpath 解析真实位置，
  *      再次校验落在 SAFE_ROOT 内——挡 "SAFE_ROOT 内放一个指向 /etc/passwd 的软链"
  *      这类逃逸（path.resolve 是纯字符串运算，不跟随软链）。
- *   3. 敏感区层：拒绝 .kfmv4/ 配置目录（含明文 API key 的 providers.json）。
- *      该目录的正当读取全部走服务端内部，从不经过 sanitizePath，故可安全拒绝。
+ *   3. 敏感文件层：拒绝 .kfmv4/providers.json（含明文 API key）。
+ *      其余 .kfmv4/ 子目录（sessions/roles/configs/active.json）是用户数据，正常读写。
  */
 export function sanitizePath(userPath: string): string | null {
   const resolved = path.resolve(SAFE_ROOT, userPath);
   if (resolved !== SAFE_ROOT.slice(0, -1) && !resolved.startsWith(SAFE_ROOT)) return null;
 
-  // 敏感区：.kfmv4/ 配置目录（含 API key）不对文件 API 开放
+  // 敏感文件：providers.json 含明文 API key，不对文件 API 开放。
+  // 其余 .kfmv4/ 子目录（sessions/roles/configs/active.json）是用户内容，需正常读写。
   const dataReal = path.resolve(KFM_DATA_DIR);
-  if (resolved === dataReal || resolved.startsWith(dataReal + path.sep)) return null;
+  if (resolved === path.join(dataReal, 'providers.json')) return null;
 
   // 符号链接解析：找最深的已存在路径段做 realpath（新建文件时目标尚不存在，
   // 需对其父目录链解析，防止用软链目录把写入/读取重定向到 SAFE_ROOT 外）。
