@@ -1039,11 +1039,36 @@ export async function doSend(
     const model = config.modelId;
     const provider = config.providerId;
 
-    // 构建发给 API 的消息（content → text 压平）
-    const apiMessages: Array<{ role: string; content: string }> = [];
+    // 构建发给 API 的消息（content blocks → OpenAI 格式）。
+    // 会话文件存的是完整 content blocks（含 tool_use + tool_result），
+    // 发给 API 时必须转为 OpenAI 的 tool_calls + role:"tool" 格式。
+    const apiMessages: Array<{ role: string; content: string | null; tool_calls?: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }>; tool_call_id?: string }> = [];
     if (systemPrompt) apiMessages.push({ role: 'system', content: systemPrompt });
     for (const m of messages) {
-      apiMessages.push({ role: m.role === 'ai' ? 'assistant' : m.role, content: extractText(m) });
+      if (m.role === 'user') {
+        apiMessages.push({ role: 'user', content: extractText(m) });
+      } else {
+        // AI 消息：拆分 text + tool blocks 为 OpenAI 格式
+        const textBlocks = m.content.filter((b): b is TextBlock => b?.type === 'text');
+        const toolBlocks = m.content.filter((b): b is ToolBlock => b?.type === 'tool');
+        const mainText = textBlocks.map(b => b.text || '').join('');
+        if (toolBlocks.length > 0) {
+          // 有工具调用：assistant 消息带 tool_calls
+          const toolCalls = toolBlocks.map(tc => ({
+            id: tc.id,
+            type: 'function' as const,
+            function: { name: tc.name, arguments: JSON.stringify(tc.input) },
+          }));
+          apiMessages.push({ role: 'assistant', content: mainText || null, tool_calls: toolCalls });
+          // 每个工具结果作为独立的 role:"tool" 消息
+          for (const tc of toolBlocks) {
+            const resultText = tc.result?.content?.map(c => c.text || '').join('') || '';
+            apiMessages.push({ role: 'tool', content: resultText, tool_call_id: tc.id });
+          }
+        } else {
+          apiMessages.push({ role: 'assistant', content: mainText });
+        }
+      }
     }
 
     // 先落盘用户消息，保证刷新/切后台后能恢复（AI 回复由重连续读补齐）
