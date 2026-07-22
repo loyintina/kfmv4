@@ -305,11 +305,19 @@ run-manager 原本直接 `import { streamChat }`，无法离线测（会打 prov
 
 ```
 1. git show <commit>            读懂当时错在哪、怎么修（心法 9/10：不凭记忆）
-2. regression('BAR-xxx', commit, 名称, fn)   写测试，断言 = 修复的可执行规格
-3. 【灵魂】临时回退该 fix（改一行 → void 0 / if(false)）→ 跑 → 必须变红
+2. 修 bug → npm test 全绿       确认修复不破坏已有测试
+3. regression('BAR-xxx', commit, 名称, fn)   写测试，断言 = 修复的可执行规格
+4. 【灵魂】临时回退该 fix（改一行 → void 0 / if(false)）→ 跑 → 必须变红
    若测试仍绿 = 假测试，它没在测那个 bug
-4. 恢复 fix → 转绿
-5. 更新 BUG_REGRESSION_REGISTRY 状态为 ✅ 已钉（revert 验证）
+5. 恢复 fix → 转绿
+6. 更新 BUG_REGRESSION_REGISTRY 状态为 ✅ 已钉（revert 验证）
+7. 更新文档（版本发布时）：
+   - package.json 版本号
+   - README.md 版本行 + 测试计数
+   - CLAUDE.md 测试计数
+   - HANDBOOK.md §二 当前状态 + §四 版本历史行 + §五 测试计数
+   - git commit + git tag vX.Y.Z
+   - node check-versions.mjs 验证一致性
 ```
 
 阶段 A 实证：禁用 `a5bf0c4` 的 finally onDone → BAR-101/101b 变红（`onDone 必须
