@@ -193,8 +193,26 @@ regression('BAR-TREE-HIDDEN-03', 'tree-loader', 'fetchDirRecursive 始终传 sho
   assert(!src.includes('showHidden: KFMState.showHidden'), '不应传 KFMState.showHidden（会导致 toggle 需要网络请求）');
 });
 
-// color-utils hslToHex — 合法 HSL 恒产出合法 6 位 hex
+
+// ==========================================================================
+// showHidden 持久化（BAR-TREE-HIDDEN-04）
 //
+// 契约：toggleHidden 写 localStorage，初始化从 localStorage 读。
+// 刷新页面后 showHidden 状态不丢失。
+// ==========================================================================
+
+group('state — showHidden 持久化');
+
+
+regression('BAR-TREE-HIDDEN-04', 'state', 'showHidden 状态持久化到 localStorage（源码检查）', () => {
+  const src = readFileSync('src/client/modules/state.ts', 'utf-8');
+  // 初始化时从 localStorage 读
+  assert(src.includes("localStorage.getItem('kfmv4_showHidden')"), '初始化应从 localStorage 读 showHidden');
+  // toggleHidden 时写入 localStorage（非注释行）
+  const setLines = src.split('\n').filter(l => l.includes("localStorage.setItem('kfmv4_showHidden'") && !l.trimStart().startsWith('//'));
+  assert(setLines.length > 0, 'toggleHidden 应写入 localStorage（非注释）');
+});
+
 // 背景：orb-chat 曾有一份本地 hslToHex 副本，缺 s/=100;l/=100 归一化与
 // clamp，对 sat/lit=0-100 的输入产出损坏字符串（如 "#ab83d-a4aa..."）。
 // 合并到 color-utils 规范版时修复。此钉子钉住不变量：任意合法 HSL →

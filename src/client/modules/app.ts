@@ -46,6 +46,8 @@ export async function initApp(): Promise<void> {
   // 眼睛按钮：显示/隐藏隐藏文件
   const eyeBtn = DOM.toggleHiddenBtn;
   if (eyeBtn) {
+    // 恢复持久化的按钮状态
+    if (KFMState.showHidden) eyeBtn.classList.add('active');
     eyeBtn.addEventListener('click', () => {
       KFMState.toggleHidden();
       eyeBtn.classList.toggle('active');

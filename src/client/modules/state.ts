@@ -75,7 +75,7 @@ export const KFMState: KFMStateType = {
   currentRoot: localStorage.getItem('kfmv4_currentRoot') || '.',
   expandedPaths: JSON.parse(localStorage.getItem('expandedPaths') || '{}'),
   selectedFile: '',
-  showHidden: false,
+  showHidden: localStorage.getItem('kfmv4_showHidden') === 'true',
   viewport: { scrollTop: 0, scrollLeft: 0 },
   sidebarOpen: false,
   openCards: [],
@@ -136,6 +136,7 @@ export const KFMState: KFMStateType = {
   
   toggleHidden() {
     this.showHidden = !this.showHidden;
+    localStorage.setItem('kfmv4_showHidden', String(this.showHidden));
     this.notify();
   },
   

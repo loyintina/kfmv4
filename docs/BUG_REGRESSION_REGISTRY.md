@@ -77,6 +77,7 @@ maintainer: AI agent
 | BAR-TREE-HIDDEN-02 | `0f240ec` | showHidden=true 展开后包含隐藏文件（节点数 >=4） | L | ✅ 已钉（revert 验证） | `tests/client-logic.test.ts` |
 | BAR-TREE-HIDDEN-03 | `0f240ec` | fetchDirRecursive 始终传 showHidden:true（源码检查，防止 toggle 变慢回归） | L | ✅ 已钉（revert 验证） | `tests/client-logic.test.ts` |
 | BAR-SEC-07 | `7af0792` | .kfmv4/ 不再屏蔽（用户个人配置，不在仓库中） | L | ✅ 已钉（providers.json/sessions/roles 放行验证） | `tests/path-utils.test.ts` |
+| BAR-TREE-HIDDEN-04 | `state` | showHidden 状态刷新后丢失（未持久化到 localStorage） | L | ✅ 已钉（源码检查，排除注释行，revert 验证） | `tests/client-logic.test.ts` |
 
 > 新 bug 修复后：补一个回归钉子 → 在此登记 → 状态置「已钉」。见
 > `docs/archive/design/REGRESSION_TESTING_SYSTEM.md` §3 微循环。
