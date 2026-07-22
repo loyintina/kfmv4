@@ -375,8 +375,10 @@ export async function* streamChat(
           }
         } else {
           toolFailureCount = 0;
-          if (t.name in FILE_TOOLS) filesChanged = true;
         }
+        // 文件工具无论成败都标记 filesChanged——bash 可能在"失败"时已改文件系统
+        // （如 rm -rf /path && ls /path，ls 失败但文件已删）
+        if (t.name in FILE_TOOLS) filesChanged = true;
         apiMessages.push({ role: 'tool', content: JSON.stringify(result), tool_call_id: t.tcId });
       }
       // 最后一个 tool_result 带 filesChanged 标记（客户端收到后刷新文件树）
