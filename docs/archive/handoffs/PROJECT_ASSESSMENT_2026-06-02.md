@@ -1,7 +1,9 @@
 ---
-status: active
+status: superseded
 created_at: 2026-06-02
-context: 对 kfmv4 项目的整体把控理解与建议
+archived_at: 2026-07-22
+superseded_by: docs/HANDBOOK.md
+context: 对 kfmv4 项目的整体把控理解与建议（v6.x 阶段评估快照，Phase II 已于 v7.x 完成）
 ---
 
 # KFM v4 — 项目把控理解与建议

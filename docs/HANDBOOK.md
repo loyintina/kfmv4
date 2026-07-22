@@ -1,6 +1,6 @@
 ---
 title: KFM v4 工作手册
-last_reviewed: 2026-07-21
+last_reviewed: 2026-07-22
 kfm_version: 7.3.0
 status: active
 maintainer: AI agent
@@ -162,7 +162,7 @@ index.ts (入口路由 + 静态文件)
 - **规则**：选择器锁 (priority 110) 在手势优先级最高，打开后外部滑动手势全部被拦截。关闭时必须调 `L.popContext()` 恢复上下文。
 
 ## 二、当前会话状态
-> **最后更新**：2026-07-21（v7.3.0 — AI 对话后台挂机持久化 + 重连续读 + WebSocket 真心跳 + Z-Index L8 焦点层）
+> **最后更新**：2026-07-22（文档同步 — PROJECT_ASSESSMENT 归档；VISION_AND_ROADMAP Phase II/III 更新；安全审计 + 同类缺陷扫描修复）
 
 ### 当前焦点
 **v7.3.0 已发布 — AI 对话运行时（后台挂机 / 重连 / WS 存活）**

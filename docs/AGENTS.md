@@ -13,10 +13,11 @@ docs/
 ├── HANDBOOK.md                 ← 工作手册：架构、调试、待办、测试（日常翻）
 ├── KFM_V4_INVARIANTS.md       ← 修改约束：心法 + 自查清单（改代码前读）
 ├── development/                ← 开发指南（CARD_DEV_GUIDE 加卡；SPEC_DRIVEN_WORKFLOW 做带文档的大改动）
-├── design/                     ← 待实现的设计提案
+├── design/                     ← 架构与运行时设计文档（active 文档，随代码演进）
 │   ├── VISION_AND_ROADMAP.md   ← 远景：核心理念 + 演进路线
-│   ├── WORKBENCH_SPEC.md       ← 卡片工作台（active 设计提案）
-│   └── TERMINAL_CARD_SPEC.md    ← 03 号终端卡（active 设计提案）
+│   ├── AI_ARCHITECTURE.md      ← AI 架构设计
+│   ├── AI_CHAT_RUNTIME.md      ← AI 对话运行时契约（改流式对话前必读）
+│   └── CONTEXT_ASSEMBLY_SPEC.md ← 上下文拼接设计（draft）
 └── archive/                    ← 历史文档仓库
     ├── README.md               ← 子目录导览 + 每类什么时候值得翻
     ├── audits/                 ← 已完成的审计记录/修复
@@ -35,7 +36,7 @@ docs/
 | `KFM_V4_INVARIANTS.md` | 心法原则、约束、补丁模式、自查清单 | 发现新约束时追加 |
 | `design/VISION_AND_ROADMAP.md` | 核心理念、演进路线、开放问题 | 做重大决策时更新 |
 | `docs/archive/design/ENGINE_ARCHITECTURE.md` | 引擎层 14 个文件的架构描述 | 改渲染逻辑后同步 |
-| `archive/design/WORKBENCH_SPEC.md` | 唯一待实现的设计提案 | 定了方案才改 |
+| `archive/design/WORKBENCH_SPEC.md` | 卡片工作台历史设计（已完成归档） | 只读，不再维护 |
 
 ### 根层文档维护规则
 

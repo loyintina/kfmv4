@@ -711,33 +711,27 @@ AI 需要一种方式"指给用户看"——不依赖卡片聚焦或状态联动
 | 7 | 将 orb.ts 迁入 ai-chat-card.ts | ❌ 未迁移。光球的全局入口角色与卡片生命周期不匹配，强迁带来特殊化反而增加复杂度。交互共享已通过 `drag-handler.ts` + `gesture-registry.ts` 实现 |
 | 8 | 写 CARD_PLUGIN_SPEC.md | ✅ 由 `docs/development/CARD_DEV_GUIDE.md` 实现 |
 
-### Phase II — Agent 基础设施（待实现）
+### Phase II — Agent 基础设施（✅ 已完成，v7.x）
 
 **核心目标**：让 AI 能通过 KFM 看代码、改代码、跑构建。
 
-| # | 内容 | 说明 |
-|---|------|------|
-| 10 | `POST /api/tools/exec` 端点（白名单命令 + 超时） | 让 Agent 能执行构建命令 |
-| 11 | `POST /api/tools/grep` 端点（文件内容搜索） | 让 Agent 能搜索代码 |
-| 12 | 设置卡：Agent 配置（类型、模型、API key 管理） | 让用户能配置和切换 Agent |
-| 13 | Agent 适配层：输入输出格式转换 + 子进程管理 | AI 对话卡后端 |
-| 14 | AI 对话卡：消息渲染器（用户/Agent/工具三类气泡） | 流式渲染 Agent 输出 |
+| # | 内容 | 实施情况 |
+|---|------|---------|
+| 10 | 构建/命令执行端点 | ✅ `src/server/ai/tools/kfmv4/exec.ts`（白名单命令 + 超时） |
+| 11 | 文件内容搜索端点 | ✅ `src/server/ai/tools/omp/grep.ts`（ripgrep，via native.ts） |
+| 12 | 设置卡：Agent 配置 | ✅ `config.card.ts`（Provider + Model + Session 管理） |
+| 13 | Agent 适配层 + 子进程管理 | ✅ `src/server/ai/chat.ts` + `src/server/ai/run-manager.ts`（挂机持久化 + SSE 续读） |
+| 14 | AI 对话卡消息渲染器 | ✅ `orb-chat.ts`（content block 协议，text/tool/reasoning 三类） |
 
-**验收标准**：
-- 在一个对话卡中，输入"帮我看看 src/ 的结构" → OMP 响应 → 结果流式渲染出来
-- 输入"帮我跑一下 npm run build" → Agent 执行 → 构建结果渲染出来
-- Agent 配置切换（OMP → Claude Code → 自定义）在设置卡中选择
+### Phase III — 生态化（部分完成）
 
-### Phase III — 生态化（待定）
-
-| # | 内容 | 说明 |
-|---|------|------|
-| 15 | 更多内置卡片（终端卡、设置卡、文件编辑卡） | |
-| 16 | 标记系统实现（点击光标 + 路标标记 → Agent 上下文） | |
-| 17 | 卡片位置持久化（localStorage） | |
-| 18 | 插件间通信（文件卡 → 代码卡跳转） | |
-| 19 | AI 自改闭环：AI 通过对话卡读规范 → 写新卡片 → 构建验证 → 注册 | |
-
+| # | 内容 | 实施情况 |
+|---|------|---------|
+| 15 | 更多内置卡片 | ✅ terminal/tmux/file/session/role/config/api/tools 全部实装 |
+| 16 | 标记系统（点击光标 + 路标标记 → Agent 上下文） | ⬜ 未实现 |
+| 17 | 卡片位置持久化（localStorage） | ⬜ 未实现 |
+| 18 | 插件间通信（文件卡 → 代码卡跳转） | ⬜ 未实现 |
+| 19 | AI 自改闭环 | ⬜ 基础设施就绪，未做完整验收 |
 ---
 
 ## 九、未解决的问题
@@ -869,7 +863,7 @@ Agent 会话到期后，新 Agent 如何"接上"当前进度？
 AI 读到本文档后，按以下流程：
 
 1. 读第六章（CardDefinition 接口规范）
-2. 当前仅 `src/client/cards/plugins/debug-card/` 为实验参考（插件系统**尚未正式搭建**，以下流程为目标设计）
+2. 参考 `src/client/cards/plugins/` 下已有的卡片实现（debug.card.ts 最简，tools.card.ts 含 API 调用示例）
 3. 在 `src/client/cards/plugins/` 下新建目录 + `index.ts`
 4. 在卡片注册表（`src/client/cards/registry.ts`）中加一行 import + 注册
 5. 执行 `npm run build` 验证编译通过

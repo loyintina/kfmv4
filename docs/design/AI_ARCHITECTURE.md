@@ -547,8 +547,8 @@ POST /api/ai/sessions
 **交付物**：
 - `src/server/ai/tools/`（已完成）
 - `src/server/prompts/`
-- src/server/ai/agent-card.ts（Agent 卡，规划中，尚未创建）
-- `.kfmv4/agents/`（Agent 配置存储，当前为空）
+- agent-card.ts（规划中，尚未创建；当前 Agent 配置由 `config.card.ts` 承担）
+- `.kfmv4/configs/`（Agent 配置存储，由 config.card.ts 管理）
 
 #### Agent 卡设计
 

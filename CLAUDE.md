@@ -50,7 +50,6 @@ CLAUDE.md                    # 本文件——项目入口
 docs/
 ├── AGENTS.md                # AI 专属：文档维护规则（改文档前读）
 ├── AGENT_PROMPT_REFERENCES.md # Agent 提示词设计参考资料
-├── PROJECT_ASSESSMENT.md    # 项目把控理解与建议（整体认知参考）
 ├── HANDBOOK.md              # 工作手册：架构-状态-待办（日常翻）
 ├── development/             # 开发指南
 │   ├── CARD_DEV_GUIDE.md    # 卡片插件开发指南（加新卡前读）
