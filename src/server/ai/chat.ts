@@ -368,11 +368,6 @@ export async function* streamChat(
         const result = results[i];
         if (result.isError) {
           toolFailureCount++;
-          if (toolFailureCount >= 3) {
-            yield { type: 'tool_result', toolUseId: t.tcId, toolResult: result };
-            yield { type: 'error', content: '工具连续失败 3 次，终止对话' };
-            return;
-          }
         } else {
           toolFailureCount = 0;
         }
@@ -389,9 +384,12 @@ export async function* streamChat(
         apiMessages.push({ role: 'user', content: pendingWarnings.join('\n\n---\n\n') });
       }
 
-      // 本轮消息结束，进入下一轮
-      yield { type: 'message_stop' };
-      continue;
+      // 连续失败 3 次 → 注入提示词让 AI 停止调工具，改用文字回复
+      if (toolFailureCount >= 3) {
+        apiMessages.push({ role: 'user', content: '你的工具调用已连续失败 3 次。请停止调用工具，直接用文字回复用户，说明当前情况。' });
+        toolFailureCount = 0; // 重置，避免下一轮立即触发
+      }
+
     }
 
     yield { type: 'message_stop' };
