@@ -100,7 +100,10 @@ if (statSync('public/bundle.js').size < 100) { console.error('[smoke] ❌ public
 // 自动更新 bundle.js 版本号（防止浏览器缓存旧 bundle）
 // 用完整时间戳而非仅日期——同一天内多次构建也必须刷新缓存
 const buildStamp = Date.now();
-const html3 = html2.replace(/bundle\.js\?v=\d+/, `bundle.js?v=${buildStamp}`);
+let html3 = html2.replace(/bundle\.js\?v=\d+/, `bundle.js?v=${buildStamp}`);
+// CSS 也加版本号（防浏览器缓存旧样式——动画/布局改动后必须刷新）
+// 匹配 css/xxx.css 或 css/xxx.css?v=数字，统一替换为带新版本号
+html3 = html3.replace(/(css\/[\w-]+\.css)(\?v=\d+)?/g, `$1?v=${buildStamp}`);
 if (html3 !== html2) writeFileSync('public/index.html', html3);
 console.log('[smoke] ✅ index.html 引用 bundle.js, 大小 ' + statSync('public/bundle.js').size + ' bytes');
 
