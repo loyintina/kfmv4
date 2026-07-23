@@ -67,7 +67,7 @@ export interface Session {
 /** 提取一条消息所有 TextBlock 的纯文本（跳过工具块、警告块）。 */
 export function extractMessageText(msg: SessionMessage): string {
   return (msg.content || [])
-    .filter((b): b is TextBlock => b.type === 'text')
+    .filter((b): b is TextBlock => b != null && b.type === 'text')
     .map(b => b.text || '')
     .join('');
 }
