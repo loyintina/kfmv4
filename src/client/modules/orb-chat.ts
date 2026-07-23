@@ -498,6 +498,10 @@ export function renderChatContent(state: ChatState): void {
               _activeFoldAnims.delete(tid);
               delete ab._foldPhase;
             }
+          } else {
+            // 条目已被 745 行兜底扫除（块曾滚出裁剪窗口）→ 动画时长早已过，
+            // 直接落定折叠态，避免 _foldPhase 残留导致 forceOpen 误判。
+            delete ab._foldPhase;
           }
         }
         const resultText = hasResult ? (tc.result!.content?.[0]?.text || '') : '';
@@ -740,8 +744,15 @@ export function renderChatContent(state: ChatState): void {
     _attachCullScroll(contentArea);
   }
   // 折叠动画 RAF：时间戳驱动，每帧重新渲染计算当前 max-height。
-  // _activeFoldAnims 中的动画在上面的模板渲染中根据 elapsed 计算并清理。
-  // 如有未完成的动画，下一帧继续渲染。
+  // 正常清理在上面的模板渲染中按 elapsed 完成（490 行）。但被视口裁剪滚出窗口的
+  // 工具块不会被渲染，其模板清理路径永不执行 → tid 永久滞留 _activeFoldAnims →
+  // 745 行 rAF 每帧无限重渲染，CPU 打满卡死（长会话 + 折叠动画交汇的泄露）。
+  // 兜底：这里无条件扫掉已超时（> 折叠时长 300ms + 帧余量）的条目，不依赖块被渲染。
+  const FOLD_DUR_MS = 300;
+  const _foldNow = Date.now();
+  for (const [tid, start] of _activeFoldAnims) {
+    if (_foldNow - start > FOLD_DUR_MS + 100) _activeFoldAnims.delete(tid);
+  }
   if (_activeFoldAnims.size > 0) {
     requestAnimationFrame(() => {
       const state = _lastRenderState;
