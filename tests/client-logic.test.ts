@@ -290,3 +290,22 @@ regression('BAR-ORB-FOLLOW-01', 'orb-chat', '追底用手势判定意图，不�
   // followBottom 标志仍是追底判定核心
   assert(src.includes('followBottom'), '应保留 followBottom 追底标志');
 });
+
+regression('BAR-ORB-FOLLOW-02', 'orb-chat', '等待提示尊重 followBottom，不无条件抢追底', () => {
+  const src = readFileSync('src/client/modules/orb-chat.ts', 'utf-8');
+  // 遗漏的绕过口：startWaitingIndicator 曾无条件 followBottom=true + scrollToBottom，
+  // 工具轮次每轮 onWait(true) 都强制追底，破坏用户上滑浏览。
+  // 提取 startWaitingIndicator 函数体，其内的 scrollToBottom 必须有 followBottom 守卫。
+  const fnStart = src.indexOf('export function startWaitingIndicator');
+  assert(fnStart >= 0, '应有 startWaitingIndicator');
+  // 函数体到行首单独 } 为止（函数结束），不跨到后续函数
+  const bodyEnd = src.indexOf('\n}\n', fnStart);
+  const body = src.slice(fnStart, bodyEnd > 0 ? bodyEnd : src.length);
+  // body 内不应有无条件 followBottom=true（那是强制抢追底的根源）
+  const bodyCode = body.split('\n').filter(l => !l.trimStart().startsWith('//')).join('\n');
+  assert(!bodyCode.includes('followBottom = true'), 'startWaitingIndicator 不应无条件设 followBottom=true（会抢用户上滑取消的追底）');
+  // 若调 scrollToBottom，必须在 if (followBottom) 守卫下
+  if (bodyCode.includes('scrollToBottom')) {
+    assert(bodyCode.includes('if (followBottom)'), 'startWaitingIndicator 的 scrollToBottom 必须有 if (followBottom) 守卫');
+  }
+});

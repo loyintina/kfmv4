@@ -85,6 +85,7 @@ maintainer: AI agent
 | BAR-ORB-REASON-01 | `aa26002` | 思考块套逐帧折叠 → 历史消息每条注册 _activeFoldAnims → rAF 无限重渲染 = 鬼畜滚动 | L | ✅ 已钉（源码检查：rid 不进 _activeFoldAnims，revert 验证） | `tests/client-logic.test.ts` |
 | BAR-ORB-CSS-VER | `73bf449` | CSS link 无版本号 → 浏览器缓存旧样式 → 动画/布局改动不生效（多次动画 bug 根因） | L | ✅ 已钉（源码检查：build.mjs 给 CSS 加 ?v=） | `tests/client-logic.test.ts` |
 | BAR-ORB-FOLLOW-01 | `59b202f` | 追底反复回归4次：suppressScroll 时间窗口吞掉流式期间用户上滑的 scroll 事件 → 取消不了追底 | L | ✅ 已钉（源码检查：无 suppressScroll 代码行 + 有 touchmove/wheel 手势监听，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-ORB-FOLLOW-02 | `6edb3cc` | 追底残留：等待提示 startWaitingIndicator 无条件 followBottom=true+滚底，工具轮次每轮抢追底 | L | ✅ 已钉（源码检查：函数体内 scrollToBottom 有 followBottom 守卫、无无条件 followBottom=true，revert 验证） | `tests/client-logic.test.ts` |
 
 > 新 bug 修复后：补一个回归钉子 → 在此登记 → 状态置「已钉」。见
 > `docs/archive/design/REGRESSION_TESTING_SYSTEM.md` §3 微循环。
