@@ -473,9 +473,8 @@ export function renderChatContent(state: ChatState): void {
         const statusLabel = isExecuting ? '忙碌中' : (isError ? '失败' : '成功');
         const statusColor = isExecuting ? 'rgba(255,255,255,0.4)' : (isError ? 'rgba(255,100,100,0.8)' : 'rgba(0,212,115,0.8)');
         const paramsFull = Object.keys(tc.input).length > 0 ? JSON.stringify(tc.input, null, 2) : '';
-        type AnimBlock = ToolBlock & { _animText?: string; _animInput?: string; _foldPhase?: 'out' | 'fold' };
+        type AnimBlock = ToolBlock & { _animInput?: string; _foldPhase?: 'out' | 'fold' };
         const ab = tc as AnimBlock;
-        const isAnimating = ab._animText !== undefined;
         const gradientBorder = `linear-gradient(rgba(10,15,30,0.75),rgba(10,15,30,0.75)) padding-box,linear-gradient(135deg,${hexToRgba(c2, 0.55)} 30%,${hexToRgba(c1, 0.55)} 70%) border-box`;
         // 展开态三段结构：输入参数 → 渐变分隔线 → 输出区（执行中为摸鱼提示，完成为结果）。
         // 分隔线复用工具卡的随机双色 c1/c2，视觉上标记"这次交互是独特的"（Fi 审美）。
@@ -484,7 +483,7 @@ export function renderChatContent(state: ChatState): void {
         const isInputAnimating = ab._animInput !== undefined;
         const paramsDisplay = isInputAnimating ? ab._animInput! : paramsFull;
         const isCollapsible = hasResult && paramsDisplay; // 有输出+有参数 → 整体容器折叠
-        const isFolding = isAnimating || (!!ab._foldPhase && !isCollapsible);
+        const isFolding = !!ab._foldPhase && !isCollapsible;
         // 容器级折叠动画：无论 isCollapsible 与否，都在容器 <div> 上做 max-height/opacity 过渡。
         // 这样输入参数也会跟着折叠，而非只有输出 <pre> 折叠。
         let containerFoldClip = '';
@@ -501,13 +500,11 @@ export function renderChatContent(state: ChatState): void {
             }
           }
         }
-        const resultText = hasResult
-          ? (isAnimating ? ab._animText! : (tc.result!.content?.[0]?.text || ''))
-          : '';
-        // 折叠状态持久化：完成的工具卡默认折叠。执行中/动画中强制展开；
+        const resultText = hasResult ? (tc.result!.content?.[0]?.text || '') : '';
+        // 折叠状态持久化：完成的工具卡默认折叠。执行中/折叠动画中强制展开；
         // 否则由 block._userExpanded 决定（用户点击展开/折叠会写回此标志，跨重渲染保持）。
         const ue = (tc as ToolBlock & { _userExpanded?: boolean })._userExpanded;
-        const forceOpen = isExecuting || isAnimating || isFolding;
+        const forceOpen = isExecuting || isFolding;
         const isOpen = forceOpen || ue === true;
         // 折叠动画期间（_foldPhase）用 orb-fold-anim 关掉 CSS transition，
         // 避免与 containerFoldClip 逐帧 inline max-height 打架抖动；否则用 orb-fold-content 走 CSS 过渡。
@@ -532,16 +529,11 @@ export function renderChatContent(state: ChatState): void {
           const hint = getToolHint(tc.id);
           outputHtml = `<div style="color:rgba(255,255,255,0.4);font-size:var(--card-font-size,9px);line-height:1.4;padding:2px 0">${hint.dotHtml}${escapeHtml(hint.text)}</div>`;
         } else {
-          // 输出区标记 data-tool-out=工具名、data-tool-ext=扩展名，供后处理富化。
-          // 动画中（isAnimating）也标记 data-tool-streaming=1。流式期间可富化的类型
-          // （read .md → marked，read/write/edit 代码 → 高亮）走后处理实时渲染；
-          // 不可富化的（bash/grep/无扩展名输出）才用 orb-tool-anim-pre 纯文本+自动滚。
+          // 输出到达即完成态（不再有打字机流式）。标记 data-tool-out=工具名、
+          // data-tool-ext=扩展名，供后处理一次性完整富化（marked/highlight 只跑一次+缓存）。
+          // reveal 动画（内容涌现感）交给 CSS .orb-tool-reveal，零重复渲染。
           const outExt = _pathExt(tc.input);
-          const isFileTool = tc.name === 'read' || tc.name === 'write' || tc.name === 'edit';
-          const richStream = isFileTool && (outExt === 'md' || outExt === 'markdown' || !!_EXT_LANG[outExt]);
-          const animClass = isAnimating && !richStream ? ' orb-tool-anim-pre' : '';
-          const outRich = ` data-tool-out="${escapeHtml(tc.name)}" data-tool-ext="${outExt}"${isAnimating ? ' data-tool-streaming="1"' : ''}`;
-          outputHtml = `<pre class="orb-tool-output-pre${animClass}"${outRich} style="${preStyle};color:rgba(255,255,255,0.6);max-height:${OUTPUT_MAX_H}px;overflow-y:auto">${escapeHtml(resultText || '(无结果)')}</pre>`;
+          outputHtml = `<pre class="orb-tool-output-pre" data-tool-out="${escapeHtml(tc.name)}" data-tool-ext="${outExt}" style="${preStyle};color:rgba(255,255,255,0.6);max-height:${OUTPUT_MAX_H}px;overflow-y:auto">${escapeHtml(resultText || '(无结果)')}</pre>`;
         }
         html += `
           <div style="display:flex;justify-content:flex-start;margin-bottom:6px">
@@ -690,56 +682,33 @@ export function renderChatContent(state: ChatState): void {
     if (!raw || raw === '(无结果)') continue;
     const tool = pre.dataset.toolOut || '';
     const ext = pre.dataset.toolExt || '';
-    const streaming = pre.dataset.toolStreaming === '1';
-    // read 的 markdown 文件 → marked 渲染（流式实时 + 完成态完整管线）
+    const key = 'out:' + tool + ':' + ext + ':' + raw;
+    const cached = _toolCacheGet(key);
+    if (cached !== undefined) { pre.outerHTML = cached; continue; }
+    // read 的 markdown → marked 完整管线（一次性，含 highlight/math/mermaid）+ 缓存
     if (tool === 'read' && (ext === 'md' || ext === 'markdown')) {
-      // 流式中不缓存（内容每帧变）；完成态查缓存
-      if (!streaming) {
-        const key = 'out:' + tool + ':' + ext + ':' + raw;
-        const cached = _toolCacheGet(key);
-        if (cached !== undefined) { pre.outerHTML = cached; continue; }
-      }
       const mathData: MathData = { display: [], inline: [] };
       const processed = preprocessMd(raw, mathData);
       const mdHtml = marked.parse(processed, MARKED_OPTS) as string;
       const wrap = document.createElement('div');
-      wrap.className = 'md-body orb-tool-md';
+      wrap.className = 'md-body orb-tool-md orb-tool-reveal';
       wrap.innerHTML = mdHtml;
-      if (streaming) {
-        // 流式：marked + highlight（内容一次性已知，高亮不贵），自动滚到底显示最新。
-        // 仅 mermaid 跳过（异步 + 流式中 ```mermaid 源码可能不完整），完成态再补。
-        highlightAll(wrap); renderMath(wrap, mathData);
-        pre.replaceWith(wrap);
-        wrap.scrollTop = wrap.scrollHeight;
-      } else {
-        // 完成：完整管线（含 mermaid）+ 缓存
-        highlightAll(wrap); renderMath(wrap, mathData); renderMermaid(wrap, '#00d4ff');
-        pre.replaceWith(wrap);
-        if (!/```mermaid/.test(raw)) _toolCacheSet('out:' + tool + ':' + ext + ':' + raw, wrap.outerHTML);
-      }
+      highlightAll(wrap); renderMath(wrap, mathData); renderMermaid(wrap, '#00d4ff');
+      pre.replaceWith(wrap);
+      if (!/```mermaid/.test(raw)) _toolCacheSet(key, wrap.outerHTML);
       continue;
     }
-    // 以下为非 md。read/write/edit 的代码文件 → 按扩展名高亮（流式期间也高亮，
-    // 内容一次性已知不贵；流式不缓存、自动滚到底，完成态缓存）。
+    // read/write/edit 代码文件 → 按扩展名高亮（一次性）+ 缓存
     const lang = (tool === 'read' || tool === 'write' || tool === 'edit') ? _EXT_LANG[ext] : '';
     if (lang) {
-      const key = 'out:' + tool + ':' + ext + ':' + raw;
-      if (!streaming) {
-        const cached = _toolCacheGet(key);
-        if (cached !== undefined) { pre.outerHTML = cached; continue; }
-      }
       pre.innerHTML = '<code class="language-' + lang + '">' + escapeHtml(raw) + '</code>';
+      pre.classList.add('orb-tool-reveal');
       const outCode = pre.querySelector('code'); if (outCode) highlightCode(outCode as HTMLElement);
-      if (streaming) {
-        pre.scrollTop = pre.scrollHeight; // 流式自动滚到底显示最新
-      } else {
-        _toolCacheSet(key, pre.outerHTML);
-        pre.removeAttribute('data-tool-out');
-      }
+      _toolCacheSet(key, pre.outerHTML);
       continue;
     }
-    // 不可高亮（bash/grep/无扩展名）：流式保持纯文本动画，完成保持纯文本
-    if (streaming) continue;
+    // 其它（bash/grep/无扩展名）→ 纯文本，加 reveal 动画
+    pre.classList.add('orb-tool-reveal');
     pre.removeAttribute('data-tool-out');
   }
   // 复制按钮：复用会话卡逻辑（writeText + "✓ 已复制" 1.5s 回弹）
@@ -912,38 +881,21 @@ function _applyEvent(event: any, ctx: RunConsumeCtx): void {
       if (toolBlock) {
         toolBlock.result = event.toolResult;
         clearToolHint(toolBlock.id);
-        const fullText = event.toolResult?.content?.[0]?.text || '';
-        type AnimBlock = ToolBlock & { _animText?: string; _foldPhase?: 'out' | 'fold' };
-        const DURATION = 500, WAIT = 340, INTERVAL = 16;
-        const totalTicks = Math.max(1, Math.round(DURATION / INTERVAL));
-        const cpt = Math.max(1, Math.ceil(fullText.length / totalTicks));
-        (toolBlock as AnimBlock)._animText = '';
-        let pos = 0;
+        // 不再用 _animText 打字机逐帧重渲染（每 tick 重跑 marked/highlight 是卡顿根源）。
+        // 结果直接落定 → 渲染一次完整富文本（进缓存），reveal 动画交给 CSS（见 .orb-tool-reveal）。
+        // 停留 WAIT 后自动折叠（保留原体验）。
+        const WAIT = 340;
         const capturedMsgIdx = msgIdx;
-        requestAnimationFrame(() => {
-          const tick = (): void => {
-            pos = Math.min(pos + cpt, fullText.length);
-            (toolBlock as AnimBlock)._animText = fullText.slice(0, pos);
-            scheduleRender();
-            if (pos >= fullText.length) {
-              const t2 = setTimeout(() => {
-                _activeAnimTimers.delete(t2);
-                delete (toolBlock as AnimBlock)._animText;
-                (toolBlock as AnimBlock)._foldPhase = 'fold';
-                const ti3 = messages[capturedMsgIdx].content.filter(b => b?.type === 'tool').indexOf(toolBlock);
-                const tid3 = 'tc' + capturedMsgIdx + '_' + ti3;
-                _activeFoldAnims.set(tid3, Date.now());
-                scheduleRender();
-              }, WAIT);
-              _activeAnimTimers.add(t2);
-            } else {
-              const t1 = setTimeout(tick, INTERVAL);
-              _activeAnimTimers.add(t1);
-            }
-          };
-          const t0 = setTimeout(tick, INTERVAL);
-          _activeAnimTimers.add(t0);
-        });
+        scheduleRender();
+        const t2 = setTimeout(() => {
+          _activeAnimTimers.delete(t2);
+          (toolBlock as ToolBlock & { _foldPhase?: 'out' | 'fold' })._foldPhase = 'fold';
+          const ti3 = messages[capturedMsgIdx].content.filter(b => b?.type === 'tool').indexOf(toolBlock);
+          const tid3 = 'tc' + capturedMsgIdx + '_' + ti3;
+          _activeFoldAnims.set(tid3, Date.now());
+          scheduleRender();
+        }, WAIT);
+        _activeAnimTimers.add(t2);
       }
       // 服务端目录指纹检测到文件系统变化 → 刷新文件树
       if (event.filesChanged) {
