@@ -97,3 +97,9 @@ export function highlightAll(parent: HTMLElement): void {
     pre.appendChild(btn);
   });
 }
+
+/** 轻量高亮：只对单个 code 元素上色，不加语言标签/复制按钮（工具框紧凑 pre 用）。
+ *  el 必须是带 language-xxx class 的 <code>。语言未注册则静默跳过。 */
+export function highlightCode(el: HTMLElement): void {
+  try { hljs.highlightElement(el); } catch { /* 语言未注册则跳过 */ }
+}

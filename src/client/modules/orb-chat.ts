@@ -20,7 +20,7 @@ import type { ContentBlock, TextBlock, ToolBlock, RuleWarningBlock } from './ses
 import { MD_CSS } from './renderers/md-css.js';
 import { marked } from 'marked';
 import { preprocessMd, MARKED_OPTS } from './renderers/md-extensions.js';
-import { highlightAll } from './renderers/code-highlight.js';
+import { highlightAll, highlightCode } from './renderers/code-highlight.js';
 import { renderMath, renderMermaid, type MathData } from './renderers/math-diagram.js';
 import { WAITING_HINTS } from '../data/waiting-hints.js';
 import { hslToHex } from './color-utils.js';
@@ -228,6 +228,36 @@ function _mdCacheSet(text: string, html: string): void {
     if (oldest !== undefined) _mdCache.delete(oldest);
   }
   _mdCache.set(text, html);
+}
+
+// 工具框输入/输出富化渲染：按工具类型 + 文件扩展名决定渲染方式。
+// 输入参数(JSON) → json 高亮；read/write/edit 的输出按扩展名代码高亮；
+// read 的 .md 文件 → 复用正文 marked 管线（富文本）；bash/其它 → 纯文本。
+// 完成态内容不变，富化后缓存（key = tool名+内容），滚动重渲染 O(1) 注入。
+const _toolCache = new Map<string, string>();
+function _toolCacheGet(k: string): string | undefined { return _toolCache.get(k); }
+function _toolCacheSet(k: string, html: string): void {
+  if (_toolCache.size >= MD_CACHE_MAX) {
+    const oldest = _toolCache.keys().next().value;
+    if (oldest !== undefined) _toolCache.delete(oldest);
+  }
+  _toolCache.set(k, html);
+}
+
+// 扩展名 → highlight.js language（未列出的返回空串 = 纯文本）
+const _EXT_LANG: Record<string, string> = {
+  ts: 'typescript', tsx: 'typescript', js: 'javascript', jsx: 'javascript', mjs: 'javascript',
+  py: 'python', sh: 'bash', bash: 'bash', zsh: 'bash', json: 'json', html: 'html', xml: 'xml',
+  css: 'css', scss: 'scss', sql: 'sql', yaml: 'yaml', yml: 'yaml', rs: 'rust', go: 'go',
+  java: 'java', c: 'c', h: 'c', cpp: 'cpp', cc: 'cpp', hpp: 'cpp',
+};
+/** 从工具 input.path 提取扩展名（去掉 :行号 选择器）。无 path 返回空。 */
+function _pathExt(input: Record<string, unknown>): string {
+  const p = typeof input.path === 'string' ? input.path : '';
+  if (!p) return '';
+  const clean = p.replace(/:\d+(-\d*)?$/, ''); // 去 :50 / :50-100 选择器
+  const m = clean.match(/\.([a-zA-Z0-9]+)$/);
+  return m ? m[1].toLowerCase() : '';
 }
 
 // 视口裁剪（虚拟滚动）：长会话时只渲染视口附近的消息，其余用等高占位撑住滚动条。
@@ -487,10 +517,12 @@ export function renderChatContent(state: ChatState): void {
         // 展开态两区结构：输入区 + 分隔线 + 输出区，各自限高可滚动。
         // 内容少时以内容高度为准；内容多时撑到 max-height 并内部滚动（不撑爆卡片）。
         const INPUT_MAX_H = 80, OUTPUT_MAX_H = 80;
-        // 输入区流式时（_animInput）标记 orb-tool-anim-pre 使其自动滚到底显示最新参数
+        // 输入区流式时（_animInput）标记 orb-tool-anim-pre 自动滚到底；非动画完成态
+        // 标记 data-tool-in 供后处理做 JSON 高亮（打字机动画中不高亮，避免闪烁）。
         const inputAnimClass = isInputAnimating ? ' orb-tool-anim-pre' : '';
+        const inputRich = paramsDisplay && !isInputAnimating ? ' data-tool-in="1"' : '';
         const inputHtml = paramsDisplay
-          ? `<pre class="orb-tool-input-pre${inputAnimClass}" style="${preStyle};color:rgba(255,255,255,0.45);max-height:${INPUT_MAX_H}px;overflow-y:auto">${escapeHtml(paramsDisplay)}</pre>`
+          ? `<pre class="orb-tool-input-pre${inputAnimClass}"${inputRich} style="${preStyle};color:rgba(255,255,255,0.45);max-height:${INPUT_MAX_H}px;overflow-y:auto">${escapeHtml(paramsDisplay)}</pre>`
           : '';
         const dividerHtml = paramsFull
           ? `<div style="height:1px;margin:5px 0;border-radius:1px;background:linear-gradient(90deg,${hexToRgba(c1, 0.7)},${hexToRgba(c2, 0.7)})"></div>`
@@ -500,9 +532,11 @@ export function renderChatContent(state: ChatState): void {
           const hint = getToolHint(tc.id);
           outputHtml = `<div style="color:rgba(255,255,255,0.4);font-size:var(--card-font-size,9px);line-height:1.4;padding:2px 0">${hint.dotHtml}${escapeHtml(hint.text)}</div>`;
         } else {
-          // 输出区始终限高可滚动；动画中标记 orb-tool-anim-pre 使其自动滚到底显示最新
+          // 输出区：动画中纯文本+自动滚；完成态标记 data-tool-out=工具名、data-tool-ext=扩展名，
+          // 供后处理按类型富化（read .md → marked，read/write/edit 代码 → 高亮，其它 → 纯文本）。
           const animClass = isAnimating ? ' orb-tool-anim-pre' : '';
-          outputHtml = `<pre class="orb-tool-output-pre${animClass}" style="${preStyle};color:rgba(255,255,255,0.6);max-height:${OUTPUT_MAX_H}px;overflow-y:auto">${escapeHtml(resultText || '(无结果)')}</pre>`;
+          const outRich = !isAnimating ? ` data-tool-out="${escapeHtml(tc.name)}" data-tool-ext="${_pathExt(tc.input)}"` : '';
+          outputHtml = `<pre class="orb-tool-output-pre${animClass}"${outRich} style="${preStyle};color:rgba(255,255,255,0.6);max-height:${OUTPUT_MAX_H}px;overflow-y:auto">${escapeHtml(resultText || '(无结果)')}</pre>`;
         }
         html += `
           <div style="display:flex;justify-content:flex-start;margin-bottom:6px">
@@ -630,6 +664,53 @@ export function renderChatContent(state: ChatState): void {
         if (!/```mermaid/.test(text)) _mdCacheSet(text, el.innerHTML);
       }
     }
+  }
+  // 工具框输入/输出富化：输入 JSON 高亮；输出按工具类型（read .md → marked，
+  // read/write/edit 代码 → 高亮，其它 → 纯文本）。完成态富化+缓存，滚动 O(1)。
+  const toolIns = contentArea.querySelectorAll<HTMLElement>('pre[data-tool-in]');
+  for (const pre of toolIns) {
+    const raw = pre.textContent || '';
+    if (!raw) continue;
+    const key = 'in:' + raw;
+    const cached = _toolCacheGet(key);
+    if (cached !== undefined) { pre.innerHTML = cached; pre.removeAttribute('data-tool-in'); continue; }
+    pre.innerHTML = '<code class="language-json">' + escapeHtml(raw) + '</code>';
+    const inCode = pre.querySelector('code'); if (inCode) highlightCode(inCode as HTMLElement);
+    _toolCacheSet(key, pre.innerHTML);
+    pre.removeAttribute('data-tool-in');
+  }
+  const toolOuts = contentArea.querySelectorAll<HTMLElement>('pre[data-tool-out]');
+  for (const pre of toolOuts) {
+    const raw = pre.textContent || '';
+    if (!raw || raw === '(无结果)') continue;
+    const tool = pre.dataset.toolOut || '';
+    const ext = pre.dataset.toolExt || '';
+    const key = 'out:' + tool + ':' + ext + ':' + raw;
+    const cached = _toolCacheGet(key);
+    if (cached !== undefined) { pre.outerHTML = cached; continue; }
+    // read 的 markdown 文件 → 复用正文 marked 管线（富文本）
+    if (tool === 'read' && (ext === 'md' || ext === 'markdown')) {
+      const mathData: MathData = { display: [], inline: [] };
+      const processed = preprocessMd(raw, mathData);
+      const mdHtml = marked.parse(processed, MARKED_OPTS) as string;
+      const wrap = document.createElement('div');
+      wrap.className = 'md-body orb-tool-md';
+      wrap.style.cssText = 'max-height:240px;overflow-y:auto';
+      wrap.innerHTML = mdHtml;
+      highlightAll(wrap); renderMath(wrap, mathData); renderMermaid(wrap, '#00d4ff');
+      pre.replaceWith(wrap);
+      if (!/```mermaid/.test(raw)) _toolCacheSet(key, wrap.outerHTML);
+      continue;
+    }
+    // read/write/edit 的代码文件 → 按扩展名高亮
+    const lang = (tool === 'read' || tool === 'write' || tool === 'edit') ? _EXT_LANG[ext] : '';
+    if (lang) {
+      pre.innerHTML = '<code class="language-' + lang + '">' + escapeHtml(raw) + '</code>';
+      const outCode = pre.querySelector('code'); if (outCode) highlightCode(outCode as HTMLElement);
+      _toolCacheSet(key, pre.outerHTML);
+    }
+    // 其它（bash/grep/无扩展名）→ 保持纯文本，不处理
+    pre.removeAttribute('data-tool-out');
   }
   // 复制按钮：复用会话卡逻辑（writeText + "✓ 已复制" 1.5s 回弹）
   const copyEls = contentArea.querySelectorAll<HTMLElement>('.orb-copy-btn');
