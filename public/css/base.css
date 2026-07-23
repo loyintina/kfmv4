@@ -252,3 +252,32 @@ body {
 .floating-card.fullscreen .card-content * {
   touch-action: pan-y;
 }
+
+/* ========== orb 折叠/展开动画 ========== */
+/* 思考框和工具卡的折叠容器：用 max-height 过渡替代 display:none 瞬切 */
+.orb-fold-content {
+  max-height: 60vh;
+  overflow: hidden;
+  opacity: 1;
+  transition: max-height 0.25s ease-out, opacity 0.2s ease-out;
+}
+
+.orb-fold-content.collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+
+/* 新消息入场动画 */
+@keyframes orbMsgSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.orb-msg-new {
+  animation: orbMsgSlideIn 0.25s ease-out;
+}

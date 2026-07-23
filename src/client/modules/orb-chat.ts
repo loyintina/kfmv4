@@ -347,15 +347,15 @@ export function renderChatContent(state: ChatState): void {
         const re = firstTb?._reasonExpanded;
         // 思考中默认展开；完成后默认折叠；用户显式操作优先
         const reasonOpen = re !== undefined ? re : !reasoningDone;
-        const displayStyle = reasonOpen ? 'display:block' : 'display:none';
+        const displayClass = reasonOpen ? 'orb-fold-content' : 'orb-fold-content collapsed';
         html += `
           <div style="display:flex;justify-content:flex-start;margin-bottom:4px">
             <div style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:linear-gradient(rgba(10,15,30,0.75),rgba(10,15,30,0.75)) padding-box,${theme.aiChat.panelBorderGradient} border-box;border:1px solid transparent;border-left-width:3px;font-size:var(--card-font-size,10px)">
-              <div data-msg="${idx}" onclick="var p=document.getElementById('${rid}');var s=p.style.display==='none'?'block':'none';p.style.display=s;this.querySelector('.rt-arrow').textContent=s==='block'?'▼':'▶';var m=this.dataset.msg;if(window.__orbMsgs&&m>=0){var t=window.__orbMsgs[m]?.content?.filter(function(x){return x&&x.type==='text'})[0];if(t)t._reasonExpanded=(s==='block')}" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
+              <div data-msg="${idx}" onclick="var p=document.getElementById('${rid}');p.classList.toggle('collapsed');this.querySelector('.rt-arrow').textContent=p.classList.contains('collapsed')?'▶':'▼';var m=this.dataset.msg;if(window.__orbMsgs&&m>=0){var t=window.__orbMsgs[m]?.content?.filter(function(x){return x&&x.type==='text'})[0];if(t)t._reasonExpanded=!p.classList.contains('collapsed')}" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
                 <span class="rt-arrow" style="font-size:7px;color:rgba(0,212,255,0.5)">${reasonOpen ? '▼' : '▶'}</span>
                 <span style="color:rgba(0,212,255,0.6);font-weight:600">${rlabel}</span>
               </div>
-              <div id="${rid}" style="${displayStyle};margin-top:4px">
+              <div id="${rid}" class="${displayClass}" style="margin-top:4px">
                 <pre style="font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.45);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;background:rgba(0,0,0,0.15);padding:4px 6px;border-radius:4px">${escapeHtml(reasoning)}</pre>
               </div>
             </div>
@@ -428,8 +428,7 @@ export function renderChatContent(state: ChatState): void {
         const ue = (tc as ToolBlock & { _userExpanded?: boolean })._userExpanded;
         const forceOpen = isExecuting || isAnimating || isFolding;
         const isOpen = forceOpen || ue === true;
-        const defaultDisplay = isOpen ? 'block' : 'none';
-        const defaultArrow = isOpen ? '▼' : '▶';
+        const foldClass = isOpen ? 'orb-fold-content' : 'orb-fold-content collapsed';
         // 展开态两区结构：输入区 + 分隔线 + 输出区，各自限高可滚动。
         // 内容少时以内容高度为准；内容多时撑到 max-height 并内部滚动（不撑爆卡片）。
         const INPUT_MAX_H = 80, OUTPUT_MAX_H = 80;
@@ -453,13 +452,11 @@ export function renderChatContent(state: ChatState): void {
         html += `
           <div style="display:flex;justify-content:flex-start;margin-bottom:6px">
             <div class="orb-tool-card" style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:${gradientBorder};border:1px solid transparent;border-left-width:3px;border-left-color:${hexToRgba(c1, 0.7)};font-size:var(--card-font-size,10px)">
-              <div data-msg="${idx}" data-ti="${ti}" onclick="var p=document.getElementById('${tid}');var s=p.style.display==='none'?'block':'none';p.style.display=s;this.querySelector('.orb-tc-arrow').textContent=s==='block'?'▼':'▶';var m=this.dataset.msg,t=this.dataset.ti;if(window.__orbMsgs&&m>=0){var b=window.__orbMsgs[m]?.content?.filter(function(x){return x&&x.type==='tool'})[t];if(b){b._userExpanded=(s==='block');if(s==='block'){delete b._foldPhase}}}if(s==='block'){p.style.maxHeight='';p.style.overflow='visible'}else{p.style.maxHeight='';p.style.overflow=''}" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;margin-bottom:2px">
-                <span class="orb-tc-arrow" style="font-size:7px;color:rgba(255,255,255,0.5)">${defaultArrow}</span>
+              <div data-msg="${idx}" data-ti="${ti}" onclick="var p=document.getElementById('${tid}');p.classList.toggle('collapsed');this.querySelector('.orb-tc-arrow').textContent=p.classList.contains('collapsed')?'▶':'▼';var m=this.dataset.msg,t=this.dataset.ti;if(window.__orbMsgs&&m>=0){var b=window.__orbMsgs[m]?.content?.filter(function(x){return x&&x.type==='tool'})[t];if(b){b._userExpanded=!p.classList.contains('collapsed');if(!p.classList.contains('collapsed')){delete b._foldPhase}}}" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;margin-bottom:2px">
                 <span style="color:${hexToRgba(c1, 0.9)};font-weight:600">${escapeHtml(tc.name)}</span>
                 <span style="color:${statusColor};font-size:var(--card-font-size,9px);font-weight:600">${statusLabel}</span>
               </div>
-              <div id="${tid}" style="display:${defaultDisplay};margin-top:4px;${containerFoldClip}">
-                ${inputHtml}${dividerHtml}${outputHtml}
+              <div id="${tid}" class="${foldClass}" style="margin-top:4px;${containerFoldClip}">
               </div>
             </div>
           </div>`;
@@ -485,7 +482,7 @@ export function renderChatContent(state: ChatState): void {
       }
     }
 
-    msgHtmls.push('<div class="orb-msg" data-mi="' + idx + '">' + html + '</div>');
+    msgHtmls.push('<div class="orb-msg' + (idx === messages.length - 1 ? ' orb-msg-new' : '') + '" data-mi="' + idx + '">' + html + '</div>');
     idx++;
   }
   // 保存滚动位置（在重建 innerHTML 之前）
