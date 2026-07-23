@@ -533,11 +533,14 @@ export function renderChatContent(state: ChatState): void {
           outputHtml = `<div style="color:rgba(255,255,255,0.4);font-size:var(--card-font-size,9px);line-height:1.4;padding:2px 0">${hint.dotHtml}${escapeHtml(hint.text)}</div>`;
         } else {
           // 输出区标记 data-tool-out=工具名、data-tool-ext=扩展名，供后处理富化。
-          // 动画中（isAnimating）也标记，但带 data-tool-streaming=1：read .md 流式实时
-          // marked 渲染（跳过 highlight/mermaid 省开销），其它工具动画中仍纯文本+自动滚。
-          const streamingMd = isAnimating && tc.name === 'read' && /\.(md|markdown)$/.test(_pathExt(tc.input) ? '.' + _pathExt(tc.input) : '');
-          const animClass = isAnimating && !streamingMd ? ' orb-tool-anim-pre' : '';
-          const outRich = ` data-tool-out="${escapeHtml(tc.name)}" data-tool-ext="${_pathExt(tc.input)}"${isAnimating ? ' data-tool-streaming="1"' : ''}`;
+          // 动画中（isAnimating）也标记 data-tool-streaming=1。流式期间可富化的类型
+          // （read .md → marked，read/write/edit 代码 → 高亮）走后处理实时渲染；
+          // 不可富化的（bash/grep/无扩展名输出）才用 orb-tool-anim-pre 纯文本+自动滚。
+          const outExt = _pathExt(tc.input);
+          const isFileTool = tc.name === 'read' || tc.name === 'write' || tc.name === 'edit';
+          const richStream = isFileTool && (outExt === 'md' || outExt === 'markdown' || !!_EXT_LANG[outExt]);
+          const animClass = isAnimating && !richStream ? ' orb-tool-anim-pre' : '';
+          const outRich = ` data-tool-out="${escapeHtml(tc.name)}" data-tool-ext="${outExt}"${isAnimating ? ' data-tool-streaming="1"' : ''}`;
           outputHtml = `<pre class="orb-tool-output-pre${animClass}"${outRich} style="${preStyle};color:rgba(255,255,255,0.6);max-height:${OUTPUT_MAX_H}px;overflow-y:auto">${escapeHtml(resultText || '(无结果)')}</pre>`;
         }
         html += `
@@ -716,19 +719,27 @@ export function renderChatContent(state: ChatState): void {
       }
       continue;
     }
-    // 以下为非 md：流式中保持纯文本+自动滚（orb-tool-anim-pre 已处理），不富化
-    if (streaming) continue;
-    const key = 'out:' + tool + ':' + ext + ':' + raw;
-    const cached = _toolCacheGet(key);
-    if (cached !== undefined) { pre.outerHTML = cached; continue; }
-    // read/write/edit 的代码文件 → 按扩展名高亮
+    // 以下为非 md。read/write/edit 的代码文件 → 按扩展名高亮（流式期间也高亮，
+    // 内容一次性已知不贵；流式不缓存、自动滚到底，完成态缓存）。
     const lang = (tool === 'read' || tool === 'write' || tool === 'edit') ? _EXT_LANG[ext] : '';
     if (lang) {
+      const key = 'out:' + tool + ':' + ext + ':' + raw;
+      if (!streaming) {
+        const cached = _toolCacheGet(key);
+        if (cached !== undefined) { pre.outerHTML = cached; continue; }
+      }
       pre.innerHTML = '<code class="language-' + lang + '">' + escapeHtml(raw) + '</code>';
       const outCode = pre.querySelector('code'); if (outCode) highlightCode(outCode as HTMLElement);
-      _toolCacheSet(key, pre.outerHTML);
+      if (streaming) {
+        pre.scrollTop = pre.scrollHeight; // 流式自动滚到底显示最新
+      } else {
+        _toolCacheSet(key, pre.outerHTML);
+        pre.removeAttribute('data-tool-out');
+      }
+      continue;
     }
-    // 其它（bash/grep/无扩展名）→ 保持纯文本
+    // 不可高亮（bash/grep/无扩展名）：流式保持纯文本动画，完成保持纯文本
+    if (streaming) continue;
     pre.removeAttribute('data-tool-out');
   }
   // 复制按钮：复用会话卡逻辑（writeText + "✓ 已复制" 1.5s 回弹）
