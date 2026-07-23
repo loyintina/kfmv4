@@ -145,9 +145,10 @@ export function startWaitingIndicator(panelEl: HTMLDivElement): () => void {
   pos++;
   timerId = setTimeout(next, 800 + Math.random() * 1400);
 
-  // 滚到底部让提示可见（发送场景默认追底）
-  followBottom = true;
-  scrollToBottom(contentArea);
+  // 仅在当前处于追底态时才滚到底让提示可见；用户已上滑浏览（followBottom=false）
+  // 则不抢滚——否则工具轮次空档每次 onWait(true) 都强制追底，破坏上滑浏览。
+  // 发送新消息的追底由 doSend/scrollMode='follow' 负责，不依赖这里。
+  if (followBottom) scrollToBottom(contentArea);
 
   return function stop(): void {
     stopped = true;
