@@ -253,3 +253,28 @@ regression('BAR-COLOR-02', 'color-utils', '边界 HSL（黑/白/全饱和）→ 
     assert(hexRe.test(hex), `边界 hslToHex(${h},${s},${l})=${hex} 应合法`);
   }
 });
+
+// ==========================================================================
+// orb 渲染层结构保护（v7.3.1 动画返工的教训）
+//
+// renderChatContent 每帧全量重建 innerHTML，CSS transition 对新元素不生效。
+// 曾尝试给思考块套逐帧折叠动画（_activeFoldAnims），但历史消息加载时每条
+// 都注册 → rAF 无限重渲染 + 每帧滚动到底 = 鬼畜滚动，且 collapsed 裁掉内容。
+// 教训：思考块不做逐帧折叠；折叠靠 CSS class 静态切换。
+// ==========================================================================
+
+group('orb-chat — 渲染层结构保护');
+
+regression('BAR-ORB-REASON-01', 'orb-chat', '思考块不注册逐帧折叠动画（防鬼畜滚动）', () => {
+  const src = readFileSync('src/client/modules/orb-chat.ts', 'utf-8');
+  // 思考块 rid 形如 'r'+idx，不能进 _activeFoldAnims（那是工具卡 tid 专用）
+  assert(!src.includes('_activeFoldAnims.set(rid'), '思考块 rid 不应注册进 _activeFoldAnims（会导致历史消息无限重渲染）');
+  // _scheduleReasonFold 已删除，不应复活
+  assert(!src.includes('_scheduleReasonFold'), '_scheduleReasonFold 已废弃，不应复活');
+});
+
+regression('BAR-ORB-CSS-VER', 'build.mjs', 'CSS link 加版本号防缓存', () => {
+  const src = readFileSync('build.mjs', 'utf-8');
+  // build.mjs 必须给 css/*.css 加 ?v= 版本号（否则浏览器缓存旧样式，动画/布局改动不生效）
+  assert(src.includes('.css') && src.includes('?v=${buildStamp}'), 'build.mjs 应给 CSS 加 ?v=buildStamp 版本号');
+});
