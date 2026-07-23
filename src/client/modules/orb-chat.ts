@@ -239,7 +239,11 @@ const DEFAULT_MSG_H = 80;    // 未测量消息的高度估计
 
 // 裁剪滚动监听：用户滚动进入被占位的区域时，重渲染以物化该区间消息。
 // rAF 节流；preserve 模式保持滚动位置不跳。
+// 防闪烁关键：只在裁剪窗口 [firstVisible,lastVisible] 真正变化时才重渲染。
+// 滚动在当前窗口内移动（大部分帧）不重建 DOM——否则每次 scroll 都全量 innerHTML
+// 重建，代码块高亮 span 销毁重建 = 闪烁。
 let _cullRafPending = false;
+let _lastCullWin = ''; // 上次裁剪窗口签名 "first:last"，未变则跳过重渲染
 function _attachCullScroll(ca: HTMLElement): void {
   const tagged = ca as HTMLElement & { _cullScroll?: boolean };
   if (tagged._cullScroll) return;
@@ -251,10 +255,32 @@ function _attachCullScroll(ca: HTMLElement): void {
       _cullRafPending = false;
       const st = _lastRenderState;
       if (st && st.messages.length > CULL_THRESHOLD) {
+        // 预判新窗口：若与当前渲染的窗口相同，跳过重渲染（避免 DOM 重建闪烁）
+        if (_computeCullWin(ca, st.messages.length) === _lastCullWin) return;
         renderChatContent({ ...st, scrollMode: 'preserve' });
       }
     });
   }, { passive: true });
+}
+
+// 用当前 scrollTop + 高度表预判裁剪窗口签名，与实际渲染逻辑一致。
+function _computeCullWin(ca: HTMLElement, msgCount: number): string {
+  const h = (i: number) => _msgHeights.get(i) ?? DEFAULT_MSG_H;
+  const scrollTop = ca.scrollTop;
+  const viewportH = ca.clientHeight || 400;
+  const winTop = scrollTop - CULL_BUFFER_PX;
+  const winBot = scrollTop + viewportH + CULL_BUFFER_PX;
+  let firstVisible = msgCount, lastVisible = -1, acc = 0;
+  for (let i = 0; i < msgCount; i++) {
+    const hi = h(i);
+    if (acc + hi >= winTop && acc <= winBot) {
+      if (i < firstVisible) firstVisible = i;
+      if (i > lastVisible) lastVisible = i;
+    }
+    acc += hi;
+  }
+  if (lastVisible < 0) { firstVisible = 0; lastVisible = msgCount - 1; }
+  return firstVisible + ':' + lastVisible;
 }
 
 // ========== 滚动追底状态 ==========
@@ -531,6 +557,7 @@ export function renderChatContent(state: ChatState): void {
   if (!cull) {
     html = msgHtmls.join('');
     _cullFirstVisible = -1;
+    _lastCullWin = '';
   } else {
     // 追底时窗口锚在末尾；否则按 scrollTop 用高度表定位可见区间
     const h = (i: number) => _msgHeights.get(i) ?? DEFAULT_MSG_H;
@@ -563,6 +590,7 @@ export function renderChatContent(state: ChatState): void {
     html = parts.join('');
     _cullFirstVisible = firstVisible;
     _cullEstTopPad = topPad;
+    _lastCullWin = firstVisible + ':' + lastVisible;
   }
   contentArea.innerHTML = html;
   if (hintEl) contentArea.appendChild(hintEl);
