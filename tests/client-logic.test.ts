@@ -278,3 +278,15 @@ regression('BAR-ORB-CSS-VER', 'build.mjs', 'CSS link 加版本号防缓存', () 
   // build.mjs 必须给 css/*.css 加 ?v= 版本号（否则浏览器缓存旧样式，动画/布局改动不生效）
   assert(src.includes('.css') && src.includes('?v=${buildStamp}'), 'build.mjs 应给 CSS 加 ?v=buildStamp 版本号');
 });
+
+regression('BAR-ORB-FOLLOW-01', 'orb-chat', '追底用手势判定意图，不用 suppressScroll 时间窗口', () => {
+  const src = readFileSync('src/client/modules/orb-chat.ts', 'utf-8');
+  // 反复回归4次的根因：suppressScroll 时间窗口吞掉流式期间用户上滑的 scroll 事件。
+  // 已删除，不应复活。必须用 touchmove/wheel 手势直接判定意图。（排除注释行——历史说明可保留）
+  const codeLines = src.split('\n').filter(l => !l.trimStart().startsWith('//'));
+  assert(!codeLines.some(l => l.includes('suppressScroll')), 'suppressScroll 反模式已废弃，不应复活（会吞掉流式期间的上滑事件）');
+  assert(src.includes("addEventListener('touchmove'"), '应监听 touchmove 判定用户上滑意图');
+  assert(src.includes("addEventListener('wheel'"), '应监听 wheel 判定桌面滚轮上滑');
+  // followBottom 标志仍是追底判定核心
+  assert(src.includes('followBottom'), '应保留 followBottom 追底标志');
+});
