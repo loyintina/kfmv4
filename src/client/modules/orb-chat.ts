@@ -532,10 +532,12 @@ export function renderChatContent(state: ChatState): void {
           const hint = getToolHint(tc.id);
           outputHtml = `<div style="color:rgba(255,255,255,0.4);font-size:var(--card-font-size,9px);line-height:1.4;padding:2px 0">${hint.dotHtml}${escapeHtml(hint.text)}</div>`;
         } else {
-          // 输出区：动画中纯文本+自动滚；完成态标记 data-tool-out=工具名、data-tool-ext=扩展名，
-          // 供后处理按类型富化（read .md → marked，read/write/edit 代码 → 高亮，其它 → 纯文本）。
-          const animClass = isAnimating ? ' orb-tool-anim-pre' : '';
-          const outRich = !isAnimating ? ` data-tool-out="${escapeHtml(tc.name)}" data-tool-ext="${_pathExt(tc.input)}"` : '';
+          // 输出区标记 data-tool-out=工具名、data-tool-ext=扩展名，供后处理富化。
+          // 动画中（isAnimating）也标记，但带 data-tool-streaming=1：read .md 流式实时
+          // marked 渲染（跳过 highlight/mermaid 省开销），其它工具动画中仍纯文本+自动滚。
+          const streamingMd = isAnimating && tc.name === 'read' && /\.(md|markdown)$/.test(_pathExt(tc.input) ? '.' + _pathExt(tc.input) : '');
+          const animClass = isAnimating && !streamingMd ? ' orb-tool-anim-pre' : '';
+          const outRich = ` data-tool-out="${escapeHtml(tc.name)}" data-tool-ext="${_pathExt(tc.input)}"${isAnimating ? ' data-tool-streaming="1"' : ''}`;
           outputHtml = `<pre class="orb-tool-output-pre${animClass}"${outRich} style="${preStyle};color:rgba(255,255,255,0.6);max-height:${OUTPUT_MAX_H}px;overflow-y:auto">${escapeHtml(resultText || '(无结果)')}</pre>`;
         }
         html += `
@@ -685,23 +687,38 @@ export function renderChatContent(state: ChatState): void {
     if (!raw || raw === '(无结果)') continue;
     const tool = pre.dataset.toolOut || '';
     const ext = pre.dataset.toolExt || '';
-    const key = 'out:' + tool + ':' + ext + ':' + raw;
-    const cached = _toolCacheGet(key);
-    if (cached !== undefined) { pre.outerHTML = cached; continue; }
-    // read 的 markdown 文件 → 复用正文 marked 管线（富文本）
+    const streaming = pre.dataset.toolStreaming === '1';
+    // read 的 markdown 文件 → marked 渲染（流式实时 + 完成态完整管线）
     if (tool === 'read' && (ext === 'md' || ext === 'markdown')) {
+      // 流式中不缓存（内容每帧变）；完成态查缓存
+      if (!streaming) {
+        const key = 'out:' + tool + ':' + ext + ':' + raw;
+        const cached = _toolCacheGet(key);
+        if (cached !== undefined) { pre.outerHTML = cached; continue; }
+      }
       const mathData: MathData = { display: [], inline: [] };
       const processed = preprocessMd(raw, mathData);
       const mdHtml = marked.parse(processed, MARKED_OPTS) as string;
       const wrap = document.createElement('div');
       wrap.className = 'md-body orb-tool-md';
-      wrap.style.cssText = 'max-height:240px;overflow-y:auto';
       wrap.innerHTML = mdHtml;
-      highlightAll(wrap); renderMath(wrap, mathData); renderMermaid(wrap, '#00d4ff');
-      pre.replaceWith(wrap);
-      if (!/```mermaid/.test(raw)) _toolCacheSet(key, wrap.outerHTML);
+      if (streaming) {
+        // 流式：只跑 marked（快），跳过 highlight/mermaid（贵，完成再补），自动滚到底显示最新
+        pre.replaceWith(wrap);
+        wrap.scrollTop = wrap.scrollHeight;
+      } else {
+        // 完成：完整管线 + 缓存
+        highlightAll(wrap); renderMath(wrap, mathData); renderMermaid(wrap, '#00d4ff');
+        pre.replaceWith(wrap);
+        if (!/```mermaid/.test(raw)) _toolCacheSet('out:' + tool + ':' + ext + ':' + raw, wrap.outerHTML);
+      }
       continue;
     }
+    // 以下为非 md：流式中保持纯文本+自动滚（orb-tool-anim-pre 已处理），不富化
+    if (streaming) continue;
+    const key = 'out:' + tool + ':' + ext + ':' + raw;
+    const cached = _toolCacheGet(key);
+    if (cached !== undefined) { pre.outerHTML = cached; continue; }
     // read/write/edit 的代码文件 → 按扩展名高亮
     const lang = (tool === 'read' || tool === 'write' || tool === 'edit') ? _EXT_LANG[ext] : '';
     if (lang) {
@@ -709,7 +726,7 @@ export function renderChatContent(state: ChatState): void {
       const outCode = pre.querySelector('code'); if (outCode) highlightCode(outCode as HTMLElement);
       _toolCacheSet(key, pre.outerHTML);
     }
-    // 其它（bash/grep/无扩展名）→ 保持纯文本，不处理
+    // 其它（bash/grep/无扩展名）→ 保持纯文本
     pre.removeAttribute('data-tool-out');
   }
   // 复制按钮：复用会话卡逻辑（writeText + "✓ 已复制" 1.5s 回弹）
