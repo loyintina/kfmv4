@@ -184,6 +184,10 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 .orb-fold-anim {
   overflow: hidden;
 }
+/* 流式展开态：无过渡、无高度限制——内容边生成边显示，不被 max-height 裁剪或过渡卡住 */
+.orb-fold-open {
+  overflow: visible;
+}
 
 /* 新消息入场动画 */
 @keyframes orbMsgSlideIn {

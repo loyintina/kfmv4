@@ -348,7 +348,11 @@ export function renderChatContent(state: ChatState): void {
         const re = firstTb?._reasonExpanded;
         // 思考中默认展开；完成后默认折叠；用户显式操作优先
         const reasonOpen = re !== undefined ? re : !reasoningDone;
-        const displayClass = reasonOpen ? 'orb-fold-content' : 'orb-fold-content collapsed';
+        // 思考流式中（!reasoningDone）用无过渡的 orb-fold-open，避免内容增长时反复触发 max-height 过渡卡住；
+        // 完成后折叠/展开才用 orb-fold-content 走 CSS 过渡。
+        const displayClass = !reasoningDone
+          ? 'orb-fold-open'
+          : (reasonOpen ? 'orb-fold-content' : 'orb-fold-content collapsed');
         html += `
           <div style="display:flex;justify-content:flex-start;margin-bottom:4px">
             <div style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:linear-gradient(rgba(10,15,30,0.75),rgba(10,15,30,0.75)) padding-box,${theme.aiChat.panelBorderGradient} border-box;border:1px solid transparent;border-left-width:3px;font-size:var(--card-font-size,10px)">
