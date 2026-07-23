@@ -545,6 +545,21 @@ export function renderChatContent(state: ChatState): void {
   // 保存滚动位置（在重建 innerHTML 之前）
   const prevScrollTop = contentArea.scrollTop;
   const viewportH = contentArea.clientHeight || 400;
+  // 锚点捕获（防跨裁剪边界的小跳动）：记录视口顶部第一条可见消息的 mi + 其相对
+  // 视口顶的偏移。重建后按同一 mi 的新元素重新对齐 scrollTop，视觉位置不跳——
+  // 比 topPad 估算差补偿更精确（后者补不了「新进入窗口消息」的估算误差）。
+  let _anchorMi = -1, _anchorOffset = 0;
+  {
+    const rows = contentArea.querySelectorAll<HTMLElement>('.orb-msg');
+    for (const el of rows) {
+      const rel = el.offsetTop - prevScrollTop;
+      if (rel >= 0) { // 第一条顶部进入视口的消息
+        _anchorMi = parseInt(el.dataset.mi || '-1', 10);
+        _anchorOffset = rel;
+        break;
+      }
+    }
+  }
   // 等待提示节点在 innerHTML 重建后需要恢复（它是独立 DOM 节点，不在 html 字符串里）
   const hintEl = contentArea.querySelector('#' + HINT_ID) as HTMLElement | null;
   attachScrollWatch(contentArea);
@@ -552,11 +567,9 @@ export function renderChatContent(state: ChatState): void {
   // ===== 视口裁剪：决定渲染窗口 =====
   const cull = messages.length > CULL_THRESHOLD;
   let html: string;
-  let _cullFirstVisible = 0;    // 本次裁剪的窗口起始索引（-1 = 未裁剪）
-  let _cullEstTopPad = 0;       // 估算的 topPad（供渲染后对比真实高度补偿抖动）
+  // （抖动补偿已改用锚点重定位，见 _preserveTop）
   if (!cull) {
     html = msgHtmls.join('');
-    _cullFirstVisible = -1;
     _lastCullWin = '';
   } else {
     // 追底时窗口锚在末尾；否则按 scrollTop 用高度表定位可见区间
@@ -588,8 +601,6 @@ export function renderChatContent(state: ChatState): void {
     for (let i = firstVisible; i <= lastVisible; i++) parts.push(msgHtmls[i]);
     if (botPad > 0) parts.push('<div class="orb-cull-pad" style="height:' + botPad + 'px"></div>');
     html = parts.join('');
-    _cullFirstVisible = firstVisible;
-    _cullEstTopPad = topPad;
     _lastCullWin = firstVisible + ':' + lastVisible;
   }
   contentArea.innerHTML = html;
@@ -667,13 +678,15 @@ export function renderChatContent(state: ChatState): void {
       if (state && _activeFoldAnims.size > 0) renderChatContent(state);
     });
   }
-  // 裁剪抖动补偿：物化新消息后，firstVisible 之前的真实累积高度可能 ≠ 估算 topPad
-  // （之前用 DEFAULT_MSG_H=80 估算）。差值补进 prevScrollTop，保持视觉位置不跳 → 消除抖动。
-  let scrollAdjust = 0;
-  if (_cullFirstVisible > 0) {
-    let realTopPad = 0;
-    for (let i = 0; i < _cullFirstVisible; i++) realTopPad += _msgHeights.get(i) ?? DEFAULT_MSG_H;
-    scrollAdjust = realTopPad - _cullEstTopPad;
+  // 保留位置的目标 scrollTop：优先用锚点重定位（精确，跨裁剪边界不跳）。
+  // 锚点消息在重建后仍在 DOM 中 → 用其新 offsetTop 减去原视口内偏移，
+  // 视觉位置完全不变。锚点不在（被裁掉/首次渲染）时回退 prevScrollTop。
+  function _preserveTop(ca: HTMLElement): number {
+    if (_anchorMi >= 0) {
+      const anchor = ca.querySelector<HTMLElement>('.orb-msg[data-mi="' + _anchorMi + '"]');
+      if (anchor) return anchor.offsetTop - _anchorOffset;
+    }
+    return prevScrollTop;
   }
   // 滚动策略（在 markdown 渲染后同步执行：读 scrollHeight 强制 reflow 得到真实高度）：
   //   follow  = 发送时强制追底；preserve = resize 保留位置；
@@ -682,9 +695,9 @@ export function renderChatContent(state: ChatState): void {
     followBottom = true;
     contentArea.scrollTop = contentArea.scrollHeight;
   } else if (scrollMode === 'preserve') {
-    contentArea.scrollTop = prevScrollTop + scrollAdjust;
+    contentArea.scrollTop = _preserveTop(contentArea);
   } else {
-    contentArea.scrollTop = followBottom ? contentArea.scrollHeight : prevScrollTop + scrollAdjust;
+    contentArea.scrollTop = followBottom ? contentArea.scrollHeight : _preserveTop(contentArea);
   }
   _lastMsgCount = messages.length;
 }
