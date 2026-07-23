@@ -216,13 +216,13 @@ function scheduleRender(): void {
 // 思考块延迟折叠：reasoning 完成后 340ms 触发一次重渲染让其折叠（给用户看清的缓冲）。
 // 用 Set 防重复调度；到期后 scheduleRender 重绘，此时已过 _reasonFoldAt → 折叠。
 const _reasonFoldScheduled = new Set<string>();
-function _scheduleReasonFold(rid: string): void {
+function _scheduleReasonFold(rid: string, delayMs = 360): void {
   if (_reasonFoldScheduled.has(rid)) return;
   _reasonFoldScheduled.add(rid);
   setTimeout(() => {
     _reasonFoldScheduled.delete(rid);
     scheduleRender();
-  }, 360);
+  }, Math.max(0, delayMs) + 20);
 }
 
 // Markdown 渲染缓存：源文本 → 渲染好的 HTML 字符串。
@@ -358,26 +358,43 @@ export function renderChatContent(state: ChatState): void {
         const rlabel = reasoningDone ? '已思考' : '思考中...';
         const firstTb = textBlocks[0] as (TextBlock & { _reasonExpanded?: boolean; _reasonFoldAt?: number }) | undefined;
         const re = firstTb?._reasonExpanded;
-        // 思考完成后延迟 340ms 才折叠（给用户时间看清），与工具卡折叠时序一致。
-        // reasoningDone 首次为 true 时记录 _reasonFoldAt=now+340；未到期视为仍在思考（展开）。
-        let reasonFolding = false;
-        if (reasoningDone && re === undefined && firstTb) {
-          if (firstTb._reasonFoldAt === undefined) {
-            firstTb._reasonFoldAt = Date.now() + 340;
-          }
-          if (Date.now() < firstTb._reasonFoldAt) {
-            reasonFolding = true; // 未到期：保持展开，稍后重渲染
-            _scheduleReasonFold(rid);
+        // 折叠时序（与工具卡逐帧机制统一，不用 CSS transition——全量 innerHTML 重建会
+        // 让 CSS 过渡失效，故用 JS 逐帧算 max-height）：
+        //   reasoningDone 首次 true → _reasonFoldAt=now+340（缓冲，让用户看清）
+        //   缓冲期内：展开静止
+        //   缓冲到期 → _activeFoldAnims.set(rid) 逐帧收缩 300ms → collapsed
+        const FOLD_BUFFER = 340, FOLD_DUR = 300;
+        let reasonFoldClip = '';   // 折叠动画期的 inline max-height/opacity
+        let reasonCollapsed = false; // 折叠完成的静态态
+        const autoFold = reasoningDone && re === undefined && !!firstTb;
+        if (autoFold) {
+          if (firstTb!._reasonFoldAt === undefined) firstTb!._reasonFoldAt = Date.now() + FOLD_BUFFER;
+          const foldStart = firstTb!._reasonFoldAt;
+          if (Date.now() < foldStart) {
+            _scheduleReasonFold(rid, foldStart - Date.now()); // 缓冲期：到期触发重渲染
+          } else {
+            // 缓冲到期：注册/推进逐帧折叠
+            if (!_activeFoldAnims.has(rid) && !firstTb!['_reasonFolded' as keyof typeof firstTb]) {
+              _activeFoldAnims.set(rid, Date.now());
+            }
+            const fStart = _activeFoldAnims.get(rid);
+            if (fStart !== undefined) {
+              const progress = Math.min((Date.now() - fStart) / FOLD_DUR, 1);
+              const eased = 1 - (1 - progress) * (1 - progress);
+              reasonFoldClip = `max-height:${60 * (1 - eased)}vh;overflow:hidden;opacity:${1 - eased};`;
+              if (progress >= 1) { _activeFoldAnims.delete(rid); reasonCollapsed = true; }
+            } else {
+              reasonCollapsed = true; // 动画已结束
+            }
           }
         }
-        // 思考中或延迟期内默认展开；完成且过期后默认折叠；用户显式操作优先
-        const reasonOpen = re !== undefined ? re : (!reasoningDone || reasonFolding);
-        // 思考流式中/延迟期用无过渡的 orb-fold-open，避免内容增长反复触发 max-height 过渡卡住；
-        // 完成折叠后才用 orb-fold-content 走 CSS 过渡。
-        const streaming = !reasoningDone || reasonFolding;
-        const displayClass = streaming
-          ? 'orb-fold-open'
-          : (reasonOpen ? 'orb-fold-content' : 'orb-fold-content collapsed');
+        // 用户显式操作优先；否则思考中/缓冲期展开，折叠动画中用 inline clip，完成后 collapsed
+        const userOpen = re === true;
+        const isCollapsedNow = re === false || (autoFold && reasonCollapsed);
+        const reasonOpen = re !== undefined ? userOpen : !isCollapsedNow;
+        // 展开态（含缓冲期/流式）用 orb-fold-open（无过渡，内容稳定显示）；
+        // collapsed 静态态用 orb-fold-content collapsed；折叠动画期用 inline clip 覆盖。
+        const displayClass = isCollapsedNow ? 'orb-fold-content collapsed' : 'orb-fold-open';
         html += `
           <div style="display:flex;justify-content:flex-start;margin-bottom:4px">
             <div style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:linear-gradient(rgba(10,15,30,0.75),rgba(10,15,30,0.75)) padding-box,${theme.aiChat.panelBorderGradient} border-box;border:1px solid transparent;border-left-width:3px;font-size:var(--card-font-size,10px)">
@@ -385,7 +402,7 @@ export function renderChatContent(state: ChatState): void {
                 <span class="rt-arrow" style="font-size:7px;color:rgba(0,212,255,0.5)">${reasonOpen ? '▼' : '▶'}</span>
                 <span style="color:rgba(0,212,255,0.6);font-weight:600">${rlabel}</span>
               </div>
-              <div id="${rid}" class="${displayClass}" style="margin-top:4px">
+              <div id="${rid}" class="${displayClass}" style="margin-top:4px;${reasonFoldClip}">
                 <pre style="font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.45);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;background:rgba(0,0,0,0.15);padding:4px 6px;border-radius:4px">${escapeHtml(reasoning)}</pre>
               </div>
             </div>
