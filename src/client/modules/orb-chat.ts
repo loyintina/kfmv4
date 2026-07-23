@@ -258,27 +258,44 @@ function _attachCullScroll(ca: HTMLElement): void {
 }
 
 // ========== 滚动追底状态 ==========
-// 用显式 followBottom 标志替代旧的 wasAtBottom 启发式 + rAF 竞态。
-// 用户主动上滑（scroll 事件，且非程序化）→ 关闭追底；滑回底部 → 重新追底。
-// 程序化设置 scrollTop 期间 suppressScroll=true，避免 innerHTML 重建/自身滚动误翻标志。
+// 反复回归的老问题（4次）根治方案：区分「用户主动手势」和「程序化滚动」。
+// 旧方案用 suppressScroll 时间窗口忽略 scroll 事件——但流式渲染每帧都
+// suppressScroll=true，用户上滑的 scroll 事件全被吞 → 追底取消不了。
+//
+// 新方案：
+//   - 用户主动手势（touchmove 向下拖 / wheel 向上）→ 立即 followBottom=false
+//   - scroll 事件只读当前位置：滑回底部（dist<40）→ followBottom=true 恢复追底
+//   - 不再抑制任何事件；程序化滚动产生的 scroll 事件读位置也是自洽的
+//     （滚到底→dist<40→true，本就该追底；preserve 滚到别处→false，也对）
 let followBottom = true;
-let suppressScroll = false;
 
 function attachScrollWatch(ca: HTMLElement): void {
   const tagged = ca as HTMLElement & { _scrollWatch?: boolean };
   if (tagged._scrollWatch) return;
   tagged._scrollWatch = true;
+  // scroll 事件：纯读当前位置判断是否在底部（不区分来源，位置语义自洽）
   ca.addEventListener('scroll', () => {
-    if (suppressScroll) return;
     const dist = ca.scrollHeight - ca.scrollTop - ca.clientHeight;
     followBottom = dist < 40;
+  }, { passive: true });
+  // 用户主动手势：向上浏览的意图立即生效，不等 scroll 事件（移动端关键）
+  let _touchY = 0;
+  ca.addEventListener('touchstart', (e) => {
+    _touchY = e.touches[0]?.clientY ?? 0;
+  }, { passive: true });
+  ca.addEventListener('touchmove', (e) => {
+    const y = e.touches[0]?.clientY ?? 0;
+    // 手指下移（y 增大）= 内容上滑 = 用户想往回看 → 取消追底
+    if (y - _touchY > 4) followBottom = false;
+    _touchY = y;
+  }, { passive: true });
+  ca.addEventListener('wheel', (e) => {
+    if (e.deltaY < 0) followBottom = false; // 滚轮向上 → 取消追底
   }, { passive: true });
 }
 
 function scrollToBottom(ca: HTMLElement): void {
-  suppressScroll = true;
   ca.scrollTop = ca.scrollHeight;
-  requestAnimationFrame(() => { suppressScroll = false; });
 }
 
 // ========== 渲染 ==========
@@ -505,7 +522,6 @@ export function renderChatContent(state: ChatState): void {
   // 等待提示节点在 innerHTML 重建后需要恢复（它是独立 DOM 节点，不在 html 字符串里）
   const hintEl = contentArea.querySelector('#' + HINT_ID) as HTMLElement | null;
   attachScrollWatch(contentArea);
-  suppressScroll = true;
 
   // ===== 视口裁剪：决定渲染窗口 =====
   const cull = messages.length > CULL_THRESHOLD;
@@ -618,8 +634,9 @@ export function renderChatContent(state: ChatState): void {
       if (state && _activeFoldAnims.size > 0) renderChatContent(state);
     });
   }
-  // 滚动策略（在 markdown 渲染后同步执行：读 scrollHeight 强制 reflow 得到真实高度，
-  // 不用 rAF 以消除竞态；suppressScroll 防止程序化滚动误翻 followBottom）
+  // 滚动策略（在 markdown 渲染后同步执行：读 scrollHeight 强制 reflow 得到真实高度）：
+  //   follow  = 发送时强制追底；preserve = resize 保留位置；
+  //   auto    = 按 followBottom（用户上滑取消追底，滑回底部恢复）
   if (scrollMode === 'follow') {
     followBottom = true;
     contentArea.scrollTop = contentArea.scrollHeight;
@@ -629,7 +646,6 @@ export function renderChatContent(state: ChatState): void {
     contentArea.scrollTop = followBottom ? contentArea.scrollHeight : prevScrollTop;
   }
   _lastMsgCount = messages.length;
-  requestAnimationFrame(() => { suppressScroll = false; });
 }
 
 /** 从 ChatMessage 中提取纯文本 */
