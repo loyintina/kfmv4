@@ -703,11 +703,13 @@ export function renderChatContent(state: ChatState): void {
       wrap.className = 'md-body orb-tool-md';
       wrap.innerHTML = mdHtml;
       if (streaming) {
-        // 流式：只跑 marked（快），跳过 highlight/mermaid（贵，完成再补），自动滚到底显示最新
+        // 流式：marked + highlight（内容一次性已知，高亮不贵），自动滚到底显示最新。
+        // 仅 mermaid 跳过（异步 + 流式中 ```mermaid 源码可能不完整），完成态再补。
+        highlightAll(wrap); renderMath(wrap, mathData);
         pre.replaceWith(wrap);
         wrap.scrollTop = wrap.scrollHeight;
       } else {
-        // 完成：完整管线 + 缓存
+        // 完成：完整管线（含 mermaid）+ 缓存
         highlightAll(wrap); renderMath(wrap, mathData); renderMermaid(wrap, '#00d4ff');
         pre.replaceWith(wrap);
         if (!/```mermaid/.test(raw)) _toolCacheSet('out:' + tool + ':' + ext + ':' + raw, wrap.outerHTML);
