@@ -13,6 +13,7 @@ import { API, KFMState, getFileRowData } from './state.js';
 import { loadFileTree } from './tree-loader.js';
 import { animateInsertion, animateRemoval } from './tree-animation.js';
 import { log } from './logger.js';
+import { closeSidebar } from './ui.js';
 import { Z } from './z-index-layers.js';
 // ========== 状态 ==========
 
@@ -217,6 +218,11 @@ function _copyPath(): void {
   _copiedPaths.add(_targetPath);
   const check = document.getElementById('act-chk-copy-path');
   if (check) check.style.display = 'inline';
+  // 复制成功后 340ms 自动关栏 + 关文件树（让 ✓ 反馈可见的缓冲）
+  setTimeout(() => {
+    dismissFileActionBar();
+    closeSidebar();
+  }, 340);
 }
 
 function _renameFile(): void {

@@ -213,6 +213,18 @@ function scheduleRender(): void {
   });
 }
 
+// 思考块延迟折叠：reasoning 完成后 340ms 触发一次重渲染让其折叠（给用户看清的缓冲）。
+// 用 Set 防重复调度；到期后 scheduleRender 重绘，此时已过 _reasonFoldAt → 折叠。
+const _reasonFoldScheduled = new Set<string>();
+function _scheduleReasonFold(rid: string): void {
+  if (_reasonFoldScheduled.has(rid)) return;
+  _reasonFoldScheduled.add(rid);
+  setTimeout(() => {
+    _reasonFoldScheduled.delete(rid);
+    scheduleRender();
+  }, 360);
+}
+
 // Markdown 渲染缓存：源文本 → 渲染好的 HTML 字符串。
 // 流式回复时 renderChatContent 每帧全量重建 innerHTML，历史消息内容不变却每帧
 // 重跑 marked+highlight+math+mermaid 管线（O(n) 条消息 × 每帧 = O(n²) 卡顿）。
@@ -344,13 +356,26 @@ export function renderChatContent(state: ChatState): void {
       if (reasoning) {
         const rid = 'r' + idx;
         const rlabel = reasoningDone ? '已思考' : '思考中...';
-        const firstTb = textBlocks[0] as (TextBlock & { _reasonExpanded?: boolean }) | undefined;
+        const firstTb = textBlocks[0] as (TextBlock & { _reasonExpanded?: boolean; _reasonFoldAt?: number }) | undefined;
         const re = firstTb?._reasonExpanded;
-        // 思考中默认展开；完成后默认折叠；用户显式操作优先
-        const reasonOpen = re !== undefined ? re : !reasoningDone;
-        // 思考流式中（!reasoningDone）用无过渡的 orb-fold-open，避免内容增长时反复触发 max-height 过渡卡住；
-        // 完成后折叠/展开才用 orb-fold-content 走 CSS 过渡。
-        const displayClass = !reasoningDone
+        // 思考完成后延迟 340ms 才折叠（给用户时间看清），与工具卡折叠时序一致。
+        // reasoningDone 首次为 true 时记录 _reasonFoldAt=now+340；未到期视为仍在思考（展开）。
+        let reasonFolding = false;
+        if (reasoningDone && re === undefined && firstTb) {
+          if (firstTb._reasonFoldAt === undefined) {
+            firstTb._reasonFoldAt = Date.now() + 340;
+          }
+          if (Date.now() < firstTb._reasonFoldAt) {
+            reasonFolding = true; // 未到期：保持展开，稍后重渲染
+            _scheduleReasonFold(rid);
+          }
+        }
+        // 思考中或延迟期内默认展开；完成且过期后默认折叠；用户显式操作优先
+        const reasonOpen = re !== undefined ? re : (!reasoningDone || reasonFolding);
+        // 思考流式中/延迟期用无过渡的 orb-fold-open，避免内容增长反复触发 max-height 过渡卡住；
+        // 完成折叠后才用 orb-fold-content 走 CSS 过渡。
+        const streaming = !reasoningDone || reasonFolding;
+        const displayClass = streaming
           ? 'orb-fold-open'
           : (reasonOpen ? 'orb-fold-content' : 'orb-fold-content collapsed');
         html += `
