@@ -526,8 +526,11 @@ export function renderChatContent(state: ChatState): void {
   // ===== 视口裁剪：决定渲染窗口 =====
   const cull = messages.length > CULL_THRESHOLD;
   let html: string;
+  let _cullFirstVisible = 0;    // 本次裁剪的窗口起始索引（-1 = 未裁剪）
+  let _cullEstTopPad = 0;       // 估算的 topPad（供渲染后对比真实高度补偿抖动）
   if (!cull) {
     html = msgHtmls.join('');
+    _cullFirstVisible = -1;
   } else {
     // 追底时窗口锚在末尾；否则按 scrollTop 用高度表定位可见区间
     const h = (i: number) => _msgHeights.get(i) ?? DEFAULT_MSG_H;
@@ -558,6 +561,8 @@ export function renderChatContent(state: ChatState): void {
     for (let i = firstVisible; i <= lastVisible; i++) parts.push(msgHtmls[i]);
     if (botPad > 0) parts.push('<div class="orb-cull-pad" style="height:' + botPad + 'px"></div>');
     html = parts.join('');
+    _cullFirstVisible = firstVisible;
+    _cullEstTopPad = topPad;
   }
   contentArea.innerHTML = html;
   if (hintEl) contentArea.appendChild(hintEl);
@@ -634,6 +639,14 @@ export function renderChatContent(state: ChatState): void {
       if (state && _activeFoldAnims.size > 0) renderChatContent(state);
     });
   }
+  // 裁剪抖动补偿：物化新消息后，firstVisible 之前的真实累积高度可能 ≠ 估算 topPad
+  // （之前用 DEFAULT_MSG_H=80 估算）。差值补进 prevScrollTop，保持视觉位置不跳 → 消除抖动。
+  let scrollAdjust = 0;
+  if (_cullFirstVisible > 0) {
+    let realTopPad = 0;
+    for (let i = 0; i < _cullFirstVisible; i++) realTopPad += _msgHeights.get(i) ?? DEFAULT_MSG_H;
+    scrollAdjust = realTopPad - _cullEstTopPad;
+  }
   // 滚动策略（在 markdown 渲染后同步执行：读 scrollHeight 强制 reflow 得到真实高度）：
   //   follow  = 发送时强制追底；preserve = resize 保留位置；
   //   auto    = 按 followBottom（用户上滑取消追底，滑回底部恢复）
@@ -641,9 +654,9 @@ export function renderChatContent(state: ChatState): void {
     followBottom = true;
     contentArea.scrollTop = contentArea.scrollHeight;
   } else if (scrollMode === 'preserve') {
-    contentArea.scrollTop = prevScrollTop;
+    contentArea.scrollTop = prevScrollTop + scrollAdjust;
   } else {
-    contentArea.scrollTop = followBottom ? contentArea.scrollHeight : prevScrollTop;
+    contentArea.scrollTop = followBottom ? contentArea.scrollHeight : prevScrollTop + scrollAdjust;
   }
   _lastMsgCount = messages.length;
 }
