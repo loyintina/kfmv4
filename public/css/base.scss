@@ -180,6 +180,10 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
   max-height: 0;
   opacity: 0;
 }
+/* 折叠动画进行中：JS 逐帧控制 inline max-height，关掉 CSS transition 避免打架 */
+.orb-fold-anim {
+  overflow: hidden;
+}
 
 /* 新消息入场动画 */
 @keyframes orbMsgSlideIn {

@@ -197,6 +197,7 @@ function clearAllAnimTimers(): void {
 // 不持有 element 引用（innerHTML 会销毁元素导致 isConnected=false），只存 tid → 开始时间。
 const _activeFoldAnims = new Map<string, number>(); // tid → start timestamp
 let _lastRenderState: ChatState | null = null;
+let _lastMsgCount = 0; // 上次渲染的消息数——仅当数量增加时给新消息播入场动画（防滑动重渲染反复触发）
 
 // rAF 合批渲染调度器：并行工具的多个打字机/折叠动画各自 tick 时，若直接调 onRender，
 // 12 个动画 = 每帧 12 次全量重渲染 → 卡死。改为标记脏 + 单个 rAF 每帧最多渲染一次。
@@ -428,7 +429,11 @@ export function renderChatContent(state: ChatState): void {
         const ue = (tc as ToolBlock & { _userExpanded?: boolean })._userExpanded;
         const forceOpen = isExecuting || isAnimating || isFolding;
         const isOpen = forceOpen || ue === true;
-        const foldClass = isOpen ? 'orb-fold-content' : 'orb-fold-content collapsed';
+        // 折叠动画期间（_foldPhase）用 orb-fold-anim 关掉 CSS transition，
+        // 避免与 containerFoldClip 逐帧 inline max-height 打架抖动；否则用 orb-fold-content 走 CSS 过渡。
+        const isFoldAnim = ab._foldPhase === 'fold';
+        const foldClass = isFoldAnim ? 'orb-fold-anim' : (isOpen ? 'orb-fold-content' : 'orb-fold-content collapsed');
+        const defaultArrow = isOpen ? '▼' : '▶';
         // 展开态两区结构：输入区 + 分隔线 + 输出区，各自限高可滚动。
         // 内容少时以内容高度为准；内容多时撑到 max-height 并内部滚动（不撑爆卡片）。
         const INPUT_MAX_H = 80, OUTPUT_MAX_H = 80;
@@ -453,10 +458,12 @@ export function renderChatContent(state: ChatState): void {
           <div style="display:flex;justify-content:flex-start;margin-bottom:6px">
             <div class="orb-tool-card" style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:${gradientBorder};border:1px solid transparent;border-left-width:3px;border-left-color:${hexToRgba(c1, 0.7)};font-size:var(--card-font-size,10px)">
               <div data-msg="${idx}" data-ti="${ti}" onclick="var p=document.getElementById('${tid}');p.classList.toggle('collapsed');this.querySelector('.orb-tc-arrow').textContent=p.classList.contains('collapsed')?'▶':'▼';var m=this.dataset.msg,t=this.dataset.ti;if(window.__orbMsgs&&m>=0){var b=window.__orbMsgs[m]?.content?.filter(function(x){return x&&x.type==='tool'})[t];if(b){b._userExpanded=!p.classList.contains('collapsed');if(!p.classList.contains('collapsed')){delete b._foldPhase}}}" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;margin-bottom:2px">
+                <span class="orb-tc-arrow" style="font-size:7px;color:rgba(255,255,255,0.5)">${defaultArrow}</span>
                 <span style="color:${hexToRgba(c1, 0.9)};font-weight:600">${escapeHtml(tc.name)}</span>
                 <span style="color:${statusColor};font-size:var(--card-font-size,9px);font-weight:600">${statusLabel}</span>
               </div>
               <div id="${tid}" class="${foldClass}" style="margin-top:4px;${containerFoldClip}">
+                ${inputHtml}${dividerHtml}${outputHtml}
               </div>
             </div>
           </div>`;
@@ -482,7 +489,8 @@ export function renderChatContent(state: ChatState): void {
       }
     }
 
-    msgHtmls.push('<div class="orb-msg' + (idx === messages.length - 1 ? ' orb-msg-new' : '') + '" data-mi="' + idx + '">' + html + '</div>');
+    const isNewMsg = idx === messages.length - 1 && messages.length > _lastMsgCount;
+    msgHtmls.push('<div class="orb-msg' + (isNewMsg ? ' orb-msg-new' : '') + '" data-mi="' + idx + '">' + html + '</div>');
     idx++;
   }
   // 保存滚动位置（在重建 innerHTML 之前）
@@ -614,6 +622,7 @@ export function renderChatContent(state: ChatState): void {
   } else {
     contentArea.scrollTop = followBottom ? contentArea.scrollHeight : prevScrollTop;
   }
+  _lastMsgCount = messages.length;
   requestAnimationFrame(() => { suppressScroll = false; });
 }
 
