@@ -32,6 +32,12 @@ const mixedMsg = (t: string): SessionMessage => ({
   content: [{ type: 'tool', id: 't2', name: 'x', input: {} }, { type: 'text', text: t }],
 });
 
+// content 含 null block（AI 只调工具不说话时 text block index=0 为 null）
+const nullBlockMsg = (): SessionMessage => ({
+  role: 'ai',
+  content: [null as unknown as { type: string }, { type: 'tool', id: 't3', name: 'bash', input: {} }] as SessionMessage['content'],
+});
+
 regression('BAR-103a', 'b8dec96', '纯工具调用消息不计入消息数', () => {
   assert(countTextMessages([toolMsg(), toolMsg()]) === 0, '两条纯工具消息应计为 0');
   assert(countTextMessages([textMsg('hi'), toolMsg()]) === 1, '一文本+一工具应计为 1');
@@ -44,6 +50,14 @@ regression('BAR-103b', 'b8dec96', '纯空白 text 消息不计入', () => {
 
 regression('BAR-103c', '1d9fdbc', '空会话 → 计数为 0（删最后一个会话后统计行归零）', () => {
   assert(countTextMessages([]) === 0, '空 messages 应为 0');
+});
+
+regression('BAR-MSG-NULL', 'session-store', 'content 含 null block 不崩溃（AI 只调工具不说话）', () => {
+  // extractMessageText 应安全跳过 null block，不抛 TypeError
+  const text = extractMessageText(nullBlockMsg());
+  assert(text === '', 'null block 消息应返回空字符串');
+  // countTextMessages 也不应崩溃
+  assert(countTextMessages([nullBlockMsg(), textMsg('ok')]) === 1, 'null block + 正常消息应计为 1');
 });
 
 test('混合块消息（工具+文本）计入 1（有正文）', () => {
