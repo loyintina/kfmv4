@@ -1,12 +1,14 @@
 /**
  * sibling-switcher.ts — 文件树侧栏底栏"兄弟目录切换"按钮
  *
- * 画布元素已在 index.html 侧栏工具栏中。本模块负责渲染标签 + 弹窗逻辑。
- * 不 import tree-loader（避免与 tree-render 的依赖耦合），切换目录后刷新页面。
+ * 零外部依赖，仅操作 localStorage + DOM + fetch API。不与 KFMState 交互。
+ * 切换目录后刷新页面，避免与树渲染产生任何耦合。
  */
-import { KFMState, API } from './state.js';
 
 let _popup: HTMLDivElement | null = null;
+function _apiBase(): string {
+  try { return window.location.pathname.replace(/\/+$/, '') + '/api'; } catch { return '/kfmv4/api'; }
+}
 
 function siblingName(resolved: string): string {
   const parts = resolved.split('/').filter(Boolean);
@@ -22,7 +24,7 @@ function parentPath(path: string): string {
 function renderLabel(): void {
   const c = document.getElementById('siblingSwitcherBtn') as HTMLCanvasElement | null;
   if (!c) return;
-  const label = localStorage.getItem('kfmv4_currentRoot') || KFMState.currentRoot;
+  const label = localStorage.getItem('kfmv4_currentRoot') || '.';
   const text = siblingName(label);
   const dpr = window.devicePixelRatio || 1;
   const r = c.getBoundingClientRect();
@@ -48,7 +50,6 @@ function renderLabel(): void {
       if (ctx.measureText(displayText + '…').width <= maxW) { displayText += '…'; break; }
     }
   }
-
   const tw = ctx.measureText(displayText).width;
   const tx = (w - tw) / 2;
   const g = ctx.createLinearGradient(tx, 0, tx + tw, 0);
@@ -61,14 +62,27 @@ function destroyPopup(): void {
   if (_popup) { _popup.remove(); _popup = null; }
 }
 
+function updateRootPath(): void {
+  // 异步获取 resolved path 并写入 localStorage（不碰 KFMState）
+  fetch(_apiBase() + '/files/list', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: '.' }),
+  }).then(r => r.json()).then(data => {
+    if (data?.path && document.getElementById('siblingSwitcherBtn')) {
+      localStorage.setItem('kfmv4_currentRoot', data.path);
+      renderLabel();
+    }
+  }).catch(() => {});
+}
+
 async function openPopup(): Promise<void> {
   destroyPopup();
   const anchor = document.getElementById('siblingSwitcherBtn');
   if (!anchor) return;
-  const current = KFMState.currentRoot;
+  const current = localStorage.getItem('kfmv4_currentRoot') || '.';
   const parent = parentPath(current);
   try {
-    const res = await fetch(API + '/files/list', {
+    const res = await fetch(_apiBase() + '/files/list', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ path: parent }),
     });
@@ -128,22 +142,11 @@ export function initSiblingSwitcher(): void {
   if (!btn) return;
   btn.addEventListener('click', (e) => { e.stopPropagation(); if (_popup) { destroyPopup(); return; } openPopup(); });
   renderLabel();
-  fetch(API + '/files/list', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ path: KFMState.currentRoot }),
-  }).then(r => r.json()).then(data => {
-    if (data?.path && document.getElementById('siblingSwitcherBtn')) {
-      const rp: string = data.path;
-      localStorage.setItem('kfmv4_currentRoot', rp);
-      KFMState.currentRoot = rp;
-      renderLabel();
-    }
-  }).catch(() => {});
+  updateRootPath();
 }
 
 export function isSwitcherOpen(): boolean { return !!_popup; }
 
 export function closeSwitcher(): void { destroyPopup(); }
 
-// 自初始化：脚本在 body 底部加载，DOM 已就绪，直接执行。
 initSiblingSwitcher();
