@@ -5,7 +5,7 @@
  * 当前保留：光球面板、AI输入栏、日志系统、侧栏容器（空壳）。
  * 堆叠卡片面板：右侧边缘左滑唤出。
  */
-import { KFMState } from './modules/state.js';
+import { KFMState, API } from './modules/state.js';
 
 declare global {
   interface Window {
@@ -89,7 +89,7 @@ async function establishRoot(): Promise<string> {
   const stored = localStorage.getItem('kfmv4_currentRoot');
   if (stored && stored.startsWith('/')) {
     try {
-      const res = await fetch(window.API + '/root/switch', {
+      const res = await fetch(API + '/root/switch', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: stored }),
       });
@@ -98,7 +98,7 @@ async function establishRoot(): Promise<string> {
     } catch { /* fall through */ }
   }
   try {
-    const res = await fetch(window.API + '/root/current');
+    const res = await fetch(API + '/root/current');
     const data = await res.json();
     if (data?.root) { localStorage.setItem('kfmv4_currentRoot', data.root); return data.root; }
   } catch { /* use stored */ }

@@ -64,7 +64,6 @@ async function openPopup(): Promise<void> {
   destroyPopup();
   const anchor = document.getElementById('siblingSwitcherBtn');
   if (!anchor) { _opening = false; return; }
-  renderLabel('\u23F3');
   try {
     const res = await fetch(_API + '/roots');
     const data: unknown = await res.json();
