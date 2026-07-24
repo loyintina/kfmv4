@@ -14,7 +14,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import { SAFE_ROOT, sanitizePath } from './path-utils.js';
+import { getActiveRoot, sanitizePath } from './path-utils.js';
 
 // ========== 类型定义 ==========
 
@@ -68,7 +68,7 @@ export class CapabilityExecutor {
         return { success: false, error: '缺少 pattern 参数', capabilityId: 'file-search' };
       }
       try {
-        const resolvedPath = dirPath ? sanitizePath(dirPath) : SAFE_ROOT.slice(0, -1);
+        const resolvedPath = dirPath ? sanitizePath(dirPath) : getActiveRoot();
         if (!resolvedPath) {
           return { success: false, error: `路径逃逸: ${dirPath}`, capabilityId: 'file-search' };
         }

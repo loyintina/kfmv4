@@ -19,14 +19,30 @@
 import path from 'path';
 import fs from 'fs';
 
-/** 根目录（环境变量或 HOME） */
+/** 根目录（环境变量或 HOME）— 不可变，KFM_DATA_DIR 永远基于此 */
 export const ROOT_DIR = process.env.KFM_ROOT || process.env.HOME || '.';
 
-/** 安全根目录：所有用户路径不得逃逸出此目录 */
-export const SAFE_ROOT = path.resolve(ROOT_DIR) + path.sep;
-
-/** KFM 数据目录：所有 .kfmv4/ 配置文件存储在此 */
+/** KFM 数据目录：所有 .kfmv4/ 配置文件存储在此（不随 root 切换变化） */
 export const KFM_DATA_DIR = path.join(ROOT_DIR, '.kfmv4');
+
+// ========== 动态 activeRoot（sibling-switcher 切换用） ==========
+
+let _activeRoot: string = path.resolve(ROOT_DIR);
+
+/** 当前活跃根目录（无尾 sep）— 文件操作默认路径、sanitizePath 边界 */
+export function getActiveRoot(): string {
+  return _activeRoot;
+}
+
+/** 当前活跃根目录（带尾 sep）— sanitizePath 内部前缀比对用 */
+export function getSafeRoot(): string {
+  return _activeRoot + path.sep;
+}
+
+/** 切换活跃根目录。调用方须先校验目标合法性。 */
+export function setActiveRoot(newRoot: string): void {
+  _activeRoot = path.resolve(newRoot);
+}
 
 /**
  * 路径校验：确保用户路径不逃逸出 SAFE_ROOT。返回 null 表示拒绝。
@@ -40,11 +56,12 @@ export const KFM_DATA_DIR = path.join(ROOT_DIR, '.kfmv4');
  *      数据在 $HOME/.kfmv4/ 不在项目仓库中，不存在 git 泄露风险。
  */
 export function sanitizePath(userPath: string): string | null {
-  const resolved = path.resolve(SAFE_ROOT, userPath);
-  if (resolved !== SAFE_ROOT.slice(0, -1) && !resolved.startsWith(SAFE_ROOT)) return null;
+  const safeRoot = getSafeRoot();
+  const resolved = path.resolve(safeRoot, userPath);
+  if (resolved !== safeRoot.slice(0, -1) && !resolved.startsWith(safeRoot)) return null;
 
   // 符号链接解析：找最深的已存在路径段做 realpath（新建文件时目标尚不存在，
-  // 需对其父目录链解析，防止用软链目录把写入/读取重定向到 SAFE_ROOT 外）。
+  // 需对其父目录链解析，防止用软链目录把写入/读取重定向到 activeRoot 外）。
   let probe = resolved;
   while (!fs.existsSync(probe)) {
     const parent = path.dirname(probe);
@@ -53,7 +70,7 @@ export function sanitizePath(userPath: string): string | null {
   }
   try {
     const real = fs.realpathSync(probe);
-    if (real !== SAFE_ROOT.slice(0, -1) && !real.startsWith(SAFE_ROOT)) return null;
+    if (real !== safeRoot.slice(0, -1) && !real.startsWith(safeRoot)) return null;
   } catch {
     return null; // realpath 失败（如断链）→ 拒绝
   }

@@ -8,7 +8,7 @@
 import type { Router } from 'express';
 import fs from 'fs';
 import path from 'path';
-import { ROOT_DIR, sanitizePath, verifyLocalOrigin } from '../path-utils.js';
+import { getActiveRoot, KFM_DATA_DIR, sanitizePath, setActiveRoot, verifyLocalOrigin } from '../path-utils.js';
 
 // ========== 类型 ==========
 
@@ -41,9 +41,8 @@ export function sliceMessages<T>(all: T[], from: 'head' | 'tail', offset: number
 export function setupFileRoutes(router: Router): void {
   router.post('/files/list', (req, res) => {
     try {
-      const targetPath = req.body.path || ROOT_DIR;
-      const useAbs = req.body.skipSanitize && typeof targetPath === 'string' && targetPath.startsWith('/');
-      const resolvedPath = useAbs ? targetPath : sanitizePath(targetPath === '~' ? ROOT_DIR : targetPath);
+      const targetPath = req.body.path || getActiveRoot();
+      const resolvedPath = sanitizePath(targetPath === '~' ? getActiveRoot() : targetPath);
       if (!resolvedPath) { res.json({ error: '路径不合法' }); return; }
       if (!fs.existsSync(resolvedPath)) { res.json({ error: '路径不存在', path: resolvedPath }); return; }
       const items = fs.readdirSync(resolvedPath).filter(name => !name.startsWith('.') || req.body.showHidden).map(name => {
@@ -57,12 +56,11 @@ export function setupFileRoutes(router: Router): void {
   // 递归获取目录树：一次返回指定路径下所有层级的子目录内容
   router.post('/files/list-recursive', (req, res) => {
     try {
-      const targetPath = req.body.path || ROOT_DIR;
+      const targetPath = req.body.path || getActiveRoot();
       const maxDepth = req.body.depth || 20;
       const expandedPaths: Record<string, boolean> = req.body.expandedPaths || {};
       const showHidden = req.body.showHidden || false;
-      const useAbs = req.body.skipSanitize && typeof targetPath === 'string' && targetPath.startsWith('/');
-      const resolvedPath = useAbs ? targetPath : sanitizePath(targetPath === '~' ? ROOT_DIR : targetPath);
+      const resolvedPath = sanitizePath(targetPath === '~' ? getActiveRoot() : targetPath);
       if (!resolvedPath) { res.json({ error: '路径不合法' }); return; }
       if (!fs.existsSync(resolvedPath)) { res.json({ error: '路径不存在', path: resolvedPath }); return; }
 
@@ -110,7 +108,7 @@ export function setupFileRoutes(router: Router): void {
   // 比逐文件 list+read 快 N 倍（大会话文件可达 600KB，元数据仅约 200B/条）。
   router.get('/sessions/list', (_req, res) => {
     try {
-      const sessionsDir = path.join(ROOT_DIR, '.kfmv4/sessions');
+      const sessionsDir = path.join(KFM_DATA_DIR, 'sessions');
       if (!fs.existsSync(sessionsDir)) { res.json({ sessions: [] }); return; }
       const files = fs.readdirSync(sessionsDir).filter(f => f.endsWith('.json'));
       const sessions: Array<{ id: string; title: string; createdAt: string; updatedAt: string; manuallyNamed?: boolean; providerId?: string; modelId?: string; messageCount: number }> = [];
@@ -166,7 +164,7 @@ export function setupFileRoutes(router: Router): void {
       const from = req.query.from === 'head' ? 'head' : 'tail';
       const offset = Math.max(0, parseInt(typeof req.query.offset === 'string' ? req.query.offset : '0', 10) || 0);
       const rawLimit = parseInt(typeof req.query.limit === 'string' ? req.query.limit : '0', 10) || 0;
-      const filePath = sanitizePath(`.kfmv4/sessions/${id}.json`);
+      const filePath = path.join(KFM_DATA_DIR, 'sessions', `${id}.json`);
       if (!filePath || !fs.existsSync(filePath)) { res.json({ error: '会话不存在' }); return; }
       const parsed: unknown = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
       if (!parsed || typeof parsed !== 'object' || !('messages' in parsed) || !Array.isArray(parsed.messages)) {
@@ -184,7 +182,7 @@ export function setupFileRoutes(router: Router): void {
   });
   // 列出文件系统根 / 下的所有顶层目录（兄弟目录切换用）。
   // 专用于 sibling-switcher UI，不经过 sanitizePath（不在 SAFE_ROOT 内的系统级路径）。
-  router.get('/roots', (_req, res) => {
+  router.get('/roots', verifyLocalOrigin, (_req, res) => {
     try {
       const items = fs.readdirSync('/').filter(name => {
         try { return fs.statSync('/' + name).isDirectory(); } catch { return false; }
@@ -193,6 +191,31 @@ export function setupFileRoutes(router: Router): void {
     } catch (err: unknown) {
       res.json({ error: err instanceof Error ? err.message : 'unknown error' });
     }
+  });
+
+  // 动态根切换：将 sanitizePath 边界移动到目标目录（sibling-switcher 核心）
+  router.post('/root/switch', verifyLocalOrigin, (req, res) => {
+    try {
+      const target = req.body.path;
+      if (!target || typeof target !== 'string') { res.status(400).json({ error: '缺少 path 参数' }); return; }
+      if (!path.isAbsolute(target)) { res.status(400).json({ error: '路径必须是绝对路径' }); return; }
+      let resolved: string;
+      try { resolved = fs.realpathSync(target); } catch { res.status(400).json({ error: '路径不存在或无法解析' }); return; }
+      if (!fs.statSync(resolved).isDirectory()) { res.status(400).json({ error: '目标不是目录' }); return; }
+      if (resolved === '/') { res.status(400).json({ error: '不能切换到文件系统根' }); return; }
+      if (resolved === KFM_DATA_DIR || resolved.startsWith(KFM_DATA_DIR + path.sep)) { res.status(400).json({ error: '不能切换到 .kfmv4 数据目录内' }); return; }
+      const topLevel = '/' + resolved.split('/').filter(Boolean)[0];
+      const allowed = fs.readdirSync('/').filter(n => { try { return fs.statSync('/' + n).isDirectory(); } catch { return false; } });
+      if (!allowed.includes(topLevel.slice(1))) { res.status(400).json({ error: '目标不在允许的根目录列表中' }); return; }
+      setActiveRoot(resolved);
+      res.json({ success: true, root: resolved });
+    } catch (err: unknown) {
+      res.status(500).json({ error: err instanceof Error ? err.message : 'unknown error' });
+    }
+  });
+
+  router.get('/root/current', (_req, res) => {
+    res.json({ root: getActiveRoot() });
   });
 
   router.get('/files/media', (req, res) => {
@@ -299,6 +322,6 @@ export function setupFileRoutes(router: Router): void {
   } catch (e: any) { res.json({ error: e.message }); } });
 
   router.get('/system/info', (_req, res) => {
-    res.json({ user: process.env.USER || 'root', home: ROOT_DIR, cwd: process.cwd() });
+    res.json({ user: process.env.USER || 'root', home: getActiveRoot(), cwd: process.cwd() });
   });
 }

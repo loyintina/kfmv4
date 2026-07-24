@@ -49,13 +49,10 @@ function destroyPopup(): void {
   if (_popup) { _popup.remove(); _popup = null; }
 }
 
-function updateRootPath(): void {
-  fetch(_API + '/files/list', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ path: '.', skipSanitize: true }),
-  }).then(r => r.json()).then(data => {
-    if (data?.path && document.getElementById('siblingSwitcherBtn')) {
-      localStorage.setItem('kfmv4_currentRoot', data.path);
+function syncRootFromServer(): void {
+  fetch(_API + '/root/current').then(r => r.json()).then(data => {
+    if (data?.root && document.getElementById('siblingSwitcherBtn')) {
+      localStorage.setItem('kfmv4_currentRoot', data.root);
       renderLabel();
     }
   }).catch(() => {});
@@ -102,9 +99,19 @@ async function openPopup(): Promise<void> {
         'font-weight:' + (isCurrent ? '600' : '400'),
       ].join(';');
       row.textContent = '/' + d;
-      row.onclick = () => {
+      row.onclick = async () => {
         destroyPopup();
-        localStorage.setItem('kfmv4_currentRoot', fullPath);
+        try {
+          const res = await fetch(_API + '/root/switch', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ path: fullPath }),
+          });
+          const data = await res.json();
+          if (data?.success) {
+            localStorage.setItem('kfmv4_currentRoot', data.root);
+            localStorage.removeItem('expandedPaths');
+          }
+        } catch { /* reload 后 establishRoot 会重试 */ }
         window.location.reload();
       };
       popup.appendChild(row);
@@ -128,7 +135,7 @@ export function initSiblingSwitcher(): void {
   if (!btn) return;
   btn.addEventListener('click', (e) => { e.stopPropagation(); if (_popup) { destroyPopup(); return; } openPopup(); });
   renderLabel();
-  updateRootPath();
+  syncRootFromServer();
 }
 
 export function isSwitcherOpen(): boolean { return !!_popup; }

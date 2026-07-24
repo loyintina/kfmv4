@@ -84,7 +84,30 @@ Registry.registerCapability({
 // 在所有 Registry 注册完成后初始化，建立服务端↔浏览器端双向通信
 initWsChannel();
 
-// 加载根目录（使用持久化的 currentRoot），然后启用懒加载
-loadFileTree(KFMState.currentRoot).then(() => {
+// 加载根目录：先与服务端同步 activeRoot（服务重启后重建状态），再加载文件树
+async function establishRoot(): Promise<string> {
+  const stored = localStorage.getItem('kfmv4_currentRoot');
+  if (stored && stored.startsWith('/')) {
+    try {
+      const res = await fetch(window.API + '/root/switch', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: stored }),
+      });
+      const data = await res.json();
+      if (data?.success) return data.root;
+    } catch { /* fall through */ }
+  }
+  try {
+    const res = await fetch(window.API + '/root/current');
+    const data = await res.json();
+    if (data?.root) { localStorage.setItem('kfmv4_currentRoot', data.root); return data.root; }
+  } catch { /* use stored */ }
+  return stored || '.';
+}
+
+establishRoot().then(root => {
+  KFMState.currentRoot = root;
+  return loadFileTree(root);
+}).then(() => {
   initLazyLoader();
 }).catch(e => console.error('[main] loadFileTree failed:', e));

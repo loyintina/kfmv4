@@ -40,7 +40,7 @@ async function fetchDirRecursive(
     const res = await fetch(API + '/files/list-recursive', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: dirPath, depth, expandedPaths, showHidden: true, skipSanitize: dirPath.startsWith('/') }),
+      body: JSON.stringify({ path: dirPath, depth, expandedPaths, showHidden: true }),
     });
     if (!res.ok) return false;
     const data = await res.json();

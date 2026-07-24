@@ -87,13 +87,13 @@ regression('BAR-SEC-06', 'path-utils', '多段遍历 a/../../../etc/passwd → n
 // ---- 验证实际模块导出值的类型 ----
 group('path-utils — 导出值结构');
 
-import { SAFE_ROOT as ACTUAL_ROOT, KFM_DATA_DIR, sanitizePath } from '../src/server/path-utils.js';
+import { getSafeRoot, getActiveRoot, setActiveRoot, KFM_DATA_DIR, sanitizePath } from '../src/server/path-utils.js';
 
-test('SAFE_ROOT 以 path.sep 结尾', () => {
-  assert(ACTUAL_ROOT.endsWith(path.sep), `SAFE_ROOT 应以 sep 结尾，实际: ${ACTUAL_ROOT}`);
+test('getSafeRoot() 以 path.sep 结尾', () => {
+  assert(getSafeRoot().endsWith(path.sep), `getSafeRoot() 应以 sep 结尾，实际: ${getSafeRoot()}`);
 });
 
-test('KFM_DATA_DIR 是 SAFE_ROOT 内的绝对路径', () => {
+test('KFM_DATA_DIR 是绝对路径', () => {
   assert(path.isAbsolute(KFM_DATA_DIR), 'KFM_DATA_DIR 应是绝对路径');
 });
 
@@ -102,13 +102,48 @@ test('sanitizePath 是函数', () => {
 });
 
 test('sanitizePath 合法子路径返回非 null', () => {
-  // 任意合法路径：相对路径 "docs/test" 会解析到 HOME/docs/test
   const r = sanitizePath('docs/test');
   assert(r !== null, 'sanitizePath("docs/test") 应返回非 null');
 });
 
 test('sanitizePath "../../etc/passwd" 返回 null', () => {
   assert(sanitizePath('../../etc/passwd') === null, '目录遍历应被拒绝');
+});
+
+// ---- 动态根切换 ----
+group('path-utils — 动态根切换');
+
+test('setActiveRoot 后 sanitizePath 使用新根', () => {
+  const original = getActiveRoot();
+  try {
+    setActiveRoot('/tmp');
+    assert(sanitizePath('/tmp/foo.txt') !== null, '/tmp/foo.txt 应在新根内通过');
+    assert(sanitizePath(original + '/x') === null, '旧根路径应被拒绝');
+  } finally {
+    setActiveRoot(original);
+  }
+});
+
+test('KFM_DATA_DIR 不随 activeRoot 变化', () => {
+  const original = getActiveRoot();
+  const dataDir = KFM_DATA_DIR;
+  try {
+    setActiveRoot('/tmp');
+    assert(KFM_DATA_DIR === dataDir, 'KFM_DATA_DIR 应不变');
+  } finally {
+    setActiveRoot(original);
+  }
+});
+
+regression('BAR-ROOT-01', 'path-utils', 'setActiveRoot 后 getSafeRoot 反映新根', () => {
+  const original = getActiveRoot();
+  try {
+    setActiveRoot('/tmp');
+    assert(getSafeRoot() === '/tmp' + path.sep, 'getSafeRoot 应反映新根');
+    assert(getActiveRoot() === '/tmp', 'getActiveRoot 应返回新根');
+  } finally {
+    setActiveRoot(original);
+  }
 });
 
 // ---- 安全加固回归钉子（2026-07-21 审计四洞修复）----
