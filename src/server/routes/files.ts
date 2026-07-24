@@ -42,19 +42,16 @@ export function setupFileRoutes(router: Router): void {
   router.post('/files/list', (req, res) => {
     try {
       const targetPath = req.body.path || ROOT_DIR;
-      const resolvedPath = sanitizePath(targetPath === '~' ? ROOT_DIR : targetPath);
+      const useAbs = req.body.skipSanitize && typeof targetPath === 'string' && targetPath.startsWith('/');
+      const resolvedPath = useAbs ? targetPath : sanitizePath(targetPath === '~' ? ROOT_DIR : targetPath);
       if (!resolvedPath) { res.json({ error: '路径不合法' }); return; }
       if (!fs.existsSync(resolvedPath)) { res.json({ error: '路径不存在', path: resolvedPath }); return; }
-      const items: FileItem[] = fs.readdirSync(resolvedPath)
-        .filter(name => !name.startsWith('.') || req.body.showHidden)
-        .map(name => {
-          const fullPath = path.join(resolvedPath, name);
-          try { const stats = fs.statSync(fullPath); return { name, path: fullPath, isDir: stats.isDirectory(), size: stats.size, modified: stats.mtime.toISOString() }; } catch { return null; }
-        })
-        .filter((item): item is FileItem => item !== null)
-        .sort((a, b) => { if (a.isDir !== b.isDir) return a.isDir ? -1 : 1; return a.name.localeCompare(b.name); });
+      const items = fs.readdirSync(resolvedPath).filter(name => !name.startsWith('.') || req.body.showHidden).map(name => {
+        const fullPath = path.join(resolvedPath, name);
+        try { const stats = fs.statSync(fullPath); return { name, path: fullPath, isDir: stats.isDirectory(), size: stats.size, modified: stats.mtime.toISOString() }; } catch { return null; }
+      }).filter((item): item is { name: string; path: string; isDir: boolean; size: number; modified: string } => item !== null).sort((a, b) => { if (a.isDir !== b.isDir) return a.isDir ? -1 : 1; return a.name.localeCompare(b.name); });
       res.json({ path: resolvedPath, items });
-    } catch (error: any) { res.json({ error: error.message }); }
+    } catch (error) { res.json({ error: error instanceof Error ? error.message : 'unknown' }); }
   });
 
   // 递归获取目录树：一次返回指定路径下所有层级的子目录内容
@@ -64,7 +61,8 @@ export function setupFileRoutes(router: Router): void {
       const maxDepth = req.body.depth || 20;
       const expandedPaths: Record<string, boolean> = req.body.expandedPaths || {};
       const showHidden = req.body.showHidden || false;
-      const resolvedPath = sanitizePath(targetPath === '~' ? ROOT_DIR : targetPath);
+      const useAbs = req.body.skipSanitize && typeof targetPath === 'string' && targetPath.startsWith('/');
+      const resolvedPath = useAbs ? targetPath : sanitizePath(targetPath === '~' ? ROOT_DIR : targetPath);
       if (!resolvedPath) { res.json({ error: '路径不合法' }); return; }
       if (!fs.existsSync(resolvedPath)) { res.json({ error: '路径不存在', path: resolvedPath }); return; }
 
@@ -180,6 +178,18 @@ export function setupFileRoutes(router: Router): void {
       const limit = rawLimit > 0 ? rawLimit : total;
       const slice = sliceMessages(all, from, offset, limit);
       res.json({ total, offset, limit, from, messages: slice });
+    } catch (err: unknown) {
+      res.json({ error: err instanceof Error ? err.message : 'unknown error' });
+    }
+  });
+  // 列出文件系统根 / 下的所有顶层目录（兄弟目录切换用）。
+  // 专用于 sibling-switcher UI，不经过 sanitizePath（不在 SAFE_ROOT 内的系统级路径）。
+  router.get('/roots', (_req, res) => {
+    try {
+      const items = fs.readdirSync('/').filter(name => {
+        try { return fs.statSync('/' + name).isDirectory(); } catch { return false; }
+      }).sort();
+      res.json({ items });
     } catch (err: unknown) {
       res.json({ error: err instanceof Error ? err.message : 'unknown error' });
     }
