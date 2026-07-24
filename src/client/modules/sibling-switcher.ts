@@ -83,7 +83,8 @@ async function openPopup(): Promise<void> {
       'padding:4px 0;box-shadow:0 4px 24px rgba(0,0,0,0.5);touch-action:pan-y',
     ].join(';');
     const rect = anchor.getBoundingClientRect();
-    popup.style.top = rect.bottom + 2 + 'px';
+    // 按钮在侧栏底部 → 弹出向上展示，不超出底部视口
+    popup.style.bottom = window.innerHeight - rect.top + 2 + 'px';
     popup.style.left = Math.min(rect.left, window.innerWidth - 180) + 'px';
 
     const current = localStorage.getItem('kfmv4_currentRoot') || '.';
