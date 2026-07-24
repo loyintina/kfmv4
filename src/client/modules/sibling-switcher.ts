@@ -6,9 +6,7 @@
  */
 
 let _popup: HTMLDivElement | null = null;
-function _apiBase(): string {
-  try { return window.location.pathname.replace(/\/+$/, '') + '/api'; } catch { return '/kfmv4/api'; }
-}
+const _API = '/kfmv4/api';
 
 function siblingName(resolved: string): string {
   const parts = resolved.split('/').filter(Boolean);
@@ -64,7 +62,7 @@ function destroyPopup(): void {
 
 function updateRootPath(): void {
   // 异步获取 resolved path 并写入 localStorage（不碰 KFMState）
-  fetch(_apiBase() + '/files/list', {
+  fetch(_API + '/files/list', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ path: '.' }),
   }).then(r => r.json()).then(data => {
@@ -82,9 +80,9 @@ async function openPopup(): Promise<void> {
   const current = localStorage.getItem('kfmv4_currentRoot') || '.';
   const parent = parentPath(current);
   try {
-    const res = await fetch(_apiBase() + '/files/list', {
+    const res = await fetch(_API + '/files/list', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: parent }),
+      body: JSON.stringify({ path: parent, showHidden: true }),
     });
     const data: unknown = await res.json();
     if (!data || typeof data !== 'object' || !('items' in data) || !Array.isArray(data.items)) return;

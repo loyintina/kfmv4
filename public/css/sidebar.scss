@@ -235,3 +235,20 @@
   padding:8px 12px;
   border-top:1px solid rgba(124,58,237,0.15);
 }
+
+/* 兄弟目录切换按钮 */
+#siblingSwitcherBtn{
+  border:1px solid transparent;
+  border-radius:12px;
+  background:linear-gradient(rgba(18,18,26,.75),rgba(18,18,26,.75)) padding-box,linear-gradient(90deg,rgba(0,212,255,.2),rgba(124,58,237,.15)) border-box;
+  box-shadow:0 4px 16px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.08);
+  transition:all .25s cubic-bezier(.34,1.56,.64,1);
+  cursor:pointer
+}
+#siblingSwitcherBtn:hover{
+  background:linear-gradient(rgba(18,18,26,.75),rgba(18,18,26,.75)) padding-box,linear-gradient(90deg,rgba(0,212,255,.5),rgba(124,58,237,.35)) border-box;
+  box-shadow:0 6px 24px rgba(124,58,237,.25),inset 0 1px 0 rgba(255,255,255,.1)
+}
+#siblingSwitcherBtn:active{
+  transform:scale(.92)
+}

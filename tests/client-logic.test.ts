@@ -399,3 +399,24 @@ regression('BAR-ORB-CULL-01d', 'orb-chat', '混合 block：只有 tool 计入额
   ] };
   assert(_cullWeight([mixed]) === 4, 'text+3tool 消息权重应为 4（1 消息 + 3 工具）');
 });
+
+// ==========================================================================
+// BAR-ORB-TREE-01: sibling-switcher 零依赖保护（防循环依赖崩树）
+//
+// 文件树崩溃历史（本 session 多次）：sibling-switcher 的任何 import 都可能
+// 触发 tree-render → tree-loader → sibling-switcher 的循环依赖，或主模块
+// 初始化时序错乱。此钉子锁定：sibling-switcher 只能 import 浏览器原生 API，
+// 不得 import 项目其他模块（state/theme/dom-refs/tree-loader 等）。
+// ==========================================================================
+
+group('sibling-switcher — 零依赖保护（BAR-ORB-TREE-01）');
+
+const TREE_01_SRC = readFileSync('src/client/modules/sibling-switcher.ts', 'utf-8');
+const _TREE_PROTECTED = !TREE_01_SRC.includes("from './");
+
+regression('BAR-ORB-TREE-01', 'sibling-switcher', '不 import 项目任何模块（防循环依赖）', () => {
+  // 检查是否有 import 语句引用了其他模块：正常的代码不会有 "from './"
+  // 例外：test runner 的 window 兼容代码可以保留，但不能 import 项目模块
+  const importLines = TREE_01_SRC.split('\n').filter(l => l.includes("from './"));
+  assert(importLines.length === 0, `不应 import 项目模块，发现 ${importLines.length} 处：\n${importLines.join('\n')}`);
+});
