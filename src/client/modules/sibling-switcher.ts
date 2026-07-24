@@ -104,12 +104,14 @@ async function openPopup(): Promise<void> {
   const anchor = document.getElementById('siblingSwitcherBtn');
   if (!anchor) return;
   const current = localStorage.getItem('kfmv4_currentRoot') || '.';
-  const parent = parentPath(current);
+  // 用相对路径 '..' 到/files/list，安全兼容 sanitizePath
+  // 不需要计算绝对父路径（parentPath('.'))→'/' 会被拒）
+  const listPath = current === '.' ? '..' : parentPath(current);
   renderText('\u23F3'); // 加载指示
   try {
     const res = await fetch(_API + '/files/list', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: parent, showHidden: true }),
+      body: JSON.stringify({ path: listPath, showHidden: true }),
     });
     const data: unknown = await res.json();
     if (!data || typeof data !== 'object' || !('items' in data) || !Array.isArray(data.items)) {
