@@ -24,7 +24,7 @@ export function setupAiRoutes(router: Router, wsServer: WsServer, startRunFn: St
    *   （复用已有活跃 run 时 fromIndex=0，客户端据 events 全量对齐；新 run 也是 0）
    */
   router.post('/ai/chat/start', (req, res) => {
-    const { sessionId, messages, model, provider } = req.body;
+    const { sessionId, messages, model, provider, roleFile } = req.body;
     if (!sessionId || !messages || !Array.isArray(messages) || messages.length === 0) {
       res.status(400).json({ error: '缺少 sessionId 或 messages 参数' });
       return;
@@ -34,6 +34,7 @@ export function setupAiRoutes(router: Router, wsServer: WsServer, startRunFn: St
       model || 'deepseek-v4-flash',
       provider || 'opencode-go',
       wsServer,
+      typeof roleFile === 'string' ? roleFile : undefined,
     );
     res.json({ runId: run.id, fromIndex: 0, done: run.done });
   });

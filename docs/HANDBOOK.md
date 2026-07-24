@@ -151,15 +151,13 @@ index.ts (入口路由 + 静态文件)
 - **共享常量**：导入自 `interaction-constants.ts`（`MARGIN`、`LONG_PRESS_MS`、`DRAG_THRESHOLD`）
 - **规则**：与 `orb.ts` 是独立模块，各管各的。统一化方案已放弃。新增交互模式走 gesture-registry，禁止直接 addEventListener。
 
-#### root-picker.ts — 文件树根目录切换器
+#### sibling-switcher.ts — 文件树兄弟目录切换
 
-`root-picker.ts` 实现侧栏文件树根目录切器。通过 `L.pushContext()` 复用完整的 Canvas 交互系统（RenderContext 上下文栈），
-不创建独立的手势/渲染管线。
+`sibling-switcher.ts` 替换旧 `root-picker.ts`（独立 Canvas 渲染器,从未使用）。功能:侧栏底栏按钮显示当前目录名,点击弹出父目录下所有兄弟文件夹列表(纯 DOM 弹窗),选一个即切换文件树根目录。
 
-- **出口**：`createRootPicker()`、`destroyRootPicker()`、`isPickerOpen()`、`pickerHandleClick()`
-- **生命周期**：`createRootPicker()` → `L.pushContext({ renderer, rowIndex: [], ... })` → 构建目录列表 Box 树 → 用户选择 → `L.popContext()` 恢复主树
-- **消费者**：`tree-render.ts`、`canvas-scroll.ts`、`main.ts`
-- **规则**：选择器锁 (priority 110) 在手势优先级最高，打开后外部滑动手势全部被拦截。关闭时必须调 `L.popContext()` 恢复上下文。
+- **出口**：`createSiblingSwitcher()`、`destroySiblingSwitcher()`、`isSwitcherOpen()`、`closeSwitcher()`
+- **消费者**：`tree-render.ts`、`canvas-scroll.ts`
+- **规则**：纯 DOM 实现,不触碰 Canvas 渲染器。弹窗打开时 canvas 点击/手势事件被 guard 拦截。
 
 ## 二、当前会话状态
 > **最后更新**：2026-07-24（v7.3.2 — 会话加载分段传输 + 切换竞态修复 + 上滑锚点保持 + 工具框折叠状态机 + 会话持久化竞态修复）
@@ -338,7 +336,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 > bug 账本见 [`docs/BUG_REGRESSION_REGISTRY.md`](./BUG_REGRESSION_REGISTRY.md)）：
 >
 > ```bash
-> npm test    # 326 个测试（单元/集成/回归钉子/不变量），~1.3s，进主管线
+> npm test    # 330 个测试（单元/集成/回归钉子/不变量），~1.3s，进主管线
 > npm run smoke  # 11 条浏览器冒烟（puppeteer headless），~9s，独立于主管线
 > ```
 >
@@ -395,7 +393,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `animation-registry.ts` | 91 | 5 | ✅ 提及 | GSAP 动画隔离层 |
 | `canvas-cursor.ts` | 397 | 3 | ✅ 提及 | Canvas 盒子光标系统 |
 | `liquid-geometry.ts` | 109 | 1 | ✅ 分组表 | 光标液体粒子纯几何（从 canvas-cursor 剥离，可单测，BAR-201） |
-| `canvas-scroll.ts` | 361 | 2 | ✅ 提及 | Canvas 盒子滚动系统 |
+| `canvas-scroll.ts` | 357 | 2 | ✅ 提及 | Canvas 盒子滚动系统 |
 | `canvas-utils.ts` | 61 | 4 | ✅ 依赖图 | Canvas 通用工具函数 |
 | `card-toast.ts` | 53 | 1 | ✅ 分组表 | 卡片风格轻量提示 |
 | `char-rain.ts` | 306 | 2 | ✅ 分组表 | 字符散落/回收动画 |
@@ -418,12 +416,12 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `logger.ts` | 58 | 3 | ✅ 分组表 | KFM 日志系统 |
 | `mode-system.ts` | 447 | 1 | ✅ 分组表 | 模式按钮系统（从 tree-swipe 拆分，v6.8.0 新增） |
 | `orb.ts` | 631 | 2 | ✅ 独立条目 | 光球 UI + 拖拽手势 + 面板状态机 + 挂机重连 IIFE（协调层，见 AI_CHAT_RUNTIME） |
-| `orb-chat.ts` | 1347 | 1 | ✅ 分组表 | AI 消息渲染 + 挂机 start/续读/取消 + 事件状态机（见 AI_CHAT_RUNTIME） |
+| `orb-chat.ts` | 1346 | 1 | ✅ 分组表 | AI 消息渲染 + 挂机 start/续读/取消 + 事件状态机（见 AI_CHAT_RUNTIME） |
 | `orb-panel.ts` | 209 | 1 | ✅ 分组表 | 面板 Provider/Session/Model/Role 下拉框（从 orb.ts 拆分） |
 | `orb-state.ts` | 17 | 0 | ✅ 分组表 | orb 状态机纯逻辑（零依赖，从 orb.ts 拆分，可脱离浏览器测试） |
-| `session-store.ts` | 419 | 1 | ✅ 分组表 | 会话持久化统一存储 + saveMessages 自动建会话（见 AI_CHAT_RUNTIME §4.6） |
+| `session-store.ts` | 449 | 1 | ✅ 分组表 | 会话持久化统一存储 + saveMessages 自动建会话（见 AI_CHAT_RUNTIME §4.6） |
 | `renderer-lifecycle.ts` | 224 | 5 | ✅ 注册表 | 渲染器生命周期单例 L |
-| `root-picker.ts` | 434 | 2 | ✅ 独立条目 | 文件树根目录切换器 |
+| `sibling-switcher.ts` | 147 | 2 | ✅ 独立条目 | 文件树兄弟目录切换（替代 root-picker） |
 | `state.ts` | 258 | 10 | ✅ 注册表 | 全局状态层 KFMState |
 | `style-registry.ts` | 206 | 4 | ✅ 独��条目 | 文件树样式唯一来源 |
 | `theme.ts` | 239 | 7 | ✅ 独立条目 | 主题系统（颜色唯一来源） |
@@ -431,7 +429,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `tree-model.ts` | 191 | 2 | ✅ 分组表 | 绝对深度布局模型 |
 | `tree-overlay.ts` | 414 | 1 | ✅ 分组表 | Overlay 双树构建系统（从 tree-render 拆分） |
 | `tree-animation.ts` | 74 | 1 | ✅ 分组表 | 文件树插入/移除 GSAP 动画（新建/删除/复制/移动共享） |
-| `tree-render.ts` | 1021 | 3 | ✅ 核心条目 | 文件树 Canvas 渲染（编排层） |
+| `tree-render.ts` | 1020 | 3 | ✅ 核心条目 | 文件树 Canvas 渲染（编排层） |
 | `tree-swipe.ts` | 727 | 1 | ✅ 分组表 | 文件行右滑 → 卡片堆（从 tree-render 拆分，v6.8.0 拆分为 color-utils + mode-system） |
 | `ui-registry.ts` | 334 | 9 | ✅ 独立条目 | UI 元素注册表 |
 | `ui.ts` | 71 | 10 | ✅ 提及 | UI 初始化编排 |
@@ -449,7 +447,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `../src/client/modules/renderers/md-extensions.ts` | 51 | 1 | — | Markdown 渲染扩展（链接、任务列表） |
 | `../src/client/modules/renderers/md-css.ts` | 57 | 2 | ✅ 分组表 | Markdown 渲染 CSS（全局唯一来源，orb + handler-factory 共享） |
 | `../src/client/modules/renderers/text-preview.ts` | 26 | 1 | — | 文本文件预览渲染器 |
-| **合计** | **14852** | | | |
+| **合计** | **14589** | | | |
 
 ### 死代码检查
 **结论：无死代码。** 所有 41 个模块都被至少 1 个文件导入（`terminal-card-04.ts` 和 `tmux-card.ts` 被导入数为 0，但这是模块自身的特性：它们仅在用户侧打开卡片时由 `card-registry.ts` 的 `createHandler` 工厂按需实例化，属于动态加载。`terminal-aux-bar.ts` 已删除（空占位，无任何引用）。`src/cards/` 目录已彻底删除。实际使用的 logger 在 `src/client/modules/logger.ts`。

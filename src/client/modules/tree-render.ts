@@ -21,7 +21,6 @@ import { initScrollGesture, bindWheelEvents } from './canvas-scroll.js';
 import { DOM } from "./dom-refs.js";
 import * as clickQueue from "./click-queue.js";
 import { assert } from "./debug-assert.js";
-import { createRootPicker, destroyRootPicker, isPickerOpen } from './root-picker.js';
 import { log } from './logger.js';
 import { wsChannel } from './ws-channel.js';
 import { Registry } from './ui-registry.js';
@@ -264,7 +263,7 @@ export function onSidebarOpen(): void {
     sidebar.addEventListener('transitionend', onEnd);
   }
   _createSidebarTouchArea();
-  createRootPicker();
+  // sibling-switcher 画布已在 HTML 中，不再需要动态创建
 }
 
 
@@ -293,7 +292,7 @@ export function onSidebarClose(): void {
   L.renderer?.stop();
   L.renderer = null;
   DOM.sidebarTouchArea?.remove();
-  destroyRootPicker();
+  document.querySelector('.sibling-switcher-popup')?.remove();
   L.cancelAllRafs();
 }
 
@@ -390,7 +389,7 @@ function _createSidebarTouchArea(): void {
 
   // 点击任意位置 → 执行当前光标行的动作
   box.addEventListener('click', () => {
-    if (isPickerOpen()) return;
+    if (document.querySelector('.sibling-switcher-popup')) return;
     if (L._swipeGuard) return;
     if (!L.cursorRowId || L._rowIndex.length === 0) return;
     const idx = getCursorRowIndex();
@@ -420,7 +419,7 @@ function _createSidebarTouchArea(): void {
 
 function bindClickEvents(canvas: HTMLElement, _dpr: number): void {
   canvas.addEventListener('click', (e) => {
-    if (isPickerOpen()) return;
+    if (document.querySelector('.sibling-switcher-popup')) return;
     if (!L.renderer) return;
     clickQueue.enqueue({ offsetX: e.offsetX, offsetY: e.offsetY });
     processClickQueue();

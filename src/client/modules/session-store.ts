@@ -262,26 +262,64 @@ export const sessionStore = {
     }
     return { total: 0, messages: [] };
   },
+  /** 生成不冲突的会话 id：用 title 作基础名，文件已存在则加序号后缀。 */
+  async _makeUniqueId(title: string): Promise<string> {
+    let id = title;
+    let seq = 1;
+    while (true) {
+      try {
+        const res = await fetch(this._apiBase + 'files/read', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: `.kfmv4/sessions/${id}.json` }),
+        });
+        const data = await res.json();
+        if (data.error || !data.content) return id; // 文件不存在 → 可用
+        id = `${title} (${++seq})`;
+      } catch { return id; } // 查失败就当可用
+    }
+  },
 
-  /** 创建新会话：立即写盘 + await active.json，消除 load 竞态覆盖 */
+  /** 创建新会话：id = title 作基础名，文件已存在则加序号。随后写盘。 */
   async create(): Promise<string> {
-    const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    const base = '新会话';
+    const id = await this._makeUniqueId(base);
     this.activeId = id;
     const session: Session = {
-      id, title: '新会话', manuallyNamed: false,
+      id, title: base, manuallyNamed: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       messages: [],
     };
     this.list.unshift(session);
-    // 关键顺序：先把新会话文件落盘，再 await 写 active.json，最后才派发事件。
-    // 保证 orb.ts 监听器里的 load() 重拉列表时必然包含新会话、active.json 也已是新 id，
-    // 否则新会话丢失或旧会话被串写（BAR：新会话覆盖旧会话）。
     await writeSessionFile(this._apiBase, session);
     await patchActiveConfig(this._apiBase, { sessionId: id });
     this._notify();
     window.dispatchEvent(new CustomEvent('kfm-session-change', { detail: { sessionId: id } }));
     return id;
+  },
+
+  /** 更新会话标题并同步文件名。若标题与当前 id 不同则重命名文件 + 更新 active.json。 */
+  async setTitle(session: Session, newTitle: string): Promise<void> {
+    if (!newTitle || newTitle === session.title) return;
+    const oldId = session.id;
+    const newId = await this._makeUniqueId(newTitle);
+    // 标题未导致 id 变化 → 只需更新 title 字段
+    if (newId === oldId) { session.title = newTitle; return; }
+    // 重命名文件：写新 → 删旧
+    session.title = newTitle;
+    session.id = newId;
+    session.updatedAt = new Date().toISOString();
+    await writeSessionFile(this._apiBase, session);
+    // 删旧文件
+    try { await fetch(this._apiBase + 'files/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: `.kfmv4/sessions/${oldId}.json` }) }); } catch {}
+    // 更新活跃引用
+    if (this.activeId === oldId) this.activeId = newId;
+    // 更新 list 中的缓存
+    const entry = this.list.find(s => s.id === oldId);
+    if (entry) { entry.id = newId; entry.title = newTitle; entry.updatedAt = session.updatedAt; }
+    await patchActiveConfig(this._apiBase, { sessionId: this.activeId });
+    this._notify();
+    window.dispatchEvent(new CustomEvent('kfm-session-change', { detail: { sessionId: this.activeId } }));
   },
 
   // ========== 会话操作 ==========
@@ -395,24 +433,16 @@ export const sessionStore = {
 
   // ========== 内部方法 ==========
 
-  /** 用第一条用户消息的前 18 字生成会话标题 */
+  /** 用第一条用户消息的前 18 字生成会话标题，文件自动重命名。 */
   async _generateTitle(session: Session): Promise<void> {
     const userMsg = session.messages.find(m => m.role === 'user')
       ?.content.find((b): b is TextBlock => b.type === 'text')?.text || '';
     const cleaned = userMsg.trim();
     if (!cleaned) return;
     const MAX = 18;
-    session.title = cleaned.length <= MAX ? cleaned : cleaned.slice(0, MAX) + '...';
-    await fetch(this._apiBase + 'files/write', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        path: `.kfmv4/sessions/${this.activeId}.json`,
-        content: JSON.stringify(session, null, 2),
-      }),
-    });
-    window.dispatchEvent(
-      new CustomEvent('kfm-session-change', { detail: { sessionId: this.activeId } }),
-    );
+    const newTitle = cleaned.length <= MAX ? cleaned : cleaned.slice(0, MAX) + '...';
+    // setTitle 负责文件重命名 + active.json 同步
+    await this.setTitle(session, newTitle);
+    session.manuallyNamed = true; // 自动生成后视为已命名，避免再次自动改变
   },
 };

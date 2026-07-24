@@ -261,12 +261,23 @@ function _pathExt(input: Record<string, unknown>): string {
 }
 
 // 视口裁剪（虚拟滚动）：长会话时只渲染视口附近的消息，其余用等高占位撑住滚动条。
-// 仅当消息数 > CULL_THRESHOLD 时启用；短会话走全量渲染，零回归。
 // 高度表按绝对消息索引缓存实测高度，占位块用它撑出正确的滚动高度。
-const CULL_THRESHOLD = 40;   // 消息数超过才启用裁剪
+const CULL_THRESHOLD = 15;   // 渲染权重超过才启用裁剪（见 _cullWeight：消息数+工具框数）
 const CULL_BUFFER_PX = 1200; // 视口上下各多渲染的缓冲高度
 const _msgHeights = new Map<number, number>(); // 绝对索引 → 实测高度(px)
 const DEFAULT_MSG_H = 80;    // 未测量消息的高度估计
+
+// 裁剪触发权重：不能只按消息条数——一条 AI 消息可含几十个工具框，每个都是重 DOM
+// 单元，全量重建时成本随工具框数线性增长（第二轮流式卡顿根因）。权重 = 消息条数 +
+// 所有工具框数，任一巨型消息都会把权重顶过阈值 → 触发裁剪 → 巨型历史消息滚出视口
+// 后被占位替代，不再每帧重建。
+export function _cullWeight(messages: ChatMessage[]): number {
+  let w = messages.length;
+  for (const m of messages) {
+    for (const b of m.content) if (b?.type === 'tool') w++;
+  }
+  return w;
+}
 
 // 裁剪滚动监听：用户滚动进入被占位的区域时，重渲染以物化该区间消息。
 // rAF 节流；preserve 模式保持滚动位置不跳。
@@ -285,7 +296,7 @@ function _attachCullScroll(ca: HTMLElement): void {
     requestAnimationFrame(() => {
       _cullRafPending = false;
       const st = _lastRenderState;
-      if (st && st.messages.length > CULL_THRESHOLD) {
+      if (st && _cullWeight(st.messages) > CULL_THRESHOLD) {
         // 预判新窗口：若与当前渲染的窗口相同，跳过重渲染（避免 DOM 重建闪烁）
         if (_computeCullWin(ca, st.messages.length) === _lastCullWin) return;
         renderChatContent({ ...st, scrollMode: 'preserve' });
@@ -608,7 +619,7 @@ export function renderChatContent(state: ChatState): void {
   attachScrollWatch(contentArea);
 
   // ===== 视口裁剪：决定渲染窗口 =====
-  const cull = messages.length > CULL_THRESHOLD;
+  const cull = _cullWeight(messages) > CULL_THRESHOLD;
   let html: string;
   let _cullFirstVisible = 0;    // 本次裁剪的窗口起始索引（-1 = 未裁剪）
   let _cullEstTopPad = 0;       // 估算的 topPad（供渲染后对比真实高度补偿抖动）
@@ -617,26 +628,39 @@ export function renderChatContent(state: ChatState): void {
     _cullFirstVisible = -1;
     _lastCullWin = '';
   } else {
-    // 追底时窗口锚在末尾；否则按 scrollTop 用高度表定位可见区间
     const h = (i: number) => _msgHeights.get(i) ?? DEFAULT_MSG_H;
-    // 累积偏移，找到 [top-buffer, top+viewport+buffer] 覆盖的消息区间
-    const top = followBottom ? Number.MAX_SAFE_INTEGER : prevScrollTop;
-    const winTop = top - CULL_BUFFER_PX;
-    const winBot = (followBottom ? Number.MAX_SAFE_INTEGER : prevScrollTop + viewportH) + CULL_BUFFER_PX;
-    let firstVisible = messages.length, lastVisible = -1;
-    let acc = 0;
-    for (let i = 0; i < msgHtmls.length; i++) {
-      const hi = h(i);
-      const elemTop = acc, elemBot = acc + hi;
-      if (elemBot >= winTop && elemTop <= winBot) {
-        if (i < firstVisible) firstVisible = i;
-        if (i > lastVisible) lastVisible = i;
+    let firstVisible: number, lastVisible: number;
+    if (followBottom) {
+      // 追底：窗口锚在末尾。从最后一条往前累加真实高度，直到填满 视口+上下缓冲，
+      // 作为 firstVisible。这样"少而巨型"的历史消息累计高度很快超过缓冲 → 被挡在
+      // 窗口外变占位，不参与每帧重建；同时保证末尾流式消息 + 一屏历史始终可见。
+      lastVisible = msgHtmls.length - 1;
+      const budget = viewportH + CULL_BUFFER_PX;
+      let acc = 0;
+      firstVisible = lastVisible;
+      for (let i = lastVisible; i >= 0; i--) {
+        acc += h(i);
+        firstVisible = i;
+        if (acc >= budget) break;
       }
-      acc += hi;
+    } else {
+      // 非追底：按 scrollTop 用高度表定位 [top-buffer, top+viewport+buffer] 覆盖的区间
+      const winTop = prevScrollTop - CULL_BUFFER_PX;
+      const winBot = prevScrollTop + viewportH + CULL_BUFFER_PX;
+      firstVisible = messages.length;
+      lastVisible = -1;
+      let acc = 0;
+      for (let i = 0; i < msgHtmls.length; i++) {
+        const hi = h(i);
+        const elemTop = acc, elemBot = acc + hi;
+        if (elemBot >= winTop && elemTop <= winBot) {
+          if (i < firstVisible) firstVisible = i;
+          if (i > lastVisible) lastVisible = i;
+        }
+        acc += hi;
+      }
+      if (lastVisible < 0) { firstVisible = 0; lastVisible = msgHtmls.length - 1; }
     }
-    // 追底场景：强制包含末尾若干条（流式消息必须在窗口内）
-    if (followBottom) { lastVisible = msgHtmls.length - 1; firstVisible = Math.min(firstVisible, Math.max(0, lastVisible - 12)); }
-    if (lastVisible < 0) { firstVisible = 0; lastVisible = msgHtmls.length - 1; }
     // 上下占位高度
     let topPad = 0, botPad = 0;
     for (let i = 0; i < firstVisible; i++) topPad += h(i);
@@ -767,7 +791,7 @@ export function renderChatContent(state: ChatState): void {
     pre.scrollTop = pre.scrollHeight;
   }
   // 测量已渲染消息的真实高度存入高度表，供下次裁剪的占位块撑出正确滚动高度
-  if (messages.length > CULL_THRESHOLD) {
+  if (_cullWeight(messages) > CULL_THRESHOLD) {
     const rendered = contentArea.querySelectorAll<HTMLElement>('.orb-msg');
     for (const el of rendered) {
       const mi = parseInt(el.dataset.mi || '-1', 10);
@@ -1210,33 +1234,9 @@ export async function doSend(
   if (!config.providerId) { onConfigMissing('未配置 Provider，请先在 API 卡中添加并选择一个 Provider。'); return; }
   if (!config.modelId) { onConfigMissing('未选择 Model，请先在 API 卡或光球面板底部选择一个 Model。'); return; }
 
-  // 加载活跃角色
-  let systemPrompt = '';
-  if (config.roleFile) {
-    try {
-      const roleRes = await fetch(apiBase + 'files/read', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: '.kfmv4/roles/' + config.roleFile + '.json' }),
-      });
-      const roleData = await roleRes.json();
-      if (roleData.content) {
-        const role = JSON.parse(roleData.content);
-        const parts: string[] = [];
-        if (role.prompt) parts.push(role.prompt);
-        for (const pf of (role.promptFiles || [])) {
-          try {
-            const fileRes = await fetch(apiBase + 'files/read', {
-              method: 'POST', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ path: pf }),
-            });
-            const fileData = await fileRes.json();
-            if (fileData.content) parts.push(fileData.content);
-          } catch {}
-        }
-        systemPrompt = parts.join('\n\n');
-      }
-    } catch {}
-  }
+  // system prompt 不再在客户端组装 —— 改由服务端每轮重组（眼睛系统 v7.4）。
+  // 客户端只把当前角色文件名传给服务端，服务端读角色卡 promptFiles（含动态 page-state.md）。
+  const roleFile = config.roleFile || '';
 
   try {
     const model = config.modelId;
@@ -1246,7 +1246,6 @@ export async function doSend(
     // 会话文件存的是完整 content blocks（含 tool_use + tool_result），
     // 发给 API 时必须转为 OpenAI 的 tool_calls + role:"tool" 格式。
     const apiMessages: Array<{ role: string; content: string | null; tool_calls?: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }>; tool_call_id?: string }> = [];
-    if (systemPrompt) apiMessages.push({ role: 'system', content: systemPrompt });
     for (const m of messages) {
       if (m.role === 'user') {
         apiMessages.push({ role: 'user', content: extractText(m) });
@@ -1283,7 +1282,7 @@ export async function doSend(
     // 后台启动生成任务（服务端挂机），拿 runId
     const startRes = await fetch(apiBase + 'ai/chat/start', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId: _sendSessionId, messages: apiMessages, model, provider }),
+      body: JSON.stringify({ sessionId: _sendSessionId, messages: apiMessages, model, provider, roleFile }),
       signal,
     });
     const startData = await startRes.json();

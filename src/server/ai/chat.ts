@@ -11,6 +11,8 @@ import type { WsServer } from '../ws-server.js';
 import { getToolDefinitions, executeTool } from './tools/index.js';
 import type { KfmTool, ToolContext } from './tools/types.js';
 import { buildAlwaysApplyPrompt, checkToolCallRules } from './rule-engine.js';
+import { assembleRoleSystemPrompt } from './prompt-assembler.js';
+import { refreshPageState } from './page-state.js';
 
 /** 从 prompts/tools/*.md 加载工具描述 */
 const PROMPTS_DIR = join(process.cwd(), 'src', 'server', 'prompts', 'tools');
@@ -125,13 +127,14 @@ function loadProviders(): ApiProvider[] {
   }
 }
 
-/** 流式对话 */
+/** 流式对话。roleFile 供每轮重组 system prompt（读角色卡 promptFiles，含动态 page-state）。 */
 export async function* streamChat(
   messages: ChatMessage[],
   model: string,
   provider: string,
   wsServer: WsServer,
   signal?: AbortSignal,
+  roleFile?: string,
 ): AsyncGenerator<StreamEvent> {
   const tools = getToolDefinitions();
 
@@ -155,37 +158,49 @@ export async function* streamChat(
     type: 'function' as const,
     function: { name: t.name, description: t.description, parameters: t.parameters },
   })) : undefined;
-  // 基础消息：透传 OpenAI 格式字段（tool_calls / tool_call_id）
-  const baseMessages: Array<Record<string, unknown>> = messages.map(m => {
-    const out: Record<string, unknown> = {
-      role: m.role === 'assistant' ? 'assistant' : (m.role === 'system' ? 'system' : m.role),
-      content: m.content,
-    };
-    if (m.tool_calls) out.tool_calls = m.tool_calls;
-    if (m.tool_call_id) out.tool_call_id = m.tool_call_id;
-    return out;
-  });
+  // 对话消息：只保留 user/assistant/tool（透传 OpenAI 格式字段）。
+  // 客户端发来的 system 一律剥离——system 由服务端每轮重组（眼睛系统核心）。
+  const apiMessages: Array<Record<string, unknown>> = messages
+    .filter(m => m.role !== 'system')
+    .map(m => {
+      const out: Record<string, unknown> = {
+        role: m.role === 'assistant' ? 'assistant' : m.role,
+        content: m.content,
+      };
+      if (m.tool_calls) out.tool_calls = m.tool_calls;
+      if (m.tool_call_id) out.tool_call_id = m.tool_call_id;
+      return out;
+    });
+  // 静态 system 段（工具文档 + alwaysApply 规则）：整轮对话不变，算一次。
+  const staticSystemParts: string[] = [];
   const toolDocsPrompt = buildToolDocsPrompt();
-  if (toolDocsPrompt) {
-    baseMessages.push({ role: 'system', content: toolDocsPrompt });
-  }
-  // 注入 alwaysApply 规则到 system prompt
+  if (toolDocsPrompt) staticSystemParts.push(toolDocsPrompt);
   const alwaysApplyPrompt = buildAlwaysApplyPrompt();
-  if (alwaysApplyPrompt) {
-    baseMessages.push({ role: 'system', content: alwaysApplyPrompt });
-  }
+  if (alwaysApplyPrompt) staticSystemParts.push(alwaysApplyPrompt);
 
+  // 每轮重组 system：角色 prompt（含动态 promptFiles，如 page-state.md）放最前，
+  // 静态段（工具文档/规则）在后。角色部分每轮重读 → 工具改写 page-state 后 AI 即见新状态。
+  const buildSystemMessages = (): Array<Record<string, unknown>> => {
+    const roleSystem = assembleRoleSystemPrompt(roleFile);
+    const msgs: Array<Record<string, unknown>> = [];
+    if (roleSystem) msgs.push({ role: 'system', content: roleSystem });
+    for (const part of staticSystemParts) msgs.push({ role: 'system', content: part });
+    return msgs;
+  };
+
+  // 首轮前刷新一次 page-state（AI 发第一条前先看到当前页面）。
+  refreshPageState(wsServer);
   // 工具调用循环（无轮次上限，连续失败 3 次则截断）
-  const apiMessages: Array<Record<string, unknown>> = [...baseMessages];
   let toolFailureCount = 0;
   let turn = 0;
 
   while (true) {
     if (signal?.aborted) { yield { type: 'error', content: '已取消' }; return; }
     turn++;
+    // 每轮 LLM 调用前重组 system（读最新角色文件/page-state），拼在对话前
     const requestBody: Record<string, unknown> = {
       model: model || apiProvider.models[0] || 'deepseek-v4-flash',
-      messages: apiMessages,
+      messages: [...buildSystemMessages(), ...apiMessages],
       max_tokens: 16384,
       stream: true,
     };
@@ -389,6 +404,13 @@ export async function* streamChat(
         apiMessages.push({ role: 'user', content: '你的工具调用已连续失败 3 次。请停止调用工具，直接用文字回复用户，说明当前情况。' });
         toolFailureCount = 0; // 重置，避免下一轮立即触发
       }
+      // UI 变化是异步的：服务端发指令 → 浏览器应用 → 浏览器 pushSnapshot 回传。
+      // 给一个 settle 窗口让最新快照到达，再刷新 page-state.md，使下一轮重组 system
+      // 时 AI 能看到工具对页面的实际影响（眼睛闭环）。
+      const { promise: settle, resolve: settleDone } = Promise.withResolvers<void>();
+      setTimeout(settleDone, 250);
+      await settle;
+      refreshPageState(wsServer);
       // 本轮消息结束，进入下一轮
       yield { type: 'message_stop' };
       continue;

@@ -92,7 +92,7 @@ const DONE: StreamEvent = { type: 'done' };
 // ==========================================================================
 
 regression('BAR-101', 'a5bf0c4', '生成正常结束 → 实时订阅者 onDone 触发', async () => {
-  const run = startRun('s1', [{ role: 'user', content: 'x' }], 'm', 'p', fakeWs, fixedStream([TEXT, STOP, DONE]));
+  const run = startRun('s1', [{ role: 'user', content: 'x' }], 'm', 'p', fakeWs, undefined, fixedStream([TEXT, STOP, DONE]));
   const sub = subscribe(run.id);
   await awaitRunDone(run); // 独立完成信号，不用 onDone（那是被测对象）
   assert(run.done, 'run 应已完成');
@@ -102,7 +102,7 @@ regression('BAR-101', 'a5bf0c4', '生成正常结束 → 实时订阅者 onDone 
 
 regression('BAR-101b', 'a5bf0c4', '生成器抛错 → onDone 仍触发 + error 事件入缓冲', async () => {
   const s = controllableStream();
-  const run = startRun('s-err', [{ role: 'user', content: 'x' }], 'm', 'p', fakeWs, s.fn);
+  const run = startRun('s-err', [{ role: 'user', content: 'x' }], 'm', 'p', fakeWs, undefined, s.fn);
   const sub = subscribe(run.id);
   s.push(TEXT);
   s.fail('boom');
@@ -117,7 +117,7 @@ regression('BAR-101b', 'a5bf0c4', '生成器抛错 → onDone 仍触发 + error 
 // ==========================================================================
 
 regression('BAR-104a', 'd4a60f7', 'run 已完成 → attachRun 补齐历史事件 + 立即 onDone', async () => {
-  const run = startRun('s2', [{ role: 'user', content: 'x' }], 'm', 'p', fakeWs, fixedStream([TEXT, STOP, DONE]));
+  const run = startRun('s2', [{ role: 'user', content: 'x' }], 'm', 'p', fakeWs, undefined, fixedStream([TEXT, STOP, DONE]));
   await awaitRunDone(run); // 先等它跑完
   assert(run.done, '前置：run 已完成');
   // 完成之后才订阅（模拟重连）→ attachRun 对已完成 run 同步补齐 + 同步 onDone
@@ -127,7 +127,7 @@ regression('BAR-104a', 'd4a60f7', 'run 已完成 → attachRun 补齐历史事�
 });
 
 regression('BAR-104b', 'd4a60f7', 'attachRun 从 fromIndex 续读（不重发已消费事件）', async () => {
-  const run = startRun('s3', [{ role: 'user', content: 'x' }], 'm', 'p', fakeWs, fixedStream([TEXT, STOP, DONE]));
+  const run = startRun('s3', [{ role: 'user', content: 'x' }], 'm', 'p', fakeWs, undefined, fixedStream([TEXT, STOP, DONE]));
   await awaitRunDone(run);
   const sub = subscribe(run.id, 2);
   assert(sub.seen.length === 1, `从 index=2 续读应只补 1 个事件，实际 ${sub.seen.length}`);
@@ -141,12 +141,12 @@ regression('BAR-104b', 'd4a60f7', 'attachRun 从 fromIndex 续读（不重发已
 
 regression('BAR-104c', 'd4a60f7', 'startRun 取代同 session 旧 run（新 run id 不同 + 旧 run 被取消）', async () => {
   const s1 = controllableStream();
-  const first = startRun('sess-x', [{ role: 'user', content: 'a' }], 'm', 'p', fakeWs, s1.fn);
+  const first = startRun('sess-x', [{ role: 'user', content: 'a' }], 'm', 'p', fakeWs, undefined, s1.fn);
   s1.push(TEXT);
   assert(!first.done, '前置：第一个 run 仍在跑');
 
   // 同 session 再次 startRun → 取代
-  const second = startRun('sess-x', [{ role: 'user', content: 'b' }], 'm', 'p', fakeWs, fixedStream([DONE]));
+  const second = startRun('sess-x', [{ role: 'user', content: 'b' }], 'm', 'p', fakeWs, undefined, fixedStream([DONE]));
   await awaitRunDone(second);
 
   assert(second.id !== first.id, '新 run 必须是全新 id（取代而非复用）');
@@ -160,7 +160,7 @@ regression('BAR-104c', 'd4a60f7', 'startRun 取代同 session 旧 run（新 run 
 // ==========================================================================
 
 test('startRun 分配唯一 runId 并注册为活跃', async () => {
-  const run = startRun('s-basic', [{ role: 'user', content: 'x' }], 'm', 'p', fakeWs, fixedStream([DONE]));
+  const run = startRun('s-basic', [{ role: 'user', content: 'x' }], 'm', 'p', fakeWs, undefined, fixedStream([DONE]));
   assert(run.id.startsWith('run_'), 'runId 前缀应为 run_');
   assert(getActiveRun('s-basic')!.id === run.id, '应注册为该 session 的活跃 run');
   await awaitRunDone(run);
@@ -168,7 +168,7 @@ test('startRun 分配唯一 runId 并注册为活跃', async () => {
 
 test('cancelRun abort 正在运行的 run', async () => {
   const s = controllableStream();
-  const run = startRun('s-cancel', [{ role: 'user', content: 'x' }], 'm', 'p', fakeWs, s.fn);
+  const run = startRun('s-cancel', [{ role: 'user', content: 'x' }], 'm', 'p', fakeWs, undefined, s.fn);
   const sub = subscribe(run.id);
   s.push(TEXT);
   const ok = cancelRun(run.id);
@@ -183,7 +183,7 @@ test('cancelRun 对不存在的 run 返回 false', () => {
 }, { tag: 'integration' });
 
 test('事件按到达顺序缓冲进 run.events', async () => {
-  const run = startRun('s-buf', [{ role: 'user', content: 'x' }], 'm', 'p', fakeWs, fixedStream([TEXT, STOP, DONE]));
+  const run = startRun('s-buf', [{ role: 'user', content: 'x' }], 'm', 'p', fakeWs, undefined, fixedStream([TEXT, STOP, DONE]));
   await awaitRunDone(run);
   assert(run.events.length === 3, `应缓冲 3 个事件，实际 ${run.events.length}`);
   assert(run.events[0].type === 'content_block_delta');

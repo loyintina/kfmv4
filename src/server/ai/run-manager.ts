@@ -71,6 +71,7 @@ export type StreamFn = (
   provider: string,
   wsServer: WsServer,
   signal: AbortSignal,
+  roleFile?: string,
 ) => AsyncGenerator<StreamEvent>;
 
 export function startRun(
@@ -79,6 +80,7 @@ export function startRun(
   model: string,
   provider: string,
   wsServer: WsServer,
+  roleFile?: string,
   streamFn: StreamFn = streamChat,
 ): Run {
   // 取消该 session 的旧 run（若仍在跑），新消息取代之
@@ -106,7 +108,7 @@ export function startRun(
   // 后台驱动生成器：与请求连接解耦。streamFn 默认 streamChat，测试可注入 mock。
   (async () => {
     try {
-      for await (const event of streamFn(messages, model, provider, wsServer, run.abort.signal)) {
+      for await (const event of streamFn(messages, model, provider, wsServer, run.abort.signal, roleFile)) {
         run.events.push(event);
         for (const sub of run.subscribers) {
           try { sub.onEvent(event); } catch { /* 订阅者写失败不影响生成 */ }

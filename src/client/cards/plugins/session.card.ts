@@ -482,13 +482,14 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
       saveBtn.onclick = async () => {
         const s = getActiveSession();
         if (!s) return;
-        s.title = _nameInput!.value.trim() || s.title;
-        s.manuallyNamed = true;
-        s.updatedAt = new Date().toISOString();
-        await saveSession(s);
-        await loadSessions().then(res => { sessions = res; });
+        const newTitle = _nameInput!.value.trim();
+        if (!newTitle) return;
+        // setTitle 负责文件重命名 + active.json 同步 + store 状态更新
+        await sessionStore.setTitle(s, newTitle);
+        // 本地状态同步：sessionStore 已更新 list/activeId，只需刷新本地缓存
+        sessions = sessionStore.list.slice();
+        if (activeSessionId !== sessionStore.activeId) activeSessionId = sessionStore.activeId;
         renderAll();
-        _sessionSelect?.updateItems(sessions.map(s => ({ label: s.title, value: s.id })), activeSessionId);
       };
 
       const newBtn = document.createElement('button');

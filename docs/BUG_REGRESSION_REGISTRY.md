@@ -106,6 +106,7 @@ maintainer: AI agent
 | BAR-ORB-SEG-02 | `orb.ts` | 切换会话切不过去：sessionStore.init() 监听器抢先改 activeId，orb 监听器 guard `sid===activeId` 误成立 → return → 内容永不重载 | I | ✅ 已钉（源码检查：guard 比较 _renderedSessionId、且不比较 sessionStore.activeId，revert 验证咬合） | `tests/client-logic.test.ts` |
 | BAR-ORB-SEG-03 | `orb.ts` | 分段加载黑屏：第一段 12 条未触发裁剪，prepend 补齐后超阈值触发裁剪，preserve 模式用失配的 prevScrollTop 定位窗口 → 底部移出渲染窗口黑屏 | I | ✅ 修复（补齐段改用 follow 保持追底，不用 preserve）·**不钉**：依赖「切换=追底」产品决策，源码断言 `'follow'` 无区分度、逻辑隐晦，注释说明即可 | 集成时序，冒烟兜底 |
 | BAR-ORB-SEG-04 | `orb-chat` | 上滑跨裁剪边界卡顿跳位：未测量消息按 DEFAULT_MSG_H=80 估算，进窗口后真实高度≠估算，padding 差值补偿突变 → scrollTop 突跳 | I | ✅ 已钉（源码检查：锚点三步 anchorMi+anchorOffset 捕捉 / anchorEl 查找 / preserve 分支内生效 + scrollAdjust 回退） | `tests/client-logic.test.ts` |
+| BAR-ORB-CULL-01 | `orb-chat` | 第二轮流式一帧一帧卡：视口裁剪按 `messages.length` 触发，但一条 AI 消息可含几十个工具框（每个是重 DOM 单元）；第一轮 20 工具框只算 1-2 条消息 → 不裁剪 → 每帧全量重建全部工具框 | L | ✅ 已钉（01a-d，剥离 _cullWeight 纯函数=消息数+工具框数，revert 验证咬合） | `tests/client-logic.test.ts` |
 
 > 新 bug 修复后：补一个回归钉子 → 在此登记 → 状态置「已钉」。见
 > `docs/archive/design/REGRESSION_TESTING_SYSTEM.md` §3 微循环。

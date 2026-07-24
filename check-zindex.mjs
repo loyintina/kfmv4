@@ -94,7 +94,7 @@ for (const file of walk(SRC_DIR)) {
     if (!DOM_Z_LITERAL_RE.test(line)) continue;
     if (REF_RE.test(line)) continue; // 引用注册表 = 合法
     if (/\/\/\s*zindex-ok/.test(line)) continue; // 行内标记豁免（局部 stacking 等合法例外）
-    console.error(`[check-zindex] ❌ 未注册的散落 z-index 字面量: ${key}`);
+    console.error(`[check-zindex] ❌ 未注册的散落 z-index 字面量`);
     console.error(`             → ${line.trim()}`);
     console.error(`             改为引用 Z.* (JS) 或 var(--z-*) (CSS)，并在 z-index-layers.ts + z-index.css 注册`);
     errors++;

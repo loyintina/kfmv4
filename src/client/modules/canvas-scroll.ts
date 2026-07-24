@@ -14,7 +14,7 @@ import { DOM } from './dom-refs.js';
 import { getFileRowData } from './state.js';
 import { showFileActionBar, dismissFileActionBar, isFileActionBarOpen, isRenaming } from './file-action-bar.js';
 import { closeSidebar } from './ui.js';
-import { isPickerOpen, pickerHandleClick } from './root-picker.js';
+import { isSwitcherOpen, closeSwitcher } from './sibling-switcher.js';
 
 // ========== 状态（模块级，不在 bind 函数闭包内） ==========
 let _touchIsCursor = false;
@@ -242,12 +242,8 @@ export function initScrollGesture(): void {
       }
     },
     onEnd(e, dx, dy) {
-      // picker 打开时：仅在触摸位于 picker 容器内时才路由点击，不关闭侧栏也不启动 fling
-      if (isPickerOpen()) {
-        if (Math.abs(dx) < 8 && Math.abs(dy) < 8 && (e.target as HTMLElement).closest?.('.sidebar-picker')) pickerHandleClick(e);
-        return;
-      }
-
+      // 兄弟目录弹出打开时：轻触先关闭弹出，不做任何手势动作
+      if (isSwitcherOpen()) { closeSwitcher(); return; }
       if (_gestureAxis === 'horizontal' && dx > 50) {
         L.setSwipeGuard();
         L.triggerRowSwipe();
