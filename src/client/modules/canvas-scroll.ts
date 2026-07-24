@@ -110,7 +110,9 @@ export function initScrollGesture(): void {
 
   const unreg = gestures.register({
     id: 'sidebar-scroll',
-    targetFilter: () => true,
+    targetFilter: (target: HTMLElement) => {
+      return !target.closest('.sibling-switcher-popup') && target.id !== 'siblingSwitcherBtn';
+    },
     condition: () => !L.isSidebarClosed() && !!L.renderer && !isRenaming(),
     priority: 60,
     longPressMs: 500,
