@@ -2,9 +2,9 @@
  * sibling-switcher.ts — 文件树侧栏底栏"兄弟目录切换"按钮
  *
  * 画布元素已在 index.html 侧栏工具栏中。本模块负责渲染标签 + 弹窗逻辑。
+ * 不 import tree-loader（避免与 tree-render 的依赖耦合），切换目录后刷新页面。
  */
 import { KFMState, API } from './state.js';
-import { loadFileTree } from './tree-loader.js';
 
 let _popup: HTMLDivElement | null = null;
 
@@ -48,6 +48,7 @@ function renderLabel(): void {
       if (ctx.measureText(displayText + '…').width <= maxW) { displayText += '…'; break; }
     }
   }
+
   const tw = ctx.measureText(displayText).width;
   const tx = (w - tw) / 2;
   const g = ctx.createLinearGradient(tx, 0, tx + tw, 0);
@@ -102,13 +103,11 @@ async function openPopup(): Promise<void> {
         'font-weight:' + (isCurrent ? '600' : '400'),
       ].join(';');
       row.textContent = d.name;
-      row.onclick = async () => {
+      row.onclick = () => {
         destroyPopup();
         if (d.path === current) return;
-        KFMState.currentRoot = d.path;
         localStorage.setItem('kfmv4_currentRoot', d.path);
-        await loadFileTree(d.path);
-        renderLabel();
+        window.location.reload();
       };
       popup.appendChild(row);
     }
@@ -129,13 +128,14 @@ export function initSiblingSwitcher(): void {
   if (!btn) return;
   btn.addEventListener('click', (e) => { e.stopPropagation(); if (_popup) { destroyPopup(); return; } openPopup(); });
   renderLabel();
-  // 异步获取 resolved path 更新为精确目录名
   fetch(API + '/files/list', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ path: KFMState.currentRoot }),
   }).then(r => r.json()).then(data => {
     if (data?.path && document.getElementById('siblingSwitcherBtn')) {
-      KFMState.currentRoot = data.path;
+      const rp: string = data.path;
+      localStorage.setItem('kfmv4_currentRoot', rp);
+      KFMState.currentRoot = rp;
       renderLabel();
     }
   }).catch(() => {});
@@ -144,3 +144,6 @@ export function initSiblingSwitcher(): void {
 export function isSwitcherOpen(): boolean { return !!_popup; }
 
 export function closeSwitcher(): void { destroyPopup(); }
+
+// 自初始化：脚本在 body 底部加载，DOM 已就绪，直接执行。
+initSiblingSwitcher();

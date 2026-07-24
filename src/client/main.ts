@@ -34,7 +34,7 @@ import { initFloatingCards } from './modules/floating-card.js';
 import { gestures } from './modules/gesture-registry.js';
 import { Registry } from './modules/ui-registry.js';
 import { initWsChannel } from './modules/ws-channel.js';
-import { initSiblingSwitcher } from './modules/sibling-switcher.js';
+import './modules/sibling-switcher.js';
 import './cards/registry.js';
 
 // 全局未捕获错误 → 调试卡
@@ -50,7 +50,7 @@ initOrb();
 initTreeRenderer();
 initCardStack();
 initFloatingCards();
-initSiblingSwitcher();
+
 
 // ========== 注册能力层 ==========
 // entry 字段与 capability-executor.ts 中的 id 保持一致，指向实际执行入口
