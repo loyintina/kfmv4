@@ -104,9 +104,9 @@ async function openPopup(): Promise<void> {
   const anchor = document.getElementById('siblingSwitcherBtn');
   if (!anchor) return;
   const current = localStorage.getItem('kfmv4_currentRoot') || '.';
-  // 用相对路径 '..' 到/files/list，安全兼容 sanitizePath
-  // 不需要计算绝对父路径（parentPath('.'))→'/' 会被拒）
-  const listPath = current === '.' ? '..' : parentPath(current);
+  // '.' → 用 '.'（sanitizePath 解析为 /root=SAFE_ROOT，列出 HOME 目录下兄弟）
+  // 绝对路径 → 用 parentPath 获取父目录
+  const listPath = current === '.' ? '.' : parentPath(current);
   renderText('\u23F3'); // 加载指示
   try {
     const res = await fetch(_API + '/files/list', {
