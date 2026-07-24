@@ -65,10 +65,10 @@ export function setupProxyRoutes(router: Router): void {
         function pump(): void {
           nodeReader.read().then((result) => {
             if (result.done) { res.end(); return; }
-            res.write(decoder.decode(result.value, { stream: true }));
+            const ok = res.write(decoder.decode(result.value, { stream: true }));
             const httpRes = res as unknown as { flush?(): void }; // escape-ok: express Response 无 flush 类型，compression 中间件注入；as-unknown-as 因结构不兼容必须
             httpRes.flush?.();
-            pump();
+            if (ok) { pump(); } else { res.once('drain', pump); }
           }).catch(() => res.end());
         }
         pump();

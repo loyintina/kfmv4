@@ -271,7 +271,8 @@ export class WsServer {
       resolve: (v) => { clearTimeout(timer); resolve(v); },
       reject:  (e) => { clearTimeout(timer); reject(e); },
     });
-    this.broadcast('browser-eval', { id, code });
+    const firstClient = this.clients.keys().next().value;
+    if (firstClient) this.send(firstClient, 'browser-eval', { id, code });
     return promise;
   }
 

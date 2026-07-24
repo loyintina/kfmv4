@@ -140,7 +140,7 @@ export async function* streamChat(
 
   // 构建工具上下文
   const toolCtx: ToolContext = {
-    cwd: '/root/kfmv4',
+    cwd: process.cwd(),
     wsServer,
   };
 
@@ -190,13 +190,15 @@ export async function* streamChat(
 
   // 首轮前刷新一次 page-state（AI 发第一条前先看到当前页面）。
   refreshPageState(wsServer);
-  // 工具调用循环（无轮次上限，连续失败 3 次则截断）
+  // 工具调用循环（上限 50 轮，连续失败 3 次则截断）
+  const MAX_TURNS = 50;
   let toolFailureCount = 0;
   let turn = 0;
 
   while (true) {
     if (signal?.aborted) { yield { type: 'error', content: '已取消' }; return; }
     turn++;
+    if (turn > MAX_TURNS) { yield { type: 'error', content: `工具调用超过 ${MAX_TURNS} 轮上限，已停止` }; return; }
     // 每轮 LLM 调用前重组 system（读最新角色文件/page-state），拼在对话前
     const requestBody: Record<string, unknown> = {
       model: model || apiProvider.models[0] || 'deepseek-v4-flash',
