@@ -1,22 +1,44 @@
 /**
  * sibling-switcher.ts — 文件树侧栏底栏"兄弟目录切换"按钮
  *
- * 零外部依赖，仅操作 localStorage + DOM + fetch API。不与 KFMState 交互。
- * 切换目录后刷新页面，避免与树渲染产生任何耦合。
+ * 零外部依赖。画布元素已在 index.html 中。切换目录后刷新页面。
  */
 
 let _popup: HTMLDivElement | null = null;
 const _API = '/kfmv4/api';
 
+function _textW(text: string): number {
+  const c = document.getElementById('siblingSwitcherBtn') as HTMLCanvasElement | null;
+  if (!c) return 0;
+  const ctx = c.getContext('2d');
+  if (!ctx) return 0;
+  ctx.font = '600 13px -apple-system, sans-serif';
+  return ctx.measureText(text).width;
+}
+
+function renderText(text: string): void {
+  const c = document.getElementById('siblingSwitcherBtn') as HTMLCanvasElement | null;
+  if (!c) return;
+  const dpr = window.devicePixelRatio || 1;
+  const r = c.getBoundingClientRect();
+  const w = r.width, h = r.height;
+  if (w <= 0 || h <= 0) return;
+  c.width = w * dpr; c.height = h * dpr;
+  const ctx = c.getContext('2d');
+  if (!ctx) return;
+  ctx.scale(dpr, dpr);
+  const tw = _textW(text);
+  const tx = (w - tw) / 2;
+  const g = ctx.createLinearGradient(tx, 0, tx + tw, 0);
+  g.addColorStop(0, '#7c3aed'); g.addColorStop(1, '#00d4ff');
+  ctx.fillStyle = g; ctx.textBaseline = 'middle';
+  ctx.font = '600 13px -apple-system, sans-serif';
+  ctx.fillText(text, tx, h / 2);
+}
+
 function siblingName(resolved: string): string {
   const parts = resolved.split('/').filter(Boolean);
   return parts.pop() || resolved;
-}
-
-function parentPath(path: string): string {
-  const parts = path.replace(/\/+$/, '').split('/');
-  parts.pop();
-  return parts.length > 0 ? parts.join('/') || '/' : '/';
 }
 
 function renderLabel(): void {
@@ -32,7 +54,6 @@ function renderLabel(): void {
   const ctx = c.getContext('2d');
   if (!ctx) return;
   ctx.scale(dpr, dpr);
-
   const maxW = w - 16;
   let fontSize = 13;
   let displayText = text;
@@ -61,7 +82,6 @@ function destroyPopup(): void {
 }
 
 function updateRootPath(): void {
-  // 异步获取 resolved path 并写入 localStorage（不碰 KFMState）
   fetch(_API + '/files/list', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ path: '.' }),
@@ -73,26 +93,36 @@ function updateRootPath(): void {
   }).catch(() => {});
 }
 
+function parentPath(path: string): string {
+  const parts = path.replace(/\/+$/, '').split('/');
+  parts.pop();
+  return parts.length > 0 ? parts.join('/') || '/' : '/';
+}
+
 async function openPopup(): Promise<void> {
   destroyPopup();
   const anchor = document.getElementById('siblingSwitcherBtn');
   if (!anchor) return;
   const current = localStorage.getItem('kfmv4_currentRoot') || '.';
   const parent = parentPath(current);
+  renderText('\u23F3'); // 加载指示
   try {
     const res = await fetch(_API + '/files/list', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ path: parent, showHidden: true }),
     });
     const data: unknown = await res.json();
-    if (!data || typeof data !== 'object' || !('items' in data) || !Array.isArray(data.items)) return;
+    if (!data || typeof data !== 'object' || !('items' in data) || !Array.isArray(data.items)) {
+      renderText('\u26A0'); return; // 请求异常
+    }
     const dirs: Array<{ name: string; path: string }> = (data.items as Array<unknown>)
       .filter(i => i && typeof i === 'object' && (i as Record<string, unknown>)['isDir'] === true)
       .map(i => {
         const d = i as Record<string, unknown>;
         return { name: typeof d['name'] === 'string' ? d['name'] : '', path: typeof d['path'] === 'string' ? d['path'] : '' };
       });
-    if (dirs.length <= 1) return;
+    renderLabel(); // 恢复标签
+    if (dirs.length <= 1) return; // 无兄弟目录
 
     const popup = document.createElement('div');
     popup.className = 'sibling-switcher-popup';
@@ -132,7 +162,9 @@ async function openPopup(): Promise<void> {
       }
     };
     setTimeout(() => document.addEventListener('click', onDocClick), 0);
-  } catch { /* 网络错误 */ }
+  } catch {
+    renderText('\u26A0'); // 网络错误
+  }
 }
 
 export function initSiblingSwitcher(): void {
@@ -144,7 +176,6 @@ export function initSiblingSwitcher(): void {
 }
 
 export function isSwitcherOpen(): boolean { return !!_popup; }
-
 export function closeSwitcher(): void { destroyPopup(); }
 
 initSiblingSwitcher();
