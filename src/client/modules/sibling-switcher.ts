@@ -4,6 +4,7 @@
  * 零外部依赖。列出系统根 / 下的所有顶层目录供用户切换。
  */
 let _popup: HTMLDivElement | null = null;
+let _opening = false;
 const _API = '/kfmv4/api';
 
 function renderLabel(label?: string): void {
@@ -61,17 +62,21 @@ function updateRootPath(): void {
 }
 
 async function openPopup(): Promise<void> {
+  if (_opening || _popup) return;
+  _opening = true;
   destroyPopup();
   const anchor = document.getElementById('siblingSwitcherBtn');
-  if (!anchor) return;
-  renderText('\u23F3');
+  if (!anchor) { _opening = false; return; }
+  renderLabel('\u23F3');
   try {
     const res = await fetch(_API + '/roots');
     const data: unknown = await res.json();
+    _opening = false;
     if (!data || typeof data !== 'object' || !('items' in data) || !Array.isArray(data.items)) {
-      renderText('\u26A0'); return;
+      renderLabel('\u26A0'); return;
     }
     const dirs: string[] = data.items.filter((n: unknown) => typeof n === 'string');
+    const current = localStorage.getItem('kfmv4_currentRoot') || '.';
     renderLabel();
     if (dirs.length === 0) return;
 
@@ -83,11 +88,9 @@ async function openPopup(): Promise<void> {
       'padding:4px 0;box-shadow:0 4px 24px rgba(0,0,0,0.5);touch-action:pan-y',
     ].join(';');
     const rect = anchor.getBoundingClientRect();
-    // 按钮在侧栏底部 → 弹出向上展示，不超出底部视口
     popup.style.bottom = window.innerHeight - rect.top + 2 + 'px';
     popup.style.left = Math.min(rect.left, window.innerWidth - 180) + 'px';
 
-    const current = localStorage.getItem('kfmv4_currentRoot') || '.';
     for (const d of dirs) {
       const fullPath = '/' + d;
       const isCurrent = fullPath === current || '/' + siblingName(current) === fullPath;
@@ -115,12 +118,9 @@ async function openPopup(): Promise<void> {
     };
     setTimeout(() => document.addEventListener('click', onDocClick), 0);
   } catch {
-    renderText('\u26A0');
+    _opening = false;
+    renderLabel('\u26A0');
   }
-}
-
-function renderText(text: string): void {
-  renderLabel(text);
 }
 
 export function initSiblingSwitcher(): void {
