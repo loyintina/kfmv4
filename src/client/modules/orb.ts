@@ -479,15 +479,37 @@ export async function initOrb(): Promise<void> {
     sessionStore.init(base);
     await sessionStore.load();
 
-    // 加载活跃会话的历史消息
-    if (sessionStore.activeId) {
-      const msgs = await sessionStore.getMessages(sessionStore.activeId);
+    let abortCtrl: AbortController | null = null;
+    let _switchToken = 0; // 会话切换序号，防并发切换的过期加载覆盖
+    let _renderedSessionId = ''; // 当前已渲染到聊天面板的会话 id（guard 用，不依赖 sessionStore.activeId）
+
+    // 分段加载会话到聊天面板：先取末尾 TAIL_FIRST 条立即渲染（追底可见），
+    // 其余更早的消息后台补拉后 prepend。_switchToken 防并发切换的过期覆盖。
+    const TAIL_FIRST = 12;
+    async function loadSessionInto(sid: string): Promise<void> {
+      const myToken = _switchToken;
+      const first = await sessionStore.getMessagesRange(sid, 'tail', 0, TAIL_FIRST);
+      if (myToken !== _switchToken) return;
       chatMessages.length = 0;
-      chatMessages.push(...msgs.map(m => ({ role: m.role as 'user' | 'ai', content: m.content || [] })));
-      _renderChat();
+      chatMessages.push(...first.messages.map(m => ({ role: m.role as 'user' | 'ai', content: m.content || [] })));
+      _renderedSessionId = sid;
+      _renderChat('follow'); // 追底：末尾消息立即可见
+      // 后台补齐更早的消息（若有），一次拉剩余部分 prepend 到前面。
+      // 切换会话语义 = 看最新状态 = 追底，故补齐后仍用 'follow' 保持在底部。
+      // 不能用 'preserve'：第一段仅 12 条未触发裁剪、高度表为空，prepend 大量消息后
+      // 触发裁剪时 prevScrollTop 与位移后的内容失配 → 裁剪窗口错位 → 黑屏 + 消息卡中间。
+      if (first.total > first.messages.length) {
+        const rest = await sessionStore.getMessagesRange(sid, 'head', 0, first.total - first.messages.length);
+        if (myToken !== _switchToken || _renderedSessionId !== sid) return;
+        chatMessages.unshift(...rest.messages.map(m => ({ role: m.role as 'user' | 'ai', content: m.content || [] })));
+        _renderChat('follow'); // 保持追底，避免 preserve+裁剪 的锚点失配
+      }
     }
 
-    let abortCtrl: AbortController | null = null;
+    // 加载活跃会话的历史消息（分段：末尾优先）
+    if (sessionStore.activeId) {
+      await loadSessionInto(sessionStore.activeId);
+    }
 
     // 页面恢复（刷新/切后台回来）：若上次有未完成的后台 run 且属于当前会话，
     // 自动重连续读——补齐刷新期间错过的输出并继续实时尾随。这是"挂机持久化"入口。
@@ -521,27 +543,32 @@ export async function initOrb(): Promise<void> {
       clearPersistedRun();
     })();
 
-    // 监听会话切换 → 重载消息
+    // 监听会话切换 → 中止进行中的 run + 分段重载消息
+    // 竞态防护：切换前 abort 进行中流式 run，防止流继续写入已切走的会话。
+    // guard 用 _renderedSessionId（本模块真相），不用 sessionStore.activeId——后者
+    // 会被 sessionStore.init() 的监听器抢先改掉，导致 guard 误判、切换被跳过。
     window.addEventListener('kfm-session-change', async (e: Event) => {
       const detail = (e as CustomEvent).detail;
-      await sessionStore.load();
       const sid: string = detail?.sessionId ?? '';
+      // 目标已是当前渲染的会话且无进行中 run → 无需重载，避免打断流式
+      if (sid && sid === _renderedSessionId && !abortCtrl) return;
+      // 中止进行中的后台 run（流式尾随）
+      if (abortCtrl) { abortCtrl.abort(); abortCtrl = null; sendBtn!.classList.remove('sending'); }
+      const myToken = ++_switchToken;
+      await sessionStore.load();
+      if (myToken !== _switchToken) return; // 期间又切换，放弃
       sessionStore.activeId = sid;
       _orbSessionSelect?.updateItems(
         sessionStore.list.map(s => ({ label: s.title, value: s.id })),
         sid
       );
       if (!sid) {
-        // 最后一个会话被删除 → 清空聊天面板
         chatMessages.length = 0;
+        _renderedSessionId = '';
         _renderChat();
         return;
       }
-      sessionStore.getMessages(sid).then(msgs => {
-        chatMessages.length = 0;
-        chatMessages.push(...msgs.map(m => ({ role: m.role as 'user' | 'ai', content: m.content || [] })));
-        _renderChat();
-      });
+      await loadSessionInto(sid);
     });
 
     async function handleSend(): Promise<void> {

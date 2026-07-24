@@ -60,6 +60,8 @@ export interface Session {
   providerId?: string;
   modelId?: string;
   messages: SessionMessage[];
+  /** 有正文的消息数（元数据加载时由服务端提供；messages 为空时用于统计显示）。 */
+  messageCount?: number;
 }
 
 // ========== 纯函数：消息正文提取 / 计数（无副作用，可单测） ==========
@@ -99,11 +101,31 @@ async function readActiveConfig(apiBase: string): Promise<Record<string, string>
 async function patchActiveConfig(apiBase: string, patch: Record<string, string>): Promise<void> {
   const current = await readActiveConfig(apiBase);
   const merged = { ...current, ...patch };
-  fetch(apiBase + 'files/write', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ path: '.kfmv4/active.json', content: JSON.stringify(merged) }),
-  }).catch(() => {});
+  // 必须 await：create()/switchTo() 依赖 active.json 落盘后才派发事件，
+  // 否则随后的 load() 读到旧 sessionId → activeId 被覆盖回旧会话（新会话丢失/串写）。
+  try {
+    await fetch(apiBase + 'files/write', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: '.kfmv4/active.json', content: JSON.stringify(merged) }),
+    });
+  } catch { /* ignore */ }
+}
+
+// 将单个会话对象写盘。create() 立即调用以消除「新会话未落盘 → load 重拉不含它」竞态。
+async function writeSessionFile(apiBase: string, session: Session): Promise<void> {
+  try {
+    await fetch(apiBase + 'files/write', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        path: `.kfmv4/sessions/${session.id}.json`,
+        content: JSON.stringify(session, null, 2),
+      }),
+    });
+  } catch (e) {
+    log('写入会话文件失败: ' + (e instanceof Error ? e.message : 'unknown'));
+  }
 }
 
 // ========== Store ==========
@@ -113,6 +135,9 @@ export const sessionStore = {
   list: [] as Session[],
   _apiBase: '',
   _listeners: [] as Listener[],
+  // 保存串行锁：增量落盘（每轮 message_stop）+ 收尾落盘可能重叠，
+  // 串行化避免并发写同一文件交错、以及"读-改-写"竞态丢消息。
+  _saveChain: Promise.resolve() as Promise<void>,
 
   // ========== 初始化 ==========
 
@@ -139,62 +164,67 @@ export const sessionStore = {
 
   // ========== 数据加载 ==========
 
-  /** 从服务端加载会话列表 + 恢复活跃会话 ID */
+  /** 从服务端加载会话列表（仅元数据，不含 messages）+ 恢复活跃会话 ID。
+   *  使用 /api/sessions/list 单请求端点：服务端读所有文件但只序列化元数据，
+   *  比逐文件 list+read 快 N 倍（大会话文件可达 600KB，元数据仅约 200B/条）。*/
   async load(): Promise<void> {
-    // 1. 加载会话列表
+    // 1. 加载会话元数据列表（单次请求，服务端剥离 messages）
     try {
-      const listRes = await fetch(this._apiBase + 'files/list', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: '.kfmv4/sessions' }),
-      });
-      const listData = await listRes.json();
-      const files: string[] = (listData.items || []).map((f: { name: string }) => f.name);
-      const sessions: Session[] = [];
-      for (const file of files) {
-        if (!file.endsWith('.json')) continue;
-        try {
-          const res = await fetch(this._apiBase + 'files/read', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ path: `.kfmv4/sessions/${file}` }),
+      const res = await fetch(this._apiBase + 'sessions/list');
+      const data: unknown = await res.json();
+      if (data && typeof data === 'object' && 'sessions' in data && Array.isArray(data.sessions)) {
+        const sessions: Session[] = [];
+        for (const item of data.sessions) {
+          if (!item || typeof item !== 'object') continue;
+          const s = item as Record<string, unknown>;
+          if (typeof s['id'] !== 'string' || typeof s['title'] !== 'string') continue;
+          sessions.push({
+            id: s['id'],
+            title: s['title'],
+            createdAt: typeof s['createdAt'] === 'string' ? s['createdAt'] : '',
+            updatedAt: typeof s['updatedAt'] === 'string' ? s['updatedAt'] : '',
+            ...(typeof s['manuallyNamed'] === 'boolean' && { manuallyNamed: s['manuallyNamed'] }),
+            ...(typeof s['providerId'] === 'string' && { providerId: s['providerId'] }),
+            ...(typeof s['modelId'] === 'string' && { modelId: s['modelId'] }),
+            messageCount: typeof s['messageCount'] === 'number' ? s['messageCount'] : 0,
+            messages: [], // 元数据加载不含消息，需要时通过 getMessages() 按需加载
           });
-          const data = await res.json();
-          if (data.content) {
-            const session: Session = JSON.parse(data.content);
-            if (session.id && session.title) sessions.push(session);
-          }
-        } catch { /* 跳过损坏的会话文件 */ }
+        }
+        this.list = sessions;
       }
-      sessions.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-      this.list = sessions;
     } catch (e) {
       log('加载会话列表失败: ' + (e instanceof Error ? e.message : 'unknown'));
     }
 
     // 2. 恢复活跃会话
-    try {
-      const res = await fetch(this._apiBase + 'files/read', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: '.kfmv4/active.json' }),
-      });
-      const data = await res.json();
-      if (data.content) {
-        const config = JSON.parse(data.content);
-        if (config.sessionId) this.activeId = config.sessionId;
-      }
-    } catch { /* 首次使用，尚无配置文件 */ }
+    // 仅当内存无 activeId、或其指向的会话已不在列表中（被删）时，才用 active.json 恢复。
+    // 若内存 activeId 有效（如 create()/switchTo() 刚设、文件可能尚未落盘），保留内存值，
+    // 否则 active.json 的旧 sessionId 会覆盖回旧会话 → 新会话丢失/串写。
+    const memValid = this.activeId && this.list.some(s => s.id === this.activeId);
+    if (!memValid) {
+      try {
+        const res = await fetch(this._apiBase + 'files/read', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: '.kfmv4/active.json' }),
+        });
+        const data = await res.json();
+        if (data.content) {
+          const config = JSON.parse(data.content);
+          if (config.sessionId) this.activeId = config.sessionId;
+        }
+      } catch { /* 首次使用，尚无配置文件 */ }
+    }
 
-    // 3. 兜底：无活跃会话时选第一个
-    if (!this.activeId && this.list.length > 0) {
+    // 3. 兜底：无活跃会话（或指向的会话已不存在）时选第一个
+    if ((!this.activeId || !this.list.some(s => s.id === this.activeId)) && this.list.length > 0) {
       this.activeId = this.list[0].id;
     }
 
     this._notify();
   },
 
-  /** 获取指定会话的消息列表 */
+  /** 获取指定会话的完整消息列表（一次性全量，用于需要整段的场景）。 */
   async getMessages(id: string): Promise<SessionMessage[]> {
     try {
       const res = await fetch(this._apiBase + 'files/read', {
@@ -213,16 +243,41 @@ export const sessionStore = {
     return [];
   },
 
-  /** 创建新会话 */
+  /** 分段获取会话消息。from='tail' 取末尾（面板追底优先），'head' 取开头（会话卡预览优先）。
+   *  返回 { total, messages }；messages 已是文件中的原始顺序切片。 */
+  async getMessagesRange(
+    id: string, from: 'head' | 'tail', offset: number, limit: number,
+  ): Promise<{ total: number; messages: SessionMessage[] }> {
+    try {
+      const q = `id=${encodeURIComponent(id)}&from=${from}&offset=${offset}&limit=${limit}`;
+      const res = await fetch(this._apiBase + 'sessions/messages?' + q);
+      const data: unknown = await res.json();
+      if (data && typeof data === 'object' && 'messages' in data && Array.isArray(data.messages)) {
+        const total = 'total' in data && typeof data.total === 'number' ? data.total : data.messages.length;
+        // messages 内容来自受信任的本地会话文件，结构由写入端保证
+        return { total, messages: data.messages as SessionMessage[] };
+      }
+    } catch (e) {
+      log('分段加载会话消息失败: ' + (e instanceof Error ? e.message : 'unknown'));
+    }
+    return { total: 0, messages: [] };
+  },
+
+  /** 创建新会话：立即写盘 + await active.json，消除 load 竞态覆盖 */
   async create(): Promise<string> {
     const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     this.activeId = id;
-    this.list.unshift({
+    const session: Session = {
       id, title: '新会话', manuallyNamed: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       messages: [],
-    });
+    };
+    this.list.unshift(session);
+    // 关键顺序：先把新会话文件落盘，再 await 写 active.json，最后才派发事件。
+    // 保证 orb.ts 监听器里的 load() 重拉列表时必然包含新会话、active.json 也已是新 id，
+    // 否则新会话丢失或旧会话被串写（BAR：新会话覆盖旧会话）。
+    await writeSessionFile(this._apiBase, session);
     await patchActiveConfig(this._apiBase, { sessionId: id });
     this._notify();
     window.dispatchEvent(new CustomEvent('kfm-session-change', { detail: { sessionId: id } }));
@@ -247,8 +302,23 @@ export const sessionStore = {
 
   // ========== 消息持久化 ==========
 
-  /** 保存当前消息到活跃会话，首次对话自动生成标题 */
-  async saveMessages(
+  /** 保存当前消息到活跃会话（串行化，防并发写交错）。首次对话自动生成标题。 */
+  saveMessages(
+    messages: SessionMessage[],
+    modelId?: string,
+    providerId?: string,
+  ): Promise<void> {
+    // 快照 messages（深拷贝 content 引用即可——block 对象在保存后不会被原地改字段）：
+    // 增量落盘链上多次调用共享同一 messages 数组引用，若不快照，链尾执行时可能读到
+    // 已被后续轮次追加的内容（多存无害），但快照能让每次保存对应其触发时刻的状态。
+    const snapshot = messages.map(m => ({ role: m.role, content: m.content }));
+    this._saveChain = this._saveChain
+      .catch(() => {})
+      .then(() => this._doSaveMessages(snapshot, modelId, providerId));
+    return this._saveChain;
+  },
+
+  async _doSaveMessages(
     messages: SessionMessage[],
     modelId?: string,
     providerId?: string,
@@ -305,13 +375,19 @@ export const sessionStore = {
         }),
       });
 
+      // 本地同步 list 中该会话（不再无条件 this.load()——增量落盘每轮触发，
+      // 全量重拉 N 个会话文件会拖慢流式并与切换竞态；标题变化由 _generateTitle 派发事件刷新）。
+      const idx = this.list.findIndex(s => s.id === this.activeId);
+      if (idx >= 0) {
+        this.list[idx].messages = session.messages;
+        this.list[idx].updatedAt = session.updatedAt;
+        if (modelId) this.list[idx].modelId = modelId;
+      }
+
       // 首次对话自动生成标题
       if (!session.manuallyNamed && session.messages.length === 2) {
         this._generateTitle(session);
       }
-
-      // 刷新列表（标题可能已更新）
-      this.load();
     } catch (e) {
       log('保存会话失败: ' + (e instanceof Error ? e.message : 'unknown'));
     }

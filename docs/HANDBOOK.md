@@ -1,7 +1,7 @@
 ---
 title: KFM v4 工作手册
-last_reviewed: 2026-07-23
-kfm_version: 7.3.1
+last_reviewed: 2026-07-24
+kfm_version: 7.3.2
 status: active
 maintainer: AI agent
 ---
@@ -162,7 +162,7 @@ index.ts (入口路由 + 静态文件)
 - **规则**：选择器锁 (priority 110) 在手势优先级最高，打开后外部滑动手势全部被拦截。关闭时必须调 `L.popContext()` 恢复上下文。
 
 ## 二、当前会话状态
-> **最后更新**：2026-07-22（v7.3.1 — sanitizePath 放行 + AI 工具历史修复 + 文件树刷新 + 隐藏文件瞬间切换）
+> **最后更新**：2026-07-24（v7.3.2 — 会话加载分段传输 + 切换竞态修复 + 上滑锚点保持 + 工具框折叠状态机 + 会话持久化竞态修复）
 
 ### 当前焦点
 **v7.3.0 已发布 — AI 对话运行时（后台挂机 / 重连 / WS 存活）**
@@ -329,6 +329,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | **v7.2.1** | **工具卡展开态两区可滚动 + 渲染性能三层优化（markdown 缓存/视口裁剪/渲染合批）+ Claude 工具块索引连续化 + 上游错误上抛 + 浮卡滚动 touch-action 修复 + 摸鱼提示覆盖工具轮次 + 折叠状态持久化** | git `ff5173b` |
 | **v7.3.0** | **AI 对话后台挂机持久化（run-manager）+ 重连续读 + WebSocket 真心跳半开检测 + WS 重连恢复终端（三层）+ 结束态/推理模型等待提示修复 + 会话删除同步 + Z-Index L8 焦点交互层 + AI_CHAT_RUNTIME 架构文档** | git `1404b15` |
 | **v7.3.1** | **sanitizePath .kfmv4 放行 + eye button 瞬间切换 + AI 工具历史消息保留 tool_calls + 目录指纹文件树刷新 + stealth txt 构建修复 + 306 测试** | git `0f240ec` |
+| **v7.3.2** | **会话加载分段传输（元数据端点 /sessions/list + 消息切片 /sessions/messages）+ 面板追底/卡片头部分段渲染 + 切换会话竞态修复（_renderedSessionId guard）+ 上滑锚点保持消除跳位 + 工具框折叠状态机（reveal/fold）+ 会话持久化竞态修复（写盘顺序/串行落盘）+ 326 测试** | git `HEAD` |
 > 速查：遇到 bug 先确认事件是否完整到达（用 `log()` 推日志卡），再查处理逻辑。
 
 ## 五、回归测试
@@ -337,7 +338,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 > bug 账本见 [`docs/BUG_REGRESSION_REGISTRY.md`](./BUG_REGRESSION_REGISTRY.md)）：
 >
 > ```bash
-> npm test    # 315 个测试（单元/集成/回归钉子/不变量），~1.3s，进主管线
+> npm test    # 326 个测试（单元/集成/回归钉子/不变量），~1.3s，进主管线
 > npm run smoke  # 11 条浏览器冒烟（puppeteer headless），~9s，独立于主管线
 > ```
 >
@@ -416,11 +417,11 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `file-action-bar.ts` | 434 | 2 | ✅ 分组表 | 文件行长按 → 底部抽屉操作栏 |
 | `logger.ts` | 58 | 3 | ✅ 分组表 | KFM 日志系统 |
 | `mode-system.ts` | 447 | 1 | ✅ 分组表 | 模式按钮系统（从 tree-swipe 拆分，v6.8.0 新增） |
-| `orb.ts` | 604 | 2 | ✅ 独立条目 | 光球 UI + 拖拽手势 + 面板状态机 + 挂机重连 IIFE（协调层，见 AI_CHAT_RUNTIME） |
-| `orb-chat.ts` | 1294 | 1 | ✅ 分组表 | AI 消息渲染 + 挂机 start/续读/取消 + 事件状态机（见 AI_CHAT_RUNTIME） |
-| `orb-panel.ts` | 205 | 1 | ✅ 分组表 | 面板 Provider/Session/Model/Role 下拉框（从 orb.ts 拆分） |
+| `orb.ts` | 631 | 2 | ✅ 独立条目 | 光球 UI + 拖拽手势 + 面板状态机 + 挂机重连 IIFE（协调层，见 AI_CHAT_RUNTIME） |
+| `orb-chat.ts` | 1347 | 1 | ✅ 分组表 | AI 消息渲染 + 挂机 start/续读/取消 + 事件状态机（见 AI_CHAT_RUNTIME） |
+| `orb-panel.ts` | 209 | 1 | ✅ 分组表 | 面板 Provider/Session/Model/Role 下拉框（从 orb.ts 拆分） |
 | `orb-state.ts` | 17 | 0 | ✅ 分组表 | orb 状态机纯逻辑（零依赖，从 orb.ts 拆分，可脱离浏览器测试） |
-| `session-store.ts` | 343 | 1 | ✅ 分组表 | 会话持久化统一存储 + saveMessages 自动建会话（见 AI_CHAT_RUNTIME §4.6） |
+| `session-store.ts` | 419 | 1 | ✅ 分组表 | 会话持久化统一存储 + saveMessages 自动建会话（见 AI_CHAT_RUNTIME §4.6） |
 | `renderer-lifecycle.ts` | 224 | 5 | ✅ 注册表 | 渲染器生命周期单例 L |
 | `root-picker.ts` | 434 | 2 | ✅ 独立条目 | 文件树根目录切换器 |
 | `state.ts` | 258 | 10 | ✅ 注册表 | 全局状态层 KFMState |
@@ -448,7 +449,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `../src/client/modules/renderers/md-extensions.ts` | 51 | 1 | — | Markdown 渲染扩展（链接、任务列表） |
 | `../src/client/modules/renderers/md-css.ts` | 57 | 2 | ✅ 分组表 | Markdown 渲染 CSS（全局唯一来源，orb + handler-factory 共享） |
 | `../src/client/modules/renderers/text-preview.ts` | 26 | 1 | — | 文本文件预览渲染器 |
-| **合计** | **14692** | | | |
+| **合计** | **14852** | | | |
 
 ### 死代码检查
 **结论：无死代码。** 所有 41 个模块都被至少 1 个文件导入（`terminal-card-04.ts` 和 `tmux-card.ts` 被导入数为 0，但这是模块自身的特性：它们仅在用户侧打开卡片时由 `card-registry.ts` 的 `createHandler` 工厂按需实例化，属于动态加载。`terminal-aux-bar.ts` 已删除（空占位，无任何引用）。`src/cards/` 目录已彻底删除。实际使用的 logger 在 `src/client/modules/logger.ts`。

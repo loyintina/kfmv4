@@ -199,6 +199,10 @@ export function buildPanelContent(cfg: PanelConfig): void {
         modelSelect?.updateItems((p.models || []).map((m: string) => ({ label: m, value: m })), d.modelId || p.models?.[0] || '');
       }
     }
+    // 同步 sessionStore，保证面板 session 下拉与配置卡一致
+    if (d.sessionId && d.sessionId !== sessionStore.activeId) {
+      sessionStore.activeId = d.sessionId;
+    }
     patchActiveConfig({ providerId: d.providerId || '', modelId: d.modelId || '', sessionId: d.sessionId || '' });
   }) as EventListener);
 }

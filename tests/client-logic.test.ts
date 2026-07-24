@@ -309,3 +309,47 @@ regression('BAR-ORB-FOLLOW-02', 'orb-chat', '等待提示尊重 followBottom，�
     assert(bodyCode.includes('if (followBottom)'), 'startWaitingIndicator 的 scrollToBottom 必须有 if (followBottom) 守卫');
   }
 });
+
+
+// ==========================================================================
+// BAR-ORB-SEG-02 / SEG-04: 会话分段加载的两条隐性契约（源码断言钉子）
+//
+// 这两条是集成时序 bug，逻辑耦合 DOM/rAF 无法离线跑真实场景，但根因都是
+// 「一个反直觉的实现选择被后续改动静默推翻」——正是源码断言钉子的适用场景：
+// 不验证运行结果，只锁定关键代码结构不被误删/改回反模式。
+// ==========================================================================
+
+group('orb — 会话分段加载契约（BAR-ORB-SEG）');
+
+regression('BAR-ORB-SEG-02', 'orb.ts', '切换 guard 用 _renderedSessionId，不用 sessionStore.activeId', () => {
+  const src = readFileSync('src/client/modules/orb.ts', 'utf-8');
+  // 根因：sessionStore.init() 的监听器会抢先把 activeId 改成新 sid，
+  // 若 orb 切换监听器的 guard 比较 sessionStore.activeId，则永远误成立 → return → 切不过去。
+  // 必须存在模块内独立的 _renderedSessionId 作为「已渲染会话」真相。
+  assert(src.includes('_renderedSessionId'), '应有 _renderedSessionId 追踪已渲染的会话（不依赖被抢改的 sessionStore.activeId）');
+  // 提取 kfm-session-change 监听器里的 early-return guard 行，必须比较 _renderedSessionId。
+  const guardLine = src.split('\n').find(l =>
+    l.includes('=== _renderedSessionId') && l.includes('return'),
+  );
+  assert(guardLine, '切换监听器的 early-return guard 必须比较 sid === _renderedSessionId');
+  // 反模式防复活：guard 不应改回比较 sessionStore.activeId（会被 init 监听器抢改导致误判）
+  const badGuard = src.split('\n').some(l =>
+    l.includes('sid === sessionStore.activeId') && l.includes('return'),
+  );
+  assert(!badGuard, 'guard 不应比较 sessionStore.activeId（会被 sessionStore.init 监听器抢先改掉 → 切换被跳过）');
+});
+
+regression('BAR-ORB-SEG-04', 'orb-chat', 'preserve 模式用锚点保持，免疫高度估算失配', () => {
+  const src = readFileSync('src/client/modules/orb-chat.ts', 'utf-8');
+  // 根因：视口裁剪用 DEFAULT_MSG_H 估算未测量消息高度，上滑跨裁剪边界时真实高度≠估算，
+  // 旧的 padding 差值补偿突变 → scrollTop 突跳。改为锚点法：重建前记视口顶部消息 + 偏移，
+  // 重建后锚回同一真实元素位置。三步缺一就静默退化，故逐一断言。
+  // 1. 重建前捕捉锚点（消息绝对索引 + 相对偏移）
+  assert(src.includes('anchorMi') && src.includes('anchorOffset'), '应捕捉锚点消息索引 anchorMi + 偏移 anchorOffset');
+  // 2. 重建后按 anchorMi 查找同一真实元素
+  assert(/anchorEl\s*=\s*contentArea\.querySelector/.test(src), '重建后应按 anchorMi 查找同一 .orb-msg 元素 anchorEl');
+  // 3. 锚点仅在 preserve 模式生效（follow/auto 各有自己的滚动策略）
+  assert(src.includes("scrollMode === 'preserve'"), '锚点保持应在 preserve 分支内');
+  // 锚点查找失败时回退到 padding 差值补偿（scrollAdjust），不能直接丢失位置
+  assert(src.includes('scrollAdjust'), '锚点失败应回退到 scrollAdjust padding 补偿');
+});

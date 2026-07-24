@@ -11,6 +11,7 @@ import { buildCardLayout } from '../../modules/floating-card.js';
 import { log } from '../../modules/logger.js';
 import { createCustomSelect, type CustomSelect } from '../../modules/custom-select.js';
 import { showConfirm } from '../../modules/confirm-dialog.js';
+import { sessionStore } from '../../modules/session-store.js';
 
 interface Provider {
   id: string;
@@ -558,14 +559,19 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
           };
           item.onclick = async () => {
             currentConfigId = config.id;
-            // 激活预设：展开写入 active.json
             const cfg = config as AgentConfig & { _fileName: string };
             await saveActiveConfigFileName(cfg._fileName || '');
             await saveActiveConfigField('providerId', config.providerId);
             await saveActiveConfigField('modelId', config.modelId);
             await saveActiveConfigField('sessionId', config.sessionId);
             if (config.roleFile) await saveActiveConfigField('roleFile', config.roleFile);
+            // 同步 sessionStore 权威状态
+            if (config.sessionId) sessionStore.activeId = config.sessionId;
             window.dispatchEvent(new CustomEvent('kfm-config-change', { detail: { ...config, name: cfg._fileName } }));
+            // kfm-config-change 只更新 orb 的 prov/model；session 要单独通知
+            if (config.sessionId) {
+              window.dispatchEvent(new CustomEvent('kfm-session-change', { detail: { sessionId: config.sessionId } }));
+            }
             fillEditor(config);
             renderPoolList(listEl, c1, c2);
             configSelect?.updateItems(configs.map(c => ({ label: (c as AgentConfig & { _fileName: string })._fileName || c.id, value: c.id })), currentConfigId);
@@ -587,18 +593,27 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
       // 监听外部会话变化
       const onSessionChange = (e: Event) => {
         const detail = (e as CustomEvent).detail;
-        if (detail?.sessionId) {
-          // 更新当前配置的会话
+        const sid: string | undefined = detail?.sessionId;
+        if (sid !== undefined && sid !== '') {
+          sessionStore.activeId = sid; // 保持 sessionStore 权威状态同步
           if (editingConfig) {
-            editingConfig.sessionId = detail.sessionId;
-            sessionSelect?.setValue(detail.sessionId);
+            editingConfig.sessionId = sid;
+            sessionSelect?.setValue(sid);
           }
         }
-        // 重新加载会话列表
-        loadSessions().then(s => {
-          sessions = s;
+        // 优先用 sessionStore 内存列表（已最新），避免重复全量网络请求
+        const freshList = sessionStore.list.length > 0 ? sessionStore.list : null;
+        if (freshList) {
+          // sessionStore.Session 与 config.card 本地 Session 接口字段不完全一样，
+          // 只取 id/title 用于下拉显示，直接映射，无需强转。
+          sessions = freshList.map(s => ({ id: s.id, title: s.title, createdAt: s.createdAt, updatedAt: s.updatedAt, messages: [] }));
           sessionSelect?.updateItems(sessions.map(s => ({ label: s.title, value: s.id })), editingConfig?.sessionId || '');
-        });
+        } else {
+          loadSessions().then(s => {
+            sessions = s;
+            sessionSelect?.updateItems(sessions.map(s => ({ label: s.title, value: s.id })), editingConfig?.sessionId || '');
+          });
+        }
       };
       window.addEventListener('kfm-session-change', onSessionChange);
 

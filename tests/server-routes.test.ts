@@ -12,6 +12,7 @@ import assert from 'assert';
 import { group, regression, test } from './runner.js';
 import { setupAiRoutes } from '../src/server/ai/routes.js';
 import type { StartRunFn } from '../src/server/ai/routes.js';
+import { sliceMessages } from '../src/server/routes/files.js';
 
 group('ai/routes — /ai/chat/start 参数校验');
 
@@ -189,4 +190,111 @@ regression('BAR-SEC-13', 'path-utils', '同源非 loopback（局域网/代理）
   assert(runOriginGuard('https://kfm.example.com', 'kfm.example.com:8021').passed, '同 host 不同端口应放行');
   // 但 host 不匹配的外部站点仍拒绝
   assert(!runOriginGuard('https://evil.com', 'kfm.example.com').passed, '不同 host 的外部站点应拒绝');
+});
+
+// ==========================================================================
+// BAR-ORB-SEG-01: 会话消息分段切片 sliceMessages 边界契约
+//
+// 分段传输核心逻辑：面板追底用 tail（先拿末尾数条秒显示），会话卡预览用
+// head（先拿开头数条），后台再补齐另一段拼成完整会话。切片边界算错会导致
+// 漏消息 / 重复消息 / head+tail 拼接顺序错乱或丢中间段。
+// 关键不变量：head(0,k) ++ tail(0, total-k) 必须精确等于完整数组。
+// ==========================================================================
+
+group('files/sessions — 消息分段切片（BAR-ORB-SEG-01）');
+
+const seq10 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+regression('BAR-ORB-SEG-01a', 'files.ts', 'tail 基本：offset=0 取最后 limit 条', () => {
+  assert.deepStrictEqual(
+    sliceMessages(seq10, 'tail', 0, 3),
+    [8, 9, 10],
+    'tail offset=0 limit=3 应取末尾 3 条 [8,9,10]',
+  );
+});
+
+regression('BAR-ORB-SEG-01b', 'files.ts', 'head 基本：offset=0 取最前 limit 条', () => {
+  assert.deepStrictEqual(
+    sliceMessages(seq10, 'head', 0, 3),
+    [1, 2, 3],
+    'head offset=0 limit=3 应取开头 3 条 [1,2,3]',
+  );
+});
+
+regression('BAR-ORB-SEG-01c', 'files.ts', 'tail offset：末尾往前跳过 offset 条后的 limit 条', () => {
+  assert.deepStrictEqual(
+    sliceMessages(seq10, 'tail', 3, 3),
+    [5, 6, 7],
+    'tail offset=3 limit=3 应跳过末尾 3 条后取 3 条 [5,6,7]',
+  );
+});
+
+regression('BAR-ORB-SEG-01d', 'files.ts', 'head offset：开头往后跳过 offset 条后的 limit 条', () => {
+  assert.deepStrictEqual(
+    sliceMessages(seq10, 'head', 3, 3),
+    [4, 5, 6],
+    'head offset=3 limit=3 应跳过开头 3 条后取 3 条 [4,5,6]',
+  );
+});
+
+regression('BAR-ORB-SEG-01e', 'files.ts', 'limit 超过剩余：不越界不报错', () => {
+  assert.deepStrictEqual(
+    sliceMessages([1, 2, 3, 4, 5], 'tail', 0, 100),
+    [1, 2, 3, 4, 5],
+    'tail limit=100 超总数应返回全部，不越界',
+  );
+  assert.deepStrictEqual(
+    sliceMessages([1, 2, 3, 4, 5], 'head', 0, 100),
+    [1, 2, 3, 4, 5],
+    'head limit=100 超总数应返回全部，不越界',
+  );
+});
+
+regression('BAR-ORB-SEG-01f', 'files.ts', 'limit<=0 视为取全部', () => {
+  assert.deepStrictEqual(
+    sliceMessages([1, 2, 3], 'head', 0, 0),
+    [1, 2, 3],
+    'head limit=0 应取全部 [1,2,3]',
+  );
+  assert.deepStrictEqual(
+    sliceMessages([1, 2, 3], 'tail', 0, 0),
+    [1, 2, 3],
+    'tail limit=0 应取全部 [1,2,3]',
+  );
+});
+
+regression('BAR-ORB-SEG-01g', 'files.ts', '空数组：返回空数组不报错', () => {
+  assert.deepStrictEqual(
+    sliceMessages([] as number[], 'tail', 0, 5),
+    [],
+    'tail 空数组应返回 []',
+  );
+  assert.deepStrictEqual(
+    sliceMessages([] as number[], 'head', 0, 5),
+    [],
+    'head 空数组应返回 []',
+  );
+});
+
+// 最关键：head(0,k) ++ tail(0, total-k) 必须严格等于完整数组（无重叠、无缺口）。
+// 这是面板/卡片先拿一段、后台补齐另一段后拼成完整会话的正确性保证。
+regression('BAR-ORB-SEG-01h', 'files.ts', '拼接不变量：head(0,k) ++ tail(0,total-k) === 完整数组', () => {
+  const total = seq10.length;
+  for (const k of [8, 1]) {
+    const head = sliceMessages(seq10, 'head', 0, k);
+    const tail = sliceMessages(seq10, 'tail', 0, total - k);
+    assert.deepStrictEqual(
+      [...head, ...tail],
+      seq10,
+      `k=${k}：head(0,${k}) 拼 tail(0,${total - k}) 应精确等于原数组，无重叠无缺口`,
+    );
+  }
+});
+
+regression('BAR-ORB-SEG-01i', 'files.ts', 'offset 越界：钳位后返回空数组不抛异常', () => {
+  assert.deepStrictEqual(
+    sliceMessages([1, 2, 3], 'tail', 10, 2),
+    [],
+    'tail offset=10 超总数应钳位为空 []，不返回负 slice、不抛异常',
+  );
 });

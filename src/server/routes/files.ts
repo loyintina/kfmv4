@@ -19,6 +19,22 @@ export interface FileItem {
   size: number;
   modified: string;
 }
+/**
+ * 会话消息分段切片（纯函数，供 /sessions/messages 端点 + 回归测试复用）。
+ *   from='tail'：末尾优先，offset=0 取最后 limit 条（面板追底）。
+ *   from='head'：开头优先，offset=0 取最前 limit 条（会话卡预览）。
+ * offset/limit 已由调用方钳为非负；limit<=0 视为取全部（调用方传 total）。
+ */
+export function sliceMessages<T>(all: T[], from: 'head' | 'tail', offset: number, limit: number): T[] {
+  const total = all.length;
+  const lim = limit > 0 ? limit : total;
+  if (from === 'tail') {
+    const end = total - offset;
+    const start = Math.max(0, end - lim);
+    return all.slice(start, Math.max(start, end));
+  }
+  return all.slice(offset, offset + lim);
+}
 
 // ========== 路由注册 ==========
 
@@ -91,6 +107,82 @@ export function setupFileRoutes(router: Router): void {
       if (!fs.existsSync(targetPath)) { res.json({ error: '文件不存在' }); return; }
       res.json({ path: targetPath, content: fs.readFileSync(targetPath, 'utf-8') });
     } catch (error: any) { res.json({ error: error.message }); }
+  });
+  // 会话元数据列表：一次性返回所有会话的轻量元数据（不含 messages），
+  // 比逐文件 list+read 快 N 倍（大会话文件可达 600KB，元数据仅约 200B/条）。
+  router.get('/sessions/list', (_req, res) => {
+    try {
+      const sessionsDir = path.join(ROOT_DIR, '.kfmv4/sessions');
+      if (!fs.existsSync(sessionsDir)) { res.json({ sessions: [] }); return; }
+      const files = fs.readdirSync(sessionsDir).filter(f => f.endsWith('.json'));
+      const sessions: Array<{ id: string; title: string; createdAt: string; updatedAt: string; manuallyNamed?: boolean; providerId?: string; modelId?: string; messageCount: number }> = [];
+      for (const file of files) {
+        try {
+          const raw = fs.readFileSync(path.join(sessionsDir, file), 'utf-8');
+          const parsed: unknown = JSON.parse(raw);
+          if (!parsed || typeof parsed !== 'object') continue;
+          const p = parsed as Record<string, unknown>;
+          const id = typeof p['id'] === 'string' ? p['id'] : '';
+          const title = typeof p['title'] === 'string' ? p['title'] : '';
+          if (!id || !title) continue;
+          const messages = Array.isArray(p['messages']) ? p['messages'] : [];
+          // 只统计有正文的消息数，不把整个 messages 数组传给客户端
+          let messageCount = 0;
+          for (const msg of messages) {
+            if (!msg || typeof msg !== 'object') continue;
+            const content = Array.isArray((msg as Record<string, unknown>)['content']) ? (msg as Record<string, unknown>)['content'] as unknown[] : [];
+            for (const block of content) {
+              if (block && typeof block === 'object' && 'type' in block && block.type === 'text' && 'text' in block && typeof block.text === 'string' && block.text.trim()) {
+                messageCount++;
+                break;
+              }
+            }
+          }
+          sessions.push({
+            id,
+            title,
+            createdAt: typeof p['createdAt'] === 'string' ? p['createdAt'] : '',
+            updatedAt: typeof p['updatedAt'] === 'string' ? p['updatedAt'] : '',
+            ...(typeof p['manuallyNamed'] === 'boolean' && { manuallyNamed: p['manuallyNamed'] }),
+            ...(typeof p['providerId'] === 'string' && { providerId: p['providerId'] }),
+            ...(typeof p['modelId'] === 'string' && { modelId: p['modelId'] }),
+            messageCount,
+          });
+        } catch { /* skip corrupt */ }
+      }
+      sessions.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+      res.json({ sessions });
+    } catch (err: unknown) {
+      res.json({ error: err instanceof Error ? err.message : 'unknown error' });
+    }
+  });
+  // 会话消息分段读取：只切片指定范围，避免大会话（600KB）全量传输。
+  //   query: id=会话id, from=head|tail（默认 tail）, offset, limit
+  //   tail: 从末尾往前数，offset=0 表示最后 limit 条；面板追底优先渲染尾部
+  //   head: 从开头往后数，offset=0 表示最前 limit 条；会话卡预览优先渲染头部
+  //   返回 { total, offset, limit, from, messages }
+  router.get('/sessions/messages', (req, res) => {
+    try {
+      const id = typeof req.query.id === 'string' ? req.query.id : '';
+      if (!id || id.includes('/') || id.includes('..')) { res.json({ error: '会话 id 不合法' }); return; }
+      const from = req.query.from === 'head' ? 'head' : 'tail';
+      const offset = Math.max(0, parseInt(typeof req.query.offset === 'string' ? req.query.offset : '0', 10) || 0);
+      const rawLimit = parseInt(typeof req.query.limit === 'string' ? req.query.limit : '0', 10) || 0;
+      const filePath = sanitizePath(`.kfmv4/sessions/${id}.json`);
+      if (!filePath || !fs.existsSync(filePath)) { res.json({ error: '会话不存在' }); return; }
+      const parsed: unknown = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+      if (!parsed || typeof parsed !== 'object' || !('messages' in parsed) || !Array.isArray(parsed.messages)) {
+        res.json({ total: 0, offset, limit: rawLimit, from, messages: [] });
+        return;
+      }
+      const all = parsed.messages;
+      const total = all.length;
+      const limit = rawLimit > 0 ? rawLimit : total;
+      const slice = sliceMessages(all, from, offset, limit);
+      res.json({ total, offset, limit, from, messages: slice });
+    } catch (err: unknown) {
+      res.json({ error: err instanceof Error ? err.message : 'unknown error' });
+    }
   });
 
   router.get('/files/media', (req, res) => {

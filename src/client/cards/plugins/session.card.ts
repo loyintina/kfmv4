@@ -13,7 +13,7 @@ import { log } from '../../modules/logger.js';
 import { showConfirm } from '../../modules/confirm-dialog.js';
 import { createCustomSelect } from '../../modules/custom-select.js';
 import type { Session } from '../../modules/session-store.js';
-import { extractMessageText as extractMsgText, countTextMessages } from '../../modules/session-store.js';
+import { sessionStore, extractMessageText as extractMsgText, countTextMessages } from '../../modules/session-store.js';
 import { Z } from '../../modules/z-index-layers.js';
 
 const SESSIONS_PATH = '.kfmv4/sessions';
@@ -24,17 +24,6 @@ const API_BASE = (() => {
   const base = window.location.pathname.replace(/\/+$/, '');
   return base + '/api/';
 })();
-
-async function readFile(path: string): Promise<string | null> {
-  try {
-    const res = await fetch(API_BASE + 'files/read', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path }),
-    });
-    const data = await res.json();
-    return data.content || null;
-  } catch { return null; }
-}
 
 async function writeFile(path: string, content: string): Promise<void> {
   await fetch(API_BASE + 'files/write', {
@@ -60,22 +49,34 @@ async function listDir(dir: string): Promise<string[]> {
     return (data.items || []).map((f: { name: string }) => f.name);
   } catch { return []; }
 }
+/** 加载会话元数据列表（单次请求，不含 messages）。快速渲染列表和统计行用此。
+ *  气泡预览时通过 sessionStore.getMessagesRange 分段按需拉取。 */
 async function loadSessions(): Promise<Session[]> {
-  const files = await listDir(SESSIONS_PATH);
-  const sessions: Session[] = [];
-  for (const file of files) {
-    if (!file.endsWith('.json')) continue;
-    const content = await readFile(`${SESSIONS_PATH}/${file}`);
-    if (content) {
-      try {
-        const session: Session = JSON.parse(content);
-        if (session.id && session.title) sessions.push(session);
-      } catch { /* skip corrupt files */ }
+  try {
+    const res = await fetch(API_BASE + 'sessions/list');
+    const data: unknown = await res.json();
+    if (!data || typeof data !== 'object' || !('sessions' in data) || !Array.isArray(data.sessions)) return [];
+    const sessions: Session[] = [];
+    for (const item of data.sessions) {
+      if (!item || typeof item !== 'object') continue;
+      const s = item as Record<string, unknown>;
+      if (typeof s['id'] !== 'string' || typeof s['title'] !== 'string') continue;
+      sessions.push({
+        id: s['id'],
+        title: s['title'],
+        createdAt: typeof s['createdAt'] === 'string' ? s['createdAt'] : '',
+        updatedAt: typeof s['updatedAt'] === 'string' ? s['updatedAt'] : '',
+        ...(typeof s['manuallyNamed'] === 'boolean' && { manuallyNamed: s['manuallyNamed'] }),
+        ...(typeof s['providerId'] === 'string' && { providerId: s['providerId'] }),
+        ...(typeof s['modelId'] === 'string' && { modelId: s['modelId'] }),
+        messageCount: typeof s['messageCount'] === 'number' ? s['messageCount'] : 0,
+        messages: [], // 元数据加载不含消息，气泡预览时按需拉取
+      });
     }
-  }
-  sessions.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-  return sessions;
+    return sessions;
+  } catch { return []; }
 }
+
 
 async function saveSession(session: Session): Promise<void> {
   await writeFile(`${SESSIONS_PATH}/${session.id}.json`, JSON.stringify(session, null, 2));
@@ -265,7 +266,7 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
 
       const metaRow = document.createElement('div');
       metaRow.style.cssText = 'display:flex;gap:8px;font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.5)';
-      metaRow.innerHTML = `<span>${formatDate(session.updatedAt)}</span><span>${countTextMessages(session.messages)} 条消息</span>`;
+      metaRow.innerHTML = `<span>${formatDate(session.updatedAt)}</span><span>${session.messageCount ?? countTextMessages(session.messages)} 条消息</span>`;
       if (session.providerId) metaRow.innerHTML += `<span>${session.providerId}</span>`;
 
       item.appendChild(titleRow);
@@ -279,6 +280,7 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
       };
       item.onclick = () => {
         activeSessionId = session.id;
+        sessionStore.activeId = session.id; // 保持 sessionStore 权威状态同步
         window.dispatchEvent(new CustomEvent('kfm-session-change', { detail: { sessionId: session.id } }));
         renderAll();
       };
@@ -364,14 +366,46 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
 
   function renderAll(): void {
     if (_statsEl) {
-      _statsEl.textContent = `共 ${sessions.length} 个会话，${sessions.reduce((n, s) => n + countTextMessages(s.messages), 0)} 条消息`;
+      _statsEl.textContent = `共 ${sessions.length} 个会话，${sessions.reduce((n, s) => n + (s.messageCount ?? countTextMessages(s.messages)), 0)} 条消息`;
     }
     if (_nameInput) { const s = getActiveSession(); _nameInput!.value = s?.title || ''; }
     if (_sessionSelect) {
       _sessionSelect.updateItems(sessions.map(s => ({ label: s.title, value: s.id })), activeSessionId);
     }
     if (_poolListEl) renderSessionList(_poolListEl);
-    if (_bubbleContainer) renderBubbles(_bubbleContainer, getActiveSession());
+    void refreshBubbles();
+  }
+
+  // 气泡预览：活跃会话消息按需分段加载（元数据列表不含 messages）。
+  //   1. 先取头部 HEAD_FIRST 条立即渲染（预览显示最前面几条，头部优先）
+  //   2. 后台补齐其余，使 session.messages 完整——编辑保存写回整个对象，
+  //      若只有部分消息会截断会话，故必须补全后才允许安全保存。
+  const HEAD_FIRST = 8;
+  let _bubbleLoadToken = 0;
+  async function refreshBubbles(): Promise<void> {
+    if (!_bubbleContainer) return;
+    const session = getActiveSession();
+    if (!session) { renderBubbles(_bubbleContainer, null); return; }
+    const count = session.messageCount ?? session.messages.length;
+    // 已完整加载（消息数达标）→ 直接渲染
+    if (session.messages.length >= count || count === 0) {
+      renderBubbles(_bubbleContainer, session);
+      return;
+    }
+    const myToken = ++_bubbleLoadToken;
+    // 头部优先：先拉前 HEAD_FIRST 条渲染
+    const head = await sessionStore.getMessagesRange(session.id, 'head', 0, HEAD_FIRST);
+    if (myToken !== _bubbleLoadToken || getActiveSession()?.id !== session.id) return;
+    session.messages = head.messages;
+    renderBubbles(_bubbleContainer, session);
+    // 后台补齐其余（供编辑保存用完整数据）
+    if (head.total > head.messages.length) {
+      const rest = await sessionStore.getMessagesRange(session.id, 'tail', 0, head.total - head.messages.length);
+      if (myToken !== _bubbleLoadToken || getActiveSession()?.id !== session.id) return;
+      // head 是前 N 条，rest 是剩余（末尾方向），拼成完整顺序
+      session.messages = [...head.messages, ...rest.messages];
+      if (_bubbleContainer) renderBubbles(_bubbleContainer, session);
+    }
   }
 
   return {
@@ -384,7 +418,12 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
       bodyEl.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:8px;padding:0 10px;overflow-y:auto;touch-action:pan-y';
 
       sessions = await loadSessions();
-      if (!activeSessionId && sessions.length > 0) activeSessionId = sessions[0].id;
+      // 以 sessionStore.activeId 为权威来源（orb 面板也用它）；无则取列表第一个
+      if (!activeSessionId) activeSessionId = sessionStore.activeId || (sessions.length > 0 ? sessions[0].id : '');
+      // 如果 sessionStore 已有有效 activeId，以它为准（防止卡打开时还停在旧会话）
+      if (sessionStore.activeId && sessions.some(s => s.id === sessionStore.activeId)) {
+        activeSessionId = sessionStore.activeId;
+      }
 
       // ===== 预览框（二层反色） =====
       const previewCard = document.createElement('div');
@@ -456,19 +495,14 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
       newBtn.textContent = '新建';
       newBtn.style.cssText = `flex:1;padding:0.3em 0;border-radius:6px;font-size:var(--card-font-size,10px);font-weight:600;cursor:pointer;border:1px solid ${c2}40;color:${c2};background:transparent`;
       newBtn.onclick = async () => {
-        const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-        const newSession: Session = {
-          id, title: '新会话', manuallyNamed: false,
-          createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
-          messages: [],
-        };
-        await saveSession(newSession);
-        sessions = await loadSessions();
+        // 委托给 sessionStore.create()：写盘 + await active.json + 派发事件，
+        // 保证 orb 面板的监听器能正确同步（同一套状态机，不自己重复实现）。
+        const id = await sessionStore.create();
+        sessions = sessionStore.list.slice(); // 直接用 store 内存列表，无需重拉
         activeSessionId = id;
         fillName();
         renderAll();
-        _sessionSelect?.updateItems(sessions.map(s => ({ label: s.title, value: s.id })), activeSessionId);
-        window.dispatchEvent(new CustomEvent('kfm-session-change', { detail: { sessionId: id } }));
+        // 事件已由 sessionStore.create() 派发，此处不重复
       };
 
       btnRow.appendChild(saveBtn);
@@ -500,7 +534,7 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
 
       const statsEl = document.createElement('span');
       statsEl.style.cssText = 'font-size:var(--card-font-size,10px);color:rgba(255,255,255,0.5)';
-      statsEl.textContent = `共 ${sessions.length} 个会话，${sessions.reduce((n, s) => n + countTextMessages(s.messages), 0)} 条消息`;
+      statsEl.textContent = `共 ${sessions.length} 个会话，${sessions.reduce((n, s) => n + (s.messageCount ?? countTextMessages(s.messages)), 0)} 条消息`;
       _statsEl = statsEl;
       poolHeader.appendChild(statsEl);
       poolCard.appendChild(poolHeader);
@@ -514,15 +548,18 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
 
       renderAll();
 
-      // 监听外部会话变化
+      // 监听外部会话变化（orb 面板切换 / sessionStore.create() 新建）
       window.addEventListener('kfm-session-change', ((e: CustomEvent) => {
         const sid = e.detail?.sessionId;
-        if (!sid) return;
+        // sid 可为空串（最后一个会话被删）
         (async () => {
-          sessions = await loadSessions();
-          if (sid !== activeSessionId) {
-            activeSessionId = sid;
+          // 优先用 sessionStore 内存列表（已最新），避免再发一次全量网络请求
+          if (sessionStore.list.length > 0) {
+            sessions = sessionStore.list.slice();
+          } else {
+            sessions = await loadSessions();
           }
+          if (sid !== undefined) activeSessionId = sid || (sessions.length > 0 ? sessions[0].id : '');
           _sessionSelect?.updateItems(sessions.map(s => ({ label: s.title, value: s.id })), activeSessionId);
           renderAll();
         })();
