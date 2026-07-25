@@ -1281,6 +1281,11 @@ async function _consumeRun(
           event.type === 'tool_result' ||
           event.type === 'rule_warning'
         ) { lastRender = Date.now(); ctx.onRender(); }
+        else if (event.type === 'content_block_delta' && event.deltaType === 'thinking_delta') {
+          // 增量追加：避免对已累积的全文做 escapeHtml + innerHTML 重建（O(n²) 卡顿）
+          const pre = document.querySelector('#r' + ctx.getMsgIdx() + ' pre');
+          if (pre) pre.textContent += event.deltaText || '';
+        }
         else throttledRender();
       } catch {}
     }
