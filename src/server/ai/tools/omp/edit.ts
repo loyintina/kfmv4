@@ -22,9 +22,7 @@ export const ompEditTool: KfmTool = {
     const filePath = params.path as string;
     const oldText = params.old as string;
     const newText = params.new as string;
-    try {
-      await access(filePath);
-    } catch {
+    try { await access(filePath); } catch {
       return { content: [{ type: 'text', text: `文件不存在: ${filePath}` }], isError: true };
     }
     if (!oldText) return { content: [{ type: 'text', text: '缺少 old 参数' }], isError: true };
@@ -35,7 +33,11 @@ export const ompEditTool: KfmTool = {
       }
       const updated = content.replace(oldText, newText);
       await writeFile(filePath, updated, 'utf8');
-      return { content: [{ type: 'text', text: `编辑成功 (替换了 1 处)` }] };
+      const fileName = filePath.split('/').pop() || filePath;
+      return {
+        content: [{ type: 'text', text: `编辑成功 — ${fileName}` }],
+        details: { tool: 'edit', path: filePath, name: fileName, oldText, newText },
+      };
     } catch (e) {
       return { content: [{ type: 'text', text: `编辑失败: ${e instanceof Error ? e.message : '未知错误'}` }], isError: true };
     }

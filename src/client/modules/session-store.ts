@@ -33,7 +33,7 @@ export interface ToolBlock {
   id: string;
   name: string;
   input: Record<string, unknown>;
-  result?: { content: Array<{ type: string; text?: string }>; isError?: boolean };
+  result?: { content: Array<{ type: string; text?: string }>; isError?: boolean; details?: Record<string, unknown> };
   // UI-only（渲染时生成，不做持久化）
   color1?: string;
   color2?: string;

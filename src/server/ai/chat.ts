@@ -79,7 +79,7 @@ export interface StreamEvent {
   deltaType?: 'text_delta' | 'thinking_delta' | 'input_json_delta';
   deltaText?: string;
   // tool_result
-  toolResult?: { content: Array<{ type: string; text?: string }>; isError?: boolean };
+  toolResult?: { content: Array<{ type: string; text?: string }>; isError?: boolean; details?: Record<string, unknown> };
   filesChanged?: boolean; // 工具执行后文件系统有变化，客户端应刷新文件树
   // error / rule_warning
   content?: string;

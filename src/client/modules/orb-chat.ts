@@ -201,7 +201,7 @@ let _lastRenderState: ChatState | null = null;
 let _lastMsgCount = 0; // 上次渲染的消息数——仅当数量增加时给新消息播入场动画（防滑动重渲染反复触发）
 // 思考框折叠：记录思考完成时刻，延迟 400ms 后触发折叠动画
 const _thinkDoneAt = new Map<number, number>(); // mi → timestamp
-// 折叠动画保护窗口：动画播放期间即使 innerHTML 重建也继续用 orb-think-collapsing
+const _thinkCollapsed = new Set<number>(); // mi — 折叠动画已触发
 const _collapsingUntil = new Map<number, number>(); // mi → 动画结束时间戳
 
 // rAF 合批渲染调度器：并行工具的多个打字机/折叠动画各自 tick 时，若直接调 onRender，
@@ -262,6 +262,11 @@ function _pathExt(input: Record<string, unknown>): string {
   const clean = p.replace(/:\d+(-\d*)?$/, ''); // 去 :50 / :50-100 选择器
   const m = clean.match(/\.([a-zA-Z0-9]+)$/);
   return m ? m[1].toLowerCase() : '';
+}
+/** 从工具 input.path 提取文件名 */
+function _pathName(input: Record<string, unknown>): string {
+  const p = typeof input.path === 'string' ? input.path : '';
+  return p.split('/').pop() || p;
 }
 
 // 视口裁剪（虚拟滚动）：长会话时只渲染视口附近的消息，其余用等高占位撑住滚动条。
@@ -440,6 +445,7 @@ export function renderChatContent(state: ChatState): void {
         // 延迟折叠：思考完成时记录时间戳，400ms 后才播折叠动画
         const doneAt = _thinkDoneAt.get(idx);
         if (!streaming && !reasonOpen && doneAt === undefined) {
+          _thinkDoneAt.set(idx, Date.now());
           const poll = () => {
             const start = _thinkDoneAt.get(idx);
             if (start !== undefined && Date.now() - start >= 400) {
@@ -569,11 +575,37 @@ export function renderChatContent(state: ChatState): void {
         if (isExecuting) {
           const hint = getToolHint(tc.id);
           outputHtml = `<div style="color:rgba(255,255,255,0.4);font-size:var(--card-font-size,9px);line-height:1.4;padding:2px 0">${hint.dotHtml}${escapeHtml(hint.text)}</div>`;
+        } else if ((tc.name === 'write' || tc.name === 'edit') && !isError) {
+          // write/edit 特殊渲染：紧凑文件卡片
+          const details = tc.result?.details as Record<string, unknown> | undefined;
+          const fileName = (details?.name as string) || _pathName(tc.input);
+          const filePath = (details?.path as string) || (tc.input.path as string) || '';
+          if (tc.name === 'write') {
+            const lines = (details?.lines as number) || 0;
+            const size = (details?.size as number) || 0;
+            outputHtml = `<div class="orb-write-card" data-write-path="${escapeHtml(filePath)}" data-write-ext="${_pathExt(tc.input)}">
+              <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
+                <span style="font-size:11px">📄</span>
+                <span style="color:rgba(0,212,255,0.8);font-size:9px;font-weight:600">${escapeHtml(fileName)}</span>
+                <span style="color:rgba(0,255,180,0.7);font-size:8px">${lines} 行 · ${size} 字符</span>
+              </div>
+              <pre data-tool-out="write" data-tool-ext="${_pathExt(tc.input)}" style="font-size:8px;line-height:1.3;white-space:pre-wrap;word-break:break-word;margin:0;font-family:ui-monospace,monospace;background:rgba(0,0,0,0.2);padding:3px 5px;border-radius:3px;color:rgba(255,255,255,0.55);max-height:${OUTPUT_MAX_H}px;overflow-y:auto">${escapeHtml(resultText)}</pre>
+            </div>`;
+          } else {
+            const oldText = (details?.oldText as string) || '';
+            const newText = (details?.newText as string) || '';
+            const diffHtml = oldText && newText
+              ? `<span style="color:rgba(255,100,100,0.7);background:rgba(255,50,50,0.1);text-decoration:line-through">${escapeHtml(oldText.slice(0, 200))}${oldText.length > 200 ? '...' : ''}</span>\n<span style="color:rgba(100,255,180,0.7);background:rgba(50,255,100,0.1)">${escapeHtml(newText.slice(0, 200))}${newText.length > 200 ? '...' : ''}</span>`
+              : escapeHtml(resultText);
+            outputHtml = `<div class="orb-edit-card" data-edit-path="${escapeHtml(filePath)}">
+              <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
+                <span style="font-size:11px">✏️</span>
+                <span style="color:rgba(0,212,255,0.8);font-size:9px;font-weight:600">${escapeHtml(fileName)}</span>
+              </div>
+              <pre data-tool-out="edit" data-tool-ext="${_pathExt(tc.input)}" style="font-size:8px;line-height:1.3;white-space:pre-wrap;word-break:break-word;margin:0;font-family:ui-monospace,monospace;background:rgba(0,0,0,0.2);padding:3px 5px;border-radius:3px;color:rgba(255,255,255,0.55);max-height:${OUTPUT_MAX_H}px;overflow-y:auto">${diffHtml}</pre>
+            </div>`;
+          }
         } else {
-          // 输出区标记 data-tool-out=工具名、data-tool-ext=扩展名，供后处理富化。
-          // 动画中（isAnimating）也标记 data-tool-streaming=1。流式期间可富化的类型
-          // （read .md → marked，read/write/edit 代码 → 高亮）走后处理实时渲染；
-          // 不可富化的（bash/grep/无扩展名输出）才用 orb-tool-anim-pre 纯文本+自动滚。
           const outExt = _pathExt(tc.input);
           const isFileTool = tc.name === 'read' || tc.name === 'write' || tc.name === 'edit';
           const richStream = isFileTool && (outExt === 'md' || outExt === 'markdown' || !!_EXT_LANG[outExt]);
@@ -760,6 +792,20 @@ export function renderChatContent(state: ChatState): void {
     const tool = pre.dataset.toolOut || '';
     const ext = pre.dataset.toolExt || '';
     const streaming = pre.dataset.toolStreaming === '1';
+    // write/edit 特殊渲染：代码高亮预览/diff
+    if (tool === 'write' || tool === 'edit') {
+      if (streaming) { pre.scrollTop = pre.scrollHeight; continue; }
+      const lang = _EXT_LANG[ext] || (ext === 'ts' ? 'typescript' : ext);
+      if (lang) {
+        const key = 'out:' + tool + ':' + ext + ':' + raw;
+        const cached = _toolCacheGet(key);
+        if (cached !== undefined) { pre.innerHTML = cached; continue; }
+        pre.innerHTML = '<code class="language-' + lang + '">' + escapeHtml(raw) + '</code>';
+        const outCode = pre.querySelector('code'); if (outCode) highlightCode(outCode as HTMLElement);
+        _toolCacheSet(key, pre.innerHTML);
+      }
+      continue;
+    }
     // read 的 markdown 文件 → marked 渲染（完成态完整管线+缓存；流式纯文本自动滚）
     if (tool === 'read' && (ext === 'md' || ext === 'markdown')) {
       if (streaming) {

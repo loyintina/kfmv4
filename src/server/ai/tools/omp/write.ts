@@ -24,7 +24,16 @@ export const ompWriteTool: KfmTool = {
     try {
       await mkdir(dirname(filePath), { recursive: true });
       await writeFile(filePath, content, 'utf8');
-      return { content: [{ type: 'text', text: `写入成功 (${content.length} 字符)` }] };
+      const lines = content.split('\n').length;
+      const fileName = filePath.split('/').pop() || filePath;
+      // 取前 12 行作为预览
+      const previewLines = content.split('\n').slice(0, 12);
+      const preview = previewLines.join('\n');
+      const hasMore = lines > 12;
+      return {
+        content: [{ type: 'text', text: preview + (hasMore ? `\n...（共 ${lines} 行）` : '') }],
+        details: { tool: 'write', path: filePath, name: fileName, size: content.length, lines: lines, preview: true },
+      };
     } catch (e) {
       return { content: [{ type: 'text', text: `写入失败: ${e instanceof Error ? e.message : '未知错误'}` }], isError: true };
     }
