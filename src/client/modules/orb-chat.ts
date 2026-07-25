@@ -277,21 +277,24 @@ function unescapeNL(s: string): string {
 // ========== 浮动 Todo 面板 ==========
 let _todoPanel: HTMLDivElement | null = null;
 let _todoDismissTimer: ReturnType<typeof setTimeout> | null = null;
+let _lastTodos: Array<{content: string; status: string}> | null = null; // 持久化状态
 
 function ensureTodoPanel(container: HTMLElement): HTMLDivElement {
-  if (!_todoPanel || !document.body.contains(_todoPanel)) {
+  if (!_todoPanel || _todoPanel.parentElement !== container) {
+    if (_todoPanel) _todoPanel.remove();
     _todoPanel = document.createElement('div');
     _todoPanel.className = 'orb-todo-panel';
-    _todoPanel.style.cssText = 'position:absolute;top:6px;right:6px;z-index:50;min-width:140px;max-width:220px;background:rgba(10,15,30,0.94);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:6px 8px;font-size:9px;box-shadow:0 2px 12px rgba(0,0,0,0.4);overflow:hidden;transition:opacity 0.3s';
-    container.style.position = 'relative';
+    _todoPanel.style.cssText = 'position:absolute;top:6px;right:6px;z-index:50;min-width:140px;max-width:220px;background:rgba(10,15,30,0.94);border:1px solid transparent;border-image:linear-gradient(135deg,rgba(0,212,255,0.5),rgba(124,58,237,0.5)) 1;border-radius:8px;padding:6px 8px;font-size:9px;box-shadow:0 2px 12px rgba(0,0,0,0.4);overflow:hidden;transition:opacity 0.3s';
+    container.style.position = container.style.position || 'relative';
     container.appendChild(_todoPanel);
   }
   return _todoPanel;
 }
 
 function renderTodoPanel(todos: Array<{content: string; status: string}>, container: HTMLElement): void {
+  _lastTodos = todos; // 持久化
   const panel = ensureTodoPanel(container);
-  if (todos.length === 0) { panel.style.opacity = '0'; return; }
+  if (todos.length === 0) { panel.style.opacity = '0'; _lastTodos = null; return; }
   panel.style.opacity = '1';
   const doneCount = todos.filter(t => t.status === 'completed' || t.status === 'cancelled').length;
   const allDone = doneCount === todos.length;
@@ -300,12 +303,13 @@ function renderTodoPanel(todos: Array<{content: string; status: string}>, contai
   html += '</div>';
   for (const t of todos) {
     const s = t.status;
-    const done = s === 'completed' || s === 'cancelled';
-    const active = s === 'in_progress';
     const icon = s === 'completed' ? '✓' : s === 'in_progress' ? '●' : s === 'cancelled' ? '✕' : '○';
-    const color = done ? 'rgba(255,255,255,0.3)' : active ? 'rgba(0,212,255,0.9)' : 'rgba(255,255,255,0.55)';
-    const deco = s === 'cancelled' ? 'text-decoration:line-through;' : '';
-    const pulse = active ? 'animation:orb-todo-pulse 1.5s ease-in-out infinite;' : '';
+    const color = s === 'completed' ? 'rgba(80,255,160,0.8)'
+      : s === 'in_progress' ? 'rgba(0,212,255,0.9)'
+      : s === 'cancelled' ? 'rgba(255,100,100,0.7)'
+      : 'rgba(255,255,255,0.55)';
+    const deco = s === 'completed' || s === 'cancelled' ? 'text-decoration:line-through;' : '';
+    const pulse = s === 'in_progress' ? 'animation:orb-todo-pulse 1.5s ease-in-out infinite;' : '';
     html += '<div style="display:flex;gap:4px;padding:1px 0;align-items:baseline;' + deco + '">';
     html += '<span style="color:' + color + ';font-size:8px;flex-shrink:0;' + pulse + '">' + icon + '</span>';
     html += '<span style="color:' + color + ';font-size:8px;line-height:1.3;word-break:break-word;' + deco + '">' + escapeHtml(t.content) + '</span>';
@@ -323,11 +327,15 @@ function renderTodoPanel(todos: Array<{content: string; status: string}>, contai
 function updateTodoFromTool(tc: ToolBlock): void {
   if (tc.name !== 'todo' || !tc.result || tc.result.isError) return;
   const todos = tc.input?.todos as Array<{content: string; status: string}> | undefined;
-  if (!todos || todos.length === 0) return;
-  if (!_lastRenderState) return;
-  const panelEl = _lastRenderState.panelEl;
-  if (!panelEl || panelEl.style.pointerEvents === 'none') return;
-  if (panelEl) renderTodoPanel(todos, panelEl);
+  if (!todos || todos.length === 0) { _lastTodos = null; return; }
+  _lastTodos = todos;
+  // 立即更新面板（如果 orb 面板当前可见）
+  if (_lastRenderState) {
+    const panelEl = _lastRenderState.panelEl;
+    if (panelEl && panelEl.style.pointerEvents !== 'none') {
+      renderTodoPanel(todos, panelEl);
+    }
+  }
 }
 
 
@@ -852,6 +860,8 @@ export function renderChatContent(state: ChatState): void {
     style.textContent = MD_CSS;
     contentArea.appendChild(style);
   }
+  // 恢复浮动 Todo 面板
+  if (_lastTodos && _lastTodos.length > 0) { renderTodoPanel(_lastTodos, panelEl); }
   // 同步渲染 markdown（仅 AI 消息中的 text block）
   // 性能：命中缓存直接注入 HTML，跳过 marked+highlight+math+mermaid 全套管线。
   // 只有正在流式（文本每帧变化）的那条会缓存未命中 → 跑完整管线；历史消息 O(1)。
