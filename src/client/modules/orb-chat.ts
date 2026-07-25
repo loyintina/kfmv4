@@ -199,6 +199,10 @@ function clearAllAnimTimers(): void {
 const _activeFoldAnims = new Map<string, number>(); // tid → start timestamp
 let _lastRenderState: ChatState | null = null;
 let _lastMsgCount = 0; // 上次渲染的消息数——仅当数量增加时给新消息播入场动画（防滑动重渲染反复触发）
+// 思考框折叠：记录思考完成时刻，延迟 400ms 后触发折叠动画
+const _thinkDoneAt = new Map<number, number>(); // mi → timestamp
+// 折叠动画已播过的消息（避免每帧重播）
+const _thinkCollapsed = new Set<number>();
 
 // rAF 合批渲染调度器：并行工具的多个打字机/折叠动画各自 tick 时，若直接调 onRender，
 // 12 个动画 = 每帧 12 次全量重渲染 → 卡死。改为标记脏 + 单个 rAF 每帧最多渲染一次。
@@ -431,20 +435,35 @@ export function renderChatContent(state: ChatState): void {
         const rlabel = reasoningDone ? '已思考' : '思考中...';
         const firstTb = textBlocks[0] as (TextBlock & { _reasonExpanded?: boolean }) | undefined;
         const re = firstTb?._reasonExpanded;
-        // 折叠规则：思考中展开；完成后默认折叠；用户点击后以 _reasonExpanded 为准。
-        // 流式中用 orb-fold-open（无过渡，内容稳定显示，避免全量重建让 CSS 过渡失效而卡住）；
-        // 完成/折叠态用 orb-fold-content（+collapsed），用户点击展开/折叠时同一元素 class 切换
-        // 能触发 CSS 过渡（onclick 里 classList.toggle）。历史消息直接静态折叠，无动画。
         const reasonOpen = re !== undefined ? re : !reasoningDone;
         const streaming = !reasoningDone;
-        const displayClass = streaming
-          ? 'orb-fold-open'
-          : (reasonOpen ? 'orb-fold-content' : 'orb-fold-content collapsed');
+        // 延迟折叠：思考完成时记录时间戳，400ms 后才播折叠动画
+        const doneAt = _thinkDoneAt.get(idx);
+        if (!streaming && !reasonOpen && doneAt === undefined) {
+          _thinkDoneAt.set(idx, Date.now());
+          // rAF 轮询直到 400ms 后触发渲染
+          const poll = () => {
+            const start = _thinkDoneAt.get(idx);
+            if (start !== undefined && Date.now() - start >= 400) {
+              _thinkDoneAt.delete(idx);
+              _thinkCollapsed.add(idx);
+              if (_lastRenderState) renderChatContent(_lastRenderState);
+            } else if (start !== undefined) {
+              requestAnimationFrame(poll);
+            }
+          };
+          requestAnimationFrame(poll);
+        }
+        const willCollapse = _thinkCollapsed.has(idx);
+        const displayClass = streaming ? 'orb-fold-open'
+          : willCollapse ? 'orb-think-collapsing'
+          : reasonOpen ? 'orb-fold-content'
+          : 'orb-fold-content collapsed';
         html += `
           <div style="display:flex;justify-content:flex-start;margin-bottom:4px">
             <div style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:linear-gradient(rgba(10,15,30,0.75),rgba(10,15,30,0.75)) padding-box,${theme.aiChat.panelBorderGradient} border-box;border:1px solid transparent;border-left-width:3px;font-size:var(--card-font-size,10px)">
               <div data-msg="${idx}" onclick="var p=document.getElementById('${rid}');p.classList.toggle('collapsed');this.querySelector('.rt-arrow').textContent=p.classList.contains('collapsed')?'▶':'▼';var m=this.dataset.msg;if(window.__orbMsgs&&m>=0){var t=window.__orbMsgs[m]?.content?.filter(function(x){return x&&x.type==='text'})[0];if(t)t._reasonExpanded=!p.classList.contains('collapsed')}" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
-                <span class="rt-arrow" style="font-size:7px;color:rgba(0,212,255,0.5)">${reasonOpen ? '▼' : '▶'}</span>
+                <span class="rt-arrow" style="font-size:7px;color:rgba(0,212,255,0.5)">${(streaming || doneAt !== undefined || reasonOpen) ? '▼' : '▶'}</span>
                 <span style="color:rgba(0,212,255,0.6);font-weight:600">${rlabel}</span>
               </div>
               <div id="${rid}" class="${displayClass}" style="margin-top:4px">

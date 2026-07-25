@@ -3,9 +3,15 @@
  *
  * 零外部依赖。列出系统根 / 下的所有顶层目录供用户切换。
  */
+import { KFMState, API } from './state.js';
+import { loadFileTree } from './tree-loader.js';
+import { log } from './logger.js';
+
 let _popup: HTMLDivElement | null = null;
 let _opening = false;
-const _API = '/kfmv4/api';
+
+
+
 
 function renderLabel(label?: string): void {
   const c = document.getElementById('siblingSwitcherBtn') as HTMLCanvasElement | null;
@@ -50,7 +56,7 @@ function destroyPopup(): void {
 }
 
 function syncRootFromServer(): void {
-  fetch(_API + '/root/current').then(r => r.json()).then(data => {
+  fetch(API + '/root/current').then(r => r.json()).then(data => {
     if (data?.root && document.getElementById('siblingSwitcherBtn')) {
       localStorage.setItem('kfmv4_currentRoot', data.root);
       renderLabel();
@@ -65,7 +71,7 @@ async function openPopup(): Promise<void> {
   const anchor = document.getElementById('siblingSwitcherBtn');
   if (!anchor) { _opening = false; return; }
   try {
-    const res = await fetch(_API + '/roots');
+    const res = await fetch(API + '/roots');
     const data: unknown = await res.json();
     _opening = false;
     if (!data || typeof data !== 'object' || !('items' in data) || !Array.isArray(data.items)) {
@@ -101,7 +107,7 @@ async function openPopup(): Promise<void> {
       row.onclick = async () => {
         destroyPopup();
         try {
-          const res = await fetch(_API + '/root/switch', {
+          const res = await fetch(API + '/root/switch', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ path: fullPath }),
           });
@@ -109,9 +115,17 @@ async function openPopup(): Promise<void> {
           if (data?.success) {
             localStorage.setItem('kfmv4_currentRoot', data.root);
             localStorage.removeItem('expandedPaths');
+            // 清空旧状态，重新加载文件树
+            KFMState.currentRoot = data.root;
+            KFMState.files = {};
+            KFMState.expandedPaths = {};
+            KFMState.notify();
+            await loadFileTree(data.root);
+            renderLabel(siblingName(data.root));
           }
-        } catch { /* reload 后 establishRoot 会重试 */ }
-        window.location.reload();
+        } catch (e) {
+          log('[sibling-switcher] switch failed:', e);
+        }
       };
       popup.appendChild(row);
     }

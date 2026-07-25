@@ -267,6 +267,22 @@ body {
   opacity: 0;
 }
 
+/* 思考框折叠动画：用 CSS animation（新元素上必播），替代 transition */
+@keyframes orbThinkCollapse {
+  from {
+    max-height: 60vh;
+    opacity: 1;
+  }
+  to {
+    max-height: 0;
+    opacity: 0;
+  }
+}
+.orb-think-collapsing {
+  animation: orbThinkCollapse 0.5s ease-out forwards;
+  overflow: hidden;
+}
+
 /* 折叠动画进行中：JS 逐帧控制 inline max-height，关掉 CSS transition 避免打架 */
 .orb-fold-anim {
   overflow: hidden;
