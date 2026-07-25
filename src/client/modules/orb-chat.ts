@@ -1293,6 +1293,7 @@ async function _consumeRun(
           // 增量追加：避免对已累积的全文做 escapeHtml + innerHTML 重建（O(n²) 卡顿）
           const pre = document.querySelector('#r' + ctx.getMsgIdx() + ' pre');
           if (pre) pre.textContent += event.deltaText || '';
+          else throttledRender(); // DOM 尚未构建（首批 delta），回退到节流渲染让思考框出现
         }
         else throttledRender();
       } catch {}
