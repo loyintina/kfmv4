@@ -283,6 +283,15 @@ body {
   overflow: hidden;
 }
 
+/* 浮动 Todo 面板进行中任务脉冲 */
+@keyframes orb-todo-pulse {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
 /* 折叠动画进行中：JS 逐帧控制 inline max-height，关掉 CSS transition 避免打架 */
 .orb-fold-anim {
   overflow: hidden;

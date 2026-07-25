@@ -274,6 +274,64 @@ function unescapeNL(s: string): string {
   return s.replace(/\\n/g, '\n').replace(/\\t/g, '\t');
 }
 
+// ========== 浮动 Todo 面板 ==========
+let _todoPanel: HTMLDivElement | null = null;
+let _todoDismissTimer: ReturnType<typeof setTimeout> | null = null;
+
+function ensureTodoPanel(container: HTMLElement): HTMLDivElement {
+  if (!_todoPanel || !document.body.contains(_todoPanel)) {
+    _todoPanel = document.createElement('div');
+    _todoPanel.className = 'orb-todo-panel';
+    _todoPanel.style.cssText = 'position:absolute;top:6px;right:6px;z-index:50;min-width:140px;max-width:220px;background:rgba(10,15,30,0.94);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:6px 8px;font-size:9px;box-shadow:0 2px 12px rgba(0,0,0,0.4);overflow:hidden;transition:opacity 0.3s';
+    container.style.position = 'relative';
+    container.appendChild(_todoPanel);
+  }
+  return _todoPanel;
+}
+
+function renderTodoPanel(todos: Array<{content: string; status: string}>, container: HTMLElement): void {
+  const panel = ensureTodoPanel(container);
+  if (todos.length === 0) { panel.style.opacity = '0'; return; }
+  panel.style.opacity = '1';
+  const doneCount = todos.filter(t => t.status === 'completed' || t.status === 'cancelled').length;
+  const allDone = doneCount === todos.length;
+  let html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;gap:6px">';
+  html += '<span style="color:rgba(0,212,255,0.7);font-weight:600;font-size:8px">📋 ' + doneCount + '/' + todos.length + '</span>';
+  html += '</div>';
+  for (const t of todos) {
+    const s = t.status;
+    const done = s === 'completed' || s === 'cancelled';
+    const active = s === 'in_progress';
+    const icon = s === 'completed' ? '✓' : s === 'in_progress' ? '●' : s === 'cancelled' ? '✕' : '○';
+    const color = done ? 'rgba(255,255,255,0.3)' : active ? 'rgba(0,212,255,0.9)' : 'rgba(255,255,255,0.55)';
+    const deco = s === 'cancelled' ? 'text-decoration:line-through;' : '';
+    const pulse = active ? 'animation:orb-todo-pulse 1.5s ease-in-out infinite;' : '';
+    html += '<div style="display:flex;gap:4px;padding:1px 0;align-items:baseline;' + deco + '">';
+    html += '<span style="color:' + color + ';font-size:8px;flex-shrink:0;' + pulse + '">' + icon + '</span>';
+    html += '<span style="color:' + color + ';font-size:8px;line-height:1.3;word-break:break-word;' + deco + '">' + escapeHtml(t.content) + '</span>';
+    html += '</div>';
+  }
+  panel.innerHTML = html;
+  if (allDone) {
+    if (_todoDismissTimer) clearTimeout(_todoDismissTimer);
+    _todoDismissTimer = setTimeout(() => { panel.style.opacity = '0'; }, 5000);
+  } else {
+    if (_todoDismissTimer) { clearTimeout(_todoDismissTimer); _todoDismissTimer = null; }
+  }
+}
+
+function updateTodoFromTool(tc: ToolBlock): void {
+  if (tc.name !== 'todo' || !tc.result || tc.result.isError) return;
+  const todos = tc.input?.todos as Array<{content: string; status: string}> | undefined;
+  if (!todos || todos.length === 0) return;
+  if (!_lastRenderState) return;
+  const panelEl = _lastRenderState.panelEl;
+  if (!panelEl || panelEl.style.pointerEvents === 'none') return;
+  const contentArea = DOM.orbPanelContent(panelEl);
+  if (contentArea) renderTodoPanel(todos, contentArea);
+}
+
+
 // 视口裁剪（虚拟滚动）：长会话时只渲染视口附近的消息，其余用等高占位撑住滚动条。
 // 高度表按绝对消息索引缓存实测高度，占位块用它撑出正确的滚动高度。
 const CULL_THRESHOLD = 15;   // 渲染权重超过才启用裁剪（见 _cullWeight：消息数+工具框数）
@@ -656,6 +714,8 @@ export function renderChatContent(state: ChatState): void {
               <div style="background:rgba(0,0,0,0.2);border-radius:4px;padding:3px 6px;max-height:${OUTPUT_MAX_H}px;overflow-y:auto">${formatted}</div>
             </div>`;
           }
+        } else if (tc.name === 'todo' && !isError && hasResult) {
+          outputHtml = `<div style="color:rgba(255,255,255,0.4);font-size:8px;padding:2px 0">📋 任务列表已更新 — 详见右上角面板</div>`;
         } else {
           const outExt = _pathExt(tc.input);
           const isFileTool = tc.name === 'read' || tc.name === 'write' || tc.name === 'edit';
@@ -1075,6 +1135,7 @@ function _applyEvent(event: any, ctx: RunConsumeCtx): void {
       );
       if (toolBlock) {
         toolBlock.result = event.toolResult;
+        updateTodoFromTool(toolBlock);
         clearToolHint(toolBlock.id);
         const fullText = event.toolResult?.content?.[0]?.text || '';
         type AnimBlock = ToolBlock & { _animText?: string; _foldPhase?: 'out' | 'fold' };
