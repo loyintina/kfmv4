@@ -317,7 +317,7 @@ function renderTodoPanel(todos: Array<{content: string; status: string}>, contai
   panel.innerHTML = html;
   if (allDone) {
     if (_todoDismissTimer) clearTimeout(_todoDismissTimer);
-    _todoDismissTimer = setTimeout(() => { panel.style.opacity = '0'; }, 5000);
+    _todoDismissTimer = setTimeout(() => { panel.style.opacity = '0'; _lastTodos = null; }, 5000);
   } else {
     if (_todoDismissTimer) { clearTimeout(_todoDismissTimer); _todoDismissTimer = null; }
   }
@@ -439,7 +439,6 @@ function attachScrollWatch(ca: HTMLElement): void {
     if (e.deltaY < 0) followBottom = false; // 滚轮向上 → 取消追底
   }, { passive: true });
 }
-    _todoDismissTimer = setTimeout(() => { panel.style.opacity = '0'; _lastTodos = null; }, 5000);
 function scrollToBottom(ca: HTMLElement): void {
   ca.scrollTop = ca.scrollHeight;
 }
