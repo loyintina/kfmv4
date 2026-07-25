@@ -34,9 +34,15 @@ export const ompEditTool: KfmTool = {
       const updated = content.replace(oldText, newText);
       await writeFile(filePath, updated, 'utf8');
       const fileName = filePath.split('/').pop() || filePath;
+      // 计算行号
+      const idx = content.indexOf(oldText);
+      const before = content.slice(0, idx);
+      const lineStart = (before.match(/\n/g) || []).length + 1;
+      const oldLines = (oldText.match(/\n/g) || []).length + 1;
+      const lineEnd = lineStart + oldLines - 1;
       return {
         content: [{ type: 'text', text: `编辑成功 — ${fileName}` }],
-        details: { tool: 'edit', path: filePath, name: fileName, oldText, newText },
+        details: { tool: 'edit', path: filePath, name: fileName, oldText, newText, lineStart, lineEnd },
       };
     } catch (e) {
       return { content: [{ type: 'text', text: `编辑失败: ${e instanceof Error ? e.message : '未知错误'}` }], isError: true };

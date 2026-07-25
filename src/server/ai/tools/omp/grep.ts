@@ -31,6 +31,6 @@ export const ompGrepTool: KfmTool = {
     const lines = result.matches.map(m => `${m.path}:${m.lineNumber}: ${m.line}`);
     let text = lines.join('\n');
     if (result.limitReached) text += '\n(结果被截断)';
-    return { content: [{ type: 'text', text }] };
+    return { content: [{ type: 'text', text }], details: { count: result.matches.length, limitReached: result.limitReached } };
   },
 };

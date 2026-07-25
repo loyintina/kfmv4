@@ -29,6 +29,6 @@ export const ompGlobTool: KfmTool = {
       return { content: [{ type: 'text', text: '未找到匹配文件' }] };
     }
     const text = result.matches.map(m => `${m.path}${m.fileType === 2 ? '/' : ''}`).join('\n');
-    return { content: [{ type: 'text', text }] };
+    return { content: [{ type: 'text', text }], details: { count: result.matches.length } };
   },
 };

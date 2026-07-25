@@ -599,6 +599,9 @@ export function renderChatContent(state: ChatState): void {
           } else {
             const oldText = (details?.oldText as string) || '';
             const newText = (details?.newText as string) || '';
+            const lineStart = details?.lineStart as number | undefined;
+            const lineEnd = details?.lineEnd as number | undefined;
+            const lineInfo = lineStart ? (lineStart === lineEnd ? `L${lineStart}` : `L${lineStart}-${lineEnd}`) : '';
             const diffHtml = oldText && newText
               ? `<div style="margin:0;font-family:ui-monospace,monospace;font-size:8px;line-height:1.5">
   <div style="color:#ff6b6b;background:rgba(255,60,60,0.08);padding:2px 5px;border-radius:2px;margin-bottom:2px"><span style="opacity:0.6">−</span> ${escapeHtml(unescapeNL(oldText.slice(0, 300)))}${oldText.length > 300 ? '...' : ''}</div>
@@ -609,8 +612,48 @@ export function renderChatContent(state: ChatState): void {
               <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
                 <span style="font-size:11px">✏️</span>
                 <span style="color:rgba(0,212,255,0.8);font-size:9px;font-weight:600">${escapeHtml(fileName)}</span>
+                ${lineInfo ? `<span style="color:rgba(255,255,255,0.35);font-size:8px">${lineInfo}</span>` : ''}
               </div>
               ${diffHtml}
+            </div>`;
+          }
+        } else if ((tc.name === 'grep' || tc.name === 'glob') && !isError && hasResult) {
+          const details = tc.result?.details as Record<string, unknown> | undefined;
+          const count = (details?.count as number) || 0;
+          if (tc.name === 'grep') {
+            // 解析 grep 输出: path:line: text → 分行渲染
+            const grepLines = resultText.split('\n').filter(l => l.trim());
+            const limitReached = details?.limitReached;
+            const formatted = grepLines.map(line => {
+              const m = line.match(/^(.+?):(\d+): (.*)/);
+              if (m) {
+                return `<div style="display:flex;gap:4px;padding:1px 0"><span style="color:rgba(0,212,255,0.7);font-size:8px;white-space:nowrap;flex-shrink:0">${escapeHtml(m[1])}:</span><span style="color:rgba(255,255,255,0.3);font-size:8px;white-space:nowrap;flex-shrink:0;min-width:24px;text-align:right">${m[2]}</span><span style="color:rgba(255,255,255,0.6);font-size:8px;white-space:pre-wrap;word-break:break-word">${escapeHtml(m[3])}</span></div>`;
+              }
+              return `<div style="color:rgba(255,255,255,0.4);font-size:8px;padding:1px 0">${escapeHtml(line)}</div>`;
+            }).join('');
+            const footer = limitReached ? '<div style="color:rgba(255,255,255,0.3);font-size:7px;padding-top:2px">(结果被截断)</div>' : '';
+            outputHtml = `<div class="orb-grep-card">
+              <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
+                <span style="font-size:10px">🔍</span>
+                <span style="color:rgba(0,212,255,0.7);font-size:8px;font-weight:600">${count} 处匹配</span>
+              </div>
+              <div style="background:rgba(0,0,0,0.2);border-radius:4px;padding:3px 6px;max-height:${OUTPUT_MAX_H}px;overflow-y:auto">${formatted}${footer}</div>
+            </div>`;
+          } else {
+            // glob 输出：path + 文件/目录图标
+            const globLines = resultText.split('\n').filter(l => l.trim());
+            const formatted = globLines.map(line => {
+              const isDir = line.endsWith('/');
+              const display = isDir ? line.slice(0, -1) : line;
+              const icon = isDir ? '📁' : '📄';
+              return `<div style="display:flex;gap:4px;padding:1px 0;align-items:center"><span style="font-size:9px;flex-shrink:0">${icon}</span><span style="color:rgba(255,255,255,0.6);font-size:8px;white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,monospace">${escapeHtml(display)}</span></div>`;
+            }).join('');
+            outputHtml = `<div class="orb-glob-card">
+              <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
+                <span style="font-size:10px">📂</span>
+                <span style="color:rgba(0,212,255,0.7);font-size:8px;font-weight:600">${count} 个文件</span>
+              </div>
+              <div style="background:rgba(0,0,0,0.2);border-radius:4px;padding:3px 6px;max-height:${OUTPUT_MAX_H}px;overflow-y:auto">${formatted}</div>
             </div>`;
           }
         } else {
