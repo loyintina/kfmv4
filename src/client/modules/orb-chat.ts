@@ -322,6 +322,7 @@ function renderTodoPanel(todos: Array<{content: string; status: string}>, panelE
   const allDone = doneCount === todos.length;
   let html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;gap:6px">';
   html += '<span style="color:rgba(0,212,255,0.7);font-weight:600;font-size:8px">📋 ' + doneCount + '/' + todos.length + '</span>';
+  html += '<span class="orb-todo-close" style="color:rgba(255,80,80,0.7);font-size:9px;cursor:pointer;user-select:none;font-weight:700;line-height:1" onclick="var p=this.closest(\'.orb-todo-panel\');if(p){p.style.opacity=\'0\';}try{window.__clearTodoPanel()}catch(e){}">✕</span>';
   html += '</div>';
   for (const t of todos) {
     const s = t.status;
@@ -352,6 +353,7 @@ export function clearTodoPanel(): void {
   if (_todoDismissTimer) { clearTimeout(_todoDismissTimer); _todoDismissTimer = null; }
   if (_todoPanel) { _todoPanel.style.opacity = '0'; }
 }
+(window as unknown as Record<string, unknown>).__clearTodoPanel = clearTodoPanel; // escape-ok: 供内联 onclick 关闭 todo 面板时清理内部状态
 
 function updateTodoFromTool(tc: ToolBlock): void {
   if (tc.name !== 'todo' || !tc.result || tc.result.isError) return;
