@@ -106,7 +106,7 @@ export function startWaitingIndicator(panelEl: HTMLDivElement): () => void {
   ].join(';');
 
   const txt = document.createElement('span');
-  txt.style.cssText = 'color:rgba(255,255,255,0.35);transition:opacity 0.3s';
+  txt.style.cssText = 'color:rgba(255,255,255,0.75);transition:opacity 0.3s';
 
   el.appendChild(dot);
   el.appendChild(txt);
@@ -489,6 +489,7 @@ export function renderChatContent(state: ChatState): void {
 
   const innerWidth = renderWidth - 24;
   (window as unknown as Record<string, unknown>).__orbMsgs = messages; // escape-ok: 挂到 window 供内联 onclick 读取，DOM 全局无类型
+  (window as unknown as Record<string, unknown>).__orbRender = () => scheduleRender(); // escape-ok: 折叠块展开时触发重渲染构建内容
   if (innerWidth < 50) return;
 
   const msgHtmls: string[] = [];  // 每条消息一个 HTML 片段（视口裁剪按条替换为占位）
@@ -615,15 +616,19 @@ export function renderChatContent(state: ChatState): void {
           : isCollapsing ? 'orb-think-collapsing'
           : reasonOpen ? 'orb-fold-content'
           : 'orb-fold-content collapsed';
+        const buildThinkContent = streaming || isCollapsing || reasonOpen;
+        const thinkPre = buildThinkContent
+          ? `<pre style="font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.45);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;background:rgba(0,0,0,0.15);padding:4px 6px;border-radius:4px;max-height:80px;overflow-y:auto">${escapeHtml(reasoning)}</pre>`
+          : '';
         html += `
           <div style="display:flex;justify-content:flex-start;margin-bottom:4px">
             <div style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:linear-gradient(rgba(10,15,30,0.75),rgba(10,15,30,0.75)) padding-box,${theme.aiChat.panelBorderGradient} border-box;border:1px solid transparent;border-left-width:3px;font-size:var(--card-font-size,10px)">
-              <div data-msg="${idx}" onclick="var p=document.getElementById('${rid}');p.classList.toggle('collapsed');this.querySelector('.rt-arrow').textContent=p.classList.contains('collapsed')?'▶':'▼';var m=this.dataset.msg;if(window.__orbMsgs&&m>=0){var t=window.__orbMsgs[m]?.content?.filter(function(x){return x&&x.type==='text'})[0];if(t)t._reasonExpanded=!p.classList.contains('collapsed')}" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
+              <div data-msg="${idx}" onclick="var p=document.getElementById('${rid}');p.classList.toggle('collapsed');this.querySelector('.rt-arrow').textContent=p.classList.contains('collapsed')?'▶':'▼';var m=this.dataset.msg;if(window.__orbMsgs&&m>=0){var t=window.__orbMsgs[m]?.content?.filter(function(x){return x&&x.type==='text'})[0];if(t){t._reasonExpanded=!p.classList.contains('collapsed');if(t._reasonExpanded&&window.__orbRender)window.__orbRender()}}" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
                 <span class="rt-arrow" style="font-size:7px;color:rgba(0,212,255,0.5)">${(streaming || doneAt !== undefined || reasonOpen) ? '▼' : '▶'}</span>
                 <span style="color:rgba(0,212,255,0.6);font-weight:600">${rlabel}</span>
               </div>
               <div id="${rid}" class="${displayClass}" style="margin-top:4px">
-                <pre style="font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.45);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;background:rgba(0,0,0,0.15);padding:4px 6px;border-radius:4px;max-height:80px;overflow-y:auto">${escapeHtml(reasoning)}</pre>
+                ${thinkPre}
               </div>
             </div>
           </div>`;
@@ -698,6 +703,9 @@ export function renderChatContent(state: ChatState): void {
         // 折叠动画期间（_foldPhase）用 orb-fold-anim 关掉 CSS transition，
         // 避免与 containerFoldClip 逐帧 inline max-height 打架抖动；否则用 orb-fold-content 走 CSS 过渡。
         const isFoldAnim = ab._foldPhase === 'fold';
+        // 惰性内容构建：折叠且非动画态时跳过内容 HTML（escapeHtml/格式化），只渲染标题栏。
+        // 用户点击展开 → onclick 触发 scheduleRender 重建完整内容。
+        const buildToolContent = isOpen || isFoldAnim;
         const foldClass = isFoldAnim ? 'orb-fold-anim' : (isOpen ? 'orb-fold-content' : 'orb-fold-content collapsed');
         const defaultArrow = isOpen ? '▼' : '▶';
         // 展开态两区结构：输入区 + 分隔线 + 输出区，各自限高可滚动。
@@ -707,16 +715,17 @@ export function renderChatContent(state: ChatState): void {
         // 标记 data-tool-in 供后处理做 JSON 高亮（打字机动画中不高亮，避免闪烁）。
         const inputAnimClass = isInputAnimating ? ' orb-tool-anim-pre' : '';
         const inputRich = paramsDisplay && !isInputAnimating ? ' data-tool-in="1"' : '';
-        const inputHtml = paramsDisplay
+        const inputHtml = buildToolContent && paramsDisplay
           ? `<pre class="orb-tool-input-pre${inputAnimClass}"${inputRich} style="${preStyle};color:rgba(255,255,255,0.45);max-height:${INPUT_MAX_H}px;overflow-y:auto">${escapeHtml(paramsDisplay)}</pre>`
           : '';
-        const dividerHtml = paramsFull
+        const dividerHtml = buildToolContent && paramsFull
           ? `<div style="height:1px;margin:5px 0;border-radius:1px;background:linear-gradient(90deg,${hexToRgba(c1, 0.7)},${hexToRgba(c2, 0.7)})"></div>`
           : '';
-        let outputHtml: string;
+        let outputHtml = '';
+        if (buildToolContent) {
         if (isExecuting) {
           const hint = getToolHint(tc.id);
-          outputHtml = `<div style="color:rgba(255,255,255,0.4);font-size:var(--card-font-size,9px);line-height:1.4;padding:2px 0">${hint.dotHtml}${escapeHtml(hint.text)}</div>`;
+          outputHtml = `<div style="color:rgba(255,255,255,0.75);font-size:var(--card-font-size,9px);line-height:1.4;padding:2px 0">${hint.dotHtml}${escapeHtml(hint.text)}</div>`;
         } else if ((tc.name === 'write' || tc.name === 'edit') && !isError) {
           // write/edit 特殊渲染：紧凑文件卡片
           const details = tc.result?.details as Record<string, unknown> | undefined;
@@ -803,10 +812,11 @@ export function renderChatContent(state: ChatState): void {
           const outRich = ` data-tool-out="${escapeHtml(tc.name)}" data-tool-ext="${outExt}"${isAnimating ? ' data-tool-streaming="1"' : ''}`;
           outputHtml = `<pre class="orb-tool-output-pre${animClass}"${outRich} style="${preStyle};color:rgba(255,255,255,0.6);max-height:${OUTPUT_MAX_H}px;overflow-y:auto">${escapeHtml(resultText || '(无结果)')}</pre>`;
         }
+        }
         html += `
           <div style="display:flex;justify-content:flex-start;margin-bottom:6px">
             <div class="orb-tool-card" style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:${gradientBorder};border:1px solid transparent;border-left-width:3px;border-left-color:${hexToRgba(c1, 0.7)};font-size:var(--card-font-size,10px)">
-              <div data-msg="${idx}" data-ti="${ti}" onclick="var p=document.getElementById('${tid}');p.classList.toggle('collapsed');this.querySelector('.orb-tc-arrow').textContent=p.classList.contains('collapsed')?'▶':'▼';var m=this.dataset.msg,t=this.dataset.ti;if(window.__orbMsgs&&m>=0){var b=window.__orbMsgs[m]?.content?.filter(function(x){return x&&x.type==='tool'})[t];if(b){b._userExpanded=!p.classList.contains('collapsed');if(!p.classList.contains('collapsed')){delete b._foldPhase}}}" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;margin-bottom:2px">
+              <div data-msg="${idx}" data-ti="${ti}" onclick="var p=document.getElementById('${tid}');p.classList.toggle('collapsed');this.querySelector('.orb-tc-arrow').textContent=p.classList.contains('collapsed')?'▶':'▼';var m=this.dataset.msg,t=this.dataset.ti;if(window.__orbMsgs&&m>=0){var b=window.__orbMsgs[m]?.content?.filter(function(x){return x&&x.type==='tool'})[t];if(b){b._userExpanded=!p.classList.contains('collapsed');if(!p.classList.contains('collapsed')){delete b._foldPhase;if(window.__orbRender)window.__orbRender()}}}" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;margin-bottom:2px">
                 <span class="orb-tc-arrow" style="font-size:7px;color:rgba(255,255,255,0.5)">${defaultArrow}</span>
                 <span style="color:${hexToRgba(c1, 0.9)};font-weight:600">${escapeHtml(tc.name)}</span>
                 <span style="color:${statusColor};font-size:var(--card-font-size,9px);font-weight:600">${statusLabel}</span>
@@ -1186,6 +1196,16 @@ function _applyEvent(event: any, ctx: RunConsumeCtx): void {
         clearToolHint(toolBlock.id);
         const fullText = event.toolResult?.content?.[0]?.text || '';
         type AnimBlock = ToolBlock & { _animText?: string; _foldPhase?: 'out' | 'fold' };
+        // 视口裁剪：工具卡不在可视区时跳过打字机动画，直接折叠（省 30+ 次渲染）
+        const ti2 = messages[msgIdx].content.filter(b => b?.type === 'tool').indexOf(toolBlock);
+        const el2 = document.getElementById('tc' + msgIdx + '_' + ti2);
+        const inView = el2 ? (() => { const r = el2.getBoundingClientRect(); return r.bottom > 0 && r.top < window.innerHeight; })() : true;
+        if (!inView) {
+          (toolBlock as AnimBlock)._foldPhase = 'fold';
+          const tid2 = 'tc' + msgIdx + '_' + ti2;
+          _activeFoldAnims.set(tid2, Date.now());
+          scheduleRender();
+        } else {
         const DURATION = 500, WAIT = 340, INTERVAL = 16;
         const totalTicks = Math.max(1, Math.round(DURATION / INTERVAL));
         const cpt = Math.max(1, Math.ceil(fullText.length / totalTicks));
@@ -1216,6 +1236,7 @@ function _applyEvent(event: any, ctx: RunConsumeCtx): void {
           const t0 = setTimeout(tick, INTERVAL);
           _activeAnimTimers.add(t0);
         });
+        }
       }
       // 服务端目录指纹检测到文件系统变化 → 刷新文件树
       if (event.filesChanged) {
@@ -1293,11 +1314,16 @@ async function _consumeRun(
           // 增量追加：避免对已累积的全文做 escapeHtml + innerHTML 重建（O(n²) 卡顿）
           const pre = document.querySelector('#r' + ctx.getMsgIdx() + ' pre');
           if (pre) {
-            pre.textContent += event.deltaText || '';
-            pre.scrollTop = pre.scrollHeight;
-            if (followBottom) {
-              const ca = pre.closest('.orb-panel-content');
-              if (ca) ca.scrollTop = ca.scrollHeight;
+            // 视口裁剪：pre 滚出可视区时跳过 DOM 写（数据已在模型累积，滚回后全量渲染恢复）
+            const r = pre.getBoundingClientRect();
+            if (r.bottom < 0 || r.top > window.innerHeight) { /* out of viewport, skip */ }
+            else {
+              pre.textContent += event.deltaText || '';
+              pre.scrollTop = pre.scrollHeight;
+              if (followBottom) {
+                const ca = pre.closest('.orb-panel-content');
+                if (ca) ca.scrollTop = ca.scrollHeight;
+              }
             }
           }
           else throttledRender(); // DOM 尚未构建（首批 delta），回退到节流渲染让思考框出现
