@@ -3,7 +3,7 @@
  *
  * 注册所有可用的 AI 工具：
  * - kfmv4 专用工具（snapshot, logs, exec）
- * - omp 工具（bash, read, write, edit, grep, glob, todo, eval, checkpoint, rewind, browser, debug, github, web_search）
+ * - omp 工具（bash, read, write, edit, grep, glob, todo, eval, checkpoint, rewind, browser, debug, web_search）
  */
 
 import type { KfmTool, ToolContext, ToolResult, ToolUpdate, ContentBlock } from './types.js';
@@ -31,7 +31,6 @@ import { ompRewindTool } from './omp/rewind.js';
 // omp 待配置工具
 import { browserTool } from './omp/browser.js';
 import { ompDebugTool } from './omp/debug.js';
-import { ompGithubTool } from './omp/github.js';
 import { ompWebSearchTool } from './omp/web-search.js';
 
 const tools = new Map<string, KfmTool>();
@@ -63,7 +62,6 @@ registerTool(ompRewindTool);
 // omp 待配置
 registerTool(browserTool);
 registerTool(ompDebugTool);
-registerTool(ompGithubTool);
 registerTool(ompWebSearchTool);
 
 export function getAllTools(): KfmTool[] {
