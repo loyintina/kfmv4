@@ -623,7 +623,7 @@ export function renderChatContent(state: ChatState): void {
                 <span style="color:rgba(0,212,255,0.6);font-weight:600">${rlabel}</span>
               </div>
               <div id="${rid}" class="${displayClass}" style="margin-top:4px">
-                <pre style="font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.45);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;background:rgba(0,0,0,0.15);padding:4px 6px;border-radius:4px">${escapeHtml(reasoning)}</pre>
+                <pre style="font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.45);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;background:rgba(0,0,0,0.15);padding:4px 6px;border-radius:4px;max-height:80px;overflow-y:auto">${escapeHtml(reasoning)}</pre>
               </div>
             </div>
           </div>`;
@@ -1292,7 +1292,14 @@ async function _consumeRun(
         else if (event.type === 'content_block_delta' && event.deltaType === 'thinking_delta') {
           // 增量追加：避免对已累积的全文做 escapeHtml + innerHTML 重建（O(n²) 卡顿）
           const pre = document.querySelector('#r' + ctx.getMsgIdx() + ' pre');
-          if (pre) pre.textContent += event.deltaText || '';
+          if (pre) {
+            pre.textContent += event.deltaText || '';
+            pre.scrollTop = pre.scrollHeight;
+            if (followBottom) {
+              const ca = pre.closest('.orb-panel-content');
+              if (ca) ca.scrollTop = ca.scrollHeight;
+            }
+          }
           else throttledRender(); // DOM 尚未构建（首批 delta），回退到节流渲染让思考框出现
         }
         else throttledRender();
