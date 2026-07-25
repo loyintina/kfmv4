@@ -292,9 +292,8 @@ function ensureTodoPanel(container: HTMLElement): HTMLDivElement {
 }
 
 function renderTodoPanel(todos: Array<{content: string; status: string}>, container: HTMLElement): void {
-  _lastTodos = todos; // 持久化
   const panel = ensureTodoPanel(container);
-  if (todos.length === 0) { panel.style.opacity = '0'; _lastTodos = null; return; }
+  if (todos.length === 0) { panel.style.opacity = '0'; return; }
   panel.style.opacity = '1';
   const doneCount = todos.filter(t => t.status === 'completed' || t.status === 'cancelled').length;
   const allDone = doneCount === todos.length;
@@ -326,14 +325,14 @@ function renderTodoPanel(todos: Array<{content: string; status: string}>, contai
 
 function updateTodoFromTool(tc: ToolBlock): void {
   if (tc.name !== 'todo' || !tc.result || tc.result.isError) return;
-  const todos = tc.input?.todos as Array<{content: string; status: string}> | undefined;
-  if (!todos || todos.length === 0) { _lastTodos = null; return; }
-  _lastTodos = todos;
-  // 立即更新面板（如果 orb 面板当前可见）
+  const todos = (tc.input?.todos as Array<{content: string; status: string}> | undefined) || [];
+  _lastTodos = todos.length > 0 ? todos : null;
+  // 立即更新面板
   if (_lastRenderState) {
     const panelEl = _lastRenderState.panelEl;
     if (panelEl && panelEl.style.pointerEvents !== 'none') {
-      renderTodoPanel(todos, panelEl);
+      if (todos.length > 0) renderTodoPanel(todos, panelEl);
+      else if (_todoPanel) { _todoPanel.style.opacity = '0'; }
     }
   }
 }
@@ -440,7 +439,7 @@ function attachScrollWatch(ca: HTMLElement): void {
     if (e.deltaY < 0) followBottom = false; // 滚轮向上 → 取消追底
   }, { passive: true });
 }
-
+    _todoDismissTimer = setTimeout(() => { panel.style.opacity = '0'; _lastTodos = null; }, 5000);
 function scrollToBottom(ca: HTMLElement): void {
   ca.scrollTop = ca.scrollHeight;
 }
