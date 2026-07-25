@@ -19,6 +19,7 @@ interface Role {
   id: string;
   name: string;
   promptFiles: string[];
+  dynamicPromptFiles: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -100,17 +101,19 @@ async function loadRoles(): Promise<Role[]> {
     const name = file.slice(0, -5);
     const content = await readFile(`${ROLES_PATH}/${file}`);
     let promptFiles: string[] = [];
+    let dynamicPromptFiles: string[] = [];
     let createdAt = '';
     let updatedAt = '';
     if (content) {
       try {
         const data = JSON.parse(content);
         promptFiles = data.promptFiles || [];
+        dynamicPromptFiles = data.dynamicPromptFiles || [];
         createdAt = data.createdAt || '';
         updatedAt = data.updatedAt || '';
       } catch (e) { log('[Role] loadRoles JSON 解析失败 (' + name + '): ' + (e instanceof Error ? e.message : String(e))); }
     }
-    roles.push({ id: name, name, promptFiles, createdAt, updatedAt });
+    roles.push({ id: name, name, promptFiles, dynamicPromptFiles, createdAt, updatedAt });
   }
   roles.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
   return roles;
@@ -270,8 +273,12 @@ function createRoleHandler(meta: Record<string, unknown>): CardContentHandler {
       metaRow.style.cssText = 'display:flex;gap:8px;font-size:var(--card-font-size,9px);color:' + TXT_SUB + '';
       
       const desc = document.createElement('span');
-      const count = role.promptFiles?.length || 0;
-      desc.textContent = count > 0 ? count + ' 个提示词文件' : '无提示词';
+      const sCount = role.promptFiles?.length || 0;
+      const dCount = role.dynamicPromptFiles?.length || 0;
+      const parts: string[] = [];
+      if (sCount > 0) parts.push(sCount + ' 个静态');
+      if (dCount > 0) parts.push(dCount + ' 个动态');
+      desc.textContent = parts.length > 0 ? parts.join(' + ') : '无提示词';
       
       metaRow.appendChild(desc);
       
@@ -319,6 +326,7 @@ function createRoleHandler(meta: Record<string, unknown>): CardContentHandler {
           id: '\u9ED8\u8BA4\u52A9\u624B',
           name: '\u9ED8\u8BA4\u52A9\u624B',
           promptFiles: [],
+          dynamicPromptFiles: [],
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -356,205 +364,247 @@ function createRoleHandler(meta: Record<string, unknown>): CardContentHandler {
       nameWrap.appendChild(_nameInput);
       formScroll.appendChild(nameRow);
       
-      // 标签
-      const promptLabel = document.createElement('div');
-      promptLabel.style.cssText = 'font-size:var(--card-font-size,10px);color:' + TXT_SUB + ';margin-top:6px;margin-bottom:4px';
-      promptLabel.textContent = 'prompt\u5E8F\u5217';
+      // ====== 双栏提示词文件（静态 + 动态） ======
 
-      // 提示词文件卡链
-      const promptFilesEl = document.createElement('div');
-      promptFilesEl.id = 'role-prompt-files';
-      promptFilesEl.style.cssText = 'display:flex;flex-direction:column;gap:7px';
+      const staticLabel = document.createElement('div');
+      staticLabel.style.cssText = 'font-size:var(--card-font-size,10px);color:' + TXT_SUB + ';margin-top:6px;margin-bottom:4px';
+      staticLabel.textContent = '静态提示词';
+
+      const staticFilesEl = document.createElement('div');
+      staticFilesEl.style.cssText = 'display:flex;flex-direction:column;gap:7px;min-height:20px;border-radius:8px;padding:2px;transition:outline 0.15s';
+
+      const dynamicLabel = document.createElement('div');
+      dynamicLabel.style.cssText = 'font-size:var(--card-font-size,10px);color:' + c2 + ';margin-top:10px;margin-bottom:4px';
+      dynamicLabel.textContent = '动态反馈（每轮工具调用后刷新）';
+
+      const dynamicFilesEl = document.createElement('div');
+      dynamicFilesEl.style.cssText = 'display:flex;flex-direction:column;gap:7px;min-height:20px;border-radius:8px;padding:2px;transition:outline 0.15s';
 
       function _pathDisplay(filePath: string): string {
-        // 不做任何截断，全部交给 CSS direction:rtl 处理左边省略号
         return filePath;
       }
 
-      function renderPromptFiles(): void {
-        promptFilesEl.innerHTML = '';
-        const role = getCurrentRole();
-        if (!role) return;
+      // 跨栏拖拽状态
+      let dragCard: HTMLElement | null = null;
+      let dragStartY = 0;
+      let dragOffY = 0;
+      let dragSource: 'static' | 'dynamic' = 'static';
+      let dragOrigIdx = -1;
+      let dragOverTarget: 'static' | 'dynamic' | null = null;
 
-        // 拖拽状态
-        let dragCard: HTMLElement | null = null;
-        let dragStartY = 0;
-        let dragOrigIdx = -1;
-        let dragOffY = 0;
+      function highlightDropZone(target: 'static' | 'dynamic' | null): void {
+        const accent = c1 + '60';
+        staticFilesEl.style.outline = target === 'static' ? '2px dashed ' + accent : 'none';
+        dynamicFilesEl.style.outline = target === 'dynamic' ? '2px dashed ' + c2 + '60' : 'none';
+      }
 
-        function onPointerMove(e: PointerEvent): void {
-          if (!dragCard) return;
-          dragOffY = e.clientY - dragStartY;
-          dragCard.style.transform = 'scale(1.04) translateY(' + dragOffY + 'px)';
-          // 检测落点：计算当前应处于的索引
-          const cards = Array.from(promptFilesEl.children) as HTMLElement[];
-          const cardH = dragCard.offsetHeight + 7; // height + gap
-          const targetIdx = Math.max(0, Math.min(cards.length - 1,
+      function onPointerMove(e: PointerEvent): void {
+        if (!dragCard) return;
+        dragOffY = e.clientY - dragStartY;
+        dragCard.style.transform = 'scale(1.04) translateY(' + dragOffY + 'px)';
+
+        // 检测是否越过另一栏
+        const otherEl = dragSource === 'static' ? dynamicFilesEl : staticFilesEl;
+        const otherZone = dragSource === 'static' ? 'dynamic' : 'static';
+        const rect = otherEl.getBoundingClientRect();
+        if (e.clientY >= rect.top - 10 && e.clientY <= rect.bottom + 10) {
+          if (dragOverTarget !== otherZone) { dragOverTarget = otherZone; highlightDropZone(otherZone); }
+        } else {
+          // 同栏排序
+          if (dragOverTarget !== null) { dragOverTarget = null; highlightDropZone(null); }
+          const container = dragSource === 'static' ? staticFilesEl : dynamicFilesEl;
+          const cards = Array.from(container.children).filter(c => c !== dragCard) as HTMLElement[];
+          const cardH = dragCard.offsetHeight + 7;
+          const targetIdx = Math.max(0, Math.min(cards.length,
             Math.round((dragOrigIdx * cardH + dragOffY) / cardH)));
           cards.forEach((c, i) => {
-            if (c === dragCard) return;
             const shouldShift =
-              (dragOrigIdx < targetIdx && i > dragOrigIdx && i <= targetIdx) ||
-              (dragOrigIdx > targetIdx && i < dragOrigIdx && i >= targetIdx);
+              (dragOrigIdx < targetIdx && i >= dragOrigIdx && i < targetIdx) ||
+              (dragOrigIdx > targetIdx && i >= targetIdx && i < dragOrigIdx);
             if (shouldShift) {
               const dir = dragOrigIdx < targetIdx ? -cardH : cardH;
-              // 先设 transition 再设 transform：浏览器确保下一帧能看到动画
               c.style.transition = 'transform 0.15s';
               c.style.transform = 'translateY(' + dir + 'px)';
             } else {
-              // 回到原位：先清 transform（触发动画），再用 rAF 之后清 transition
-              // 若直接同帧清掉 transition，浏览器会把 transform 的变化当瞬移处理
               c.style.transition = 'transform 0.15s';
               c.style.transform = '';
             }
           });
         }
+      }
 
-        function onPointerUp(e: PointerEvent): void {
-          if (!dragCard) return;
-          (e.target as HTMLElement)?.releasePointerCapture?.(e.pointerId);
-          const cards = Array.from(promptFilesEl.children) as HTMLElement[];
+      function onPointerUp(e: PointerEvent): void {
+        if (!dragCard) return;
+        (e.target as HTMLElement)?.releasePointerCapture?.(e.pointerId);
+
+        dragCard.style.transition = 'transform 0.25s cubic-bezier(0.34,1.56,0.64,1)';
+        dragCard.style.transform = 'scale(1)';
+        dragCard.style.boxShadow = '';
+        dragCard.style.zIndex = '';
+        dragCard.style.cursor = '';
+        highlightDropZone(null);
+
+        const container = dragSource === 'static' ? staticFilesEl : dynamicFilesEl;
+        const cards = Array.from(container.children) as HTMLElement[];
+        cards.forEach(c => { c.style.transform = ''; c.style.transition = ''; c.style.zIndex = ''; c.style.boxShadow = ''; });
+
+        const role = editingRole;
+        if (!role) { dragCard = null; return; }
+
+        if (dragOverTarget && dragOverTarget !== dragSource) {
+          // 跨栏移动
+          const srcArr = dragSource === 'static' ? role.promptFiles : role.dynamicPromptFiles;
+          const dstArr = dragOverTarget === 'static' ? role.promptFiles : role.dynamicPromptFiles;
+          const [moved] = srcArr.splice(dragOrigIdx, 1);
+          dstArr.push(moved);
+          saveRole(role).then(() => _renderPromptFiles?.());
+        } else {
+          // 同栏排序
           const cardH = dragCard.offsetHeight + 7;
           const targetIdx = Math.max(0, Math.min(cards.length - 1,
             Math.round((dragOrigIdx * cardH + dragOffY) / cardH)));
-
-          // 弹簧归位
-          dragCard.style.transition = 'transform 0.25s cubic-bezier(0.34,1.56,0.64,1)';
-          dragCard.style.transform = 'scale(1)';
-          dragCard.style.boxShadow = '';
-          dragCard.style.zIndex = '';
-          dragCard.style.cursor = '';
-
-          cards.forEach(c => { c.style.transform = ''; c.style.transition = ''; c.style.zIndex = ''; c.style.boxShadow = ''; });
-
           if (targetIdx !== dragOrigIdx) {
-            const files = editingRole!.promptFiles;
+            const files = dragSource === 'static' ? role.promptFiles : role.dynamicPromptFiles;
             const [moved] = files.splice(dragOrigIdx, 1);
             files.splice(targetIdx, 0, moved);
-            saveRole(editingRole!).then(() => _renderPromptFiles?.());
+            saveRole(role).then(() => _renderPromptFiles?.());
           }
-
-          dragCard = null;
         }
-        for (let fi = 0; fi < (role.promptFiles || []).length; fi++) {
-          const filePath = role.promptFiles![fi];
-          const origIdx = fi;
 
-          const card = document.createElement('div');
-          card.style.cssText = 'border-radius:8px;padding:1px;padding-left:3px;margin-bottom:7px;' +
-            'background:linear-gradient(135deg,' + c1 + ' 30%,' + c2 + ' 70%);' +
-            'transition:transform 0.15s';
+        dragCard = null;
+        dragOverTarget = null;
+      }
 
-          // 内层内容区
-          const inner = document.createElement('div');
-          inner.style.cssText = 'display:flex;align-items:stretch;border-radius:6px;height:78px;overflow:hidden;' +
-            'background:linear-gradient(rgba(10,10,15,0.94),rgba(10,10,15,0.94))';
+      function createFileCard(filePath: string, origIdx: number, source: 'static' | 'dynamic', c1: string, c2: string): HTMLElement {
+        const card = document.createElement('div');
+        card.style.cssText = 'border-radius:8px;padding:1px;padding-left:3px;margin-bottom:7px;' +
+          'background:linear-gradient(135deg,' + c1 + ' 30%,' + c2 + ' 70%);' +
+          'transition:transform 0.15s';
 
-          // 拖拽柄（第四层嵌套卡片：c2→c1）
-          const handle = document.createElement('div');
-          handle.style.cssText = 'display:flex;align-items:stretch;' +
-            'width:24px;flex-shrink:0;cursor:grab;user-select:none;padding:4px 3px 4px 4px;touch-action:none';
-          handle.addEventListener('pointerdown', (e: PointerEvent) => {
-            handle.setPointerCapture(e.pointerId);
-            dragCard = card;
-            dragStartY = e.clientY;
-            dragOrigIdx = origIdx;
-            dragOffY = 0;
-            card.style.transition = 'transform 0.12s ease-out';
-            card.style.transform = 'scale(1.04)';
-            card.style.boxShadow = '0 8px 32px rgba(0,0,0,0.55),0 0 0 1px ' + c1 + '30';
-            card.style.zIndex = '10'; // zindex-ok: 拖拽项在兄弟列表内抬升，局部 stacking 非全局层
-            card.style.cursor = 'grabbing';
-          });
-          handle.addEventListener('pointermove', onPointerMove);
-          handle.addEventListener('pointerup', onPointerUp);
-          handle.addEventListener('pointercancel', onPointerUp);
+        const inner = document.createElement('div');
+        inner.style.cssText = 'display:flex;align-items:stretch;border-radius:6px;height:78px;overflow:hidden;' +
+          'background:linear-gradient(rgba(10,10,15,0.94),rgba(10,10,15,0.94))';
 
-          const handleCard = document.createElement('div');
-          handleCard.style.cssText = 'display:flex;align-items:center;justify-content:center;flex:1;' +
-            'border-radius:4px;' +
-            'background:linear-gradient(rgba(12,12,18,0.92),rgba(12,12,18,0.92)) padding-box,' +
-            'linear-gradient(180deg,' + c2 + ' 30%,' + c1 + ' 70%) border-box;' +
-            'border:1px solid transparent;border-top-width:3px;pointer-events:none';
-          const dots = document.createElement('div');
-          dots.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:2px 0';
-          for (let i = 0; i < 14; i++) {
-            const dot = document.createElement('span');
-            dot.style.cssText = 'width:3px;height:3px;border-radius:50%;background:' + c1 + ';opacity:0.6;display:block;margin:auto';
-            dots.appendChild(dot);
+        // 拖拽柄
+        const handle = document.createElement('div');
+        handle.style.cssText = 'display:flex;align-items:stretch;' +
+          'width:24px;flex-shrink:0;cursor:grab;user-select:none;padding:4px 3px 4px 4px;touch-action:none';
+        handle.addEventListener('pointerdown', (e: PointerEvent) => {
+          handle.setPointerCapture(e.pointerId);
+          dragCard = card;
+          dragStartY = e.clientY;
+          dragOrigIdx = origIdx;
+          dragOffY = 0;
+          dragSource = source;
+          card.style.transition = 'transform 0.12s ease-out';
+          card.style.transform = 'scale(1.04)';
+          card.style.boxShadow = '0 8px 32px rgba(0,0,0,0.55),0 0 0 1px ' + c1 + '30';
+          card.style.zIndex = '10'; // zindex-ok: 拖拽项在兄弟列表内抬升，局部 stacking 非全局层
+          card.style.cursor = 'grabbing';
+        });
+        handle.addEventListener('pointermove', onPointerMove);
+        handle.addEventListener('pointerup', onPointerUp);
+        handle.addEventListener('pointercancel', onPointerUp);
+
+        const handleCard = document.createElement('div');
+        handleCard.style.cssText = 'display:flex;align-items:center;justify-content:center;flex:1;' +
+          'border-radius:4px;' +
+          'background:linear-gradient(rgba(12,12,18,0.92),rgba(12,12,18,0.92)) padding-box,' +
+          'linear-gradient(180deg,' + c2 + ' 30%,' + c1 + ' 70%) border-box;' +
+          'border:1px solid transparent;border-top-width:3px;pointer-events:none';
+        const dots = document.createElement('div');
+        dots.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:2px 0';
+        for (let i = 0; i < 14; i++) {
+          const dot = document.createElement('span');
+          dot.style.cssText = 'width:3px;height:3px;border-radius:50%;background:' + c1 + ';opacity:0.6;display:block;margin:auto';
+          dots.appendChild(dot);
+        }
+        handleCard.appendChild(dots);
+        handle.appendChild(handleCard);
+
+        // 内容区
+        const body = document.createElement('div');
+        body.style.cssText = 'flex:1;padding:3px 10px 8px 10px;min-width:0;overflow:hidden;' +
+          'display:flex;flex-direction:column';
+        const pathEl = document.createElement('div');
+        pathEl.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0;direction:rtl';
+        const pathSpan = document.createElement('span');
+        pathSpan.style.cssText = 'font-size:var(--card-font-size,11px);font-weight:600;' +
+          'color:' + TXT_TITLE + ';direction:ltr;unicode-bidi:plaintext';
+        pathSpan.textContent = _pathDisplay(filePath);
+        pathEl.appendChild(pathSpan);
+        const previewEl = document.createElement('div');
+        previewEl.style.cssText = 'font-size:var(--card-font-size,9px);color:' + TXT_SUB + ';' +
+          'line-height:1.4;margin-top:2px;overflow:hidden;flex:1';
+
+        readFile(filePath).then(content => {
+          if (content) {
+            const preview = content.trimStart().split('\n').slice(0, 20).join('\n');
+            previewEl.textContent = preview || '(空文件)';
+          } else {
+            previewEl.textContent = '(无法读取)';
           }
-          handleCard.appendChild(dots);
-          handle.appendChild(handleCard);
+        }).catch(() => { previewEl.textContent = '(无法读取)'; });
 
-          // 内容区（路径 + 预览）
-          const body = document.createElement('div');
-          body.style.cssText = 'flex:1;padding:3px 10px 8px 10px;min-width:0;overflow:hidden;' +
-            'display:flex;flex-direction:column';
-          const pathEl = document.createElement('div');
-          pathEl.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0;' +
-            'direction:rtl';
-          const pathSpan = document.createElement('span');
-          pathSpan.style.cssText = 'font-size:var(--card-font-size,11px);font-weight:600;' +
-            'color:' + TXT_TITLE + ';direction:ltr;unicode-bidi:plaintext';
-          pathSpan.textContent = _pathDisplay(filePath);
-          pathEl.appendChild(pathSpan);
-          const previewEl = document.createElement('div');
-          previewEl.style.cssText = 'font-size:var(--card-font-size,9px);color:' + TXT_SUB + ';' +
-            'line-height:1.4;margin-top:2px;overflow:hidden;flex:1';
+        body.appendChild(pathEl);
+        body.appendChild(previewEl);
 
-          readFile(filePath).then(content => {
-            if (content) {
-              const preview = content.trimStart().split('\n').slice(0, 20).join('\n');
-              previewEl.textContent = preview || '(\u7A7A\u6587\u4EF6)';
-            } else {
-              previewEl.textContent = '(\u65E0\u6CD5\u8BFB\u53D6)';
-            }
-          }).catch(() => { previewEl.textContent = '(\u65E0\u6CD5\u8BFB\u53D6)'; });
-
-          body.appendChild(pathEl);
-          body.appendChild(previewEl);
-
-          const removeBtn = document.createElement('div');
-          removeBtn.style.cssText = 'display:flex;align-items:flex-start;padding:3px 5px 0 0;flex-shrink:0;' +
-            'font-size:10px;color:rgba(255,100,100,0.5);cursor:pointer';
-          removeBtn.textContent = '\u2715';
-          removeBtn.onclick = async (e: MouseEvent) => {
-            e.stopPropagation();
-            if (!editingRole) return;
+        const removeBtn = document.createElement('div');
+        removeBtn.style.cssText = 'display:flex;align-items:flex-start;padding:3px 5px 0 0;flex-shrink:0;' +
+          'font-size:10px;color:rgba(255,100,100,0.5);cursor:pointer';
+        removeBtn.textContent = '\u2715';
+        removeBtn.onclick = async (e: MouseEvent) => {
+          e.stopPropagation();
+          if (!editingRole) return;
+          if (source === 'static') {
             editingRole.promptFiles = editingRole.promptFiles.filter(f => f !== filePath);
-            await saveRole(editingRole);
-            _renderPromptFiles?.();
-          };
+          } else {
+            editingRole.dynamicPromptFiles = editingRole.dynamicPromptFiles.filter(f => f !== filePath);
+          }
+          await saveRole(editingRole);
+          _renderPromptFiles?.();
+        };
 
-          inner.appendChild(handle);
-          inner.appendChild(body);
-          inner.appendChild(removeBtn);
-          card.appendChild(inner);
-          promptFilesEl.appendChild(card);
+        inner.appendChild(handle);
+        inner.appendChild(body);
+        inner.appendChild(removeBtn);
+        card.appendChild(inner);
+        return card;
+      }
+
+      function renderPromptFiles(): void {
+        staticFilesEl.innerHTML = '';
+        dynamicFilesEl.innerHTML = '';
+        const role = getCurrentRole();
+        if (!role) return;
+
+        for (let i = 0; i < (role.promptFiles || []).length; i++) {
+          staticFilesEl.appendChild(createFileCard(role.promptFiles[i], i, 'static', c1, c2));
+        }
+        for (let i = 0; i < (role.dynamicPromptFiles || []).length; i++) {
+          dynamicFilesEl.appendChild(createFileCard(role.dynamicPromptFiles[i], i, 'dynamic', c1, c2));
         }
       }
 
-      // 添加按钮（与文件卡片等高：min-height 78px）
-      const addPromptBtn = document.createElement('div');
-      addPromptBtn.style.cssText = 'border-radius:8px;padding:1px;padding-left:3px;margin-bottom:7px;' +
+      // 静态栏添加按钮
+      const addStaticBtn = document.createElement('div');
+      addStaticBtn.style.cssText = 'border-radius:8px;padding:1px;padding-left:3px;margin-bottom:7px;' +
         'background:linear-gradient(135deg,' + c1 + ' 30%,' + c2 + ' 70%);cursor:pointer';
-      const addInner = document.createElement('div');
-      addInner.style.cssText = 'display:flex;align-items:center;justify-content:center;' +
+      const addStaticInner = document.createElement('div');
+      addStaticInner.style.cssText = 'display:flex;align-items:center;justify-content:center;' +
         'border-radius:6px;min-height:32px;' +
         'background:linear-gradient(rgba(10,10,15,0.94),rgba(10,10,15,0.94))';
-      addInner.innerHTML = '<span style="font-size:20px;color:' + c1 + ';opacity:0.5;line-height:1">+</span>';
-      addPromptBtn.appendChild(addInner);
-      addPromptBtn.onclick = () => {
+      addStaticInner.innerHTML = '<span style="font-size:20px;color:' + c1 + ';opacity:0.5;line-height:1">+</span>';
+      addStaticBtn.appendChild(addStaticInner);
+      addStaticBtn.onclick = () => {
         const role = getCurrentRole();
         if (!role) return;
         selectFilesForPrompt(
           (paths) => {
             if (!editingRole) return;
-            const existing = new Set(editingRole.promptFiles || []);
+            const existing = new Set([...(editingRole.promptFiles || []), ...(editingRole.dynamicPromptFiles || [])]);
             for (const p of paths) {
-              if (!existing.has(p)) {
-                editingRole.promptFiles.push(p);
-              }
+              if (!existing.has(p)) editingRole.promptFiles.push(p);
             }
             saveRole(editingRole).then(() => {
               _renderPromptFiles?.();
@@ -565,9 +615,41 @@ function createRoleHandler(meta: Record<string, unknown>): CardContentHandler {
         );
       };
 
-      formScroll.appendChild(promptLabel);
-      formScroll.appendChild(promptFilesEl);
-      formScroll.appendChild(addPromptBtn);
+      // 动态栏添加按钮
+      const addDynamicBtn = document.createElement('div');
+      addDynamicBtn.style.cssText = 'border-radius:8px;padding:1px;padding-left:3px;margin-bottom:7px;' +
+        'background:linear-gradient(135deg,' + c2 + ' 30%,' + c1 + ' 70%);cursor:pointer';
+      const addDynamicInner = document.createElement('div');
+      addDynamicInner.style.cssText = 'display:flex;align-items:center;justify-content:center;' +
+        'border-radius:6px;min-height:32px;' +
+        'background:linear-gradient(rgba(10,10,15,0.94),rgba(10,10,15,0.94))';
+      addDynamicInner.innerHTML = '<span style="font-size:20px;color:' + c2 + ';opacity:0.5;line-height:1">+</span>';
+      addDynamicBtn.appendChild(addDynamicInner);
+      addDynamicBtn.onclick = () => {
+        const role = getCurrentRole();
+        if (!role) return;
+        selectFilesForPrompt(
+          (paths) => {
+            if (!editingRole) return;
+            const existing = new Set([...(editingRole.promptFiles || []), ...(editingRole.dynamicPromptFiles || [])]);
+            for (const p of paths) {
+              if (!existing.has(p)) editingRole.dynamicPromptFiles.push(p);
+            }
+            saveRole(editingRole).then(() => {
+              _renderPromptFiles?.();
+              renderPoolList(poolListEl, c1, c2);
+            });
+          },
+          c1, c2
+        );
+      };
+
+      formScroll.appendChild(staticLabel);
+      formScroll.appendChild(staticFilesEl);
+      formScroll.appendChild(addStaticBtn);
+      formScroll.appendChild(dynamicLabel);
+      formScroll.appendChild(dynamicFilesEl);
+      formScroll.appendChild(addDynamicBtn);
       _renderPromptFiles = renderPromptFiles;
       renderPromptFiles();
 
@@ -604,7 +686,7 @@ function createRoleHandler(meta: Record<string, unknown>): CardContentHandler {
       newBtn.style.cssText = btnStyle(c2);
       newBtn.textContent = '\u65B0\u5EFA';
       newBtn.onclick = async () => {
-        const newRole: Role = { id: '\u65B0\u89D2\u8272', name: '\u65B0\u89D2\u8272', promptFiles: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+        const newRole: Role = { id: '\u65B0\u89D2\u8272', name: '\u65B0\u89D2\u8272', promptFiles: [], dynamicPromptFiles: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
         roles.unshift(newRole);
         await saveRole(newRole);
         currentRoleId = newRole.id;

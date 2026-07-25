@@ -101,8 +101,6 @@ export function renderPageState(snap: unknown): string {
       lines.push(`- \`${c.name}\`${params} — ${c.description}`);
     }
   }
-  lines.push('');
-  lines.push(`_快照时间：${new Date().toISOString()}_`);
 
   return lines.join('\n');
 }

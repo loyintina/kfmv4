@@ -11,7 +11,7 @@ import type { WsServer } from '../ws-server.js';
 import { getToolDefinitions, executeTool } from './tools/index.js';
 import type { KfmTool, ToolContext } from './tools/types.js';
 import { buildAlwaysApplyPrompt, checkToolCallRules } from './rule-engine.js';
-import { assembleRoleSystemPrompt } from './prompt-assembler.js';
+import { assembleRoleSystemPrompt, assembleDynamicPrompt } from './prompt-assembler.js';
 import { refreshPageState } from './page-state.js';
 
 /** 从 prompts/tools/*.md 加载工具描述 */
@@ -178,18 +178,20 @@ export async function* streamChat(
   const alwaysApplyPrompt = buildAlwaysApplyPrompt();
   if (alwaysApplyPrompt) staticSystemParts.push(alwaysApplyPrompt);
 
-  // 每轮重组 system：角色 prompt（含动态 promptFiles，如 page-state.md）放最前，
-  // 静态段（工具文档/规则）在后。角色部分每轮重读 → 工具改写 page-state 后 AI 即见新状态。
-  const buildSystemMessages = (): Array<Record<string, unknown>> => {
-    const roleSystem = assembleRoleSystemPrompt(roleFile);
-    const msgs: Array<Record<string, unknown>> = [];
-    if (roleSystem) msgs.push({ role: 'system', content: roleSystem });
-    for (const part of staticSystemParts) msgs.push({ role: 'system', content: part });
-    return msgs;
-  };
+  // system 消息只构建一次（静态前缀，利于 API 缓存命中）。
+  // 动态内容（page-state 等）改由工具循环末尾注入对话尾部，不再每轮重建 system。
+  const systemMessages: Array<Record<string, unknown>> = [];
+  const roleSystem = assembleRoleSystemPrompt(roleFile);
+  if (roleSystem) systemMessages.push({ role: 'system', content: roleSystem });
+  for (const part of staticSystemParts) systemMessages.push({ role: 'system', content: part });
 
   // 首轮前刷新一次 page-state（AI 发第一条前先看到当前页面）。
   refreshPageState(wsServer);
+  // 首轮注入动态反馈（让 AI 第一条就能看到页面状态）
+  const initialDynamic = assembleDynamicPrompt(roleFile);
+  if (initialDynamic) {
+    apiMessages.push({ role: 'user', content: `[系统反馈 — 页面状态]\n${initialDynamic}` });
+  }
   // 工具调用循环（上限 50 轮，连续失败 3 次则截断）
   const MAX_TURNS = 50;
   let toolFailureCount = 0;
@@ -199,10 +201,10 @@ export async function* streamChat(
     if (signal?.aborted) { yield { type: 'error', content: '已取消' }; return; }
     turn++;
     if (turn > MAX_TURNS) { yield { type: 'error', content: `工具调用超过 ${MAX_TURNS} 轮上限，已停止` }; return; }
-    // 每轮 LLM 调用前重组 system（读最新角色文件/page-state），拼在对话前
+    // 静态 system 前缀 + 累积的对话消息
     const requestBody: Record<string, unknown> = {
       model: model || apiProvider.models[0] || 'deepseek-v4-flash',
-      messages: [...buildSystemMessages(), ...apiMessages],
+      messages: [...systemMessages, ...apiMessages],
       max_tokens: 16384,
       stream: true,
     };
@@ -413,6 +415,11 @@ export async function* streamChat(
       setTimeout(settleDone, 250);
       await settle;
       refreshPageState(wsServer);
+      // 动态反馈注入对话末尾（不破坏 system 前缀缓存）
+      const dynamicPrompt = assembleDynamicPrompt(roleFile);
+      if (dynamicPrompt) {
+        apiMessages.push({ role: 'user', content: `[系统反馈 — 页面状态更新]\n${dynamicPrompt}` });
+      }
       // 本轮消息结束，进入下一轮
       yield { type: 'message_stop' };
       continue;

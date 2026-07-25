@@ -22,6 +22,7 @@ import { sanitizePath } from '../path-utils.js';
 interface RoleConfig {
   prompt?: string;
   promptFiles?: string[];
+  dynamicPromptFiles?: string[];
 }
 
 /** 读取 active.json 中当前激活的 roleFile 名（不含 .json）。 */
@@ -50,6 +51,9 @@ function loadRole(roleFile: string): RoleConfig | null {
         promptFiles: Array.isArray(p['promptFiles'])
           ? p['promptFiles'].filter((f): f is string => typeof f === 'string')
           : [],
+        dynamicPromptFiles: Array.isArray(p['dynamicPromptFiles'])
+          ? p['dynamicPromptFiles'].filter((f): f is string => typeof f === 'string')
+          : [],
       };
     }
   } catch { /* 角色文件不存在或损坏 */ }
@@ -75,6 +79,26 @@ export function assembleRoleSystemPrompt(roleFile?: string): string {
     try {
       parts.push(readFileSync(safe, 'utf-8'));
     } catch { /* 读失败跳过该文件 */ }
+  }
+  return parts.join('\n\n');
+}
+
+/**
+ * 组装动态反馈 prompt：只读 dynamicPromptFiles（如 page-state.md）。
+ * 工具循环每轮调用，内容注入对话末尾（user message），不破坏 system 前缀缓存。
+ */
+export function assembleDynamicPrompt(roleFile?: string): string {
+  const rf = roleFile || getActiveRoleFile();
+  const role = loadRole(rf);
+  if (!role || !role.dynamicPromptFiles || role.dynamicPromptFiles.length === 0) return '';
+  const parts: string[] = [];
+  for (const pf of role.dynamicPromptFiles) {
+    const safe = sanitizePath(pf);
+    if (!safe || !existsSync(safe)) continue;
+    try {
+      const content = readFileSync(safe, 'utf-8').trim();
+      if (content) parts.push(content);
+    } catch { /* 读失败跳过 */ }
   }
   return parts.join('\n\n');
 }
