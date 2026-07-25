@@ -190,9 +190,22 @@ export class WsServer {
 
       case 'tmux-cmd': {
         const p = msg.payload as { cmd: string; args: string[] };
-        if (p.cmd !== 'list-sessions') { this.send(ws, 'tmux-result', { cmd: p.cmd, result: { stdout: '', stderr: 'unknown command', exitCode: 1 } }); break; }
-
-        execFile('tmux', ['list-sessions', '-F', '#S'], { timeout: 5000 }, (err, stdout, stderr) => {
+        let tmuxArgs: string[];
+        switch (p.cmd) {
+          case 'list-sessions': tmuxArgs = ['list-sessions', '-F', '#S']; break;
+          case 'new-session': tmuxArgs = ['new-session', '-d', '-s', p.args[0] || 'work']; break;
+          case 'kill-session': tmuxArgs = ['kill-session', '-t', p.args[0] || '']; break;
+          case 'switch-client': {
+            const tty = this._ptyManager.getTty(p.args[1] || '');
+            if (!tty) { this.send(ws, 'tmux-result', { cmd: p.cmd, result: { stdout: '', stderr: 'no tty for session', exitCode: 1 } }); return; }
+            tmuxArgs = ['switch-client', '-c', tty, '-t', p.args[0] || ''];
+            break;
+          }
+          default:
+            this.send(ws, 'tmux-result', { cmd: p.cmd, result: { stdout: '', stderr: 'unknown command', exitCode: 1 } });
+            return;
+        }
+        execFile('tmux', tmuxArgs, { timeout: 5000 }, (err, stdout, stderr) => {
           this.send(ws, 'tmux-result', {
             cmd: p.cmd,
             result: { stdout: stdout || '', stderr: stderr || '', exitCode: (err as { code?: string | number } | null)?.code ?? (err ? 1 : 0) },

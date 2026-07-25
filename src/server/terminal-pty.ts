@@ -9,6 +9,7 @@
 
 import * as pty from 'node-pty-prebuilt-multiarch';
 import { WebSocket } from 'ws';
+import { readlinkSync } from 'fs';
 
 // ========== 类型定义 ==========
 
@@ -17,6 +18,7 @@ interface PtySession {
   pty: pty.IPty;
   ws: WebSocket;
   cwd: string;
+  tty: string;
 }
 
 export type PtyDataCallback = (ws: WebSocket, sessionId: string, data: string) => void;
@@ -52,7 +54,8 @@ export class PtyManager {
       env: process.env as Record<string, string>,
     });
 
-    const session: PtySession = { id: sessionId, pty: term, ws, cwd: dir };
+    const session: PtySession = { id: sessionId, pty: term, ws, cwd: dir, tty: '' };
+    try { session.tty = readlinkSync('/proc/' + term.pid + '/fd/0'); } catch { /* ignore */ }
     this._sessions.set(sessionId, session);
 
     term.onData((data: string) => {
@@ -101,6 +104,11 @@ export class PtyManager {
   /** 查询会话信息 */
   getSession(sessionId: string): PtySession | undefined {
     return this._sessions.get(sessionId);
+  }
+
+  /** 获取会话的 tty 路径（用于 tmux switch-client -c） */
+  getTty(sessionId: string): string {
+    return this._sessions.get(sessionId)?.tty || '';
   }
 
   /** 当前活跃会话数 */

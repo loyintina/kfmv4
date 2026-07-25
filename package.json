@@ -4,6 +4,7 @@
   "description": "KFM v4 - TypeScript 全栈文件管理器",
   "type": "module",
   "scripts": {
+    "preinstall": "node scripts/clean-npm-temp.cjs",
     "bundle": "node build.mjs",
     "watch": "node build.mjs && (sass --no-source-map --watch public/css/:public/css/ & npx esbuild src/client/main.ts --bundle --platform=browser --format=iife --outfile=public/bundle.js --target=es2019 --external:katex --external:mermaid --watch)",
     "dev": "node build.mjs && npm run start",
@@ -29,10 +30,12 @@
     "ws": "^8.21.0"
   },
   "devDependencies": {
+    "@puppeteer/browsers": "^3.0.6",
     "@types/express": "^5.0.6",
     "@types/node": "^25.6.0",
     "@types/ws": "^8.18.1",
     "esbuild": "^0.28.0",
-    "typescript": "^6.0.3"
+    "puppeteer-core": "^25.3.0",
+    "typescript": "^7.0.2"
   }
 }

@@ -79,6 +79,7 @@ export const Z = {
 
   /** L7 AI 核心（凌驾除焦点弹窗外的一切 UI） */
   ORB_PANEL: 9000,
+  TODO_PANEL: 9050,
   AI_INPUT_BAR: 9100,
   AI_SEND_BTN: 9200,
   LIGHT_ORB: 9200,

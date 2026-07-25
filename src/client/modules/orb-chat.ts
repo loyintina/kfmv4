@@ -21,6 +21,7 @@ import { MD_CSS } from './renderers/md-css.js';
 import { marked } from 'marked';
 import { preprocessMd, MARKED_OPTS } from './renderers/md-extensions.js';
 import { highlightAll, highlightCode } from './renderers/code-highlight.js';
+import { Z } from './z-index-layers.js';
 import { renderMath, renderMermaid, type MathData } from './renderers/math-diagram.js';
 import { WAITING_HINTS } from '../data/waiting-hints.js';
 import { hslToHex } from './color-utils.js';
@@ -284,7 +285,7 @@ function ensureTodoPanel(container: HTMLElement): HTMLDivElement {
     if (_todoPanel) _todoPanel.remove();
     _todoPanel = document.createElement('div');
     _todoPanel.className = 'orb-todo-panel';
-    _todoPanel.style.cssText = 'position:absolute;top:6px;right:6px;z-index:50;min-width:140px;max-width:220px;background:rgba(10,15,30,0.94);border:1px solid transparent;border-image:linear-gradient(135deg,rgba(0,212,255,0.5),rgba(124,58,237,0.5)) 1;border-radius:8px;padding:6px 8px;font-size:9px;box-shadow:0 2px 12px rgba(0,0,0,0.4);overflow:hidden;transition:opacity 0.3s';
+    _todoPanel.style.cssText = 'position:absolute;top:6px;right:6px;z-index:' + Z.TODO_PANEL + ';min-width:140px;max-width:220px;background:rgba(10,15,30,0.94);border:1px solid transparent;border-image:linear-gradient(135deg,rgba(0,212,255,0.5),rgba(124,58,237,0.5)) 1;border-radius:8px;padding:6px 8px;font-size:9px;box-shadow:0 2px 12px rgba(0,0,0,0.4);overflow:hidden;transition:opacity 0.3s';
     container.style.position = container.style.position || 'relative';
     container.appendChild(_todoPanel);
   }

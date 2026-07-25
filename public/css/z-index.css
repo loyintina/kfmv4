@@ -49,6 +49,7 @@
   --z-terminal-magnifier: 6430;
   /* L7 AI 核心（凌驾除焦点弹窗外的一切 UI） */
   --z-orb-panel: 9000;
+  --z-todo-panel: 9050;
   --z-ai-input-bar: 9100;
   --z-ai-send-btn: 9200;
   --z-light-orb: 9200;
