@@ -440,14 +440,16 @@ export function renderChatContent(state: ChatState): void {
         // 延迟折叠：思考完成时记录时间戳，400ms 后才播折叠动画
         const doneAt = _thinkDoneAt.get(idx);
         if (!streaming && !reasonOpen && doneAt === undefined) {
-          _thinkDoneAt.set(idx, Date.now());
-          // rAF 轮询直到 400ms 后触发渲染
           const poll = () => {
             const start = _thinkDoneAt.get(idx);
             if (start !== undefined && Date.now() - start >= 400) {
               _thinkDoneAt.delete(idx);
-              _thinkCollapsed.add(idx);
-              if (_lastRenderState) renderChatContent(_lastRenderState);
+              // 直接在 DOM 上加动画类，不触发 innerHTML 重建，避免动画被打断
+              const el = document.getElementById('r' + idx);
+              if (el) {
+                el.classList.add('orb-think-collapsing');
+                el.addEventListener('animationend', () => { el.classList.add('collapsed'); el.classList.remove('orb-think-collapsing'); }, { once: true });
+              }
             } else if (start !== undefined) {
               requestAnimationFrame(poll);
             }
@@ -455,6 +457,7 @@ export function renderChatContent(state: ChatState): void {
           requestAnimationFrame(poll);
         }
         const willCollapse = _thinkCollapsed.has(idx);
+        if (willCollapse) _thinkCollapsed.delete(idx); // 只播一帧，后续渲染用静态 collapsed
         const displayClass = streaming ? 'orb-fold-open'
           : willCollapse ? 'orb-think-collapsing'
           : reasonOpen ? 'orb-fold-content'
