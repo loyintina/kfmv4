@@ -302,6 +302,7 @@ function ensureTodoPanel(panelEl: HTMLElement): HTMLDivElement {
     wrapper.appendChild(_todoPanel);
     target.prepend(wrapper);
   } else {
+    wrapper.style.cssText = 'position:sticky;top:0;margin-top:-12px;display:flex;justify-content:flex-end;z-index:' + Z.TODO_PANEL + ';pointer-events:none';
     _todoPanel = wrapper.querySelector('.orb-todo-panel') as HTMLDivElement | null;
     if (!_todoPanel) {
       _todoPanel = document.createElement('div');
