@@ -327,8 +327,7 @@ function updateTodoFromTool(tc: ToolBlock): void {
   if (!_lastRenderState) return;
   const panelEl = _lastRenderState.panelEl;
   if (!panelEl || panelEl.style.pointerEvents === 'none') return;
-  const contentArea = DOM.orbPanelContent(panelEl);
-  if (contentArea) renderTodoPanel(todos, contentArea);
+  if (panelEl) renderTodoPanel(todos, panelEl);
 }
 
 
