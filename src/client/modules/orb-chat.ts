@@ -201,8 +201,8 @@ let _lastRenderState: ChatState | null = null;
 let _lastMsgCount = 0; // 上次渲染的消息数——仅当数量增加时给新消息播入场动画（防滑动重渲染反复触发）
 // 思考框折叠：记录思考完成时刻，延迟 400ms 后触发折叠动画
 const _thinkDoneAt = new Map<number, number>(); // mi → timestamp
-// 折叠动画已播过的消息（避免每帧重播）
-const _thinkCollapsed = new Set<number>();
+// 折叠动画保护窗口：动画播放期间即使 innerHTML 重建也继续用 orb-think-collapsing
+const _collapsingUntil = new Map<number, number>(); // mi → 动画结束时间戳
 
 // rAF 合批渲染调度器：并行工具的多个打字机/折叠动画各自 tick 时，若直接调 onRender，
 // 12 个动画 = 每帧 12 次全量重渲染 → 卡死。改为标记脏 + 单个 rAF 每帧最多渲染一次。
@@ -444,6 +444,7 @@ export function renderChatContent(state: ChatState): void {
             const start = _thinkDoneAt.get(idx);
             if (start !== undefined && Date.now() - start >= 400) {
               _thinkDoneAt.delete(idx);
+              _collapsingUntil.set(idx, Date.now() + 500);
               // 直接在 DOM 上加动画类，不触发 innerHTML 重建，避免动画被打断
               const el = document.getElementById('r' + idx);
               if (el) {
@@ -456,10 +457,14 @@ export function renderChatContent(state: ChatState): void {
           };
           requestAnimationFrame(poll);
         }
+        // 保护期内的折叠动画，即使 innerHTML 重建也保持动画类
+        const cUntil = _collapsingUntil.get(idx);
+        const isCollapsing = cUntil !== undefined && Date.now() < cUntil;
+        if (!isCollapsing && cUntil !== undefined) _collapsingUntil.delete(idx);
         const willCollapse = _thinkCollapsed.has(idx);
-        if (willCollapse) _thinkCollapsed.delete(idx); // 只播一帧，后续渲染用静态 collapsed
+        if (willCollapse) _thinkCollapsed.delete(idx);
         const displayClass = streaming ? 'orb-fold-open'
-          : willCollapse ? 'orb-think-collapsing'
+          : isCollapsing ? 'orb-think-collapsing'
           : reasonOpen ? 'orb-fold-content'
           : 'orb-fold-content collapsed';
         html += `
