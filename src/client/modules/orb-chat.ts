@@ -280,20 +280,41 @@ let _todoPanel: HTMLDivElement | null = null;
 let _todoDismissTimer: ReturnType<typeof setTimeout> | null = null;
 let _lastTodos: Array<{content: string; status: string}> | null = null; // 持久化状态
 
-function ensureTodoPanel(container: HTMLElement): HTMLDivElement {
-  if (!_todoPanel || _todoPanel.parentElement !== container) {
-    if (_todoPanel) _todoPanel.remove();
+// 圆角方案：border-image 会覆盖 border-radius，改用 background 双层渐变
+// 即 padding-box（内）和 border-box（外）两段渐变实现圆角边框。
+// 定位方案：贴在面板的滚动内容区（.orb-panel-content）顶部，用 position:sticky
+// 让面板在消息滚动时保持可见；不贴在 panelEl 上以免挡住右上角会话下拉框。
+const TODO_GRADIENT = 'linear-gradient(rgba(10,15,30,0.94),rgba(10,15,30,0.94)) padding-box,linear-gradient(135deg,rgba(0,212,255,0.5),rgba(124,58,237,0.5)) border-box';
+
+function ensureTodoPanel(panelEl: HTMLElement): HTMLDivElement {
+  const contentArea = DOM.orbPanelContent(panelEl);
+  const target = contentArea || panelEl;
+  // 用 wrapper 类名标识已存在；_todoPanel 指向内层面板，不直接用 _todoPanel.parentElement
+  // 因为外层有 sticky wrapper，parentElement 是 wrapper 而非 target。
+  let wrapper = target.querySelector('.orb-todo-wrapper') as HTMLDivElement | null;
+  if (!wrapper) {
+    wrapper = document.createElement('div');
+    wrapper.className = 'orb-todo-wrapper';
+    wrapper.style.cssText = 'position:sticky;top:6px;display:flex;justify-content:flex-end;z-index:' + Z.TODO_PANEL + ';pointer-events:none';
     _todoPanel = document.createElement('div');
     _todoPanel.className = 'orb-todo-panel';
-    _todoPanel.style.cssText = 'position:absolute;top:6px;right:6px;z-index:' + Z.TODO_PANEL + ';min-width:140px;max-width:220px;background:rgba(10,15,30,0.94);border:1px solid transparent;border-image:linear-gradient(135deg,rgba(0,212,255,0.5),rgba(124,58,237,0.5)) 1;border-radius:8px;padding:6px 8px;font-size:9px;box-shadow:0 2px 12px rgba(0,0,0,0.4);overflow:hidden;transition:opacity 0.3s';
-    container.style.position = container.style.position || 'relative';
-    container.appendChild(_todoPanel);
+    _todoPanel.style.cssText = 'min-width:140px;max-width:220px;background:' + TODO_GRADIENT + ';border:1px solid transparent;border-radius:8px;padding:6px 8px;font-size:9px;box-shadow:0 2px 12px rgba(0,0,0,0.4);overflow:hidden;transition:opacity 0.3s;pointer-events:auto';
+    wrapper.appendChild(_todoPanel);
+    target.prepend(wrapper);
+  } else {
+    _todoPanel = wrapper.querySelector('.orb-todo-panel') as HTMLDivElement | null;
+    if (!_todoPanel) {
+      _todoPanel = document.createElement('div');
+      _todoPanel.className = 'orb-todo-panel';
+      _todoPanel.style.cssText = 'min-width:140px;max-width:220px;background:' + TODO_GRADIENT + ';border:1px solid transparent;border-radius:8px;padding:6px 8px;font-size:9px;box-shadow:0 2px 12px rgba(0,0,0,0.4);overflow:hidden;transition:opacity 0.3s;pointer-events:auto';
+      wrapper.appendChild(_todoPanel);
+    }
   }
   return _todoPanel;
 }
 
-function renderTodoPanel(todos: Array<{content: string; status: string}>, container: HTMLElement): void {
-  const panel = ensureTodoPanel(container);
+function renderTodoPanel(todos: Array<{content: string; status: string}>, panelEl: HTMLElement): void {
+  const panel = ensureTodoPanel(panelEl);
   if (todos.length === 0) { panel.style.opacity = '0'; return; }
   panel.style.opacity = '1';
   const doneCount = todos.filter(t => t.status === 'completed' || t.status === 'cancelled').length;
@@ -322,6 +343,13 @@ function renderTodoPanel(todos: Array<{content: string; status: string}>, contai
   } else {
     if (_todoDismissTimer) { clearTimeout(_todoDismissTimer); _todoDismissTimer = null; }
   }
+}
+
+/** 切换会话时清理 todo 面板（防止旧会话的任务列表残留） */
+export function clearTodoPanel(): void {
+  _lastTodos = null;
+  if (_todoDismissTimer) { clearTimeout(_todoDismissTimer); _todoDismissTimer = null; }
+  if (_todoPanel) { _todoPanel.style.opacity = '0'; }
 }
 
 function updateTodoFromTool(tc: ToolBlock): void {

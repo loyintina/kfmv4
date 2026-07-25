@@ -23,7 +23,7 @@ import { anim } from './animation-registry.js';
 import { log } from './logger.js';
 import { sessionStore } from './session-store.js';
 import { buildPanelContent } from './orb-panel.js';
-import { renderChatContent, doSend, resumeRun, readPersistedRun, clearPersistedRun, startWaitingIndicator, type ChatMessage } from './orb-chat.js';
+import { renderChatContent, doSend, resumeRun, readPersistedRun, clearPersistedRun, clearTodoPanel, startWaitingIndicator, type ChatMessage } from './orb-chat.js';
 import type { OrbState } from './orb-state.js';
 const API_BASE = window.location.pathname.replace(/\/+$/, '') + '/api/';
 
@@ -554,6 +554,8 @@ export async function initOrb(): Promise<void> {
       if (sid && sid === _renderedSessionId && !abortCtrl) return;
       // 中止进行中的后台 run（流式尾随）
       if (abortCtrl) { abortCtrl.abort(); abortCtrl = null; sendBtn!.classList.remove('sending'); }
+      // 清理旧会话的 todo 面板（防止残留）
+      clearTodoPanel();
       const myToken = ++_switchToken;
       await sessionStore.load();
       if (myToken !== _switchToken) return; // 期间又切换，放弃
