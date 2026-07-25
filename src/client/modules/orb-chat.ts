@@ -269,6 +269,11 @@ function _pathName(input: Record<string, unknown>): string {
   return p.split('/').pop() || p;
 }
 
+/** 将字面量 \n 转成真实换行（AI tool call 参数里的换行符是转义字符串） */
+function unescapeNL(s: string): string {
+  return s.replace(/\\n/g, '\n').replace(/\\t/g, '\t');
+}
+
 // 视口裁剪（虚拟滚动）：长会话时只渲染视口附近的消息，其余用等高占位撑住滚动条。
 // 高度表按绝对消息索引缓存实测高度，占位块用它撑出正确的滚动高度。
 const CULL_THRESHOLD = 15;   // 渲染权重超过才启用裁剪（见 _cullWeight：消息数+工具框数）
@@ -595,14 +600,17 @@ export function renderChatContent(state: ChatState): void {
             const oldText = (details?.oldText as string) || '';
             const newText = (details?.newText as string) || '';
             const diffHtml = oldText && newText
-              ? `<span style="color:rgba(255,100,100,0.7);background:rgba(255,50,50,0.1);text-decoration:line-through">${escapeHtml(oldText.slice(0, 200))}${oldText.length > 200 ? '...' : ''}</span>\n<span style="color:rgba(100,255,180,0.7);background:rgba(50,255,100,0.1)">${escapeHtml(newText.slice(0, 200))}${newText.length > 200 ? '...' : ''}</span>`
+              ? `<div style="margin:0;font-family:ui-monospace,monospace;font-size:8px;line-height:1.5">
+  <div style="color:#ff6b6b;background:rgba(255,60,60,0.08);padding:2px 5px;border-radius:2px;margin-bottom:2px"><span style="opacity:0.6">−</span> ${escapeHtml(unescapeNL(oldText.slice(0, 300)))}${oldText.length > 300 ? '...' : ''}</div>
+  <div style="color:#51cf66;background:rgba(80,255,100,0.08);padding:2px 5px;border-radius:2px"><span style="opacity:0.6">+</span> ${escapeHtml(unescapeNL(newText.slice(0, 300)))}${newText.length > 300 ? '...' : ''}</div>
+</div>`
               : escapeHtml(resultText);
             outputHtml = `<div class="orb-edit-card" data-edit-path="${escapeHtml(filePath)}">
               <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
                 <span style="font-size:11px">✏️</span>
                 <span style="color:rgba(0,212,255,0.8);font-size:9px;font-weight:600">${escapeHtml(fileName)}</span>
               </div>
-              <pre data-tool-out="edit" data-tool-ext="${_pathExt(tc.input)}" style="font-size:8px;line-height:1.3;white-space:pre-wrap;word-break:break-word;margin:0;font-family:ui-monospace,monospace;background:rgba(0,0,0,0.2);padding:3px 5px;border-radius:3px;color:rgba(255,255,255,0.55);max-height:${OUTPUT_MAX_H}px;overflow-y:auto">${diffHtml}</pre>
+              ${diffHtml}
             </div>`;
           }
         } else {
@@ -800,7 +808,7 @@ export function renderChatContent(state: ChatState): void {
         const key = 'out:' + tool + ':' + ext + ':' + raw;
         const cached = _toolCacheGet(key);
         if (cached !== undefined) { pre.innerHTML = cached; continue; }
-        pre.innerHTML = '<code class="language-' + lang + '">' + escapeHtml(raw) + '</code>';
+        pre.innerHTML = '<code class="language-' + lang + '">' + escapeHtml(unescapeNL(raw)) + '</code>';
         const outCode = pre.querySelector('code'); if (outCode) highlightCode(outCode as HTMLElement);
         _toolCacheSet(key, pre.innerHTML);
       }
