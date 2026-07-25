@@ -492,8 +492,50 @@ export function renderChatContent(state: ChatState): void {
   if (innerWidth < 50) return;
 
   const msgHtmls: string[] = [];  // 每条消息一个 HTML 片段（视口裁剪按条替换为占位）
+
+  // ===== 视口裁剪窗口：提前计算，循环内跳过窗口外消息的 HTML 构建 =====
+  const cull = _cullWeight(messages) > CULL_THRESHOLD;
+  let cullFirst = 0, cullLast = messages.length - 1;
+  if (cull) {
+    const h = (i: number) => _msgHeights.get(i) ?? DEFAULT_MSG_H;
+    const vpH = contentArea.clientHeight || 400;
+    if (followBottom) {
+      cullLast = messages.length - 1;
+      const budget = vpH + CULL_BUFFER_PX;
+      let acc = 0;
+      cullFirst = cullLast;
+      for (let i = cullLast; i >= 0; i--) {
+        acc += h(i);
+        cullFirst = i;
+        if (acc >= budget) break;
+      }
+    } else {
+      const st = contentArea.scrollTop;
+      const winTop = st - CULL_BUFFER_PX;
+      const winBot = st + vpH + CULL_BUFFER_PX;
+      cullFirst = messages.length;
+      cullLast = -1;
+      let acc = 0;
+      for (let i = 0; i < messages.length; i++) {
+        const hi = h(i);
+        if (acc + hi >= winTop && acc <= winBot) {
+          if (i < cullFirst) cullFirst = i;
+          if (i > cullLast) cullLast = i;
+        }
+        acc += hi;
+      }
+      if (cullLast < 0) { cullFirst = 0; cullLast = messages.length - 1; }
+    }
+  }
+
   let idx = 0;
   for (const msg of messages) {
+    // 裁剪：窗口外消息跳过 HTML 构建，只占位
+    if (cull && (idx < cullFirst || idx > cullLast)) {
+      msgHtmls.push('');
+      idx++;
+      continue;
+    }
     let html = '';  // 本条消息的片段
     const isUser = msg.role === 'user';
     const bgColor = isUser
@@ -825,61 +867,27 @@ export function renderChatContent(state: ChatState): void {
   const hintEl = contentArea.querySelector('#' + HINT_ID) as HTMLElement | null;
   attachScrollWatch(contentArea);
 
-  // ===== 视口裁剪：决定渲染窗口 =====
-  const cull = _cullWeight(messages) > CULL_THRESHOLD;
+  // ===== 视口裁剪：组装最终 HTML =====
   let html: string;
-  let _cullFirstVisible = 0;    // 本次裁剪的窗口起始索引（-1 = 未裁剪）
-  let _cullEstTopPad = 0;       // 估算的 topPad（供渲染后对比真实高度补偿抖动）
+  let _cullFirstVisible = 0;
+  let _cullEstTopPad = 0;
   if (!cull) {
     html = msgHtmls.join('');
     _cullFirstVisible = -1;
     _lastCullWin = '';
   } else {
     const h = (i: number) => _msgHeights.get(i) ?? DEFAULT_MSG_H;
-    let firstVisible: number, lastVisible: number;
-    if (followBottom) {
-      // 追底：窗口锚在末尾。从最后一条往前累加真实高度，直到填满 视口+上下缓冲，
-      // 作为 firstVisible。这样"少而巨型"的历史消息累计高度很快超过缓冲 → 被挡在
-      // 窗口外变占位，不参与每帧重建；同时保证末尾流式消息 + 一屏历史始终可见。
-      lastVisible = msgHtmls.length - 1;
-      const budget = viewportH + CULL_BUFFER_PX;
-      let acc = 0;
-      firstVisible = lastVisible;
-      for (let i = lastVisible; i >= 0; i--) {
-        acc += h(i);
-        firstVisible = i;
-        if (acc >= budget) break;
-      }
-    } else {
-      // 非追底：按 scrollTop 用高度表定位 [top-buffer, top+viewport+buffer] 覆盖的区间
-      const winTop = prevScrollTop - CULL_BUFFER_PX;
-      const winBot = prevScrollTop + viewportH + CULL_BUFFER_PX;
-      firstVisible = messages.length;
-      lastVisible = -1;
-      let acc = 0;
-      for (let i = 0; i < msgHtmls.length; i++) {
-        const hi = h(i);
-        const elemTop = acc, elemBot = acc + hi;
-        if (elemBot >= winTop && elemTop <= winBot) {
-          if (i < firstVisible) firstVisible = i;
-          if (i > lastVisible) lastVisible = i;
-        }
-        acc += hi;
-      }
-      if (lastVisible < 0) { firstVisible = 0; lastVisible = msgHtmls.length - 1; }
-    }
-    // 上下占位高度
     let topPad = 0, botPad = 0;
-    for (let i = 0; i < firstVisible; i++) topPad += h(i);
-    for (let i = lastVisible + 1; i < msgHtmls.length; i++) botPad += h(i);
+    for (let i = 0; i < cullFirst; i++) topPad += h(i);
+    for (let i = cullLast + 1; i < msgHtmls.length; i++) botPad += h(i);
     const parts: string[] = [];
     if (topPad > 0) parts.push('<div class="orb-cull-pad" style="height:' + topPad + 'px"></div>');
-    for (let i = firstVisible; i <= lastVisible; i++) parts.push(msgHtmls[i]);
+    for (let i = cullFirst; i <= cullLast; i++) parts.push(msgHtmls[i]);
     if (botPad > 0) parts.push('<div class="orb-cull-pad" style="height:' + botPad + 'px"></div>');
     html = parts.join('');
-    _cullFirstVisible = firstVisible;
+    _cullFirstVisible = cullFirst;
     _cullEstTopPad = topPad;
-    _lastCullWin = firstVisible + ':' + lastVisible;
+    _lastCullWin = cullFirst + ':' + cullLast;
   }
   contentArea.innerHTML = html;
   if (hintEl) contentArea.appendChild(hintEl);
