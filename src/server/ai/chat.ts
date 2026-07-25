@@ -207,6 +207,7 @@ export async function* streamChat(
       messages: [...systemMessages, ...apiMessages],
       max_tokens: 16384,
       stream: true,
+      stream_options: { include_usage: true },
     };
     if (toolsParam) requestBody.tools = toolsParam;
 
@@ -270,6 +271,7 @@ export async function* streamChat(
           }
           const delta = chunk?.choices?.[0]?.delta || {};
           if (chunk.choices?.[0]?.finish_reason) finishReason = chunk.choices[0].finish_reason;
+          if (chunk.usage) console.log('[chat] usage:', JSON.stringify(chunk.usage));
 
           // 工具调用：流式累积 + 即时 yield content_block_start/delta
           // 设计决策：工具名一出现就 yield start（客户端立刻渲染卡片），参数片段到了就 yield delta。
