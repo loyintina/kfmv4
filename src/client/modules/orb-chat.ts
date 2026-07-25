@@ -295,14 +295,14 @@ function ensureTodoPanel(panelEl: HTMLElement): HTMLDivElement {
   if (!wrapper) {
     wrapper = document.createElement('div');
     wrapper.className = 'orb-todo-wrapper';
-    wrapper.style.cssText = 'position:sticky;top:0;margin-top:-12px;display:flex;justify-content:flex-end;z-index:' + Z.TODO_PANEL + ';pointer-events:none';
+    wrapper.style.cssText = 'position:sticky;top:-12px;display:flex;justify-content:flex-end;z-index:' + Z.TODO_PANEL + ';pointer-events:none';
     _todoPanel = document.createElement('div');
     _todoPanel.className = 'orb-todo-panel';
     _todoPanel.style.cssText = 'min-width:140px;max-width:220px;background:' + TODO_GRADIENT + ';border:1px solid transparent;border-radius:8px;padding:6px 8px;font-size:9px;box-shadow:0 2px 12px rgba(0,0,0,0.4);overflow:hidden;transition:opacity 0.3s;pointer-events:auto';
     wrapper.appendChild(_todoPanel);
     target.prepend(wrapper);
   } else {
-    wrapper.style.cssText = 'position:sticky;top:0;margin-top:-12px;display:flex;justify-content:flex-end;z-index:' + Z.TODO_PANEL + ';pointer-events:none';
+    wrapper.style.cssText = 'position:sticky;top:-12px;display:flex;justify-content:flex-end;z-index:' + Z.TODO_PANEL + ';pointer-events:none';
     _todoPanel = wrapper.querySelector('.orb-todo-panel') as HTMLDivElement | null;
     if (!_todoPanel) {
       _todoPanel = document.createElement('div');
