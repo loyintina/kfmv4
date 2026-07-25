@@ -3,7 +3,7 @@
  *
  * 注册所有可用的 AI 工具：
  * - kfmv4 专用工具（snapshot, logs, exec）
- * - omp 工具（bash, read, write, edit, grep, glob, todo, eval, ask, checkpoint, rewind, browser, debug, github, web_search）
+ * - omp 工具（bash, read, write, edit, grep, glob, todo, eval, checkpoint, rewind, browser, debug, github, web_search）
  */
 
 import type { KfmTool, ToolContext, ToolResult, ToolUpdate, ContentBlock } from './types.js';
@@ -25,7 +25,6 @@ import { ompGlobTool } from './omp/glob.js';
 // omp 扩展工具
 import { ompEvalTool } from './omp/eval.js';
 import { ompTodoTool } from './omp/todo.js';
-import { ompAskTool } from './omp/ask.js';
 import { ompCheckpointTool } from './omp/checkpoint.js';
 import { ompRewindTool } from './omp/rewind.js';
 
@@ -58,7 +57,6 @@ registerTool(ompGlobTool);
 // omp 扩展
 registerTool(ompEvalTool);
 registerTool(ompTodoTool);
-registerTool(ompAskTool);
 registerTool(ompCheckpointTool);
 registerTool(ompRewindTool);
 
