@@ -19,6 +19,7 @@
 
 import { streamChat, type ChatMessage, type StreamEvent } from './chat.js';
 import type { WsServer } from '../ws-server.js';
+import { appendEvent, flush } from './session-store.js';
 
 interface Subscriber {
   onEvent: (event: StreamEvent) => void;
@@ -113,6 +114,7 @@ export function startRun(
     try {
       for await (const event of streamFn(messages, model, provider, wsServer, run.abort.signal, sessionId, clientMessages, roleFile)) {
         run.events.push(event);
+        if (sessionId) appendEvent(sessionId, event);
         for (const sub of run.subscribers) {
           try { sub.onEvent(event); } catch { /* 订阅者写失败不影响生成 */ }
         }
@@ -122,9 +124,11 @@ export function startRun(
       run.error = msg;
       const errEvent: StreamEvent = { type: 'error', content: msg };
       run.events.push(errEvent);
+      if (sessionId) appendEvent(sessionId, errEvent);
       for (const sub of run.subscribers) { try { sub.onEvent(errEvent); } catch { /* ignore */ } }
     } finally {
       run.done = true;
+      if (sessionId) flush(sessionId);
       // 通知所有实时订阅者流已结束（onEvent 循环里 run.done 尚为 false，
       // 最后一个 done/error 事件派发时不会触发 onDone，必须在此显式收尾）。
       for (const sub of run.subscribers) { try { sub.onDone(); } catch { /* ignore */ } }
