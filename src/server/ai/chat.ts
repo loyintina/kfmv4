@@ -384,9 +384,7 @@ export async function* streamChat(
         });
       }
       serverMessages.push(aiMsg);
-      saveSessionFile(sessionId, serverMessages);
     }
-    // ===== 保存结束 =====
 
     // 检查是否需要执行工具
     if (finishReason === 'tool_calls' && toolCallBufs.size > 0) {
@@ -477,16 +475,14 @@ export async function* streamChat(
       }
       // 本轮消息结束，进入下一轮
       yield { type: 'message_stop' };
-      if (sessionId) saveSessionFile(sessionId, serverMessages);
       continue;
     }
 
-    // ===== 保存点 3：流结束，最后一条 AI 消息无工具调用 → 落盘 =====
+    // 流结束，最后一条 AI 消息无工具调用
     if (sessionId) {
       if (hasTextBlock) {
         serverMessages.push({ role: 'ai', content: [{ type: 'text', text: contentBuf, reasoning: reasoningBuf }] });
       }
-      saveSessionFile(sessionId, serverMessages);
     }
     yield { type: 'message_stop' };
     yield { type: 'done' };
