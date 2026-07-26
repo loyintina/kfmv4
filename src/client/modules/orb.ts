@@ -23,7 +23,8 @@ import { anim } from './animation-registry.js';
 import { log } from './logger.js';
 import { sessionStore } from './session-store.js';
 import { buildPanelContent } from './orb-panel.js';
-import { renderChatContent, doSend, resumeRun, readPersistedRun, clearPersistedRun, clearTodoPanel, startWaitingIndicator, clearMsgHeights, type ChatMessage } from './orb-chat.js';
+import { renderChatContent, doSend, resumeRun, readPersistedRun, clearPersistedRun, clearTodoPanel, startWaitingIndicator, clearMsgHeights, setEventHook, type ChatMessage } from './orb-chat.js';
+import { initChatDom, patchEvent, clearChatDom, mountUserMessage, mountAiMessage, scrollToBottom } from './chat-dom.js';
 import type { OrbState } from './orb-state.js';
 const API_BASE = window.location.pathname.replace(/\/+$/, '') + '/api/';
 
@@ -475,7 +476,15 @@ export async function initOrb(): Promise<void> {
   const sendBtn = DOM.aiSendBtn;
   if (inputEl && sendBtn) {
     const base = window.location.pathname.replace(/\/+$/, '') + '/api/';
-    const _renderChat = (scrollMode: 'follow' | 'preserve' | 'auto' = 'auto') => { if (panelEl) renderChatContent({ panelEl, messages: chatMessages, renderWidth, apiBase: base, scrollMode }); };
+    const _useV8 = new URLSearchParams(window.location.search).get('renderer') === 'v8';
+    const _renderChat = (scrollMode: 'follow' | 'preserve' | 'auto' = 'auto') => {
+      if (_useV8) { scrollToBottom(); return; }
+      if (panelEl) renderChatContent({ panelEl, messages: chatMessages, renderWidth, apiBase: base, scrollMode });
+    };
+    if (_useV8 && panelEl) {
+      initChatDom(panelEl, () => { /* TODO: loadFileTree */ });
+      setEventHook(patchEvent);
+    }
     sessionStore.init(base);
     await sessionStore.load();
 
@@ -494,16 +503,43 @@ export async function initOrb(): Promise<void> {
       clearMsgHeights();
       chatMessages.push(...first.messages.map(m => ({ role: m.role as 'user' | 'ai', content: m.content || [] })));
       _renderedSessionId = sid;
-      _renderChat('follow'); // 追底：末尾消息立即可见
-      // 后台补齐更早的消息（若有），一次拉剩余部分 prepend 到前面。
-      // 切换会话语义 = 看最新状态 = 追底，故补齐后仍用 'follow' 保持在底部。
-      // 不能用 'preserve'：第一段仅 12 条未触发裁剪、高度表为空，prepend 大量消息后
-      // 触发裁剪时 prevScrollTop 与位移后的内容失配 → 裁剪窗口错位 → 黑屏 + 消息卡中间。
+
+      if (_useV8) {
+        clearChatDom();
+        for (let i = 0; i < chatMessages.length; i++) {
+          const m = chatMessages[i];
+          if (m.role === 'user') {
+            const text = (m.content.find((b: any) => b?.type === 'text') as any)?.text || '';
+            mountUserMessage(i, text);
+          } else {
+            mountAiMessage(i, m.content as any[]);
+          }
+        }
+        scrollToBottom();
+      } else {
+        _renderChat('follow');
+      }
+
       if (first.total > first.messages.length) {
         const rest = await sessionStore.getMessagesRange(sid, 'head', 0, first.total - first.messages.length);
         if (myToken !== _switchToken || _renderedSessionId !== sid) return;
         chatMessages.unshift(...rest.messages.map(m => ({ role: m.role as 'user' | 'ai', content: m.content || [] })));
-        _renderChat('follow'); // 保持追底，避免 preserve+裁剪 的锚点失配
+        if (_useV8) {
+          // v8: 全量重建（prepend 场景较少，性能可接受）
+          clearChatDom();
+          for (let i = 0; i < chatMessages.length; i++) {
+            const m = chatMessages[i];
+            if (m.role === 'user') {
+              const text = (m.content.find((b: any) => b?.type === 'text') as any)?.text || '';
+              mountUserMessage(i, text);
+            } else {
+              mountAiMessage(i, m.content as any[]);
+            }
+          }
+          scrollToBottom();
+        } else {
+          _renderChat('follow');
+        }
       }
     }
 
@@ -602,7 +638,13 @@ export async function initOrb(): Promise<void> {
       setWait(true);
 
       await doSend(text, chatMessages, base, abortCtrl.signal,
-        () => {},
+        () => {
+          // onBeforeSend: 用户消息已入队（doSend 内部 push 后调此回调）
+          if (_useV8) {
+            mountUserMessage(chatMessages.length - 1, text);
+            scrollToBottom();
+          }
+        },
         () => {
           if (!firstRenderDone) {
             // 第一次 onRender = 用户消息已入队，强制追底显示用户消息

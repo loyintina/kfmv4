@@ -205,6 +205,11 @@ const _thinkDoneAt = new Map<number, number>(); // mi → timestamp
 const _thinkCollapsed = new Set<number>(); // mi — 折叠动画已触发
 const _collapsingUntil = new Map<number, number>(); // mi → 动画结束时间戳
 
+// v8 事件钩子：orb.ts 在 ?renderer=v8 模式下注入 chat-dom.patchEvent，
+// 每个 SSE 事件在 _applyEvent 之后额外调此钩子做增量 DOM 投影。
+let _eventHook: ((event: any) => void) | null = null;
+export function setEventHook(fn: ((event: any) => void) | null): void { _eventHook = fn; }
+
 // rAF 合批渲染调度器：并行工具的多个打字机/折叠动画各自 tick 时，若直接调 onRender，
 // 12 个动画 = 每帧 12 次全量重渲染 → 卡死。改为标记脏 + 单个 rAF 每帧最多渲染一次。
 // 关闭面板后不再自我调度，避免后台空转。
@@ -1128,6 +1133,7 @@ interface RunConsumeCtx {
   messages: ChatMessage[];
   onRender: () => void;
   onWait?: (waiting: boolean) => void;
+  onEvent?: (event: any) => void;
   getMsgIdx: () => number;
   setMsgIdx: (i: number) => void;
 }
@@ -1307,6 +1313,7 @@ async function _consumeRun(
         const event = env.event;
         if (typeof env.index === 'number') _activeCursor = env.index + 1;
         _applyEvent(event, ctx);
+        _eventHook?.(event);
         if (
           event.type === 'message_start' ||
           (event.type === 'content_block_start' && event.blockType === 'tool_use') ||
