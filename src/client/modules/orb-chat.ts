@@ -1125,6 +1125,7 @@ interface RunConsumeCtx {
   messages: ChatMessage[];
   onRender: () => void;
   onWait?: (waiting: boolean) => void;
+  onMessageStop?: () => void; // 每轮 message_stop 时增量落盘
   getMsgIdx: () => number;
   setMsgIdx: (i: number) => void;
 }
@@ -1142,7 +1143,7 @@ function _applyEvent(event: any, ctx: RunConsumeCtx): void {
       ctx.setMsgIdx(messages.length - 1);
       break;
     }
-    case 'message_stop': { onWait?.(true); break; }
+    case 'message_stop': { onWait?.(true); ctx.onMessageStop?.(); break; }
     case 'content_block_start': {
       if (msgIdx < 0) break;
       const { index, blockType, toolUseId, toolName } = event;
@@ -1564,6 +1565,7 @@ export async function doSend(
     const ctx: RunConsumeCtx = {
       messages, onRender, onWait,
       getMsgIdx: () => msgIdx, setMsgIdx: (i) => { msgIdx = i; },
+      onMessageStop: () => { sessionStore.saveMessages(messages, model, provider).catch(() => {}); },
     };
     const result = await _consumeWithReconnect(apiBase, startData.runId, startData.fromIndex || 0, signal, ctx);
     // 流结束：最后一轮 message_stop 会把等待提示打开，此处立即关闭，
