@@ -265,99 +265,73 @@ export async function loadedSources(session: CdpSession): Promise<SourceInfo[]> 
   return sources;
 }
 
-// ========== 运行时探针（Probe — tsx 兼容版） ==========
+// ========== 运行时探针（Probe） ==========
 
 /**
- * 通过 Runtime.evaluate 在运行中包装一个函数，捕获其调用信息后自动恢复原函数。
+ * 通过 CDP Runtime.evaluate 操作服务端的 __kfmProbe 基础设施，
+ * 实现非侵入式跟踪点——不暂停进程，30-50ms 内捕获调用信息。
  *
- * tsx 编译模式下 CDP 断点 URL 映射不可靠（.ts 被转译为 .js），
- * 此方法避开断点机制，直接在运行时用 JS 包装目标函数：
- * 1. 找到 target 对象上的 method 函数
- * 2. 用包装器替换它，包装器调用原始函数并记录入参 + 调用栈
- * 3. 执行后自动恢复原始函数
+ * 工作流程：
+ * 1. __kfmProbe.set(targetExpr, methodName) → 包装目标方法
+ * 2. 等待 WS 流量触发被包装方法（通过 broadcast ping 或等待自然调用）
+ * 3. __kfmProbe.read() → 返回 { called, args, stack }
+ * 4. __kfmProbe.restore() → 恢复原函数
  *
- * 适合排查：某个函数是否被调用、入参是什么、调用路径是什么。
+ * tsx 编译模式下不可用（globalThis 隔离），生产模式（纯 JS）下正常。
  */
 export async function injectProbe(
   session: CdpSession,
-  targetExpr: string,      // 如 "globalThis.wsServer" 或 "module.exports"
-  methodName: string       // 要包装的方法名
+  targetExpr: string,
+  methodName: string
 ): Promise<{
   called: boolean;
   args: unknown[];
   stackTrace: string;
 }> {
-  // 注入探针：包装目标方法，捕获首次调用信息
-  const injectScript = `
-(function() {
-  const target = ${targetExpr};
-  if (!target || typeof target.${methodName} !== 'function') {
-    return { error: 'target.' + ${JSON.stringify(methodName)} + ' is not a function' };
-  }
-  const original = target.${methodName}.bind(target);
-  let called = false;
-  let capturedArgs = null;
-  let capturedStack = '';
-  target.${methodName} = function(...args) {
-    if (!called) {
-      called = true;
-      capturedArgs = args.map(function(a) {
-        try { return JSON.parse(JSON.stringify(a)); }
-        catch(e) { return String(a).slice(0, 200); }
-      });
-      capturedStack = new Error().stack || '';
-    }
-    return original.apply(this, args);
-  };
-  // 返回清理函数和读取函数
-  target.__probe_restore = function() { target.${methodName} = original; };
-  target.__probe_read = function() {
-    return { called: called, args: capturedArgs, stackTrace: capturedStack };
-  };
-  return { ok: true, method: ${JSON.stringify(methodName)} };
-})()`;
-
-  const result = await evaluate(session, injectScript);
-  if (result.startsWith('[Error]') || result.includes('"error"')) {
-    throw new Error(`探针注入失败: ${result.slice(0, 200)}`);
+  // Step 1: 注入探针
+  const setResult = await evaluate(
+    session,
+    `globalThis.__kfmProbe.set('${targetExpr.replace(/'/g, "\\'")}', '${methodName}')`
+  );
+  if (setResult.startsWith('Error') || setResult.includes('不是函数')) {
+    throw new Error(`探针注入失败: ${setResult}`);
   }
 
-  // 等待最多 15 秒让目标函数被调用
-  await new Promise<void>((resolve, reject) => {
-    const timeout = setTimeout(() => {
-      // 超时：恢复原函数 + 返回结果
-      evaluate(session, `${targetExpr}.__probe_restore && ${targetExpr}.__probe_restore()`).catch(() => {});
-      resolve(); // 超时也算正常结束——只是没被调用
-    }, 15000);
+  // Step 2: 发送一个 ping 触发消息流（服务端的 WS 广播 → 客户端回复 → 经过 handleMessage）
+  // 这会触发被包装的方法（如果目标是 handleMessage 或类似的消息处理器）
+  await evaluate(
+    session,
+    `(globalThis.__kfmDebugServer as { wsServer: { broadcast: (t: string, p: unknown) => void } }).wsServer.broadcast('ping', { from: 'tracepoint' })`
+  ).catch(() => {});
 
+  // Step 3: 等待最多 5 秒让探针被触发
+  await new Promise<void>(resolve => {
+    const start = Date.now();
     const poll = async () => {
       try {
-        const r = await evaluate(session, `(function() { const d = ${targetExpr}.__probe_read && ${targetExpr}.__probe_read(); ${targetExpr}.__probe_restore && ${targetExpr}.__probe_restore(); return d; })()`);
-        const data = r.startsWith('{') ? JSON.parse(r) : null;
-        if (data && data.called) {
-          clearTimeout(timeout);
+        const r = await evaluate(session, 'globalThis.__kfmProbe.read()');
+        const data = JSON.parse(r);
+        if (data.called) {
           resolve();
-        } else {
-          setTimeout(poll, 100);
+          return;
         }
-      } catch {
-        setTimeout(poll, 100);
-      }
+      } catch { /* 继续等 */ }
+      if (Date.now() - start < 5000) setTimeout(poll, 100);
+      else resolve(); // 超时
     };
     poll();
   });
 
-  // 读取结果
-  const readResult = await evaluate(session, `(function() { const d = ${targetExpr}.__probe_read && ${targetExpr}.__probe_read(); return d; })()`);
-  // 清理探针
-  await evaluate(session, `${targetExpr}.__probe_restore && ${targetExpr}.__probe_restore(); delete ${targetExpr}.__probe_restore; delete ${targetExpr}.__probe_read`).catch(() => {});
+  // Step 4: 读取结果并恢复
+  const readResult = await evaluate(session, 'globalThis.__kfmProbe.read()');
+  await evaluate(session, 'globalThis.__kfmProbe.restore()').catch(() => {});
 
   try {
     const data = JSON.parse(readResult);
     return {
       called: !!data.called,
       args: data.args || [],
-      stackTrace: data.stackTrace || '',
+      stackTrace: data.stack || data.stackTrace || '',
     };
   } catch {
     return { called: false, args: [], stackTrace: readResult };

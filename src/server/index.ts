@@ -52,8 +52,7 @@ let _lastTracepointResult: unknown = null;
   /** 设置探针：targetExpr 是访问目标对象的表达式，methodName 是要包装的方法名 */
   set(targetExpr: string, methodName: string): string {
     try {
-      const getTarget = new Function(targetExpr);
-      const target = getTarget();
+      const target = new Function('return ' + targetExpr)();
       if (!target || typeof target[methodName] !== 'function') {
         return `Error: ${targetExpr}.${methodName} 不是函数或不存在`;
       }
