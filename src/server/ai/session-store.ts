@@ -158,11 +158,18 @@ export function flushSync(sessionId: string): void {
 }
 
 /**
- * 追加用户消息（/ai/chat/start 时调用，替代旧的 routes.ts 内联写入）。
+ * 追加用户消息（/ai/chat/start 时调用）。
+ * 幂等：若末尾已是相同文本的 user 消息则跳过（客户端 pre-run saveMessages 已落盘）。
  */
 export function appendUserMessage(sessionId: string, text: string, model?: string, provider?: string): void {
   const s = _get(sessionId);
-  s.ctx.messages.push({ role: 'user', content: [{ type: 'text', text }] });
+  const msgs = s.ctx.messages;
+  const last = msgs[msgs.length - 1];
+  const lastText = last?.role === 'user' && last.content.length > 0 && last.content[0]?.type === 'text'
+    ? (last.content[0] as { text?: string }).text : null;
+  if (lastText !== text) {
+    msgs.push({ role: 'user', content: [{ type: 'text', text }] });
+  }
   s.ctx.msgIdx = -1;
   if (model) s.meta.modelId = model;
   if (provider) s.meta.providerId = provider;

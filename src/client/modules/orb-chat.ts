@@ -1404,7 +1404,7 @@ async function _finalizeRun(messages: ChatMessage[], msgIdx: number, model: stri
       if (b?.type === 'text') delete (b as TextBlock & { _reasonExpanded?: boolean })._reasonExpanded;
     }
   }
-  await sessionStore.saveMessages(messages, model, provider);
+  // v8: 持久化由服务端 SessionStore 接管（run-manager finally flush），客户端不再双写。
 }
 
 /**
@@ -1483,8 +1483,6 @@ export async function resumeRun(
       _cancelPendingTools(messages);
       const lastMsg = messages[messages.length - 1];
       if (lastMsg?.role === 'ai') lastMsg.content.push({ type: 'text', text: '[已取消]' });
-      // 同步落盘取消态
-      try { await sessionStore.saveMessages(messages, model, provider); } catch {}
     }
     _activeRunId = null;
   }
@@ -1594,9 +1592,6 @@ export async function doSend(
       _cancelPendingTools(messages);
       const lastMsg = messages[messages.length - 1];
       if (lastMsg?.role === 'ai') lastMsg.content.push({ type: 'text', text: '[已取消]' });
-      // 同步落盘取消态：await 确保中间态写入后再开始下一次发送，
-      // 避免 fire-and-forget 与后续 doSend 的 save 形成 _saveChain 背压
-      try { await sessionStore.saveMessages(messages, model, provider); } catch {}
     } else {
       messages.push({ role: 'ai', content: [{ type: 'text', text: '请求失败: ' + (e instanceof Error ? e.message : '未知错误') }] });
     }
