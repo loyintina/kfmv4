@@ -601,15 +601,13 @@ export async function initOrb(): Promise<void> {
     })();
 
     // v8 冷恢复：检测"未完成的对话"（kfm-restart 后 AI 工具执行完了但没来得及回应）
-    // 判据：末尾是 AI 消息，含 tool block 有 result，但无后续纯文本 → 自动 resume
+    // 判据：末尾是 AI 消息且含 tool result → 工具执行完了但 AI 还没回应（回应会是新 message）
     (async () => {
       if (!sessionStore.activeId || chatMessages.length === 0) return;
       const last = chatMessages[chatMessages.length - 1];
       if (last.role !== 'ai') return;
       const hasToolResult = last.content.some(b => b?.type === 'tool' && b.result);
-      const hasText = last.content.some(b => b?.type === 'text' && b.text && b.text.trim() && !b.text.startsWith('[错误'));
-      if (!hasToolResult || hasText) return;
-      // 末尾 AI 消息有工具结果但无正文 → 未完成，自动 resume
+      if (!hasToolResult) return;
       const sid = sessionStore.activeId;
       const meta = sessionStore.list.find(s => s.id === sid);
       const model = meta?.modelId || '';
