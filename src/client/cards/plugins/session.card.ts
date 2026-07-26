@@ -78,6 +78,7 @@ async function loadSessions(): Promise<Session[]> {
         ...(typeof s['providerId'] === 'string' && { providerId: s['providerId'] }),
         ...(typeof s['modelId'] === 'string' && { modelId: s['modelId'] }),
         messageCount: typeof s['messageCount'] === 'number' ? s['messageCount'] : 0,
+        tokenCount: typeof s['tokenCount'] === 'number' ? s['tokenCount'] : 0,
         messages: [], // 元数据加载不含消息，气泡预览时按需拉取
       });
     }
