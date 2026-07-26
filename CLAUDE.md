@@ -38,7 +38,7 @@ npm run watch    # 全链路通过后 → 持续监听、快速重编（开发�
 npm run check    # 15 个 check-*.mjs + tsc --noEmit（仅检查，不构建）
 npm run build    # 同 bundle（全链路）
 npm run start    # 启动生产构建 http://localhost:8021
-npm run test     # 334 个回归测试
+npm run test     # 367 个回归测试
 ```
 
 > **没有快捷方式**。`bundle`/`build`/`dev` 全部走 `build.mjs` 全链路。`watch` 初检不过不进 watch。
@@ -61,6 +61,7 @@ docs/
 │   ├── AI_ARCHITECTURE.md          # AI 架构设计（基于 omp）
 │   ├── AI_CHAT_RUNTIME.md          # AI 对话运行时：后台挂机/重连/WS存活（改流式对话前必读）
 │   ├── AI_AGENT_DEBUG_TOOLS.md     # AI Agent 调试能力体系（能力矩阵 + 缺位分析 + 路线图）
+│   ├── V8_ARCHITECTURE.md          # v8 所有权分离架构（三条宪法 + 视觉契约 + 迁移计划）
 │   ├── VISION_AND_ROADMAP.md        # 远景：核心理念 + 演进路线（方向性，保留）
 │   └── CONTEXT_ASSEMBLY_SPEC.md     # 上下文拼接与 AI 工作空间（draft）
 └── archive/                 # 历史归档
@@ -88,7 +89,7 @@ docs/
 ```bash
 npm run check   # sass + 15 个 check-*.mjs + tsc --noEmit，零错误
 npm run build   # check 全过 → esbuild client+server → smoke test
-npm run test    # 334 个回归测试，覆盖 23 个模块
+npm run test    # 367 个回归测试，覆盖 23 个模块
 ```
 
 卡片系统是三层结构：
