@@ -200,13 +200,13 @@ export function launchCdp(opts: CdpLaunchOptions): Promise<CdpSession> {
 /**
  * 附加模式：连接到已有进程的 CDP WebSocket
  */
-export function attachCdp(opts: CdpAttachOptions): Promise<CdpSession> {
-  // 先通过 HTTP 获取 WebSocket URL
-  return new Promise((resolve, reject) => {
-    const http = require('node:http');
-    const url = `http://${opts.host}:${opts.port}/json/list`;
+export async function attachCdp(opts: CdpAttachOptions): Promise<CdpSession> {
+  // 先通过 HTTP 获取 WebSocket URL。动态 import 避免 ESM 中 require 不可用
+  const http = await import('node:http');
+  const url = `http://${opts.host}:${opts.port}/json/list`;
 
-    http.get(url, (res: { on: (e: string, cb: (d: Buffer) => void) => void }) => {
+  return new Promise((resolve, reject) => {
+    http.get(url, (res) => {
       let body = '';
       res.on('data', (d: Buffer) => { body += d.toString(); });
       res.on('end', () => {

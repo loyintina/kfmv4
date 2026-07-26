@@ -265,6 +265,105 @@ export async function loadedSources(session: CdpSession): Promise<SourceInfo[]> 
   return sources;
 }
 
+// ========== 运行时探针（Probe — tsx 兼容版） ==========
+
+/**
+ * 通过 Runtime.evaluate 在运行中包装一个函数，捕获其调用信息后自动恢复原函数。
+ *
+ * tsx 编译模式下 CDP 断点 URL 映射不可靠（.ts 被转译为 .js），
+ * 此方法避开断点机制，直接在运行时用 JS 包装目标函数：
+ * 1. 找到 target 对象上的 method 函数
+ * 2. 用包装器替换它，包装器调用原始函数并记录入参 + 调用栈
+ * 3. 执行后自动恢复原始函数
+ *
+ * 适合排查：某个函数是否被调用、入参是什么、调用路径是什么。
+ */
+export async function injectProbe(
+  session: CdpSession,
+  targetExpr: string,      // 如 "globalThis.wsServer" 或 "module.exports"
+  methodName: string       // 要包装的方法名
+): Promise<{
+  called: boolean;
+  args: unknown[];
+  stackTrace: string;
+}> {
+  // 注入探针：包装目标方法，捕获首次调用信息
+  const injectScript = `
+(function() {
+  const target = ${targetExpr};
+  if (!target || typeof target.${methodName} !== 'function') {
+    return { error: 'target.' + ${JSON.stringify(methodName)} + ' is not a function' };
+  }
+  const original = target.${methodName}.bind(target);
+  let called = false;
+  let capturedArgs = null;
+  let capturedStack = '';
+  target.${methodName} = function(...args) {
+    if (!called) {
+      called = true;
+      capturedArgs = args.map(function(a) {
+        try { return JSON.parse(JSON.stringify(a)); }
+        catch(e) { return String(a).slice(0, 200); }
+      });
+      capturedStack = new Error().stack || '';
+    }
+    return original.apply(this, args);
+  };
+  // 返回清理函数和读取函数
+  target.__probe_restore = function() { target.${methodName} = original; };
+  target.__probe_read = function() {
+    return { called: called, args: capturedArgs, stackTrace: capturedStack };
+  };
+  return { ok: true, method: ${JSON.stringify(methodName)} };
+})()`;
+
+  const result = await evaluate(session, injectScript);
+  if (result.startsWith('[Error]') || result.includes('"error"')) {
+    throw new Error(`探针注入失败: ${result.slice(0, 200)}`);
+  }
+
+  // 等待最多 15 秒让目标函数被调用
+  await new Promise<void>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      // 超时：恢复原函数 + 返回结果
+      evaluate(session, `${targetExpr}.__probe_restore && ${targetExpr}.__probe_restore()`).catch(() => {});
+      resolve(); // 超时也算正常结束——只是没被调用
+    }, 15000);
+
+    const poll = async () => {
+      try {
+        const r = await evaluate(session, `(function() { const d = ${targetExpr}.__probe_read && ${targetExpr}.__probe_read(); ${targetExpr}.__probe_restore && ${targetExpr}.__probe_restore(); return d; })()`);
+        const data = r.startsWith('{') ? JSON.parse(r) : null;
+        if (data && data.called) {
+          clearTimeout(timeout);
+          resolve();
+        } else {
+          setTimeout(poll, 100);
+        }
+      } catch {
+        setTimeout(poll, 100);
+      }
+    };
+    poll();
+  });
+
+  // 读取结果
+  const readResult = await evaluate(session, `(function() { const d = ${targetExpr}.__probe_read && ${targetExpr}.__probe_read(); return d; })()`);
+  // 清理探针
+  await evaluate(session, `${targetExpr}.__probe_restore && ${targetExpr}.__probe_restore(); delete ${targetExpr}.__probe_restore; delete ${targetExpr}.__probe_read`).catch(() => {});
+
+  try {
+    const data = JSON.parse(readResult);
+    return {
+      called: !!data.called,
+      args: data.args || [],
+      stackTrace: data.stackTrace || '',
+    };
+  } catch {
+    return { called: false, args: [], stackTrace: readResult };
+  }
+}
+
 // ========== 暂停事件管理 ==========
 
 /**

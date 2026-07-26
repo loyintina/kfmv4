@@ -389,13 +389,16 @@ export const sessionStore = {
     modelId?: string,
     providerId?: string,
   ): Promise<void> {
-    const snapshot = messages.map(m => ({
-      role: m.role,
-      content: (m.content || []).map(b => cleanBlockForSave(b)),
-    }));
-    const doSave = () => this._doSaveMessages(snapshot, modelId, providerId);
-    // then(action,action): 即使上次保存失败也继续，锁不断裂
-    return (this._saveChain = this._saveChain.then(doSave, doSave).catch(() => {}));
+    try {
+      const snapshot = messages.map(m => ({
+        role: m.role,
+        content: (m.content || []).map(b => cleanBlockForSave(b)),
+      }));
+      const doSave = () => this._doSaveMessages(snapshot, modelId, providerId);
+      return (this._saveChain = this._saveChain.then(doSave, doSave).catch(() => {}));
+    } catch {
+      return Promise.resolve();
+    }
   },
 
   async _doSaveMessages(

@@ -40,6 +40,8 @@ app.use('/kfmv4/api', apiRoutes);
 const PORT = parseInt(process.env.KFM_PORT || '8021', 10);
 const httpServer = http.createServer(app);
 const wsServer = new WsServer(httpServer);
+// 暴露到全局供 debug tracepoint 探针访问（CDP Runtime.evaluate 无法访问模块局部变量）
+(globalThis as Record<string, unknown>).__kfmDebugServer = { wsServer };
 
 // AI Tools 路由
 const aiRoutes = express.Router();

@@ -1516,8 +1516,12 @@ export async function doSend(
     // 构建发给 API 的消息（content blocks → OpenAI 格式）。
     // 会话文件存的是完整 content blocks（含 tool_use + tool_result），
     // 发给 API 时必须转为 OpenAI 的 tool_calls + role:"tool" 格式。
+    // 只取最近 N 条：911 条 apiMessages 超过 nginx 1MB 限制，且 LLM 上下文窗口也装不下。
+    const MAX_API_MSGS = 80;
     const apiMessages: Array<{ role: string; content: string | null; tool_calls?: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }>; tool_call_id?: string }> = [];
-    for (const m of messages) {
+    const startIdx = Math.max(0, messages.length - MAX_API_MSGS);
+    for (let i = startIdx; i < messages.length; i++) {
+      const m = messages[i];
       if (m.role === 'user') {
         apiMessages.push({ role: 'user', content: extractText(m) });
       } else {
@@ -1588,8 +1592,7 @@ export async function doSend(
       // 避免 fire-and-forget 与后续 doSend 的 save 形成 _saveChain 背压
       try { await sessionStore.saveMessages(messages, model, provider); } catch {}
     } else {
-      const errMsg = e instanceof Error ? e.message : '未知错误';
-      messages.push({ role: 'ai', content: [{ type: 'text', text: '请求失败: ' + errMsg }] });
+      messages.push({ role: 'ai', content: [{ type: 'text', text: '请求失败: ' + (e instanceof Error ? e.message : '未知错误') }] });
     }
   }
   // 流彻底结束（成功/错误/取消）：确保等待提示已停

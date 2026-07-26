@@ -18,7 +18,7 @@ import {
   setBreakpoint, setFunctionBreakpoint, removeBreakpoint,
   doContinue, doPause, stepIn, stepOver, stepOut,
   waitForPause, getStack, getVariables, evaluate, loadedSources,
-  capturePausedFrames, clearPausedFrames,
+  capturePausedFrames, clearPausedFrames, injectProbe,
   type Breakpoint, type StackFrame
 } from './debug/debug-operations.js';
 import {
@@ -177,6 +177,27 @@ export const ompDebugTool: KfmTool = {
       if (!session) return txt(`[debug] 无活跃会话。先 launch 或 attach。如果已有会话，传 sessionId。`, true);
 
       // ========== 断点 ==========
+
+      if (action === 'tracepoint') {
+        const target = params.target as string;
+        const method = params.method as string;
+        if (!target || !method) return txt('[debug] tracepoint 需要 target（对象表达式，如 "globalThis.wsServer"）+ method（方法名）', true);
+        try {
+          const result = await injectProbe(session, target, method);
+          if (result.called) {
+            const lines: string[] = [`[debug] 探针命中: ${target}.${method}()`];
+            lines.push(`入参 (${result.args.length}):`);
+            result.args.forEach((a: unknown, i: number) => lines.push(`  [${i}]: ${JSON.stringify(a).slice(0, 200)}`));
+            lines.push(`调用栈:\n${result.stackTrace.split('\n').slice(1, 8).join('\n')}`);
+            return txt(lines.join('\n'));
+          } else {
+            return txt(`[debug] 探针未命中: ${target}.${method}() 在 15s 内未被调用`);
+          }
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return txt(`[debug] tracepoint 失败: ${msg}`, true);
+        }
+      }
 
       if (action === 'set_breakpoint') {
         const file = params.file as string;
