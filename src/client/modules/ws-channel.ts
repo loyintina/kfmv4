@@ -242,7 +242,8 @@ class WsChannel {
             // AsyncFunction — 支持 return 和 await，在 window 作用域执行
             // eslint-disable-next-line @typescript-eslint/no-implied-eval
             const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor as new (...a: string[]) => () => Promise<unknown>;
-            const fn = new AsyncFunction(req.code);
+            // 用 return 包裹 script，确保 IIFE 的返回值能被捕获
+            const fn = new AsyncFunction('return (' + req.code + ')');
             const result = await fn.call(window);
             this.sendMessage('browser-eval-result', {
               id: req.id,

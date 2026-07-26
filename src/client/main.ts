@@ -56,6 +56,7 @@ import { anim } from './modules/animation-registry.js';
 (window as unknown as Record<string, unknown>).__anim = anim; // escape-ok: debug视图脚本需要
 (window as unknown as Record<string, unknown>).__cardRegistry = cardRegistry; // escape-ok: debug视图脚本需要
 (window as unknown as Record<string, unknown>).__gestureRegistry = gestures; // escape-ok: debug视图脚本需要
+(window as unknown as Record<string, unknown>).KFMState = KFMState; // escape-ok: debug视图脚本需要 window.KFMState
 
 // 全局未捕获错误 → 调试卡
 import { log } from './modules/logger.js';
