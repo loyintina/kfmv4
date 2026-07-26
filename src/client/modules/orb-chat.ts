@@ -1474,6 +1474,8 @@ export async function resumeRun(
       _cancelPendingTools(messages);
       const lastMsg = messages[messages.length - 1];
       if (lastMsg?.role === 'ai') lastMsg.content.push({ type: 'text', text: '[已取消]' });
+      // 取消后落盘 AI 部分回复 + [已取消]
+      sessionStore.saveMessages(messages, model, provider).catch(() => {});
     }
     _activeRunId = null;
   }
@@ -1508,11 +1510,10 @@ export async function doSend(
   // system prompt 不再在客户端组装 —— 改由服务端每轮重组（眼睛系统 v7.4）。
   // 客户端只把当前角色文件名传给服务端，服务端读角色卡 promptFiles（含动态 page-state.md）。
   const roleFile = config.roleFile || '';
+  const model = config.modelId;
+  const provider = config.providerId;
 
   try {
-    const model = config.modelId;
-    const provider = config.providerId;
-
     // 构建发给 API 的消息（content blocks → OpenAI 格式）。
     // 会话文件存的是完整 content blocks（含 tool_use + tool_result），
     // 发给 API 时必须转为 OpenAI 的 tool_calls + role:"tool" 格式。
@@ -1586,6 +1587,8 @@ export async function doSend(
       _cancelPendingTools(messages);
       const lastMsg = messages[messages.length - 1];
       if (lastMsg?.role === 'ai') lastMsg.content.push({ type: 'text', text: '[已取消]' });
+      // 取消后落盘：用户消息已在 doSend 开头保存，此处落盘带上 AI 部分回复 + [已取消]
+      sessionStore.saveMessages(messages, model, provider).catch(() => {});
     } else {
       messages.push({ role: 'ai', content: [{ type: 'text', text: '请求失败: ' + (e instanceof Error ? e.message : '未知错误') }] });
     }
