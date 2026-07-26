@@ -1462,10 +1462,9 @@ export async function resumeRun(
   try {
     const result = await _consumeWithReconnect(apiBase, runId, fromIndex, signal, ctx);
     _activeRunId = null;
-    if (result === 'done') {
-      _persistActiveRun('', null);
-      await _finalizeRun(messages, msgIdx, model, provider);
-    }
+    _persistActiveRun('', null);
+    // 无条件落盘——无论流正常结束(done)还是 run 消失(gone/服务重启)
+    await _finalizeRun(messages, msgIdx, model, provider);
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') {
       // 用户在重连态点暂停 → 通知服务端取消后台 run（彻底停止生成）
@@ -1572,10 +1571,9 @@ export async function doSend(
     onWait?.(false);
     _activeRunId = null;
     _persistActiveRun(_sendSessionId, null);
-    if (result === 'done') {
-      await _finalizeRun(messages, msgIdx, model, provider);
-    }
-    // result==='gone'：run 在服务端消失（进程重启/淘汰），停止；已渲染的内容保留
+    // 无条件落盘——无论流正常结束(done)还是 run 消失(gone/服务重启)，
+    // 已渲染在面板上的 AI 回复都应该持久化，否则刷新后永久丢失。
+    await _finalizeRun(messages, msgIdx, model, provider);
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') {
       // 用户主动取消：通知服务端取消后台 run
