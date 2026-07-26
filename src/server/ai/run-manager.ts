@@ -19,7 +19,7 @@
 
 import { streamChat, type ChatMessage, type StreamEvent } from './chat.js';
 import type { WsServer } from '../ws-server.js';
-import { appendEvent, flush } from './session-store.js';
+import { appendEvent, flush, flushSync } from './session-store.js';
 
 interface Subscriber {
   onEvent: (event: StreamEvent) => void;
@@ -114,7 +114,11 @@ export function startRun(
     try {
       for await (const event of streamFn(messages, model, provider, wsServer, run.abort.signal, sessionId, clientMessages, roleFile)) {
         run.events.push(event);
-        if (sessionId) appendEvent(sessionId, event);
+        if (sessionId) {
+          appendEvent(sessionId, event);
+          // 生死线：tool_result 必须立即同步落盘（kfm-restart 等工具触发后进程随时被杀）
+          if (event.type === 'tool_result') flushSync(sessionId);
+        }
         for (const sub of run.subscribers) {
           try { sub.onEvent(event); } catch { /* 订阅者写失败不影响生成 */ }
         }
