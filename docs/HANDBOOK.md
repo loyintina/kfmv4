@@ -1,7 +1,7 @@
 ---
 title: KFM v4 工作手册
 last_reviewed: 2026-07-26
-kfm_version: 7.3.2
+kfm_version: 7.3.3
 status: active
 maintainer: AI agent
 ---
@@ -160,7 +160,7 @@ index.ts (入口路由 + 静态文件)
 - **规则**：纯 DOM 实现,不触碰 Canvas 渲染器。弹窗打开时 canvas 点击/手势事件被 guard 拦截。
 
 ## 二、当前会话状态
-> **最后更新**：2026-07-26（v7.3.2+ — debug 工具 CDP attach + 5 个专属视图 + 服务端 __kfmProbe 基础设施）
+> **最后更新**：2026-07-26（v7.3.3 — 会话保存迁至服务端 + 端口/nginx/systemd 修复 + sessions/list 性能优化）
 
 ### 当前焦点
 **AI Agent 调试能力体系建设** — 面向 AI 开发者的调试基础设施。
@@ -331,7 +331,8 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | **v7.2.1** | **工具卡展开态两区可滚动 + 渲染性能三层优化（markdown 缓存/视口裁剪/渲染合批）+ Claude 工具块索引连续化 + 上游错误上抛 + 浮卡滚动 touch-action 修复 + 摸鱼提示覆盖工具轮次 + 折叠状态持久化** | git `ff5173b` |
 | **v7.3.0** | **AI 对话后台挂机持久化（run-manager）+ 重连续读 + WebSocket 真心跳半开检测 + WS 重连恢复终端（三层）+ 结束态/推理模型等待提示修复 + 会话删除同步 + Z-Index L8 焦点交互层 + AI_CHAT_RUNTIME 架构文档** | git `1404b15` |
 | **v7.3.1** | **sanitizePath .kfmv4 放行 + eye button 瞬间切换 + AI 工具历史消息保留 tool_calls + 目录指纹文件树刷新 + stealth txt 构建修复 + 306 测试** | git `0f240ec` |
-| **v7.3.2** | **会话加载分段传输（元数据端点 /sessions/list + 消息切片 /sessions/messages）+ 面板追底/卡片头部分段渲染 + 切换会话竞态修复（_renderedSessionId guard）+ 上滑锚点保持消除跳位 + 工具框折叠状态机（reveal/fold）+ 会话持久化竞态修复（写盘顺序/串行落盘）+ 326 测试** | git `HEAD` |
+| **v7.3.2** | **会话加载分段传输（元数据端点 /sessions/list + 消息切片 /sessions/messages）+ 面板追底/卡片头部分段渲染 + 切换会话竞态修复（_renderedSessionId guard）+ 上滑锚点保持消除跳位 + 工具框折叠状态机（reveal/fold）+ 会话持久化竞态修复（写盘顺序/串行落盘）+ 326 测试** | git `0f240ec` |
+| **v7.3.3** | **会话保存迁至服务端（3 保存点 + 消息累加器）+ clientMessages 去除/nginx body size 修复 + systemd 端口误杀修复（Node 路径 + ExecStopPost）+ sessions/list 跳过 messages 数组** | git `HEAD` |
 > 速查：遇到 bug 先确认事件是否完整到达（用 `log()` 推日志卡），再查处理逻辑。
 
 ## 五、回归测试
