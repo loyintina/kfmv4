@@ -37,6 +37,22 @@ import { initWsChannel } from './modules/ws-channel.js';
 import './modules/sibling-switcher.js';
 import './cards/registry.js';
 
+// ========== 调试桥：暴露关键模块到 window 供 browser_eval / debug 工具查询 ==========
+// esbuild 将所有模块打包在 IIFE 闭包中，内部变量对 window 不可见。
+// 这里显式暴露元数据访问接口，让 debug 工具的 5 个 kfmv4 专属视图能读取运行时状态。
+import { L } from './modules/renderer-lifecycle.js';
+import { cardRegistry } from './modules/card-registry.js';
+import { anim } from './modules/animation-registry.js';
+
+// escape-ok: 调试桥需要把内部模块暴露给 browser_eval，TS 泛型无法表达运行时动态类型
+(window as unknown as Record<string, unknown>).__kfmDebug = {
+  KFMState,
+  L,
+  anim,
+  cardRegistry,
+  gestureRegistry: gestures,
+};
+
 // 全局未捕获错误 → 调试卡
 import { log } from './modules/logger.js';
 window.addEventListener('error', e => log('GLOBAL error: ' + (e.error?.message || e.message) + ' ' + (e.error?.stack || e.filename + ':' + e.lineno)));

@@ -21,6 +21,12 @@ import {
   capturePausedFrames, clearPausedFrames,
   type Breakpoint, type StackFrame
 } from './debug/debug-operations.js';
+import {
+  KFMV4_SCRIPT_MAP,
+  formatRendererSnapshot, formatAnimationTimeline, formatGestureTrace,
+  formatStateHistory, formatCardLifecycle,
+  type Kfmv4ViewName
+} from './debug/kfmv4-views.js';
 
 // ========== 会话管理 ==========
 
@@ -303,6 +309,18 @@ export const ompDebugTool: KfmTool = {
           `用 loaded_sources 查看文件，用 evaluate 求值表达式间接修改状态。`, true);
       }
 
+      // ========== kfmv4 专属视图（浏览器端，无需 CDP 会话）==========
+
+      if (isKfmv4View(action)) {
+        const script = KFMV4_SCRIPT_MAP[action];
+        // browser_eval 由 kfmv4 工具系统注入——这里返回需要执行的脚本，
+        // AI 助手会通过 kfm-browser-eval 工具在浏览器中执行
+        const viewResult = { view: action, script };
+        const formatted = formatViewResult(action, viewResult);
+        return txt(`[debug] ${action}: 在浏览器中执行的脚本已生成。\n` +
+          `请在浏览器中执行以下 JS 查看结果（或使用 kfm-browser-eval 工具）：\n\`\`\`js\n${script.slice(0, 500)}...\n\`\`\``);
+      }
+
       return txt(`[debug] 未知 action: ${action}`, true);
 
     } catch (e: unknown) {
@@ -323,4 +341,20 @@ function resolveSession(sid: string): CdpSession | undefined {
 
 function txt(text: string, isError: boolean = false): ToolResult {
   return { content: [{ type: 'text', text }], isError };
+}
+
+// ========== kfmv4 专属视图辅助 ==========
+
+function isKfmv4View(action: string): action is Kfmv4ViewName {
+  return ['renderer_snapshot', 'animation_timeline', 'gesture_trace', 'state_history', 'card_lifecycle'].includes(action);
+}
+
+function formatViewResult(view: Kfmv4ViewName, _result: Record<string, unknown>): string {
+  switch (view) {
+    case 'renderer_snapshot': return '({ view, data: { root, boxCount, canvasSize, activeOverlays, isAnimating } })';
+    case 'animation_timeline': return '({ view, data: { activeTweens, timelines, animRegistryScope } })';
+    case 'gesture_trace': return '({ view, data: { activeGesture, registeredHandlers, recentEvents } })';
+    case 'state_history': return '({ view, data: { currentState, subscribers, notifyCount } })';
+    case 'card_lifecycle': return '({ view, data: { instanceCount, instances, activeCards, stackedCards } })';
+  }
 }
