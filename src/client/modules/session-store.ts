@@ -435,6 +435,7 @@ export const sessionStore = {
       let session: Session;
       if (readData.error) {
         if (readData.error === '文件不存在') {
+          log(`[save] ${this.activeId} 文件不存在，创建新会话 (写入 ${messages.length} 条)`);
           session = {
             id: this.activeId, title: '新会话', manuallyNamed: false,
             createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), messages: [],
@@ -445,6 +446,7 @@ export const sessionStore = {
       } else if (readData.content) {
         session = JSON.parse(readData.content);
       } else {
+        log(`[save] ${this.activeId} 空响应，创建新会话 (写入 ${messages.length} 条)`);
         session = {
           id: this.activeId, title: '新会话', manuallyNamed: false,
           createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), messages: [],
@@ -478,6 +480,7 @@ export const sessionStore = {
             throw new Error('写入会话文件失败: ' + writeData.error);
           }
           lastErr = null;
+          log(`[save] 写入 ${messages.length} 条 → ${this.activeId} (${(content.length / 1024).toFixed(0)}KB, attempt ${attempt + 1})`);
           break; // 写入成功，退出重试循环
         } catch (e) {
           lastErr = e instanceof Error ? e : new Error(String(e));
