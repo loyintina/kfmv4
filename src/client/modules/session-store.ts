@@ -498,7 +498,8 @@ export const sessionStore = {
       }
     } catch (e) {
       log('保存会话失败: ' + (e instanceof Error ? e.message : 'unknown'));
-      throw e; // 上抛，让 _saveChain reject → 下一轮 saveMessages 的 .catch(()=>{}) 恢复 + caller 可感知
+      // 不 rethrow：保存失败不应阻塞调用方（doSend/_finalizeRun）。
+      // _saveChain 的 .catch(()=>{}) 已保证链不会因单次失败断裂，下一轮保存会覆盖。
     }
   },
 
