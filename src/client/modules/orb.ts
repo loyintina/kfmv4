@@ -23,7 +23,7 @@ import { anim } from './animation-registry.js';
 import { log } from './logger.js';
 import { sessionStore } from './session-store.js';
 import { buildPanelContent } from './orb-panel.js';
-import { renderChatContent, doSend, resumeRun, readPersistedRun, clearPersistedRun, clearTodoPanel, startWaitingIndicator, clearMsgHeights, setEventHook, type ChatMessage } from './orb-chat.js';
+import { doSend, resumeRun, readPersistedRun, clearPersistedRun, clearTodoPanel, startWaitingIndicator, clearMsgHeights, setEventHook, type ChatMessage } from './orb-chat.js';
 import { initChatDom, patchEvent, clearChatDom, mountUserMessage, mountAiMessage, scrollToBottom } from './chat-dom.js';
 import type { OrbState } from './orb-state.js';
 const API_BASE = window.location.pathname.replace(/\/+$/, '') + '/api/';
@@ -56,7 +56,6 @@ let panelState: PanelState = 'closed';
 let orbEl: HTMLDivElement | null = null;
 let panelEl: HTMLDivElement | null = null;
 let _orbSessionSelect: ReturnType<typeof import('./custom-select.js').createCustomSelect> | null = null;
-let _useV8Renderer = false;
 let _v8Initialized = false;
 
 const PANEL_MIN_WIDTH = 120;
@@ -85,12 +84,10 @@ function getInputBarTop(): number {
   return bar.getBoundingClientRect().top;
 }
 
-// 模块级聊天渲染桥接（renderChatContent 来自 orb-chat.ts）
+// 模块级聊天渲染桥接（v8：增量 DOM，resize 时只需滚动）
 function _renderChat(): void {
   if (!panelEl) return;
-  if (_useV8Renderer) { scrollToBottom(); return; }
-  // resize / 拖拽调整大小时保留用户滚动位置
-  renderChatContent({ panelEl, messages: chatMessages, renderWidth, apiBase: API_BASE, scrollMode: 'preserve' });
+  scrollToBottom();
 }
 
 
@@ -200,7 +197,7 @@ function expandPanel(): void {
     orbState = 'expanded';
     panelState = 'open';
     buildPanelContent({ panelEl: panelEl!, setOrbSessionSelect: (s) => { _orbSessionSelect = s; }, readActiveConfig, patchActiveConfig });
-    if (_useV8Renderer && !_v8Initialized) {
+    if (!_v8Initialized) {
       _v8Initialized = true;
       initChatDom(panelEl!, () => { /* TODO: loadFileTree */ });
       // 补挂 init 阶段已加载的消息（loadSessionInto 先于面板创建执行）
@@ -494,18 +491,10 @@ export async function initOrb(): Promise<void> {
   const sendBtn = DOM.aiSendBtn;
   if (inputEl && sendBtn) {
     const base = window.location.pathname.replace(/\/+$/, '') + '/api/';
-    const _useV8 = new URLSearchParams(window.location.search).get('renderer') === 'v8';
-    _useV8Renderer = _useV8;
-    const _renderChat = (scrollMode: 'follow' | 'preserve' | 'auto' = 'auto') => {
-      if (_useV8) { scrollToBottom(); return; }
-      if (panelEl) renderChatContent({ panelEl, messages: chatMessages, renderWidth, apiBase: base, scrollMode });
+    const _renderChat = (_scrollMode: 'follow' | 'preserve' | 'auto' = 'auto') => {
+      scrollToBottom();
     };
-    if (_useV8 && panelEl) {
-      initChatDom(panelEl, () => { /* TODO: loadFileTree */ });
-      setEventHook(patchEvent);
-    } else if (_useV8) {
-      setEventHook(patchEvent);
-    }
+    setEventHook(patchEvent);
     sessionStore.init(base);
     await sessionStore.load();
 
@@ -525,7 +514,22 @@ export async function initOrb(): Promise<void> {
       chatMessages.push(...first.messages.map(m => ({ role: m.role as 'user' | 'ai', content: m.content || [] })));
       _renderedSessionId = sid;
 
-      if (_useV8) {
+      clearChatDom();
+      for (let i = 0; i < chatMessages.length; i++) {
+        const m = chatMessages[i];
+        if (m.role === 'user') {
+          const tb = m.content.find(b => b?.type === 'text');
+          mountUserMessage(i, tb && 'text' in tb ? tb.text : '');
+        } else {
+          mountAiMessage(i, m.content);
+        }
+      }
+      scrollToBottom();
+
+      if (first.total > first.messages.length) {
+        const rest = await sessionStore.getMessagesRange(sid, 'head', 0, first.total - first.messages.length);
+        if (myToken !== _switchToken || _renderedSessionId !== sid) return;
+        chatMessages.unshift(...rest.messages.map(m => ({ role: m.role as 'user' | 'ai', content: m.content || [] })));
         clearChatDom();
         for (let i = 0; i < chatMessages.length; i++) {
           const m = chatMessages[i];
@@ -537,29 +541,6 @@ export async function initOrb(): Promise<void> {
           }
         }
         scrollToBottom();
-      } else {
-        _renderChat('follow');
-      }
-
-      if (first.total > first.messages.length) {
-        const rest = await sessionStore.getMessagesRange(sid, 'head', 0, first.total - first.messages.length);
-        if (myToken !== _switchToken || _renderedSessionId !== sid) return;
-        chatMessages.unshift(...rest.messages.map(m => ({ role: m.role as 'user' | 'ai', content: m.content || [] })));
-        if (_useV8) {
-          clearChatDom();
-          for (let i = 0; i < chatMessages.length; i++) {
-            const m = chatMessages[i];
-            if (m.role === 'user') {
-              const tb = m.content.find(b => b?.type === 'text');
-              mountUserMessage(i, tb && 'text' in tb ? tb.text : '');
-            } else {
-              mountAiMessage(i, m.content);
-            }
-          }
-          scrollToBottom();
-        } else {
-          _renderChat('follow');
-        }
       }
     }
 
@@ -730,10 +711,8 @@ export async function initOrb(): Promise<void> {
       await doSend(text, chatMessages, base, abortCtrl.signal,
         () => {
           // onBeforeSend: 用户消息已入队（doSend 内部 push 后调此回调）
-          if (_useV8) {
-            mountUserMessage(chatMessages.length - 1, text);
-            scrollToBottom();
-          }
+          mountUserMessage(chatMessages.length - 1, text);
+          scrollToBottom();
         },
         () => {
           if (!firstRenderDone) {
