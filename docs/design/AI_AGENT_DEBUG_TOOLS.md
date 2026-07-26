@@ -138,8 +138,8 @@ maintainer: AI agent (蔚然)
 改动文件：
 | 文件 | 改动 |
 |------|------|
-| `tools/types.ts` | `KfmTool` 加可选 `exclusive?: boolean` |
-| `tools/kfmv4/restart.ts` | `kfmRestartTool.exclusive = true` |
+| `src/server/ai/tools/types.ts` | `KfmTool` 加可选 `exclusive?: boolean` |
+| `src/server/ai/tools/kfmv4/restart.ts` | `kfmRestartTool.exclusive = true` |
 | `chat.ts` | Promise.all 前加 exclusive 检查，分离执行 |
 
 **第二层——文件接力**：去掉轮询和浏览器刷新，改为「触发重启 → 写标记文件 → 立即返回」。利用进程死亡前约 100ms 的安全窗口（`POST` 返回与 `systemctl` 杀进程之间），工具在窗口内完成所有 yield，SSE 数据写入 TCP 缓冲区。新进程启动后检测标记文件 → 广播 `restart-completed` WS 事件。
@@ -147,10 +147,10 @@ maintainer: AI agent (蔚然)
 改动文件：
 | 文件 | 改动 |
 |------|------|
-| `tools/kfmv4/restart.ts` | 重写：触发 POST → 写 `.kfmv4/restart-pending.json` → 立即返回 |
-| `server/index.ts` | 新增：启动时检测标记文件、广播 WS 事件 |
-| `client/ws-channel.ts` | 新增：注册 `restart-completed` 处理器 |
-| `client/orb-chat.ts` | 新增：收到事件后更新工具卡 UI |
+| `src/server/ai/tools/kfmv4/restart.ts` | 重写：触发 POST → 写 $HOME/.kfmv4/restart-pending.json → 立即返回 |
+| `src/server/index.ts` | 新增：启动时检测标记文件、广播 WS 事件 |
+| `src/client/modules/ws-channel.ts` | 新增：注册 `restart-completed` 处理器 |
+| `src/client/modules/orb-chat.ts` | 新增：收到事件后更新工具卡 UI |
 
 **初步规模估算**：约 120-150 行总改动（类型 3 行 + restart 重写 25 行 + index 启动检测 15 行 + ws-channel 20 行 + orb-chat 20 行 + 独占逻辑 ~30 行 + 工具提示文档 ~15 行）。
 
