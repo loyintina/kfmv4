@@ -16,7 +16,7 @@ import { hslToHex } from './color-utils.js';
 import { Z } from './z-index-layers.js';
 import { WAITING_HINTS } from '../data/waiting-hints.js';
 import type { StreamEvent } from '../../shared/chat-protocol/events.js';
-import type { ToolBlock } from '../../shared/chat-protocol/messages.js';
+import type { ContentBlock, TextBlock, ToolBlock, RuleWarningBlock } from '../../shared/chat-protocol/messages.js';
 
 // ========== 状态（最小化） ==========
 
@@ -525,7 +525,7 @@ function _findLastToolId(mi: number): string | null {
 
 // ========== 历史消息挂载（会话加载） ==========
 
-export function mountAiMessage(mi: number, blocks: Array<{ type: string; [k: string]: unknown }>): void {
+export function mountAiMessage(mi: number, blocks: ContentBlock[]): void {
   const msgEl = _createMsgContainer(mi, 'ai');
   _currentMsgIdx = mi;
   _toolCountInMsg = 0;
@@ -555,7 +555,7 @@ export function mountAiMessage(mi: number, blocks: Array<{ type: string; [k: str
         // TODO v8.1: 服务端 HTML 注入（marked + hljs 渲染产物）
       }
     } else if (block.type === 'tool') {
-      const tb = block as unknown as ToolBlock;
+      const tb = block;
       const blockId = tb.id || `tool_${mi}_${_toolCountInMsg}`;
       const els = _createToolCard(msgEl, mi, _toolCountInMsg, blockId, tb.name);
       _toolCountInMsg++;

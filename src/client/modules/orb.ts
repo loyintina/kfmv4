@@ -509,10 +509,10 @@ export async function initOrb(): Promise<void> {
         for (let i = 0; i < chatMessages.length; i++) {
           const m = chatMessages[i];
           if (m.role === 'user') {
-            const text = (m.content.find((b: any) => b?.type === 'text') as any)?.text || '';
-            mountUserMessage(i, text);
+            const tb = m.content.find(b => b?.type === 'text');
+            mountUserMessage(i, tb && 'text' in tb ? tb.text : '');
           } else {
-            mountAiMessage(i, m.content as any[]);
+            mountAiMessage(i, m.content);
           }
         }
         scrollToBottom();
@@ -525,15 +525,14 @@ export async function initOrb(): Promise<void> {
         if (myToken !== _switchToken || _renderedSessionId !== sid) return;
         chatMessages.unshift(...rest.messages.map(m => ({ role: m.role as 'user' | 'ai', content: m.content || [] })));
         if (_useV8) {
-          // v8: 全量重建（prepend 场景较少，性能可接受）
           clearChatDom();
           for (let i = 0; i < chatMessages.length; i++) {
             const m = chatMessages[i];
             if (m.role === 'user') {
-              const text = (m.content.find((b: any) => b?.type === 'text') as any)?.text || '';
-              mountUserMessage(i, text);
+              const tb = m.content.find(b => b?.type === 'text');
+              mountUserMessage(i, tb && 'text' in tb ? tb.text : '');
             } else {
-              mountAiMessage(i, m.content as any[]);
+              mountAiMessage(i, m.content);
             }
           }
           scrollToBottom();
