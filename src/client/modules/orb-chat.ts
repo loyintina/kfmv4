@@ -1473,8 +1473,8 @@ export async function resumeRun(
       _cancelPendingTools(messages);
       const lastMsg = messages[messages.length - 1];
       if (lastMsg?.role === 'ai') lastMsg.content.push({ type: 'text', text: '[已取消]' });
-      // 取消后落盘 AI 部分回复 + [已取消]
-      sessionStore.saveMessages(messages, model, provider).catch(() => {});
+      // 同步落盘取消态
+      try { await sessionStore.saveMessages(messages, model, provider); } catch {}
     }
     _activeRunId = null;
   }
@@ -1585,8 +1585,9 @@ export async function doSend(
       _cancelPendingTools(messages);
       const lastMsg = messages[messages.length - 1];
       if (lastMsg?.role === 'ai') lastMsg.content.push({ type: 'text', text: '[已取消]' });
-      // 取消后落盘：用户消息已在 doSend 开头保存，此处落盘带上 AI 部分回复 + [已取消]
-      sessionStore.saveMessages(messages, model, provider).catch(() => {});
+      // 同步落盘取消态：await 确保中间态写入后再开始下一次发送，
+      // 避免 fire-and-forget 与后续 doSend 的 save 形成 _saveChain 背压
+      try { await sessionStore.saveMessages(messages, model, provider); } catch {}
     } else {
       messages.push({ role: 'ai', content: [{ type: 'text', text: '请求失败: ' + (e instanceof Error ? e.message : '未知错误') }] });
     }

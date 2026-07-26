@@ -174,6 +174,8 @@ export const sessionStore = {
   // 保存串行锁：增量落盘（每轮 message_stop）+ 收尾落盘可能重叠，
   // 串行化避免并发写同一文件交错、以及"读-改-写"竞态丢消息。
   _saveChain: Promise.resolve() as Promise<void>,
+  // 最近一次保存是否成功（null=从未保存或已成功，string=最后一次失败原因）
+  _lastSaveError: null as string | null,
 
   // ========== 初始化 ==========
 
@@ -481,7 +483,11 @@ export const sessionStore = {
           }
         }
       }
-      if (lastErr) throw lastErr;
+      if (lastErr) {
+        this._lastSaveError = lastErr.message;
+        throw lastErr;
+      }
+      this._lastSaveError = null; // 写盘成功，清错误标记
 
       // 本地同步 list 中该会话（不再无条件 this.load()——增量落盘每轮触发，
       // 全量重拉 N 个会话文件会拖慢流式并与切换竞态；标题变化由 _generateTitle 派发事件刷新）。
@@ -497,7 +503,8 @@ export const sessionStore = {
         this._generateTitle(session);
       }
     } catch (e) {
-      log('保存会话失败: ' + (e instanceof Error ? e.message : 'unknown'));
+      this._lastSaveError = (e instanceof Error ? e.message : 'unknown');
+      log('保存会话失败: ' + this._lastSaveError);
       // 不 rethrow：保存失败不应阻塞调用方（doSend/_finalizeRun）。
       // _saveChain 的 .catch(()=>{}) 已保证链不会因单次失败断裂，下一轮保存会覆盖。
     }
