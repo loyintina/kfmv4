@@ -48,6 +48,8 @@ export class WsServer {
   private _latestCapabilities: unknown[] | null = null;
   private _ptyManager: PtyManager;
   private _evalPending = new Map<string, { resolve(v: unknown): void; reject(e: Error): void }>();
+  /** v8 冷恢复：设为 true 后，下一个新连接立即收到 server-restarted（无需固定延迟） */
+  justRestarted = false;
 
   /**
    * WebSocket 握手 origin 校验（安全关键）。
@@ -80,6 +82,13 @@ export class WsServer {
 
       // 发送欢迎消息
       this.send(ws, 'ack', { received: 'hello', version: '1.0' });
+
+      // v8 冷恢复：重启后首个重连的客户端立即收到 server-restarted
+      if (this.justRestarted) {
+        this.justRestarted = false;
+        this.send(ws, 'server-restarted', { at: new Date().toISOString() });
+        console.log('[ws-server] 已推送 server-restarted（客户端重连触发）');
+      }
 
       ws.on('message', (raw) => {
         try {

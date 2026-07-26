@@ -151,10 +151,7 @@ try {
 httpServer.listen(PORT, '127.0.0.1', () => {
   console.log(`[kfmv4] http://127.0.0.1:${PORT}`);
   if (_justRestarted) {
-    // 等 1.5s 让客户端 WS 重连完成，再广播
-    setTimeout(() => {
-      wsServer.broadcast('server-restarted', { at: new Date().toISOString() });
-      console.log('[kfmv4] 已广播 server-restarted');
-    }, 1500);
+    // 客户端 WS 重连时立即推送 server-restarted（无固定延迟）
+    wsServer.justRestarted = true;
   }
 });
