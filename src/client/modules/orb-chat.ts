@@ -389,6 +389,9 @@ export function _cullWeight(messages: ChatMessage[]): number {
   return w;
 }
 
+/** 切换会话时清理消息高度缓存 */
+export function clearMsgHeights(): void { _msgHeights.clear(); }
+
 // 裁剪滚动监听：用户滚动进入被占位的区域时，重渲染以物化该区间消息。
 // rAF 节流；preserve 模式保持滚动位置不跳。
 // 防闪烁关键：只在裁剪窗口 [firstVisible,lastVisible] 真正变化时才重渲染。

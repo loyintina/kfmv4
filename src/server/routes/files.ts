@@ -104,8 +104,8 @@ export function setupFileRoutes(router: Router): void {
       res.json({ path: targetPath, content: fs.readFileSync(targetPath, 'utf-8') });
     } catch (error: any) { res.json({ error: error.message }); }
   });
-  // 会话元数据列表：一次性返回所有会话的轻量元数据（不含 messages），
-  // 比逐文件 list+read 快 N 倍（大会话文件可达 600KB，元数据仅约 200B/条）。
+  // 会话元数据列表：只读顶层字段（messageCount/tokenCount 由 saveSessionFile 写入），
+  // 不再解析 messages 数组——大会话文件 1.5MB，3 个会话 = 4.5MB 磁盘 IO + JSON.parse。
   router.get('/sessions/list', (_req, res) => {
     try {
       const sessionsDir = path.join(KFM_DATA_DIR, 'sessions');
@@ -121,36 +121,38 @@ export function setupFileRoutes(router: Router): void {
           const id = typeof p['id'] === 'string' ? p['id'] : '';
           const title = typeof p['title'] === 'string' ? p['title'] : '';
           if (!id || !title) continue;
-          const messages = Array.isArray(p['messages']) ? p['messages'] : [];
-          // 只统计有正文的消息数，不把整个 messages 数组传给客户端
-          let messageCount = 0;
-          let totalChars = 0;
-          for (const msg of messages) {
-            if (!msg || typeof msg !== 'object') continue;
-            const content = Array.isArray((msg as Record<string, unknown>)['content']) ? (msg as Record<string, unknown>)['content'] as unknown[] : [];
-            for (const block of content) {
-              if (!block || typeof block !== 'object') continue;
-              const b = block as Record<string, unknown>;
-              if (b['type'] === 'text') {
-                const t = typeof b['text'] === 'string' ? b['text'] : '';
-                const r = typeof b['reasoning'] === 'string' ? b['reasoning'] : '';
-                totalChars += t.length + r.length;
-                if (t.trim()) { messageCount++; break; }
-              } else if (b['type'] === 'tool') {
-                if (b['input'] && typeof b['input'] === 'object') {
-                  totalChars += JSON.stringify(b['input']).length;
-                }
-                const result = b['result'] as Record<string, unknown> | undefined;
-                if (result) {
-                  const rc = Array.isArray(result['content']) ? result['content'] as unknown[] : [];
-                  for (const c of rc) {
-                    if (c && typeof c === 'object' && 'text' in (c as Record<string, unknown>)) {
-                      totalChars += String((c as Record<string, unknown>)['text']).length;
+          // messageCount/tokenCount 优先取顶层字段（由 saveSessionFile 写入），
+          // 旧文件无此字段时回退计数（仅首次，下次保存即更新）
+          let messageCount = typeof p['messageCount'] === 'number' ? p['messageCount'] : 0;
+          let tokenCount = typeof p['tokenCount'] === 'number' ? p['tokenCount'] : 0;
+          if (messageCount === 0 && tokenCount === 0) {
+            const messages = Array.isArray(p['messages']) ? p['messages'] : [];
+            for (const msg of messages) {
+              if (!msg || typeof msg !== 'object') continue;
+              const content = Array.isArray((msg as Record<string, unknown>)['content']) ? (msg as Record<string, unknown>)['content'] as unknown[] : [];
+              for (const block of content) {
+                if (!block || typeof block !== 'object') continue;
+                const b = block as Record<string, unknown>;
+                if (b['type'] === 'text') {
+                  const t = typeof b['text'] === 'string' ? b['text'] : '';
+                  const r = typeof b['reasoning'] === 'string' ? b['reasoning'] : '';
+                  tokenCount += t.length + r.length;
+                  if (t.trim()) { messageCount++; break; }
+                } else if (b['type'] === 'tool') {
+                  if (b['input'] && typeof b['input'] === 'object') tokenCount += JSON.stringify(b['input']).length;
+                  const result = b['result'] as Record<string, unknown> | undefined;
+                  if (result) {
+                    const rc = Array.isArray(result['content']) ? result['content'] as unknown[] : [];
+                    for (const c of rc) {
+                      if (c && typeof c === 'object' && 'text' in (c as Record<string, unknown>)) {
+                        tokenCount += String((c as Record<string, unknown>)['text']).length;
+                      }
                     }
                   }
                 }
               }
             }
+            tokenCount = Math.round(tokenCount / 3);
           }
           sessions.push({
             id,
@@ -161,7 +163,7 @@ export function setupFileRoutes(router: Router): void {
             ...(typeof p['providerId'] === 'string' && { providerId: p['providerId'] }),
             ...(typeof p['modelId'] === 'string' && { modelId: p['modelId'] }),
             messageCount,
-            tokenCount: Math.round(totalChars / 3),
+            tokenCount,
           });
         } catch { /* skip corrupt */ }
       }

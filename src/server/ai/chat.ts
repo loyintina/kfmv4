@@ -123,7 +123,25 @@ function saveSessionFile(sessionId: string, messages: Array<{ role: string; cont
         if (existsSync(filePath)) {
             try { session = JSON.parse(readFileSync(filePath, 'utf-8')); } catch {}
         }
+        // 计算顶层 messageCount / tokenCount（sessions/list 仅读顶层字段，跳过 messages 解析）
+        let mc = 0, tc = 0;
+        for (const msg of messages) {
+            if (!msg || !Array.isArray(msg.content)) continue;
+            for (const b of msg.content) {
+                if (!b) continue;
+                if (b.type === 'text') {
+                    tc += ((typeof b.text === 'string' ? b.text.length : 0) + (typeof b.reasoning === 'string' ? b.reasoning.length : 0));
+                    if (typeof b.text === 'string' && b.text.trim()) { mc++; break; }
+                } else if (b.type === 'tool') {
+                    if (b.input) tc += JSON.stringify(b.input).length;
+                    const rc = b.result?.content;
+                    if (Array.isArray(rc)) for (const c of rc) { if (c?.text) tc += String(c.text).length; }
+                }
+            }
+        }
         session.messages = messages;
+        session.messageCount = mc;
+        session.tokenCount = Math.round(tc / 3);
         session.updatedAt = new Date().toISOString();
         mkdirSync(dir, { recursive: true });
         writeFileSync(filePath, JSON.stringify(session, null, 2), 'utf-8');

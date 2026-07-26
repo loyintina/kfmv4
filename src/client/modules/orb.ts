@@ -23,7 +23,7 @@ import { anim } from './animation-registry.js';
 import { log } from './logger.js';
 import { sessionStore } from './session-store.js';
 import { buildPanelContent } from './orb-panel.js';
-import { renderChatContent, doSend, resumeRun, readPersistedRun, clearPersistedRun, clearTodoPanel, startWaitingIndicator, type ChatMessage } from './orb-chat.js';
+import { renderChatContent, doSend, resumeRun, readPersistedRun, clearPersistedRun, clearTodoPanel, startWaitingIndicator, clearMsgHeights, type ChatMessage } from './orb-chat.js';
 import type { OrbState } from './orb-state.js';
 const API_BASE = window.location.pathname.replace(/\/+$/, '') + '/api/';
 
@@ -491,6 +491,7 @@ export async function initOrb(): Promise<void> {
       const first = await sessionStore.getMessagesRange(sid, 'tail', 0, TAIL_FIRST);
       if (myToken !== _switchToken) return;
       chatMessages.length = 0;
+      clearMsgHeights();
       chatMessages.push(...first.messages.map(m => ({ role: m.role as 'user' | 'ai', content: m.content || [] })));
       _renderedSessionId = sid;
       _renderChat('follow'); // 追底：末尾消息立即可见
@@ -566,6 +567,7 @@ export async function initOrb(): Promise<void> {
       );
       if (!sid) {
         chatMessages.length = 0;
+        clearMsgHeights();
         _renderedSessionId = '';
         _renderChat();
         return;
