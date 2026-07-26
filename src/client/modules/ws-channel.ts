@@ -344,6 +344,13 @@ export function initWsChannel(): void {
 
   // 注册默认指令处理器（各模块可以覆盖或补充）
   registerDefaultCommandHandlers();
+
+  // v8 冷恢复：服务端重启后广播 server-restarted → 客户端 reload
+  wsChannel.onMessage('server-restarted', () => {
+    log('[ws-channel] 服务端已重启，刷新页面恢复会话');
+    setTimeout(() => { window.location.reload(); }, 500);
+  });
+
   log('[ws-channel] 初始化完成');
 }
 /** 注册默认的 AI 操作指令处理器。

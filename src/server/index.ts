@@ -135,6 +135,26 @@ try {
   } catch {}
 } catch {}
 
+// v8 冷恢复：检测 restart-pending.json 标记（kfm-restart 工具写入）
+// 存在 → 说明是重启后的新进程 → 删除标记 → 延迟广播 server-restarted（等客户端 WS 重连）
+import { KFM_DATA_DIR } from './path-utils.js';
+let _justRestarted = false;
+try {
+  const markerPath = path.join(KFM_DATA_DIR, 'restart-pending.json');
+  if (fs.existsSync(markerPath)) {
+    fs.unlinkSync(markerPath);
+    _justRestarted = true;
+    console.log('[kfmv4] 检测到重启标记，将在客户端重连后广播 server-restarted');
+  }
+} catch {}
+
 httpServer.listen(PORT, '127.0.0.1', () => {
   console.log(`[kfmv4] http://127.0.0.1:${PORT}`);
+  if (_justRestarted) {
+    // 等 3s 让客户端 WS 重连完成，再广播
+    setTimeout(() => {
+      wsServer.broadcast('server-restarted', { at: new Date().toISOString() });
+      console.log('[kfmv4] 已广播 server-restarted');
+    }, 3000);
+  }
 });
