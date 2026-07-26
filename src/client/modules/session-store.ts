@@ -380,7 +380,9 @@ export const sessionStore = {
 
   // ========== 消息持久化 ==========
 
-  /** 保存当前消息到活跃会话（串行化，防并发写交错）。首次对话自动生成标题。 */
+  /** 保存当前消息到活跃会话。不再使用 _saveChain 串行化——
+   *  所有调用方（doSend 初始保存/cancel保存/_finalizeRun）已是顺序执行，
+   *  不存在并发写入风险。链式异步反而在 fetch 挂起时阻塞所有后续保存。 */
   saveMessages(
     messages: SessionMessage[],
     modelId?: string,
@@ -395,10 +397,9 @@ export const sessionStore = {
       role: m.role,
       content: (m.content || []).map(b => cleanBlockForSave(b)),
     }));
-    this._saveChain = this._saveChain
-      .catch(() => {})
-      .then(() => this._doSaveMessages(snapshot, modelId, providerId));
-    return this._saveChain;
+    log(`[save] 直接写入 ${snapshot.length}msgs → ${this.activeId}`);
+    // 直接执行，不走 _saveChain 排队
+    return this._doSaveMessages(snapshot, modelId, providerId).catch(() => {});
   },
 
   async _doSaveMessages(
@@ -422,6 +423,7 @@ export const sessionStore = {
       window.dispatchEvent(new CustomEvent('kfm-session-change', { detail: { sessionId: this.activeId } }));
       this._pendingAutoTitle = true; // 仅 auto-create 创建的会话才能触发自动命名
     }
+    log(`[save] 开始执行 → ${this.activeId} (${messages.length}msgs)`);
     try {
       // 读取现有会话（或创建新的）
       const readRes = await fetch(this._apiBase + 'files/read', {
