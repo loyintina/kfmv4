@@ -62,6 +62,7 @@ maintainer: AI agent (蔚然)
 | `kfm-logs` | 查看客户端日志卡内容 | ✅ 核心 |
 | `kfm-exec` | 在项目目录执行命令 | ✅ 核心 |
 | 「眼睛」系统 | 每次工具调用后自动推送页面状态 | ✅ 已启用 |
+| `kfm-restart` | 安全重启 kfmv4 服务 | ⚠️ 需重构（见 P0） |
 
 ### 2.3 debug 工具内置能力
 
@@ -117,6 +118,44 @@ maintainer: AI agent (蔚然)
 
 **初步规模估算**：约 30-50 行代码改动（ws-server.ts 新增 `server-logs` 消息类型 + kfm-log.ts 加 `--server` 参数）。
 
+### P0 — kfm-restart 安全重启重构
+
+**现状**：`kfm-restart` 工具在 `executeTool()` 中触发 `systemctl restart kfmv4`，但工具代码本身运行在 kfmv4 进程内——杀死进程等于杀死自己。30s 轮询 + 浏览器刷新等逻辑在进程死亡前无法完成，导致工具调用被截断，结果标记为「未完成」。
+
+**draft（当前分析）**：
+
+有两个结构性缺陷：
+
+| 缺陷 | 位置 | 表现 |
+|------|------|------|
+| **并行执行** | `chat.ts` 的 `Promise.all(todo.map(...))` | LLM 一轮可调多个工具，restart 可能和 write/edit 并行，进程被杀时其他工具结果丢失 |
+| **进程内等待** | `restart.ts` 的 30s 轮询 + WS eval | 工具在将死的进程里做远程操作，轮询到一半进程被 kill |
+
+**方案—两层改造**：
+
+**第一层——独占标记**：`KfmTool` 加 `exclusive?: boolean` 字段，`kfmRestartTool.exclusive = true`。`chat.ts` 中 Promise.all 前做独占检查——若 todo 中有 exclusive 工具，只执行它，其余返回「因独占本轮而跳过」。LLM 下一轮看到跳过信息后自行决定是否重试。
+
+改动文件：
+| 文件 | 改动 |
+|------|------|
+| `tools/types.ts` | `KfmTool` 加可选 `exclusive?: boolean` |
+| `tools/kfmv4/restart.ts` | `kfmRestartTool.exclusive = true` |
+| `chat.ts` | Promise.all 前加 exclusive 检查，分离执行 |
+
+**第二层——文件接力**：去掉轮询和浏览器刷新，改为「触发重启 → 写标记文件 → 立即返回」。利用进程死亡前约 100ms 的安全窗口（`POST` 返回与 `systemctl` 杀进程之间），工具在窗口内完成所有 yield，SSE 数据写入 TCP 缓冲区。新进程启动后检测标记文件 → 广播 `restart-completed` WS 事件。
+
+改动文件：
+| 文件 | 改动 |
+|------|------|
+| `tools/kfmv4/restart.ts` | 重写：触发 POST → 写 `.kfmv4/restart-pending.json` → 立即返回 |
+| `server/index.ts` | 新增：启动时检测标记文件、广播 WS 事件 |
+| `client/ws-channel.ts` | 新增：注册 `restart-completed` 处理器 |
+| `client/orb-chat.ts` | 新增：收到事件后更新工具卡 UI |
+
+**初步规模估算**：约 120-150 行总改动（类型 3 行 + restart 重写 25 行 + index 启动检测 15 行 + ws-channel 20 行 + orb-chat 20 行 + 独占逻辑 ~30 行 + 工具提示文档 ~15 行）。
+
+**设计评论状态**：已与洛讨论确认，待实施。
+
 ### P0 — 一键健康检查（kfm-check）
 
 **现状**：每次改完代码需要手动跑多个检查命令，步骤分散。
@@ -159,7 +198,8 @@ await assert('文件树有至少3个条目', () => getTreeEntries().length >= 3)
 
 ## 四、能力演化路线
 
-### Phase 1 — 补齐基础（现在就做）
+### Phase 1 — 补齐基础（现在做）
+- [ ] P0: kfm-restart 安全重构（独占标记 + 文件接力）
 - [ ] P0: 服务端结构化日志访问
 - [ ] P0: kfm-check 一键健康检查
 - [ ] P1: 构建日志缓存
