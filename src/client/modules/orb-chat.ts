@@ -1588,7 +1588,8 @@ export async function doSend(
       // 避免 fire-and-forget 与后续 doSend 的 save 形成 _saveChain 背压
       try { await sessionStore.saveMessages(messages, model, provider); } catch {}
     } else {
-      messages.push({ role: 'ai', content: [{ type: 'text', text: '请求失败: ' + (e instanceof Error ? e.message : '未知错误') }] });
+      const errMsg = e instanceof Error ? e.message : '未知错误';
+      messages.push({ role: 'ai', content: [{ type: 'text', text: '请求失败: ' + errMsg }] });
     }
   }
   // 流彻底结束（成功/错误/取消）：确保等待提示已停
