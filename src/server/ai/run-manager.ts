@@ -116,8 +116,9 @@ export function startRun(
         run.events.push(event);
         if (sessionId) {
           appendEvent(sessionId, event);
-          // 生死线：tool_result 必须立即同步落盘（kfm-restart 等工具触发后进程随时被杀）
-          if (event.type === 'tool_result') flushSync(sessionId);
+          // 每事件同步落盘：单用户系统写小 JSON 开销可忽略，
+          // 彻底消除防抖窗口内进程被杀导致的数据丢失（kfm-restart 生死线）。
+          flushSync(sessionId);
         }
         for (const sub of run.subscribers) {
           try { sub.onEvent(event); } catch { /* 订阅者写失败不影响生成 */ }
