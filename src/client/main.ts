@@ -51,6 +51,11 @@ import { anim } from './modules/animation-registry.js';
   cardRegistry,
   gestureRegistry: gestures,
 };
+// 额外暴露顶层引用，供 kfmv4-views.ts 的 JS 注入脚本通过 window.__L / window.__anim 等直接访问
+(window as unknown as Record<string, unknown>).__L = L; // escape-ok: debug视图脚本需要
+(window as unknown as Record<string, unknown>).__anim = anim; // escape-ok: debug视图脚本需要
+(window as unknown as Record<string, unknown>).__cardRegistry = cardRegistry; // escape-ok: debug视图脚本需要
+(window as unknown as Record<string, unknown>).__gestureRegistry = gestures; // escape-ok: debug视图脚本需要
 
 // 全局未捕获错误 → 调试卡
 import { log } from './modules/logger.js';
