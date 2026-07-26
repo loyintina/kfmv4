@@ -1,0 +1,13 @@
+<div class="orb-msg" data-mi="0">
+          <div style="display:flex;justify-content:flex-start;margin-bottom:4px">
+            <div style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:linear-gradient(RGBA,RGBA) padding-box,linear-gradient(135deg,RGBA,RGBA,RGBA) border-box;border:1px solid transparent;border-left-width:3px;font-size:var(--card-font-size,10px)">
+              <div data-msg="0" onclick="var p=document.getElementById('r0');p.classList.toggle('collapsed');this.querySelector('.rt-arrow').textContent=p.classList.contains('collapsed')?'▶':'▼';var m=this.dataset.msg;if(window.__orbMsgs&&m>=0){var t=window.__orbMsgs[m]?.content?.filter(function(x){return x&&x.type==='text'})[0];if(t){t._reasonExpanded=!p.classList.contains('collapsed');if(t._reasonExpanded&&window.__orbRender)window.__orbRender()}}" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
+                <span class="rt-arrow" style="font-size:7px;color:RGBA">▼</span>
+                <span style="color:RGBA;font-weight:600">思考中...</span>
+              </div>
+              <div id="r0" class="orb-fold-open" style="margin-top:4px">
+                <pre style="font-size:var(--card-font-size,9px);color:RGBA;line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;background:RGBA;padding:4px 6px;border-radius:4px;max-height:80px;overflow-y:auto">让我想想这个问题...
+首先分析需求</pre>
+              </div>
+            </div>
+          </div></div>

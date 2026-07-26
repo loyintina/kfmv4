@@ -1,0 +1,68 @@
+<div class="orb-msg" data-mi="0">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+          <div style="max-width:311.09999999999997px;padding:6px 12px;background:linear-gradient(RGBA,RGBA) padding-box,linear-gradient(135deg,#COLOR,RGBA) border-box;border:1px solid transparent;border-left-width:3px;border-radius:8px;box-shadow:0 0 10px 2px RGBA">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;gap:8px">
+        <span style="font-size:10px;color:#COLOR;font-weight:600">你</span>
+        <span class="orb-copy-btn" data-copy-idx="0" style="font-size:9px;color:RGBA;cursor:pointer;flex-shrink:0;user-select:none">复制</span>
+      </div><div class="orb-msg-text" data-msg-idx="0" style="font-family:sans-serif;font-size:var(--card-font-size,13px);line-height:16px;color:#COLOR;word-break:break-word">帮我重构这个文件</div>
+          </div>
+        </div></div><div class="orb-msg orb-msg-new" data-mi="1">
+          <div style="display:flex;justify-content:flex-start;margin-bottom:4px">
+            <div style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:linear-gradient(RGBA,RGBA) padding-box,linear-gradient(135deg,RGBA,RGBA,RGBA) border-box;border:1px solid transparent;border-left-width:3px;font-size:var(--card-font-size,10px)">
+              <div data-msg="1" onclick="var p=document.getElementById('r1');p.classList.toggle('collapsed');this.querySelector('.rt-arrow').textContent=p.classList.contains('collapsed')?'▶':'▼';var m=this.dataset.msg;if(window.__orbMsgs&&m>=0){var t=window.__orbMsgs[m]?.content?.filter(function(x){return x&&x.type==='text'})[0];if(t){t._reasonExpanded=!p.classList.contains('collapsed');if(t._reasonExpanded&&window.__orbRender)window.__orbRender()}}" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
+                <span class="rt-arrow" style="font-size:7px;color:RGBA">▶</span>
+                <span style="color:RGBA;font-weight:600">已思考</span>
+              </div>
+              <div id="r1" class="orb-fold-content collapsed" style="margin-top:4px">
+                
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-start;margin-bottom:8px">
+            <div style="max-width:358px;padding:6px 12px;background:linear-gradient(RGBA,RGBA) padding-box,linear-gradient(135deg,RGBA,RGBA,RGBA) border-box;border:1px solid transparent;border-left-width:3px;border-radius:8px;box-shadow:0 0 10px 2px RGBA">
+              
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;gap:8px">
+            <span style="font-size:10px;color:#COLOR;font-weight:600">蔚然</span>
+            <span class="orb-copy-btn" data-copy-idx="1" style="font-size:9px;color:RGBA;cursor:pointer;flex-shrink:0;user-select:none">复制</span>
+          </div>
+          <div class="orb-msg-text" data-msg-idx="1" style="font-family:sans-serif;font-size:var(--card-font-size,13px);line-height:16px;color:#COLOR;word-break:break-word">好的，我来看看这个文件。</div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-start;margin-bottom:6px">
+            <div class="orb-tool-card" style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:linear-gradient(RGBA,RGBA) padding-box,linear-gradient(135deg,RGBA 30%,RGBA 70%) border-box;border:1px solid transparent;border-left-width:3px;border-left-color:RGBA;font-size:var(--card-font-size,10px)">
+              <div data-msg="1" data-ti="0" onclick="var p=document.getElementById('tc1_0');p.classList.toggle('collapsed');this.querySelector('.orb-tc-arrow').textContent=p.classList.contains('collapsed')?'▶':'▼';var m=this.dataset.msg,t=this.dataset.ti;if(window.__orbMsgs&&m>=0){var b=window.__orbMsgs[m]?.content?.filter(function(x){return x&&x.type==='tool'})[t];if(b){b._userExpanded=!p.classList.contains('collapsed');if(!p.classList.contains('collapsed')){delete b._foldPhase;if(window.__orbRender)window.__orbRender()}}}" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;margin-bottom:2px">
+                <span class="orb-tc-arrow" style="font-size:7px;color:RGBA">▼</span>
+                <span style="color:RGBA;font-weight:600">read</span>
+                <span style="color:RGBA;font-size:var(--card-font-size,9px);font-weight:600">成功</span>
+              </div>
+              <div id="tc1_0" class="orb-fold-content" style="margin-top:4px;">
+                <pre class="orb-tool-input-pre" data-tool-in="1" style="font-size:var(--card-font-size,9px);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;background:RGBA;padding:4px 6px;border-radius:4px;color:RGBA;max-height:80px;overflow-y:auto">{
+  "path": "/src/old.ts"
+}</pre><div style="height:1px;margin:5px 0;border-radius:1px;background:linear-gradient(90deg,RGBA,RGBA)"></div><pre class="orb-tool-output-pre" data-tool-out="read" data-tool-ext="ts" style="font-size:var(--card-font-size,9px);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;background:RGBA;padding:4px 6px;border-radius:4px;color:RGBA;max-height:80px;overflow-y:auto">const x = 1;
+const y = 2;</pre>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-start;margin-bottom:6px">
+            <div class="orb-tool-card" style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:linear-gradient(RGBA,RGBA) padding-box,linear-gradient(135deg,RGBA 30%,RGBA 70%) border-box;border:1px solid transparent;border-left-width:3px;border-left-color:RGBA;font-size:var(--card-font-size,10px)">
+              <div data-msg="1" data-ti="1" onclick="var p=document.getElementById('tc1_1');p.classList.toggle('collapsed');this.querySelector('.orb-tc-arrow').textContent=p.classList.contains('collapsed')?'▶':'▼';var m=this.dataset.msg,t=this.dataset.ti;if(window.__orbMsgs&&m>=0){var b=window.__orbMsgs[m]?.content?.filter(function(x){return x&&x.type==='tool'})[t];if(b){b._userExpanded=!p.classList.contains('collapsed');if(!p.classList.contains('collapsed')){delete b._foldPhase;if(window.__orbRender)window.__orbRender()}}}" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;margin-bottom:2px">
+                <span class="orb-tc-arrow" style="font-size:7px;color:RGBA">▼</span>
+                <span style="color:RGBA;font-weight:600">write</span>
+                <span style="color:RGBA;font-size:var(--card-font-size,9px);font-weight:600">成功</span>
+              </div>
+              <div id="tc1_1" class="orb-fold-content" style="margin-top:4px;">
+                <pre class="orb-tool-input-pre" data-tool-in="1" style="font-size:var(--card-font-size,9px);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;background:RGBA;padding:4px 6px;border-radius:4px;color:RGBA;max-height:80px;overflow-y:auto">{
+  "path": "/src/old.ts",
+  "content": "export const x = 1;\nexport const y = 2;"
+}</pre><div style="height:1px;margin:5px 0;border-radius:1px;background:linear-gradient(90deg,RGBA,RGBA)"></div><div class="orb-write-card" data-write-path="/src/old.ts" data-write-ext="ts">
+              <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
+                <span style="font-size:11px">📄</span>
+                <span style="color:RGBA;font-size:9px;font-weight:600">old.ts</span>
+                <span style="color:RGBA;font-size:8px">2 行 · 40 字符</span>
+              </div>
+              <pre data-tool-out="write" data-tool-ext="ts" style="font-size:8px;line-height:1.3;white-space:pre-wrap;word-break:break-word;margin:0;font-family:ui-monospace,monospace;background:RGBA;padding:3px 5px;border-radius:3px;color:RGBA;max-height:80px;overflow-y:auto">export const x = 1;
+export const y = 2;</pre>
+            </div>
+              </div>
+            </div>
+          </div></div>

@@ -1,0 +1,15 @@
+<div class="orb-msg" data-mi="0">
+          <div style="display:flex;justify-content:flex-start;margin-bottom:6px">
+            <div class="orb-tool-card" style="flex:1;max-width:100%;padding:5px 10px;border-radius:8px;background:linear-gradient(RGBA,RGBA) padding-box,linear-gradient(135deg,RGBA 30%,RGBA 70%) border-box;border:1px solid transparent;border-left-width:3px;border-left-color:RGBA;font-size:var(--card-font-size,10px)">
+              <div data-msg="0" data-ti="0" onclick="var p=document.getElementById('tc0_0');p.classList.toggle('collapsed');this.querySelector('.orb-tc-arrow').textContent=p.classList.contains('collapsed')?'▶':'▼';var m=this.dataset.msg,t=this.dataset.ti;if(window.__orbMsgs&&m>=0){var b=window.__orbMsgs[m]?.content?.filter(function(x){return x&&x.type==='tool'})[t];if(b){b._userExpanded=!p.classList.contains('collapsed');if(!p.classList.contains('collapsed')){delete b._foldPhase;if(window.__orbRender)window.__orbRender()}}}" style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;margin-bottom:2px">
+                <span class="orb-tc-arrow" style="font-size:7px;color:RGBA">▼</span>
+                <span style="color:RGBA;font-weight:600">bash</span>
+                <span style="color:RGBA;font-size:var(--card-font-size,9px);font-weight:600">忙碌中</span>
+              </div>
+              <div id="tc0_0" class="orb-fold-content" style="margin-top:4px;">
+                <pre class="orb-tool-input-pre" data-tool-in="1" style="font-size:var(--card-font-size,9px);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;background:RGBA;padding:4px 6px;border-radius:4px;color:RGBA;max-height:80px;overflow-y:auto">{
+  "command": "ls -la"
+}</pre><div style="height:1px;margin:5px 0;border-radius:1px;background:linear-gradient(90deg,RGBA,RGBA)"></div><div style="color:RGBA;font-size:var(--card-font-size,9px);line-height:1.4;padding:2px 0"><span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:RGBA;animation:orb-hint-pulse 1.2s ease-in-out infinite;vertical-align:middle;margin-right:5px"></span>HINT_TEXT</div>
+              </div>
+            </div>
+          </div></div>
