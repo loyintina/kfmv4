@@ -600,6 +600,69 @@ export async function initOrb(): Promise<void> {
       clearPersistedRun();
     })();
 
+    // v8 冷恢复：检测"未完成的对话"（kfm-restart 后 AI 工具执行完了但没来得及回应）
+    // 判据：末尾是 AI 消息，含 tool block 有 result，但无后续纯文本 → 自动 resume
+    (async () => {
+      if (!sessionStore.activeId || chatMessages.length === 0) return;
+      const last = chatMessages[chatMessages.length - 1];
+      if (last.role !== 'ai') return;
+      const hasToolResult = last.content.some(b => b?.type === 'tool' && b.result);
+      const hasText = last.content.some(b => b?.type === 'text' && b.text && b.text.trim() && !b.text.startsWith('[错误'));
+      if (!hasToolResult || hasText) return;
+      // 末尾 AI 消息有工具结果但无正文 → 未完成，自动 resume
+      const sid = sessionStore.activeId;
+      const meta = sessionStore.list.find(s => s.id === sid);
+      const model = meta?.modelId || '';
+      const provider = meta?.providerId || '';
+      if (!model || !provider) return;
+      // 构建 apiMessages（复用 doSend 的格式转换逻辑）
+      const apiMessages: Array<{ role: string; content: string | null; tool_calls?: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }>; tool_call_id?: string }> = [];
+      for (const m of chatMessages) {
+        if (m.role === 'user') {
+          const text = m.content.filter(b => b?.type === 'text').map(b => ('text' in b ? b.text : '')).join('');
+          apiMessages.push({ role: 'user', content: text });
+        } else {
+          const textBlocks = m.content.filter(b => b?.type === 'text');
+          const toolBlocks = m.content.filter(b => b?.type === 'tool');
+          const mainText = textBlocks.map(b => ('text' in b ? b.text : '')).join('');
+          if (toolBlocks.length > 0) {
+            const toolCalls = toolBlocks.map(tc => ({
+              id: ('id' in tc ? tc.id : '') as string,
+              type: 'function' as const,
+              function: { name: ('name' in tc ? tc.name : '') as string, arguments: JSON.stringify('input' in tc ? tc.input : {}) },
+            }));
+            apiMessages.push({ role: 'assistant', content: mainText || null, tool_calls: toolCalls });
+            for (const tc of toolBlocks) {
+              const resultText = ('result' in tc && tc.result?.content?.map(c => c.text || '').join('')) || '';
+              apiMessages.push({ role: 'tool', content: resultText, tool_call_id: ('id' in tc ? tc.id : '') as string });
+            }
+          } else {
+            apiMessages.push({ role: 'assistant', content: mainText });
+          }
+        }
+      }
+      try {
+        const res = await fetch(base + 'ai/chat/start', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId: sid, messages: apiMessages, model, provider }),
+        });
+        const data = await res.json();
+        if (data.runId) {
+          // 自动续读（复用 resumeRun 路径）
+          if (orbState === 'collapsed') expandPanel();
+          abortCtrl = new AbortController();
+          sendBtn!.classList.add('sending');
+          await resumeRun(base, data.runId, 0, chatMessages, abortCtrl.signal,
+            () => _renderChat('auto'), () => {},
+            model, provider,
+          );
+          abortCtrl = null;
+          sendBtn!.classList.remove('sending');
+          _renderChat('auto');
+        }
+      } catch { /* 网络失败静默，用户可手动重发 */ }
+    })();
+
     // 监听会话切换 → 中止进行中的 run + 分段重载消息
     // 竞态防护：切换前 abort 进行中流式 run，防止流继续写入已切走的会话。
     // guard 用 _renderedSessionId（本模块真相），不用 sessionStore.activeId——后者
