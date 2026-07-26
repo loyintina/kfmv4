@@ -380,26 +380,22 @@ export const sessionStore = {
 
   // ========== 消息持久化 ==========
 
-  /** 保存当前消息到活跃会话。不再使用 _saveChain 串行化——
-   *  所有调用方（doSend 初始保存/cancel保存/_finalizeRun）已是顺序执行，
-   *  不存在并发写入风险。链式异步反而在 fetch 挂起时阻塞所有后续保存。 */
+  /** 保存当前消息到活跃会话。串行锁防并发写入竞争——
+   *  工具密集型对话中 onToolCall 可能触发多次快速保存，
+   *  若不串行，先后两轮保存的快照可能乱序落盘（新数据被旧快照覆盖）。
+   *  _saveLock 保证顺序，失败不阻断（.then(action, action)）。 */
   saveMessages(
     messages: SessionMessage[],
     modelId?: string,
     providerId?: string,
   ): Promise<void> {
-    // 深拷贝快照 + 剥离 UI 动画字段：旧代码 messages.map(m => ({ role, content: m.content }))
-    // 只浅拷贝外层，content 数组与 block 对象仍是引用。_saveChain 异步执行时 block 已被
-    // 打字机动画/流式缓冲原地修改（_animText/_animInput/_foldPhase），导致增量保存
-    // 将动画中间态落地磁盘（回读后工具卡显示空结果/卡在动画态）。cleanBlockForSave 做
-    // 深拷贝 + 剥离，确保每次保存对应其触发时刻的语义完整状态。
     const snapshot = messages.map(m => ({
       role: m.role,
       content: (m.content || []).map(b => cleanBlockForSave(b)),
     }));
-    log(`[save] 直接写入 ${snapshot.length}msgs → ${this.activeId}`);
-    // 直接执行，不走 _saveChain 排队
-    return this._doSaveMessages(snapshot, modelId, providerId).catch(() => {});
+    const doSave = () => this._doSaveMessages(snapshot, modelId, providerId);
+    // then(action,action): 即使上次保存失败也继续，锁不断裂
+    return (this._saveChain = this._saveChain.then(doSave, doSave).catch(() => {}));
   },
 
   async _doSaveMessages(

@@ -156,6 +156,23 @@ export const ompDebugTool: KfmTool = {
         return txt(buf.slice(-50).join('') || '(无输出)');
       }
 
+      // ========== kfmv4 专属视图（不需要 CDP 会话，需在 session 检查前处理）==========
+
+      if (isKfmv4View(action)) {
+        const script = KFMV4_SCRIPT_MAP[action];
+        if (!ctx.wsServer) {
+          return txt(`[debug] ${action}: wsServer 不可用`, true);
+        }
+        try {
+          const result = await ctx.wsServer.evalInBrowser(script, 5000);
+          const text = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
+          return txt(`[debug] ${action} 结果：\n${text}`);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return txt(`[debug] ${action} 执行失败：${msg}`, true);
+        }
+      }
+
       const session = resolveSession(sid);
       if (!session) return txt(`[debug] 无活跃会话。先 launch 或 attach。如果已有会话，传 sessionId。`, true);
 
@@ -305,24 +322,6 @@ export const ompDebugTool: KfmTool = {
       if (['disassemble', 'read_memory', 'write_memory', 'modules'].includes(action)) {
         return txt(`[debug] ${action}: CDP 不直接暴露此能力。` +
           `用 loaded_sources 查看文件，用 evaluate 求值表达式间接修改状态。`, true);
-      }
-
-      // ========== kfmv4 专属视图（浏览器端，无需 CDP 会话）==========
-
-      if (isKfmv4View(action)) {
-        const script = KFMV4_SCRIPT_MAP[action];
-        // 自动通过 wsServer 在浏览器里执行脚本，当场返回结果
-        if (!ctx.wsServer) {
-          return txt(`[debug] ${action}: wsServer 不可用，请在浏览器手动执行：\n\`\`\`js\n${script.slice(0, 500)}...\n\`\`\``, true);
-        }
-        try {
-          const result = await ctx.wsServer.evalInBrowser(script, 5000);
-          const text = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
-          return txt(`[debug] ${action} 结果：\n${text}`);
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
-          return txt(`[debug] ${action} 执行失败：${msg}`, true);
-        }
       }
 
       return txt(`[debug] 未知 action: ${action}`, true);
