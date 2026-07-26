@@ -348,7 +348,7 @@ export function initWsChannel(): void {
   // v8 冷恢复：服务端重启后广播 server-restarted → 客户端 reload
   wsChannel.onMessage('server-restarted', () => {
     log('[ws-channel] 服务端已重启，刷新页面恢复会话');
-    setTimeout(() => { window.location.reload(); }, 500);
+    setTimeout(() => { window.location.reload(); }, 100);
   });
 
   log('[ws-channel] 初始化完成');

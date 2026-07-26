@@ -650,10 +650,17 @@ export async function initOrb(): Promise<void> {
           if (orbState === 'collapsed') expandPanel();
           abortCtrl = new AbortController();
           sendBtn!.classList.add('sending');
+          let stopHintR: (() => void) | null = null;
+          const setWaitR = (w: boolean) => {
+            if (w) { if (!stopHintR && panelEl) stopHintR = startWaitingIndicator(panelEl); }
+            else if (stopHintR) { stopHintR(); stopHintR = null; }
+          };
+          setWaitR(true);
           await resumeRun(base, data.runId, 0, chatMessages, abortCtrl.signal,
-            () => _renderChat('auto'), () => {},
+            () => _renderChat('auto'), setWaitR,
             model, provider,
           );
+          setWaitR(false);
           abortCtrl = null;
           sendBtn!.classList.remove('sending');
           _renderChat('auto');
