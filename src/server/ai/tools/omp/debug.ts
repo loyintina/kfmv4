@@ -23,8 +23,6 @@ import {
 } from './debug/debug-operations.js';
 import {
   KFMV4_SCRIPT_MAP,
-  formatRendererSnapshot, formatAnimationTimeline, formatGestureTrace,
-  formatStateHistory, formatCardLifecycle,
   type Kfmv4ViewName
 } from './debug/kfmv4-views.js';
 
@@ -93,7 +91,7 @@ export const ompDebugTool: KfmTool = {
     required: ['action'],
   },
 
-  async execute(params: Record<string, unknown>): Promise<ToolResult> {
+  async execute(params: Record<string, unknown>, ctx): Promise<ToolResult> {
     const action = params.action as string;
     const sid = (params.sessionId as string) || '';
 
@@ -313,12 +311,18 @@ export const ompDebugTool: KfmTool = {
 
       if (isKfmv4View(action)) {
         const script = KFMV4_SCRIPT_MAP[action];
-        // browser_eval 由 kfmv4 工具系统注入——这里返回需要执行的脚本，
-        // AI 助手会通过 kfm-browser-eval 工具在浏览器中执行
-        const viewResult = { view: action, script };
-        const formatted = formatViewResult(action, viewResult);
-        return txt(`[debug] ${action}: 在浏览器中执行的脚本已生成。\n` +
-          `请在浏览器中执行以下 JS 查看结果（或使用 kfm-browser-eval 工具）：\n\`\`\`js\n${script.slice(0, 500)}...\n\`\`\``);
+        // 自动通过 wsServer 在浏览器里执行脚本，当场返回结果
+        if (!ctx.wsServer) {
+          return txt(`[debug] ${action}: wsServer 不可用，请在浏览器手动执行：\n\`\`\`js\n${script.slice(0, 500)}...\n\`\`\``, true);
+        }
+        try {
+          const result = await ctx.wsServer.evalInBrowser(script, 5000);
+          const text = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
+          return txt(`[debug] ${action} 结果：\n${text}`);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return txt(`[debug] ${action} 执行失败：${msg}`, true);
+        }
       }
 
       return txt(`[debug] 未知 action: ${action}`, true);
@@ -347,14 +351,4 @@ function txt(text: string, isError: boolean = false): ToolResult {
 
 function isKfmv4View(action: string): action is Kfmv4ViewName {
   return ['renderer_snapshot', 'animation_timeline', 'gesture_trace', 'state_history', 'card_lifecycle'].includes(action);
-}
-
-function formatViewResult(view: Kfmv4ViewName, _result: Record<string, unknown>): string {
-  switch (view) {
-    case 'renderer_snapshot': return '({ view, data: { root, boxCount, canvasSize, activeOverlays, isAnimating } })';
-    case 'animation_timeline': return '({ view, data: { activeTweens, timelines, animRegistryScope } })';
-    case 'gesture_trace': return '({ view, data: { activeGesture, registeredHandlers, recentEvents } })';
-    case 'state_history': return '({ view, data: { currentState, subscribers, notifyCount } })';
-    case 'card_lifecycle': return '({ view, data: { instanceCount, instances, activeCards, stackedCards } })';
-  }
 }
