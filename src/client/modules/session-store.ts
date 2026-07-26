@@ -20,36 +20,13 @@ import { log } from './logger.js';
 
 // ========== 类型 ==========
 
-// ========== Content Block 类型（与 orb-chat.ts 共享语义）==========
+// Content Block 类型：唯一来源在 shared/chat-protocol/messages.ts（双端共享）。
+// 此处 re-export 保持现有 import 路径兼容（orb-chat.ts 等从此处导入）。
+export type { TextBlock, ToolBlock, RuleWarningBlock, ContentBlock, ChatMessage } from '../../shared/chat-protocol/messages.js';
+import type { TextBlock, ToolBlock, ContentBlock, ChatMessage } from '../../shared/chat-protocol/messages.js';
 
-export interface TextBlock {
-  type: 'text';
-  text: string;
-  reasoning?: string;
-}
-
-export interface ToolBlock {
-  type: 'tool';
-  id: string;
-  name: string;
-  input: Record<string, unknown>;
-  result?: { content: Array<{ type: string; text?: string }>; isError?: boolean; details?: Record<string, unknown> };
-  // UI-only（渲染时生成，不做持久化）
-  color1?: string;
-  color2?: string;
-}
-
-export interface RuleWarningBlock {
-  type: 'rule_warning';
-  content: string;
-}
-
-export type ContentBlock = TextBlock | ToolBlock | RuleWarningBlock;
-
-export interface SessionMessage {
-  role: 'user' | 'ai';
-  content: ContentBlock[];
-}
+/** SessionMessage 是 ChatMessage 的别名（历史兼容） */
+export type SessionMessage = ChatMessage;
 
 export interface Session {
   id: string;

@@ -85,26 +85,10 @@ export interface StreamEvent {
   content?: string;
 }
 
-/**
- * 工具块索引映射器（BAR-106 修复的核心逻辑，抽出为可测的纯工厂）。
- *
- * provider 的 tc.index → 客户端连续块索引：text 恒占 0，工具块从 1 起按首见顺序
- * 连续递增。必须连续——Claude 等 provider 的 tc.index 可能不从 0 起（如 1），若直接
- * 用 idx+1 会在客户端 content 数组留下 undefined 空洞，.filter(b=>b.type) 读空洞即崩
- * "Cannot read properties of undefined (reading 'type')"。同一 providerIdx 多次映射
- * 返回同一 clientIdx（幂等）。
- */
-export function createClientIdxMapper(): { clientIdx: (providerIdx: number) => number } {
-  const toolBlockIdx = new Map<number, number>();
-  let nextToolBlock = 1;
-  return {
-    clientIdx(providerIdx: number): number {
-      let ci = toolBlockIdx.get(providerIdx);
-      if (ci === undefined) { ci = nextToolBlock++; toolBlockIdx.set(providerIdx, ci); }
-      return ci;
-    },
-  };
-}
+// BAR-106 核心逻辑已迁移到 shared/chat-protocol/block-idx.ts（双端共享）。
+// import + re-export：本地使用 + 保持现有外部 import 路径兼容。
+import { createClientIdxMapper } from '../../shared/chat-protocol/block-idx.js';
+export { createClientIdxMapper };
 
 /** API Provider 配置 */
 interface ApiProvider {
