@@ -16,7 +16,6 @@ import type { SessionMessage } from '../src/client/modules/session-store.js';
 import { recolorCards, getModeTheme, getTriColor } from '../src/client/modules/mode-system.js';
 import { buildTree } from '../src/client/modules/tree-model.js';
 import { KFMState, type FileNode } from '../src/client/modules/state.js';
-import { _cullWeight, type ChatMessage } from '../src/client/modules/orb-chat.js';
 
 // ==========================================================================
 // BAR-103 (b8dec96 / 1d9fdbc): 消息计数只算「有正文」的消息
@@ -338,66 +337,6 @@ regression('BAR-ORB-SEG-02', 'orb.ts', '切换 guard 用 _renderedSessionId，�
     l.includes('sid === sessionStore.activeId') && l.includes('return'),
   );
   assert(!badGuard, 'guard 不应比较 sessionStore.activeId（会被 sessionStore.init 监听器抢先改掉 → 切换被跳过）');
-});
-
-regression('BAR-ORB-SEG-04', 'orb-chat', 'preserve 模式用锚点保持，免疫高度估算失配', () => {
-  const src = readFileSync('src/client/modules/orb-chat.ts', 'utf-8');
-  // 根因：视口裁剪用 DEFAULT_MSG_H 估算未测量消息高度，上滑跨裁剪边界时真实高度≠估算，
-  // 旧的 padding 差值补偿突变 → scrollTop 突跳。改为锚点法：重建前记视口顶部消息 + 偏移，
-  // 重建后锚回同一真实元素位置。三步缺一就静默退化，故逐一断言。
-  // 1. 重建前捕捉锚点（消息绝对索引 + 相对偏移）
-  assert(src.includes('anchorMi') && src.includes('anchorOffset'), '应捕捉锚点消息索引 anchorMi + 偏移 anchorOffset');
-  // 2. 重建后按 anchorMi 查找同一真实元素
-  assert(/anchorEl\s*=\s*contentArea\.querySelector/.test(src), '重建后应按 anchorMi 查找同一 .orb-msg 元素 anchorEl');
-  // 3. 锚点仅在 preserve 模式生效（follow/auto 各有自己的滚动策略）
-  assert(src.includes("scrollMode === 'preserve'"), '锚点保持应在 preserve 分支内');
-  // 锚点查找失败时回退到 padding 差值补偿（scrollAdjust），不能直接丢失位置
-  assert(src.includes('scrollAdjust'), '锚点失败应回退到 scrollAdjust padding 补偿');
-});
-
-// ==========================================================================
-// BAR-ORB-CULL-01: 视口裁剪触发权重 = 消息数 + 工具框数（不是只按消息条数）
-//
-// 根因：一条 AI 消息可含几十个工具框，每个是重 DOM 单元。裁剪若只按 messages.length
-// 判断（旧 CULL_THRESHOLD=40 条），第一轮 20 工具框只算 1-2 条消息 → 不触发裁剪 →
-// 第二轮流式每帧全量重建全部工具框 → 一帧一帧卡死。改为按 block 权重触发。
-// ==========================================================================
-
-group('orb-chat — 裁剪触发权重（BAR-ORB-CULL-01）');
-
-const _uMsg = (t: string): ChatMessage => ({ role: 'user', content: [{ type: 'text', text: t }] });
-const _aMsgTools = (n: number): ChatMessage => ({
-  role: 'ai',
-  content: Array.from({ length: n }, (_, i) => ({ type: 'tool' as const, id: 't' + i, name: 'bash', input: {} })),
-});
-
-regression('BAR-ORB-CULL-01a', 'orb-chat', '纯文本消息：权重 = 消息条数', () => {
-  assert(_cullWeight([_uMsg('a'), _uMsg('b'), _uMsg('c')]) === 3, '3 条纯文本消息权重应为 3');
-  assert(_cullWeight([]) === 0, '空列表权重为 0');
-});
-
-regression('BAR-ORB-CULL-01b', 'orb-chat', '工具框计入权重：一条含 N 工具的消息权重 = 1 + N', () => {
-  // 1 条 AI 消息含 20 个工具框 → 权重 = 1(消息) + 20(工具) = 21
-  assert(_cullWeight([_aMsgTools(20)]) === 21, '含 20 工具框的单条消息权重应为 21，而非 1');
-});
-
-regression('BAR-ORB-CULL-01c', 'orb-chat', '卡顿场景权重超阈值 → 会触发裁剪', () => {
-  // 用户实际卡顿场景：用户消息 + 一条含 20 工具框的 AI 回复
-  const w = _cullWeight([_uMsg('做点事'), _aMsgTools(20)]);
-  assert(w === 22, `场景权重应为 22（1+1+20），实际 ${w}`);
-  // 关键：这个权重必须 > 15（当前 CULL_THRESHOLD），否则回到"只按消息条数=2 不裁剪"的卡顿
-  assert(w > 15, '20 工具框场景权重必须超过裁剪阈值 15，否则第二轮流式卡死');
-});
-
-regression('BAR-ORB-CULL-01d', 'orb-chat', '混合 block：只有 tool 计入额外权重，text 不重复计', () => {
-  // AI 消息含 text + 3 tool → 权重 = 1(消息) + 3(工具) = 4；text block 不额外加权
-  const mixed: ChatMessage = { role: 'ai', content: [
-    { type: 'text', text: 'hi' },
-    { type: 'tool', id: 't1', name: 'read', input: {} },
-    { type: 'tool', id: 't2', name: 'bash', input: {} },
-    { type: 'tool', id: 't3', name: 'edit', input: {} },
-  ] };
-  assert(_cullWeight([mixed]) === 4, 'text+3tool 消息权重应为 4（1 消息 + 3 工具）');
 });
 
 // ==========================================================================

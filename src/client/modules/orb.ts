@@ -23,7 +23,7 @@ import { anim } from './animation-registry.js';
 import { log } from './logger.js';
 import { sessionStore } from './session-store.js';
 import { buildPanelContent } from './orb-panel.js';
-import { doSend, resumeRun, readPersistedRun, clearPersistedRun, clearTodoPanel, startWaitingIndicator, clearMsgHeights, setEventHook, type ChatMessage } from './orb-chat.js';
+import { doSend, resumeRun, readPersistedRun, clearPersistedRun, clearTodoPanel, startWaitingIndicator, setEventHook, type ChatMessage } from './orb-chat.js';
 import { initChatDom, patchEvent, clearChatDom, mountUserMessage, mountAiMessage, scrollToBottom } from './chat-dom.js';
 import type { OrbState } from './orb-state.js';
 const API_BASE = window.location.pathname.replace(/\/+$/, '') + '/api/';
@@ -510,7 +510,6 @@ export async function initOrb(): Promise<void> {
       const first = await sessionStore.getMessagesRange(sid, 'tail', 0, TAIL_FIRST);
       if (myToken !== _switchToken) return;
       chatMessages.length = 0;
-      clearMsgHeights();
       chatMessages.push(...first.messages.map(m => ({ role: m.role as 'user' | 'ai', content: m.content || [] })));
       _renderedSessionId = sid;
 
@@ -674,7 +673,6 @@ export async function initOrb(): Promise<void> {
       );
       if (!sid) {
         chatMessages.length = 0;
-        clearMsgHeights();
         _renderedSessionId = '';
         _renderChat();
         return;
