@@ -13,6 +13,7 @@ import { kfmSnapshotTool } from './kfmv4/snapshot.js';
 import { kfmLogsTool } from './kfmv4/logs.js';
 import { kfmExecTool } from './kfmv4/exec.js';
 import { kfmBrowserEvalTool } from './kfmv4/browser-eval.js';
+import { kfmRestartTool } from './kfmv4/restart.js';
 
 // omp 核心文件工具
 import { ompBashTool } from './omp/bash.js';
@@ -44,6 +45,7 @@ registerTool(kfmSnapshotTool);
 registerTool(kfmLogsTool);
 registerTool(kfmExecTool);
 registerTool(kfmBrowserEvalTool);
+registerTool(kfmRestartTool);
 
 // omp 核心文件
 registerTool(ompBashTool);
