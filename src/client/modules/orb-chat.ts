@@ -1547,8 +1547,7 @@ export async function doSend(
     // 先落盘用户消息，保证刷新/切后台后能恢复（AI 回复由重连续读补齐）
     // saveMessages 会在 activeId 为空时自动新建会话——同步回 _sendSessionId，
     // 否则删除最后一个会话后再发送会带空 sessionId 触发服务端 400。
-    // 用户消息保存失败不阻塞 AI 生成——增量/最终保存会覆盖（session-store 已记录错误日志）。
-    try { await sessionStore.saveMessages(messages, model, provider); } catch { /* 已由 session-store log */ }
+    await sessionStore.saveMessages(messages, model, provider);
     if (!_sendSessionId) _sendSessionId = sessionStore.activeId;
 
     // 后台启动生成任务（服务端挂机），拿 runId

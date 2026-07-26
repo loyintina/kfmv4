@@ -176,6 +176,8 @@ export const sessionStore = {
   _saveChain: Promise.resolve() as Promise<void>,
   // 最近一次保存是否成功（null=从未保存或已成功，string=最后一次失败原因）
   _lastSaveError: null as string | null,
+  // 标记本会话是否由 auto-create 路径创建（仅此路径才有权触发 _generateTitle）
+  _pendingAutoTitle: false,
 
   // ========== 初始化 ==========
 
@@ -418,6 +420,7 @@ export const sessionStore = {
       });
       this._notify();
       window.dispatchEvent(new CustomEvent('kfm-session-change', { detail: { sessionId: this.activeId } }));
+      this._pendingAutoTitle = true; // 仅 auto-create 创建的会话才能触发自动命名
     }
     try {
       // 读取现有会话（或创建新的）
@@ -498,8 +501,12 @@ export const sessionStore = {
         if (modelId) this.list[idx].modelId = modelId;
       }
 
-      // 首次对话自动生成标题
-      if (!session.manuallyNamed && session.messages.length === 2) {
+      // 首次对话自动生成标题——仅限 auto-create 创建的会话。
+      // 旧逻辑 !session.manuallyNamed && session.messages.length===2 会误触发：
+      // 已有 365 条的会话被 snapshot(messages=2) 覆盖时，_generateTitle 重新
+      // 触发 → setTitle 重命名 → kfm-session-change → chatMessages 被清空。
+      if (this._pendingAutoTitle && messages.length >= 2) {
+        this._pendingAutoTitle = false;
         this._generateTitle(session);
       }
     } catch (e) {
