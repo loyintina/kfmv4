@@ -648,6 +648,8 @@ export async function initOrb(): Promise<void> {
         if (data.runId) {
           // 自动续读（复用 resumeRun 路径）
           if (orbState === 'collapsed') expandPanel();
+          // 等面板展开动画完成（~300ms），确保 page-state snapshot 反映展开态
+          await new Promise(r => setTimeout(r, 400));
           abortCtrl = new AbortController();
           sendBtn!.classList.add('sending');
           let stopHintR: (() => void) | null = null;
