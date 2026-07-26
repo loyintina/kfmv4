@@ -8,7 +8,7 @@
 
 import http from 'http';
 
-const PORT = process.env.KFM_PORT || 8021;
+const PORT = process.env.KFM_PORT || 8022;
 const HOST = '127.0.0.1';
 const TIMEOUT_MS = 5000;
 

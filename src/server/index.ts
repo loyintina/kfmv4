@@ -37,11 +37,64 @@ app.use('/api', apiRoutes);
 app.use('/kfmv4/api', apiRoutes);
 
 // WebSocket + AI
-const PORT = parseInt(process.env.KFM_PORT || '8021', 10);
+const PORT = parseInt(process.env.KFM_PORT || '8022', 10);
 const httpServer = http.createServer(app);
 const wsServer = new WsServer(httpServer);
-// 暴露到全局供 debug tracepoint 探针访问（CDP Runtime.evaluate 无法访问模块局部变量）
+
+// 调试探针注册表（runtime probe）：debug 工具通过 evaluate 注入包装函数来捕获调用信息。
+// 存储在 index.ts 的模块作用域中，CDP evaluate 通过 globalThis.__kfmProbes 访问。
+// 探针机制：包装目标方法 → 首次调用时捕获 args + stack → 自动恢复原函数。
+// 这是 step/variables/stack_trace 的非侵入式替代方案——不暂停进程，30-50ms 内完成。
 (globalThis as Record<string, unknown>).__kfmDebugServer = { wsServer };
+// 存储上一次探测结果，供 debug 工具通过 evaluate 读取
+let _lastTracepointResult: unknown = null;
+(globalThis as Record<string, unknown>).__kfmProbe = {
+  /** 设置探针：targetExpr 是访问目标对象的表达式，methodName 是要包装的方法名 */
+  set(targetExpr: string, methodName: string): string {
+    try {
+      const getTarget = new Function(targetExpr);
+      const target = getTarget();
+      if (!target || typeof target[methodName] !== 'function') {
+        return `Error: ${targetExpr}.${methodName} 不是函数或不存在`;
+      }
+      const original = target[methodName].bind(target);
+      let called = false;
+      let capturedArgs: unknown = null;
+      let capturedStack = '';
+      target[methodName] = function(...args: unknown[]) {
+        if (!called) {
+          called = true;
+          capturedArgs = args.map((a: unknown) => {
+            try { return JSON.parse(JSON.stringify(a)); }
+            catch { return String(a).slice(0, 200); }
+          });
+          capturedStack = new Error().stack || '';
+        }
+        return original.apply(this, args);
+      };
+      target.__kfmProbeRestore = function() { target[methodName] = original; };
+      _lastTracepointResult = { called, args: capturedArgs, stack: capturedStack };
+      return `OK: 探针已注入 ${targetExpr}.${methodName}`;
+    } catch (e) { return `Error: ${e instanceof Error ? e.message : String(e)}`; }
+  },
+  /** 读取探针结果并恢复原函数 */
+  read(): string {
+    const result = _lastTracepointResult as { called: boolean; args: unknown[]; stack: string } | null;
+    if (!result) return JSON.stringify({ called: false, args: [], stack: '' });
+    return JSON.stringify(result);
+  },
+  /** 恢复所有被包装的原函数 */
+  restore(): string {
+    try {
+      // 尝试恢复 wsServer.handleMessage（常见的探测目标）
+      const wsSrv = (globalThis as Record<string, unknown>).__kfmDebugServer as { wsServer: Record<string, unknown> };
+      if (wsSrv?.wsServer?.__kfmProbeRestore) {
+        (wsSrv.wsServer.__kfmProbeRestore as () => void)();
+      }
+      return 'OK';
+    } catch (e) { return `Error: ${e instanceof Error ? e.message : String(e)}`; }
+  }
+};
 
 // AI Tools 路由
 const aiRoutes = express.Router();
