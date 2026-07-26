@@ -1,11 +1,14 @@
 /**
- * chat-dom.ts — 聊天面板增量 DOM 投影（v8 宪法第一条：客户端拥有呈现）
+ * chat-dom.ts — 聊天面板增量 DOM 投影（v8 唯一渲染路径）
  *
  * 每个 SSE 事件到达时直接操作 DOM（append/replace/patch），
  * 永不全量重建。历史消息的 DOM 节点一旦创建就不再触碰。
  *
- * 视觉契约：产出结构与 v7 renderChatContent 等价
- * （tests/fixtures/visual-baseline/ 17 个 fixture 为证）。
+ * 渲染时机：
+ *   - 流式 text_delta：追加裸文本（打字机效果）
+ *   - content_block_stop（text）：跑 markdown 管线（marked + hljs + math + mermaid）
+ *   - tool_result：按工具类型渲染富输出（write/edit/grep/glob/通用）
+ *   - mountAiMessage（历史加载）：直接渲染最终态
  *
  * 随机配色在此层生成（宪法第二条），绑定 blockId 稳定哈希。
  */
@@ -13,10 +16,14 @@
 import { DOM } from './dom-refs.js';
 import { currentTheme as theme } from './theme.js';
 import { hslToHex } from './color-utils.js';
-import { Z } from './z-index-layers.js';
 import { WAITING_HINTS } from '../data/waiting-hints.js';
+import { marked } from 'marked';
+import { preprocessMd, MARKED_OPTS } from './renderers/md-extensions.js';
+import { highlightAll, highlightCode } from './renderers/code-highlight.js';
+import { renderMath, renderMermaid, type MathData } from './renderers/math-diagram.js';
+import { MD_CSS } from './renderers/md-css.js';
 import type { StreamEvent } from '../../shared/chat-protocol/events.js';
-import type { ContentBlock, TextBlock, ToolBlock, RuleWarningBlock } from '../../shared/chat-protocol/messages.js';
+import type { ContentBlock, TextBlock, ToolBlock } from '../../shared/chat-protocol/messages.js';
 
 // ========== 状态（最小化） ==========
 
@@ -40,7 +47,7 @@ let _followBottom = true;
 let _onFilesChanged: (() => void) | null = null;
 
 // 折叠状态（会话内记住，切换清空）
-const _foldState: Map<string, boolean> = new Map(); // blockId → userExpanded
+const _foldState: Map<string, boolean> = new Map();
 
 // ========== 初始化 ==========
 
@@ -50,6 +57,7 @@ export function initChatDom(panelEl: HTMLDivElement, onFilesChanged?: () => void
   _onFilesChanged = onFilesChanged || null;
   if (_contentArea) {
     _attachScrollWatch(_contentArea);
+    _injectMdCss(_contentArea);
   }
 }
 
@@ -60,10 +68,21 @@ export function clearChatDom(): void {
   _foldState.clear();
   _currentMsgIdx = -1;
   _toolCountInMsg = 0;
+  if (_contentArea) _injectMdCss(_contentArea);
 }
 
 export function getFollowBottom(): boolean { return _followBottom; }
 export function setFollowBottom(v: boolean): void { _followBottom = v; }
+
+// ========== MD CSS 注入 ==========
+
+function _injectMdCss(ca: HTMLElement): void {
+  if (ca.querySelector('.orb-md-css')) return;
+  const style = document.createElement('style');
+  style.className = 'orb-md-css';
+  style.textContent = MD_CSS;
+  ca.appendChild(style);
+}
 
 // ========== 随机配色（宪法第二条） ==========
 
@@ -139,6 +158,208 @@ function _escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+// ========== Markdown 渲染管线 ==========
+
+function _renderMarkdown(textEl: HTMLElement, text: string): void {
+  const mathData: MathData = { display: [], inline: [] };
+  const processed = preprocessMd(text, mathData);
+  const mdHtml = marked.parse(processed, MARKED_OPTS) as string;
+  textEl.innerHTML = '<div class="md-body">' + mdHtml + '</div>';
+  const mdBody = textEl.querySelector('.md-body') as HTMLElement;
+  if (mdBody) {
+    highlightAll(mdBody);
+    renderMath(mdBody, mathData);
+    renderMermaid(mdBody, '#00d4ff');
+  }
+}
+
+// ========== 工具输出富渲染 ==========
+
+const _EXT_LANG: Record<string, string> = {
+  ts: 'typescript', tsx: 'typescript', js: 'javascript', jsx: 'javascript', mjs: 'javascript',
+  py: 'python', sh: 'bash', bash: 'bash', zsh: 'bash', json: 'json', html: 'html', xml: 'xml',
+  css: 'css', scss: 'scss', sql: 'sql', yaml: 'yaml', yml: 'yaml', rs: 'rust', go: 'go',
+  java: 'java', c: 'c', h: 'c', cpp: 'cpp', cc: 'cpp', hpp: 'cpp',
+};
+
+function _pathExt(input: Record<string, unknown>): string {
+  const p = typeof input.path === 'string' ? input.path : '';
+  if (!p) return '';
+  const clean = p.replace(/:\d+(-\d*)?$/, '');
+  const m = clean.match(/\.([a-zA-Z0-9]+)$/);
+  return m ? m[1].toLowerCase() : '';
+}
+
+function _pathName(input: Record<string, unknown>): string {
+  const p = typeof input.path === 'string' ? input.path : '';
+  return p.split('/').pop() || p;
+}
+
+function _unescapeNL(s: string): string {
+  return s.replace(/\\n/g, '\n').replace(/\\t/g, '\t');
+}
+
+const PRE_STYLE = 'font-size:var(--card-font-size,9px);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;background:rgba(0,0,0,0.2);padding:4px 6px;border-radius:4px;color:rgba(255,255,255,0.6);max-height:80px;overflow-y:auto';
+
+/** 渲染工具输出区（按工具类型分发） */
+function _renderToolOutput(outputArea: HTMLElement, toolName: string, input: Record<string, unknown>, resultText: string, isError: boolean, details?: Record<string, unknown>): void {
+  outputArea.innerHTML = '';
+
+  if ((toolName === 'write' || toolName === 'edit') && !isError) {
+    _renderWriteEditCard(outputArea, toolName, input, resultText, details);
+  } else if ((toolName === 'grep' || toolName === 'glob') && !isError) {
+    _renderGrepGlobCard(outputArea, toolName, resultText, details);
+  } else if (toolName === 'todo' && !isError) {
+    const div = _el('div', '', 'color:rgba(255,255,255,0.4);font-size:8px;padding:2px 0');
+    div.textContent = '📋 任务列表已更新 — 详见右上角面板';
+    outputArea.appendChild(div);
+  } else {
+    // 通用输出：按扩展名决定是否高亮
+    const ext = _pathExt(input);
+    const lang = _EXT_LANG[ext];
+    const pre = _el('pre', 'orb-tool-output-pre', PRE_STYLE);
+    if (lang && resultText) {
+      const code = document.createElement('code');
+      code.className = 'language-' + lang;
+      code.textContent = _unescapeNL(resultText);
+      pre.appendChild(code);
+      outputArea.appendChild(pre);
+      highlightCode(code);
+    } else {
+      pre.textContent = resultText || '(无结果)';
+      outputArea.appendChild(pre);
+    }
+  }
+}
+
+function _renderWriteEditCard(outputArea: HTMLElement, toolName: string, input: Record<string, unknown>, resultText: string, details?: Record<string, unknown>): void {
+  const fileName = (details?.name as string) || _pathName(input);
+  const filePath = (details?.path as string) || (input.path as string) || '';
+
+  if (toolName === 'write') {
+    const lines = (details?.lines as number) || 0;
+    const size = (details?.size as number) || 0;
+    const card = _el('div', 'orb-write-card');
+    card.dataset.writePath = filePath;
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
+        <span style="font-size:11px">📄</span>
+        <span style="color:rgba(0,212,255,0.8);font-size:9px;font-weight:600">${_escapeHtml(fileName)}</span>
+        <span style="color:rgba(0,255,180,0.7);font-size:8px">${lines} 行 · ${size} 字符</span>
+      </div>`;
+    const pre = _el('pre', '', 'font-size:8px;line-height:1.3;white-space:pre-wrap;word-break:break-word;margin:0;font-family:ui-monospace,monospace;background:rgba(0,0,0,0.2);padding:3px 5px;border-radius:3px;color:rgba(255,255,255,0.55);max-height:80px;overflow-y:auto');
+    const ext = _pathExt(input);
+    const lang = _EXT_LANG[ext];
+    if (lang && resultText) {
+      const code = document.createElement('code');
+      code.className = 'language-' + lang;
+      code.textContent = resultText;
+      pre.appendChild(code);
+      highlightCode(code);
+    } else {
+      pre.textContent = resultText;
+    }
+    card.appendChild(pre);
+    outputArea.appendChild(card);
+  } else {
+    // edit: diff 卡片
+    const oldText = (details?.oldText as string) || '';
+    const newText = (details?.newText as string) || '';
+    const lineStart = details?.lineStart as number | undefined;
+    const lineEnd = details?.lineEnd as number | undefined;
+    const lineInfo = lineStart ? (lineStart === lineEnd ? `L${lineStart}` : `L${lineStart}-${lineEnd}`) : '';
+    const card = _el('div', 'orb-edit-card');
+    card.dataset.editPath = filePath;
+    let headerHtml = `
+      <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
+        <span style="font-size:11px">✏️</span>
+        <span style="color:rgba(0,212,255,0.8);font-size:9px;font-weight:600">${_escapeHtml(fileName)}</span>
+        ${lineInfo ? `<span style="color:rgba(255,255,255,0.35);font-size:8px">${lineInfo}</span>` : ''}
+      </div>`;
+    card.innerHTML = headerHtml;
+    if (oldText && newText) {
+      const diff = _el('div', '', 'margin:0;font-family:ui-monospace,monospace;font-size:8px;line-height:1.5');
+      const oldDiv = _el('div', '', 'color:#ff6b6b;background:rgba(255,60,60,0.08);padding:2px 5px;border-radius:2px;margin-bottom:2px');
+      oldDiv.innerHTML = '<span style="opacity:0.6">−</span> ' + _escapeHtml(_unescapeNL(oldText.slice(0, 300))) + (oldText.length > 300 ? '...' : '');
+      const newDiv = _el('div', '', 'color:#51cf66;background:rgba(80,255,100,0.08);padding:2px 5px;border-radius:2px');
+      newDiv.innerHTML = '<span style="opacity:0.6">+</span> ' + _escapeHtml(_unescapeNL(newText.slice(0, 300))) + (newText.length > 300 ? '...' : '');
+      diff.appendChild(oldDiv);
+      diff.appendChild(newDiv);
+      card.appendChild(diff);
+    } else {
+      const pre = _el('pre', '', PRE_STYLE);
+      pre.textContent = resultText;
+      card.appendChild(pre);
+    }
+    outputArea.appendChild(card);
+  }
+}
+
+function _renderGrepGlobCard(outputArea: HTMLElement, toolName: string, resultText: string, details?: Record<string, unknown>): void {
+  const count = (details?.count as number) || 0;
+  const lines = resultText.split('\n').filter(l => l.trim());
+
+  if (toolName === 'grep') {
+    const card = _el('div', 'orb-grep-card');
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
+        <span style="font-size:10px">🔍</span>
+        <span style="color:rgba(0,212,255,0.7);font-size:8px;font-weight:600">${count} 处匹配</span>
+      </div>`;
+    const container = _el('div', '', 'background:rgba(0,0,0,0.2);border-radius:4px;padding:3px 6px;max-height:80px;overflow-y:auto');
+    for (const line of lines) {
+      const m = line.match(/^(.+?):(\d+): (.*)/);
+      if (m) {
+        const row = _el('div', '', 'display:flex;gap:4px;padding:1px 0');
+        row.innerHTML = `<span style="color:rgba(0,212,255,0.7);font-size:8px;white-space:nowrap;flex-shrink:0">${_escapeHtml(m[1])}:</span><span style="color:rgba(255,255,255,0.3);font-size:8px;white-space:nowrap;flex-shrink:0;min-width:24px;text-align:right">${m[2]}</span><span style="color:rgba(255,255,255,0.6);font-size:8px;white-space:pre-wrap;word-break:break-word">${_escapeHtml(m[3])}</span>`;
+        container.appendChild(row);
+      } else {
+        const row = _el('div', '', 'color:rgba(255,255,255,0.4);font-size:8px;padding:1px 0');
+        row.textContent = line;
+        container.appendChild(row);
+      }
+    }
+    if (details?.limitReached) {
+      const footer = _el('div', '', 'color:rgba(255,255,255,0.3);font-size:7px;padding-top:2px');
+      footer.textContent = '(结果被截断)';
+      container.appendChild(footer);
+    }
+    card.appendChild(container);
+    outputArea.appendChild(card);
+  } else {
+    // glob
+    const card = _el('div', 'orb-glob-card');
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
+        <span style="font-size:10px">📂</span>
+        <span style="color:rgba(0,212,255,0.7);font-size:8px;font-weight:600">${count} 个文件</span>
+      </div>`;
+    const container = _el('div', '', 'background:rgba(0,0,0,0.2);border-radius:4px;padding:3px 6px;max-height:80px;overflow-y:auto');
+    for (const line of lines) {
+      const isDir = line.endsWith('/');
+      const display = isDir ? line.slice(0, -1) : line;
+      const icon = isDir ? '📁' : '📄';
+      const row = _el('div', '', 'display:flex;gap:4px;padding:1px 0;align-items:center');
+      row.innerHTML = `<span style="font-size:9px;flex-shrink:0">${icon}</span><span style="color:rgba(255,255,255,0.6);font-size:8px;white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,monospace">${_escapeHtml(display)}</span>`;
+      container.appendChild(row);
+    }
+    card.appendChild(container);
+    outputArea.appendChild(card);
+  }
+}
+
+/** JSON 高亮工具输入 */
+function _highlightInput(inputPre: HTMLElement): void {
+  const raw = inputPre.textContent || '';
+  if (!raw) return;
+  inputPre.innerHTML = '';
+  const code = document.createElement('code');
+  code.className = 'language-json';
+  code.textContent = raw;
+  inputPre.appendChild(code);
+  highlightCode(code);
+}
+
 // ========== 消息容器 ==========
 
 function _createMsgContainer(mi: number, role: 'user' | 'ai'): HTMLElement {
@@ -199,7 +420,6 @@ function _createThinkingBlock(msgEl: HTMLElement, mi: number): { pre: HTMLElemen
   const pre = _el('pre', '', 'font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.45);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;background:rgba(0,0,0,0.15);padding:4px 6px;border-radius:4px;max-height:80px;overflow-y:auto');
   foldEl.appendChild(pre);
 
-  // 点击展开/折叠
   headerEl.addEventListener('click', () => {
     const collapsed = foldEl.classList.toggle('collapsed');
     arrow.textContent = collapsed ? '▶' : '▼';
@@ -265,13 +485,10 @@ function _createToolCard(msgEl: HTMLElement, mi: number, ti: number, blockId: st
   const contentEl = _el('div', 'orb-fold-content', 'margin-top:4px;');
   contentEl.id = 'tc' + mi + '_' + ti;
 
-  // 输入区
   const inputPre = _el('pre', 'orb-tool-input-pre', 'font-size:var(--card-font-size,9px);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;background:rgba(0,0,0,0.2);padding:4px 6px;border-radius:4px;color:rgba(255,255,255,0.45);max-height:80px;overflow-y:auto');
 
-  // 分隔线
   const divider = _el('div', '', `height:1px;margin:5px 0;border-radius:1px;background:linear-gradient(90deg,${_hexToRgba(c1, 0.7)},${_hexToRgba(c2, 0.7)})`);
 
-  // 输出区（执行中为摸鱼提示）
   const outputArea = _el('div', '', 'color:rgba(255,255,255,0.75);font-size:var(--card-font-size,9px);line-height:1.4;padding:2px 0');
   outputArea.innerHTML = HINT_DOT_HTML + _escapeHtml(_randomHint());
 
@@ -279,7 +496,6 @@ function _createToolCard(msgEl: HTMLElement, mi: number, ti: number, blockId: st
   contentEl.appendChild(divider);
   contentEl.appendChild(outputArea);
 
-  // 折叠交互
   headerEl.addEventListener('click', () => {
     const collapsed = contentEl.classList.toggle('collapsed');
     arrow.textContent = collapsed ? '▶' : '▼';
@@ -333,13 +549,13 @@ function _createWarningBlock(msgEl: HTMLElement, mi: number, wi: number, content
 
 // ========== 事件投影（核心） ==========
 
-// 每个消息的流式状态
 interface MsgStreamState {
   msgEl: HTMLElement;
   thinkingPre: HTMLElement | null;
   thinkingLabel: HTMLElement | null;
   thinkingFold: HTMLElement | null;
   textEl: HTMLElement | null;
+  textBuf: string;
   warningCount: number;
 }
 
@@ -354,7 +570,7 @@ export function patchEvent(event: StreamEvent): void {
       const msgEl = _createMsgContainer(mi, 'ai');
       _currentMsgIdx = mi;
       _toolCountInMsg = 0;
-      _streamState.set(mi, { msgEl, thinkingPre: null, thinkingLabel: null, thinkingFold: null, textEl: null, warningCount: 0 });
+      _streamState.set(mi, { msgEl, thinkingPre: null, thinkingLabel: null, thinkingFold: null, textEl: null, textBuf: '', warningCount: 0 });
       _maybeScroll();
       break;
     }
@@ -366,7 +582,6 @@ export function patchEvent(event: StreamEvent): void {
       if (!st) break;
 
       if (event.blockType === 'text') {
-        // 思考框（流式期间先显示为思考，正文到达后转为正文气泡）
         const { pre, foldEl, labelEl } = _createThinkingBlock(st.msgEl, mi);
         st.thinkingPre = pre;
         st.thinkingFold = foldEl;
@@ -391,17 +606,15 @@ export function patchEvent(event: StreamEvent): void {
         st.thinkingPre.scrollTop = st.thinkingPre.scrollHeight;
         _maybeScroll();
       } else if (event.deltaType === 'text_delta') {
-        // 正文到达：如果还没有正文气泡，创建它
         if (!st.textEl) {
           st.textEl = _createTextBubble(st.msgEl, mi);
-          // 思考框标记完成
           if (st.thinkingLabel) st.thinkingLabel.textContent = '已思考';
         }
-        st.textEl.textContent += event.deltaText || '';
+        st.textBuf += event.deltaText || '';
+        st.textEl.textContent = st.textBuf;
         _maybeScroll();
       } else if (event.deltaType === 'input_json_delta') {
-        // 找最后一个工具卡的 inputPre
-        const lastToolId = _findLastToolId(mi);
+        const lastToolId = _findLastToolId();
         if (lastToolId) {
           const els = _toolEls.get(lastToolId);
           if (els?.inputPre) {
@@ -419,8 +632,19 @@ export function patchEvent(event: StreamEvent): void {
       const st = _streamState.get(mi);
       if (!st) break;
 
-      // 如果只有思考没有正文，思考框保持（不折叠——等正文或工具到达后再折叠）
-      // 如果有正文，思考框在 text_delta 到达时已标记"已思考"
+      // text block 完成 → 跑 markdown 管线
+      if (st.textEl && st.textBuf) {
+        _renderMarkdown(st.textEl, st.textBuf);
+        _maybeScroll();
+      }
+      // tool input 完成 → JSON 高亮
+      const lastToolId = _findLastToolId();
+      if (lastToolId) {
+        const els = _toolEls.get(lastToolId);
+        if (els?.inputPre && els.inputPre.textContent) {
+          _highlightInput(els.inputPre);
+        }
+      }
       break;
     }
 
@@ -429,20 +653,18 @@ export function patchEvent(event: StreamEvent): void {
       if (mi < 0) break;
       const els = _toolEls.get(event.toolUseId || '');
       if (els) {
-        const isError = event.toolResult?.isError;
+        const isError = !!event.toolResult?.isError;
         els.statusEl.textContent = isError ? '失败' : '成功';
         els.statusEl.style.color = isError ? 'rgba(255,100,100,0.8)' : 'rgba(0,212,115,0.8)';
 
-        // 输出区填入结果
         if (els.outputArea) {
           const text = event.toolResult?.content?.[0]?.text || '';
-          els.outputArea.innerHTML = '';
-          const pre = _el('pre', 'orb-tool-output-pre', 'font-size:var(--card-font-size,9px);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;background:rgba(0,0,0,0.2);padding:4px 6px;border-radius:4px;color:rgba(255,255,255,0.6);max-height:80px;overflow-y:auto');
-          pre.textContent = text || '(无结果)';
-          els.outputArea.appendChild(pre);
+          const toolName = els.header.querySelector('span:nth-child(2)')?.textContent || '';
+          const input = _getToolInput(els.inputPre);
+          _renderToolOutput(els.outputArea, toolName, input, text, isError, event.toolResult?.details);
         }
 
-        // 折叠（延迟 340ms，模拟打字机完成后的停顿）
+        // 折叠
         const blockId = event.toolUseId || '';
         if (!_foldState.get(blockId)) {
           setTimeout(() => {
@@ -453,7 +675,7 @@ export function patchEvent(event: StreamEvent): void {
           }, 340);
         }
 
-        // 思考框折叠（工具到达 = 思考完成）
+        // 思考框折叠
         const st = _streamState.get(mi);
         if (st?.thinkingLabel) {
           st.thinkingLabel.textContent = '已思考';
@@ -492,14 +714,14 @@ export function patchEvent(event: StreamEvent): void {
     case 'error': {
       const mi = _currentMsgIdx;
       if (mi < 0) {
-        // 无消息时创建
         const msgEl = _createMsgContainer(_messageEls.length, 'ai');
         const textEl = _createTextBubble(msgEl, _messageEls.length - 1);
         textEl.textContent = '[错误: ' + (event.content || '') + ']';
       } else {
         const st = _streamState.get(mi);
         if (st?.textEl) {
-          st.textEl.textContent += '\n\n[错误: ' + (event.content || '') + ']';
+          st.textBuf += '\n\n[错误: ' + (event.content || '') + ']';
+          st.textEl.textContent = st.textBuf;
         }
       }
       _maybeScroll();
@@ -513,14 +735,15 @@ export function patchEvent(event: StreamEvent): void {
   }
 }
 
-function _findLastToolId(mi: number): string | null {
-  for (const [id] of _toolEls) {
-    // tool id 格式不固定，用创建顺序判断：最后插入的就是最后一个
-  }
-  // 简单方案：遍历 _toolEls 找最后一个（Map 保持插入序）
+function _findLastToolId(): string | null {
   let last: string | null = null;
   for (const [id] of _toolEls) last = id;
   return last;
+}
+
+function _getToolInput(inputPre: HTMLElement | null): Record<string, unknown> {
+  if (!inputPre) return {};
+  try { return JSON.parse(inputPre.textContent || '{}'); } catch { return {}; }
 }
 
 // ========== 历史消息挂载（会话加载） ==========
@@ -529,19 +752,19 @@ export function mountAiMessage(mi: number, blocks: ContentBlock[]): void {
   const msgEl = _createMsgContainer(mi, 'ai');
   _currentMsgIdx = mi;
   _toolCountInMsg = 0;
-  const st: MsgStreamState = { msgEl, thinkingPre: null, thinkingLabel: null, thinkingFold: null, textEl: null, warningCount: 0 };
+  const st: MsgStreamState = { msgEl, thinkingPre: null, thinkingLabel: null, thinkingFold: null, textEl: null, textBuf: '', warningCount: 0 };
   _streamState.set(mi, st);
 
   for (const block of blocks) {
     if (!block) continue;
     if (block.type === 'text') {
-      const reasoning = (block.reasoning as string) || '';
-      const text = (block.text as string) || '';
+      const tb = block as TextBlock;
+      const reasoning = tb.reasoning || '';
+      const text = tb.text || '';
       if (reasoning) {
         const { pre, foldEl, labelEl } = _createThinkingBlock(msgEl, mi);
         pre.textContent = reasoning;
         labelEl.textContent = '已思考';
-        // 完成态默认折叠
         foldEl.classList.add('collapsed');
         foldEl.classList.remove('orb-fold-open');
         const arrow = foldEl.previousElementSibling?.querySelector('.rt-arrow');
@@ -551,35 +774,30 @@ export function mountAiMessage(mi: number, blocks: ContentBlock[]): void {
       }
       if (text) {
         st.textEl = _createTextBubble(msgEl, mi);
-        st.textEl.textContent = text;
-        // TODO v8.1: 服务端 HTML 注入（marked + hljs 渲染产物）
+        st.textBuf = text;
+        _renderMarkdown(st.textEl, text);
       }
     } else if (block.type === 'tool') {
-      const tb = block;
+      const tb = block as ToolBlock;
       const blockId = tb.id || `tool_${mi}_${_toolCountInMsg}`;
       const els = _createToolCard(msgEl, mi, _toolCountInMsg, blockId, tb.name);
       _toolCountInMsg++;
 
-      // 填入输入参数
       if (els.inputPre && Object.keys(tb.input || {}).length > 0) {
         els.inputPre.textContent = JSON.stringify(tb.input, null, 2);
+        _highlightInput(els.inputPre);
       }
-      // 填入结果
       if (tb.result && els.outputArea) {
-        const isError = tb.result.isError;
+        const isError = !!tb.result.isError;
         els.statusEl.textContent = isError ? '失败' : '成功';
         els.statusEl.style.color = isError ? 'rgba(255,100,100,0.8)' : 'rgba(0,212,115,0.8)';
         const text = tb.result.content?.[0]?.text || '';
-        els.outputArea.innerHTML = '';
-        const pre = _el('pre', 'orb-tool-output-pre', 'font-size:var(--card-font-size,9px);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;background:rgba(0,0,0,0.2);padding:4px 6px;border-radius:4px;color:rgba(255,255,255,0.6);max-height:80px;overflow-y:auto');
-        pre.textContent = text || '(无结果)';
-        els.outputArea.appendChild(pre);
-        // 完成态默认折叠
+        _renderToolOutput(els.outputArea, tb.name, tb.input || {}, text, isError, tb.result.details);
         els.content.classList.add('collapsed');
         els.arrowEl.textContent = '▶';
       }
     } else if (block.type === 'rule_warning') {
-      _createWarningBlock(msgEl, mi, st.warningCount, (block.content as string) || '');
+      _createWarningBlock(msgEl, mi, st.warningCount, (block as { content?: string }).content || '');
       st.warningCount++;
     }
   }
