@@ -80,6 +80,42 @@ export function countTextMessages(messages: SessionMessage[]): number {
   return messages.filter(m => extractMessageText(m).trim()).length;
 }
 
+// ========== 保存前清洗：深拷贝 + 剥离 UI 动画残留字段 ==========
+// saveMessages 的快照引用共享问题：旧代码 messages.map(m => ({ role, content: m.content }))
+// 只浅拷贝外层，content 数组和 block 对象仍是引用。当 _saveChain 异步执行 _doSaveMessages
+// 时，block 已被后续事件原地修改（_animText 打字机动画、_foldPhase 折叠动画、_jsonBuf
+// 流式缓冲），导致增量保存将动画中间态持久化到磁盘。
+//
+// cleanBlockForSave 做两件事：
+//   1. 深拷贝——切断与实时 objects 的引用，链上后续变异不影响已排队的保存
+//   2. 剥离 UI-only 动画字段——_animText/_animInput/_foldPhase/_jsonBuf 不应落地
+// 保留：color1/color2（工具卡配色，跨页面加载保持一致，renderChatContent 已有兼容处理）
+
+function cleanBlockForSave(b: ContentBlock): ContentBlock {
+  if (!b) return b;
+  if (b.type === 'text') {
+    return { type: 'text', text: b.text || '', reasoning: b.reasoning || '' };
+  }
+  if (b.type === 'tool') {
+    const out: ToolBlock = { type: 'tool', id: b.id, name: b.name, input: { ...(b.input || {}) } };
+    if (b.result) {
+      out.result = {
+        content: (b.result.content || []).map(c => ({ ...c })),
+        ...(b.result.isError !== undefined && { isError: b.result.isError }),
+        ...(b.result.details && { details: { ...b.result.details } }),
+      };
+    }
+    if (b.color1) out.color1 = b.color1;
+    if (b.color2) out.color2 = b.color2;
+    return out;
+  }
+  if (b.type === 'rule_warning') {
+    return { type: 'rule_warning', content: b.content };
+  }
+  // 未知类型防御（ContentBlock 当前仅含 text/tool/rule_warning，此分支不命中）
+  return b;
+}
+
 type Listener = () => void;
 
 // ========== Helpers ==========
@@ -346,10 +382,15 @@ export const sessionStore = {
     modelId?: string,
     providerId?: string,
   ): Promise<void> {
-    // 快照 messages（深拷贝 content 引用即可——block 对象在保存后不会被原地改字段）：
-    // 增量落盘链上多次调用共享同一 messages 数组引用，若不快照，链尾执行时可能读到
-    // 已被后续轮次追加的内容（多存无害），但快照能让每次保存对应其触发时刻的状态。
-    const snapshot = messages.map(m => ({ role: m.role, content: m.content }));
+    // 深拷贝快照 + 剥离 UI 动画字段：旧代码 messages.map(m => ({ role, content: m.content }))
+    // 只浅拷贝外层，content 数组与 block 对象仍是引用。_saveChain 异步执行时 block 已被
+    // 打字机动画/流式缓冲原地修改（_animText/_animInput/_foldPhase），导致增量保存
+    // 将动画中间态落地磁盘（回读后工具卡显示空结果/卡在动画态）。cleanBlockForSave 做
+    // 深拷贝 + 剥离，确保每次保存对应其触发时刻的语义完整状态。
+    const snapshot = messages.map(m => ({
+      role: m.role,
+      content: (m.content || []).map(b => cleanBlockForSave(b)),
+    }));
     this._saveChain = this._saveChain
       .catch(() => {})
       .then(() => this._doSaveMessages(snapshot, modelId, providerId));
@@ -385,15 +426,25 @@ export const sessionStore = {
       });
       const readData = await readRes.json();
 
-      let session: Session = readData.content
-        ? JSON.parse(readData.content)
-        : {
-            id: this.activeId,
-            title: '新会话',
-            manuallyNamed: false,
-            createdAt: new Date().toISOString(),
-            messages: [],
+      // 区分「文件不存在」（新会话）与「读取失败」（服务端异常）
+      let session: Session;
+      if (readData.error) {
+        if (readData.error === '文件不存在') {
+          session = {
+            id: this.activeId, title: '新会话', manuallyNamed: false,
+            createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), messages: [],
           };
+        } else {
+          throw new Error('读取会话文件失败: ' + readData.error);
+        }
+      } else if (readData.content) {
+        session = JSON.parse(readData.content);
+      } else {
+        session = {
+          id: this.activeId, title: '新会话', manuallyNamed: false,
+          createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), messages: [],
+        };
+      }
 
       // content block 格式直接序列化，无需转换
       session.messages = messages.map(m => ({
@@ -404,14 +455,33 @@ export const sessionStore = {
       if (modelId) session.modelId = modelId;
       if (providerId) session.providerId = providerId;
 
-      await fetch(this._apiBase + 'files/write', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          path: `.kfmv4/sessions/${this.activeId}.json`,
-          content: JSON.stringify(session, null, 2),
-        }),
-      });
+      // 写入会话文件（含重试：最多 3 次，指数退避 100/300/900ms）
+      const content = JSON.stringify(session, null, 2);
+      let lastErr: Error | null = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const writeRes = await fetch(this._apiBase + 'files/write', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              path: `.kfmv4/sessions/${this.activeId}.json`,
+              content,
+            }),
+          });
+          const writeData = await writeRes.json();
+          if (writeData.error) {
+            throw new Error('写入会话文件失败: ' + writeData.error);
+          }
+          lastErr = null;
+          break; // 写入成功，退出重试循环
+        } catch (e) {
+          lastErr = e instanceof Error ? e : new Error(String(e));
+          if (attempt < 2) {
+            await new Promise(r => setTimeout(r, 100 * (3 ** attempt)));
+          }
+        }
+      }
+      if (lastErr) throw lastErr;
 
       // 本地同步 list 中该会话（不再无条件 this.load()——增量落盘每轮触发，
       // 全量重拉 N 个会话文件会拖慢流式并与切换竞态；标题变化由 _generateTitle 派发事件刷新）。
@@ -428,6 +498,7 @@ export const sessionStore = {
       }
     } catch (e) {
       log('保存会话失败: ' + (e instanceof Error ? e.message : 'unknown'));
+      throw e; // 上抛，让 _saveChain reject → 下一轮 saveMessages 的 .catch(()=>{}) 恢复 + caller 可感知
     }
   },
 
