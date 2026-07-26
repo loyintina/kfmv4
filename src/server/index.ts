@@ -37,7 +37,7 @@ app.use('/api', apiRoutes);
 app.use('/kfmv4/api', apiRoutes);
 
 // WebSocket + AI
-const PORT = parseInt(process.env.KFM_PORT || '8022', 10);
+const PORT = parseInt(process.env.KFM_PORT || '8021', 10);
 const httpServer = http.createServer(app);
 const wsServer = new WsServer(httpServer);
 
