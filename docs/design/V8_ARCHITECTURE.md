@@ -1,279 +1,181 @@
-# KFM v8.0 — 双端分离架构设计
+# KFM v8.0 — 所有权分离架构
 
-## 一、设计原则
-
-```
-服务端：数据处理、格式化、渲染准备、持久化
-客户端：DOM 操作、Canvas 渲染、手势交互、动画
-```
-
-一句话：**服务端产出可直接注入 DOM 的 HTML，客户端只需要 `el.innerHTML = html` 或 `el.appendChild(node)`**。客户端不再做任何内容处理——不跑 markdown、不跑高亮、不关心消息结构。
+> 状态：active | 版本：v8.0-draft | 最后更新：2026-07-26
+>
+> 本文只讲架构（宪法 + 形状 + 契约）。迁移计划见 §六，实现细节在各模块头部注释。
 
 ---
 
-## 二、现状问题
+## 一、宪法（不可妥协）
 
-### 2.1 消息渲染：双端重复处理
+### 第一条：内容/呈现所有权二分
 
-```
-服务端                    客户端
-  │                         │
-  │  yield SSE events  ────→ _applyEvent() 拼 content blocks
-  │                         renderChatContent() 全量 innerHTML
-  │                         │
-  │                         ├── 遍历 500 条消息 → 拼 HTML 字符串
-  │                         ├── 遍历 DOM → marked.parse + highlightAll
-  │                         ├── 遍历 DOM → renderMath + renderMermaid
-  │                         ├── 工具输入 JSON 高亮
-  │                         ├── 工具结果格式化（write/edit/grep/glob）
-  │                         ├── 裁剪/虚拟滚动
-  │                         └── 滚动策略
-```
+> 服务端拥有内容的语义，客户端拥有呈现的视觉。
 
-**问题**：客户端把所有消息从 data → HTML 每帧重建一次。手机端 500 条消息 + 工具卡 = 明显卡顿。
-
-### 2.2 会话保存：双写竞争
-
-```
-服务端 saveSessionFile()  ─┐
-                            ├── 同一文件，无锁
-客户端 saveMessages()     ─┘
-```
-
-### 2.3 Content block 协议：state 双重镜像
-
-服务端有 `serverMessages`，客户端有 `chatMessages`。两者独立处理同一组 SSE 事件。任何一个有 bug 就不同步。
-
-### 2.4 消息加载：一次拉三段
-
-`loadSessionInto()` 先拉 tail 12 条 → 渲染 → 再拉 head 剩余 → unshift 合并。需要维护 `_switchToken` 防竞态、`_msgHeights` 补高度。
-
----
-
-## 三、v8.0 目标架构
-
-```
-服务端（全权处理）              客户端（纯展示）
-  │                               │
-  │  SSE 事件（含预渲染 HTML）────→ 增量 DOM 更新
-  │                               │
-  │  fs.writeFileSync 落盘        │  （不再保存会话）
-  │                               │
-  │  API 端点返回完整消息          │  加载时直接注入 HTML
-```
-
-### 3.1 SSE 事件协议 v3
-
-旧协议（v2）传输原始数据块，客户端自行拼装+渲染：
-
-```json
-{ "type": "content_block_delta", "deltaType": "text_delta", "deltaText": "Hello" }
-```
-
-新协议（v3）在每个 `content_block_stop` 或 `message_stop` 时，附带服务端预渲染的 HTML：
-
-```json
-{
-  "type": "text_block_complete",
-  "index": 0,
-  "text": "Hello **World**",
-  "html": "<p>Hello <strong>World</strong></p>"
-}
-```
-
-流式增量（`text_delta`）保持不变，继续发送原始文本——因为只有完整 block 才知道边界（markdown 段落、代码块开始/结束）。
-
-关键事件：
-
-| 事件 | 传什么 | 客户端做什么 |
-|------|--------|-------------|
-| `message_start` | `{ messageId }` | 创建空消息容器 |
-| `text_delta` | `{ deltaText }` | 追加到 #current .orb-text-content |
-| `text_block_complete` | `{ text, html }` | `el.innerHTML = html` |
-| `tool_block_start` | `{ id, name }` | 创建工具卡骨架 |
-| `tool_block_input_json` | `{ input, html }` | 填入工具参数（预格式化） |
-| `tool_block_result` | `{ result, html }` | 填入工具结果（预格式化） |
-| `tool_block_complete` | `{ id }` | 结束工具卡动画 |
-| `reasoning_complete` | `{ reasoning, html }` | 已思考框内容 |
-| `message_stop` | `{}` | 滚动追底，停等待动画 |
-| `done` | `{}` | 正常结束 |
-
-### 3.2 服务端新增职责
-
-**`src/server/ai/renderer.ts`** — 消息内容渲染器（~200 行）
-
-```typescript
-// 纯函数：content blocks → HTML
-renderTextBlock(text: string): { html: string }
-renderThinkingBlock(reasoning: string): { html: string }
-renderToolInputBlock(name: string, input: Record<string, unknown>): { html: string }
-renderToolResultBlock(name: string, result: ToolResult, ext?: string): { html: string }
-```
-
-- Markdown 渲染：`marked.parse(text)`
-- 代码高亮：`highlight.js`（服务端已有，`server/` 之外的 import 需要确认）
-- 工具输入 JSON 格式化 + 语法高亮
-- 工具结果按类型格式化（write 显示文件卡片、grep 分行渲染、glob 文件列表）
-- KaTeX 渲染：`katex.renderToString()`（可选，公式场景少）
-- Mermaid：保持客户端渲染（需要 DOM 环境，1MB+ 库不适合服务端）
-
-**`src/server/ai/chat.ts`** 改动：
-
-- `streamChat` 中的 yield 点改为输出预渲染 HTML 事件
-- `saveSessionFile` 不再每轮重复写——只在 `done` 时最后写一次
-- `streamChat` 不再堆积 `serverMessages` 数组（累加器职责取消，改为最终落盘用）
-
-### 3.3 客户端新架构
-
-**新增 `src/client/modules/chat-dom.ts`**（~250 行）
-
-```
-chat-dom.ts — 聊天面板 DOM 增量操作
-─────────────────────────────────────
-createMessageContainer(msgId) → HTMLElement
-appendThinkingBlock(msgEl, html)
-replaceTextBlock(msgEl, html)
-createToolCard(msgEl, id, name) → { cardEl, inputEl, resultEl }
-updateToolInput(toolEl, html)
-updateToolResult(toolEl, html)
-foldToolCard(toolEl)
-scrollToBottom(panelEl)
-```
-
-每个 SSE 事件到达时，直接调用上述函数操作 DOM，不再维护 `chatMessages` state。
-
-**保留的客户端状态**（最小化）：
-
-- `_messageEls: Map<string, HTMLElement>` — 消息容器 DOM 引用（用于更新/定位工具卡）
-- `_toolEls: Map<string, { card, input, result }>` — 工具卡 DOM 引用
-- `followBottom: boolean` — 滚动追底状态
-- `_currentMsgId: string | null` — 当前正在流式的消息
-
-**删除的内容**：
-
-| 文件 | 删除/大幅简化 |
-|------|-------------|
-| `orb-chat.ts` | 删除 `renderChatContent`（~600 行）及其全部子函数 |
-|                       | 删除 `_mdCache`, `_toolCache`, `_msgHeights`, `_cullWeight`, `_computeCullWin` |
-|                       | 删除 `_activeAnimTimers`, `_activeFoldAnims`（打字机动画改为 CSS transition） |
-|                       | 删除 markdown/KaTeX/Mermaid 后处理管线 |
-|                       | 删除 `RunConsumeCtx`（不再需要 ctx 回调） |
-| `session-store.ts` | 删除客户端 `saveMessages` 调用（取消路径除外） |
-|                         | 删除 `_saveChain` |
-| `orb.ts` | 删除 `loadSessionInto()` 的两段加载逻辑，改为单次服务端全量渲染 |
-
-### 3.4 消息加载
-
-`/api/sessions/messages` 改为 `/api/sessions/render`：
-
-```
-GET /api/sessions/render?id=todo工具测试
-→ { html: "<div class='orb-msg'>...</div><div class='orb-msg'>...</div>..." }
-```
-
-客户端只需 `panelEl.innerHTML = data.html`，一次性渲染全部历史消息。
-
-### 3.5 会话保存
-
-```
-之前：服务端 saveSessionFile × N + 客户端 saveMessages × M = 双写竞争
-之后：服务端 saveSessionFile × 1（仅在 done 时执行）
-```
-
-取消路径：客户端仍做一次 `saveMessages` 作为保底（服务端取消时可能已死）。
-
----
-
-## 四、删除清单
-
-| 删除项 | 文件 | 原因 |
+| 所有权 | 含义 | 归属 |
 |--------|------|------|
-| `renderChatContent` 及相关 ~800 行 | `orb-chat.ts` | 全量 innerHTML 重建被增量 DOM 替代 |
-| `_mdCache`, `_toolCache` | `orb-chat.ts` | markdown/高亮移服务端 |
-| `_msgHeights`, `_cullWeight`, culling 逻辑 | `orb-chat.ts` | 裁剪被简单隐藏/懒渲染替代 |
-| `_activeAnimTimers`, `_activeFoldAnims` | `orb-chat.ts` | 动画改为 CSS transition |
-| `_applyEvent`, `RunConsumeCtx` | `orb-chat.ts` | 不再累积 state |
-| `settlePendingToolBlocks`, `_cancelPendingTools` | `orb-chat.ts` | 服务端在取消前已完成 |
-| `startWaitingIndicator` 复杂逻辑 | `orb-chat.ts` | 简化为 CSS class toggle |
-| `_saveChain` | `session-store.ts` | 不再需要串行锁 |
-| `loadSessionInto` 两段加载 | `orb.ts` | 单次服务端渲染 |
-| `_switchToken`, `_renderedSessionId` | `orb.ts` | 不再有竞态 |
-| KaTeX/Mermaid CDN | `renderers/` | 保留 Mermaid（客户端），KaTeX 可移服务端 |
+| 语义渲染 | markdown → DOM 结构、代码 → 高亮 span、grep → 分行结构、工具结果格式化 | 服务端 |
+| 视觉合成 | 主题色、随机渐变、阴影、字体、动画时序、折叠编排、滚动追底 | 客户端 |
+
+交接契约：服务端产出**带语义 class + data-attr 的 HTML**，不带颜色、不带 inline style、不带动画。客户端通过 CSS class 和 JS 投影赋予视觉。
+
+### 第二条：随机组合是客户端的所有物
+
+> 视觉的随机性（配色、节奏、姿态）不可上移到服务端。
+
+工具卡随机双色、摸鱼提示随机文案、入场动画节奏——这些是设计核心，不是噪声。它们在客户端投影层（chat-dom.ts）生成，绑定 blockId 做稳定哈希（同一 block 每次渲染颜色相同，不同 block 之间"随机"）。
+
+### 第三条：服务端可死
+
+> 任何运行态要么已落盘，要么可从磁盘重建。客户端将服务端断连视为"暂时不可达"，而非"世界终结"。
+
+run-manager 的事件缓冲是性能缓存，不是真相源。真相在磁盘（session JSON）。进程重启 = 较长断连，不是数据丢失。
 
 ---
 
-## 五、不变清单
+## 二、现状病灶（v7.3）
 
-| 保留项 | 原因 |
-|--------|------|
-| Canvas 文件树渲染 (`tree-render.ts` 等) | 纯 UI，需要 Canvas 2D |
-| 手势系统 (`gesture-registry.ts`) | 纯 UI |
-| 卡片插件系统 (`card-registry.ts`, `floating-card.ts`) | 纯 UI |
-| 动画 (`animation-registry.ts`, `char-rain.ts`) | 纯浏览器 API |
-| WebSocket 传输 (`ws-channel.ts`) | 双向通道不变 |
-| 服务端 `run-manager.ts` | 挂机逻辑不变 |
+| 病灶 | 根因 | 症状 |
+|------|------|------|
+| 全量 innerHTML 重建 | 内容/呈现焊死在同一字符串里 | 每帧 O(n) 重跑 marked+hljs，手机端卡顿 |
+| 八个状态补丁 | 全量重建的并发症 | `_mdCache`/`_toolCache`/`_msgHeights`/`_cullWin`/`_activeFoldAnims`/`_thinkDoneAt`/`_collapsingUntil`/`_lastCullWin` |
+| 三份消息镜像 | 所有权边界缺失 | `serverMessages` / `chatMessages` / `apiMessages` 各自独立处理同一事件流 |
+| 双写竞争 | 客户端也是写者 | 服务端 saveSessionFile × N + 客户端 saveMessages × M |
+| 重启即死亡 | 运行态只在内存 | kfm-restart 杀死自己 → AI 长程工作中断 → 无法恢复 |
+| 两段加载 + 竞态 | 客户端持有 state | `_switchToken` / `_renderedSessionId` / tail→head 补拉 |
+
+v8 不是优化这些症状，是让它们**不可能再出现**。
+
+---
+
+## 三、架构形状
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  src/shared/chat-protocol/          ← 双端共享（已完成）      │
+│    messages.ts    ContentBlock / ChatMessage 唯一类型         │
+│    events.ts      StreamEvent 协议                           │
+│    reducer.ts     applyEvent / reduceEvents（纯状态转换）     │
+│    block-idx.ts   BAR-106 索引映射                            │
+└─────────────────────────────────────────────────────────────┘
+                          │
+        ┌─────────────────┴─────────────────┐
+        │                                   │
+┌──────────────────────┐         ┌──────────────────────┐
+│  服务端：内容所有者    │         │  客户端：呈现所有者    │
+│                      │         │                      │
+│  ai/chat.ts          │         │  chat-dom.ts（新）    │
+│   └ LLM → events     │         │   └ event → DOM patch│
+│                      │         │   └ 随机配色/动画     │
+│  ai/renderer.ts（新） │         │                      │
+│   └ block → 语义 HTML │         │  chat-session.ts（新）│
+│     (marked/hljs/    │         │   └ 只读会话缓存      │
+│      katex/工具卡)    │         │   └ 冷/热恢复路由     │
+│                      │         │                      │
+│  ai/session-store.ts │         │  renderers/          │
+│   （新）唯一写者       │         │   └ mermaid only     │
+│   reduce + 防抖落盘   │         │                      │
+│                      │         │  CSS class 系统       │
+│  ai/run-manager.ts   │         │   └ 主题/色/动画      │
+│   └ 事件缓冲（缓存）  │         │                      │
+│                      │         │  ws-channel.ts       │
+│  routes.ts           │         │   └ 断连=等待         │
+│   └ /sessions/render │         │   └ 重连=恢复         │
+└──────────────────────┘         └──────────────────────┘
+```
+
+四个核心模块，两条所有权链，零回边。
+
+---
+
+## 四、视觉契约（v8 必须等价的视觉规范）
+
+面板的视觉效果是硬约束。以下行为在 v8 后必须可证明地保持：
+
+| 视觉行为 | 协议事件 | 客户端责任 |
+|---------|---------|-----------|
+| 思考框弹出 + 流式文本 | `content_block_delta(thinking)` | append 裸文本到 `<pre>` |
+| 思考完成 → 400ms 折叠 | `content_block_stop` | 计时器 + CSS 动画 |
+| 正文流式打字机 | `content_block_delta(text)` | append 裸文本 |
+| 正文完成 → 富文本 | `content_block_stop` + 服务端 html | 整段替换 innerHTML |
+| 工具卡弹出（参数未到） | `content_block_start(tool_use)` | 创建骨架 + 随机配色 + 摸鱼提示 |
+| 参数流式 | `content_block_delta(input_json)` | append 裸 JSON |
+| 参数完成 → 高亮 | `content_block_stop` + 服务端 html | 替换 |
+| 摸鱼提示滚动 | 无（客户端本地计时器） | 随机文案循环 |
+| 工具结果 → 状态色 | `tool_result` | 更新标题栏 + 服务端 html 填入输出区 |
+| 完成 → 自动折叠 | `tool_result`（隐含） | 打字机动画 → 折叠 |
+| 用户展开/折叠 | 无（客户端本地） | Map<blockId, bool>，会话切换清空 |
+| 规则警告框 | `rule_warning` | 红色框 + 折叠 |
+| 等待提示 | `message_stop` / 发送时 | 独立 DOM 节点，随机文案 |
+| 入场动画 | 新消息 mount | CSS class `orb-msg-new` |
+
+流式期间客户端显示裸文本（`<pre class="block--streaming">`），完成时刻服务端语义 HTML 一次性注入。交接瞬间用 80ms fade 作为设计节拍。
+
+视觉基准测试：`tests/visual-baseline.test.ts`（17 个 fixture，已固化 v7 结构）。
+
+---
+
+## 五、kfm-restart 路径（宪法第三条的验证场景）
+
+```
+t0  AI 调用 kfm-restart → 工具立即返回 "重启已触发"
+t1  chat.ts yield tool_result → SessionStore 同步落盘 ← 生死线
+t2  工具触发 POST /api/system/restart → spawn detached systemctl
+t3  systemd 杀进程（streamChat 死在 t2-t3 之间）
+    ─── 进程死亡 ───
+t4  systemd 启动新进程
+t5  新进程检测 restart-pending.json → 删除 → justRestarted = true
+t6  客户端 WS 重连
+t7  服务端 WS 握手 → 发送 { type: 'server-restarted' }
+t8  客户端重新 fetch session → 重建 DOM
+t9  检测"会话末尾是 tool_result 且无后续 AI 消息" → 自动 resume
+t10 POST /ai/chat/start（完整 history）→ LLM 看到 tool_result → 继续推理
+```
+
+AI 长程工作恢复。不是"进程没死"，是"真相在磁盘上，任何新进程都能接上"。
+
+自动 resume 判据：session 末尾 `role:'ai'` 含 `type:'tool'` block 且有 result，但无后续纯文本 AI 消息。超过 3 次连续 restart 停在确认态（防无限循环）。
 
 ---
 
 ## 六、迁移计划
 
-### Phase 1：服务端渲染器（~1 天）
+| Phase | 内容 | 状态 |
+|-------|------|------|
+| 0 | 视觉基准 fixture（17 个 DOM 快照 + 4 个结构不变量） | ✅ b50d721 |
+| 1 | 抽取 `src/shared/chat-protocol/`（类型 + reducer + 索引映射） | ✅ 20be4c3 |
+| 2 | 客户端投影：chat-dom.ts 增量 DOM，删 renderChatContent + 八个补丁 | 待做 |
+| 3 | 服务端 SessionStore：唯一写者 + 落盘原子化 + 删客户端保存链路 | 待做 |
+| 4 | 冷恢复 + kfm-restart 重写 + ws-channel 断连语义 | 待做 |
+| 5 | 服务端 renderer.ts（语义 HTML）+ /sessions/render 端点 | 待做 |
+| 6 | 回归：视觉 diff + 协议幂等 + restart 端到端 | 待做 |
 
-1. 新建 `src/server/ai/renderer.ts`
-2. 实现 `renderTextBlock`, `renderThinkingBlock`, `renderToolInputBlock`, `renderToolResultBlock`
-3. 修改 `streamChat`：yield 新协议事件（附带 html 字段），同时保持旧事件兼容
-4. 新增 `/api/sessions/render` 端点
-
-### Phase 2：客户端增量 DOM（~1 天）
-
-1. 新建 `src/client/modules/chat-dom.ts`
-2. 实现 DOM 增量操作函数
-3. 重写 SSE 事件处理：每个事件直接调 chat-dom 函数
-4. 重写消息加载：单次 `innerHTML = serverHTML`
-5. 删除 `renderChatContent` 及其全部子函数
-6. 删除缓存、裁剪、动画计时器
-
-### Phase 3：清理（~0.5 天）
-
-1. 删除 `_saveChain`、客户端双重保存
-2. 删除 `RunConsumeCtx`、`_applyEvent`
-3. 更新 session-store.ts
-
-### Phase 4：测试 + 回归（~0.5 天）
-
-1. 消息渲染：发送各类消息，对比新旧渲染效果
-2. 工具卡：tool_use → tool_result 完整周期
-3. 思考框：reasoning 展开/折叠
-4. 取消/中断：取消后恢复
-5. 刷新恢复：重启后消息完整
-6. 运行全量测试
+每个 Phase 独立可回滚。Phase 2 用 dev flag `?renderer=v8` 双跑，视觉 diff 通过后切默认。
 
 ---
 
-## 七、其他可简化项
+## 七、不变清单
 
-### 7.1 文件树数据加载
-
-`tree-loader.ts` 通过 `files/list` + `files/list-recursive` 递归获取目录树，每次展开目录就调用一次 API。可改为：打开目录时一次性返回该目录下所有子目录内容（已有 `files/list-recursive`），减少请求数。
-
-### 7.2 Session 接口统一
-
-`session-store.ts` 和 `session.card.ts` 各自独立请求 `/sessions/list` 加载数据。统一为一个入口，卡片从 store 读 `list` 而不是独立加载。
-
-### 7.3 删除 orb-panel.ts
-
-当前 `orb-panel.ts`（209 行）只是几个下拉框的初始化。可合并回 `orb.ts` 或彻底简化。
+| 保留项 | 原因 |
+|--------|------|
+| Canvas 文件树（tree-render 等） | 纯呈现，需要 Canvas 2D |
+| 手势系统（gesture-registry） | 纯呈现 |
+| 卡片插件系统（card-registry, floating-card） | 纯呈现 |
+| 动画（animation-registry, char-rain, GSAP） | 纯呈现 |
+| WebSocket 传输（ws-channel） | 通道不变，断连语义改变 |
+| Mermaid 渲染 | 输出 SVG + 交互 → 属于呈现层 |
 
 ---
 
 ## 八、预期效果
 
-| 指标 | 现在 (v7.3) | v8.0 |
-|------|------------|------|
-| 流式渲染每帧耗时 | O(n) 遍历全量 messages | O(1) 追加/更新单个 DOM 节点 |
-| 内存占用（500 条） | chatMessages + _mdCache + _toolCache + _msgHeights | 仅 DOM 树（消息容器引用） |
-| Bundle 大小 | ~1.9MB (含 marked + highlight.js + KaTeX) | ~1.4MB (去掉 marked 等) |
-| 消息加载 | 2 次 HTTP + 客户端整合 | 1 次 HTTP + innerHTML |
-| 会话保存 | 服务端+客户端双写 | 服务端单写 |
-| SSE 带宽 | ~200KB/轮（原始文本） | ~300KB/轮（含 HTML，+50%） |
-| 手机端卡顿 | 明显 | 大幅改善 |
+| 指标 | v7.3 | v8.0 |
+|------|------|------|
+| 流式渲染每帧 | O(n) 全量重建 | O(1) 增量 patch |
+| 状态补丁数 | 8 个 | 0（架构蒸发） |
+| 消息表示份数 | 3（server/client/api） | 1（shared reducer） |
+| 会话写者 | 2（双写竞争） | 1（服务端） |
+| 重启后 AI 工作 | 丢失 | 自动恢复 |
+| Bundle（marked+hljs+katex） | ~500KB | 移至服务端 |
+| 主题/配色改动触碰文件 | orb-chat.ts 1621 行 | SCSS 一处 |
+| 加新工具触碰文件 | orb-chat.ts（渲染）+ chat.ts（事件） | renderer.ts 一个 case |
