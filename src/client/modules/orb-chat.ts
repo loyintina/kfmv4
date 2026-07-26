@@ -1516,12 +1516,8 @@ export async function doSend(
     // 构建发给 API 的消息（content blocks → OpenAI 格式）。
     // 会话文件存的是完整 content blocks（含 tool_use + tool_result），
     // 发给 API 时必须转为 OpenAI 的 tool_calls + role:"tool" 格式。
-    // 只取最近 N 条：911 条 apiMessages 超过 nginx 1MB 限制，且 LLM 上下文窗口也装不下。
-    const MAX_API_MSGS = 80;
     const apiMessages: Array<{ role: string; content: string | null; tool_calls?: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }>; tool_call_id?: string }> = [];
-    const startIdx = Math.max(0, messages.length - MAX_API_MSGS);
-    for (let i = startIdx; i < messages.length; i++) {
-      const m = messages[i];
+    for (const m of messages) {
       if (m.role === 'user') {
         apiMessages.push({ role: 'user', content: extractText(m) });
       } else {
