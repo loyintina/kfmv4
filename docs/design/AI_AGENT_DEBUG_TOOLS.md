@@ -136,8 +136,8 @@ kfm-check → tsc --noEmit → build → test → smoke
 **现状**：每次 `npm run build` 输出只有最后一次可见。上次构建的完整日志需要重新跑一遍才能看到。
 
 **draft（当前分析）**：
-`build.mjs` 的输出重定向到 `.kfmv4/build.log`，最多保留最近 5 次构建。
-agent 可通过 `bash cat $HOME/.kfmv4/build.log`（待实现的构建日志缓存方案）直接读取。
+构建日志输出重定向到缓存文件（待实现），最多保留最近 5 次构建。
+agent 可通过 `bash` 读取构建日志缓存文件（待实现的方案）。
 
 **初步规模估算**：约 20-30 行改动（build.mjs + build.mjs 内部修改）。
 

@@ -107,6 +107,25 @@ setupAiRoutes(aiChatRoutes, wsServer);
 app.use('/api', aiChatRoutes);
 app.use('/kfmv4/api', aiChatRoutes);
 
+// ========== 系统管理端点 ==========
+
+// POST /api/system/restart — 安全重启服务
+// 关键设计：先响应 200，再 spawn detached 子进程。子进程脱离 kfmv4 进程组，
+// 不受 SIGTERM 影响，能在 kfmv4 被 systemd 杀死后继续完成重启命令。
+// 解决 AI agent 调用 systemctl restart 时自身也被 kill 导致命令超时的问题。
+import { spawn } from 'node:child_process';
+app.post('/api/system/restart', (_req, res) => {
+  res.json({ status: 'restarting', message: 'Service restart initiated. kfmv4 will be back in ~5s.' });
+  // 立即 flush 响应，然后委托给独立子进程
+  setTimeout(() => {
+    const child = spawn('systemctl', ['restart', 'kfmv4'], {
+      detached: true,
+      stdio: 'ignore',
+    });
+    child.unref(); // 让子进程完全脱离父进程生命周期
+  }, 100);
+});
+
 // 检查 providers.json 权限（明文 API key 安全提醒）
 try {
   const provPath = path.join(process.env.HOME || '/root', '.kfmv4/providers.json');
