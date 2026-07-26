@@ -56,6 +56,8 @@ let panelState: PanelState = 'closed';
 let orbEl: HTMLDivElement | null = null;
 let panelEl: HTMLDivElement | null = null;
 let _orbSessionSelect: ReturnType<typeof import('./custom-select.js').createCustomSelect> | null = null;
+let _useV8Renderer = false;
+let _v8Initialized = false;
 
 const PANEL_MIN_WIDTH = 120;
 const PANEL_MIN_HEIGHT = 100;
@@ -86,6 +88,7 @@ function getInputBarTop(): number {
 // 模块级聊天渲染桥接（renderChatContent 来自 orb-chat.ts）
 function _renderChat(): void {
   if (!panelEl) return;
+  if (_useV8Renderer) { scrollToBottom(); return; }
   // resize / 拖拽调整大小时保留用户滚动位置
   renderChatContent({ panelEl, messages: chatMessages, renderWidth, apiBase: API_BASE, scrollMode: 'preserve' });
 }
@@ -197,6 +200,21 @@ function expandPanel(): void {
     orbState = 'expanded';
     panelState = 'open';
     buildPanelContent({ panelEl: panelEl!, setOrbSessionSelect: (s) => { _orbSessionSelect = s; }, readActiveConfig, patchActiveConfig });
+    if (_useV8Renderer && !_v8Initialized) {
+      _v8Initialized = true;
+      initChatDom(panelEl!, () => { /* TODO: loadFileTree */ });
+      // 补挂 init 阶段已加载的消息（loadSessionInto 先于面板创建执行）
+      for (let i = 0; i < chatMessages.length; i++) {
+        const m = chatMessages[i];
+        if (m.role === 'user') {
+          const tb = m.content.find(b => b?.type === 'text');
+          mountUserMessage(i, tb && 'text' in tb ? tb.text : '');
+        } else {
+          mountAiMessage(i, m.content);
+        }
+      }
+      scrollToBottom();
+    }
     updatePanelPosition();
     // 加载存储的字号偏好
     const stored = localStorage.getItem('kfm-fontsize-orb');
@@ -477,12 +495,15 @@ export async function initOrb(): Promise<void> {
   if (inputEl && sendBtn) {
     const base = window.location.pathname.replace(/\/+$/, '') + '/api/';
     const _useV8 = new URLSearchParams(window.location.search).get('renderer') === 'v8';
+    _useV8Renderer = _useV8;
     const _renderChat = (scrollMode: 'follow' | 'preserve' | 'auto' = 'auto') => {
       if (_useV8) { scrollToBottom(); return; }
       if (panelEl) renderChatContent({ panelEl, messages: chatMessages, renderWidth, apiBase: base, scrollMode });
     };
     if (_useV8 && panelEl) {
       initChatDom(panelEl, () => { /* TODO: loadFileTree */ });
+      setEventHook(patchEvent);
+    } else if (_useV8) {
       setEventHook(patchEvent);
     }
     sessionStore.init(base);
