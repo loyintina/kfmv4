@@ -1125,6 +1125,7 @@ interface RunConsumeCtx {
   messages: ChatMessage[];
   onRender: () => void;
   onWait?: (waiting: boolean) => void;
+  onToolCall?: () => void; // AI 调用工具前保存（工具可能杀服务导致消息丢失）
   getMsgIdx: () => number;
   setMsgIdx: (i: number) => void;
 }
@@ -1151,6 +1152,7 @@ function _applyEvent(event: any, ctx: RunConsumeCtx): void {
       } else if (blockType === 'tool_use') {
         onWait?.(false); // 工具块到达 = 有实际内容，停等待提示
         messages[msgIdx].content[index] = { type: 'tool', id: toolUseId || '', name: toolName || 'unknown', input: {} };
+        ctx.onToolCall?.(); // 工具执行前落盘：工具可能重启服务导致消息丢失
       }
       break;
     }
@@ -1458,6 +1460,7 @@ export async function resumeRun(
   const ctx: RunConsumeCtx = {
     messages, onRender, onWait,
     getMsgIdx: () => msgIdx, setMsgIdx: (i) => { msgIdx = i; },
+    onToolCall: () => { sessionStore.saveMessages(messages, model, provider).catch(() => {}); },
   };
   try {
     const result = await _consumeWithReconnect(apiBase, runId, fromIndex, signal, ctx);
@@ -1565,6 +1568,7 @@ export async function doSend(
     const ctx: RunConsumeCtx = {
       messages, onRender, onWait,
       getMsgIdx: () => msgIdx, setMsgIdx: (i) => { msgIdx = i; },
+      onToolCall: () => { sessionStore.saveMessages(messages, model, provider).catch(() => {}); },
     };
     const result = await _consumeWithReconnect(apiBase, startData.runId, startData.fromIndex || 0, signal, ctx);
     // 流结束：最后一轮 message_stop 会把等待提示打开，此处立即关闭，

@@ -149,7 +149,7 @@ export function launchCdp(opts: CdpLaunchOptions): Promise<CdpSession> {
     const args = [inspectFlag];
     if (opts.args?.length) args.push(...opts.args);
 
-    const child = spawn(process.execPath, [opts.program, ...args], {
+    const child = spawn(process.execPath, [...args, opts.program], {
       cwd: opts.cwd || process.cwd(),
       env: { ...process.env, ...opts.env },
       stdio: ['pipe', 'pipe', 'pipe'],
