@@ -1,15 +1,14 @@
 /**
- * debug.ts — 完整的 CDP 调试工具（基于 Node.js inspector）
+ * debug.ts — CDP 调试工具 + kfmv4 专属视图（基于 Node.js inspector）
  *
- * 支持 28 种 action：
+ * 支持 19 种 CDP 操作 + 5 个 kfmv4 专属调试视图：
  *   生命周期: launch, attach, terminate, sessions, output
- *   断点:     set_breakpoint, remove_breakpoint, set_instruction_breakpoint,
- *             remove_instruction_breakpoint, data_breakpoint_info, set_data_breakpoint,
- *             remove_data_breakpoint
+ *   断点:     set_breakpoint, remove_breakpoint, tracepoint
  *   执行控制: continue, step_over, step_in, step_out, pause
  *   状态检查: stack_trace, threads, scopes, variables, evaluate
- *   底层能力: disassemble, read_memory, write_memory, modules, loaded_sources,
- *             custom_request
+ *   辅助:     loaded_sources, custom_request
+ *   kfmv4:   renderer_snapshot, animation_timeline, gesture_trace,
+ *            state_history, card_lifecycle
  */
 
 import type { KfmTool, ToolResult } from '../types.js';
@@ -221,13 +220,6 @@ export const ompDebugTool: KfmTool = {
         return txt(`[debug] 断点已移除: ${bpid}`);
       }
 
-      // 不支持的断点类型
-      if (['set_instruction_breakpoint', 'remove_instruction_breakpoint',
-           'data_breakpoint_info', 'set_data_breakpoint', 'remove_data_breakpoint'].includes(action)) {
-        return txt(`[debug] ${action}: 此操作在 CDP mode 中不可用（V8 不暴露指令/数据断点接口）。` +
-          `请用 set_breakpoint 按文件+行号设断点。`, true);
-      }
-
       // ========== 执行控制 ==========
 
       if (action === 'continue') {
@@ -328,7 +320,7 @@ export const ompDebugTool: KfmTool = {
         return txt(`已加载源文件 (${filtered.length}/${sources.length}):\n${lines.join('\n')}`);
       }
 
-      // ========== 底层能力 ==========
+      // ========== 辅助 ==========
 
       if (action === 'custom_request') {
         const method = params.method as string;
@@ -338,11 +330,6 @@ export const ompDebugTool: KfmTool = {
         const { sendCmd } = await import('./debug/cdp-connection.js');
         const result = await sendCmd(session, method, cdpParams || {});
         return txt(JSON.stringify(result, null, 2));
-      }
-
-      if (['disassemble', 'read_memory', 'write_memory', 'modules'].includes(action)) {
-        return txt(`[debug] ${action}: CDP 不直接暴露此能力。` +
-          `用 loaded_sources 查看文件，用 evaluate 求值表达式间接修改状态。`, true);
       }
 
       return txt(`[debug] 未知 action: ${action}`, true);

@@ -60,6 +60,7 @@ docs/
 ├── design/                  # 设计文档
 │   ├── AI_ARCHITECTURE.md          # AI 架构设计（基于 omp）
 │   ├── AI_CHAT_RUNTIME.md          # AI 对话运行时：后台挂机/重连/WS存活（改流式对话前必读）
+│   ├── AI_AGENT_DEBUG_TOOLS.md     # AI Agent 调试能力体系（能力矩阵 + 缺位分析 + 路线图）
 │   ├── VISION_AND_ROADMAP.md        # 远景：核心理念 + 演进路线（方向性，保留）
 │   └── CONTEXT_ASSEMBLY_SPEC.md     # 上下文拼接与 AI 工作空间（draft）
 └── archive/                 # 历史归档
