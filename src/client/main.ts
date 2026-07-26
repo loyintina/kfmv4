@@ -44,8 +44,7 @@ import { L } from './modules/renderer-lifecycle.js';
 import { cardRegistry } from './modules/card-registry.js';
 import { anim } from './modules/animation-registry.js';
 
-// escape-ok: 调试桥需要把内部模块暴露给 browser_eval，TS 泛型无法表达运行时动态类型
-(window as unknown as Record<string, unknown>).__kfmDebug = {
+(window as unknown as Record<string, unknown>).__kfmDebug = { // escape-ok: 调试桥暴露内部模块到 window 供 browser_eval 调试
   KFMState,
   L,
   anim,

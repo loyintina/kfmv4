@@ -269,9 +269,18 @@ export class WsServer {
     return this.clients.size;
   }
 
-  /** 在连接的浏览器里执行 JS，返回结果（用于 AI 工具 browser_eval） */
-  evalInBrowser(code: string, timeoutMs = 10_000): Promise<unknown> {
-    if (this.clients.size === 0) return Promise.reject(new Error('没有已连接的浏览器'));
+  /** 在连接的浏览器里执行 JS，返回结果（用于 AI 工具 browser_eval）。
+   *
+   * 服务重启或页面刷新后，客户端 WS 重连有短暂空窗期（~1-2s）。
+   * 在此窗口内 clients.size 可能为 0。加 2 秒重试避免硬报错。 */
+  async evalInBrowser(code: string, timeoutMs = 10_000): Promise<unknown> {
+    // 客户端可能正在重连中——等待一小段时间再试
+    if (this.clients.size === 0) {
+      await new Promise<void>(r => setTimeout(r, 2000));
+      if (this.clients.size === 0) {
+        return Promise.reject(new Error('没有已连接的浏览器（等待 2s 后仍未连接）'));
+      }
+    }
     const id = crypto.randomUUID();
     let resolve!: (v: unknown) => void;
     let reject!: (e: Error) => void;
