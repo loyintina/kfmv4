@@ -9,11 +9,9 @@
  */
 
 import { Router } from 'express';
-import { mkdirSync, existsSync, readFileSync, writeFileSync } from 'fs';
-import { join } from 'path';
-import { KFM_DATA_DIR } from '../path-utils.js';
 import { getToolDefinitions } from './tools/index.js';
 import { startRun, attachRun, cancelRun, getActiveRun, getRun } from './run-manager.js';
+import * as sessionStore from './session-store.js';
 import type { WsServer } from '../ws-server.js';
 
 /** 可注入的 startRun 签名（测试用，生产走默认值） */
@@ -32,28 +30,12 @@ export function setupAiRoutes(router: Router, wsServer: WsServer, startRunFn: St
       res.status(400).json({ error: '缺少 sessionId 或 messages 参数' });
       return;
     }
-    // 服务端从磁盘读取已有会话 + 合并本次用户消息 → 立即落盘
-    let clientMessages: Array<{ role: string; content: any[] }> = [];
-    try {
-      const dir = join(KFM_DATA_DIR, 'sessions');
-      const filePath = join(dir, `${sessionId}.json`);
-      let session: Record<string, unknown> = { id: sessionId, title: sessionId, createdAt: new Date().toISOString() };
-      if (existsSync(filePath)) {
-        try { session = JSON.parse(readFileSync(filePath, 'utf-8')); } catch {}
-      }
-      if (Array.isArray(session.messages)) clientMessages = session.messages as any[]; // escape-ok: 磁盘 JSON 解析结果无类型
-      // 从 apiMessages 最后一条 user 消息提取文本，追加为 content block
-      const lastUserMsg = [...messages].reverse().find((m: any) => m?.role === 'user');
-      if (lastUserMsg && typeof lastUserMsg.content === 'string' && lastUserMsg.content.trim()) {
-        clientMessages = [...clientMessages, { role: 'user', content: [{ type: 'text', text: lastUserMsg.content }] }];
-        session.messages = clientMessages;
-        session.updatedAt = new Date().toISOString();
-        if (model) session.modelId = model;
-        if (provider) session.providerId = provider;
-        mkdirSync(dir, { recursive: true });
-        writeFileSync(filePath, JSON.stringify(session, null, 2), 'utf-8');
-      }
-    } catch {}
+    // 从 apiMessages 最后一条 user 消息提取文本，通过 SessionStore 追加
+    const lastUserMsg = [...messages].reverse().find((m: any) => m?.role === 'user');
+    if (lastUserMsg && typeof lastUserMsg.content === 'string' && lastUserMsg.content.trim()) {
+      sessionStore.appendUserMessage(sessionId, lastUserMsg.content, model, provider);
+    }
+    const clientMessages = sessionStore.getMessages(sessionId);
     const run = startRunFn(
       sessionId, messages,
       model || 'deepseek-v4-flash',
@@ -61,7 +43,7 @@ export function setupAiRoutes(router: Router, wsServer: WsServer, startRunFn: St
       wsServer,
       typeof roleFile === 'string' ? roleFile : undefined,
       undefined,
-      clientMessages.length > 0 ? clientMessages : undefined,
+      clientMessages.length > 0 ? clientMessages as any[] : undefined, // escape-ok: ChatMessage[] → startRun 的 legacy untyped 参数
     );
     res.json({ runId: run.id, fromIndex: 0, done: run.done });
   });
