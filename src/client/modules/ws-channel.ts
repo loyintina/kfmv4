@@ -244,7 +244,7 @@ class WsChannel {
             const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor as new (...a: string[]) => () => Promise<unknown>;
             // 用 return 包裹 script。IIFE（以 (function...() 开头）会自执行并返回结果，
             // 普通语句（如 window.location.reload()）也会正常执行。
-            const fn = new AsyncFunction('return ' + req.code);
+            const fn = new AsyncFunction('return ' + req.code.trimStart());
             const result = await fn.call(window);
             this.sendMessage('browser-eval-result', {
               id: req.id,
