@@ -163,3 +163,51 @@ v8 架构改动成功落地，核心目标达成：
 2. 删除 _applyEvent 动画代码（30 分钟，需验证）
 3. 文档集中更新（1 小时）
 4. auto-resume 加 restartCount 防护（15 分钟）
+
+---
+
+## 六、文档逐文件详细问题（补充）
+
+### V8_ARCHITECTURE.md
+
+| 位置 | 问题 | 修复 |
+|------|------|------|
+| L3 `v8.0-draft` | 实现已完成，不再是 draft | 改为 `v8.0` / status: active |
+| §六 Phase 2-6 标"待做" | 实际已完成 | Phase 2-4 标 ✅，Phase 5 标"推迟"，Phase 6 标 ✅ |
+| L153 "?renderer=v8 双跑" | flag 已删除 | 删除此句 |
+
+### AI_CHAT_RUNTIME.md
+
+| 位置 | 问题 | 修复 |
+|------|------|------|
+| frontmatter `kfm_version: 7.3.0` | 过期 | 改为 8.0 |
+| 文件列表"跨 10 文件" | 缺 chat-dom.ts、shared/chat-protocol/、server/session-store.ts | 补充，计数改为 13+ |
+| §2 架构图 | 仍描述 orb-chat.ts 做渲染 | 重绘 |
+| §8 文件一览 | 缺 3 个核心文件 | 补充 |
+| 缺失 | 无冷恢复文档 | 新增 §10 |
+
+### HANDBOOK.md
+
+| 位置 | 问题 | 修复 |
+|------|------|------|
+| frontmatter `kfm_version: 7.3.3` | 过期 | 改为 8.0.0 |
+| L82 AI/通信分组 | 缺 chat-dom.ts | 补充 |
+| 服务端模块树 | 缺 session-store.ts 等 4 个 | 补充，计数 11→15 |
+| §七 审计表 | 缺 shared/chat-protocol/ 5 个文件 | 补充 |
+| §七 行数 | orb-chat.ts 标 1629（实际 843） | 更新 |
+
+### README.md
+
+| 位置 | 问题 | 修复 |
+|------|------|------|
+| "v7.3.3" | 过期 | 改为 v8.0 |
+| "会话持久化 localStorage" | **事实错误** | 改为"服务端单写者 + run 重连 localStorage" |
+
+### 跨文档问题
+
+| 问题 | 影响范围 |
+|------|----------|
+| package.json 仍为 7.3.3 | 所有版本号引用 |
+| 两个 session-store.ts 文档中不加路径会歧义 | AI_CHAT_RUNTIME、HANDBOOK |
+| 代码注释仍引用 renderChatContent | orb-chat.ts、session-store.ts |
+| 测试计数 360 vs 实际 359+1fail | CLAUDE.md、README、HANDBOOK |
