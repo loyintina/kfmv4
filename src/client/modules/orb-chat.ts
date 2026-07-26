@@ -111,10 +111,8 @@ export function startWaitingIndicator(panelEl: HTMLDivElement): () => void {
   pos++;
   timerId = setTimeout(next, 800 + Math.random() * 1400);
 
-  // 仅在当前处于追底态时才滚到底让提示可见；用户已上滑浏览（followBottom=false）
-  // 则不抢滚——否则工具轮次空档每次 onWait(true) 都强制追底，破坏上滑浏览。
-  // 发送新消息的追底由 doSend/scrollMode='follow' 负责，不依赖这里。
-  if (followBottom) scrollToBottom(contentArea);
+  // 等待提示出现时始终滚到底（提示应始终可见）
+  scrollToBottom(contentArea);
 
   return function stop(): void {
     stopped = true;
@@ -272,40 +270,8 @@ function updateTodoFromTool(tc: ToolBlock): void {
 
 // ========== 滚动追底状态 ==========
 // 反复回归的老问题（4次）根治方案：区分「用户主动手势」和「程序化滚动」。
-// 旧方案用 suppressScroll 时间窗口忽略 scroll 事件——但流式渲染每帧都
-// suppressScroll=true，用户上滑的 scroll 事件全被吞 → 追底取消不了。
-//
-// 新方案：
-//   - 用户主动手势（touchmove 向下拖 / wheel 向上）→ 立即 followBottom=false
-//   - scroll 事件只读当前位置：滑回底部（dist<40）→ followBottom=true 恢复追底
-//   - 不再抑制任何事件；程序化滚动产生的 scroll 事件读位置也是自洽的
-//     （滚到底→dist<40→true，本就该追底；preserve 滚到别处→false，也对）
-let followBottom = true;
-
-function attachScrollWatch(ca: HTMLElement): void {
-  const tagged = ca as HTMLElement & { _scrollWatch?: boolean };
-  if (tagged._scrollWatch) return;
-  tagged._scrollWatch = true;
-  // scroll 事件：纯读当前位置判断是否在底部（不区分来源，位置语义自洽）
-  ca.addEventListener('scroll', () => {
-    const dist = ca.scrollHeight - ca.scrollTop - ca.clientHeight;
-    followBottom = dist < 40;
-  }, { passive: true });
-  // 用户主动手势：向上浏览的意图立即生效，不等 scroll 事件（移动端关键）
-  let _touchY = 0;
-  ca.addEventListener('touchstart', (e) => {
-    _touchY = e.touches[0]?.clientY ?? 0;
-  }, { passive: true });
-  ca.addEventListener('touchmove', (e) => {
-    const y = e.touches[0]?.clientY ?? 0;
-    // 手指下移（y 增大）= 内容上滑 = 用户想往回看 → 取消追底
-    if (y - _touchY > 4) followBottom = false;
-    _touchY = y;
-  }, { passive: true });
-  ca.addEventListener('wheel', (e) => {
-    if (e.deltaY < 0) followBottom = false; // 滚轮向上 → 取消追底
-  }, { passive: true });
-}
+// v8: 滚动追底状态由 chat-dom.ts 管理（_attachScrollWatch + getFollowBottom）。
+// startWaitingIndicator 中直接滚到底（等待提示应始终可见）。
 function scrollToBottom(ca: HTMLElement): void {
   ca.scrollTop = ca.scrollHeight;
 }
@@ -507,8 +473,6 @@ async function _consumeRun(
   if (!reader) throw new Error('无响应体');
   const decoder = new TextDecoder();
   let buffer = '';
-  let lastRender = 0;
-  const throttledRender = () => { const now = Date.now(); if (now - lastRender > 80) { lastRender = now; ctx.onRender(); } };
   while (true) {
     let chunk: ReadableStreamReadResult<Uint8Array>;
     try {
@@ -539,26 +503,7 @@ async function _consumeRun(
           (event.type === 'content_block_start' && event.blockType === 'tool_use') ||
           event.type === 'tool_result' ||
           event.type === 'rule_warning'
-        ) { lastRender = Date.now(); ctx.onRender(); }
-        else if (event.type === 'content_block_delta' && event.deltaType === 'thinking_delta') {
-          // 增量追加：避免对已累积的全文做 escapeHtml + innerHTML 重建（O(n²) 卡顿）
-          const pre = document.querySelector('#r' + ctx.getMsgIdx() + ' pre');
-          if (pre) {
-            // 视口裁剪：pre 滚出可视区时跳过 DOM 写（数据已在模型累积，滚回后全量渲染恢复）
-            const r = pre.getBoundingClientRect();
-            if (r.bottom < 0 || r.top > window.innerHeight) { /* out of viewport, skip */ }
-            else {
-              pre.textContent += event.deltaText || '';
-              pre.scrollTop = pre.scrollHeight;
-              if (followBottom) {
-                const ca = pre.closest('.orb-panel-content');
-                if (ca) ca.scrollTop = ca.scrollHeight;
-              }
-            }
-          }
-          else throttledRender(); // DOM 尚未构建（首批 delta），回退到节流渲染让思考框出现
-        }
-        else throttledRender();
+        ) { ctx.onRender(); }
       } catch {}
     }
   }
