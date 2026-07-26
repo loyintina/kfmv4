@@ -6,3 +6,4 @@ public/bundle.js
 *.css.map
 .env
 .tsbuildinfo
+.qoder/
