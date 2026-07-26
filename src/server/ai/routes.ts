@@ -27,28 +27,33 @@ export function setupAiRoutes(router: Router, wsServer: WsServer, startRunFn: St
    *   （复用已有活跃 run 时 fromIndex=0，客户端据 events 全量对齐；新 run 也是 0）
    */
   router.post('/ai/chat/start', (req, res) => {
-    const { sessionId, messages, model, provider, roleFile, clientMessages } = req.body;
+    const { sessionId, messages, model, provider, roleFile } = req.body;
     if (!sessionId || !messages || !Array.isArray(messages) || messages.length === 0) {
       res.status(400).json({ error: '缺少 sessionId 或 messages 参数' });
       return;
     }
-    // 服务端立即保存客户端发来的完整消息（含本次用户消息）
-    if (Array.isArray(clientMessages) && clientMessages.length > 0) {
-      try {
-        const dir = join(KFM_DATA_DIR, 'sessions');
-        const filePath = join(dir, `${sessionId}.json`);
-        let session: Record<string, unknown> = {};
-        if (existsSync(filePath)) {
-          try { session = JSON.parse(readFileSync(filePath, 'utf-8')); } catch {}
-        }
+    // 服务端从磁盘读取已有会话 + 合并本次用户消息 → 立即落盘
+    let clientMessages: Array<{ role: string; content: any[] }> = [];
+    try {
+      const dir = join(KFM_DATA_DIR, 'sessions');
+      const filePath = join(dir, `${sessionId}.json`);
+      let session: Record<string, unknown> = { id: sessionId, title: sessionId, createdAt: new Date().toISOString() };
+      if (existsSync(filePath)) {
+        try { session = JSON.parse(readFileSync(filePath, 'utf-8')); } catch {}
+      }
+      if (Array.isArray(session.messages)) clientMessages = session.messages as any[]; // escape-ok: 磁盘 JSON 解析结果无类型
+      // 从 apiMessages 最后一条 user 消息提取文本，追加为 content block
+      const lastUserMsg = [...messages].reverse().find((m: any) => m?.role === 'user');
+      if (lastUserMsg && typeof lastUserMsg.content === 'string' && lastUserMsg.content.trim()) {
+        clientMessages = [...clientMessages, { role: 'user', content: [{ type: 'text', text: lastUserMsg.content }] }];
         session.messages = clientMessages;
         session.updatedAt = new Date().toISOString();
         if (model) session.modelId = model;
         if (provider) session.providerId = provider;
         mkdirSync(dir, { recursive: true });
         writeFileSync(filePath, JSON.stringify(session, null, 2), 'utf-8');
-      } catch {}
-    }
+      }
+    } catch {}
     const run = startRunFn(
       sessionId, messages,
       model || 'deepseek-v4-flash',
@@ -56,7 +61,7 @@ export function setupAiRoutes(router: Router, wsServer: WsServer, startRunFn: St
       wsServer,
       typeof roleFile === 'string' ? roleFile : undefined,
       undefined,
-      Array.isArray(clientMessages) ? clientMessages : undefined,
+      clientMessages.length > 0 ? clientMessages : undefined,
     );
     res.json({ runId: run.id, fromIndex: 0, done: run.done });
   });

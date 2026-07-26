@@ -1553,7 +1553,7 @@ export async function doSend(
     // 后台启动生成任务（服务端挂机），拿 runId
     const startRes = await fetch(apiBase + 'ai/chat/start', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId: _sendSessionId, messages: apiMessages, clientMessages: messages, model, provider, roleFile }),
+      body: JSON.stringify({ sessionId: _sendSessionId, messages: apiMessages, model, provider, roleFile }),
       signal,
     });
     const startData = await startRes.json();
