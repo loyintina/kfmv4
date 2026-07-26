@@ -62,6 +62,8 @@ export interface Session {
   messages: SessionMessage[];
   /** 有正文的消息数（元数据加载时由服务端提供；messages 为空时用于统计显示）。 */
   messageCount?: number;
+  /** 估算 token 数（服务端基于 char/3 估算） */
+  tokenCount?: number;
 }
 
 // ========== 纯函数：消息正文提取 / 计数（无副作用，可单测） ==========
@@ -227,6 +229,7 @@ export const sessionStore = {
             ...(typeof s['providerId'] === 'string' && { providerId: s['providerId'] }),
             ...(typeof s['modelId'] === 'string' && { modelId: s['modelId'] }),
             messageCount: typeof s['messageCount'] === 'number' ? s['messageCount'] : 0,
+            tokenCount: typeof s['tokenCount'] === 'number' ? s['tokenCount'] : 0,
             messages: [], // 元数据加载不含消息，需要时通过 getMessages() 按需加载
           });
         }

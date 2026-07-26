@@ -18,6 +18,14 @@ import { Z } from '../../modules/z-index-layers.js';
 
 const SESSIONS_PATH = '.kfmv4/sessions';
 
+/** token 数格式化为可读字符串：<1K 显示数字，<1M 显示 nK，>=1M 显示 n.nM */
+function formatTokens(n?: number): string {
+  if (!n || n < 1) return '0';
+  if (n < 1000) return String(n);
+  if (n < 1_000_000) return Math.round(n / 1000) + 'K';
+  return (n / 1_000_000).toFixed(1) + 'M';
+}
+
 // ====== API 基础 ======
 
 const API_BASE = (() => {
@@ -266,7 +274,7 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
 
       const metaRow = document.createElement('div');
       metaRow.style.cssText = 'display:flex;gap:8px;font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.5)';
-      metaRow.innerHTML = `<span>${formatDate(session.updatedAt)}</span><span>${session.messageCount ?? countTextMessages(session.messages)} 条消息</span>`;
+      metaRow.innerHTML = `<span>${formatDate(session.updatedAt)}</span><span>${session.messageCount ?? countTextMessages(session.messages)} 条</span><span>${formatTokens(session.tokenCount)}</span>`;
       if (session.providerId) metaRow.innerHTML += `<span>${session.providerId}</span>`;
 
       item.appendChild(titleRow);
@@ -366,7 +374,9 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
 
   function renderAll(): void {
     if (_statsEl) {
-      _statsEl.textContent = `共 ${sessions.length} 个会话，${sessions.reduce((n, s) => n + (s.messageCount ?? countTextMessages(s.messages)), 0)} 条消息`;
+      const totalMsgs = sessions.reduce((n, s) => n + (s.messageCount ?? countTextMessages(s.messages)), 0);
+      const totalTokens = sessions.reduce((n, s) => n + (s.tokenCount ?? 0), 0);
+      _statsEl.textContent = `共 ${sessions.length} 个会话，${totalMsgs} 条 · ${formatTokens(totalTokens)}`;
     }
     if (_nameInput) { const s = getActiveSession(); _nameInput!.value = s?.title || ''; }
     if (_sessionSelect) {
@@ -535,7 +545,7 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
 
       const statsEl = document.createElement('span');
       statsEl.style.cssText = 'font-size:var(--card-font-size,10px);color:rgba(255,255,255,0.5)';
-      statsEl.textContent = `共 ${sessions.length} 个会话，${sessions.reduce((n, s) => n + (s.messageCount ?? countTextMessages(s.messages)), 0)} 条消息`;
+      statsEl.textContent = `共 ${sessions.length} 个会话，${sessions.reduce((n, s) => n + (s.messageCount ?? countTextMessages(s.messages)), 0)} 条 · ${formatTokens(sessions.reduce((n, s) => n + (s.tokenCount ?? 0), 0))}`;
       _statsEl = statsEl;
       poolHeader.appendChild(statsEl);
       poolCard.appendChild(poolHeader);

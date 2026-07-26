@@ -111,7 +111,7 @@ export function setupFileRoutes(router: Router): void {
       const sessionsDir = path.join(KFM_DATA_DIR, 'sessions');
       if (!fs.existsSync(sessionsDir)) { res.json({ sessions: [] }); return; }
       const files = fs.readdirSync(sessionsDir).filter(f => f.endsWith('.json'));
-      const sessions: Array<{ id: string; title: string; createdAt: string; updatedAt: string; manuallyNamed?: boolean; providerId?: string; modelId?: string; messageCount: number }> = [];
+      const sessions: Array<{ id: string; title: string; createdAt: string; updatedAt: string; manuallyNamed?: boolean; providerId?: string; modelId?: string; messageCount: number; tokenCount: number }> = [];
       for (const file of files) {
         try {
           const raw = fs.readFileSync(path.join(sessionsDir, file), 'utf-8');
@@ -124,13 +124,31 @@ export function setupFileRoutes(router: Router): void {
           const messages = Array.isArray(p['messages']) ? p['messages'] : [];
           // 只统计有正文的消息数，不把整个 messages 数组传给客户端
           let messageCount = 0;
+          let totalChars = 0;
           for (const msg of messages) {
             if (!msg || typeof msg !== 'object') continue;
             const content = Array.isArray((msg as Record<string, unknown>)['content']) ? (msg as Record<string, unknown>)['content'] as unknown[] : [];
             for (const block of content) {
-              if (block && typeof block === 'object' && 'type' in block && block.type === 'text' && 'text' in block && typeof block.text === 'string' && block.text.trim()) {
-                messageCount++;
-                break;
+              if (!block || typeof block !== 'object') continue;
+              const b = block as Record<string, unknown>;
+              if (b['type'] === 'text') {
+                const t = typeof b['text'] === 'string' ? b['text'] : '';
+                const r = typeof b['reasoning'] === 'string' ? b['reasoning'] : '';
+                totalChars += t.length + r.length;
+                if (t.trim()) { messageCount++; break; }
+              } else if (b['type'] === 'tool') {
+                if (b['input'] && typeof b['input'] === 'object') {
+                  totalChars += JSON.stringify(b['input']).length;
+                }
+                const result = b['result'] as Record<string, unknown> | undefined;
+                if (result) {
+                  const rc = Array.isArray(result['content']) ? result['content'] as unknown[] : [];
+                  for (const c of rc) {
+                    if (c && typeof c === 'object' && 'text' in (c as Record<string, unknown>)) {
+                      totalChars += String((c as Record<string, unknown>)['text']).length;
+                    }
+                  }
+                }
               }
             }
           }
@@ -143,6 +161,7 @@ export function setupFileRoutes(router: Router): void {
             ...(typeof p['providerId'] === 'string' && { providerId: p['providerId'] }),
             ...(typeof p['modelId'] === 'string' && { modelId: p['modelId'] }),
             messageCount,
+            tokenCount: Math.round(totalChars / 3),
           });
         } catch { /* skip corrupt */ }
       }
