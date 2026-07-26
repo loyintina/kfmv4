@@ -9,6 +9,9 @@
  */
 
 import { Router } from 'express';
+import { mkdirSync, existsSync, readFileSync, writeFileSync } from 'fs';
+import { join } from 'path';
+import { KFM_DATA_DIR } from '../path-utils.js';
 import { getToolDefinitions } from './tools/index.js';
 import { startRun, attachRun, cancelRun, getActiveRun, getRun } from './run-manager.js';
 import type { WsServer } from '../ws-server.js';
@@ -24,10 +27,27 @@ export function setupAiRoutes(router: Router, wsServer: WsServer, startRunFn: St
    *   （复用已有活跃 run 时 fromIndex=0，客户端据 events 全量对齐；新 run 也是 0）
    */
   router.post('/ai/chat/start', (req, res) => {
-    const { sessionId, messages, model, provider, roleFile } = req.body;
+    const { sessionId, messages, model, provider, roleFile, clientMessages } = req.body;
     if (!sessionId || !messages || !Array.isArray(messages) || messages.length === 0) {
       res.status(400).json({ error: '缺少 sessionId 或 messages 参数' });
       return;
+    }
+    // 服务端立即保存客户端发来的完整消息（含本次用户消息）
+    if (Array.isArray(clientMessages) && clientMessages.length > 0) {
+      try {
+        const dir = join(KFM_DATA_DIR, 'sessions');
+        const filePath = join(dir, `${sessionId}.json`);
+        let session: Record<string, unknown> = {};
+        if (existsSync(filePath)) {
+          try { session = JSON.parse(readFileSync(filePath, 'utf-8')); } catch {}
+        }
+        session.messages = clientMessages;
+        session.updatedAt = new Date().toISOString();
+        if (model) session.modelId = model;
+        if (provider) session.providerId = provider;
+        mkdirSync(dir, { recursive: true });
+        writeFileSync(filePath, JSON.stringify(session, null, 2), 'utf-8');
+      } catch {}
     }
     const run = startRunFn(
       sessionId, messages,
@@ -35,6 +55,8 @@ export function setupAiRoutes(router: Router, wsServer: WsServer, startRunFn: St
       provider || 'opencode-go',
       wsServer,
       typeof roleFile === 'string' ? roleFile : undefined,
+      undefined,
+      Array.isArray(clientMessages) ? clientMessages : undefined,
     );
     res.json({ runId: run.id, fromIndex: 0, done: run.done });
   });

@@ -4,7 +4,7 @@
  * 使用 kfmv4 的 API 卡配置和 proxy 端点实现流式对话
  */
 
-import { readFileSync, readdirSync } from 'fs';
+import { mkdirSync, existsSync, readFileSync, readdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { KFM_DATA_DIR } from '../path-utils.js';
 import type { WsServer } from '../ws-server.js';
@@ -115,6 +115,23 @@ interface ApiProvider {
   models: string[];
 }
 
+function saveSessionFile(sessionId: string, messages: Array<{ role: string; content: any[] }>): void {
+    try {
+        const dir = join(KFM_DATA_DIR, 'sessions');
+        const filePath = join(dir, `${sessionId}.json`);
+        let session: Record<string, unknown> = { id: sessionId, title: sessionId, createdAt: new Date().toISOString() };
+        if (existsSync(filePath)) {
+            try { session = JSON.parse(readFileSync(filePath, 'utf-8')); } catch {}
+        }
+        session.messages = messages;
+        session.updatedAt = new Date().toISOString();
+        mkdirSync(dir, { recursive: true });
+        writeFileSync(filePath, JSON.stringify(session, null, 2), 'utf-8');
+    } catch (e) {
+        console.error('[chat] saveSessionFile:', e instanceof Error ? e.message : e);
+    }
+}
+
 /** 读取 providers.json */
 function loadProviders(): ApiProvider[] {
   try {
@@ -134,6 +151,8 @@ export async function* streamChat(
   provider: string,
   wsServer: WsServer,
   signal?: AbortSignal,
+  sessionId?: string,
+  clientMessages?: Array<{ role: string; content: Array<{ type: string; [k: string]: unknown }> }>,
   roleFile?: string,
 ): AsyncGenerator<StreamEvent> {
   const tools = getToolDefinitions();
@@ -197,6 +216,11 @@ export async function* streamChat(
   let toolFailureCount = 0;
   let turn = 0;
 
+  // 服务端消息累加器：镜像客户端 content block 结构
+  const serverMessages: Array<{ role: string; content: Array<{ type: string; [k: string]: unknown }> }> = clientMessages
+    ? clientMessages.map(m => ({ role: m.role, content: Array.isArray(m.content) ? m.content.map((b: any) => ({ ...b })) : [] }))
+    : [];
+
   while (true) {
     if (signal?.aborted) { yield { type: 'error', content: '已取消' }; return; }
     turn++;
@@ -236,6 +260,7 @@ export async function* streamChat(
     const toolCallBufs = new Map<number, { id: string; name: string; args: string }>();
     let finishReason = '';
     let contentBuf = '';
+    let reasoningBuf = ''; // 服务端保存用：记录 thinking delta，构建 AI 消息时填入 reasoning 字段
     // text block（含 reasoning）始终在 index=0，tool_use block 从 index=1 开始
     // 设计决策：thinking(reasoning_content) 和 text(content) 合并到同一个 TextBlock，
     // 不拆成两个 block。客户端 content[0] 同时持有 reasoning 和 text，
@@ -316,6 +341,7 @@ export async function* streamChat(
               hasTextBlock = true;
               yield { type: 'content_block_start', index: 0, blockType: 'text' };
             }
+            reasoningBuf += delta.reasoning_content as string;
             yield { type: 'content_block_delta', index: 0, deltaType: 'thinking_delta', deltaText: delta.reasoning_content as string };
           }
 
@@ -340,6 +366,25 @@ export async function* streamChat(
     for (const idx of toolStarted) {
       yield { type: 'content_block_stop', index: clientIdx(idx) };
     }
+
+    // ===== 保存点 1：本轮内容完整 → 工具执行前落盘 =====
+    if (sessionId) {
+      const aiMsg: { role: string; content: Array<{ type: string; [k: string]: unknown }> } = { role: 'ai', content: [] };
+      if (hasTextBlock) {
+        aiMsg.content.push({ type: 'text', text: contentBuf, reasoning: reasoningBuf });
+      }
+      for (const [, buf] of toolCallBufs) {
+        aiMsg.content.push({
+          type: 'tool',
+          id: buf.id || '',
+          name: buf.name,
+          input: safeParseJson(buf.args),
+        });
+      }
+      serverMessages.push(aiMsg);
+      saveSessionFile(sessionId, serverMessages);
+    }
+    // ===== 保存结束 =====
 
     // 检查是否需要执行工具
     if (finishReason === 'tool_calls' && toolCallBufs.size > 0) {
@@ -398,6 +443,12 @@ export async function* streamChat(
         // 最后一个带 filesChanged 标记
         yield { type: 'tool_result', toolUseId: t.tcId, toolResult: result, filesChanged: i === todo.length - 1 ? filesChanged : undefined };
         apiMessages.push({ role: 'tool', content: JSON.stringify(result), tool_call_id: t.tcId });
+        // 更新 serverMessages 中工具块的 result
+        if (sessionId && serverMessages.length > 0) {
+          const lastMsg = serverMessages[serverMessages.length - 1];
+          const toolBlock = lastMsg.content.find((b: any) => b.type === 'tool' && b.id === t.tcId);
+          if (toolBlock) { toolBlock.result = result; }
+        }
       }
 
       // 注入 warning
@@ -424,9 +475,17 @@ export async function* streamChat(
       }
       // 本轮消息结束，进入下一轮
       yield { type: 'message_stop' };
+      if (sessionId) saveSessionFile(sessionId, serverMessages);
       continue;
     }
 
+    // ===== 保存点 3：流结束，最后一条 AI 消息无工具调用 → 落盘 =====
+    if (sessionId) {
+      if (hasTextBlock) {
+        serverMessages.push({ role: 'ai', content: [{ type: 'text', text: contentBuf, reasoning: reasoningBuf }] });
+      }
+      saveSessionFile(sessionId, serverMessages);
+    }
     yield { type: 'message_stop' };
     yield { type: 'done' };
     return;
