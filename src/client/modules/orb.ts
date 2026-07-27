@@ -200,17 +200,24 @@ function expandPanel(): void {
     if (!_v8Initialized) {
       _v8Initialized = true;
       initChatDom(panelEl!, () => { /* TODO: loadFileTree */ });
-      // 补挂 init 阶段已加载的消息（loadSessionInto 先于面板创建执行）
-      for (let i = 0; i < chatMessages.length; i++) {
-        const m = chatMessages[i];
-        if (m.role === 'user') {
-          const tb = m.content.find(b => b?.type === 'text');
-          mountUserMessage(i, tb && 'text' in tb ? tb.text : '');
-        } else {
-          mountAiMessage(i, m.content);
+    }
+    // 每次展开面板时，如果 chatMessages 有内容且 DOM 为空，重新挂载消息
+    // 解决：loadSessionInto 在面板展开前完成，但消息未渲染的问题
+    if (chatMessages.length > 0) {
+      const ca = DOM.orbPanelContent(panelEl!);
+      // 检查 DOM 是否为空（避免重复挂载）
+      if (ca && ca.children.length === 0) {
+        for (let i = 0; i < chatMessages.length; i++) {
+          const m = chatMessages[i];
+          if (m.role === 'user') {
+            const tb = m.content.find(b => b?.type === 'text');
+            mountUserMessage(i, tb && 'text' in tb ? tb.text : '');
+          } else {
+            mountAiMessage(i, m.content);
+          }
         }
+        scrollToBottom();
       }
-      scrollToBottom();
     }
     updatePanelPosition();
     // 加载存储的字号偏好

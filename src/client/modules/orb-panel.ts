@@ -134,11 +134,23 @@ export function buildPanelContent(cfg: PanelConfig): void {
       footerElement: newBtn,
     });
     sessionContainer.appendChild(sessionSelect.element);
-    sessionSelect.updateItems(
-      sessionStore.list.map(function(s) { return { label: s.title, value: s.id }; }),
-      sessionStore.activeId || sessionStore.list[0]?.id || ''
-    );
+    
+    // 初始化时立即更新一次（如果 sessionStore.list 已有数据）
+    if (sessionStore.list.length > 0) {
+      sessionSelect.updateItems(
+        sessionStore.list.map(function(s) { return { label: s.title, value: s.id }; }),
+        sessionStore.activeId || sessionStore.list[0]?.id || ''
+      );
+    }
     setOrbSessionSelect(sessionSelect);
+    
+    // 订阅 sessionStore 变化，数据加载完成后自动更新下拉栏
+    sessionStore.subscribe(() => {
+      sessionSelect.updateItems(
+        sessionStore.list.map(function(s) { return { label: s.title, value: s.id }; }),
+        sessionStore.activeId || ''
+      );
+    });
   }
 
   // --- Provider / Model 下拉 ---
