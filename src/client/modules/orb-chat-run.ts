@@ -21,6 +21,9 @@ import { loadFileTree } from './tree-loader.js';
 import { sessionStore } from './session-client.js';
 import type { ContentBlock, TextBlock, ToolBlock, RuleWarningBlock } from './session-client.js';
 import { clearToolHint, updateTodoFromTool } from './orb-chat-hints.js';
+import { log } from './logger.js';
+// 工具 I/O 上下文压缩（v8.1.0）：纯函数注册表，契约 docs/design/TOOL_IO_COMPACTION.md
+import { compactToolInput, compactToolResult } from '../../shared/tool-compaction/index.js';
 // 兜底消息上屏 + 取消时工具卡 DOM 收尾（v8 增量 DOM：数据层变更不会自动投影）
 import { mountFallbackAiMessage, settleToolCardsDom } from './chat-dom.js';
 
@@ -447,38 +450,85 @@ export async function doSend(
     // 构建发给 API 的消息（content blocks → OpenAI 格式）。
     // 会话文件存的是完整 content blocks（含 tool_use + tool_result），
     // 发给 API 时必须转为 OpenAI 的 tool_calls + role:"tool" 格式。
+    //
+    // 工具 I/O 上下文压缩（v8.1.0，契约 docs/design/TOOL_IO_COMPACTION.md）：
+    // 会话文件是全量真相源（永不压缩），apiMessages 是投影——压缩只发生在这一处。
+    const noCompact = localStorage.getItem('kfm-no-compact') === '1'; // 灰度逃生门：=1 跳过压缩发全量
+    // G1：最近 2 条 AI 消息（工作记忆）及之后的全部消息豁免压缩
+    let compactExemptFrom = 0; // 不足 2 条 AI 消息 = 全部豁免
+    let aiSeen = 0;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i]?.role === 'ai' && ++aiSeen === 2) { compactExemptFrom = i; break; }
+    }
+    // G4：整个历史中最后出现的 todo 工具结果豁免（承载当前任务状态，压了=失忆当前进度）
+    let lastTodoResultId = '';
+    for (let i = messages.length - 1; i >= 0 && !lastTodoResultId; i--) {
+      const m = messages[i];
+      if (m?.role !== 'ai') continue;
+      for (const b of m.content) {
+        if (b?.type === 'tool' && b.name === 'todo' && b.result) { lastTodoResultId = b.id; break; }
+      }
+    }
+    let compactSaved = 0; // 压缩省下的字符数（观测日志用）
     const apiMessages: Array<{ role: string; content: string | null; tool_calls?: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }>; tool_call_id?: string }> = [];
-    for (const m of messages) {
+    for (let mi = 0; mi < messages.length; mi++) {
+      const m = messages[mi];
+      if (!m) continue;
+      const compactable = !noCompact && mi < compactExemptFrom; // G1 豁免期外的旧消息才压
       if (m.role === 'user') {
-        apiMessages.push({ role: 'user', content: extractText(m) });
+        apiMessages.push({ role: 'user', content: extractText(m) }); // G5：user 消息一个字不动
       } else {
         // AI 消息：拆分 text + tool blocks 为 OpenAI 格式
         const textBlocks = m.content.filter((b): b is TextBlock => b?.type === 'text');
         const toolBlocks = m.content.filter((b): b is ToolBlock => b?.type === 'tool');
-        const mainText = textBlocks.map(b => b.text || '').join('');
+        const mainText = textBlocks.map(b => b.text || '').join(''); // G5：AI 正文一个字不动
         if (toolBlocks.length > 0) {
           // 有工具调用：assistant 消息带 tool_calls
-          const toolCalls = toolBlocks.map(tc => ({
-            id: tc.id,
-            type: 'function' as const,
-            function: { name: tc.name, arguments: JSON.stringify(tc.input) },
-          }));
+          const toolCalls = toolBlocks.map(tc => {
+            let args = JSON.stringify(tc.input);
+            if (compactable) {
+              const compacted = compactToolInput(tc.name, tc.input);
+              if (compacted) {
+                const compactedArgs = JSON.stringify(compacted);
+                compactSaved += args.length - compactedArgs.length;
+                args = compactedArgs;
+              }
+            }
+            return { id: tc.id, type: 'function' as const, function: { name: tc.name, arguments: args } };
+          });
           apiMessages.push({ role: 'assistant', content: mainText || null, tool_calls: toolCalls });
-          // 每个工具结果作为独立的 role:"tool" 消息
+          // 每个工具结果作为独立的 role:"tool" 消息（tool_calls/tool 配对结构原样保留，只压 content）
           for (const tc of toolBlocks) {
             const resultText = tc.result?.content?.map(c => c.text || '').join('') || '';
-            apiMessages.push({ role: 'tool', content: resultText, tool_call_id: tc.id });
+            let content = resultText;
+            if (compactable && tc.id !== lastTodoResultId) { // G4：最新 todo 结果豁免
+              const compacted = compactToolResult(tc.name, tc.input, resultText, !!tc.result?.isError);
+              if (compacted !== null) {
+                compactSaved += resultText.length - compacted.length;
+                content = compacted;
+              }
+            }
+            apiMessages.push({ role: 'tool', content, tool_call_id: tc.id });
           }
         } else {
           apiMessages.push({ role: 'assistant', content: mainText });
         }
       }
     }
+    if (!noCompact) {
+      // 观测：压缩前后大小（JSON.stringify 长度估算；压缩前 = 压缩后 + 省下的字符）
+      const afterSize = JSON.stringify(apiMessages).length;
+      log(`[compact] apiMessages ${((afterSize + compactSaved) / 1000).toFixed(1)}KB → ${(afterSize / 1000).toFixed(1)}KB`);
+    }
 
-    // 先落盘用户消息，保证刷新/切后台后能恢复（AI 回复由重连续读补齐）
-    // saveMessages 会在 activeId 为空时自动新建会话——同步回 _sendSessionId，
+    // 落盘用户消息：仅新会话（无 activeId）需要 saveMessages——它负责建会话并回填 activeId，
     // 否则删除最后一个会话后再发送会带空 sessionId 触发服务端 400。
-    await sessionStore.saveMessages(messages, model, provider);
+    // activeId 已存在时跳过——等价性论证：服务端 /ai/chat/start 自己会 appendUserMessage
+    // 落盘用户消息（routes.ts，带末条去重），AI 回复由 run-manager flush 落盘，
+    // 客户端这次全量 saveMessages 是冗余写。
+    if (!sessionStore.activeId) {
+      await sessionStore.saveMessages(messages, model, provider);
+    }
     if (!_sendSessionId) _sendSessionId = sessionStore.activeId;
 
     // 后台启动生成任务（服务端挂机），拿 runId
