@@ -506,7 +506,11 @@ function _createMsgContainer(mi: number, role: 'user' | 'ai', atTop = false): HT
       // prepend 到最早消息之前（跳过 .orb-md-css style 节点），调用方按索引升序调用即有序
       _contentArea.insertBefore(msgEl, _contentArea.querySelector('.orb-msg'));
     } else {
-      _contentArea.appendChild(msgEl);
+      // 等待提示（#orb-waiting-hint）若已挂载必须保持在尾部：
+      // orb.ts 在 doSend 前即 setWait(true)，hint 先于用户消息入列，
+      // 直接 appendChild 会把消息插到 hint 之后（hint 跑到消息上方）。
+      const hint = _contentArea.querySelector('#orb-waiting-hint');
+      _contentArea.insertBefore(msgEl, hint);
     }
   }
   _messageEls[mi] = msgEl;

@@ -75,7 +75,8 @@ await build({
   platform: 'node',
   format: 'esm',
   outfile: 'dist/server/index.js',
-  external: ['express','fs','path','os','ws','events','node-pty-prebuilt-multiarch'],
+  // CJS 依赖必须 external——bundle 进 ESM 产物会触发 Dynamic require of "buffer" 启动崩溃
+  external: ['express','compression','fs','path','os','ws','events','node-pty-prebuilt-multiarch'],
   minify: true,
 });
 
