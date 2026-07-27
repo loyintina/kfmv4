@@ -10,6 +10,19 @@
  *   - tool_result：按工具类型渲染富输出（write/edit/grep/glob/通用）
  *   - mountAiMessage（历史加载）：直接渲染最终态
  *
+ * 历史挂载成本控制（v8.1 性能三层）：
+ *   1. 窗口化挂载：调用方（orb.ts）只挂载末尾一个窗口的消息，滚动近顶部时
+ *      经 setHistoryLoader 回调向前翻页 prepend（withScrollAnchor 锚定滚动位置）。
+ *      为什么不做 v7 式高度估算裁剪：估算误差导致滚动突跳（登记表 BAR-ORB-SEG-04），
+ *      且与「DOM 一旦创建不触碰」不变式冲突；窗口化把成本换成 O(用户实际浏览量)。
+ *   2. content-visibility:auto：浏览器原生跳过屏外消息的布局/绘制——拖拽光球时
+ *      面板重栅格化成本的主要来源。contain-intrinsic-size 保底预估高 80px。
+ *   3. 渲染结果缓存：历史消息不可变，markdown / 工具输入高亮的产物 HTML 按内容
+ *      缓存（_mdCache / _hlCache，FIFO 上限 300 条），重挂 = 查表。
+ *
+ * 批量挂载纪律：调用方用 suspendScroll()/resumeScroll() 包裹批量挂载，
+ * 中途的 scrollToBottom 被抑制，结束后只滚一次——消灭每消息一次强制 reflow。
+ *
  * 随机配色在此层生成（宪法第二条），绑定 blockId 稳定哈希。
  */
 
@@ -68,6 +81,7 @@ export function clearChatDom(): void {
   _foldState.clear();
   _currentMsgIdx = -1;
   _toolCountInMsg = 0;
+  _historyLoader = null; // 旧 loader 引用的索引已随内容失效
   if (_contentArea) _injectMdCss(_contentArea);
 }
 
@@ -111,6 +125,36 @@ function _hexToRgba(hex: string, alpha: number): string {
 
 // ========== 滚动 ==========
 
+// 历史翻页回调（orb.ts 注入）：滚动近顶部时同步 prepend 更早的消息
+let _historyLoader: (() => void) | null = null;
+let _inHistoryLoad = false;
+
+// 批量挂载滚动抑制：>0 时 scrollToBottom 为 no-op（见文件头「批量挂载纪律」）
+let _scrollSuspend = 0;
+
+export function setHistoryLoader(cb: (() => void) | null): void {
+  _historyLoader = cb;
+}
+
+export function suspendScroll(): void {
+  _scrollSuspend++;
+}
+
+export function resumeScroll(toBottom: boolean): void {
+  _scrollSuspend = Math.max(0, _scrollSuspend - 1);
+  if (_scrollSuspend === 0 && toBottom) scrollToBottom();
+}
+
+/** prepend 历史批次时保持视口锚定： prepend 高度差补偿到 scrollTop */
+export function withScrollAnchor(fn: () => void): void {
+  const ca = _contentArea;
+  if (!ca) { fn(); return; }
+  const prevHeight = ca.scrollHeight;
+  const prevTop = ca.scrollTop;
+  fn();
+  ca.scrollTop = prevTop + (ca.scrollHeight - prevHeight);
+}
+
 function _attachScrollWatch(ca: HTMLElement): void {
   const tagged = ca as HTMLElement & { _v8ScrollWatch?: boolean };
   if (tagged._v8ScrollWatch) return;
@@ -118,6 +162,11 @@ function _attachScrollWatch(ca: HTMLElement): void {
   ca.addEventListener('scroll', () => {
     const dist = ca.scrollHeight - ca.scrollTop - ca.clientHeight;
     _followBottom = dist < 40;
+    // 近顶部触发历史翻页（loader 自行在耗尽后 setHistoryLoader(null) 停火）
+    if (ca.scrollTop < 80 && _historyLoader && !_inHistoryLoad) {
+      _inHistoryLoad = true;
+      try { _historyLoader(); } finally { _inHistoryLoad = false; }
+    }
   }, { passive: true });
   let _touchY = 0;
   ca.addEventListener('touchstart', (e) => { _touchY = e.touches[0]?.clientY ?? 0; }, { passive: true });
@@ -130,6 +179,7 @@ function _attachScrollWatch(ca: HTMLElement): void {
 }
 
 export function scrollToBottom(): void {
+  if (_scrollSuspend > 0) return;
   if (_contentArea) _contentArea.scrollTop = _contentArea.scrollHeight;
 }
 
@@ -160,7 +210,26 @@ function _escapeHtml(s: string): string {
 
 // ========== Markdown 渲染管线 ==========
 
+// 渲染产物缓存（历史消息不可变 → 内容即键）。FIFO 上限防内存膨胀。
+// 为什么不做 LRU：重挂场景是顺序回放，FIFO 淘汰最老的恰好最不可能再被翻回。
+const MD_CACHE_MAX = 300;
+const _mdCache = new Map<string, string>(); // 原始 text → 渲染后 innerHTML
+const _hlCache = new Map<string, string>(); // 工具输入 raw JSON → 高亮后 innerHTML
+
+function _cacheSet(cache: Map<string, string>, key: string, value: string): void {
+  if (cache.size >= MD_CACHE_MAX) {
+    const first = cache.keys().next();
+    if (!first.done) cache.delete(first.value);
+  }
+  cache.set(key, value);
+}
+
 function _renderMarkdown(textEl: HTMLElement, text: string): void {
+  const cached = _mdCache.get(text);
+  if (cached !== undefined) {
+    textEl.innerHTML = cached;
+    return;
+  }
   const mathData: MathData = { display: [], inline: [] };
   const processed = preprocessMd(text, mathData);
   const mdHtml = marked.parse(processed, MARKED_OPTS) as string;
@@ -171,6 +240,7 @@ function _renderMarkdown(textEl: HTMLElement, text: string): void {
     renderMath(mdBody, mathData);
     renderMermaid(mdBody, '#00d4ff');
   }
+  _cacheSet(_mdCache, text, textEl.innerHTML);
 }
 
 // ========== 工具输出富渲染 ==========
@@ -352,28 +422,44 @@ function _renderGrepGlobCard(outputArea: HTMLElement, toolName: string, resultTe
 function _highlightInput(inputPre: HTMLElement): void {
   const raw = inputPre.textContent || '';
   if (!raw) return;
+  const cached = _hlCache.get(raw);
+  if (cached !== undefined) {
+    inputPre.innerHTML = cached;
+    return;
+  }
   inputPre.innerHTML = '';
   const code = document.createElement('code');
   code.className = 'language-json';
   code.textContent = raw;
   inputPre.appendChild(code);
   highlightCode(code);
+  _cacheSet(_hlCache, raw, inputPre.innerHTML);
 }
 
 // ========== 消息容器 ==========
 
-function _createMsgContainer(mi: number, role: 'user' | 'ai'): HTMLElement {
+function _createMsgContainer(mi: number, role: 'user' | 'ai', atTop = false): HTMLElement {
   const msgEl = _el('div', 'orb-msg');
+  // 浏览器原生视口裁剪：屏外消息跳过布局/绘制（拖拽光球不触发全面板重栅格化）。
+  // 为什么不用 v7 的手工裁剪：见文件头「历史挂载成本控制」第 1 条。
+  msgEl.style.cssText = 'content-visibility:auto;contain-intrinsic-size:auto 80px';
   msgEl.dataset.mi = String(mi);
-  if (_contentArea) _contentArea.appendChild(msgEl);
+  if (_contentArea) {
+    if (atTop) {
+      // prepend 到最早消息之前（跳过 .orb-md-css style 节点），调用方按索引升序调用即有序
+      _contentArea.insertBefore(msgEl, _contentArea.querySelector('.orb-msg'));
+    } else {
+      _contentArea.appendChild(msgEl);
+    }
+  }
   _messageEls[mi] = msgEl;
   return msgEl;
 }
 
 // ========== 用户消息 ==========
 
-export function mountUserMessage(mi: number, text: string): void {
-  const msgEl = _createMsgContainer(mi, 'user');
+export function mountUserMessage(mi: number, text: string, atTop = false): void {
+  const msgEl = _createMsgContainer(mi, 'user', atTop);
   const innerWidth = (_contentArea?.clientWidth || 390) - 24;
   const maxWidth = Math.min(innerWidth - 8, innerWidth * 0.85);
   const bgColor = `linear-gradient(${theme.surface.bgLight},${theme.surface.bgLight}) padding-box,${theme.aiChat.bubbleSelfGradient} border-box`;
@@ -754,8 +840,8 @@ function _getToolInput(inputPre: HTMLElement | null): Record<string, unknown> {
 
 // ========== 历史消息挂载（会话加载） ==========
 
-export function mountAiMessage(mi: number, blocks: ContentBlock[]): void {
-  const msgEl = _createMsgContainer(mi, 'ai');
+export function mountAiMessage(mi: number, blocks: ContentBlock[], atTop = false): void {
+  const msgEl = _createMsgContainer(mi, 'ai', atTop);
   _currentMsgIdx = mi;
   _toolCountInMsg = 0;
   const st: MsgStreamState = { msgEl, thinkingPre: null, thinkingLabel: null, thinkingFold: null, textEl: null, textBuf: '', warningCount: 0 };
