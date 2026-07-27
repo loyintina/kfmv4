@@ -33,8 +33,8 @@ import { anim } from './animation-registry.js';
 import { log } from './logger.js';
 import { sessionStore } from './session-client.js';
 import { buildPanelContent } from './orb-panel.js';
-import { doSend, resumeRun, readPersistedRun, clearPersistedRun, clearTodoPanel, startWaitingIndicator, setEventHook, type ChatMessage } from './orb-chat.js';
-import { initChatDom, patchEvent, clearChatDom, mountUserMessage, mountAiMessage, scrollToBottom, suspendScroll, resumeScroll, withScrollAnchor, setHistoryLoader, getFollowBottom, setFollowBottom } from './chat-dom.js';
+import { doSend, resumeRun, readPersistedRun, clearPersistedRun, clearTodoPanel, startWaitingIndicator, setEventHook, updateTodoFromTool, type ChatMessage, type ToolBlock } from './orb-chat.js';
+import { initChatDom, patchEvent, clearChatDom, mountUserMessage, mountAiMessage, mountFallbackAiMessage, scrollToBottom, suspendScroll, resumeScroll, withScrollAnchor, setHistoryLoader, getFollowBottom, setFollowBottom } from './chat-dom.js';
 import type { OrbState } from './orb-state.js';
 const API_BASE = window.location.pathname.replace(/\/+$/, '') + '/api/';
 
@@ -129,6 +129,18 @@ function _mountHistoryWindow(): void {
   for (let i = _oldestMounted; i < chatMessages.length; i++) _mountOne(i);
   setHistoryLoader(_oldestMounted > 0 ? _loadOlderHistory : null);
   resumeScroll(true); // 批量挂载后只追底一次
+  _restoreTodoPanel();
+}
+
+// v7 行为恢复：历史窗口（重）挂载后，从数据层找回最近一次 todo 工具结果重挂面板。
+// v8 曾只有 live tool_result 触发 updateTodoFromTool——刷新/切会话后面板消失。
+function _restoreTodoPanel(): void {
+  for (let i = chatMessages.length - 1; i >= 0; i--) {
+    const tb = chatMessages[i].content.find(
+      (b): b is ToolBlock => b?.type === 'tool' && b.name === 'todo' && !!b.result
+    );
+    if (tb) { updateTodoFromTool(tb); return; }
+  }
 }
 
 // 滚动近顶部时向前翻一页（由 chat-dom 滚动监听同步触发）
@@ -273,8 +285,9 @@ function expandPanel(): void {
     } catch {}
   }
   panelEl!.style.pointerEvents = 'auto';
-  // DOM 持久化后消息早已挂载好，展开只需跳到最新
-  requestAnimationFrame(() => { scrollToBottom(); });
+  // DOM 持久化后消息早已挂载好，展开只需跳到最新；
+  // 仅用户本就在底部时追底——上滑浏览历史时展开面板不应把视口拽回底部
+  requestAnimationFrame(() => { if (getFollowBottom()) scrollToBottom(); });
   Registry.notifyStateChange('orb');
   Registry.notifyStateChange('orb-panel');
   anim.to(panelEl!, { opacity: 1, duration: 0.3, ease: 'power2.out' });
@@ -789,7 +802,8 @@ export async function initOrb(): Promise<void> {
       await doSend(text, chatMessages, base, abortCtrl.signal,
         () => {
           // onBeforeSend: 用户消息已入队（doSend 内部 push 后调此回调）
-          mountUserMessage(chatMessages.length - 1, text);
+          // live 发送传 animate=true：滑入动画（v7 orb-msg-new 行为恢复，历史挂载不动画）
+          mountUserMessage(chatMessages.length - 1, text, false, true);
           scrollToBottom();
         },
         () => {
@@ -804,6 +818,8 @@ export async function initOrb(): Promise<void> {
         (msg) => {
           setWait(false);
           chatMessages.push({ role: 'ai', content: [{ type: 'text', text: msg }] });
+          // 兜底消息必须显式上屏——_renderChat 只滚动不挂载（v8 曾只 push 数据层，用户看不到）
+          mountFallbackAiMessage(msg);
           _renderChat('auto');
         },
         setWait,

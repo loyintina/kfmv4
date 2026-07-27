@@ -11,6 +11,7 @@
  *
  * 依赖：
  *   - orb-chat-hints（clearToolHint + updateTodoFromTool）
+ *   - chat-dom（mountFallbackAiMessage 兜底上屏 + settleToolCardsDom 取消收尾）
  *   - session-client（会话管理）
  *   - KFMState + loadFileTree（文件树刷新）
  */
@@ -20,6 +21,8 @@ import { loadFileTree } from './tree-loader.js';
 import { sessionStore } from './session-client.js';
 import type { ContentBlock, TextBlock, ToolBlock, RuleWarningBlock } from './session-client.js';
 import { clearToolHint, updateTodoFromTool } from './orb-chat-hints.js';
+// 兜底消息上屏 + 取消时工具卡 DOM 收尾（v8 增量 DOM：数据层变更不会自动投影）
+import { mountFallbackAiMessage, settleToolCardsDom } from './chat-dom.js';
 
 // ========== 类型 ==========
 
@@ -292,10 +295,12 @@ async function _consumeWithReconnect(
 
 /** 生成完成后的收尾：去除临时字段 + 标记未完成工具块 */
 async function _finalizeRun(messages: ChatMessage[], msgIdx: number): Promise<void> {
-  if (msgIdx < 0) {
+  const noReply = msgIdx < 0 || (messages[msgIdx] && messages[msgIdx].content.length === 0);
+  if (noReply) {
+    // 兜底一律新起一条消息并显式上屏：v8 增量 DOM 下 append 进已挂载的空消息
+    // 容器不会投影（chat-dom 只增不改）；新起一条同时保持 _messageEls 与 messages 对齐
     messages.push({ role: 'ai', content: [{ type: 'text', text: '[未收到回复，请重试]' }] });
-  } else if (messages[msgIdx] && messages[msgIdx].content.length === 0) {
-    messages[msgIdx].content.push({ type: 'text', text: '[未收到回复，请重试]' });
+    mountFallbackAiMessage('[未收到回复，请重试]');
   }
   // 收尾任何仍无 result 的工具块（流已结束，如上游 error 中断时工具未返回结果）——
   // 否则渲染判 isExecuting=!result 会让工具卡永久卡"忙碌中"（BAR-105 同类，error 触发路径）。
@@ -376,8 +381,13 @@ export async function resumeRun(
       fetch(apiBase + 'ai/chat/' + runId + '/cancel', { method: 'POST' }).catch(() => {});
       _persistActiveRun('', null);
       _cancelPendingTools(messages);
+      settleToolCardsDom('(已取消)'); // 工具卡 DOM 同步收尾：忙碌中 → 已取消（v8 数据层变更不自动投影）
       const lastMsg = messages[messages.length - 1];
-      if (lastMsg?.role === 'ai') lastMsg.content.push({ type: 'text', text: '[已取消]' });
+      if (lastMsg?.role === 'ai') {
+        // 同 _finalizeRun：不 append 进已挂载消息（不会上屏），新起一条保证对齐
+        messages.push({ role: 'ai', content: [{ type: 'text', text: '[已取消]' }] });
+        mountFallbackAiMessage('[已取消]');
+      }
     }
     _activeRunId = null;
   }
@@ -503,10 +513,18 @@ export async function doSend(
       _persistActiveRun(_sendSessionId, null);
       // 收尾未完成的工具卡（从"忙碌中"→已取消→折叠），并追加取消标注
       _cancelPendingTools(messages);
+      settleToolCardsDom('(已取消)'); // 工具卡 DOM 同步收尾（v8 数据层变更不自动投影）
       const lastMsg = messages[messages.length - 1];
-      if (lastMsg?.role === 'ai') lastMsg.content.push({ type: 'text', text: '[已取消]' });
+      if (lastMsg?.role === 'ai') {
+        // 新起一条取消标注：append 进已挂载消息不会上屏（v8 增量 DOM 只增不改）
+        messages.push({ role: 'ai', content: [{ type: 'text', text: '[已取消]' }] });
+        mountFallbackAiMessage('[已取消]');
+      }
     } else {
-      messages.push({ role: 'ai', content: [{ type: 'text', text: '请求失败: ' + (e instanceof Error ? e.message : '未知错误') }] });
+      // 兜底消息 push 后必须显式上屏——onRender 只滚动不挂载，否则用户看不到失败原因
+      const errText = '请求失败: ' + (e instanceof Error ? e.message : '未知错误');
+      messages.push({ role: 'ai', content: [{ type: 'text', text: errText }] });
+      mountFallbackAiMessage(errText);
     }
   }
   // 流彻底结束（成功/错误/取消）：确保等待提示已停
