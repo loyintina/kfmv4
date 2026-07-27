@@ -57,6 +57,7 @@ let orbEl: HTMLDivElement | null = null;
 let panelEl: HTMLDivElement | null = null;
 let _orbSessionSelect: ReturnType<typeof import('./custom-select.js').createCustomSelect> | null = null;
 let _v8Initialized = false;
+let _panelUpdateScheduled = false;
 
 const PANEL_MIN_WIDTH = 120;
 const PANEL_MIN_HEIGHT = 100;
@@ -429,10 +430,15 @@ export async function initOrb(): Promise<void> {
       orbEl!.style.top = clamped.y + 'px';
       orbEl!.style.right = 'auto';
       orbEl!.style.bottom = 'auto';
-      orbEl!.style.transition = 'none';
       if (orbState === 'expanded' && panelEl) {
-        updatePanelPosition();
-        _renderChat();
+        if (!_panelUpdateScheduled) {
+          _panelUpdateScheduled = true;
+          requestAnimationFrame(() => {
+            _panelUpdateScheduled = false;
+            updatePanelPosition();
+            _renderChat();
+          });
+        }
       }
     },
     onMoveEditing({ dx, dy, startOrbX, startOrbY }) {
@@ -452,8 +458,14 @@ export async function initOrb(): Promise<void> {
       orbEl.style.top = orbY + 'px';
       orbEl.style.right = 'auto';
       orbEl.style.bottom = 'auto';
-      updatePanelPosition();
-      _renderChat();
+      if (!_panelUpdateScheduled) {
+        _panelUpdateScheduled = true;
+        requestAnimationFrame(() => {
+          _panelUpdateScheduled = false;
+          updatePanelPosition();
+          _renderChat();
+        });
+      }
     },
   };
 
