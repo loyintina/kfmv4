@@ -146,6 +146,9 @@ maintainer: AI agent
 | BAR-BUILD-03 | `build.mjs` | **线上事故**：compression 未列入 server external，被打进 ESM bundle，其 CJS 依赖 `require("buffer")` → 启动即崩，systemd 重启风暴 76 次、全站 502，`kfm-restart` 后服务再也起不来。契约：server 构建 external 必须含全部 CJS 运行时依赖 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
 | BAR-ORB-PANEL-11 | `chat-dom` | 思考框永不自动折叠：仅 tool_result 路径有折叠逻辑，纯文本回复摊到底。契约：首个 text_delta（思考结束）+ message_stop 兜底 + tool_result 三路径统一走 `_autoCollapseThinking`，尊重 `_foldState` 手动展开 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
 | BAR-ORB-PANEL-12 | `chat-dom` | 流式期 textContent 裸奔 md 源码、block stop 时突变成渲染态。契约：`_scheduleStreamingMd` 120ms 节流轻管线（marked+高亮，跳过 KaTeX/mermaid）；final 渲染前 `_cancelStreamingMd` 防轻管线覆盖；部分渲染不进 `_mdCache`；clearChatDom 清计时器 | L | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-ORB-PANEL-13 | `chat-dom` | 历史思考框显示 ▶ 标记却摊开着、点击无法折叠：折叠容器用 `orb-fold-open` 类，但 `.collapsed` CSS 只定义在 `.orb-fold-content.collapsed` 上——`orb-fold-open.collapsed` 无任何规则，toggle 的是无效果的类。契约：思考框折叠容器必须 `orb-fold-content`；死类 `.orb-fold-open` 从 SCSS 清除 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-ORB-PANEL-14 | `chat-dom` | 摸鱼提示每 1.5s 覆盖已完成工具的真实输出、折叠再展开还在滚：`_createToolCard` 无条件 `setInterval`，历史挂载路径无人清计时器。契约：提示只在执行期由 patchEvent/mountAiMessage（无 result）经 `_startToolHint` 启动，tool_result 经 `_stopToolHint` 停 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-ORB-PANEL-15 | `base.scss` | 摸鱼提示脉冲点不播动画：`@keyframes orb-hint-pulse` 靠 `startWaitingIndicator` 运行时注入 `<style>`，未触发过等待提示的页面（纯看历史）keyframes 缺失。契约：keyframes 必须静态定义在 base.scss，禁止 JS 注入 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
 
 > 新 bug 修复后：补一个回归钉子 → 在此登记 → 状态置「已钉」。见
 > `docs/archive/design/REGRESSION_TESTING_SYSTEM.md` §3 微循环。

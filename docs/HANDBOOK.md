@@ -247,6 +247,26 @@ v7 被砍设计的盘点结论：恢复 6 项（其余为 v8 架构红利，不�
    裸请求，推理模型 TTFT 随之拉长），用 journalctl 数据定论。
    回归钉：BAR-ORB-PANEL-11…12（均已 revert 验证）。
 
+**v8.1 第五批 — v7 丢失细节三连（真机发现）+ 丢失发现方法论**
+
+1. **历史思考框假折叠** — 显示 ▶ 标记却摊开着、点击无效：折叠容器用
+   `orb-fold-open` 类，而 `.collapsed` 规则只写在 `.orb-fold-content.collapsed`
+   上——toggle 的是一个没有任何 CSS 效果的类。修复：容器统一
+   `orb-fold-content`，死类 `.orb-fold-open` 从 SCSS 清除。
+2. **摸鱼提示咬真实输出** — `_createToolCard` 无条件 `setInterval`，历史挂载
+   的已完成工具没有清计时器路径：提示每 1.5s 覆盖真实输出，折叠再展开还在滚。
+   修复：`_startToolHint/_stopToolHint` 启停对，只在执行期启动。
+3. **脉冲点不播动画** — `@keyframes orb-hint-pulse` 靠 startWaitingIndicator
+   运行时注入 `<style>`，未发过消息的页面（纯看历史）keyframes 缺失。
+   修复：挪进 base.scss 静态定义。
+
+> 方法论（为什么 380 条钉子没拦住这些）：钉子是**源码文本断言**，只能防已知
+> bug 复活，发现不了未知丢失。本批起两条新机制：(a) v7.3.3 tag ↔ v8 行为
+> 清单审计（按用户可感知维度逐项对比，非代码结构对比）；(b) 接线类静态检查
+> 思路——JS 引用的 CSS 类/keyframes 必须有定义、SCSS 定义的类必须被引用
+> （本批 bug 1/3 都能被这种检查自动抓住）。
+> 回归钉：BAR-ORB-PANEL-13…15（均已 revert 验证）。
+
 ### 当前焦点
 **AI Agent 调试能力体系建设** — 面向 AI 开发者的调试基础设施。
 

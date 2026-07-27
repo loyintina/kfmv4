@@ -575,3 +575,39 @@ regression('BAR-ORB-PANEL-12', 'chat-dom', '流式实时 MD：节流轻管线 + 
   const clearBody = src.split('export function clearChatDom')[1]?.split('\n}')[0] || '';
   assert(clearBody.includes('_streamMdTimers.clear()'), 'clearChatDom 必须清流式计时器（防泄漏）');
 });
+
+group('v8.1 第五批 — v7 丢失细节三连（真机发现）');
+
+regression('BAR-ORB-PANEL-13', 'chat-dom', '思考框折叠必须挂在 orb-fold-content 类上（collapsed 才有 CSS 效果）', () => {
+  const src = readFileSync('src/client/modules/chat-dom.ts', 'utf-8');
+  // 曾用 orb-fold-open 类 + collapsed——但 .collapsed 的 CSS 只定义在
+  // .orb-fold-content.collapsed 上，orb-fold-open.collapsed 无任何规则：
+  // 历史思考框显示 ▶ 标记却摊开着，点击也无法折叠（toggle 了一个无效果的类）
+  const fnBody = src.split('function _createThinkingBlock')[1]?.split('\n}')[0] || '';
+  assert(fnBody.includes("'orb-fold-content'") && !fnBody.includes("'orb-fold-open'"),
+    '思考框折叠容器必须用 orb-fold-content 类');
+  const mountBody = src.split('export function mountAiMessage')[1] || '';
+  assert(!mountBody.includes("remove('orb-fold-open')"), '历史挂载不得再移除 orb-fold-open（死机制残留）');
+  // orb-fold-open 已无任何 JS 引用 → SCSS 中应已清除（死 CSS 是丢失细节的藏身处）
+  const scss = readFileSync('public/css/base.scss', 'utf-8');
+  assert(!scss.includes('.orb-fold-open'), 'base.scss 不应残留死类 .orb-fold-open');
+});
+
+regression('BAR-ORB-PANEL-14', 'chat-dom', '摸鱼提示只在工具执行期：_createToolCard 不得启动轮换', () => {
+  const src = readFileSync('src/client/modules/chat-dom.ts', 'utf-8');
+  // 曾在 _createToolCard 无条件 setInterval——历史挂载的已完成工具没有清计时器
+  // 路径，提示每 1.5s 覆盖真实输出；卡片折叠再展开提示还在滚
+  const cardBody = src.split('function _createToolCard')[1]?.split('\n}')[0] || '';
+  assert(!cardBody.includes('setInterval') && !cardBody.includes('_startToolHint'),
+    '_createToolCard 不得启动提示轮换（历史挂载路径无人清）');
+  assert(src.includes('function _startToolHint') && src.includes('function _stopToolHint'), '应有统一的提示启停 helper');
+  const mountBody = src.split('export function mountAiMessage')[1] || '';
+  assert(mountBody.includes('_startToolHint'), '历史挂载的执行中工具（无 result）才允许起提示');
+});
+
+regression('BAR-ORB-PANEL-15', 'base.scss', 'orb-hint-pulse keyframes 必须在静态 CSS（非 JS 运行时注入）', () => {
+  const scss = readFileSync('public/css/base.scss', 'utf-8');
+  assert(scss.includes('@keyframes orb-hint-pulse'), 'keyframes 必须在 base.scss 静态定义');
+  const hints = readFileSync('src/client/modules/orb-chat-hints.ts', 'utf-8');
+  assert(!hints.includes('orb-hint-css'), '禁止恢复 JS 注入 <style> 的老机制（未触发等待提示的页面 keyframes 缺失，脉冲不播）');
+});
