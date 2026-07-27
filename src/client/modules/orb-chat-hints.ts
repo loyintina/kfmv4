@@ -16,6 +16,7 @@
 import { DOM } from './dom-refs.js';
 import { Z } from './z-index-layers.js';
 import { WAITING_HINTS } from '../data/waiting-hints.js';
+import { getFollowBottom } from './chat-dom.js';
 import type { ToolBlock } from './session-client.js';
 
 // ========== 等待提示动画 ==========
@@ -91,8 +92,8 @@ export function startWaitingIndicator(panelEl: HTMLDivElement): () => void {
   pos++;
   timerId = setTimeout(next, 800 + Math.random() * 1400);
 
-  // 等待提示出现时始终滚到底（提示应始终可见）
-  contentArea.scrollTop = contentArea.scrollHeight;
+  // 仅用户本就在底部时追底——否则多轮工具调用的空档会反复把上滑浏览的用户拽回底部
+  if (getFollowBottom()) contentArea.scrollTop = contentArea.scrollHeight;
 
   return function stop(): void {
     stopped = true;
@@ -194,16 +195,18 @@ function renderTodoPanel(todos: Array<{content: string; status: string}>, panelE
   }
   panel.innerHTML = html;
   if (allDone) {
-    if (_todoDismissTimer) {
-      clearTimeout(_todoDismissTimer);
-      _todoDismissTimer = null;
-    }
-  } else {
+    // 全部完成：停留 5s 让用户看到完成态，然后淡出
     if (_todoDismissTimer) {
       clearTimeout(_todoDismissTimer);
       _todoDismissTimer = null;
     }
     _todoDismissTimer = setTimeout(() => { panel.style.opacity = '0'; _lastTodos = null; }, 5000);
+  } else {
+    // 进行中：保持常显，撤销可能残留的淡出计时
+    if (_todoDismissTimer) {
+      clearTimeout(_todoDismissTimer);
+      _todoDismissTimer = null;
+    }
   }
 }
 
@@ -220,4 +223,8 @@ export function updateTodoFromTool(tc: ToolBlock): void {
   if (tc.name !== 'todo' || !tc.result || tc.result.isError) return;
   const todos = (tc.input?.todos as Array<{content: string; status: string}> | undefined) || [];
   _lastTodos = todos.length > 0 ? todos : null;
+  // v8 拆分搬运事故修复：这里必须接通渲染（曾只写 _lastTodos，面板永不出现）。
+  // 面板引用走 DOM.orbPanel（initOrb 时 ensurePanel 已保证存在），不依赖调用方传参。
+  const panelEl = DOM.orbPanel;
+  if (panelEl && _lastTodos) renderTodoPanel(_lastTodos, panelEl);
 }

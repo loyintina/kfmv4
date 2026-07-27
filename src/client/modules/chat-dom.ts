@@ -5,10 +5,17 @@
  * 永不全量重建。历史消息的 DOM 节点一旦创建就不再触碰。
  *
  * 渲染时机：
- *   - 流式 text_delta：追加裸文本（打字机效果）
+ *   - 流式 text_delta：追加裸文本（打字机效果）；跟随滚动经 rAF 合批，
+ *     每帧至多滚一次（见「滚动」节 _maybeScroll），显式 scrollToBottom 仍同步
  *   - content_block_stop（text）：跑 markdown 管线（marked + hljs + math + mermaid）
- *   - tool_result：按工具类型渲染富输出（write/edit/grep/glob/通用）
+ *   - tool_result：按工具类型渲染富输出（write/edit/grep/glob/通用；
+ *     实时到达时通用输出走 500ms 打字机 reveal，v7.2.0 UX 特性恢复）
  *   - mountAiMessage（历史加载）：直接渲染最终态
+ *
+ * 交互杂项（v8.1 恢复 v7 行为）：
+ *   - 复制按钮：contentArea 事件委托（v8.0 只建按钮未接处理，纯装饰）
+ *   - 工具执行期摸鱼提示每 1.5s 轮换（_hintTimers，tool_result 到达即停，
+ *     clearChatDom 全清）
  *
  * 历史挂载成本控制（v8.1 性能三层）：
  *   1. 窗口化挂载：调用方（orb.ts）只挂载末尾一个窗口的消息，滚动近顶部时
@@ -54,6 +61,8 @@ let _panelEl: HTMLDivElement | null = null;
 let _contentArea: HTMLElement | null = null;
 const _messageEls: HTMLElement[] = [];
 const _toolEls: Map<string, ToolEls> = new Map();
+// blockId → 摸鱼提示轮换计时器（工具执行期每 1.5s 换一条，tool_result 到达即停）
+const _hintTimers = new Map<string, ReturnType<typeof setInterval>>();
 let _currentMsgIdx = -1;
 let _toolCountInMsg = 0;
 let _followBottom = true;
@@ -78,6 +87,8 @@ export function clearChatDom(): void {
   if (_contentArea) _contentArea.innerHTML = '';
   _messageEls.length = 0;
   _toolEls.clear();
+  for (const t of _hintTimers.values()) clearInterval(t);
+  _hintTimers.clear();
   _foldState.clear();
   _currentMsgIdx = -1;
   _toolCountInMsg = 0;
@@ -176,6 +187,22 @@ function _attachScrollWatch(ca: HTMLElement): void {
     _touchY = y;
   }, { passive: true });
   ca.addEventListener('wheel', (e) => { if (e.deltaY < 0) _followBottom = false; }, { passive: true });
+
+  // 消息复制按钮：事件委托一次注册，覆盖所有动态挂载的消息
+  // （v8.0 只创建了按钮没接处理，纯装饰——v8.1 恢复 v7 行为）
+  ca.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('.orb-copy-btn') as HTMLElement | null;
+    if (!btn) return;
+    const msgEl = btn.closest('.orb-msg');
+    if (!msgEl) return;
+    const text = Array.from(msgEl.querySelectorAll('.orb-msg-text'))
+      .map(el => el.textContent || '').join('\n\n');
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = '✓ 已复制';
+      setTimeout(() => { btn.textContent = '复制'; }, 1200);
+    }).catch(() => {});
+  });
 }
 
 export function scrollToBottom(): void {
@@ -183,8 +210,18 @@ export function scrollToBottom(): void {
   if (_contentArea) _contentArea.scrollTop = _contentArea.scrollHeight;
 }
 
+// 流式滚动 rAF 合批：text_delta 高频到达，每个 delta 同步 scrollToBottom
+// 会读 scrollHeight 触发强制 reflow；改为只调度，rAF 回调里复查状态再滚。
+// scrollToBottom 本身保持同步语义（expandPanel/resumeScroll 依赖立即滚动）。
+let _scrollRafScheduled = false;
+
 function _maybeScroll(): void {
-  if (_followBottom) scrollToBottom();
+  if (!_followBottom || _scrollSuspend > 0 || _scrollRafScheduled) return;
+  _scrollRafScheduled = true;
+  requestAnimationFrame(() => {
+    _scrollRafScheduled = false;
+    if (_followBottom && _scrollSuspend === 0) scrollToBottom();
+  });
 }
 
 // ========== 摸鱼提示 ==========
@@ -245,6 +282,24 @@ function _renderMarkdown(textEl: HTMLElement, text: string): void {
 
 // ========== 工具输出富渲染 ==========
 
+// 工具结果打字机 reveal（v7.2.0 UX 特性恢复）：500ms 内放完，长文本加大步长。
+// 仅实时 tool_result 使用（animate=true）；历史挂载直接渲染最终态。
+function _typewriterReveal(el: HTMLElement, full: string, done?: () => void): void {
+  const TICK = 50;
+  const step = Math.max(1, Math.ceil(full.length / (500 / TICK)));
+  let i = 0;
+  const timer = setInterval(() => {
+    i += step;
+    if (i >= full.length) {
+      el.textContent = full;
+      clearInterval(timer);
+      done?.();
+      return;
+    }
+    el.textContent = full.slice(0, i);
+  }, TICK);
+}
+
 const _EXT_LANG: Record<string, string> = {
   ts: 'typescript', tsx: 'typescript', js: 'javascript', jsx: 'javascript', mjs: 'javascript',
   py: 'python', sh: 'bash', bash: 'bash', zsh: 'bash', json: 'json', html: 'html', xml: 'xml',
@@ -271,8 +326,8 @@ function _unescapeNL(s: string): string {
 
 const PRE_STYLE = 'font-size:var(--card-font-size,9px);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;background:rgba(0,0,0,0.2);padding:4px 6px;border-radius:4px;color:rgba(255,255,255,0.6);max-height:80px;overflow-y:auto';
 
-/** 渲染工具输出区（按工具类型分发） */
-function _renderToolOutput(outputArea: HTMLElement, toolName: string, input: Record<string, unknown>, resultText: string, isError: boolean, details?: Record<string, unknown>): void {
+/** 渲染工具输出区（按工具类型分发）。animate=true 时通用输出走打字机 reveal（仅实时 tool_result） */
+function _renderToolOutput(outputArea: HTMLElement, toolName: string, input: Record<string, unknown>, resultText: string, isError: boolean, details?: Record<string, unknown>, animate = false): void {
   outputArea.innerHTML = '';
 
   if ((toolName === 'write' || toolName === 'edit') && !isError) {
@@ -291,13 +346,15 @@ function _renderToolOutput(outputArea: HTMLElement, toolName: string, input: Rec
     if (lang && resultText) {
       const code = document.createElement('code');
       code.className = 'language-' + lang;
-      code.textContent = _unescapeNL(resultText);
       pre.appendChild(code);
       outputArea.appendChild(pre);
-      highlightCode(code);
+      const text = _unescapeNL(resultText);
+      if (animate) _typewriterReveal(code, text, () => highlightCode(code));
+      else { code.textContent = text; highlightCode(code); }
     } else {
-      pre.textContent = resultText || '(无结果)';
       outputArea.appendChild(pre);
+      if (animate) _typewriterReveal(pre, resultText || '(无结果)');
+      else pre.textContent = resultText || '(无结果)';
     }
   }
 }
@@ -577,6 +634,10 @@ function _createToolCard(msgEl: HTMLElement, mi: number, ti: number, blockId: st
 
   const outputArea = _el('div', '', 'color:rgba(255,255,255,0.75);font-size:var(--card-font-size,9px);line-height:1.4;padding:2px 0');
   outputArea.innerHTML = HINT_DOT_HTML + _escapeHtml(_randomHint());
+  // 执行期间每 1.5s 轮换摸鱼提示（v7 getToolHint 轮换语义恢复），tool_result 到达即停
+  _hintTimers.set(blockId, setInterval(() => {
+    outputArea.innerHTML = HINT_DOT_HTML + _escapeHtml(_randomHint());
+  }, 1500));
 
   contentEl.appendChild(inputPre);
   contentEl.appendChild(divider);
@@ -745,6 +806,9 @@ export function patchEvent(event: StreamEvent): void {
       if (mi < 0) break;
       const els = _toolEls.get(event.toolUseId || '');
       if (els) {
+        // 结果到达：停摸鱼提示轮换
+        const ht = _hintTimers.get(event.toolUseId || '');
+        if (ht) { clearInterval(ht); _hintTimers.delete(event.toolUseId || ''); }
         const isError = !!event.toolResult?.isError;
         els.statusEl.textContent = isError ? '失败' : '成功';
         els.statusEl.style.color = isError ? 'rgba(255,100,100,0.8)' : 'rgba(0,212,115,0.8)';
@@ -753,7 +817,7 @@ export function patchEvent(event: StreamEvent): void {
           const text = event.toolResult?.content?.[0]?.text || '';
           const toolName = els.header.querySelector('span:nth-child(2)')?.textContent || '';
           const input = _getToolInput(els.inputPre);
-          _renderToolOutput(els.outputArea, toolName, input, text, isError, event.toolResult?.details);
+          _renderToolOutput(els.outputArea, toolName, input, text, isError, event.toolResult?.details, true);
         }
 
         // 折叠

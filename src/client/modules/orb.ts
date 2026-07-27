@@ -34,7 +34,7 @@ import { log } from './logger.js';
 import { sessionStore } from './session-client.js';
 import { buildPanelContent } from './orb-panel.js';
 import { doSend, resumeRun, readPersistedRun, clearPersistedRun, clearTodoPanel, startWaitingIndicator, setEventHook, type ChatMessage } from './orb-chat.js';
-import { initChatDom, patchEvent, clearChatDom, mountUserMessage, mountAiMessage, scrollToBottom, suspendScroll, resumeScroll, withScrollAnchor, setHistoryLoader } from './chat-dom.js';
+import { initChatDom, patchEvent, clearChatDom, mountUserMessage, mountAiMessage, scrollToBottom, suspendScroll, resumeScroll, withScrollAnchor, setHistoryLoader, getFollowBottom, setFollowBottom } from './chat-dom.js';
 import type { OrbState } from './orb-state.js';
 const API_BASE = window.location.pathname.replace(/\/+$/, '') + '/api/';
 
@@ -96,9 +96,10 @@ function getInputBarTop(): number {
 }
 
 // 模块级聊天渲染桥接（v8：增量 DOM，resize 时只需滚动）
+// v8.1：仅 followBottom 时追底——拖拽/编辑松手不应把上滑浏览的用户拽回底部。
 function _renderChat(): void {
   if (!panelEl) return;
-  scrollToBottom();
+  if (getFollowBottom()) scrollToBottom();
 }
 
 // ========== 历史消息窗口化挂载（v8.1） ==========
@@ -574,8 +575,13 @@ export async function initOrb(): Promise<void> {
   const sendBtn = DOM.aiSendBtn;
   if (inputEl && sendBtn) {
     const base = window.location.pathname.replace(/\/+$/, '') + '/api/';
-    const _renderChat = (_scrollMode: 'follow' | 'preserve' | 'auto' = 'auto') => {
-      scrollToBottom();
+    // scrollMode 语义（v8.1 恢复 v7 契约）：
+    //   follow  = 强制追底（发送/首轮渲染），并重新附着底部
+    //   auto    = 仅用户本就在底部时追底（流式事件默认；上滑浏览时不拽回）
+    //   preserve= 不动（DOM 持久化后视觉位置天然保持，无需补偿）
+    const _renderChat = (scrollMode: 'follow' | 'preserve' | 'auto' = 'auto') => {
+      if (scrollMode === 'follow') { setFollowBottom(true); scrollToBottom(); }
+      else if (scrollMode === 'auto' && getFollowBottom()) scrollToBottom();
     };
     setEventHook(patchEvent);
     sessionStore.init(base);

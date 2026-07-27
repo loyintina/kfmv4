@@ -27,6 +27,7 @@ export const DOM = {
   // ===== JS 动态创建的元素 =====
   get treeCanvas()        { return document.getElementById("tree-canvas") as HTMLCanvasElement | null; },
   get sidebarTouchArea()  { return document.getElementById("sidebarTouchArea"); },
+  get orbPanel()          { return document.getElementById("orbPanel") as HTMLDivElement | null; },
 
 
   // ===== querySelector 模式（参数化，不走 getElementById） =====
