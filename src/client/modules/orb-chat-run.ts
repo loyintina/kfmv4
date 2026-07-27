@@ -1,0 +1,515 @@
+/**
+ * orb-chat-run.ts — 持久化运行态 + 流消费 + 重连
+ *
+ * 从 orb-chat.ts 拆分（v8 审计：706 行 → 3 文件）。
+ * 职责：
+ *   - 持久化运行态（runId/cursor/sessionId + localStorage 跨刷新恢复）
+ *   - SSE 流消费（_applyEvent 状态变更 + _consumeRun 流读取）
+ *   - 自动重连（_consumeWithReconnect 指数退避）
+ *   - 收尾逻辑（_finalizeRun + settlePendingToolBlocks + _cancelPendingTools）
+ *   - 公开 API（resumeRun + doSend）
+ *
+ * 依赖：
+ *   - orb-chat-hints（clearToolHint + updateTodoFromTool）
+ *   - session-client（会话管理）
+ *   - KFMState + loadFileTree（文件树刷新）
+ */
+
+import { KFMState } from './state.js';
+import { loadFileTree } from './tree-loader.js';
+import { sessionStore } from './session-client.js';
+import type { ContentBlock, TextBlock, ToolBlock, RuleWarningBlock } from './session-client.js';
+import { clearToolHint, updateTodoFromTool } from './orb-chat-hints.js';
+
+// ========== 类型 ==========
+
+export type { ContentBlock, TextBlock, ToolBlock, RuleWarningBlock };
+
+/** 消息结构：content 是 block 数组，一次 AI 回复 = 一条消息 = 多个 block */
+export interface ChatMessage {
+  role: 'user' | 'ai';
+  content: ContentBlock[];
+}
+
+/** 流式事件（服务端 → 客户端 SSE 协议） */
+interface StreamEvent {
+  type: 'message_start' | 'message_stop' | 'content_block_start' | 'content_block_delta' | 'content_block_stop' | 'tool_result' | 'rule_warning' | 'error' | 'done';
+  index?: number;
+  blockType?: 'text' | 'tool_use';
+  toolUseId?: string;
+  toolName?: string;
+  deltaType?: 'text_delta' | 'thinking_delta' | 'input_json_delta';
+  deltaText?: string;
+  toolResult?: { content: Array<{ type: string; text?: string }>; isError?: boolean };
+  filesChanged?: boolean;
+  content?: string;
+}
+
+// ========== 持久化挂机运行态 ==========
+// 当前活跃 runId（服务端后台生成任务）。刷新/切后台后据此重连续读。
+let _activeRunId: string | null = null;
+let _activeCursor = 0; // 已消费到的事件 index（重连从此续读）
+let _sendSessionId = ''; // doSend 时传入的 sessionId
+
+export function getActiveRunId(): string | null {
+  return _activeRunId;
+}
+
+export function getActiveCursor(): number {
+  return _activeCursor;
+}
+// ========== v8 事件钩子 ==========
+// orb.ts 注入 chat-dom.patchEvent，每个 SSE 事件在 _applyEvent（状态层）之后
+// 额外调此钩子做增量 DOM 投影。
+let _eventHook: ((event: unknown) => void) | null = null;
+
+export function setEventHook(fn: ((event: unknown) => void) | null): void {
+  _eventHook = fn;
+}
+
+
+// localStorage 持久化：{sessionId, runId} —— 跨刷新/切后台/杀浏览器重启后据此重连。
+// 用 localStorage 而非 sessionStorage：后者随标签页/浏览器关闭清空，杀浏览器就丢了。
+const RUN_KEY = 'kfm-active-run';
+
+function _persistActiveRun(sessionId: string, runId: string | null): void {
+  try {
+    if (runId) localStorage.setItem(RUN_KEY, JSON.stringify({ sessionId, runId }));
+    else localStorage.removeItem(RUN_KEY);
+  } catch { /* ignore */ }
+}
+
+/** 读取上次未完成的 run（供 orb.ts 页面恢复时重连）。 */
+export function readPersistedRun(): { sessionId: string; runId: string } | null {
+  try {
+    const raw = localStorage.getItem(RUN_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+export function clearPersistedRun(): void {
+  try { localStorage.removeItem(RUN_KEY); } catch { /* ignore */ }
+}
+
+// ========== 流消费 ==========
+
+/** 流消费上下文：把事件应用到 messages 所需的回调与状态 */
+interface RunConsumeCtx {
+  messages: ChatMessage[];
+  onRender: () => void;
+  onWait?: (waiting: boolean) => void;
+  getMsgIdx: () => number;
+  setMsgIdx: (i: number) => void;
+}
+
+/** 把单个 StreamEvent 应用到 messages（纯状态变更，不含渲染节流） */
+function _applyEvent(event: StreamEvent, ctx: RunConsumeCtx): void {
+  const { messages, onWait } = ctx;
+  let msgIdx = ctx.getMsgIdx();
+  switch (event.type) {
+    case 'message_start': {
+      // 不在此处停等待提示：推理模型（如 deepseek-v4-pro）message_start 后
+      // 首个 thinking_delta 可能延迟很久，过早停提示会留下空白。改为首个
+      // 实际内容（正文/思考 delta 或工具块）到达时才停（见下方各 case）。
+      messages.push({ role: 'ai', content: [] });
+      ctx.setMsgIdx(messages.length - 1);
+      break;
+    }
+    case 'message_stop': {
+      onWait?.(true);
+      break;
+    }
+    case 'content_block_start': {
+      if (msgIdx < 0) break;
+      const { index, blockType, toolUseId, toolName } = event;
+      if (blockType === 'text') {
+        messages[msgIdx].content[index!] = { type: 'text', text: '', reasoning: '' };
+      } else if (blockType === 'tool_use') {
+        onWait?.(false); // 工具块到达 = 有实际内容，停等待提示
+        messages[msgIdx].content[index!] = { type: 'tool', id: toolUseId || '', name: toolName || 'unknown', input: {} };
+      }
+      break;
+    }
+    case 'content_block_delta': {
+      if (msgIdx < 0) break;
+      const { index, deltaType, deltaText } = event;
+      const block = messages[msgIdx].content[index!];
+      if (!block) break;
+      if (deltaType === 'text_delta' && block.type === 'text') {
+        onWait?.(false); // 首个正文 delta = 内容开始，停等待提示
+        block.text += deltaText || '';
+      } else if (deltaType === 'thinking_delta' && block.type === 'text') {
+        onWait?.(false); // 首个思考 delta = 推理开始，停等待提示（推理模型关键路径）
+        block.reasoning = (block.reasoning || '') + (deltaText || '');
+      } else if (deltaType === 'input_json_delta' && block.type === 'tool') {
+        const buf = ((block as ToolBlock & { _jsonBuf?: string })._jsonBuf || '') + (deltaText || '');
+        (block as ToolBlock & { _jsonBuf?: string })._jsonBuf = buf;
+      }
+      break;
+    }
+    case 'content_block_stop': {
+      if (msgIdx < 0) break;
+      const { index } = event;
+      const block = messages[msgIdx].content[index!];
+      if (block?.type === 'tool' && (block as ToolBlock & { _jsonBuf?: string })._jsonBuf) {
+        let parsed: Record<string, unknown> = {};
+        try { parsed = JSON.parse((block as ToolBlock & { _jsonBuf: string })._jsonBuf); } catch {}
+        block.input = parsed;
+        delete (block as ToolBlock & { _jsonBuf?: string })._jsonBuf;
+      }
+      break;
+    }
+    case 'tool_result': {
+      if (msgIdx < 0) break;
+      const toolBlock = messages[msgIdx].content.find(
+        (b): b is ToolBlock => b?.type === 'tool' && b.id === event.toolUseId
+      );
+      if (toolBlock) {
+        toolBlock.result = event.toolResult;
+        updateTodoFromTool(toolBlock);
+        clearToolHint(toolBlock.id);
+      }
+      // 服务端目录指纹检测到文件系统变化 → 刷新文件树
+      if (event.filesChanged) {
+        loadFileTree(KFMState.currentRoot);
+      }
+      break;
+    }
+    case 'rule_warning': {
+      if (msgIdx < 0) break;
+      messages[msgIdx].content.push({ type: 'rule_warning', content: event.content || '' } as RuleWarningBlock);
+      break;
+    }
+    case 'error': {
+      if (msgIdx < 0) {
+        messages.push({ role: 'ai', content: [{ type: 'text', text: '[错误: ' + event.content + ']' }] });
+        ctx.setMsgIdx(messages.length - 1);
+        break;
+      }
+      const tb = messages[msgIdx].content.find((b): b is TextBlock => b?.type === 'text');
+      if (tb) tb.text += '\n\n[错误: ' + event.content + ']';
+      else messages[msgIdx].content.push({ type: 'text', text: '[错误: ' + event.content + ']' });
+      break;
+    }
+  }
+}
+
+/**
+ * 消费一个 run 的 SSE 续读流（{index,event} 信封）。
+ * 从服务端补齐 fromIndex 起的事件 + 实时尾随，更新 _activeCursor。
+ * 客户端断开（signal abort / 页面关闭）不影响服务端后台生成。
+ * 返回 'done'（生成完成）| 'disconnected'（本次连接中断，run 可能仍在跑）。
+ */
+async function _consumeRun(
+  apiBase: string, runId: string, fromIndex: number,
+  signal: AbortSignal, ctx: RunConsumeCtx,
+): Promise<'done' | 'disconnected'> {
+  const res = await fetch(apiBase + 'ai/chat/' + runId + '/stream?from=' + fromIndex, { signal });
+  const reader = res.body?.getReader();
+  if (!reader) throw new Error('无响应体');
+  const decoder = new TextDecoder();
+  let buffer = '';
+  while (true) {
+    let chunk: ReadableStreamReadResult<Uint8Array>;
+    try {
+      chunk = await reader.read();
+    } catch (e) {
+      // 网络中断（切后台被挂起/断网）→ 视为断连，交给上层重连，不当硬错误
+      if (signal.aborted) throw e; // 用户主动取消，照常上抛
+      return 'disconnected';
+    }
+    const { done, value } = chunk;
+    if (done) return 'disconnected';
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const jsonStr = line.slice(6).trim();
+      if (!jsonStr) continue;
+      try {
+        const env = JSON.parse(jsonStr) as { type?: string; index?: number; event?: StreamEvent };
+        if (env.type === '__end__') return 'done';
+        const event = env.event;
+        if (!event) continue;
+        if (typeof env.index === 'number') _activeCursor = env.index + 1;
+        _applyEvent(event, ctx);
+        _eventHook?.(event);
+        if (
+          event.type === 'message_start' ||
+          (event.type === 'content_block_start' && event.blockType === 'tool_use') ||
+          event.type === 'tool_result' ||
+          event.type === 'rule_warning'
+        ) { ctx.onRender(); }
+      } catch {}
+    }
+  }
+}
+
+/**
+ * 带自动重连的续读：断连（切后台/网络抖动）后，只要服务端该 run 仍存活，
+ * 就从当前 cursor 续读补齐，最多重试若干次（指数退避）。用户主动取消或 run
+ * 已消失则停止。返回最终状态。
+ */
+async function _consumeWithReconnect(
+  apiBase: string, runId: string, startFrom: number,
+  signal: AbortSignal, ctx: RunConsumeCtx,
+): Promise<'done' | 'gone'> {
+  let from = startFrom;
+  let attempt = 0;
+  while (true) {
+    if (signal.aborted) return 'gone';
+    let result: 'done' | 'disconnected';
+    try {
+      result = await _consumeRun(apiBase, runId, from, signal, ctx);
+    } catch (e) {
+      if (signal.aborted) throw e;
+      result = 'disconnected';
+    }
+    if (result === 'done') return 'done';
+    // 断连：从已消费到的 cursor 续读
+    from = _activeCursor;
+    // 校验服务端 run 是否还在
+    try {
+      const chk = await fetch(apiBase + 'ai/chat/' + runId + '/status').then(r => r.json()) as { done?: boolean; exists?: boolean };
+      if (chk.done) {
+        // 已完成：再补一次剩余事件即返回
+        await _consumeRun(apiBase, runId, from, signal, ctx).catch(() => {});
+        return 'done';
+      }
+      if (!chk.exists) return 'gone';
+    } catch {
+      if (++attempt > 5) return 'gone';
+    }
+    // 指数退避重连（0.3s、0.6s、1.2s… 上限 3s）
+    const delay = Math.min(300 * 2 ** attempt, 3000);
+    attempt++;
+    await new Promise(r => setTimeout(r, delay));
+  }
+}
+
+// ========== 收尾逻辑 ==========
+
+/** 生成完成后的收尾：去除临时字段 + 标记未完成工具块 */
+async function _finalizeRun(messages: ChatMessage[], msgIdx: number): Promise<void> {
+  if (msgIdx < 0) {
+    messages.push({ role: 'ai', content: [{ type: 'text', text: '[未收到回复，请重试]' }] });
+  } else if (messages[msgIdx] && messages[msgIdx].content.length === 0) {
+    messages[msgIdx].content.push({ type: 'text', text: '[未收到回复，请重试]' });
+  }
+  // 收尾任何仍无 result 的工具块（流已结束，如上游 error 中断时工具未返回结果）——
+  // 否则渲染判 isExecuting=!result 会让工具卡永久卡"忙碌中"（BAR-105 同类，error 触发路径）。
+  settlePendingToolBlocks(messages, '(未完成)');
+  for (const m of messages) {
+    for (const b of m.content) {
+      if (b?.type === 'tool') clearToolHint((b as ToolBlock).id);
+      if (b?.type === 'text') delete (b as TextBlock & { _reasonExpanded?: boolean })._reasonExpanded;
+    }
+  }
+  // v8: 持久化由服务端 SessionStore 接管（run-manager finally flush），客户端不再双写。
+}
+
+/**
+ * 收尾纯逻辑（BAR-105 核心，抽出为可测函数）：给所有仍处于"执行中"
+ * （无 result）的工具块打上结果，使其从"忙碌中"变完成态（渲染判 isExecuting=!result）。
+ * 已有 result 的工具块不覆盖。返回被标记的工具块数。
+ *
+ * @param label 收尾文案：取消路径传 "(已取消)"，流结束/中断路径传 "(未完成)"。
+ *
+ * 纯函数：只改 content 数组里工具块的 result + 清 UI-only 动画字段，
+ * 不碰计时器/toolHint（那些 DOM 副作用留在调用方）。
+ */
+export function settlePendingToolBlocks(messages: ChatMessage[], label: string): number {
+  let settled = 0;
+  for (const m of messages) {
+    for (const b of m.content) {
+      if (b?.type === 'tool') {
+        const tb = b as ToolBlock;
+        if (!tb.result) {
+          tb.result = { content: [{ type: 'text', text: label }], isError: true };
+          settled++;
+        }
+        delete (b as ToolBlock & { _userExpanded?: boolean })._userExpanded;
+      }
+    }
+  }
+  return settled;
+}
+
+/** 取消时收尾：清 toolHint（DOM 副作用），再调纯函数标记未完成工具块。 */
+function _cancelPendingTools(messages: ChatMessage[]): void {
+  for (const m of messages) {
+    for (const b of m.content) {
+      if (b?.type === 'tool') clearToolHint((b as ToolBlock).id);
+    }
+  }
+  settlePendingToolBlocks(messages, '(已取消)');
+}
+
+// ========== 公开 API ==========
+
+/**
+ * 重连一个已存在的后台 run（页面刷新/切后台恢复后调用）。
+ * 从 fromIndex 续读补齐已错过的事件 + 实时尾随到完成。
+ */
+export async function resumeRun(
+  apiBase: string, runId: string, fromIndex: number,
+  messages: ChatMessage[], signal: AbortSignal,
+  onRender: () => void, onWait?: (waiting: boolean) => void,
+): Promise<void> {
+  _activeRunId = runId;
+  let msgIdx = -1;
+  // 重连时 messages 已含历史；新 AI 消息由 message_start 追加。msgIdx 从末尾 AI 消息推断。
+  const ctx: RunConsumeCtx = {
+    messages, onRender, onWait,
+    getMsgIdx: () => msgIdx, setMsgIdx: (i) => { msgIdx = i; },
+  };
+  try {
+    await _consumeWithReconnect(apiBase, runId, fromIndex, signal, ctx);
+    _activeRunId = null;
+    _persistActiveRun('', null);
+    // 无条件落盘——无论流正常结束(done)还是 run 消失(gone/服务重启)
+    await _finalizeRun(messages, msgIdx);
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      // 用户在重连态点暂停 → 通知服务端取消后台 run（彻底停止生成）
+      fetch(apiBase + 'ai/chat/' + runId + '/cancel', { method: 'POST' }).catch(() => {});
+      _persistActiveRun('', null);
+      _cancelPendingTools(messages);
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg?.role === 'ai') lastMsg.content.push({ type: 'text', text: '[已取消]' });
+    }
+    _activeRunId = null;
+  }
+  onWait?.(false);
+  onRender();
+}
+
+/** 从 ChatMessage 中提取纯文本 */
+function extractText(msg: ChatMessage): string {
+  return msg.content
+    .filter((b): b is TextBlock => b?.type === 'text')
+    .map(b => b.text)
+    .join('');
+}
+
+/** 读取活跃配置（provider/model/roleFile） */
+async function readActiveConfig(base: string): Promise<{ providerId?: string; modelId?: string; roleFile?: string }> {
+  try {
+    const res = await fetch(base + 'files/read', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: '.kfmv4/active.json' }),
+    });
+    const data = await res.json() as { content?: string };
+    return data.content ? JSON.parse(data.content) : {};
+  } catch { return {}; }
+}
+
+export async function doSend(
+  text: string,
+  messages: ChatMessage[],
+  apiBase: string,
+  signal: AbortSignal,
+  onBeforeSend: () => void,
+  onRender: () => void,
+  onConfigMissing: (msg: string) => void,
+  onWait?: (waiting: boolean) => void,
+  sessionId = '',
+): Promise<void> {
+  _sendSessionId = sessionId;
+  // 推用户消息（content block 格式）
+  messages.push({ role: 'user', content: [{ type: 'text', text }] });
+  onBeforeSend();
+  // onRender 在这里只是为了让用户消息气泡先出现，不影响 hint（hint 在 orb.ts 里 startWaitingIndicator 之后追加）
+  onRender();
+
+  const config = await readActiveConfig(apiBase);
+  if (!config.providerId) { onConfigMissing('未配置 Provider，请先在 API 卡中添加并选择一个 Provider。'); return; }
+  if (!config.modelId) { onConfigMissing('未选择 Model，请先在 API 卡或光球面板底部选择一个 Model。'); return; }
+
+  // system prompt 不再在客户端组装 —— 改由服务端每轮重组（眼睛系统 v7.4）。
+  // 客户端只把当前角色文件名传给服务端，服务端读角色卡 promptFiles（含动态 page-state.md）。
+  const roleFile = config.roleFile || '';
+  const model = config.modelId;
+  const provider = config.providerId;
+
+  try {
+    // 构建发给 API 的消息（content blocks → OpenAI 格式）。
+    // 会话文件存的是完整 content blocks（含 tool_use + tool_result），
+    // 发给 API 时必须转为 OpenAI 的 tool_calls + role:"tool" 格式。
+    const apiMessages: Array<{ role: string; content: string | null; tool_calls?: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }>; tool_call_id?: string }> = [];
+    for (const m of messages) {
+      if (m.role === 'user') {
+        apiMessages.push({ role: 'user', content: extractText(m) });
+      } else {
+        // AI 消息：拆分 text + tool blocks 为 OpenAI 格式
+        const textBlocks = m.content.filter((b): b is TextBlock => b?.type === 'text');
+        const toolBlocks = m.content.filter((b): b is ToolBlock => b?.type === 'tool');
+        const mainText = textBlocks.map(b => b.text || '').join('');
+        if (toolBlocks.length > 0) {
+          // 有工具调用：assistant 消息带 tool_calls
+          const toolCalls = toolBlocks.map(tc => ({
+            id: tc.id,
+            type: 'function' as const,
+            function: { name: tc.name, arguments: JSON.stringify(tc.input) },
+          }));
+          apiMessages.push({ role: 'assistant', content: mainText || null, tool_calls: toolCalls });
+          // 每个工具结果作为独立的 role:"tool" 消息
+          for (const tc of toolBlocks) {
+            const resultText = tc.result?.content?.map(c => c.text || '').join('') || '';
+            apiMessages.push({ role: 'tool', content: resultText, tool_call_id: tc.id });
+          }
+        } else {
+          apiMessages.push({ role: 'assistant', content: mainText });
+        }
+      }
+    }
+
+    // 先落盘用户消息，保证刷新/切后台后能恢复（AI 回复由重连续读补齐）
+    // saveMessages 会在 activeId 为空时自动新建会话——同步回 _sendSessionId，
+    // 否则删除最后一个会话后再发送会带空 sessionId 触发服务端 400。
+    await sessionStore.saveMessages(messages, model, provider);
+    if (!_sendSessionId) _sendSessionId = sessionStore.activeId;
+
+    // 后台启动生成任务（服务端挂机），拿 runId
+    const startRes = await fetch(apiBase + 'ai/chat/start', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId: _sendSessionId, messages: apiMessages, model, provider, roleFile }),
+      signal,
+    });
+    const startData = await startRes.json() as { runId?: string; fromIndex?: number; error?: string };
+    if (!startData.runId) { throw new Error(startData.error || '启动生成失败'); }
+    _activeRunId = startData.runId;
+    _persistActiveRun(_sendSessionId, startData.runId);
+
+    let msgIdx = -1;
+    const ctx: RunConsumeCtx = {
+      messages, onRender, onWait,
+      getMsgIdx: () => msgIdx, setMsgIdx: (i) => { msgIdx = i; },
+    };
+    await _consumeWithReconnect(apiBase, startData.runId, startData.fromIndex || 0, signal, ctx);
+    // 流结束：最后一轮 message_stop 会把等待提示打开，此处立即关闭，
+    // 避免 _finalizeRun 的落盘网络往返期间残留一个多余的等待框。
+    onWait?.(false);
+    _activeRunId = null;
+    _persistActiveRun(_sendSessionId, null);
+    // 无条件落盘——无论流正常结束(done)还是 run 消失(gone/服务重启)，
+    // 已渲染在面板上的 AI 回复都应该持久化，否则刷新后永久丢失。
+    await _finalizeRun(messages, msgIdx);
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      // 用户主动取消：通知服务端取消后台 run
+      if (_activeRunId) { fetch(apiBase + 'ai/chat/' + _activeRunId + '/cancel', { method: 'POST' }).catch(() => {}); _activeRunId = null; }
+      _persistActiveRun(_sendSessionId, null);
+      // 收尾未完成的工具卡（从"忙碌中"→已取消→折叠），并追加取消标注
+      _cancelPendingTools(messages);
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg?.role === 'ai') lastMsg.content.push({ type: 'text', text: '[已取消]' });
+    } else {
+      messages.push({ role: 'ai', content: [{ type: 'text', text: '请求失败: ' + (e instanceof Error ? e.message : '未知错误') }] });
+    }
+  }
+  // 流彻底结束（成功/错误/取消）：确保等待提示已停
+  onWait?.(false);
+  onRender();
+}
