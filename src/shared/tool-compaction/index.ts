@@ -87,12 +87,21 @@ export function compactToolResult(
   switch (name) {
     case 'bash': {
       const cmd = trunc(str(input.command), 60);
-      return `[bash: ${cmd} → ${isError ? '失败' : '成功'}，${lines}行输出已折叠]`;
+      if (!isError) return `[bash: ${cmd} → 成功，${lines}行输出已折叠]`;
+      // 失败 = 诊断证据（重跑可能昂贵/有副作用/不可复现）：确定性保留尾部 200 字符
+      // （stderr 惯例错误信息在末尾）。换行压为 ⏎——压缩行单行契约不可破坏。
+      const tail = resultText.slice(-200).replace(/\n/g, '⏎');
+      return `[bash: ${cmd} → 失败，${lines}行输出已折叠，尾部: …${tail}]`;
     }
     case 'read': {
-      // KB = 1000 字符（对齐契约示例：41,203 字符 → 41.2KB）
-      const kb = (resultText.length / 1000).toFixed(1);
-      return `[read ${str(input.path)} → ${kb}KB，可用 read 重读]`;
+      // 指纹对（行数+字符数）：同一路径两条压缩行指纹不同 = 两次读取之间文件被修改，
+      // AI 看历史即可推断——LLM 不会自发对比元数据，显式提示才会进思考链。
+      // 截断标记：read 工具 >100KB 截断/采样时结果自带标记（omp/read.ts），
+      // 必须透传——否则 AI 误以为自己看过全文。
+      let note = '';
+      if (resultText.includes('仅显示前')) note = '，原读取截断未看全';
+      else if (resultText.includes('采样 (前 ')) note = '，采样读取未看全';
+      return `[read ${str(input.path)} → ${lines}行/${resultText.length}字符${note}，可用 read 重读]`;
     }
     case 'write': {
       const content = str(input.content);

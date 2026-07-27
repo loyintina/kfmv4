@@ -37,9 +37,17 @@ test('bash 成功：[bash: {cmd} → 成功，{n}行输出已折叠]', () => {
   assert(out === '[bash: ls -la → 成功，42行输出已折叠]', `得 ${out}`);
 });
 
-test('bash 失败超 500 字符也压（G3 只保 ≤500），标记「失败」', () => {
+test('bash 失败超 500 字符也压（G3 只保 ≤500），带尾部 200 字符诊断采样', () => {
   const out = compactToolResult('bash', { command: 'npm test' }, chars(501), true);
-  assert(out === '[bash: npm test → 失败，1行输出已折叠]', `得 ${out}`);
+  assert(out === `[bash: npm test → 失败，1行输出已折叠，尾部: …${'x'.repeat(200)}]`, `得 ${out}`);
+});
+
+test('bash 失败尾部采样：换行压为 ⏎（压缩行单行契约），取末尾 200 字符', () => {
+  const tail = 'error TS2307: Cannot find module\n  at src/index.ts(7,52)';
+  const out = compactToolResult('bash', { command: 'npx tsc' }, bigLines(30) + '\n' + tail, true);
+  const wantTail = (bigLines(30) + '\n' + tail).slice(-200).replace(/\n/g, '⏎');
+  assert(out?.includes('⏎') && !out.slice(out.indexOf('尾部:')).includes('\n'), '尾部采样不得含裸换行');
+  assert(out === `[bash: npx tsc → 失败，32行输出已折叠，尾部: …${wantTail}]`, `得 ${out}`);
 });
 
 test('bash 命令 >60 字符截断保留前半', () => {
@@ -48,9 +56,24 @@ test('bash 命令 >60 字符截断保留前半', () => {
   assert(out === `[bash: ${'a'.repeat(60)}… → 成功，5行输出已折叠]`, `得 ${out}`);
 });
 
-test('read：[read {path} → {size}KB，可用 read 重读]（KB=1000 字符，对齐契约示例）', () => {
+test('read：指纹对 {n}行/{c}字符（同路径指纹不同 = 读取间文件被修改）', () => {
   const out = compactToolResult('read', { path: '/src/orb.ts' }, chars(41203), false);
-  assert(out === '[read /src/orb.ts → 41.2KB，可用 read 重读]', `得 ${out}`);
+  assert(out === '[read /src/orb.ts → 1行/41203字符，可用 read 重读]', `得 ${out}`);
+});
+
+test('read：行选择器保留在 path（:275-370），重读能读对段', () => {
+  const body = bigLines(96);
+  const out = compactToolResult('read', { path: '/src/orb.ts:275-370' }, body, false);
+  assert(out === `[read /src/orb.ts:275-370 → 96行/${body.length}字符，可用 read 重读]`, `得 ${out}`);
+});
+
+test('read：截断标记透传（>100KB 截断/采样，AI 需知道自己没看全）', () => {
+  const truncated = chars(400) + '\n\n--- 文件较大 (2.1MB)，仅显示前 100.0KB ---';
+  const out1 = compactToolResult('read', { path: '/big.log' }, truncated, false);
+  assert(out1?.includes('原读取截断未看全'), `截断标记丢失: ${out1}`);
+  const sampled = '📄 /big.log\n大小: 2.1MB\n\n采样 (前 30 行):\n---\n' + bigLines(30);
+  const out2 = compactToolResult('read', { path: '/big.log' }, sampled, false);
+  assert(out2?.includes('采样读取未看全'), `采样标记丢失: ${out2}`);
 });
 
 test('write：[write {path} {lines}行]（行数取入参 content）', () => {
@@ -140,16 +163,16 @@ test('G2：结果恰好 300 字符 → 豁免（返回 null）', () => {
 
 test('G2 边界 +1：结果 301 字符 → 压缩', () => {
   const out = compactToolResult('read', { path: '/a' }, chars(301), false);
-  assert(out === '[read /a → 0.3KB，可用 read 重读]', `得 ${out}`);
+  assert(out === '[read /a → 1行/301字符，可用 read 重读]', `得 ${out}`);
 });
 
 test('G3：失败结果恰好 500 字符 → 豁免', () => {
   assert(compactToolResult('bash', { command: 'ls' }, chars(500), true) === null);
 });
 
-test('G3 边界 +1：失败结果 501 字符 → 压缩', () => {
+test('G3 边界 +1：失败结果 501 字符 → 压缩（带尾部采样）', () => {
   const out = compactToolResult('bash', { command: 'ls' }, chars(501), true);
-  assert(out === '[bash: ls → 失败，1行输出已折叠]', `得 ${out}`);
+  assert(out === `[bash: ls → 失败，1行输出已折叠，尾部: …${'x'.repeat(200)}]`, `得 ${out}`);
 });
 
 test('G3 只保护失败结果：成功结果 400 字符（>300）仍压', () => {
