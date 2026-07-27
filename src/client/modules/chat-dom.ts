@@ -52,6 +52,7 @@ interface ToolEls {
   header: HTMLElement;
   content: HTMLElement;
   inputPre: HTMLElement | null;
+  divider: HTMLElement;
   outputArea: HTMLElement | null;
   statusEl: HTMLElement;
   arrowEl: HTMLElement;
@@ -65,6 +66,9 @@ const _toolEls: Map<string, ToolEls> = new Map();
 const _hintTimers = new Map<string, ReturnType<typeof setInterval>>();
 // mi → 流式 MD 节流计时器（text_delta 期间 ~120ms 重渲染一次，block stop 时取消并跑全管线）
 const _streamMdTimers = new Map<number, ReturnType<typeof setTimeout>>();
+// client block index → blockId：并行工具交错 input_json_delta 时按 event.index 路由
+// 到正确的卡（v7 按 index 寻址；曾一律灌最后一张卡），message_start 时清空
+const _blockToolIds = new Map<number, string>();
 let _currentMsgIdx = -1;
 let _toolCountInMsg = 0;
 let _followBottom = true;
@@ -93,6 +97,7 @@ export function clearChatDom(): void {
   _hintTimers.clear();
   for (const t of _streamMdTimers.values()) clearTimeout(t);
   _streamMdTimers.clear();
+  _blockToolIds.clear();
   _foldState.clear();
   _currentMsgIdx = -1;
   _toolCountInMsg = 0;
@@ -286,7 +291,10 @@ function _cacheSet(cache: Map<string, string>, key: string, value: string): void
 }
 
 function _renderMarkdown(textEl: HTMLElement, text: string): void {
-  const cached = _mdCache.get(text);
+  // mermaid 异步渲染，SVG 未就绪就把 innerHTML 写进缓存会存下半成品
+  // （重挂命中后 mermaid 永远显示原始代码）→ 含 mermaid 的文本不读不写缓存（v7 行为）
+  const hasMermaid = /```mermaid/.test(text);
+  const cached = hasMermaid ? undefined : _mdCache.get(text);
   if (cached !== undefined) {
     textEl.innerHTML = cached;
     return;
@@ -301,7 +309,7 @@ function _renderMarkdown(textEl: HTMLElement, text: string): void {
     renderMath(mdBody, mathData);
     renderMermaid(mdBody, '#00d4ff');
   }
-  _cacheSet(_mdCache, text, textEl.innerHTML);
+  if (!hasMermaid) _cacheSet(_mdCache, text, textEl.innerHTML);
 }
 
 // 流式实时 MD（替代"先裸奔 md 源码、block stop 时突变"）：
@@ -359,6 +367,8 @@ function _typewriterReveal(el: HTMLElement, full: string, done?: () => void): vo
       return;
     }
     el.textContent = full.slice(0, i);
+    // 每帧滚底：长输出始终显示最新几行（v7 行为；el 不可滚动时赋值无副作用）
+    el.scrollTop = el.scrollHeight;
   }, TICK);
 }
 
@@ -388,18 +398,37 @@ function _unescapeNL(s: string): string {
 
 const PRE_STYLE = 'font-size:var(--card-font-size,9px);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;background:rgba(0,0,0,0.2);padding:4px 6px;border-radius:4px;color:rgba(255,255,255,0.6);max-height:80px;overflow-y:auto';
 
-/** 渲染工具输出区（按工具类型分发）。animate=true 时通用输出走打字机 reveal（仅实时 tool_result） */
-function _renderToolOutput(outputArea: HTMLElement, toolName: string, input: Record<string, unknown>, resultText: string, isError: boolean, details?: Record<string, unknown>, animate = false): void {
+/**
+ * 渲染工具输出区（按工具类型分发）。animate=true 时通用输出走打字机 reveal（仅实时 tool_result）。
+ * onDone：输出渲染完成的回调——animate=true 由打字机 done 触发，其余分支同步触发
+ * （调用方用它决定折叠时机，防止输出没放完就折叠）。
+ */
+function _renderToolOutput(outputArea: HTMLElement, toolName: string, input: Record<string, unknown>, resultText: string, isError: boolean, details?: Record<string, unknown>, animate = false, onDone?: () => void): void {
   outputArea.innerHTML = '';
 
   if ((toolName === 'write' || toolName === 'edit') && !isError) {
     _renderWriteEditCard(outputArea, toolName, input, resultText, details);
+    onDone?.();
   } else if ((toolName === 'grep' || toolName === 'glob') && !isError) {
     _renderGrepGlobCard(outputArea, toolName, resultText, details);
+    onDone?.();
   } else if (toolName === 'todo' && !isError) {
     const div = _el('div', '', 'color:rgba(255,255,255,0.4);font-size:8px;padding:2px 0');
     div.textContent = '📋 任务列表已更新 — 详见右上角面板';
     outputArea.appendChild(div);
+    onDone?.();
+  } else if (toolName === 'read' && !isError && (_pathExt(input) === 'md' || _pathExt(input) === 'markdown')) {
+    // read 的 markdown 文件 → marked 全管线渲染（v7 行为；.orb-tool-md 样式在 base.css）。
+    // 不走打字机（md 源码逐段放无意义），也不进 _mdCache（避免与正文缓存键混淆）
+    const wrap = _el('div', 'md-body orb-tool-md');
+    outputArea.appendChild(wrap);
+    const mathData: MathData = { display: [], inline: [] };
+    const processed = preprocessMd(_unescapeNL(resultText), mathData);
+    wrap.innerHTML = marked.parse(processed, MARKED_OPTS) as string;
+    highlightAll(wrap);
+    renderMath(wrap, mathData);
+    renderMermaid(wrap, '#00d4ff');
+    onDone?.();
   } else {
     // 通用输出：按扩展名决定是否高亮
     const ext = _pathExt(input);
@@ -411,12 +440,12 @@ function _renderToolOutput(outputArea: HTMLElement, toolName: string, input: Rec
       pre.appendChild(code);
       outputArea.appendChild(pre);
       const text = _unescapeNL(resultText);
-      if (animate) _typewriterReveal(code, text, () => highlightCode(code));
-      else { code.textContent = text; highlightCode(code); }
+      if (animate) _typewriterReveal(code, text, () => { highlightCode(code); onDone?.(); });
+      else { code.textContent = text; highlightCode(code); onDone?.(); }
     } else {
       outputArea.appendChild(pre);
-      if (animate) _typewriterReveal(pre, resultText || '(无结果)');
-      else pre.textContent = resultText || '(无结果)';
+      if (animate) _typewriterReveal(pre, resultText || '(无结果)', onDone);
+      else { pre.textContent = resultText || '(无结果)'; onDone?.(); }
     }
   }
 }
@@ -557,8 +586,11 @@ function _highlightInput(inputPre: HTMLElement): void {
 
 // ========== 消息容器 ==========
 
-function _createMsgContainer(mi: number, role: 'user' | 'ai', atTop = false): HTMLElement {
+function _createMsgContainer(mi: number, role: 'user' | 'ai', atTop = false, animate = false): HTMLElement {
   const msgEl = _el('div', 'orb-msg');
+  // 新到消息滑入动画（v7 行为；orbMsgSlideIn keyframes 在 base.css）。
+  // 仅 live 路径传 true：历史挂载/翻页 prepend 不播，防翻旧消息时整屏闪烁
+  if (animate) msgEl.classList.add('orb-msg-new');
   // 浏览器原生视口裁剪：屏外消息跳过布局/绘制（拖拽光球不触发全面板重栅格化）。
   // 为什么不用 v7 的手工裁剪：见文件头「历史挂载成本控制」第 1 条。
   msgEl.style.cssText = 'content-visibility:auto;contain-intrinsic-size:auto 80px';
@@ -581,8 +613,8 @@ function _createMsgContainer(mi: number, role: 'user' | 'ai', atTop = false): HT
 
 // ========== 用户消息 ==========
 
-export function mountUserMessage(mi: number, text: string, atTop = false): void {
-  const msgEl = _createMsgContainer(mi, 'user', atTop);
+export function mountUserMessage(mi: number, text: string, atTop = false, animate = false): void {
+  const msgEl = _createMsgContainer(mi, 'user', atTop, animate);
   const innerWidth = (_contentArea?.clientWidth || 390) - 24;
   const maxWidth = Math.min(innerWidth - 8, innerWidth * 0.85);
   const bgColor = `linear-gradient(${theme.surface.bgLight},${theme.surface.bgLight}) padding-box,${theme.aiChat.bubbleSelfGradient} border-box`;
@@ -717,7 +749,7 @@ function _createToolCard(msgEl: HTMLElement, mi: number, ti: number, blockId: st
   row.appendChild(card);
   msgEl.appendChild(row);
 
-  const els: ToolEls = { card, header: headerEl, content: contentEl, inputPre, outputArea, statusEl, arrowEl: arrow };
+  const els: ToolEls = { card, header: headerEl, content: contentEl, inputPre, divider, outputArea, statusEl, arrowEl: arrow };
   _toolEls.set(blockId, els);
   return els;
 }
@@ -777,9 +809,10 @@ export function patchEvent(event: StreamEvent): void {
   switch (event.type) {
     case 'message_start': {
       const mi = _messageEls.length;
-      const msgEl = _createMsgContainer(mi, 'ai');
+      const msgEl = _createMsgContainer(mi, 'ai', false, true); // 新到消息播滑入动画
       _currentMsgIdx = mi;
       _toolCountInMsg = 0;
+      _blockToolIds.clear(); // block index → blockId 路由表按消息生命周期重建
       _streamState.set(mi, { msgEl, thinkingPre: null, thinkingLabel: null, thinkingFold: null, textEl: null, textBuf: '', warningCount: 0 });
       _maybeScroll();
       break;
@@ -791,15 +824,13 @@ export function patchEvent(event: StreamEvent): void {
       const st = _streamState.get(mi);
       if (!st) break;
 
-      if (event.blockType === 'text') {
-        const { pre, foldEl, labelEl } = _createThinkingBlock(st.msgEl, mi);
-        st.thinkingPre = pre;
-        st.thinkingFold = foldEl;
-        st.thinkingLabel = labelEl;
-      } else if (event.blockType === 'tool_use') {
+      // text block 开始时不建思考块：非思考模型（全程无 thinking_delta）的回复
+      // 会留下一个内容为空的"已思考"折叠条。思考块懒创建，见 thinking_delta 分支
+      if (event.blockType === 'tool_use') {
         const blockId = event.toolUseId || `tool_${mi}_${_toolCountInMsg}`;
         const els = _createToolCard(st.msgEl, mi, _toolCountInMsg, blockId, event.toolName || 'unknown');
         _toolCountInMsg++;
+        if (typeof event.index === 'number') _blockToolIds.set(event.index, blockId);
         _startToolHint(blockId, els.outputArea); // 执行期摸鱼提示，tool_result 即停
       }
       _maybeScroll();
@@ -812,7 +843,14 @@ export function patchEvent(event: StreamEvent): void {
       const st = _streamState.get(mi);
       if (!st) break;
 
-      if (event.deltaType === 'thinking_delta' && st.thinkingPre) {
+      if (event.deltaType === 'thinking_delta') {
+        // 首个思考 delta 到达才懒创建思考块（v7 行为：reasoning 非空才渲染）
+        if (!st.thinkingPre) {
+          const { pre, foldEl, labelEl } = _createThinkingBlock(st.msgEl, mi);
+          st.thinkingPre = pre;
+          st.thinkingFold = foldEl;
+          st.thinkingLabel = labelEl;
+        }
         st.thinkingPre.textContent += event.deltaText || '';
         st.thinkingPre.scrollTop = st.thinkingPre.scrollHeight;
         _maybeScroll();
@@ -827,9 +865,11 @@ export function patchEvent(event: StreamEvent): void {
         _scheduleStreamingMd(mi, st); // 实时流渲染 md（节流 120ms）
         _maybeScroll();
       } else if (event.deltaType === 'input_json_delta') {
-        const lastToolId = _findLastToolId();
-        if (lastToolId) {
-          const els = _toolEls.get(lastToolId);
+        // 按 event.index 路由到对应工具卡（并行工具交错 delta 时曾一律灌最后一张卡）；
+        // 查不到（旧事件无 index 等）回退最后一张卡
+        const toolId = (typeof event.index === 'number' ? _blockToolIds.get(event.index) : undefined) ?? _findLastToolId();
+        if (toolId) {
+          const els = _toolEls.get(toolId);
           if (els?.inputPre) {
             els.inputPre.textContent += event.deltaText || '';
             els.inputPre.scrollTop = els.inputPre.scrollHeight;
@@ -856,12 +896,21 @@ export function patchEvent(event: StreamEvent): void {
           _maybeScroll();
         }
       } else if (blockIdx > 0) {
-        // tool block 完成 → JSON 高亮该工具的 input
-        const lastToolId = _findLastToolId();
-        if (lastToolId) {
-          const els = _toolEls.get(lastToolId);
-          if (els?.inputPre && els.inputPre.textContent) {
-            _highlightInput(els.inputPre);
+        // tool block 完成 → 按 event.index 找到该工具卡，pretty-print 后 JSON 高亮 input
+        const toolId = _blockToolIds.get(blockIdx) ?? _findLastToolId();
+        if (toolId) {
+          const els = _toolEls.get(toolId);
+          if (els?.inputPre) {
+            const raw = els.inputPre.textContent || '';
+            if (raw) {
+              // 流式累积的是紧凑 JSON，完成后重写为缩进格式再高亮（v7 行为）；
+              // 解析失败（截断/非 JSON）保留原文直接高亮
+              try { els.inputPre.textContent = JSON.stringify(JSON.parse(raw), null, 2); } catch { /* 保留原文 */ }
+              _highlightInput(els.inputPre);
+            }
+            // 无参数工具（如 kfm-snapshot）不显示输入区和分隔线（v7 行为）。
+            // live 路径 input_json 可能晚到，故在 stop 时判断而非 block start
+            _hideEmptyToolInput(els);
           }
         }
       }
@@ -883,18 +932,15 @@ export function patchEvent(event: StreamEvent): void {
           const text = event.toolResult?.content?.[0]?.text || '';
           const toolName = els.header.querySelector('span:nth-child(2)')?.textContent || '';
           const input = _getToolInput(els.inputPre);
-          _renderToolOutput(els.outputArea, toolName, input, text, isError, event.toolResult?.details, true);
-        }
-
-        // 折叠
-        const blockId = event.toolUseId || '';
-        if (!_foldState.get(blockId)) {
-          setTimeout(() => {
+          const blockId = event.toolUseId || '';
+          // 输出放完才折叠（曾 340ms 定时折叠，打字机 reveal 要 500ms——输出没放完就折了）；
+          // animate=true 时由打字机 done 触发，无动画分支同步触发
+          _renderToolOutput(els.outputArea, toolName, input, text, isError, event.toolResult?.details, true, () => {
             if (!_foldState.get(blockId)) {
               els.content.classList.add('collapsed');
               els.arrowEl.textContent = '▶';
             }
-          }, 340);
+          });
         }
 
         // 思考框折叠
@@ -930,14 +976,23 @@ export function patchEvent(event: StreamEvent): void {
 
     case 'error': {
       const mi = _currentMsgIdx;
+      const errText = '[错误: ' + (event.content || '') + ']';
       if (mi < 0) {
         const msgEl = _createMsgContainer(_messageEls.length, 'ai');
         const textEl = _createTextBubble(msgEl, _messageEls.length - 1);
-        textEl.textContent = '[错误: ' + (event.content || '') + ']';
+        textEl.textContent = errText;
       } else {
         const st = _streamState.get(mi);
-        if (st?.textEl) {
-          st.textBuf += '\n\n[错误: ' + (event.content || '') + ']';
+        if (st?.textEl && st.textBuf) {
+          // 正文已走过 markdown 排版：追加后重渲染
+          // （直接写 textContent 会把既有排版拍平成纯文本）
+          st.textBuf += '\n\n' + errText;
+          _cancelStreamingMd(mi);
+          _renderMarkdown(st.textEl, st.textBuf);
+        } else if (st) {
+          // 思考阶段出错尚无正文气泡（曾什么都不显示）：补建气泡显示错误文本
+          if (!st.textEl) st.textEl = _createTextBubble(st.msgEl, mi);
+          st.textBuf += (st.textBuf ? '\n\n' : '') + errText;
           st.textEl.textContent = st.textBuf;
         }
       }
@@ -961,6 +1016,14 @@ function _findLastToolId(): string | null {
 function _getToolInput(inputPre: HTMLElement | null): Record<string, unknown> {
   if (!inputPre) return {};
   try { return JSON.parse(inputPre.textContent || '{}'); } catch { return {}; }
+}
+
+/** 无参数工具（如 kfm-snapshot）隐藏输入区和分隔线（v7 行为：空 input 不渲染这两段） */
+function _hideEmptyToolInput(els: ToolEls): void {
+  if (els.inputPre && !els.inputPre.textContent) {
+    els.inputPre.style.display = 'none';
+    els.divider.style.display = 'none';
+  }
 }
 
 // ========== 历史消息挂载（会话加载） ==========
@@ -1002,6 +1065,9 @@ export function mountAiMessage(mi: number, blocks: ContentBlock[], atTop = false
       if (els.inputPre && Object.keys(tb.input || {}).length > 0) {
         els.inputPre.textContent = JSON.stringify(tb.input, null, 2);
         _highlightInput(els.inputPre);
+      } else {
+        // 无参数工具（如 kfm-snapshot）不显示输入区和分隔线（v7 行为）
+        _hideEmptyToolInput(els);
       }
       if (tb.result && els.outputArea) {
         const isError = !!tb.result.isError;
@@ -1021,4 +1087,45 @@ export function mountAiMessage(mi: number, blocks: ContentBlock[], atTop = false
     }
   }
   _currentMsgIdx = -1;
+}
+
+// ========== 收尾/兜底导出（orb.ts 数据层调用） ==========
+
+/**
+ * 用户取消时收尾仍在执行中的工具卡 DOM（数据层收尾由 orb.ts 负责）：
+ * 对所有仍显示「忙碌中」的卡——停摸鱼提示、状态置为 label（失败红）、
+ * 输出区若还是提示内容则显示 label 文本、折叠卡片（尊重 _foldState 手动展开）。
+ */
+export function settleToolCardsDom(label: string): void {
+  for (const [blockId, els] of _toolEls) {
+    if (els.statusEl.textContent !== '忙碌中') continue;
+    const hadHint = _hintTimers.has(blockId);
+    _stopToolHint(blockId);
+    els.statusEl.textContent = label;
+    els.statusEl.style.color = 'rgba(255,100,100,0.8)';
+    // 输出区只有摸鱼提示（无真实输出）时，用收尾文本替换提示
+    if (els.outputArea && hadHint) {
+      els.outputArea.textContent = label;
+      els.outputArea.style.color = 'rgba(255,100,100,0.8)';
+    }
+    if (!_foldState.get(blockId)) {
+      els.content.classList.add('collapsed');
+      els.arrowEl.textContent = '▶';
+    }
+  }
+}
+
+/**
+ * 数据层兜底消息上屏（请求失败/已取消/未收到回复等）：挂载一条纯文本 AI 消息。
+ * mi 取 _messageEls.length，与 patchEvent message_start 的计数方式一致——
+ * 数据层每 push 一条兜底消息，此处同步多占一个 mi，后续 patchEvent 的 mi 对齐不受影响。
+ * 不触碰 _currentMsgIdx：兜底消息不属于任何流式轮次。
+ */
+export function mountFallbackAiMessage(text: string): void {
+  if (!_contentArea) return;
+  const mi = _messageEls.length;
+  const msgEl = _createMsgContainer(mi, 'ai');
+  const textEl = _createTextBubble(msgEl, mi);
+  textEl.textContent = text;
+  _maybeScroll();
 }
