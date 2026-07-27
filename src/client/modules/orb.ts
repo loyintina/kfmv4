@@ -597,6 +597,7 @@ export async function initOrb(): Promise<void> {
       if (last.role !== 'ai') return;
       const hasToolResult = last.content.some(b => b?.type === 'tool' && b.result);
       if (!hasToolResult) return;
+      const sid = sessionStore.activeId;
       const meta = sessionStore.list.find(s => s.id === sid);
       const model = meta?.modelId || '';
       const provider = meta?.providerId || '';
