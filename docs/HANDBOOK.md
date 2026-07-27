@@ -1,7 +1,7 @@
 ---
 title: KFM v4 工作手册
 last_reviewed: 2026-07-28
-kfm_version: 8.0.0
+kfm_version: 8.1.0
 status: active
 maintainer: AI agent
 ---
@@ -168,9 +168,9 @@ index.ts (入口路由 + 静态文件)
 - **规则**：纯 DOM 实现,不触碰 Canvas 渲染器。弹窗打开时 canvas 点击/手势事件被 guard 拦截。
 
 ## 二、当前会话状态
-> **最后更新**：2026-07-27（v8.1 — 光球面板性能根洽 + 交互回归恢复 + 全项目前端优化批次；基线 v8.0.0 — 所有权分离架构 + renderChatContent 删除 + chat-dom.ts 增量 DOM 渲染 + SessionStore 单写者 + kfm-restart 冷恢复 + 死代码清理 ~160 行）
+> **最后更新**：2026-07-28（v8.1.0 — 光球面板性能根洽 + 交互回归恢复 + 全项目前端优化 + 工具 I/O 上下文压缩；基线 v8.0.0 — 所有权分离架构 + renderChatContent 删除 + chat-dom.ts 增量 DOM 渲染 + SessionStore 单写者 + kfm-restart 冷恢复 + 死代码清理 ~160 行）
 
-**v8.1（进行中）— 光球面板性能根洽（点击展开 2-3s + 展开后拖拽卡顿）**
+**v8.1.0（已发布）— 光球面板性能根洽（点击展开 2-3s + 展开后拖拽卡顿）**
 
 根因：v8.0 重写渲染路径时删除了 v7 的视口裁剪与渲染缓存，历史挂载退化为
 「每次展开全量同步渲染」（marked + hljs 全量跑 + 每消息一次强制 reflow）。
@@ -289,6 +289,27 @@ v7 被砍设计的盘点结论：恢复 6 项（其余为 v8 架构红利，不�
 > v8 文件头注明有意收窄）；项 18 foldState 键漂移经核实不存在——
 > `_mountHistoryWindow` 走 `clearChatDom` 已整体清状态（v7 同生命周期），记录在案。
 > 回归钉：BAR-ORB-PANEL-16…21、BAR-BUILD-04（均已 revert 验证）。
+
+**v8.1 第七批 — 工具 I/O 上下文压缩（8.0.0 → 8.1.0）**
+
+动机（实测）：「todo工具测试」会话 2.1MB，每轮发给 API 的载荷 ~90% 是工具
+I/O（结果 76% + 入参 14%），45 万 tokens/轮，TTFB 5-8s——正文被工具信息淹没。
+
+设计：会话文件是全量真相源（永不压缩），发给 LLM 的 apiMessages 是压缩投影。
+压缩器是纯函数注册表（`src/shared/tool-compaction/`，双端可用、零依赖），
+逐工具映射 + 通用规则 G1-G7（最近 2 轮豁免 / ≤300 字符豁免 / 失败 ≤500 豁免 /
+最新 todo 结果豁免 / 用户与 AI 正文一个字不动 / 压缩行确定性幂等保 prompt 缓存 /
+未登记工具走兜底）。`kfm-no-compact=1` 灰度逃生门。附带 saveMessages 优化：
+仅新会话才全量上传（老会话服务端 /ai/chat/start 自己落盘，客户端写属冗余）。
+
+机械执行：`check-tool-compaction.mjs` 双向核对「注册工具 ↔ 压缩器登记」，
+新增工具不登记压缩行为 = 构建中断（豁免型也要登记并注明 G 依据）。
+
+> **契约文档：`docs/design/TOOL_IO_COMPACTION.md`**——改压缩行为、增删工具前
+> 必读（含逐工具映射表、决策树、禁令清单）。第九节「逐工具细化」随讨论滚动更新。
+> 预期收益：API 载荷 ~900KB→120-180KB、tokens 45万→7-10万/轮、TTFB 5-8s→1-2s。
+> 观测：`[compact]` 日志（压缩前后 KB）+ 既有 `[chat] usage`/`upstream TTFB`。
+> 回归钉：BAR-COMPACT-01/02（均已 revert 验证）；压缩器本体 34 例行为测试。
 
 ### 当前焦点
 **AI Agent 调试能力体系建设** — 面向 AI 开发者的调试基础设施。
@@ -462,6 +483,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | **v7.3.2** | **会话加载分段传输（元数据端点 /sessions/list + 消息切片 /sessions/messages）+ 面板追底/卡片头部分段渲染 + 切换会话竞态修复（_renderedSessionId guard）+ 上滑锚点保持消除跳位 + 工具框折叠状态机（reveal/fold）+ 会话持久化竞态修复（写盘顺序/串行落盘）+ 326 测试** | git `0f240ec` |
 | **v7.3.3** | **会话保存迁至服务端（3 保存点 + 消息累加器）+ clientMessages 去除/nginx body size 修复 + systemd 端口误杀修复（Node 路径 + ExecStopPost）+ sessions/list 跳过 messages 数组** | git `HEAD` |
 | **v8.0.0** | **所有权分离架构：renderChatContent 删除 + chat-dom.ts 增量 DOM 渲染器 + SessionStore 服务端单写者 + kfm-restart 冷恢复 + 死代码清理（~160 行）** | git `HEAD` |
+| **v8.1.0** | **光球面板性能根洽（持久化/窗口化/content-visibility/minify+gzip）+ v7 丢失细节全量恢复（18 项）+ 工具 I/O 上下文压缩（apiMessages 压缩投影 + check-tool-compaction 双向核对）+ 427 测试** | git `HEAD` |
 > 速查：遇到 bug 先确认事件是否完整到达（用 `log()` 推日志卡），再查处理逻辑。
 
 ## 五、回归测试
@@ -470,7 +492,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 > bug 账本见 [`docs/BUG_REGRESSION_REGISTRY.md`](./BUG_REGRESSION_REGISTRY.md)）：
 >
 > ```bash
-> npm test    # 391 个测试（单元/集成/回归钉子/不变量），~1.3s，进主管线
+> npm test    # 427 个测试（单元/集成/回归钉子/不变量），~1.3s，进主管线
 > npm run smoke  # 11 条浏览器冒烟（puppeteer headless），~9s，独立于主管线
 > ```
 >
@@ -552,7 +574,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `orb.ts` | 840 | 2 | ✅ 独立条目 | 光球 UI + 拖拽手势 + 面板状态机 + 挂机重连 IIFE（协调层，见 AI_CHAT_RUNTIME） |
 | `orb-chat.ts` | 42 | 1 | ✅ 分组表 | AI 对话模块入口（薄编排层，re-export + markdown 渲染） |
 | `orb-chat-hints.ts` | 251 | 0 | ✅ 分组表 | 等待提示 + 工具提示 + Todo 面板（从 orb-chat 拆分） |
-| `orb-chat-run.ts` | 534 | 0 | ✅ 分组表 | 持久化运行态 + 流消费 + 重连 + doSend/resumeRun（从 orb-chat 拆分） |
+| `orb-chat-run.ts` | 584 | 0 | ✅ 分组表 | 持久化运行态 + 流消费 + 重连 + doSend/resumeRun（从 orb-chat 拆分） |
 | `chat-dom.ts` | 1132 | 0 | ✅ 分组表 | v8 增量 DOM 投影（事件驱动，替代 renderChatContent 全量重建） |
 | `orb-panel.ts` | 221 | 1 | ✅ 分组表 | 面板 Provider/Session/Model/Role 下拉框（从 orb.ts 拆分） |
 | `orb-state.ts` | 17 | 0 | ✅ 分组表 | orb 状态机纯逻辑（零依赖，从 orb.ts 拆分，可脱离浏览器测试） |
@@ -592,7 +614,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `../src/client/modules/renderers/md-extensions.ts` | 51 | 1 | — | Markdown 渲染扩展（链接、任务列表） |
 | `../src/client/modules/renderers/md-css.ts` | 57 | 2 | ✅ 分组表 | Markdown 渲染 CSS（全局唯一来源，orb + handler-factory 共享） |
 | `../src/client/modules/renderers/text-preview.ts` | 26 | 1 | — | 文本文件预览渲染器 |
-| **合计** | **16092** | | | |
+| **合计** | **16142** | | | |
 
 ### 死代码检查
 **结论：无死代码。** 所有 41 个模块都被至少 1 个文件导入（`terminal-card-04.ts` 和 `tmux-card.ts` 被导入数为 0，但这是模块自身的特性：它们仅在用户侧打开卡片时由 `card-registry.ts` 的 `createHandler` 工厂按需实例化，属于动态加载。`terminal-aux-bar.ts` 已删除（空占位，无任何引用）。`src/cards/` 目录已彻底删除。实际使用的 logger 在 `src/client/modules/logger.ts`。

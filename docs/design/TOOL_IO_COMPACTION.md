@@ -61,6 +61,7 @@ TTFB 5-8s、缓存读取费用、注意力稀释（"lost in the middle"）三连
 | debug | `[debug {action} → 已折叠]` | action | 输出大但价值密度低 |
 | eval / browser_eval | `[eval {expr(≤40)} → 已折叠]` | 表达式前缀 | |
 | browser | `[browser {action}]` | action | |
+| kfm-logs | `[kfm-logs → 输出{n}字符已折叠]`（G7 兜底） | — | 日志可重取、跨轮引用价值低，全压 |
 | kfm-snapshot / kfm-exec / kfm-restart / checkpoint / rewind / git / cat | 通常 ≤300 字符 → G2 豁免 | — | **不压**。后来者不得画蛇添足加压缩器 |
 
 ## 六、示例与错误示例

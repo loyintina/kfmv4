@@ -1,0 +1,262 @@
+// ==========================================================================
+// tests/tool-compaction.test.ts — 工具 I/O 上下文压缩器行为测试（v8.1.0）
+//
+// 契约：docs/design/TOOL_IO_COMPACTION.md。覆盖：
+//   1. 第五节逐工具映射表——每个登记工具至少一个用例，压缩行逐字符相等
+//   2. 通用规则 G2（≤300 豁免）/ G3（失败 ≤500 豁免）边界 ±1
+//   3. todo 压缩行（G4「最新豁免」在调用层，不在此测）
+//   4. G7 兜底压缩器
+//   5. compactToolInput 的 write/edit 大入参压缩 + 小入参豁免
+//
+// 被测对象是纯函数（src/shared/tool-compaction），无需 mock localStorage——
+// 逃生门 kfm-no-compact 在调用层（orb-chat-run.ts），不在压缩器内。
+// ==========================================================================
+
+import assert from 'assert';
+import { group, test } from './runner.js';
+import {
+  compactToolResult,
+  compactToolInput,
+  COMPACTOR_NAMES,
+} from '../src/shared/tool-compaction/index.js';
+
+// 构造超长文本：'x' * n（单行）或 n 行多行文本
+const chars = (n: number): string => 'x'.repeat(n);
+const lines = (n: number): string => Array.from({ length: n }, (_, i) => `line${i}`).join('\n');
+// n 行且总长 >300（把超长垫在最后一行，行数保持精确）
+const bigLines = (n: number): string => lines(n) + chars(400);
+
+// ==========================================================================
+// 1. 逐工具映射表（契约第五节）
+// ==========================================================================
+
+group('tool-compaction — 逐工具映射表');
+
+test('bash 成功：[bash: {cmd} → 成功，{n}行输出已折叠]', () => {
+  const out = compactToolResult('bash', { command: 'ls -la' }, bigLines(42), false);
+  assert(out === '[bash: ls -la → 成功，42行输出已折叠]', `得 ${out}`);
+});
+
+test('bash 失败超 500 字符也压（G3 只保 ≤500），标记「失败」', () => {
+  const out = compactToolResult('bash', { command: 'npm test' }, chars(501), true);
+  assert(out === '[bash: npm test → 失败，1行输出已折叠]', `得 ${out}`);
+});
+
+test('bash 命令 >60 字符截断保留前半', () => {
+  const cmd = 'a'.repeat(70);
+  const out = compactToolResult('bash', { command: cmd }, bigLines(5), false);
+  assert(out === `[bash: ${'a'.repeat(60)}… → 成功，5行输出已折叠]`, `得 ${out}`);
+});
+
+test('read：[read {path} → {size}KB，可用 read 重读]（KB=1000 字符，对齐契约示例）', () => {
+  const out = compactToolResult('read', { path: '/src/orb.ts' }, chars(41203), false);
+  assert(out === '[read /src/orb.ts → 41.2KB，可用 read 重读]', `得 ${out}`);
+});
+
+test('write：[write {path} {lines}行]（行数取入参 content）', () => {
+  const input = { path: '/src/a.ts', content: lines(17) };
+  const out = compactToolResult('write', input, chars(400), false);
+  assert(out === '[write /src/a.ts 17行]', `得 ${out}`);
+});
+
+test('edit：[edit {path} 第{a}-{b}行]（行号取 input.lineStart/lineEnd）', () => {
+  const out = compactToolResult('edit', { path: '/src/a.ts', lineStart: 10, lineEnd: 25 }, chars(400), false);
+  assert(out === '[edit /src/a.ts 第10-25行]', `得 ${out}`);
+});
+
+test('edit：无行号入参时省略行范围', () => {
+  const out = compactToolResult('edit', { path: '/src/a.ts', old: 'x', new: 'y' }, chars(400), false);
+  assert(out === '[edit /src/a.ts]', `得 ${out}`);
+});
+
+test('grep：[grep {pattern} → {count}处匹配，可重跑]（截断标记行不计入）', () => {
+  const result = [
+    'a.ts:1: ' + chars(150),
+    'b.ts:2: ' + chars(150),
+    'c.ts:3: ' + chars(150),
+    '(结果被截断)',
+  ].join('\n');
+  const out = compactToolResult('grep', { pattern: 'foo' }, result, false);
+  assert(out === '[grep foo → 3处匹配，可重跑]', `得 ${out}`);
+});
+
+test('glob：[glob {pattern} → {count}个文件]', () => {
+  const out = compactToolResult('glob', { pattern: 'src/**/*.ts' }, bigLines(8), false);
+  assert(out === '[glob src/**/*.ts → 8个文件]', `得 ${out}`);
+});
+
+test('todo：旧 todo [todo 更新{n}项]（n=input.todos 长度）', () => {
+  const input = { todos: [{ content: 'a' }, { content: 'b' }, { content: 'c' }] };
+  const out = compactToolResult('todo', input, chars(400), false);
+  assert(out === '[todo 更新3项]', `得 ${out}`);
+});
+
+test('web_search：[web_search {query(≤50)} → 结果已折叠]', () => {
+  const out = compactToolResult('web_search', { query: 'kimi code cli' }, chars(400), false);
+  assert(out === '[web_search kimi code cli → 结果已折叠]', `得 ${out}`);
+});
+
+test('web_search query >50 字符截断', () => {
+  const q = 'q'.repeat(60);
+  const out = compactToolResult('web_search', { query: q }, chars(400), false);
+  assert(out === `[web_search ${'q'.repeat(50)}… → 结果已折叠]`, `得 ${out}`);
+});
+
+test('debug：[debug {action} → 已折叠]', () => {
+  const out = compactToolResult('debug', { action: 'evaluate' }, chars(400), false);
+  assert(out === '[debug evaluate → 已折叠]', `得 ${out}`);
+});
+
+test('eval：[eval {expr(≤40)} → 已折叠]（表达式取 input.code）', () => {
+  const out = compactToolResult('eval', { language: 'py', code: 'print(1)' }, chars(400), false);
+  assert(out === '[eval print(1) → 已折叠]', `得 ${out}`);
+});
+
+test('eval code >40 字符截断', () => {
+  const code = 'c'.repeat(50);
+  const out = compactToolResult('eval', { language: 'js', code }, chars(400), false);
+  assert(out === `[eval ${'c'.repeat(40)}… → 已折叠]`, `得 ${out}`);
+});
+
+test('browser_eval 与 eval 同模板（表达式取 input.code）', () => {
+  const out = compactToolResult('browser_eval', { code: 'return 1' }, chars(400), false);
+  assert(out === '[eval return 1 → 已折叠]', `得 ${out}`);
+});
+
+test('browser：[browser {action}]', () => {
+  const out = compactToolResult('browser', { action: 'open', url: 'https://x.com' }, chars(400), false);
+  assert(out === '[browser open]', `得 ${out}`);
+});
+
+// ==========================================================================
+// 2. 通用规则 G2 / G3 边界（±1 字符）
+// ==========================================================================
+
+group('tool-compaction — G2/G3 豁免边界');
+
+test('G2：结果恰好 300 字符 → 豁免（返回 null）', () => {
+  assert(compactToolResult('read', { path: '/a' }, chars(300), false) === null);
+});
+
+test('G2 边界 +1：结果 301 字符 → 压缩', () => {
+  const out = compactToolResult('read', { path: '/a' }, chars(301), false);
+  assert(out === '[read /a → 0.3KB，可用 read 重读]', `得 ${out}`);
+});
+
+test('G3：失败结果恰好 500 字符 → 豁免', () => {
+  assert(compactToolResult('bash', { command: 'ls' }, chars(500), true) === null);
+});
+
+test('G3 边界 +1：失败结果 501 字符 → 压缩', () => {
+  const out = compactToolResult('bash', { command: 'ls' }, chars(501), true);
+  assert(out === '[bash: ls → 失败，1行输出已折叠]', `得 ${out}`);
+});
+
+test('G3 只保护失败结果：成功结果 400 字符（>300）仍压', () => {
+  const out = compactToolResult('bash', { command: 'ls' }, chars(400), false);
+  assert(out === '[bash: ls → 成功，1行输出已折叠]', `得 ${out}`);
+});
+
+test('失败结果 ≤300 时 G2 先生效（豁免与 G3 一致）', () => {
+  assert(compactToolResult('bash', { command: 'ls' }, chars(300), true) === null);
+});
+
+// ==========================================================================
+// 3. G7 兜底压缩器 + 豁免型工具
+// ==========================================================================
+
+group('tool-compaction — G7 兜底与豁免');
+
+test('未登记工具走兜底：[{name} → 输出{n}字符已折叠]', () => {
+  const out = compactToolResult('some-future-tool', {}, chars(400), false);
+  assert(out === '[some-future-tool → 输出400字符已折叠]', `得 ${out}`);
+});
+
+test('kfm-logs 登记为兜底全压（日志可重取、跨轮价值低）', () => {
+  const out = compactToolResult('kfm-logs', {}, chars(5000), false);
+  assert(out === '[kfm-logs → 输出5000字符已折叠]', `得 ${out}`);
+});
+
+test('豁免型工具（kfm-snapshot 等）输出 ≤300 时 G2 自然豁免', () => {
+  for (const name of ['kfm-snapshot', 'kfm-exec', 'kfm-restart', 'checkpoint', 'rewind']) {
+    assert(compactToolResult(name, {}, chars(200), false) === null, `${name} 应豁免`);
+    assert(COMPACTOR_NAMES.includes(name), `${name} 必须在注册表有登记条目`);
+  }
+});
+
+// ==========================================================================
+// 4. compactToolInput — 大入参压缩
+// ==========================================================================
+
+group('tool-compaction — compactToolInput');
+
+test('write 大入参 → {path, _compacted: {lines}行内容已折叠}', () => {
+  const input = { path: '/src/a.ts', content: lines(120) };
+  const out = compactToolInput('write', input);
+  assert(out !== null, '大入参应压');
+  assert(out.path === '/src/a.ts', 'path 原样保留');
+  assert(out._compacted === '120行内容已折叠', `得 ${out._compacted}`);
+  assert(!('content' in out), '文件全文必须被折叠掉');
+});
+
+test('edit 大入参（带行号）→ 第{a}-{b}行编辑已折叠', () => {
+  const input = { path: '/src/a.ts', old: chars(200), new: chars(200), lineStart: 3, lineEnd: 9 };
+  const out = compactToolInput('edit', input);
+  assert(out !== null && out._compacted === '第3-9行编辑已折叠', `得 ${JSON.stringify(out)}`);
+  assert(out.path === '/src/a.ts');
+  assert(!('old' in out) && !('new' in out), 'old/new 全文必须被折叠掉');
+});
+
+test('edit 大入参（无行号）→ 省略行号', () => {
+  const input = { path: '/src/a.ts', old: chars(200), new: chars(200) };
+  const out = compactToolInput('edit', input);
+  assert(out !== null && out._compacted === '编辑已折叠', `得 ${JSON.stringify(out)}`);
+});
+
+test('小入参（JSON ≤300 字符）一律豁免', () => {
+  assert(compactToolInput('write', { path: '/a', content: 'short' }) === null);
+  assert(compactToolInput('edit', { path: '/a', old: 'x', new: 'y' }) === null);
+});
+
+test('write 小入参边界：301 字符 → 压，300 字符 → 豁免', () => {
+  // 骨架 {"path":"/a","content":""} 的长度动态算，content 补齐到总长 300/301
+  const skeleton = JSON.stringify({ path: '/a', content: '' }).length;
+  const at300 = { path: '/a', content: chars(300 - skeleton) };
+  const at301 = { path: '/a', content: chars(301 - skeleton) };
+  assert(JSON.stringify(at300).length === 300, '夹具长度算错');
+  assert(JSON.stringify(at301).length === 301, '夹具长度算错');
+  assert(compactToolInput('write', at300) === null, '300 字符应豁免');
+  assert(compactToolInput('write', at301) !== null, '301 字符应压');
+});
+
+test('其余工具入参保留原文（返回 null）', () => {
+  const big = { command: chars(500) };
+  for (const name of ['bash', 'read', 'grep', 'glob', 'todo', 'web_search', 'debug', 'eval', 'browser_eval', 'browser']) {
+    assert(compactToolInput(name, big) === null, `${name} 入参不应压`);
+  }
+});
+
+// ==========================================================================
+// 5. 确定性（G6：同样输入永远产出同样文本）
+// ==========================================================================
+
+group('tool-compaction — 确定性与登记完整性');
+
+test('同样输入两次调用产出逐字符相等（prompt 缓存前缀不失效）', () => {
+  const input = { command: 'git status' };
+  const a = compactToolResult('bash', input, lines(100), false);
+  const b = compactToolResult('bash', input, lines(100), false);
+  assert(a === b && a !== null, '必须确定性输出');
+});
+
+test('COMPACTOR_NAMES 覆盖映射表全部显式登记工具', () => {
+  const expected = [
+    'bash', 'read', 'write', 'edit', 'grep', 'glob', 'todo',
+    'web_search', 'debug', 'eval', 'browser_eval', 'browser',
+    'kfm-logs', 'kfm-snapshot', 'kfm-exec', 'kfm-restart', 'checkpoint', 'rewind',
+  ];
+  for (const name of expected) {
+    assert(COMPACTOR_NAMES.includes(name), `注册表缺 ${name}`);
+  }
+  assert(COMPACTOR_NAMES.length === expected.length, `登记数应为 ${expected.length}，得 ${COMPACTOR_NAMES.length}`);
+});

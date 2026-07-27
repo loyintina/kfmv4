@@ -690,3 +690,30 @@ regression('BAR-ORB-PANEL-22', 'orb-chat-hints', 'Todo 面板手动 ✕ 关闭�
   assert(utBody.includes('dismissed === fp'), '同指纹列表（刷新恢复）必须跳过渲染');
   assert(utBody.includes('removeItem(TODO_DISMISS_KEY)'), '新列表（指纹不同）必须清除关闭记录并恢复显示');
 });
+
+// ========== 第十三批：工具 I/O 上下文压缩（v8.1.0）==========
+// 契约 docs/design/TOOL_IO_COMPACTION.md。压缩器本体行为由 tests/tool-compaction.test.ts
+// 覆盖（34 例）；此处钉的是「接线」——doSend 压缩管线 + check 脚本挂构建链。
+
+regression('BAR-COMPACT-01', 'orb-chat-run', 'doSend 工具 I/O 压缩接线（G1/G4/逃生门/观测日志）', () => {
+  const src = readFileSync('src/client/modules/orb-chat-run.ts', 'utf-8');
+  assert(src.includes("from '../../shared/tool-compaction/index.js'"), 'doSend 必须引用压缩器注册表');
+  assert(src.includes("localStorage.getItem('kfm-no-compact')"), '应有 kfm-no-compact 灰度逃生门');
+  assert(src.includes('compactExemptFrom'), 'G1：最近 2 条 AI 消息豁免压缩');
+  assert(src.includes('lastTodoResultId'), 'G4：最新 todo 工具结果豁免（当前任务状态）');
+  assert(src.includes('compactToolInput') && src.includes('compactToolResult'), '入参与结果双路压缩');
+  assert(src.includes('[compact]'), '应有压缩观测日志（前后 KB 对比）');
+  // saveMessages 优化：仅新会话全量上传（老会话服务端 /ai/chat/start 自己 appendUserMessage）
+  const saveBody = src.split('sessionStore.saveMessages')[0] || '';
+  assert(saveBody.includes('if (!sessionStore.activeId)'), 'saveMessages 必须仅新会话才调用（每轮全量上传曾 90% 冗余）');
+});
+
+regression('BAR-COMPACT-02', 'build/check', 'check-tool-compaction 双向核对必须挂在构建链', () => {
+  const build = readFileSync('build.mjs', 'utf-8');
+  assert(build.includes('check-tool-compaction'), 'build.mjs 必须跑 check-tool-compaction');
+  const pkg = readFileSync('package.json', 'utf-8');
+  assert(pkg.includes('check-tool-compaction'), 'npm run check 链必须含 check-tool-compaction');
+  const script = readFileSync('check-tool-compaction.mjs', 'utf-8');
+  assert(script.includes('COMPACTOR_REGISTRY') && script.includes('tools/index.ts'),
+    '脚本必须双向核对：注册工具 ↔ 压缩器登记（新增工具不登记 = 构建中断）');
+});

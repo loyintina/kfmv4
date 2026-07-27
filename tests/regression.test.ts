@@ -39,6 +39,7 @@ import './liquid-geometry.test.js';
 import './invariants.test.js';
 import './visual-baseline.test.js';
 import './protocol-reducer.test.js';
+import './tool-compaction.test.js';
 
 function seedState(files: Record<string, any>) {
   KFMState.files = {};
