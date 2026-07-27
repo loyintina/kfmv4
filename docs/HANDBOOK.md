@@ -229,6 +229,24 @@ v7 被砍设计的盘点结论：恢复 6 项（其余为 v8 架构红利，不�
    分支一律 `insertBefore(msgEl, #orb-waiting-hint)`，提示恒在尾部。
    回归钉：BAR-ORB-PANEL-10、BAR-BUILD-03（均已 revert 验证）。
 
+**v8.1 第四批 — 思考框折叠 + 流式实时 MD + 首 token 延迟诊断**
+
+1. **思考框自动折叠** — 曾只有 tool_result 路径折叠，纯文本回复思考框摊到底。
+   现三路径统一 `_autoCollapseThinking`：首个 text_delta（思考结束）/
+   tool_result / message_stop 兜底，尊重 `_foldState` 手动展开。
+2. **流式实时 MD** — 替代"先裸奔 md 源码、block stop 突变渲染态"。
+   `_scheduleStreamingMd` 120ms 节流重渲染：轻管线（marked + 代码高亮，
+   跳过 preprocessMd/KaTeX/mermaid——block stop 的 final 渲染才跑全管线）。
+   性能论证：全量重解析 O(n) @ ≤8 次/秒，对话尺度 KB 级每次数 ms；
+   部分渲染不进 _mdCache 防污染；final 前 `_cancelStreamingMd` 防轻管线覆盖。
+3. **首 token 延迟诊断** — 全链路审计结论：kfm 中间层（client doSend →
+   POST /start → run-manager 逐事件广播 → SSE res.write）无任何缓冲/延迟机制，
+   SSE 路由有 `X-Accel-Buffering: no` 且 compression 排除 /ai/。chat.ts 新增
+   `[chat] upstream TTFB` / `first delta` 计时日志——若 TTFB 大则慢在上游
+   prefill/网关（kfm 请求带工具定义+角色 system+页面状态，prompt 远大于直接
+   裸请求，推理模型 TTFT 随之拉长），用 journalctl 数据定论。
+   回归钉：BAR-ORB-PANEL-11…12（均已 revert 验证）。
+
 ### 当前焦点
 **AI Agent 调试能力体系建设** — 面向 AI 开发者的调试基础设施。
 

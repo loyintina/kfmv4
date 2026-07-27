@@ -548,3 +548,30 @@ regression('BAR-BUILD-03', 'build.mjs', 'CJS 依赖必须 external（ESM 产物 
   const extLine = src.split('external: [')[1]?.split(']')[0] || '';
   assert(extLine.includes("'compression'"), "server 构建 external 必须含 'compression'");
 });
+
+group('v8.1 第四批 — 思考框折叠 + 流式实时 MD');
+
+regression('BAR-ORB-PANEL-11', 'chat-dom', '思考框自动折叠：正文开始/工具结果/消息结束三路径', () => {
+  const src = readFileSync('src/client/modules/chat-dom.ts', 'utf-8');
+  // 曾只有 tool_result 路径折叠——纯文本回复的思考框永远摊着（用户须手动点）
+  assert(src.includes('function _autoCollapseThinking'), '应有统一的思考框自动折叠 helper');
+  const tdBody = src.split("event.deltaType === 'text_delta'")[1]?.split("input_json_delta")[0] || '';
+  assert(tdBody.includes('_autoCollapseThinking'), '首个 text_delta（思考结束）必须触发折叠');
+  const msBody = src.split("case 'message_stop'")[1]?.split("case 'error'")[0] || '';
+  assert(msBody.includes('_autoCollapseThinking'), 'message_stop 必须有折叠兜底');
+  assert(src.includes("_foldState.get('r' + mi)"), '折叠必须尊重用户手动展开状态');
+});
+
+regression('BAR-ORB-PANEL-12', 'chat-dom', '流式实时 MD：节流轻管线 + final 全管线不被覆盖', () => {
+  const src = readFileSync('src/client/modules/chat-dom.ts', 'utf-8');
+  // 曾是 textContent 裸奔 md 源码、content_block_stop 时突变成渲染态
+  assert(src.includes('_scheduleStreamingMd'), '应有流式 MD 节流渲染');
+  const fnBody = src.split('function _scheduleStreamingMd')[1]?.split('\n}')[0] || '';
+  assert(fnBody.includes('marked.parse') && !fnBody.includes('preprocessMd') && !fnBody.includes('renderMermaid'),
+    '流式必须走轻管线（marked+高亮，跳过 KaTeX/mermaid 后处理）');
+  assert(fnBody.includes('_mdCache') === false, '流式部分渲染不得进 _mdCache（防缓存污染）');
+  const stopBody = src.split("case 'content_block_stop'")[1]?.split("case 'tool_result'")[0] || '';
+  assert(stopBody.includes('_cancelStreamingMd'), 'final 全管线渲染前必须取消流式计时器（防轻管线覆盖）');
+  const clearBody = src.split('export function clearChatDom')[1]?.split('\n}')[0] || '';
+  assert(clearBody.includes('_streamMdTimers.clear()'), 'clearChatDom 必须清流式计时器（防泄漏）');
+});

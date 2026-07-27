@@ -144,6 +144,8 @@ maintainer: AI agent
 | BAR-BUILD-02 | `server/index` | 无 gzip（1.9MB 直传）；`express.static` 挂载仓库根把 `.git`/`src`/`node_modules` 暴露 HTTP。契约：compression filter 排除 `/ai/`（SSE 不缓冲）+ 禁止重挂根目录 | L | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
 | BAR-ORB-PANEL-10 | `chat-dom` | 摸鱼提示跑到用户消息上方：`setWait(true)` 在 doSend 前执行，hint 先挂载，`_createMsgContainer` 裸 `appendChild` 把消息插到 hint 之后。契约：非 prepend 分支必须 `insertBefore(msgEl, hint)`，hint 恒在尾部 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
 | BAR-BUILD-03 | `build.mjs` | **线上事故**：compression 未列入 server external，被打进 ESM bundle，其 CJS 依赖 `require("buffer")` → 启动即崩，systemd 重启风暴 76 次、全站 502，`kfm-restart` 后服务再也起不来。契约：server 构建 external 必须含全部 CJS 运行时依赖 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-ORB-PANEL-11 | `chat-dom` | 思考框永不自动折叠：仅 tool_result 路径有折叠逻辑，纯文本回复摊到底。契约：首个 text_delta（思考结束）+ message_stop 兜底 + tool_result 三路径统一走 `_autoCollapseThinking`，尊重 `_foldState` 手动展开 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-ORB-PANEL-12 | `chat-dom` | 流式期 textContent 裸奔 md 源码、block stop 时突变成渲染态。契约：`_scheduleStreamingMd` 120ms 节流轻管线（marked+高亮，跳过 KaTeX/mermaid）；final 渲染前 `_cancelStreamingMd` 防轻管线覆盖；部分渲染不进 `_mdCache`；clearChatDom 清计时器 | L | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
 
 > 新 bug 修复后：补一个回归钉子 → 在此登记 → 状态置「已钉」。见
 > `docs/archive/design/REGRESSION_TESTING_SYSTEM.md` §3 微循环。
