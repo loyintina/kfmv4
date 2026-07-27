@@ -114,9 +114,12 @@ export function startRun(
         run.events.push(event);
         if (sessionId) {
           appendEvent(sessionId, event);
-          // 每事件同步落盘：单用户系统写小 JSON 开销可忽略，
-          // 彻底消除防抖窗口内进程被杀导致的数据丢失（kfm-restart 生死线）。
-          flushSync(sessionId);
+          // v8 性能优化：按事件类型分流落盘策略
+          // 高频 delta（text/thinking/input_json）走 200ms 防抖异步写入，合并多次小写入
+          // 结构性/终态事件（tool_result/message_stop/done/error）立即同步写入
+          // 生死线：tool_result 必须同步（工具执行昂贵，丢失=重执行；冷恢复依赖）
+          const isHighFreq = event.type === 'content_block_delta';
+          if (!isHighFreq) flushSync(sessionId);
         }
         for (const sub of run.subscribers) {
           try { sub.onEvent(event); } catch { /* 订阅者写失败不影响生成 */ }
