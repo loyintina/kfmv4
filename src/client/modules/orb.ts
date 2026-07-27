@@ -582,13 +582,21 @@ export async function initOrb(): Promise<void> {
 
     // v8 冷恢复：检测"未完成的对话"（kfm-restart 后 AI 工具执行完了但没来得及回应）
     // 判据：末尾是 AI 消息且含 tool result → 工具执行完了但 AI 还没回应（回应会是新 message）
+    // 防护：restartCount 计数器防止无限循环（连续自动 resume 超过 3 次则停止）
     (async () => {
       if (!sessionStore.activeId || chatMessages.length === 0) return;
+      const RESTART_COUNT_KEY = 'kfm-restart-count';
+      const MAX_RESTART_COUNT = 3;
+      let restartCount = 0;
+      try { restartCount = parseInt(localStorage.getItem(RESTART_COUNT_KEY) || '0', 10); } catch {}
+      if (restartCount >= MAX_RESTART_COUNT) {
+        try { localStorage.removeItem(RESTART_COUNT_KEY); } catch {}
+        return;
+      }
       const last = chatMessages[chatMessages.length - 1];
       if (last.role !== 'ai') return;
       const hasToolResult = last.content.some(b => b?.type === 'tool' && b.result);
       if (!hasToolResult) return;
-      const sid = sessionStore.activeId;
       const meta = sessionStore.list.find(s => s.id === sid);
       const model = meta?.modelId || '';
       const provider = meta?.providerId || '';
@@ -646,6 +654,8 @@ export async function initOrb(): Promise<void> {
           abortCtrl = null;
           sendBtn!.classList.remove('sending');
           _renderChat('auto');
+          // 递增重启计数（防止无限循环）
+          try { localStorage.setItem(RESTART_COUNT_KEY, String(restartCount + 1)); } catch {}
         }
       } catch { /* 网络失败静默，用户可手动重发 */ }
     })();
@@ -684,6 +694,8 @@ export async function initOrb(): Promise<void> {
       if (abortCtrl) { abortCtrl.abort(); abortCtrl = null; sendBtn!.classList.remove('sending'); return; }
       const text = inputEl!.value.trim();
       if (!text) return;
+      // 用户手动发送 → 重置重启计数（允许下次冷恢复自动 resume）
+      try { localStorage.removeItem('kfm-restart-count'); } catch {}
       inputEl!.value = '';
       if (orbState === 'collapsed') expandPanel();
       inputEl!.style.height = 'auto';

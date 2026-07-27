@@ -99,40 +99,6 @@ interface ApiProvider {
   models: string[];
 }
 
-function saveSessionFile(sessionId: string, messages: Array<{ role: string; content: any[] }>): void {
-    try {
-        const dir = join(KFM_DATA_DIR, 'sessions');
-        const filePath = join(dir, `${sessionId}.json`);
-        let session: Record<string, unknown> = { id: sessionId, title: sessionId, createdAt: new Date().toISOString() };
-        if (existsSync(filePath)) {
-            try { session = JSON.parse(readFileSync(filePath, 'utf-8')); } catch {}
-        }
-        // 计算顶层 messageCount / tokenCount（sessions/list 仅读顶层字段，跳过 messages 解析）
-        let mc = 0, tc = 0;
-        for (const msg of messages) {
-            if (!msg || !Array.isArray(msg.content)) continue;
-            for (const b of msg.content) {
-                if (!b) continue;
-                if (b.type === 'text') {
-                    tc += ((typeof b.text === 'string' ? b.text.length : 0) + (typeof b.reasoning === 'string' ? b.reasoning.length : 0));
-                    if (typeof b.text === 'string' && b.text.trim()) { mc++; break; }
-                } else if (b.type === 'tool') {
-                    if (b.input) tc += JSON.stringify(b.input).length;
-                    const rc = b.result?.content;
-                    if (Array.isArray(rc)) for (const c of rc) { if (c?.text) tc += String(c.text).length; }
-                }
-            }
-        }
-        session.messages = messages;
-        session.messageCount = mc;
-        session.tokenCount = Math.round(tc / 3);
-        session.updatedAt = new Date().toISOString();
-        mkdirSync(dir, { recursive: true });
-        writeFileSync(filePath, JSON.stringify(session, null, 2), 'utf-8');
-    } catch (e) {
-        console.error('[chat] saveSessionFile:', e instanceof Error ? e.message : e);
-    }
-}
 
 /** 读取 providers.json */
 function loadProviders(): ApiProvider[] {
@@ -153,8 +119,6 @@ export async function* streamChat(
   provider: string,
   wsServer: WsServer,
   signal?: AbortSignal,
-  sessionId?: string,
-  clientMessages?: Array<{ role: string; content: Array<{ type: string; [k: string]: unknown }> }>,
   roleFile?: string,
 ): AsyncGenerator<StreamEvent> {
   const tools = getToolDefinitions();
@@ -218,10 +182,6 @@ export async function* streamChat(
   let toolFailureCount = 0;
   let turn = 0;
 
-  // 服务端消息累加器：镜像客户端 content block 结构
-  const serverMessages: Array<{ role: string; content: Array<{ type: string; [k: string]: unknown }> }> = clientMessages
-    ? clientMessages.map(m => ({ role: m.role, content: Array.isArray(m.content) ? m.content.map((b: any) => ({ ...b })) : [] }))
-    : [];
 
   while (true) {
     if (signal?.aborted) { yield { type: 'error', content: '已取消' }; return; }
@@ -369,22 +329,6 @@ export async function* streamChat(
       yield { type: 'content_block_stop', index: clientIdx(idx) };
     }
 
-    // ===== 保存点 1：本轮内容完整 → 工具执行前落盘 =====
-    if (sessionId) {
-      const aiMsg: { role: string; content: Array<{ type: string; [k: string]: unknown }> } = { role: 'ai', content: [] };
-      if (hasTextBlock) {
-        aiMsg.content.push({ type: 'text', text: contentBuf, reasoning: reasoningBuf });
-      }
-      for (const [, buf] of toolCallBufs) {
-        aiMsg.content.push({
-          type: 'tool',
-          id: buf.id || '',
-          name: buf.name,
-          input: safeParseJson(buf.args),
-        });
-      }
-      serverMessages.push(aiMsg);
-    }
 
     // 检查是否需要执行工具
     if (finishReason === 'tool_calls' && toolCallBufs.size > 0) {
@@ -443,12 +387,6 @@ export async function* streamChat(
         // 最后一个带 filesChanged 标记
         yield { type: 'tool_result', toolUseId: t.tcId, toolResult: result, filesChanged: i === todo.length - 1 ? filesChanged : undefined };
         apiMessages.push({ role: 'tool', content: JSON.stringify(result), tool_call_id: t.tcId });
-        // 更新 serverMessages 中工具块的 result
-        if (sessionId && serverMessages.length > 0) {
-          const lastMsg = serverMessages[serverMessages.length - 1];
-          const toolBlock = lastMsg.content.find((b: any) => b.type === 'tool' && b.id === t.tcId);
-          if (toolBlock) { toolBlock.result = result; }
-        }
       }
 
       // 注入 warning
@@ -478,12 +416,6 @@ export async function* streamChat(
       continue;
     }
 
-    // 流结束，最后一条 AI 消息无工具调用
-    if (sessionId) {
-      if (hasTextBlock) {
-        serverMessages.push({ role: 'ai', content: [{ type: 'text', text: contentBuf, reasoning: reasoningBuf }] });
-      }
-    }
     yield { type: 'message_stop' };
     yield { type: 'done' };
     return;

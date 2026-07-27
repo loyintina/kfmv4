@@ -1,6 +1,6 @@
 # KFM v8.0 — 所有权分离架构
 
-> 状态：active | 版本：v8.0-draft | 最后更新：2026-07-26
+> 状态：active | 版本：v8.0 | 最后更新：2026-07-26
 >
 > 本文只讲架构（宪法 + 形状 + 契约）。迁移计划见 §六，实现细节在各模块头部注释。
 
@@ -144,13 +144,11 @@ AI 长程工作恢复。不是"进程没死"，是"真相在磁盘上，任何�
 |-------|------|------|
 | 0 | 视觉基准 fixture（17 个 DOM 快照 + 4 个结构不变量） | ✅ b50d721 |
 | 1 | 抽取 `src/shared/chat-protocol/`（类型 + reducer + 索引映射） | ✅ 20be4c3 |
-| 2 | 客户端投影：chat-dom.ts 增量 DOM，删 renderChatContent + 八个补丁 | 待做 |
-| 3 | 服务端 SessionStore：唯一写者 + 落盘原子化 + 删客户端保存链路 | 待做 |
-| 4 | 冷恢复 + kfm-restart 重写 + ws-channel 断连语义 | 待做 |
-| 5 | 服务端 renderer.ts（语义 HTML）+ /sessions/render 端点 | 待做 |
-| 6 | 回归：视觉 diff + 协议幂等 + restart 端到端 | 待做 |
-
-每个 Phase 独立可回滚。Phase 2 用 dev flag `?renderer=v8` 双跑，视觉 diff 通过后切默认。
+| 2 | 客户端投影：chat-dom.ts 增量 DOM，删 renderChatContent + 八个补丁 | ✅ |
+| 3 | 服务端 SessionStore：唯一写者 + 落盘原子化 + 删客户端保存链路 | ✅ |
+| 4 | 冷恢复 + kfm-restart 重写 + ws-channel 断连语义 | ✅ |
+| 5 | 服务端 renderer.ts（语义 HTML）+ /sessions/render 端点 | 推迟——客户端增量渲染已解决性能问题，服务端语义渲染为可选优化 |
+| 6 | 回归：视觉 diff + 协议幂等 + restart 端到端 | ✅ |
 
 ---
 

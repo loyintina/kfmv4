@@ -147,39 +147,12 @@ function clearToolHint(toolId: string): void {
   _toolHints.delete(toolId);
 }
 
-// 打字机动画 interval 追踪：新 content block 到达时立即结束未完成的动画，
-// 避免用户在 AI 已开始回复时还要等 3 秒装饰动画跑完。
-const _activeAnimTimers = new Set<ReturnType<typeof setTimeout>>();
-
-function clearAllAnimTimers(): void {
-  for (const t of _activeAnimTimers) clearTimeout(t);
-  _activeAnimTimers.clear();
-}
-
-// 折叠动画追踪：用时间戳驱动 max-height/opacity 过渡，替代 CSS transition。
-// 原因：renderChatContent 通过 innerHTML 重建 DOM，CSS transition 只在已有元素
-// 改变样式时工作——新创建的元素 max-height 直接是 0，没有过渡可执行。
-// 不持有 element 引用（innerHTML 会销毁元素导致 isConnected=false），只存 tid → 开始时间。
-const _activeFoldAnims = new Map<string, number>(); // tid → start timestamp
 
 // v8 事件钩子：orb.ts 在 ?renderer=v8 模式下注入 chat-dom.patchEvent，
 // 每个 SSE 事件在 _applyEvent 之后额外调此钩子做增量 DOM 投影。
 let _eventHook: ((event: any) => void) | null = null;
 export function setEventHook(fn: ((event: any) => void) | null): void { _eventHook = fn; }
 
-// rAF 合批渲染调度器：并行工具的多个打字机/折叠动画各自 tick 时，若直接调 onRender，
-// 12 个动画 = 每帧 12 次全量重渲染 → 卡死。改为标记脏 + 单个 rAF 每帧最多渲染一次。
-// 关闭面板后不再自我调度，避免后台空转。
-let _renderCb: (() => void) | null = null;
-let _renderScheduled = false;
-function scheduleRender(): void {
-  if (_renderScheduled) return;
-  _renderScheduled = true;
-  requestAnimationFrame(() => {
-    _renderScheduled = false;
-    if (_renderCb) _renderCb();
-  });
-}
 
 // ========== 浮动 Todo 面板 ==========
 let _todoPanel: HTMLDivElement | null = null;
@@ -363,7 +336,6 @@ function _applyEvent(event: any, ctx: RunConsumeCtx): void {
       } else if (deltaType === 'input_json_delta' && block.type === 'tool') {
         const buf = ((block as ToolBlock & { _jsonBuf?: string })._jsonBuf || '') + (deltaText || '');
         (block as ToolBlock & { _jsonBuf?: string })._jsonBuf = buf;
-        (block as ToolBlock & { _animInput?: string })._animInput = buf;
       }
       break;
     }
@@ -376,7 +348,6 @@ function _applyEvent(event: any, ctx: RunConsumeCtx): void {
         try { parsed = JSON.parse((block as ToolBlock & { _jsonBuf: string })._jsonBuf); } catch {}
         block.input = parsed;
         delete (block as ToolBlock & { _jsonBuf?: string })._jsonBuf;
-        delete (block as ToolBlock & { _animInput?: string })._animInput;
       }
       break;
     }
@@ -389,49 +360,6 @@ function _applyEvent(event: any, ctx: RunConsumeCtx): void {
         toolBlock.result = event.toolResult;
         updateTodoFromTool(toolBlock);
         clearToolHint(toolBlock.id);
-        const fullText = event.toolResult?.content?.[0]?.text || '';
-        type AnimBlock = ToolBlock & { _animText?: string; _foldPhase?: 'out' | 'fold' };
-        // 视口裁剪：工具卡不在可视区时跳过打字机动画，直接折叠（省 30+ 次渲染）
-        const ti2 = messages[msgIdx].content.filter(b => b?.type === 'tool').indexOf(toolBlock);
-        const el2 = document.getElementById('tc' + msgIdx + '_' + ti2);
-        const inView = el2 ? (() => { const r = el2.getBoundingClientRect(); return r.bottom > 0 && r.top < window.innerHeight; })() : true;
-        if (!inView) {
-          (toolBlock as AnimBlock)._foldPhase = 'fold';
-          const tid2 = 'tc' + msgIdx + '_' + ti2;
-          _activeFoldAnims.set(tid2, Date.now());
-          scheduleRender();
-        } else {
-        const DURATION = 500, WAIT = 340, INTERVAL = 16;
-        const totalTicks = Math.max(1, Math.round(DURATION / INTERVAL));
-        const cpt = Math.max(1, Math.ceil(fullText.length / totalTicks));
-        (toolBlock as AnimBlock)._animText = '';
-        let pos = 0;
-        const capturedMsgIdx = msgIdx;
-        requestAnimationFrame(() => {
-          const tick = (): void => {
-            pos = Math.min(pos + cpt, fullText.length);
-            (toolBlock as AnimBlock)._animText = fullText.slice(0, pos);
-            scheduleRender();
-            if (pos >= fullText.length) {
-              const t2 = setTimeout(() => {
-                _activeAnimTimers.delete(t2);
-                delete (toolBlock as AnimBlock)._animText;
-                (toolBlock as AnimBlock)._foldPhase = 'fold';
-                const ti3 = messages[capturedMsgIdx].content.filter(b => b?.type === 'tool').indexOf(toolBlock);
-                const tid3 = 'tc' + capturedMsgIdx + '_' + ti3;
-                _activeFoldAnims.set(tid3, Date.now());
-                scheduleRender();
-              }, WAIT);
-              _activeAnimTimers.add(t2);
-            } else {
-              const t1 = setTimeout(tick, INTERVAL);
-              _activeAnimTimers.add(t1);
-            }
-          };
-          const t0 = setTimeout(tick, INTERVAL);
-          _activeAnimTimers.add(t0);
-        });
-        }
       }
       // 服务端目录指纹检测到文件系统变化 → 刷新文件树
       if (event.filesChanged) {
@@ -551,15 +479,13 @@ async function _consumeWithReconnect(
   }
 }
 
-/** 生成完成后的收尾：清动画 timer + 去除临时字段 + 落盘 */
+/** 生成完成后的收尾：去除临时字段 + 标记未完成工具块 */
 async function _finalizeRun(messages: ChatMessage[], msgIdx: number, model: string, provider: string): Promise<void> {
   if (msgIdx < 0) {
     messages.push({ role: 'ai', content: [{ type: 'text', text: '[未收到回复，请重试]' }] });
   } else if (messages[msgIdx] && messages[msgIdx].content.length === 0) {
     messages[msgIdx].content.push({ type: 'text', text: '[未收到回复，请重试]' });
   }
-  clearAllAnimTimers();
-  _activeFoldAnims.clear();
   // 收尾任何仍无 result 的工具块（流已结束，如上游 error 中断时工具未返回结果）——
   // 否则渲染判 isExecuting=!result 会让工具卡永久卡"忙碌中"（BAR-105 同类，error 触发路径）。
   settlePendingToolBlocks(messages, '(未完成)');
@@ -592,9 +518,6 @@ export function settlePendingToolBlocks(messages: ChatMessage[], label: string):
           tb.result = { content: [{ type: 'text', text: label }], isError: true };
           settled++;
         }
-        delete (b as ToolBlock & { _animText?: string })._animText;
-        delete (b as ToolBlock & { _animInput?: string })._animInput;
-        delete (b as ToolBlock & { _foldPhase?: string })._foldPhase;
         delete (b as ToolBlock & { _userExpanded?: boolean })._userExpanded;
       }
     }
@@ -603,11 +526,9 @@ export function settlePendingToolBlocks(messages: ChatMessage[], label: string):
 }
 
 /**
- * 取消时收尾：清动画计时器/toolHint（DOM 副作用），再调纯函数标记未完成工具块。
+ * 取消时收尾：清 toolHint（DOM 副作用），再调纯函数标记未完成工具块。
  */
 function _cancelPendingTools(messages: ChatMessage[]): void {
-  clearAllAnimTimers();
-  _activeFoldAnims.clear();
   for (const m of messages) {
     for (const b of m.content) {
       if (b?.type === 'tool') clearToolHint((b as ToolBlock).id);
@@ -626,7 +547,6 @@ export async function resumeRun(
   onRender: () => void, onWait?: (waiting: boolean) => void,
   model = '', provider = '',
 ): Promise<void> {
-  _renderCb = onRender;
   _activeRunId = runId;
   let msgIdx = -1;
   // 重连时 messages 已含历史；新 AI 消息由 message_start 追加。msgIdx 从末尾 AI 消息推断。
@@ -667,8 +587,6 @@ export async function doSend(
   sessionId = '',
 ): Promise<void> {
   _sendSessionId = sessionId;
-  // 注册渲染回调供 scheduleRender 合批调用（并行动画共用一个 rAF）
-  _renderCb = onRender;
   // 推用户消息（content block 格式）
   messages.push({ role: 'user', content: [{ type: 'text', text }] });
   onBeforeSend();

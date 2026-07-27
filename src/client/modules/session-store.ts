@@ -59,16 +59,15 @@ export function countTextMessages(messages: SessionMessage[]): number {
   return messages.filter(m => extractMessageText(m).trim()).length;
 }
 
-// ========== 保存前清洗：深拷贝 + 剥离 UI 动画残留字段 ==========
+// ========== 保存前清洗：深拷贝 + 剥离 UI-only 字段 ==========
 // saveMessages 的快照引用共享问题：旧代码 messages.map(m => ({ role, content: m.content }))
 // 只浅拷贝外层，content 数组和 block 对象仍是引用。当 _saveChain 异步执行 _doSaveMessages
-// 时，block 已被后续事件原地修改（_animText 打字机动画、_foldPhase 折叠动画、_jsonBuf
-// 流式缓冲），导致增量保存将动画中间态持久化到磁盘。
+// 时，block 已被后续事件原地修改（_jsonBuf 流式缓冲），导致增量保存将中间态持久化到磁盘。
 //
 // cleanBlockForSave 做两件事：
 //   1. 深拷贝——切断与实时 objects 的引用，链上后续变异不影响已排队的保存
-//   2. 剥离 UI-only 动画字段——_animText/_animInput/_foldPhase/_jsonBuf 不应落地
-// 保留：color1/color2（工具卡配色，跨页面加载保持一致，renderChatContent 已有兼容处理）
+//   2. 剥离 UI-only 字段——_jsonBuf 不应落地（v8 已删除动画字段 _animText/_animInput/_foldPhase）
+// 保留：color1/color2（工具卡配色，跨页面加载保持一致）
 
 function cleanBlockForSave(b: ContentBlock): ContentBlock {
   if (!b) return b;

@@ -35,15 +35,12 @@ export function setupAiRoutes(router: Router, wsServer: WsServer, startRunFn: St
     if (lastUserMsg && typeof lastUserMsg.content === 'string' && lastUserMsg.content.trim()) {
       sessionStore.appendUserMessage(sessionId, lastUserMsg.content, model, provider);
     }
-    const clientMessages = sessionStore.getMessages(sessionId);
     const run = startRunFn(
       sessionId, messages,
       model || 'deepseek-v4-flash',
       provider || 'opencode-go',
       wsServer,
       typeof roleFile === 'string' ? roleFile : undefined,
-      undefined,
-      clientMessages.length > 0 ? clientMessages as any[] : undefined, // escape-ok: ChatMessage[] → startRun 的 legacy untyped 参数
     );
     res.json({ runId: run.id, fromIndex: 0, done: run.done });
   });

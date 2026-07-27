@@ -2,7 +2,7 @@
 title: AI 对话运行时 — 后台挂机 / 重连续读 / WebSocket 存活
 status: active
 created: 2026-07-21
-kfm_version: 7.3.0
+kfm_version: 8.0.0
 maintainer: AI agent
 ---
 
@@ -10,11 +10,14 @@ maintainer: AI agent
 
 > **改动 AI 对话流式、挂机持久化、WebSocket 重连、终端卡恢复前必读。**
 >
-> 这一子系统横跨客户端（`orb-chat.ts` / `orb.ts` / `ws-channel.ts` / `tmux-card.ts` /
-> `terminal-card-04.ts` / `session-store.ts`）与服务端（`src/server/ai/run-manager.ts` /
-> `src/server/ai/routes.ts` / `src/server/ai/chat.ts` / `ws-server.ts`）。它的正确性依赖若干**跨文件的
-> 隐式时序契约**——违反其中任何一条都会产生"看起来没错、跑起来卡死"的 bug。
-> 本文把这些契约集中写下来，避免未来加功能时踩同一个坑。
+> 这一子系统横跨客户端（`orb-chat.ts` / `orb.ts` / `chat-dom.ts` / `ws-channel.ts` /
+> `tmux-card.ts` / `terminal-card-04.ts` / `session-store.ts`）、
+> 共享协议层（`shared/chat-protocol/`：`messages.ts` / `events.ts` / `reducer.ts` /
+> `block-idx.ts` / `index.ts`）与服务端（`src/server/ai/run-manager.ts` /
+> `src/server/ai/routes.ts` / `src/server/ai/chat.ts` / `src/server/ai/session-store.ts` /
+> `ws-server.ts`）。跨 13+ 文件，正确性依赖若干**跨文件的隐式时序契约**——违反其中
+> 任何一条都会产生"看起来没错、跑起来卡死"的 bug。本文把这些契约集中写下来，
+> 避免未来加功能时踩同一个坑。
 
 ---
 
@@ -32,9 +35,6 @@ maintainer: AI agent
 客户端只是"订阅者"，断开只是取消订阅、不取消生成，回来可以从任意事件位置续读。
 
 ---
-
-## 2. 架构总览
-
 ```
 ┌─────────────── 浏览器 ───────────────┐        ┌─────────────── 服务端 ───────────────┐
 │                                       │        │                                        │
@@ -44,21 +44,29 @@ maintainer: AI agent
 │  orb-chat.ts                          │        │     POST /ai/chat/:runId/cancel        │
 │     doSend → start → _consumeWith-    │  HTTP  │     GET  /ai/chat/active?sessionId=    │
 │       Reconnect → _consumeRun         │◄──────►│     GET  /ai/chat/:runId/status        │
-│       → _applyEvent (状态机)          │  SSE   │                    │                   │
+│       → applyEvent (reducer)          │  SSE   │                    │                   │
 │     resumeRun (重连续读)              │        │                    ▼                   │
 │     localStorage: {sessionId,runId}   │        │  ai/run-manager.ts (后台挂机核心)      │
 │                                       │        │     startRun / attachRun / cancelRun   │
-│  session-store.ts (会话落盘)          │        │     Run{events[],done,subscribers}     │
-│                                       │        │     EVICT_MS=5min 淘汰                  │
-│  ws-channel.ts (WebSocket + 重连)     │        │                    │                   │
-│     onReconnect/offReconnect          │        │                    ▼                   │
-│     WATCHDOG_MS=75s 存活看门狗        │  WS    │  ai/chat.ts (SSE 流式生成器)           │
-│         │                             │◄──────►│     streamChat() async generator       │
-│         ▼                             │ ping/  │       message_start → block_* →        │
-│  terminal-card-04.ts / tmux-card.ts   │ pong   │       tool_result → message_stop → done│
+│  chat-dom.ts (唯一渲染路径)           │        │     Run{events[],done,subscribers}     │
+│     patchEvent → DOM 投影             │        │     EVICT_MS=5min 淘汰                  │
+│     mountUserMessage / mountAiMessage │        │                    │                   │
+│     增量 DOM：思考框/文本泡/工具卡    │        │                    ▼                   │
+│                                       │        │  ai/chat.ts (SSE 流式生成器)           │
+│  session-store.ts (会话落盘)          │        │     streamChat() async generator       │
+│                                       │        │       message_start → block_* →        │
+│  shared/chat-protocol/ (协议层)       │        │       tool_result → message_stop → done│
+│     messages.ts / events.ts           │        │                                        │
+│     reducer.ts / block-idx.ts         │        │  ai/session-store.ts (会话日志落盘)    │
+│                                       │        │     appendEvent / flush / flushSync    │
+│  ws-channel.ts (WebSocket + 重连)     │        │     isIncomplete (冷恢复判据)          │
+│     onReconnect/offReconnect          │        │                                        │
+│     WATCHDOG_MS=75s 存活看门狗        │  WS    │  ws-server.ts (30s 协议级 ping)        │
+│         │                             │◄──────►│     _isAlive 半开检测 → killAll + PTY  │
+│         ▼                             │ ping/  │                                        │
+│  terminal-card-04.ts / tmux-card.ts   │ pong   │                                        │
 │     _onReconnect → 重开 PTY / re-attach│        │                                        │
-│                                       │        │  ws-server.ts (30s 协议级 ping)        │
-│                                       │        │     _isAlive 半开检测 → killAll + PTY  │
+│                                       │        │                                        │
 └───────────────────────────────────────┘        └────────────────────────────────────────┘
 ```
 
@@ -280,6 +288,9 @@ IIFE 与 `handleSend` 之间**共享单例**，保证重连态也能被同一个
 | `src/client/modules/tmux-card.ts` | tmux 卡：`_lastCommand` + WS 重连 re-attach |
 | `src/client/modules/terminal-card-04.ts` | 终端核心：`_onReconnect` 重开 PTY |
 | `src/client/modules/session-store.ts` | 会话落盘 + `saveMessages` 自动建会话 |
+| `src/client/modules/chat-dom.ts` | v8 唯一渲染路径：`patchEvent` DOM 投影 + 历史消息挂载 |
+| `src/shared/chat-protocol/` | 双端共享协议层（5 文件）：`messages.ts`（类型）/ `events.ts`（事件）/ `reducer.ts`（纯状态转换）/ `block-idx.ts`（工具块索引映射）/ `index.ts`（导出） |
+| `src/server/ai/session-store.ts` | 服务端会话日志落盘：`appendEvent` / `flush` / `flushSync` / `isIncomplete`（冷恢复判据） |
 
 ---
 
@@ -300,3 +311,59 @@ IIFE 与 `handleSend` 之间**共享单例**，保证重连态也能被同一个
 
 > **`CUSTOM_SELECT`(10900) 必须高于 `MODAL_DIALOG`(10800)**：下拉框常在模态框内部
 > 弹出（config/session/tools 卡的下拉都在弹窗里），低于模态框会被遮住。
+
+---
+
+## 10. 冷恢复（Cold Recovery）— kfm-restart 自动续跑
+
+> v8 宪法第三条：**服务端可死，真相在磁盘**。工具只负责"触发 + 立即返回"，
+> 架构负责恢复。
+
+### 10.1 触发流程
+
+1. AI 调用 `kfm-restart` 工具 → 写 `restart-pending.json` 标记 → POST `/api/system/restart`
+   → 立即返回 `tool_result`（不轮询、不刷新）。
+2. `run-manager` 的 `flush` 保障落盘先于进程死亡（`session-store.flushSync` 同步写）。
+3. 旧进程死亡 → `systemctl` 拉起新进程 → 新进程启动时检测 `restart-pending.json`
+   → WS 广播 `server-restarted` 事件 → 删除标记文件。
+4. 客户端 WS 重连后收到 `server-restarted` → 触发冷恢复逻辑。
+
+### 10.2 客户端冷恢复判据（`orb.ts` 重连 IIFE）
+
+页面加载 / WS 重连时，客户端检测"未完成的对话"：
+
+- **判据**：`chatMessages` 末尾是 `role:'ai'` 消息，且含 `type:'tool'` block 带 `result`
+  （工具执行完了但 AI 还没回应——回应会是新 message）。
+- **动作**：重建 `apiMessages`（复用 `doSend` 的格式转换）→ `POST /ai/chat/start`
+  启动新 run → `resumeRun` 自动续读 → 面板自动展开 + 等待提示。
+
+### 10.3 restartCount 防护（防无限循环）
+
+**问题**：若冷恢复本身又触发 `kfm-restart`（如 AI 连续多轮重启），会无限循环。
+
+**防护**：`localStorage` 存 `kfm-restart-count` 计数器，每次自动 resume 递增。
+`MAX_RESTART_COUNT = 3`——连续自动 resume 超过 3 次则停止，清除计数器，用户可手动重发。
+
+```
+RESTART_COUNT_KEY = 'kfm-restart-count'
+MAX_RESTART_COUNT = 3
+
+on reconnect:
+  restartCount = localStorage.getItem(RESTART_COUNT_KEY) || 0
+  if restartCount >= MAX_RESTART_COUNT:
+    localStorage.removeItem(RESTART_COUNT_KEY)
+    return  // 停止自动恢复
+  ...
+  on successful auto-resume:
+    localStorage.setItem(RESTART_COUNT_KEY, restartCount + 1)
+```
+
+### 10.4 服务端支撑
+
+- **`session-store.ts`**：`isIncomplete(sessionId)` 检测未完成的对话（末尾是 AI 消息
+  含 tool result 但无后续纯文本 AI 消息）。供自动 resume 判据使用。
+- **`flushSync(sessionId)`**：同步落盘，用于 `kfm-restart` 的 `abort.finally` 路径——
+  进程即将死亡前的最后保障。
+- **`appendEvent` / `flush`**：异步落盘 + 防抖，正常流程每事件调度写盘。
+
+**历史案例**：v8 重写（2026-07-27），冷恢复 + restartCount 防护。

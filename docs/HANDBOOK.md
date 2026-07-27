@@ -1,7 +1,7 @@
 ---
 title: KFM v4 工作手册
 last_reviewed: 2026-07-27
-kfm_version: 7.3.3
+kfm_version: 8.0.0
 status: active
 maintainer: AI agent
 ---
@@ -79,10 +79,10 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 | **视觉效果** | `char-rain.ts` | 字符散落/回收动画（展开折叠时） |
 | **交互共享** | `interaction-constants.ts` `drag-handler.ts` `click-queue.ts` `z-index-layers.ts` | 模块间共享的常量/类型/事件队列/层级注册表 |
 | **卡片系统** | `card-registry.ts` `card-stack.ts` `floating-card.ts` `floating-shared.ts` `floating-fullscreen.ts` | 统一注册表（类型/实例）+ 堆叠抽屉 UI + 浮卡拖拽/全屏 UI |
-| **AI / 通信** | `orb.ts` `orb-chat.ts` `orb-panel.ts` `ws-channel.ts` `session-store.ts` `debug-assert.ts` `gestures.ts` | 光球面板、下拉框、AI 消息/流式、WebSocket、会话持久化 |
+| **AI / 通信** | `orb.ts` `orb-chat.ts` `orb-panel.ts` `chat-dom.ts` `ws-channel.ts` `session-store.ts` `debug-assert.ts` `gestures.ts` | 光球面板、下拉框、AI 消息/流式、增量 DOM 渲染、WebSocket、会话持久化 |
 | **日志** | `logger.ts` | KFM 日志系统（debug-card 伴侣） |
 
-### 服务端模块（11 个）
+### 服务端模块（15 个）
 
 服务端是 Express 4 + WebSocket 服务，通过 `index.ts` 统一入口编排。路由层已拆分到 `routes/`：
 
@@ -95,10 +95,14 @@ index.ts (入口路由 + 静态文件)
   ├── path-utils.ts       — 安全路径守卫（所有用户路径逃逸校验，安全关键模块）
   ├── terminal-pty.ts     — PTY 会话管理（PtyManager: spawn/write/resize/kill）
   ├── ws-server.ts        — WebSocket 通信通道（服务端↔浏览器双向实时通信）
-  ├── ai/                 — AI 对话子系统（v7.0.0 新增，v7.3.0 加挂机运行时）
+  ├── ai/                 — AI 对话子系统（v7.0.0 新增，v7.3.0 加挂机运行时，v8.0.0 所有权分离）
   │   ├── chat.ts         — SSE 流式对话核心（Provider/Model/SystemPrompt/ToolCall）
   │   ├── run-manager.ts  — 后台挂机运行时（runId/事件缓冲/订阅/5min淘汰，v7.3.0 新增）
   │   ├── routes.ts       — AI 对话 HTTP 端点（start/stream/cancel/active/status）
+  │   ├── session-store.ts — 会话日志唯一写者（v8.0.0 所有权分离，服务端单写者）
+  │   ├── page-state.ts   — 动态页面状态文件（.kfmv4/page-state.md）
+  │   ├── prompt-assembler.ts — 服务端 system prompt 组装（v7.4 眼睛系统）
+  │   ├── rule-engine.ts  — AI 规则引擎（rules/*.md 加载 + 约束注入）
   │   └── tools/          — AI 工具定义与执行（kfm-exec/snapshot/logs）
   └── prompts/            — 提示词模板（system/base.md + tools/）
 ```
@@ -115,6 +119,10 @@ index.ts (入口路由 + 静态文件)
 | `src/server/ai/chat.ts` | SSE 流式对话核心：Provider 加载、SystemPrompt 拼接、Tool Call、事件协议源头 |
 | `src/server/ai/run-manager.ts` | 后台挂机运行时：runId 分配、事件缓冲、订阅广播、5min 淘汰（详见 `docs/design/AI_CHAT_RUNTIME.md`） |
 | `src/server/ai/routes.ts` | AI 对话 HTTP 端点：start / stream?from=N / cancel / active / status |
+| `src/server/ai/session-store.ts` | 会话日志唯一写者（v8.0.0 所有权分离）：持有 Message[] + 磁盘 hydrate + 冷恢复 |
+| `src/server/ai/page-state.ts` | 动态页面状态文件：PageDescription → MUD 风格房间描述 markdown |
+| `src/server/ai/prompt-assembler.ts` | 服务端 system prompt 组装（v7.4 眼睛系统） |
+| `src/server/ai/rule-engine.ts` | AI 规则引擎：rules/*.md 加载 + frontmatter 解析 + 约束注入 |
 | `src/server/ai/tools/` | AI 工具定义（types→index→kfm-exec/snapshot/logs/browser） |
 | `src/server/ai/tools/omp/browser.ts` | Browser 工具入口：open/run/close，封装 tab-supervisor |
 | `src/server/ai/tools/omp/browser/` | Browser 核心：WorkerCore(puppeteer) + tab-supervisor + launch + aria |
@@ -160,7 +168,7 @@ index.ts (入口路由 + 静态文件)
 - **规则**：纯 DOM 实现,不触碰 Canvas 渲染器。弹窗打开时 canvas 点击/手势事件被 guard 拦截。
 
 ## 二、当前会话状态
-> **最后更新**：2026-07-26（v7.3.3 — 会话保存迁至服务端 + 端口/nginx/systemd 修复 + sessions/list 性能优化）
+> **最后更新**：2026-07-27（v8.0.0 — 所有权分离架构 + renderChatContent 删除 + chat-dom.ts 增量 DOM 渲染 + SessionStore 单写者 + kfm-restart 冷恢复 + 死代码清理 ~160 行）
 
 ### 当前焦点
 **AI Agent 调试能力体系建设** — 面向 AI 开发者的调试基础设施。
@@ -333,6 +341,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | **v7.3.1** | **sanitizePath .kfmv4 放行 + eye button 瞬间切换 + AI 工具历史消息保留 tool_calls + 目录指纹文件树刷新 + stealth txt 构建修复 + 306 测试** | git `0f240ec` |
 | **v7.3.2** | **会话加载分段传输（元数据端点 /sessions/list + 消息切片 /sessions/messages）+ 面板追底/卡片头部分段渲染 + 切换会话竞态修复（_renderedSessionId guard）+ 上滑锚点保持消除跳位 + 工具框折叠状态机（reveal/fold）+ 会话持久化竞态修复（写盘顺序/串行落盘）+ 326 测试** | git `0f240ec` |
 | **v7.3.3** | **会话保存迁至服务端（3 保存点 + 消息累加器）+ clientMessages 去除/nginx body size 修复 + systemd 端口误杀修复（Node 路径 + ExecStopPost）+ sessions/list 跳过 messages 数组** | git `HEAD` |
+| **v8.0.0** | **所有权分离架构：renderChatContent 删除 + chat-dom.ts 增量 DOM 渲染器 + SessionStore 服务端单写者 + kfm-restart 冷恢复 + 死代码清理（~160 行）** | git `HEAD` |
 > 速查：遇到 bug 先确认事件是否完整到达（用 `log()` 推日志卡），再查处理逻辑。
 
 ## 五、回归测试
@@ -420,8 +429,8 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `file-action-bar.ts` | 434 | 2 | ✅ 分组表 | 文件行长按 → 底部抽屉操作栏 |
 | `logger.ts` | 58 | 3 | ✅ 分组表 | KFM 日志系统 |
 | `mode-system.ts` | 447 | 1 | ✅ 分组表 | 模式按钮系统（从 tree-swipe 拆分，v6.8.0 新增） |
-| `orb.ts` | 744 | 2 | ✅ 独立条目 | 光球 UI + 拖拽手势 + 面板状态机 + 挂机重连 IIFE（协调层，见 AI_CHAT_RUNTIME） |
-| `orb-chat.ts` | 844 | 1 | ✅ 分组表 | AI 消息渲染 + 挂机 start/续读/取消 + 事件状态机（见 AI_CHAT_RUNTIME） |
+| `orb.ts` | 755 | 2 | ✅ 独立条目 | 光球 UI + 拖拽手势 + 面板状态机 + 挂机重连 IIFE（协调层，见 AI_CHAT_RUNTIME） |
+| `orb-chat.ts` | 706 | 1 | ✅ 分组表 | AI 消息渲染 + 挂机 start/续读/取消 + 事件状态机（见 AI_CHAT_RUNTIME） |
 | `chat-dom.ts` | 806 | 0 | ✅ 分组表 | v8 增量 DOM 投影（事件驱动，替代 renderChatContent 全量重建） |
 | `orb-panel.ts` | 209 | 1 | ✅ 分组表 | 面板 Provider/Session/Model/Role 下拉框（从 orb.ts 拆分） |
 | `orb-state.ts` | 17 | 0 | ✅ 分组表 | orb 状态机纯逻辑（零依赖，从 orb.ts 拆分，可脱离浏览器测试） |
@@ -443,6 +452,14 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `terminal-card-04.ts` | 755 | 0 | TERMINAL_CARD_SPEC | 03 号终端卡 xterm.js 集成 + WS 重连重开 PTY |
 | `tmux-card.ts` | 289 | 0 | AI_CHAT_RUNTIME §6 | 04 号 tmux 卡 + WS 重连自动 re-attach（_lastCommand） |
 | `card-registry.ts` | 155 | 5 | CARD_REGISTRY_SPEC | 卡片注册表：类型声明 + 实例追踪 |
+| **共享协议（src/shared/chat-protocol/）** | | | | |
+| `../src/shared/chat-protocol/index.ts` | 4 | 2 | ✅ 分组表 | 协议桶导出 |
+| `../src/shared/chat-protocol/events.ts` | 44 | 3 | ✅ 分组表 | 聊天事件类型定义（ChatEvent 联合类型） |
+| `../src/shared/chat-protocol/messages.ts` | 38 | 2 | ✅ 分组表 | 消息类型定义（Message/ContentBlock） |
+| `../src/shared/chat-protocol/reducer.ts` | 121 | 2 | ✅ 分组表 | 事件→状态 reducer（纯函数，事件驱动状态机） |
+| `../src/shared/chat-protocol/block-idx.ts` | 23 | 1 | ✅ 分组表 | content block 索引工具 |
+| **服务端会话存储** | | | | |
+| `../src/server/ai/session-store.ts` | 223 | 2 | ✅ 服务端模块表 | 会话日志唯一写者（v8.0.0 所有权分离）：Message[] 持有 + 磁盘 hydrate + 冷恢复 |
 | **渲染器（renderers/）** | | | | |
 | `../src/client/modules/renderers/binary-fallback.ts` | 37 | 1 | — | 二进制文件回退渲染器（文字提示不可预览） |
 | `../src/client/modules/renderers/code-highlight.ts` | 106 | 1 | — | 代码语法高亮渲染器（highlight.js） |
@@ -453,7 +470,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `../src/client/modules/renderers/md-extensions.ts` | 51 | 1 | — | Markdown 渲染扩展（链接、任务列表） |
 | `../src/client/modules/renderers/md-css.ts` | 57 | 2 | ✅ 分组表 | Markdown 渲染 CSS（全局唯一来源，orb + handler-factory 共享） |
 | `../src/client/modules/renderers/text-preview.ts` | 26 | 1 | — | 文本文件预览渲染器 |
-| **合计** | **15174** | | | |
+| **合计** | **15500** | | | |
 
 ### 死代码检查
 **结论：无死代码。** 所有 41 个模块都被至少 1 个文件导入（`terminal-card-04.ts` 和 `tmux-card.ts` 被导入数为 0，但这是模块自身的特性：它们仅在用户侧打开卡片时由 `card-registry.ts` 的 `createHandler` 工厂按需实例化，属于动态加载。`terminal-aux-bar.ts` 已删除（空占位，无任何引用）。`src/cards/` 目录已彻底删除。实际使用的 logger 在 `src/client/modules/logger.ts`。
