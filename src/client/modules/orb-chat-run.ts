@@ -23,7 +23,8 @@ import type { ContentBlock, TextBlock, ToolBlock, RuleWarningBlock } from './ses
 import { clearToolHint, updateTodoFromTool } from './orb-chat-hints.js';
 import { log } from './logger.js';
 // 工具 I/O 上下文压缩（v8.1.0）：纯函数注册表，契约 docs/design/TOOL_IO_COMPACTION.md
-import { compactToolInput, compactToolResult } from '../../shared/tool-compaction/index.js';
+import { compactToolInput, compactToolResult, normalizeBashCommand } from '../../shared/tool-compaction/index.js';
+import type { CompactionCtx } from '../../shared/tool-compaction/index.js';
 // 兜底消息上屏 + 取消时工具卡 DOM 收尾（v8 增量 DOM：数据层变更不会自动投影）
 import { mountFallbackAiMessage, settleToolCardsDom } from './chat-dom.js';
 
@@ -469,6 +470,52 @@ export async function doSend(
         if (b?.type === 'tool' && b.name === 'todo' && b.result) { lastTodoResultId = b.id; break; }
       }
     }
+    // 跨调用标注预扫描（契约第九节：标注只向后看——每个调用的 ctx 只由它之前的
+    // 调用决定，旧压缩行永不因后续消息改变，prompt 缓存前缀稳定）。
+    // 压缩器保持纯函数，此处在压缩循环前产出每个工具块的 CompactionCtx。
+    const compactCtxById = new Map<string, CompactionCtx>();
+    {
+      const readFpsByPath = new Map<string, string[]>();
+      const bashRunsByCmd = new Map<string, boolean[]>(); // 归一化命令 → isError 序列
+      let bashFailCmds: string[] = []; // 当前连续失败的归一化命令序列（环境故障判定用）
+      for (const m of messages) {
+        if (m?.role !== 'ai') continue;
+        for (const b of m.content) {
+          if (b?.type !== 'tool' || !b.result) continue;
+          const resultText = b.result.content?.map(c => c.text || '').join('') || '';
+          if (b.name === 'read') {
+            const path = typeof b.input.path === 'string' ? b.input.path : '';
+            const fp = `${resultText.split('\n').length}行/${resultText.length}字符`;
+            const prev = readFpsByPath.get(path) || [];
+            compactCtxById.set(b.id, { readPrevFps: [...prev] });
+            prev.push(fp);
+            readFpsByPath.set(path, prev);
+          } else if (b.name === 'bash') {
+            const rawCmd = typeof b.input.command === 'string' ? b.input.command : '';
+            const norm = normalizeBashCommand(rawCmd) || rawCmd.trim(); // 归一化为空 → 退回原串分组
+            const isError = !!b.result.isError;
+            const runs = bashRunsByCmd.get(norm) || [];
+            let tailFails = 0; // runs 末尾的连续失败数
+            for (let i = runs.length - 1; i >= 0 && runs[i]; i--) tailFails++;
+            // 环境故障：连续 ≥3 次 bash 失败且最近 3 次命令各不相同（不同意图同一结局 = 通道问题）
+            if (isError) bashFailCmds.push(norm); else bashFailCmds = [];
+            const last3 = bashFailCmds.slice(-3);
+            const envStreak = isError && bashFailCmds.length >= 3 && new Set(last3).size === 3
+              ? bashFailCmds.length : 0;
+            compactCtxById.set(b.id, {
+              bashRetry: {
+                ordinal: runs.length + 1,
+                failStreak: isError ? tailFails + 1 : 0,
+                prevFailStreak: isError ? 0 : tailFails,
+              },
+              bashEnvStreak: envStreak,
+            });
+            runs.push(isError);
+            bashRunsByCmd.set(norm, runs);
+          }
+        }
+      }
+    }
     let compactSaved = 0; // 压缩省下的字符数（观测日志用）
     const apiMessages: Array<{ role: string; content: string | null; tool_calls?: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }>; tool_call_id?: string }> = [];
     for (let mi = 0; mi < messages.length; mi++) {
@@ -502,7 +549,7 @@ export async function doSend(
             const resultText = tc.result?.content?.map(c => c.text || '').join('') || '';
             let content = resultText;
             if (compactable && tc.id !== lastTodoResultId) { // G4：最新 todo 结果豁免
-              const compacted = compactToolResult(tc.name, tc.input, resultText, !!tc.result?.isError);
+              const compacted = compactToolResult(tc.name, tc.input, resultText, !!tc.result?.isError, compactCtxById.get(tc.id));
               if (compacted !== null) {
                 compactSaved += resultText.length - compacted.length;
                 content = compacted;

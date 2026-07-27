@@ -17,6 +17,7 @@ import { group, test } from './runner.js';
 import {
   compactToolResult,
   compactToolInput,
+  normalizeBashCommand,
   COMPACTOR_NAMES,
 } from '../src/shared/tool-compaction/index.js';
 
@@ -92,7 +93,7 @@ test('edit：无行号入参时省略行范围', () => {
   assert(out === '[edit /src/a.ts]', `得 ${out}`);
 });
 
-test('grep：[grep {pattern} → {count}处匹配，可重跑]（截断标记行不计入）', () => {
+test('grep：截断时透传「未看全」→ {count}+处匹配（结果被截断），标记行不计入', () => {
   const result = [
     'a.ts:1: ' + chars(150),
     'b.ts:2: ' + chars(150),
@@ -100,7 +101,7 @@ test('grep：[grep {pattern} → {count}处匹配，可重跑]（截断标记行
     '(结果被截断)',
   ].join('\n');
   const out = compactToolResult('grep', { pattern: 'foo' }, result, false);
-  assert(out === '[grep foo → 3处匹配，可重跑]', `得 ${out}`);
+  assert(out === '[grep foo → 3+处匹配（结果被截断），可重跑]', `得 ${out}`);
 });
 
 test('glob：[glob {pattern} → {count}个文件]', () => {
@@ -282,4 +283,79 @@ test('COMPACTOR_NAMES 覆盖映射表全部显式登记工具', () => {
     assert(COMPACTOR_NAMES.includes(name), `注册表缺 ${name}`);
   }
   assert(COMPACTOR_NAMES.length === expected.length, `登记数应为 ${expected.length}，得 ${COMPACTOR_NAMES.length}`);
+});
+
+// ==========================================================================
+// 6. 跨调用标注层（契约第九节：宁漏勿错 / 决策相关性 / 只向后看）
+// ==========================================================================
+
+group('tool-compaction — 跨调用标注层');
+
+test('归一化语法：去 cd 前缀 + 截管道 + 去 2>&1 + 折叠空白', () => {
+  assert(normalizeBashCommand('cd /root/kfmv4 && npm test 2>&1 | tail -5') === 'npm test');
+  assert(normalizeBashCommand('cd /a && cd /b && npx tsc --noEmit') === 'npx tsc --noEmit');
+  assert(normalizeBashCommand('export FOO=1 && git status') === 'git status');
+  assert(normalizeBashCommand('time npx tsc --noEmit') === 'npx tsc --noEmit');
+  assert(normalizeBashCommand('git  status') === 'git status');
+  assert(normalizeBashCommand('cd /only-prefix &&') === '');
+  // 宁漏勿错：语义等价写法不同 = 不同命令，不模糊匹配
+  assert(normalizeBashCommand('npm run test') !== normalizeBashCommand('npm test'));
+});
+
+test('grep 截断透传：{count}+处匹配（结果被截断）', () => {
+  const out = compactToolResult('grep', { pattern: 'foo' }, bigLines(20) + '\n(结果被截断)', false);
+  assert(out === '[grep foo → 20+处匹配（结果被截断），可重跑]', `得 ${out}`);
+  const full = compactToolResult('grep', { pattern: 'foo' }, bigLines(20), false);
+  assert(full === '[grep foo → 20处匹配，可重跑]', `得 ${full}`);
+});
+
+test('bash 指标提取白名单：只认 N passed, N failed，其它输出不提取', () => {
+  const withTests = bigLines(50) + '\n425 passed, 0 failed';
+  const out = compactToolResult('bash', { command: 'npm test' }, withTests, false);
+  assert(out?.includes('（425 passed, 0 failed）'), `指标未提取: ${out}`);
+  const other = compactToolResult('bash', { command: 'ls' }, bigLines(50), false);
+  assert(!other?.includes('passed'), `不应提取: ${other}`);
+});
+
+test('read 去重标注：指纹相同 → 内容与上方读取相同', () => {
+  const body = bigLines(40);
+  const fp = `${body.split('\n').length}行/${body.length}字符`;
+  const out = compactToolResult('read', { path: '/a.ts' }, body, false, { readPrevFps: [fp] });
+  assert(out?.includes('内容与上方读取相同'), `得 ${out}`);
+});
+
+test('read 修改标注：指纹不同 → 文件已被修改；回退 → 标明回到第几次读取', () => {
+  const body = bigLines(40);
+  const fpA = '10行/500字符';
+  const fpB = `${body.split('\n').length}行/${body.length}字符`;
+  const modified = compactToolResult('read', { path: '/a.ts' }, body, false, { readPrevFps: [fpA] });
+  assert(modified?.includes('内容与上方读取不同（文件已被修改）'), `得 ${modified}`);
+  const reverted = compactToolResult('read', { path: '/a.ts' }, body, false, { readPrevFps: [fpB, fpA] });
+  assert(reverted?.includes('内容回退到第1次读取时的状态'), `得 ${reverted}`);
+});
+
+test('bash 重试弧线：第N次执行 / 连续失败 / 成功前的失败史', () => {
+  const out1 = compactToolResult('bash', { command: 'npm test' }, bigLines(50), false,
+    { bashRetry: { ordinal: 3, failStreak: 0, prevFailStreak: 2 } });
+  assert(out1?.includes('（第3次执行，此前连续2次失败）'), `得 ${out1}`);
+  const out2 = compactToolResult('bash', { command: 'npm test' }, bigLines(50), true,
+    { bashRetry: { ordinal: 3, failStreak: 3, prevFailStreak: 0 } });
+  assert(out2?.includes('（第3次执行，连续3次失败）'), `得 ${out2}`);
+  const out3 = compactToolResult('bash', { command: 'npm test' }, bigLines(50), false,
+    { bashRetry: { ordinal: 1, failStreak: 0, prevFailStreak: 0 } });
+  assert(!out3?.includes('第1次执行'), '首次执行不标注');
+});
+
+test('bash 环境故障：连续 ≥3 次不同命令失败才标注（<3 不标）', () => {
+  const out = compactToolResult('bash', { command: 'ss -tlnp' }, bigLines(50), true, { bashEnvStreak: 4 });
+  assert(out?.includes('（连续4次失败均为不同命令——疑似环境问题）'), `得 ${out}`);
+  const under = compactToolResult('bash', { command: 'ss -tlnp' }, bigLines(50), true, { bashEnvStreak: 2 });
+  assert(!under?.includes('疑似环境问题'), '2 次不应标注');
+});
+
+test('无 ctx → 无任何标注（向后兼容 + 标注层不影响纯函数契约）', () => {
+  const out = compactToolResult('read', { path: '/a.ts' }, bigLines(40), false);
+  assert(!out?.includes('内容与上方'), `得 ${out}`);
+  const out2 = compactToolResult('bash', { command: 'ls' }, bigLines(50), false);
+  assert(!out2?.includes('次执行'), `得 ${out2}`);
 });

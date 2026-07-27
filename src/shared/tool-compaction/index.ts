@@ -64,6 +64,52 @@ function num(v: unknown): number | null {
   return typeof v === 'number' && Number.isFinite(v) ? v : null;
 }
 
+// ========== 跨调用标注（契约第九节）==========
+
+/**
+ * 跨调用标注上下文——由调用层（orb-chat-run.ts）预扫描产出，压缩器保持纯函数。
+ * 公理（契约第九节「标注层」）：宁漏勿错 / 决策相关性检验 / 只向后看
+ * （旧压缩行永不因后续消息改变，prompt 缓存前缀稳定）。
+ */
+export interface CompactionCtx {
+  /** read：同路径历史指纹（"行/字符" 串，按调用顺序） */
+  readPrevFps?: string[];
+  /** bash 重试弧线（同一归一化命令）：执行序 / 含本次连续失败数 / 本次成功前的连续失败数 */
+  bashRetry?: { ordinal: number; failStreak: number; prevFailStreak: number };
+  /** bash 环境故障：连续 n 次失败且最近 3 次为不同归一化命令（≥3 才标注） */
+  bashEnvStreak?: number;
+}
+
+/**
+ * bash 命令归一化语法（契约第九节，四条规则，改规则先改文档）：
+ *   1. 截断 | 管道尾（tail/head 是展示层，不改命令意图）
+ *   2. 去 2>&1 重定向
+ *   3. 按 && / ; 切段，丢弃 cd / export / time 前缀段，取第一个实质段（带参数）
+ *   4. 折叠多余空白
+ * 原则：宁漏勿错——语义等价但写法不同的命令（npm test vs npm run test）宁可漏标。
+ */
+export function normalizeBashCommand(cmd: string): string {
+  const noPipe = String(cmd || '').split('|')[0] ?? '';
+  const noRedir = noPipe.replace(/2>&1/g, '');
+  const segs = noRedir.split(/&&|;/).map(s => s.trim()).filter(s => s && !/^(cd|export)\s/.test(s));
+  return (segs[0] || '').replace(/^time\s+/, '').replace(/\s+/g, ' ').trim();
+}
+
+/** bash 重试弧线/环境故障标注拼装（无 ctx 或无信号 → 空串） */
+function bashAnnotation(isError: boolean, ctx?: CompactionCtx): string {
+  const r = ctx?.bashRetry;
+  if (r && r.ordinal >= 2) {
+    let a = `（第${r.ordinal}次执行`;
+    if (isError && r.failStreak >= 2) a += `，连续${r.failStreak}次失败`;
+    else if (!isError && r.prevFailStreak >= 1) a += `，此前连续${r.prevFailStreak}次失败`;
+    return a + '）';
+  }
+  if (isError && (ctx?.bashEnvStreak ?? 0) >= 3) {
+    return `（连续${ctx?.bashEnvStreak}次失败均为不同命令——疑似环境问题）`;
+  }
+  return '';
+}
+
 // ========== 工具结果压缩 ==========
 
 /**
@@ -73,12 +119,14 @@ function num(v: unknown): number | null {
  *   G3：失败结果 ≤500 字符保留原文（错误信息往往正是后续诊断对象）
  *   G7：未登记工具走兜底压缩器（行为永不出错；check 会对未登记工具报红）
  * G1（最近 2 轮豁免）与 G4（最新 todo 豁免）在调用层判断，不在此函数内。
+ * ctx：跨调用标注上下文（可选，契约第九节）。
  */
 export function compactToolResult(
   name: string,
   input: Record<string, unknown>,
   resultText: string,
   isError: boolean,
+  ctx?: CompactionCtx,
 ): string | null {
   if (resultText.length <= 300) return null; // G2
   if (isError && resultText.length <= 500) return null; // G3
@@ -87,11 +135,18 @@ export function compactToolResult(
   switch (name) {
     case 'bash': {
       const cmd = trunc(str(input.command), 60);
-      if (!isError) return `[bash: ${cmd} → 成功，${lines}行输出已折叠]`;
+      const anno = bashAnnotation(isError, ctx);
+      if (!isError) {
+        // 关键指标提取（白名单制，契约第九节）：只认跨工具通用的测试结果模式，
+        // 不认就不提取——绝不为各种输出格式维护专属解析器。
+        const m = resultText.match(/\d+ passed, \d+ failed/);
+        const metrics = m ? `（${m[0]}）` : '';
+        return `[bash: ${cmd} → 成功，${lines}行输出已折叠${metrics}${anno}]`;
+      }
       // 失败 = 诊断证据（重跑可能昂贵/有副作用/不可复现）：确定性保留尾部 200 字符
       // （stderr 惯例错误信息在末尾）。换行压为 ⏎——压缩行单行契约不可破坏。
       const tail = resultText.slice(-200).replace(/\n/g, '⏎');
-      return `[bash: ${cmd} → 失败，${lines}行输出已折叠，尾部: …${tail}]`;
+      return `[bash: ${cmd} → 失败，${lines}行输出已折叠，尾部: …${tail}]${anno}`;
     }
     case 'read': {
       // 指纹对（行数+字符数）：同一路径两条压缩行指纹不同 = 两次读取之间文件被修改，
@@ -101,7 +156,17 @@ export function compactToolResult(
       let note = '';
       if (resultText.includes('仅显示前')) note = '，原读取截断未看全';
       else if (resultText.includes('采样 (前 ')) note = '，采样读取未看全';
-      return `[read ${str(input.path)} → ${lines}行/${resultText.length}字符${note}，可用 read 重读]`;
+      // 去重/回退标注（ctx 驱动）：指纹是证据，标注是结论——省去 AI 跨行比对
+      const fp = `${lines}行/${resultText.length}字符`;
+      let dup = '';
+      const prev = ctx?.readPrevFps;
+      if (prev && prev.length > 0) {
+        const idx = prev.lastIndexOf(fp);
+        if (idx === prev.length - 1) dup = '，内容与上方读取相同';
+        else if (idx >= 0) dup = `，内容回退到第${idx + 1}次读取时的状态`;
+        else dup = '，内容与上方读取不同（文件已被修改）';
+      }
+      return `[read ${str(input.path)} → ${fp}${note}${dup}，可用 read 重读]`;
     }
     case 'write': {
       const content = str(input.content);
@@ -116,8 +181,10 @@ export function compactToolResult(
     }
     case 'grep': {
       // grep 输出每行一处匹配（path:line: text），末尾可能带「(结果被截断)」标记行
+      // 「未看全」透传（契约第九节）：截断时 count 不全，必须显式标注
+      const truncated = resultText.includes('(结果被截断)');
       const count = resultText.split('\n').filter(l => l !== '(结果被截断)').length;
-      return `[grep ${str(input.pattern)} → ${count}处匹配，可重跑]`;
+      return `[grep ${str(input.pattern)} → ${count}${truncated ? '+' : ''}处匹配${truncated ? '（结果被截断）' : ''}，可重跑]`;
     }
     case 'glob':
       return `[glob ${str(input.pattern)} → ${lines}个文件]`;
