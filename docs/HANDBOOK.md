@@ -503,7 +503,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 
 ## 六、约束与原则
 
-> 全量约束交叉引用见 [`docs/KFM_V4_INVARIANTS.md`](./KFM_V4_INVARIANTS.md)（心法 18 条 + 架构约束 + 隐性契约 + 关键约定速查）。
+> 全量约束交叉引用见 [`docs/KFM_V4_INVARIANTS.md`](./KFM_V4_INVARIANTS.md)（宪法 5 条 + 心法 31 条 + 架构约束 + 隐性契约 + 关键约定速查）。
 > 修改代码前必读 [`docs/KFM_V4_INVARIANTS.md`](./KFM_V4_INVARIANTS.md)（修改约束协议）。
 > 补充原则（流程建议）见 [`docs/DIAGNOSTICS.md`](./DIAGNOSTICS.md) §四。
 

@@ -14,6 +14,7 @@
 > **加新卡片前先读** `docs/development/CARD_DEV_GUIDE.md`（卡片插件开发指南）。
 > **改 AI 对话流式/挂机/WS 重连/终端恢复先读** `docs/design/AI_CHAT_RUNTIME.md`（后台挂机运行时架构 + 跨 10 文件的隐式时序契约）。
 > **改代码/修 bug 前先读回归纪律** `docs/BUG_REGRESSION_REGISTRY.md` + INVARIANTS 心法 24（修 bug 补钉子+登记+revert 验证；测试分层见 `docs/archive/design/REGRESSION_TESTING_SYSTEM.md`）。
+> **设计讨论定稿后必跑沉淀五问**（INVARIANTS §七 步骤 7）：特性不算 done，直到五问被问过——被推翻的初版方案入契约错误示例，可泛化规则提名心法/宪法候选。
 > **UI Registry 相关**已归档到 `docs/archive/design/`。
 > **引擎层改动先读** `docs/archive/design/ENGINE_ARCHITECTURE.md`（v2 管线 + text-layout 排版引擎架构）。
 
@@ -54,7 +55,7 @@ docs/
 ├── development/             # 开发指南
 │   ├── CARD_DEV_GUIDE.md    # 卡片插件开发指南（加新卡前读）
 │   └── SPEC_DRIVEN_WORKFLOW.md # 规范驱动工作流：怎么做带文档的大改动（大改动前读）
-├── KFM_V4_INVARIANTS.md     # 修改约束协议：心法原则+自查清单（改代码前必读）
+├── KFM_V4_INVARIANTS.md     # 修改约束协议：宪法+心法原则+自查清单（改代码前必读）
 ├── DIAGNOSTICS.md           # 诊断手册：隐性契约 + 排查流程 + 根因案例库（遇到 bug 先翻）
 ├── BUG_REGRESSION_REGISTRY.md # Bug 回归登记表：687 fix 蒸馏成「该不该测/测了没」追踪表
 ├── V8_AUDIT_REPORT.md         # v8 全量审计报告（代码架构 + 文档同步性 + 技术债）
@@ -120,7 +121,7 @@ orb.ts 和 floating-card.ts 通过交互共享层共享常量。统一化方案�
   原项目根目录下的 `.kfmv4/` 已废弃删除。
 - **Git 推送认证**：项目根目录 `.env` 文件中配置了 `GITHUB_TOKEN` 环境变量（已 `.gitignore` 保护）。执行 `git push` 前先 `source .env` 或将该 token 加入 git credential。该 token 用于 agent 远程推送代码，不可删除。
 - **代码注释约定**：设计决策写在所改动代码文件的头部注释块中，而非独立文档。
-  关键分支处必写"为什么走A不走B"。改到哪个文件注释就更新到哪个文件。详见 `docs/KFM_V4_INVARIANTS.md` §八（设计注释规约）。
+  关键分支处必写"为什么走A不走B"。改到哪个文件注释就更新到哪个文件。详见 `docs/KFM_V4_INVARIANTS.md` §九（设计注释规约）。
 > 更多隐性契约见 `docs/DIAGNOSTICS.md` §一。
 
 > 历史修复记录（v4.0.0 前）已清理。如需追溯：`git log --oneline v4.0.0..HEAD`
