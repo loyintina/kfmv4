@@ -611,3 +611,72 @@ regression('BAR-ORB-PANEL-15', 'base.scss', 'orb-hint-pulse keyframes 必须在�
   const hints = readFileSync('src/client/modules/orb-chat-hints.ts', 'utf-8');
   assert(!hints.includes('orb-hint-css'), '禁止恢复 JS 注入 <style> 的老机制（未触发等待提示的页面 keyframes 缺失，脉冲不播）');
 });
+
+group('v8.1 第六批 — v7 丢失细节全量恢复（v7.3.3 审计驱动，18 项）');
+
+regression('BAR-ORB-PANEL-16', 'orb-chat-run', '兜底消息必须上屏 + 取消时工具卡 DOM 收尾', () => {
+  const run = readFileSync('src/client/modules/orb-chat-run.ts', 'utf-8');
+  // v8 曾只 push 数据层：「请求失败/已取消/未收到回复」用户看不到，刷新才冒出来
+  assert(run.includes('mountFallbackAiMessage'), '兜底消息必须调 mountFallbackAiMessage 上屏');
+  const aborts = run.split('AbortError');
+  assert(aborts.length >= 3, 'doSend/resumeRun 两处 AbortError 分支都应在');
+  assert((run.match(/settleToolCardsDom\('\(已取消\)'\)/g) || []).length >= 2,
+    '两处取消分支都必须 settleToolCardsDom（曾工具卡永远"忙碌中"+提示无限轮转）');
+  const orb = readFileSync('src/client/modules/orb.ts', 'utf-8');
+  assert(orb.includes('mountFallbackAiMessage'), 'onConfigMissing 兜底必须上屏');
+});
+
+regression('BAR-ORB-PANEL-17', 'chat-dom', '思考块懒创建（非思考模型不留幽灵"已思考"空条）', () => {
+  const src = readFileSync('src/client/modules/chat-dom.ts', 'utf-8');
+  const startBody = src.split("case 'content_block_start'")[1]?.split("case 'content_block_delta'")[0] || '';
+  assert(!startBody.includes('_createThinkingBlock'), 'block start 不得建思考块（v7：reasoning 非空才渲染）');
+  const tdBody = src.split("event.deltaType === 'thinking_delta'")[1]?.split("event.deltaType === 'text_delta'")[0] || '';
+  assert(tdBody.includes('_createThinkingBlock'), '首个 thinking_delta 必须懒创建思考块');
+});
+
+regression('BAR-ORB-PANEL-18', 'chat-dom', '并行工具 input_json 按 event.index 路由（不灌最后一张卡）', () => {
+  const src = readFileSync('src/client/modules/chat-dom.ts', 'utf-8');
+  assert(src.includes('_blockToolIds'), '应有 block index → blockId 路由表');
+  const deltaBody = src.split("input_json_delta'")[1]?.split("case 'content_block_stop'")[0] || '';
+  assert(deltaBody.includes('_blockToolIds.get'), 'input_json_delta 必须按 event.index 路由');
+  const stopBody = src.split('blockIdx > 0')[1]?.split("case 'tool_result'")[0] || '';
+  assert(stopBody.includes('_blockToolIds.get') && stopBody.includes('null, 2'),
+    'block stop 必须按 index 找卡 + pretty-print 后再高亮（v7 行为）');
+});
+
+regression('BAR-ORB-PANEL-19', 'chat-dom', 'read 读 .md 富渲染 + mermaid 不进缓存', () => {
+  const src = readFileSync('src/client/modules/chat-dom.ts', 'utf-8');
+  assert(src.includes('orb-tool-md'), 'read .md 必须走 orb-tool-md 富渲染（CSS 曾成死代码）');
+  const rmBody = src.split('function _renderMarkdown')[1]?.split('\n}')[0] || '';
+  assert(rmBody.includes('hasMermaid'), '含 mermaid 的文本不得读写 _mdCache（SVG 未就绪存半成品）');
+});
+
+regression('BAR-ORB-PANEL-20', 'orb', 'Todo 面板历史恢复 + 面板展开追底门控', () => {
+  const src = readFileSync('src/client/modules/orb.ts', 'utf-8');
+  const mhwBody = src.split('function _mountHistoryWindow')[1]?.split('\n}')[0] || '';
+  assert(mhwBody.includes('_restoreTodoPanel()'), '历史窗口重挂末尾必须调 _restoreTodoPanel（刷新/切会话面板曾消失）');
+  const rtpBody = src.split('function _restoreTodoPanel')[1]?.split('\n}')[0] || '';
+  assert(rtpBody.includes('updateTodoFromTool'), '_restoreTodoPanel 必须从数据层找回 todo 结果重挂');
+  const epBody = src.split('function expandPanel')[1]?.split('\n}')[0] || '';
+  assert(epBody.includes('getFollowBottom()'), 'expandPanel 不得无条件追底（上滑浏览位置曾丢失）');
+});
+
+regression('BAR-ORB-PANEL-21', 'chat-dom', '细节组：滑入动画/打字机滚底/放完才折/空输入隐藏', () => {
+  const src = readFileSync('src/client/modules/chat-dom.ts', 'utf-8');
+  assert(src.includes('orb-msg-new'), 'live 新消息必须有滑入动画类（CSS 曾无使用者）');
+  const twBody = src.split('function _typewriterReveal')[1]?.split('\n}')[0] || '';
+  assert(twBody.includes('scrollTop = el.scrollHeight'), '打字机 reveal 期间必须滚底（长输出停在开头）');
+  const trBody = src.split("case 'tool_result'")[1]?.split("case 'rule_warning'")[0] || '';
+  assert(trBody.includes('onDone') || trBody.includes('_foldState.get(blockId'), '折叠必须在输出放完后（曾 340ms 折进 500ms 打字机）');
+  assert(!trBody.includes('setTimeout('), '禁止恢复定时折叠（必须由渲染完成回调触发）');
+  assert(src.includes('_hideEmptyToolInput'), '无参数工具必须隐藏输入区+分隔线');
+});
+
+regression('BAR-BUILD-04', 'build/check', 'check-css-wiring 永久接线检查必须挂在构建链', () => {
+  const build = readFileSync('build.mjs', 'utf-8');
+  assert(build.includes('check-css-wiring'), 'build.mjs 必须跑 check-css-wiring（sass 之后）');
+  const pkg = readFileSync('package.json', 'utf-8');
+  assert(pkg.includes('check-css-wiring'), 'npm run check 链必须含 check-css-wiring');
+  const script = readFileSync('check-css-wiring.mjs', 'utf-8');
+  assert(script.includes('@keyframes') && script.includes('scss'), '脚本必须双向检查类与 keyframes');
+});

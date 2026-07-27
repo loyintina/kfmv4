@@ -149,6 +149,13 @@ maintainer: AI agent
 | BAR-ORB-PANEL-13 | `chat-dom` | 历史思考框显示 ▶ 标记却摊开着、点击无法折叠：折叠容器用 `orb-fold-open` 类，但 `.collapsed` CSS 只定义在 `.orb-fold-content.collapsed` 上——`orb-fold-open.collapsed` 无任何规则，toggle 的是无效果的类。契约：思考框折叠容器必须 `orb-fold-content`；死类 `.orb-fold-open` 从 SCSS 清除 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
 | BAR-ORB-PANEL-14 | `chat-dom` | 摸鱼提示每 1.5s 覆盖已完成工具的真实输出、折叠再展开还在滚：`_createToolCard` 无条件 `setInterval`，历史挂载路径无人清计时器。契约：提示只在执行期由 patchEvent/mountAiMessage（无 result）经 `_startToolHint` 启动，tool_result 经 `_stopToolHint` 停 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
 | BAR-ORB-PANEL-15 | `base.scss` | 摸鱼提示脉冲点不播动画：`@keyframes orb-hint-pulse` 靠 `startWaitingIndicator` 运行时注入 `<style>`，未触发过等待提示的页面（纯看历史）keyframes 缺失。契约：keyframes 必须静态定义在 base.scss，禁止 JS 注入 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-ORB-PANEL-16 | `orb-chat-run` | 「请求失败/已取消/未收到回复/未配置 Provider」只 push 数据层永不上屏（发送失败界面毫无反应）；取消后工具卡永远"忙碌中"+提示无限轮转。契约：兜底一律新起消息 + `mountFallbackAiMessage` 上屏（append 进已挂载消息在增量 DOM 下不会投影）；两处 AbortError 必须 `settleToolCardsDom` | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-ORB-PANEL-17 | `chat-dom` | 非思考模型每条回复多一条空壳"已思考"折叠条：block start 无条件建思考块。契约：`content_block_start(text)` 不建，首个 thinking_delta 懒创建（v7：reasoning 非空才渲染） | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-ORB-PANEL-18 | `chat-dom` | 并行工具 input_json_delta 无视 event.index 全灌最后一张卡（JSON 错乱）。契约：`_blockToolIds` 路由表，delta/stop 按 index 寻址；stop 时 pretty-print 后再高亮 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-ORB-PANEL-19 | `chat-dom` | read 读 .md 退化为等宽纯文本（`.orb-tool-md` 整套样式成死代码）；mermaid SVG 未就绪就写进 `_mdCache`，重挂后永远显示原始代码。契约：read+md 走 orb-tool-md 全管线；含 ```mermaid 文本不读写缓存 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-ORB-PANEL-20 | `orb` | Todo 面板刷新/切会话后不再恢复（v7 每次渲染末尾重挂）；面板收起再展开无条件拽回底部。契约：`_mountHistoryWindow` 末尾 `_restoreTodoPanel`；`expandPanel` 追底走 `getFollowBottom()` 门控 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-ORB-PANEL-21 | `chat-dom` | 细节组：新消息滑入动画丢失（`orb-msg-new` CSS 无使用者）；打字机 reveal 期间 pre 不滚底（长输出停在开头）；340ms 定时折叠把 500ms 打字机折进一半；无参数工具显示空输入框+分隔线。契约：live 挂载 animate=true；reveal tick 滚底；折叠由 onDone 回调触发（禁 setTimeout）；`_hideEmptyToolInput` | L | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-BUILD-04 | `build/check` | 「接线丢失」类 bug（CSS 定义了没人用/JS 引用了没定义）反复出现却无防线。契约：`check-css-wiring.mjs` 双向检查 orb-* 类与 keyframes，挂在 build 和 npm run check 链 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
 
 > 新 bug 修复后：补一个回归钉子 → 在此登记 → 状态置「已钉」。见
 > `docs/archive/design/REGRESSION_TESTING_SYSTEM.md` §3 微循环。

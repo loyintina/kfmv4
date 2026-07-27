@@ -267,6 +267,29 @@ v7 被砍设计的盘点结论：恢复 6 项（其余为 v8 架构红利，不�
 > （本批 bug 1/3 都能被这种检查自动抓住）。
 > 回归钉：BAR-ORB-PANEL-13…15（均已 revert 验证）。
 
+**v8.1 第六批 — v7 丢失细节全量恢复（v7.3.3 审计驱动，18 项）**
+
+方法：explore 代理对 v7.3.3 tag 与 v8 做逐维度行为审计（非代码结构对比），
+产出 18 项清单，全部修复（除两项经确认保留现状，见下）。
+
+1. **兜底上屏** — 「请求失败/已取消/未收到回复/未配置 Provider」曾只 push
+   数据层；现统一新起消息 + `mountFallbackAiMessage`（v8 增量 DOM 只增不改，
+   append 进已挂载消息不会投影——这是 v7 全量重渲染掩盖的系统性差异）。
+2. **取消收尾** — AbortError 分支补 `settleToolCardsDom('(已取消)')`。
+3. **思考块懒创建** — block start 不建，首个 thinking_delta 才建。
+4. **read .md 富渲染 / mermaid 不缓存 / Todo 面板历史恢复 / 并行工具按
+   event.index 路由 + stop 时 pretty-print / expandPanel 追底门控 / 新消息
+   滑入 / 打字机滚底 / 折叠等 onDone / 空输入隐藏 / error 事件不拍平 md**。
+5. **check-css-wiring.mjs 永久机制** — orb-* 类与 keyframes 双向接线检查
+   （JS↔SCSS），挂进 build + check 链。此类病（本批 bug 1/3、审计项 4/10）
+   从此构建即报错。
+
+> 保留现状（经确认）：项 15 复制按钮保持复制渲染后纯文本（用户决定）；
+> 项 17 write/edit/grep/glob 富渲染卡不走打字机（结构化信息瞬间全量更合理，
+> v8 文件头注明有意收窄）；项 18 foldState 键漂移经核实不存在——
+> `_mountHistoryWindow` 走 `clearChatDom` 已整体清状态（v7 同生命周期），记录在案。
+> 回归钉：BAR-ORB-PANEL-16…21、BAR-BUILD-04（均已 revert 验证）。
+
 ### 当前焦点
 **AI Agent 调试能力体系建设** — 面向 AI 开发者的调试基础设施。
 
