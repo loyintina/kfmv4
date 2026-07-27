@@ -195,13 +195,16 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
   0%, 100% { opacity: 0.7; }
   50% { opacity: 1; }
 }
+/* 摸鱼提示脉冲点（等待提示 + 工具执行期提示共用）。
+ * 必须在静态 CSS 定义——曾靠 startWaitingIndicator 运行时注入 <style>，
+ * 未触发过等待提示的页面（如纯看历史）keyframes 缺失，脉冲点完全不播动画。 */
+@keyframes orb-hint-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.3); }
+}
 /* 折叠动画进行中：JS 逐帧控制 inline max-height，关掉 CSS transition 避免打架 */
 .orb-fold-anim {
   overflow: hidden;
-}
-/* 流式展开态：无过渡、无高度限制——内容边生成边显示，不被 max-height 裁剪或过渡卡住 */
-.orb-fold-open {
-  overflow: visible;
 }
 /* 工具框内的 markdown 输出（read .md）：字号跟工具框(9px 系)而非正文(13px)，
  * 固定最大高度内部滚动，流式渲染时不撑爆卡片。覆盖 .md-body 的字号/间距。 */

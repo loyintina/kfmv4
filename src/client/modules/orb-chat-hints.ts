@@ -58,13 +58,7 @@ export function startWaitingIndicator(panelEl: HTMLDivElement): () => void {
   el.appendChild(txt);
   contentArea.appendChild(el);
 
-  // 注入脉冲 CSS（仅一次）
-  if (!document.getElementById('orb-hint-css')) {
-    const style = document.createElement('style');
-    style.id = 'orb-hint-css';
-    style.textContent = '@keyframes orb-hint-pulse{0%,100%{opacity:0.4;transform:scale(1)}50%{opacity:1;transform:scale(1.3)}}';
-    document.head.appendChild(style);
-  }
+  // 脉冲 keyframes 在 base.scss（静态定义，曾在此运行时注入——见 base.scss 注释）
 
   // 随机打乱提示顺序，循环播放
   const pool = [...WAITING_HINTS].sort(() => Math.random() - 0.5);

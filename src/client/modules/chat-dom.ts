@@ -236,6 +236,26 @@ function _randomHint(): string {
 
 const HINT_DOT_HTML = '<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:rgba(0,212,255,0.6);animation:orb-hint-pulse 1.2s ease-in-out infinite;vertical-align:middle;margin-right:5px"></span>';
 
+/**
+ * 启动工具执行期摸鱼提示轮换（1.5s 一条，tool_result 到达即停）。
+ * 只在「执行中」调用——_createToolCard 不预设提示：
+ * 曾在卡片创建时无条件启动轮换，历史挂载的已完成工具没有清计时器的路径，
+ * 提示每 1.5s 覆盖真实输出，且卡片折叠再展开后仍在滚。
+ */
+function _startToolHint(blockId: string, outputArea: HTMLElement): void {
+  if (_hintTimers.has(blockId)) return;
+  outputArea.innerHTML = HINT_DOT_HTML + _escapeHtml(_randomHint());
+  _hintTimers.set(blockId, setInterval(() => {
+    outputArea.innerHTML = HINT_DOT_HTML + _escapeHtml(_randomHint());
+  }, 1500));
+}
+
+/** 停止摸鱼提示轮换（输出渲染前必须停，防 1.5s 后提示覆盖真实输出） */
+function _stopToolHint(blockId: string): void {
+  const ht = _hintTimers.get(blockId);
+  if (ht) { clearInterval(ht); _hintTimers.delete(blockId); }
+}
+
 // ========== DOM 构建工具 ==========
 
 function _el(tag: string, className?: string, style?: string): HTMLElement {
@@ -604,7 +624,7 @@ function _createThinkingBlock(msgEl: HTMLElement, mi: number): { pre: HTMLElemen
   headerEl.appendChild(arrow);
   headerEl.appendChild(labelEl);
 
-  const foldEl = _el('div', 'orb-fold-open', 'margin-top:4px');
+  const foldEl = _el('div', 'orb-fold-content', 'margin-top:4px');
   foldEl.id = 'r' + mi;
   const pre = _el('pre', '', 'font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.45);line-height:1.4;white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;background:rgba(0,0,0,0.15);padding:4px 6px;border-radius:4px;max-height:80px;overflow-y:auto');
   foldEl.appendChild(pre);
@@ -679,11 +699,8 @@ function _createToolCard(msgEl: HTMLElement, mi: number, ti: number, blockId: st
   const divider = _el('div', '', `height:1px;margin:5px 0;border-radius:1px;background:linear-gradient(90deg,${_hexToRgba(c1, 0.7)},${_hexToRgba(c2, 0.7)})`);
 
   const outputArea = _el('div', '', 'color:rgba(255,255,255,0.75);font-size:var(--card-font-size,9px);line-height:1.4;padding:2px 0');
-  outputArea.innerHTML = HINT_DOT_HTML + _escapeHtml(_randomHint());
-  // 执行期间每 1.5s 轮换摸鱼提示（v7 getToolHint 轮换语义恢复），tool_result 到达即停
-  _hintTimers.set(blockId, setInterval(() => {
-    outputArea.innerHTML = HINT_DOT_HTML + _escapeHtml(_randomHint());
-  }, 1500));
+  // 摸鱼提示不在此启动——执行中由 patchEvent/mountAiMessage 按需启动
+  //（曾在卡片创建时无条件轮换：历史挂载路径无人清计时器，提示每 1.5s 覆盖真实输出）
 
   contentEl.appendChild(inputPre);
   contentEl.appendChild(divider);
@@ -781,8 +798,9 @@ export function patchEvent(event: StreamEvent): void {
         st.thinkingLabel = labelEl;
       } else if (event.blockType === 'tool_use') {
         const blockId = event.toolUseId || `tool_${mi}_${_toolCountInMsg}`;
-        _createToolCard(st.msgEl, mi, _toolCountInMsg, blockId, event.toolName || 'unknown');
+        const els = _createToolCard(st.msgEl, mi, _toolCountInMsg, blockId, event.toolName || 'unknown');
         _toolCountInMsg++;
+        _startToolHint(blockId, els.outputArea); // 执行期摸鱼提示，tool_result 即停
       }
       _maybeScroll();
       break;
@@ -856,8 +874,7 @@ export function patchEvent(event: StreamEvent): void {
       const els = _toolEls.get(event.toolUseId || '');
       if (els) {
         // 结果到达：停摸鱼提示轮换
-        const ht = _hintTimers.get(event.toolUseId || '');
-        if (ht) { clearInterval(ht); _hintTimers.delete(event.toolUseId || ''); }
+        _stopToolHint(event.toolUseId || '');
         const isError = !!event.toolResult?.isError;
         els.statusEl.textContent = isError ? '失败' : '成功';
         els.statusEl.style.color = isError ? 'rgba(255,100,100,0.8)' : 'rgba(0,212,115,0.8)';
@@ -966,7 +983,6 @@ export function mountAiMessage(mi: number, blocks: ContentBlock[], atTop = false
         pre.textContent = reasoning;
         labelEl.textContent = '已思考';
         foldEl.classList.add('collapsed');
-        foldEl.classList.remove('orb-fold-open');
         const arrow = foldEl.previousElementSibling?.querySelector('.rt-arrow');
         if (arrow) arrow.textContent = '▶';
         st.thinkingFold = foldEl;
@@ -995,6 +1011,9 @@ export function mountAiMessage(mi: number, blocks: ContentBlock[], atTop = false
         _renderToolOutput(els.outputArea, tb.name, tb.input || {}, text, isError, tb.result.details);
         els.content.classList.add('collapsed');
         els.arrowEl.textContent = '▶';
+      } else if (!tb.result) {
+        // 执行中的工具（刷新恢复活跃 run）：起摸鱼提示，tool_result 到达即停
+        _startToolHint(blockId, els.outputArea);
       }
     } else if (block.type === 'rule_warning') {
       _createWarningBlock(msgEl, mi, st.warningCount, (block as { content?: string }).content || '');
