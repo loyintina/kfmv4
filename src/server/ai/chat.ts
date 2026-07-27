@@ -197,6 +197,7 @@ export async function* streamChat(
     };
     if (toolsParam) requestBody.tools = toolsParam;
 
+    const _tFetch = Date.now();
     const response = await fetch(`${apiProvider.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
@@ -206,6 +207,10 @@ export async function* streamChat(
       body: JSON.stringify(requestBody),
       signal,
     });
+
+    // 计时诊断：上游 TTFB（首字节耗时）。若远大于直接请求 API 的首 token 耗时，
+    // 说明慢在上游 prefill/网关而非 kfm 中间层（中间层全链路流式，无缓冲点）。
+    console.log(`[chat] upstream TTFB: ${Date.now() - _tFetch}ms (turn ${turn}, ~${JSON.stringify(requestBody).length}B body)`);
 
     if (!response.ok) {
       yield { type: 'error', content: `API 请求失败: ${response.status}` };
@@ -236,6 +241,7 @@ export async function* streamChat(
 
     // 本轮 message_start
     yield { type: 'message_start' };
+    let _firstDeltaLogged = false;
 
     while (true) {
       const { done, value } = await reader.read();
@@ -249,6 +255,10 @@ export async function* streamChat(
         if (jsonStr === '[DONE]') continue;
         try {
           const chunk = JSON.parse(jsonStr);
+          if (!_firstDeltaLogged && chunk?.choices?.[0]?.delta) {
+            _firstDeltaLogged = true;
+            console.log(`[chat] first delta at +${Date.now() - _tFetch}ms (turn ${turn})`);
+          }
           // 上游错误块（配额/限流/内部错误）：非 OpenAI chunk 格式，无 choices。
           // 必须显式上抛，否则流静默结束——用户只看到思考后戛然而止、工具调用"被截断"。
           if (chunk?.error || chunk?.type === 'error') {

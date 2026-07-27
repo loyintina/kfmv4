@@ -63,6 +63,8 @@ const _messageEls: HTMLElement[] = [];
 const _toolEls: Map<string, ToolEls> = new Map();
 // blockId → 摸鱼提示轮换计时器（工具执行期每 1.5s 换一条，tool_result 到达即停）
 const _hintTimers = new Map<string, ReturnType<typeof setInterval>>();
+// mi → 流式 MD 节流计时器（text_delta 期间 ~120ms 重渲染一次，block stop 时取消并跑全管线）
+const _streamMdTimers = new Map<number, ReturnType<typeof setTimeout>>();
 let _currentMsgIdx = -1;
 let _toolCountInMsg = 0;
 let _followBottom = true;
@@ -89,6 +91,8 @@ export function clearChatDom(): void {
   _toolEls.clear();
   for (const t of _hintTimers.values()) clearInterval(t);
   _hintTimers.clear();
+  for (const t of _streamMdTimers.values()) clearTimeout(t);
+  _streamMdTimers.clear();
   _foldState.clear();
   _currentMsgIdx = -1;
   _toolCountInMsg = 0;
@@ -278,6 +282,44 @@ function _renderMarkdown(textEl: HTMLElement, text: string): void {
     renderMermaid(mdBody, '#00d4ff');
   }
   _cacheSet(_mdCache, text, textEl.innerHTML);
+}
+
+// 流式实时 MD（替代"先裸奔 md 源码、block stop 时突变"）：
+// text_delta 期间 ~120ms 节流重渲染一次，走轻管线（marked + 代码高亮，
+// 跳过 preprocessMd/KaTeX/mermaid 后处理——block stop 的 _renderMarkdown 才跑全管线）。
+// 性能：全量重解析 O(n) @ ≤8 次/秒，对话尺度（KB 级）每次仅数 ms，可忽略；
+// 流式渲染不进 _mdCache（部分文本无复用价值，防缓存污染）。
+function _scheduleStreamingMd(mi: number, st: MsgStreamState): void {
+  if (!st.textEl || _streamMdTimers.has(mi)) return;
+  _streamMdTimers.set(mi, setTimeout(() => {
+    _streamMdTimers.delete(mi);
+    if (!st.textEl) return;
+    const mdHtml = marked.parse(st.textBuf, MARKED_OPTS) as string;
+    st.textEl.innerHTML = '<div class="md-body">' + mdHtml + '</div>';
+    const mdBody = st.textEl.querySelector('.md-body') as HTMLElement | null;
+    if (mdBody) highlightAll(mdBody);
+    _maybeScroll();
+  }, 120));
+}
+
+/** 取消某消息的流式 MD 节流计时器（final render 前必须取消，防轻管线覆盖全管线产物） */
+function _cancelStreamingMd(mi: number): void {
+  const t = _streamMdTimers.get(mi);
+  if (t) { clearTimeout(t); _streamMdTimers.delete(mi); }
+}
+
+/** 思考结束 → 自动折叠思考框（尊重用户手动展开状态 _foldState） */
+function _autoCollapseThinking(mi: number, st: MsgStreamState, delayMs: number): void {
+  if (st.thinkingLabel) st.thinkingLabel.textContent = '已思考';
+  if (st.thinkingFold && !_foldState.get('r' + mi)) {
+    setTimeout(() => {
+      if (st.thinkingFold && !_foldState.get('r' + mi)) {
+        st.thinkingFold.classList.add('collapsed');
+        const arrow = st.thinkingFold.previousElementSibling?.querySelector('.rt-arrow');
+        if (arrow) arrow.textContent = '▶';
+      }
+    }, delayMs);
+  }
 }
 
 // ========== 工具输出富渲染 ==========
@@ -759,10 +801,12 @@ export function patchEvent(event: StreamEvent): void {
       } else if (event.deltaType === 'text_delta') {
         if (!st.textEl) {
           st.textEl = _createTextBubble(st.msgEl, mi);
-          if (st.thinkingLabel) st.thinkingLabel.textContent = '已思考';
+          // 正文开始 = 思考结束 → 自动折叠思考框（曾只有 tool_result 路径折叠，
+          // 纯文本回复的思考框永远摊着）
+          _autoCollapseThinking(mi, st, 400);
         }
         st.textBuf += event.deltaText || '';
-        st.textEl.textContent = st.textBuf;
+        _scheduleStreamingMd(mi, st); // 实时流渲染 md（节流 120ms）
         _maybeScroll();
       } else if (event.deltaType === 'input_json_delta') {
         const lastToolId = _findLastToolId();
@@ -787,7 +831,8 @@ export function patchEvent(event: StreamEvent): void {
       // 避免 text block stop 时重复高亮已完成的 tool input，反之亦然
       const blockIdx = event.index ?? -1;
       if (blockIdx === 0) {
-        // text block 完成 → 跑 markdown 管线
+        // text block 完成 → 跑 markdown 管线（先取消流式轻渲染，防其覆盖全管线产物）
+        _cancelStreamingMd(mi);
         if (st.textEl && st.textBuf) {
           _renderMarkdown(st.textEl, st.textBuf);
           _maybeScroll();
@@ -837,18 +882,7 @@ export function patchEvent(event: StreamEvent): void {
 
         // 思考框折叠
         const st = _streamState.get(mi);
-        if (st?.thinkingLabel) {
-          st.thinkingLabel.textContent = '已思考';
-          if (st.thinkingFold && !_foldState.get('r' + mi)) {
-            setTimeout(() => {
-              if (st.thinkingFold && !_foldState.get('r' + mi)) {
-                st.thinkingFold.classList.add('collapsed');
-                const arrow = st.thinkingFold.previousElementSibling?.querySelector('.rt-arrow');
-                if (arrow) arrow.textContent = '▶';
-              }
-            }, 400);
-          }
-        }
+        if (st) _autoCollapseThinking(mi, st, 400);
       }
       if (event.filesChanged && _onFilesChanged) _onFilesChanged();
       _maybeScroll();
@@ -867,6 +901,12 @@ export function patchEvent(event: StreamEvent): void {
     }
 
     case 'message_stop': {
+      // 兜底：思考框若还摊着（思考-only 轮次等路径），本轮结束时折叠
+      const mi = _currentMsgIdx;
+      const st = mi >= 0 ? _streamState.get(mi) : undefined;
+      if (st?.thinkingFold && !st.thinkingFold.classList.contains('collapsed')) {
+        _autoCollapseThinking(mi, st, 200);
+      }
       _maybeScroll();
       break;
     }
