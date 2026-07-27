@@ -396,7 +396,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 > bug 账本见 [`docs/BUG_REGRESSION_REGISTRY.md`](./BUG_REGRESSION_REGISTRY.md)）：
 >
 > ```bash
-> npm test    # 365 个测试（单元/集成/回归钉子/不变量），~1.3s，进主管线
+> npm test    # 376 个测试（单元/集成/回归钉子/不变量），~1.3s，进主管线
 > npm run smoke  # 11 条浏览器冒烟（puppeteer headless），~9s，独立于主管线
 > ```
 >
@@ -463,8 +463,8 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `confirm-dialog.ts` | 192 | 1 | ✅ 分组表 | 可复用的自定义确认对话框 |
 | `color-utils.ts` | 46 | 2 | ✅ 分组表 | 颜色工具函数（从 tree-swipe 拆分） |
 | `debug-assert.ts` | 24 | 1 | ✅ 提及 | 运行时断言 |
-| `dom-refs.ts` | 37 | 9 | ✅ 注册表 | DOM 元素引用 |
-| `floating-card.ts` | 785 | 3 | ✅ 独立条目 | 浮卡创建/状态机/手势（核心模块） |
+| `dom-refs.ts` | 38 | 9 | ✅ 注册表 | DOM 元素引用 |
+| `floating-card.ts` | 811 | 3 | ✅ 独立条目 | 浮卡创建/状态机/手势（核心模块） |
 | `floating-shared.ts` | 173 | 1 | ✅ 分组表 | 浮卡共享类型/常量/状态/工具（从 floating-card 拆分） |
 | `floating-fullscreen.ts` | 214 | 1 | ✅ 分组表 | 浮卡全屏/退出/关闭逻辑（从 floating-card 拆分） |
 | `gesture-registry.ts` | 385 | 6 | ✅ 独立条目 | 手势注册中心 |
@@ -475,11 +475,11 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `file-action-bar.ts` | 434 | 2 | ✅ 分组表 | 文件行长按 → 底部抽屉操作栏 |
 | `logger.ts` | 58 | 3 | ✅ 分组表 | KFM 日志系统 |
 | `mode-system.ts` | 447 | 1 | ✅ 分组表 | 模式按钮系统（从 tree-swipe 拆分，v6.8.0 新增） |
-| `orb.ts` | 818 | 2 | ✅ 独立条目 | 光球 UI + 拖拽手势 + 面板状态机 + 挂机重连 IIFE（协调层，见 AI_CHAT_RUNTIME） |
+| `orb.ts` | 824 | 2 | ✅ 独立条目 | 光球 UI + 拖拽手势 + 面板状态机 + 挂机重连 IIFE（协调层，见 AI_CHAT_RUNTIME） |
 | `orb-chat.ts` | 42 | 1 | ✅ 分组表 | AI 对话模块入口（薄编排层，re-export + markdown 渲染） |
-| `orb-chat-hints.ts` | 224 | 0 | ✅ 分组表 | 等待提示 + 工具提示 + Todo 面板（从 orb-chat 拆分） |
+| `orb-chat-hints.ts` | 231 | 0 | ✅ 分组表 | 等待提示 + 工具提示 + Todo 面板（从 orb-chat 拆分） |
 | `orb-chat-run.ts` | 516 | 0 | ✅ 分组表 | 持久化运行态 + 流消费 + 重连 + doSend/resumeRun（从 orb-chat 拆分） |
-| `chat-dom.ts` | 898 | 0 | ✅ 分组表 | v8 增量 DOM 投影（事件驱动，替代 renderChatContent 全量重建） |
+| `chat-dom.ts` | 962 | 0 | ✅ 分组表 | v8 增量 DOM 投影（事件驱动，替代 renderChatContent 全量重建） |
 | `orb-panel.ts` | 221 | 1 | ✅ 分组表 | 面板 Provider/Session/Model/Role 下拉框（从 orb.ts 拆分） |
 | `orb-state.ts` | 17 | 0 | ✅ 分组表 | orb 状态机纯逻辑（零依赖，从 orb.ts 拆分，可脱离浏览器测试） |
 | `session-client.ts` | 519 | 1 | ✅ 分组表 | 客户端会话管理（只读缓存 + pre-run 创建，实际存储在服务端 session-store.ts） |
@@ -492,7 +492,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `tree-model.ts` | 191 | 2 | ✅ 分组表 | 绝对深度布局模型 |
 | `tree-overlay.ts` | 414 | 1 | ✅ 分组表 | Overlay 双树构建系统（从 tree-render 拆分） |
 | `tree-animation.ts` | 74 | 1 | ✅ 分组表 | 文件树插入/移除 GSAP 动画（新建/删除/复制/移动共享） |
-| `tree-render.ts` | 1020 | 3 | ✅ 核心条目 | 文件树 Canvas 渲染（编排层） |
+| `tree-render.ts` | 1033 | 3 | ✅ 核心条目 | 文件树 Canvas 渲染（编排层） |
 | `tree-swipe.ts` | 727 | 1 | ✅ 分组表 | 文件行右滑 → 卡片堆（从 tree-render 拆分，v6.8.0 拆分为 color-utils + mode-system） |
 | `ui-registry.ts` | 334 | 9 | ✅ 独立条目 | UI 元素注册表 |
 | `ui.ts` | 71 | 10 | ✅ 提及 | UI 初始化编排 |
@@ -518,7 +518,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `../src/client/modules/renderers/md-extensions.ts` | 51 | 1 | — | Markdown 渲染扩展（链接、任务列表） |
 | `../src/client/modules/renderers/md-css.ts` | 57 | 2 | ✅ 分组表 | Markdown 渲染 CSS（全局唯一来源，orb + handler-factory 共享） |
 | `../src/client/modules/renderers/text-preview.ts` | 26 | 1 | — | 文本文件预览渲染器 |
-| **合计** | **15292** | | | |
+| **合计** | **15409** | | | |
 
 ### 死代码检查
 **结论：无死代码。** 所有 41 个模块都被至少 1 个文件导入（`terminal-card-04.ts` 和 `tmux-card.ts` 被导入数为 0，但这是模块自身的特性：它们仅在用户侧打开卡片时由 `card-registry.ts` 的 `createHandler` 工厂按需实例化，属于动态加载。`terminal-aux-bar.ts` 已删除（空占位，无任何引用）。`src/cards/` 目录已彻底删除。实际使用的 logger 在 `src/client/modules/logger.ts`。
