@@ -421,6 +421,11 @@ export async function initOrb(): Promise<void> {
       const r = orbEl.getBoundingClientRect();
       freeOrbX = r.left;
       freeOrbY = r.top;
+      // 拖拽结束：更新面板位置
+      if (orbState === 'expanded' && panelEl) {
+        updatePanelPosition();
+        _renderChat();
+      }
     },
     onMoveNormal({ dx, dy, startOrbX, startOrbY }) {
       const rawX = startOrbX + dx;
@@ -430,16 +435,8 @@ export async function initOrb(): Promise<void> {
       orbEl!.style.top = clamped.y + 'px';
       orbEl!.style.right = 'auto';
       orbEl!.style.bottom = 'auto';
-      if (orbState === 'expanded' && panelEl) {
-        if (!_panelUpdateScheduled) {
-          _panelUpdateScheduled = true;
-          requestAnimationFrame(() => {
-            _panelUpdateScheduled = false;
-            updatePanelPosition();
-            _renderChat();
-          });
-        }
-      }
+      orbEl!.style.transition = 'none';
+      // 拖拽期间不更新面板——省去 getBoundingClientRect + scrollHeight 重排
     },
     onMoveEditing({ dx, dy, startOrbX, startOrbY }) {
       if (!orbEl || !panelEl) return;
