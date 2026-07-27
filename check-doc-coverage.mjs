@@ -41,6 +41,18 @@ function collectTsFiles(dir) {
   return results;
 }
 
+// ========== 0. 必需目录存在性 ==========
+
+const requiredDirs = [
+  join(ROOT, 'src', 'client', 'modules'),
+  join(ROOT, 'src', 'server'),
+];
+for (const d of requiredDirs) {
+  if (!existsSync(d)) {
+    error(`必需目录 ${d.replace(ROOT + '/', '')} 不存在，项目结构异常`);
+  }
+}
+
 // ========== 1. 客户端模块 HANDBOOK 覆盖 ==========
 
 console.log('[check-doc-coverage] 检查客户端模块文档覆盖...');

@@ -202,7 +202,7 @@ function checkNumericClaims() {
       testCount += (testContent.match(/^\s*(?:test|regression)\(/gm) || []).length;
     }
   }
-  for (const file of ['CLAUDE.md', 'docs/HANDBOOK.md', 'docs/DIAGNOSTICS.md', 'docs/PROJECT_ASSESSMENT.md', 'README.md', 'docs/archive/standards/TESTING.md']) {
+  for (const file of ['CLAUDE.md', 'docs/HANDBOOK.md', 'docs/DIAGNOSTICS.md', 'README.md', 'docs/archive/standards/TESTING.md']) {
     if (!existsSync(join(ROOT, file))) continue;
     const content = readFileSync(join(ROOT, file), 'utf-8');
     const claims = content.match(/(?<!\d)(?<!(?:新增|覆盖|有) )(\d+)\s*个\s*(?:回归)?测试/g) || [];
@@ -387,7 +387,7 @@ function syncCounts() {
   let synced = 0;
 
   // 测试数：改写 "N 个测试" / "N 个回归测试"（排除 "新增/覆盖/有 N 个测试" 语境）
-  const testFiles = ['CLAUDE.md', 'docs/HANDBOOK.md', 'docs/DIAGNOSTICS.md', 'docs/PROJECT_ASSESSMENT.md', 'README.md', 'docs/archive/standards/TESTING.md'];
+  const testFiles = ['CLAUDE.md', 'docs/HANDBOOK.md', 'docs/DIAGNOSTICS.md', 'README.md', 'docs/archive/standards/TESTING.md'];
   for (const file of testFiles) {
     const path = join(ROOT, file);
     if (!existsSync(path)) continue;

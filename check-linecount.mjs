@@ -63,6 +63,7 @@ function updateHandbook(counts) {
 
   let changed = false;
   let total = 0;
+  let hasError = false;
   const remaining = new Set(Object.keys(counts));
 
   for (let i = tableStart; i < tableEnd; i++) {
@@ -72,9 +73,18 @@ function updateHandbook(counts) {
     // 允许 ../src/client/modules/ 前缀
     name = name.replace(/^(?:\.\.\/)?src\/client\/modules\//, '');
     const oldCount = parseInt(m[2], 10);
-    const realCount = counts[name];
+    let realCount = counts[name];
+    // 表格中以 ../src/ 开头的条目 → 相对于项目根目录解析（共享/服务端文件）
+    if (realCount === undefined && name.startsWith('../src/')) {
+      const projPath = name.slice(3); // "../src/shared/..." → "src/shared/..."
+      const absPath = join(ROOT, projPath);
+      try {
+        realCount = readFileSync(absPath, 'utf-8').split('\n').length;
+      } catch { /* 文件不存在 → realCount 保持 undefined → 走下方硬阻断 */ }
+    }
     if (realCount === undefined) {
-      console.warn(`[check-linecount] ⚠️ 文件 ${name} 在表格中但不存在于 modules/ 下`);
+      console.error(`[check-linecount] ❌ 文件 ${name} 在表格中但不存在于 modules/ 下（请删除该表格行或恢复文件）`);
+      hasError = true;
       continue;
     }
     remaining.delete(name);
@@ -100,7 +110,6 @@ function updateHandbook(counts) {
   }
 
   // 错误：未在表格中的模块（硬阻断，不再是警告）
-  let hasError = false;
   if (remaining.size > 0) {
     console.error(`[check-linecount] ❌ 以下文件在 modules/ 下但未在表格中：`);
     for (const name of remaining) {

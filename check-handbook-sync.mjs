@@ -27,14 +27,14 @@ let content;
 try {
   content = readFileSync(handbookPath, 'utf-8');
 } catch {
-  console.log('[check-handbook-sync] SKIP — docs/HANDBOOK.md 不存在');
-  process.exit(0);
+  console.error('[check-handbook-sync] ERROR — docs/HANDBOOK.md 不存在，构建中断');
+  process.exit(1);
 }
 
 const frontMatch = content.match(/^---\n([\s\S]*?)\n---/);
 if (!frontMatch) {
-  console.log('[check-handbook-sync] SKIP — HANDBOOK.md 缺少 YAML frontmatter');
-  process.exit(0);
+  console.error('[check-handbook-sync] ERROR — HANDBOOK.md 缺少 YAML frontmatter，构建中断');
+  process.exit(1);
 }
 
 const frontmatter = {};
@@ -47,8 +47,8 @@ for (const line of frontMatch[1].split('\n')) {
 
 const lastReviewed = frontmatter.last_reviewed;
 if (!lastReviewed) {
-  console.log('[check-handbook-sync] SKIP — frontmatter 缺少 last_reviewed');
-  process.exit(0);
+  console.error('[check-handbook-sync] ERROR — frontmatter 缺少 last_reviewed，构建中断');
+  process.exit(1);
 }
 
 // ========== 2. 检查 git 提交历史 ==========
@@ -60,9 +60,9 @@ try {
     `git log -1 --format="%ci %s" -- 'src/' 'tests/' -- ':!docs/HANDBOOK.md'`,
     { cwd: ROOT, encoding: 'utf-8' }
   ).trim();
-} catch {
-  console.log('[check-handbook-sync] SKIP — git 不可用或非 git 仓库');
-  process.exit(0);
+} catch (e) {
+  console.error('[check-handbook-sync] ERROR — git 不可用: ' + e.message);
+  process.exit(1);
 }
 
 if (!latestSrcCommit) {

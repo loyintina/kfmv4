@@ -127,11 +127,11 @@ archived_at: 2026-06-09          # 归档日期
 发版时必须按顺序完成以下步骤，缺一不可：
 
 1. **更新版本号** — `package.json` 中的 `version` 字段
-2. **更新文档** — HANDBOOK.md §2 版本历史表 + WORKBENCH_SPEC.md 状态表中的 `✅ vX.Y.Z` 标记
+2. **更新文档** — HANDBOOK.md §2 版本历史表添加 `**vX.Y.Z**` 粗体条目
 3. **提交** — `git commit -m "release: vX.Y.Z — 一句话描述"`
 4. **打 tag** — `git tag vX.Y.Z`（如果不打 tag，`npm run check` 会中断构建）
 
 > **验证**：`npm run check` 必须零错误通过。`check-versions.mjs` 会自动检查：
 > - tag `vX.Y.Z` 是否存在
 > - HANDBOOK 版本历史表是否有当前版本的粗体条目
-> - WORKBENCH_SPEC 状态表是否有当前版本的 `✅` 标记
+> - 各活跃文档中"最后更新/当前版本"标记是否与 package.json 版本一致

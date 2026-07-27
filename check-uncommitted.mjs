@@ -44,7 +44,7 @@ try {
   console.log('╚══════════════════════════════════════════════════════════════╝');
   console.log('');
   process.exit(blocked ? 1 : 0);
-} catch {
-  console.log('[check-uncommitted] SKIP — git 不可用');
-  process.exit(0);
+} catch (e) {
+  console.error('[check-uncommitted] ERROR — git 不可用: ' + e.message);
+  process.exit(1);
 }

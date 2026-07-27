@@ -6,7 +6,6 @@
  *  2. HANDBOOK.md 的 last_reviewed 新鲜度（最新提交是否超过 last_reviewed）
  *  3. 各文档中"最后更新/当前版本"标记的行是否一致
  *  4. 版本历史表中 **vX.Y.Z** 的粗体标记行是否含当前版本
- *  5. WORKBENCH_SPEC 状态表中的 ✅ vX.Y.Z 标记是否更新
  *
  * 挂入 npm run check，不一致 = 构建中断。
  */
@@ -37,7 +36,10 @@ try {
 // ========== 检查 2: HANDBOOK last_reviewed 新鲜度 ==========
 
 const handbookContent = (() => {
-  try { return readFileSync('docs/HANDBOOK.md', 'utf-8'); } catch { return ''; }
+  try { return readFileSync('docs/HANDBOOK.md', 'utf-8'); } catch {
+    console.error('[check-versions] ERROR — docs/HANDBOOK.md 不存在，构建中断');
+    process.exit(1);
+  }
 })();
 
 const frontMatch = handbookContent.match(/^---\n([\s\S]*?)\n---/);
@@ -65,8 +67,9 @@ if (frontMatch) {
           errors++;
         }
       }
-    } catch {
-      // git 不可用时跳过
+    } catch (e) {
+      console.error(`[check-versions] ERROR — git 不可用: ${e.message}`);
+      errors++;
     }
   }
 }
@@ -79,7 +82,6 @@ const DOCS = [
   'docs/DIAGNOSTICS.md',
   'docs/design/VISION_AND_ROADMAP.md',
   'docs/KFM_V4_INVARIANTS.md',
-  'docs/design/WORKBENCH_SPEC.md',
   'README.md',
 ];
 
@@ -90,6 +92,8 @@ for (const docPath of DOCS) {
   try {
     content = readFileSync(docPath, 'utf-8');
   } catch {
+    console.error(`[check-versions] ERROR — 必需文档 ${docPath} 不存在`);
+    errors++;
     continue;
   }
 
@@ -126,20 +130,6 @@ for (const docPath of DOCS) {
     markerChecks++;
   }
 
-  // 3c) WORKBENCH_SPEC 状态表中的 ✅ vX.Y.Z
-  if (docPath === 'docs/design/WORKBENCH_SPEC.md') {
-    const statusVersions = lines
-      .map(l => l.match(/✅\s*v(\d+\.\d+\.\d+)/))
-      .filter(Boolean)
-      .map(m => m[1]);
-    const hasCurrent = statusVersions.includes(authVersion);
-    if (!hasCurrent) {
-      console.error(`[STATUS TABLE MISSING] WORKBENCH_SPEC.md 状态表缺少 v${authVersion} 标记`);
-      console.error(`  当前状态表中的版本: ${statusVersions.join(', ')}`);
-      errors++;
-    }
-    markerChecks++;
-  }
 }
 
 if (errors > 0) {

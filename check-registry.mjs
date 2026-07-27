@@ -231,7 +231,7 @@ function checkCapabilityConsistency() {
   // 检查服务端有但浏览器端没有注册的能力
   for (const id of executorIds) {
     if (!clientEntries.some(e => e.id === id)) {
-      console.log(`[check-registry] 服务端有能力 "${id}" 的 handler 但浏览器端未注册（可能是新增能力）`);
+      reportError(`服务端有能力 "${id}" 的 handler 但浏览器端未注册（客户端无法触达）`);
     }
   }
 }
@@ -328,10 +328,7 @@ function check() {
 
   const extraElements = [...registeredElements].filter(id => !ELEMENT_MANIFEST.includes(id));
   if (extraElements.length > 0) {
-    console.log(`[check-registry] 以下元素已注册但不在 ELEMENT_MANIFEST 中（可能是新增遗漏）：`);
-    for (const id of extraElements) {
-      console.log(`  - ${id}`);
-    }
+    reportError(`以下元素已注册但不在 ELEMENT_MANIFEST 中（请更新 MANIFEST）：${extraElements.join(', ')}`);
   }
 
   // ===== 检查内容层 MANIFEST =====

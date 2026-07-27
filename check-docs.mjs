@@ -34,28 +34,44 @@ function warn(msg) {
 // 1. 内部链接有效性检查
 // ============================================================
 function verifyPath(filePath, rawHref) {
-  const href = rawHref.split('#')[0];
-  if (!href) return;
+  const [href, anchor] = rawHref.split('#');
+  if (!href && !anchor) return;
   if (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:')) return;
 
-  // 以 ./ 或 ../ 开头 → 文档相对路径
-  if (href.startsWith('./') || href.startsWith('../')) {
-    const absPath = path.resolve(path.dirname(filePath), href);
-    if (!fs.existsSync(absPath)) {
-      error(`Broken ref in ${path.relative(ROOT, filePath)}: "${rawHref}" → ${path.relative(ROOT, absPath)} (not found)`);
+  let resolvedPath = null;
+
+  if (href) {
+    // 以 ./ 或 ../ 开头 → 文档相对路径
+    if (href.startsWith('./') || href.startsWith('../')) {
+      resolvedPath = path.resolve(path.dirname(filePath), href);
+      if (!fs.existsSync(resolvedPath)) {
+        error(`Broken ref in ${path.relative(ROOT, filePath)}: "${rawHref}" → ${path.relative(ROOT, resolvedPath)} (not found)`);
+        return;
+      }
+    } else {
+      // 其他路径（如 src/、docs/、archive/）→ 尝试两个基准
+      const fromRoot = path.resolve(ROOT, href);
+      const fromDoc = path.resolve(path.dirname(filePath), href);
+      resolvedPath = fs.existsSync(fromRoot) ? fromRoot : fs.existsSync(fromDoc) ? fromDoc : null;
+      if (!resolvedPath) {
+        error(`Broken ref in ${path.relative(ROOT, filePath)}: "${rawHref}" → ${path.relative(ROOT, fromRoot)} (not found)`);
+        return;
+      }
     }
-    return;
+  } else {
+    // 纯锚点链接 (#section) → 指向当前文件
+    resolvedPath = filePath;
   }
 
-  // 其他路径（如 src/、docs/、archive/）→ 尝试两个基准：
-  //   1. 项目根目录（适用于完整的 project-relative 路径）
-  //   2. 文档所在目录（适用于省略 docs/ 前缀的简写）
-  const fromRoot = path.resolve(ROOT, href);
-  const fromDoc = path.resolve(path.dirname(filePath), href);
-  const found = fs.existsSync(fromRoot) ? fromRoot : fs.existsSync(fromDoc) ? fromDoc : null;
-
-  if (!found) {
-    error(`Broken ref in ${path.relative(ROOT, filePath)}: "${rawHref}" → ${path.relative(ROOT, fromRoot)} (not found)`);
+  // 验证锚点：目标为 .md 文件时检查 heading 是否存在
+  if (anchor && resolvedPath && resolvedPath.endsWith('.md') && fs.existsSync(resolvedPath)) {
+    const targetContent = fs.readFileSync(resolvedPath, 'utf-8');
+    const headings = targetContent.match(/^#{1,6}\s+.+$/gm) || [];
+    const slugify = (h) => h.replace(/^#{1,6}\s+/, '').toLowerCase().replace(/[^\w\u4e00-\u9fff\s-]/g, '').replace(/\s+/g, '-');
+    const slugs = headings.map(slugify);
+    if (!slugs.includes(anchor)) {
+      error(`Broken anchor in ${path.relative(ROOT, filePath)}: "${rawHref}" → #${anchor} not found in ${path.relative(ROOT, resolvedPath)}`);
+    }
   }
 }
 
@@ -146,9 +162,9 @@ function checkFrontmatter(filePath) {
     }
   }
 
-  // 有 superseded_by 但 status 不是 superseded → warning
+  // 有 superseded_by 但 status 不是 superseded → 元数据矛盾
   if (fields.superseded_by && fields.status && fields.status !== 'superseded') {
-    warn(`${relPath}: 有 superseded_by 但 status="${fields.status}"（应为 superseded）`);
+    error(`${relPath}: 有 superseded_by 但 status="${fields.status}"（应为 superseded）`);
   }
 }
 
@@ -176,7 +192,10 @@ function checkFileSize(filePath) {
 // Collect all .md files in docs/
 const docFiles = [];
 function walkDir(dir) {
-  if (!fs.existsSync(dir)) return;
+  if (!fs.existsSync(dir)) {
+    error(`必需目录 ${path.relative(ROOT, dir)} 不存在，文档结构异常`);
+    return;
+  }
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
