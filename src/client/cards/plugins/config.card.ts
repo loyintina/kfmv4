@@ -242,6 +242,11 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
   let modelSelect: CustomSelect | null = null;
   let sessionSelect: CustomSelect | null = null;
 
+  // window 事件监听持有引用：deactivate 时移除防泄漏；重复 activate 先摘后挂防叠加
+  let _onSessionChange: ((e: Event) => void) | null = null;
+  let _onProviderChange: ((e: Event) => void) | null = null;
+  let _onModelChange: ((e: Event) => void) | null = null;
+
   function getProviderById(id: string): Provider | undefined {
     return providers.find(p => p.id === id);
   }
@@ -590,8 +595,9 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
       fillEditor(displayConfig);
       renderPoolList(poolListEl, c1, c2);
       
-      // 监听外部会话变化
-      const onSessionChange = (e: Event) => {
+      // 监听外部会话变化（先摘旧监听，保证重复 activate 不叠加注册）
+      if (_onSessionChange) window.removeEventListener('kfm-session-change', _onSessionChange);
+      _onSessionChange = (e: Event) => {
         const detail = (e as CustomEvent).detail;
         const sid: string | undefined = detail?.sessionId;
         if (sid !== undefined && sid !== '') {
@@ -615,10 +621,11 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
           });
         }
       };
-      window.addEventListener('kfm-session-change', onSessionChange);
+      window.addEventListener('kfm-session-change', _onSessionChange);
 
       // 监听面板的 Provider 变化
-      const onProviderChange = (e: Event) => {
+      if (_onProviderChange) window.removeEventListener('kfm-provider-change', _onProviderChange);
+      _onProviderChange = (e: Event) => {
         const detail = (e as CustomEvent).detail;
         if (detail?.providerId) {
           if (editingConfig) {
@@ -632,10 +639,11 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
           }
         }
       };
-      window.addEventListener('kfm-provider-change', onProviderChange);
+      window.addEventListener('kfm-provider-change', _onProviderChange);
 
       // 监听面板的 Model 变化
-      const onModelChange = (e: Event) => {
+      if (_onModelChange) window.removeEventListener('kfm-model-change', _onModelChange);
+      _onModelChange = (e: Event) => {
         const detail = (e as CustomEvent).detail;
         if (detail?.modelId) {
           if (editingConfig) {
@@ -644,10 +652,23 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
           }
         }
       };
-      window.addEventListener('kfm-model-change', onModelChange);
+      window.addEventListener('kfm-model-change', _onModelChange);
     },
 
     deactivate(contentEl) {
+      // 摘除 window 事件监听（与 activate 的注册一一对应）
+      if (_onSessionChange) {
+        window.removeEventListener('kfm-session-change', _onSessionChange);
+        _onSessionChange = null;
+      }
+      if (_onProviderChange) {
+        window.removeEventListener('kfm-provider-change', _onProviderChange);
+        _onProviderChange = null;
+      }
+      if (_onModelChange) {
+        window.removeEventListener('kfm-model-change', _onModelChange);
+        _onModelChange = null;
+      }
       // 清理下拉框实例
       configSelect?.destroy();
       provSelect?.destroy();

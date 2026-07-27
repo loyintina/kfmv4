@@ -211,6 +211,8 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
   let _c1 = '#00d4ff', _c2 = '#7c3aed';
   let _sessionSelect: ReturnType<typeof createCustomSelect> | null = null;
   let _nameInput: HTMLInputElement | null = null;
+  // window 事件监听持有引用：deactivate 时移除防泄漏；重复 activate 先摘后挂防叠加
+  let _onExternalSessionChange: EventListener | null = null;
 
   function getActiveSession(): Session | null {
     return sessions.find(s => s.id === activeSessionId) || null;
@@ -561,7 +563,9 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
       renderAll();
 
       // 监听外部会话变化（orb 面板切换 / sessionStore.create() 新建）
-      window.addEventListener('kfm-session-change', ((e: CustomEvent) => {
+      // 先摘旧监听，保证重复 activate 不叠加注册
+      if (_onExternalSessionChange) window.removeEventListener('kfm-session-change', _onExternalSessionChange);
+      _onExternalSessionChange = ((e: CustomEvent) => {
         const sid = e.detail?.sessionId;
         // sid 可为空串（最后一个会话被删）
         (async () => {
@@ -575,10 +579,15 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
           _sessionSelect?.updateItems(sessions.map(s => ({ label: s.title, value: s.id })), activeSessionId);
           renderAll();
         })();
-      }) as EventListener);
+      }) as EventListener;
+      window.addEventListener('kfm-session-change', _onExternalSessionChange);
     },
 
     deactivate(contentEl) {
+      if (_onExternalSessionChange) {
+        window.removeEventListener('kfm-session-change', _onExternalSessionChange);
+        _onExternalSessionChange = null;
+      }
       _poolListEl = null;
       _bubbleContainer = null;
       _statsEl = null;

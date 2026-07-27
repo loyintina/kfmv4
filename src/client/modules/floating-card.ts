@@ -27,6 +27,30 @@ let dragItem: FloatingCardItem | null = null;
 const FLOATING_CARD_W_MIN = 54;
 const FLOATING_CARD_H_MIN = 54;
 
+// ========== 拖拽期卡片模糊挂起（v8.1，照搬 orb.ts 面板模式） ==========
+// backdrop-filter 让卡片区在每个 pointermove 重跑 GPU 模糊合成，是拖动卡顿的主因。
+// 浮卡可多张：_blurSuspendedItem 记住挂起的是哪张（bgLayer = el.firstElementChild），
+// 拖动首帧挂起，onSavePosition（含 pointercancel）恢复。
+const CARD_BLUR = 'blur(16px)';
+let _blurSuspendedItem: FloatingCardItem | null = null;
+function _suspendCardBlur(): void {
+  if (_blurSuspendedItem || !dragItem) return;
+  const bg = dragItem.el.firstElementChild as HTMLElement | null;
+  if (!bg) return;
+  _blurSuspendedItem = dragItem;
+  bg.style.setProperty('backdrop-filter', 'none');
+  bg.style.setProperty('-webkit-backdrop-filter', 'none');
+}
+function _restoreCardBlur(): void {
+  const item = _blurSuspendedItem;
+  if (!item) return;
+  _blurSuspendedItem = null;
+  const bg = item.el.firstElementChild as HTMLElement | null;
+  if (!bg) return;
+  bg.style.setProperty('backdrop-filter', CARD_BLUR);
+  bg.style.setProperty('-webkit-backdrop-filter', CARD_BLUR);
+}
+
 
 const orbT = theme.cornerOrb;
 const { cornerSize, cornerOff, rightOff, bottomOff } = _cornerLayout;
@@ -126,7 +150,7 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
   bgLayer.style.cssText = [
     'border-radius:11px', 'width:100%', 'height:100%',
     'background:rgba(20,16,32,0.92)',
-    'backdrop-filter:blur(16px)', '-webkit-backdrop-filter:blur(16px)',
+    'backdrop-filter:' + CARD_BLUR, '-webkit-backdrop-filter:' + CARD_BLUR,
     'position:relative', 'overflow:hidden',
   ].join(';');
   // 标题栏由 handler 自己创建（buildCardLayout 或 inline），shell 不干预
@@ -556,7 +580,7 @@ export function initFloatingCards(): void {
     clamp: fClamp,
     isEditing() { return dragItem?.state === 'editing'; },
     onTap() { _toggleExpandCollapse(); },
-    onSavePosition() { /* 浮卡不保存自由位置 */ },
+    onSavePosition() { _restoreCardBlur(); /* 浮卡不保存自由位置 */ },
     onEnterEdit() {
       if (!dragItem) return;
       preEdit = dragItem.state as 'compact' | 'active';
@@ -583,6 +607,7 @@ export function initFloatingCards(): void {
       }
     },
     onMoveNormal({ dx, dy, startOrbX, startOrbY }) {
+      _suspendCardBlur();
       if (!dragItem) return;
       const rawX = startOrbX + dx;
       const rawY = startOrbY + dy;
@@ -602,6 +627,7 @@ export function initFloatingCards(): void {
       fSyncCorners(dragItem, renderW, renderH);
     },
     onMoveEditing({ dx, dy, startOrbX, startOrbY }) {
+      _suspendCardBlur();
       if (!dragItem) return;
       const rawX = startOrbX + dx;
       const rawY = startOrbY + dy;

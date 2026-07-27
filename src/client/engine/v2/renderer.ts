@@ -48,6 +48,10 @@ export class Renderer {
   // Pretext 缓存：key = font + text
   private _pretextCache: Map<string, any>;
 
+  // 行高测量缓存：key = ctx.font。同一字体的 'Ag' 度量不变，
+  // 不缓存则每个文本 Box 每帧一次 measureText 同步测量
+  private _fontMetricsCache: Map<string, number>;
+
   // input 元素缓存：key = Box.id
   private _inputElements: Map<string, HTMLInputElement | HTMLTextAreaElement>;
 
@@ -77,6 +81,7 @@ export class Renderer {
     this._frameCount = 0;
     this._fps = 0;
     this._pretextCache = new Map();
+    this._fontMetricsCache = new Map();
     this._inputElements = new Map();
     this.resize();
   }
@@ -780,9 +785,13 @@ export class Renderer {
     this.ctx.fillStyle = style.color;
     this.ctx.textBaseline = 'middle';
 
-    // 计算当前字体的实际行高（ascender + descender）
-    const metrics = this.ctx.measureText('Ag');
-    const fontHeight = Math.abs(metrics.actualBoundingBoxAscent) + Math.abs(metrics.actualBoundingBoxDescent);
+    // 计算当前字体的实际行高（ascender + descender），按字体缓存避免每帧测量
+    let fontHeight = this._fontMetricsCache.get(style.font);
+    if (fontHeight === undefined) {
+      const metrics = this.ctx.measureText('Ag');
+      fontHeight = Math.abs(metrics.actualBoundingBoxAscent) + Math.abs(metrics.actualBoundingBoxDescent);
+      this._fontMetricsCache.set(style.font, fontHeight);
+    }
     const lineGap = (style.lineHeight - fontHeight) / 2;
 
     for (let i = 0; i < visibleLines.length; i++) {
@@ -888,5 +897,6 @@ export class Renderer {
 
   clearTextCache(): void {
     this._pretextCache.clear();
+    this._fontMetricsCache.clear();
   }
 }

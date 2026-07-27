@@ -39,6 +39,19 @@ import {
 import { bounceCursorRow, handleRowSwipe, clearTempCards, initTempCardGesture, dismissFocusedCard, promptSelectSingle } from './tree-swipe.js';
 import { getSelectedMode } from './mode-system.js';
 const ts = anim.scope('tree-render');
+
+// window resize 监听全模块只挂一次：onSidebarOpen 每次打开都会走到注册点，
+// 原先的匿名监听无法移除、随打开次数叠加。行为不变——L.renderer 是动态引用，
+// N 个监听调的本就是同一个 resize()，去重后等价。
+let _resizeBound = false;
+function _onWindowResize(): void {
+  L.renderer?.resize();
+}
+function _ensureResizeListener(): void {
+  if (_resizeBound) return;
+  _resizeBound = true;
+  window.addEventListener('resize', _onWindowResize);
+}
 /** 重置动画时间线：清空 tween + 归零播放头 + 清除回调。正常动画结束时调用。 */
 function _resetAnimTimeline(): void {
   ts.clear();
@@ -243,7 +256,7 @@ export function onSidebarOpen(): void {
     L.renderer?.resize();
 
     _ensureSubscribed();
-    window.addEventListener('resize', () => L.renderer?.resize());
+    _ensureResizeListener();
 
     bindWheelEvents(canvas);
     bindClickEvents(canvas, dpr);
@@ -326,7 +339,7 @@ export function initTreeRenderer(): void {
   rebuildTree();
 
   _ensureSubscribed();
-  window.addEventListener('resize', () => L.renderer?.resize());
+  _ensureResizeListener();
 
   bindWheelEvents(canvas);
   bindClickEvents(canvas, dpr);
