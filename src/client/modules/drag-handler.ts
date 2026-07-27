@@ -117,6 +117,8 @@ export function createDragHandler(cfg: DragConfig) {
   function onEnd(e?: PointerEvent): void {
     if (e?.type === 'pointercancel') {
       if (s.longPressTimer) { clearTimeout(s.longPressTimer); s.longPressTimer = null; }
+      // cancel 也要走收尾钩子：调用方在此恢复拖拽期的临时状态（如 orb 面板模糊）
+      cfg.onSavePosition();
       reset();
       return;
     }
