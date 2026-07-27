@@ -571,8 +571,6 @@ export async function initOrb(): Promise<void> {
       // 从头续读：服务端缓冲了本轮全部事件，from=0 全量重放重建 AI 回复
       await resumeRun(base, persisted.runId, 0, chatMessages, abortCtrl.signal,
         () => _renderChat('auto'), setWait2,
-        sessionStore.list.find(s => s.id === persisted.sessionId)?.modelId || '',
-        sessionStore.list.find(s => s.id === persisted.sessionId)?.providerId || '',
       );
       setWait2(false);
       abortCtrl = null;
@@ -651,10 +649,7 @@ export async function initOrb(): Promise<void> {
           setWaitR(true);
           await resumeRun(base, data.runId, 0, chatMessages, abortCtrl.signal,
             () => _renderChat('auto'), setWaitR,
-            model, provider,
           );
-          setWaitR(false);
-          abortCtrl = null;
           sendBtn!.classList.remove('sending');
           _renderChat('auto');
           // 递增重启计数（防止无限循环）

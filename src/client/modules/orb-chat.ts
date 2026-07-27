@@ -15,7 +15,7 @@
 
 // ========== Re-exports ==========
 
-export type { ContentBlock, TextBlock, ToolBlock, RuleWarningBlock, ChatMessage } from './orb-chat-run.js';
+export type { ContentBlock, TextBlock, ToolBlock, RuleWarningBlock, ChatMessage, StreamEvent } from './orb-chat-run.js';
 export {
   doSend, resumeRun, readPersistedRun, clearPersistedRun,
   getActiveRunId, getActiveCursor, settlePendingToolBlocks, setEventHook,

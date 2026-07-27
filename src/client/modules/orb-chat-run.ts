@@ -32,7 +32,7 @@ export interface ChatMessage {
 }
 
 /** 流式事件（服务端 → 客户端 SSE 协议） */
-interface StreamEvent {
+export interface StreamEvent {
   type: 'message_start' | 'message_stop' | 'content_block_start' | 'content_block_delta' | 'content_block_stop' | 'tool_result' | 'rule_warning' | 'error' | 'done';
   index?: number;
   blockType?: 'text' | 'tool_use';
@@ -61,9 +61,9 @@ export function getActiveCursor(): number {
 // ========== v8 事件钩子 ==========
 // orb.ts 注入 chat-dom.patchEvent，每个 SSE 事件在 _applyEvent（状态层）之后
 // 额外调此钩子做增量 DOM 投影。
-let _eventHook: ((event: unknown) => void) | null = null;
+let _eventHook: ((event: StreamEvent) => void) | null = null;
 
-export function setEventHook(fn: ((event: unknown) => void) | null): void {
+export function setEventHook(fn: ((event: StreamEvent) => void) | null): void {
   _eventHook = fn;
 }
 

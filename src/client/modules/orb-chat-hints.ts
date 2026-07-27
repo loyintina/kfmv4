@@ -68,7 +68,7 @@ export function startWaitingIndicator(panelEl: HTMLDivElement): () => void {
   // 随机打乱提示顺序，循环播放
   const pool = [...WAITING_HINTS].sort(() => Math.random() - 0.5);
   let pos = 0;
-  let timerId: number | null = null;
+  let timerId: ReturnType<typeof setTimeout> | null = null;
   let stopped = false;
 
   function next(): void {
@@ -96,7 +96,7 @@ export function startWaitingIndicator(panelEl: HTMLDivElement): () => void {
 
   return function stop(): void {
     stopped = true;
-    clearTimeout(timerId);
+    timerId && clearTimeout(timerId);
     el.remove();
   };
 }
@@ -129,7 +129,7 @@ export function clearToolHint(toolId: string): void {
 
 // ========== 浮动 Todo 面板 ==========
 let _todoPanel: HTMLDivElement | null = null;
-let _todoDismissTimer: number | null = null;
+let _todoDismissTimer: ReturnType<typeof setTimeout> | null = null;
 let _lastTodos: Array<{content: string; status: string}> | null = null; // 持久化状态
 
 // 圆角方案：border-image 会覆盖 border-radius，改用 background 双层渐变
@@ -210,7 +210,7 @@ function renderTodoPanel(todos: Array<{content: string; status: string}>, panelE
 /** 切换会话时清理 todo 面板（防止旧会话的任务列表残留） */
 export function clearTodoPanel(): void {
   _lastTodos = null;
-  clearTimeout(_todoDismissTimer);
+  _todoDismissTimer && clearTimeout(_todoDismissTimer);
   _todoDismissTimer = null;
   if (_todoPanel) { _todoPanel.style.opacity = '0'; }
 }
