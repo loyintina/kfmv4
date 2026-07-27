@@ -680,3 +680,13 @@ regression('BAR-BUILD-04', 'build/check', 'check-css-wiring 永久接线检查�
   const script = readFileSync('check-css-wiring.mjs', 'utf-8');
   assert(script.includes('@keyframes') && script.includes('scss'), '脚本必须双向检查类与 keyframes');
 });
+
+regression('BAR-ORB-PANEL-22', 'orb-chat-hints', 'Todo 面板手动 ✕ 关闭必须持久化（刷新不再自动弹出）', () => {
+  const src = readFileSync('src/client/modules/orb-chat-hints.ts', 'utf-8');
+  // 曾 ✕ 只清内存：_restoreTodoPanel 刷新后从数据层找回结果重挂，关不掉
+  assert(src.includes('function dismissTodoPanel') && src.includes('TODO_DISMISS_KEY'), '应有 dismissTodoPanel + localStorage 关闭记录');
+  assert(src.includes('__dismissTodoPanel'), '✕ onclick 必须走 dismiss（非会话切换的 clearTodoPanel）');
+  const utBody = src.split('export function updateTodoFromTool')[1] || '';
+  assert(utBody.includes('dismissed === fp'), '同指纹列表（刷新恢复）必须跳过渲染');
+  assert(utBody.includes('removeItem(TODO_DISMISS_KEY)'), '新列表（指纹不同）必须清除关闭记录并恢复显示');
+});

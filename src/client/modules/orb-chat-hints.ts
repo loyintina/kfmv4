@@ -127,6 +127,14 @@ let _todoPanel: HTMLDivElement | null = null;
 let _todoDismissTimer: ReturnType<typeof setTimeout> | null = null;
 let _lastTodos: Array<{content: string; status: string}> | null = null; // 持久化状态
 
+// 手动 ✕ 关闭的持久化：记录被关闭列表的指纹（localStorage）。
+// 之后同一份列表（含刷新后 _restoreTodoPanel 从数据层找回的）不再自动弹出；
+// AI 再次调用 todo 工具产生新列表（指纹不同）时才重新出现并清除关闭记录。
+const TODO_DISMISS_KEY = 'kfm-todo-dismissed';
+function _todosFingerprint(todos: Array<{content: string; status: string}>): string {
+  return JSON.stringify(todos.map(t => [t.content, t.status]));
+}
+
 // 圆角方案：border-image 会覆盖 border-radius，改用 background 双层渐变
 // 即 padding-box（内）和 border-box（外）两段渐变实现圆角边框。
 // 定位方案：贴在面板的滚动内容区（.orb-panel-content）顶部，用 position:sticky
@@ -169,7 +177,7 @@ function renderTodoPanel(todos: Array<{content: string; status: string}>, panelE
   const allDone = doneCount === todos.length;
   let html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;gap:6px">';
   html += '<span style="color:rgba(0,212,255,0.7);font-weight:600;font-size:8px">📋 ' + doneCount + '/' + todos.length + '</span>';
-  html += '<span class="orb-todo-close" style="color:rgba(255,80,80,0.7);font-size:9px;cursor:pointer;user-select:none;font-weight:700;line-height:1" onclick="var p=this.closest(\'.orb-todo-panel\');if(p){p.style.opacity=\'0\';}try{window.__clearTodoPanel()}catch(e){}">✕</span>';
+  html += '<span class="orb-todo-close" style="color:rgba(255,80,80,0.7);font-size:9px;cursor:pointer;user-select:none;font-weight:700;line-height:1" onclick="var p=this.closest(\'.orb-todo-panel\');if(p){p.style.opacity=\'0\';}try{window.__dismissTodoPanel()}catch(e){}">✕</span>';
   html += '</div>';
   for (const t of todos) {
     const s = t.status;
@@ -211,14 +219,32 @@ export function clearTodoPanel(): void {
   _todoDismissTimer = null;
   if (_todoPanel) { _todoPanel.style.opacity = '0'; }
 }
-(window as unknown as Record<string, unknown>).__clearTodoPanel = clearTodoPanel; // escape-ok: 供内联 onclick 关闭 todo 面板时清理内部状态
+
+/** 用户手动 ✕ 关闭：清理 + 记录指纹（刷新/重挂不再自动弹出，直到 AI 给出新列表） */
+export function dismissTodoPanel(): void {
+  if (_lastTodos) {
+    try { localStorage.setItem(TODO_DISMISS_KEY, _todosFingerprint(_lastTodos)); } catch { /* 隐私模式等 */ }
+  }
+  clearTodoPanel();
+}
+(window as unknown as Record<string, unknown>).__dismissTodoPanel = dismissTodoPanel; // escape-ok: 供内联 onclick 关闭 todo 面板时记录关闭状态并清理内部状态
 
 export function updateTodoFromTool(tc: ToolBlock): void {
   if (tc.name !== 'todo' || !tc.result || tc.result.isError) return;
   const todos = (tc.input?.todos as Array<{content: string; status: string}> | undefined) || [];
   _lastTodos = todos.length > 0 ? todos : null;
+  if (!_lastTodos) return;
+  // 用户手动 ✕ 关闭过这份列表（指纹一致）→ 不再自动弹出（含刷新后恢复路径）。
+  // 指纹不同 = AI 给出了新列表 → 清除关闭记录并正常显示。
+  const fp = _todosFingerprint(_lastTodos);
+  let dismissed = '';
+  try { dismissed = localStorage.getItem(TODO_DISMISS_KEY) || ''; } catch { /* ignore */ }
+  if (dismissed) {
+    if (dismissed === fp) return;
+    try { localStorage.removeItem(TODO_DISMISS_KEY); } catch { /* ignore */ }
+  }
   // v8 拆分搬运事故修复：这里必须接通渲染（曾只写 _lastTodos，面板永不出现）。
   // 面板引用走 DOM.orbPanel（initOrb 时 ensurePanel 已保证存在），不依赖调用方传参。
   const panelEl = DOM.orbPanel;
-  if (panelEl && _lastTodos) renderTodoPanel(_lastTodos, panelEl);
+  if (panelEl) renderTodoPanel(_lastTodos, panelEl);
 }

@@ -157,5 +157,7 @@ maintainer: AI agent
 | BAR-ORB-PANEL-21 | `chat-dom` | 细节组：新消息滑入动画丢失（`orb-msg-new` CSS 无使用者）；打字机 reveal 期间 pre 不滚底（长输出停在开头）；340ms 定时折叠把 500ms 打字机折进一半；无参数工具显示空输入框+分隔线。契约：live 挂载 animate=true；reveal tick 滚底；折叠由 onDone 回调触发（禁 setTimeout）；`_hideEmptyToolInput` | L | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
 | BAR-BUILD-04 | `build/check` | 「接线丢失」类 bug（CSS 定义了没人用/JS 引用了没定义）反复出现却无防线。契约：`check-css-wiring.mjs` 双向检查 orb-* 类与 keyframes，挂在 build 和 npm run check 链 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
 
+| BAR-ORB-PANEL-22 | `orb-chat-hints` | Todo 面板 ✕ 关闭后刷新又弹出：关闭只清内存，`_restoreTodoPanel` 从数据层找回结果重挂。契约：`dismissTodoPanel` 记录列表指纹到 localStorage；`updateTodoFromTool` 同指纹跳过渲染、新列表（指纹不同）清记录并恢复显示 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
+
 > 新 bug 修复后：补一个回归钉子 → 在此登记 → 状态置「已钉」。见
 > `docs/archive/design/REGRESSION_TESTING_SYSTEM.md` §3 微循环。
