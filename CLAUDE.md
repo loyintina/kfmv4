@@ -64,7 +64,8 @@ docs/
 │   ├── AI_AGENT_DEBUG_TOOLS.md     # AI Agent 调试能力体系（能力矩阵 + 缺位分析 + 路线图）
 │   ├── V8_ARCHITECTURE.md          # v8 所有权分离架构（三条宪法 + 视觉契约 + 迁移计划）
 │   ├── VISION_AND_ROADMAP.md        # 远景：核心理念 + 演进路线（方向性，保留）
-│   └── CONTEXT_ASSEMBLY_SPEC.md     # 上下文拼接与 AI 工作空间（draft）
+│   ├── CONTEXT_ASSEMBLY_SPEC.md     # 上下文拼接与 AI 工作空间（draft）
+│   └── TOOL_IO_COMPACTION.md        # 工具 I/O 上下文压缩契约（与 AI_CHAT_RUNTIME 同级）
 └── archive/                 # 历史归档
     ├── README.md            # 子目录导览
     ├── handoffs/            # 版本交接记录
