@@ -492,7 +492,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 > bug 账本见 [`docs/BUG_REGRESSION_REGISTRY.md`](./BUG_REGRESSION_REGISTRY.md)）：
 >
 > ```bash
-> npm test    # 427 个测试（单元/集成/回归钉子/不变量），~1.3s，进主管线
+> npm test    # 430 个测试（单元/集成/回归钉子/不变量），~1.3s，进主管线
 > npm run smoke  # 11 条浏览器冒烟（puppeteer headless），~9s，独立于主管线
 > ```
 >
