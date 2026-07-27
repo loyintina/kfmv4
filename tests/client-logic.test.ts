@@ -425,3 +425,107 @@ regression('BAR-ORB-PANEL-05', 'orb.ts', '拖拽时面板跟随光球（rAF 合�
   assert(moveBody.includes('updatePanelPosition'), 'onMoveNormal 应 rAF 合帧更新面板位置（面板随光球移动）');
   assert(!moveBody.includes('_renderChat'), '拖拽期间不调 _renderChat（scrollHeight=强制 reflow，松手后统一滚）');
 });
+
+
+// ==========================================================================
+// 第八批前置：v8.1 交互回归修复（v7 契约恢复，源码断言钉子）
+// ==========================================================================
+
+regression('BAR-ORB-PANEL-06', 'orb.ts', '流式滚动 followBottom 门控：上滑浏览不被拽回底部', () => {
+  const src = readFileSync('src/client/modules/orb.ts', 'utf-8');
+  // v8.0 回归：_renderChat(scrollMode) 收参但忽略、无条件滚底——用户上滑看历史时
+  // 每个流式事件都拽回底部。v7 契约：follow 强制 / auto 门控 / preserve 不动。
+  assert(src.includes("scrollMode === 'auto' && getFollowBottom()"), 'auto 模式必须 followBottom 门控');
+  assert(src.includes("scrollMode === 'follow'"), 'follow 模式必须显式强制追底');
+  const hints = readFileSync('src/client/modules/orb-chat-hints.ts', 'utf-8');
+  const waitBody = hints.split('export function startWaitingIndicator')[1]?.split('return function stop')[0] || '';
+  assert(waitBody.includes('getFollowBottom()'), '等待提示滚底必须 followBottom 门控（v7 注释明示的契约）');
+});
+
+regression('BAR-ORB-PANEL-07', 'orb-chat-hints', 'Todo 面板：渲染接通 + 全部完成后才 5s 淡出', () => {
+  const src = readFileSync('src/client/modules/orb-chat-hints.ts', 'utf-8');
+  // v8 拆分搬运事故：updateTodoFromTool 只写 _lastTodos 不调 renderTodoPanel → 面板永不出现
+  const updBody = src.split('export function updateTodoFromTool')[1] || '';
+  assert(updBody.includes('renderTodoPanel('), 'updateTodoFromTool 必须接通 renderTodoPanel');
+  // dismiss 分支曾写反（进行中 5s 消失、全完成常驻）。正确：allDone → 5s 淡出；进行中 → 常显
+  const todoBody = src.split('function renderTodoPanel')[1] || '';
+  const allDoneBranch = todoBody.split('if (allDone)')[1]?.split('} else')[0] || '';
+  assert(allDoneBranch.includes('setTimeout'), 'allDone 分支必须安排 5s 淡出（而非常驻）');
+});
+
+
+// ==========================================================================
+// 第八批：v8.1 第二批 — 交互恢复 + 运行时/构建优化（源码断言钉子）
+// ==========================================================================
+
+group('v8.1 第二批 — 交互恢复 + 运行时/构建优化');
+
+regression('BAR-ORB-PANEL-08', 'chat-dom', '复制按钮委托 + 打字机 reveal + 摸鱼提示轮换（v7 行为恢复）', () => {
+  const src = readFileSync('src/client/modules/chat-dom.ts', 'utf-8');
+  // v8.0 复制按钮只创建未接处理（纯装饰）；打字机/摸鱼轮换是 v7 特性被砍
+  assert(src.includes('.orb-copy-btn') && src.includes('clipboard'), '复制按钮必须有事件委托处理');
+  assert(src.includes('_typewriterReveal'), '工具结果应有打字机 reveal（v7.2.0 特性）');
+  const trBody = src.split("case 'tool_result'")[1]?.split("case 'rule_warning'")[0] || '';
+  assert(trBody.includes('details, true'), '实时 tool_result 必须传 animate=true（历史挂载才直渲最终态）');
+  assert(src.includes('_hintTimers'), '执行期摸鱼提示应轮换（_hintTimers）');
+  const clearBody = src.split('export function clearChatDom')[1]?.split('\n}')[0] || '';
+  assert(clearBody.includes('_hintTimers.clear()'), 'clearChatDom 必须清轮换计时器（防泄漏）');
+});
+
+regression('BAR-ORB-PANEL-09', 'chat-dom', '流式滚动 rAF 合批（每 delta 强制 reflow 根除）', () => {
+  const src = readFileSync('src/client/modules/chat-dom.ts', 'utf-8');
+  // 每个 text_delta 同步 scrollToBottom = 每个 delta 一次强制同步布局
+  const ms = src.split('function _maybeScroll')[1]?.split('\n}')[0] || '';
+  assert(ms.includes('_scrollRafScheduled') && ms.includes('requestAnimationFrame'), '_maybeScroll 必须 rAF 合批而非同步滚动');
+  // scrollToBottom 本身必须保持同步（expandPanel/resumeScroll 依赖立即滚动）
+  const st = src.split('export function scrollToBottom')[1]?.split('\n}')[0] || '';
+  assert(!st.includes('requestAnimationFrame'), 'scrollToBottom 不得改异步（显式调用方依赖同步语义）');
+});
+
+regression('BAR-CARD-BLUR-01', 'floating-card', '浮卡拖拽期挂起 backdrop-filter（blur 16px 每帧重算是拖动卡顿主因）', () => {
+  const src = readFileSync('src/client/modules/floating-card.ts', 'utf-8');
+  assert(src.includes('_suspendCardBlur') && src.includes('_restoreCardBlur'), '应有拖拽期模糊挂起/恢复（orb 同款模式）');
+  const saveBody = src.split('onSavePosition()')[1]?.split('}')[0] || '';
+  assert(saveBody.includes('_restoreCardBlur'), 'onSavePosition 必须恢复模糊（pointercancel 由 drag-handler 保证到达）');
+});
+
+regression('BAR-LEAK-01', 'config.card', 'config.card 三个 window 监听必须在 deactivate 移除', () => {
+  const src = readFileSync('src/client/cards/plugins/config.card.ts', 'utf-8');
+  // 曾只挂不摘：每次激活泄漏 3 个闭包（持过期 editingConfig/select 引用）
+  assert(src.includes('_onSessionChange') && src.includes('_onProviderChange') && src.includes('_onModelChange'), 'handler 必须存字段（匿名函数无法移除）');
+  const deact = src.split('deactivate')[1] || '';
+  assert(deact.includes('removeEventListener'), 'deactivate 必须 removeEventListener');
+});
+
+regression('BAR-LEAK-02', 'session.card', 'session.card 的 kfm-session-change 监听必须在 deactivate 移除', () => {
+  const src = readFileSync('src/client/cards/plugins/session.card.ts', 'utf-8');
+  assert(src.includes('_onExternalSessionChange'), 'handler 必须存字段（匿名函数无法移除）');
+  const deact = src.split('deactivate')[1] || '';
+  assert(deact.includes('removeEventListener'), 'deactivate 必须 removeEventListener');
+});
+
+regression('BAR-LEAK-03', 'tree-render', 'window resize 监听只注册一次（曾每次开侧栏叠加一个）', () => {
+  const src = readFileSync('src/client/modules/tree-render.ts', 'utf-8');
+  assert(src.includes('_ensureResizeListener'), '应有单次注册守卫');
+  const anon = src.split('\n').filter(l => l.includes("addEventListener('resize'") && !l.includes('_onWindowResize'));
+  assert(anon.length === 0, 'resize 监听必须用具名 handler（匿名注册无法移除、开 N 次挂 N 个）');
+});
+
+regression('BAR-ENGINE-01', 'renderer', '行高 measureText 按字体缓存（曾每个文本 Box 每帧测量）', () => {
+  const src = readFileSync('src/client/engine/v2/renderer.ts', 'utf-8');
+  assert(src.includes('_fontMetricsCache'), '应有字体度量缓存（60fps 全量重绘下每 Box 每帧测量是大头）');
+});
+
+regression('BAR-BUILD-01', 'build.mjs', 'esbuild 必须 minify + 版本号 query 不叠加', () => {
+  const src = readFileSync('build.mjs', 'utf-8');
+  assert((src.match(/minify: true/g) || []).length >= 2, 'client/server 两处 esbuild 都必须 minify（1.9MB→1.07MB）');
+  const html = readFileSync('public/index.html', 'utf-8');
+  assert(!/\?v=\d+\?v=/.test(html), 'index.html 不应有双重 ?v= 畸形 query（正则曾吞不掉旧 query）');
+});
+
+regression('BAR-BUILD-02', 'server/index', 'gzip 排除 SSE + 不挂载仓库根目录', () => {
+  const src = readFileSync('src/server/index.ts', 'utf-8');
+  assert(src.includes('compression('), '应有 gzip compression 中间件');
+  assert(src.includes("'/ai/'"), 'compression filter 必须排除 /ai/（SSE 流式不能被缓冲）');
+  assert(!src.includes("express.static(path.join(__dirname, '../..'))"), '禁止重新挂载仓库根目录（.git/src/node_modules 曾暴露 HTTP）');
+});

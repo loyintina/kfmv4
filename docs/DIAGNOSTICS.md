@@ -241,10 +241,19 @@ created_at: 2026-06-29
   `updatePanelPosition`——「面板随光球移动」是设计契约，禁止用「整体跳过面板
   更新」治卡顿（226c2fb 的治标方案，面板原地不动）；拖拽期间不调 `_renderChat`
   （`scrollHeight` 读取=强制 reflow），松手后 `onSavePosition` 统一滚。
+- **流式滚动 followBottom 门控**：`_renderChat('auto')`、等待提示、`_maybeScroll`
+  都只在用户本就在底部时追底；强制追底只能走 `'follow'`（发送/首轮渲染）。
+  违反 → 上滑看历史的用户被每个流式事件拽回底部。
+- **`_maybeScroll` 必须 rAF 合批**：每个 delta 同步 `scrollToBottom` = 每 delta 一次
+  强制 reflow；但 `scrollToBottom` 本体保持同步语义（expandPanel/resumeScroll 依赖）。
+- **复制按钮走 contentArea 事件委托**：消息 DOM 动态增删，委托一次注册覆盖全部；
+  禁止逐按钮绑定（v8.0 曾只建按钮不接处理，纯装饰）。
 
-**违规后果**：展开 2-3s 无响应、拖拽卡顿、滚动位置突跳、面板模糊永久丢失。
+**违规后果**：展开 2-3s 无响应、拖拽卡顿、滚动位置突跳、面板模糊永久丢失、
+上滑浏览被拽回底部、复制按钮形同虚设。
 
-**历史案例**：2026-07-27（v8.1 光球面板性能根洽，登记表 BAR-ORB-PANEL-01…04）。
+**历史案例**：2026-07-27（v8.1 光球面板性能根洽 + 交互回归恢复，登记表
+BAR-ORB-PANEL-01…09）。
 
 ---
 

@@ -168,7 +168,7 @@ index.ts (入口路由 + 静态文件)
 - **规则**：纯 DOM 实现,不触碰 Canvas 渲染器。弹窗打开时 canvas 点击/手势事件被 guard 拦截。
 
 ## 二、当前会话状态
-> **最后更新**：2026-07-27（v8.1 — 光球面板性能根洽：面板 DOM 持久化 + 历史窗口化挂载 + content-visibility + 渲染产物缓存 + 拖拽期挂起模糊；基线 v8.0.0 — 所有权分离架构 + renderChatContent 删除 + chat-dom.ts 增量 DOM 渲染 + SessionStore 单写者 + kfm-restart 冷恢复 + 死代码清理 ~160 行）
+> **最后更新**：2026-07-27（v8.1 — 光球面板性能根洽 + 交互回归恢复 + 全项目前端优化批次；基线 v8.0.0 — 所有权分离架构 + renderChatContent 删除 + chat-dom.ts 增量 DOM 渲染 + SessionStore 单写者 + kfm-restart 冷恢复 + 死代码清理 ~160 行）
 
 **v8.1（进行中）— 光球面板性能根洽（点击展开 2-3s + 展开后拖拽卡顿）**
 
@@ -188,6 +188,33 @@ index.ts (入口路由 + 静态文件)
 
 > 隐性契约：`docs/DIAGNOSTICS.md` §1.14；回归钉：BAR-ORB-PANEL-01…04
 > （`tests/client-logic.test.ts`，源码断言，均已 revert 验证）。
+
+**v8.1 第二批 — 交互回归恢复 + 全项目前端优化**
+
+v7 被砍设计的盘点结论：恢复 6 项（其余为 v8 架构红利，不需要恢复）：
+1. **scrollMode 三态恢复** — `_renderChat` 的 auto 走 `getFollowBottom()` 门控，
+   上滑看历史不再被流式事件拽回底部；等待提示滚底同款门控。
+2. **Todo 面板复活** — 接通 `renderTodoPanel`（v8 拆分丢了调用方）+ 修正写反的
+   dismiss 分支（allDone→5s 淡出 / 进行中→常显）。
+3. **复制按钮接回** — contentArea 事件委托（v8.0 只建按钮未接处理）。
+4. **打字机 reveal + 摸鱼提示轮换** — v7.2.0 两个 UX 特性恢复（实时 tool_result
+   500ms 放完；执行期 1.5s 换一条，tool_result 即停）。
+
+前端优化盘点落地（证据见当日盘点报告，按收益排序实施）：
+5. **传输** — esbuild minify（bundle 1.9MB→1.07MB）+ compression gzip（filter 排除
+   `/ai/` SSE）+ `?v=` 资源 immutable 缓存头 + 版本号 query 畸形修复 + KaTeX 字体
+   404 修复（public/fonts）。
+6. **运行时** — 浮卡拖拽挂起 `blur(16px)`（orb 同款模式）+ Canvas 行高
+   `measureText` 按字体缓存 + chat-dom 流式滚动 rAF 合批。
+7. **泄漏** — config.card/session.card window 监听 deactivate 移除 + tree-render
+   resize 监听单次注册守卫。
+8. **安全** — 删除 `express.static` 仓库根目录挂载（曾暴露 `.git`/`src`/`node_modules`）。
+
+> 未做（评估后放弃）：xterm 懒加载（IIFE 单文件不支持 code splitting，需改 ESM
+> 输出，成本大于收益）；Canvas dirty-flag（引擎级改造，留待专项）；B3 transition
+> 收敛（视觉回归无法离线验证）。
+> 回归钉：BAR-ORB-PANEL-06…09、BAR-CARD-BLUR-01、BAR-LEAK-01…03、BAR-ENGINE-01、
+> BAR-BUILD-01…02（均已 revert 验证）。
 
 ### 当前焦点
 **AI Agent 调试能力体系建设** — 面向 AI 开发者的调试基础设施。

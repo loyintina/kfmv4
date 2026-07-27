@@ -123,5 +123,25 @@ maintainer: AI agent
 | BAR-ORB-PANEL-04 | `drag-handler` | 拖拽卡顿次因：backdrop-filter 让面板区域每帧重跑 GPU 模糊合成。契约：拖拽期 _suspendPanelBlur 挂起、onSavePosition 恢复；pointercancel 分支必须也调 onSavePosition（否则模糊挂起后永不恢复） | L | ✅ 已钉（源码检查：pointercancel 分支含 onSavePosition 调用，revert 验证） | `tests/client-logic.test.ts` |
 | BAR-ORB-PANEL-05 | `orb.ts` | 226c2fb 治卡顿整体跳过拖拽期面板更新（治标），破坏「面板随光球移动」设计契约 → 光球走了面板原地不动。契约：onMoveNormal 必须 rAF 合帧调 updatePanelPosition（性能根因已由 PANEL-01…04 根治，行为不需要再牺牲）；拖拽期间不调 _renderChat（scrollHeight=强制 reflow，松手统一滚） | I | ✅ 已钉（源码检查：onMoveNormal 含 updatePanelPosition、不含 _renderChat 调用，revert 验证） | `tests/client-logic.test.ts` |
 
+### 第八批：v8.1 交互回归恢复 + 运行时/构建优化
+
+> 恢复 v7 被砍的交互契约（scrollMode/等待提示门控、Todo 面板、复制按钮、打字机、
+> 摸鱼轮换），及全项目前端优化盘点落地的修复（minify+gzip、浮卡模糊挂起、
+> measureText 缓存、三处监听泄漏、仓库根目录暴露收敛）。
+
+| BAR | commit | 症状/契约 | 类别 | 状态 | 测试位置 |
+|-----|--------|-----------|------|------|---------|
+| BAR-ORB-PANEL-06 | `orb.ts` | 上滑看历史被流式事件反复拽回底部：`_renderChat(scrollMode)` 收参但忽略、无条件滚底；等待提示出现也强制滚底。契约（v7 原设计）：follow 强制追底 / auto 走 `getFollowBottom()` 门控 / preserve 不动 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-ORB-PANEL-07 | `orb-chat-hints` | Todo 浮动面板永不出现：v8 拆分丢 `renderTodoPanel` 调用方；且 dismiss 分支写反（进行中 5s 消失、全完成常驻）。契约：updateTodoFromTool 接通渲染；allDone→5s 淡出、进行中→常显 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-ORB-PANEL-08 | `chat-dom` | 复制按钮纯装饰（只创建未接处理）；工具结果打字机 reveal、执行期摸鱼提示轮换两个 v7 特性被砍 | L | ✅ 已钉（源码检查四要素，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-ORB-PANEL-09 | `chat-dom` | 每个 text_delta 同步 `scrollToBottom` = 每 delta 一次强制 reflow。契约：`_maybeScroll` rAF 合批；`scrollToBottom` 本体保持同步语义（显式调用方依赖） | L | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-CARD-BLUR-01 | `floating-card` | 浮卡拖拽卡顿：`blur(16px)` 背景每帧重算 + 位置直写无合批。契约：拖拽期 `_suspendCardBlur` 挂起、`onSavePosition` 恢复（orb 同款模式） | L | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-LEAK-01 | `config.card` | activate 挂 3 个 window 监听（session/provider/model-change）从不移除，每次激活泄漏 3 个闭包 | L | ✅ 已钉（源码检查：handler 存字段 + deactivate 移除，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-LEAK-02 | `session.card` | kfm-session-change 监听只挂不摘（与 LEAK-01 同模式） | L | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-LEAK-03 | `tree-render` | 每次开侧栏叠加一个匿名 resize 监听，开 N 次 = resize 调 N 次。契约：具名 handler + 单次注册守卫 | L | ✅ 已钉（源码检查：无匿名 resize 注册，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-ENGINE-01 | `renderer` | 每个文本 Box 每帧 `measureText('Ag')`（常驻 60fps 全量重绘下的测量大头）。契约：字体度量按 font 缓存 | L | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-BUILD-01 | `build.mjs` | bundle 1.9MB 未压缩源码上线（minify 后 1.07MB，-44%）；版本号正则吞不掉旧 query 叠加成 `?v=A?v=forceB` 畸形 | L | ✅ 已钉（源码检查：两处 minify + index.html 无双重 query，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-BUILD-02 | `server/index` | 无 gzip（1.9MB 直传）；`express.static` 挂载仓库根把 `.git`/`src`/`node_modules` 暴露 HTTP。契约：compression filter 排除 `/ai/`（SSE 不缓冲）+ 禁止重挂根目录 | L | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
+
 > 新 bug 修复后：补一个回归钉子 → 在此登记 → 状态置「已钉」。见
 > `docs/archive/design/REGRESSION_TESTING_SYSTEM.md` §3 微循环。
