@@ -79,7 +79,7 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 | **视觉效果** | `char-rain.ts` | 字符散落/回收动画（展开折叠时） |
 | **交互共享** | `interaction-constants.ts` `drag-handler.ts` `click-queue.ts` `z-index-layers.ts` | 模块间共享的常量/类型/事件队列/层级注册表 |
 | **卡片系统** | `card-registry.ts` `card-stack.ts` `floating-card.ts` `floating-shared.ts` `floating-fullscreen.ts` | 统一注册表（类型/实例）+ 堆叠抽屉 UI + 浮卡拖拽/全屏 UI |
-| **AI / 通信** | `orb.ts` `orb-chat.ts` `orb-panel.ts` `chat-dom.ts` `ws-channel.ts` `session-store.ts` `debug-assert.ts` `gestures.ts` | 光球面板、下拉框、AI 消息/流式、增量 DOM 渲染、WebSocket、会话持久化 |
+| **AI / 通信** | `orb.ts` `orb-chat.ts` `orb-panel.ts` `chat-dom.ts` `ws-channel.ts` `session-client.ts` `debug-assert.ts` `gestures.ts` | 光球面板、下拉框、AI 消息/流式、增量 DOM 渲染、WebSocket、会话管理 |
 | **日志** | `logger.ts` | KFM 日志系统（debug-card 伴侣） |
 
 ### 服务端模块（15 个）
@@ -434,7 +434,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `chat-dom.ts` | 806 | 0 | ✅ 分组表 | v8 增量 DOM 投影（事件驱动，替代 renderChatContent 全量重建） |
 | `orb-panel.ts` | 209 | 1 | ✅ 分组表 | 面板 Provider/Session/Model/Role 下拉框（从 orb.ts 拆分） |
 | `orb-state.ts` | 17 | 0 | ✅ 分组表 | orb 状态机纯逻辑（零依赖，从 orb.ts 拆分，可脱离浏览器测试） |
-| `session-store.ts` | 518 | 1 | ✅ 分组表 | 会话持久化统一存储 + saveMessages 自动建会话（见 AI_CHAT_RUNTIME §4.6） |
+| `session-client.ts` | 518 | 1 | ✅ 分组表 | 客户端会话管理（只读缓存 + pre-run 创建，实际存储在服务端 session-store.ts） |
 | `renderer-lifecycle.ts` | 224 | 5 | ✅ 注册表 | 渲染器生命周期单例 L |
 | `sibling-switcher.ts` | 158 | 2 | ✅ 独立条目 | 文件树兄弟目录切换（替代 root-picker） |
 | `state.ts` | 258 | 10 | ✅ 注册表 | 全局状态层 KFMState |

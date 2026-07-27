@@ -1,8 +1,9 @@
 /**
- * KFM v4 - 会话持久化存储
+ * session-client.ts — 客户端会话管理（只读缓存 + pre-run 创建）
  *
- * 单一数据源：会话列表、当前活跃会话、消息保存/加载。
- * 替代 orb.ts 中散布的 loadSessions / loadActiveSessionId / saveSession / generateSessionTitle。
+ * 注意：实际持久化存储在服务端 `src/server/ai/session-store.ts`。
+ * 本模块职责：会话列表缓存、activeId 管理、pre-run saveMessages（创建会话+标题生成）。
+ * 替代 orb.ts 中散布的 loadSessions / loadActiveSessionId / generateSessionTitle。
  *
  * ## 数据流
  *   sessionStore.load()          → 从服务端拉取列表 + 恢复 activeId → notify

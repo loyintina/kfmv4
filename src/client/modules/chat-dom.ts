@@ -632,17 +632,22 @@ export function patchEvent(event: StreamEvent): void {
       const st = _streamState.get(mi);
       if (!st) break;
 
-      // text block 完成 → 跑 markdown 管线
-      if (st.textEl && st.textBuf) {
-        _renderMarkdown(st.textEl, st.textBuf);
-        _maybeScroll();
-      }
-      // tool input 完成 → JSON 高亮
-      const lastToolId = _findLastToolId();
-      if (lastToolId) {
-        const els = _toolEls.get(lastToolId);
-        if (els?.inputPre && els.inputPre.textContent) {
-          _highlightInput(els.inputPre);
+      // v8 修复：通过 event.index 区分 text block (index=0) 和 tool block (index>0)
+      // 避免 text block stop 时重复高亮已完成的 tool input，反之亦然
+      if (event.index === 0) {
+        // text block 完成 → 跑 markdown 管线
+        if (st.textEl && st.textBuf) {
+          _renderMarkdown(st.textEl, st.textBuf);
+          _maybeScroll();
+        }
+      } else if (event.index > 0) {
+        // tool block 完成 → JSON 高亮该工具的 input
+        const lastToolId = _findLastToolId();
+        if (lastToolId) {
+          const els = _toolEls.get(lastToolId);
+          if (els?.inputPre && els.inputPre.textContent) {
+            _highlightInput(els.inputPre);
+          }
         }
       }
       break;

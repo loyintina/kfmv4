@@ -175,7 +175,7 @@ created_at: 2026-06-29
 
 ### 1.12 AI 对话运行时：跨文件时序契约
 
-**涉及模块**：`orb-chat.ts`、`orb.ts`、`ws-channel.ts`、`tmux-card.ts`、`terminal-card-04.ts`、`session-store.ts`、`src/server/ai/run-manager.ts`、`src/server/ai/routes.ts`、`src/server/ai/chat.ts`、`ws-server.ts`
+**涉及模块**：`orb-chat.ts`、`orb.ts`、`ws-channel.ts`、`tmux-card.ts`、`terminal-card-04.ts`、`session-client.ts`、`src/server/ai/run-manager.ts`、`src/server/ai/routes.ts`、`src/server/ai/chat.ts`、`ws-server.ts`
 
 > **完整架构 + 全部契约见 `docs/design/AI_CHAT_RUNTIME.md`。** 此处只列最容易踩、
 > 且症状为"看起来没错、跑起来卡死"的几条速查。

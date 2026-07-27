@@ -2,7 +2,7 @@
 // tests/client-logic.test.ts — 客户端纯逻辑回归钉子（步骤 4）
 //
 // 覆盖三块「有明确对错、可离线测」的客户端逻辑：
-//   1. 会话消息计数（BAR-103）        session-store.countTextMessages
+//   1. 会话消息计数（BAR-103）        session-client.countTextMessages
 //   2. 临时卡组模式着色（427c960）     mode-system.recolorCards
 //   3. 文件树构建边界                  tree-model.buildTree
 //
@@ -11,8 +11,8 @@
 
 import assert from 'assert';
 import { group, test, regression } from './runner.js';
-import { extractMessageText, countTextMessages } from '../src/client/modules/session-store.js';
-import type { SessionMessage } from '../src/client/modules/session-store.js';
+import { extractMessageText, countTextMessages } from '../src/client/modules/session-client.js';
+import type { SessionMessage } from '../src/client/modules/session-client.js';
 import { recolorCards, getModeTheme, getTriColor } from '../src/client/modules/mode-system.js';
 import { buildTree } from '../src/client/modules/tree-model.js';
 import { KFMState, type FileNode } from '../src/client/modules/state.js';
@@ -22,7 +22,7 @@ import { KFMState, type FileNode } from '../src/client/modules/state.js';
 // 纯工具调用 / 纯思考气泡不计入；删空会话归零。
 // ==========================================================================
 
-group('session-store — 消息计数（BAR-103）');
+group('session-client — 消息计数（BAR-103）');
 
 const textMsg = (t: string): SessionMessage => ({ role: 'user', content: [{ type: 'text', text: t }] });
 const toolMsg = (): SessionMessage => ({ role: 'ai', content: [{ type: 'tool', id: 't1', name: 'bash', input: {} }] });
@@ -52,7 +52,7 @@ regression('BAR-103c', '1d9fdbc', '空会话 → 计数为 0（删最后一个�
   assert(countTextMessages([]) === 0, '空 messages 应为 0');
 });
 
-regression('BAR-MSG-NULL', 'session-store', 'content 含 null block 不崩溃（AI 只调工具不说话）', () => {
+regression('BAR-MSG-NULL', 'session-client', 'content 含 null block 不崩溃（AI 只调工具不说话）', () => {
   // extractMessageText 应安全跳过 null block，不抛 TypeError
   const text = extractMessageText(nullBlockMsg());
   assert(text === '', 'null block 消息应返回空字符串');

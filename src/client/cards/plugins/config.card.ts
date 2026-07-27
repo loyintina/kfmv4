@@ -11,7 +11,7 @@ import { buildCardLayout } from '../../modules/floating-card.js';
 import { log } from '../../modules/logger.js';
 import { createCustomSelect, type CustomSelect } from '../../modules/custom-select.js';
 import { showConfirm } from '../../modules/confirm-dialog.js';
-import { sessionStore } from '../../modules/session-store.js';
+import { sessionStore } from '../../modules/session-client.js';
 
 interface Provider {
   id: string;

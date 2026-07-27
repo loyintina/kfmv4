@@ -21,7 +21,7 @@ import { MARGIN } from './interaction-constants.js';
 import { createDragHandler, type DragConfig } from './drag-handler.js';
 import { anim } from './animation-registry.js';
 import { log } from './logger.js';
-import { sessionStore } from './session-store.js';
+import { sessionStore } from './session-client.js';
 import { buildPanelContent } from './orb-panel.js';
 import { doSend, resumeRun, readPersistedRun, clearPersistedRun, clearTodoPanel, startWaitingIndicator, setEventHook, type ChatMessage } from './orb-chat.js';
 import { initChatDom, patchEvent, clearChatDom, mountUserMessage, mountAiMessage, scrollToBottom } from './chat-dom.js';
@@ -583,7 +583,7 @@ export async function initOrb(): Promise<void> {
     // v8 冷恢复：检测"未完成的对话"（kfm-restart 后 AI 工具执行完了但没来得及回应）
     // 判据：末尾是 AI 消息且含 tool result → 工具执行完了但 AI 还没回应（回应会是新 message）
     // 防护：restartCount 计数器防止无限循环（连续自动 resume 超过 3 次则停止）
-    (async () => {
+    async function tryAutoResume(): Promise<void> {
       if (!sessionStore.activeId || chatMessages.length === 0) return;
       const RESTART_COUNT_KEY = 'kfm-restart-count';
       const MAX_RESTART_COUNT = 3;
@@ -638,7 +638,9 @@ export async function initOrb(): Promise<void> {
           // 自动续读（复用 resumeRun 路径）
           if (orbState === 'collapsed') expandPanel();
           // 等面板展开动画完成（~300ms），确保 page-state snapshot 反映展开态
-          await new Promise(r => setTimeout(r, 400));
+          const { promise: delayPromise, resolve: delayResolve } = Promise.withResolvers<void>();
+          setTimeout(delayResolve, 400);
+          await delayPromise;
           abortCtrl = new AbortController();
           sendBtn!.classList.add('sending');
           let stopHintR: (() => void) | null = null;
@@ -659,7 +661,8 @@ export async function initOrb(): Promise<void> {
           try { localStorage.setItem(RESTART_COUNT_KEY, String(restartCount + 1)); } catch {}
         }
       } catch { /* 网络失败静默，用户可手动重发 */ }
-    })();
+    }
+    tryAutoResume();
 
     // 监听会话切换 → 中止进行中的 run + 分段重载消息
     // 竞态防护：切换前 abort 进行中流式 run，防止流继续写入已切走的会话。

@@ -5,7 +5,7 @@
  * orb.ts 负责光球 UI / 手势 / 状态机，本模块负责面板 DOM 内容。
  */
 
-import { sessionStore } from './session-store.js';
+import { sessionStore } from './session-client.js';
 import { createCustomSelect, type CustomSelect } from './custom-select.js';
 
 // ========== 类型 ==========

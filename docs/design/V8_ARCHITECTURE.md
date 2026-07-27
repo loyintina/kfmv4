@@ -19,6 +19,11 @@
 
 交接契约：服务端产出**带语义 class + data-attr 的 HTML**，不带颜色、不带 inline style、不带动画。客户端通过 CSS class 和 JS 投影赋予视觉。
 
+> **v8 有意推迟**：当前 `chat-dom.ts` 仍在客户端做 markdown → DOM 渲染（`_renderMarkdown`），
+> 未严格遵循"服务端语义渲染"的交接契约。Phase 5（服务端 renderer.ts + /sessions/render 端点）
+> 原计划解决此问题，但因客户端增量渲染已满足性能需求（innerHTML 全量重建 → patchEvent 增量 DOM），
+> 服务端语义渲染降级为可选优化。未来若需多端渲染（CLI/桌面）或 SEO，可重启 Phase 5。
+
 ### 第二条：随机组合是客户端的所有物
 
 > 视觉的随机性（配色、节奏、姿态）不可上移到服务端。

@@ -226,9 +226,9 @@ export async function* streamChat(
     // text block（含 reasoning）始终在 index=0，tool_use block 从 index=1 开始
     // 设计决策：thinking(reasoning_content) 和 text(content) 合并到同一个 TextBlock，
     // 不拆成两个 block。客户端 content[0] 同时持有 reasoning 和 text，
-    // renderChatContent 取 textBlocks[0] 即可正确渲染两者。
+    // chat-dom.ts patchEvent 取 textBlocks[0] 即可正确渲染两者。
     // 历史问题：曾经 thinking 开 index=0，text 再 stop/reopen 到 index=1，
-    // 导致 renderChatContent 的 textBlocks[0].text 永远为空。
+    // 导致 textBlocks[0].text 永远为空。
     let hasTextBlock = false; // 已 yield content_block_start index=0
     const toolStarted = new Set<number>(); // 已 yield content_block_start 的工具 provider idx
     // 工具块索引连续化：见 createClientIdxMapper（BAR-106 核心）。

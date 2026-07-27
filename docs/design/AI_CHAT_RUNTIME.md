@@ -11,7 +11,7 @@ maintainer: AI agent
 > **改动 AI 对话流式、挂机持久化、WebSocket 重连、终端卡恢复前必读。**
 >
 > 这一子系统横跨客户端（`orb-chat.ts` / `orb.ts` / `chat-dom.ts` / `ws-channel.ts` /
-> `tmux-card.ts` / `terminal-card-04.ts` / `session-store.ts`）、
+> `tmux-card.ts` / `terminal-card-04.ts` / `session-client.ts`）、
 > 共享协议层（`shared/chat-protocol/`：`messages.ts` / `events.ts` / `reducer.ts` /
 > `block-idx.ts` / `index.ts`）与服务端（`src/server/ai/run-manager.ts` /
 > `src/server/ai/routes.ts` / `src/server/ai/chat.ts` / `src/server/ai/session-store.ts` /
@@ -53,7 +53,7 @@ maintainer: AI agent
 │     mountUserMessage / mountAiMessage │        │                    │                   │
 │     增量 DOM：思考框/文本泡/工具卡    │        │                    ▼                   │
 │                                       │        │  ai/chat.ts (SSE 流式生成器)           │
-│  session-store.ts (会话落盘)          │        │     streamChat() async generator       │
+│  session-client.ts (客户端会话管理)     │        │     streamChat() async generator       │
 │                                       │        │       message_start → block_* →        │
 │  shared/chat-protocol/ (协议层)       │        │       tool_result → message_stop → done│
 │     messages.ts / events.ts           │        │                                        │
@@ -207,7 +207,7 @@ false**（它在循环结束后的 `finally` 才置 true）。因此**不能**�
 残留旧消息不清空。
 
 **正确做法**：空 `sessionId` 时清空 `chatMessages` + `_renderChat()` + 清空选择器。
-（`session-store.ts` 的监听器则相反：它用 `if (e.detail?.sessionId)` 守卫是对的，因为
+（`session-client.ts` 的监听器则相反：它用 `if (e.detail?.sessionId)` 守卫是对的，因为
 它只负责"切换到某个会话"，清空由 orb.ts 直接 `activeId=''` 处理。）
 
 ---
@@ -287,7 +287,7 @@ IIFE 与 `handleSend` 之间**共享单例**，保证重连态也能被同一个
 | `src/client/modules/ws-channel.ts` | WebSocket 客户端 + 重连 + 看门狗 + onReconnect API |
 | `src/client/modules/tmux-card.ts` | tmux 卡：`_lastCommand` + WS 重连 re-attach |
 | `src/client/modules/terminal-card-04.ts` | 终端核心：`_onReconnect` 重开 PTY |
-| `src/client/modules/session-store.ts` | 会话落盘 + `saveMessages` 自动建会话 |
+| `src/client/modules/session-client.ts` | 客户端会话管理（只读缓存 + pre-run 创建，实际存储在服务端 session-store.ts） |
 | `src/client/modules/chat-dom.ts` | v8 唯一渲染路径：`patchEvent` DOM 投影 + 历史消息挂载 |
 | `src/shared/chat-protocol/` | 双端共享协议层（5 文件）：`messages.ts`（类型）/ `events.ts`（事件）/ `reducer.ts`（纯状态转换）/ `block-idx.ts`（工具块索引映射）/ `index.ts`（导出） |
 | `src/server/ai/session-store.ts` | 服务端会话日志落盘：`appendEvent` / `flush` / `flushSync` / `isIncomplete`（冷恢复判据） |

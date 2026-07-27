@@ -12,8 +12,8 @@ import { buildCardLayout } from '../../modules/floating-card.js';
 import { log } from '../../modules/logger.js';
 import { showConfirm } from '../../modules/confirm-dialog.js';
 import { createCustomSelect } from '../../modules/custom-select.js';
-import type { Session } from '../../modules/session-store.js';
-import { sessionStore, extractMessageText as extractMsgText, countTextMessages } from '../../modules/session-store.js';
+import type { Session } from '../../modules/session-client.js';
+import { sessionStore, extractMessageText as extractMsgText, countTextMessages } from '../../modules/session-client.js';
 import { Z } from '../../modules/z-index-layers.js';
 
 const SESSIONS_PATH = '.kfmv4/sessions';

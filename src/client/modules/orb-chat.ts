@@ -14,8 +14,8 @@
 import { KFMState } from './state.js';
 import { loadFileTree } from './tree-loader.js';
 import { DOM } from './dom-refs.js';
-import { sessionStore } from './session-store.js';
-import type { ContentBlock, TextBlock, ToolBlock, RuleWarningBlock } from './session-store.js';
+import { sessionStore } from './session-client.js';
+import type { ContentBlock, TextBlock, ToolBlock, RuleWarningBlock } from './session-client.js';
 import { marked } from 'marked';
 import { preprocessMd, MARKED_OPTS } from './renderers/md-extensions.js';
 import { Z } from './z-index-layers.js';
@@ -24,7 +24,7 @@ import { WAITING_HINTS } from '../data/waiting-hints.js';
 
 // ========== 类型 ==========
 
-export type { ContentBlock, TextBlock, ToolBlock, RuleWarningBlock } from './session-store.js';
+export type { ContentBlock, TextBlock, ToolBlock, RuleWarningBlock } from './session-client.js';
 
 /** 消息结构：content 是 block 数组，一次 AI 回复 = 一条消息 = 多个 block */
 export interface ChatMessage {
@@ -39,7 +39,7 @@ function escapeHtml(str: string): string {
 }
 
 // ========== 等待提示动画 ==========
-// 设计：attach 到 orb-panel-content 尾部的独立 DOM 节点，不走 renderChatContent 的 innerHTML 重建。
+// 设计：attach 到 orb-panel-content 尾部的独立 DOM 节点，由 chat-dom.ts patchEvent 增量更新。
 // start() 返回 stop 函数；message_start 到达后 orb.ts 调 stop() 移除节点。
 
 const HINT_ID = 'orb-waiting-hint';
