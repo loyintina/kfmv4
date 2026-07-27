@@ -76,6 +76,7 @@ await build({
   format: 'esm',
   outfile: 'dist/server/index.js',
   external: ['express','fs','path','os','ws','events','node-pty-prebuilt-multiarch'],
+  minify: true,
 });
 
 // 客户端
@@ -87,6 +88,7 @@ await build({
   outfile: 'public/bundle.js',
   target: ['es2019'],
   external: ['katex', 'mermaid'],
+  minify: true,
 });
 
 // 校验产物新鲜度
@@ -100,10 +102,11 @@ if (statSync('public/bundle.js').size < 100) { console.error('[smoke] ❌ public
 // 自动更新 bundle.js 版本号（防止浏览器缓存旧 bundle）
 // 用完整时间戳而非仅日期——同一天内多次构建也必须刷新缓存
 const buildStamp = Date.now();
-let html3 = html2.replace(/bundle\.js\?v=\d+/, `bundle.js?v=${buildStamp}`);
+// query 部分用贪婪匹配 [^"'\s>]* —— 历史上叠加过 ?v=A?v=forceB 的畸形 query 也能整段吞掉，收敛为单个 ?v=
+let html3 = html2.replace(/bundle\.js(\?[^"'\s>]*)?/, `bundle.js?v=${buildStamp}`);
 // CSS 也加版本号（防浏览器缓存旧样式——动画/布局改动后必须刷新）
-// 匹配 css/xxx.css 或 css/xxx.css?v=数字，统一替换为带新版本号
-html3 = html3.replace(/(css\/[\w-]+\.css)(\?v=\d+)?/g, `$1?v=${buildStamp}`);
+// 匹配 css/xxx.css 或 css/xxx.css?v=任意旧值（含畸形叠加），统一替换为带新版本号
+html3 = html3.replace(/(css\/[\w-]+\.css)(\?[^"'\s>]*)?/g, `$1?v=${buildStamp}`);
 if (html3 !== html2) writeFileSync('public/index.html', html3);
 console.log('[smoke] ✅ index.html 引用 bundle.js, 大小 ' + statSync('public/bundle.js').size + ' bytes');
 

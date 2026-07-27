@@ -6,7 +6,7 @@
   "scripts": {
     "preinstall": "node scripts/clean-npm-temp.cjs",
     "bundle": "node build.mjs",
-    "watch": "node build.mjs && (sass --no-source-map --watch public/css/:public/css/ & npx esbuild src/client/main.ts --bundle --platform=browser --format=iife --outfile=public/bundle.js --target=es2019 --external:katex --external:mermaid --watch)",
+    "watch": "node build.mjs && (sass --no-source-map --watch public/css/:public/css/ & npx esbuild src/client/main.ts --bundle --platform=browser --format=iife --outfile=public/bundle.js --target=es2019 --external:katex --external:mermaid --minify --watch)",
     "dev": "node build.mjs && npm run start",
     "check": "node check-uncommitted.mjs && node check-versions.mjs && node check-checks.mjs && node check-doc-coverage.mjs && sass --no-source-map public/css/:public/css/ && node check-anim.mjs --check-only && node check-as-any.mjs --check-only && node check-card-meta.mjs && node check-registry.mjs --check-only && node check-zindex.mjs && node check-console.mjs && node check-docs.mjs && node check-linecount.mjs && node check-consistency.mjs && node check-cards.mjs && node check-handbook-sync.mjs && tsc --noEmit",
     "build": "node build.mjs",
@@ -20,6 +20,7 @@
     "@xterm/addon-canvas": "^0.7.0",
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/xterm": "^5.5.0",
+    "compression": "^1.8.1",
     "express": "^4.22.1",
     "gsap": "^3.15.0",
     "highlight.js": "^11.11.1",
@@ -31,6 +32,7 @@
   },
   "devDependencies": {
     "@puppeteer/browsers": "^3.0.6",
+    "@types/compression": "^1.8.1",
     "@types/express": "^5.0.6",
     "@types/node": "^25.6.0",
     "@types/ws": "^8.18.1",

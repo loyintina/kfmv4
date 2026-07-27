@@ -14,6 +14,7 @@ import fs from 'fs';
 import http from 'http';
 import express from 'express';
 import path from 'path';
+import compression from 'compression';
 import { fileURLToPath } from 'url';
 import { setupFileRoutes } from './routes/files.js';
 import { setupProxyRoutes } from './routes/proxy.js';
@@ -25,9 +26,22 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 app.use(express.json({ limit: '10mb' }));
 
+// gzip 压缩（排除 /ai/ 路由——SSE 流式响应不能被缓冲压缩）
+app.use(compression({
+  filter: (req, res) => !req.url.includes('/ai/') && compression.filter(req, res),
+}));
+
 // 静态文件
-app.use(express.static(path.join(__dirname, '../../public')));
-app.use(express.static(path.join(__dirname, '../..')));
+// 带 ?v= 版本号的资源内容随 URL 变化，可安全永久缓存
+app.use(express.static(path.join(__dirname, '../../public'), {
+  setHeaders: (res) => {
+    if (/[?&]v=/.test(res.req.url || '')) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    }
+  },
+}));
+// 安全：不挂载仓库根目录（曾把 .git/src/node_modules 暴露在 HTTP 上，虽仅绑
+// 127.0.0.1 仍属纯冗余暴露；客户端全部资源都在 public/ 下）
 
 // 文件 API 路由
 const apiRoutes = express.Router();
