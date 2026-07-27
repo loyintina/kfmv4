@@ -197,10 +197,9 @@ function expandPanel(): void {
     orbState = 'expanded';
     panelState = 'open';
     buildPanelContent({ panelEl: panelEl!, setOrbSessionSelect: (s) => { _orbSessionSelect = s; }, readActiveConfig, patchActiveConfig });
-    if (!_v8Initialized) {
-      _v8Initialized = true;
-      initChatDom(panelEl!, () => { /* TODO: loadFileTree */ });
-    }
+    // 每次展开面板都重新 initChatDom，因为 buildPanelContent 的 innerHTML 会销毁旧 contentArea
+    initChatDom(panelEl!, () => { /* TODO: loadFileTree */ });
+    _v8Initialized = true;
     // 每次展开面板时，如果 chatMessages 有内容且 DOM 为空，重新挂载消息
     // 解决：loadSessionInto 在面板展开前完成，但消息未渲染的问题
     if (chatMessages.length > 0) {
@@ -532,6 +531,21 @@ export async function initOrb(): Promise<void> {
       }
       scrollToBottom();
 
+      // 如果面板已展开但 chatMessages 是异步加载的（expandPanel 先执行，loadSessionInto 后完成），
+      // expandPanel 中的 mount 调用因 chatMessages 为空而跳过。此处补渲。
+      if (orbState === 'expanded') {
+        clearChatDom();
+        for (let i = 0; i < chatMessages.length; i++) {
+          const m = chatMessages[i];
+          if (m.role === 'user') {
+            const tb = m.content.find(b => b?.type === 'text');
+            mountUserMessage(i, tb && 'text' in tb ? tb.text : '');
+          } else {
+            mountAiMessage(i, m.content);
+          }
+        }
+        scrollToBottom();
+      }
       if (first.total > first.messages.length) {
         const rest = await sessionStore.getMessagesRange(sid, 'head', 0, first.total - first.messages.length);
         if (myToken !== _switchToken || _renderedSessionId !== sid) return;
