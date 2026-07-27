@@ -124,7 +124,8 @@ function createPanel(): HTMLDivElement {
   panel.style.cssText = `
     position: fixed;
     background: linear-gradient(${theme.surface.bg},${theme.surface.bg}) padding-box, ${theme.aiChat.panelBorderGradient} border-box;
-    backdrop-filter: blur(16px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: 1px solid transparent;
     border-left-width: 3px;
     border-radius: 12px;
@@ -134,6 +135,7 @@ function createPanel(): HTMLDivElement {
     overflow: hidden;
     opacity: 0;
     pointer-events: none;
+    will-change: opacity;
   `;
   panel.dataset.registryId = 'orb-panel';
   panel.id = 'orbPanel';
