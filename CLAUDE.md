@@ -57,6 +57,7 @@ docs/
 ├── KFM_V4_INVARIANTS.md     # 修改约束协议：心法原则+自查清单（改代码前必读）
 ├── DIAGNOSTICS.md           # 诊断手册：隐性契约 + 排查流程 + 根因案例库（遇到 bug 先翻）
 ├── BUG_REGRESSION_REGISTRY.md # Bug 回归登记表：687 fix 蒸馏成「该不该测/测了没」追踪表
+├── V8_AUDIT_REPORT.md         # v8 全量审计报告（代码架构 + 文档同步性 + 技术债）
 ├── design/                  # 设计文档
 │   ├── AI_ARCHITECTURE.md          # AI 架构设计（基于 omp）
 │   ├── AI_CHAT_RUNTIME.md          # AI 对话运行时：后台挂机/重连/WS存活（改流式对话前必读）

@@ -173,7 +173,8 @@ function checkNumericClaims() {
   const tableSection = tableStart >= 0 && tableEnd > 0
     ? handbook.slice(tableStart, tableEnd)
     : handbook;
-  const moduleRows = (tableSection.match(/^\| `(?:[^`]+\/)?[^`]+\.ts` \| \d+ \|/gm) || []).length;
+  const allModuleRows = tableSection.match(/^\| `[^`]+\.ts` \| \d+ \|/gm) || [];
+  const moduleRows = allModuleRows.filter(row => !row.includes('../src/shared/') && !row.includes('../src/server/')).length;
   if (moduleRows !== clientModules) {
     error(`HANDBOOK.md 模块表有 ${moduleRows} 行模块，但 src/client/modules/（递归）下有 ${clientModules} 个 .ts 文件`);
   }
