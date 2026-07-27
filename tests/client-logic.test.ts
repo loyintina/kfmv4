@@ -416,3 +416,12 @@ regression('BAR-ORB-PANEL-04', 'drag-handler', '拖拽期挂起面板 backdrop-f
   const cancelBranch = dh.split("e?.type === 'pointercancel'")[1]?.split('return;')[0] || '';
   assert(cancelBranch.includes('onSavePosition'), 'pointercancel 分支必须调 onSavePosition（收尾钩子）');
 });
+
+regression('BAR-ORB-PANEL-05', 'orb.ts', '拖拽时面板跟随光球（rAF 合帧），不整帧跳过', () => {
+  const src = readFileSync('src/client/modules/orb.ts', 'utf-8');
+  // 226c2fb 曾整体跳过拖拽期面板更新治卡顿（治标），破坏「面板随光球移动」设计契约
+  const moveBody = (src.split('onMoveNormal(')[1]?.split('onMoveEditing(')[0] || '')
+    .split('\n').filter(l => !l.trimStart().startsWith('//')).join('\n');
+  assert(moveBody.includes('updatePanelPosition'), 'onMoveNormal 应 rAF 合帧更新面板位置（面板随光球移动）');
+  assert(!moveBody.includes('_renderChat'), '拖拽期间不调 _renderChat（scrollHeight=强制 reflow，松手后统一滚）');
+});

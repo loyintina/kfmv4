@@ -121,6 +121,7 @@ maintainer: AI agent
 | BAR-ORB-PANEL-02 | `orb.ts` | 同根因：loadSessionInto 全量挂载 + 「面板已展开则 clearChatDom 再全量挂一遍」双重渲染。契约：历史窗口化（首屏只挂尾部 MOUNT_WINDOW 条，滚动近顶部经 setHistoryLoader 翻页 prepend），loadSessionInto 只走 _mountHistoryWindow | I | ✅ 已钉（源码检查：loadSessionInto 体内无直接 mount/展开态补渲分支，revert 验证） | `tests/client-logic.test.ts` |
 | BAR-ORB-PANEL-03 | `chat-dom` | 拖拽卡顿主因：全量历史常驻 DOM，每条气泡渐变+阴影参与重栅格化；且批量挂载每消息读 scrollHeight = 每消息一次强制 reflow。契约：消息容器 content-visibility 原生裁剪 + _mdCache/_hlCache 产物缓存 + scrollToBottom 受 _scrollSuspend 抑制 + 翻页 withScrollAnchor 锚定 | L | ✅ 已钉（源码检查四要素，revert 验证） | `tests/client-logic.test.ts` |
 | BAR-ORB-PANEL-04 | `drag-handler` | 拖拽卡顿次因：backdrop-filter 让面板区域每帧重跑 GPU 模糊合成。契约：拖拽期 _suspendPanelBlur 挂起、onSavePosition 恢复；pointercancel 分支必须也调 onSavePosition（否则模糊挂起后永不恢复） | L | ✅ 已钉（源码检查：pointercancel 分支含 onSavePosition 调用，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-ORB-PANEL-05 | `orb.ts` | 226c2fb 治卡顿整体跳过拖拽期面板更新（治标），破坏「面板随光球移动」设计契约 → 光球走了面板原地不动。契约：onMoveNormal 必须 rAF 合帧调 updatePanelPosition（性能根因已由 PANEL-01…04 根治，行为不需要再牺牲）；拖拽期间不调 _renderChat（scrollHeight=强制 reflow，松手统一滚） | I | ✅ 已钉（源码检查：onMoveNormal 含 updatePanelPosition、不含 _renderChat 调用，revert 验证） | `tests/client-logic.test.ts` |
 
 > 新 bug 修复后：补一个回归钉子 → 在此登记 → 状态置「已钉」。见
 > `docs/archive/design/REGRESSION_TESTING_SYSTEM.md` §3 微循环。

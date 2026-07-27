@@ -474,7 +474,17 @@ export async function initOrb(): Promise<void> {
       orbEl!.style.right = 'auto';
       orbEl!.style.bottom = 'auto';
       orbEl!.style.transition = 'none';
-      // 拖拽期间不更新面板——省去 getBoundingClientRect + scrollHeight 重排
+      // 面板跟随光球（rAF 合帧：每帧最多一次位置计算+写入）。
+      // 226c2fb 曾整体跳过面板更新治卡顿——那是治标；content-visibility +
+      // 模糊挂起根治成本后，恢复文件头设计的「面板随光球移动」。
+      // 不调 _renderChat：scrollHeight 读取=强制 reflow，松手后 onSavePosition 统一滚。
+      if (orbState !== 'collapsed' && !_panelUpdateScheduled) {
+        _panelUpdateScheduled = true;
+        requestAnimationFrame(() => {
+          _panelUpdateScheduled = false;
+          updatePanelPosition();
+        });
+      }
     },
     onMoveEditing({ dx, dy, startOrbX, startOrbY }) {
       if (!orbEl || !panelEl) return;

@@ -237,6 +237,10 @@ created_at: 2026-06-29
 - **拖拽期挂起面板 backdrop-filter**：拖拽中每帧 GPU 模糊合成是卡顿主因之一；
   `onSavePosition` 恢复，且 `drag-handler` 的 `pointercancel` 分支也必须调
   `onSavePosition`（否则挂起后永不恢复）。
+- **拖拽时面板跟随光球（rAF 合帧）**：`onMoveNormal` 必须每帧（rAF 合帧）调
+  `updatePanelPosition`——「面板随光球移动」是设计契约，禁止用「整体跳过面板
+  更新」治卡顿（226c2fb 的治标方案，面板原地不动）；拖拽期间不调 `_renderChat`
+  （`scrollHeight` 读取=强制 reflow），松手后 `onSavePosition` 统一滚。
 
 **违规后果**：展开 2-3s 无响应、拖拽卡顿、滚动位置突跳、面板模糊永久丢失。
 
