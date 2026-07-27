@@ -242,8 +242,8 @@ const HINT_DOT_HTML = '<span style="display:inline-block;width:5px;height:5px;bo
  * 曾在卡片创建时无条件启动轮换，历史挂载的已完成工具没有清计时器的路径，
  * 提示每 1.5s 覆盖真实输出，且卡片折叠再展开后仍在滚。
  */
-function _startToolHint(blockId: string, outputArea: HTMLElement): void {
-  if (_hintTimers.has(blockId)) return;
+function _startToolHint(blockId: string, outputArea: HTMLElement | null): void {
+  if (!outputArea || _hintTimers.has(blockId)) return;
   outputArea.innerHTML = HINT_DOT_HTML + _escapeHtml(_randomHint());
   _hintTimers.set(blockId, setInterval(() => {
     outputArea.innerHTML = HINT_DOT_HTML + _escapeHtml(_randomHint());
@@ -1011,7 +1011,7 @@ export function mountAiMessage(mi: number, blocks: ContentBlock[], atTop = false
         _renderToolOutput(els.outputArea, tb.name, tb.input || {}, text, isError, tb.result.details);
         els.content.classList.add('collapsed');
         els.arrowEl.textContent = '▶';
-      } else if (!tb.result) {
+      } else if (!tb.result && els.outputArea) {
         // 执行中的工具（刷新恢复活跃 run）：起摸鱼提示，tool_result 到达即停
         _startToolHint(blockId, els.outputArea);
       }
