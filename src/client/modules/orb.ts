@@ -197,15 +197,30 @@ function expandPanel(): void {
     orbState = 'expanded';
     panelState = 'open';
     buildPanelContent({ panelEl: panelEl!, setOrbSessionSelect: (s) => { _orbSessionSelect = s; }, readActiveConfig, patchActiveConfig });
-    // 每次展开面板都重新 initChatDom，因为 buildPanelContent 的 innerHTML 会销毁旧 contentArea
     initChatDom(panelEl!, () => { /* TODO: loadFileTree */ });
-    _v8Initialized = true;
-    // 每次展开面板时，如果 chatMessages 有内容且 DOM 为空，重新挂载消息
-    // 解决：loadSessionInto 在面板展开前完成，但消息未渲染的问题
+    if (!_v8Initialized) {
+      _v8Initialized = true;
+      // 订阅 sessionStore 变化：数据异步加载完成后自动补渲
+      sessionStore.subscribe(() => {
+        if (orbState !== 'expanded' || chatMessages.length === 0) return;
+        const ca = DOM.orbPanelContent(panelEl!);
+        if (!ca || ca.children.length > 0) return;
+        for (let i = 0; i < chatMessages.length; i++) {
+          const m = chatMessages[i];
+          if (m.role === 'user') {
+            const tb = m.content.find(b => b?.type === 'text');
+            mountUserMessage(i, tb && 'text' in tb ? tb.text : '');
+          } else {
+            mountAiMessage(i, m.content);
+          }
+        }
+        scrollToBottom();
+      });
+    }
+    // 立即挂载已有消息
     if (chatMessages.length > 0) {
       const ca = DOM.orbPanelContent(panelEl!);
-      // 检查 DOM 是否为空（避免重复挂载）
-      if (ca && ca.children.length === 0) {
+      if (ca) {
         for (let i = 0; i < chatMessages.length; i++) {
           const m = chatMessages[i];
           if (m.role === 'user') {
