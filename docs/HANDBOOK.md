@@ -216,6 +216,19 @@ v7 被砍设计的盘点结论：恢复 6 项（其余为 v8 架构红利，不�
 > 回归钉：BAR-ORB-PANEL-06…09、BAR-CARD-BLUR-01、BAR-LEAK-01…03、BAR-ENGINE-01、
 > BAR-BUILD-01…02（均已 revert 验证）。
 
+**v8.1 第三批 — 线上事故修复（真机回归发现）**
+
+1. **全站 502 / kfm-restart 后服务起不来** — compression 未列入 server 构建
+   external，被打进 ESM bundle，其 CJS 依赖 `require("buffer")` 触发
+   `Dynamic require of "buffer" is not supported`，启动即崩，systemd 重启风暴。
+   教训：**新增服务端依赖时必须同步 build.mjs external 列表**（CJS 包不能进
+   ESM bundle）；smoke 只校验 client bundle，服务端启动崩溃无法离线捕获——
+   本批靠 `POST /api/system/restart` 端到端验证补齐。
+2. **摸鱼提示跑到用户消息上方** — `setWait(true)` 在 doSend 前执行（提示先挂载），
+   `_createMsgContainer` 裸 `appendChild` 把消息插到提示之后。修复：非 prepend
+   分支一律 `insertBefore(msgEl, #orb-waiting-hint)`，提示恒在尾部。
+   回归钉：BAR-ORB-PANEL-10、BAR-BUILD-03（均已 revert 验证）。
+
 ### 当前焦点
 **AI Agent 调试能力体系建设** — 面向 AI 开发者的调试基础设施。
 
@@ -479,7 +492,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `orb-chat.ts` | 42 | 1 | ✅ 分组表 | AI 对话模块入口（薄编排层，re-export + markdown 渲染） |
 | `orb-chat-hints.ts` | 231 | 0 | ✅ 分组表 | 等待提示 + 工具提示 + Todo 面板（从 orb-chat 拆分） |
 | `orb-chat-run.ts` | 516 | 0 | ✅ 分组表 | 持久化运行态 + 流消费 + 重连 + doSend/resumeRun（从 orb-chat 拆分） |
-| `chat-dom.ts` | 962 | 0 | ✅ 分组表 | v8 增量 DOM 投影（事件驱动，替代 renderChatContent 全量重建） |
+| `chat-dom.ts` | 966 | 0 | ✅ 分组表 | v8 增量 DOM 投影（事件驱动，替代 renderChatContent 全量重建） |
 | `orb-panel.ts` | 221 | 1 | ✅ 分组表 | 面板 Provider/Session/Model/Role 下拉框（从 orb.ts 拆分） |
 | `orb-state.ts` | 17 | 0 | ✅ 分组表 | orb 状态机纯逻辑（零依赖，从 orb.ts 拆分，可脱离浏览器测试） |
 | `session-client.ts` | 519 | 1 | ✅ 分组表 | 客户端会话管理（只读缓存 + pre-run 创建，实际存储在服务端 session-store.ts） |
@@ -518,7 +531,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `../src/client/modules/renderers/md-extensions.ts` | 51 | 1 | — | Markdown 渲染扩展（链接、任务列表） |
 | `../src/client/modules/renderers/md-css.ts` | 57 | 2 | ✅ 分组表 | Markdown 渲染 CSS（全局唯一来源，orb + handler-factory 共享） |
 | `../src/client/modules/renderers/text-preview.ts` | 26 | 1 | — | 文本文件预览渲染器 |
-| **合计** | **15409** | | | |
+| **合计** | **15413** | | | |
 
 ### 死代码检查
 **结论：无死代码。** 所有 41 个模块都被至少 1 个文件导入（`terminal-card-04.ts` 和 `tmux-card.ts` 被导入数为 0，但这是模块自身的特性：它们仅在用户侧打开卡片时由 `card-registry.ts` 的 `createHandler` 工厂按需实例化，属于动态加载。`terminal-aux-bar.ts` 已删除（空占位，无任何引用）。`src/cards/` 目录已彻底删除。实际使用的 logger 在 `src/client/modules/logger.ts`。

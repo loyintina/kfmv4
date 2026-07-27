@@ -529,3 +529,22 @@ regression('BAR-BUILD-02', 'server/index', 'gzip 排除 SSE + 不挂载仓库根
   assert(src.includes("'/ai/'"), 'compression filter 必须排除 /ai/（SSE 流式不能被缓冲）');
   assert(!src.includes("express.static(path.join(__dirname, '../..'))"), '禁止重新挂载仓库根目录（.git/src/node_modules 曾暴露 HTTP）');
 });
+
+group('v8.1 第三批 — 线上事故修复');
+
+regression('BAR-ORB-PANEL-10', 'chat-dom', '消息必须插到等待提示之前（hint 恒在尾部）', () => {
+  const src = readFileSync('src/client/modules/chat-dom.ts', 'utf-8');
+  // orb.ts 在 doSend 前即 setWait(true)，hint 先于用户消息挂载；
+  // appendChild 会把消息插到 hint 之后 → hint 跑到用户消息上方（线上事故）
+  const body = src.split('function _createMsgContainer')[1]?.split('\n}')[0] || '';
+  assert(body.includes("#orb-waiting-hint") && body.includes('insertBefore(msgEl, hint)'),
+    '非 prepend 分支必须 insertBefore(msgEl, hint) 而非 appendChild');
+});
+
+regression('BAR-BUILD-03', 'build.mjs', 'CJS 依赖必须 external（ESM 产物 Dynamic require 崩溃）', () => {
+  const src = readFileSync('build.mjs', 'utf-8');
+  // compression 被打进 ESM bundle → 其 CJS 依赖 require("buffer") → 启动即崩，
+  // systemd 重启风暴 76 次、全站 502（kfm-restart 后服务再也起不来）
+  const extLine = src.split('external: [')[1]?.split(']')[0] || '';
+  assert(extLine.includes("'compression'"), "server 构建 external 必须含 'compression'");
+});

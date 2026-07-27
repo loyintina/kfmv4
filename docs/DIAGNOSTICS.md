@@ -770,3 +770,18 @@ el.addEventListener("click", (e) => {
 **关键规则**：`updateFocus(onComplete)` 支持完成回调。不要在 `updateFocus()` 之后立即调用 `closeCardStack()`，应通过回调延迟关闭。
 
 **历史案例**：2026-07-12 卡片堆点击投卡功能开发时发现。
+
+### 5.2 CJS 依赖打进 ESM bundle：服务端启动即崩（Dynamic require of "buffer"）
+
+**模块**：`build.mjs` → server esbuild external 列表
+
+**症状**：构建/tsc/测试全绿，部署后服务启动即崩，systemd 重启风暴（本次 76 次），全站 502，`kfm-restart` 后服务再也起不来。
+
+**根因**：新增服务端依赖 `compression` 时未同步 build.mjs 的 `external` 列表。CJS 包被打进 ESM 产物后，其内部 `require("buffer")` 等动态 require 在 Node ESM 下无对应实现，模块加载即抛错。
+
+**关键规则**：
+- 新增服务端 npm 依赖 → 必须同步加进 `build.mjs` server 构建的 `external` 数组。
+- smoke 只校验 client bundle，**服务端启动崩溃无法被离线检查捕获**——部署后必须验证进程真实存活（`systemctl is-active` + HTTP 200）。
+- 回归钉：BAR-BUILD-03（源码检查 external 含 compression）。
+
+**历史案例**：2026-07-27 v8.1 第二批 gzip 优化引入，真机 kfm-restart 后爆发。
