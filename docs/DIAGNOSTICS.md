@@ -218,6 +218,30 @@ created_at: 2026-06-29
 
 **历史案例**：2026-07-19 commit `e477264`（真心跳）+ `b2f74bc`（WS 重连三层恢复终端）。
 
+### 1.14 光球面板渲染生命周期：DOM 持久化 + 窗口化挂载（v8.1）
+
+**涉及模块**：`orb.ts`、`chat-dom.ts`、`orb-panel.ts`、`drag-handler.ts`
+
+**契约内容**：
+- **面板 DOM 只创建一次**：`ensurePanel()` 幂等创建，`expandPanel`/`collapsePanel`
+  只切显隐（opacity + pointer-events）。禁止在 expand 路径调 `buildPanelContent`/
+  `initChatDom`/重新挂载历史——innerHTML 重建会让 chat-dom 的 `_contentArea` 指向
+  脱离 DOM 的节点，且全量重挂是展开卡顿根因。
+- **历史窗口化**：`chatMessages` 持全量（发送上下文需要），DOM 只挂尾部
+  `MOUNT_WINDOW` 条；滚动近顶部由 chat-dom 滚动监听触发 `setHistoryLoader`
+  回调 prepend（必须 `withScrollAnchor` 锚定滚动位置）。`unshift` 补齐段导致
+  索引整体偏移后，必须 `_mountHistoryWindow()` 全清重挂窗口校正。
+- **批量挂载滚动抑制**：多条挂载必须 `suspendScroll()/resumeScroll()` 包裹，
+  否则每条消息一次 `scrollHeight` 读取 = 一次强制同步布局。
+- **`clearChatDom` 连带清 history loader**：旧 loader 引用的索引随内容失效。
+- **拖拽期挂起面板 backdrop-filter**：拖拽中每帧 GPU 模糊合成是卡顿主因之一；
+  `onSavePosition` 恢复，且 `drag-handler` 的 `pointercancel` 分支也必须调
+  `onSavePosition`（否则挂起后永不恢复）。
+
+**违规后果**：展开 2-3s 无响应、拖拽卡顿、滚动位置突跳、面板模糊永久丢失。
+
+**历史案例**：2026-07-27（v8.1 光球面板性能根洽，登记表 BAR-ORB-PANEL-01…04）。
+
 ---
 
 ## 二、诊断流程

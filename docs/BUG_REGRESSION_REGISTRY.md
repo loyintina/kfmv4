@@ -108,5 +108,19 @@ maintainer: AI agent
 | BAR-ORB-SEG-04 | `orb-chat` | 上滑跨裁剪边界卡顿跳位：未测量消息按 DEFAULT_MSG_H=80 估算，进窗口后真实高度≠估算，padding 差值补偿突变 → scrollTop 突跳 | I | ✅ 已钉（源码检查：锚点三步 anchorMi+anchorOffset 捕捉 / anchorEl 查找 / preserve 分支内生效 + scrollAdjust 回退） | `tests/client-logic.test.ts` |
 | BAR-ORB-CULL-01 | `orb-chat` | 第二轮流式一帧一帧卡：视口裁剪按 `messages.length` 触发，但一条 AI 消息可含几十个工具框（每个是重 DOM 单元）；第一轮 20 工具框只算 1-2 条消息 → 不裁剪 → 每帧全量重建全部工具框 | L | ✅ 已钉（01a-d，剥离 _cullWeight 纯函数=消息数+工具框数，revert 验证咬合） | `tests/client-logic.test.ts` |
 
+### 第七批：v8.1 光球面板性能架构（展开慢 2-3s + 拖拽卡顿根洽）
+
+> 根因：v8.0 重写渲染路径时删除了 v7 的视口裁剪 + 渲染缓存（SEG-03/SEG-04/CULL-01
+> 所钉的 v7 机制随之移除），历史挂载变成「每次展开全量同步渲染」。
+> v8.1 用与增量 DOM 模型兼容的机制接替：面板 DOM 持久化 + 窗口化挂载 +
+> content-visibility 原生裁剪 + 渲染产物缓存。
+
+| BAR | commit | 症状/契约 | 类别 | 状态 | 测试位置 |
+|-----|--------|-----------|------|------|---------|
+| BAR-ORB-PANEL-01 | `orb.ts` | 点击展开 2-3s 无响应：每次展开 buildPanelContent 重建 innerHTML + 全量重挂历史（marked+hljs 全量同步跑），还制造 _contentArea 失效竞态需订阅补渲兜底。契约：expandPanel 只切显隐，面板创建收敛到 ensurePanel 幂等入口 | I | ✅ 已钉（源码检查：expandPanel 体内无 buildPanelContent/initChatDom/mountAiMessage/sessionStore.subscribe，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-ORB-PANEL-02 | `orb.ts` | 同根因：loadSessionInto 全量挂载 + 「面板已展开则 clearChatDom 再全量挂一遍」双重渲染。契约：历史窗口化（首屏只挂尾部 MOUNT_WINDOW 条，滚动近顶部经 setHistoryLoader 翻页 prepend），loadSessionInto 只走 _mountHistoryWindow | I | ✅ 已钉（源码检查：loadSessionInto 体内无直接 mount/展开态补渲分支，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-ORB-PANEL-03 | `chat-dom` | 拖拽卡顿主因：全量历史常驻 DOM，每条气泡渐变+阴影参与重栅格化；且批量挂载每消息读 scrollHeight = 每消息一次强制 reflow。契约：消息容器 content-visibility 原生裁剪 + _mdCache/_hlCache 产物缓存 + scrollToBottom 受 _scrollSuspend 抑制 + 翻页 withScrollAnchor 锚定 | L | ✅ 已钉（源码检查四要素，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-ORB-PANEL-04 | `drag-handler` | 拖拽卡顿次因：backdrop-filter 让面板区域每帧重跑 GPU 模糊合成。契约：拖拽期 _suspendPanelBlur 挂起、onSavePosition 恢复；pointercancel 分支必须也调 onSavePosition（否则模糊挂起后永不恢复） | L | ✅ 已钉（源码检查：pointercancel 分支含 onSavePosition 调用，revert 验证） | `tests/client-logic.test.ts` |
+
 > 新 bug 修复后：补一个回归钉子 → 在此登记 → 状态置「已钉」。见
 > `docs/archive/design/REGRESSION_TESTING_SYSTEM.md` §3 微循环。

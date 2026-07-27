@@ -168,7 +168,26 @@ index.ts (入口路由 + 静态文件)
 - **规则**：纯 DOM 实现,不触碰 Canvas 渲染器。弹窗打开时 canvas 点击/手势事件被 guard 拦截。
 
 ## 二、当前会话状态
-> **最后更新**：2026-07-27（v8.0.0 — 所有权分离架构 + renderChatContent 删除 + chat-dom.ts 增量 DOM 渲染 + SessionStore 单写者 + kfm-restart 冷恢复 + 死代码清理 ~160 行）
+> **最后更新**：2026-07-27（v8.1 — 光球面板性能根洽：面板 DOM 持久化 + 历史窗口化挂载 + content-visibility + 渲染产物缓存 + 拖拽期挂起模糊；基线 v8.0.0 — 所有权分离架构 + renderChatContent 删除 + chat-dom.ts 增量 DOM 渲染 + SessionStore 单写者 + kfm-restart 冷恢复 + 死代码清理 ~160 行）
+
+**v8.1（进行中）— 光球面板性能根洽（点击展开 2-3s + 展开后拖拽卡顿）**
+
+根因：v8.0 重写渲染路径时删除了 v7 的视口裁剪与渲染缓存，历史挂载退化为
+「每次展开全量同步渲染」（marked + hljs 全量跑 + 每消息一次强制 reflow）。
+修复（与 v8 增量 DOM 模型兼容的接替机制，非 v7 机制回退）：
+1. **面板 DOM 持久化** — `ensurePanel` 幂等创建一次，expand/collapse 只切显隐；
+   「展开时补渲」竞态整类消除（连带删除订阅补渲兜底与 loadSessionInto 双重挂载）。
+2. **历史窗口化挂载** — 首屏只挂末尾 20 条，滚动近顶部经 chat-dom
+   `setHistoryLoader` 翻页 prepend（`withScrollAnchor` 锚定）；`chatMessages`
+   仍持全量（发送上下文），窗口只控 DOM 规模。
+3. **content-visibility 原生裁剪** — 屏外消息跳过布局/绘制，替代 v7 手工
+   高度估算裁剪（估算误差曾致滚动突跳，BAR-ORB-SEG-04）。
+4. **渲染产物缓存** — markdown / 工具输入高亮按内容缓存（FIFO 300 条），重挂=查表。
+5. **微优化** — 批量挂载滚动抑制（`_scrollSuspend`）、拖拽期挂起面板
+   backdrop-filter（`drag-handler` pointercancel 分支补收尾钩子）。
+
+> 隐性契约：`docs/DIAGNOSTICS.md` §1.14；回归钉：BAR-ORB-PANEL-01…04
+> （`tests/client-logic.test.ts`，源码断言，均已 revert 验证）。
 
 ### 当前焦点
 **AI Agent 调试能力体系建设** — 面向 AI 开发者的调试基础设施。
@@ -425,15 +444,15 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `gestures.ts` | 217 | 1 | ✅ 提及 | 页面滑动手势配置 |
 | `interaction-constants.ts` | 21 | 2 | ✅ 分组表 | 交互常量共享层（v6.6.0 新增） |
 | `z-index-layers.ts` | 103 | 11 | ✅ 分组表 | Z-Index 层级权威注册表（JS 侧，与 z-index.css 镜像，check-zindex 校验） |
-| `drag-handler.ts` | 136 | 2 | ✅ 分组表 | 共享拖动状态机（orb + floating-card 去重） |
+| `drag-handler.ts` | 138 | 2 | ✅ 分组表 | 共享拖动状态机（orb + floating-card 去重） |
 | `file-action-bar.ts` | 434 | 2 | ✅ 分组表 | 文件行长按 → 底部抽屉操作栏 |
 | `logger.ts` | 58 | 3 | ✅ 分组表 | KFM 日志系统 |
 | `mode-system.ts` | 447 | 1 | ✅ 分组表 | 模式按钮系统（从 tree-swipe 拆分，v6.8.0 新增） |
-| `orb.ts` | 802 | 2 | ✅ 独立条目 | 光球 UI + 拖拽手势 + 面板状态机 + 挂机重连 IIFE（协调层，见 AI_CHAT_RUNTIME） |
+| `orb.ts` | 808 | 2 | ✅ 独立条目 | 光球 UI + 拖拽手势 + 面板状态机 + 挂机重连 IIFE（协调层，见 AI_CHAT_RUNTIME） |
 | `orb-chat.ts` | 42 | 1 | ✅ 分组表 | AI 对话模块入口（薄编排层，re-export + markdown 渲染） |
 | `orb-chat-hints.ts` | 224 | 0 | ✅ 分组表 | 等待提示 + 工具提示 + Todo 面板（从 orb-chat 拆分） |
 | `orb-chat-run.ts` | 516 | 0 | ✅ 分组表 | 持久化运行态 + 流消费 + 重连 + doSend/resumeRun（从 orb-chat 拆分） |
-| `chat-dom.ts` | 812 | 0 | ✅ 分组表 | v8 增量 DOM 投影（事件驱动，替代 renderChatContent 全量重建） |
+| `chat-dom.ts` | 898 | 0 | ✅ 分组表 | v8 增量 DOM 投影（事件驱动，替代 renderChatContent 全量重建） |
 | `orb-panel.ts` | 221 | 1 | ✅ 分组表 | 面板 Provider/Session/Model/Role 下拉框（从 orb.ts 拆分） |
 | `orb-state.ts` | 17 | 0 | ✅ 分组表 | orb 状态机纯逻辑（零依赖，从 orb.ts 拆分，可脱离浏览器测试） |
 | `session-client.ts` | 519 | 1 | ✅ 分组表 | 客户端会话管理（只读缓存 + pre-run 创建，实际存储在服务端 session-store.ts） |
@@ -472,7 +491,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | `../src/client/modules/renderers/md-extensions.ts` | 51 | 1 | — | Markdown 渲染扩展（链接、任务列表） |
 | `../src/client/modules/renderers/md-css.ts` | 57 | 2 | ✅ 分组表 | Markdown 渲染 CSS（全局唯一来源，orb + handler-factory 共享） |
 | `../src/client/modules/renderers/text-preview.ts` | 26 | 1 | — | 文本文件预览渲染器 |
-| **合计** | **15188** | | | |
+| **合计** | **15282** | | | |
 
 ### 死代码检查
 **结论：无死代码。** 所有 41 个模块都被至少 1 个文件导入（`terminal-card-04.ts` 和 `tmux-card.ts` 被导入数为 0，但这是模块自身的特性：它们仅在用户侧打开卡片时由 `card-registry.ts` 的 `createHandler` 工厂按需实例化，属于动态加载。`terminal-aux-bar.ts` 已删除（空占位，无任何引用）。`src/cards/` 目录已彻底删除。实际使用的 logger 在 `src/client/modules/logger.ts`。

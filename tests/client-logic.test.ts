@@ -358,3 +358,61 @@ regression('BAR-ORB-TREE-01', 'sibling-switcher', '不 import 危险模块（防
     assert(isSafe, `未预期的 import：${line}`);
   }
 });
+
+
+// ==========================================================================
+// BAR-ORB-PANEL: v8.1 光球面板性能架构（源码断言钉子）
+//
+// 背景：v8.0 删除 v7 的视口裁剪 + 渲染缓存后，历史消息挂载变成「每次展开
+// 全量同步渲染」（marked + hljs 全量跑 + 每消息一次强制 reflow），症状是
+// 展开 2-3s 无响应、展开后拖拽光球卡顿。v8.1 修复 = 面板 DOM 持久化 +
+// 窗口化挂载 + content-visibility + 渲染产物缓存 + 拖拽期挂起模糊。
+// 这些机制跨 4 个文件且耦合 DOM/滚动时序，无法离线跑真实场景，
+// 用源码断言锁定关键结构不被误删/改回反模式。
+// ==========================================================================
+
+group('orb — v8.1 面板性能架构（BAR-ORB-PANEL）');
+
+regression('BAR-ORB-PANEL-01', 'orb.ts', 'expandPanel 不重建面板 DOM（持久化），不重新挂载历史', () => {
+  const src = readFileSync('src/client/modules/orb.ts', 'utf-8');
+  // 根因：v8.0 每次展开都 buildPanelContent(innerHTML 重建) + initChatDom + 全量重挂，
+  // 既慢又制造 _contentArea 失效竞态。修复后创建逻辑收敛到 ensurePanel（幂等）。
+  assert(src.includes('function ensurePanel'), '应有 ensurePanel 幂等创建入口');
+  const expandBody = src.split('function expandPanel')[1]?.split('\nfunction ')[0] || '';
+  assert(!expandBody.includes('buildPanelContent'), 'expandPanel 不应重建面板内容（应只在 ensurePanel 创建一次）');
+  assert(!expandBody.includes('initChatDom'), 'expandPanel 不应重复 initChatDom');
+  assert(!expandBody.includes('mountAiMessage'), 'expandPanel 不应重新挂载历史消息（DOM 持久化后天然同步）');
+  // 反模式防复活：v8.0 的「展开时订阅 sessionStore 补渲」兜底机制不应回来（竞态已根除）
+  assert(!expandBody.includes('sessionStore.subscribe'), 'expandPanel 不应再有订阅补渲兜底（竞态已由 DOM 持久化根除）');
+});
+
+regression('BAR-ORB-PANEL-02', 'orb.ts', '历史挂载窗口化：首屏只挂尾部窗口，滚动翻页 prepend', () => {
+  const src = readFileSync('src/client/modules/orb.ts', 'utf-8');
+  // v8.0 反模式：loadSessionInto 全量挂载 + 「面板已展开则 clearChatDom 再全量挂一遍」双重渲染
+  assert(src.includes('MOUNT_WINDOW'), '应有首屏挂载窗口常量');
+  assert(src.includes('_loadOlderHistory'), '应有向上翻页加载函数');
+  assert(src.includes('setHistoryLoader'), '应通过 setHistoryLoader 向 chat-dom 注册翻页回调');
+  const loadBody = src.split('async function loadSessionInto')[1]?.split('\n    }')[0] || '';
+  assert(!loadBody.includes('mountAiMessage'), 'loadSessionInto 不应直接挂载（应走 _mountHistoryWindow）');
+  assert(!loadBody.includes("orbState === 'expanded'"), 'loadSessionInto 不应有「展开态补渲」分支（双重挂载已根除）');
+});
+
+regression('BAR-ORB-PANEL-03', 'chat-dom', '渲染成本控制：content-visibility + 产物缓存 + 批量滚动抑制', () => {
+  const src = readFileSync('src/client/modules/chat-dom.ts', 'utf-8');
+  assert(src.includes('content-visibility'), '消息容器应有 content-visibility 原生视口裁剪');
+  assert(src.includes('_mdCache'), '应有 markdown 渲染产物缓存');
+  assert(src.includes('_hlCache'), '应有工具输入高亮产物缓存');
+  // 每消息一次 scrollHeight 读取 = 每消息一次强制 reflow，批量挂载必须可抑制
+  const scrollFn = src.split('export function scrollToBottom')[1]?.split('\n}')[0] || '';
+  assert(scrollFn.includes('_scrollSuspend'), 'scrollToBottom 应受批量挂载抑制（_scrollSuspend）');
+  assert(src.includes('withScrollAnchor'), 'prepend 翻页应有滚动锚定（withScrollAnchor）');
+});
+
+regression('BAR-ORB-PANEL-04', 'drag-handler', '拖拽期挂起面板 backdrop-filter，收尾恢复（含 pointercancel）', () => {
+  const src = readFileSync('src/client/modules/orb.ts', 'utf-8');
+  assert(src.includes('_suspendPanelBlur') && src.includes('_restorePanelBlur'), '应有拖拽期模糊挂起/恢复');
+  const dh = readFileSync('src/client/modules/drag-handler.ts', 'utf-8');
+  // pointercancel 提前 return 曾是收尾漏洞：模糊挂起后永不恢复
+  const cancelBranch = dh.split("e?.type === 'pointercancel'")[1]?.split('return;')[0] || '';
+  assert(cancelBranch.includes('onSavePosition'), 'pointercancel 分支必须调 onSavePosition（收尾钩子）');
+});

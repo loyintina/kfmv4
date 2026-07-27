@@ -288,7 +288,7 @@ IIFE 与 `handleSend` 之间**共享单例**，保证重连态也能被同一个
 | `src/client/modules/tmux-card.ts` | tmux 卡：`_lastCommand` + WS 重连 re-attach |
 | `src/client/modules/terminal-card-04.ts` | 终端核心：`_onReconnect` 重开 PTY |
 | `src/client/modules/session-client.ts` | 客户端会话管理（只读缓存 + pre-run 创建，实际存储在服务端 session-store.ts） |
-| `src/client/modules/chat-dom.ts` | v8 唯一渲染路径：`patchEvent` DOM 投影 + 历史消息挂载 |
+| `src/client/modules/chat-dom.ts` | v8 唯一渲染路径：`patchEvent` DOM 投影 + 历史消息挂载（v8.1 窗口化：首屏尾部窗口 + 滚动翻页 prepend） |
 | `src/shared/chat-protocol/` | 双端共享协议层（5 文件）：`messages.ts`（类型）/ `events.ts`（事件）/ `reducer.ts`（纯状态转换）/ `block-idx.ts`（工具块索引映射）/ `index.ts`（导出） |
 | `src/server/ai/session-store.ts` | 服务端会话日志落盘：`appendEvent` / `flush` / `flushSync` / `isIncomplete`（冷恢复判据） |
 
