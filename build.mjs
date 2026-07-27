@@ -50,6 +50,7 @@ try {
 }
 
 execSync('node check-css-wiring.mjs --check-only', { stdio: 'inherit' });
+execSync('node check-tool-compaction.mjs --check-only', { stdio: 'inherit' });
 execSync('node check-anim.mjs --check-only', { stdio: 'inherit' });
 execSync('node check-as-any.mjs --check-only', { stdio: 'inherit' });
 execSync('node check-card-meta.mjs', { stdio: 'inherit' });
