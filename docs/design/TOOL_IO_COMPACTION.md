@@ -62,7 +62,7 @@ TTFB 5-8s、缓存读取费用、注意力稀释（"lost in the middle"）三连
 | eval / browser_eval | 结果 `[eval {首行描述(≤40)} → 已折叠]`；入参 `{_compacted: "代码已折叠: {首行描述}"}`（language 透传） | 首行描述 | 入参代码才是载荷（实测 med 323 字符）；描述符两端同词汇 |
 | browser | `[browser {action}]` | action | 实测仅 2 次调用皆失败，数据不足仅记录 |
 | kfm-logs | `[kfm-logs → 输出{n}字符已折叠]`（G7 兜底） | — | 日志可重取、跨轮引用价值低，全压 |
-| kfm-snapshot / kfm-exec / kfm-restart / checkpoint / rewind / git / cat | 通常 ≤300 字符 → G2 豁免 | — | **不压**。后来者不得画蛇添足加压缩器 |
+| kfm-restart / checkpoint / rewind / git / cat | 通常 ≤300 字符 → G2 豁免 | — | **不压**。后来者不得画蛇添足加压缩器 |
 
 ## 六、示例与错误示例
 
@@ -334,6 +334,26 @@ bash 是复用通道（build/test/git 复用一个工具名），不相干失败
 - **顺带修复：read 指纹历史不再计入失败读取**。旧逻辑不区分成败，EISDIR
   这类错误指纹（「1行/52字符」）会污染历史，让后续成功读取误判「文件已
   被修改」——宁漏勿错 violations，失败的 read 不是「读到了内容」。
+
+### 豁免组 + 工具删除（2026-07-28 定稿：kfm-snapshot / kfm-exec 删除）
+
+- **kfm-snapshot 删除（眼睛机制是严格上位替代）**：与 page-state.md 同一
+  数据源（wsServer._latestSnapshot），但眼睛三维度全胜——更新鲜（每次
+  工具循环末尾自动刷新注入对话尾部，snapshot 只在调用那一刻）、更丰富
+  （page-state 三层「看到什么/页面元素/能做什么」，snapshot 格式化只有
+  元素+能力两层，连内容层都没有）、零成本（不占工具调用不留历史输出）。
+  实测 3 个会话仅 3 次探索性调用。理论缺口（无眼睛角色临时看页面）无
+  实证——两个主力角色均配眼睛；真需要时给角色卡 dynamicPromptFiles 加
+  一行即可，轮不到工具来补。
+- **kfm-exec 删除（与 bash 同一实现的双胞胎）**：逐行对比同一 executeShell
+  /同一输出格式/同一 isError 逻辑，仅超时默认值不同。实测 bash 330 次 vs
+  kfm-exec 4 次（1.2%）。实际危害：**kfm-exec 调用逃逸 bash 全部统计**
+  （重试弧线/环境故障预扫描只认 `bash` 名）——两个入口 = 统计流分裂。
+- **历史兼容**：旧会话里的 kfm-snapshot/kfm-exec 块落 G7 兜底压缩器
+  （`[kfm-exec → 输出N字符已折叠]`），行为永不出错——兜底设计的本意。
+- **剩余豁免组**：kfm-restart / checkpoint / rewind（G2，输出通常 ≤300，
+  实测成立），git / cat（v7 死工具，历史块同走 G7）。「豁免但偶尔超 300
+  落 G7」的悬案随 snapshot/exec 删除自然消解。
 
 ### 标注层公理 4：统计量锚定真相源
 

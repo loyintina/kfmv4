@@ -303,8 +303,8 @@ test('kfm-logs 登记为兜底全压（日志可重取、跨轮价值低）', ()
   assert(out === '[kfm-logs → 输出5000字符已折叠]', `得 ${out}`);
 });
 
-test('豁免型工具（kfm-snapshot 等）输出 ≤300 时 G2 自然豁免', () => {
-  for (const name of ['kfm-snapshot', 'kfm-exec', 'kfm-restart', 'checkpoint', 'rewind']) {
+test('豁免型工具（kfm-restart 等）输出 ≤300 时 G2 自然豁免', () => {
+  for (const name of ['kfm-restart', 'checkpoint', 'rewind']) {
     assert(compactToolResult(name, {}, chars(200), false) === null, `${name} 应豁免`);
     assert(COMPACTOR_NAMES.includes(name), `${name} 必须在注册表有登记条目`);
   }
@@ -420,7 +420,7 @@ test('COMPACTOR_NAMES 覆盖映射表全部显式登记工具', () => {
   const expected = [
     'bash', 'read', 'write', 'edit', 'grep', 'glob', 'todo',
     'web_search', 'debug', 'eval', 'browser_eval', 'browser',
-    'kfm-logs', 'kfm-snapshot', 'kfm-exec', 'kfm-restart', 'checkpoint', 'rewind',
+    'kfm-logs', 'kfm-restart', 'checkpoint', 'rewind',
   ];
   for (const name of expected) {
     assert(COMPACTOR_NAMES.includes(name), `注册表缺 ${name}`);

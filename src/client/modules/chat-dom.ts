@@ -908,7 +908,7 @@ export function patchEvent(event: StreamEvent): void {
               try { els.inputPre.textContent = JSON.stringify(JSON.parse(raw), null, 2); } catch { /* 保留原文 */ }
               _highlightInput(els.inputPre);
             }
-            // 无参数工具（如 kfm-snapshot）不显示输入区和分隔线（v7 行为）。
+            // 无参数工具（如 rewind）不显示输入区和分隔线（v7 行为）。
             // live 路径 input_json 可能晚到，故在 stop 时判断而非 block start
             _hideEmptyToolInput(els);
           }
@@ -1018,7 +1018,7 @@ function _getToolInput(inputPre: HTMLElement | null): Record<string, unknown> {
   try { return JSON.parse(inputPre.textContent || '{}'); } catch { return {}; }
 }
 
-/** 无参数工具（如 kfm-snapshot）隐藏输入区和分隔线（v7 行为：空 input 不渲染这两段） */
+/** 无参数工具（如 rewind）隐藏输入区和分隔线（v7 行为：空 input 不渲染这两段） */
 function _hideEmptyToolInput(els: ToolEls): void {
   if (els.inputPre && !els.inputPre.textContent) {
     els.inputPre.style.display = 'none';
@@ -1066,7 +1066,7 @@ export function mountAiMessage(mi: number, blocks: ContentBlock[], atTop = false
         els.inputPre.textContent = JSON.stringify(tb.input, null, 2);
         _highlightInput(els.inputPre);
       } else {
-        // 无参数工具（如 kfm-snapshot）不显示输入区和分隔线（v7 行为）
+        // 无参数工具（如 rewind）不显示输入区和分隔线（v7 行为）
         _hideEmptyToolInput(els);
       }
       if (tb.result && els.outputArea) {

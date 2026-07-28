@@ -103,7 +103,7 @@ index.ts (入口路由 + 静态文件)
   │   ├── page-state.ts   — 动态页面状态文件（.kfmv4/page-state.md）
   │   ├── prompt-assembler.ts — 服务端 system prompt 组装（v7.4 眼睛系统）
   │   ├── rule-engine.ts  — AI 规则引擎（rules/*.md 加载 + 约束注入）
-  │   └── tools/          — AI 工具定义与执行（kfm-exec/snapshot/logs）
+  │   └── tools/          — AI 工具定义与执行（kfm-logs/browser_eval/restart + omp/*）
   └── prompts/            — 提示词模板（system/base.md + tools/）
 ```
 
@@ -123,7 +123,7 @@ index.ts (入口路由 + 静态文件)
 | `src/server/ai/page-state.ts` | 动态页面状态文件：PageDescription → MUD 风格房间描述 markdown |
 | `src/server/ai/prompt-assembler.ts` | 服务端 system prompt 组装（v7.4 眼睛系统） |
 | `src/server/ai/rule-engine.ts` | AI 规则引擎：rules/*.md 加载 + frontmatter 解析 + 约束注入 |
-| `src/server/ai/tools/` | AI 工具定义（types→index→kfm-exec/snapshot/logs/browser） |
+| `src/server/ai/tools/` | AI 工具定义（types→index→kfm-logs/browser_eval/restart + omp/*） |
 | `src/server/ai/tools/omp/browser.ts` | Browser 工具入口：open/run/close，封装 tab-supervisor |
 | `src/server/ai/tools/omp/browser/` | Browser 核心：WorkerCore(puppeteer) + tab-supervisor + launch + aria |
 | `src/server/prompts/` | 提示词模板：system/base.md（基础角色）+ tools/（工具描述） |

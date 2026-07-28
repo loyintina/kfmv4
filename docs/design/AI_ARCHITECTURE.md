@@ -150,6 +150,11 @@ interface ToolUpdate {
 
 #### 3.1.2 kfmv4 专用工具
 
+> ⚠️ v8.1.0 更新：`kfm-snapshot` 与 `kfm-exec` 已删除（前者被「眼睛」系统
+> page-state.md 严格上位替代，后者与 `bash` 为同一实现）。论证与数据见
+> `docs/design/TOOL_IO_COMPACTION.md` 第九节「豁免组 + 工具删除」。
+> 本节下文为历史设计记录。
+
 **kfm-snapshot** — 获取页面状态
 
 ```typescript

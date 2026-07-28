@@ -39,8 +39,6 @@ export const COMPACTOR_REGISTRY: Record<string, CompactorEntry> = {
   browser_eval: {},
   browser: {},
   'kfm-logs': { note: '日志输出大但跨轮引用价值低、可重取，走 G7 兜底压缩器全压' },
-  'kfm-snapshot': { exempt: 'G2：输出通常 ≤300 字符，压缩是负优化' },
-  'kfm-exec': { exempt: 'G2：输出通常 ≤300 字符' },
   'kfm-restart': { exempt: 'G2：输出通常 ≤300 字符' },
   checkpoint: { exempt: 'G2：输出通常 ≤300 字符' },
   rewind: { exempt: 'G2：输出通常 ≤300 字符' },

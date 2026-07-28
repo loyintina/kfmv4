@@ -7,7 +7,7 @@
  * 双向校验：
  *   1. src/server/ai/tools/index.ts 注册的工具必须在压缩器注册表
  *      （src/shared/tool-compaction/index.ts 的 COMPACTOR_REGISTRY）有登记条目
- *      ——豁免型工具（kfm-snapshot 等）也要登记，用 exempt 注明豁免依据（G2/G4）。
+ *      ——豁免型工具（kfm-restart 等）也要登记，用 exempt 注明豁免依据（G2/G4）。
  *      未登记 = 该工具的上下文压缩行为无人思考过 → 报错，提示去读契约第四节决策树。
  *   2. 注册表里的每个条目必须对应一个真实注册的工具
  *      ——否则是死压缩器（工具已删/改名但压缩器残留）→ 报错。
@@ -75,7 +75,7 @@ if (toolNames.size === 0) {
 // ========== 2. 提取压缩器注册表登记名 ==========
 // COMPACTOR_REGISTRY 是扁平对象字面量，每个 key 独占一行、两空格缩进：
 //   bash: {},
-//   'kfm-snapshot': { exempt: '...' },
+//   'kfm-restart': { exempt: '...' },
 
 const registryPath = join(ROOT, 'src/shared/tool-compaction/index.ts');
 const registrySrc = readFileSync(registryPath, 'utf-8');

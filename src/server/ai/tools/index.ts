@@ -2,16 +2,17 @@
  * kfmv4 AI 工具注册入口
  *
  * 注册所有可用的 AI 工具：
- * - kfmv4 专用工具（snapshot, logs, exec）
+ * - kfmv4 专用工具（logs, browser_eval, restart）
  * - omp 工具（bash, read, write, edit, grep, glob, todo, eval, checkpoint, rewind, browser, debug, web_search）
+ *
+ * v8.1.0 删除 kfm-snapshot（眼睛机制 page-state.md 是其严格上位：更新鲜/更丰富/零调用成本）
+ * 与 kfm-exec（与 bash 同一实现的双胞胎，且逃逸 bash 重试弧线统计）——见 TOOL_IO_COMPACTION.md。
  */
 
 import type { KfmTool, ToolContext, ToolResult, ToolUpdate, ContentBlock } from './types.js';
 
 // kfmv4 专用工具
-import { kfmSnapshotTool } from './kfmv4/snapshot.js';
 import { kfmLogsTool } from './kfmv4/logs.js';
-import { kfmExecTool } from './kfmv4/exec.js';
 import { kfmBrowserEvalTool } from './kfmv4/browser-eval.js';
 import { kfmRestartTool } from './kfmv4/restart.js';
 
@@ -41,9 +42,7 @@ function registerTool(tool: KfmTool): void {
 }
 
 // kfmv4
-registerTool(kfmSnapshotTool);
 registerTool(kfmLogsTool);
-registerTool(kfmExecTool);
 registerTool(kfmBrowserEvalTool);
 registerTool(kfmRestartTool);
 

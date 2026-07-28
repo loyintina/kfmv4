@@ -58,11 +58,13 @@ maintainer: AI agent (蔚然)
 | 工具 | 用途 | 状态 |
 |------|------|------|
 | `browser_eval` | 在浏览器端执行 JS 代码 | ✅ 核心 |
-| `kfm-snapshot` | 查看页面元素和卡片状态 | ✅ 核心 |
 | `kfm-logs` | 查看客户端日志卡内容 | ✅ 核心 |
-| `kfm-exec` | 在项目目录执行命令 | ✅ 核心 |
 | 「眼睛」系统 | 每次工具调用后自动推送页面状态 | ✅ 已启用 |
 | `kfm-restart` | 安全重启 kfmv4 服务 | ⚠️ 需重构（见 P0） |
+
+> v8.1.0 删除 `kfm-snapshot`（「眼睛」系统是其严格上位：自动刷新/三层信息/零调用成本）
+> 与 `kfm-exec`（与 `bash` 同一实现的双胞胎，且逃逸 bash 统计）。详见
+> `docs/design/TOOL_IO_COMPACTION.md` 第九节豁免组小节。
 
 ### 2.3 debug 工具内置能力
 
