@@ -34,7 +34,36 @@
 3. **新增服务端依赖必须同步 build.mjs external**——CJS 包打进 ESM bundle 启动即崩。
    案例：v8.1 compression 事故，全站 502 + systemd 重启风暴。
 4. **推理模型等待提示**：`onWait(false)` 挂在首个实际内容（含 thinking_delta），
-   不是 message_start——否则白屏空档。
+   不是 message_start——否则白屏空档。最后一轮 message_stop 打开的提示由 doSend
+   返回后主动清。
+5. **空 sessionId → 服务端 400**：删除最后一个会话后 `activeId=''`；doSend 必须在
+   saveMessages（自动建会话）后回填 `_sendSessionId`；`kfm-session-change` 监听器
+   必须处理空串（清空面板），不能 `if(!sessionId) return`。
+6. **run 持久化用 localStorage**：`{sessionId,runId}` 存 localStorage 才能跨浏览器
+   重启重连（配 5min 服务端缓冲）；sessionStorage 会丢。
+7. **面板渲染生命周期（v8.1 根洽契约，全 8 条）**：
+   - **面板 DOM 只创建一次**：`ensurePanel()` 幂等创建，expand/collapse 只切显隐。
+     禁止 expand 路径调 buildPanelContent/initChatDom/重挂历史——innerHTML 重建会让
+     chat-dom 的 `_contentArea` 指向脱离 DOM 的节点，且全量重挂是展开卡顿根因。
+   - **历史窗口化**：`chatMessages` 持全量，DOM 只挂尾部 `MOUNT_WINDOW` 条；滚动近顶部
+     经 `setHistoryLoader` 回调 prepend（必须 `withScrollAnchor` 锚定）。unshift 补段致
+     索引偏移后，必须 `_mountHistoryWindow()` 全清重挂窗口校正。
+   - **批量挂载滚动抑制**：多条挂载必须 `suspendScroll()/resumeScroll()` 包裹——
+     每条消息一次 scrollHeight 读取 = 一次强制同步布局。
+   - **`clearChatDom` 连带清 history loader**：旧 loader 引用的索引随内容失效。
+   - **拖拽期挂起面板 backdrop-filter**：每帧 GPU 模糊合成是卡顿主因；`onSavePosition`
+     恢复，且 drag-handler 的 `pointercancel` 分支也必须调 `onSavePosition`。
+   - **拖拽时面板跟随光球（rAF 合帧）**：`onMoveNormal` 必须每帧调 `updatePanelPosition`——
+     「面板随光球移动」是设计契约，禁止用「整体跳过面板更新」治卡顿（226c2fb 治标）；
+     拖拽期间不调 `_renderChat`，松手后 `onSavePosition` 统一滚。
+   - **流式滚动 followBottom 门控**：`_renderChat('auto')`/等待提示/`_maybeScroll` 只在
+     用户本就在底部时追底；强制追底只能走 `'follow'`（发送/首轮渲染）。违反 → 上滑看
+     历史的用户被每个流式事件拽回底部。
+   - **`_maybeScroll` 必须 rAF 合批**；但 `scrollToBottom` 本体保持同步语义
+     （expandPanel/resumeScroll 依赖）。
+   - **复制按钮走 contentArea 事件委托**：消息 DOM 动态增删，委托一次注册覆盖全部；
+     禁止逐按钮绑定（v8.0 曾只建按钮不接处理，纯装饰）。
+   回归钉：BAR-ORB-PANEL-01…21。
 
 ## 文件清单
 

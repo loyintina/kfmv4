@@ -19,6 +19,9 @@
 2. 新增交互模式走 GestureRegistry，禁止直接 addEventListener。
 3. 共享常量只能从 `interaction-constants.ts` 取——历史教训：局部定义 `MARGIN_F=8`
    绕过共享 `MARGIN`，已修正，勿再犯。
+4. **双色渐变对应规则**：方向 135deg；color1（起点）→ 右光球 TR/BR + 图标背景；
+   color2（终点）→ 左光球 TL/BL + 图标数字；文字统一白色，不派生自卡片色
+   （视觉舒适 > 派生规则）。
 
 ## #陷阱
 
@@ -29,6 +32,22 @@
    逐后代设 `style.touchAction='none'` 后永久粘住。退出全屏/浮卡态只改容器元素。
    案例：2026-07-14 浮卡滚动失效，排查 2 小时。
 3. **`display:''` 恢复显示**：同 client-shell#陷阱 4（flex 布局必须显式恢复）。
+4. **卡片堆是全局模式，不是局部组件**：打开后整屏都是操作区域；
+   `targetFilter: () => true` 是设计不是缺陷；任何「精确」限定手势区域的做法
+   都会破坏外部触摸。案例：B.A.R. #002。
+5. **BR 光球切换必须双向**：`compact ⇄ active` 状态机闭环——只写展开方向的后果是
+   只能 dismiss 无法回紧凑态。案例：B.A.R. #004。
+6. **背景和边框正交解耦**：外层壳用 `padding` 挤出渐变边框，内层独立元素负责毛玻璃；
+   禁止在单个 `background` 里用 padding-box/border-box 分层模拟——背景透明度或
+   渐变方向一改，边框就消失。
+7. **浮卡与卡堆卡片共享同一套 DOM 结构**：内层毛玻璃用 `flow` 布局（外层 padding
+   自然约束），禁止 `inset:0` absolute 定位；改任何一方的背景/边框/布局必须同步另一方。
+8. **随机配色种子在 `openCardStack` 时生成**：每次召唤重新随机；`initCardStack`
+   需预生成一次防 null——`_currentAccents` 未赋值时 `createCard` 崩溃。
+   案例：B.A.R. #003。
+9. **GSAP 动画冲突（幽灵卡片堆）**：`updateFocus()` 后立即 `closeCardStack()`，
+   两个动画作用于同组 DOM，状态机卡在 closing/open → 幽灵卡片堆。
+   必须 `updateFocus(onComplete)` 回调延迟关闭。案例：2026-07-12。
 
 ## 文件清单
 

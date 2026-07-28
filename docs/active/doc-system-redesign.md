@@ -994,3 +994,29 @@ P4 路由头）+ detail-engine/detail-browser + guides/testing.md + ledger/histo
 （版本线 v4.1.0-v8.1.1 + 事件线）+ decisions/adr-003（前端优化放弃项）+
 STACK/vision 更新。trap 16（与心法 14 重复）已删未迁；trap 12 留案例指针。
 迁移注销：旧 HANDBOOK 在切换提交前仍是权威，届时随旧 docs/ 整体退役。
+
+---
+
+## 十九、逐份过 2/19：DIAGNOSTICS.md 拆分定稿 + 填充（2026-07-28 ✅）
+
+### 19.1 流程规则更新（用户裁定，影响后续全部迁移）
+
+**两阶段分离**：迁移（保真）与压缩（有损）分阶段——迁移期内容全量进 contract
+（§4.4「<150 行」改为迁移期软约束），收尾统一做一轮归纳压缩。
+理由：一份内容只过一次手，避免「边迁边压 + 收尾再压」的双重有损。
+（同时裁定：DIAGNOSTICS §四 4.1/4.2 尊重 v6.11 主动降级原意，留 diagnostics.md
+流程建议节，不提级回心法。）
+
+### 19.2 归宿执行记录
+
+- §一 隐性契约：11 条活，按域分发（client-shell +3 / floating-card +6+1 硬规则 /
+  canvas-tree +1 / ai-chat +2+1.14 全 8 条）；**2 条重复删除**——1.10（已在
+  client-shell#陷阱 1）、1.13（已在 server#陷阱 2）。
+- §二 诊断流程 5 路径 + 附录 A 索引 → `newdoc/constraints/diagnostics.md`；
+  **2.4 staleness 修正**：旧「npm run dev 不打包 + 手动 esbuild」已过时
+  （dev 现跑 build.mjs，external/target 均不符），迁移时按现状重写。
+- §三 案例库 8 例全文 → `newdoc/constraints/detail-cases.md`（B.A.R. 两例 #006
+  重编号为 #006a/#006b）。
+- 附录 B 手动回归清单 18 项 → `newdoc/guides/testing.md`（接 release 真机回归窗口）。
+- §五 5.1 → floating-card#陷阱 9（GSAP updateFocus 回调）；**5.2 删**（已迁）。
+- §四 4.3/4.4/4.5 删（= 心法 4/15/24）；附录 C 删（目标已被映射表追踪）。

@@ -29,6 +29,9 @@
    `renderer.setOverlayRoot(null)`（v6.6.0 根解）——新路径触发 rebuild 不得绕过此入口。
 5. **方向锁**：`dx>dy` 45° 分界（v6.8.0 简化后的唯一模型，三代补丁已删，勿回填）。
 6. **行变暗**：`_dimmedPaths` + `_dimmedBoxes` + `opacity` 即时生效。
+7. **Canvas 尺寸数据源必须随渲染器上下文**：优先 `L.renderer?.canvas ?? DOM.treeCanvas`；
+   硬编码 `DOM.treeCanvas` 意味着代码只在主树上下文正确。案例：B.A.R. #007
+   （6 处硬编码修复，光标偏移/越界）。
 
 ## 文件清单
 

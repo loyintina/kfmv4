@@ -58,6 +58,16 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
    会 revert 到 CSS 默认值。案例：2026-07-05 光球 SVG 偏移 ~6px，排查数小时。
 5. **动画锁 3s 是兜底不是设计**：`waitForAnimUnlock` 3s 超时；`onComplete` 里
    `L.endOp()` 必须在早期 return 之前执行（v6.11.0 已根解，再犯即回归）。
+6. **PointerEvent 统一**：所有触摸/鼠标输入必须走 gesture-registry 的 PointerEvent
+   调度；禁止直接绑原生 `touchstart/touchmove/touchend`——两套事件系统在同一 DOM 上
+   互相干扰，`pointermove` 被浏览器提前终止。案例：B.A.R. #001。
+7. **touch-action 分层策略**：全局 `none`（body/.main/全屏覆盖层/自定义 Canvas 控件）；
+   卡片内容区与浮卡外层 `pan-y`（原生垂直滚动 + 横滑透传全局手势）。
+   内容区设 `none` → 无法滚动；全局 `auto` → 浏览器接管 → pointercancel 截断。
+   **`touch-action` 是继承属性**（文档曾写反，B.A.R. #008 的诱因）。
+8. **KFMState 批量修改必须合并一次 notify**：`setExpanded()` 每次调用都 notify 且受
+   `L.isAnimating` 守卫；连续调用第二次可能被丢弃 → 幽灵 toggle + 动画断裂。
+   批量修改用 `L.beginOp`/`L.endOp` 包裹，或确保空闲时执行。案例：2026-05-29 三连 setExpanded。
 
 ## 文件清单
 
