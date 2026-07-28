@@ -31,3 +31,4 @@
 - 2026-06-08 文档-代码全量审计 16 项全完成（审计表随 HANDBOOK 迁移注销）
 - 2026-07-18 Browser 工具自 omp 移植（踩坑记录 → domains/ai-chat/detail-browser.md）
 - 2026-07-28 v8.2 文档系统重构启动：骨架立（newdoc/），HANDBOOK 首份迁移完成（本文件即其版本表转世）
+- 2026-07-28 VISION_AND_ROADMAP 迁移：Phase 0-II（v4.1-v7.x，基础设施/卡片系统/Agent 基础设施）全完成，原文 693 行进度表注销；远景核心进 active/vision.md
