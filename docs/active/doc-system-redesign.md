@@ -1,6 +1,6 @@
 # 文档系统重构设计 — 从文档形态驱动到工作流驱动
 
-> **状态**：休眠（设计完成 + 第三方评审 §十，不执行；启动前先完成 §10.6 对齐清单）
+> **状态**：对齐中（2026-07-28 唤醒：v8.1.1 已发布，本重构排期 v8.2.0；§十一 rebase 完成，待走查 + 用户确认决策点）
 > **触发**：2026-07-28 文档系统审计（管线 warning→hard-fail 升级 + 结构性盲区分析）
 > **执行前置**：§10.6 对齐清单完成 + 用户确认后，用 spec-driven 流程执行本设计
 
@@ -537,3 +537,61 @@ exit_condition: 只剩一条活跃轨 + 双方产物已合并提交
 未来若启动本重构，第一步不是阶段 1，而是：①完成 10.5 全部六项处理；
 ②纸面压力测试 15+1 工作流并记录 hop/文档数对比；③把 §10.2 的第 16
 工作流纳入 workflows/ 清单；④经用户确认后再进 spec-driven 流程。
+
+---
+
+## 十一、2026-07-28 rebase（休眠唤醒对齐）
+
+> 唤醒条件①处理记录：§10.5 六项缺陷逐条处理 + 修宪后现实基线。
+> 唤醒条件②（15+1 工作流纸面走查）随后进行，结果追加为 §十二。
+
+### 11.1 现实基线变化（设计写作时 → 唤醒时）
+
+- **INVARIANTS 已 734 行**（宪法 5 条 + 31 心法 + SOP 步骤 3b/7）——
+  §4.4「constraints 总计 <500 行」约束已被修宪撑破，见缺陷 6 处理。
+- **`docs/design/TOOL_IO_COMPACTION.md`（369 行）已是事实上的 domain contract**：
+  逐工具映射表 + 决策树 + 禁令清单 + check-tool-compaction 双向核对——
+  §4.2 domains 模型的可行性证据，迁移时作为 ai-chat 域 detail 级素材。
+- **`decisions/` 已存在**（adr-001/002），不可变层部分落地。
+- **检查管线 18 → 20 个**（新增 check-tool-compaction、check-test-patterns），
+  全部位于仓库根目录；§五管线适配表按此 rebase。
+- **第 16 工作流已半固化**：讨论文化侧（质疑五母型、沉淀五问、设计讨论 SOP）
+  已进 INVARIANTS §七 步骤 3b/步骤 7；§10.2 yaml 待补的只剩平行多轨规则本身
+  （文件边界 / git log 同步 / 单轨收尾）。
+- **文档体量**：VISION_AND_ROADMAP 893 行（全库最大）、DIAGNOSTICS 787、
+  HANDBOOK 783、CARD_DEV_GUIDE 715、BUG_REGRESSION_REGISTRY 166。
+- **V8_ARCHITECTURE 归宿**：宪法展开论述 → constraints/invariants 附录；
+  §四视觉契约 + §五 restart 判据 + §七不变清单 → 对应 domain contract；
+  §二/§三/§六/§八战报 → ledger/history.md 一条。不再单独迁移。
+
+### 11.2 §10.5 六项缺陷的处理
+
+1. **走查提前**：§六阶段 5 的「验证」走查提前为迁移前置（即 §10.6 ②），
+   纸面走查 15+1 工作流并记录 hop/文档数对比，不过不进阶段 1。
+2. **hop 数学**：承认 CLAUDE→INDEX→yaml→文档实为 3 跳。修正：CLAUDE.md
+   不缩成一行——最高频的会话启动工作流在 CLAUDE.md 内联自包含（1 跳）；
+   INDEX.md 只做任务→工作流匹配；yaml 的 reads 直接写文档全路径。
+   目标：会话启动 1 跳，其余 ≤2 跳。（决策点 D1）
+3. **迁移窗口真相源**：写入 §六——阶段 1-4 期间旧结构是唯一权威，
+   新结构为影子；阶段 4 管线切换提交即权威切换点，此前新结构不承载引用。
+4. **archive 活引用**（唤醒时复核仍在）：CLAUDE.md 4 处
+   （ENGINE_ARCHITECTURE、CARD_SYSTEM_UNIFICATION_SPEC、
+   REGRESSION_TESTING_SYSTEM、WORKBENCH_SPEC）+ HANDBOOK 1 处
+   （REGRESSION_TESTING_SYSTEM）。处理顺序：先迁引用再压缩 archive——
+   ENGINE_ARCHITECTURE → domains 引擎域 contract 素材；
+   CARD_SYSTEM_UNIFICATION_SPEC（失败教训指针）→ decisions/ ADR 化后移除引用；
+   REGRESSION_TESTING_SYSTEM → guides/ 测试方法论一节；
+   WORKBENCH_SPEC 死活待确认（决策点 D3）。删除 archive/ 永远排在最后。
+5. **自进化机械化**：§五新增 check-workflow-integrity（yaml reads/writes
+   路径全有效）之外，补 check-workflow-freshness（draft 超期未升级 /
+   正式工作流 60 天未触发 → 候选退役，hard fail）。
+6. **修宪撞车**：constraints 注入层重新分层——system prompt 注入 =
+   宪法 5 条全文 + 31 心法索引（一行一条），INVARIANTS 全文按需读；
+   constraints/ 总量约束相应改为「注入层 <200 行」。（决策点 D2）
+
+### 11.3 待用户确认的决策点
+
+- **D1**：CLAUDE.md 形态——会话启动自包含（推荐）vs 一行指针。
+- **D2**：constraints 注入拆分——摘要注入 + 全文按需（推荐）vs 全量注入。
+- **D3**：WORKBENCH_SPEC 死活——归档注记迁移 vs 仍有活内容。
+- **D4**：第 16 工作流 yaml 只补平行多轨规则（推荐，讨论文化已在心法）。
