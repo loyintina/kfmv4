@@ -18,6 +18,8 @@ import {
   compactToolResult,
   compactToolInput,
   normalizeBashCommand,
+  todoResultAnnotation,
+  TODO_STALE_GAP,
   COMPACTOR_NAMES,
 } from '../src/shared/tool-compaction/index.js';
 
@@ -139,6 +141,23 @@ test('todo：旧 todo [todo 更新{n}项]（n=input.todos 长度）', () => {
   const input = { todos: [{ content: 'a' }, { content: 'b' }, { content: 'c' }] };
   const out = compactToolResult('todo', input, chars(400), false);
   assert(out === '[todo 更新3项]', `得 ${out}`);
+});
+
+test('todo 投影标注：dismiss / 烂尾（只陈述事实，措辞不含因果断言）', () => {
+  // 无信号 → 空串
+  assert(todoResultAnnotation({ dismissed: false, aiRoundsAfter: 0 }) === '');
+  // dismiss：只陈述「被关闭」事实——不含「任务结束」类断言（关闭也可能只是嫌碍眼）
+  const d = todoResultAnnotation({ dismissed: true, aiRoundsAfter: 0 });
+  assert(d === '\n（面板已被用户手动关闭）', `得 ${d}`);
+  assert(!d.includes('结束') && !d.includes('完成'), 'dismiss 措辞不得做因果断言');
+  // 烂尾：阈值式单调（≥TODO_STALE_GAP 才标），措辞带「可能」
+  const below = todoResultAnnotation({ dismissed: false, aiRoundsAfter: TODO_STALE_GAP - 1 });
+  assert(below === '', `阈值以下不标，得 ${below}`);
+  const s = todoResultAnnotation({ dismissed: false, aiRoundsAfter: TODO_STALE_GAP });
+  assert(s === `\n（此后超过${TODO_STALE_GAP}轮未更新，可能已过时）`, `得 ${s}`);
+  // 双信号并存：dismiss 在前
+  const both = todoResultAnnotation({ dismissed: true, aiRoundsAfter: TODO_STALE_GAP + 5 });
+  assert(both === `\n（面板已被用户手动关闭）\n（此后超过${TODO_STALE_GAP}轮未更新，可能已过时）`, `得 ${both}`);
 });
 
 test('web_search：[web_search {query(≤50)} → 结果已折叠]', () => {

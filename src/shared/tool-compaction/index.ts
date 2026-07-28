@@ -86,6 +86,24 @@ export interface CompactionCtx {
 /** mutBurst 判定阈值：相邻两次成功修改相距超过这么多轮 AI 消息即视为新一轮爆发（可调常量）。 */
 export const MUT_BURST_GAP = 8;
 
+/** todo 烂尾判定阈值：最后一次 todo 更新后超过这么多轮 AI 消息未再更新 = 可能已过时（可调常量）。 */
+export const TODO_STALE_GAP = 10;
+
+/**
+ * todo 结果投影标注（契约第九节，只追加在最后一个 todo 结果上）。
+ * 两条都是**只陈述事实、不做因果断言**（宁漏勿错）：
+ * - dismissed：用户手动 ✕ 关闭面板——可能是任务结束，也可能只是嫌碍眼（用户原话），
+ *   信号本身分不出来，所以只说「被关闭」，不替用户下「任务完成」的结论。
+ * - 烂尾：超过 TODO_STALE_GAP 轮未更新——阈值式单调布尔（一旦为真恒真，
+ *   标注行只翻转一次，prompt 缓存前缀稳定；直接标轮数会每轮变，不可接受）。
+ */
+export function todoResultAnnotation(opts: { dismissed: boolean; aiRoundsAfter: number }): string {
+  let a = '';
+  if (opts.dismissed) a += '\n（面板已被用户手动关闭）';
+  if (opts.aiRoundsAfter >= TODO_STALE_GAP) a += `\n（此后超过${TODO_STALE_GAP}轮未更新，可能已过时）`;
+  return a;
+}
+
 /**
  * bash 命令归一化语法（契约第九节，四条规则，改规则先改文档）：
  *   1. 截断 | 管道尾（tail/head 是展示层，不改命令意图）

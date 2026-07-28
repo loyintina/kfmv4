@@ -20,10 +20,10 @@ import { KFMState } from './state.js';
 import { loadFileTree } from './tree-loader.js';
 import { sessionStore } from './session-client.js';
 import type { ContentBlock, TextBlock, ToolBlock, RuleWarningBlock } from './session-client.js';
-import { clearToolHint, updateTodoFromTool } from './orb-chat-hints.js';
+import { clearToolHint, updateTodoFromTool, TODO_DISMISS_KEY, todosFingerprint } from './orb-chat-hints.js';
 import { log } from './logger.js';
 // 工具 I/O 上下文压缩（v8.1.0）：纯函数注册表，契约 docs/design/TOOL_IO_COMPACTION.md
-import { compactToolInput, compactToolResult, normalizeBashCommand, MUT_BURST_GAP } from '../../shared/tool-compaction/index.js';
+import { compactToolInput, compactToolResult, normalizeBashCommand, MUT_BURST_GAP, todoResultAnnotation } from '../../shared/tool-compaction/index.js';
 import type { CompactionCtx } from '../../shared/tool-compaction/index.js';
 // 兜底消息上屏 + 取消时工具卡 DOM 收尾（v8 增量 DOM：数据层变更不会自动投影）
 import { mountFallbackAiMessage, settleToolCardsDom } from './chat-dom.js';
@@ -462,13 +462,34 @@ export async function doSend(
       if (messages[i]?.role === 'ai' && ++aiSeen === 2) { compactExemptFrom = i; break; }
     }
     // G4：整个历史中最后出现的 todo 工具结果豁免（承载当前任务状态，压了=失忆当前进度）
+    // 同时捕获该块与其后 AI 消息数，供投影标注（契约第九节 todo 小节）。
     let lastTodoResultId = '';
+    let lastTodoBlock: ToolBlock | null = null;
+    let todoAiRoundsAfter = 0; // 最后一次 todo 更新之后经过的 AI 消息数（烂尾判定用）
     for (let i = messages.length - 1; i >= 0 && !lastTodoResultId; i--) {
       const m = messages[i];
       if (m?.role !== 'ai') continue;
       for (const b of m.content) {
-        if (b?.type === 'tool' && b.name === 'todo' && b.result) { lastTodoResultId = b.id; break; }
+        if (b?.type === 'tool' && b.name === 'todo' && b.result) {
+          lastTodoResultId = b.id;
+          lastTodoBlock = b;
+          break;
+        }
       }
+      if (!lastTodoResultId) todoAiRoundsAfter++;
+    }
+    // todo 投影标注（契约第九节）：dismiss 指纹命中 = 用户 ✕ 关闭过这份列表；
+    // 烂尾 = ≥TODO_STALE_GAP 轮未更新。措辞只陈述事实不做因果断言——
+    // 手动关闭 ≠ 任务结束，也可能只是嫌碍眼（用户原话），信号本身分不出来。
+    let todoAnnotation = '';
+    if (lastTodoBlock) {
+      const todos = Array.isArray(lastTodoBlock.input?.todos)
+        ? lastTodoBlock.input.todos as Array<{ content: string; status: string }> : [];
+      let dismissed = false;
+      if (todos.length > 0) {
+        try { dismissed = (localStorage.getItem(TODO_DISMISS_KEY) || '') === todosFingerprint(todos); } catch { /* 隐私模式等 */ }
+      }
+      todoAnnotation = todoResultAnnotation({ dismissed, aiRoundsAfter: todoAiRoundsAfter });
     }
     // 跨调用标注预扫描（契约第九节：标注只向后看——每个调用的 ctx 只由它之前的
     // 调用决定，旧压缩行永不因后续消息改变，prompt 缓存前缀稳定）。
@@ -587,6 +608,7 @@ export async function doSend(
                 content = compacted;
               }
             }
+            if (tc.id === lastTodoResultId && todoAnnotation) content += todoAnnotation; // 投影标注：dismiss/烂尾
             apiMessages.push({ role: 'tool', content, tool_call_id: tc.id });
           }
         } else {

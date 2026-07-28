@@ -130,8 +130,9 @@ let _lastTodos: Array<{content: string; status: string}> | null = null; // 持�
 // 手动 ✕ 关闭的持久化：记录被关闭列表的指纹（localStorage）。
 // 之后同一份列表（含刷新后 _restoreTodoPanel 从数据层找回的）不再自动弹出；
 // AI 再次调用 todo 工具产生新列表（指纹不同）时才重新出现并清除关闭记录。
-const TODO_DISMISS_KEY = 'kfm-todo-dismissed';
-function _todosFingerprint(todos: Array<{content: string; status: string}>): string {
+// 导出供投影层（orb-chat-run）比对：命中则在最后 todo 结果追加「已被用户关闭」标注。
+export const TODO_DISMISS_KEY = 'kfm-todo-dismissed';
+export function todosFingerprint(todos: Array<{content: string; status: string}>): string {
   return JSON.stringify(todos.map(t => [t.content, t.status]));
 }
 
@@ -223,7 +224,7 @@ export function clearTodoPanel(): void {
 /** 用户手动 ✕ 关闭：清理 + 记录指纹（刷新/重挂不再自动弹出，直到 AI 给出新列表） */
 export function dismissTodoPanel(): void {
   if (_lastTodos) {
-    try { localStorage.setItem(TODO_DISMISS_KEY, _todosFingerprint(_lastTodos)); } catch { /* 隐私模式等 */ }
+    try { localStorage.setItem(TODO_DISMISS_KEY, todosFingerprint(_lastTodos)); } catch { /* 隐私模式等 */ }
   }
   clearTodoPanel();
 }
@@ -236,7 +237,7 @@ export function updateTodoFromTool(tc: ToolBlock): void {
   if (!_lastTodos) return;
   // 用户手动 ✕ 关闭过这份列表（指纹一致）→ 不再自动弹出（含刷新后恢复路径）。
   // 指纹不同 = AI 给出了新列表 → 清除关闭记录并正常显示。
-  const fp = _todosFingerprint(_lastTodos);
+  const fp = todosFingerprint(_lastTodos);
   let dismissed = '';
   try { dismissed = localStorage.getItem(TODO_DISMISS_KEY) || ''; } catch { /* ignore */ }
   if (dismissed) {
