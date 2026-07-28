@@ -1115,3 +1115,27 @@ STACK/vision 更新。trap 16（与心法 14 重复）已删未迁；trap 12 留
 ### 留待核对
 
 - adr 编号矛盾：旧 CLAUDE.md L110 指 adr-001（orb-floating-card-independent），floating-card contract 硬规则 1 指 adr-002——decisions 迁移轮核对。
+
+---
+
+## §二十三 逐份过 6/19：docs/AGENTS.md（136 行 → guides/doc-maintenance.md）
+
+执行日期：2026-07-28。判定书用户批准。
+
+### 归宿执行
+
+- `newdoc/guides/doc-maintenance.md`：「待迁」注结算，+三覆盖核实三 parity（含 2026-06-02 假覆盖历史教训 + 判定书流程注）+ 方向性文档纪律（vision.md 不追实现细节）+ 文档生命周期节（适配新体系：active/ → 知识回家 + history 一条 → decisions/；归档细则注管线适配阶段定稿）。
+
+### 工作流覆盖查证（删除依据）
+
+- state-sync.yaml 接管「改完代码同步状态」（旧 §二规则 1）。
+- doc-tree-sync.yaml 接管「加新文档后同步」（旧 §二规则 2）。
+- release.yaml 已含发版四步 + check-versions（旧 §六全文，已适配 ledger/history.md）。
+
+### 当场删除（旧结构绑定）
+
+1. §一 文档分层树（旧结构导览）。
+2. §二 根层职责表 + 规则 1/2（HANDBOOK 消亡/CLAUDE 体系图取代，精神已被工作流接管）。
+3. §三 3.1-3.4 archive 规则（新体系无 archive/，等价规则待管线适配）。
+4. §四 check-docs.mjs 维护（旧管线，适配阶段重写）。
+5. §六 版本发布 SOP（release.yaml 已覆盖）。
