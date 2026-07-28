@@ -117,6 +117,27 @@ export const MUT_BURST_GAP = 8;
 /** todo 烂尾判定阈值：最后一次 todo 更新后超过这么多轮 AI 消息未再更新 = 可能已过时（可调常量）。 */
 export const TODO_STALE_GAP = 10;
 
+/** 失败模式重复标注的起始序号：第 2 次可能是合理重试，第 3 次才是「模式」（可调常量）。 */
+export const FAIL_REPEAT_MIN = 3;
+
+/**
+ * 失败文本指纹（契约第九节「失败模式重复标注」）：取 trim 后前 100 字符精确匹配。
+ * 守卫：无信息失败文本返回空串（不参与比对不入库）——`(未完成)`/`(退出码: N)`
+ * 是不同命令的不同结局（实测 bash 失败 17/34 是 `(未完成)`），exact-match 会
+ * 互相误判「相同错误」；<20 字符同理无鉴别力。
+ */
+export function errorFingerprint(text: string): string {
+  const t = text.trim();
+  if (t.length < 20) return '';
+  if (/^\((未完成|已取消)\)$/.test(t) || /^\(退出码: \d+\)$/.test(t)) return '';
+  return t.slice(0, 100);
+}
+
+/** 失败模式重复标注拼装（<FAIL_REPEAT_MIN → 空串）。只陈述事实，不开处方。 */
+export function failRepeatAnnotation(n: number): string {
+  return n >= FAIL_REPEAT_MIN ? `\n（第${n}次相同错误）` : '';
+}
+
 /**
  * todo 结果投影标注（契约第九节，只追加在最后一个 todo 结果上）。
  * 两条都是**只陈述事实、不做因果断言**（宁漏勿错）：

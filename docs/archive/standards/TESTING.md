@@ -8,7 +8,7 @@ superseded_by: docs/DIAGNOSTICS.md
 ## 自动化回归测试
 
 ```bash
-npm test   # 450 个测试，覆盖 23 个模块
+npm test   # 452 个测试，覆盖 23 个模块
 ```
 
 | # | 测试组 | 覆盖模块 | 断言数 |

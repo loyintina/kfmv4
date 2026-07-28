@@ -23,7 +23,7 @@ import type { ContentBlock, TextBlock, ToolBlock, RuleWarningBlock } from './ses
 import { clearToolHint, updateTodoFromTool, TODO_DISMISS_KEY, todosFingerprint } from './orb-chat-hints.js';
 import { log } from './logger.js';
 // 工具 I/O 上下文压缩（v8.1.0）：纯函数注册表，契约 docs/design/TOOL_IO_COMPACTION.md
-import { compactToolInput, compactToolResult, normalizeBashCommand, MUT_BURST_GAP, todoResultAnnotation, webTitleKey } from '../../shared/tool-compaction/index.js';
+import { compactToolInput, compactToolResult, normalizeBashCommand, MUT_BURST_GAP, todoResultAnnotation, webTitleKey, errorFingerprint, failRepeatAnnotation } from '../../shared/tool-compaction/index.js';
 import type { CompactionCtx } from '../../shared/tool-compaction/index.js';
 // 兜底消息上屏 + 取消时工具卡 DOM 收尾（v8 增量 DOM：数据层变更不会自动投影）
 import { mountFallbackAiMessage, settleToolCardsDom } from './chat-dom.js';
@@ -495,6 +495,7 @@ export async function doSend(
     // 调用决定，旧压缩行永不因后续消息改变，prompt 缓存前缀稳定）。
     // 压缩器保持纯函数，此处在压缩循环前产出每个工具块的 CompactionCtx。
     const compactCtxById = new Map<string, CompactionCtx>();
+    const failRepeatById = new Map<string, number>(); // 块 id → 同错误第 N 次（投影标注用，需在块外可见）
     {
       const readFpsByPath = new Map<string, string[]>();
       const bashRunsByCmd = new Map<string, boolean[]>(); // 归一化命令 → isError 序列
@@ -503,13 +504,27 @@ export async function doSend(
       const mutStateByPath = new Map<string, { cum: number; burst: number; lastMi: number }>();
       let bashFailCmds: string[] = []; // 当前连续失败的归一化命令序列（环境故障判定用）
       const webPrevTitles: string[] = []; // web_search 历史标题键（空键不入，契约第九节空键守卫）
+      const failCountByKey = new Map<string, number>(); // 工具:错误指纹 → 次数（失败模式重复标注用）
       for (let mi = 0; mi < messages.length; mi++) {
         const m = messages[mi];
         if (m?.role !== 'ai') continue;
         for (const b of m.content) {
           if (b?.type !== 'tool' || !b.result) continue;
           const resultText = b.result.content?.map(c => c.text || '').join('') || '';
+          // 失败模式重复（跨工具通用层；bash 除外——它有更精细的弧线/环境故障机制）
+          if (b.result.isError && b.name !== 'bash') {
+            const efp = errorFingerprint(resultText);
+            if (efp) { // 空指纹（无信息失败文本）不入库不比对
+              const key = `${b.name}:${efp}`;
+              const n = (failCountByKey.get(key) || 0) + 1;
+              failCountByKey.set(key, n);
+              failRepeatById.set(b.id, n);
+            }
+          }
           if (b.name === 'read') {
+            // 失败的 read 不是「读到了内容」——不推进指纹历史（否则 EISDIR 这类
+            // 错误指纹会让后续成功读取误判「文件已被修改」，宁漏勿错）
+            if (b.result.isError) continue;
             const path = typeof b.input.path === 'string' ? b.input.path : '';
             const fp = `${resultText.split('\n').length}行/${resultText.length}字符`;
             const prev = readFpsByPath.get(path) || [];
@@ -616,6 +631,8 @@ export async function doSend(
               }
             }
             if (tc.id === lastTodoResultId && todoAnnotation) content += todoAnnotation; // 投影标注：dismiss/烂尾
+            const failNote = failRepeatAnnotation(failRepeatById.get(tc.id) || 0);
+            if (failNote) content += failNote; // 失败模式重复标注（≥FAIL_REPEAT_MIN 才标，不限压缩区）
             apiMessages.push({ role: 'tool', content, tool_call_id: tc.id });
           }
         } else {

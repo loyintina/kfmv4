@@ -20,6 +20,9 @@ import {
   normalizeBashCommand,
   todoResultAnnotation,
   TODO_STALE_GAP,
+  errorFingerprint,
+  failRepeatAnnotation,
+  FAIL_REPEAT_MIN,
   COMPACTOR_NAMES,
 } from '../src/shared/tool-compaction/index.js';
 
@@ -158,6 +161,28 @@ test('todo 投影标注：dismiss / 烂尾（只陈述事实，措辞不含因�
   // 双信号并存：dismiss 在前
   const both = todoResultAnnotation({ dismissed: true, aiRoundsAfter: TODO_STALE_GAP + 5 });
   assert(both === `\n（面板已被用户手动关闭）\n（此后超过${TODO_STALE_GAP}轮未更新，可能已过时）`, `得 ${both}`);
+});
+
+test('失败文本指纹：无信息失败文本守卫（不入库不比对）', () => {
+  // 无信息失败：不同命令的不同结局，exact-match 会互相误判（实测 bash 17/34 是 (未完成)）
+  assert(errorFingerprint('(未完成)') === '');
+  assert(errorFingerprint('(已取消)') === '');
+  assert(errorFingerprint('(退出码: 1)') === '');
+  assert(errorFingerprint('(退出码: 127)') === '');
+  assert(errorFingerprint('short') === '', '<20 字符无鉴别力');
+  // 正常错误：trim + 截 100
+  const eisdir = '读取失败: EISDIR: illegal operation on a directory, read';
+  assert(errorFingerprint(eisdir) === eisdir, 'EISDIR 全文就是指纹');
+  const long = chars(150);
+  assert(errorFingerprint(long).length === 100, '截 100 字符');
+});
+
+test('失败模式重复标注：<FAIL_REPEAT_MIN(=3) 不标，只陈述事实不开处方', () => {
+  assert(failRepeatAnnotation(1) === '');
+  assert(failRepeatAnnotation(FAIL_REPEAT_MIN - 1) === '', '第 2 次可能是合理重试');
+  assert(failRepeatAnnotation(FAIL_REPEAT_MIN) === `\n（第${FAIL_REPEAT_MIN}次相同错误）`);
+  assert(failRepeatAnnotation(5) === '\n（第5次相同错误）');
+  assert(!failRepeatAnnotation(5).includes('改用'), '不得开处方（怎么改是 AI 的判断）');
 });
 
 test('web_search：无标题行结果 → 兜底 [web_search {query(≤50)} → 结果已折叠，可重搜]', () => {
