@@ -878,3 +878,39 @@ yaml 增加 `natural_next`（提醒不强制，扳机在人）：
 - bug-fix 登记时同模式 ≥3 → discipline-mechanize（已有机械化信号）
 - 每月末 → 「文档漂移审计候选」（约两月一次，check-workflow-freshness 管）
 衔接图随 CLAUDE.md 路由表落地（guides/ 一张状态机图），不做时间触发。
+
+---
+
+## 十六、度量触发器与 SOP→prompt 集群化（2026-07-28 用户提案，铺路记录）
+
+> 定位：未来大版本方向，本次重构只铺路不实现。
+
+### 16.1 触发器三级分类
+
+| 级 | 判定方式 | 实例 | 现状 |
+|----|---------|------|------|
+| 机械可判 | check 直接拦截 | 代码 ≥5 提交未同步描述；>3 文件未提交 | 已有（check-desc-freshness / check-uncommitted），即度量触发器雏形 |
+| 度量提醒 | 计数+阈值，人判断 | ≥30 fix since release → 发版候选；≥60 天 → 审计候选 | 本次铺路：yaml 预留 metric 字段 |
+| 永不机械化 | 人 | 灵感 / 讨论 / parallel-tracks | — |
+
+### 16.2 阈值校准（§十五 历史分布）
+
+版本窗口 fix 13~101、发版约每 150 提交、审计间隔约两月——初始阈值取中位，
+按误报率调整。警戒：阈值是代理指标（心法 27），提醒类宁缺勿滥（心法 26，
+误报过多的提醒=不存在）。
+
+### 16.3 SOP→prompt→subagent 集群（未来大版本）
+
+workflow yaml 四要素（trigger/reads/steps/writes/exit）天然是结构化 prompt——
+骨架质量标准即「每份 yaml 可机械渲染成 subagent 任务书」（上下文指针 +
+验证命令 + exit condition 齐备）。
+
+下放边界：机械验证类（审计/计数同步/断链/映射表核对）可下放；
+判断类（设计讨论/架构决策）永不下放。
+铁律：**subagent 产物不过 check 管线不算数**——管线是集群时代的质量地基。
+
+### 16.4 本次铺路清单（随骨架落地）
+
+1. yaml 模板增加 `natural_next`（§15.4）与 `metric`（度量触发）字段；
+2. 已有度量触发器盘点登记进对应 yaml（check-desc-freshness 等）；
+3. 本节迁移时进 `active/vision.md` 未来方向区。
