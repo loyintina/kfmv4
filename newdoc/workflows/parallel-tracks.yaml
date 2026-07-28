@@ -1,0 +1,22 @@
+id: parallel-tracks
+name: 平行多轨讨论（慎用——对人脑消耗极大）
+trigger: 两个及以上 agent 在同一代码库并行推进独立设计/开发轨
+frequency: 罕见
+cost_warning: 双倍的决策点与上下文切换。触发前自问：这两轨真的不能串行吗？
+reads:
+  - git log（不看对方聊天记录，看 commit）
+rules:
+  - 每轨有明确文件边界，不交叉编辑同一文件
+  - 通过 git log 同步
+  - 收尾单轨汇总：一轨先结束，另一轨 agent 负责合并双方产物
+  - 合并点必须 check/test 全绿
+steps:
+  1. 确认两轨无法串行（否则取消本卡）
+  2. 划定文件边界
+  3. 各轨独立推进，git log 同步
+  4. 单轨收尾合并，check 全绿
+writes:
+  - 各自文件边界内
+exit_condition: 只剩一条活跃轨 + 双方产物已合并提交
+natural_next: 收尾轨负责合并 → state-sync
+metric: none（触发永远靠人，§12.4 F5）

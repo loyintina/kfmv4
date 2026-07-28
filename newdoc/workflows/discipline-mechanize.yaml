@@ -1,0 +1,19 @@
+id: discipline-mechanize
+name: 纪律机械化
+trigger: 同一错误模式重复 ≥3 次
+frequency: 每批 bug 后审视
+reads:
+  - ledger/bugs.md（重复模式考古）
+  - guides/doc-maintenance.md（check 编写约定）
+steps:
+  1. 从 bugs.md 抽象重复模式
+  2. 写 check-*.mjs（warning=不存在，一律 hard fail）
+  3. 挂入 npm run check 链
+  4. 验证：复现场景必须被拦截
+  5. 登记 bugs.md（模式已机械化，不再依赖自觉）
+writes:
+  - check-*.mjs
+  - package.json（check 链）
+exit_condition: 新 check 进主管线且复现场景被拦
+natural_next: 管线加固后 → 下轮 feat 更稳（§15.3 大循环）
+metric: none（本卡即度量触发的执行端）

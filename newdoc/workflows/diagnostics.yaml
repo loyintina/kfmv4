@@ -1,0 +1,14 @@
+id: diagnostics
+name: Bug 诊断/分诊
+trigger: 异常行为出现，根因不明
+frequency: 遇 bug 时
+reads:
+  - constraints/diagnostics.md（纯排查流程：触控/手势、CSS/视觉、渲染/Canvas、构建/Bundle 四类路径）
+steps:
+  1. 按症状选排查路径
+  2. 先确认事件是否完整到达（log() 推日志卡），再查处理逻辑
+  3. 定位根因 → 转 bug-fix 工作流
+writes: []
+exit_condition: 根因定位（转 bug-fix）或确认为非 bug
+natural_next: bug-fix
+metric: none

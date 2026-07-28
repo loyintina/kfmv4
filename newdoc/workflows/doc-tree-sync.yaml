@@ -1,0 +1,15 @@
+id: doc-tree-sync
+name: 文档树同步
+trigger: 新增/移动/删除文档
+frequency: 文档结构变化时
+reads: []
+steps:
+  1. 更新 CLAUDE.md 路由表（一行）
+  2. 涉及工作流 reads/writes 变化 → 同步改对应 yaml
+  3. check-consistency + check-workflow-integrity 绿
+writes:
+  - CLAUDE.md（路由表）
+  - workflows/*.yaml（如涉及）
+exit_condition: 路由表与实际文件一致，无孤儿文档
+natural_next: none
+metric: 任何文档无工作流 read/write 它 → 不该存在（自进化原则）

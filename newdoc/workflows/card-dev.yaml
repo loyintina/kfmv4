@@ -1,0 +1,18 @@
+id: card-dev
+name: 卡片插件开发
+trigger: 新增 .card.ts / 修改卡片类型
+frequency: 加卡时
+reads:
+  - guides/card-dev.md
+  - domains/floating-card/contract.md
+steps:
+  1. 读指南 + 浮卡域契约（注册表/MANIFEST/state getter 配对规则）
+  2. 实现卡片（类型声明 + 实例追踪）
+  3. check-cards + check-card-meta 绿
+  4. 新陷阱 → floating-card/contract.md#陷阱
+writes:
+  - src/client/cards/（或对应路径）
+  - domains/floating-card/contract.md
+exit_condition: check-cards/check-card-meta 绿
+natural_next: state-sync
+metric: none

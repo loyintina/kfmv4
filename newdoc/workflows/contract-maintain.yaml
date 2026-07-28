@@ -1,0 +1,16 @@
+id: contract-maintain
+name: 参考契约维护
+trigger: 修改已有子系统 / 发现新陷阱 / 知识被确认
+frequency: 改子系统时
+reads:
+  - domains/{域}/contract.md
+steps:
+  1. 改动带来的契约变化写入 contract（架构/陷阱/文件清单）
+  2. 超 150 行 → 细节下沉 detail-*.md，contract 留指针
+  3. 发现新陷阱 → #陷阱 节追加（含历史案例）
+writes:
+  - domains/{域}/contract.md
+  - domains/{域}/detail-*.md
+exit_condition: contract <150 行 + check-desc-freshness 绿
+natural_next: state-sync
+metric: check-desc-freshness（已有）

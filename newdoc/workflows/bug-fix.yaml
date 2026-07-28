@@ -1,0 +1,24 @@
+id: bug-fix
+name: Bug 修复 + 回归钉
+trigger: 发现 bug / 用户报告异常
+frequency: 最高频（git 主体，47% 提交）
+reads:
+  - constraints/invariants.md#心法24
+  - domains/{受影响域}/contract.md#陷阱
+  - ledger/bugs.md（查是否已有相关条目）
+steps:
+  1. 定位根因（参考 constraints/diagnostics.md 排查流程）
+  2. 修复代码
+  3. 写 regression() 钉子
+  4. revert 验证（revert fix → 钉子必须红）
+  5. 登记 ledger/bugs.md
+  6. 发现新陷阱 → 写入 domains/{域}/contract.md#陷阱
+  7. 提交（fix: 和 test+docs: 分开）
+writes:
+  - src/（fix）
+  - tests/（钉子）
+  - ledger/bugs.md（登记）
+  - domains/{域}/contract.md（新陷阱）
+exit_condition: 钉子通过 revert 验证 + 登记有行 + npm run check 绿
+natural_next: bugs.md 同模式 ≥3 次 → discipline-mechanize
+metric: bugs.md 同模式 ≥3（机械化信号，已有先例：check-css-wiring）

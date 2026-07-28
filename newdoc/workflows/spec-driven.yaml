@@ -1,0 +1,19 @@
+id: spec-driven
+name: 大改动 spec-driven 流程
+trigger: 跨 3+ 文件 / 多阶段 / 引入隐式契约的改动
+frequency: 每周 1-2 次
+reads:
+  - guides/spec-driven.md（含纪律路由表）
+  - active/STACK.md（当前工作栈）
+  - constraints/invariants.md §七（SOP：步骤 3a 心法回溯 / 3b 设计讨论 / 7 沉淀五问）
+steps:
+  1. 需求提出 → 现状分析 → 设计确认（暴露所有已知缺口 + 5 场景压力测试）
+  2. 设计文档写入 active/（含被否定方案及原因）
+  3. 改动计划 → 实施 → 验证 → 沉淀五问
+  4. 完成后：确认知识写入对应 domain contract，设计文档删除，STACK pop
+writes:
+  - active/*.md（设计文档，临时）
+  - domains/{域}/contract.md（完成后的知识归宿）
+exit_condition: 设计经压力测试 + 用户确认 + 完成后知识被 contract 吸收
+natural_next: feat 实施窗口 — 预期 fix 尾随（历史 47%），预留批次修复窗口
+metric: none
