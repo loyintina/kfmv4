@@ -19,16 +19,23 @@ export const ompGlobTool: KfmTool = {
     required: [],
   },
   async execute(params, ctx): Promise<ToolResult> {
+    const maxResults = (params.maxResults as number) || 200;
+    // +1 探针（BAR-COMPACT-03）：native 的 totalMatches 顶格时等于返回数，无法判断
+    // 截断——改请求 maxResults+1 个，拿到第 maxResults+1 个即确知「至少还有 1 个
+    // 未显示」（语义与 grep limitReached 同构，不声称精确总数）。探针条不展示。
     const result = await glob({
       pattern: (params.pattern as string) || '*',
       path: (params.path as string) || ctx.cwd,
       hidden: params.hidden as boolean | undefined,
-      maxResults: (params.maxResults as number) || 200,
+      maxResults: maxResults + 1,
     });
-    if (result.matches.length === 0) {
+    const truncated = result.matches.length > maxResults;
+    const shown = truncated ? result.matches.slice(0, maxResults) : result.matches;
+    if (shown.length === 0) {
       return { content: [{ type: 'text', text: '未找到匹配文件' }] };
     }
-    const text = result.matches.map(m => `${m.path}${m.fileType === 2 ? '/' : ''}`).join('\n');
-    return { content: [{ type: 'text', text }], details: { count: result.matches.length } };
+    let text = shown.map(m => `${m.path}${m.fileType === 2 ? '/' : ''}`).join('\n');
+    if (truncated) text += '\n(结果被截断)';
+    return { content: [{ type: 'text', text }], details: { count: shown.length, truncated } };
   },
 };

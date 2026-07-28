@@ -115,6 +115,26 @@ test('glob：[glob {pattern} → {count}个文件]', () => {
   assert(out === '[glob src/**/*.ts → 8个文件]', `得 ${out}`);
 });
 
+// ---- 参数标注规则（契约第九节：影响结果语义的非默认参数进压缩行）----
+
+test('grep 参数标注：@ {path} 必标（传了才标），（忽略大小写）非默认才标', () => {
+  const out = compactToolResult('grep', { pattern: 'foo', path: '/root/kfmv4/src/server' }, bigLines(5), false);
+  assert(out === '[grep foo @ /root/kfmv4/src/server → 5处匹配，可重跑]', `得 ${out}`);
+  const ic = compactToolResult('grep', { pattern: 'foo', path: '/a', ignoreCase: true }, bigLines(5), false);
+  assert(ic === '[grep foo @ /a（忽略大小写） → 5处匹配，可重跑]', `得 ${ic}`);
+  // 未传 path/ignoreCase → 不标（默认语义，标了是噪音）
+  const def = compactToolResult('grep', { pattern: 'foo' }, bigLines(5), false);
+  assert(def === '[grep foo → 5处匹配，可重跑]', `得 ${def}`);
+});
+
+test('glob 参数标注 + 截断透传（BAR-COMPACT-03 起工具侧带标记行）', () => {
+  const out = compactToolResult('glob', { pattern: '*', path: '/w', hidden: true }, bigLines(8), false);
+  assert(out === '[glob * @ /w（含隐藏） → 8个文件]', `得 ${out}`);
+  // 截断：标记行不计入文件数，透传「未看全」
+  const trunc = compactToolResult('glob', { pattern: '*' }, bigLines(200) + '\n(结果被截断)', false);
+  assert(trunc === '[glob * → 200+个文件（结果被截断）]', `得 ${trunc}`);
+});
+
 test('todo：旧 todo [todo 更新{n}项]（n=input.todos 长度）', () => {
   const input = { todos: [{ content: 'a' }, { content: 'b' }, { content: 'c' }] };
   const out = compactToolResult('todo', input, chars(400), false);

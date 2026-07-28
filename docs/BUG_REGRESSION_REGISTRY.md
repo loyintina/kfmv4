@@ -160,6 +160,7 @@ maintainer: AI agent
 | BAR-ORB-PANEL-22 | `orb-chat-hints` | Todo 面板 ✕ 关闭后刷新又弹出：关闭只清内存，`_restoreTodoPanel` 从数据层找回结果重挂。契约：`dismissTodoPanel` 记录列表指纹到 localStorage；`updateTodoFromTool` 同指纹跳过渲染、新列表（指纹不同）清记录并恢复显示 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
 | BAR-COMPACT-01 | `orb-chat-run` | doSend 发给 API 的载荷 ~90% 是工具 I/O（45 万 tokens/轮、TTFB 5-8s）；saveMessages 每轮全量上传冗余。契约：apiMessages 是压缩投影（会话文件全量不动），G1 最近 2 轮豁免 / G4 最新 todo 结果豁免 / `kfm-no-compact=1` 逃生门 / `[compact]` 观测日志；saveMessages 仅新会话调用（服务端 /ai/chat/start 自己落盘） | L | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
 | BAR-COMPACT-02 | `build/check` | 新增工具若不登记压缩行为，上下文压缩策略随工具增多悄悄失效。契约：`check-tool-compaction.mjs` 双向核对注册工具 ↔ 压缩器登记（豁免型也要登记 + 注明 G 依据），挂 build 和 npm run check 链，失配 = 构建中断 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-COMPACT-03 | `omp/glob` | glob 默认上限 maxResults=200 命中时输出无截断标记（「未看全」类：匹配 500 个 AI 以为 200 是全部；实测 native totalMatches 顶格=返回数不可用；真实会话有一次顶格 200 行无法判断全否）。契约：+1 探针法（请求 maxResults+1，超出则只展示 maxResults 条 + `(结果被截断)` 标记行；恰好顶格不算截断），与 grep limitReached 同语义 | I | ✅ 已钉（真实 native 功能测试三边界：超限/未超/恰好顶格，revert 验证） | `tests/omp-glob.test.ts` |
 
 > 新 bug 修复后：补一个回归钉子 → 在此登记 → 状态置「已钉」。见
 > `docs/archive/design/REGRESSION_TESTING_SYSTEM.md` §3 微循环。

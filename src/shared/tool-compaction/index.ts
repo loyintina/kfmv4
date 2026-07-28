@@ -192,12 +192,24 @@ export function compactToolResult(
     case 'grep': {
       // grep 输出每行一处匹配（path:line: text），末尾可能带「(结果被截断)」标记行
       // 「未看全」透传（契约第九节）：截断时 count 不全，必须显式标注
+      // 参数标注规则（契约第九节）：影响结果语义的非默认参数进压缩行——
+      // path（实测 27/27 显式传，不带则无法区分搜索覆盖范围）；
+      // ignoreCase（同 pattern 大小写敏感与否计数不同）。maxCount 不标（可推断）。
       const truncated = resultText.includes('(结果被截断)');
       const count = resultText.split('\n').filter(l => l !== '(结果被截断)').length;
-      return `[grep ${str(input.pattern)} → ${count}${truncated ? '+' : ''}处匹配${truncated ? '（结果被截断）' : ''}，可重跑]`;
+      const at = str(input.path) ? ` @ ${str(input.path)}` : '';
+      const ic = input.ignoreCase ? '（忽略大小写）' : '';
+      return `[grep ${str(input.pattern)}${at}${ic} → ${count}${truncated ? '+' : ''}处匹配${truncated ? '（结果被截断）' : ''}，可重跑]`;
     }
-    case 'glob':
-      return `[glob ${str(input.pattern)} → ${lines}个文件]`;
+    case 'glob': {
+      // 截断透传（BAR-COMPACT-03 起工具侧带标记行）：顶格时 count 不全，必须显式
+      // 参数标注规则同 grep：path 影响覆盖范围；hidden 影响结果集（含隐藏文件）。
+      const truncated = resultText.includes('(结果被截断)');
+      const count = resultText.split('\n').filter(l => l.trim() && l !== '(结果被截断)').length;
+      const at = str(input.path) ? ` @ ${str(input.path)}` : '';
+      const hid = input.hidden ? '（含隐藏）' : '';
+      return `[glob ${str(input.pattern)}${at}${hid} → ${count}${truncated ? '+' : ''}个文件${truncated ? '（结果被截断）' : ''}]`;
+    }
     case 'todo': {
       const n = Array.isArray(input.todos) ? input.todos.length : 0;
       return `[todo 更新${n}项]`;
