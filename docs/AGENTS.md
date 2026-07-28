@@ -15,9 +15,8 @@ docs/
 ├── development/                ← 开发指南（CARD_DEV_GUIDE 加卡；SPEC_DRIVEN_WORKFLOW 做带文档的大改动）
 ├── design/                     ← 架构与运行时设计文档（active 文档，随代码演进）
 │   ├── VISION_AND_ROADMAP.md   ← 远景：核心理念 + 演进路线
-│   ├── AI_ARCHITECTURE.md      ← AI 架构设计
 │   ├── AI_CHAT_RUNTIME.md      ← AI 对话运行时契约（改流式对话前必读）
-│   └── CONTEXT_ASSEMBLY_SPEC.md ← 上下文拼接设计（draft）
+│   └── TOOL_IO_COMPACTION.md   ← 工具 I/O 上下文压缩契约
 └── archive/                    ← 历史文档仓库
     ├── README.md               ← 子目录导览 + 每类什么时候值得翻
     ├── audits/                 ← 已完成的审计记录/修复

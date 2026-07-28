@@ -1,9 +1,17 @@
 ---
 title: kfmv4 AI 架构设计
-status: draft
+status: superseded
+superseded_by: docs/design/AI_CHAT_RUNTIME.md
+archived_at: 2026-07-28
 created: 2026-07-11
 based_on: omp v16.3.11 (oh-my-pi)
 ---
+
+> **归档注记（2026-07-28）**：本文是 omp 借鉴版初始架构计划（draft），已落地并
+> 演化出四个继承者——运行时归 AI_CHAT_RUNTIME.md、工具 I/O 压缩归
+> TOOL_IO_COMPACTION.md、调试工具体系归 AI_AGENT_DEBUG_TOOLS.md、v8 宪法归
+> V8_ARCHITECTURE.md。kfm-snapshot/kfm-exec 已于 v8.1.0 删除（见
+> TOOL_IO_COMPACTION.md 第九节）。
 
 # kfmv4 AI 架构设计
 

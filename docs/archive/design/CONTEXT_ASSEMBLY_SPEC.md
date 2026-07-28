@@ -1,6 +1,18 @@
+---
+status: superseded
+superseded_by: docs/design/AI_CHAT_RUNTIME.md
+archived_at: 2026-07-28
+---
+
 # KFM v4 — 上下文拼接与 AI 工作空间设计
 
-> **状态**：draft
+> **归档注记（2026-07-28）**：本文是 2026-07-07 的问题清单与方向整理（draft v0.1），
+> 所列问题已全部被现实回答——§1 无上下文 → prompt-assembler 每轮重组 + 角色卡
+> promptFiles；§2 三类上下文 → 静态=角色卡、动态=page-state.md 眼睛；§4 存储之争
+> → `.kfmv4/` 胜出。运行时契约归 AI_CHAT_RUNTIME.md，上下文压缩归
+> TOOL_IO_COMPACTION.md。§7 未发生的开放问题（多角色卡同载、工具卡）随档留存。
+>
+> **状态**：superseded
 > **版本**：v0.1
 > **最后更新**：2026-07-07
 >
