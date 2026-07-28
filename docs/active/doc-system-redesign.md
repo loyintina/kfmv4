@@ -725,20 +725,20 @@ newdoc/
 |---------|------|------|
 | `CLAUDE.md` | 仓库根保留，重写 | 内联会话启动 reads + 16 行路由表 |
 | `README.md` | 仓库根保留 | 版本/测试计数标记随 check-versions 重写适配 |
-| `docs/KFM_V4_INVARIANTS.md` | `constraints/invariants.md` | 基本不动；编号永不重排（隐式 API） |
-| `docs/DIAGNOSTICS.md` | **拆分** | §1 隐性契约 → 各 `domains/{x}/contract.md#陷阱`；排查流程 → `constraints/diagnostics.md` |
-| `docs/HANDBOOK.md` | **拆分** | §1 模块速查 → 各 contract 文件清单；§2 状态+版本史 → `ledger/history.md` + `active/STACK.md`；§3 待办 → `active/vision.md`/STACK；§五/§七 → `guides/doc-maintenance.md` |
-| `docs/BUG_REGRESSION_REGISTRY.md` | `ledger/bugs.md` | 只追加不改写 |
-| `docs/AGENTS.md` | **拆分** | 路由功能并入 CLAUDE.md（F1）；维护规则 → `guides/doc-maintenance.md` |
+| `docs/KFM_V4_INVARIANTS.md` | `newdoc/constraints/invariants.md` | 基本不动；编号永不重排（隐式 API） |
+| `docs/DIAGNOSTICS.md` | **拆分** | §1 隐性契约 → 各 各域 contract.md 的陷阱节；排查流程 → `newdoc/constraints/diagnostics.md` |
+| `docs/HANDBOOK.md` | **拆分** | §1 模块速查 → 各 contract 文件清单；§2 状态+版本史 → `newdoc/ledger/history.md` + `newdoc/active/STACK.md`；§3 待办 → `newdoc/active/vision.md`/STACK；§五/§七 → `newdoc/guides/doc-maintenance.md` |
+| `docs/BUG_REGRESSION_REGISTRY.md` | `newdoc/ledger/bugs.md` | 只追加不改写 |
+| `docs/AGENTS.md` | **拆分** | 路由功能并入 CLAUDE.md（F1）；维护规则 → `newdoc/guides/doc-maintenance.md` |
 | `docs/AGENT_PROMPT_REFERENCES.md` | `constraints/`（注入层素材） | 迁移时精读，按 D2 新写提示词挂载 |
-| `docs/V8_AUDIT_REPORT.md` | `ledger/history.md` 一条 | 未处理项（如 §六 Phase 状态）进 STACK 或随 V8_ARCHITECTURE 归宿处理 |
-| `docs/design/VISION_AND_ROADMAP.md` | `active/vision.md` | 远景 + 步骤清单 + 进度 |
+| `docs/V8_AUDIT_REPORT.md` | `newdoc/ledger/history.md` 一条 | 未处理项（如 §六 Phase 状态）进 STACK 或随 V8_ARCHITECTURE 归宿处理 |
+| `docs/design/VISION_AND_ROADMAP.md` | `newdoc/active/vision.md` | 远景 + 步骤清单 + 进度 |
 | `docs/design/AI_CHAT_RUNTIME.md` | `domains/ai-chat/` contract + detail 素材 | 隐性时序契约是 contract 核心内容 |
-| `docs/design/TOOL_IO_COMPACTION.md` | `domains/ai-chat/detail-tool-compaction.md` | 已是 contract 形态，基本直接搬 |
+| `docs/design/TOOL_IO_COMPACTION.md` | `newdoc/domains/ai-chat/detail-tool-compaction.md` | 已是 contract 形态，基本直接搬 |
 | `docs/design/V8_ARCHITECTURE.md` | **拆分**（§11.1 既定） | 宪法展开 → invariants 附录；§四/§五/§七 → 对应 domain contract；§二/§三/§六/§八 → history 一条 |
 | `docs/design/AI_AGENT_DEBUG_TOOLS.md` | `active/`（进行中设计） | 当前焦点，完成后知识进 domains/server |
-| `docs/development/CARD_DEV_GUIDE.md` | `guides/card-dev.md` | |
-| `docs/development/SPEC_DRIVEN_WORKFLOW.md` | `guides/spec-driven.md` | 含纪律路由表 |
+| `docs/development/CARD_DEV_GUIDE.md` | `newdoc/guides/card-dev.md` | |
+| `docs/development/SPEC_DRIVEN_WORKFLOW.md` | `newdoc/guides/spec-driven.md` | 含纪律路由表 |
 | `docs/decisions/adr-001/002` | `decisions/` | 直接搬 |
 | `docs/active/doc-system-redesign.md` | `active/` 暂住，完成后删除 | §八既定：知识已被新结构吸收即删 |
 
@@ -747,22 +747,22 @@ newdoc/
 归宿 ≠ 文件搬家，归宿 = 信息的下一步载体。三类：
 
 **(c) 教训型 → `decisions/` 详注（3 份）**
-`design/CASE_STUDY_MODEL_CHOICE.md`、`design/CARD_SYSTEM_UNIFICATION_SPEC.md`
-（统一化失败，CLAUDE.md 现引用即此教训指针）、`design/REFACTOR_THESIS_FULL.md`
+`docs/archive/design/CASE_STUDY_MODEL_CHOICE.md`、`docs/archive/design/CARD_SYSTEM_UNIFICATION_SPEC.md`
+（统一化失败，CLAUDE.md 现引用即此教训指针）、`docs/archive/design/REFACTOR_THESIS_FULL.md`
 
 **(b) domain contract 写作素材 → history 一行 + 素材标记（19 份）**
 - canvas-tree：`ENGINE_ARCHITECTURE.md`、`BOX_LOCATION_MAP_SPEC.md`
 - floating-card：`CARD_REGISTRY_SPEC.md`、`CARD-STACK-HANDOFF.md`、
   `CARD_SYSTEM_DESIGN.md`、`FULLSCREEN_CARD_SPEC.md`、`STACK_CARDS_DESIGN.md`、
   `TERMINAL_CARD_SPEC.md`、`UI_ELEMENT_REGISTRY_SPEC.md`、`WORKBENCH_SPEC.md`、
-  `WORKBENCH_PHASE1/4/7.md`
+  WORKBENCH_PHASE1.md（及 PHASE4/PHASE7）
 - ai-chat：`AI_ARCHITECTURE.md`、`CONTEXT_ASSEMBLY_SPEC.md`、`AI_OPERATION_PROTOCOL.md`
 - server：`WEBSOCKET_CHANNEL_PROPOSAL.md`
 - orb-ui：`GESTURE_ARCHITECTURE_SPEC.md`、`ANIMATION_REFINEMENT_PLAN.md`
 - infra：`REGRESSION_TESTING_SYSTEM.md`（兼 guides 测试方法论素材）、
   `TEST_INFRASTRUCTURE_SPEC.md`
 
-**(a) 纯历史 → `ledger/history.md` 一行（43 份）**
+**(a) 纯历史 → `newdoc/ledger/history.md` 一行（43 份）**
 audits/ 3、bugs/ 2、handoffs/ 12、legacy/ 4、standards/ 5、
 `KFM_V4_INVARIANTS_v6.10.md`、archive 根 `README.md`、
 design/ 其余 14（`ARCHITECTURE`、`DOC_CODE_ALIGNMENT_*`、`HANDOFF_*` 4、
@@ -792,8 +792,8 @@ INVARIANTS（组2/7/8 标注「新吸收自」），history 行注明吸收关�
 ### 14.1 通用映射规则（本次沉淀，后续文档复用）
 
 **批次记录三分法**：版本批次/完成记录类内容一律拆三份——
-一句话进 `ledger/history.md`；机制描述（根因/修复原理/回归钉编号）进对应
-`domains/{x}/contract.md`；「放弃/推迟」进 `decisions/` 或 contract 有意推迟节。
+一句话进 `newdoc/ledger/history.md`；机制描述（根因/修复原理/回归钉编号）进对应
+各域 contract.md；「放弃/推迟」进 `decisions/` 或 contract 有意推迟节。
 纯 history 化会丢活知识，纯 contract 化会淹没契约，三分各得其所。
 
 **跨领域架构块的家**：H1 裁定——orb-ui 改名为 **client-shell**（第七个 domain），
@@ -806,27 +806,27 @@ floating-card / ai-chat / server / infra / decisions 不变。
 | 块 | 归宿 | 备注 |
 |----|------|------|
 | frontmatter + 头部路由段 | 消亡 | 路由由 CLAUDE.md 接管；文档规范说明 → guides/doc-maintenance.md；frontmatter 新鲜度机制由 check-desc-freshness 重写后管 domain contracts（F2） |
-| §一 注册中心/手势优先级/动画状态机/依赖方向/关键调用链 | `domains/client-shell/contract.md` | 跨领域块，H1 |
+| §一 注册中心/手势优先级/动画状态机/依赖方向/关键调用链 | `newdoc/domains/client-shell/contract.md` | 跨领域块，H1 |
 | §一 模块职能分组（51 模块） | 拆分进各 contract 文件清单 | 去「行数/被导入」易腐列（行数归 check-linecount，导入关系归代码） |
-| §一 服务端模块（15 个） | `domains/server/contract.md` | 含 ai/ 子系统树，与 AI_CHAT_RUNTIME 素材合并 |
+| §一 服务端模块（15 个） | `newdoc/domains/server/contract.md` | 含 ai/ 子系统树，与 AI_CHAT_RUNTIME 素材合并 |
 | §一 关键客户端模块详述 | theme/style-registry → canvas-tree；floating-card → floating-card；sibling-switcher → canvas-tree | 「唯一来源」规则是各 contract 的核心条款 |
 | §二 版本批次记录（v6.x~v8.1.1） | **三分法** | 例：v8.1.0 根洽五机制 → client-shell/ai-chat contract；「未做（评估后放弃）」→ decisions；每批一行 → history |
 | §二 已知陷阱 1-20 | 各 `contract.md#陷阱`（按域分发） | trap 16（立即提交）与心法 14 重复→删；trap 12（补丁链=模型错）与心法 5 重复→留案例指针 |
-| §二 当前焦点（AI 调试能力体系） | `active/vision.md` 或 STACK.md | 与 VISION_AND_ROADMAP 汇合 |
+| §二 当前焦点（AI 调试能力体系） | `newdoc/active/vision.md` 或 STACK.md | 与 VISION_AND_ROADMAP 汇合 |
 | §三 已完成待办（全划线） | history 一条 | |
-| §三 活跃待办（手势系统 P3）+ 持续观察 | `active/STACK.md` | |
-| §三 历史版本归档表 | `ledger/history.md` | 版本表本体，check-versions 重写后的验证目标（F2） |
-| §五 回归测试 | `guides/testing.md`（第五个 guide，H2） | 与 archive/REGRESSION_TESTING_SYSTEM 素材合并；纪律指针留心法 24 |
+| §三 活跃待办（手势系统 P3）+ 持续观察 | `newdoc/active/STACK.md` | |
+| §三 历史版本归档表 | `newdoc/ledger/history.md` | 版本表本体，check-versions 重写后的验证目标（F2） |
+| §五 回归测试 | `newdoc/guides/testing.md`（第五个 guide，H2） | 与 archive/REGRESSION_TESTING_SYSTEM 素材合并；纪律指针留心法 24 |
 | §六 约束与原则 | 消亡 | 纯指针，constraints/ 接管 |
 | §七 2026-06-08 审计清单（16 项全完成）+ 死代码检查 | history 一条 | 时点快照 |
 | §七 客户端模块完整审计表 | 拆分进各 contract 文件清单 | 同 §一 分组表，去易腐列 |
-| §七 引擎层清单（14 文件） | `domains/canvas-tree/detail-engine.md`（H3） | 与 archive/ENGINE_ARCHITECTURE 素材合并 |
-| §八 Browser 工具移植记录 | `domains/ai-chat/detail-browser.md`（H4） | 踩坑 5 条进 ai-chat contract#陷阱 |
+| §七 引擎层清单（14 文件） | `newdoc/domains/canvas-tree/detail-engine.md`（H3） | 与 archive/ENGINE_ARCHITECTURE 素材合并 |
+| §八 Browser 工具移植记录 | `newdoc/domains/ai-chat/detail-browser.md`（H4） | 踩坑 5 条进 ai-chat contract#陷阱 |
 
 ### 14.3 决策点落锤
 
 - **H1 → orb-ui 改名 client-shell**（第七 domain），跨领域架构块有家。
-- **H2 → 测试方法论独立 `guides/testing.md`**。
+- **H2 → 测试方法论独立 `newdoc/guides/testing.md`**。
 - **H3 → 引擎层为 canvas-tree 的 detail-engine.md**（保持 6 域 + client-shell）。
 - **H4 → §八 → domains/ai-chat/detail-browser.md**。
 
@@ -913,7 +913,7 @@ workflow yaml 四要素（trigger/reads/steps/writes/exit）天然是结构化 p
 
 1. yaml 模板增加 `natural_next`（§15.4）与 `metric`（度量触发）字段；
 2. 已有度量触发器盘点登记进对应 yaml（check-desc-freshness 等）；
-3. 本节迁移时进 `active/vision.md` 未来方向区。
+3. 本节迁移时进 `newdoc/active/vision.md` 未来方向区。
 
 ---
 
