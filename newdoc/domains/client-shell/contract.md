@@ -81,6 +81,22 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 10. **侧栏触摸区事件冒泡**：冒泡到 document 会误触发 GestureRegistry——
     侧栏交互注意事件边界的阻止/隔离（旧 CLAUDE.md 注意事项迁入）。
 
+## Z-Index 层级（自 AI_CHAT_RUNTIME §九迁入，2026-07-28）
+
+**产品决策（2026-07-19，commit `a5bf0c4`）**：焦点弹窗（L8, 10000+）**高于** AI 核心
+（L7, 9000-9200）。理由：确认框/模态框一出现即代表用户正专注一次操作（如确认删除），
+必须能盖住输入栏/发送按钮/光球，避免误触打断。
+
+| 层 | z 值 | 内容 |
+|----|------|------|
+| L8 焦点交互 | 10000-10900 | action-bar / toast / 模态框 / 确认框 / 下拉 |
+| L7 AI 核心 | 9000-9200 | 面板 / 输入栏 / 发送按钮 / 光球 |
+| L6 终端交互 | 6400-6430 | 终端手柄 / 茎 / 放大镜 / 复制（卡片作用域） |
+
+- **`CUSTOM_SELECT`(10900) 必须高于 `MODAL_DIALOG`(10800)**：下拉框常在模态框内部
+  弹出（config/session/tools 卡的下拉都在弹窗里），低于模态框会被遮住。
+- 全表见 `z-index-layers.ts` / `z-index.css`（`check-zindex.mjs` 强制 JS↔CSS 一致）。
+
 ## 文件清单
 
 - 骨架：`app.ts` `ui.ts` `dom-refs.ts` `state.ts` `renderer-lifecycle.ts`

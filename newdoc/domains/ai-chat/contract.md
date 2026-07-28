@@ -1,5 +1,5 @@
 > 这是什么：AI 对话子系统——光球面板、流式协议、会话存储、工具。
-> 别的去哪找：运行时隐性时序 → detail（旧 docs/design/AI_CHAT_RUNTIME.md 迁移）；压缩规则 → detail-tool-compaction（旧 TOOL_IO_COMPACTION.md 迁移）；browser 工具 → detail-browser.md；orb 骨架 → ../client-shell/。
+> 别的去哪找：运行时隐性时序 → detail-runtime.md；压缩规则 → detail-tool-compaction.md；browser 工具 → detail-browser.md；orb 骨架 → ../client-shell/。
 
 # ai-chat 域契约
 
@@ -64,6 +64,10 @@
    - **复制按钮走 contentArea 事件委托**：消息 DOM 动态增删，委托一次注册覆盖全部；
      禁止逐按钮绑定（v8.0 曾只建按钮不接处理，纯装饰）。
    回归钉：BAR-ORB-PANEL-01…21。
+8. **content_block index 连续性**：thinking+text 永远 index=0，工具块从 1 起按首见顺序
+   连续分配（`clientIdx()` 映射 provider 的 `tc.index`）——provider 的 index 可能不从 0 起，
+   直接用会在 content 数组留 `undefined` 空洞，`.filter(b=>b.type)` 读空洞即崩。
+   回归钉：BAR-106。展开版见 detail-runtime.md §3.3。
 
 ## 文件清单
 

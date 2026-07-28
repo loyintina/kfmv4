@@ -1173,3 +1173,25 @@ FIRST PRINCIPLES 的「抽象优先」、RESEARCH METHODOLOGY 的「问题审计
 ## §二十六 逐份过 9/19：V8_AUDIT_REPORT.md（213 行 → history 一条 + STACK 一条）
 
 执行日期：2026-07-28。判定书用户批准。代码现状逐条核实：§一 两个 HIGH（死代码）已删无残留、auto-resume restartCount 已实现；§二/§六 文档同步性问题由本迁移逐份结算。产出：history.md 事件线一条 + STACK.md P3 遗留项一条（session-store 命名 / tool_result 两处分散 / flushSync 混合策略）。全文删除——时点快照归档类标准形态。
+
+---
+
+## §二十六补 逐份过 9/19 核实记录补遗
+
+V8_AUDIT_REPORT §四.2「tool_result 状态/渲染两处分散」与 §四.3「session-store 命名」已按判定进 STACK P3；§一 LOW content_block_stop 双重高亮经评估为无害浪费，随 STACK 条目一并观察，不单列。
+
+---
+
+## §二十七 逐份过 10/19：AI_CHAT_RUNTIME.md（369 行 → ai-chat/detail-runtime.md + 2 处 contract 增补）
+
+执行日期：2026-07-28。判定书用户批准。
+
+### 归宿执行
+
+- `newdoc/domains/ai-chat/detail-runtime.md`（337 行）：§1 动机 + §2 架构图/双通道 + §3 挂机生命周期/端点表/事件协议 + §4 七条隐式契约展开版 + §5 WS 存活 + §6 终端恢复 + §7 取消 + §8 文件一览 + §10 冷恢复，原文未删节。
+- `ai-chat/contract.md`：+ 陷阱 8（content_block index 连续性/clientIdx 映射防空洞，BAR-106）；路由头改指 detail-runtime.md。
+- `client-shell/contract.md`：+「Z-Index 层级」节（L8>L7 产品决策 + CUSTOM_SELECT>MODAL_DIALOG + 简表）。
+
+### 重叠说明（留压缩轮）
+
+§4 七条中五条（4.1/4.2+4.3/4.4/4.5/4.6+4.7）与 contract 陷阱 1/2/4/5/6 为展开-压缩关系，按两阶段规则不合并，detail 路由注已标明「改代码以 contract 为准」。
