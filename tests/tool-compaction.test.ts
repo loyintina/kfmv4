@@ -87,6 +87,9 @@ test('edit：diff-stat -{old}/+{new}行（真实 schema：input.old/input.new，
   const input = { path: '/src/a.ts', old: lines(3), new: lines(5) };
   const out = compactToolResult('edit', input, chars(400), false);
   assert(out === '[edit /src/a.ts → -3/+5行]', `得 ${out}`);
+  // 带 ctx.editRange（result.details.lineStart/lineEnd）→ 插入行号段
+  const ranged = compactToolResult('edit', input, chars(400), false, { editRange: { start: 36, end: 38 } });
+  assert(ranged === '[edit /src/a.ts 第36-38行 → -3/+5行]', `得 ${ranged}`);
 });
 
 test('edit diff-stat 形状语义：纯新增 -0/+12 / 纯删除 -15/+0', () => {
@@ -234,12 +237,26 @@ test('edit 大入参 → diff-stat（真实 schema：old/new）', () => {
   assert(!('old' in out) && !('new' in out), 'old/new 全文必须被折叠掉');
 });
 
-test('write/edit 修改次数标注（ctx.mutOrdinal，≥2 才标注）', () => {
+test('edit 大入参带行号区间（ctx.editRange，来自 result.details）', () => {
+  const input = { path: '/src/a.ts', old: lines(3) + chars(150), new: lines(5) + chars(150) };
+  const out = compactToolInput('edit', input, false, { editRange: { start: 36, end: 38 } });
+  assert(out !== null && out._compacted === '编辑已折叠: 第36-38行 -3/+5行', `得 ${JSON.stringify(out)}`);
+});
+
+test('write/edit 修改爆发标注（ctx.mutBurst：本轮序号 / 再进入）', () => {
   const input = { path: '/src/a.ts', content: lines(120) };
-  const first = compactToolInput('write', input, false, { mutOrdinal: 1 });
-  assert(!first?._compacted?.includes('次修改'), '第 1 次不标注');
-  const fourth = compactToolInput('write', input, false, { mutOrdinal: 4 });
-  assert(fourth?._compacted?.includes('（本文件第4次修改）'), `得 ${fourth?._compacted}`);
+  const first = compactToolInput('write', input, false, { mutBurst: { burst: 1, cum: 1, reEntry: false } });
+  assert(!first?._compacted?.includes('次修改') && !first?._compacted?.includes('重新进入'), '首次不标注');
+  const burst3 = compactToolInput('write', input, false, { mutBurst: { burst: 3, cum: 3, reEntry: false } });
+  assert(burst3?._compacted?.includes('（本轮第3次修改）'), `得 ${burst3?._compacted}`);
+  // 相距 >MUT_BURST_GAP 轮后的再进入：历史累计降级为背景
+  const reEntry = compactToolInput('write', input, false, { mutBurst: { burst: 1, cum: 5, reEntry: true } });
+  assert(reEntry?._compacted?.includes('（重新进入修改，此前共4次）'), `得 ${reEntry?._compacted}`);
+  // 失败调用不标注（失败 edit 什么都没改）
+  const failed = compactToolInput('edit',
+    { path: '/a.ts', old: lines(10) + chars(200), new: lines(10) + chars(200) },
+    true, { mutBurst: { burst: 3, cum: 3, reEntry: false } });
+  assert(failed !== null && !failed._compacted?.includes('次修改'), '失败调用不标爆发');
 });
 
 test('失败调用入参 ≤500 字符豁免（失败 edit 的 old/new 是诊断对象，镜像 G3）', () => {

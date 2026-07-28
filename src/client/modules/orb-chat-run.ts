@@ -23,7 +23,7 @@ import type { ContentBlock, TextBlock, ToolBlock, RuleWarningBlock } from './ses
 import { clearToolHint, updateTodoFromTool } from './orb-chat-hints.js';
 import { log } from './logger.js';
 // 工具 I/O 上下文压缩（v8.1.0）：纯函数注册表，契约 docs/design/TOOL_IO_COMPACTION.md
-import { compactToolInput, compactToolResult, normalizeBashCommand } from '../../shared/tool-compaction/index.js';
+import { compactToolInput, compactToolResult, normalizeBashCommand, MUT_BURST_GAP } from '../../shared/tool-compaction/index.js';
 import type { CompactionCtx } from '../../shared/tool-compaction/index.js';
 // 兜底消息上屏 + 取消时工具卡 DOM 收尾（v8 增量 DOM：数据层变更不会自动投影）
 import { mountFallbackAiMessage, settleToolCardsDom } from './chat-dom.js';
@@ -477,9 +477,12 @@ export async function doSend(
     {
       const readFpsByPath = new Map<string, string[]>();
       const bashRunsByCmd = new Map<string, boolean[]>(); // 归一化命令 → isError 序列
-      const mutCountByPath = new Map<string, number>(); // 路径 → 成功修改次数（write+edit）
+      // 路径 → 修改爆发状态（write+edit 成功调用）。cum=全会话累计；burst=本轮爆发内序号；
+      // lastMi=上次成功修改所在 AI 消息索引（相距 >MUT_BURST_GAP 轮 = 新一轮爆发）
+      const mutStateByPath = new Map<string, { cum: number; burst: number; lastMi: number }>();
       let bashFailCmds: string[] = []; // 当前连续失败的归一化命令序列（环境故障判定用）
-      for (const m of messages) {
+      for (let mi = 0; mi < messages.length; mi++) {
+        const m = messages[mi];
         if (m?.role !== 'ai') continue;
         for (const b of m.content) {
           if (b?.type !== 'tool' || !b.result) continue;
@@ -516,11 +519,31 @@ export async function doSend(
           } else if (b.name === 'write' || b.name === 'edit') {
             // 修改轨迹（锚定真相源：从全量会话文件计数，与投影窗口无关）。
             // 只有成功调用才算「修改」——失败的 edit 什么都没改。
+            // 爆发语义：相邻两次成功修改相距 >MUT_BURST_GAP 轮 = 新一轮爆发，
+            // 历史累计降级为「再进入」背景（几轮内集中修改的计数才有时效性）。
             const path = typeof b.input.path === 'string' ? b.input.path : '';
-            const prev = mutCountByPath.get(path) || 0;
-            const ordinal = prev + 1;
-            compactCtxById.set(b.id, b.result.isError ? {} : { mutOrdinal: ordinal });
-            if (!b.result.isError) mutCountByPath.set(path, ordinal);
+            // edit 行号区间来自 result.details（omp/edit.ts 写入，编辑当时位置，后续会漂移）
+            let editRange: CompactionCtx['editRange'];
+            if (b.name === 'edit') {
+              const d = b.result.details;
+              const ls = d?.lineStart, le = d?.lineEnd;
+              if (typeof ls === 'number' && typeof le === 'number') editRange = { start: ls, end: le };
+            }
+            if (b.result.isError) {
+              compactCtxById.set(b.id, editRange ? { editRange } : {}); // 失败不更新爆发状态
+            } else {
+              const st = mutStateByPath.get(path) || { cum: 0, burst: 0, lastMi: -1 };
+              const reEntry = st.cum > 0 && mi - st.lastMi > MUT_BURST_GAP;
+              const next = {
+                cum: st.cum + 1,
+                burst: reEntry || st.lastMi < 0 ? 1 : st.burst + 1,
+                lastMi: mi,
+              };
+              mutStateByPath.set(path, next);
+              const ctx: CompactionCtx = { mutBurst: { burst: next.burst, cum: next.cum, reEntry } };
+              if (editRange) ctx.editRange = editRange;
+              compactCtxById.set(b.id, ctx);
+            }
           }
         }
       }

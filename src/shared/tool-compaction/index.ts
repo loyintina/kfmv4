@@ -74,9 +74,17 @@ export interface CompactionCtx {
   bashRetry?: { ordinal: number; failStreak: number; prevFailStreak: number };
   /** bash 环境故障：连续 n 次失败且最近 3 次为不同归一化命令（≥3 才标注） */
   bashEnvStreak?: number;
-  /** write/edit：本文件第 N 次成功修改（write+edit 合并计数，锚定真相源，见 compactToolInput 头注） */
-  mutOrdinal?: number;
+  /** write/edit：修改爆发状态（write+edit 成功调用合并计数，锚定真相源，见 compactToolInput 头注）。
+   *  同一路径相邻两次成功修改相距 ≤MUT_BURST_GAP 轮 = 同一爆发期；超出则开新一轮，
+   *  此时历史累计数降级为「再进入」背景——几轮内集中修改的计数才有时效性。 */
+  mutBurst?: { burst: number; cum: number; reEntry: boolean };
+  /** edit：该次替换涉及的行号区间（读 result.details.lineStart/lineEnd，编辑当时位置，
+   *  后续编辑会使行号漂移——仅作当次定位，不代表当前文件状态）。 */
+  editRange?: { start: number; end: number };
 }
+
+/** mutBurst 判定阈值：相邻两次成功修改相距超过这么多轮 AI 消息即视为新一轮爆发（可调常量）。 */
+export const MUT_BURST_GAP = 8;
 
 /**
  * bash 命令归一化语法（契约第九节，四条规则，改规则先改文档）：
@@ -173,13 +181,13 @@ export function compactToolResult(
       return `[write ${str(input.path)} → ${n}行/${content.length}字符已写入]`;
     }
     case 'edit': {
-      // 真实 schema（omp/edit.ts）：input.old / input.new，无 lineStart/lineEnd——
-      // 初版按假设的 lineStart/lineEnd 取行号，真实数据下静默退化为 [edit {path}]。
-      // 教训（契约第九节）：测试样例必须照真实会话数据构造，假设错则测试跟着错。
+      // 真实 schema（omp/edit.ts）：input.old / input.new，无行号——行号读 ctx.editRange
+      // （来自 result.details.lineStart/lineEnd，真相源数据；无则省略）。
       // diff-stat 形状自带故事：-0/+12=纯新增，-15/+0=纯删除，-30/+3=大幅简化（心法 18）。
       const oldLines = str(input.old) ? str(input.old).split('\n').length : 0;
       const newLines = str(input.new) ? str(input.new).split('\n').length : 0;
-      return `[edit ${str(input.path)} → -${oldLines}/+${newLines}行]`;
+      const range = ctx?.editRange ? ` 第${ctx.editRange.start}-${ctx.editRange.end}行` : '';
+      return `[edit ${str(input.path)}${range} → -${oldLines}/+${newLines}行]`;
     }
     case 'grep': {
       // grep 输出每行一处匹配（path:line: text），末尾可能带「(结果被截断)」标记行
@@ -216,8 +224,10 @@ export function compactToolResult(
  * 只压 write（文件全文）与 edit（old/new 全文）——其余工具入参保留原文。
  * 小入参（JSON ≤300 字符）一律不压（与 G2 同理：占位本身也占 token）。
  * 失败调用入参 ≤500 字符不压（与 G3 同理：失败 edit 的 old/new 正是诊断对象）。
- * ctx.mutOrdinal：本文件第 N 次成功修改（write+edit 合并计数，锚定真相源——
- * 从全量会话文件预扫描，与投影窗口无关，未来上下文压缩不影响计数）。
+ * ctx.mutBurst：修改爆发状态（write+edit 合并计数，锚定真相源——从全量会话文件
+ * 预扫描，与投影窗口无关，未来上下文压缩不影响计数）。只计成功调用（失败 edit
+ * 什么都没改）。相邻两次成功修改相距 >MUT_BURST_GAP 轮 = 新一轮爆发，历史累计
+ * 降级为再进入背景（几轮内集中修改的计数才有时效性）。
  */
 export function compactToolInput(
   name: string,
@@ -228,7 +238,10 @@ export function compactToolInput(
   const jsonLen = JSON.stringify(input).length;
   if (jsonLen <= 300) return null;
   if (isError && jsonLen <= 500) return null;
-  const mut = !isError && (ctx?.mutOrdinal ?? 0) >= 2 ? `（本文件第${ctx?.mutOrdinal}次修改）` : '';
+  const mb = !isError ? ctx?.mutBurst : undefined;
+  const mut = mb?.reEntry
+    ? `（重新进入修改，此前共${mb.cum - 1}次）`
+    : mb && mb.burst >= 2 ? `（本轮第${mb.burst}次修改）` : '';
   switch (name) {
     case 'write': {
       const content = str(input.content);
@@ -238,7 +251,8 @@ export function compactToolInput(
     case 'edit': {
       const oldLines = str(input.old) ? str(input.old).split('\n').length : 0;
       const newLines = str(input.new) ? str(input.new).split('\n').length : 0;
-      return { path: input.path, _compacted: `编辑已折叠: -${oldLines}/+${newLines}行${mut}` };
+      const range = ctx?.editRange ? `第${ctx.editRange.start}-${ctx.editRange.end}行 ` : '';
+      return { path: input.path, _compacted: `编辑已折叠: ${range}-${oldLines}/+${newLines}行${mut}` };
     }
     default:
       return null;
