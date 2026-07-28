@@ -1161,3 +1161,9 @@ STACK/vision 更新。trap 16（与心法 14 重复）已删未迁；trap 12 留
 ### 重复说明（留压缩轮）
 
 FIRST PRINCIPLES 的「抽象优先」、RESEARCH METHODOLOGY 的「问题审计/基于证据的分歧」与 §二 心法 #21-24 为蒸馏-展开关系，按两阶段规则不合并，压缩轮归并。
+
+---
+
+## §二十五 逐份过 8/19：BUG_REGRESSION_REGISTRY.md（166 行 → ledger/bugs.md）
+
+执行日期：2026-07-28。判定书用户批准。近乎整份平移：分类图例 + 登记表 8 批（BAR-101…COMPACT-03）保真；frontmatter 删、路由头替代；指针改指 3 处（diagnostics/testing/invariants；REGRESSION_TESTING_SYSTEM 暂留旧路径注 archive 轮改指）。工作流层 bug-fix/discipline-mechanize/testing 三处引用就此咬合。
