@@ -696,3 +696,87 @@ hop 模型：CLAUDE.md(0) → workflow.yaml(1) → 目标文档(2)，全部工�
 TOOL_IO_COMPACTION → domains/ai-chat/ detail，工作流 4/12；V8_ARCHITECTURE
 按 §11.1 归宿拆分；完整映射表随迁移阶段 2 产出）。
 唤醒条件②③完成。下一步：唤醒条件④用户确认 → newdoc/ 骨架（§11.4）。
+
+---
+
+## 十三、完整映射表：每个现存文档的归宿（2026-07-28）
+
+> 本节是迁移阶段 2 的核对清单：每迁一份打一个勾。
+> **切换提交前的机械验收**：旧 `docs/` 全量文件清单 ↔ 本表，无未映射文件才允许改名。
+
+### 13.1 骨架（F1 修正后）
+
+```
+newdoc/
+├── workflows/            # 16 个 yaml + _template.yaml + _retired/
+├── constraints/          # invariants.md（心法，编号不重排）+ diagnostics.md（纯排查流程）
+├── domains/              # ai-chat/ canvas-tree/ floating-card/ orb-ui/ server/ infra/
+│   └── {domain}/         #   contract.md（<150行）+ detail-*.md
+├── active/               # STACK.md + vision.md + 进行中的设计文档
+├── ledger/               # bugs.md + history.md
+├── guides/               # spec-driven / card-dev / release / doc-maintenance（含测试方法论）
+└── decisions/            # adr-*.md（不可变）
+```
+仓库根：`CLAUDE.md`（自包含路由表，D1）+ `README.md`（门面）保留。
+
+### 13.2 活跃文档逐文件映射（19 份）
+
+| 现存文件 | 归宿 | 备注 |
+|---------|------|------|
+| `CLAUDE.md` | 仓库根保留，重写 | 内联会话启动 reads + 16 行路由表 |
+| `README.md` | 仓库根保留 | 版本/测试计数标记随 check-versions 重写适配 |
+| `docs/KFM_V4_INVARIANTS.md` | `constraints/invariants.md` | 基本不动；编号永不重排（隐式 API） |
+| `docs/DIAGNOSTICS.md` | **拆分** | §1 隐性契约 → 各 `domains/{x}/contract.md#陷阱`；排查流程 → `constraints/diagnostics.md` |
+| `docs/HANDBOOK.md` | **拆分** | §1 模块速查 → 各 contract 文件清单；§2 状态+版本史 → `ledger/history.md` + `active/STACK.md`；§3 待办 → `active/vision.md`/STACK；§五/§七 → `guides/doc-maintenance.md` |
+| `docs/BUG_REGRESSION_REGISTRY.md` | `ledger/bugs.md` | 只追加不改写 |
+| `docs/AGENTS.md` | **拆分** | 路由功能并入 CLAUDE.md（F1）；维护规则 → `guides/doc-maintenance.md` |
+| `docs/AGENT_PROMPT_REFERENCES.md` | `constraints/`（注入层素材） | 迁移时精读，按 D2 新写提示词挂载 |
+| `docs/V8_AUDIT_REPORT.md` | `ledger/history.md` 一条 | 未处理项（如 §六 Phase 状态）进 STACK 或随 V8_ARCHITECTURE 归宿处理 |
+| `docs/design/VISION_AND_ROADMAP.md` | `active/vision.md` | 远景 + 步骤清单 + 进度 |
+| `docs/design/AI_CHAT_RUNTIME.md` | `domains/ai-chat/` contract + detail 素材 | 隐性时序契约是 contract 核心内容 |
+| `docs/design/TOOL_IO_COMPACTION.md` | `domains/ai-chat/detail-tool-compaction.md` | 已是 contract 形态，基本直接搬 |
+| `docs/design/V8_ARCHITECTURE.md` | **拆分**（§11.1 既定） | 宪法展开 → invariants 附录；§四/§五/§七 → 对应 domain contract；§二/§三/§六/§八 → history 一条 |
+| `docs/design/AI_AGENT_DEBUG_TOOLS.md` | `active/`（进行中设计） | 当前焦点，完成后知识进 domains/server |
+| `docs/development/CARD_DEV_GUIDE.md` | `guides/card-dev.md` | |
+| `docs/development/SPEC_DRIVEN_WORKFLOW.md` | `guides/spec-driven.md` | 含纪律路由表 |
+| `docs/decisions/adr-001/002` | `decisions/` | 直接搬 |
+| `docs/active/doc-system-redesign.md` | `active/` 暂住，完成后删除 | §八既定：知识已被新结构吸收即删 |
+
+### 13.3 archive 65 文件三分类映射
+
+归宿 ≠ 文件搬家，归宿 = 信息的下一步载体。三类：
+
+**(c) 教训型 → `decisions/` 详注（3 份）**
+`design/CASE_STUDY_MODEL_CHOICE.md`、`design/CARD_SYSTEM_UNIFICATION_SPEC.md`
+（统一化失败，CLAUDE.md 现引用即此教训指针）、`design/REFACTOR_THESIS_FULL.md`
+
+**(b) domain contract 写作素材 → history 一行 + 素材标记（19 份）**
+- canvas-tree：`ENGINE_ARCHITECTURE.md`、`BOX_LOCATION_MAP_SPEC.md`
+- floating-card：`CARD_REGISTRY_SPEC.md`、`CARD-STACK-HANDOFF.md`、
+  `CARD_SYSTEM_DESIGN.md`、`FULLSCREEN_CARD_SPEC.md`、`STACK_CARDS_DESIGN.md`、
+  `TERMINAL_CARD_SPEC.md`、`UI_ELEMENT_REGISTRY_SPEC.md`、`WORKBENCH_SPEC.md`、
+  `WORKBENCH_PHASE1/4/7.md`
+- ai-chat：`AI_ARCHITECTURE.md`、`CONTEXT_ASSEMBLY_SPEC.md`、`AI_OPERATION_PROTOCOL.md`
+- server：`WEBSOCKET_CHANNEL_PROPOSAL.md`
+- orb-ui：`GESTURE_ARCHITECTURE_SPEC.md`、`ANIMATION_REFINEMENT_PLAN.md`
+- infra：`REGRESSION_TESTING_SYSTEM.md`（兼 guides 测试方法论素材）、
+  `TEST_INFRASTRUCTURE_SPEC.md`
+
+**(a) 纯历史 → `ledger/history.md` 一行（43 份）**
+audits/ 3、bugs/ 2、handoffs/ 12、legacy/ 4、standards/ 5、
+`KFM_V4_INVARIANTS_v6.10.md`、archive 根 `README.md`、
+design/ 其余 14（`ARCHITECTURE`、`DOC_CODE_ALIGNMENT_*`、`HANDOFF_*` 4、
+`P3_RENDER_CONTEXT_REFACTOR*` 2、`RACE_CONDITION_PLAN`、`REGISTRY_AUDIT_*` 2、
+`REGISTRY_NEXT_AGENT_DISCUSSION`、`design/README`）。
+其中 legacy 两原则文档与 standards/PRINCIPLES_INDEX 的实质内容已吸收进
+INVARIANTS（组2/7/8 标注「新吸收自」），history 行注明吸收关系；
+`standards/DEBUG_SOP` → 已被 DIAGNOSTICS 覆盖（§3.5 既定）。
+
+### 13.4 完整性保证
+
+1. 本表即核对清单：阶段 2 每迁一份打勾。
+2. 切换提交前机械验收：`find docs/ -name '*.md'` 全量 ↔ 本表比对，
+   无未映射、无未打勾，才允许 `git mv newdoc docs`。
+3. history.md 一行不是信息删除：文件本体在 git 历史与版本 tag 里永远可
+   `git show` 取回（§10.5 缺陷 4 的 grep 可发现性损失，由 (b) 类的
+   contract 素材化与 (c) 类的 decisions 详注补偿）。
