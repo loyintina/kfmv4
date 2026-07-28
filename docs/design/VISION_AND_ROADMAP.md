@@ -717,7 +717,7 @@ AI 需要一种方式"指给用户看"——不依赖卡片聚焦或状态联动
 
 | # | 内容 | 实施情况 |
 |---|------|---------|
-| 10 | 构建/命令执行端点 | ✅ `src/server/ai/tools/kfmv4/exec.ts`（白名单命令 + 超时） |
+| 10 | 构建/命令执行端点 | ✅ `src/server/ai/tools/omp/bash.ts`（超时 + 流式输出；v8.1.0 起统一为 bash，原 kfm-exec 已删除） |
 | 11 | 文件内容搜索端点 | ✅ `src/server/ai/tools/omp/grep.ts`（ripgrep，via native.ts） |
 | 12 | 设置卡：Agent 配置 | ✅ `config.card.ts`（Provider + Model + Session 管理） |
 | 13 | Agent 适配层 + 子进程管理 | ✅ `src/server/ai/chat.ts` + `src/server/ai/run-manager.ts`（挂机持久化 + SSE 续读） |
