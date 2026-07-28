@@ -625,3 +625,74 @@ exit_condition: 只剩一条活跃轨 + 双方产物已合并提交
 - **§11.4 修正**：大爆炸点与窗口冻结顾虑撤销——迁移期唯一工作流就是
   重构本身，无并发开发内容；管线重写随迁移在 newdoc/ 内渐进完成，
   改名提交只剩 git mv + 开关切换。影子目录与权威源物理化两个核心保留。
+
+---
+
+## 十二、15+1 工作流纸面走查（唤醒条件②③，2026-07-28）
+
+> 方法：逐工作流从入口走到 exit_condition。hop = 一次文件打开；
+> CLAUDE.md 是工具自动读取的入口，计 0。
+> 结论先行：**16 个工作流全部走通**；走查发现 5 个适配点（F1-F5），反馈进设计。
+
+### 12.1 统一入口与 hop 模型
+
+采纳 D1 后，CLAUDE.md 自包含：内联会话启动 reads + 任务→工作流路由表。
+hop 模型：CLAUDE.md(0) → workflow.yaml(1) → 目标文档(2)，全部工作流 ≤2 跳。
+（若 INDEX.md 独立存在则全员 3 跳——这是 F1 合并的直接理由。）
+
+### 12.2 逐工作流走查
+
+| # | 工作流 | yaml | reads（hop 2） | writes | 走通 |
+|---|--------|------|----------------|--------|------|
+| 1 | 会话启动/路由 | （CLAUDE.md 内联） | active/STACK.md + ledger/history.md 尾部 | — | ✅ 1 跳 |
+| 2 | 改代码前约束加载 | pre-code-gate | constraints/invariants.md 目标节 + domains/{x}/contract.md | — | ✅ |
+| 3 | spec-driven 大改动 | spec-driven | guides/spec-driven.md + active/STACK.md | active/*.md | ✅ |
+| 4 | bug 修复+回归钉 | bug-fix | invariants#心法24 + domains/{x}/contract.md#陷阱 + ledger/bugs.md | src/、tests/、bugs.md、contract#陷阱 | ✅ |
+| 5 | 纪律机械化 | discipline-mechanize | ledger/bugs.md（重复模式）+ guides/doc-maintenance.md | check-*.mjs + guides | ✅ |
+| 6 | 活跃状态同步 | state-sync | — | ledger/history.md + active/STACK.md | ✅ 见 F3 |
+| 7 | 设计提案生命周期 | （并入 spec-driven） | active/STACK.md | active/*.md 增删 | ✅ |
+| 8 | 版本发布 | release | guides/release.md | package.json + history.md + tag | ✅ 见 F2 |
+| 9 | 卡片插件开发 | card-dev | guides/card-dev.md + domains/floating-card/contract.md | cards/ + contract | ✅ |
+| 10 | bug 诊断/分诊 | diagnostics | constraints/diagnostics.md（纯排查流程） | — | ✅ |
+| 11 | 文档树同步 | doc-tree-sync | — | CLAUDE.md 路由表一行 | ✅ 见 F1 |
+| 12 | 参考契约维护 | contract-maintain | domains/{x}/contract.md | 同左 | ✅ |
+| 13 | 文档-代码审计 | audit | guides/doc-maintenance.md 审计节 + check 输出 | guides/contract 修正 | ✅ 见 F2 |
+| 14 | 设计注释约定 | （并入 pre-code-gate） | constraints/invariants.md §九 | 源文件头注释 | ✅ |
+| 15 | 心法回溯 | （并入 spec-driven 步骤 3a/3b） | constraints/invariants.md §六/§七 | — | ✅ |
+| 16 | 平行多轨讨论 | parallel-tracks | git log（不看对方聊天记录） | 各自文件边界内 | ✅ 见 F5 |
+
+### 12.3 新旧对比
+
+| 指标 | 旧结构 | 新结构 |
+|------|--------|--------|
+| 最长引用链 | 5 跳（CLAUDE→SPEC_DRIVEN→AGENTS→HANDBOOK→DIAGNOSTICS→AI_CHAT_RUNTIME） | 2 跳 |
+| bug 修复单次阅读量 | 3 文档 / 潜在 1687 行（INVARIANTS 734 + DIAGNOSTICS 787 + REGISTRY 166） | 3 处定点读 / <400 行 |
+| 路由入口 | 3 处重叠（CLAUDE.md / HANDBOOK / AGENTS.md） | 1 处（CLAUDE.md 路由表） |
+| 活跃文档数 | 17 活跃 + 65 archive | ~16 yaml + 2 constraints + 6 domain + 4 guides + 2 ledger + STACK.md；archive → history.md |
+| 工作流定义 | 隐式（靠 git log 考古） | 显式 yaml + 自进化机制 |
+
+### 12.4 走查发现的适配点（反馈进设计）
+
+- **F1（结构修正）**：INDEX.md 并入 CLAUDE.md 路由表——否则全员 3 跳且
+  路由仍两处重叠。§4.2 删 INDEX.md；§4.5「INDEX 唯一路由」改为
+  「CLAUDE.md 内联路由表」。
+- **F2（管线依赖）**：check-versions / check-handbook-sync /
+  check-desc-freshness 深度耦合 HANDBOOK（版本表、last_reviewed、§2/§3）。
+  新结构里版本表入 ledger/history.md、当前态入 STACK.md——三脚本随 §五
+  重写，列入切换提交的验收条件。
+- **F3（成本承认）**：state-sync 从写一处（HANDBOOK §2/§3）变写两处
+  （history.md + STACK.md）——每次改代码多写一行，换职责单一。接受。
+- **F4（遗留确认）**：system prompt 注入（src/server/prompts/base.md 硬编码
+  INVARIANTS 路径）必须改指 constraints/——§七未解决问题 1 走查后确认
+  仍是迁移必要项；按 D2 不预设行数上限，按新文档实际体积评估。
+- **F5（机制限度）**：parallel-tracks 的触发无机械信号（靠人判断），
+  自进化机制管不了它——接受；yaml 的 cost_warning 就是设计意图本身。
+  唤醒条件③随之完成（第 16 工作流入清单）。
+
+### 12.5 走查结论
+
+16 工作流在新结构的 reads/writes 全部有物理路径，无悬空。现存活跃文档
+各有归宿（示例：VISION_AND_ROADMAP → active/vision.md，工作流 3；
+TOOL_IO_COMPACTION → domains/ai-chat/ detail，工作流 4/12；V8_ARCHITECTURE
+按 §11.1 归宿拆分；完整映射表随迁移阶段 2 产出）。
+唤醒条件②③完成。下一步：唤醒条件④用户确认 → newdoc/ 骨架（§11.4）。
