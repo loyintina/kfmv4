@@ -1090,3 +1090,28 @@ STACK/vision 更新。trap 16（与心法 14 重复）已删未迁；trap 12 留
 - §6.2/§6.3 视觉约束 → floating-card/contract.md 硬规则 #4/#6/#7 逐字覆盖（B 类回家因此为空）。
 - §4.6 双模式 → 已实装于 src/client/modules/renderers/handler-factory.ts（preview/edit）。
 - §3.1 全局输入栏、§5.5 AI 指针 → 全代码库无对应实现，按未实装远景保留。
+
+---
+
+## §二十二 逐份过 5/19：CLAUDE.md（126 行 → newdoc/CLAUDE.md 定稿）
+
+执行日期：2026-07-28。判定书用户批准（「后续能进新的」）。旧 CLAUDE.md 不动，切换提交时由 newdoc/CLAUDE.md 替换。
+
+### 归宿执行
+
+- `newdoc/CLAUDE.md` 定稿（约 60 行）：git 安全网诫命置顶 + 会话启动 3 步 + 工作流路由表（增补「理解项目方向 → active/vision.md」行）+ 构建命令速查（七 scripts + 没有快捷方式 + 双终端日常 + push 认证注/从不主动 push）。
+- `newdoc/domains/client-shell/contract.md`：+ 陷阱 10（侧栏触摸区事件冒泡 → GestureRegistry 误触发）——全份唯一未覆盖信息。
+
+### 当场删除（判定书已批）
+
+1. 阅读指引块 11 条指针（新路由表 + 路由头接管）。
+2. 技术栈块（易腐概览；SCSS/GSAP 硬规则已有家）。
+3. 文档体系树 + 推荐阅读顺序（旧结构导览）。
+4. 完整性校验块（与命令速查重复，合并）。
+5. 卡片三层结构块（floating-card 架构节已覆盖实质）。
+6. 注意事项已覆盖 5 条（Canvas 初始化/PointerEvent/touch-action/数据目录/注释约定）。
+7. 尾部历史清理注（时点快照）。
+
+### 留待核对
+
+- adr 编号矛盾：旧 CLAUDE.md L110 指 adr-001（orb-floating-card-independent），floating-card contract 硬规则 1 指 adr-002——decisions 迁移轮核对。
