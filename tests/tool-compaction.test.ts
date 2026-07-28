@@ -77,20 +77,23 @@ test('read：截断标记透传（>100KB 截断/采样，AI 需知道自己没�
   assert(out2?.includes('采样读取未看全'), `采样标记丢失: ${out2}`);
 });
 
-test('write：[write {path} {lines}行]（行数取入参 content）', () => {
+test('write：指纹对 {n}行/{c}字符已写入（与 read 同词汇，跨工具指纹链）', () => {
   const input = { path: '/src/a.ts', content: lines(17) };
   const out = compactToolResult('write', input, chars(400), false);
-  assert(out === '[write /src/a.ts 17行]', `得 ${out}`);
+  assert(out === `[write /src/a.ts → 17行/${lines(17).length}字符已写入]`, `得 ${out}`);
 });
 
-test('edit：[edit {path} 第{a}-{b}行]（行号取 input.lineStart/lineEnd）', () => {
-  const out = compactToolResult('edit', { path: '/src/a.ts', lineStart: 10, lineEnd: 25 }, chars(400), false);
-  assert(out === '[edit /src/a.ts 第10-25行]', `得 ${out}`);
+test('edit：diff-stat -{old}/+{new}行（真实 schema：input.old/input.new，无 lineStart）', () => {
+  const input = { path: '/src/a.ts', old: lines(3), new: lines(5) };
+  const out = compactToolResult('edit', input, chars(400), false);
+  assert(out === '[edit /src/a.ts → -3/+5行]', `得 ${out}`);
 });
 
-test('edit：无行号入参时省略行范围', () => {
-  const out = compactToolResult('edit', { path: '/src/a.ts', old: 'x', new: 'y' }, chars(400), false);
-  assert(out === '[edit /src/a.ts]', `得 ${out}`);
+test('edit diff-stat 形状语义：纯新增 -0/+12 / 纯删除 -15/+0', () => {
+  const add = compactToolResult('edit', { path: '/a', old: '', new: lines(12) }, chars(400), false);
+  assert(add === '[edit /a → -0/+12行]', `得 ${add}`);
+  const del = compactToolResult('edit', { path: '/a', old: lines(15), new: '' }, chars(400), false);
+  assert(del === '[edit /a → -15/+0行]', `得 ${del}`);
 });
 
 test('grep：截断时透传「未看全」→ {count}+处匹配（结果被截断），标记行不计入', () => {
@@ -214,27 +217,37 @@ test('豁免型工具（kfm-snapshot 等）输出 ≤300 时 G2 自然豁免', (
 
 group('tool-compaction — compactToolInput');
 
-test('write 大入参 → {path, _compacted: {lines}行内容已折叠}', () => {
+test('write 大入参 → 指纹对 {n}行/{c}字符内容已折叠', () => {
   const input = { path: '/src/a.ts', content: lines(120) };
   const out = compactToolInput('write', input);
   assert(out !== null, '大入参应压');
   assert(out.path === '/src/a.ts', 'path 原样保留');
-  assert(out._compacted === '120行内容已折叠', `得 ${out._compacted}`);
+  assert(out._compacted === `120行/${lines(120).length}字符内容已折叠`, `得 ${out._compacted}`);
   assert(!('content' in out), '文件全文必须被折叠掉');
 });
 
-test('edit 大入参（带行号）→ 第{a}-{b}行编辑已折叠', () => {
-  const input = { path: '/src/a.ts', old: chars(200), new: chars(200), lineStart: 3, lineEnd: 9 };
+test('edit 大入参 → diff-stat（真实 schema：old/new）', () => {
+  const input = { path: '/src/a.ts', old: lines(3) + chars(150), new: lines(9) + chars(150) };
   const out = compactToolInput('edit', input);
-  assert(out !== null && out._compacted === '第3-9行编辑已折叠', `得 ${JSON.stringify(out)}`);
+  assert(out !== null && out._compacted === '编辑已折叠: -3/+9行', `得 ${JSON.stringify(out)}`);
   assert(out.path === '/src/a.ts');
   assert(!('old' in out) && !('new' in out), 'old/new 全文必须被折叠掉');
 });
 
-test('edit 大入参（无行号）→ 省略行号', () => {
-  const input = { path: '/src/a.ts', old: chars(200), new: chars(200) };
-  const out = compactToolInput('edit', input);
-  assert(out !== null && out._compacted === '编辑已折叠', `得 ${JSON.stringify(out)}`);
+test('write/edit 修改次数标注（ctx.mutOrdinal，≥2 才标注）', () => {
+  const input = { path: '/src/a.ts', content: lines(120) };
+  const first = compactToolInput('write', input, false, { mutOrdinal: 1 });
+  assert(!first?._compacted?.includes('次修改'), '第 1 次不标注');
+  const fourth = compactToolInput('write', input, false, { mutOrdinal: 4 });
+  assert(fourth?._compacted?.includes('（本文件第4次修改）'), `得 ${fourth?._compacted}`);
+});
+
+test('失败调用入参 ≤500 字符豁免（失败 edit 的 old/new 是诊断对象，镜像 G3）', () => {
+  const input = { path: '/a.ts', old: lines(10) + chars(150), new: lines(10) + chars(150) };
+  const len = JSON.stringify(input).length;
+  assert(len > 300 && len <= 500, `夹具长度 ${len} 应在 (300,500]`);
+  assert(compactToolInput('edit', input, true) === null, '失败且 ≤500 应豁免');
+  assert(compactToolInput('edit', input, false) !== null, '成功同尺寸仍压');
 });
 
 test('小入参（JSON ≤300 字符）一律豁免', () => {

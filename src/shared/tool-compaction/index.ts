@@ -60,10 +60,6 @@ function str(v: unknown): string {
   return typeof v === 'string' ? v : '';
 }
 
-function num(v: unknown): number | null {
-  return typeof v === 'number' && Number.isFinite(v) ? v : null;
-}
-
 // ========== 跨调用标注（契约第九节）==========
 
 /**
@@ -78,6 +74,8 @@ export interface CompactionCtx {
   bashRetry?: { ordinal: number; failStreak: number; prevFailStreak: number };
   /** bash 环境故障：连续 n 次失败且最近 3 次为不同归一化命令（≥3 才标注） */
   bashEnvStreak?: number;
+  /** write/edit：本文件第 N 次成功修改（write+edit 合并计数，锚定真相源，见 compactToolInput 头注） */
+  mutOrdinal?: number;
 }
 
 /**
@@ -171,13 +169,17 @@ export function compactToolResult(
     case 'write': {
       const content = str(input.content);
       const n = content ? content.split('\n').length : 0;
-      return `[write ${str(input.path)} ${n}行]`;
+      // 指纹对与 read 同词汇：write 时指纹 ≠ 后来 read 时指纹 = 写后被修改（跨工具指纹链）
+      return `[write ${str(input.path)} → ${n}行/${content.length}字符已写入]`;
     }
     case 'edit': {
-      const a = num(input.lineStart);
-      const b = num(input.lineEnd);
-      const range = a !== null && b !== null ? ` 第${a}-${b}行` : '';
-      return `[edit ${str(input.path)}${range}]`;
+      // 真实 schema（omp/edit.ts）：input.old / input.new，无 lineStart/lineEnd——
+      // 初版按假设的 lineStart/lineEnd 取行号，真实数据下静默退化为 [edit {path}]。
+      // 教训（契约第九节）：测试样例必须照真实会话数据构造，假设错则测试跟着错。
+      // diff-stat 形状自带故事：-0/+12=纯新增，-15/+0=纯删除，-30/+3=大幅简化（心法 18）。
+      const oldLines = str(input.old) ? str(input.old).split('\n').length : 0;
+      const newLines = str(input.new) ? str(input.new).split('\n').length : 0;
+      return `[edit ${str(input.path)} → -${oldLines}/+${newLines}行]`;
     }
     case 'grep': {
       // grep 输出每行一处匹配（path:line: text），末尾可能带「(结果被截断)」标记行
@@ -213,23 +215,30 @@ export function compactToolResult(
  * 返回 null = 保留原 input；返回对象 = 压缩后的 arguments。
  * 只压 write（文件全文）与 edit（old/new 全文）——其余工具入参保留原文。
  * 小入参（JSON ≤300 字符）一律不压（与 G2 同理：占位本身也占 token）。
+ * 失败调用入参 ≤500 字符不压（与 G3 同理：失败 edit 的 old/new 正是诊断对象）。
+ * ctx.mutOrdinal：本文件第 N 次成功修改（write+edit 合并计数，锚定真相源——
+ * 从全量会话文件预扫描，与投影窗口无关，未来上下文压缩不影响计数）。
  */
 export function compactToolInput(
   name: string,
   input: Record<string, unknown>,
+  isError = false,
+  ctx?: CompactionCtx,
 ): Record<string, unknown> | null {
-  if (JSON.stringify(input).length <= 300) return null;
+  const jsonLen = JSON.stringify(input).length;
+  if (jsonLen <= 300) return null;
+  if (isError && jsonLen <= 500) return null;
+  const mut = !isError && (ctx?.mutOrdinal ?? 0) >= 2 ? `（本文件第${ctx?.mutOrdinal}次修改）` : '';
   switch (name) {
     case 'write': {
       const content = str(input.content);
       const n = content ? content.split('\n').length : 0;
-      return { path: input.path, _compacted: `${n}行内容已折叠` };
+      return { path: input.path, _compacted: `${n}行/${content.length}字符内容已折叠${mut}` };
     }
     case 'edit': {
-      const a = num(input.lineStart);
-      const b = num(input.lineEnd);
-      const note = a !== null && b !== null ? `第${a}-${b}行编辑已折叠` : '编辑已折叠';
-      return { path: input.path, _compacted: note };
+      const oldLines = str(input.old) ? str(input.old).split('\n').length : 0;
+      const newLines = str(input.new) ? str(input.new).split('\n').length : 0;
+      return { path: input.path, _compacted: `编辑已折叠: -${oldLines}/+${newLines}行${mut}` };
     }
     default:
       return null;

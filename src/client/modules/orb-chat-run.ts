@@ -477,6 +477,7 @@ export async function doSend(
     {
       const readFpsByPath = new Map<string, string[]>();
       const bashRunsByCmd = new Map<string, boolean[]>(); // 归一化命令 → isError 序列
+      const mutCountByPath = new Map<string, number>(); // 路径 → 成功修改次数（write+edit）
       let bashFailCmds: string[] = []; // 当前连续失败的归一化命令序列（环境故障判定用）
       for (const m of messages) {
         if (m?.role !== 'ai') continue;
@@ -512,6 +513,14 @@ export async function doSend(
             });
             runs.push(isError);
             bashRunsByCmd.set(norm, runs);
+          } else if (b.name === 'write' || b.name === 'edit') {
+            // 修改轨迹（锚定真相源：从全量会话文件计数，与投影窗口无关）。
+            // 只有成功调用才算「修改」——失败的 edit 什么都没改。
+            const path = typeof b.input.path === 'string' ? b.input.path : '';
+            const prev = mutCountByPath.get(path) || 0;
+            const ordinal = prev + 1;
+            compactCtxById.set(b.id, b.result.isError ? {} : { mutOrdinal: ordinal });
+            if (!b.result.isError) mutCountByPath.set(path, ordinal);
           }
         }
       }
@@ -534,7 +543,7 @@ export async function doSend(
           const toolCalls = toolBlocks.map(tc => {
             let args = JSON.stringify(tc.input);
             if (compactable) {
-              const compacted = compactToolInput(tc.name, tc.input);
+              const compacted = compactToolInput(tc.name, tc.input, !!tc.result?.isError, compactCtxById.get(tc.id));
               if (compacted) {
                 const compactedArgs = JSON.stringify(compacted);
                 compactSaved += args.length - compactedArgs.length;
