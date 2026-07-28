@@ -1030,3 +1030,32 @@ STACK/vision 更新。trap 16（与心法 14 重复）已删未迁；trap 12 留
   指令密度改写 + <150 行 + 溢出进 detail + 注入层瘦身。
 - **分界线**：筛选删「不该存在的信息」；压缩炼「该存在但形态待炼的信息」。
   同家近重叠（如 ai-chat 1.12 速查 vs 1.14 八条）迁移期**故意不合并**，留压缩轮。
+
+---
+
+## §二十 逐份过 3/19：KFM_V4_INVARIANTS.md（734 行 → constraints 整本 + 按域回家）
+
+执行日期：2026-07-28。迁移方式：marker 切分脚本一次产出，人工抽查衔接处并修正两处列表归位。
+
+### 归宿执行
+
+- `newdoc/constraints/invariants.md`（494 行）：头部 + §〇 + §一 + §二（31 条心法全文）+ §三 + §五仅「硬编码常量」条 + §六 + 版本说明。§一 展开论述指针改指 detail-invariants.md。路由头已加。
+- `newdoc/constraints/detail-invariants.md`（34 行）：宪法第一~三条展开论述 + v8 有意推迟清单（自 V8_ARCHITECTURE §一，原文未删节，§11.1 既定）。
+- `newdoc/guides/spec-driven.md`（72 行）：§七 SOP 整节。spec-driven.yaml 的 reads 已改指。
+- `newdoc/guides/doc-maintenance.md`（44 行）：§九注释规约 + 「AGENTS.md 维护规则待迁」注。pre-code-gate.yaml 已改指。
+
+### 按域回家
+
+- canvas-tree/contract.md：+「架构规则」节（4.1 动画安全 / 4.2 Box 侧类型安全 / 4.5 侧栏层级 / 4.6 变体面板）+ 陷阱 8（overlay overflow）。
+- client-shell/contract.md：+「GSAP 动画治理」节（4.4）+ 陷阱 9（拖拽 if 守卫）。
+- infra/contract.md：+ 硬规则 4（as-any，4.2 通用侧）。
+
+### 当场删除（判定书已批）
+
+1. §四 4.3 依赖方向——与 client-shell contract 重复。
+2. §四 4.7 注册中心与优先级调度——与 client-shell contract 重复。
+3. §五 ❌ stealth patches——与 ai-chat/detail-browser.md 踩坑 1 逐字重复。
+4. §五 ❌ TS 参数属性——与 ai-chat/detail-browser.md 踩坑 2 逐字重复。
+5. §八 关键文件职责——概览类 + 行数易腐 + 与各域文件清单重复。
+
+§五留存处加迁移注标明三条去向。脚本产物两处追加错位（陷阱条目落到文件清单节后）已人工归位。

@@ -9,7 +9,7 @@ steps:
   1. 定位改动所属域（client-shell/canvas-tree/floating-card/ai-chat/server/infra）
   2. 读该域 contract.md 全文（<150 行）
   3. 读 invariants.md §六 自查清单，逐条过
-  4. 涉及注释时读 invariants.md §九 设计注释规约
+  4. 涉及注释时读 guides/doc-maintenance.md 注释规约
 writes: []
 exit_condition: 能说出该域契约与相关陷阱，再动手
 natural_next: 改动完成 → state-sync

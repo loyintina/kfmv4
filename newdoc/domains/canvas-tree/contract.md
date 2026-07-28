@@ -20,6 +20,36 @@
 - 视觉效果：`char-rain.ts`（字符散落/回收）
 - 引擎层：14 文件自包含子系统 → **detail-engine.md**
 
+## 架构规则（自 INVARIANTS §四迁入，2026-07-28）
+
+### 动画安全（4.1）
+▎ 动画开始前相关状态应处于初始态（tree-render: _activeOverlays === []）
+▎ 动画结束后相关状态应回到初始态
+▎ rebuildTree() 被调用时 L.isAnimating 应为 false
+    例外：超过 3000ms 超时兜底，允许强制释放
+▎ 每轮动画结束时必须调用 _resetAnimTimeline()
+    ts.clear() + ts.time(0) + ts.reversed(false)
+
+### 类型安全 Box 侧（4.2 拆分）
+- Box.data 必须通过 getFileRowData() 访问，禁止 (box as any).data.xxx（白名单已清空）。
+- Overlay 元数据用 (as Box & OverlayMeta) 访问，禁止 (as any)._xxx。
+- 所有 _ 前缀属性只在模块内访问，跨模块读写走显式接口。
+
+### 侧栏空间层级（4.5）
+▎ 侧栏（.sidebar）是文件树的操作空间，所有文件树相关的 UI 元素必须在此空间内
+▎ 弹出面板/选择器必须贴左栏对齐，不能脱离侧栏层级去做全局居中
+▎ 浏览态侧栏交互禁止使用遮罩或背景变暗
+▎ 操作态侧栏交互（如长按抽屉栏）允许全屏遮罩作为功能守卫
+▎ 左栏的视觉语言：毛玻璃暗色底 + 紫色/青色边框 + 绿底光标
+
+### 文件树变体面板（4.6）
+▎ 当需要加一个"文件树的变体"（如只显示目录、只显示某类型）
+   — 不创建新的手势/渲染/交互管线
+   — 通过 L.pushContext() 原子化切换到变体上下文
+▎ 流程：L.pushContext() → 构建变体 Box 树 → L.popContext() 恢复
+▎ 适合场景：侧栏根目录选择器、右栏卡片堆内的文件子集面板
+▎ 不适合场景：完全不同的交互模型（如拖拽排序）
+
 ## #陷阱
 
 1. **`buildTree` 数据源**：内部读 `KFMState.files`，修改后必须恢复。
@@ -32,6 +62,8 @@
 7. **Canvas 尺寸数据源必须随渲染器上下文**：优先 `L.renderer?.canvas ?? DOM.treeCanvas`；
    硬编码 `DOM.treeCanvas` 意味着代码只在主树上下文正确。案例：B.A.R. #007
    （6 处硬编码修复，光标偏移/越界）。
+8. **禁止给 overlay 加 `overflow` 补丁**：字符雨被裁剪的根解是建在独立 charLayer 上，
+   不是给 overlay 加 overflow: visible（INVARIANTS §五补丁模式迁入）。
 
 ## 文件清单
 

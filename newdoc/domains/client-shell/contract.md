@@ -46,6 +46,14 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
         → initTreeRenderer() → loadFileTree() → initLazyLoader() → initCardStack()
 ```
 
+## GSAP 动画治理（自 INVARIANTS §四.4，2026-07-28）
+
+▎ 所有 GSAP 调用必须通过 animation-registry.ts
+▎ 禁止直接 import gsap（构建时 check-anim.mjs 扫描白名单）
+▎ tree-render 内的动画加到 ts = anim.scope('tree-render')
+▎ char-rain 使用独立 timeline（anim.timeline()），ts.clear() 不影响
+▎ card-stack / orb 的 GSAP 调用走 anim 工具方法
+
 ## #陷阱
 
 1. **CSS 布局方程**：`.sidebar-content` + `.sidebar-tools` = 100dvh，禁止改用 flex。
@@ -68,6 +76,8 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 8. **KFMState 批量修改必须合并一次 notify**：`setExpanded()` 每次调用都 notify 且受
    `L.isAnimating` 守卫；连续调用第二次可能被丢弃 → 幽灵 toggle + 动画断裂。
    批量修改用 `L.beginOp`/`L.endOp` 包裹，或确保空闲时执行。案例：2026-05-29 三连 setExpanded。
+9. **拖拽残留状态禁止 if 守卫绕过**：`_dragItem` 残留的根解是拖拽生命周期由事件系统
+   保证，不是在 `_startFloatingDrag` 开头加 `if (_dragItem)` 清场（INVARIANTS §五迁入）。
 
 ## 文件清单
 
@@ -77,3 +87,4 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 - orb 骨架：`orb.ts`（协调层）`orb-panel.ts` `orb-state.ts` `gestures.ts` `debug-assert.ts`
 - 通用组件：`custom-select.ts` `confirm-dialog.ts` `card-toast.ts`
 - 日志：`logger.ts`（debug-card 伴侣）
+

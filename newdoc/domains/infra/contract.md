@@ -22,6 +22,9 @@ test-patterns → superseded-coverage → tsc。
 2. **新增工具/卡片/模块必须过对应双向核对 check**（tool-compaction/cards/registry），
    不登记 = 构建中断。
 3. **新增服务端依赖同步 build.mjs external 列表**。
+4. **禁止 (as any)**（自 INVARIANTS §四.2）：新建代码零逃逸，check-as-any 扫描，
+   新增逃逸构建中断；确因类型定义缺失必须 ① check-as-any WHITELIST 登记（注释原因）
+   ② 代码行加 `// P2:` 备注根因。
 
 ## #陷阱
 
