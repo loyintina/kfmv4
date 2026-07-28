@@ -1225,3 +1225,9 @@ V8_AUDIT_REPORT §四.2「tool_result 状态/渲染两处分散」与 §四.3「
 ## §三十一 逐份过 14/19：CARD_DEV_GUIDE.md（715 行 → guides/card-dev.md，706 行）
 
 执行日期：2026-07-28。判定书用户批准。§1-§12 全保真；整理 2 处（§10 视觉规范按目录归位至 §9/§11 之间、目录补全 §11/§12 且锚点链接简化为纯文本列表）；删除 3 处（§12.2 隐式契约表=12.1 压缩复述、§10.1 示例尾部游离两行=10.2 复制碎屑、版本脚注）；原 §12.3 重编号 12.2 消除缺号。card-dev.yaml reads 就此咬合。
+
+---
+
+## §三十二 逐份过 15/19：SPEC_DRIVEN_WORKFLOW.md（126 行 → guides/spec-driven.md 第二章）
+
+执行日期：2026-07-29。判定书用户批准。合并为双章结构：第一章=七步 SOP（原有），第二章=四环节元工作流（§1 何时用/§2 四环节/§3 收尾清单全保真）。指针改指 3 组：关联文档（AGENTS→doc-maintenance、RUNTIME→detail-runtime、REGRESSION 留旧路径注 archive 轮）、§2③ 沉淀去向表五行换新载体、§2④ 归档动作改指 doc-maintenance 生命周期节（判据本身保留）。留压缩轮：§2④ 判据 vs doc-maintenance 生命周期节近重叠。frontmatter 删。
