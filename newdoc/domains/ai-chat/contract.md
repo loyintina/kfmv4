@@ -75,4 +75,4 @@
 `session-client.ts` `ws-channel.ts` + `src/shared/chat-protocol/`（5 文件）
 服务端：`ai/chat.ts` `ai/run-manager.ts` `ai/routes.ts` `ai/session-store.ts`
 `ai/page-state.ts` `ai/prompt-assembler.ts` `ai/rule-engine.ts` `ai/tools/` `prompts/`
-细节：AI_CHAT_RUNTIME（迁移中）· detail-tool-compaction（迁移中）· detail-browser.md
+细节：detail-runtime.md · detail-tool-compaction.md · detail-browser.md

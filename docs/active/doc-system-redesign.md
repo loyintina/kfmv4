@@ -1195,3 +1195,9 @@ V8_AUDIT_REPORT §四.2「tool_result 状态/渲染两处分散」与 §四.3「
 ### 重叠说明（留压缩轮）
 
 §4 七条中五条（4.1/4.2+4.3/4.4/4.5/4.6+4.7）与 contract 陷阱 1/2/4/5/6 为展开-压缩关系，按两阶段规则不合并，detail 路由注已标明「改代码以 contract 为准」。
+
+---
+
+## §二十八 逐份过 11/19：TOOL_IO_COMPACTION.md（369 行 → ai-chat/detail-tool-compaction.md）
+
+执行日期：2026-07-28。判定书用户批准。整份平移（§一~§九含逐工具细化记录全部保真）；仅 2 处删除：头部「与 AI_CHAT_RUNTIME.md 同级」旧指针（路由头替代）、§九「待填」死注（全部已定稿）。contract.md 文件清单「细节」行结算为三份 detail 实名。遗留：`src/server/ai/tools/index.ts:9` 注释引用旧路径，切换提交时全局路径重写处理。
