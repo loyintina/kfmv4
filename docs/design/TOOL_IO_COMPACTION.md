@@ -57,10 +57,10 @@ TTFB 5-8s、缓存读取费用、注意力稀释（"lost in the middle"）三连
 | grep | `[grep {pattern}{ @ path}{（忽略大小写）} → {count}处匹配，可重跑]`；截断时 `{count}+处匹配（结果被截断）` | pattern + 非默认语义参数 | 「未看全」透传：截断时 count 不全，必须显式标注；参数标注规则见第九节 |
 | glob | `[glob {pattern}{ @ path}{（含隐藏）} → {count}个文件]`；截断时 `{count}+个文件（结果被截断）` | pattern + 非默认语义参数 | BAR-COMPACT-03 起工具侧带 `(结果被截断)` 标记行，压缩层透传 |
 | todo | 最新不压（G4）；旧的 `[todo 更新{n}项]`；最后一条结果追加投影标注（dismiss/烂尾） | 项数 + 用户信号 | 实测结果全部 ≤188 字符，G2 已天然豁免；入参刻意不压（计划本体，见第九节） |
-| web_search | `[web_search {query(≤50)} → 结果已折叠]` | query | 结果不可重取但可重搜 |
-| debug | `[debug {action} → 已折叠]` | action | 输出大但价值密度低 |
-| eval / browser_eval | `[eval {expr(≤40)} → 已折叠]` | 表达式前缀 | |
-| browser | `[browser {action}]` | action | |
+| web_search | `[web_search {query(≤50)} → {n}条：{标题;连接}，正文已折叠，可重搜{（结果与上方搜索相同）}]`；无标题行兜底 `→ 结果已折叠，可重搜` | query + 标题清单 | 留判决（来源清单）不留证据（snippet 正文）；重复搜索标注见第九节 |
+| debug | `[debug {action} → 已折叠]` | action | 实测输出 med 48 字符天然豁免；>300 全是 action 可描述的 state dump |
+| eval / browser_eval | 结果 `[eval {首行描述(≤40)} → 已折叠]`；入参 `{_compacted: "代码已折叠: {首行描述}"}`（language 透传） | 首行描述 | 入参代码才是载荷（实测 med 323 字符）；描述符两端同词汇 |
+| browser | `[browser {action}]` | action | 实测仅 2 次调用皆失败，数据不足仅记录 |
 | kfm-logs | `[kfm-logs → 输出{n}字符已折叠]`（G7 兜底） | — | 日志可重取、跨轮引用价值低，全压 |
 | kfm-snapshot / kfm-exec / kfm-restart / checkpoint / rewind / git / cat | 通常 ≤300 字符 → G2 豁免 | — | **不压**。后来者不得画蛇添足加压缩器 |
 
@@ -283,6 +283,36 @@ bash 是复用通道（build/test/git 复用一个工具名），不相干失败
     同样是宁漏勿错）。
 - **观察（未建）**：todo 的 status 无枚举校验，数据出现过一次 `thinking`
   静默降级渲染为 `[ ]`（1/31，边界测试会话，无害）。要堵就是工具加校验的事。
+
+### web_search / eval / browser_eval / debug / browser（2026-07-28 定稿，实测依据：web 13 / browser_eval 26 / eval 5 / debug 68 / browser 2 次）
+
+- **分组框架（用户提出）**：主动命令（debug/eval）价值在「效果」，信息收集
+  （web/browser）价值在「内容」——压缩策略分开想。结论：主动命令组天然
+  完整（debug 输出 med 48、eval max 145 字符，G2 豁免原文直通），信息收集
+  组各有一个缺口。
+- **web_search 保留标题清单（A）**：旧压缩行 `→ 结果已折叠` 连判决一起烧
+  （来源清单彻底消失，无法复查覆盖度）。实测标题行仅占输出 12-23%——
+  **标题清单=判决，snippet=证据**。新行保留标题：每条截 30、`；`连接、
+  总截 120（G6 确定性截断，规则必须写死）。
+- **eval/browser_eval 入参折叠（B）**：载荷在入参代码（med 323 字符、
+  17/31 >300、最大 1327），结果天然小。代码是一次性探针，价值在结果。
+  描述符 `codeDescriptor()`：首个非空行去注释符截 40——实测 13/31 首行
+  是意图注释，其余首行代码（DOM 查询）也有描述性，100% 有值。**结果行
+  与入参行共用此描述符**（同词汇原则）；两端独立触发各自自包含（实测
+  结果 >300 ⟺ 入参 >300，相邻 40 字符冗余换自包含，值）。eval 的
+  `language` 透传。**可重跑性差异记录在案不分裂机制**：eval 沙盒可重跑、
+  browser_eval 依赖页面状态不可——折叠 eval 的损失=重写成本，实测全是
+  测试小脚本可接受。
+- **重复搜索标注（D）`（结果与上方搜索相同）`**：实测 13 次 web_search
+  中 5 次卷入重复对（38% 重复率）——换措辞再搜是 agent 搜索循环的典型
+  死法。指纹=**标题键精确全等**（比 read 的「行数/字符数」更强，假阳性
+  ≈0）。**空键守卫**：失败/异常结果无标题行，空键不参与比对不入历史——
+  两个失败搜索的空键会互相误判「相同」（自我反驳阶段抓到的 bug 胚子）。
+  措辞只陈述事实，不加「别再搜了」指令性解读。
+- **debug/browser 无动作（C，数据支持）**：debug >300 的 7 次输出全是
+  action 名即可充分描述的 state dump（renderer_snapshot/gesture_trace/
+  custom_request/evaluate），11 次错误（16%）被 G3 完整保护；browser 仅
+  2 次调用皆失败，数据不足仅记录。
 
 ### 标注层公理 4：统计量锚定真相源
 

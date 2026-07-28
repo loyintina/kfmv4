@@ -63,6 +63,32 @@ function str(v: unknown): string {
 // ========== 跨调用标注（契约第九节）==========
 
 /**
+ * eval/browser_eval 代码描述符（结果行与入参折叠行共用，同词汇原则）：
+ * 取首个非空行、去注释符（// # /* *）、trim、截 40——实测 13/31 首行是意图
+ * 注释，其余首行代码本身有描述性（DOM 查询），100% 有值。
+ */
+function codeDescriptor(code: string): string {
+  const first = (code.split('\n').find(l => l.trim()) || '').replace(/^\s*(?:\/\/+|#+|\/\*+|\*+)\s*/, '').trim();
+  return trunc(first || code.trim(), 40);
+}
+
+/**
+ * web_search 标题键（去重指纹，契约第九节）：提取 `N. 标题` 行原样 join。
+ * 精确全等才判同（宁漏勿错，假阳性≈0）；**空键不参与比对**——失败/异常
+ * 结果没有标题行，两个空键会互相误判「相同」。
+ */
+export function webTitleKey(resultText: string): string {
+  return resultText.split('\n').filter(l => /^\d+\. /.test(l)).join('\n');
+}
+
+/** web_search 标题段展示版：每条截 30、`；` 连接、总截 120（G6 确定性截断） */
+function webTitlesDisplay(resultText: string): string {
+  const titles = webTitleKey(resultText).split('\n').filter(Boolean)
+    .map(l => trunc(l.replace(/^\d+\.\s*/, ''), 30));
+  return trunc(titles.join('；'), 120);
+}
+
+/**
  * 跨调用标注上下文——由调用层（orb-chat-run.ts）预扫描产出，压缩器保持纯函数。
  * 公理（契约第九节「标注层」）：宁漏勿错 / 决策相关性检验 / 只向后看
  * （旧压缩行永不因后续消息改变，prompt 缓存前缀稳定）。
@@ -81,6 +107,8 @@ export interface CompactionCtx {
   /** edit：该次替换涉及的行号区间（读 result.details.lineStart/lineEnd，编辑当时位置，
    *  后续编辑会使行号漂移——仅作当次定位，不代表当前文件状态）。 */
   editRange?: { start: number; end: number };
+  /** web_search：此前各次搜索的标题键（webTitleKey，空键不入），用于重复搜索标注 */
+  webPrevTitles?: string[];
 }
 
 /** mutBurst 判定阈值：相邻两次成功修改相距超过这么多轮 AI 消息即视为新一轮爆发（可调常量）。 */
@@ -232,13 +260,24 @@ export function compactToolResult(
       const n = Array.isArray(input.todos) ? input.todos.length : 0;
       return `[todo 更新${n}项]`;
     }
-    case 'web_search':
-      return `[web_search ${trunc(str(input.query), 50)} → 结果已折叠]`;
+    case 'web_search': {
+      // 留判决不留证据：标题清单=「找到了什么来源」（占输出仅 12-23%），
+      // snippet 正文=证据，折叠可重搜（可寻址的丢失）。
+      // 重复搜索标注（ctx）：标题键精确全等才判同（换措辞同结果=搜索空间饱和，
+      // 打断搜索循环）；空键不参与（失败结果无标题行，两空键会误判）。
+      const key = webTitleKey(resultText);
+      const dup = key && (ctx?.webPrevTitles || []).includes(key) ? '（结果与上方搜索相同）' : '';
+      const titles = webTitlesDisplay(resultText);
+      const n = key ? key.split('\n').length : 0;
+      if (!titles) return `[web_search ${trunc(str(input.query), 50)} → 结果已折叠，可重搜]${dup}`;
+      return `[web_search ${trunc(str(input.query), 50)} → ${n}条：${titles}，正文已折叠，可重搜]${dup}`;
+    }
     case 'debug':
       return `[debug ${str(input.action)} → 已折叠]`;
     case 'eval':
     case 'browser_eval':
-      return `[eval ${trunc(str(input.code) || str(input.expression), 40)} → 已折叠]`;
+      // codeDescriptor 与入参折叠行同词汇（首行清理版，非 raw 前 40 字符）
+      return `[eval ${codeDescriptor(str(input.code) || str(input.expression))} → 已折叠]`;
     case 'browser':
       return `[browser ${str(input.action)}]`;
     default:
@@ -251,7 +290,8 @@ export function compactToolResult(
 /**
  * 压缩大入参（发给 API 的 tool_calls.arguments）。
  * 返回 null = 保留原 input；返回对象 = 压缩后的 arguments。
- * 只压 write（文件全文）与 edit（old/new 全文）——其余工具入参保留原文。
+ * 压 write（文件全文）、edit（old/new 全文）、eval/browser_eval（代码）——
+ * 其余工具入参保留原文。
  * 小入参（JSON ≤300 字符）一律不压（与 G2 同理：占位本身也占 token）。
  * 失败调用入参 ≤500 字符不压（与 G3 同理：失败 edit 的 old/new 正是诊断对象）。
  * ctx.mutBurst：修改爆发状态（write+edit 合并计数，锚定真相源——从全量会话文件
@@ -283,6 +323,18 @@ export function compactToolInput(
       const newLines = str(input.new) ? str(input.new).split('\n').length : 0;
       const range = ctx?.editRange ? `第${ctx.editRange.start}-${ctx.editRange.end}行 ` : '';
       return { path: input.path, _compacted: `编辑已折叠: ${range}-${oldLines}/+${newLines}行${mut}` };
+    }
+    case 'eval':
+    case 'browser_eval': {
+      // 入参代码是载荷（实测 med 323 字符，17/31 >300，最大 1327）：一次性
+      // 探针/计算，价值在结果不在代码。折叠留首行描述（注释优先、代码行兜底）。
+      // eval 的 language 透传（js/py 语义不同）；browser_eval 无此字段。
+      const code = str(input.code) || str(input.expression);
+      if (!code) return null; // 无代码输入折叠无意义
+      return {
+        ...(typeof input.language === 'string' ? { language: input.language } : {}),
+        _compacted: `代码已折叠: ${codeDescriptor(code)}`,
+      };
     }
     default:
       return null;

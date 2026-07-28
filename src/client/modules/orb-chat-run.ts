@@ -23,7 +23,7 @@ import type { ContentBlock, TextBlock, ToolBlock, RuleWarningBlock } from './ses
 import { clearToolHint, updateTodoFromTool, TODO_DISMISS_KEY, todosFingerprint } from './orb-chat-hints.js';
 import { log } from './logger.js';
 // 工具 I/O 上下文压缩（v8.1.0）：纯函数注册表，契约 docs/design/TOOL_IO_COMPACTION.md
-import { compactToolInput, compactToolResult, normalizeBashCommand, MUT_BURST_GAP, todoResultAnnotation } from '../../shared/tool-compaction/index.js';
+import { compactToolInput, compactToolResult, normalizeBashCommand, MUT_BURST_GAP, todoResultAnnotation, webTitleKey } from '../../shared/tool-compaction/index.js';
 import type { CompactionCtx } from '../../shared/tool-compaction/index.js';
 // 兜底消息上屏 + 取消时工具卡 DOM 收尾（v8 增量 DOM：数据层变更不会自动投影）
 import { mountFallbackAiMessage, settleToolCardsDom } from './chat-dom.js';
@@ -502,6 +502,7 @@ export async function doSend(
       // lastMi=上次成功修改所在 AI 消息索引（相距 >MUT_BURST_GAP 轮 = 新一轮爆发）
       const mutStateByPath = new Map<string, { cum: number; burst: number; lastMi: number }>();
       let bashFailCmds: string[] = []; // 当前连续失败的归一化命令序列（环境故障判定用）
+      const webPrevTitles: string[] = []; // web_search 历史标题键（空键不入，契约第九节空键守卫）
       for (let mi = 0; mi < messages.length; mi++) {
         const m = messages[mi];
         if (m?.role !== 'ai') continue;
@@ -537,6 +538,12 @@ export async function doSend(
             });
             runs.push(isError);
             bashRunsByCmd.set(norm, runs);
+          } else if (b.name === 'web_search') {
+            // 重复搜索标注：标题键精确全等才判同；空键（失败/异常结果无标题行）
+            // 不入历史也不比对——两个空键会互相误判「相同」（契约空键守卫）。
+            compactCtxById.set(b.id, { webPrevTitles: [...webPrevTitles] });
+            const key = webTitleKey(resultText);
+            if (key) webPrevTitles.push(key);
           } else if (b.name === 'write' || b.name === 'edit') {
             // 修改轨迹（锚定真相源：从全量会话文件计数，与投影窗口无关）。
             // 只有成功调用才算「修改」——失败的 edit 什么都没改。

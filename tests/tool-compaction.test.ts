@@ -160,15 +160,47 @@ test('todo 投影标注：dismiss / 烂尾（只陈述事实，措辞不含因�
   assert(both === `\n（面板已被用户手动关闭）\n（此后超过${TODO_STALE_GAP}轮未更新，可能已过时）`, `得 ${both}`);
 });
 
-test('web_search：[web_search {query(≤50)} → 结果已折叠]', () => {
+test('web_search：无标题行结果 → 兜底 [web_search {query(≤50)} → 结果已折叠，可重搜]', () => {
   const out = compactToolResult('web_search', { query: 'kimi code cli' }, chars(400), false);
-  assert(out === '[web_search kimi code cli → 结果已折叠]', `得 ${out}`);
+  assert(out === '[web_search kimi code cli → 结果已折叠，可重搜]', `得 ${out}`);
 });
 
 test('web_search query >50 字符截断', () => {
   const q = 'q'.repeat(60);
   const out = compactToolResult('web_search', { query: q }, chars(400), false);
-  assert(out === `[web_search ${'q'.repeat(50)}… → 结果已折叠]`, `得 ${out}`);
+  assert(out === `[web_search ${'q'.repeat(50)}… → 结果已折叠，可重搜]`, `得 ${out}`);
+});
+
+// 真实结构的搜索结果夹具（标题行 `N. xxx` + URL 行 + snippet 行，垫长 >300）
+function webResults(titles: string[]): string {
+  return titles.map((t, i) => `${i + 1}. ${t}\n   https://example.com/${i}\n   ${chars(120)}`).join('\n');
+}
+
+test('web_search 保留标题清单（判决留下，证据折叠）', () => {
+  const out = compactToolResult('web_search', { query: 'qoder api' }, webResults(['下载 | Qoder', 'API 文档', '镜像站']), false);
+  assert(out === '[web_search qoder api → 3条：下载 | Qoder；API 文档；镜像站，正文已折叠，可重搜]', `得 ${out}`);
+});
+
+test('web_search 标题截断规则：每条 ≤30，标题段总 ≤120', () => {
+  const longTitles = Array.from({ length: 5 }, (_, i) => `标题${i}` + '长'.repeat(40));
+  const out = compactToolResult('web_search', { query: 'q' }, webResults(longTitles), false);
+  const seg = out!.match(/→ 5条：(.+)，正文已折叠/)![1];
+  assert(seg.length <= 121, `标题段 ${seg.length} 应 ≤121（含省略号）`);
+  for (const t of seg.split('；')) assert(t.length <= 31, `单条 ${t.length} 应 ≤31`);
+});
+
+test('web_search 重复标注：标题键精确全等才判同，空键守卫', () => {
+  const res = webResults(['甲', '乙', '丙']);
+  const key = '1. 甲\n2. 乙\n3. 丙';
+  // 命中：ctx 含相同标题键 → 标注
+  const dup = compactToolResult('web_search', { query: '换个措辞' }, res, false, { webPrevTitles: [key] });
+  assert(dup!.endsWith('（结果与上方搜索相同）'), `得 ${dup}`);
+  // 标题不同 → 不标（宁漏勿错）
+  const diff = compactToolResult('web_search', { query: 'q' }, res, false, { webPrevTitles: ['1. 别的'] });
+  assert(!diff!.includes('相同'), `得 ${diff}`);
+  // 空键守卫：ctx 里的空键 vs 无标题行结果 → 不得误判
+  const emptyCur = compactToolResult('web_search', { query: 'q' }, chars(400), false, { webPrevTitles: [''] });
+  assert(!emptyCur!.includes('相同'), `空键不得误判，得 ${emptyCur}`);
 });
 
 test('debug：[debug {action} → 已折叠]', () => {
@@ -324,9 +356,26 @@ test('write 小入参边界：301 字符 → 压，300 字符 → 豁免', () =>
 
 test('其余工具入参保留原文（返回 null）', () => {
   const big = { command: chars(500) };
-  for (const name of ['bash', 'read', 'grep', 'glob', 'todo', 'web_search', 'debug', 'eval', 'browser_eval', 'browser']) {
+  for (const name of ['bash', 'read', 'grep', 'glob', 'todo', 'web_search', 'debug', 'browser']) {
     assert(compactToolInput(name, big) === null, `${name} 入参不应压`);
   }
+});
+
+test('eval/browser_eval 大入参 → 代码折叠留首行描述', () => {
+  // 注释首行：去注释符
+  const withComment = { language: 'js', code: '// 查看面板结构\n' + chars(400) };
+  const a = compactToolInput('eval', withComment);
+  assert(a !== null && a._compacted === '代码已折叠: 查看面板结构', `得 ${JSON.stringify(a)}`);
+  assert(a.language === 'js', 'eval 的 language 透传');
+  assert(!('code' in a), '代码全文必须被折叠掉');
+  // 代码首行兜底（无注释也有描述性）
+  const codeFirst = { code: `const panel = document.querySelector('.orb-panel');\n` + chars(400) };
+  const b = compactToolInput('browser_eval', codeFirst);
+  assert(b !== null && b._compacted === "代码已折叠: const panel = document.querySelector('.o…", `得 ${JSON.stringify(b)}`);
+  assert(!('language' in b), 'browser_eval 无 language 字段');
+  // 小入参豁免 / 无 code 不压
+  assert(compactToolInput('eval', { language: 'js', code: 'return 1' }) === null);
+  assert(compactToolInput('browser_eval', { command: chars(500) }) === null, '无 code 不压');
 });
 
 // ==========================================================================
