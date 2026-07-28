@@ -168,7 +168,7 @@ index.ts (入口路由 + 静态文件)
 - **规则**：纯 DOM 实现,不触碰 Canvas 渲染器。弹窗打开时 canvas 点击/手势事件被 guard 拦截。
 
 ## 二、当前会话状态
-> **最后更新**：2026-07-28（v8.1.0 — 光球面板性能根洽 + 交互回归恢复 + 全项目前端优化 + 工具 I/O 上下文压缩；基线 v8.0.0 — 所有权分离架构 + renderChatContent 删除 + chat-dom.ts 增量 DOM 渲染 + SessionStore 单写者 + kfm-restart 冷恢复 + 死代码清理 ~160 行）
+> **最后更新**：2026-07-28（v8.1.1 — 逐工具压缩细化五批 + 失败模式标注 + kfm-snapshot/kfm-exec 删除；v8.1.0 — 光球面板性能根洽 + 交互回归恢复 + 全项目前端优化 + 工具 I/O 上下文压缩；基线 v8.0.0 — 所有权分离架构 + renderChatContent 删除 + chat-dom.ts 增量 DOM 渲染 + SessionStore 单写者 + kfm-restart 冷恢复 + 死代码清理 ~160 行）
 
 **v8.1.0（已发布）— 光球面板性能根洽（点击展开 2-3s + 展开后拖拽卡顿）**
 
@@ -310,6 +310,28 @@ I/O（结果 76% + 入参 14%），45 万 tokens/轮，TTFB 5-8s——正文被�
 > 预期收益：API 载荷 ~900KB→120-180KB、tokens 45万→7-10万/轮、TTFB 5-8s→1-2s。
 > 观测：`[compact]` 日志（压缩前后 KB）+ 既有 `[chat] usage`/`upstream TTFB`。
 > 回归钉：BAR-COMPACT-01/02（均已 revert 验证）；压缩器本体 34 例行为测试。
+
+**v8.1.1（已发布）— 逐工具压缩细化五批 + 失败模式标注 + 工具精简**
+
+第七批定了压缩骨架，本批把它逐工具落到实测数据上（每批定稿依据见
+`docs/design/TOOL_IO_COMPACTION.md` 第九节）：
+1. **bash/read** — bash 失败尾部采样；read 指纹对 + 截断透传。
+2. **write/edit** — diff-stat + 指纹对 + 修改计数升级为爆发语义
+   （MUT_BURST_GAP=8）；edit 追加行号段标注（result.details 真相源）。
+3. **grep/glob** — 参数标注规则；glob 截断 +1 探针修复（BAR-COMPACT-03）。
+4. **todo** — dismiss/烂尾投影标注（TODO_STALE_GAP=10），含数据证伪记录。
+5. **web/eval** — 标题清单 / codeDescriptor 入参折叠 / 重复搜索标注 + 空键守卫。
+6. **失败模式重复标注（跨工具通用层）** — FAIL_REPEAT_MIN=3，errorFingerprint
+   守卫；read 指纹污染修复。
+7. **工具精简** — 删除 kfm-snapshot（动态加载眼睛机制上位替代）与
+   kfm-exec（bash 双胞胎去重）。
+
+文档侧：INVARIANTS 修宪（宪法五条提级 + 组7/组8 + 设计讨论 SOP 步骤 3b +
+沉淀五问步骤 7）；归档孤儿 draft（CONTEXT_ASSEMBLY_SPEC、AI_ARCHITECTURE）；
+文档系统重构设计完成 + 第三方评审（`docs/active/doc-system-redesign.md` §十），
+休眠待 v8.2 启动。
+
+> 回归钉：BAR-COMPACT-03（已 revert 验证）；452 个回归测试全绿。
 
 ### 当前焦点
 **AI Agent 调试能力体系建设** — 面向 AI 开发者的调试基础设施。
@@ -484,6 +506,7 @@ v6.6.0 之前的焦点是「浮卡系统统一化」已两次尝试均回退放�
 | **v7.3.3** | **会话保存迁至服务端（3 保存点 + 消息累加器）+ clientMessages 去除/nginx body size 修复 + systemd 端口误杀修复（Node 路径 + ExecStopPost）+ sessions/list 跳过 messages 数组** | git `HEAD` |
 | **v8.0.0** | **所有权分离架构：renderChatContent 删除 + chat-dom.ts 增量 DOM 渲染器 + SessionStore 服务端单写者 + kfm-restart 冷恢复 + 死代码清理（~160 行）** | git `HEAD` |
 | **v8.1.0** | **光球面板性能根洽（持久化/窗口化/content-visibility/minify+gzip）+ v7 丢失细节全量恢复（18 项）+ 工具 I/O 上下文压缩（apiMessages 压缩投影 + check-tool-compaction 双向核对）+ 427 测试** | git `HEAD` |
+| **v8.1.1** | **逐工具压缩细化五批（bash/read、write/edit、grep/glob、todo、web/eval）+ 失败模式重复标注通用层 + kfm-snapshot/kfm-exec 删除 + INVARIANTS 修宪 + 452 测试** | git `HEAD` |
 > 速查：遇到 bug 先确认事件是否完整到达（用 `log()` 推日志卡），再查处理逻辑。
 
 ## 五、回归测试
