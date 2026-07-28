@@ -986,3 +986,11 @@ PARA/Zettelkasten（纯个人知识管理，零工程数据）；IFT（只余类
 Context Rot 证据提示注入体积有真实成本。D2 裁定（不拆 INVARIANTS）维持，
 但加写法约束：迁移后 constraints/ 新写时保持精简，注入层只放
 「必须逐字遵守的指令」，论述性内容进 detail。
+
+### 14.4 填充记录（2026-07-28 ✅ 1/19 完成）
+
+HANDBOOK 已按 §14.2 全部填入 newdoc/：5 域 contract（34-69 行，P1 指令密度 +
+P4 路由头）+ detail-engine/detail-browser + guides/testing.md + ledger/history.md
+（版本线 v4.1.0-v8.1.1 + 事件线）+ decisions/adr-003（前端优化放弃项）+
+STACK/vision 更新。trap 16（与心法 14 重复）已删未迁；trap 12 留案例指针。
+迁移注销：旧 HANDBOOK 在切换提交前仍是权威，届时随旧 docs/ 整体退役。

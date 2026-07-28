@@ -1,3 +1,33 @@
 # 压缩时间线
-> 只追加不改写。一行一事；文件本体在 git tag 中永远可取回。
-> 待迁入：HANDBOOK 历史版本表 + archive 65 份压缩行 + 版本批次记录。
+> 只追加不改写，一行一事。文件本体在 git tag 中永远可取回（`git show vX.Y.Z:路径`）。
+
+## 版本线（自 HANDBOOK 历史版本表迁入，2026-07-28）
+
+- v4.1.0 卡片配色 + 浮卡系统 + BR 守卫（archive/handoffs/v4.1.0.md）
+- v5.0.0 CSS 语法安全 + SCSS 迁移（archive/handoffs/v5.0.0.md）
+- v5.1.0 root-picker 交互修复（archive/handoffs/v5.1.0.md）
+- v5.2.0 RenderContext 上下文隔离（archive/handoffs/v5.2.0.md）
+- v6.0.0 UI Element Registry + 代码审计（archive/handoffs/v6.0.0-*）
+- v6.1.0 Registry 全面接入 + 三层 MANIFEST 验证（25a295e）
+- v6.2.0 文件树 AI 命令 + 对称操作（87a025d）
+- v6.3.x 三轮深度审计 + 心法 LEVEL + CI 基线（847e988）
+- v6.6.0 交互共享层 + overlay 根解（6006949）；v6.6.1 Box 位置映射 + 死代码 ~300 行（96508b5）
+- v6.7.0 浮卡模板化 + ✓/✗ 投放撤销（0b47b2e）
+- v6.8.0 模式系统 + 传送门液体粒子 + 方向锁简化 + as any 零逃逸（5585967）；v6.8.1 代码质量审计（0061bb5）
+- v6.9.x Phase 7 长按抽屉栏 + 滚动轴锁定重构（0d43f00/5b9d0b8）
+- v6.10.x 键盘避让 + card04 tmux + card.meta 类型化（145136d/f8d3e2a）
+- v6.11.x 双指处理跳过 + 心法重组 22 条 + 终端 aux bar（53dcf21/fedab31/c386da3）
+- v7.0.0 进入 Agent 阶段（9de2a8c）
+- v7.1.0 orb/floating-card 拆分 + server 路由拆分 + 214 测试 + 2 ADR（3deb88b）
+- v7.2.0 content block 协议修复 + 流式统一 + 等待提示（16b374b）；v7.2.1 工具卡两区滚动 + 渲染三层优化（ff5173b）
+- v7.3.0 后台挂机 run-manager + WS 真心跳 + AI_CHAT_RUNTIME（1404b15）
+- v7.3.1~v7.3.3 会话保存迁服务端 + 分段传输 + nginx/systemd 修复（0f240ec 等）
+- v8.0.0 所有权分离架构：renderChatContent 删除 + chat-dom 增量 DOM + SessionStore 单写者 + kfm-restart 冷恢复（v8.0.0 tag）
+- v8.1.0 光球面板性能根洽（持久化/窗口化/content-visibility/minify+gzip）+ v7 丢失细节全量恢复 18 项 + 工具 I/O 上下文压缩（v8.1.0 tag）
+- v8.1.1 逐工具压缩细化五批 + 失败模式标注 + kfm-snapshot/kfm-exec 删除 + INVARIANTS 修宪（v8.1.1 tag，452 测试）
+
+## 事件线
+
+- 2026-06-08 文档-代码全量审计 16 项全完成（审计表随 HANDBOOK 迁移注销）
+- 2026-07-18 Browser 工具自 omp 移植（踩坑记录 → domains/ai-chat/detail-browser.md）
+- 2026-07-28 v8.2 文档系统重构启动：骨架立（newdoc/），HANDBOOK 首份迁移完成（本文件即其版本表转世）

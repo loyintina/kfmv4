@@ -1,5 +1,9 @@
 # 远景与工作栈（大）
-> 占位（骨架）— 待从 docs/design/VISION_AND_ROADMAP.md 迁移 + HANDBOOK 当前焦点汇合。
+> 待从 docs/design/VISION_AND_ROADMAP.md 迁移（其迁移排在其自身轮次）。
+
+## 当前焦点（自 HANDBOOK §二 迁入）
+**AI Agent 调试能力体系建设** — 面向 AI 开发者的调试基础设施。
+设计文档：`docs/design/AI_AGENT_DEBUG_TOOLS.md`（能力矩阵 + 缺位分析 + 路线图，迁移待定）。
 
 ## 未来方向区（文档系统重构完成后启动）
 1. **SOP→prompt→subagent 集群化**（设计文档 §十六）：yaml 可机械渲染成任务书；
