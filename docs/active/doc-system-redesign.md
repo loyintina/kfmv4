@@ -1213,3 +1213,9 @@ V8_AUDIT_REPORT §四.2「tool_result 状态/渲染两处分散」与 §四.3「
 - §七 不变清单 → 同 contract「不变清单」节。
 - §五 t0-t10 时序 → detail-runtime.md §10.5；resume 判据句删（与 §10.2 重复）。
 - §二/§三/§六/§八 战报 → history.md 一条（病灶→效果，Phase 5 推迟如实记录）。
+
+---
+
+## §三十 逐份过 13/19：AI_AGENT_DEBUG_TOOLS.md（225 行 → active/debug-tools.md）
+
+执行日期：2026-07-28。判定书用户批准。整份保真迁入 + 实现状态逐项核实加注：kfm-restart 第二层文件接力 ✅（v8 冷恢复）；第一层 exclusive ❌、服务端日志 ❌、kfm-check ❌、构建日志缓存 ❌、E2E 断言 ❌（均经代码核实）。§五 相关文档四条指针改指新路径。无 contract 回家——进行中设计，完成后知识才进 domains/server（映射表既定）。
