@@ -25,6 +25,48 @@
    新工具不登记压缩行为 = 构建中断）。
 3. 增量 DOM 只增不改：append 进已挂载消息不会投影——新消息必须走新 mount。
 
+## 视觉契约（自 V8_ARCHITECTURE §四迁入，2026-07-28）
+
+面板的视觉效果是硬约束。以下行为在 v8 后必须可证明地保持：
+
+| 视觉行为 | 协议事件 | 客户端责任 |
+|---------|---------|-----------|
+| 思考框弹出 + 流式文本 | `content_block_delta(thinking)` | append 裸文本到 `<pre>` |
+| 思考完成 → 400ms 折叠 | `content_block_stop` | 计时器 + CSS 动画 |
+| 正文流式打字机 | `content_block_delta(text)` | append 裸文本 |
+| 正文完成 → 富文本 | `content_block_stop` + 服务端 html | 整段替换 innerHTML |
+| 工具卡弹出（参数未到） | `content_block_start(tool_use)` | 创建骨架 + 随机配色 + 摸鱼提示 |
+| 参数流式 | `content_block_delta(input_json)` | append 裸 JSON |
+| 参数完成 → 高亮 | `content_block_stop` + 服务端 html | 替换 |
+| 摸鱼提示滚动 | 无（客户端本地计时器） | 随机文案循环 |
+| 工具结果 → 状态色 | `tool_result` | 更新标题栏 + 服务端 html 填入输出区 |
+| 完成 → 自动折叠 | `tool_result`（隐含） | 打字机动画 → 折叠 |
+| 用户展开/折叠 | 无（客户端本地） | Map<blockId, bool>，会话切换清空 |
+| 规则警告框 | `rule_warning` | 红色框 + 折叠 |
+| 等待提示 | `message_stop` / 发送时 | 独立 DOM 节点，随机文案 |
+| 入场动画 | 新消息 mount | CSS class `orb-msg-new` |
+
+流式期间客户端显示裸文本（`<pre class="block--streaming">`），完成时刻服务端语义 HTML 一次性注入。交接瞬间用 80ms fade 作为设计节拍。
+
+> **v8.1 修订（迁移注）**：① 流式期不再是纯裸文本——`_scheduleStreamingMd` 120ms
+> 节流轻管线（marked+高亮，跳过 KaTeX/mermaid；部分渲染不进 `_mdCache`），钉
+> BAR-ORB-PANEL-12；② 思考框折叠是三路径 `_autoCollapseThinking`（首个 text_delta +
+> message_stop 兜底 + tool_result），尊重手动展开，钉 PANEL-11；③ 历史思考框折叠容器
+> 必须 `orb-fold-content`（死类 `orb-fold-open` 已清除），钉 PANEL-13。
+
+视觉基准测试：`tests/visual-baseline.test.ts`（17 个 fixture，固化 v7 结构）。
+
+## 不变清单（自 V8_ARCHITECTURE §七迁入——v8 故意不动的模块）
+
+| 保留项 | 原因 |
+|--------|------|
+| Canvas 文件树（tree-render 等） | 纯呈现，需要 Canvas 2D |
+| 手势系统（gesture-registry） | 纯呈现 |
+| 卡片插件系统（card-registry, floating-card） | 纯呈现 |
+| 动画（animation-registry, char-rain, GSAP） | 纯呈现 |
+| WebSocket 传输（ws-channel） | 通道不变，断连语义改变 |
+| Mermaid 渲染 | 输出 SVG + 交互 → 属于呈现层 |
+
 ## #陷阱
 
 1. **run 收尾时序**：必须在 `finally` 显式触发订阅者 `onDone`（run.done 时序陷阱），

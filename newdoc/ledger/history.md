@@ -33,3 +33,4 @@
 - 2026-07-28 v8.2 文档系统重构启动：骨架立（newdoc/），HANDBOOK 首份迁移完成（本文件即其版本表转世）
 - 2026-07-28 VISION_AND_ROADMAP 迁移：Phase 0-II（v4.1-v7.x，基础设施/卡片系统/Agent 基础设施）全完成，原文 693 行进度表注销；远景核心进 active/vision.md
 - 2026-07-27 v8 全量审计（QoderCN，213 行时点快照随迁移注销）：主要发现已全部解决——chat.ts/orb-chat.ts 死代码 ~160 行已删、auto-resume restartCount 防护已实现（orb.ts:665）；文档同步性问题由 v8.2 迁移逐份结算；LOW 遗留 3 项进 active/STACK.md
+- 2026-07-26/27 v8 所有权分离架构：v7 六病灶（全量 innerHTML 重建/八个状态补丁/三份消息镜像/双写竞争/重启即死亡/两段加载竞态）→ Phase 0-4+6 ✅、Phase 5 服务端语义渲染推迟（客户端增量渲染已够用）；效果 O(n)→O(1) patch、补丁 8→0、写者 2→1、重启自动恢复。V8_ARCHITECTURE 原文 187 行按 §11.1 四分注销（视觉契约+不变清单 → ai-chat contract；t0-t10 时序 → detail-runtime §10.5）

@@ -1201,3 +1201,15 @@ V8_AUDIT_REPORT §四.2「tool_result 状态/渲染两处分散」与 §四.3「
 ## §二十八 逐份过 11/19：TOOL_IO_COMPACTION.md（369 行 → ai-chat/detail-tool-compaction.md）
 
 执行日期：2026-07-28。判定书用户批准。整份平移（§一~§九含逐工具细化记录全部保真）；仅 2 处删除：头部「与 AI_CHAT_RUNTIME.md 同级」旧指针（路由头替代）、§九「待填」死注（全部已定稿）。contract.md 文件清单「细节」行结算为三份 detail 实名。遗留：`src/server/ai/tools/index.ts:9` 注释引用旧路径，切换提交时全局路径重写处理。
+
+---
+
+## §二十九 逐份过 12/19：V8_ARCHITECTURE.md（187 行 → §11.1 既定四分）
+
+执行日期：2026-07-28。判定书用户批准。
+
+- §一 宪法全节删（3/19 已逐字进 constraints/detail-invariants.md）。
+- §四 视觉契约 → newdoc/domains/ai-chat/contract.md「视觉契约」节：表保真 + 迁移注标明 v8.1 三处修订（PANEL-11/12/13 钉号），不改写历史。
+- §七 不变清单 → 同 contract「不变清单」节。
+- §五 t0-t10 时序 → detail-runtime.md §10.5；resume 判据句删（与 §10.2 重复）。
+- §二/§三/§六/§八 战报 → history.md 一条（病灶→效果，Phase 5 推迟如实记录）。

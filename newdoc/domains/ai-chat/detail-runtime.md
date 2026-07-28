@@ -335,3 +335,23 @@ on reconnect:
 - **`appendEvent` / `flush`**：异步落盘 + 防抖，正常流程每事件调度写盘。
 
 **历史案例**：v8 重写（2026-07-27），冷恢复 + restartCount 防护。
+
+### 10.5 kfm-restart t0-t10 时序（自 V8_ARCHITECTURE §五迁入，2026-07-28）
+
+```
+t0  AI 调用 kfm-restart → 工具立即返回 "重启已触发"
+t1  chat.ts yield tool_result → SessionStore 同步落盘 ← 生死线
+t2  工具触发 POST /api/system/restart → spawn detached systemctl
+t3  systemd 杀进程（streamChat 死在 t2-t3 之间）
+    ─── 进程死亡 ───
+t4  systemd 启动新进程
+t5  新进程检测 restart-pending.json → 删除 → justRestarted = true
+t6  客户端 WS 重连
+t7  服务端 WS 握手 → 发送 { type: 'server-restarted' }
+t8  客户端重新 fetch session → 重建 DOM
+t9  检测"会话末尾是 tool_result 且无后续 AI 消息" → 自动 resume
+t10 POST /ai/chat/start（完整 history）→ LLM 看到 tool_result → 继续推理
+```
+
+AI 长程工作恢复。不是"进程没死"，是"真相在磁盘上，任何新进程都能接上"。
+（自动 resume 判据与 restartCount 防护见 §10.2/§10.3。）
