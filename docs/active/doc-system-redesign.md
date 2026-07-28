@@ -780,3 +780,52 @@ INVARIANTS（组2/7/8 标注「新吸收自」），history 行注明吸收关�
 3. history.md 一行不是信息删除：文件本体在 git 历史与版本 tag 里永远可
    `git show` 取回（§10.5 缺陷 4 的 grep 可发现性损失，由 (b) 类的
    contract 素材化与 (c) 类的 decisions 详注补偿）。
+
+---
+
+## 十四、逐份过 1/19：HANDBOOK.md 拆分定稿（2026-07-28）
+
+> 逐块盘点 → 归宿 → 决策点。结构：§一 架构速查 / §二 当前会话状态（含已知陷阱）/
+> §三 当前待办 / §五 回归测试 / §六 约束指针 / §七 文档-代码审计 / §八 Browser 移植记录
+>（无 §四，历史缺号）。frontmatter 与 check-versions/check-doc-coverage 耦合见 F2。
+
+### 14.1 通用映射规则（本次沉淀，后续文档复用）
+
+**批次记录三分法**：版本批次/完成记录类内容一律拆三份——
+一句话进 `ledger/history.md`；机制描述（根因/修复原理/回归钉编号）进对应
+`domains/{x}/contract.md`；「放弃/推迟」进 `decisions/` 或 contract 有意推迟节。
+纯 history 化会丢活知识，纯 contract 化会淹没契约，三分各得其所。
+
+**跨领域架构块的家**：H1 裁定——orb-ui 改名为 **client-shell**（第七个 domain），
+承载注册中心/手势优先级/动画状态机/依赖方向/关键调用链等跨领域客户端架构。
+orb 专属内容仍在该域内。domains/ 共 7 域：client-shell / canvas-tree /
+floating-card / ai-chat / server / infra / decisions 不变。
+
+### 14.2 逐块归宿
+
+| 块 | 归宿 | 备注 |
+|----|------|------|
+| frontmatter + 头部路由段 | 消亡 | 路由由 CLAUDE.md 接管；文档规范说明 → guides/doc-maintenance.md；frontmatter 新鲜度机制由 check-desc-freshness 重写后管 domain contracts（F2） |
+| §一 注册中心/手势优先级/动画状态机/依赖方向/关键调用链 | `domains/client-shell/contract.md` | 跨领域块，H1 |
+| §一 模块职能分组（51 模块） | 拆分进各 contract 文件清单 | 去「行数/被导入」易腐列（行数归 check-linecount，导入关系归代码） |
+| §一 服务端模块（15 个） | `domains/server/contract.md` | 含 ai/ 子系统树，与 AI_CHAT_RUNTIME 素材合并 |
+| §一 关键客户端模块详述 | theme/style-registry → canvas-tree；floating-card → floating-card；sibling-switcher → canvas-tree | 「唯一来源」规则是各 contract 的核心条款 |
+| §二 版本批次记录（v6.x~v8.1.1） | **三分法** | 例：v8.1.0 根洽五机制 → client-shell/ai-chat contract；「未做（评估后放弃）」→ decisions；每批一行 → history |
+| §二 已知陷阱 1-20 | 各 `contract.md#陷阱`（按域分发） | trap 16（立即提交）与心法 14 重复→删；trap 12（补丁链=模型错）与心法 5 重复→留案例指针 |
+| §二 当前焦点（AI 调试能力体系） | `active/vision.md` 或 STACK.md | 与 VISION_AND_ROADMAP 汇合 |
+| §三 已完成待办（全划线） | history 一条 | |
+| §三 活跃待办（手势系统 P3）+ 持续观察 | `active/STACK.md` | |
+| §三 历史版本归档表 | `ledger/history.md` | 版本表本体，check-versions 重写后的验证目标（F2） |
+| §五 回归测试 | `guides/testing.md`（第五个 guide，H2） | 与 archive/REGRESSION_TESTING_SYSTEM 素材合并；纪律指针留心法 24 |
+| §六 约束与原则 | 消亡 | 纯指针，constraints/ 接管 |
+| §七 2026-06-08 审计清单（16 项全完成）+ 死代码检查 | history 一条 | 时点快照 |
+| §七 客户端模块完整审计表 | 拆分进各 contract 文件清单 | 同 §一 分组表，去易腐列 |
+| §七 引擎层清单（14 文件） | `domains/canvas-tree/detail-engine.md`（H3） | 与 archive/ENGINE_ARCHITECTURE 素材合并 |
+| §八 Browser 工具移植记录 | `domains/ai-chat/detail-browser.md`（H4） | 踩坑 5 条进 ai-chat contract#陷阱 |
+
+### 14.3 决策点落锤
+
+- **H1 → orb-ui 改名 client-shell**（第七 domain），跨领域架构块有家。
+- **H2 → 测试方法论独立 `guides/testing.md`**。
+- **H3 → 引擎层为 canvas-tree 的 detail-engine.md**（保持 6 域 + client-shell）。
+- **H4 → §八 → domains/ai-chat/detail-browser.md**。
