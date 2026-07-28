@@ -1,6 +1,6 @@
 ---
 title: KFM v4 工作手册
-last_reviewed: 2026-07-28
+last_reviewed: 2026-07-29
 kfm_version: 8.1.0
 status: active
 maintainer: AI agent
@@ -168,7 +168,7 @@ index.ts (入口路由 + 静态文件)
 - **规则**：纯 DOM 实现,不触碰 Canvas 渲染器。弹窗打开时 canvas 点击/手势事件被 guard 拦截。
 
 ## 二、当前会话状态
-> **最后更新**：2026-07-28（v8.1.1 — 逐工具压缩细化五批 + 失败模式标注 + kfm-snapshot/kfm-exec 删除；v8.1.0 — 光球面板性能根洽 + 交互回归恢复 + 全项目前端优化 + 工具 I/O 上下文压缩；基线 v8.0.0 — 所有权分离架构 + renderChatContent 删除 + chat-dom.ts 增量 DOM 渲染 + SessionStore 单写者 + kfm-restart 冷恢复 + 死代码清理 ~160 行）
+> **最后更新**：2026-07-29（v8.1.1 — 逐工具压缩细化五批 + 失败模式标注 + kfm-snapshot/kfm-exec 删除；v8.1.0 — 光球面板性能根洽 + 交互回归恢复 + 全项目前端优化 + 工具 I/O 上下文压缩；基线 v8.0.0 — 所有权分离架构 + renderChatContent 删除 + chat-dom.ts 增量 DOM 渲染 + SessionStore 单写者 + kfm-restart 冷恢复 + 死代码清理 ~160 行）
 
 **v8.1.0（已发布）— 光球面板性能根洽（点击展开 2-3s + 展开后拖拽卡顿）**
 
