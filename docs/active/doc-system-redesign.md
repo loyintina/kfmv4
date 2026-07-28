@@ -829,3 +829,52 @@ floating-card / ai-chat / server / infra / decisions 不变。
 - **H2 → 测试方法论独立 `guides/testing.md`**。
 - **H3 → 引擎层为 canvas-tree 的 detail-engine.md**（保持 6 域 + client-shell）。
 - **H4 → §八 → domains/ai-chat/detail-browser.md**。
+
+---
+
+## 十五、git 考古：工作流衔接链验证（2026-07-28）
+
+> 方法：1656 个提交（2026-04-21 → 07-28，98 天，日均 17 提交）按类型
+> 做转移矩阵 + 版本区间分类 + check 诞生前溯。类型分布：fix 785（47%）、
+> feat 297（18%）、docs 154、refactor 120、chore 77。
+> 粒度警告：commit 相邻 ≠ 因果，下列「验证」均指模式重复出现 ≥3 次。
+
+### 15.1 已验证的衔接链（natural_next 的数据基础）
+
+| 衔接 | 证据 | 强度 |
+|------|------|------|
+| **feat → fix（实施生虫）** | feat 后紧跟 fix 占 47%；refactor→fix 45%；debug→fix 54% | 全库最粗的边 |
+| **fix → fix（修复成串）** | 61% 的 fix 后面还是 fix——回归窗口/批次模式真实存在 | 479 次 |
+| **docs 成串 → feat（设计→实施）** | docs→docs 36%（讨论/设计成批），docs→feat 19%；实例：TOOL_IO_COMPACTION 定稿→细化五批、V8_ARCHITECTURE→Phase 0-6 | spec-driven 循环真实 |
+| **重复错误 → 机械化（check 诞生）** | check-css-wiring 生于「v7 丢失细节」批次；3 个新 check 生于管线审计；check-handbook-sync 生于状态同步 fix | 逐例吻合 |
+| **发版窗口 fix 主导** | v7.2.0 窗口 101 fix/32 feat；v7.3.3 窗口 46/16；v8.1.0 窗口 18/4——每个版本的开发期都被 fix 淹没 | 逐版本吻合 |
+| **文档漂移 → 审计重构（月度节奏）** | 06-02 文档体系重构 → 07-07 check-handbook-sync → 07-28 管线审计 + 文档系统重构——约两月一次 | 3 次 |
+
+### 15.2 修正与异类
+
+- **fix→docs 仅 6%**：修完立刻写文档比例低——但纪律已被「test+docs 合并提交」
+  绑定（登记 SOP），实际靠 commit 规约而非自觉。
+- **v8.1.1 窗口 feat:9 fix:0 是异类**：纯设计/压缩工作流窗口，无 fix 尾随——
+  设计讨论前置（步骤 3b 压力测试）可能确实压住了返工，单样本，继续观察。
+- **release 11 次 / 1656 提交**：约每 150 提交一版，发版是 fix 收集期的中点
+  而非终点。
+
+### 15.3 大循环（已验证形态，衔接图的底稿）
+
+```
+灵感/需求 → [docs 成串：讨论+设计] → feat 实施
+    ↑                                    ↓ (47% 生虫)
+    ← 真机使用 ← release ← 攒批 ← 钉子+登记 ← fix 长尾(61% 成串)
+                                              ↓ (同模式≥3)
+                                        check 机械化 → 管线加固 → 下轮 feat 更稳
+月度旁路：文档漂移感 → 审计 → 重构/机械化（本设计即此环产物）
+```
+
+### 15.4 对 natural_next 字段的裁定
+
+yaml 增加 `natural_next`（提醒不强制，扳机在人）：
+- feat/spec-driven 完成 → 「预期 fix 尾随（47%），预留批次修复窗口」
+- release 完成 → 「真机回归窗口开启：fix 高发期，可主动 smoke」
+- bug-fix 登记时同模式 ≥3 → discipline-mechanize（已有机械化信号）
+- 每月末 → 「文档漂移审计候选」（约两月一次，check-workflow-freshness 管）
+衔接图随 CLAUDE.md 路由表落地（guides/ 一张状态机图），不做时间触发。
