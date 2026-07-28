@@ -1190,7 +1190,7 @@ V8_AUDIT_REPORT §四.2「tool_result 状态/渲染两处分散」与 §四.3「
 
 - `newdoc/domains/ai-chat/detail-runtime.md`（337 行）：§1 动机 + §2 架构图/双通道 + §3 挂机生命周期/端点表/事件协议 + §4 七条隐式契约展开版 + §5 WS 存活 + §6 终端恢复 + §7 取消 + §8 文件一览 + §10 冷恢复，原文未删节。
 - `ai-chat/contract.md`：+ 陷阱 8（content_block index 连续性/clientIdx 映射防空洞，BAR-106）；路由头改指 detail-runtime.md。
-- `client-shell/contract.md`：+「Z-Index 层级」节（L8>L7 产品决策 + CUSTOM_SELECT>MODAL_DIALOG + 简表）。
+- `newdoc/domains/client-shell/contract.md`：+「Z-Index 层级」节（L8>L7 产品决策 + CUSTOM_SELECT>MODAL_DIALOG + 简表）。
 
 ### 重叠说明（留压缩轮）
 
