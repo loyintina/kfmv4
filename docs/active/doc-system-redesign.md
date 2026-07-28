@@ -1139,3 +1139,25 @@ STACK/vision 更新。trap 16（与心法 14 重复）已删未迁；trap 12 留
 3. §三 3.1-3.4 archive 规则（新体系无 archive/，等价规则待管线适配）。
 4. §四 check-docs.mjs 维护（旧管线，适配阶段重写）。
 5. §六 版本发布 SOP（release.yaml 已覆盖）。
+
+---
+
+## §二十四 逐份过 7/19：AGENT_PROMPT_REFERENCES.md（414 行 → constraints/ 两份 detail）
+
+执行日期：2026-07-28。用户定性：外部找来的研究用提示词，目的是提取对项目有用的部分——按提取处理而非档案迁移。
+
+### 归宿执行
+
+- `newdoc/constraints/detail-research-method.md`：FIRST PRINCIPLES + RESEARCH METHODOLOGY + ALGORITHM & ARCHITECTURE 全节 + OUTPUT 确信度标注段。与 §二 心法关系注：蒸馏版 vs 展开版。diagnostics.yaml reads 增补此文件。
+- `newdoc/constraints/detail-prompt-engineering.md`：PROMPT ENGINEERING 整节 7 小节原文未删节——「写提示词的约束」，适用 workflows yaml/subagent 提示词/角色卡/压缩模板。
+
+### 当场删除（角色/环境绑定，判定书已批）
+
+1. MISSION 全节（「你是 Researcher」角色定义，归 role.card.ts + $HOME/.kfmv4/roles/ 体系）。
+2. EXECUTION 的 CODE INTERACTION 节（Researcher 职责边界，与 kfmv4 agent 职责相反）。
+3. TOOLS 节（opencode/omo 环境绑定：Sisyphus-Junior/Oracle/Momus 子代理、fallback 机制；子代理提示词原则已被 PROMPT ENGINEERING 覆盖）。
+4. OUTPUT 节的输出结构建议段（Understanding/Key Insights 五段式——研究报告格式，角色绑定；确信度标注段保留）。
+
+### 重复说明（留压缩轮）
+
+FIRST PRINCIPLES 的「抽象优先」、RESEARCH METHODOLOGY 的「问题审计/基于证据的分歧」与 §二 心法 #21-24 为蒸馏-展开关系，按两阶段规则不合并，压缩轮归并。

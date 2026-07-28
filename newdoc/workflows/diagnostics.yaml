@@ -4,6 +4,7 @@ trigger: 异常行为出现，根因不明
 frequency: 遇 bug 时
 reads:
   - constraints/diagnostics.md（纯排查流程：触控/手势、CSS/视觉、渲染/Canvas、构建/Bundle 四类路径）
+  - constraints/detail-research-method.md（研究方法论展开版：多假设/穷尽搜索/验证后结论）
 steps:
   1. 按症状选排查路径
   2. 先确认事件是否完整到达（log() 推日志卡），再查处理逻辑
