@@ -1,0 +1,5 @@
+[
+  { "providerId": "Kimi", "model": "kimi-for-coding-highspeed", "params": { "temperature": 1 } },
+  { "providerId": "deepseek", "model": "deepseek-v4-flash" },
+  { "providerId": "阶跃星辰", "model": "step-3.7-flash" }
+]

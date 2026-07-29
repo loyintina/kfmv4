@@ -26,6 +26,7 @@
 | 新增/移动文档 | workflows/doc-tree-sync.yaml |
 | 多 agent 平行推进 | workflows/parallel-tracks.yaml（慎用） |
 | 理解项目方向/为什么这么设计 | active/vision.md |
+| 写/跑 agent 脚本（发版建议等） | guides/agent-runner.md |
 | **无匹配** | 完成后记录；同类操作重复 3 次 → workflows/_template.yaml 固化 |
 
 ## 构建与运行
@@ -34,7 +35,7 @@
 npm run dev      # 全链路（check → esbuild client+server → smoke → 启动）
 npm run bundle   # 同 build.mjs（全链路，零快捷方式）
 npm run watch    # 全链路通过后 → 持续监听、快速重编（开发时一直开着）
-npm run check    # 27 个 check-*.mjs + tsc --noEmit（仅检查，不构建）
+npm run check    # 28 个 check-*.mjs + tsc --noEmit（仅检查，不构建）
 npm run build    # 同 bundle（全链路）
 npm run start    # 启动生产构建 http://localhost:8021
 npm run test     # 452 个回归测试
