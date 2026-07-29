@@ -33,9 +33,18 @@
    — 审查文件卡代码高亮问题修正（具体病灶待补充）
 9. prompts 提示词注入约束修复（2026-07-29 记，src/server/prompts/，具体病灶待补充）
    — 另：面板发送消息无响应（2026-07-29 记，用户反馈的活 bug，具体病灶待补充——复现后进 bug-fix 流程）
-10. 全量代码分析 → domains 填充（未来议题，2026-07-29 记）
-   — 问题：契约/#陷阱靠犯错沉淀是事后型，填不出「还没犯的错」
-   — 候选：主动全量代码结构梳理，把 6 域 contract/detail 填实（可复用 agent-runner 集群）
+10. 全量代码分析 → domains 填充（2026-07-29 提前完成，用户动议）
+   — ✅ 六域 code-map + cross-domain.md（99 条漂移带 file:line，0cecc62/3906707）
+   — ✅ 机械层：gen-code-inventory.mjs（212 文件 + 224 跨域边，鲜度挂接待办）
+   — ✅ 溯源审计：22 subagent 考古 → ledger/drift-provenance.md（105 行普查 + 8 案深潜）
+     分布：E 机制没人走 21.9% · A 过时 20% · C 权宜 17.1% · F 文档 16.2% · B 接力 14.3% · D 复制 9.5%
+   — 后续队列（按堆）：① 真 bug 10 条（ai-chat#2 冷恢复载荷优先）② 安全面 3 条核实
+     ③ 死代码 ~30 处（text-layout 2292 行整目录居首）④ 契约失真 ~35 条（→批 1.5）
+     ⑤ 协议制度缺口（localStorage 登记/多写者锁/scope 裁决）⑥ 架构议题（orb 归属/
+     重复实现群/check 链单源化）
+   — 深潜 3 个待裁决分歧：orb.ts 拆 vs 登双域 / anim scope 强化 vs 废弃 /
+     ai-tools 端点立即删 vs 访问日志实证一周期
+   — 制度化：随修溯源（修每条漂移必带成因标签 + 引入 commit，进 bug-fix 流程）
 4. 手势系统研究与全局交互区域分权（P3，自 HANDBOOK 活跃待办迁入）
    — 浮卡/卡片堆/设置卡内容区与全局左右滑的边界
    （touch-action 分区策略已文档化 → domains/client-shell/contract.md #陷阱 7，2026-07-29 关闭该子项）
