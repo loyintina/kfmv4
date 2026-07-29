@@ -636,7 +636,9 @@ export async function doSend(
             apiMessages.push({ role: 'tool', content, tool_call_id: tc.id });
           }
         } else {
-          apiMessages.push({ role: 'assistant', content: mainText });
+          // 空壳 assistant（纯思考/取消残留的零正文零工具消息）不进载荷——
+          // 宽松端点容忍，严格端点（kimi）400「assistant must not be empty」（BAR-PROVIDER-02）
+          if (mainText) apiMessages.push({ role: 'assistant', content: mainText });
         }
       }
     }

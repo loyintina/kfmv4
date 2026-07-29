@@ -159,7 +159,10 @@ export async function* streamChat(
       if (m.tool_calls) out.tool_calls = m.tool_calls;
       if (m.tool_call_id) out.tool_call_id = m.tool_call_id;
       return out;
-    });
+    })
+    // 边界兜底（BAR-PROVIDER-02）：无 tool_calls 的空 assistant 一律丢弃——
+    // 严格端点（kimi）400「assistant must not be empty」，源头在客户端，此处 fail-closed。
+    .filter(m => !(m.role === 'assistant' && !m.tool_calls && (m.content == null || m.content === '')));
   // 静态 system 段（工具文档 + alwaysApply 规则）：整轮对话不变，算一次。
   const staticSystemParts: string[] = [];
   const toolDocsPrompt = buildToolDocsPrompt();
