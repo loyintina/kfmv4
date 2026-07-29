@@ -17,7 +17,7 @@ import { readFileSync, readdirSync, statSync } from 'fs';
 import { join, relative } from 'path';
 import { fileURLToPath } from 'url';
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const __dirname = fileURLToPath(new URL('../../', import.meta.url));
 const ROOT = __dirname;
 
 const CONSOLE_RE = /console\.(log|warn|error)\(/;

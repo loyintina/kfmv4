@@ -34,12 +34,12 @@ function checkFreshness(outfile, label) {
 // ========== 构建 ==========
 
 // 全量代码质量检查（对齐 npm run check，零错误通过才构建）
-execSync('node check-versions.mjs', { stdio: 'inherit' });
+execSync('node scripts/check/check-versions.mjs', { stdio: 'inherit' });
 
 // 未提交提醒（不阻断）
-try { execSync('node check-uncommitted.mjs', { stdio: 'inherit' }); } catch {}
-execSync('node check-checks.mjs', { stdio: 'inherit' });
-execSync('node check-doc-coverage.mjs', { stdio: 'inherit' });
+try { execSync('node scripts/check/check-uncommitted.mjs', { stdio: 'inherit' }); } catch {}
+execSync('node scripts/check/check-checks.mjs', { stdio: 'inherit' });
+execSync('node scripts/check/check-doc-coverage.mjs', { stdio: 'inherit' });
 
 // SCSS 编译（语法校验 + 输出 .css）
 try {
@@ -49,22 +49,22 @@ try {
   process.exit(1);
 }
 
-execSync('node check-css-wiring.mjs --check-only', { stdio: 'inherit' });
-execSync('node check-tool-compaction.mjs --check-only', { stdio: 'inherit' });
-execSync('node check-anim.mjs --check-only', { stdio: 'inherit' });
-execSync('node check-as-any.mjs --check-only', { stdio: 'inherit' });
-execSync('node check-card-meta.mjs', { stdio: 'inherit' });
-execSync('node check-registry.mjs --check-only', { stdio: 'inherit' });
-execSync('node check-zindex.mjs', { stdio: 'inherit' });
-execSync('node check-console.mjs', { stdio: 'inherit' });
-execSync('node check-docs.mjs', { stdio: 'inherit' });
-execSync('node check-consistency.mjs', { stdio: 'inherit' });
-execSync('node check-active-stack.mjs', { stdio: 'inherit' });
-execSync('node check-code-doc-refs.mjs', { stdio: 'inherit' });
-execSync('node check-workflow-integrity.mjs', { stdio: 'inherit' });
-execSync('node check-cards.mjs', { stdio: 'inherit' });
-execSync('node check-contract-freshness.mjs', { stdio: 'inherit' });
-execSync('node check-test-patterns.mjs', { stdio: 'inherit' });
+execSync('node scripts/check/check-css-wiring.mjs --check-only', { stdio: 'inherit' });
+execSync('node scripts/check/check-tool-compaction.mjs --check-only', { stdio: 'inherit' });
+execSync('node scripts/check/check-anim.mjs --check-only', { stdio: 'inherit' });
+execSync('node scripts/check/check-as-any.mjs --check-only', { stdio: 'inherit' });
+execSync('node scripts/check/check-card-meta.mjs', { stdio: 'inherit' });
+execSync('node scripts/check/check-registry.mjs --check-only', { stdio: 'inherit' });
+execSync('node scripts/check/check-zindex.mjs', { stdio: 'inherit' });
+execSync('node scripts/check/check-console.mjs', { stdio: 'inherit' });
+execSync('node scripts/check/check-docs.mjs', { stdio: 'inherit' });
+execSync('node scripts/check/check-consistency.mjs', { stdio: 'inherit' });
+execSync('node scripts/check/check-active-stack.mjs', { stdio: 'inherit' });
+execSync('node scripts/check/check-code-doc-refs.mjs', { stdio: 'inherit' });
+execSync('node scripts/check/check-workflow-integrity.mjs', { stdio: 'inherit' });
+execSync('node scripts/check/check-cards.mjs', { stdio: 'inherit' });
+execSync('node scripts/check/check-contract-freshness.mjs', { stdio: 'inherit' });
+execSync('node scripts/check/check-test-patterns.mjs', { stdio: 'inherit' });
 execSync('npx tsc --noEmit', { stdio: 'inherit' });
 
 // 复制 stealth 脚本到 dist（launch.ts 在运行时读取这些文件）

@@ -150,11 +150,11 @@
 | BAR-ORB-PANEL-19 | `chat-dom` | read 读 .md 退化为等宽纯文本（`.orb-tool-md` 整套样式成死代码）；mermaid SVG 未就绪就写进 `_mdCache`，重挂后永远显示原始代码。契约：read+md 走 orb-tool-md 全管线；含 ```mermaid 文本不读写缓存 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
 | BAR-ORB-PANEL-20 | `orb` | Todo 面板刷新/切会话后不再恢复（v7 每次渲染末尾重挂）；面板收起再展开无条件拽回底部。契约：`_mountHistoryWindow` 末尾 `_restoreTodoPanel`；`expandPanel` 追底走 `getFollowBottom()` 门控 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
 | BAR-ORB-PANEL-21 | `chat-dom` | 细节组：新消息滑入动画丢失（`orb-msg-new` CSS 无使用者）；打字机 reveal 期间 pre 不滚底（长输出停在开头）；340ms 定时折叠把 500ms 打字机折进一半；无参数工具显示空输入框+分隔线。契约：live 挂载 animate=true；reveal tick 滚底；折叠由 onDone 回调触发（禁 setTimeout）；`_hideEmptyToolInput` | L | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
-| BAR-BUILD-04 | `build/check` | 「接线丢失」类 bug（CSS 定义了没人用/JS 引用了没定义）反复出现却无防线。契约：`check-css-wiring.mjs` 双向检查 orb-* 类与 keyframes，挂在 build 和 npm run check 链 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-BUILD-04 | `build/check` | 「接线丢失」类 bug（CSS 定义了没人用/JS 引用了没定义）反复出现却无防线。契约：`scripts/check/check-css-wiring.mjs` 双向检查 orb-* 类与 keyframes，挂在 build 和 npm run check 链 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
 
 | BAR-ORB-PANEL-22 | `orb-chat-hints` | Todo 面板 ✕ 关闭后刷新又弹出：关闭只清内存，`_restoreTodoPanel` 从数据层找回结果重挂。契约：`dismissTodoPanel` 记录列表指纹到 localStorage；`updateTodoFromTool` 同指纹跳过渲染、新列表（指纹不同）清记录并恢复显示 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
 | BAR-COMPACT-01 | `orb-chat-run` | doSend 发给 API 的载荷 ~90% 是工具 I/O（45 万 tokens/轮、TTFB 5-8s）；saveMessages 每轮全量上传冗余。契约：apiMessages 是压缩投影（会话文件全量不动），G1 最近 2 轮豁免 / G4 最新 todo 结果豁免 / `kfm-no-compact=1` 逃生门 / `[compact]` 观测日志；saveMessages 仅新会话调用（服务端 /ai/chat/start 自己落盘） | L | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
-| BAR-COMPACT-02 | `build/check` | 新增工具若不登记压缩行为，上下文压缩策略随工具增多悄悄失效。契约：`check-tool-compaction.mjs` 双向核对注册工具 ↔ 压缩器登记（豁免型也要登记 + 注明 G 依据），挂 build 和 npm run check 链，失配 = 构建中断 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-COMPACT-02 | `build/check` | 新增工具若不登记压缩行为，上下文压缩策略随工具增多悄悄失效。契约：`scripts/check/check-tool-compaction.mjs` 双向核对注册工具 ↔ 压缩器登记（豁免型也要登记 + 注明 G 依据），挂 build 和 npm run check 链，失配 = 构建中断 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
 | BAR-COMPACT-03 | `omp/glob` | glob 默认上限 maxResults=200 命中时输出无截断标记（「未看全」类：匹配 500 个 AI 以为 200 是全部；实测 native totalMatches 顶格=返回数不可用；真实会话有一次顶格 200 行无法判断全否）。契约：+1 探针法（请求 maxResults+1，超出则只展示 maxResults 条 + `(结果被截断)` 标记行；恰好顶格不算截断），与 grep limitReached 同语义 | I | ✅ 已钉（真实 native 功能测试三边界：超限/未超/恰好顶格，revert 验证） | `tests/omp-glob.test.ts` |
 
 > 新 bug 修复后：补一个回归钉子 → 在此登记 → 状态置「已钉」。见

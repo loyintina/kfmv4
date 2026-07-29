@@ -12,7 +12,7 @@ import { readFileSync, readdirSync, statSync, existsSync } from 'fs';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 
-const ROOT = fileURLToPath(new URL('.', import.meta.url));
+const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 let errors = 0;
 function error(msg) {
   console.error(`[check-code-doc-refs] ${msg}`);

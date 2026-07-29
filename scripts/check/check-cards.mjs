@@ -19,7 +19,7 @@ import { join, relative } from 'path';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const __dirname = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const SRC_DIR   = join(__dirname, 'src', 'client', 'modules');
 const PLUGINS_DIR = join(__dirname, 'src', 'client', 'cards', 'plugins');
 const CARDS_DIR   = join(__dirname, 'src', 'client', 'cards');

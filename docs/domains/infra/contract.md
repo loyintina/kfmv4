@@ -36,6 +36,6 @@ test-patterns → tsc。
 
 ## 文件清单
 
-`build.mjs` `check-*.mjs`（20 个，仓库根）`tests/`（regression.test.ts + smoke/）
+`build.mjs` `scripts/check/check-*.mjs`（20 个）`tests/`（regression.test.ts + smoke/）
 `public/css/`（scss 源）`package.json`（check 链定义）
 测试分层与纪律 → ../../guides/testing.md

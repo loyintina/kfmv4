@@ -1,10 +1,10 @@
 > 这是什么：工具 I/O 上下文压缩契约（居家级别）——修改压缩行为、新增工具、调整豁免策略前必读。
-> 别的去哪找：域硬规则 → contract.md；运行时契约 → detail-runtime.md；机械执行 → ../../../check-tool-compaction.mjs。
+> 别的去哪找：域硬规则 → contract.md；运行时契约 → detail-runtime.md；机械执行 → ../../../scripts/check/check-tool-compaction.mjs。
 
 # 工具 I/O 上下文压缩契约（居家级别）
 
 > **地位**：本文档是 kfmv4 AI 对话上下文管理的最高契约之一，与 detail-runtime.md 同级。
-> 本文档由 `check-tool-compaction.mjs` 机械执行：注册工具无压缩器 = 构建中断。
+> 本文档由 `scripts/check/check-tool-compaction.mjs` 机械执行：注册工具无压缩器 = 构建中断。
 > 迁移注（2026-07-28）：自 docs/design/TOOL_IO_COMPACTION.md 整份迁入，原文未删节（原文 v8.2 注销，git show v8.1.1 考古）。
 
 ## 一、为什么存在（问题定义）
@@ -109,7 +109,7 @@ TTFB 5-8s、缓存读取费用、注意力稀释（"lost in the middle"）三连
 
 - 压缩器注册表：`src/shared/tool-compaction/`（纯函数，双端可用）
 - 调用点：`orb-chat-run.ts` doSend 构建 apiMessages 时（唯一压缩点；run 内后续轮次的工具结果是"近期"，天然豁免）
-- 机械执行：`check-tool-compaction.mjs`（tools/ 注册名 ↔ 压缩器注册表双向核对，build 中断级）
+- 机械执行：`scripts/check/check-tool-compaction.mjs`（tools/ 注册名 ↔ 压缩器注册表双向核对，build 中断级）
 - 灰度开关：localStorage `kfm-no-compact=1` → 跳过压缩发全量（回退逃生门）
 - 观测：压缩前后字符数日志 + 既有 `[chat] usage`/`upstream TTFB` 前后对比
 

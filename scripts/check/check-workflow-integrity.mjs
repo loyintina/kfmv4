@@ -13,7 +13,7 @@ import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { DOCS_ROOT } from './docs-root-const.mjs';
 
-const ROOT = fileURLToPath(new URL('.', import.meta.url));
+const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 let errors = 0;
 function error(msg) {
   console.error(`[check-workflow-integrity] ${msg}`);

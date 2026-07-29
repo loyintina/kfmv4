@@ -15,7 +15,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { DOCS_ROOT } from './docs-root-const.mjs';
 
-const ROOT = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 let errors = 0;
 function error(msg) {
@@ -79,7 +79,7 @@ function checkInternalLinks(filePath, content) {
   // 只校验「全路径」：首段是已知根（src/ docs/ newdoc/ 等）或根级文件。
   // 模块速写（routes/files.ts、engine/v2/renderer.ts 这类域内简写）不校验。
   const KNOWN_ROOTS = new Set([
-    'src', 'docs', 'newdoc', 'tests', 'public',
+    'src', 'docs', 'newdoc', 'tests', 'public', 'scripts',
     'workflows', 'domains', 'constraints', 'guides', 'ledger', 'active', 'decisions',
   ]);
   const ROOT_FILES = new Set(['build.mjs', 'package.json', 'README.md', 'CLAUDE.md', 'tsconfig.json']);

@@ -17,7 +17,8 @@ import { join, relative } from 'path';
 import { fileURLToPath } from 'url';
 import { DOCS_ROOT } from './docs-root-const.mjs';
 
-const ROOT = fileURLToPath(new URL('.', import.meta.url));
+const ROOT = fileURLToPath(new URL('../../', import.meta.url));
+const SCRIPT_DIR = fileURLToPath(new URL('.', import.meta.url));
 
 let hasError = false;
 function error(msg) {
@@ -91,7 +92,7 @@ const readme = readFileSync(join(ROOT, 'README.md'), 'utf-8');
 const rm = readme.match(/(\d+)\s*个\s*check/);
 if (rm) {
   const claimed = parseInt(rm[1], 10);
-  const actual = readdirSync(ROOT).filter(e => e.startsWith('check-') && e.endsWith('.mjs')).length;
+  const actual = readdirSync(SCRIPT_DIR).filter(e => e.startsWith('check-') && e.endsWith('.mjs')).length;
   if (claimed !== actual) {
     error(`README.md 声称 "${claimed} 个 check-* 脚本"，实际有 ${actual} 个`);
   }

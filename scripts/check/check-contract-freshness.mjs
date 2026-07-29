@@ -60,7 +60,7 @@ const DOMAIN_SRC = {
     'src/server/routes/',
   ],
   'infra': [
-    'build.mjs', 'check-*.mjs', 'docs-root-const.mjs', 'tests/', 'public/css/',
+    'build.mjs', 'scripts/check/', 'tests/', 'public/css/',
   ],
 };
 

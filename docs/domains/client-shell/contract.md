@@ -49,7 +49,7 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 ## GSAP 动画治理（自 INVARIANTS §四.4，2026-07-28）
 
 ▎ 所有 GSAP 调用必须通过 animation-registry.ts
-▎ 禁止直接 import gsap（构建时 check-anim.mjs 扫描白名单）
+▎ 禁止直接 import gsap（构建时 scripts/check/check-anim.mjs 扫描白名单）
 ▎ tree-render 内的动画加到 ts = anim.scope('tree-render')
 ▎ char-rain 使用独立 timeline（anim.timeline()），ts.clear() 不影响
 ▎ card-stack / orb 的 GSAP 调用走 anim 工具方法
@@ -96,7 +96,7 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 
 - **`CUSTOM_SELECT`(10900) 必须高于 `MODAL_DIALOG`(10800)**：下拉框常在模态框内部
   弹出（config/session/tools 卡的下拉都在弹窗里），低于模态框会被遮住。
-- 全表见 `z-index-layers.ts` / `z-index.css`（`check-zindex.mjs` 强制 JS↔CSS 一致）。
+- 全表见 `z-index-layers.ts` / `z-index.css`（`scripts/check/check-zindex.mjs` 强制 JS↔CSS 一致）。
 
 ## 素材考古（原文已随 archive 注销，`git show v8.1.1:docs/archive/design/…` 可挖）
 

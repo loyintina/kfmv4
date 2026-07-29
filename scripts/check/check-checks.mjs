@@ -13,8 +13,8 @@ import { readFileSync, readdirSync, statSync, existsSync } from 'fs';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
-const ROOT = __dirname;
+const SCRIPT_DIR = fileURLToPath(new URL('.', import.meta.url));
+const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 
 let hasError = false;
 
@@ -26,8 +26,8 @@ function error(msg) {
 // ========== 1. 收集所有 check-*.mjs 脚本 ==========
 
 const checkScripts = [];
-for (const entry of readdirSync(ROOT)) {
-  const full = join(ROOT, entry);
+for (const entry of readdirSync(SCRIPT_DIR)) {
+  const full = join(SCRIPT_DIR, entry);
   const st = statSync(full, { throwIfNoEntry: false });
   if (st && st.isFile() && entry.startsWith('check-') && entry.endsWith('.mjs') && entry !== 'check-checks.mjs') {
     checkScripts.push(entry);

@@ -677,7 +677,7 @@ regression('BAR-BUILD-04', 'build/check', 'check-css-wiring 永久接线检查�
   assert(build.includes('check-css-wiring'), 'build.mjs 必须跑 check-css-wiring（sass 之后）');
   const pkg = readFileSync('package.json', 'utf-8');
   assert(pkg.includes('check-css-wiring'), 'npm run check 链必须含 check-css-wiring');
-  const script = readFileSync('check-css-wiring.mjs', 'utf-8');
+  const script = readFileSync('scripts/check/check-css-wiring.mjs', 'utf-8');
   assert(script.includes('@keyframes') && script.includes('scss'), '脚本必须双向检查类与 keyframes');
 });
 
@@ -713,7 +713,7 @@ regression('BAR-COMPACT-02', 'build/check', 'check-tool-compaction 双向核对�
   assert(build.includes('check-tool-compaction'), 'build.mjs 必须跑 check-tool-compaction');
   const pkg = readFileSync('package.json', 'utf-8');
   assert(pkg.includes('check-tool-compaction'), 'npm run check 链必须含 check-tool-compaction');
-  const script = readFileSync('check-tool-compaction.mjs', 'utf-8');
+  const script = readFileSync('scripts/check/check-tool-compaction.mjs', 'utf-8');
   assert(script.includes('COMPACTOR_REGISTRY') && script.includes('tools/index.ts'),
     '脚本必须双向核对：注册工具 ↔ 压缩器登记（新增工具不登记 = 构建中断）');
 });
