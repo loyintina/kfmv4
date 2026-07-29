@@ -48,6 +48,6 @@ agent 原件，不是 agent 应用。三明治：**机械组装输入 → agent 
 
 ## 新负载如何加
 
-1. 写 `scripts/agent/<name>.mjs`：`runAgent({ system, prompt, validate })`，输入机械组装
+1. 在 scripts/agent/ 下写新脚本（参照 tag-advisor.mjs）：`runAgent({ system, prompt, validate })`，输入机械组装
 2. 需要新触发位 → 对应 check/钩子挂提醒（雷达模式）
 3. 走测试协议四段再投产
