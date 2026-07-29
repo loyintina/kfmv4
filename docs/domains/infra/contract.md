@@ -41,6 +41,8 @@ sync-counts → tsc。
 
 `build.mjs` `scripts/check/check-*.mjs`（28 个）`scripts/deploy.sh`（构建→重启→版本握手闭环）
 `scripts/agent/`（agent-runner：agent 脚本执行器，指南 → ../../guides/agent-runner.md）
+`scripts/check/domain-src.mjs`（域→代码映射单一真相源：contract-freshness 与清单生成器共用）
+`scripts/gen-code-inventory.mjs`（机械层清单 + 跨域 import 边生成器 → ../code-inventory.md，管线挂接待办）
 `dist/build-info.json`（构建时生成的版本握手真相源）
 `tests/`（regression.test.ts + smoke/ + probes/ 探针假树）
 `public/css/`（scss 源）`package.json`（check 链定义）`.githooks/`（commit-msg/pre-push 薄壳）
