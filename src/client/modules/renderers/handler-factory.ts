@@ -6,6 +6,7 @@ import { type MathData, renderMath, renderMermaid } from './math-diagram.js';
 import { MD_CSS } from './md-css.js';
 import { marked } from 'marked';
 import { API } from '../state.js';
+import { showCardToast } from '../card-toast.js';
 import { type CardInstance } from '../card-registry.js';
 
 function _fileName(p: string): string {
@@ -153,20 +154,31 @@ export function createFileHandler(meta: Record<string, unknown>): { activate: (c
   }
 
   // 静默保存：只持久化，不切换模式、不重渲染（否则会毁掉正在编辑的 textarea + 关输入法）
-  async function _doSave(newContent: string) {
+  // 返回是否成功——失败必须让用户感知（BAR-SAVE-01：曾 catch 吞掉 + 不查响应，静默丢写）
+  async function _doSave(newContent: string): Promise<boolean> {
     try {
-      await fetch(API + '/files/write', {
+      const res = await fetch(API + '/files/write', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: filePath, content: newContent }),
       });
+      const data = await res.json();
+      if (!data.success) {
+        showCardToast('保存失败: ' + (data.error || '未知错误'), '#ff5555');
+        return false;
+      }
       _rawContent = newContent;
-    } catch { /* swallow */ }
+      return true;
+    } catch (e) {
+      showCardToast('保存失败: ' + (e instanceof Error ? e.message : String(e)), '#ff5555');
+      return false;
+    }
   }
 
   // 保存并切到预览（供预览按钮/失焦等显式退出编辑时用）
+  // 保存失败不切预览——留在编辑模式保住用户文本
   async function _saveAndPreview(newContent: string) {
-    await _doSave(newContent);
+    if (!await _doSave(newContent)) return;
     _mode = 'preview';
     _renderToolbar();
     _renderPreview();

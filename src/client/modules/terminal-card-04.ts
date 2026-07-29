@@ -506,11 +506,13 @@ export function initTerminalCore(
 
   // WS 重连后自动重新打开 PTY：WS 断线重连 → 旧 PTY/sessionId 在服务端已消失，
   // 必须重新 terminal-open 拿新 sessionId，否则终端变死（无法输入/无输出）。
-  // 取消旧的重连回调（deactivate 时 dispose 会注销，这里先清旧的防重复）
+  // tmux 卡跳过本回调——它的重连由 tmux-card.ts 的 _onWsReconnect 处理（发 tmux
+  // attach 重开）；若两个回调都发 terminal-open 会一次重连 spawn 两个 PTY，
+  // 基础 PTY 无人认领成孤儿（BAR-RECONNECT-01）。
   if (tc.meta._onReconnect) wsChannel.offReconnect(tc.meta._onReconnect);
   const onReconnect = () => {
+    if (terminalName === 'tmux') return;
     // WS 刚重连：服务端是全新状态，旧 sessionId 无效，重新 spawn 基础 PTY。
-    // tmux 卡的重连回调由 tmux-card.ts 的 _onWsReconnect 另行处理（发 tmux attach）。
     delete tc.meta.sessionId;
     term.write('\r\n\x1b[33m[WS 已重连，自动恢复终端]\x1b[0m\r\n');
     const t = card.instanceId + '-' + Date.now();

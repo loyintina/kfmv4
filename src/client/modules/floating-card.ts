@@ -20,7 +20,7 @@ import {
   _floatingCards, _allocZ, _brOrbToItem,
   _hexToRgba, _cornerLayout,
   _scatterPosition, _dismissOne,
-  Z_FLOATING_BASE, Z_FULLSCREEN, TITLE_BAR_H,
+  TITLE_BAR_H,
   COMPACT_W, COMPACT_H,
 } from './floating-shared.js';
 let dragItem: FloatingCardItem | null = null;
@@ -270,8 +270,10 @@ export function createFloatingCard(config: FloatingCardConfig): FloatingCardItem
   document.body.appendChild(el);
 
   _floatingCards.push(item);
-  const LAUNCH_Z_ABOVE_STACK = Z_FLOATING_BASE + _floatingCards.length + 1;
-  el.style.zIndex = String(LAUNCH_Z_ABOVE_STACK);
+  // z-index 不变量：item.zIndex === el.style.zIndex 全程一致（BAR-FLOAT-Z-01）。
+  // el 的 z 已在上方 cssText 写入（= _allocZ() 值）；_allocZ 单调递增，
+  // 新卡天然在已有卡之上，无需另算发射 z（曾覆写为 BASE+length+1 导致
+  // item.zIndex 与 DOM 在首次 touch 前发散）。
 
   // 目标位置：优先用 config 指定，否则自动散落
   let targetLeft: number, targetTop: number;

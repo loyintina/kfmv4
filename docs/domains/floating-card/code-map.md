@@ -109,14 +109,16 @@ DOM 保 WS（:594）→ dismiss 全清 + terminal-close。tmux 卡叠加 list-se
 
 **疑似 bug / 脆弱点（存疑）：**
 
-17. **WS 重连双开 PTY**：terminal-card-04 的 onReconnect（:511-521）与 tmux-card 的
-    _onWsReconnect（:246-256）都会发 terminal-open → 一次重连 spawn 两个 PTY，前者孤儿。
-18. **发射时 zIndex 记录与 DOM 不一致**：item.zIndex 用 _allocZ（:164），el 覆写为
-    Z_FLOATING_BASE + length + 1（:273-274）——首次 touch 前两者发散。
+17. **【已结案】WS 重连双开 PTY**：通用重连回调已对 `terminalName === 'tmux'` 早退
+    （BAR-RECONNECT-01，成因 C 权宜——注释声称另行处理但出生无门控，引入 b2f74bc）。
+18. **【已结案】发射时 zIndex 记录与 DOM 不一致**：发射覆写已删，el 直接用 _allocZ
+    值（单调递增天然在上），`item.zIndex === DOM z` 全程一致（BAR-FLOAT-Z-01，
+    成因 B 接力——revert 1a9a3ec 恢复旧双轨）。
 19. **api/tools 卡字号 fallback 错配**：读 kfm-fontsize-api/tools 但 FONT_SIZE_CONFIGS
     无这两个 typeId（gestures.ts:32-37）→ 按 file 的 8/20/13 钳；config/session/role
     卡压根不读字号偏好。
-20. handler-factory 失焦静默 _doSave，失败 catch 吞掉（:164）——用户无感知静默丢写。
+20. **【已结案】handler-factory 失焦静默丢写**：`_doSave` 查响应 + 失败 toast +
+    失败不切预览保住文本（BAR-SAVE-01，成因 C 权宜，引入 0b12122）。
 21. main.ts:57 把 cardRegistry 挂 window.__cardRegistry——调试后门，契约未提。
 22. 命名错位：card03 的 handler 工厂叫 `createTerminal04Handler`；契约文件清单混用
     03/04 编号。

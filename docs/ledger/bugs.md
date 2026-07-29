@@ -172,6 +172,9 @@
 | BAR-DEBUG-01 | `4e59339` | `debugger;` 语句随生产包发布（测绘 client-shell#15）：devtools 打开即冻结页面。契约：debug-assert 不得含 debugger 语句；DEBUG 常开为有意决策（本地单用户应用，断言日志即 bug 上报通道） | L | ✅ 已钉（源码断言） | `tests/client-logic.test.ts` |
 | BAR-RESTART-GUARD-01 | `8b1dc57` | /api/system/restart 无 verifyLocalOrigin（测绘 server#7，成因 E 机制没人走——opt-in 机制出生未接入）：恶意网页跨源 POST 可触发服务重启。契约：端点必须挂 guard | L | ✅ 已钉（源码断言） | `tests/client-logic.test.ts` |
 | BAR-ORIGIN-GUARD-01 | `683b9f2` | /ai/chat/start 无 verifyLocalOrigin（同 server#7，成因 E）：跨源可触发 AI run（烧额度）。契约：端点必须挂 guard | L | ✅ 已钉（中间件功能测试，跨源 403 真红验证） | `tests/server-routes.test.ts` |
+| BAR-SAVE-01 | `0b12122` | 失焦静默保存吞错（测绘 floating-card#20，成因 C 权宜——出生即 `catch { /* swallow */ }` 不查响应）：写盘失败用户无感知且 `_rawContent` 已更新，静默丢写。契约：`_doSave` 查 `data.success` + 失败 toast + 失败不切预览保住文本 | L | ✅ 已钉（源码断言） | `tests/client-logic.test.ts` |
+| BAR-RECONNECT-01 | `b2f74bc` | WS 重连双开 PTY（测绘 floating-card#17，成因 C 权宜——注释声称 tmux 另行处理但代码无门控）：tmux 卡重连时通用回调与 tmux 回调各发一次 terminal-open，基础 PTY 成孤儿。契约：通用重连回调对 `terminalName === 'tmux'` 早退 | L | ✅ 已钉（源码断言） | `tests/client-logic.test.ts` |
+| BAR-FLOAT-Z-01 | `1a9a3ec` | 浮卡发射 zIndex 记录与 DOM 发散（测绘 floating-card#18，成因 B 接力——revert 恢复旧实现时未察觉双轨）：`item.zIndex` 用 `_allocZ()`、DOM 覆写为 BASE+length+1，首次 touch 前 `_cardAbove/_cardBelow` 比较失准。契约：`item.zIndex === el.style.zIndex` 全程一致，`_allocZ` 单调递增天然在上，禁止另算发射 z | L | ✅ 已钉（源码断言） | `tests/client-logic.test.ts` |
 
 > 新 bug 修复后：补一个回归钉子 → 在此登记 → 状态置「已钉」。见
 > `../guides/testing.md` + `../constraints/invariants.md` §二 #24（修 bug 补钉子纪律）。

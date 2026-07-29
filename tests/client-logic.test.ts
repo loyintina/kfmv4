@@ -794,3 +794,26 @@ regression('BAR-RESTART-GUARD-01', '8b1dc57', '/api/system/restart 挂 verifyLoc
   const src = readFileSync('src/server/index.ts', 'utf-8');
   assert(src.includes("app.post('/api/system/restart', verifyLocalOrigin,"), 'restart 端点必须挂跨源防护');
 });
+
+// ==========================================================================
+// 2026-07-29 bug 堆批次二（floating-card 域：#17/#18/#20 结案）
+// ==========================================================================
+
+regression('BAR-SAVE-01', '0b12122', '失焦静默保存不得吞错——失败必须 toast + 不切预览保住文本（成因C 权宜）', () => {
+  const src = readFileSync('src/client/modules/renderers/handler-factory.ts', 'utf-8');
+  assert(src.includes('data.success'), '_doSave 必须检查响应 success');
+  assert(src.includes('showCardToast'), '_doSave 失败必须 toast 让用户感知');
+  assert(!src.includes('catch { /* swallow */ }'), '不得吞 catch（静默丢写根源）');
+  assert(src.includes('if (!await _doSave(newContent)) return;'), '保存失败不得切预览（保住用户文本）');
+});
+
+regression('BAR-RECONNECT-01', 'b2f74bc', 'tmux 卡 WS 重连不得走通用 terminal-open（一次重连双 PTY 孤儿）', () => {
+  const src = readFileSync('src/client/modules/terminal-card-04.ts', 'utf-8');
+  const cb = src.slice(src.indexOf('const onReconnect = () =>'));
+  assert(cb.includes("terminalName === 'tmux'"), '通用重连回调必须对 tmux 卡早退（tmux 由 tmux-card 另行重开）');
+});
+
+regression('BAR-FLOAT-Z-01', '1a9a3ec', '浮卡 z-index 不变量：item.zIndex 与 DOM 全程一致（发射不得覆写发散）', () => {
+  const src = readFileSync('src/client/modules/floating-card.ts', 'utf-8');
+  assert(!src.includes('LAUNCH_Z_ABOVE_STACK'), '不得另算发射 z 覆写 DOM（_allocZ 单调递增天然在上）');
+});
