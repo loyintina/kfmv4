@@ -68,6 +68,8 @@ execSync('node scripts/check/check-test-patterns.mjs', { stdio: 'inherit' });
 execSync('node scripts/check/check-bar-ledger.mjs', { stdio: 'inherit' });
 execSync('node scripts/check/check-doc-budget.mjs', { stdio: 'inherit' });
 execSync('node scripts/check/check-doc-symbols.mjs', { stdio: 'inherit' });
+execSync('node scripts/check/check-doc-schema.mjs', { stdio: 'inherit' });
+execSync('node scripts/check/check-commit-docs.mjs', { stdio: 'inherit' });
 execSync('node scripts/check/sync-counts.mjs --check-only', { stdio: 'inherit' });
 execSync('npx tsc --noEmit', { stdio: 'inherit' });
 

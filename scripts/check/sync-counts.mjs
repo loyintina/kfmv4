@@ -14,6 +14,8 @@
  *   CLAUDE.md                    「N 个 check-*.mjs」「N 个回归测试」
  *   docs/domains/infra/contract.md「check-*.mjs`（N 个）」
  *   docs/guides/testing.md       「N 个测试（单元/集成…）」
+ *   docs/domains/infra/contract.md 检查管线节：头部脚本数 + <!-- chain:auto --> 区块
+ *     （链枚举从 package.json scripts.check 派生重新生成，含顺序）
  * 注意：ledger/history.md 的历史计数（某版本当时的数）禁止同步。
  */
 
@@ -69,6 +71,57 @@ for (const { file, subs } of TARGETS) {
   } else {
     writeFileSync(path, after);
     console.log(`[sync-counts] ${file} 已回写`);
+  }
+}
+
+// ========== 检查管线链枚举生成区（infra contract） ==========
+// 真相源 = package.json scripts.check 的命令顺序
+
+{
+  const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf-8'));
+  const names = pkg.scripts.check.split('&&').map(s => s.trim()).map(step => {
+    const m = step.match(/check-([\w-]+)\.mjs/);
+    if (m) return m[1];
+    if (step.startsWith('sass')) return 'sass';
+    if (step.includes('sync-counts')) return 'sync-counts';
+    if (step.startsWith('tsc')) return 'tsc';
+    return null;
+  }).filter(Boolean);
+
+  // 渲染：首位带注，其余短名，贪心换行 ≤100 字符
+  const parts = names.map((n, i) =>
+    i === 0 ? '`check-' + n + '`（>3 未提交即中断，首位）' : n);
+  const lines = [];
+  let cur = '';
+  for (const p of parts) {
+    if (cur && (cur + ' → ' + p).length > 100) { lines.push(cur + ' →'); cur = p; }
+    else cur = cur ? cur + ' → ' + p : p;
+  }
+  lines.push(cur);
+  // 末行收尾：tsc 后加句号
+  lines[lines.length - 1] = lines[lines.length - 1] + '。';
+  const block = '<!-- chain:auto 由 sync-counts 生成，禁止手改 -->\n'
+    + lines.join('\n') + '\n<!-- /chain:auto -->';
+
+  const file = 'docs/domains/infra/contract.md';
+  const path = join(ROOT, file);
+  const before = readFileSync(path, 'utf-8');
+  let after = before.replace(
+    /(## 检查管线（npm run check，)(\d+)( 脚本，顺序固定）)/,
+    `$1${checkCount}$3`);
+  if (/<!-- chain:auto[\s\S]*?<!-- \/chain:auto -->/.test(after)) {
+    after = after.replace(/<!-- chain:auto[\s\S]*?<!-- \/chain:auto -->/, block);
+  } else {
+    console.error(`[sync-counts] ${file} 缺少 <!-- chain:auto --> 生成区标记`);
+    process.exit(1);
+  }
+  if (after !== before) {
+    if (CHECK_ONLY) {
+      console.error(`[sync-counts] ${file} 检查管线链漂移（未同步）`);
+      process.exit(1);
+    }
+    writeFileSync(path, after);
+    console.log(`[sync-counts] ${file} 检查管线链已回写（${names.length} 步）`);
   }
 }
 

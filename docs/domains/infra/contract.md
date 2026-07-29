@@ -9,12 +9,14 @@
 - server：ESM bundle——**external 列表是生死线**（CJS 包打进去启动即崩）。
 - 样式：`sass base.scss → base.css`（check 链内自动编译）。
 
-## 检查管线（npm run check，20 脚本，顺序固定）
+## 检查管线（npm run check，25 脚本，顺序固定）
 
-`check-uncommitted`（>3 未提交即中断，首位）→ versions → checks → doc-coverage →
-sass → css-wiring → tool-compaction → anim → as-any → card-meta → registry → zindex →
-console → docs → consistency → active-stack → code-doc-refs → workflow-integrity → cards → contract-freshness →
-test-patterns → tsc。
+<!-- chain:auto 由 sync-counts 生成，禁止手改 -->
+`check-uncommitted`（>3 未提交即中断，首位） → versions → checks → doc-coverage → sass → css-wiring →
+tool-compaction → anim → as-any → card-meta → registry → zindex → console → docs → consistency →
+active-stack → code-doc-refs → workflow-integrity → cards → contract-freshness → test-patterns →
+bar-ledger → doc-budget → doc-symbols → doc-schema → commit-docs → sync-counts → tsc。
+<!-- /chain:auto -->
 
 ## 硬规则
 
@@ -36,6 +38,6 @@ test-patterns → tsc。
 
 ## 文件清单
 
-`build.mjs` `scripts/check/check-*.mjs`（23 个）`tests/`（regression.test.ts + smoke/）
+`build.mjs` `scripts/check/check-*.mjs`（25 个）`tests/`（regression.test.ts + smoke/）
 `public/css/`（scss 源）`package.json`（check 链定义）
 测试分层与纪律 → ../../guides/testing.md

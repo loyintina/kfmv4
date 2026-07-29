@@ -42,7 +42,13 @@
 ### domains/\*/contract.md — #陷阱
 
 - `## #陷阱` 节为有序列表：`N. **名称**：……`，编号从 1 连续不跳号；跨文档引用写作 `#陷阱 N`
+- 契约必备章节：`## #陷阱`、`## 文件清单`（check-doc-schema 机检）
 - 消费者：代码注释 `#陷阱 N` 锚点校验（批 1）；check-docs 锚点检查（已有）
+
+### workflows/\*.yaml — 字段
+
+- 必备字段：`id / name / trigger / frequency / reads / steps / writes / exit_condition / natural_next`
+- 消费者：check-doc-schema（字段齐）+ check-workflow-integrity（reads/writes 路径有效）
 
 ### domains/\* — 符号引用
 
