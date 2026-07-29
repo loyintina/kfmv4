@@ -16,7 +16,8 @@
      agent）——失败/审查产物必须格式化为 agent 可拾取（STACK/ledger 邮箱位）
    — 配套：provider 选择配置（providers.json 多 key 有过期/余额不足，agent 脚本用哪个
      必须显式可配；该设置未来进前端设置卡）
-   — 试点负载：tag 升版检测器（枚举产出/机械算下限+语义判上限/兑现 release.yaml 铺路字段）
+   — 试点负载：tag 升版检测器 ✅ 落地进入影子模式（2026-07-29，回放三轮 47→57→61%，
+     调整后 83%；影子日志 ledger/tag-advisor-shadow.md）
    — 触发：check-release-radar 常驻雷达（commits≥30 或 feat≥10 提醒，阈值经 14 历史版本对论证）→
      agent 判定 → 人拍板
    — 测试协议：回放测试（14 历史版本对=黄金集，测一致率）→ 否定测试（周期中段切片须忍住）→
