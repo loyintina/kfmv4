@@ -32,8 +32,8 @@
 | 视觉行为 | 协议事件 | 客户端责任 |
 |---------|---------|-----------|
 | 思考框弹出 + 流式文本 | `content_block_delta(thinking)` | append 裸文本到 `<pre>` |
-| 思考完成 → 400ms 折叠 | `content_block_stop` | 计时器 + CSS 动画 |
-| 正文流式打字机 | `content_block_delta(text)` | append 裸文本 |
+| 思考完成 → 400ms 折叠 | `content_block_stop` | 三路径 `_autoCollapseThinking`（首个 text_delta + message_stop 兜底 + tool_result）+ CSS 动画；尊重手动展开（PANEL-11） |
+| 正文流式 | `content_block_delta(text)` | `_scheduleStreamingMd` 120ms 节流轻管线（marked+高亮，跳过 KaTeX/mermaid；不进 `_mdCache`）（PANEL-12） |
 | 正文完成 → 富文本 | `content_block_stop` + 服务端 html | 整段替换 innerHTML |
 | 工具卡弹出（参数未到） | `content_block_start(tool_use)` | 创建骨架 + 随机配色 + 摸鱼提示 |
 | 参数流式 | `content_block_delta(input_json)` | append 裸 JSON |
@@ -46,13 +46,7 @@
 | 等待提示 | `message_stop` / 发送时 | 独立 DOM 节点，随机文案 |
 | 入场动画 | 新消息 mount | CSS class `orb-msg-new` |
 
-流式期间客户端显示裸文本（`<pre class="block--streaming">`），完成时刻服务端语义 HTML 一次性注入。交接瞬间用 80ms fade 作为设计节拍。
-
-> **v8.1 修订（迁移注）**：① 流式期不再是纯裸文本——`_scheduleStreamingMd` 120ms
-> 节流轻管线（marked+高亮，跳过 KaTeX/mermaid；部分渲染不进 `_mdCache`），钉
-> BAR-ORB-PANEL-12；② 思考框折叠是三路径 `_autoCollapseThinking`（首个 text_delta +
-> message_stop 兜底 + tool_result），尊重手动展开，钉 PANEL-11；③ 历史思考框折叠容器
-> 必须 `orb-fold-content`（死类 `orb-fold-open` 已清除），钉 PANEL-13。
+流式期间走 120ms 节流轻管线部分渲染（`<pre class="block--streaming">`），完成时刻服务端语义 HTML 一次性注入。交接瞬间用 80ms fade 作为设计节拍。历史思考框的折叠容器必须用 `orb-fold-content`（死类 `orb-fold-open` 已清除，PANEL-13）。
 
 视觉基准测试：`tests/visual-baseline.test.ts`（17 个 fixture，固化 v7 结构）。
 

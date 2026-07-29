@@ -24,7 +24,10 @@
 
 1. 设计草案写在 `active/` 下（自由格式，随手记）
 2. 讨论确认后进入实施，草案随实施持续更新
-3. 实施完成 → 知识按域回家（contract/detail/guides）+ `ledger/history.md` 记一条，原草案删除
+3. 实施完成 → 按文档性质分两路：
+   - 任务型（一次性计划）→ 知识按域回家（contract/detail/guides）+ `ledger/history.md` 记一条，原草案删除
+   - 参考型（长期要查的契约/架构参考）→ 进 `domains/{域}/` detail 或 `guides/`，实现完也不删除
+   判据：「实现完之后，还有人需要回来查它吗？」需要 → 参考型。
 4. 设计被放弃 → 决策与原因进 `decisions/`，草案删除
 
 > 归档细则（check-docs 重写后的 frontmatter/命名规约）待管线适配阶段定稿。

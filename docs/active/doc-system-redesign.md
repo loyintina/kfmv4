@@ -1249,8 +1249,9 @@ V8_AUDIT_REPORT §四.2「tool_result 状态/渲染两处分散」与 §四.3「
 1. README.md 文档表 6 行旧 docs 路径 → 重写为新结构入口（CLAUDE.md 路由表 + 各层导览）。
 2. README.md 功能表「HANDBOOK 同步检查」措辞 → 随 check-handbook-sync 重写同步。
 3. src/server/ai/tools/index.ts:9 注释的 TOOL_IO_COMPACTION.md 旧路径 → 改指 detail-tool-compaction.md（§二十八遗留）。
-4. ledger/bugs.md 头部 REGRESSION_TESTING_SYSTEM 旧路径 → archive 轮结算后改指（§二十五遗留）。
-5. guides/spec-driven.md 第二章范本 REGRESSION_TESTING_SYSTEM 旧路径 → 同上（§三十二遗留）。
+4. ~~ledger/bugs.md 头部 REGRESSION_TESTING_SYSTEM 旧路径~~ ✅ 已提前完成（§三十七，切指不删原文安全）。
+5. ~~guides/spec-driven.md 第二章范本 REGRESSION_TESTING_SYSTEM 旧路径~~ ✅ 已提前完成（§三十九，同上）。
+6. docs/AGENT_PROMPT_REFERENCES.md 原文删除——内容已全文提取进 `newdoc/constraints/detail-research-method.md` + `detail-prompt-engineering.md`（§三十九），invariants.md 指针已改。
 
 ## §三十五 19/19 预告：doc-system-redesign.md 自身
 
@@ -1321,3 +1322,14 @@ V8_AUDIT_REPORT §四.2「tool_result 状态/渲染两处分散」与 §四.3「
 - 边角确认：appendix-b-c 的 processClickQueue 栈风险已由现行蹦床式实现闭环；RACE_CONDITION_PLAN Phase 2/3/5 设计提案未采纳且被现行代码明确否决（tree-animation.ts 头注「不建 overlay」）。
 
 至此 archive 65 份全部分类完毕：(a) 41 + (b) 21 + (c) 3。收尾三件套（统一压缩轮 → 管线适配 → 切换提交）成为唯一剩余工作。
+
+---
+
+## §三十九 压缩轮 ①：已知 4 组近重叠归并
+
+执行日期：2026-07-29。原则：压缩=归并（一条知识一个家，别处只留指针），教训不压没。
+
+1. **adr-001/002**：001 理由 1（统一化成本叙述）缩为一句互指 adr-002 尝试史；002 决策+理由 3（共享层方案叙述）缩为互指 adr-001；002 后果 1 死指针「HANDBOOK §一」→ floating-card 契约硬规则 1。分工维持：001 记「怎么办」，002 记「为什么不统一」。
+2. **ai-chat 视觉契约**：v8.1 修订注三条（_scheduleStreamingMd 轻管线 PANEL-12 / 思考折叠三路径 PANEL-11 / orb-fold-content PANEL-13）并进表格对应行与正文，删除「纯裸文本」过时描述与整个修订注块——表格即现行行为，不再有「表+补丁注」双层。
+3. **spec-driven §2④ vs doc-maintenance 生命周期**：生命周期唯一来源定 doc-maintenance（步骤 3 拆任务型/参考型两路 + 判据）；§2④ 缩为判据 + 常见错误 + 指针。顺带：spec-driven 两处 REGRESSION_TESTING_SYSTEM 范本指针改指 guides/testing 素材考古节（切换清单第 5 项提前完成）。
+4. **AGENT_PROMPT_REFERENCES**：有用内容 2026-07-28 已全文提取（detail-research-method 203 行 + detail-prompt-engineering 89 行，角色绑定/环境绑定部分当时已判定删除），原文 415 行完全冗余。按规则旧 docs 切换前不动——invariants.md:38 指针改指两个 detail 文件，原文删除记进切换清单第 6 项。「蒸馏（invariants §二）/展开（detail）」双层是既有设计，非重叠，不动。

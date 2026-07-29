@@ -35,7 +35,7 @@ AI 模型在训练中获得了强大的代码生成能力，但也带有一些�
 - **设计阶段**：对照 §六 自查清单逐条确认
 - **遇到冲突**：按 §三 冲突处理规则裁决
 - **遇到不熟悉的模块**：查 §八 关键文件职责
-- **配置 agent 提示词时**：参考 `docs/AGENT_PROMPT_REFERENCES.md`（Researcher 方法论 + Prompt Engineering）与本文档——方法论告诉 agent"怎么想"，约束告诉 agent"怎么做"。
+- **配置 agent 提示词时**：参考 `detail-research-method.md`（研究方法论展开版）与 `detail-prompt-engineering.md`（提示词工程约束）配合本文档——方法论告诉 agent"怎么想"，约束告诉 agent"怎么做"。
 
 ### 0.3 原则的优先级（LEVEL）
 
