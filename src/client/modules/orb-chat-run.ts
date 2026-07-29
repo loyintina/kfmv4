@@ -22,9 +22,8 @@ import { sessionStore } from './session-client.js';
 import type { ContentBlock, TextBlock, ToolBlock, RuleWarningBlock } from './session-client.js';
 import { clearToolHint, updateTodoFromTool, TODO_DISMISS_KEY, todosFingerprint } from './orb-chat-hints.js';
 import { log } from './logger.js';
-// 工具 I/O 上下文压缩（v8.1.0）：纯函数注册表，契约 docs/domains/ai-chat/detail-tool-compaction.md
-import { compactToolInput, compactToolResult, normalizeBashCommand, MUT_BURST_GAP, todoResultAnnotation, webTitleKey, errorFingerprint, failRepeatAnnotation } from '../../shared/tool-compaction/index.js';
-import type { CompactionCtx } from '../../shared/tool-compaction/index.js';
+// 载荷构造唯一入口（BAR-ORB-RESUME-01）：shared 纯函数，压缩/标注/空壳过滤全在那一处
+import { toOpenAiMessages } from '../../shared/chat-protocol/to-openai-messages.js';
 import { promoteReasoningBlocks } from '../../shared/message-normalize.js';
 // 兜底消息上屏 + 取消时工具卡 DOM 收尾（v8 增量 DOM：数据层变更不会自动投影）
 import { mountFallbackAiMessage, settleToolCardsDom } from './chat-dom.js';
@@ -402,14 +401,6 @@ export async function resumeRun(
   onRender();
 }
 
-/** 从 ChatMessage 中提取纯文本 */
-function extractText(msg: ChatMessage): string {
-  return msg.content
-    .filter((b): b is TextBlock => b?.type === 'text')
-    .map(b => b.text)
-    .join('');
-}
-
 /** 读取活跃配置（provider/model/roleFile） */
 async function readActiveConfig(base: string): Promise<{ providerId?: string; modelId?: string; roleFile?: string }> {
   try {
@@ -451,200 +442,17 @@ export async function doSend(
   const provider = config.providerId;
 
   try {
-    // 构建发给 API 的消息（content blocks → OpenAI 格式）。
-    // 会话文件存的是完整 content blocks（含 tool_use + tool_result），
-    // 发给 API 时必须转为 OpenAI 的 tool_calls + role:"tool" 格式。
-    //
-    // 工具 I/O 上下文压缩（v8.1.0，契约 docs/domains/ai-chat/detail-tool-compaction.md）：
-    // 会话文件是全量真相源（永不压缩），apiMessages 是投影——压缩只发生在这一处。
+    // 构建发给 API 的消息（content blocks → OpenAI 格式）——唯一构造函数在
+    // shared/chat-protocol/to-openai-messages.ts（BAR-ORB-RESUME-01：禁止第三份手写转换，
+    // tryAutoResume 曾内联复制简化版 → 无压缩/不过滤空壳/content:null 严格端点 400）。
+    // 会话文件是全量真相源（永不压缩），apiMessages 是投影——压缩只发生在那一处。
     const noCompact = localStorage.getItem('kfm-no-compact') === '1'; // 灰度逃生门：=1 跳过压缩发全量
-    // G1：最近 2 条 AI 消息（工作记忆）及之后的全部消息豁免压缩
-    let compactExemptFrom = 0; // 不足 2 条 AI 消息 = 全部豁免
-    let aiSeen = 0;
-    for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i]?.role === 'ai' && ++aiSeen === 2) { compactExemptFrom = i; break; }
-    }
-    // G4：整个历史中最后出现的 todo 工具结果豁免（承载当前任务状态，压了=失忆当前进度）
-    // 同时捕获该块与其后 AI 消息数，供投影标注（契约第九节 todo 小节）。
-    let lastTodoResultId = '';
-    let lastTodoBlock: ToolBlock | null = null;
-    let todoAiRoundsAfter = 0; // 最后一次 todo 更新之后经过的 AI 消息数（烂尾判定用）
-    for (let i = messages.length - 1; i >= 0 && !lastTodoResultId; i--) {
-      const m = messages[i];
-      if (m?.role !== 'ai') continue;
-      for (const b of m.content) {
-        if (b?.type === 'tool' && b.name === 'todo' && b.result) {
-          lastTodoResultId = b.id;
-          lastTodoBlock = b;
-          break;
-        }
-      }
-      if (!lastTodoResultId) todoAiRoundsAfter++;
-    }
-    // todo 投影标注（契约第九节）：dismiss 指纹命中 = 用户 ✕ 关闭过这份列表；
-    // 烂尾 = ≥TODO_STALE_GAP 轮未更新。措辞只陈述事实不做因果断言——
-    // 手动关闭 ≠ 任务结束，也可能只是嫌碍眼（用户原话），信号本身分不出来。
-    let todoAnnotation = '';
-    if (lastTodoBlock) {
-      const todos = Array.isArray(lastTodoBlock.input?.todos)
-        ? lastTodoBlock.input.todos as Array<{ content: string; status: string }> : [];
-      let dismissed = false;
-      if (todos.length > 0) {
-        try { dismissed = (localStorage.getItem(TODO_DISMISS_KEY) || '') === todosFingerprint(todos); } catch { /* 隐私模式等 */ }
-      }
-      todoAnnotation = todoResultAnnotation({ dismissed, aiRoundsAfter: todoAiRoundsAfter });
-    }
-    // 跨调用标注预扫描（契约第九节：标注只向后看——每个调用的 ctx 只由它之前的
-    // 调用决定，旧压缩行永不因后续消息改变，prompt 缓存前缀稳定）。
-    // 压缩器保持纯函数，此处在压缩循环前产出每个工具块的 CompactionCtx。
-    const compactCtxById = new Map<string, CompactionCtx>();
-    const failRepeatById = new Map<string, number>(); // 块 id → 同错误第 N 次（投影标注用，需在块外可见）
-    {
-      const readFpsByPath = new Map<string, string[]>();
-      const bashRunsByCmd = new Map<string, boolean[]>(); // 归一化命令 → isError 序列
-      // 路径 → 修改爆发状态（write+edit 成功调用）。cum=全会话累计；burst=本轮爆发内序号；
-      // lastMi=上次成功修改所在 AI 消息索引（相距 >MUT_BURST_GAP 轮 = 新一轮爆发）
-      const mutStateByPath = new Map<string, { cum: number; burst: number; lastMi: number }>();
-      let bashFailCmds: string[] = []; // 当前连续失败的归一化命令序列（环境故障判定用）
-      const webPrevTitles: string[] = []; // web_search 历史标题键（空键不入，契约第九节空键守卫）
-      const failCountByKey = new Map<string, number>(); // 工具:错误指纹 → 次数（失败模式重复标注用）
-      for (let mi = 0; mi < messages.length; mi++) {
-        const m = messages[mi];
-        if (m?.role !== 'ai') continue;
-        for (const b of m.content) {
-          if (b?.type !== 'tool' || !b.result) continue;
-          const resultText = b.result.content?.map(c => c.text || '').join('') || '';
-          // 失败模式重复（跨工具通用层；bash 除外——它有更精细的弧线/环境故障机制）
-          if (b.result.isError && b.name !== 'bash') {
-            const efp = errorFingerprint(resultText);
-            if (efp) { // 空指纹（无信息失败文本）不入库不比对
-              const key = `${b.name}:${efp}`;
-              const n = (failCountByKey.get(key) || 0) + 1;
-              failCountByKey.set(key, n);
-              failRepeatById.set(b.id, n);
-            }
-          }
-          if (b.name === 'read') {
-            // 失败的 read 不是「读到了内容」——不推进指纹历史（否则 EISDIR 这类
-            // 错误指纹会让后续成功读取误判「文件已被修改」，宁漏勿错）
-            if (b.result.isError) continue;
-            const path = typeof b.input.path === 'string' ? b.input.path : '';
-            const fp = `${resultText.split('\n').length}行/${resultText.length}字符`;
-            const prev = readFpsByPath.get(path) || [];
-            compactCtxById.set(b.id, { readPrevFps: [...prev] });
-            prev.push(fp);
-            readFpsByPath.set(path, prev);
-          } else if (b.name === 'bash') {
-            const rawCmd = typeof b.input.command === 'string' ? b.input.command : '';
-            const norm = normalizeBashCommand(rawCmd) || rawCmd.trim(); // 归一化为空 → 退回原串分组
-            const isError = !!b.result.isError;
-            const runs = bashRunsByCmd.get(norm) || [];
-            let tailFails = 0; // runs 末尾的连续失败数
-            for (let i = runs.length - 1; i >= 0 && runs[i]; i--) tailFails++;
-            // 环境故障：连续 ≥3 次 bash 失败且最近 3 次命令各不相同（不同意图同一结局 = 通道问题）
-            if (isError) bashFailCmds.push(norm); else bashFailCmds = [];
-            const last3 = bashFailCmds.slice(-3);
-            const envStreak = isError && bashFailCmds.length >= 3 && new Set(last3).size === 3
-              ? bashFailCmds.length : 0;
-            compactCtxById.set(b.id, {
-              bashRetry: {
-                ordinal: runs.length + 1,
-                failStreak: isError ? tailFails + 1 : 0,
-                prevFailStreak: isError ? 0 : tailFails,
-              },
-              bashEnvStreak: envStreak,
-            });
-            runs.push(isError);
-            bashRunsByCmd.set(norm, runs);
-          } else if (b.name === 'web_search') {
-            // 重复搜索标注：标题键精确全等才判同；空键（失败/异常结果无标题行）
-            // 不入历史也不比对——两个空键会互相误判「相同」（契约空键守卫）。
-            compactCtxById.set(b.id, { webPrevTitles: [...webPrevTitles] });
-            const key = webTitleKey(resultText);
-            if (key) webPrevTitles.push(key);
-          } else if (b.name === 'write' || b.name === 'edit') {
-            // 修改轨迹（锚定真相源：从全量会话文件计数，与投影窗口无关）。
-            // 只有成功调用才算「修改」——失败的 edit 什么都没改。
-            // 爆发语义：相邻两次成功修改相距 >MUT_BURST_GAP 轮 = 新一轮爆发，
-            // 历史累计降级为「再进入」背景（几轮内集中修改的计数才有时效性）。
-            const path = typeof b.input.path === 'string' ? b.input.path : '';
-            // edit 行号区间来自 result.details（omp/edit.ts 写入，编辑当时位置，后续会漂移）
-            let editRange: CompactionCtx['editRange'];
-            if (b.name === 'edit') {
-              const d = b.result.details;
-              const ls = d?.lineStart, le = d?.lineEnd;
-              if (typeof ls === 'number' && typeof le === 'number') editRange = { start: ls, end: le };
-            }
-            if (b.result.isError) {
-              compactCtxById.set(b.id, editRange ? { editRange } : {}); // 失败不更新爆发状态
-            } else {
-              const st = mutStateByPath.get(path) || { cum: 0, burst: 0, lastMi: -1 };
-              const reEntry = st.cum > 0 && mi - st.lastMi > MUT_BURST_GAP;
-              const next = {
-                cum: st.cum + 1,
-                burst: reEntry || st.lastMi < 0 ? 1 : st.burst + 1,
-                lastMi: mi,
-              };
-              mutStateByPath.set(path, next);
-              const ctx: CompactionCtx = { mutBurst: { burst: next.burst, cum: next.cum, reEntry } };
-              if (editRange) ctx.editRange = editRange;
-              compactCtxById.set(b.id, ctx);
-            }
-          }
-        }
-      }
-    }
-    let compactSaved = 0; // 压缩省下的字符数（观测日志用）
-    const apiMessages: Array<{ role: string; content: string | null; tool_calls?: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }>; tool_call_id?: string }> = [];
-    for (let mi = 0; mi < messages.length; mi++) {
-      const m = messages[mi];
-      if (!m) continue;
-      const compactable = !noCompact && mi < compactExemptFrom; // G1 豁免期外的旧消息才压
-      if (m.role === 'user') {
-        apiMessages.push({ role: 'user', content: extractText(m) }); // G5：user 消息一个字不动
-      } else {
-        // AI 消息：拆分 text + tool blocks 为 OpenAI 格式
-        const textBlocks = m.content.filter((b): b is TextBlock => b?.type === 'text');
-        const toolBlocks = m.content.filter((b): b is ToolBlock => b?.type === 'tool');
-        const mainText = textBlocks.map(b => b.text || '').join(''); // G5：AI 正文一个字不动
-        if (toolBlocks.length > 0) {
-          // 有工具调用：assistant 消息带 tool_calls
-          const toolCalls = toolBlocks.map(tc => {
-            let args = JSON.stringify(tc.input);
-            if (compactable) {
-              const compacted = compactToolInput(tc.name, tc.input, !!tc.result?.isError, compactCtxById.get(tc.id));
-              if (compacted) {
-                const compactedArgs = JSON.stringify(compacted);
-                compactSaved += args.length - compactedArgs.length;
-                args = compactedArgs;
-              }
-            }
-            return { id: tc.id, type: 'function' as const, function: { name: tc.name, arguments: args } };
-          });
-          apiMessages.push({ role: 'assistant', content: mainText || null, tool_calls: toolCalls });
-          // 每个工具结果作为独立的 role:"tool" 消息（tool_calls/tool 配对结构原样保留，只压 content）
-          for (const tc of toolBlocks) {
-            const resultText = tc.result?.content?.map(c => c.text || '').join('') || '';
-            let content = resultText;
-            if (compactable && tc.id !== lastTodoResultId) { // G4：最新 todo 结果豁免
-              const compacted = compactToolResult(tc.name, tc.input, resultText, !!tc.result?.isError, compactCtxById.get(tc.id));
-              if (compacted !== null) {
-                compactSaved += resultText.length - compacted.length;
-                content = compacted;
-              }
-            }
-            if (tc.id === lastTodoResultId && todoAnnotation) content += todoAnnotation; // 投影标注：dismiss/烂尾
-            const failNote = failRepeatAnnotation(failRepeatById.get(tc.id) || 0);
-            if (failNote) content += failNote; // 失败模式重复标注（≥FAIL_REPEAT_MIN 才标，不限压缩区）
-            apiMessages.push({ role: 'tool', content, tool_call_id: tc.id });
-          }
-        } else {
-          // 空壳 assistant（纯思考/取消残留的零正文零工具消息）不进载荷——
-          // 宽松端点容忍，严格端点（kimi）400「assistant must not be empty」（BAR-PROVIDER-02）
-          if (mainText) apiMessages.push({ role: 'assistant', content: mainText });
-        }
-      }
-    }
+    const { apiMessages, compactSaved } = toOpenAiMessages(messages, {
+      compact: !noCompact,
+      isTodoDismissed: (todos) => {
+        try { return (localStorage.getItem(TODO_DISMISS_KEY) || '') === todosFingerprint(todos); } catch { return false; }
+      },
+    });
     if (!noCompact) {
       // 观测：压缩前后大小（JSON.stringify 长度估算；压缩前 = 压缩后 + 省下的字符）
       const afterSize = JSON.stringify(apiMessages).length;

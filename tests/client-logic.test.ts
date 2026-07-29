@@ -696,13 +696,15 @@ regression('BAR-ORB-PANEL-22', 'orb-chat-hints', 'Todo 面板手动 ✕ 关闭�
 // 契约 docs/design/TOOL_IO_COMPACTION.md。压缩器本体行为由 tests/tool-compaction.test.ts
 // 覆盖（34 例）；此处钉的是「接线」——doSend 压缩管线 + check 脚本挂构建链。
 
-regression('BAR-COMPACT-01', 'orb-chat-run', 'doSend 工具 I/O 压缩接线（G1/G4/逃生门/观测日志）', () => {
+regression('BAR-COMPACT-01', 'to-openai-messages', '工具 I/O 压缩接线（G1/G4/逃生门/观测日志）——载荷唯一构造函数', () => {
+  // BAR-ORB-RESUME-01 后：压缩/G1/G4 全收编 shared 唯一构造函数，调用层只剩逃生门与观测
+  const shared = readFileSync('src/shared/chat-protocol/to-openai-messages.ts', 'utf-8');
+  assert(shared.includes("from '../tool-compaction/index.js'"), '载荷构造必须引用压缩器注册表');
+  assert(shared.includes('compactExemptFrom'), 'G1：最近 2 条 AI 消息豁免压缩');
+  assert(shared.includes('lastTodoResultId'), 'G4：最新 todo 工具结果豁免（当前任务状态）');
+  assert(shared.includes('compactToolInput') && shared.includes('compactToolResult'), '入参与结果双路压缩');
   const src = readFileSync('src/client/modules/orb-chat-run.ts', 'utf-8');
-  assert(src.includes("from '../../shared/tool-compaction/index.js'"), 'doSend 必须引用压缩器注册表');
   assert(src.includes("localStorage.getItem('kfm-no-compact')"), '应有 kfm-no-compact 灰度逃生门');
-  assert(src.includes('compactExemptFrom'), 'G1：最近 2 条 AI 消息豁免压缩');
-  assert(src.includes('lastTodoResultId'), 'G4：最新 todo 工具结果豁免（当前任务状态）');
-  assert(src.includes('compactToolInput') && src.includes('compactToolResult'), '入参与结果双路压缩');
   assert(src.includes('[compact]'), '应有压缩观测日志（前后 KB 对比）');
   // saveMessages 优化：仅新会话全量上传（老会话服务端 /ai/chat/start 自己 appendUserMessage）
   const saveBody = src.split('sessionStore.saveMessages')[0] || '';
@@ -728,7 +730,7 @@ regression('BAR-PROVIDER-01', 'ai/chat', 'tool 消息 content 必须字符串化
 });
 
 regression('BAR-PROVIDER-02', 'ai/chat', '空壳 assistant 消息（纯思考/取消残留）不进 API 载荷（kimi 400 must not be empty）', () => {
-  const client = readFileSync('src/client/modules/orb-chat-run.ts', 'utf-8');
+  const client = readFileSync('src/shared/chat-protocol/to-openai-messages.ts', 'utf-8');
   assert(client.includes('if (mainText) apiMessages.push({ role: \'assistant\''), '客户端必须跳过零正文 assistant');
   const server = readFileSync('src/server/ai/chat.ts', 'utf-8');
   assert(server.includes("m.content == null || m.content === ''"), '服务端边界必须过滤空 assistant（fail-closed）');

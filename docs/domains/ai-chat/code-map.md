@@ -94,6 +94,7 @@
 2. **格式转换双份实现已漂移**：orb-chat-run.ts:598-647（含压缩 + 空壳过滤）vs
    orb.ts:686-709 tryAutoResume 内重复实现（无压缩，且 push `content: mainText || null`
    不过滤空 assistant）——冷恢复路径发给严格端点的载荷不合上游边界契约。
+   **（已修复 BAR-ORB-RESUME-01：收编 shared/chat-protocol/to-openai-messages.ts 唯一入口）**
 3. **死代码三处**：renderMarkdownAsync（orb-chat.ts:37 全仓库无调用）；
    getToolHint（orb-chat-hints.ts:106 无调用，chat-dom 自给自足）；
    session-store.ts:190 isIncomplete 无人调用（冷恢复判据在 orb.ts:676-679 重复实现）。

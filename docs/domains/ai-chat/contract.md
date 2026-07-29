@@ -112,6 +112,11 @@
     text 留空——显示成「已思考+无回复」，进载荷成空 assistant。正常结束（message_stop）
     text 空且 reasoning 非空 → 归位为正文；历史加载读时归一化（不改文件）；
     取消残留不归位（真实历史）。回归钉：BAR-ORB-EMPTY-01。
+11. **载荷构造唯一入口**：任何发送路径（doSend / tryAutoResume / 未来第三条）必须经
+    `shared/chat-protocol/to-openai-messages.ts` 构造 OpenAI 载荷——压缩投影、标注、
+    空壳过滤全在这一处；约束对象是端点载荷而非入口路径。禁止第三份手写转换
+    （tryAutoResume 曾内联复制简化版 → 无压缩/不过滤空壳/content:null，严格端点 400）。
+    回归钉：BAR-ORB-RESUME-01。
 
 ## 素材考古（原文已随 archive 注销，`git show v8.1.1:docs/archive/design/…` 可挖）
 

@@ -41,6 +41,7 @@ import './visual-baseline.test.js';
 import './protocol-reducer.test.js';
 import './tool-compaction.test.js';
 import './omp-glob.test.js';
+import './to-openai-messages.test.js';
 
 function seedState(files: Record<string, any>) {
   KFMState.files = {};

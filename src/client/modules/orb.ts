@@ -34,6 +34,8 @@ import { log } from './logger.js';
 import { sessionStore } from './session-client.js';
 import { buildPanelContent } from './orb-panel.js';
 import { doSend, resumeRun, readPersistedRun, clearPersistedRun, clearTodoPanel, startWaitingIndicator, setEventHook, updateTodoFromTool, type ChatMessage, type ToolBlock } from './orb-chat.js';
+import { TODO_DISMISS_KEY, todosFingerprint } from './orb-chat-hints.js';
+import { toOpenAiMessages } from '../../shared/chat-protocol/to-openai-messages.js';
 import { initChatDom, patchEvent, clearChatDom, mountUserMessage, mountAiMessage, mountFallbackAiMessage, scrollToBottom, suspendScroll, resumeScroll, withScrollAnchor, setHistoryLoader, getFollowBottom, setFollowBottom } from './chat-dom.js';
 import type { OrbState } from './orb-state.js';
 const API_BASE = window.location.pathname.replace(/\/+$/, '') + '/api/';
@@ -682,32 +684,15 @@ export async function initOrb(): Promise<void> {
       const model = meta?.modelId || '';
       const provider = meta?.providerId || '';
       if (!model || !provider) return;
-      // 构建 apiMessages（复用 doSend 的格式转换逻辑）
-      const apiMessages: Array<{ role: string; content: string | null; tool_calls?: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }>; tool_call_id?: string }> = [];
-      for (const m of chatMessages) {
-        if (m.role === 'user') {
-          const text = m.content.filter(b => b?.type === 'text').map(b => ('text' in b ? b.text : '')).join('');
-          apiMessages.push({ role: 'user', content: text });
-        } else {
-          const textBlocks = m.content.filter(b => b?.type === 'text');
-          const toolBlocks = m.content.filter(b => b?.type === 'tool');
-          const mainText = textBlocks.map(b => ('text' in b ? b.text : '')).join('');
-          if (toolBlocks.length > 0) {
-            const toolCalls = toolBlocks.map(tc => ({
-              id: ('id' in tc ? tc.id : '') as string,
-              type: 'function' as const,
-              function: { name: ('name' in tc ? tc.name : '') as string, arguments: JSON.stringify('input' in tc ? tc.input : {}) },
-            }));
-            apiMessages.push({ role: 'assistant', content: mainText || null, tool_calls: toolCalls });
-            for (const tc of toolBlocks) {
-              const resultText = ('result' in tc && tc.result?.content?.map(c => c.text || '').join('')) || '';
-              apiMessages.push({ role: 'tool', content: resultText, tool_call_id: ('id' in tc ? tc.id : '') as string });
-            }
-          } else {
-            apiMessages.push({ role: 'assistant', content: mainText });
-          }
-        }
-      }
+      // 构建 apiMessages——唯一构造函数（BAR-ORB-RESUME-01）：冷恢复与正常发送同投影，
+      // 压缩 + 空壳过滤 + 严格端点契约全部继承，禁止再手写第三份转换。
+      const noCompact = localStorage.getItem('kfm-no-compact') === '1';
+      const { apiMessages } = toOpenAiMessages(chatMessages, {
+        compact: !noCompact,
+        isTodoDismissed: (todos) => {
+          try { return (localStorage.getItem(TODO_DISMISS_KEY) || '') === todosFingerprint(todos); } catch { return false; }
+        },
+      });
       try {
         const res = await fetch(base + 'ai/chat/start', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
