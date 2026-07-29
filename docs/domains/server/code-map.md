@@ -13,26 +13,24 @@
 ## 一句话职责
 
 本机 HTTP/WS 服务器：Express 装配、文件 CRUD 路由、根切换、终端 PTY、tmux 桥、
-AI eval/snapshot 桥、能力执行器、出网代理。**安全边界域**——只绑 127.0.0.1 是前提。
+AI eval/snapshot 桥、出网代理。**安全边界域**——只绑 127.0.0.1 是前提。
 
 ## 承重入口
 
 | 入口 | 位置 | 调用方 |
 |------|------|--------|
-| index.ts（无导出，进程入口） | 装配 :26-51 + listen 127.0.0.1:8021 :165 | 进程 |
-| `WsServer` | ws-server.ts:44 | index.ts:56 唯一构造；ai-tools/ai 路由/工具群依赖——本域被引用最广的出口 |
-| `setupFileRoutes()` | routes/files.ts:41 | index.ts:48（唯一） |
-| `setupProxyRoutes()` | routes/proxy.ts:13 | index.ts:49（唯一） |
-| `setupAiTools()` | ai-tools.ts:24（9 端点薄路由） | index.ts:114（唯一） |
-| `capabilityExecutor` 单例 | capability-executor.ts:242 | ai-tools.ts:135,245,258 |
+| index.ts（无导出，进程入口） | 装配 :26-51 + ai 路由 :112 + listen 127.0.0.1:8021 :157 | 进程 |
+| `WsServer` | ws-server.ts:44 | index.ts:54 唯一构造；ai 路由/工具群依赖——本域被引用最广的出口 |
+| `setupFileRoutes()` | routes/files.ts:41 | index.ts:46（唯一） |
+| `setupProxyRoutes()` | routes/proxy.ts:13 | index.ts:47（唯一） |
 | `PtyManager` | terminal-pty.ts | ws-server.ts:69 唯一实例化 |
 | `sanitizePath` 等纯工具 | path-utils.ts | 全域 + ai/ 子域 5 文件 |
 
 ## 状态所有权
 
 - `_activeRoot`：path-utils.ts:30，唯一写者 /root/switch（files.ts:231）
-- `_latestSnapshot/_latestCapabilities`：ws-server.ts:47-48（WS 消息写）；
-  **ai-tools.ts:21-22 另有 _cached 双份缓存并存**（POST push 写，GET 时 WS 优先缓存兜底）
+- `_latestSnapshot/_latestCapabilities`：ws-server.ts:47-48（WS 消息写，唯一持有者——
+  ai-tools.ts 的 _cached 双份缓存已随 ADR-004 整删）
 - PTY 会话：唯一持有者 PtyManager._sessions；ws-server 的 ClientState.terminalSessions
   只是镜像记录（不强制，见漂移 8）
 - `_evalPending`：ws-server.ts:50；`justRestarted`：读后自清（ws-server.ts:87-91）
@@ -72,28 +70,32 @@ send('terminal-output')；输入 → pty.write；close/error/心跳判死 → ki
 1. **会话统计口径三份**：`_computeStats`（session-store.ts:69）与 /sessions/list 回退
    （files.ts:126-156）双实现；第三份 `listSessions()`（session-store.ts:203）**死代码**。
 2. **死代码一簇**：session-store 的 getMessages/isIncomplete/listSessions；
-   terminal-pty 的 getSession/sessionCount；capability-executor 公开 register()
-   （仅内部 3 处自注册使用）。
-3. **【存疑，重大】ai-tools 9 个端点疑似整体死端点**：/ui/snapshot、/capabilities、
-   /ui/command、/capabilities/execute 等仓库内无任何 HTTP 调用方——AI 工具都直接调
-   wsServer 方法绕开 HTTP。若外部 agent 也不再用，整文件 + capability-executor 皆死重。
+   terminal-pty 的 getSession/sessionCount。（capability-executor 公开 register()
+   已随 ADR-004 整删，不再列出。）
+3. **【已结案】ai-tools 9 个端点疑似整体死端点**：经溯源确认为死重（成因 E，引入
+   25a295e v6.1.0），ai-tools.ts + capability-executor.ts 已整删（ADR-004）。
+   连带：POST /ui/command 是 `command` WS 消息的唯一服务端触发，删除后客户端
+   19 个 command handler 无生产者——见 cross-domain.md 与 STACK #6/#7。
 4. **ws-server 职责混杂证实**：一个 switch 混 PTY 四类消息、tmux 子进程桥（:200-224
    直接在 WS 层 execFile）、browser-eval 桥、snapshot 缓存——实为四合一。
 5. **index.ts 自述与实际不符**：头注释「只做 Express 装配」，实含 50 行 __kfmProbe
    探针设施（:62-110）、/api/system/restart（:131-141）、权限检查与重启标记（:144-163）。
 6. **陷阱 1「sanitizePath 不许例外」与实然矛盾**：/roots 直读 / 不过 sanitizePath
    （files.ts:208）、/root/switch 自带校验体系、/sessions/messages 自造 id 校验。
-7. **【存疑，安全】origin 防护覆盖不均**：/api/system/restart、/capabilities/execute、
-   /ui/command、/ai/chat/start 均无 verifyLocalOrigin——恶意网页可跨源 POST 触发
-   服务重启/AI run。绑 127.0.0.1 不防浏览器 drive-by。
+7. **【存疑，安全】origin 防护覆盖不均**：/api/system/restart、/ai/chat/start
+   均无 verifyLocalOrigin——恶意网页可跨源 POST 触发服务重启/AI run。绑 127.0.0.1
+   不防浏览器 drive-by。（/capabilities/execute、/ui/command 两敞口已随 ADR-004
+   整删消除。）
 8. **【存疑，安全】PTY 会话无所有权校验**：terminal-input/resize/close 只按 sessionId
    操作（ws-server.ts:180-198）——知道 sessionId 的任一已连客户端可写/关闭他人 PTY。
 9. **【存疑】evalInBrowser 落点随机**：只发给 clients 第一个（ws-server.ts:305-306），
    多标签页时命令落点不确定。
 10. **files.ts 职责超出契约**：除文件 CRUD 还挂 /sessions/*、/roots、/root/switch——
     sibling-switcher 基础设施藏在「文件路由」里。
-11. **能力清单双源注册**：服务端内置 3 能力与客户端 main.ts:78-101 同名注册并存，
-    GET /api/capabilities WS 推送优先、executor 兜底（ai-tools.ts:114-146）。
+11. **能力清单双源注册（半结案）**：执行面（服务端内置 3 能力 + executor 兜底 +
+    GET /api/capabilities）已随 ADR-004 整删；listing 面仍存活——客户端
+    main.ts:78-101 的 registerCapability 经 WS 推送喂 page-state 提示词。遗留问题：
+    这些能力的 entry 指向已删执行端，AI 可见但永不可调用（提示词噪声），待裁决。
 12. **【存疑 bug】proxy.ts 非流式分支**：method 未传时默认 GET 却带 body（:80-84）
     会抛 TypeError——api.card 恒传 method 则无害，未核全部调用方。
 13. 次要：/api 与 /kfmv4/api 双挂载（index.ts:50-51）；应用层 'ping' 消息客户端不回，
@@ -101,7 +103,7 @@ send('terminal-output')；输入 → pty.write；close/error/心跳判死 → ki
     清理依赖 close 事件触发（行为正确但脆弱）。
 
 **已核实为真的契约声称**：30s 半开检测 → killAll、express.static 只挂 public、
-只绑 127.0.0.1、sanitizePath 被 files/capability-executor/prompt-assembler 一致使用。
+只绑 127.0.0.1、sanitizePath 被 files/prompt-assembler 一致使用。
 
 ## 陷阱指针
 

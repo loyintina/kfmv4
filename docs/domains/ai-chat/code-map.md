@@ -72,7 +72,7 @@
 - 依赖域外：state.js / tree-loader.js（文件树）、renderers/* + marked（渲染）、
   logger.js；orb.ts 依赖 client-shell 大量基础设施（gesture-registry、drag-handler 等）
 - 被域外依赖：main.ts → initOrb（唯一启动口）；config.card / session.card → sessionStore；
-  server/ai-tools 与 kfmv4 工具 → wsServer snapshot/eval 桥
+  kfmv4 工具 → wsServer snapshot/eval 桥（server/ai-tools 已随 ADR-004 整删）
 - 无人 import orb-chat-run.ts / chat-dom.ts / orb-chat-hints.ts（orb.ts 门面之外）
 
 ## 代码强制的不变量（附证据）

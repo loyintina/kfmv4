@@ -48,8 +48,7 @@ export const DOMAIN_SRC = {
   ],
   'server': [
     'src/server/index.ts', 'src/server/path-utils.ts', 'src/server/terminal-pty.ts',
-    'src/server/ws-server.ts', 'src/server/ai-tools.ts', 'src/server/capability-executor.ts',
-    'src/server/routes/',
+    'src/server/ws-server.ts', 'src/server/routes/',
   ],
   'infra': [
     'build.mjs', 'scripts/check/', 'scripts/agent/', 'tests/', 'public/css/',

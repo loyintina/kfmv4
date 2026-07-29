@@ -9,8 +9,6 @@ Express 4 + WebSocket，`index.ts` 统一入口编排（协调层）。
 
 - `routes/files.ts`：文件 CRUD API（list/read/write/copy/move/delete/rename/create/media + system/info）
 - `routes/proxy.ts`：CORS 代理 `/proxy/fetch`（流式 SSE pipe + 非流式 JSON）
-- `ai-tools.ts`：Registry snapshot → 服务端 API 端点（供 AI 查询页面状态）
-- `capability-executor.ts`：能力名 → 可执行函数映射（AI 命令调用端点）
 - **`path-utils.ts`（安全关键）**：`SAFE_ROOT` + `sanitizePath()` 路径逃逸守卫
 - `terminal-pty.ts`：PTY 会话管理（spawn/write/resize/kill）
 - `ws-server.ts`：WS 连接管理；**30s 协议级 ping 半开检测 → killAll 清 PTY**
@@ -35,5 +33,5 @@ Express 4 + WebSocket，`index.ts` 统一入口编排（协调层）。
 
 ## 文件清单
 
-`index.ts` `routes/files.ts` `routes/proxy.ts` `ai-tools.ts` `capability-executor.ts`
+`index.ts` `routes/files.ts` `routes/proxy.ts`
 `path-utils.ts` `terminal-pty.ts` `ws-server.ts` `ai/`（见 ai-chat 域）`prompts/`

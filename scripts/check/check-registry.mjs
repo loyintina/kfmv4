@@ -42,10 +42,12 @@ const CONTENT_MANIFEST = [
 ];
 
 // ========== CAPABILITY MANIFEST（权威清单 — 能力层） ==========
+// 注意：能力的服务端执行面（ai-tools/capability-executor）已随 ADR-004 整删——
+// 此清单现仅约束 main.ts 的浏览器端注册（经 WS 喂 page-state 提示词展示）。
 const CAPABILITY_MANIFEST = [
-  'file-search',          // main.ts / capability-executor.ts
-  'file-read',            // main.ts / capability-executor.ts
-  'file-write',           // main.ts / capability-executor.ts
+  'file-search',          // main.ts（page-state 展示）
+  'file-read',            // main.ts（page-state 展示）
+  'file-write',           // main.ts（page-state 展示）
 ];
 
 // ========== data-registry-id 覆盖验证 ==========
@@ -170,73 +172,6 @@ function checkDataRegistryId() {
 }
 
 /**
- * 检查能力注册的一致性：
- * 1. 浏览器端 main.ts 中的 Registry.registerCapability({ entry }) 格式：entry 应为 'capability-executor:<id>'
- * 2. 服务端 capability-executor.ts 中的 this.registerCapability('id') 都有对应的浏览器端注册
- */
-function checkCapabilityConsistency() {
-  const executorFile = join('src', 'server', 'capability-executor.ts');
-  let executorContent;
-  try {
-    executorContent = readFileSync(executorFile, 'utf-8');
-  } catch {
-    reportError(`无法读取 ${executorFile}，跳过能力一致性检查`);
-    return;
-  }
-
-  // 从 capability-executor.ts 提取 this.registerCapability('id', ...) 中的 id
-  const EXECUTOR_REG_RE = /this\.registerCapability\s*\(\s*'([^']+)'/g;
-  const executorIds = new Set();
-  let m;
-  while ((m = EXECUTOR_REG_RE.exec(executorContent)) !== null) {
-    executorIds.add(m[1]);
-  }
-
-  const clientFile = join('src', 'client', 'main.ts');
-  let clientContent;
-  try {
-    clientContent = readFileSync(clientFile, 'utf-8');
-  } catch {
-    reportError(`无法读取 ${clientFile}，跳过能力一致性检查`);
-    return;
-  }
-
-  // 从 main.ts 提取 Registry.registerCapability({ id, entry }) 中的 id 和 entry
-  // 匹配整个 registerCapability 调用的 id 和 entry 字段
-  const CAP_REG_BLOCK_RE = /Registry\.registerCapability\s*\(\s*\{([\s\S]*?)\}\s*\)/g;
-  const clientEntries = [];
-  let mc;
-  while ((mc = CAP_REG_BLOCK_RE.exec(clientContent)) !== null) {
-    const block = mc[1];
-    const idMatch = block.match(/id:\s*'([^']+)'/);
-    const entryMatch = block.match(/entry:\s*'([^']+)'/);
-    if (idMatch) {
-      clientEntries.push({ id: idMatch[1], entry: entryMatch ? entryMatch[1] : null, file: clientFile });
-    }
-  }
-
-  for (const { id, entry } of clientEntries) {
-    // 检查 entry 格式：应为 capability-executor:<id>
-    const expectedEntry = `capability-executor:${id}`;
-    if (entry !== expectedEntry) {
-      reportError(`${clientFile}: 能力 "${id}" 的 entry 应为 "${expectedEntry}"，实际为 "${entry || '(无)'}"`);
-    }
-
-    // 检查服务端是否有对应 handler
-    if (!executorIds.has(id)) {
-      reportError(`${clientFile}: 能力 "${id}" 在 capability-executor.ts 中没有对应的 handler（未调用 registerCapability('${id}', ...)）`);
-    }
-  }
-
-  // 检查服务端有但浏览器端没有注册的能力
-  for (const id of executorIds) {
-    if (!clientEntries.some(e => e.id === id)) {
-      reportError(`服务端有能力 "${id}" 的 handler 但浏览器端未注册（客户端无法触达）`);
-    }
-  }
-}
-
-/**
  * 检查孤立 state getter：registerStateGetter('id') 是否有对应的 register({ id }) 或 registerElement({ id })。
  * 没有对应元素的 getter 永远不会被调用，属于死代码或漏注册。
  */
@@ -351,8 +286,6 @@ function check() {
 
   // ===== data-registry-id 覆盖验证 =====
   checkDataRegistryId();
-  // ===== 能力注册一致性验证 =====
-  checkCapabilityConsistency();
   // ===== 孤立 state getter 检查 =====
   checkOrphanGetters();
   // ===== 命令注册重复检查 =====

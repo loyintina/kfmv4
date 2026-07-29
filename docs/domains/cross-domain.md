@@ -48,8 +48,8 @@
 
 - 挂载：`/api` + `/kfmv4/api` 双前缀（index.ts:50-51 等），但 **/api/system/restart 只挂
   /api**（index.ts:131，与其余三组双挂载不一致）⚠
-- **孤儿端点**：GET /system/info（仓内无调用，读者是 deploy.sh 外部）；ai-tools.ts 全部
-  9 个端点仓内零调用（外侧面，见 server code-map 漂移 3）
+- **孤儿端点**：GET /system/info（仓内无调用，读者是 deploy.sh 外部）。
+  （ai-tools.ts 全部 9 个端点仓内零调用——已整删，ADR-004。）
 - **API_BASE 三套风格共 10 处**：动态拼接公式重复 8 处（orb.ts×2、orb-panel、config/api/
   role/session/tools 卡）+ state.ts:6 硬编码 /kfmv4/api + ws-channel.ts:409 硬编码
   /api/files/list——靠服务端双前缀挂载才不出错 ⚠
@@ -59,8 +59,10 @@
 
 - 客户端→服务端 9 类消息与服务端处理**完全对称** ✅；服务端→客户端 11 类中
   **`error` 无任何 onMessage 注册者，静默丢弃**（ws-channel.ts:233）⚠
-- `command` 的 action 字串由服务端透传（ai-tools.ts:156 不校验），仅靠客户端未注册
-  warn 兜底——协议无静态约束 ⚠
+- `command` 的 action 字串服务端透传不校验、协议无静态约束 ⚠——**且唯一服务端
+  触发（POST /ui/command → ws-server.ts sendCommand）已随 ADR-004 整删**：客户端
+  19 个 command handler（shell 8 / canvas-tree 4 / ai-chat 3 / floating-card 4）
+  从此无生产者，成孤儿面，待裁决（留待「AI 之手」实现 or 清除）。
 - terminal-open/terminal-close 两写者跨两域（terminal-card-04 × tmux-card）——
   即 floating-card code-map 漂移 17 双开 PTY 嫌疑的协议层成因 ⚠
 - 应用层 'ping' 客户端不回，纯喂看门狗——协议残留
@@ -88,7 +90,7 @@
 3. **API_BASE 三套风格 10 处重复**
 4. **anim scope 机制形同虚设**（1 租户 + 三域绕过）
 5. **KFMState/L 私有字段直写泛滥**，setter 与钩子被绕过
-6. **ws error 消息无人接收**；command action 无静态约束
+6. **ws error 消息无人接收**；command action 无静态约束 + 无生产者（ADR-004 后）
 7. **/api/system/restart 单挂载不一致**
 8. **kfm-no-compact 无写者**（协议无生产者）
 9. **localStorage 无登记制度**（本表之前零约束）

@@ -5,7 +5,6 @@
  *   routes/files.ts  — /api/files/*（文件 CRUD）+ /api/system/info
  *   routes/proxy.ts  — /api/proxy/fetch（CORS 代理）
  *   server/ai/routes.ts  — /api/ai/chat（SSE 流式对话）
- *   server/ai-tools.ts   — /api/ai/tools/*（Agent 工具端点）
  *
  * index.ts 只做 Express 装配：静态文件 → 路由挂载 → 启动。
  */
@@ -18,7 +17,6 @@ import compression from 'compression';
 import { fileURLToPath } from 'url';
 import { setupFileRoutes } from './routes/files.js';
 import { setupProxyRoutes } from './routes/proxy.js';
-import { setupAiTools } from './ai-tools.js';
 import { setupAiRoutes } from './ai/routes.js';
 import { WsServer } from './ws-server.js';
 
@@ -108,12 +106,6 @@ let _lastTracepointResult: unknown = null;
     } catch (e) { return `Error: ${e instanceof Error ? e.message : String(e)}`; }
   }
 };
-
-// AI Tools 路由
-const aiRoutes = express.Router();
-setupAiTools(aiRoutes, wsServer);
-app.use('/api', aiRoutes);
-app.use('/kfmv4/api', aiRoutes);
 
 // AI 对话路由
 const aiChatRoutes = express.Router();

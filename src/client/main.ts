@@ -74,7 +74,8 @@ initFloatingCards();
 
 
 // ========== 注册能力层 ==========
-// entry 字段与 capability-executor.ts 中的 id 保持一致，指向实际执行入口
+// ⚠ 幽灵清单（ADR-004 遗留，待裁决）：capability-executor.ts 服务端执行面已整删，
+// 以下 3 条注册仅喂 page-state 提示词——AI 可见但永不可调用。保留或清除见 STACK #7。
 Registry.registerCapability({
   id: 'file-search',
   name: '文件搜索',

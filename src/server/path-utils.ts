@@ -9,8 +9,7 @@
  * - 返回 `` 表示路径非法，调用方应拒绝操作并记录日志
  *
  * ## 依赖方
- * - `capability-executor.ts` — AI 命令执行前调用 sanitizePath 校验
- * - `ai-tools.ts` — AI 工具函数中校验文件路径
+ * - `routes/files.ts` / `prompt-assembler.ts` 等 — 文件操作前调用 sanitizePath 校验
  *
  * ## 环境变量
  * - `KFM_ROOT` — 项目根目录（可选，默认取 HOME）
