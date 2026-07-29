@@ -16,6 +16,15 @@
 > **历史教训**：2026-06-02 批量标记 19 份文档 `superseded_by: HANDBOOK.md`，但 HANDBOOK 从未真正覆盖这些内容（隐性契约、根因案例库、诊断流程、回归清单）。2026-06-29 terminal 滚动 debug 耗时 15 轮，根因之一是诊断知识在 archive 中不可达（B.A.R. #007）。
 > 2026-07-28 注：v8.2 逐份迁移的判定书流程（逐块判定 → 用户批准 → 删除记理由）本质就是人工三覆盖核实；check-superseded-coverage 是其机制化前身。
 
+## 加载类文件预算线（2026-07-29 压缩轮定稿）
+
+按加载频率分层控篇幅，超线才做密度改写，不为压缩而压缩：
+
+- `CLAUDE.md`（每会话注入）≤ 60 行，只留路由 + 非带不可的硬约束
+- `domains/*/contract.md`（pre-code-gate 每域加载）≤ 150 行
+- 其余文件（detail/guides/ledger/decisions/active）按需加载，篇幅免费，不设线
+- `invariants.md` 按节加载（§六 + 相关心法节），why 层是有意设计，禁止压掉
+
 ## 方向性文档纪律（自 AGENTS.md §二迁入）
 
 `active/vision.md` **不追实现细节**。它是方向性文档——记录核心理念、历史决策、开放问题、下一步方向。具体实现状态归 `ledger/history.md` 与各域 contract。
