@@ -1262,7 +1262,7 @@ V8_AUDIT_REPORT §四.2「tool_result 状态/渲染两处分散」与 §四.3「
 
 执行日期：2026-07-29。形态按用户批准：详注 + git 考古钩（v8.1.1 tag 永久快照）。
 
-- `decisions/case-study-model-choice.md`（88 行）：原文整份搬（本身就是蒸馏好的教训），+ 路由头/考古注。
-- `decisions/case-study-unification-spec.md`（蒸馏 3 条元教训）：流程正确≠方向正确（SPEC 流程无懈可击但前提未质疑）、方向反转是沉没成本伪装、概念对称≠可参数化。与 adr-001/002 互指。
-- `decisions/case-study-refactor-thesis.md`（蓝图 vs 现实对照）：证实 6 项（理念层全活）/ 证伪 6 项（LeaferJS/Yoga/DOM Island/盒子协议接口/中央画布/CodeMirror）；标记系统完整设计留考古钩给 vision §四.1。
+- `newdoc/decisions/case-study-model-choice.md`（88 行）：原文整份搬（本身就是蒸馏好的教训），+ 路由头/考古注。
+- `newdoc/decisions/case-study-unification-spec.md`（蒸馏 3 条元教训）：流程正确≠方向正确（SPEC 流程无懈可击但前提未质疑）、方向反转是沉没成本伪装、概念对称≠可参数化。与 adr-001/002 互指。
+- `newdoc/decisions/case-study-refactor-thesis.md`（蓝图 vs 现实对照）：证实 6 项（理念层全活）/ 证伪 6 项（LeaferJS/Yoga/DOM Island/盒子协议接口/中央画布/CodeMirror）；标记系统完整设计留考古钩给 vision §四.1。
 - history.md +1 行。原文 3 份切换提交时随 archive 删除。
