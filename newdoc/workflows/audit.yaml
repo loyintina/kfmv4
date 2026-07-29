@@ -11,7 +11,8 @@ steps:
   3. 修正文档或代码（谁错改谁，证据优先）
   4. 发现的系统性问题 → discipline-mechanize
 writes:
-  - domains/、guides/（修正）
+  - domains/（修正）
+  - guides/（修正）
   - check-*.mjs（如机械化）
 exit_condition: 全量 check 绿 + 漂移清零
 natural_next: discipline-mechanize（审计盛产机械化素材）

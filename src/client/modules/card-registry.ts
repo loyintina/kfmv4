@@ -6,7 +6,7 @@
  *   2. 运行时实例追踪 — CardRegistry 类
  *   3. AI 工具层预留 — getAll() 供 Registry snapshot 读取
  *
- * 设计文档：docs/design/CARD_REGISTRY_SPEC.md
+ * 设计契约：newdoc/domains/floating-card/contract.md（注册表）
  */
 
 import { log } from './logger.js';

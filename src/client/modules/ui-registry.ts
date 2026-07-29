@@ -4,7 +4,7 @@
  * 被动索引（黄页），不存储业务状态、不监听事件、不启动 rAF。
  * 职责：回答「当前页面上有什么可交互的、可查看的、可调用的」。
  *
- * 设计参见 docs/UI_ELEMENT_REGISTRY_SPEC.md §S（已定稿）。
+ * 设计参见 newdoc/domains/client-shell/contract.md 注册中心节。
  *
  * 使用方式：
  *   在模块的 init*() 函数末尾调用：
