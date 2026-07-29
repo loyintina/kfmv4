@@ -9,12 +9,12 @@
 - server：ESM bundle——**external 列表是生死线**（CJS 包打进去启动即崩）。
 - 样式：`sass base.scss → base.css`（check 链内自动编译）。
 
-## 检查管线（npm run check，19 脚本，顺序固定）
+## 检查管线（npm run check，18 脚本，顺序固定）
 
 `check-uncommitted`（>3 未提交即中断，首位）→ versions → checks → doc-coverage →
 sass → css-wiring → tool-compaction → anim → as-any → card-meta → registry → zindex →
-console → docs → linecount → consistency → cards → handbook-sync → desc-freshness →
-test-patterns → superseded-coverage → tsc。
+console → docs → linecount → consistency → cards → contract-freshness →
+test-patterns → tsc。
 
 ## 硬规则
 
