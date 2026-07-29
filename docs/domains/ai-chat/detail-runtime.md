@@ -3,7 +3,7 @@
 
 # AI 对话运行时（AI Chat Runtime）
 
-> 迁移注（2026-07-28）：自 `docs/design/AI_CHAT_RUNTIME.md` 迁入，§1-§8/§10 原文未删节。
+> 迁移注（2026-07-28）：自 docs/design/AI_CHAT_RUNTIME.md 迁入，§1-§8/§10 原文未删节（原文 v8.2 注销，git show v8.1.1 考古）。
 > §9 Z-Index 层级已回家 ../client-shell/contract.md。§4 七条隐式契约的压缩版在 contract.md
 > #陷阱 1/2/4/5/6——改代码时以 contract 为准，排查/加功能时读本文展开版。
 > 改动 AI 对话流式、挂机持久化、WebSocket 重连、终端卡恢复前必读。

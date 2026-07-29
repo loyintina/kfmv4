@@ -3,10 +3,10 @@
 
 # KFM v4 — 愿景与方向
 
-> 迁移注（2026-07-28）：自 `docs/design/VISION_AND_ROADMAP.md`（893 行）迁入。
+> 迁移注（2026-07-28）：自 docs/design/VISION_AND_ROADMAP.md（893 行）迁入（原文 v8.2 注销，git show v8.1.1 考古）。
 > 已实装的交互模型/视觉设计/插件系统章节（其契约已归 domains/ 各 contract）、
 > 已被 v8 超越的 Agent 适配层设计、与 CARD_DEV_GUIDE 重复的贡献流程，均按判定书删除，
-> 逐块记录见 `docs/active/doc-system-redesign.md` §二十一。本文只保留远景核心：
+> 逐块记录见 docs/active/doc-system-redesign.md §二十一（原文 v8.2 注销，git 考古）。本文只保留远景核心：
 > 核心理念、历史决策、开放问题、下一步方向。
 
 ---

@@ -5,7 +5,7 @@
 
 > **地位**：本文档是 kfmv4 AI 对话上下文管理的最高契约之一，与 detail-runtime.md 同级。
 > 本文档由 `check-tool-compaction.mjs` 机械执行：注册工具无压缩器 = 构建中断。
-> 迁移注（2026-07-28）：自 `docs/design/TOOL_IO_COMPACTION.md` 整份迁入，原文未删节。
+> 迁移注（2026-07-28）：自 docs/design/TOOL_IO_COMPACTION.md 整份迁入，原文未删节（原文 v8.2 注销，git show v8.1.1 考古）。
 
 ## 一、为什么存在（问题定义）
 

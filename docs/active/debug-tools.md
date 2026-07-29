@@ -8,7 +8,7 @@
 > 本文定义 kfmv4 项目为 AI 开发者（agent）提供的调试能力体系：
 > 哪些已经可用、哪些缺位、如何填补。
 >
-> 迁移注（2026-07-28）：自 `docs/design/AI_AGENT_DEBUG_TOOLS.md` 迁入 active/（进行中设计），
+> 迁移注（2026-07-28）：自 docs/design/AI_AGENT_DEBUG_TOOLS.md 迁入 active/（进行中设计；原文 v8.2 注销，git show v8.1.1 考古），
 > 原文保真，各缺位项补 2026-07-28 实现状态注。完成后知识按域进 domains/server。
 
 ---

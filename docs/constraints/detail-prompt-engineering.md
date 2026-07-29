@@ -3,7 +3,7 @@
 
 # 提示词工程约束
 
-> 提取注（2026-07-28）：自 `docs/AGENT_PROMPT_REFERENCES.md` PROMPT ENGINEERING 整节提取，原文未删节。
+> 提取注（2026-07-28）：自 docs/AGENT_PROMPT_REFERENCES.md PROMPT ENGINEERING 整节提取，原文未删节（原文件 v8.2 注销，git show v8.1.1 考古）。
 > 适用范围：workflows/*.yaml、subagent 提示词、L1 角色卡、工具压缩产物模板——一切提示词产物。
 
 ## 执行者认知

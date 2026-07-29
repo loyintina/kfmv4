@@ -3,7 +3,7 @@
 
 # 研究方法论（展开版）
 
-> 提取注（2026-07-28）：自 `docs/AGENT_PROMPT_REFERENCES.md`（外部提示词，研究用途）提取。
+> 提取注（2026-07-28）：自 docs/AGENT_PROMPT_REFERENCES.md（外部提示词，研究用途；原文件 v8.2 注销，git show v8.1.1 考古）提取。
 > 角色绑定（MISSION/CODE INTERACTION）与环境绑定（TOOLS，opencode/omo 子代理）部分已删。
 > 与 invariants.md §二 的关系：心法是蒸馏版一句话原则，本文是展开论述与操作级标准。
 

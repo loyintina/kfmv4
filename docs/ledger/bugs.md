@@ -5,8 +5,8 @@
 
 > **把 687 个历史 `fix` 蒸馏成「该不该测 / 测了没」的追踪地图。**
 >
-> 配套设计文档：`docs/archive/design/REGRESSION_TESTING_SYSTEM.md`（方法论与实施步骤，已归档；素材摘要 → ../guides/testing.md#素材考古）。
-> 编号体系复用 `docs/archive/standards/BUG_AUDIT_REGISTRY.md` 的 B.A.R. 命名空间。
+> 配套设计文档：docs/archive/design/REGRESSION_TESTING_SYSTEM.md（方法论与实施步骤，v8.2 注销，git show v8.1.1 考古；素材摘要 → ../guides/testing.md#素材考古）。
+> 编号体系复用 docs/archive/standards/BUG_AUDIT_REGISTRY.md 的 B.A.R. 命名空间（原文同上考古）。
 > 隐性契约相关条目与 `../constraints/diagnostics.md` §一 一一呼应。
 ## 分类图例
 
