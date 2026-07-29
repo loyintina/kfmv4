@@ -27,6 +27,7 @@
 - v8.1.1 逐工具压缩细化五批 + 失败模式标注 + kfm-snapshot/kfm-exec 删除 + INVARIANTS 修宪（v8.1.1 tag，452 测试）
 - v8.2.0 文档系统重构：新六层体系（constraints/domains/guides/ledger/workflows/active）+ 19 活跃迁移 + archive 65 份结算 + 压缩轮 + 管线 20 脚本新链 + 切换提交（v8.2.0 tag）
 - v8.3.0 文档管线再设计（STACK #2，批 0-5）：27 个 check 脚本（新增 bar-ledger/doc-budget/doc-symbols/doc-schema/commit-docs/hooks/probes）+ sync-counts 计数 SSOT + commit-msg 钩子 + 探针自检 + grammar/检查设计宪法定稿（v8.3.0 tag）
+- v8.3.1 审计闭环（问题轮）：漂移测绘 99 条溯源 + ADR-004 三裁决+追加裁决 + bug 堆 9 条结案 + 死代码清理 ~2800 行 + orb.ts 拆分（orb-chat-host 宿主归位）（v8.3.1 tag；同批含语义编译地基——agent-runner + tag-advisor + 部署版本握手，主题未完成不抬级）
 
 ## 事件线
 
