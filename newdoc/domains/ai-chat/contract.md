@@ -115,7 +115,9 @@
 ## 文件清单
 
 客户端：`orb-chat.ts` `orb-chat-run.ts` `orb-chat-hints.ts` `chat-dom.ts`
-`session-client.ts` `ws-channel.ts` + `src/shared/chat-protocol/`（5 文件）
+`session-client.ts` `ws-channel.ts` `../data/waiting-hints.ts`（等待/摸鱼提示文案）
++ `src/shared/chat-protocol/`（5 文件）
 服务端：`ai/chat.ts` `ai/run-manager.ts` `ai/routes.ts` `ai/session-store.ts`
-`ai/page-state.ts` `ai/prompt-assembler.ts` `ai/rule-engine.ts` `ai/tools/` `prompts/`
+`ai/page-state.ts` `ai/prompt-assembler.ts` `ai/rule-engine.ts` `ai/tools/`
+`ai/tools/omp/browser/`（Browser 工具）`prompts/`
 细节：detail-runtime.md · detail-tool-compaction.md · detail-browser.md
