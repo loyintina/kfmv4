@@ -6,7 +6,9 @@
    — 批 0 归拢 ✅ → 批 0.5 grammar ✅ → 批 1 机械四件套 ✅ → 批 2 schema+耦合门 ✅ → 批 3 仪表盘+分层 ✅
    — 原则：失效探测器 / 格式为消费者 / 精确率≈1（已进 doc-maintenance）
    — 批 5 ✅：check-probes 探针自检（8 检查注入 + 8 假树 + 突变自测闭环）；遗留：耦合门 warning 观察期后定级（含豁免语法收紧：prose 字面串误认）
-   — 批 1.5 语义审计试点 ✅ 开工（2026-07-29 方案修订：不查代码，code-map 群任基准层，文档对文档对账 + 溯源轮；产出模式 SOP/冲突清单/成因分类学）
+   — 批 1.5 语义审计试点 ✅ 结案（2026-07-30：审计 26 报 24 真（精确率 92%）→ 溯源 G1-G6 分类学
+     → 24 条修复 → 结晶三件套进确定区 → semantic-audit.yaml 制度化；账本 ledger/semantic-provenance.md，
+     复盘与「编译≠检查」三档阶梯见 semantic-compiler-seed.md 末节）
    — 语义编译器体系（双区管线/SEM 错误码/冷启动 e2e/集群统计）→ [semantic-compiler-seed.md]，批 1.5 试点
 3. agent 任务执行器（agent-runner）设计（2026-07-29 立项，用户动议）
    — 通用运行模式：固定提示词 + 输出可控 + 独立任务——发版（版本判定/账本回写/tag）、
@@ -43,6 +45,10 @@
      ③ 死代码 ~30 处（text-layout 2292 行整目录居首）④ 契约失真 ~35 条（→批 1.5）
      ⑤ 协议制度缺口（localStorage 登记/多写者锁/scope 裁决）⑥ 架构议题（orb 归属/
      重复实现群/check 链单源化）
+   — 队列结算注（2026-07-29 语义审计 E1）：①②③⑥-orb 归属已闭环（bug 堆 9 条已钉见
+     bugs.md；安全面 3 条 server 漂移 7/8/9 结案；text-layout 整目录已删；orb 宿主
+     已拆 orb-chat-host）；④ 与 ⑤-localStorage 登记/多写者锁、⑥-重复实现群/check
+     链单源化仍活
    — 深潜 3 分歧已裁决（adr-004，2026-07-29 用户拍板）：orb.ts **拆**（专项，
      消息窗口卡前置，一切皆卡片愿景）/ anim scope 废弃泛化声称 / ai-tools 端点整删
    — 制度化：随修溯源（修每条漂移必带成因标签 + 引入 commit，进 bug-fix 流程）
@@ -51,6 +57,7 @@
    （touch-action 分区策略已文档化 → domains/client-shell/contract.md #陷阱 7，2026-07-29 关闭该子项）
 5. v8 审计遗留 LOW 项（P3，自 V8_AUDIT_REPORT 迁入，2026-07-27 审计）
    — session-store.ts（客户端）命名/职责模糊（重命名 session-client 或合并 orb.ts）
+     —— 重命名已落地 session-client.ts；职责双轨残留见 ai-chat code-map 漂移 1（语义审计 E2）
    — tool_result 状态（orb-chat _applyEvent）与渲染（chat-dom patchEvent）两处分散
    — flushSync 每事件同步写盘：当前可接受；多用户/长对话时改「text_delta 防抖+其余同步」
 6. archive (b) 结算发现的两个活缺口（2026-07-29，素材考古行已标注）

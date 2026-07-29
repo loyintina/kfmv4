@@ -1,0 +1,21 @@
+id: semantic-audit
+name: 语义审计（文档系统语义对账）
+trigger: 大迁移/大重构后必跑；中版本收尾前例行
+frequency: 迁移后 + 每中版本一次
+reads:
+  - active/semantic-compiler-seed.md
+  - ledger/semantic-provenance.md
+  - ledger/drift-provenance.md
+steps:
+  1. 机械先行：check-doc-linerefs / check-workflow-integrity / check-ledger-commits 全绿才进语义层——机械能抓的不进语义清单
+  2. 全量语义审计：explore subagent 分组（远景/指南/契约/细节/账本）对照代码实然，产出 SEM 发现清单
+  3. 提示词必含「登记豁免规则」：已在 ledger 登记的漂移不算新发现（防重复立案；v8.3 试点：加规则后重复立案归零）
+  4. SEM 立案 → git 考古溯源（写入 commit / 失效 commit / 时间差 / G 成因分类）
+  5. 修复轮：修复 + 同步全部引用面；修复必须带预防——能机械化的当场机械化，不能的登记豁免
+  6. 复盘：成因分类学更新 + 提示词有效性数据（精确率/重复率）回写 semantic-provenance.md
+writes:
+  - ledger/semantic-provenance.md
+  - ledger/bugs.md
+exit_condition: 发现清零或全部立案分流 + 机械三件套绿 + 溯源账本回写
+natural_next: contract-maintain
+metric: 审计精确率（真发现/总报告）+ 重复立案率（登记豁免规则效果）
