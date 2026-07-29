@@ -52,6 +52,37 @@ for (const [domain, paths] of Object.entries(DOMAIN_SRC)) {
 // 未登记桶：src/ 下不在任何域的代码文件
 const unregistered = walk(join(ROOT, 'src')).filter(f => !fileDomain.has(f));
 
+// ========== 跨域 import 边 ==========
+// 机械解析 import/export-from/动态 import 的相对路径，解析到域内文件后按域配对。
+// 多行 import 的 from 行由 FROM_RE 兜底。npm/绝对路径不解析。
+const IMPORT_RE = /^\s*(?:import|export)\s.*?['"](\.[^'"]+)['"]/;
+const FROM_RE = /\bfrom\s+['"](\.[^'"]+)['"]/;
+const DYN_RE = /\bimport\(\s*['"](\.[^'"]+)['"]/;
+
+function resolveSpec(fromFile, spec) {
+  const fromDir = fromFile.split('/').slice(0, -1).join('/');
+  const base = join(fromDir, spec).replace(/\\/g, '/');
+  const candidates = [base, base + '.ts', base + '.tsx', base + '.js', base + '.mjs',
+    base.replace(/\.js$/, '.ts'), base.replace(/\.js$/, '.mjs'), base + '/index.ts'];
+  for (const c of candidates) if (fileDomain.has(c)) return c;
+  return null;
+}
+
+const edges = new Map(); // 'domA|domB' -> Set('fileA → fileB')
+for (const [file, domA] of fileDomain) {
+  const content = readFileSync(join(ROOT, file), 'utf-8');
+  for (const line of content.split('\n')) {
+    const m = line.match(IMPORT_RE) || line.match(FROM_RE) || line.match(DYN_RE);
+    if (!m) continue;
+    const target = resolveSpec(file, m[1]);
+    if (!target) continue;
+    const domB = fileDomain.get(target);
+    if (domB === domA) continue;
+    if (!edges.has(`${domA}|${domB}`)) edges.set(`${domA}|${domB}`, new Set());
+    edges.get(`${domA}|${domB}`).add(`${file} → ${target}`);
+  }
+}
+
 const EXPORT_RE = /^export\s+(?:async\s+)?(?:function|class|const|let|interface|type|enum)\s+([A-Za-z_$][\w$]*)/;
 const EXPORT_BRACE_RE = /^export\s*\{([^}]+)\}/;
 
@@ -110,8 +141,20 @@ if (unregistered.length > 0) {
   out.push('');
 }
 
+out.push('## 跨域 import 边（机械生成）');
+out.push('');
+out.push('> 语义层解读 → cross-domain.md；域内依赖 → 各域 code-map.md。');
+out.push('');
+for (const [key, set] of [...edges.entries()].sort()) {
+  const [a, b] = key.split('|');
+  out.push(`### ${a} → ${b}（${set.size} 边）`);
+  out.push('');
+  for (const e of [...set].sort()) out.push(`- ${e}`);
+  out.push('');
+}
+
 out.push(`---`);
-out.push(`合计 ${totalFiles} 文件 · ${totalLoc} 行`);
+out.push(`合计 ${totalFiles} 文件 · ${totalLoc} 行 · 跨域边 ${[...edges.values()].reduce((s, e) => s + e.size, 0)} 条`);
 
 writeFileSync(join(ROOT, 'docs/domains/code-inventory.md'), out.join('\n') + '\n');
 console.log(`[gen-code-inventory] docs/domains/code-inventory.md 已生成：${totalFiles} 文件 · ${totalLoc} 行` +
