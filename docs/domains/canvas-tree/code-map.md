@@ -77,7 +77,7 @@ _resetAnimTimeline → 下一个队列点击。
    npm @chenglou/pretext 的冻结 port 副本，生产 4 处全部走 npm 包）。
 2. **契约「theme.ts = 颜色唯一定义点」被普遍违反**：tree-render.ts:224、tree-swipe.ts:142/147、
    mode-system.ts:135-138/389-399、sibling-switcher.ts:44、tree-model.ts:126 等处大量
-   硬编码颜色（另案）。`getFileColor` + `theme.extColors` 已随死代码批次删除
+   硬编码颜色（另案）。getFileColor + theme.extColors 已随死代码批次删除
    （扩展名着色出生即未接线，2026-07-29）。
 3. **契约 §4.6 pushContext/popContext 流程零调用方**（renderer-lifecycle.ts:112-125）；
    根目录选择器实际由 sibling-switcher 直接清 KFMState 实现，未走该管线。
