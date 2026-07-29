@@ -32,7 +32,7 @@ test-patterns → tsc。
    案例：2026-07-06 全屏卡 touch-action 被覆盖。
 2. **esbuild nullish-coalescing 降级**：源码大量 `??`，TS 编译需确保正确降级。
 3. **GSAP mock 时序**：`tl.call(cb)` 同步执行回调，改变动画时序——测试不用墙钟计时器。
-4. **测试计数同步**：改测试数后跑 check 自动回写文档计数（check-test-patterns 验证模式完整性）。
+4. **计数同步**：增删 check 脚本/测试后跑 `npm run sync-counts` 一键回写各文档计数（check 链 `sync-counts --check-only` 拦截未同步；check-test-patterns 验证模式完整性）。
 
 ## 文件清单
 
