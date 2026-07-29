@@ -10,7 +10,7 @@ steps:
   1. 需求提出 → 现状分析 → 设计确认（暴露所有已知缺口 + 5 场景压力测试）
   2. 设计文档写入 active/（含被否定方案及原因）
   3. 改动计划 → 实施 → 验证 → 沉淀五问
-  4. 完成后：确认知识写入对应 domain contract，设计文档删除，STACK pop
+  4. 完成后：确认知识写入对应 domain contract + ledger/history.md 记一条，设计文档删除，STACK pop
 writes:
   - active/*.md（设计文档，临时）
   - domains/{域}/contract.md（完成后的知识归宿）

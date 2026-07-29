@@ -1333,3 +1333,30 @@ V8_AUDIT_REPORT §四.2「tool_result 状态/渲染两处分散」与 §四.3「
 2. **ai-chat 视觉契约**：v8.1 修订注三条（_scheduleStreamingMd 轻管线 PANEL-12 / 思考折叠三路径 PANEL-11 / orb-fold-content PANEL-13）并进表格对应行与正文，删除「纯裸文本」过时描述与整个修订注块——表格即现行行为，不再有「表+补丁注」双层。
 3. **spec-driven §2④ vs doc-maintenance 生命周期**：生命周期唯一来源定 doc-maintenance（步骤 3 拆任务型/参考型两路 + 判据）；§2④ 缩为判据 + 常见错误 + 指针。顺带：spec-driven 两处 REGRESSION_TESTING_SYSTEM 范本指针改指 guides/testing 素材考古节（切换清单第 5 项提前完成）。
 4. **AGENT_PROMPT_REFERENCES**：有用内容 2026-07-28 已全文提取（detail-research-method 203 行 + detail-prompt-engineering 89 行，角色绑定/环境绑定部分当时已判定删除），原文 415 行完全冗余。按规则旧 docs 切换前不动——invariants.md:38 指针改指两个 detail 文件，原文删除记进切换清单第 6 项。「蒸馏（invariants §二）/展开（detail）」双层是既有设计，非重叠，不动。
+
+---
+
+## §四十 压缩轮 ②：全库意外重复扫描（10 主题 explore swarm）
+
+执行日期：2026-07-29。结果：无意重复 8 处全部归并（一家一指针），6 个附带发现顺手修复。
+
+### 8 处归并
+
+1. 手势优先级表双写且不一致 → 家留 client-shell（补 card-stack(90) 档），card-dev 删表改指针。
+2. 第三方触摸库手势冲突规则+案例 → 家留 floating-card #陷阱1，diagnostics 解法段改指针。
+3. 走 GestureRegistry 禁 addEventListener 三处 → 家留 client-shell，floating-card/card-dev 改指针。
+4. setExpanded 陷阱 → 家留 client-shell #陷阱8，canvas-tree #陷阱2 改指针。
+5. 动画锁 3s → 事实归 canvas-tree 动画安全节，client-shell #陷阱5 留 endOp 教训+指针。
+6. CJS external 双家 → 家留 infra 硬规则 3，ai-chat #陷阱3 改指针、server:29 指针跟改。
+7. 心法 19 逐字复述 → detail-prompt-engineering §泛化缩为同源声明+指针。
+8. theme.ts 颜色唯一来源 4 处 → 家留 canvas-tree「两个唯一来源」，card-dev 两处规则句改指针（checklist 条目保留）。
+
+### 附带修复
+
+- STACK.md:5「touch-action 分区策略待文档化」过时 → 关闭子项。
+- card-dev.yaml 配对规则的家指错（浮卡域→client-shell）+ reads 缺 client-shell → 修正；card-dev.md 路由头补 client-shell。
+- invariants.md:148 陈旧指针 → decisions/case-study-model-choice.md。
+- 「监听 127.0.0.1」安全规则全库缺失 → server contract 补 #陷阱 5。
+- ai-chat contract:23 宪法编号核正（三=可死、四=真相源 → 改「宪法三/四」）；#陷阱6 补 detail-runtime §4.5 指针（与 #8 对齐）。
+- 摸鱼提示 4 条契约级规则唯一家在 bugs.md 档案（PANEL-10/14/15/17）→ 收进视觉契约表两行。
+- spec-driven.yaml 步骤 4 补「history 记一条」。

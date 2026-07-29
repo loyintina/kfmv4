@@ -53,7 +53,8 @@
 ## #陷阱
 
 1. **`buildTree` 数据源**：内部读 `KFMState.files`，修改后必须恢复。
-2. **`setExpanded` 连续调用**：触发多次 notify，动画守卫丢弃中间状态。
+2. **`setExpanded` 连续调用**：触发多次 notify，动画守卫丢弃中间状态
+   （完整版见 ../client-shell/contract.md #陷阱 8）。
 3. **Canvas 初始化 `clientWidth=0`**：必须在 rAF 回调里 `rebuildTree()`。
 4. **overlay 残留**：`rebuildTree` 入口已加防御性清理 `_removeAllOverlays()` +
    `renderer.setOverlayRoot(null)`（v6.6.0 根解）——新路径触发 rebuild 不得绕过此入口。

@@ -45,8 +45,7 @@
 
 1. 库的手势处理器是否拦截该区域；`targetFilter` 是否匹配；是否只处理部分方向；
    `stopPropagation` 是否为 true。
-2. 解法：处理器加方向检测，不处理的方向传给其他处理器；或降低优先级。
-   案例：xterm-scroll（优先级 61）只处理垂直滚动，水平滑动被丢弃 → 加全屏模式水平滑检测。
+2. 解法与案例（xterm-scroll 水平滑丢弃）见 `../domains/floating-card/contract.md` #陷阱 1。
 
 ## 根因类型索引（症状 → 排查方向）
 

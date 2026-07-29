@@ -5,8 +5,9 @@ frequency: 加卡时
 reads:
   - guides/card-dev.md
   - domains/floating-card/contract.md
+  - domains/client-shell/contract.md
 steps:
-  1. 读指南 + 浮卡域契约（注册表/MANIFEST/state getter 配对规则）
+  1. 读指南 + 浮卡域契约（注册表/动态路径实例化）+ client-shell 域契约（MANIFEST/state getter 配对规则）
   2. 实现卡片（类型声明 + 实例追踪）
   3. check-cards + check-card-meta 绿
   4. 新陷阱 → floating-card/contract.md#陷阱

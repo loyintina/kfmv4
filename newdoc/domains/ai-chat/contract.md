@@ -20,7 +20,7 @@
 
 ## 硬规则
 
-1. 会话文件是全量真相源；任何运行态要么已落盘要么可重建（宪法三）。
+1. 会话文件是全量真相源；任何运行态要么已落盘要么可重建（宪法三/四）。
 2. 工具 I/O 发给 LLM 前必须过压缩投影（check-tool-compaction 双向核对，
    新工具不登记压缩行为 = 构建中断）。
 3. 增量 DOM 只增不改：append 进已挂载消息不会投影——新消息必须走新 mount。
@@ -31,14 +31,14 @@
 
 | 视觉行为 | 协议事件 | 客户端责任 |
 |---------|---------|-----------|
-| 思考框弹出 + 流式文本 | `content_block_delta(thinking)` | append 裸文本到 `<pre>` |
+| 思考框弹出 + 流式文本 | `content_block_delta(thinking)` | 懒创建（PANEL-17）+ append 裸文本到 `<pre>` |
 | 思考完成 → 400ms 折叠 | `content_block_stop` | 三路径 `_autoCollapseThinking`（首个 text_delta + message_stop 兜底 + tool_result）+ CSS 动画；尊重手动展开（PANEL-11） |
 | 正文流式 | `content_block_delta(text)` | `_scheduleStreamingMd` 120ms 节流轻管线（marked+高亮，跳过 KaTeX/mermaid；不进 `_mdCache`）（PANEL-12） |
 | 正文完成 → 富文本 | `content_block_stop` + 服务端 html | 整段替换 innerHTML |
 | 工具卡弹出（参数未到） | `content_block_start(tool_use)` | 创建骨架 + 随机配色 + 摸鱼提示 |
 | 参数流式 | `content_block_delta(input_json)` | append 裸 JSON |
 | 参数完成 → 高亮 | `content_block_stop` + 服务端 html | 替换 |
-| 摸鱼提示滚动 | 无（客户端本地计时器） | 随机文案循环 |
+| 摸鱼提示 | 无（客户端本地计时器） | 随机文案循环；恒在消息尾部 insertBefore（PANEL-10）；`_startToolHint`/`_stopToolHint` 生命周期（PANEL-14）；keyframes 静态定义禁 JS 注入（PANEL-15） |
 | 工具结果 → 状态色 | `tool_result` | 更新标题栏 + 服务端 html 填入输出区 |
 | 完成 → 自动折叠 | `tool_result`（隐含） | 打字机动画 → 折叠 |
 | 用户展开/折叠 | 无（客户端本地） | Map<blockId, bool>，会话切换清空 |
@@ -67,8 +67,8 @@
    否则 `__end__` 不发 → 发送按钮卡死 + 残留等待框。
 2. **startRun 语义为「取代」**：重连走 `attachRun`；`_consumeWithReconnect` 退避重试 +
    `/status` 探活。
-3. **新增服务端依赖必须同步 build.mjs external**——CJS 包打进 ESM bundle 启动即崩。
-   案例：v8.1 compression 事故，全站 502 + systemd 重启风暴。
+3. **新增服务端依赖必须同步 build.mjs external**（规则的家 → ../infra/contract.md 硬规则 3）。
+   案例：v8.1 compression 事故，全站 502 + systemd 重启风暴（BAR-BUILD-03）。
 4. **推理模型等待提示**：`onWait(false)` 挂在首个实际内容（含 thinking_delta），
    不是 message_start——否则白屏空档。最后一轮 message_stop 打开的提示由 doSend
    返回后主动清。
@@ -76,7 +76,7 @@
    saveMessages（自动建会话）后回填 `_sendSessionId`；`kfm-session-change` 监听器
    必须处理空串（清空面板），不能 `if(!sessionId) return`。
 6. **run 持久化用 localStorage**：`{sessionId,runId}` 存 localStorage 才能跨浏览器
-   重启重连（配 5min 服务端缓冲）；sessionStorage 会丢。
+   重启重连（配 5min 服务端缓冲）；sessionStorage 会丢（展开版见 detail-runtime.md §4.5）。
 7. **面板渲染生命周期（v8.1 根洽契约，全 8 条）**：
    - **面板 DOM 只创建一次**：`ensurePanel()` 幂等创建，expand/collapse 只切显隐。
      禁止 expand 路径调 buildPanelContent/initChatDom/重挂历史——innerHTML 重建会让

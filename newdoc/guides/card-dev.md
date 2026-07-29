@@ -1,5 +1,5 @@
 > 这是什么：卡片插件开发指南——写新 .card.ts 前必读。
-> 别的去哪找：卡片域契约 → ../domains/floating-card/contract.md；视觉决策史 → vision.md；心法 → ../constraints/invariants.md。
+> 别的去哪找：卡片域契约 → ../domains/floating-card/contract.md；注册表配对/手势优先级 → ../domains/client-shell/contract.md；视觉决策史 → vision.md；心法 → ../constraints/invariants.md。
 
 # KFM v4 — 卡片插件开发指南
 
@@ -228,17 +228,9 @@ const unreg = gestures.register({
 unreg();
 ```
 
-### 手势优先级表
+### 手势优先级
 
-| 优先级 | 处理器 | 说明 |
-|--------|--------|------|
-| 110 | picker-lock | 根目录选择器（全局屏蔽） |
-| 100 | orb | 光球拖拽 |
-| 100 | floating-orb | 浮卡拖拽 |
-| 90 | card-stack | 卡片堆切换 |
-| 80 | card-stack-global | 卡片堆全局手势 |
-| 60 | sidebar-scroll | 侧栏滚动 |
-| 50 | page-swipe | 页面滑动 |
+优先级全表见 `../domains/client-shell/contract.md` 手势优先级节（唯一来源）。
 
 新增卡片的建议优先级：
 - 卡片内操作（点击按钮、滚动内容）：不注册全局手势，用 DOM 事件即可
@@ -274,7 +266,8 @@ const bgColor = theme.surface.bgLight;            // 背景色
 const accent = card?.accents?.color1;             // 卡片主色（来自运行时实例）
 ```
 
-**规则**：新增颜色只能在 `theme.ts` 中定义，禁止在卡片 handler 中硬编码色值。
+**规则**：新增颜色只能在 `theme.ts` 中定义，禁止在卡片 handler 中硬编码色值
+（唯一来源规则的家 → ../domains/canvas-tree/contract.md「两个唯一来源」）。
 
 ### 全局状态
 
@@ -447,7 +440,7 @@ bodyEl.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:8px;paddin
 
 ### 10.2 主题色引用
 
-所有颜色引用自 `theme.ts`，禁止硬编码十六进制色值：
+所有颜色引用自 `theme.ts`，禁止硬编码十六进制色值（家 → canvas-tree 契约「两个唯一来源」）：
 
 ```typescript
 import { currentTheme as theme } from '../../modules/theme.js';

@@ -26,7 +26,8 @@ Express 4 + WebSocket，`index.ts` 统一入口编排（协调层）。
 1. **路径安全**：所有用户路径必须过 `sanitizePath()`，逃逸即拒。新端点不许例外。
 2. **WS 半开**：后台冻结可导致连接假活——必须依赖协议级 ping，不可用 TCP 状态推断。
 3. **express.static 不得挂载仓库根**——曾暴露 `.git`/`src`/`node_modules`（v8.1 已删）。
-4. **CJS 依赖进 ESM bundle 即启动崩溃**——新增依赖同步 build.mjs external（见 ai-chat#陷阱 3）。
+4. **CJS 依赖进 ESM bundle 即启动崩溃**——新增依赖同步 build.mjs external（见 ../infra/contract.md 硬规则 3）。
+5. **只监听 127.0.0.1**——无认证 API 禁止绑 0.0.0.0（v5.1.0 已修，index.ts 有注释；新端点不许例外）。
 
 ## 素材考古（原文已随 archive 注销，`git show v8.1.1:docs/archive/design/…` 可挖）
 

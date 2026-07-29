@@ -16,8 +16,8 @@
 ## 手势优先级（不可违反）
 
 ```
-picker-lock(110) > orb(100) > floating-orb(100) > card-stack-global(80)
-> sidebar-scroll(60) > page-swipe(50)
+picker-lock(110) > orb(100) > floating-orb(100) > card-stack(90)
+> card-stack-global(80) > sidebar-scroll(60) > page-swipe(50)
 ```
 
 - 新增交互模式必须注册进 GestureRegistry，**禁止直接 addEventListener**。
@@ -65,8 +65,8 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
    notify 覆盖靠人工保证。
 4. **`display:''` 是继承链杀手**：恢复显示必须显式写 `'flex'`/`'block'`——`display:''`
    会 revert 到 CSS 默认值。案例：2026-07-05 光球 SVG 偏移 ~6px，排查数小时。
-5. **动画锁 3s 是兜底不是设计**：`waitForAnimUnlock` 3s 超时；`onComplete` 里
-   `L.endOp()` 必须在早期 return 之前执行（v6.11.0 已根解，再犯即回归）。
+5. **`endOp` 必须在早期 return 之前执行**（v6.11.0 已根解，再犯即回归）；
+   动画锁 3s 兜底的不变量本体 → ../canvas-tree/contract.md 动画安全节。
 6. **PointerEvent 统一**：所有触摸/鼠标输入必须走 gesture-registry 的 PointerEvent
    调度；禁止直接绑原生 `touchstart/touchmove/touchend`——两套事件系统在同一 DOM 上
    互相干扰，`pointermove` 被浏览器提前终止。案例：B.A.R. #001。

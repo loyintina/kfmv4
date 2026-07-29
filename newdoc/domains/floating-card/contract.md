@@ -16,7 +16,8 @@
 ## 硬规则
 
 1. 浮卡与 orb 是独立模块，各管各的；**统一化方案已两次回退放弃**（../../decisions/adr-002-card-unification-abandoned.md）。
-2. 新增交互模式走 GestureRegistry，禁止直接 addEventListener。
+2. 新增交互模式走 GestureRegistry，禁止直接 addEventListener
+   （规则的家 → ../client-shell/contract.md 手势优先级节 + #陷阱 6）。
 3. 共享常量只能从 `interaction-constants.ts` 取——历史教训：局部定义 `MARGIN_F=8`
    绕过共享 `MARGIN`，已修正，勿再犯。
 4. **双色渐变对应规则**：方向 135deg；color1（起点）→ 右光球 TR/BR + 图标背景；
