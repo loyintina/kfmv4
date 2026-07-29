@@ -15,7 +15,7 @@
 - v6.7.0 浮卡模板化 + ✓/✗ 投放撤销（0b47b2e）
 - v6.8.0 模式系统 + 传送门液体粒子 + 方向锁简化 + as any 零逃逸（5585967）；v6.8.1 代码质量审计（0061bb5）
 - v6.9.x Phase 7 长按抽屉栏 + 滚动轴锁定重构（0d43f00/5b9d0b8）
-- v6.10.x 键盘避让 + card04 tmux + card.meta 类型化（145136d/f8d3e2a）
+- v6.10.x 键盘避让 + card04 tmux + card.meta 类型化（6bc4741/8be2f27）
 - v6.11.x 双指处理跳过 + 心法重组 22 条 + 终端 aux bar（53dcf21/fedab31/c386da3）
 - v7.0.0 进入 Agent 阶段（9de2a8c）
 - v7.1.0 orb/floating-card 拆分 + server 路由拆分 + 214 测试 + 2 ADR（3deb88b）

@@ -7,7 +7,7 @@
 ## 测绘元数据
 
 - 基准：commit 03da8c9 · 2026-07-29 · 域规模 68 文件 / 9510 行（机械清单口径）
-- 派生真相实测：28 个 check 脚本、456 个测试
+- 派生真相实测：以 sync-counts 输出为准（测绘时 28 check/456 测试；v8.3 语义审计机械化后 30 check/440 测试）
 - 方法：subagent 七问侦察 + 主 agent 抽查核实（check 链漂移、tag-advisor exit 码已亲验）
 - 注意：本域契约文件清单列了 scripts/deploy.sh、scripts/agent/、.githooks/、package.json，
   但测绘时 DOMAIN_SRC 的 infra 条目不含它们（已随本次测绘补登，见漂移 6）
@@ -15,14 +15,14 @@
 ## 一句话职责
 
 构建产物链（check → sass → esbuild 双 bundle → 握手信息）、部署闭环
-（build → restart → 握手断言）、28 个 check 组成的文档/代码管线、agent-runner 工具。
+（build → restart → 握手断言）、29 个 check 组成的文档/代码管线、agent-runner 工具。
 
 ## 承重入口
 
 | 入口 | 位置 | 调用方 |
 |------|------|--------|
 | build.mjs（无导出，顶层即入口） | 内嵌 check 链 :37-77 + esbuild :86-107 | package.json build/dev/watch、deploy.sh:11 |
-| 28 个 check-*.mjs | 全部顶层执行、exit 1 硬失败 | package.json:11 的 check 串 + build.mjs 内嵌副本 |
+| 29 个 check-*.mjs | 全部顶层执行、exit 1 硬失败 | package.json:11 的 check 串 + build.mjs 内嵌副本 |
 | DOCS_ROOT / DOMAIN_SRC 共享常量 | scripts/check/docs-root-const.mjs、domain-src.mjs | 11 个 check / freshness + 清单生成器 |
 | sync-counts.mjs | 唯一会回写文档的 check | 链内 --check-only；无参回写 |
 | scripts/agent/agent-runner.mjs | 导出 runAgent/extractJson | tag-advisor.mjs:13 |
@@ -73,14 +73,16 @@ esbuild server ESM + client IIFE（external 硬编码 build.mjs:93）→ checkFr
    (b) 阻断语义不同——build.mjs:40 try/catch 把「>3 未提交即中断」降级为提醒，与
    build.mjs:36 自身注释「零错误通过才构建」直接矛盾。check-checks 的 includes 匹配
    守不住这类漂移。
-2. **契约硬规则 1「新 check 一律 hard fail」有未登记例外**：check-release-radar
-   设计性 warning-only、exit 0；check-uncommitted ≤3 也只警告。契约未提例外清单。
-3. **【已核实】tag-advisor exit 1 语义是幽灵**：头注释与 guides/agent-runner.md:18
-   都声称「exit 1 = 模糊输出交调用方」，代码只有 exit 0（tag-advisor.mjs:90）与
-   exit 2（:72）——永无 exit 1。
-4. **【已核实】tag-advisor 机械下限注释 ≠ 代码**：头注释「有 feat → minor」，代码
-   floor = breaking>0 ? major : total>0 ? patch : none（:32）——feat-only 窗口下限
-   是 patch 不是 minor。
+2. **【已结案 2026-07-29】契约硬规则 1「新 check 一律 hard fail」曾有未登记例外**：check-release-radar
+   设计性 warning-only、exit 0；check-uncommitted ≤3 也只警告。例外清单已登记
+   contract.md 硬规则 1 + workflows/discipline-mechanize.yaml（语义审计 B1）。
+3. **【已结案 2026-07-29】tag-advisor exit 1 语义曾是幽灵**：头注释与 guides/agent-runner.md
+   曾声称「exit 1 = 模糊输出交调用方」，代码只有 exit 0 与 exit 2。修复：协议改为
+   exit 0（可机械消费）/ exit 2（重试耗尽或异常，交调用方），头注释与
+   agent-runner.md 已对齐（语义审计 B2）。
+4. **【已结案 2026-07-29】tag-advisor 机械下限注释曾 ≠ 代码**：头注释曾写「有 feat → minor」，
+   代码 floor = breaking>0 ? major : total>0 ? patch : none（:33）。修复：头注释改为
+   与代码一致（feat 不抬下限，级别归语义层）（语义审计 B2 附带）。
 5. **死代码**：renderTemplate（agent-runner.mjs:32）全仓库无调用，尽管头注释把
    「{{var}} 模板注入」列为设计支柱。
 6. **infra 域映射残缺（本次测绘已修）**：DOMAIN_SRC 的 infra 条目原只有

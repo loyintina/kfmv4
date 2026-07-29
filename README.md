@@ -2,7 +2,7 @@
 
 > AI 人机交互个人工作台原型，面向移动端浏览器。核心理念：**一切皆卡片**。
 >
-> 当前版本：**v8.3.1** | 构建管线：**28 个 check-* 脚本 + 440 个回归测试**
+> 当前版本：**v8.3.1** | 构建管线：**30 个 check-* 脚本 + 440 个回归测试**
 
 ## 这是什么
 
@@ -16,8 +16,8 @@
 | 终端（xterm.js） | 支持 tmux mouse mode、触控滚动、键盘自动避让、双指缩放 |
 | 卡片工作台 | 统一的浮动卡片引擎，拖拽/缩放/编辑模式/四角光球/全屏模式 |
 | 模式按钮系统 | copy/move/delete 批量操作，色系联动光标 + 卡片 |
-| AI 对话运行时 | 后台挂机持久化（run-manager）+ 重连续读 + WebSocket 真心跳半开检测 + WS 重连三层恢复终端 + content block 协议（Claude/OpenAI 标准）流式思考/工具调用渲染 + 打字机结果动画 + 等待期无厘头提示 + 会话持久化 服务端单写者 + run 重连续读 + Z-Index L8 焦点交互层 |
-| 自动化检查管线 | 28 个 check-* 脚本 + 元检查器 + 文档-代码一致性验证 + 域契约新鲜度检查（contract-freshness），构建时零错误，440 个回归测试 |
+| AI 对话运行时 | 后台挂机持久化（run-manager）+ 重连续读 + WebSocket 真心跳半开检测 + WS 重连三层恢复终端 + content block 协议（Claude/OpenAI 标准）流式思考/工具调用渲染 + 打字机结果动画 + 等待期无厘头提示 + 会话持久化服务端常规写者（客户端双轨残留治理中） + run 重连续读 + Z-Index L8 焦点交互层 |
+| 自动化检查管线 | 30 个 check-* 脚本 + 元检查器 + 文档-代码一致性验证 + 域契约新鲜度检查（contract-freshness），构建时零错误，440 个回归测试 |
 
 ## 快速开始
 
@@ -47,7 +47,7 @@ TypeScript 7 + Canvas 2D 自研渲染引擎（v2 Box → Renderer）+ GSAP 3.15 
 | 层 | 用途 |
 |----|------|
 | [`docs/constraints/`](docs/constraints/invariants.md) | 约束层：invariants（宪法+心法）、diagnostics（诊断手册） |
-| [`docs/domains/`](docs/domains/ai-chat/contract.md) | 域契约层：7 个子系统的 contract + detail |
+| [`docs/domains/`](docs/domains/ai-chat/contract.md) | 域契约层：6 个子系统的 contract + detail |
 | [`docs/guides/`](docs/guides/doc-architecture.md) | 指南层：文档体系设计原理、维护规则、测试、发版等 |
 | [`docs/ledger/`](docs/ledger/history.md) | 账本层：history（版本线）、bugs（回归登记） |
 | [`docs/workflows/`](docs/workflows/pre-code-gate.yaml) | 工作流层：15 张机械执行卡 |

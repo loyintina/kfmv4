@@ -23,8 +23,8 @@ Canvas 2D 文件树的全部呈现与交互：树构建、展开/折叠动画（
 | `loadFileTree()` | tree-loader.ts:128 | 6 方（main/tree-swipe/action-bar/switcher/orb-chat-run） |
 | `buildSidebarTree()` | tree-model.ts:183（纯构建） | tree-render.ts:936（生产唯一） |
 | `selectFilesForPrompt()` | tree-swipe.ts:651 | role.card.ts:14（跨域） |
-| `L` 单例（生命周期/动画锁） | renderer-lifecycle.ts:223 | 域内全部模块读写 |
-| `currentTheme` | theme.ts:238 | 13 个模块只读（含大量域外） |
+| `L` 单例（生命周期/动画锁） | renderer-lifecycle.ts:171 | 域内全部模块读写 |
+| `currentTheme` | theme.ts:227 | 13 个模块只读（含大量域外） |
 
 ## 状态所有权
 
@@ -51,7 +51,7 @@ _resetAnimTimeline → 下一个队列点击。
 - 文件系统写唯一执行者是服务端（HTTP /files/*），客户端无直接写
 - **localStorage expandedPaths 写者 4 处（非唯一）**：state.ts:128、tree-render.ts:525
   （动画反转直写，绕过 setter 无 notify）、tree-loader.ts:179、sibling-switcher.ts:117
-- localStorage kfmv4_currentRoot 写者 3 处：sibling-switcher.ts:61/116、main.ts:124
+- localStorage kfmv4_currentRoot 写者 3 处：sibling-switcher.ts:61/116、main.ts:93
 
 ## 跨域边界
 

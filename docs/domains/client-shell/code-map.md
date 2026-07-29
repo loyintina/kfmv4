@@ -18,12 +18,12 @@
 
 | 入口 | 位置 | 调用方 |
 |------|------|--------|
-| main.ts（无导出，启动编排） | main.ts:66-73 同步链 + :109-134 异步尾链 | 进程入口 |
+| main.ts（无导出，启动编排） | main.ts:57-75 同步链 + :98-103 异步尾链 | 进程入口 |
 | `KFMState` 单例 | state.ts:73 | 订阅者仅 tree-render.ts:85、ws-channel.ts:343 |
-| `L` 单例（渲染生命周期/动画锁） | renderer-lifecycle.ts:223 | 7 个 canvas-tree/floating 文件读写 |
-| `gestures` 单例 | gesture-registry.ts:385 | 9 个文件注册 handler |
+| `L` 单例（渲染生命周期/动画锁） | renderer-lifecycle.ts:171 | 7 个 canvas-tree/floating 文件读写 |
+| `gestures` 单例 | gesture-registry.ts:346 | 9 个文件注册 handler |
 | `anim` 单例 | animation-registry.ts | ~10 个文件 |
-| `initOrb()` | orb.ts（529 行纯 DOM 壳，宿主已拆出） | main.ts:70（唯一） |
+| `initOrb()` | orb.ts（529 行纯 DOM 壳，宿主已拆出） | main.ts:61（唯一） |
 | `createDragHandler()` | drag-handler.ts:68 | orb.ts:471、floating-card.ts |
 
 公共底座（logger/dom-refs/z-index-layers/animation-registry）被全仓三域共用。
@@ -31,7 +31,7 @@
 ## 状态所有权
 
 - KFMState 常规写走方法；**但 expandedPaths 被 tree-render.ts:524、tree-loader.ts:178
-  直写绕过 setter（无 notify）**；currentRoot 由 main.ts:130 直接赋值
+  直写绕过 setter（无 notify）**；currentRoot 由 main.ts:99 直接赋值
 - 手势内部态：gesture-registry 独占；drag-handler 每次 create 一个闭包 DragState
 - orb 模块级变量（orb.ts:63 起）：orbState/panelState 等 orb.ts 独占写；
   chatMessages 已随拆分迁 orb-chat-host.ts（ai-chat 域）——跨界共享结案（见漂移 8）
@@ -42,7 +42,7 @@
 **启动序列（实然）**：gestures.init（绑 document 4 监听 + body touchAction=none）→
 initApp → initUI → initGestures → initOrb（ensurePanel、sessionStore 初始化、
 持久 run 恢复、tryAutoResume）→ initTreeRenderer → initCardStack → initFloatingCards
-→ initWsChannel（main.ts:106）→ establishRoot → loadFileTree → initLazyLoader。
+→ initWsChannel（main.ts:75）→ establishRoot → loadFileTree → initLazyLoader。
 
 **手势一帧**：pointerdown → _handleStart（gesture-registry.ts:224）→ preMatch hooks →
 按 priority 降序匹配（命中即 break :281）→ drag-handler onStart（长按计时 600ms）→

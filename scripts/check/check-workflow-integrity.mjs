@@ -1,27 +1,36 @@
 /**
- * check-workflow-integrity.mjs — 工作流卡引用完整性（v8.2 新增）
+ * check-workflow-integrity.mjs — 工作流卡引用完整性（v8.2 新增，v8.3 扩展 M2）
  *
  * workflows/*.yaml 的 reads/writes 字段是 agent 的导航命脉。规则：
- * 每条 reads/writes 条目指向的路径必须存在（DOCS_ROOT 相对或项目根相对）。
- * 含 {占位符} 的条目跳过（模板形态）；目录以 / 结尾。
+ * 1. 每条 reads/writes 条目指向的路径必须存在（DOCS_ROOT 相对或项目根相对）。
+ *    含 {占位符} 的条目跳过（模板形态）；目录以 / 结尾。
+ * 2. 卡内任意位置提到的 check-*.mjs 脚本名必须在 scripts/check/ 存在
+ *    （v8.3 语义审计 B3：yaml 引用已改名的 check-desc-freshness 长达数天无人发现——
+ *    脚本名也是引用，引用就会悬空）。豁免登记 SCRIPT_WHITELIST。
  *
  * 挂入 npm run check，失败 → 构建中断。
  */
 
 import { readFileSync, readdirSync, existsSync } from 'fs';
-import { join } from 'path';
+import { join, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { DOCS_ROOT } from './docs-root-const.mjs';
 
-const ROOT = fileURLToPath(new URL('../../', import.meta.url));
+const ROOT = resolve(process.env.KFM_PROBE_ROOT || fileURLToPath(new URL('../../', import.meta.url)));
 let errors = 0;
 function error(msg) {
   console.error(`[check-workflow-integrity] ${msg}`);
   errors++;
 }
 
+// 非脚本 token 豁免（注释原因）
+const SCRIPT_WHITELIST = new Set([
+  'check-only', // --check-only 命令行旗标，非脚本名
+]);
+
 const wfDir = join(ROOT, DOCS_ROOT, 'workflows');
 let checked = 0;
+let scriptsChecked = 0;
 
 for (const f of readdirSync(wfDir).filter(f => f.endsWith('.yaml'))) {
   const content = readFileSync(join(wfDir, f), 'utf-8');
@@ -46,10 +55,19 @@ for (const f of readdirSync(wfDir).filter(f => f.endsWith('.yaml'))) {
       }
     }
   }
+  // 脚本名引用核对：卡内出现的 check-xxx(.mjs) 必须落在 scripts/check/
+  for (const m of content.matchAll(/\bcheck-[a-z0-9]+(?:-[a-z0-9]+)*(\.mjs)?\b/g)) {
+    const name = m[1] ? m[0] : m[0] + '.mjs';
+    if (SCRIPT_WHITELIST.has(m[0])) continue;
+    scriptsChecked++;
+    if (!existsSync(join(ROOT, 'scripts', 'check', name))) {
+      error(`${f}: 引用脚本 "${m[0]}" 在 scripts/check/ 不存在（脚本改名/删除后引用面未同步）`);
+    }
+  }
 }
 
 if (errors > 0) {
   console.error(`\n[check-workflow-integrity] ${errors} 条工作流引用失效，构建中断。`);
   process.exit(1);
 }
-console.log(`[check-workflow-integrity] OK — ${checked} 条 reads/writes 引用全部有效`);
+console.log(`[check-workflow-integrity] OK — ${checked} 条 reads/writes 引用 + ${scriptsChecked} 处脚本名引用全部有效`);

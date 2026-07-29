@@ -9,19 +9,21 @@
 - server：ESM bundle——**external 列表是生死线**（CJS 包打进去启动即崩）。
 - 样式：`sass base.scss → base.css`（check 链内自动编译）。
 
-## 检查管线（npm run check，28 脚本，顺序固定）
+## 检查管线（npm run check，30 脚本，顺序固定）
 
 <!-- chain:auto 由 sync-counts 生成，禁止手改 -->
 `check-uncommitted`（>3 未提交即中断，首位） → versions → checks → doc-coverage → sass → css-wiring →
 tool-compaction → anim → as-any → card-meta → registry → zindex → console → docs → consistency →
 active-stack → code-doc-refs → workflow-integrity → cards → contract-freshness → test-patterns →
-bar-ledger → doc-budget → doc-symbols → doc-schema → commit-docs → hooks → probes → release-radar →
-sync-counts → tsc。
+bar-ledger → ledger-commits → doc-budget → doc-symbols → doc-linerefs → doc-schema → commit-docs →
+hooks → probes → release-radar → sync-counts → tsc。
 <!-- /chain:auto -->
 
 ## 硬规则
 
 1. **新 check 一律 hard fail**——warning 对 agent 等于不存在。
+   设计性例外须登记（语义审计 B1 修订）：check-release-radar（发版提醒，只 WARN）、
+   check-uncommitted（≤3 文件只警告）。例外清单外新增 warning-only check = 中断。
 2. **新增工具/卡片/模块必须过对应双向核对 check**（tool-compaction/cards/registry），
    不登记 = 构建中断。
 3. **新增服务端依赖同步 build.mjs external 列表**。
@@ -45,7 +47,7 @@ sync-counts → tsc。
 
 ## 文件清单
 
-`build.mjs` `scripts/check/check-*.mjs`（28 个）`scripts/deploy.sh`（构建→重启→版本握手闭环）
+`build.mjs` `scripts/check/check-*.mjs`（30 个）`scripts/deploy.sh`（构建→重启→版本握手闭环）
 `scripts/agent/`（agent-runner：agent 脚本执行器，指南 → ../../guides/agent-runner.md）
 `scripts/check/domain-src.mjs`（域→代码映射单一真相源：contract-freshness 与清单生成器共用）
 `scripts/gen-code-inventory.mjs`（机械层清单 + 跨域 import 边生成器 → ../code-inventory.md，管线挂接待办）

@@ -48,10 +48,11 @@
 
 1. orb.ts 发送按钮（DOM 属 client-shell）→ orb-chat-host handleSend → 起等待提示
 2. doSend：push 用户消息 → mountUserMessage 上屏（orb-chat-host.ts:300 直接调用）
-3. 读 .kfmv4/active.json 配置（orb-chat-run.ts:414）
+3. 读 .kfmv4/active.json 配置（orb-chat-run.ts:397）
 4. **格式转换在客户端**：content blocks → OpenAI tool_calls 形态 + 压缩投影
-   + 空壳 assistant 过滤（orb-chat-run.ts:598-647）
-5. 新会话先 sessionStore.saveMessages 建文件（orb-chat-run.ts:659-661）
+   + 空壳 assistant 过滤——唯一构造函数 shared/chat-protocol/to-openai-messages.ts
+   （调用点：orb-chat-host.ts:197 冷恢复 / orb-chat-run.ts:438 doSend）
+5. 新会话先 sessionStore.saveMessages 建文件（orb-chat-run.ts:456）
 6. POST /api/ai/chat/start → session-store.appendUserMessage（幂等）→ run-manager.startRun
 7. streamChat 组装 system + 边界规范化（chat.ts:151-178）→ POST 上游 → 解析 SSE
    → 工具本地并行执行（chat.ts:382），上限 50 轮（chat.ts:188）
@@ -80,7 +81,7 @@
 ## 代码强制的不变量（附证据）
 
 - content 类型归一 fail-closed：非字符串一律 JSON.stringify（chat.ts:156）；
-  无 tool_calls 的空 assistant 一律丢弃（chat.ts:165；客户端同策略 orb-chat-run.ts:643-644）
+  无 tool_calls 的空 assistant 一律丢弃（chat.ts:165；客户端同策略 to-openai-messages.ts:234-236）
 - 空壳消息 reasoning 归位：写时 + 读时双挂点（见承重入口表）
 - 块索引连续化：block-idx.ts:13-23，text 恒 0、工具块从 1 连续
 - 压缩硬性豁免：G2 ≤300 / G3 失败 ≤500 early-return（tool-compaction/index.ts:202-203）；
@@ -94,7 +95,7 @@
 1. **session-client 职责漂移**：contract 称其「只读缓存 + pre-run 创建」，代码仍持有
    完整写盘链路 _doSaveMessages（session-client.ts:389）——双轨残留。
 2. **格式转换双份实现已漂移**：orb-chat-run.ts:598-647（含压缩 + 空壳过滤）vs
-   orb.ts:686-709 tryAutoResume 内重复实现（无压缩，且 push `content: mainText || null`
+   修复前 orb.ts:686-709 tryAutoResume 内重复实现（无压缩，且 push `content: mainText || null`
    不过滤空 assistant）——冷恢复路径发给严格端点的载荷不合上游边界契约。
    **（已修复 BAR-ORB-RESUME-01：收编 shared/chat-protocol/to-openai-messages.ts 唯一入口）**
 3. **【已结案】死代码三处已全部删除**：renderMarkdownAsync 与 getToolHint/clearToolHint

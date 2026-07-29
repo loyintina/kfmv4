@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 0e30169 · 生成于 2026-07-29 -->
+<!-- 基准 commit a3c751f · 生成于 2026-07-29 -->
 
 # 代码清单（机械层）
 
@@ -165,7 +165,7 @@
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 
-## infra（71 文件 · 9811 行）
+## infra（74 文件 · 10022 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -191,12 +191,13 @@
 | tests/protocol-reducer.test.ts | 161 | — |
 | scripts/check/check-docs.mjs | 146 | — |
 | scripts/check/check-bar-ledger.mjs | 142 | — |
+| build.mjs | 137 | — |
 | scripts/check/sync-counts.mjs | 137 | — |
-| build.mjs | 135 | — |
 | scripts/check/check-tool-compaction.mjs | 129 | — |
 | scripts/check/check-checks.mjs | 126 | — |
 | tests/to-openai-messages.test.ts | 126 | — |
 | tests/liquid-geometry.test.ts | 120 | — |
+| scripts/check/check-doc-linerefs.mjs | 116 | — |
 | tests/harness.ts | 116 | TestTag, TestOpts, test, regression, group, beforeEach, runAll |
 | scripts/check/check-doc-coverage.mjs | 110 | — |
 | scripts/check/check-zindex.mjs | 110 | — |
@@ -205,16 +206,18 @@
 | scripts/check/check-contract-freshness.mjs | 103 | — |
 | scripts/check/check-test-patterns.mjs | 102 | — |
 | scripts/check/check-anim.mjs | 99 | — |
+| scripts/agent/tag-advisor.mjs | 95 | — |
 | scripts/check/check-versions.mjs | 91 | — |
-| scripts/agent/tag-advisor.mjs | 91 | — |
 | scripts/check/check-probes.mjs | 86 | — |
 | tests/engine.test.ts | 85 | — |
 | scripts/check/check-console.mjs | 79 | — |
 | scripts/check/check-as-any.mjs | 76 | — |
 | scripts/check/docs-status.mjs | 76 | — |
 | scripts/check/check-doc-symbols.mjs | 75 | — |
+| scripts/check/check-workflow-integrity.mjs | 74 | — |
 | scripts/check/check-code-doc-refs.mjs | 69 | — |
 | scripts/check/check-card-meta.mjs | 68 | — |
+| scripts/check/check-ledger-commits.mjs | 67 | — |
 | tests/floating-state.test.ts | 66 | — |
 | scripts/check/check-active-stack.mjs | 61 | — |
 | scripts/check/check-hooks.mjs | 61 | — |
@@ -222,7 +225,6 @@
 | scripts/check/domain-src.mjs | 60 | DOMAIN_SRC |
 | scripts/agent/test-tag-advisor.mjs | 59 | — |
 | tests/omp-glob.test.ts | 58 | — |
-| scripts/check/check-workflow-integrity.mjs | 56 | — |
 | scripts/check/check-commit-docs.mjs | 55 | — |
 | scripts/check/check-uncommitted.mjs | 51 | — |
 | scripts/check/check-consistency.mjs | 50 | — |
@@ -235,6 +237,7 @@
 | scripts/check/docs-root-const.mjs | 8 | DOCS_ROOT |
 | tests/register-hook.mjs | 8 | — |
 | tests/mocks/xterm-addon-fit.ts | 6 | FitAddon |
+| tests/probes/doc-linerefs/src/fake.ts | 4 | a, b |
 | tests/probes/bar-ledger/tests/probe.ts | 2 | — |
 | tests/probes/doc-symbols/src/probe.ts | 2 | realFoo |
 | tests/probes/sync-counts/scripts/check/check-a.mjs | 2 | — |
@@ -528,4 +531,4 @@
 - src/server/index.ts → src/server/ai/routes.ts
 
 ---
-合计 205 文件 · 40231 行 · 跨域边 225 条
+合计 208 文件 · 40442 行 · 跨域边 225 条
