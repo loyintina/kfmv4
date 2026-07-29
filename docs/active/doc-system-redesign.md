@@ -1299,3 +1299,25 @@ V8_AUDIT_REPORT §四.2「tool_result 状态/渲染两处分散」与 §四.3「
 
 - `newdoc/ledger/bugs.md` 头部 REGRESSION_TESTING_SYSTEM 指针改指 guides/testing.md#素材考古（§三十四切换清单第 4 项提前完成，切指不删原文，安全）。
 - 异常记录（原文反正要删，只记不修）：多份 frontmatter status 与正文矛盾；CARD-STACK-HANDOFF 引用根目录 STACK_CARDS_DESIGN.md 死链。
+
+---
+
+## §三十八 archive 批次 (a)：纯历史 41 份 → history 分组压行
+
+执行日期：2026-07-29。41 个 explore subagent 逐份核查（全文通读 + newdoc 吸收对照 + 现行代码验证）。
+
+### 判定结果
+
+- **38 份 pure-history**：版本线各行此前已就位（v4.1.0-v6.8.1 handoff、v6.3.x 三轮审计、v8 审计），本批确认有效；新增 6 行分组记录（legacy/standards/bugs+根/handoffs 杂项/design 其余 + 总述）。
+- **3 份翻出真遗留 → STACK.md 第 5 项**：旧审计的开放项在新文档系统完全失联，均为「AI 之手」或代码卫生类：
+  1. v6.8 审计 #10 服务端 console.log 残留 ~12 处（头部谎称全修复，正文 #10 明标 ⏳）。
+  2. HANDOFF_2026-06-03_AUDIT_FIX_DEEP 三项体系化建议（_rowIndex 接口化 88 处 / RafHandleSet / L._savedScrollY），代码中仍以原模式存在。
+  3. REGISTRY_AUDIT_2026-06-03 发现 #7：file-tree 命令缺口（expand-dir/collapse-dir/select-file 未实现）。
+
+### 顺带修正
+
+- `newdoc/domains/client-shell/contract.md` #陷阱 3 补半句：check-registry 实际还验孤立 getter + 跨文件命令重复（原写「只验字段完整性」与现行行为不符）。
+- DOC_CODE_ALIGNMENT 的「snapshot ordering 无契约」（P3 观察）在 history 分组行顺带注明，不单独立项。
+- 边角确认：appendix-b-c 的 processClickQueue 栈风险已由现行蹦床式实现闭环；RACE_CONDITION_PLAN Phase 2/3/5 设计提案未采纳且被现行代码明确否决（tree-animation.ts 头注「不建 overlay」）。
+
+至此 archive 65 份全部分类完毕：(a) 41 + (b) 21 + (c) 3。收尾三件套（统一压缩轮 → 管线适配 → 切换提交）成为唯一剩余工作。

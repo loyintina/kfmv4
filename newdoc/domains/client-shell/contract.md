@@ -61,7 +61,8 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
    （几乎全部）必须用 `registerElement()`（register + registerStateGetter 一次配对），
    否则 snapshot() 返回过时静态 state。
 3. **notifyStateChange 覆盖**：只通知「变了」不传值，snapshot 靠 registerStateGetter 读实时态。
-   漏调 → AI 看到的 snapshot 滞后。check-registry 只验字段完整性，notify 覆盖靠人工保证。
+   漏调 → AI 看到的 snapshot 滞后。check-registry 验字段完整性 + 孤立 getter + 跨文件命令重复，
+   notify 覆盖靠人工保证。
 4. **`display:''` 是继承链杀手**：恢复显示必须显式写 `'flex'`/`'block'`——`display:''`
    会 revert 到 CSS 默认值。案例：2026-07-05 光球 SVG 偏移 ~6px，排查数小时。
 5. **动画锁 3s 是兜底不是设计**：`waitForAnimUnlock` 3s 超时；`onComplete` 里
