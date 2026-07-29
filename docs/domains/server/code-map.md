@@ -86,10 +86,13 @@ send('terminal-output')；输入 → pty.write；close/error/心跳判死 → ki
    /ui/command 随 ADR-004 整删；/api/system/restart（BAR-RESTART-GUARD-01）、
    /ai/chat/start（BAR-ORIGIN-GUARD-01）已挂 verifyLocalOrigin（成因 E 机制没人走，
    opt-in 出生未接入）。教训升入契约：新端点默认挂 guard，例外需注释理由。
-8. **【存疑，安全】PTY 会话无所有权校验**：terminal-input/resize/close 只按 sessionId
-   操作（ws-server.ts:180-198）——知道 sessionId 的任一已连客户端可写/关闭他人 PTY。
-9. **【存疑】evalInBrowser 落点随机**：只发给 clients 第一个（ws-server.ts:305-306），
-   多标签页时命令落点不确定。
+8. **【已结案·接受现状】PTY 会话无所有权校验**：terminal-input/resize/close 只按
+   sessionId 操作——知道 sessionId 的任一已连客户端可写/关闭他人 PTY。用户裁决
+   （2026-07-29）：本地单用户威胁模型下接受——「其他客户端」只是自己的另一个
+   标签页，加所有权登记是机制建设而非修 bug。若未来暴露局域网/多用户再立项。
+9. **【已结案·接受现状】evalInBrowser 落点随机**：只发给 clients 第一个，多标签页
+   落点不确定。同上裁决：单标签使用无影响，「该发给谁」的语义待有多客户端
+   场景时再定义。
 10. **files.ts 职责超出契约**：除文件 CRUD 还挂 /sessions/*、/roots、/root/switch——
     sibling-switcher 基础设施藏在「文件路由」里。
 11. **【已结案】能力清单双源注册**：执行面随 ADR-004 整删；listing 面（ui-registry →
