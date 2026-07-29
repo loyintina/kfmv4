@@ -29,12 +29,15 @@ const stats = {
   refactor: count(/^refactor/),
   breaking: count(/BREAKING|^feat!|^fix!/),
 };
-const floor = stats.breaking > 0 ? 'major' : stats.feat > 0 ? 'minor' : (stats.fix + stats.docs + stats.refactor) > 0 ? 'patch' : 'none';
+const floor = stats.breaking > 0 ? 'major' : stats.total > 0 ? 'patch' : 'none';
 
 const recentTags = execSync("git tag -l 'v*' --sort=-v:refname | head -5", { encoding: 'utf-8' }).trim();
 
 const system = '你是版本发布顾问。只输出要求的 JSON，不要任何多余文字。';
-const prompt = `项目采用 semver（major=架构推翻/minor=新能力/patch=修复细化/none=不值得发）。
+const prompt = `项目采用 semver，但有本项目的家规（从历史发版归纳，优先级高于教科书规则）：
+- feat 提交若只是上一版刚发布能力的细化/收尾/补全 → patch；独立新能力才 minor
+- 窗口很小（≤7 提交）且无 breaking → 倾向 patch，除非有明确独立新能力
+- major 只用于架构级推翻（会有 BREAKING 标记或主题级重构）；无法从提交清单确认 major 时给 minor 并在 reason 注明
 
 最近 tag：${recentTags.split('\n').join('、')}
 基准：${baseTag} 以来共 ${stats.total} 提交（feat:${stats.feat} fix:${stats.fix} docs:${stats.docs} refactor:${stats.refactor} breaking:${stats.breaking}）

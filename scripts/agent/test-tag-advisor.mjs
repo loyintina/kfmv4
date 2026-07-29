@@ -12,7 +12,8 @@
 import { execFileSync, execSync } from 'child_process';
 
 const limit = parseInt(process.argv[2] || '0', 10);
-const tags = execSync("git tag -l 'v*' --sort=v:refname", { encoding: 'utf-8' }).trim().split('\n');
+const tags = execSync("git tag -l 'v*' --sort=v:refname", { encoding: 'utf-8' }).trim().split('\n')
+  .filter(t => /^v\d+\.\d+\.\d+$/.test(t));  // 只保留严格 semver tag（v4.x 后缀快照 tag 是测试集噪音）
 const pairs = [];
 for (let i = 1; i < tags.length; i++) pairs.push([tags[i - 1], tags[i]]);
 const selected = limit > 0 ? pairs.slice(-limit) : pairs;
