@@ -24,7 +24,7 @@ function error(msg) {
 const activeDir = join(ROOT, DOCS_ROOT, 'active');
 const stackPath = join(activeDir, 'STACK.md');
 const stack = readFileSync(stackPath, 'utf-8');
-const claude = readFileSync(join(ROOT, DOCS_ROOT, 'CLAUDE.md'), 'utf-8');
+const claude = readFileSync(join(ROOT, 'CLAUDE.md'), 'utf-8');
 
 // ========== 1. STACK.md 引用存在性 ==========
 

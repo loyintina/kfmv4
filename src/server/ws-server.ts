@@ -10,7 +10,7 @@
  *   3. 向浏览器端转发操作指令（AI agent → UI操作）
  *   4. 心跳检测 + 断线清理
  *
- * 设计参见 newdoc/domains/server/contract.md（WS 半开检测）
+ * 设计参见 docs/domains/server/contract.md（WS 半开检测）
  */
 
 import { Server as HttpServer } from 'http';

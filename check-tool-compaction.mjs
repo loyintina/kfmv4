@@ -1,7 +1,7 @@
 /**
  * check-tool-compaction.mjs — 工具 I/O 压缩器登记完整性校验（v8.1.0）
  *
- * 契约：newdoc/domains/ai-chat/detail-tool-compaction.md —— 「映射表、注册表、本文档三者同步
+ * 契约：docs/domains/ai-chat/detail-tool-compaction.md —— 「映射表、注册表、本文档三者同步
  * 是新增工具的 DoD」（禁令 5）。本脚本机械执行这条同步：
  *
  * 双向校验：
@@ -100,7 +100,7 @@ if (blockStart >= 0 && blockEnd > blockStart) {
 // 方向 1：注册工具必须有登记条目（豁免型也要，exempt 注明依据）
 for (const [name, file] of [...toolNames.entries()].sort()) {
   if (!registered.has(name)) {
-    error(`❌ 工具 ${name}（${file}）在压缩器注册表无登记——其上下文压缩行为无人思考过；先读 newdoc/domains/ai-chat/detail-tool-compaction.md 第四节决策树，再在 COMPACTOR_REGISTRY 补条目（豁免型用 exempt 注明 G2/G4 依据）`);
+    error(`❌ 工具 ${name}（${file}）在压缩器注册表无登记——其上下文压缩行为无人思考过；先读 docs/domains/ai-chat/detail-tool-compaction.md 第四节决策树，再在 COMPACTOR_REGISTRY 补条目（豁免型用 exempt 注明 G2/G4 依据）`);
   }
 }
 

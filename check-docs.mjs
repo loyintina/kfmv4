@@ -2,7 +2,7 @@
  * check-docs.mjs — 文档质量自动化检查（v8.2 重写：scope 切到 DOCS_ROOT，废弃 frontmatter 规则）
  *
  * 检查项：
- *   1. {DOCS_ROOT}/**+ CLAUDE.md 中 [text](path) 内部链接与 #锚点 是否有效
+ *   1. {DOCS_ROOT}/** + 根 CLAUDE.md/README.md/AGENTS.md 中 [text](path) 内部链接与 #锚点 是否有效
  *   2. 反引号路径 `path/to/file.ext` 是否有效（含空格的命令行除外）
  *   3. 单篇 > 2000 行报错阻断（职责边界膨胀信号）
  *
@@ -124,8 +124,13 @@ function walkDir(dir) {
   }
 }
 walkDir(path.join(ROOT, DOCS_ROOT));
+// 根入口文件同样纳入链接/路径校验
+for (const f of ['CLAUDE.md', 'README.md', 'AGENTS.md']) {
+  const p = path.join(ROOT, f);
+  if (fs.existsSync(p)) docFiles.push(p);
+}
 
-console.log(`[check-docs] Scanning ${docFiles.length} .md files in ${DOCS_ROOT}/...\n`);
+console.log(`[check-docs] Scanning ${docFiles.length} .md files (${DOCS_ROOT}/ + 根入口)...\n`);
 
 for (const filePath of docFiles) {
   const content = checkFileSize(filePath);

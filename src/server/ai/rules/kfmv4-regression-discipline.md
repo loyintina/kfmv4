@@ -6,12 +6,12 @@ scope: tool:write, tool:edit
 ---
 
 改动 `src/` 下的代码前，遵守回归测试体系的纪律（体系见
-`docs/archive/design/REGRESSION_TESTING_SYSTEM.md`，账本见 `docs/BUG_REGRESSION_REGISTRY.md`）：
+`docs/guides/testing.md`，账本见 `docs/ledger/bugs.md`）：
 
 **修 bug 时**
 - 补一个回归钉子 `regression('BAR-xxx', '<commit>', 名称, fn)`，断言 = 这个修复的可执行规格。
 - **必过 revert 验证**：临时回退该修复（改一行）→ 跑测试 → 必须变红；否则测试是假的，没在测那个 bug。恢复后转绿。
-- 在 `docs/BUG_REGRESSION_REGISTRY.md` 登记该条，状态置「✅ 已钉」。
+- 在 `docs/ledger/bugs.md` 登记该条，状态置「✅ 已钉」。
 
 **写新逻辑时**
 - 逻辑与渲染/DOM/单例分离：把「算什么」抽成纯函数，渲染只消费。纯函数配单元测试。

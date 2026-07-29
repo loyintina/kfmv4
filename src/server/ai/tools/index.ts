@@ -6,7 +6,7 @@
  * - omp 工具（bash, read, write, edit, grep, glob, todo, eval, checkpoint, rewind, browser, debug, web_search）
  *
  * v8.1.0 删除 kfm-snapshot（眼睛机制 page-state.md 是其严格上位：更新鲜/更丰富/零调用成本）
- * 与 kfm-exec（与 bash 同一实现的双胞胎，且逃逸 bash 重试弧线统计）——见 newdoc/domains/ai-chat/detail-tool-compaction.md。
+ * 与 kfm-exec（与 bash 同一实现的双胞胎，且逃逸 bash 重试弧线统计）——见 docs/domains/ai-chat/detail-tool-compaction.md。
  */
 
 import type { KfmTool, ToolContext, ToolResult, ToolUpdate, ContentBlock } from './types.js';

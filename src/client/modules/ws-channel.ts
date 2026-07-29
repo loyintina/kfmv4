@@ -14,7 +14,7 @@
  *   import { initWsChannel } from './ws-channel.js';
  *   initWsChannel();
  *
- * 设计参见 newdoc/domains/ai-chat/detail-runtime.md（WS 通道契约）
+ * 设计参见 docs/domains/ai-chat/detail-runtime.md（WS 通道契约）
  */
 
 import { Registry } from './ui-registry.js';

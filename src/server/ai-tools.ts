@@ -10,7 +10,7 @@
  *   5. GET /api/ui/schema — 返回 registry snapshot 的 JSON Schema
  *   6. POST /api/ui/command — AI agent 通过此端点向浏览器端发送操作指令
  *
- * 设计参见 newdoc/domains/server/contract.md（ai-tools/capability 职责）
+ * 设计参见 docs/domains/server/contract.md（ai-tools/capability 职责）
  */
 
 import { Router } from 'express';

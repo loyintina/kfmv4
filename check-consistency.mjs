@@ -2,7 +2,7 @@
  * check-consistency.mjs — 入口路由表一致性（v8.2 重写：文档树 → CLAUDE.md 路由表）
  *
  * 检查项：
- *   1. {DOCS_ROOT}/CLAUDE.md 路由表引用的 workflows/*.yaml、active/*.md 全部存在
+ *   1. 根 CLAUDE.md 路由表引用的 workflows/*.yaml、active/*.md 全部存在
  *   2. 反向：workflows/ 下每个 .yaml 都被 CLAUDE.md 路由表引用（防孤儿工作流）
  *
  * 挂入 npm run check，不一致 → 构建中断。
@@ -20,7 +20,7 @@ function error(msg) {
   errors++;
 }
 
-const claudePath = join(ROOT, DOCS_ROOT, 'CLAUDE.md');
+const claudePath = join(ROOT, 'CLAUDE.md');
 const claude = readFileSync(claudePath, 'utf-8');
 
 // ========== 1. 正向：路由表引用 → 文件存在 ==========

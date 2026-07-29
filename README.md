@@ -17,7 +17,7 @@
 | 卡片工作台 | 统一的浮动卡片引擎，拖拽/缩放/编辑模式/四角光球/全屏模式 |
 | 模式按钮系统 | copy/move/delete 批量操作，色系联动光标 + 卡片 |
 | AI 对话运行时 | 后台挂机持久化（run-manager）+ 重连续读 + WebSocket 真心跳半开检测 + WS 重连三层恢复终端 + content block 协议（Claude/OpenAI 标准）流式思考/工具调用渲染 + 打字机结果动画 + 等待期无厘头提示 + 会话持久化 服务端单写者 + run 重连续读 + Z-Index L8 焦点交互层 |
-| 自动化检查管线 | 20 个 check-* 脚本 + 元检查器 + 文档-代码一致性验证 + HANDBOOK 同步检查，构建时零错误，452 个回归测试 |
+| 自动化检查管线 | 20 个 check-* 脚本 + 元检查器 + 文档-代码一致性验证 + 域契约新鲜度检查（contract-freshness），构建时零错误，452 个回归测试 |
 
 ## 快速开始
 
@@ -42,16 +42,16 @@ TypeScript 6 + Canvas 2D 自研渲染引擎（v2 Box → Renderer）+ GSAP 3.15 
 
 ## 文档
 
-详见 `docs/` 目录：
+入口路由在 [`CLAUDE.md`](CLAUDE.md)（会话启动 + 任务→工作流路由表），文档体系在 `docs/` 下：
 
-| 文档 | 用途 |
-|------|------|
-| [`CLAUDE.md`](CLAUDE.md) | 项目入口，文档导航 |
-| [`docs/HANDBOOK.md`](docs/HANDBOOK.md) | 架构 + 调试 + 待办 + 模块清单 |
-| [`docs/KFM_V4_INVARIANTS.md`](docs/KFM_V4_INVARIANTS.md) | 修改约束协议（24 条心法 + 自查清单 + SOP） |
-| [`docs/DIAGNOSTICS.md`](docs/DIAGNOSTICS.md) | 诊断手册（隐性契约 + 根因案例库） |
-| [`docs/design/AI_CHAT_RUNTIME.md`](docs/design/AI_CHAT_RUNTIME.md) | AI 对话运行时架构（后台挂机 / WS 重连 / 跨文件契约） |
-| [`docs/design/VISION_AND_ROADMAP.md`](docs/design/VISION_AND_ROADMAP.md) | 远景 + 路线图 |
+| 层 | 用途 |
+|----|------|
+| [`docs/constraints/`](docs/constraints/invariants.md) | 约束层：invariants（宪法+心法）、diagnostics（诊断手册） |
+| [`docs/domains/`](docs/domains/ai-chat/contract.md) | 域契约层：7 个子系统的 contract + detail |
+| [`docs/guides/`](docs/guides/doc-architecture.md) | 指南层：文档体系设计原理、维护规则、测试、发版等 |
+| [`docs/ledger/`](docs/ledger/history.md) | 账本层：history（版本线）、bugs（回归登记） |
+| [`docs/workflows/`](docs/workflows/pre-code-gate.yaml) | 工作流层：15 张机械执行卡 |
+| [`docs/active/`](docs/active/vision.md) | 活跃层：STACK（工作栈）、vision（远景） |
 
 ## 协议
 

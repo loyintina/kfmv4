@@ -9,7 +9,7 @@
  *   2. 提供统一的 execute(capabilityId, params) 接口
  *   3. 每个能力实际调用服务端现有的 API 端点
  *
- * 设计参见 newdoc/domains/server/contract.md（能力名→函数映射）
+ * 设计参见 docs/domains/server/contract.md（能力名→函数映射）
  */
 
 import fs from 'fs';

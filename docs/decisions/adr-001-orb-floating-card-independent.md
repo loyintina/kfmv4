@@ -1,4 +1,6 @@
-# ADR 001 — orb.ts 与 floating-card.ts 保持独立模块
+> 这是什么：ADR-001——orb 与 floating-card 保持独立模块的决策（accepted）。
+> 别的去哪找：统一化失败史 → adr-002-card-unification-abandoned.md；浮卡契约 → ../domains/floating-card/contract.md。
+
 
 **日期**: 2026-06-07  
 **状态**: accepted  
@@ -22,7 +24,7 @@
 
 ## 理由
 
-1. **统一化成本远高于预期**。orb.ts 经过多轮迭代，包含 AI 面板特定的业务逻辑（消息渲染、SSE 流式、会话管理），这些逻辑无法泛化而不丢失细节。floating-card.ts 有全屏切换、文件预览、键盘避让等完全不同的需求。
+1. **统一化已两次回退放弃**——两模块解决的问题本质不同，统一成本远高于预期；完整失败史见 adr-002。
 
 2. **共享层已经解决了重复问题**。`interaction-constants.ts` 统一了常量（MARGIN、DRAG_THRESHOLD），`drag-handler.ts` 统一了拖拽状态机。两个模块不再有逻辑重复——只有概念对称。
 

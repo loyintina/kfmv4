@@ -53,4 +53,4 @@
 - **项目**：kfmv4 — AI 人机交互个人工作台
 - **技术栈**：TypeScript/Scss + Canvas + WebSocket
 - **架构**：卡片式 UI，一切皆盒子
-- **文档**：`docs/KFM_V4_INVARIANTS.md`（修改约束协议）
+- **文档**：`docs/constraints/invariants.md`（修改约束协议）

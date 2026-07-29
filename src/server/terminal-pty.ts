@@ -4,7 +4,7 @@
  * 管理 node-pty 伪终端进程的生命周期：
  * spawn / write / resize / kill / killAll
  *
- * 设计契约：newdoc/domains/server/contract.md（PTY 管理）
+ * 设计契约：docs/domains/server/contract.md（PTY 管理）
  */
 
 import * as pty from 'node-pty-prebuilt-multiarch';
