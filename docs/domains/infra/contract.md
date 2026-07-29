@@ -36,6 +36,12 @@ sync-counts → tsc。
 2. **esbuild nullish-coalescing 降级**：源码大量 `??`，TS 编译需确保正确降级。
 3. **GSAP mock 时序**：`tl.call(cb)` 同步执行回调，改变动画时序——测试不用墙钟计时器。
 4. **计数同步**：增删 check 脚本/测试后跑 `npm run sync-counts` 一键回写各文档计数（check 链 `sync-counts --check-only` 拦截未同步；check-test-patterns 验证模式完整性）。
+5. **清理死代码必须连它的测试一起删**——测试引用会掩护死代码躲过零引用检测。
+   案例：text-layout 2292 行、getFileColor 各有两轮「清死代码」被自家测试挡住
+   （2026-07-29 批次才发现）；判断死代码以**生产引用**为准，tests 引用不算活口。
+6. **check-registry 能力层暂缺**：CAPABILITY_MANIFEST 已随 ADR-004 追加裁决摘除
+   （无执行面的注册会误导 AI）——「AI 之手」落地时在 check-registry.mjs 重建
+   能力清单 + 检查块，勿提前补注册。
 
 ## 文件清单
 
