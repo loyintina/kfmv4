@@ -74,33 +74,10 @@ initFloatingCards();
 
 
 // ========== 注册能力层 ==========
-// ⚠ 幽灵清单（ADR-004 遗留，待裁决）：capability-executor.ts 服务端执行面已整删，
-// 以下 3 条注册仅喂 page-state 提示词——AI 可见但永不可调用。保留或清除见 STACK #7。
-Registry.registerCapability({
-  id: 'file-search',
-  name: '文件搜索',
-  description: '在当前目录下搜索文件名匹配的文件',
-  parameters: [{ name: 'pattern', type: 'string' }],
-  entry: 'capability-executor:file-search',
-});
-Registry.registerCapability({
-  id: 'file-read',
-  name: '读取文件',
-  description: '读取指定路径的文件内容',
-  parameters: [{ name: 'path', type: 'string' }],
-  entry: 'capability-executor:file-read',
-});
-Registry.registerCapability({
-  id: 'file-write',
-  name: '写入文件',
-  description: '写入内容到指定路径的文件（可追加）',
-  parameters: [
-    { name: 'path', type: 'string' },
-    { name: 'content', type: 'string' },
-    { name: 'append', type: 'boolean' },
-  ],
-  entry: 'capability-executor:file-write',
-});
+// （空）能力注册面是「AI 之手」预留基础设施：ui-registry.registerCapability /
+// ws-channel capabilities 推送 / page-state「你能做什么」段落管道保留，
+// 但具体能力注册在 AI 之手落地前一律不加——无执行面的注册会误导 AI
+// （ADR-004 追加裁决，2026-07-29：原 file-search/file-read/file-write 幽灵注册已删）。
 
 // ========== 初始化 WebSocket 通道 ==========
 // 在所有 Registry 注册完成后初始化，建立服务端↔浏览器端双向通信

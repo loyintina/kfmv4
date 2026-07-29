@@ -41,14 +41,9 @@ const CONTENT_MANIFEST = [
   'orb-chat',             // orb.ts — AI 对话摘要
 ];
 
-// ========== CAPABILITY MANIFEST（权威清单 — 能力层） ==========
-// 注意：能力的服务端执行面（ai-tools/capability-executor）已随 ADR-004 整删——
-// 此清单现仅约束 main.ts 的浏览器端注册（经 WS 喂 page-state 提示词展示）。
-const CAPABILITY_MANIFEST = [
-  'file-search',          // main.ts（page-state 展示）
-  'file-read',            // main.ts（page-state 展示）
-  'file-write',           // main.ts（page-state 展示）
-];
+// ========== 能力层（暂无权威清单） ==========
+// 「AI 之手」落地前能力注册面留空（ADR-004 追加裁决：无执行面的注册会误导 AI）。
+// AI 之手实施时在此重建 CAPABILITY_MANIFEST + 下方对应检查块。
 
 // ========== data-registry-id 覆盖验证 ==========
 // 在 index.html 中有 data-registry-id 属性，AI click 指令可以直接点击。
@@ -272,11 +267,7 @@ function check() {
     reportError(`以下内容块在 CONTENT_MANIFEST 中但未注册：${missingContents.join(', ')}`);
   }
 
-  // ===== 检查能力层 MANIFEST =====
-  const missingCaps = CAPABILITY_MANIFEST.filter(id => !registeredCapabilities.has(id));
-  if (missingCaps.length > 0) {
-    reportError(`以下能力在 CAPABILITY_MANIFEST 中但未注册：${missingCaps.join(', ')}`);
-  }
+  // ===== 能力层检查（暂缺——AI 之手落地时随 CAPABILITY_MANIFEST 重建） =====
 
   // ===== 参数完整性检查 =====
   const incomplete = checkRegisterCompleteness();

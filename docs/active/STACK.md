@@ -66,6 +66,7 @@
    — file-tree 命令缺口：AI 能看文件树但不能操作，expand-dir/collapse-dir/select-file
      从未实现（ws-channel.ts:379 注释留有设想；与第 6 项 CARD_REGISTRY 三命令同属
      「AI 之手」家族，可一并裁决）
-   — ⚠ 2026-07-29 ADR-004 加码：ai-tools 整删后，`command` WS 消息的唯一服务端触发
-     （POST /ui/command）消失，客户端 19 个 command handler 全部成孤儿——「AI 之手」
-     家族从「设计了未实施」升级为「客户端有 handler 但永远无人触发」，裁决更紧迫
+   — ⚠ 2026-07-29 ADR-004 追加裁决（已定性，非债）：`command` 通道（客户端 19 个
+     handler + WS 协议面）保留为「AI 之手」预留基础设施——未来做 AI 操作页面时重建
+     服务端触发即可，不算技术债；同日幽灵能力注册（file-search/file-read/file-write，
+     无执行面误导 AI）已删，能力管道留空待 AI 之手重建

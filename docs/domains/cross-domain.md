@@ -59,10 +59,10 @@
 
 - 客户端→服务端 9 类消息与服务端处理**完全对称** ✅；服务端→客户端 11 类中
   **`error` 无任何 onMessage 注册者，静默丢弃**（ws-channel.ts:233）⚠
-- `command` 的 action 字串服务端透传不校验、协议无静态约束 ⚠——**且唯一服务端
-  触发（POST /ui/command → ws-server.ts sendCommand）已随 ADR-004 整删**：客户端
-  19 个 command handler（shell 8 / canvas-tree 4 / ai-chat 3 / floating-card 4）
-  从此无生产者，成孤儿面，待裁决（留待「AI 之手」实现 or 清除）。
+- `command` 通道（ADR-004 追加裁决：保留为「AI 之手」预留基础设施，非债）——
+  唯一服务端触发（POST /ui/command → ws-server.ts sendCommand）已随整删消失，
+  客户端 19 个 handler（shell 8 / canvas-tree 4 / ai-chat 3 / floating-card 4）
+  现无生产者属预期空转；action 字串无静态校验的约束缺口待 AI 之手重建时一并补。
 - terminal-open/terminal-close 两写者跨两域（terminal-card-04 × tmux-card）——
   即 floating-card code-map 漂移 17 双开 PTY 嫌疑的协议层成因 ⚠
 - 应用层 'ping' 客户端不回，纯喂看门狗——协议残留

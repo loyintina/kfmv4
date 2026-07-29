@@ -50,3 +50,15 @@ server contract 同步摘除。不留访问日志实证期。
 - 「**ai 时代，重构比补丁效率更高**」——删除不明遗产的默认立场：能重建的不保留。
   （候选宪法条款，待心法文档下一轮归纳时正式收录）
 - 随修溯源：修每条漂移必带成因标签 + 引入 commit（制度化，进 bug-fix 流程）。
+
+## 追加裁决（2026-07-29，裁决三连带两问）
+
+- **command 通道 → 保留为「AI 之手」预留基础设施，不算技术债**。用户定调：
+  未来肯定做 AI 操作页面的工具，19 个客户端 command handler + WS 协议面是
+  「提前做好的接口」。服务端触发端（原 POST /ui/command）随整删消失属预期空转，
+  AI 之手落地时重建触发 + 补 action 静态校验即可。
+- **幽灵能力注册 → 删除**。main.ts 的 file-search/file-read/file-write 注册
+  无执行面、仅喂 page-state 提示词，会让 AI 看到永不可调用的能力（提示词噪声，
+  可能误导调用尝试）。已删；能力管道（ui-registry → WS → page-state）留空，
+  与 command 通道同属 AI 之手重建面。check-registry 的 CAPABILITY_MANIFEST
+  同步摘除，AI 之手落地时重建。

@@ -92,10 +92,10 @@ send('terminal-output')；输入 → pty.write；close/error/心跳判死 → ki
    多标签页时命令落点不确定。
 10. **files.ts 职责超出契约**：除文件 CRUD 还挂 /sessions/*、/roots、/root/switch——
     sibling-switcher 基础设施藏在「文件路由」里。
-11. **能力清单双源注册（半结案）**：执行面（服务端内置 3 能力 + executor 兜底 +
-    GET /api/capabilities）已随 ADR-004 整删；listing 面仍存活——客户端
-    main.ts:78-101 的 registerCapability 经 WS 推送喂 page-state 提示词。遗留问题：
-    这些能力的 entry 指向已删执行端，AI 可见但永不可调用（提示词噪声），待裁决。
+11. **【已结案】能力清单双源注册**：执行面随 ADR-004 整删；listing 面（ui-registry →
+    WS capabilities → page-state「你能做什么」）保留为「AI 之手」预留空管道——
+    幽灵注册（file-search/file-read/file-write，无执行面误导 AI）已于追加裁决删除，
+    当前注册数 0，page-state 空态输出「当前无额外可调用能力」。
 12. **【存疑 bug】proxy.ts 非流式分支**：method 未传时默认 GET 却带 body（:80-84）
     会抛 TypeError——api.card 恒传 method 则无害，未核全部调用方。
 13. 次要：/api 与 /kfmv4/api 双挂载（index.ts:50-51）；应用层 'ping' 消息客户端不回，
