@@ -65,6 +65,7 @@ execSync('node scripts/check/check-workflow-integrity.mjs', { stdio: 'inherit' }
 execSync('node scripts/check/check-cards.mjs', { stdio: 'inherit' });
 execSync('node scripts/check/check-contract-freshness.mjs', { stdio: 'inherit' });
 execSync('node scripts/check/check-test-patterns.mjs', { stdio: 'inherit' });
+execSync('node scripts/check/check-bar-ledger.mjs', { stdio: 'inherit' });
 execSync('npx tsc --noEmit', { stdio: 'inherit' });
 
 // 复制 stealth 脚本到 dist（launch.ts 在运行时读取这些文件）
