@@ -69,4 +69,4 @@
 `card-registry.ts` `card-stack.ts` `floating-card.ts` `floating-shared.ts`
 `floating-fullscreen.ts` `terminal-card-04.ts`（xterm + WS 重连重开 PTY）
 `tmux-card.ts`（WS 重连 _lastCommand 自动 re-attach）
-`renderers/`（9 个文件渲染器）`../cards/`（plugins 9 卡 + registry/types）
+`renderers/`（9 个文件渲染器）`../cards/plugins/`（9 张插件卡）`../cards/`（registry/types）
