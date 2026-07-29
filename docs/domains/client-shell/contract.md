@@ -77,8 +77,8 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 8. **KFMState 批量修改必须合并一次 notify**：`setExpanded()` 每次调用都 notify 且受
    `L.isAnimating` 守卫；连续调用第二次可能被丢弃 → 幽灵 toggle + 动画断裂。
    批量修改用 `L.beginOp`/`L.endOp` 包裹，或确保空闲时执行。案例：2026-05-29 三连 setExpanded。
-9. **拖拽残留状态禁止 if 守卫绕过**：`_dragItem` 残留的根解是拖拽生命周期由事件系统
-   保证，不是在 `_startFloatingDrag` 开头加 `if (_dragItem)` 清场（INVARIANTS §五迁入）。
+9. **拖拽残留状态禁止 if 守卫绕过**：拖拽残留（v7 的 _dragItem，已随重写消亡）的根解是拖拽生命周期由事件系统
+   保证，不是在拖拽入口（v7 的 _startFloatingDrag）开头加 if 守卫清场（INVARIANTS §五迁入）。
 10. **侧栏触摸区事件冒泡**：冒泡到 document 会误触发 GestureRegistry——
     侧栏交互注意事件边界的阻止/隔离（旧 CLAUDE.md 注意事项迁入）。
 

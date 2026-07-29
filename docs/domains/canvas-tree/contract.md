@@ -56,7 +56,7 @@
 2. **`setExpanded` 连续调用**：触发多次 notify，动画守卫丢弃中间状态
    （完整版见 ../client-shell/contract.md #陷阱 8）。
 3. **Canvas 初始化 `clientWidth=0`**：必须在 rAF 回调里 `rebuildTree()`。
-4. **overlay 残留**：`rebuildTree` 入口已加防御性清理 `_removeAllOverlays()` +
+4. **overlay 残留**：`rebuildTree` 入口已加防御性清理 `removeAllOverlays()` +
    `renderer.setOverlayRoot(null)`（v6.6.0 根解）——新路径触发 rebuild 不得绕过此入口。
 5. **方向锁**：`dx>dy` 45° 分界（v6.8.0 简化后的唯一模型，三代补丁已删，勿回填）。
 6. **行变暗**：`_dimmedPaths` + `_dimmedBoxes` + `opacity` 即时生效。
