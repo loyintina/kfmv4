@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 0b77827 · 生成于 2026-07-29 -->
+<!-- 基准 commit 03da8c9 · 生成于 2026-07-29 -->
 
 # 代码清单（机械层）
 
@@ -171,7 +171,7 @@
 | src/server/terminal-pty.ts | 119 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/routes/proxy.ts | 93 | setupProxyRoutes |
 
-## infra（68 文件 · 9510 行）
+## infra（72 文件 · 9886 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -201,14 +201,17 @@
 | scripts/check/check-tool-compaction.mjs | 129 | — |
 | scripts/check/check-checks.mjs | 126 | — |
 | tests/liquid-geometry.test.ts | 120 | — |
+| scripts/gen-code-inventory.mjs | 119 | — |
 | tests/harness.ts | 116 | TestTag, TestOpts, test, regression, group, beforeEach, runAll |
 | scripts/check/check-doc-coverage.mjs | 110 | — |
 | scripts/check/check-zindex.mjs | 110 | — |
 | scripts/check/check-cards.mjs | 105 | — |
+| scripts/agent/agent-runner.mjs | 105 | renderTemplate, extractJson, runAgent |
 | scripts/check/check-contract-freshness.mjs | 103 | — |
 | scripts/check/check-test-patterns.mjs | 102 | — |
 | scripts/check/check-anim.mjs | 99 | — |
 | scripts/check/check-versions.mjs | 91 | — |
+| scripts/agent/tag-advisor.mjs | 91 | — |
 | tests/text-layout.test.ts | 88 | — |
 | scripts/check/check-probes.mjs | 86 | — |
 | tests/engine.test.ts | 85 | — |
@@ -222,7 +225,8 @@
 | scripts/check/check-active-stack.mjs | 61 | — |
 | scripts/check/check-hooks.mjs | 61 | — |
 | scripts/check/check-doc-schema.mjs | 60 | — |
-| scripts/check/domain-src.mjs | 58 | DOMAIN_SRC |
+| scripts/check/domain-src.mjs | 60 | DOMAIN_SRC |
+| scripts/agent/test-tag-advisor.mjs | 59 | — |
 | tests/omp-glob.test.ts | 58 | — |
 | scripts/check/check-workflow-integrity.mjs | 56 | — |
 | scripts/check/check-commit-docs.mjs | 55 | — |
@@ -245,4 +249,4 @@
 | tests/probes/sync-counts/tests/probe.ts | 2 | — |
 
 ---
-合计 208 文件 · 42848 行
+合计 212 文件 · 43224 行

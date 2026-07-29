@@ -52,6 +52,8 @@ export const DOMAIN_SRC = {
     'src/server/routes/',
   ],
   'infra': [
-    'build.mjs', 'scripts/check/', 'tests/', 'public/css/',
+    'build.mjs', 'scripts/check/', 'scripts/agent/', 'tests/', 'public/css/',
+    'scripts/deploy.sh', 'scripts/kfm-restart.sh', 'scripts/gen-code-inventory.mjs',
+    'scripts/clean-npm-temp.cjs', '.githooks/', 'package.json',
   ],
 };

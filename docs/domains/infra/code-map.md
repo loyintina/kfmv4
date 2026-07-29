@@ -1,0 +1,113 @@
+> 这是什么：infra 域**代码现状**测绘（实然）——构建/部署/文档管线此刻到底是什么，含与契约的漂移。
+> 应然去哪找：设计契约 → contract.md；检查设计宪法 → ../guides/doc-maintenance.md。
+> 机械层对照：文件/行数/导出符号 → ../code-inventory.md（脚本生成，可重跑）。
+
+# infra 代码地图（code-map）
+
+## 测绘元数据
+
+- 基准：commit 03da8c9 · 2026-07-29 · 域规模 68 文件 / 9510 行（机械清单口径）
+- 派生真相实测：28 个 check 脚本、456 个测试
+- 方法：subagent 七问侦察 + 主 agent 抽查核实（check 链漂移、tag-advisor exit 码已亲验）
+- 注意：本域契约文件清单列了 scripts/deploy.sh、scripts/agent/、.githooks/、package.json，
+  但测绘时 DOMAIN_SRC 的 infra 条目不含它们（已随本次测绘补登，见漂移 6）
+
+## 一句话职责
+
+构建产物链（check → sass → esbuild 双 bundle → 握手信息）、部署闭环
+（build → restart → 握手断言）、28 个 check 组成的文档/代码管线、agent-runner 工具。
+
+## 承重入口
+
+| 入口 | 位置 | 调用方 |
+|------|------|--------|
+| build.mjs（无导出，顶层即入口） | 内嵌 check 链 :37-77 + esbuild :86-107 | package.json build/dev/watch、deploy.sh:11 |
+| 28 个 check-*.mjs | 全部顶层执行、exit 1 硬失败 | package.json:11 的 check 串 + build.mjs 内嵌副本 |
+| DOCS_ROOT / DOMAIN_SRC 共享常量 | scripts/check/docs-root-const.mjs、domain-src.mjs | 11 个 check / freshness + 清单生成器 |
+| sync-counts.mjs | 唯一会回写文档的 check | 链内 --check-only；无参回写 |
+| scripts/agent/agent-runner.mjs | 导出 runAgent/extractJson | tag-advisor.mjs:13 |
+| scripts/deploy.sh | 三步部署闭环 | 人 + docs/workflows/bug-fix.yaml:17 |
+
+薄门面：tests/runner.ts 纯 re-export tests/harness.ts；.githooks 两个壳。
+
+## 状态所有权
+
+- 域内脚本基本无状态（一次性进程）；errors 累加 → 末尾 exit 1 是统一模式
+- dist/build-info.json 是跨进程状态：build.mjs:114 唯一写者；读者
+  src/server/routes/files.ts（/api/system/info 暴露）+ deploy.sh 握手断言
+- tests/preload.mjs 模块级 mock localStorage（全测试共享，reset-hooks 隔离）
+
+## 核心流程
+
+**构建链**：内嵌 check 链（30 步）→ sass 编译（失败 exit 1）→ 复制 stealth 脚本 →
+esbuild server ESM + client IIFE（external 硬编码 build.mjs:93）→ checkFreshness
+双产物 → 写 dist/build-info.json → index.html 注入 ?v=buildStamp → bundle 大小冒烟。
+
+**部署闭环**：deploy.sh：npm run build → 读新包 buildTime → kfm-restart.sh（POST
+/api/system/restart，服务端先回 200 再 spawn detached systemctl）→ 轮询
+/api/system/info 至 200 → 断言运行 buildTime ≥ 新包，否则 exit 1。
+
+## 持久化/外部边界
+
+- **写 git 跟踪文件**：build.mjs 改写 tracked 的 public/index.html（:131）+
+  public/css/*.css（sass）——每次构建让工作区变脏（见漂移 10）；sync-counts 回写
+  README/CLAUDE/contract/testing.md；gen-code-inventory 写 code-inventory.md
+- 网络：agent-runner fetch OpenAI 兼容端点（60s 超时）；deploy/kfm-restart curl 本机
+- 仓库外：~/.kfmv4/providers.json（agent-runner 读 key；src/server/index.ts:145-149
+  另有权限检查——server 域越界读 agent 配置）
+
+## 强制不变量（附证据）
+
+- check 链集成完整性：每个 check-*.mjs 必须同时出现在 package.json 与 build.mjs
+  （check-checks.mjs:56-68）——**只查存在性，不查顺序与阻断语义**（见漂移 1）
+- 构建产物新鲜度：产物不得旧于任何 src/*.ts（build.mjs:20-32）
+- 计数漂移中断：sync-counts --check-only 漂移 exit 1；版本三方一致（check-versions）
+- 钩子健康：core.hooksPath + 可执行位 + 薄壳引用（check-hooks）
+- 探针负例必须报红且病因字串匹配（check-probes）；as any 白名单制（check-as-any）
+- 部署握手：运行 buildTime 早于新包即 exit 1（deploy.sh:24-27）
+
+## 漂移清单（实然 ≠ 应然）
+
+1. **【已核实】check 链双份实现已漂移**：package.json:11 与 build.mjs:37-77 是同一链
+   的两份手写拷贝。(a) 顺序不同——build.mjs 把 check-uncommitted 挪到 versions 之后；
+   (b) 阻断语义不同——build.mjs:40 try/catch 把「>3 未提交即中断」降级为提醒，与
+   build.mjs:36 自身注释「零错误通过才构建」直接矛盾。check-checks 的 includes 匹配
+   守不住这类漂移。
+2. **契约硬规则 1「新 check 一律 hard fail」有未登记例外**：check-release-radar
+   设计性 warning-only、exit 0；check-uncommitted ≤3 也只警告。契约未提例外清单。
+3. **【已核实】tag-advisor exit 1 语义是幽灵**：头注释与 guides/agent-runner.md:18
+   都声称「exit 1 = 模糊输出交调用方」，代码只有 exit 0（tag-advisor.mjs:90）与
+   exit 2（:72）——永无 exit 1。
+4. **【已核实】tag-advisor 机械下限注释 ≠ 代码**：头注释「有 feat → minor」，代码
+   floor = breaking>0 ? major : total>0 ? patch : none（:32）——feat-only 窗口下限
+   是 patch 不是 minor。
+5. **死代码**：renderTemplate（agent-runner.mjs:32）全仓库无调用，尽管头注释把
+   「{{var}} 模板注入」列为设计支柱。
+6. **infra 域映射残缺（本次测绘已修）**：DOMAIN_SRC 的 infra 条目原只有
+   build.mjs/scripts/check//tests//public/css/，契约文件清单声称的 scripts/deploy.sh、
+   scripts/agent/、.githooks/、package.json 全部不在映射内 → contract-freshness 对
+   这些文件的提交永久失明，code-inventory 也不含 scripts/agent/*。映射盲区检查只扫
+   src/，所以自洽地报不出来。**已随本次测绘补登 domain-src.mjs 并重生成清单**。
+7. **contract 样式节失真**：只提 base.scss → base.css，实际 sass 编译 base+sidebar
+   两份；5 个 css 中 tmux-card/xterm/z-index 无 scss 源，陷阱 1 对它们不适用。
+8. **check-test-patterns 注释指向错误**：头注释称计数模式在 check-consistency.mjs，
+   实际在 sync-counts.mjs:37；check-consistency 是 CLAUDE.md 路由表检查。
+9. **smoke.mjs:4 注释硬编码「287 个测试」**，实测 456——sync-counts 的 TARGETS
+   不覆盖 smoke.mjs。
+10. **构建制造未提交改动**：build.mjs 改写 tracked 的 index.html + css，每次构建让
+    工作区变脏，与 check-uncommitted 的心法 14 形成张力——build.mjs 里的降级
+    （漂移 1b）或许正是 workaround（存疑）。
+11. **gen-code-inventory.mjs 无管线挂接**：不在 package.json scripts、不在 check 链，
+    code-inventory.md 的新鲜度全靠人记得重跑（待办：接管线）。
+12. **【存疑】Kimi provider temperature 1**：providers.config.json:2 的 params 覆盖
+    默认 0.2——对「只输出 JSON」的抽取任务反常（但这是端点硬性要求，注释未写明原因）。
+13. **进程管理双路径**：npm start 用 lsof kill（package.json:15），生产走 systemctl；
+    dev/prod 语义不同，文档未对齐。
+14. 次要：tests/runner.ts 与 harness.ts 双门面冗余；public/css/base.css.map 是
+    gitignored 陈旧残留；npm run check 用裸 sass、build.mjs 用 npx sass。
+
+## 陷阱指针
+
+已定型陷阱见 contract.md #陷阱 + ../constraints/diagnostics.md（构建/Bundle 节）。
+测绘新捕获：漂移 1 说明「同一链两份拷贝」必然漂移——后续要么 build.mjs 改为调
+npm run check 单源化，要么 check-checks 升级为顺序+语义比对。漂移 11 已有待办。
