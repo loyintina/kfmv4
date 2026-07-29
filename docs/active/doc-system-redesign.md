@@ -1237,3 +1237,21 @@ V8_AUDIT_REPORT §四.2「tool_result 状态/渲染两处分散」与 §四.3「
 ## §三十三 逐份过 16-17/19：decisions/adr-001 + adr-002（直接搬）
 
 执行日期：2026-07-29。判定书用户批准。两份 ADR 全文保真进 newdoc/decisions/（路由头互指）。编号悬案结案：无矛盾——adr-001 记「怎么办」（独立+共享层），adr-002 记「为什么不统一」（两次尝试史），各指各的不重编号。顺带：adr-003 补路由头；floating-card contract 的 adr-002 指针补全相对路径。重叠留压缩轮：001 的「两次回退」与 002 的尝试史相邻。
+
+---
+
+## §三十四 逐份过 18/19：README.md（保留仓库根，不迁移）
+
+执行日期：2026-07-29。判定书用户批准。当场修正：标题版本号 v8.1.0 → v8.1.1（与正文一致）。
+
+### 切换提交清单（累积，切换时逐项执行）
+
+1. README.md 文档表 6 行旧 docs 路径 → 重写为新结构入口（CLAUDE.md 路由表 + 各层导览）。
+2. README.md 功能表「HANDBOOK 同步检查」措辞 → 随 check-handbook-sync 重写同步。
+3. src/server/ai/tools/index.ts:9 注释的 TOOL_IO_COMPACTION.md 旧路径 → 改指 detail-tool-compaction.md（§二十八遗留）。
+4. ledger/bugs.md 头部 REGRESSION_TESTING_SYSTEM 旧路径 → archive 轮结算后改指（§二十五遗留）。
+5. guides/spec-driven.md 第二章范本 REGRESSION_TESTING_SYSTEM 旧路径 → 同上（§三十二遗留）。
+
+## §三十五 19/19 预告：doc-system-redesign.md 自身
+
+映射表既定：「active/ 暂住，完成后删除」。本文件是迁移的工作台，archive 65 份逐份确认 + 收尾三件套（压缩轮/管线适配/切换提交）全部完成后，知识已被新结构吸收即删——那是迁移的最后一个动作。
