@@ -104,6 +104,14 @@
    连续分配（`clientIdx()` 映射 provider 的 `tc.index`）——provider 的 index 可能不从 0 起，
    直接用会在 content 数组留 `undefined` 空洞，`.filter(b=>b.type)` 读空洞即崩。
    回归钉：BAR-106。展开版见 detail-runtime.md §3.3。
+9. **上游边界规范化（严格端点契约）**：发给 provider 的载荷必须满足 OpenAI 严格形态——
+   `tool.content` 必须是 string（非字符串 `JSON.stringify`）、assistant 不得为空
+   （无 tool_calls 的空 assistant 过滤）。宽松端点容忍不代表合法；上游错误体必须透传
+   （只报状态码 = 扔掉诊断）。回归钉：BAR-PROVIDER-01/02。
+10. **回复错放 reasoning 必须归位**：某些模型/端点把最终回复全写进 reasoning_content、
+    text 留空——显示成「已思考+无回复」，进载荷成空 assistant。正常结束（message_stop）
+    text 空且 reasoning 非空 → 归位为正文；历史加载读时归一化（不改文件）；
+    取消残留不归位（真实历史）。回归钉：BAR-ORB-EMPTY-01。
 
 ## 素材考古（原文已随 archive 注销，`git show v8.1.1:docs/archive/design/…` 可挖）
 

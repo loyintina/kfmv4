@@ -39,6 +39,9 @@ sync-counts → tsc。
 
 ## 文件清单
 
-`build.mjs` `scripts/check/check-*.mjs`（28 个）`tests/`（regression.test.ts + smoke/）
-`public/css/`（scss 源）`package.json`（check 链定义）
+`build.mjs` `scripts/check/check-*.mjs`（28 个）`scripts/deploy.sh`（构建→重启→版本握手闭环）
+`scripts/agent/`（agent-runner：agent 脚本执行器，指南 → ../../guides/agent-runner.md）
+`dist/build-info.json`（构建时生成的版本握手真相源）
+`tests/`（regression.test.ts + smoke/ + probes/ 探针假树）
+`public/css/`（scss 源）`package.json`（check 链定义）`.githooks/`（commit-msg/pre-push 薄壳）
 测试分层与纪律 → ../../guides/testing.md
