@@ -23,7 +23,7 @@
 - v7.3.0 后台挂机 run-manager + WS 真心跳 + AI_CHAT_RUNTIME（1404b15）
 - v7.3.1~v7.3.3 会话保存迁服务端 + 分段传输 + nginx/systemd 修复（0f240ec 等）
 - v8.0.0 所有权分离架构：renderChatContent 删除 + chat-dom 增量 DOM + SessionStore 单写者 + kfm-restart 冷恢复（v8.0.0 tag）
-- v8.1.0 光球面板性能根洽（持久化/窗口化/content-visibility/minify+gzip）+ v7 丢失细节全量恢复 18 项 + 工具 I/O 上下文压缩（v8.1.0 tag）
+- v8.1.0 光球面板性能根洽（持久化/窗口化/content-visibility/minify+gzip）+ v7 丢失细节全量恢复 18 项 + 工具 I/O 上下文压缩（v8.1.0 tag；注：历史唯一双主题混装窗口——性能/细节问题轮与压缩器主题同版，v8.3.1 起按主题分离，见 guides/release.md）
 - v8.1.1 逐工具压缩细化五批 + 失败模式标注 + kfm-snapshot/kfm-exec 删除 + INVARIANTS 修宪（v8.1.1 tag，452 测试）
 - v8.2.0 文档系统重构：新六层体系（constraints/domains/guides/ledger/workflows/active）+ 19 活跃迁移 + archive 65 份结算 + 压缩轮 + 管线 20 脚本新链 + 切换提交（v8.2.0 tag）
 - v8.3.0 文档管线再设计（STACK #2，批 0-5）：27 个 check 脚本（新增 bar-ledger/doc-budget/doc-symbols/doc-schema/commit-docs/hooks/probes）+ sync-counts 计数 SSOT + commit-msg 钩子 + 探针自检 + grammar/检查设计宪法定稿（v8.3.0 tag）

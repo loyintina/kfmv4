@@ -16,4 +16,4 @@ writes:
   - git tag
 exit_condition: check-versions 绿 + tag 存在
 natural_next: 真机回归窗口开启 — fix 高发期（历史：发版窗口 fix 主导），可主动 smoke；窗口关闭回常态
-metric: ≥30 fix since last release → 发版候选提醒（铺路字段，未实现）
+metric: 已实现——check-release-radar：距上个 tag ≥30 提交或 ≥10 feat → WARN 提醒（阈值拟合历史窗口中位数 ~34 提交，只提醒不中断）

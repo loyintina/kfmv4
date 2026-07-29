@@ -34,7 +34,9 @@ const floor = stats.breaking > 0 ? 'major' : stats.total > 0 ? 'patch' : 'none';
 const recentTags = execSync("git tag -l 'v*' --sort=-v:refname | head -5", { encoding: 'utf-8' }).trim();
 
 const system = '你是版本发布顾问。只输出要求的 JSON，不要任何多余文字。';
-const prompt = `项目采用 semver，但有本项目的家规（从历史发版归纳，优先级高于教科书规则）：
+const prompt = `项目采用 semver，但有本项目的家规（v8.3.1 定稿于 docs/guides/release.md，优先级高于教科书规则）：
+- 级别看主题不看类型计数：major=架构设计跃迁；minor=单一主题的完整功能闭环（多个 feat 轮组合后的成品，不是 feat 累计）；patch=问题轮闭环（这一轮发现的问题都解决了，开新循环）
+- 一批提交混两个主题时，以已完成主题定级；未完成主题（地基/半成品能力）不抬级别，写进 notes 注明
 - feat 提交若只是上一版刚发布能力的细化/收尾/补全 → patch；独立新能力才 minor
 - 窗口很小（≤7 提交）且无 breaking → 倾向 patch，除非有明确独立新能力
 - major 只用于架构级推翻（会有 BREAKING 标记或主题级重构）；无法从提交清单确认 major 时给 minor 并在 reason 注明
@@ -44,6 +46,7 @@ const prompt = `项目采用 semver，但有本项目的家规（从历史发版
 - 「文档管线再设计：新增 7 个检查 + 探针自检体系」（此前不存在的能力域）→ minor（v8.3.0 实况）
 - 「后台挂机 run-manager + WS 真心跳」（新能力域）→ minor（v7.3.0 实况）
 - 「分段传输 + nginx 修复」（v7.3.0 能力的收尾）→ patch（v7.3.1 实况）
+- 「审计闭环：漂移溯源裁决 + 死代码清理 + orb 拆分」（问题轮；同批含 agent-runner 地基但主题未完成，不抬级）→ patch（v8.3.1 实况）
 
 最近 tag：${recentTags.split('\n').join('、')}
 基准：${baseTag} 以来共 ${stats.total} 提交（feat:${stats.feat} fix:${stats.fix} docs:${stats.docs} refactor:${stats.refactor} breaking:${stats.breaking}）

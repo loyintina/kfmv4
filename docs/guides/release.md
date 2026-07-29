@@ -1,2 +1,38 @@
-# 指南：release
-> 占位（骨架）— 逐份迁移时填充（映射表 §十三）。
+> 这是什么：版本语义与发版操作——级别怎么判、什么时候发、怎么发。
+> 别的去哪找：提醒阈值实现 → scripts/check/check-release-radar.mjs；级别建议 prompt → scripts/agent/tag-advisor.mjs；工作流卡 → ../workflows/release.yaml。
+
+# 发版指南
+
+## 版本语义（三层定义，v8.3.1 定稿）
+
+级别看**主题**，不看提交类型计数：
+
+- **大版本（major）= 架构设计的跃迁**。判例：v5 SCSS 编译管线、v7 进入 Agent 时代、v8 所有权分离架构。
+- **中版本（minor）= 围绕单一主题的完整功能闭环加冕**。不是 feat 的机械累计，
+  而是多个 feat 轮组合后完成的一个完整功能部分。判例：v8.1 上下文压缩、v8.2 文档系统、v8.3 文档管线。
+- **小版本（patch）= 问题轮闭环**。这一轮发现的问题都解决了，可以开新循环。
+  判例：v6.8.1 审计修复、v7.3.1 分段传输收尾、v8.1.1 压缩细化五批。
+
+## 节奏（中版本周期内不追求主题纯）
+
+- 地基/半成品能力随小版本同行是常态——**中版本的跳跃才是主题的加冕礼**：
+  主题闭环那一刻打中版本，之后的 fix 轮继续升小版本。
+- 一批提交混了两个主题时，**以已完成主题的级别定级**，未完成主题在 note 注明为地基。
+- 历史混装窗口：v8.1.0（性能/细节问题轮 44 提交 + 压缩器 4 提交同版）。
+  裁决：**不补打历史 tag**——tag 是发布锚点，必须对应 release commit 与版本戳，
+  中间态补 tag 会破坏「tag=发布态」的考古模式；叙事层由 history.md 注记承担。
+  v8.3.1 起严格执行主题分离。
+
+## 三层分工（拍板归人）
+
+1. **机械提醒**：check-release-radar（距上个 tag ≥30 提交或 ≥10 feat → WARN，不中断）。
+   阈值拟合历史窗口中位数 ~34 提交，只负责「值得看一眼」，不发版、不阻塞。
+2. **语义建议**：tag-advisor（agent-runner 一号负载）按本指南判级 + 起草 release note。
+3. **人拍板**：tag 永远是人工动作（git mutation）。advisor 建议可被人覆写——
+   v8.3.1 即判例（advisor 建议 minor，人按主题判据改判 patch）。
+
+## 操作步骤
+
+照 ../workflows/release.yaml 的 steps：package.json 版本 → README 版本标记 →
+ledger/history.md 条目（含主题与注记）→ `release: vX.Y.Z — 主题` commit →
+git tag → npm run check 全绿 → 部署握手（scripts/deploy.sh）。
