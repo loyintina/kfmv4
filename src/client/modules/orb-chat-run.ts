@@ -22,7 +22,7 @@ import { sessionStore } from './session-client.js';
 import type { ContentBlock, TextBlock, ToolBlock, RuleWarningBlock } from './session-client.js';
 import { clearToolHint, updateTodoFromTool, TODO_DISMISS_KEY, todosFingerprint } from './orb-chat-hints.js';
 import { log } from './logger.js';
-// 工具 I/O 上下文压缩（v8.1.0）：纯函数注册表，契约 docs/design/TOOL_IO_COMPACTION.md
+// 工具 I/O 上下文压缩（v8.1.0）：纯函数注册表，契约 docs/domains/ai-chat/detail-tool-compaction.md
 import { compactToolInput, compactToolResult, normalizeBashCommand, MUT_BURST_GAP, todoResultAnnotation, webTitleKey, errorFingerprint, failRepeatAnnotation } from '../../shared/tool-compaction/index.js';
 import type { CompactionCtx } from '../../shared/tool-compaction/index.js';
 // 兜底消息上屏 + 取消时工具卡 DOM 收尾（v8 增量 DOM：数据层变更不会自动投影）
@@ -452,7 +452,7 @@ export async function doSend(
     // 会话文件存的是完整 content blocks（含 tool_use + tool_result），
     // 发给 API 时必须转为 OpenAI 的 tool_calls + role:"tool" 格式。
     //
-    // 工具 I/O 上下文压缩（v8.1.0，契约 docs/design/TOOL_IO_COMPACTION.md）：
+    // 工具 I/O 上下文压缩（v8.1.0，契约 docs/domains/ai-chat/detail-tool-compaction.md）：
     // 会话文件是全量真相源（永不压缩），apiMessages 是投影——压缩只发生在这一处。
     const noCompact = localStorage.getItem('kfm-no-compact') === '1'; // 灰度逃生门：=1 跳过压缩发全量
     // G1：最近 2 条 AI 消息（工作记忆）及之后的全部消息豁免压缩

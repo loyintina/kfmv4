@@ -339,7 +339,7 @@ export function initWsChannel(): void {
   // 通过 KFMState.subscribe 监听状态层变化（展开折叠/隐藏文件开关等），自动推送 snapshot
   // 此订阅放在通信层（ws-channel）而非 Registry 自身，保持 Registry 的被动索引性质
   // P3: 这是集中化替代方案——去掉后散布在 ~36 处的手动 notifyStateChange 调用不会消失。
-  //     真正的根解需要 KFMState 层统一广播而非通信层订阅。见 docs/HANDBOOK.md 陷阱 14。
+  //     真正的根解需要 KFMState 层统一广播而非通信层订阅。见 docs/domains/client-shell/contract.md（KFMState 契约与 #陷阱）。
   KFMState.subscribe(() => wsChannel.pushSnapshot());
 
   // 注册默认指令处理器（各模块可以覆盖或补充）

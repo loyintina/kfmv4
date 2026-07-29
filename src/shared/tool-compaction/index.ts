@@ -1,7 +1,7 @@
 /**
  * tool-compaction/index.ts — 工具 I/O 上下文压缩器注册表（v8.1.0）
  *
- * 契约：docs/design/TOOL_IO_COMPACTION.md —— 改压缩行为、增删工具前必须先读。
+ * 契约：docs/domains/ai-chat/detail-tool-compaction.md —— 改压缩行为、增删工具前必须先读。
  * 本模块是纯函数、双端可用、零依赖（不 import 任何 DOM/Node API）。
  *
  * 哲学：会话文件是全量真相源（永不压缩），发给 LLM 的 apiMessages 是投影——
