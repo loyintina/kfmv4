@@ -1,0 +1,70 @@
+> 这是什么：v8.2 文档体系的设计原理——为什么这样分层、为什么 contract+detail、工作流如何驱动结构。
+> 别的去哪找：维护规则与预算线 → doc-maintenance.md；工作流卡 → ../workflows/；迁移过程记录 → ../ledger/history.md。
+
+# 文档体系架构（as-built，2026-07-29 定稿）
+
+## 核心原则
+
+1. **工作流是一等公民**，文档是工作流的状态/资源。
+2. **按变更频率 + 消费模式分层**，不按文档类型分。
+3. **一个工作流定义 = 读什么 + 写什么 + 退出条件**。
+4. **最长引用链 ≤ 2 跳**：根 CLAUDE.md 路由表 → 目标。
+5. **结构从工作流需求中涌现**——一个文档若没有任何工作流 read/write 它，它不该存在。
+
+## 分层（七层）
+
+| 层 | 变更频率 | 消费方式 | 约束 |
+|---|---|---|---|
+| `workflows/` | 极少 | 每次任务开始匹配 | 是架构本身，不是文档 |
+| `constraints/` | 极少 | 改代码前按节加载 | 心法编号永不重排（代码写死「心法 14」是隐式 API） |
+| `domains/` | 慢 | 工作流 reads 指定 | contract ≤150 行；detail 按需 |
+| `active/` | 快 | 当前工作栈内 | STACK 必须与实际一致（check-active-stack） |
+| `ledger/` | 中 | reads 指定 | 只追加不修改不删除 |
+| `guides/` | 极少 | 特定工作流触发 | 是 SOP 不是知识 |
+| `decisions/` | 极少 | 追溯时 | 不可变 |
+
+六域：`canvas-tree` / `floating-card` / `client-shell` / `ai-chat` / `server` / `infra`。
+
+## 关键设计决策及理由
+
+| 决策 | 理由 |
+|------|------|
+| 根 CLAUDE.md 是唯一路由 | 消除旧 CLAUDE.md 与 HANDBOOK 的路由重叠（旧体系 5 跳链是信息丢失根因） |
+| 参考契约 = domains/*/contract.md | 实现完了还要永远活着，与任务型设计文档是不同物种 |
+| 任务文档 = active/*.md（临时） | 知识归宿是被 contract 吸收，不是被「保存」 |
+| 隐性契约迁入领域 contract | 它本质是领域知识，旧时散布在 DIAGNOSTICS 是因为没有更好的家 |
+| diagnostics 只保留排查流程 | 知识仓库职能被 contract 接管后，它只需要做「怎么查」 |
+| 回归钉独立成 ledger/bugs.md | 最高频工作流，路径必须极短 |
+| archive 压缩成 history.md + git 考古钩 | 65 份旧档大部分是噪音；代码和测试是细节的真相源 |
+| 心法编号永不重排 | 代码里写死了「心法 14」「心法 24」，是隐式 API |
+| 无 frontmatter | 路由头两行即元数据；frontmatter 是第二份要手工维护的账 |
+| 新鲜度纯 git 启发式 | git 即账本，单一来源（check-contract-freshness） |
+
+## contract + detail 双层
+
+contract 是压缩结论（≤150 行，pre-code-gate 每域必读），detail 是展开论述（按需）。
+允许的三层共存：contract 记结论 + detail 记展开 + ledger 记病史——但必须互指。
+除此之外的一知识多处陈述 = 无意重复，归并（一知识一个家，别处只留指针）。
+
+## 素材考古机制
+
+原文注销后靠 git tag 考古：contract「素材考古」节记 `git show v8.1.1:docs/archive/design/…`。
+tag 是永久快照——删除文件 ≠ 丢失信息。写考古行时必须含「什么细节值得挖」。
+
+## 迁移两阶段方法论（v8.2 实践定型）
+
+1. **整理筛选期**：逐份保真移动，当场删死信息记理由；判定书 = 人工三覆盖核实
+   （concept/detail/procedural parity，见 doc-maintenance.md）。
+2. **压缩归并期**：全库扫重复归并；预算线量化（doc-maintenance.md 预算线节）；
+   不为压缩而压缩。
+
+## 自进化机制
+
+同类 ad-hoc 操作重复 ≥3 次 → 工作流候选（`_template.yaml` 固化）；工作流 60 天未触发 → 退役候选。
+案例：心法 24 从一条原则长成 SOP + 登记表 + check 脚本；check-css-wiring 从一批 bug 长成机械化。
+
+## 铺路记录（方向既定，未实施）
+
+- 度量触发器：按 fix/feat/tag 计数提醒审计节奏（作息时间表式大工作流）。
+- SOP→prompt 集群化：标准 SOP 做成 prompt 让 subagent 集群执行，人的对话聚焦架构与设计。
+- 管线文档检查自动化体系的再设计（切换后议题，见 ../active/STACK.md）。

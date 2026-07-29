@@ -1410,3 +1410,30 @@ V8_AUDIT_REPORT §四.2「tool_result 状态/渲染两处分散」与 §四.3「
 - 检查计数四处同步（CLAUDE.md/newdoc/CLAUDE.md/README/infra contract）20→19→18→17→20 全程 check-checks 强制对齐。
 
 至此收尾三件套只剩切换提交。
+
+---
+
+## §四十四 终章：设计文档自我分散 + 切换清单（2026-07-29）
+
+### 本文档的分散结算
+
+本文档（~1412 行，44 节讨论记录）是 v8.2 重构的过程文档，使命完成，按自身方法论分散：
+
+- **原理层** → `guides/doc-architecture.md`（as-built 版：核心原则 5 条 / 七层表 / 关键决策 10 条 / contract+detail 双层机制 / 素材考古机制 / 迁移两阶段方法论 / 自进化机制）。
+- **过程层**（44 节讨论、映射表 §十三、逐项裁决理由）→ 不搬家，随旧 docs/ 注销；考古钩：`git show v8.1.1:docs/active/doc-system-redesign.md` 或 master 历史。
+- **历史行** → ledger/history.md 终章行压 1 行。
+
+### 切换提交清单（执行序）
+
+1. `git rm -r docs` + `git rm CLAUDE.md`（旧体系注销，含 archive/design/AGENTS.md/本文档）
+2. `git mv newdoc docs`；`git mv docs/CLAUDE.md CLAUDE.md`（路由文件落根）
+3. `docs-root-const.mjs` DOCS_ROOT 'newdoc'→'docs'（一处翻全链跟）
+4. 根 CLAUDE.md 自引用 newdoc/→docs/ + 删第 1 行过时括注
+5. 提示词 3 处：base.md（INVARIANTS→constraints/invariants.md）、kfmv4-read-invariants-first.md（同）、kfmv4-regression-discipline.md（REGRESSION_TESTING_SYSTEM→guides/testing.md、BUG_REGRESSION_REGISTRY→ledger/bugs.md ×2）
+6. src 8 处代码注释 newdoc/domains/→docs/domains/（check-code-doc-refs 强制）
+7. 新建根 AGENTS.md stub（多 agent 工具入口 → 重定向 CLAUDE.md）
+8. check 适配：check-consistency/check-active-stack 的 CLAUDE.md 路径改根；check-docs docFiles +根 CLAUDE.md/README.md/AGENTS.md；check-tool-compaction 2 处 newdoc→docs
+9. README 文档表重写 + 功能表「HANDBOOK 同步检查」→「域契约新鲜度检查」
+10. STACK.md：item 1 ✅ + 立项「管线文档检查自动化体系再设计」；history.md 终章行
+11. 仓库外：~/.kfmv4/roles/蔚然-kfmv4.json promptFiles 3 处
+12. `npm run check` 全绿 + `npm test` 452 全绿 → 一次大爆炸提交
