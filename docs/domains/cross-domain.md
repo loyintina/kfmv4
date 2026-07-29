@@ -88,7 +88,9 @@
 1. **sessions/*.json 双端双写者无协调**（最危险，见写入矩阵）
 2. **active.json 三写者 read-merge-write 无锁**
 3. **API_BASE 三套风格 10 处重复**
-4. **anim scope 机制形同虚设**（1 租户 + 三域绕过）
+4. **【已结案】anim scope 机制形同虚设**（1 租户 + 三域绕过）——ADR-004 裁决二：
+   废弃泛化声称，定位改为「直透为官方用法、scope 按需（tree-render 单租户）」，
+   注释契约已重写，不再是漂移
 5. **KFMState/L 私有字段直写泛滥**，setter 与钩子被绕过
 6. **ws error 消息无人接收**；command action 无静态约束 + 无生产者（ADR-004 后）
 7. **/api/system/restart 单挂载不一致**

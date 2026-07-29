@@ -83,8 +83,9 @@ initApp → initUI → initGestures → initOrb（ensurePanel、sessionStore 初
    状态机单测测的是没人用的代码。
 4. **char-rain timeline 契约错误**：契约称字符雨用独立 timeline 不受 ts.clear 影响；
    实然 setupCharRainTweens 接收的就是共享 ts scope（tree-render.ts:665,690）。
-5. **animation-registry 注释≠实现**：头注释声称的 play 自动 kill/reverse/killAll
-   不存在；`_entries`/`AnimEntry`（:19-27）声明后从未读写。
+5. **【已结案】animation-registry 注释≠实现**：头注释泛化声称（play 自动 kill/reverse/
+   killAll）已按 ADR-004 裁决二重写为「直透为官方用法、scope 按需（单租户）」，
+   注释与实现现已一致。遗留死字段 `_entries`/`AnimEntry`（:19-27）归入死代码批次。
 6. **契约 #8 错位**：契约称 setExpanded 受 L.isAnimating 守卫；state.ts:116-130 内
    无守卫，守卫在调用侧（tree-render.ts:409,489）。
 7. **PointerEvent 统一被违反**：chat-dom.ts:192-193 直接绑 touchstart/touchmove。

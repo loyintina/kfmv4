@@ -1,12 +1,14 @@
 /**
  * KFM v4 - 动画注册中心 (AnimationRegistry)
  *
- * 集中管理所有 GSAP 动画，确保：
- *   1. 同名动画互斥 —— play() 自动 kill 旧 timeline
- *   2. 支持 reverse() 丝滑反向 —— 不会出现动画截断
- *   3. 模块级 scope —— 隔离各模块动画，替代 globalTimeline.clear()
- *   4. 一次性补间 —— to()/fromTo()/set() 轻薄封装
- *   5. killAll() —— 页面切换时一键清理所有动画
+ * GSAP 的统一 import 口 + 轻薄透传封装（ADR-004 裁决二后重新定位）：
+ *   1. 一次性补间 —— to()/fromTo()/set()/timeline() 直透 GSAP，调用方自行管理
+ *   2. killTweensOf() 直透 —— 官方用法，需要停动画时直接调它
+ *   3. scope()/clearScope() —— 按需的模块级 timeline 隔离
+ *      （现仅 tree-render 单租户；不是必须走的机制，新模块默认用直透即可）
+ *
+ * 已删除的历史声称（240dbcf）：play() 同名互斥、reverse() 丝滑反向、
+ * killAll() 页面切换一键清理——这些机制已不存在，勿再按旧注释使用。
  */
 
 import gsap from 'gsap';
@@ -54,18 +56,17 @@ class AnimationRegistryClass {
     gsap.killTweensOf(target);
   }
 
-  // ========== 模块级 scope（替代 globalTimeline.clear()） ==========
+  // ========== 模块级 scope（按需隔离，非必经机制） ==========
 
   /**
-   * 获取或创建模块级独立 timeline。
+   * 获取或创建模块级独立 timeline（现仅 tree-render 单租户）。
    *
-   * 所有该模块的动画都应添加到这个 timeline 上：
+   * 适用场景：模块需要一把 clear() 清掉自己的整组动画、且不想误杀别人时：
    *   const ts = anim.scope('tree-render');
-   *   ts.to(box, { height: 100 });     // 而非 gsap.to()
-   *   ts.add(subTimeline, 0);
-   *   ts.clear();                       // 而非 gsap.globalTimeline.clear()
+   *   ts.to(box, { height: 100 });
+   *   ts.clear();   // 只影响本 scope
    *
-   * 这样 clear() 只影响本模块，不会误杀其他模块的动画。
+   * 不需要整组清理的模块请直接用 to()/killTweensOf() 直透（官方用法）。
    */
   scope(name: string): gsap.core.Timeline {
     let tl = this._scopes.get(name);
