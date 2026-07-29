@@ -309,8 +309,8 @@ regression('BAR-ORB-FOLLOW-02', 'chat-dom', '滚动追底在 chat-dom.ts 管理�
 
 group('orb — 会话分段加载契约（BAR-ORB-SEG）');
 
-regression('BAR-ORB-SEG-02', 'orb.ts', '切换 guard 用 _renderedSessionId，不用 sessionStore.activeId', () => {
-  const src = readFileSync('src/client/modules/orb.ts', 'utf-8');
+regression('BAR-ORB-SEG-02', 'orb-chat-host.ts', '切换 guard 用 _renderedSessionId，不用 sessionStore.activeId', () => {
+  const src = readFileSync('src/client/modules/orb-chat-host.ts', 'utf-8');
   // 根因：sessionStore.init() 的监听器会抢先把 activeId 改成新 sid，
   // 若 orb 切换监听器的 guard 比较 sessionStore.activeId，则永远误成立 → return → 切不过去。
   // 必须存在模块内独立的 _renderedSessionId 作为「已渲染会话」真相。
@@ -387,8 +387,8 @@ regression('BAR-ORB-PANEL-01', 'orb.ts', 'expandPanel 不重建面板 DOM（持�
   assert(!expandBody.includes('sessionStore.subscribe'), 'expandPanel 不应再有订阅补渲兜底（竞态已由 DOM 持久化根除）');
 });
 
-regression('BAR-ORB-PANEL-02', 'orb.ts', '历史挂载窗口化：首屏只挂尾部窗口，滚动翻页 prepend', () => {
-  const src = readFileSync('src/client/modules/orb.ts', 'utf-8');
+regression('BAR-ORB-PANEL-02', 'orb-chat-host.ts', '历史挂载窗口化：首屏只挂尾部窗口，滚动翻页 prepend', () => {
+  const src = readFileSync('src/client/modules/orb-chat-host.ts', 'utf-8');
   // v8.0 反模式：loadSessionInto 全量挂载 + 「面板已展开则 clearChatDom 再全量挂一遍」双重渲染
   assert(src.includes('MOUNT_WINDOW'), '应有首屏挂载窗口常量');
   assert(src.includes('_loadOlderHistory'), '应有向上翻页加载函数');
@@ -432,8 +432,8 @@ regression('BAR-ORB-PANEL-05', 'orb.ts', '拖拽时面板跟随光球（rAF 合�
 // 第八批前置：v8.1 交互回归修复（v7 契约恢复，源码断言钉子）
 // ==========================================================================
 
-regression('BAR-ORB-PANEL-06', 'orb.ts', '流式滚动 followBottom 门控：上滑浏览不被拽回底部', () => {
-  const src = readFileSync('src/client/modules/orb.ts', 'utf-8');
+regression('BAR-ORB-PANEL-06', 'orb-chat-host.ts', '流式滚动 followBottom 门控：上滑浏览不被拽回底部', () => {
+  const src = readFileSync('src/client/modules/orb-chat-host.ts', 'utf-8');
   // v8.0 回归：_renderChat(scrollMode) 收参但忽略、无条件滚底——用户上滑看历史时
   // 每个流式事件都拽回底部。v7 契约：follow 强制 / auto 门控 / preserve 不动。
   assert(src.includes("scrollMode === 'auto' && getFollowBottom()"), 'auto 模式必须 followBottom 门控');
@@ -623,7 +623,7 @@ regression('BAR-ORB-PANEL-16', 'orb-chat-run', '兜底消息必须上屏 + 取�
   assert(aborts.length >= 3, 'doSend/resumeRun 两处 AbortError 分支都应在');
   assert((run.match(/settleToolCardsDom\('\(已取消\)'\)/g) || []).length >= 2,
     '两处取消分支都必须 settleToolCardsDom（曾工具卡永远"忙碌中"+提示无限轮转）');
-  const orb = readFileSync('src/client/modules/orb.ts', 'utf-8');
+  const orb = readFileSync('src/client/modules/orb-chat-host.ts', 'utf-8');
   assert(orb.includes('mountFallbackAiMessage'), 'onConfigMissing 兜底必须上屏');
 });
 
@@ -653,11 +653,12 @@ regression('BAR-ORB-PANEL-19', 'chat-dom', 'read 读 .md 富渲染 + mermaid 不
 });
 
 regression('BAR-ORB-PANEL-20', 'orb', 'Todo 面板历史恢复 + 面板展开追底门控', () => {
-  const src = readFileSync('src/client/modules/orb.ts', 'utf-8');
-  const mhwBody = src.split('function _mountHistoryWindow')[1]?.split('\n}')[0] || '';
+  const host = readFileSync('src/client/modules/orb-chat-host.ts', 'utf-8');
+  const mhwBody = host.split('function _mountHistoryWindow')[1]?.split('\n}')[0] || '';
   assert(mhwBody.includes('_restoreTodoPanel()'), '历史窗口重挂末尾必须调 _restoreTodoPanel（刷新/切会话面板曾消失）');
-  const rtpBody = src.split('function _restoreTodoPanel')[1]?.split('\n}')[0] || '';
+  const rtpBody = host.split('function _restoreTodoPanel')[1]?.split('\n}')[0] || '';
   assert(rtpBody.includes('updateTodoFromTool'), '_restoreTodoPanel 必须从数据层找回 todo 结果重挂');
+  const src = readFileSync('src/client/modules/orb.ts', 'utf-8');
   const epBody = src.split('function expandPanel')[1]?.split('\n}')[0] || '';
   assert(epBody.includes('getFollowBottom()'), 'expandPanel 不得无条件追底（上滑浏览位置曾丢失）');
 });

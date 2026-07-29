@@ -25,7 +25,7 @@
 ```
 ┌─────────────── 浏览器 ───────────────┐        ┌─────────────── 服务端 ───────────────┐
 │                                       │        │                                        │
-│  orb.ts (handleSend / 重连 IIFE)      │        │  ai/routes.ts (HTTP 端点)              │
+│  orb-chat-host.ts (handleSend/重连)   │        │  ai/routes.ts (HTTP 端点)              │
 │     │  abortCtrl 单例 + sendBtn.sending│        │     POST /ai/chat/start                │
 │     ▼                                 │        │     GET  /ai/chat/:runId/stream?from=N │
 │  orb-chat.ts                          │        │     POST /ai/chat/:runId/cancel        │
@@ -172,7 +172,7 @@ false**（它在循环结束后的 `finally` 才置 true）。因此**不能**�
 
 ### 4.5 run 持久化用 localStorage，不是 sessionStorage
 
-**契约**：`orb-chat.ts` 的 `_persistActiveRun` 存 `{sessionId, runId}` 到
+**契约**：`orb-chat-run.ts` 的 `_persistActiveRun` 存 `{sessionId, runId}` 到
 **localStorage**。sessionStorage 随标签页/浏览器关闭清空 → 杀浏览器重启后无法重连
 挂机中的生成。localStorage 跨浏览器重启存活（配合服务端 `EVICT_MS=5min` 缓冲窗口）。
 
@@ -269,8 +269,8 @@ IIFE 与 `handleSend` 之间**共享单例**，保证重连态也能被同一个
 | `src/server/ai/chat.ts` | SSE 流式生成器 `streamChat()`，事件协议源头 |
 | `src/server/ws-server.ts` | WebSocket + 30s 协议级 ping 半开检测 |
 | `src/server/terminal-pty.ts` | PtyManager：断开时 `killAll` 清该连接的 PTY |
-| `src/client/modules/orb-chat.ts` | `doSend`/`resumeRun`/`_applyEvent`/`_consumeRun`/持久化 |
-| `src/client/modules/orb.ts` | `handleSend` + 重连 IIFE + 等待提示编排 + 会话切换监听 |
+| `src/client/modules/orb-chat.ts` | re-export 门面 + `setEventHook` 事件钩子（实现在 orb-chat-run/orb-chat-hints） |
+| `src/client/modules/orb-chat-host.ts` | 客户端宿主：`handleSend` + 重连 + 等待提示编排 + 会话切换监听 + `chatMessages` 全量持有 + 消息窗口编排（ChatHostDeps 注入，自 orb.ts 拆出） |
 | `src/client/modules/ws-channel.ts` | WebSocket 客户端 + 重连 + 看门狗 + onReconnect API |
 | `src/client/modules/tmux-card.ts` | tmux 卡：`_lastCommand` + WS 重连 re-attach |
 | `src/client/modules/terminal-card-04.ts` | 终端核心：`_onReconnect` 重开 PTY |

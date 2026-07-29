@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 7659a0b · 生成于 2026-07-29 -->
+<!-- 基准 commit 0e30169 · 生成于 2026-07-29 -->
 
 # 代码清单（机械层）
 
@@ -68,11 +68,11 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（22 文件 · 3614 行）
+## client-shell（22 文件 · 3321 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/client/modules/orb.ts | 823 | type OrbState, initOrb |
+| src/client/modules/orb.ts | 530 | type OrbState, initOrb |
 | src/client/modules/gesture-registry.ts | 346 | GestureHandler, GestureRegistry, gestures |
 | src/client/modules/ui-registry.ts | 334 | UIElementType, UIElementState, InteractiveElement, ContentBlock, Capability, PageDescription, RegistryChangeHandler, UIElementRegistry, Registry |
 | src/client/modules/custom-select.ts | 246 | SelectItem, CustomSelectOptions, CustomSelect, createCustomSelect |
@@ -95,7 +95,7 @@
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（53 文件 · 10923 行）
+## ai-chat（54 文件 · 11201 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -104,17 +104,18 @@
 | src/server/ai/tools/omp/browser/tab-worker.ts | 921 | WorkerCore |
 | src/server/ai/tools/omp/browser/launch.ts | 603 | DEFAULT_VIEWPORT, BROWSER_PROTOCOL_TIMEOUT_MS, loadPuppeteer, loadPuppeteerInWorker, LaunchHeadlessOptions, launchHeadlessBrowser, applyViewport, UserAgentOverride, UserAgentSession, applyStealthPatches |
 | src/client/modules/session-client.ts | 524 | SessionMessage, Session, extractMessageText, countTextMessages, sessionStore |
-| src/client/modules/orb-chat-run.ts | 522 | ChatMessage, StreamEvent, getActiveRunId, getActiveCursor, setEventHook, readPersistedRun, clearPersistedRun, settlePendingToolBlocks, resumeRun, doSend |
+| src/client/modules/orb-chat-run.ts | 510 | ChatMessage, StreamEvent, getActiveRunId, getActiveCursor, setEventHook, readPersistedRun, clearPersistedRun, settlePendingToolBlocks, resumeRun, doSend |
 | src/server/ai/chat.ts | 447 | ChatMessage, StreamEvent, createClientIdxMapper |
 | src/client/modules/ws-channel.ts | 426 | wsChannel, initWsChannel |
 | src/shared/tool-compaction/index.ts | 362 | CompactorEntry, COMPACTOR_REGISTRY, COMPACTOR_NAMES, webTitleKey, CompactionCtx, MUT_BURST_GAP, TODO_STALE_GAP, FAIL_REPEAT_MIN, errorFingerprint, failRepeatAnnotation, todoResultAnnotation, normalizeBashCommand, compactToolResult, compactToolInput |
 | src/server/ai/tools/omp/debug.ts | 362 | ompDebugTool |
 | src/server/ai/tools/omp/debug/debug-operations.ts | 356 | Breakpoint, StackFrame, Variable, SourceInfo, setBreakpoint, setFunctionBreakpoint, removeBreakpoint, doContinue, doPause, stepIn, stepOver, stepOut, waitForPause, getStack, getVariables, evaluate, loadedSources, injectProbe, capturePausedFrames, clearPausedFrames |
+| src/client/modules/orb-chat-host.ts | 332 | ChatHostDeps, initChatHost |
 | src/server/ai/tools/omp/browser/tab-supervisor.ts | 320 | WorkerHandle, TabSession, PendingRun, AcquireTabOptions, RunInTabOptions, getTab, acquireTab, runInTab, releaseTab, releaseAllTabs |
 | src/server/ai/tools/omp/debug/kfmv4-views.ts | 318 | Kfmv4ViewName, Kfmv4ViewResult, RENDERER_SNAPSHOT_SCRIPT, ANIMATION_TIMELINE_SCRIPT, GESTURE_TRACE_SCRIPT, STATE_HISTORY_SCRIPT, CARD_LIFECYCLE_SCRIPT, KFMV4_SCRIPT_MAP, formatRendererSnapshot, formatAnimationTimeline, formatGestureTrace, formatStateHistory, formatCardLifecycle |
-| src/client/modules/orb-chat-hints.ts | 252 | startWaitingIndicator, getToolHint, clearToolHint, TODO_DISMISS_KEY, todosFingerprint, clearTodoPanel, dismissTodoPanel, updateTodoFromTool |
 | src/shared/chat-protocol/to-openai-messages.ts | 242 | OpenAiToolCall, OpenAiMessage, ToOpenAiOptions, ToOpenAiResult, toOpenAiMessages |
 | src/server/ai/tools/omp/debug/cdp-connection.ts | 242 | CdpSession, CdpLaunchOptions, CdpAttachOptions, CdpPausedEvent, sendCmd, onCdpEvent, launchCdp, attachCdp, closeCdp |
+| src/client/modules/orb-chat-hints.ts | 225 | startWaitingIndicator, TODO_DISMISS_KEY, todosFingerprint, clearTodoPanel, dismissTodoPanel, updateTodoFromTool |
 | src/server/ai/run-manager.ts | 193 | getActiveRun, getRun, StreamFn, startRun, attachRun, cancelRun |
 | src/server/ai/session-store.ts | 178 | appendEvent, flush, flushSync, appendUserMessage |
 | src/server/ai/page-state.ts | 123 | PAGE_STATE_PATH, renderPageState, refreshPageState |
@@ -138,7 +139,6 @@
 | src/server/ai/tools/omp/eval.ts | 60 | ompEvalTool |
 | src/server/ai/tools/omp/edit.ts | 52 | ompEditTool |
 | src/shared/chat-protocol/events.ts | 45 | StreamEvent |
-| src/client/modules/orb-chat.ts | 42 | renderMarkdownAsync |
 | src/server/ai/tools/omp/glob.ts | 42 | ompGlobTool |
 | src/server/ai/tools/omp/write.ts | 42 | ompWriteTool |
 | src/shared/chat-protocol/messages.ts | 39 | TextBlock, ToolBlock, RuleWarningBlock, ContentBlock, ChatMessage |
@@ -147,6 +147,7 @@
 | src/server/ai/tools/omp/browser/tab-worker-entry.ts | 31 | — |
 | src/shared/message-normalize.ts | 30 | NormalizableBlock, promoteReasoningBlocks |
 | src/server/ai/tools/omp/todo.ts | 29 | ompTodoTool |
+| src/client/modules/orb-chat.ts | 27 | — |
 | src/shared/chat-protocol/block-idx.ts | 24 | createClientIdxMapper |
 | src/server/ai/tools/omp/checkpoint.ts | 22 | ompCheckpointTool |
 | src/server/ai/tools/omp/browser/tab-worker-entry.js | 19 | — |
@@ -164,11 +165,11 @@
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 
-## infra（71 文件 · 9809 行）
+## infra（71 文件 · 9811 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| tests/client-logic.test.ts | 820 | — |
+| tests/client-logic.test.ts | 821 | — |
 | tests/regression.test.ts | 639 | — |
 | tests/tool-compaction.test.ts | 505 | — |
 | tests/preload.mjs | 406 | — |
@@ -218,7 +219,7 @@
 | scripts/check/check-active-stack.mjs | 61 | — |
 | scripts/check/check-hooks.mjs | 61 | — |
 | scripts/check/check-doc-schema.mjs | 60 | — |
-| scripts/check/domain-src.mjs | 59 | DOMAIN_SRC |
+| scripts/check/domain-src.mjs | 60 | DOMAIN_SRC |
 | scripts/agent/test-tag-advisor.mjs | 59 | — |
 | tests/omp-glob.test.ts | 58 | — |
 | scripts/check/check-workflow-integrity.mjs | 56 | — |
@@ -250,11 +251,13 @@
 - src/client/modules/chat-dom.ts → src/client/modules/theme.ts
 - src/client/modules/orb-chat-run.ts → src/client/modules/tree-loader.ts
 
-### ai-chat → client-shell（10 边）
+### ai-chat → client-shell（12 边）
 
 - src/client/modules/chat-dom.ts → src/client/modules/dom-refs.ts
 - src/client/modules/orb-chat-hints.ts → src/client/modules/dom-refs.ts
 - src/client/modules/orb-chat-hints.ts → src/client/modules/z-index-layers.ts
+- src/client/modules/orb-chat-host.ts → src/client/modules/orb-state.ts
+- src/client/modules/orb-chat-host.ts → src/client/modules/ui-registry.ts
 - src/client/modules/orb-chat-run.ts → src/client/modules/logger.ts
 - src/client/modules/orb-chat-run.ts → src/client/modules/state.ts
 - src/client/modules/session-client.ts → src/client/modules/logger.ts
@@ -263,14 +266,12 @@
 - src/client/modules/ws-channel.ts → src/client/modules/state.ts
 - src/client/modules/ws-channel.ts → src/client/modules/ui-registry.ts
 
-### ai-chat → floating-card（6 边）
+### ai-chat → floating-card（4 边）
 
 - src/client/modules/chat-dom.ts → src/client/modules/renderers/code-highlight.ts
 - src/client/modules/chat-dom.ts → src/client/modules/renderers/math-diagram.ts
 - src/client/modules/chat-dom.ts → src/client/modules/renderers/md-css.ts
 - src/client/modules/chat-dom.ts → src/client/modules/renderers/md-extensions.ts
-- src/client/modules/orb-chat.ts → src/client/modules/renderers/math-diagram.ts
-- src/client/modules/orb-chat.ts → src/client/modules/renderers/md-extensions.ts
 
 ### ai-chat → server（12 边）
 
@@ -355,17 +356,14 @@
 - src/client/modules/tree-swipe.ts → src/client/modules/renderers/file-type.ts
 - src/client/modules/tree-swipe.ts → src/client/modules/renderers/handler-factory.ts
 
-### client-shell → ai-chat（10 边）
+### client-shell → ai-chat（7 边）
 
 - src/client/main.ts → src/client/modules/ws-channel.ts
 - src/client/modules/app.ts → src/client/modules/ws-channel.ts
 - src/client/modules/orb-panel.ts → src/client/modules/session-client.ts
 - src/client/modules/orb.ts → src/client/modules/chat-dom.ts
-- src/client/modules/orb.ts → src/client/modules/orb-chat-hints.ts
-- src/client/modules/orb.ts → src/client/modules/orb-chat.ts
-- src/client/modules/orb.ts → src/client/modules/session-client.ts
+- src/client/modules/orb.ts → src/client/modules/orb-chat-host.ts
 - src/client/modules/orb.ts → src/client/modules/ws-channel.ts
-- src/client/modules/orb.ts → src/shared/chat-protocol/to-openai-messages.ts
 - src/client/modules/ui.ts → src/client/modules/ws-channel.ts
 
 ### client-shell → canvas-tree（8 边）
@@ -530,4 +528,4 @@
 - src/server/index.ts → src/server/ai/routes.ts
 
 ---
-合计 204 文件 · 40244 行 · 跨域边 228 条
+合计 205 文件 · 40231 行 · 跨域边 225 条

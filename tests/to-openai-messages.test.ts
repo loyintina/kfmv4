@@ -113,13 +113,13 @@ test('失败模式重复标注：同错误第 N 次附加 failRepeatAnnotation',
 
 group('BAR-ORB-RESUME-01 — 载荷构造唯一入口');
 
-regression('BAR-ORB-RESUME-01', 'orb/orb-chat-run', '载荷构造唯一入口 toOpenAiMessages，禁止第三份手写转换', () => {
+regression('BAR-ORB-RESUME-01', 'orb-chat-host/orb-chat-run', '载荷构造唯一入口 toOpenAiMessages，禁止第三份手写转换', () => {
   const run = readFileSync('src/client/modules/orb-chat-run.ts', 'utf-8');
-  const orb = readFileSync('src/client/modules/orb.ts', 'utf-8');
+  const orb = readFileSync('src/client/modules/orb-chat-host.ts', 'utf-8');
   assert(run.includes("from '../../shared/chat-protocol/to-openai-messages.js'"),
     'doSend 必须走共享构造函数');
   assert(orb.includes('toOpenAiMessages(chatMessages'),
     'tryAutoResume 必须走共享构造函数（冷恢复曾无压缩/不过滤空壳 → kimi 400）');
-  assert(!orb.includes('mainText'), 'orb.ts 不得残留手写转换逻辑');
+  assert(!orb.includes('mainText'), 'orb-chat-host.ts 不得残留手写转换逻辑');
   assert(!run.includes('mainText'), 'orb-chat-run.ts 不得残留手写转换逻辑');
 });

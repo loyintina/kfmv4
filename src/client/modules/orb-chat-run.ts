@@ -6,11 +6,11 @@
  *   - 持久化运行态（runId/cursor/sessionId + localStorage 跨刷新恢复）
  *   - SSE 流消费（_applyEvent 状态变更 + _consumeRun 流读取）
  *   - 自动重连（_consumeWithReconnect 指数退避）
- *   - 收尾逻辑（_finalizeRun + settlePendingToolBlocks + _cancelPendingTools）
+ *   - 收尾逻辑（_finalizeRun + settlePendingToolBlocks）
  *   - 公开 API（resumeRun + doSend）
  *
  * 依赖：
- *   - orb-chat-hints（clearToolHint + updateTodoFromTool）
+ *   - orb-chat-hints（updateTodoFromTool）
  *   - chat-dom（mountFallbackAiMessage 兜底上屏 + settleToolCardsDom 取消收尾）
  *   - session-client（会话管理）
  *   - KFMState + loadFileTree（文件树刷新）
@@ -20,7 +20,7 @@ import { KFMState } from './state.js';
 import { loadFileTree } from './tree-loader.js';
 import { sessionStore } from './session-client.js';
 import type { ContentBlock, TextBlock, ToolBlock, RuleWarningBlock } from './session-client.js';
-import { clearToolHint, updateTodoFromTool, TODO_DISMISS_KEY, todosFingerprint } from './orb-chat-hints.js';
+import { updateTodoFromTool, TODO_DISMISS_KEY, todosFingerprint } from './orb-chat-hints.js';
 import { log } from './logger.js';
 // 载荷构造唯一入口（BAR-ORB-RESUME-01）：shared 纯函数，压缩/标注/空壳过滤全在那一处
 import { toOpenAiMessages } from '../../shared/chat-protocol/to-openai-messages.js';
@@ -176,7 +176,6 @@ function _applyEvent(event: StreamEvent, ctx: RunConsumeCtx): void {
       if (toolBlock) {
         toolBlock.result = event.toolResult;
         updateTodoFromTool(toolBlock);
-        clearToolHint(toolBlock.id);
       }
       // 服务端目录指纹检测到文件系统变化 → 刷新文件树
       if (event.filesChanged) {
@@ -313,7 +312,6 @@ async function _finalizeRun(messages: ChatMessage[], msgIdx: number): Promise<vo
   settlePendingToolBlocks(messages, '(未完成)');
   for (const m of messages) {
     for (const b of m.content) {
-      if (b?.type === 'tool') clearToolHint((b as ToolBlock).id);
       if (b?.type === 'text') delete (b as TextBlock & { _reasonExpanded?: boolean })._reasonExpanded;
     }
   }
@@ -328,7 +326,7 @@ async function _finalizeRun(messages: ChatMessage[], msgIdx: number): Promise<vo
  * @param label 收尾文案：取消路径传 "(已取消)"，流结束/中断路径传 "(未完成)"。
  *
  * 纯函数：只改 content 数组里工具块的 result + 清 UI-only 动画字段，
- * 不碰计时器/toolHint（那些 DOM 副作用留在调用方）。
+ * 不碰计时器等 DOM 副作用（留在调用方）。
  */
 export function settlePendingToolBlocks(messages: ChatMessage[], label: string): number {
   let settled = 0;
@@ -345,16 +343,6 @@ export function settlePendingToolBlocks(messages: ChatMessage[], label: string):
     }
   }
   return settled;
-}
-
-/** 取消时收尾：清 toolHint（DOM 副作用），再调纯函数标记未完成工具块。 */
-function _cancelPendingTools(messages: ChatMessage[]): void {
-  for (const m of messages) {
-    for (const b of m.content) {
-      if (b?.type === 'tool') clearToolHint((b as ToolBlock).id);
-    }
-  }
-  settlePendingToolBlocks(messages, '(已取消)');
 }
 
 // ========== 公开 API ==========
@@ -386,7 +374,7 @@ export async function resumeRun(
       // 用户在重连态点暂停 → 通知服务端取消后台 run（彻底停止生成）
       fetch(apiBase + 'ai/chat/' + runId + '/cancel', { method: 'POST' }).catch(() => {});
       _persistActiveRun('', null);
-      _cancelPendingTools(messages);
+      settlePendingToolBlocks(messages, '(已取消)');
       settleToolCardsDom('(已取消)'); // 工具卡 DOM 同步收尾：忙碌中 → 已取消（v8 数据层变更不自动投影）
       const lastMsg = messages[messages.length - 1];
       if (lastMsg?.role === 'ai') {
@@ -500,7 +488,7 @@ export async function doSend(
       if (_activeRunId) { fetch(apiBase + 'ai/chat/' + _activeRunId + '/cancel', { method: 'POST' }).catch(() => {}); _activeRunId = null; }
       _persistActiveRun(_sendSessionId, null);
       // 收尾未完成的工具卡（从"忙碌中"→已取消→折叠），并追加取消标注
-      _cancelPendingTools(messages);
+      settlePendingToolBlocks(messages, '(已取消)');
       settleToolCardsDom('(已取消)'); // 工具卡 DOM 同步收尾（v8 数据层变更不自动投影）
       const lastMsg = messages[messages.length - 1];
       if (lastMsg?.role === 'ai') {

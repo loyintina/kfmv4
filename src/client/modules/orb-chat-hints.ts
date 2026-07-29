@@ -1,16 +1,15 @@
 /**
- * orb-chat-hints.ts — 等待提示 + 工具提示 + Todo 面板
+ * orb-chat-hints.ts — 等待提示 + Todo 面板
  *
  * 从 orb-chat.ts 拆分（v8 审计：706 行 → 3 文件）。
  * 职责：
  *   - startWaitingIndicator: AI 生成期间的随机提示动画
- *   - getToolHint/clearToolHint: 工具执行期间的随机提示（每工具独立打乱）
  *   - Todo 面板：浮动任务列表（sticky 在面板顶部）
  *
  * 依赖：
  *   - DOM.orbPanelContent（面板内容区引用）
  *   - Z.TODO_PANEL（z-index 层级）
- *   - WAITING_HINTS（100 条随机提示数据）
+ *   - WAITING_HINTS（随机提示数据库）
  */
 
 import { DOM } from './dom-refs.js';
@@ -94,32 +93,6 @@ export function startWaitingIndicator(panelEl: HTMLDivElement): () => void {
     timerId && clearTimeout(timerId);
     el.remove();
   };
-}
-
-// ========== 工具执行期随机提示（每工具独立打乱列表） ==========
-// 设计：与等待提示共用 WAITING_HINTS 数据源，但每个工具调用有自己的随机打乱顺序。
-// 渲染时带脉冲圆点动画，与 startWaitingIndicator 同款视觉风格。
-// tool_result 到达后由 doSend 调 clearToolHint 清除对应条目。
-
-const _toolHints = new Map<string, { pool: string[]; start: number }>();
-
-export function getToolHint(toolId: string): { text: string; dotHtml: string } {
-  let h = _toolHints.get(toolId);
-  if (!h) {
-    h = { pool: [...WAITING_HINTS].sort(() => Math.random() - 0.5), start: Date.now() };
-    _toolHints.set(toolId, h);
-  }
-  const elapsed = Date.now() - h.start;
-  const interval = elapsed < 2000 ? 2000 : 1500;
-  const idx = Math.floor(elapsed / interval) % h.pool.length;
-  return {
-    text: h.pool[idx],
-    dotHtml: '<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:rgba(0,212,255,0.6);animation:orb-hint-pulse 1.2s ease-in-out infinite;vertical-align:middle;margin-right:5px"></span>',
-  };
-}
-
-export function clearToolHint(toolId: string): void {
-  _toolHints.delete(toolId);
 }
 
 // ========== 浮动 Todo 面板 ==========

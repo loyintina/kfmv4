@@ -116,7 +116,8 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 - 骨架：`app.ts` `ui.ts` `dom-refs.ts` `state.ts` `renderer-lifecycle.ts`
 - 注册中心：`ui-registry.ts` `gesture-registry.ts` `animation-registry.ts`
 - 交互共享：`interaction-constants.ts` `drag-handler.ts` `click-queue.ts` `z-index-layers.ts`（与 z-index.css 镜像，check-zindex 校验）
-- orb 骨架：`orb.ts`（协调层）`orb-panel.ts` `orb-state.ts` `gestures.ts` `debug-assert.ts`
+- orb 骨架：`orb.ts`（纯 DOM 壳；ai-chat 宿主编排在 ai-chat 域 orb-chat-host.ts，
+  经 ChatHostDeps 注入——ADR-004 裁决一）`orb-panel.ts` `orb-state.ts` `gestures.ts` `debug-assert.ts`
 - 通用组件：`custom-select.ts` `confirm-dialog.ts` `card-toast.ts`
 - 日志：`logger.ts`（debug-card 伴侣）
 

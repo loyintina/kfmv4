@@ -21,33 +21,33 @@
 
 | 入口 | 位置 | 调用方 |
 |------|------|--------|
-| `doSend()` | orb-chat-run.ts:425 | orb.ts（handleSend，唯一） |
-| `resumeRun()` | orb-chat-run.ts:367 | orb.ts（刷新恢复 + kfm-restart 冷恢复） |
+| `doSend()` | orb-chat-run.ts:404 | orb-chat-host.ts（handleSend，唯一） |
+| `resumeRun()` | orb-chat-run.ts:354 | orb-chat-host.ts（刷新恢复 + kfm-restart 冷恢复） |
 | `patchEvent()` | chat-dom.ts:806 | 经 setEventHook 注入，SSE 事件 → DOM 唯一投影口 |
-| `sessionStore` 单例 | session-client.ts:149 | orb.ts / orb-panel.ts / 域外两张卡片 |
+| `sessionStore` 单例 | session-client.ts:149 | orb-chat-host.ts / orb-panel.ts / 域外两张卡片 |
 | `streamChat()` | chat.ts:116（服务端） | run-manager.ts:86（唯一） |
 | `promoteReasoningBlocks()` | message-normalize.ts:21 | 写时 orb-chat-run.ts:128；读时 session-client.ts:260,282 |
-| `startWaitingIndicator()` | orb-chat-hints.ts:28 | orb.ts（发送/恢复三处） |
+| `startWaitingIndicator()` | orb-chat-hints.ts:27 | orb-chat-host.ts（发送/恢复三处） |
 
-`orb-chat.ts` 只是薄 re-export 门面（orb-chat.ts:18-26），无自身逻辑。
+`orb-chat.ts` 只是 re-export 门面 + 事件钩子（setEventHook），无业务逻辑。
 
 ## 状态所有权
 
 | 状态 | 持有者 | 备注 |
 |------|--------|------|
-| 客户端会话消息数组 `chatMessages` | orb.ts:89 | 引用传给 doSend/resumeRun，orb-chat-run 原地写；chat-dom 只读事件不持数据 |
+| 客户端会话消息数组 `chatMessages` | orb-chat-host.ts:32 | 引用传给 doSend/resumeRun，orb-chat-run 原地写；chat-dom 只读事件不持数据 |
 | 服务端消息数组 | session-store.ts（每 session 一份 SessionState） | reducer applyEvent 原地写 |
 | 流式进行态（runId/cursor） | orb-chat-run.ts:58-59 | 服务端对应 run-manager.ts:43-44 |
 | 思考框折叠态 `_foldState` | chat-dom.ts:78 | 会话切换随 clearChatDom 清空 |
-| 等待提示定时器 | startWaitingIndicator 闭包（orb-chat-hints.ts:66） | stop 函数交 orb.ts 持有 |
+| 等待提示定时器 | startWaitingIndicator 闭包（orb-chat-hints.ts:27） | stop 函数交 orb-chat-host.ts 持有 |
 | 工具卡内提示 `_hintTimers` | chat-dom.ts:66 | tool_result 到达即停 |
-| todo 面板态 | orb-chat-hints.ts:126-128 | 手动 ✕ 指纹存 localStorage kfm-todo-dismissed |
-| 取消/发送中标记 | orb.ts（按钮 .sending class） | 独占写 |
+| todo 面板态 | orb-chat-hints.ts:99-101 | 手动 ✕ 指纹存 localStorage kfm-todo-dismissed |
+| 取消/发送中标记 | orb-chat-host.ts（按钮 .sending class，按钮 DOM 属 orb.ts） | 独占写 |
 
 ## 一次发送的链路（全 HTTP，无 WS）
 
-1. orb.ts 发送按钮 → handleSend → 起等待提示
-2. doSend：push 用户消息 → mountUserMessage 上屏（orb.ts:806 回调）
+1. orb.ts 发送按钮（DOM 属 client-shell）→ orb-chat-host handleSend → 起等待提示
+2. doSend：push 用户消息 → mountUserMessage 上屏（orb-chat-host.ts:300 直接调用）
 3. 读 .kfmv4/active.json 配置（orb-chat-run.ts:414）
 4. **格式转换在客户端**：content blocks → OpenAI tool_calls 形态 + 压缩投影
    + 空壳 assistant 过滤（orb-chat-run.ts:598-647）
@@ -70,10 +70,12 @@
 ## 跨域边界
 
 - 依赖域外：state.js / tree-loader.js（文件树）、renderers/* + marked（渲染）、
-  logger.js；orb.ts 依赖 client-shell 大量基础设施（gesture-registry、drag-handler 等）
-- 被域外依赖：main.ts → initOrb（唯一启动口）；config.card / session.card → sessionStore；
+  logger.js；orb-chat-host 仅用 shell 的 Registry/ui-registry 与 OrbState 类型，
+  面板/orb 状态经 ChatHostDeps 注入（不 import orb.ts）
+- 被域外依赖：main.ts → initOrb（唯一启动口，initOrb 内部经 initChatHost 起宿主）；
+  config.card / session.card → sessionStore；
   kfmv4 工具 → wsServer snapshot/eval 桥（server/ai-tools 已随 ADR-004 整删）
-- 无人 import orb-chat-run.ts / chat-dom.ts / orb-chat-hints.ts（orb.ts 门面之外）
+- orb-chat-run / chat-dom / orb-chat-hints 只被 orb-chat 门面与 orb-chat-host 使用
 
 ## 代码强制的不变量（附证据）
 
@@ -95,14 +97,14 @@
    orb.ts:686-709 tryAutoResume 内重复实现（无压缩，且 push `content: mainText || null`
    不过滤空 assistant）——冷恢复路径发给严格端点的载荷不合上游边界契约。
    **（已修复 BAR-ORB-RESUME-01：收编 shared/chat-protocol/to-openai-messages.ts 唯一入口）**
-3. **死代码三处**：renderMarkdownAsync（orb-chat.ts:37 全仓库无调用）；
-   getToolHint（orb-chat-hints.ts:106 无调用，chat-dom 自给自足）；
-   session-store.ts:190 isIncomplete 无人调用（冷恢复判据在 orb.ts:676-679 重复实现）。
-4. **orb.ts 域归属**：注册在 client-shell 域（domain-src.mjs），但持有 ai-chat 核心状态
-   （chatMessages、abortCtrl、发送按钮态）——域边界与状态所有权不一致。
+3. **【已结案】死代码三处已全部删除**：renderMarkdownAsync 与 getToolHint/clearToolHint
+   整条链（orb 拆分专项）+ isIncomplete（批次二）。
+4. **【已结案】orb.ts 域归属**：宿主编排已拆出为 orb-chat-host.ts（本域，331 行，
+   ChatHostDeps 注入），orb.ts 剩 529 行纯 DOM 壳归 client-shell；chatMessages、
+   abortCtrl、发送按钮态随宿主迁出——域边界与状态所有权已一致（ADR-004 裁决一）。
 5. **localStorage 协议五处散落无登记**：kfm-active-run、kfm-no-compact、
    kfm-restart-count、kfm-todo-dismissed、kfm-fontsize-orb。
-6. **文件变更通知双路径并存**：initChatDom 的 onFilesChanged 是空 TODO（orb.ts:268），
+6. **文件变更通知双路径并存**：initChatDom 的 onFilesChanged 是空 TODO（orb.ts:209），
    而 orb-chat-run.ts:184 自己直接调 loadFileTree——DOM 侧回调失效。
 7. **switchTo 未 await patchActiveConfig**（session-client.ts:358，同文件 320/345/397
    均 await）——与自身注释强调的时序要求矛盾。

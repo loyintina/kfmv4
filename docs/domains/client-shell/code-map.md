@@ -23,8 +23,8 @@
 | `L` 单例（渲染生命周期/动画锁） | renderer-lifecycle.ts:223 | 7 个 canvas-tree/floating 文件读写 |
 | `gestures` 单例 | gesture-registry.ts:385 | 9 个文件注册 handler |
 | `anim` 单例 | animation-registry.ts | ~10 个文件 |
-| `initOrb()` | orb.ts（840 行，真逻辑厚重） | main.ts:70（唯一） |
-| `createDragHandler()` | drag-handler.ts:68 | orb.ts:532、floating-card.ts |
+| `initOrb()` | orb.ts（529 行纯 DOM 壳，宿主已拆出） | main.ts:70（唯一） |
+| `createDragHandler()` | drag-handler.ts:68 | orb.ts:471、floating-card.ts |
 
 公共底座（logger/dom-refs/z-index-layers/animation-registry）被全仓三域共用。
 
@@ -33,8 +33,8 @@
 - KFMState 常规写走方法；**但 expandedPaths 被 tree-render.ts:524、tree-loader.ts:178
   直写绕过 setter（无 notify）**；currentRoot 由 main.ts:130 直接赋值
 - 手势内部态：gesture-registry 独占；drag-handler 每次 create 一个闭包 DragState
-- orb 模块级变量（orb.ts:63-89）：orbState/panelState 等 orb.ts 独占写；
-  **chatMessages（orb.ts:89）所有权在 shell、写在 ai-chat——跨界共享**（见漂移 8）
+- orb 模块级变量（orb.ts:63 起）：orbState/panelState 等 orb.ts 独占写；
+  chatMessages 已随拆分迁 orb-chat-host.ts（ai-chat 域）——跨界共享结案（见漂移 8）
 - logger._logs（200 行环形）、click-queue._queue、Registry._elements 均模块独占
 
 ## 核心流程
@@ -58,7 +58,8 @@ initApp → initUI → initGestures → initOrb（ensurePanel、sessionStore 初
 
 ## 跨域边界
 
-- 本域 import 域外：orb.ts → theme + ai-chat 四模块；app/ui → ws-channel（归 ai-chat 域）；
+- 本域 import 域外：orb.ts → ai-chat 三模块（chat-dom/orb-chat-host/ws-channel，
+  宿主经 ChatHostDeps 注入）；app/ui → ws-channel（归 ai-chat 域）；
   gestures.ts → card-stack/card-registry；main.ts → 全三域 init
 - 域外 import 本域：canvas-tree 与 floating-card 全域依赖 L/anim/DOM/Z/log/debug-assert；
   ai-chat → Registry/KFMState/DOM/Z/log
@@ -88,10 +89,10 @@ initApp → initUI → initGestures → initOrb（ensurePanel、sessionStore 初
 6. **契约 #8 错位**：契约称 setExpanded 受 L.isAnimating 守卫；state.ts:116-130 内
    无守卫，守卫在调用侧（tree-render.ts:409,489）。
 7. **PointerEvent 统一被违反**：chat-dom.ts:192-193 直接绑 touchstart/touchmove。
-8. **orb.ts 域归属漂移（呼应 ai-chat code-map 漂移 4）**：840 行中约 350 行是
-   ai-chat 编排（loadSessionInto、tryAutoResume 格式转换、handleSend、chatMessages、
-   abortCtrl）；orb-panel.ts 同样泄漏（sessionStore.subscribe、providers/roles 拉取）。
-   「orb 骨架=协调层」名不副实，它是 ai-chat 客户端的事实宿主。
+8. **【已结案】orb.ts 域归属漂移（呼应 ai-chat code-map 漂移 4）**：约 350 行
+   ai-chat 编排（loadSessionInto、tryAutoResume、handleSend、chatMessages、abortCtrl）
+   已拆出为 orb-chat-host.ts 并登记 ai-chat 域；orb.ts 剩 529 行纯 DOM 壳，
+  「orb 骨架=协调层」名实相符（ADR-004 裁决一）。orb-panel 泄漏残留见漂移 10。
 9. **【已结案】showToast 死代码 + 双份漂移**：app.ts 的零调用 showToast 已随批次二
    删除，ws-channel.ts:381-387 内联版成唯一实现（双份消除；其「消失不 notify」
    行为差异随死原版消亡，如 AI 视角需要 toast 状态另案补 notify）。
@@ -104,7 +105,7 @@ initApp → initUI → initGestures → initOrb（ensurePanel、sessionStore 初
     removeAllListeners、gestures.disable/enable/destroy/isRegistered/
     removePreMatchHook、anim.clearScope、debug-assert.warn 已随批次二删除
     （连带 7 个测死代码的测试，按 infra 陷阱 5）。
-13. **dom-refs 自我宣称不实**：头称「唯一入口」，实然 orb.ts:175、gestures.ts:142,160、
+13. **dom-refs 自我宣称不实**：头称「唯一入口」，实然 orb.ts:116、gestures.ts:142,160、
     orb-panel.ts:91 等多处绕过直查。
 14. **【已结案】DragConfig 死字段**：minEditW/minEditH 接口字段及两处传值
     （floating-card/orb）已随批次二删除。
@@ -112,11 +113,13 @@ initApp → initUI → initGestures → initOrb（ensurePanel、sessionStore 初
     引入 4e59339）。DEBUG=true 常开保留为有意决策——本地单用户应用，用户即开发者，
     断言日志即 bug 上报通道（docstring 已写明）。
 16. 次要：空 if 块死码已随批次二删除；剩余：orb 面板尺寸双实现
-    （getPanelTargetPosition vs updatePanelPosition，:234-235 算了不用）；长按双机制
-    并存（registry longPressMs vs drag-handler 自计时）。
+    （getPanelTargetPosition :102 vs updatePanelPosition :156 两套定位逻辑并存）；
+    长按双机制并存（registry longPressMs vs drag-handler 自计时）。
+17. **orb-panel.ts ai-chat 泄漏残留**（原漂移 8 的另一半）：sessionStore.subscribe、
+    providers/roles 拉取仍在 shell 域文件中，待同类拆分。
 
 ## 陷阱指针
 
 已定型陷阱见 contract.md #陷阱（注意 #8 已错位，见漂移 6）。
-测绘新捕获：orb.ts 跨界共享 chatMessages 是双向漂移的枢纽——任何 orb/ai-chat 边界
-重构必须先读本条与 ai-chat code-map 漂移 4。
+测绘新捕获：orb/ai-chat 边界拆分已完成（宿主=orb-chat-host.ts，ChatHostDeps 注入）——
+后续同类拆分（如漂移 17 的 orb-panel）照此模式：依赖注入优先于跨界共享模块级状态。
