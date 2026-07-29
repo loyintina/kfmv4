@@ -1384,3 +1384,29 @@ V8_AUDIT_REPORT §四.2「tool_result 状态/渲染两处分散」与 §四.3「
 - 超线才做密度改写；篇幅约束从此可量化，不靠审美。
 
 压缩轮四步全部完成：① 4 组归并 → ② 8 处去重+6 修复 → ③ 注入层零改动 → ④ 预算线量化零改写。剩余：管线适配 → 切换提交。
+
+---
+
+## §四十三 管线适配（4 批 + versions 锚点，2026-07-29）
+
+### 最终链（20 脚本）
+
+- **删除 3**：check-superseded-coverage（判定书流程取代）、check-handbook-sync + check-desc-freshness（合并）、check-linecount（行数表无新家，价值低）——实际净 -3 +4 = +1，20→20 是巧合。
+- **合并新建**：check-contract-freshness（域 contract git 新鲜度，≥5 次域内 src 提交未碰 contract → 中断；域→src 映射内置，纯 git 无 frontmatter）。
+- **重写 4**：check-doc-coverage（src/ 每个 .ts 的文件名或祖先目录必须在某域 contract/detail 出现）、check-consistency（CLAUDE.md 路由表↔workflows 双向）、check-docs（scope 切 DOCS_ROOT，弃 frontmatter 规则，反引号路径只校验已知根全路径）、check-versions（锚点 HANDBOOK → README 标记 + history.md 版本线）。
+- **新增 3**：check-active-stack（STACK 引用有效 + active/ 无孤儿）、check-code-doc-refs（代码注释 docs/newdoc 引用不腐烂——首轮即抓 8 处真腐烂，全部改指新家）、check-workflow-integrity（yaml reads/writes 路径有效）。
+- **地基**：docs-root-const.mjs 共享 DOCS_ROOT='newdoc'（切换提交一处翻 'docs'）。
+
+### 三个既定决策落地
+
+1. 新鲜度纯 git 启发式，不加 frontmatter（git 即账本）。
+2. linecount 行数表取消写回。
+3. frontmatter 规约定稿「新体系不要 frontmatter」——doc-maintenance.md 待定稿注已结算（§四十二预算线节同文）。
+
+### 顺手修复
+
+- 8 处代码注释腐烂引用（CARD_REGISTRY/UI_ELEMENT_REGISTRY/WEBSOCKET/TERMINAL_CARD spec 旧路径）→ 改指 newdoc 域契约；tools/index.ts:9 注释提前改指（切换清单第 3 项 ✅）。
+- audit.yaml writes 枚举拆分；bug-fix.yaml 锚点条目解析兼容。
+- 检查计数四处同步（CLAUDE.md/newdoc/CLAUDE.md/README/infra contract）20→19→18→17→20 全程 check-checks 强制对齐。
+
+至此收尾三件套只剩切换提交。
