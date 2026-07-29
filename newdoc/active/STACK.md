@@ -1,6 +1,6 @@
 # 工作栈
 1. [vision.md] v8.2 文档系统重构 — 逐份迁移中（映射表：docs/active/doc-system-redesign.md §十三）
-   ← 当前：19 份活跃文档全部 ✅。下一阶段：archive 65 份按 §13.3 (a)(b)(c) 逐份确认
+   ← 当前：archive (c) 3 份 ✅。下一：archive (b) 素材型 19 份（素材考古行散进各域 contract）
 2. 手势系统研究与全局交互区域分权（P3，自 HANDBOOK 活跃待办迁入）
    — 浮卡/卡片堆/设置卡内容区与全局左右滑的边界；touch-action 分区策略待文档化
 3. v8 审计遗留 LOW 项（P3，自 V8_AUDIT_REPORT 迁入，2026-07-27 审计）
