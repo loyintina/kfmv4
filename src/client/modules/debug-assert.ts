@@ -14,9 +14,3 @@ export function assert(condition: boolean, message: string): void {
     console.error(`[ASSERT FAILED] ${message}`);
   }
 }
-
-export function warn(message: string): void {
-  if (DEBUG) {
-    console.warn(`[WARN] ${message}`);
-  }
-}

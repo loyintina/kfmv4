@@ -28,8 +28,6 @@ import { log } from './logger.js';
 import { computeLiquidSegments, type LiquidPoint } from './liquid-geometry.js';
 
 
-export function getRowIndexLength(): number { return L._rowIndex.length; }
-
 // 模式联动光标颜色（由 tree-swipe 的 _applyModeTheme 调用）
 let _cursorColor: string | null = null;
 let _cursorBgColor: string | null = null;
@@ -184,8 +182,6 @@ export function setModeAccent(color: string | null): void {
   const tog = row?.children.find(c => c.id?.startsWith('toggle-'));
   if (tog) tog.textStyle = { ...tog.textStyle, color: color || theme.canvas.accent };
 }
-
-export function getModeAccentColor(): string | null { return _modeAccentColor; }
 
 /** 移动光标到指定行（GSAP 平滑过渡） */
 export function moveCursorTo(hitBox: Box, animate = true): void {

@@ -101,18 +101,8 @@ export class PtyManager {
     }
   }
 
-  /** 查询会话信息 */
-  getSession(sessionId: string): PtySession | undefined {
-    return this._sessions.get(sessionId);
-  }
-
   /** 获取会话的 tty 路径（用于 tmux switch-client -c） */
   getTty(sessionId: string): string {
     return this._sessions.get(sessionId)?.tty || '';
-  }
-
-  /** 当前活跃会话数 */
-  get sessionCount(): number {
-    return this._sessions.size;
   }
 }

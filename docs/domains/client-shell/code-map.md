@@ -77,14 +77,14 @@ initApp → initUI → initGestures → initOrb（ensurePanel、sessionStore 初
    loadFileTree 之前同步执行（main.ts:72-73 vs :129-134），initWsChannel 不在契约链上。
 2. **【已结案】手势优先级表漂移**：契约表已按代码重测绘（实然 14 个 handler 全列，
    含平手靠注册序警告）。pinch-zoom 与 mode-btn 同为 90 的平手保留并在契约标注。
-3. **【已结案·半】orb 状态机漂移**：契约已改为实然 3 态（过渡态由 GSAP 承担）。
-   遗留：`nextOrbState` 生产零调用（orb.ts 全程手工赋值）、状态机单测测的是
-   没人用的代码——归死代码批次处理。
+3. **【已结案】orb 状态机漂移**：契约已改为实然 3 态（过渡态由 GSAP 承担）；
+   nextOrbState 及其单测（orb-state.test.ts 整文件）已随死代码批次二删除
+   （orb.ts 的 re-export 收窄为仅类型）。
 4. **【已结案】char-rain timeline 契约错误**：契约已改为实然（字符雨挂共享 ts
    scope，ts.clear 一并清除、重渲染时重建）——按裁决二「契约随实然」方向结案。
 5. **【已结案】animation-registry 注释≠实现**：头注释泛化声称（play 自动 kill/reverse/
    killAll）已按 ADR-004 裁决二重写为「直透为官方用法、scope 按需（单租户）」，
-   注释与实现现已一致。遗留死字段 `_entries`/`AnimEntry`（:19-27）归入死代码批次。
+   注释与实现现已一致；死字段 _entries/AnimEntry 已随批次二删除。
 6. **契约 #8 错位**：契约称 setExpanded 受 L.isAnimating 守卫；state.ts:116-130 内
    无守卫，守卫在调用侧（tree-render.ts:409,489）。
 7. **PointerEvent 统一被违反**：chat-dom.ts:192-193 直接绑 touchstart/touchmove。
@@ -92,21 +92,26 @@ initApp → initUI → initGestures → initOrb（ensurePanel、sessionStore 初
    ai-chat 编排（loadSessionInto、tryAutoResume 格式转换、handleSend、chatMessages、
    abortCtrl）；orb-panel.ts 同样泄漏（sessionStore.subscribe、providers/roles 拉取）。
    「orb 骨架=协调层」名不副实，它是 ai-chat 客户端的事实宿主。
-9. **showToast 死代码 + 双份漂移**：app.ts:13 导出零调用；ws-channel.ts:381-387
-   内联重写一份（超时 3000 vs 2000ms，且消失不 notify）。
-10. **window 全局接口空声明**：main.ts:13-20 声明的 window.API/selectedFile 等
-    全仓库无一处赋值。
-11. **state.ts 卡片工作台死代码**：cart*/openCards/focusCard/setViewport 等
-    （state.ts:148-195）全仓库零调用（WORKBENCH_SPEC 遗留）。
-12. **死 API 一批**：L.pushContext/popContext/registerListener/removeAllListeners、
-    gestures.disable/enable/destroy 等、anim.clearScope、debug-assert.warn（生产）。
+9. **【已结案】showToast 死代码 + 双份漂移**：app.ts 的零调用 showToast 已随批次二
+   删除，ws-channel.ts:381-387 内联版成唯一实现（双份消除；其「消失不 notify」
+   行为差异随死原版消亡，如 AI 视角需要 toast 状态另案补 notify）。
+10. **【已结案】window 全局接口空声明**：main.ts 的 window.API/selectedFile 等
+    8 个空声明已随批次二删除。
+11. **【已结案】state.ts 卡片工作台死代码**：cart*/openCards/focusCard/setViewport
+    及 OpenCard/CartEntry/CartState/CartConfig 四类型已随批次二删除
+    （WORKBENCH_SPEC 遗留；呼应 cross-domain#11）。
+12. **【已结案】死 API 一批**：L.pushContext/popContext/registerListener/
+    removeAllListeners、gestures.disable/enable/destroy/isRegistered/
+    removePreMatchHook、anim.clearScope、debug-assert.warn 已随批次二删除
+    （连带 7 个测死代码的测试，按 infra 陷阱 5）。
 13. **dom-refs 自我宣称不实**：头称「唯一入口」，实然 orb.ts:175、gestures.ts:142,160、
     orb-panel.ts:91 等多处绕过直查。
-14. **DragConfig 死字段**：`minEditW`/`minEditH` 必填但 createDragHandler 从不读取。
+14. **【已结案】DragConfig 死字段**：minEditW/minEditH 接口字段及两处传值
+    （floating-card/orb）已随批次二删除。
 15. **【已结案】debug-assert debugger 语句上生产**：`debugger;` 已删（BAR-DEBUG-01，
     引入 4e59339）。DEBUG=true 常开保留为有意决策——本地单用户应用，用户即开发者，
     断言日志即 bug 上报通道（docstring 已写明）。
-16. 次要：gesture-registry.ts:237-238 空 if 块死码；orb 面板尺寸双实现
+16. 次要：空 if 块死码已随批次二删除；剩余：orb 面板尺寸双实现
     （getPanelTargetPosition vs updatePanelPosition，:234-235 算了不用）；长按双机制
     并存（registry longPressMs vs drag-handler 自计时）。
 

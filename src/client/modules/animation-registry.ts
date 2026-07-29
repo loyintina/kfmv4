@@ -4,7 +4,7 @@
  * GSAP 的统一 import 口 + 轻薄透传封装（ADR-004 裁决二后重新定位）：
  *   1. 一次性补间 —— to()/fromTo()/set()/timeline() 直透 GSAP，调用方自行管理
  *   2. killTweensOf() 直透 —— 官方用法，需要停动画时直接调它
- *   3. scope()/clearScope() —— 按需的模块级 timeline 隔离
+ *   3. scope() —— 按需的模块级 timeline 隔离
  *      （现仅 tree-render 单租户；不是必须走的机制，新模块默认用直透即可）
  *
  * 已删除的历史声称（240dbcf）：play() 同名互斥、reverse() 丝滑反向、
@@ -16,17 +16,9 @@ import gsap from 'gsap';
 // ========== 导出类型（供其他模块使用，避免直接 import gsap） ==========
 export type AnimTimeline = gsap.core.Timeline;
 
-// ========== 内部类型 ==========
-
-interface AnimEntry {
-  name: string;
-  tl: gsap.core.Timeline;
-}
-
 // ========== 注册中心 ==========
 
 class AnimationRegistryClass {
-  private _entries: Map<string, AnimEntry> = new Map();
   private _scopes: Map<string, gsap.core.Timeline> = new Map();
 
   // ========== 一次性补间（轻薄封装，直接透传 GSAP） ==========
@@ -75,15 +67,6 @@ class AnimationRegistryClass {
       this._scopes.set(name, tl);
     }
     return tl;
-  }
-
-  /** 清除 scope 中的所有动画并销毁 */
-  clearScope(name: string): void {
-    const tl = this._scopes.get(name);
-    if (tl) {
-      tl.clear();
-      this._scopes.delete(name);
-    }
   }
 
 }

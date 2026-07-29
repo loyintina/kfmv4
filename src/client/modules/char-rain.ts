@@ -270,27 +270,6 @@ export function setupCharRainTweens(
 }
 
 // ============================================================
-// 便捷入口 2：为显式指定的行创建字符雨（兄弟行用）
-// ============================================================
-
-/**
- * 为显式指定的行列表创建字符雨。
- * referenceBox 用于计算 topY — 通常传行们的父容器。
- */
-export function setupCharRainForSiblings(
-  rows: Box[],
-  rowTargetYs: number[] | undefined,
-  referenceBox: Box,
-  overlayContainer: Box,
-  root: Box,
-  tl: AnimTimeline,
-  baseDelay: number,
-  direction: 'expand' | 'collapse' = 'expand',
-): CharRainCleanup | null {
-  return _charRainCore(rows, rowTargetYs, referenceBox, overlayContainer, root, tl, baseDelay, direction);
-}
-
-// ============================================================
 // 清理
 // ============================================================
 

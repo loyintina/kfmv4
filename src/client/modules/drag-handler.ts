@@ -19,10 +19,6 @@ export interface DragConfig {
   /** 获取要素在起点的屏幕位置 */
   getOrbStartRect: (e: PointerEvent) => { left: number; top: number };
 
-  /** 编辑态最小尺寸（用于防止往左上拖过起点） */
-  minEditW: number;
-  minEditH: number;
-
   /** 屏幕边界钳制 */
   clamp: (x: number, y: number) => { x: number; y: number };
 

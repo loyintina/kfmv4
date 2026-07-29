@@ -9,15 +9,6 @@ import { KFMState, API } from './modules/state.js';
 
 declare global {
   interface Window {
-    // ===== 应用全局接口 =====
-    API: string;
-    selectedFile: string;
-    expandedPaths: Record<string, boolean>;
-    showHidden: boolean;
-    showToast: (msg: string) => void;
-    openSidebar: () => void;
-    closeSidebar: () => void;
-    executeCursorAction: () => Promise<void>;
     // ===== 调试/跨模块访问 =====
     KFMState: import('./modules/state.js').KFMStateType;
   }

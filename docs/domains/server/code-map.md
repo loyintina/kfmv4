@@ -67,11 +67,12 @@ send('terminal-output')；输入 → pty.write；close/error/心跳判死 → ki
 
 ## 漂移清单（实然 ≠ 应然）
 
-1. **会话统计口径三份**：`_computeStats`（session-store.ts:69）与 /sessions/list 回退
-   （files.ts:126-156）双实现；第三份 `listSessions()`（session-store.ts:203）**死代码**。
-2. **死代码一簇**：session-store 的 getMessages/isIncomplete/listSessions；
-   terminal-pty 的 getSession/sessionCount。（capability-executor 公开 register()
-   已随 ADR-004 整删，不再列出。）
+1. **会话统计口径三份（部分结案）**：`_computeStats`（session-store.ts:69）与
+   /sessions/list 回退（files.ts:126-156）双实现并存（另案）；第三份
+   listSessions 死代码已随批次二删除。
+2. **【已结案】死代码一簇**：session-store 的 getMessages/isIncomplete/listSessions、
+   terminal-pty 的 getSession/sessionCount 已随批次二删除（capability-executor 的
+   register() 更早随 ADR-004 整删）。
 3. **【已结案】ai-tools 9 个端点疑似整体死端点**：经溯源确认为死重（成因 E，引入
    25a295e v6.1.0），ai-tools.ts + capability-executor.ts 已整删（ADR-004）。
    连带：POST /ui/command 是 `command` WS 消息的唯一服务端触发，删除后客户端
@@ -102,8 +103,8 @@ send('terminal-output')；输入 → pty.write；close/error/心跳判死 → ki
 12. **【已结案】proxy.ts 非流式分支**：method 未传/GET/HEAD 已归无 body 分支
     （BAR-PROXY-01，引入 678c6d2 v7.1.0 拆分）。
 13. 次要：/api 与 /kfmv4/api 双挂载（index.ts:50-51）；应用层 'ping' 消息客户端不回，
-    纯喂看门狗——疑似协议残留；files.ts:189 死条件（path.join 恒真）；心跳 interval
-    清理依赖 close 事件触发（行为正确但脆弱）。
+    纯喂看门狗——疑似协议残留；files.ts 死条件（path.join 恒真）已随批次二删除；
+    心跳 interval 清理依赖 close 事件触发（行为正确但脆弱）。
 
 **已核实为真的契约声称**：30s 半开检测 → killAll、express.static 只挂 public、
 只绑 127.0.0.1、sanitizePath 被 files/prompt-assembler 一致使用。

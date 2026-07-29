@@ -1,7 +1,7 @@
 /**
  * RendererLifecycle — 渲染器生命周期注册中心
  *
- * 集中管理 tree-render.ts 的所有可变状态、rAF 循环和 DOM 事件监听。
+ * 集中管理 tree-render.ts 的所有可变状态和 rAF 循环。
  * onSidebarOpen/Close 通过此注册中心统一初始化和清理。
  */
 
@@ -10,16 +10,9 @@
 import type { Box } from '../engine/v2/box.js';
 import type { Renderer } from '../engine/v2/renderer.js';
 
-interface ListenerRef {
-  target: EventTarget;
-  type: string;
-  listener: EventListener;
-  options?: AddEventListenerOptions | boolean;
-}
-
 // ========== RenderContext：渲染器相关的可变状态容器 ==========
 
-/** 属于一个渲染器的可变状态集合。替换渲染器时通过 pushContext/popContext 原子化切换。 */
+/** 属于一个渲染器的可变状态集合。 */
 export interface RenderContext {
   renderer: Renderer | null;
   rowIndex: Box[];
@@ -103,27 +96,6 @@ export class RendererLifecycle {
   }
 
 
-  // ---- RenderContext 原子化切换 ----
-
-  /**
-   * 推入新上下文。未指定的字段从当前上下文继承。
-   * 返回当前上下文，调用方可引用它判断是否有变化。
-   */
-  pushContext(ctx: Partial<RenderContext>): void {
-    const cur = this.ctx;
-    this._ctxStack.push({
-      renderer: ctx.renderer !== undefined ? ctx.renderer : cur.renderer,
-      rowIndex: ctx.rowIndex !== undefined ? ctx.rowIndex : cur.rowIndex,
-      cursorBox: ctx.cursorBox !== undefined ? ctx.cursorBox : cur.cursorBox,
-      cursorRowId: ctx.cursorRowId !== undefined ? ctx.cursorRowId : cur.cursorRowId,
-    });
-  }
-
-  /** 弹出当前上下文，恢复到上一个。至少保留一个默认上下文。 */
-  popContext(): void {
-    if (this._ctxStack.length > 1) this._ctxStack.pop();
-  }
-
   // ---- KFMState 订阅 ----
   _stateSub: ((state: any) => void) | null = null;
 
@@ -170,9 +142,6 @@ export class RendererLifecycle {
   _cursorFlingRaf = 0;
   _flingRaf = 0;
 
-  // ---- DOM 监听器追踪 ----
-  private _listenerRefs: ListenerRef[] = [];
-
   // ========== rAF 管理 ==========
 
   /** 取消所有已注册的 rAF 循环 */
@@ -180,27 +149,6 @@ export class RendererLifecycle {
     for (const key of ['_cursorWheelDecayRaf', '_wheelRaf', '_cursorFlingRaf', '_flingRaf'] as const) {
       if (this[key]) { cancelAnimationFrame(this[key]); this[key] = 0; }
     }
-  }
-
-  // ========== Listener 管理 ==========
-
-  /** 注册 DOM 事件监听（自动追踪，供 removeAllListeners 清理） */
-  registerListener(
-    target: EventTarget,
-    type: string,
-    listener: EventListener,
-    options?: AddEventListenerOptions | boolean
-  ): void {
-    target.addEventListener(type, listener, options);
-    this._listenerRefs.push({ target, type, listener, options });
-  }
-
-  /** 移除所有通过 registerListener 注册的监听器 */
-  removeAllListeners(): void {
-    for (const ref of this._listenerRefs) {
-      ref.target.removeEventListener(ref.type, ref.listener, ref.options);
-    }
-    this._listenerRefs = [];
   }
 
   // ========== 生命周期快捷方法 ==========

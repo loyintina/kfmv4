@@ -27,7 +27,6 @@ import './renderer.test.js';
 import './gesture-registry.test.js';
 import './cards.test.js';
 import './engine.test.js';
-import './orb-state.test.js';
 import './floating-state.test.js';
 import './run-manager.test.js';
 import './server-routes.test.js';
@@ -187,7 +186,6 @@ test('assert passes on true', () => {
 
 test('assert style — ensure functions exist', () => {
   if (typeof da.assert !== 'function') throw new Error('assert not a function');
-  if (typeof da.warn !== 'function') throw new Error('warn not a function');
 });
 
 // ==========================================================================
@@ -245,13 +243,6 @@ test('setSidebarOpen sets and notifies', () => {
   if (!KFMState.sidebarOpen) throw new Error('sidebarOpen should be true');
   KFMState.setSidebarOpen(false);
   if (KFMState.sidebarOpen) throw new Error('sidebarOpen should be false');
-});
-
-test('setViewport merges partially', () => {
-  KFMState.setViewport({ scrollTop: 100 });
-  if (KFMState.viewport.scrollTop !== 100) throw new Error('scrollTop should be 100');
-  KFMState.setViewport({});
-  if (KFMState.viewport.scrollTop !== 100) throw new Error('scrollTop should persist after empty merge');
 });
 
 test('beforeExpand hook can skip default logic', () => {
@@ -354,13 +345,6 @@ test('scope returns isolated timeline', () => {
   if (tsA === tsB) throw new Error('different scope should return different timeline');
 });
 
-test('clearScope removes timeline', () => {
-  anim.scope('test-clear');
-  anim.clearScope('test-clear');
-  const ts = anim.scope('test-clear');
-  if (typeof ts.to !== 'function') throw new Error('scope should recreate after clear');
-});
-
 test('killTweensOf delegates', () => {
   // Should not throw
   anim.killTweensOf({});
@@ -375,12 +359,6 @@ test('DIMENSIONS has expected keys', () => {
   if (typeof sr.DIMENSIONS.BOX_HEIGHT !== 'number') throw new Error('BOX_HEIGHT missing');
   if (typeof sr.DIMENSIONS.SIDEBAR_WIDTH !== 'number') throw new Error('SIDEBAR_WIDTH missing');
   if (sr.DIMENSIONS.SIDEBAR_WIDTH !== 295) throw new Error('SIDEBAR_WIDTH should be 295');
-});
-
-test('getRowLayout returns x and width', () => {
-  const layout = sr.getRowLayout(2);
-  if (layout.x !== 36) throw new Error(`x should be 36 for depth 2, got ${layout.x}`);
-  if (layout.width !== 295 - 36) throw new Error('width should be sidebar - x');
 });
 
 test('getShift returns decreasing offsets', () => {
@@ -424,28 +402,6 @@ test('styleRegistry get returns copy', () => {
   t.width = 999;
   const t2 = sr.styleRegistry.get('folder-row');
   if (t2!.width !== 295) throw new Error('get should return a copy');
-});
-
-test('styleRegistry set patches template', () => {
-  sr.styleRegistry.set('folder-row', { height: 30 });
-  const t = sr.styleRegistry.get('folder-row');
-  if (t!.height !== 30) throw new Error('height should be patched to 30');
-  sr.styleRegistry.set('folder-row', { height: 26 });
-});
-
-test('styleRegistry patch applies multiple', () => {
-  sr.styleRegistry.patch({
-    'folder-row': { height: 28, backgroundColor: 'red' },
-    'file-row': { height: 28 },
-  });
-  const fr = sr.styleRegistry.get('folder-row');
-  if (fr!.height !== 28 || fr!.backgroundColor !== 'red') throw new Error('folder-row not patched');
-  const fl = sr.styleRegistry.get('file-row');
-  if (fl!.height !== 28) throw new Error('file-row not patched');
-  sr.styleRegistry.patch({
-    'folder-row': { height: 26, backgroundColor: 'rgba(124,58,237,0.3)' },
-    'file-row': { height: 26 },
-  });
 });
 
 test('TEXT_STYLES has expected keys', () => {
@@ -603,7 +559,7 @@ test('DRAG_THRESHOLD is 15', () => { assert(DRAG_THRESHOLD === 15); });
 // ==========================================================================
 group('debug-assert (expanded)');
 
-import { assert as dbgAssert, warn as dbgWarn } from '../src/client/modules/debug-assert.js';
+import { assert as dbgAssert } from '../src/client/modules/debug-assert.js';
 
 test('assert logs to console on false', () => {
   const prev = __testLogs.length;
@@ -615,12 +571,6 @@ test('assert does not log on true', () => {
   const prev = __testLogs.length;
   dbgAssert(true, 'ok');
   assert(__testLogs.length === prev, 'should not log when true');
-});
-
-test('warn does not throw', () => {
-  let threw = false;
-  try { dbgWarn('this is a warning'); } catch { threw = true; }
-  assert(threw === false);
 });
 
 // ==========================================================================

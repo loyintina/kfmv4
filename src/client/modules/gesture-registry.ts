@@ -100,33 +100,9 @@ export class GestureRegistry {
     }
   }
 
-  isRegistered(id: string): boolean {
-    return this._handlers.some(h => h.id === id);
-  }
-
   /** 注册 preMatch 钩子：每次 pointerdown 在 handler 匹配前执行（无优先级，无返回值） */
   addPreMatchHook(fn: (e: PointerEvent) => void): void {
     this._preMatchHooks.push(fn);
-  }
-
-  removePreMatchHook(fn: (e: PointerEvent) => void): void {
-    const idx = this._preMatchHooks.indexOf(fn);
-    if (idx >= 0) this._preMatchHooks.splice(idx, 1);
-  }
-
-  // ========== 全局控制 ==========
-
-  disable(): void {
-    this._enabled = false;
-    this._active = null; // 清除进行中的手势
-  }
-
-  enable(): void {
-    this._enabled = true;
-  }
-
-  get enabled(): boolean {
-    return this._enabled;
   }
 
   // ========== 生命周期 ==========
@@ -142,17 +118,6 @@ export class GestureRegistry {
     document.addEventListener('pointermove', this._onMove, { passive: true });
     document.addEventListener('pointerup', this._onEnd, { passive: true });
     document.addEventListener('pointercancel', this._onEnd, { passive: true });
-  }
-
-  /** 销毁：移除所有监听 */
-  destroy(): void {
-    document.removeEventListener('pointerdown', this._onStart);
-    document.removeEventListener('pointermove', this._onMove);
-    document.removeEventListener('pointerup', this._onEnd);
-    document.removeEventListener('pointercancel', this._onEnd);
-    this._handlers = [];
-    this._active = null;
-    this._initialized = false;
   }
 
   // ========== 内部调度 ==========
@@ -232,10 +197,6 @@ export class GestureRegistry {
 
     const target = e.target as HTMLElement;
     if (!target) return;
-
-
-    if (this._active && this._active.handler.id === 'card-stack-global') {
-    }
 
     // 清除上一个手势（防御性）
     this._active = null;

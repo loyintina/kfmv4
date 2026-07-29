@@ -186,7 +186,7 @@ export function setupFileRoutes(router: Router): void {
       const offset = Math.max(0, parseInt(typeof req.query.offset === 'string' ? req.query.offset : '0', 10) || 0);
       const rawLimit = parseInt(typeof req.query.limit === 'string' ? req.query.limit : '0', 10) || 0;
       const filePath = path.join(KFM_DATA_DIR, 'sessions', `${id}.json`);
-      if (!filePath || !fs.existsSync(filePath)) { res.json({ error: '会话不存在' }); return; }
+      if (!fs.existsSync(filePath)) { res.json({ error: '会话不存在' }); return; }
       const parsed: unknown = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
       if (!parsed || typeof parsed !== 'object' || !('messages' in parsed) || !Array.isArray(parsed.messages)) {
         res.json({ total: 0, offset, limit: rawLimit, from, messages: [] });

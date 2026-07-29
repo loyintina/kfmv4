@@ -577,8 +577,6 @@ export function initFloatingCards(): void {
     getOrbStartRect() {
       return dragItem!.brOrb!.getBoundingClientRect();
     },
-    minEditW: FLOATING_CARD_W_MIN,
-    minEditH: FLOATING_CARD_H_MIN,
     clamp: fClamp,
     isEditing() { return dragItem?.state === 'editing'; },
     onTap() { _toggleExpandCollapse(); },

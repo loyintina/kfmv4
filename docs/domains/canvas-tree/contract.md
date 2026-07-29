@@ -8,7 +8,7 @@
 1. **`theme.ts` = 全项目颜色唯一定义点**。导出 `currentTheme`（单例，运行时不可变）。
    新增颜色只能在这里加，禁止消费方硬编码色值；改一处全局同步。
 2. **`style-registry.ts` = 文件树尺寸/字体/间距唯一定义点**。导出 `DIMENSIONS`、
-   `TEXT_STYLES`、`getRowLayout()`、`createBox()`。行高/缩进/字号只能在这里改。
+   `TEXT_STYLES`、`createBox()`。行高/缩进/字号只能在这里改。
 
 ## 模块职责
 

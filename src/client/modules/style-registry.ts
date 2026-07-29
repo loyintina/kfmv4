@@ -27,21 +27,6 @@ export const DIMENSIONS = {
 } as Record<string, number>;
 
 // ============================================================
-// 缩进映射函数
-// 接收层级深度，返回该层容器相对上一层的缩进偏移 px
-// 默认：等距 18px，改这里即可全局切换为对数/斐波那契等
-// ============================================================
-
-/**
- * 根据深度返回该行的绝对布局 { x, width }
- * 不依赖容器递归传递偏移，每层独立计算
- */
-export function getRowLayout(depth: number): { x: number; width: number } {
-  var x = depth * 18;
-  return { x: x, width: DIMENSIONS.SIDEBAR_WIDTH - x };
-}
-
-// ============================================================
 // 文字样式常量
 // ============================================================
 
@@ -150,26 +135,6 @@ export const styleRegistry = {
   get(name: string): Partial<BoxOptions> | undefined {
     const t = templates[name];
     return t ? { ...t } : undefined;
-  },
-
-  set(name: string, updates: Record<string, any>): void {
-    const old = templates[name];
-    if (!old) {
-      templates[name] = { ...updates };
-    } else {
-      Object.assign(templates[name], updates);
-    }
-  },
-
-  patch(patches: Record<string, Record<string, any>>): void {
-    for (const [name, updates] of Object.entries(patches)) {
-      const old = templates[name];
-      if (!old) {
-        templates[name] = { ...updates };
-      } else {
-        Object.assign(templates[name], updates);
-      }
-    }
   },
 };
 

@@ -94,10 +94,11 @@ _resetAnimTimeline → 下一个队列点击。
 8. **【已结案】tree-swipe delete 分支不检查响应**：已修（BAR-DELETE-01）——delete 分支
    解析响应查 success 并记日志，成因 C 权宜（引入 cafcb58）。遗留次要项：
    animateRemoval 未 await 与 API 并行，失败时动画已播完（观感瑕疵，另案）。
-9. **死代码清单**：locateFileBox、forceRebuildTree（tree-render.ts:118/909）、
-   getRowIndexLength、getModeAccentColor（canvas-cursor.ts:31/188）、getRowLayout、
-   styleRegistry.set/patch、getFileColor（style-registry）、setupCharRainForSiblings
-   （char-rain.ts:280，import 了但从未调用）、pushContext/popContext。
+9. **【已结案】死代码清单**：locateFileBox、forceRebuildTree、getRowIndexLength、
+   getModeAccentColor、getRowLayout、styleRegistry.set/patch、setupCharRainForSiblings
+   已全部随死代码批次一/二删除（getFileColor 批次一；pushContext/popContext 属
+   renderer-lifecycle，批次二 client-shell#12 同案）；tree-render 的 ~11 行空 `;`
+   残留语句同批清除（注释乱码未动）。
 10. **契约 #陷阱 1「buildTree 修改后必须恢复 KFMState」过时**：tree-model 只读不写。
 11. **职责与文件名不符**：tree-swipe.ts 名义「右滑」实含临时卡片堆全生命周期 +
     copy/move/delete 执行 + prompt 模式（726 行）；canvas-cursor/scroll 自称「通用」

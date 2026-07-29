@@ -9,7 +9,7 @@
 import { buildSidebarTree } from './tree-model.js';
 import { KFMState, getFileRowData, type FileRowData } from './state.js';
 import { anim } from './animation-registry.js';
-import { setupCharRainTweens, setupCharRainForSiblings, cleanupCharRain, type CharRainCleanup } from "./char-rain.js";
+import { setupCharRainTweens, cleanupCharRain, type CharRainCleanup } from "./char-rain.js";
 import { closeSidebar } from './ui.js';
 import { Z } from './z-index-layers.js';
 import { Renderer } from '../engine/v2/renderer.js';
@@ -112,16 +112,6 @@ function _rebuildBoxLocationMap(root: Box): void {
     }
   }
   walk(root);
-}
-
-/** 根据文件路径返回 Box 中心坐标，不可见时返回 null */
-export function locateFileBox(path: string): { x: number; y: number } | null {
-  const loc = _boxLocationMap.get(path);
-  if (!loc) return null;
-  return {
-    x: loc.screenRect.x + loc.screenRect.width / 2,
-    y: loc.screenRect.y + loc.screenRect.height / 2,
-  };
 }
 
 /** 通过文件路径直接触发 Canvas 文件行操作（tap），路径不可见时静默失败 */
@@ -638,16 +628,6 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
 
   L.beginOp(path, 'expand');
   const animRoot = L.renderer!.getRoot()!;
-  ;
-  ;
-  ;
-  ;
-  ;
-  ;
-  ;
-  ;
-  ;
-  ;
 
   // 所有 overlay tween + 字符雨 cleanup 信息收集
   const charRainCleanups: CharRainCleanup[] = [];
@@ -664,7 +644,6 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
     pack.rowOverlays.map(r => r.y),
     ts, 0
   );
-  ;
   if (topCleanup) charRainCleanups.push(topCleanup);
 
   // 所有子容器 overlay + 字符雨，按层 staggered delay
@@ -904,15 +883,6 @@ function createFileFloatingCard(hit: Box, hitData: FileRowData): void {
 // ============================================================
 // 树重建
 // ============================================================
-
-/** 强制重建树（跳过 L._animBusy 锁，用于眼睛图标��用户主动行为） */
-export function forceRebuildTree(): void {
-  removeAllOverlays();
-  L.endOp();
-  
-  clickQueue.clear();
-  rebuildTree();
-}
 
 function rebuildTree(): void {
   // 防御性清理：无论从哪里触发 rebuildTree，先丢弃旧的动画状态

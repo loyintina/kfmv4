@@ -9,19 +9,6 @@ import { wsChannel } from './ws-channel.js';
  */
 
 
-// ========== Toast ==========
-export function showToast(msg: string): void {
-  const toast = DOM.operationToast;
-  if (!toast) return;
-  toast.textContent = msg;
-  toast.classList.add('show');
-  Registry.notifyStateChange('operation-toast');
-  setTimeout(() => {
-    toast.classList.remove('show');
-    Registry.notifyStateChange('operation-toast');
-  }, 2000);
-}
-
 export async function initApp(): Promise<void> {
 
   // AI输入栏跟随键盘平滑移动；文件树底部同步抬到输入栏之上（含输入法避让）

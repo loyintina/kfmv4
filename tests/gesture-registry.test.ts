@@ -15,9 +15,9 @@ test('register returns unregister function', () => {
   const r = makeRegistry();
   const unreg = r.register({ id: 'a', targetFilter: () => true, priority: 1 });
   if (typeof unreg !== 'function') throw new Error('register should return function');
-  if (!r.isRegistered('a')) throw new Error('a should be registered');
+  if (!(r as any)._handlers.some((h: any) => h.id === 'a')) throw new Error('a should be registered');
   unreg();
-  if (r.isRegistered('a')) throw new Error('a should be unregistered');
+  if ((r as any)._handlers.some((h: any) => h.id === 'a')) throw new Error('a should be unregistered');
 });
 
 test('handlers sorted by priority descending', () => {
@@ -57,21 +57,6 @@ test('init adds document listeners', () => {
   // Second init should be no-op
   r.init();
   if (addCalls.filter(c => c === 'pointerdown').length !== 1) throw new Error('init should be idempotent');
-});
-
-test('destroy removes document listeners', () => {
-  const r = makeRegistry();
-  const removeCalls: string[] = [];
-  const origRemove = document.removeEventListener.bind(document);
-  document.removeEventListener = ((type: string, fn: any, opts: any) => {
-    removeCalls.push(type);
-    origRemove(type, fn, opts);
-  }) as any;
-  r.init();
-  r.destroy();
-  document.removeEventListener = origRemove;
-  if (!removeCalls.includes('pointerdown')) throw new Error('pointerdown should be removed');
-  if (!removeCalls.includes('pointermove')) throw new Error('pointermove should be removed');
 });
 
 // ---- Integration: actual pointer event dispatch ----
@@ -170,27 +155,6 @@ test('only highest priority handler fires', () => {
   if (called[0] !== 'high') throw new Error('highest priority handler should fire');
 });
 
-test('disable/enable toggles all handlers', () => {
-  const r = makeRegistry();
-  const called: string[] = [];
-  r.register({
-    id: 'disable-test', targetFilter: () => true, priority: 10,
-    onStart: () => { called.push('start'); },
-  });
-  r.init();
-  const evt = new PointerEvent('pointerdown', {
-    clientX: 100, clientY: 200, bubbles: false, button: 0,
-  } as any);
-
-  r.disable();
-  document.dispatchEvent(evt);
-  if (called.length > 0) throw new Error('handler should not fire when disabled');
-
-  r.enable();
-  document.dispatchEvent(evt);
-  if (called.length !== 1) throw new Error('handler should fire after re-enable');
-});
-
 test('onMove receives dx, dy', () => {
   const r = makeRegistry();
   const moves: any[] = [];
@@ -252,8 +216,9 @@ function _makeReg(): GestureRegistry {
   return new GestureRegistry();
 }
 
-function _clearReg(reg: GestureRegistry): void {
-  reg.destroy();
+function _clearReg(_reg: GestureRegistry): void {
+  // 清除文档事件监听残留
+  (globalThis as any).__clearDocumentListeners?.();
 }
 
 test('addPreMatchHook fires on pointerdown', () => {
@@ -278,26 +243,6 @@ test('multiple hooks fire in registration order', () => {
     clientX: 0, clientY: 0, button: 0, bubbles: false,
   } as any));
   if (order[0] !== 'A' || order[1] !== 'B') throw new Error('hooks should fire in order');
-  _clearReg(r);
-});
-
-test('removePreMatchHook removes hook', () => {
-  const r = _makeReg();
-  let count = 0;
-  const fn = () => { count++; };
-  r.addPreMatchHook(fn);
-  r.removePreMatchHook(fn);
-  r.init();
-  document.dispatchEvent(new PointerEvent('pointerdown', {
-    clientX: 0, clientY: 0, button: 0, bubbles: false,
-  } as any));
-  if (count !== 0) throw new Error('removed hook should not fire');
-  _clearReg(r);
-});
-
-test('removePreMatchHook of unregistered fn is no-op', () => {
-  const r = _makeReg();
-  r.removePreMatchHook(() => {}); // should not throw
   _clearReg(r);
 });
 

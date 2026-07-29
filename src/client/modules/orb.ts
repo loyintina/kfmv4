@@ -260,7 +260,7 @@ function updatePanelPosition(): void {
 
 // ========== 状态切换 ==========
 
-export { nextOrbState, type OrbState } from './orb-state.js';
+export { type OrbState } from './orb-state.js';
 
 // 面板 DOM 只创建一次（见文件头「面板生命周期」）。initOrb 与 expandPanel 双入口调用。
 function ensurePanel(): void {
@@ -461,8 +461,6 @@ export async function initOrb(): Promise<void> {
     getElement: () => orbEl,
     canStart: () => true,
     getOrbStartRect: () => orbEl!.getBoundingClientRect(),
-    minEditW: PANEL_MIN_WIDTH,
-    minEditH: PANEL_MIN_HEIGHT,
     clamp: clampOrbPosition,
     isEditing: () => orbState === 'editing',
     onEnterEdit: enterEditMode,

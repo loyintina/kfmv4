@@ -1,16 +1,16 @@
 <!-- 机械生成：node scripts/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 5e05afe · 生成于 2026-07-29 -->
+<!-- 基准 commit 7659a0b · 生成于 2026-07-29 -->
 
 # 代码清单（机械层）
 
 > 这是什么：全量代码文件的域归属、行数、导出符号，脚本生成可重跑。
 > 语义层现状 → 各域 code-map.md；域契约（应然）→ 各域 contract.md。
 
-## canvas-tree（25 文件 · 8089 行）
+## canvas-tree（25 文件 · 7999 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/client/modules/tree-render.ts | 1033 | locateFileBox, executeOnPath, markAnimatingPath, triggerExpandAnimation, isAnimLocked, onSidebarOpen, onSidebarClose, initTreeRenderer, forceRebuildTree |
+| src/client/modules/tree-render.ts | 1003 | executeOnPath, markAnimatingPath, triggerExpandAnimation, isAnimLocked, onSidebarOpen, onSidebarClose, initTreeRenderer |
 | src/client/engine/v2/renderer.ts | 903 | RendererOptions, Renderer |
 | src/client/modules/tree-swipe.ts | 730 | isDimmed, bounceCursorRow, handleRowSwipe, updateFocus, focusNext, focusPrev, dismissFocusedCard, dismissAllCards, deployAllCards, selectFilesForPrompt, promptSelectSingle, initTempCardGesture, clearTempCards |
 | src/client/engine/v2/box.ts | 628 | BoxOptions, Box |
@@ -18,15 +18,15 @@
 | src/client/modules/mode-system.ts | 447 | initModeSystem, getSelectedMode, getModeTheme, getTriColor, ensureBg, removeBg, enterPromptMode, exitPromptMode, updateBg, recolorCards, applyModeTheme, updateModeSelection |
 | src/client/modules/file-action-bar.ts | 440 | showFileActionBar, dismissFileActionBar, isFileActionBarOpen, isRenaming |
 | src/client/modules/tree-overlay.ts | 414 | OverlayMeta, removeAllOverlays, createCharLayer, collectSiblingsAfter, buildAndSetOverlayTree, createVisualClone, OverlayPack, setupExpandOverlays, setupCollapseOverlays, collectAncestorSiblings, collectAncestorContainers, FlatSubTarget, flattenExpandTree, ensureMetaFromExpandedState, activeOverlayCount |
-| src/client/modules/canvas-cursor.ts | 397 | getRowIndexLength, setLiquidColor, setCursorColor, ensureCursorBox, setModeAccent, getModeAccentColor, moveCursorTo, getCursorRowIndex, moveCursorBySteps, isCursorMode, getCenterRowIndex, snapCursorToCenter, scrollToCenterCursor |
+| src/client/modules/canvas-cursor.ts | 393 | setLiquidColor, setCursorColor, ensureCursorBox, setModeAccent, moveCursorTo, getCursorRowIndex, moveCursorBySteps, isCursorMode, getCenterRowIndex, snapCursorToCenter, scrollToCenterCursor |
 | src/client/modules/canvas-scroll.ts | 359 | bindWheelEvents, initScrollGesture |
-| src/client/modules/char-rain.ts | 306 | CharRainCleanup, setupCharRainTweens, setupCharRainForSiblings, cleanupCharRain |
+| src/client/modules/char-rain.ts | 285 | CharRainCleanup, setupCharRainTweens, cleanupCharRain |
 | src/client/engine/v2/BorderDrawer.ts | 267 | drawBorders |
 | src/client/engine/v2/flex.ts | 245 | applyFlexLayout |
 | src/client/modules/theme.ts | 228 | ThemeConfig, nebula, currentTheme |
-| src/client/modules/style-registry.ts | 197 | DIMENSIONS, getRowLayout, FONT, LINE_HEIGHT, MAX_LINES, TEXT_STYLES, styleRegistry, getShift, createBox |
 | src/client/modules/tree-model.ts | 191 | TreeOptions, buildTree, buildSidebarTree |
 | src/client/modules/tree-loader.ts | 188 | loadFileTree, initLazyLoader |
+| src/client/modules/style-registry.ts | 162 | DIMENSIONS, FONT, LINE_HEIGHT, MAX_LINES, TEXT_STYLES, styleRegistry, getShift, createBox |
 | src/client/modules/sibling-switcher.ts | 158 | initSiblingSwitcher, isSwitcherOpen, closeSwitcher |
 | src/client/engine/v2/StyleConfig.ts | 156 | BorderSide, BorderState, BorderConfig, GradientStop, BoxStyle, CornerAction, getCornerAction, getNeighbor, DEFAULT_BOX_STYLE, PRESETS, resolveStyle |
 | src/client/modules/liquid-geometry.ts | 109 | LiquidPoint, LiquidGeomParams, pathToPhysical, liquidPathLen, computeLiquidSegments |
@@ -36,11 +36,11 @@
 | src/client/engine/v2/animation.ts | 40 | ease |
 | src/client/engine/v2/utils.ts | 24 | uniformSpacing, hvSpacing, ZERO_SPACING |
 
-## floating-card（27 文件 · 6724 行）
+## floating-card（27 文件 · 6722 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/client/modules/floating-card.ts | 813 | enterFullscreen, exitFullscreen, dismissFullscreen, updateFullscreenSavedPosition, createFloatingCard, dismissFloatingCard, initFloatingCards, hasFloatingCard, buildCardLayout |
+| src/client/modules/floating-card.ts | 811 | enterFullscreen, exitFullscreen, dismissFullscreen, updateFullscreenSavedPosition, createFloatingCard, dismissFloatingCard, initFloatingCards, hasFloatingCard, buildCardLayout |
 | src/client/modules/terminal-card-04.ts | 757 | TerminalCardMeta, initTerminalCore, disposeTerminalCore, compactTerminalCore, createTerminal04Handler |
 | src/client/cards/plugins/role.card.ts | 740 | — |
 | src/client/cards/plugins/config.card.ts | 694 | — |
@@ -68,34 +68,34 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（22 文件 · 3857 行）
+## client-shell（22 文件 · 3614 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/client/modules/orb.ts | 825 | nextOrbState, type OrbState, initOrb |
-| src/client/modules/gesture-registry.ts | 385 | GestureHandler, GestureRegistry, gestures |
+| src/client/modules/orb.ts | 823 | type OrbState, initOrb |
+| src/client/modules/gesture-registry.ts | 346 | GestureHandler, GestureRegistry, gestures |
 | src/client/modules/ui-registry.ts | 334 | UIElementType, UIElementState, InteractiveElement, ContentBlock, Capability, PageDescription, RegistryChangeHandler, UIElementRegistry, Registry |
-| src/client/modules/state.ts | 258 | API, FileNode, ViewportState, KFMStateType, KFMState, FileRowData, getFileRowData, OpenCard, CartEntry, CartState, CartConfig |
 | src/client/modules/custom-select.ts | 246 | SelectItem, CustomSelectOptions, CustomSelect, createCustomSelect |
-| src/client/modules/renderer-lifecycle.ts | 224 | RenderContext, RendererLifecycle, L |
 | src/client/modules/orb-panel.ts | 221 | PanelConfig, buildPanelContent |
 | src/client/modules/gestures.ts | 217 | initGestures |
 | src/client/modules/confirm-dialog.ts | 192 | ConfirmOptions, showConfirm |
-| src/client/modules/app.ts | 190 | showToast, initApp |
-| src/client/modules/drag-handler.ts | 138 | DragConfig, createDragHandler |
-| src/client/main.ts | 112 | — |
+| src/client/modules/app.ts | 177 | initApp |
+| src/client/modules/renderer-lifecycle.ts | 172 | RenderContext, RendererLifecycle, L |
+| src/client/modules/state.ts | 165 | API, FileNode, ViewportState, KFMStateType, KFMState, FileRowData, getFileRowData |
+| src/client/modules/drag-handler.ts | 134 | DragConfig, createDragHandler |
+| src/client/main.ts | 103 | — |
 | src/client/modules/z-index-layers.ts | 103 | Z, ZLayer |
-| src/client/modules/animation-registry.ts | 92 | AnimTimeline, anim |
+| src/client/modules/animation-registry.ts | 75 | AnimTimeline, anim |
 | src/client/modules/ui.ts | 71 | openSidebar, closeSidebar, initUI |
 | src/client/modules/logger.ts | 58 | log, getLogs, clearLogs, copyLogs, onLog |
 | src/client/modules/card-toast.ts | 53 | showCardToast |
 | src/client/modules/click-queue.ts | 39 | ClickEvent, enqueue, dequeue, clear, isEmpty, peek |
 | src/client/modules/dom-refs.ts | 38 | DOM |
-| src/client/modules/debug-assert.ts | 23 | assert, warn |
 | src/client/modules/interaction-constants.ts | 21 | MARGIN, LONG_PRESS_MS, DRAG_THRESHOLD, FLOATING_CARD_W, FLOATING_CARD_H |
-| src/client/modules/orb-state.ts | 17 | OrbState, nextOrbState |
+| src/client/modules/debug-assert.ts | 17 | assert |
+| src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（53 文件 · 10969 行）
+## ai-chat（53 文件 · 10923 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -115,8 +115,8 @@
 | src/client/modules/orb-chat-hints.ts | 252 | startWaitingIndicator, getToolHint, clearToolHint, TODO_DISMISS_KEY, todosFingerprint, clearTodoPanel, dismissTodoPanel, updateTodoFromTool |
 | src/shared/chat-protocol/to-openai-messages.ts | 242 | OpenAiToolCall, OpenAiMessage, ToOpenAiOptions, ToOpenAiResult, toOpenAiMessages |
 | src/server/ai/tools/omp/debug/cdp-connection.ts | 242 | CdpSession, CdpLaunchOptions, CdpAttachOptions, CdpPausedEvent, sendCmd, onCdpEvent, launchCdp, attachCdp, closeCdp |
-| src/server/ai/session-store.ts | 224 | appendEvent, flush, flushSync, appendUserMessage, getMessages, isIncomplete, listSessions |
 | src/server/ai/run-manager.ts | 193 | getActiveRun, getRun, StreamFn, startRun, attachRun, cancelRun |
+| src/server/ai/session-store.ts | 178 | appendEvent, flush, flushSync, appendUserMessage |
 | src/server/ai/page-state.ts | 123 | PAGE_STATE_PATH, renderPageState, refreshPageState |
 | src/shared/chat-protocol/reducer.ts | 122 | ReduceContext, applyEvent, reduceEvents |
 | src/server/ai/tools/kfmv4/logs.ts | 119 | kfmLogsTool |
@@ -153,7 +153,7 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（6 文件 · 1187 行）
+## server（6 文件 · 1177 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -161,24 +161,24 @@
 | src/server/ws-server.ts | 315 | WsServer |
 | src/server/index.ts | 165 | — |
 | src/server/path-utils.ts | 139 | ROOT_DIR, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
-| src/server/terminal-pty.ts | 119 | PtyDataCallback, PtyExitCallback, PtyManager |
+| src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 
-## infra（72 文件 · 9955 行）
+## infra（71 文件 · 9809 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | tests/client-logic.test.ts | 820 | — |
-| tests/regression.test.ts | 689 | — |
+| tests/regression.test.ts | 639 | — |
 | tests/tool-compaction.test.ts | 505 | — |
 | tests/preload.mjs | 406 | — |
 | tests/visual-baseline.test.ts | 367 | — |
 | tests/server-routes.test.ts | 321 | — |
-| tests/gesture-registry.test.ts | 318 | — |
 | tests/box.test.ts | 309 | — |
 | tests/mocks/gsap.ts | 305 | gsap |
 | scripts/check/check-registry.mjs | 294 | — |
 | tests/cards.test.ts | 286 | — |
+| tests/gesture-registry.test.ts | 263 | — |
 | tests/invariants.test.ts | 245 | — |
 | scripts/check/check-css-wiring.mjs | 228 | — |
 | tests/renderer.test.ts | 215 | — |
@@ -226,7 +226,6 @@
 | scripts/check/check-uncommitted.mjs | 51 | — |
 | scripts/check/check-consistency.mjs | 50 | — |
 | scripts/check/check-doc-budget.mjs | 43 | — |
-| tests/orb-state.test.ts | 41 | — |
 | tests/reset-hooks.ts | 41 | — |
 | scripts/check/check-release-radar.mjs | 36 | — |
 | tests/runner.ts | 33 | test, group, runAll, regression, beforeEach, TestFileNode, singleFolder, nestedFolders |
@@ -495,12 +494,11 @@
 - tests/renderer.test.ts → src/client/engine/v2/flex.ts
 - tests/renderer.test.ts → src/client/engine/v2/renderer.ts
 
-### infra → client-shell（14 边）
+### infra → client-shell（13 边）
 
 - tests/client-logic.test.ts → src/client/modules/state.ts
 - tests/gesture-registry.test.ts → src/client/modules/gesture-registry.ts
 - tests/invariants.test.ts → src/client/modules/z-index-layers.ts
-- tests/orb-state.test.ts → src/client/modules/orb-state.ts
 - tests/regression.test.ts → src/client/modules/animation-registry.ts
 - tests/regression.test.ts → src/client/modules/click-queue.ts
 - tests/regression.test.ts → src/client/modules/debug-assert.ts
@@ -532,4 +530,4 @@
 - src/server/index.ts → src/server/ai/routes.ts
 
 ---
-合计 205 文件 · 40781 行 · 跨域边 229 条
+合计 204 文件 · 40244 行 · 跨域边 228 条
