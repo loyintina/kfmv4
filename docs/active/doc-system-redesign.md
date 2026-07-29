@@ -1252,6 +1252,7 @@ V8_AUDIT_REPORT §四.2「tool_result 状态/渲染两处分散」与 §四.3「
 4. ~~ledger/bugs.md 头部 REGRESSION_TESTING_SYSTEM 旧路径~~ ✅ 已提前完成（§三十七，切指不删原文安全）。
 5. ~~guides/spec-driven.md 第二章范本 REGRESSION_TESTING_SYSTEM 旧路径~~ ✅ 已提前完成（§三十九，同上）。
 6. docs/AGENT_PROMPT_REFERENCES.md 原文删除——内容已全文提取进 `newdoc/constraints/detail-research-method.md` + `detail-prompt-engineering.md`（§三十九），invariants.md 指针已改。
+7. 全库 newdoc/ 前缀自引用重写（共 3 处：CLAUDE.md 会话启动 2 处、ledger/history.md 1 处）——git mv 后统一去前缀。CLAUDE.md 本身同时移至仓库根。
 
 ## §三十五 19/19 预告：doc-system-redesign.md 自身
 
@@ -1360,3 +1361,11 @@ V8_AUDIT_REPORT §四.2「tool_result 状态/渲染两处分散」与 §四.3「
 - ai-chat contract:23 宪法编号核正（三=可死、四=真相源 → 改「宪法三/四」）；#陷阱6 补 detail-runtime §4.5 指针（与 #8 对齐）。
 - 摸鱼提示 4 条契约级规则唯一家在 bugs.md 档案（PANEL-10/14/15/17）→ 收进视觉契约表两行。
 - spec-driven.yaml 步骤 4 补「history 记一条」。
+
+---
+
+## §四十一 压缩轮 ③：注入层瘦身（CLAUDE.md）
+
+执行日期：2026-07-29。逐行按「删了会不会出事」审 46 行：提交纪律（有意自带）、会话启动 1 跳、路由表、构建命令+无快捷方式纪律+push 令牌——全部是常驻必需品。**结论：零改动，不为压缩而压缩**。
+
+附带发现：全库 newdoc/ 前缀自引用仅 3 处（CLAUDE.md×2、history.md×1），git mv 后会断 → 切换清单第 7 项。
