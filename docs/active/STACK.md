@@ -17,6 +17,12 @@
    — 配套：provider 选择配置（providers.json 多 key 有过期/余额不足，agent 脚本用哪个
      必须显式可配；该设置未来进前端设置卡）
    — 试点负载：tag 升版检测器（枚举产出/机械算下限+语义判上限/兑现 release.yaml 铺路字段）
+   — 触发：check-release-radar 常驻雷达（commits≥30 或 feat≥10 提醒，阈值经 14 历史版本对论证）→
+     agent 判定 → 人拍板
+   — 测试协议：回放测试（14 历史版本对=黄金集，测一致率）→ 否定测试（周期中段切片须忍住）→
+     影子模式（分歧记日志调 prompt）→ 投产仍只产建议（git mutation 人拍板）
+   — 模型链：kimi-for-code-highspeed（256k）→ deepseek_v4_flash → step-3.7-flash 有序兜底
+   — 远期：agent 工具 prompt 管理卡（实体化管理 + 逐脚本微调，很久后）
    — 待设计：触发方式（cron/事件/手动）、产出验证（LLM proposes, mechanics disposes）、
      结果回写（tag/STACK/ledger）、失败兜底
 8. 卡片类需求三件（2026-07-29 记，优先级后排）
