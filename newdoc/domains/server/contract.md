@@ -28,6 +28,10 @@ Express 4 + WebSocket，`index.ts` 统一入口编排（协调层）。
 3. **express.static 不得挂载仓库根**——曾暴露 `.git`/`src`/`node_modules`（v8.1 已删）。
 4. **CJS 依赖进 ESM bundle 即启动崩溃**——新增依赖同步 build.mjs external（见 ai-chat#陷阱 3）。
 
+## 素材考古（原文已随 archive 注销，`git show v8.1.1:docs/archive/design/…` 可挖）
+
+- `WEBSOCKET_CHANNEL_PROPOSAL.md`：WS 协议 type 表 + token 验证/多标签 connection id 待决议。
+
 ## 文件清单
 
 `index.ts` `routes/files.ts` `routes/proxy.ts` `ai-tools.ts` `capability-executor.ts`

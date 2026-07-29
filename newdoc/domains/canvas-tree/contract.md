@@ -65,6 +65,14 @@
 8. **禁止给 overlay 加 `overflow` 补丁**：字符雨被裁剪的根解是建在独立 charLayer 上，
    不是给 overlay 加 overflow: visible（INVARIANTS §五补丁模式迁入）。
 
+## 素材考古（原文已随 archive 注销，`git show v8.1.1:docs/archive/design/…` 可挖）
+
+- `ENGINE_ARCHITECTURE.md`：v2 逐帧渲染/双树/边框渐变/Flex 四遍布局/Pretext 管线细节。
+- `BOX_LOCATION_MAP_SPEC.md`：path→Box→像素坐标映射接口与重建时机。
+- `WORKBENCH_PHASE1.md`：右滑回弹双树 overlay 方案 + GSAP 参数。
+- `WORKBENCH_PHASE7.md`：长按手势时序 + 抽屉栏 z-index/动画/关闭条件。
+- `ANIMATION_REFINEMENT_PLAN.md`：多层展开瀑布时序（0.06s/层）+ 点击三规则。
+
 ## 文件清单
 
 `tree-render.ts` `tree-overlay.ts` `tree-animation.ts` `tree-swipe.ts` `tree-model.ts`

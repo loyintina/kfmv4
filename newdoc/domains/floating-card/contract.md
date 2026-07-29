@@ -49,6 +49,20 @@
    两个动画作用于同组 DOM，状态机卡在 closing/open → 幽灵卡片堆。
    必须 `updateFocus(onComplete)` 回调延迟关闭。案例：2026-07-12。
 
+## 素材考古（原文已随 archive 注销，`git show v8.1.1:docs/archive/design/…` 可挖）
+
+- `CARD_REGISTRY_SPEC.md`：三层注册表接口 + allocId 编号池；**§6 的 AI 卡片三命令
+  （focus-card/close-card/send-to-card）设计未实施**——现行无实现，属活设计缺口。
+- `CARD-STACK-HANDOFF.md`：padding-box/border-box 渐变边框四次失败史 +
+  父级 transform 破坏 backdrop-filter。
+- `CARD_SYSTEM_DESIGN.md`：九卡 accent 配色表 + 三态 CardConfig 草样（被 adr-002 放弃）。
+- `FULLSCREEN_CARD_SPEC.md`：全屏唯一槽位让位 + z-index 20-49 + 记忆位置恢复。
+- `STACK_CARDS_DESIGN.md`：暮光/琉璃两套备用配色 21 色值（代码只留星云一套）。
+- `TERMINAL_CARD_SPEC.md`：被弃自研 Canvas 终端方案——ANSI/SGR 解析表 + aux bar VT 映射。
+- `UI_ELEMENT_REGISTRY_SPEC.md`：Registry 三层 schema + 注册配对约定 + 设计否决理由。
+- `WORKBENCH_SPEC.md`：购物车交互/蜡笔光标 SVG/模式色系/API 契约。
+- `WORKBENCH_PHASE4.md`：文件渲染器类型路由 + 预览/编辑双模式 + KaTeX/Mermaid CDN。
+
 ## 文件清单
 
 `card-registry.ts` `card-stack.ts` `floating-card.ts` `floating-shared.ts`

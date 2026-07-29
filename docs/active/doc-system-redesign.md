@@ -1266,3 +1266,36 @@ V8_AUDIT_REPORT §四.2「tool_result 状态/渲染两处分散」与 §四.3「
 - `newdoc/decisions/case-study-unification-spec.md`（蒸馏 3 条元教训）：流程正确≠方向正确（SPEC 流程无懈可击但前提未质疑）、方向反转是沉没成本伪装、概念对称≠可参数化。与 adr-001/002 互指。
 - `newdoc/decisions/case-study-refactor-thesis.md`（蓝图 vs 现实对照）：证实 6 项（理念层全活）/ 证伪 6 项（LeaferJS/Yoga/DOM Island/盒子协议接口/中央画布/CodeMirror）；标记系统完整设计留考古钩给 vision §四.1。
 - history.md +1 行。原文 3 份切换提交时随 archive 删除。
+
+---
+
+## §三十七 archive 批次 (b)：素材型 21 份 → 素材考古行
+
+执行日期：2026-07-29。21 个 explore subagent 逐份核查（背景对照 + 代码对照），判定全部成立。素材行形态按用户批准：散进各域 contract + guides/testing 的「素材考古」节，指向 `git show v8.1.1:docs/archive/design/…` 考古而非文件路径（切换提交删 archive 原文后仍有效）。
+
+### 勘误与重判（相对 §13.3）
+
+- 计数：§13.3 写 (b) 19 / (a) 43，实际 **(b) 21 / (a) 41**——handoffs 实际 13 份（非 12），design 其余实际 12 份（非 14）。
+- 域归属重判：`WORKBENCH_PHASE1/7` 内容是 tree-swipe/侧栏 → canvas-tree（原归 floating-card）；`ANIMATION_REFINEMENT_PLAN` 是 tree-render 字符雨 → canvas-tree（原归 orb-ui）；orb-ui 域不存在，余下 `GESTURE_ARCHITECTURE_SPEC` → client-shell。
+- `REGRESSION_TESTING_SYSTEM`/`TEST_INFRASTRUCTURE_SPEC` 进 `newdoc/guides/testing.md` 素材槽位（非 infra contract）。
+
+### 落地分布（21 份）
+
+| 落点 | 份数 | 文件 |
+|------|------|------|
+| `newdoc/domains/canvas-tree/contract.md` | 5 | ENGINE_ARCHITECTURE / BOX_LOCATION_MAP_SPEC / WORKBENCH_PHASE1 / WORKBENCH_PHASE7 / ANIMATION_REFINEMENT_PLAN |
+| `newdoc/domains/floating-card/contract.md` | 9 | CARD_REGISTRY_SPEC / CARD-STACK-HANDOFF / CARD_SYSTEM_DESIGN / FULLSCREEN_CARD_SPEC / STACK_CARDS_DESIGN / TERMINAL_CARD_SPEC / UI_ELEMENT_REGISTRY_SPEC / WORKBENCH_SPEC / WORKBENCH_PHASE4 |
+| `newdoc/domains/ai-chat/contract.md` | 3 | AI_ARCHITECTURE / CONTEXT_ASSEMBLY_SPEC / AI_OPERATION_PROTOCOL |
+| `newdoc/domains/server/contract.md` | 1 | WEBSOCKET_CHANNEL_PROPOSAL |
+| `newdoc/domains/client-shell/contract.md` | 1 | GESTURE_ARCHITECTURE_SPEC |
+| `newdoc/guides/testing.md` | 2 | REGRESSION_TESTING_SYSTEM / TEST_INFRASTRUCTURE_SPEC |
+
+### 两个活发现 → STACK.md 第 4 项
+
+1. CARD_REGISTRY_SPEC §6 AI 卡片三命令（focus-card/close-card/send-to-card）设计未实施。
+2. CONTEXT_ASSEMBLY_SPEC §7 两开放问题（多角色卡同载、工具卡工具定义来源）未关闭。
+
+### 顺带
+
+- `newdoc/ledger/bugs.md` 头部 REGRESSION_TESTING_SYSTEM 指针改指 guides/testing.md#素材考古（§三十四切换清单第 4 项提前完成，切指不删原文，安全）。
+- 异常记录（原文反正要删，只记不修）：多份 frontmatter status 与正文矛盾；CARD-STACK-HANDOFF 引用根目录 STACK_CARDS_DESIGN.md 死链。

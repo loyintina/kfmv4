@@ -97,6 +97,10 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
   弹出（config/session/tools 卡的下拉都在弹窗里），低于模态框会被遮住。
 - 全表见 `z-index-layers.ts` / `z-index.css`（`check-zindex.mjs` 强制 JS↔CSS 一致）。
 
+## 素材考古（原文已随 archive 注销，`git show v8.1.1:docs/archive/design/…` 可挖）
+
+- `GESTURE_ARCHITECTURE_SPEC.md`：requireFailure 手势依赖方案（未采用——实际更简方案已落地）。
+
 ## 文件清单
 
 - 骨架：`app.ts` `ui.ts` `dom-refs.ts` `state.ts` `renderer-lifecycle.ts`

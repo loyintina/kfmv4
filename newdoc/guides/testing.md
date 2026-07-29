@@ -22,10 +22,10 @@ npm run smoke  # 11 条浏览器冒烟（puppeteer headless），~9s，独立于
 3. 登记 `../ledger/bugs.md`
 4. 测试不用墙钟计时器（GSAP mock 时序见 infra#陷阱 3）
 
-## 方法论素材（迁移待办）
+## 素材考古（原文已随 archive 注销，`git show v8.1.1:docs/archive/design/…` 可挖）
 
-旧 `docs/archive/design/REGRESSION_TESTING_SYSTEM.md` 的完整体系论述，
-迁移 archive 时并入本节。
+- `REGRESSION_TESTING_SYSTEM.md`：四层金字塔 + L/I/V/S/D 分类 + revert 微循环 + DI 模板。
+- `TEST_INFRASTRUCTURE_SPEC.md`：GSAP 时间线事件模型 + DOM 布局 mock 推导。
 
 ## 手动回归检查清单（无法 CLI 自动化的交互，18 项）
 

@@ -111,6 +111,13 @@
    直接用会在 content 数组留 `undefined` 空洞，`.filter(b=>b.type)` 读空洞即崩。
    回归钉：BAR-106。展开版见 detail-runtime.md §3.3。
 
+## 素材考古（原文已随 archive 注销，`git show v8.1.1:docs/archive/design/…` 可挖）
+
+- `AI_ARCHITECTURE.md`：omp 借鉴版初始接口草样 + Agent 卡未落地设计。
+- `CONTEXT_ASSEMBLY_SPEC.md`：§3 优先级裁剪策略；**§7 两个开放问题未关闭**
+  （多角色卡同载、工具卡工具定义来源）——detail-runtime 未覆盖。
+- `AI_OPERATION_PROTOCOL.md`：九种 op 指令集 + 会话执行规则（被 capabilities 架构取代）。
+
 ## 文件清单
 
 客户端：`orb-chat.ts` `orb-chat-run.ts` `orb-chat-hints.ts` `chat-dom.ts`
