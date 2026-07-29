@@ -26,7 +26,6 @@ import './box.test.js';
 import './renderer.test.js';
 import './gesture-registry.test.js';
 import './cards.test.js';
-import './text-layout.test.js';
 import './engine.test.js';
 import './orb-state.test.js';
 import './floating-state.test.js';
@@ -393,18 +392,6 @@ test('getShift returns decreasing offsets', () => {
   if (d0 !== 18) throw new Error('depth 0 should be 18');
   const d30 = sr.getShift(30);
   if (d30 !== 2) throw new Error('depth 30 should fall back to 2');
-});
-
-test('getFileColor returns color for known extension', () => {
-  const tsColor = sr.getFileColor('test.ts');
-  if (!tsColor || tsColor === '#e0e0e0') throw new Error('ts should have specific color');
-  const jsColor = sr.getFileColor('test.js');
-  if (jsColor === tsColor) throw new Error('js should have different color from ts');
-});
-
-test('getFileColor returns default for unknown extension', () => {
-  const color = sr.getFileColor('test.xyz');
-  if (color !== '#e0e0e0') throw new Error('unknown ext should return default file color');
 });
 
 test('FONT and LINE_HEIGHT exist', () => {

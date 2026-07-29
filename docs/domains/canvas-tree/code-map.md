@@ -72,13 +72,13 @@ _resetAnimTimeline → 下一个队列点击。
 
 ## 漂移清单（实然 ≠ 应然）
 
-1. **【重大】engine/text-layout 全目录生产死代码**：6 文件 2292 行的 port 版排版引擎，
-   生产代码全部直接 import npm @chenglou/pretext（renderer.ts:18、tree-model.ts:11、
-   canvas-cursor.ts:26、char-rain.ts:16），text-layout 仅 tests 引用。detail-engine.md
-   把它写成正式组成——已核实，双份实现只活了 npm 那份。
+1. **【已结案】engine/text-layout 全目录生产死代码**：整目录 6 文件 2292 行 +
+   tests/text-layout.test.ts 已删（2026-07-29 死代码批次，溯源见 ledger 案一——
+   npm @chenglou/pretext 的冻结 port 副本，生产 4 处全部走 npm 包）。
 2. **契约「theme.ts = 颜色唯一定义点」被普遍违反**：tree-render.ts:224、tree-swipe.ts:142/147、
    mode-system.ts:135-138/389-399、sibling-switcher.ts:44、tree-model.ts:126 等处大量
-   硬编码颜色；`getFileColor`（style-registry.ts:183）生产零调用——扩展名着色未接线。
+   硬编码颜色（另案）。`getFileColor` + `theme.extColors` 已随死代码批次删除
+   （扩展名着色出生即未接线，2026-07-29）。
 3. **契约 §4.6 pushContext/popContext 流程零调用方**（renderer-lifecycle.ts:112-125）；
    根目录选择器实际由 sibling-switcher 直接清 KFMState 实现，未走该管线。
 4. **契约 #陷阱 5「方向锁 45°」不实**：canvas-scroll.ts:170-173 实为 12px 死区 +

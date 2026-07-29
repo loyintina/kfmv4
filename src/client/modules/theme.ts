@@ -116,9 +116,6 @@ export interface ThemeConfig {
     symMaskCutoff: string;      // "#000 30%" 光照截止点
     tlAlpha: number;            // 0.95 左上角透明度覆盖值
   };
-
-  /** 文件扩展名 -> 颜色映射 */
-  extColors: Record<string, string>;
 }
 
 // ============================================================
@@ -223,14 +220,6 @@ export const nebula: ThemeConfig = {
     symMaskAngle: '135deg',
     symMaskCutoff: '#000 30%',
     tlAlpha: 0.95,
-  },
-
-  extColors: {
-    ts: '#3178c6', js: '#f7df1e', json: '#292929',
-    html: '#e34f26', css: '#1572b6', md: '#083fa1',
-    py: '#3776ab', rs: '#dea584', go: '#00d800',
-    rsync: '#7c3aed', zip: '#f39c12', gz: '#f39c12',
-    tar: '#f39c12', bak: '#888', old: '#888',
   },
 };
 

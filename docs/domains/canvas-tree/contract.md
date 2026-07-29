@@ -80,4 +80,4 @@
 `tree-loader.ts` `canvas-cursor.ts` `liquid-geometry.ts` `canvas-scroll.ts` `canvas-utils.ts`
 `style-registry.ts` `theme.ts` `color-utils.ts` `sibling-switcher.ts` `mode-system.ts`
 `file-action-bar.ts` `char-rain.ts`
-引擎层：`engine/v2/`（8 文件）+ `engine/text-layout/`（6 文件）→ detail-engine.md
+引擎层：`engine/v2/`（8 文件）→ detail-engine.md

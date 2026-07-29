@@ -4,7 +4,7 @@
 
 import { Box } from '../engine/v2/box.js';
 import { KFMState, type FileNode } from './state.js';
-import { DIMENSIONS, TEXT_STYLES, getFileColor, createBox, LINE_HEIGHT, MAX_LINES, FONT, getShift } from './style-registry.js';
+import { DIMENSIONS, TEXT_STYLES, createBox, LINE_HEIGHT, MAX_LINES, FONT, getShift } from './style-registry.js';
 import { currentTheme as theme } from './theme.js';
 import { isDimmed } from './tree-swipe.js';
 import { resolveStyle } from '../engine/v2/StyleConfig.js';
