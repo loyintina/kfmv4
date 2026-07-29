@@ -25,6 +25,7 @@ import { log } from './logger.js';
 // 工具 I/O 上下文压缩（v8.1.0）：纯函数注册表，契约 docs/domains/ai-chat/detail-tool-compaction.md
 import { compactToolInput, compactToolResult, normalizeBashCommand, MUT_BURST_GAP, todoResultAnnotation, webTitleKey, errorFingerprint, failRepeatAnnotation } from '../../shared/tool-compaction/index.js';
 import type { CompactionCtx } from '../../shared/tool-compaction/index.js';
+import { promoteReasoningBlocks } from '../../shared/message-normalize.js';
 // 兜底消息上屏 + 取消时工具卡 DOM 收尾（v8 增量 DOM：数据层变更不会自动投影）
 import { mountFallbackAiMessage, settleToolCardsDom } from './chat-dom.js';
 
@@ -123,6 +124,8 @@ function _applyEvent(event: StreamEvent, ctx: RunConsumeCtx): void {
       break;
     }
     case 'message_stop': {
+      // 正常结束归位（BAR-ORB-EMPTY-01）：回复错放 reasoning（text 空）→ 提升为正文
+      if (msgIdx >= 0) promoteReasoningBlocks(messages[msgIdx].content);
       onWait?.(true);
       break;
     }

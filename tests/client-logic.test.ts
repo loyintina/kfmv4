@@ -12,6 +12,7 @@
 import assert from 'assert';
 import { group, test, regression } from './runner.js';
 import { extractMessageText, countTextMessages } from '../src/client/modules/session-client.js';
+import { promoteReasoningBlocks } from '../src/shared/message-normalize.js';
 import type { SessionMessage } from '../src/client/modules/session-client.js';
 import { recolorCards, getModeTheme, getTriColor } from '../src/client/modules/mode-system.js';
 import { buildTree } from '../src/client/modules/tree-model.js';
@@ -740,4 +741,22 @@ regression('BAR-BUILD-05', 'build/deploy', '版本握手：build 写 dist/build-
   assert(routes.includes('buildInfo'), '/api/system/info 必须暴露 buildInfo（运行进程包版本可查证）');
   const deploy = readFileSync('scripts/deploy.sh', 'utf-8');
   assert(deploy.includes('kfm-restart.sh') && deploy.includes('system/info'), 'deploy.sh 必须 构建→重启→握手 三步闭环');
+});
+
+regression('BAR-ORB-EMPTY-01', 'message-normalize', '回复错放 reasoning（text 空）正常结束必须归位为正文', () => {
+  // 纯函数行为：空 text + 有 reasoning → 归位；有正文 → 不动；无 reasoning → 不动
+  const b1 = [{ type: 'text', text: '', reasoning: '真正的回复' }];
+  promoteReasoningBlocks(b1);
+  assert(b1[0].text === '真正的回复' && b1[0].reasoning === '', '空 text 有 reasoning 必须归位');
+  const b2 = [{ type: 'text', text: '已有正文', reasoning: '思考' }];
+  promoteReasoningBlocks(b2);
+  assert(b2[0].text === '已有正文' && b2[0].reasoning === '思考', '有正文不得改动（G5）');
+  const b3 = [{ type: 'text', text: '', reasoning: '' }];
+  promoteReasoningBlocks(b3);
+  assert(b3[0].text === '', '取消残留的空壳不归位（留作真实历史）');
+  // 接线：正常结束点 + 历史加载点都必须调用
+  const run = readFileSync('src/client/modules/orb-chat-run.ts', 'utf-8');
+  assert(run.includes('promoteReasoningBlocks(messages[msgIdx]'), 'message_stop（正常结束）必须归位');
+  const sc = readFileSync('src/client/modules/session-client.ts', 'utf-8');
+  assert(sc.includes('promoteReasoningBlocks(m.content'), '历史加载必须读时归一化');
 });

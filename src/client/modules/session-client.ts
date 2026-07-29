@@ -25,6 +25,7 @@ import { log } from './logger.js';
 // 此处 re-export 保持现有 import 路径兼容（orb-chat.ts 等从此处导入）。
 export type { TextBlock, ToolBlock, RuleWarningBlock, ContentBlock, ChatMessage } from '../../shared/chat-protocol/messages.js';
 import type { TextBlock, ToolBlock, ContentBlock, ChatMessage } from '../../shared/chat-protocol/messages.js';
+import { promoteReasoningBlocks } from '../../shared/message-normalize.js';
 
 /** SessionMessage 是 ChatMessage 的别名（历史兼容） */
 export type SessionMessage = ChatMessage;
@@ -255,6 +256,8 @@ export const sessionStore = {
       const data = await res.json();
       if (data.content) {
         const session: Session = JSON.parse(data.content);
+        // 读时归一化（BAR-ORB-EMPTY-01）：历史壳的 reasoning 回复归位正文，文件不改写
+        for (const m of session.messages || []) promoteReasoningBlocks(m.content as TextBlock[]);
         return session.messages || [];
       }
     } catch (e) {
@@ -275,6 +278,8 @@ export const sessionStore = {
       if (data && typeof data === 'object' && 'messages' in data && Array.isArray(data.messages)) {
         const total = 'total' in data && typeof data.total === 'number' ? data.total : data.messages.length;
         // messages 内容来自受信任的本地会话文件，结构由写入端保证
+        // 读时归一化（BAR-ORB-EMPTY-01）：历史壳的 reasoning 回复归位正文，文件不改写
+        for (const m of data.messages as SessionMessage[]) promoteReasoningBlocks(m.content as TextBlock[]);
         return { total, messages: data.messages as SessionMessage[] };
       }
     } catch (e) {
