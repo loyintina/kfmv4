@@ -1,8 +1,8 @@
-# KFM v4（咖啡猫）v8.1.1
+# KFM v4（咖啡猫）v8.2.0
 
 > AI 人机交互个人工作台原型，面向移动端浏览器。核心理念：**一切皆卡片**。
 >
-> 当前版本：**v8.1.1** | 构建管线：**20 个 check-* 脚本 + 452 个回归测试**
+> 当前版本：**v8.2.0** | 构建管线：**20 个 check-* 脚本 + 452 个回归测试**
 
 ## 这是什么
 
@@ -38,7 +38,7 @@ npm run start        # http://localhost:8021
 
 ## 技术栈
 
-TypeScript 6 + Canvas 2D 自研渲染引擎（v2 Box → Renderer）+ GSAP 3.15 + Express 4 + WebSocket + esbuild + xterm.js
+TypeScript 7 + Canvas 2D 自研渲染引擎（v2 Box → Renderer）+ GSAP 3.15 + Express 4 + WebSocket + esbuild + xterm.js
 
 ## 文档
 
