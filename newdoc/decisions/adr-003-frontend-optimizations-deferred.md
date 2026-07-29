@@ -1,3 +1,6 @@
+> 这是什么：ADR-003——v8.1 前端优化三项评估后放弃的决策。
+> 别的去哪找：版本线 → ../ledger/history.md；优化钉 → ../ledger/bugs.md（BAR-CARD-BLUR/LEAK/ENGINE/BUILD 串）。
+
 # ADR-003：v8.1 前端优化三项评估后放弃
 
 - 状态：已决定（2026-07-28 随 HANDBOOK 迁移立档）
