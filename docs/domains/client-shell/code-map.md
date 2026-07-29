@@ -75,14 +75,13 @@ initApp → initUI → initGestures → initOrb（ensurePanel、sessionStore 初
 
 1. **初始化链漂移**：契约顺序与实然不符——initCardStack/initFloatingCards 在
    loadFileTree 之前同步执行（main.ts:72-73 vs :129-134），initWsChannel 不在契约链上。
-2. **手势优先级表漂移**：契约列的 picker-lock(110)/card-stack(90) 代码中不存在；
-   实然另有 xterm-sel-handle(105)、floating-topmid-orb(101)、pinch-zoom(90) 等 9 个
-   契约未列 handler。【存疑】pinch-zoom 与 mode-btn 同为 90，平手靠注册序。
-3. **orb 状态机漂移**：契约 5 态（含 expanding/collapsing）；实然 OrbState 仅 3 态
-   （orb-state.ts:8），且 `nextOrbState` 生产零调用（orb.ts 全程手工赋值）——
-   状态机单测测的是没人用的代码。
-4. **char-rain timeline 契约错误**：契约称字符雨用独立 timeline 不受 ts.clear 影响；
-   实然 setupCharRainTweens 接收的就是共享 ts scope（tree-render.ts:665,690）。
+2. **【已结案】手势优先级表漂移**：契约表已按代码重测绘（实然 14 个 handler 全列，
+   含平手靠注册序警告）。pinch-zoom 与 mode-btn 同为 90 的平手保留并在契约标注。
+3. **【已结案·半】orb 状态机漂移**：契约已改为实然 3 态（过渡态由 GSAP 承担）。
+   遗留：`nextOrbState` 生产零调用（orb.ts 全程手工赋值）、状态机单测测的是
+   没人用的代码——归死代码批次处理。
+4. **【已结案】char-rain timeline 契约错误**：契约已改为实然（字符雨挂共享 ts
+   scope，ts.clear 一并清除、重渲染时重建）——按裁决二「契约随实然」方向结案。
 5. **【已结案】animation-registry 注释≠实现**：头注释泛化声称（play 自动 kill/reverse/
    killAll）已按 ADR-004 裁决二重写为「直透为官方用法、scope 按需（单租户）」，
    注释与实现现已一致。遗留死字段 `_entries`/`AnimEntry`（:19-27）归入死代码批次。

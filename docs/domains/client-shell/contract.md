@@ -15,12 +15,19 @@
 
 ## 手势优先级（不可违反）
 
+实然注册表（2026-07-29 按代码重测绘，旧表的 picker-lock(110)/card-stack-global(80)
+在代码中不存在）：
+
 ```
-picker-lock(110) > orb(100) > floating-orb(100) > card-stack(90)
-> card-stack-global(80) > sidebar-scroll(60) > page-swipe(50)
+xterm-sel-handle(105) > floating-topmid-orb(101) > orb(100) = floating-orb(100)
+> check-btns(95) > mode-btn(90) = pinch-zoom(90) > temp-card-swipe(80) = card-stack(80)
+> action-bar-zone(70) = tmux-tab(70) > xterm-scroll(61) > sidebar-scroll(60)
+> gestures-page-swipe(50)
 ```
 
 - 新增交互模式必须注册进 GestureRegistry，**禁止直接 addEventListener**。
+- ⚠ 平手靠注册序（如 mode-btn/pinch-zoom 同 90）——新增 handler 避免与现有同值，
+  除非顺序无关。
 
 ## 动画状态机
 
@@ -29,7 +36,8 @@ picker-lock(110) > orb(100) > floating-orb(100) > card-stack(90)
 | tree-render | `idle ⇄ animating`（L.beginOp/endOp） |
 | card-stack | `closed ⇄ opening ⇄ open ⇄ closing` |
 | floating-card | `compact → expanding → active ⇄ editing` |
-| orb | `collapsed ⇄ expanding/collapsing ⇄ expanded ⇄ editing` |
+| orb | `collapsed ⇄ expanded ⇄ editing`（orb-state.ts 实然 3 态；
+过渡态由 GSAP 承担不入状态机） |
 
 ## 依赖方向（单向，零回边）
 
@@ -46,12 +54,13 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
         → initTreeRenderer() → loadFileTree() → initLazyLoader() → initCardStack()
 ```
 
-## GSAP 动画治理（自 INVARIANTS §四.4，2026-07-28）
+## GSAP 动画治理（2026-07-29 按 ADR-004 裁决二修订）
 
 ▎ 所有 GSAP 调用必须通过 animation-registry.ts
 ▎ 禁止直接 import gsap（构建时 scripts/check/check-anim.mjs 扫描白名单）
-▎ tree-render 内的动画加到 ts = anim.scope('tree-render')
-▎ char-rain 使用独立 timeline（anim.timeline()），ts.clear() 不影响
+▎ anim.to/set/killTweensOf/timeline 直透是**官方用法**——需要停动画直接 killTweensOf
+▎ scope() 是**按需**机制（现仅 tree-render 单租户）：需要一把 clear() 清掉本模块
+  整组动画时才用；char-rain 实然也挂共享 ts scope，ts.clear() 会一并清除（重渲染时重建）
 ▎ card-stack / orb 的 GSAP 调用走 anim 工具方法
 
 ## #陷阱
