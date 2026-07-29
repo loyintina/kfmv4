@@ -1,0 +1,8 @@
+#!/bin/sh
+# KFM v4 — commit-msg hook：commit-doc 耦合门（warning 模式，犯罪现场拦截）
+# 薄壳：逻辑全在 scripts/check/check-commit-docs.mjs，禁止在此重新实现
+# 安装：git config core.hooksPath .githooks
+cd "$(dirname "$0")/.." || exit 1
+node scripts/check/check-commit-docs.mjs --staged "$1"
+# warning 模式：永不阻断提交
+exit 0

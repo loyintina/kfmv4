@@ -13,7 +13,7 @@
  * 挂入 npm run check，发现逃逸 → 构建中断。
  */
 
-import { readFileSync, readdirSync, statSync } from 'fs';
+import { readFileSync, readdirSync, statSync, existsSync } from 'fs';
 import { join, relative } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -57,6 +57,18 @@ function walk(dir) {
 }
 
 walk(join(ROOT, 'src'));
+
+// 白名单防腐（v8.2 批 4）：豁免文件必须存在且仍含 console 调用，否则是僵尸豁免
+for (const rel of WHITELIST) {
+  const abs = join(ROOT, rel);
+  if (!existsSync(abs)) {
+    console.error(`[check-console] 僵尸豁免：${rel} 已不存在——删条目`);
+    errors++;
+  } else if (!CONSOLE_RE.test(readFileSync(abs, 'utf-8'))) {
+    console.error(`[check-console] 僵尸豁免：${rel} 已无 console 调用，豁免不再必要——删条目`);
+    errors++;
+  }
+}
 
 if (errors > 0) {
   console.error(`\n[check-console] ${errors} console 逃逸 — 请改用 logger.ts 的 log()`);

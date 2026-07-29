@@ -52,7 +52,7 @@ const DOMAIN_SRC = {
     'src/client/modules/orb-chat-hints.ts', 'src/client/modules/chat-dom.ts',
     'src/client/modules/session-client.ts', 'src/client/modules/ws-channel.ts',
     'src/shared/chat-protocol/', 'src/shared/tool-compaction/',
-    'src/server/ai/', 'src/server/prompts/',
+    'src/server/ai/', 'src/server/prompts/', 'src/client/data/waiting-hints.ts',
   ],
   'server': [
     'src/server/index.ts', 'src/server/path-utils.ts', 'src/server/terminal-pty.ts',
@@ -104,3 +104,47 @@ if (errors > 0) {
   process.exit(1);
 }
 console.log('[check-contract-freshness] OK — 全部域契约在新鲜度阈值内');
+
+// ========== 映射双向健康（v8.2 批 4：防「建立时刻快照」） ==========
+// 方向 1：src/ 每个 .ts 必须被某个域的映射覆盖（新文件无归属 = 新鲜度失明）
+// 方向 2：映射条目必须真实存在（映射指向已删文件 = 僵尸条目）
+
+import { readdirSync, existsSync } from 'fs';
+import { join } from 'path';
+import { fileURLToPath } from 'url';
+
+const ROOT = fileURLToPath(new URL('../../', import.meta.url));
+
+function walk(dir, out = []) {
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    const p = join(dir, e.name);
+    if (e.isDirectory()) walk(p, out);
+    else out.push(p);
+  }
+  return out;
+}
+
+const allPaths = Object.values(DOMAIN_SRC).flat();
+let mapErrors = 0;
+
+const srcFiles = walk(join(ROOT, 'src')).filter(f => f.endsWith('.ts'))
+  .map(f => f.slice(ROOT.length).replace(/^\//, '').replace(/\\/g, '/'));
+for (const f of srcFiles) {
+  if (!allPaths.some(p => f === p || f.startsWith(p))) {
+    console.error(`[check-contract-freshness] 映射盲区：${f} 不属于任何域——在 DOMAIN_SRC 登记归属，否则新鲜度对它永远失明`);
+    mapErrors++;
+  }
+}
+
+for (const p of allPaths) {
+  if (!existsSync(join(ROOT, p))) {
+    console.error(`[check-contract-freshness] 僵尸映射：${p} 在 DOMAIN_SRC 登记但文件已不存在（删条目或改指新家）`);
+    mapErrors++;
+  }
+}
+
+if (mapErrors > 0) {
+  console.error(`\n[check-contract-freshness] ${mapErrors} 处映射不健康，构建中断。`);
+  process.exit(1);
+}
+console.log(`[check-contract-freshness] 映射健康 ✅（${srcFiles.length} 个 src 文件全部有域归属，${allPaths.length} 条映射无僵尸）`);

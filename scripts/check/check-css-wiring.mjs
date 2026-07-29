@@ -204,6 +204,19 @@ for (const [name, pos] of [...scssKeyframes.entries()].sort()) {
   }
 }
 
+// ========== 白名单防腐（v8.2 批 4：豁免必须持续自证，僵尸豁免 = 盲区） ==========
+
+for (const name of JS_REF_NO_SCSS) {
+  if (!jsClasses.has(name)) {
+    error(`❌ 僵尸豁免：JS_REF_NO_SCSS 登记 "${name}"，但 JS 已不再引用该类——删条目`);
+  }
+}
+for (const name of SCSS_DEF_NO_JS) {
+  if (!scssClasses.has(name)) {
+    error(`❌ 僵尸豁免：SCSS_DEF_NO_JS 登记 "${name}"，但 SCSS 已无该类定义——删条目`);
+  }
+}
+
 // ========== 汇总 ==========
 
 if (errors > 0) {
