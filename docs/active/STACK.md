@@ -10,8 +10,19 @@
 3. agent 任务执行器（agent-runner）设计（2026-07-29 立项，用户动议）
    — 通用运行模式：固定提示词 + 输出可控 + 独立任务——发版（版本判定/账本回写/tag）、
      语义审计（批 1.5）、集群冷启动 e2e 都是其实例，与 semantic-compiler-seed.md 双区管线一脉
+   — 形态收敛：A=独立 agent 脚本（洁净室/可进 cron/exit code 语义，新建）；
+     B=提示词文件由 agent 执行（存量：workflows 卡 + subagent）
+   — 输出消费闭环 = 新 agent 会话（用户指正：不存在「人工」兜底，兜底是会话间接力的
+     agent）——失败/审查产物必须格式化为 agent 可拾取（STACK/ledger 邮箱位）
+   — 配套：provider 选择配置（providers.json 多 key 有过期/余额不足，agent 脚本用哪个
+     必须显式可配；该设置未来进前端设置卡）
+   — 试点负载：tag 升版检测器（枚举产出/机械算下限+语义判上限/兑现 release.yaml 铺路字段）
    — 待设计：触发方式（cron/事件/手动）、产出验证（LLM proposes, mechanics disposes）、
      结果回写（tag/STACK/ledger）、失败兜底
+8. 卡片类需求三件（2026-07-29 记，优先级后排）
+   — 工作流实体卡片插件：workflows/ 的实体卡进卡片堆（形态参照现有 tool 卡）
+   — 中央面板网格线升级 + 实时统计信息
+   — 会话卡逻辑修复（具体病灶待补充）
 4. 手势系统研究与全局交互区域分权（P3，自 HANDBOOK 活跃待办迁入）
    — 浮卡/卡片堆/设置卡内容区与全局左右滑的边界
    （touch-action 分区策略已文档化 → domains/client-shell/contract.md #陷阱 7，2026-07-29 关闭该子项）
