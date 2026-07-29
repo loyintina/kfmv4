@@ -39,6 +39,12 @@ const prompt = `项目采用 semver，但有本项目的家规（从历史发版
 - 窗口很小（≤7 提交）且无 breaking → 倾向 patch，除非有明确独立新能力
 - major 只用于架构级推翻（会有 BREAKING 标记或主题级重构）；无法从提交清单确认 major 时给 minor 并在 reason 注明
 
+真实判例（照这个尺度判）：
+- 「逐工具压缩细化 + 失败模式标注」（v8.1.0 压缩器的细化）→ patch（v8.1.1 实况）
+- 「文档管线再设计：新增 7 个检查 + 探针自检体系」（此前不存在的能力域）→ minor（v8.3.0 实况）
+- 「后台挂机 run-manager + WS 真心跳」（新能力域）→ minor（v7.3.0 实况）
+- 「分段传输 + nginx 修复」（v7.3.0 能力的收尾）→ patch（v7.3.1 实况）
+
 最近 tag：${recentTags.split('\n').join('、')}
 基准：${baseTag} 以来共 ${stats.total} 提交（feat:${stats.feat} fix:${stats.fix} docs:${stats.docs} refactor:${stats.refactor} breaking:${stats.breaking}）
 机械下限：${floor}（你的建议不得低于此级别）

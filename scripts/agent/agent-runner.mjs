@@ -88,9 +88,14 @@ export async function runAgent({ system = '', prompt, validate = null, retries =
         }
         feedback = '\n\n[校验失败] 上次输出不符合要求格式。只输出要求的 JSON，不要任何多余文字。';
       } catch (e) {
+        // 瞬态错误（空响应/超时/5xx）原地重试一次再落下一个 provider
+        if (attempt < retries && /空响应|timeout|HTTP 5/.test(e.message)) {
+          errors.push(`${step.providerId}/${step.model}: 瞬态错误原地重试（${e.message.slice(0, 60)}）`);
+          continue;
+        }
         errors.push(`${step.providerId}/${step.model}: ${e.message}`);
         callFailed = true;
-        break; // 调用失败 → 落下一个 provider
+        break; // 非瞬态失败 → 落下一个 provider
       }
     }
     if (!callFailed) errors.push(`${step.providerId}/${step.model}: 校验重试 ${retries + 1} 次均失败`);
