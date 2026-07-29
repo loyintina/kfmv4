@@ -161,6 +161,7 @@
 | BAR-ORB-TREE-01 | `1c2ab9e` | sibling-switcher import 危险模块 → 循环依赖风险 | L | ✅ 已钉（2026-07-29 交叉检查补登记） | `tests/client-logic.test.ts` |
 | BAR-ROOT-01 | `46df845` | setActiveRoot 后 getSafeRoot 不反映新根（skipSanitize 旁路遗留） | L | ✅ 已钉（2026-07-29 交叉检查补登记） | `tests/path-utils.test.ts` |
 | BAR-SEC-08…13 | `53d47e4`/`a84ccef` | 软链 realpath 逃逸（08）+ Origin 校验五边界（09 跨源 403 / 10 回环放行 / 11 无 Origin 放行 / 12 畸形拒绝 / 13 局域网放行） | L | ✅ 已钉（2026-07-29 交叉检查补登记） | `tests/path-utils.test.ts` + `tests/server-routes.test.ts` |
+| BAR-PROVIDER-01 | `chat.ts` | kimi-k3 面板发消息 400：tool 结果 content 以结构化对象透传给上游，宽松 provider 容忍、严格端点（api.kimi.com/coding）按 OpenAI 规范拒收。契约：边界规范化——非字符串 content 一律 `JSON.stringify`，tool null 兜底空串；上游错误体必须透传（只报状态码 = 扔掉诊断） | L | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
 
 > 新 bug 修复后：补一个回归钉子 → 在此登记 → 状态置「已钉」。见
 > `../guides/testing.md` + `../constraints/invariants.md` §二 #24（修 bug 补钉子纪律）。

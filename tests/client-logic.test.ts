@@ -717,3 +717,11 @@ regression('BAR-COMPACT-02', 'build/check', 'check-tool-compaction 双向核对�
   assert(script.includes('COMPACTOR_REGISTRY') && script.includes('tools/index.ts'),
     '脚本必须双向核对：注册工具 ↔ 压缩器登记（新增工具不登记 = 构建中断）');
 });
+
+regression('BAR-PROVIDER-01', 'ai/chat', 'tool 消息 content 必须字符串化 + 上游错误体透传（kimi 严格端点 400 根因）', () => {
+  const src = readFileSync('src/server/ai/chat.ts', 'utf-8');
+  // 根因：tool 结果 content 以结构化对象透传，宽松 provider 容忍、严格 provider（kimi）400。
+  assert(src.includes('JSON.stringify(m.content)'), '非字符串 content 必须 JSON.stringify（OpenAI 规范 tool.content 是 string）');
+  assert(src.includes("out.content == null"), 'tool 消息 null content 必须兜底为空串');
+  assert(src.includes('errBody'), '上游错误体必须透传（只报状态码 = 扔掉诊断）');
+});

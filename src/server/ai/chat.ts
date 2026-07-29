@@ -145,13 +145,17 @@ export async function* streamChat(
   })) : undefined;
   // 对话消息：只保留 user/assistant/tool（透传 OpenAI 格式字段）。
   // 客户端发来的 system 一律剥离——system 由服务端每轮重组（眼睛系统核心）。
+  // 边界规范化（2026-07-29，kimi-k3 400 根因）：tool/assistant 的 content 可能是
+  // 结构化对象（工具结果未字符串化），宽松 provider 容忍、严格 provider（kimi）400。
+  // OpenAI 规范 tool.content 必须是 string——非字符串一律 JSON.stringify。
   const apiMessages: Array<Record<string, unknown>> = messages
     .filter(m => m.role !== 'system')
     .map(m => {
       const out: Record<string, unknown> = {
         role: m.role === 'assistant' ? 'assistant' : m.role,
-        content: m.content,
+        content: typeof m.content === 'string' || m.content == null ? m.content : JSON.stringify(m.content),
       };
+      if (m.role === 'tool' && out.content == null) out.content = '';
       if (m.tool_calls) out.tool_calls = m.tool_calls;
       if (m.tool_call_id) out.tool_call_id = m.tool_call_id;
       return out;
@@ -213,7 +217,9 @@ export async function* streamChat(
     console.log(`[chat] upstream TTFB: ${Date.now() - _tFetch}ms (turn ${turn}, ~${JSON.stringify(requestBody).length}B body)`);
 
     if (!response.ok) {
-      yield { type: 'error', content: `API 请求失败: ${response.status}` };
+      // 透传上游错误体（kimi 等严格端点会给出具体原因，只报状态码等于扔掉诊断）
+      const errBody = await response.text().catch(() => '');
+      yield { type: 'error', content: `API 请求失败: ${response.status}${errBody ? ` — ${errBody.slice(0, 300)}` : ''}` };
       return;
     }
 
