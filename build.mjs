@@ -110,6 +110,12 @@ await build({
 checkFreshness('dist/server/index.js', 'server');
 checkFreshness('public/bundle.js', 'client');
 
+// 版本握手：写构建信息（/api/system/info 暴露，deploy.sh 据此验证运行进程已加载新包）
+writeFileSync('dist/build-info.json', JSON.stringify({
+  buildTime: new Date().toISOString(),
+  version: JSON.parse(readFileSync('package.json', 'utf-8')).version,
+}));
+
 // 冒烟：验证 HTML 引用了 bundle.js 且 bundle.js 非空
 const html2 = readFileSync('public/index.html', 'utf-8');
 if (!html2.includes('bundle.js')) { console.error('[smoke] ❌ public/index.html 未引用 bundle.js'); process.exit(1); }

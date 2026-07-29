@@ -343,6 +343,12 @@ export function setupFileRoutes(router: Router): void {
   } catch (e: any) { res.json({ error: e.message }); } });
 
   router.get('/system/info', (_req, res) => {
-    res.json({ user: process.env.USER || 'root', home: getActiveRoot(), cwd: process.cwd() });
+    // buildInfo：构建时间戳（版本握手——「线上跑的是哪天的包」必须可机械查证，
+    // 历史高发模式「反复修反复没效果」多数根因是旧包，见 diagnostics 构建/Bundle #4）
+    let buildInfo: Record<string, unknown> | null = null;
+    try {
+      buildInfo = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'dist', 'build-info.json'), 'utf-8'));
+    } catch { /* 未构建过 */ }
+    res.json({ user: process.env.USER || 'root', home: getActiveRoot(), cwd: process.cwd(), buildInfo });
   });
 }

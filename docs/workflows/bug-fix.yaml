@@ -14,11 +14,13 @@ steps:
   5. 登记 ledger/bugs.md
   6. 发现新陷阱 → 写入 domains/{域}/contract.md#陷阱
   7. 提交（fix: 和 test+docs: 分开）
+  8. 部署闭环（需用户真机验证时）：`bash scripts/deploy.sh`——构建+重启+版本握手，
+     确认运行进程已加载新包后才请用户验证（防「修了对的包、测了错的包」）
 writes:
   - src/（fix）
   - tests/（钉子）
   - ledger/bugs.md（登记）
   - domains/{域}/contract.md（新陷阱）
-exit_condition: 钉子通过 revert 验证 + 登记有行 + npm run check 绿
+exit_condition: 钉子通过 revert 验证 + 登记有行 + npm run check 绿 + 真机验证前 deploy 握手确认
 natural_next: bugs.md 同模式 ≥3 次 → discipline-mechanize
 metric: bugs.md 同模式 ≥3（机械化信号，已有先例：check-css-wiring）

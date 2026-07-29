@@ -732,3 +732,12 @@ regression('BAR-PROVIDER-02', 'ai/chat', '空壳 assistant 消息（纯思考/�
   const server = readFileSync('src/server/ai/chat.ts', 'utf-8');
   assert(server.includes("m.content == null || m.content === ''"), '服务端边界必须过滤空 assistant（fail-closed）');
 });
+
+regression('BAR-BUILD-05', 'build/deploy', '版本握手：build 写 dist/build-info.json + /api/system/info 暴露 buildInfo（防旧包白诊断）', () => {
+  const build = readFileSync('build.mjs', 'utf-8');
+  assert(build.includes('build-info.json') && build.includes('buildTime'), 'build.mjs 必须写构建信息（版本握手真相源）');
+  const routes = readFileSync('src/server/routes/files.ts', 'utf-8');
+  assert(routes.includes('buildInfo'), '/api/system/info 必须暴露 buildInfo（运行进程包版本可查证）');
+  const deploy = readFileSync('scripts/deploy.sh', 'utf-8');
+  assert(deploy.includes('kfm-restart.sh') && deploy.includes('system/info'), 'deploy.sh 必须 构建→重启→握手 三步闭环');
+});

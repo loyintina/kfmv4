@@ -163,6 +163,7 @@
 | BAR-SEC-08…13 | `53d47e4`/`a84ccef` | 软链 realpath 逃逸（08）+ Origin 校验五边界（09 跨源 403 / 10 回环放行 / 11 无 Origin 放行 / 12 畸形拒绝 / 13 局域网放行） | L | ✅ 已钉（2026-07-29 交叉检查补登记） | `tests/path-utils.test.ts` + `tests/server-routes.test.ts` |
 | BAR-PROVIDER-01 | `chat.ts` | kimi-k3 面板发消息 400：tool 结果 content 以结构化对象透传给上游，宽松 provider 容忍、严格端点（api.kimi.com/coding）按 OpenAI 规范拒收。契约：边界规范化——非字符串 content 一律 `JSON.stringify`，tool null 兜底空串；上游错误体必须透传（只报状态码 = 扔掉诊断） | L | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
 | BAR-PROVIDER-02 | `orb-chat-run` | kimi-k3 真 400 根因（错误体透传后现形）：`assistant must not be empty`——纯思考/取消残留的 AI 消息零正文零工具，进载荷成空 assistant。契约：客户端跳过零正文 assistant（不动 G5 正文）+ 服务端边界 fail-closed 过滤 | L | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-BUILD-05 | `build/deploy` | 「反复修反复没效果」历史高发模式：修复已提交但线上进程仍跑旧包（进程加载的是启动那一刻的包），白诊断反复发生。契约：build 写 `dist/build-info.json`（buildTime）+ `/api/system/info` 暴露 buildInfo + `scripts/deploy.sh` 构建→重启→版本握手三步闭环，bug-fix 工作流真机验证前必须 deploy 确认 | L | ✅ 已钉（源码检查 + deploy 端到端实测） | `tests/client-logic.test.ts` |
 
 > 新 bug 修复后：补一个回归钉子 → 在此登记 → 状态置「已钉」。见
 > `../guides/testing.md` + `../constraints/invariants.md` §二 #24（修 bug 补钉子纪律）。
