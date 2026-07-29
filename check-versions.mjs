@@ -1,17 +1,18 @@
 /**
- * KFM v4 — 版本号一致性检查
+ * KFM v4 — 版本号一致性检查（v8.2 适配：HANDBOOK 锚点 → README + ledger/history）
  *
  * 从 package.json 读取权威版本号，检查：
  *  1. git tag "v{version}" 是否存在（防止忘打 tag）
- *  2. HANDBOOK.md 的 last_reviewed 新鲜度（最新提交是否超过 last_reviewed）
- *  3. 各文档中"最后更新/当前版本"标记的行是否一致
- *  4. 版本历史表中 **vX.Y.Z** 的粗体标记行是否含当前版本
+ *  2. README.md / CLAUDE.md 中「最后更新/当前版本」行的版本号一致
+ *  3. {DOCS_ROOT}/ledger/history.md 版本线含当前版本条目
  *
+ * （旧检查 2「HANDBOOK last_reviewed 新鲜度」由 check-contract-freshness 取代。）
  * 挂入 npm run check，不一致 = 构建中断。
  */
 
 import { readFileSync } from 'fs';
 import { execSync } from 'child_process';
+import { DOCS_ROOT } from './docs-root-const.mjs';
 
 const PKG = JSON.parse(readFileSync('package.json', 'utf-8'));
 const authVersion = PKG.version;
@@ -33,58 +34,9 @@ try {
   errors++;
 }
 
-// ========== 检查 2: HANDBOOK last_reviewed 新鲜度 ==========
+// ========== 检查 2: 文档中的版本号标记 ==========
 
-const handbookContent = (() => {
-  try { return readFileSync('docs/HANDBOOK.md', 'utf-8'); } catch {
-    console.error('[check-versions] ERROR — docs/HANDBOOK.md 不存在，构建中断');
-    process.exit(1);
-  }
-})();
-
-const frontMatch = handbookContent.match(/^---\n([\s\S]*?)\n---/);
-if (frontMatch) {
-  const frontFields = {};
-  for (const line of frontMatch[1].split('\n')) {
-    const idx = line.indexOf(':');
-    if (idx > 0) frontFields[line.slice(0, idx).trim()] = line.slice(idx + 1).trim();
-  }
-
-  const lastReviewed = frontFields.last_reviewed;
-  if (lastReviewed) {
-    try {
-      const latestCommit = execSync(
-        `git log -1 --format="%ci" -- 'src/' 'tests/' 'docs/' '*.mjs' -- ':!docs/HANDBOOK.md'`,
-        { encoding: 'utf-8' }
-      ).trim();
-      if (latestCommit) {
-        const commitDate = new Date(latestCommit.slice(0, 10) + 'T00:00:00');
-        const reviewDate = new Date(lastReviewed + 'T00:00:00');
-        if (commitDate > reviewDate) {
-          console.error(`[HANDBOOK OUTDATED] docs/HANDBOOK.md frontmatter last_reviewed=${lastReviewed}`);
-          console.error(`  最新提交日期: ${latestCommit.slice(0, 10)}`);
-          console.error(`  请更新 last_reviewed 并同步 §二「当前会话状态」`);
-          errors++;
-        }
-      }
-    } catch (e) {
-      console.error(`[check-versions] ERROR — git 不可用: ${e.message}`);
-      errors++;
-    }
-  }
-}
-
-// ========== 检查 3: 文档中的版本号标记 ==========
-
-const DOCS = [
-  'CLAUDE.md',
-  'docs/HANDBOOK.md',
-  'docs/DIAGNOSTICS.md',
-  'docs/design/VISION_AND_ROADMAP.md',
-  'docs/KFM_V4_INVARIANTS.md',
-  'README.md',
-];
-
+const DOCS = ['CLAUDE.md', 'README.md'];
 let markerChecks = 0;
 
 for (const docPath of DOCS) {
@@ -97,10 +49,7 @@ for (const docPath of DOCS) {
     continue;
   }
 
-  const lines = content.split('\n');
-
-  // 3a) "最后更新"或"当前版本"行中的版本号
-  for (const line of lines) {
+  for (const line of content.split('\n')) {
     if (!/最后更新|当前版本/.test(line)) continue;
     const match = line.match(/\bv(\d+\.\d+\.\d+)\b/);
     if (!match) continue;
@@ -113,23 +62,24 @@ for (const docPath of DOCS) {
       errors++;
     }
   }
+}
 
-  // 3b) 版本历史表中的粗体标记 **vX.Y.Z** 含当前版本
-  //     只检查 docs/HANDBOOK.md（版本历史表所在文件）
-  if (docPath === 'docs/HANDBOOK.md') {
-    const boldVersions = lines
-      .map(l => l.match(/\*\*v(\d+\.\d+\.\d+)\*\*/))
-      .filter(Boolean)
-      .map(m => m[1]);
-    const hasCurrent = boldVersions.includes(authVersion);
-    if (!hasCurrent) {
-      console.error(`[VERSION TABLE MISSING] HANDBOOK.md 版本历史表缺少 v${authVersion} 条目`);
-      console.error(`  当前版本历史表中的粗体版本: ${boldVersions.join(', ')}`);
-      errors++;
-    }
-    markerChecks++;
-  }
+// ========== 检查 3: history.md 版本线含当前版本 ==========
 
+const historyPath = `${DOCS_ROOT}/ledger/history.md`;
+let history;
+try {
+  history = readFileSync(historyPath, 'utf-8');
+} catch {
+  console.error(`[check-versions] ERROR — ${historyPath} 不存在，构建中断`);
+  process.exit(1);
+}
+const versionLine = history.split('\n').find(l => l.startsWith(`- v${authVersion} `));
+if (!versionLine) {
+  console.error(`[VERSION HISTORY MISSING] ${historyPath} 版本线缺少 v${authVersion} 条目`);
+  errors++;
+} else {
+  markerChecks++;
 }
 
 if (errors > 0) {
