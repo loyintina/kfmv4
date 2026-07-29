@@ -46,7 +46,7 @@
 │     messages.ts / events.ts           │        │                                        │
 │     reducer.ts / block-idx.ts         │        │  ai/session-store.ts (会话日志落盘)    │
 │                                       │        │     appendEvent / flush / flushSync    │
-│  ws-channel.ts (WebSocket + 重连)     │        │     isIncomplete (冷恢复判据)          │
+│  ws-channel.ts (WebSocket + 重连)     │        │     appendUserMessage (幂等)           │
 │     onReconnect/offReconnect          │        │                                        │
 │     WATCHDOG_MS=75s 存活看门狗        │  WS    │  ws-server.ts (30s 协议级 ping)        │
 │         │                             │◄──────►│     _isAlive 半开检测 → killAll + PTY  │
@@ -190,12 +190,12 @@ false**（它在循环结束后的 `finally` 才置 true）。因此**不能**�
 ### 4.7 删除最后一个会话 → 派发的 sessionId 是空串 → 消费方必须处理空串
 
 **契约**：`session.card` 删除最后一个会话时派发 `kfm-session-change {sessionId:''}`。
-`orb.ts` 的监听器**不能** `if (!detail.sessionId) return`——那样会跳过空串，光球面板
+`orb-chat-host.ts` 的监听器**不能** `if (!detail.sessionId) return`——那样会跳过空串，光球面板
 残留旧消息不清空。
 
-**正确做法**：空 `sessionId` 时清空 `chatMessages` + `_renderChat()` + 清空选择器。
+**正确做法**：空 `sessionId` 时清空 `chatMessages` + `clearChatDom()` + 清空选择器。
 （`session-client.ts` 的监听器则相反：它用 `if (e.detail?.sessionId)` 守卫是对的，因为
-它只负责"切换到某个会话"，清空由 orb.ts 直接 `activeId=''` 处理。）
+它只负责"切换到某个会话"，清空由 orb-chat-host 直接 `activeId=''` 处理。）
 
 ---
 
@@ -248,13 +248,13 @@ WS 重连成功后，**服务端旧 PTY 已随旧连接被 `killAll` 清除**，
 
 1. `doSend`/`resumeRun` 的 `catch` 捕获 `AbortError` → `POST /ai/chat/:runId/cancel`
    通知服务端取消后台 run。
-2. `_cancelPendingTools(messages)`：给所有仍"执行中"（无 result）的工具块打上
-   `{已取消, isError}` 结果 → 从"忙碌中"变完成态 → 自动折叠，不再卡住。清 toolHint +
-   动画状态。
+2. `settlePendingToolBlocks(messages, '(已取消)')`：给所有仍"执行中"（无 result）的工具块打上
+   `{已取消, isError}` 结果 → 从"忙碌中"变完成态 → 自动折叠，不再卡住；
+   `settleToolCardsDom('(已取消)')` 做 DOM 同步收尾。
 3. 追加 `[已取消]` 文本（**push**，不 clobber 已有正文）。
 
-**契约**：取消**只 append 标注**，不覆盖已渲染的内容。abortCtrl 在 `orb.ts` 的重连
-IIFE 与 `handleSend` 之间**共享单例**，保证重连态也能被同一个按钮中断。
+**契约**：取消**只 append 标注**，不覆盖已渲染的内容。abortCtrl 在 `orb-chat-host.ts` 的重连
+逻辑与 `handleSend` 之间**共享单例**，保证重连态也能被同一个按钮中断。
 
 **历史案例**：2026-07-19（commit `da39891`、`b80ccb3`）。
 
@@ -296,7 +296,7 @@ IIFE 与 `handleSend` 之间**共享单例**，保证重连态也能被同一个
    → WS 广播 `server-restarted` 事件 → 删除标记文件。
 4. 客户端 WS 重连后收到 `server-restarted` → 触发冷恢复逻辑。
 
-### 10.2 客户端冷恢复判据（`orb.ts` 重连 IIFE）
+### 10.2 客户端冷恢复判据（`orb-chat-host.ts` tryAutoResume）
 
 页面加载 / WS 重连时，客户端检测"未完成的对话"：
 
@@ -328,8 +328,8 @@ on reconnect:
 
 ### 10.4 服务端支撑
 
-- **`session-store.ts`**：`isIncomplete(sessionId)` 检测未完成的对话（末尾是 AI 消息
-  含 tool result 但无后续纯文本 AI 消息）。供自动 resume 判据使用。
+- **`session-store.ts`**：不承担冷恢复判据——isIncomplete 已随死代码批次二删除，
+  判据在客户端 `orb-chat-host.ts` tryAutoResume（末尾 AI 消息含 tool result）。
 - **`flushSync(sessionId)`**：同步落盘，用于 `kfm-restart` 的 `abort.finally` 路径——
   进程即将死亡前的最后保障。
 - **`appendEvent` / `flush`**：异步落盘 + 防抖，正常流程每事件调度写盘。

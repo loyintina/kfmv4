@@ -10,6 +10,6 @@ steps:
 writes:
   - ledger/history.md
   - active/STACK.md
-exit_condition: npm run check 绿（check-desc-freshness 兜底）
+exit_condition: npm run check 绿（check-contract-freshness 兜底）
 natural_next: none
-metric: check-desc-freshness（代码 ≥5 提交未同步 → hard fail，已有）
+metric: check-contract-freshness（代码 ≥5 提交未同步 → hard fail，已有）

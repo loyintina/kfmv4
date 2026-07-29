@@ -11,6 +11,6 @@ steps:
 writes:
   - domains/{域}/contract.md
   - domains/{域}/detail-*.md
-exit_condition: contract <150 行 + check-desc-freshness 绿
+exit_condition: contract <150 行 + check-contract-freshness 绿
 natural_next: state-sync
-metric: check-desc-freshness（已有）
+metric: check-contract-freshness（已有）

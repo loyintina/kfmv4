@@ -11,8 +11,9 @@
 
 ## 模块职责
 
-- 客户端：`orb-chat.ts`（薄编排入口）`orb-chat-run.ts`（持久化运行态/流消费/重连/doSend）
-  `orb-chat-hints.ts`（等待提示/工具提示/Todo 面板）`chat-dom.ts`（增量投影）
+- 客户端：`orb-chat-host.ts`（宿主：会话状态/run 生命周期/消息窗口编排，ChatHostDeps 注入）
+  `orb-chat.ts`（re-export 门面 + 事件钩子）`orb-chat-run.ts`（持久化运行态/流消费/重连/doSend）
+  `orb-chat-hints.ts`（等待提示/Todo 面板）`chat-dom.ts`（增量投影）
   `session-client.ts`（只读缓存 + pre-run 创建）`ws-channel.ts`（WS + 重连看门狗 + onReconnect）
 - 服务端 `ai/`：`chat.ts`（SSE 流式核心）`run-manager.ts`（后台挂机：runId/事件缓冲/5min 淘汰）
   `routes.ts`（start/stream/cancel/active/status）`session-store.ts`（唯一写者 + 冷恢复）
@@ -127,9 +128,9 @@
 
 ## 文件清单
 
-客户端：`orb-chat.ts` `orb-chat-run.ts` `orb-chat-hints.ts` `chat-dom.ts`
+客户端：`orb-chat-host.ts` `orb-chat.ts` `orb-chat-run.ts` `orb-chat-hints.ts` `chat-dom.ts`
 `session-client.ts` `ws-channel.ts` `../data/waiting-hints.ts`（等待/摸鱼提示文案）
-+ `src/shared/chat-protocol/`（5 文件）
++ `src/shared/chat-protocol/`（6 文件）
 服务端：`ai/chat.ts` `ai/run-manager.ts` `ai/routes.ts` `ai/session-store.ts`
 `ai/page-state.ts` `ai/prompt-assembler.ts` `ai/rule-engine.ts` `ai/tools/`
 `ai/tools/omp/browser/`（Browser 工具）`prompts/`

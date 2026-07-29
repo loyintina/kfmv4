@@ -2,11 +2,12 @@
  * tag-advisor.mjs — 发版建议 agent（agent-runner 一号负载）
  *
  * 分工（STACK #3 定稿）：机械算下限，agent 判级别起草稿，人拍板（tag 永远是人工动作）。
- *   下限规则：breaking → major；有 feat → minor；有 fix/docs/refactor → patch；全空 → none
+ *   下限规则：breaking → major；有任意提交 → patch；全空 → none（feat 不抬下限，级别归语义层）
  *   agent 输出 {level, reason, notes}，级别不得低于机械下限（一致性校验）
  *
  * 用法：node scripts/agent/tag-advisor.mjs [基准tag] [顶端ref=HEAD]
- * exit 0 = 精确建议（可机械流转）；exit 1 = 模糊输出（原始结果交调用方）；exit 2 = 全 provider 失败
+ * exit 0 = 精确建议（可机械流转）；exit 2 = 全 provider 失败或重试耗尽
+ * （exit 1「模糊输出交调用方」是设计意图未实现——语义审计 B2 修订，重试耗尽现归 exit 2）
  */
 
 import { execSync } from 'child_process';

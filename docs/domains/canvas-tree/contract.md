@@ -18,7 +18,7 @@
 - 模式系统：`mode-system.ts`（copy/move/delete 模式按钮）`file-action-bar.ts`（长按抽屉操作栏）
 - 目录切换：`sibling-switcher.ts`——纯 DOM 弹窗，弹开时 canvas 点击/手势被 guard 拦截；出口 `createSiblingSwitcher()/destroySiblingSwitcher()/isSwitcherOpen()/closeSwitcher()`
 - 视觉效果：`char-rain.ts`（字符散落/回收）
-- 引擎层：14 文件自包含子系统 → **detail-engine.md**
+- 引擎层：`engine/v2/` 8 文件自包含子系统 → **detail-engine.md**
 
 ## 架构规则（自 INVARIANTS §四迁入，2026-07-28）
 

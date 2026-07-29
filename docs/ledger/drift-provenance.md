@@ -131,8 +131,8 @@
 | 14 | 0b12122 | 2026-06-23 | v6.9.1 | feat(renderer): Phase 4B 预览/编辑双模式 — marke | D | handler-factory照抄debug卡头骨架；buildCardLayout统一后未回迁 |
 | 15 | 90d4b76 | 2026-07-14 | v7.2.0 | feat: 卡片系统重构 — 统一视觉规范 + 会话管理 + 手 | D | 三张管理卡照抄api卡API_BASE/readFile/writeFile，tools卡再抄 |
 | 16 | bdafdc1 | 2026-07-06 | v6.11.0 | feat: 所有卡片支持双指缩放字号 | D | "所有卡片支持"以逐卡复制方式铺开，后续新卡（api/tools/orb）各自再抄 |
-| 17 | b2f74bc | 2026-07-21 | v7.3.0 | fix(ws/tmux): WS 断线后终端卡自动重新打开 PTY | B | 重连钩加进共享 initTerminalCore 又给 tmux 单开一路，两路都发 terminal-open |
-| 18 | 84419a1 | 2026-06-13 | v6.7.0 | refactor(floating-card): Phase 2-3 — 模板提取 | A | 发射时 DOM 压栈是视觉刚需，item.zIndex 另轨记录彼时无害，后无人归并 |
+| 17 | b2f74bc | 2026-07-21 | v7.3.0 | fix(ws/tmux): WS 断线后终端卡自动重新打开 PTY | B | 重连钩加进共享 initTerminalCore 又给 tmux 单开一路，两路都发 terminal-open（注：bugs.md/code-map 标 C 权宜，两标签分歧保留——语义审计 E4） |
+| 18 | 84419a1 | 2026-06-13 | v6.7.0 | refactor(floating-card): Phase 2-3 — 模板提取 | A | 发射时 DOM 压栈是视觉刚需，item.zIndex 另轨记录彼时无害，后无人归并（注：复活点为 revert 1a9a3ec，bugs/code-map 据此标 B 接力，双锚并存——语义审计 E5） |
 | 19 | 5ee0321 | 2026-07-10 | v7.2.0 | fix: API 卡字号改 --card-font-size + 终端方向 | B | 插件卡自建 kfm-fontsize-api 读取，不知 gestures.ts 钳制表需同步加 typeId |
 | 20 | 0b12122 | 2026-06-23 | v6.9.1 | feat(renderer): Phase 4B 预览/编辑双模式 | C | Phase 赶工特性，catch /* swallow */ 为保静默保存明知吞错，留成永久 |
 | 21 | f5ee84c | 2026-07-26 | v7.3.3 | fix: 暴露 __L/__anim/__cardRegistry 到 window | C | 为让 AI debug 视图脚本找到 registry 权宜挂 window，escape-ok 自认破例 |
@@ -155,7 +155,7 @@
 | 9 | 4e6f6df | 2026-07-25 | v7.3.3 | fix: 审计修复 — 删除死工具、cwd 硬编码、eval 广播… | C | 修「广播致多标签重复执行」时权宜改发第一个客户端，落点不确定性留为永久 |
 | 10 | bfbd2ad | 2026-07-24 | v7.3.2 | feat(orb): v7.3.2 会话加载分段传输 + 竞态修复 | A | 会话即 JSON 文件读写，就近挂 files 路由当时合理；路由契约细化后成越界 |
 | 11 | 25a295e | 2026-06-02 | v6.1.0 | v6.1.0: UI Registry 全面接入 + 三层 MANIFEST 验证 | A | 客户端元数据+服务端处理器+WS 优先兜底系同 commit 有意设计，演进后成双源重复 |
-| 12 | fbcc0c7 | 2026-07-10 | v7.2.0 | fix: AI API 请求走服务端代理（绕过 CORS） | C | 赶工绕 CORS，按唯一调用方（恒传 method）形状实现，GET+body 隐患潜伏至今 |
+| 12 | fbcc0c7 | 2026-07-10 | v7.2.0 | fix: AI API 请求走服务端代理（绕过 CORS） | C | 赶工绕 CORS，按唯一调用方（恒传 method）形状实现，GET+body 隐患潜伏至今（注：bugs.md/code-map 锚 678c6d2 为 v7.1.0 路由拆分迁移点，引入实为本 commit——语义审计 E6） |
 | 13 | f28999d | 2026-04-22 | baseline | refactor: 全面迁移至 TypeScript + Pretext 引擎… | A | 双挂载支持 /kfmv4/ 子路径部署（state.ts:6 仍硬编码使用）；ping 残留系 e477264 有意兼容保留 |
 
 注：条目 3 的「外部 agent 是否调用」仓库内不可证（缺运行时访问日志），成因按「仓内从未接线」判 E，若外部确有调用方应改判 A（详见深潜八）。条目 13 四个子项成因不一（双挂载 A、ping 残留 C、死条件 D 倾向），按格式要求取首个子项双挂载定行，余见该域深潜叙事。
@@ -283,7 +283,7 @@
 
 **修法结论（深潜）：废弃 scope 的泛化契约声称、承认现状——保留 scope 给 tree-render 单租户，将头注释第 3 条及 scope() docstring 改为「按需的模块级 timeline 隔离」，不必把 killTweensOf 收编进台账。**
 
-⚠ 修法分歧（保留并标注）：普查 agent-100（cross-domain#4）给出相反方向的修法——「killTweensOf 改为必须带 scope 参数或登记进 `_scopes`，check-anim 增加对无 scope 调用的断言」（强化机制）。深潜 agent-107 的证据（killTweensOf 自出生 commit 起即被设计为透传、7 处直透均为修真实 bug 的官方用法）指向废弃而非强化。两案证据均已收录，待裁决。
+⚠ 修法分歧（保留并标注）：普查 agent-100（cross-domain#4）给出相反方向的修法——「killTweensOf 改为必须带 scope 参数或登记进 `_scopes`，check-anim 增加对无 scope 调用的断言」（强化机制）。深潜 agent-107 的证据（killTweensOf 自出生 commit 起即被设计为透传、7 处直透均为修真实 bug 的官方用法）指向废弃而非强化。两案证据均已收录，待裁决。（结案注：2026-07-29 ADR-004 裁决二采纳深潜方向——废弃 scope 泛化声称、承认现状，见 cross-domain 漂移 4【已结案】——语义审计 E3）
 
 ### 七、格式转换双份（ai-chat#2；深潜 agent-108）
 

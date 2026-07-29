@@ -15,8 +15,8 @@ agent 原件，不是 agent 应用。三明治：**机械组装输入 → agent 
 ## 输出协议（调用方 = agent，不存在「人工兜底」，兜底是会话间接力 agent）
 
 - **exit 0**：输出精确（schema 校验通过），机械流程直接走
-- **exit 1**：重试耗尽的模糊输出——原始结果抛 stdout，调用方读了自己判断（与读 subagent 模糊汇报无异）
-- **exit 2**：全 provider 失败——errors 抛 stdout
+- **exit 2**：全 provider 失败或校验重试耗尽——errors/原始结果抛 stdout，调用方读了自己判断
+  （原设计的 exit 1「模糊输出交调用方」未实现，重试耗尽现归 exit 2——语义审计 B2 修订；实现侧见 scripts/agent/tag-advisor.mjs）
 - 未来自主触发（cron 无 agent 在场）才需要邮箱位（STACK 拾取），当前调用方永远在场，不设
 
 ## provider 兜底链

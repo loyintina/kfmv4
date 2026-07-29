@@ -16,7 +16,7 @@ Express 4 + WebSocket，`index.ts` 统一入口编排（协调层）。
 
 ## 数据目录
 
-`$HOME/.kfmv4/`（`KFM_DATA_DIR`）：providers/active/sessions/roles/configs。
+`$HOME/.kfmv4/`（`KFM_DATA_DIR`）：providers/active/sessions/roles/configs/page-state.md/restart-pending.json。
 客户端经 API 端点以相对路径 `.kfmv4/...` 访问，`sanitizePath()` 解析到 `SAFE_ROOT`。
 
 ## #陷阱

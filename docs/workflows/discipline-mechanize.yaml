@@ -7,7 +7,7 @@ reads:
   - guides/doc-maintenance.md（check 编写约定）
 steps:
   1. 从 bugs.md 抽象重复模式
-  2. 写 check-*.mjs（warning=不存在，一律 hard fail）
+  2. 写 check-*.mjs（一律 hard fail；设计性例外须登记——现：check-release-radar、check-uncommitted≤3）
   3. 挂入 npm run check 链
   4. 验证：复现场景必须被拦截
   5. 登记 bugs.md（模式已机械化，不再依赖自觉）
