@@ -166,6 +166,12 @@
 | BAR-BUILD-05 | `build/deploy` | 「反复修反复没效果」历史高发模式：修复已提交但线上进程仍跑旧包（进程加载的是启动那一刻的包），白诊断反复发生。契约：build 写 `dist/build-info.json`（buildTime）+ `/api/system/info` 暴露 buildInfo + `scripts/deploy.sh` 构建→重启→版本握手三步闭环，bug-fix 工作流真机验证前必须 deploy 确认 | L | ✅ 已钉（源码检查 + deploy 端到端实测） | `tests/client-logic.test.ts` |
 | BAR-ORB-EMPTY-01 | `orb-chat-run` | 回复错放 reasoning：某些模型/端点把最终回复全写进 reasoning_content、text 留空（todo工具测试尸检 3 条完整交付报告被埋）——显示成「已思考+无回复」，进载荷成空 assistant（PROVIDER-02 的 400 元凶）。契约：正常结束（message_stop）text 空且 reasoning 非空 → 归位为正文；历史加载读时归一化（不改文件）；取消残留不归位（真实历史） | L | ✅ 已钉（纯函数三态 + 接线源码断言，revert 验证） | `tests/client-logic.test.ts` |
 | BAR-ORB-RESUME-01 | `orb.ts` | 冷恢复载荷脏（测绘 ai-chat#2，溯源引入 0ebea93，成因 D 复制粘贴漂移）：tryAutoResume 内联复制 doSend 格式转换简化版——无压缩投影、不过滤空壳、塞 `content: null`，严格端点（kimi）400 同款雷，刷新恢复路径必炸。契约：载荷构造唯一入口 `shared/chat-protocol/to-openai-messages.ts`（纯函数，压缩/标注/空壳过滤全在一处），**任何发送路径（doSend/tryAutoResume/未来第三条）必须经此函数**，禁止第三份手写转换；BAR-COMPACT-01/PROVIDER-02 钉子随迁移改指新正典 | L | ✅ 已钉（功能测试 5 项 + 双调用点源码断言，revert 验证真红） | `tests/to-openai-messages.test.ts` + `tests/client-logic.test.ts` |
+| BAR-RENAME-01 | `eed2baf` | rename 后树不刷新（测绘 canvas-tree#7，成因 C 权宜——出生即无响应检查无刷新）：重命名成功界面原地不动。契约：submit 必须查 `data.success` + 成功后 `loadFileTree` 刷新 | L | ✅ 已钉（源码断言） | `tests/client-logic.test.ts` |
+| BAR-DELETE-01 | `cafcb58` | tree-swipe delete 不查响应（测绘 canvas-tree#8，成因 C 权宜——copy/move 都查唯独 delete 不查）：删除失败用户无感知。契约：delete 分支必须解析响应查 `data.success` 并记日志 | L | ✅ 已钉（源码断言） | `tests/client-logic.test.ts` |
+| BAR-PROXY-01 | `678c6d2` | proxy 非流式分支 method 未传时走 else 带 body（测绘 server#12）：fetch 对 GET/HEAD 带 body 抛 TypeError。契约：`!method \|\| GET \|\| HEAD` 归无 body 分支 | L | ✅ 已钉（源码断言） | `tests/client-logic.test.ts` |
+| BAR-DEBUG-01 | `4e59339` | `debugger;` 语句随生产包发布（测绘 client-shell#15）：devtools 打开即冻结页面。契约：debug-assert 不得含 debugger 语句；DEBUG 常开为有意决策（本地单用户应用，断言日志即 bug 上报通道） | L | ✅ 已钉（源码断言） | `tests/client-logic.test.ts` |
+| BAR-RESTART-GUARD-01 | `8b1dc57` | /api/system/restart 无 verifyLocalOrigin（测绘 server#7，成因 E 机制没人走——opt-in 机制出生未接入）：恶意网页跨源 POST 可触发服务重启。契约：端点必须挂 guard | L | ✅ 已钉（源码断言） | `tests/client-logic.test.ts` |
+| BAR-ORIGIN-GUARD-01 | `683b9f2` | /ai/chat/start 无 verifyLocalOrigin（同 server#7，成因 E）：跨源可触发 AI run（烧额度）。契约：端点必须挂 guard | L | ✅ 已钉（中间件功能测试，跨源 403 真红验证） | `tests/server-routes.test.ts` |
 
 > 新 bug 修复后：补一个回归钉子 → 在此登记 → 状态置「已钉」。见
 > `../guides/testing.md` + `../constraints/invariants.md` §二 #24（修 bug 补钉子纪律）。

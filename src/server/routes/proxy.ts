@@ -72,7 +72,8 @@ export function setupProxyRoutes(router: Router): void {
           }).catch(() => res.end());
         }
         pump();
-      } else if (method === 'GET') {
+      } else if (!method || method === 'GET' || method === 'HEAD') {
+        // GET/HEAD 不得带 body（fetch 会抛 TypeError）；method 未传时按 GET 处理
         const response = await fetch(url, { headers });
         const data = await response.json();
         res.json({ status: response.status, ok: response.ok, data });

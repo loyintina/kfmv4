@@ -762,3 +762,35 @@ regression('BAR-ORB-EMPTY-01', 'message-normalize', '回复错放 reasoning（te
   const sc = readFileSync('src/client/modules/session-client.ts', 'utf-8');
   assert(sc.includes('promoteReasoningBlocks(m.content'), '历史加载必须读时归一化');
 });
+
+// ==========================================================================
+// 2026-07-29 bug 堆批次（测绘漂移结案：canvas-tree#7/#8、server#12、client-shell#15）
+// ==========================================================================
+
+regression('BAR-RENAME-01', 'eed2baf', 'rename 成功必须刷新文件树 + 检查响应（成因C 权宜，出生即无刷新）', () => {
+  const src = readFileSync('src/client/modules/file-action-bar.ts', 'utf-8');
+  const submit = src.slice(src.indexOf('async function submit()'));
+  assert(submit.includes('data.success'), 'rename 必须检查响应 success');
+  assert(submit.includes('loadFileTree(KFMState.currentRoot)'), 'rename 成功后必须刷新文件树');
+});
+
+regression('BAR-DELETE-01', 'cafcb58', 'tree-swipe delete 必须检查响应（成因C 权宜，copy/move 都查唯独 delete 不查）', () => {
+  const src = readFileSync('src/client/modules/tree-swipe.ts', 'utf-8');
+  const del = src.slice(src.indexOf("mode === 'delete'"));
+  assert(del.includes('data.success'), 'delete 分支必须解析响应并检查 success');
+});
+
+regression('BAR-PROXY-01', '678c6d2', 'proxy 非流式分支 method 未传/GET/HEAD 不得带 body（fetch TypeError）', () => {
+  const src = readFileSync('src/server/routes/proxy.ts', 'utf-8');
+  assert(src.includes("!method || method === 'GET' || method === 'HEAD'"), 'method 缺省必须归入无 body 分支');
+});
+
+regression('BAR-DEBUG-01', '4e59339', 'debugger 语句不得随生产包发布（devtools 打开即冻结页面）', () => {
+  const src = readFileSync('src/client/modules/debug-assert.ts', 'utf-8');
+  assert(!src.includes('debugger;'), 'debug-assert 不得含 debugger 语句');
+});
+
+regression('BAR-RESTART-GUARD-01', '8b1dc57', '/api/system/restart 挂 verifyLocalOrigin（成因E，机制出生未接入）', () => {
+  const src = readFileSync('src/server/index.ts', 'utf-8');
+  assert(src.includes("app.post('/api/system/restart', verifyLocalOrigin,"), 'restart 端点必须挂跨源防护');
+});

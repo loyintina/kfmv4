@@ -104,8 +104,9 @@ initApp → initUI → initGestures → initOrb（ensurePanel、sessionStore 初
 13. **dom-refs 自我宣称不实**：头称「唯一入口」，实然 orb.ts:175、gestures.ts:142,160、
     orb-panel.ts:91 等多处绕过直查。
 14. **DragConfig 死字段**：`minEditW`/`minEditH` 必填但 createDragHandler 从不读取。
-15. **【存疑安全/调试】debug-assert 生产常开**：DEBUG = true 硬编码（debug-assert.ts:9），
-    `debugger;` 语句（:15）随生产包发布。
+15. **【已结案】debug-assert debugger 语句上生产**：`debugger;` 已删（BAR-DEBUG-01，
+    引入 4e59339）。DEBUG=true 常开保留为有意决策——本地单用户应用，用户即开发者，
+    断言日志即 bug 上报通道（docstring 已写明）。
 16. 次要：gesture-registry.ts:237-238 空 if 块死码；orb 面板尺寸双实现
     （getPanelTargetPosition vs updatePanelPosition，:234-235 算了不用）；长按双机制
     并存（registry longPressMs vs drag-handler 自计时）。

@@ -82,10 +82,10 @@ send('terminal-output')；输入 → pty.write；close/error/心跳判死 → ki
    探针设施（:62-110）、/api/system/restart（:131-141）、权限检查与重启标记（:144-163）。
 6. **陷阱 1「sanitizePath 不许例外」与实然矛盾**：/roots 直读 / 不过 sanitizePath
    （files.ts:208）、/root/switch 自带校验体系、/sessions/messages 自造 id 校验。
-7. **【存疑，安全】origin 防护覆盖不均**：/api/system/restart、/ai/chat/start
-   均无 verifyLocalOrigin——恶意网页可跨源 POST 触发服务重启/AI run。绑 127.0.0.1
-   不防浏览器 drive-by。（/capabilities/execute、/ui/command 两敞口已随 ADR-004
-   整删消除。）
+7. **【已结案】origin 防护覆盖不均**：四个敞口全部消除——/capabilities/execute、
+   /ui/command 随 ADR-004 整删；/api/system/restart（BAR-RESTART-GUARD-01）、
+   /ai/chat/start（BAR-ORIGIN-GUARD-01）已挂 verifyLocalOrigin（成因 E 机制没人走，
+   opt-in 出生未接入）。教训升入契约：新端点默认挂 guard，例外需注释理由。
 8. **【存疑，安全】PTY 会话无所有权校验**：terminal-input/resize/close 只按 sessionId
    操作（ws-server.ts:180-198）——知道 sessionId 的任一已连客户端可写/关闭他人 PTY。
 9. **【存疑】evalInBrowser 落点随机**：只发给 clients 第一个（ws-server.ts:305-306），
@@ -96,8 +96,8 @@ send('terminal-output')；输入 → pty.write；close/error/心跳判死 → ki
     WS capabilities → page-state「你能做什么」）保留为「AI 之手」预留空管道——
     幽灵注册（file-search/file-read/file-write，无执行面误导 AI）已于追加裁决删除，
     当前注册数 0，page-state 空态输出「当前无额外可调用能力」。
-12. **【存疑 bug】proxy.ts 非流式分支**：method 未传时默认 GET 却带 body（:80-84）
-    会抛 TypeError——api.card 恒传 method 则无害，未核全部调用方。
+12. **【已结案】proxy.ts 非流式分支**：method 未传/GET/HEAD 已归无 body 分支
+    （BAR-PROXY-01，引入 678c6d2 v7.1.0 拆分）。
 13. 次要：/api 与 /kfmv4/api 双挂载（index.ts:50-51）；应用层 'ping' 消息客户端不回，
     纯喂看门狗——疑似协议残留；files.ts:189 死条件（path.join 恒真）；心跳 interval
     清理依赖 close 事件触发（行为正确但脆弱）。

@@ -20,12 +20,13 @@ group('ai/routes — /ai/chat/start 参数校验');
 
 type Handler = (req: any, res: any) => void;
 
-/** 把 setupAiRoutes 注册的路由收集到 Map，按 "METHOD PATH" 检索 handler。*/
+/** 把 setupAiRoutes 注册的路由收集到 Map，按 "METHOD PATH" 检索 handler。
+ *  express 签名是 (path, ...middleware, handler)，取最后一个为业务 handler。*/
 function collectRoutes(startRunFn?: StartRunFn) {
   const routes = new Map<string, Handler>();
   const fakeRouter = {
-    post: (path: string, handler: Handler) => routes.set(`POST ${path}`, handler),
-    get:  (path: string, handler: Handler) => routes.set(`GET ${path}`, handler),
+    post: (path: string, ...handlers: Handler[]) => routes.set(`POST ${path}`, handlers[handlers.length - 1]),
+    get:  (path: string, ...handlers: Handler[]) => routes.set(`GET ${path}`, handlers[handlers.length - 1]),
   } as any;
   const fakeWs = {} as any;
   setupAiRoutes(fakeRouter, fakeWs, startRunFn);
@@ -104,6 +105,25 @@ test('合法请求 → 200 + runId', () => {
 }, { tag: 'integration' });
 
 // ---- 其他路由 ----
+
+regression('BAR-ORIGIN-GUARD-01', '4d3b251', '/ai/chat/start 挂 verifyLocalOrigin 中间件（drive-by 防护）', () => {
+  // express 签名 (path, ...middleware, handler)：挂 guard 后 handlers 数 ≥ 2，
+  // 且首个中间件拒绝跨源 Origin。
+  const seen = new Map<string, Handler[]>();
+  const countingRouter = {
+    post: (path: string, ...handlers: Handler[]) => seen.set(`POST ${path}`, handlers),
+    get: (path: string, ...handlers: Handler[]) => seen.set(`GET ${path}`, handlers),
+  } as any;
+  setupAiRoutes(countingRouter, {} as any);
+  const handlers = seen.get('POST /ai/chat/start')!;
+  assert(handlers.length >= 2, '应有 verifyLocalOrigin 中间件 + 业务 handler');
+  const guard = handlers[0];
+  const res = makeRes();
+  guard({ headers: { origin: 'https://evil.com', host: '127.0.0.1:8021' } }, res, () => {
+    throw new Error('跨源请求不应通过 guard');
+  });
+  assert(res._r.statusCode === 403, `跨源应 403，得 ${res._r.statusCode}`);
+});
 
 group('ai/routes — 其他端点');
 

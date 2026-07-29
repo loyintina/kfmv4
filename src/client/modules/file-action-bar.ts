@@ -349,11 +349,17 @@ function _renameFile(): void {
     _cleanup();
     if (!newName || newName === oldName) return;
     try {
-      await fetch(API + '/files/rename', {
+      const res = await fetch(API + '/files/rename', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: p, newName }),
       });
+      const data = await res.json();
+      if (!data.success) {
+        log('[action-bar] 重命名失败: ' + (data.error || '未知错误'));
+        return;
+      }
+      await loadFileTree(KFMState.currentRoot);
     } catch (e) { log('[action-bar] 重命名失败: ' + (e instanceof Error ? e.message : String(e))); }
   }
 

@@ -89,10 +89,11 @@ _resetAnimTimeline → 下一个队列点击。
    等锁放弃，不是释放锁）。
 6. **sibling-switcher 出口名漂移**：契约称 create/destroySiblingSwitcher，实际导出
    `initSiblingSwitcher`/`isSwitcherOpen`/`closeSwitcher`，且 init 模块加载自执行（:157）。
-7. **【疑似 bug，已核实】rename 后树不刷新**：file-action-bar 的建目录/建文件/删除
-   均在 API 后 loadFileTree（:379/404/431），唯独 rename 的 submit（:346-358）不发刷新。
-8. **【疑似 bug】tree-swipe delete 分支不检查响应**（:392-397，copy/move 都查 success），
-   且 animateRemoval 未 await 与 API 并行——失败时动画已播完。
+7. **【已结案】rename 后树不刷新**：已修（BAR-RENAME-01）——submit 查 `data.success`
+   + 成功后 loadFileTree，成因 C 权宜（出生即缺，引入 eed2baf）。
+8. **【已结案】tree-swipe delete 分支不检查响应**：已修（BAR-DELETE-01）——delete 分支
+   解析响应查 success 并记日志，成因 C 权宜（引入 cafcb58）。遗留次要项：
+   animateRemoval 未 await 与 API 并行，失败时动画已播完（观感瑕疵，另案）。
 9. **死代码清单**：locateFileBox、forceRebuildTree（tree-render.ts:118/909）、
    getRowIndexLength、getModeAccentColor（canvas-cursor.ts:31/188）、getRowLayout、
    styleRegistry.set/patch、getFileColor（style-registry）、setupCharRainForSiblings

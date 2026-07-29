@@ -12,6 +12,7 @@ import { anim, type AnimTimeline } from './animation-registry.js';
 import { getFileRowData, API, KFMState } from './state.js';
 import { findBoxById } from './canvas-utils.js';
 import { setCursorColor, setModeAccent, setLiquidColor } from './canvas-cursor.js';
+import { log } from './logger.js';
 import { currentTheme as theme } from './theme.js';
 import { DOM } from './dom-refs.js';
 import { Box } from '../engine/v2/box.js';
@@ -390,10 +391,12 @@ async function _executeMode(): Promise<void> {
       const data = await res.json();
       if (data.success && data.dest) insertedPaths.push(data.dest);
     } else if (mode === 'delete') {
-      await fetch(API + '/files/delete', {
+      const res = await fetch(API + '/files/delete', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: src }),
       });
+      const data = await res.json();
+      if (!data.success) log('[tree-swipe] 删除失败: ' + (data.error || '未知错误') + ' — ' + src);
     }
   }
 

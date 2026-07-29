@@ -19,6 +19,7 @@ import { setupFileRoutes } from './routes/files.js';
 import { setupProxyRoutes } from './routes/proxy.js';
 import { setupAiRoutes } from './ai/routes.js';
 import { WsServer } from './ws-server.js';
+import { verifyLocalOrigin } from './path-utils.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -120,7 +121,7 @@ app.use('/kfmv4/api', aiChatRoutes);
 // 不受 SIGTERM 影响，能在 kfmv4 被 systemd 杀死后继续完成重启命令。
 // 解决 AI agent 调用 systemctl restart 时自身也被 kill 导致命令超时的问题。
 import { spawn } from 'node:child_process';
-app.post('/api/system/restart', (_req, res) => {
+app.post('/api/system/restart', verifyLocalOrigin, (_req, res) => {
   res.json({ status: 'restarting', message: 'Service restart initiated. kfmv4 will be back in ~5s.' });
   // 立即 flush 响应，然后委托给独立子进程
   setTimeout(() => {
