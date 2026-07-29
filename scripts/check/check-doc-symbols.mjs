@@ -16,7 +16,7 @@ import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { DOCS_ROOT } from './docs-root-const.mjs';
 
-const ROOT = fileURLToPath(new URL('../../', import.meta.url));
+const ROOT = process.env.KFM_PROBE_ROOT || fileURLToPath(new URL('../../', import.meta.url));
 
 // 豁免登记（注释原因）；优先去反引号转叙事，豁免是最后手段
 const WHITELIST = new Set([

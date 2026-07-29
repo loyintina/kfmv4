@@ -23,7 +23,7 @@ import { readFileSync, readdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 
-const ROOT = fileURLToPath(new URL('../../', import.meta.url));
+const ROOT = process.env.KFM_PROBE_ROOT || fileURLToPath(new URL('../../', import.meta.url));
 const CHECK_ONLY = process.argv.includes('--check-only');
 
 // ========== 派生真相 ==========

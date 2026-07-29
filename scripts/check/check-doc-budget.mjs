@@ -12,7 +12,7 @@ import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { DOCS_ROOT } from './docs-root-const.mjs';
 
-const ROOT = fileURLToPath(new URL('../../', import.meta.url));
+const ROOT = process.env.KFM_PROBE_ROOT || fileURLToPath(new URL('../../', import.meta.url));
 
 // 预算线（契约：doc-maintenance.md「加载类文件预算线」，改线先改契约）
 const BUDGETS = [

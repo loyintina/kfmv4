@@ -1,0 +1,12 @@
+id: probe
+name: 探针卡
+trigger: 测试
+frequency: 探针
+reads:
+  - x.md
+steps:
+  1. 做
+writes:
+  - x.md
+exit_condition: 完
+natural_next: 无

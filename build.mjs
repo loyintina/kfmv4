@@ -71,6 +71,7 @@ execSync('node scripts/check/check-doc-symbols.mjs', { stdio: 'inherit' });
 execSync('node scripts/check/check-doc-schema.mjs', { stdio: 'inherit' });
 execSync('node scripts/check/check-commit-docs.mjs', { stdio: 'inherit' });
 execSync('node scripts/check/check-hooks.mjs', { stdio: 'inherit' });
+execSync('node scripts/check/check-probes.mjs', { stdio: 'inherit' });
 execSync('node scripts/check/sync-counts.mjs --check-only', { stdio: 'inherit' });
 execSync('npx tsc --noEmit', { stdio: 'inherit' });
 

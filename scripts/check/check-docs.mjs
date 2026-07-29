@@ -15,7 +15,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { DOCS_ROOT } from './docs-root-const.mjs';
 
-const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const ROOT = process.env.KFM_PROBE_ROOT || path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 let errors = 0;
 function error(msg) {

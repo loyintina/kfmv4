@@ -1,0 +1,6 @@
+{
+  "name": "probe",
+  "scripts": {
+    "check": "node scripts/check/check-a.mjs && tsc --noEmit"
+  }
+}
