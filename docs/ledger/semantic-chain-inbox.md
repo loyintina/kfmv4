@@ -5,3 +5,5 @@
 - 2026-07-30 17:32 ⚠️ 8 条新发现待裁决（跑 24 跳 0，幻觉拦截 6）→ 明细见 semantic-audit-state.json，裁决流 workflows/semantic-audit.yaml
 - 2026-07-30 18:00 ⚠️ 10 条待裁决（本轮新增 2，跑 3 跳 21，幻觉拦截 0）→ 明细见 semantic-audit-state.json 各任务 keptFindings，裁决流 workflows/semantic-audit.yaml
 - 2026-07-30 18:14 ⚠️ 2 条待裁决（本轮新增 2，跑 16 跳 8，幻觉拦截 3）→ 明细见 semantic-audit-state.json 各任务 keptFindings，裁决流 workflows/semantic-audit.yaml
+- 2026-07-30 18:26 ⚠️ 1 条待裁决（本轮新增 1，跑 17 跳 7，幻觉拦截 2）→ 明细见 semantic-audit-state.json 各任务 keptFindings，裁决流 workflows/semantic-audit.yaml
+- 2026-07-30 18:39 ✅ 干净（跑 1 跳 23，幻觉拦截 0）

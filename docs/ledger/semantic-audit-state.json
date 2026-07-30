@@ -1,7 +1,7 @@
 {
   "tasks": {
     "diagnostics-vs-maps": {
-      "hash": "09d6e488ba10c9b33e62c37043d757def30e3fe8",
+      "hash": "3a5e1773f434759268b78080129a41aec27b68c1",
       "lastRun": "2026-07-30",
       "status": "ok",
       "reported": 0,
@@ -13,27 +13,27 @@
       "attempts": 1
     },
     "guides-testing-vs-infra": {
-      "hash": "49a665d0b6708af6c6d77faed0b548eb962c3712",
+      "hash": "9eb835b27a1bc428af81221ae6c445966e4f9a3b",
       "lastRun": "2026-07-30",
       "status": "ok",
       "reported": 1,
-      "kept": 1,
-      "dropped": 0,
-      "keptFindings": [
+      "kept": 0,
+      "dropped": 1,
+      "keptFindings": [],
+      "droppedFindings": [
         {
           "type": "SEM001",
-          "claim": "docs/guides/testing.md:8",
-          "against": "docs/domains/infra/contract.md:10",
-          "quote": "进主管线",
-          "note": "npm test非主管线，主管线为npm run check"
+          "claim": "docs/guides/testing.md:7",
+          "against": "docs/domains/infra/code-map.md:155",
+          "quote": "11 条浏览器冒烟",
+          "note": "testing.md 称冒烟测试 11 条，code-map.md 漂移 9 记载 smoke.mjs 实测 456 个测试，数量严重不符。"
         }
       ],
-      "droppedFindings": [],
       "provider": "Opencode Go Google/deepseek-v4-flash",
       "attempts": 1
     },
     "stack-vs-ledger": {
-      "hash": "512927c9f7e4dfb2bf399e1b1a105d0320aa2941",
+      "hash": "b12fc1f9be8354485ac04fef9384d155f97c4050",
       "lastRun": "2026-07-30",
       "status": "ok",
       "reported": 0,
@@ -42,10 +42,10 @@
       "keptFindings": [],
       "droppedFindings": [],
       "provider": "Opencode Go Google/deepseek-v4-flash",
-      "attempts": 2
+      "attempts": 1
     },
     "inter-vision-invariants": {
-      "hash": "520e6f366625068d27dd1a7286adeeb1519c96a3",
+      "hash": "b8c0e923544b660f190cb7018e8f2c1858cde284",
       "lastRun": "2026-07-30",
       "status": "ok",
       "reported": 0,
@@ -57,7 +57,7 @@
       "attempts": 1
     },
     "inter-readme-codemap": {
-      "hash": "8e2c20b48f892d8fbfbbe27d16be00bc5858e61f",
+      "hash": "0b84db34853ed30bd3d5f211ab65021aa013a924",
       "lastRun": "2026-07-30",
       "status": "ok",
       "reported": 0,
@@ -65,62 +65,11 @@
       "dropped": 0,
       "keptFindings": [],
       "droppedFindings": [],
-      "provider": "Opencode Go Google/deepseek-v4-flash",
-      "attempts": 1
-    },
-    "inter-agentrunner-infra": {
-      "hash": "6a75f792674ac9490af400ae5c53bd4f4bd9afa3",
-      "lastRun": "2026-07-30",
-      "status": "ok",
-      "reported": 0,
-      "kept": 0,
-      "dropped": 0,
-      "keptFindings": [],
-      "droppedFindings": [],
-      "provider": "Opencode Go Google/deepseek-v4-flash",
-      "attempts": 1
-    },
-    "vision-vs-maps": {
-      "hash": "b9215869cdfb676286177b8f642c46ebba962950",
-      "lastRun": "2026-07-30",
-      "status": "ok",
-      "reported": 0,
-      "kept": 0,
-      "dropped": 0,
-      "keptFindings": [],
-      "droppedFindings": [],
-      "provider": "Opencode Go Google/deepseek-v4-flash",
-      "attempts": 1
-    },
-    "invariants-vs-maps": {
-      "hash": "bc5a2724e141081201f2c0161a15d41fefa9cabf",
-      "lastRun": "2026-07-30",
-      "status": "ok",
-      "reported": 2,
-      "kept": 0,
-      "dropped": 2,
-      "keptFindings": [],
-      "droppedFindings": [
-        {
-          "type": "SEM001",
-          "claim": "docs/constraints/invariants.md:278",
-          "against": "docs/domains/client-shell/code-map.md:161",
-          "quote": "发现补丁就立即根除",
-          "note": "长按双机制并存（registry longPressMs vs drag-handler自计时）是未根除的补丁，违反心法6。"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/constraints/invariants.md:300",
-          "against": "docs/domains/canvas-tree/code-map.md:52",
-          "quote": "一个数据对象在系统内只能有一个生产者",
-          "note": "expandedPaths有4个写者（state/tree-render/tree-loader/sibling-switcher），违反唯一生产者原则。"
-        }
-      ],
       "provider": "Opencode Go Google/deepseek-v4-flash",
       "attempts": 2
     },
-    "readme-vs-maps": {
-      "hash": "d93d647c6e1ed48223427e5766f8c9041889120a",
+    "inter-agentrunner-infra": {
+      "hash": "f6f44d671939810abecde536ea0eaa77eb7d865c",
       "lastRun": "2026-07-30",
       "status": "ok",
       "reported": 1,
@@ -129,18 +78,54 @@
       "keptFindings": [],
       "droppedFindings": [
         {
-          "type": "SEM001",
-          "claim": "README.md:5",
-          "against": "infra/code-map.md:5",
-          "quote": "440 个回归测试",
-          "note": "实际回归测试数为456（infra码图测绘元数据），README写440，数量不符"
+          "type": "SEM002",
+          "claim": "docs/guides/agent-runner.md:17",
+          "against": "docs/guides/agent-runner.md:124",
+          "quote": "exit 0：输出精确",
+          "note": "输出协议规定exit 0和exit 2，但三号负载声称永远exit 0，矛盾"
         }
       ],
       "provider": "Opencode Go Google/deepseek-v4-flash",
+      "attempts": 3
+    },
+    "vision-vs-maps": {
+      "hash": "fd9532dc9d7396c1a67dc91459394f7241880a9a",
+      "lastRun": "2026-07-30",
+      "status": "ok",
+      "reported": 0,
+      "kept": 0,
+      "dropped": 0,
+      "keptFindings": [],
+      "droppedFindings": [],
+      "provider": "Opencode Go Google/deepseek-v4-flash",
+      "attempts": 2
+    },
+    "invariants-vs-maps": {
+      "hash": "e4832361876c33e137544bbb11b808b8bbcb53a1",
+      "lastRun": "2026-07-30",
+      "status": "ok",
+      "reported": 0,
+      "kept": 0,
+      "dropped": 0,
+      "keptFindings": [],
+      "droppedFindings": [],
+      "provider": "Opencode Go Google/deepseek-v4-flash",
       "attempts": 1
     },
+    "readme-vs-maps": {
+      "hash": "0a76162e8296ea465deb3ec68c261ca5c4a9fbcf",
+      "lastRun": "2026-07-30",
+      "status": "ok",
+      "reported": 0,
+      "kept": 0,
+      "dropped": 0,
+      "keptFindings": [],
+      "droppedFindings": [],
+      "provider": "Opencode Go Google/deepseek-v4-flash",
+      "attempts": 2
+    },
     "claude-vs-docs": {
-      "hash": "e746d17dc0ab37efa3efde2e0c4dd4d5251fc7b9",
+      "hash": "5e013c06059f36bf52f9985528ad35d35d7bdd98",
       "lastRun": "2026-07-30",
       "status": "ok",
       "reported": 0,
@@ -152,7 +137,7 @@
       "attempts": 1
     },
     "workflows-vs-guides": {
-      "hash": "28e312c88aa38d76f1d5ae88978ce8ad05b049ae",
+      "hash": "4ab553b9866db4dead0420f8b369c2cad00afdc3",
       "lastRun": "2026-07-30",
       "status": "ok",
       "reported": 0,
@@ -161,7 +146,7 @@
       "keptFindings": [],
       "droppedFindings": [],
       "provider": "Opencode Go Google/deepseek-v4-flash",
-      "attempts": 2
+      "attempts": 1
     },
     "guides-release-vs-history": {
       "hash": "39a24a5526520017f98e8277a7830c1cfca15666",
@@ -176,7 +161,7 @@
       "attempts": 1
     },
     "doc-maintenance-vs-pipeline": {
-      "hash": "c64e8db18736f3f30820b2143db20d4d2a89a1ae",
+      "hash": "c5b119604fca73d330106b41cdc0383b81388a07",
       "lastRun": "2026-07-30",
       "status": "ok",
       "reported": 0,
@@ -188,7 +173,7 @@
       "attempts": 1
     },
     "contract-vs-map-ai-chat": {
-      "hash": "a160f7b2ec9cf1a9123d29d411b329285a7d4a25",
+      "hash": "4c598a1eb7104a2e490dc173280d8b2702feefe9",
       "lastRun": "2026-07-30",
       "status": "ok",
       "reported": 0,
@@ -196,7 +181,7 @@
       "dropped": 0,
       "keptFindings": [],
       "droppedFindings": [],
-      "provider": "Opencode Go Google/deepseek-v4-flash",
+      "provider": "deepseek/deepseek-v4-flash",
       "attempts": 1
     },
     "contract-vs-map-canvas-tree": {
@@ -248,7 +233,7 @@
       "attempts": 1
     },
     "contract-vs-map-infra": {
-      "hash": "c291715cba8dbe44cef0d533b9b94bb3bf2af552",
+      "hash": "6d3b2df85f1fda8239877b8b99da642d589a39dd",
       "lastRun": "2026-07-30",
       "status": "ok",
       "reported": 0,
@@ -256,11 +241,11 @@
       "dropped": 0,
       "keptFindings": [],
       "droppedFindings": [],
-      "provider": "deepseek/deepseek-v4-flash",
-      "attempts": 1
+      "provider": "Opencode Go Google/deepseek-v4-flash",
+      "attempts": 2
     },
     "crossdomain-vs-inventory": {
-      "hash": "1249a32e70a07611ece914decc88a109aeeb0b98",
+      "hash": "c60e4b89cfcc140dd73a13e8a38169b6c30b9546",
       "lastRun": "2026-07-30",
       "status": "ok",
       "reported": 0,
@@ -272,7 +257,7 @@
       "attempts": 1
     },
     "inter-workflows-infra": {
-      "hash": "6a2bb94532bae3270fda14c571e5ad3b77227aaf",
+      "hash": "656c232436744d38b5d67cf56aa6465159d1f2df",
       "lastRun": "2026-07-30",
       "status": "ok",
       "reported": 0,
@@ -296,27 +281,19 @@
       "attempts": 1
     },
     "inter-detail-contract-aichat": {
-      "hash": "b15213b4262b1c2e5b4cd087692251dacc790028",
+      "hash": "21b553fe01512495a7757084e66e701ebe472097",
       "lastRun": "2026-07-30",
       "status": "ok",
-      "reported": 1,
-      "kept": 1,
+      "reported": 0,
+      "kept": 0,
       "dropped": 0,
-      "keptFindings": [
-        {
-          "type": "SEM002",
-          "claim": "docs/domains/ai-chat/contract.md:25",
-          "against": "docs/domains/ai-chat/detail-runtime.md:275",
-          "quote": "唯一写者 + 冷恢复",
-          "note": "契约声称 session-store.ts 负责冷恢复，但展开版声明其不承担冷恢复判据，职责归属矛盾。"
-        }
-      ],
+      "keptFindings": [],
       "droppedFindings": [],
-      "provider": "Opencode Go Google/deepseek-v4-flash",
+      "provider": "deepseek/deepseek-v4-flash",
       "attempts": 1
     },
     "vision-internal": {
-      "hash": "959f58989181627001347317fd90aee3c0964def",
+      "hash": "807fc7c3993ba9bb6f3652ac255db93aa798ffc0",
       "lastRun": "2026-07-30",
       "status": "ok",
       "reported": 0,
@@ -325,7 +302,7 @@
       "keptFindings": [],
       "droppedFindings": [],
       "provider": "Opencode Go Google/deepseek-v4-flash",
-      "attempts": 1
+      "attempts": 2
     }
   },
   "runs": [
@@ -412,6 +389,27 @@
       "skipped": 8,
       "kept": 2,
       "dropped": 3
+    },
+    {
+      "date": "2026-07-30",
+      "ran": 17,
+      "skipped": 7,
+      "kept": 1,
+      "dropped": 2
+    },
+    {
+      "date": "2026-07-30",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-07-30",
+      "ran": 1,
+      "skipped": 23,
+      "kept": 0,
+      "dropped": 0
     }
   ]
 }
