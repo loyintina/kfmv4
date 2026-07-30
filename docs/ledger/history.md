@@ -50,3 +50,4 @@
 - 2026-07-29 管线再设计批 2-3 完成（STACK #2 主干收官，25 个 check 脚本）：check-doc-schema（契约必备章节 + workflows 9 字段）/ check-commit-docs（耦合门 warning 观察期，豁免语法 docs:na）/ sync-counts 升级（infra 链枚举 <!-- chain:auto --> 生成区，顺手修「20 脚本」漂移）/ docs-status 仪表盘（npm run docs:status，非阻断观测）/ 生命周期分层（frozen/active-tracked/generated/working）/ 管线两原则定稿（失效探测器 + 格式为消费者）；遗留：耦合门观察期后定级、批 1.5 语义审计试点（semantic-compiler-seed.md）
 - 2026-07-29 管线批 4（快照病四洞，26 个 check 脚本）：域映射双向健康（上岗即抓 waiting-hints.ts 盲区）/ 豁免防腐（css-wiring + console 白名单自证）/ commit-msg 钩子（耦合门 --staged 犯罪现场拦截，薄壳原则）/ check-hooks（hooksPath+可执行位+薄壳引用）/ 检查设计宪法进 doc-maintenance；批 5 探针自检登记 STACK
 - 2026-07-29 管线批 5（探针自检，27 个 check 脚本）：check-probes 运行器（双断言：报红 + 含 expect.txt 病因字串）+ 8 检查 KFM_PROBE_ROOT 注入 + 8 棵负例假树；突变自测闭环（治愈夹具 → 运行器报「检查已失效」）；git 历史型检查豁免；探针条款进宪法——「绿色可信」从此可验证
+- 2026-07-30 耦合门定级（STACK #2 批 5 遗留收官）：观察期数据（src/ 口径 13/13 全合规；scripts/ 口径 34 提交 3 例漏同步——真实腐化在 src/ 之外）→ hard fail + 口径扩 src/+scripts/ + 豁免收紧独立行 `docs:na`（防 prose 字面串误认）；git 历史型检查免探针条款维持

@@ -5,7 +5,9 @@
 2. 管线文档检查自动化体系再设计（2026-07-29 立项，主干 ✅ 完成）
    — 批 0 归拢 ✅ → 批 0.5 grammar ✅ → 批 1 机械四件套 ✅ → 批 2 schema+耦合门 ✅ → 批 3 仪表盘+分层 ✅
    — 原则：失效探测器 / 格式为消费者 / 精确率≈1（已进 doc-maintenance）
-   — 批 5 ✅：check-probes 探针自检（8 检查注入 + 8 假树 + 突变自测闭环）；遗留：耦合门 warning 观察期后定级（含豁免语法收紧：prose 字面串误认）
+   — 批 5 ✅：check-probes 探针自检（8 检查注入 + 8 假树 + 突变自测闭环）
+   — 耦合门定级 ✅（2026-07-30）：观察期数据（src/ 13/13 合规、scripts/ 34 提 3 漏）→
+     hard fail + 口径扩 src/+scripts/ + 豁免收紧独立行 docs:na（防 prose 字面串误认）
    — 批 1.5 语义审计试点 ✅ 结案（2026-07-30：审计 26 报 24 真（精确率 92%）→ 溯源 G1-G6 分类学
      → 24 条修复 → 结晶三件套进确定区 → semantic-audit.yaml 制度化；账本 ledger/semantic-provenance.md，
      复盘与「编译≠检查」三档阶梯见 semantic-compiler-seed.md 末节）
