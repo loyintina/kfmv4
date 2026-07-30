@@ -21,7 +21,9 @@ agent 原件，不是 agent 应用。三明治：**机械组装输入 → agent 
 
 ## provider 兜底链
 
-`providers.config.json` 有序列表：deepseek/deepseek-v4-flash → 阶跃星辰/step-3.7-flash。
+`providers.config.json` 有序列表：Opencode Go Google/deepseek-v4-flash →
+OpenCode Go GitHub/deepseek-v4-flash（429 月限额兜底位，复位后自动回主）→
+deepseek/deepseek-v4-flash → 阶跃星辰/step-3.7-flash（2026-07-30 用户拍板重排）。
 key 从 `~/.kfmv4/providers.json` 按 id 读；调用失败自动落下一个；
 可选 `params` 覆盖请求参数（现配 `response_format: json_object`——「只输出 JSON」从 prompt 约束升级为端点约束，与 validate 重试双保险）。
 

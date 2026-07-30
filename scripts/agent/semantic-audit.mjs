@@ -76,7 +76,7 @@ function inlineDocs(files) {
 
 // 审计逻辑版本：脚本/prompt/复核规则变更时 +1——任务哈希不含 prompt 内容，
 // 不加版本盐，修完脚本旧哈希会跳过复跑（四轮教训：误触发跑出的污染结果被哈希跳过）
-const AUDIT_VERSION = 3;
+const AUDIT_VERSION = 4;
 
 function taskHash(task, files) {
   const h = createHash('sha1');
@@ -156,6 +156,9 @@ ${task.sem.map(s => `- ${s}`).join('\n')}
 【输出契约】只输出 JSON，不要任何多余文字：
 {"findings":[{"type":"SEM001","claim":"出错文档路径:行号","against":"基准出处路径:行号 或 null","note":"50字内冲突说明"}]}
 无发现输出 {"findings":[]}。上限 10 条，拿不准的不报（宁缺勿滥——幻觉发现会死在机械复核环节）。
+特别注意：承重入口表不枚举全部 30 个 check——「code-map 未提及某 check」不构成
+其不存在的证据，「声称 check 存在但实际不存在」类发现**一律不报**（四轮+变异基准
+同族假发现复发 6 次教训：check-docs/check-active-stack/check-doc-symbols 等均真实存在）。
 
 【登记豁免】以下病灶已在账本登记，**不算新发现，一律跳过**：
 ${registeredFindings(domains) || '（无）'}

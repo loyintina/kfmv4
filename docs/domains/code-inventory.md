@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 586154e · 生成于 2026-07-30 -->
+<!-- 基准 commit 907b1bd · 生成于 2026-07-30 -->
 
 # 代码清单（机械层）
 
@@ -165,7 +165,7 @@
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 
-## infra（84 文件 · 10914 行）
+## infra（84 文件 · 10917 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -174,7 +174,7 @@
 | tests/tool-compaction.test.ts | 505 | — |
 | tests/preload.mjs | 406 | — |
 | tests/visual-baseline.test.ts | 367 | — |
-| scripts/agent/semantic-audit.mjs | 349 | taskFiles, buildPrompt, makeValidate, recheckRef |
+| scripts/agent/semantic-audit.mjs | 352 | taskFiles, buildPrompt, makeValidate, recheckRef |
 | tests/server-routes.test.ts | 321 | — |
 | tests/box.test.ts | 309 | — |
 | tests/mocks/gsap.ts | 305 | gsap |
@@ -541,4 +541,4 @@
 - src/server/index.ts → src/server/ai/routes.ts
 
 ---
-合计 218 文件 · 41334 行 · 跨域边 225 条
+合计 218 文件 · 41337 行 · 跨域边 225 条
