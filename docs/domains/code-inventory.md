@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 59192bf · 生成于 2026-07-30 -->
+<!-- 基准 commit 83bbad1 · 生成于 2026-07-30 -->
 
 # 代码清单（机械层）
 
@@ -36,7 +36,7 @@
 | src/client/engine/v2/animation.ts | 40 | ease |
 | src/client/engine/v2/utils.ts | 24 | uniformSpacing, hvSpacing, ZERO_SPACING |
 
-## floating-card（27 文件 · 6722 行）
+## floating-card（27 文件 · 6727 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -44,7 +44,7 @@
 | src/client/modules/terminal-card-04.ts | 757 | TerminalCardMeta, initTerminalCore, disposeTerminalCore, compactTerminalCore, createTerminal04Handler |
 | src/client/cards/plugins/role.card.ts | 740 | — |
 | src/client/cards/plugins/config.card.ts | 694 | — |
-| src/client/cards/plugins/session.card.ts | 607 | — |
+| src/client/cards/plugins/session.card.ts | 612 | — |
 | src/client/cards/plugins/api.card.ts | 575 | — |
 | src/client/modules/card-stack.ts | 447 | getCardCount, getCard, getCardName, getCardId, hexToRgba, cardGradient, cardBg, getFocusIndex, getCurrentAccent, getCardHandler, getFocusedCardRect, animateStackPullFeedback, launchFocusedCard, openCardStack, closeCardStack, isCardStackOpen, focusNext, focusPrev, initCardStack |
 | src/client/cards/plugins/tools.card.ts | 307 | — |
@@ -68,7 +68,7 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（22 文件 · 3321 行）
+## client-shell（23 文件 · 3387 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -83,10 +83,11 @@
 | src/client/modules/renderer-lifecycle.ts | 172 | RenderContext, RendererLifecycle, L |
 | src/client/modules/state.ts | 165 | API, FileNode, ViewportState, KFMStateType, KFMState, FileRowData, getFileRowData |
 | src/client/modules/drag-handler.ts | 134 | DragConfig, createDragHandler |
-| src/client/main.ts | 103 | — |
-| src/client/modules/z-index-layers.ts | 103 | Z, ZLayer |
+| src/client/main.ts | 107 | — |
+| src/client/modules/z-index-layers.ts | 105 | Z, ZLayer |
 | src/client/modules/animation-registry.ts | 75 | AnimTimeline, anim |
 | src/client/modules/ui.ts | 71 | openSidebar, closeSidebar, initUI |
+| src/client/modules/version-watch.ts | 60 | initVersionWatch |
 | src/client/modules/logger.ts | 58 | log, getLogs, clearLogs, copyLogs, onLog |
 | src/client/modules/card-toast.ts | 53 | showCardToast |
 | src/client/modules/click-queue.ts | 39 | ClickEvent, enqueue, dequeue, clear, isEmpty, peek |
@@ -95,7 +96,7 @@
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（54 文件 · 11257 行）
+## ai-chat（54 文件 · 11276 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -103,7 +104,7 @@
 | src/client/data/waiting-hints.ts | 1108 | WAITING_HINTS |
 | src/server/ai/tools/omp/browser/tab-worker.ts | 921 | WorkerCore |
 | src/server/ai/tools/omp/browser/launch.ts | 603 | DEFAULT_VIEWPORT, BROWSER_PROTOCOL_TIMEOUT_MS, loadPuppeteer, loadPuppeteerInWorker, LaunchHeadlessOptions, launchHeadlessBrowser, applyViewport, UserAgentOverride, UserAgentSession, applyStealthPatches |
-| src/client/modules/session-client.ts | 526 | SessionMessage, Session, extractMessageText, countTextMessages, sessionStore |
+| src/client/modules/session-client.ts | 529 | SessionMessage, Session, extractMessageText, countTextMessages, sessionStore |
 | src/client/modules/orb-chat-run.ts | 512 | ChatMessage, StreamEvent, getActiveRunId, getActiveCursor, setEventHook, readPersistedRun, clearPersistedRun, settlePendingToolBlocks, resumeRun, doSend |
 | src/server/ai/chat.ts | 447 | ChatMessage, StreamEvent, createClientIdxMapper |
 | src/client/modules/ws-channel.ts | 426 | wsChannel, initWsChannel |
@@ -116,19 +117,19 @@
 | src/shared/chat-protocol/to-openai-messages.ts | 276 | OpenAiToolCall, OpenAiMessage, ToOpenAiOptions, ToOpenAiResult, toOpenAiMessages |
 | src/server/ai/tools/omp/debug/cdp-connection.ts | 242 | CdpSession, CdpLaunchOptions, CdpAttachOptions, CdpPausedEvent, sendCmd, onCdpEvent, launchCdp, attachCdp, closeCdp |
 | src/client/modules/orb-chat-hints.ts | 225 | startWaitingIndicator, TODO_DISMISS_KEY, todosFingerprint, clearTodoPanel, dismissTodoPanel, updateTodoFromTool |
+| src/server/ai/session-store.ts | 196 | appendEvent, flush, flushSync, appendUserMessage |
 | src/server/ai/run-manager.ts | 193 | getActiveRun, getRun, StreamFn, startRun, attachRun, cancelRun |
-| src/server/ai/session-store.ts | 185 | appendEvent, flush, flushSync, appendUserMessage |
 | src/server/ai/page-state.ts | 123 | PAGE_STATE_PATH, renderPageState, refreshPageState |
 | src/shared/chat-protocol/reducer.ts | 122 | ReduceContext, applyEvent, reduceEvents |
 | src/server/ai/tools/kfmv4/logs.ts | 119 | kfmLogsTool |
 | src/server/ai/tools/omp/read.ts | 117 | ompReadTool |
 | src/server/ai/tools/omp/browser/aria/aria-snapshot.ts | 116 | AriaSnapshotOptions, captureAriaSnapshot, resolveAriaRefHandle, parseAriaRefSelector, buildAriaSnapshotScript |
 | src/server/ai/tools/omp/browser/tab-protocol.ts | 115 | Transferable, ObservationEntry, Observation, ScreenshotResult, SessionSnapshot, WorkerInitPayload, ToolReply, WorkerInbound, ReadyInfo, RunResultOk, RunErrorPayload, WorkerOutbound, Transport |
+| src/server/ai/routes.ts | 112 | StartRunFn, setupAiRoutes |
 | src/server/ai/tools/omp/browser/readable.ts | 111 | ReadableFormat, ReadableResult, extractReadableFromHtml |
 | src/server/ai/tools/omp/web-search.ts | 109 | ompWebSearchTool |
 | src/server/ai/rule-engine.ts | 108 | AiRule, loadRules, buildAlwaysApplyPrompt, checkToolCallRules, reloadRules |
 | src/server/ai/tools/index.ts | 108 | getAllTools, getToolDefinitions, executeTool, hasTool, getTool |
-| src/server/ai/routes.ts | 107 | StartRunFn, setupAiRoutes |
 | src/server/ai/prompt-assembler.ts | 105 | getActiveRoleFile, assembleRoleSystemPrompt, assembleDynamicPrompt |
 | src/server/ai/tools/omp/browser.ts | 100 | browserTool |
 | src/server/ai/tools/types.ts | 99 | ContentBlock, ToolResult, ToolUpdate, ToolContext, KfmTool, ToolError, ToolAbortError, throwIfAborted, renderError |
@@ -154,22 +155,22 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（6 文件 · 1177 行）
+## server（6 文件 · 1178 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/server/routes/files.ts | 355 | FileItem, sliceMessages, setupFileRoutes |
+| src/server/routes/files.ts | 356 | FileItem, sliceMessages, setupFileRoutes |
 | src/server/ws-server.ts | 315 | WsServer |
 | src/server/index.ts | 165 | — |
 | src/server/path-utils.ts | 139 | ROOT_DIR, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 
-## infra（88 文件 · 11575 行）
+## infra（89 文件 · 11695 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| tests/client-logic.test.ts | 820 | — |
+| tests/client-logic.test.ts | 832 | — |
 | tests/regression.test.ts | 639 | — |
 | tests/tool-compaction.test.ts | 505 | — |
 | tests/preload.mjs | 406 | — |
@@ -189,9 +190,9 @@
 | tests/smoke/smoke.mjs | 190 | — |
 | scripts/check/gen-code-inventory.mjs | 181 | — |
 | tests/path-utils.test.ts | 172 | — |
+| tests/to-openai-messages.test.ts | 172 | — |
 | tests/chat-protocol.test.ts | 169 | — |
 | tests/protocol-reducer.test.ts | 161 | — |
-| tests/to-openai-messages.test.ts | 161 | — |
 | scripts/agent/semantic-audit.tasks.mjs | 152 | TASKS |
 | scripts/check/check-docs.mjs | 146 | — |
 | scripts/agent/semantic-bench.mjs | 145 | — |
@@ -208,19 +209,20 @@
 | scripts/check/check-zindex.mjs | 110 | — |
 | scripts/agent/agent-runner.mjs | 109 | renderTemplate, extractJson, runAgent |
 | scripts/agent/exp-vision-internal.mjs | 109 | — |
+| build.mjs | 108 | — |
 | scripts/check/check-cards.mjs | 105 | — |
 | scripts/check/check-contract-freshness.mjs | 103 | — |
 | scripts/check/check-test-patterns.mjs | 102 | — |
 | scripts/agent/tag-advisor.mjs | 100 | — |
 | scripts/check/check-anim.mjs | 99 | — |
-| build.mjs | 96 | — |
 | scripts/check/check-versions.mjs | 91 | — |
 | scripts/check/check-probes.mjs | 86 | — |
 | tests/engine.test.ts | 85 | — |
+| scripts/check/check-deploy-freshness.mjs | 83 | — |
 | scripts/check/check-hooks.mjs | 81 | — |
 | scripts/agent/exp-thinking.mjs | 81 | — |
 | scripts/check/check-console.mjs | 79 | — |
-| scripts/check/chain.mjs | 77 | STEPS |
+| scripts/check/chain.mjs | 78 | STEPS |
 | scripts/check/check-as-any.mjs | 76 | — |
 | scripts/check/docs-status.mjs | 76 | — |
 | scripts/check/check-doc-symbols.mjs | 75 | — |
@@ -232,8 +234,8 @@
 | tests/floating-state.test.ts | 66 | — |
 | scripts/agent/test-tag-advisor.mjs | 64 | — |
 | scripts/check/check-active-stack.mjs | 61 | — |
+| scripts/check/domain-src.mjs | 61 | DOMAIN_SRC |
 | scripts/check/check-doc-schema.mjs | 60 | — |
-| scripts/check/domain-src.mjs | 60 | DOMAIN_SRC |
 | scripts/check/check-commit-docs.mjs | 59 | — |
 | tests/omp-glob.test.ts | 58 | — |
 | scripts/check/check-uncommitted.mjs | 51 | — |
@@ -545,4 +547,4 @@
 - src/server/index.ts → src/server/ai/routes.ts
 
 ---
-合计 222 文件 · 42051 行 · 跨域边 225 条
+合计 224 文件 · 42262 行 · 跨域边 225 条
