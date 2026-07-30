@@ -79,6 +79,7 @@ async function loadSessions(): Promise<Session[]> {
         ...(typeof s['modelId'] === 'string' && { modelId: s['modelId'] }),
         messageCount: typeof s['messageCount'] === 'number' ? s['messageCount'] : 0,
         tokenCount: typeof s['tokenCount'] === 'number' ? s['tokenCount'] : 0,
+        ...(typeof s['fullTokenCount'] === 'number' && { fullTokenCount: s['fullTokenCount'] }),
         messages: [], // 元数据加载不含消息，气泡预览时按需拉取
       });
     }
@@ -277,7 +278,11 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
 
       const metaRow = document.createElement('div');
       metaRow.style.cssText = 'display:flex;gap:8px;font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.5)';
-      metaRow.innerHTML = `<span>${formatDate(session.updatedAt)}</span><span>${session.messageCount ?? countTextMessages(session.messages)} 条</span><span>${formatTokens(session.tokenCount)}</span>`;
+      // 双 token 显示「压缩/全量」：压缩后 = 实际发给 API 的量级，全量 = 会话文件原始大小
+      const tokenText = session.fullTokenCount
+        ? `${formatTokens(session.tokenCount)}/${formatTokens(session.fullTokenCount)}`
+        : formatTokens(session.tokenCount);
+      metaRow.innerHTML = `<span>${formatDate(session.updatedAt)}</span><span>${session.messageCount ?? countTextMessages(session.messages)} 条</span><span title="压缩后/全量 token">${tokenText}</span>`;
       if (session.providerId) metaRow.innerHTML += `<span>${session.providerId}</span>`;
 
       item.appendChild(titleRow);

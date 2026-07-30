@@ -26,15 +26,20 @@ export function setupAiRoutes(router: Router, wsServer: WsServer, startRunFn: St
    *   （复用已有活跃 run 时 fromIndex=0，客户端据 events 全量对齐；新 run 也是 0）
    */
   router.post('/ai/chat/start', verifyLocalOrigin, (req, res) => {
-    const { sessionId, messages, model, provider, roleFile } = req.body;
+    // body: { sessionId, messages, model, provider, roleFile, userText }
+    const { sessionId, messages, model, provider, roleFile, userText } = req.body;
     if (!sessionId || !messages || !Array.isArray(messages) || messages.length === 0) {
       res.status(400).json({ error: '缺少 sessionId 或 messages 参数' });
       return;
     }
-    // 从 apiMessages 最后一条 user 消息提取文本，通过 SessionStore 追加
-    const lastUserMsg = [...messages].reverse().find((m: any) => m?.role === 'user');
-    if (lastUserMsg && typeof lastUserMsg.content === 'string' && lastUserMsg.content.trim()) {
-      sessionStore.appendUserMessage(sessionId, lastUserMsg.content, model, provider);
+    // 落盘用户消息必须用 userText 原文——messages 是投影产物（带 [MM-DD HH:MM] 前缀、
+    // 可能压缩），把投影文本回写真相源会造成前缀叠加污染（v8.3.x ts 泄漏病灶：
+    // 会话文件里用户消息长出 [07-30 21:05] 前缀，下轮投影再盖一层）。
+    // userText 缺省时退回旧路径（老客户端兼容）。
+    const rawUserText = typeof userText === 'string' && userText.trim() ? userText
+      : (() => { const m = [...messages].reverse().find((x: any) => x?.role === 'user'); return m && typeof m.content === 'string' ? m.content : ''; })();
+    if (rawUserText.trim()) {
+      sessionStore.appendUserMessage(sessionId, rawUserText, model, provider);
     }
     const run = startRunFn(
       sessionId, messages,

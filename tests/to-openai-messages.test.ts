@@ -144,7 +144,18 @@ test('失败模式重复标注：同错误第 N 次附加 failRepeatAnnotation',
     '第 N 次同错误应带重复标注');
 });
 
-// ========== 源码钉：两处调用点不许再手写转换 ==========
+// ========== 投影文本不得回写真相源（ts 泄漏病灶） ==========
+
+group('投影/存储分离 — 落盘必须走原文通道');
+
+test('routes 落盘用户消息用 userText 原文，不用投影文本（前缀叠加污染）', () => {
+  const routes = readFileSync('src/server/ai/routes.ts', 'utf-8');
+  const run = readFileSync('src/client/modules/orb-chat-run.ts', 'utf-8');
+  assert(routes.includes('userText'), '服务端必须接收并使用 userText 原文落盘');
+  assert(run.includes('userText: text'), '客户端必须发送未投影的用户原文');
+  // 病灶回顾：投影给 user 文本加 [MM-DD HH:MM] 前缀后，服务端从 apiMessages
+  // 提取文本落盘 → 会话文件长出前缀，下轮投影再盖一层，真相源被投影污染。
+});
 
 group('BAR-ORB-RESUME-01 — 载荷构造唯一入口');
 

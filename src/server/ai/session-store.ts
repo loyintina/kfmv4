@@ -71,35 +71,45 @@ function _get(sessionId: string): SessionState {
 }
 
 /**
- * 计算 messageCount / tokenCount。
+ * 计算 messageCount / tokenCount / fullTokenCount。
  * tokenCount 口径（v8.3.x 起）：**压缩投影后的载荷字符数 / 3**——这是实际发给 API
- * 的量级，对齐「上下文窗口还剩多少」的用户直觉。旧口径是全量会话字符 / 3：1M 窗口的
- * 模型会在界面上早早显示顶格（实际压缩后远低于上限），误导判断。
+ * 的量级，对齐「上下文窗口还剩多少」的用户直觉。
+ * fullTokenCount：全量会话字符 / 3（旧口径，含 reasoning 与全部工具 I/O）——
+ * 会话卡并列显示「压缩/全量」，让压缩收益与窗口占用同时可见。
  * isTodoDismissed 是客户端 localStorage 信号，服务端缺省（投影标注 ±30 字符，可忽略）。
  */
-function _computeStats(messages: ChatMessage[]): { messageCount: number; tokenCount: number } {
-  let mc = 0;
+function _computeStats(messages: ChatMessage[]): { messageCount: number; tokenCount: number; fullTokenCount: number } {
+  let mc = 0, fc = 0;
   for (const msg of messages) {
     if (!msg || !Array.isArray(msg.content)) continue;
+    let counted = false;
     for (const b of msg.content) {
       if (!b) continue;
-      if (b.type === 'text' && typeof b.text === 'string' && b.text.trim()) { mc++; break; }
+      if (b.type === 'text') {
+        fc += ((typeof b.text === 'string' ? b.text.length : 0) + (typeof b.reasoning === 'string' ? b.reasoning.length : 0));
+        if (!counted && typeof b.text === 'string' && b.text.trim()) { mc++; counted = true; }
+      } else if (b.type === 'tool') {
+        if (b.input) fc += JSON.stringify(b.input).length;
+        const rc = b.result?.content;
+        if (Array.isArray(rc)) for (const c of rc) { if (c?.text) fc += String(c.text).length; }
+      }
     }
   }
   const { apiMessages } = toOpenAiMessages(messages, { compact: true });
   const tc = apiMessages.reduce((s, m) =>
     s + (m.content?.length || 0) + (m.tool_calls ? JSON.stringify(m.tool_calls).length : 0), 0);
-  return { messageCount: mc, tokenCount: Math.round(tc / 3) };
+  return { messageCount: mc, tokenCount: Math.round(tc / 3), fullTokenCount: Math.round(fc / 3) };
 }
 
 /** 异步落盘（非阻塞） */
 function _writeToDisk(sessionId: string, s: SessionState): void {
-  const { messageCount, tokenCount } = _computeStats(s.ctx.messages);
+  const { messageCount, tokenCount, fullTokenCount } = _computeStats(s.ctx.messages);
   const out = {
     ...s.meta,
     messages: s.ctx.messages,
     messageCount,
     tokenCount,
+    fullTokenCount,
     updatedAt: new Date().toISOString(),
   };
   _ensureDir();
@@ -151,12 +161,13 @@ export function flushSync(sessionId: string): void {
   const s = _sessions.get(sessionId);
   if (!s || !s.dirty) return;
   if (s.flushTimer) { clearTimeout(s.flushTimer); s.flushTimer = null; }
-  const { messageCount, tokenCount } = _computeStats(s.ctx.messages);
+  const { messageCount, tokenCount, fullTokenCount } = _computeStats(s.ctx.messages);
   const out = {
     ...s.meta,
     messages: s.ctx.messages,
     messageCount,
     tokenCount,
+    fullTokenCount,
     updatedAt: new Date().toISOString(),
   };
   _ensureDir();

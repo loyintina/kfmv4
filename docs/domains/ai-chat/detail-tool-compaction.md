@@ -122,6 +122,8 @@ TTFB 5-8s、缓存读取费用、注意力稀释（"lost in the middle"）三连
 - **时间戳前缀**：消息写入侧盖 `ts`（ISO 8601，messages.ts 定义），投影层对 user/assistant
   正文渲染 `[MM-DD HH:MM] ` 前缀，给 AI 对话时间感。旧消息无 ts = 不渲染（向后兼容）。
   不违反 G6：ts 是真相源数据、确定不变；G6 禁的是投影时现生成。
+  **投影文本禁止回写真相源**：服务端落盘用户消息必须走请求体的 `userText` 原文通道
+  （routes.ts），不得从 apiMessages 提取——投影带前缀，回写会造成前缀叠加污染（v8.3.x 病灶）。
 - **会话卡 tokenCount 口径**：压缩投影后的载荷字符数 / 3（session-store._computeStats）——
   对齐「上下文窗口还剩多少」的直觉；旧口径（全量字符 / 3）会让 1M 窗口的模型在界面上早早显示顶格。
 

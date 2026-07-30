@@ -111,7 +111,7 @@ export function setupFileRoutes(router: Router): void {
       const sessionsDir = path.join(KFM_DATA_DIR, 'sessions');
       if (!fs.existsSync(sessionsDir)) { res.json({ sessions: [] }); return; }
       const files = fs.readdirSync(sessionsDir).filter(f => f.endsWith('.json'));
-      const sessions: Array<{ id: string; title: string; createdAt: string; updatedAt: string; manuallyNamed?: boolean; providerId?: string; modelId?: string; messageCount: number; tokenCount: number }> = [];
+      const sessions: Array<{ id: string; title: string; createdAt: string; updatedAt: string; manuallyNamed?: boolean; providerId?: string; modelId?: string; messageCount: number; tokenCount: number; fullTokenCount?: number }> = [];
       for (const file of files) {
         try {
           const raw = fs.readFileSync(path.join(sessionsDir, file), 'utf-8');
@@ -164,6 +164,7 @@ export function setupFileRoutes(router: Router): void {
             ...(typeof p['modelId'] === 'string' && { modelId: p['modelId'] }),
             messageCount,
             tokenCount,
+            ...(typeof p['fullTokenCount'] === 'number' && { fullTokenCount: p['fullTokenCount'] }),
           });
         } catch { /* skip corrupt */ }
       }
