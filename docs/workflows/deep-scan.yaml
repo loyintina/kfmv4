@@ -1,0 +1,31 @@
+# 语义深扫 — 强模型软标记对账（2026-07-30 深扫实验验证后制度化）
+id: deep-scan
+name: 语义深扫（强模型软标记）
+trigger: 发版雷达提醒发版候选时（发版周期同步；check-release-radar WARN 行会附提醒）
+frequency: 随发版周期（历史节奏约 2-4 周一版）
+reads:
+  - active/vision.md
+  - constraints/invariants.md
+  - active/STACK.md
+  - workflows/（纲领层全部）
+steps:
+  1. 每份核心文档放一个 explore subagent（洁净室、单文档 scope、thorough）
+  2. 软提示词（已验证配方）：疑似矛盾清单 = 行号 + 矛盾双方逐字引文 + 理由 + 置信度；
+     「疑似有意」（修订注/例外/状态演进）自我过滤单列；不下硬断言；无发现明确答「未发现」
+  3. 汇总各文档软标记 → 会话内逐条裁决：真漂移修（谁错改谁）/ 疑似有意确认 / 豁免登记
+  4. 裁决结果落 ledger/semantic-provenance.md
+writes:
+  - ledger/semantic-provenance.md（裁决记录）
+  - 漂移修复涉及的文档（谁错改谁）
+exit_condition: 全部软标记有裁决结论（修/确认/豁免三态之一）
+natural_next: release（深扫干净后拍板发版）；同一发现家族反复出现 → discipline-mechanize（移民确定区）
+metric: none
+notes:
+  - 能力边界已实测（2026-07-30，10 subagent 盲测，STACK #3 深扫实验条目）：
+    推理级矛盾强模型 4/4（MID-4，便宜链四臂 0/20 的钉子）；
+    状态词矛盾强模型 0/4（MID-3）——状态词类归 check-stack-status.mjs（确定区），深扫不重复扫
+  - 禁止用便宜 provider 链跑深扫（agent-runner 模型链即 MID-4 能力天花板 0/20）；
+    只放 subagent（会话内强模型），因此本工作流天然只能会话内触发——与「拍板归人」同族，不冲突
+  - 扫描范围默认只扫纲领层；domains/detail 层由机械检查 + 便宜链探针覆盖（三档分工见
+    active/semantic-compiler-seed.md）
+  - 精确率预期：每文档 6-12 条软标记、约半数自我过滤为「疑似有意」——裁决负载实测可承受

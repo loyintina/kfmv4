@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit b585770 · 生成于 2026-07-30 -->
+<!-- 基准 commit 582a1a0 · 生成于 2026-07-30 -->
 
 # 代码清单（机械层）
 
@@ -165,7 +165,7 @@
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 
-## infra（87 文件 · 11413 行）
+## infra（87 文件 · 11419 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -238,8 +238,8 @@
 | scripts/check/check-uncommitted.mjs | 51 | — |
 | scripts/check/check-consistency.mjs | 50 | — |
 | scripts/check/check-doc-budget.mjs | 43 | — |
+| scripts/check/check-release-radar.mjs | 42 | — |
 | tests/reset-hooks.ts | 41 | — |
-| scripts/check/check-release-radar.mjs | 36 | — |
 | tests/runner.ts | 33 | test, group, runAll, regression, beforeEach, TestFileNode, singleFolder, nestedFolders |
 | tests/gsap-hook.mjs | 17 | resolve |
 | tests/mocks/xterm.ts | 15 | Terminal |
@@ -544,4 +544,4 @@
 - src/server/index.ts → src/server/ai/routes.ts
 
 ---
-合计 221 文件 · 41833 行 · 跨域边 225 条
+合计 221 文件 · 41839 行 · 跨域边 225 条

@@ -48,6 +48,10 @@
      MID-3（状态词矛盾）强模型 0/4 全漏，恰被 check-stack-status.mjs 覆盖——
      两路盲区互补，双层架构获数据证明；对照组「疑似有意」自我过滤可靠，
      每文档 6-12 条软标记裁决量可承受。触发设想：release 雷达/大改后，非 per-commit
+   — 深扫制度化 ✅（2026-07-30 用户拍板）：workflows/deep-scan.yaml 上岗 +
+     CLAUDE.md 路由表登记 + release 雷达 WARN 附深扫提醒（带本周期 docs 变更计数）+
+     semantic-compiler-seed.md 增记第三区——触发定稿为仅发版周期同步（用户砍掉大改触发），
+     形态定稿为会话内 subagent（禁便宜链）
    — 变异基准 ✅（semantic-mutate/bench，2026-07-30 用户拍板）：首卷 10 条
      （L1 git 矿 5 + L2 矩阵 3 + L3 负例 2）；分数纪律：单轮 ±1 是采样噪声看趋势；
      副产物逮 5 条真漂移

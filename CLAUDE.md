@@ -24,6 +24,7 @@
 | 子系统契约更新 | workflows/contract-maintain.yaml |
 | 文档-代码审计 | workflows/audit.yaml |
 | 文档语义审计（迁移后/中版本收尾） | workflows/semantic-audit.yaml |
+| 语义深扫（发版前，强模型软标记） | workflows/deep-scan.yaml |
 | 新增/移动文档 | workflows/doc-tree-sync.yaml |
 | 多 agent 平行推进 | workflows/parallel-tracks.yaml（慎用） |
 | 理解项目方向/为什么这么设计 | active/vision.md |

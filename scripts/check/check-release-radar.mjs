@@ -28,8 +28,14 @@ const THRESH_COMMITS = 30;
 const THRESH_FEAT = 10;
 
 if (total >= THRESH_COMMITS || feat >= THRESH_FEAT) {
+  let docsCommits = 0;
+  try {
+    docsCommits = execSync(`git log ${lastTag}..HEAD --format='%h' -- docs/`, { encoding: 'utf-8' })
+      .trim().split('\n').filter(Boolean).length;
+  } catch { /* docs 计数失败不阻塞提醒 */ }
   console.warn(`[check-release-radar][WARN] 距 ${lastTag} 已 ${total} 提交（feat:${feat}）——发版候选`);
   console.warn('[check-release-radar][WARN] 跑 `node scripts/agent/tag-advisor.mjs` 让语义层给级别建议（拍板归人）');
+  console.warn(`[check-release-radar][WARN] 发版前建议语义深扫（本周期 docs 变更 ${docsCommits} 提交）——流程见 docs/workflows/deep-scan.yaml`);
 } else {
   console.log(`[check-release-radar] OK — 距 ${lastTag} 共 ${total} 提交（feat:${feat}），未达发版候选线（${THRESH_COMMITS} 提交/${THRESH_FEAT} feat）`);
 }
