@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 73327ba · 生成于 2026-07-30 -->
+<!-- 基准 commit c1c269b · 生成于 2026-07-30 -->
 
 # 代码清单（机械层）
 
@@ -165,11 +165,11 @@
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 
-## infra（88 文件 · 11541 行）
+## infra（88 文件 · 11540 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| tests/client-logic.test.ts | 821 | — |
+| tests/client-logic.test.ts | 820 | — |
 | tests/regression.test.ts | 639 | — |
 | tests/tool-compaction.test.ts | 505 | — |
 | tests/preload.mjs | 406 | — |
@@ -545,4 +545,4 @@
 - src/server/index.ts → src/server/ai/routes.ts
 
 ---
-合计 222 文件 · 41961 行 · 跨域边 225 条
+合计 222 文件 · 41960 行 · 跨域边 225 条
