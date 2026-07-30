@@ -24,6 +24,9 @@ hooks → probes → release-radar → sync-counts → gen-code-inventory → ts
 1. **新 check 一律 hard fail**——warning 对 agent 等于不存在。
    设计性例外须登记（语义审计 B1 修订）：check-release-radar（发版提醒，只 WARN）、
    check-uncommitted（≤3 文件只警告）。例外清单外新增 warning-only check = 中断。
+2. **钩子接线脚本必须声明模式**——`.githooks/` 薄壳接线的脚本头部机器可读声明
+   `MODE: hard-fail|warning`，壳注释模式词必须一致（check-hooks 第 4 条对账）。
+   事故原型：耦合门升 hard fail 改脚本忘改壳，壳写死 exit 0 吞码，拦截虚掩（2026-07-30）。
 2. **新增工具/卡片/模块必须过对应双向核对 check**（tool-compaction/cards/registry），
    不登记 = 构建中断。
 3. **新增服务端依赖同步 build.mjs external 列表**。
@@ -51,7 +54,7 @@ hooks → probes → release-radar → sync-counts → gen-code-inventory → ts
 `scripts/agent/`（agent 脚本群：agent-runner.mjs 执行器 + 一号负载 tag-advisor.mjs
 （发版建议，影子模式）+ 二号负载 semantic-audit.mjs/tasks.mjs（语义审计探针集群，
 并发 10）+ semantic-mutate.mjs/bench.mjs（变异基准：沙盒注入已知缺陷测召回/误报，
-卷子只长不缩）+ exp-thinking.mjs（对照实验一次性脚本）；指南 → ../../guides/agent-runner.md）
+四层取材 L1 git 矿 / L2 SEM×元素矩阵 / MID 盲区降级档 / L3 对抗负例，卷子只长不缩）+ exp-thinking.mjs（对照实验一次性脚本）；指南 → ../../guides/agent-runner.md）
 `scripts/check/domain-src.mjs`（域→代码映射单一真相源：contract-freshness 与清单生成器共用）
 `scripts/check/gen-code-inventory.mjs`（机械层清单 + 跨域 import 边生成器 → ../code-inventory.md，--check-only 已挂链）
 `dist/build-info.json`（构建时生成的版本握手真相源）
