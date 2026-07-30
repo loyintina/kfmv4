@@ -1,5 +1,6 @@
 /**
  * check-commit-docs.mjs — commit-doc 耦合门（v8.2 批 2 立项，**2026-07-30 定级 hard fail**）
+ * MODE: hard-fail
  *
  * 思想：代码提交后文档没跟上 = 文档腐化的源头。
  * 定级依据（观察期 v8.2.0..2026-07-30 数据 + 用户拍板）：

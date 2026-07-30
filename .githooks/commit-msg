@@ -1,7 +1,7 @@
 #!/bin/sh
 # KFM v4 — commit-msg hook：commit-doc 耦合门（hard fail，犯罪现场拦截）
 # 薄壳：逻辑全在 scripts/check/check-commit-docs.mjs，禁止在此重新实现
-# 退出码必须透传（2026-07-30 耦合门升 hard fail 后修复：warning 时代壳子写死
+# 退出码必须透传（2026-07-30 耦合门升 hard fail 后修复：旧壳子写死
 # exit 0 吞掉脚本退出码，拦截失效）——薄壳只接线，不改语义
 # 安装：git config core.hooksPath .githooks
 cd "$(dirname "$0")/.." || exit 1

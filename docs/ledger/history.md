@@ -52,3 +52,4 @@
 - 2026-07-29 管线批 4（快照病四洞，26 个 check 脚本）：域映射双向健康（上岗即抓 waiting-hints.ts 盲区）/ 豁免防腐（css-wiring + console 白名单自证）/ commit-msg 钩子（耦合门 --staged 犯罪现场拦截，薄壳原则）/ check-hooks（hooksPath+可执行位+薄壳引用）/ 检查设计宪法进 doc-maintenance；批 5 探针自检登记 STACK
 - 2026-07-29 管线批 5（探针自检，27 个 check 脚本）：check-probes 运行器（双断言：报红 + 含 expect.txt 病因字串）+ 8 检查 KFM_PROBE_ROOT 注入 + 8 棵负例假树；突变自测闭环（治愈夹具 → 运行器报「检查已失效」）；git 历史型检查豁免；探针条款进宪法——「绿色可信」从此可验证
 - 2026-07-30 耦合门定级（STACK #2 批 5 遗留收官）：观察期数据（src/ 口径 13/13 全合规；scripts/ 口径 34 提交 3 例漏同步——真实腐化在 src/ 之外）→ hard fail + 口径扩 src/+scripts/ + 豁免收紧独立行 `docs:na`（防 prose 字面串误认）；git 历史型检查免探针条款维持
+- 2026-07-30 exit 0 吞码事故修复 + 制度化防线：commit-msg 壳写死 exit 0 吞掉耦合门 hard fail 退出码（升 hard fail 时改脚本忘改壳，拦截虚掩一天多，触发讲解管线触发机制时现场发现）→ 壳修复透传 + check-hooks 第 4 条模式对账（被接线脚本头部机器可读声明 MODE: hard-fail/warning，壳注释模式词必须一致）+ 宪法模式对账条款——「壳语义 vs 脚本模式」从此机械对账

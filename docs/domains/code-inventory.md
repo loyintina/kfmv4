@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit d406c2f · 生成于 2026-07-30 -->
+<!-- 基准 commit 32ee6fc · 生成于 2026-07-30 -->
 
 # 代码清单（机械层）
 
@@ -165,7 +165,7 @@
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 
-## infra（84 文件 · 10930 行）
+## infra（84 文件 · 10951 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -214,6 +214,7 @@
 | scripts/check/check-versions.mjs | 91 | — |
 | scripts/check/check-probes.mjs | 86 | — |
 | tests/engine.test.ts | 85 | — |
+| scripts/check/check-hooks.mjs | 81 | — |
 | scripts/agent/exp-thinking.mjs | 81 | — |
 | scripts/check/check-console.mjs | 79 | — |
 | scripts/check/check-as-any.mjs | 76 | — |
@@ -227,10 +228,9 @@
 | tests/floating-state.test.ts | 66 | — |
 | scripts/agent/test-tag-advisor.mjs | 64 | — |
 | scripts/check/check-active-stack.mjs | 61 | — |
-| scripts/check/check-hooks.mjs | 61 | — |
 | scripts/check/check-doc-schema.mjs | 60 | — |
 | scripts/check/domain-src.mjs | 60 | DOMAIN_SRC |
-| scripts/check/check-commit-docs.mjs | 58 | — |
+| scripts/check/check-commit-docs.mjs | 59 | — |
 | tests/omp-glob.test.ts | 58 | — |
 | scripts/check/check-uncommitted.mjs | 51 | — |
 | scripts/check/check-consistency.mjs | 50 | — |
@@ -541,4 +541,4 @@
 - src/server/index.ts → src/server/ai/routes.ts
 
 ---
-合计 218 文件 · 41350 行 · 跨域边 225 条
+合计 218 文件 · 41371 行 · 跨域边 225 条
