@@ -53,7 +53,7 @@ esbuild server ESM + client IIFE（external 硬编码 build.mjs）→ checkFresh
 - **写 git 跟踪文件**：build.mjs 改写 tracked 的 public/index.html（:131）+
   public/css/*.css（sass）——每次构建让工作区变脏（见漂移 10）；sync-counts 回写
   README/CLAUDE/contract/testing.md；gen-code-inventory 写 code-inventory.md
-- 网络：agent-runner fetch OpenAI 兼容端点（60s 超时）；deploy/kfm-restart curl 本机
+- 网络：agent-runner fetch OpenAI 兼容端点（120s 超时，runAgent timeoutMs 可配）；deploy/kfm-restart curl 本机
 - 仓库外：~/.kfmv4/providers.json（agent-runner 读 key；src/server/index.ts:145-149
   另有权限检查——server 域越界读 agent 配置）
 

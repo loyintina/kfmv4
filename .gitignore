@@ -7,3 +7,4 @@ public/bundle.js
 .env
 .tsbuildinfo
 .qoder/
+tmp/

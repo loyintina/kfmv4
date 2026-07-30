@@ -14,6 +14,8 @@
 
 本机 HTTP/WS 服务器：Express 装配、文件 CRUD 路由、根切换、终端 PTY、tmux 桥、
 AI eval/snapshot 桥、出网代理。**安全边界域**——只绑 127.0.0.1 是前提。
+数据目录 `$HOME/.kfmv4/`（`KFM_DATA_DIR`）：providers/active/sessions/roles/configs/
+page-state.md/restart-pending.json。
 
 ## 承重入口
 
@@ -105,6 +107,12 @@ send('terminal-output')；输入 → pty.write；close/error/心跳判死 → ki
 13. 次要：/api 与 /kfmv4/api 双挂载（index.ts:50-51）；应用层 'ping' 消息客户端不回，
     纯喂看门狗——疑似协议残留；files.ts 死条件（path.join 恒真）已随批次二删除；
     心跳 interval 清理依赖 close 事件触发（行为正确但脆弱）。
+14. **prompts/ 无测绘归属**：契约文件清单含 `prompts/`，但本图与 ai-chat/cross-domain
+    均无一行测绘——提示词注入约束目录全图缺席（语义审计变异基准 M04 额外发现，
+    2026-07-30；用户 STACK 备注待办同源）。
+15. **ai/ 归属三方口径分叉**：契约文件清单写 `ai/（见 ai-chat 域）」，本图测绘元数据
+    却把 ai/session-store.ts、ai/routes.ts 计入 server 域规模，ai-chat code-map 又
+    无一字认领——所有权没有单一出处（语义审计变异基准额外发现，2026-07-30）。
 
 **已核实为真的契约声称**：30s 半开检测 → killAll、express.static 只挂 public、
 只绑 127.0.0.1、sanitizePath 被 files/prompt-assembler 一致使用。

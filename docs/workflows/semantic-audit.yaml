@@ -19,6 +19,6 @@ steps:
 writes:
   - ledger/semantic-provenance.md
   - ledger/bugs.md
-exit_condition: 发现清零或全部立案分流 + 机械三件套绿 + 溯源账本回写
+exit_condition: 发现清零或全部立案分流 + npm run check 绿 + 溯源账本回写
 natural_next: contract-maintain
 metric: 审计精确率（真发现/总报告）+ 重复立案率（登记豁免规则效果）

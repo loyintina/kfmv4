@@ -78,11 +78,28 @@ inter-workflows 大 prompt 探针双端 60s 超时失败教训）。
 
 - **编排器 + 任务清单分离**：一个探针只问一个问题（组内 17 + 组间 6），组间探针种子来自
   ledger/semantic-provenance.md 实测冲突对——不打 N² 笛卡尔积
-- **并发 3 洁净室**：任务间零共享上下文，单任务失败不拖垮全局（进 errors 不阻塞）
-- **增量对账**：任务输入（定义+文档内容）哈希没变即跳过（make 式）；`--full` 强制全量、
+- **并发 10 洁净室**：任务间零共享上下文，单任务失败不拖垮全局（进 errors 不阻塞）。
+  定档依据（2026-07-30 变异基准三曲线）：conc3/10/20 成绩在噪声带内不动、conc20
+  全 Google 端 22/22 绿——并发只影响速度不影响质量，10 留一倍余量
+- **增量对账**：任务输入（定义+文档内容）哈希没变即跳过（make 式）；哈希含
+  AUDIT_VERSION 版本盐（脚本/prompt 变更 +1 令旧哈希失效）。`--full` 强制全量、
   `--dry-run` 只出计划、`--task=<id>` 单跑
 - **拜占庭对策代码化**：发现的 claim/against 证据行必须真实存在，否则计入 dropped（幻觉拦截）
 - **记账**：reported/kept/dropped/provider/attempts 全量进 `docs/ledger/semantic-audit-state.json`，
   per-任务精确率是 prompt 迭代的数据源
 - **exit 协议**：0 = 流程跑完（发现是产出不是失败）；2 = 全部任务失败/环境缺 provider；
   非阻断，不挂 check 链（概率区纪律）
+
+### 变异基准：semantic-mutate.mjs + semantic-bench.mjs（2026-07-30 用户拍板）
+
+真实漂移收敛后准确度信号枯竭——mutation testing：往沙盒副本注入已知缺陷测召回/误报。
+- `semantic-mutate.mjs`：变异目录（首卷 10 条 = L1 历史复刻 5 + L2 SEM×元素矩阵 3 +
+  L3 near-miss 负例 2）+ 沙盒物化（tmp/semantic-bench/，gitignored）+ ground-truth.json。
+  find 串失效即物料过期，目录随文档演进维护；逃逸病例裁决后复刻进目录，卷子只长不缩
+- `semantic-bench.mjs [--remutate] [--conc=N] [--dup=N]`：对沙盒跑受影响探针，
+  claim 文件+行 ±5 对分。审计模块经 SEMANTIC_AUDIT_ROOT 环境变量指沙盒，活树无感
+- 首卷三曲线（conc 3/10/20）：召回稳定 2-3/8（直接矛盾全逮，推理型/缺席型全漏——
+  M02 归属推理/M05 同文件拼写/M06 证据缺席/M07 长链推理是稳定盲区），NC 0-2/2 波动
+- **分数纪律：单轮 ±1 是 LLM 采样噪声不是信号，比分数看连续多轮趋势**
+- 副产物：额外发现已逮 4 条真漂移（prompts/ 无测绘、ai/ 归属三方分叉、code-map 60s
+  旧超时、yaml dangling 术语）——基准卷兼作探矿器

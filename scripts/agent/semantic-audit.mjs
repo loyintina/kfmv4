@@ -28,9 +28,15 @@ import { createHash } from 'crypto';
 import { runAgent, extractJson } from './agent-runner.mjs';
 import { TASKS } from './semantic-audit.tasks.mjs';
 
-const ROOT = resolve(fileURLToPath(new URL('../../', import.meta.url)));
+// SEMANTIC_AUDIT_ROOT：变异基准卷专用——指向 semantic-mutate.mjs 物化的沙盒副本，
+// 审计逻辑不变、读的全是副本；活树/账本/check 链无感。生产跑不设此变量。
+const ROOT = process.env.SEMANTIC_AUDIT_ROOT
+  ? resolve(process.env.SEMANTIC_AUDIT_ROOT)
+  : resolve(fileURLToPath(new URL('../../', import.meta.url)));
 const STATE_PATH = join(ROOT, 'docs/ledger/semantic-audit-state.json');
-const CONCURRENCY = 3;
+// 并发：压测定档 10（2026-07-30 变异基准三曲线——conc20 全 Google 22/22 绿、
+// 成绩噪声带内不动；conc10 留一倍余量，墙钟收益主要给 23 探针的多波次场景）
+const CONCURRENCY = 10;
 const SEM_TYPES = ['SEM001', 'SEM002', 'SEM003', 'SEM004', 'SEM005'];
 
 const args = process.argv.slice(2);
