@@ -675,10 +675,10 @@ regression('BAR-ORB-PANEL-21', 'chat-dom', '细节组：滑入动画/打字机�
 });
 
 regression('BAR-BUILD-04', 'build/check', 'check-css-wiring 永久接线检查必须挂在构建链', () => {
-  const build = readFileSync('build.mjs', 'utf-8');
-  assert(build.includes('check-css-wiring'), 'build.mjs 必须跑 check-css-wiring（sass 之后）');
-  const pkg = readFileSync('package.json', 'utf-8');
-  assert(pkg.includes('check-css-wiring'), 'npm run check 链必须含 check-css-wiring');
+  // v8.3 链单源化后：唯一出处是 chain.mjs STEPS，build.mjs/package.json 均委托 chain
+  const chain = readFileSync('scripts/check/chain.mjs', 'utf-8');
+  assert(chain.includes('check-css-wiring'), 'chain.mjs STEPS 必须跑 check-css-wiring');
+  assert(chain.indexOf('sass') < chain.indexOf('check-css-wiring'), 'check-css-wiring 必须排在 sass 之后');
   const script = readFileSync('scripts/check/check-css-wiring.mjs', 'utf-8');
   assert(script.includes('@keyframes') && script.includes('scss'), '脚本必须双向检查类与 keyframes');
 });
@@ -713,10 +713,9 @@ regression('BAR-COMPACT-01', 'to-openai-messages', '工具 I/O 压缩接线（G1
 });
 
 regression('BAR-COMPACT-02', 'build/check', 'check-tool-compaction 双向核对必须挂在构建链', () => {
-  const build = readFileSync('build.mjs', 'utf-8');
-  assert(build.includes('check-tool-compaction'), 'build.mjs 必须跑 check-tool-compaction');
-  const pkg = readFileSync('package.json', 'utf-8');
-  assert(pkg.includes('check-tool-compaction'), 'npm run check 链必须含 check-tool-compaction');
+  // v8.3 链单源化后：唯一出处是 chain.mjs STEPS，build.mjs/package.json 均委托 chain
+  const chain = readFileSync('scripts/check/chain.mjs', 'utf-8');
+  assert(chain.includes('check-tool-compaction'), 'chain.mjs STEPS 必须跑 check-tool-compaction');
   const script = readFileSync('scripts/check/check-tool-compaction.mjs', 'utf-8');
   assert(script.includes('COMPACTOR_REGISTRY') && script.includes('tools/index.ts'),
     '脚本必须双向核对：注册工具 ↔ 压缩器登记（新增工具不登记 = 构建中断）');
