@@ -182,6 +182,7 @@
 | BAR-TS-MIMIC-01 | `ai/chat` | ts 前缀被 AI 当行文格式模仿：投影层给 assistant 历史消息盖前缀 → AI 学成自己的格式，正文开头复读时间戳。第一轮修复（`[ts ]` 标签 + 秒级 + 静态声明）实测**拦不住**——照旧复读，甚至产出 `[ts …] [ts …]` 双前缀杂交体（模仿新前缀 + 历史旧格式残留）。契约（终版）：**前缀只盖 user 侧**，assistant 消息一律不盖——投影里 AI 的历史回复全干净，没有可模仿的样本；静态 system 段声明兜底 | L | ✅ 已钉（源码断言 + 投影测试） | `tests/client-logic.test.ts` `tests/to-openai-messages.test.ts` |
 | BAR-EYE-WRAP-01 | `ai/chat` | 动态感官注入无包裹 → AI 主动叙述注入本身（「蓝眼睛在页面状态上停留……」）：动态内容每轮刷新占据最新一条消息的注意力焦点，拟人化标题「（你的眼睛）」进一步诱发元叙述，出戏且稀释正文。契约：`assembleDynamicPrompt` 统一包裹（分隔线 + 使用规则：信息直接取用、勿主动提及注入本身、除非用户问起来源）；page-state 头部去自我指涉；chat.ts 注入不再自贴标签 | L | ✅ 已钉（源码断言） | `tests/client-logic.test.ts` |
 | BAR-SESSIONCARD-PROVIDER-01 | `ui/session-card` | 会话卡 metaRow 显示 providerId = 信息噪音（用户明令删除：provider 是配置态不是会话信息）。契约：metaRow 只渲染 时间/条数/双 token 三项 | L | ✅ 已钉（源码断言） | `tests/client-logic.test.ts` |
+| BAR-PROVIDER-03 | `omp/todo` | gemini-3.1-pro（聚光）发消息 400：`function_declarations[10].properties[todos].items: missing field`——todo 的 todos 参数 type:'array' 缺 items，OpenAI 系宽松容忍、Gemini 严格校验拒收整次请求（非单工具不可用，是整轮 400）。契约：所有注册工具 schema 中任何 type:'array' 节点必须带 items（递归检查嵌套层）；todo items 描述任务项结构（content 必填） | L | ✅ 已钉（递归扫描 + 结构断言，revert 验证真红） | `tests/tool-schema.test.ts` |
 
 > 新 bug 修复后：补一个回归钉子 → 在此登记 → 状态置「已钉」。见
 > `../guides/testing.md` + `../constraints/invariants.md` §二 #24（修 bug 补钉子纪律）。

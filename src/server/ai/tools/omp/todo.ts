@@ -10,7 +10,21 @@ export const ompTodoTool: KfmTool = {
   parameters: {
     type: 'object',
     properties: {
-      todos: { type: 'array', description: '任务项列表，每项含 content、status（pending/in_progress/completed/cancelled）、priority（high/medium/low）' },
+      // items 必填：Gemini function_declarations 严格校验数组 schema 缺 items 直接 400
+      // （BAR-PROVIDER-03；OpenAI 系宽松容忍，strict 端点拒绝）
+      todos: {
+        type: 'array',
+        description: '任务项列表，每项含 content、status（pending/in_progress/completed/cancelled）、priority（high/medium/low）',
+        items: {
+          type: 'object',
+          properties: {
+            content: { type: 'string', description: '任务内容' },
+            status: { type: 'string', description: '状态：pending/in_progress/completed/cancelled' },
+            priority: { type: 'string', description: '优先级：high/medium/low' },
+          },
+          required: ['content'],
+        },
+      },
     },
     required: ['todos'],
   },
