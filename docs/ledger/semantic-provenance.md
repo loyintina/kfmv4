@@ -102,3 +102,5 @@ G1（出生即错，9 处）居次，只能靠「写入时对照现实」的纪�
 | 32 | README「ai-chat detail 3 份」被探针称实际仅 1 份——假阳性：实有 detail-browser/detail-runtime/detail-tool-compaction 恰 3 份，探针漏数 | 2026-07-30 人工裁决：ls docs/domains/ai-chat/ 实证 |
 | 33 | infra 契约「31 脚本」与链枚举步数不一致——假阳性：口径不同，链枚举含 sass/sync-counts/gen-code-inventory/tsc 非 check-* 步骤 | 2026-07-30 人工裁决：chain.mjs STEPS 实证；契约检查管线节已加口径注 |
 | 34 | v8.1.0 混装打 minor 与「混装以已完成主题定级」规则冲突——假阳性：minor 依上下文压缩主题闭环（release.md 版本语义判例），问题轮随行，双侧已注记混装窗口 | 2026-07-30 人工裁决：release.md 节奏节 + history.md v8.1.0 行注记自洽 |
+| 35 | vision「一切皆卡片」与 §2.2 文件树不迁卡片系统——假阳性：§1.5 行内已括注「交互隐喻；渲染层例外见 §2.2」，例外条款明示 | 2026-07-30 语义巡逻裁决：复现型发现（跨深扫 4 臂 + 巡逻探针双路复现），vision.md 行 100/165 实证 |
+

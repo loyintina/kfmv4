@@ -85,6 +85,7 @@ for (const { file, subs } of TARGETS) {
     if (step.includes('sass')) return 'sass';
     if (step.includes('sync-counts')) return 'sync-counts';
     if (step.includes('gen-code-inventory')) return 'gen-code-inventory';
+    if (step === 'npm test') return 'npm test';
     if (step.includes('tsc')) return 'tsc';
     return null;
   }).filter(Boolean);

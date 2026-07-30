@@ -16,7 +16,7 @@
   `orb-chat-hints.ts`（等待提示/Todo 面板）`chat-dom.ts`（增量投影）
   `session-client.ts`（只读缓存 + pre-run 创建）`ws-channel.ts`（WS + 重连看门狗 + onReconnect）
 - 服务端 `ai/`：`chat.ts`（SSE 流式核心）`run-manager.ts`（后台挂机：runId/事件缓冲/5min 淘汰）
-  `routes.ts`（start/stream/cancel/active/status）`session-store.ts`（唯一写者 + 冷恢复）
+  `routes.ts`（start/stream/cancel/active/status）`session-store.ts`（唯一写者；冷恢复判据在客户端 orb-chat-host，detail-runtime §10）
   `page-state.ts` `prompt-assembler.ts`（眼睛系统）`rule-engine.ts` `tools/`
 
 ## 硬规则

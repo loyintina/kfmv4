@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit b73f423 · 生成于 2026-07-30 -->
+<!-- 基准 commit 73327ba · 生成于 2026-07-30 -->
 
 # 代码清单（机械层）
 
@@ -165,7 +165,7 @@
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 
-## infra（88 文件 · 11524 行）
+## infra（88 文件 · 11541 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -173,7 +173,7 @@
 | tests/regression.test.ts | 639 | — |
 | tests/tool-compaction.test.ts | 505 | — |
 | tests/preload.mjs | 406 | — |
-| scripts/agent/semantic-audit.mjs | 386 | taskFiles, buildPrompt, makeValidate, recheckRef, recheckQuote |
+| scripts/agent/semantic-audit.mjs | 387 | taskFiles, buildPrompt, makeValidate, recheckRef, recheckQuote |
 | tests/visual-baseline.test.ts | 367 | — |
 | tests/server-routes.test.ts | 321 | — |
 | tests/box.test.ts | 309 | — |
@@ -195,12 +195,13 @@
 | scripts/check/check-docs.mjs | 146 | — |
 | scripts/agent/semantic-bench.mjs | 145 | — |
 | scripts/check/check-bar-ledger.mjs | 142 | — |
-| scripts/check/sync-counts.mjs | 138 | — |
+| scripts/check/sync-counts.mjs | 139 | — |
 | scripts/agent/exp-iceberg.mjs | 134 | — |
 | scripts/check/check-checks.mjs | 132 | — |
 | scripts/check/check-tool-compaction.mjs | 129 | — |
 | tests/to-openai-messages.test.ts | 126 | — |
 | tests/liquid-geometry.test.ts | 120 | — |
+| scripts/agent/semantic-chain.mjs | 119 | — |
 | scripts/check/check-doc-linerefs.mjs | 116 | — |
 | tests/harness.ts | 116 | TestTag, TestOpts, test, regression, group, beforeEach, runAll |
 | scripts/check/check-doc-coverage.mjs | 110 | — |
@@ -208,7 +209,6 @@
 | scripts/agent/agent-runner.mjs | 109 | renderTemplate, extractJson, runAgent |
 | scripts/agent/exp-vision-internal.mjs | 109 | — |
 | scripts/check/check-cards.mjs | 105 | — |
-| scripts/agent/semantic-chain.mjs | 105 | — |
 | scripts/check/check-contract-freshness.mjs | 103 | — |
 | scripts/check/check-test-patterns.mjs | 102 | — |
 | scripts/agent/tag-advisor.mjs | 100 | — |
@@ -220,7 +220,7 @@
 | scripts/check/check-hooks.mjs | 81 | — |
 | scripts/agent/exp-thinking.mjs | 81 | — |
 | scripts/check/check-console.mjs | 79 | — |
-| scripts/check/chain.mjs | 76 | STEPS |
+| scripts/check/chain.mjs | 77 | STEPS |
 | scripts/check/check-as-any.mjs | 76 | — |
 | scripts/check/docs-status.mjs | 76 | — |
 | scripts/check/check-doc-symbols.mjs | 75 | — |
@@ -545,4 +545,4 @@
 - src/server/index.ts → src/server/ai/routes.ts
 
 ---
-合计 222 文件 · 41944 行 · 跨域边 225 条
+合计 222 文件 · 41961 行 · 跨域边 225 条

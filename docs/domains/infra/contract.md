@@ -11,7 +11,7 @@
 
 ## 检查管线（npm run check，31 脚本，顺序固定）
 
-（下方生成区枚举的链步数多于标题脚本数：sass/sync-counts/gen-code-inventory/tsc
+（下方生成区枚举的链步数多于标题脚本数：sass/sync-counts/gen-code-inventory/npm test/tsc
 为非 check-* 步骤，不计入脚本数。）
 
 <!-- chain:auto 由 sync-counts 生成，禁止手改 -->
@@ -19,7 +19,7 @@
 tool-compaction → anim → as-any → card-meta → registry → zindex → console → docs → consistency →
 active-stack → stack-status → code-doc-refs → workflow-integrity → cards → contract-freshness →
 test-patterns → bar-ledger → ledger-commits → doc-budget → doc-symbols → doc-linerefs → doc-schema →
-commit-docs → hooks → probes → release-radar → sync-counts → gen-code-inventory → tsc。
+commit-docs → hooks → probes → release-radar → sync-counts → gen-code-inventory → npm test → tsc。
 <!-- /chain:auto -->
 
 **链外概率区自动化（2026-07-30 登记）**：`scripts/agent/semantic-chain.mjs`（语义巡逻，

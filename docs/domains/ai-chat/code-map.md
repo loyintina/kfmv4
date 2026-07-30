@@ -65,8 +65,10 @@
 - **常规写者唯一**：服务端 session-store.ts（防抖 200ms + flushSync 同步写，
   非 delta 事件立即 flush）。读路径：/api/sessions/list、/api/sessions/messages、
   /api/files/read；客户端读时 promoteReasoningBlocks 归一化（不改文件）。
-- **双实现注意**：files.ts 与 session-store.ts 各自独立读/写同一批会话文件，
-  _computeStats 统计口径两处各写一份。
+- **读路径注意**：files.ts 的 /sessions/list 只读会话文件并内联统计
+  （messageCount/tokenCount），不写；写者确为 session-store 唯一
+  （2026-07-30 语义巡逻裁决：旧文「双实现各自读/写」为过时表述，_computeStats
+  现存仅 session-store.ts:69 一份）。
 
 ## 跨域边界
 

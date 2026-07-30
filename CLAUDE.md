@@ -11,8 +11,8 @@
 3. 读 `docs/ledger/semantic-chain-inbox.md` 尾部 — 语义巡逻信箱；有 ⚠️ 行 → 进 workflows/semantic-audit.yaml 裁决流
 4. 改代码前 → 走 pre-code-gate
 
-## 任务 → 工作流路由表
-| 任务 | 工作流卡 |
+## 任务 → 路由表
+| 任务 | 去向 |
 |------|---------|
 | 改代码前的约束加载 | workflows/pre-code-gate.yaml |
 | 修 bug + 回归钉 | workflows/bug-fix.yaml |

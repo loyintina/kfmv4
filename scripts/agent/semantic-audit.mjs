@@ -290,7 +290,7 @@ const plan = selected.map(task => {
   const files = taskFiles(task);
   const hash = taskHash(task, files);
   const prev = state.tasks[task.id];
-  const skip = !FULL && prev && prev.hash === hash;
+  const skip = !FULL && !ONLY && prev && prev.hash === hash; // 点名任务=必然想跑（豁免登记后单刷 keptFindings 用），增量跳过只对例行巡逻生效
   return { task, files, hash, skip };
 });
 
@@ -332,6 +332,7 @@ const results = await pool(willRun, CONCURRENCY, async ({ task, files, hash }) =
   }
   runReport.tasks[task.id] = {
     status: 'ok', reported: result.data.findings.length, kept: kept.length, dropped,
+    keptFindings: kept, // 落盘明细——cron 无人值守时裁决轮的唯一入口（首跑教训：只打印 stdout = 发现蒸发）
     droppedFindings: droppedList,
     provider: result.provider, attempts: result.attempts,
   };

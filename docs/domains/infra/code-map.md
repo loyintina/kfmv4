@@ -7,7 +7,9 @@
 ## 测绘元数据
 
 - 基准：commit 03da8c9 · 2026-07-29 · 域规模 68 文件 / 9510 行（机械清单口径）
-- 派生真相实测：以 sync-counts 输出为准（测绘时 28 check/456 测试；现值随 check 增删浮动，以 sync-counts 实时输出为准）
+- 派生真相实测：一律以 sync-counts 实时输出为准，本文不记快照值
+  （2026-07-30 语义巡逻裁决：快照数字「28 check/456 测试」反复诱发假阳性——
+  快照必有保质期，消灭来源，三档阶梯消灭档）
 - 方法：subagent 七问侦察 + 主 agent 抽查核实（check 链漂移、tag-advisor exit 码已亲验）
 - 注意：本域契约文件清单列了 scripts/deploy.sh、scripts/agent/、.githooks/、package.json，
   但测绘时 DOMAIN_SRC 的 infra 条目不含它们（已随本次测绘补登，见漂移 6）
@@ -22,7 +24,7 @@
 | 入口 | 位置 | 调用方 |
 |------|------|--------|
 | build.mjs（无导出，顶层即入口） | chain.mjs 委托 + esbuild | package.json build/dev/watch、deploy.sh:11 |
-| chain.mjs（check 链唯一出处，STEPS 35 步） | scripts/check/chain.mjs | package.json:11、build.mjs 委托 |
+| chain.mjs（check 链唯一出处，STEPS 36 步） | scripts/check/chain.mjs | package.json:11、build.mjs 委托 |
 | 31 个 check-*.mjs（含 check-checks 自身，业务检查 30） | 全部顶层执行、exit 1 硬失败 | chain.mjs STEPS 统一调度 |
 | DOCS_ROOT / DOMAIN_SRC 共享常量 | scripts/check/docs-root-const.mjs、domain-src.mjs | 11 个 check / freshness + 清单生成器 |
 | sync-counts.mjs | 唯一会回写文档的 check | 链内 --check-only；无参回写 |
@@ -41,7 +43,7 @@
 
 ## 核心流程
 
-**构建链**：chain.mjs 全链（35 步，含 sass 编译）→ 复制 stealth 脚本 →
+**构建链**：chain.mjs 全链（36 步，含 sass 编译与 npm test）→ 复制 stealth 脚本 →
 esbuild server ESM + client IIFE（external 硬编码 build.mjs）→ checkFreshness
 双产物 → 写 dist/build-info.json → index.html 注入 ?v=buildStamp → bundle 大小冒烟。
 

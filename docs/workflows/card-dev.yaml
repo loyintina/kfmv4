@@ -14,6 +14,6 @@ steps:
 writes:
   - src/client/cards/（或对应路径）
   - domains/floating-card/contract.md
-exit_condition: check-cards/check-card-meta 绿
+exit_condition: npm run check 全绿（含 check-cards/check-card-meta）
 natural_next: state-sync
 metric: none

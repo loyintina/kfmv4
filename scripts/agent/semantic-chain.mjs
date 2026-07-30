@@ -79,10 +79,24 @@ if (audit.code === 2) {
     console.error('[semantic-chain] state.runs 为空，腿一可能没跑成');
     process.exit(2);
   }
-  const kept = last.kept ?? 0;
-  verdict = kept === 0
+  // 全量未裁决数 = 各任务 keptFindings 之和（重跑刷新、跳过保留）——增量模式下
+  // 只看本轮会把未裁决发现吞掉；修复（哈希变→重跑→消失）或豁免登记（prompt 抑制）才消除
+  const pending = [];
+  for (const [taskId, t] of Object.entries(state.tasks || {})) {
+    for (const f of t.keptFindings || []) pending.push({ task: taskId, ...f });
+  }
+  const seenKeys = new Set();
+  const pendingDedup = pending.filter((f) => {
+    const k = `${f.type}|${f.claim}|${f.against}`;
+    if (seenKeys.has(k)) return false;
+    seenKeys.add(k);
+    return true;
+  });
+  const n = pendingDedup.length;
+  const newThisRun = last.kept ?? 0;
+  verdict = n === 0
     ? `✅ 干净（跑 ${last.ran} 跳 ${last.skipped}，幻觉拦截 ${last.dropped}）`
-    : `⚠️ ${kept} 条新发现待裁决（跑 ${last.ran} 跳 ${last.skipped}，幻觉拦截 ${last.dropped}）→ 明细见 semantic-audit-state.json，裁决流 workflows/semantic-audit.yaml`;
+    : `⚠️ ${n} 条待裁决（本轮新增 ${newThisRun}，跑 ${last.ran} 跳 ${last.skipped}，幻觉拦截 ${last.dropped}）→ 明细见 semantic-audit-state.json 各任务 keptFindings，裁决流 workflows/semantic-audit.yaml`;
 }
 inbox(`- ${stamp} ${verdict}`);
 

@@ -56,13 +56,18 @@ inter-workflows 大 prompt 探针双端 60s 超时失败教训）。
 2. **agent 判定**：`node scripts/agent/tag-advisor.mjs`——语义判级别 + 起草 release note
 3. **人拍板**：tag 是 git mutation，永远人工
 
-## 测试协议（agent 脚本投产前必过）
+## 测试协议（agent 脚本投产前后必过）
 
 1. **回放测试**：历史版本对 = 黄金集，`node scripts/agent/test-tag-advisor.mjs [近N对]`，
    一致率 ≥70% 进影子模式（分歧样本是 prompt 调优输入，不必然是错——历史发版本就不规范）
 2. **否定测试**：周期中段切片须「忍住」（测不发版的判断力）
 3. **影子模式**：建议归建议，决定归人，分歧记 `ledger/tag-advisor-shadow.md`
 4. **投产仍只产建议**：mutation 类动作永远人拍板
+5. **首班岗演练**（2026-07-30 用户拍板）：投产后第一班必须有人盯着实战跑一轮，
+   交「首班报告」（逮到了什么 + 机制自身出了什么丑），凭报告才算正式投产。
+   模糊层版的 check-probes 探针条款——新探测器第一次真跑，既是它检查世界、
+   也是世界检查它。判例：semantic-chain 首班逮 8 条发现 + 暴露自身 2 机制缺口
+   （keptFindings 不落盘 / 增量跳过吞未裁决），不首班验收这两个洞永久潜伏
 
 > tag-advisor 回放实录（2026-07-29，三轮）：47% → 57% → 61%（原始）；
 > 调整后 83%（豁免类：major 提交清单无信号 5 例 + v6 小窗历史标级松 3 例）。
@@ -72,7 +77,7 @@ inter-workflows 大 prompt 探针双端 60s 超时失败教训）。
 
 1. 在 scripts/agent/ 下写新脚本（参照 tag-advisor.mjs）：`runAgent({ system, prompt, validate })`，输入机械组装
 2. 需要新触发位 → 对应 check/钩子挂提醒（雷达模式）
-3. 走测试协议四段再投产
+3. 走测试协议四段再投产（投产后还有第五段：首班岗演练）
 
 ## 二号负载：semantic-audit.mjs（探针集群，2026-07-30）
 
@@ -88,7 +93,12 @@ inter-workflows 大 prompt 探针双端 60s 超时失败教训）。
   `--dry-run` 只出计划、`--task=<id>` 单跑
 - **拜占庭对策代码化**：发现的 claim/against 证据行必须真实存在，否则计入 dropped（幻觉拦截）
 - **记账**：reported/kept/dropped/provider/attempts 全量进 `docs/ledger/semantic-audit-state.json`，
-  per-任务精确率是 prompt 迭代的数据源
+  per-任务精确率是 prompt 迭代的数据源；keptFindings 明细同样落盘（重跑刷新、跳过保留）——
+  cron 无人值守时裁决轮的唯一入口（2026-07-30 首跑教训：只打印 stdout = 发现蒸发，
+  且增量跳过一次就把未裁决发现吞掉）
+- **采样闪烁（诚实边界，2026-07-30 首跑实测）**：keptFindings 重跑即刷新——LLM 采样方差
+  会让上一轮的真发现在新一轮静默消失（工作流卡 2 条 exit_condition 张力即因此从账上
+  掉落，凭 stdout 证据人工追回修复）。趋势看多轮，单轮消失 ≠ 已裁决
 - **exit 协议**：0 = 流程跑完（发现是产出不是失败）；2 = 全部任务失败/环境缺 provider；
   非阻断，不挂 check 链（概率区纪律）
 
@@ -111,7 +121,9 @@ inter-workflows 大 prompt 探针双端 60s 超时失败教训）。
 定时巡逻编排：跑腿一（增量）→ 聚合成单结论 → 投信箱 → 走人。裁决不归它管。
 
 - **三态 verdict**：✅ 干净 / ⚠️ N 条待裁决（指向裁决流 workflows/semantic-audit.yaml）/
-  💀 退化（腿一 exit 2，provider 链异常）；永远 exit 0——注意力信号不是构建失败
+  💀 退化（腿一 exit 2，provider 链异常）；永远 exit 0——注意力信号不是构建失败。
+  ⚠️ 的 N = 全量未裁决数（各任务 keptFindings 之和，跨任务去重），非本轮新增——
+  修复或豁免登记才让数字下降，增量跳过不会吞掉旧发现
 - **信箱**：`docs/ledger/semantic-chain-inbox.md`（append-only 一行一轮）；新会话 agent
   读尾部见 ⚠️ → 进裁决流。未裁决发现下轮重复出现是特性（注意力门控靠反复提醒兑现）
 - **--with-bench**：顺带跑变异基准做尺校准（invariants #32），成绩单摘要行进信箱；
