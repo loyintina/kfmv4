@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 83bbad1 · 生成于 2026-07-30 -->
+<!-- 基准 commit 9af295e · 生成于 2026-07-30 -->
 
 # 代码清单（机械层）
 
@@ -96,7 +96,7 @@
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（54 文件 · 11276 行）
+## ai-chat（54 文件 · 11297 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -106,7 +106,7 @@
 | src/server/ai/tools/omp/browser/launch.ts | 603 | DEFAULT_VIEWPORT, BROWSER_PROTOCOL_TIMEOUT_MS, loadPuppeteer, loadPuppeteerInWorker, LaunchHeadlessOptions, launchHeadlessBrowser, applyViewport, UserAgentOverride, UserAgentSession, applyStealthPatches |
 | src/client/modules/session-client.ts | 529 | SessionMessage, Session, extractMessageText, countTextMessages, sessionStore |
 | src/client/modules/orb-chat-run.ts | 512 | ChatMessage, StreamEvent, getActiveRunId, getActiveCursor, setEventHook, readPersistedRun, clearPersistedRun, settlePendingToolBlocks, resumeRun, doSend |
-| src/server/ai/chat.ts | 447 | ChatMessage, StreamEvent, createClientIdxMapper |
+| src/server/ai/chat.ts | 468 | ChatMessage, StreamEvent, createClientIdxMapper |
 | src/client/modules/ws-channel.ts | 426 | wsChannel, initWsChannel |
 | src/shared/tool-compaction/index.ts | 369 | CompactorEntry, COMPACTOR_REGISTRY, COMPACTOR_NAMES, webTitleKey, CompactionCtx, MUT_BURST_GAP, EXEMPT_USER_ROUNDS, TODO_STALE_GAP, FAIL_REPEAT_MIN, errorFingerprint, failRepeatAnnotation, todoResultAnnotation, normalizeBashCommand, compactToolResult, compactToolInput |
 | src/server/ai/tools/omp/debug.ts | 362 | ompDebugTool |
@@ -166,11 +166,11 @@
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 
-## infra（89 文件 · 11695 行）
+## infra（90 文件 · 11773 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| tests/client-logic.test.ts | 832 | — |
+| tests/client-logic.test.ts | 847 | — |
 | tests/regression.test.ts | 639 | — |
 | tests/tool-compaction.test.ts | 505 | — |
 | tests/preload.mjs | 406 | — |
@@ -221,8 +221,8 @@
 | scripts/check/check-deploy-freshness.mjs | 83 | — |
 | scripts/check/check-hooks.mjs | 81 | — |
 | scripts/agent/exp-thinking.mjs | 81 | — |
+| scripts/check/chain.mjs | 79 | STEPS |
 | scripts/check/check-console.mjs | 79 | — |
-| scripts/check/chain.mjs | 78 | STEPS |
 | scripts/check/check-as-any.mjs | 76 | — |
 | scripts/check/docs-status.mjs | 76 | — |
 | scripts/check/check-doc-symbols.mjs | 75 | — |
@@ -233,6 +233,7 @@
 | scripts/check/check-ledger-commits.mjs | 67 | — |
 | tests/floating-state.test.ts | 66 | — |
 | scripts/agent/test-tag-advisor.mjs | 64 | — |
+| scripts/check/check-fix-tests.mjs | 62 | — |
 | scripts/check/check-active-stack.mjs | 61 | — |
 | scripts/check/domain-src.mjs | 61 | DOMAIN_SRC |
 | scripts/check/check-doc-schema.mjs | 60 | — |
@@ -547,4 +548,4 @@
 - src/server/index.ts → src/server/ai/routes.ts
 
 ---
-合计 224 文件 · 42262 行 · 跨域边 225 条
+合计 225 文件 · 42361 行 · 跨域边 225 条
