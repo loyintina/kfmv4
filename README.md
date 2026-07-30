@@ -47,7 +47,7 @@ TypeScript 7 + Canvas 2D 自研渲染引擎（v2 Box → Renderer）+ GSAP 3.15 
 | 层 | 用途 |
 |----|------|
 | [`docs/constraints/`](docs/constraints/invariants.md) | 约束层：invariants（宪法+心法）、diagnostics（诊断手册） |
-| [`docs/domains/`](docs/domains/ai-chat/contract.md) | 域契约层：6 个子系统的 contract + detail |
+| [`docs/domains/`](docs/domains/ai-chat/contract.md) | 域契约层：6 个子系统的 contract（detail 按需下沉，现 ai-chat detail 3 份、canvas-tree detail 1 份，其余域仅 contract） |
 | [`docs/guides/`](docs/guides/doc-architecture.md) | 指南层：文档体系设计原理、维护规则、测试、发版等 |
 | [`docs/ledger/`](docs/ledger/history.md) | 账本层：history（版本线）、bugs（回归登记） |
 | [`docs/workflows/`](docs/workflows/pre-code-gate.yaml) | 工作流层：15 张机械执行卡 |

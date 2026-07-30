@@ -1,0 +1,342 @@
+/**
+ * semantic-audit.mjs — 语义审计探针集群编排器（腿一，agent-runner 二号负载）
+ *
+ * 定位：概率区对账器（双区管线），**非阻断**——不进 check 链，产出是 SEM 清单草案，
+ * 裁决与修复留给会话内 agent（自动化边界 = 检测）。
+ *
+ * 架构（STACK #3 腿一，2026-07-30 用户拍板）：
+ * - 任务清单 semantic-audit.tasks.mjs：一个探针只问一个问题（组内 17 + 组间 6）
+ * - 并发 3 洁净室并行：任务间零共享上下文，失败只重问单任务
+ * - 增量对账：任务输入（定义 + 文档内容）哈希没变 → 跳过（make 式；--full 强制全量）；
+ *   哈希含 AUDIT_VERSION 版本盐——脚本/prompt/复核规则变更时 +1 令旧哈希全失效
+ * - 拜占庭对策代码化：LLM 报的发现必须过机械复核（claim/against 的 file:line 真实存在），
+ *   幻觉死在复核环节，计入 dropped
+ * - 登记豁免：prompt 内置已登记病灶清单（semantic-provenance + bugs + 各域 code-map
+ *   **漂移清单节**解析——只扫该节，全文件扫会把普通编号行当豁免、过度抑制真发现），
+ *   重复发现不报（试点数据：加规则后重复立案归零）
+ * - per-任务记账：reported/kept/dropped/provider/attempts 全量记 state，精确率迭代的数据源
+ *
+ * 用法：
+ *   node scripts/agent/semantic-audit.mjs [--full] [--dry-run] [--task=<id>]
+ * exit 0 = 流程跑完（发现是产出不是失败）；exit 2 = 全部任务失败或环境缺 provider
+ */
+
+import { readFileSync, readdirSync, statSync, existsSync, writeFileSync } from 'fs';
+import { join, resolve } from 'path';
+import { fileURLToPath } from 'url';
+import { createHash } from 'crypto';
+import { runAgent, extractJson } from './agent-runner.mjs';
+import { TASKS } from './semantic-audit.tasks.mjs';
+
+const ROOT = resolve(fileURLToPath(new URL('../../', import.meta.url)));
+const STATE_PATH = join(ROOT, 'docs/ledger/semantic-audit-state.json');
+const CONCURRENCY = 3;
+const SEM_TYPES = ['SEM001', 'SEM002', 'SEM003', 'SEM004', 'SEM005'];
+
+const args = process.argv.slice(2);
+const FULL = args.includes('--full');
+const DRY_RUN = args.includes('--dry-run');
+const ONLY = (args.find(a => a.startsWith('--task=')) || '').slice(7) || null;
+
+// ========== 文档装载（目录展开为文件） ==========
+
+function expandPaths(paths) {
+  const out = [];
+  for (const p of paths) {
+    const abs = join(ROOT, p);
+    if (!existsSync(abs)) continue;
+    if (statSync(abs).isDirectory()) {
+      for (const e of readdirSync(abs).sort()) {
+        // _ 前缀不排除：_template.yaml 这类下划线文件也是审计对象（二轮教训：漏喂 → 假发现）
+        if (/\.(md|yaml)$/.test(e)) out.push(`${p.replace(/\/$/, '')}/${e}`);
+      }
+    } else out.push(p);
+  }
+  return out;
+}
+
+export function taskFiles(task) {
+  return [...new Set([...expandPaths(task.feeds), ...expandPaths(task.baseline)])];
+}
+
+function inlineDocs(files) {
+  return files.map(f => {
+    const content = readFileSync(join(ROOT, f), 'utf-8');
+    return `\n===== ${f} =====\n${content}`;
+  }).join('\n');
+}
+
+// ========== 增量哈希 ==========
+
+// 审计逻辑版本：脚本/prompt/复核规则变更时 +1——任务哈希不含 prompt 内容，
+// 不加版本盐，修完脚本旧哈希会跳过复跑（四轮教训：误触发跑出的污染结果被哈希跳过）
+const AUDIT_VERSION = 3;
+
+function taskHash(task, files) {
+  const h = createHash('sha1');
+  h.update(JSON.stringify({ v: AUDIT_VERSION, q: task.question, sem: task.sem, kind: task.kind }));
+  for (const f of files) h.update(f + '\0' + readFileSync(join(ROOT, f), 'utf-8'));
+  return h.digest('hex');
+}
+
+function loadState() {
+  if (!existsSync(STATE_PATH)) return { tasks: {}, runs: [] };
+  try { return JSON.parse(readFileSync(STATE_PATH, 'utf-8')); }
+  catch { return { tasks: {}, runs: [] }; }
+}
+
+// ========== 登记豁免清单（已登记病灶不算新发现） ==========
+
+function registeredFindings(domainFilter = null) {
+  const out = [];
+  const prov = join(ROOT, 'docs/ledger/semantic-provenance.md');
+  if (existsSync(prov)) {
+    for (const line of readFileSync(prov, 'utf-8').split('\n')) {
+      const m = line.match(/^\| \d+ \| ([^|]+) \|/);
+      if (m) out.push('- ' + m[1].trim().slice(0, 60));
+    }
+  }
+  const bugs = join(ROOT, 'docs/ledger/bugs.md');
+  if (existsSync(bugs)) {
+    for (const line of readFileSync(bugs, 'utf-8').split('\n')) {
+      const m = line.match(/^\| (BAR-[\w-]+) \|/);
+      if (m) out.push('- ' + m[1]);
+    }
+  }
+  // 各域 code-map 漂移清单条目（已立案的实然≠应然，不算新发现——二轮教训：
+  // 豁免只喂两份账本，已登记漂移被重复报告）
+  const domainsDir = join(ROOT, 'docs/domains');
+  if (existsSync(domainsDir)) {
+    for (const d of readdirSync(domainsDir)) {
+      // 四轮教训 b：漂移豁免按任务上下文域过滤——全量 218 行喂每个 prompt 太重，
+      // 且重复立案只可能发生在 prompt 里能读到的 code-map（其域必在 files 里）
+      if (domainFilter && !domainFilter.has(d)) continue;
+      const cm = join(domainsDir, d, 'code-map.md');
+      if (!existsSync(cm)) continue;
+      // 只扫「## 漂移清单」节——四轮教训：放宽正则后若全文件扫，普通编号行
+      // 全被当豁免（92 条），会过度抑制真发现
+      let inDrift = false;
+      for (const line of readFileSync(cm, 'utf-8').split('\n')) {
+        if (/^##\s/.test(line)) { inDrift = /^##\s*漂移清单/.test(line); continue; }
+        if (!inDrift) continue;
+        const t = line.trim();
+        if (!t) continue;
+        // 四轮教训 a：多主题条目的细节藏在冒号后/缩进续行（canvas-tree 漂移 14
+        // 的 rAF 细节在续行），「抓标题到冒号」漏抓 → 重复立案。编号行 + 续行整行喂。
+        if (/^\d+\.\s+/.test(t) || /^\s/.test(line)) {
+          out.push(`- [${d}漂移] ` + t.replace(/^\d+\.\s+/, '').slice(0, 120));
+        }
+      }
+    }
+  }
+  return out.join('\n');
+}
+
+// ========== prompt 组装 ==========
+
+export function buildPrompt(task, files) {
+  const feedSet = new Set(expandPaths(task.feeds));
+  const feeds = files.filter(f => feedSet.has(f));
+  const baseline = files.filter(f => !feedSet.has(f));
+  // 漂移豁免按上下文域过滤（prompt 里读得到的 code-map 才可能被重复报告）
+  const domains = new Set(files.map(f => (f.match(/^docs\/domains\/([^/]+)\//) || [])[1]).filter(Boolean));
+  return `你是文档语义审计探针，只回答一个问题的发现，不做额外评论。
+
+【审计问题】${task.question}
+
+【病灶类型】只报这几类（其他不报）：
+${task.sem.map(s => `- ${s}`).join('\n')}
+
+【输出契约】只输出 JSON，不要任何多余文字：
+{"findings":[{"type":"SEM001","claim":"出错文档路径:行号","against":"基准出处路径:行号 或 null","note":"50字内冲突说明"}]}
+无发现输出 {"findings":[]}。上限 10 条，拿不准的不报（宁缺勿滥——幻觉发现会死在机械复核环节）。
+
+【登记豁免】以下病灶已在账本登记，**不算新发现，一律跳过**：
+${registeredFindings(domains) || '（无）'}
+
+【被审文档】
+${inlineDocs(feeds)}
+
+【基准层（对账参照）】
+${baseline.length ? inlineDocs(baseline) : '（无）'}`;
+}
+
+// ========== 输出校验（validate → data | null） ==========
+
+export function makeValidate() {
+  return text => {
+    const j = extractJson(text);
+    if (!j || !Array.isArray(j.findings)) return null;
+    const clean = [];
+    for (const f of j.findings.slice(0, 10)) {
+      if (!f || !SEM_TYPES.includes(f.type)) continue;
+      if (typeof f.claim !== 'string' || !f.claim.includes(':')) continue;
+      clean.push({
+        type: f.type,
+        claim: f.claim.trim(),
+        against: typeof f.against === 'string' ? f.against.trim() : null,
+        note: String(f.note || '').slice(0, 80),
+      });
+    }
+    return { findings: clean };
+  };
+}
+
+// ========== 机械复核（拜占庭对策：证据必须落在真实文件上） ==========
+// 二轮教训：LLM 的引用格式五花八门——范围行 33-34、裸文件名 code-map.md、
+// 节锚 ## 标题、「末行」、文件:节名。复核的目标是杀「文件不存在的幻觉」，
+// 不是考较格式——全部归一化后再核对；行号只查越界，节锚放宽到文件级。
+// 裁决权仍在会话内 agent（复核是筛子不是法官）。
+
+export function recheckRef(ref, ctxFiles = []) {
+  if (!ref) return true; // against 可为 null
+  // 三轮教训：LLM 把 JSON null 序列化成字符串 'null'/'null:…'——归一为 null，否则误杀
+  if (String(ref).trim().toLowerCase() === 'null') return true;
+  const s = String(ref).replace(/[`*\s]/g, ' ').trim();
+  // 提取文件部分与行号部分：path:123 / path:33-34 / path:末行 / path:## 节 / path
+  let pathPart = s, linePart = null;
+  const mLine = s.match(/^(.+?):(\d+)(?:\s*[-–~]\s*\d+)?$/);
+  const mLast = s.match(/^(.+?):末行$/);
+  if (mLine) { pathPart = mLine[1]; linePart = parseInt(mLine[2], 10); }
+  else if (mLast) { pathPart = mLast[1]; }
+  else if (s.includes(':')) { pathPart = s.slice(0, s.indexOf(':')); } // 节锚等，放宽到文件级
+
+  const candidates = [join(ROOT, pathPart), join(ROOT, 'docs', pathPart)];
+  if (!pathPart.includes('/')) {
+    // 裸文件名 → 任务上下文文件集解析
+    for (const f of ctxFiles) {
+      if (f === pathPart || f.endsWith('/' + pathPart)) candidates.push(join(ROOT, f));
+    }
+  }
+  const abs = candidates.find(c => existsSync(c) && statSync(c).isFile());
+  if (!abs) return false;
+  if (linePart === null) return true; // 文件级证据：文件存在即过
+  const lines = readFileSync(abs, 'utf-8').split('\n').length;
+  return linePart <= lines;
+}
+
+// ========== 并发池 ==========
+
+async function pool(items, n, worker) {
+  const results = [];
+  let idx = 0;
+  async function run() {
+    while (idx < items.length) {
+      const i = idx++;
+      results[i] = await worker(items[i]);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(n, items.length) }, run));
+  return results;
+}
+
+// ========== 主流程（仅直接执行时跑；被 import 只暴露纯函数——
+// 四轮教训：实验脚本 import 探测误触发了一次并发全量审计） ==========
+
+const IS_MAIN = !!process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (IS_MAIN) {
+const state = loadState();
+let selected = TASKS.filter(t => !ONLY || t.id === ONLY);
+if (ONLY && selected.length === 0) {
+  console.error(`[semantic-audit] 无任务 id=${ONLY}（可选：${TASKS.map(t => t.id).join(', ')}）`);
+  process.exit(2);
+}
+
+const plan = selected.map(task => {
+  const files = taskFiles(task);
+  const hash = taskHash(task, files);
+  const prev = state.tasks[task.id];
+  const skip = !FULL && prev && prev.hash === hash;
+  return { task, files, hash, skip };
+});
+
+const willRun = plan.filter(p => !p.skip);
+console.log(`[semantic-audit] 任务 ${plan.length} 个：跳过 ${plan.length - willRun.length}（输入未变）· 待跑 ${willRun.length}${DRY_RUN ? '（dry-run）' : ''}`);
+if (DRY_RUN) {
+  for (const p of plan) console.log(`  ${p.skip ? 'SKIP' : 'RUN '} ${p.task.id}（${p.files.length} 文件）`);
+  process.exit(0);
+}
+
+let anyOk = false;
+const runReport = { date: new Date().toISOString().slice(0, 10), tasks: {}, findingsKept: 0, findingsDropped: 0 };
+
+const results = await pool(willRun, CONCURRENCY, async ({ task, files, hash }) => {
+  const result = await runAgent({
+    system: '你是文档语义审计探针。只输出要求的 JSON，不要任何多余文字。',
+    prompt: buildPrompt(task, files),
+    validate: makeValidate(),
+    // 首轮教训（2026-07-30）：2000 被推理模型的思考链吃光，三棒全空响应；
+    // 审计 prompt 大 → 思考长 → 上限必须给足
+    maxTokens: 16000,
+  });
+  if (!result.ok) {
+    console.error(`[semantic-audit] ${task.id}: agent 失败——${result.errors.join('；')}`);
+    runReport.tasks[task.id] = { status: 'failed', errors: result.errors };
+    return { task, hash, ok: false };
+  }
+  anyOk = true;
+  // 机械复核 + 去重
+  const kept = [];
+  const droppedList = [];
+  for (const f of result.data.findings) {
+    if (!recheckRef(f.claim, files) || !recheckRef(f.against, files)) { droppedList.push(f); continue; }
+    kept.push(f);
+  }
+  const dropped = droppedList.length;
+  if (dropped) {
+    for (const f of droppedList) console.log(`  ✂ 幻觉拦截: [${f.type}] ${f.claim}${f.against ? ` ↔ ${f.against}` : ''} — ${f.note.slice(0, 50)}`);
+  }
+  runReport.tasks[task.id] = {
+    status: 'ok', reported: result.data.findings.length, kept: kept.length, dropped,
+    droppedFindings: droppedList,
+    provider: result.provider, attempts: result.attempts,
+  };
+  runReport.findingsKept += kept.length;
+  runReport.findingsDropped += dropped;
+  console.log(`[semantic-audit] ${task.id}: 报 ${result.data.findings.length} · 复核保留 ${kept.length} · 幻觉拦截 ${dropped}（${result.provider}，${result.attempts} 次尝试）`);
+  return { task, hash, ok: true, kept };
+});
+
+// 跨任务去重（claim+against+type）
+const seen = new Set();
+const allFindings = [];
+for (const r of results) {
+  if (!r || !r.ok) continue;
+  for (const f of r.kept) {
+    const key = `${f.type}|${f.claim}|${f.against}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    allFindings.push({ task: r.task.id, ...f });
+  }
+}
+
+// state 回写（成功任务才更新哈希——失败任务下轮重跑）
+for (const r of results) {
+  if (!r || !r.ok) continue;
+  state.tasks[r.task.id] = { hash: r.hash, lastRun: runReport.date, ...runReport.tasks[r.task.id] };
+}
+for (const p of plan.filter(p => p.skip)) {
+  // 跳过任务保留旧记账
+}
+state.runs.push({ date: runReport.date, ran: willRun.length, skipped: plan.length - willRun.length, kept: runReport.findingsKept, dropped: runReport.findingsDropped });
+writeFileSync(STATE_PATH, JSON.stringify(state, null, 2) + '\n');
+
+// ========== 产出：SEM 清单草案 ==========
+
+console.log('\n========== SEM 清单草案 ==========');
+if (allFindings.length === 0) {
+  console.log('（本轮无新发现）');
+} else {
+  for (const f of allFindings) {
+    console.log(`[${f.type}] ${f.claim}${f.against ? ` ↔ ${f.against}` : ''}（探针 ${f.task}）\n  ${f.note}`);
+  }
+}
+console.log(`\n[semantic-audit] 合计：保留 ${allFindings.length} 条（去重后）· 幻觉拦截 ${runReport.findingsDropped} · state → docs/ledger/semantic-audit-state.json`);
+
+if (!anyOk && willRun.length > 0) {
+  console.error('[semantic-audit] 全部任务失败');
+  process.exit(2);
+}
+process.exit(0);
+} // IS_MAIN

@@ -25,10 +25,18 @@
      agent 判定 → 人拍板
    — 测试协议：回放测试（14 历史版本对=黄金集，测一致率）→ 否定测试（周期中段切片须忍住）→
      影子模式（分歧记日志调 prompt）→ 投产仍只产建议（git mutation 人拍板）
-   — 模型链：kimi-for-code-highspeed（256k）→ deepseek_v4_flash → step-3.7-flash 有序兜底
+   — 模型链：deepseek_v4_flash → step-3.7-flash 有序兜底（2026-07-30 撤下 kimi 链首：端点过严，
+     审计大 prompt 连续空响应 + 强制 temperature=1 与 JSON 任务相克）
    — 远期：agent 工具 prompt 管理卡（实体化管理 + 逐脚本微调，很久后）
    — 待设计：触发方式（cron/事件/手动）、产出验证（LLM proposes, mechanics disposes）、
-     结果回写（tag/STACK/ledger）、失败兜底
+     成本预算、结果回写（tag/STACK/ledger）、失败兜底
+   — 腿一：semantic-audit.mjs 探针集群（2026-07-30 立项，用户拍板架构）——编排器 +
+     手写任务清单（组内 ~15 + 组间 ~6，组间种子来自 semantic-provenance 冲突对）+
+     并发 3 + 增量哈希（输入文档哈希没变则跳过，make 式对账）+ per-任务精确率记账；
+     v2 留 map-reduce 声明提取对账（任务清单先手写，对错从数据长出再谈编译）
+   — 腿三（远期）：semantic-chain.mjs 总 runner——探针 verdict 聚合成单结论（过/N 条新发现），
+     cron 化巡逻；verdict 门控注意力不门控合并（概率区纪律）；裁决与修复留会话内 agent，
+     自动化边界 = 检测，结晶回路负责把反复发现移民确定区
 8. 卡片类需求三件（2026-07-29 记，优先级后排）
    — 工作流实体卡片插件：workflows/ 的实体卡进卡片堆（形态参照现有 tool 卡）
    — 中央面板网格线升级 + 实时统计信息

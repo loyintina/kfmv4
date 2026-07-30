@@ -1,0 +1,308 @@
+{
+  "tasks": {
+    "diagnostics-vs-maps": {
+      "hash": "e572b740f8530a564fed103df157cb662cb01ab7",
+      "lastRun": "2026-07-30",
+      "status": "ok",
+      "reported": 0,
+      "kept": 0,
+      "dropped": 0,
+      "droppedFindings": [],
+      "provider": "deepseek/deepseek-v4-flash",
+      "attempts": 1
+    },
+    "guides-testing-vs-infra": {
+      "hash": "4e86f8be45553c8ce84acc161db90ba17883950d",
+      "lastRun": "2026-07-30",
+      "status": "ok",
+      "reported": 0,
+      "kept": 0,
+      "dropped": 0,
+      "droppedFindings": [],
+      "provider": "deepseek/deepseek-v4-flash",
+      "attempts": 1
+    },
+    "stack-vs-ledger": {
+      "hash": "74d05756001e51efa76fb80d006d1b3ec37b7f81",
+      "lastRun": "2026-07-30",
+      "status": "ok",
+      "reported": 1,
+      "kept": 1,
+      "dropped": 0,
+      "droppedFindings": [],
+      "provider": "deepseek/deepseek-v4-flash",
+      "attempts": 1
+    },
+    "inter-vision-invariants": {
+      "hash": "959d437594e31a3f38c1825207eaa2089b95f258",
+      "lastRun": "2026-07-30",
+      "status": "ok",
+      "reported": 0,
+      "kept": 0,
+      "dropped": 0,
+      "droppedFindings": [],
+      "provider": "deepseek/deepseek-v4-flash",
+      "attempts": 1
+    },
+    "inter-readme-codemap": {
+      "hash": "7f90a43367ea578ad570f31ed6193bf624bdbed7",
+      "lastRun": "2026-07-30",
+      "status": "ok",
+      "reported": 0,
+      "kept": 0,
+      "dropped": 0,
+      "droppedFindings": [],
+      "provider": "deepseek/deepseek-v4-flash",
+      "attempts": 1
+    },
+    "inter-agentrunner-infra": {
+      "hash": "c2d918747a7b282cc6447f5fc7e72a6a4e353663",
+      "lastRun": "2026-07-30",
+      "status": "ok",
+      "reported": 0,
+      "kept": 0,
+      "dropped": 0,
+      "droppedFindings": [],
+      "provider": "deepseek/deepseek-v4-flash",
+      "attempts": 1
+    },
+    "vision-vs-maps": {
+      "hash": "b4654037a6757ebe6babf958e7c07dafc916c5ab",
+      "lastRun": "2026-07-30",
+      "status": "ok",
+      "reported": 0,
+      "kept": 0,
+      "dropped": 0,
+      "droppedFindings": [],
+      "provider": "deepseek/deepseek-v4-flash",
+      "attempts": 1
+    },
+    "invariants-vs-maps": {
+      "hash": "3c70303d21bf379080985e361217427ae881dfac",
+      "lastRun": "2026-07-30",
+      "status": "ok",
+      "reported": 0,
+      "kept": 0,
+      "dropped": 0,
+      "droppedFindings": [],
+      "provider": "deepseek/deepseek-v4-flash",
+      "attempts": 1
+    },
+    "readme-vs-maps": {
+      "hash": "dda4debade8459745ee4ba8d53e6f096b63747e1",
+      "lastRun": "2026-07-30",
+      "status": "ok",
+      "reported": 1,
+      "kept": 0,
+      "dropped": 1,
+      "droppedFindings": [
+        {
+          "type": "SEM001",
+          "claim": "README.md:51",
+          "against": "docs/domains/ai-chat/code-map.md:7-8, docs/domains/canvas-tree/code-map.md:6-7",
+          "note": "README声称ai-chat有3份contract、canvas-tree有1份，但code-map显示各为2份，数量不符"
+        }
+      ],
+      "provider": "deepseek/deepseek-v4-flash",
+      "attempts": 1
+    },
+    "claude-vs-docs": {
+      "hash": "de687a2eacffe59746db5ddfa0710883aac932be",
+      "lastRun": "2026-07-30",
+      "status": "ok",
+      "reported": 1,
+      "kept": 1,
+      "dropped": 0,
+      "droppedFindings": [],
+      "provider": "deepseek/deepseek-v4-flash",
+      "attempts": 1
+    },
+    "workflows-vs-guides": {
+      "hash": "e2fa29b8b79f876f602f06619ca53d145996b8f9",
+      "lastRun": "2026-07-30",
+      "status": "ok",
+      "reported": 1,
+      "kept": 1,
+      "dropped": 0,
+      "droppedFindings": [],
+      "provider": "deepseek/deepseek-v4-flash",
+      "attempts": 1
+    },
+    "guides-release-vs-history": {
+      "hash": "eeec0c04e1a94da89f5bdcc15d87464a061388b7",
+      "lastRun": "2026-07-30",
+      "status": "ok",
+      "reported": 0,
+      "kept": 0,
+      "dropped": 0,
+      "droppedFindings": [],
+      "provider": "deepseek/deepseek-v4-flash",
+      "attempts": 1
+    },
+    "doc-maintenance-vs-pipeline": {
+      "hash": "a6f33ef0dedf024548875a7b174fc02ea5f31297",
+      "lastRun": "2026-07-30",
+      "status": "ok",
+      "reported": 2,
+      "kept": 2,
+      "dropped": 0,
+      "droppedFindings": [],
+      "provider": "deepseek/deepseek-v4-flash",
+      "attempts": 1
+    },
+    "contract-vs-map-ai-chat": {
+      "hash": "a4d7ebb1e0d60db884cf2a47b4fa7bd03452e791",
+      "lastRun": "2026-07-30",
+      "status": "ok",
+      "reported": 0,
+      "kept": 0,
+      "dropped": 0,
+      "droppedFindings": [],
+      "provider": "deepseek/deepseek-v4-flash",
+      "attempts": 1
+    },
+    "contract-vs-map-canvas-tree": {
+      "hash": "626d9f412ab62646cd06468f1b358ce01da48d8d",
+      "lastRun": "2026-07-30",
+      "status": "ok",
+      "reported": 1,
+      "kept": 1,
+      "dropped": 0,
+      "droppedFindings": [],
+      "provider": "deepseek/deepseek-v4-flash",
+      "attempts": 1
+    },
+    "contract-vs-map-client-shell": {
+      "hash": "061e79d6f11688d6fb28f8c2c7066d93b3d6ea3a",
+      "lastRun": "2026-07-30",
+      "status": "ok",
+      "reported": 0,
+      "kept": 0,
+      "dropped": 0,
+      "droppedFindings": [],
+      "provider": "deepseek/deepseek-v4-flash",
+      "attempts": 1
+    },
+    "contract-vs-map-floating-card": {
+      "hash": "acf99564d5e1383b1f363a13f31cabe708134888",
+      "lastRun": "2026-07-30",
+      "status": "ok",
+      "reported": 0,
+      "kept": 0,
+      "dropped": 0,
+      "droppedFindings": [],
+      "provider": "deepseek/deepseek-v4-flash",
+      "attempts": 1
+    },
+    "contract-vs-map-server": {
+      "hash": "d9c9b0c89142037c670674d648358627fee52ead",
+      "lastRun": "2026-07-30",
+      "status": "ok",
+      "reported": 0,
+      "kept": 0,
+      "dropped": 0,
+      "droppedFindings": [],
+      "provider": "deepseek/deepseek-v4-flash",
+      "attempts": 1
+    },
+    "contract-vs-map-infra": {
+      "hash": "f77af300d8bb331a21a3d5cfb06ff58f297ef02e",
+      "lastRun": "2026-07-30",
+      "status": "ok",
+      "reported": 0,
+      "kept": 0,
+      "dropped": 0,
+      "droppedFindings": [],
+      "provider": "deepseek/deepseek-v4-flash",
+      "attempts": 1
+    },
+    "crossdomain-vs-inventory": {
+      "hash": "2a8c6ffd718a0ce0c837470982fdee78843397af",
+      "lastRun": "2026-07-30",
+      "status": "ok",
+      "reported": 0,
+      "kept": 0,
+      "dropped": 0,
+      "droppedFindings": [],
+      "provider": "deepseek/deepseek-v4-flash",
+      "attempts": 1
+    },
+    "inter-workflows-infra": {
+      "hash": "c8c66177a26715fe9dcb0f737d8a041f0b7da8bc",
+      "lastRun": "2026-07-30",
+      "status": "ok",
+      "reported": 0,
+      "kept": 0,
+      "dropped": 0,
+      "droppedFindings": [],
+      "provider": "deepseek/deepseek-v4-flash",
+      "attempts": 1
+    },
+    "inter-provenance-bugs": {
+      "hash": "074e063d03bf2009b1e229931f12bdcf59bc6041",
+      "lastRun": "2026-07-30",
+      "status": "ok",
+      "reported": 0,
+      "kept": 0,
+      "dropped": 0,
+      "droppedFindings": [],
+      "provider": "deepseek/deepseek-v4-flash",
+      "attempts": 1
+    },
+    "inter-detail-contract-aichat": {
+      "hash": "7204f462fc1052ca42fdad207aec421be14b5a01",
+      "lastRun": "2026-07-30",
+      "status": "ok",
+      "reported": 0,
+      "kept": 0,
+      "dropped": 0,
+      "droppedFindings": [],
+      "provider": "deepseek/deepseek-v4-flash",
+      "attempts": 1
+    }
+  },
+  "runs": [
+    {
+      "date": "2026-07-30",
+      "ran": 23,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-07-30",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-07-30",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 1
+    },
+    {
+      "date": "2026-07-30",
+      "ran": 17,
+      "skipped": 6,
+      "kept": 3,
+      "dropped": 21
+    },
+    {
+      "date": "2026-07-30",
+      "ran": 15,
+      "skipped": 8,
+      "kept": 5,
+      "dropped": 1
+    },
+    {
+      "date": "2026-07-30",
+      "ran": 23,
+      "skipped": 0,
+      "kept": 6,
+      "dropped": 1
+    }
+  ]
+}

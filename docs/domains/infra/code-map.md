@@ -15,7 +15,7 @@
 ## 一句话职责
 
 构建产物链（check → sass → esbuild 双 bundle → 握手信息）、部署闭环
-（build → restart → 握手断言）、29 个 check 组成的文档/代码管线、agent-runner 工具。
+（build → restart → 握手断言）、30 个 check（含 check-checks 自身）组成的文档/代码管线、agent-runner 工具。
 
 ## 承重入口
 
@@ -23,7 +23,7 @@
 |------|------|--------|
 | build.mjs（无导出，顶层即入口） | chain.mjs 委托 + esbuild | package.json build/dev/watch、deploy.sh:11 |
 | chain.mjs（check 链唯一出处，STEPS 34 步） | scripts/check/chain.mjs | package.json:11、build.mjs 委托 |
-| 29 个 check-*.mjs | 全部顶层执行、exit 1 硬失败 | chain.mjs STEPS 统一调度 |
+| 30 个 check-*.mjs（含 check-checks 自身，业务检查 29） | 全部顶层执行、exit 1 硬失败 | chain.mjs STEPS 统一调度 |
 | DOCS_ROOT / DOMAIN_SRC 共享常量 | scripts/check/docs-root-const.mjs、domain-src.mjs | 11 个 check / freshness + 清单生成器 |
 | sync-counts.mjs | 唯一会回写文档的 check | 链内 --check-only；无参回写 |
 | scripts/agent/agent-runner.mjs | 导出 runAgent/extractJson | tag-advisor.mjs:13 |
@@ -102,8 +102,9 @@ esbuild server ESM + client IIFE（external 硬编码 build.mjs）→ checkFresh
 11. **【已结案 2026-07-30】gen-code-inventory 无管线挂接**：已移入 scripts/check/ 并加
     --check-only 挂 check 链（sync-counts 后、tsc 前）+ 探针负例——清单不新鲜即中断，
     不再靠人记得重跑。
-12. **【存疑】Kimi provider temperature 1**：providers.config.json:2 的 params 覆盖
-    默认 0.2——对「只输出 JSON」的抽取任务反常（但这是端点硬性要求，注释未写明原因）。
+12. **【已结案 2026-07-30】Kimi provider temperature 1**：providers.config.json 的 params 覆盖
+    默认 0.2 系端点硬性要求——但语义审计首轮实测该端点对大 prompt 连续空响应，用户拍板
+    将 Kimi 撤下链首（现链：deepseek → 阶跃星辰），配置已不含此项。
 13. **进程管理双路径**：npm start 用 lsof kill（package.json:15），生产走 systemctl；
     dev/prod 语义不同，文档未对齐。
 14. 次要：tests/runner.ts 与 harness.ts 双门面冗余；public/css/base.css.map 是

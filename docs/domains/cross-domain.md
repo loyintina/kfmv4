@@ -68,15 +68,15 @@
   即 floating-card code-map 漂移 17 双开 PTY 嫌疑的协议层成因 ⚠
 - 应用层 'ping' 客户端不回，纯喂看门狗——协议残留
 
-## 跨域 import 图（机械层，224 边）
+## 跨域 import 图（机械层，边数以 code-inventory.md 为准）
 
-详见 code-inventory.md 末节。要点：
+详见 code-inventory.md 末节（机械生成，唯一计数出处——字面拷贝已实测漂移两轮，家训：转述引用式）。要点：
 
-- **client-shell 是被依赖枢纽**（canvas-tree→51 边、floating-card→40 边）——底座定位属实
-- **ai-chat ↔ client-shell 双向 18 边**——orb.ts 域归属漂移（两域 code-map 均已立案）
+- **client-shell 是被依赖枢纽**（canvas-tree、floating-card 两域指向它的边最多）——底座定位属实
+- **ai-chat ↔ client-shell 双向边显著**——orb.ts 域归属漂移（两域 code-map 均已立案）
   的边级证据
 - canvas-tree → ai-chat 仅 1 边（tree-render → ws-channel）——比想象中干净
-- infra → 各域 60 边全部是 tests/ 引用——测试跨域是常态，不算耦合
+- infra → 各域边全部是 tests/ 引用——测试跨域是常态，不算耦合
 
 ## 跨域不变量（现有代码实际维持的）
 

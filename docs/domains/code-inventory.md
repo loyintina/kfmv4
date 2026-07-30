@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 6a20d96 · 生成于 2026-07-30 -->
+<!-- 基准 commit 7b54c7b · 生成于 2026-07-30 -->
 
 # 代码清单（机械层）
 
@@ -165,7 +165,7 @@
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 
-## infra（79 文件 · 10089 行）
+## infra（82 文件 · 10657 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -174,6 +174,7 @@
 | tests/tool-compaction.test.ts | 505 | — |
 | tests/preload.mjs | 406 | — |
 | tests/visual-baseline.test.ts | 367 | — |
+| scripts/agent/semantic-audit.mjs | 343 | taskFiles, buildPrompt, makeValidate, recheckRef |
 | tests/server-routes.test.ts | 321 | — |
 | tests/box.test.ts | 309 | — |
 | tests/mocks/gsap.ts | 305 | gsap |
@@ -191,6 +192,7 @@
 | tests/protocol-reducer.test.ts | 161 | — |
 | scripts/check/check-docs.mjs | 146 | — |
 | scripts/check/check-bar-ledger.mjs | 142 | — |
+| scripts/agent/semantic-audit.tasks.mjs | 140 | TASKS |
 | scripts/check/sync-counts.mjs | 138 | — |
 | scripts/check/check-checks.mjs | 132 | — |
 | scripts/check/check-tool-compaction.mjs | 129 | — |
@@ -200,8 +202,8 @@
 | tests/harness.ts | 116 | TestTag, TestOpts, test, regression, group, beforeEach, runAll |
 | scripts/check/check-doc-coverage.mjs | 110 | — |
 | scripts/check/check-zindex.mjs | 110 | — |
+| scripts/agent/agent-runner.mjs | 109 | renderTemplate, extractJson, runAgent |
 | scripts/check/check-cards.mjs | 105 | — |
-| scripts/agent/agent-runner.mjs | 105 | renderTemplate, extractJson, runAgent |
 | scripts/check/check-contract-freshness.mjs | 103 | — |
 | scripts/check/check-test-patterns.mjs | 102 | — |
 | scripts/check/check-anim.mjs | 99 | — |
@@ -210,6 +212,7 @@
 | scripts/check/check-versions.mjs | 91 | — |
 | scripts/check/check-probes.mjs | 86 | — |
 | tests/engine.test.ts | 85 | — |
+| scripts/agent/exp-thinking.mjs | 81 | — |
 | scripts/check/check-console.mjs | 79 | — |
 | scripts/check/check-as-any.mjs | 76 | — |
 | scripts/check/docs-status.mjs | 76 | — |
@@ -536,4 +539,4 @@
 - src/server/index.ts → src/server/ai/routes.ts
 
 ---
-合计 213 文件 · 40509 行 · 跨域边 225 条
+合计 216 文件 · 41077 行 · 跨域边 225 条

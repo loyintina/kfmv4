@@ -33,7 +33,7 @@ export function renderTemplate(tpl, vars) {
   return tpl.replace(/\{\{(\w+)\}\}/g, (_, k) => (k in vars ? String(vars[k]) : `{{${k}!MISSING}}`));
 }
 
-async function chat(baseUrl, apiKey, model, system, user, maxTokens, params = {}) {
+async function chat(baseUrl, apiKey, model, system, user, maxTokens, params = {}, timeoutMs = 120_000) {
   const res = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
@@ -47,7 +47,7 @@ async function chat(baseUrl, apiKey, model, system, user, maxTokens, params = {}
       max_tokens: maxTokens,
       ...params,
     }),
-    signal: AbortSignal.timeout(60_000),
+    signal: AbortSignal.timeout(timeoutMs),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status} ${(await res.text()).slice(0, 200)}`);
   const json = await res.json();
@@ -66,8 +66,12 @@ export function extractJson(text) {
 /**
  * 跑一个 agent 任务。
  * validate(text) → data | null：null = 校验失败（触发带反馈重问）
+ * params：负载级请求参数覆盖（合并于 provider 的 step.params 之后）——
+ *   抽取型负载可传 { thinking: { type: 'disabled' } } 关思考换速度
+ *   （deepseek 实测 2026-07-30：真开关，10 倍提速；推理型负载勿用）
+ * timeoutMs：单次请求超时（默认 120s——大 prompt 如 inter-workflows 探针 60s 不够）
  */
-export async function runAgent({ system = '', prompt, validate = null, retries = 2, maxTokens = 2000 }) {
+export async function runAgent({ system = '', prompt, validate = null, retries = 2, maxTokens = 2000, params = {}, timeoutMs = 120_000 }) {
   const entries = loadProviderEntries();
   const errors = [];
 
@@ -80,7 +84,7 @@ export async function runAgent({ system = '', prompt, validate = null, retries =
     let callFailed = false;
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
-        const text = await chat(entry.baseUrl, entry.apiKey, step.model, system, prompt + feedback, maxTokens, step.params);
+        const text = await chat(entry.baseUrl, entry.apiKey, step.model, system, prompt + feedback, maxTokens, { ...step.params, ...params }, timeoutMs);
         lastRaw = text;
         const data = validate ? validate(text) : text;
         if (data !== null) {

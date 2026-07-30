@@ -21,9 +21,25 @@ agent 原件，不是 agent 应用。三明治：**机械组装输入 → agent 
 
 ## provider 兜底链
 
-`providers.config.json` 有序列表：Kimi/kimi-for-coding-highspeed → deepseek/deepseek-v4-flash →
-阶跃星辰/step-3.7-flash。key 从 `~/.kfmv4/providers.json` 按 id 读；调用失败自动落下一个；
-可选 `params` 覆盖请求参数（如 kimi-for-coding 系只允许 temperature=1）。
+`providers.config.json` 有序列表：deepseek/deepseek-v4-flash → 阶跃星辰/step-3.7-flash。
+key 从 `~/.kfmv4/providers.json` 按 id 读；调用失败自动落下一个；
+可选 `params` 覆盖请求参数（现配 `response_format: json_object`——「只输出 JSON」从 prompt 约束升级为端点约束，与 validate 重试双保险）。
+
+**禁思考字段（deepseek 实测 2026-07-30）**：`thinking: {"type": "disabled"}` 是真开关
+（572ms/5 completion tokens vs 裸 6083ms/445 tokens；`reasoning_effort:none` 非法、
+`low` 只降不关、`enable_thinking:false` 静默忽略）。负载级选择：`runAgent({ params })`
+透传覆盖——抽取型负载（JSON 提取/判定）关思考换速度，推理型负载（语义审计）勿关。
+注意思考链吃 max_tokens：推理型负载上限要给足（审计用 16000，首轮 2000 全灭教训）。
+**对照实验（2026-07-30 exp-thinking.mjs，4 审计任务 × 2 臂，顺序交替）**：关思考提速
+51-71×（1.3-1.7s vs 72-97s）但 4 任务产出**全部为零**——1.4s 对 16-51KB 审计 prompt
+返回空 = 根本没分析；开思考臂报 7 条（该样本下全假——文档已收敛，真发现信号枯竭，
+召回差异待变异基准测）。结论：推理型负载关思考 = 没审，勿关铁律有硬数据了。
+单次请求超时 `runAgent({ timeoutMs })`，默认 120s（2026-07-30 由 60s 上调——
+inter-workflows 大 prompt 探针双端 60s 超时失败教训）。
+（2026-07-30 用户拍板撤下 Kimi/kimi-for-coding-highspeed 链首位：端点过严——审计大 prompt
+连续空响应，且该系只允许 temperature=1 与「只输出 JSON」任务相克，原 infra code-map 漂移 12 结案。
+同日链路重排：Opencode Go Google/deepseek-v4-flash → OpenCode Go GitHub（429 月限额，8 天复位）
+→ deepseek 官方 → 阶跃星辰。）
 未来前端设置卡负责该链的可视化编排 + key 健康状态（STACK #3 配套）。
 
 ## 输出可控性
@@ -55,3 +71,18 @@ agent 原件，不是 agent 应用。三明治：**机械组装输入 → agent 
 1. 在 scripts/agent/ 下写新脚本（参照 tag-advisor.mjs）：`runAgent({ system, prompt, validate })`，输入机械组装
 2. 需要新触发位 → 对应 check/钩子挂提醒（雷达模式）
 3. 走测试协议四段再投产
+
+## 二号负载：semantic-audit.mjs（探针集群，2026-07-30）
+
+语义审计的脚本化（母体 → ../active/semantic-compiler-seed.md；任务清单 → scripts/agent/semantic-audit.tasks.mjs）：
+
+- **编排器 + 任务清单分离**：一个探针只问一个问题（组内 17 + 组间 6），组间探针种子来自
+  ledger/semantic-provenance.md 实测冲突对——不打 N² 笛卡尔积
+- **并发 3 洁净室**：任务间零共享上下文，单任务失败不拖垮全局（进 errors 不阻塞）
+- **增量对账**：任务输入（定义+文档内容）哈希没变即跳过（make 式）；`--full` 强制全量、
+  `--dry-run` 只出计划、`--task=<id>` 单跑
+- **拜占庭对策代码化**：发现的 claim/against 证据行必须真实存在，否则计入 dropped（幻觉拦截）
+- **记账**：reported/kept/dropped/provider/attempts 全量进 `docs/ledger/semantic-audit-state.json`，
+  per-任务精确率是 prompt 迭代的数据源
+- **exit 协议**：0 = 流程跑完（发现是产出不是失败）；2 = 全部任务失败/环境缺 provider；
+  非阻断，不挂 check 链（概率区纪律）
