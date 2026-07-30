@@ -36,6 +36,8 @@ export type { ContentBlock, TextBlock, ToolBlock, RuleWarningBlock };
 export interface ChatMessage {
   role: 'user' | 'ai';
   content: ContentBlock[];
+  /** 消息创建时刻（ISO 8601）；权威定义在 shared/chat-protocol/messages.ts */
+  ts?: string;
 }
 
 /** 流式事件（服务端 → 客户端 SSE 协议） */
