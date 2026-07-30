@@ -148,7 +148,7 @@ test('失败模式重复标注：同错误第 N 次附加 failRepeatAnnotation',
 
 group('投影/存储分离 — 落盘必须走原文通道');
 
-test('routes 落盘用户消息用 userText 原文，不用投影文本（前缀叠加污染）', () => {
+regression('BAR-CHAT-TS-01', 'ai/routes', '落盘用户消息用 userText 原文，不用投影文本（前缀叠加污染）', () => {
   const routes = readFileSync('src/server/ai/routes.ts', 'utf-8');
   const run = readFileSync('src/client/modules/orb-chat-run.ts', 'utf-8');
   assert(routes.includes('userText'), '服务端必须接收并使用 userText 原文落盘');

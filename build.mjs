@@ -33,9 +33,18 @@ function checkFreshness(outfile, label) {
 
 // ========== 构建 ==========
 
+// 本次构建时间：一处生成，客户端 bundle define 与 build-info.json 共用——
+// version-watch 横幅靠「bundle 内嵌时间 == 服务端 buildTime」判定旧包，两出处必须同值
+const BUILD_TIME = new Date().toISOString();
+// --fast：deploy-fast.sh 会话中途快通道——跳过全链（链在交付 deploy.sh 才完整跑）
+const FAST = process.argv.includes('--fast');
+
 // 全量代码质量检查（唯一链出处 scripts/check/chain.mjs——禁止在此回潮手写单个 check；
-// build 中 check-uncommitted 按 --soft 降级为提醒，其余零错误通过才构建）
-execSync('node scripts/check/chain.mjs --soft=check-uncommitted', { stdio: 'inherit' });
+// build 中 check-uncommitted 按 --soft 降级为提醒，其余零错误通过才构建。
+// check-deploy-freshness 也必须 --soft：构建中途源码必然比包新，硬跑会自锁）
+if (!FAST) {
+  execSync('node scripts/check/chain.mjs --soft=check-uncommitted --soft=check-deploy-freshness', { stdio: 'inherit' });
+}
 
 // 复制 stealth 脚本到 dist（launch.ts 在运行时读取这些文件）
 const puppeteerSrc = 'src/server/ai/tools/omp/browser/puppeteer';
@@ -65,15 +74,18 @@ await build({
   target: ['es2019'],
   external: ['katex', 'mermaid'],
   minify: true,
+  // 把构建时间烙进 bundle：version-watch 横幅据此与服务端 buildTime 比对报旧包
+  define: { KFM_BUILD_TIME: JSON.stringify(BUILD_TIME) },
 });
 
 // 校验产物新鲜度
 checkFreshness('dist/server/index.js', 'server');
 checkFreshness('public/bundle.js', 'client');
 
-// 版本握手：写构建信息（/api/system/info 暴露，deploy.sh 据此验证运行进程已加载新包）
+// 版本握手：写构建信息（/api/system/info 暴露，deploy.sh 据此验证运行进程已加载新包；
+// 与客户端 bundle define 共用 BUILD_TIME——version-watch 横幅比对两边同值才不误报）
 writeFileSync('dist/build-info.json', JSON.stringify({
-  buildTime: new Date().toISOString(),
+  buildTime: BUILD_TIME,
   version: JSON.parse(readFileSync('package.json', 'utf-8')).version,
 }));
 

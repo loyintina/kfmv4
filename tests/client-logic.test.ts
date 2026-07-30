@@ -745,6 +745,18 @@ regression('BAR-BUILD-05', 'build/deploy', '版本握手：build 写 dist/build-
   assert(deploy.includes('kfm-restart.sh') && deploy.includes('system/info'), 'deploy.sh 必须 构建→重启→握手 三步闭环');
 });
 
+regression('BAR-DEPLOY-01', 'build/check', '部署新鲜度硬门：源码比包新=链红 + deploy-fast 快通道 + version-watch 横幅兜底', () => {
+  const chain = readFileSync('scripts/check/chain.mjs', 'utf-8');
+  assert(chain.includes('check-deploy-freshness'), 'chain.mjs STEPS 必须挂部署新鲜度硬门');
+  const build = readFileSync('build.mjs', 'utf-8');
+  assert(build.includes('--soft=check-deploy-freshness'), 'build.mjs 必须 soft 跳过本门（构建中途源码必然比包新，硬跑自锁）');
+  assert(build.includes('KFM_BUILD_TIME'), 'build.mjs 必须把 BUILD_TIME define 进客户端 bundle（横幅比对源）');
+  const fast = readFileSync('scripts/deploy-fast.sh', 'utf-8');
+  assert(fast.includes('--fast') && fast.includes('kfm-restart.sh'), 'deploy-fast.sh 必须 快构建→重启→握手');
+  const main = readFileSync('src/client/main.ts', 'utf-8');
+  assert(main.includes('initVersionWatch'), 'main.ts 必须挂载 version-watch 旧包横幅');
+});
+
 regression('BAR-ORB-EMPTY-01', 'message-normalize', '回复错放 reasoning（text 空）正常结束必须归位为正文', () => {
   // 纯函数行为：空 text + 有 reasoning → 归位；有正文 → 不动；无 reasoning → 不动
   const b1 = [{ type: 'text', text: '', reasoning: '真正的回复' }];

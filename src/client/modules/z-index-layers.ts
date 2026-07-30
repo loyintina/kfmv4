@@ -97,6 +97,8 @@ export const Z = {
   MODAL_DIALOG: 10800,
   /** 自定义下拉浮层：常在模态框内部弹出，故必须高于 MODAL_DIALOG */
   CUSTOM_SELECT: 10900,
+  /** 版本横幅（旧包报警）：全站最高——它出现时其他一切交互都该让位于「先刷新」 */
+  VERSION_BANNER: 11000,
 } as const;
 
 export type ZLayer = keyof typeof Z;

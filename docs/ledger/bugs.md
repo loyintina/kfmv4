@@ -153,7 +153,7 @@
 | BAR-BUILD-04 | `build/check` | 「接线丢失」类 bug（CSS 定义了没人用/JS 引用了没定义）反复出现却无防线。契约：`scripts/check/check-css-wiring.mjs` 双向检查 orb-* 类与 keyframes，挂在 build 和 npm run check 链 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
 
 | BAR-ORB-PANEL-22 | `orb-chat-hints` | Todo 面板 ✕ 关闭后刷新又弹出：关闭只清内存，`_restoreTodoPanel` 从数据层找回结果重挂。契约：`dismissTodoPanel` 记录列表指纹到 localStorage；`updateTodoFromTool` 同指纹跳过渲染、新列表（指纹不同）清记录并恢复显示 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
-| BAR-COMPACT-01 | `orb-chat-run` | doSend 发给 API 的载荷 ~90% 是工具 I/O（45 万 tokens/轮、TTFB 5-8s）；saveMessages 每轮全量上传冗余。契约：apiMessages 是压缩投影（会话文件全量不动），G1 最近 2 轮豁免 / G4 最新 todo 结果豁免 / `kfm-no-compact=1` 逃生门 / `[compact]` 观测日志；saveMessages 仅新会话调用（服务端 /ai/chat/start 自己落盘） | L | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-COMPACT-01 | `orb-chat-run` | doSend 发给 API 的载荷 ~90% 是工具 I/O（45 万 tokens/轮、TTFB 5-8s）；saveMessages 每轮全量上传冗余。契约：apiMessages 是压缩投影（会话文件全量不动），G1 最近 8 轮用户回合豁免（v8.3.x 边界实验定标，原「2 条 AI 消息」会让多工具回合证据跨回合蒸发）/ G4 最新 todo 结果豁免 / `kfm-no-compact=1` 逃生门 / `[compact]` 观测日志；saveMessages 仅新会话调用（服务端 /ai/chat/start 自己落盘） | L | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
 | BAR-COMPACT-02 | `build/check` | 新增工具若不登记压缩行为，上下文压缩策略随工具增多悄悄失效。契约：`scripts/check/check-tool-compaction.mjs` 双向核对注册工具 ↔ 压缩器登记（豁免型也要登记 + 注明 G 依据），挂 build 和 npm run check 链，失配 = 构建中断 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
 | BAR-COMPACT-03 | `omp/glob` | glob 默认上限 maxResults=200 命中时输出无截断标记（「未看全」类：匹配 500 个 AI 以为 200 是全部；实测 native totalMatches 顶格=返回数不可用；真实会话有一次顶格 200 行无法判断全否）。契约：+1 探针法（请求 maxResults+1，超出则只展示 maxResults 条 + `(结果被截断)` 标记行；恰好顶格不算截断），与 grep limitReached 同语义 | I | ✅ 已钉（真实 native 功能测试三边界：超限/未超/恰好顶格，revert 验证） | `tests/omp-glob.test.ts` |
 | BAR-COLOR-01 | `8679cb3` | color-utils sat/lit 越出 0-100 范围 → 非法颜色输出 | L | ✅ 已钉（2026-07-29 交叉检查补登记） | `tests/client-logic.test.ts` |
@@ -175,6 +175,8 @@
 | BAR-SAVE-01 | `0b12122` | 失焦静默保存吞错（测绘 floating-card#20，成因 C 权宜——出生即 `catch { /* swallow */ }` 不查响应）：写盘失败用户无感知且 `_rawContent` 已更新，静默丢写。契约：`_doSave` 查 `data.success` + 失败 toast + 失败不切预览保住文本 | L | ✅ 已钉（源码断言） | `tests/client-logic.test.ts` |
 | BAR-RECONNECT-01 | `b2f74bc` | WS 重连双开 PTY（测绘 floating-card#17，成因 C 权宜——注释声称 tmux 另行处理但代码无门控）：tmux 卡重连时通用回调与 tmux 回调各发一次 terminal-open，基础 PTY 成孤儿。契约：通用重连回调对 `terminalName === 'tmux'` 早退 | L | ✅ 已钉（源码断言） | `tests/client-logic.test.ts` |
 | BAR-FLOAT-Z-01 | `1a9a3ec` | 浮卡发射 zIndex 记录与 DOM 发散（测绘 floating-card#18，成因 B 接力——revert 恢复旧实现时未察觉双轨）：`item.zIndex` 用 `_allocZ()`、DOM 覆写为 BASE+length+1，首次 touch 前 `_cardAbove/_cardBelow` 比较失准。契约：`item.zIndex === el.style.zIndex` 全程一致，`_allocZ` 单调递增天然在上，禁止另算发射 z | L | ✅ 已钉（源码断言） | `tests/client-logic.test.ts` |
+| BAR-CHAT-TS-01 | `ai/routes` | ts 前缀泄漏真相源（v8.3.x 时间戳特性自伤）：投影层给 user 文本加 `[MM-DD HH:MM]` 前缀后，服务端从 apiMessages 提取用户文本落盘 → 会话文件长出前缀、下轮投影再盖一层。契约：落盘必须走请求体 `userText` 原文通道，投影文本禁止回写真相源 | L | ✅ 已钉（源码断言 + 契约条款） | `tests/to-openai-messages.test.ts` |
+| BAR-DEPLOY-01 | `build/check` | 旧包验证病灶机械化收编（kfmv4.0 起反复出现、反复靠自觉、反复意识不到）：修复已提交但用户验证的是旧包。契约：`check-deploy-freshness.mjs` 硬门入链（源码比包新=链红，口径 max(HEAD 提交时间, src 最新 .ts mtime) > buildTime）；build.mjs 内 --soft 防自锁；`deploy-fast.sh` 快通道保提交节奏；version-watch 浏览器横幅兜底（bundle define 与服务端 buildTime 同出 BUILD_TIME 单源） | I | ✅ 已钉（硬门实测拦截 + 源码断言） | `tests/client-logic.test.ts` |
 
 > 新 bug 修复后：补一个回归钉子 → 在此登记 → 状态置「已钉」。见
 > `../guides/testing.md` + `../constraints/invariants.md` §二 #24（修 bug 补钉子纪律）。

@@ -25,6 +25,7 @@ import { initFloatingCards } from './modules/floating-card.js';
 import { gestures } from './modules/gesture-registry.js';
 import { Registry } from './modules/ui-registry.js';
 import { initWsChannel } from './modules/ws-channel.js';
+import { initVersionWatch } from './modules/version-watch.js';
 import './modules/sibling-switcher.js';
 import './cards/registry.js';
 
@@ -73,6 +74,9 @@ initFloatingCards();
 // ========== 初始化 WebSocket 通道 ==========
 // 在所有 Registry 注册完成后初始化，建立服务端↔浏览器端双向通信
 initWsChannel();
+
+// 版本监视：本页 bundle 与服务端 buildTime 不一致时挂旧包报警横幅
+initVersionWatch();
 
 // 加载根目录：先与服务端同步 activeRoot（服务重启后重建状态），再加载文件树
 async function establishRoot(): Promise<string> {
