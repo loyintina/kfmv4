@@ -7,7 +7,7 @@
 ## 测绘元数据
 
 - 基准：commit 03da8c9 · 2026-07-29 · 域规模 68 文件 / 9510 行（机械清单口径）
-- 派生真相实测：以 sync-counts 输出为准（测绘时 28 check/456 测试；v8.3 语义审计机械化后 30 check/440 测试）
+- 派生真相实测：以 sync-counts 输出为准（测绘时 28 check/456 测试；现值随 check 增删浮动，以 sync-counts 实时输出为准）
 - 方法：subagent 七问侦察 + 主 agent 抽查核实（check 链漂移、tag-advisor exit 码已亲验）
 - 注意：本域契约文件清单列了 scripts/deploy.sh、scripts/agent/、.githooks/、package.json，
   但测绘时 DOMAIN_SRC 的 infra 条目不含它们（已随本次测绘补登，见漂移 6）

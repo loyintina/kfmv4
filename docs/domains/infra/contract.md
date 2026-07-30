@@ -7,7 +7,7 @@
 
 - client：esbuild IIFE bundle + minify；`?v=` 缓存指纹（immutable 缓存头）。
 - server：ESM bundle——**external 列表是生死线**（CJS 包打进去启动即崩）。
-- 样式：`sass base.scss → base.css`（check 链内自动编译）。
+- 样式：`sass public/css/:public/css/`（目录级全量编译，check 链内自动执行）。
 
 ## 检查管线（npm run check，31 脚本，顺序固定）
 

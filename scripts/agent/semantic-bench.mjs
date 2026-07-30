@@ -29,7 +29,7 @@ const ground = readGround();
 
 // 关键：import 审计模块前设沙盒 ROOT——审计逻辑原样跑，读的全是副本
 process.env.SEMANTIC_AUDIT_ROOT = SANDBOX;
-const { taskFiles, buildPrompt, makeValidate, recheckRef } = await import('./semantic-audit.mjs');
+const { taskFiles, buildPrompt, makeValidate, recheckRef, recheckQuote } = await import('./semantic-audit.mjs');
 const { TASKS } = await import('./semantic-audit.tasks.mjs');
 const { runAgent } = await import('./agent-runner.mjs');
 
@@ -49,11 +49,15 @@ async function pool(items, n, worker) {
 const CONC = parseInt((process.argv.find(a => a.startsWith('--conc=')) || '--conc=3').slice(7), 10);
 // --dup=N：任务集复制 N 份——压测 provider 并发上限专用（成绩照常对分，命中会重复计）
 const DUP = parseInt((process.argv.find(a => a.startsWith('--dup=')) || '--dup=1').slice(6), 10);
-const worklist = DUP > 1 ? Array.from({ length: DUP }, () => affected).flat() : affected;
-console.log(`[bench] 并发 ${CONC} · 任务 ${worklist.length} 个${DUP > 1 ? `（dup×${DUP} 压测模式）` : ''}`);
+// --samples=N：每任务跑 N 个独立样本，成绩按并集聚合（2026-07-30 四轮趋势定案：
+// 单轮方差 ±2~3，单样本不作数——「成绩看趋势」从人肉纪律升级为机制）
+const SAMPLES = parseInt((process.argv.find(a => a.startsWith('--samples=')) || '--samples=1').slice(10), 10);
+const base = DUP > 1 ? Array.from({ length: DUP }, () => affected).flat() : affected;
+const worklist = base.flatMap(task => Array.from({ length: SAMPLES }, (_, s) => ({ task, sample: s + 1 })));
+console.log(`[bench] 并发 ${CONC} · 任务 ${worklist.length} 个（${base.length} 探针 × ${SAMPLES} 样本）${DUP > 1 ? `（dup×${DUP} 压测模式）` : ''}`);
 
 const t0 = Date.now();
-const runs = await pool(worklist, CONC, async (task) => {
+const runs = await pool(worklist, CONC, async ({ task, sample }) => {
   const files = taskFiles(task);
   const result = await runAgent({
     system: '你是文档语义审计探针。只输出要求的 JSON，不要任何多余文字。',
@@ -62,16 +66,16 @@ const runs = await pool(worklist, CONC, async (task) => {
     maxTokens: 16000,
   });
   if (!result.ok) {
-    console.log(`  ${task.id}: 失败——${result.errors.join('；').slice(0, 100)}`);
-    return { task: task.id, ok: false, kept: [] };
+    console.log(`  ${task.id}#${sample}: 失败——${result.errors.join('；').slice(0, 100)}`);
+    return { task: task.id, sample, ok: false, kept: [] };
   }
-  const kept = result.data.findings.filter(f => recheckRef(f.claim, files) && recheckRef(f.against, files));
+  const kept = result.data.findings.filter(f => recheckRef(f.claim, files) && recheckRef(f.against, files) && recheckQuote(f, files));
   // v5.2 教训（MID-2「报 1 保留 0」）：复核杀掉的可能是真发现的格式坏锚——
   // 掉落明细必须可见，否则无法区分「幻觉拦截立功」与「复核误杀真发现」
   const dropped = result.data.findings.filter(f => !kept.includes(f));
   for (const d of dropped) console.log(`    ⚠ 复核掉落：[${d.type}] ${d.claim}${d.against ? ` ↔ ${d.against}` : ''}— ${String(d.note).slice(0, 60)}`);
-  console.log(`  ${task.id}: 报 ${result.data.findings.length} · 复核保留 ${kept.length}（${result.provider}）`);
-  return { task: task.id, ok: true, kept };
+  console.log(`  ${task.id}#${sample}: 报 ${result.data.findings.length} · 复核保留 ${kept.length}（${result.provider}）`);
+  return { task: task.id, sample, ok: true, kept };
 });
 
 // ========== 对分 ==========
@@ -93,8 +97,17 @@ function hitMutation(f, m) {
   });
 }
 
-const allFindings = runs.flatMap(r => r.kept.map(f => ({ ...f, probe: r.task })));
-console.log(`\n========== 成绩单（${((Date.now() - t0) / 1000).toFixed(0)}s）==========`);
+// 多样本聚合：同任务并集（type+claim+against 去重）——「任一样本逮到」计入并集召回，
+// 单样本成绩单独列出看方差（聚合分才是成绩，单样本只是波动展示）
+const byTask = new Map();
+for (const r of runs) {
+  if (!byTask.has(r.task)) byTask.set(r.task, { ok: false, kept: new Map() });
+  const g = byTask.get(r.task);
+  g.ok = g.ok || r.ok;
+  for (const f of r.kept) g.kept.set(`${f.type}|${f.claim}|${f.against}`, f);
+}
+const allFindings = [...byTask.entries()].flatMap(([task, g]) => [...g.kept.values()].map(f => ({ ...f, probe: task })));
+console.log(`\n========== 成绩单（${((Date.now() - t0) / 1000).toFixed(0)}s · ${SAMPLES} 样本并集）==========`);
 
 let recall = 0, reportTotal = 0, ncViolations = 0, ncTotal = 0;
 const extras = [];
@@ -117,7 +130,15 @@ for (const m of ground.mutations) {
 for (const f of allFindings) {
   if (!claimed.has(f)) extras.push(f);
 }
-console.log(`\n召回：${recall}/${reportTotal} · NC 误报：${ncViolations}/${ncTotal} · 变异面之外额外发现：${extras.length} 条`);
+console.log(`\n召回（并集）：${recall}/${reportTotal} · NC 误报：${ncViolations}/${ncTotal} · 变异面之外额外发现：${extras.length} 条`);
+if (SAMPLES > 1) {
+  console.log('—— 单样本召回（方差展示，聚合分才是成绩）——');
+  for (let s = 1; s <= SAMPLES; s++) {
+    const sf = runs.filter(r => r.sample === s).flatMap(r => r.kept.map(f => ({ ...f, probe: r.task })));
+    const rc = ground.mutations.filter(m => m.expect === 'report' && sf.some(f => hitMutation(f, m))).length;
+    console.log(`  样本 ${s}: ${rc}/${reportTotal}`);
+  }
+}
 for (const f of extras) console.log(`  ？ [${f.type}] ${f.claim}${f.against ? ` ↔ ${f.against}` : ''}（${f.probe}）— ${f.note.slice(0, 60)}`);
 if (runs.some(r => !r.ok)) console.log('⚠️ 有探针失败，本轮分数仅供回顾，不进对照记录');
 process.exit(0);

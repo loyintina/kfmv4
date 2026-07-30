@@ -76,9 +76,9 @@ function inlineDocs(files) {
 
 // 审计逻辑版本：脚本/prompt/复核规则变更时 +1——任务哈希不含 prompt 内容，
 // 不加版本盐，修完脚本旧哈希会跳过复跑（四轮教训：误触发跑出的污染结果被哈希跳过）
-// v5（2026-07-30 扩卷首测后硬化）：prompt 补组内自相矛盾扫描范围 + 措辞变体精确率条款；
-// tasks 三探针 question 扩（vision-vs-maps / stack-vs-ledger / inter-vision-invariants）
-const AUDIT_VERSION = 5;
+// v6（2026-07-30）：输出契约加 quote 引文字段 + recheckQuote 验原文——
+// 四臂实验发现「语义侦测对但锚点靠编」（M14 半逮/A 臂假命中），复核升级到内容级
+const AUDIT_VERSION = 6;
 
 function taskHash(task, files) {
   const h = createHash('sha1');
@@ -156,8 +156,10 @@ export function buildPrompt(task, files) {
 ${task.sem.map(s => `- ${s}`).join('\n')}
 
 【输出契约】只输出 JSON，不要任何多余文字：
-{"findings":[{"type":"SEM001","claim":"出错文档路径:行号","against":"基准出处路径:行号 或 null","note":"50字内冲突说明"}]}
+{"findings":[{"type":"SEM001","claim":"出错文档路径:行号","against":"基准出处路径:行号 或 null","quote":"claim 处原文片段（≤15字）","note":"50字内冲突说明"}]}
 无发现输出 {"findings":[]}。上限 10 条，拿不准的不报（宁缺勿滥——幻觉发现会死在机械复核环节）。
+quote 必须是 claim 行附近的真实原文片段（≤15字）——机械复核会验引文确实存在于
+该处；编 quote 与编行号同罪（六轮教训：语义侦测对但锚点是编的，复核只查行界查不出）。
 特别注意：承重入口表不枚举全部 30 个 check——「code-map 未提及某 check」不构成
 其不存在的证据，「声称 check 存在但实际不存在」类发现**一律不报**（四轮+变异基准
 同族假发现复发 6 次教训：check-docs/check-active-stack/check-doc-symbols 等均真实存在）。
@@ -190,6 +192,7 @@ export function makeValidate() {
         type: f.type,
         claim: f.claim.trim(),
         against: typeof f.against === 'string' ? f.against.trim() : null,
+        quote: typeof f.quote === 'string' ? f.quote.trim().slice(0, 30) : '',
         note: String(f.note || '').slice(0, 80),
       });
     }
@@ -228,6 +231,31 @@ export function recheckRef(ref, ctxFiles = []) {
   if (linePart === null) return true; // 文件级证据：文件存在即过
   const lines = readFileSync(abs, 'utf-8').split('\n').length;
   return linePart <= lines;
+}
+
+// 引文复核（v6）：quote 必须真实存在于 claim 文件内——锚点不可靠的治本。
+// 行号可解析时收窄到 ±10 行窗口（防「引文是真的但不在声称的位置」）。
+// 无 quote / 太短（<4 字无鉴别力）/ 文件找不到 → fail-closed 一律杀。
+export function recheckQuote(f, ctxFiles = []) {
+  const q = String(f.quote || '').trim();
+  if (q.length < 4) return false;
+  const s = String(f.claim).replace(/[`*\s]/g, ' ').trim();
+  let pathPart = s, linePart = null;
+  const mLine = s.match(/^(.+?):(\d+)(?:\s*[-–~]\s*\d+)?$/);
+  if (mLine) { pathPart = mLine[1]; linePart = parseInt(mLine[2], 10); }
+  else if (s.includes(':')) pathPart = s.slice(0, s.indexOf(':'));
+  const candidates = [join(ROOT, pathPart), join(ROOT, 'docs', pathPart)];
+  if (!pathPart.includes('/')) {
+    for (const cf of ctxFiles) {
+      if (cf === pathPart || cf.endsWith('/' + pathPart)) candidates.push(join(ROOT, cf));
+    }
+  }
+  const abs = candidates.find(c => existsSync(c) && statSync(c).isFile());
+  if (!abs) return false;
+  const content = readFileSync(abs, 'utf-8');
+  if (linePart === null) return content.includes(q);
+  const lines = content.split('\n');
+  return lines.slice(Math.max(0, linePart - 11), linePart + 10).join('\n').includes(q);
 }
 
 // ========== 并发池 ==========
@@ -295,7 +323,7 @@ const results = await pool(willRun, CONCURRENCY, async ({ task, files, hash }) =
   const kept = [];
   const droppedList = [];
   for (const f of result.data.findings) {
-    if (!recheckRef(f.claim, files) || !recheckRef(f.against, files)) { droppedList.push(f); continue; }
+    if (!recheckRef(f.claim, files) || !recheckRef(f.against, files) || !recheckQuote(f, files)) { droppedList.push(f); continue; }
     kept.push(f);
   }
   const dropped = droppedList.length;
