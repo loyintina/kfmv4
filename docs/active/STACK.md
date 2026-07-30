@@ -25,15 +25,19 @@
      agent 判定 → 人拍板
    — 测试协议：回放测试（14 历史版本对=黄金集，测一致率）→ 否定测试（周期中段切片须忍住）→
      影子模式（分歧记日志调 prompt）→ 投产仍只产建议（git mutation 人拍板）
-   — 模型链：deepseek_v4_flash → step-3.7-flash 有序兜底（2026-07-30 撤下 kimi 链首：端点过严，
-     审计大 prompt 连续空响应 + 强制 temperature=1 与 JSON 任务相克）
+   — 模型链：Opencode Go Google/deepseek_v4_flash → GitHub（429 兜底位）→ deepseek 官方
+     → step-3.7-flash（2026-07-30 撤下 kimi 链首：端点过严；同日重排 opencode 优先）
    — 远期：agent 工具 prompt 管理卡（实体化管理 + 逐脚本微调，很久后）
    — 待设计：触发方式（cron/事件/手动）、产出验证（LLM proposes, mechanics disposes）、
      成本预算、结果回写（tag/STACK/ledger）、失败兜底
-   — 腿一：semantic-audit.mjs 探针集群（2026-07-30 立项，用户拍板架构）——编排器 +
-     手写任务清单（组内 ~15 + 组间 ~6，组间种子来自 semantic-provenance 冲突对）+
-     并发 3 + 增量哈希（输入文档哈希没变则跳过，make 式对账）+ per-任务精确率记账；
+   — 腿一：semantic-audit.mjs 探针集群 ✅ 落地（2026-07-30）——23 探针四轮实跑收敛
+     （真发现归零=文档趋稳）+ 并发 10 定档（压测 conc40 全绿，成绩噪声带内不动）+
+     增量哈希含 AUDIT_VERSION 版本盐 + 机械复核 + 登记豁免按域过滤；
+     prompt v4 硬化（「check 不存在」类假发现一律不报，家族 6→2 残余）；
      v2 留 map-reduce 声明提取对账（任务清单先手写，对错从数据长出再谈编译）
+   — 变异基准 ✅（semantic-mutate/bench，2026-07-30 用户拍板）：首卷 10 条
+     （L1 git 矿 5 + L2 矩阵 3 + L3 负例 2），召回稳定 2-4/8，M02/M05/M06/M07
+     稳定盲区留作难例；分数纪律：单轮 ±1 是采样噪声看趋势；副产物逮 5 条真漂移
    — 腿三（远期）：semantic-chain.mjs 总 runner——探针 verdict 聚合成单结论（过/N 条新发现），
      cron 化巡逻；verdict 门控注意力不门控合并（概率区纪律）；裁决与修复留会话内 agent，
      自动化边界 = 检测，结晶回路负责把反复发现移民确定区
