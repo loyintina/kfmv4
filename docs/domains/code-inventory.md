@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 1e99e02 · 生成于 2026-07-30 -->
+<!-- 基准 commit b585770 · 生成于 2026-07-30 -->
 
 # 代码清单（机械层）
 
@@ -165,7 +165,7 @@
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 
-## infra（86 文件 · 11279 行）
+## infra（87 文件 · 11413 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -196,6 +196,7 @@
 | scripts/agent/semantic-bench.mjs | 145 | — |
 | scripts/check/check-bar-ledger.mjs | 142 | — |
 | scripts/check/sync-counts.mjs | 138 | — |
+| scripts/agent/exp-iceberg.mjs | 134 | — |
 | scripts/check/check-checks.mjs | 132 | — |
 | scripts/check/check-tool-compaction.mjs | 129 | — |
 | tests/to-openai-messages.test.ts | 126 | — |
@@ -543,4 +544,4 @@
 - src/server/index.ts → src/server/ai/routes.ts
 
 ---
-合计 220 文件 · 41699 行 · 跨域边 225 条
+合计 221 文件 · 41833 行 · 跨域边 225 条
