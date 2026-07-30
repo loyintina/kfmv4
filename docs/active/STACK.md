@@ -30,6 +30,9 @@
    — 模型链：Opencode Go Google/deepseek_v4_flash → GitHub（429 兜底位）→ deepseek 官方
      → step-3.7-flash（2026-07-30 撤下 kimi 链首：端点过严；同日重排 opencode 优先）
    — 远期：agent 工具 prompt 管理卡（实体化管理 + 逐脚本微调，很久后）
+   — 方向（2026-07-30 用户动议）：语义管线内置工具化——审计探针/变异基准/发版雷达
+     做成 kfmv4 内置工具（前端可触发 + 触发表现与运行过程可视化，用户对触发层感兴趣），
+     与 prompt 管理卡同族，落地时一并裁决形态
    — 待设计：触发方式（cron/事件/手动）、产出验证（LLM proposes, mechanics disposes）、
      成本预算、结果回写（tag/STACK/ledger）、失败兜底
    — 腿一：semantic-audit.mjs 探针集群 ✅ 落地（2026-07-30）——23 探针四轮实跑收敛
