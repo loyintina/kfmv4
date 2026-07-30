@@ -16,6 +16,7 @@ import type { ChatMessage, TextBlock, ToolBlock } from './messages.js';
 import {
   compactToolInput, compactToolResult, normalizeBashCommand, MUT_BURST_GAP,
   todoResultAnnotation, webTitleKey, errorFingerprint, failRepeatAnnotation,
+  EXEMPT_USER_ROUNDS,
 } from '../tool-compaction/index.js';
 import type { CompactionCtx } from '../tool-compaction/index.js';
 
@@ -51,13 +52,40 @@ function extractText(msg: ChatMessage): string {
     .join('');
 }
 
+/** [MM-DD HH:MM] 前缀（投影端本地时区）。ts 缺失/非法 → 空串（旧消息向后兼容）。
+ *  给 AI 对话时间感（跨度、间隔）。不违反 G6：ts 是写入侧盖章的真相源数据，
+ *  确定不变；G6 禁的是投影时现生成时间戳。 */
+function tsPrefix(ts?: string): string {
+  if (!ts) return '';
+  const d = new Date(ts);
+  if (Number.isNaN(d.getTime())) return '';
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `[${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}] `;
+}
+
+/**
+ * 客户端产物占位符（非 AI 真实输出）：API 失败/空响应时的本地兜底消息。
+ * 不进载荷——它们是客户端事故记录，不是对话内容；原样上行会让「最近的自己」
+ * 看起来像一连串错误文本（实测 k3 400 时代：最近 10 条占位错误里 8 条挤在最近几十轮）。
+ * 会话文件原样保留（真相源不动），只在投影层过滤。
+ * 混有真实正文的（错误追加在正文后）不在此列——isClientArtifact 要求整条都是占位符。
+ * [已取消] 不过滤：用户主动取消是对话信号（AI 不该续着被取消的思路讲）。
+ */
+function isClientArtifact(text: string): boolean {
+  const t = text.trim();
+  return (t.startsWith('[错误: ') && t.endsWith(']')) || t === '[未收到回复，请重试]';
+}
+
 export function toOpenAiMessages(messages: ChatMessage[], opts: ToOpenAiOptions): ToOpenAiResult {
   const compact = opts.compact;
-  // G1：最近 2 条 AI 消息（工作记忆）及之后的全部消息豁免压缩
-  let compactExemptFrom = 0; // 不足 2 条 AI 消息 = 全部豁免
-  let aiSeen = 0;
+  // G1：最近 EXEMPT_USER_ROUNDS 轮用户回合（含当前输入所在回合）豁免压缩。
+  // 豁免单位是用户回合而非 AI 消息数：一轮多工具调用会产生多条 AI 消息，同属一个
+  // 逻辑回合——按 AI 消息计数（旧 G1=2 条），上一回合的多轮工具证据本回合就蒸发，
+  // AI 失去校验锚点只能依赖自己的叙述（v8.3.x 边界实验定标，见 EXEMPT_USER_ROUNDS）。
+  let compactExemptFrom = 0; // 不足 EXEMPT_USER_ROUNDS 轮用户消息 = 全部豁免
+  let userSeen = 0;
   for (let i = messages.length - 1; i >= 0; i--) {
-    if (messages[i]?.role === 'ai' && ++aiSeen === 2) { compactExemptFrom = i; break; }
+    if (messages[i]?.role === 'user' && ++userSeen === EXEMPT_USER_ROUNDS) { compactExemptFrom = i; break; }
   }
   // G4：整个历史中最后出现的 todo 工具结果豁免（承载当前任务状态，压了=失忆当前进度）
   // 同时捕获该块与其后 AI 消息数，供投影标注（契约第九节 todo 小节）。
@@ -193,7 +221,8 @@ export function toOpenAiMessages(messages: ChatMessage[], opts: ToOpenAiOptions)
     if (!m) continue;
     const compactable = compact && mi < compactExemptFrom; // G1 豁免期外的旧消息才压
     if (m.role === 'user') {
-      apiMessages.push({ role: 'user', content: extractText(m) }); // G5：user 消息一个字不动
+      // G5：user 消息一个字不动（压缩绝对禁区；ts 前缀是元数据渲染，非压缩）
+      apiMessages.push({ role: 'user', content: tsPrefix(m.ts) + extractText(m) });
     } else {
       // AI 消息：拆分 text + tool blocks 为 OpenAI 格式
       const textBlocks = m.content.filter((b): b is TextBlock => b?.type === 'text');
@@ -213,7 +242,8 @@ export function toOpenAiMessages(messages: ChatMessage[], opts: ToOpenAiOptions)
           }
           return { id: tc.id, type: 'function' as const, function: { name: tc.name, arguments: args } };
         });
-        apiMessages.push({ role: 'assistant', content: mainText || null, tool_calls: toolCalls });
+        const headText = mainText && !isClientArtifact(mainText) ? tsPrefix(m.ts) + mainText : null;
+        apiMessages.push({ role: 'assistant', content: headText, tool_calls: toolCalls });
         // 每个工具结果作为独立的 role:"tool" 消息（tool_calls/tool 配对结构原样保留，只压 content）
         for (const tc of toolBlocks) {
           const resultText = tc.result?.content?.map(c => c.text || '').join('') || '';
@@ -232,8 +262,12 @@ export function toOpenAiMessages(messages: ChatMessage[], opts: ToOpenAiOptions)
         }
       } else {
         // 空壳 assistant（纯思考/取消残留的零正文零工具消息）不进载荷——
-        // 宽松端点容忍，严格端点（kimi）400「assistant must not be empty」（BAR-PROVIDER-02）
-        if (mainText) apiMessages.push({ role: 'assistant', content: mainText });
+        // 宽松端点容忍，严格端点（kimi）400「assistant must not be empty」（BAR-PROVIDER-02）。
+        // 客户端产物占位符（[错误:…]/[未收到回复，请重试]）同样不进载荷：
+        // 本地事故记录不是对话内容，上行会污染 AI 的「最近的自己」。
+        if (mainText && !isClientArtifact(mainText)) {
+          apiMessages.push({ role: 'assistant', content: tsPrefix(m.ts) + mainText });
+        }
       }
     }
   }

@@ -61,19 +61,54 @@ test('不变量：任何 assistant 要么非空字符串、要么带 tool_calls�
 
 group('载荷唯一构造函数 — 压缩投影');
 
-test('G1 豁免期外的旧工具结果被压缩，compactSaved > 0', () => {
-  const msgs = [
-    user('开始'),
-    aiTool('r1', 'read', { path: '/a.ts' }, chars(1000)), // mi=1 < 豁免线 → 应被压
-    aiTool('r2', 'read', { path: '/b.ts' }, chars(1000)), // mi=2 = 豁免线（倒数第 2 条 AI）
-    aiText('收尾'),
-  ];
+test('G1（用户回合口径）：最近 8 轮用户回合豁免，之外的旧工具结果被压缩', () => {
+  // 豁免单位是用户回合（EXEMPT_USER_ROUNDS=8）而非 AI 消息数——
+  // 一轮多工具调用产生多条 AI 消息，按 AI 消息计数会让跨回合证据 1~2 轮蒸发。
+  const msgs: ChatMessage[] = [user('第1轮'), aiTool('r1', 'read', { path: '/a.ts' }, chars(1000))]; // 第1轮，豁免线外 → 应被压
+  for (let i = 2; i <= 9; i++) msgs.push(user(`第${i}轮`), aiText(`答${i}`));
+  msgs.push(aiTool('r2', 'read', { path: '/b.ts' }, chars(1000))); // 第9轮内 → 豁免
   const { apiMessages, compactSaved } = toOpenAiMessages(msgs, { compact: true });
   const firstTool = apiMessages.find(m => m.role === 'tool' && m.tool_call_id === 'r1')!;
   const secondTool = apiMessages.find(m => m.role === 'tool' && m.tool_call_id === 'r2')!;
-  assert(firstTool.content!.length < 1000, '旧 read 结果应被压缩');
+  assert(firstTool.content!.length < 1000, '豁免线外的旧 read 结果应被压缩');
   assert.strictEqual(secondTool.content!.length, 1000, 'G1 豁免期内的结果一个字不动');
   assert(compactSaved > 0, '应统计出省下的字符');
+});
+
+test('G1 用户回合口径：一轮内 5 次工具调用全部豁免（多工具回合证据不蒸发）', () => {
+  const msgs: ChatMessage[] = [user('开始')];
+  for (let i = 0; i < 5; i++) msgs.push(aiTool(`t${i}`, 'read', { path: `/${i}.ts` }, chars(1000)));
+  msgs.push(aiText('收尾'));
+  const { apiMessages } = toOpenAiMessages(msgs, { compact: true });
+  for (const m of apiMessages.filter(x => x.role === 'tool')) {
+    assert.strictEqual(m.content!.length, 1000, '同一用户回合的所有工具结果必须全量保留');
+  }
+});
+
+test('时间戳前缀：有 ts 的消息渲染 [MM-DD HH:MM]，无 ts 不渲染（向后兼容）', () => {
+  const { apiMessages } = toOpenAiMessages([
+    { role: 'user', content: [{ type: 'text', text: '老消息' }] },
+    { role: 'user', content: [{ type: 'text', text: '新消息' }], ts: '2026-07-30T12:05:00.000Z' },
+    aiText('答复'),
+  ], { compact: true });
+  assert.strictEqual(apiMessages[0]!.content, '老消息', '无 ts 一个字不动');
+  assert(/^\[\d{2}-\d{2} \d{2}:\d{2}\] 新消息$/.test(String(apiMessages[1]!.content)),
+    `有 ts 应带前缀，得 ${apiMessages[1]!.content}`);
+  assert.strictEqual(apiMessages[2]!.content, '答复', '无 ts 的 AI 消息不带前缀');
+});
+
+test('客户端产物占位符不进载荷：[错误:…]/[未收到回复] 过滤，[已取消] 保留', () => {
+  const { apiMessages } = toOpenAiMessages([
+    user('问1'), aiText('[错误: API 请求失败: 400 — {"error":{"message":"x"}}]'),
+    user('问2'), aiText('[未收到回复，请重试]'),
+    user('问3'), aiText('[已取消]'),
+    user('问4'), aiText('正文\n\n[错误: 混在正文后的错误保留]'),
+  ], { compact: true });
+  const texts = apiMessages.map(m => m.content);
+  assert(!texts.some(c => String(c).includes('API 请求失败')), '纯错误占位符应被过滤');
+  assert(!texts.some(c => String(c).includes('未收到回复')), '空响应占位符应被过滤');
+  assert(texts.some(c => c === '[已取消]'), '[已取消] 是用户信号，必须保留');
+  assert(texts.some(c => String(c).startsWith('正文')), '混有真实正文的不过滤');
 });
 
 test('逃生门 compact:false 全量保留、不压缩', () => {

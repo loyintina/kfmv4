@@ -378,6 +378,7 @@ export const sessionStore = {
       const snapshot = messages.map(m => ({
         role: m.role,
         content: (m.content || []).map(b => cleanBlockForSave(b)),
+        ...(m.ts ? { ts: m.ts } : {}), // 时间戳随快照存活
       }));
       const doSave = () => this._doSaveMessages(snapshot, modelId, providerId);
       return (this._saveChain = this._saveChain.then(doSave, doSave).catch(() => {}));
@@ -443,6 +444,7 @@ export const sessionStore = {
       session.messages = messages.map(m => ({
         role: m.role,
         content: m.content,
+        ...(m.ts ? { ts: m.ts } : {}), // 时间戳随落盘存活
       }));
       session.updatedAt = new Date().toISOString();
       if (modelId) session.modelId = modelId;

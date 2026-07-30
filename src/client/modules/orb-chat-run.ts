@@ -118,7 +118,7 @@ function _applyEvent(event: StreamEvent, ctx: RunConsumeCtx): void {
       // 不在此处停等待提示：推理模型（如 deepseek-v4-pro）message_start 后
       // 首个 thinking_delta 可能延迟很久，过早停提示会留下空白。改为首个
       // 实际内容（正文/思考 delta 或工具块）到达时才停（见下方各 case）。
-      messages.push({ role: 'ai', content: [] });
+      messages.push({ role: 'ai', content: [], ts: new Date().toISOString() });
       ctx.setMsgIdx(messages.length - 1);
       break;
     }
@@ -190,7 +190,7 @@ function _applyEvent(event: StreamEvent, ctx: RunConsumeCtx): void {
     }
     case 'error': {
       if (msgIdx < 0) {
-        messages.push({ role: 'ai', content: [{ type: 'text', text: '[错误: ' + event.content + ']' }] });
+        messages.push({ role: 'ai', content: [{ type: 'text', text: '[错误: ' + event.content + ']' }], ts: new Date().toISOString() });
         ctx.setMsgIdx(messages.length - 1);
         break;
       }
@@ -304,7 +304,7 @@ async function _finalizeRun(messages: ChatMessage[], msgIdx: number): Promise<vo
   if (noReply) {
     // 兜底一律新起一条消息并显式上屏：v8 增量 DOM 下 append 进已挂载的空消息
     // 容器不会投影（chat-dom 只增不改）；新起一条同时保持 _messageEls 与 messages 对齐
-    messages.push({ role: 'ai', content: [{ type: 'text', text: '[未收到回复，请重试]' }] });
+    messages.push({ role: 'ai', content: [{ type: 'text', text: '[未收到回复，请重试]' }], ts: new Date().toISOString() });
     mountFallbackAiMessage('[未收到回复，请重试]');
   }
   // 收尾任何仍无 result 的工具块（流已结束，如上游 error 中断时工具未返回结果）——
@@ -379,7 +379,7 @@ export async function resumeRun(
       const lastMsg = messages[messages.length - 1];
       if (lastMsg?.role === 'ai') {
         // 同 _finalizeRun：不 append 进已挂载消息（不会上屏），新起一条保证对齐
-        messages.push({ role: 'ai', content: [{ type: 'text', text: '[已取消]' }] });
+        messages.push({ role: 'ai', content: [{ type: 'text', text: '[已取消]' }], ts: new Date().toISOString() });
         mountFallbackAiMessage('[已取消]');
       }
     }
@@ -414,7 +414,7 @@ export async function doSend(
 ): Promise<void> {
   _sendSessionId = sessionId;
   // 推用户消息（content block 格式）
-  messages.push({ role: 'user', content: [{ type: 'text', text }] });
+  messages.push({ role: 'user', content: [{ type: 'text', text }], ts: new Date().toISOString() });
   onBeforeSend();
   // onRender 在这里只是为了让用户消息气泡先出现，不影响 hint（hint 在 orb.ts 里 startWaitingIndicator 之后追加）
   onRender();
@@ -493,13 +493,13 @@ export async function doSend(
       const lastMsg = messages[messages.length - 1];
       if (lastMsg?.role === 'ai') {
         // 新起一条取消标注：append 进已挂载消息不会上屏（v8 增量 DOM 只增不改）
-        messages.push({ role: 'ai', content: [{ type: 'text', text: '[已取消]' }] });
+        messages.push({ role: 'ai', content: [{ type: 'text', text: '[已取消]' }], ts: new Date().toISOString() });
         mountFallbackAiMessage('[已取消]');
       }
     } else {
       // 兜底消息 push 后必须显式上屏——onRender 只滚动不挂载，否则用户看不到失败原因
       const errText = '请求失败: ' + (e instanceof Error ? e.message : '未知错误');
-      messages.push({ role: 'ai', content: [{ type: 'text', text: errText }] });
+      messages.push({ role: 'ai', content: [{ type: 'text', text: errText }], ts: new Date().toISOString() });
       mountFallbackAiMessage(errText);
     }
   }

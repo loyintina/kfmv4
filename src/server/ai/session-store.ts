@@ -17,6 +17,7 @@ import { KFM_DATA_DIR } from '../path-utils.js';
 import { applyEvent, type ReduceContext } from '../../shared/chat-protocol/reducer.js';
 import type { StreamEvent } from '../../shared/chat-protocol/events.js';
 import type { ChatMessage } from '../../shared/chat-protocol/messages.js';
+import { toOpenAiMessages } from '../../shared/chat-protocol/to-openai-messages.js';
 
 const SESSIONS_DIR = join(KFM_DATA_DIR, 'sessions');
 const FLUSH_DEBOUNCE_MS = 200;
@@ -46,7 +47,11 @@ function _loadFromDisk(sessionId: string): SessionState {
       meta = raw;
       if (Array.isArray(raw.messages)) {
         for (const m of raw.messages) {
-          messages.push({ role: m.role === 'user' ? 'user' : 'ai', content: Array.isArray(m.content) ? m.content : [] });
+          messages.push({
+            role: m.role === 'user' ? 'user' : 'ai',
+            content: Array.isArray(m.content) ? m.content : [],
+            ...(typeof m.ts === 'string' ? { ts: m.ts } : {}), // 时间戳随 hydrate 存活
+          });
         }
       }
     } catch { /* corrupted file → start fresh */ }
@@ -65,23 +70,25 @@ function _get(sessionId: string): SessionState {
   return s;
 }
 
-/** 计算 messageCount / tokenCount（与旧 saveSessionFile 口径一致） */
+/**
+ * 计算 messageCount / tokenCount。
+ * tokenCount 口径（v8.3.x 起）：**压缩投影后的载荷字符数 / 3**——这是实际发给 API
+ * 的量级，对齐「上下文窗口还剩多少」的用户直觉。旧口径是全量会话字符 / 3：1M 窗口的
+ * 模型会在界面上早早显示顶格（实际压缩后远低于上限），误导判断。
+ * isTodoDismissed 是客户端 localStorage 信号，服务端缺省（投影标注 ±30 字符，可忽略）。
+ */
 function _computeStats(messages: ChatMessage[]): { messageCount: number; tokenCount: number } {
-  let mc = 0, tc = 0;
+  let mc = 0;
   for (const msg of messages) {
     if (!msg || !Array.isArray(msg.content)) continue;
     for (const b of msg.content) {
       if (!b) continue;
-      if (b.type === 'text') {
-        tc += ((typeof b.text === 'string' ? b.text.length : 0) + (typeof b.reasoning === 'string' ? b.reasoning.length : 0));
-        if (typeof b.text === 'string' && b.text.trim()) { mc++; break; }
-      } else if (b.type === 'tool') {
-        if (b.input) tc += JSON.stringify(b.input).length;
-        const rc = b.result?.content;
-        if (Array.isArray(rc)) for (const c of rc) { if (c?.text) tc += String(c.text).length; }
-      }
+      if (b.type === 'text' && typeof b.text === 'string' && b.text.trim()) { mc++; break; }
     }
   }
+  const { apiMessages } = toOpenAiMessages(messages, { compact: true });
+  const tc = apiMessages.reduce((s, m) =>
+    s + (m.content?.length || 0) + (m.tool_calls ? JSON.stringify(m.tool_calls).length : 0), 0);
   return { messageCount: mc, tokenCount: Math.round(tc / 3) };
 }
 
@@ -168,7 +175,7 @@ export function appendUserMessage(sessionId: string, text: string, model?: strin
   const lastText = last?.role === 'user' && last.content.length > 0 && last.content[0]?.type === 'text'
     ? (last.content[0] as { text?: string }).text : null;
   if (lastText !== text) {
-    msgs.push({ role: 'user', content: [{ type: 'text', text }] });
+    msgs.push({ role: 'user', content: [{ type: 'text', text }], ts: new Date().toISOString() });
   }
   s.ctx.msgIdx = -1;
   if (model) s.meta.modelId = model;

@@ -35,4 +35,8 @@ export type ContentBlock = TextBlock | ToolBlock | RuleWarningBlock;
 export interface ChatMessage {
   role: 'user' | 'ai';
   content: ContentBlock[];
+  /** 消息创建时刻（ISO 8601，写入侧一次性盖章，之后永不改变）。
+   *  投影层据此渲染 [MM-DD HH:MM] 前缀给 AI 时间感；旧消息无此字段 = 不渲染（向后兼容）。
+   *  与 G6 不冲突：G6 禁的是投影时现生成时间戳，ts 是真相源的一部分，确定不变。 */
+  ts?: string;
 }

@@ -731,7 +731,7 @@ regression('BAR-PROVIDER-01', 'ai/chat', 'tool 消息 content 必须字符串化
 
 regression('BAR-PROVIDER-02', 'ai/chat', '空壳 assistant 消息（纯思考/取消残留）不进 API 载荷（kimi 400 must not be empty）', () => {
   const client = readFileSync('src/shared/chat-protocol/to-openai-messages.ts', 'utf-8');
-  assert(client.includes('if (mainText) apiMessages.push({ role: \'assistant\''), '客户端必须跳过零正文 assistant');
+  assert(client.includes('if (mainText && !isClientArtifact(mainText))'), '客户端必须跳过零正文/产物占位 assistant');
   const server = readFileSync('src/server/ai/chat.ts', 'utf-8');
   assert(server.includes("m.content == null || m.content === ''"), '服务端边界必须过滤空 assistant（fail-closed）');
 });

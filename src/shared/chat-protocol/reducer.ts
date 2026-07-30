@@ -26,7 +26,7 @@ export function applyEvent(ctx: ReduceContext, event: StreamEvent): void {
 
   switch (event.type) {
     case 'message_start': {
-      messages.push({ role: 'ai', content: [] });
+      messages.push({ role: 'ai', content: [], ts: new Date().toISOString() });
       ctx.msgIdx = messages.length - 1;
       break;
     }
@@ -93,7 +93,7 @@ export function applyEvent(ctx: ReduceContext, event: StreamEvent): void {
     }
     case 'error': {
       if (msgIdx < 0) {
-        messages.push({ role: 'ai', content: [{ type: 'text', text: '[错误: ' + event.content + ']' }] });
+        messages.push({ role: 'ai', content: [{ type: 'text', text: '[错误: ' + event.content + ']' }], ts: new Date().toISOString() });
         ctx.msgIdx = messages.length - 1;
         break;
       }

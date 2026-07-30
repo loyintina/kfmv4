@@ -121,14 +121,14 @@ export async function initChatHost(deps: ChatHostDeps): Promise<void> {
     const first = await sessionStore.getMessagesRange(sid, 'tail', 0, TAIL_FIRST);
     if (myToken !== _switchToken) return;
     chatMessages.length = 0;
-    chatMessages.push(...first.messages.map(m => ({ role: m.role as 'user' | 'ai', content: m.content || [] })));
+    chatMessages.push(...first.messages.map(m => ({ role: m.role as 'user' | 'ai', content: m.content || [], ...(m.ts ? { ts: m.ts } : {}) })));
     _renderedSessionId = sid;
     _mountHistoryWindow();
 
     if (first.total > first.messages.length) {
       const rest = await sessionStore.getMessagesRange(sid, 'head', 0, first.total - first.messages.length);
       if (myToken !== _switchToken || _renderedSessionId !== sid) return;
-      chatMessages.unshift(...rest.messages.map(m => ({ role: m.role as 'user' | 'ai', content: m.content || [] })));
+      chatMessages.unshift(...rest.messages.map(m => ({ role: m.role as 'user' | 'ai', content: m.content || [], ...(m.ts ? { ts: m.ts } : {}) })));
       _mountHistoryWindow(); // unshift 偏移了索引，重挂窗口校正（窗口小 + 缓存，成本可忽略）
     }
   }
@@ -311,7 +311,7 @@ export async function initChatHost(deps: ChatHostDeps): Promise<void> {
       },
       (msg) => {
         setWait(false);
-        chatMessages.push({ role: 'ai', content: [{ type: 'text', text: msg }] });
+        chatMessages.push({ role: 'ai', content: [{ type: 'text', text: msg }], ts: new Date().toISOString() });
         // 兜底消息必须显式上屏——_renderChat 只滚动不挂载（v8 曾只 push 数据层，用户看不到）
         mountFallbackAiMessage(msg);
         _renderChat('auto');

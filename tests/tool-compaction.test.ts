@@ -38,14 +38,14 @@ const bigLines = (n: number): string => lines(n) + chars(400);
 
 group('tool-compaction — 逐工具映射表');
 
-test('bash 成功：[bash: {cmd} → 成功，{n}行输出已折叠]', () => {
+test('bash 成功：[bash: {cmd} → 成功，{n}行输出已折叠，可重跑]', () => {
   const out = compactToolResult('bash', { command: 'ls -la' }, bigLines(42), false);
-  assert(out === '[bash: ls -la → 成功，42行输出已折叠]', `得 ${out}`);
+  assert(out === '[bash: ls -la → 成功，42行输出已折叠，可重跑]', `得 ${out}`);
 });
 
 test('bash 失败超 500 字符也压（G3 只保 ≤500），带尾部 200 字符诊断采样', () => {
   const out = compactToolResult('bash', { command: 'npm test' }, chars(501), true);
-  assert(out === `[bash: npm test → 失败，1行输出已折叠，尾部: …${'x'.repeat(200)}]`, `得 ${out}`);
+  assert(out === `[bash: npm test → 失败，1行输出已折叠，尾部: …${'x'.repeat(200)}，可重跑]`, `得 ${out}`);
 });
 
 test('bash 失败尾部采样：换行压为 ⏎（压缩行单行契约），取末尾 200 字符', () => {
@@ -53,13 +53,13 @@ test('bash 失败尾部采样：换行压为 ⏎（压缩行单行契约），�
   const out = compactToolResult('bash', { command: 'npx tsc' }, bigLines(30) + '\n' + tail, true);
   const wantTail = (bigLines(30) + '\n' + tail).slice(-200).replace(/\n/g, '⏎');
   assert(out?.includes('⏎') && !out.slice(out.indexOf('尾部:')).includes('\n'), '尾部采样不得含裸换行');
-  assert(out === `[bash: npx tsc → 失败，32行输出已折叠，尾部: …${wantTail}]`, `得 ${out}`);
+  assert(out === `[bash: npx tsc → 失败，32行输出已折叠，尾部: …${wantTail}，可重跑]`, `得 ${out}`);
 });
 
 test('bash 命令 >60 字符截断保留前半', () => {
   const cmd = 'a'.repeat(70);
   const out = compactToolResult('bash', { command: cmd }, bigLines(5), false);
-  assert(out === `[bash: ${'a'.repeat(60)}… → 成功，5行输出已折叠]`, `得 ${out}`);
+  assert(out === `[bash: ${'a'.repeat(60)}… → 成功，5行输出已折叠，可重跑]`, `得 ${out}`);
 });
 
 test('read：指纹对 {n}行/{c}字符（同路径指纹不同 = 读取间文件被修改）', () => {
@@ -275,12 +275,12 @@ test('G3：失败结果恰好 500 字符 → 豁免', () => {
 
 test('G3 边界 +1：失败结果 501 字符 → 压缩（带尾部采样）', () => {
   const out = compactToolResult('bash', { command: 'ls' }, chars(501), true);
-  assert(out === `[bash: ls → 失败，1行输出已折叠，尾部: …${'x'.repeat(200)}]`, `得 ${out}`);
+  assert(out === `[bash: ls → 失败，1行输出已折叠，尾部: …${'x'.repeat(200)}，可重跑]`, `得 ${out}`);
 });
 
 test('G3 只保护失败结果：成功结果 400 字符（>300）仍压', () => {
   const out = compactToolResult('bash', { command: 'ls' }, chars(400), false);
-  assert(out === '[bash: ls → 成功，1行输出已折叠]', `得 ${out}`);
+  assert(out === '[bash: ls → 成功，1行输出已折叠，可重跑]', `得 ${out}`);
 });
 
 test('失败结果 ≤300 时 G2 先生效（豁免与 G3 一致）', () => {

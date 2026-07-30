@@ -112,6 +112,13 @@ export interface CompactionCtx {
 /** mutBurst 判定阈值：相邻两次成功修改相距超过这么多轮 AI 消息即视为新一轮爆发（可调常量）。 */
 export const MUT_BURST_GAP = 8;
 
+/** G1 豁免窗口：最近这么多轮用户回合（含当前输入所在回合）内的工具 I/O 不压缩（可调常量）。
+ *  定标依据（2026-07-30 边界实验，4 个真实会话）：豁免单位必须是用户回合而非 AI 消息数——
+ *  一轮多工具调用产生多条 AI 消息，按 AI 消息计数会让跨回合证据 1~2 轮内蒸发。
+ *  W=8 覆盖：复取距离中位 4~7 回合、读→改距离 p90=2 回合、讨论反驳弧线 ≤8 回合；
+ *  成本拐点：3/4 会话 W8 几乎免费（+2K 字符），最重会话 +28K，W12 起曲线变陡（3 倍）。 */
+export const EXEMPT_USER_ROUNDS = 8;
+
 /** todo 烂尾判定阈值：最后一次 todo 更新后超过这么多轮 AI 消息未再更新 = 可能已过时（可调常量）。 */
 export const TODO_STALE_GAP = 10;
 
@@ -212,12 +219,12 @@ export function compactToolResult(
         // 不认就不提取——绝不为各种输出格式维护专属解析器。
         const m = resultText.match(/\d+ passed, \d+ failed/);
         const metrics = m ? `（${m[0]}）` : '';
-        return `[bash: ${cmd} → 成功，${lines}行输出已折叠${metrics}${anno}]`;
+        return `[bash: ${cmd} → 成功，${lines}行输出已折叠${metrics}，可重跑${anno}]`;
       }
       // 失败 = 诊断证据（重跑可能昂贵/有副作用/不可复现）：确定性保留尾部 200 字符
       // （stderr 惯例错误信息在末尾）。换行压为 ⏎——压缩行单行契约不可破坏。
       const tail = resultText.slice(-200).replace(/\n/g, '⏎');
-      return `[bash: ${cmd} → 失败，${lines}行输出已折叠，尾部: …${tail}]${anno}`;
+      return `[bash: ${cmd} → 失败，${lines}行输出已折叠，尾部: …${tail}，可重跑]${anno}`;
     }
     case 'read': {
       // 指纹对（行数+字符数）：同一路径两条压缩行指纹不同 = 两次读取之间文件被修改，
