@@ -28,6 +28,7 @@
 - v8.2.0 文档系统重构：新六层体系（constraints/domains/guides/ledger/workflows/active）+ 19 活跃迁移 + archive 65 份结算 + 压缩轮 + 管线 20 脚本新链 + 切换提交（v8.2.0 tag）
 - v8.3.0 文档管线再设计（STACK #2，批 0-5）：27 个 check 脚本（新增 bar-ledger/doc-budget/doc-symbols/doc-schema/commit-docs/hooks/probes）+ sync-counts 计数 SSOT + commit-msg 钩子 + 探针自检 + grammar/检查设计宪法定稿（v8.3.0 tag）
 - v8.3.1 审计闭环（问题轮）：漂移测绘 99 条溯源 + ADR-004 三裁决+追加裁决 + bug 堆 9 条结案 + 死代码清理 ~2800 行 + orb.ts 拆分（orb-chat-host 宿主归位）（v8.3.1 tag；同批含语义编译地基——agent-runner + tag-advisor + 部署版本握手，主题未完成不抬级）
+- v8.3.2 语义审计体系落地（问题轮）：批 1.5 试点结案（审计 26 报 24 真）→ 语义机械化三件套（doc-linerefs/workflow-integrity 扩展/ledger-commits）→ 腿一探针集群（23 探针并发 10 + 增量哈希版本盐 + 机械复核 + 登记豁免按域过滤）+ 变异基准卷（mutation testing 首卷 10 条，召回 2-4/8）+ 压测定档（conc40 全绿）+ prompt v4 硬化；agent 工具群：tag-advisor 主题分大小判据（影子首记录，minor 只给大主题闭环）+ 回放器全并发化（25min→2min）；耦合门定级 hard fail（口径扩 scripts/ + 独立行 docs:na）；check 链单源化 + 漂移 8 条修复（v8.3.2 tag；语义编译大主题持续推进，v2/腿三在队列）
 
 ## 事件线
 
