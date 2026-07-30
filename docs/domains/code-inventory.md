@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit d07a61c · 生成于 2026-07-30 -->
+<!-- 基准 commit 59192bf · 生成于 2026-07-30 -->
 
 # 代码清单（机械层）
 
@@ -95,7 +95,7 @@
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（54 文件 · 11255 行）
+## ai-chat（54 文件 · 11257 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -104,7 +104,7 @@
 | src/server/ai/tools/omp/browser/tab-worker.ts | 921 | WorkerCore |
 | src/server/ai/tools/omp/browser/launch.ts | 603 | DEFAULT_VIEWPORT, BROWSER_PROTOCOL_TIMEOUT_MS, loadPuppeteer, loadPuppeteerInWorker, LaunchHeadlessOptions, launchHeadlessBrowser, applyViewport, UserAgentOverride, UserAgentSession, applyStealthPatches |
 | src/client/modules/session-client.ts | 526 | SessionMessage, Session, extractMessageText, countTextMessages, sessionStore |
-| src/client/modules/orb-chat-run.ts | 510 | ChatMessage, StreamEvent, getActiveRunId, getActiveCursor, setEventHook, readPersistedRun, clearPersistedRun, settlePendingToolBlocks, resumeRun, doSend |
+| src/client/modules/orb-chat-run.ts | 512 | ChatMessage, StreamEvent, getActiveRunId, getActiveCursor, setEventHook, readPersistedRun, clearPersistedRun, settlePendingToolBlocks, resumeRun, doSend |
 | src/server/ai/chat.ts | 447 | ChatMessage, StreamEvent, createClientIdxMapper |
 | src/client/modules/ws-channel.ts | 426 | wsChannel, initWsChannel |
 | src/shared/tool-compaction/index.ts | 369 | CompactorEntry, COMPACTOR_REGISTRY, COMPACTOR_NAMES, webTitleKey, CompactionCtx, MUT_BURST_GAP, EXEMPT_USER_ROUNDS, TODO_STALE_GAP, FAIL_REPEAT_MIN, errorFingerprint, failRepeatAnnotation, todoResultAnnotation, normalizeBashCommand, compactToolResult, compactToolInput |
@@ -545,4 +545,4 @@
 - src/server/index.ts → src/server/ai/routes.ts
 
 ---
-合计 222 文件 · 42049 行 · 跨域边 225 条
+合计 222 文件 · 42051 行 · 跨域边 225 条
