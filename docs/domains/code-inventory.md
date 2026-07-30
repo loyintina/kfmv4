@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit ba719f1 · 生成于 2026-07-30 -->
+<!-- 基准 commit 96c2ea7 · 生成于 2026-07-30 -->
 
 # 代码清单（机械层）
 
@@ -96,7 +96,7 @@
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（54 文件 · 11320 行）
+## ai-chat（54 文件 · 11334 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -141,13 +141,13 @@
 | src/server/ai/tools/omp/edit.ts | 52 | ompEditTool |
 | src/shared/chat-protocol/events.ts | 45 | StreamEvent |
 | src/shared/chat-protocol/messages.ts | 43 | TextBlock, ToolBlock, RuleWarningBlock, ContentBlock, ChatMessage |
+| src/server/ai/tools/omp/todo.ts | 43 | ompTodoTool |
 | src/server/ai/tools/omp/glob.ts | 42 | ompGlobTool |
 | src/server/ai/tools/omp/write.ts | 42 | ompWriteTool |
 | src/server/ai/tools/omp/bash.ts | 38 | ompBashTool |
 | src/server/ai/tools/omp/grep.ts | 37 | ompGrepTool |
 | src/server/ai/tools/omp/browser/tab-worker-entry.ts | 31 | — |
 | src/shared/message-normalize.ts | 30 | NormalizableBlock, promoteReasoningBlocks |
-| src/server/ai/tools/omp/todo.ts | 29 | ompTodoTool |
 | src/client/modules/orb-chat.ts | 27 | — |
 | src/shared/chat-protocol/block-idx.ts | 24 | createClientIdxMapper |
 | src/server/ai/tools/omp/checkpoint.ts | 22 | ompCheckpointTool |
@@ -166,12 +166,12 @@
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 
-## infra（90 文件 · 11810 行）
+## infra（91 文件 · 11865 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | tests/client-logic.test.ts | 875 | — |
-| tests/regression.test.ts | 639 | — |
+| tests/regression.test.ts | 640 | — |
 | tests/tool-compaction.test.ts | 505 | — |
 | tests/preload.mjs | 406 | — |
 | scripts/agent/semantic-audit.mjs | 387 | taskFiles, buildPrompt, makeValidate, recheckRef, recheckQuote |
@@ -239,6 +239,7 @@
 | scripts/check/check-doc-schema.mjs | 60 | — |
 | scripts/check/check-commit-docs.mjs | 59 | — |
 | tests/omp-glob.test.ts | 58 | — |
+| tests/tool-schema.test.ts | 54 | — |
 | scripts/check/check-uncommitted.mjs | 51 | — |
 | scripts/check/check-consistency.mjs | 50 | — |
 | scripts/check/check-doc-budget.mjs | 43 | — |
@@ -469,7 +470,7 @@
 - src/client/modules/terminal-card-04.ts → src/client/modules/z-index-layers.ts
 - src/client/modules/tmux-card.ts → src/client/modules/gesture-registry.ts
 
-### infra → ai-chat（19 边）
+### infra → ai-chat（20 边）
 
 - tests/chat-protocol.test.ts → src/client/modules/orb-chat.ts
 - tests/chat-protocol.test.ts → src/server/ai/chat.ts
@@ -488,6 +489,7 @@
 - tests/to-openai-messages.test.ts → src/shared/chat-protocol/to-openai-messages.ts
 - tests/to-openai-messages.test.ts → src/shared/tool-compaction/index.ts
 - tests/tool-compaction.test.ts → src/shared/tool-compaction/index.ts
+- tests/tool-schema.test.ts → src/server/ai/tools/index.ts
 - tests/visual-baseline.test.ts → src/client/modules/chat-dom.ts
 - tests/visual-baseline.test.ts → src/shared/chat-protocol/messages.ts
 
@@ -548,4 +550,4 @@
 - src/server/index.ts → src/server/ai/routes.ts
 
 ---
-合计 225 文件 · 42420 行 · 跨域边 225 条
+合计 226 文件 · 42489 行 · 跨域边 226 条
