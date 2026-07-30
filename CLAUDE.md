@@ -8,7 +8,8 @@
 ## 会话启动（每次对话，1 跳）
 1. 读 `docs/active/STACK.md` — 当前工作栈（在哪一层、干到哪）
 2. 读 `docs/ledger/history.md` 尾部 — 最近发生了什么
-3. 改代码前 → 走 pre-code-gate
+3. 读 `docs/ledger/semantic-chain-inbox.md` 尾部 — 语义巡逻信箱；有 ⚠️ 行 → 进 workflows/semantic-audit.yaml 裁决流
+4. 改代码前 → 走 pre-code-gate
 
 ## 任务 → 工作流路由表
 | 任务 | 工作流卡 |

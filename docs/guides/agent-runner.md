@@ -105,3 +105,16 @@ inter-workflows 大 prompt 探针双端 60s 超时失败教训）。
 - **分数纪律：单轮 ±1 是 LLM 采样噪声不是信号，比分数看连续多轮趋势**
 - 副产物：额外发现已逮 4 条真漂移（prompts/ 无测绘、ai/ 归属三方分叉、code-map 60s
   旧超时、yaml dangling 术语）——基准卷兼作探矿器
+
+## 三号负载：semantic-chain.mjs（语义巡逻总 runner，腿三，2026-07-30 用户拍板）
+
+定时巡逻编排：跑腿一（增量）→ 聚合成单结论 → 投信箱 → 走人。裁决不归它管。
+
+- **三态 verdict**：✅ 干净 / ⚠️ N 条待裁决（指向裁决流 workflows/semantic-audit.yaml）/
+  💀 退化（腿一 exit 2，provider 链异常）；永远 exit 0——注意力信号不是构建失败
+- **信箱**：`docs/ledger/semantic-chain-inbox.md`（append-only 一行一轮）；新会话 agent
+  读尾部见 ⚠️ → 进裁决流。未裁决发现下轮重复出现是特性（注意力门控靠反复提醒兑现）
+- **--with-bench**：顺带跑变异基准做尺校准（invariants #32），成绩单摘要行进信箱；
+  基准有 API 成本，cron 每周一次即可
+- **cron 安装**（2026-07-30 装机）：每日 `17 4 * * *` 巡逻 + 每周一 `23 4 * * 1` 带基准，
+  日志 `/var/log/semantic-chain.log`

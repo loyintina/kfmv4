@@ -93,6 +93,9 @@
    — 腿三（远期）：semantic-chain.mjs 总 runner——探针 verdict 聚合成单结论（过/N 条新发现），
      cron 化巡逻；verdict 门控注意力不门控合并（概率区纪律）；裁决与修复留会话内 agent，
      自动化边界 = 检测，结晶回路负责把反复发现移民确定区
+     ——✅ 落地（2026-07-30）：三态 verdict（✅/⚠️ N 条/💀 退化）+ 信箱
+     ledger/semantic-chain-inbox.md（append-only，CLAUDE.md 启动步 3 消费）+
+     --with-bench 周校准 + cron 装机（每日 4:17 巡逻 / 每周一 4:23 带基准）
    — 冰山工作量验证实验 ✅（2026-07-30）：scripts/agent/exp-iceberg.mjs，339 feat 全量
      统计——有设计沉淀 avg fix 链 1.58 vs 无沉淀 2.58（-39%，置换检验 p=0.004，pre/post-v7
      两时代方向一致，厚尾率 12.7% vs 21.0%）——心法 34 获数据支持，报告
