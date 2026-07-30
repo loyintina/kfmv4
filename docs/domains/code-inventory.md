@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 3130c7b · 生成于 2026-07-30 -->
+<!-- 基准 commit ba719f1 · 生成于 2026-07-30 -->
 
 # 代码清单（机械层）
 
@@ -96,7 +96,7 @@
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（54 文件 · 11319 行）
+## ai-chat（54 文件 · 11320 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -114,7 +114,7 @@
 | src/client/modules/orb-chat-host.ts | 332 | ChatHostDeps, initChatHost |
 | src/server/ai/tools/omp/browser/tab-supervisor.ts | 320 | WorkerHandle, TabSession, PendingRun, AcquireTabOptions, RunInTabOptions, getTab, acquireTab, runInTab, releaseTab, releaseAllTabs |
 | src/server/ai/tools/omp/debug/kfmv4-views.ts | 318 | Kfmv4ViewName, Kfmv4ViewResult, RENDERER_SNAPSHOT_SCRIPT, ANIMATION_TIMELINE_SCRIPT, GESTURE_TRACE_SCRIPT, STATE_HISTORY_SCRIPT, CARD_LIFECYCLE_SCRIPT, KFMV4_SCRIPT_MAP, formatRendererSnapshot, formatAnimationTimeline, formatGestureTrace, formatStateHistory, formatCardLifecycle |
-| src/shared/chat-protocol/to-openai-messages.ts | 278 | OpenAiToolCall, OpenAiMessage, ToOpenAiOptions, ToOpenAiResult, toOpenAiMessages |
+| src/shared/chat-protocol/to-openai-messages.ts | 279 | OpenAiToolCall, OpenAiMessage, ToOpenAiOptions, ToOpenAiResult, toOpenAiMessages |
 | src/server/ai/tools/omp/debug/cdp-connection.ts | 242 | CdpSession, CdpLaunchOptions, CdpAttachOptions, CdpPausedEvent, sendCmd, onCdpEvent, launchCdp, attachCdp, closeCdp |
 | src/client/modules/orb-chat-hints.ts | 225 | startWaitingIndicator, TODO_DISMISS_KEY, todosFingerprint, clearTodoPanel, dismissTodoPanel, updateTodoFromTool |
 | src/server/ai/session-store.ts | 196 | appendEvent, flush, flushSync, appendUserMessage |
@@ -166,11 +166,11 @@
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 
-## infra（90 文件 · 11800 行）
+## infra（90 文件 · 11810 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| tests/client-logic.test.ts | 874 | — |
+| tests/client-logic.test.ts | 875 | — |
 | tests/regression.test.ts | 639 | — |
 | tests/tool-compaction.test.ts | 505 | — |
 | tests/preload.mjs | 406 | — |
@@ -189,8 +189,8 @@
 | tests/run-manager.test.ts | 192 | — |
 | tests/smoke/smoke.mjs | 190 | — |
 | scripts/check/gen-code-inventory.mjs | 181 | — |
+| tests/to-openai-messages.test.ts | 181 | — |
 | tests/path-utils.test.ts | 172 | — |
-| tests/to-openai-messages.test.ts | 172 | — |
 | tests/chat-protocol.test.ts | 169 | — |
 | tests/protocol-reducer.test.ts | 161 | — |
 | scripts/agent/semantic-audit.tasks.mjs | 152 | TASKS |
@@ -548,4 +548,4 @@
 - src/server/index.ts → src/server/ai/routes.ts
 
 ---
-合计 225 文件 · 42409 行 · 跨域边 225 条
+合计 225 文件 · 42420 行 · 跨域边 225 条
