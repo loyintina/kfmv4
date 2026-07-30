@@ -33,50 +33,9 @@ function checkFreshness(outfile, label) {
 
 // ========== 构建 ==========
 
-// 全量代码质量检查（对齐 npm run check，零错误通过才构建）
-execSync('node scripts/check/check-versions.mjs', { stdio: 'inherit' });
-
-// 未提交提醒（不阻断）
-try { execSync('node scripts/check/check-uncommitted.mjs', { stdio: 'inherit' }); } catch {}
-execSync('node scripts/check/check-checks.mjs', { stdio: 'inherit' });
-execSync('node scripts/check/check-doc-coverage.mjs', { stdio: 'inherit' });
-
-// SCSS 编译（语法校验 + 输出 .css）
-try {
-  execSync('npx sass --no-source-map public/css/:public/css/', { stdio: 'inherit' });
-} catch {
-  console.error('[sass] SCSS 编译失败，构建中断。');
-  process.exit(1);
-}
-
-execSync('node scripts/check/check-css-wiring.mjs --check-only', { stdio: 'inherit' });
-execSync('node scripts/check/check-tool-compaction.mjs --check-only', { stdio: 'inherit' });
-execSync('node scripts/check/check-anim.mjs --check-only', { stdio: 'inherit' });
-execSync('node scripts/check/check-as-any.mjs --check-only', { stdio: 'inherit' });
-execSync('node scripts/check/check-card-meta.mjs', { stdio: 'inherit' });
-execSync('node scripts/check/check-registry.mjs --check-only', { stdio: 'inherit' });
-execSync('node scripts/check/check-zindex.mjs', { stdio: 'inherit' });
-execSync('node scripts/check/check-console.mjs', { stdio: 'inherit' });
-execSync('node scripts/check/check-docs.mjs', { stdio: 'inherit' });
-execSync('node scripts/check/check-consistency.mjs', { stdio: 'inherit' });
-execSync('node scripts/check/check-active-stack.mjs', { stdio: 'inherit' });
-execSync('node scripts/check/check-code-doc-refs.mjs', { stdio: 'inherit' });
-execSync('node scripts/check/check-workflow-integrity.mjs', { stdio: 'inherit' });
-execSync('node scripts/check/check-cards.mjs', { stdio: 'inherit' });
-execSync('node scripts/check/check-contract-freshness.mjs', { stdio: 'inherit' });
-execSync('node scripts/check/check-test-patterns.mjs', { stdio: 'inherit' });
-execSync('node scripts/check/check-bar-ledger.mjs', { stdio: 'inherit' });
-execSync('node scripts/check/check-ledger-commits.mjs', { stdio: 'inherit' });
-execSync('node scripts/check/check-doc-budget.mjs', { stdio: 'inherit' });
-execSync('node scripts/check/check-doc-symbols.mjs', { stdio: 'inherit' });
-execSync('node scripts/check/check-doc-linerefs.mjs', { stdio: 'inherit' });
-execSync('node scripts/check/check-doc-schema.mjs', { stdio: 'inherit' });
-execSync('node scripts/check/check-commit-docs.mjs', { stdio: 'inherit' });
-execSync('node scripts/check/check-hooks.mjs', { stdio: 'inherit' });
-execSync('node scripts/check/check-probes.mjs', { stdio: 'inherit' });
-execSync('node scripts/check/check-release-radar.mjs', { stdio: 'inherit' });
-execSync('node scripts/check/sync-counts.mjs --check-only', { stdio: 'inherit' });
-execSync('npx tsc --noEmit', { stdio: 'inherit' });
+// 全量代码质量检查（唯一链出处 scripts/check/chain.mjs——禁止在此回潮手写单个 check；
+// build 中 check-uncommitted 按 --soft 降级为提醒，其余零错误通过才构建）
+execSync('node scripts/check/chain.mjs --soft=check-uncommitted', { stdio: 'inherit' });
 
 // 复制 stealth 脚本到 dist（launch.ts 在运行时读取这些文件）
 const puppeteerSrc = 'src/server/ai/tools/omp/browser/puppeteer';

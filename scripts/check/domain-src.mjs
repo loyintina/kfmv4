@@ -53,7 +53,7 @@ export const DOMAIN_SRC = {
   ],
   'infra': [
     'build.mjs', 'scripts/check/', 'scripts/agent/', 'tests/', 'public/css/',
-    'scripts/deploy.sh', 'scripts/kfm-restart.sh', 'scripts/gen-code-inventory.mjs',
+    'scripts/deploy.sh', 'scripts/kfm-restart.sh',
     'scripts/clean-npm-temp.cjs', '.githooks/', 'package.json',
   ],
 };

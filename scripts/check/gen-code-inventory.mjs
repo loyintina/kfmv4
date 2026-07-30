@@ -8,16 +8,21 @@
  * 域归属映射来自 scripts/check/domain-src.mjs（单一真相源）。
  * 未登记桶：存在但不在任何域映射里的代码文件 —— 域登记漂移信号。
  *
- * 用法：node scripts/gen-code-inventory.mjs   （重写 docs/domains/code-inventory.md）
+ * 用法：
+ *   node scripts/check/gen-code-inventory.mjs              # 重写 docs/domains/code-inventory.md
+ *   node scripts/check/gen-code-inventory.mjs --check-only # 只验证不重写（挂 check 链，漂移 = 中断）
+ *   比对时剔除第 2 行基准头（commit/日期是挥发字段，内容漂移才算漂移）。
  */
 
 import { readFileSync, readdirSync, statSync, existsSync, writeFileSync } from 'fs';
-import { join, relative } from 'path';
+import { join, relative, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
-import { DOMAIN_SRC } from './check/domain-src.mjs';
+import { DOMAIN_SRC } from './domain-src.mjs';
+import { DOCS_ROOT } from './docs-root-const.mjs';
 
-const ROOT = fileURLToPath(new URL('../', import.meta.url));
+const ROOT = resolve(process.env.KFM_PROBE_ROOT || fileURLToPath(new URL('../../', import.meta.url)));
+const CHECK_ONLY = process.argv.includes('--check-only');
 const CODE_EXT = /\.(ts|tsx|js|mjs)$/;
 const SKIP_DIRS = new Set(['node_modules', 'dist', '.git']);
 
@@ -110,7 +115,7 @@ try {
 } catch { /* 非 git 环境 */ }
 
 const out = [];
-out.push('<!-- 机械生成：node scripts/gen-code-inventory.mjs —— 请勿手改 -->');
+out.push('<!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->');
 out.push(`<!-- 基准 commit ${commit} · 生成于 ${new Date().toISOString().slice(0, 10)} -->`);
 out.push('');
 out.push('# 代码清单（机械层）');
@@ -156,6 +161,20 @@ for (const [key, set] of [...edges.entries()].sort()) {
 out.push(`---`);
 out.push(`合计 ${totalFiles} 文件 · ${totalLoc} 行 · 跨域边 ${[...edges.values()].reduce((s, e) => s + e.size, 0)} 条`);
 
-writeFileSync(join(ROOT, 'docs/domains/code-inventory.md'), out.join('\n') + '\n');
-console.log(`[gen-code-inventory] docs/domains/code-inventory.md 已生成：${totalFiles} 文件 · ${totalLoc} 行` +
-  (unregistered.length ? ` · ⚠ 未登记 ${unregistered.length}` : ''));
+const outFile = join(ROOT, DOCS_ROOT, 'domains', 'code-inventory.md');
+const generated = out.join('\n') + '\n';
+
+if (CHECK_ONLY) {
+  // 剔除第 2 行基准头（commit/日期是挥发字段）再比对
+  const stripHeader = s => s.split('\n').filter((_, i) => i !== 1).join('\n');
+  const existing = existsSync(outFile) ? readFileSync(outFile, 'utf-8') : '';
+  if (stripHeader(existing) !== stripHeader(generated)) {
+    console.error('[gen-code-inventory] code-inventory.md 与代码现实漂移（未重新生成）——跑 node scripts/check/gen-code-inventory.mjs 回写');
+    process.exit(1);
+  }
+  console.log(`[gen-code-inventory] OK — code-inventory.md 与代码现实一致（${totalFiles} 文件 · ${totalLoc} 行）`);
+} else {
+  writeFileSync(outFile, generated);
+  console.log(`[gen-code-inventory] ${DOCS_ROOT}/domains/code-inventory.md 已生成：${totalFiles} 文件 · ${totalLoc} 行` +
+    (unregistered.length ? ` · ⚠ 未登记 ${unregistered.length}` : ''));
+}

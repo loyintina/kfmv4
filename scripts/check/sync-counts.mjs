@@ -15,7 +15,7 @@
  *   docs/domains/infra/contract.md「check-*.mjs`（N 个）」
  *   docs/guides/testing.md       「N 个测试（单元/集成…）」
  *   docs/domains/infra/contract.md 检查管线节：头部脚本数 + <!-- chain:auto --> 区块
- *     （链枚举从 package.json scripts.check 派生重新生成，含顺序）
+ *     （链枚举从 chain.mjs STEPS 派生重新生成，含顺序）
  * 注意：ledger/history.md 的历史计数（某版本当时的数）禁止同步。
  */
 
@@ -75,16 +75,17 @@ for (const { file, subs } of TARGETS) {
 }
 
 // ========== 检查管线链枚举生成区（infra contract） ==========
-// 真相源 = package.json scripts.check 的命令顺序
+// 真相源 = scripts/check/chain.mjs 的 STEPS（check 链唯一出处）
 
 {
-  const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf-8'));
-  const names = pkg.scripts.check.split('&&').map(s => s.trim()).map(step => {
+  const { STEPS } = await import('./chain.mjs');
+  const names = STEPS.map(step => {
     const m = step.match(/check-([\w-]+)\.mjs/);
     if (m) return m[1];
-    if (step.startsWith('sass')) return 'sass';
+    if (step.includes('sass')) return 'sass';
     if (step.includes('sync-counts')) return 'sync-counts';
-    if (step.startsWith('tsc')) return 'tsc';
+    if (step.includes('gen-code-inventory')) return 'gen-code-inventory';
+    if (step.includes('tsc')) return 'tsc';
     return null;
   }).filter(Boolean);
 

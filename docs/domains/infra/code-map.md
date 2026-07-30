@@ -21,8 +21,9 @@
 
 | 入口 | 位置 | 调用方 |
 |------|------|--------|
-| build.mjs（无导出，顶层即入口） | 内嵌 check 链 :37-77 + esbuild :86-107 | package.json build/dev/watch、deploy.sh:11 |
-| 29 个 check-*.mjs | 全部顶层执行、exit 1 硬失败 | package.json:11 的 check 串 + build.mjs 内嵌副本 |
+| build.mjs（无导出，顶层即入口） | chain.mjs 委托 + esbuild | package.json build/dev/watch、deploy.sh:11 |
+| chain.mjs（check 链唯一出处，STEPS 34 步） | scripts/check/chain.mjs | package.json:11、build.mjs 委托 |
+| 29 个 check-*.mjs | 全部顶层执行、exit 1 硬失败 | chain.mjs STEPS 统一调度 |
 | DOCS_ROOT / DOMAIN_SRC 共享常量 | scripts/check/docs-root-const.mjs、domain-src.mjs | 11 个 check / freshness + 清单生成器 |
 | sync-counts.mjs | 唯一会回写文档的 check | 链内 --check-only；无参回写 |
 | scripts/agent/agent-runner.mjs | 导出 runAgent/extractJson | tag-advisor.mjs:13 |
@@ -39,8 +40,8 @@
 
 ## 核心流程
 
-**构建链**：内嵌 check 链（30 步）→ sass 编译（失败 exit 1）→ 复制 stealth 脚本 →
-esbuild server ESM + client IIFE（external 硬编码 build.mjs:93）→ checkFreshness
+**构建链**：chain.mjs 全链（34 步，含 sass 编译）→ 复制 stealth 脚本 →
+esbuild server ESM + client IIFE（external 硬编码 build.mjs）→ checkFreshness
 双产物 → 写 dist/build-info.json → index.html 注入 ?v=buildStamp → bundle 大小冒烟。
 
 **部署闭环**：deploy.sh：npm run build → 读新包 buildTime → kfm-restart.sh（POST
@@ -58,8 +59,8 @@ esbuild server ESM + client IIFE（external 硬编码 build.mjs:93）→ checkFr
 
 ## 强制不变量（附证据）
 
-- check 链集成完整性：每个 check-*.mjs 必须同时出现在 package.json 与 build.mjs
-  （check-checks.mjs:56-68）——**只查存在性，不查顺序与阻断语义**（见漂移 1）
+- check 链唯一出处：每个 check-*.mjs 必须挂入 chain.mjs STEPS、链上脚本必须存在、
+  package.json 与 build.mjs 必须委托且不得回潮手写单个 check（check-checks 执法）
 - 构建产物新鲜度：产物不得旧于任何 src/*.ts（build.mjs:20-32）
 - 计数漂移中断：sync-counts --check-only 漂移 exit 1；版本三方一致（check-versions）
 - 钩子健康：core.hooksPath + 可执行位 + 薄壳引用（check-hooks）
@@ -68,11 +69,10 @@ esbuild server ESM + client IIFE（external 硬编码 build.mjs:93）→ checkFr
 
 ## 漂移清单（实然 ≠ 应然）
 
-1. **【已核实】check 链双份实现已漂移**：package.json:11 与 build.mjs:37-77 是同一链
-   的两份手写拷贝。(a) 顺序不同——build.mjs 把 check-uncommitted 挪到 versions 之后；
-   (b) 阻断语义不同——build.mjs:40 try/catch 把「>3 未提交即中断」降级为提醒，与
-   build.mjs:36 自身注释「零错误通过才构建」直接矛盾。check-checks 的 includes 匹配
-   守不住这类漂移。
+1. **【已结案 2026-07-30】check 链双份实现已漂移 → 单源化消灭**：package.json:11 与 build.mjs 曾是同一链
+   的两份手写拷贝（顺序不同、阻断语义不同）。修复：唯一出处 scripts/check/chain.mjs（STEPS 数组），
+   package.json "check" 与 build.mjs 均委托；build 的 check-uncommitted 降级改为显式 --soft 声明。
+   check-checks 升级为唯一出处执法者（每 check 必挂链/链上脚本必存在/禁回潮手写）。
 2. **【已结案 2026-07-29】契约硬规则 1「新 check 一律 hard fail」曾有未登记例外**：check-release-radar
    设计性 warning-only、exit 0；check-uncommitted ≤3 也只警告。例外清单已登记
    contract.md 硬规则 1 + workflows/discipline-mechanize.yaml（语义审计 B1）。
@@ -97,19 +97,21 @@ esbuild server ESM + client IIFE（external 硬编码 build.mjs:93）→ checkFr
 9. **smoke.mjs:4 注释硬编码「287 个测试」**，实测 456——sync-counts 的 TARGETS
    不覆盖 smoke.mjs。
 10. **构建制造未提交改动**：build.mjs 改写 tracked 的 index.html + css，每次构建让
-    工作区变脏，与 check-uncommitted 的心法 14 形成张力——build.mjs 里的降级
-    （漂移 1b）或许正是 workaround（存疑）。
-11. **gen-code-inventory.mjs 无管线挂接**：不在 package.json scripts、不在 check 链，
-    code-inventory.md 的新鲜度全靠人记得重跑（待办：接管线）。
+    工作区变脏，与 check-uncommitted 的心法 14 形成张力——chain.mjs 的 --soft 降级
+    或许正是 workaround（存疑）。
+11. **【已结案 2026-07-30】gen-code-inventory 无管线挂接**：已移入 scripts/check/ 并加
+    --check-only 挂 check 链（sync-counts 后、tsc 前）+ 探针负例——清单不新鲜即中断，
+    不再靠人记得重跑。
 12. **【存疑】Kimi provider temperature 1**：providers.config.json:2 的 params 覆盖
     默认 0.2——对「只输出 JSON」的抽取任务反常（但这是端点硬性要求，注释未写明原因）。
 13. **进程管理双路径**：npm start 用 lsof kill（package.json:15），生产走 systemctl；
     dev/prod 语义不同，文档未对齐。
 14. 次要：tests/runner.ts 与 harness.ts 双门面冗余；public/css/base.css.map 是
-    gitignored 陈旧残留；npm run check 用裸 sass、build.mjs 用 npx sass。
+    gitignored 陈旧残留；npm 上下文裸 sass、build.mjs 上下文 npx sass（单源化后统一
+    走 chain.mjs 的 npx 形态）。
 
 ## 陷阱指针
 
 已定型陷阱见 contract.md #陷阱 + ../constraints/diagnostics.md（构建/Bundle 节）。
-测绘新捕获：漂移 1 说明「同一链两份拷贝」必然漂移——后续要么 build.mjs 改为调
-npm run check 单源化，要么 check-checks 升级为顺序+语义比对。漂移 11 已有待办。
+测绘新捕获：漂移 1 说明「同一链两份拷贝」必然漂移——已按编译方向升档消灭
+（chain.mjs 唯一出处，2026-07-30），同类「双份手写」设计一律禁止，改单一出处+生成。

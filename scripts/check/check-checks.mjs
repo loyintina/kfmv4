@@ -1,20 +1,22 @@
 /**
- * check-checks.mjs — 检查脚本集成完整性验证
+ * check-checks.mjs — 检查脚本集成完整性验证（v8.3 单源化后重写）
  *
- * 验证所有 check-*.mjs 脚本（自身除外）是否在 npm 构建管线中有合理覆盖：
- *   1. 在 package.json "check" 命令中被引用
- *   2. 在 package.json "build" 命令中被引用
- *   3. 新增的、需要构建时运行的检查是否也接入了 build.mjs
+ * check 链唯一出处 = scripts/check/chain.mjs 的 STEPS。本检查执法：
+ *   1. 每个 check-*.mjs（自身除外）必须出现在 chain.mjs STEPS（漏挂 = 中断）
+ *   2. STEPS 每个步骤引用的脚本文件必须存在（改名失联 = 中断）
+ *   3. package.json "check" 必须委托 chain.mjs（禁止回潮手写链）
+ *   4. build.mjs 必须引用 chain.mjs 且不得出现任何单个 check-*.mjs（防双份拷贝回潮）
+ *   5. README/CLAUDE 的 check 计数声明与实际一致
  *
- * 挂入 npm run check，遗漏 = 构建中断。
+ * 挂入 check 链（chain.mjs STEPS 第 3 步），失配 = 中断。
  */
 
 import { readFileSync, readdirSync, statSync, existsSync } from 'fs';
-import { join } from 'path';
-import { fileURLToPath } from 'url';
+import { join, resolve } from 'path';
+import { fileURLToPath, pathToFileURL } from 'url';
 
-const SCRIPT_DIR = fileURLToPath(new URL('.', import.meta.url));
-const ROOT = fileURLToPath(new URL('../../', import.meta.url));
+const ROOT = resolve(process.env.KFM_PROBE_ROOT || fileURLToPath(new URL('../../', import.meta.url)));
+const SCRIPT_DIR = join(ROOT, 'scripts', 'check');
 
 let hasError = false;
 
@@ -37,80 +39,84 @@ for (const entry of readdirSync(SCRIPT_DIR)) {
 checkScripts.sort();
 console.log(`[check-checks] 发现 ${checkScripts.length} 个检查脚本: ${checkScripts.join(', ')}`);
 
-// ========== 2. 验证 package.json 覆盖 ==========
+// ========== 2. 读取唯一出处 chain.mjs STEPS ==========
 
-const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf-8'));
-const checkScript = pkg.scripts.check || '';
-const buildScript = pkg.scripts.build || '';
-
-// 如果 build 命令委托给 build.mjs，检查 build.mjs 内容而非 npm script 字符串
-const buildDelegatesToMjs = buildScript.includes('build.mjs');
-let buildMjsContent = '';
-if (buildDelegatesToMjs) {
-  const buildMjsPath2 = join(ROOT, 'build.mjs');
-  if (existsSync(buildMjsPath2)) {
-    buildMjsContent = readFileSync(buildMjsPath2, 'utf-8');
-  }
+const chainPath = join(SCRIPT_DIR, 'chain.mjs');
+if (!existsSync(chainPath)) {
+  error('scripts/check/chain.mjs 不存在——check 链唯一出处丢失');
 }
+const { STEPS } = existsSync(chainPath)
+  ? await import(pathToFileURL(chainPath).href)
+  : { STEPS: [] };
 
+// 2a. 每个 check-*.mjs 必须在链上
 for (const script of checkScripts) {
-  const inCheck = checkScript.includes(script) || checkScript.includes(script.replace('.mjs', ''));
-  const inBuild = buildDelegatesToMjs
-    ? buildMjsContent.includes(script)
-    : buildScript.includes(script) || buildScript.includes(script.replace('.mjs', ''));
-
-  if (!inCheck) {
-    error(`${script} 未在 package.json "check" 命令中找到。请添加。`);
-  }
-  if (!inBuild) {
-    error(`${script} 未在构建管线中找到（${buildDelegatesToMjs ? 'build.mjs' : 'package.json "build"'}）。所有检查脚本必须在构建时也运行。`);
+  if (!STEPS.some(step => step.includes(script))) {
+    error(`${script} 未挂入 chain.mjs STEPS——新检查必须登记唯一出处，否则永不执行`);
   }
 }
 
-// ========== 3. 验证 build.mjs 覆盖 ==========
-
-const buildMjsPath = join(ROOT, 'build.mjs');
-if (existsSync(buildMjsPath)) {
-  const buildMjs = readFileSync(buildMjsPath, 'utf-8');
-
-  // build.mjs 只需包含新增的、有构建阶段特殊意义的检查
-  // 已在 npm build 脚本中运行的 check 不需要重复在 build.mjs 中
-  // 但新增的 check（如 check-card-meta.mjs 和 check-cards.mjs）需要被 build.mjs 引用
-  // 以确认它们在 esbuild bundle 阶段之前执行
-  const expectedInBuildMjs = ['check-card-meta.mjs', 'check-cards.mjs'];
-  for (const script of expectedInBuildMjs) {
-    if (checkScripts.includes(script) && !buildMjs.includes(script)) {
-      error(`${script} 应接入 build.mjs（需要在构建产物生成前执行类型检查），但未找到引用`);
+// 2b. 链上每个步骤引用的脚本必须存在
+for (const step of STEPS) {
+  for (const m of step.matchAll(/(scripts\/[\w./-]+\.(?:mjs|js|cjs))/g)) {
+    if (!existsSync(join(ROOT, m[1]))) {
+      error(`chain.mjs 步骤 "${step}" 引用的 ${m[1]} 不存在（脚本改名/删除后链未同步）`);
     }
   }
-} else {
-  error('build.mjs 不存在，无法验证构建管线覆盖');
 }
 
-// ========== 4. 验证 README.md 中的 check 脚本计数 ==========
+// ========== 3. package.json 必须委托 chain.mjs ==========
 
-const readme = readFileSync(join(ROOT, 'README.md'), 'utf-8');
-const readmeMatch = readme.match(/(\d+)\s*个\s*check/);
-if (readmeMatch) {
-  const readmeCount = parseInt(readmeMatch[1], 10);
-  // 含自身，所以显示 count = checkScripts.length + 1
-  const actualDisplayCount = checkScripts.length + 1;
-  if (readmeCount !== actualDisplayCount) {
-    error(`README.md 声称 "${readmeCount} 个 check-* 脚本"，实际有 ${actualDisplayCount} 个（${checkScripts.length} 个检查 + check-checks.mjs 自身）`);
+const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf-8'));
+const checkCmd = (pkg.scripts.check || '').trim();
+if (checkCmd !== 'node scripts/check/chain.mjs') {
+  error(`package.json "check" 未委托 chain.mjs（当前："${checkCmd.slice(0, 60)}…"）——禁止回潮手写链`);
+}
+
+// ========== 4. build.mjs 必须委托且不得回潮 ==========
+
+const buildMjsPath = join(ROOT, 'build.mjs');
+if (!existsSync(buildMjsPath)) {
+  error('build.mjs 不存在，无法验证构建管线覆盖');
+} else {
+  const buildMjs = readFileSync(buildMjsPath, 'utf-8');
+  if (!buildMjs.includes('scripts/check/chain.mjs')) {
+    error('build.mjs 未引用 scripts/check/chain.mjs——构建链必须委托唯一出处');
+  }
+  for (const script of checkScripts) {
+    if (buildMjs.includes(script)) {
+      error(`build.mjs 出现单个 ${script} 引用——双份拷贝回潮（infra 漂移 1 的复活），必须走 chain.mjs`);
+    }
   }
 }
 
-// ========== 5. 验证 CLAUDE.md 中的 check 脚本计数 ==========
+// ========== 5. 验证 README.md / CLAUDE.md 中的 check 脚本计数 ==========
 
-const claudeContent2 = readFileSync(join(ROOT, 'CLAUDE.md'), 'utf-8');
-const claudeMatch = claudeContent2.match(/(\d+)\s*个\s*check-\*\.mjs/g);
-if (claudeMatch) {
-  for (const claim of claudeMatch) {
-    const claudeCount = parseInt(claim.match(/\d+/)[0], 10);
+const readmePath = join(ROOT, 'README.md');
+if (existsSync(readmePath)) {
+  const readme = readFileSync(readmePath, 'utf-8');
+  const readmeMatch = readme.match(/(\d+)\s*个\s*check/);
+  if (readmeMatch) {
+    const readmeCount = parseInt(readmeMatch[1], 10);
     // 含自身，所以显示 count = checkScripts.length + 1
     const actualDisplayCount = checkScripts.length + 1;
-    if (claudeCount !== actualDisplayCount) {
-      error(`CLAUDE.md 声称 "${claim}"，实际有 ${actualDisplayCount} 个（${checkScripts.length} 个检查 + check-checks.mjs 自身）`);
+    if (readmeCount !== actualDisplayCount) {
+      error(`README.md 声称 "${readmeCount} 个 check-* 脚本"，实际有 ${actualDisplayCount} 个（${checkScripts.length} 个检查 + check-checks.mjs 自身）`);
+    }
+  }
+}
+
+const claudePath = join(ROOT, 'CLAUDE.md');
+if (existsSync(claudePath)) {
+  const claudeContent = readFileSync(claudePath, 'utf-8');
+  const claudeMatch = claudeContent.match(/(\d+)\s*个\s*check-\*\.mjs/g);
+  if (claudeMatch) {
+    for (const claim of claudeMatch) {
+      const claudeCount = parseInt(claim.match(/\d+/)[0], 10);
+      const actualDisplayCount = checkScripts.length + 1;
+      if (claudeCount !== actualDisplayCount) {
+        error(`CLAUDE.md 声称 "${claim}"，实际有 ${actualDisplayCount} 个（${checkScripts.length} 个检查 + check-checks.mjs 自身）`);
+      }
     }
   }
 }
@@ -122,4 +128,4 @@ if (hasError) {
   process.exit(1);
 }
 
-console.log(`[check-checks] OK — 全部 ${checkScripts.length} 个检查脚本已正确集成到 check/build 管线中`);
+console.log(`[check-checks] OK — ${checkScripts.length} 个检查脚本全部挂入唯一出处 chain.mjs`);

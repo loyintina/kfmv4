@@ -38,7 +38,7 @@
    — 另：面板发送消息无响应（2026-07-29 记，用户反馈的活 bug，具体病灶待补充——复现后进 bug-fix 流程）
 10. 全量代码分析 → domains 填充（2026-07-29 提前完成，用户动议）
    — ✅ 六域 code-map + cross-domain.md（99 条漂移带 file:line，0cecc62/3906707）
-   — ✅ 机械层：gen-code-inventory.mjs（212 文件 + 224 跨域边，鲜度挂接待办）
+   — ✅ 机械层：gen-code-inventory.mjs（已移 scripts/check/ 并 --check-only 挂链，鲜度不再靠人）
    — ✅ 溯源审计：22 subagent 考古 → ledger/drift-provenance.md（105 行普查 + 8 案深潜）
      分布：E 机制没人走 21.9% · A 过时 20% · C 权宜 17.1% · F 文档 16.2% · B 接力 14.3% · D 复制 9.5%
    — 后续队列（按堆）：① 真 bug 10 条（ai-chat#2 冷恢复载荷优先）② 安全面 3 条核实
