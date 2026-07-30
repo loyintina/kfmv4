@@ -133,11 +133,11 @@ export const MUTATIONS = [
     note: '与 vision §1.8「文档系统 = AI 的长期记忆库」争夺产品定位权威',
   },
   {
-    id: 'M15', level: 'L3', sem: 'NC', file: 'CLAUDE.md', expect: 'silent',
-    find: '440 个回归测试',
-    replace: '440 项回归测试',
-    tasks: ['claude-vs-docs'],
-    note: '正确计数的量词变体——不应报告（M09 同族换载体）',
+    id: 'M15', level: 'L3', sem: 'NC', file: 'docs/guides/release.md', expect: 'silent',
+    find: '距上个 tag ≥30 提交或 ≥10 feat → WARN，不中断',
+    replace: '距上个 tag ≥30 个提交或 ≥10 个 feat → WARN，不中断',
+    tasks: ['guides-release-vs-history'],
+    note: '正确阈值的量词变体——不应报告。2026-07-30 迁址：原锚 CLAUDE.md:42 距 M12 仅 3 行，±5 容差必然双中（出题事故非模型误报）',
   },
   // ---- MID 中间难度档（2026-07-30 扩卷）：四条稳定盲区各拆单一难点，降级可逮 ----
   // 设计逻辑：M02 难在需 src/ 代码知识 → MID-1 同款改名回退但 code-map 基线明记新名；

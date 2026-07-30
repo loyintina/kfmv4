@@ -76,7 +76,9 @@ function inlineDocs(files) {
 
 // 审计逻辑版本：脚本/prompt/复核规则变更时 +1——任务哈希不含 prompt 内容，
 // 不加版本盐，修完脚本旧哈希会跳过复跑（四轮教训：误触发跑出的污染结果被哈希跳过）
-const AUDIT_VERSION = 4;
+// v5（2026-07-30 扩卷首测后硬化）：prompt 补组内自相矛盾扫描范围 + 措辞变体精确率条款；
+// tasks 三探针 question 扩（vision-vs-maps / stack-vs-ledger / inter-vision-invariants）
+const AUDIT_VERSION = 5;
 
 function taskHash(task, files) {
   const h = createHash('sha1');
@@ -159,6 +161,10 @@ ${task.sem.map(s => `- ${s}`).join('\n')}
 特别注意：承重入口表不枚举全部 30 个 check——「code-map 未提及某 check」不构成
 其不存在的证据，「声称 check 存在但实际不存在」类发现**一律不报**（四轮+变异基准
 同族假发现复发 6 次教训：check-docs/check-active-stack/check-doc-symbols 等均真实存在）。
+扫描范围含**被审文档内部自相矛盾**：同文件两处断言直接打架、状态词与详情语气互搏——
+against 填同文件另一处的 路径:行号（变异基准 MID-3/4 双漏教训，v5 硬化）。
+精确率条款：事实与基准一致、仅措辞/量词/表述格式不同的变体**一律不报**
+（如「440 个测试」与「440 项回归测试」是同实异表——变异基准 M15 误报教训，v5 硬化）。
 
 【登记豁免】以下病灶已在账本登记，**不算新发现，一律跳过**：
 ${registeredFindings(domains) || '（无）'}

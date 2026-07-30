@@ -9,14 +9,14 @@
 - server：ESM bundle——**external 列表是生死线**（CJS 包打进去启动即崩）。
 - 样式：`sass base.scss → base.css`（check 链内自动编译）。
 
-## 检查管线（npm run check，30 脚本，顺序固定）
+## 检查管线（npm run check，31 脚本，顺序固定）
 
 <!-- chain:auto 由 sync-counts 生成，禁止手改 -->
 `check-uncommitted`（>3 未提交即中断，首位） → versions → checks → doc-coverage → sass → css-wiring →
 tool-compaction → anim → as-any → card-meta → registry → zindex → console → docs → consistency →
-active-stack → code-doc-refs → workflow-integrity → cards → contract-freshness → test-patterns →
-bar-ledger → ledger-commits → doc-budget → doc-symbols → doc-linerefs → doc-schema → commit-docs →
-hooks → probes → release-radar → sync-counts → gen-code-inventory → tsc。
+active-stack → stack-status → code-doc-refs → workflow-integrity → cards → contract-freshness →
+test-patterns → bar-ledger → ledger-commits → doc-budget → doc-symbols → doc-linerefs → doc-schema →
+commit-docs → hooks → probes → release-radar → sync-counts → gen-code-inventory → tsc。
 <!-- /chain:auto -->
 
 ## 硬规则
@@ -50,7 +50,7 @@ hooks → probes → release-radar → sync-counts → gen-code-inventory → ts
 
 ## 文件清单
 
-`build.mjs` `scripts/check/chain.mjs`（check 链唯一出处 STEPS）`scripts/check/check-*.mjs`（30 个）`scripts/deploy.sh`（构建→重启→版本握手闭环）
+`build.mjs` `scripts/check/chain.mjs`（check 链唯一出处 STEPS）`scripts/check/check-*.mjs`（31 个）`scripts/deploy.sh`（构建→重启→版本握手闭环）
 `scripts/agent/`（agent 脚本群：agent-runner.mjs 执行器 + 一号负载 tag-advisor.mjs
 （发版建议，影子模式）+ 二号负载 semantic-audit.mjs/tasks.mjs（语义审计探针集群，
 并发 10）+ semantic-mutate.mjs/bench.mjs（变异基准：沙盒注入已知缺陷测召回/误报，

@@ -29,7 +29,7 @@ export const TASKS = [
     id: 'vision-vs-maps', kind: 'intra', sem: ['SEM001', 'SEM005'],
     feeds: ['docs/active/vision.md'],
     baseline: codeMaps,
-    question: '找出 vision 中被代码现状（code-map 基准）直接反驳的断言，以及与累积现状方向相悖的路线图表述',
+    question: '找出 vision 中被代码现状（code-map 基准）直接反驳的断言、与累积现状方向相悖的路线图表述，以及 vision 文档内部自相矛盾处（相邻断言互搏、决策记录与后文叙述打架——against 指向同文件另一处）',
   },
   {
     id: 'invariants-vs-maps', kind: 'intra', sem: ['SEM001', 'SEM003'],
@@ -83,7 +83,7 @@ export const TASKS = [
     id: 'stack-vs-ledger', kind: 'intra', sem: ['SEM001', 'SEM005'],
     feeds: ['docs/active/STACK.md'],
     baseline: ['docs/ledger/bugs.md', 'docs/ledger/semantic-provenance.md'],
-    question: '找出 STACK 队列中已闭环但未标注、或与账本状态矛盾的条目（状态无同步机制类）',
+    question: '找出 STACK 队列中已闭环但未标注、或与账本状态矛盾的条目（状态无同步机制类），以及条目状态词与同条目详情自相矛盾处（如标「进行中」但下行全是完成结算语气——against 指向同条目详情行）',
   },
   // 六域：契约（应然）↔ code-map（实然）逐域对账
   ...DOMAINS.map(d => ({
@@ -104,7 +104,7 @@ export const TASKS = [
     id: 'inter-vision-invariants', kind: 'inter', sem: ['SEM002', 'SEM004'],
     feeds: ['docs/active/vision.md', 'docs/constraints/invariants.md'],
     baseline: [],
-    question: '对账 vision 与 invariants：找出两份文档对同一主题（产品定位/AI 角色/架构方向）断言不兼容或争夺权威之处。历史冲突案例：两者曾各自表述「kfmv4 是否做自己的 agent」且不一致（已修），重点核同类主题',
+    question: '对账 vision 与 invariants：找出两份文档对同一主题（产品定位/AI 角色/架构方向/长期记忆定位）断言不兼容或争夺权威之处。历史冲突案例：两者曾各自表述「kfmv4 是否做自己的 agent」且不一致（已修），重点核同类主题',
   },
   {
     id: 'inter-readme-codemap', kind: 'inter', sem: ['SEM002'],

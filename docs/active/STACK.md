@@ -49,6 +49,19 @@
      家族盲区不在假设因子（跨账本/代码知识），vision-vs-maps 与 stack-vs-ledger
      双探针报 0：组内自相矛盾不在 prompt 扫描语义内（硬化方向）③ 旧盲区 M02/M05
      本轮翻转为逮到、M03/M04 反漏——单轮方差 ±2，「稳定盲区」结论须多轮趋势
+   — prompt v5 硬化 + v5.1 评分器修正（2026-07-30）：组内自矛盾扫描 + 措辞变体
+     精确率条款进共享 prompt，三探针 question 扩写，AUDIT_VERSION 5；评分器
+     hitMutation 双锚点（矛盾型发现可锚任一侧，MID-2 冤案平反）+ M15 迁址
+     release.md（原锚距 M12 仅 3 行 ±5 容差必双中，出题事故）
+   — 三轮趋势定案（v4/v5/v5.1 = 9/6/7 ×16）：稳定逮到 M01/M08/M11/M12；稳定盲区
+     3/3 = M06/MID-3/MID-4；其余全在噪声带翻转——单轮成绩不作数，趋势才算
+   — SEM005 机械化移民 ✅（2026-07-30 用户拍板）：stack-vs-ledger 四次连续零响应
+     → check-stack-status.mjs 上岗（31 个 check）——R1 头行状态词矛盾 / R2 头活跃+
+     详情完成，枚举型 + 探针夹具；诚实边界：M06 缺失型（已闭环忘标注）机械判不了，
+     仍归语义层/人工。vision 探针重组（拆 codeMaps 大基线）待做
+   — 活树 v5 审计 10 条保留发现待裁决：canvas-tree 契约 6 连中（出口名/方向锁/
+     超时释放等真漂移集群）+ README detail 计数 + infra「30 脚本 vs 35 步」
+     （疑似单位不同误报）+ cross-domain 行号差 1 + provider 链描述分叉
    — 腿三（远期）：semantic-chain.mjs 总 runner——探针 verdict 聚合成单结论（过/N 条新发现），
      cron 化巡逻；verdict 门控注意力不门控合并（概率区纪律）；裁决与修复留会话内 agent，
      自动化边界 = 检测，结晶回路负责把反复发现移民确定区

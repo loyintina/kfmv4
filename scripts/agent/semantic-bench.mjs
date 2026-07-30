@@ -78,10 +78,15 @@ function parseClaim(claim) {
   return { path: m ? m[1] : s.split(':')[0], line: m ? parseInt(m[2], 10) : 0 };
 }
 function hitMutation(f, m) {
-  const c = parseClaim(f.claim);
-  if (!c.path.endsWith(m.file) && !m.file.endsWith(c.path)) return false;
-  if (c.line === 0) return true; // 文件级 claim 宽松命中
-  return Math.abs(c.line - m.line) <= 5;
+  // 矛盾型发现可锚在任一侧（v5 轮教训：MID-2 被逮到但 claim 锚在矛盾另一侧，
+  // 评分器只看 claim ±5 误判漏报）——claim/against 双锚点都试
+  return [f.claim, f.against].some(ref => {
+    if (!ref) return false;
+    const c = parseClaim(ref);
+    if (!c.path.endsWith(m.file) && !m.file.endsWith(c.path)) return false;
+    if (c.line === 0) return true; // 文件级 claim 宽松命中
+    return Math.abs(c.line - m.line) <= 5;
+  });
 }
 
 const allFindings = runs.flatMap(r => r.kept.map(f => ({ ...f, probe: r.task })));

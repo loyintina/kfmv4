@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit dbdb745 · 生成于 2026-07-30 -->
+<!-- 基准 commit f9ed56a · 生成于 2026-07-30 -->
 
 # 代码清单（机械层）
 
@@ -165,7 +165,7 @@
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 
-## infra（84 文件 · 11022 行）
+## infra（85 文件 · 11105 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -174,7 +174,7 @@
 | tests/tool-compaction.test.ts | 505 | — |
 | tests/preload.mjs | 406 | — |
 | tests/visual-baseline.test.ts | 367 | — |
-| scripts/agent/semantic-audit.mjs | 352 | taskFiles, buildPrompt, makeValidate, recheckRef |
+| scripts/agent/semantic-audit.mjs | 358 | taskFiles, buildPrompt, makeValidate, recheckRef |
 | tests/server-routes.test.ts | 321 | — |
 | tests/box.test.ts | 309 | — |
 | tests/mocks/gsap.ts | 305 | gsap |
@@ -198,10 +198,10 @@
 | scripts/check/check-checks.mjs | 132 | — |
 | scripts/check/check-tool-compaction.mjs | 129 | — |
 | tests/to-openai-messages.test.ts | 126 | — |
+| scripts/agent/semantic-bench.mjs | 120 | — |
 | tests/liquid-geometry.test.ts | 120 | — |
 | scripts/check/check-doc-linerefs.mjs | 116 | — |
 | tests/harness.ts | 116 | TestTag, TestOpts, test, regression, group, beforeEach, runAll |
-| scripts/agent/semantic-bench.mjs | 115 | — |
 | scripts/check/check-doc-coverage.mjs | 110 | — |
 | scripts/check/check-zindex.mjs | 110 | — |
 | scripts/agent/agent-runner.mjs | 109 | renderTemplate, extractJson, runAgent |
@@ -217,11 +217,12 @@
 | scripts/check/check-hooks.mjs | 81 | — |
 | scripts/agent/exp-thinking.mjs | 81 | — |
 | scripts/check/check-console.mjs | 79 | — |
+| scripts/check/chain.mjs | 76 | STEPS |
 | scripts/check/check-as-any.mjs | 76 | — |
 | scripts/check/docs-status.mjs | 76 | — |
-| scripts/check/chain.mjs | 75 | STEPS |
 | scripts/check/check-doc-symbols.mjs | 75 | — |
 | scripts/check/check-workflow-integrity.mjs | 74 | — |
+| scripts/check/check-stack-status.mjs | 71 | — |
 | scripts/check/check-code-doc-refs.mjs | 69 | — |
 | scripts/check/check-card-meta.mjs | 68 | — |
 | scripts/check/check-ledger-commits.mjs | 67 | — |
@@ -541,4 +542,4 @@
 - src/server/index.ts → src/server/ai/routes.ts
 
 ---
-合计 218 文件 · 41442 行 · 跨域边 225 条
+合计 219 文件 · 41525 行 · 跨域边 225 条
