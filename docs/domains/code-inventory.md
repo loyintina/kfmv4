@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit f9ed56a · 生成于 2026-07-30 -->
+<!-- 基准 commit 87c8522 · 生成于 2026-07-30 -->
 
 # 代码清单（机械层）
 
@@ -165,7 +165,7 @@
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 
-## infra（85 文件 · 11105 行）
+## infra（85 文件 · 11121 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -191,14 +191,14 @@
 | tests/path-utils.test.ts | 172 | — |
 | tests/chat-protocol.test.ts | 169 | — |
 | tests/protocol-reducer.test.ts | 161 | — |
+| scripts/agent/semantic-audit.tasks.mjs | 152 | TASKS |
 | scripts/check/check-docs.mjs | 146 | — |
 | scripts/check/check-bar-ledger.mjs | 142 | — |
-| scripts/agent/semantic-audit.tasks.mjs | 140 | TASKS |
 | scripts/check/sync-counts.mjs | 138 | — |
 | scripts/check/check-checks.mjs | 132 | — |
 | scripts/check/check-tool-compaction.mjs | 129 | — |
 | tests/to-openai-messages.test.ts | 126 | — |
-| scripts/agent/semantic-bench.mjs | 120 | — |
+| scripts/agent/semantic-bench.mjs | 124 | — |
 | tests/liquid-geometry.test.ts | 120 | — |
 | scripts/check/check-doc-linerefs.mjs | 116 | — |
 | tests/harness.ts | 116 | TestTag, TestOpts, test, regression, group, beforeEach, runAll |
@@ -542,4 +542,4 @@
 - src/server/index.ts → src/server/ai/routes.ts
 
 ---
-合计 219 文件 · 41525 行 · 跨域边 225 条
+合计 219 文件 · 41541 行 · 跨域边 225 条

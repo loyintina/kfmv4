@@ -11,6 +11,9 @@
 
 ## 检查管线（npm run check，31 脚本，顺序固定）
 
+（下方生成区枚举的链步数多于标题脚本数：sass/sync-counts/gen-code-inventory/tsc
+为非 check-* 步骤，不计入脚本数。）
+
 <!-- chain:auto 由 sync-counts 生成，禁止手改 -->
 `check-uncommitted`（>3 未提交即中断，首位） → versions → checks → doc-coverage → sass → css-wiring →
 tool-compaction → anim → as-any → card-meta → registry → zindex → console → docs → consistency →

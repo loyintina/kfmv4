@@ -15,7 +15,7 @@
 
 | 单例 | 名义所有者 | 实际写者 | 违规/风险 |
 |------|-----------|---------|-----------|
-| KFMState（state.ts:73） | client-shell | 方法写：canvas-tree 多文件；**裸 notify 4 处**（tree-render.ts:536、tree-loader.ts:104,137,146、sibling-switcher.ts:122） | ⚠ **直接字段写绕过 setter**：tree-render.ts:524、tree-loader.ts:178（expandedPaths，绕过 beforeExpand 钩子）、sibling-switcher.ts:119-121 三字段直写、main.ts:99 |
+| KFMState（state.ts:73） | client-shell | 方法写：canvas-tree 多文件；**裸 notify 4 处**（tree-render.ts:536、tree-loader.ts:104,137,146、sibling-switcher.ts:122） | ⚠ **直接字段写绕过 setter**：tree-render.ts processClickQueue 反转分支（同路径点击 → reverse，字段写+手动落盘同处）、tree-loader.ts:178（expandedPaths，绕过 beforeExpand 钩子）、sibling-switcher.ts:119-121 三字段直写、main.ts:99 |
 | L（renderer-lifecycle.ts:171） | client-shell（事实 canvas-tree） | 写集中 canvas-tree；**私有字段直写泛滥**：canvas-scroll.ts 10+ 处 `_wheelRaf/_flingRaf` 等、canvas-utils.ts:36-47、tree-render.ts 多处 `L.renderer=` 直写 | ⚠ 跨域回调注入：L.setCardDismissHandler（tree-render.ts:381）挂的是 floating-card 域的 dismissFocusedCard |
 | anim（animation-registry） | client-shell | scope 唯一租户 tree-render.ts:41 | ⚠ **scope 隔离形同虚设**：killTweensOf 直透 gsap 被三个域调用（mode-system.ts:218、floating-card.ts:491、card-stack.ts:210、tree-swipe/tree-render），全绕过 `_scopes` 台账 |
 | Registry（ui-registry） | client-shell | 全部越域写（设计如此）：registerElement/notifyStateChange 四域都在调 | 重复注册仅 warn 覆盖 |
@@ -25,7 +25,7 @@
 
 | key | 写者 | 读者 | 风险 |
 |-----|------|------|------|
-| `expandedPaths` | **4 写者跨 2 域**（state.ts:128、tree-render.ts:525、tree-loader.ts:179、sibling-switcher.ts:117 remove） | state.ts:76 | ⚠ 含绕过 setter 的直写后手动落盘 |
+| `expandedPaths` | **4 写者跨 2 域**（state.ts:128、tree-render.ts processClickQueue 反转分支、tree-loader.ts:179、sibling-switcher.ts:117 remove） | state.ts:76 | ⚠ 含绕过 setter 的直写后手动落盘 |
 | `kfmv4_currentRoot` | **3 写者**（sibling-switcher.ts:61,116、main.ts:93） | 3 处 | ⚠ 多写者 |
 | `kfm-fontsize-{typeId}` | gestures.ts:56（唯一，动态拼接） | **7 处散落 4 域** | ⚠ 未知 typeId 回落 file 配置（api/tools 卡错配，见 floating-card code-map 漂移 19） |
 | `kfmv4_showHidden` | state.ts:139 | state.ts:78 | 干净 |

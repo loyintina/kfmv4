@@ -28,8 +28,20 @@ export const TASKS = [
   {
     id: 'vision-vs-maps', kind: 'intra', sem: ['SEM001', 'SEM005'],
     feeds: ['docs/active/vision.md'],
-    baseline: codeMaps,
-    question: '找出 vision 中被代码现状（code-map 基准）直接反驳的断言、与累积现状方向相悖的路线图表述，以及 vision 文档内部自相矛盾处（相邻断言互搏、决策记录与后文叙述打架——against 指向同文件另一处）',
+    // 2026-07-30 重组：6 份全量 code-map 大基线注意力稀释（四轮连续零响应）——
+    // 收窄到与远景宏观声称直接相关的 4 份（子系统划分/agent 通路/检查管线）；
+    // 组内矛盾职责拆给 vision-internal
+    baseline: ['docs/domains/code-inventory.md', 'docs/domains/cross-domain.md',
+      'docs/domains/infra/code-map.md', 'docs/domains/server/code-map.md'],
+    question: '找出 vision 中被代码现状（code-map 基准）直接反驳的断言、与累积现状方向相悖的路线图表述',
+  },
+  {
+    // 2026-07-30 新增：vision 内部一致性独立探针——不喂基线，专扫自打架
+    //（MID-4 决策翻转 3/3 漏报定案：内部矛盾被大基线稀释，独立出来零干扰）
+    id: 'vision-internal', kind: 'intra', sem: ['SEM001', 'SEM005'],
+    feeds: ['docs/active/vision.md'],
+    baseline: [],
+    question: '找出 vision 文档内部自相矛盾处：相邻断言互搏、决策记录与后文叙述打架、同一主题前后表述方向相悖（against 指向同文件另一处行号）',
   },
   {
     id: 'invariants-vs-maps', kind: 'intra', sem: ['SEM001', 'SEM003'],

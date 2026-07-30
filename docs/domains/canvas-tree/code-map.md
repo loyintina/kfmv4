@@ -79,16 +79,21 @@ _resetAnimTimeline → 下一个队列点击。
    mode-system.ts:135-138/389-399、sibling-switcher.ts:44、tree-model.ts:126 等处大量
    硬编码颜色（另案）。getFileColor + theme.extColors 已随死代码批次删除
    （扩展名着色出生即未接线，2026-07-29）。
-3. **契约 §4.6 pushContext/popContext 流程零调用方**（renderer-lifecycle.ts:112-125）；
+3. **【已结案】契约 §4.6 pushContext/popContext 流程零调用方**（renderer-lifecycle.ts:112-125）；
    根目录选择器实际由 sibling-switcher 直接清 KFMState 实现，未走该管线。
-4. **契约 #陷阱 5「方向锁 45°」不实**：canvas-scroll.ts:170-173 实为 12px 死区 +
+   结案：pushContext/popContext 已随死代码批次二删除（见漂移 9），契约 §4.6
+   已改写移除死机制引用（2026-07-30 语义审计裁决）。
+4. **【已结案】契约 #陷阱 5「方向锁 45°」不实**：canvas-scroll.ts:170-173 实为 12px 死区 +
    ±65° 扇形；tree-swipe.ts:693 另用 10px 阈值。
-5. **契约 4.1「rebuildTree 时 L.isAnimating 应为 false」被懒加载有意违反**：
+   结案：契约 #陷阱 5 已改写为现实模型（2026-07-30 语义审计裁决）。
+5. **【已结案】契约 4.1「rebuildTree 时 L.isAnimating 应为 false」被懒加载有意违反**：
    tree-loader.ts:96-104 先 markAnimatingPath 再 notify 触发 rebuildTree，靠入口
    endOp 强清；契约所称「3000ms 超时强制释放」不存在（tree-loader.ts:25 的 3s 是
    等锁放弃，不是释放锁）。
-6. **sibling-switcher 出口名漂移**：契约称 create/destroySiblingSwitcher，实际导出
+   结案：契约 4.1 例外注记已改写为懒加载例外 + 3s 等锁放弃语义（2026-07-30 语义审计裁决）。
+6. **【已结案】sibling-switcher 出口名漂移**：契约称 create/destroySiblingSwitcher，实际导出
    `initSiblingSwitcher`/`isSwitcherOpen`/`closeSwitcher`，且 init 模块加载自执行（:157）。
+   结案：契约模块职责节已改为实际出口名（2026-07-30 语义审计裁决）。
 7. **【已结案】rename 后树不刷新**：已修（BAR-RENAME-01）——submit 查 `data.success`
    + 成功后 loadFileTree，成因 C 权宜（出生即缺，引入 eed2baf）。
 8. **【已结案】tree-swipe delete 分支不检查响应**：已修（BAR-DELETE-01）——delete 分支
@@ -99,7 +104,8 @@ _resetAnimTimeline → 下一个队列点击。
    已全部随死代码批次一/二删除（getFileColor 批次一；pushContext/popContext 属
    renderer-lifecycle，批次二 client-shell#12 同案）；tree-render 的 ~11 行空 `;`
    残留语句同批清除（注释乱码未动）。
-10. **契约 #陷阱 1「buildTree 修改后必须恢复 KFMState」过时**：tree-model 只读不写。
+10. **【已结案】契约 #陷阱 1「buildTree 修改后必须恢复 KFMState」过时**：tree-model 只读不写。
+    结案：契约 #陷阱 1 已改为只读表述（2026-07-30 语义审计裁决）。
 11. **职责与文件名不符**：tree-swipe.ts 名义「右滑」实含临时卡片堆全生命周期 +
     copy/move/delete 执行 + prompt 模式（726 行）；canvas-cursor/scroll 自称「通用」
     但 import 文件树专属的 style-registry。
@@ -112,5 +118,5 @@ _resetAnimTimeline → 下一个队列点击。
 
 ## 陷阱指针
 
-已定型陷阱见 contract.md #陷阱（注意第 1、5 条已过时/不实，见漂移清单 5/10）。
+已定型陷阱见 contract.md #陷阱（第 1、5 条已于 2026-07-30 随漂移 5/10 结案修订回现实）。
 测绘新捕获：rename 不刷新、delete 不查响应（漂移 7/8）——待复核后升入契约。

@@ -58,10 +58,15 @@
    — SEM005 机械化移民 ✅（2026-07-30 用户拍板）：stack-vs-ledger 四次连续零响应
      → check-stack-status.mjs 上岗（31 个 check）——R1 头行状态词矛盾 / R2 头活跃+
      详情完成，枚举型 + 探针夹具；诚实边界：M06 缺失型（已闭环忘标注）机械判不了，
-     仍归语义层/人工。vision 探针重组（拆 codeMaps 大基线）待做
-   — 活树 v5 审计 10 条保留发现待裁决：canvas-tree 契约 6 连中（出口名/方向锁/
-     超时释放等真漂移集群）+ README detail 计数 + infra「30 脚本 vs 35 步」
-     （疑似单位不同误报）+ cross-domain 行号差 1 + provider 链描述分叉
+     仍归语义层/人工。vision 探针重组 ✅（窄基线 4 份 + vision-internal 独立探针）
+     ——v5.2 验证：vision-internal 首秀报 0，MID-4 四连败，LLM 路线此格子收益耗尽；
+     多次采样投票（N 轮并集，顺带治单轮方差）vs 强模型专项 vs 归人工层——待用户裁决
+   — 活树 v5 审计 10+1 条发现裁决 ✅（2026-07-30 subagent 轮）：真漂移 5 条全修
+     （canvas-tree 契约集群：出口名/方向锁/3s 等锁语义/死符号 pushContext/只读
+     tree-model，code-map 漂移 3/4/5/6/10 结案）+ 假阳性 3 条登记豁免 #32/33/34
+     （README detail 计数/31 脚本 vs 35 步口径/v8.1.0 混装定级）+ 代码违例 1 条
+     （theme.ts 颜色，漂移 2 早已登记另案）+ 陈旧快照措辞修正（provider 链漂移 12）；
+     机制缺口发现：复核只查行号越界不查内容支撑（M14 被编行号半逮——语义对锚点假）
    — 腿三（远期）：semantic-chain.mjs 总 runner——探针 verdict 聚合成单结论（过/N 条新发现），
      cron 化巡逻；verdict 门控注意力不门控合并（概率区纪律）；裁决与修复留会话内 agent，
      自动化边界 = 检测，结晶回路负责把反复发现移民确定区

@@ -104,7 +104,8 @@ esbuild server ESM + client IIFE（external 硬编码 build.mjs）→ checkFresh
     不再靠人记得重跑。
 12. **【已结案 2026-07-30】Kimi provider temperature 1**：providers.config.json 的 params 覆盖
     默认 0.2 系端点硬性要求——但语义审计首轮实测该端点对大 prompt 连续空响应，用户拍板
-    将 Kimi 撤下链首（现链：deepseek → 阶跃星辰），配置已不含此项。
+    将 Kimi 撤下链首（撤下当日链为 deepseek → 阶跃星辰，同日再重排；现链以
+    guides/agent-runner.md「provider 兜底链」节为准），配置已不含此项。
 13. **进程管理双路径**：npm start 用 lsof kill（package.json:15），生产走 systemctl；
     dev/prod 语义不同，文档未对齐。
 14. 次要：tests/runner.ts 与 harness.ts 双门面冗余；public/css/base.css.map 是

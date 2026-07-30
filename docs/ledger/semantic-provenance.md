@@ -91,3 +91,14 @@ G1（出生即错，9 处）居次，只能靠「写入时对照现实」的纪�
 - 2 处带推断保留：#07 HANDOFF_AUDIT 精确写入点只收窄到 207e73b–4cb0e8c 区间；
   #18/#21 isIncomplete 进文档的写入点 5862516 系 -S 证据推断，未逐行 blame 复核。
 - 审计各组「存疑断言」清单未在本轮分流（见审计轮 subagent 回报），留第二轮。
+
+## 假阳性豁免登记（裁决：非病灶，不计入上方 31 处统计）
+
+活树审计轮探针误报，裁决为假阳性后登记于此（registeredFindings 解析本表第二列，
+防探针重复立案）。编号续全量表。
+
+| # | 病灶 | 裁决依据 |
+|---|---|---|
+| 32 | README「ai-chat detail 3 份」被探针称实际仅 1 份——假阳性：实有 detail-browser/detail-runtime/detail-tool-compaction 恰 3 份，探针漏数 | 2026-07-30 人工裁决：ls docs/domains/ai-chat/ 实证 |
+| 33 | infra 契约「31 脚本」与链枚举步数不一致——假阳性：口径不同，链枚举含 sass/sync-counts/gen-code-inventory/tsc 非 check-* 步骤 | 2026-07-30 人工裁决：chain.mjs STEPS 实证；契约检查管线节已加口径注 |
+| 34 | v8.1.0 混装打 minor 与「混装以已完成主题定级」规则冲突——假阳性：minor 依上下文压缩主题闭环（release.md 版本语义判例），问题轮随行，双侧已注记混装窗口 | 2026-07-30 人工裁决：release.md 节奏节 + history.md v8.1.0 行注记自洽 |

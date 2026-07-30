@@ -66,6 +66,10 @@ const runs = await pool(worklist, CONC, async (task) => {
     return { task: task.id, ok: false, kept: [] };
   }
   const kept = result.data.findings.filter(f => recheckRef(f.claim, files) && recheckRef(f.against, files));
+  // v5.2 教训（MID-2「报 1 保留 0」）：复核杀掉的可能是真发现的格式坏锚——
+  // 掉落明细必须可见，否则无法区分「幻觉拦截立功」与「复核误杀真发现」
+  const dropped = result.data.findings.filter(f => !kept.includes(f));
+  for (const d of dropped) console.log(`    ⚠ 复核掉落：[${d.type}] ${d.claim}${d.against ? ` ↔ ${d.against}` : ''}— ${String(d.note).slice(0, 60)}`);
   console.log(`  ${task.id}: 报 ${result.data.findings.length} · 复核保留 ${kept.length}（${result.provider}）`);
   return { task: task.id, ok: true, kept };
 });

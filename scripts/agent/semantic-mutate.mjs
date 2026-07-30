@@ -33,10 +33,10 @@ export const MUTATIONS = [
   // ---- L1 回归层：历史真案例复刻 ----
   {
     id: 'M01', level: 'L1', sem: 'SEM001', file: 'README.md', expect: 'report',
-    find: '**30 个 check-* 脚本 + 440 个回归测试**',
-    replace: '**29 个 check-* 脚本 + 440 个回归测试**',
+    find: '**31 个 check-* 脚本 + 440 个回归测试**',
+    replace: '**30 个 check-* 脚本 + 440 个回归测试**',
     tasks: ['readme-vs-maps', 'inter-readme-codemap'],
-    note: 'check 计数应为 30（复刻 10ae324 README 20→19）',
+    note: 'check 计数应为 31（复刻 10ae324 README 20→19；锚点随 sync-counts 30→31 迁移）',
   },
   {
     id: 'M02', level: 'L1', sem: 'SEM002', file: 'docs/domains/ai-chat/detail-runtime.md', expect: 'report',
@@ -78,21 +78,21 @@ export const MUTATIONS = [
     id: 'M07', level: 'L2', sem: 'SEM004', file: 'docs/active/vision.md', expect: 'report',
     find: '随时展开收起、随手调配。',
     replace: '随时展开收起、随手调配。\n\nKFM 不内置自己的 agent 运行时——agent 能力一律由外部 CLI 工具转接，项目只做人机交互层。',
-    tasks: ['vision-vs-maps'],
+    tasks: ['vision-vs-maps', 'vision-internal'],
     note: '植入与 agent-runner 现实相悖的远景断言（用户 2026-07-30 亲述的过时表述原型）',
   },
   {
     id: 'M08', level: 'L2', sem: 'SEM002', file: 'docs/domains/infra/contract.md', expect: 'report',
-    find: '## 检查管线（npm run check，30 脚本，顺序固定）',
-    replace: '## 检查管线（npm run check，28 脚本，顺序固定）',
+    find: '## 检查管线（npm run check，31 脚本，顺序固定）',
+    replace: '## 检查管线（npm run check，29 脚本，顺序固定）',
     tasks: ['contract-vs-map-infra'],
-    note: '契约计数 28 vs code-map「30 个 check（含 check-checks 自身）」冲突',
+    note: '契约计数 29 vs code-map「30 个 check（含 check-checks 自身）」冲突（锚点随 31 迁移）',
   },
   // ---- L3 对抗层：near-miss 负例（报了即误报） ----
   {
     id: 'M09', level: 'L3', sem: 'NC', file: 'README.md', expect: 'silent',
-    find: '| 自动化检查管线 | 30 个 check-* 脚本',
-    replace: '| 自动化检查管线 | 30（三十）个 check-* 脚本',
+    find: '| 自动化检查管线 | 31 个 check-* 脚本',
+    replace: '| 自动化检查管线 | 31（三十一）个 check-* 脚本',
     tasks: ['readme-vs-maps', 'inter-readme-codemap'],
     note: '正确计数的表述变体——不应报告（三轮假发现改造）',
   },
@@ -113,10 +113,10 @@ export const MUTATIONS = [
   },
   {
     id: 'M12', level: 'L2', sem: 'SEM002', file: 'CLAUDE.md', expect: 'report',
-    find: 'npm run check    # 30 个 check-*.mjs + tsc --noEmit（仅检查，不构建）',
-    replace: 'npm run check    # 28 个 check-*.mjs + tsc --noEmit（仅检查，不构建）',
+    find: 'npm run check    # 31 个 check-*.mjs + tsc --noEmit（仅检查，不构建）',
+    replace: 'npm run check    # 30 个 check-*.mjs + tsc --noEmit（仅检查，不构建）',
     tasks: ['claude-vs-docs'],
-    note: '入口文档计数 28 vs infra 契约「30 脚本」冲突',
+    note: '入口文档计数 30 vs infra 契约「31 脚本」冲突（锚点随 31 迁移）',
   },
   {
     id: 'M13', level: 'L2', sem: 'SEM003', file: 'docs/constraints/diagnostics.md', expect: 'report',
@@ -168,7 +168,7 @@ export const MUTATIONS = [
     id: 'MID-4', level: 'MID', sem: 'SEM005', file: 'docs/active/vision.md', expect: 'report',
     find: '「决定：不做」对内置通路不再成立',
     replace: '「决定：不做」对内置通路依然成立',
-    tasks: ['vision-vs-maps', 'inter-vision-invariants'],
+    tasks: ['vision-vs-maps', 'vision-internal', 'inter-vision-invariants'],
     note: '决策翻转——下句「实际走出的是第三条路：窄域自建」直接反驳，code-maps 遍布 scripts/agent/（M07 实现知识难点摘除）',
   },
 ];

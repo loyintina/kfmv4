@@ -16,7 +16,7 @@
 - 交互：`tree-swipe.ts`（文件行右滑→卡片堆）`canvas-cursor.ts`（含液体粒子，几何在 `liquid-geometry.ts`）`canvas-scroll.ts` `canvas-utils.ts`
 - 数据：`tree-model.ts`（绝对深度布局模型）`tree-loader.ts`（按需加载展开路径）
 - 模式系统：`mode-system.ts`（copy/move/delete 模式按钮）`file-action-bar.ts`（长按抽屉操作栏）
-- 目录切换：`sibling-switcher.ts`——纯 DOM 弹窗，弹开时 canvas 点击/手势被 guard 拦截；出口 `createSiblingSwitcher()/destroySiblingSwitcher()/isSwitcherOpen()/closeSwitcher()`
+- 目录切换：`sibling-switcher.ts`——纯 DOM 弹窗，弹开时 canvas 点击/手势被 guard 拦截；出口 `initSiblingSwitcher()`（模块加载即自执行）/`isSwitcherOpen()`/`closeSwitcher()`
 - 视觉效果：`char-rain.ts`（字符散落/回收）
 - 引擎层：`engine/v2/` 8 文件自包含子系统 → **detail-engine.md**
 
@@ -26,7 +26,9 @@
 ▎ 动画开始前相关状态应处于初始态（tree-render: _activeOverlays === []）
 ▎ 动画结束后相关状态应回到初始态
 ▎ rebuildTree() 被调用时 L.isAnimating 应为 false
-    例外：超过 3000ms 超时兜底，允许强制释放
+    例外：懒加载路径有意在动画中触发 rebuild（tree-loader 先 markAnimatingPath 再
+    notify），靠 rebuildTree 入口 endOp 强清；waitForAnimUnlock 等锁最长 3s，
+    超时放弃等待继续执行（是等锁放弃，不是强制释放锁）
 ▎ 每轮动画结束时必须调用 _resetAnimTimeline()
     ts.clear() + ts.time(0) + ts.reversed(false)
 
@@ -45,20 +47,23 @@
 ### 文件树变体面板（4.6）
 ▎ 当需要加一个"文件树的变体"（如只显示目录、只显示某类型）
    — 不创建新的手势/渲染/交互管线
-   — 通过 L.pushContext() 原子化切换到变体上下文
-▎ 流程：L.pushContext() → 构建变体 Box 树 → L.popContext() 恢复
+▎ 原 pushContext/popContext 原子化切换机制已随死代码批次二删除（2026-07-29，
+   生前零调用方）；现存参照：根目录切换由 sibling-switcher 直接清 KFMState 实现
 ▎ 适合场景：侧栏根目录选择器、右栏卡片堆内的文件子集面板
 ▎ 不适合场景：完全不同的交互模型（如拖拽排序）
 
 ## #陷阱
 
-1. **`buildTree` 数据源**：内部读 `KFMState.files`，修改后必须恢复。
+1. **`buildTree` 数据源**：内部只读 `KFMState.files`（tree-model 全程不写状态，
+   无「修改后恢复」义务——旧陷阱表述已随只读化失效）。
 2. **`setExpanded` 连续调用**：触发多次 notify，动画守卫丢弃中间状态
    （完整版见 ../client-shell/contract.md #陷阱 8）。
 3. **Canvas 初始化 `clientWidth=0`**：必须在 rAF 回调里 `rebuildTree()`。
 4. **overlay 残留**：`rebuildTree` 入口已加防御性清理 `removeAllOverlays()` +
    `renderer.setOverlayRoot(null)`（v6.6.0 根解）——新路径触发 rebuild 不得绕过此入口。
-5. **方向锁**：`dx>dy` 45° 分界（v6.8.0 简化后的唯一模型，三代补丁已删，勿回填）。
+5. **方向锁**：12px 死区后扇形分区——右侧 ±65° 扇形（`absDy < absDx × 2.14`）判水平、
+   其余竖向；纯竖向（`dx<5px`）`dy>12px` 提前解锁（canvas-scroll onMove）。
+   tree-swipe 轴向判定另用 10px 死区 + `|dx|>|dy|` 比较。
 6. **行变暗**：`_dimmedPaths` + `_dimmedBoxes` + `opacity` 即时生效。
 7. **Canvas 尺寸数据源必须随渲染器上下文**：优先 `L.renderer?.canvas ?? DOM.treeCanvas`；
    硬编码 `DOM.treeCanvas` 意味着代码只在主树上下文正确。案例：B.A.R. #007
