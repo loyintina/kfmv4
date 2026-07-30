@@ -757,6 +757,21 @@ regression('BAR-DEPLOY-01', 'build/check', '部署新鲜度硬门：源码比包
   assert(main.includes('initVersionWatch'), 'main.ts 必须挂载 version-watch 旧包横幅');
 });
 
+regression('BAR-CHAT-RETRY-01', 'ai/chat', '上游瞬时网络错误重试：一次抖动不得杀死整轮 run', () => {
+  const chat = readFileSync('src/server/ai/chat.ts', 'utf-8');
+  assert(chat.includes('MAX_NET_RETRIES'), 'chat.ts 必须有网络级错误重试循环');
+  assert(chat.includes('signal?.aborted'), '用户取消必须立即上抛不重试');
+  // 边界：HTTP 错误（4xx/5xx）确定性失败不重试——重试循环只 catch fetch 抛出（网络级）
+  assert(chat.includes('已重试'), '重试耗尽后的错误消息必须声明已重试次数');
+});
+
+regression('BAR-FIX-TESTS-01', 'build/check', 'fix-tests 耦合门：fix 提交无 tests 变更=链红（心法 24 机械化）', () => {
+  const chain = readFileSync('scripts/check/chain.mjs', 'utf-8');
+  assert(chain.includes('check-fix-tests'), 'chain.mjs STEPS 必须挂 fix-tests 耦合门');
+  const hook = readFileSync('.githooks/commit-msg', 'utf-8');
+  assert(hook.includes('check-fix-tests.mjs --staged'), 'commit-msg 钩子必须接线 fix-tests 门（犯罪现场拦截）');
+});
+
 regression('BAR-ORB-EMPTY-01', 'message-normalize', '回复错放 reasoning（text 空）正常结束必须归位为正文', () => {
   // 纯函数行为：空 text + 有 reasoning → 归位；有正文 → 不动；无 reasoning → 不动
   const b1 = [{ type: 'text', text: '', reasoning: '真正的回复' }];

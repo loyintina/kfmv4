@@ -205,15 +205,36 @@ export async function* streamChat(
     if (toolsParam) requestBody.tools = toolsParam;
 
     const _tFetch = Date.now();
-    const response = await fetch(`${apiProvider.baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiProvider.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-      signal,
-    });
+    // 上游瞬时错误重试（仅网络级：fetch 抛出 = DNS/连接重置/超时，非 HTTP 状态码）。
+    // 病灶：一次网络抖动杀死整轮 run——工具续写中途「fetch failed」怼进正文，
+    // AI 无法接着说话（todo工具测试 msg 734 尸检）。HTTP 错误（4xx/5xx）是确定性
+    // 失败，不重试、直接透传错误体；用户取消（signal aborted）立即上抛不重试。
+    const MAX_NET_RETRIES = 2;
+    let response: Response | null = null;
+    for (let attempt = 0; attempt <= MAX_NET_RETRIES; attempt++) {
+      try {
+        response = await fetch(`${apiProvider.baseUrl}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiProvider.apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+          signal,
+        });
+        break;
+      } catch (err) {
+        if (signal?.aborted) throw err;
+        if (attempt >= MAX_NET_RETRIES) {
+          yield { type: 'error', content: `网络错误（已重试 ${MAX_NET_RETRIES} 次仍失败）: ${err instanceof Error ? err.message : String(err)}` };
+          return;
+        }
+        const waitMs = (attempt + 1) * 2000; // 2s / 4s 线性退避
+        console.log(`[chat] upstream 网络错误（turn ${turn}, 第 ${attempt + 1} 次），${waitMs}ms 后重试: ${err instanceof Error ? err.message : err}`);
+        await new Promise(r => setTimeout(r, waitMs));
+      }
+    }
+    if (!response) { yield { type: 'error', content: '网络错误：未能建立连接' }; return; }
 
     // 计时诊断：上游 TTFB（首字节耗时）。若远大于直接请求 API 的首 token 耗时，
     // 说明慢在上游 prefill/网关而非 kfm 中间层（中间层全链路流式，无缓冲点）。

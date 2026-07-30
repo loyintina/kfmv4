@@ -22,6 +22,10 @@ npm run smoke  # 11 条浏览器冒烟（puppeteer headless），~9s，独立于
 3. 登记 `../ledger/bugs.md`
 4. 测试不用墙钟计时器（GSAP mock 时序见 infra#陷阱 3）
 
+**机检兜底（BAR-FIX-TESTS-01，2026-07-30）**：`check-fix-tests.mjs` 已把第 1 条机械化——
+fix: 提交未触及 tests/ = commit-msg 钩子与构建链双点中断；确认无需补钉的
+（纯配置/文案/构建修复）在提交信息独立一行写 `tests:na` 豁免。
+
 ## 素材考古（原文已随 archive 注销，`git show v8.1.1:docs/archive/design/…` 可挖）
 
 - `REGRESSION_TESTING_SYSTEM.md`：四层金字塔 + L/I/V/S/D 分类 + revert 微循环 + DI 模板。
