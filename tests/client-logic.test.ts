@@ -849,12 +849,13 @@ regression('BAR-FLOAT-Z-01', '1a9a3ec', '浮卡 z-index 不变量：item.zIndex 
 // 2026-07-30 会话呈现修复（ts 模仿泄漏 + 眼睛元叙述 + 会话卡 provider）
 // ==========================================================================
 
-regression('BAR-TS-MIMIC-01', 'ai/chat', 'ts 前缀秒级 + 元数据标签 + 静态防模仿声明（AI 正文复读时间戳）', () => {
+regression('BAR-TS-MIMIC-01', 'ai/chat', 'ts 前缀只盖 user 侧 + 秒级 + 静态防模仿声明（AI 正文复读时间戳）', () => {
   const proj = readFileSync('src/shared/chat-protocol/to-openai-messages.ts', 'utf-8');
   assert(proj.includes('[ts '), 'ts 前缀必须带 ts 元数据标签（裸 [MM-DD HH:MM] 会被当行文格式模仿）');
   assert(proj.includes('getSeconds()'), 'ts 前缀必须精确到秒（一分钟内可有多轮对话）');
+  assert(!proj.includes("tsPrefix(m.ts) + mainText"), 'assistant 消息不得盖 ts 前缀（盖了 AI 就学样复读）');
   const chat = readFileSync('src/server/ai/chat.ts', 'utf-8');
-  assert(chat.includes('不要在你的回复中复述'), '静态 system 必须声明 ts 前缀性质禁止模仿');
+  assert(chat.includes('你的回复从不带这个前缀'), '静态 system 必须声明 ts 前缀性质禁止模仿');
 });
 
 regression('BAR-EYE-WRAP-01', 'ai/chat', '动态感官注入包裹：分隔线 + 勿主动提及规则（AI 叙述「蓝眼睛看到」出戏）', () => {

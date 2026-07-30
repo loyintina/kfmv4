@@ -54,8 +54,9 @@ function extractText(msg: ChatMessage): string {
 
 /** [ts MM-DD HH:MM:SS] 前缀（投影端本地时区）。ts 缺失/非法 → 空串（旧消息向后兼容）。
  *  给 AI 对话时间感（跨度、间隔）——精确到秒：一分钟内可以有很多轮对话，分级太粗。
- *  「ts 」标签让前缀读作系统元数据而非对话风格——裸 [MM-DD HH:MM] 会被 AI 当成
- *  自己历史回复的行文格式模仿，正文开头复读时间戳（BAR-TS-MIMIC-01）。
+ *  **只盖 user 消息**（BAR-TS-MIMIC-01）：assistant 消息盖前缀 = AI 在自己历史回复上
+ *  看到统一行文格式 → 模仿复读（实测：换格式、加声明都拦不住，甚至产出双前缀杂交体）。
+ *  前缀不上 assistant 身，投影里 AI 的全部历史回复就是干净的，没有可模仿的样本。
  *  不违反 G6：ts 是写入侧盖章的真相源数据，确定不变；G6 禁的是投影时现生成时间戳。 */
 function tsPrefix(ts?: string): string {
   if (!ts) return '';
@@ -244,7 +245,7 @@ export function toOpenAiMessages(messages: ChatMessage[], opts: ToOpenAiOptions)
           }
           return { id: tc.id, type: 'function' as const, function: { name: tc.name, arguments: args } };
         });
-        const headText = mainText && !isClientArtifact(mainText) ? tsPrefix(m.ts) + mainText : null;
+        const headText = mainText && !isClientArtifact(mainText) ? mainText : null;
         apiMessages.push({ role: 'assistant', content: headText, tool_calls: toolCalls });
         // 每个工具结果作为独立的 role:"tool" 消息（tool_calls/tool 配对结构原样保留，只压 content）
         for (const tc of toolBlocks) {
@@ -268,7 +269,7 @@ export function toOpenAiMessages(messages: ChatMessage[], opts: ToOpenAiOptions)
         // 客户端产物占位符（[错误:…]/[未收到回复，请重试]）同样不进载荷：
         // 本地事故记录不是对话内容，上行会污染 AI 的「最近的自己」。
         if (mainText && !isClientArtifact(mainText)) {
-          apiMessages.push({ role: 'assistant', content: tsPrefix(m.ts) + mainText });
+          apiMessages.push({ role: 'assistant', content: mainText });
         }
       }
     }

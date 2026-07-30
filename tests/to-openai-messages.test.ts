@@ -97,6 +97,15 @@ test('时间戳前缀：有 ts 的消息渲染 [ts MM-DD HH:MM:SS]，无 ts 不�
   assert.strictEqual(apiMessages[2]!.content, '答复', '无 ts 的 AI 消息不带前缀');
 });
 
+test('ts 前缀只盖 user 侧：带 ts 的 assistant 消息一律不渲染前缀（BAR-TS-MIMIC-01）', () => {
+  const { apiMessages } = toOpenAiMessages([
+    { role: 'user', content: [{ type: 'text', text: '问' }], ts: '2026-07-30T12:05:00.000Z' },
+    { role: 'assistant', content: [{ type: 'text', text: '答' }], ts: '2026-07-30T12:05:05.000Z' },
+  ], { compact: true });
+  assert.strictEqual(apiMessages[1]!.content, '答',
+    `assistant 侧盖前缀 = AI 学成行文格式复读，得 ${apiMessages[1]!.content}`);
+});
+
 test('客户端产物占位符不进载荷：[错误:…]/[未收到回复] 过滤，[已取消] 保留', () => {
   const { apiMessages } = toOpenAiMessages([
     user('问1'), aiText('[错误: API 请求失败: 400 — {"error":{"message":"x"}}]'),

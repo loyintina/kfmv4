@@ -169,10 +169,10 @@ export async function* streamChat(
   if (toolDocsPrompt) staticSystemParts.push(toolDocsPrompt);
   const alwaysApplyPrompt = buildAlwaysApplyPrompt();
   if (alwaysApplyPrompt) staticSystemParts.push(alwaysApplyPrompt);
-  // ts 元数据声明（BAR-TS-MIMIC-01）：投影层给每条消息盖 [ts …] 前缀（to-openai-messages），
-  // 若不声明其性质，AI 会把自己历史回复上的前缀当成行文格式模仿，正文开头复读时间戳。
+  // ts 元数据声明（BAR-TS-MIMIC-01）：投影层只给 user 消息盖 [ts …] 前缀（to-openai-messages），
+  // assistant 侧不盖——盖了 AI 就把前缀学成自己的行文格式复读。声明兜底残留模仿冲动。
   // 静态段：整轮对话不变，不破坏前缀缓存。
-  staticSystemParts.push('对话中每条消息前的 [ts MM-DD HH:MM:SS] 是系统加盖的时间元数据（精确到秒），供你感知对话的节奏与间隔；它不是对话内容。不要在你的回复中复述、模仿或以任何形式带上这个前缀。');
+  staticSystemParts.push('用户消息前的 [ts MM-DD HH:MM:SS] 是系统加盖的时间元数据（精确到秒），供你感知对话的节奏与间隔；它不是用户写的内容。你的回复从不带这个前缀——也不要自己以任何形式加上它。');
 
   // system 消息只构建一次（静态前缀，利于 API 缓存命中）。
   // 动态内容（page-state 等）改由工具循环末尾注入对话尾部，不再每轮重建 system。
