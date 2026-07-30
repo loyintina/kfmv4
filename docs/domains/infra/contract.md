@@ -22,6 +22,11 @@ test-patterns → bar-ledger → ledger-commits → doc-budget → doc-symbols �
 commit-docs → hooks → probes → release-radar → sync-counts → gen-code-inventory → tsc。
 <!-- /chain:auto -->
 
+**链外概率区自动化（2026-07-30 登记）**：`scripts/agent/semantic-chain.mjs`（语义巡逻，
+cron 每日 04:17 + 每周一 04:23 带变异基准）与 tag-advisor/semantic-audit/bench 同属
+agent 脚本层——检测归自动化，裁决归会话内 agent，**永远不进 check 链**（verdict 门控
+注意力不门控合并，概率区纪律；指南见 ../guides/agent-runner.md）。
+
 ## 硬规则
 
 1. **新 check 一律 hard fail**——warning 对 agent 等于不存在。
