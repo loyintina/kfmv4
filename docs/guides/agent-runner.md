@@ -27,6 +27,14 @@ deepseek/deepseek-v4-flash → 阶跃星辰/step-3.7-flash（2026-07-30 用户�
 key 从 `~/.kfmv4/providers.json` 按 id 读；调用失败自动落下一个；
 可选 `params` 覆盖请求参数（现配 `response_format: json_object`——「只输出 JSON」从 prompt 约束升级为端点约束，与 validate 重试双保险）。
 
+**中转池体质（2026-07-30 实测）**：`opencode.ai/zen/go` 是 Cloudflare 挡前的
+**共享额度中转池**，非官方 API——池拥挤时会把上游失败吞成「200 空响应」
+（间歇性，同一参数组稍后即恢复）；Cloudflare error 1010 按客户端签名封禁
+非浏览器 UA（python urllib 403，node fetch 放行）。与官方 deepseek 的本质
+区别：共享额度便宜但不稳定 vs 自有额度按量付费稳定。**空响应/429 不是协议
+不兼容，是池体质**——兜底链（空响应原地重试 → 落下一个 provider）就是为
+吸收它设计的，看到链上前两臂失败、官方臂成功 = 系统正常工作，不是 bug。
+
 **禁思考字段（deepseek 实测 2026-07-30）**：`thinking: {"type": "disabled"}` 是真开关
 （572ms/5 completion tokens vs 裸 6083ms/445 tokens；`reasoning_effort:none` 非法、
 `low` 只降不关、`enable_thinking:false` 静默忽略）。负载级选择：`runAgent({ params })`

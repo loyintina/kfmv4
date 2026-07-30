@@ -1,0 +1,20 @@
+id: onboarding
+name: 新 agent 接手（冷启动同步进度）
+trigger: 新会话接手项目——上下文为零 / 换模型 / 长任务跨会话接力
+frequency: 中频（每次新开项目会话；git 里无身影，但 v7 时代代码与文档风格打架即其痕迹——未走此流的 agent 各带一套理解硬拼）
+reads:
+  - guides/orientation.md（心智模型：三层体系怎么咬合）
+  - active/STACK.md（当前焦点；电报体读法见 orientation）
+  - ledger/history.md 尾部（最近发生了什么）
+  - ledger/semantic-chain-inbox.md 尾部（语义巡逻信箱；有 ⚠️ 行进 semantic-audit 裁决流）
+steps:
+  1. 读 orientation.md 建立三层心智模型（文档-检查-脚本）
+  2. 按 CLAUDE.md 会话启动三步补齐当前状态
+  3. 向用户复述理解 + 确认当前焦点（一句话级：在哪一层、干到哪、下一步）
+     ——对齐前不动代码；理解有偏差时这一步是唯一便宜的纠正点
+  4. 确认后按任务类型走 CLAUDE.md 路由表匹配对应工作流
+writes:
+  - 无（纯只读 + 对话对齐；产出 = 理解同步）
+exit_condition: 已向用户复述理解且焦点得到确认；此后任何代码改动走 pre-code-gate
+natural_next: 按任务路由——bug-fix / spec-driven / contract-maintain 等
+metric: none

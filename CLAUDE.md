@@ -6,6 +6,7 @@
 > 违反此规则的 agent 需重做全部丢失工作。见 constraints/invariants.md 心法 14。
 
 ## 会话启动（每次对话，1 跳）
+0. **首次接触本项目** → `docs/guides/orientation.md`（15 分钟心智模型）+ `docs/workflows/onboarding.yaml`（接手流）
 1. 读 `docs/active/STACK.md` — 当前工作栈（在哪一层、干到哪）
 2. 读 `docs/ledger/history.md` 尾部 — 最近发生了什么
 3. 读 `docs/ledger/semantic-chain-inbox.md` 尾部 — 语义巡逻信箱；有 ⚠️ 行 → 进 workflows/semantic-audit.yaml 裁决流
@@ -14,6 +15,7 @@
 ## 任务 → 路由表
 | 任务 | 去向 |
 |------|---------|
+| 新 agent 接手/冷启动同步进度 | workflows/onboarding.yaml |
 | 改代码前的约束加载 | workflows/pre-code-gate.yaml |
 | 修 bug + 回归钉 | workflows/bug-fix.yaml |
 | 根因不明的异常 | workflows/diagnostics.yaml |
