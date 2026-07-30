@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 907b1bd · 生成于 2026-07-30 -->
+<!-- 基准 commit bddb5d6 · 生成于 2026-07-30 -->
 
 # 代码清单（机械层）
 
@@ -165,7 +165,7 @@
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 
-## infra（84 文件 · 10917 行）
+## infra（84 文件 · 10927 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -208,9 +208,9 @@
 | scripts/check/check-cards.mjs | 105 | — |
 | scripts/check/check-contract-freshness.mjs | 103 | — |
 | scripts/check/check-test-patterns.mjs | 102 | — |
+| scripts/agent/tag-advisor.mjs | 100 | — |
 | scripts/check/check-anim.mjs | 99 | — |
 | build.mjs | 96 | — |
-| scripts/agent/tag-advisor.mjs | 95 | — |
 | scripts/check/check-versions.mjs | 91 | — |
 | scripts/check/check-probes.mjs | 86 | — |
 | tests/engine.test.ts | 85 | — |
@@ -225,11 +225,11 @@
 | scripts/check/check-card-meta.mjs | 68 | — |
 | scripts/check/check-ledger-commits.mjs | 67 | — |
 | tests/floating-state.test.ts | 66 | — |
+| scripts/agent/test-tag-advisor.mjs | 64 | — |
 | scripts/check/check-active-stack.mjs | 61 | — |
 | scripts/check/check-hooks.mjs | 61 | — |
 | scripts/check/check-doc-schema.mjs | 60 | — |
 | scripts/check/domain-src.mjs | 60 | DOMAIN_SRC |
-| scripts/agent/test-tag-advisor.mjs | 59 | — |
 | tests/omp-glob.test.ts | 58 | — |
 | scripts/check/check-commit-docs.mjs | 55 | — |
 | scripts/check/check-uncommitted.mjs | 51 | — |
@@ -541,4 +541,4 @@
 - src/server/index.ts → src/server/ai/routes.ts
 
 ---
-合计 218 文件 · 41337 行 · 跨域边 225 条
+合计 218 文件 · 41347 行 · 跨域边 225 条
