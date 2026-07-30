@@ -85,15 +85,15 @@ test('G1 用户回合口径：一轮内 5 次工具调用全部豁免（多工�
   }
 });
 
-test('时间戳前缀：有 ts 的消息渲染 [MM-DD HH:MM]，无 ts 不渲染（向后兼容）', () => {
+test('时间戳前缀：有 ts 的消息渲染 [ts MM-DD HH:MM:SS]，无 ts 不渲染（向后兼容）', () => {
   const { apiMessages } = toOpenAiMessages([
     { role: 'user', content: [{ type: 'text', text: '老消息' }] },
     { role: 'user', content: [{ type: 'text', text: '新消息' }], ts: '2026-07-30T12:05:00.000Z' },
     aiText('答复'),
   ], { compact: true });
   assert.strictEqual(apiMessages[0]!.content, '老消息', '无 ts 一个字不动');
-  assert(/^\[\d{2}-\d{2} \d{2}:\d{2}\] 新消息$/.test(String(apiMessages[1]!.content)),
-    `有 ts 应带前缀，得 ${apiMessages[1]!.content}`);
+  assert(/^\[ts \d{2}-\d{2} \d{2}:\d{2}:\d{2}\] 新消息$/.test(String(apiMessages[1]!.content)),
+    `有 ts 应带秒级 ts 标签前缀，得 ${apiMessages[1]!.content}`);
   assert.strictEqual(apiMessages[2]!.content, '答复', '无 ts 的 AI 消息不带前缀');
 });
 

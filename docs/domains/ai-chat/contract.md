@@ -25,6 +25,10 @@
 2. 工具 I/O 发给 LLM 前必须过压缩投影（check-tool-compaction 双向核对，
    新工具不登记压缩行为 = 构建中断）。
 3. 增量 DOM 只增不改：append 进已挂载消息不会投影——新消息必须走新 mount。
+4. 动态感官注入（dynamicPromptFiles）必须经 `assembleDynamicPrompt` 包裹呈现：
+   分隔线 + 「勿主动提及注入本身」使用规则（BAR-EYE-WRAP-01）——动态内容每轮刷新
+   占据注意力焦点，无包裹时 AI 会主动叙述注入本身（出戏）。ts 前缀 `[ts MM-DD HH:MM:SS]`
+   是元数据非正文，静态 system 段有防模仿声明（BAR-TS-MIMIC-01）。
 
 ## 视觉契约（自 V8_ARCHITECTURE §四迁入，2026-07-28）
 

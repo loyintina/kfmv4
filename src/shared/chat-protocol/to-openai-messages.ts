@@ -52,15 +52,17 @@ function extractText(msg: ChatMessage): string {
     .join('');
 }
 
-/** [MM-DD HH:MM] 前缀（投影端本地时区）。ts 缺失/非法 → 空串（旧消息向后兼容）。
- *  给 AI 对话时间感（跨度、间隔）。不违反 G6：ts 是写入侧盖章的真相源数据，
- *  确定不变；G6 禁的是投影时现生成时间戳。 */
+/** [ts MM-DD HH:MM:SS] 前缀（投影端本地时区）。ts 缺失/非法 → 空串（旧消息向后兼容）。
+ *  给 AI 对话时间感（跨度、间隔）——精确到秒：一分钟内可以有很多轮对话，分级太粗。
+ *  「ts 」标签让前缀读作系统元数据而非对话风格——裸 [MM-DD HH:MM] 会被 AI 当成
+ *  自己历史回复的行文格式模仿，正文开头复读时间戳（BAR-TS-MIMIC-01）。
+ *  不违反 G6：ts 是写入侧盖章的真相源数据，确定不变；G6 禁的是投影时现生成时间戳。 */
 function tsPrefix(ts?: string): string {
   if (!ts) return '';
   const d = new Date(ts);
   if (Number.isNaN(d.getTime())) return '';
   const p = (n: number) => String(n).padStart(2, '0');
-  return `[${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}] `;
+  return `[ts ${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}] `;
 }
 
 /**

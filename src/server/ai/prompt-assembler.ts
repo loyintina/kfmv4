@@ -86,7 +86,21 @@ export function assembleRoleSystemPrompt(roleFile?: string): string {
 /**
  * 组装动态反馈 prompt：只读 dynamicPromptFiles（如 page-state.md）。
  * 工具循环每轮调用，内容注入对话末尾（user message），不破坏 system 前缀缓存。
+ *
+ * 呈现层包裹（BAR-EYE-WRAP-01）：分隔线 + 使用规则。病灶——动态内容每轮刷新，
+ * 始终占据「最新一条消息」的注意力焦点，AI 被吸引去主动叙述这份注入本身
+ * （「蓝眼睛在页面状态上停留了一下……」），出戏且稀释正文。规则要点：
+ * 信息直接取用，不主动提及注入本身，除非用户问起来源。
  */
+const DYNAMIC_WRAP_HEADER =
+  '──────── 系统感官注入（动态 · 每轮自动刷新）────────\n' +
+  '以下是你的实时环境感官信息，不是用户发来的消息，也不是对话内容。';
+const DYNAMIC_WRAP_FOOTER =
+  '──────── 感官注入结束 ────────\n' +
+  '使用规则：其中的信息直接取用即可——用户问及相关内容时自然回答，无需说明出处；' +
+  '不要主动提及或描述这份注入本身（例如「我看到/我的眼睛察觉到/系统反馈显示」），' +
+  '除非用户主动问起这些信息从何而来。';
+
 export function assembleDynamicPrompt(roleFile?: string): string {
   const rf = roleFile || getActiveRoleFile();
   const role = loadRole(rf);
@@ -100,5 +114,6 @@ export function assembleDynamicPrompt(roleFile?: string): string {
       if (content) parts.push(content);
     } catch { /* 读失败跳过 */ }
   }
-  return parts.join('\n\n');
+  if (parts.length === 0) return '';
+  return `${DYNAMIC_WRAP_HEADER}\n\n${parts.join('\n\n')}\n\n${DYNAMIC_WRAP_FOOTER}`;
 }

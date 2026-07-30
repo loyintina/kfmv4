@@ -169,6 +169,10 @@ export async function* streamChat(
   if (toolDocsPrompt) staticSystemParts.push(toolDocsPrompt);
   const alwaysApplyPrompt = buildAlwaysApplyPrompt();
   if (alwaysApplyPrompt) staticSystemParts.push(alwaysApplyPrompt);
+  // ts 元数据声明（BAR-TS-MIMIC-01）：投影层给每条消息盖 [ts …] 前缀（to-openai-messages），
+  // 若不声明其性质，AI 会把自己历史回复上的前缀当成行文格式模仿，正文开头复读时间戳。
+  // 静态段：整轮对话不变，不破坏前缀缓存。
+  staticSystemParts.push('对话中每条消息前的 [ts MM-DD HH:MM:SS] 是系统加盖的时间元数据（精确到秒），供你感知对话的节奏与间隔；它不是对话内容。不要在你的回复中复述、模仿或以任何形式带上这个前缀。');
 
   // system 消息只构建一次（静态前缀，利于 API 缓存命中）。
   // 动态内容（page-state 等）改由工具循环末尾注入对话尾部，不再每轮重建 system。
@@ -180,9 +184,10 @@ export async function* streamChat(
   // 首轮前刷新一次 page-state（AI 发第一条前先看到当前页面）。
   refreshPageState(wsServer);
   // 首轮注入动态反馈（让 AI 第一条就能看到页面状态）
+  // 包裹（分隔线 + 「勿主动提及」规则）统一由 assembleDynamicPrompt 完成。
   const initialDynamic = assembleDynamicPrompt(roleFile);
   if (initialDynamic) {
-    apiMessages.push({ role: 'user', content: `[系统反馈 — 页面状态]\n${initialDynamic}` });
+    apiMessages.push({ role: 'user', content: initialDynamic });
   }
   // 工具调用循环（上限 50 轮，连续失败 3 次则截断）
   const MAX_TURNS = 50;
@@ -446,10 +451,10 @@ export async function* streamChat(
       setTimeout(settleDone, 250);
       await settle;
       refreshPageState(wsServer);
-      // 动态反馈注入对话末尾（不破坏 system 前缀缓存）
+      // 动态反馈注入对话末尾（不破坏 system 前缀缓存；包裹同首轮）
       const dynamicPrompt = assembleDynamicPrompt(roleFile);
       if (dynamicPrompt) {
-        apiMessages.push({ role: 'user', content: `[系统反馈 — 页面状态更新]\n${dynamicPrompt}` });
+        apiMessages.push({ role: 'user', content: dynamicPrompt });
       }
       // 本轮消息结束，进入下一轮
       yield { type: 'message_stop' };

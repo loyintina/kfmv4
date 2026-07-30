@@ -283,7 +283,6 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
         ? `${formatTokens(session.tokenCount)}/${formatTokens(session.fullTokenCount)}`
         : formatTokens(session.tokenCount);
       metaRow.innerHTML = `<span>${formatDate(session.updatedAt)}</span><span>${session.messageCount ?? countTextMessages(session.messages)} 条</span><span title="压缩后/全量 token">${tokenText}</span>`;
-      if (session.providerId) metaRow.innerHTML += `<span>${session.providerId}</span>`;
 
       item.appendChild(titleRow);
       item.appendChild(metaRow);

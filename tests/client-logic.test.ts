@@ -844,3 +844,30 @@ regression('BAR-FLOAT-Z-01', '1a9a3ec', '浮卡 z-index 不变量：item.zIndex 
   const src = readFileSync('src/client/modules/floating-card.ts', 'utf-8');
   assert(!src.includes('LAUNCH_Z_ABOVE_STACK'), '不得另算发射 z 覆写 DOM（_allocZ 单调递增天然在上）');
 });
+
+// ==========================================================================
+// 2026-07-30 会话呈现修复（ts 模仿泄漏 + 眼睛元叙述 + 会话卡 provider）
+// ==========================================================================
+
+regression('BAR-TS-MIMIC-01', 'ai/chat', 'ts 前缀秒级 + 元数据标签 + 静态防模仿声明（AI 正文复读时间戳）', () => {
+  const proj = readFileSync('src/shared/chat-protocol/to-openai-messages.ts', 'utf-8');
+  assert(proj.includes('[ts '), 'ts 前缀必须带 ts 元数据标签（裸 [MM-DD HH:MM] 会被当行文格式模仿）');
+  assert(proj.includes('getSeconds()'), 'ts 前缀必须精确到秒（一分钟内可有多轮对话）');
+  const chat = readFileSync('src/server/ai/chat.ts', 'utf-8');
+  assert(chat.includes('不要在你的回复中复述'), '静态 system 必须声明 ts 前缀性质禁止模仿');
+});
+
+regression('BAR-EYE-WRAP-01', 'ai/chat', '动态感官注入包裹：分隔线 + 勿主动提及规则（AI 叙述「蓝眼睛看到」出戏）', () => {
+  const asm = readFileSync('src/server/ai/prompt-assembler.ts', 'utf-8');
+  assert(asm.includes('系统感官注入'), 'assembleDynamicPrompt 必须有分隔线包裹头');
+  assert(asm.includes('不要主动提及'), '包裹必须带「勿主动提及注入本身」使用规则');
+  const chat = readFileSync('src/server/ai/chat.ts', 'utf-8');
+  assert(!chat.includes('[系统反馈 — 页面状态'), 'chat.ts 不再自贴标签（包裹统一由 assembleDynamicPrompt 做）');
+  const ps = readFileSync('src/server/ai/page-state.ts', 'utf-8');
+  assert(!ps.includes('（你的眼睛）'), 'page-state 头部不得自我指涉「眼睛」（诱发拟人元叙述）');
+});
+
+regression('BAR-SESSIONCARD-PROVIDER-01', 'ui/session-card', '会话卡 metaRow 不显示 provider（信息噪音，用户明令删除）', () => {
+  const card = readFileSync('src/client/cards/plugins/session.card.ts', 'utf-8');
+  assert(!card.includes('<span>${session.providerId}</span>'), 'metaRow 不得追加 providerId');
+});

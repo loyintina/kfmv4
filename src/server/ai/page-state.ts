@@ -59,7 +59,7 @@ function parseSnapshot(snap: unknown): { elements: Element[]; content: Content[]
 export function renderPageState(snap: unknown): string {
   const { elements, content, capabilities } = parseSnapshot(snap);
   const lines: string[] = [];
-  lines.push('# 当前页面状态（你的眼睛）');
+  lines.push('# 当前页面状态');
   lines.push('');
   lines.push('> 本节由系统在每次工具调用后自动刷新，反映你的操作对页面的实际影响。');
   lines.push('');
@@ -114,7 +114,7 @@ export function refreshPageState(wsServer: WsServer): void {
     const snap = wsServer.getLatestSnapshot();
     const md = snap
       ? renderPageState(snap)
-      : '# 当前页面状态（你的眼睛）\n\n> 暂无页面快照（浏览器未连接或未推送状态）。';
+      : '# 当前页面状态\n\n> 暂无页面快照（浏览器未连接或未推送状态）。';
     writeFileSync(PAGE_STATE_PATH, md, 'utf-8');
   } catch (e) {
     console.error('[page-state] 写入失败:', e instanceof Error ? e.message : e);
