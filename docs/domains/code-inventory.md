@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 32ee6fc · 生成于 2026-07-30 -->
+<!-- 基准 commit dbdb745 · 生成于 2026-07-30 -->
 
 # 代码清单（机械层）
 
@@ -165,7 +165,7 @@
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 
-## infra（84 文件 · 10951 行）
+## infra（84 文件 · 11022 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -184,6 +184,7 @@
 | tests/invariants.test.ts | 245 | — |
 | scripts/check/check-css-wiring.mjs | 228 | — |
 | tests/renderer.test.ts | 215 | — |
+| scripts/agent/semantic-mutate.mjs | 207 | MUTATIONS |
 | tests/run-manager.test.ts | 192 | — |
 | tests/smoke/smoke.mjs | 190 | — |
 | scripts/check/gen-code-inventory.mjs | 181 | — |
@@ -194,7 +195,6 @@
 | scripts/check/check-bar-ledger.mjs | 142 | — |
 | scripts/agent/semantic-audit.tasks.mjs | 140 | TASKS |
 | scripts/check/sync-counts.mjs | 138 | — |
-| scripts/agent/semantic-mutate.mjs | 136 | MUTATIONS |
 | scripts/check/check-checks.mjs | 132 | — |
 | scripts/check/check-tool-compaction.mjs | 129 | — |
 | tests/to-openai-messages.test.ts | 126 | — |
@@ -541,4 +541,4 @@
 - src/server/index.ts → src/server/ai/routes.ts
 
 ---
-合计 218 文件 · 41371 行 · 跨域边 225 条
+合计 218 文件 · 41442 行 · 跨域边 225 条

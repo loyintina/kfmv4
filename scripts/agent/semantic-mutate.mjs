@@ -7,6 +7,9 @@
  *
  * 取材（五井）：L1 历史复刻（git 矿 10ae324/1400eea/7b54c7b）、L2 SEM×元素矩阵、
  * L3 对抗负例（三/四轮假发现改造，near-miss 不应报告）。
+ * 2026-07-30 扩卷：L2 矩阵系统填充（M11-M15）+ MID 中间难度档（MID-1..4）——
+ * 四条稳定盲区（M02/M05/M06/M07）各拆单一难点降级成可逮题，用于分辨
+ * 「改 prompt/换模型」动的是哪个能力维度。
  *
  * 纪律：
  * - 变异只打沙盒副本（tmp/semantic-bench/，gitignored），活树/账本/check 链无感
@@ -99,6 +102,74 @@ export const MUTATIONS = [
     replace: 'check-docs 锚点检查（已在链）',
     tasks: ['doc-maintenance-vs-pipeline'],
     note: 'check-docs.mjs 真实存在——真声称换措辞不应报告（四轮假发现改造）',
+  },
+  // ---- L2 矩阵填充（2026-07-30 扩卷）：SEM × 文档元素空格系统补齐 ----
+  {
+    id: 'M11', level: 'L2', sem: 'SEM001', file: 'docs/guides/testing.md', expect: 'report',
+    find: '440 个测试（单元/集成/回归钉/不变量），~1.3s',
+    replace: '420 个测试（单元/集成/回归钉/不变量），~1.3s',
+    tasks: ['guides-testing-vs-infra'],
+    note: '测试计数漂移（infra code-map 明记 440——baseline 可逮）',
+  },
+  {
+    id: 'M12', level: 'L2', sem: 'SEM002', file: 'CLAUDE.md', expect: 'report',
+    find: 'npm run check    # 30 个 check-*.mjs + tsc --noEmit（仅检查，不构建）',
+    replace: 'npm run check    # 28 个 check-*.mjs + tsc --noEmit（仅检查，不构建）',
+    tasks: ['claude-vs-docs'],
+    note: '入口文档计数 28 vs infra 契约「30 脚本」冲突',
+  },
+  {
+    id: 'M13', level: 'L2', sem: 'SEM003', file: 'docs/constraints/diagnostics.md', expect: 'report',
+    find: '构建由 build.mjs 接管',
+    replace: '构建由 bundle.mjs 接管',
+    tasks: ['diagnostics-vs-maps'],
+    note: '幽灵文件名——bundle 只是 npm script 别名，build.mjs 才真实存在（codeMaps 可逮）',
+  },
+  {
+    id: 'M14', level: 'L2', sem: 'SEM004', file: 'docs/constraints/invariants.md', expect: 'report',
+    find: 'AI 的长期记忆是产品本体',
+    replace: 'AI 的长期记忆只是易失缓存，产品本体是文件管理功能',
+    tasks: ['inter-vision-invariants', 'invariants-vs-maps'],
+    note: '与 vision §1.8「文档系统 = AI 的长期记忆库」争夺产品定位权威',
+  },
+  {
+    id: 'M15', level: 'L3', sem: 'NC', file: 'CLAUDE.md', expect: 'silent',
+    find: '440 个回归测试',
+    replace: '440 项回归测试',
+    tasks: ['claude-vs-docs'],
+    note: '正确计数的量词变体——不应报告（M09 同族换载体）',
+  },
+  // ---- MID 中间难度档（2026-07-30 扩卷）：四条稳定盲区各拆单一难点，降级可逮 ----
+  // 设计逻辑：M02 难在需 src/ 代码知识 → MID-1 同款改名回退但 code-map 基线明记新名；
+  // M05 难在拼写需 FS 对证 → MID-2 同文件语义自相矛盾；M06 难在跨账本对账 → MID-3
+  // 状态词翻转与下行结算详情自打架；M07 难在远景 vs 实现现实 → MID-4 决策翻转被下句自反驳
+  {
+    id: 'MID-1', level: 'MID', sem: 'SEM003', file: 'docs/domains/ai-chat/detail-runtime.md', expect: 'report',
+    find: '| `src/client/modules/session-client.ts` | 客户端会话管理',
+    replace: '| `src/client/modules/session-store.ts` | 客户端会话管理',
+    tasks: ['inter-detail-contract-aichat'],
+    note: '改名回退（M02 同族）——但 code-map 明记 session-client.ts:149，且下行 280 行服务端同名 session-store.ts，文档面即可逮',
+  },
+  {
+    id: 'MID-2', level: 'MID', sem: 'SEM002', file: 'docs/guides/agent-runner.md', expect: 'report',
+    find: '2 = 全部任务失败/环境缺 provider',
+    replace: '1 = 全部任务失败/环境缺 provider',
+    tasks: ['inter-agentrunner-infra'],
+    note: '同文件 17-19 行明记 exit 0/2 且 exit 1 未实现——自相矛盾，无需外部知识（M05 拼写难点摘除）',
+  },
+  {
+    id: 'MID-3', level: 'MID', sem: 'SEM005', file: 'docs/active/STACK.md', expect: 'report',
+    find: 'v8.2 文档系统重构 — ✅ 完成（2026-07-29 切换提交）',
+    replace: 'v8.2 文档系统重构 — 进行中（2026-07-29 切换提交）',
+    tasks: ['stack-vs-ledger'],
+    note: '状态词翻转（比 M06 摘除更响）——下行「65 份结算/压缩轮/设计文档已自我分散」全是完成语气，自打架',
+  },
+  {
+    id: 'MID-4', level: 'MID', sem: 'SEM005', file: 'docs/active/vision.md', expect: 'report',
+    find: '「决定：不做」对内置通路不再成立',
+    replace: '「决定：不做」对内置通路依然成立',
+    tasks: ['vision-vs-maps', 'inter-vision-invariants'],
+    note: '决策翻转——下句「实际走出的是第三条路：窄域自建」直接反驳，code-maps 遍布 scripts/agent/（M07 实现知识难点摘除）',
   },
 ];
 
