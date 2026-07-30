@@ -39,10 +39,10 @@
 npm run dev      # 全链路（check → esbuild client+server → smoke → 启动）
 npm run bundle   # 同 build.mjs（全链路，零快捷方式）
 npm run watch    # 全链路通过后 → 持续监听、快速重编（开发时一直开着）
-npm run check    # 31 个 check-*.mjs + tsc --noEmit（仅检查，不构建）
+npm run check    # 32 个 check-*.mjs + tsc --noEmit（仅检查，不构建）
 npm run build    # 同 bundle（全链路）
 npm run start    # 启动生产构建 http://localhost:8021
-npm run test     # 443 个回归测试
+npm run test     # 445 个回归测试
 ```
 
 > **没有快捷方式**。`bundle`/`build`/`dev` 全部走 `build.mjs` 全链路。`watch` 初检不过不进 watch。

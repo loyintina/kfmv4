@@ -6,7 +6,7 @@
 ## 分层
 
 ```bash
-npm test       # 443 个测试（单元/集成/回归钉/不变量），~1.3s，进主管线
+npm test       # 445 个测试（单元/集成/回归钉/不变量），~1.3s，进主管线
 npm run smoke  # 11 条浏览器冒烟（puppeteer headless），~9s，独立于主管线
 ```
 

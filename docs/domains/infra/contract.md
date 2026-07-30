@@ -9,17 +9,18 @@
 - server：ESM bundle——**external 列表是生死线**（CJS 包打进去启动即崩）。
 - 样式：`sass public/css/:public/css/`（目录级全量编译，check 链内自动执行）。
 
-## 检查管线（npm run check，31 脚本，顺序固定）
+## 检查管线（npm run check，32 脚本，顺序固定）
 
 （下方生成区枚举的链步数多于标题脚本数：sass/sync-counts/gen-code-inventory/npm test/tsc
 为非 check-* 步骤，不计入脚本数。）
 
 <!-- chain:auto 由 sync-counts 生成，禁止手改 -->
-`check-uncommitted`（>3 未提交即中断，首位） → versions → checks → doc-coverage → sass → css-wiring →
-tool-compaction → anim → as-any → card-meta → registry → zindex → console → docs → consistency →
-active-stack → stack-status → code-doc-refs → workflow-integrity → cards → contract-freshness →
-test-patterns → bar-ledger → ledger-commits → doc-budget → doc-symbols → doc-linerefs → doc-schema →
-commit-docs → hooks → probes → release-radar → sync-counts → gen-code-inventory → npm test → tsc。
+`check-uncommitted`（>3 未提交即中断，首位） → deploy-freshness → versions → checks → doc-coverage → sass →
+css-wiring → tool-compaction → anim → as-any → card-meta → registry → zindex → console → docs →
+consistency → active-stack → stack-status → code-doc-refs → workflow-integrity → cards →
+contract-freshness → test-patterns → bar-ledger → ledger-commits → doc-budget → doc-symbols →
+doc-linerefs → doc-schema → commit-docs → hooks → probes → release-radar → sync-counts →
+gen-code-inventory → npm test → tsc。
 <!-- /chain:auto -->
 
 **链外概率区自动化（2026-07-30 登记）**：`scripts/agent/semantic-chain.mjs`（语义巡逻，
@@ -58,7 +59,7 @@ agent 脚本层——检测归自动化，裁决归会话内 agent，**永远不
 
 ## 文件清单
 
-`build.mjs` `scripts/check/chain.mjs`（check 链唯一出处 STEPS）`scripts/check/check-*.mjs`（31 个）`scripts/deploy.sh`（构建→重启→版本握手闭环）
+`build.mjs` `scripts/check/chain.mjs`（check 链唯一出处 STEPS）`scripts/check/check-*.mjs`（32 个）`scripts/deploy.sh`（构建→重启→版本握手闭环）
 `scripts/agent/`（agent 脚本群：agent-runner.mjs 执行器 + 一号负载 tag-advisor.mjs
 （发版建议，影子模式）+ 二号负载 semantic-audit.mjs/tasks.mjs（语义审计探针集群，
 并发 10）+ semantic-mutate.mjs/bench.mjs（变异基准：沙盒注入已知缺陷测召回/误报，
