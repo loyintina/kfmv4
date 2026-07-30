@@ -107,6 +107,12 @@
    — 审查文件卡代码高亮问题修正（具体病灶待补充）
 9. prompts 提示词注入约束修复（2026-07-29 记，src/server/prompts/，具体病灶待补充）
    — 另：面板发送消息无响应（2026-07-29 记，用户反馈的活 bug，具体病灶待补充——复现后进 bug-fix 流程）
+   — 另：会话删除后服务端串档（2026-07-30 记，冷启动实验 terra 臂尸检发现）：删除会话卡只删
+     磁盘文件，`server/ai/session-store.ts` 的 `_sessions` 缓存（`_get` 缓存优先）不失效 →
+     同名新会话 `appendUserMessage` 接续旧 ctx，flush 以旧 meta 落盘 → 会话文件合并两个独立
+     会话的历史（createdAt 是旧会话的），「会话文件=全量真相源」契约被污染——文件 ≠ 模型所见。
+     用户可见症状：刷新面板后被删会话的消息在新会话上方「复活」、会话卡统计错。
+     修复方向：会话文件删除路径同步失效服务端 AI 会话缓存（或删除走统一入口两侧一起清）
 10. 全量代码分析 → domains 填充（2026-07-29 提前完成，用户动议）
    — ✅ 六域 code-map + cross-domain.md（99 条漂移带 file:line，0cecc62/3906707）
    — ✅ 机械层：gen-code-inventory.mjs（已移 scripts/check/ 并 --check-only 挂链，鲜度不再靠人）
