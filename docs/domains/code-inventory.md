@@ -1,16 +1,16 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit d48e560 · 生成于 2026-08-01 -->
+<!-- 基准 commit 61579a7 · 生成于 2026-08-01 -->
 
 # 代码清单（机械层）
 
 > 这是什么：全量代码文件的域归属、行数、导出符号，脚本生成可重跑。
 > 语义层现状 → 各域 code-map.md；域契约（应然）→ 各域 contract.md。
 
-## canvas-tree（25 文件 · 7999 行）
+## canvas-tree（25 文件 · 8001 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/client/modules/tree-render.ts | 1003 | executeOnPath, markAnimatingPath, triggerExpandAnimation, isAnimLocked, onSidebarOpen, onSidebarClose, initTreeRenderer |
+| src/client/modules/tree-render.ts | 1005 | executeOnPath, markAnimatingPath, triggerExpandAnimation, isAnimLocked, onSidebarOpen, onSidebarClose, initTreeRenderer |
 | src/client/engine/v2/renderer.ts | 903 | RendererOptions, Renderer |
 | src/client/modules/tree-swipe.ts | 730 | isDimmed, bounceCursorRow, handleRowSwipe, updateFocus, focusNext, focusPrev, dismissFocusedCard, dismissAllCards, deployAllCards, selectFilesForPrompt, promptSelectSingle, initTempCardGesture, clearTempCards |
 | src/client/engine/v2/box.ts | 628 | BoxOptions, Box |
@@ -36,7 +36,7 @@
 | src/client/engine/v2/animation.ts | 40 | ease |
 | src/client/engine/v2/utils.ts | 24 | uniformSpacing, hvSpacing, ZERO_SPACING |
 
-## floating-card（27 文件 · 6738 行）
+## floating-card（27 文件 · 6741 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -46,7 +46,7 @@
 | src/client/cards/plugins/config.card.ts | 694 | — |
 | src/client/cards/plugins/session.card.ts | 615 | — |
 | src/client/cards/plugins/api.card.ts | 575 | — |
-| src/client/modules/card-stack.ts | 455 | getCardCount, getCard, getCardName, getCardId, hexToRgba, cardGradient, cardBg, getFocusIndex, getCurrentAccent, getCardHandler, getFocusedCardRect, animateStackPullFeedback, launchFocusedCard, openCardStack, closeCardStack, isCardStackOpen, focusNext, focusPrev, initCardStack |
+| src/client/modules/card-stack.ts | 458 | getCardCount, getCard, getCardName, getCardId, hexToRgba, cardGradient, cardBg, getFocusIndex, getCurrentAccent, getCardHandler, getFocusedCardRect, animateStackPullFeedback, launchFocusedCard, openCardStack, closeCardStack, isCardStackOpen, focusNext, focusPrev, initCardStack |
 | src/client/cards/plugins/tools.card.ts | 307 | — |
 | src/client/modules/renderers/handler-factory.ts | 296 | createFileHandler |
 | src/client/modules/tmux-card.ts | 289 | TmuxCardMeta, createTmuxCardHandler |
@@ -68,11 +68,11 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（23 文件 · 3387 行）
+## client-shell（23 文件 · 3395 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/client/modules/orb.ts | 530 | type OrbState, initOrb |
+| src/client/modules/orb.ts | 538 | type OrbState, collapseOrbPanel, initOrb |
 | src/client/modules/gesture-registry.ts | 346 | GestureHandler, GestureRegistry, gestures |
 | src/client/modules/ui-registry.ts | 334 | UIElementType, UIElementState, InteractiveElement, ContentBlock, Capability, PageDescription, RegistryChangeHandler, UIElementRegistry, Registry |
 | src/client/modules/custom-select.ts | 246 | SelectItem, CustomSelectOptions, CustomSelect, createCustomSelect |
@@ -166,15 +166,15 @@
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 
-## infra（94 文件 · 12445 行）
+## infra（94 文件 · 12471 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | tests/client-logic.test.ts | 875 | — |
 | tests/regression.test.ts | 643 | — |
 | tests/tool-compaction.test.ts | 505 | — |
-| tests/preload.mjs | 419 | — |
-| tests/cards.test.ts | 388 | — |
+| tests/preload.mjs | 423 | — |
+| tests/cards.test.ts | 410 | — |
 | scripts/agent/semantic-audit.mjs | 387 | taskFiles, buildPrompt, makeValidate, recheckRef, recheckQuote |
 | tests/visual-baseline.test.ts | 367 | — |
 | tests/server-routes.test.ts | 321 | — |
@@ -316,7 +316,7 @@
 
 - src/client/modules/tree-render.ts → src/client/modules/ws-channel.ts
 
-### canvas-tree → client-shell（52 边）
+### canvas-tree → client-shell（53 边）
 
 - src/client/modules/canvas-cursor.ts → src/client/modules/animation-registry.ts
 - src/client/modules/canvas-cursor.ts → src/client/modules/dom-refs.ts
@@ -356,6 +356,7 @@
 - src/client/modules/tree-render.ts → src/client/modules/debug-assert.ts
 - src/client/modules/tree-render.ts → src/client/modules/dom-refs.ts
 - src/client/modules/tree-render.ts → src/client/modules/logger.ts
+- src/client/modules/tree-render.ts → src/client/modules/orb.ts
 - src/client/modules/tree-render.ts → src/client/modules/renderer-lifecycle.ts
 - src/client/modules/tree-render.ts → src/client/modules/state.ts
 - src/client/modules/tree-render.ts → src/client/modules/ui-registry.ts
@@ -429,7 +430,7 @@
 - src/client/modules/floating-shared.ts → src/client/modules/theme.ts
 - src/client/modules/terminal-card-04.ts → src/client/modules/theme.ts
 
-### floating-card → client-shell（41 边）
+### floating-card → client-shell（42 边）
 
 - src/client/cards/plugins/api.card.ts → src/client/modules/confirm-dialog.ts
 - src/client/cards/plugins/api.card.ts → src/client/modules/custom-select.ts
@@ -452,6 +453,7 @@
 - src/client/modules/card-stack.ts → src/client/modules/animation-registry.ts
 - src/client/modules/card-stack.ts → src/client/modules/gesture-registry.ts
 - src/client/modules/card-stack.ts → src/client/modules/logger.ts
+- src/client/modules/card-stack.ts → src/client/modules/orb.ts
 - src/client/modules/card-stack.ts → src/client/modules/ui-registry.ts
 - src/client/modules/card-stack.ts → src/client/modules/z-index-layers.ts
 - src/client/modules/floating-card.ts → src/client/modules/animation-registry.ts
@@ -562,4 +564,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 229 文件 · 43237 行 · 跨域边 235 条
+合计 229 文件 · 43276 行 · 跨域边 237 条
