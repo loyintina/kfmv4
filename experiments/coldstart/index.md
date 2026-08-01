@@ -1,7 +1,9 @@
 # 冷启动接手实验 · 数据集索引
 
-> 📦 2026-08-01 起本数据集入库：`experiments/coldstart/`（原 `/root/.kfmv4/coldstart-exp`
-> 已整体迁移，单一出处）。协议/试卷/地面真相/判卷标准见同目录
+> 📦 2026-08-01 起本数据集入库：`experiments/coldstart/`。**两层数据**：
+> 索引/结论在仓库（开源）；**原始答卷在 `.kfmv4/experiments/coldstart/sessions/`
+> 私有同步区**（不开源，引用由 check-experiment-index 跨区验证）。
+> 协议/试卷/地面真相/判卷标准见同目录
 > prompt.md / paper.md / ground-truth.md / rubric.md；通用实验契约见 ../README.md。
 >
 > 受控多臂实验：同一试卷（/root/kfmv4-lab @ 8c9616b；早期臂基线为 50badfa，

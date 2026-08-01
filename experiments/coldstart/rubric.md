@@ -22,7 +22,7 @@
 2. 解析 messages（tool 调用在 content 数组 `type='tool'` 项；**命令要全量看，截断会漏**）
 3. **先刷新 ground-truth.md**（按该文末尾方法实跑验证，勿信笔记）
 4. 对照地面真相逐条定级；亮点与错误都记，亮点要看取证方法而非结论运气
-5. `sessions/` 归档（命名延续 index.md 惯例）
+5. 归档至 `.kfmv4/experiments/coldstart/sessions/`（私有同步区，命名延续 index.md 惯例）
 6. index.md 臂清单区插行（glm-5.2 行之前）
 7. 简报：定级 + 亮点 + 组内模式更新
 

@@ -35,5 +35,6 @@
 
 判卷标准见 `rubric.md`，判卷依据见 `ground-truth.md`（**判卷前必须先刷新**）。
 每臂流程：定位最新会话 → 解析消息与工具轨迹 → 对照地面真相逐条定级 →
-`sessions/` 归档（命名见 index.md 既有惯例）→ index.md 插行 → 简报。
+归档至 `.kfmv4/experiments/coldstart/sessions/`（私有同步区，命名见 index.md 既有惯例）
+→ index.md 插行 → 简报。
 试卷若被污染，按 `paper.md` 的卫生流程复原后再继续。

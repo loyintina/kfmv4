@@ -5,6 +5,7 @@ dist/
 public/bundle.js
 *.css.map
 .env
+.kfmv4/
 .tsbuildinfo
 .qoder/
 tmp/
