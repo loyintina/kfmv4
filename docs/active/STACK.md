@@ -113,6 +113,12 @@
      会话的历史（createdAt 是旧会话的），「会话文件=全量真相源」契约被污染——文件 ≠ 模型所见。
      用户可见症状：刷新面板后被删会话的消息在新会话上方「复活」、会话卡统计错。
      修复方向：会话文件删除路径同步失效服务端 AI 会话缓存（或删除走统一入口两侧一起清）
+   — 另：sessionId 路径穿越 P0（2026-07-31 记，冷启动实验 gpt-5.6-sol 臂发现，已登记
+     BAR-SEC-14）：routes 只查 truthy + session-store join 无格式校验 → `../` 逃逸。
+     修复方向：格式白名单全入口统一校验 + containment 复查 + 恶意 id 否定钉
+   — 另：tag-advisor shell 注入 P0（2026-07-31 记，同臂发现，已登记 BAR-SEC-15）：
+     argv ref 直插 execSync 模板串。修复方向：execFileSync 参数数组化 + ref 格式校验
+     + 恶意 ref 否定测试
 10. 全量代码分析 → domains 填充（2026-07-29 提前完成，用户动议）
    — ✅ 六域 code-map + cross-domain.md（99 条漂移带 file:line，0cecc62/3906707）
    — ✅ 机械层：gen-code-inventory.mjs（已移 scripts/check/ 并 --check-only 挂链，鲜度不再靠人）
