@@ -81,7 +81,7 @@ test('bug 机理复现：不失效缓存时，同名 append 接续旧 ctx（两�
   }
 });
 
-regression('串档', 'files-route-invalidate', 'files.ts delete/rename/move 三路由均接线 _invalidateIfSessionFile', () => {
+regression('BAR-SESSION-01', 'files-route-invalidate', 'files.ts delete/rename/move 三路由均接线 _invalidateIfSessionFile', () => {
   const src = readFileSync(new URL('../src/server/routes/files.ts', import.meta.url), 'utf-8');
   assert(src.includes("import { invalidateSession } from '../ai/session-store.js'"), 'files.ts 未 import invalidateSession');
   const calls = (src.match(/_invalidateIfSessionFile\(/g) || []).length;
@@ -89,7 +89,7 @@ regression('串档', 'files-route-invalidate', 'files.ts delete/rename/move 三�
   assert(calls === 4, `_invalidateIfSessionFile 应出现 4 次（1 定义 + 3 路由），实际 ${calls} 次`);
 });
 
-regression('串档', 'invalidate-no-flush', 'invalidateSession 不 flush 脏数据（避免把已删会话重新写出）', () => {
+regression('BAR-SESSION-01', 'invalidate-no-flush', 'invalidateSession 不 flush 脏数据（避免把已删会话重新写出）', () => {
   const src = readFileSync(new URL('../src/server/ai/session-store.ts', import.meta.url), 'utf-8');
   const fnBody = src.slice(src.indexOf('export function invalidateSession'));
   const fnEnd = fnBody.indexOf('\n}');
