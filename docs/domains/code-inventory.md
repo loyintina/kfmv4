@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit a473813 · 生成于 2026-08-01 -->
+<!-- 基准 commit 74d2a38 · 生成于 2026-08-01 -->
 
 # 代码清单（机械层）
 
@@ -96,7 +96,7 @@
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（54 文件 · 11422 行）
+## ai-chat（54 文件 · 11459 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -134,6 +134,7 @@
 | src/server/ai/tools/types.ts | 101 | ContentBlock, ToolResult, ToolUpdate, ToolContext, KfmTool, ToolError, ToolAbortError, throwIfAborted, renderError |
 | src/server/ai/tools/omp/browser.ts | 100 | browserTool |
 | src/server/ai/tools/omp/browser/run-cancellation.ts | 86 | markHandled, waitForBrowserRun, bindBrowserRunFacade |
+| src/server/ai/tools/omp/bash.ts | 80 | ompBashTool |
 | src/server/ai/tools/omp/native.ts | 72 | executeShell, grep, glob |
 | src/server/ai/tools/kfmv4/restart.ts | 62 | kfmRestartTool |
 | src/server/ai/tools/kfmv4/browser-eval.ts | 60 | kfmBrowserEvalTool |
@@ -141,7 +142,6 @@
 | src/server/ai/tools/omp/edit.ts | 52 | ompEditTool |
 | src/shared/chat-protocol/events.ts | 45 | StreamEvent |
 | src/shared/chat-protocol/messages.ts | 43 | TextBlock, ToolBlock, RuleWarningBlock, ContentBlock, ChatMessage |
-| src/server/ai/tools/omp/bash.ts | 43 | ompBashTool |
 | src/server/ai/tools/omp/todo.ts | 43 | ompTodoTool |
 | src/server/ai/tools/omp/glob.ts | 42 | ompGlobTool |
 | src/server/ai/tools/omp/write.ts | 42 | ompWriteTool |
@@ -166,7 +166,7 @@
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 
-## infra（94 文件 · 12265 行）
+## infra（94 文件 · 12302 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -179,10 +179,10 @@
 | tests/server-routes.test.ts | 321 | — |
 | tests/box.test.ts | 309 | — |
 | tests/mocks/gsap.ts | 305 | gsap |
+| tests/run-manager.test.ts | 300 | — |
 | scripts/check/check-registry.mjs | 294 | — |
 | tests/cards.test.ts | 286 | — |
 | tests/gesture-registry.test.ts | 263 | — |
-| tests/run-manager.test.ts | 263 | — |
 | tests/invariants.test.ts | 245 | — |
 | scripts/check/check-css-wiring.mjs | 228 | — |
 | tests/renderer.test.ts | 215 | — |
@@ -473,7 +473,7 @@
 - src/client/modules/terminal-card-04.ts → src/client/modules/z-index-layers.ts
 - src/client/modules/tmux-card.ts → src/client/modules/gesture-registry.ts
 
-### infra → ai-chat（22 边）
+### infra → ai-chat（23 边）
 
 - tests/chat-protocol.test.ts → src/client/modules/orb-chat.ts
 - tests/chat-protocol.test.ts → src/server/ai/chat.ts
@@ -487,6 +487,7 @@
 - tests/protocol-reducer.test.ts → src/shared/chat-protocol/reducer.ts
 - tests/run-manager.test.ts → src/server/ai/chat.ts
 - tests/run-manager.test.ts → src/server/ai/run-manager.ts
+- tests/run-manager.test.ts → src/server/ai/tools/omp/bash.ts
 - tests/server-routes.test.ts → src/server/ai/routes.ts
 - tests/session-invalidate.test.ts → src/server/ai/session-store.ts
 - tests/session-security.test.ts → src/server/ai/routes.ts
@@ -559,4 +560,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 229 文件 · 43008 行 · 跨域边 232 条
+合计 229 文件 · 43082 行 · 跨域边 233 条
