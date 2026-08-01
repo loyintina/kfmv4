@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 96c2ea7 · 生成于 2026-07-30 -->
+<!-- 基准 commit d112101 · 生成于 2026-08-01 -->
 
 # 代码清单（机械层）
 
@@ -96,7 +96,7 @@
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（54 文件 · 11334 行）
+## ai-chat（54 文件 · 11364 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -117,16 +117,16 @@
 | src/shared/chat-protocol/to-openai-messages.ts | 279 | OpenAiToolCall, OpenAiMessage, ToOpenAiOptions, ToOpenAiResult, toOpenAiMessages |
 | src/server/ai/tools/omp/debug/cdp-connection.ts | 242 | CdpSession, CdpLaunchOptions, CdpAttachOptions, CdpPausedEvent, sendCmd, onCdpEvent, launchCdp, attachCdp, closeCdp |
 | src/client/modules/orb-chat-hints.ts | 225 | startWaitingIndicator, TODO_DISMISS_KEY, todosFingerprint, clearTodoPanel, dismissTodoPanel, updateTodoFromTool |
-| src/server/ai/session-store.ts | 196 | appendEvent, flush, flushSync, appendUserMessage |
+| src/server/ai/session-store.ts | 222 | appendEvent, flush, flushSync, appendUserMessage |
 | src/server/ai/run-manager.ts | 193 | getActiveRun, getRun, StreamFn, startRun, attachRun, cancelRun |
 | src/server/ai/page-state.ts | 123 | PAGE_STATE_PATH, renderPageState, refreshPageState |
 | src/shared/chat-protocol/reducer.ts | 122 | ReduceContext, applyEvent, reduceEvents |
 | src/server/ai/prompt-assembler.ts | 120 | getActiveRoleFile, assembleRoleSystemPrompt, assembleDynamicPrompt |
 | src/server/ai/tools/kfmv4/logs.ts | 119 | kfmLogsTool |
 | src/server/ai/tools/omp/read.ts | 117 | ompReadTool |
+| src/server/ai/routes.ts | 116 | StartRunFn, setupAiRoutes |
 | src/server/ai/tools/omp/browser/aria/aria-snapshot.ts | 116 | AriaSnapshotOptions, captureAriaSnapshot, resolveAriaRefHandle, parseAriaRefSelector, buildAriaSnapshotScript |
 | src/server/ai/tools/omp/browser/tab-protocol.ts | 115 | Transferable, ObservationEntry, Observation, ScreenshotResult, SessionSnapshot, WorkerInitPayload, ToolReply, WorkerInbound, ReadyInfo, RunResultOk, RunErrorPayload, WorkerOutbound, Transport |
-| src/server/ai/routes.ts | 112 | StartRunFn, setupAiRoutes |
 | src/server/ai/tools/omp/browser/readable.ts | 111 | ReadableFormat, ReadableResult, extractReadableFromHtml |
 | src/server/ai/tools/omp/web-search.ts | 109 | ompWebSearchTool |
 | src/server/ai/rule-engine.ts | 108 | AiRule, loadRules, buildAlwaysApplyPrompt, checkToolCallRules, reloadRules |
@@ -155,23 +155,23 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（6 文件 · 1178 行）
+## server（6 文件 · 1190 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/server/routes/files.ts | 356 | FileItem, sliceMessages, setupFileRoutes |
 | src/server/ws-server.ts | 315 | WsServer |
 | src/server/index.ts | 165 | — |
-| src/server/path-utils.ts | 139 | ROOT_DIR, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
+| src/server/path-utils.ts | 151 | ROOT_DIR, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, SESSION_ID_RE, isValidSessionId, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 
-## infra（91 文件 · 11865 行）
+## infra（93 文件 · 12090 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | tests/client-logic.test.ts | 875 | — |
-| tests/regression.test.ts | 640 | — |
+| tests/regression.test.ts | 642 | — |
 | tests/tool-compaction.test.ts | 505 | — |
 | tests/preload.mjs | 406 | — |
 | scripts/agent/semantic-audit.mjs | 387 | taskFiles, buildPrompt, makeValidate, recheckRef, recheckQuote |
@@ -201,6 +201,8 @@
 | scripts/agent/exp-iceberg.mjs | 134 | — |
 | scripts/check/check-checks.mjs | 132 | — |
 | scripts/check/check-tool-compaction.mjs | 129 | — |
+| scripts/agent/tag-advisor.mjs | 124 | REF_RE, isValidRef |
+| tests/session-security.test.ts | 122 | — |
 | tests/liquid-geometry.test.ts | 120 | — |
 | scripts/agent/semantic-chain.mjs | 119 | — |
 | scripts/check/check-doc-linerefs.mjs | 116 | — |
@@ -213,7 +215,6 @@
 | scripts/check/check-cards.mjs | 105 | — |
 | scripts/check/check-contract-freshness.mjs | 103 | — |
 | scripts/check/check-test-patterns.mjs | 102 | — |
-| scripts/agent/tag-advisor.mjs | 100 | — |
 | scripts/check/check-anim.mjs | 99 | — |
 | scripts/check/check-versions.mjs | 91 | — |
 | scripts/check/check-probes.mjs | 86 | — |
@@ -223,6 +224,7 @@
 | scripts/agent/exp-thinking.mjs | 81 | — |
 | scripts/check/chain.mjs | 79 | STEPS |
 | scripts/check/check-console.mjs | 79 | — |
+| tests/tag-advisor.test.ts | 77 | — |
 | scripts/check/check-as-any.mjs | 76 | — |
 | scripts/check/docs-status.mjs | 76 | — |
 | scripts/check/check-doc-symbols.mjs | 75 | — |
@@ -470,7 +472,7 @@
 - src/client/modules/terminal-card-04.ts → src/client/modules/z-index-layers.ts
 - src/client/modules/tmux-card.ts → src/client/modules/gesture-registry.ts
 
-### infra → ai-chat（20 边）
+### infra → ai-chat（21 边）
 
 - tests/chat-protocol.test.ts → src/client/modules/orb-chat.ts
 - tests/chat-protocol.test.ts → src/server/ai/chat.ts
@@ -485,6 +487,7 @@
 - tests/run-manager.test.ts → src/server/ai/chat.ts
 - tests/run-manager.test.ts → src/server/ai/run-manager.ts
 - tests/server-routes.test.ts → src/server/ai/routes.ts
+- tests/session-security.test.ts → src/server/ai/routes.ts
 - tests/to-openai-messages.test.ts → src/shared/chat-protocol/messages.ts
 - tests/to-openai-messages.test.ts → src/shared/chat-protocol/to-openai-messages.ts
 - tests/to-openai-messages.test.ts → src/shared/tool-compaction/index.ts
@@ -539,15 +542,17 @@
 - tests/floating-state.test.ts → src/client/modules/floating-shared.ts
 - tests/reset-hooks.ts → src/client/modules/card-registry.ts
 
-### infra → server（3 边）
+### infra → server（5 边）
 
 - tests/path-utils.test.ts → src/server/path-utils.ts
 - tests/server-routes.test.ts → src/server/path-utils.ts
 - tests/server-routes.test.ts → src/server/routes/files.ts
+- tests/session-security.test.ts → src/server/path-utils.ts
+- tests/session-security.test.ts → src/server/ws-server.ts
 
 ### server → ai-chat（1 边）
 
 - src/server/index.ts → src/server/ai/routes.ts
 
 ---
-合计 226 文件 · 42489 行 · 跨域边 226 条
+合计 228 文件 · 42756 行 · 跨域边 229 条
