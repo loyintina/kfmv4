@@ -5,6 +5,8 @@
 > 私有同步区**（不开源，引用由 check-experiment-index 跨区验证）。
 > 协议/试卷/地面真相/判卷标准见同目录
 > prompt.md / paper.md / ground-truth.md / rubric.md；通用实验契约见 ../README.md。
+> 判卷管线：`tools/normalize-arms.mjs`（归一化器，sessions→私有区 `derived/`
+> arms.json+transcripts/+scores/）→ 判卷提示词 `prompts/judge-v1.md`（Kimi 判卷集群）。
 >
 > 受控多臂实验：同一试卷（/root/kfmv4-lab @ 8c9616b；早期臂基线为 50badfa，
 > 冷启动层落地前，omp 时代后已前移）、同一提示词（逐字冻结）、全程工具轨迹可尸检。
