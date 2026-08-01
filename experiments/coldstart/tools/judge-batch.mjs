@@ -70,7 +70,7 @@ async function judgeOne(armId) {
     prompt: buildPrompt(armId),
     validate,
     retries: 1,
-    maxTokens: 16000, // 思考链与正文共享预算——8k 会被推理吃光导致空响应
+    maxTokens: 32768, // 思考链与正文共享预算——16k 仍会被长推理吃光导致空响应（flash-6 两连跪实测）
     params: { response_format: undefined }, // deepseek-v4-flash @ oc-go 在大 prompt + json_object 下会空响应（2026-08-01 实测）；extractJson 容错围栏
     timeoutMs: 240_000, // 大 transcript + 思考链
   });
