@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 74d2a38 · 生成于 2026-08-01 -->
+<!-- 基准 commit e583177 · 生成于 2026-08-01 -->
 
 # 代码清单（机械层）
 
@@ -166,14 +166,14 @@
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 
-## infra（94 文件 · 12302 行）
+## infra（94 文件 · 12343 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | tests/client-logic.test.ts | 875 | — |
 | tests/regression.test.ts | 643 | — |
 | tests/tool-compaction.test.ts | 505 | — |
-| tests/preload.mjs | 406 | — |
+| tests/preload.mjs | 419 | — |
 | scripts/agent/semantic-audit.mjs | 387 | taskFiles, buildPrompt, makeValidate, recheckRef, recheckQuote |
 | tests/visual-baseline.test.ts | 367 | — |
 | tests/server-routes.test.ts | 321 | — |
@@ -187,10 +187,10 @@
 | scripts/check/check-css-wiring.mjs | 228 | — |
 | tests/renderer.test.ts | 215 | — |
 | scripts/agent/semantic-mutate.mjs | 207 | MUTATIONS |
+| tests/path-utils.test.ts | 200 | — |
 | tests/smoke/smoke.mjs | 190 | — |
 | scripts/check/gen-code-inventory.mjs | 181 | — |
 | tests/to-openai-messages.test.ts | 181 | — |
-| tests/path-utils.test.ts | 172 | — |
 | tests/chat-protocol.test.ts | 169 | — |
 | tests/protocol-reducer.test.ts | 161 | — |
 | scripts/agent/semantic-audit.tasks.mjs | 152 | TASKS |
@@ -560,4 +560,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 229 文件 · 43082 行 · 跨域边 233 条
+合计 229 文件 · 43123 行 · 跨域边 233 条
