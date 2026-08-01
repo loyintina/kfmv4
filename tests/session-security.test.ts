@@ -6,8 +6,10 @@
 // 校验）——`../` 可逃逸 sessions/ 目录，服务端权限内任意 JSON 读写。
 // 2026-07-31 冷启动实验 gpt-5.6-sol 臂发现，源码复核实锤。
 //
-// 契约：sessionId 格式白名单 `^[A-Za-z0-9_-]{1,128}$` 全入口统一校验
-// （/ai/chat/start、/sessions/messages、session-store 落盘点）+ join 后 containment 复查。
+// 契约：sessionId 格式白名单 `^[\p{L}\p{N}_-]{1,128}$/u`（Unicode 字母数字含中文——
+// 生产会话 id 即中文标题，初版 ASCII 白名单 2026-08-01 误杀全部中文会话）+ UTF-8
+// 字节 ≤ 200，全入口统一校验（/ai/chat/start、/sessions/messages、session-store
+// 落盘点）+ join 后 containment 复查。
 //
 // revert 验证：去掉入口校验后「start 拒绝」三条全红；去掉落盘守卫后
 // 「join 单点化」源码断言红。
@@ -26,14 +28,15 @@ group('BAR-SEC-14 — sessionId 路径穿越防护');
 
 // ========== 1. 校验器边界（单元） ==========
 
-test('合法 sessionId 通过：字母/数字/-/_，1..128 位', () => {
-  for (const id of ['a', 'abc123', 'sess-01_x', 'A1_b-C2', 'x'.repeat(128)]) {
+test('合法 sessionId 通过：Unicode 字母数字（含中文标题）/-/_，1..128 位', () => {
+  // 生产会话 id 就是中文标题（todo工具测试/新会话3/蔚然的一次整理——v8.3.3 误杀事故）
+  for (const id of ['a', 'abc123', 'sess-01_x', 'A1_b-C2', '中文', 'todo工具测试', '新会话3', '蔚然的一次整理', 'x'.repeat(128)]) {
     assert(isValidSessionId(id), `应通过: ${JSON.stringify(id)}`);
   }
 });
 
-test('非法 sessionId 拒绝：路径逃逸/分隔符/空白/超长/非字符串', () => {
-  const bad: unknown[] = ['..', '../x', 'a/b', 'a\\b', 'a b', '', '.hidden', 'a.b', '中文', 'x'.repeat(129), 42, null, undefined];
+test('非法 sessionId 拒绝：路径逃逸/分隔符/空白/超长/非字符串/超字节', () => {
+  const bad: unknown[] = ['..', '../x', 'a/b', 'a\\b', 'a b', '', '.hidden', 'a.b', 'x'.repeat(129), '中'.repeat(67), 42, null, undefined];
   for (const id of bad) {
     assert(!isValidSessionId(id), `应拒绝: ${JSON.stringify(id)}`);
   }

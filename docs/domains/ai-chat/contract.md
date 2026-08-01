@@ -123,8 +123,10 @@
     （tryAutoResume 曾内联复制简化版 → 无压缩/不过滤空壳/content:null，严格端点 400）。
     回归钉：BAR-ORB-RESUME-01。
 12. **sessionId 白名单（BAR-SEC-14）**：sessionId 拼进落盘路径，格式白名单
-    `^[A-Za-z0-9_-]{1,128}$` 全入口校验——新入口必须复用 `isValidSessionId`
-    （path-utils），落盘统一走 `_sessionFilePath` 单点 + containment 复查。
+    `^[\p{L}\p{N}_-]{1,128}$/u`（Unicode 字母数字**含中文**——生产会话 id 即中文
+    标题；初版 ASCII 白名单 2026-08-01 误杀全部中文会话 → 放宽）+ UTF-8 字节 ≤ 200，
+    全入口校验——新入口必须复用 `isValidSessionId`（path-utils），落盘统一走
+    `_sessionFilePath` 单点 + containment 复查。
 
 ## 素材考古（原文已随 archive 注销，`git show v8.1.1:docs/archive/design/…` 可挖）
 

@@ -80,13 +80,15 @@ export function sanitizePath(userPath: string): string | null {
 /**
  * sessionId 格式白名单（BAR-SEC-14）：会话 id 会被拼进文件路径
  * `join(SESSIONS_DIR, ${sessionId}.json)`，故只允许安全字符集——
- * 字母数字 + `-`/`_`，1..128 位。任何路径分隔符/`.`/空白一律拒绝。
+ * Unicode 字母/数字（含中文，生产会话 id 就是中文标题）+ `-`/`_`，1..128 位。
+ * 任何路径分隔符/`.`/空白/控制字符一律拒绝（无 `.` 即无 `..` 逃逸）。
+ * 另限 UTF-8 字节 ≤ 200（防 128 位全 CJK 超 ext4 文件名 255 字节上限 → ENAMETOOLONG）。
  * 全入口统一校验（/ai/chat/start、/sessions/messages、session-store 落盘点）。
  */
-export const SESSION_ID_RE = /^[A-Za-z0-9_-]{1,128}$/;
+export const SESSION_ID_RE = /^[\p{L}\p{N}_-]{1,128}$/u;
 
 export function isValidSessionId(id: unknown): boolean {
-  return typeof id === 'string' && SESSION_ID_RE.test(id);
+  return typeof id === 'string' && SESSION_ID_RE.test(id) && Buffer.byteLength(id, 'utf8') <= 200;
 }
 
 /**
