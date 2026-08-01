@@ -1,4 +1,5 @@
 import { gestures } from "./gesture-registry.js";
+import { collapseOrbPanel } from './orb.js';
 import { anim, AnimTimeline } from './animation-registry.js';
 import { Registry } from './ui-registry.js';
 import { wsChannel } from './ws-channel.js';
@@ -181,10 +182,12 @@ function createCard(index: number): HTMLElement {
       _focusIndex = idx;
       // 聚焦动画 + 投全屏卡同时开始，聚焦动画完成后关闭卡片堆
       launchFocusedCard(true);
+      collapseOrbPanel(); // 手动点击投全屏 → 联动折叠面板（AI 召唤路径不经过此）
       updateFocus(() => { closeCardStack(); });
     } else {
       // 已聚焦 → 直接投卡 + 关闭
       launchFocusedCard(true);
+      collapseOrbPanel();
       closeCardStack();
     }
   });

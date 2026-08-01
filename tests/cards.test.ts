@@ -385,3 +385,25 @@ test('堆外 tap 关堆 / 堆内 tap 不关 / 滑动后不触发 tap 关堆', as
   assert(isCardStackOpen(), 'after real swipe, tap-close should not fire');
   closeCardStack();
 });
+
+group('手动投全屏联动折叠面板');
+
+test('collapseOrbPanel 已在 orb.ts 导出（源码级，orb.ts 顶层依赖 window.location 不可直接 import）', async () => {
+  const { readFileSync } = await import('fs');
+  const orb = readFileSync(new URL('../src/client/modules/orb.ts', import.meta.url), 'utf-8');
+  assert(/export function collapseOrbPanel\(\)/.test(orb), 'orb.ts 应导出 collapseOrbPanel');
+  assert(orb.includes("if (orbState === 'expanded') collapsePanel();"), 'collapseOrbPanel 应只在 expanded 态折叠');
+});
+
+test('两条手动路径接线 + 共享层不含折叠（AI 召唤安全不变量）', async () => {
+  const { readFileSync } = await import('fs');
+  const treeRender = readFileSync(new URL('../src/client/modules/tree-render.ts', import.meta.url), 'utf-8');
+  const cardStack = readFileSync(new URL('../src/client/modules/card-stack.ts', import.meta.url), 'utf-8');
+  const fsShared = readFileSync(new URL('../src/client/modules/floating-fullscreen.ts', import.meta.url), 'utf-8');
+  assert(treeRender.includes('collapseOrbPanel'), '文件行点击路径（createFileFloatingCard）未接 collapseOrbPanel');
+  assert(cardStack.includes('collapseOrbPanel'), '卡片堆点击路径未接 collapseOrbPanel');
+  // AI 召唤会经过的共享层一律不得折叠面板
+  assert(!fsShared.includes('collapseOrbPanel'), 'enterFullscreen 共享层不得折叠面板（AI 召唤路径经过此处）');
+  const launchFn = cardStack.split('export function launchFocusedCard')[1]?.split('\n}')[0] ?? '';
+  assert(!launchFn.includes('collapseOrbPanel'), 'launchFocusedCard 共享层不得折叠面板（堆左滑/未来 AI 指令经过）');
+});

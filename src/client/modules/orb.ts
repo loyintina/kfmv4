@@ -201,6 +201,14 @@ function updatePanelPosition(): void {
 
 export { type OrbState } from './orb-state.js';
 
+/**
+ * 手动投全屏卡时联动折叠面板。仅两条手动点击路径调用（文件行点击、卡片堆卡片点击）——
+ * 故意不挂进 enterFullscreen/launchFocusedCard 等共享层：未来 AI 自动召唤的页面操作不折叠面板。
+ */
+export function collapseOrbPanel(): void {
+  if (orbState === 'expanded') collapsePanel();
+}
+
 // 面板 DOM 只创建一次（见文件头「面板生命周期」）。initOrb 与 expandPanel 双入口调用。
 function ensurePanel(): void {
   if (panelEl) return;

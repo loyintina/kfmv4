@@ -368,6 +368,10 @@ globalThis.document = {
 globalThis.window = globalThis;
 globalThis.window.innerWidth = 414;     // iPhone-ish
 globalThis.window.innerHeight = 896;
+// location mock（orb.ts 等模块顶层读 window.location.pathname 计算 API_BASE）
+if (!globalThis.window.location) {
+  globalThis.window.location = { pathname: '/', href: 'http://localhost/', origin: 'http://localhost' };
+}
 // PointerEvent mock (gesture-registry uses pointer events)
 class MockPointerEvent {
   constructor(type, init = {}) {

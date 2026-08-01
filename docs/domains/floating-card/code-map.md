@@ -43,7 +43,9 @@ domain-src 归在本域——同 ai-chat code-map 漂移 4 的边界问题。
 
 **召唤浮卡**：page-swipe → openCardStack（GSAP 飞入）→ launchFocusedCard（card-stack.ts:80）
 → createHandler → createFloatingCard（建壳 + createInstance + activate + 全屏或散落飞入）。
-堆内手势分流：点击卡片=投**全屏**卡（card-stack.ts:178-190）；左滑=投**浮卡**（非全屏，
+堆内手势分流：点击卡片=投**全屏**卡（card-stack.ts:178-190）**+ collapseOrbPanel 联动折叠
+光球面板**（手动点击专属；launchFocusedCard 共享层与 enterFullscreen 均不含折叠——
+AI 召唤路径不折叠，cards.test.ts 源码钉）；左滑=投**浮卡**（非全屏，
 card-stack.ts:397 launchFocusedCard(false)）；右滑=关堆；**堆外 tap=关堆**
 （'card-stack-global' onEnd 位移<10px 且 target 不在 .stack-card 内，card-stack.ts:411-419）。
 

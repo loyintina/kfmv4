@@ -43,6 +43,10 @@ Canvas 2D 文件树的全部呈现与交互：树构建、展开/折叠动画（
 → _runExpandAnimation（:610）→ overlay 搭建 + 字符雨 → onComplete：endOp → 清理 →
 _resetAnimTimeline → 下一个队列点击。
 
+**点击文件行投卡**：createFileFloatingCard（tree-render.ts:862）→ createFloatingCard
+（startInFullscreen）→ closeSidebar + **collapseOrbPanel**（手动路径专属联动：投全屏时
+折叠光球面板；AI 召唤不经过此函数，不折叠——orb.ts:204 注释与 cards.test.ts 双钉）。
+
 **启动**：main.ts init → establishRoot → loadFileTree（拉全展开路径 → ingestTree →
 逐层播展开动画）→ initLazyLoader 挂 beforeExpand 钩子；侧栏打开时销毁旧 renderer 重建。
 

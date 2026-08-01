@@ -11,6 +11,7 @@ import { KFMState, getFileRowData, type FileRowData } from './state.js';
 import { anim } from './animation-registry.js';
 import { setupCharRainTweens, cleanupCharRain, type CharRainCleanup } from "./char-rain.js";
 import { closeSidebar } from './ui.js';
+import { collapseOrbPanel } from './orb.js';
 import { Z } from './z-index-layers.js';
 import { Renderer } from '../engine/v2/renderer.js';
 import { L } from './renderer-lifecycle.js';
@@ -857,7 +858,7 @@ function findTapTarget(box: Box, px: number, py: number): Box | null {
   return null;
 }
 
-/** 点击文件行 → 投放全屏浮卡 + 关闭侧栏 */
+/** 点击文件行 → 投放全屏浮卡 + 关闭侧栏 + 折叠面板（手动路径专属，AI 召唤不折叠） */
 function createFileFloatingCard(hit: Box, hitData: FileRowData): void {
   const root = L.renderer?.getRoot();
   if (!root) return;
@@ -878,6 +879,7 @@ function createFileFloatingCard(hit: Box, hitData: FileRowData): void {
     contentHandler: getCardType('file')?.createHandler({ filePath, accent: cc.color1 }),
   });
   closeSidebar();
+  collapseOrbPanel();
 }
 
 // ============================================================
