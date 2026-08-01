@@ -30,6 +30,7 @@ export const STEPS = [
   'node scripts/check/check-registry.mjs --check-only',
   'node scripts/check/check-zindex.mjs',
   'node scripts/check/check-console.mjs',
+  'node scripts/check/check-secrets.mjs',
   'node scripts/check/check-docs.mjs',
   'node scripts/check/check-consistency.mjs',
   'node scripts/check/check-active-stack.mjs',

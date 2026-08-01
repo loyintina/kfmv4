@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 61532bd · 生成于 2026-08-01 -->
+<!-- 基准 commit 6a64fe9 · 生成于 2026-08-01 -->
 
 # 代码清单（机械层）
 
@@ -168,7 +168,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（96 文件 · 12724 行）
+## infra（97 文件 · 12777 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -224,9 +224,9 @@
 | scripts/check/check-probes.mjs | 86 | — |
 | tests/engine.test.ts | 85 | — |
 | scripts/check/check-deploy-freshness.mjs | 83 | — |
+| scripts/check/chain.mjs | 81 | STEPS |
 | scripts/check/check-hooks.mjs | 81 | — |
 | scripts/agent/exp-thinking.mjs | 81 | — |
-| scripts/check/chain.mjs | 80 | STEPS |
 | scripts/check/check-console.mjs | 79 | — |
 | scripts/check/check-experiment-index.mjs | 79 | — |
 | tests/tag-advisor.test.ts | 77 | — |
@@ -247,6 +247,7 @@
 | scripts/check/check-commit-docs.mjs | 59 | — |
 | tests/omp-glob.test.ts | 58 | — |
 | tests/tool-schema.test.ts | 54 | — |
+| scripts/check/check-secrets.mjs | 52 | — |
 | scripts/check/check-uncommitted.mjs | 51 | — |
 | scripts/check/check-consistency.mjs | 50 | — |
 | scripts/check/check-doc-budget.mjs | 43 | — |
@@ -572,4 +573,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 233 文件 · 43729 行 · 跨域边 241 条
+合计 234 文件 · 43782 行 · 跨域边 241 条
