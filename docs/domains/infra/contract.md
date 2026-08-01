@@ -68,6 +68,14 @@ agent 脚本层——检测归自动化，裁决归会话内 agent，**永远不
    模板串（`git log ${ref}`）会被 shell 元字符注入——agent 脚本层
    同样受安全约束：必须 execFileSync 参数数组 + 输入白名单
    （先例：tag-advisor REF_RE `^[A-Za-z0-9._/-]{1,256}$`）。
+8. **bash 工具后端是 `node:child_process`，不是 pi-natives executeShell**
+   （BAR-BASH-HANG-01，2026-08-01）：brush 进程内 shell 的进程替换实现
+   （`brush-core interp.rs setup_process_substitution`）把管道写端泄漏进
+   node 进程——急性（`comm <(sort …)` 死锁 100 分钟挂死整轮 run）+ 慢性
+   （每次 bash 漏 ~2 fd）。换芯：`/bin/bash -c` + `detached: true` 进程组 +
+   超时/abort 负 pid SIGKILL 杀树 + 1MB 输出截断；omp 升级勿回退后端；
+   泄漏取证待反馈上游（STACK #15）。配套：run-manager 停摆看门狗 360s
+   （生成器零事件即中止，兜一切「悬挂不抛错」类）。
 ## 文件清单
 
 `build.mjs` `scripts/check/chain.mjs`（check 链唯一出处 STEPS）`scripts/check/check-*.mjs`（33 个）`scripts/deploy.sh`（构建→重启→版本握手闭环）
