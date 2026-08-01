@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 072fd26 · 生成于 2026-08-01 -->
+<!-- 基准 commit a473813 · 生成于 2026-08-01 -->
 
 # 代码清单（机械层）
 
@@ -96,7 +96,7 @@
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（54 文件 · 11379 行）
+## ai-chat（54 文件 · 11422 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -106,7 +106,7 @@
 | src/server/ai/tools/omp/browser/launch.ts | 603 | DEFAULT_VIEWPORT, BROWSER_PROTOCOL_TIMEOUT_MS, loadPuppeteer, loadPuppeteerInWorker, LaunchHeadlessOptions, launchHeadlessBrowser, applyViewport, UserAgentOverride, UserAgentSession, applyStealthPatches |
 | src/client/modules/session-client.ts | 529 | SessionMessage, Session, extractMessageText, countTextMessages, sessionStore |
 | src/client/modules/orb-chat-run.ts | 512 | ChatMessage, StreamEvent, getActiveRunId, getActiveCursor, setEventHook, readPersistedRun, clearPersistedRun, settlePendingToolBlocks, resumeRun, doSend |
-| src/server/ai/chat.ts | 473 | ChatMessage, StreamEvent, createClientIdxMapper |
+| src/server/ai/chat.ts | 474 | ChatMessage, StreamEvent, createClientIdxMapper |
 | src/client/modules/ws-channel.ts | 426 | wsChannel, initWsChannel |
 | src/shared/tool-compaction/index.ts | 369 | CompactorEntry, COMPACTOR_REGISTRY, COMPACTOR_NAMES, webTitleKey, CompactionCtx, MUT_BURST_GAP, EXEMPT_USER_ROUNDS, TODO_STALE_GAP, FAIL_REPEAT_MIN, errorFingerprint, failRepeatAnnotation, todoResultAnnotation, normalizeBashCommand, compactToolResult, compactToolInput |
 | src/server/ai/tools/omp/debug.ts | 362 | ompDebugTool |
@@ -117,8 +117,8 @@
 | src/shared/chat-protocol/to-openai-messages.ts | 279 | OpenAiToolCall, OpenAiMessage, ToOpenAiOptions, ToOpenAiResult, toOpenAiMessages |
 | src/server/ai/tools/omp/debug/cdp-connection.ts | 242 | CdpSession, CdpLaunchOptions, CdpAttachOptions, CdpPausedEvent, sendCmd, onCdpEvent, launchCdp, attachCdp, closeCdp |
 | src/server/ai/session-store.ts | 237 | appendEvent, flush, flushSync, invalidateSession, appendUserMessage |
+| src/server/ai/run-manager.ts | 228 | _setStallMsForTest, getActiveRun, getRun, StreamFn, startRun, attachRun, cancelRun |
 | src/client/modules/orb-chat-hints.ts | 225 | startWaitingIndicator, TODO_DISMISS_KEY, todosFingerprint, clearTodoPanel, dismissTodoPanel, updateTodoFromTool |
-| src/server/ai/run-manager.ts | 193 | getActiveRun, getRun, StreamFn, startRun, attachRun, cancelRun |
 | src/server/ai/page-state.ts | 123 | PAGE_STATE_PATH, renderPageState, refreshPageState |
 | src/shared/chat-protocol/reducer.ts | 122 | ReduceContext, applyEvent, reduceEvents |
 | src/server/ai/prompt-assembler.ts | 120 | getActiveRoleFile, assembleRoleSystemPrompt, assembleDynamicPrompt |
@@ -131,8 +131,8 @@
 | src/server/ai/tools/omp/web-search.ts | 109 | ompWebSearchTool |
 | src/server/ai/rule-engine.ts | 108 | AiRule, loadRules, buildAlwaysApplyPrompt, checkToolCallRules, reloadRules |
 | src/server/ai/tools/index.ts | 108 | getAllTools, getToolDefinitions, executeTool, hasTool, getTool |
+| src/server/ai/tools/types.ts | 101 | ContentBlock, ToolResult, ToolUpdate, ToolContext, KfmTool, ToolError, ToolAbortError, throwIfAborted, renderError |
 | src/server/ai/tools/omp/browser.ts | 100 | browserTool |
-| src/server/ai/tools/types.ts | 99 | ContentBlock, ToolResult, ToolUpdate, ToolContext, KfmTool, ToolError, ToolAbortError, throwIfAborted, renderError |
 | src/server/ai/tools/omp/browser/run-cancellation.ts | 86 | markHandled, waitForBrowserRun, bindBrowserRunFacade |
 | src/server/ai/tools/omp/native.ts | 72 | executeShell, grep, glob |
 | src/server/ai/tools/kfmv4/restart.ts | 62 | kfmRestartTool |
@@ -141,10 +141,10 @@
 | src/server/ai/tools/omp/edit.ts | 52 | ompEditTool |
 | src/shared/chat-protocol/events.ts | 45 | StreamEvent |
 | src/shared/chat-protocol/messages.ts | 43 | TextBlock, ToolBlock, RuleWarningBlock, ContentBlock, ChatMessage |
+| src/server/ai/tools/omp/bash.ts | 43 | ompBashTool |
 | src/server/ai/tools/omp/todo.ts | 43 | ompTodoTool |
 | src/server/ai/tools/omp/glob.ts | 42 | ompGlobTool |
 | src/server/ai/tools/omp/write.ts | 42 | ompWriteTool |
-| src/server/ai/tools/omp/bash.ts | 38 | ompBashTool |
 | src/server/ai/tools/omp/grep.ts | 37 | ompGrepTool |
 | src/server/ai/tools/omp/browser/tab-worker-entry.ts | 31 | — |
 | src/shared/message-normalize.ts | 30 | NormalizableBlock, promoteReasoningBlocks |
@@ -166,7 +166,7 @@
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 
-## infra（94 文件 · 12194 行）
+## infra（94 文件 · 12265 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -182,11 +182,11 @@
 | scripts/check/check-registry.mjs | 294 | — |
 | tests/cards.test.ts | 286 | — |
 | tests/gesture-registry.test.ts | 263 | — |
+| tests/run-manager.test.ts | 263 | — |
 | tests/invariants.test.ts | 245 | — |
 | scripts/check/check-css-wiring.mjs | 228 | — |
 | tests/renderer.test.ts | 215 | — |
 | scripts/agent/semantic-mutate.mjs | 207 | MUTATIONS |
-| tests/run-manager.test.ts | 192 | — |
 | tests/smoke/smoke.mjs | 190 | — |
 | scripts/check/gen-code-inventory.mjs | 181 | — |
 | tests/to-openai-messages.test.ts | 181 | — |
@@ -559,4 +559,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 229 文件 · 42894 行 · 跨域边 232 条
+合计 229 文件 · 43008 行 · 跨域边 232 条
