@@ -1,6 +1,19 @@
 // Preload: browser globals for Node.js test environment
 // Keep in sync with all modules under test
 
+// ========== 测试环境数据目录隔离（BAR-TEST-ENV-01，最优先段） ==========
+// path-utils 在 import 时读 KFM_ROOT 计算 ROOT_DIR/KFM_DATA_DIR——preload 先于
+// 一切被测模块执行，此处把数据根重定向到临时目录。此前测试以真实 $HOME 跑，
+// run-manager/session 类测试的落盘把 s-basic/s-stall/sess-x 等垃圾会话文件
+// 写进生产 ~/.kfmv4/sessions/（用户会话卡可见，2026-08-01 手工清过 11 个，
+// 每轮 npm test 都会再长）。不改 HOME——smoke 等场景仍需要它。
+import { mkdtempSync as _mkdtempSync } from 'fs';
+import { tmpdir as _tmpdir } from 'os';
+import { join as _join } from 'path';
+if (!process.env.KFM_ROOT) {
+  process.env.KFM_ROOT = _mkdtempSync(_join(_tmpdir(), 'kfmv4-test-root-'));
+}
+
 // ========== localStorage ==========
 const _store = {};
 globalThis.localStorage = {

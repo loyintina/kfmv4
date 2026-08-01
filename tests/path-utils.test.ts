@@ -115,10 +115,15 @@ group('path-utils — 动态根切换');
 
 test('setActiveRoot 后 sanitizePath 使用新根', () => {
   const original = getActiveRoot();
+  // 新根取独立临时目录——测试不得假设旧根位置（BAR-TEST-ENV-01 后旧根也在 /tmp 下）
+  const newRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'kfm-newroot-'));
   try {
-    setActiveRoot('/tmp');
-    assert(sanitizePath('/tmp/foo.txt') !== null, '/tmp/foo.txt 应在新根内通过');
-    assert(sanitizePath(original + '/x') === null, '旧根路径应被拒绝');
+    setActiveRoot(newRoot);
+    assert(sanitizePath(path.join(newRoot, 'foo.txt')) !== null, '新根内路径应通过');
+    // 旧根与新根互不包含时，旧根路径才应被拒绝（包含关系下该断言无意义）
+    if (!original.startsWith(newRoot + path.sep) && !newRoot.startsWith(original + path.sep)) {
+      assert(sanitizePath(path.join(original, 'x')) === null, '旧根路径应被拒绝');
+    }
   } finally {
     setActiveRoot(original);
   }
@@ -161,11 +166,34 @@ regression('BAR-SEC-07', 'path-utils', '.kfmv4/ 不再屏蔽（用户个人配�
 
 regression('BAR-SEC-08', 'path-utils', 'SAFE_ROOT 内指向外部的软链 → null（realpath 逃逸）', () => {
   const linkName = '.kfm-sec-test-' + Date.now();
-  const linkPath = path.join(os.homedir(), linkName);
+  // 软链必须建在当前活跃根内（不得假设根 = HOME，BAR-TEST-ENV-01 后根为临时目录）
+  const linkPath = path.join(getActiveRoot(), linkName);
   try {
     fs.symlinkSync('/etc/passwd', linkPath);
     assert(sanitizePath(linkName) === null, '指向 /etc/passwd 的软链应被 realpath 拦截');
   } finally {
     try { fs.unlinkSync(linkPath); } catch { /* ignore */ }
   }
+});
+
+// ==========================================================================
+// BAR-TEST-ENV-01：测试环境数据目录隔离（2026-08-01，STACK #16）
+// 病灶：测试以真实 $HOME 跑，run-manager/session 类测试落盘把 s-basic/
+// s-stall/sess-x 等垃圾会话写进生产 ~/.kfmv4/sessions/（用户会话卡可见，
+// 手工清过 11 个，每轮 npm test 再长）。根治：preload 把 KFM_ROOT 重定向
+// 到临时目录（path-utils import 时读 env 计算 KFM_DATA_DIR）。
+// revert 验证：删掉 preload 的隔离段，本钉 KFM_ROOT 断言即红。
+// ==========================================================================
+
+regression('BAR-TEST-ENV-01', 'test-data-dir-isolation', '测试数据根重定向临时目录，不污染生产 ~/.kfmv4', async () => {
+  assert(process.env.KFM_ROOT, 'preload 必须设置 KFM_ROOT（缺失 = 测试落盘会进生产数据目录）');
+  assert(process.env.KFM_ROOT.includes('kfmv4-test-root-'), `KFM_ROOT 应为 preload 临时目录，实际: ${process.env.KFM_ROOT}`);
+  const { KFM_DATA_DIR } = await import('../src/server/path-utils.js');
+  assert(KFM_DATA_DIR === path.join(process.env.KFM_ROOT, '.kfmv4'), `KFM_DATA_DIR 应落在临时根下，实际: ${KFM_DATA_DIR}`);
+  const prodDir = path.join(process.env.HOME || '', '.kfmv4');
+  assert(KFM_DATA_DIR !== prodDir, `KFM_DATA_DIR 不得是生产数据目录 ${prodDir}`);
+  // preload 源码断言：隔离段必须在文件头部（path-utils import 前生效）
+  const { readFileSync } = await import('fs');
+  const preload = readFileSync(new URL('./preload.mjs', import.meta.url), 'utf-8');
+  assert(preload.includes('kfmv4-test-root-'), 'preload.mjs 缺数据目录隔离段');
 });
