@@ -141,7 +141,7 @@ export function startRun(
           run.abort.abort(); // 中止信号透传：上游 fetch / 工具原生子进程能杀的杀
           // 不可 await it.return()：生成器卡死在永不 resolve 的 await 时（正是停摆
           // 场景），return() 会排在 pending next() 后面同样永不返回——只能 fire-and-forget。
-          try { it.return?.()?.catch(() => {}); } catch { /* 同步 throw 也不掩盖停摆 */ }
+          try { it.return?.(undefined)?.catch(() => {}); } catch { /* 同步 throw 也不掩盖停摆 */ }
           throw new Error(`生成停滞超过 ${Math.round(_stallMs / 1000)}s 无任何事件，已中止（工具挂死或上游静默停摆）`);
         }
         if (res.done) break;
