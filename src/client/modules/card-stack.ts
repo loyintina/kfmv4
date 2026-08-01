@@ -394,7 +394,7 @@ export function initCardStack(): void {
       }
 
       if (_axisLock === 'horizontal') {
-        if (dx < -50 && _prevDx >= -50) { _prevDx = dx; launchFocusedCard(true); closeCardStack(); return; }
+        if (dx < -50 && _prevDx >= -50) { _prevDx = dx; launchFocusedCard(false); closeCardStack(); return; }
         if (dx > 50 && _prevDx <= 50) { _prevDx = dx; closeCardStack(); return; }
         _prevDx = dx;
       } else if (_axisLock === 'vertical') {
@@ -406,6 +406,14 @@ export function initCardStack(): void {
           updateFocus();
         }
       }
+    },
+    onEnd: (e, dx, dy) => {
+      // 堆外 tap（未形成滑动的点击）→ 关堆。堆内卡片的点击走卡自身 click 投卡，不在此拦截
+      if (_axisLock !== 'none') return;
+      if (Math.abs(dx) > 10 || Math.abs(dy) > 10) return;
+      const t = e.target as HTMLElement | null;
+      if (t && typeof t.closest === 'function' && t.closest('.stack-card')) return;
+      closeCardStack();
     },
   });
 

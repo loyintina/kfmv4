@@ -283,3 +283,105 @@ test('dismissFloatingCard removes card', () => {
   assert(!hasFloatingCard(), 'should NOT have floating card after dismiss');
   while (hasFloatingCard()) dismissFloatingCard(false);
 });
+
+group('floating-card 全屏唯一槽位');
+
+test('enterFullscreen 完全关闭旧全屏卡（新来旧关，不再窗口化退回）', async () => {
+  const { _floatingCards } = await import('../src/client/modules/floating-shared.js');
+  while (hasFloatingCard()) dismissFloatingCard(false);
+  const a = createFloatingCard({
+    id: 'test-fs-old', typeId: 'test-file',
+    color1: '#7c3aed', color2: '#00d4ff', name: 'old-fs',
+    sourceX: 50, sourceY: 50,
+  });
+  const b = createFloatingCard({
+    id: 'test-fs-new', typeId: 'test-file',
+    color1: '#7c3aed', color2: '#00d4ff', name: 'new-fs',
+    sourceX: 80, sourceY: 80,
+  });
+  assert(a && b, 'both cards should be created');
+  if (!a || !b) return;
+  enterFullscreen(a);
+  assert(a.state === 'fullscreen', `a should be fullscreen, got ${a.state}`);
+  enterFullscreen(b);
+  assert(b.state === 'fullscreen', `b should be fullscreen, got ${b.state}`);
+  // 旧卡 a 必须被完全关闭（从浮卡列表消失），而不是 exitFullscreen 退回浮卡态
+  assert(!_floatingCards.includes(a), `old fullscreen card should be dismissed from _floatingCards, state=${a.state}`);
+  while (hasFloatingCard()) dismissFloatingCard(false);
+});
+
+test('浮卡召唤不影响已有全屏卡', async () => {
+  const { _floatingCards } = await import('../src/client/modules/floating-shared.js');
+  while (hasFloatingCard()) dismissFloatingCard(false);
+  const fs = createFloatingCard({
+    id: 'test-fs-keep', typeId: 'test-file',
+    color1: '#7c3aed', color2: '#00d4ff', name: 'keep-fs',
+    sourceX: 50, sourceY: 50,
+  });
+  assert(fs, 'card should be created');
+  if (!fs) return;
+  enterFullscreen(fs);
+  const f = createFloatingCard({
+    id: 'test-float-1', typeId: 'test-file',
+    color1: '#7c3aed', color2: '#00d4ff', name: 'float-1',
+    sourceX: 100, sourceY: 100,
+  });
+  assert(f, 'floating card should be created');
+  assert(fs.state === 'fullscreen', `fullscreen card should stay fullscreen after floating summon, got ${fs.state}`);
+  assert(_floatingCards.includes(fs), 'fullscreen card should still exist');
+  while (hasFloatingCard()) dismissFloatingCard(false);
+});
+
+group('card-stack 堆外点击关堆');
+
+test('堆外 tap 关堆 / 堆内 tap 不关 / 滑动后不触发 tap 关堆', async () => {
+  const { gestures } = await import('../src/client/modules/gesture-registry.js');
+  const { initCardStack } = await import('../src/client/modules/card-stack.js');
+  // 测试环境的 window mock 没有 addEventListener，先 stub（initCardStack 末尾要挂 resize 监听）
+  const _origAdd = (window as any).addEventListener;
+  if (typeof _origAdd !== 'function') (window as any).addEventListener = () => {};
+  try {
+    initCardStack();
+  } finally {
+    if (typeof _origAdd !== 'function') delete (window as any).addEventListener;
+  }
+  const h = (gestures as any)._handlers.find((x: any) => h_filter(x));
+  function h_filter(x: any) { return x.id === 'card-stack-global'; }
+  assert(h, 'card-stack-global handler should be registered');
+  assert(typeof h.onEnd === 'function', 'card-stack-global should have onEnd (tap 关堆)');
+
+  // 动画 mock 的 timeline onComplete 走 setTimeout（异步）但 reverse() 同步触发
+  // onReverseComplete——close→open 紧挨会落到 closed。ensureOpen 循环重开+等落定来免疫。
+  const settle = () => new Promise(r => setTimeout(r, 60));
+  const ensureOpen = async () => {
+    for (let i = 0; i < 5 && !isCardStackOpen(); i++) {
+      openCardStack();
+      await settle();
+    }
+    assert(isCardStackOpen(), 'stack should be open');
+  };
+
+  // 1) 堆外 tap（位移≈0，target 不在 .stack-card 内）→ 关堆
+  await ensureOpen();
+  h.onStart?.({} as any);
+  h.onEnd?.({ target: document.body } as any, 0, 0, 100);
+  assert(!isCardStackOpen(), 'tap outside stack should close it');
+
+  // 2) 堆内 tap（target 在 .stack-card 内）→ 不关堆（走卡片自身 click 投卡）
+  await ensureOpen();
+  const cardEl = document.createElement('div');
+  cardEl.className = 'stack-card';
+  document.body.appendChild(cardEl);
+  h.onStart?.({} as any);
+  h.onEnd?.({ target: cardEl } as any, 0, 0, 100);
+  assert(isCardStackOpen(), 'tap inside stack card should NOT close it');
+  cardEl.remove();
+
+  // 3) 形成滑动后松手 → 不触发 tap 关堆（位移超阈值）
+  await ensureOpen();
+  h.onStart?.({} as any);
+  h.onMove?.({} as any, 30, 5, 100);
+  h.onEnd?.({ target: document.body } as any, 30, 5, 100);
+  assert(isCardStackOpen(), 'after real swipe, tap-close should not fire');
+  closeCardStack();
+});

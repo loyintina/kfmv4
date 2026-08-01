@@ -19,10 +19,10 @@ import {
 export function enterFullscreen(item: FloatingCardItem): void {
   if (item.state === 'fullscreen' || item.state === 'dismissing') return;
 
-  // 如果有其他全屏卡，先退出
+  // 如果有其他全屏卡，先完全关闭（全屏唯一槽位：新来旧关，不再窗口化退回）
   for (const other of _floatingCards) {
     if (other !== item && other.state === 'fullscreen') {
-      exitFullscreen(other);
+      dismissFullscreen(other);
     }
   }
 

@@ -385,7 +385,7 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
       const totalTokens = sessions.reduce((n, s) => n + (s.tokenCount ?? 0), 0);
       _statsEl.textContent = `共 ${sessions.length} 个会话，${totalMsgs} 条 · ${formatTokens(totalTokens)}`;
     }
-    if (_nameInput) { const s = getActiveSession(); _nameInput!.value = s?.title || ''; }
+    if (_nameInput) { const s = getActiveSession(); if (document.activeElement !== _nameInput) _nameInput!.value = s?.title || ''; }
     if (_sessionSelect) {
       _sessionSelect.updateItems(sessions.map(s => ({ label: s.title, value: s.id })), activeSessionId);
     }
@@ -493,14 +493,12 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
       const btnRow = document.createElement('div');
       btnRow.style.cssText = 'display:flex;gap:6px;margin-top:8px;margin-bottom:6px';
 
-      const saveBtn = document.createElement('button');
-      saveBtn.textContent = '保存';
-      saveBtn.style.cssText = `flex:1;padding:0.3em 0;border-radius:6px;font-size:var(--card-font-size,10px);font-weight:600;cursor:pointer;border:1px solid ${c1}40;color:${c1};background:transparent`;
-      saveBtn.onclick = async () => {
+      // 保存逻辑：保存按钮与 input 失焦共用。dirty 检查去重——点保存按钮会先触发 blur 再触发 click
+      const saveName = async () => {
         const s = getActiveSession();
         if (!s) return;
         const newTitle = _nameInput!.value.trim();
-        if (!newTitle) return;
+        if (!newTitle || newTitle === s.title) return;
         // setTitle 负责文件重命名 + active.json 同步 + store 状态更新
         await sessionStore.setTitle(s, newTitle);
         // 本地状态同步：sessionStore 已更新 list/activeId，只需刷新本地缓存
@@ -508,6 +506,12 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
         if (activeSessionId !== sessionStore.activeId) activeSessionId = sessionStore.activeId;
         renderAll();
       };
+
+      const saveBtn = document.createElement('button');
+      saveBtn.textContent = '保存';
+      saveBtn.style.cssText = `flex:1;padding:0.3em 0;border-radius:6px;font-size:var(--card-font-size,10px);font-weight:600;cursor:pointer;border:1px solid ${c1}40;color:${c1};background:transparent`;
+      saveBtn.onclick = saveName;
+      _nameInput!.addEventListener('blur', () => { void saveName(); });
 
       const newBtn = document.createElement('button');
       newBtn.textContent = '新建';

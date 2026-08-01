@@ -43,6 +43,9 @@ domain-src 归在本域——同 ai-chat code-map 漂移 4 的边界问题。
 
 **召唤浮卡**：page-swipe → openCardStack（GSAP 飞入）→ launchFocusedCard（card-stack.ts:80）
 → createHandler → createFloatingCard（建壳 + createInstance + activate + 全屏或散落飞入）。
+堆内手势分流：点击卡片=投**全屏**卡（card-stack.ts:178-190）；左滑=投**浮卡**（非全屏，
+card-stack.ts:397 launchFocusedCard(false)）；右滑=关堆；**堆外 tap=关堆**
+（'card-stack-global' onEnd 位移<10px 且 target 不在 .stack-card 内，card-stack.ts:411-419）。
 
 **终端 WS 会话**：initTerminalCore（动态 import xterm）→ terminal-open（tag 匹配认领
 sessionId，:530）→ onData→terminal-input / terminal-output→term.write → compact 只拔
@@ -59,7 +62,7 @@ DOM 保 WS（:594）→ dismiss 全清 + terminal-close。tmux 卡叠加 list-se
 
 ## 强制不变量（附证据）
 
-- 全屏唯一槽位：enterFullscreen 先退其他全屏卡（floating-fullscreen.ts:23-27）
+- 全屏唯一槽位：enterFullscreen 先**完全关闭**其他全屏卡（dismissFullscreen，floating-fullscreen.ts:23-27）——新来旧关，不再窗口化退回；浮卡召唤不影响全屏卡（cards.test.ts 双钉）
 - zLocked 卡不参与层叠交换（floating-card.ts:96/110/122）
 - 尺寸下限 54×54 四处钳制（floating-card.ts:27-28）
 - 终端 open 回复必须 tag 匹配才认领 sessionId（terminal-card-04.ts:530）
