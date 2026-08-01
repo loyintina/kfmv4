@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 61579a7 · 生成于 2026-08-01 -->
+<!-- 基准 commit 2278718 · 生成于 2026-08-01 -->
 
 # 代码清单（机械层）
 
@@ -166,7 +166,7 @@
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 
-## infra（94 文件 · 12471 行）
+## infra（95 文件 · 12536 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -223,7 +223,7 @@
 | scripts/check/check-deploy-freshness.mjs | 83 | — |
 | scripts/check/check-hooks.mjs | 81 | — |
 | scripts/agent/exp-thinking.mjs | 81 | — |
-| scripts/check/chain.mjs | 79 | STEPS |
+| scripts/check/chain.mjs | 80 | STEPS |
 | scripts/check/check-console.mjs | 79 | — |
 | tests/tag-advisor.test.ts | 77 | — |
 | scripts/check/check-as-any.mjs | 76 | — |
@@ -235,6 +235,7 @@
 | scripts/check/check-card-meta.mjs | 68 | — |
 | scripts/check/check-ledger-commits.mjs | 67 | — |
 | tests/floating-state.test.ts | 66 | — |
+| scripts/check/check-experiment-index.mjs | 64 | — |
 | scripts/agent/test-tag-advisor.mjs | 64 | — |
 | scripts/check/check-fix-tests.mjs | 62 | — |
 | scripts/check/check-active-stack.mjs | 61 | — |
@@ -564,4 +565,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 229 文件 · 43276 行 · 跨域边 237 条
+合计 230 文件 · 43341 行 · 跨域边 237 条

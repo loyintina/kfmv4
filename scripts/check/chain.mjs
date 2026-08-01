@@ -50,6 +50,7 @@ export const STEPS = [
   'node scripts/check/check-hooks.mjs',
   'node scripts/check/check-probes.mjs',
   'node scripts/check/check-release-radar.mjs',
+  'node scripts/check/check-experiment-index.mjs',
   'node scripts/check/sync-counts.mjs --check-only',
   'node scripts/check/gen-code-inventory.mjs --check-only',
   'npm test',
