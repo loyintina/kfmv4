@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 377ae96 · 生成于 2026-08-01 -->
+<!-- 基准 commit 9128a02 · 生成于 2026-08-01 -->
 
 # 代码清单（机械层）
 
@@ -36,7 +36,7 @@
 | src/client/engine/v2/animation.ts | 40 | ease |
 | src/client/engine/v2/utils.ts | 24 | uniformSpacing, hvSpacing, ZERO_SPACING |
 
-## floating-card（27 文件 · 6741 行）
+## floating-card（27 文件 · 6758 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -45,7 +45,7 @@
 | src/client/cards/plugins/role.card.ts | 740 | — |
 | src/client/cards/plugins/config.card.ts | 694 | — |
 | src/client/cards/plugins/session.card.ts | 615 | — |
-| src/client/cards/plugins/api.card.ts | 575 | — |
+| src/client/cards/plugins/api.card.ts | 592 | — |
 | src/client/modules/card-stack.ts | 458 | getCardCount, getCard, getCardName, getCardId, hexToRgba, cardGradient, cardBg, getFocusIndex, getCurrentAccent, getCardHandler, getFocusedCardRect, animateStackPullFeedback, launchFocusedCard, openCardStack, closeCardStack, isCardStackOpen, focusNext, focusPrev, initCardStack |
 | src/client/cards/plugins/tools.card.ts | 307 | — |
 | src/client/modules/renderers/handler-factory.ts | 296 | createFileHandler |
@@ -96,7 +96,7 @@
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（54 文件 · 11459 行）
+## ai-chat（54 文件 · 11469 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -106,7 +106,7 @@
 | src/server/ai/tools/omp/browser/launch.ts | 603 | DEFAULT_VIEWPORT, BROWSER_PROTOCOL_TIMEOUT_MS, loadPuppeteer, loadPuppeteerInWorker, LaunchHeadlessOptions, launchHeadlessBrowser, applyViewport, UserAgentOverride, UserAgentSession, applyStealthPatches |
 | src/client/modules/session-client.ts | 529 | SessionMessage, Session, extractMessageText, countTextMessages, sessionStore |
 | src/client/modules/orb-chat-run.ts | 512 | ChatMessage, StreamEvent, getActiveRunId, getActiveCursor, setEventHook, readPersistedRun, clearPersistedRun, settlePendingToolBlocks, resumeRun, doSend |
-| src/server/ai/chat.ts | 474 | ChatMessage, StreamEvent, createClientIdxMapper |
+| src/server/ai/chat.ts | 484 | ChatMessage, StreamEvent, createClientIdxMapper |
 | src/client/modules/ws-channel.ts | 426 | wsChannel, initWsChannel |
 | src/shared/tool-compaction/index.ts | 369 | CompactorEntry, COMPACTOR_REGISTRY, COMPACTOR_NAMES, webTitleKey, CompactionCtx, MUT_BURST_GAP, EXEMPT_USER_ROUNDS, TODO_STALE_GAP, FAIL_REPEAT_MIN, errorFingerprint, failRepeatAnnotation, todoResultAnnotation, normalizeBashCommand, compactToolResult, compactToolInput |
 | src/server/ai/tools/omp/debug.ts | 362 | ompDebugTool |
@@ -155,23 +155,24 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（6 文件 · 1209 行）
+## server（7 文件 · 1279 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/server/routes/files.ts | 373 | FileItem, sliceMessages, setupFileRoutes |
 | src/server/ws-server.ts | 315 | WsServer |
-| src/server/index.ts | 165 | — |
+| src/server/index.ts | 169 | — |
 | src/server/path-utils.ts | 153 | ROOT_DIR, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, SESSION_ID_RE, isValidSessionId, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
+| src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（95 文件 · 12551 行）
+## infra（96 文件 · 12724 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | tests/client-logic.test.ts | 875 | — |
-| tests/regression.test.ts | 643 | — |
+| tests/regression.test.ts | 644 | — |
 | tests/tool-compaction.test.ts | 505 | — |
 | tests/preload.mjs | 423 | — |
 | tests/cards.test.ts | 410 | — |
@@ -196,8 +197,10 @@
 | scripts/agent/semantic-audit.tasks.mjs | 152 | TASKS |
 | scripts/check/check-docs.mjs | 146 | — |
 | scripts/agent/semantic-bench.mjs | 145 | — |
+| scripts/agent/agent-runner.mjs | 144 | renderTemplate, extractJson, runAgent |
 | scripts/check/check-bar-ledger.mjs | 142 | — |
 | scripts/check/sync-counts.mjs | 139 | — |
+| tests/provider-env.test.ts | 137 | — |
 | scripts/agent/exp-iceberg.mjs | 134 | — |
 | scripts/check/check-checks.mjs | 132 | — |
 | scripts/check/check-tool-compaction.mjs | 129 | — |
@@ -209,7 +212,6 @@
 | tests/harness.ts | 116 | TestTag, TestOpts, test, regression, group, beforeEach, runAll |
 | scripts/check/check-doc-coverage.mjs | 110 | — |
 | scripts/check/check-zindex.mjs | 110 | — |
-| scripts/agent/agent-runner.mjs | 109 | renderTemplate, extractJson, runAgent |
 | scripts/agent/exp-vision-internal.mjs | 109 | — |
 | build.mjs | 108 | — |
 | scripts/check/check-cards.mjs | 105 | — |
@@ -265,6 +267,10 @@
 | tests/probes/sync-counts/tests/probe.ts | 2 | — |
 | tests/probes/checks/scripts/check/check-alpha.mjs | 1 | — |
 | tests/probes/checks/scripts/check/check-beta.mjs | 1 | — |
+
+## ⚠ 未登记（1 文件——不在 domain-src.mjs 任何域内）
+
+- src/server/env-store.ts（103 行）
 
 ## 跨域 import 边（机械生成）
 
@@ -550,9 +556,11 @@
 - tests/floating-state.test.ts → src/client/modules/floating-shared.ts
 - tests/reset-hooks.ts → src/client/modules/card-registry.ts
 
-### infra → server（6 边）
+### infra → server（8 边）
 
 - tests/path-utils.test.ts → src/server/path-utils.ts
+- tests/provider-env.test.ts → src/server/path-utils.ts
+- tests/provider-env.test.ts → src/server/routes/providers.ts
 - tests/server-routes.test.ts → src/server/path-utils.ts
 - tests/server-routes.test.ts → src/server/routes/files.ts
 - tests/session-invalidate.test.ts → src/server/path-utils.ts
@@ -565,4 +573,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 230 文件 · 43356 行 · 跨域边 237 条
+合计 232 文件 · 43626 行 · 跨域边 239 条
