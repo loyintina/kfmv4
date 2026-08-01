@@ -65,10 +65,9 @@ agent 脚本层——检测归自动化，裁决归会话内 agent，**永远不
    （无执行面的注册会误导 AI）——「AI 之手」落地时在 check-registry.mjs 重建
    能力清单 + 检查块，勿提前补注册。
 7. **agent 脚本执行外部命令禁 shell 插值**（BAR-SEC-15，2026-08-01）：
-   `execSync` 模板串（`git log ${ref}`）会被 shell 元字符注入——agent 脚本层
-   同样受安全约束：必须 `execFileSync` 参数数组 + 输入白名单
+   模板串（`git log ${ref}`）会被 shell 元字符注入——agent 脚本层
+   同样受安全约束：必须 execFileSync 参数数组 + 输入白名单
    （先例：tag-advisor REF_RE `^[A-Za-z0-9._/-]{1,256}$`）。
-
 ## 文件清单
 
 `build.mjs` `scripts/check/chain.mjs`（check 链唯一出处 STEPS）`scripts/check/check-*.mjs`（33 个）`scripts/deploy.sh`（构建→重启→版本握手闭环）
