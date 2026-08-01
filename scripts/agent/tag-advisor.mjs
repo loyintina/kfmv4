@@ -6,20 +6,38 @@
  *   agent 输出 {level, reason, notes}，级别不得低于机械下限（一致性校验）
  *
  * 用法：node scripts/agent/tag-advisor.mjs [基准tag] [顶端ref=HEAD]
- * exit 0 = 精确建议（可机械流转）；exit 2 = 全 provider 失败或重试耗尽
- * （exit 1「模糊输出交调用方」是设计意图未实现——语义审计 B2 修订，重试耗尽现归 exit 2）
+ * exit 0 = 精确建议（可机械流转）；exit 1 = 参数非法（ref 格式校验拒绝，BAR-SEC-15）；
+ * exit 2 = 全 provider 失败或重试耗尽
+ * （旧 exit 1「模糊输出交调用方」是设计意图未实现——语义审计 B2 修订，重试耗尽现归 exit 2）
  */
 
-import { execSync } from 'child_process';
+import { execFileSync, execSync } from 'child_process';
+import { pathToFileURL } from 'url';
 import { runAgent, extractJson } from './agent-runner.mjs';
 
 const LEVELS = ['none', 'patch', 'minor', 'major'];
 
-const [baseArg, headArg] = process.argv.slice(2);
-const baseTag = baseArg || execSync('git describe --tags --abbrev=0', { encoding: 'utf-8' }).trim();
-const headRef = headArg || 'HEAD';
-const log = execSync(`git log ${baseTag}..${headRef} --format='%s'`, { encoding: 'utf-8' }).trim();
-const commits = log ? log.split('\n') : [];
+/** ref 严格格式校验（BAR-SEC-15）：git ref 安全字符集，1..256 位——路径分隔符/空白/引号/`$()` 一律拒绝 */
+export const REF_RE = /^[A-Za-z0-9._/-]{1,256}$/;
+export function isValidRef(ref) {
+  return typeof ref === 'string' && REF_RE.test(ref);
+}
+
+async function main() {
+  const [baseArg, headArg] = process.argv.slice(2);
+  if (baseArg !== undefined && !isValidRef(baseArg)) {
+    console.error(`[tag-advisor] 非法基准 ref：${baseArg}`);
+    process.exit(1);
+  }
+  if (headArg !== undefined && !isValidRef(headArg)) {
+    console.error(`[tag-advisor] 非法顶端 ref：${headArg}`);
+    process.exit(1);
+  }
+  const baseTag = baseArg || execSync('git describe --tags --abbrev=0', { encoding: 'utf-8' }).trim();
+  const headRef = headArg || 'HEAD';
+  // BAR-SEC-15：execFileSync 参数数组——ref 不进 shell，杜绝命令注入
+  const log = execFileSync('git', ['log', `${baseTag}..${headRef}`, '--format=%s'], { encoding: 'utf-8' }).trim();
+  const commits = log ? log.split('\n') : [];
 
 const count = re => commits.filter(s => re.test(s)).length;
 const stats = {
@@ -97,3 +115,9 @@ if (level === 'none') {
   console.log(`[tag-advisor] release note 草稿：${notes}`);
 }
 process.exit(0);
+}
+
+// 直接执行时跑 main；被测试 import 时只取导出（REF_RE / isValidRef），不触发 LLM 调用
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await main();
+}
