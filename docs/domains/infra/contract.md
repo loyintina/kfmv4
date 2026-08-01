@@ -36,10 +36,18 @@ agent 脚本层——检测归自动化，裁决归会话内 agent，**永远不
 2. **钩子接线脚本必须声明模式**——`.githooks/` 薄壳接线的脚本头部机器可读声明
    `MODE: hard-fail|warning`，壳注释模式词必须一致（check-hooks 第 4 条对账）。
    事故原型：耦合门升 hard fail 改脚本忘改壳，壳写死 exit 0 吞码，拦截虚掩（2026-07-30）。
-2. **新增工具/卡片/模块必须过对应双向核对 check**（tool-compaction/cards/registry），
+3. **新增工具/卡片/模块必须过对应双向核对 check**（tool-compaction/cards/registry），
    不登记 = 构建中断。
-3. **新增服务端依赖同步 build.mjs external 列表**。
-4. **禁止 (as any)**（自 INVARIANTS §四.2）：新建代码零逃逸，check-as-any 扫描，
+4. **fix 提交必须带回归钉**（BAR-FIX-TESTS-01，2026-07-30）：commit-msg 钩子 +
+   构建链双执法点——`fix:` 提交未触及 `tests/` = 中断；确认无需补钉（纯配置/
+   文案/构建修复）用独立行 `tests:na` 豁免。
+5. **部署新鲜度硬门**（BAR-DEPLOY-01，2026-07-30）：`dist/build-info.json` 的
+   buildTime 必须 ≥ max(HEAD 提交时间, src 最新 .ts mtime)——源码比包新 = 链红
+   （防「修了源码验证旧包」）；`build.mjs` 内以 `--soft` 防自锁；`deploy-fast.sh`
+   快通道（--fast 跳过全链）保提交节奏；version-watch 浏览器横幅比对 bundle 内嵌
+   BUILD_TIME 与服务端 buildTime 同值判定旧包（单源：build.mjs 一处生成）。
+6. **新增服务端依赖同步 build.mjs external 列表**。
+7. **禁止 (as any)**（自 INVARIANTS §四.2）：新建代码零逃逸，check-as-any 扫描，
    新增逃逸构建中断；确因类型定义缺失必须 ① check-as-any WHITELIST 登记（注释原因）
    ② 代码行加 `// P2:` 备注根因。
 
@@ -56,6 +64,10 @@ agent 脚本层——检测归自动化，裁决归会话内 agent，**永远不
 6. **check-registry 能力层暂缺**：CAPABILITY_MANIFEST 已随 ADR-004 追加裁决摘除
    （无执行面的注册会误导 AI）——「AI 之手」落地时在 check-registry.mjs 重建
    能力清单 + 检查块，勿提前补注册。
+7. **agent 脚本执行外部命令禁 shell 插值**（BAR-SEC-15，2026-08-01）：
+   `execSync` 模板串（`git log ${ref}`）会被 shell 元字符注入——agent 脚本层
+   同样受安全约束：必须 `execFileSync` 参数数组 + 输入白名单
+   （先例：tag-advisor REF_RE `^[A-Za-z0-9._/-]{1,256}$`）。
 
 ## 文件清单
 
