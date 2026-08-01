@@ -163,6 +163,16 @@
    — 方法论（#12 测试先行在实验基建上的同源应用）：先摸索实验机制和流程（试卷/
      基线/尸检/评分口径），产物是实验结论——结论用来推动决策和方向设计；
      设计不能脱离实际，决策需要真实数据支撑
+15. 稳定代码逐渐 Rust 化方向研究（2026-08-01 用户动议，远景方向）
+   — 契机：BAR-BASH-HANG-01 调研发现 pi-natives 全栈源码可得（MIT，vendored
+     brush-core/uutils 同仓可改），服务器已有 rustup——Rust 化有现成土壤
+   — 方向：稳定下来的热路径/性能敏感模块逐步 Rust 化（形态未定：napi  addon /
+     sidecar 进程 / wasm——需先做选型研究，不预设）
+   — 前置：先积累自己的 Rust 工程能力（小型试点），再谈迁移；不为此引入
+     新的构建链复杂度到主仓
+   — 附属待办：pi-natives 进程替换 fd 泄漏（brush-core interp.rs
+     setup_process_substitution 写端未回收，/proc 级取证在本会话）整理成
+     issue 反馈上游 can1357/oh-my-pi——开源回馈，也防 omp 升级带回同类问题
 4. 手势系统研究与全局交互区域分权（P3，自 HANDBOOK 活跃待办迁入）
    — 浮卡/卡片堆/设置卡内容区与全局左右滑的边界
    （touch-action 分区策略已文档化 → domains/client-shell/contract.md #陷阱 7，2026-07-29 关闭该子项）

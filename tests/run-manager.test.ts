@@ -255,8 +255,45 @@ regression('BAR-BASH-HANG-01', 'watchdog-no-false-positive', '持续产出事件
   }
 }, { tag: 'integration' });
 
-regression('BAR-BASH-HANG-01', 'bash-default-timeout', 'bash 工具缺省必须带超时（描述承诺默认 300s）+ signal 透传', () => {
+regression('BAR-BASH-HANG-01', 'bash-backend-node', 'bash 工具后端为 node:child_process（pi-natives fd 泄漏类根除）+ 缺省超时 + 信号接线', () => {
   const src = readFileSync(new URL('../src/server/ai/tools/omp/bash.ts', import.meta.url), 'utf-8');
-  assert(src.includes('300_000'), 'bash.ts 缺省 timeoutMs 应为 300_000（缺省 undefined = 原生层无超时 = 本次事故根因之一）');
-  assert(src.includes('signal: ctx.signal'), 'bash.ts 必须把 run 中止信号传给 executeShell');
+  assert(src.includes("from 'child_process'"), 'bash.ts 后端应为 node:child_process（pi-natives executeShell 进程替换管道泄漏 = 本次事故根因）');
+  assert(!src.includes("from './native.js'"), 'bash.ts 不应再引用 pi-natives 原生层');
+  assert(src.includes('300_000'), 'bash.ts 缺省 timeoutMs 应为 300_000（缺省无超时 = 挂死无兜底）');
+  assert(src.includes("addEventListener('abort'"), 'bash.ts 必须接 ctx.signal 的 abort');
+  assert(src.includes('detached: true'), 'bash.ts 必须 detached 成组，超时/中止才能杀整棵进程树');
+}, { tag: 'integration' });
+
+// ---- 真刀实枪行为钉（node 后端真实执行，秒级确定性） ----
+
+regression('BAR-BASH-HANG-01', 'proc-subst-no-hang', '事故现场命令：进程替换 comm 正常完成（旧后端在此死锁 100 分钟）', async () => {
+  const { ompBashTool } = await import('../src/server/ai/tools/omp/bash.js');
+  const r = await ompBashTool.execute(
+    { command: 'comm -23 <(printf "a\\nb\\nc\\n") <(printf "b\\n")', timeout: 10 },
+    { cwd: '/tmp', wsServer: fakeWs },
+  );
+  assert(!r.isError, `进程替换命令应成功，实际: ${JSON.stringify(r.content)}`);
+  const text = r.content[0]?.text || '';
+  assert(text.includes('a') && text.includes('c') && !text.trim().startsWith('b'), `comm 输出应为 a/c，实际: ${text}`);
+}, { tag: 'integration' });
+
+regression('BAR-BASH-HANG-01', 'timeout-kills', '超时杀死挂死命令（sleep 30 + timeout 1s → ~1s 返回 isError）', async () => {
+  const { ompBashTool } = await import('../src/server/ai/tools/omp/bash.js');
+  const t0 = Date.now();
+  const r = await ompBashTool.execute({ command: 'sleep 30', timeout: 1 }, { cwd: '/tmp', wsServer: fakeWs });
+  const dt = Date.now() - t0;
+  assert(dt < 5000, `应 ~1s 返回，实际 ${dt}ms`);
+  assert(r.isError, '超时应标记 isError');
+}, { tag: 'integration' });
+
+regression('BAR-BASH-HANG-01', 'abort-kills', 'ctx.signal abort 杀死运行中命令（sleep 30 + 100ms 后 abort → 快速返回）', async () => {
+  const { ompBashTool } = await import('../src/server/ai/tools/omp/bash.js');
+  const ac = new AbortController();
+  const t0 = Date.now();
+  const p = ompBashTool.execute({ command: 'sleep 30' }, { cwd: '/tmp', wsServer: fakeWs, signal: ac.signal });
+  setTimeout(() => ac.abort(), 100);
+  const r = await p;
+  const dt = Date.now() - t0;
+  assert(dt < 5000, `abort 应快速返回，实际 ${dt}ms`);
+  assert(r.isError, 'abort 应标记 isError');
 }, { tag: 'integration' });
