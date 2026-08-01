@@ -30,6 +30,8 @@ export interface ToolUpdate {
 export interface ToolContext {
   cwd: string;
   wsServer: WsServer;
+  /** run 级中止信号（用户取消 / 停摆看门狗）——能中止的工具必须传入底层 */
+  signal?: AbortSignal;
 }
 
 /** kfmv4 工具定义 */

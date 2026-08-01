@@ -13,9 +13,10 @@
 // ==========================================================================
 
 import assert from 'assert';
+import { readFileSync } from 'fs';
 import { test, group, regression } from './runner.js';
 import {
-  startRun, attachRun, getActiveRun, getRun, cancelRun,
+  startRun, attachRun, getActiveRun, getRun, cancelRun, _setStallMsForTest,
   type StreamFn,
 } from '../src/server/ai/run-manager.js';
 import type { StreamEvent } from '../src/server/ai/chat.js';
@@ -188,4 +189,74 @@ test('事件按到达顺序缓冲进 run.events', async () => {
   assert(run.events.length === 3, `应缓冲 3 个事件，实际 ${run.events.length}`);
   assert(run.events[0].type === 'content_block_delta');
   assert(run.events[2].type === 'done');
+}, { tag: 'integration' });
+
+// ==========================================================================
+// BAR-BASH-HANG-01：run 级停摆看门狗
+// 2026-08-01 生产实锤：bash 进程替换管道死锁（comm 读 <(sort …)，pi-natives
+// spawn 把管道写端泄漏进 node 进程，EOF 永不到达）→ executeShell Promise 悬挂
+// 100 分钟 → for await 永卡 next() → run 永不完成 → 发送按钮永卡"生成中"。
+// 看门狗：STALL_MS 无事件 → 中止 run + error 收尾。覆盖工具挂死/上游静默停摆
+// （TCP 半开 reader.read() 永不返回）等一切"悬挂但不抛错"故障类。
+// revert 验证：去掉看门狗竞速后，「停摆中止」钉会因 run 永不完成而失败（有界轮询耗尽）。
+// ==========================================================================
+
+/** 墙钟有界轮询 run.done——看门狗本身是定时器，微任务轮询等不到它。
+ *  轮询只是「观察真实信号」，不是 sleep 猜时长（ts-no-test-timers 的精神）。 */
+async function awaitDoneWall(run: { done: boolean }, maxMs = 4000): Promise<void> {
+  const t0 = Date.now();
+  while (!run.done && Date.now() - t0 < maxMs) {
+    await new Promise(r => setTimeout(r, 10));
+  }
+  if (!run.done) throw new Error(`run 未在 ${maxMs}ms 内完成（看门狗未生效）`);
+}
+
+/** 产出一个事件后永久悬挂的 mock 生成器（复刻 executeShell 悬挂现场） */
+function hangStream(): StreamFn {
+  return async function* () {
+    yield { type: 'content_block_delta', index: 0, deltaType: 'text_delta', deltaText: 'x' };
+    await new Promise<void>(() => {}); // 永不 resolve——工具挂死/上游半开的同构体
+  };
+}
+
+regression('BAR-BASH-HANG-01', 'stall-watchdog', '生成器停摆 → 看门狗中止 run + error 收尾 + abort 透传', async () => {
+  _setStallMsForTest(50);
+  try {
+    const run = startRun('s-stall', [{ role: 'user', content: 'x' }], 'm', 'p', fakeWs, undefined, hangStream());
+    const sub = subscribe(run.id);
+    await awaitDoneWall(run);
+    assert(run.error && run.error.includes('停滞'), `run.error 应含停摆说明，实际: ${run.error}`);
+    assert(run.abort.signal.aborted, '停摆后 run 应被 abort（信号透传给上游/工具）');
+    const errEvents = run.events.filter(e => e.type === 'error');
+    assert(errEvents.length === 1, `应有 1 个 error 事件，实际 ${errEvents.length}`);
+    assert(sub.wasDoneCalled(), '订阅者应收到 onDone（客户端发送按钮才能复位）');
+  } finally {
+    _setStallMsForTest(null);
+  }
+}, { tag: 'integration' });
+
+regression('BAR-BASH-HANG-01', 'watchdog-no-false-positive', '持续产出事件的 run 不触发看门狗', async () => {
+  _setStallMsForTest(80);
+  try {
+    const s = controllableStream();
+    const run = startRun('s-nostall', [{ role: 'user', content: 'x' }], 'm', 'p', fakeWs, undefined, s.fn);
+    s.push(TEXT);
+    // 间隔小于阈值地持续产出：每次 next() 都赶在定时器前返回
+    for (let i = 0; i < 5; i++) {
+      await new Promise(r => setTimeout(r, 30));
+      s.push(TEXT);
+    }
+    s.end();
+    await awaitDoneWall(run);
+    assert(run.error === null, `正常 run 不应有 error，实际: ${run.error}`);
+    assert(run.events[run.events.length - 1].type !== 'error', '末尾不应是 error 事件');
+  } finally {
+    _setStallMsForTest(null);
+  }
+}, { tag: 'integration' });
+
+regression('BAR-BASH-HANG-01', 'bash-default-timeout', 'bash 工具缺省必须带超时（描述承诺默认 300s）+ signal 透传', () => {
+  const src = readFileSync(new URL('../src/server/ai/tools/omp/bash.ts', import.meta.url), 'utf-8');
+  assert(src.includes('300_000'), 'bash.ts 缺省 timeoutMs 应为 300_000（缺省 undefined = 原生层无超时 = 本次事故根因之一）');
+  assert(src.includes('signal: ctx.signal'), 'bash.ts 必须把 run 中止信号传给 executeShell');
 }, { tag: 'integration' });

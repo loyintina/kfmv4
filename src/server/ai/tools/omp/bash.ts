@@ -18,12 +18,17 @@ export const ompBashTool: KfmTool = {
     required: ['command'],
   },
   async execute(params, ctx): Promise<ToolResult> {
-    const timeoutMs = (params.timeout as number) ? (params.timeout as number) * 1000 : undefined;
+    // BAR-BASH-HANG-01：缺省也必须带超时（描述承诺「默认 300」但旧代码缺省传
+    // undefined → 原生层无超时）。2026-08-01 生产实锤：进程替换管道死锁
+    // （comm 读 <(sort …)，pi-natives spawn fd 泄漏致 node 持有管道写端，
+    // EOF 永不到达），executeShell Promise 悬挂 100 分钟，整轮 run 卡死。
+    const timeoutMs = (params.timeout as number) ? (params.timeout as number) * 1000 : 300_000;
     let output = '';
     const result = await executeShell({
       command: params.command as string,
       cwd: (params.cwd as string) || ctx.cwd,
       timeoutMs,
+      signal: ctx.signal, // run 中止信号：看门狗/用户取消时杀死原生子进程
     }, (err, chunk) => {
       if (!err) output += chunk;
     });

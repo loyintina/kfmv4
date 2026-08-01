@@ -40,6 +40,21 @@ interface Run {
 
 const EVICT_MS = 5 * 60 * 1000; // done 后保留 5 分钟供重连补齐
 
+/**
+ * BAR-BASH-HANG-01：run 级停摆看门狗。
+ * 2026-08-01 生产实锤：bash 工具进程替换管道死锁（comm 读 <(sort …)，pi-natives
+ * spawn 把管道写端泄漏进 node 进程，EOF 永不到达），executeShell Promise 悬挂
+ * 100 分钟——for await 永久阻塞在 next()，run 永不完成，客户端发送按钮永卡"生成中"。
+ * 同类故障还有上游静默停摆（TCP 半开，reader.read() 无数据无错误永不返回）。
+ * 看门狗：生成器 STALL_MS 内一个事件都不产出 → 判停摆，中止 run 并以 error 收尾——
+ * 覆盖一切"悬挂但不抛错"的故障类（工具挂死/上游半开/未来未知挂点）。
+ * 取值 > bash 默认超时 300s：合法的长工具调用由工具自身超时先收尾，看门狗只兜真挂死。
+ */
+const STALL_MS_DEFAULT = 360_000;
+let _stallMs = STALL_MS_DEFAULT;
+/** 测试钩子：注入短停摆阈值（null 恢复默认）。生产禁止调用。 */
+export function _setStallMsForTest(ms: number | null): void { _stallMs = ms ?? STALL_MS_DEFAULT; }
+
 const _runs = new Map<string, Run>();      // runId → Run
 const _bySession = new Map<string, string>(); // sessionId → 活跃 runId
 
@@ -109,8 +124,28 @@ export function startRun(
 
   // 后台驱动生成器：与请求连接解耦。streamFn 默认 streamChat，测试可注入 mock。
   (async () => {
+    const it = streamFn(messages, model, provider, wsServer, run.abort.signal, roleFile)[Symbol.asyncIterator]();
     try {
-      for await (const event of streamFn(messages, model, provider, wsServer, run.abort.signal, roleFile)) {
+      // 停摆看门狗（BAR-BASH-HANG-01）：手动迭代 + 每次 next() 与停摆定时器
+      // 竞速。for await 无法表达"next() 永不返回"的超时。
+      while (true) {
+        let stallTimer: ReturnType<typeof setTimeout> | null = null;
+        const nextP = it.next();
+        const stallP = new Promise<'__stall__'>(res => {
+          stallTimer = setTimeout(() => res('__stall__'), _stallMs);
+        });
+        const res = await Promise.race([nextP, stallP]);
+        if (stallTimer) clearTimeout(stallTimer);
+        if (res === '__stall__') {
+          nextP.catch(() => {}); // 被抛弃的 next() 之后可能 reject，吞掉防 unhandled
+          run.abort.abort(); // 中止信号透传：上游 fetch / 工具原生子进程能杀的杀
+          // 不可 await it.return()：生成器卡死在永不 resolve 的 await 时（正是停摆
+          // 场景），return() 会排在 pending next() 后面同样永不返回——只能 fire-and-forget。
+          try { it.return?.()?.catch(() => {}); } catch { /* 同步 throw 也不掩盖停摆 */ }
+          throw new Error(`生成停滞超过 ${Math.round(_stallMs / 1000)}s 无任何事件，已中止（工具挂死或上游静默停摆）`);
+        }
+        if (res.done) break;
+        const event = res.value;
         run.events.push(event);
         if (sessionId) {
           appendEvent(sessionId, event);

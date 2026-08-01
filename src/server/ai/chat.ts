@@ -127,6 +127,7 @@ export async function* streamChat(
   const toolCtx: ToolContext = {
     cwd: process.cwd(),
     wsServer,
+    signal, // run 中止信号透传（BAR-BASH-HANG-01：看门狗/取消要能杀死原生子进程）
   };
 
   // 读取 API 配置
