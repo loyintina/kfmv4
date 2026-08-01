@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 9128a02 · 生成于 2026-08-01 -->
+<!-- 基准 commit 61532bd · 生成于 2026-08-01 -->
 
 # 代码清单（机械层）
 
@@ -155,7 +155,7 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（7 文件 · 1279 行）
+## server（8 文件 · 1382 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -164,6 +164,7 @@
 | src/server/index.ts | 169 | — |
 | src/server/path-utils.ts | 153 | ROOT_DIR, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, SESSION_ID_RE, isValidSessionId, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
+| src/server/env-store.ts | 103 | ENV_PATH, parseEnv, loadEnvFile, isEnvRef, ResolvedKey, resolveKey, envNameForProvider, upsertEnvVar |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
@@ -268,10 +269,6 @@
 | tests/probes/checks/scripts/check/check-alpha.mjs | 1 | — |
 | tests/probes/checks/scripts/check/check-beta.mjs | 1 | — |
 
-## ⚠ 未登记（1 文件——不在 domain-src.mjs 任何域内）
-
-- src/server/env-store.ts（103 行）
-
 ## 跨域 import 边（机械生成）
 
 > 语义层解读 → cross-domain.md；域内依赖 → 各域 code-map.md。
@@ -304,8 +301,9 @@
 - src/client/modules/chat-dom.ts → src/client/modules/renderers/md-css.ts
 - src/client/modules/chat-dom.ts → src/client/modules/renderers/md-extensions.ts
 
-### ai-chat → server（12 边）
+### ai-chat → server（13 边）
 
+- src/server/ai/chat.ts → src/server/env-store.ts
 - src/server/ai/chat.ts → src/server/path-utils.ts
 - src/server/ai/chat.ts → src/server/ws-server.ts
 - src/server/ai/page-state.ts → src/server/path-utils.ts
@@ -556,9 +554,10 @@
 - tests/floating-state.test.ts → src/client/modules/floating-shared.ts
 - tests/reset-hooks.ts → src/client/modules/card-registry.ts
 
-### infra → server（8 边）
+### infra → server（9 边）
 
 - tests/path-utils.test.ts → src/server/path-utils.ts
+- tests/provider-env.test.ts → src/server/env-store.ts
 - tests/provider-env.test.ts → src/server/path-utils.ts
 - tests/provider-env.test.ts → src/server/routes/providers.ts
 - tests/server-routes.test.ts → src/server/path-utils.ts
@@ -573,4 +572,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 232 文件 · 43626 行 · 跨域边 239 条
+合计 233 文件 · 43729 行 · 跨域边 241 条
