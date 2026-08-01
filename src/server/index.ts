@@ -17,6 +17,7 @@ import compression from 'compression';
 import { fileURLToPath } from 'url';
 import { setupFileRoutes } from './routes/files.js';
 import { setupProxyRoutes } from './routes/proxy.js';
+import { setupProvidersRoutes } from './routes/providers.js';
 import { setupAiRoutes } from './ai/routes.js';
 import { WsServer } from './ws-server.js';
 import { verifyLocalOrigin } from './path-utils.js';
@@ -46,6 +47,7 @@ app.use(express.static(path.join(__dirname, '../../public'), {
 const apiRoutes = express.Router();
 setupFileRoutes(apiRoutes);
 setupProxyRoutes(apiRoutes);
+setupProvidersRoutes(apiRoutes);
 app.use('/api', apiRoutes);
 app.use('/kfmv4/api', apiRoutes);
 
@@ -133,13 +135,15 @@ app.post('/api/system/restart', verifyLocalOrigin, (_req, res) => {
   }, 100);
 });
 
-// 检查 providers.json 权限（明文 API key 安全提醒）
+// 检查 providers.json / .env 权限（明文 API key 安全提醒）
 try {
-  const provPath = path.join(process.env.HOME || '/root', '.kfmv4/providers.json');
-  try {
-    const mode = fs.statSync(provPath).mode & 0o777;
-    if (mode !== 0o600) console.warn(`[kfmv4] ⚠ ${provPath} 权限 ${mode.toString(8)}，建议 chmod 600（含 API key）`);
-  } catch {}
+  for (const secretFile of ['providers.json', '.env']) {
+    const provPath = path.join(process.env.HOME || '/root', '.kfmv4', secretFile);
+    try {
+      const mode = fs.statSync(provPath).mode & 0o777;
+      if (mode !== 0o600) console.warn(`[kfmv4] ⚠ ${provPath} 权限 ${mode.toString(8)}，建议 chmod 600（含 API key）`);
+    } catch {}
+  }
 } catch {}
 
 // v8 冷恢复：检测 restart-pending.json 标记（kfm-restart 工具写入）

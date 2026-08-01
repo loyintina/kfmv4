@@ -7,6 +7,7 @@
 import { mkdirSync, existsSync, readFileSync, readdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { KFM_DATA_DIR } from '../path-utils.js';
+import { resolveKey } from '../env-store.js';
 import type { WsServer } from '../ws-server.js';
 import { getToolDefinitions, executeTool } from './tools/index.js';
 import type { KfmTool, ToolContext } from './tools/types.js';
@@ -139,6 +140,15 @@ export async function* streamChat(
     return;
   }
 
+  // apiKey 代字解析（${VAR} → process.env / .kfmv4/.env，见 env-store.ts）——
+  // 使用点展开而非加载点：raw 代字不流出服务端，API 卡编辑回写不会冲掉引用。
+  const resolvedKey = resolveKey(apiProvider.apiKey);
+  if (resolvedKey.missingVar) {
+    yield { type: 'error', content: `Provider「${apiProvider.name || apiProvider.id}」的 apiKey 引用了环境变量 ${resolvedKey.missingVar}，但未设置——请在 .kfmv4/.env 中配置（或 export 后重启服务）。` };
+    return;
+  }
+  const apiKey = resolvedKey.value;
+
   // 构建 OpenAI 格式的 tools 参数
   const toolsParam = tools.length > 0 ? tools.map(t => ({
     type: 'function' as const,
@@ -222,7 +232,7 @@ export async function* streamChat(
         response = await fetch(`${apiProvider.baseUrl}/chat/completions`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${apiProvider.apiKey}`,
+            'Authorization': `Bearer ${apiKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(requestBody),

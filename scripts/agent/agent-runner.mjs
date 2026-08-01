@@ -5,7 +5,8 @@
  *
  * 设计（STACK #3 讨论定稿）：
  * - prompt 模板 {{var}} 注入；输入一律由机械层预装，agent 原件不带工具
- * - provider 有序兜底链（providers.config.json；key 从 ~/.kfmv4/providers.json 按 id 读）
+ * - provider 有序兜底链（providers.config.json；key 从 ~/.kfmv4/providers.json 按 id 读，
+ *   ${VAR} 代字经 resolveKey 解析：process.env 优先、.kfmv4/.env 其次）
  *   调用失败（鉴权/余额/超时）→ 自动落下一个 provider
  * - 输出校验失败 → 带错误反馈重问（同 provider，最多 retries 次）
  * - 返回 { ok, data?, raw, provider, errors } —— ok=false 不是失败，
@@ -26,6 +27,37 @@ function loadProviderEntries() {
   const map = new Map();
   for (const p of raw) map.set(p.id, p);
   return map;
+}
+
+// ---- apiKey 代字解析（与 src/server/env-store.ts 语义同步：构建边界两侧各一份，
+// .env 行格式为冻结契约：KEY=VALUE、# 注释、可选成对引号）----
+const ENV_PATH = join(homedir(), '.kfmv4', '.env');
+const ENV_REF_RE = /^\$\{([A-Za-z_][A-Za-z0-9_]*)\}$/;
+
+function loadEnvFile() {
+  try {
+    const vars = {};
+    for (const line of readFileSync(ENV_PATH, 'utf-8').split('\n')) {
+      const t = line.trim();
+      if (!t || t.startsWith('#')) continue;
+      const eq = t.indexOf('=');
+      if (eq <= 0) continue;
+      let val = t.slice(eq + 1).trim();
+      if (val.length >= 2 && ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'")))) {
+        val = val.slice(1, -1);
+      }
+      vars[t.slice(0, eq).trim()] = val;
+    }
+    return vars;
+  } catch { return {}; }
+}
+
+/** ${VAR} → process.env 优先、.kfmv4/.env 其次；未设置返回 { missingVar } */
+function resolveKey(raw) {
+  const m = ENV_REF_RE.exec(String(raw ?? '').trim());
+  if (!m) return { value: raw, missingVar: null };
+  const v = process.env[m[1]] ?? loadEnvFile()[m[1]];
+  return v ? { value: v, missingVar: null } : { value: '', missingVar: m[1] };
 }
 
 /** {{var}} 模板注入（输入一律机械预装） */
@@ -79,12 +111,15 @@ export async function runAgent({ system = '', prompt, validate = null, retries =
     const entry = entries.get(step.providerId);
     if (!entry) { errors.push(`${step.providerId}: providers.json 无此条目`); continue; }
 
+    const key = resolveKey(entry.apiKey);
+    if (key.missingVar) { errors.push(`${step.providerId}: apiKey 引用 ${key.missingVar} 未设置（.kfmv4/.env 或 export）`); continue; }
+
     let feedback = '';
     let lastRaw = '';
     let callFailed = false;
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
-        const text = await chat(entry.baseUrl, entry.apiKey, step.model, system, prompt + feedback, maxTokens, { ...step.params, ...params }, timeoutMs);
+        const text = await chat(entry.baseUrl, key.value, step.model, system, prompt + feedback, maxTokens, { ...step.params, ...params }, timeoutMs);
         lastRaw = text;
         const data = validate ? validate(text) : text;
         if (data !== null) {

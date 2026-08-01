@@ -3,6 +3,7 @@
  *
  * 管理 Provider（地址/Key/模型列表）的编辑、测试、选择。
  * 数据存储于 .kfmv4/providers.json，当前选中存储于 .kfmv4/active.json。
+ * 粘贴即入库：明文 apiKey 保存时由服务端转写 .kfmv4/.env，文件里只留 ${VAR} 代字。
  */
 
 import { registerCardType, type CardContentHandler } from '../../modules/card-registry.js';
@@ -76,8 +77,24 @@ async function loadProviders(): Promise<Provider[]> {
 
 async function saveProviders(ps: Provider[]): Promise<void> {
   log('[API] saveProviders: count:', ps.length);
-  await writeFile(PROVIDERS_PATH, JSON.stringify(ps, null, 2));
-  log('[API] saveProviders: file written');
+  // 粘贴即入库（fuse-on-save）：明文 apiKey 由服务端写入 .kfmv4/.env，
+  // providers.json 只留 ${VAR} 代字；返回融合后的列表，同步回本地状态。
+  try {
+    const res = await fetch(API_BASE + 'providers/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ providers: ps }),
+    });
+    const data = await res.json();
+    if (data.success && Array.isArray(data.providers)) {
+      const fused = new Map<string, string>();
+      for (const p of data.providers) fused.set(String(p.id), String(p.apiKey ?? ''));
+      for (const p of ps) { const k = fused.get(p.id); if (k !== undefined) p.apiKey = k; }
+      log('[API] saveProviders: saved (fuse-on-save)');
+    } else {
+      log('[API] saveProviders failed:', data);
+    }
+  } catch (e) { log('[API] saveProviders error:', e); }
 }
 
 
