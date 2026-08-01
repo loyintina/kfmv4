@@ -127,6 +127,10 @@
     标题；初版 ASCII 白名单 2026-08-01 误杀全部中文会话 → 放宽）+ UTF-8 字节 ≤ 200，
     全入口校验——新入口必须复用 `isValidSessionId`（path-utils），落盘统一走
     `_sessionFilePath` 单点 + containment 复查。
+13. **apiKey 代字在使用点展开（fuse-on-save）**：`chat.ts` 选定 provider 后立即
+    `resolveKey`（`../env-store.ts`——process.env 优先、`.kfmv4/.env` mtime 缓存兜底）；
+    `missingVar` → 人话错误（env 未设置），绝不裸发 `${VAR}` 或报 401。
+    加载点展开的回写陷阱见 ../server/contract.md 陷阱 7。
 
 ## 素材考古（原文已随 archive 注销，`git show v8.1.1:docs/archive/design/…` 可挖）
 

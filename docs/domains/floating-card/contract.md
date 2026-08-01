@@ -49,6 +49,12 @@
 9. **GSAP 动画冲突（幽灵卡片堆）**：`updateFocus()` 后立即 `closeCardStack()`，
    两个动画作用于同组 DOM，状态机卡在 closing/open → 幽灵卡片堆。
    必须 `updateFocus(onComplete)` 回调延迟关闭。案例：2026-07-12。
+10. **全屏互斥：新来旧关，不设槽位排队**（43fcdd2）：投新全屏卡时旧卡走
+    `dismissFullscreen` 完全关闭（不是压栈让位）；浮卡（滑动召唤）不改变全屏卡。
+    卡片堆外 tap = 关堆（不透传手势）。
+11. **手动投全屏联动折叠光球面板，AI 召唤不折叠**（61579a7）：`collapseOrbPanel`
+    只挂两条手动路径——tree-render `createFileFloatingCard` 与 card-stack 的 click
+    处理器；共享层（floating-fullscreen）刻意不挂，AI 自动召唤页面操作不折叠面板。
 
 ## 素材考古（原文已随 archive 注销，`git show v8.1.1:docs/archive/design/…` 可挖）
 
