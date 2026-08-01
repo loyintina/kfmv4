@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit d112101 · 生成于 2026-08-01 -->
+<!-- 基准 commit 82e1220 · 生成于 2026-08-01 -->
 
 # 代码清单（机械层）
 
@@ -155,18 +155,18 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（6 文件 · 1190 行）
+## server（6 文件 · 1192 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/server/routes/files.ts | 356 | FileItem, sliceMessages, setupFileRoutes |
 | src/server/ws-server.ts | 315 | WsServer |
 | src/server/index.ts | 165 | — |
-| src/server/path-utils.ts | 151 | ROOT_DIR, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, SESSION_ID_RE, isValidSessionId, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
+| src/server/path-utils.ts | 153 | ROOT_DIR, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, SESSION_ID_RE, isValidSessionId, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 
-## infra（93 文件 · 12090 行）
+## infra（93 文件 · 12093 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -201,8 +201,8 @@
 | scripts/agent/exp-iceberg.mjs | 134 | — |
 | scripts/check/check-checks.mjs | 132 | — |
 | scripts/check/check-tool-compaction.mjs | 129 | — |
+| tests/session-security.test.ts | 125 | — |
 | scripts/agent/tag-advisor.mjs | 124 | REF_RE, isValidRef |
-| tests/session-security.test.ts | 122 | — |
 | tests/liquid-geometry.test.ts | 120 | — |
 | scripts/agent/semantic-chain.mjs | 119 | — |
 | scripts/check/check-doc-linerefs.mjs | 116 | — |
@@ -555,4 +555,4 @@
 - src/server/index.ts → src/server/ai/routes.ts
 
 ---
-合计 228 文件 · 42756 行 · 跨域边 229 条
+合计 228 文件 · 42761 行 · 跨域边 229 条
