@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit e583177 · 生成于 2026-08-01 -->
+<!-- 基准 commit d48e560 · 生成于 2026-08-01 -->
 
 # 代码清单（机械层）
 
@@ -36,7 +36,7 @@
 | src/client/engine/v2/animation.ts | 40 | ease |
 | src/client/engine/v2/utils.ts | 24 | uniformSpacing, hvSpacing, ZERO_SPACING |
 
-## floating-card（27 文件 · 6726 行）
+## floating-card（27 文件 · 6738 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -44,9 +44,9 @@
 | src/client/modules/terminal-card-04.ts | 757 | TerminalCardMeta, initTerminalCore, disposeTerminalCore, compactTerminalCore, createTerminal04Handler |
 | src/client/cards/plugins/role.card.ts | 740 | — |
 | src/client/cards/plugins/config.card.ts | 694 | — |
-| src/client/cards/plugins/session.card.ts | 611 | — |
+| src/client/cards/plugins/session.card.ts | 615 | — |
 | src/client/cards/plugins/api.card.ts | 575 | — |
-| src/client/modules/card-stack.ts | 447 | getCardCount, getCard, getCardName, getCardId, hexToRgba, cardGradient, cardBg, getFocusIndex, getCurrentAccent, getCardHandler, getFocusedCardRect, animateStackPullFeedback, launchFocusedCard, openCardStack, closeCardStack, isCardStackOpen, focusNext, focusPrev, initCardStack |
+| src/client/modules/card-stack.ts | 455 | getCardCount, getCard, getCardName, getCardId, hexToRgba, cardGradient, cardBg, getFocusIndex, getCurrentAccent, getCardHandler, getFocusedCardRect, animateStackPullFeedback, launchFocusedCard, openCardStack, closeCardStack, isCardStackOpen, focusNext, focusPrev, initCardStack |
 | src/client/cards/plugins/tools.card.ts | 307 | — |
 | src/client/modules/renderers/handler-factory.ts | 296 | createFileHandler |
 | src/client/modules/tmux-card.ts | 289 | TmuxCardMeta, createTmuxCardHandler |
@@ -166,7 +166,7 @@
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 
-## infra（94 文件 · 12343 行）
+## infra（94 文件 · 12445 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -174,6 +174,7 @@
 | tests/regression.test.ts | 643 | — |
 | tests/tool-compaction.test.ts | 505 | — |
 | tests/preload.mjs | 419 | — |
+| tests/cards.test.ts | 388 | — |
 | scripts/agent/semantic-audit.mjs | 387 | taskFiles, buildPrompt, makeValidate, recheckRef, recheckQuote |
 | tests/visual-baseline.test.ts | 367 | — |
 | tests/server-routes.test.ts | 321 | — |
@@ -181,7 +182,6 @@
 | tests/mocks/gsap.ts | 305 | gsap |
 | tests/run-manager.test.ts | 300 | — |
 | scripts/check/check-registry.mjs | 294 | — |
-| tests/cards.test.ts | 286 | — |
 | tests/gesture-registry.test.ts | 263 | — |
 | tests/invariants.test.ts | 245 | — |
 | scripts/check/check-css-wiring.mjs | 228 | — |
@@ -520,8 +520,9 @@
 - tests/renderer.test.ts → src/client/engine/v2/flex.ts
 - tests/renderer.test.ts → src/client/engine/v2/renderer.ts
 
-### infra → client-shell（13 边）
+### infra → client-shell（14 边）
 
+- tests/cards.test.ts → src/client/modules/gesture-registry.ts
 - tests/client-logic.test.ts → src/client/modules/state.ts
 - tests/gesture-registry.test.ts → src/client/modules/gesture-registry.ts
 - tests/invariants.test.ts → src/client/modules/z-index-layers.ts
@@ -536,11 +537,12 @@
 - tests/reset-hooks.ts → src/client/modules/gesture-registry.ts
 - tests/reset-hooks.ts → src/client/modules/state.ts
 
-### infra → floating-card（6 边）
+### infra → floating-card（7 边）
 
 - tests/cards.test.ts → src/client/modules/card-registry.ts
 - tests/cards.test.ts → src/client/modules/card-stack.ts
 - tests/cards.test.ts → src/client/modules/floating-card.ts
+- tests/cards.test.ts → src/client/modules/floating-shared.ts
 - tests/cards.test.ts → src/client/modules/tmux-card.ts
 - tests/floating-state.test.ts → src/client/modules/floating-shared.ts
 - tests/reset-hooks.ts → src/client/modules/card-registry.ts
@@ -560,4 +562,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 229 文件 · 43123 行 · 跨域边 233 条
+合计 229 文件 · 43237 行 · 跨域边 235 条
