@@ -12,8 +12,8 @@
  */
 
 import { mkdirSync, existsSync, readFileSync, readdirSync, writeFile, writeFileSync } from 'fs';
-import { join } from 'path';
-import { KFM_DATA_DIR } from '../path-utils.js';
+import { join, resolve, sep } from 'path';
+import { KFM_DATA_DIR, isValidSessionId } from '../path-utils.js';
 import { applyEvent, type ReduceContext } from '../../shared/chat-protocol/reducer.js';
 import type { StreamEvent } from '../../shared/chat-protocol/events.js';
 import type { ChatMessage } from '../../shared/chat-protocol/messages.js';
@@ -35,9 +35,24 @@ function _ensureDir(): void {
   mkdirSync(SESSIONS_DIR, { recursive: true });
 }
 
-/** 从磁盘加载 session 的 meta + messages（hydrate） */
-function _loadFromDisk(sessionId: string): SessionState {
+/**
+ * 构造会话文件路径（BAR-SEC-14 纵深防御）：格式白名单 + join 后 containment 复查。
+ * 非法 sessionId 返回 null——调用方必须 fail-closed（不读写磁盘）。
+ */
+function _sessionFilePath(sessionId: string): string | null {
+  if (!isValidSessionId(sessionId)) return null;
   const filePath = join(SESSIONS_DIR, `${sessionId}.json`);
+  const resolved = resolve(filePath);
+  if (!resolved.startsWith(SESSIONS_DIR + sep)) return null; // 逃逸复查（双重保险）
+  return filePath;
+}
+
+function _loadFromDisk(sessionId: string): SessionState {
+  const filePath = _sessionFilePath(sessionId);
+  if (!filePath) {
+    console.error('[session-store] 拒绝非法 sessionId 读取:', sessionId);
+    return { ctx: { messages: [], msgIdx: -1 }, meta: { id: sessionId }, flushTimer: null, dirty: false };
+  }
   let meta: Record<string, unknown> = { id: sessionId, title: sessionId, createdAt: new Date().toISOString() };
   const messages: ChatMessage[] = [];
 
@@ -112,8 +127,13 @@ function _writeToDisk(sessionId: string, s: SessionState): void {
     fullTokenCount,
     updatedAt: new Date().toISOString(),
   };
+  const filePath = _sessionFilePath(sessionId);
+  if (!filePath) {
+    console.error('[session-store] 拒绝非法 sessionId 落盘:', sessionId);
+    s.dirty = false;
+    return;
+  }
   _ensureDir();
-  const filePath = join(SESSIONS_DIR, `${sessionId}.json`);
   writeFile(filePath, JSON.stringify(out, null, 2), 'utf-8', (err) => {
     if (err) console.error('[session-store] write failed:', sessionId, err.message);
   });
@@ -170,8 +190,14 @@ export function flushSync(sessionId: string): void {
     fullTokenCount,
     updatedAt: new Date().toISOString(),
   };
+  const filePath = _sessionFilePath(sessionId);
+  if (!filePath) {
+    console.error('[session-store] 拒绝非法 sessionId 同步落盘:', sessionId);
+    s.dirty = false;
+    return;
+  }
   _ensureDir();
-  writeFileSync(join(SESSIONS_DIR, `${sessionId}.json`), JSON.stringify(out, null, 2), 'utf-8');
+  writeFileSync(filePath, JSON.stringify(out, null, 2), 'utf-8');
   s.dirty = false;
 }
 

@@ -78,6 +78,18 @@ export function sanitizePath(userPath: string): string | null {
 }
 
 /**
+ * sessionId 格式白名单（BAR-SEC-14）：会话 id 会被拼进文件路径
+ * `join(SESSIONS_DIR, ${sessionId}.json)`，故只允许安全字符集——
+ * 字母数字 + `-`/`_`，1..128 位。任何路径分隔符/`.`/空白一律拒绝。
+ * 全入口统一校验（/ai/chat/start、/sessions/messages、session-store 落盘点）。
+ */
+export const SESSION_ID_RE = /^[A-Za-z0-9_-]{1,128}$/;
+
+export function isValidSessionId(id: unknown): boolean {
+  return typeof id === 'string' && SESSION_ID_RE.test(id);
+}
+
+/**
  * 判断 URL hostname 是否为本地回环。
  *
  * 注意 IPv6：`new URL('http://[::1]:80').hostname` 返回带方括号的 `[::1]`，

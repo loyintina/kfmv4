@@ -12,7 +12,7 @@ import { Router } from 'express';
 import { getToolDefinitions } from './tools/index.js';
 import { startRun, attachRun, cancelRun, getActiveRun, getRun } from './run-manager.js';
 import * as sessionStore from './session-store.js';
-import { verifyLocalOrigin } from '../path-utils.js';
+import { verifyLocalOrigin, isValidSessionId } from '../path-utils.js';
 import type { WsServer } from '../ws-server.js';
 
 /** 可注入的 startRun 签名（测试用，生产走默认值） */
@@ -23,13 +23,17 @@ export function setupAiRoutes(router: Router, wsServer: WsServer, startRunFn: St
    * POST /ai/chat/start
    * body: { sessionId, messages, model, provider }
    * 返回: { runId, fromIndex } —— fromIndex 是客户端应从该索引开始读的事件位置
-   *   （复用已有活跃 run 时 fromIndex=0，客户端据 events 全量对齐；新 run 也是 0）
    */
   router.post('/ai/chat/start', verifyLocalOrigin, (req, res) => {
     // body: { sessionId, messages, model, provider, roleFile, userText }
     const { sessionId, messages, model, provider, roleFile, userText } = req.body;
     if (!sessionId || !messages || !Array.isArray(messages) || messages.length === 0) {
       res.status(400).json({ error: '缺少 sessionId 或 messages 参数' });
+      return;
+    }
+    // BAR-SEC-14：sessionId 会拼进落盘文件路径，格式白名单全入口校验（防 ../ 逃逸 sessions/）
+    if (!isValidSessionId(sessionId)) {
+      res.status(400).json({ error: 'sessionId 格式不合法' });
       return;
     }
     // 落盘用户消息必须用 userText 原文——messages 是投影产物（带 [MM-DD HH:MM] 前缀、

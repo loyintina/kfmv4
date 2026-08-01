@@ -8,7 +8,7 @@
 import type { Router } from 'express';
 import fs from 'fs';
 import path from 'path';
-import { getActiveRoot, KFM_DATA_DIR, sanitizePath, setActiveRoot, verifyLocalOrigin } from '../path-utils.js';
+import { getActiveRoot, KFM_DATA_DIR, sanitizePath, setActiveRoot, verifyLocalOrigin, isValidSessionId } from '../path-utils.js';
 
 // ========== 类型 ==========
 
@@ -182,7 +182,7 @@ export function setupFileRoutes(router: Router): void {
   router.get('/sessions/messages', (req, res) => {
     try {
       const id = typeof req.query.id === 'string' ? req.query.id : '';
-      if (!id || id.includes('/') || id.includes('..')) { res.json({ error: '会话 id 不合法' }); return; }
+      if (!id || !isValidSessionId(id)) { res.json({ error: '会话 id 不合法' }); return; }
       const from = req.query.from === 'head' ? 'head' : 'tail';
       const offset = Math.max(0, parseInt(typeof req.query.offset === 'string' ? req.query.offset : '0', 10) || 0);
       const rawLimit = parseInt(typeof req.query.limit === 'string' ? req.query.limit : '0', 10) || 0;
