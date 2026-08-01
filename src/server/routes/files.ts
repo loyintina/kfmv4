@@ -9,6 +9,20 @@ import type { Router } from 'express';
 import fs from 'fs';
 import path from 'path';
 import { getActiveRoot, KFM_DATA_DIR, sanitizePath, setActiveRoot, verifyLocalOrigin, isValidSessionId } from '../path-utils.js';
+import { invalidateSession } from '../ai/session-store.js';
+
+/**
+ * 若目标路径是 .kfmv4/sessions/<id>.json，同步失效 session-store 内存缓存。
+ * 串档 bug（2026-08-01 实测）：删除/移动/重命名会话文件只动磁盘，_sessions
+ * 缓存不失效——同名新会话接续旧 ctx，两段历史串档合并、旧消息全量发给 API。
+ * 只在文件直属 sessions/ 目录时触发（basename 即 sessionId，天然过白名单）。
+ */
+const SESSIONS_DIR = path.join(KFM_DATA_DIR, 'sessions');
+function _invalidateIfSessionFile(p: string): void {
+  if (path.dirname(p) === SESSIONS_DIR && p.endsWith('.json')) {
+    invalidateSession(path.basename(p, '.json'));
+  }
+}
 
 // ========== 类型 ==========
 
@@ -292,6 +306,7 @@ export function setupFileRoutes(router: Router): void {
       if (stat.isDirectory()) { fs.cpSync(src, dest, { recursive: true }); fs.rmSync(src, { recursive: true, force: true }); }
       else { fs.cpSync(src, dest); fs.rmSync(src); }
     }
+    _invalidateIfSessionFile(src); // 串档修复：移出 sessions/ 的会话文件缓存同步失效
     res.json({ success: true, source: src, dest });
   } catch (e: any) { res.json({ error: e.message }); } });
 
@@ -302,6 +317,7 @@ export function setupFileRoutes(router: Router): void {
     const stat = fs.statSync(target);
     if (stat.isDirectory()) { fs.rmSync(target, { recursive: true, force: true }); }
     else { fs.rmSync(target); }
+    _invalidateIfSessionFile(target); // 串档修复：删会话文件必须同步失效内存缓存
     res.json({ success: true, path: target });
   } catch (e: any) { res.json({ error: e.message }); } });
 
@@ -315,6 +331,7 @@ export function setupFileRoutes(router: Router): void {
     const dest = path.join(dir, newName);
     if (fs.existsSync(dest)) { res.json({ error: '目标已存在', path: dest }); return; }
     fs.renameSync(src, dest);
+    _invalidateIfSessionFile(src); // 串档修复：旧 id 缓存随重命名失效（新 id 未缓存，会从磁盘重载）
     res.json({ success: true, source: src, dest });
   } catch (e: any) { res.json({ error: e.message }); } });
 

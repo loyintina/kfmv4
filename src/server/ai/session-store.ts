@@ -202,6 +202,21 @@ export function flushSync(sessionId: string): void {
 }
 
 /**
+ * 使 session 的内存缓存失效（会话文件被删除/移动/重命名时必须调用）。
+ * 串档 bug（2026-08-01 冷启动实验实测）：删除会话只删磁盘文件，_sessions
+ * 缓存不失效——同名新会话 appendUserMessage 接续旧 ctx，旧消息被全量发给
+ * API（turn1 载荷 5.7× 膨胀：~114KB/49,512 tokens vs 干净基线 ~20KB/9,042），
+ * flush 后两段历史合并落盘，刷新面板旧消息「复活」。
+ * 注意：不 flush 脏数据——文件已被删，flush 会把删掉的会话重新写出来。
+ */
+export function invalidateSession(sessionId: string): void {
+  const s = _sessions.get(sessionId);
+  if (!s) return;
+  if (s.flushTimer) { clearTimeout(s.flushTimer); s.flushTimer = null; }
+  _sessions.delete(sessionId);
+}
+
+/**
  * 追加用户消息（/ai/chat/start 时调用）。
  * 幂等：若末尾已是相同文本的 user 消息则跳过（客户端 pre-run saveMessages 已落盘）。
  */

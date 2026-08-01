@@ -42,6 +42,7 @@ import './omp-glob.test.js';
 import './to-openai-messages.test.js';
 import './tool-schema.test.js';
 import './session-security.test.js';
+import './session-invalidate.test.js';
 import './tag-advisor.test.js';
 
 function seedState(files: Record<string, any>) {

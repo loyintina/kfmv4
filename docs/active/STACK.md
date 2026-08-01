@@ -112,7 +112,8 @@
      同名新会话 `appendUserMessage` 接续旧 ctx，flush 以旧 meta 落盘 → 会话文件合并两个独立
      会话的历史（createdAt 是旧会话的），「会话文件=全量真相源」契约被污染——文件 ≠ 模型所见。
      用户可见症状：刷新面板后被删会话的消息在新会话上方「复活」、会话卡统计错。
-     修复方向：会话文件删除路径同步失效服务端 AI 会话缓存（或删除走统一入口两侧一起清）
+     **✅ 已修复（2026-08-01，BAR-SESSION-01）**：flash-10 臂实测实锤（turn1 载荷 5.7× 膨胀），
+     invalidateSession + delete/rename/move 三路由接线，4 钉（tests/session-invalidate.test.ts）
    — 另：sessionId 路径穿越 P0（2026-07-31 记，冷启动实验 gpt-5.6-sol 臂发现，已登记
      BAR-SEC-14）：routes 只查 truthy + session-store join 无格式校验 → `../` 逃逸。
      修复方向：格式白名单全入口统一校验 + containment 复查 + 恶意 id 否定钉

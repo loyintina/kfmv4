@@ -185,6 +185,7 @@
 | BAR-EYE-WRAP-01 | `ai/chat` | 动态感官注入无包裹 → AI 主动叙述注入本身（「蓝眼睛在页面状态上停留……」）：动态内容每轮刷新占据最新一条消息的注意力焦点，拟人化标题「（你的眼睛）」进一步诱发元叙述，出戏且稀释正文。契约：`assembleDynamicPrompt` 统一包裹（分隔线 + 使用规则：信息直接取用、勿主动提及注入本身、除非用户问起来源）；page-state 头部去自我指涉；chat.ts 注入不再自贴标签 | L | ✅ 已钉（源码断言） | `tests/client-logic.test.ts` |
 | BAR-SESSIONCARD-PROVIDER-01 | `ui/session-card` | 会话卡 metaRow 显示 providerId = 信息噪音（用户明令删除：provider 是配置态不是会话信息）。契约：metaRow 只渲染 时间/条数/双 token 三项 | L | ✅ 已钉（源码断言） | `tests/client-logic.test.ts` |
 | BAR-PROVIDER-03 | `omp/todo` | gemini-3.1-pro（聚光）发消息 400：`function_declarations[10].properties[todos].items: missing field`——todo 的 todos 参数 type:'array' 缺 items，OpenAI 系宽松容忍、Gemini 严格校验拒收整次请求（非单工具不可用，是整轮 400）。契约：所有注册工具 schema 中任何 type:'array' 节点必须带 items（递归检查嵌套层）；todo items 描述任务项结构（content 必填） | L | ✅ 已钉（递归扫描 + 结构断言，revert 验证真红） | `tests/tool-schema.test.ts` |
+| BAR-SESSION-01 | `session-store`+`routes/files` | 会话删除后服务端串档（2026-07-30 terra 臂尸检发现，2026-08-01 flash-10 臂实测实锤）：删除会话只删磁盘文件，`_sessions` 内存缓存不失效——同名新会话 appendUserMessage 接续旧 ctx：①旧消息全量发给 API（turn1 载荷 ~114KB/49,512 tokens vs 干净基线 ~20KB/9,042，5.7× 膨胀）；②flush 以旧 meta 落盘，两段历史合并一个文件（createdAt=旧会话）；③客户端新建会话本地状态为空 → 面板显示干净，污染全在服务端，肉眼测试不可见，刷新后旧消息「复活」。契约：session-store 新增 `invalidateSession()`（不 flush 脏数据——文件已删，flush 会把删掉的会话重新写出）；files.ts delete/rename/move 三路由对 `sessions/*.json` 目标同步失效 | L | ✅ 已钉（修复验证 + bug 机理复现负对照 + 路由接线 + 不 flush 断言，4 钉） | `tests/session-invalidate.test.ts` |
 
 > 新 bug 修复后：补一个回归钉子 → 在此登记 → 状态置「已钉」。见
 > `../guides/testing.md` + `../constraints/invariants.md` §二 #24（修 bug 补钉子纪律）。
