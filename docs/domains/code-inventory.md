@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 82e1220 · 生成于 2026-08-01 -->
+<!-- 基准 commit 072fd26 · 生成于 2026-08-01 -->
 
 # 代码清单（机械层）
 
@@ -96,7 +96,7 @@
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（54 文件 · 11364 行）
+## ai-chat（54 文件 · 11379 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -116,8 +116,8 @@
 | src/server/ai/tools/omp/debug/kfmv4-views.ts | 318 | Kfmv4ViewName, Kfmv4ViewResult, RENDERER_SNAPSHOT_SCRIPT, ANIMATION_TIMELINE_SCRIPT, GESTURE_TRACE_SCRIPT, STATE_HISTORY_SCRIPT, CARD_LIFECYCLE_SCRIPT, KFMV4_SCRIPT_MAP, formatRendererSnapshot, formatAnimationTimeline, formatGestureTrace, formatStateHistory, formatCardLifecycle |
 | src/shared/chat-protocol/to-openai-messages.ts | 279 | OpenAiToolCall, OpenAiMessage, ToOpenAiOptions, ToOpenAiResult, toOpenAiMessages |
 | src/server/ai/tools/omp/debug/cdp-connection.ts | 242 | CdpSession, CdpLaunchOptions, CdpAttachOptions, CdpPausedEvent, sendCmd, onCdpEvent, launchCdp, attachCdp, closeCdp |
+| src/server/ai/session-store.ts | 237 | appendEvent, flush, flushSync, invalidateSession, appendUserMessage |
 | src/client/modules/orb-chat-hints.ts | 225 | startWaitingIndicator, TODO_DISMISS_KEY, todosFingerprint, clearTodoPanel, dismissTodoPanel, updateTodoFromTool |
-| src/server/ai/session-store.ts | 222 | appendEvent, flush, flushSync, appendUserMessage |
 | src/server/ai/run-manager.ts | 193 | getActiveRun, getRun, StreamFn, startRun, attachRun, cancelRun |
 | src/server/ai/page-state.ts | 123 | PAGE_STATE_PATH, renderPageState, refreshPageState |
 | src/shared/chat-protocol/reducer.ts | 122 | ReduceContext, applyEvent, reduceEvents |
@@ -155,23 +155,23 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（6 文件 · 1192 行）
+## server（6 文件 · 1209 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/server/routes/files.ts | 356 | FileItem, sliceMessages, setupFileRoutes |
+| src/server/routes/files.ts | 373 | FileItem, sliceMessages, setupFileRoutes |
 | src/server/ws-server.ts | 315 | WsServer |
 | src/server/index.ts | 165 | — |
 | src/server/path-utils.ts | 153 | ROOT_DIR, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, SESSION_ID_RE, isValidSessionId, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 
-## infra（93 文件 · 12093 行）
+## infra（94 文件 · 12194 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | tests/client-logic.test.ts | 875 | — |
-| tests/regression.test.ts | 642 | — |
+| tests/regression.test.ts | 643 | — |
 | tests/tool-compaction.test.ts | 505 | — |
 | tests/preload.mjs | 406 | — |
 | scripts/agent/semantic-audit.mjs | 387 | taskFiles, buildPrompt, makeValidate, recheckRef, recheckQuote |
@@ -215,6 +215,7 @@
 | scripts/check/check-cards.mjs | 105 | — |
 | scripts/check/check-contract-freshness.mjs | 103 | — |
 | scripts/check/check-test-patterns.mjs | 102 | — |
+| tests/session-invalidate.test.ts | 100 | — |
 | scripts/check/check-anim.mjs | 99 | — |
 | scripts/check/check-versions.mjs | 91 | — |
 | scripts/check/check-probes.mjs | 86 | — |
@@ -472,7 +473,7 @@
 - src/client/modules/terminal-card-04.ts → src/client/modules/z-index-layers.ts
 - src/client/modules/tmux-card.ts → src/client/modules/gesture-registry.ts
 
-### infra → ai-chat（21 边）
+### infra → ai-chat（22 边）
 
 - tests/chat-protocol.test.ts → src/client/modules/orb-chat.ts
 - tests/chat-protocol.test.ts → src/server/ai/chat.ts
@@ -487,6 +488,7 @@
 - tests/run-manager.test.ts → src/server/ai/chat.ts
 - tests/run-manager.test.ts → src/server/ai/run-manager.ts
 - tests/server-routes.test.ts → src/server/ai/routes.ts
+- tests/session-invalidate.test.ts → src/server/ai/session-store.ts
 - tests/session-security.test.ts → src/server/ai/routes.ts
 - tests/to-openai-messages.test.ts → src/shared/chat-protocol/messages.ts
 - tests/to-openai-messages.test.ts → src/shared/chat-protocol/to-openai-messages.ts
@@ -542,17 +544,19 @@
 - tests/floating-state.test.ts → src/client/modules/floating-shared.ts
 - tests/reset-hooks.ts → src/client/modules/card-registry.ts
 
-### infra → server（5 边）
+### infra → server（6 边）
 
 - tests/path-utils.test.ts → src/server/path-utils.ts
 - tests/server-routes.test.ts → src/server/path-utils.ts
 - tests/server-routes.test.ts → src/server/routes/files.ts
+- tests/session-invalidate.test.ts → src/server/path-utils.ts
 - tests/session-security.test.ts → src/server/path-utils.ts
 - tests/session-security.test.ts → src/server/ws-server.ts
 
-### server → ai-chat（1 边）
+### server → ai-chat（2 边）
 
 - src/server/index.ts → src/server/ai/routes.ts
+- src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 228 文件 · 42761 行 · 跨域边 229 条
+合计 229 文件 · 42894 行 · 跨域边 232 条
