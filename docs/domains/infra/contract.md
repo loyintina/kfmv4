@@ -9,15 +9,15 @@
 - server：ESM bundle——**external 列表是生死线**（CJS 包打进去启动即崩）。
 - 样式：`sass public/css/:public/css/`（目录级全量编译，check 链内自动执行）。
 
-## 检查管线（npm run check，34 脚本，顺序固定）
+## 检查管线（npm run check，35 脚本，顺序固定）
 
 （下方生成区枚举的链步数多于标题脚本数：sass/sync-counts/gen-code-inventory/npm test/tsc
 为非 check-* 步骤，不计入脚本数。）
 
 <!-- chain:auto 由 sync-counts 生成，禁止手改 -->
 `check-uncommitted`（>3 未提交即中断，首位） → deploy-freshness → versions → checks → doc-coverage → sass →
-css-wiring → tool-compaction → anim → as-any → card-meta → registry → zindex → console → docs →
-consistency → active-stack → stack-status → code-doc-refs → workflow-integrity → cards →
+css-wiring → tool-compaction → anim → as-any → card-meta → registry → zindex → console → secrets →
+docs → consistency → active-stack → stack-status → code-doc-refs → workflow-integrity → cards →
 contract-freshness → test-patterns → bar-ledger → ledger-commits → doc-budget → doc-symbols →
 doc-linerefs → doc-schema → commit-docs → fix-tests → hooks → probes → release-radar →
 experiment-index → sync-counts → gen-code-inventory → npm test → tsc。
@@ -50,6 +50,14 @@ agent 脚本层——检测归自动化，裁决归会话内 agent，**永远不
 7. **禁止 (as any)**（自 INVARIANTS §四.2）：新建代码零逃逸，check-as-any 扫描，
    新增逃逸构建中断；确因类型定义缺失必须 ① check-as-any WHITELIST 登记（注释原因）
    ② 代码行加 `// P2:` 备注根因。
+8. **明文 key 禁止入库**（BAR-SEC-16，2026-08-01）：check-secrets 扫描 git 跟踪
+   工作树，命中 `sk-{20+}` / `tp-{20+}` / `AIza{20+}` 形态即构建中断。真实 key
+   一律走 `.kfmv4/.env` 代字（`${KFM_PROVIDER_*}`，agent-runner 与 server
+   env-store 同语义 resolveKey 解析；事故原型：1e5897d 曾把真实 apiKey 当默认
+   示例提交，三个 key 入公开历史已注销，用户裁决不重写历史只守门）。
+9. **agent 脚本 key 读取**（2026-08-01）：一律从 `~/.kfmv4/providers.json` 按
+   providerId 读取，`${VAR}` 代字经 resolveKey 解析（process.env 优先、
+   `.kfmv4/.env` 其次）；禁止在脚本内硬编码 apiKey。
 
 ## #陷阱
 
@@ -78,7 +86,7 @@ agent 脚本层——检测归自动化，裁决归会话内 agent，**永远不
    （生成器零事件即中止，兜一切「悬挂不抛错」类）。
 ## 文件清单
 
-`build.mjs` `scripts/check/chain.mjs`（check 链唯一出处 STEPS）`scripts/check/check-*.mjs`（34 个）`scripts/deploy.sh`（构建→重启→版本握手闭环）
+`build.mjs` `scripts/check/chain.mjs`（check 链唯一出处 STEPS）`scripts/check/check-*.mjs`（35 个）`scripts/deploy.sh`（构建→重启→版本握手闭环）
 `scripts/agent/`（agent 脚本群：agent-runner.mjs 执行器 + 一号负载 tag-advisor.mjs
 （发版建议，影子模式）+ 二号负载 semantic-audit.mjs/tasks.mjs（语义审计探针集群，
 并发 10）+ semantic-mutate.mjs/bench.mjs（变异基准：沙盒注入已知缺陷测召回/误报，
