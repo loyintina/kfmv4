@@ -11,7 +11,7 @@
  *
  * 用法：node experiments/coldstart/tools/routine-entry-validation.mjs [--arms N] [--dry-run]
  */
-import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, copyFileSync, readdirSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, copyFileSync, readdirSync, appendFileSync } from 'fs';
 import { join } from 'path';
 import { execSync } from 'child_process';
 import { homedir } from 'os';
@@ -137,8 +137,16 @@ async function main() {
   const premise = stats.filter(x => x.premise).length / n;
   console.log(`\n[routine] 本轮 ${n} 臂：实错率 ${fatalPerArm.toFixed(2)}/臂 | LCA ${lca}/${n} | 硬破界 ${hardBreach}/${n} | 质疑 ${premise}/${n}`);
   const pass = fatalPerArm <= THRESHOLDS.fatalPerArm && lca <= THRESHOLDS.lcaMax
-    && boundary >= THRESHOLDS.boundaryMin && premise >= THRESHOLDS.premiseMin;  console.log(`[routine] ${pass ? '✅ PASS（文档健康）' : '❌ FAIL（文档需修复轮——对照基线找漂移，走 v1.1 式迭代）'}`);
+    && boundary >= THRESHOLDS.boundaryMin && premise >= THRESHOLDS.premiseMin;
+  console.log(`[routine] ${pass ? '✅ PASS（文档健康）' : '❌ FAIL（文档需修复轮——对照基线找漂移，走 v1.1 式迭代）'}`);
   console.log(`[routine] 阈值：实错≤${THRESHOLDS.fatalPerArm} LCA=${THRESHOLDS.lcaMax} 守界≥${THRESHOLDS.boundaryMin} 质疑≥${THRESHOLDS.premiseMin}`);
+  // 投信箱（2026-08-02：慢检查归 cron、会话不主动调——FAIL 必须被早上接手的 agent 看见）
+  const inboxPath = join(REPO, 'docs/ledger/semantic-chain-inbox.md');
+  const stamp = new Date().toISOString().slice(0, 10);
+  const verdict = pass
+    ? `✅ 入口文档体检通过（${n} 臂：实错 ${fatalPerArm.toFixed(2)}/臂 LCA ${lca}/${n} 硬破界 ${hardBreach}/${n} 质疑 ${premise}/${n}）`
+    : `⚠️ 入口文档体检 FAIL（${n} 臂：实错 ${fatalPerArm.toFixed(2)}/臂 LCA ${lca}/${n} 硬破界 ${hardBreach}/${n} 质疑 ${premise}/${n}）→ 走 onboarding.md 修复轮`;
+  try { appendFileSync(inboxPath, `- ${stamp} ${verdict}\n`); } catch { /* 信箱不可写不阻断 */ }
   process.exit(pass ? 0 : 1);
 }
 
