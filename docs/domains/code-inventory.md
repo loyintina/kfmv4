@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 1ec21f8 · 生成于 2026-08-02 -->
+<!-- 基准 commit bc60ebb · 生成于 2026-08-02 -->
 
 # 代码清单（机械层）
 
@@ -170,7 +170,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（105 文件 · 13581 行）
+## infra（105 文件 · 13584 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -203,7 +203,7 @@
 | scripts/agent/semantic-bench.mjs | 149 | — |
 | scripts/check/check-docs.mjs | 146 | — |
 | scripts/check/check-bar-ledger.mjs | 142 | — |
-| scripts/check/sync-counts.mjs | 139 | — |
+| scripts/check/sync-counts.mjs | 142 | — |
 | tests/provider-env.test.ts | 137 | — |
 | scripts/agent/exp-iceberg.mjs | 134 | — |
 | scripts/check/check-checks.mjs | 132 | — |
@@ -587,4 +587,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 244 文件 · 44882 行 · 跨域边 245 条
+合计 244 文件 · 44885 行 · 跨域边 245 条
