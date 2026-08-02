@@ -48,7 +48,7 @@
 npm run dev      # 全链路（check → esbuild client+server → smoke → 启动）
 npm run bundle   # 同 build.mjs（全链路，零快捷方式）
 npm run watch    # 全链路通过后 → 持续监听、快速重编（开发时一直开着）
-npm run check    # 36 个 check-*.mjs + tsc --noEmit（仅检查，不构建）
+npm run check    # 37 个 check-*.mjs + tsc --noEmit（仅检查，不构建）
 npm run start    # 启动生产构建 http://localhost:8021
 npm run test     # 490 个回归测试
 ```

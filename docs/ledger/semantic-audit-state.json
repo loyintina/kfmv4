@@ -148,23 +148,15 @@
       "attempts": 1
     },
     "guides-release-vs-history": {
-      "hash": "0a74f465b2695fbdb59b5004e595e5b4725cd4a4",
+      "hash": "b8927f19a238d5a5beb318e701c6405c6d4edc6b",
       "lastRun": "2026-08-02",
       "status": "ok",
-      "reported": 1,
-      "kept": 1,
+      "reported": 0,
+      "kept": 0,
       "dropped": 0,
-      "keptFindings": [
-        {
-          "type": "SEM005",
-          "claim": "docs/guides/release.md:23",
-          "against": "docs/ledger/history.md:29",
-          "quote": "v8.3.2 起以单主题为主",
-          "note": "指南称主题分离自 v8.3.2 起，history 注记称 v8.3.1 起，且 history 自身 v8.3.1 仍混装，起点矛盾。"
-        }
-      ],
+      "keptFindings": [],
       "droppedFindings": [],
-      "provider": "deepseek/deepseek-v4-flash",
+      "provider": "Opencode Go Google/deepseek-v4-flash",
       "attempts": 1
     },
     "doc-maintenance-vs-pipeline": {
@@ -192,31 +184,16 @@
       "attempts": 1
     },
     "contract-vs-map-canvas-tree": {
-      "hash": "df14cd8b4f6f6eaa76f9192de3972b0c49c0bed7",
-      "lastRun": "2026-08-01",
+      "hash": "fcfdbb3b0ada797077dc4eb216c3b0579e2866f6",
+      "lastRun": "2026-08-02",
       "status": "ok",
-      "reported": 2,
-      "kept": 2,
+      "reported": 0,
+      "kept": 0,
       "dropped": 0,
-      "keptFindings": [
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/canvas-tree/contract.md:61",
-          "against": "docs/domains/canvas-tree/code-map.md:121",
-          "quote": "必须在 rAF 回调里",
-          "note": "contract 要求首帧 rebuildTree 在 rAF 内，code-map 漂移 14 指出现实未走 rAF，靠 ||295 兜底"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/canvas-tree/contract.md:82",
-          "against": "docs/domains/canvas-tree/code-map.md:9",
-          "quote": "## 文件清单",
-          "note": "contract 文件清单列 25 文件，code-map 实测绘 31 文件，遗漏 renderer-lifecycle 等"
-        }
-      ],
+      "keptFindings": [],
       "droppedFindings": [],
       "provider": "Opencode Go Google/deepseek-v4-flash",
-      "attempts": 1
+      "attempts": 2
     },
     "contract-vs-map-client-shell": {
       "hash": "967b6f8717f41e99a2ac727cb90ce0f5e082253e",
@@ -255,55 +232,25 @@
       "attempts": 2
     },
     "contract-vs-map-infra": {
-      "hash": "0636ba4e88dd03f723f580ebe1c6d85440901ce7",
-      "lastRun": "2026-08-01",
+      "hash": "c91049cba66959bf354a11b40b76476a9c31daa9",
+      "lastRun": "2026-08-02",
       "status": "ok",
-      "reported": 1,
-      "kept": 1,
+      "reported": 0,
+      "kept": 0,
       "dropped": 0,
-      "keptFindings": [
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/infra/contract.md:11",
-          "against": "docs/domains/infra/code-map.md:18",
-          "quote": "35 脚本，顺序固定",
-          "note": "contract 35 脚本 vs code-map 31 check，同为 check 脚本数，冲突。"
-        }
-      ],
+      "keptFindings": [],
       "droppedFindings": [],
       "provider": "deepseek/deepseek-v4-flash",
       "attempts": 2
     },
     "crossdomain-vs-inventory": {
-      "hash": "a1dbc469d005021fac3093e73f9a5ee2200974fe",
-      "lastRun": "2026-08-01",
+      "hash": "b883e8e7387cabe2c6e6d64debc2da9677820472",
+      "lastRun": "2026-08-02",
       "status": "ok",
-      "reported": 3,
-      "kept": 3,
+      "reported": 0,
+      "kept": 0,
       "dropped": 0,
-      "keptFindings": [
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/cross-domain.md:anim风险列",
-          "against": "docs/domains/code-inventory.md:canvas-tree、floating-card域文件列表",
-          "quote": "被三个域调用",
-          "note": "实际调用文件分属canvas-tree、floating-card共2个域，计数多1"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/cross-domain.md:HTTP端点面",
-          "against": "docs/domains/code-inventory.md:client-shell、floating-card、ai-chat域文件列表",
-          "quote": "共 10 处",
-          "note": "实际动态拼接7处+硬编码2处共9处，重复动态拼接为7处，计数多1"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/cross-domain.md:WS协议面",
-          "against": "docs/domains/code-inventory.md:floating-card域文件列表",
-          "quote": "两写者跨两域",
-          "note": "terminal-card-04.ts与tmux-card.ts同属floating-card域，非跨域"
-        }
-      ],
+      "keptFindings": [],
       "droppedFindings": [],
       "provider": "阶跃星辰/step-3.7-flash",
       "attempts": 1
@@ -503,6 +450,55 @@
       "ran": 1,
       "skipped": 0,
       "kept": 1,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-02",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-02",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 1,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-02",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 1,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-02",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 1,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-02",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-02",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-02",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
       "dropped": 0
     }
   ]
