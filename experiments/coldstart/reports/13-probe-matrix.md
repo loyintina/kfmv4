@@ -41,11 +41,12 @@ M05/M08/MID-2 基线逮住本跑漏 = 方差，非系统性。
 | 新 12 变异命中 | — | **0/12（全漏）** |
 | NC 误报 | 1/3 | 2/3 |
 
-**结论：新覆盖的 6 探针系统性失明**（contract-vs-map-ai-chat/canvas-tree/client-shell/
-floating-card、crossdomain-vs-inventory、inter-provenance-bugs）——该逮的逮不住、
-负例还误报，非方差（12 全漏）。**覆盖补齐的使命达成：把未知能力变成已知盲区**——
-19 探针现状：5 强（readme-vs-maps/claude-vs-docs/contract-vs-map-infra/inter-readme-codemap/
-inter-vision-invariants）+ 6 盲（本轮证明）+ 8 未考（变异集仍未覆盖，见行动项）。
+**修正结论（2026-08-02 盲因诊断推翻）**：6 探针失明是**误诊**——12 条新变异
+大多**测试无效**：对照面（code-map/bugs/inventory）根本没提被变异的事实维度
+（M20 100dvh/M22 135deg/M24 currentRoot/M26 G2 对照面 0 处），探针找不到可冲突
+来源，无从逮起。仅 M18 有真实对照面。
+**方法论教训：变异设计必须保证「对照面存在该事实」**——否则测试测空气。
+19 探针真实状态回归未知（需有效变异重测）；5 强维持既有证据。
 
 **行动项更新**：6 盲探针需 prompt 强化或换设计（其变异类型 SEM001 硬规则/陷阱/计数
 或需机械化——喂编译升档）；8 未考探针（组间类）变异设计是下一轮。
