@@ -134,7 +134,10 @@ check-ledger-commits（commit 锚点对账），全部配探针/豁免登记。�
   每发现一类语义漂移，先问能否升档——检查是编译器够不着的地方的兜底，不是终点。
   模糊层让确定区失业（结晶回路），确定区让模糊层失业（编译升档）——双向收敛。
 
-**遗留**：各组「存疑断言」清单未分流（见审计轮回报，第二轮分流）；SAFE_ROOT 存疑项未证伪。
+**遗留**：各组「存疑断言」清单未分流（已自动核销——EX 豁免/变体系统（2026-08-02）演进覆盖）；
+SAFE_ROOT 存疑项已证伪结案（2026-08-02）：用户路径入口全部经 sanitizePath
+（files.ts 5 处 + prompt-assembler），sessions 走 isValidSessionId 白名单 +
+数据目录（BAR-SEC-14），sibling-switcher 为注释明示的系统级有意例外——校验面完整无缺口。
 
 **深扫区（2026-07-30 新增第三区，workflows/deep-scan.yaml）**：确定区（机械 check）与概率区
 （便宜链探针）之上，补强模型软标记层——explore subagent 单文档洁净室直读纲领层，
