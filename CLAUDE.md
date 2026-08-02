@@ -16,9 +16,9 @@
 
 ## 会话启动（每次对话，1 跳）
 0. **首次接触本项目** → `docs/guides/orientation.md`（15 分钟心智模型）+ `docs/workflows/onboarding.yaml`（接手流）
-1. 读 `docs/active/STACK.md` + `docs/ledger/history.md` 尾部 — 当前栈与最近动态
-3. 读 `docs/ledger/semantic-chain-inbox.md` 尾部 — 语义巡逻信箱；有 ⚠️ 行 → 进 workflows/semantic-audit.yaml 裁决流
-4. 改代码前 → 走 pre-code-gate
+1. 读 STACK.md + history.md 尾 — 当前栈与动态
+3. 读 semantic-chain-inbox.md 尾 — 信箱 ⚠️ → 裁决流
+4. 改代码前 → pre-code-gate
 
 ## 任务 → 路由表
 | 任务 | 去向 |
@@ -56,7 +56,6 @@ npm run start    # 启动生产构建 http://localhost:8021
 npm run test     # 493 个回归测试
 ```
 
-> **没有快捷方式**：`bundle`/`build`/`dev` 全走 `build.mjs`；`watch` 初检不过不进。
-> 日常：终端 1 `npm run dev`，终端 2 `npm run watch`。改源码 → 自动重编 → 刷新。
-> **Git 推送**：push 前先 `source .env`（GITHUB_TOKEN 在根 `.env`，已 gitignore）；
+> **没有快捷方式**：`bundle`/`build`/`dev` 全走 `build.mjs`；`watch` 初检不过不进。日常：
+> 终端 1 `npm run dev`，终端 2 `npm run watch`。Git 推送：push 前先 `source .env`；
 > agent 从不主动 push——只在用户明确要求时执行。
