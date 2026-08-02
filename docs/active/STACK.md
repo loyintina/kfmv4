@@ -126,9 +126,9 @@
      argv ref 直插 execSync 模板串。修复方向：execFileSync 参数数组化 + ref 格式校验
      + 恶意 ref 否定测试
 10. 全量代码分析 → domains 填充（2026-07-29 提前完成，用户动议）
-   — ✅ 六域 code-map + cross-domain.md（99 条漂移带 file:line，0cecc62/3906707）
-   — ✅ 机械层：gen-code-inventory.mjs（已移 scripts/check/ 并 --check-only 挂链，鲜度不再靠人）
-   — ✅ 溯源审计：22 subagent 考古 → ledger/drift-provenance.md（105 行普查 + 8 案深潜）
+   — ✅ 六域 code-map + cross-domain.md（2026-07-29，99 条漂移带 file:line，0cecc62/3906707）
+   — ✅ 机械层：gen-code-inventory.mjs（2026-07-29，已移 scripts/check/ 并 --check-only 挂链，鲜度不再靠人）
+   — ✅ 溯源审计（2026-07-29）：22 subagent 考古 → ledger/drift-provenance.md（105 行普查 + 8 案深潜）
      分布：E 机制没人走 21.9% · A 过时 20% · C 权宜 17.1% · F 文档 16.2% · B 接力 14.3% · D 复制 9.5%
    — 后续队列（按堆）：① 真 bug 10 条（ai-chat#2 冷恢复载荷优先）② 安全面 3 条核实
      ③ 死代码 ~30 处（text-layout 2292 行整目录居首）④ 契约失真 ~35 条（→批 1.5）

@@ -148,24 +148,24 @@
       "attempts": 1
     },
     "guides-release-vs-history": {
-      "hash": "4a8206b7dc5f91540400af90a5ca7bf4fbfc0e3f",
-      "lastRun": "2026-08-01",
+      "hash": "0a74f465b2695fbdb59b5004e595e5b4725cd4a4",
+      "lastRun": "2026-08-02",
       "status": "ok",
       "reported": 1,
       "kept": 1,
       "dropped": 0,
       "keptFindings": [
         {
-          "type": "SEM001",
-          "claim": "docs/guides/release.md:27",
-          "against": "docs/ledger/history.md:30",
-          "quote": "v8.3.1 起严格执行",
-          "note": "release 称 v8.3.1 起主题分离，但 history:30 记录 v8.3.1 同批含语义编译地基，且 v8.3.2/8.3.3 仍混装，实践相悖"
+          "type": "SEM005",
+          "claim": "docs/guides/release.md:23",
+          "against": "docs/ledger/history.md:29",
+          "quote": "v8.3.2 起以单主题为主",
+          "note": "指南称主题分离自 v8.3.2 起，history 注记称 v8.3.1 起，且 history 自身 v8.3.1 仍混装，起点矛盾。"
         }
       ],
       "droppedFindings": [],
-      "provider": "Opencode Go Google/deepseek-v4-flash",
-      "attempts": 2
+      "provider": "deepseek/deepseek-v4-flash",
+      "attempts": 1
     },
     "doc-maintenance-vs-pipeline": {
       "hash": "c5b119604fca73d330106b41cdc0383b81388a07",
@@ -496,6 +496,13 @@
       "ran": 1,
       "skipped": 0,
       "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-02",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 1,
       "dropped": 0
     }
   ]

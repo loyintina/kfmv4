@@ -86,22 +86,22 @@
 
 | BAR | commit | 症状/契约 | 类别 | 状态 | 测试位置 |
 |-----|--------|-----------|------|------|---------|
-| BAR-ORB-FOLD-01 | `d64ba51` | 工具框输出「一闪而过」：用「有结果+有参数」判折叠 → 输出一到 forceOpen 立即转 false 塌下，340ms 折叠动画被架空。正确态：结果到达进 reveal 停留期（展开播涌现动画）→ WAIT 后转 fold 播折叠动画 → 落定收起 | L | ✅ 修复（v8 渲染重写后 v7 foldPhase/computeToolFoldOpen 机制消亡：折叠=CSS class 即时切换 + `_foldState` 持久，无 forceOpen 竞态向量；打字机 reveal 等相邻行为有 BAR-ORB-PANEL-21 钉） | 架构吸收，冒烟兜底 |
-| BAR-ORB-LEAK-01 | `orb-chat` | 折叠动画 rAF 死循环：被视口裁剪滚出窗口的工具块，模板内清理路径永不执行 → `_activeFoldAnims` 条目永久滞留 → rAF 每帧无限 renderChatContent，CPU 打满卡死（BAR-ORB-REASON-01 孪生变体，裁剪触发） | L | ✅ 修复（v7 rAF 折叠动画注册表随渲染器删除（4601fdc）；v8 折叠=CSS class 无 rAF 注册表，泄漏向量消亡；REASON-01 相邻钉在） | 架构吸收，冒烟兜底 |
-| BAR-ORB-SESSION-01 | `session-store` | 新建会话覆盖旧会话：create() 只在内存 unshift 不写盘 + patchActiveConfig fire-and-forget → 随后 load() 重拉列表不含新会话、读旧 active.json 覆盖 activeId → 新会话丢失/旧会话被串写 | I | ✅ 修复（create 立即写盘 + await active.json；load 保护有效内存 activeId 不被覆盖） | 集成时序，冒烟兜底 |
-| BAR-ORB-SESSION-02 | `session-store` | 刷新吞记录：AI 回复仅在流全部结束才 saveMessages，多轮工具调用中途刷新/服务端 run 丢失 → 本轮记录未落盘丢失 | I | ✅ 修复（每轮 message_stop 增量落盘 onPersist；saveMessages 串行化防并发写交错） | 集成时序，冒烟兜底 |
-| BAR-ORB-SESSION-03 | `orb.ts` | 切会话内容错乱：切换监听器 await load 后 getMessages().then 覆盖 chatMessages，与进行中流式追加打架 | I | ✅ 修复（切换前 abort 进行中 run + _switchToken 丢弃过期加载结果） | 集成时序，冒烟兜底 |
+| BAR-ORB-FOLD-01 | `d64ba51` | 工具框输出「一闪而过」：用「有结果+有参数」判折叠 → 输出一到 forceOpen 立即转 false 塌下，340ms 折叠动画被架空。正确态：结果到达进 reveal 停留期（展开播涌现动画）→ WAIT 后转 fold 播折叠动画 → 落定收起 | L | ✅ 修复（v8 渲染重写后 v7 foldPhase/computeToolFoldOpen 机制消亡：折叠=CSS class 即时切换 + `_foldState` 持久，无 forceOpen 竞态向量；打字机 reveal 等相邻行为有 BAR-ORB-PANEL-21 钉） | 架构吸收，冒烟兜底；复核日 2026-11-02 |
+| BAR-ORB-LEAK-01 | `orb-chat` | 折叠动画 rAF 死循环：被视口裁剪滚出窗口的工具块，模板内清理路径永不执行 → `_activeFoldAnims` 条目永久滞留 → rAF 每帧无限 renderChatContent，CPU 打满卡死（BAR-ORB-REASON-01 孪生变体，裁剪触发） | L | ✅ 修复（v7 rAF 折叠动画注册表随渲染器删除（4601fdc）；v8 折叠=CSS class 无 rAF 注册表，泄漏向量消亡；REASON-01 相邻钉在） | 架构吸收，冒烟兜底；复核日 2026-11-02 |
+| BAR-ORB-SESSION-01 | `session-store` | 新建会话覆盖旧会话：create() 只在内存 unshift 不写盘 + patchActiveConfig fire-and-forget → 随后 load() 重拉列表不含新会话、读旧 active.json 覆盖 activeId → 新会话丢失/旧会话被串写 | I | ✅ 修复（create 立即写盘 + await active.json；load 保护有效内存 activeId 不被覆盖） | 集成时序，冒烟兜底；复核日 2026-11-02 |
+| BAR-ORB-SESSION-02 | `session-store` | 刷新吞记录：AI 回复仅在流全部结束才 saveMessages，多轮工具调用中途刷新/服务端 run 丢失 → 本轮记录未落盘丢失 | I | ✅ 修复（每轮 message_stop 增量落盘 onPersist；saveMessages 串行化防并发写交错） | 集成时序，冒烟兜底；复核日 2026-11-02 |
+| BAR-ORB-SESSION-03 | `orb.ts` | 切会话内容错乱：切换监听器 await load 后 getMessages().then 覆盖 chatMessages，与进行中流式追加打架 | I | ✅ 修复（切换前 abort 进行中 run + _switchToken 丢弃过期加载结果） | 集成时序，冒烟兜底；复核日 2026-11-02 |
 
 ### 第六批：会话分段加载 + 视口裁剪滚动（性能优化善后）
 
 | BAR | commit | 症状/契约 | 类别 | 状态 | 测试位置 |
 |-----|--------|-----------|------|------|---------|
-| BAR-ORB-PERF-01 | `session-store` | 会话卡加载慢/无内容：loadSessions N+1 逐文件全量读（单会话可达 600KB），3 会话串行传 ~900KB。改服务端 `/api/sessions/list` 单请求只返元数据（id/title/updatedAt/messageCount，剥离 messages），~200B/条 | I | ✅ 修复（元数据端点 + 客户端 messages 懒加载） | 冒烟兜底 |
+| BAR-ORB-PERF-01 | `session-store` | 会话卡加载慢/无内容：loadSessions N+1 逐文件全量读（单会话可达 600KB），3 会话串行传 ~900KB。改服务端 `/api/sessions/list` 单请求只返元数据（id/title/updatedAt/messageCount，剥离 messages），~200B/条 | I | ✅ 修复（元数据端点 + 客户端 messages 懒加载） | 冒烟兜底；复核日 2026-11-02 |
 | BAR-ORB-SEG-01 | `files.ts` | 会话消息分段切片：`/api/sessions/messages` 按 head/tail 切片，避免大会话全量传输。面板追底用 tail、卡片预览用 head。切片边界算错会漏/重/错序消息 | L | ✅ 已钉（剥离 sliceMessages 纯函数，含 head++tail 拼接不变量） | `tests/server-routes.test.ts` |
 | BAR-ORB-SEG-02 | `orb.ts` | 切换会话切不过去：sessionStore.init() 监听器抢先改 activeId，orb 监听器 guard `sid===activeId` 误成立 → return → 内容永不重载 | I | ✅ 已钉（源码检查：guard 比较 _renderedSessionId、且不比较 sessionStore.activeId，revert 验证咬合） | `tests/client-logic.test.ts` |
-| BAR-ORB-SEG-03 | `orb.ts` | 分段加载黑屏：第一段 12 条未触发裁剪，prepend 补齐后超阈值触发裁剪，preserve 模式用失配的 prevScrollTop 定位窗口 → 底部移出渲染窗口黑屏 | I | ✅ 修复（补齐段改用 follow 保持追底，不用 preserve）·**不钉**：依赖「切换=追底」产品决策，源码断言 `'follow'` 无区分度、逻辑隐晦，注释说明即可 | 集成时序，冒烟兜底 |
+| BAR-ORB-SEG-03 | `orb.ts` | 分段加载黑屏：第一段 12 条未触发裁剪，prepend 补齐后超阈值触发裁剪，preserve 模式用失配的 prevScrollTop 定位窗口 → 底部移出渲染窗口黑屏 | I | ✅ 修复（补齐段改用 follow 保持追底，不用 preserve）·**不钉**：依赖「切换=追底」产品决策，源码断言 `'follow'` 无区分度、逻辑隐晦，注释说明即可 | 集成时序，冒烟兜底；复核日 2026-11-02 |
 | BAR-ORB-SEG-04 | `orb-chat` | 上滑跨裁剪边界卡顿跳位：未测量消息按 DEFAULT_MSG_H=80 估算，进窗口后真实高度≠估算，padding 差值补偿突变 → scrollTop 突跳 | I | ✅ 已钉（钉见 BAR-ORB-SEG-02：源码断言同组「BAR-ORB-SEG-02 / SEG-04 会话分段加载两条隐性契约」） | `tests/client-logic.test.ts` |
-| BAR-ORB-CULL-01 | `orb-chat` | 第二轮流式一帧一帧卡：视口裁剪按 `messages.length` 触发，但一条 AI 消息可含几十个工具框（每个是重 DOM 单元）；第一轮 20 工具框只算 1-2 条消息 → 不裁剪 → 每帧全量重建全部工具框 | L | ✅ 修复（v8 改用浏览器原生 content-visibility 逐元素裁剪（chat-dom 有注释），JS 权重计数 `_cullWeight` 随 v7 渲染器删除；逐元素机制天然无「工具框计数盲区」） | 架构吸收，冒烟兜底 |
+| BAR-ORB-CULL-01 | `orb-chat` | 第二轮流式一帧一帧卡：视口裁剪按 `messages.length` 触发，但一条 AI 消息可含几十个工具框（每个是重 DOM 单元）；第一轮 20 工具框只算 1-2 条消息 → 不裁剪 → 每帧全量重建全部工具框 | L | ✅ 修复（v8 改用浏览器原生 content-visibility 逐元素裁剪（chat-dom 有注释），JS 权重计数 `_cullWeight` 随 v7 渲染器删除；逐元素机制天然无「工具框计数盲区」） | 架构吸收，冒烟兜底；复核日 2026-11-02 |
 
 ### 第七批：v8.1 光球面板性能架构（展开慢 2-3s + 拖拽卡顿根洽）
 
@@ -191,5 +191,5 @@
 
 > 新 bug 修复后：补一个回归钉子 → 在此登记 → 状态置「已钉」。见
 > `../guides/testing.md` + `../constraints/invariants.md` §二 #24（修 bug 补钉子纪律）。
-| BAR-CARD-GHOST-01 | `card-stack` | 幽灵卡片堆（2026-08-02 用户 live 实测，历史反复出现）：左滑召唤卡片堆后再次左滑投浮卡，正常应关堆——但关闭动画完成后卡片又被拉回展开位，形成「DOM 可见但 state=closed + pointerEvents=none」的幽灵堆：点击/手势全无响应，再次左滑召唤新堆才顶掉。机制=动画竞态：左滑投卡走 `launchFocusedCard(false)`+`closeCardStack()`，前者先启动 pull 反馈回弹补间（延迟 0~0.15s+0.2s 拉出+0.25s 回弹到展开位），后者 0.3s 关闭到 100vw 并置 closed——关闭完成后回弹补间才触发，把卡片从屏外拉回。点击路径走全屏发射（`!fullscreen` 跳过 pull 反馈）故不触发；自 43fcdd2 手势改造成「投卡即关堆」起潜伏。契约：closeCardStack 启动关闭时间线前必须 `killTweensOf` 全部卡片，杜绝任何补间在关闭后把卡片拉回 | I | ✅ 修复（2026-08-02 用户实机验证通过；动画时序无单测载体，冒烟层兜底） | — |
+| BAR-CARD-GHOST-01 | `card-stack` | 幽灵卡片堆（2026-08-02 用户 live 实测，历史反复出现）：左滑召唤卡片堆后再次左滑投浮卡，正常应关堆——但关闭动画完成后卡片又被拉回展开位，形成「DOM 可见但 state=closed + pointerEvents=none」的幽灵堆：点击/手势全无响应，再次左滑召唤新堆才顶掉。机制=动画竞态：左滑投卡走 `launchFocusedCard(false)`+`closeCardStack()`，前者先启动 pull 反馈回弹补间（延迟 0~0.15s+0.2s 拉出+0.25s 回弹到展开位），后者 0.3s 关闭到 100vw 并置 closed——关闭完成后回弹补间才触发，把卡片从屏外拉回。点击路径走全屏发射（`!fullscreen` 跳过 pull 反馈）故不触发；自 43fcdd2 手势改造成「投卡即关堆」起潜伏。契约：closeCardStack 启动关闭时间线前必须 `killTweensOf` 全部卡片，杜绝任何补间在关闭后把卡片拉回 | I | ✅ 修复（2026-08-02 用户实机验证通过；动画时序无单测载体，冒烟层兜底） | —；复核日 2026-11-02 |
 | BAR-CWD-DRIFT-01 | `chat.ts`+`path-utils` | 面板 bash 默认 cwd 漂移（2026-08-02 验证臂 2 实测）：toolCtx.cwd = process.cwd()，命令工作目录随服务启动位置漂移——臂的 bash 命令混入非预期仓库数据（它用 checkpoint+显式 cwd 自救）。契约：PROJECT_ROOT 基于文件位置推导（src/server/path-utils.ts 上两级），chat/rule-engine/files 全链路替换 process.cwd()；bash 工具描述写明「缺省=项目根（会话内固定），跨仓显式传 cwd」 | L | ✅ 已钉（PROJECT_ROOT 绝对性+根判据+关键路径，3 断言） | `tests/path-utils.test.ts` |

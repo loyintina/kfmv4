@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit fcfe6b1 · 生成于 2026-08-02 -->
+<!-- 基准 commit bdb2877 · 生成于 2026-08-02 -->
 
 # 代码清单（机械层）
 
@@ -168,7 +168,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（97 文件 · 12871 行）
+## infra（98 文件 · 12960 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -221,10 +221,11 @@
 | tests/session-invalidate.test.ts | 100 | — |
 | scripts/check/check-anim.mjs | 99 | — |
 | scripts/check/check-versions.mjs | 91 | — |
+| scripts/check/check-state-freshness.mjs | 88 | — |
 | scripts/check/check-probes.mjs | 86 | — |
 | tests/engine.test.ts | 85 | — |
 | scripts/check/check-deploy-freshness.mjs | 83 | — |
-| scripts/check/chain.mjs | 81 | STEPS |
+| scripts/check/chain.mjs | 82 | STEPS |
 | scripts/check/check-hooks.mjs | 81 | — |
 | scripts/agent/exp-thinking.mjs | 81 | — |
 | scripts/check/check-console.mjs | 79 | — |
@@ -574,4 +575,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 234 文件 · 43898 行 · 跨域边 242 条
+合计 235 文件 · 43987 行 · 跨域边 242 条
