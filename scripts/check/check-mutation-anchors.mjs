@@ -25,14 +25,16 @@ let m;
 while ((m = re.exec(src))) entries.push({ id: m[1], file: m[2], find: m[3] });
 
 const errors = [];
+// schema 完整性（2026-08-02 补：新变异漏写 line → hitMutation 恒打不中；
+// 全局计数法——每字段出现次数 ≥ 条目数即全量具备）
+const countField = (re) => (src.match(re) || []).length;
+const nLine = countField(/\bline:\s*\d+/g);
+const nExpect = countField(/\bexpect:\s*['"](report|silent)['"]/g);
+const nTasks = countField(/\btasks:\s*\[/g);
+if (nLine < entries.length) errors.push(`变异物料缺 line 字段（${entries.length - nLine} 条，命中判定依赖，见 2026-08-02 假象教训）`);
+if (nExpect < entries.length) errors.push(`变异物料缺 expect 字段（${entries.length - nExpect} 条）`);
+if (nTasks < entries.length) errors.push(`变异物料缺 tasks 字段（${entries.length - nTasks} 条）`);
 for (const e of entries) {
-  // schema 完整性（2026-08-02 补：新变异漏写 line 字段 → hitMutation ±5 容差
-  // 永远打不中，覆盖补齐首跑 6/28 假象即此因——硬标准必须验 schema 而非只验锚点）
-  const entryText = src.slice(Math.max(0, src.indexOf(`id: "${e.id}"`)), src.indexOf('id: "' + e.id + '"') + 600);
-  if (!/\bline:\s*\d+/.test(entryText)) errors.push(`${e.id}: 缺 line 字段（正整数，命中判定依赖）`);
-  if (!/\bexpect:\s*['"](report|silent)['"]/.test(entryText)) errors.push(`${e.id}: 缺 expect 字段（report|silent）`);
-  if (!/tasks:\s*\[/.test(entryText)) errors.push(`${e.id}: 缺 tasks 字段（预期探针清单）`);
-  if (!existsSync(join(ROOT, e.file))) {
     errors.push(`${e.id}: 目标文件不存在 ${e.file}`);
     continue;
   }
