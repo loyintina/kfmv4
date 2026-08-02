@@ -209,3 +209,14 @@
      handler + WS 协议面）保留为「AI 之手」预留基础设施——未来做 AI 操作页面时重建
      服务端触发即可，不算技术债；同日幽灵能力注册（file-search/file-read/file-write，
      无执行面误导 AI）已删，能力管道留空待 AI 之手重建
+
+## 研究参考（2026-08-02 起登记，未立项，内化备查）
+
+10. ⏳ harness 权限引擎（借鉴 OpenWorker 审批门控，远景待办）——研究报告
+    `experiments/harness-studies/openworker.md`（吴恩达团队完整 agent 实现，
+    286 行含文件:行号索引）。核心结论：把边界纪律从提示词挪进代码——
+    PermissionEngine fail-closed / RiskClass 四类分级 / roots 写路径硬边界 /
+    shell 元字符白名单 / 无人值守 Inbox 挂起。对治 124 臂实验 20% 破界
+    （16 臂 edit 修复者，提示词劝诫失效）。立项时机：语义编译器主线收尾后
+    或 kfmv4 工具暴露面扩增前。姊妹篇：different-ai/openwork 报告同目录。
+    （用户裁决 2026-08-02：结论内化文档即可，不着急立项）
