@@ -23,21 +23,24 @@
 ## 任务 → 路由表
 | 任务 | 去向 |
 |------|---------|
-| 新 agent 接手/冷启动同步进度 | workflows/onboarding.yaml |
-| 改代码前的约束加载 | workflows/pre-code-gate.yaml |
-| 修 bug + 回归钉 | workflows/bug-fix.yaml |
-| 根因不明的异常 | workflows/diagnostics.yaml |
-| 大改动（跨 3+ 文件/多阶段） | workflows/spec-driven.yaml |
-| 同一错误重复 ≥3 次 | workflows/discipline-mechanize.yaml |
-| 代码改完同步状态 | workflows/state-sync.yaml |
-| 发版 | workflows/release.yaml |
-| 新增/改卡片 | workflows/card-dev.yaml |
-| 子系统契约更新 | workflows/contract-maintain.yaml |
-| 文档/语义审计（迁移后/中版本收尾） | workflows/audit.yaml · semantic-audit.yaml |
-| 语义深扫（发版前，强模型软标记） | workflows/deep-scan.yaml |
-| LLM 管线病灶排查（根因不明） | workflows/probe-diagnosis.yaml |
-| 新增/移动文档 | workflows/doc-tree-sync.yaml |
-| 多 agent 平行推进 | workflows/parallel-tracks.yaml（慎用） |
+<!-- gen:route-table 自动生成，禁止手改（源：docs/workflows/*.yaml name/id） -->
+| 文档-代码审计 | workflows/audit.yaml |
+| Bug 修复 + 回归钉 | workflows/bug-fix.yaml |
+| 卡片插件开发 | workflows/card-dev.yaml |
+| 参考契约维护 | workflows/contract-maintain.yaml |
+| 语义深扫 | workflows/deep-scan.yaml |
+| Bug 诊断/分诊 | workflows/diagnostics.yaml |
+| 纪律机械化 | workflows/discipline-mechanize.yaml |
+| 文档树同步 | workflows/doc-tree-sync.yaml |
+| 新 agent 接手 | workflows/onboarding.yaml |
+| 平行多轨讨论 | workflows/parallel-tracks.yaml |
+| 改代码前约束加载 | workflows/pre-code-gate.yaml |
+| LLM 管线病灶排查 | workflows/probe-diagnosis.yaml |
+| 版本发布 | workflows/release.yaml |
+| 语义审计 | workflows/semantic-audit.yaml |
+| 大改动 spec-driven 流程 | workflows/spec-driven.yaml |
+| 活跃状态同步 | workflows/state-sync.yaml |
+<!-- /gen:route-table -->
 | 理解项目方向/为什么这么设计 | active/vision.md |
 | 写/跑 agent 脚本（发版建议等） | guides/agent-runner.md |
 | **无匹配** | 完成后记录；同类操作重复 3 次 → workflows/_template.yaml 固化 |

@@ -11,3 +11,5 @@
 - 2026-08-01 04:17 ⚠️ 3 条待裁决（本轮新增 0，跑 2 跳 22，幻觉拦截 0）→ 明细见 semantic-audit-state.json 各任务 keptFindings，裁决流 workflows/semantic-audit.yaml
 - 2026-08-02 04:17 ⚠️ 11 条待裁决（本轮新增 11，跑 20 跳 4，幻觉拦截 2）→ 明细见 semantic-audit-state.json 各任务 keptFindings，裁决流 workflows/semantic-audit.yaml
 - 2026-08-02 ⚠️ 入口文档体检 FAIL（6 臂：实错 0.33/臂 LCA 0/6 硬破界 0/6 质疑 1/6）→ 走 onboarding.md 修复轮
+- 2026-08-02 📊 - LLM 调用：372 次 · 成功 84 · 失败 288 · 平均 111s/次
+- 2026-08-02 ⚠️ 入口文档体检 FAIL（3 臂：实错 0.00/臂 LCA 0/3 硬破界 1/3 质疑 0.3333333333333333/3）→ 走 onboarding.md 修复轮
