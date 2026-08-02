@@ -191,3 +191,4 @@
 
 > 新 bug 修复后：补一个回归钉子 → 在此登记 → 状态置「已钉」。见
 > `../guides/testing.md` + `../constraints/invariants.md` §二 #24（修 bug 补钉子纪律）。
+| BAR-CARD-GHOST-01 | `card-stack` | 幽灵卡片堆（2026-08-02 用户 live 实测，历史反复出现）：左滑召唤卡片堆后再次左滑投浮卡，正常应关堆——但关闭动画完成后卡片又被拉回展开位，形成「DOM 可见但 state=closed + pointerEvents=none」的幽灵堆：点击/手势全无响应，再次左滑召唤新堆才顶掉。机制=动画竞态：左滑投卡走 `launchFocusedCard(false)`+`closeCardStack()`，前者先启动 pull 反馈回弹补间（延迟 0~0.15s+0.2s 拉出+0.25s 回弹到展开位），后者 0.3s 关闭到 100vw 并置 closed——关闭完成后回弹补间才触发，把卡片从屏外拉回。点击路径走全屏发射（`!fullscreen` 跳过 pull 反馈）故不触发；自 43fcdd2 手势改造成「投卡即关堆」起潜伏。契约：closeCardStack 启动关闭时间线前必须 `killTweensOf` 全部卡片，杜绝任何补间在关闭后把卡片拉回 | I | ⏳ 修复已提交，待左滑人工验证 + 回归记录 | — |

@@ -332,6 +332,11 @@ export function openCardStack(): void {
 
 export function closeCardStack(): void {
   if (_state === 'closed' || _state === 'closing') return;
+  // 先杀掉卡片的独立补间（左滑投卡路径的 pull 反馈动画延迟回弹，会与关闭动画竞态：
+  // 关闭 0.3s 完成后回弹补间才触发，把卡片拉回展开位置 → 幽灵卡片堆：DOM 可见但
+  // state=closed + pointerEvents=none，点不动、手势不理。点击路径走全屏发射跳过
+  // pull 反馈故不触发——此竞态自 43fcdd2 手势改造成「投卡即关堆」起潜伏）
+  for (const el of _cardEls) anim.killTweensOf(el);
   // 关闭卡片堆时销毁已召唤的浮卡
 
   if (_state === 'opening' && _tl) {
