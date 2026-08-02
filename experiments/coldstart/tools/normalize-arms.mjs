@@ -18,7 +18,7 @@ const SRC = '/root/.kfmv4/experiments/coldstart/sessions';
 const OUT = '/root/.kfmv4/experiments/coldstart/derived';
 const TRANSCRIPT_DIR = join(OUT, 'transcripts');
 
-const EXPECTED_ARMS = 124;
+// 2026-08-02 起验证轮动态增长，下限仍为基线 124（见文末断言）
 const SOFT_CAP = 80_000; // transcript 单文件软上限（字节）
 const THINKING_LIMIT = 1000;
 const INPUT_LIMIT = 200;
@@ -572,13 +572,13 @@ function main() {
     console.log(`${h.padEnd(14)} ${String(s.count).padStart(4)}   ${String(s.warnings).padStart(6)}`);
   }
   console.log(`解析器异常臂数: ${failures.length}${failures.length ? ' -> ' + failures.join(', ') : ''}`);
-  console.log(`总臂数: ${arms.length}（期望 ${EXPECTED_ARMS}）`);
+  console.log(`总臂数: ${arms.length}（2026-08-01 基线 124，验证轮起动态增长）`);
   const ro = arms.filter((a) => a.readOnly).length;
   console.log(`readOnly: ${ro} 只读 / ${arms.length - ro} 有写入`);
   console.log(`输出: ${OUT}/arms.json + ${TRANSCRIPT_DIR}/ (${arms.length} 份)`);
 
-  if (arms.length !== EXPECTED_ARMS) {
-    console.error(`\n错误：总臂数 ${arms.length} != ${EXPECTED_ARMS}`);
+  if (arms.length < 124) {
+    console.error(`\n错误：总臂数 ${arms.length} < 124（不应少于实验基线）`);
     process.exit(1);
   }
 }
