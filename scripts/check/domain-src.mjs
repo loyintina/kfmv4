@@ -51,6 +51,7 @@ export const DOMAIN_SRC = {
   'server': [
     'src/server/index.ts', 'src/server/path-utils.ts', 'src/server/terminal-pty.ts',
     'src/server/ws-server.ts', 'src/server/routes/', 'src/server/env-store.ts',
+  'src/server/permissions.ts',
   ],
   'infra': [
     'build.mjs', 'scripts/check/', 'scripts/agent/', 'tests/', 'public/css/',

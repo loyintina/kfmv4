@@ -38,6 +38,7 @@ import './invariants.test.js';
 import './visual-baseline.test.js';
 import './protocol-reducer.test.js';
 import './tool-compaction.test.js';
+import './permissions.test.js';
 import './omp-glob.test.js';
 import './to-openai-messages.test.js';
 import './tool-schema.test.js';

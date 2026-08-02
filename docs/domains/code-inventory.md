@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 264ff56 · 生成于 2026-08-02 -->
+<!-- 基准 commit 876b7be · 生成于 2026-08-02 -->
 
 # 代码清单（机械层）
 
@@ -96,7 +96,7 @@
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（54 文件 · 11470 行）
+## ai-chat（55 文件 · 11610 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -119,6 +119,7 @@
 | src/server/ai/session-store.ts | 237 | appendEvent, flush, flushSync, invalidateSession, appendUserMessage |
 | src/server/ai/run-manager.ts | 228 | _setStallMsForTest, getActiveRun, getRun, StreamFn, startRun, attachRun, cancelRun |
 | src/client/modules/orb-chat-hints.ts | 225 | startWaitingIndicator, TODO_DISMISS_KEY, todosFingerprint, clearTodoPanel, dismissTodoPanel, updateTodoFromTool |
+| src/server/ai/permissions.ts | 134 | RiskClass, TOOL_RISK, Decision, AuditEntry, riskClassOf, evaluate |
 | src/server/ai/page-state.ts | 123 | PAGE_STATE_PATH, renderPageState, refreshPageState |
 | src/shared/chat-protocol/reducer.ts | 122 | ReduceContext, applyEvent, reduceEvents |
 | src/server/ai/prompt-assembler.ts | 120 | getActiveRoleFile, assembleRoleSystemPrompt, assembleDynamicPrompt |
@@ -127,10 +128,10 @@
 | src/server/ai/routes.ts | 116 | StartRunFn, setupAiRoutes |
 | src/server/ai/tools/omp/browser/aria/aria-snapshot.ts | 116 | AriaSnapshotOptions, captureAriaSnapshot, resolveAriaRefHandle, parseAriaRefSelector, buildAriaSnapshotScript |
 | src/server/ai/tools/omp/browser/tab-protocol.ts | 115 | Transferable, ObservationEntry, Observation, ScreenshotResult, SessionSnapshot, WorkerInitPayload, ToolReply, WorkerInbound, ReadyInfo, RunResultOk, RunErrorPayload, WorkerOutbound, Transport |
+| src/server/ai/tools/index.ts | 114 | getAllTools, getToolDefinitions, executeTool, hasTool, getTool |
 | src/server/ai/tools/omp/browser/readable.ts | 111 | ReadableFormat, ReadableResult, extractReadableFromHtml |
 | src/server/ai/rule-engine.ts | 109 | AiRule, loadRules, buildAlwaysApplyPrompt, checkToolCallRules, reloadRules |
 | src/server/ai/tools/omp/web-search.ts | 109 | ompWebSearchTool |
-| src/server/ai/tools/index.ts | 108 | getAllTools, getToolDefinitions, executeTool, hasTool, getTool |
 | src/server/ai/tools/types.ts | 101 | ContentBlock, ToolResult, ToolUpdate, ToolContext, KfmTool, ToolError, ToolAbortError, throwIfAborted, renderError |
 | src/server/ai/tools/omp/browser.ts | 100 | browserTool |
 | src/server/ai/tools/omp/browser/run-cancellation.ts | 86 | markHandled, waitForBrowserRun, bindBrowserRunFacade |
@@ -168,12 +169,12 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（101 文件 · 13233 行）
+## infra（102 文件 · 13280 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | tests/client-logic.test.ts | 875 | — |
-| tests/regression.test.ts | 644 | — |
+| tests/regression.test.ts | 645 | — |
 | tests/tool-compaction.test.ts | 505 | — |
 | scripts/agent/semantic-audit.mjs | 431 | taskFiles, buildPrompt, makeValidate, recheckRef, recheckQuote |
 | tests/preload.mjs | 423 | — |
@@ -244,8 +245,8 @@
 | tests/floating-state.test.ts | 66 | — |
 | scripts/agent/test-tag-advisor.mjs | 64 | — |
 | scripts/check/check-fix-tests.mjs | 62 | — |
+| scripts/check/domain-src.mjs | 62 | DOMAIN_SRC |
 | scripts/check/check-active-stack.mjs | 61 | — |
-| scripts/check/domain-src.mjs | 61 | DOMAIN_SRC |
 | scripts/check/check-doc-schema.mjs | 60 | — |
 | scripts/check/check-commit-docs.mjs | 59 | — |
 | tests/omp-glob.test.ts | 58 | — |
@@ -254,6 +255,7 @@
 | scripts/check/check-uncommitted.mjs | 51 | — |
 | scripts/check/check-consistency.mjs | 50 | — |
 | scripts/check/check-mutation-anchors.mjs | 48 | — |
+| tests/permissions.test.ts | 45 | — |
 | scripts/check/check-doc-budget.mjs | 43 | — |
 | scripts/check/check-release-radar.mjs | 42 | — |
 | tests/reset-hooks.ts | 41 | — |
@@ -486,7 +488,7 @@
 - src/client/modules/terminal-card-04.ts → src/client/modules/z-index-layers.ts
 - src/client/modules/tmux-card.ts → src/client/modules/gesture-registry.ts
 
-### infra → ai-chat（23 边）
+### infra → ai-chat（24 边）
 
 - tests/chat-protocol.test.ts → src/client/modules/orb-chat.ts
 - tests/chat-protocol.test.ts → src/server/ai/chat.ts
@@ -495,6 +497,7 @@
 - tests/invariants.test.ts → src/server/ai/chat.ts
 - tests/omp-glob.test.ts → src/server/ai/tools/omp/glob.ts
 - tests/omp-glob.test.ts → src/server/ai/tools/types.ts
+- tests/permissions.test.ts → src/server/ai/permissions.ts
 - tests/protocol-reducer.test.ts → src/shared/chat-protocol/events.ts
 - tests/protocol-reducer.test.ts → src/shared/chat-protocol/messages.ts
 - tests/protocol-reducer.test.ts → src/shared/chat-protocol/reducer.ts
@@ -578,4 +581,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 238 文件 · 44260 行 · 跨域边 242 条
+合计 240 文件 · 44447 行 · 跨域边 243 条

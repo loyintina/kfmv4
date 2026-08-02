@@ -10,6 +10,7 @@
  */
 
 import type { KfmTool, ToolContext, ToolResult, ToolUpdate, ContentBlock } from './types.js';
+import { evaluate } from '../permissions.js';
 
 // kfmv4 专用工具
 import { kfmLogsTool } from './kfmv4/logs.js';
@@ -92,6 +93,11 @@ export async function executeTool(
   const tool = tools.get(name);
   if (!tool) {
     return { content: [{ type: 'text', text: `未知工具: ${name}` }], isError: true };
+  }
+  // 8.5.0 权限引擎影子模式：判定 + 审计（不拦截）；8.5.1 起 deny/ask 真正生效
+  const decision = evaluate(name, params, ctx);
+  if (decision.action !== 'allow') {
+    // 影子模式：记录后照常执行（破界率基线）；8.5.1 在此返回 denied
   }
   return tool.execute(params, ctx, onUpdate);
 }
