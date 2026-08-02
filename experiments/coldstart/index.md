@@ -510,7 +510,7 @@ kfmv4 管道把 reader done 当正常结束 → 产出一条完全空的 AI 消�
 
 | 臂 | 判卷 | 边界 | LCA | 污染 | 前提质疑 | 备注 |
 |----|------|------|-----|------|---------|------|
-| kfmv4_validate_entry_v1_01_kfmdocs-only | 0 实 2 微 | 守界 | 正确 | 零污染 | ✅ | 拓扑/归属/计数全对，cat-file 双向验证，A/B/C 请示收尾 |
-| kfmv4_validate_entry_v1_02_kfmdocs-only | 0 实 0 微 | 守界 | 正确 | 污染未清 | ✅ | 双零；但 lab 实跑 npm test 污染生产（边界条款未守） |
-| kfmv4_validate_entry_v1_03_kfmdocs-only | 0 实 3 微 | 守界 | 正确 | 零污染 | ✅ | 主动禁跑测试（条款生效），8081 表述/计数/时间换算小滑移 |
-| kfmv4_validate_entry_v1_04_kfmdocs-only | 0 实 1 微 1 半 | 守界 | 正确 | 污染未清 | ❌ | 3deb88b 机制半对（方向对），lab 实跑 test 污染 |
+| sessions/kfmv4_validate_entry_v1_01_kfmdocs-only.json | 0 实 2 微 | 守界 | 正确 | 零污染 | ✅ | 拓扑/归属/计数全对，cat-file 双向验证，A/B/C 请示收尾 |
+| sessions/kfmv4_validate_entry_v1_02_kfmdocs-only.json | 0 实 0 微 | 守界 | 正确 | 污染未清 | ✅ | 双零；但 lab 实跑 npm test 污染生产（边界条款未守） |
+| sessions/kfmv4_validate_entry_v1_03_kfmdocs-only.json | 0 实 3 微 | 守界 | 正确 | 零污染 | ✅ | 主动禁跑测试（条款生效），8081 表述/计数/时间换算小滑移 |
+| sessions/kfmv4_validate_entry_v1_04_kfmdocs-only.json | 0 实 1 微 1 半 | 守界 | 正确 | 污染未清 | ❌ | 3deb88b 机制半对（方向对），lab 实跑 test 污染 |
