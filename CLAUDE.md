@@ -5,16 +5,14 @@
 > 历史：2026-07-05 浮卡全天工作丢失；2026-07-14 orb.ts ~200 行 AI 集成丢失。
 > 违反此规则的 agent 需重做全部丢失工作。见 constraints/invariants.md 心法 14。
 
-## 环境快照与边界（冷启动必读，124 臂实验校准）
+## 环境快照与边界（冷启动必读）
 
-**双仓拓扑**：`/root/kfmv4`=canonical 主仓（8021 服务跑它）；`/root/kfmv4-lab`=试卷快照
-（冻结 `8c9616b`，无服务）。同源（LCA `50fe654`），lab=快照+3 文档提交。
-**双仓问题先读 `guides/onboarding.md` §拓扑 SOP，禁止自行 merge-base 推断**
-（124 臂最稳失败信号）。**计数**：文档数字默认已陈旧，引用前当场实跑
-（`npm run test` 尾部 / `check-checks.mjs` / `git rev-list --count HEAD`）。
-**边界**：接手=探索+汇报+请示，不自动改代码；发现真问题→证据+选项交裁决。
-**进门三验**：`git log -1` 双仓各自 HEAD、`curl -s localhost:8021`、读
-`history.md` 尾部；随后读 `onboarding.md` 陷阱地图。详见 `onboarding.md`。
+**双仓**：`/root/kfmv4`=主仓（8021 服务跑它）；`/root/kfmv4-lab`=试卷快照（冻结 `8c9616b`，
+无服务）；同源（LCA `50fe654`），lab=快照+3 文档提交。双仓问题先读 `onboarding.md`
+§拓扑 SOP，**禁止自行 merge-base 推断**（124 臂最稳失败信号）。**计数**：文档数字
+默认已陈旧，引用前当场实跑（`npm run test` 尾 / `check-checks.mjs` / `git rev-list --count HEAD`）。
+**边界**：接手=探索+汇报+请示，不自动改代码；真问题→证据+选项交裁决。
+**进门三验**：`git log -1` 双仓、`curl -s localhost:8021`、读 `history.md` 尾 → 读 `onboarding.md` 陷阱地图。
 
 ## 会话启动（每次对话，1 跳）
 0. **首次接触本项目** → `docs/guides/orientation.md`（15 分钟心智模型）+ `docs/workflows/onboarding.yaml`（接手流）
@@ -53,12 +51,11 @@ npm run dev      # 全链路（check → esbuild client+server → smoke → 启
 npm run bundle   # 同 build.mjs（全链路，零快捷方式）
 npm run watch    # 全链路通过后 → 持续监听、快速重编（开发时一直开着）
 npm run check    # 35 个 check-*.mjs + tsc --noEmit（仅检查，不构建）
-npm run build    # 同 bundle（全链路）
 npm run start    # 启动生产构建 http://localhost:8021
 npm run test     # 489 个回归测试
 ```
 
-> **没有快捷方式**。`bundle`/`build`/`dev` 全部走 `build.mjs` 全链路。`watch` 初检不过不进 watch。
+> **没有快捷方式**：`bundle`/`build`/`dev` 全走 `build.mjs`；`watch` 初检不过不进。
 > 日常：终端 1 `npm run dev`，终端 2 `npm run watch`。改源码 → 自动重编 → 刷新。
-> **Git 推送**：`git push` 前先 `source .env`（根目录 `.env` 内有 GITHUB_TOKEN，已 gitignore，不可删除）。
+> **Git 推送**：push 前先 `source .env`（GITHUB_TOKEN 在根 `.env`，已 gitignore）；
 > agent 从不主动 push——只在用户明确要求时执行。
