@@ -34,6 +34,13 @@ let scriptsChecked = 0;
 
 for (const f of readdirSync(wfDir).filter(f => f.endsWith('.yaml'))) {
   const content = readFileSync(join(wfDir, f), 'utf-8');
+  // 规则 3（2026-08-02 加，可生成事实登记表 P0）：新工作流卡必须进 CLAUDE.md 路由表——
+  // 路由表是 agent 导航命脉，手写清单靠人记得加（新工作流迷路 = 路由表升档候选）
+  const routeTable = readFileSync(join(ROOT, 'CLAUDE.md'), 'utf-8');
+  const wfName = f.replace(/\.yaml$/, '');
+  if (!routeTable.includes(wfName)) {
+    error(`${f}: 未出现在 CLAUDE.md 路由表（新工作流必须在路由表登记一行，见 generateable-facts P0）`);
+  }
   // 提取 reads:/writes: 块下的列表项（- 开头的行）
   for (const field of ['reads', 'writes']) {
     const blockRe = new RegExp(`^${field}:\\n((?:^\\s+-.*\\n)+)`, 'm');
