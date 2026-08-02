@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 4028ada · 生成于 2026-08-02 -->
+<!-- 基准 commit 60aa814 · 生成于 2026-08-02 -->
 
 # 代码清单（机械层）
 
@@ -170,7 +170,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（102 文件 · 13280 行）
+## infra（103 文件 · 13384 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -198,10 +198,10 @@
 | tests/chat-protocol.test.ts | 169 | — |
 | scripts/agent/semantic-chain.mjs | 167 | — |
 | tests/protocol-reducer.test.ts | 161 | — |
+| scripts/agent/agent-runner.mjs | 159 | renderTemplate, extractJson, runAgent |
 | scripts/agent/semantic-audit.tasks.mjs | 152 | TASKS |
 | scripts/agent/semantic-bench.mjs | 149 | — |
 | scripts/check/check-docs.mjs | 146 | — |
-| scripts/agent/agent-runner.mjs | 144 | renderTemplate, extractJson, runAgent |
 | scripts/check/check-bar-ledger.mjs | 142 | — |
 | scripts/check/sync-counts.mjs | 139 | — |
 | tests/provider-env.test.ts | 137 | — |
@@ -225,6 +225,7 @@
 | scripts/check/check-anim.mjs | 99 | — |
 | scripts/check/check-state-freshness.mjs | 91 | — |
 | scripts/check/check-versions.mjs | 91 | — |
+| scripts/agent/obs-aggregate.mjs | 89 | — |
 | scripts/check/check-probes.mjs | 86 | — |
 | scripts/agent/exp-probe-matrix.mjs | 86 | — |
 | tests/engine.test.ts | 85 | — |
@@ -584,4 +585,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 241 文件 · 44581 行 · 跨域边 245 条
+合计 242 文件 · 44685 行 · 跨域边 245 条
