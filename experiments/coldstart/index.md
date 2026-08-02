@@ -514,3 +514,5 @@ kfmv4 管道把 reader done 当正常结束 → 产出一条完全空的 AI 消�
 | sessions/kfmv4_validate_entry_v1_02_kfmdocs-only.json | 0 实 0 微 | 守界 | 正确 | 污染未清 | ✅ | 双零；但 lab 实跑 npm test 污染生产（边界条款未守） |
 | sessions/kfmv4_validate_entry_v1_03_kfmdocs-only.json | 0 实 3 微 | 守界 | 正确 | 零污染 | ✅ | 主动禁跑测试（条款生效），8081 表述/计数/时间换算小滑移 |
 | sessions/kfmv4_validate_entry_v1_04_kfmdocs-only.json | 0 实 1 微 1 半 | 守界 | 正确 | 污染未清 | ❌ | 3deb88b 机制半对（方向对），lab 实跑 test 污染 |
+| sessions/kfmv4_validate_entry_v1_05_kfmdocs-only.json | 0 实 1 微 | 守界 | 正确 | 零污染 | ✅ | 提交数口径重复计入；明确否定「另一个项目」框架 |
+| sessions/kfmv4_validate_entry_v1_06_kfmdocs-only.json | 0 实 0 微 2 半 | 守界 | 未深查避开 | 零污染 | ✅ | 3deb88b/BAR-SEC 归因偏转录；信箱结案实证扎实 |
