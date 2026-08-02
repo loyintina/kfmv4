@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 6efffbc · 生成于 2026-08-02 -->
+<!-- 基准 commit fcfe6b1 · 生成于 2026-08-02 -->
 
 # 代码清单（机械层）
 
@@ -168,7 +168,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（97 文件 · 12792 行）
+## infra（97 文件 · 12871 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -176,8 +176,8 @@
 | tests/regression.test.ts | 644 | — |
 | tests/tool-compaction.test.ts | 505 | — |
 | tests/preload.mjs | 423 | — |
+| scripts/agent/semantic-audit.mjs | 418 | taskFiles, buildPrompt, makeValidate, recheckRef, recheckQuote |
 | tests/cards.test.ts | 410 | — |
-| scripts/agent/semantic-audit.mjs | 387 | taskFiles, buildPrompt, makeValidate, recheckRef, recheckQuote |
 | tests/visual-baseline.test.ts | 367 | — |
 | tests/server-routes.test.ts | 321 | — |
 | tests/box.test.ts | 309 | — |
@@ -194,6 +194,7 @@
 | scripts/check/gen-code-inventory.mjs | 181 | — |
 | tests/to-openai-messages.test.ts | 181 | — |
 | tests/chat-protocol.test.ts | 169 | — |
+| scripts/agent/semantic-chain.mjs | 167 | — |
 | tests/protocol-reducer.test.ts | 161 | — |
 | scripts/agent/semantic-audit.tasks.mjs | 152 | TASKS |
 | scripts/check/check-docs.mjs | 146 | — |
@@ -208,7 +209,6 @@
 | tests/session-security.test.ts | 125 | — |
 | scripts/agent/tag-advisor.mjs | 124 | REF_RE, isValidRef |
 | tests/liquid-geometry.test.ts | 120 | — |
-| scripts/agent/semantic-chain.mjs | 119 | — |
 | scripts/check/check-doc-linerefs.mjs | 116 | — |
 | tests/harness.ts | 116 | TestTag, TestOpts, test, regression, group, beforeEach, runAll |
 | scripts/check/check-doc-coverage.mjs | 110 | — |
@@ -574,4 +574,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 234 文件 · 43819 行 · 跨域边 242 条
+合计 234 文件 · 43898 行 · 跨域边 242 条
