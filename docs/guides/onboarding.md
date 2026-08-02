@@ -13,7 +13,7 @@
 - 仓库：`/root/kfmv4` = canonical 主仓（活跃开发），origin=GitHub
   （github.com/loyintina/kfmv4）。数据目录 `~/.kfmv4/`（sessions / providers.json /
   .env 代字 / experiments 私有区）。
-- 8021 端口 = **canonical 的生产服务**（node LISTEN + nginx 反代）。
+- 8021 端口 = **canonical 的生产服务**（node LISTEN + nginx 反代）。**lab 无服务**——lab 现状报告不得包含 8021（2026-08-02 routine 臂仍犯，硬事实写入）。
 - 若遇到第二仓库（如实验试卷快照 `/root/kfmv4-lab`）：它只是快照/考试材料，
   **生产接手无视之**；但如需比较，按下面取证三步。**已知事实（2026-08-02 验证轮回归后
   恢复）：两仓同源，共享历史存在（真 LCA `50fe654` 双仓可见）——lab = 主仓某时点快照 +
@@ -58,7 +58,7 @@ git log --all --oneline --grep="<提交标题关键词>"
 | F1 计数病 | 50/124 臂 | §2 当场实跑；口径标注 |
 | F2 双仓拓扑/LCA | 13 臂但深入者过半 | §1 取证三步 |
 | F3 8021 归属 | 10 臂 | lsof + /proc/<pid>/cwd 实证 |
-| F4 文档状态误读 | 7+ 臂 | 「文档声称」≠「代码现实」；状态看标题行内标记；STACK 读标题行状态词；**反例：lab STACK 声称 BAR-SEC-14/15「已修复」但代码实际未修——断言修复前必须 grep 代码验证** |
+| F4 文档状态误读 | 7+ 臂 | 「文档声称」≠「代码现实」；状态看标题行内标记；STACK 读标题行状态词；**任何「已修复/已闭环/✅」状态标记都必须 grep 代码验证**（反例：lab 声称 BAR-SESSION-01 已闭环，实际 invalidateSession 代码+测试双缺席；BAR-SEC-14/15 同款） |
 | F5 幻觉/无出处编造 | 7+ 臂（测量盲区） | 报告里每个专有名词/数字都要能指出来源；编不出来源 = 划掉 |
 | F6 信箱/待办时效 | 5 臂 | 读 state.json / 结案记录核实「⚠️ 是否已结案」，不照搬字面 |
 | F7 机制误诊 | 3 臂 | 归因前先验证机制本身存在（git show/cat-file） |
