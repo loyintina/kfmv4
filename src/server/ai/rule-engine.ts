@@ -9,6 +9,7 @@
 
 import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
+import { PROJECT_ROOT } from '../path-utils.js';
 
 export interface AiRule {
   name: string;
@@ -19,7 +20,7 @@ export interface AiRule {
   content: string;
 }
 
-const RULES_DIR = join(process.cwd(), 'src', 'server', 'ai', 'rules');
+const RULES_DIR = join(PROJECT_ROOT, 'src', 'server', 'ai', 'rules');
 
 let _rules: AiRule[] | null = null;
 

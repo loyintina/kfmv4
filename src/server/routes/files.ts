@@ -8,7 +8,7 @@
 import type { Router } from 'express';
 import fs from 'fs';
 import path from 'path';
-import { getActiveRoot, KFM_DATA_DIR, sanitizePath, setActiveRoot, verifyLocalOrigin, isValidSessionId } from '../path-utils.js';
+import { getActiveRoot, KFM_DATA_DIR, PROJECT_ROOT, sanitizePath, setActiveRoot, verifyLocalOrigin, isValidSessionId } from '../path-utils.js';
 import { invalidateSession } from '../ai/session-store.js';
 
 /**
@@ -365,8 +365,8 @@ export function setupFileRoutes(router: Router): void {
     // 历史高发模式「反复修反复没效果」多数根因是旧包，见 diagnostics 构建/Bundle #4）
     let buildInfo: Record<string, unknown> | null = null;
     try {
-      buildInfo = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'dist', 'build-info.json'), 'utf-8'));
+      buildInfo = JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, 'dist', 'build-info.json'), 'utf-8'));
     } catch { /* 未构建过 */ }
-    res.json({ user: process.env.USER || 'root', home: getActiveRoot(), cwd: process.cwd(), buildInfo });
+    res.json({ user: process.env.USER || 'root', home: getActiveRoot(), cwd: PROJECT_ROOT, buildInfo });
   });
 }

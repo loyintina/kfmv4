@@ -6,7 +6,7 @@
 
 import { mkdirSync, existsSync, readFileSync, readdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import { KFM_DATA_DIR } from '../path-utils.js';
+import { KFM_DATA_DIR, PROJECT_ROOT } from '../path-utils.js';
 import { resolveKey } from '../env-store.js';
 import type { WsServer } from '../ws-server.js';
 import { getToolDefinitions, executeTool } from './tools/index.js';
@@ -15,8 +15,8 @@ import { buildAlwaysApplyPrompt, checkToolCallRules } from './rule-engine.js';
 import { assembleRoleSystemPrompt, assembleDynamicPrompt } from './prompt-assembler.js';
 import { refreshPageState } from './page-state.js';
 
-/** 从 prompts/tools/*.md 加载工具描述 */
-const PROMPTS_DIR = join(process.cwd(), 'src', 'server', 'prompts', 'tools');
+/** 从 prompts/tools/*.md 加载工具描述（基于 PROJECT_ROOT，不依赖进程 cwd） */
+const PROMPTS_DIR = join(PROJECT_ROOT, 'src', 'server', 'prompts', 'tools');
 const toolDocs = new Map<string, string>();
 function loadToolDocs(): void {
   try {
@@ -124,9 +124,9 @@ export async function* streamChat(
 ): AsyncGenerator<StreamEvent> {
   const tools = getToolDefinitions();
 
-  // 构建工具上下文
+  // 构建工具上下文（cwd = PROJECT_ROOT 确定性默认，不随服务启动目录漂移——BAR-CWD-DRIFT-01）
   const toolCtx: ToolContext = {
-    cwd: process.cwd(),
+    cwd: PROJECT_ROOT,
     wsServer,
     signal, // run 中止信号透传（BAR-BASH-HANG-01：看门狗/取消要能杀死原生子进程）
   };

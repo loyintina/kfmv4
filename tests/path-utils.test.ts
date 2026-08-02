@@ -197,3 +197,18 @@ regression('BAR-TEST-ENV-01', 'test-data-dir-isolation', '测试数据根重定�
   const preload = readFileSync(new URL('./preload.mjs', import.meta.url), 'utf-8');
   assert(preload.includes('kfmv4-test-root-'), 'preload.mjs 缺数据目录隔离段');
 });
+
+regression('BAR-CWD-DRIFT-01', 'project-root-deterministic', '工具默认 cwd 确定性：PROJECT_ROOT 基于文件位置而非进程 cwd', async () => {
+  const { PROJECT_ROOT } = await import('../src/server/path-utils.js');
+  assert(path.isAbsolute(PROJECT_ROOT), `PROJECT_ROOT 必须是绝对路径，实际: ${PROJECT_ROOT}`);
+  // 项目根必须存在 package.json（根判据）
+  const { existsSync, readFileSync } = await import('fs');
+  const pkg = path.join(PROJECT_ROOT, 'package.json');
+  assert(existsSync(pkg), `PROJECT_ROOT 下应有 package.json，实际: ${pkg}`);
+  // 与进程 cwd 解耦：服务从任意目录启动，PROJECT_ROOT 不变（值推导自文件位置）
+  const pkg2 = JSON.parse(readFileSync(pkg, 'utf-8'));
+  assert(pkg2.name, 'package.json 应可读且含 name');
+  // 关键路径（提示词/规则/构建产物）应落在 PROJECT_ROOT 下
+  assert(existsSync(path.join(PROJECT_ROOT, 'src', 'server', 'prompts', 'tools')), 'PROMPTS_DIR 应基于 PROJECT_ROOT');
+  assert(existsSync(path.join(PROJECT_ROOT, 'src', 'server', 'ai', 'rules')), 'RULES_DIR 应基于 PROJECT_ROOT');
+});

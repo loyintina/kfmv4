@@ -25,7 +25,7 @@ export const ompBashTool: KfmTool = {
     type: 'object',
     properties: {
       command: { type: 'string', description: '要执行的 shell 命令' },
-      cwd: { type: 'string', description: '工作目录，默认当前项目根' },
+      cwd: { type: 'string', description: '工作目录，缺省 = 项目根（会话内固定，不随服务启动位置漂移）。跨仓库/跨目录操作请显式传 cwd（如 /root/kfmv4-lab）' },
       timeout: { type: 'number', description: '超时秒数，默认 300' },
     },
     required: ['command'],

@@ -26,7 +26,7 @@ export const ompReadTool: KfmTool = {
   parameters: {
     type: 'object',
     properties: {
-      path: { type: 'string', description: '文件路径，支持 :行号 选择器（如 src/index.ts:50-100）' },
+      path: { type: 'string', description: '文件路径，支持 :行号 选择器（如 src/index.ts:50-100）；传目录会报错（EISDIR），看目录请先用 ls/glob' },
       raw: { type: 'boolean', description: '设为 true 跳过采样，全量读取' },
     },
     required: ['path'],

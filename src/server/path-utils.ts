@@ -17,9 +17,16 @@
 
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 
 /** 根目录（环境变量或 HOME）— 不可变，KFM_DATA_DIR 永远基于此 */
 export const ROOT_DIR = process.env.KFM_ROOT || process.env.HOME || '.';
+
+/** 项目根：基于本文件位置推导（src/server/path-utils.ts → 上两级），
+ *  不依赖 process.cwd()——服务从任何目录启动，工具默认工作目录都确定。
+ *  教训 BAR-CWD-DRIFT-01（2026-08-02 验证臂 2 实测）：默认 cwd 漂移导致
+ *  命令混入非预期仓库。 */
+export const PROJECT_ROOT = fileURLToPath(new URL('../..', import.meta.url));
 
 /** KFM 数据目录：所有 .kfmv4/ 配置文件存储在此（不随 root 切换变化） */
 export const KFM_DATA_DIR = path.join(ROOT_DIR, '.kfmv4');
