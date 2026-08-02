@@ -88,7 +88,7 @@ git log --all --oneline --grep="<提交标题关键词>"
 | 信箱 | `docs/ledger/semantic-chain-inbox.md`，语义巡逻每日一行 |
 | 光球/浮卡/文件树/卡片堆 | 面板 UI 四要素；卡片系统见 active/vision.md |
 | kfm_ 工具族 | 面板内置工具（kfm-read/kfm-logs/kfm-restart…） |
-| KFM | **无官方英文展开名**——历史上曾有臂编造「Kalo File Manager」，那是幻觉 |
+| KFM | 页面标题即「Kalo File Manager」（public/index.html title，2026-08-02 翻案——曾有笔记误记为「臂编造的幻觉」） |
 | 心法/宪法 | `docs/constraints/`：心法=工程纪律，宪法=全局统揽原则 |
 
 ## 6. 时效与新鲜度
