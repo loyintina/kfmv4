@@ -15,7 +15,7 @@
 **进门三验**：`git log -1`、`curl -s localhost:8021`、读 `history.md` 尾 → 读 `onboarding.md` 陷阱地图。
 
 ## 会话启动（每次对话，1 跳）
-0. **首次接触本项目** → `docs/guides/orientation.md`（15 分钟心智模型）+ `docs/workflows/onboarding.yaml`（接手流）
+0. 首次接触 → orientation.md（心智模型）+ onboarding.yaml（接手流）
 1. 读 STACK.md + history.md 尾 — 当前栈与动态
 3. 读 semantic-chain-inbox.md 尾 — 信箱 ⚠️ → 裁决流
 4. 改代码前 → pre-code-gate
@@ -49,7 +49,6 @@
 
 ```bash
 npm run dev      # 全链路（check → esbuild client+server → smoke → 启动）
-npm run bundle   # 同 build.mjs（全链路，零快捷方式）
 npm run watch    # 全链路通过后 → 持续监听、快速重编（开发时一直开着）
 npm run check    # 37 个 check-*.mjs + tsc --noEmit（仅检查，不构建）
 npm run start    # 启动生产构建 http://localhost:8021
