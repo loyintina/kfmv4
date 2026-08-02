@@ -28,6 +28,7 @@ const CHECK_ONLY = process.argv.includes('--check-only');
 
 // ========== 派生真相 ==========
 
+const VERSION = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf-8')).version; // 版本号单一出处（P1a 2026-08-02）
 const checkCount = readdirSync(join(ROOT, 'scripts/check'))
   .filter(f => f.startsWith('check-') && f.endsWith('.mjs')).length;
 
@@ -43,6 +44,8 @@ console.log(`[sync-counts] 派生真相：${checkCount} 个 check 脚本，${tes
 
 const TARGETS = [
   { file: 'README.md', subs: [
+    [/KFM v4（咖啡猫）v[\d.]+/, `KFM v4（咖啡猫）v${VERSION}`],
+    [/\*\*v[\d.]+\*\*/, `**v${VERSION}**`],
     [/(\d+) 个 check-\* 脚本/g, `${checkCount} 个 check-* 脚本`],
     [/(\d+) 个回归测试/g, `${testCount} 个回归测试`],
   ] },

@@ -17,11 +17,11 @@
 
 | 事实 | 源头 | 现状 | 升档路径 | 优先级 |
 |------|------|------|---------|--------|
-| **CLAUDE 路由表**（19 工作流） | docs/workflows/*.yaml（id/name） | 手写 18 行，新工作流靠人记得加 | 生成器：枚举目录 + frontmatter → 表；加门（新 yaml 必须进路由表） | **P0** |
-| **契约文件清单 ×5** | code-inventory（域文件列表） | ai-chat/client-shell/floating-card/infra/server 手写；canvas-tree 已引用式 | 生成器：从 inventory 提取域文件 → 清单节（gen: 标记） | **P0** |
-| 版本号标记（README:1/5 + CLAUDE） | package.json + git tag | 手写（发版时手动改） | sync-counts 加版本号回写点 | P1 |
-| check 清单（「37 个 check-*」名字） | chain.mjs STEPS | 只有计数没名字 | 生成器：STEPS 枚举 → 名字清单 | P1 |
-| 「六域」列举（多处） | docs/domains/ 目录 | 手写数字 | 生成器：目录枚举 | P2 |
+| **CLAUDE 路由表**（16 工作流） | docs/workflows/*.yaml（id/name） | ✅ 生成器 gen-route-table 挂链 | — | ✅ P0 |
+| **契约文件清单 ×6** | code-inventory（域文件列表） | ✅ 生成器 gen-contract-lists 挂链 | — | ✅ P0 |
+| 版本号标记（README:1/5） | package.json | ✅ sync-counts 回写 | — | ✅ P1 |
+| check 清单（名字） | chain.mjs STEPS | ✅ 已由 contract chain:auto 覆盖（生成区含全部名字） | — | ✅ P1 |
+| 「六域」列举 | docs/domains/ 目录 | 域数稳定（6），code-inventory 已机械列出全部域 | 不升档：prose 提及属判断区，生成成本高于收益 | ⏸ P2 |
 
 ## 边界（不可生成，默认手写）
 
