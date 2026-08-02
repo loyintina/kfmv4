@@ -35,6 +35,7 @@ if (nLine < entries.length) errors.push(`变异物料缺 line 字段（${entries
 if (nExpect < entries.length) errors.push(`变异物料缺 expect 字段（${entries.length - nExpect} 条）`);
 if (nTasks < entries.length) errors.push(`变异物料缺 tasks 字段（${entries.length - nTasks} 条）`);
 for (const e of entries) {
+  if (!existsSync(join(ROOT, e.file))) {
     errors.push(`${e.id}: 目标文件不存在 ${e.file}`);
     continue;
   }
