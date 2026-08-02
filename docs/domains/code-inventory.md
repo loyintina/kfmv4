@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 4d2b299 · 生成于 2026-08-02 -->
+<!-- 基准 commit 6efffbc · 生成于 2026-08-02 -->
 
 # 代码清单（机械层）
 
@@ -96,7 +96,7 @@
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（54 文件 · 11469 行）
+## ai-chat（54 文件 · 11470 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -128,8 +128,8 @@
 | src/server/ai/tools/omp/browser/aria/aria-snapshot.ts | 116 | AriaSnapshotOptions, captureAriaSnapshot, resolveAriaRefHandle, parseAriaRefSelector, buildAriaSnapshotScript |
 | src/server/ai/tools/omp/browser/tab-protocol.ts | 115 | Transferable, ObservationEntry, Observation, ScreenshotResult, SessionSnapshot, WorkerInitPayload, ToolReply, WorkerInbound, ReadyInfo, RunResultOk, RunErrorPayload, WorkerOutbound, Transport |
 | src/server/ai/tools/omp/browser/readable.ts | 111 | ReadableFormat, ReadableResult, extractReadableFromHtml |
+| src/server/ai/rule-engine.ts | 109 | AiRule, loadRules, buildAlwaysApplyPrompt, checkToolCallRules, reloadRules |
 | src/server/ai/tools/omp/web-search.ts | 109 | ompWebSearchTool |
-| src/server/ai/rule-engine.ts | 108 | AiRule, loadRules, buildAlwaysApplyPrompt, checkToolCallRules, reloadRules |
 | src/server/ai/tools/index.ts | 108 | getAllTools, getToolDefinitions, executeTool, hasTool, getTool |
 | src/server/ai/tools/types.ts | 101 | ContentBlock, ToolResult, ToolUpdate, ToolContext, KfmTool, ToolError, ToolAbortError, throwIfAborted, renderError |
 | src/server/ai/tools/omp/browser.ts | 100 | browserTool |
@@ -155,20 +155,20 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（8 文件 · 1382 行）
+## server（8 文件 · 1389 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/server/routes/files.ts | 373 | FileItem, sliceMessages, setupFileRoutes |
 | src/server/ws-server.ts | 315 | WsServer |
 | src/server/index.ts | 169 | — |
-| src/server/path-utils.ts | 153 | ROOT_DIR, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, SESSION_ID_RE, isValidSessionId, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
+| src/server/path-utils.ts | 160 | ROOT_DIR, PROJECT_ROOT, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, SESSION_ID_RE, isValidSessionId, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/env-store.ts | 103 | ENV_PATH, parseEnv, loadEnvFile, isEnvRef, ResolvedKey, resolveKey, envNameForProvider, upsertEnvVar |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（97 文件 · 12777 行）
+## infra（97 文件 · 12792 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -187,9 +187,9 @@
 | tests/gesture-registry.test.ts | 263 | — |
 | tests/invariants.test.ts | 245 | — |
 | scripts/check/check-css-wiring.mjs | 228 | — |
+| tests/path-utils.test.ts | 215 | — |
 | tests/renderer.test.ts | 215 | — |
 | scripts/agent/semantic-mutate.mjs | 207 | MUTATIONS |
-| tests/path-utils.test.ts | 200 | — |
 | tests/smoke/smoke.mjs | 190 | — |
 | scripts/check/gen-code-inventory.mjs | 181 | — |
 | tests/to-openai-messages.test.ts | 181 | — |
@@ -302,7 +302,7 @@
 - src/client/modules/chat-dom.ts → src/client/modules/renderers/md-css.ts
 - src/client/modules/chat-dom.ts → src/client/modules/renderers/md-extensions.ts
 
-### ai-chat → server（13 边）
+### ai-chat → server（14 边）
 
 - src/server/ai/chat.ts → src/server/env-store.ts
 - src/server/ai/chat.ts → src/server/path-utils.ts
@@ -312,6 +312,7 @@
 - src/server/ai/prompt-assembler.ts → src/server/path-utils.ts
 - src/server/ai/routes.ts → src/server/path-utils.ts
 - src/server/ai/routes.ts → src/server/ws-server.ts
+- src/server/ai/rule-engine.ts → src/server/path-utils.ts
 - src/server/ai/run-manager.ts → src/server/ws-server.ts
 - src/server/ai/session-store.ts → src/server/path-utils.ts
 - src/server/ai/tools/kfmv4/logs.ts → src/server/ws-server.ts
@@ -573,4 +574,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 234 文件 · 43796 行 · 跨域边 241 条
+合计 234 文件 · 43819 行 · 跨域边 242 条
