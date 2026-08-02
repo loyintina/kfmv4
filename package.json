@@ -1,6 +1,6 @@
 {
   "name": "kfmv4",
-  "version": "8.3.3",
+  "version": "8.3.4",
   "description": "KFM v4 - TypeScript 全栈文件管理器",
   "type": "module",
   "scripts": {
