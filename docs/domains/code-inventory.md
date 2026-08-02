@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit bdb2877 · 生成于 2026-08-02 -->
+<!-- 基准 commit c314188 · 生成于 2026-08-02 -->
 
 # 代码清单（机械层）
 
@@ -168,15 +168,15 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（98 文件 · 12960 行）
+## infra（99 文件 · 13029 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | tests/client-logic.test.ts | 875 | — |
 | tests/regression.test.ts | 644 | — |
 | tests/tool-compaction.test.ts | 505 | — |
+| scripts/agent/semantic-audit.mjs | 431 | taskFiles, buildPrompt, makeValidate, recheckRef, recheckQuote |
 | tests/preload.mjs | 423 | — |
-| scripts/agent/semantic-audit.mjs | 418 | taskFiles, buildPrompt, makeValidate, recheckRef, recheckQuote |
 | tests/cards.test.ts | 410 | — |
 | tests/visual-baseline.test.ts | 367 | — |
 | tests/server-routes.test.ts | 321 | — |
@@ -197,8 +197,8 @@
 | scripts/agent/semantic-chain.mjs | 167 | — |
 | tests/protocol-reducer.test.ts | 161 | — |
 | scripts/agent/semantic-audit.tasks.mjs | 152 | TASKS |
+| scripts/agent/semantic-bench.mjs | 149 | — |
 | scripts/check/check-docs.mjs | 146 | — |
-| scripts/agent/semantic-bench.mjs | 145 | — |
 | scripts/agent/agent-runner.mjs | 144 | renderTemplate, extractJson, runAgent |
 | scripts/check/check-bar-ledger.mjs | 142 | — |
 | scripts/check/sync-counts.mjs | 139 | — |
@@ -220,12 +220,12 @@
 | scripts/check/check-test-patterns.mjs | 102 | — |
 | tests/session-invalidate.test.ts | 100 | — |
 | scripts/check/check-anim.mjs | 99 | — |
+| scripts/check/check-state-freshness.mjs | 91 | — |
 | scripts/check/check-versions.mjs | 91 | — |
-| scripts/check/check-state-freshness.mjs | 88 | — |
 | scripts/check/check-probes.mjs | 86 | — |
 | tests/engine.test.ts | 85 | — |
+| scripts/check/chain.mjs | 83 | STEPS |
 | scripts/check/check-deploy-freshness.mjs | 83 | — |
-| scripts/check/chain.mjs | 82 | STEPS |
 | scripts/check/check-hooks.mjs | 81 | — |
 | scripts/agent/exp-thinking.mjs | 81 | — |
 | scripts/check/check-console.mjs | 79 | — |
@@ -251,6 +251,7 @@
 | scripts/check/check-secrets.mjs | 52 | — |
 | scripts/check/check-uncommitted.mjs | 51 | — |
 | scripts/check/check-consistency.mjs | 50 | — |
+| scripts/check/check-mutation-anchors.mjs | 48 | — |
 | scripts/check/check-doc-budget.mjs | 43 | — |
 | scripts/check/check-release-radar.mjs | 42 | — |
 | tests/reset-hooks.ts | 41 | — |
@@ -575,4 +576,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 235 文件 · 43987 行 · 跨域边 242 条
+合计 236 文件 · 44056 行 · 跨域边 242 条
