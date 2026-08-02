@@ -70,7 +70,12 @@ agent 脚本层——检测归自动化，裁决归会话内 agent，**永远不
     ~/.kfmv4/agent-calls.jsonl（provider/耗时/成败）——观测台聚合器
     scripts/agent/obs-aggregate.mjs 周报（周一 04:37 投信箱）；工具调用审计
     permission-audit.jsonl（权限引擎影子模式）同源；新增数据流必须登记观测台。
-13. **权限引擎**（2026-08-02，8.5.0 影子模式）：工具 RiskClass 四类映射
+14. **语义生成**（2026-08-02，登记表 P0 完成）：契约清单生成器
+    gen-contract-lists（6 域清单单一出处）、路由表生成器 gen-route-table
+    （工作流行从 workflows/ 生成）——生成区标记 gen:xxx，幂等 + --check-only
+    漂移门；**新增可生成事实必须先问「能否从活源头推导」，能则登记生成**。
+    （设计 active/semantic-generation.md + 登记表 active/generateable-facts.md）
+15. **权限引擎**（2026-08-02，8.5.0 影子模式）：工具 RiskClass 四类映射
     （src/server/ai/permissions.ts TOOL_RISK），所有工具调用过 evaluate 判定 +
     审计（影子模式不拦截）；加新工具必须在此登记 RiskClass（BAR-PERM-01 钉）。
     8.5.1 审批通道待数据成熟（观测台基线）。
