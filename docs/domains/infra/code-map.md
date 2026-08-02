@@ -25,7 +25,7 @@
 |------|------|--------|
 | build.mjs（无导出，顶层即入口） | chain.mjs 委托 + esbuild | package.json build/dev/watch、deploy.sh:11 |
 | chain.mjs（check 链唯一出处，STEPS 36 步） | scripts/check/chain.mjs | package.json:11、build.mjs 委托 |
-| 31 个 check-*.mjs（含 check-checks 自身，业务检查 30） | 全部顶层执行、exit 1 硬失败 | chain.mjs STEPS 统一调度 |
+| check 数以 check-checks.mjs 实报为准（引用式，曾手写 31 已陈旧——编译升档盘点 2026-08-02 逮住） | 全部顶层执行、exit 1 硬失败 | chain.mjs STEPS 统一调度 |
 | DOCS_ROOT / DOMAIN_SRC 共享常量 | scripts/check/docs-root-const.mjs、domain-src.mjs | 11 个 check / freshness + 清单生成器 |
 | sync-counts.mjs | 唯一会回写文档的 check | 链内 --check-only；无参回写 |
 | scripts/agent/agent-runner.mjs | 导出 runAgent/extractJson | tag-advisor.mjs:13 |
