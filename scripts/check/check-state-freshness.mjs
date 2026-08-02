@@ -24,15 +24,18 @@ const ok = (m) => console.log(`  ✓ ${m}`);
 const bad = (m) => errors.push(m);
 
 // ---- R1 豁免表：每行必带 40hex 哈希；临时必带 review-by（YYYY-MM-DD） ----
+// 列序：id | 核心码 | 目标 | 关键词 | 类型 | review-by | 理由 | 登记 | 哈希
 console.log('[check-state-freshness] R1 豁免登记表 schema');
 const exLines = readFileSync(exPath, 'utf-8').split('\n');
 let exCount = 0;
 for (const line of exLines) {
-  const m = /^\|\s*(EX-\d+)\s*\|\s*(SEM\d+)\s*\|\s*([^|]+?)\s*\|\s*(\S+?)\s*\|\s*([^|]*?)\s*\|/.exec(line);
+  const m = /^\|\s*(EX-\d+)\s*\|\s*(SEM\d+)\s*\|\s*([^|]+?)\s*\|\s*[^|]*?\s*\|\s*(\S+?)\s*\|\s*([^|]*?)\s*\|/.exec(line);
   if (!m) continue;
   exCount++;
-  const [id, , , type, reviewBy] = [m[1], m[2], m[3], m[4], m[5]];
-  const hashM = /^\|\s*(EX-\d+)\s*\|[^|]*\|[^|]*\|[^|]*\|[^|]*\|[^|]*\|[^|]*\|\s*([0-9a-f]{40})\s*\|/.exec(line);
+  const id = m[1];
+  const type = m[4];
+  const reviewBy = m[5];
+  const hashM = /^\|\s*(EX-\d+)\s*\|[^|]*\|[^|]*\|[^|]*\|[^|]*\|[^|]*\|[^|]*\|[^|]*\|\s*([0-9a-f]{40})\s*\|/.exec(line);
   if (!hashM) bad(`R1 ${id}: 缺目标哈希（必须 40hex）`);
   else ok(`${id}: 哈希在`);
   if (type === '临时') {
