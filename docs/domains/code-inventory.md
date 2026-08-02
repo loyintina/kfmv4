@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 876b7be · 生成于 2026-08-02 -->
+<!-- 基准 commit 4028ada · 生成于 2026-08-02 -->
 
 # 代码清单（机械层）
 
@@ -156,7 +156,7 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（8 文件 · 1389 行）
+## server（9 文件 · 1523 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -164,6 +164,7 @@
 | src/server/ws-server.ts | 315 | WsServer |
 | src/server/index.ts | 169 | — |
 | src/server/path-utils.ts | 160 | ROOT_DIR, PROJECT_ROOT, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, SESSION_ID_RE, isValidSessionId, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
+| src/server/ai/permissions.ts | 134 | RiskClass, TOOL_RISK, Decision, AuditEntry, riskClassOf, evaluate |
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/env-store.ts | 103 | ENV_PATH, parseEnv, loadEnvFile, isEnvRef, ResolvedKey, resolveKey, envNameForProvider, upsertEnvVar |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
@@ -308,7 +309,7 @@
 - src/client/modules/chat-dom.ts → src/client/modules/renderers/md-css.ts
 - src/client/modules/chat-dom.ts → src/client/modules/renderers/md-extensions.ts
 
-### ai-chat → server（14 边）
+### ai-chat → server（15 边）
 
 - src/server/ai/chat.ts → src/server/env-store.ts
 - src/server/ai/chat.ts → src/server/path-utils.ts
@@ -321,6 +322,7 @@
 - src/server/ai/rule-engine.ts → src/server/path-utils.ts
 - src/server/ai/run-manager.ts → src/server/ws-server.ts
 - src/server/ai/session-store.ts → src/server/path-utils.ts
+- src/server/ai/tools/index.ts → src/server/ai/permissions.ts
 - src/server/ai/tools/kfmv4/logs.ts → src/server/ws-server.ts
 - src/server/ai/tools/kfmv4/restart.ts → src/server/path-utils.ts
 - src/server/ai/tools/types.ts → src/server/ws-server.ts
@@ -488,7 +490,7 @@
 - src/client/modules/terminal-card-04.ts → src/client/modules/z-index-layers.ts
 - src/client/modules/tmux-card.ts → src/client/modules/gesture-registry.ts
 
-### infra → ai-chat（24 边）
+### infra → ai-chat（23 边）
 
 - tests/chat-protocol.test.ts → src/client/modules/orb-chat.ts
 - tests/chat-protocol.test.ts → src/server/ai/chat.ts
@@ -497,7 +499,6 @@
 - tests/invariants.test.ts → src/server/ai/chat.ts
 - tests/omp-glob.test.ts → src/server/ai/tools/omp/glob.ts
 - tests/omp-glob.test.ts → src/server/ai/tools/types.ts
-- tests/permissions.test.ts → src/server/ai/permissions.ts
 - tests/protocol-reducer.test.ts → src/shared/chat-protocol/events.ts
 - tests/protocol-reducer.test.ts → src/shared/chat-protocol/messages.ts
 - tests/protocol-reducer.test.ts → src/shared/chat-protocol/reducer.ts
@@ -563,9 +564,10 @@
 - tests/floating-state.test.ts → src/client/modules/floating-shared.ts
 - tests/reset-hooks.ts → src/client/modules/card-registry.ts
 
-### infra → server（9 边）
+### infra → server（10 边）
 
 - tests/path-utils.test.ts → src/server/path-utils.ts
+- tests/permissions.test.ts → src/server/ai/permissions.ts
 - tests/provider-env.test.ts → src/server/env-store.ts
 - tests/provider-env.test.ts → src/server/path-utils.ts
 - tests/provider-env.test.ts → src/server/routes/providers.ts
@@ -575,10 +577,11 @@
 - tests/session-security.test.ts → src/server/path-utils.ts
 - tests/session-security.test.ts → src/server/ws-server.ts
 
-### server → ai-chat（2 边）
+### server → ai-chat（3 边）
 
+- src/server/ai/permissions.ts → src/server/ai/tools/types.ts
 - src/server/index.ts → src/server/ai/routes.ts
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 240 文件 · 44447 行 · 跨域边 243 条
+合计 241 文件 · 44581 行 · 跨域边 245 条
