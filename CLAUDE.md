@@ -7,22 +7,14 @@
 
 ## 环境快照与边界（冷启动必读，124 臂实验校准）
 
-**双仓拓扑**：`/root/kfmv4`（canonical，主仓，8021 生产服务跑的是它）与
-`/root/kfmv4-lab`（试卷快照仓，冻结基线 `8c9616b`，无服务）。两者同源
-（真 LCA `50fe654`），lab = 快照 + 3 条文档提交。**判断任何双仓问题先读
-`guides/onboarding.md` §拓扑 SOP——禁止自行 merge-base 推断**（全场最稳
-定失败信号，124 臂中深入探索者踩中过半）。
-
-**计数纪律**：文档里的数字（测试数/check 数/提交数/文件数）**全部可能已陈旧**。
-凡要引用，当场实跑验证（`npm run test` 尾部、`check-checks.mjs` 实报、
-`git rev-list --count HEAD`）；转录旧值是全场最高频错误（50/124 臂次）。
-
-**边界**：接手 = 探索 + 汇报 + 请示，**不自动改代码**。发现真实问题 →
-收集证据 → 给选项交用户裁决。「修复者冲动」走合规出口（见 onboarding.md §边界）。
-
-**进门三验**（每次冷启动先做）：`git log -1`（双仓各自 HEAD）、
-`curl -s localhost:8021`（服务归属）、读 `docs/ledger/history.md` 尾部。
-随后读 `onboarding.md` 的陷阱地图再动手。
+**双仓拓扑**：`/root/kfmv4`=canonical 主仓（8021 服务跑它）；`/root/kfmv4-lab`=试卷快照
+（冻结 `8c9616b`，无服务）。同源（LCA `50fe654`），lab=快照+3 文档提交。
+**双仓问题先读 `guides/onboarding.md` §拓扑 SOP，禁止自行 merge-base 推断**
+（124 臂最稳失败信号）。**计数**：文档数字默认已陈旧，引用前当场实跑
+（`npm run test` 尾部 / `check-checks.mjs` / `git rev-list --count HEAD`）。
+**边界**：接手=探索+汇报+请示，不自动改代码；发现真问题→证据+选项交裁决。
+**进门三验**：`git log -1` 双仓各自 HEAD、`curl -s localhost:8021`、读
+`history.md` 尾部；随后读 `onboarding.md` 陷阱地图。详见 `onboarding.md`。
 
 ## 会话启动（每次对话，1 跳）
 0. **首次接触本项目** → `docs/guides/orientation.md`（15 分钟心智模型）+ `docs/workflows/onboarding.yaml`（接手流）
