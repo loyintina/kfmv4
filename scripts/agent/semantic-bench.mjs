@@ -52,6 +52,7 @@ const DUP = parseInt((process.argv.find(a => a.startsWith('--dup=')) || '--dup=1
 // --samples=N：每任务跑 N 个独立样本，成绩按并集聚合（2026-07-30 四轮趋势定案：
 // 单轮方差 ±2~3，单样本不作数——「成绩看趋势」从人肉纪律升级为机制）
 const SAMPLES = parseInt((process.argv.find(a => a.startsWith('--samples=')) || '--samples=1').slice(10), 10);
+const NO_THINK = process.argv.includes('--no-think'); // 2026-08-02：思考 on/off 对照实验
 const base = DUP > 1 ? Array.from({ length: DUP }, () => affected).flat() : affected;
 const worklist = base.flatMap(task => Array.from({ length: SAMPLES }, (_, s) => ({ task, sample: s + 1 })));
 console.log(`[bench] 并发 ${CONC} · 任务 ${worklist.length} 个（${base.length} 探针 × ${SAMPLES} 样本）${DUP > 1 ? `（dup×${DUP} 压测模式）` : ''}`);
@@ -64,6 +65,9 @@ const runs = await pool(worklist, CONC, async ({ task, sample }) => {
     prompt: buildPrompt(task, files),
     validate: makeValidate(),
     maxTokens: 16000,
+    // 2026-08-02：json_object 空响应病（同审计修复）+ 思考开关（--no-think 对照实验）
+    params: { response_format: undefined, ...(NO_THINK ? { thinking: { type: 'disabled' } } : {}) },
+    timeoutMs: 300_000,
   });
   if (!result.ok) {
     console.log(`  ${task.id}#${sample}: 失败——${result.errors.join('；').slice(0, 100)}`);

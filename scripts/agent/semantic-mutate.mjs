@@ -33,10 +33,10 @@ export const MUTATIONS = [
   // ---- L1 回归层：历史真案例复刻 ----
   {
     id: 'M01', level: 'L1', sem: 'SEM001', file: 'README.md', expect: 'report',
-    find: '**31 个 check-* 脚本 + 440 个回归测试**',
-    replace: '**30 个 check-* 脚本 + 440 个回归测试**',
+    find: '**36 个 check-* 脚本 + 490 个回归测试**',
+    replace: '**35 个 check-* 脚本 + 490 个回归测试**',
     tasks: ['readme-vs-maps', 'inter-readme-codemap'],
-    note: 'check 计数应为 31（复刻 10ae324 README 20→19；锚点随 sync-counts 30→31 迁移）',
+    note: 'check 计数应为 36（锚点 2026-08-02 随 34→36 迁移）',
   },
   {
     id: 'M02', level: 'L1', sem: 'SEM002', file: 'docs/domains/ai-chat/detail-runtime.md', expect: 'report',
@@ -83,7 +83,7 @@ export const MUTATIONS = [
   },
   {
     id: 'M08', level: 'L2', sem: 'SEM002', file: 'docs/domains/infra/contract.md', expect: 'report',
-    find: '## 检查管线（npm run check，31 脚本，顺序固定）',
+    find: '## 检查管线（npm run check，36 脚本，顺序固定）',
     replace: '## 检查管线（npm run check，29 脚本，顺序固定）',
     tasks: ['contract-vs-map-infra'],
     note: '契约计数 29 vs code-map「30 个 check（含 check-checks 自身）」冲突（锚点随 31 迁移）',
@@ -91,8 +91,8 @@ export const MUTATIONS = [
   // ---- L3 对抗层：near-miss 负例（报了即误报） ----
   {
     id: 'M09', level: 'L3', sem: 'NC', file: 'README.md', expect: 'silent',
-    find: '| 自动化检查管线 | 31 个 check-* 脚本',
-    replace: '| 自动化检查管线 | 31（三十一）个 check-* 脚本',
+    find: '| 自动化检查管线 | 36 个 check-* 脚本',
+    replace: '| 自动化检查管线 | 36（三十六）个 check-* 脚本',
     tasks: ['readme-vs-maps', 'inter-readme-codemap'],
     note: '正确计数的表述变体——不应报告（三轮假发现改造）',
   },
@@ -106,15 +106,15 @@ export const MUTATIONS = [
   // ---- L2 矩阵填充（2026-07-30 扩卷）：SEM × 文档元素空格系统补齐 ----
   {
     id: 'M11', level: 'L2', sem: 'SEM001', file: 'docs/guides/testing.md', expect: 'report',
-    find: '440 个测试（单元/集成/回归钉/不变量），~1.3s',
+    find: '490 个测试（单元/集成/回归钉/不变量），~1.3s',
     replace: '420 个测试（单元/集成/回归钉/不变量），~1.3s',
     tasks: ['guides-testing-vs-infra'],
     note: '测试计数漂移（infra code-map 明记 440——baseline 可逮）',
   },
   {
     id: 'M12', level: 'L2', sem: 'SEM002', file: 'CLAUDE.md', expect: 'report',
-    find: 'npm run check    # 31 个 check-*.mjs + tsc --noEmit（仅检查，不构建）',
-    replace: 'npm run check    # 30 个 check-*.mjs + tsc --noEmit（仅检查，不构建）',
+    find: 'npm run check    # 36 个 check-*.mjs + tsc --noEmit（仅检查，不构建）',
+    replace: 'npm run check    # 35 个 check-*.mjs + tsc --noEmit（仅检查，不构建）',
     tasks: ['claude-vs-docs'],
     note: '入口文档计数 30 vs infra 契约「31 脚本」冲突（锚点随 31 迁移）',
   },
