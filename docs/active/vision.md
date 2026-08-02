@@ -342,7 +342,6 @@ OpenWorker（吴恩达团队，MIT）完整 agent 实现研究报告：`experime
 一句话：**审批门控=机制强制，非提示词纪律**——PermissionEngine fail-closed + RiskClass 四类
 分级 + roots 写路径硬边界 + shell 元字符白名单 + 无人值守 Inbox 挂起。对治 kfmv4 面板 20%
 破界（124 臂实测），是「可插拔 Agent 引擎」远景下 harness 层的基础设施候选。
-姊妹报告：different-ai/openwork（opencode 系编排层）同目录。
 
 ## 未来：动画系统结构性大修（远景待办，2026-08-02 记）
 

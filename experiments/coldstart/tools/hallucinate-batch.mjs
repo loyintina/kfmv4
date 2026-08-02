@@ -20,6 +20,37 @@ mkdirSync(OUT, { recursive: true });
 const spec = readFileSync(join(REPO, 'experiments/coldstart/prompts/judge-hallucination.md'), 'utf-8');
 const arms = JSON.parse(readFileSync(join(DERIVED, 'arms.json'), 'utf-8'));
 
+function buildEvidencePack(transcript) {
+  // 精简证据包：去 thinking 块；工具调用块截断到 600 字符（含调用行+结果开头）；
+  // 保留头部元数据与最终报告全文。大成绩单压垮判官的根因修复（flash-18 空响应、
+  // minimax 欠抽取均源于 50-80KB 全文）。
+  const lines = transcript.split('\n');
+  const out = [];
+  let inTool = false;
+  let toolChars = 0;
+  let finalReport = false;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i];
+    if (l.trim().startsWith('> [thinking]') || l.trim().startsWith('>思考')) continue;
+    if (l.includes('## 最终报告')) { out.push(l); finalReport = true; continue; }
+    if (finalReport) { out.push(l); continue; }
+    if (/^- \*\*\[T\d+\]\*\*/.test(l)) {
+      inTool = true; toolChars = 0; out.push(l);
+      continue;
+    }
+    if (inTool) {
+      if (/^### \[A|^## |^- \*\*\[T\d+\]/.test(l)) { inTool = false; out.push(l); continue; }
+      toolChars += l.length + 1;
+      if (toolChars <= 600) out.push(l);
+      else continue; // 截断剩余工具块内容
+    } else {
+      // 头部元数据（前若干行）保留，AI 中间文本跳过
+      if (i < 12) out.push(l);
+    }
+  }
+  return out.join('\n');
+}
+
 function extractCandidates(transcript) {
   // 从最终报告段机械抽取断言候选：数字（含上下文）、引号内容、特定专有名词形态。
   // 抽取宁全勿漏——判官必须逐条分类，漏判一条编造 = 尺子失职。
@@ -51,7 +82,8 @@ function buildPrompt(armId) {
   const arm = arms.find(a => a.armId === armId) || {};
   const epoch = (arm.createdAt || '') < '2026-08-01T02:33' ? 'A' : 'B';
   const transcript = readFileSync(join(DERIVED, 'transcripts', `${armId}.md`), 'utf-8');
-  const cands = extractCandidates(transcript);
+  const evidence = buildEvidencePack(transcript);
+  const cands = extractCandidates(evidence);
   const checklist = cands.length
     ? cands.map((c, i) => `${i + 1}. ${c}`).join('\n')
     : '（机械层未抽到候选——通读最终报告自行提取）';
@@ -59,7 +91,7 @@ function buildPrompt(armId) {
     `【本臂运行时点】createdAt=${arm.createdAt || '未知'}（UTC），时代 ${epoch}`,
     '\n【判卷规程】', spec,
     '\n【机械抽取断言候选清单——逐条分类，不许跳过】\n' + checklist,
-    '\n【臂成绩单 transcript】', transcript,
+    '\n【臂证据包（精简：工具轨迹+最终报告全文；中间 AI 文本与 thinking 已剥离）】\n' + evidence,
     `\n【任务】臂 ${armId} 的幻觉判卷。严格按规程 schema 输出 JSON（armId 填 "${armId}"）。`
     + ' 机械清单每条都要出现在 claims 里（category 可为 unsourced），遗漏 = 尺子失职。只输出 JSON。',
   ].join('\n');

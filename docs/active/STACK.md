@@ -218,5 +218,5 @@
     PermissionEngine fail-closed / RiskClass 四类分级 / roots 写路径硬边界 /
     shell 元字符白名单 / 无人值守 Inbox 挂起。对治 124 臂实验 20% 破界
     （16 臂 edit 修复者，提示词劝诫失效）。立项时机：语义编译器主线收尾后
-    或 kfmv4 工具暴露面扩增前。姊妹篇：different-ai/openwork 报告同目录。
-    （用户裁决 2026-08-02：结论内化文档即可，不着急立项）
+    或 kfmv4 工具暴露面扩增前。（用户裁决 2026-08-02：结论内化文档即可，不着急立项；
+    different-ai/openwork 误研报告已删除）
