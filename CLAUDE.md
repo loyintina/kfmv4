@@ -55,7 +55,5 @@ npm run start    # 启动生产构建 http://localhost:8021
 npm run test     # 493 个回归测试
 ```
 
-> **没有快捷方式**：`bundle`/`build`/`dev` 全走 `build.mjs`；`watch` 初检不过不进。日常：
-
-> 终端 1 dev、终端 2 watch。Git 推送：push 前先 `source .env`；
-> agent 从不主动 push——只在用户明确要求时执行。
+> **没有快捷方式**：`bundle`/`build`/`dev` 全走 `build.mjs`；`watch` 初检不过不进。
+> 日常：终端 1 dev、终端 2 watch。Git 推送：push 前先 `source .env`；agent 从不主动 push。
