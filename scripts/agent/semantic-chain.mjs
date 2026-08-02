@@ -94,9 +94,17 @@ if (audit.code === 2) {
   });
   const n = pendingDedup.length;
   const newThisRun = last.kept ?? 0;
+  // 按码分布（喂结晶回路：同码复发计数——变体级 ≥3 → 机械化候选，≥2 且 SEM900 → 变体提案）
+  const byCode = new Map();
+  for (const f of pendingDedup) byCode.set(f.type || 'SEM900', (byCode.get(f.type || 'SEM900') || 0) + 1);
+  const codeDist = [...byCode.entries()].sort((a, b) => b[1] - a[1]).map(([c, n2]) => `${c}×${n2}`).join(' ');
+  const mechCandidates = [...byCode.entries()].filter(([, n2]) => n2 >= 3).map(([c]) => c);
+  const variantCandidates = [...byCode.entries()].filter(([c, n2]) => c === 'SEM900' && n2 >= 2).map(([, n2]) => `${n2} 条`);
   verdict = n === 0
     ? `✅ 干净（跑 ${last.ran} 跳 ${last.skipped}，幻觉拦截 ${last.dropped}）`
-    : `⚠️ ${n} 条待裁决（本轮新增 ${newThisRun}，跑 ${last.ran} 跳 ${last.skipped}，幻觉拦截 ${last.dropped}）→ 明细见 semantic-audit-state.json 各任务 keptFindings，裁决流 workflows/semantic-audit.yaml`;
+    : `⚠️ ${n} 条待裁决（${codeDist}；本轮新增 ${newThisRun}，跑 ${last.ran} 跳 ${last.skipped}，幻觉拦截 ${last.dropped}）→ 明细见 semantic-audit-state.json 各任务 keptFindings，裁决流 workflows/semantic-audit.yaml`;
+  if (mechCandidates.length) verdict += `；机械化候选（≥3 次）：${mechCandidates.join('/')}`;
+  if (variantCandidates.length) verdict += `；变体提案候选（SEM900×${variantCandidates[0]}，走裁决流）`;
 }
 inbox(`- ${stamp} ${verdict}`);
 

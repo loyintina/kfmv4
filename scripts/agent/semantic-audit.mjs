@@ -154,6 +154,8 @@ export function buildPrompt(task, files) {
 
 【病灶类型】只报这几类（其他不报）：
 ${task.sem.map(s => `- ${s}`).join('\n')}
+- SEM900（未分类）：你确认它是真冲突/真漂移，但归不进上述任何已知码的新形态——报 SEM900，
+  不要硬塞进最近的码（两层码表定稿 2026-08-02：核心码固定、变体判例法累积，SEM900 是急诊室）
 
 【输出契约】只输出 JSON，不要任何多余文字：
 {"findings":[{"type":"SEM001","claim":"出错文档路径:行号","against":"基准出处路径:行号 或 null","quote":"claim 处原文片段（≤15字）","note":"50字内冲突说明"}]}
