@@ -3,6 +3,22 @@
 > 研究日期：2026-08-02。只读研究，未改动任何仓库代码。
 > 关联冷启动实验：`experiments/coldstart/reports/06-harness-behavior.md`（五 harness × 124 臂）。
 
+## 0. 身份澄清（2026-08-02 复核）：两个「OpenWork」
+
+本报告研究的对象是 **`different-ai/openwork`**（Claude Cowork 开源平替，opencode 系编排层，
+2026-02 起，独立组织 different-ai）。**与吴恩达（Andrew Ng）团队的 OpenWorker 是两个项目**：
+
+| | different-ai/openwork（本报告对象） | andrewyng/openworker（吴恩达团队） |
+|---|---|---|
+| 定位 | Cowork 平替，opencode 反代+编排层 | 桌面 AI 同事，交成品不交聊天 |
+| 技术栈 | TS（Electron+自研 server → opencode fork） | Python（coworker/ 引擎，基于 aisuite）+ Tauri GUI |
+| 连接器 | opencode 工具面 | 25+ 集成（GitHub/Slack/Jira/Notion…）+ MCP 可插拔 |
+| 审批 | opencode 审批流 | 写/发送/shell 命令审批门控，无人值守停在收件箱 |
+| 发布 | 2026-02 | 2026-07-24 开源 beta（GitHub 3.7k+ star） |
+
+两者都验证「harness 决定行为」主题：openwork 用提示词分段注入+动态分支，openworker 用
+审批门控+连接器面。openworker 的 Python/aisuite 架构与本报告无关，如需对比研究另立篇目。
+
 ## 1. 仓库来源与版本
 
 | 项 | 值 |
