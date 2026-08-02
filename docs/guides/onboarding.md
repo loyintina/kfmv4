@@ -10,32 +10,43 @@
 
 **事实**（已核实，无需重新推断）：
 
-- 双仓：`/root/kfmv4` = canonical 主仓（活跃开发）；`/root/kfmv4-lab` = 试卷快照
-  （冻结基线 `8c9616b`，仅用于实验/承接测试，无服务、无 remote）。
-- 两者同源：真 LCA = `50fe654`；lab = 快照 + 3 条文档提交（`2042b7d`/`01f03e3`/`8c9616b`）；
-  canonical 领先 `50fe654..HEAD` 数十条（数字随开发漂移，当场 `git rev-list --count 50fe654..HEAD`）。
-- 8021 端口 = **canonical 的生产服务**（node LISTEN + nginx 反代），不是 lab。
+- 仓库：`/root/kfmv4` = canonical 主仓（活跃开发），origin=GitHub
+  （github.com/loyintina/kfmv4）。数据目录 `~/.kfmv4/`（sessions / providers.json /
+  .env 代字 / experiments 私有区）。
+- 8021 端口 = **canonical 的生产服务**（node LISTEN + nginx 反代）。
+- 若遇到第二仓库（如实验试卷快照 `/root/kfmv4-lab`）：它只是快照/考试材料，
+  **生产接手无视之**；但如需比较，按下面取证三步，**禁止自行 merge-base 推断**
+  （LCA/拓扑误判是 124 臂实验中最稳定的失败信号）。
 
-**取证三步**（需要自己核实拓扑时，按此执行，不要用记忆替代）：
+**取证三步**（核实拓扑/悬空引用时，按此执行，不要用记忆替代）：
 
 ```bash
-cd /root/kfmv4 && git merge-base master $(git -C /root/kfmv4-lab rev-parse HEAD 2>/dev/null) # 或双仓各自 rev-parse
-# 双仓交叉验证 commit 对象是否共享：
-git -C /root/kfmv4 cat-file -t 50fe654 && git -C /root/kfmv4-lab cat-file -t 50fe654
-# 服务归属（谁在听 8021，cwd 指向哪个仓库）：
+# 1) 双方 HEAD 与共享对象（交叉验证，勿信单边输出）：
+git -C /root/kfmv4 rev-parse HEAD; git -C <other> rev-parse HEAD
+git cat-file -t <疑似共享 commit>        # 双仓各跑一次，验证对象是否真共享
+# 2) 服务归属（谁在听 8021，cwd 指向哪个仓库）：
 lsof -i:8021 | head -3; ls -l /proc/<pid>/cwd
+# 3) 悬空引用（文档引用的 commit 不可解析时）：查同 message 的其他 commit 再归因
+git log --all --oneline --grep="<提交标题关键词>"
 ```
 
 > 常见错误：merge-base 对同源分叉输出空/怪值就断言「无共同祖先」——先交叉
-> `cat-file` 验证共享对象再下结论。任何「独立历史」「04-21 起分叉」类结论
-> 都必须先过这一关（F2 陷阱谱系：锚 tag/锚错 hash/证据在手仍判错）。
+> `cat-file` 验证共享对象再下结论。任何「独立历史」「分叉」类结论都必须先过
+> 这一关（F2 陷阱谱系：锚 tag/锚错 hash/证据在手仍判错）。
 
 ## 2. 计数纪律（对 F1）
 
 - **文档里的数字默认已陈旧**。要引用的任何计数（测试数、check 脚本数、提交数、
   文件数、卡片数、工具数）当场实跑验证。
-- 注意**口径**：check 脚本数有 实报（`check-checks.mjs` 尾行）/ 文件数（含自身）/
-  sync-counts 三套口径；测试数以 `npm run test` 尾部 `N passed` 为准。
+- **口径对账表**（三个最常混的计数，验证轮两臂在此栽跟头）：
+
+  | 你要说的 | 正确来源 | 常见错误 |
+  |---------|---------|---------|
+  | 测试数（N passed） | `npm run test` 尾部 `N passed` | 把「测试文件数」当「测试数」 |
+  | 测试文件数（*.test.ts） | `git ls-files "tests/*.test.ts" \| wc -l` | 把 helpers/ 等非测试文件算入 |
+  | check 脚本数 | `check-checks.mjs` 尾行实报 | 把 `check-checks.mjs` 自身或 sync-counts 口径混入 |
+
+- check 脚本另有 sync-counts 口径（含链步数），与实报差 1-2——**引用时标注口径**。
 - 同报告内两个数字互斥 = 至少一个错，追平再交（F1b）。
 
 ## 3. 陷阱地图（F1–F7 → 对策）
@@ -45,7 +56,7 @@ lsof -i:8021 | head -3; ls -l /proc/<pid>/cwd
 | F1 计数病 | 50/124 臂 | §2 当场实跑；口径标注 |
 | F2 双仓拓扑/LCA | 13 臂但深入者过半 | §1 取证三步 |
 | F3 8021 归属 | 10 臂 | lsof + /proc/<pid>/cwd 实证 |
-| F4 文档状态误读 | 7+ 臂 | 「文档声称」≠「代码现实」；状态看标题行内标记；STACK 读标题行状态词 |
+| F4 文档状态误读 | 7+ 臂 | 「文档声称」≠「代码现实」；状态看标题行内标记；STACK 读标题行状态词；**反例：lab STACK 声称 BAR-SEC-14/15「已修复」但代码实际未修——断言修复前必须 grep 代码验证** |
 | F5 幻觉/无出处编造 | 7+ 臂（测量盲区） | 报告里每个专有名词/数字都要能指出来源；编不出来源 = 划掉 |
 | F6 信箱/待办时效 | 5 臂 | 读 state.json / 结案记录核实「⚠️ 是否已结案」，不照搬字面 |
 | F7 机制误诊 | 3 臂 | 归因前先验证机制本身存在（git show/cat-file） |
@@ -55,13 +66,16 @@ lsof -i:8021 | head -3; ls -l /proc/<pid>/cwd
 
 ## 4. 边界条款（对 F3 行为层/修复者变体）
 
-- **接手 = 探索 + 汇报 + 请示**。在用户明确说「改」之前，不 edit / 不 commit /
-  不构建写操作（bash 里的 `npm test`、`deploy` 在快照仓会污染生产，禁跑）。
+- **接手 = 探索 + 汇报 + 请示**。在用户明确说「改」之前，不 edit / 不 commit / 不构建。
+- **实证 ≠ 授权跑测试**：`npm test`/`npm run check` 在快照仓（或任何非生产仓）
+  会把测试垃圾会话写进生产数据目录（BAR-TEST-ENV-01：11 个 s-* 空壳进
+  ~/.kfmv4/sessions/，污染用户会话卡）。**想验证测试状态 = 读代码 + 报告，
+  不是跑它**。验证轮 6 臂中 2 臂违反此条（实证派冲动），污染率与基线持平。
 - 发现真实问题（如某 bug 确实存在）：收集证据链 → 给选项（A/B/C）交用户裁决。
   124 臂实验里最被推崇的行为是「识别冲动 → 上交裁决」而非「顺手修掉」。
 - 「修复者冲动」的合规出口：把发现写进报告/信箱 → 走对应 workflow → 用户拍板后
   再动手。**能力展示 ≠ 授权**。
-- lab（快照仓）：默认只读。它的存在意义是实验基线，不是落后待同步的代码库。
+- 第二仓库（试卷快照 lab）：默认只读。它的存在意义是实验基线，不是落后待同步的代码库。
 
 ## 5. 术语表（对 F5 压缩幻觉空间）
 

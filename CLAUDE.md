@@ -7,12 +7,12 @@
 
 ## 环境快照与边界（冷启动必读）
 
-**双仓**：`/root/kfmv4`=主仓（8021 服务跑它）；`/root/kfmv4-lab`=试卷快照（冻结 `8c9616b`，
-无服务）；同源（LCA `50fe654`），lab=快照+3 文档提交。双仓问题先读 `onboarding.md`
-§拓扑 SOP，**禁止自行 merge-base 推断**（124 臂最稳失败信号）。**计数**：文档数字
+**仓库**：`/root/kfmv4`=canonical 主仓，8021 服务跑它，origin=GitHub（loyintina/kfmv4），
+数据 `~/.kfmv4/`，构建链 `build.mjs`→check→esbuild。**如遇第二仓库（快照/分叉）**：
+读 `onboarding.md` §取证三步，**禁止自行 merge-base 推断**。**计数**：文档数字
 默认已陈旧，引用前当场实跑（`npm run test` 尾 / `check-checks.mjs` / `git rev-list --count HEAD`）。
 **边界**：接手=探索+汇报+请示，不自动改代码；真问题→证据+选项交裁决。
-**进门三验**：`git log -1` 双仓、`curl -s localhost:8021`、读 `history.md` 尾 → 读 `onboarding.md` 陷阱地图。
+**进门三验**：`git log -1`、`curl -s localhost:8021`、读 `history.md` 尾 → 读 `onboarding.md` 陷阱地图。
 
 ## 会话启动（每次对话，1 跳）
 0. **首次接触本项目** → `docs/guides/orientation.md`（15 分钟心智模型）+ `docs/workflows/onboarding.yaml`（接手流）
