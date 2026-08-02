@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit c314188 · 生成于 2026-08-02 -->
+<!-- 基准 commit 264ff56 · 生成于 2026-08-02 -->
 
 # 代码清单（机械层）
 
@@ -168,7 +168,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（99 文件 · 13029 行）
+## infra（101 文件 · 13233 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -209,6 +209,7 @@
 | tests/session-security.test.ts | 125 | — |
 | scripts/agent/tag-advisor.mjs | 124 | REF_RE, isValidRef |
 | tests/liquid-geometry.test.ts | 120 | — |
+| scripts/agent/exp-probe-decompose.mjs | 117 | — |
 | scripts/check/check-doc-linerefs.mjs | 116 | — |
 | tests/harness.ts | 116 | TestTag, TestOpts, test, regression, group, beforeEach, runAll |
 | scripts/check/check-doc-coverage.mjs | 110 | — |
@@ -223,13 +224,14 @@
 | scripts/check/check-state-freshness.mjs | 91 | — |
 | scripts/check/check-versions.mjs | 91 | — |
 | scripts/check/check-probes.mjs | 86 | — |
+| scripts/agent/exp-probe-matrix.mjs | 86 | — |
 | tests/engine.test.ts | 85 | — |
 | scripts/check/chain.mjs | 83 | STEPS |
 | scripts/check/check-deploy-freshness.mjs | 83 | — |
 | scripts/check/check-hooks.mjs | 81 | — |
 | scripts/agent/exp-thinking.mjs | 81 | — |
+| scripts/check/check-experiment-index.mjs | 80 | — |
 | scripts/check/check-console.mjs | 79 | — |
-| scripts/check/check-experiment-index.mjs | 79 | — |
 | tests/tag-advisor.test.ts | 77 | — |
 | scripts/check/check-as-any.mjs | 76 | — |
 | scripts/check/docs-status.mjs | 76 | — |
@@ -576,4 +578,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 236 文件 · 44056 行 · 跨域边 242 条
+合计 238 文件 · 44260 行 · 跨域边 242 条
