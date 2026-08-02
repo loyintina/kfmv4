@@ -82,11 +82,6 @@
 
 ## 文件清单
 
-> 全量文件以 code-inventory.md 为准（机械生成，本文不再维护手写清单——
-> 曾手写 25 个，实测 31 个，漂移源即手写清单）。
-
-`tree-render.ts` `tree-overlay.ts` `tree-animation.ts` `tree-swipe.ts` `tree-model.ts`
-`tree-loader.ts` `canvas-cursor.ts` `liquid-geometry.ts` `canvas-scroll.ts` `canvas-utils.ts`
-`style-registry.ts` `theme.ts` `color-utils.ts` `sibling-switcher.ts` `mode-system.ts`
-`file-action-bar.ts` `char-rain.ts`
-引擎层：`engine/v2/`（8 文件）→ detail-engine.md
+<!-- gen:contract-list 自动生成，禁止手改（源：code-inventory） -->
+`src/client/modules/tree-render.ts` `src/client/engine/v2/renderer.ts` `src/client/modules/tree-swipe.ts` `src/client/engine/v2/box.ts` `src/client/engine/v2/types.ts` `src/client/modules/mode-system.ts` `src/client/modules/file-action-bar.ts` `src/client/modules/tree-overlay.ts` `src/client/modules/canvas-cursor.ts` `src/client/modules/canvas-scroll.ts` `src/client/modules/char-rain.ts` `src/client/engine/v2/BorderDrawer.ts` `src/client/engine/v2/flex.ts` `src/client/modules/theme.ts` `src/client/modules/tree-model.ts` `src/client/modules/tree-loader.ts` `src/client/modules/style-registry.ts` `src/client/modules/sibling-switcher.ts` `src/client/engine/v2/StyleConfig.ts` `src/client/modules/liquid-geometry.ts` `src/client/modules/tree-animation.ts` `src/client/modules/canvas-utils.ts` `src/client/modules/color-utils.ts` `src/client/engine/v2/animation.ts` `src/client/engine/v2/utils.ts`
+<!-- /gen:contract-list -->

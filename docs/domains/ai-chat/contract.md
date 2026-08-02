@@ -140,10 +140,6 @@
 
 ## 文件清单
 
-客户端：`orb-chat-host.ts` `orb-chat.ts` `orb-chat-run.ts` `orb-chat-hints.ts` `chat-dom.ts`
-`session-client.ts` `ws-channel.ts` `../data/waiting-hints.ts`（等待/摸鱼提示文案）
-+ `src/shared/chat-protocol/`（6 文件）
-服务端：`ai/chat.ts` `ai/run-manager.ts` `ai/routes.ts` `ai/session-store.ts`
-`ai/page-state.ts` `ai/prompt-assembler.ts` `ai/rule-engine.ts` `ai/tools/`
-`ai/tools/omp/browser/`（Browser 工具）`prompts/`
-细节：detail-runtime.md · detail-tool-compaction.md · detail-browser.md
+<!-- gen:contract-list 自动生成，禁止手改（源：code-inventory） -->
+`src/client/modules/chat-dom.ts` `src/client/data/waiting-hints.ts` `src/server/ai/tools/omp/browser/tab-worker.ts` `src/server/ai/tools/omp/browser/launch.ts` `src/client/modules/session-client.ts` `src/client/modules/orb-chat-run.ts` `src/server/ai/chat.ts` `src/client/modules/ws-channel.ts` `src/shared/tool-compaction/index.ts` `src/server/ai/tools/omp/debug.ts` `src/server/ai/tools/omp/debug/debug-operations.ts` `src/client/modules/orb-chat-host.ts` `src/server/ai/tools/omp/browser/tab-supervisor.ts` `src/server/ai/tools/omp/debug/kfmv4-views.ts` `src/shared/chat-protocol/to-openai-messages.ts` `src/server/ai/tools/omp/debug/cdp-connection.ts` `src/server/ai/session-store.ts` `src/server/ai/run-manager.ts` `src/client/modules/orb-chat-hints.ts` `src/server/ai/permissions.ts` `src/server/ai/page-state.ts` `src/shared/chat-protocol/reducer.ts` `src/server/ai/prompt-assembler.ts` `src/server/ai/tools/kfmv4/logs.ts` `src/server/ai/tools/omp/read.ts` `src/server/ai/routes.ts` `src/server/ai/tools/omp/browser/aria/aria-snapshot.ts` `src/server/ai/tools/omp/browser/tab-protocol.ts` `src/server/ai/tools/index.ts` `src/server/ai/tools/omp/browser/readable.ts` `src/server/ai/rule-engine.ts` `src/server/ai/tools/omp/web-search.ts` `src/server/ai/tools/types.ts` `src/server/ai/tools/omp/browser.ts` `src/server/ai/tools/omp/browser/run-cancellation.ts` `src/server/ai/tools/omp/bash.ts` `src/server/ai/tools/omp/native.ts` `src/server/ai/tools/kfmv4/restart.ts` `src/server/ai/tools/kfmv4/browser-eval.ts` `src/server/ai/tools/omp/eval.ts` `src/server/ai/tools/omp/edit.ts` `src/shared/chat-protocol/events.ts` `src/shared/chat-protocol/messages.ts` `src/server/ai/tools/omp/todo.ts` `src/server/ai/tools/omp/glob.ts` `src/server/ai/tools/omp/write.ts` `src/server/ai/tools/omp/grep.ts` `src/server/ai/tools/omp/browser/tab-worker-entry.ts` `src/shared/message-normalize.ts` `src/client/modules/orb-chat.ts` `src/shared/chat-protocol/block-idx.ts` `src/server/ai/tools/omp/checkpoint.ts` `src/server/ai/tools/omp/browser/tab-worker-entry.js` `src/server/ai/tools/omp/rewind.ts` `src/shared/chat-protocol/index.ts`
+<!-- /gen:contract-list -->

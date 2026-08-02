@@ -40,5 +40,6 @@ Express 4 + WebSocket，`index.ts` 统一入口编排（协调层）。
 
 ## 文件清单
 
-`index.ts` `routes/files.ts` `routes/proxy.ts` `routes/providers.ts`
-`env-store.ts` `path-utils.ts` `terminal-pty.ts` `ws-server.ts` `ai/`（见 ai-chat 域）`prompts/`
+<!-- gen:contract-list 自动生成，禁止手改（源：code-inventory） -->
+`src/server/routes/files.ts` `src/server/ws-server.ts` `src/server/index.ts` `src/server/path-utils.ts` `src/server/ai/permissions.ts` `src/server/terminal-pty.ts` `src/server/env-store.ts` `src/server/routes/proxy.ts` `src/server/routes/providers.ts`
+<!-- /gen:contract-list -->

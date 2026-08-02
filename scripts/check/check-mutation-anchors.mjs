@@ -20,7 +20,7 @@ const src = readFileSync(MUTATE, 'utf-8');
 
 // MUTATIONS 数组条目文本抽取（宽松：id/file/find 三字段）
 const entries = [];
-const re = /id:\s*'([^']+)'[\s\S]*?file:\s*'([^']+)'[\s\S]*?find:\s*'([^']*)'/g;
+const re = /id:\s*['"]([^'"]+)['"][\s\S]*?file:\s*['"]([^'"]+)['"][\s\S]*?find:\s*['"]([^'"]*)['"]/g;
 let m;
 while ((m = re.exec(src))) entries.push({ id: m[1], file: m[2], find: m[3] });
 

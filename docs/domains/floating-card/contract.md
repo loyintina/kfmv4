@@ -72,7 +72,6 @@
 
 ## 文件清单
 
-`card-registry.ts` `card-stack.ts` `floating-card.ts` `floating-shared.ts`
-`floating-fullscreen.ts` `terminal-card-04.ts`（xterm + WS 重连重开 PTY）
-`tmux-card.ts`（WS 重连 _lastCommand 自动 re-attach）
-`renderers/`（9 个文件渲染器）`../cards/plugins/`（9 张插件卡）`../cards/`（registry/types）
+<!-- gen:contract-list 自动生成，禁止手改（源：code-inventory） -->
+`src/client/modules/floating-card.ts` `src/client/modules/terminal-card-04.ts` `src/client/cards/plugins/role.card.ts` `src/client/cards/plugins/config.card.ts` `src/client/cards/plugins/session.card.ts` `src/client/cards/plugins/api.card.ts` `src/client/modules/card-stack.ts` `src/client/cards/plugins/tools.card.ts` `src/client/modules/renderers/handler-factory.ts` `src/client/modules/tmux-card.ts` `src/client/modules/floating-fullscreen.ts` `src/client/modules/floating-shared.ts`
+<!-- /gen:contract-list -->

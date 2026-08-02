@@ -180,7 +180,58 @@ function materialize() {
   cpSync(join(REPO, 'docs'), join(SANDBOX, 'docs'), { recursive: true });
   for (const f of ['README.md', 'CLAUDE.md']) cpSync(join(REPO, f), join(SANDBOX, f));
 
-  const truth = [];
+  const truth = [
+  // ---- 2026-08-02 覆盖补齐（6 探针 × 2 变异，report 13 行动项） ----
+  { id: "M16", level: "L2", sem: "SEM001", file: "docs/domains/ai-chat/contract.md", expect: "report",
+    find: "客户端：`orb-chat-host.ts` `orb-chat.ts` `orb-chat-run.ts` `orb-chat-hints.ts` `chat-dom.ts`",
+    replace: "客户端：`orb-chat-host.ts` `orb-chat.ts` `orb-chat-run.ts` `ghost-chat-extra.ts` `chat-dom.ts`",
+    tasks: ["contract-vs-map-ai-chat"], note: "文件清单混入幽灵文件（覆盖补齐 1/6）" },
+  { id: "M17", level: "L2", sem: "SEM001", file: "docs/domains/ai-chat/contract.md", expect: "report",
+    find: "3. **新增服务端依赖必须同步 build.mjs external**（规则的家 → ../infra/contract.md 硬规则 3）",
+    replace: "3. **新增服务端依赖必须同步 build.mjs external**（规则的家 → ../infra/contract.md 硬规则 9）",
+    tasks: ["contract-vs-map-ai-chat"], note: "跨契约交叉引用改错号（覆盖补齐 1/6 第二例）" },
+  { id: "M18", level: "L2", sem: "SEM001", file: "docs/domains/canvas-tree/contract.md", expect: "report",
+    find: "1. **`theme.ts` = 全项目颜色唯一定义点**。导出 `currentTheme`（单例，运行时不可变）。",
+    replace: "1. **`colors.ts` = 全项目颜色唯一定义点**。导出 `currentTheme`（单例，运行时不可变）。",
+    tasks: ["contract-vs-map-canvas-tree"], note: "唯一定义点文件改名 ghost（覆盖补齐 2/6）" },
+  { id: "M19", level: "L2", sem: "SEM001", file: "docs/domains/canvas-tree/contract.md", expect: "report",
+    find: "2. **`style-registry.ts` = 文件树尺寸/字体/间距唯一定义点**。",
+    replace: "2. **`style-ghost.ts` = 文件树尺寸/字体/间距唯一定义点**。",
+    tasks: ["contract-vs-map-canvas-tree"], note: "同上第二例（覆盖补齐 2/6）" },
+  { id: "M20", level: "L2", sem: "SEM001", file: "docs/domains/client-shell/contract.md", expect: "report",
+    find: "1. **CSS 布局方程**：`.sidebar-content` + `.sidebar-tools` = 100dvh，禁止改用 flex。",
+    replace: "1. **CSS 布局方程**：`.sidebar-content` + `.sidebar-tools` = 50dvh，禁止改用 flex。",
+    tasks: ["contract-vs-map-client-shell"], note: "布局常量改错（覆盖补齐 3/6）" },
+  { id: "M21", level: "L2", sem: "SEM001", file: "docs/domains/client-shell/contract.md", expect: "report",
+    find: "2. **Registry 配对规则**：新增交互元素必须 register + 加入 MANIFEST；",
+    replace: "2. **Registry 配对规则**：新增交互元素必须 register + 加入 GHOSTMANIFEST；",
+    tasks: ["contract-vs-map-client-shell"], note: "机制名改 ghost（覆盖补齐 3/6 第二例）" },
+  { id: "M22", level: "L2", sem: "SEM001", file: "docs/domains/floating-card/contract.md", expect: "report",
+    find: "4. **双色渐变对应规则**：方向 135deg；color1（起点）→ 左光球 TL/BL + 图标背景；",
+    replace: "4. **双色渐变对应规则**：方向 90deg；color1（起点）→ 左光球 TL/BL + 图标背景；",
+    tasks: ["contract-vs-map-floating-card"], note: "渐变方向常量改错（覆盖补齐 4/6）" },
+  { id: "M23", level: "L2", sem: "SEM001", file: "docs/domains/floating-card/contract.md", expect: "report",
+    find: "`card-registry.ts` `card-stack.ts` `floating-card.ts` `floating-shared.ts`",
+    replace: "`card-registry.ts` `card-stack.ts` `ghost-card.ts` `floating-shared.ts`",
+    tasks: ["contract-vs-map-floating-card"], note: "文件清单混入幽灵（覆盖补齐 4/6 第二例）" },
+  { id: "M24", level: "L2", sem: "SEM001", file: "docs/domains/cross-domain.md", expect: "report",
+    find: "| `kfmv4_currentRoot` | **3 写者**（sibling-switcher.ts:61,116、main.ts:93） | 3 处 | ⚠ 多写者 |",
+    replace: "| `kfmv4_currentRoot` | **1 写者**（sibling-switcher.ts:61） | 1 处 | ⚠ 多写者 |",
+    tasks: ["crossdomain-vs-inventory"], note: "写者计数改错（覆盖补齐 5/6）" },
+  { id: "M25", level: "L2", sem: "SEM001", file: "docs/domains/cross-domain.md", expect: "report",
+    find: "| `kfm-todo-dismissed` / `kfm-active-run` / `kfm-restart-count` | ai-chat 各自单写 | 同域 | 可接受（restart-count 有 1 处字面量未用常量 orb-chat-host.ts:272） |",
+    replace: "| `kfm-todo-dismissed` / `kfm-active-run` / `kfm-restart-count` | ai-chat 各自单写 | 同域 | 可接受（restart-count 有 0 处字面量未用常量 orb-chat-host.ts:272） |",
+    tasks: ["crossdomain-vs-inventory"], note: "字面量计数改错（覆盖补齐 5/6 第二例）" },
+  { id: "M26", level: "L2", sem: "SEM002", file: "docs/ledger/semantic-provenance.md", expect: "report",
+    find: "- **G2 迁移只搬不核**：大迁移把已失真内容逐字搬运进新体系，无人对照现实核实。",
+    replace: "- **G2 迁移只搬不核**：大迁移把已失真内容逐字搬运进新体系，无人对照现实核实（2026-08-02 已废止，改归 G5）。",
+    tasks: ["inter-provenance-bugs"], note: "provenance 单方改 G2 语义（覆盖补齐 6/6）" },
+  { id: "M27", level: "L2", sem: "SEM002", file: "docs/ledger/semantic-provenance.md", expect: "report",
+    find: "| G3 | 变更后引用面未同步 | 15 | 48.4% |",
+    replace: "| G3 | 变更后引用面未同步 | 13 | 48.4% |",
+    tasks: ["inter-provenance-bugs"], note: "G3 计数改错（覆盖补齐 6/6 第二例）" },
+
+];
   for (const m of MUTATIONS) {
     const abs = join(SANDBOX, m.file);
     const content = readFileSync(abs, 'utf-8');

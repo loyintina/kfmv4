@@ -56,6 +56,7 @@ export const STEPS = [
   'node scripts/check/check-experiment-index.mjs',
   'node scripts/check/sync-counts.mjs --check-only',
   'node scripts/check/gen-code-inventory.mjs --check-only',
+  'node scripts/check/gen-contract-lists.mjs --check-only',
   'npm test',
   'npx tsc --noEmit',
 ];
