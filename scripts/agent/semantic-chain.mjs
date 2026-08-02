@@ -26,6 +26,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync, appendFileSync, existsSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 
 const REPO = resolve(fileURLToPath(new URL('../../', import.meta.url)));
 const STATE_PATH = join(REPO, 'docs/ledger/semantic-audit-state.json');
@@ -106,7 +107,46 @@ if (audit.code === 2) {
   if (mechCandidates.length) verdict += `；机械化候选（≥3 次）：${mechCandidates.join('/')}`;
   if (variantCandidates.length) verdict += `；变体提案候选（SEM900×${variantCandidates[0]}，走裁决流）`;
 }
+// ---- 豁免新鲜度（2026-08-02：豁免不是永久静默——哈希失效 + review-by 到期） ----
+const exemptionStatus = checkExemptions();
+if (exemptionStatus) verdict += exemptionStatus;
 inbox(`- ${stamp} ${verdict}`);
+
+/** 豁免新鲜度检查：目标文件哈希变化 → 失效；临时豁免 review-by 到期 → 复核提醒 */
+function checkExemptions() {
+  const exPath = join(ROOT, 'docs/ledger/semantic-exemptions.md');
+  if (!existsSync(exPath)) return '';
+  const lines = readFileSync(exPath, 'utf-8').split('\n');
+  const today = new Date().toISOString().slice(0, 10);
+  const due = [];
+  const stale = [];
+  const temp = [];
+  let total = 0;
+  for (const line of lines) {
+    const m = /^\|\s*(EX-\d+)\s*\|[^|]*\|\s*([^|]+?)\s*\|[^|]*\|\s*([^|]*?)\s*\|[^|]*\|[^|]*\|\s*([0-9a-f]{40})/.exec(line);
+    if (!m) continue;
+    total++;
+    const id = m[1];
+    const targetFile = (m[2].split('（')[0].trim().split(':')[0] || '').trim();
+    const reviewBy = m[3].trim();
+    const regHash = m[4];
+    if (reviewBy && reviewBy !== '—') {
+      temp.push(id);
+      if (reviewBy <= today) due.push(id);
+    }
+    if (targetFile && regHash) {
+      try {
+        const cur = createHash('sha1').update(readFileSync(join(ROOT, targetFile))).digest('hex');
+        if (cur !== regHash) stale.push(`${id}(${targetFile} 已变)`);
+      } catch { stale.push(`${id}(${targetFile} 不可读)`); }
+    }
+  }
+  if (!total) return '';
+  const parts = [`豁免 ${total} 条（临时 ${temp.length}` + (due.length ? `，${due.length} 到期` : '') + '）'];
+  if (due.length) parts.push(`⚠️ 复核到期：${due.join('/')}（走裁决流）`);
+  if (stale.length) parts.push(`⚠️ 豁免失效（目标已变，将重新上报）：${stale.join('/')}`);
+  return `；${parts.join('；')}`;
+}
 
 // ---- 变异基准（可选，尺校准） ----
 if (WITH_BENCH && audit.code !== 2) {

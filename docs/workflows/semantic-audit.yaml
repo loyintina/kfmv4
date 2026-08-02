@@ -22,7 +22,10 @@ steps:
   6. 裁决落账（2026-07-30 巡逻首跑追加）：修复裁决靠哈希变化下轮自动消除；
      **豁免裁决必须当场 `node scripts/agent/semantic-audit.mjs --task=<探针id>` 单跑该探针**
      （--task 点名必跑，prompt 含豁免 → keptFindings 刷新），否则旧发现在 state 里
-     滞留成僵尸、信箱 ⚠️ 数字永不降（修复/豁免对称性条款）
+     滞留成僵尸、信箱 ⚠️ 数字永不降（修复/豁免对称性条款）。
+     **豁免登记（2026-08-02 加）：裁决确认的豁免写入 docs/ledger/semantic-exemptions.md**
+     （EX-xx 表：目标/类型/理由/目标哈希；临时豁免必填 review-by）——探针读取跳过、
+     巡逻做哈希失效与到期复核提醒（豁免不是永久静默）
   7. 复盘：成因分类学更新 + 提示词有效性数据（精确率/重复率）回写 semantic-provenance.md
 writes:
   - ledger/semantic-provenance.md

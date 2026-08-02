@@ -27,13 +27,41 @@ import { fileURLToPath } from 'url';
 import { createHash } from 'crypto';
 import { runAgent, extractJson } from './agent-runner.mjs';
 import { TASKS } from './semantic-audit.tasks.mjs';
-
 // SEMANTIC_AUDIT_ROOT：变异基准卷专用——指向 semantic-mutate.mjs 物化的沙盒副本，
 // 审计逻辑不变、读的全是副本；活树/账本/check 链无感。生产跑不设此变量。
 const ROOT = process.env.SEMANTIC_AUDIT_ROOT
   ? resolve(process.env.SEMANTIC_AUDIT_ROOT)
   : resolve(fileURLToPath(new URL('../../', import.meta.url)));
 const STATE_PATH = join(ROOT, 'docs/ledger/semantic-audit-state.json');
+
+// ========== 豁免登记表（EX-xx，新鲜度机制 2026-08-02） ==========
+// 结构：docs/ledger/semantic-exemptions.md 表格。探针按「目标（文档:行）」前缀跳过
+// keptFindings；chain 负责哈希失效与 review-by 到期提醒。
+const EXEMPTIONS_PATH = join(ROOT, 'docs/ledger/semantic-exemptions.md');
+let _exemptions = null; // [{id, target, type, reviewBy}]
+function loadExemptions() {
+  if (_exemptions) return _exemptions;
+  _exemptions = [];
+  try {
+    const raw = readFileSync(EXEMPTIONS_PATH, 'utf-8');
+    for (const line of raw.split('\n')) {
+      const m = /^\|\s*(EX-\d+)\s*\|\s*(SEM\d+)\s*\|\s*([^|]+?)\s*\|\s*(\S+?)\s*\|\s*([^|]*?)\s*\|/.exec(line);
+      if (!m) continue;
+      _exemptions.push({ id: m[1], sem: m[2], target: m[3].trim(), type: m[4], reviewBy: m[5].trim() });
+    }
+  } catch { /* 表不存在 = 无豁免 */ }
+  return _exemptions;
+}
+let _exemptIdMap = null;
+function exemptIdFor(claim) {
+  if (!_exemptIdMap) {
+    _exemptIdMap = new Map();
+    for (const e of loadExemptions()) _exemptIdMap.set(e.target.split('（')[0].trim(), e.id);
+  }
+  for (const [target, id] of _exemptIdMap) if (claim.startsWith(target)) return id;
+  return null;
+}
+function isExempted(claim) { return exemptIdFor(claim) !== null; }
 // 并发：压测定档 10（2026-07-30 变异基准三曲线——conc20 全 Google 22/22 绿、
 // 成绩噪声带内不动；conc10 留一倍余量，墙钟收益主要给 23 探针的多波次场景）
 const CONCURRENCY = 10;
@@ -321,11 +349,12 @@ const results = await pool(willRun, CONCURRENCY, async ({ task, files, hash }) =
     return { task, hash, ok: false };
   }
   anyOk = true;
-  // 机械复核 + 去重
+  // 机械复核 + 去重 + 豁免跳过（EX-xx 登记表：已裁决确认的发现不重复上报）
   const kept = [];
   const droppedList = [];
   for (const f of result.data.findings) {
     if (!recheckRef(f.claim, files) || !recheckRef(f.against, files) || !recheckQuote(f, files)) { droppedList.push(f); continue; }
+    if (isExempted(f.claim)) { droppedList.push({ ...f, note: `豁免跳过 EX-${exemptIdFor(f.claim)}（${f.note || ''}` }); continue; }
     kept.push(f);
   }
   const dropped = droppedList.length;

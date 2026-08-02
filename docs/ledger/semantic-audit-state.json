@@ -13,35 +13,13 @@
       "attempts": 1
     },
     "guides-testing-vs-infra": {
-      "hash": "6a7c8cbf6a937ba64df08025aaca0be85c52fa0e",
-      "lastRun": "2026-08-01",
+      "hash": "a36d33fe9ed1defddd9daeb9285a65b37676d3b9",
+      "lastRun": "2026-08-02",
       "status": "ok",
-      "reported": 3,
-      "kept": 3,
+      "reported": 0,
+      "kept": 0,
       "dropped": 0,
-      "keptFindings": [
-        {
-          "type": "SEM001",
-          "claim": "docs/guides/testing.md:6",
-          "against": "docs/domains/infra/code-map.md:79",
-          "quote": "489 个测试",
-          "note": "code-map 明确不记快照值，实测以 sync-counts 为准；testing.md 硬编码 489 与 code-map 声明冲突"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/guides/testing.md:7",
-          "against": "docs/domains/infra/code-map.md:79",
-          "quote": "11 条浏览器冒烟",
-          "note": "smoke 数量未在基准确认，code-map 声明不记快照，testing.md 具体数字与基准口径冲突"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/guides/testing.md:9",
-          "against": "docs/domains/infra/contract.md:18",
-          "quote": "L1 不变量",
-          "note": "contract 未定义 L1 分层；code-map 仅记 check 链，testing.md 分层断言无基准支撑"
-        }
-      ],
+      "keptFindings": [],
       "droppedFindings": [],
       "provider": "Opencode Go Google/deepseek-v4-flash",
       "attempts": 1
@@ -134,24 +112,16 @@
       "attempts": 3
     },
     "readme-vs-maps": {
-      "hash": "4a2ceb32b078640d8fb2c575e0f1564b9f0a47f4",
-      "lastRun": "2026-08-01",
+      "hash": "a0d7e546d97ee3bb1e247e8abe1276f194518fb8",
+      "lastRun": "2026-08-02",
       "status": "ok",
-      "reported": 1,
-      "kept": 1,
+      "reported": 0,
+      "kept": 0,
       "dropped": 0,
-      "keptFindings": [
-        {
-          "type": "SEM001",
-          "claim": "README.md:5",
-          "against": "docs/domains/infra/code-map.md:20",
-          "quote": "35 个 check-* 脚本",
-          "note": "README 称 35 个 check-* 脚本，infra 测绘实为 31 个 check-*.mjs（含 check-checks 自身），数量不符"
-        }
-      ],
+      "keptFindings": [],
       "droppedFindings": [],
       "provider": "Opencode Go Google/deepseek-v4-flash",
-      "attempts": 1
+      "attempts": 2
     },
     "claude-vs-docs": {
       "hash": "c94c5b9480203d78d852d7038c2f249996df323e",
@@ -513,6 +483,20 @@
       "skipped": 4,
       "kept": 11,
       "dropped": 2
+    },
+    {
+      "date": "2026-08-02",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-02",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 0
     }
   ]
 }
