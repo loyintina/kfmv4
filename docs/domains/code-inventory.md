@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit c495faa · 生成于 2026-08-02 -->
+<!-- 基准 commit 1ec21f8 · 生成于 2026-08-02 -->
 
 # 代码清单（机械层）
 
@@ -170,7 +170,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（104 文件 · 13521 行）
+## infra（105 文件 · 13581 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -187,7 +187,7 @@
 | tests/run-manager.test.ts | 300 | — |
 | scripts/check/check-registry.mjs | 294 | — |
 | tests/gesture-registry.test.ts | 263 | — |
-| scripts/agent/semantic-mutate.mjs | 258 | MUTATIONS |
+| scripts/agent/semantic-mutate.mjs | 261 | MUTATIONS |
 | tests/invariants.test.ts | 245 | — |
 | scripts/check/check-css-wiring.mjs | 228 | — |
 | tests/path-utils.test.ts | 215 | — |
@@ -228,8 +228,8 @@
 | scripts/agent/obs-aggregate.mjs | 89 | — |
 | scripts/check/check-probes.mjs | 86 | — |
 | scripts/agent/exp-probe-matrix.mjs | 86 | — |
+| scripts/check/chain.mjs | 85 | STEPS |
 | tests/engine.test.ts | 85 | — |
-| scripts/check/chain.mjs | 84 | STEPS |
 | scripts/check/check-deploy-freshness.mjs | 83 | — |
 | scripts/check/check-hooks.mjs | 81 | — |
 | scripts/check/check-workflow-integrity.mjs | 81 | — |
@@ -253,12 +253,13 @@
 | scripts/check/check-doc-schema.mjs | 60 | — |
 | scripts/check/check-commit-docs.mjs | 59 | — |
 | tests/omp-glob.test.ts | 58 | — |
+| scripts/check/check-mutation-anchors.mjs | 55 | — |
 | tests/tool-schema.test.ts | 54 | — |
 | scripts/check/check-secrets.mjs | 52 | — |
 | scripts/check/check-uncommitted.mjs | 51 | — |
 | scripts/check/check-consistency.mjs | 50 | — |
+| scripts/check/gen-route-table.mjs | 49 | — |
 | tests/permissions.test.ts | 49 | — |
-| scripts/check/check-mutation-anchors.mjs | 48 | — |
 | scripts/check/check-doc-budget.mjs | 43 | — |
 | scripts/check/check-release-radar.mjs | 42 | — |
 | tests/reset-hooks.ts | 41 | — |
@@ -586,4 +587,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 243 文件 · 44822 行 · 跨域边 245 条
+合计 244 文件 · 44882 行 · 跨域边 245 条
