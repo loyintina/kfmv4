@@ -66,6 +66,14 @@ agent 脚本层——检测归自动化，裁决归会话内 agent，**永远不
 11. **慢 LLM 检查归 cron**（2026-08-02）：语义巡逻每日 04:17、入口文档体检每日
     04:47、变异基准校准每周一 04:23——会话不主动调慢检查，只消费信箱结果；
     发版门（routine 6 臂）是唯一人工例外。阈值按 22 臂池化校准（质疑软指标）。
+12. **史官制度**（2026-08-02，观测台 v0.1）：agent-runner 每次 LLM 调用必落
+    ~/.kfmv4/agent-calls.jsonl（provider/耗时/成败）——观测台聚合器
+    scripts/agent/obs-aggregate.mjs 周报（周一 04:37 投信箱）；工具调用审计
+    permission-audit.jsonl（权限引擎影子模式）同源；新增数据流必须登记观测台。
+13. **权限引擎**（2026-08-02，8.5.0 影子模式）：工具 RiskClass 四类映射
+    （src/server/ai/permissions.ts TOOL_RISK），所有工具调用过 evaluate 判定 +
+    审计（影子模式不拦截）；加新工具必须在此登记 RiskClass（BAR-PERM-01 钉）。
+    8.5.1 审批通道待数据成熟（观测台基线）。
 
 ## #陷阱
 
