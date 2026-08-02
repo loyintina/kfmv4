@@ -102,7 +102,7 @@
     KFMState.currentRoot 喂 loadFileTree）——无接口层
 11. **【已结案】KFMState 孤儿 API 死协议面**（cart*/openCards 等）——已随死代码
     批次二删除（client-shell 漂移 11 同案）
-12. **terminal-open/close 跨域两写者**（双开 PTY 的协议层成因——BAR-RECONNECT-01
+12. **terminal-open/close 同域双写者**（双开 PTY 的协议层成因——BAR-RECONNECT-01
     已修客户端双发，两写者结构本身保留：terminal-card 与 tmux-card 各有合法打开路径）
 
 ## 指针

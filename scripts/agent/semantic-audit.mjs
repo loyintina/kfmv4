@@ -45,9 +45,10 @@ function loadExemptions() {
   try {
     const raw = readFileSync(EXEMPTIONS_PATH, 'utf-8');
     for (const line of raw.split('\n')) {
-      const m = /^\|\s*(EX-\d+)\s*\|\s*(SEM\d+)\s*\|\s*([^|]+?)\s*\|\s*(\S+?)\s*\|\s*([^|]*?)\s*\|/.exec(line);
+      // 列序：id | 核心码 | 目标 | 关键词 | 类型 | review-by
+      const m = /^\|\s*(EX-\d+)\s*\|\s*(SEM\d+)\s*\|\s*([^|]+?)\s*\|\s*([^|]*?)\s*\|\s*(\S+?)\s*\|\s*([^|]*?)\s*\|/.exec(line);
       if (!m) continue;
-      _exemptions.push({ id: m[1], sem: m[2], target: m[3].trim(), type: m[4], reviewBy: m[5].trim() });
+      _exemptions.push({ id: m[1], sem: m[2], target: m[3].trim(), keyword: m[4].trim(), type: m[5], reviewBy: m[6].trim() });
     }
   } catch { /* 表不存在 = 无豁免 */ }
   return _exemptions;
@@ -55,10 +56,17 @@ function loadExemptions() {
 let _exemptIdMap = null;
 function exemptIdFor(claim) {
   if (!_exemptIdMap) {
-    _exemptIdMap = new Map();
-    for (const e of loadExemptions()) _exemptIdMap.set(e.target.split('（')[0].trim(), e.id);
+    // 匹配：目标文件前缀 + 关键词（探针 claim 是描述式如「cross-domain.md:anim风险列」；
+    // 2026-08-02 教训：纯 :行号 前缀匹配会漏，文件+关键词双条件）
+    _exemptIdMap = [];
+    for (const e of loadExemptions()) {
+      const file = e.target.split('（')[0].trim().split(':')[0];
+      _exemptIdMap.push({ id: e.id, file, keyword: e.keyword });
+    }
   }
-  for (const [target, id] of _exemptIdMap) if (claim.startsWith(target)) return id;
+  for (const { id, file, keyword } of _exemptIdMap) {
+    if (claim.startsWith(file) && (!keyword || claim.includes(keyword))) return id;
+  }
   return null;
 }
 function isExempted(claim) { return exemptIdFor(claim) !== null; }
