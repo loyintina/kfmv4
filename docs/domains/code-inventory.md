@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 6a64fe9 · 生成于 2026-08-01 -->
+<!-- 基准 commit dea5eab · 生成于 2026-08-02 -->
 
 # 代码清单（机械层）
 
@@ -36,7 +36,7 @@
 | src/client/engine/v2/animation.ts | 40 | ease |
 | src/client/engine/v2/utils.ts | 24 | uniformSpacing, hvSpacing, ZERO_SPACING |
 
-## floating-card（27 文件 · 6758 行）
+## floating-card（27 文件 · 6763 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -46,7 +46,7 @@
 | src/client/cards/plugins/config.card.ts | 694 | — |
 | src/client/cards/plugins/session.card.ts | 615 | — |
 | src/client/cards/plugins/api.card.ts | 592 | — |
-| src/client/modules/card-stack.ts | 458 | getCardCount, getCard, getCardName, getCardId, hexToRgba, cardGradient, cardBg, getFocusIndex, getCurrentAccent, getCardHandler, getFocusedCardRect, animateStackPullFeedback, launchFocusedCard, openCardStack, closeCardStack, isCardStackOpen, focusNext, focusPrev, initCardStack |
+| src/client/modules/card-stack.ts | 463 | getCardCount, getCard, getCardName, getCardId, hexToRgba, cardGradient, cardBg, getFocusIndex, getCurrentAccent, getCardHandler, getFocusedCardRect, animateStackPullFeedback, launchFocusedCard, openCardStack, closeCardStack, isCardStackOpen, focusNext, focusPrev, initCardStack |
 | src/client/cards/plugins/tools.card.ts | 307 | — |
 | src/client/modules/renderers/handler-factory.ts | 296 | createFileHandler |
 | src/client/modules/tmux-card.ts | 289 | TmuxCardMeta, createTmuxCardHandler |
@@ -573,4 +573,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 234 文件 · 43782 行 · 跨域边 241 条
+合计 234 文件 · 43787 行 · 跨域边 241 条
