@@ -297,6 +297,10 @@ export function openCardStack(): void {
   _generateRandomAccents();
   _updateCardStyles();
 
+  // 状态迁移先清理在途补间（BAR-CARD-GHOST-01 不变量；closing→opening 的反向分支
+  // 走 _tl.reverse() 不在此列——杀掉会取消反向）
+  killAllCardTweens();
+
   _state = 'opening';
   Registry.notifyStateChange('card-stack');
   randomizeCards();
@@ -330,13 +334,18 @@ export function openCardStack(): void {
   }
 }
 
+/** 状态迁移不变量：先清理所有卡片的在途补间，再启动新动画。
+ *  教训 BAR-CARD-GHOST-01（2026-08-02）：左滑投卡路径的 pull 反馈回弹补间
+ *  与关闭动画竞态，关闭完成后把卡片拉回展开位 → 幽灵堆。任何 opening/closing
+ *  迁移前必须调用本函数——「迁移先杀在途」是硬规则，不是可选项。 */
+function killAllCardTweens(): void {
+  for (const el of _cardEls) anim.killTweensOf(el);
+}
+
 export function closeCardStack(): void {
   if (_state === 'closed' || _state === 'closing') return;
-  // 先杀掉卡片的独立补间（左滑投卡路径的 pull 反馈动画延迟回弹，会与关闭动画竞态：
-  // 关闭 0.3s 完成后回弹补间才触发，把卡片拉回展开位置 → 幽灵卡片堆：DOM 可见但
-  // state=closed + pointerEvents=none，点不动、手势不理。点击路径走全屏发射跳过
-  // pull 反馈故不触发——此竞态自 43fcdd2 手势改造成「投卡即关堆」起潜伏）
-  for (const el of _cardEls) anim.killTweensOf(el);
+  // 状态迁移先清理在途补间（BAR-CARD-GHOST-01：pull 反馈回弹与关闭动画竞态）
+  killAllCardTweens();
   // 关闭卡片堆时销毁已召唤的浮卡
 
   if (_state === 'opening' && _tl) {
