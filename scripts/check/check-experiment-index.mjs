@@ -59,9 +59,10 @@ for (const exp of expDirs) {
     }
   }
 
-  // 方向 2：文件 → 必须被引用
+  // 方向 2：文件 → 必须被引用（routine 臂豁免：每日 cron 的 CI 数据，自带生命周期，
+  // 策展索引只登记实验臂——2026-08-02 豁免，否则每日孤儿）
   for (const f of readdirSync(sessDir).filter(f => /\.jsonl?$/.test(f))) {
-    if (!referenced.has(f)) {
+    if (!referenced.has(f) && !f.startsWith('kfmv4_routine_')) {
       errors.push(`${exp} 数据区 sessions/${f} 存在但未被 index.md 引用（孤儿数据）`);
     }
   }
