@@ -64,7 +64,8 @@
   唯一服务端触发（POST /ui/command → ws-server.ts sendCommand）已随整删消失，
   客户端 19 个 handler（shell 8 / canvas-tree 4 / ai-chat 3 / floating-card 4）
   现无生产者属预期空转；action 字串无静态校验的约束缺口待 AI 之手重建时一并补。
-- terminal-open/terminal-close 两写者跨两域（terminal-card-04 × tmux-card）——
+- terminal-open/terminal-close 两写者同域双实现（terminal-card-04 × tmux-card，同属
+  floating-card 域——2026-08-02 裁决修正：非跨域，是域内双写者）——
   即 floating-card code-map 漂移 17 双开 PTY 嫌疑的协议层成因 ⚠
 - 应用层 'ping' 客户端不回，纯喂看门狗——协议残留
 

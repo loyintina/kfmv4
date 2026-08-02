@@ -105,3 +105,14 @@ G1（出生即错，9 处）居次，只能靠「写入时对照现实」的纪�
 | 35 | vision「一切皆卡片」与 §2.2 文件树不迁卡片系统——假阳性：§1.5 行内已括注「交互隐喻；渲染层例外见 §2.2」，例外条款明示 | 2026-07-30 语义巡逻裁决：复现型发现（跨深扫 4 臂 + 巡逻探针双路复现），vision.md 行 100/165 实证 |
 | 36 | README「统一的浮动卡片引擎」与实现层重复（hexToRgba 多份/卡头骨架多份）——假阳性：「统一」指引擎架构统一（成立），实现层重复实现群是已登记技术债 | 2026-07-30 语义巡逻裁决：归口 STACK #10 ⑥ 重复实现群（仍活队列项），grep hexToRgba 实证 5 文件 |
 
+
+## 2026-08-02 信箱裁决轮（8-02 巡逻 11 条，裁决人：主会话 + 用户拍板）
+
+| 探针任务 | 裁决 | 处置 | 详情 |
+|---------|------|------|------|
+| guides-testing-vs-infra ×3 | testing.md:6 已解决 / :7 豁免 / :9 豁免 | 重跑刷新 | :6「489」已被 sync-counts 回写为 490（加钉后）；:7「11 条冒烟」实测 11 个 check() 调用=真；:9「L1 不变量」是 testing.md 方法论自有分层（L1-L4），自洽无需 contract 定义 |
+| readme-vs-maps | 豁免（README 对，基准旧） | 修 code-map + 重跑 | README「35 个 check-*」= 真（34 检查+check-checks）；code-map 曾记 31 陈旧，已改引用式 |
+| guides-release-vs-history | 修复 | 已修 release.md:27 | 「v8.3.1 起严格执行主题分离」过强——8.3.1 同批含语义地基混装；改为「8.3.2 起单主题为主，个别版含基建伴生」 |
+| contract-vs-map-canvas-tree ×2 | 修复 ×2 | 已修 contract:61/82 | rAF「必须」→「应，现实 ||295 兜底（漂移 14）」；文件清单手写 25 vs 实 31 → 改引用式指向 code-inventory |
+| contract-vs-map-infra | 豁免（contract 对，基准旧） | 修 code-map + 重跑 | contract「35 脚本」= 真；同 code-map 陈旧根因 |
+| crossdomain-vs-inventory ×3 | anim 豁免 / HTTP 豁免待复核 / WS 修复 | 已修 :67 + 豁免 | anim「三个域」= 真（client-shell/floating-card/canvas-tree 三域，探针误数）；HTTP「10 vs 9」计数口径分歧，登记待人工复核；WS「跨两域」→ 实为 floating-card 域内双写者（terminal-card-04 × tmux-card），已修正 |

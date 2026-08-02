@@ -58,7 +58,8 @@
    无「修改后恢复」义务——旧陷阱表述已随只读化失效）。
 2. **`setExpanded` 连续调用**：触发多次 notify，动画守卫丢弃中间状态
    （完整版见 ../client-shell/contract.md #陷阱 8）。
-3. **Canvas 初始化 `clientWidth=0`**：必须在 rAF 回调里 `rebuildTree()`。
+3. **Canvas 初始化 `clientWidth=0`**：应在 rAF 回调里 `rebuildTree()`——现实由
+   `||295` 兜底（漂移 14 已登记：未严格走 rAF）。
 4. **overlay 残留**：`rebuildTree` 入口已加防御性清理 `removeAllOverlays()` +
    `renderer.setOverlayRoot(null)`（v6.6.0 根解）——新路径触发 rebuild 不得绕过此入口。
 5. **方向锁**：12px 死区后扇形分区——右侧 ±65° 扇形（`absDy < absDx × 2.14`）判水平、
@@ -80,6 +81,9 @@
 - `ANIMATION_REFINEMENT_PLAN.md`：多层展开瀑布时序（0.06s/层）+ 点击三规则。
 
 ## 文件清单
+
+> 全量文件以 code-inventory.md 为准（机械生成，本文不再维护手写清单——
+> 曾手写 25 个，实测 31 个，漂移源即手写清单）。
 
 `tree-render.ts` `tree-overlay.ts` `tree-animation.ts` `tree-swipe.ts` `tree-model.ts`
 `tree-loader.ts` `canvas-cursor.ts` `liquid-geometry.ts` `canvas-scroll.ts` `canvas-utils.ts`
