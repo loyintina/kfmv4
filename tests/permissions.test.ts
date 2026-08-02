@@ -4,6 +4,10 @@ import { mkdtempSync, readFileSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 
+// 测试重定向审计日志到临时目录（防污染史官账本——KFM_AUDIT_PATH 覆盖）
+const auditTmp = mkdtempSync(join(tmpdir(), 'perm-audit-'));
+process.env.KFM_AUDIT_PATH = join(auditTmp, 'audit.jsonl');
+
 regression('BAR-PERM-01', 'riskclass-mapping', '工具 RiskClass 映射完整（read 永不 gate / bash=exec / restart=external）', async () => {
   const { riskClassOf, TOOL_RISK } = await import('../src/server/ai/permissions.js');
   assert.strictEqual(riskClassOf('read'), 'read');

@@ -61,7 +61,7 @@ export interface AuditEntry {
   cwd: string;
 }
 
-const AUDIT_PATH = join(homedir(), '.kfmv4', 'permission-audit.jsonl');
+const AUDIT_PATH = process.env.KFM_AUDIT_PATH || join(homedir(), '.kfmv4', 'permission-audit.jsonl'); // 测试可用 KFM_AUDIT_PATH 重定向，防污染史官账本
 
 export function riskClassOf(tool: string): RiskClass {
   return TOOL_RISK[tool] || 'exec'; // 未知工具默认 exec 级（fail-closed 方向）
