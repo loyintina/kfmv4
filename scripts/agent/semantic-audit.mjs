@@ -350,6 +350,11 @@ const results = await pool(willRun, CONCURRENCY, async ({ task, files, hash }) =
     // 首轮教训（2026-07-30）：2000 被推理模型的思考链吃光，三棒全空响应；
     // 审计 prompt 大 → 思考长 → 上限必须给足
     maxTokens: 16000,
+    // 2026-08-02 超时根因修复：providers.config.json 全局带 response_format=json_object，
+    // 大 prompt+长思考链下 ds-flash 内容空 → 校验重问 → 落链 → 单任务 15-25 分钟。
+    // 剥离（extractJson 容错围栏）+ 大 prompt 超时给足——judge-batch 同款药方。
+    params: { response_format: undefined },
+    timeoutMs: 300_000,
   });
   if (!result.ok) {
     console.error(`[semantic-audit] ${task.id}: agent 失败——${result.errors.join('；')}`);
