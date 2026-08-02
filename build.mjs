@@ -52,31 +52,31 @@ const puppeteerDst = 'dist/server/puppeteer';
 mkdirSync(puppeteerDst, { recursive: true });
 cpSync(puppeteerSrc, puppeteerDst, { recursive: true });
 
-// 服务端
-await build({
-  entryPoints: ['src/server/index.ts'],
-  bundle: true,
-  platform: 'node',
-  format: 'esm',
-  outfile: 'dist/server/index.js',
-  // CJS 依赖必须 external——bundle 进 ESM 产物会触发 Dynamic require of "buffer" 启动崩溃
-  external: ['express','compression','fs','path','os','ws','events','node-pty-prebuilt-multiarch'],
-  minify: true,
-});
-
-// 客户端
-await build({
-  entryPoints: ['src/client/main.ts'],
-  bundle: true,
-  platform: 'browser',
-  format: 'iife',
-  outfile: 'public/bundle.js',
-  target: ['es2019'],
-  external: ['katex', 'mermaid'],
-  minify: true,
-  // 把构建时间烙进 bundle：version-watch 横幅据此与服务端 buildTime 比对报旧包
-  define: { KFM_BUILD_TIME: JSON.stringify(BUILD_TIME) },
-});
+// 服务端 + 客户端（2026-08-02 并行化：产物独立、BUILD_TIME 预计算共享，Promise.all 减半 esbuild 耗时）
+await Promise.all([
+  build({
+    entryPoints: ['src/server/index.ts'],
+    bundle: true,
+    platform: 'node',
+    format: 'esm',
+    outfile: 'dist/server/index.js',
+    // CJS 依赖必须 external——bundle 进 ESM 产物会触发 Dynamic require of "buffer" 启动崩溃
+    external: ['express','compression','fs','path','os','ws','events','node-pty-prebuilt-multiarch'],
+    minify: true,
+  }),
+  build({
+    entryPoints: ['src/client/main.ts'],
+    bundle: true,
+    platform: 'browser',
+    format: 'iife',
+    outfile: 'public/bundle.js',
+    target: ['es2019'],
+    external: ['katex', 'mermaid'],
+    minify: true,
+    // 把构建时间烙进 bundle：version-watch 横幅据此与服务端 buildTime 比对报旧包
+    define: { KFM_BUILD_TIME: JSON.stringify(BUILD_TIME) },
+  }),
+]);
 
 // 校验产物新鲜度
 checkFreshness('dist/server/index.js', 'server');

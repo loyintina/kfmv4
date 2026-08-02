@@ -94,10 +94,7 @@ async function runOneArm(i) {
 }
 
 async function judgeArm(armId) {
-  execSync(`node ${join(REPO, 'experiments/coldstart/tools/judge-batch.mjs')} --arm ${armId}`, {
-    stdio: 'pipe',
-    timeout: 600_000,
-  });
+  // 判卷由调用方批量执行（judge-batch --arm a b c...，并发 4）；这里只读评分卡
   const card = JSON.parse(readFileSync(join(DERIVED, 'scores', `${armId}.json`), 'utf-8'));
   return {
     fatal: (card.accuracy.fatal || []).length,
@@ -117,13 +114,14 @@ async function main() {
     console.log('[routine] 目录就绪，可跑真实轮');
     return;
   }
-  console.log(`[routine] 跑 ${arms} 臂（${MODEL} @ ${PROVIDER}，kfmdocs-only 条件）`);
+  console.log(`[routine] 跑 ${arms} 臂（${MODEL} @ ${PROVIDER}，kfmdocs-only 条件，并发 3）`);
   mkdirSync(COLD_SESSIONS, { recursive: true });
-  const armIds = [];
-  for (let i = 1; i <= arms; i++) armIds.push(await runOneArm(i));
+  // 2026-08-02 并发化：面板 run-manager 支持并发 run，6 臂从 ~25 分钟砍到 ~10 分钟
+  const armIds = await Promise.all(Array.from({ length: arms }, (_, i) => runOneArm(i + 1)));
 
-  // 归一 + 判卷
+  // 归一 + 判卷（2026-08-02 批处理：judge-batch 并发 4 一次调用，替代逐条 execSync）
   execSync(`node ${join(REPO, 'experiments/coldstart/tools/normalize-arms.mjs')}`, { stdio: 'pipe', timeout: 120_000 });
+  execSync(`node ${join(REPO, 'experiments/coldstart/tools/judge-batch.mjs')} --arm ${armIds.join(' ')}`, { stdio: 'pipe', timeout: 900_000 });
   const stats = [];
   for (const id of armIds) stats.push(await judgeArm(id));
 
