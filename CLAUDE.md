@@ -12,7 +12,7 @@
 读 `onboarding.md` §取证三步，**禁止自行 merge-base 推断**。**计数**：文档数字
 默认已陈旧，引用前当场实跑（`npm run test` 尾 / `check-checks.mjs` / `git rev-list --count HEAD`）。
 **边界**：接手=探索+汇报+请示，不自动改代码；真问题→证据+选项交裁决。
-**进门三验**：`git log -1`、`curl -s localhost:8021`、读 `history.md` 尾 → 读 `onboarding.md` 陷阱地图。
+**进门三验**：`git log -1`、`curl -s localhost:8021`、history 尾 → 读 `onboarding.md` 陷阱地图。
 
 ## 会话启动（每次对话，1 跳）
 0. 首次接触 → orientation.md（心智模型）+ onboarding.yaml（接手流）
@@ -56,5 +56,6 @@ npm run test     # 493 个回归测试
 ```
 
 > **没有快捷方式**：`bundle`/`build`/`dev` 全走 `build.mjs`；`watch` 初检不过不进。日常：
-> 终端 1 `npm run dev`，终端 2 `npm run watch`。Git 推送：push 前先 `source .env`；
+
+> 终端 1 dev、终端 2 watch。Git 推送：push 前先 `source .env`；
 > agent 从不主动 push——只在用户明确要求时执行。
