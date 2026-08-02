@@ -13,7 +13,7 @@
  *   是「判断权交还调用方（agent）」的常规路径：调用方读 raw/errors 手动处理
  */
 
-import { readFileSync } from 'fs';
+import { readFileSync, appendFileSync, mkdirSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { homedir } from 'os';
 import { join } from 'path';
@@ -21,6 +21,17 @@ import { join } from 'path';
 const CHAIN = JSON.parse(
   readFileSync(fileURLToPath(new URL('./providers.config.json', import.meta.url)), 'utf-8'),
 );
+
+// ========== 调用账本（史官制度 8.5：每次 LLM 调用落 append-only 记录，观测台聚合） ==========
+const CALLS_PATH = join(homedir(), '.kfmv4', 'agent-calls.jsonl');
+function logCall(provider, ms, ok, error = '') {
+  try {
+    mkdirSync(join(homedir(), '.kfmv4'), { recursive: true });
+    appendFileSync(CALLS_PATH, JSON.stringify({
+      ts: new Date().toISOString(), provider, ms, ok, error: error.slice(0, 120),
+    }) + '\n');
+  } catch { /* 账本不可写不阻断调用 */ }
+}
 
 function loadProviderEntries() {
   const raw = JSON.parse(readFileSync(join(homedir(), '.kfmv4', 'providers.json'), 'utf-8'));
@@ -118,15 +129,19 @@ export async function runAgent({ system = '', prompt, validate = null, retries =
     let lastRaw = '';
     let callFailed = false;
     for (let attempt = 0; attempt <= retries; attempt++) {
+      const t0 = Date.now();
       try {
         const text = await chat(entry.baseUrl, key.value, step.model, system, prompt + feedback, maxTokens, { ...step.params, ...params }, timeoutMs);
         lastRaw = text;
         const data = validate ? validate(text) : text;
         if (data !== null) {
+          logCall(`${step.providerId}/${step.model}`, Date.now() - t0, true);
           return { ok: true, data, raw: text, provider: `${step.providerId}/${step.model}`, attempts: attempt + 1, errors };
         }
+        logCall(`${step.providerId}/${step.model}`, Date.now() - t0, false, '校验失败');
         feedback = '\n\n[校验失败] 上次输出不符合要求格式。只输出要求的 JSON，不要任何多余文字。';
       } catch (e) {
+        logCall(`${step.providerId}/${step.model}`, Date.now() - t0, false, e.message);
         // 瞬态错误（空响应/超时/5xx）原地重试一次再落下一个 provider
         if (attempt < retries && /空响应|timeout|HTTP 5/.test(e.message)) {
           errors.push(`${step.providerId}/${step.model}: 瞬态错误原地重试（${e.message.slice(0, 60)}）`);
