@@ -43,7 +43,7 @@
 
 ## 核心流程
 
-**构建链**：chain.mjs 全链（36 步，含 sass 编译与 npm test）→ 复制 stealth 脚本 →
+ **构建链**：chain.mjs 全链（步数以 contract chain:auto 实况为准——曾手写 36 已陈旧，第 4 处手写计数漂移）→ 复制 stealth 脚本 →
 esbuild server ESM + client IIFE（external 硬编码 build.mjs）→ checkFreshness
 双产物 → 写 dist/build-info.json → index.html 注入 ?v=buildStamp → bundle 大小冒烟。
 
