@@ -16,8 +16,7 @@
 
 ## 会话启动（每次对话，1 跳）
 0. **首次接触本项目** → `docs/guides/orientation.md`（15 分钟心智模型）+ `docs/workflows/onboarding.yaml`（接手流）
-1. 读 `docs/active/STACK.md` — 当前工作栈（在哪一层、干到哪）
-2. 读 `docs/ledger/history.md` 尾部 — 最近发生了什么
+1. 读 `docs/active/STACK.md` + `docs/ledger/history.md` 尾部 — 当前栈与最近动态
 3. 读 `docs/ledger/semantic-chain-inbox.md` 尾部 — 语义巡逻信箱；有 ⚠️ 行 → 进 workflows/semantic-audit.yaml 裁决流
 4. 改代码前 → 走 pre-code-gate
 
