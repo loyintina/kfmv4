@@ -25,13 +25,11 @@ let m;
 while ((m = re.exec(src))) entries.push({ id: m[1], file: m[2], find: m[3] });
 
 const errors = [];
-// schema 完整性（2026-08-02 补：新变异漏写 line → hitMutation 恒打不中；
-// 全局计数法——每字段出现次数 ≥ 条目数即全量具备）
+// schema 完整性（2026-08-02 补：新变异漏写字段 → 基准失真；
+// line 非必填——物化时由 find 位置自动计算（semantic-mutate.mjs:242）
 const countField = (re) => (src.match(re) || []).length;
-const nLine = countField(/\bline:\s*\d+/g);
 const nExpect = countField(/\bexpect:\s*['"](report|silent)['"]/g);
 const nTasks = countField(/\btasks:\s*\[/g);
-if (nLine < entries.length) errors.push(`变异物料缺 line 字段（${entries.length - nLine} 条，命中判定依赖，见 2026-08-02 假象教训）`);
 if (nExpect < entries.length) errors.push(`变异物料缺 expect 字段（${entries.length - nExpect} 条）`);
 if (nTasks < entries.length) errors.push(`变异物料缺 tasks 字段（${entries.length - nTasks} 条）`);
 for (const e of entries) {
