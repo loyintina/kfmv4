@@ -212,7 +212,7 @@
 
 ## 研究参考（2026-08-02 起登记，未立项，内化备查）
 
-10. **harness 权限引擎（8.5 主题，2026-08-02 立项：行为守界）**——设计文档
+10. **harness 权限引擎（远景后备，2026-08-02 重定题）**——8.5 主题改为「观测与度量（史官制度）」；本项 8.5.0 骨架已落地（影子模式长跑），审批通道待观测台数据成熟后重启。设计文档
     `docs/active/harness-permission-engine.md`（主战场）；蓝图 OpenWorker 报告
     `experiments/harness-studies/openworker.md`。核心：工具执行层加
     PermissionEngine.evaluate 拦截点（fail-closed）+ RiskClass 四类分级 +
