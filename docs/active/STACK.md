@@ -212,7 +212,13 @@
 
 ## 研究参考（2026-08-02 起登记，未立项，内化备查）
 
-10. ⏳ harness 权限引擎（借鉴 OpenWorker 审批门控，远景待办）——研究报告
+10. **harness 权限引擎（8.5 主题，2026-08-02 立项：行为守界）**——设计文档
+    `docs/active/harness-permission-engine.md`（主战场）；蓝图 OpenWorker 报告
+    `experiments/harness-studies/openworker.md`。核心：工具执行层加
+    PermissionEngine.evaluate 拦截点（fail-closed）+ RiskClass 四类分级 +
+    roots 硬边界 + shell 白名单 + 无人值守 fail-closed + 审计日志（破界率观测仪）。
+    小版本：8.5.0 骨架+审计 → 8.5.1 审批通道 → 8.5.2 roots/白名单 → 8.5.3
+    allowlist+回归。原研究参考：
     `experiments/harness-studies/openworker.md`（吴恩达团队完整 agent 实现，
     286 行含文件:行号索引）。核心结论：把边界纪律从提示词挪进代码——
     PermissionEngine fail-closed / RiskClass 四类分级 / roots 写路径硬边界 /
