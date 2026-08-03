@@ -12,7 +12,7 @@ import { buildCardLayout } from '../../modules/floating-card.js';
 import { log } from '../../modules/logger.js';
 import { createCustomSelect, type CustomSelect } from '../../modules/custom-select.js';
 import { showConfirm } from '../../modules/confirm-dialog.js';
-import { inputStyle, btnStyle, mkRow } from '../card-ui.js';
+import { innerCardStyle, inputStyle, btnStyle, mkRow } from '../card-ui.js';
 
 interface Provider {
   id: string;
@@ -244,7 +244,7 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
       
       // 配置表单（内卡样式）
       const formSection = document.createElement('div');
-      formSection.style.cssText = `border-radius:10px;padding:8px 12px;margin-top:6px;background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,linear-gradient(135deg,${c2} 30%,${c1} 70%) border-box;border:1px solid transparent;border-left-width:3px;display:flex;flex-direction:column;max-height:70vh`;
+      formSection.style.cssText = `${innerCardStyle(c1, c2)};display:flex;flex-direction:column;max-height:70vh`;
       
       // 顶部选择器（自定义下拉，在卡片内部）
       const { row: configRow, wrap: configWrap } = mkRow('配置');
@@ -377,7 +377,7 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
 
       // 池列表（内卡样式）
       const poolCard = document.createElement('div');
-      poolCard.style.cssText = `border-radius:10px;padding:8px 12px;background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,linear-gradient(135deg,${c2} 30%,${c1} 70%) border-box;border:1px solid transparent;border-left-width:3px`;
+      poolCard.style.cssText = `${innerCardStyle(c1, c2)}`;
       
       const poolTitle = document.createElement('div');
       poolTitle.style.cssText = 'font-size:var(--card-font-size,11px);font-weight:700;color:rgba(255,255,255,0.85);margin-bottom:6px';

@@ -14,6 +14,7 @@ import { showConfirm } from '../../modules/confirm-dialog.js';
 import { selectFilesForPrompt } from '../../modules/tree-swipe.js';
 import { loadFileTree } from '../../modules/tree-loader.js';
 import { KFMState } from '../../modules/state.js';
+import { innerCardStyle } from '../card-ui.js';
 
 interface Role {
   id: string;
@@ -151,11 +152,6 @@ function mkRow(label: string): { row: HTMLElement; wrap: HTMLElement } {
   row.appendChild(lbl);
   row.appendChild(wrap);
   return { row, wrap };
-}
-
-// 内卡边框样式（§10.6 颜色反转）
-function innerCardStyle(c1: string, c2: string): string {
-  return 'border-radius:10px;padding:8px 12px;background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,linear-gradient(135deg,' + c2 + ' 30%,' + c1 + ' 70%) border-box;border:1px solid transparent;border-left-width:3px';
 }
 
 // ====== 卡片处理器 ======

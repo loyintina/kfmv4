@@ -15,6 +15,7 @@ import { createCustomSelect } from '../../modules/custom-select.js';
 import type { Session } from '../../modules/session-client.js';
 import { sessionStore, extractMessageText as extractMsgText, countTextMessages } from '../../modules/session-client.js';
 import { Z } from '../../modules/z-index-layers.js';
+import { innerCardStyle } from '../card-ui.js';
 
 const SESSIONS_PATH = '.kfmv4/sessions';
 
@@ -444,7 +445,7 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
 
       // ===== 预览框（二层反色） =====
       const previewCard = document.createElement('div');
-      previewCard.style.cssText = `border-radius:10px;padding:8px 12px;margin-top:6px;background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,linear-gradient(135deg,${c2} 30%,${c1} 70%) border-box;border:1px solid transparent;border-left-width:3px;display:flex;flex-direction:column;max-height:70%;min-height:120px`;
+      previewCard.style.cssText = `${innerCardStyle(c1, c2)};display:flex;flex-direction:column;max-height:70%;min-height:120px`;
 
       // 顶栏：会话选择器
       const previewHeader = document.createElement('div');
@@ -548,7 +549,7 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
 
       // ===== 池框（二层反色） =====
       const poolCard = document.createElement('div');
-      poolCard.style.cssText = `border-radius:10px;padding:8px 12px;background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,linear-gradient(135deg,${c2} 30%,${c1} 70%) border-box;border:1px solid transparent;border-left-width:3px;flex:1;display:flex;flex-direction:column;min-height:0`;
+      poolCard.style.cssText = `${innerCardStyle(c1, c2)};flex:1;display:flex;flex-direction:column;min-height:0`;
 
       // 顶栏：统计
       const poolHeader = document.createElement('div');

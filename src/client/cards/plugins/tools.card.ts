@@ -11,6 +11,7 @@ import { registerCardType, type CardContentHandler } from '../../modules/card-re
 import { buildCardLayout } from '../../modules/floating-card.js';
 import { createCustomSelect, type CustomSelect } from '../../modules/custom-select.js';
 import { Z } from '../../modules/z-index-layers.js';
+import { innerCardStyle } from '../card-ui.js';
 
 interface ToolDef {
   name: string;
@@ -224,7 +225,7 @@ function createToolsHandler(_meta: Record<string, unknown>): CardContentHandler 
 
       // ===== 上方：类工具卡（二层 c2→c1 反色） =====
       const toolCard = document.createElement('div');
-      toolCard.style.cssText = `border-radius:10px;padding:8px 12px;margin-top:6px;background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,linear-gradient(135deg,${c2} 30%,${c1} 70%) border-box;border:1px solid transparent;border-left-width:3px;display:flex;flex-direction:column;max-height:60%;min-height:100px`;
+      toolCard.style.cssText = `${innerCardStyle(c1, c2)};display:flex;flex-direction:column;max-height:60%;min-height:100px`;
 
       const toolHeader = document.createElement('div');
       toolHeader.style.cssText = 'display:flex;align-items:center;margin-bottom:6px;flex-shrink:0';
@@ -256,7 +257,7 @@ function createToolsHandler(_meta: Record<string, unknown>): CardContentHandler 
 
       // ===== 下方：类池卡（二层 c2→c1 反色） =====
       const poolCard = document.createElement('div');
-      poolCard.style.cssText = `border-radius:10px;padding:8px 12px;background:linear-gradient(rgba(10,10,15,0.92),rgba(10,10,15,0.92)) padding-box,linear-gradient(135deg,${c2} 30%,${c1} 70%) border-box;border:1px solid transparent;border-left-width:3px;flex:1;display:flex;flex-direction:column;min-height:0`;
+      poolCard.style.cssText = `${innerCardStyle(c1, c2)};flex:1;display:flex;flex-direction:column;min-height:0`;
 
       const poolHeader = document.createElement('div');
       poolHeader.style.cssText = 'display:flex;align-items:center;margin-bottom:6px;flex-shrink:0';
