@@ -12,6 +12,8 @@
 |----|--------|---------------------|------|-----------|------|------|---------|
 | EX-001 | SEM001 | docs/guides/testing.md:7（11 条冒烟） | 冒烟 | 永久 | — | 实测 11 个 check() 调用，文档正确 | 2026-08-02 | bc7efb9ba2100407de45e8a7dcfca5f10012583d |
 | EX-002 | SEM001 | docs/guides/testing.md:9（L1 不变量） | L1 | 永久 | — | testing.md 方法论自有分层（L1-L4），自洽无需 contract 定义 | 2026-08-02 | bc7efb9ba2100407de45e8a7dcfca5f10012583d |
-| EX-003 | SEM001 | docs/domains/cross-domain.md:54（API_BASE 共 10 处） | HTTP | 临时 | 2026-09-02 | 计数口径分歧（探针 9 vs 文档 10），待人工复核 | 2026-08-02 | 4d3c26e9fe812e0b0d070fd6daac2f95bc0e9b6c |
-| EX-004 | SEM001 | docs/domains/cross-domain.md:20（anim 被三个域调用） | anim | 永久 | — | 实 3 域（client-shell/floating-card/canvas-tree），探针误数 | 2026-08-02 | 4d3c26e9fe812e0b0d070fd6daac2f95bc0e9b6c |
+| EX-003 | SEM001 | docs/domains/cross-domain.md:54（API_BASE 共 10 处） | HTTP | 临时 | 2026-09-02 | 计数口径分歧（探针 9 vs 文档 10），待人工复核 | 2026-08-02 | e55da744a686fa096050774f30b9a8f59882dcf4 |
+| EX-004 | SEM001 | docs/domains/cross-domain.md:20（anim 被三个域调用） | anim | 永久 | — | 实 3 域（client-shell/floating-card/canvas-tree），探针误数 | 2026-08-02 | e55da744a686fa096050774f30b9a8f59882dcf4 |
 | EX-005 | SEM001 | docs/ledger/history.md:v8.1.0条目 | v8.1 | 永久 | — | 误报：release.md 判例行自带「v8.1.0 实为混装窗口」内联注，与 history 无冲突（2026-08-03 裁决流取证） | 2026-08-03 | 52ab3496974bffc80f7d3da19c899508090c3395 |
+| EX-006 | SEM001 | docs/guides/release.md:25（主题闭环打中版本） | v8.5 | 永久 | — | 误报：v8.5.1 即 8.5 主题加冕版（history.md:53），8.4→8.5.1 直跳合「跳跃才是加冕礼」，无 v8.5.0 属正常（2026-08-03 裁决流取证） | 2026-08-03 | 839faf887f691b06e5f1ba3db18804521a26aaa9 |
+| EX-007 | SEM001 | docs/domains/infra/contract.md:15（39 脚本） | 39 | 永久 | — | 误报：39 = check-* 脚本数，chain:auto 枚举含 gen-* 验证步/sass/sync-counts/npm test/tsc，紧随的括号注已说明口径（2026-08-03 裁决流取证） | 2026-08-03 | db6cd23fc9b22ab69d7196716ae13e48ccc237aa |

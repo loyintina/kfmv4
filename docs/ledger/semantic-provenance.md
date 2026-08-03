@@ -129,4 +129,8 @@ G1（出生即错，9 处）居次，只能靠「写入时对照现实」的纪�
 | crossdomain-vs-inventory（anim 状态互搏） | 修复 | 风险矩阵行改 ✅【已结案】指 ADR-004 | 结案只改了漂移清单节、漏同步风险矩阵——「修复必须同步全部引用面」教训再验证 |
 | guides-release-vs-history（v8.1.0） | 豁免 EX-005 | 登记表 + 重跑 | release.md 判例行自带「实为混装窗口」内联注，探针未读到——误报 |
 | 臂数口径（3/6/22） | 修复 | 双端删数字改指单源 | release.yaml 臂数指 crontab、契约硬规则 11 指 release.yaml 步骤 0；22 臂是池化校准数据集非运行臂数——探针曾把三者当互斥 |
+| workflows-vs-guides（尾批 4 条） | 修复 ×4 | 四份 workflow yaml 落账 | release.yaml exit 补「步骤 0 入口体检 PASS」；contract-maintain「<150」→「≤150」对齐预算线；audit.yaml 步骤 1 分机械/语义两层信号（semantic-chain 在链外）；spec-driven exit 补「npm run check 绿」 |
+| crossdomain-vs-inventory（漂移 #10 归属） | 修复 | cross-domain.md #10 重写 | 读方实为 ai-chat（orb-chat-run.ts:184）+ floating-card（role.card.ts:158,166），被读方是 client-shell 的 KFMState——原句「ai-chat 直读 canvas-tree」双错归属 + 陈旧行号 |
+| guides-release-vs-history（v8.5.1 跳号） | 豁免 EX-006 | 登记表 + 重跑 | v8.5.1 即 8.5 主题加冕版，8.4→8.5.1 直跳合规，探针误读「加冕」为须先有 x.0——误报 |
+| inter-workflows-infra（39 vs 链步数） | 豁免 EX-007 | 登记表 + 重跑 | 39 = check-* 脚本数，chain:auto 枚举含非 check-* 步，标题下括号注已说明口径——误报 |
 | 提示词有效性 | — | — | 本轮幻觉拦截 5；机械层 bug 三条全为真发现（精确率高的轮次）；新病灶学条目：生成器与校验器共享解析 = 全绿放行型盲区，预防 = 探针负例构造「buggy 版恰好绿」 |
