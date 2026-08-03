@@ -36,10 +36,15 @@
    校准事件记入 rubric（已有两案：3deb88b 翻案、33→32 check 锚点）。
 5. **模式从撞墙中演化**：本契约 v0.1 提炼自唯一一个实验（coldstart），
    刻意留白。新实验带来新形态时，先撞墙、再把撞出来的经验回写这里升版——
-   不要预先设计没被撞过的需求。
+   不要预先设计没被撞过的需求。（2026-08-03 已有 3 实验线：coldstart /
+   harness-studies / behavior-injection，契约角色由各线自填。）
 
 ## 实验清单
 
 | 实验 | 主题 | 状态 |
 |------|------|------|
 | [coldstart/](coldstart/) | 零上下文 agent 冷启动接手 kfmv4：固定提示词 × 静态试卷 × 多模型多 harness 多臂 | 取材完成（124 臂），群体汇总中 |
+| [harness-studies/](harness-studies/) | 外部 harness 体系研究报告（OpenWorker 等），内化为设计参考 | 研究笔记 |
+| [behavior-injection/](behavior-injection/) | 行为注入包：高质量行为模式提炼成模块化注入包，弱模型模仿补强 | 研究线登记，实验待设计 |
+
+> 清单维护：新增实验目录 → 这里加一行（主题/状态从实验 index.md 首行抄）。

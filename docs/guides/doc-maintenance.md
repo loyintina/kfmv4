@@ -191,6 +191,10 @@
    domains 下的 detail-*.md → 写进同域 `contract.md` 头注「别的去哪找」；
    guides/*.md → 被 orientation 或对应 workflow 引用；新生成器/可生成事实 →
    登记进 `active/generateable-facts.md`。只建文档不挂引用 = check 红。
+8. **目录 README 清单同步**：新建子目录/实验线/模块时，若所在目录的 README
+   有「清单段」（实验清单/子目录列举/索引表），必须同步加一行——清单是目录的
+   活源头呈现，漏列 = 读者不知道它存在（2026-08-03 behavior-injection 漏列教训）。
+   清单段更新后检查：README 提到的子项与实际目录一一对应。
 
 ### 流程引导错误码（错误码总表在 active/error-codes.md）
 
