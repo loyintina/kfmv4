@@ -17,7 +17,7 @@ import { refreshPageState } from './page-state.js';
 
 /** 从 prompts/tools/*.md 加载工具描述（基于 PROJECT_ROOT，不依赖进程 cwd） */
 const PROMPTS_DIR = join(PROJECT_ROOT, 'src', 'server', 'prompts', 'tools');
-const SYSTEM_PROMPTS_DIR = join(PROJECT_ROOT, 'src', 'server', 'prompts', 'system');
+const GLOBAL_PROMPTS_DIR = join(PROJECT_ROOT, 'src', 'server', 'prompts', 'global');
 const toolDocs = new Map<string, string>();
 function loadToolDocs(): void {
   try {
@@ -32,13 +32,20 @@ function loadToolDocs(): void {
 }
 loadToolDocs();
 
-/** 证据纪律（全部会话强制，独立于角色卡）：read 不到按空串处理（不阻塞对话） */
-const evidenceDiscipline = (() => {
+/**
+ * 全局预设提示词（prompts/global/*.md）：目录下所有 md 自动注入静态 system 段，
+ * 全部会话强制，独立于角色卡。与 prompts/system/*.md（角色卡挂载才生效）语义区分：
+ * global = 自动生效；system = 挂载生效。目录语义见 prompts/README.md。
+ */
+const globalPrompts: string[] = (() => {
   try {
-    return readFileSync(join(SYSTEM_PROMPTS_DIR, 'evidence-discipline.md'), 'utf-8');
+    return readdirSync(GLOBAL_PROMPTS_DIR)
+      .filter(f => f.endsWith('.md'))
+      .sort()
+      .map(f => readFileSync(join(GLOBAL_PROMPTS_DIR, f), 'utf-8'));
   } catch {
-    console.error('[chat] evidence-discipline.md 缺失');
-    return '';
+    console.error('[chat] prompts/global 读取失败');
+    return [];
   }
 })();
 
@@ -185,11 +192,11 @@ export async function* streamChat(
     // 边界兜底（BAR-PROVIDER-02）：无 tool_calls 的空 assistant 一律丢弃——
     // 严格端点（kimi）400「assistant must not be empty」，源头在客户端，此处 fail-closed。
     .filter(m => !(m.role === 'assistant' && !m.tool_calls && (m.content == null || m.content === '')));
-  // 静态 system 段（工具文档 + 证据纪律 + alwaysApply 规则）：整轮对话不变，算一次。
+  // 静态 system 段（工具文档 + 全局预设 + alwaysApply 规则）：整轮对话不变，算一次。
   const staticSystemParts: string[] = [];
   const toolDocsPrompt = buildToolDocsPrompt();
   if (toolDocsPrompt) staticSystemParts.push(toolDocsPrompt);
-  if (evidenceDiscipline) staticSystemParts.push(evidenceDiscipline);
+  staticSystemParts.push(...globalPrompts);
   const alwaysApplyPrompt = buildAlwaysApplyPrompt();
   if (alwaysApplyPrompt) staticSystemParts.push(alwaysApplyPrompt);
   // ts 元数据声明（BAR-TS-MIMIC-01）：投影层只给 user 消息盖 [ts …] 前缀（to-openai-messages），
