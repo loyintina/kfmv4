@@ -10,7 +10,7 @@
  *   ✅ 干净       — 本轮 0 新发现（含全 SKIP 的「文档没动」情形，行内注明跑/跳数）
  *   ⚠️ N 条待裁决 — 新发现进 state，信箱行指向裁决流 workflows/semantic-audit.yaml
  *   💀 退化       — 腿一 exit 2（全部任务失败/provider 链挂了），本轮结论无效
- *   💀 崩溃/环境  — runner 自身异常（08-03 ROOT 事故生 BAR-SEMCHAIN-01）：崩溃也投
+ *   💀 崩溃/环境  — runner 自身异常（08-03 未定义变量事故生 BAR-SEMCHAIN-01）：崩溃也投
  *                   信箱——信箱是永远有输出的信道，沉默不允许（心跳 check 兜底）
  *
  * --with-bench：顺带跑变异基准（尺校准，invariants #32——尺要定期证明自己能报病），
@@ -112,7 +112,7 @@ try {
   if (exemptionStatus) verdict += exemptionStatus;
   inbox(`- ${stamp} ${verdict}`);
 } catch (e) {
-  // 崩溃也投信箱：沉默不允许（08-03 ROOT 事故——runner 死了一天无人知晓，BAR-SEMCHAIN-01）
+  // 崩溃也投信箱：沉默不允许（08-03 未定义变量事故——runner 死了一天无人知晓，BAR-SEMCHAIN-01）
   inbox(`- ${stamp} 💀 崩溃——runner 异常：${e.message}。本轮无效，堆栈见 /var/log/semantic-chain.log，先修 runner 再谈裁决`);
   console.error(e);
   process.exit(2);

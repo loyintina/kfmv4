@@ -46,6 +46,7 @@ import './session-security.test.js';
 import './session-invalidate.test.js';
 import './tag-advisor.test.js';
 import './provider-env.test.js';
+import './semantic-chain.test.js';
 
 function seedState(files: Record<string, any>) {
   KFMState.files = {};

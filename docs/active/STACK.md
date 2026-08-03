@@ -208,11 +208,14 @@
      handler + WS 协议面）保留为「AI 之手」预留基础设施——未来做 AI 操作页面时重建
      服务端触发即可，不算技术债；同日幽灵能力注册（file-search/file-read/file-write，
      无执行面误导 AI）已删，能力管道留空待 AI 之手重建
-17. 接手审计五缺口（2026-08-03 记，QoderCN 冷启动审计；逐条待裁决，裁决后拆解）
+17. 接手审计五缺口（2026-08-03 记，QoderCN 冷启动审计；F1 已修 ✅，F2-F5 待裁决，裁决后拆解）
    — 共性：「反复出现的失败类还没有机械化主人」——责任真空型缺口
-   — F1 语义巡逻静默死亡（已登记 BAR-SEMCHAIN-01）：921f6744 新增 checkExemptions
+   — F1 语义巡逻静默死亡（BAR-SEMCHAIN-01）：921f6744 新增 checkExemptions
      引用未定义 ROOT（模块定义的是 REPO）→ 08-03 04:17 cron 崩，state 已写信箱未投；
      runner 崩溃无信箱通道、/var/log 无人读、agent 脚本不在任何检查覆盖内
+     ——✅ 已修（2026-08-03）：ROOT→REPO + 崩溃投信箱 💀（沉默不允许）+
+     check-inbox-heartbeat.mjs 挂链（MECH-FLOW-10，上岗即逮现役停摆 42h）+
+     3 钉（tests/semantic-chain.test.ts）+ 探针夹具；补跑巡逻回填当日欠班
    — F2 bug 入口无强制通道：面板发送无响应 bug 以「另:」散文挂 STACK #9，未进 BAR
      登记 → 修完无人追状态（用户 08-03 确认早已修复，STACK 未更新）；入口路由可机械化
    — F3 STACK 编号碰撞：主列表 1,2,3,8..16,4..7 插入序混乱，研究参考区 0./0b./9./10.
