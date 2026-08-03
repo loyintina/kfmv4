@@ -116,3 +116,17 @@ G1（出生即错，9 处）居次，只能靠「写入时对照现实」的纪�
 | contract-vs-map-canvas-tree ×2 | 修复 ×2 | 已修 contract:61/82 | rAF「必须」→「应，现实 ||295 兜底（漂移 14）」；文件清单手写 25 vs 实 31 → 改引用式指向 code-inventory |
 | contract-vs-map-infra | 豁免（contract 对，基准旧） | 修 code-map + 重跑 | contract「35 脚本」= 真；同 code-map 陈旧根因 |
 | crossdomain-vs-inventory ×3 | anim 豁免 / HTTP 豁免待复核 / WS 修复 | 已修 :67 + 豁免 | anim「三个域」= 真（client-shell/floating-card/canvas-tree 三域，探针误数）；HTTP「10 vs 9」计数口径分歧，登记待人工复核；WS「跨两域」→ 实为 floating-card 域内双写者（terminal-card-04 × tmux-card），已修正 |
+
+## 2026-08-03 接手裁决轮（积压 13 + 巡逻刷新 10，裁决人：QoderCN 冷启动审计）
+
+| 探针任务 | 裁决 | 处置 | 详情 |
+|---------|------|------|------|
+| contract-vs-map-floating-card / client-shell / infra 清单类 | 修复（真身是生成器 bug） | BAR-GENLIST-01/GENINV-01/SYNCCOUNTS-01 三钉 | 「清单缺文件」三条发现同根：机械层静默丢事实家族——\Z 当字面 Z 截断域节、CODE_EXT 蒸发显式登记文件、chain:auto 映射吞 gen-* 步；共性「check-only 与生成共享坏解析，体检者与被体检者同病相认」，三例各带钉/探针 |
+| workflows-vs-guides（阈值） | 修复 | release.yaml 改指 THRESHOLDS 单源 | 文档复述 LCA≥1/硬破界≥1 与校准脚本（LCA≤1、守界≥5/6）相悖——「勿复述数字」教训再验证 |
+| workflows-vs-guides（探针数 17/18） | 修复 | agent-runner.md 改指 tasks.mjs 单源 | 实 18+6（24 任务）；手写计数又一次漂——同教训 |
+| inter-workflows-infra（tests:na ×3） | 修复 | bug-fix.yaml 步骤 4/7/exit 补豁免例外 | fix/test 分开提交与硬规则 4 的钩子冲突，文档未载 tests:na 通道——本会话提交时被钩子现场拦截，裁决即亲历 |
+| contract-vs-map-infra（陷阱 1 scss） | 修复 | 陷阱改「有同名 .scss 才防覆盖」 | 实 5 css 仅 2 有 scss 源（base/sidebar），绝对化措辞失真 |
+| crossdomain-vs-inventory（anim 状态互搏） | 修复 | 风险矩阵行改 ✅【已结案】指 ADR-004 | 结案只改了漂移清单节、漏同步风险矩阵——「修复必须同步全部引用面」教训再验证 |
+| guides-release-vs-history（v8.1.0） | 豁免 EX-005 | 登记表 + 重跑 | release.md 判例行自带「实为混装窗口」内联注，探针未读到——误报 |
+| 臂数口径（3/6/22） | 修复 | 双端删数字改指单源 | release.yaml 臂数指 crontab、契约硬规则 11 指 release.yaml 步骤 0；22 臂是池化校准数据集非运行臂数——探针曾把三者当互斥 |
+| 提示词有效性 | — | — | 本轮幻觉拦截 5；机械层 bug 三条全为真发现（精确率高的轮次）；新病灶学条目：生成器与校验器共享解析 = 全绿放行型盲区，预防 = 探针负例构造「buggy 版恰好绿」 |
