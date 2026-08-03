@@ -156,15 +156,15 @@
      feat 流程无对应约束——讨论适配形态后候选进 workflows feat 类卡 / 心法
 13. 冷启动试卷体系长期化（2026-08-01 用户动议）
    — 现状：同一提示词 + lab 基线的多 harness 对照实验已产出 100+ 臂带尸检数据，
-     资产在 /root/.kfmv4/coldstart-exp/（index.md 臂清单 + sessions/ 原始记录）
+     资产已入库 experiments/coldstart/（2026-08-01 起，sessions 在 .kfmv4 私有区）
    — 方向：① 定期复测对照（模型版本迭代/harness 演进后的行为漂移追踪）
      ② 新 harness 接入即测 ③ 远期：agent-runner 形态自动跑臂+尸检入库，
      挂机后台持久化（与 #3 agent 任务执行器会合）
 14. 实验体系迁入源码仓 + 数据重构（2026-08-01 用户动议）
-   — 现状：实验数据在 /root/.kfmv4/coldstart-exp/（仓外）——但实验本身是开发行为，
-     应随源码走（版本化/可审查/接力 agent 可见）
-   — 时机：随 #13 试卷体系固化成工作流时一并数据重构（目录归位 + sessions 存档
-     格式定型 + index 入 ledger 或邻接层）
+   — 现状：已入库 experiments/coldstart/（index.md + reports + tools），sessions/
+     原始答卷在 .kfmv4/experiments/coldstart/ 私有区——数据重构已完成主体
+   — 时机：随 #13 试卷体系固化成工作流时一并收尾（sessions 存档格式定型 +
+     index 入 ledger 或邻接层）
    — 方法论（#12 测试先行在实验基建上的同源应用）：先摸索实验机制和流程（试卷/
      基线/尸检/评分口径），产物是实验结论——结论用来推动决策和方向设计；
      设计不能脱离实际，决策需要真实数据支撑
@@ -202,9 +202,8 @@
    — HANDOFF_2026-06-03_AUDIT_FIX_DEEP「留给下一轮」三项：_rowIndex 显式接口化
      （代码仍 88 处直引）/ RafHandleSet 封装（canvas-scroll 5 个 rAF 循环散布读写）/
      L._savedScrollY 迁移入 saveSidebarScrollState()
-   — file-tree 命令缺口：AI 能看文件树但不能操作，expand-dir/collapse-dir/select-file
-     从未实现（ws-channel.ts:379 注释留有设想；与第 6 项 CARD_REGISTRY 三命令同属
-     「AI 之手」家族，可一并裁决）
+   — file-tree 命令已实现（v6.2.0 expand-dir/collapse-dir/select-file，见 tree-render.ts
+     工具卡）；残留缺口是「AI 之手」家族的卡片操作（CARD_REGISTRY 三命令等）
    — ⚠ 2026-07-29 ADR-004 追加裁决（已定性，非债）：`command` 通道（客户端 19 个
      handler + WS 协议面）保留为「AI 之手」预留基础设施——未来做 AI 操作页面时重建
      服务端触发即可，不算技术债；同日幽灵能力注册（file-search/file-read/file-write，
@@ -216,7 +215,7 @@
    MECH-FLOW×9）总表 `active/error-codes.md`：构建失败时 check 报错带 ⛳ 引导，
    把处理者引回「读 X 走 Y」；20 个流程门 check 已覆盖。
 0b. **思维模式记录（2026-08-03 立）**——洛主在范式级讨论中的思维模式提炼
-   `active/thinking-patterns.md`（7 类 + 出处），原始数据 `.kfmv4/discussion-log.jsonl`；
+   `active/thinking-patterns.md`（10 类 + 出处），原始数据 `.kfmv4/discussion-log.jsonl`；
    记录流程见 workflows/discussion-study.yaml（双触发：agent 主动提议/用户发起复盘）。
 
 

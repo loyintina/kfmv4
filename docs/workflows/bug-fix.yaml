@@ -1,7 +1,7 @@
 id: bug-fix
 name: Bug 修复 + 回归钉
 trigger: 发现 bug / 用户报告异常
-frequency: 最高频（git 主体，47% 提交）
+frequency: 最高频（git 主体，历史约 42-47% 提交）
 reads:
   - constraints/invariants.md#心法24
   - domains/{受影响域}/contract.md#陷阱

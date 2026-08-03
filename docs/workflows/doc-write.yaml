@@ -3,7 +3,7 @@ name: 文档写入（新增/重写）
 trigger: 需要新增或重写 docs/ 下的任何文档（新 detail/guide/ADR/ledger/契约），或新生成器/可生成事实
 frequency: 中频（文档体系演进时）
 reads:
-  - guides/doc-maintenance.md（检查清单 7 条：计数唯一出处/时点/必读分层/专有名词/必挂引用点）
+  - guides/doc-maintenance.md（检查清单 8 条：计数唯一出处/时点/必读分层/专有名词/必挂引用点/目录 README 清单同步）
   - active/generateable-facts.md（可生成事实登记——该拼接的别手写；新可生成事实先登记）
   - guides/doc-architecture.md（读/存分区——这份文档是书架还是档案馆）
 steps:

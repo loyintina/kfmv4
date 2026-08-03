@@ -8,7 +8,7 @@ reads:
   - ledger/drift-provenance.md
 steps:
   1. 机械先行：check 链全绿才进语义层——机械能抓的不进语义清单
-  2. 脚本化审计（首选）：node scripts/agent/semantic-audit.mjs——探针集群（组内 17 + 组间 6，
+  2. 脚本化审计（首选）：node scripts/agent/semantic-audit.mjs——探针集群（组内 18 + 组间 6，
      任务清单 scripts/agent/semantic-audit.tasks.mjs）并发对账 + 机械复核 + 增量跳过；
      产 SEM 清单草案。深潜/存疑分流可补手动 subagent
   3. 提示词必含「登记豁免规则」：已在 ledger 登记的漂移不算新发现（脚本已内置；

@@ -21,7 +21,7 @@ kfmv4 是一个 AI 对话面板（光球 + 浮卡 + 文件树），自带 API �
 | 层 | 角色 | 你什么时候读 |
 |----|------|-------------|
 | `constraints/` | 心法（约束）+ 诊断流程 | 改代码前按节加载 |
-| `domains/` | 域契约（六域，每域 contract + detail） | 动某个域的代码前 |
+| `domains/` | 域契约（六域，contract 必带，detail 按需展开） | 动某个域的代码前 |
 | `active/` | 当前工作栈（STACK）+ 远景 | 每会话开头 |
 | `guides/` | SOP 手册（测试/发版/文档维护/agent-runner…） | 对应任务触发时 |
 | `workflows/` | 工作流卡（YAML：reads/steps/writes/exit） | 每次任务开头按 CLAUDE.md 路由表匹配 |
@@ -69,7 +69,7 @@ build.mjs → check 链 → esbuild → smoke → 启动
 docs 之外还有三组运行时机制，入口在这里：
 
 **生成器家族**——「文档由代码拼接」的体系地图在 `docs/active/generateable-facts.md`
-（登记表：每个可生成事实的源头/生成器/标记）。已落地 8 个：
+（登记表：每个可生成事实的源头/生成器/标记）。已落地 9 个：
 
 | 生成器 | 产出 |
 |--------|------|
@@ -85,7 +85,7 @@ docs 之外还有三组运行时机制，入口在这里：
 规矩：**改了代码注册源没跑生成器 = check 中断**，按报错提示回写即可。
 
 **提示词目录**（`src/server/prompts/`，三目录语义见 `prompts/README.md`）：
-`global/`（预设+工具文档，自动注入全部会话）· `system/`（角色卡挂载，静态）·
+`global/`（预设+`global/tools/`工具文档，自动注入全部会话）· `system/`（角色卡挂载，静态）·
 `dynamic/`（角色卡挂载，动态；说明文档在源码侧，运行时文件在
 `.kfmv4/prompts/dynamic/`，格式见 `dynamic/page-state-schema.md`）。
 

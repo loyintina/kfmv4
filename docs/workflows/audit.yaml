@@ -3,7 +3,7 @@ name: 文档-代码审计
 trigger: 周期性（约两月）/ 感觉漂移时
 frequency: 约两月一次（历史：06-02 → 07-28）
 reads:
-  - guides/doc-maintenance.md（审计节）
+  - guides/doc-maintenance.md（检查清单与审计纪律）
   - check 管线输出
 steps:
   1. 跑全量 check，收集漂移信号

@@ -136,7 +136,7 @@ check-ledger-commits（commit 锚点对账），全部配探针/豁免登记。�
 
 **遗留**：各组「存疑断言」清单未分流（已自动核销——EX 豁免/变体系统（2026-08-02）演进覆盖）；
 SAFE_ROOT 存疑项已证伪结案（2026-08-02）：用户路径入口全部经 sanitizePath
-（files.ts 5 处 + prompt-assembler），sessions 走 isValidSessionId 白名单 +
+（files.ts 13 调用点 + prompt-assembler），sessions 走 isValidSessionId 白名单 +
 数据目录（BAR-SEC-14），sibling-switcher 为注释明示的系统级有意例外——校验面完整无缺口。
 
 **深扫区（2026-07-30 新增第三区，workflows/deep-scan.yaml）**：确定区（机械 check）与概率区

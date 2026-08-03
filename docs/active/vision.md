@@ -204,7 +204,7 @@ KFM 项目本身就是一个完整的工作区。`docs/` 是共享记忆库，`s
 CardShell 给插件暴露哪些能力？
 
 ```
-已知的：
+设计中的接口（与实装 CardContentHandler 不同，见 card-registry.ts）：
   - shell.contentEl / shell.headerEl / shell.cardEl
   - shell.setState('compact' | 'active' | 'editing')
   - shell.resizeTo(w, h)
@@ -301,7 +301,7 @@ Agent 会话到期后，新 Agent 如何"接上"当前进度？
 |---|------|------|
 | 16 | 标记系统（点击光标 + 路标标记 → Agent 上下文，见 §一.6） | ⬜ 未实现 |
 | 17 | 卡片位置持久化（localStorage 或服务端，含 open 问题：跨设备同步？持久化哪些状态？） | ⬜ 未实现 |
-| 18 | 插件间通信（文件卡 → 代码卡跳转；KFMState 订阅还是自定义事件？） | ⬜ 未实现 |
+| 18 | 插件间通信（文件卡 → 代码卡跳转；KFMState 订阅还是自定义事件？——自定义事件已落地 kfm-session/provider/model-change，跳转场景未做） | 🟡 部分（事件机制已落地） |
 | 19 | AI 自改闭环（基础设施就绪，未做完整验收） | ⬜ 未验收 |
 
 ### 4.2 全局输入栏（原 §3.1，未实装）

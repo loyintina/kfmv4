@@ -1,15 +1,15 @@
 id: release
 name: 版本发布
 trigger: 发版候选（批次攒够 / 用户决定）
-frequency: 约每 150 提交一版（历史 11 版/1656 提交）
+frequency: 约每 40-50 提交一版（阈值拟合历史窗口中位数，见 check-release-radar）
 reads:
   - guides/release.md
 steps:
   0. **入口文档体检**（2026-08-02 加）：`node experiments/coldstart/tools/routine-entry-validation.mjs --arms 3`
-     跑 3 个 kfmdocs-only 验证臂对照基线；FAIL（实错>0.33/臂 或 LCA≥1 或 硬破界≥1 或 质疑<3/6）
+     跑 3 个 kfmdocs-only 验证臂对照基线；FAIL（实错>0.5/臂 或 LCA≥1 或 硬破界≥1，质疑为软指标）
      → 先修文档再发版（v1.1 式修复轮）；PASS 继续
   1. 更新 package.json version
-  2. ledger/history.md 加版本条目（粗体 **vX.Y.Z**）
+  2. ledger/history.md 加版本条目（`- vX.Y.Z` 行）
   3. git commit "release: vX.Y.Z — 一句话"
   4. git tag vX.Y.Z
   5. npm run check 全绿（check-versions 验 tag+条目+标记一致）
