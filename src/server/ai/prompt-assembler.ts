@@ -94,12 +94,16 @@ export function assembleRoleSystemPrompt(roleFile?: string): string {
  */
 const DYNAMIC_WRAP_HEADER =
   '──────── 系统感官注入（动态 · 每轮自动刷新）────────\n' +
-  '以下是你的实时环境感官信息，不是用户发来的消息，也不是对话内容。';
+  '以下是你的实时环境感官信息，不是用户发来的消息，也不是对话内容。\n' +
+  '注意：这份感官是页面投影，可能滞后或不完整——它不是证据源。' +
+  '涉及文件内容、状态、计数的断言，一律以工具读取的实际结果为准；' +
+  '感官信息只用于感知上下文，不得作为断言依据。';
 const DYNAMIC_WRAP_FOOTER =
   '──────── 感官注入结束 ────────\n' +
   '使用规则：其中的信息直接取用即可——用户问及相关内容时自然回答，无需说明出处；' +
   '不要主动提及或描述这份注入本身（例如「我看到/我的眼睛察觉到/系统反馈显示」），' +
-  '除非用户主动问起这些信息从何而来。';
+  '除非用户主动问起这些信息从何而来。' +
+  '若感官信息与工具结果冲突，以工具结果为准。';
 
 export function assembleDynamicPrompt(roleFile?: string): string {
   const rf = roleFile || getActiveRoleFile();
