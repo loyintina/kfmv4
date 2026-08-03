@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit abd085f · 生成于 2026-08-03 -->
+<!-- 基准 commit 36a8752 · 生成于 2026-08-03 -->
 
 # 代码清单（机械层）
 
@@ -170,7 +170,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（112 文件 · 14088 行）
+## infra（118 文件 · 14368 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -210,6 +210,7 @@
 | scripts/check/check-checks.mjs | 132 | — |
 | scripts/check/check-tool-compaction.mjs | 129 | — |
 | scripts/check/check-mutation-anchors.mjs | 126 | — |
+| scripts/check/gen-permission-map.mjs | 125 | — |
 | tests/session-security.test.ts | 125 | — |
 | scripts/agent/tag-advisor.mjs | 124 | REF_RE, isValidRef |
 | scripts/check/gen-tool-docs.mjs | 120 | — |
@@ -225,12 +226,13 @@
 | scripts/check/check-cards.mjs | 105 | — |
 | scripts/check/check-contract-freshness.mjs | 103 | — |
 | scripts/check/check-test-patterns.mjs | 102 | — |
+| scripts/check/gen-rules-map.mjs | 101 | — |
 | tests/session-invalidate.test.ts | 100 | — |
 | scripts/check/check-anim.mjs | 99 | — |
 | scripts/check/check-state-freshness.mjs | 91 | — |
 | scripts/check/check-versions.mjs | 91 | — |
+| scripts/check/chain.mjs | 89 | STEPS |
 | scripts/agent/obs-aggregate.mjs | 89 | — |
-| scripts/check/chain.mjs | 87 | STEPS |
 | scripts/check/check-probes.mjs | 86 | — |
 | scripts/agent/exp-probe-matrix.mjs | 86 | — |
 | tests/engine.test.ts | 85 | — |
@@ -267,15 +269,19 @@
 | scripts/check/check-release-radar.mjs | 42 | — |
 | tests/reset-hooks.ts | 41 | — |
 | tests/runner.ts | 33 | test, group, runAll, regression, beforeEach, TestFileNode, singleFolder, nestedFolders |
+| tests/probes/gen-permission-map/src/server/ai/tools/index.ts | 19 | getToolDefinitions, getAllTools |
 | tests/gsap-hook.mjs | 17 | resolve |
+| tests/probes/gen-permission-map/src/server/ai/tools/fake.ts | 16 | fakeTool |
 | tests/probes/gen-tool-docs/src/server/ai/tools/fake.ts | 16 | fakeTool |
 | tests/mocks/xterm.ts | 15 | Terminal |
 | tests/probes/gen-tool-docs/src/server/ai/tools/index.ts | 15 | getToolDefinitions |
+| tests/probes/gen-permission-map/src/server/ai/tools/types.ts | 12 | KfmTool |
 | tests/probes/gen-tool-docs/src/server/ai/tools/types.ts | 12 | KfmTool |
 | scripts/check/docs-root-const.mjs | 8 | DOCS_ROOT |
 | tests/register-hook.mjs | 8 | — |
 | tests/probes/gen-page-state-schema/src/client/modules/ui-registry.ts | 7 | ContentBlock |
 | tests/mocks/xterm-addon-fit.ts | 6 | FitAddon |
+| tests/probes/gen-permission-map/src/server/ai/permissions.ts | 5 | TOOL_RISK |
 | tests/probes/doc-linerefs/src/fake.ts | 4 | a, b |
 | tests/probes/checks/build.mjs | 3 | — |
 | tests/probes/bar-ledger/tests/probe.ts | 2 | — |
@@ -594,4 +600,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 251 文件 · 45438 行 · 跨域边 245 条
+合计 257 文件 · 45718 行 · 跨域边 245 条
