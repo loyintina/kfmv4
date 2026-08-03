@@ -7,7 +7,7 @@
 | `global/` | 预设（自动） | **自动注入**——顶层 `*.md` 进静态 system 段，全部会话强制，独立于角色卡 | `evidence-discipline.md`（证据纪律） |
 | `global/tools/` | 工具文档（自动） | **自动注入**——作为「可用工具」段（文件名 = 工具名） | `read.md`、`bash.md` 等 15 个 |
 | `system/` | 手动（静态） | **角色卡 `promptFiles` 挂载**——每轮重组但内容不变，挂哪个角色卡就进哪个会话 | `base.md`（工程架构师职业卡，由蔚然-kfmv4 卡挂载） |
-| `dynamic/` | 手动（动态） | **角色卡 `dynamicPromptFiles` 挂载**——每轮刷新注入对话尾部（user 消息），内容可被工具改写 | 见 `dynamic/README.md`（眼睛 page-state 即此类，运行时生成于 `.kfmv4/`） |
+| `dynamic/` | 手动（动态） | **角色卡 `dynamicPromptFiles` 挂载**——每轮刷新注入对话尾部（user 消息），内容可被工具改写 | 见 `dynamic/README.md`（眼睛 page-state 即此类，运行时生成于 `.kfmv4/prompts/dynamic/`，格式说明见 `dynamic/page-state-schema.md`） |
 
 ## 判断放哪
 

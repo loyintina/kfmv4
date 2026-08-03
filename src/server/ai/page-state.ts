@@ -2,7 +2,8 @@
  * page-state.ts — 「眼睛」动态页面状态文件
  *
  * 把浏览器持续推上来的 PageDescription（ws-server._latestSnapshot）渲染成
- * MUD/文字冒险风格的「房间描述」markdown，写入 .kfmv4/page-state.md。
+ * MUD/文字冒险风格的「房间描述」markdown，写入 .kfmv4/prompts/dynamic/page-state.md。
+ * （数据侧 prompts/dynamic/ 与源码侧 prompts/dynamic/（说明文档）路径对称。）
  *
  * 这个文件是普通文件——角色卡把它列进 promptFiles 即获得「眼睛」，不列则无。
  * 服务端每轮 LLM 调用前重组 system 时重读它 → AI 看到工具执行后的最新页面。
@@ -15,7 +16,7 @@ import { join } from 'path';
 import { KFM_DATA_DIR } from '../path-utils.js';
 import type { WsServer } from '../ws-server.js';
 
-export const PAGE_STATE_PATH = join(KFM_DATA_DIR, 'page-state.md');
+export const PAGE_STATE_PATH = join(KFM_DATA_DIR, 'prompts', 'dynamic', 'page-state.md');
 
 interface Element {
   id: string; type: string; label: string; description: string;
