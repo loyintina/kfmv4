@@ -51,6 +51,7 @@ export const STEPS = [
   'node scripts/check/check-commit-docs.mjs',
   'node scripts/check/check-fix-tests.mjs',
   'node scripts/check/check-hooks.mjs',
+  'node scripts/check/check-page-state-schema.mjs',
   'node scripts/check/check-probes.mjs',
   'node scripts/check/check-release-radar.mjs',
   'node scripts/check/check-experiment-index.mjs',
