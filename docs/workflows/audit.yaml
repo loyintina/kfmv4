@@ -6,7 +6,8 @@ reads:
   - guides/doc-maintenance.md（检查清单与审计纪律）
   - check 管线输出
 steps:
-  1. 跑全量 check，收集漂移信号
+  1. 跑全量 check（机械层信号）+ 读巡逻信箱/semantic-audit state（语义层漂移信号
+     归巡逻，semantic-chain 不进 check 链——infra 契约链外概率区）
   2. 逐域核对 contract 与代码实际状态
   3. 修正文档或代码（谁错改谁，证据优先）
   4. 发现的系统性问题 → discipline-mechanize

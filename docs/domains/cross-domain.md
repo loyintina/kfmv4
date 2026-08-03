@@ -98,8 +98,8 @@
 7. **/api/system/restart 单挂载不一致**
 8. **kfm-no-compact 无写者**（协议无生产者）
 9. **localStorage 无登记制度**（本表之前零约束）
-10. **ai-chat 直读 canvas-tree 状态**（orb-chat-run.ts:184、role.card.ts:187,195 读
-    KFMState.currentRoot 喂 loadFileTree）——无接口层
+10. **ai-chat 与 floating-card 直读 client-shell 的 KFMState**（orb-chat-run.ts:184、
+    role.card.ts:158,166 读 KFMState.currentRoot 喂 loadFileTree）——无接口层
 11. **【已结案】KFMState 孤儿 API 死协议面**（cart*/openCards 等）——已随死代码
     批次二删除（client-shell 漂移 11 同案）
 12. **terminal-open/close 同域双写者**（双开 PTY 的协议层成因——BAR-RECONNECT-01
