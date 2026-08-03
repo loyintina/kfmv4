@@ -215,6 +215,10 @@
 0. **错误码总表（2026-08-03 落地）**——流程引导错误码（DOC-FLOW×8 / TEST-FLOW×3 /
    MECH-FLOW×9）总表 `active/error-codes.md`：构建失败时 check 报错带 ⛳ 引导，
    把处理者引回「读 X 走 Y」；20 个流程门 check 已覆盖。
+0b. **思维模式记录（2026-08-03 立）**——洛主在范式级讨论中的思维模式提炼
+   `active/thinking-patterns.md`（7 类 + 出处），原始数据 `.kfmv4/discussion-log.jsonl`；
+   记录流程见 workflows/discussion-study.yaml（双触发：agent 主动提议/用户发起复盘）。
+
 
 9. **语义生成（2026-08-02 立项：语义单源+生成呈现）**——设计 `active/semantic-generation.md`；
    可生成事实登记表 `active/generateable-facts.md`；已落地：契约清单生成器

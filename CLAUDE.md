@@ -30,6 +30,7 @@
 | 语义深扫 | workflows/deep-scan.yaml |
 | Bug 诊断/分诊 | workflows/diagnostics.yaml |
 | 纪律机械化 | workflows/discipline-mechanize.yaml |
+| 范式级讨论研究 | workflows/discussion-study.yaml |
 | 文档树同步 | workflows/doc-tree-sync.yaml |
 | 文档写入 | workflows/doc-write.yaml |
 | 新 agent 接手 | workflows/onboarding.yaml |
