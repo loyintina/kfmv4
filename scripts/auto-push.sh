@@ -15,7 +15,65 @@ STAMP="$(date +%Y-%m-%d\ %H:%M:%S)"
 cd "$REPO" || { echo "$STAMP 失败: 无法进入 $REPO" >> "$LOG"; exit 1; }
 
 # 闸 1：非戳未提交改动 → 跳过
-CHANGED=$(git status --porcelain | grep -v '^ M public/index.html$' | grep -v '^?? public/index.html$' | wc -l)
+CHANGED=$(git status --porcelain | grep -vE '^[ M]M? public/index.html | wc -l)
+if [ "$CHANGED" -gt 0 ]; then
+  echo "$STAMP 跳过: 工作树有 $CHANGED 处非戳改动（真实工作进行中，不越权）" >> "$LOG"
+  exit 0
+fi
+
+# 推 master（pre-push 钩子跑全链，失败自动拦下）
+# 顺序：先推后戳——戳提交会让 HEAD 晚于 buildTime 导致 deploy-freshness 红
+#（2026-08-03 实测）；push 时戳脏只触发非阻断警告。
+if git push origin master >> "$LOG" 2>&1; then
+  echo "$STAMP 推送 master 成功" >> "$LOG"
+else
+  echo "$STAMP 推送 master 失败（pre-push 检查未过或网络问题）" >> "$LOG"
+  exit 1
+fi
+
+# 推新 tag（远端没有的）
+for tag in $(git tag); do
+  if ! git ls-remote --tags origin "$tag" | grep -q "$tag"; then
+    git push origin "$tag" >> "$LOG" 2>&1 && echo "$STAMP 推送 tag $tag" >> "$LOG"
+  fi
+done
+
+# 闸 2（push 后）：只有戳脏 → 按惯例提交
+if git status --porcelain | grep -q 'public/index.html'; then
+  git add public/index.html
+  git commit -q -m "chore(build): 构建缓存戳" 2>/dev/null || echo "$STAMP 戳提交失败" >> "$LOG"
+fi
+echo "$STAMP 完成" >> "$LOG"
+ | grep -v '^?? public/index.html | wc -l)
+if [ "$CHANGED" -gt 0 ]; then
+  echo "$STAMP 跳过: 工作树有 $CHANGED 处非戳改动（真实工作进行中，不越权）" >> "$LOG"
+  exit 0
+fi
+
+# 推 master（pre-push 钩子跑全链，失败自动拦下）
+# 顺序：先推后戳——戳提交会让 HEAD 晚于 buildTime 导致 deploy-freshness 红
+#（2026-08-03 实测）；push 时戳脏只触发非阻断警告。
+if git push origin master >> "$LOG" 2>&1; then
+  echo "$STAMP 推送 master 成功" >> "$LOG"
+else
+  echo "$STAMP 推送 master 失败（pre-push 检查未过或网络问题）" >> "$LOG"
+  exit 1
+fi
+
+# 推新 tag（远端没有的）
+for tag in $(git tag); do
+  if ! git ls-remote --tags origin "$tag" | grep -q "$tag"; then
+    git push origin "$tag" >> "$LOG" 2>&1 && echo "$STAMP 推送 tag $tag" >> "$LOG"
+  fi
+done
+
+# 闸 2（push 后）：只有戳脏 → 按惯例提交
+if git status --porcelain | grep -q 'public/index.html'; then
+  git add public/index.html
+  git commit -q -m "chore(build): 构建缓存戳" 2>/dev/null || echo "$STAMP 戳提交失败" >> "$LOG"
+fi
+echo "$STAMP 完成" >> "$LOG"
+ | wc -l)
 if [ "$CHANGED" -gt 0 ]; then
   echo "$STAMP 跳过: 工作树有 $CHANGED 处非戳改动（真实工作进行中，不越权）" >> "$LOG"
   exit 0
