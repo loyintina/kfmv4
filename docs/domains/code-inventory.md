@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit ca3b9a1b · 生成于 2026-08-03 -->
+<!-- 基准 commit 932b00b7 · 生成于 2026-08-03 -->
 
 # 代码清单（机械层）
 
@@ -36,15 +36,15 @@
 | src/client/engine/v2/animation.ts | 40 | ease |
 | src/client/engine/v2/utils.ts | 24 | uniformSpacing, hvSpacing, ZERO_SPACING |
 
-## floating-card（27 文件 · 6772 行）
+## floating-card（27 文件 · 6682 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/client/modules/floating-card.ts | 811 | enterFullscreen, exitFullscreen, dismissFullscreen, updateFullscreenSavedPosition, createFloatingCard, dismissFloatingCard, initFloatingCards, hasFloatingCard, buildCardLayout |
 | src/client/modules/terminal-card-04.ts | 757 | TerminalCardMeta, initTerminalCore, disposeTerminalCore, compactTerminalCore, createTerminal04Handler |
 | src/client/cards/plugins/role.card.ts | 740 | — |
-| src/client/cards/plugins/config.card.ts | 694 | — |
 | src/client/cards/plugins/session.card.ts | 615 | — |
+| src/client/cards/plugins/config.card.ts | 604 | — |
 | src/client/cards/plugins/api.card.ts | 592 | — |
 | src/client/modules/card-stack.ts | 472 | getCardCount, getCard, getCardName, getCardId, hexToRgba, cardGradient, cardBg, getFocusIndex, getCurrentAccent, getCardHandler, getFocusedCardRect, animateStackPullFeedback, launchFocusedCard, openCardStack, closeCardStack, isCardStackOpen, focusNext, focusPrev, initCardStack |
 | src/client/cards/plugins/tools.card.ts | 307 | — |
@@ -445,9 +445,8 @@
 - src/client/modules/gestures.ts → src/client/modules/card-registry.ts
 - src/client/modules/gestures.ts → src/client/modules/card-stack.ts
 
-### floating-card → ai-chat（5 边）
+### floating-card → ai-chat（4 边）
 
-- src/client/cards/plugins/config.card.ts → src/client/modules/session-client.ts
 - src/client/cards/plugins/session.card.ts → src/client/modules/session-client.ts
 - src/client/modules/card-stack.ts → src/client/modules/ws-channel.ts
 - src/client/modules/terminal-card-04.ts → src/client/modules/ws-channel.ts
@@ -602,4 +601,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 259 文件 · 46126 行 · 跨域边 245 条
+合计 259 文件 · 46036 行 · 跨域边 244 条

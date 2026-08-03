@@ -73,5 +73,5 @@
 ## 文件清单
 
 <!-- gen:contract-list 自动生成，禁止手改（源：code-inventory） -->
-`src/client/modules/floating-card.ts` `src/client/modules/terminal-card-04.ts` `src/client/cards/plugins/role.card.ts` `src/client/cards/plugins/config.card.ts` `src/client/cards/plugins/session.card.ts` `src/client/cards/plugins/api.card.ts` `src/client/modules/card-stack.ts` `src/client/cards/plugins/tools.card.ts` `src/client/modules/renderers/handler-factory.ts` `src/client/modules/tmux-card.ts` `src/client/modules/floating-fullscreen.ts` `src/client/modules/floating-shared.ts`
+`src/client/modules/floating-card.ts` `src/client/modules/terminal-card-04.ts` `src/client/cards/plugins/role.card.ts` `src/client/cards/plugins/session.card.ts` `src/client/cards/plugins/config.card.ts` `src/client/cards/plugins/api.card.ts` `src/client/modules/card-stack.ts` `src/client/cards/plugins/tools.card.ts` `src/client/modules/renderers/handler-factory.ts` `src/client/modules/tmux-card.ts` `src/client/modules/floating-fullscreen.ts` `src/client/modules/floating-shared.ts`
 <!-- /gen:contract-list -->

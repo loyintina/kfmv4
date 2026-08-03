@@ -1,7 +1,8 @@
 /**
  * config.card.ts — AI 配置卡
  *
- * 管理 Agent 配置组合（Provider + Model + Session）。
+ * 管理 Agent 配置组合（Provider + Model + 角色 + 行为预设）。
+ * sessionId 是运行参数（每次调用不同），不绑配置——运行时传入。
  * 类似 API 卡结构：顶部选择器 + 配置表单 + 池列表。
  * 数据存储于 .kfmv4/configs/ 文件夹。
  */
@@ -11,7 +12,6 @@ import { buildCardLayout } from '../../modules/floating-card.js';
 import { log } from '../../modules/logger.js';
 import { createCustomSelect, type CustomSelect } from '../../modules/custom-select.js';
 import { showConfirm } from '../../modules/confirm-dialog.js';
-import { sessionStore } from '../../modules/session-client.js';
 
 interface Provider {
   id: string;
@@ -21,30 +21,18 @@ interface Provider {
   models: string[];
 }
 
-interface Session {
-  id: string;
-  title: string;
-  manuallyNamed?: boolean;
-  createdAt: string;
-  updatedAt: string;
-  providerId?: string;
-  modelId?: string;
-  messages: Array<{ role: string; text: string; reasoning?: string }>;
-}
-
 interface AgentConfig {
   id: string;
   providerId: string;
   modelId: string;
-  sessionId: string;
   roleFile?: string;
+  systemInject?: string; // 行为预设（注入包）：拼进会话首条消息的行为规范
   createdAt: string;
   updatedAt: string;
 }
 
 const PROVIDERS_PATH = '.kfmv4/providers.json';
 const CONFIGS_PATH = '.kfmv4/configs';
-const SESSIONS_PATH = '.kfmv4/sessions';
 const ACTIVE_PATH = '.kfmv4/active.json';
 
 // ====== API 基础 ======
@@ -98,25 +86,6 @@ async function loadProviders(): Promise<Provider[]> {
   return [];
 }
 
-async function loadSessions(): Promise<Session[]> {
-  const files = await listDir(SESSIONS_PATH);
-  const sessions: Session[] = [];
-  for (const file of files) {
-    if (!file.endsWith('.json')) continue;
-    const content = await readFile(`${SESSIONS_PATH}/${file}`);
-    if (content) {
-      try {
-        const session = JSON.parse(content);
-        if (session.id && session.title) {
-          sessions.push(session);
-        }
-      } catch (e) { log('[config] 解析 session 失败: ' + (e instanceof Error ? e.message : String(e))); }
-    }
-  }
-  sessions.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-  return sessions;
-}
-
 async function loadConfigs(): Promise<AgentConfig[]> {
   const files = await listDir(CONFIGS_PATH);
   const configs: AgentConfig[] = [];
@@ -137,8 +106,8 @@ async function loadConfigs(): Promise<AgentConfig[]> {
 }
 
 async function saveConfig(config: AgentConfig, fileName: string): Promise<void> {
-  const { providerId, modelId, sessionId, roleFile, createdAt, updatedAt } = config;
-  await writeFile(`${CONFIGS_PATH}/${fileName}.json`, JSON.stringify({ id: fileName, providerId, modelId, sessionId, roleFile, createdAt, updatedAt }, null, 2));
+  const { providerId, modelId, roleFile, systemInject, createdAt, updatedAt } = config;
+  await writeFile(`\${CONFIGS_PATH}/\${fileName}.json`, JSON.stringify({ id: fileName, providerId, modelId, roleFile, systemInject, createdAt, updatedAt }, null, 2));
 }
 
 async function deleteConfigFile(fileName: string): Promise<void> {
@@ -231,7 +200,6 @@ function mkRow(label: string): { row: HTMLElement; wrap: HTMLElement } {
 
 function createConfigHandler(meta: Record<string, unknown>): CardContentHandler {
   let providers: Provider[] = [];
-  let sessions: Session[] = [];
   let configs: AgentConfig[] = [];
   let currentConfigId = '';
   let editingConfig: AgentConfig | null = null;
@@ -240,19 +208,13 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
   let configSelect: CustomSelect | null = null;
   let provSelect: CustomSelect | null = null;
   let modelSelect: CustomSelect | null = null;
-  let sessionSelect: CustomSelect | null = null;
 
   // window 事件监听持有引用：deactivate 时移除防泄漏；重复 activate 先摘后挂防叠加
-  let _onSessionChange: ((e: Event) => void) | null = null;
   let _onProviderChange: ((e: Event) => void) | null = null;
   let _onModelChange: ((e: Event) => void) | null = null;
 
   function getProviderById(id: string): Provider | undefined {
     return providers.find(p => p.id === id);
-  }
-
-  function getSessionById(id: string): Session | undefined {
-    return sessions.find(s => s.id === id);
   }
 
   function getCurrentConfig(): AgentConfig | null {
@@ -268,14 +230,12 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
       bodyEl.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:8px;padding:0 10px;overflow-y:auto;touch-action:pan-y';
       
       // 并行加载数据
-      const [providersResult, sessionsResult, configsResult, activeConfigFile] = await Promise.all([
+      const [providersResult, configsResult, activeConfigFile] = await Promise.all([
         loadProviders(),
-        loadSessions(),
         loadConfigs(),
         loadActiveConfigFileName(),
       ]);
       providers = providersResult;
-      sessions = sessionsResult;
       configs = configsResult;
       const activeConfig = configs.find(c => (c as AgentConfig & { _fileName: string })._fileName === activeConfigFile);
       currentConfigId = activeConfig?.id || '';
@@ -286,7 +246,6 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
           id: '主会话',
           providerId: providers[0]?.id || '',
           modelId: providers[0]?.models?.[0] || '',
-          sessionId: sessions[0]?.id || '',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -320,7 +279,6 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
             await saveActiveConfigFileName(cfg._fileName || '');
             await saveActiveConfigField('providerId', cfg.providerId);
             await saveActiveConfigField('modelId', cfg.modelId);
-            await saveActiveConfigField('sessionId', cfg.sessionId);
             if (cfg.roleFile) await saveActiveConfigField('roleFile', cfg.roleFile);
           }
           fillEditor(getCurrentConfig());
@@ -373,22 +331,15 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
       });
       modelWrap.appendChild(modelSelect.element);
       formScroll.appendChild(modelRow);
-      
-      const { row: sessionRow, wrap: sessionWrap } = mkRow('会话');
-      sessionSelect = createCustomSelect({
-        accent: c2,
-        placeholder: '选择会话',
-        minWidth: 100,
-        onSelect: (sessionId) => {
-          if (editingConfig) {
-            editingConfig.sessionId = sessionId;
-            // 触发会话变化事件
-            window.dispatchEvent(new CustomEvent('kfm-session-change', { detail: { sessionId } }));
-          }
-        },
-      });
-      sessionWrap.appendChild(sessionSelect.element);
-      formScroll.appendChild(sessionRow);
+
+      // 行为预设（注入包）
+      const { row: injectRow, wrap: injectWrap } = mkRow('行为预设');
+      const injectInput = document.createElement('textarea');
+      injectInput.id = 'config-inject-input';
+      injectInput.placeholder = '注入包：会话首条消息前拼入的行为规范（可选）';
+      injectInput.style.cssText = inputStyle() + ';min-height:40px;resize:vertical;font-family:monospace';
+      injectWrap.appendChild(injectInput);
+      formScroll.appendChild(injectRow);
 
       // 操作按钮（在 formSection 内部）
       const btnRow = document.createElement('div');
@@ -405,7 +356,7 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
         const oldName = oldCfg._fileName || '';
         editingConfig.providerId = provSelect?.getValue() || '';
         editingConfig.modelId = modelSelect?.getValue() || '';
-        editingConfig.sessionId = sessionSelect?.getValue() || '';
+        editingConfig.systemInject = injectInput.value.trim() || undefined;
         editingConfig.updatedAt = new Date().toISOString();
         if (oldName && oldName !== newName) { await renameConfigFile(oldName, newName); }
         await saveConfig(editingConfig, newName);
@@ -424,7 +375,7 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
       newBtn.textContent = '新建';
       newBtn.onclick = async () => {
         const newName = '新配置';
-        const newConfig: AgentConfig = { id: newName, providerId: providers[0]?.id || '', modelId: providers[0]?.models?.[0] || '', sessionId: sessions[0]?.id || '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+        const newConfig: AgentConfig = { id: newName, providerId: providers[0]?.id || '', modelId: providers[0]?.models?.[0] || '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
         const configWithName = { ...newConfig, _fileName: newName } as AgentConfig & { _fileName: string };
         configs.unshift(configWithName);
         await saveConfig(newConfig, newName);
@@ -465,12 +416,12 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
           provSelect?.updateItems(providers.map(p => ({ label: p.name || p.id, value: p.id })), config.providerId);
           const prov = getProviderById(config.providerId);
           modelSelect?.updateItems((prov?.models || []).map(m => ({ label: m, value: m })), config.modelId);
-          sessionSelect?.updateItems(sessions.map(s => ({ label: s.title, value: s.id })), config.sessionId);
+          injectInput.value = config.systemInject || '';
         } else {
           nameInput.value = '';
           provSelect?.updateItems(providers.map(p => ({ label: p.name || p.id, value: p.id })), '');
           modelSelect?.updateItems([], '');
-          sessionSelect?.updateItems(sessions.map(s => ({ label: s.title, value: s.id })), '');
+          injectInput.value = '';
         }
       }
       
@@ -568,15 +519,8 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
             await saveActiveConfigFileName(cfg._fileName || '');
             await saveActiveConfigField('providerId', config.providerId);
             await saveActiveConfigField('modelId', config.modelId);
-            await saveActiveConfigField('sessionId', config.sessionId);
             if (config.roleFile) await saveActiveConfigField('roleFile', config.roleFile);
-            // 同步 sessionStore 权威状态
-            if (config.sessionId) sessionStore.activeId = config.sessionId;
             window.dispatchEvent(new CustomEvent('kfm-config-change', { detail: { ...config, name: cfg._fileName } }));
-            // kfm-config-change 只更新 orb 的 prov/model；session 要单独通知
-            if (config.sessionId) {
-              window.dispatchEvent(new CustomEvent('kfm-session-change', { detail: { sessionId: config.sessionId } }));
-            }
             fillEditor(config);
             renderPoolList(listEl, c1, c2);
             configSelect?.updateItems(configs.map(c => ({ label: (c as AgentConfig & { _fileName: string })._fileName || c.id, value: c.id })), currentConfigId);
@@ -590,38 +534,10 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
       const current = getCurrentConfig();
       const av = await readActiveConfigAll();
       const displayConfig: AgentConfig = current
-        ? { ...current, providerId: av.providerId || current.providerId, modelId: av.modelId || current.modelId, sessionId: av.sessionId || current.sessionId, roleFile: av.roleFile || current.roleFile }
-        : { id: '', providerId: av.providerId || '', modelId: av.modelId || '', sessionId: av.sessionId || '', roleFile: av.roleFile || '', createdAt: '', updatedAt: '' };
+        ? { ...current, providerId: av.providerId || current.providerId, modelId: av.modelId || current.modelId, roleFile: av.roleFile || current.roleFile }
+        : { id: '', providerId: av.providerId || '', modelId: av.modelId || '', roleFile: av.roleFile || '', createdAt: '', updatedAt: '' };
       fillEditor(displayConfig);
       renderPoolList(poolListEl, c1, c2);
-      
-      // 监听外部会话变化（先摘旧监听，保证重复 activate 不叠加注册）
-      if (_onSessionChange) window.removeEventListener('kfm-session-change', _onSessionChange);
-      _onSessionChange = (e: Event) => {
-        const detail = (e as CustomEvent).detail;
-        const sid: string | undefined = detail?.sessionId;
-        if (sid !== undefined && sid !== '') {
-          sessionStore.activeId = sid; // 保持 sessionStore 权威状态同步
-          if (editingConfig) {
-            editingConfig.sessionId = sid;
-            sessionSelect?.setValue(sid);
-          }
-        }
-        // 优先用 sessionStore 内存列表（已最新），避免重复全量网络请求
-        const freshList = sessionStore.list.length > 0 ? sessionStore.list : null;
-        if (freshList) {
-          // sessionStore.Session 与 config.card 本地 Session 接口字段不完全一样，
-          // 只取 id/title 用于下拉显示，直接映射，无需强转。
-          sessions = freshList.map(s => ({ id: s.id, title: s.title, createdAt: s.createdAt, updatedAt: s.updatedAt, messages: [] }));
-          sessionSelect?.updateItems(sessions.map(s => ({ label: s.title, value: s.id })), editingConfig?.sessionId || '');
-        } else {
-          loadSessions().then(s => {
-            sessions = s;
-            sessionSelect?.updateItems(sessions.map(s => ({ label: s.title, value: s.id })), editingConfig?.sessionId || '');
-          });
-        }
-      };
-      window.addEventListener('kfm-session-change', _onSessionChange);
 
       // 监听面板的 Provider 变化
       if (_onProviderChange) window.removeEventListener('kfm-provider-change', _onProviderChange);
@@ -657,10 +573,6 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
 
     deactivate(contentEl) {
       // 摘除 window 事件监听（与 activate 的注册一一对应）
-      if (_onSessionChange) {
-        window.removeEventListener('kfm-session-change', _onSessionChange);
-        _onSessionChange = null;
-      }
       if (_onProviderChange) {
         window.removeEventListener('kfm-provider-change', _onProviderChange);
         _onProviderChange = null;
@@ -673,11 +585,9 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
       configSelect?.destroy();
       provSelect?.destroy();
       modelSelect?.destroy();
-      sessionSelect?.destroy();
       configSelect = null;
       provSelect = null;
       modelSelect = null;
-      sessionSelect = null;
       contentEl.innerHTML = '';
     },
   };
