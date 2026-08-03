@@ -11,7 +11,7 @@ import { buildCardLayout } from '../../modules/floating-card.js';
 import { log } from '../../modules/logger.js';
 import { createCustomSelect, type CustomSelect } from '../../modules/custom-select.js';
 import { showConfirm } from '../../modules/confirm-dialog.js';
-import { innerCardStyle } from '../card-ui.js';
+import { innerCardStyle, inputStyle, btnStyle, mkRow } from '../card-ui.js';
 interface Provider {
   id: string;
   name: string;
@@ -104,37 +104,6 @@ function uid(): string {
 }
 
 // ====== DOM 辅助 ======
-
-function inputStyle(): Record<string, string> {
-  return {
-    fontSize: 'var(--card-font-size, 11px)',
-    padding: '0.35em 0.7em',
-    borderRadius: '6px',
-    border: '1px solid rgba(255,255,255,0.1)',
-    background: 'rgba(255,255,255,0.06)',
-    color: 'rgba(255,255,255,0.85)',
-    outline: 'none',
-    flex: '1',
-    minWidth: '0',
-  };
-}
-
-function mkRow(label: string): { row: HTMLElement; inputWrap: HTMLElement } {
-  const row = document.createElement('div');
-  row.style.cssText = 'display:flex;align-items:center;margin-bottom:8px';
-  const lbl = document.createElement('div');
-  lbl.textContent = label;
-  lbl.style.cssText = 'font-size:var(--card-font-size,11px);color:rgba(255,255,255,0.75);flex-shrink:0;margin-right:8px;width:52px';
-  const wrap = document.createElement('div');
-  wrap.style.cssText = 'display:flex;flex:1;min-width:0';
-  row.appendChild(lbl);
-  row.appendChild(wrap);
-  return { row, inputWrap: wrap };
-}
-
-function btnStyle(color: string): string {
-  return `padding:0.3em 0.8em;border-radius:6px;font-size:var(--card-font-size,10px);font-weight:600;cursor:pointer;user-select:none;border:1px solid ${color}40;color:${color};background:transparent;flex:1;text-align:center`;
-}
 
 // ====== Handler ======
 
@@ -463,22 +432,22 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
       const nr = mkRow('名称');
       nameEl = document.createElement('input');
       nameEl.type = 'text'; nameEl.placeholder = 'OpenAI';
-      Object.assign(nameEl.style, inputStyle());
-      nr.inputWrap.appendChild(nameEl);
+      nameEl.style.cssText = inputStyle();
+      nr.wrap.appendChild(nameEl);
       innerScroll.appendChild(nr.row);
 
       const ur = mkRow('API 地址');
       urlEl = document.createElement('input');
       urlEl.type = 'text'; urlEl.placeholder = 'https://api.openai.com/v1';
-      Object.assign(urlEl.style, inputStyle());
-      ur.inputWrap.appendChild(urlEl);
+      urlEl.style.cssText = inputStyle();
+      ur.wrap.appendChild(urlEl);
       innerScroll.appendChild(ur.row);
 
       const kr = mkRow('API Key');
       keyEl = document.createElement('input');
       keyEl.type = 'password'; keyEl.placeholder = 'sk-...';
-      Object.assign(keyEl.style, inputStyle());
-      kr.inputWrap.appendChild(keyEl);
+      keyEl.style.cssText = inputStyle();
+      kr.wrap.appendChild(keyEl);
       innerScroll.appendChild(kr.row);
 
       const ml = document.createElement('div');
@@ -492,7 +461,7 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
       mar.style.cssText = 'display:flex;gap:4px;margin-bottom:8px';
       modelInput = document.createElement('input');
       modelInput.type = 'text'; modelInput.placeholder = '输入模型名，回车添加';
-      Object.assign(modelInput.style, { ...inputStyle(), flex: '1', minWidth: '0' });
+      modelInput.style.cssText = inputStyle() + ';flex:1;min-width:0';
       modelInput.onkeydown = (e: KeyboardEvent) => { if (e.key === 'Enter') { e.preventDefault(); addModel(); } };
       const addBtn = document.createElement('span');
       addBtn.textContent = '+';
