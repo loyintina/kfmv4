@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 46dec48 · 生成于 2026-08-03 -->
+<!-- 基准 commit e8c9ca8 · 生成于 2026-08-03 -->
 
 # 代码清单（机械层）
 
@@ -96,7 +96,7 @@
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（55 文件 · 11633 行）
+## ai-chat（55 文件 · 11635 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -106,7 +106,7 @@
 | src/server/ai/tools/omp/browser/launch.ts | 603 | DEFAULT_VIEWPORT, BROWSER_PROTOCOL_TIMEOUT_MS, loadPuppeteer, loadPuppeteerInWorker, LaunchHeadlessOptions, launchHeadlessBrowser, applyViewport, UserAgentOverride, UserAgentSession, applyStealthPatches |
 | src/client/modules/session-client.ts | 529 | SessionMessage, Session, extractMessageText, countTextMessages, sessionStore |
 | src/client/modules/orb-chat-run.ts | 512 | ChatMessage, StreamEvent, getActiveRunId, getActiveCursor, setEventHook, readPersistedRun, clearPersistedRun, settlePendingToolBlocks, resumeRun, doSend |
-| src/server/ai/chat.ts | 503 | ChatMessage, StreamEvent, createClientIdxMapper |
+| src/server/ai/chat.ts | 504 | ChatMessage, StreamEvent, createClientIdxMapper |
 | src/client/modules/ws-channel.ts | 426 | wsChannel, initWsChannel |
 | src/shared/tool-compaction/index.ts | 369 | CompactorEntry, COMPACTOR_REGISTRY, COMPACTOR_NAMES, webTitleKey, CompactionCtx, MUT_BURST_GAP, EXEMPT_USER_ROUNDS, TODO_STALE_GAP, FAIL_REPEAT_MIN, errorFingerprint, failRepeatAnnotation, todoResultAnnotation, normalizeBashCommand, compactToolResult, compactToolInput |
 | src/server/ai/tools/omp/debug.ts | 362 | ompDebugTool |
@@ -120,8 +120,8 @@
 | src/server/ai/run-manager.ts | 228 | _setStallMsForTest, getActiveRun, getRun, StreamFn, startRun, attachRun, cancelRun |
 | src/client/modules/orb-chat-hints.ts | 225 | startWaitingIndicator, TODO_DISMISS_KEY, todosFingerprint, clearTodoPanel, dismissTodoPanel, updateTodoFromTool |
 | src/server/ai/permissions.ts | 134 | RiskClass, TOOL_RISK, Decision, AuditEntry, riskClassOf, evaluate |
+| src/server/ai/page-state.ts | 124 | PAGE_STATE_PATH, renderPageState, refreshPageState |
 | src/server/ai/prompt-assembler.ts | 124 | getActiveRoleFile, assembleRoleSystemPrompt, assembleDynamicPrompt |
-| src/server/ai/page-state.ts | 123 | PAGE_STATE_PATH, renderPageState, refreshPageState |
 | src/shared/chat-protocol/reducer.ts | 122 | ReduceContext, applyEvent, reduceEvents |
 | src/server/ai/tools/kfmv4/logs.ts | 119 | kfmLogsTool |
 | src/server/ai/tools/omp/read.ts | 117 | ompReadTool |
@@ -170,7 +170,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（105 文件 · 13655 行）
+## infra（108 文件 · 13869 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -211,6 +211,7 @@
 | scripts/check/check-mutation-anchors.mjs | 126 | — |
 | tests/session-security.test.ts | 125 | — |
 | scripts/agent/tag-advisor.mjs | 124 | REF_RE, isValidRef |
+| tests/probes/page-state-schema/src/server/ai/page-state.ts | 124 | PAGE_STATE_PATH, renderPageState, refreshPageState |
 | tests/liquid-geometry.test.ts | 120 | — |
 | scripts/agent/exp-probe-decompose.mjs | 117 | — |
 | scripts/check/check-doc-linerefs.mjs | 116 | — |
@@ -227,11 +228,12 @@
 | scripts/check/check-state-freshness.mjs | 91 | — |
 | scripts/check/check-versions.mjs | 91 | — |
 | scripts/agent/obs-aggregate.mjs | 89 | — |
+| scripts/check/chain.mjs | 86 | STEPS |
 | scripts/check/check-probes.mjs | 86 | — |
 | scripts/agent/exp-probe-matrix.mjs | 86 | — |
-| scripts/check/chain.mjs | 85 | STEPS |
 | tests/engine.test.ts | 85 | — |
 | scripts/check/check-deploy-freshness.mjs | 83 | — |
+| scripts/check/check-page-state-schema.mjs | 82 | — |
 | scripts/check/check-hooks.mjs | 81 | — |
 | scripts/check/check-workflow-integrity.mjs | 81 | — |
 | scripts/agent/exp-thinking.mjs | 81 | — |
@@ -268,6 +270,7 @@
 | tests/mocks/xterm.ts | 15 | Terminal |
 | scripts/check/docs-root-const.mjs | 8 | DOCS_ROOT |
 | tests/register-hook.mjs | 8 | — |
+| tests/probes/page-state-schema/src/client/modules/ui-registry.ts | 7 | ContentBlock |
 | tests/mocks/xterm-addon-fit.ts | 6 | FitAddon |
 | tests/probes/doc-linerefs/src/fake.ts | 4 | a, b |
 | tests/probes/checks/build.mjs | 3 | — |
@@ -587,4 +590,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 244 文件 · 44979 行 · 跨域边 245 条
+合计 247 文件 · 45195 行 · 跨域边 245 条
