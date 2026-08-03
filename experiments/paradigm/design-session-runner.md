@@ -1,4 +1,4 @@
-# 会话驱动内核 + 研究管线设计（behavior-injection 实验基建）
+# 会话驱动内核 + 研究管线设计（paradigm 实验基建）
 
 > 2026-08-03。目标：**离线批量跑 kfm 工具流**——行为范式包研究的测试床，
 > 同时是「subagent 工具」的产品内核（AI 之手愿景复用）。
@@ -47,14 +47,14 @@ batch-run --variants 范式包A,范式包B,无 --models m1,m2 --tasks t1,t2 --ar
   1. 笛卡尔积变体 → 臂清单（armId 编码变体：arm-<模型>-<注入>-<任务>-<n>）
   2. 并发 pool（复用 hallucinate-batch 模式，并发 4，断点续跑）
   3. 每臂 runSession（带变体 paradigm）→ 归档
-     .kfmv4/experiments/behavior-injection/sessions/<armId>.json
+     .kfmv4/experiments/paradigm/sessions/<armId>.json
   4. 输出臂清单（供判卷）
 ```
 
 ## 目录结构
 
 ```
-experiments/behavior-injection/
+experiments/paradigm/
   index.md                    # 研究线登记（4 假设）
   design-session-runner.md    # 本文档
   tools/

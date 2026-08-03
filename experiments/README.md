@@ -45,7 +45,7 @@
 
 | 实验 | 主题 |
 |------|------|
-| [behavior-injection/](behavior-injection/) | behavior-injection · 研究线登记（行为注入包） |
 | [coldstart/](coldstart/) | 冷启动接手实验 · 数据集索引 |
+| [paradigm/](paradigm/) | paradigm · 研究线登记（范式包） |
 
 <!-- gen:experiments-list:end -->
