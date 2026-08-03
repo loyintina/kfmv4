@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit d93166f2 · 生成于 2026-08-03 -->
+<!-- 基准 commit 5665c89d · 生成于 2026-08-03 -->
 
 # 代码清单（机械层）
 
@@ -172,7 +172,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（135 文件 · 16297 行）
+## infra（135 文件 · 16303 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -251,10 +251,10 @@
 | scripts/check/check-hooks.mjs | 81 | — |
 | scripts/agent/exp-thinking.mjs | 81 | — |
 | scripts/check/check-console.mjs | 79 | — |
+| scripts/check/gen-contract-lists.mjs | 77 | — |
 | tests/tag-advisor.test.ts | 77 | — |
 | scripts/check/check-as-any.mjs | 76 | — |
 | scripts/check/docs-status.mjs | 76 | — |
-| scripts/check/gen-contract-lists.mjs | 76 | — |
 | scripts/check/check-doc-symbols.mjs | 75 | — |
 | experiments/coldstart/tools/theme-code.mjs | 75 | — |
 | scripts/check/check-stack-status.mjs | 72 | — |
@@ -280,8 +280,8 @@
 | scripts/check/check-doc-budget.mjs | 44 | — |
 | scripts/clean-npm-temp.cjs | 44 | — |
 | scripts/check/check-release-radar.mjs | 42 | — |
+| tests/gen-pipeline.test.ts | 41 | — |
 | tests/reset-hooks.ts | 41 | — |
-| tests/gen-pipeline.test.ts | 36 | — |
 | tests/semantic-chain.test.ts | 34 | — |
 | tests/runner.ts | 33 | test, group, runAll, regression, beforeEach, TestFileNode, singleFolder, nestedFolders |
 | scripts/kfm-restart.sh | 30 | — |
@@ -620,4 +620,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 276 文件 · 47790 行 · 跨域边 246 条
+合计 276 文件 · 47796 行 · 跨域边 246 条
