@@ -172,6 +172,36 @@ if (fails.length) {
   add(`  - 高频失败 check: ${topC.map(([k, v]) => `${k}×${v}`).join(' ')}`);
 }
 
+// ---- 6. 工具执行（工具错误流） ----
+const execs = readLines(join(homedir(), '.kfmv4', 'tool-exec.jsonl')).filter(e => e.ts && new Date(e.ts).getTime() >= since);
+add(`- 工具执行：${execs.length} 次 · 失败 ${execs.filter(e => !e.ok).length} · 平均 ${execs.length ? Math.round(execs.reduce((s, e) => s + e.ms, 0) / execs.length) : 0}ms`);
+if (execs.length) {
+  const byTool = {};
+  for (const e of execs) if (!e.ok) { byTool[e.tool] = (byTool[e.tool] || 0) + 1; }
+  const topFail = Object.entries(byTool).sort((a, b) => b[1] - a[1]).slice(0, 4);
+  if (topFail.length) add(`  - 高频失败工具: ${topFail.map(([k, v]) => `${k}×${v}`).join(' ')}`);
+  // 错误类型 top（去工具名的常见错误后缀）
+  const errTypes = {};
+  for (const e of execs) if (!e.ok && e.error) {
+    const k = e.error.replace(/^\[?\w+\]?\s*/, '').slice(0, 40);
+    errTypes[k] = (errTypes[k] || 0) + 1;
+  }
+  const topErr = Object.entries(errTypes).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  if (topErr.length) add(`  - 错误类型: ${topErr.map(([k, v]) => `${k}×${v}`).join(' ')}`);
+}
+
+// ---- 7. 构建/检查耗时 ----
+const metrics = readLines(join(homedir(), '.kfmv4', 'build-metrics.jsonl')).filter(m => m.ts && new Date(m.ts).getTime() >= since);
+if (metrics.length) {
+  const byPhase = {};
+  for (const m of metrics) (byPhase[m.phase] = byPhase[m.phase] || []).push(m);
+  for (const [phase, arr] of Object.entries(byPhase)) {
+    const ok = arr.filter(m => m.ok).length;
+    const avg = Math.round(arr.reduce((s, m) => s + m.ms, 0) / arr.length / 1000);
+    add(`- ${phase} 耗时：${arr.length} 次（成功 ${ok}）· 平均 ${avg}s/次`);
+  }
+}
+
 const report = out.join('\n');
 console.log(report);
 if (toMailbox) {

@@ -34,6 +34,14 @@ function recordFailure(cmd, output) {
   } catch { /* 账本不可写不阻断 */ }
 }
 
+/** 检查链耗时账本（观测台：构建/检查耗时，成功失败都记） */
+const METRIC_LOG = join(homedir(), '.kfmv4', 'build-metrics.jsonl');
+function recordCheckMetric(ms, ok) {
+  try {
+    appendFileSync(METRIC_LOG, JSON.stringify({ ts: new Date().toISOString(), phase: 'check', ms, ok }) + '\n');
+  } catch { /* 账本不可写不阻断 */ }
+}
+
 export const STEPS = [
   'node scripts/check/check-uncommitted.mjs',
   'node scripts/check/check-deploy-freshness.mjs',
@@ -89,6 +97,7 @@ export const STEPS = [
 
 const isMain = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
+  const t0 = Date.now();
   const soft = process.argv.slice(2)
     .filter(a => a.startsWith('--soft='))
     .map(a => a.slice('--soft='.length));
@@ -104,9 +113,11 @@ if (isMain) {
         continue;
       }
       recordFailure(cmd, `${r.stdout || ''}${r.stderr || ''}`);
+      recordCheckMetric(Date.now() - t0, false);
       console.error(`\n[chain] 步骤失败即中断：${cmd}`);
       process.exit(r.status ?? 1);
     }
   }
+  recordCheckMetric(Date.now() - t0, true);
   console.log('[chain] OK — 全部步骤通过');
 }

@@ -11,6 +11,29 @@
 
 import type { KfmTool, ToolContext, ToolResult, ToolUpdate, ContentBlock } from './types.js';
 import { evaluate } from '../permissions.js';
+import { appendFileSync, mkdirSync } from 'fs';
+import { join, dirname } from 'path';
+import { homedir } from 'os';
+
+/**
+ * 工具执行账本（观测台：工具错误流数据源）
+ * 每次工具调用记一条 {ts, tool, ok, error, ms}——周报聚合高频失败工具/
+ * 错误类型/平均耗时。append-only，异步不阻塞（失败吞掉不影响工具执行）。
+ */
+const TOOL_EXEC_LOG = join(homedir(), '.kfmv4', 'tool-exec.jsonl');
+function recordToolExec(tool: string, ok: boolean, error: string, ms: number): void {
+  try {
+    appendFileSync(TOOL_EXEC_LOG, JSON.stringify({
+      ts: new Date().toISOString(), tool, ok, error: error.slice(0, 120), ms,
+    }) + '\n');
+  } catch { /* 账本不可写不阻断 */ }
+}
+
+/** 从工具结果提取错误文本（截断） */
+function resultErrorText(result: ToolResult): string {
+  const t = result.content?.[0]?.type === 'text' ? (result.content[0].text ?? '') : '';
+  return t.length > 120 ? t.slice(0, 120) : t;
+}
 
 // kfmv4 专用工具
 import { kfmLogsTool } from './kfmv4/logs.js';
@@ -99,7 +122,15 @@ export async function executeTool(
   if (decision.action !== 'allow') {
     // 影子模式：记录后照常执行（破界率基线）；8.5.1 在此返回 denied
   }
-  return tool.execute(params, ctx, onUpdate);
+  const t0 = Date.now();
+  try {
+    const result = await tool.execute(params, ctx, onUpdate);
+    recordToolExec(name, !result.isError, result.isError ? resultErrorText(result) : '', Date.now() - t0);
+    return result;
+  } catch (e) {
+    recordToolExec(name, false, e instanceof Error ? e.message : '未知错误', Date.now() - t0);
+    throw e;
+  }
 }
 
 export function hasTool(name: string): boolean {

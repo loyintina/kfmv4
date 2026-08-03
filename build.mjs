@@ -1,7 +1,8 @@
 import { build } from 'esbuild';
 import { execSync } from 'child_process';
-import { statSync, readdirSync, readFileSync, writeFileSync, cpSync, mkdirSync } from 'fs';
+import { statSync, readdirSync, readFileSync, writeFileSync, cpSync, mkdirSync, appendFileSync } from 'fs';
 import { join, extname } from 'path';
+import { homedir } from 'os';
 
 // ========== 构建后校验 ==========
 
@@ -32,12 +33,19 @@ function checkFreshness(outfile, label) {
 }
 
 // ========== 构建 ==========
+const BUILD_T0 = Date.now();
 
 // 本次构建时间：一处生成，客户端 bundle define 与 build-info.json 共用——
 // version-watch 横幅靠「bundle 内嵌时间 == 服务端 buildTime」判定旧包，两出处必须同值
 const BUILD_TIME = new Date().toISOString();
 // --fast：deploy-fast.sh 会话中途快通道——跳过全链（链在交付 deploy.sh 才完整跑）
 const FAST = process.argv.includes('--fast');
+
+/** 构建耗时账本（观测台） */
+const BUILD_METRIC_LOG = join(homedir(), '.kfmv4', 'build-metrics.jsonl');
+function recordBuildMetric(ms, ok) {
+  try { appendFileSync(BUILD_METRIC_LOG, JSON.stringify({ ts: new Date().toISOString(), phase: 'build', ms, ok }) + '\n'); } catch {}
+}
 
 // 全量代码质量检查（唯一链出处 scripts/check/chain.mjs——禁止在此回潮手写单个 check；
 // build 中 check-uncommitted 按 --soft 降级为提醒，其余零错误通过才构建。
@@ -104,4 +112,5 @@ html3 = html3.replace(/(css\/[\w-]+\.css)(\?[^"'\s>]*)?/g, `$1?v=${buildStamp}`)
 if (html3 !== html2) writeFileSync('public/index.html', html3);
 console.log('[smoke] ✅ index.html 引用 bundle.js, 大小 ' + statSync('public/bundle.js').size + ' bytes');
 
+recordBuildMetric(Date.now() - BUILD_T0, true);
 console.log('Build OK');
