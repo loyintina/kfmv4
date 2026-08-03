@@ -6,7 +6,8 @@ reads:
   - guides/release.md
 steps:
   0. **入口文档体检**（2026-08-02 加）：`node experiments/coldstart/tools/routine-entry-validation.mjs --arms 3`
-     跑 3 个 kfmdocs-only 验证臂对照基线；FAIL（判定阈值单源 = 脚本内 THRESHOLDS 常量，
+     跑 3 个 kfmdocs-only 验证臂对照基线（与每日巡逻 cron 同 3 臂口径——实况单源 crontab；
+     6 臂仅见于早期池化校准历史）；FAIL（判定阈值单源 = 脚本内 THRESHOLDS 常量，
      2026-08-02 校准：实错≤0.5/臂、LCA≤1、守界≥5/6、质疑为软指标——勿在此复述数字，会漂）
      → 先修文档再发版（v1.1 式修复轮）；PASS 继续
   1. 更新 package.json version
