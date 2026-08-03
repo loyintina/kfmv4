@@ -12,6 +12,7 @@ import { buildCardLayout } from '../../modules/floating-card.js';
 import { log } from '../../modules/logger.js';
 import { createCustomSelect, type CustomSelect } from '../../modules/custom-select.js';
 import { showConfirm } from '../../modules/confirm-dialog.js';
+import { inputStyle, btnStyle, mkRow } from '../card-ui.js';
 
 interface Provider {
   id: string;
@@ -172,30 +173,6 @@ function uid(): string {
 }
 
 // ====== DOM 辅助 ======
-
-function inputStyle(): string {
-  return 'font-size:var(--card-font-size,11px);padding:0.35em 0.7em;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.85);outline:none;flex:1;min-width:0';
-}
-
-function btnStyle(accent: string): string {
-  return `padding:0.3em 0.8em;border-radius:6px;font-size:var(--card-font-size,10px);font-weight:600;cursor:pointer;user-select:none;border:1px solid ${accent}40;color:${accent};background:transparent;flex:1;text-align:center`;
-}
-
-function mkRow(label: string): { row: HTMLElement; wrap: HTMLElement } {
-  const row = document.createElement('div');
-  row.style.cssText = 'display:flex;align-items:center;margin-bottom:6px';
-  
-  const lbl = document.createElement('div');
-  lbl.style.cssText = 'font-size:var(--card-font-size,10px);color:rgba(255,255,255,0.5);flex-shrink:0;margin-right:8px;width:52px';
-  lbl.textContent = label;
-  
-  const wrap = document.createElement('div');
-  wrap.style.cssText = 'display:flex;flex:1;min-width:0';
-  
-  row.appendChild(lbl);
-  row.appendChild(wrap);
-  return { row, wrap };
-}
 
 // ====== 卡片处理器 ======
 

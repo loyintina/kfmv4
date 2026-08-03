@@ -369,6 +369,8 @@ registerCardType({
 
 **卡片内没有"裸元素"。** 每个可见元素必须归属于某一层卡片框。同层元素统一使用同款边框、同款间距、同款渐变方向。
 
+**基础样式必须用公共 helper（`src/client/cards/card-ui.ts`）**——`innerCardStyle(c1,c2)`（二级反色框）、`inputStyle()`、`btnStyle(accent)`、`mkRow(label)`。禁止手写内卡 cssText（2026-08-03 注入卡 UI 不同步审计：内卡样式曾被 6 张卡手抄 20+ 次且遍数不同——无模板必漂移）。新卡 import 即用，样式天然一致。
+
 ```
 ┌─ 外壳（一层 c1→c2）                         floating-card.ts 自动处理
 │  ┌─ 编辑器/预览框（二层 c2→c1 反色）         margin-top:6px 与标题线留间距
