@@ -11,9 +11,28 @@
  *   node scripts/check/chain.mjs --soft=<名>      # 指定步骤降级为提醒（仅 build.mjs 用于 check-uncommitted）
  */
 
-import { execSync } from 'child_process';
-import { resolve } from 'path';
+import { spawnSync } from 'child_process';
+import { resolve, join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { appendFileSync, mkdirSync } from 'fs';
+import { homedir } from 'os';
+
+/** check 失败账本（错误码结晶数据源，8.5 观测）：每次构建中断记一条 */
+const FAIL_LOG = join(homedir(), '.kfmv4', 'check-failures.jsonl');
+function recordFailure(cmd, output) {
+  try {
+    mkdirSync(dirname(FAIL_LOG), { recursive: true });
+    const m = output.match(/⛳\s*([A-Z]+-FLOW-\d+)/);
+    const check = cmd.split('/').pop().split(' ')[0];
+    appendFileSync(FAIL_LOG, JSON.stringify({
+      ts: new Date().toISOString(),
+      code: m ? m[1] : null,
+      check,
+      step: cmd.slice(0, 100),
+      msg: output.trim().split('\n').filter(Boolean).pop()?.slice(0, 120) || '',
+    }) + '\n');
+  } catch { /* 账本不可写不阻断 */ }
+}
 
 export const STEPS = [
   'node scripts/check/check-uncommitted.mjs',
@@ -74,15 +93,18 @@ if (isMain) {
     .map(a => a.slice('--soft='.length));
   for (const cmd of STEPS) {
     const isSoft = soft.some(s => cmd.includes(s));
-    try {
-      execSync(cmd, { stdio: 'inherit' });
-    } catch (e) {
+    // spawnSync 捕获输出（解析错误码记失败账本），再原样转发保持可见
+    const r = spawnSync(cmd, [], { shell: true, stdio: ['inherit', 'pipe', 'pipe'] });
+    if (r.stdout) process.stdout.write(r.stdout);
+    if (r.stderr) process.stderr.write(r.stderr);
+    if (r.status !== 0) {
       if (isSoft) {
         console.error(`[chain] ${cmd} 失败但已按 --soft 降级为提醒`);
         continue;
       }
+      recordFailure(cmd, `${r.stdout || ''}${r.stderr || ''}`);
       console.error(`\n[chain] 步骤失败即中断：${cmd}`);
-      process.exit(e.status ?? 1);
+      process.exit(r.status ?? 1);
     }
   }
   console.log('[chain] OK — 全部步骤通过');

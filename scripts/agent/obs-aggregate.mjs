@@ -156,6 +156,22 @@ if (DOC_READ.size === 0) {
   }
 }
 
+// ---- 5. check 失败账本（错误码结晶数据源） ----
+// chain.mjs 每次构建中断记一条（含 ⛳ 错误码）。周期内分布 = 流程摩擦面：
+// 高频码 = 流程哪步最容易走错 → 结晶回路候选（阈值待数据积累后科学划定）。
+const fails = readLines(join(homedir(), '.kfmv4', 'check-failures.jsonl')).filter(f => f.ts && new Date(f.ts).getTime() >= since);
+add(`- check 失败账本：${fails.length} 次构建中断`);
+if (fails.length) {
+  const byCode = {};
+  for (const f of fails) { const k = f.code || '（无码）'; byCode[k] = (byCode[k] || 0) + 1; }
+  const top = Object.entries(byCode).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  add(`  - 错误码分布: ${top.map(([k, v]) => `${k}×${v}`).join(' ')}`);
+  const byCheck = {};
+  for (const f of fails) byCheck[f.check] = (byCheck[f.check] || 0) + 1;
+  const topC = Object.entries(byCheck).sort((a, b) => b[1] - a[1]).slice(0, 4);
+  add(`  - 高频失败 check: ${topC.map(([k, v]) => `${k}×${v}`).join(' ')}`);
+}
+
 const report = out.join('\n');
 console.log(report);
 if (toMailbox) {

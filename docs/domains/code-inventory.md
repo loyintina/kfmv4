@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 5d8cf598 · 生成于 2026-08-03 -->
+<!-- 基准 commit 26df5746 · 生成于 2026-08-03 -->
 
 # 代码清单（机械层）
 
@@ -170,7 +170,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（119 文件 · 14567 行）
+## infra（119 文件 · 14605 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -193,10 +193,10 @@
 | tests/path-utils.test.ts | 215 | — |
 | tests/renderer.test.ts | 215 | — |
 | tests/smoke/smoke.mjs | 190 | — |
+| scripts/agent/obs-aggregate.mjs | 184 | — |
 | scripts/check/gen-code-inventory.mjs | 181 | — |
 | tests/to-openai-messages.test.ts | 181 | — |
 | tests/chat-protocol.test.ts | 169 | — |
-| scripts/agent/obs-aggregate.mjs | 168 | — |
 | scripts/agent/semantic-chain.mjs | 167 | — |
 | tests/protocol-reducer.test.ts | 161 | — |
 | scripts/agent/agent-runner.mjs | 159 | renderTemplate, extractJson, runAgent |
@@ -220,6 +220,7 @@
 | scripts/check/check-doc-linerefs.mjs | 116 | — |
 | tests/harness.ts | 116 | TestTag, TestOpts, test, regression, group, beforeEach, runAll |
 | scripts/check/gen-page-state-schema.mjs | 113 | — |
+| scripts/check/chain.mjs | 112 | STEPS |
 | scripts/check/check-doc-coverage.mjs | 111 | — |
 | scripts/check/check-zindex.mjs | 110 | — |
 | scripts/agent/exp-vision-internal.mjs | 109 | — |
@@ -233,7 +234,6 @@
 | scripts/check/check-anim.mjs | 99 | — |
 | scripts/check/check-state-freshness.mjs | 92 | — |
 | scripts/check/check-versions.mjs | 91 | — |
-| scripts/check/chain.mjs | 90 | STEPS |
 | scripts/check/check-probes.mjs | 86 | — |
 | scripts/agent/exp-probe-matrix.mjs | 86 | — |
 | tests/engine.test.ts | 85 | — |
@@ -601,4 +601,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 258 文件 · 45917 行 · 跨域边 245 条
+合计 258 文件 · 45955 行 · 跨域边 245 条
