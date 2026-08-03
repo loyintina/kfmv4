@@ -41,10 +41,11 @@
 
 ## 实验清单
 
-| 实验 | 主题 | 状态 |
-|------|------|------|
-| [coldstart/](coldstart/) | 零上下文 agent 冷启动接手 kfmv4：固定提示词 × 静态试卷 × 多模型多 harness 多臂 | 取材完成（124 臂），群体汇总中 |
-| [harness-studies/](harness-studies/) | 外部 harness 体系研究报告（OpenWorker 等），内化为设计参考 | 研究笔记 |
-| [behavior-injection/](behavior-injection/) | 行为注入包：高质量行为模式提炼成模块化注入包，弱模型模仿补强 | 研究线登记，实验待设计 |
+<!-- gen:experiments-list:start -->
 
-> 清单维护：新增实验目录 → 这里加一行（主题/状态从实验 index.md 首行抄）。
+| 实验 | 主题 |
+|------|------|
+| [behavior-injection/](behavior-injection/) | behavior-injection · 研究线登记（行为注入包） |
+| [coldstart/](coldstart/) | 冷启动接手实验 · 数据集索引 |
+
+<!-- gen:experiments-list:end -->
