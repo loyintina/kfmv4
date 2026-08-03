@@ -15,5 +15,6 @@
 | EX-003 | SEM001 | docs/domains/cross-domain.md:54（API_BASE 共 10 处） | HTTP | 临时 | 2026-09-02 | 计数口径分歧（探针 9 vs 文档 10），待人工复核 | 2026-08-02 | e55da744a686fa096050774f30b9a8f59882dcf4 |
 | EX-004 | SEM001 | docs/domains/cross-domain.md:20（anim 被三个域调用） | anim | 永久 | — | 实 3 域（client-shell/floating-card/canvas-tree），探针误数 | 2026-08-02 | e55da744a686fa096050774f30b9a8f59882dcf4 |
 | EX-005 | SEM001 | docs/ledger/history.md:v8.1.0条目 | v8.1 | 永久 | — | 误报：release.md 判例行自带「v8.1.0 实为混装窗口」内联注，与 history 无冲突（2026-08-03 裁决流取证） | 2026-08-03 | 52ab3496974bffc80f7d3da19c899508090c3395 |
-| EX-006 | SEM001 | docs/guides/release.md:25（主题闭环打中版本） | v8.5 | 永久 | — | 误报：v8.5.1 即 8.5 主题加冕版（history.md:53），8.4→8.5.1 直跳合「跳跃才是加冕礼」，无 v8.5.0 属正常（2026-08-03 裁决流取证） | 2026-08-03 | 839faf887f691b06e5f1ba3db18804521a26aaa9 |
+| EX-006 | SEM001 | docs/guides/release.md（minor 加冕定义各行） |  | 永久 | — | 误报（两发两拦）：v8.5.1 即 8.5 主题加冕版，history「8.5 主题继续」指后续 v8.5.2 patch 收尾，正合节奏节「主题闭环打中版本、后续 fix 轮升小版本」；claim 为裸 file:行号故关键词留空按文件豁免，哈希守门（2026-08-03/04 裁决流取证） | 2026-08-03 | 839faf887f691b06e5f1ba3db18804521a26aaa9 |
 | EX-007 | SEM001 | docs/domains/infra/contract.md:15（39 脚本） | 39 | 永久 | — | 误报：39 = check-* 脚本数，chain:auto 枚举含 gen-* 验证步/sass/sync-counts/npm test/tsc，紧随的括号注已说明口径（2026-08-03 裁决流取证） | 2026-08-03 | db6cd23fc9b22ab69d7196716ae13e48ccc237aa |
+| EX-008 | SEM001 | docs/guides/testing.md（N 个测试行） |  | 永久 | — | 误报：testing.md 测试总数由 sync-counts 自动回写（subs 登记在案），非手写死数、无漂移面；claim 为裸 file:行号故按文件豁免，哈希守门（2026-08-04 裁决流取证） | 2026-08-04 | fb8c2ac08311fb49b9b7d34aef615a2c1ed3fecb |
