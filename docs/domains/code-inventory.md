@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit e214e06 · 生成于 2026-08-03 -->
+<!-- 基准 commit 718fd476 · 生成于 2026-08-03 -->
 
 # 代码清单（机械层）
 
@@ -170,7 +170,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（119 文件 · 14523 行）
+## infra（119 文件 · 14555 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -196,6 +196,7 @@
 | scripts/check/gen-code-inventory.mjs | 181 | — |
 | tests/to-openai-messages.test.ts | 181 | — |
 | tests/chat-protocol.test.ts | 169 | — |
+| scripts/agent/obs-aggregate.mjs | 168 | — |
 | scripts/agent/semantic-chain.mjs | 167 | — |
 | tests/protocol-reducer.test.ts | 161 | — |
 | scripts/agent/agent-runner.mjs | 159 | renderTemplate, extractJson, runAgent |
@@ -203,7 +204,6 @@
 | scripts/agent/semantic-bench.mjs | 149 | — |
 | tests/probes/gen-page-state-schema/src/server/ai/page-state.ts | 149 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
 | scripts/check/check-docs.mjs | 146 | — |
-| scripts/agent/obs-aggregate.mjs | 144 | — |
 | scripts/check/check-bar-ledger.mjs | 142 | — |
 | scripts/check/sync-counts.mjs | 142 | — |
 | tests/provider-env.test.ts | 137 | — |
@@ -211,26 +211,26 @@
 | scripts/check/check-checks.mjs | 132 | — |
 | scripts/check/check-tool-compaction.mjs | 129 | — |
 | scripts/check/check-mutation-anchors.mjs | 126 | — |
-| scripts/check/gen-permission-map.mjs | 125 | — |
+| scripts/check/gen-permission-map.mjs | 126 | — |
 | tests/session-security.test.ts | 125 | — |
 | scripts/agent/tag-advisor.mjs | 124 | REF_RE, isValidRef |
-| scripts/check/gen-tool-docs.mjs | 120 | — |
+| scripts/check/gen-tool-docs.mjs | 121 | — |
 | tests/liquid-geometry.test.ts | 120 | — |
 | scripts/agent/exp-probe-decompose.mjs | 117 | — |
 | scripts/check/check-doc-linerefs.mjs | 116 | — |
 | tests/harness.ts | 116 | TestTag, TestOpts, test, regression, group, beforeEach, runAll |
-| scripts/check/gen-page-state-schema.mjs | 112 | — |
-| scripts/check/check-doc-coverage.mjs | 110 | — |
+| scripts/check/gen-page-state-schema.mjs | 113 | — |
+| scripts/check/check-doc-coverage.mjs | 111 | — |
 | scripts/check/check-zindex.mjs | 110 | — |
 | scripts/agent/exp-vision-internal.mjs | 109 | — |
 | build.mjs | 108 | — |
 | scripts/check/check-cards.mjs | 105 | — |
 | scripts/check/check-contract-freshness.mjs | 103 | — |
 | scripts/check/check-test-patterns.mjs | 102 | — |
-| scripts/check/gen-rules-map.mjs | 101 | — |
+| scripts/check/gen-rules-map.mjs | 102 | — |
+| scripts/check/check-doc-orphans.mjs | 101 | — |
 | tests/session-invalidate.test.ts | 100 | — |
 | scripts/check/check-anim.mjs | 99 | — |
-| scripts/check/check-doc-orphans.mjs | 99 | — |
 | scripts/check/check-state-freshness.mjs | 91 | — |
 | scripts/check/check-versions.mjs | 91 | — |
 | scripts/check/chain.mjs | 90 | STEPS |
@@ -266,7 +266,7 @@
 | scripts/check/check-consistency.mjs | 50 | — |
 | scripts/check/gen-route-table.mjs | 49 | — |
 | tests/permissions.test.ts | 49 | — |
-| scripts/check/check-doc-budget.mjs | 43 | — |
+| scripts/check/check-doc-budget.mjs | 44 | — |
 | scripts/check/check-release-radar.mjs | 42 | — |
 | tests/reset-hooks.ts | 41 | — |
 | tests/runner.ts | 33 | test, group, runAll, regression, beforeEach, TestFileNode, singleFolder, nestedFolders |
@@ -601,4 +601,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 258 文件 · 45873 行 · 跨域边 245 条
+合计 258 文件 · 45905 行 · 跨域边 245 条
