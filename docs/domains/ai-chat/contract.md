@@ -2,7 +2,6 @@
 > 别的去哪找：运行时隐性时序 → detail-runtime.md；压缩规则 → detail-tool-compaction.md；browser 工具 → detail-browser.md；orb 骨架 → ../client-shell/。
 
 # ai-chat 域契约
-
 ## 所有权二分（宪法第一条的落地）
 
 - 服务端拥有内容语义：LLM → 事件流 → SessionStore 落盘（**唯一写者**）。
@@ -32,7 +31,7 @@
 5. **证据纪律全局预设**（report 14/15 落地）：`prompts/global/*.md`（含
    `global/tools/`）自动注入静态 system 段，全部会话强制、独立于角色卡；
    `prompts/system/`（promptFiles）与 `prompts/dynamic/`（dynamicPromptFiles）
-   是手动语义——全局预设**不得**再加进角色卡 promptFiles（重复注入）。动态
+   是手动语义——全局预设**不得**再加进角色卡 promptFiles（重复注入）；动态
    文件在 `.kfmv4/prompts/dynamic/`，格式见 `dynamic/page-state-schema.md`。
 
 ## 视觉契约（自 V8_ARCHITECTURE §四迁入，2026-07-28）
