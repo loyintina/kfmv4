@@ -210,6 +210,10 @@
      无执行面误导 AI）已删，能力管道留空待 AI 之手重建
 17. 接手审计五缺口（2026-08-03 记，QoderCN 冷启动审计；F1 已修 ✅，F2-F5 待裁决，裁决后拆解）
    — 共性：「反复出现的失败类还没有机械化主人」——责任真空型缺口
+   — 08-03 追加：语义审计积压裁决完成——13 条逐条落账，牵出机械层「静默丢事实」
+     家族三 bug（BAR-GENLIST-01 \Z 截断 / BAR-GENINV-01 CODE_EXT 蒸发 / BAR-SYNCCOUNTS-01
+     枚举吞 gen-* 步，共性：check-only 与生成共享坏解析、全绿放行），均已钉；
+     明细 → ledger/semantic-provenance.md「2026-08-03 接手裁决轮」
    — F1 语义巡逻静默死亡（BAR-SEMCHAIN-01）：921f6744 新增 checkExemptions
      引用未定义 ROOT（模块定义的是 REPO）→ 08-03 04:17 cron 崩，state 已写信箱未投；
      runner 崩溃无信箱通道、/var/log 无人读、agent 脚本不在任何检查覆盖内
