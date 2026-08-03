@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 718fd476 · 生成于 2026-08-03 -->
+<!-- 基准 commit 5d8cf598 · 生成于 2026-08-03 -->
 
 # 代码清单（机械层）
 
@@ -170,7 +170,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（119 文件 · 14555 行）
+## infra（119 文件 · 14567 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -204,13 +204,13 @@
 | scripts/agent/semantic-bench.mjs | 149 | — |
 | tests/probes/gen-page-state-schema/src/server/ai/page-state.ts | 149 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
 | scripts/check/check-docs.mjs | 146 | — |
-| scripts/check/check-bar-ledger.mjs | 142 | — |
+| scripts/check/check-bar-ledger.mjs | 143 | — |
 | scripts/check/sync-counts.mjs | 142 | — |
 | tests/provider-env.test.ts | 137 | — |
 | scripts/agent/exp-iceberg.mjs | 134 | — |
 | scripts/check/check-checks.mjs | 132 | — |
-| scripts/check/check-tool-compaction.mjs | 129 | — |
-| scripts/check/check-mutation-anchors.mjs | 126 | — |
+| scripts/check/check-tool-compaction.mjs | 130 | — |
+| scripts/check/check-mutation-anchors.mjs | 127 | — |
 | scripts/check/gen-permission-map.mjs | 126 | — |
 | tests/session-security.test.ts | 125 | — |
 | scripts/agent/tag-advisor.mjs | 124 | REF_RE, isValidRef |
@@ -225,45 +225,45 @@
 | scripts/agent/exp-vision-internal.mjs | 109 | — |
 | build.mjs | 108 | — |
 | scripts/check/check-cards.mjs | 105 | — |
-| scripts/check/check-contract-freshness.mjs | 103 | — |
+| scripts/check/check-contract-freshness.mjs | 104 | — |
 | scripts/check/check-test-patterns.mjs | 102 | — |
 | scripts/check/gen-rules-map.mjs | 102 | — |
 | scripts/check/check-doc-orphans.mjs | 101 | — |
 | tests/session-invalidate.test.ts | 100 | — |
 | scripts/check/check-anim.mjs | 99 | — |
-| scripts/check/check-state-freshness.mjs | 91 | — |
+| scripts/check/check-state-freshness.mjs | 92 | — |
 | scripts/check/check-versions.mjs | 91 | — |
 | scripts/check/chain.mjs | 90 | STEPS |
 | scripts/check/check-probes.mjs | 86 | — |
 | scripts/agent/exp-probe-matrix.mjs | 86 | — |
 | tests/engine.test.ts | 85 | — |
 | scripts/check/check-deploy-freshness.mjs | 83 | — |
+| scripts/check/check-workflow-integrity.mjs | 82 | — |
+| scripts/check/check-experiment-index.mjs | 81 | — |
 | scripts/check/check-hooks.mjs | 81 | — |
-| scripts/check/check-workflow-integrity.mjs | 81 | — |
 | scripts/agent/exp-thinking.mjs | 81 | — |
-| scripts/check/check-experiment-index.mjs | 80 | — |
 | scripts/check/check-console.mjs | 79 | — |
 | tests/tag-advisor.test.ts | 77 | — |
 | scripts/check/check-as-any.mjs | 76 | — |
 | scripts/check/docs-status.mjs | 76 | — |
 | scripts/check/check-doc-symbols.mjs | 75 | — |
 | scripts/check/gen-contract-lists.mjs | 74 | — |
-| scripts/check/check-stack-status.mjs | 71 | — |
+| scripts/check/check-stack-status.mjs | 72 | — |
 | scripts/check/check-code-doc-refs.mjs | 69 | — |
 | scripts/check/check-card-meta.mjs | 68 | — |
-| scripts/check/check-ledger-commits.mjs | 67 | — |
+| scripts/check/check-ledger-commits.mjs | 68 | — |
 | tests/floating-state.test.ts | 66 | — |
 | scripts/agent/test-tag-advisor.mjs | 64 | — |
-| scripts/check/check-fix-tests.mjs | 62 | — |
+| scripts/check/check-fix-tests.mjs | 63 | — |
+| scripts/check/check-active-stack.mjs | 62 | — |
 | scripts/check/domain-src.mjs | 62 | DOMAIN_SRC |
-| scripts/check/check-active-stack.mjs | 61 | — |
 | scripts/check/check-doc-schema.mjs | 60 | — |
 | scripts/check/check-commit-docs.mjs | 59 | — |
 | tests/omp-glob.test.ts | 58 | — |
 | tests/tool-schema.test.ts | 54 | — |
 | scripts/check/check-secrets.mjs | 52 | — |
+| scripts/check/check-consistency.mjs | 51 | — |
 | scripts/check/check-uncommitted.mjs | 51 | — |
-| scripts/check/check-consistency.mjs | 50 | — |
 | scripts/check/gen-route-table.mjs | 49 | — |
 | tests/permissions.test.ts | 49 | — |
 | scripts/check/check-doc-budget.mjs | 44 | — |
@@ -601,4 +601,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 258 文件 · 45905 行 · 跨域边 245 条
+合计 258 文件 · 45917 行 · 跨域边 245 条
