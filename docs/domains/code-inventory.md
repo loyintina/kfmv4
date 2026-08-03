@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit f52dac9f · 生成于 2026-08-03 -->
+<!-- 基准 commit d93166f2 · 生成于 2026-08-03 -->
 
 # 代码清单（机械层）
 
@@ -51,7 +51,7 @@
 | src/client/modules/renderers/handler-factory.ts | 296 | createFileHandler |
 | src/client/modules/tmux-card.ts | 289 | TmuxCardMeta, createTmuxCardHandler |
 | src/client/modules/floating-fullscreen.ts | 214 | enterFullscreen, exitFullscreen, dismissFullscreen |
-| src/client/cards/plugins/inject.card.ts | 213 | — |
+| src/client/cards/plugins/paradigm.card.ts | 213 | — |
 | src/client/modules/floating-shared.ts | 173 | FloatingCardAction, nextFloatingCardState, _hexToRgba, _cornerLayout, Z_FLOATING_BASE, Z_FULLSCREEN, TITLE_BAR_H, COMPACT_W, COMPACT_H, FloatingCardConfig, FloatingCardItem, _floatingCards, _allocZ, _brOrbToItem, _scatterPosition, _dismissOne |
 | src/client/modules/card-registry.ts | 155 | CardTypeDef, CardContentHandler, CardInstance, registerCardType, getCardType, getAllCardTypes, cardRegistry |
 | src/client/modules/renderers/math-diagram.ts | 155 | MathData, preprocessMath, renderMath, renderMermaid |
@@ -172,12 +172,13 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（121 文件 · 14806 行）
+## infra（135 文件 · 16297 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | tests/client-logic.test.ts | 875 | — |
-| tests/regression.test.ts | 645 | — |
+| tests/regression.test.ts | 647 | — |
+| experiments/coldstart/tools/normalize-arms.mjs | 587 | — |
 | tests/tool-compaction.test.ts | 505 | — |
 | scripts/agent/semantic-audit.mjs | 431 | taskFiles, buildPrompt, makeValidate, recheckRef, recheckQuote |
 | tests/preload.mjs | 423 | — |
@@ -196,19 +197,22 @@
 | tests/renderer.test.ts | 215 | — |
 | scripts/agent/obs-aggregate.mjs | 214 | — |
 | tests/smoke/smoke.mjs | 190 | — |
-| scripts/check/gen-code-inventory.mjs | 181 | — |
+| scripts/check/gen-code-inventory.mjs | 184 | — |
 | tests/to-openai-messages.test.ts | 181 | — |
 | scripts/agent/semantic-chain.mjs | 173 | — |
 | tests/chat-protocol.test.ts | 169 | — |
+| experiments/coldstart/tools/hallucinate-batch.mjs | 164 | — |
 | tests/protocol-reducer.test.ts | 161 | — |
 | scripts/agent/agent-runner.mjs | 159 | renderTemplate, extractJson, runAgent |
 | scripts/agent/semantic-audit.tasks.mjs | 152 | TASKS |
+| experiments/coldstart/tools/routine-entry-validation.mjs | 152 | — |
 | scripts/agent/semantic-bench.mjs | 149 | — |
 | tests/probes/gen-page-state-schema/src/server/ai/page-state.ts | 149 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
 | scripts/check/check-docs.mjs | 146 | — |
+| scripts/check/sync-counts.mjs | 144 | — |
 | scripts/check/check-bar-ledger.mjs | 143 | — |
-| scripts/check/sync-counts.mjs | 142 | — |
 | tests/provider-env.test.ts | 137 | — |
+| experiments/coldstart/tools/judge-batch.mjs | 135 | — |
 | scripts/agent/exp-iceberg.mjs | 134 | — |
 | scripts/check/check-checks.mjs | 132 | — |
 | scripts/check/check-tool-compaction.mjs | 130 | — |
@@ -226,6 +230,7 @@
 | scripts/check/gen-page-state-schema.mjs | 113 | — |
 | scripts/check/check-doc-coverage.mjs | 111 | — |
 | scripts/check/check-zindex.mjs | 110 | — |
+| experiments/coldstart/tools/gen-hallucination-inputs.mjs | 110 | — |
 | scripts/agent/exp-vision-internal.mjs | 109 | — |
 | scripts/check/check-cards.mjs | 105 | — |
 | scripts/check/check-contract-freshness.mjs | 104 | — |
@@ -249,8 +254,9 @@
 | tests/tag-advisor.test.ts | 77 | — |
 | scripts/check/check-as-any.mjs | 76 | — |
 | scripts/check/docs-status.mjs | 76 | — |
+| scripts/check/gen-contract-lists.mjs | 76 | — |
 | scripts/check/check-doc-symbols.mjs | 75 | — |
-| scripts/check/gen-contract-lists.mjs | 74 | — |
+| experiments/coldstart/tools/theme-code.mjs | 75 | — |
 | scripts/check/check-stack-status.mjs | 72 | — |
 | scripts/check/check-code-doc-refs.mjs | 69 | — |
 | scripts/check/check-card-meta.mjs | 68 | — |
@@ -258,8 +264,8 @@
 | tests/floating-state.test.ts | 66 | — |
 | scripts/agent/test-tag-advisor.mjs | 64 | — |
 | scripts/check/check-fix-tests.mjs | 63 | — |
+| scripts/check/domain-src.mjs | 63 | DOMAIN_SRC |
 | scripts/check/check-active-stack.mjs | 62 | — |
-| scripts/check/domain-src.mjs | 62 | DOMAIN_SRC |
 | scripts/check/check-doc-schema.mjs | 60 | — |
 | scripts/check/check-commit-docs.mjs | 59 | — |
 | tests/omp-glob.test.ts | 58 | — |
@@ -270,10 +276,17 @@
 | scripts/check/check-uncommitted.mjs | 51 | — |
 | scripts/check/gen-route-table.mjs | 49 | — |
 | tests/permissions.test.ts | 49 | — |
+| package.json | 47 | — |
 | scripts/check/check-doc-budget.mjs | 44 | — |
+| scripts/clean-npm-temp.cjs | 44 | — |
 | scripts/check/check-release-radar.mjs | 42 | — |
 | tests/reset-hooks.ts | 41 | — |
+| tests/gen-pipeline.test.ts | 36 | — |
+| tests/semantic-chain.test.ts | 34 | — |
 | tests/runner.ts | 33 | test, group, runAll, regression, beforeEach, TestFileNode, singleFolder, nestedFolders |
+| scripts/kfm-restart.sh | 30 | — |
+| scripts/deploy.sh | 29 | — |
+| .githooks/pre-push | 28 | — |
 | tests/probes/gen-permission-map/src/server/ai/tools/index.ts | 19 | getToolDefinitions, getAllTools |
 | tests/gsap-hook.mjs | 17 | resolve |
 | tests/probes/gen-permission-map/src/server/ai/tools/fake.ts | 16 | fakeTool |
@@ -282,6 +295,7 @@
 | tests/probes/gen-tool-docs/src/server/ai/tools/index.ts | 15 | getToolDefinitions |
 | tests/probes/gen-permission-map/src/server/ai/tools/types.ts | 12 | KfmTool |
 | tests/probes/gen-tool-docs/src/server/ai/tools/types.ts | 12 | KfmTool |
+| .githooks/commit-msg | 10 | — |
 | scripts/check/docs-root-const.mjs | 8 | DOCS_ROOT |
 | tests/register-hook.mjs | 8 | — |
 | tests/probes/gen-page-state-schema/src/client/modules/ui-registry.ts | 7 | ContentBlock |
@@ -474,8 +488,8 @@
 - src/client/cards/plugins/config.card.ts → src/client/modules/custom-select.ts
 - src/client/cards/plugins/config.card.ts → src/client/modules/logger.ts
 - src/client/cards/plugins/debug.card.ts → src/client/modules/logger.ts
-- src/client/cards/plugins/inject.card.ts → src/client/modules/confirm-dialog.ts
-- src/client/cards/plugins/inject.card.ts → src/client/modules/logger.ts
+- src/client/cards/plugins/paradigm.card.ts → src/client/modules/confirm-dialog.ts
+- src/client/cards/plugins/paradigm.card.ts → src/client/modules/logger.ts
 - src/client/cards/plugins/role.card.ts → src/client/modules/confirm-dialog.ts
 - src/client/cards/plugins/role.card.ts → src/client/modules/custom-select.ts
 - src/client/cards/plugins/role.card.ts → src/client/modules/logger.ts
@@ -606,4 +620,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 262 文件 · 46299 行 · 跨域边 246 条
+合计 276 文件 · 47790 行 · 跨域边 246 条

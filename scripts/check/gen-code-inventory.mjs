@@ -46,7 +46,10 @@ for (const [domain, paths] of Object.entries(DOMAIN_SRC)) {
     const abs = join(ROOT, p);
     if (p.endsWith('/')) {
       for (const f of walk(abs)) set.add(f);
-    } else if (existsSync(abs) && statSync(abs).isFile() && CODE_EXT.test(p)) {
+    } else if (existsSync(abs) && statSync(abs).isFile()) {
+      // 显式登记的文件不限扩展名——声明即意图（deploy.sh/package.json 曾被 CODE_EXT
+      // 静默丢弃 → 契约清单与 code-map 实况脱节，2026-08-03 裁决流修复）；
+      // 目录递归仍按代码扩展名过滤
       set.add(p);
     }
   }

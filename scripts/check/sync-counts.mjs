@@ -88,6 +88,8 @@ for (const { file, subs } of TARGETS) {
     if (step.includes('sass')) return 'sass';
     if (step.includes('sync-counts')) return 'sync-counts';
     if (step.includes('gen-code-inventory')) return 'gen-code-inventory';
+    const g = step.match(/gen-([\w-]+)\.mjs/);
+    if (g) return 'gen-' + g[1]; // gen-* --check-only 也是链步——静默丢弃 = 枚举失真（裁决流发现，2026-08-03）
     if (step === 'npm test') return 'npm test';
     if (step.includes('tsc')) return 'tsc';
     return null;
