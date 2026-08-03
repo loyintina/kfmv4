@@ -75,6 +75,7 @@ for (const f of readdirSync(wfDir).filter(f => f.endsWith('.yaml'))) {
 
 if (errors > 0) {
   console.error(`\n[check-workflow-integrity] ${errors} 条工作流引用失效，构建中断。`);
+  console.error('[check-workflow-integrity] ⛳ MECH-FLOW-05：工作流引用失效——读 docs/guides/doc-architecture.md §工作流约定，走 workflows/doc-tree-sync.yaml');
   process.exit(1);
 }
 console.log(`[check-workflow-integrity] OK — ${checked} 条 reads/writes 引用 + ${scriptsChecked} 处脚本名引用全部有效`);

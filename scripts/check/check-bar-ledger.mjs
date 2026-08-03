@@ -136,6 +136,7 @@ for (const r of rows) {
 
 if (errors > 0) {
   console.error(`\n[check-bar-ledger] ${errors} errors，构建中断。`);
+  console.error('[check-bar-ledger] ⛳ TEST-FLOW-02：BAR 钉必须登记 ledger——读 docs/ledger/bugs.md §登记纪律，走 workflows/bug-fix.yaml 登记步骤');
   process.exit(1);
 }
 console.log(`[check-bar-ledger] OK — ${nails.size} 钉 ↔ ${rows.length} 行登记，双向对齐`);

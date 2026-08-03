@@ -114,6 +114,7 @@ for (const e of entries) {
 
 if (entries.length === 0) {
   console.error('[check-mutation-anchors] MUTATIONS 解析失败（0 条）——格式变了要修本检查');
+  console.error('[check-mutation-anchors] ⛳ MECH-FLOW-01：锚点失效需维护 semantic-mutate——读 experiments/coldstart/reports/13-probe-matrix.md，走 workflows/discipline-mechanize.yaml');
   process.exit(1);
 }
 

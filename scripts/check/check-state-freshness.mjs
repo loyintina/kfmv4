@@ -85,6 +85,7 @@ console.log('---');
 if (errors.length) {
   for (const e of errors) console.error(`  ❌ ${e}`);
   console.error(`[check-state-freshness] ${errors.length} 处违反状态新鲜度纪律，构建中断`);
+  console.error('[check-state-freshness] ⛳ MECH-FLOW-07：状态词必须带时点标注——读 docs/guides/doc-maintenance.md §时点标注，走 workflows/doc-write.yaml 第 3 步或 state-sync.yaml');
   process.exit(1);
 }
 console.log('[check-state-freshness] OK — 状态类条目全部自带失效触发器');

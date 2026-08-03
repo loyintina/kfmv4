@@ -55,6 +55,7 @@ for (const f of readdirSync(activeDir).filter(f => f.endsWith('.md'))) {
 
 if (errors > 0) {
   console.error(`\n[check-active-stack] 检查失败，构建中断。`);
+  console.error('[check-active-stack] ⛳ MECH-FLOW-08：STACK 与事实漂移——读 docs/active/STACK.md，走 workflows/state-sync.yaml');
   process.exit(1);
 }
 console.log(`[check-active-stack] OK — STACK ${refs.size} 条引用有效，active/ 无孤儿`);

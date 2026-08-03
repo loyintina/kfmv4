@@ -53,6 +53,7 @@ for (const [domain, srcPaths] of Object.entries(DOMAIN_SRC)) {
 
 if (errors > 0) {
   console.error(`\n[check-contract-freshness] ${errors} 个域契约疑似过时，构建中断。`);
+  console.error('[check-contract-freshness] ⛳ MECH-FLOW-03：契约过时需审查更新——读对应域 contract.md，走 workflows/contract-maintain.yaml');
   process.exit(1);
 }
 console.log('[check-contract-freshness] OK — 全部域契约在新鲜度阈值内');

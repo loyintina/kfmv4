@@ -65,6 +65,7 @@ for (const e of entries) {
 
 if (errors > 0) {
   console.error(`\n[check-stack-status] ${errors} 处状态词矛盾，构建中断。`);
+  console.error('[check-stack-status] ⛳ MECH-FLOW-09：STACK 状态词矛盾——读 docs/active/STACK.md §状态词，走 workflows/state-sync.yaml');
   process.exit(1);
 }
 console.log(`[check-stack-status] OK — ${entries.length} 个栈条目状态词无矛盾`);

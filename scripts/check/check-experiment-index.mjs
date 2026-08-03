@@ -71,6 +71,7 @@ for (const exp of expDirs) {
 for (const w of warnings) console.log('[check-experiment-index] 注意 — ' + w);
 if (errors.length > 0) {
   console.error('[check-experiment-index] FAIL — 实验数据引用不完整:');
+  console.error('[check-experiment-index] ⛳ MECH-FLOW-04：实验引用需登记——读 experiments/index.md，走实验登记流程');
   for (const e of errors) console.error('  ✗ ' + e);
   process.exit(1);
 }

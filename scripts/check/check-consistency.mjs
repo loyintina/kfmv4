@@ -44,6 +44,7 @@ for (const f of readdirSync(wfDir).filter(f => f.endsWith('.yaml'))) {
 
 if (errors > 0) {
   console.error(`\n[check-consistency] 路由表一致性检查失败，构建中断。`);
+  console.error('[check-consistency] ⛳ MECH-FLOW-06：路由表漂移——跑 node scripts/check/gen-route-table.mjs 回写，走 workflows/doc-tree-sync.yaml');
   process.exit(1);
 }
 console.log(`[check-consistency] OK — 路由表 ${refs.size} 条引用有效，workflows 无孤儿`);

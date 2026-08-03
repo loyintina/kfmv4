@@ -48,6 +48,7 @@ const exempt = /^tests:na\s*$/m.test(message);
 if (isFix && !touchedTests && !exempt) {
   console.error('╔══════════════════════════════════════════════════════════════╗');
   console.error('║  🚫 心法 24：fix 提交未带回归钉                                ');
+  console.error('⛳ TEST-FLOW-01：fix 提交必须带回归钉——读 docs/guides/testing.md，走 workflows/bug-fix.yaml 补钉步骤');
   console.error('╠══════════════════════════════════════════════════════════════╣');
   console.error(`║  ${label}：${firstLine}`);
   console.error('║  修 bug 不补钉 = 同一个 bug 会回来第二次。                    ');

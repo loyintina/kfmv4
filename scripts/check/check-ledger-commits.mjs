@@ -61,6 +61,7 @@ for (const f of readdirSync(ledgerDir).filter(f => f.endsWith('.md'))) {
 
 if (errors > 0) {
   console.error(`\n[check-ledger-commits] ${errors} 处 commit 引用失效，构建中断。`);
+  console.error('[check-ledger-commits] ⛳ TEST-FLOW-03：账本 commit 引用悬空——读 docs/ledger/history.md §账本纪律，走 workflows/bug-fix.yaml 或修正账本');
   process.exit(1);
 }
 console.log(`[check-ledger-commits] OK — ${checked} 处 commit 引用全部可解析`);

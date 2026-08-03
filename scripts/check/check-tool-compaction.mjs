@@ -122,6 +122,7 @@ for (const [name, body] of [...registered.entries()].sort()) {
 
 if (errors > 0) {
   console.error(`\n[check-tool-compaction] ${errors} 处登记失配，构建中断。`);
+  console.error('[check-tool-compaction] ⛳ MECH-FLOW-02：新工具必须登记压缩行为——读 docs/domains/ai-chat/detail-tool-compaction.md §映射表，走 workflows/contract-maintain.yaml');
   process.exit(1);
 }
 
