@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 6337139 · 生成于 2026-08-03 -->
+<!-- 基准 commit e214e06 · 生成于 2026-08-03 -->
 
 # 代码清单（机械层）
 
@@ -170,7 +170,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（119 文件 · 14468 行）
+## infra（119 文件 · 14523 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -203,6 +203,7 @@
 | scripts/agent/semantic-bench.mjs | 149 | — |
 | tests/probes/gen-page-state-schema/src/server/ai/page-state.ts | 149 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
 | scripts/check/check-docs.mjs | 146 | — |
+| scripts/agent/obs-aggregate.mjs | 144 | — |
 | scripts/check/check-bar-ledger.mjs | 142 | — |
 | scripts/check/sync-counts.mjs | 142 | — |
 | tests/provider-env.test.ts | 137 | — |
@@ -233,7 +234,6 @@
 | scripts/check/check-state-freshness.mjs | 91 | — |
 | scripts/check/check-versions.mjs | 91 | — |
 | scripts/check/chain.mjs | 90 | STEPS |
-| scripts/agent/obs-aggregate.mjs | 89 | — |
 | scripts/check/check-probes.mjs | 86 | — |
 | scripts/agent/exp-probe-matrix.mjs | 86 | — |
 | tests/engine.test.ts | 85 | — |
@@ -601,4 +601,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 258 文件 · 45818 行 · 跨域边 245 条
+合计 258 文件 · 45873 行 · 跨域边 245 条
