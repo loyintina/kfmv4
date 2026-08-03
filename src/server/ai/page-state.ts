@@ -18,6 +18,29 @@ import type { WsServer } from '../ws-server.js';
 
 export const PAGE_STATE_PATH = join(KFM_DATA_DIR, 'prompts', 'dynamic', 'page-state.md');
 
+/**
+ * 页面状态模板常量注册表（原代码注册，gen-page-state-schema 读取）
+ *
+ * 新增/修改任何会出现在 page-state.md 里的文本，都改这里——渲染引用本表，
+ * `gen-page-state-schema.mjs` 读取本表 + ui-registry 内容类型联合，拼接生成
+ * `page-state-schema.md` 的「代码注册的事实段」。只改代码不跑生成器 =
+ * check 链漂移中断（check-page-state-schema 改名 gen 后由 chain 校验）。
+ */
+export const PAGE_STATE_TEXTS = {
+  headerTitle: '# 当前页面状态',
+  headerRefreshNote: '> 本节由系统在每次工具调用后自动刷新，反映你的操作对页面的实际影响。',
+  sectionVisible: '## 你能看到什么',
+  sectionElements: '## 当前页面元素',
+  sectionCapabilities: '## 你能做什么',
+  emptyContent: '（页面暂无可读内容摘要）',
+  emptyElements: '（页面暂无可交互元素）',
+  emptyCapabilities: '（当前无额外可调用能力）',
+  noSummary: '(无摘要)',
+  disabledMark: '（禁用）',
+  effectPrefix: '操作后：',
+  noSnapshotFull: '# 当前页面状态\n\n> 暂无页面快照（浏览器未连接或未推送状态）。',
+} as const;
+
 interface Element {
   id: string; type: string; label: string; description: string;
   state?: string; enabled: boolean; effect: string;
@@ -59,41 +82,42 @@ function parseSnapshot(snap: unknown): { elements: Element[]; content: Content[]
 /** 渲染成 MUD 风格房间描述。 */
 export function renderPageState(snap: unknown): string {
   const { elements, content, capabilities } = parseSnapshot(snap);
+  const T = PAGE_STATE_TEXTS;
   const lines: string[] = [];
-  lines.push('# 当前页面状态');
+  lines.push(T.headerTitle);
   lines.push('');
-  lines.push('> 本节由系统在每次工具调用后自动刷新，反映你的操作对页面的实际影响。');
+  lines.push(T.headerRefreshNote);
   lines.push('');
 
   // 你能看到什么 —— 内容层摘要
-  lines.push('## 你能看到什么');
+  lines.push(T.sectionVisible);
   if (content.length === 0) {
-    lines.push('（页面暂无可读内容摘要）');
+    lines.push(T.emptyContent);
   } else {
     for (const c of content) {
-      lines.push(`- **${c.type}**：${c.summary || '(无摘要)'}`);
+      lines.push(`- **${c.type}**：${c.summary || T.noSummary}`);
     }
   }
   lines.push('');
 
   // 当前元素 —— 交互层
-  lines.push('## 当前页面元素');
+  lines.push(T.sectionElements);
   if (elements.length === 0) {
-    lines.push('（页面暂无可交互元素）');
+    lines.push(T.emptyElements);
   } else {
     for (const e of elements) {
       const st = e.state ? ` [${e.state}]` : '';
-      const dis = e.enabled ? '' : ' （禁用）';
-      const eff = e.effect ? ` — 操作后：${e.effect}` : '';
+      const dis = e.enabled ? '' : ` ${T.disabledMark}`;
+      const eff = e.effect ? ` — ${T.effectPrefix}${e.effect}` : '';
       lines.push(`- **${e.label || e.id}**（${e.type}）${st}${dis}${eff}`);
     }
   }
   lines.push('');
 
   // 你能做什么 —— 能力层
-  lines.push('## 你能做什么');
+  lines.push(T.sectionCapabilities);
   if (capabilities.length === 0) {
-    lines.push('（当前无额外可调用能力）');
+    lines.push(T.emptyCapabilities);
   } else {
     for (const c of capabilities) {
       const params = c.parameters.length > 0
@@ -115,7 +139,7 @@ export function refreshPageState(wsServer: WsServer): void {
     const snap = wsServer.getLatestSnapshot();
     const md = snap
       ? renderPageState(snap)
-      : '# 当前页面状态\n\n> 暂无页面快照（浏览器未连接或未推送状态）。';
+      : PAGE_STATE_TEXTS.noSnapshotFull;
     writeFileSync(PAGE_STATE_PATH, md, 'utf-8');
   } catch (e) {
     console.error('[page-state] 写入失败:', e instanceof Error ? e.message : e);

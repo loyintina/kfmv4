@@ -42,6 +42,38 @@
 
 ## 各段可能出现的一切文本形态
 
+<!-- gen:page-state-facts:start -->
+
+### 代码注册的事实段（自动生成，勿手改）
+
+> 本段由 `gen-page-state-schema.mjs` 从 `PAGE_STATE_TEXTS`（page-state.ts）
+> 与 ui-registry 内容类型联合拼接生成。**新增/修改模板文本后必须跑
+> 生成器回写**，否则 check 链中断（代码有而文档没有 = 漂移）。
+
+固定常量（`PAGE_STATE_TEXTS`）：
+
+- `headerTitle`：`# 当前页面状态`
+- `headerRefreshNote`：`> 本节由系统在每次工具调用后自动刷新，反映你的操作对页面的实际影响。`
+- `sectionVisible`：`## 你能看到什么`
+- `sectionElements`：`## 当前页面元素`
+- `sectionCapabilities`：`## 你能做什么`
+- `emptyContent`：`（页面暂无可读内容摘要）`
+- `emptyElements`：`（页面暂无可交互元素）`
+- `emptyCapabilities`：`（当前无额外可调用能力）`
+- `noSummary`：`(无摘要)`
+- `disabledMark`：`（禁用）`
+- `effectPrefix`：`操作后：`
+- `noSnapshotFull`：`# 当前页面状态\n\n> 暂无页面快照（浏览器未连接或未推送状态）。`
+
+内容类型枚举（ui-registry.ts 类型联合）：
+
+- `file-tree`
+- `card-content`
+- `text-output`
+- `status-bar`
+
+<!-- gen:page-state-facts:end -->
+
 ### 头部（固定两行，不变）
 
 ```
