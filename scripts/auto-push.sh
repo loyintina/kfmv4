@@ -14,6 +14,19 @@ STAMP="$(date +%Y-%m-%d\ %H:%M:%S)"
 
 cd "$REPO" || { echo "$STAMP 失败: 无法进入 $REPO" >> "$LOG"; exit 1; }
 
+# 闸 0：freshness 红（有未部署提交）→ 先部署（check 全链门 + 重启服务），
+# 否则 auto-push 永远推不了最新（2026-08-03 循环教训）。4:57 是安静窗口
+#（巡逻 4:17/体检 4:47 已完成）。
+if ! node scripts/check/check-deploy-freshness.mjs >/dev/null 2>&1; then
+  echo "$STAMP freshness 红 → 自动部署" >> "$LOG"
+  if bash scripts/deploy.sh >> "$LOG" 2>&1; then
+    echo "$STAMP 部署成功" >> "$LOG"
+  else
+    echo "$STAMP 部署失败（check 链未过），跳过推送" >> "$LOG"
+    exit 1
+  fi
+fi
+
 # 闸 1：非戳未提交改动 → 跳过
 CHANGED=$(git status --porcelain | grep -vE '^[ M]M? public/index.html | wc -l)
 if [ "$CHANGED" -gt 0 ]; then
