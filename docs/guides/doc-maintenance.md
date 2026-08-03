@@ -186,6 +186,11 @@
    扩展按需；必读清单越长越被跳读（04 报告实证）。
 5. **环境事实附取证指引**：写「8021=主仓」不如写「lsof -i:8021 + /proc/<pid>/cwd 验证」。
 6. **专有名词表登记**：新缩写/术语进 onboarding §5，防无出处编造（Kalo 翻案教训）。
+7. **必挂引用点（新建文档时一并挂，check-doc-orphans 机械门）**：新文档必须有
+   正规入口——decisions 下的 ADR/case-study → 加进 `decisions/README.md` 索引；
+   domains 下的 detail-*.md → 写进同域 `contract.md` 头注「别的去哪找」；
+   guides/*.md → 被 orientation 或对应 workflow 引用；新生成器/可生成事实 →
+   登记进 `active/generateable-facts.md`。只建文档不挂引用 = check 红。
 
 ### 入口文档常态化验证（文档 CI）
 

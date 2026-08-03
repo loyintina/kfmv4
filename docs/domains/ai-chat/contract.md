@@ -1,5 +1,5 @@
 > 这是什么：AI 对话子系统——光球面板、流式协议、会话存储、工具。
-> 别的去哪找：运行时隐性时序 → detail-runtime.md；压缩规则 → detail-tool-compaction.md；browser 工具 → detail-browser.md；orb 骨架 → ../client-shell/。
+> 别的去哪找：运行时隐性时序 → detail-runtime.md；压缩规则 → detail-tool-compaction.md；browser 工具 → detail-browser.md；规则集 → detail-rules.md；orb 骨架 → ../client-shell/。
 
 # ai-chat 域契约
 ## 所有权二分（宪法第一条的落地）

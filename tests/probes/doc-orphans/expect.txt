@@ -1,1 +1,1 @@
-孤儿文档
+必须在 decisions/README.md 索引登记

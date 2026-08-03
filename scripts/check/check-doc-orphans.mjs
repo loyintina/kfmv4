@@ -1,11 +1,16 @@
 #!/usr/bin/env node
 /**
- * check-doc-orphans.mjs — 文档可达性纪律（每份文档必须被引用）
+ * check-doc-orphans.mjs — 文档可达性纪律（每份文档必须被引用，且去对地方）
  *
  * orientation 关键设计：「一份文档若没有任何工作流读/写它，它不该存在」。
- * 本脚本机械执行：docs/ 下每份 .md 的文件名（不含 .md 后缀）必须作为独立词
- * 出现在引用面（docs 内互引 + CLAUDE/README + workflows + src + scripts +
- * tests + .kfmv4 角色卡）。孤儿文档 = 无人知道它存在 = 去不到的设施。
+ * 两层门：
+ *   1. 孤儿门：docs/ 下每份 .md 的文件名必须作为独立词出现在引用面
+ *      （docs 内互引 + CLAUDE/README + workflows + src + scripts + tests
+ *      + .kfmv4 角色卡）
+ *   2. MUST 门（去对地方）：特定类型的文档必须被「正规入口」引用——
+ *      decisions 下的文档 → decisions/README.md 索引
+ *      domains 下各域的 detail-*.md → 同域 contract.md 头注
+ * 孤儿文档 = 无人知道它存在；MUST 缺失 = 存在但没挂进正规入口。
  *
  * 豁免：根 README.md / CLAUDE.md（项目入口，天然可达）；
  * decisions/README.md 由 orientation 引用（索引文件），不豁免。
@@ -53,6 +58,7 @@ const corpus = [
 ].map(read).join('\n');
 
 const orphans = [];
+const mustErrors = [];
 for (const f of docsFiles) {
   const base = join('docs', f.slice(DOCS.length + 1)).replace(/\\/g, '/');
   if (EXEMPT.has(base)) continue;
@@ -63,13 +69,30 @@ for (const f of docsFiles) {
   const nameRe = new RegExp(`(?<![\\w.-])${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\w-])`);
   const reachable = relRe.test(corpus) || (!GENERIC_NAMES.has(name) && nameRe.test(corpus));
   if (!reachable) orphans.push(base);
+
+  // MUST 门：类型 → 正规入口（rel 已去 .md 后缀）
+  if (/^decisions\/.+$/.test(rel) && !rel.endsWith('README')) {
+    const idx = read(join(DOCS, 'decisions', 'README.md'));
+    if (!idx.includes(name)) mustErrors.push(`${base} 必须在 decisions/README.md 索引登记`);
+  }
+  const dm = rel.match(/^domains\/([\w-]+)\/detail-.+$/);
+  if (dm) {
+    const contract = read(join(DOCS, 'domains', dm[1], 'contract.md'));
+    if (!contract.includes(name)) mustErrors.push(`${base} 必须在同域 ${dm[1]}/contract.md 头注登记（别的去哪找）`);
+  }
 }
 
+if (mustErrors.length) {
+  for (const e of mustErrors) console.error(`[check-doc-orphans] ${e}`);
+}
 if (orphans.length) {
   for (const o of orphans) {
     console.error(`[check-doc-orphans] 孤儿文档 ${o}——没有任何引用（orientation 纪律：文档不可孤悬）`);
   }
-  console.error(`[check-doc-orphans] ${orphans.length} 份文档无引用——要么补引用（索引/契约/工作流），要么删除`);
+}
+if (mustErrors.length || orphans.length) {
+  const n = mustErrors.length + orphans.length;
+  console.error(`[check-doc-orphans] ${n} 处可达性问题——补正规入口引用（索引/契约头注），或删除`);
   process.exit(1);
 }
-console.log(`[check-doc-orphans] OK — 全部 ${docsFiles.length} 份文档可去得（有引用）`);
+console.log(`[check-doc-orphans] OK — 全部 ${docsFiles.length} 份文档可去得且去对地方`);
