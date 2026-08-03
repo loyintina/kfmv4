@@ -26,9 +26,21 @@
    新工具不登记压缩行为 = 构建中断）。
 3. 增量 DOM 只增不改：append 进已挂载消息不会投影——新消息必须走新 mount。
 4. 动态感官注入（dynamicPromptFiles）必须经 `assembleDynamicPrompt` 包裹呈现：
-   分隔线 + 「勿主动提及注入本身」使用规则（BAR-EYE-WRAP-01）——动态内容每轮刷新
-   占据注意力焦点，无包裹时 AI 会主动叙述注入本身（出戏）。ts 前缀 `[ts MM-DD HH:MM:SS]`
-   是元数据非正文，静态 system 段有防模仿声明（BAR-TS-MIMIC-01）。
+   分隔线 + 使用规则（BAR-EYE-WRAP-01）。动态内容每轮刷新占据注意力焦点，
+   无包裹时 AI 会主动叙述注入本身（出戏）。wrap 同时声明**感官可靠性**
+   （2026-08-03，report 15 落地）：投影可能滞后或不完整、非证据源，涉及文件/
+   状态/计数的断言以工具结果为准，感官与工具冲突以工具为准——防「AI 说我
+   在眼睛里看到 X」式假观察。ts 前缀 `[ts MM-DD HH:MM:SS]` 是元数据非正文，
+   静态 system 段有防模仿声明（BAR-TS-MIMIC-01）。
+5. **证据纪律全局预设**（2026-08-03，report 14/15 落地）：`prompts/global/*.md`
+   自动注入静态 system 段（全部会话强制，独立于角色卡）；`prompts/global/tools/`
+   为工具文档（自动）。`prompts/system/`（角色卡 promptFiles 挂载）与
+   `prompts/dynamic/`（dynamicPromptFiles 挂载）是手动语义——全局预设文件
+   **不得**再加进角色卡 promptFiles（重复注入）。新增约束先放 `prompts/global/`，
+   目录语义见 `prompts/README.md`。动态文件本体在 `.kfmv4/prompts/dynamic/`
+   （数据目录，与源码说明目录路径对称），格式说明见
+   `prompts/dynamic/page-state-schema.md`（check-page-state-schema 探针
+   双向校验代码常量与文档一致）。
 
 ## 视觉契约（自 V8_ARCHITECTURE §四迁入，2026-07-28）
 
