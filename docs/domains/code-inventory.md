@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 0d81a83e · 生成于 2026-08-03 -->
+<!-- 基准 commit ca3b9a1b · 生成于 2026-08-03 -->
 
 # 代码清单（机械层）
 
@@ -96,7 +96,7 @@
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（55 文件 · 11659 行）
+## ai-chat（55 文件 · 11690 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -120,6 +120,7 @@
 | src/server/ai/run-manager.ts | 228 | _setStallMsForTest, getActiveRun, getRun, StreamFn, startRun, attachRun, cancelRun |
 | src/client/modules/orb-chat-hints.ts | 225 | startWaitingIndicator, TODO_DISMISS_KEY, todosFingerprint, clearTodoPanel, dismissTodoPanel, updateTodoFromTool |
 | src/server/ai/page-state.ts | 148 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
+| src/server/ai/tools/index.ts | 145 | getAllTools, getToolDefinitions, executeTool, hasTool, getTool |
 | src/server/ai/permissions.ts | 134 | RiskClass, TOOL_RISK, Decision, AuditEntry, riskClassOf, evaluate |
 | src/server/ai/prompt-assembler.ts | 124 | getActiveRoleFile, assembleRoleSystemPrompt, assembleDynamicPrompt |
 | src/shared/chat-protocol/reducer.ts | 122 | ReduceContext, applyEvent, reduceEvents |
@@ -128,7 +129,6 @@
 | src/server/ai/routes.ts | 116 | StartRunFn, setupAiRoutes |
 | src/server/ai/tools/omp/browser/aria/aria-snapshot.ts | 116 | AriaSnapshotOptions, captureAriaSnapshot, resolveAriaRefHandle, parseAriaRefSelector, buildAriaSnapshotScript |
 | src/server/ai/tools/omp/browser/tab-protocol.ts | 115 | Transferable, ObservationEntry, Observation, ScreenshotResult, SessionSnapshot, WorkerInitPayload, ToolReply, WorkerInbound, ReadyInfo, RunResultOk, RunErrorPayload, WorkerOutbound, Transport |
-| src/server/ai/tools/index.ts | 114 | getAllTools, getToolDefinitions, executeTool, hasTool, getTool |
 | src/server/ai/tools/omp/browser/readable.ts | 111 | ReadableFormat, ReadableResult, extractReadableFromHtml |
 | src/server/ai/rule-engine.ts | 109 | AiRule, loadRules, buildAlwaysApplyPrompt, checkToolCallRules, reloadRules |
 | src/server/ai/tools/omp/web-search.ts | 109 | ompWebSearchTool |
@@ -170,7 +170,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（120 文件 · 14695 行）
+## infra（120 文件 · 14745 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -192,8 +192,8 @@
 | scripts/check/check-css-wiring.mjs | 228 | — |
 | tests/path-utils.test.ts | 215 | — |
 | tests/renderer.test.ts | 215 | — |
+| scripts/agent/obs-aggregate.mjs | 214 | — |
 | tests/smoke/smoke.mjs | 190 | — |
-| scripts/agent/obs-aggregate.mjs | 184 | — |
 | scripts/check/gen-code-inventory.mjs | 181 | — |
 | tests/to-openai-messages.test.ts | 181 | — |
 | tests/chat-protocol.test.ts | 169 | — |
@@ -213,18 +213,18 @@
 | scripts/check/check-mutation-anchors.mjs | 127 | — |
 | scripts/check/gen-permission-map.mjs | 126 | — |
 | tests/session-security.test.ts | 125 | — |
+| scripts/check/chain.mjs | 124 | STEPS |
 | scripts/agent/tag-advisor.mjs | 124 | REF_RE, isValidRef |
 | scripts/check/gen-tool-docs.mjs | 121 | — |
 | tests/liquid-geometry.test.ts | 120 | — |
+| build.mjs | 117 | — |
 | scripts/agent/exp-probe-decompose.mjs | 117 | — |
 | scripts/check/check-doc-linerefs.mjs | 116 | — |
 | tests/harness.ts | 116 | TestTag, TestOpts, test, regression, group, beforeEach, runAll |
-| scripts/check/chain.mjs | 113 | STEPS |
 | scripts/check/gen-page-state-schema.mjs | 113 | — |
 | scripts/check/check-doc-coverage.mjs | 111 | — |
 | scripts/check/check-zindex.mjs | 110 | — |
 | scripts/agent/exp-vision-internal.mjs | 109 | — |
-| build.mjs | 108 | — |
 | scripts/check/check-cards.mjs | 105 | — |
 | scripts/check/check-contract-freshness.mjs | 104 | — |
 | scripts/check/check-test-patterns.mjs | 102 | — |
@@ -602,4 +602,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 259 文件 · 46045 行 · 跨域边 245 条
+合计 259 文件 · 46126 行 · 跨域边 245 条
