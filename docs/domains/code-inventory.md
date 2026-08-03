@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit e8c9ca8 · 生成于 2026-08-03 -->
+<!-- 基准 commit 257efe5 · 生成于 2026-08-03 -->
 
 # 代码清单（机械层）
 
@@ -96,7 +96,7 @@
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（55 文件 · 11635 行）
+## ai-chat（55 文件 · 11659 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -119,8 +119,8 @@
 | src/server/ai/session-store.ts | 237 | appendEvent, flush, flushSync, invalidateSession, appendUserMessage |
 | src/server/ai/run-manager.ts | 228 | _setStallMsForTest, getActiveRun, getRun, StreamFn, startRun, attachRun, cancelRun |
 | src/client/modules/orb-chat-hints.ts | 225 | startWaitingIndicator, TODO_DISMISS_KEY, todosFingerprint, clearTodoPanel, dismissTodoPanel, updateTodoFromTool |
+| src/server/ai/page-state.ts | 148 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
 | src/server/ai/permissions.ts | 134 | RiskClass, TOOL_RISK, Decision, AuditEntry, riskClassOf, evaluate |
-| src/server/ai/page-state.ts | 124 | PAGE_STATE_PATH, renderPageState, refreshPageState |
 | src/server/ai/prompt-assembler.ts | 124 | getActiveRoleFile, assembleRoleSystemPrompt, assembleDynamicPrompt |
 | src/shared/chat-protocol/reducer.ts | 122 | ReduceContext, applyEvent, reduceEvents |
 | src/server/ai/tools/kfmv4/logs.ts | 119 | kfmLogsTool |
@@ -170,7 +170,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（108 文件 · 13869 行）
+## infra（108 文件 · 13924 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -201,6 +201,7 @@
 | scripts/agent/agent-runner.mjs | 159 | renderTemplate, extractJson, runAgent |
 | scripts/agent/semantic-audit.tasks.mjs | 152 | TASKS |
 | scripts/agent/semantic-bench.mjs | 149 | — |
+| tests/probes/gen-page-state-schema/src/server/ai/page-state.ts | 149 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
 | scripts/check/check-docs.mjs | 146 | — |
 | scripts/check/check-bar-ledger.mjs | 142 | — |
 | scripts/check/sync-counts.mjs | 142 | — |
@@ -211,11 +212,11 @@
 | scripts/check/check-mutation-anchors.mjs | 126 | — |
 | tests/session-security.test.ts | 125 | — |
 | scripts/agent/tag-advisor.mjs | 124 | REF_RE, isValidRef |
-| tests/probes/page-state-schema/src/server/ai/page-state.ts | 124 | PAGE_STATE_PATH, renderPageState, refreshPageState |
 | tests/liquid-geometry.test.ts | 120 | — |
 | scripts/agent/exp-probe-decompose.mjs | 117 | — |
 | scripts/check/check-doc-linerefs.mjs | 116 | — |
 | tests/harness.ts | 116 | TestTag, TestOpts, test, regression, group, beforeEach, runAll |
+| scripts/check/gen-page-state-schema.mjs | 112 | — |
 | scripts/check/check-doc-coverage.mjs | 110 | — |
 | scripts/check/check-zindex.mjs | 110 | — |
 | scripts/agent/exp-vision-internal.mjs | 109 | — |
@@ -233,7 +234,6 @@
 | scripts/agent/exp-probe-matrix.mjs | 86 | — |
 | tests/engine.test.ts | 85 | — |
 | scripts/check/check-deploy-freshness.mjs | 83 | — |
-| scripts/check/check-page-state-schema.mjs | 82 | — |
 | scripts/check/check-hooks.mjs | 81 | — |
 | scripts/check/check-workflow-integrity.mjs | 81 | — |
 | scripts/agent/exp-thinking.mjs | 81 | — |
@@ -270,7 +270,7 @@
 | tests/mocks/xterm.ts | 15 | Terminal |
 | scripts/check/docs-root-const.mjs | 8 | DOCS_ROOT |
 | tests/register-hook.mjs | 8 | — |
-| tests/probes/page-state-schema/src/client/modules/ui-registry.ts | 7 | ContentBlock |
+| tests/probes/gen-page-state-schema/src/client/modules/ui-registry.ts | 7 | ContentBlock |
 | tests/mocks/xterm-addon-fit.ts | 6 | FitAddon |
 | tests/probes/doc-linerefs/src/fake.ts | 4 | a, b |
 | tests/probes/checks/build.mjs | 3 | — |
@@ -590,4 +590,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 247 文件 · 45195 行 · 跨域边 245 条
+合计 247 文件 · 45274 行 · 跨域边 245 条
