@@ -26,7 +26,7 @@ kfmv4 是一个 AI 对话面板（光球 + 浮卡 + 文件树），自带 API �
 | `guides/` | SOP 手册（测试/发版/文档维护/agent-runner…） | 对应任务触发时 |
 | `workflows/` | 工作流卡（YAML：reads/steps/writes/exit） | 每次任务开头按 CLAUDE.md 路由表匹配 |
 | `ledger/` | 只追加账本（bugs/history/语义审计…） | 工作流卡的 reads 指定时 |
-| `decisions/` | 不可变 ADR | 追溯「为什么这么设计」时 |
+| `decisions/` | 不可变 ADR（索引：[decisions/README.md](../decisions/README.md)） | 追溯「为什么这么设计」时 |
 
 关键设计：**工作流是一等公民。** 一份文档若没有任何工作流读/写它，它不该存在。
 
@@ -63,6 +63,34 @@ build.mjs → check 链 → esbuild → smoke → 启动
                           ↓ 重复 3 次的模式
                      固化为新 check 脚本或新工作流卡（体系自我生长）
 ```
+
+## 机制地图（生成器 / 提示词 / 权限规则）
+
+docs 之外还有三组运行时机制，入口在这里：
+
+**生成器家族**——「文档由代码拼接」的体系地图在 `docs/active/generateable-facts.md`
+（登记表：每个可生成事实的源头/生成器/标记）。已落地 8 个：
+
+| 生成器 | 产出 |
+|--------|------|
+| `sync-counts.mjs` | 计数/版本号/检查链节 |
+| `gen-code-inventory.mjs` | 代码清单 |
+| `gen-contract-lists.mjs` | 契约文件清单 |
+| `gen-route-table.mjs` | CLAUDE 工作流路由表 |
+| `gen-page-state-schema.mjs` | 眼睛格式事实段 |
+| `gen-tool-docs.mjs` | 工具文档参数节（16 份） |
+| `gen-permission-map.mjs` | 权限风险表 + BAR-PERM-01 登记门 |
+| `gen-rules-map.mjs` | 规则登记表（detail-rules.md） |
+
+规矩：**改了代码注册源没跑生成器 = check 中断**，按报错提示回写即可。
+
+**提示词目录**（`src/server/prompts/`，三目录语义见 `prompts/README.md`）：
+`global/`（预设+工具文档，自动注入全部会话）· `system/`（角色卡挂载，静态）·
+`dynamic/`（角色卡挂载，动态；说明文档在源码侧，运行时文件在
+`.kfmv4/prompts/dynamic/`，格式见 `dynamic/page-state-schema.md`）。
+
+**行为防线**：权限引擎设计见 `active/harness-permission-engine.md`（TOOL_RISK
+精确映射自动生成）；条件规则集见 `domains/ai-chat/detail-rules.md`（登记表自动生成）。
 
 ## 怎么读 STACK（工作栈）的电报体
 
