@@ -27,15 +27,13 @@
 3. 增量 DOM 只增不改：append 进已挂载消息不会投影——新消息必须走新 mount。
 4. 动态感官注入（dynamicPromptFiles）必须经 `assembleDynamicPrompt` 包裹：
    分隔线 + 使用规则（BAR-EYE-WRAP-01），并声明**感官可靠性**（report 15）：
-   投影可能滞后不完整、非证据源，文件/状态/计数断言以工具结果为准——防
-   「我在眼睛里看到 X」式假观察。`[ts …]` 是元数据非正文，静态段有防模仿声明
-   （BAR-TS-MIMIC-01）。
+   投影可能滞后不完整、非证据源，文件/状态/计数断言以工具结果为准；`[ts …]`
+   是元数据非正文（BAR-TS-MIMIC-01）。
 5. **证据纪律全局预设**（report 14/15 落地）：`prompts/global/*.md`（含
    `global/tools/`）自动注入静态 system 段，全部会话强制、独立于角色卡；
    `prompts/system/`（promptFiles）与 `prompts/dynamic/`（dynamicPromptFiles）
-   是手动语义——全局预设**不得**再加进角色卡 promptFiles（重复注入）。目录语义
-   见 `prompts/README.md`；动态文件本体在 `.kfmv4/prompts/dynamic/`，格式见
-   `dynamic/page-state-schema.md`（check-page-state-schema 探针双向校验）。
+   是手动语义——全局预设**不得**再加进角色卡 promptFiles（重复注入）。动态
+   文件在 `.kfmv4/prompts/dynamic/`，格式见 `dynamic/page-state-schema.md`。
 
 ## 视觉契约（自 V8_ARCHITECTURE §四迁入，2026-07-28）
 
