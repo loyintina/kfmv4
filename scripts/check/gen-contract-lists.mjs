@@ -20,9 +20,11 @@ const CHECK_ONLY = process.argv.includes('--check-only');
 const inventory = readFileSync(join(ROOT, 'docs/domains/code-inventory.md'), 'utf-8');
 
 // 解析 inventory 域节：## <domain>（N 文件 · M 行）→ 文件列（相对路径）
+// 节终止 = 下一个 `## ` 节标题或字符串真末尾——注意 JS 无 \Z（被当字面 Z：
+// exports 列含 Z 的域节会被截断，floating-card 曾因此丢 card-registry.ts，BAR-GENLIST-01）
 function domainFiles() {
   const map = {};
-  const secRe = /^## (\S+)（\d+ 文件 · \d+ 行）\n\n\| 文件 \|[\s\S]*?(?=^## |\Z)/gm;
+  const secRe = /^## (\S+)（\d+ 文件 · \d+ 行）\n\n\| 文件 \|[\s\S]*?(?=^## |$(?![\s\S]))/gm;
   let m;
   while ((m = secRe.exec(inventory))) {
     const domain = m[1];

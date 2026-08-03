@@ -1,10 +1,10 @@
 /**
- * inject.card.ts — 注入包池卡
+ * paradigm.card.ts — 范式包池卡
  *
- * 展示 .kfmv4/injects/*.md（行为预设注入包）——「池里有什么」，
+ * 展示 .kfmv4/paradigms/*.md（行为预设范式包）——「池里有什么」，
  * 供配置卡下拉引用。支持：列表（名称）、点选查看/编辑内容、
- * 新建、删除。注入包 = 拼进会话首条消息的行为规范文本（会话参数组的
- * 可选字段，见 config.card.ts 的 injectFile）。
+ * 新建、删除。范式包 = 拼进会话首条消息的行为规范文本（会话参数组的
+ * 可选字段，见 config.card.ts 的 paradigmFile）。
  *
  * UI 对齐 card-dev §内卡样式：表单内卡 + 池内卡（二级 c2→c1 反色框，
  * margin-top:6px 间距，同款 border-radius/padding/border-left-width）。
@@ -16,7 +16,7 @@ import { log } from '../../modules/logger.js';
 import { showConfirm } from '../../modules/confirm-dialog.js';
 import { innerCardStyle, inputStyle, btnStyle, mkRow, flashSaved } from '../card-ui.js';
 
-const INJECTS_PATH = '.kfmv4/injects';
+const PARADIGMS_PATH = '.kfmv4/paradigms';
 
 const API_BASE = (() => {
   const base = window.location.pathname.replace(/\/+$/, '');
@@ -32,7 +32,7 @@ async function readFile(path: string): Promise<string | null> {
     });
     const data = await res.json();
     return data.content || null;
-  } catch (e) { log('[inject] 读取失败: ' + (e instanceof Error ? e.message : String(e))); return null; }
+  } catch (e) { log('[paradigm] 读取失败: ' + (e instanceof Error ? e.message : String(e))); return null; }
 }
 
 async function writeFile(path: string, content: string): Promise<void> {
@@ -42,7 +42,7 @@ async function writeFile(path: string, content: string): Promise<void> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ path, content }),
     });
-  } catch (e) { log('[inject] 写入失败: ' + (e instanceof Error ? e.message : String(e))); }
+  } catch (e) { log('[paradigm] 写入失败: ' + (e instanceof Error ? e.message : String(e))); }
 }
 
 async function listDir(dir: string): Promise<string[]> {
@@ -54,7 +54,7 @@ async function listDir(dir: string): Promise<string[]> {
     });
     const data = await res.json();
     return (data.items || []).map((f: { name: string }) => f.name);
-  } catch (e) { log('[inject] 列出失败: ' + (e instanceof Error ? e.message : String(e))); return []; }
+  } catch (e) { log('[paradigm] 列出失败: ' + (e instanceof Error ? e.message : String(e))); return []; }
 }
 
 async function deleteFile(path: string): Promise<void> {
@@ -62,7 +62,7 @@ async function deleteFile(path: string): Promise<void> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ path }),
-  }).catch((e) => { log('[inject] 删除失败: ' + (e instanceof Error ? e.message : String(e))); });
+  }).catch((e) => { log('[paradigm] 删除失败: ' + (e instanceof Error ? e.message : String(e))); });
 }
 
 function createInjectHandler(meta: Record<string, unknown>): CardContentHandler {
@@ -73,7 +73,7 @@ function createInjectHandler(meta: Record<string, unknown>): CardContentHandler 
     async activate(contentEl, card) {
       const c1 = card?.accents?.color1 || '#ffb347';
       const c2 = card?.accents?.color2 || '#ff6b6b';
-      const { bodyEl } = buildCardLayout(contentEl, '注入包池', c1, c2);
+      const { bodyEl } = buildCardLayout(contentEl, '范式包池', c1, c2);
       bodyEl.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:8px;padding:0 10px;overflow-y:auto;touch-action:pan-y';
 
       // ── 表单内卡（二级反色框）──
@@ -83,14 +83,14 @@ function createInjectHandler(meta: Record<string, unknown>): CardContentHandler 
       const { row: nameRow, wrap: nameWrap } = mkRow('名称');
       const nameInput = document.createElement('input');
       nameInput.style.cssText = inputStyle();
-      nameInput.placeholder = '注入包名称（存为 .kfmv4/injects/<名>.md）';
+      nameInput.placeholder = '范式包名称（存为 .kfmv4/paradigms/<名>.md）';
       nameWrap.appendChild(nameInput);
       formSection.appendChild(nameRow);
 
       const { row: contentRow, wrap: contentWrap } = mkRow('内容');
       const contentArea = document.createElement('textarea');
       contentArea.style.cssText = inputStyle() + ';min-height:120px;resize:vertical;font-family:monospace';
-      contentArea.placeholder = '注入包内容：拼进会话首条消息前的行为规范';
+      contentArea.placeholder = '范式包内容：拼进会话首条消息前的行为规范';
       contentWrap.appendChild(contentArea);
       formSection.appendChild(contentRow);
 
@@ -117,7 +117,7 @@ function createInjectHandler(meta: Record<string, unknown>): CardContentHandler 
 
       const poolTitle = document.createElement('div');
       poolTitle.style.cssText = 'font-size:var(--card-font-size,11px);font-weight:700;color:rgba(255,255,255,0.85);margin-bottom:6px';
-      poolTitle.textContent = '注入包池（.kfmv4/injects/）';
+      poolTitle.textContent = '范式包池（.kfmv4/paradigms/）';
       poolCard.appendChild(poolTitle);
 
       const listEl = document.createElement('div');
@@ -126,13 +126,13 @@ function createInjectHandler(meta: Record<string, unknown>): CardContentHandler 
       bodyEl.appendChild(poolCard);
 
       async function load(): Promise<void> {
-        files = (await listDir(INJECTS_PATH)).filter(f => f.endsWith('.md')).sort();
+        files = (await listDir(PARADIGMS_PATH)).filter(f => f.endsWith('.md')).sort();
         render();
       }
 
       async function select(name: string): Promise<void> {
         selected = name;
-        const content = await readFile(`${INJECTS_PATH}/${name}.md`);
+        const content = await readFile(`${PARADIGMS_PATH}/${name}.md`);
         nameInput.value = name.replace(/\.md$/, '');
         contentArea.value = content || '';
         render();
@@ -143,7 +143,7 @@ function createInjectHandler(meta: Record<string, unknown>): CardContentHandler 
         if (files.length === 0) {
           const empty = document.createElement('div');
           empty.style.cssText = 'font-size:var(--card-font-size,11px);color:rgba(255,255,255,0.5);text-align:center;padding:10px 0';
-          empty.textContent = '暂无注入包——新建一个（如复制 evidence-discipline）';
+          empty.textContent = '暂无范式包——新建一个（如复制 evidence-discipline）';
           listEl.appendChild(empty);
           return;
         }
@@ -165,17 +165,17 @@ function createInjectHandler(meta: Record<string, unknown>): CardContentHandler 
 
       saveBtn.onclick = async () => {
         const name = nameInput.value.trim();
-        if (!name) { alert('请输入注入包名称'); return; }
-        await writeFile(`${INJECTS_PATH}/${name}.md`, contentArea.value);
+        if (!name) { alert('请输入范式包名称'); return; }
+        await writeFile(`${PARADIGMS_PATH}/${name}.md`, contentArea.value);
         selected = name;
         flashSaved(saveBtn);
         await load();
       };
 
       delBtn.onclick = async () => {
-        if (!selected) { alert('先选择一个注入包'); return; }
+        if (!selected) { alert('先选择一个范式包'); return; }
         const ok = await showConfirm({
-          title: '删除注入包',
+          title: '删除范式包',
           message: `确定删除「${selected}」？`,
           accent: c1,
           accent2: c2,
@@ -183,7 +183,7 @@ function createInjectHandler(meta: Record<string, unknown>): CardContentHandler 
           cancelText: '取消',
         });
         if (ok) {
-          await deleteFile(`${INJECTS_PATH}/${selected}.md`);
+          await deleteFile(`${PARADIGMS_PATH}/${selected}.md`);
           selected = '';
           nameInput.value = '';
           contentArea.value = '';
@@ -203,10 +203,10 @@ function createInjectHandler(meta: Record<string, unknown>): CardContentHandler 
 }
 
 registerCardType({
-  typeId: 'inject',
+  typeId: 'paradigm',
   icon: '\uD83D\uDCE6',
-  name: '注入包',
-  description: '注入包池管理（行为预设，供配置卡引用）',
+  name: '范式包',
+  description: '范式包池管理（行为预设，供配置卡引用）',
   kind: 'tool',
   createHandler: createInjectHandler,
 });

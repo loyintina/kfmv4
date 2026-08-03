@@ -27,14 +27,14 @@ interface AgentConfig {
   providerId?: string; // 可选：空 = 用默认（active.json / 首选项）
   modelId?: string;
   roleFile?: string;
-  injectFile?: string; // 注入包引用（.kfmv4/injects/<name>.md，可选）
+  paradigmFile?: string; // 范式包引用（.kfmv4/paradigms/<name>.md，可选）
   createdAt: string;
   updatedAt: string;
 }
 
 const PROVIDERS_PATH = '.kfmv4/providers.json';
 const CONFIGS_PATH = '.kfmv4/configs';
-const INJECTS_PATH = '.kfmv4/injects';
+const PARADIGMS_PATH = '.kfmv4/paradigms';
 const ACTIVE_PATH = '.kfmv4/active.json';
 
 // ====== API 基础 ======
@@ -108,8 +108,8 @@ async function loadConfigs(): Promise<AgentConfig[]> {
 }
 
 async function saveConfig(config: AgentConfig, fileName: string): Promise<void> {
-  const { providerId, modelId, roleFile, injectFile, createdAt, updatedAt } = config;
-  await writeFile(`\${CONFIGS_PATH}/\${fileName}.json`, JSON.stringify({ id: fileName, providerId, modelId, roleFile, injectFile, createdAt, updatedAt }, null, 2));
+  const { providerId, modelId, roleFile, paradigmFile, createdAt, updatedAt } = config;
+  await writeFile(`\${CONFIGS_PATH}/\${fileName}.json`, JSON.stringify({ id: fileName, providerId, modelId, roleFile, paradigmFile, createdAt, updatedAt }, null, 2));
 }
 
 async function deleteConfigFile(fileName: string): Promise<void> {
@@ -186,7 +186,7 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
   let configSelect: CustomSelect | null = null;
   let provSelect: CustomSelect | null = null;
   let modelSelect: CustomSelect | null = null;
-  let injectSelect: CustomSelect | null = null;
+  let paradigmSelect: CustomSelect | null = null;
 
   // window 事件监听持有引用：deactivate 时移除防泄漏；重复 activate 先摘后挂防叠加
   let _onProviderChange: ((e: Event) => void) | null = null;
@@ -214,7 +214,7 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
         loadConfigs(),
         loadActiveConfigFileName(),
       ]);
-      const injectFiles = (await listDir(INJECTS_PATH)).filter(f => f.endsWith('.md')).map(f => f.replace(/.md$/, ''));
+      const paradigmFiles = (await listDir(PARADIGMS_PATH)).filter(f => f.endsWith('.md')).map(f => f.replace(/.md$/, ''));
       providers = providersResult;
       configs = configsResult;
       const activeConfig = configs.find(c => (c as AgentConfig & { _fileName: string })._fileName === activeConfigFile);
@@ -314,17 +314,17 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
       modelWrap.appendChild(modelSelect.element);
       formScroll.appendChild(modelRow);
 
-      // 行为预设（注入包：从池下拉选择，可空 = 默认无注入）
-      const { row: injectRow, wrap: injectWrap } = mkRow('注入包');
-      injectSelect = createCustomSelect({
+      // 行为预设（范式包：从池下拉选择，可空 = 默认无范式）
+      const { row: injectRow, wrap: injectWrap } = mkRow('范式包');
+      paradigmSelect = createCustomSelect({
         accent: c2,
         placeholder: '（默认）',
         minWidth: 100,
         onSelect: async (file) => {
-          if (editingConfig) { editingConfig.injectFile = file || undefined; await persistConfig(); }
+          if (editingConfig) { editingConfig.paradigmFile = file || undefined; await persistConfig(); }
         },
       });
-      injectWrap.appendChild(injectSelect.element);
+      injectWrap.appendChild(paradigmSelect.element);
       formScroll.appendChild(injectRow);
 
       // 操作按钮（在 formSection 内部）
@@ -342,7 +342,7 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
         const oldName = oldCfg._fileName || '';
         editingConfig.providerId = provSelect?.getValue() || '';
         editingConfig.modelId = modelSelect?.getValue() || '';
-        editingConfig.injectFile = injectSelect?.getValue() || undefined;
+        editingConfig.paradigmFile = paradigmSelect?.getValue() || undefined;
         editingConfig.updatedAt = new Date().toISOString();
         if (oldName && oldName !== newName) { await renameConfigFile(oldName, newName); }
         await saveConfig(editingConfig, newName);
@@ -410,12 +410,12 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
           provSelect?.updateItems(providers.map(p => ({ label: p.name || p.id, value: p.id })), config.providerId || '');
           const prov = getProviderById(config.providerId || '');
           modelSelect?.updateItems((prov?.models || []).map(m => ({ label: m, value: m })), config.modelId || '');
-          injectSelect?.updateItems(injectFiles.map(f => ({ label: f, value: f })), config.injectFile || '');
+          paradigmSelect?.updateItems(paradigmFiles.map(f => ({ label: f, value: f })), config.paradigmFile || '');
         } else {
           nameInput.value = '';
           provSelect?.updateItems(providers.map(p => ({ label: p.name || p.id, value: p.id })), '');
           modelSelect?.updateItems([], '');
-          injectSelect?.updateItems(injectFiles.map(f => ({ label: f, value: f })), '');
+          paradigmSelect?.updateItems(paradigmFiles.map(f => ({ label: f, value: f })), '');
         }
       }
       
@@ -579,11 +579,11 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
       configSelect?.destroy();
       provSelect?.destroy();
       modelSelect?.destroy();
-      injectSelect?.destroy();
+      paradigmSelect?.destroy();
       configSelect = null;
       provSelect = null;
       modelSelect = null;
-      injectSelect = null;
+      paradigmSelect = null;
       contentEl.innerHTML = '';
     },
   };
