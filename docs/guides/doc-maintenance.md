@@ -192,6 +192,26 @@
    guides/*.md → 被 orientation 或对应 workflow 引用；新生成器/可生成事实 →
    登记进 `active/generateable-facts.md`。只建文档不挂引用 = check 红。
 
+### 流程引导错误码（DOC-FLOW，构建失败时把 agent 引回流程）
+
+写文档/新机制的 check 失败时，报错尾部带 `⛳ DOC-FLOW-<NN>` 引导——agent
+照引导读对应文档、走对应工作流步骤，而不是自己瞎猜修法。错误码可统计
+（高频错误码 = 流程哪步最容易走错 → 针对性优化流程）。
+
+| 错误码 | 触发 | 读什么 | 走 doc-write 第几步 |
+|--------|------|--------|---------------------|
+| DOC-FLOW-01 | 孤儿文档（无引用） | 本节 §必挂引用点 | 第 4 步 |
+| DOC-FLOW-02 | MUST 未登记（decisions/detail 没进正规入口） | decisions/README §纪律 或 本域契约头注 | 第 4 步 |
+| DOC-FLOW-03 | 可生成内容漂移（gen-* check-only 红） | generateable-facts.md | 第 2 步 |
+| DOC-FLOW-04 | 工具文档参数节漂移 | generateable-facts.md（gen-tool-docs） | 第 2 步 |
+| DOC-FLOW-05 | 权限映射未登记（BAR-PERM-01） | harness-permission-engine.md §映射 | 第 2 步 |
+| DOC-FLOW-06 | 规则登记表漂移 | detail-rules.md | 第 2 步 |
+| DOC-FLOW-07 | 加载类文档超预算线 | doc-architecture §读/存分区 | 第 1 步 |
+| DOC-FLOW-08 | 新代码文件无文档家（check-doc-coverage） | 对应域 contract.md | 第 4 步 |
+
+新错误码：加一行（码 + 触发 + 读什么 + 走哪步），并在对应 check 报错尾部
+补 `⛳ DOC-FLOW-NN：…` 引导行。
+
 ### 入口文档常态化验证（文档 CI）
 
 入口文档的活性由 `experiments/coldstart/tools/routine-entry-validation.mjs` 保障

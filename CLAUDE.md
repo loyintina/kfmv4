@@ -31,6 +31,7 @@
 | 语义深扫 | workflows/deep-scan.yaml |
 | Bug 诊断/分诊 | workflows/diagnostics.yaml |
 | 纪律机械化 | workflows/discipline-mechanize.yaml |
+| 文档写入（新增/重写） | workflows/doc-write.yaml |
 | 文档树同步 | workflows/doc-tree-sync.yaml |
 | 新 agent 接手 | workflows/onboarding.yaml |
 | 平行多轨讨论 | workflows/parallel-tracks.yaml |

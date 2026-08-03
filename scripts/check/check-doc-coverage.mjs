@@ -74,6 +74,7 @@ for (const fp of collectTsFiles(join(ROOT, 'src'))) {
   }
 }
 if (uncovered > 0) console.error(`[check-doc-coverage] ${uncovered} 个文件无文档覆盖`);
+if (uncovered > 0) console.error('[check-doc-coverage] ⛳ DOC-FLOW-08：新代码文件必须有文档家——读对应域 contract.md 文件清单，走 workflows/doc-write.yaml 第 4 步');
 
 // ========== 2. 服务端文件头部注释 ==========
 

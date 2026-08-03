@@ -1,0 +1,28 @@
+id: doc-write
+name: 文档写入（新增/重写）
+trigger: 需要新增或重写 docs/ 下的任何文档（新 detail/guide/ADR/ledger/契约），或新生成器/可生成事实
+frequency: 中频（文档体系演进时）
+reads:
+  - guides/doc-maintenance.md（检查清单 7 条：计数唯一出处/时点/必读分层/专有名词/必挂引用点）
+  - active/generateable-facts.md（可生成事实登记——该拼接的别手写；新可生成事实先登记）
+  - guides/doc-architecture.md（读/存分区——这份文档是书架还是档案馆）
+steps:
+  1. 判断类型 + 读/存分区（书架=读价值，执行者要读；档案馆=存价值，为了万一/血泪）
+     → 决定放哪层：ADR/case-study → decisions/；detail → domains/{域}/；guide → guides/；
+       新契约 → domains/{域}/；ledger → ledger/
+  2. 查 generateable-facts：内容能从活源头推导 → 必须用生成器（gen-*）拼接，不手写；
+     登记表没有但能推导 → 先登记再升档（否则 check 漂移红）
+  3. 按 doc-maintenance 清单写内容（计数写引用不写快照/时点标注/新术语进 onboarding §5）
+  4. 挂正规入口（MUST 门，check-doc-orphans 会拦）：
+     - decisions/* → decisions/README.md 索引登记
+     - domains/*/detail-* → 同域 contract.md 头注「别的去哪找」
+     - guides/* → orientation 或对应 workflow
+     - 新生成器/可生成事实 → generateable-facts.md 登记
+  5. 跑对应生成器回写 + npm run check（gen-* / doc-orphans / doc-budget 全绿）
+  6. 新增/移动/删除文档 → doc-tree-sync（路由表一行 + 工作流 reads 同步）
+writes:
+  - 新文档本体
+  - 引用点（decisions 索引 / 契约头注 / orientation / generateable-facts 登记）
+exit_condition: npm run check 全绿 + 文档被正确入口引用（非孤儿非三无）
+natural_next: doc-tree-sync（结构变化时）
+metric: 一次通过率（被 check 弹回次数）——观测台 doc-write 遵循率

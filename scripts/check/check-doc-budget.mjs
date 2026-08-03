@@ -37,6 +37,7 @@ for (const { file, max } of BUDGETS) {
 
 if (errors > 0) {
   console.error(`\n[check-doc-budget] ${errors} 个文件超预算线，构建中断。`);
+  console.error('[check-doc-budget] ⛳ DOC-FLOW-07：加载类文档有注意力预算（150 行）——读 docs/guides/doc-architecture.md §读/存分区，走 workflows/doc-write.yaml 第 1 步');
   process.exit(1);
 }
 console.log('[check-doc-budget] OK — 全部加载类文档在预算线内');

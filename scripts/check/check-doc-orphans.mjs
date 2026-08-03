@@ -84,11 +84,13 @@ for (const f of docsFiles) {
 
 if (mustErrors.length) {
   for (const e of mustErrors) console.error(`[check-doc-orphans] ${e}`);
+  console.error('[check-doc-orphans] ⛳ DOC-FLOW-02：decisions 必须进 decisions/README.md 索引；detail 必须进同域契约头注——读 docs/guides/doc-maintenance.md §必挂引用点，走 workflows/doc-write.yaml 第 4 步');
 }
 if (orphans.length) {
   for (const o of orphans) {
     console.error(`[check-doc-orphans] 孤儿文档 ${o}——没有任何引用（orientation 纪律：文档不可孤悬）`);
   }
+  console.error('[check-doc-orphans] ⛳ DOC-FLOW-01：新文档必须挂正规入口——读 docs/guides/doc-maintenance.md §必挂引用点，走 workflows/doc-write.yaml 第 4 步');
 }
 if (mustErrors.length || orphans.length) {
   const n = mustErrors.length + orphans.length;

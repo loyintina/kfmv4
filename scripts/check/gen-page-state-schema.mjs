@@ -101,6 +101,7 @@ const next = doc.slice(0, startIdx) + facts + doc.slice(endIdx + MARK_END.length
 if (checkOnly) {
   if (next !== doc) {
     console.error('[gen-page-state-schema] 事实段漂移——代码注册的文本与文档不一致');
+  console.error('[gen-page-state-schema] ⛳ DOC-FLOW-03：可生成内容必须由生成器拼接，别手写——读 docs/active/generateable-facts.md，走 workflows/doc-write.yaml 第 2 步');
     console.error('[gen-page-state-schema] 跑 node scripts/check/gen-page-state-schema.mjs 回写');
     process.exit(1);
   }

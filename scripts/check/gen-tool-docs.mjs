@@ -96,6 +96,7 @@ for (const def of defs) {
     changed++;
     if (checkOnly) {
       errors.push(`工具 ${def.name} 参数节漂移（schema 与文档不一致）`);
+  console.error('[gen-tool-docs] ⛳ DOC-FLOW-04：工具参数由 schema 拼接，改参数别改文档——读 docs/active/generateable-facts.md，走 workflows/doc-write.yaml 第 2 步');
     } else {
       writeFileSync(docPath, next, 'utf-8');
     }

@@ -71,6 +71,7 @@ const errors = [];
 // 双向校验：工具缺登记 / 幽灵登记
 for (const t of toolNames) {
   if (!riskMap.some(r => r.tool === t)) errors.push(`工具 ${t} 未在 TOOL_RISK 登记 RiskClass（BAR-PERM-01）`);
+  console.error('[gen-permission-map] ⛳ DOC-FLOW-05：新工具必须登记 RiskClass——读 docs/active/harness-permission-engine.md §映射，走 workflows/doc-write.yaml 第 2 步');
 }
 for (const r of riskMap) {
   if (!toolNames.includes(r.tool)) errors.push(`TOOL_RISK 幽灵登记 ${r.tool}（代码未注册该工具）`);

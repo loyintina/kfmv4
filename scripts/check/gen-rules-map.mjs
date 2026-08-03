@@ -88,6 +88,7 @@ if (s !== -1) {
 
 if (checkOnly) {
   if (next !== doc) errors.push('规则登记段漂移（rules 集与文档不一致）');
+  console.error('[gen-rules-map] ⛳ DOC-FLOW-06：规则登记表由 frontmatter 拼接——读 docs/domains/ai-chat/detail-rules.md，走 workflows/doc-write.yaml 第 2 步');
 } else if (next !== doc) {
   writeFileSync(DOC, next, 'utf-8');
 }
