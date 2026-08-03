@@ -15,8 +15,8 @@ import { buildAlwaysApplyPrompt, checkToolCallRules } from './rule-engine.js';
 import { assembleRoleSystemPrompt, assembleDynamicPrompt } from './prompt-assembler.js';
 import { refreshPageState } from './page-state.js';
 
-/** 从 prompts/tools/*.md 加载工具描述（基于 PROJECT_ROOT，不依赖进程 cwd） */
-const PROMPTS_DIR = join(PROJECT_ROOT, 'src', 'server', 'prompts', 'tools');
+/** 从 prompts/global/tools/*.md 加载工具描述（基于 PROJECT_ROOT，不依赖进程 cwd） */
+const PROMPTS_DIR = join(PROJECT_ROOT, 'src', 'server', 'prompts', 'global', 'tools');
 const GLOBAL_PROMPTS_DIR = join(PROJECT_ROOT, 'src', 'server', 'prompts', 'global');
 const toolDocs = new Map<string, string>();
 function loadToolDocs(): void {
@@ -33,9 +33,10 @@ function loadToolDocs(): void {
 loadToolDocs();
 
 /**
- * 全局预设提示词（prompts/global/*.md）：目录下所有 md 自动注入静态 system 段，
- * 全部会话强制，独立于角色卡。与 prompts/system/*.md（角色卡挂载才生效）语义区分：
- * global = 自动生效；system = 挂载生效。目录语义见 prompts/README.md。
+ * 全局预设提示词（prompts/global/*.md 顶层）：自动注入静态 system 段，全部会话强制，
+ * 独立于角色卡。工具文档在 prompts/global/tools/（自动注入，见 PROMPTS_DIR）。
+ * 与 prompts/system/*.md（角色卡挂载才生效）语义区分：global = 自动；system = 挂载。
+ * 目录语义见 prompts/README.md。readdirSync 不递归 → 顶层与 tools/ 子目录互不干扰。
  */
 const globalPrompts: string[] = (() => {
   try {
