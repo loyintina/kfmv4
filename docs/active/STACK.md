@@ -212,6 +212,10 @@
 
 ## 研究参考（2026-08-02 起登记，未立项，内化备查）
 
+0. **错误码总表（2026-08-03 落地）**——流程引导错误码（DOC-FLOW×8 / TEST-FLOW×3 /
+   MECH-FLOW×9）总表 `active/error-codes.md`：构建失败时 check 报错带 ⛳ 引导，
+   把处理者引回「读 X 走 Y」；20 个流程门 check 已覆盖。
+
 9. **语义生成（2026-08-02 立项：语义单源+生成呈现）**——设计 `active/semantic-generation.md`；
    可生成事实登记表 `active/generateable-facts.md`；已落地：契约清单生成器
    （gen-contract-lists，6 域清单单一出处）、路由表覆盖门（check-workflow-integrity）。
