@@ -33,6 +33,34 @@ fail-closed（默认拒绝、显式放行）。提示词边界条款保留（降
 | exec | 执行命令，副作用面大 | **bash** | 门控（白名单 + 审批） | 06：做事通道与破界正相关；18 臂构建/部署越界 |
 | external | 外部副作用 | commit/push、kfm-restart、未来 AI 之手页面操作 | 审批；**无人值守一律拒绝** | 11 臂 commit 越界；无人臂 build 越界（验证轮冒烟实测） |
 
+<!-- gen:perm-map:start -->
+
+### 工具 → RiskClass 精确映射（自动生成，勿手改）
+
+> 由 `gen-permission-map.mjs` 从 permissions.ts 的 TOOL_RISK 拼接。
+> 新工具必须登记 RiskClass（BAR-PERM-01）；未登记 = check 中断。
+
+| 工具 | RiskClass | 语义 |
+|------|-----------|------|
+| glob | read | 只读，无副作用 |
+| grep | read | 只读，无副作用 |
+| kfm-logs | read | 只读，无副作用 |
+| read | read | 只读，无副作用 |
+| web_search | read | 只读，无副作用 |
+| checkpoint | write_local | 写本地，路径可控 |
+| edit | write_local | 写本地，路径可控 |
+| rewind | write_local | 写本地，路径可控 |
+| todo | write_local | 写本地，路径可控 |
+| write | write_local | 写本地，路径可控 |
+| bash | exec | 执行命令，副作用面大 |
+| browser | exec | 执行命令，副作用面大 |
+| browser_eval | exec | 执行命令，副作用面大 |
+| debug | exec | 执行命令，副作用面大 |
+| eval | exec | 执行命令，副作用面大 |
+| kfm-restart | external | 外部副作用，审批/无人拒绝 |
+
+<!-- gen:perm-map:end -->
+
 ## 3. evaluate 契约
 
 ```ts

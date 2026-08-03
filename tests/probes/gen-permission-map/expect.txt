@@ -1,0 +1,1 @@
+工具 fake_tool 未在 TOOL_RISK 登记 RiskClass（BAR-PERM-01）
