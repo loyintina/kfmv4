@@ -13,6 +13,7 @@
 | 代码清单（域归属/行数） | 代码树 | gen-code-inventory.mjs | 机械生成头注 |
 | 观测台周报 | 账本/审计/信箱 | obs-aggregate.mjs | 每周投信箱 |
 | 眼睛格式事实段 | PAGE_STATE_TEXTS 注册表 + ui-registry 类型联合 | gen-page-state-schema.mjs | `<!-- gen:page-state-facts:start/end -->` |
+| 实验清单 | experiments/*/index.md（目录 + 首行标题） | gen-experiments-list.mjs | `<!-- gen:experiments-list:start/end -->` |
 
 ## 可生成待升档（按优先级）
 
