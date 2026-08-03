@@ -9,7 +9,7 @@
 - server：ESM bundle——**external 列表是生死线**（CJS 包打进去启动即崩）。
 - 样式：`sass public/css/:public/css/`（目录级全量编译，check 链内自动执行）。
 
-## 检查管线（npm run check，37 脚本，顺序固定）
+## 检查管线（npm run check，38 脚本，顺序固定）
 
 （下方生成区枚举的链步数多于标题脚本数：sass/sync-counts/gen-code-inventory/npm test/tsc
 为非 check-* 步骤，不计入脚本数。）
@@ -20,8 +20,8 @@ css-wiring → tool-compaction → anim → as-any → card-meta → registry �
 state-freshness → mutation-anchors → docs → consistency → active-stack → stack-status →
 code-doc-refs → workflow-integrity → cards → contract-freshness → test-patterns → bar-ledger →
 ledger-commits → doc-budget → doc-symbols → doc-linerefs → doc-schema → commit-docs → fix-tests →
-hooks → probes → release-radar → experiment-index → sync-counts → gen-code-inventory → npm test →
-tsc。
+hooks → page-state-schema → probes → release-radar → experiment-index → sync-counts →
+gen-code-inventory → npm test → tsc。
 <!-- /chain:auto -->
 
 **链外概率区自动化（2026-07-30 登记）**：`scripts/agent/semantic-chain.mjs`（语义巡逻，
