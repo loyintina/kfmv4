@@ -9,6 +9,11 @@ import { fileURLToPath } from 'url';
 const url = (rel: string) => fileURLToPath(new URL(rel, import.meta.url));
 const src = (rel: string) => readFileSync(url(rel), 'utf-8');
 
+regression('BAR-GENLIST-01', 'no-literal-Z-lookahead', 'gen-contract-lists 节终止前瞻不得回退到 \\Z（JS 无此转义，被当字面 Z 截断域节——探针夹具 tests/probes/gen-contract-lists/ 同钉）', async () => {
+  const gen = src('../scripts/check/gen-contract-lists.mjs');
+  assert(!/\\Z/.test(gen), 'gen-contract-lists 再现 \\Z 字面——回到 BAR-GENLIST-01 病根');
+});
+
 regression('BAR-GENINV-01', 'explicit-files-not-filtered', 'gen-code-inventory 显式登记文件不得被 CODE_EXT 过滤（deploy.sh/package.json 曾因此从清单蒸发）', async () => {
   const gen = src('../scripts/check/gen-code-inventory.mjs');
   assert(!/isFile\(\)\s*&&\s*CODE_EXT/.test(gen), '显式文件分支重新挂上 CODE_EXT 过滤 = 回到 BAR-GENINV-01 病根');
