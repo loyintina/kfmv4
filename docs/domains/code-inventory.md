@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit e3faa58 · 生成于 2026-08-03 -->
+<!-- 基准 commit 6337139 · 生成于 2026-08-03 -->
 
 # 代码清单（机械层）
 
@@ -170,7 +170,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（119 文件 · 14445 行）
+## infra（119 文件 · 14468 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -229,6 +229,7 @@
 | scripts/check/gen-rules-map.mjs | 101 | — |
 | tests/session-invalidate.test.ts | 100 | — |
 | scripts/check/check-anim.mjs | 99 | — |
+| scripts/check/check-doc-orphans.mjs | 99 | — |
 | scripts/check/check-state-freshness.mjs | 91 | — |
 | scripts/check/check-versions.mjs | 91 | — |
 | scripts/check/chain.mjs | 90 | STEPS |
@@ -244,7 +245,6 @@
 | scripts/check/check-console.mjs | 79 | — |
 | tests/tag-advisor.test.ts | 77 | — |
 | scripts/check/check-as-any.mjs | 76 | — |
-| scripts/check/check-doc-orphans.mjs | 76 | — |
 | scripts/check/docs-status.mjs | 76 | — |
 | scripts/check/check-doc-symbols.mjs | 75 | — |
 | scripts/check/gen-contract-lists.mjs | 74 | — |
@@ -601,4 +601,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 258 文件 · 45795 行 · 跨域边 245 条
+合计 258 文件 · 45818 行 · 跨域边 245 条
