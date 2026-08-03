@@ -20,7 +20,7 @@ steps:
   6. 新模式/新样本 → 更新 active/thinking-patterns.md（模式名 + 定义 + 出处）
 writes:
   - 决策文档（decisions/ 或对应文档）
-  - .kfmv4/discussion-log.jsonl（原始数据账本）
+  - ~/.kfmv4/discussion-log.jsonl（原始数据账本，数据目录在仓库外）
   - active/thinking-patterns.md（模式+出处提炼）
 exit_condition: 成果已沉淀 + 账本已记 + 用户已确认模式 + patterns.md 已更新
 natural_next: 按成果类型走 doc-write / spec-driven / contract-maintain

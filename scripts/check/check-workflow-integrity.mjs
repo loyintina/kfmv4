@@ -13,6 +13,7 @@
 
 import { readFileSync, readdirSync, existsSync } from 'fs';
 import { join, resolve } from 'path';
+import { homedir } from 'os';
 import { fileURLToPath } from 'url';
 import { DOCS_ROOT } from './docs-root-const.mjs';
 
@@ -54,9 +55,13 @@ for (const f of readdirSync(wfDir).filter(f => f.endsWith('.yaml'))) {
       if (p.includes('{') || p.includes('*')) continue; // 占位符/通配
       if (!p.includes('/')) continue; // 非路径（单个词）
       checked++;
-      const full = p.endsWith('/')
-        ? [join(ROOT, DOCS_ROOT, p), join(ROOT, p)]
-        : [join(ROOT, DOCS_ROOT, p), join(ROOT, p)];
+      // 数据目录引用（~/ 前缀 → homedir 展开，如 ~/.kfmv4/discussion-log.jsonl）
+      if (p.startsWith('~/')) {
+        const homePath = join(homedir(), p.slice(2));
+        if (!existsSync(homePath)) error(`${f}: ${field} 引用 "${p}" 不存在`);
+        continue;
+      }
+      const full = [join(ROOT, DOCS_ROOT, p), join(ROOT, p)];
       if (!full.some(c => existsSync(c))) {
         error(`${f}: ${field} 引用 "${p}" 不存在`);
       }
