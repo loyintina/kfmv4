@@ -1,17 +1,18 @@
-# checkpoint — 保存快照
+# checkpoint — 快照（未实现）
 
-在探索性工作前设置安全点，之后可以通过 rewind 回滚，只保留精简的报告。
+> ⚠️ **当前为占位实现（stub）**：调用只返回 `[checkpoint] {label} — 快照功能已就绪，需要文件系统支持`，
+> **不保存任何状态**，`rewind` 也无法真正回滚。不要依赖它做探索安全点。
 
-## 使用规则
 
-- 在需要大量中间工具调用（read/grep/glob 等）的探索前设置
-- 调用 rewind 结束 checkpoint 后才能 yield
-- 不能嵌套 checkpoint
 
-## 典型流程
+<!-- gen:tool-params:start -->
 
-1. `checkpoint(goal: "探索目的")`
-2. 执行探索工作
-3. `rewind(report: "简洁发现报告")`
+## 参数
 
-回滚后，中间的探索消息从上下文中移除，只保留报告。
+- `label`（可选）— 快照标签
+
+<!-- gen:tool-params:end -->
+## 现状与替代
+
+- 快照/回滚能力尚未落地；需要「安全点」语义时，用 todo 记录进度 + 谨慎操作
+- 实现路线：checkpoint/rewind 需要配套的上下文快照存储（未实现）

@@ -12,6 +12,7 @@
 | 检查链节（chain:auto） | chain.mjs STEPS | sync-counts.mjs | `<!-- chain:auto -->` |
 | 代码清单（域归属/行数） | 代码树 | gen-code-inventory.mjs | 机械生成头注 |
 | 观测台周报 | 账本/审计/信箱 | obs-aggregate.mjs | 每周投信箱 |
+| 眼睛格式事实段 | PAGE_STATE_TEXTS 注册表 + ui-registry 类型联合 | gen-page-state-schema.mjs | `<!-- gen:page-state-facts:start/end -->` |
 
 ## 可生成待升档（按优先级）
 
@@ -22,6 +23,9 @@
 | 版本号标记（README:1/5） | package.json | ✅ sync-counts 回写 | — | ✅ P1 |
 | check 清单（名字） | chain.mjs STEPS | ✅ 已由 contract chain:auto 覆盖（生成区含全部名字） | — | ✅ P1 |
 | 「六域」列举 | docs/domains/ 目录 | 域数稳定（6），code-inventory 已机械列出全部域 | 不升档：prose 提及属判断区，生成成本高于收益 | ⏸ P2 |
+| **工具文档参数节**（16 份） | tools/*.ts 的 KfmTool.parameters schema | ✅ 生成器 gen-tool-docs 挂链（参数节拼接 + check-only 门） | `<!-- gen:tool-params:start/end -->` | ✅ P0 |
+| 运行时事件类型清单 | shared/chat-protocol/events.ts 类型 union | detail-runtime §3.3 手写 7/9 种（缺 error/rule_warning） | 低成本：生成类型清单或补引用指针 | P1 |
+| debug-tools CDP 操作表 | debug.ts action 分支 + kfmv4-views.ts | 手写 14/19 种 + launch 状态错 | 生成器从注册表拼接 | P1 |
 
 ## 边界（不可生成，默认手写）
 

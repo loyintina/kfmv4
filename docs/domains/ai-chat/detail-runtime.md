@@ -117,6 +117,12 @@ done                ← 整个生成结束
 > `tc.index` 可能不从 0 起（如 Claude 从 1），若直接用会在客户端 content 数组留
 > `undefined` 空洞，`.filter(b=>b.type)` 读空洞崩 `Cannot read ... 'type'`。见 chat.ts 头注。
 
+> **完整事件类型（9 种，定义在 `src/shared/chat-protocol/events.ts` 的 union）**：
+> 上述序列的 7 种之外，还有两种非序列事件——
+> - `error` — 生成过程错误（流中随时可插入）
+> - `rule_warning` — 工具调用触发条件规则时的警告框（见 rule-engine checkToolCallRules）
+> 新事件类型以 events.ts 类型 union 为准，本文档的序列图只画 happy path。
+
 ---
 
 ## 4. ⚠️ 隐式契约（破坏会卡死，且难调试）

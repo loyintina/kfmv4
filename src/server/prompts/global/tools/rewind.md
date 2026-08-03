@@ -1,20 +1,17 @@
-# rewind — 快照回滚
+# rewind — 快照回滚（未实现）
 
-结束当前 checkpoint，回滚上下文到 checkpoint 设置点，用精简报告替换中间探索内容。
+> ⚠️ **当前为占位实现（stub）**：调用恒返回 `[rewind] 已回滚到最近快照`，
+> **不执行任何回滚**（无参数、无逻辑）。与 checkpoint 配套，两者都未落地。
+
+
+<!-- gen:tool-params:start -->
 
 ## 参数
 
-- `report`（必填）— 简洁的发现报告
+（无参数）
 
-## 要求
+<!-- gen:tool-params:end -->
+## 现状
 
-- 报告必须简洁、事实性、可操作
-- 包含关键发现、决策和未解决的风险
-- 避免原始日志转储
-- 如果 checkpoint 已回滚，从保留的报告继续，不要重试
-
-## 行为
-
-- 无活跃 checkpoint → 错误
-- 成功 → 会话回滚，保留报告，关闭 checkpoint
-- 回滚对此 checkpoint 是终局的，重复调用会报错
+- 无活跃 checkpoint 概念、无上下文回滚能力
+- 别指望 rewind 恢复被截断/丢失的上下文——这是 stub 的假响应

@@ -1,0 +1,1 @@
+工具 fake_tool 参数节漂移（schema 与文档不一致）

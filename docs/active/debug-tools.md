@@ -89,7 +89,12 @@
 | `threads` | 查看线程 | ✅ |
 | `loaded_sources` | 查看加载的源文件 | ✅ |
 | `tracepoint` | 非侵入式探针（__kfmProbe 基础设施） | ✅ 已架构 |
-| `launch` | 启动子进程调试 | ❌ AI 沙盒限制 |
+| `launch` | `--inspect-brk` 启动子进程调试（端口 0 自动分配） | ✅ 已实现 |
+| `terminate` | 终止调试会话 | ✅ |
+| `continue` | 继续执行（resume 后等 3s，暂停则列帧） | ✅ |
+| `pause` | 暂停执行 | ✅ |
+| `stack_trace` | 当前暂停帧栈 | ✅ |
+| `output` | 输出缓冲末尾 50 条 | ✅ |
 | `step_in/over/out` | 单步执行 | ⚠️ 需暂停帧，生产不建议 |
 | `variables/scopes` | 查看变量 | ⚠️ 需暂停帧，生产不建议 |
 

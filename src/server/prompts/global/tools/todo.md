@@ -1,28 +1,34 @@
-# todo — 任务列表
+# todo — 任务列表渲染
 
-管理当前会话的任务追踪。
+把任务列表渲染成文本清单，供对话中追踪待办。**纯逻辑格式化，不持久化**——
+每轮调用都要带上当前完整的任务数组（服务端不保存状态）。
 
-## 操作类型
 
-| `op` | 参数 | 效果 |
-|------|------|------|
-| `init` | `items: string[]` | 初始化任务列表（替换已有） |
-| `start` | `task` | 标记为进行中 |
-| `done` | `task` | 标记为已完成 |
-| `drop` | `task` | 标记为放弃 |
-| `rm` | `task`（可选） | 删除指定任务；省略则清空列表 |
-| `append` | `items: string[]` | 追加新任务 |
-| `view` | — | 查看当前列表 |
+<!-- gen:tool-params:start -->
 
-## 任务内容规范
+## 参数
 
-- 5-10 字，描述做什么，不描述怎么做
-- 唯一标识符，不要用 `"task-1"` 这种自创 ID
-- 完成立即标记 done
+- `todos`（必填）— 任务项列表，每项含 content、status（pending/in_progress/completed/cancelled）、priority（high/medium/low）
 
-## 何时创建列表
+<!-- gen:tool-params:end -->
+## 任务项格式
 
-- 任务需要 3 步以上
-- 用户明确要求
-- 用户提供了任务集合
-- 中途收到新指令 — 先记录再执行
+每个任务项是对象：
+
+- `content`（必填）— 任务描述文本
+- `status`（可选）— `pending` / `in_progress` / `completed` / `cancelled`
+- `priority`（可选）— `high` / `medium` / `low`（仅校验，不参与渲染）
+
+## 渲染规则
+
+- `pending` → `[ ] 任务内容`
+- `in_progress` → `[>] 任务内容`
+- `completed` → `[x] 任务内容`
+- `cancelled` → `[-] 任务内容`
+- 缺 `content` → 显示 `任务 {序号}`
+
+## 关键规则
+
+- 每次调用传**完整**任务数组（不是增量），列表以调用时的数组为准
+- 列表为空或未传 → 返回 `(任务列表为空)`
+- 更新任务状态 = 重新调用并传修改后的完整数组
