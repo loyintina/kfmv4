@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 1e73194d · 生成于 2026-08-03 -->
+<!-- 基准 commit b981732e · 生成于 2026-08-03 -->
 
 # 代码清单（机械层）
 
@@ -36,7 +36,7 @@
 | src/client/engine/v2/animation.ts | 40 | ease |
 | src/client/engine/v2/utils.ts | 24 | uniformSpacing, hvSpacing, ZERO_SPACING |
 
-## floating-card（27 文件 · 6689 行）
+## floating-card（28 文件 · 6908 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -50,6 +50,7 @@
 | src/client/cards/plugins/tools.card.ts | 307 | — |
 | src/client/modules/renderers/handler-factory.ts | 296 | createFileHandler |
 | src/client/modules/tmux-card.ts | 289 | TmuxCardMeta, createTmuxCardHandler |
+| src/client/cards/plugins/inject.card.ts | 218 | — |
 | src/client/modules/floating-fullscreen.ts | 214 | enterFullscreen, exitFullscreen, dismissFullscreen |
 | src/client/modules/floating-shared.ts | 173 | FloatingCardAction, nextFloatingCardState, _hexToRgba, _cornerLayout, Z_FLOATING_BASE, Z_FULLSCREEN, TITLE_BAR_H, COMPACT_W, COMPACT_H, FloatingCardConfig, FloatingCardItem, _floatingCards, _allocZ, _brOrbToItem, _scatterPosition, _dismissOne |
 | src/client/modules/card-registry.ts | 155 | CardTypeDef, CardContentHandler, CardInstance, registerCardType, getCardType, getAllCardTypes, cardRegistry |
@@ -60,7 +61,7 @@
 | src/client/modules/renderers/md-extensions.ts | 51 | MARKED_OPTS, preprocessMd |
 | src/client/modules/renderers/binary-fallback.ts | 37 | renderBinaryInfo |
 | src/client/modules/renderers/text-preview.ts | 26 | renderTextPreview |
-| src/client/cards/registry.ts | 21 | — |
+| src/client/cards/registry.ts | 22 | — |
 | src/client/cards/plugins/file.card.ts | 19 | — |
 | src/client/cards/plugins/terminal.card.ts | 19 | — |
 | src/client/cards/plugins/tmux.card.ts | 19 | — |
@@ -462,7 +463,7 @@
 - src/client/modules/floating-shared.ts → src/client/modules/theme.ts
 - src/client/modules/terminal-card-04.ts → src/client/modules/theme.ts
 
-### floating-card → client-shell（42 边）
+### floating-card → client-shell（44 边）
 
 - src/client/cards/plugins/api.card.ts → src/client/modules/confirm-dialog.ts
 - src/client/cards/plugins/api.card.ts → src/client/modules/custom-select.ts
@@ -471,6 +472,8 @@
 - src/client/cards/plugins/config.card.ts → src/client/modules/custom-select.ts
 - src/client/cards/plugins/config.card.ts → src/client/modules/logger.ts
 - src/client/cards/plugins/debug.card.ts → src/client/modules/logger.ts
+- src/client/cards/plugins/inject.card.ts → src/client/modules/confirm-dialog.ts
+- src/client/cards/plugins/inject.card.ts → src/client/modules/logger.ts
 - src/client/cards/plugins/role.card.ts → src/client/modules/confirm-dialog.ts
 - src/client/cards/plugins/role.card.ts → src/client/modules/custom-select.ts
 - src/client/cards/plugins/role.card.ts → src/client/modules/logger.ts
@@ -601,4 +604,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 259 文件 · 46043 行 · 跨域边 244 条
+合计 260 文件 · 46262 行 · 跨域边 246 条
