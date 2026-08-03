@@ -12,7 +12,7 @@ import { buildCardLayout } from '../../modules/floating-card.js';
 import { log } from '../../modules/logger.js';
 import { createCustomSelect, type CustomSelect } from '../../modules/custom-select.js';
 import { showConfirm } from '../../modules/confirm-dialog.js';
-import { innerCardStyle, inputStyle, btnStyle, mkRow } from '../card-ui.js';
+import { innerCardStyle, inputStyle, btnStyle, mkRow, flashSaved } from '../card-ui.js';
 
 interface Provider {
   id: string;
@@ -342,6 +342,7 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
         editingConfig.updatedAt = new Date().toISOString();
         if (oldName && oldName !== newName) { await renameConfigFile(oldName, newName); }
         await saveConfig(editingConfig, newName);
+        flashSaved(saveBtn);
         const oldId = editingConfig.id;
         editingConfig.id = newName;
         (editingConfig as AgentConfig & { _fileName: string })._fileName = newName;

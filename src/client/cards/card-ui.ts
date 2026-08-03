@@ -22,6 +22,17 @@ export function btnStyle(accent: string): string {
   return `padding:0.3em 0.8em;border-radius:6px;font-size:var(--card-font-size,10px);font-weight:600;cursor:pointer;user-select:none;border:1px solid ${accent}40;color:${accent};background:transparent;flex:1;text-align:center`;
 }
 
+/** 保存成功反馈：按钮短暂变「✓ 已保存」后恢复（统一缺口——2026-08-03） */
+export function flashSaved(btn: HTMLButtonElement, savedText = '✓ 已保存'): void {
+  const original = btn.textContent;
+  btn.textContent = savedText;
+  btn.style.opacity = '0.75';
+  setTimeout(() => {
+    btn.textContent = original;
+    btn.style.opacity = '';
+  }, 1500);
+}
+
 /** 表单行（label + wrap） */
 export function mkRow(label: string): { row: HTMLElement; wrap: HTMLElement } {
   const row = document.createElement('div');

@@ -14,7 +14,7 @@ import { registerCardType, type CardContentHandler } from '../../modules/card-re
 import { buildCardLayout } from '../../modules/floating-card.js';
 import { log } from '../../modules/logger.js';
 import { showConfirm } from '../../modules/confirm-dialog.js';
-import { innerCardStyle, inputStyle, btnStyle, mkRow } from '../card-ui.js';
+import { innerCardStyle, inputStyle, btnStyle, mkRow, flashSaved } from '../card-ui.js';
 
 const INJECTS_PATH = '.kfmv4/injects';
 
@@ -168,6 +168,7 @@ function createInjectHandler(meta: Record<string, unknown>): CardContentHandler 
         if (!name) { alert('请输入注入包名称'); return; }
         await writeFile(`${INJECTS_PATH}/${name}.md`, contentArea.value);
         selected = name;
+        flashSaved(saveBtn);
         await load();
       };
 
