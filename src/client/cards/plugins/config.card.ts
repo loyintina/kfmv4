@@ -23,16 +23,17 @@ interface Provider {
 
 interface AgentConfig {
   id: string;
-  providerId: string;
-  modelId: string;
+  providerId?: string; // 可选：空 = 用默认（active.json / 首选项）
+  modelId?: string;
   roleFile?: string;
-  systemInject?: string; // 行为预设（注入包）：拼进会话首条消息的行为规范
+  injectFile?: string; // 注入包引用（.kfmv4/injects/<name>.md，可选）
   createdAt: string;
   updatedAt: string;
 }
 
 const PROVIDERS_PATH = '.kfmv4/providers.json';
 const CONFIGS_PATH = '.kfmv4/configs';
+const INJECTS_PATH = '.kfmv4/injects';
 const ACTIVE_PATH = '.kfmv4/active.json';
 
 // ====== API 基础 ======
@@ -106,8 +107,8 @@ async function loadConfigs(): Promise<AgentConfig[]> {
 }
 
 async function saveConfig(config: AgentConfig, fileName: string): Promise<void> {
-  const { providerId, modelId, roleFile, systemInject, createdAt, updatedAt } = config;
-  await writeFile(`\${CONFIGS_PATH}/\${fileName}.json`, JSON.stringify({ id: fileName, providerId, modelId, roleFile, systemInject, createdAt, updatedAt }, null, 2));
+  const { providerId, modelId, roleFile, injectFile, createdAt, updatedAt } = config;
+  await writeFile(`\${CONFIGS_PATH}/\${fileName}.json`, JSON.stringify({ id: fileName, providerId, modelId, roleFile, injectFile, createdAt, updatedAt }, null, 2));
 }
 
 async function deleteConfigFile(fileName: string): Promise<void> {
@@ -208,6 +209,7 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
   let configSelect: CustomSelect | null = null;
   let provSelect: CustomSelect | null = null;
   let modelSelect: CustomSelect | null = null;
+  let injectSelect: CustomSelect | null = null;
 
   // window 事件监听持有引用：deactivate 时移除防泄漏；重复 activate 先摘后挂防叠加
   let _onProviderChange: ((e: Event) => void) | null = null;
@@ -235,6 +237,7 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
         loadConfigs(),
         loadActiveConfigFileName(),
       ]);
+      const injectFiles = (await listDir(INJECTS_PATH)).filter(f => f.endsWith('.md')).map(f => f.replace(/.md$/, ''));
       providers = providersResult;
       configs = configsResult;
       const activeConfig = configs.find(c => (c as AgentConfig & { _fileName: string })._fileName === activeConfigFile);
@@ -277,8 +280,8 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
           const cfg = configs.find(c => c.id === id) as (AgentConfig & { _fileName: string }) | undefined;
           if (cfg) {
             await saveActiveConfigFileName(cfg._fileName || '');
-            await saveActiveConfigField('providerId', cfg.providerId);
-            await saveActiveConfigField('modelId', cfg.modelId);
+            await saveActiveConfigField('providerId', cfg.providerId || '');
+            await saveActiveConfigField('modelId', cfg.modelId || '');
             if (cfg.roleFile) await saveActiveConfigField('roleFile', cfg.roleFile);
           }
           fillEditor(getCurrentConfig());
@@ -332,13 +335,15 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
       modelWrap.appendChild(modelSelect.element);
       formScroll.appendChild(modelRow);
 
-      // 行为预设（注入包）
-      const { row: injectRow, wrap: injectWrap } = mkRow('行为预设');
-      const injectInput = document.createElement('textarea');
-      injectInput.id = 'config-inject-input';
-      injectInput.placeholder = '注入包：会话首条消息前拼入的行为规范（可选）';
-      injectInput.style.cssText = inputStyle() + ';min-height:40px;resize:vertical;font-family:monospace';
-      injectWrap.appendChild(injectInput);
+      // 行为预设（注入包：从池下拉选择，可空 = 默认无注入）
+      const { row: injectRow, wrap: injectWrap } = mkRow('注入包');
+      injectSelect = createCustomSelect({
+        accent: c2,
+        placeholder: '（默认）',
+        minWidth: 100,
+        onSelect: () => { /* 保存时读取 */ },
+      });
+      injectWrap.appendChild(injectSelect.element);
       formScroll.appendChild(injectRow);
 
       // 操作按钮（在 formSection 内部）
@@ -356,7 +361,7 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
         const oldName = oldCfg._fileName || '';
         editingConfig.providerId = provSelect?.getValue() || '';
         editingConfig.modelId = modelSelect?.getValue() || '';
-        editingConfig.systemInject = injectInput.value.trim() || undefined;
+        editingConfig.injectFile = injectSelect?.getValue() || undefined;
         editingConfig.updatedAt = new Date().toISOString();
         if (oldName && oldName !== newName) { await renameConfigFile(oldName, newName); }
         await saveConfig(editingConfig, newName);
@@ -413,15 +418,15 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
         if (config) {
           const cfg = config as AgentConfig & { _fileName: string };
           nameInput.value = cfg._fileName || '';
-          provSelect?.updateItems(providers.map(p => ({ label: p.name || p.id, value: p.id })), config.providerId);
-          const prov = getProviderById(config.providerId);
-          modelSelect?.updateItems((prov?.models || []).map(m => ({ label: m, value: m })), config.modelId);
-          injectInput.value = config.systemInject || '';
+          provSelect?.updateItems(providers.map(p => ({ label: p.name || p.id, value: p.id })), config.providerId || '');
+          const prov = getProviderById(config.providerId || '');
+          modelSelect?.updateItems((prov?.models || []).map(m => ({ label: m, value: m })), config.modelId || '');
+          injectSelect?.updateItems(injectFiles.map(f => ({ label: f, value: f })), config.injectFile || '');
         } else {
           nameInput.value = '';
           provSelect?.updateItems(providers.map(p => ({ label: p.name || p.id, value: p.id })), '');
           modelSelect?.updateItems([], '');
-          injectInput.value = '';
+          injectSelect?.updateItems(injectFiles.map(f => ({ label: f, value: f })), '');
         }
       }
       
@@ -490,12 +495,12 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
           const metaRow = document.createElement('div');
           metaRow.style.cssText = 'display:flex;gap:8px;font-size:var(--card-font-size,9px);color:rgba(255,255,255,0.4)';
           
-          const prov = getProviderById(config.providerId);
+          const prov = getProviderById(config.providerId || '');
           const provLabel = document.createElement('span');
-          provLabel.textContent = prov?.name || config.providerId;
+          provLabel.textContent = prov?.name || config.providerId || '（默认）';
           
           const modelLabel = document.createElement('span');
-          modelLabel.textContent = config.modelId;
+          modelLabel.textContent = config.modelId || '（默认）';
           
           metaRow.appendChild(provLabel);
           metaRow.appendChild(modelLabel);
@@ -517,8 +522,8 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
             currentConfigId = config.id;
             const cfg = config as AgentConfig & { _fileName: string };
             await saveActiveConfigFileName(cfg._fileName || '');
-            await saveActiveConfigField('providerId', config.providerId);
-            await saveActiveConfigField('modelId', config.modelId);
+            await saveActiveConfigField('providerId', config.providerId || '');
+            await saveActiveConfigField('modelId', config.modelId || '');
             if (config.roleFile) await saveActiveConfigField('roleFile', config.roleFile);
             window.dispatchEvent(new CustomEvent('kfm-config-change', { detail: { ...config, name: cfg._fileName } }));
             fillEditor(config);
@@ -585,9 +590,11 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
       configSelect?.destroy();
       provSelect?.destroy();
       modelSelect?.destroy();
+      injectSelect?.destroy();
       configSelect = null;
       provSelect = null;
       modelSelect = null;
+      injectSelect = null;
       contentEl.innerHTML = '';
     },
   };
