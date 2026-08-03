@@ -14,8 +14,7 @@
 **进门三验**：`git log -1`、`curl -s localhost:8021`、history 尾 → 读 `onboarding.md` 陷阱地图。
 
 ## 会话启动（每次对话，1 跳）
-0. 首次接触 → orientation.md（心智模型）+ onboarding.yaml（接手流）
-1. 读 STACK.md + history.md 尾 — 当前栈与动态
+0. 首次接触 → orientation.md + onboarding.yaml；随后读 STACK.md + history.md 尾
 3. 读 semantic-chain-inbox.md 尾 — 信箱 ⚠️ → 裁决流
 4. 改代码前 → pre-code-gate
 
