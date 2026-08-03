@@ -1,6 +1,6 @@
 ---
 alwaysApply: false
-description: 修改代码前先读 KFM_V4_INVARIANTS.md
+description: 修改代码前先读 docs/constraints/invariants.md
 condition: (edit|write|bash).*src/
 scope: tool:write, tool:edit
 ---

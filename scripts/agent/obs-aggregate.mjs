@@ -10,7 +10,7 @@
  *
  * 用法：node scripts/agent/obs-aggregate.mjs [--days=7] [--mailbox]
  */
-import { readFileSync, existsSync, appendFileSync } from 'fs';
+import { readFileSync, existsSync, appendFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import { fileURLToPath } from 'url';
@@ -75,6 +75,61 @@ if (existsSync(inbox)) {
   const warn = recent.filter(l => l.includes('⚠️') && l.includes('待裁决') || l.includes('体检 FAIL'));
   add(`- 文档健康：信箱 ${recent.length} 条巡逻记录，其中 ⚠️/FAIL ${warn.length} 条`);
   if (warn.length) for (const w of warn.slice(0, 5)) add(`    ${w.slice(0, 100)}`);
+}
+
+// ---- 4. 文档读取痕迹（价值观测累积日志） ----
+// 从面板会话 tool 块挖 read/grep 的 docs/ 路径 → agent 真实读取痕迹。
+// 目的：累积「文档被读」数据，对照读/存分类——读类没人读 = 该查；
+// 存类被读 = 该考虑升读类；幽灵路径 = 文档已删但旧引用还在。
+const SESSIONS_DIR = join(homedir(), '.kfmv4', 'sessions');
+const DOC_READ = new Map();   // 相对路径 → 次数
+const GHOST = new Map();      // 幽灵路径（当前不存在）→ 次数
+let sessionsScanned = 0, toolScanned = 0;
+const STORE_PREFIXES = ['docs/decisions/', 'docs/ledger/'];
+if (existsSync(SESSIONS_DIR)) {
+  for (const f of readdirSync(SESSIONS_DIR).filter(f => f.endsWith('.json'))) {
+    let s;
+    try { s = JSON.parse(readFileSync(join(SESSIONS_DIR, f), 'utf-8')); } catch { continue; }
+    if (!s || !s.updatedAt || new Date(s.updatedAt).getTime() < since) continue;
+    sessionsScanned++;
+    for (const m of (s.messages || [])) {
+      if (!Array.isArray(m.content)) continue;
+      for (const c of m.content) {
+        if (!c || c.type !== 'tool') continue;
+        toolScanned++;
+        const name = c.name || '';
+        const input = c.input || {};
+        const paths = [];
+        if (name === 'read' && typeof input.path === 'string') paths.push(input.path);
+        else if (name === 'grep' && typeof input.path === 'string') paths.push(input.path);
+        else if (name === 'bash' && typeof input.command === 'string') {
+          for (const m2 of input.command.matchAll(/[\w./-]*docs\/[\w./-]+\.md/g)) paths.push(m2[0]);
+        }
+        for (let p of paths) {
+          p = p.replace(/:\d+.*$/, '').replace(/^\/root\/kfmv4\//, '');
+          if (!p.startsWith('docs/')) continue;
+          const exists = existsSync(join(REPO, p));
+          (exists ? DOC_READ : GHOST).set(p, ((exists ? DOC_READ : GHOST).get(p) || 0) + 1);
+        }
+      }
+    }
+  }
+}
+add(`- 文档读取痕迹：${sessionsScanned} 个周期内会话 · ${toolScanned} 次工具调用`);
+if (DOC_READ.size === 0) {
+  add('  - 无 docs/ 读取记录（会话为空或面板未使用）');
+} else {
+  const top = [...DOC_READ.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+  add(`  - 高频读取: ${top.map(([p, n]) => `${p}×${n}`).join(' ')}`);
+  // 存类被读 = 该考虑升读类
+  const storeRead = [...DOC_READ.entries()].filter(([p]) => STORE_PREFIXES.some(pre => p.startsWith(pre)));
+  if (storeRead.length) {
+    add(`  - ⚠️ 存类被读 ${storeRead.length} 份（decisions/ledger——被频繁读说明该升读类）: ${storeRead.slice(0, 4).map(([p, n]) => `${p}×${n}`).join(' ')}`);
+  }
+  // 幽灵路径 = 旧文档残留引用
+  if (GHOST.size) {
+    add(`  - 👻 幽灵路径 ${GHOST.size} 个（被读但当前不存在——旧文档/迁移残留）: ${[...GHOST.entries()].slice(0, 5).map(([p, n]) => `${p}×${n}`).join(' ')}`);
+  }
 }
 
 const report = out.join('\n');
