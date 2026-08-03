@@ -45,6 +45,7 @@
 | MECH-FLOW-07 | 状态新鲜度违反（check-state-freshness） | doc-maintenance §时点标注 | doc-write.yaml 第 3 步 或 state-sync.yaml |
 | MECH-FLOW-08 | STACK 与事实漂移（check-active-stack） | active/STACK.md | state-sync.yaml |
 | MECH-FLOW-09 | STACK 状态词矛盾（check-stack-status） | active/STACK.md §状态词 | state-sync.yaml |
+| MECH-FLOW-10 | 巡逻心跳停摆（check-inbox-heartbeat） | /var/log/semantic-chain.log + crontab -l | 排查后手动补跑 semantic-chain.mjs；runner bug 走 bug-fix.yaml |
 
 ## 新错误码规程
 

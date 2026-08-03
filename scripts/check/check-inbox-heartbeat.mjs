@@ -41,7 +41,7 @@ if (!existsSync(INBOX_PATH)) {
     const age = Date.now() - Math.max(...stamps);
     if (age > STALE_MS) {
       const hours = Math.round(age / 3600000);
-      error(`⛳ MECH-FLOW-10 巡逻心跳停摆：最新巡逻条目已是 ${hours} 小时前（阈值 36h）。排查路径：tail /var/log/semantic-chain.log 看崩溃堆栈 → crontab -l 看 cron 是否还在 → 手动补跑 node scripts/agent/semantic-chain.mjs`);
+      error(`⛳ MECH-FLOW-10 巡逻心跳停摆：最新巡逻条目已是 ${hours} 小时前（阈值 36h）——读 /var/log/semantic-chain.log 看崩溃堆栈 + crontab -l 看 cron，走「排查后手动补跑 node scripts/agent/semantic-chain.mjs」（runner bug 走 bug-fix.yaml）`);
     }
   }
 }

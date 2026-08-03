@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 35626d4f · 生成于 2026-08-03 -->
+<!-- 基准 commit f52dac9f · 生成于 2026-08-03 -->
 
 # 代码清单（机械层）
 
@@ -36,7 +36,7 @@
 | src/client/engine/v2/animation.ts | 40 | ease |
 | src/client/engine/v2/utils.ts | 24 | uniformSpacing, hvSpacing, ZERO_SPACING |
 
-## floating-card（29 文件 · 6873 行）
+## floating-card（29 文件 · 6884 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -44,7 +44,7 @@
 | src/client/modules/terminal-card-04.ts | 757 | TerminalCardMeta, initTerminalCore, disposeTerminalCore, compactTerminalCore, createTerminal04Handler |
 | src/client/cards/plugins/role.card.ts | 711 | — |
 | src/client/cards/plugins/session.card.ts | 616 | — |
-| src/client/cards/plugins/config.card.ts | 589 | — |
+| src/client/cards/plugins/config.card.ts | 600 | — |
 | src/client/cards/plugins/api.card.ts | 562 | — |
 | src/client/modules/card-stack.ts | 472 | getCardCount, getCard, getCardName, getCardId, hexToRgba, cardGradient, cardBg, getFocusIndex, getCurrentAccent, getCardHandler, getFocusedCardRect, animateStackPullFeedback, launchFocusedCard, openCardStack, closeCardStack, isCardStackOpen, focusNext, focusPrev, initCardStack |
 | src/client/cards/plugins/tools.card.ts | 308 | — |
@@ -172,7 +172,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（120 文件 · 14745 行）
+## infra（121 文件 · 14806 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -198,8 +198,8 @@
 | tests/smoke/smoke.mjs | 190 | — |
 | scripts/check/gen-code-inventory.mjs | 181 | — |
 | tests/to-openai-messages.test.ts | 181 | — |
+| scripts/agent/semantic-chain.mjs | 173 | — |
 | tests/chat-protocol.test.ts | 169 | — |
-| scripts/agent/semantic-chain.mjs | 167 | — |
 | tests/protocol-reducer.test.ts | 161 | — |
 | scripts/agent/agent-runner.mjs | 159 | renderTemplate, extractJson, runAgent |
 | scripts/agent/semantic-audit.tasks.mjs | 152 | TASKS |
@@ -214,8 +214,8 @@
 | scripts/check/check-tool-compaction.mjs | 130 | — |
 | scripts/check/check-mutation-anchors.mjs | 127 | — |
 | scripts/check/gen-permission-map.mjs | 126 | — |
+| scripts/check/chain.mjs | 125 | STEPS |
 | tests/session-security.test.ts | 125 | — |
-| scripts/check/chain.mjs | 124 | STEPS |
 | scripts/agent/tag-advisor.mjs | 124 | REF_RE, isValidRef |
 | scripts/check/gen-tool-docs.mjs | 121 | — |
 | tests/liquid-geometry.test.ts | 120 | — |
@@ -263,6 +263,7 @@
 | scripts/check/check-doc-schema.mjs | 60 | — |
 | scripts/check/check-commit-docs.mjs | 59 | — |
 | tests/omp-glob.test.ts | 58 | — |
+| scripts/check/check-inbox-heartbeat.mjs | 54 | — |
 | tests/tool-schema.test.ts | 54 | — |
 | scripts/check/check-secrets.mjs | 52 | — |
 | scripts/check/check-consistency.mjs | 51 | — |
@@ -605,4 +606,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 261 文件 · 46227 行 · 跨域边 246 条
+合计 262 文件 · 46299 行 · 跨域边 246 条
