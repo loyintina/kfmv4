@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 32cd7f61 · 生成于 2026-08-03 -->
+<!-- 基准 commit 35626d4f · 生成于 2026-08-03 -->
 
 # 代码清单（机械层）
 
@@ -36,7 +36,7 @@
 | src/client/engine/v2/animation.ts | 40 | ease |
 | src/client/engine/v2/utils.ts | 24 | uniformSpacing, hvSpacing, ZERO_SPACING |
 
-## floating-card（29 文件 · 6860 行）
+## floating-card（29 文件 · 6873 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -44,14 +44,14 @@
 | src/client/modules/terminal-card-04.ts | 757 | TerminalCardMeta, initTerminalCore, disposeTerminalCore, compactTerminalCore, createTerminal04Handler |
 | src/client/cards/plugins/role.card.ts | 711 | — |
 | src/client/cards/plugins/session.card.ts | 616 | — |
-| src/client/cards/plugins/config.card.ts | 588 | — |
+| src/client/cards/plugins/config.card.ts | 589 | — |
 | src/client/cards/plugins/api.card.ts | 562 | — |
 | src/client/modules/card-stack.ts | 472 | getCardCount, getCard, getCardName, getCardId, hexToRgba, cardGradient, cardBg, getFocusIndex, getCurrentAccent, getCardHandler, getFocusedCardRect, animateStackPullFeedback, launchFocusedCard, openCardStack, closeCardStack, isCardStackOpen, focusNext, focusPrev, initCardStack |
 | src/client/cards/plugins/tools.card.ts | 308 | — |
 | src/client/modules/renderers/handler-factory.ts | 296 | createFileHandler |
 | src/client/modules/tmux-card.ts | 289 | TmuxCardMeta, createTmuxCardHandler |
 | src/client/modules/floating-fullscreen.ts | 214 | enterFullscreen, exitFullscreen, dismissFullscreen |
-| src/client/cards/plugins/inject.card.ts | 212 | — |
+| src/client/cards/plugins/inject.card.ts | 213 | — |
 | src/client/modules/floating-shared.ts | 173 | FloatingCardAction, nextFloatingCardState, _hexToRgba, _cornerLayout, Z_FLOATING_BASE, Z_FULLSCREEN, TITLE_BAR_H, COMPACT_W, COMPACT_H, FloatingCardConfig, FloatingCardItem, _floatingCards, _allocZ, _brOrbToItem, _scatterPosition, _dismissOne |
 | src/client/modules/card-registry.ts | 155 | CardTypeDef, CardContentHandler, CardInstance, registerCardType, getCardType, getAllCardTypes, cardRegistry |
 | src/client/modules/renderers/math-diagram.ts | 155 | MathData, preprocessMath, renderMath, renderMermaid |
@@ -59,7 +59,7 @@
 | src/client/modules/renderers/code-highlight.ts | 106 | highlightAll, highlightCode |
 | src/client/modules/renderers/md-css.ts | 57 | MD_CSS |
 | src/client/modules/renderers/md-extensions.ts | 51 | MARKED_OPTS, preprocessMd |
-| src/client/cards/card-ui.ts | 38 | innerCardStyle, inputStyle, btnStyle, mkRow |
+| src/client/cards/card-ui.ts | 49 | innerCardStyle, inputStyle, btnStyle, flashSaved, mkRow |
 | src/client/modules/renderers/binary-fallback.ts | 37 | renderBinaryInfo |
 | src/client/modules/renderers/text-preview.ts | 26 | renderTextPreview |
 | src/client/cards/registry.ts | 22 | — |
@@ -605,4 +605,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 261 文件 · 46214 行 · 跨域边 246 条
+合计 261 文件 · 46227 行 · 跨域边 246 条
