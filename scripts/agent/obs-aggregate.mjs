@@ -11,6 +11,7 @@
  * 用法：node scripts/agent/obs-aggregate.mjs [--days=7] [--mailbox]
  */
 import { readFileSync, existsSync, appendFileSync, readdirSync } from 'fs';
+import { execFileSync } from 'child_process';
 import { join } from 'path';
 import { homedir } from 'os';
 import { fileURLToPath } from 'url';
@@ -81,18 +82,33 @@ if (existsSync(inbox)) {
 // 从面板会话 tool 块挖 read/grep 的 docs/ 路径 → agent 真实读取痕迹。
 // 目的：累积「文档被读」数据，对照读/存分类——读类没人读 = 该查；
 // 存类被读 = 该考虑升读类；幽灵路径 = 文档已删但旧引用还在。
+// ⚠️ 统计口径（2026-08-03 修正）：纯次数有**年龄偏倚**——新文档存在时间短、
+// 读取天然少，旧文档存在久、读取多。输出按「文档存在天数」归一为日均读取率
+// （git 首次提交时间算年龄）；面板会话过少时标注「积累期」，数据不具代表性。
 const SESSIONS_DIR = join(homedir(), '.kfmv4', 'sessions');
 const DOC_READ = new Map();   // 相对路径 → 次数
 const GHOST = new Map();      // 幽灵路径（当前不存在）→ 次数
-let sessionsScanned = 0, toolScanned = 0;
+let sessionsScanned = 0, toolScanned = 0, sessTimes = [];
 const STORE_PREFIXES = ['docs/decisions/', 'docs/ledger/'];
+
+/** 文档存在天数（git 首次提交日期起）；查不到返回 null（不归一） */
+function docAgeDays(rel) {
+  try {
+    const out = execFileSync('git', ['log', '--diff-filter=A', '--format=%ai', '--', rel], {
+      cwd: REPO, encoding: 'utf-8', timeout: 10_000,
+    });
+    const line = out.split('\n').find(Boolean);
+    if (!line) return null;
+    return Math.max(1, (Date.now() - new Date(line).getTime()) / 86400_000);
+  } catch { return null; }
+}
 if (existsSync(SESSIONS_DIR)) {
   for (const f of readdirSync(SESSIONS_DIR).filter(f => f.endsWith('.json'))) {
     let s;
     try { s = JSON.parse(readFileSync(join(SESSIONS_DIR, f), 'utf-8')); } catch { continue; }
     if (!s || !s.updatedAt || new Date(s.updatedAt).getTime() < since) continue;
     sessionsScanned++;
-    for (const m of (s.messages || [])) {
+    sessTimes.push(new Date(s.updatedAt).getTime());    for (const m of (s.messages || [])) {
       if (!Array.isArray(m.content)) continue;
       for (const c of m.content) {
         if (!c || c.type !== 'tool') continue;
@@ -115,16 +131,24 @@ if (existsSync(SESSIONS_DIR)) {
     }
   }
 }
-add(`- 文档读取痕迹：${sessionsScanned} 个周期内会话 · ${toolScanned} 次工具调用`);
+add(`- 文档读取痕迹：${sessionsScanned} 个周期内会话 · ${toolScanned} 次工具调用` + (sessionsScanned < 3 ? '（⚠️ 积累期：会话过少，数据不具代表性，仅作基线起点）' : ''));
+if (sessionsScanned > 0) {
+  add(`  - 会话时间范围：${sessTimes.length ? new Date(Math.min(...sessTimes)).toISOString().slice(0, 10) : '?'} ~ ${sessTimes.length ? new Date(Math.max(...sessTimes)).toISOString().slice(0, 10) : '?'}（无近期会话 = 读取数据是旧痕迹，仅作历史参考）`);
+}
 if (DOC_READ.size === 0) {
   add('  - 无 docs/ 读取记录（会话为空或面板未使用）');
 } else {
-  const top = [...DOC_READ.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
-  add(`  - 高频读取: ${top.map(([p, n]) => `${p}×${n}`).join(' ')}`);
+  // 按日均读取率（次数/年龄天）排序，消除新文档年龄偏倚
+  const rated = [...DOC_READ.entries()].map(([p, n]) => {
+    const age = docAgeDays(p);
+    return { p, n, age, rate: age ? n / age : null };
+  });
+  const top = rated.slice().sort((a, b) => (b.rate ?? -1) - (a.rate ?? -1)).slice(0, 8);
+  add(`  - 高频读取（日均率，新文档不吃亏）: ${top.map(({ p, n, rate }) => `${p} ${n}次${rate != null ? `/${rate.toFixed(2)}日` : ''}`).join(' ')}`);
   // 存类被读 = 该考虑升读类
-  const storeRead = [...DOC_READ.entries()].filter(([p]) => STORE_PREFIXES.some(pre => p.startsWith(pre)));
+  const storeRead = rated.filter(({ p }) => STORE_PREFIXES.some(pre => p.startsWith(pre)));
   if (storeRead.length) {
-    add(`  - ⚠️ 存类被读 ${storeRead.length} 份（decisions/ledger——被频繁读说明该升读类）: ${storeRead.slice(0, 4).map(([p, n]) => `${p}×${n}`).join(' ')}`);
+    add(`  - ⚠️ 存类被读 ${storeRead.length} 份（decisions/ledger——被频繁读说明该升读类）: ${storeRead.slice(0, 4).map(({ p, n }) => `${p}×${n}`).join(' ')}`);
   }
   // 幽灵路径 = 旧文档残留引用
   if (GHOST.size) {
