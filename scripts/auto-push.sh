@@ -21,13 +21,9 @@ if [ "$CHANGED" -gt 0 ]; then
   exit 0
 fi
 
-# 闸 2：只有戳脏 → 按惯例提交
-if git status --porcelain | grep -q 'public/index.html'; then
-  git add public/index.html
-  git commit -q -m "chore(build): 构建缓存戳" 2>/dev/null || echo "$STAMP 戳提交失败" >> "$LOG"
-fi
-
 # 推 master（pre-push 钩子跑全链，失败自动拦下）
+# 顺序：先推后戳——戳提交会让 HEAD 晚于 buildTime 导致 deploy-freshness 红
+#（2026-08-03 实测）；push 时戳脏只触发非阻断警告。
 if git push origin master >> "$LOG" 2>&1; then
   echo "$STAMP 推送 master 成功" >> "$LOG"
 else
@@ -41,4 +37,10 @@ for tag in $(git tag); do
     git push origin "$tag" >> "$LOG" 2>&1 && echo "$STAMP 推送 tag $tag" >> "$LOG"
   fi
 done
+
+# 闸 2（push 后）：只有戳脏 → 按惯例提交
+if git status --porcelain | grep -q 'public/index.html'; then
+  git add public/index.html
+  git commit -q -m "chore(build): 构建缓存戳" 2>/dev/null || echo "$STAMP 戳提交失败" >> "$LOG"
+fi
 echo "$STAMP 完成" >> "$LOG"
