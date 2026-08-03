@@ -14,7 +14,7 @@ import { readFileSync, writeFileSync, readdirSync, existsSync } from 'fs';
 import { join, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
-const ROOT = resolve(fileURLToPath(new URL('../../', import.meta.url)));
+const ROOT = resolve(process.env.KFM_PROBE_ROOT || fileURLToPath(new URL('../../', import.meta.url)));
 const CHECK_ONLY = process.argv.includes('--check-only');
 
 const inventory = readFileSync(join(ROOT, 'docs/domains/code-inventory.md'), 'utf-8');
