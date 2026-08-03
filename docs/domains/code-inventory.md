@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 2b65b81b · 生成于 2026-08-03 -->
+<!-- 基准 commit 0ad16263 · 生成于 2026-08-03 -->
 
 # 代码清单（机械层）
 
@@ -36,18 +36,18 @@
 | src/client/engine/v2/animation.ts | 40 | ease |
 | src/client/engine/v2/utils.ts | 24 | uniformSpacing, hvSpacing, ZERO_SPACING |
 
-## floating-card（29 文件 · 6915 行）
+## floating-card（29 文件 · 6914 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/client/modules/floating-card.ts | 811 | enterFullscreen, exitFullscreen, dismissFullscreen, updateFullscreenSavedPosition, createFloatingCard, dismissFloatingCard, initFloatingCards, hasFloatingCard, buildCardLayout |
 | src/client/modules/terminal-card-04.ts | 757 | TerminalCardMeta, initTerminalCore, disposeTerminalCore, compactTerminalCore, createTerminal04Handler |
-| src/client/cards/plugins/role.card.ts | 740 | — |
-| src/client/cards/plugins/session.card.ts | 615 | — |
-| src/client/cards/plugins/api.card.ts | 592 | — |
+| src/client/cards/plugins/role.card.ts | 736 | — |
+| src/client/cards/plugins/session.card.ts | 616 | — |
+| src/client/cards/plugins/api.card.ts | 593 | — |
 | src/client/cards/plugins/config.card.ts | 588 | — |
 | src/client/modules/card-stack.ts | 472 | getCardCount, getCard, getCardName, getCardId, hexToRgba, cardGradient, cardBg, getFocusIndex, getCurrentAccent, getCardHandler, getFocusedCardRect, animateStackPullFeedback, launchFocusedCard, openCardStack, closeCardStack, isCardStackOpen, focusNext, focusPrev, initCardStack |
-| src/client/cards/plugins/tools.card.ts | 307 | — |
+| src/client/cards/plugins/tools.card.ts | 308 | — |
 | src/client/modules/renderers/handler-factory.ts | 296 | createFileHandler |
 | src/client/modules/tmux-card.ts | 289 | TmuxCardMeta, createTmuxCardHandler |
 | src/client/modules/floating-fullscreen.ts | 214 | enterFullscreen, exitFullscreen, dismissFullscreen |
@@ -605,4 +605,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 261 文件 · 46269 行 · 跨域边 246 条
+合计 261 文件 · 46268 行 · 跨域边 246 条
