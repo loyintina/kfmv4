@@ -119,3 +119,4 @@
 已定型陷阱见 contract.md #陷阱（10 条，不重复）。测绘新捕获、待复核升级：
 `_findLastToolId`（chat-dom.ts:1010）依赖 Map 遍历序兜底路由 input_json_delta，
 跨会话残留 `_toolEls` 可能把 delta 路由到别的消息的卡。
+- **run 收尾时序（实测）**：run 结束在 `finally` 显式触发订阅者 `onDone`（run-manager.js/chat 循环；对照 contract #陷阱 1）。

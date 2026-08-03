@@ -123,3 +123,5 @@ initApp → initUI → initGestures → initOrb（ensurePanel、sessionStore 初
 已定型陷阱见 contract.md #陷阱（注意 #8 已错位，见漂移 6）。
 测绘新捕获：orb/ai-chat 边界拆分已完成（宿主=orb-chat-host.ts，ChatHostDeps 注入）——
 后续同类拆分（如漂移 17 的 orb-panel）照此模式：依赖注入优先于跨界共享模块级状态。
+- **布局方程（实测）**：`.sidebar-content` + `.sidebar-tools` = 100dvh（CSS 布局方程，对照 contract 硬规则 1）。
+- **Registry 配对（实测）**：新增交互元素必须 register + 加入 MANIFEST（对照 contract 硬规则 2）。

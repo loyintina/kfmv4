@@ -135,3 +135,4 @@ DOM 保 WS（:594）→ dismiss 全清 + terminal-close。tmux 卡叠加 list-se
 
 已定型陷阱见 contract.md #陷阱（注意 #2 未被自家遵守、#7 只有一半遵守，见漂移 5/14）。
 测绘新捕获：漂移 17 的 WS 重连双开 PTY 若属实是会话泄漏级 bug，优先复核。
+- **渐变方向（实测）**：双色渐变方向 135deg（color1 起点 → 左光球 TL/BL，对照 contract 硬规则 4）。

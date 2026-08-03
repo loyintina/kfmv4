@@ -124,3 +124,4 @@ _resetAnimTimeline → 下一个队列点击。
 
 已定型陷阱见 contract.md #陷阱（第 1、5 条已于 2026-07-30 随漂移 5/10 结案修订回现实）。
 测绘新捕获：rename 不刷新、delete 不查响应（漂移 7/8）——待复核后升入契约。
+- **唯一定义点（实测）**：`theme.ts` = 全项目颜色唯一定义点（导出 `currentTheme`）；`style-registry.ts` = 文件树尺寸/字体/间距唯一定义点（对照 contract 硬规则 1/2）。

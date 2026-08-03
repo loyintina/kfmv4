@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit bc60ebb · 生成于 2026-08-02 -->
+<!-- 基准 commit 84cc784 · 生成于 2026-08-03 -->
 
 # 代码清单（机械层）
 
@@ -170,7 +170,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（105 文件 · 13584 行）
+## infra（105 文件 · 13655 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -208,6 +208,7 @@
 | scripts/agent/exp-iceberg.mjs | 134 | — |
 | scripts/check/check-checks.mjs | 132 | — |
 | scripts/check/check-tool-compaction.mjs | 129 | — |
+| scripts/check/check-mutation-anchors.mjs | 126 | — |
 | tests/session-security.test.ts | 125 | — |
 | scripts/agent/tag-advisor.mjs | 124 | REF_RE, isValidRef |
 | tests/liquid-geometry.test.ts | 120 | — |
@@ -253,7 +254,6 @@
 | scripts/check/check-doc-schema.mjs | 60 | — |
 | scripts/check/check-commit-docs.mjs | 59 | — |
 | tests/omp-glob.test.ts | 58 | — |
-| scripts/check/check-mutation-anchors.mjs | 55 | — |
 | tests/tool-schema.test.ts | 54 | — |
 | scripts/check/check-secrets.mjs | 52 | — |
 | scripts/check/check-uncommitted.mjs | 51 | — |
@@ -587,4 +587,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 244 文件 · 44885 行 · 跨域边 245 条
+合计 244 文件 · 44956 行 · 跨域边 245 条
