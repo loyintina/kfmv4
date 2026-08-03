@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 2441c056 · 生成于 2026-08-03 -->
+<!-- 基准 commit 32cd7f61 · 生成于 2026-08-03 -->
 
 # 代码清单（机械层）
 
@@ -36,7 +36,7 @@
 | src/client/engine/v2/animation.ts | 40 | ease |
 | src/client/engine/v2/utils.ts | 24 | uniformSpacing, hvSpacing, ZERO_SPACING |
 
-## floating-card（29 文件 · 6858 行）
+## floating-card（29 文件 · 6860 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -51,7 +51,7 @@
 | src/client/modules/renderers/handler-factory.ts | 296 | createFileHandler |
 | src/client/modules/tmux-card.ts | 289 | TmuxCardMeta, createTmuxCardHandler |
 | src/client/modules/floating-fullscreen.ts | 214 | enterFullscreen, exitFullscreen, dismissFullscreen |
-| src/client/cards/plugins/inject.card.ts | 210 | — |
+| src/client/cards/plugins/inject.card.ts | 212 | — |
 | src/client/modules/floating-shared.ts | 173 | FloatingCardAction, nextFloatingCardState, _hexToRgba, _cornerLayout, Z_FLOATING_BASE, Z_FULLSCREEN, TITLE_BAR_H, COMPACT_W, COMPACT_H, FloatingCardConfig, FloatingCardItem, _floatingCards, _allocZ, _brOrbToItem, _scatterPosition, _dismissOne |
 | src/client/modules/card-registry.ts | 155 | CardTypeDef, CardContentHandler, CardInstance, registerCardType, getCardType, getAllCardTypes, cardRegistry |
 | src/client/modules/renderers/math-diagram.ts | 155 | MathData, preprocessMath, renderMath, renderMermaid |
@@ -605,4 +605,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 261 文件 · 46212 行 · 跨域边 246 条
+合计 261 文件 · 46214 行 · 跨域边 246 条

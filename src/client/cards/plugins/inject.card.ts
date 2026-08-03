@@ -156,6 +156,8 @@ function createInjectHandler(meta: Record<string, unknown>): CardContentHandler 
             item.style.borderColor = 'transparent';
           }
           item.textContent = name;
+          item.onmouseenter = () => { if (name !== selected) item.style.background = 'rgba(255,255,255,0.06)'; };
+          item.onmouseleave = () => { if (name !== selected) item.style.background = 'rgba(255,255,255,0.03)'; };
           item.onclick = () => select(name);
           listEl.appendChild(item);
         }
