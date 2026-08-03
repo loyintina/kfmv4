@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 257efe5 · 生成于 2026-08-03 -->
+<!-- 基准 commit abd085f · 生成于 2026-08-03 -->
 
 # 代码清单（机械层）
 
@@ -170,7 +170,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（108 文件 · 13924 行）
+## infra（112 文件 · 14088 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -212,6 +212,7 @@
 | scripts/check/check-mutation-anchors.mjs | 126 | — |
 | tests/session-security.test.ts | 125 | — |
 | scripts/agent/tag-advisor.mjs | 124 | REF_RE, isValidRef |
+| scripts/check/gen-tool-docs.mjs | 120 | — |
 | tests/liquid-geometry.test.ts | 120 | — |
 | scripts/agent/exp-probe-decompose.mjs | 117 | — |
 | scripts/check/check-doc-linerefs.mjs | 116 | — |
@@ -229,7 +230,7 @@
 | scripts/check/check-state-freshness.mjs | 91 | — |
 | scripts/check/check-versions.mjs | 91 | — |
 | scripts/agent/obs-aggregate.mjs | 89 | — |
-| scripts/check/chain.mjs | 86 | STEPS |
+| scripts/check/chain.mjs | 87 | STEPS |
 | scripts/check/check-probes.mjs | 86 | — |
 | scripts/agent/exp-probe-matrix.mjs | 86 | — |
 | tests/engine.test.ts | 85 | — |
@@ -267,7 +268,10 @@
 | tests/reset-hooks.ts | 41 | — |
 | tests/runner.ts | 33 | test, group, runAll, regression, beforeEach, TestFileNode, singleFolder, nestedFolders |
 | tests/gsap-hook.mjs | 17 | resolve |
+| tests/probes/gen-tool-docs/src/server/ai/tools/fake.ts | 16 | fakeTool |
 | tests/mocks/xterm.ts | 15 | Terminal |
+| tests/probes/gen-tool-docs/src/server/ai/tools/index.ts | 15 | getToolDefinitions |
+| tests/probes/gen-tool-docs/src/server/ai/tools/types.ts | 12 | KfmTool |
 | scripts/check/docs-root-const.mjs | 8 | DOCS_ROOT |
 | tests/register-hook.mjs | 8 | — |
 | tests/probes/gen-page-state-schema/src/client/modules/ui-registry.ts | 7 | ContentBlock |
@@ -590,4 +594,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 247 文件 · 45274 行 · 跨域边 245 条
+合计 251 文件 · 45438 行 · 跨域边 245 条
