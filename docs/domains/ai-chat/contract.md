@@ -34,9 +34,8 @@
    `global/tools/`）自动注入静态 system 段，全部会话强制、独立于角色卡；
    `prompts/system/`（promptFiles）与 `prompts/dynamic/`（dynamicPromptFiles）
    是手动语义——全局预设**不得**再加进角色卡 promptFiles（重复注入）。目录语义
-   见 `prompts/README.md`；动态文件本体在 `.kfmv4/prompts/dynamic/`（与源码
-   说明目录对称），格式见 `dynamic/page-state-schema.md`（check-page-state-schema
-   探针双向校验代码常量与文档）。
+   见 `prompts/README.md`；动态文件本体在 `.kfmv4/prompts/dynamic/`，格式见
+   `dynamic/page-state-schema.md`（check-page-state-schema 探针双向校验）。
 
 ## 视觉契约（自 V8_ARCHITECTURE §四迁入，2026-07-28）
 
