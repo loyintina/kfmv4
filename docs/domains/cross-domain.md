@@ -17,7 +17,7 @@
 |------|-----------|---------|-----------|
 | KFMState（state.ts:73） | client-shell | 方法写：canvas-tree 多文件；**裸 notify 5 处**（tree-render.ts:536、tree-loader.ts:104,137,146、sibling-switcher.ts:122） | ⚠ **直接字段写绕过 setter**：tree-render.ts processClickQueue 反转分支（同路径点击 → reverse，字段写+手动落盘同处）、tree-loader.ts:178（expandedPaths，绕过 beforeExpand 钩子）、sibling-switcher.ts:119-121 三字段直写、main.ts:99 |
 | L（renderer-lifecycle.ts:171） | client-shell（事实 canvas-tree） | 写集中 canvas-tree；**私有字段直写泛滥**：canvas-scroll.ts 10+ 处 `_wheelRaf/_flingRaf` 等、canvas-utils.ts:36-47、tree-render.ts 多处 `L.renderer=` 直写 | ⚠ 跨域回调注入：L.setCardDismissHandler（tree-render.ts:381）挂的是 floating-card 域的 dismissFocusedCard |
-| anim（animation-registry） | client-shell | scope 台账唯一租户 tree-render.ts:41（其余域直透 gsap 不登记台账，见风险列） | ⚠ **scope 隔离形同虚设**：killTweensOf 直透 gsap 被三个域调用（mode-system.ts:218、floating-card.ts:491、card-stack.ts:210、tree-swipe/tree-render），全绕过 `_scopes` 台账 |
+| anim（animation-registry） | client-shell | scope 台账唯一租户 tree-render.ts:41（其余域直透 gsap 不登记台账，见风险列） | ✅【已结案】ADR-004 裁决二（见漂移清单 #4）：直透为官方用法、scope 按需（tree-render 单租户）——注释契约已重写，不再是漂移 |
 | Registry（ui-registry） | client-shell | 全部越域写（设计如此）：registerElement/notifyStateChange 四域都在调 | 重复注册仅 warn 覆盖 |
 | ws-channel 命令注册表 | ai-chat（文件归属） | 四域注册 19 条命令：shell 8、canvas-tree 4、ai-chat 3、floating-card 4 | ⚠ onCommand 重复注册覆盖旧处理器仅 warn（ws-channel.ts:148-151），无冲突防护 |
 

@@ -91,7 +91,8 @@ inter-workflows 大 prompt 探针双端 60s 超时失败教训）。
 
 语义审计的脚本化（母体 → ../active/semantic-compiler-seed.md；任务清单 → scripts/agent/semantic-audit.tasks.mjs）：
 
-- **编排器 + 任务清单分离**：一个探针只问一个问题（组内 17 + 组间 6），组间探针种子来自
+- **编排器 + 任务清单分离**：一个探针只问一个问题（组内/组间条数单源 = semantic-audit.tasks.mjs，
+  2026-08-03 实况 18 + 6），组间探针种子来自
   ledger/semantic-provenance.md 实测冲突对——不打 N² 笛卡尔积
 - **并发 10 洁净室**：任务间零共享上下文，单任务失败不拖垮全局（进 errors 不阻塞）。
   定档依据（2026-07-30 变异基准三曲线）：conc3/10/20 成绩在噪声带内不动、conc20
