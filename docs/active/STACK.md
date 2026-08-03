@@ -110,7 +110,7 @@
    — 中央面板网格线升级 + 实时统计信息
    — 会话卡逻辑修复（具体病灶待补充）
    — 审查文件卡代码高亮问题修正（具体病灶待补充）
-9. prompts 提示词注入约束修复（2026-07-29 记，src/server/prompts/，具体病灶待补充）
+9. server 会话/prompts 域 bug 池（2026-07-29 记；初始主题=提示词注入约束修复，病灶待补充；后收编 bug 见子项）
    — 另：面板发送消息无响应（2026-07-29 记，用户反馈的活 bug，具体病灶待补充——复现后进 bug-fix 流程）
    — 另：会话删除后服务端串档（2026-07-30 记，冷启动实验 terra 臂尸检发现）：删除会话卡只删
      磁盘文件，`server/ai/session-store.ts` 的 `_sessions` 缓存（`_get` 缓存优先）不失效 →
@@ -178,12 +178,12 @@
    — 附属待办：pi-natives 进程替换 fd 泄漏（brush-core interp.rs
      setup_process_substitution 写端未回收，/proc 级取证在本会话）整理成
      issue 反馈上游 can1357/oh-my-pi——开源回馈，也防 omp 升级带回同类问题
-16. 测试环境污染生产数据目录（2026-08-01 记，蔚然五测尸检发现）
+16. ✅ 测试环境污染生产数据目录（2026-08-01 记，蔚然五测尸检发现；2026-08-01 根治）
    — **✅ 已根治（2026-08-01，BAR-TEST-ENV-01）**：preload.mjs 头部把 KFM_ROOT
      重定向到 mkdtemp 临时目录（path-utils import 时读 env，preload 先于一切
      被测模块）；两枚假设根=HOME 的旧钉一并解除；全量跑后生产 sessions
      零增长实测；存量 11 个已手工清理
-4. 手势系统研究与全局交互区域分权（P3，自 HANDBOOK 活跃待办迁入）
+4. ✅ 手势系统研究与全局交互区域分权（P3，自 HANDBOOK 活跃待办迁入；唯一子项 2026-07-29 关闭）
    — 浮卡/卡片堆/设置卡内容区与全局左右滑的边界
    （touch-action 分区策略已文档化 → domains/client-shell/contract.md #陷阱 7，2026-07-29 关闭该子项）
 5. v8 审计遗留 LOW 项（P3，自 V8_AUDIT_REPORT 迁入，2026-07-27 审计）
