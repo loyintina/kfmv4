@@ -9,24 +9,36 @@
 **复用基础**：`routine-entry-validation.mjs` 已是离线跑 kfm 会话的驱动
 （POST /ai/chat/start → SSE 消费 → 落盘归档），抽成可复用模块。
 
+**参数组 = 配置卡**（config.card.ts 已有产品载体，`.kfmv4/configs/<id>.json`）：
+
+```json
+{ "id": "测试配置", "providerId": "opencode-go", "modelId": "deepseek-v4-flash",
+  "sessionId": "", "roleFile": "蔚然" }
+```
+
 ```
 runSession({
-  sessionId,     // 合法 sessionId（BAR-SEC-14 白名单）
+  configId,      // 配置卡 id → 解析 providerId/modelId/sessionId/roleFile
   messages,      // 完整消息列表（续写 = 读 session 历史 + 追加新消息后全量重发）
   userText,      // 落盘原文（防 ts 前缀污染——routes.ts 语义）
-  model, provider,
   systemInject,  // 注入包文本：拼进首条 user 消息前（不能走 system——chat.ts
                  //   会过滤 role==='system'；注入包=上下文注入，正是其本质）
+  overrides,     // 实验覆盖：{ sessionId?, model?, roleFile? }——实验每臂新会话
   base,          // http://localhost:8021/api
   timeoutMs,
 }) → { runId, events, ms, sessionPath }
 ```
 
+**解析链**：configId → `.kfmv4/configs/<id>.json`（provider/model/session/role）
+→ providerId → `.kfmv4/providers.json`（baseUrl/apiKey/models——命名映射实现时确认）
+→ `POST /ai/chat/start`（带 roleFile + overrides 覆盖）→ SSE → 归档。
+
 **关键语义**（从代码确认）：
 1. `POST /ai/chat/start` body = { sessionId, messages, model, provider, roleFile?, userText }——messages 是发往 AI 的对话列表，userText 是落盘原文（防投影污染）
 2. SSE 消费：`GET /ai/chat/:runId/stream` 续读到 done（run-manager 后台生成，连接解耦）
-3. **注入机制**：`chat.ts` apiMessages 过滤 `role==='system'` → 注入包必须拼进首条 user 消息（如「〔注入包〕以下是行为规范，遵守它……\n\n任务：…」）——比角色卡（roleFile）更灵活，离线驱动可精确控制
+3. **注入机制**：`chat.ts` apiMessages 过滤 `role==='system'` → 注入包必须拼进首条 user 消息（如「〔行为规范注入〕…\n\n任务：…」）——比角色卡（roleFile）更灵活，离线驱动可精确控制
 4. **续写**：服务端按 messages 全量做上下文；续写 = 读 `~/.kfmv4/sessions/<id>.json` → 追加新 user 消息 → 全量重发
+5. **实验覆盖**：配置卡的 sessionId 是面板绑定（可能空或指定会话）；实验每臂独立会话 → overrides.sessionId = armId 动态生成
 
 ## 研究管线：batch-run（变体批量）
 
