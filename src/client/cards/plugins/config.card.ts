@@ -292,6 +292,7 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
           }
           // 写入 active.json（merge 模式）
           await saveActiveConfigField('providerId', id);
+          if (editingConfig) { editingConfig.providerId = id; await persistConfig(); }
           window.dispatchEvent(new CustomEvent('kfm-provider-change', { detail: { providerId: id, modelId: prov?.models?.[0] || '' } }));
         },
       });
@@ -306,6 +307,7 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
         minWidth: 100,
         onSelect: async (modelId) => {
           await saveActiveConfigField('modelId', modelId);
+          if (editingConfig) { editingConfig.modelId = modelId; await persistConfig(); }
           window.dispatchEvent(new CustomEvent('kfm-model-change', { detail: { modelId } }));
         },
       });
@@ -318,7 +320,9 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
         accent: c2,
         placeholder: '（默认）',
         minWidth: 100,
-        onSelect: () => { /* 保存时读取 */ },
+        onSelect: async (file) => {
+          if (editingConfig) { editingConfig.injectFile = file || undefined; await persistConfig(); }
+        },
       });
       injectWrap.appendChild(injectSelect.element);
       formScroll.appendChild(injectRow);
@@ -390,6 +394,13 @@ function createConfigHandler(meta: Record<string, unknown>): CardContentHandler 
       poolCard.appendChild(poolListEl);
       bodyEl.appendChild(poolCard);
       
+      // 修改即落盘：写当前编辑配置到 configs 文件（对齐 role/api 自动保存）
+      async function persistConfig(): Promise<void> {
+        if (!editingConfig) return;
+        const name = (editingConfig as AgentConfig & { _fileName: string })._fileName;
+        if (name) await saveConfig(editingConfig, name);
+      }
+
       // 填充编辑器
       function fillEditor(config: AgentConfig | null): void {
         editingConfig = config;
