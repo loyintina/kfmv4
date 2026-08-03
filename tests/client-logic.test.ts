@@ -490,10 +490,10 @@ regression('BAR-CARD-BLUR-01', 'floating-card', '浮卡拖拽期挂起 backdrop-
   assert(saveBody.includes('_restoreCardBlur'), 'onSavePosition 必须恢复模糊（pointercancel 由 drag-handler 保证到达）');
 });
 
-regression('BAR-LEAK-01', 'config.card', 'config.card 三个 window 监听必须在 deactivate 移除', () => {
+regression('BAR-LEAK-01', 'config.card', 'config.card 的 window 监听必须在 deactivate 移除（session 监听 2026-08-03 设计移除，剩 provider/model 两个）', () => {
   const src = readFileSync('src/client/cards/plugins/config.card.ts', 'utf-8');
-  // 曾只挂不摘：每次激活泄漏 3 个闭包（持过期 editingConfig/select 引用）
-  assert(src.includes('_onSessionChange') && src.includes('_onProviderChange') && src.includes('_onModelChange'), 'handler 必须存字段（匿名函数无法移除）');
+  // 曾只挂不摘：每次激活泄漏闭包（持过期 editingConfig/select 引用）
+  assert(src.includes('_onProviderChange') && src.includes('_onModelChange'), 'handler 必须存字段（匿名函数无法移除）');
   const deact = src.split('deactivate')[1] || '';
   assert(deact.includes('removeEventListener'), 'deactivate 必须 removeEventListener');
 });
