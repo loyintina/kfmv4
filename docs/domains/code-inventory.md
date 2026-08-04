@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 434c83f5 · 生成于 2026-08-04 -->
+<!-- 基准 commit 8e6d95d4 · 生成于 2026-08-04 -->
 
 # 代码清单（机械层）
 
@@ -98,7 +98,7 @@
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（55 文件 · 11746 行）
+## ai-chat（55 文件 · 11764 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -116,7 +116,7 @@
 | src/client/modules/orb-chat-host.ts | 332 | ChatHostDeps, initChatHost |
 | src/server/ai/tools/omp/browser/tab-supervisor.ts | 320 | WorkerHandle, TabSession, PendingRun, AcquireTabOptions, RunInTabOptions, getTab, acquireTab, runInTab, releaseTab, releaseAllTabs |
 | src/server/ai/tools/omp/debug/kfmv4-views.ts | 318 | Kfmv4ViewName, Kfmv4ViewResult, RENDERER_SNAPSHOT_SCRIPT, ANIMATION_TIMELINE_SCRIPT, GESTURE_TRACE_SCRIPT, STATE_HISTORY_SCRIPT, CARD_LIFECYCLE_SCRIPT, KFMV4_SCRIPT_MAP, formatRendererSnapshot, formatAnimationTimeline, formatGestureTrace, formatStateHistory, formatCardLifecycle |
-| src/shared/chat-protocol/to-openai-messages.ts | 279 | OpenAiToolCall, OpenAiMessage, ToOpenAiOptions, ToOpenAiResult, toOpenAiMessages |
+| src/shared/chat-protocol/to-openai-messages.ts | 297 | OpenAiToolCall, OpenAiMessage, ToOpenAiOptions, ToOpenAiResult, toOpenAiMessages |
 | src/server/ai/session-store.ts | 248 | appendEvent, flush, flushSync, invalidateSession, appendUserMessage |
 | src/server/ai/tools/omp/debug/cdp-connection.ts | 242 | CdpSession, CdpLaunchOptions, CdpAttachOptions, CdpPausedEvent, sendCmd, onCdpEvent, launchCdp, attachCdp, closeCdp |
 | src/server/ai/run-manager.ts | 236 | _setStallMsForTest, getActiveRun, getRun, StreamFn, startRun, attachRun, cancelRun |
@@ -172,7 +172,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（142 文件 · 17064 行）
+## infra（142 文件 · 17091 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -198,10 +198,10 @@
 | scripts/agent/semantic-audit.tasks.mjs | 222 | TASKS |
 | tests/path-utils.test.ts | 215 | — |
 | tests/renderer.test.ts | 215 | — |
+| tests/to-openai-messages.test.ts | 208 | — |
 | tests/smoke/smoke.mjs | 190 | — |
 | scripts/agent/semantic-chain.mjs | 185 | — |
 | scripts/check/gen-code-inventory.mjs | 184 | — |
-| tests/to-openai-messages.test.ts | 181 | — |
 | tests/chat-protocol.test.ts | 169 | — |
 | experiments/coldstart/tools/hallucinate-batch.mjs | 164 | — |
 | tests/protocol-reducer.test.ts | 161 | — |
@@ -629,4 +629,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 283 文件 · 48680 行 · 跨域边 248 条
+合计 283 文件 · 48725 行 · 跨域边 248 条
