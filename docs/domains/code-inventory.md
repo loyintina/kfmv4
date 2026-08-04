@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 4500c097 · 生成于 2026-08-04 -->
+<!-- 基准 commit 3ac7eece · 生成于 2026-08-04 -->
 
 # 代码清单（机械层）
 
@@ -36,7 +36,7 @@
 | src/client/engine/v2/animation.ts | 40 | ease |
 | src/client/engine/v2/utils.ts | 24 | uniformSpacing, hvSpacing, ZERO_SPACING |
 
-## floating-card（29 文件 · 6937 行）
+## floating-card（29 文件 · 6940 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -48,7 +48,7 @@
 | src/client/cards/plugins/api.card.ts | 562 | — |
 | src/client/modules/card-stack.ts | 472 | getCardCount, getCard, getCardName, getCardId, hexToRgba, cardGradient, cardBg, getFocusIndex, getCurrentAccent, getCardHandler, getFocusedCardRect, animateStackPullFeedback, launchFocusedCard, openCardStack, closeCardStack, isCardStackOpen, focusNext, focusPrev, initCardStack |
 | src/client/cards/plugins/tools.card.ts | 308 | — |
-| src/client/modules/tmux-card.ts | 303 | TmuxCardMeta, createTmuxCardHandler |
+| src/client/modules/tmux-card.ts | 306 | TmuxCardMeta, createTmuxCardHandler |
 | src/client/modules/renderers/handler-factory.ts | 296 | createFileHandler |
 | src/client/modules/floating-fullscreen.ts | 214 | enterFullscreen, exitFullscreen, dismissFullscreen |
 | src/client/cards/plugins/paradigm.card.ts | 213 | — |
@@ -172,7 +172,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（135 文件 · 16303 行）
+## infra（136 文件 · 16340 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -204,12 +204,12 @@
 | experiments/coldstart/tools/hallucinate-batch.mjs | 164 | — |
 | tests/protocol-reducer.test.ts | 161 | — |
 | scripts/agent/agent-runner.mjs | 159 | renderTemplate, extractJson, runAgent |
+| scripts/check/sync-counts.mjs | 156 | — |
 | scripts/agent/semantic-audit.tasks.mjs | 152 | TASKS |
 | experiments/coldstart/tools/routine-entry-validation.mjs | 152 | — |
 | scripts/agent/semantic-bench.mjs | 149 | — |
 | tests/probes/gen-page-state-schema/src/server/ai/page-state.ts | 149 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
 | scripts/check/check-docs.mjs | 146 | — |
-| scripts/check/sync-counts.mjs | 144 | — |
 | scripts/check/check-bar-ledger.mjs | 143 | — |
 | tests/provider-env.test.ts | 137 | — |
 | experiments/coldstart/tools/judge-batch.mjs | 135 | — |
@@ -272,6 +272,7 @@
 | scripts/check/check-inbox-heartbeat.mjs | 54 | — |
 | tests/tool-schema.test.ts | 54 | — |
 | scripts/check/check-secrets.mjs | 52 | — |
+| tests/gen-pipeline.test.ts | 52 | — |
 | scripts/check/check-consistency.mjs | 51 | — |
 | scripts/check/check-uncommitted.mjs | 51 | — |
 | scripts/check/gen-route-table.mjs | 49 | — |
@@ -280,7 +281,6 @@
 | scripts/check/check-doc-budget.mjs | 44 | — |
 | scripts/clean-npm-temp.cjs | 44 | — |
 | scripts/check/check-release-radar.mjs | 42 | — |
-| tests/gen-pipeline.test.ts | 41 | — |
 | tests/reset-hooks.ts | 41 | — |
 | tests/semantic-chain.test.ts | 34 | — |
 | tests/runner.ts | 33 | test, group, runAll, regression, beforeEach, TestFileNode, singleFolder, nestedFolders |
@@ -293,6 +293,7 @@
 | tests/probes/gen-tool-docs/src/server/ai/tools/fake.ts | 16 | fakeTool |
 | tests/mocks/xterm.ts | 15 | Terminal |
 | tests/probes/gen-tool-docs/src/server/ai/tools/index.ts | 15 | getToolDefinitions |
+| tests/probes/sync-counts/scripts/agent/semantic-mutate.mjs | 14 | MUTATIONS |
 | tests/probes/gen-permission-map/src/server/ai/tools/types.ts | 12 | KfmTool |
 | tests/probes/gen-tool-docs/src/server/ai/tools/types.ts | 12 | KfmTool |
 | .githooks/commit-msg | 10 | — |
@@ -620,4 +621,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 276 文件 · 47849 行 · 跨域边 246 条
+合计 277 文件 · 47889 行 · 跨域边 246 条
