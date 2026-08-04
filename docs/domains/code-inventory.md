@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 6c7e7d7b · 生成于 2026-08-04 -->
+<!-- 基准 commit a53f640c · 生成于 2026-08-04 -->
 
 # 代码清单（机械层）
 
@@ -172,7 +172,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（137 文件 · 16429 行）
+## infra（137 文件 · 16445 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -234,6 +234,7 @@
 | scripts/agent/exp-vision-internal.mjs | 109 | — |
 | scripts/check/check-cards.mjs | 105 | — |
 | scripts/check/check-contract-freshness.mjs | 104 | — |
+| scripts/check/check-stack-status.mjs | 102 | — |
 | scripts/check/check-test-patterns.mjs | 102 | — |
 | scripts/check/gen-rules-map.mjs | 102 | — |
 | scripts/check/check-doc-orphans.mjs | 101 | — |
@@ -243,7 +244,6 @@
 | scripts/check/check-versions.mjs | 91 | — |
 | scripts/check/check-workflow-integrity.mjs | 87 | — |
 | scripts/check/check-probes.mjs | 86 | — |
-| scripts/check/check-stack-status.mjs | 86 | — |
 | scripts/agent/exp-probe-matrix.mjs | 86 | — |
 | tests/engine.test.ts | 85 | — |
 | scripts/check/gen-experiments-list.mjs | 84 | — |
@@ -622,4 +622,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 278 文件 · 47989 行 · 跨域边 246 条
+合计 278 文件 · 48005 行 · 跨域边 246 条
