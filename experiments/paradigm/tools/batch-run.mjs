@@ -15,7 +15,7 @@
  *   --paradigms "无" = 对照组（无范式包）；其他名 = .kfmv4/paradigms/<名>.md
  *   --arms N = 每配置重复次数（重复测量——模型随机性需多次取统计）
  */
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import { fileURLToPath } from 'url';
@@ -28,15 +28,19 @@ const argv = process.argv.slice(2);
 const get = (k) => { const i = argv.indexOf(`--${k}`); return i >= 0 ? argv[i + 1] : undefined; };
 
 const tasks = (get('tasks') || '').split(',').map(s => s.trim()).filter(Boolean);
+// --task-file <path>：整文件内容作为单一任务（JSON 契约含逗号时 --tasks 拆分不可用）
+const taskFile = get('task-file');
+if (taskFile) tasks.push(readFileSync(taskFile, 'utf-8').trim());
 const paradigms = (get('paradigms') || '无').split(',').map(s => s.trim()).filter(Boolean);
 const models = (get('models') || 'deepseek-v4-flash').split(',').map(s => s.trim()).filter(Boolean);
 const arms = Number(get('arms') || 1);
 const concurrency = Number(get('concurrency') || 4);
 const provider = get('provider') || 'Opencode Go Google';
+const prefix = get('prefix') || 'bi-';
 const tools = get('tools')?.split(',').map(s => s.trim()).filter(Boolean);
 
 if (!tasks.length) {
-  console.error('用法: --tasks "任务1,任务2" [--paradigms "无,范式包名"] [--models m1,m2] [--arms N] [--concurrency N] [--provider 名] [--tools "read,grep,glob"]');
+  console.error('用法: --tasks "任务1,任务2" | --task-file <路径> [--paradigms "无,范式包名"] [--models m1,m2] [--arms N] [--concurrency N] [--provider 名] [--tools "read,grep,glob"] [--prefix bi-]');
   process.exit(2);
 }
 mkdirSync(SCRIPT, { recursive: true });
@@ -52,7 +56,7 @@ for (let ti = 0; ti < tasks.length; ti++) {
     }
   }
 }
-const armId = (s) => `bi-t${s.ti}p${s.pi}m${s.mi}r${s.n}`;
+const armId = (s) => `${prefix}t${s.ti}p${s.pi}m${s.mi}r${s.n}`;
 
 // 断点续跑：已归档的跳过
 const todo = armSpecs.filter(s => !existsSync(join(SCRIPT, `${armId(s)}.json`)));

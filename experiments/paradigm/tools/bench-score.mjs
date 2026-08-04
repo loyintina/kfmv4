@@ -40,7 +40,8 @@ console.log(`[bench-score] ground-truth ${ground.mutations.length} 条（已机�
 
 // ========== 收集会话文件 ==========
 const argv = process.argv.slice(2);
-const armArg = (argv.find(a => a.startsWith('--arm=')) || '').slice(6);
+const armArg = (argv.find(a => a.startsWith('--arm=')) || '').slice(6)
+  || (() => { const i = argv.indexOf('--arm'); return i >= 0 ? argv[i + 1] || '' : ''; })();
 const files = armArg
   ? armArg.split(',').map(id => join(SCRIPT, `${id}.json`))
   : readdirSync(SCRIPT).filter(f => f.endsWith('.json')).map(f => join(SCRIPT, f));
