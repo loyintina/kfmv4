@@ -75,6 +75,7 @@ export interface TerminalCardMeta {
   _openTag?: string;
   _welcomed?: boolean;
   _selfHeal?: ReturnType<typeof setInterval>;
+  _onVisible?: () => void; // 锁屏恢复：强制重绘+fit
 }
 
 /** 窄化守卫：将通用 CardInstance 窄化为 TerminalCardMeta 特化。全文件唯一 as 逃逸。 */
@@ -477,6 +478,16 @@ export function initTerminalCore(
   robustFit(fit);
   startSelfHeal(tc, fit);
 
+  // 锁屏恢复（渲染抑制后 canvas 帧缓存错乱——「复制行追加」病灶）：强制全屏重绘 + fit
+  if (!tc.meta._onVisible) {
+    tc.meta._onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      try { term.refresh(0, term.rows - 1); } catch {}
+      robustFit(fit);
+    };
+    document.addEventListener('visibilitychange', tc.meta._onVisible);
+  }
+
   tc.meta._term = term;
   tc.meta._fit = fit;
   tc.meta._xtermEl = xtermEl;
@@ -622,6 +633,7 @@ export function disposeTerminalCore(card: CardInstance, poolName: string): void 
 export function compactTerminalCore(card: CardInstance): void {
   const tc = tcard(card);
   if (tc.meta._selfHeal) { clearInterval(tc.meta._selfHeal); tc.meta._selfHeal = undefined; }
+  if (tc.meta._onVisible) { document.removeEventListener('visibilitychange', tc.meta._onVisible); tc.meta._onVisible = undefined; }
   if (tc.meta._observer) {
     tc.meta._observer.disconnect();
   }
