@@ -74,9 +74,34 @@ export interface TerminalCardMeta {
   _onReconnect?: () => void;   // WS 重连后重新打开 PTY 的回调
   _openTag?: string;
   _welcomed?: boolean;
+  _selfHeal?: ReturnType<typeof setInterval>;
 }
 
 /** 窄化守卫：将通用 CardInstance 窄化为 TerminalCardMeta 特化。全文件唯一 as 逃逸。 */
+/** fit 健壮化：多阶段（立即 + rAF + 150ms 延迟）——覆盖浮动卡动画中途的中间尺寸 */
+function robustFit(fit: FitAddon) {
+  try { fit.fit(); } catch {}
+  requestAnimationFrame(() => { try { fit.fit(); } catch {} });
+  setTimeout(() => { try { fit.fit(); } catch {} }, 150);
+}
+
+/** 半屏自愈：低频校验容器高度 vs canvas 高度，偏差 >20% re-fit（错过 resize 也能自愈） */
+function startSelfHeal(tc: CardInstance<TerminalCardMeta>, fit: FitAddon) {
+  if (tc.meta._selfHeal) clearInterval(tc.meta._selfHeal);
+  tc.meta._selfHeal = setInterval(() => {
+    try {
+      const el = tc.meta._termEl;
+      const canvas = el?.querySelector('.xterm canvas') as HTMLElement | null;
+      if (!el || !canvas) return;
+      const containerH = el.clientHeight;
+      const canvasH = canvas.clientHeight;
+      if (containerH > 40 && canvasH > 0 && Math.abs(containerH - canvasH) / containerH > 0.2) {
+        fit.fit();
+      }
+    } catch {}
+  }, 60_000);
+}
+
 function tcard(card: CardInstance): CardInstance<TerminalCardMeta> {
   return card as CardInstance<TerminalCardMeta>;
 }
@@ -382,7 +407,7 @@ export function initTerminalCore(
     const xtermEl = termEl!.querySelector('.xterm') as HTMLElement;
     container.appendChild(termEl!);
     if (xtermEl) { xtermEl.style.touchAction = 'none'; _termMap.set(xtermEl, term!); }
-    requestAnimationFrame(() => { fit!.fit(); });
+    robustFit(fit!);
     tc.meta._xtermEl = xtermEl;
     let resizeTimer: ReturnType<typeof setTimeout> | null = null;
     const observer = new ResizeObserver(() => {
@@ -449,8 +474,8 @@ export function initTerminalCore(
     xtermEl.style.touchAction = 'none';
     _termMap.set(xtermEl, term);
   }
-  fit.fit();
-  requestAnimationFrame(() => { fit.fit(); });
+  robustFit(fit);
+  startSelfHeal(tc, fit);
 
   tc.meta._term = term;
   tc.meta._fit = fit;
@@ -479,6 +504,7 @@ export function initTerminalCore(
     }, 200);
   });
   observer.observe(termEl);
+  if (termEl.parentElement) observer.observe(termEl.parentElement); // 容器父链——canvas 锁高时 termEl contentRect 可能失效
   tc.meta._observer = observer;
 
   wsChannel.onMessage('error', function onErr(p: unknown) {
@@ -595,6 +621,7 @@ export function disposeTerminalCore(card: CardInstance, poolName: string): void 
 /** 紧缩态：保留 Terminal + WS，只拔 xterm DOM */
 export function compactTerminalCore(card: CardInstance): void {
   const tc = tcard(card);
+  if (tc.meta._selfHeal) { clearInterval(tc.meta._selfHeal); tc.meta._selfHeal = undefined; }
   if (tc.meta._observer) {
     tc.meta._observer.disconnect();
   }

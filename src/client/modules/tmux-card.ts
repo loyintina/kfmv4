@@ -51,6 +51,8 @@ export function createTmuxCardHandler(): CardContentHandler {
   let _initDone = false;
   let _lastCommand = '';
   let _attached = '';
+  let _switching = false; // 切换守卫：防连点竞态
+  let _prevAttached = '';  // 失败回滚用
   let _sessions: string[] = [];
   let _pendingName = '';
 
@@ -86,8 +88,10 @@ export function createTmuxCardHandler(): CardContentHandler {
   }
 
   function switchSession(session: string): void {
-    if (!_sessionId || session === _attached) return;
-    _attached = session;
+    if (_switching || !_sessionId || session === _attached) return;
+    _switching = true;
+    _prevAttached = _attached;
+    _attached = session; // 乐观更新（失败回滚见 onResult）
     if (_tabBar) renderTabBar(_sessions, session);
     wsChannel.sendMessage('tmux-cmd', { cmd: 'switch-client', args: [session, _sessionId] });
   }
@@ -115,6 +119,16 @@ export function createTmuxCardHandler(): CardContentHandler {
 
   const onResult = (payload: unknown): void => {
     const p = payload as { cmd: string; result: { stdout: string; stderr: string; exitCode: number } };
+
+    if (p.cmd === 'switch-client') {
+      // 切换回包：成功保持，失败回滚（乐观更新的兜底）
+      _switching = false;
+      if (p.result.exitCode !== 0) {
+        _attached = _prevAttached;
+        if (_tabBar) renderTabBar(_sessions, _attached);
+      }
+      return;
+    }
 
     if (p.cmd === 'new-session') {
       const name = _pendingName;
