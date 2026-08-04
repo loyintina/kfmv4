@@ -78,7 +78,7 @@ send('terminal-output')；输入 → pty.write；close/error/心跳判死 → ki
 3. **【已结案】ai-tools 9 个端点疑似整体死端点**：经溯源确认为死重（成因 E，引入
    25a295e v6.1.0），ai-tools.ts + capability-executor.ts 已整删（ADR-004）。
    连带：POST /ui/command 是 `command` WS 消息的唯一服务端触发，删除后客户端
-   19 个 command handler 无生产者——见 cross-domain.md 与 STACK #6/#7。
+   19 个 command handler 无生产者——见 cross-domain.md 与 STACK #15/#16。
 4. **ws-server 职责混杂证实**：一个 switch 混 PTY 四类消息、tmux 子进程桥（:200-224
    直接在 WS 层 execFile）、browser-eval 桥、snapshot 缓存——实为四合一。
 5. **index.ts 自述与实际不符**：头注释「只做 Express 装配」，实含 50 行 __kfmProbe

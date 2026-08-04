@@ -5,6 +5,10 @@
 > **状态 = 条目标题行内的第一个标记，永不放在延续行**——`✅`（已落地，同行带日期）/
 > `⏳`（远期/待建，同括号带说明）/ `⚠️`（有保留）。描述延续行只承载内容，不再以
 > `——✅` 引导新状态；快读只需标题行即可确定条目状态。写新条目先定状态，再写内容。
+> **编号规范**（2026-08-04 立，F3 裁决）：主列表编号 = 物理顺序 1..N 严格连续，
+> 新条目一律追加到主列表末尾（不插队）；重排时历史账本行（history/bugs/provenance）
+> 保留当时编号不回改。研究参考区用独立命名空间 R1/R2/…，不与主列表撞号
+> （check-stack-status 机械 enforcement：断号/撞号即拦）。
 1. [vision.md] v8.2 文档系统重构 — ✅ 完成（2026-07-29 切换提交）
    — 19 活跃迁移 + archive 65 份结算 + 压缩轮 + 管线 20 脚本新链；设计文档已自我分散
    （原理 → guides/doc-architecture.md，过程 → git show v8.1.1 考古）
@@ -105,12 +109,12 @@
      统计——有设计沉淀 avg fix 链 1.58 vs 无沉淀 2.58（-39%，置换检验 p=0.004，pre/post-v7
      两时代方向一致，厚尾率 12.7% vs 21.0%）——心法 34 获数据支持，报告
      decisions/case-study-iceberg-experiment.md（三条新心法首次联合实战）
-8. 卡片类需求四件（2026-07-29 记，优先级后排）
+4. 卡片类需求四件（2026-07-29 记，优先级后排）
    — 工作流实体卡片插件：workflows/ 的实体卡进卡片堆（形态参照现有 tool 卡）
    — 中央面板网格线升级 + 实时统计信息
    — 会话卡逻辑修复（具体病灶待补充）
    — 审查文件卡代码高亮问题修正（具体病灶待补充）
-9. server 会话/prompts 域 bug 池（2026-07-29 记；初始主题=提示词注入约束修复，病灶待补充；后收编 bug 见子项）
+5. server 会话/prompts 域 bug 池（2026-07-29 记；初始主题=提示词注入约束修复，病灶待补充；后收编 bug 见子项）
    — 另：面板发送消息无响应（2026-07-29 记，用户反馈的活 bug）——**用户 08-03 确认早已修复**，
      闭环此条；病灶/钉未入 BAR（即 F2「bug 入口无强制通道」现场）
    — 另：会话删除后服务端串档（2026-07-30 记，冷启动实验 terra 臂尸检发现）：删除会话卡只删
@@ -127,7 +131,7 @@
    — 另：tag-advisor shell 注入 P0（2026-07-31 记，同臂发现）：argv ref 直插 execSync
      模板串。**✅ 已修复（BAR-SEC-15）**：execFileSync 参数数组 + REF_RE 白名单，
      tests/tag-advisor.test.ts 3 钉 revert 验证
-10. 全量代码分析 → domains 填充（2026-07-29 提前完成，用户动议）
+6. 全量代码分析 → domains 填充（2026-07-29 提前完成，用户动议）
    — ✅ 六域 code-map + cross-domain.md（2026-07-29，99 条漂移带 file:line，0cecc62/3906707）
    — ✅ 机械层：gen-code-inventory.mjs（2026-07-29，已移 scripts/check/ 并 --check-only 挂链，鲜度不再靠人）
    — ✅ 溯源审计（2026-07-29）：22 subagent 考古 → ledger/drift-provenance.md（105 行普查 + 8 案深潜）
@@ -143,26 +147,26 @@
    — 深潜 3 分歧已裁决（adr-004，2026-07-29 用户拍板）：orb.ts **拆**（专项，
      消息窗口卡前置，一切皆卡片愿景）/ anim scope 废弃泛化声称 / ai-tools 端点整删
    — 制度化：随修溯源（修每条漂移必带成因标签 + 引入 commit，进 bug-fix 流程）
-11. 校验逻辑改动前必查生产数据分布（2026-08-01 记，BAR-SEC-14 中文 sessionId 误杀事故）
+7. 校验逻辑改动前必查生产数据分布（2026-08-01 记，BAR-SEC-14 中文 sessionId 误杀事故）
    — 事故：安全修复加 ASCII 白名单技术判断全对，但不知道生产会话 id 是中文标题，
      回归钉还把「中文」钉在拒绝侧——463 测试全绿拦不住「测试亲自钉死的误杀」
    — 教训候选进 pre-code-gate 自查清单（或心法）：改任何校验/过滤/白名单逻辑前，
      先看生产真实数据的分布（ls 数据目录/抽样真实记录），再定合法集
    — 同类风险面：凡「合法/非法」二分的校验器（provider 参数、路径、ref、id 类）
-12. 测试先行（测试设计先于实现）理念候选（2026-08-01 用户动议，外部经验引入）
+8. 测试先行（测试设计先于实现）理念候选（2026-08-01 用户动议，外部经验引入）
    — 内容：开发功能前先讨论设计出「测试怎么写」，再写实现代码——目标降低 feat 后
      fix 提交占比（历史一半时间在修 bug 的病灶直指此处）
    — 与冰山实验同源：feat 前投入转移 feat 后 fix 工作量（有沉淀 avg fix 链 1.58 vs
      无沉淀 2.58，p=0.004 已证「前置投入有效」）——测试先行是前置投入的具体形态
    — 现状锚点：bug-fix 流程已有「先钉回归测试再修」先例（BAR 系列 revert 钉），
      feat 流程无对应约束——讨论适配形态后候选进 workflows feat 类卡 / 心法
-13. 冷启动试卷体系长期化（2026-08-01 用户动议）
+9. 冷启动试卷体系长期化（2026-08-01 用户动议）
    — 现状：同一提示词 + lab 基线的多 harness 对照实验已产出 100+ 臂带尸检数据，
      资产已入库 experiments/coldstart/（2026-08-01 起，sessions 在 .kfmv4 私有区）
    — 方向：① 定期复测对照（模型版本迭代/harness 演进后的行为漂移追踪）
      ② 新 harness 接入即测 ③ 远期：agent-runner 形态自动跑臂+尸检入库，
      挂机后台持久化（与 #3 agent 任务执行器会合）
-14. 实验体系迁入源码仓 + 数据重构（2026-08-01 用户动议）
+10. 实验体系迁入源码仓 + 数据重构（2026-08-01 用户动议）
    — 现状：已入库 experiments/coldstart/（index.md + reports + tools），sessions/
      原始答卷在 .kfmv4/experiments/coldstart/ 私有区——数据重构已完成主体
    — 时机：随 #13 试卷体系固化成工作流时一并收尾（sessions 存档格式定型 +
@@ -170,7 +174,7 @@
    — 方法论（#12 测试先行在实验基建上的同源应用）：先摸索实验机制和流程（试卷/
      基线/尸检/评分口径），产物是实验结论——结论用来推动决策和方向设计；
      设计不能脱离实际，决策需要真实数据支撑
-15. 稳定代码逐渐 Rust 化方向研究（2026-08-01 用户动议，远景方向）
+11. 稳定代码逐渐 Rust 化方向研究（2026-08-01 用户动议，远景方向）
    — 契机：BAR-BASH-HANG-01 调研发现 pi-natives 全栈源码可得（MIT，vendored
      brush-core/uutils 同仓可改），服务器已有 rustup——Rust 化有现成土壤
    — 方向：稳定下来的热路径/性能敏感模块逐步 Rust 化（形态未定：napi  addon /
@@ -180,25 +184,25 @@
    — 附属待办：pi-natives 进程替换 fd 泄漏（brush-core interp.rs
      setup_process_substitution 写端未回收，/proc 级取证在本会话）整理成
      issue 反馈上游 can1357/oh-my-pi——开源回馈，也防 omp 升级带回同类问题
-16. ✅ 测试环境污染生产数据目录（2026-08-01 记，蔚然五测尸检发现；2026-08-01 根治）
+12. ✅ 测试环境污染生产数据目录（2026-08-01 记，蔚然五测尸检发现；2026-08-01 根治）
    — **✅ 已根治（2026-08-01，BAR-TEST-ENV-01）**：preload.mjs 头部把 KFM_ROOT
      重定向到 mkdtemp 临时目录（path-utils import 时读 env，preload 先于一切
      被测模块）；两枚假设根=HOME 的旧钉一并解除；全量跑后生产 sessions
      零增长实测；存量 11 个已手工清理
-4. ✅ 手势系统研究与全局交互区域分权（P3，自 HANDBOOK 活跃待办迁入；唯一子项 2026-07-29 关闭）
+13. ✅ 手势系统研究与全局交互区域分权（P3，自 HANDBOOK 活跃待办迁入；唯一子项 2026-07-29 关闭）
    — 浮卡/卡片堆/设置卡内容区与全局左右滑的边界
    （touch-action 分区策略已文档化 → domains/client-shell/contract.md #陷阱 7，2026-07-29 关闭该子项）
-5. v8 审计遗留 LOW 项（P3，自 V8_AUDIT_REPORT 迁入，2026-07-27 审计）
+14. v8 审计遗留 LOW 项（P3，自 V8_AUDIT_REPORT 迁入，2026-07-27 审计）
    — session-store.ts（客户端）命名/职责模糊（重命名 session-client 或合并 orb.ts）
      —— 重命名已落地 session-client.ts；职责双轨残留见 ai-chat code-map 漂移 1（语义审计 E2）
    — tool_result 状态（orb-chat _applyEvent）与渲染（chat-dom patchEvent）两处分散
    — flushSync 每事件同步写盘：当前可接受；多用户/长对话时改「text_delta 防抖+其余同步」
-6. archive (b) 结算发现的两个活缺口（2026-07-29，素材考古行已标注）
+15. archive (b) 结算发现的两个活缺口（2026-07-29，素材考古行已标注）
    — CARD_REGISTRY_SPEC §6 AI 卡片三命令（focus-card/close-card/send-to-card）：设计了未实施，
      现行无实现。要么实现，要么正式否决记 decisions/
    — CONTEXT_ASSEMBLY_SPEC §7 两开放问题（多角色卡同载、工具卡工具定义来源）：
      detail-runtime 未覆盖，需裁决或补文档
-7. archive (a) 结算发现的三个真遗留（2026-07-29，旧审计开放项在新文档系统失联）
+16. archive (a) 结算发现的三个真遗留（2026-07-29，旧审计开放项在新文档系统失联）
    — v6.8 审计 #10：服务端 console.log 残留 ~12 处（ws-server.ts/index.ts/ai/chat.ts），
      应统一为 warn/error（客户端侧已清，debug-tools.md:115 有服务端惯例）
    — HANDOFF_2026-06-03_AUDIT_FIX_DEEP「留给下一轮」三项：_rowIndex 显式接口化
@@ -226,7 +230,7 @@
      ——✅ 已修（2026-08-03）：ROOT→REPO + 崩溃投信箱 💀（沉默不允许）+
      check-inbox-heartbeat.mjs 挂链（MECH-FLOW-10，上岗即逮现役停摆 42h）+
      3 钉（tests/semantic-chain.test.ts）+ 探针夹具；补跑巡逻回填当日欠班
-   — F2 bug 入口无强制通道：面板发送无响应 bug 以「另:」散文挂 STACK #9，未进 BAR
+   — F2 bug 入口无强制通道：面板发送无响应 bug 以「另:」散文挂 STACK #5，未进 BAR
      登记 → 修完无人追状态（用户 08-03 确认早已修复，STACK 未更新）；入口路由可机械化
    — F3 STACK 编号碰撞：主列表 1,2,3,8..16,4..7 插入序混乱，研究参考区 0./0b./9./10.
      与主列表 #9/#10 撞号，引用歧义；check-stack-status 切分正则也会吞研究参考条目
@@ -237,19 +241,19 @@
 
 ## 研究参考（2026-08-02 起登记，未立项，内化备查）
 
-0. **错误码总表（2026-08-03 落地）**——流程引导错误码（DOC-FLOW×8 / TEST-FLOW×3 /
+R1. **错误码总表（2026-08-03 落地）**——流程引导错误码（DOC-FLOW×8 / TEST-FLOW×3 /
    MECH-FLOW×9）总表 `active/error-codes.md`：构建失败时 check 报错带 ⛳ 引导，
    把处理者引回「读 X 走 Y」；20 个流程门 check 已覆盖。
-0b. **思维模式记录（2026-08-03 立）**——洛主在范式级讨论中的思维模式提炼
+R2. **思维模式记录（2026-08-03 立）**——洛主在范式级讨论中的思维模式提炼
    `active/thinking-patterns.md`（10 类 + 出处），原始数据 `.kfmv4/discussion-log.jsonl`；
    记录流程见 workflows/discussion-study.yaml（双触发：agent 主动提议/用户发起复盘）。
 
 
-9. **语义生成（2026-08-02 立项：语义单源+生成呈现）**——设计 `active/semantic-generation.md`；
+R3. **语义生成（2026-08-02 立项：语义单源+生成呈现）**——设计 `active/semantic-generation.md`；
    可生成事实登记表 `active/generateable-facts.md`；已落地：契约清单生成器
    （gen-contract-lists，6 域清单单一出处）、路由表覆盖门（check-workflow-integrity）。
    纪律：写文档前先问能否从活源头推导——能→生成器，不能→手写。
-10. **harness 权限引擎（远景后备，2026-08-02 重定题）**——8.5 主题改为「观测与度量（史官制度）」；本项 8.5.0 骨架已落地（影子模式长跑），审批通道待观测台数据成熟后重启。设计文档
+R4. **harness 权限引擎（远景后备，2026-08-02 重定题）**——8.5 主题改为「观测与度量（史官制度）」；本项 8.5.0 骨架已落地（影子模式长跑），审批通道待观测台数据成熟后重启。设计文档
     `docs/active/harness-permission-engine.md`（主战场）；蓝图 OpenWorker 报告
     `experiments/harness-studies/openworker.md`。核心：工具执行层加
     PermissionEngine.evaluate 拦截点（fail-closed）+ RiskClass 四类分级 +

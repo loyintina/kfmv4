@@ -36,10 +36,13 @@ const ACTIVE_RE = /进行中|启动中|未结案/;
 const stack = readFileSync(join(ROOT, DOCS_ROOT, 'active', 'STACK.md'), 'utf-8');
 const lines = stack.split('\n');
 
-// 条目切分：头行 = /^\d+\.\s/，详情行 = 到下一个头行之前的缩进行
+// 条目切分：头行 = /^\d+\.\s/，详情行 = 到下一个头行之前的缩进行。
+// 研究参考区（R1/R2/… 独立命名空间）不参与主列表检查——2026-08-04 F3：
+// 旧切分会吞掉该区条目，与主列表撞号产生引用歧义。
 let head = null; // { n, line, text, details: [] }
 const entries = [];
 for (let i = 0; i < lines.length; i++) {
+  if (/^## 研究参考/.test(lines[i])) break;
   const m = lines[i].match(/^(\d+)\.\s/);
   if (m) {
     head = { n: m[1], line: i + 1, text: lines[i], details: [] };
@@ -48,6 +51,17 @@ for (let i = 0; i < lines.length; i++) {
     head.details.push({ line: i + 1, text: lines[i] });
   }
 }
+
+// R3 编号纪律（2026-08-04 F3 机械化）：主列表编号 = 物理顺序 1..N 严格连续——
+// 插入序编号曾造成 1,2,3,8..16,4..7 乱序 + 研究参考区与主列表撞号（引用歧义）
+const seen = new Set();
+entries.forEach((e, i) => {
+  if (seen.has(e.n)) error(`条目编号 ${e.n} 重复（STACK.md:${e.line}）——主列表撞号`);
+  seen.add(e.n);
+  if (Number(e.n) !== i + 1) {
+    error(`条目编号断裂：第 ${i + 1} 个条目编号为 ${e.n}（STACK.md:${e.line}）——主列表须 1..N 严格连续，新条目追加到末尾`);
+  }
+});
 
 for (const e of entries) {
   const headDone = DONE_RE.test(e.text);

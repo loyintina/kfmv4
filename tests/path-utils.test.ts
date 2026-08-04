@@ -177,7 +177,7 @@ regression('BAR-SEC-08', 'path-utils', 'SAFE_ROOT 内指向外部的软链 → n
 });
 
 // ==========================================================================
-// BAR-TEST-ENV-01：测试环境数据目录隔离（2026-08-01，STACK #16）
+// BAR-TEST-ENV-01：测试环境数据目录隔离（2026-08-01，STACK #12）
 // 病灶：测试以真实 $HOME 跑，run-manager/session 类测试落盘把 s-basic/
 // s-stall/sess-x 等垃圾会话写进生产 ~/.kfmv4/sessions/（用户会话卡可见，
 // 手工清过 11 个，每轮 npm test 再长）。根治：preload 把 KFM_ROOT 重定向

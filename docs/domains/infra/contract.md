@@ -106,7 +106,7 @@ agent 脚本层——检测归自动化，裁决归会话内 agent，**永远不
    node 进程——急性（`comm <(sort …)` 死锁 100 分钟挂死整轮 run）+ 慢性
    （每次 bash 漏 ~2 fd）。换芯：`/bin/bash -c` + `detached: true` 进程组 +
    超时/abort 负 pid SIGKILL 杀树 + 1MB 输出截断；omp 升级勿回退后端；
-   泄漏取证待反馈上游（STACK #15）。配套：run-manager 停摆看门狗 360s
+   泄漏取证待反馈上游（STACK #11）。配套：run-manager 停摆看门狗 360s
    （生成器零事件即中止，兜一切「悬挂不抛错」类）。
 ## 文件清单
 

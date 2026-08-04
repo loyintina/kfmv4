@@ -48,6 +48,7 @@ import './tag-advisor.test.js';
 import './provider-env.test.js';
 import './gen-pipeline.test.js';
 import './semantic-chain.test.js';
+import './stack-numbering.test.js';
 
 function seedState(files: Record<string, any>) {
   KFMState.files = {};
