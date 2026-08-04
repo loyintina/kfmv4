@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit c4f40241 · 生成于 2026-08-04 -->
+<!-- 基准 commit dad8d634 · 生成于 2026-08-04 -->
 
 # 代码清单（机械层）
 
@@ -36,12 +36,12 @@
 | src/client/engine/v2/animation.ts | 40 | ease |
 | src/client/engine/v2/utils.ts | 24 | uniformSpacing, hvSpacing, ZERO_SPACING |
 
-## floating-card（29 文件 · 6940 行）
+## floating-card（29 文件 · 6951 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/client/modules/floating-card.ts | 811 | enterFullscreen, exitFullscreen, dismissFullscreen, updateFullscreenSavedPosition, createFloatingCard, dismissFloatingCard, initFloatingCards, hasFloatingCard, buildCardLayout |
-| src/client/modules/terminal-card-04.ts | 796 | TerminalCardMeta, initTerminalCore, disposeTerminalCore, compactTerminalCore, createTerminal04Handler |
+| src/client/modules/terminal-card-04.ts | 807 | TerminalCardMeta, initTerminalCore, disposeTerminalCore, compactTerminalCore, createTerminal04Handler |
 | src/client/cards/plugins/role.card.ts | 711 | — |
 | src/client/cards/plugins/session.card.ts | 616 | — |
 | src/client/cards/plugins/config.card.ts | 600 | — |
@@ -172,12 +172,12 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（136 文件 · 16340 行）
+## infra（137 文件 · 16406 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | tests/client-logic.test.ts | 875 | — |
-| tests/regression.test.ts | 647 | — |
+| tests/regression.test.ts | 648 | — |
 | experiments/coldstart/tools/normalize-arms.mjs | 587 | — |
 | tests/tool-compaction.test.ts | 505 | — |
 | scripts/agent/semantic-audit.mjs | 431 | taskFiles, buildPrompt, makeValidate, recheckRef, recheckQuote |
@@ -243,6 +243,7 @@
 | scripts/check/check-versions.mjs | 91 | — |
 | scripts/check/check-workflow-integrity.mjs | 87 | — |
 | scripts/check/check-probes.mjs | 86 | — |
+| scripts/check/check-stack-status.mjs | 86 | — |
 | scripts/agent/exp-probe-matrix.mjs | 86 | — |
 | tests/engine.test.ts | 85 | — |
 | scripts/check/gen-experiments-list.mjs | 84 | — |
@@ -257,7 +258,6 @@
 | scripts/check/docs-status.mjs | 76 | — |
 | scripts/check/check-doc-symbols.mjs | 75 | — |
 | experiments/coldstart/tools/theme-code.mjs | 75 | — |
-| scripts/check/check-stack-status.mjs | 72 | — |
 | scripts/check/check-code-doc-refs.mjs | 69 | — |
 | scripts/check/check-card-meta.mjs | 68 | — |
 | scripts/check/check-ledger-commits.mjs | 68 | — |
@@ -275,6 +275,7 @@
 | tests/gen-pipeline.test.ts | 52 | — |
 | scripts/check/check-consistency.mjs | 51 | — |
 | scripts/check/check-uncommitted.mjs | 51 | — |
+| tests/stack-numbering.test.ts | 51 | — |
 | scripts/check/gen-route-table.mjs | 49 | — |
 | tests/permissions.test.ts | 49 | — |
 | package.json | 47 | — |
@@ -621,4 +622,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 277 文件 · 47889 行 · 跨域边 246 条
+合计 278 文件 · 47966 行 · 跨域边 246 条
