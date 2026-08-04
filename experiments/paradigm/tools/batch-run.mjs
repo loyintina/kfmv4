@@ -33,9 +33,10 @@ const models = (get('models') || 'deepseek-v4-flash').split(',').map(s => s.trim
 const arms = Number(get('arms') || 1);
 const concurrency = Number(get('concurrency') || 4);
 const provider = get('provider') || 'Opencode Go Google';
+const tools = get('tools')?.split(',').map(s => s.trim()).filter(Boolean);
 
 if (!tasks.length) {
-  console.error('用法: --tasks "任务1,任务2" [--paradigms "无,范式包名"] [--models m1,m2] [--arms N] [--concurrency N] [--provider 名]');
+  console.error('用法: --tasks "任务1,任务2" [--paradigms "无,范式包名"] [--models m1,m2] [--arms N] [--concurrency N] [--provider 名] [--tools "read,grep,glob"]');
   process.exit(2);
 }
 mkdirSync(SCRIPT, { recursive: true });
@@ -84,6 +85,7 @@ const results = await pool(todo, async (s) => {
       model: s.model,
       provider,
       paradigm: paradigmText,
+      tools, // --tools 白名单透传（无 = 服务端全量工具）
       // 默认归档 script/（session-runner 默认行为）
     });
     console.log(`[batch-run] ${id} OK（${((Date.now() - t1) / 1000).toFixed(0)}s${paradigmText ? ` 范式=${s.paradigm}` : ' 对照'}）`);
