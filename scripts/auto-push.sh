@@ -4,7 +4,8 @@
 # 闸 0：freshness 红（有未部署提交）→ 先部署（check 全链门 + 重启），否则推不了最新
 # 闸 1：工作树有「非构建戳」未提交改动 → 跳过不推（真实工作在进行，不越权提交）
 # 闸 2：pre-push 钩子跑全链 check——失败则 push 被钩子拦下，记录日志
-# 顺序：先推后戳——戳提交会让 HEAD 晚于 buildTime 致 deploy-freshness 红（2026-08-03 实测）
+# 顺序：先推后戳——戳提交在 push 后，本地留着（2026-08-04 根治后戳提交不再触发
+# freshness 红：check-deploy-freshness 只查「最后一个改 src/ 的提交」，build 戳不算未部署）
 # 边界：机器机制（cron），非 agent 主动 push；CLAUDE.md 纪律注明机制层例外。
 set -u
 REPO=/root/kfmv4

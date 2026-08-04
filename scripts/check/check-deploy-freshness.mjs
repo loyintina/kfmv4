@@ -6,8 +6,10 @@
  * 检测手段（版本握手 BAR-BUILD-05 + deploy.sh 闭环）早已存在，但靠自觉想起去跑
  * → 自觉是最不可靠的部件 → 机械化：源码比包新 = 链红，部署前交付永远不过。
  *
- * 口径：max(HEAD 提交时间, src/ 最新 .ts mtime) > dist/build-info.json 的 buildTime → fail。
- *   - HEAD 提交时间覆盖「已提交未部署」
+ * 口径：max(最后一个改 src/ 的提交时间, src/ 最新 .ts mtime) > dist/build-info.json 的 buildTime → fail。
+ *   - 「最后一个改 src/ 的提交时间」覆盖「已提交未部署」——只改非 src（如 public/index.html
+ *     构建戳）的提交不算未部署（2026-08-04 根治：build 戳提交必然晚于 buildTime，
+ *     旧口径 HEAD 时间导致「提交戳 → freshness 红 → 再部署 → 再提交戳」自锁）
  *   - src mtime 覆盖「改了没提交」（check-uncommitted 只管 >3 文件，漏小改动）
  * build.mjs 构建中途源码必然比包新 → 构建内调用链时以 --soft=check-deploy-freshness 跳过本步。
  *
@@ -42,10 +44,12 @@ if (!buildTime || Number.isNaN(buildMs)) {
   process.exit(1);
 }
 
-// HEAD 提交时间（已提交未部署的口径）
-let headMs = 0;
+// 最后一个改 src/ 的提交时间（已提交未部署的口径）——只改非 src（build 戳）不算未部署，
+// 根治「提交戳 → freshness 红 → 再部署 → 再提交戳」自锁（2026-08-04）
+let lastSrcCommitMs = 0;
 try {
-  headMs = Date.parse(execSync('git log -1 --format=%cI', { encoding: 'utf-8' }).trim());
+  const lastSrc = execSync('git log -1 --format=%cI -- src/', { encoding: 'utf-8' }).trim();
+  if (lastSrc) lastSrcCommitMs = Date.parse(lastSrc);
 } catch { /* 无 git 历史时只靠 mtime */ }
 
 // src/ 最新 .ts mtime（改了没提交的口径）
@@ -60,14 +64,14 @@ let newestSrcMs = 0, newestSrcFile = '';
   }
 })('src');
 
-const staleByCommit = headMs > buildMs;
+const staleByCommit = lastSrcCommitMs > buildMs;
 const staleBySource = newestSrcMs > buildMs;
 
 if (staleByCommit || staleBySource) {
   const lines = [
     `包体 buildTime: ${buildTime}`,
   ];
-  if (staleByCommit) lines.push(`HEAD 提交更晚: ${new Date(headMs).toISOString()}（已提交未部署）`);
+  if (staleByCommit) lines.push(`最后一个 src/ 提交更晚: ${new Date(lastSrcCommitMs).toISOString()}（已提交未部署）`);
   if (staleBySource) lines.push(`源码文件更晚: ${newestSrcFile}（有未构建的改动）`);
   lines.push(
     '',
