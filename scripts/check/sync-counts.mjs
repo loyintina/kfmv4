@@ -146,7 +146,7 @@ for (const { file, subs } of TARGETS) {
 
 if (CHECK_ONLY) {
   if (drift > 0) {
-    console.error(`\n[sync-counts] ${drift} 个文件计数漂移——跑 npm run sync-counts 回写`);
+    console.error(`\n[sync-counts] ${drift} 个文件计数漂移——跑 bash scripts/regenerate.sh 回写（或 --commit 一次提交）`);
     process.exit(1);
   }
   console.log('[sync-counts] OK — 各文档计数与派生真相一致');

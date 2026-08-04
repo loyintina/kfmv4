@@ -61,7 +61,7 @@ for (const dir of readdirSync(contractsDir, { withFileTypes: true }).filter(d =>
   if (!m) continue;
   if (m[0] !== generated) {
     if (CHECK_ONLY) {
-      console.error(`[gen-contract-lists] ${f}: 文件清单与 inventory 漂移（未同步）`);
+      console.error(`[gen-contract-lists] ${f}: 文件清单与 inventory 漂移（未同步）——跑 bash scripts/regenerate.sh 回写`);
       process.exit(1);
     }
     writeFileSync(path, content.replace(m[0], generated));

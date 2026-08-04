@@ -172,7 +172,7 @@ if (CHECK_ONLY) {
   const stripHeader = s => s.split('\n').filter((_, i) => i !== 1).join('\n');
   const existing = existsSync(outFile) ? readFileSync(outFile, 'utf-8') : '';
   if (stripHeader(existing) !== stripHeader(generated)) {
-    console.error('[gen-code-inventory] code-inventory.md 与代码现实漂移（未重新生成）——跑 node scripts/check/gen-code-inventory.mjs 回写');
+    console.error('[gen-code-inventory] code-inventory.md 与代码现实漂移（未重新生成）——跑 bash scripts/regenerate.sh 回写（或 --commit 一次提交）');
     process.exit(1);
   }
   console.log(`[gen-code-inventory] OK — code-inventory.md 与代码现实一致（${totalFiles} 文件 · ${totalLoc} 行）`);
