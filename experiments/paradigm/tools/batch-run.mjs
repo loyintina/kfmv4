@@ -38,6 +38,7 @@ const concurrency = Number(get('concurrency') || 4);
 const provider = get('provider') || 'Opencode Go Google';
 const prefix = get('prefix') || 'bi-';
 const tools = get('tools')?.split(',').map(s => s.trim()).filter(Boolean);
+const retries = Number(get('retries') || 2); // 失败臂自动重跑次数（断连/抖动用；服务重启掐 SSE 时重连仍可兜）
 
 if (!tasks.length) {
   console.error('用法: --tasks "任务1,任务2" | --task-file <路径> [--paradigms "无,范式包名"] [--models m1,m2] [--arms N] [--concurrency N] [--provider 名] [--tools "read,grep,glob"] [--prefix bi-]');
@@ -81,23 +82,32 @@ const results = await pool(todo, async (s) => {
   const id = armId(s);
   const t1 = Date.now();
   const paradigmText = s.paradigm === '无' ? '' : loadParadigm(s.paradigm);
-  try {
-    const res = await runSession({
-      sessionId: id,
-      messages: [{ role: 'user', content: [{ type: 'text', text: s.task }] }],
-      userText: s.task,
-      model: s.model,
-      provider,
-      paradigm: paradigmText,
-      tools, // --tools 白名单透传（无 = 服务端全量工具）
-      // 默认归档 script/（session-runner 默认行为）
-    });
-    console.log(`[batch-run] ${id} OK（${((Date.now() - t1) / 1000).toFixed(0)}s${paradigmText ? ` 范式=${s.paradigm}` : ' 对照'}）`);
-    return { id, ok: true, ms: res.ms };
-  } catch (e) {
-    console.error(`[batch-run] ${id} 失败: ${e.message.slice(0, 120)}`);
-    return { id, ok: false, error: e.message.slice(0, 120) };
+  // 失败臂自动重跑：新 sessionId（id-tN）避免服务端内存态残留接续旧 ctx，
+  // out 归档回原 id 文件——断点续跑语义不变（成功即原 id 文件在场）
+  for (let n = 0; n <= retries; n++) {
+    const tryId = n === 0 ? id : `${id}-t${n}`;
+    try {
+      const res = await runSession({
+        sessionId: tryId,
+        messages: [{ role: 'user', content: [{ type: 'text', text: s.task }] }],
+        userText: s.task,
+        model: s.model,
+        provider,
+        paradigm: paradigmText,
+        tools, // --tools 白名单透传（无 = 服务端全量工具）
+        out: join(SCRIPT, `${id}.json`), // 重试也归档到原臂 id
+      });
+      console.log(`[batch-run] ${id} OK${n > 0 ? `（第 ${n} 次重试成功）` : ''}（${((Date.now() - t1) / 1000).toFixed(0)}s${paradigmText ? ` 范式=${s.paradigm}` : ' 对照'}${res.reconnects ? ` 重连${res.reconnects}` : ''}）`);
+      return { id, ok: true, ms: res.ms, tries: n + 1 };
+    } catch (e) {
+      if (n === retries) {
+        console.error(`[batch-run] ${id} 失败（重试 ${retries} 次后）: ${e.message.slice(0, 120)}`);
+        return { id, ok: false, error: e.message.slice(0, 120) };
+      }
+      console.warn(`[batch-run] ${id} 第 ${n + 1} 次失败，重试…（${e.message.slice(0, 80)}）`);
+    }
   }
+  return { id, ok: false, error: 'unreachable' };
 }, concurrency);
 
 const ok = results.filter(r => r.ok).length;

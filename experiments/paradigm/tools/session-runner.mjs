@@ -119,21 +119,57 @@ async function startRun(sessionId, messages, userText, model, provider, roleFile
 
 async function waitRun(runId, maxMs = 600_000) {
   const t0 = Date.now();
-  const res = await fetch(`${BASE}/ai/chat/${runId}/stream`, { signal: AbortSignal.timeout(maxMs + 15_000) });
-  if (!res.ok) throw new Error(`stream HTTP ${res.status}`);
-  const reader = res.body.getReader();
-  const dec = new TextDecoder();
-  let buf = '';
-  let events = 0;
+  let from = 0; // 已读事件游标（SSE 每事件带 index，断线续读 from=N）
+  let attempts = 0;
+  const MAX_RECONNECT = 6;
   for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buf += dec.decode(value, { stream: true });
-    events += 1;
-    buf = buf.replace(/^.*?\n\n/s, '');
-    if (Date.now() - t0 > maxMs) throw new Error(`run ${runId} 超时 ${maxMs}ms`);
+    try {
+      const res = await fetch(`${BASE}/ai/chat/${runId}/stream?from=${from}`, { signal: AbortSignal.timeout(maxMs + 15_000) });
+      if (!res.ok) throw new Error(`stream HTTP ${res.status}`);
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        // 解析 SSE 事件行：data: {"index":N,...}——游标推进
+        let nl;
+        while ((nl = buf.indexOf('\n\n')) >= 0) {
+          const line = buf.slice(0, nl);
+          buf = buf.slice(nl + 2);
+          const m = line.match(/^data: (.+)$/);
+          if (!m) continue;
+          try {
+            const evt = JSON.parse(m[1]);
+            if (typeof evt.index === 'number') from = evt.index + 1;
+            if (evt.type === '__end__' || evt.event?.type === 'done') {
+              return { events: from, ms: Date.now() - t0, reconnects: attempts };
+            }
+          } catch { /* 忽略坏行 */ }
+        }
+        if (Date.now() - t0 > maxMs) throw new Error(`run ${runId} 超时 ${maxMs}ms`);
+      }
+      // EOF（服务端 res.end）：正常收尾
+      return { events: from, ms: Date.now() - t0, reconnects: attempts };
+    } catch (e) {
+      // 断连（terminated/网络抖）→ 探活续读（服务端 SSE 设计就是挂机重连；曾误判为并发瓶颈，
+      // 实为服务重启掐断在途连接——BAR-SESSION-FLUSH-01 同轮实验发现）
+      attempts++;
+      if (attempts > MAX_RECONNECT) throw e;
+      let st = null;
+      try { st = await fetch(`${BASE}/ai/chat/${runId}/status`, { signal: AbortSignal.timeout(10_000) }).then(r => r.json()); } catch { /* 探活也失败 → 等重试 */ }
+      if (st && st.exists === false) throw e; // run 已从内存消失（服务重启丢 run）→ 交调用方读已落盘会话
+      if (st && st.done) { // 已 done：事件全在缓存，续读补齐后收尾
+        try {
+          const res = await fetch(`${BASE}/ai/chat/${runId}/stream?from=${from}`, { signal: AbortSignal.timeout(15_000) });
+          if (res.ok) { await res.body?.cancel(); }
+        } catch { /* 补齐失败不致命——done 后会话已 flush 落盘 */ }
+        return { events: from, ms: Date.now() - t0, reconnects: attempts };
+      }
+      await new Promise(r => setTimeout(r, 800));
+    }
   }
-  return { events, ms: Date.now() - t0 };
 }
 
 /**
