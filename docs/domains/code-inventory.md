@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit a53f640c · 生成于 2026-08-04 -->
+<!-- 基准 commit 6d68815e · 生成于 2026-08-04 -->
 
 # 代码清单（机械层）
 
@@ -172,7 +172,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（137 文件 · 16445 行）
+## infra（137 文件 · 16467 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -193,13 +193,13 @@
 | scripts/agent/semantic-mutate.mjs | 261 | MUTATIONS |
 | tests/invariants.test.ts | 245 | — |
 | scripts/check/check-css-wiring.mjs | 228 | — |
+| scripts/agent/obs-aggregate.mjs | 224 | — |
 | tests/path-utils.test.ts | 215 | — |
 | tests/renderer.test.ts | 215 | — |
-| scripts/agent/obs-aggregate.mjs | 214 | — |
 | tests/smoke/smoke.mjs | 190 | — |
+| scripts/agent/semantic-chain.mjs | 185 | — |
 | scripts/check/gen-code-inventory.mjs | 184 | — |
 | tests/to-openai-messages.test.ts | 181 | — |
-| scripts/agent/semantic-chain.mjs | 173 | — |
 | tests/chat-protocol.test.ts | 169 | — |
 | experiments/coldstart/tools/hallucinate-batch.mjs | 164 | — |
 | tests/protocol-reducer.test.ts | 161 | — |
@@ -622,4 +622,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 278 文件 · 48005 行 · 跨域边 246 条
+合计 278 文件 · 48027 行 · 跨域边 246 条
