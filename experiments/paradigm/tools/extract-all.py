@@ -42,8 +42,13 @@ CREATE TABLE IF NOT EXISTS patches (
 );
 CREATE INDEX IF NOT EXISTS idx_msg_sess ON messages(session_id, seq);
 CREATE INDEX IF NOT EXISTS idx_tool_sess ON tool_calls(session_id, seq);
+-- FTS：trigram 分词（2026-08-04 接手修复——unicode61 把中文整段当一个 token，
+-- 「范式包的」≠「范式包」漏检；trigram 对 ≥3 字短语精准。2 字词（补丁/心法）
+-- 不索引，检索时用 LIKE 兜底（messages 6610 行全扫毫秒级）。
+-- 注意：CREATE VIRTUAL TABLE IF NOT EXISTS 不会更新已存在表的 tokenizer——
+-- 升级分词器需先 DROP TABLE messages_fts 再建。
 CREATE VIRTUAL TABLE IF NOT EXISTS messages_fts USING fts5(
-  session_id, role, text, content='messages', content_rowid='id'
+  session_id, role, text, tokenize='trigram'
 );
 """
 
@@ -121,9 +126,79 @@ def opencode_session(c, sid):
     oc.close()
     return {"session": sid, "title": s["title"], "user": user_n, "ai": ai_n}
 
+def kimi_session(c, sid):
+    """kimi 会话入库：用户消息 = turn.prompt 的 input。"""
+    import glob as _glob
+    sid = f"kimi-{sid}"
+    files = _glob.glob(str(Path.home() / ".kimi-code/sessions" / "*" / f"session_{sid[5:]}" / "agents" / "main" / "wire.jsonl"))
+    if not files:
+        return None
+    c.execute("DELETE FROM messages WHERE session_id=?", (sid,))
+    rows = []
+    for f in files:
+        for line in open(f, encoding="utf-8", errors="ignore"):
+            try: d = json.loads(line)
+            except Exception: continue
+            if d.get("type") != "turn.prompt":
+                continue
+            inp = d.get("input")
+            text = inp if isinstance(inp, str) else (inp.get("text") if isinstance(inp, dict) and isinstance(inp.get("text"), str) else str(inp))
+            if text and text.strip():
+                rows.append((d.get("time") or 0, text.strip()))
+    rows.sort(key=lambda x: x[0])
+    for seq, (ts, text) in enumerate(rows):
+        c.execute("INSERT INTO messages(session_id,seq,role,ts,text) VALUES(?,?,?,?,?)", (sid, seq, "user", ts, text))
+    c.execute("INSERT OR REPLACE INTO sessions(id,source,title,dir,started_at,ended_at,user_msgs,all_msgs) VALUES(?,?,?,?,?,?,?,?)",
+              (sid, "kimi", f"kimi-{sid[5:8]}", "root", rows[0][0] if rows else 0, rows[-1][0] if rows else 0, len(rows), len(rows)))
+    return {"session": sid, "user": len(rows)}
+
+def qoder_session(c, sid):
+    """qoder 会话入库：用户消息 = input.prompt.submitted（text_preview）。
+    AI 内容在事件流中分散（model.response 只有元数据），暂只入用户消息。"""
+    import glob as _glob
+    segs = _glob.glob(str(Path.home() / ".qoder-cn/logs/sessions" / "*" / sid / "segments" / "*.jsonl"))
+    if not segs:
+        return None
+    sid = f"qoder-{sid}"  # 统一源前缀（与 CLASS_FILES 一致）
+    # 先清旧（幂等：全量提取重跑不重复）
+    c.execute("DELETE FROM messages WHERE session_id=?", (sid,))
+    rows = []
+    for f in segs:
+        for line in open(f, encoding="utf-8"):
+            try: d = json.loads(line)
+            except Exception: continue
+            if d.get("type") != "input.prompt.submitted":
+                continue
+            data = d.get("data", {})
+            text = (data.get("text_preview") or "").strip()
+            if not text or data.get("is_meta"):
+                continue
+            rows.append((d.get("ts", ""), text))
+    rows.sort(key=lambda x: x[0])
+    seq = 0
+    for ts, text in rows:
+        c.execute("INSERT INTO messages(session_id,seq,role,ts,text) VALUES(?,?,?,?,?)",
+                  (sid, seq, "user", 0, text))
+        seq += 1
+    c.execute("INSERT OR REPLACE INTO sessions(id,source,title,dir,started_at,ended_at,user_msgs,all_msgs) VALUES(?,?,?,?,?,?,?,?)",
+              (sid, "qoder", f"qoder-{sid[:8]}", str(Path(segs[0]).parent.parent.name), 0, 0, len(rows), len(rows)))
+    return {"session": sid, "title": f"qoder-{sid[:8]}", "user": len(rows), "ai": 0}
+
 def main():
     c = init_db()
     args = sys.argv[1:]
+    if "--kimi" in args:
+        sid = args[args.index("--kimi") + 1]
+        r = kimi_session(c, sid)
+        c.commit()
+        print(f"[extract-all] kimi 入库: user={r['user'] if r else 0}")
+        c.close(); return
+    if "--qoder" in args:
+        sid = args[args.index("--qoder") + 1]
+        r = qoder_session(c, sid)
+        c.commit()
+        print(f"[extract-all] qoder {r['title']} 入库: user={r['user']}")
+        c.close(); return
     if "--all-opencode" in args:
         oc = sqlite3.connect(str(OPENCODE_DB))
         sids = [r[0] for r in oc.execute("SELECT id FROM session")]
