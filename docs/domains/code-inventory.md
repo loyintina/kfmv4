@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 411d4371 · 生成于 2026-08-04 -->
+<!-- 基准 commit 2a66e888 · 生成于 2026-08-04 -->
 
 # 代码清单（机械层）
 
@@ -98,7 +98,7 @@
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（55 文件 · 11710 行）
+## ai-chat（55 文件 · 11735 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -106,8 +106,8 @@
 | src/client/data/waiting-hints.ts | 1108 | WAITING_HINTS |
 | src/server/ai/tools/omp/browser/tab-worker.ts | 921 | WorkerCore |
 | src/server/ai/tools/omp/browser/launch.ts | 603 | DEFAULT_VIEWPORT, BROWSER_PROTOCOL_TIMEOUT_MS, loadPuppeteer, loadPuppeteerInWorker, LaunchHeadlessOptions, launchHeadlessBrowser, applyViewport, UserAgentOverride, UserAgentSession, applyStealthPatches |
+| src/server/ai/chat.ts | 536 | ChatMessage, StreamEvent, createClientIdxMapper |
 | src/client/modules/session-client.ts | 529 | SessionMessage, Session, extractMessageText, countTextMessages, sessionStore |
-| src/server/ai/chat.ts | 520 | ChatMessage, StreamEvent, createClientIdxMapper |
 | src/client/modules/orb-chat-run.ts | 512 | ChatMessage, StreamEvent, getActiveRunId, getActiveCursor, setEventHook, readPersistedRun, clearPersistedRun, settlePendingToolBlocks, resumeRun, doSend |
 | src/client/modules/ws-channel.ts | 426 | wsChannel, initWsChannel |
 | src/shared/tool-compaction/index.ts | 369 | CompactorEntry, COMPACTOR_REGISTRY, COMPACTOR_NAMES, webTitleKey, CompactionCtx, MUT_BURST_GAP, EXEMPT_USER_ROUNDS, TODO_STALE_GAP, FAIL_REPEAT_MIN, errorFingerprint, failRepeatAnnotation, todoResultAnnotation, normalizeBashCommand, compactToolResult, compactToolInput |
@@ -119,15 +119,15 @@
 | src/shared/chat-protocol/to-openai-messages.ts | 279 | OpenAiToolCall, OpenAiMessage, ToOpenAiOptions, ToOpenAiResult, toOpenAiMessages |
 | src/server/ai/tools/omp/debug/cdp-connection.ts | 242 | CdpSession, CdpLaunchOptions, CdpAttachOptions, CdpPausedEvent, sendCmd, onCdpEvent, launchCdp, attachCdp, closeCdp |
 | src/server/ai/session-store.ts | 237 | appendEvent, flush, flushSync, invalidateSession, appendUserMessage |
-| src/server/ai/run-manager.ts | 230 | _setStallMsForTest, getActiveRun, getRun, StreamFn, startRun, attachRun, cancelRun |
+| src/server/ai/run-manager.ts | 236 | _setStallMsForTest, getActiveRun, getRun, StreamFn, startRun, attachRun, cancelRun |
 | src/client/modules/orb-chat-hints.ts | 225 | startWaitingIndicator, TODO_DISMISS_KEY, todosFingerprint, clearTodoPanel, dismissTodoPanel, updateTodoFromTool |
 | src/server/ai/page-state.ts | 148 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
 | src/server/ai/tools/index.ts | 145 | getAllTools, getToolDefinitions, executeTool, hasTool, getTool |
 | src/server/ai/permissions.ts | 134 | RiskClass, TOOL_RISK, Decision, AuditEntry, riskClassOf, evaluate |
 | src/server/ai/prompt-assembler.ts | 124 | getActiveRoleFile, assembleRoleSystemPrompt, assembleDynamicPrompt |
 | src/shared/chat-protocol/reducer.ts | 122 | ReduceContext, applyEvent, reduceEvents |
+| src/server/ai/routes.ts | 121 | StartRunFn, setupAiRoutes |
 | src/server/ai/tools/kfmv4/logs.ts | 119 | kfmLogsTool |
-| src/server/ai/routes.ts | 118 | StartRunFn, setupAiRoutes |
 | src/server/ai/tools/omp/read.ts | 117 | ompReadTool |
 | src/server/ai/tools/omp/browser/aria/aria-snapshot.ts | 116 | AriaSnapshotOptions, captureAriaSnapshot, resolveAriaRefHandle, parseAriaRefSelector, buildAriaSnapshotScript |
 | src/server/ai/tools/omp/browser/tab-protocol.ts | 115 | Transferable, ObservationEntry, Observation, ScreenshotResult, SessionSnapshot, WorkerInitPayload, ToolReply, WorkerInbound, ReadyInfo, RunResultOk, RunErrorPayload, WorkerOutbound, Transport |
@@ -172,7 +172,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（140 文件 · 16662 行）
+## infra（140 文件 · 16951 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -180,10 +180,11 @@
 | tests/regression.test.ts | 649 | — |
 | experiments/coldstart/tools/normalize-arms.mjs | 587 | — |
 | tests/tool-compaction.test.ts | 505 | — |
-| scripts/agent/semantic-audit.mjs | 431 | taskFiles, buildPrompt, makeValidate, recheckRef, recheckQuote |
+| scripts/agent/semantic-audit.mjs | 460 | taskFiles, buildPrompt, makeValidate, recheckRef, recheckQuote |
 | tests/preload.mjs | 423 | — |
 | tests/cards.test.ts | 410 | — |
 | tests/visual-baseline.test.ts | 367 | — |
+| scripts/agent/agent-runner.mjs | 325 | renderTemplate, extractJson, runAgent, parseToolStream, runAgentTooled |
 | tests/server-routes.test.ts | 321 | — |
 | tests/box.test.ts | 309 | — |
 | tests/mocks/gsap.ts | 305 | gsap |
@@ -200,12 +201,11 @@
 | scripts/agent/semantic-chain.mjs | 185 | — |
 | scripts/check/gen-code-inventory.mjs | 184 | — |
 | tests/to-openai-messages.test.ts | 181 | — |
+| scripts/agent/semantic-audit.tasks.mjs | 179 | TASKS |
 | tests/chat-protocol.test.ts | 169 | — |
 | experiments/coldstart/tools/hallucinate-batch.mjs | 164 | — |
 | tests/protocol-reducer.test.ts | 161 | — |
-| scripts/agent/agent-runner.mjs | 159 | renderTemplate, extractJson, runAgent |
 | scripts/check/sync-counts.mjs | 156 | — |
-| scripts/agent/semantic-audit.tasks.mjs | 152 | TASKS |
 | experiments/coldstart/tools/routine-entry-validation.mjs | 152 | — |
 | scripts/agent/semantic-bench.mjs | 149 | — |
 | tests/probes/gen-page-state-schema/src/server/ai/page-state.ts | 149 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
@@ -239,6 +239,7 @@
 | scripts/check/check-test-patterns.mjs | 102 | — |
 | scripts/check/gen-rules-map.mjs | 102 | — |
 | scripts/check/check-doc-orphans.mjs | 101 | — |
+| tests/semantic-chain.test.ts | 101 | — |
 | tests/session-invalidate.test.ts | 100 | — |
 | scripts/check/check-anim.mjs | 99 | — |
 | scripts/check/check-state-freshness.mjs | 92 | — |
@@ -285,7 +286,6 @@
 | scripts/clean-npm-temp.cjs | 44 | — |
 | scripts/check/check-release-radar.mjs | 42 | — |
 | tests/reset-hooks.ts | 41 | — |
-| tests/semantic-chain.test.ts | 34 | — |
 | tests/runner.ts | 33 | test, group, runAll, regression, beforeEach, TestFileNode, singleFolder, nestedFolders |
 | scripts/kfm-restart.sh | 30 | — |
 | scripts/deploy.sh | 29 | — |
@@ -625,4 +625,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 281 文件 · 48242 行 · 跨域边 246 条
+合计 281 文件 · 48556 行 · 跨域边 246 条
