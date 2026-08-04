@@ -43,6 +43,7 @@ export interface CharRainCleanup {
  * @param tl             timeline
  * @param baseDelay      起始延迟
  * @param direction      'expand' 或 'collapse'
+ * @param depth          当前嵌套深度（用于性能优化：深层跳过字符雨）
  */
 function _charRainCore(
   rows: Box[],
@@ -53,7 +54,14 @@ function _charRainCore(
   tl: AnimTimeline,
   baseDelay: number,
   direction: 'expand' | 'collapse',
+  depth: number = 0,
 ): CharRainCleanup | null {
+  // 性能优化：嵌套深度超过阈值时跳过字符雨动画（每字符一个 Box 开销大）
+  // 阈值设为 2：根目录 (0) → 一级 (1) → 二级 (2) → 三级及以上跳过
+  const CHAR_RAIN_DEPTH_THRESHOLD = 2;
+  if (depth > CHAR_RAIN_DEPTH_THRESHOLD) {
+    return null;
+  }
   const isCollapse = direction === 'collapse';
   if (rows.length === 0) return null;
 

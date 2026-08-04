@@ -31,7 +31,10 @@ export function setRootScrollY(val: number): void {
 // 光标步进辅助函数
 // ============================================================
 
-/** 重建行索引：遍历树收集所有可交互行，按绝对 Y 排序 */
+/** 重建行索引：遍历树收集所有可交互行。
+ *  关键优化：树构建时按从上到下顺序添加子节点，深度优先遍历天然就是 Y 递增顺序，
+ *  无需额外排序（避免 O(n × depth × log n) 开销）。
+ */
 export function _rebuildRowIndex(root: Box): void {
   L._rowIndex = [];
   function walk(box: Box): void {
@@ -44,9 +47,7 @@ export function _rebuildRowIndex(root: Box): void {
     }
   }
   walk(root);
-  L._rowIndex.sort((a, b) => {
-    return a.getAbsolutePosition().y - b.getAbsolutePosition().y;
-  });
+  // 不再排序——遍历顺序即 Y 顺序
 }
 
 /** 在 root 子树中按 id 查找 Box */

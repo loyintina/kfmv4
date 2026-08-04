@@ -179,3 +179,10 @@ batch-run（计划中）：批量跑所有组合臂（并发+断点续跑）+ �
 - **工具链**：extract-{operit,omp,omp-jsonl,omp-db,kimi-full,convo}.py/mjs（5 源提取）
   + annotate-pattern.py（模式标注）+ annotate-operit.py（范式候选筛选）+ gen-slices-summary.py（摘要生成）
 - **研究可用**：跨 harness 对比 / 决策路径分析 / AI 思考链研究 / FTS 模式检索——历史消息研究的现成基础设施
+
+## 范式包批次 2（2026-08-04 数据库级素材）
+
+- **root-cause-first.md**（8.7k token，S2 无缝，5 段）——「补丁 vs 根因」范式：
+  边框救场（alpha 混合数学证据）/文字渐变（别硬编码）/幽灵卡现场（git 还原逐行加回）/
+  终端缩放（纯 CSS 布局根因）/手势注册表（最笨但最有效）。
+  素材来自素材库 560 段（omp/opencode 真实会话），第一批 H1 复验实验用包。

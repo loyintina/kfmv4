@@ -86,33 +86,37 @@ function _ensureSubscribed(): void {
   KFMState.subscribe(fn);
 }
 
-/** 遍历 Box 树，为每个可见文件行重建 _boxLocationMap */
+/** 遍历 Box 树，为每个可见文件行重建 _boxLocationMap。
+ *  关键优化：遍历时传递累积位置，避免每个节点重复调用 getAbsolutePosition()
+ *  （原实现 O(n × depth)，优化后 O(n)）。
+ */
 function _rebuildBoxLocationMap(root: Box): void {
   _boxLocationMap.clear();
   let rowIndex = 0;
-  function walk(box: Box): void {
+  function walk(box: Box, parentX: number, parentY: number): void {
+    const accX = parentX + box.x;
+    const accY = parentY + box.y;
     for (const child of box.children) {
       if (!child.visible || child.disabled) continue;
       const data = getFileRowData(child.data);
       if (data && child.gesture?.onTap) {
-        const abs = child.getAbsolutePosition();
         _boxLocationMap.set(data.path, {
           path: data.path,
           box: child,
           rowIndex,
           screenRect: {
-            x: abs.x,
-            y: abs.y,
+            x: accX + child.x,
+            y: accY + child.y,
             width: child.width,
             height: child.height,
           },
         });
         rowIndex++;
       }
-      walk(child);
+      walk(child, accX, accY);
     }
   }
-  walk(root);
+  walk(root, 0, 0);
 }
 
 /** 通过文件路径直接触发 Canvas 文件行操作（tap），路径不可见时静默失败 */
