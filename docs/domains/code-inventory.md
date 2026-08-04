@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit dad8d634 · 生成于 2026-08-04 -->
+<!-- 基准 commit bc44cd1c · 生成于 2026-08-04 -->
 
 # 代码清单（机械层）
 
@@ -172,7 +172,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（137 文件 · 16406 行）
+## infra（137 文件 · 16422 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -214,6 +214,7 @@
 | tests/provider-env.test.ts | 137 | — |
 | experiments/coldstart/tools/judge-batch.mjs | 135 | — |
 | scripts/agent/exp-iceberg.mjs | 134 | — |
+| build.mjs | 133 | — |
 | scripts/check/check-checks.mjs | 132 | — |
 | scripts/check/check-tool-compaction.mjs | 130 | — |
 | scripts/check/check-mutation-anchors.mjs | 127 | — |
@@ -223,7 +224,6 @@
 | scripts/agent/tag-advisor.mjs | 124 | REF_RE, isValidRef |
 | scripts/check/gen-tool-docs.mjs | 121 | — |
 | tests/liquid-geometry.test.ts | 120 | — |
-| build.mjs | 117 | — |
 | scripts/agent/exp-probe-decompose.mjs | 117 | — |
 | scripts/check/check-doc-linerefs.mjs | 116 | — |
 | tests/harness.ts | 116 | TestTag, TestOpts, test, regression, group, beforeEach, runAll |
@@ -622,4 +622,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 278 文件 · 47966 行 · 跨域边 246 条
+合计 278 文件 · 47982 行 · 跨域边 246 条
