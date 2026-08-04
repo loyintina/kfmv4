@@ -15,7 +15,7 @@
  *   const r = await runSession({ sessionId, messages, userText, model, provider, roleFile, paradigm, base });
  */
 import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, copyFileSync } from 'fs';
-import { join, dirname } from 'path';
+import { join, dirname, resolve } from 'path';
 import { homedir } from 'os';
 import { fileURLToPath } from 'url';
 
@@ -32,9 +32,13 @@ function validSessionId(id) {
 /** 范式包拼进首条 user 消息（示范性上下文——AI 被同化到范式，非指令注入） */
 function applyParadigm(messages, paradigm) {
   if (!paradigm) return messages;
-  return messages.map((m, i) => i === 0 && m.role === 'user'
-    ? { ...m, content: `〔范式包〕以下是你要同化的思维/行为范式（示范性上下文）：\n\n${paradigm}\n\n————\n${m.content}` }
-    : m);
+  return messages.map((m, i) => {
+    if (i !== 0 || m.role !== 'user') return m;
+    // 保留块结构：范式作为新 text 块，原文本拼接其后（不能拼成字符串——toOpenAi 假设 content 是块数组）
+    const original = (m.content || []).filter(b => b?.type === 'text').map(b => b.text || '').join('');
+    const nonText = (m.content || []).filter(b => b?.type !== 'text');
+    return { ...m, content: [{ type: 'text', text: `〔范式包〕以下是你要同化的思维/行为范式（示范性上下文）：\n\n${paradigm}\n\n————\n${original}` }, ...nonText] };
+  });
 }
 
 /**
@@ -165,9 +169,10 @@ export async function runSession({ sessionId, messages, userText, model, provide
   return { runId, events, ms, sessionPath: dest };
 }
 
-// ====== CLI ======
+// ====== CLI（isMain guard：被 import 时不执行——batch-run 等模块复用）======
 const argv = process.argv.slice(2);
-if (argv.length > 0) {
+const isMain = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isMain && argv.length > 0) {
   const get = (k) => { const i = argv.indexOf(`--${k}`); return i >= 0 ? argv[i + 1] : undefined; };
   const prompt = get('prompt');
   const cont = get('continue');
