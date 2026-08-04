@@ -15,12 +15,13 @@
  *   const r = await runSession({ sessionId, messages, userText, model, provider, roleFile, paradigm, base });
  */
 import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, copyFileSync } from 'fs';
-import { join } from 'path';
+import { join, dirname } from 'path';
 import { homedir } from 'os';
 import { fileURLToPath } from 'url';
 
 const REPO = join(fileURLToPath(new URL('../../..', import.meta.url)));
 const SESSIONS = join(homedir(), '.kfmv4', 'sessions');
+const SCRIPT_SESSIONS = join(SESSIONS, 'script'); // 脚本会话区（面板会话卡只列根目录，子文件夹天然排除）
 const PARADIGMS = join(homedir(), '.kfmv4', 'paradigms');
 const BASE = process.env.KFM_BASE || 'http://localhost:8021/api';
 
@@ -83,7 +84,7 @@ export function loadParadigm(name) {
 export function loadSessionMessages(sessionId) {
   const cands = sessionId.includes('/')
     ? [sessionId]
-    : [join(SESSIONS, `${sessionId}.json`), join(homedir(), '.kfmv4', 'experiments', 'paradigm', 'sessions', `${sessionId}.json`)];
+    : [join(SESSIONS, `${sessionId}.json`), join(SCRIPT_SESSIONS, `${sessionId}.json`), join(homedir(), '.kfmv4', 'experiments', 'paradigm', 'sessions', `${sessionId}.json`)];
   for (const p of cands) {
     if (existsSync(p)) {
       const o = JSON.parse(readFileSync(p, 'utf-8'));
@@ -156,13 +157,12 @@ export async function runSession({ sessionId, messages, userText, model, provide
   await new Promise(r => setTimeout(r, 1500));
   const src = join(SESSIONS, `${sessionId}.json`);
   if (!existsSync(src)) throw new Error(`会话未落盘: ${src}`);
-  if (out) {
-    mkdirSync(join(out, '..'), { recursive: true });
-    copyFileSync(src, out);
-    rmSync(src); // 清理生产区副本
-    return { runId, events, ms, sessionPath: out };
-  }
-  return { runId, events, ms, sessionPath: src };
+  // 默认归档到 sessions/script/（脚本会话区，不进面板会话卡）；--out 覆盖
+  const dest = out || join(SCRIPT_SESSIONS, `${sessionId}.json`);
+  mkdirSync(dirname(dest), { recursive: true });
+  copyFileSync(src, dest);
+  rmSync(src); // 清理生产区副本（临时会话语义）
+  return { runId, events, ms, sessionPath: dest };
 }
 
 // ====== CLI ======
