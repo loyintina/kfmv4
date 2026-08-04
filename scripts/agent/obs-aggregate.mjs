@@ -202,6 +202,16 @@ if (metrics.length) {
   }
 }
 
+// ---- 8. 巡逻 metric（F5 记录层：语义巡逻耗时/成败趋势，长期收集） ----
+const patrol = readLines(join(homedir(), '.kfmv4', 'semantic-chain-metrics.jsonl')).filter(m => m.ts && new Date(m.ts).getTime() >= since);
+if (patrol.length) {
+  const ok = patrol.filter(m => m.ok).length;
+  const avg = Math.round(patrol.reduce((s, m) => s + (m.ms || 0), 0) / patrol.length / 1000);
+  add(`- 巡逻：${patrol.length} 次 · 成功 ${ok} · 平均 ${avg}s/次`);
+  const fails = patrol.filter(m => !m.ok);
+  if (fails.length) add(`  - ⚠️ 失败 ${fails.length} 次: ${fails.slice(0, 2).map(f => (f.fail || '').slice(0, 60)).join(' | ')}`);
+}
+
 const report = out.join('\n');
 console.log(report);
 if (toMailbox) {

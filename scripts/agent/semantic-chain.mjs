@@ -26,6 +26,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { readFileSync, appendFileSync, existsSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
@@ -33,6 +34,13 @@ import { createHash } from 'node:crypto';
 const REPO = resolve(fileURLToPath(new URL('../../', import.meta.url)));
 const STATE_PATH = join(REPO, 'docs/ledger/semantic-audit-state.json');
 const INBOX_PATH = join(REPO, 'docs/ledger/semantic-chain-inbox.md');
+const METRIC_PATH = join(homedir(), '.kfmv4', 'semantic-chain-metrics.jsonl'); // F5 记录层（2026-08-04）：巡逻耗时/成败账本，长期跑收集
+let _inboxCount = 0;
+function recordMetric(ok, fail) {
+  try {
+    appendFileSync(METRIC_PATH, JSON.stringify({ ts: new Date().toISOString(), ms: Date.now() - t0, ok, fail: fail || '', inboxLines: _inboxCount }) + '\n');
+  } catch {}
+}
 const NODE = process.execPath;
 const WITH_BENCH = process.argv.includes('--with-bench');
 
@@ -45,6 +53,7 @@ const INBOX_HEADER = `# 语义巡逻信箱（semantic-chain.mjs 自动写入，a
 function inbox(line) {
   if (!existsSync(INBOX_PATH)) writeFileSync(INBOX_PATH, INBOX_HEADER);
   appendFileSync(INBOX_PATH, line + '\n');
+  _inboxCount++;
   console.log(`[semantic-chain] 信箱 ← ${line}`);
 }
 
@@ -57,6 +66,7 @@ function run(cmdArgs, label) {
   }
 }
 
+const t0 = Date.now();
 const now = new Date();
 // 本地时间戳（toISOString 是 UTC，与 ledger 其他条目的本地口径不一致，2026-07-30 首跑教训）
 const pad = (n) => String(n).padStart(2, '0');
@@ -111,9 +121,11 @@ try {
   const exemptionStatus = checkExemptions();
   if (exemptionStatus) verdict += exemptionStatus;
   inbox(`- ${stamp} ${verdict}`);
+  recordMetric(true);
 } catch (e) {
   // 崩溃也投信箱：沉默不允许（08-03 未定义变量事故——runner 死了一天无人知晓，BAR-SEMCHAIN-01）
   inbox(`- ${stamp} 💀 崩溃——runner 异常：${e.message}。本轮无效，堆栈见 /var/log/semantic-chain.log，先修 runner 再谈裁决`);
+  recordMetric(false, e.message);
   console.error(e);
   process.exit(2);
 }
