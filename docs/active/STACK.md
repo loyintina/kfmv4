@@ -111,7 +111,8 @@
    — 会话卡逻辑修复（具体病灶待补充）
    — 审查文件卡代码高亮问题修正（具体病灶待补充）
 9. server 会话/prompts 域 bug 池（2026-07-29 记；初始主题=提示词注入约束修复，病灶待补充；后收编 bug 见子项）
-   — 另：面板发送消息无响应（2026-07-29 记，用户反馈的活 bug，具体病灶待补充——复现后进 bug-fix 流程）
+   — 另：面板发送消息无响应（2026-07-29 记，用户反馈的活 bug）——**用户 08-03 确认早已修复**，
+     闭环此条；病灶/钉未入 BAR（即 F2「bug 入口无强制通道」现场）
    — 另：会话删除后服务端串档（2026-07-30 记，冷启动实验 terra 臂尸检发现）：删除会话卡只删
      磁盘文件，`server/ai/session-store.ts` 的 `_sessions` 缓存（`_get` 缓存优先）不失效 →
      同名新会话 `appendUserMessage` 接续旧 ctx，flush 以旧 meta 落盘 → 会话文件合并两个独立
@@ -119,12 +120,13 @@
      用户可见症状：刷新面板后被删会话的消息在新会话上方「复活」、会话卡统计错。
      **✅ 已修复（2026-08-01，BAR-SESSION-01）**：flash-10 臂实测实锤（turn1 载荷 5.7× 膨胀），
      invalidateSession + delete/rename/move 三路由接线，4 钉（tests/session-invalidate.test.ts）
-   — 另：sessionId 路径穿越 P0（2026-07-31 记，冷启动实验 gpt-5.6-sol 臂发现，已登记
-     BAR-SEC-14）：routes 只查 truthy + session-store join 无格式校验 → `../` 逃逸。
-     修复方向：格式白名单全入口统一校验 + containment 复查 + 恶意 id 否定钉
-   — 另：tag-advisor shell 注入 P0（2026-07-31 记，同臂发现，已登记 BAR-SEC-15）：
-     argv ref 直插 execSync 模板串。修复方向：execFileSync 参数数组化 + ref 格式校验
-     + 恶意 ref 否定测试
+   — 另：sessionId 路径穿越 P0（2026-07-31 记，冷启动实验 gpt-5.6-sol 臂发现）：
+     routes 只查 truthy + session-store join 无格式校验 → `../` 逃逸。
+     **✅ 已修复（BAR-SEC-14）**：Unicode 白名单（含中文 id 放宽）+ 落盘单点守卫
+     + containment 复查，tests/session-security.test.ts revert 验证
+   — 另：tag-advisor shell 注入 P0（2026-07-31 记，同臂发现）：argv ref 直插 execSync
+     模板串。**✅ 已修复（BAR-SEC-15）**：execFileSync 参数数组 + REF_RE 白名单，
+     tests/tag-advisor.test.ts 3 钉 revert 验证
 10. 全量代码分析 → domains 填充（2026-07-29 提前完成，用户动议）
    — ✅ 六域 code-map + cross-domain.md（2026-07-29，99 条漂移带 file:line，0cecc62/3906707）
    — ✅ 机械层：gen-code-inventory.mjs（2026-07-29，已移 scripts/check/ 并 --check-only 挂链，鲜度不再靠人）
