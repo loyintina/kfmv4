@@ -98,7 +98,7 @@ export function loadSessionMessages(sessionId) {
   return null;
 }
 
-async function startRun(sessionId, messages, userText, model, provider, roleFile) {
+async function startRun(sessionId, messages, userText, model, provider, roleFile, tools) {
   const res = await fetch(`${BASE}/ai/chat/start`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -109,6 +109,7 @@ async function startRun(sessionId, messages, userText, model, provider, roleFile
       model,
       provider,
       ...(roleFile ? { roleFile } : {}),
+      ...(tools?.length ? { tools } : {}),
     }),
     signal: AbortSignal.timeout(30_000),
   });
@@ -148,14 +149,14 @@ async function waitRun(runId, maxMs = 600_000) {
  * @param {string} [opts.out] 归档路径（默认 ~/.kfmv4/sessions/<sessionId>.json）
  * @returns {Promise<{runId, events, ms, sessionPath}>}
  */
-export async function runSession({ sessionId, messages, userText, model, provider, roleFile, paradigm, out }) {
+export async function runSession({ sessionId, messages, userText, model, provider, roleFile, paradigm, tools, out }) {
   if (!validSessionId(sessionId)) throw new Error(`sessionId 不合法: ${sessionId}`);
   const paradigmText = paradigm && !paradigm.includes('\n')
     ? loadParadigm(paradigm) || paradigm   // 名字→读文件；不是文件名则当文本
     : (paradigm || '');
   const msgs = applyParadigm(messages, paradigmText);
   const apiMessages = toOpenAi(msgs); // 原始格式 → OpenAI 格式（provider 不认 role:'ai'）
-  const { runId } = await startRun(sessionId, apiMessages, userText, model, provider, roleFile);
+  const { runId } = await startRun(sessionId, apiMessages, userText, model, provider, roleFile, tools);
   const { events, ms } = await waitRun(runId);
   // 等服务端 flush 会话文件
   await new Promise(r => setTimeout(r, 1500));
@@ -176,13 +177,14 @@ if (isMain && argv.length > 0) {
   const get = (k) => { const i = argv.indexOf(`--${k}`); return i >= 0 ? argv[i + 1] : undefined; };
   const prompt = get('prompt');
   const cont = get('continue');
-  if (!prompt && !cont) { console.error('用法: --prompt <文本> [--continue <会话id/路径>] [--provider <名>] [--model <名>] [--role <角色>] [--paradigm <范式包名>] [--session <id>] [--out <路径>]'); process.exit(2); }
+  if (!prompt && !cont) { console.error('用法: --prompt <文本> [--tools read,bash,grep] [--provider <名>] [--model <名>] [--role <角色>] [--paradigm <范式包名>] [--session <id>] [--out <路径>]'); process.exit(2); }
   const provider = get('provider') || 'Opencode Go Google';
   const model = get('model') || 'deepseek-v4-flash';
   const role = get('role');
   const paradigm = get('paradigm');
   const sessionId = get('session') || (cont ? (cont.includes('/') ? 'bi-cont' : cont) : `bi-${Date.now().toString(36)}`);
   const out = get('out');
+  const tools = get('tools')?.split(',').map(s => s.trim()).filter(Boolean);
 
   // 续写：读历史 → 追加新 user 消息 → 全量重发（服务端 to-openai-messages 原生处理 role:'ai'）
   let history = [];
@@ -197,7 +199,7 @@ if (isMain && argv.length > 0) {
   const t0 = Date.now();
   console.log(`[session-runner] ${model} @ ${provider}${role ? ` 角色=${role}` : ''}${paradigm ? ` 范式包=${paradigm}` : ''} 会话=${sessionId}${cont ? '（多轮）' : ''}`);
   const res = await runSession({
-    sessionId, messages, userText: prompt, model, provider, roleFile: role, paradigm, out,
+    sessionId, messages, userText: prompt, model, provider, roleFile: role, paradigm, tools, out,
   });
   console.log(`[session-runner] 完成（${((Date.now() - t0) / 1000).toFixed(0)}s，${res.events} 事件）→ ${res.sessionPath}`);
 }

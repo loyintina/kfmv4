@@ -50,10 +50,13 @@ const globalPrompts: string[] = (() => {
   }
 })();
 
-function buildToolDocsPrompt(): string {
+function buildToolDocsPrompt(allowTools?: string[]): string {
   if (toolDocs.size === 0) return '';
   let text = '\n\n## 可用工具\n\n';
-  for (const [name, doc] of toolDocs) {
+  const names = allowTools?.length ? allowTools : [...toolDocs.keys()];
+  for (const name of names) {
+    const doc = toolDocs.get(name);
+    if (!doc) continue; // 白名单内但没有文档的工具：跳过（保留工具定义但无说明）
     text += `### ${name}\n\n${doc}\n\n`;
   }
   return text;
@@ -140,8 +143,11 @@ export async function* streamChat(
   wsServer: WsServer,
   signal?: AbortSignal,
   roleFile?: string,
+  allowTools?: string[], // 工具白名单（脚本用——不给的 AI 不会用，2026-08-04 用户提议）
 ): AsyncGenerator<StreamEvent> {
-  const tools = getToolDefinitions();
+  const tools = allowTools?.length
+    ? getToolDefinitions().filter(t => allowTools.includes(t.name))
+    : getToolDefinitions();
 
   // 构建工具上下文（cwd = PROJECT_ROOT 确定性默认，不随服务启动目录漂移——BAR-CWD-DRIFT-01）
   const toolCtx: ToolContext = {
@@ -195,7 +201,7 @@ export async function* streamChat(
     .filter(m => !(m.role === 'assistant' && !m.tool_calls && (m.content == null || m.content === '')));
   // 静态 system 段（工具文档 + 全局预设 + alwaysApply 规则）：整轮对话不变，算一次。
   const staticSystemParts: string[] = [];
-  const toolDocsPrompt = buildToolDocsPrompt();
+  const toolDocsPrompt = buildToolDocsPrompt(allowTools);
   if (toolDocsPrompt) staticSystemParts.push(toolDocsPrompt);
   staticSystemParts.push(...globalPrompts);
   const alwaysApplyPrompt = buildAlwaysApplyPrompt();
@@ -422,9 +428,10 @@ export async function* streamChat(
       assistantMsg.tool_calls = toolCalls;
       apiMessages.push(assistantMsg);
 
-      // 规则检查
+      // 规则检查（仅白名单内工具——白名单外的根本不执行，无需警告）
       const pendingWarnings: string[] = [];
       for (const t of todo) {
+        if (allowTools?.length && !allowTools.includes(t.name)) continue;
         const ruleWarning = checkToolCallRules(t.name, t.params);
         if (ruleWarning) {
           pendingWarnings.push(ruleWarning);
@@ -437,6 +444,15 @@ export async function* streamChat(
 
       // 并行执行所有工具
       const results = await Promise.all(todo.map(async t => {
+        // 白名单 fail-closed（2026-08-04 用户提议）：脚本会话只允许清单内工具。
+        // AI 可能从历史消息/预置对话中学到白名单外工具名——执行层必须再拦一道，
+        // 否则「文档过滤 + 定义过滤」只是提示层，AI 硬调照样执行。
+        if (allowTools?.length && !allowTools.includes(t.name)) {
+          return {
+            content: [{ type: 'text', text: `工具「${t.name}」不在本次会话的工具白名单内（允许: ${allowTools.join(', ')}），已拒绝执行。请改用白名单内的工具，或直接文字回复。` }],
+            isError: true,
+          };
+        }
         try {
           return await executeTool(t.name, t.params, toolCtx);
         } catch (err) {
