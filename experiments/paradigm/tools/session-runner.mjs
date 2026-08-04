@@ -36,6 +36,42 @@ function applyParadigm(messages, paradigm) {
     : m);
 }
 
+/**
+ * 原始格式 → OpenAI 格式（to-openai-messages 的不压缩简化版——session-runner 是
+ * .mjs 不能直接 import TS 模块；续写多轮历史必须转换，provider 不认 role:'ai'）。
+ * 保留全量（不压缩），user 盖 ts 前缀（与面板投影一致）。
+ */
+function toOpenAi(messages) {
+  const extractText = (m) => (m.content || [])
+    .filter(b => b?.type === 'text')
+    .map(b => b.text || '')
+    .join('');
+  const api = [];
+  for (const m of messages) {
+    if (!m) continue;
+    if (m.role === 'user') {
+      api.push({ role: 'user', content: (m.ts ? `[ts ${new Date(m.ts).toISOString().slice(5, 19).replace('T', ' ')}] ` : '') + extractText(m) });
+    } else if (m.role === 'ai') {
+      const textBlocks = (m.content || []).filter(b => b?.type === 'text');
+      const toolBlocks = (m.content || []).filter(b => b?.type === 'tool');
+      const mainText = textBlocks.map(b => b.text || '').join('');
+      if (toolBlocks.length > 0) {
+        api.push({
+          role: 'assistant',
+          content: mainText || null,
+          tool_calls: toolBlocks.map(tc => ({ id: tc.id, type: 'function', function: { name: tc.name, arguments: JSON.stringify(tc.input) } })),
+        });
+        for (const tc of toolBlocks) {
+          api.push({ role: 'tool', content: tc.result?.content?.map(c => c.text || '').join('') || '', tool_call_id: tc.id });
+        }
+      } else {
+        api.push({ role: 'assistant', content: mainText });
+      }
+    }
+  }
+  return api;
+}
+
 /** 读范式包文件（.kfmv4/paradigms/<name>.md） */
 export function loadParadigm(name) {
   if (!name) return '';
@@ -113,7 +149,8 @@ export async function runSession({ sessionId, messages, userText, model, provide
     ? loadParadigm(paradigm) || paradigm   // 名字→读文件；不是文件名则当文本
     : (paradigm || '');
   const msgs = applyParadigm(messages, paradigmText);
-  const { runId } = await startRun(sessionId, msgs, userText, model, provider, roleFile);
+  const apiMessages = toOpenAi(msgs); // 原始格式 → OpenAI 格式（provider 不认 role:'ai'）
+  const { runId } = await startRun(sessionId, apiMessages, userText, model, provider, roleFile);
   const { events, ms } = await waitRun(runId);
   // 等服务端 flush 会话文件
   await new Promise(r => setTimeout(r, 1500));
