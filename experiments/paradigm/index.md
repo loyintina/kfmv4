@@ -168,3 +168,14 @@ batch-run（计划中）：批量跑所有组合臂（并发+断点续跑）+ �
 - 负迁移风险：弱模型忠实模仿范式包错误 → 范式包质量须经 check 级检验
 - 上下文成本：范式包必须精选（必读清单越长越被跳读）；长度倒 U 形（H5）
 - 价值递减：模型代际变强后范式包收益下降（定位：经济模型 × 中低能力区间）
+
+## 素材库状态（2026-08-04 第一性原理落地）
+
+- **全量数据**：5 源 351 会话 / 27,930 消息（含 AI 侧）/ 32,175 reasoning / 32,215 tool_calls
+  —— operit（kfm 早期 02-25 起）/ omp（05-27）/ opencode（06-11）/ kimi（07-27，当前）/ qoder
+- **切片**：560 段 episodes（operit 90 / omp 203 / opencode 155 / kimi 65 / qoder 47），pattern 94%
+- **存储**：~/.kfmv4/materials/materials.db（全量 + 段索引 + FTS trigram；切片=引用不复制）
+- **导航**：slices-summary.md（560 段按源分类摘要）+ patterns.md（模式库）+ pack-list.md（审核清单）
+- **工具链**：extract-{operit,omp,omp-jsonl,omp-db,kimi-full,convo}.py/mjs（5 源提取）
+  + annotate-pattern.py（模式标注）+ annotate-operit.py（范式候选筛选）+ gen-slices-summary.py（摘要生成）
+- **研究可用**：跨 harness 对比 / 决策路径分析 / AI 思考链研究 / FTS 模式检索——历史消息研究的现成基础设施
