@@ -49,6 +49,7 @@ import './provider-env.test.js';
 import './gen-pipeline.test.js';
 import './semantic-chain.test.js';
 import './stack-numbering.test.js';
+import './doc-scripts.test.js';
 
 function seedState(files: Record<string, any>) {
   KFMState.files = {};

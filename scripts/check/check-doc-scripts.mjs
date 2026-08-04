@@ -83,8 +83,8 @@ for (const f of readdirSync(ROOT)) {
 }
 
 // ---------- P/Z 通道：逐行扫描（保留行号） ----------
-const PATH_REF_RE = /`((?:src|scripts|tests|experiments|build\.mjs|dist)\/[^\s`"()]+\.(?:ts|mjs|cjs))`/;
-const NAME_REF_RE = /`([a-zA-Z0-9_.-]+\.(?:mjs|ts|cjs))`/;
+const PATH_REF_RE = /`((?:src|scripts|tests|experiments|build\.mjs|dist)\/[^\s`"()]+\.(?:ts|mjs|cjs))`/g;
+const NAME_REF_RE = /`([a-zA-Z0-9_.-]+\.(?:mjs|ts|cjs))`/g;
 
 function stripLineSuffix(ref) {
   return ref.replace(/\.(ts|mjs|cjs):\d+.*$/, '.$1');
@@ -95,17 +95,16 @@ for (const f of docFiles) {
   const lines = readFileSync(f, 'utf-8').split('\n');
   lines.forEach((line, i) => {
     const lineNo = i + 1;
-    // P：完整路径引用（反引号内）
-    const pm = line.match(PATH_REF_RE);
-    if (pm) {
+    // P：完整路径引用（反引号内）——matchAll：一行可多个引用（gen 生成区单行数百反引号）
+    for (const pm of line.matchAll(PATH_REF_RE)) {
       const ref = stripLineSuffix(pm[1]);
       if (!statSync(join(ROOT, ref), { throwIfNoEntry: false })?.isFile()) {
         error(`${f.replace(ROOT + '/', '')}:${lineNo} 引用路径不存在：\`${pm[1]}\`（文档漂移；脚本已删/改名请同步引用）`);
       }
     }
     // Z：纯文件名引用（反引号内，无路径分隔符）
-    const zm = line.match(NAME_REF_RE);
-    if (zm && !WHITELIST.has(zm[1])) {
+    for (const zm of line.matchAll(NAME_REF_RE)) {
+      if (WHITELIST.has(zm[1])) continue;
       const ref = stripLineSuffix(zm[1]);
       if (!allNames.has(ref)) {
         error(`${f.replace(ROOT + '/', '')}:${lineNo} 引用文件不存在：\`${zm[1]}\`（文档漂移；脚本已删/改名请同步引用）`);

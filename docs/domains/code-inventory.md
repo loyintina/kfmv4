@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit a74c0ecf · 生成于 2026-08-04 -->
+<!-- 基准 commit 411d4371 · 生成于 2026-08-04 -->
 
 # 代码清单（机械层）
 
@@ -172,12 +172,12 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（139 文件 · 16611 行）
+## infra（140 文件 · 16662 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | tests/client-logic.test.ts | 882 | — |
-| tests/regression.test.ts | 648 | — |
+| tests/regression.test.ts | 649 | — |
 | experiments/coldstart/tools/normalize-arms.mjs | 587 | — |
 | tests/tool-compaction.test.ts | 505 | — |
 | scripts/agent/semantic-audit.mjs | 431 | taskFiles, buildPrompt, makeValidate, recheckRef, recheckQuote |
@@ -211,7 +211,7 @@
 | tests/probes/gen-page-state-schema/src/server/ai/page-state.ts | 149 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
 | scripts/check/check-docs.mjs | 146 | — |
 | scripts/check/check-bar-ledger.mjs | 143 | — |
-| scripts/check/check-doc-scripts.mjs | 140 | — |
+| scripts/check/check-doc-scripts.mjs | 139 | — |
 | tests/provider-env.test.ts | 137 | — |
 | experiments/coldstart/tools/judge-batch.mjs | 135 | — |
 | scripts/agent/exp-iceberg.mjs | 134 | — |
@@ -276,6 +276,7 @@
 | tests/gen-pipeline.test.ts | 52 | — |
 | scripts/check/check-consistency.mjs | 51 | — |
 | scripts/check/check-uncommitted.mjs | 51 | — |
+| tests/doc-scripts.test.ts | 51 | — |
 | tests/stack-numbering.test.ts | 51 | — |
 | scripts/check/gen-route-table.mjs | 49 | — |
 | tests/permissions.test.ts | 49 | — |
@@ -624,4 +625,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 280 文件 · 48191 行 · 跨域边 246 条
+合计 281 文件 · 48242 行 · 跨域边 246 条

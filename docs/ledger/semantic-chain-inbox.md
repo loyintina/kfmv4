@@ -17,3 +17,4 @@
 - 2026-08-03 ✅ 入口文档体检通过（3 臂：实错 0.33/臂 LCA 1/3 硬破界 0/3 质疑 0.6666666666666666/3）
 - 2026-08-03 22:09 ⚠️ 11 条待裁决（SEM001×8 SEM002×3；本轮新增 10，跑 23 跳 1，幻觉拦截 5）→ 明细见 semantic-audit-state.json 各任务 keptFindings，裁决流 workflows/semantic-audit.yaml；机械化候选（≥3 次）：SEM001/SEM002
 - 2026-08-04 04:17 ⚠️ 5 条待裁决（SEM001×4 SEM005×1；本轮新增 4，跑 13 跳 11，幻觉拦截 2）→ 明细见 semantic-audit-state.json 各任务 keptFindings，裁决流 workflows/semantic-audit.yaml；机械化候选（≥3 次）：SEM001
+- 2026-08-04 ✅ 结晶回路收割落地：check-doc-scripts.mjs 上岗（BAR-DOCSCRIPTS-01）——M03/M05/M13 引用 ghost 从语义层移民机械层，变异基准注解机械化，check 39→40（sync-counts 派生）
