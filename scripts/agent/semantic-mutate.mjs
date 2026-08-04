@@ -50,8 +50,8 @@ export const MUTATIONS = [
   },
   {
     id: 'M03', level: 'L1', sem: 'SEM003', file: 'docs/workflows/contract-maintain.yaml', expect: 'report',
-    find: 'exit_condition: contract <150 行 + check-contract-freshness 绿',
-    replace: 'exit_condition: contract <150 行 + check-desc-freshness 绿',
+    find: 'exit_condition: contract ≤150 行 + check-contract-freshness 绿',
+    replace: 'exit_condition: contract ≤150 行 + check-desc-freshness 绿',
     tasks: ['workflows-vs-guides', 'inter-workflows-infra'],
     note: 'check 改名未同步（复刻 1400eea；check-desc-freshness 已死）',
   },
