@@ -144,6 +144,7 @@ export async function* streamChat(
   signal?: AbortSignal,
   roleFile?: string,
   allowTools?: string[], // 工具白名单（脚本用——不给的 AI 不会用，2026-08-04 用户提议）
+  extraSystem?: string, // 外部 system 约束注入（脚本工具流会话用——如探针的「只输出 JSON」；非角色卡）
 ): AsyncGenerator<StreamEvent> {
   const tools = allowTools?.length
     ? getToolDefinitions().filter(t => allowTools.includes(t.name))
@@ -204,6 +205,9 @@ export async function* streamChat(
   const toolDocsPrompt = buildToolDocsPrompt(allowTools);
   if (toolDocsPrompt) staticSystemParts.push(toolDocsPrompt);
   staticSystemParts.push(...globalPrompts);
+  // 外部 system 约束（脚本工具流会话：探针「只输出 JSON」等机械约束）。
+  // 与 roleFile（角色卡）语义区分：这是调用方强制的行为约束，非人格/角色内容。
+  if (extraSystem) staticSystemParts.push(extraSystem);
   const alwaysApplyPrompt = buildAlwaysApplyPrompt();
   if (alwaysApplyPrompt) staticSystemParts.push(alwaysApplyPrompt);
   // ts 元数据声明（BAR-TS-MIMIC-01）：投影层只给 user 消息盖 [ts …] 前缀（to-openai-messages），

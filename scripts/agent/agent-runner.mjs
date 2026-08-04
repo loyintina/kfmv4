@@ -156,3 +156,153 @@ export async function runAgent({ system = '', prompt, validate = null, retries =
   }
   return { ok: false, errors };
 }
+
+// ========== 工具流通道（巡逻探针工具化，2026-08-04） ==========
+// 设计：探针通过 kfm 服务端 /ai/chat/start（带 tools 白名单 + extraSystem）跑工具流会话，
+// 复用服务端工具循环/权限引擎/白名单三层过滤。输出契约与 runAgent 一致（{ok,data,raw}），
+// 调用方（semantic-audit）分流即可。服务端不可达 → fallback 纯文本 runAgent（巡逻无人值守，
+// 宁可有纯文本结果也别空窗；fallback 计 metrics 长跑观测服务端可用性）。
+
+const KFM_BASE = process.env.KFM_BASE || 'http://localhost:8021/api';
+
+/**
+ * 解析 kfm 服务端 SSE 工具流，收集最终文本。
+ * 事件协议见 src/server/ai/chat.ts StreamEvent：
+ *   content_block_delta.deltaType=text_delta → 拼文本（多轮工具调用间分散，全收）
+ *   error → 抛错（上游失败，文本无效）
+ *   done → 完成
+ * 容错：未知 type / 坏 JSON 行跳过；流结束未收到 done 也返回已收集文本。
+ * @param {ReadableStreamDefaultReader} reader
+ * @returns {Promise<string>}
+ */
+export async function parseToolStream(reader) {
+  const decoder = new TextDecoder();
+  let buf = '';
+  let text = '';
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const lines = buf.split('\n');
+    buf = lines.pop() || '';
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const jsonStr = line.slice(6).trim();
+      if (!jsonStr || jsonStr === '[DONE]') continue;
+      let ev;
+      try { ev = JSON.parse(jsonStr); } catch { continue; }
+      if (ev.type === 'content_block_delta' && ev.deltaType === 'text_delta' && typeof ev.deltaText === 'string') {
+        text += ev.deltaText;
+      } else if (ev.type === 'error') {
+        throw new Error(`工具流错误: ${String(ev.content || ev.message || '未知').slice(0, 300)}`);
+      } else if (ev.type === 'done') {
+        return text;
+      }
+    }
+  }
+  return text;
+}
+
+/**
+ * 跑一次工具流会话（单个 provider 单次尝试，不含重问/兜底）。
+ * @returns {{text:string} | {error:{fallback:boolean, message:string}}}
+ *   error.fallback=true = 服务端网络层不可达（连接拒绝/流中断）→ 应降级纯文本；
+ *   error.fallback=false = HTTP/上游错误（服务端在但拒绝）→ 落下一个 provider。
+ */
+async function tooledOnce({ base, sid, system, prompt, model, providerId, tools, timeoutMs }) {
+  let res;
+  try {
+    res = await fetch(`${base}/ai/chat/start`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId: sid,
+        messages: [{ role: 'user', content: prompt }],
+        userText: prompt,
+        model,
+        provider: providerId,
+        tools,
+        extraSystem: system,
+      }),
+      signal: AbortSignal.timeout(30_000),
+    });
+  } catch (e) {
+    return { error: { fallback: true, message: `服务端连接失败: ${e.message.slice(0, 100)}` } };
+  }
+  if (!res.ok) {
+    const body = (await res.text().catch(() => '')).slice(0, 200);
+    return { error: { fallback: false, message: `start HTTP ${res.status}: ${body}` } };
+  }
+  const { runId } = await res.json();
+  let streamRes;
+  try {
+    streamRes = await fetch(`${base}/ai/chat/${runId}/stream`, { signal: AbortSignal.timeout(timeoutMs + 15_000) });
+  } catch (e) {
+    return { error: { fallback: true, message: `流式连接失败: ${e.message.slice(0, 100)}` } };
+  }
+  if (!streamRes.ok) return { error: { fallback: false, message: `stream HTTP ${streamRes.status}` } };
+  try {
+    const text = await parseToolStream(streamRes.body.getReader());
+    return { text };
+  } catch (e) {
+    // 上游 error 事件 / 流中断：服务端在但本轮失败——非 fallback（换 provider 有意义）
+    return { error: { fallback: false, message: e.message } };
+  }
+}
+
+/**
+ * 跑一个带工具白名单的 agent 任务（工具流形态，服务端通道）。
+ * 与 runAgent 同契约：{ok, data, raw, provider, attempts, errors}；另附 tooled:true、
+ * fallback:true（服务端不可达降级纯文本，errors 带降级说明）。
+ * @param {object} opts
+ * @param {string}  opts.system    探针系统约束（经 extraSystem 注入服务端 system 段）
+ * @param {string}  opts.prompt    任务问题
+ * @param {Function} [opts.validate] 校验函数（同 runAgent）
+ * @param {number}  [opts.retries]  校验失败带反馈重问次数（默认 2）
+ * @param {string[]} [opts.tools]   工具白名单（不给 = 空，AI 只用文字）
+ * @param {number}  [opts.timeoutMs] 单次流式会话总超时（默认 600s——工具流多轮比单轮慢）
+ * @param {string}  [opts.sessionId] 会话 id 前缀（默认 patrol）
+ */
+export async function runAgentTooled({ system = '', prompt, validate = null, retries = 2, tools = [], timeoutMs = 600_000, sessionId = 'patrol' }) {
+  const entries = loadProviderEntries();
+  const errors = [];
+
+  const fallbackToPlain = async (msg) => {
+    errors.push(msg);
+    const fb = await runAgent({ system, prompt, validate, retries, maxTokens: 16000, timeoutMs: 300_000 });
+    return { ...fb, fallback: true, errors: [...errors, ...(fb.errors || [])] };
+  };
+
+  for (const step of CHAIN) {
+    const entry = entries.get(step.providerId);
+    if (!entry) { errors.push(`${step.providerId}: providers.json 无此条目`); continue; }
+    const key = resolveKey(entry.apiKey);
+    if (key.missingVar) { errors.push(`${step.providerId}: apiKey 引用 ${key.missingVar} 未设置（.kfmv4/.env 或 export）`); continue; }
+
+    let feedback = '';
+    let callFailed = false;
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      const t0 = Date.now();
+      // 每次尝试独立会话（校验失败重问 = 新会话带反馈重发，不污染前一轮）
+      const sid = `${sessionId}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+      const out = await tooledOnce({ base: KFM_BASE, sid, system, prompt: prompt + feedback, model: step.model, providerId: step.providerId, tools, timeoutMs });
+      if (out.error) {
+        logCall(`${step.providerId}/${step.model}`, Date.now() - t0, false, out.error.message);
+        if (out.error.fallback) return await fallbackToPlain(out.error.message);
+        errors.push(`${step.providerId}/${step.model}: ${out.error.message}`);
+        callFailed = true;
+        break; // 非网络错误 → 落下一个 provider
+      }
+      const text = out.text;
+      const data = validate ? validate(text) : text;
+      if (data !== null) {
+        logCall(`${step.providerId}/${step.model}`, Date.now() - t0, true);
+        return { ok: true, data, raw: text, provider: `${step.providerId}/${step.model}`, attempts: attempt + 1, errors, tooled: true };
+      }
+      logCall(`${step.providerId}/${step.model}`, Date.now() - t0, false, '校验失败');
+      feedback = '\n\n[校验失败] 上次输出不符合要求格式。只输出要求的 JSON，不要任何多余文字。';
+    }
+    if (!callFailed) errors.push(`${step.providerId}/${step.model}: 校验重试 ${retries + 1} 次均失败`);
+  }
+  return { ok: false, errors, tooled: true };
+}

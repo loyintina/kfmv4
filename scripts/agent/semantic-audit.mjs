@@ -25,7 +25,7 @@ import { readFileSync, readdirSync, statSync, existsSync, writeFileSync } from '
 import { join, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { createHash } from 'crypto';
-import { runAgent, extractJson } from './agent-runner.mjs';
+import { runAgent, runAgentTooled, extractJson } from './agent-runner.mjs';
 import { TASKS } from './semantic-audit.tasks.mjs';
 // SEMANTIC_AUDIT_ROOT：变异基准卷专用——指向 semantic-mutate.mjs 物化的沙盒副本，
 // 审计逻辑不变、读的全是副本；活树/账本/check 链无感。生产跑不设此变量。
@@ -118,7 +118,8 @@ const AUDIT_VERSION = 6;
 
 function taskHash(task, files) {
   const h = createHash('sha1');
-  h.update(JSON.stringify({ v: AUDIT_VERSION, q: task.question, sem: task.sem, kind: task.kind }));
+  // tools 并入哈希：任务从纯文本改为工具流（或反之）定义变化 → 触发重跑
+  h.update(JSON.stringify({ v: AUDIT_VERSION, q: task.question, sem: task.sem, kind: task.kind, tools: task.tools || [] }));
   for (const f of files) h.update(f + '\0' + readFileSync(join(ROOT, f), 'utf-8'));
   return h.digest('hex');
 }
@@ -343,25 +344,41 @@ let anyOk = false;
 const runReport = { date: new Date().toISOString().slice(0, 10), tasks: {}, findingsKept: 0, findingsDropped: 0 };
 
 const results = await pool(willRun, CONCURRENCY, async ({ task, files, hash }) => {
-  const result = await runAgent({
+  const tooled = Array.isArray(task.tools) && task.tools.length > 0;
+  const baseAgent = {
     system: '你是文档语义审计探针。只输出要求的 JSON，不要任何多余文字。',
     prompt: buildPrompt(task, files),
     validate: makeValidate(),
-    // 首轮教训（2026-07-30）：2000 被推理模型的思考链吃光，三棒全空响应；
-    // 审计 prompt 大 → 思考长 → 上限必须给足
-    maxTokens: 16000,
-    // 2026-08-02 超时根因修复：providers.config.json 全局带 response_format=json_object，
-    // 大 prompt+长思考链下 ds-flash 内容空 → 校验重问 → 落链 → 单任务 15-25 分钟。
-    // 剥离（extractJson 容错围栏）+ 大 prompt 超时给足——judge-batch 同款药方。
-    params: { response_format: undefined },
-    timeoutMs: 300_000,
-  });
+  };
+  const result = tooled
+    ? await runAgentTooled({
+        ...baseAgent,
+        tools: task.tools,
+        sessionId: `patrol-${task.id}`,
+        // 工具流多轮（读文件→验证→报）比单轮慢，超时给足
+        timeoutMs: 600_000,
+      })
+    : await runAgent({
+        ...baseAgent,
+        // 首轮教训（2026-07-30）：2000 被推理模型的思考链吃光，三棒全空响应；
+        // 审计 prompt 大 → 思考长 → 上限必须给足
+        maxTokens: 16000,
+        // 2026-08-02 超时根因修复：providers.config.json 全局带 response_format=json_object，
+        // 大 prompt+长思考链下 ds-flash 内容空 → 校验重问 → 落链 → 单任务 15-25 分钟。
+        // 剥离（extractJson 容错围栏）+ 大 prompt 超时给足——judge-batch 同款药方。
+        params: { response_format: undefined },
+        timeoutMs: 300_000,
+      });
   if (!result.ok) {
     console.error(`[semantic-audit] ${task.id}: agent 失败——${result.errors.join('；')}`);
-    runReport.tasks[task.id] = { status: 'failed', errors: result.errors };
+    runReport.tasks[task.id] = { status: 'failed', tooled, errors: result.errors };
     return { task, hash, ok: false };
   }
   anyOk = true;
+  // 工具流降级纯文本（服务端不可达）——巡逻不空窗，但记 fallback 供长跑观测服务端可用性
+  if (result.fallback) {
+    console.warn(`[semantic-audit] ${task.id}: 服务端不可达 → 已降级纯文本探针（${result.errors.slice(-1)[0] || 'fallback'}）`);
+  }
   // 机械复核 + 去重 + 豁免跳过（EX-xx 登记表：已裁决确认的发现不重复上报）
   const kept = [];
   const droppedList = [];
@@ -375,14 +392,16 @@ const results = await pool(willRun, CONCURRENCY, async ({ task, files, hash }) =
     for (const f of droppedList) console.log(`  ✂ 幻觉拦截: [${f.type}] ${f.claim}${f.against ? ` ↔ ${f.against}` : ''} — ${f.note.slice(0, 50)}`);
   }
   runReport.tasks[task.id] = {
-    status: 'ok', reported: result.data.findings.length, kept: kept.length, dropped,
+    status: result.fallback ? 'ok-fallback' : 'ok',
+    tooled, fallback: result.fallback || false,
+    reported: result.data.findings.length, kept: kept.length, dropped,
     keptFindings: kept, // 落盘明细——cron 无人值守时裁决轮的唯一入口（首跑教训：只打印 stdout = 发现蒸发）
     droppedFindings: droppedList,
     provider: result.provider, attempts: result.attempts,
   };
   runReport.findingsKept += kept.length;
   runReport.findingsDropped += dropped;
-  console.log(`[semantic-audit] ${task.id}: 报 ${result.data.findings.length} · 复核保留 ${kept.length} · 幻觉拦截 ${dropped}（${result.provider}，${result.attempts} 次尝试）`);
+  console.log(`[semantic-audit] ${task.id}: ${tooled ? '工具流' : '纯文本'} 报 ${result.data.findings.length} · 复核保留 ${kept.length} · 幻觉拦截 ${dropped}（${result.provider}，${result.attempts} 次尝试${result.fallback ? '，⚠ 降级纯文本' : ''}）`);
   return { task, hash, ok: true, kept };
 });
 

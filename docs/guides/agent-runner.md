@@ -12,6 +12,20 @@ agent 原件，不是 agent 应用。三明治：**机械组装输入 → agent 
   输入一律机械预装，原件不带工具（可控性来源）。
 - **形态 B（存量）**：提示词文件由 agent 执行（workflows/ 卡 + subagent）——交互式、需要工具的任务。
 
+## 形态 A 工具流扩展（runAgentTooled，2026-08-04）
+
+探针的「不带工具」不是铁律，而是**工具须受白名单约束**。`runAgentTooled` 给形态 A
+加了工具流通道：探针通过 kfm 服务端 `/ai/chat/start`（带 `tools` 白名单 +
+`extraSystem` 约束注入）跑多轮工具流会话，复用服务端工具循环/权限引擎/白名单三层过滤，
+**不本地执行任何工具**——可控性来源从「探针没有工具」迁移到「探针只被允许用白名单内
+工具，且执行在服务端统一护栏内」。
+
+- 输出契约与 `runAgent` 一致（`{ok, data, raw, provider, attempts, errors}`），另附
+  `tooled:true`、`fallback:true`（服务端不可达 → 自动降级纯文本，巡逻不空窗）。
+- 任务级声明：semantic-audit 任务清单 `tools?: string[]` 字段，给了走工具流，不给走纯文本。
+- 边界 = 检测：探针白名单只给读类（read/grep/glob），**禁止 write/edit/bash**——修复留给会话 agent。
+- 依赖：kfm 服务在线（fallback 保底）；流式多轮比单轮贵，超时给足（默认 600s）。
+
 ## 输出协议（调用方 = agent，不存在「人工兜底」，兜底是会话间接力 agent）
 
 - **exit 0**：输出精确（schema 校验通过），机械流程直接走

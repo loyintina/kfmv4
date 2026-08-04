@@ -25,8 +25,8 @@ export function setupAiRoutes(router: Router, wsServer: WsServer, startRunFn: St
    * 返回: { runId, fromIndex } —— fromIndex 是客户端应从该索引开始读的事件位置
    */
   router.post('/ai/chat/start', verifyLocalOrigin, (req, res) => {
-    // body: { sessionId, messages, model, provider, roleFile, userText }
-    const { sessionId, messages, model, provider, roleFile, userText, tools } = req.body;
+    // body: { sessionId, messages, model, provider, roleFile, userText, tools, extraSystem }
+    const { sessionId, messages, model, provider, roleFile, userText, tools, extraSystem } = req.body;
     if (!sessionId || !messages || !Array.isArray(messages) || messages.length === 0) {
       res.status(400).json({ error: '缺少 sessionId 或 messages 参数' });
       return;
@@ -53,6 +53,7 @@ export function setupAiRoutes(router: Router, wsServer: WsServer, startRunFn: St
       typeof roleFile === 'string' ? roleFile : undefined,
       undefined, // streamFn 默认
       Array.isArray(tools) ? tools.filter((t): t is string => typeof t === 'string') : undefined,
+      typeof extraSystem === 'string' ? extraSystem : undefined,
     );
     res.json({ runId: run.id, fromIndex: 0, done: run.done });
   });

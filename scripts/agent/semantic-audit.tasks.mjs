@@ -15,6 +15,9 @@
  *   sem      该探针追的 SEM 错误码（见 active/semantic-compiler-seed.md）
  *   feeds    喂给 agent 的文档（相对仓库根）
  *   baseline 基准层文档（对账参照，不逐行审计）
+ *   tools    可选：工具白名单（read/grep/glob 等读类）。给了 = 该任务走工具流探针
+ *            （runAgentTooled，服务端通道）；不给 = 纯文本探针（runAgent，现状）。
+ *            巡逻边界 = 检测：只允许读类工具，禁止 write/edit/bash（修复留给会话 agent）。
  *   question 探针问题（prompt 核心，必须单一）
  */
 
@@ -147,5 +150,18 @@ export const TASKS = [
     feeds: ['docs/domains/ai-chat/detail-runtime.md', 'docs/domains/ai-chat/contract.md'],
     baseline: ['docs/domains/ai-chat/code-map.md'],
     question: '对账 ai-chat 细节文档与契约：找出对运行时机制（取消路径/冷恢复/会话存储）断言冲突或归属矛盾之处',
+  },
+
+  // ========== 工具流试点（2026-08-04 用户拍板：巡逻探针工具化） ==========
+  // 与 *-vs-maps 的本质区别：对账对象是【源码】（不是另一份文档）。
+  // 纯文本探针没看过源码，「声称 vs 代码现状」只能靠模型先验猜（幻觉率高，靠机械复核拦截）；
+  // 工具流探针现场 read/grep 证伪——只报可验证的断言，从源头降幻觉。
+  // 试点先上 1 份 code-map（infra，最小），跑通后逐任务推广覆盖全部 6 份。
+  {
+    id: 'code-map-vs-src', kind: 'intra', sem: ['SEM001'],
+    feeds: ['docs/domains/infra/code-map.md'],
+    baseline: [],
+    tools: ['read', 'grep', 'glob'],
+    question: '抽查 code-map 中声称的具体文件路径/机制/计数/脚本名，用 read/grep/glob 现场验证是否与源码现状一致。只报可被工具证伪的断言（路径不存在/机制已删/计数不符/脚本已更名），每条 finding 必须附上工具验证证据（读到的实际内容或 grep 无命中说明）。不确定的不要报。',
   },
 ];
