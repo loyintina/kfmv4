@@ -57,6 +57,33 @@ test('不变量：任何 assistant 要么非空字符串、要么带 tool_calls�
   }
 });
 
+// ========== deepseek 官方 thinking mode：reasoning_content 回传（2026-08-04 接入官方） ==========
+
+group('载荷唯一构造函数 — reasoning_content 回传（deepseek 官方 thinking 要求）');
+
+test('有 tool_calls 的 assistant 历史透传 reasoning_content', () => {
+  const msgs: ChatMessage[] = [
+    user('问'),
+    { role: 'ai', content: [
+      { type: 'text', text: '', reasoning: '思考过程……' },
+      { type: 'tool', id: 't1', name: 'read', input: { path: '/a' }, result: { content: [{ type: 'text', text: 'ok' }] } },
+    ] },
+  ];
+  const { apiMessages } = toOpenAiMessages(msgs, { compact: true });
+  const assistant = apiMessages.find(m => m.role === 'assistant')!;
+  assert.strictEqual(assistant.reasoning_content, '思考过程……', '有 tool_calls 的 assistant 必须回传 reasoning');
+  assert(assistant.tool_calls && assistant.tool_calls.length === 1, 'tool_calls 保持');
+});
+
+test('纯正文 assistant 不带 reasoning_content（官方文档：无工具调用时不参与拼接）', () => {
+  const { apiMessages } = toOpenAiMessages([
+    user('问'),
+    { role: 'ai', content: [{ type: 'text', text: '答', reasoning: '想过……' }] },
+  ], { compact: true });
+  const assistant = apiMessages.find(m => m.role === 'assistant')!;
+  assert.strictEqual(assistant.reasoning_content, undefined, '无 tool_calls 不带 reasoning_content');
+});
+
 // ========== 压缩投影（tryAutoResume 曾缺失） ==========
 
 group('载荷唯一构造函数 — 压缩投影');

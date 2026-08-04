@@ -31,6 +31,12 @@ export interface OpenAiMessage {
   content: string | null;
   tool_calls?: OpenAiToolCall[];
   tool_call_id?: string;
+  /** deepseek 官方 thinking mode 要求（有工具调用时须回传）：
+   *  官方文档「Between two user messages, if the model performed a tool call,
+   *  the intermediate assistant's reasoning_content must be passed back to the
+   *  API in all subsequent turns」。只在有 tool_calls 的分支带——无工具调用时
+   *  reasoning 不参与拼接，传了会被忽略（官方文档原话），少传少风险。 */
+  reasoning_content?: string;
 }
 
 export interface ToOpenAiOptions {
@@ -246,7 +252,19 @@ export function toOpenAiMessages(messages: ChatMessage[], opts: ToOpenAiOptions)
           return { id: tc.id, type: 'function' as const, function: { name: tc.name, arguments: args } };
         });
         const headText = mainText && !isClientArtifact(mainText) ? mainText : null;
-        apiMessages.push({ role: 'assistant', content: headText, tool_calls: toolCalls });
+        // deepseek 官方 thinking mode：有 tool_calls 的 assistant 历史必须回传
+        // reasoning_content（官方文档「must be passed back to the API in all
+        // subsequent turns」——会话回放场景客户端重发历史时思考链不能丢）。
+        // 实测（2026-08-04）：当前官方 flash 端点宽容，不回传也 200；但文档明确
+        // 要求 + 严格端点/版本演进风险——带上合规无害。无 tool_calls 的纯正文分支
+        // 不带：官方文档「无工具调用时 reasoning 不参与拼接，传了会被忽略」。
+        const reasoning = textBlocks.map(b => b.reasoning || '').join('') || undefined;
+        apiMessages.push({
+          role: 'assistant',
+          content: headText,
+          tool_calls: toolCalls,
+          ...(reasoning ? { reasoning_content: reasoning } : {}),
+        });
         // 每个工具结果作为独立的 role:"tool" 消息（tool_calls/tool 配对结构原样保留，只压 content）
         for (const tc of toolBlocks) {
           const resultText = tc.result?.content?.map(c => c.text || '').join('') || '';

@@ -117,6 +117,12 @@
    `tool.content` 必须是 string（非字符串 `JSON.stringify`）、assistant 不得为空
    （无 tool_calls 的空 assistant 过滤）。宽松端点容忍不代表合法；上游错误体必须透传
    （只报状态码 = 扔掉诊断）。回归钉：BAR-PROVIDER-01/02。
+   **deepseek 官方 thinking mode 附加要求（2026-08-04 实测定稿）**：有 tool_calls 的
+   assistant 历史必须回传 `reasoning_content`（官方文档「must be passed back to the
+   API in all subsequent turns」）——双点透传：客户端 `to-openai-messages.ts`（历史
+   回放）+ 服务端 `chat.ts`（工具循环当轮）；纯正文 assistant 不带（官方文档：无工具
+   调用时 reasoning 不参与拼接，传了会被忽略）。实测：当前官方 flash 端点宽容、不回传
+   也 200，但文档明确要求 + 严格端点/版本演进风险——带上合规无害。
 10. **回复错放 reasoning 必须归位**：某些模型/端点把最终回复全写进 reasoning_content、
     text 留空——显示成「已思考+无回复」，进载荷成空 assistant。正常结束（message_stop）
     text 空且 reasoning 非空 → 归位为正文；历史加载读时归一化（不改文件）；
