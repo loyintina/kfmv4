@@ -49,15 +49,20 @@ const arms = files.filter(f => existsSync(f));
 console.log(`[bench-score] 会话 ${arms.length} 个${armArg ? '（--arm 指定）' : '（扫 script/ 全部）'}`);
 
 // ========== 提取 agent 输出的 findings JSON ==========
-/** 面板会话最后一条 ai 消息的 text 块——输出 JSON 契约在此 */
+/** 面板会话最后一条含 text 的 ai 消息——输出 JSON 契约在此（tool-only 消息跳过） */
 function extractFindings(file) {
-  const o = JSON.parse(readFileSync(file, 'utf-8'));
+  let o;
+  try {
+    o = JSON.parse(readFileSync(file, 'utf-8'));
+  } catch (e) {
+    return { ok: false, reason: `会话文件损坏: ${String(e).slice(0, 40)}`, findings: [] };
+  }
   const aiTexts = (o.messages || [])
     .filter(m => m.role === 'ai')
-    .map(m => (m.content || []).filter(b => b?.type === 'text').map(b => b.text || '').join(''))
-    .filter(t => t);
-  if (!aiTexts.length) return { ok: false, reason: '无 ai 消息', findings: [] };
-  const text = aiTexts[aiTexts.length - 1];
+    .map(m => ({ text: (m.content || []).filter(b => b?.type === 'text').map(b => b.text || '').join(''), toolCount: (m.content || []).filter(b => b?.type === 'tool').length }))
+    .filter(x => x.text.trim()); // 只保留含 text 块的消息（tool-only 消息不是答案）
+  if (!aiTexts.length) return { ok: false, reason: '无含 text 的 ai 消息', findings: [] };
+  const text = aiTexts[aiTexts.length - 1].text;
   // 找最后一个 ```json 代码块
   const blocks = [...text.matchAll(/```(?:json)?\s*\n([\s\S]*?)\n```/g)];
   const candidate = blocks.length ? blocks[blocks.length - 1][1] : text;
