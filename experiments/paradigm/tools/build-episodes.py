@@ -17,6 +17,7 @@ CLASS_FILES = {
     "ses_14a552b2fffeeo6FbB3MQJI7TQ": "kfmv4dev-classification.md",
     "ses_097843368ffejJGDPa2PNXgmfI": "kfmv4-handover-classification.md",
     "ses_063fd57d7ffepMZzVsdv2wNXM2": "kfmv4-troubleshoot-classification.md",
+    "ses_141744654ffehLxZxWEQSrD8RN": "kfmv4-audit-classification.md",
 }
 
 # 解析段行：- B1 [1-3] **标题** 或 - F1 [4-38] 标题
@@ -57,6 +58,9 @@ def build(c):
     );
     """)
     for sid, fname in CLASS_FILES.items():
+        # 幂等：重跑先清该会话旧段/回合
+        c.execute("DELETE FROM turns WHERE episode_id IN (SELECT id FROM episodes WHERE session_id=?)", (sid,))
+        c.execute("DELETE FROM episodes WHERE session_id=?", (sid,))
         cfile = PACKS / fname
         if not cfile.exists():
             print(f"[episodes] 缺 {fname}"); continue
