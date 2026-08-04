@@ -74,6 +74,7 @@ export const STEPS = [
   'node scripts/check/check-ledger-commits.mjs',
   'node scripts/check/check-doc-budget.mjs',
   'node scripts/check/check-doc-symbols.mjs',
+  'node scripts/check/check-doc-scripts.mjs',
   'node scripts/check/check-doc-linerefs.mjs',
   'node scripts/check/check-doc-schema.mjs',
   'node scripts/check/check-commit-docs.mjs',

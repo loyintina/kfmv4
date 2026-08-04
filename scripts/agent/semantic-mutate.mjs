@@ -36,7 +36,7 @@ export const MUTATIONS = [
   // ---- L1 回归层：历史真案例复刻 ----
   {
     id: 'M01', level: 'L1', sem: 'SEM001', file: 'README.md', expect: 'report',
-    find: '**39 个 check-* 脚本 + 502 个回归测试**',
+    find: '**40 个 check-* 脚本 + 502 个回归测试**',
     replace: '**36 个 check-* 脚本 + 499 个回归测试**',
     tasks: ['readme-vs-maps', 'inter-readme-codemap'],
     note: 'check 计数应为 36（锚点 2026-08-03 随 493→498 迁移）',
@@ -53,7 +53,7 @@ export const MUTATIONS = [
     find: 'exit_condition: contract ≤150 行 + check-contract-freshness 绿',
     replace: 'exit_condition: contract ≤150 行 + check-desc-freshness 绿',
     tasks: ['workflows-vs-guides', 'inter-workflows-infra'],
-    note: 'check 改名未同步（复刻 1400eea；check-desc-freshness 已死）',
+    note: 'check 改名未同步（复刻 1400eea；check-desc-freshness 已死）。2026-08-04 已机械化：check-doc-scripts C 通道直接逮（workflows 面裸 check-* 名存在性）',
   },
   {
     id: 'M04', level: 'L1', sem: 'SEM001', file: 'docs/domains/server/contract.md', expect: 'report',
@@ -67,7 +67,7 @@ export const MUTATIONS = [
     find: '`node scripts/agent/tag-advisor.mjs`——语义判级别',
     replace: '`node scripts/agent/tag-adviser.mjs`——语义判级别',
     tasks: ['inter-agentrunner-infra'],
-    note: '同文件 4 处引用仅 1 处拼错 tag-adviser——死路径引用（复刻 7b54c7b 类的路径版）',
+    note: '同文件 4 处引用仅 1 处拼错 tag-adviser——死路径引用（复刻 7b54c7b 类的路径版）。2026-08-04 已机械化：check-doc-scripts P 通道直接逮（反引号完整路径存在性）',
   },
   // ---- L2 枚举层：SEM × 文档元素矩阵 ----
   {
@@ -86,7 +86,7 @@ export const MUTATIONS = [
   },
   {
     id: 'M08', level: 'L2', sem: 'SEM002', file: 'docs/domains/infra/contract.md', expect: 'report',
-    find: '## 检查管线（npm run check，39 脚本，顺序固定）',
+    find: '## 检查管线（npm run check，40 脚本，顺序固定）',
     replace: '## 检查管线（npm run check，29 脚本，顺序固定）',
     tasks: ['contract-vs-map-infra'],
     note: '契约计数 29 vs code-map「30 个 check（含 check-checks 自身）」冲突（锚点随 31 迁移）',
@@ -94,7 +94,7 @@ export const MUTATIONS = [
   // ---- L3 对抗层：near-miss 负例（报了即误报） ----
   {
     id: 'M09', level: 'L3', sem: 'NC', file: 'README.md', expect: 'silent',
-    find: '| 自动化检查管线 | 39 个 check-* 脚本',
+    find: '| 自动化检查管线 | 40 个 check-* 脚本',
     replace: '| 自动化检查管线 | 37（三十七）个 check-* 脚本',
     tasks: ['readme-vs-maps', 'inter-readme-codemap'],
     note: '正确计数的表述变体——不应报告（三轮假发现改造）',
@@ -116,7 +116,7 @@ export const MUTATIONS = [
   },
   {
     id: 'M12', level: 'L2', sem: 'SEM002', file: 'CLAUDE.md', expect: 'report',
-    find: 'npm run check    # 39 个 check-*.mjs + tsc --noEmit（仅检查，不构建）',
+    find: 'npm run check    # 40 个 check-*.mjs + tsc --noEmit（仅检查，不构建）',
     replace: 'npm run check    # 36 个 check-*.mjs + tsc --noEmit（仅检查，不构建）',
     tasks: ['claude-vs-docs'],
     note: '入口文档计数 30 vs infra 契约「31 脚本」冲突（锚点随 31 迁移）',
@@ -126,7 +126,7 @@ export const MUTATIONS = [
     find: '构建由 build.mjs 接管',
     replace: '构建由 bundle.mjs 接管',
     tasks: ['diagnostics-vs-maps'],
-    note: '幽灵文件名——bundle 只是 npm script 别名，build.mjs 才真实存在（codeMaps 可逮）',
+    note: '幽灵文件名——bundle 只是 npm script 别名，build.mjs 才真实存在（codeMaps 可逮）。2026-08-04 已机械化：check-doc-scripts Z 通道直接逮（反引号纯文件名存在性）',
   },
   {
     id: 'M14', level: 'L2', sem: 'SEM004', file: 'docs/constraints/invariants.md', expect: 'report',

@@ -1,0 +1,7 @@
+id: probe-workflow
+name: 探针工作流（doc-scripts 负例夹具）
+reads:
+  - guides/probe-guide.md
+steps:
+  1. 引用现役 check：check-real
+  2. 引用幽灵 check（C 通道应逮）：check-ghost-name
