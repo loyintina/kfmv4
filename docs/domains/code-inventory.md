@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit a40bbda4 · 生成于 2026-08-04 -->
+<!-- 基准 commit 434c83f5 · 生成于 2026-08-04 -->
 
 # 代码清单（机械层）
 
@@ -98,7 +98,7 @@
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（55 文件 · 11735 行）
+## ai-chat（55 文件 · 11746 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -117,8 +117,8 @@
 | src/server/ai/tools/omp/browser/tab-supervisor.ts | 320 | WorkerHandle, TabSession, PendingRun, AcquireTabOptions, RunInTabOptions, getTab, acquireTab, runInTab, releaseTab, releaseAllTabs |
 | src/server/ai/tools/omp/debug/kfmv4-views.ts | 318 | Kfmv4ViewName, Kfmv4ViewResult, RENDERER_SNAPSHOT_SCRIPT, ANIMATION_TIMELINE_SCRIPT, GESTURE_TRACE_SCRIPT, STATE_HISTORY_SCRIPT, CARD_LIFECYCLE_SCRIPT, KFMV4_SCRIPT_MAP, formatRendererSnapshot, formatAnimationTimeline, formatGestureTrace, formatStateHistory, formatCardLifecycle |
 | src/shared/chat-protocol/to-openai-messages.ts | 279 | OpenAiToolCall, OpenAiMessage, ToOpenAiOptions, ToOpenAiResult, toOpenAiMessages |
+| src/server/ai/session-store.ts | 248 | appendEvent, flush, flushSync, invalidateSession, appendUserMessage |
 | src/server/ai/tools/omp/debug/cdp-connection.ts | 242 | CdpSession, CdpLaunchOptions, CdpAttachOptions, CdpPausedEvent, sendCmd, onCdpEvent, launchCdp, attachCdp, closeCdp |
-| src/server/ai/session-store.ts | 237 | appendEvent, flush, flushSync, invalidateSession, appendUserMessage |
 | src/server/ai/run-manager.ts | 236 | _setStallMsForTest, getActiveRun, getRun, StreamFn, startRun, attachRun, cancelRun |
 | src/client/modules/orb-chat-hints.ts | 225 | startWaitingIndicator, TODO_DISMISS_KEY, todosFingerprint, clearTodoPanel, dismissTodoPanel, updateTodoFromTool |
 | src/server/ai/page-state.ts | 148 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
@@ -172,12 +172,12 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（140 文件 · 16994 行）
+## infra（142 文件 · 17064 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | tests/client-logic.test.ts | 882 | — |
-| tests/regression.test.ts | 649 | — |
+| tests/regression.test.ts | 651 | — |
 | experiments/coldstart/tools/normalize-arms.mjs | 587 | — |
 | tests/tool-compaction.test.ts | 505 | — |
 | scripts/agent/semantic-audit.mjs | 460 | taskFiles, buildPrompt, makeValidate, recheckRef, recheckQuote |
@@ -244,12 +244,12 @@
 | scripts/check/check-anim.mjs | 99 | — |
 | scripts/check/check-state-freshness.mjs | 92 | — |
 | scripts/check/check-versions.mjs | 91 | — |
+| scripts/check/check-deploy-freshness.mjs | 87 | — |
 | scripts/check/check-workflow-integrity.mjs | 87 | — |
 | scripts/check/check-probes.mjs | 86 | — |
 | scripts/agent/exp-probe-matrix.mjs | 86 | — |
 | tests/engine.test.ts | 85 | — |
 | scripts/check/gen-experiments-list.mjs | 84 | — |
-| scripts/check/check-deploy-freshness.mjs | 83 | — |
 | scripts/check/check-experiment-index.mjs | 81 | — |
 | scripts/check/check-hooks.mjs | 81 | — |
 | scripts/agent/exp-thinking.mjs | 81 | — |
@@ -282,6 +282,7 @@
 | scripts/check/gen-route-table.mjs | 49 | — |
 | tests/permissions.test.ts | 49 | — |
 | package.json | 47 | — |
+| tests/session-flush.test.ts | 45 | — |
 | scripts/check/check-doc-budget.mjs | 44 | — |
 | scripts/clean-npm-temp.cjs | 44 | — |
 | scripts/check/check-release-radar.mjs | 42 | — |
@@ -290,6 +291,7 @@
 | scripts/kfm-restart.sh | 30 | — |
 | scripts/deploy.sh | 29 | — |
 | .githooks/pre-push | 28 | — |
+| tests/check-deploy-freshness.test.ts | 19 | — |
 | tests/probes/gen-permission-map/src/server/ai/tools/index.ts | 19 | getToolDefinitions, getAllTools |
 | tests/gsap-hook.mjs | 17 | resolve |
 | tests/probes/gen-permission-map/src/server/ai/tools/fake.ts | 16 | fakeTool |
@@ -531,7 +533,7 @@
 - src/client/modules/terminal-card-04.ts → src/client/modules/z-index-layers.ts
 - src/client/modules/tmux-card.ts → src/client/modules/gesture-registry.ts
 
-### infra → ai-chat（23 边）
+### infra → ai-chat（24 边）
 
 - tests/chat-protocol.test.ts → src/client/modules/orb-chat.ts
 - tests/chat-protocol.test.ts → src/server/ai/chat.ts
@@ -547,6 +549,7 @@
 - tests/run-manager.test.ts → src/server/ai/run-manager.ts
 - tests/run-manager.test.ts → src/server/ai/tools/omp/bash.ts
 - tests/server-routes.test.ts → src/server/ai/routes.ts
+- tests/session-flush.test.ts → src/server/ai/session-store.ts
 - tests/session-invalidate.test.ts → src/server/ai/session-store.ts
 - tests/session-security.test.ts → src/server/ai/routes.ts
 - tests/to-openai-messages.test.ts → src/shared/chat-protocol/messages.ts
@@ -605,7 +608,7 @@
 - tests/floating-state.test.ts → src/client/modules/floating-shared.ts
 - tests/reset-hooks.ts → src/client/modules/card-registry.ts
 
-### infra → server（10 边）
+### infra → server（11 边）
 
 - tests/path-utils.test.ts → src/server/path-utils.ts
 - tests/permissions.test.ts → src/server/ai/permissions.ts
@@ -614,6 +617,7 @@
 - tests/provider-env.test.ts → src/server/routes/providers.ts
 - tests/server-routes.test.ts → src/server/path-utils.ts
 - tests/server-routes.test.ts → src/server/routes/files.ts
+- tests/session-flush.test.ts → src/server/path-utils.ts
 - tests/session-invalidate.test.ts → src/server/path-utils.ts
 - tests/session-security.test.ts → src/server/path-utils.ts
 - tests/session-security.test.ts → src/server/ws-server.ts
@@ -625,4 +629,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 281 文件 · 48599 行 · 跨域边 246 条
+合计 283 文件 · 48680 行 · 跨域边 248 条
