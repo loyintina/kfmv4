@@ -156,23 +156,66 @@ export const TASKS = [
     question: '对账 ai-chat 细节文档与契约：找出对运行时机制（取消路径/冷恢复/会话存储）断言冲突或归属矛盾之处',
   },
 
-  // ========== 工具流试点（2026-08-04 用户拍板：巡逻探针工具化） ==========
+  // ========== 工具流探针（2026-08-04 用户拍板：巡逻探针工具化 → 推广 6 域） ==========
   // 与 *-vs-maps 的本质区别：对账对象是【源码】（不是另一份文档）。
   // 纯文本探针没看过源码，「声称 vs 代码现状」只能靠模型先验猜（幻觉率高，靠机械复核拦截）；
   // 工具流探针现场 read/grep 证伪——只报可验证的断言，从源头降幻觉。
-  // 试点先上 1 份 code-map（infra，最小），跑通后逐任务推广覆盖全部 6 份。
+  // 每域一任务（单一职责 + per-任务记账 + 增量哈希独立：某域 code-map 变更只重跑该域）。
+  // 标配（2026-08-04 官方实测定稿）：provider=deepseek（官方）+ thinking enabled +
+  // reasoning_effort low + max_tokens 32000——思考留 reasoning 通道不外溢（保持 JSON 纪律）
+  // 且长度受控（官方 flash 映射 low→low）；中转 effort 失真、thinking disabled 外溢皆实测失败。
   {
     id: 'code-map-vs-src', kind: 'intra', sem: ['SEM001'],
     feeds: ['docs/domains/infra/code-map.md'],
     baseline: [],
     tools: ['read', 'grep', 'glob'],
-    // 官方 deepseek + reasoning_effort=low（2026-08-04 实测结论）：
-    // - 保留思考（在 reasoning 通道不外溢，AI 保持「只输出 JSON」纪律——中转 thinking disabled
-    //   版实测失败：思考过程外溢进 text、拒不输出 findings）
-    // - 限制思考长度：官方 flash 映射 low→low（难任务实测 1788 vs max 6272 字符）
-    // - max_tokens 32000 兜底；中转 opencode 的 effort 档位差弱（1.5 倍）故指定官方 provider
     provider: 'deepseek',
     params: { thinking: { type: 'enabled' }, reasoning_effort: 'low' },
-    question: '抽查 code-map 中声称的具体文件路径/机制/计数/脚本名，用 read/grep/glob 现场验证是否与源码现状一致。只报可被工具证伪的断言（路径不存在/机制已删/计数不符/脚本已更名），每条 finding 必须附上工具验证证据（读到的实际内容或 grep 无命中说明）。验证 3-6 条即可。你的思考过程留在内部，回复正文只输出 JSON findings，不要输出任何分析、报告或多余文字。不确定的不要报。',
+    question: '抽查 infra 域 code-map 中声称的具体文件路径/机制/计数/脚本名，用 read/grep/glob 现场验证是否与源码现状一致。只报可被工具证伪的断言（路径不存在/机制已删/计数不符/脚本已更名），每条 finding 必须附上工具验证证据（读到的实际内容或 grep 无命中说明）。验证 3-6 条即可。你的思考过程留在内部，回复正文只输出 JSON findings，不要输出任何分析、报告或多余文字。不确定的不要报。',
+  },
+  {
+    id: 'code-map-vs-src-ai-chat', kind: 'intra', sem: ['SEM001'],
+    feeds: ['docs/domains/ai-chat/code-map.md'],
+    baseline: [],
+    tools: ['read', 'grep', 'glob'],
+    provider: 'deepseek',
+    params: { thinking: { type: 'enabled' }, reasoning_effort: 'low' },
+    question: '抽查 ai-chat 域 code-map 中声称的具体文件路径/机制/计数/脚本名（对话运行时/工具/会话存储/SSE 协议相关），用 read/grep/glob 现场验证是否与源码现状一致。只报可被工具证伪的断言（路径不存在/机制已删/计数不符/脚本已更名），每条 finding 必须附上工具验证证据。验证 3-6 条即可。你的思考过程留在内部，回复正文只输出 JSON findings，不要输出任何分析、报告或多余文字。不确定的不要报。',
+  },
+  {
+    id: 'code-map-vs-src-canvas-tree', kind: 'intra', sem: ['SEM001'],
+    feeds: ['docs/domains/canvas-tree/code-map.md'],
+    baseline: [],
+    tools: ['read', 'grep', 'glob'],
+    provider: 'deepseek',
+    params: { thinking: { type: 'enabled' }, reasoning_effort: 'low' },
+    question: '抽查 canvas-tree 域 code-map 中声称的具体文件路径/机制/计数/脚本名（自研渲染引擎/文件树/动画），用 read/grep/glob 现场验证是否与源码现状一致。只报可被工具证伪的断言（路径不存在/机制已删/计数不符/脚本已更名），每条 finding 必须附上工具验证证据。验证 3-6 条即可。你的思考过程留在内部，回复正文只输出 JSON findings，不要输出任何分析、报告或多余文字。不确定的不要报。',
+  },
+  {
+    id: 'code-map-vs-src-client-shell', kind: 'intra', sem: ['SEM001'],
+    feeds: ['docs/domains/client-shell/code-map.md'],
+    baseline: [],
+    tools: ['read', 'grep', 'glob'],
+    provider: 'deepseek',
+    params: { thinking: { type: 'enabled' }, reasoning_effort: 'low' },
+    question: '抽查 client-shell 域 code-map 中声称的具体文件路径/机制/计数/脚本名（客户端外壳/手势/状态机），用 read/grep/glob 现场验证是否与源码现状一致。只报可被工具证伪的断言（路径不存在/机制已删/计数不符/脚本已更名），每条 finding 必须附上工具验证证据。验证 3-6 条即可。你的思考过程留在内部，回复正文只输出 JSON findings，不要输出任何分析、报告或多余文字。不确定的不要报。',
+  },
+  {
+    id: 'code-map-vs-src-floating-card', kind: 'intra', sem: ['SEM001'],
+    feeds: ['docs/domains/floating-card/code-map.md'],
+    baseline: [],
+    tools: ['read', 'grep', 'glob'],
+    provider: 'deepseek',
+    params: { thinking: { type: 'enabled' }, reasoning_effort: 'low' },
+    question: '抽查 floating-card 域 code-map 中声称的具体文件路径/机制/计数/脚本名（浮动卡片引擎/拖拽/全屏），用 read/grep/glob 现场验证是否与源码现状一致。只报可被工具证伪的断言（路径不存在/机制已删/计数不符/脚本已更名），每条 finding 必须附上工具验证证据。验证 3-6 条即可。你的思考过程留在内部，回复正文只输出 JSON findings，不要输出任何分析、报告或多余文字。不确定的不要报。',
+  },
+  {
+    id: 'code-map-vs-src-server', kind: 'intra', sem: ['SEM001'],
+    feeds: ['docs/domains/server/code-map.md'],
+    baseline: [],
+    tools: ['read', 'grep', 'glob'],
+    provider: 'deepseek',
+    params: { thinking: { type: 'enabled' }, reasoning_effort: 'low' },
+    question: '抽查 server 域 code-map 中声称的具体文件路径/机制/计数/脚本名（服务端/WS/终端/路由），用 read/grep/glob 现场验证是否与源码现状一致。只报可被工具证伪的断言（路径不存在/机制已删/计数不符/脚本已更名），每条 finding 必须附上工具验证证据。验证 3-6 条即可。你的思考过程留在内部，回复正文只输出 JSON findings，不要输出任何分析、报告或多余文字。不确定的不要报。',
   },
 ];

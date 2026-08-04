@@ -392,6 +392,20 @@
       ],
       "provider": "deepseek/deepseek-v4-flash",
       "attempts": 1
+    },
+    "code-map-vs-src-server": {
+      "hash": "a3711224c0d79efb412e96a48c564aa22584bf50",
+      "lastRun": "2026-08-04",
+      "status": "ok",
+      "tooled": true,
+      "fallback": false,
+      "reported": 0,
+      "kept": 0,
+      "dropped": 0,
+      "keptFindings": [],
+      "droppedFindings": [],
+      "provider": "deepseek/deepseek-v4-flash",
+      "attempts": 1
     }
   },
   "runs": [
@@ -779,6 +793,13 @@
       "skipped": 0,
       "kept": 1,
       "dropped": 2
+    },
+    {
+      "date": "2026-08-04",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 0
     }
   ]
 }

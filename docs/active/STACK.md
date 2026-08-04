@@ -54,12 +54,19 @@
      任务无需为弱模型改造，断言清单+保鲜机制整个不建
    — 腿一探针工具化 ✅（2026-08-04 用户拍板「巡逻脚本接工具白名单」）：探针从纯文本
      单轮升级为可带白名单工具流——agent-runner 新增 runAgentTooled（服务端
-     /ai/chat/start 带 tools+extraSystem 通道，复用工具循环/权限引擎/白名单三层过滤），
-     任务级 tools 字段声明（试点 code-map-vs-src：code-map 声称 vs 源码现状，
-     只报可被 read/grep/glob 证伪的断言，从源头降幻觉）；服务端不可达 fallback
-     纯文本 + metric 记 fallback（长跑观测服务端可用性）；巡逻边界=检测：白名单
-     只给读类，禁止 write/edit/bash（修复留给会话 agent）；BAR-SEMCHAIN-02 测试钉
-     ——与 43 行「语义管线内置工具化」（探针做成 kfm 前端工具）方向互补不冲突
+     /ai/chat/start 带 tools+extraSystem+maxTokens+params 通道，复用工具循环/权限引擎/
+     白名单三层过滤），任务级 tools/provider/thinking/params 字段；服务端不可达 fallback
+     纯文本 + metric 记 fallback（长跑观测服务端可用性）；巡逻边界=检测：白名单只给读类，
+     禁止 write/edit/bash（修复留给会话 agent）；BAR-SEMCHAIN-02 测试钉
+   — 工具流推广 6 域 ✅（2026-08-04 试点验证后）：code-map-vs-src 家族覆盖全部 6 份
+     code-map（infra 试点 + ai-chat/canvas-tree/client-shell/floating-card/server），
+     每域一任务（单一职责+per-任务记账+增量哈希独立）。标配定稿（官方实测定稿）：
+     provider=deepseek（官方）+ thinking enabled + reasoning_effort low + max_tokens
+     32000——思考留 reasoning 通道不外溢（保持 JSON 纪律）且长度受控（官方 flash 映射
+     low→low，难任务实测 1788 vs max 6272 字符）；⚠️ 中转 thinking disabled 外溢、
+     effort=max 吃光预算皆实测失败。试点 1 次尝试通过校验，产出真实发现（infra 漂移10
+     vs build.mjs F4 戳）——与 43 行「语义管线内置工具化」（探针做成 kfm 前端工具）
+     方向互补不冲突
    — 深扫实验 ✅（2026-07-30，用户动议「只找可能矛盾不断言」）：10 subagent 盲测
      （4×MID-3 + 4×MID-4 + 2 干净对照，单突变夹具 tmp/exp-deepscan）——
      MID-4（推理级矛盾，便宜链四臂 0/20）强模型 4/4 全逮且全高置信；
