@@ -27,6 +27,8 @@ interface SessionState {
   meta: Record<string, unknown>;
   flushTimer: ReturnType<typeof setTimeout> | null;
   dirty: boolean;
+  writing: boolean;      // 异步写中（BAR-SESSION-FLUSH-01：防抖写与强制写并发交错文件）
+  pendingWrite: boolean; // 写中期间又变脏 → 写完回调续写最新快照
 }
 
 const _sessions = new Map<string, SessionState>();
@@ -51,7 +53,7 @@ function _loadFromDisk(sessionId: string): SessionState {
   const filePath = _sessionFilePath(sessionId);
   if (!filePath) {
     console.error('[session-store] 拒绝非法 sessionId 读取:', sessionId);
-    return { ctx: { messages: [], msgIdx: -1 }, meta: { id: sessionId }, flushTimer: null, dirty: false };
+    return { ctx: { messages: [], msgIdx: -1 }, meta: { id: sessionId }, flushTimer: null, dirty: false, writing: false, pendingWrite: false };
   }
   let meta: Record<string, unknown> = { id: sessionId, title: sessionId, createdAt: new Date().toISOString() };
   const messages: ChatMessage[] = [];
@@ -73,7 +75,7 @@ function _loadFromDisk(sessionId: string): SessionState {
   }
 
   const ctx: ReduceContext = { messages, msgIdx: -1 };
-  return { ctx, meta, flushTimer: null, dirty: false };
+  return { ctx, meta, flushTimer: null, dirty: false, writing: false, pendingWrite: false };
 }
 
 function _get(sessionId: string): SessionState {
@@ -116,8 +118,13 @@ function _computeStats(messages: ChatMessage[]): { messageCount: number; tokenCo
   return { messageCount: mc, tokenCount: Math.round(tc / 3), fullTokenCount: Math.round(fc / 3) };
 }
 
-/** 异步落盘（非阻塞） */
+/** 异步落盘（非阻塞）。写锁串行化：写中时新请求只置 pendingWrite，写完回调续写最新快照——
+ *  防抖写与强制写（tool_result/done/abort）并发 writeFile 同一文件导致内容交错损坏
+ *  （BAR-SESSION-FLUSH-01，2026-08-04 并发标定实验实锤）。 */
 function _writeToDisk(sessionId: string, s: SessionState): void {
+  if (s.writing) { s.pendingWrite = true; return; } // 写中：标记待写，写完回调续写
+  s.writing = true;
+  s.dirty = false;
   const { messageCount, tokenCount, fullTokenCount } = _computeStats(s.ctx.messages);
   const out = {
     ...s.meta,
@@ -130,14 +137,15 @@ function _writeToDisk(sessionId: string, s: SessionState): void {
   const filePath = _sessionFilePath(sessionId);
   if (!filePath) {
     console.error('[session-store] 拒绝非法 sessionId 落盘:', sessionId);
-    s.dirty = false;
+    s.writing = false;
     return;
   }
   _ensureDir();
   writeFile(filePath, JSON.stringify(out, null, 2), 'utf-8', (err) => {
     if (err) console.error('[session-store] write failed:', sessionId, err.message);
+    s.writing = false;
+    if (s.pendingWrite) { s.pendingWrite = false; _writeToDisk(sessionId, s); } // 写期间有新脏 → 续写最新
   });
-  s.dirty = false;
 }
 
 function _scheduleFlush(sessionId: string, s: SessionState): void {
@@ -199,6 +207,9 @@ export function flushSync(sessionId: string): void {
   _ensureDir();
   writeFileSync(filePath, JSON.stringify(out, null, 2), 'utf-8');
   s.dirty = false;
+  // 同步写是最新全量快照：在途异步写已无意义，重置写锁防残留死锁（后续异步写不会被吞）
+  s.writing = false;
+  s.pendingWrite = false;
 }
 
 /**
