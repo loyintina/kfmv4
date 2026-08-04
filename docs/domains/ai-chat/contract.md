@@ -55,9 +55,7 @@
 | 等待提示 | `message_stop` / 发送时 | 独立 DOM 节点，随机文案 |
 | 入场动画 | 新消息 mount | CSS class `orb-msg-new` |
 
-流式期间走 120ms 节流轻管线部分渲染（`<pre class="block--streaming">`），完成时刻服务端语义 HTML 一次性注入。交接瞬间用 80ms fade 作为设计节拍。历史思考框的折叠容器必须用 `orb-fold-content`（死类 `orb-fold-open` 已清除，PANEL-13）。
-
-视觉基准测试：`tests/visual-baseline.test.ts`（17 个 fixture，固化 v7 结构）。
+流式期间走 120ms 节流轻管线部分渲染（`<pre class="block--streaming">`），完成时刻服务端语义 HTML 一次性注入；交接 80ms fade。历史思考框折叠容器必须用 `orb-fold-content`（死类 `orb-fold-open` 已清除，PANEL-13）。视觉基准：`tests/visual-baseline.test.ts`（17 fixture）。
 
 ## 不变清单（自 V8_ARCHITECTURE §七迁入——v8 故意不动的模块）
 
@@ -117,12 +115,10 @@
    `tool.content` 必须是 string（非字符串 `JSON.stringify`）、assistant 不得为空
    （无 tool_calls 的空 assistant 过滤）。宽松端点容忍不代表合法；上游错误体必须透传
    （只报状态码 = 扔掉诊断）。回归钉：BAR-PROVIDER-01/02。
-   **deepseek 官方 thinking mode 附加要求（2026-08-04 实测定稿）**：有 tool_calls 的
-   assistant 历史必须回传 `reasoning_content`（官方文档「must be passed back to the
-   API in all subsequent turns」）——双点透传：客户端 `to-openai-messages.ts`（历史
-   回放）+ 服务端 `chat.ts`（工具循环当轮）；纯正文 assistant 不带（官方文档：无工具
-   调用时 reasoning 不参与拼接，传了会被忽略）。实测：当前官方 flash 端点宽容、不回传
-   也 200，但文档明确要求 + 严格端点/版本演进风险——带上合规无害。
+   **deepseek thinking mode 附加（2026-08-04 实测）**：有 tool_calls 的 assistant 历史
+   必须回传 `reasoning_content`（官方「must be passed back」）——双点透传（客户端
+   to-openai-messages 回放 + 服务端 chat.ts 当轮）；纯正文 assistant 不带；flash 宽容
+   也 200，但严格端点/演进风险——带上合规无害。
 10. **回复错放 reasoning 必须归位**：某些模型/端点把最终回复全写进 reasoning_content、
     text 留空——显示成「已思考+无回复」，进载荷成空 assistant。正常结束（message_stop）
     text 空且 reasoning 非空 → 归位为正文；历史加载读时归一化（不改文件）；
@@ -143,11 +139,9 @@
 
 ## 素材考古（原文已随 archive 注销，`git show v8.1.1:docs/archive/design/…` 可挖）
 
-- `AI_ARCHITECTURE.md`：omp 借鉴版初始接口草样 + Agent 卡未落地设计。
-- `CONTEXT_ASSEMBLY_SPEC.md`：§3 优先级裁剪策略；**§7 两个开放问题未关闭**
-  （多角色卡同载、工具卡工具定义来源）——detail-runtime 未覆盖。
-- `AI_OPERATION_PROTOCOL.md`：九种 op 指令集 + 会话执行规则（被 capabilities 架构取代）。
-
+- `AI_ARCHITECTURE.md`（omp 借鉴接口草样 + Agent 卡未落地）；`CONTEXT_ASSEMBLY_SPEC.md`
+  （§3 优先级裁剪、**§7 两开放问题未关闭**——多角色卡同载/工具卡定义来源，detail-runtime 未覆盖）；
+  `AI_OPERATION_PROTOCOL.md`（九种 op 指令集，被 capabilities 取代）。
 ## 文件清单
 
 <!-- gen:contract-list 自动生成，禁止手改（源：code-inventory） -->
