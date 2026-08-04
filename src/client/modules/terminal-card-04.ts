@@ -576,6 +576,17 @@ export function initTerminalCore(
         term.write('\x1b[34mKFM 终端已连接 — ' + terminalName + '\x1b[0m\r\n');
       }
       if (onReady) onReady(d.sessionId);
+      // 重连后 PTY 重建（默认 24 行）——必须主动 fit + resize 让 PTY 尺寸跟上
+      // xterm 可视（ResizeObserver 不触发：xterm DOM 尺寸没变）——否则内容只填
+      // 上半屏（PTY 行数 < 可视行数 = 半屏病灶）
+      robustFit(fit);
+      setTimeout(() => {
+        if (tc.meta.sessionId) {
+          wsChannel.sendMessage('terminal-resize', {
+            sessionId: tc.meta.sessionId, cols: term.cols, rows: term.rows,
+          });
+        }
+      }, 200);
     };
     wsChannel.onMessage('terminal-opened', onOpened);
     tc.meta._onOpened = onOpened;
