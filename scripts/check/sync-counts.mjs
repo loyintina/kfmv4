@@ -14,6 +14,8 @@
  *   CLAUDE.md                    「N 个 check-*.mjs」「N 个回归测试」
  *   docs/domains/infra/contract.md「check-*.mjs`（N 个）」
  *   docs/guides/testing.md       「N 个测试（单元/集成…）」
+ *   scripts/agent/semantic-mutate.mjs 变异锚点 find 串内数字（只写 find，
+ *     replace 是故意错数不得动——BAR-SYNCCOUNTS-02）
  *   docs/domains/infra/contract.md 检查管线节：头部脚本数 + <!-- chain:auto --> 区块
  *     （链枚举从 chain.mjs STEPS 派生重新生成，含顺序）
  * 注意：ledger/history.md 的历史计数（某版本当时的数）禁止同步。
@@ -58,6 +60,16 @@ const TARGETS = [
   ] },
   { file: 'docs/guides/testing.md', subs: [
     [/(\d+) 个测试（单元/g, `${testCount} 个测试（单元`],
+  ] },
+  // 变异锚点 find 串自动追平（BAR-SYNCCOUNTS-02）：锚点 find 嵌着本脚本管理的
+  // 数字，此前每加钉/加 check 就打断部署（M01/M11 三度人工迁移）。
+  // 铁律：只写 find 行——replace 是故意写错的数（变异物料本体），碰了即毁卷。
+  { file: 'scripts/agent/semantic-mutate.mjs', subs: [
+    [/find: '([^']*)'/g, (_m, s) => `find: '${s
+      .replace(/(\d+) 个 check-\* 脚本/g, `${checkCount} 个 check-* 脚本`)
+      .replace(/(\d+) 个回归测试/g, `${testCount} 个回归测试`)
+      .replace(/(\d+) 个测试（单元/g, `${testCount} 个测试（单元`)
+      .replace(/(\d+) 个 check-\*\.mjs/g, `${checkCount} 个 check-*.mjs`)}'`],
   ] },
 ];
 

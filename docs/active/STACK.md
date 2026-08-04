@@ -216,9 +216,10 @@
      家族三 bug（BAR-GENLIST-01 \Z 截断 / BAR-GENINV-01 CODE_EXT 蒸发 / BAR-SYNCCOUNTS-01
      枚举吞 gen-* 步，共性：check-only 与生成共享坏解析、全绿放行），均已钉；
      明细 → ledger/semantic-provenance.md「2026-08-03 接手裁决轮」；
-     另：变异锚点-文案耦合已三度打断部署（M01/M11 测试计数、M03 ≤150 阈值，
-     锚点 find 串嵌了 sync-counts/裁决会动的文案）——机械化候选：锚点引用式
-     或部署前自动迁移，待立项
+     另：变异锚点-文案耦合曾三度打断部署（M01/M11 测试计数、M03 ≤150 阈值）
+     ——✅ 计数类已机械化（2026-08-04，BAR-SYNCCOUNTS-02）：sync-counts 登记
+     semantic-mutate.mjs、回写限 find 行（replace 是故意错数不得动）；
+     裁决改措辞类（M03 型）仍人工，低频且检出信道明确
    — F1 语义巡逻静默死亡（BAR-SEMCHAIN-01）：921f6744 新增 checkExemptions
      引用未定义 ROOT（模块定义的是 REPO）→ 08-03 04:17 cron 崩，state 已写信箱未投；
      runner 崩溃无信箱通道、/var/log 无人读、agent 脚本不在任何检查覆盖内

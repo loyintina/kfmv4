@@ -1,1 +1,2 @@
-README.md 计数漂移
+[sync-counts] README.md 计数漂移（未同步）
+[sync-counts] scripts/agent/semantic-mutate.mjs 计数漂移（未同步）

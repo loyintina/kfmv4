@@ -38,3 +38,14 @@ regression('BAR-SYNCCOUNTS-01', 'chain-enum-complete', 'chain:auto 枚举必须�
     else if (gm) assert(block[0].includes('gen-' + gm[1]), `chain:auto 漏列链步 gen-${gm[1]}`);
   }
 });
+
+regression('BAR-SYNCCOUNTS-02', 'anchor-finds-autosync', '变异锚点 find 内计数由 sync-counts 自动追平，且回写限于 find 行（replace 是故意错数，碰了毁卷；M01/M11 曾三度人工迁移打断部署）', async () => {
+  const sc = src('../scripts/check/sync-counts.mjs');
+  const i = sc.indexOf("'scripts/agent/semantic-mutate.mjs'");
+  assert(i >= 0, 'sync-counts 未登记 semantic-mutate.mjs——锚点数字又要人工追平');
+  const block = sc.slice(i, i + 700);
+  assert(/find: '\(\[\^'\]\*\)'\/g/.test(block), '回写必须锚定 find: 行（正则限定）');
+  assert(!/replace: '/.test(block), '回写块不得触碰 replace 行——replace 是变异物料本体');
+  const probe = src('../tests/probes/sync-counts/expect.txt');
+  assert(probe.includes('semantic-mutate.mjs 计数漂移'), '探针负例必须覆盖锚点漂移检出');
+});
