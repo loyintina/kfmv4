@@ -24,7 +24,17 @@ agent 原件，不是 agent 应用。三明治：**机械组装输入 → agent 
   `tooled:true`、`fallback:true`（服务端不可达 → 自动降级纯文本，巡逻不空窗）。
 - 任务级声明：semantic-audit 任务清单 `tools?: string[]` 字段，给了走工具流，不给走纯文本。
 - 边界 = 检测：探针白名单只给读类（read/grep/glob），**禁止 write/edit/bash**——修复留给会话 agent。
-- 依赖：kfm 服务在线（fallback 保底）；流式多轮比单轮贵，超时给足（默认 600s）。
+- 依赖：kfm 服务在线（fallback 保底）；流式多轮比单轮贵，超时给足（默认 600s）；
+  `maxTokens` 默认 32000——思考链计入 max_tokens，默认 16384 会被长思考吃光、
+  text 为 0 导致校验失败（2026-08-04 试点事故），任务级 `maxTokens` 可覆盖。
+- 思考控制（2026-08-04 官方实测）：opencode 中转只认 `thinking:{type:'disabled'}` 硬开关
+  （effort 档位失真 1.5 倍）；deepseek 官方 `reasoning_effort` 真控制（flash 映射 low→low，
+  难任务实测 1788 vs max 6272 字符），且带 tools 必须回传 `reasoning_content`（服务端已支持）。
+  推荐组合：`provider:'deepseek'` + `params:{thinking:{type:'enabled'}, reasoning_effort:'low'}`
+  + max_tokens 兜底——思考保留在 reasoning 通道（不外溢、AI 保持 JSON 输出纪律）且长度受控
+  （试点 1 次尝试通过校验，产出真实发现）。
+  ⚠️ 不用 effort=max（实测必吃光预算 → text 空）；不用 thinking disabled（试点实测失败：
+  思考过程外溢进 text、拒不输出 findings JSON）。
 
 ## 输出协议（调用方 = agent，不存在「人工兜底」，兜底是会话间接力 agent）
 

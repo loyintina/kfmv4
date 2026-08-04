@@ -18,6 +18,10 @@
  *   tools    可选：工具白名单（read/grep/glob 等读类）。给了 = 该任务走工具流探针
  *            （runAgentTooled，服务端通道）；不给 = 纯文本探针（runAgent，现状）。
  *            巡逻边界 = 检测：只允许读类工具，禁止 write/edit/bash（修复留给会话 agent）。
+ *   thinking 可选：思考开关（默认 true）。false = 透传 thinking:{type:'disabled'}——
+ *            工具证伪/抽取型任务关思考：快 10 倍 + 杜绝「思考链吃光 max_tokens 致
+ *            text 空」（2026-08-04 试点事故，opencode 中转只认开/关，不认长度预算）；
+ *            推理型任务保持思考。extraParams 可追加 provider 参数（如 reasoning_effort）。
  *   question 探针问题（prompt 核心，必须单一）
  */
 
@@ -162,6 +166,13 @@ export const TASKS = [
     feeds: ['docs/domains/infra/code-map.md'],
     baseline: [],
     tools: ['read', 'grep', 'glob'],
-    question: '抽查 code-map 中声称的具体文件路径/机制/计数/脚本名，用 read/grep/glob 现场验证是否与源码现状一致。只报可被工具证伪的断言（路径不存在/机制已删/计数不符/脚本已更名），每条 finding 必须附上工具验证证据（读到的实际内容或 grep 无命中说明）。不确定的不要报。',
+    // 官方 deepseek + reasoning_effort=low（2026-08-04 实测结论）：
+    // - 保留思考（在 reasoning 通道不外溢，AI 保持「只输出 JSON」纪律——中转 thinking disabled
+    //   版实测失败：思考过程外溢进 text、拒不输出 findings）
+    // - 限制思考长度：官方 flash 映射 low→low（难任务实测 1788 vs max 6272 字符）
+    // - max_tokens 32000 兜底；中转 opencode 的 effort 档位差弱（1.5 倍）故指定官方 provider
+    provider: 'deepseek',
+    params: { thinking: { type: 'enabled' }, reasoning_effort: 'low' },
+    question: '抽查 code-map 中声称的具体文件路径/机制/计数/脚本名，用 read/grep/glob 现场验证是否与源码现状一致。只报可被工具证伪的断言（路径不存在/机制已删/计数不符/脚本已更名），每条 finding 必须附上工具验证证据（读到的实际内容或 grep 无命中说明）。验证 3-6 条即可。你的思考过程留在内部，回复正文只输出 JSON findings，不要输出任何分析、报告或多余文字。不确定的不要报。',
   },
 ];

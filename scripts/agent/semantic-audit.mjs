@@ -357,6 +357,16 @@ const results = await pool(willRun, CONCURRENCY, async ({ task, files, hash }) =
         sessionId: `patrol-${task.id}`,
         // 工具流多轮（读文件→验证→报）比单轮慢，超时给足
         timeoutMs: 600_000,
+        // 思考链计入 max_tokens：默认 16384 会被长思考吃光 → text 为 0 → 校验失败
+        //（2026-08-04 试点事故：38 次工具调用后无 text 输出），探针放宽到 32000
+        maxTokens: task.maxTokens || 32000,
+        // 任务级 provider/思考参数：官方 deepseek + reasoning_effort 档位（实测官方
+        // 真 low/high/max 控制思考长度；中转 thinking disabled 硬开关但 effort 失真）
+        preferProvider: task.provider || null,
+        params: {
+          ...(task.thinking === false ? { thinking: { type: 'disabled' } } : {}),
+          ...(task.params || task.extraParams || {}),
+        },
       })
     : await runAgent({
         ...baseAgent,

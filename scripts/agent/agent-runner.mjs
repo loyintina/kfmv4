@@ -167,11 +167,12 @@ const KFM_BASE = process.env.KFM_BASE || 'http://localhost:8021/api';
 
 /**
  * 解析 kfm 服务端 SSE 工具流，收集最终文本。
+ * 服务端事件封装（routes.ts stream 端点）：data: {"index":N,"event":{...}}
  * 事件协议见 src/server/ai/chat.ts StreamEvent：
- *   content_block_delta.deltaType=text_delta → 拼文本（多轮工具调用间分散，全收）
- *   error → 抛错（上游失败，文本无效）
- *   done → 完成
- * 容错：未知 type / 坏 JSON 行跳过；流结束未收到 done 也返回已收集文本。
+ *   event.content_block_delta.deltaType=text_delta → 拼文本（多轮工具调用间分散，全收）
+ *   event.error → 抛错（上游失败，文本无效）
+ *   __end__（无 event 包装，服务端流结束哨兵）→ 完成
+ * 容错：未知 type / 坏 JSON 行跳过；流结束未收到 __end__ 也返回已收集文本。
  * @param {ReadableStreamDefaultReader} reader
  * @returns {Promise<string>}
  */
@@ -191,11 +192,14 @@ export async function parseToolStream(reader) {
       if (!jsonStr || jsonStr === '[DONE]') continue;
       let ev;
       try { ev = JSON.parse(jsonStr); } catch { continue; }
-      if (ev.type === 'content_block_delta' && ev.deltaType === 'text_delta' && typeof ev.deltaText === 'string') {
+      // 解包服务端封装（{index, event}）；__end__ 是流结束哨兵（无 event 包装）
+      if (ev && typeof ev === 'object' && 'event' in ev) ev = ev.event;
+      if (ev?.type === '__end__') return text;
+      if (ev?.type === 'content_block_delta' && ev.deltaType === 'text_delta' && typeof ev.deltaText === 'string') {
         text += ev.deltaText;
-      } else if (ev.type === 'error') {
+      } else if (ev?.type === 'error') {
         throw new Error(`工具流错误: ${String(ev.content || ev.message || '未知').slice(0, 300)}`);
-      } else if (ev.type === 'done') {
+      } else if (ev?.type === 'done') {
         return text;
       }
     }
@@ -209,7 +213,7 @@ export async function parseToolStream(reader) {
  *   error.fallback=true = 服务端网络层不可达（连接拒绝/流中断）→ 应降级纯文本；
  *   error.fallback=false = HTTP/上游错误（服务端在但拒绝）→ 落下一个 provider。
  */
-async function tooledOnce({ base, sid, system, prompt, model, providerId, tools, timeoutMs }) {
+async function tooledOnce({ base, sid, system, prompt, model, providerId, tools, maxTokens, params, timeoutMs }) {
   let res;
   try {
     res = await fetch(`${base}/ai/chat/start`, {
@@ -223,6 +227,8 @@ async function tooledOnce({ base, sid, system, prompt, model, providerId, tools,
         provider: providerId,
         tools,
         extraSystem: system,
+        maxTokens,
+        params,
       }),
       signal: AbortSignal.timeout(30_000),
     });
@@ -260,20 +266,30 @@ async function tooledOnce({ base, sid, system, prompt, model, providerId, tools,
  * @param {Function} [opts.validate] 校验函数（同 runAgent）
  * @param {number}  [opts.retries]  校验失败带反馈重问次数（默认 2）
  * @param {string[]} [opts.tools]   工具白名单（不给 = 空，AI 只用文字）
+ * @param {number}  [opts.maxTokens] 单轮输出预算（默认 32000——工具流思考型探针：
+ *   思考链计入 max_tokens，预算被吃光则 text 为 0（2026-08-04 试点事故），
+ *   故比纯文本路径的 16000 更宽；服务端默认 16384）
+ * @param {object}  [opts.params]   上游请求参数透传（provider 特定：thinking 开关/
+ *   reasoning_effort 档位——官方 deepseek 真 low/high/max（flash 映射 low→low），
+ *   中转 opencode 档位差弱（1.5 倍）；服务端合并进 requestBody）
+ * @param {string}  [opts.preferProvider] 优先 provider（从 CHAIN 该位开始，失败仍落下一个兜底）
  * @param {number}  [opts.timeoutMs] 单次流式会话总超时（默认 600s——工具流多轮比单轮慢）
  * @param {string}  [opts.sessionId] 会话 id 前缀（默认 patrol）
  */
-export async function runAgentTooled({ system = '', prompt, validate = null, retries = 2, tools = [], timeoutMs = 600_000, sessionId = 'patrol' }) {
+export async function runAgentTooled({ system = '', prompt, validate = null, retries = 2, tools = [], maxTokens = 32000, params = {}, preferProvider = null, timeoutMs = 600_000, sessionId = 'patrol' }) {
   const entries = loadProviderEntries();
   const errors = [];
+  // 从 preferProvider 位置开始的链（默认全链），失败落下一个——保留兜底语义
+  const startIdx = preferProvider ? CHAIN.findIndex(s => s.providerId === preferProvider) : 0;
+  const chain = startIdx >= 0 ? [...CHAIN.slice(startIdx), ...CHAIN.slice(0, startIdx)] : CHAIN;
 
   const fallbackToPlain = async (msg) => {
     errors.push(msg);
-    const fb = await runAgent({ system, prompt, validate, retries, maxTokens: 16000, timeoutMs: 300_000 });
+    const fb = await runAgent({ system, prompt, validate, retries, maxTokens: 16000, params, timeoutMs: 300_000 });
     return { ...fb, fallback: true, errors: [...errors, ...(fb.errors || [])] };
   };
 
-  for (const step of CHAIN) {
+  for (const step of chain) {
     const entry = entries.get(step.providerId);
     if (!entry) { errors.push(`${step.providerId}: providers.json 无此条目`); continue; }
     const key = resolveKey(entry.apiKey);
@@ -285,7 +301,7 @@ export async function runAgentTooled({ system = '', prompt, validate = null, ret
       const t0 = Date.now();
       // 每次尝试独立会话（校验失败重问 = 新会话带反馈重发，不污染前一轮）
       const sid = `${sessionId}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
-      const out = await tooledOnce({ base: KFM_BASE, sid, system, prompt: prompt + feedback, model: step.model, providerId: step.providerId, tools, timeoutMs });
+      const out = await tooledOnce({ base: KFM_BASE, sid, system, prompt: prompt + feedback, model: step.model, providerId: step.providerId, tools, maxTokens, params, timeoutMs });
       if (out.error) {
         logCall(`${step.providerId}/${step.model}`, Date.now() - t0, false, out.error.message);
         if (out.error.fallback) return await fallbackToPlain(out.error.message);

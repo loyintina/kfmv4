@@ -355,6 +355,43 @@
       "droppedFindings": [],
       "provider": "deepseek/deepseek-v4-flash",
       "attempts": 1
+    },
+    "code-map-vs-src": {
+      "hash": "f33182f39350084a03658abd0759e79d9b6b3f82",
+      "lastRun": "2026-08-04",
+      "status": "ok",
+      "tooled": true,
+      "fallback": false,
+      "reported": 3,
+      "kept": 1,
+      "dropped": 2,
+      "keptFindings": [
+        {
+          "type": "SEM001",
+          "claim": "docs/domains/infra/code-map.md:漂移10",
+          "against": "build.mjs:113-128",
+          "quote": "改写 tracked 的 index.html + css，",
+          "note": "build.mjs 现用 F4 确定性戳(contentStamp)，仅内容变化才重写 index.html(注释明言消灭脏树)，且从不写 css——漂移10描"
+        }
+      ],
+      "droppedFindings": [
+        {
+          "type": "SEM001",
+          "claim": "docs/domains/infra/code-map.md:状态所有权 build.mjs:75",
+          "against": "build.mjs:102",
+          "quote": "build.mjs:75 唯一写者",
+          "note": "build-info.json 实际 writeFileSync 在 :102（grep 证），:75 是 esbuild 段，锚点偏移 27 行"
+        },
+        {
+          "type": "SEM001",
+          "claim": "docs/domains/infra/code-map.md:承重入口 tag-advisor.mjs:13",
+          "against": "scripts/agent/tag-advisor.mjs:16",
+          "quote": "tag-advisor.mjs:13",
+          "note": "runAgent/extractJson 的 import 实际在 :16（grep 证），:13 是头注释收尾 */，调用方锚点偏移"
+        }
+      ],
+      "provider": "deepseek/deepseek-v4-flash",
+      "attempts": 1
     }
   },
   "runs": [
@@ -735,6 +772,13 @@
       "skipped": 0,
       "kept": 0,
       "dropped": 1
+    },
+    {
+      "date": "2026-08-04",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 1,
+      "dropped": 2
     }
   ]
 }

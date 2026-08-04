@@ -145,6 +145,8 @@ export async function* streamChat(
   roleFile?: string,
   allowTools?: string[], // 工具白名单（脚本用——不给的 AI 不会用，2026-08-04 用户提议）
   extraSystem?: string, // 外部 system 约束注入（脚本工具流会话用——如探针的「只输出 JSON」；非角色卡）
+  maxTokens?: number, // 单轮输出预算覆盖（默认 16384；工具流思考型探针需放宽——思考链计入 max_tokens，预算被吃光则 text 为 0，2026-08-04 试点事故）
+  params?: Record<string, unknown>, // 上游请求参数透传（provider 特定：thinking 开关等；与 tools/max_tokens 平级合并进 requestBody）
 ): AsyncGenerator<StreamEvent> {
   const tools = allowTools?.length
     ? getToolDefinitions().filter(t => allowTools.includes(t.name))
@@ -195,6 +197,10 @@ export async function* streamChat(
       if (m.role === 'tool' && out.content == null) out.content = '';
       if (m.tool_calls) out.tool_calls = m.tool_calls;
       if (m.tool_call_id) out.tool_call_id = m.tool_call_id;
+      // 官方 deepseek thinking mode 要求带 tools 的 assistant 历史必须回传 reasoning_content
+      //（会话回放场景：客户端重发历史时思考链不能丢，否则 api.deepseek.com 400）
+      const rc = (m as { reasoning_content?: unknown }).reasoning_content;
+      if (typeof rc === 'string' && rc) out.reasoning_content = rc;
       return out;
     })
     // 边界兜底（BAR-PROVIDER-02）：无 tool_calls 的空 assistant 一律丢弃——
@@ -244,9 +250,10 @@ export async function* streamChat(
     const requestBody: Record<string, unknown> = {
       model: model || apiProvider.models[0] || 'deepseek-v4-flash',
       messages: [...systemMessages, ...apiMessages],
-      max_tokens: 16384,
+      max_tokens: maxTokens ?? 16384,
       stream: true,
       stream_options: { include_usage: true },
+      ...(params || {}),
     };
     if (toolsParam) requestBody.tools = toolsParam;
 
@@ -430,6 +437,11 @@ export async function* streamChat(
         tcIdx++;
       }
       assistantMsg.tool_calls = toolCalls;
+      // 官方 deepseek thinking mode + tools 硬性要求（2026-08-04 接官方研究实测 400）：
+      // 「The reasoning_content in the thinking mode must be passed back to the API」——
+      // 带 tool_calls 的 assistant 消息必须回传当轮思考链，否则 api.deepseek.com 直接 400。
+      // 中转网关（opencode）通常不强制，官方严格；reasoningBuf 服务端一直在收集，带上有益无害。
+      if (reasoningBuf) assistantMsg.reasoning_content = reasoningBuf;
       apiMessages.push(assistantMsg);
 
       // 规则检查（仅白名单内工具——白名单外的根本不执行，无需警告）

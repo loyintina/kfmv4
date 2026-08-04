@@ -74,21 +74,24 @@ regression('BAR-SEMCHAIN-02', 'parse-tool-stream', 'parseToolStream 拼接 text_
     let i = 0;
     return { read: async () => (i < chunks.length ? { done: false as const, value: enc.encode(chunks[i++]) } : { done: true as const, value: undefined }) };
   };
-  // 1) 多轮 text_delta + 工具事件穿插 → 只拼文本，工具/思考事件不产生文本
+  // 1) 真实服务端封装格式（{index, event} 包装 + __end__ 哨兵）——多轮 text_delta +
+  //    工具事件穿插 → 只拼文本，工具/思考事件不产生文本
+  const wrap = (index: number, event: unknown) => `data: ${JSON.stringify({ index, event })}\n`;
   const sse1 = [
-    'data: {"type":"content_block_start","index":0,"blockType":"text"}\n',
-    'data: {"type":"content_block_delta","index":0,"deltaType":"thinking_delta","deltaText":"思考中"}\n',
-    'data: {"type":"content_block_delta","index":0,"deltaType":"text_delta","deltaText":"发现"}\n',
-    'data: {"type":"content_block_start","index":1,"blockType":"tool_use","toolName":"read"}\n',
-    'data: {"type":"content_block_delta","index":1,"deltaType":"input_json_delta","deltaText":"{\\"path\\":\\"x\\"}"}\n',
-    'data: {"type":"tool_result","toolUseId":"t1","toolResult":{"content":[]}}\n',
-    'data: {"type":"content_block_delta","index":0,"deltaType":"text_delta","deltaText":"一条"}\n',
-    'data: {"type":"done"}\n',
+    wrap(0, { type: 'content_block_start', index: 0, blockType: 'text' }),
+    wrap(0, { type: 'content_block_delta', index: 0, deltaType: 'thinking_delta', deltaText: '思考中' }),
+    wrap(0, { type: 'content_block_delta', index: 0, deltaType: 'text_delta', deltaText: '发现' }),
+    wrap(1, { type: 'content_block_start', index: 1, blockType: 'tool_use', toolName: 'read' }),
+    wrap(1, { type: 'content_block_delta', index: 1, deltaType: 'input_json_delta', deltaText: '{"path":"x"}' }),
+    wrap(1, { type: 'tool_result', toolUseId: 't1', toolResult: { content: [] } }),
+    wrap(0, { type: 'content_block_delta', index: 0, deltaType: 'text_delta', deltaText: '一条' }),
+    'data: {"type":"__end__"}\n',
   ];
   const t1 = await parseToolStream(fakeReader(sse1));
-  assert.strictEqual(t1, '发现一条', '应只拼接 text_delta，跳过 thinking/工具参数/结果');
-  // 2) error 事件 → 抛错
-  const sse2 = ['data: {"type":"error","content":"上游配额耗尽"}\n'];
+  assert.strictEqual(t1, '发现一条', '应解包 {index,event}、只拼接 text_delta、__end__ 即完成');
+  // 2) error 事件（封装格式）→ 抛错
+  const sse2 = [wrap(0, { type: 'error', content: '上游配额耗尽' })];
+  await assert.rejects(() => parseToolStream(fakeReader(sse2)), /上游配额耗尽/, 'error 事件必须抛错');
   await assert.rejects(() => parseToolStream(fakeReader(sse2)), /上游配额耗尽/, 'error 事件必须抛错');
   // 3) 流结束未收到 done → 返回已收集文本（容错）
   const sse3 = ['data: {"type":"content_block_delta","index":0,"deltaType":"text_delta","deltaText":"半截"}\n'];
