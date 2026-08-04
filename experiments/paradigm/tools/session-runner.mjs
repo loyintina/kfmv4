@@ -43,6 +43,20 @@ export function loadParadigm(name) {
   return existsSync(p) ? readFileSync(p, 'utf-8') : '';
 }
 
+/** 读已有会话的历史消息（续写用）——支持 sessionId 或直接路径 */
+export function loadSessionMessages(sessionId) {
+  const cands = sessionId.includes('/')
+    ? [sessionId]
+    : [join(SESSIONS, `${sessionId}.json`), join(homedir(), '.kfmv4', 'experiments', 'paradigm', 'sessions', `${sessionId}.json`)];
+  for (const p of cands) {
+    if (existsSync(p)) {
+      const o = JSON.parse(readFileSync(p, 'utf-8'));
+      return { messages: o.messages || [], sessionPath: p };
+    }
+  }
+  return null;
+}
+
 async function startRun(sessionId, messages, userText, model, provider, roleFile) {
   const res = await fetch(`${BASE}/ai/chat/start`, {
     method: 'POST',
@@ -119,18 +133,29 @@ const argv = process.argv.slice(2);
 if (argv.length > 0) {
   const get = (k) => { const i = argv.indexOf(`--${k}`); return i >= 0 ? argv[i + 1] : undefined; };
   const prompt = get('prompt');
-  if (!prompt) { console.error('用法: --prompt <文本> --provider <名> --model <名> [--role <角色>] [--paradigm <范式包名>] [--session <id>] [--out <路径>]'); process.exit(2); }
+  const cont = get('continue');
+  if (!prompt && !cont) { console.error('用法: --prompt <文本> [--continue <会话id/路径>] [--provider <名>] [--model <名>] [--role <角色>] [--paradigm <范式包名>] [--session <id>] [--out <路径>]'); process.exit(2); }
   const provider = get('provider') || 'Opencode Go Google';
   const model = get('model') || 'deepseek-v4-flash';
   const role = get('role');
   const paradigm = get('paradigm');
-  const sessionId = get('session') || `bi-${Date.now().toString(36)}`;
+  const sessionId = get('session') || (cont ? (cont.includes('/') ? 'bi-cont' : cont) : `bi-${Date.now().toString(36)}`);
   const out = get('out');
+
+  // 续写：读历史 → 追加新 user 消息 → 全量重发（服务端 to-openai-messages 原生处理 role:'ai'）
+  let history = [];
+  if (cont) {
+    const loaded = loadSessionMessages(cont);
+    if (!loaded) { console.error(`[session-runner] 会话不存在: ${cont}`); process.exit(1); }
+    history = loaded.messages;
+    console.log(`[session-runner] 续写会话（历史 ${history.length} 条消息）`);
+  }
+  const messages = [...history, { role: 'user', content: [{ type: 'text', text: prompt }] }];
+
   const t0 = Date.now();
-  console.log(`[session-runner] ${model} @ ${provider}${role ? ` 角色=${role}` : ''}${paradigm ? ` 范式包=${paradigm}` : ''} 会话=${sessionId}`);
+  console.log(`[session-runner] ${model} @ ${provider}${role ? ` 角色=${role}` : ''}${paradigm ? ` 范式包=${paradigm}` : ''} 会话=${sessionId}${cont ? '（多轮）' : ''}`);
   const res = await runSession({
-    sessionId, messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }],
-    userText: prompt, model, provider, roleFile: role, paradigm, out,
+    sessionId, messages, userText: prompt, model, provider, roleFile: role, paradigm, out,
   });
   console.log(`[session-runner] 完成（${((Date.now() - t0) / 1000).toFixed(0)}s，${res.events} 事件）→ ${res.sessionPath}`);
 }
