@@ -18,6 +18,7 @@ CLASS_FILES = {
     "ses_097843368ffejJGDPa2PNXgmfI": "kfmv4-handover-classification.md",
     "ses_063fd57d7ffepMZzVsdv2wNXM2": "kfmv4-troubleshoot-classification.md",
     "ses_141744654ffehLxZxWEQSrD8RN": "kfmv4-audit-classification.md",
+    "ses_0b64338f0ffe19Oza4gW1ACwZb": "kfmv4-handover-sync-classification.md",
 }
 
 # 解析段行：- B1 [1-3] **标题** 或 - F1 [4-38] 标题
@@ -58,9 +59,8 @@ def build(c):
     );
     """)
     for sid, fname in CLASS_FILES.items():
-        # 幂等：重跑先清该会话旧段/回合
-        c.execute("DELETE FROM turns WHERE episode_id IN (SELECT id FROM episodes WHERE session_id=?)", (sid,))
-        c.execute("DELETE FROM episodes WHERE session_id=?", (sid,))
+        # 幂等：已存在的段不重插（绝不清标注——标注是人工精切成果，见 restore-from-history 事故）
+        existing = {r[0] for r in c.execute("SELECT uid FROM episodes WHERE session_id=?", (sid,))}
         cfile = PACKS / fname
         if not cfile.exists():
             print(f"[episodes] 缺 {fname}"); continue
@@ -68,6 +68,7 @@ def build(c):
         seqs = user_seqs(c, sid)  # 用户消息 seq（升序）
         n = 0
         for s in segs:
+            if s["id"] in existing: continue  # 已存在不重插（保留精切标注）
             fi, ti = s["from"], min(s["to"], len(seqs) - 1)
             if fi >= len(seqs):
                 continue
@@ -97,6 +98,7 @@ def build(c):
                 else: groups.append(run); run = [i]
             groups.append(run)
             for g in groups:
+                if f"O{g[0]}-{g[-1]}" in existing: continue
                 start = seqs[g[0]]
                 end = seqs[g[-1] + 1] - 1 if g[-1] + 1 < len(seqs) else 10**12
                 c.execute("INSERT INTO episodes(session_id,uid,kind,user_from,user_to,seq_start,seq_end,topic,source) VALUES(?,?,?,?,?,?,?,?,?)",
