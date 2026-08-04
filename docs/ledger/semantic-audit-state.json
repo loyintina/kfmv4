@@ -1,7 +1,7 @@
 {
   "tasks": {
     "diagnostics-vs-maps": {
-      "hash": "8de677569b5cd0e6b7db91853e38dd6a26e74073",
+      "hash": "e5f7ca6d6c8b4ef1701e756b912b357b9bf240d8",
       "lastRun": "2026-08-03",
       "status": "ok",
       "reported": 0,
@@ -10,10 +10,10 @@
       "keptFindings": [],
       "droppedFindings": [],
       "provider": "Opencode Go Google/deepseek-v4-flash",
-      "attempts": 1
+      "attempts": 3
     },
     "guides-testing-vs-infra": {
-      "hash": "ee410c1c5699b76eddbe740643900f3e23271fff",
+      "hash": "83a0dfe8faac336de3cf9b3322b52e8ef4b0bd2f",
       "lastRun": "2026-08-03",
       "status": "ok",
       "reported": 0,
@@ -22,23 +22,44 @@
       "keptFindings": [],
       "droppedFindings": [],
       "provider": "Opencode Go Google/deepseek-v4-flash",
-      "attempts": 1
+      "attempts": 2
     },
     "stack-vs-ledger": {
-      "hash": "e7903d48c7b803633d1392c64f6d3eb65eaf7126",
+      "hash": "ede692b96a3ecdba7f40e03824d95f85bd7515a0",
       "lastRun": "2026-08-03",
       "status": "ok",
-      "reported": 1,
+      "reported": 4,
       "kept": 0,
-      "dropped": 1,
+      "dropped": 4,
       "keptFindings": [],
       "droppedFindings": [
         {
-          "type": "SEM005",
+          "type": "SEM001",
           "claim": "docs/active/STACK.md:9",
-          "against": null,
-          "quote": "面板发送消息无响应",
-          "note": "该bug已修复但STACK条目未标注闭环状态，状态无同步机制"
+          "against": "docs/active/STACK.md:9 详情行",
+          "quote": "初始主题=提示词注入约束修复",
+          "note": "标题主题与子项内容矛盾，已修复子项未标✅，状态无同步"
+        },
+        {
+          "type": "SEM005",
+          "claim": "docs/active/STACK.md:10",
+          "against": "docs/active/STACK.md:10 详情行",
+          "quote": "全量代码分析 → domains 填充",
+          "note": "标题称提前完成，详情全为✅已结算，标题未标状态"
+        },
+        {
+          "type": "SEM005",
+          "claim": "docs/active/STACK.md:5",
+          "against": "docs/active/STACK.md:5 详情行",
+          "quote": "v8 审计遗留 LOW 项",
+          "note": "首个子项重命名已落地，标题未标✅，状态未同步"
+        },
+        {
+          "type": "SEM001",
+          "claim": "docs/active/STACK.md:17",
+          "against": "docs/active/STACK.md:17 详情行",
+          "quote": "F2-F5 待裁决",
+          "note": "F2已修复，标题称待裁决矛盾，已闭环项未标注"
         }
       ],
       "provider": "阶跃星辰/step-3.7-flash",
@@ -57,7 +78,7 @@
       "attempts": 2
     },
     "inter-readme-codemap": {
-      "hash": "e6c487772d3318ac1f92fe197f50a1d50cbb7a9f",
+      "hash": "91e1f686c3100a9ea8a1fd8b27605081b9d95479",
       "lastRun": "2026-08-03",
       "status": "ok",
       "reported": 0,
@@ -69,34 +90,19 @@
       "attempts": 1
     },
     "inter-agentrunner-infra": {
-      "hash": "6644965fe8506f469fbff8d597ad211fa330209a",
+      "hash": "0d6fc437cd5ff4e538ee28d36d1f152dce95986a",
       "lastRun": "2026-08-03",
       "status": "ok",
-      "reported": 2,
+      "reported": 0,
       "kept": 0,
-      "dropped": 2,
+      "dropped": 0,
       "keptFindings": [],
-      "droppedFindings": [
-        {
-          "type": "SEM002",
-          "claim": "docs/guides/agent-runner.md : 触发三层节",
-          "against": "docs/domains/infra/contract.md : 检查管线节",
-          "quote": "check 链第 28 个",
-          "note": "agent-runner称check-release-radar为check链第28个，contract链步数中其为第39个，位置断言冲突"
-        },
-        {
-          "type": "SEM002",
-          "claim": "docs/guides/agent-runner.md : 输出协议节",
-          "against": "docs/domains/infra/code-map.md : 状态所有权节",
-          "quote": "exit 2：全 provider 失败",
-          "note": "infra通用规则errors累加末尾exit1，agent脚本全provider失败等errors场景走exit2，协议冲突"
-        }
-      ],
-      "provider": "阶跃星辰/step-3.7-flash",
-      "attempts": 2
+      "droppedFindings": [],
+      "provider": "Opencode Go Google/deepseek-v4-flash",
+      "attempts": 1
     },
     "vision-vs-maps": {
-      "hash": "a10d3a678265bf977c000e1937634ff295280ea9",
+      "hash": "8d976dc1086c0c425072cbe189250471287c2e9b",
       "lastRun": "2026-08-03",
       "status": "ok",
       "reported": 0,
@@ -108,7 +114,7 @@
       "attempts": 1
     },
     "invariants-vs-maps": {
-      "hash": "908653c36d4ec730eaa19d81e2541beff4206d77",
+      "hash": "e13abf33d6143a6a22a4dfb07e45ea1f3a558b9d",
       "lastRun": "2026-08-03",
       "status": "ok",
       "reported": 0,
@@ -120,7 +126,7 @@
       "attempts": 2
     },
     "readme-vs-maps": {
-      "hash": "a13f3a27679889c07f3d1403ce732c272bfeaf98",
+      "hash": "519d0f5df2578deafb6a98591dd32d4ad2eac1ba",
       "lastRun": "2026-08-03",
       "status": "ok",
       "reported": 0,
@@ -132,7 +138,7 @@
       "attempts": 1
     },
     "claude-vs-docs": {
-      "hash": "9f4e2d709dc9c569f1fcc11b66da184cbf1d4080",
+      "hash": "f76e06eb043869537ba1db2eaba14316aa1c572d",
       "lastRun": "2026-08-03",
       "status": "ok",
       "reported": 0,
@@ -141,72 +147,42 @@
       "keptFindings": [],
       "droppedFindings": [],
       "provider": "Opencode Go Google/deepseek-v4-flash",
-      "attempts": 3
-    },
-    "workflows-vs-guides": {
-      "hash": "d12b1bbcfa18e43d77f656ca20259d0d4bc9bbfa",
-      "lastRun": "2026-08-03",
-      "status": "ok",
-      "reported": 4,
-      "kept": 3,
-      "dropped": 1,
-      "keptFindings": [
-        {
-          "type": "SEM001",
-          "claim": "docs/workflows/semantic-audit.yaml:steps",
-          "against": "docs/guides/agent-runner.md:null",
-          "quote": "组内 18 + 组间 6",
-          "note": "组内探针数量工作流卡称18，指南称17，数字冲突"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/workflows/bug-fix.yaml:steps",
-          "against": "docs/domains/infra/contract.md:硬规则4",
-          "quote": "fix: 和 test+docs: 分开",
-          "note": "fix与test分开提交导致fix提交未触及tests/，违反硬规则4的fix提交必须带回归钉要求，未提及tests:na豁免"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/workflows/release.yaml:step0",
-          "against": "docs/domains/infra/contract.md:文件清单",
-          "quote": "node experiments/coldstart/too",
-          "note": "工作流引用的入口体检脚本未收录于infra契约文件清单，检查管线未挂接"
-        }
-      ],
-      "droppedFindings": [
-        {
-          "type": "SEM001",
-          "claim": "docs/workflows/release.yaml:exit_condition",
-          "against": "docs/workflows/release.yaml:step0",
-          "quote": "npm run check 全绿 + tag 存在",
-          "note": "exit条件未包含入口体检通过要求，与step 0的FAIL拦截逻辑矛盾"
-        }
-      ],
-      "provider": "阶跃星辰/step-3.7-flash",
       "attempts": 1
     },
-    "guides-release-vs-history": {
-      "hash": "852af7bb27ac1ecc0d949520726729b6eb87e8a4",
-      "lastRun": "2026-08-02",
+    "workflows-vs-guides": {
+      "hash": "33baad28ea05522cf90ee6bf2d67e02e67242015",
+      "lastRun": "2026-08-03",
       "status": "ok",
-      "reported": 1,
-      "kept": 1,
+      "reported": 0,
+      "kept": 0,
       "dropped": 0,
-      "keptFindings": [
-        {
-          "type": "SEM001",
-          "claim": "docs/guides/release.md:版本语义节",
-          "against": "docs/ledger/history.md:v8.1.0条目",
-          "quote": "v8.1 上下文压缩（主题闭环加冕",
-          "note": "history.md 明确 v8.1.0 为双主题混装窗口，非单一主题闭环，与 release.md 将其列为 minor 判例相悖"
-        }
-      ],
+      "keptFindings": [],
       "droppedFindings": [],
       "provider": "阶跃星辰/step-3.7-flash",
       "attempts": 2
     },
+    "guides-release-vs-history": {
+      "hash": "86ada6d3a7adcd58a208ac713d6ffe153cf81040",
+      "lastRun": "2026-08-03",
+      "status": "ok",
+      "reported": 1,
+      "kept": 0,
+      "dropped": 1,
+      "keptFindings": [],
+      "droppedFindings": [
+        {
+          "type": "SEM001",
+          "claim": "docs/guides/release.md:12",
+          "against": "docs/ledger/history.md:30",
+          "quote": "v8.3 文档管线",
+          "note": "豁免跳过 EX-EX-006（release.md将v8.3系列整体列为minor判例，但history.md显示仅v8.3.0为文档管线minor，v8.3.1+均为patch，版本级别对"
+        }
+      ],
+      "provider": "阶跃星辰/step-3.7-flash",
+      "attempts": 3
+    },
     "doc-maintenance-vs-pipeline": {
-      "hash": "b39dc8692a0173558a46acf4f3931ddfdba666e9",
+      "hash": "9455b72a314fafb03eedf0f778e1916f25a90ce5",
       "lastRun": "2026-08-03",
       "status": "ok",
       "reported": 0,
@@ -214,7 +190,7 @@
       "dropped": 0,
       "keptFindings": [],
       "droppedFindings": [],
-      "provider": "Opencode Go Google/deepseek-v4-flash",
+      "provider": "deepseek/deepseek-v4-flash",
       "attempts": 2
     },
     "contract-vs-map-ai-chat": {
@@ -242,27 +218,19 @@
       "attempts": 2
     },
     "contract-vs-map-client-shell": {
-      "hash": "49d98215b28f539f9dc5e342a3fea0d766e9bda6",
+      "hash": "384552e51183469aba726f5ea705c87b5eab56cf",
       "lastRun": "2026-08-03",
       "status": "ok",
-      "reported": 1,
-      "kept": 1,
+      "reported": 0,
+      "kept": 0,
       "dropped": 0,
-      "keptFindings": [
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/client-shell/contract.md:117",
-          "against": "docs/domains/client-shell/code-map.md:9",
-          "quote": "modules/orb.ts",
-          "note": "契约文件清单仅13个.ts，code-map称域规模22文件，漏列animation-registry等9文件"
-        }
-      ],
+      "keptFindings": [],
       "droppedFindings": [],
-      "provider": "deepseek/deepseek-v4-flash",
-      "attempts": 2
+      "provider": "Opencode Go Google/deepseek-v4-flash",
+      "attempts": 3
     },
     "contract-vs-map-floating-card": {
-      "hash": "3fec89269fe924ba27ba9be7b9c4170bd2709837",
+      "hash": "2bfb3ce924da72f8c5f5c8ef6d991d0e287657a0",
       "lastRun": "2026-08-03",
       "status": "ok",
       "reported": 0,
@@ -271,7 +239,7 @@
       "keptFindings": [],
       "droppedFindings": [],
       "provider": "阶跃星辰/step-3.7-flash",
-      "attempts": 2
+      "attempts": 1
     },
     "contract-vs-map-server": {
       "hash": "e4d12a4bed970e8639252b72a0837b391b5a9cb8",
@@ -286,88 +254,46 @@
       "attempts": 2
     },
     "contract-vs-map-infra": {
-      "hash": "8805b009a464943a91044af0b58cad7a24ac2f60",
+      "hash": "a2454436985cac5478995bdef71b92ff780fd6f0",
       "lastRun": "2026-08-03",
       "status": "ok",
-      "reported": 3,
-      "kept": 3,
+      "reported": 0,
+      "kept": 0,
       "dropped": 0,
-      "keptFindings": [
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/infra/contract.md:文件清单",
-          "against": "docs/domains/infra/code-map.md:漂移6/承重入口表",
-          "quote": "`scripts/check/chain.mjs`",
-          "note": "contract生成的文件清单未包含scripts/deploy.sh、.githooks/、package.json，code-map实然已纳入"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/infra/contract.md:#陷阱1",
-          "against": "docs/domains/infra/code-map.md:漂移7",
-          "quote": "改 `.css` 前查 `.scss` 源",
-          "note": "该陷阱断言所有.css均有.scss源，但实然5个css无对应.scss源，陷阱不适用"
-        },
-        {
-          "type": "SEM002",
-          "claim": "docs/domains/infra/contract.md:检查管线标题",
-          "against": "docs/domains/infra/contract.md:chain:auto",
-          "quote": "39 脚本，顺序固定",
-          "note": "chain:auto枚举40个check-*步骤，39为陈旧手写计数，与链实况不符"
-        }
-      ],
+      "keptFindings": [],
       "droppedFindings": [],
       "provider": "阶跃星辰/step-3.7-flash",
-      "attempts": 3
-    },
-    "crossdomain-vs-inventory": {
-      "hash": "25214e609740bf75b5a07bf05c50c9486f43c684",
-      "lastRun": "2026-08-03",
-      "status": "ok",
-      "reported": 1,
-      "kept": 1,
-      "dropped": 0,
-      "keptFindings": [
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/cross-domain.md:20",
-          "against": "docs/domains/cross-domain.md:93",
-          "quote": "scope 隔离形同虚设",
-          "note": "风险矩阵仍称scope隔离形同虚设并标⚠，漂移清单已结案明示不再是漂移，状态互搏。"
-        }
-      ],
-      "droppedFindings": [],
-      "provider": "Opencode Go Google/deepseek-v4-flash",
       "attempts": 1
     },
-    "inter-workflows-infra": {
-      "hash": "eede5cb68d2a791df2cd39290e7c3311be67dc28",
+    "crossdomain-vs-inventory": {
+      "hash": "994b29502a2bce9d2169f346593302a8a1fb4127",
       "lastRun": "2026-08-03",
       "status": "ok",
       "reported": 2,
-      "kept": 2,
-      "dropped": 0,
-      "keptFindings": [
+      "kept": 0,
+      "dropped": 2,
+      "keptFindings": [],
+      "droppedFindings": [
         {
-          "type": "SEM002",
-          "claim": "docs/workflows/bug-fix.yaml:23",
-          "against": "docs/domains/infra/contract.md:硬规则4 行",
-          "quote": "钉子通过 revert 验证",
-          "note": "infra允许纯配置/文案/构建修复用tests:na豁免无需补钉，bug-fix要求所有fix必须钉子通过revert验证，断言冲突"
+          "type": "SEM001",
+          "claim": "docs/domains/cross-domain.md:HTTP端点面节",
+          "against": "docs/domains/code-inventory.md:跨域边末节",
+          "quote": "API_BASE 三套风格共 10 处",
+          "note": "豁免跳过 EX-EX-003（实际动态拼接7处加2处硬编码共9处，计数多1"
         },
         {
           "type": "SEM002",
-          "claim": "docs/workflows/bug-fix.yaml:23",
-          "against": "docs/domains/infra/contract.md:硬规则10 行",
-          "quote": "钉子通过 revert 验证",
-          "note": "infra允许bugs条目无钉但带复核日，bug-fix要求登记必须有钉子通过revert验证，断言冲突"
+          "claim": "docs/domains/cross-domain.md:共享底座所有权矩阵anim行",
+          "against": "docs/domains/code-inventory.md:跨域边canvas-tree/floating-card节",
+          "quote": "其余域直透 gsap",
+          "note": "豁免跳过 EX-EX-004（实际canvas-tree 7文件、floating-card 4文件直接跨域import animation-registry，非直透gsap"
         }
       ],
-      "droppedFindings": [],
       "provider": "阶跃星辰/step-3.7-flash",
       "attempts": 1
     },
-    "inter-provenance-bugs": {
-      "hash": "2b309799147749286d2e710ab6c11c088872935f",
+    "inter-workflows-infra": {
+      "hash": "8514f9a40021d4395bbe6d7c67829a8e414747be",
       "lastRun": "2026-08-03",
       "status": "ok",
       "reported": 0,
@@ -376,6 +302,26 @@
       "keptFindings": [],
       "droppedFindings": [],
       "provider": "Opencode Go Google/deepseek-v4-flash",
+      "attempts": 3
+    },
+    "inter-provenance-bugs": {
+      "hash": "5a1b0cb9484bcec266f213c70e316004901da4e2",
+      "lastRun": "2026-08-03",
+      "status": "ok",
+      "reported": 1,
+      "kept": 0,
+      "dropped": 1,
+      "keptFindings": [],
+      "droppedFindings": [
+        {
+          "type": "SEM002",
+          "claim": "docs/ledger/drift-provenance.md :ai-chat#4 标签 A",
+          "against": "docs/ledger/drift-provenance.md :client-shell#8 标签 C",
+          "quote": "域划分系事后补登",
+          "note": "同一orb.ts宿主化病灶，ai-chat域标A时代过时，client-shell域标C权宜遗留，标签分叉"
+        }
+      ],
+      "provider": "阶跃星辰/step-3.7-flash",
       "attempts": 1
     },
     "inter-detail-contract-aichat": {
@@ -621,6 +567,174 @@
       "skipped": 1,
       "kept": 10,
       "dropped": 5
+    },
+    {
+      "date": "2026-08-03",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-03",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 1,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-03",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-03",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 1,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-03",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-03",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-03",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 1,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-03",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-03",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 3,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-03",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 1,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-03",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 4,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-03",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 1,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-03",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 1,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-03",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 1,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-03",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-03",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 2
+    },
+    {
+      "date": "2026-08-03",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-03",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-03",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-03",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 1,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-03",
+      "ran": 13,
+      "skipped": 11,
+      "kept": 4,
+      "dropped": 2
+    },
+    {
+      "date": "2026-08-03",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 4
+    },
+    {
+      "date": "2026-08-03",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-03",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 1
     }
   ]
 }
