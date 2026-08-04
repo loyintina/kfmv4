@@ -736,6 +736,13 @@ regression('BAR-PROVIDER-02', 'ai/chat', '空壳 assistant 消息（纯思考/�
   assert(server.includes("m.content == null || m.content === ''"), '服务端边界必须过滤空 assistant（fail-closed）');
 });
 
+regression('BAR-BUILD-06', 'build.mjs', '确定性构建：BUILD_TIME 用 git 提交时间 + 版本戳内容 hash（消灭每次构建脏树）', () => {
+  const build = readFileSync('build.mjs', 'utf-8');
+  assert(!/const buildStamp = Date\.now\(\)/.test(build), '版本戳必须确定性（内容 hash），Date.now() 重写 index.html = 每次构建脏树');
+  assert(build.includes('contentStamp') && build.includes('createHash'), '必须有内容 hash 版本戳');
+  assert(/git log -1 --format=%cI/.test(build), 'BUILD_TIME 必须用 git 提交时间（同一提交构建 bundle 不变）');
+});
+
 regression('BAR-BUILD-05', 'build/deploy', '版本握手：build 写 dist/build-info.json + /api/system/info 暴露 buildInfo（防旧包白诊断）', () => {
   const build = readFileSync('build.mjs', 'utf-8');
   assert(build.includes('build-info.json') && build.includes('buildTime'), 'build.mjs 必须写构建信息（版本握手真相源）');
