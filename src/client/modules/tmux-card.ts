@@ -88,10 +88,13 @@ export function createTmuxCardHandler(): CardContentHandler {
   }
 
   function switchSession(session: string): void {
-    if (_switching || !_sessionId || session === _attached) return;
+    // 守卫只防切换进行中连点（_switching）；_attached 相等判断移除——
+    // 重开/重连可能让真实 attach 与 _attached 脱节，相等判断会锁死切换
+    if (_switching || !_sessionId) return;
     _switching = true;
     _prevAttached = _attached;
     _attached = session; // 乐观更新（失败回滚见 onResult）
+    _lastCommand = 'tmux attach -t ' + session; // 重开时 attach 当前 session（不是旧的第一个）
     if (_tabBar) renderTabBar(_sessions, session);
     wsChannel.sendMessage('tmux-cmd', { cmd: 'switch-client', args: [session, _sessionId] });
   }
