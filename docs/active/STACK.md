@@ -115,8 +115,8 @@
    — 会话卡逻辑修复（具体病灶待补充）
    — 审查文件卡代码高亮问题修正（具体病灶待补充）
 5. server 会话/prompts 域 bug 池（2026-07-29 记；初始主题=提示词注入约束修复，病灶待补充；后收编 bug 见子项）
-   — 另：面板发送消息无响应（2026-07-29 记，用户反馈的活 bug）——**用户 08-03 确认早已修复**，
-     闭环此条；病灶/钉未入 BAR（即 F2「bug 入口无强制通道」现场）
+   — 另：面板发送消息无响应（2026-07-29 记，用户反馈的活 bug；**用户 08-03 确认早已修复**）
+     ——已追溯登记 BAR-BUG-01（F2 现场，R4 入口门后此类不再发生）
    — 另：会话删除后服务端串档（2026-07-30 记，冷启动实验 terra 臂尸检发现）：删除会话卡只删
      磁盘文件，`server/ai/session-store.ts` 的 `_sessions` 缓存（`_get` 缓存优先）不失效 →
      同名新会话 `appendUserMessage` 接续旧 ctx，flush 以旧 meta 落盘 → 会话文件合并两个独立
@@ -124,11 +124,11 @@
      用户可见症状：刷新面板后被删会话的消息在新会话上方「复活」、会话卡统计错。
      **✅ 已修复（2026-08-01，BAR-SESSION-01）**：flash-10 臂实测实锤（turn1 载荷 5.7× 膨胀），
      invalidateSession + delete/rename/move 三路由接线，4 钉（tests/session-invalidate.test.ts）
-   — 另：sessionId 路径穿越 P0（2026-07-31 记，冷启动实验 gpt-5.6-sol 臂发现）：
+   — 另：sessionId 路径穿越 P0（2026-07-31 记，冷启动实验 gpt-5.6-sol 臂发现；BAR-SEC-14 已钉）：
      routes 只查 truthy + session-store join 无格式校验 → `../` 逃逸。
      **✅ 已修复（BAR-SEC-14）**：Unicode 白名单（含中文 id 放宽）+ 落盘单点守卫
      + containment 复查，tests/session-security.test.ts revert 验证
-   — 另：tag-advisor shell 注入 P0（2026-07-31 记，同臂发现）：argv ref 直插 execSync
+   — 另：tag-advisor shell 注入 P0（2026-07-31 记，同臂发现；BAR-SEC-15 已钉）：argv ref 直插 execSync
      模板串。**✅ 已修复（BAR-SEC-15）**：execFileSync 参数数组 + REF_RE 白名单，
      tests/tag-advisor.test.ts 3 钉 revert 验证
 6. 全量代码分析 → domains 填充（2026-07-29 提前完成，用户动议）
@@ -230,8 +230,9 @@
      ——✅ 已修（2026-08-03）：ROOT→REPO + 崩溃投信箱 💀（沉默不允许）+
      check-inbox-heartbeat.mjs 挂链（MECH-FLOW-10，上岗即逮现役停摆 42h）+
      3 钉（tests/semantic-chain.test.ts）+ 探针夹具；补跑巡逻回填当日欠班
-   — F2 bug 入口无强制通道：面板发送无响应 bug 以「另:」散文挂 STACK #5，未进 BAR
-     登记 → 修完无人追状态（用户 08-03 确认早已修复，STACK 未更新）；入口路由可机械化
+   — F2 bug 入口无强制通道（2026-08-04 已机械化 ✅）：check-stack-status R4
+     入口门——STACK bug 状态条目必须带 BAR 编号（条目级，bugs.md 引用豁免）；
+     现场清理：面板无响应追溯登记 BAR-BUG-01、路径穿越/注入补 BAR-SEC-14/15 引用
    — F3 STACK 编号碰撞：主列表 1,2,3,8..16,4..7 插入序混乱，研究参考区 0./0b./9./10.
      与主列表 #9/#10 撞号，引用歧义；check-stack-status 切分正则也会吞研究参考条目
    — F4 构建自产永久脏树（BAR-BUILD-06）✅ 已修（2026-08-04）：BUILD_TIME 改 git 提交

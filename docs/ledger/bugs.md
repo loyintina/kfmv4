@@ -135,6 +135,7 @@
 | BAR-LEAK-02 | `session.card` | kfm-session-change 监听只挂不摘（与 LEAK-01 同模式） | L | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
 | BAR-LEAK-03 | `tree-render` | 每次开侧栏叠加一个匿名 resize 监听，开 N 次 = resize 调 N 次。契约：具名 handler + 单次注册守卫 | L | ✅ 已钉（源码检查：无匿名 resize 注册，revert 验证） | `tests/client-logic.test.ts` |
 | BAR-ENGINE-01 | `renderer` | 每个文本 Box 每帧 `measureText('Ag')`（常驻 60fps 全量重绘下的测量大头）。契约：字体度量按 font 缓存 | L | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
+| BAR-BUG-01 | `面板发送` | 面板发送消息无响应（2026-07-29 用户反馈，活 bug；08-03 确认早已修复——F2「bug 入口无强制通道」现场：以散文挂 STACK 未进 BAR，修完无人追）。追溯登记：F2 机械化后 bug 必须 BAR 登记（check-stack-status R4 入口门） | L | 已修复（用户确认） | — | 复核日 2026-08-11 |
 | BAR-BUILD-01 | `build.mjs` | bundle 1.9MB 未压缩源码上线（minify 后 1.07MB，-44%）；版本号正则吞不掉旧 query 叠加成 `?v=A?v=forceB` 畸形 | L | ✅ 已钉（源码检查：两处 minify + index.html 无双重 query，revert 验证） | `tests/client-logic.test.ts` |
 | BAR-BUILD-02 | `server/index` | 无 gzip（1.9MB 直传）；`express.static` 挂载仓库根把 `.git`/`src`/`node_modules` 暴露 HTTP。契约：compression filter 排除 `/ai/`（SSE 不缓冲）+ 禁止重挂根目录 | L | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |
 | BAR-ORB-PANEL-10 | `chat-dom` | 摸鱼提示跑到用户消息上方：`setWait(true)` 在 doSend 前执行，hint 先挂载，`_createMsgContainer` 裸 `appendChild` 把消息插到 hint 之后。契约：非 prepend 分支必须 `insertBefore(msgEl, hint)`，hint 恒在尾部 | I | ✅ 已钉（源码检查，revert 验证） | `tests/client-logic.test.ts` |

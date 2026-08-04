@@ -77,6 +77,22 @@ for (const e of entries) {
   }
 }
 
+// R4 bug 入口强制通道（2026-08-04 F2 机械化）：主列表条目详情含 bug 状态描述
+// （bug/缺陷 + 已修复/待修复/未修复/活 bug 等状态）必须带 BAR 编号——
+// 「bug 挂 STACK 散文不登记 BAR = 修完无人追」的责任真空（面板无响应现场）
+const BUG_RE = /bug|缺陷|串档|注入|穿越|无响应/;
+const BUG_STATUS_RE = /已修复|待修复|未修复|活 bug|待裁决|P0|已闭环/;
+for (const e of entries) {
+  const rows = [e.text, ...e.details.map(d => d.text)];
+  const hasBar = rows.some(r => /BAR-/.test(r) || /bugs\.md/.test(r)); // 条目级：任一 BAR/bugs.md 引用即过（跨行）
+  if (hasBar) continue;
+  for (const row of rows) {
+    if (BUG_RE.test(row) && BUG_STATUS_RE.test(row)) {
+      error(`条目 ${e.n}（STACK.md 行 ${e.line}）bug 状态描述未带 BAR 编号（F2 入口门）——bug 必须登记 ledger/bugs.md：${row.trim().slice(0, 60)}`);
+    }
+  }
+}
+
 if (errors > 0) {
   console.error(`\n[check-stack-status] ${errors} 处状态词矛盾，构建中断。`);
   console.error('[check-stack-status] ⛳ MECH-FLOW-09：STACK 状态词矛盾——读 docs/active/STACK.md §状态词，走 workflows/state-sync.yaml');
