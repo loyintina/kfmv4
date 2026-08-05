@@ -1,0 +1,386 @@
+{
+ "625": {
+  "arm": "e7-t0p0m0r0",
+  "model": "minimax-m3"
+ },
+ "850": {
+  "arm": "e7-t0p0m0r1",
+  "model": "minimax-m3"
+ },
+ "234": {
+  "arm": "e7-t0p0m0r2",
+  "model": "minimax-m3"
+ },
+ "937": {
+  "arm": "e7-t0p0m0r3",
+  "model": "minimax-m3"
+ },
+ "863": {
+  "arm": "e7-t0p0m0r4",
+  "model": "minimax-m3"
+ },
+ "270": {
+  "arm": "e7-t0p0m0r5",
+  "model": "minimax-m3"
+ },
+ "657": {
+  "arm": "e7-t0p0m0r6",
+  "model": "minimax-m3"
+ },
+ "561": {
+  "arm": "e7-t0p0m0r7",
+  "model": "minimax-m3"
+ },
+ "877": {
+  "arm": "e7-t0p0m1r0",
+  "model": "deepseek-v4-flash"
+ },
+ "396": {
+  "arm": "e7-t0p0m1r1",
+  "model": "deepseek-v4-flash"
+ },
+ "829": {
+  "arm": "e7-t0p0m1r2",
+  "model": "deepseek-v4-flash"
+ },
+ "974": {
+  "arm": "e7-t0p0m1r3",
+  "model": "deepseek-v4-flash"
+ },
+ "276": {
+  "arm": "e7-t0p0m1r4",
+  "model": "deepseek-v4-flash"
+ },
+ "817": {
+  "arm": "e7-t0p0m1r5",
+  "model": "deepseek-v4-flash"
+ },
+ "170": {
+  "arm": "e7-t0p0m1r6",
+  "model": "deepseek-v4-flash"
+ },
+ "691": {
+  "arm": "e7-t0p0m1r7",
+  "model": "deepseek-v4-flash"
+ },
+ "889": {
+  "arm": "e7-t0p1m0r0",
+  "model": "minimax-m3"
+ },
+ "557": {
+  "arm": "e7-t0p1m0r1",
+  "model": "minimax-m3"
+ },
+ "931": {
+  "arm": "e7-t0p1m0r2",
+  "model": "minimax-m3"
+ },
+ "478": {
+  "arm": "e7-t0p1m0r3",
+  "model": "minimax-m3"
+ },
+ "724": {
+  "arm": "e7-t0p1m0r4",
+  "model": "minimax-m3"
+ },
+ "989": {
+  "arm": "e7-t0p1m0r5",
+  "model": "minimax-m3"
+ },
+ "508": {
+  "arm": "e7-t0p1m0r6",
+  "model": "minimax-m3"
+ },
+ "153": {
+  "arm": "e7-t0p1m0r7",
+  "model": "minimax-m3"
+ },
+ "127": {
+  "arm": "e7-t0p1m1r0",
+  "model": "deepseek-v4-flash"
+ },
+ "688": {
+  "arm": "e7-t0p1m1r1",
+  "model": "deepseek-v4-flash"
+ },
+ "782": {
+  "arm": "e7-t0p1m1r2",
+  "model": "deepseek-v4-flash"
+ },
+ "443": {
+  "arm": "e7-t0p1m1r3",
+  "model": "deepseek-v4-flash"
+ },
+ "801": {
+  "arm": "e7-t0p1m1r4",
+  "model": "deepseek-v4-flash"
+ },
+ "422": {
+  "arm": "e7-t0p1m1r5",
+  "model": "deepseek-v4-flash"
+ },
+ "251": {
+  "arm": "e7-t0p1m1r6",
+  "model": "deepseek-v4-flash"
+ },
+ "802": {
+  "arm": "e7-t0p1m1r7",
+  "model": "deepseek-v4-flash"
+ },
+ "609": {
+  "arm": "e7-t0p2m0r0",
+  "model": "minimax-m3"
+ },
+ "975": {
+  "arm": "e7-t0p2m0r1",
+  "model": "minimax-m3"
+ },
+ "188": {
+  "arm": "e7-t0p2m0r2",
+  "model": "minimax-m3"
+ },
+ "787": {
+  "arm": "e7-t0p2m0r3",
+  "model": "minimax-m3"
+ },
+ "370": {
+  "arm": "e7-t0p2m0r4",
+  "model": "minimax-m3"
+ },
+ "929": {
+  "arm": "e7-t0p2m0r5",
+  "model": "minimax-m3"
+ },
+ "676": {
+  "arm": "e7-t0p2m0r6",
+  "model": "minimax-m3"
+ },
+ "993": {
+  "arm": "e7-t0p2m0r7",
+  "model": "minimax-m3"
+ },
+ "568": {
+  "arm": "e7-t0p2m1r0",
+  "model": "deepseek-v4-flash"
+ },
+ "705": {
+  "arm": "e7-t0p2m1r1",
+  "model": "deepseek-v4-flash"
+ },
+ "941": {
+  "arm": "e7-t0p2m1r2",
+  "model": "deepseek-v4-flash"
+ },
+ "868": {
+  "arm": "e7-t0p2m1r3",
+  "model": "deepseek-v4-flash"
+ },
+ "138": {
+  "arm": "e7-t0p2m1r4",
+  "model": "deepseek-v4-flash"
+ },
+ "484": {
+  "arm": "e7-t0p2m1r5",
+  "model": "deepseek-v4-flash"
+ },
+ "114": {
+  "arm": "e7-t0p2m1r6",
+  "model": "deepseek-v4-flash"
+ },
+ "616": {
+  "arm": "e7-t0p2m1r7",
+  "model": "deepseek-v4-flash"
+ },
+ "554": {
+  "arm": "e7-t0p3m0r0",
+  "model": "minimax-m3"
+ },
+ "725": {
+  "arm": "e7-t0p3m0r1",
+  "model": "minimax-m3"
+ },
+ "913": {
+  "arm": "e7-t0p3m0r2",
+  "model": "minimax-m3"
+ },
+ "984": {
+  "arm": "e7-t0p3m0r3",
+  "model": "minimax-m3"
+ },
+ "712": {
+  "arm": "e7-t0p3m0r4",
+  "model": "minimax-m3"
+ },
+ "959": {
+  "arm": "e7-t0p3m0r5",
+  "model": "minimax-m3"
+ },
+ "121": {
+  "arm": "e7-t0p3m0r6",
+  "model": "minimax-m3"
+ },
+ "678": {
+  "arm": "e7-t0p3m0r7",
+  "model": "minimax-m3"
+ },
+ "279": {
+  "arm": "e7-t0p3m1r0",
+  "model": "deepseek-v4-flash"
+ },
+ "323": {
+  "arm": "e7-t0p3m1r1",
+  "model": "deepseek-v4-flash"
+ },
+ "876": {
+  "arm": "e7-t0p3m1r2",
+  "model": "deepseek-v4-flash"
+ },
+ "875": {
+  "arm": "e7-t0p3m1r3",
+  "model": "deepseek-v4-flash"
+ },
+ "205": {
+  "arm": "e7-t0p3m1r4",
+  "model": "deepseek-v4-flash"
+ },
+ "100": {
+  "arm": "e7-t0p3m1r5",
+  "model": "deepseek-v4-flash"
+ },
+ "517": {
+  "arm": "e7-t0p3m1r6",
+  "model": "deepseek-v4-flash"
+ },
+ "779": {
+  "arm": "e7-t0p3m1r7",
+  "model": "deepseek-v4-flash"
+ },
+ "342": {
+  "arm": "e7-t0p4m0r0",
+  "model": "minimax-m3"
+ },
+ "317": {
+  "arm": "e7-t0p4m0r1",
+  "model": "minimax-m3"
+ },
+ "999": {
+  "arm": "e7-t0p4m0r2",
+  "model": "minimax-m3"
+ },
+ "733": {
+  "arm": "e7-t0p4m0r3",
+  "model": "minimax-m3"
+ },
+ "955": {
+  "arm": "e7-t0p4m0r4",
+  "model": "minimax-m3"
+ },
+ "283": {
+  "arm": "e7-t0p4m0r5",
+  "model": "minimax-m3"
+ },
+ "329": {
+  "arm": "e7-t0p4m0r6",
+  "model": "minimax-m3"
+ },
+ "961": {
+  "arm": "e7-t0p4m0r7",
+  "model": "minimax-m3"
+ },
+ "778": {
+  "arm": "e7-t0p4m1r0",
+  "model": "deepseek-v4-flash"
+ },
+ "593": {
+  "arm": "e7-t0p4m1r1",
+  "model": "deepseek-v4-flash"
+ },
+ "366": {
+  "arm": "e7-t0p4m1r2",
+  "model": "deepseek-v4-flash"
+ },
+ "844": {
+  "arm": "e7-t0p4m1r3",
+  "model": "deepseek-v4-flash"
+ },
+ "546": {
+  "arm": "e7-t0p4m1r4",
+  "model": "deepseek-v4-flash"
+ },
+ "897": {
+  "arm": "e7-t0p4m1r5",
+  "model": "deepseek-v4-flash"
+ },
+ "938": {
+  "arm": "e7-t0p4m1r6",
+  "model": "deepseek-v4-flash"
+ },
+ "685": {
+  "arm": "e7-t0p4m1r7",
+  "model": "deepseek-v4-flash"
+ },
+ "147": {
+  "arm": "e7-t0p5m0r0",
+  "model": "minimax-m3"
+ },
+ "375": {
+  "arm": "e7-t0p5m0r1",
+  "model": "minimax-m3"
+ },
+ "108": {
+  "arm": "e7-t0p5m0r2",
+  "model": "minimax-m3"
+ },
+ "805": {
+  "arm": "e7-t0p5m0r3",
+  "model": "minimax-m3"
+ },
+ "917": {
+  "arm": "e7-t0p5m0r4",
+  "model": "minimax-m3"
+ },
+ "281": {
+  "arm": "e7-t0p5m0r5",
+  "model": "minimax-m3"
+ },
+ "680": {
+  "arm": "e7-t0p5m0r6",
+  "model": "minimax-m3"
+ },
+ "272": {
+  "arm": "e7-t0p5m0r7",
+  "model": "minimax-m3"
+ },
+ "922": {
+  "arm": "e7-t0p5m1r0",
+  "model": "deepseek-v4-flash"
+ },
+ "353": {
+  "arm": "e7-t0p5m1r1",
+  "model": "deepseek-v4-flash"
+ },
+ "792": {
+  "arm": "e7-t0p5m1r2",
+  "model": "deepseek-v4-flash"
+ },
+ "387": {
+  "arm": "e7-t0p5m1r3",
+  "model": "deepseek-v4-flash"
+ },
+ "953": {
+  "arm": "e7-t0p5m1r4",
+  "model": "deepseek-v4-flash"
+ },
+ "347": {
+  "arm": "e7-t0p5m1r5",
+  "model": "deepseek-v4-flash"
+ },
+ "468": {
+  "arm": "e7-t0p5m1r6",
+  "model": "deepseek-v4-flash"
+ },
+ "854": {
+  "arm": "e7-t0p5m1r7",
+  "model": "deepseek-v4-flash"
+ }
+}

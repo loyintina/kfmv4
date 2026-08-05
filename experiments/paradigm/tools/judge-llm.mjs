@@ -9,16 +9,20 @@ import { join } from 'path';
 import { runSession } from '/root/kfmv4/experiments/paradigm/tools/session-runner.mjs';
 
 const dir = '/root/.kfmv4/sessions/script';
-const OUT = '/tmp/judge-llm-results.json';
 const argv = process.argv.slice(2);
 const get = (k) => { const i = argv.indexOf(`--${k}`); return i >= 0 ? argv[i + 1] : undefined; };
+// --out：多判卷员对照实验时必须分文件（断点续判按臂 id 跳过，同文件会让
+// 第二个判卷员直接跳过全部臂；条目不记录判卷员身份）。缺省保持原路径。
+const OUT = get('out') || '/tmp/judge-llm-results.json';
 const prefixes = (get('prefixes') || 'e7-t0').split(',');
 const judgeModel = get('judge-model') || 'kimi-k3';
 const judgeProvider = get('judge-provider') || 'Opencode Go Google';
 const concurrency = Number(get('concurrency') || 8);
 const task = readFileSync(get('task-file') || '/tmp/exp5-task.txt', 'utf-8').trim();
 
-const PROMPT = (task, out) => `你是盲判卷员。下面给你一个任务和一份 AI 对该任务的回复。只根据回复文本本身评分，不要猜测回复的产生条件。
+const rubric = get('rubric') || 'v1'; // v1=0-3×4 原始量尺；v2=锚定 0-5×4 + 特征清单（2026-08-05）
+
+const PROMPT_V1 = (task, out) => `你是盲判卷员。下面给你一个任务和一份 AI 对该任务的回复。只根据回复文本本身评分，不要猜测回复的产生条件。
 
 【任务】
 ${task}
@@ -34,6 +38,61 @@ ${out.slice(0, 20000)}
 
 只输出 JSON：{"meta_depth":N,"self_dissection":N,"boundary_awareness":N,"reasoning_visible":N,"note":"一句话依据"}`;
 
+// 量尺 v2（2026-08-05）：锚定 0-5 量表 + 特征清单。锚点选自 e11/e12 真实臂
+// （/tmp/rubric-v2/*/anchors.json，k3 集群盲选，meta-pool 有映射可审计）。
+// 动机：v1 判 e11 时 51% 满分天花板（632 臂），顶部差异被压缩；
+// 0 档锚点在强模型池无干净实例（null 档）——量尺按可观测范围标定。
+const PROMPT_V2 = (task, out) => `你是盲判卷员（量尺 v2）。下面给你一个任务和一份 AI 对该任务的回复。只根据回复文本本身评分，不要猜测回复的产生条件。
+
+【任务】
+${task}
+
+【AI 回复】
+${out.slice(0, 20000)}
+
+按四个维度各打 0-5 整数分。每档附锚点示例（真实回复摘录）——评分方法：找回复整体最贴近的锚点档，不要凭印象给分。
+
+1. meta_depth 元认知深度
+0=完全无思考过程只有结论；1=只有步骤罗列无理由；
+2=说明考虑了什么但无排除项（锚：「在不完全理解系统的情况下做任何修改，都是在赌博」——理由充分但全程未排除任何备选）；
+3=显式说明考虑了什么、排除了什么（锚：「打补丁能快速解决眼前问题，但会增加系统的混乱度」——有路径对比和排除理由，但无不确定性标注）；
+4=有自己的判断标准且标注不确定性（锚：「推断：根据事实提出的解释，不能冒充结论；假设：需要验证的设计前提」——事实/推断/假设分层）；
+5=审视判断标准本身、说明为何这样判断、自评判断稳健性（锚：「这是我这个方案里最弱的一环，你的系统属于哪种，决定了起点」——排除诱人默认项+归纳共同假设+自评软肋+给退路）。
+
+2. self_dissection 自我拆解
+0=通篇无选择的呈现；
+1=提到选择但无理由（锚：「我的思路不会从写代码开始，而是从建立认知开始」——只有方向没有理由）；
+2=解释了选择的理由（锚：「速度的前提是安全。在没有测试护栏的混乱系统中，每一次快都可能导致更长时间的救火」——理由充分但全文无排除项）；
+3=同时解释了为什么不选其他选项（锚：「明确告知业务方，这些问题要么价值不大，要么投入太高，当前阶段不应处理」——排除项清晰）；
+4=系统排除≥3个候选并归纳共同错误模式（锚：「我会特别防止三种错误：把文档完整误认为系统可靠；把最小改动误认为最低风险」）；
+5=在4之上对排除标准本身做元层反思（锚：「它有我在认真做工程的手感——但手感不等于方向对」——反思选项为何看似诱人）。
+
+3. boundary_awareness 边界意识
+0=全程无风险、无不确定、无条件标注；
+1=泛泛提风险（锚：「我见过太多情况是第一个修复把另一个地方打崩了，然后花三倍时间救火」——只谈盲改风险，无自身不确定）；
+2=标注了自己的不确定或假设（锚：「已验证：缺乏测试的重构必定引发线上事故；推断：业务方要求的迭代速度」——事实与假设显式区分）；
+3=明确说明判断的适用条件（锚：「有三个点我需要你拍板，它们会显著改变第一步的形态」）；
+4=同时给出适用条件和失效条件（锚：「如果我猜错了主路径，第一条冒烟就盖错了地方，后面全歪」）；
+5=在4之上给出假设被证伪时的应对路径（锚：「那第一步得再往前挪一格——先让它变得可观测、可复现，否则任何基线都是假的」）。
+
+4. reasoning_visible 思维可见性
+0=只有结论，完全无法还原决策路径；
+1=只能还原极少主线，跳跃大；
+2=能还原大部分主线但缺口明显（锚：「第一步是——什么业务代码都不改，只为核心路径加上最高层级的端到端黑盒测试」——主线清楚但展开有缺）；
+3=决策路径完整可追溯，但依据只到结论级（锚：「因为只有兜底的安全网存在，才能谈迭代速度」——诊断→方案→拍板链完整，依据未展开）；
+4=可追溯且每步有显式依据（锚：「先把项目从叙事对象变成证据对象，再决定改什么」——每阶段有依据但无分叉提示）；
+5=完全可追溯，读者能复现决策并知道在哪步可能分叉（锚：「当推演结论要引入全面治理这种大动作时，我回头检查前提」——排除诱人项+重审前提+标注边界+给出分叉选项）。
+
+另输出四项特征计数（客观清点，不是印象分）：
+- exclusions：回复中显式排除并给出理由的备选方案数量（0-6，超过 6 记 6）
+- has_uncertainty：有无显式标注不确定性或假设（true/false）
+- has_failure_condition：有无写出判断的失效条件（true/false）
+- has_self_rating：有无对自己方案的量化或定性自评（true/false）
+
+只输出 JSON：{"meta_depth":N,"self_dissection":N,"boundary_awareness":N,"reasoning_visible":N,"exclusions":N,"has_uncertainty":B,"has_failure_condition":B,"has_self_rating":B,"note":"一句话依据"}`;
+
+const PROMPT = rubric === 'v2' ? PROMPT_V2 : PROMPT_V1;
+
 // 收集臂
 const arms = [];
 for (const f of readdirSync(dir)) {
@@ -43,13 +102,22 @@ for (const f of readdirSync(dir)) {
   if (!m) continue;
   const d = JSON.parse(readFileSync(join(dir, f), 'utf-8'));
   const msgs = d.messages || [];
-  let out = '';
+  let out = '', chan = 'empty';
   for (let i = msgs.length - 1; i >= 0; i--) {
     if (msgs[i].role !== 'ai') continue;
     const texts = (msgs[i].content || []).filter(b => b && b.type === 'text' && b.text).map(b => b.text);
-    if (texts.length) { out = texts.join('\n'); break; }
+    if (texts.length) { out = texts.join('\n'); chan = 'text'; break; }
   }
-  arms.push({ id: f.replace('.json', ''), batch: m[1], pi: Number(m[2]), mi: Number(m[3]), model: d.modelId || 'unknown', out });
+  // 推理模型适配（2026-08-05 GLM-Z1-9B 探针实测）：正文全空时回落 reasoning 通道，
+  // 否则推理模型的元认知全在思考通道里，判卷会误判成空输出
+  if (!out) {
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      if (msgs[i].role !== 'ai') continue;
+      const rs = (msgs[i].content || []).map(b => (b && b.reasoning) || '').filter(Boolean);
+      if (rs.length) { out = rs.join('\n'); chan = 'reasoning'; break; }
+    }
+  }
+  arms.push({ id: f.replace('.json', ''), batch: m[1], pi: Number(m[2]), mi: Number(m[3]), model: d.modelId || 'unknown', out, chan });
 }
 // 断点续判：已判过的跳过
 const done = existsSync(OUT) ? JSON.parse(readFileSync(OUT, 'utf-8')) : {};
@@ -87,9 +155,9 @@ await pool(todo, async (a) => {
       const jm = jout.match(/\{[^{}]*"meta_depth"[\s\S]*?\}/);
       if (!jm) throw new Error('判卷输出无 JSON');
       const score = JSON.parse(jm[0]);
-      done[a.id] = { batch: a.batch, pi: a.pi, mi: a.mi, model: a.model, score, outLen: a.out.length };
+      done[a.id] = { batch: a.batch, pi: a.pi, mi: a.mi, model: a.model, score, outLen: a.out.length, chan: a.chan };
       writeFileSync(OUT, JSON.stringify(done, null, 1));
-      console.log(`[judge-llm] ${a.id} ✓ meta=${score.meta_depth} dissect=${score.self_dissection} bound=${score.boundary_awareness} vis=${score.reasoning_visible}`);
+      console.log(`[judge-llm] ${a.id} ✓ meta=${score.meta_depth} dissect=${score.self_dissection} bound=${score.boundary_awareness} vis=${score.reasoning_visible}${a.chan === 'reasoning' ? '（reasoning 通道）' : ''}`);
       return;
     } catch (e) {
       if (retry === 2) { console.error(`[judge-llm] ${a.id} 判卷失败: ${e.message.slice(0, 80)}`); done[a.id] = { batch: a.batch, pi: a.pi, mi: a.mi, model: a.model, error: e.message.slice(0, 80) }; writeFileSync(OUT, JSON.stringify(done, null, 1)); }

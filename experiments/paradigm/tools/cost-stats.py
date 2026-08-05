@@ -22,7 +22,8 @@ JG = 0.64  # 聚光 USD→元
 PRICING = {
     # 聚光按次
     '[0.4刀/次]gemini-3.5-flash': {'kind': 'per_call', 'call': 0.1*4*0.16},
-    '[酒馆专用0.9刀/次]gemini-2.5-pro': {'kind': 'per_call', 'call': 0.225*4*0.16},
+    '[酒馆专用0.9刀/次]gemini-2.5-pro': {'kind': 'per_call', 'call': 0.225*4*0.16},  # 历史数据保留（e11/e12 所产）；2026-08-05 下线换标准线
+    # 'gemini-2.5-pro'（聚光按量，酒馆线的继任者）：费率待实测核实——暂不计入
     '[1刀/次]gemini-3-pro-preview-think': {'kind': 'per_call', 'call': 0.25*4*0.16},
     '[kiro]claude-sonnet-4-6': {'kind': 'per_call', 'call': 0.075*4*0.16},
     'kiro-claude-sonnet-5-thinking': {'kind': 'per_call', 'call': 0.125*4*0.16},
@@ -38,9 +39,11 @@ PRICING = {
     'Pro/deepseek-ai/DeepSeek-R1': {'kind': 'per_token', 'in': 4, 'out': 16},
     'Pro/deepseek-ai/DeepSeek-V3': {'kind': 'per_token', 'in': 2, 'out': 8},
     'Qwen/Qwen3.6-35B-A3B': {'kind': 'per_token', 'in': 1.8, 'out': 10.8},
-    'Qwen/Qwen3.5-4B': {'kind': 'per_token', 'in': 0, 'out': 0},  # 免费
+    # Qwen/Qwen3.5-4B：2026-08-05 除名（硅基上游挂死，45s 空响应×4 实测；用户决定不加入）
     'Qwen/Qwen3.5-9B': {'kind': 'per_token', 'in': 0.5, 'out': 4},  # ≤128k 档
     'Qwen/Qwen3.5-27B': {'kind': 'per_token', 'in': 0.6, 'out': 4.8},
+    # THUDM/GLM-4-32B-0414：2026-08-05 除名（硅基上游挂死，500 Unknown error 实测+补跑 48 臂全灭；用户决定除名）。
+    #   定价保留只为反查 e9 历史臂，新实验禁用。
     'THUDM/GLM-4-32B-0414': {'kind': 'per_token', 'in': 1.89, 'out': 1.89},
     'THUDM/GLM-Z1-9B-0414': {'kind': 'per_token', 'in': 0, 'out': 0},  # 免费
     'zai-org/GLM-4.5-Air': {'kind': 'per_token', 'in': 1, 'out': 6},

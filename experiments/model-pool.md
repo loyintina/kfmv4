@@ -5,6 +5,7 @@
 
 ## 变更记录
 
+- 2026-08-05 v4：`THUDM/GLM-4-32B-0414` 除名（硅基上游挂死：探针 500 Unknown error + e11/e12 补跑 48 臂全灭，与 4B 同病；用户决定除名）。硅基 11→10，全池 23→22。e9 历史臂保留归档，cost-stats.py 留定价仅供反查。
 - 2026-08-05 v3：聚光系从 20 精简到 12（用户要求去重：同模型多通道只留一个，按次/特价优先，e7c 锚点除外；thinking 变体每系列留一个测推理通道适配）。
 - 2026-08-05 v2：删除 Opencode Go 系（额度耗尽，小 plan 顶不住批量实验）；聚光系从 6 扩到 20（用户给清单，探针 20/22 通过）；硅基流动 12 不变。
 - 2026-08-05 v1：初版（opencode 7 + 聚光 6 + 硅基流动 12）。
@@ -19,7 +20,7 @@
 | [codex]gpt-5.4-mini | GPT | 小 | 待确认 | | codex 通道对照 |
 | [codex]gpt-5.6-luna | GPT | 中 | 待确认 | | GPT 中档独苗 |
 | [0.4刀/次]gemini-3.5-flash | Gemini | 小 | 按次 | ≈0.064 元 | 最新 flash |
-| [酒馆专用0.9刀/次]gemini-2.5-pro | Gemini | 中 | 按次 | ≈0.144 元 | 对应 e7c 的 2.5-pro-t3 |
+| gemini-2.5-pro | Gemini | 中 | 按量 | 待实测 | 2026-08-05 起替换酒馆线 |
 | [1刀/次]gemini-3-pro-preview-think | Gemini | 大 | 按次 | ≈0.16 元 | 推理型 |
 | claude-haiku-4-5-20251001 | Claude | 小 | 按量 | | e7c 锚点（288 臂） |
 | [kiro]claude-sonnet-4-6 | Claude | 中 | 按次 | 一毛级 | |
@@ -29,9 +30,15 @@
 | kiro-claude-opus-5 | Claude | 超大 | 按次 | 一毛级 | 最新旗舰 |
 
 去重砍掉的 8 个（同模型重复通道/被相邻档位夹挤）：[0.4刀/次]gemini-3-flash、[ant]gemini-3.5-flash、
-[特价]claude-haiku-4-5-20251001、gemini-2.5-pro（按量）、gpt-5.6-luna（按量）、[kiro]claude-opus-4-5、
+[特价]claude-haiku-4-5-20251001、[酒馆专用0.9刀/次]gemini-2.5-pro（见下）、gpt-5.6-luna（按量）、[kiro]claude-opus-4-5、
 [kiro]claude-sonnet-4-6-thinking、kiro-claude-sonnet-5。
 探针失败（503 No available channel，硬不可用）：`gpt-5-nano`、`kimi-k2.5`——不入池。
+
+**路由即模型身份**：同权重不同线路 = 不同实验对象。[酒馆专用0.9刀/次]gemini-2.5-pro
+2026-08-05 下线——官方标注成功率仅 ~80%，e11 实测 96k 长包 stream 两次停滞断流 +
+429 限流 + 用户后台见其挂死；标准按量 `gemini-2.5-pro` 探针 24s 全通，接任中档 Gemini。
+e11/e12 历史数据为酒馆线所产（归档与判卷映射不动，`audit-arms.py`/`cost-stats.py`
+保留旧名只为反查历史臂）；新实验一律用标准线，跨批对照时注意这是**线路换代**。
 
 聚光系窗口未逐测（多为转发通道，官方页无直接规格）：按系族常规值估算（GPT 系 400K /
 Gemini 系 1M / Claude 系 200K），89.8k 包占用率 ≤45%，e10/e11 无顶穿风险；
@@ -40,7 +47,7 @@ e11 的 D 档（2×L，最长 ~180k）仅 Gemini/GPT 系可跑，Claude 200K 跑
 历史数据注意：e7c 用过的 `gemini-2.5-flash-t3`、`gemini-2.5-pro-t3`、`gpt-5` 不在新池名单内，
 跨批对照锚点：`gpt-5-mini`、`claude-haiku-4-5-20251001`、`[kiro]claude-opus-4-8`。
 
-## 硅基流动系（12 模型，便宜小模型为主）
+## 硅基流动系（10 模型，便宜小模型为主；GLM-4-32B 2026-08-05 除名，见变更记录 v4）
 
 上下文窗口为 2026-08-05 普查结果（siliconflow.com 官方模型页，**平台实际值**，可能与模型原生值不同）。
 
@@ -49,10 +56,8 @@ e11 的 D 档（2×L，最长 ~180k）仅 Gemini/GPT 系可跑，Claude 200K 跑
 | Pro/deepseek-ai/DeepSeek-R1 | DeepSeek | 推理 | 164K（另有 96K 旧口径，未统一） | 55%（96K 口径 94%） |
 | Pro/deepseek-ai/DeepSeek-V3 | DeepSeek | 非推理 | 164K | 55% |
 | Qwen/Qwen3.6-35B-A3B | Qwen | 推理 | 262K | 34% |
-| Qwen/Qwen3.5-4B | Qwen | 推理 | 262K（推测，同系列口径） | 34% |
 | Qwen/Qwen3.5-9B | Qwen | 推理 | 262K | 34% |
 | Qwen/Qwen3.5-27B | Qwen | 推理 | 262K | 34% |
-| THUDM/GLM-4-32B-0414 | GLM | 非推理 | **33K** | **274% ✗ 顶穿** |
 | THUDM/GLM-Z1-9B-0414 | GLM | 推理 | 131K（平台扩展，原生 32K） | 69% |
 | zai-org/GLM-4.5-Air | GLM | 非推理 | 131K | 69% |
 | inclusionAI/Ling-mini-2.0 | 蚂蚁 | 非推理 | 131K | 69% |
@@ -60,8 +65,8 @@ e11 的 D 档（2×L，最长 ~180k）仅 Gemini/GPT 系可跑，Claude 200K 跑
 | Pro/MiniMaxAI/MiniMax-M2.5 | MiniMax | 推理样 | 197K（平台截断，原生 256K） | 46% |
 
 **e9 适应性调整（占用率普查直接后果）**：
-- `GLM-4-32B-0414`（33K 窗口）：只能跑 0/8.1k(25%)/30.1k(92%) 三档，47.4k 及以上物理顶穿——
-  不跑满档，按 3 档 × 8 臂 = 24 会话计。它反而成了 H8 占用率假设的天然近满样本。
+- ~~`GLM-4-32B-0414`（33K 窗口）只跑 3 档~~ → **2026-08-05 已除名**（上游挂死）。其 e9 历史臂
+  （3 档 × 8 臂）保留归档，仍是 H8 占用率假设的近满样本历史数据；e11/e12 补跑的 48 条全灭臂不计入分析。
 - 89.8k 档在 GLM-Z1-9B/GLM-4.5-Air/Ling-mini（131K）上占用率 69%，在 R1（96K 旧口径）上 94%——
   e9 数据天然覆盖 25%-94% 的占用率谱，分析时**按占用率分桶**，不只按档分桶。
 - 账户状态：API 显示欠费 -67.05 但调用正常（后付费模式）；用户后台显示余额约 49 元（以用户后台为准，差异未查明）。

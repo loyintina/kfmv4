@@ -18,6 +18,7 @@
 import { existsSync, mkdirSync, readFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
+import { createHash } from 'crypto';
 import { fileURLToPath } from 'url';
 import { runSession, loadParadigm } from './session-runner.mjs';
 
@@ -57,7 +58,12 @@ for (let ti = 0; ti < tasks.length; ti++) {
     }
   }
 }
-const armId = (s) => `${prefix}t${s.ti}p${s.pi}m${s.mi}r${s.n}`;
+// 臂 id = 下标 + 内容哈希。教训（2026-08-05 e11 批2 事故）：纯下标编码时，同前缀
+// 不同批次只要「任务数/范式数/模型数」位置对齐就撞名——批2（浓缩×2）全部被误判
+// 已跑过而跳过；若强行重跑还会覆盖批1 归档。哈希把 task+paradigm+model 编进文件名，
+// 跨批次天然唯一，同前缀共存无碰撞。
+const armHash = (s) => createHash('md5').update(`${s.task}|${s.paradigm}|${s.model}`).digest('hex').slice(0, 6);
+const armId = (s) => `${prefix}t${s.ti}p${s.pi}m${s.mi}r${s.n}-${armHash(s)}`;
 
 // 断点续跑：已归档的跳过
 const todo = armSpecs.filter(s => !existsSync(join(SCRIPT, `${armId(s)}.json`)));
@@ -65,14 +71,18 @@ console.log(`[batch-run] 变体 ${tasks.length} 任务 × ${paradigms.length} �
 
 /** 错误桩检测（2026-08-05，e9 尸检）：上游 4xx/5xx 被面板吞成正文「[错误: …]」
  *  照常归档——断点续跑会把这些臂当完成跳过， silently 污染数据。
- *  归档后检查末条 AI 消息：错误桩 → 删档 + 抛错走重试。 */
+ *  归档后检查末条 AI 消息：错误桩 → 删档 + 抛错走重试。
+ *  2026-08-05 e11 尸检补两漏检形态：① 空输出（len<50，思考型模型预算
+ *  耗尽/上游静默断流 → 正文为空，6/8 残臂都是这种，判卷按 0 分污染格均值）；
+ *  ② 中途断流（正文中段追加「[错误: terminated]」，不开头 → 原检测漏检）。 */
 function isErrorStub(outPath) {
   try {
     const d = JSON.parse(readFileSync(outPath, 'utf-8'));
     const ai = [...(d.messages || [])].reverse().find(m => m?.role === 'ai');
-    if (!ai) return false;
+    if (!ai) return true; // 无 AI 消息 = 空臂
     const txt = (ai.content || []).filter(b => b?.type === 'text').map(b => b.text || '').join('').trimStart();
-    return txt.startsWith('[错误') || txt.slice(0, 80).includes('API 请求失败');
+    if (txt.length < 50) return true; // 空输出/极短残句
+    return txt.startsWith('[错误') || txt.includes('[错误: terminated]') || txt.slice(0, 80).includes('API 请求失败');
   } catch { return false; }
 }
 

@@ -1,0 +1,194 @@
+{
+ "134": {
+  "arm": "biasf-t0p0m0r0-b6d3d1",
+  "model": "deepseek-v4-flash"
+ },
+ "439": {
+  "arm": "biasf-t0p0m0r1-b6d3d1",
+  "model": "deepseek-v4-flash"
+ },
+ "888": {
+  "arm": "biasf-t0p0m0r2-b6d3d1",
+  "model": "deepseek-v4-flash"
+ },
+ "470": {
+  "arm": "biasf-t0p0m0r3-b6d3d1",
+  "model": "deepseek-v4-flash"
+ },
+ "158": {
+  "arm": "biasf-t0p0m0r4-b6d3d1",
+  "model": "deepseek-v4-flash"
+ },
+ "420": {
+  "arm": "biasf-t0p0m0r5-b6d3d1",
+  "model": "deepseek-v4-flash"
+ },
+ "542": {
+  "arm": "biasf-t0p0m0r6-b6d3d1",
+  "model": "deepseek-v4-flash"
+ },
+ "945": {
+  "arm": "biasf-t0p0m0r7-b6d3d1",
+  "model": "deepseek-v4-flash"
+ },
+ "587": {
+  "arm": "biasf-t0p1m0r0-981768",
+  "model": "deepseek-v4-flash"
+ },
+ "580": {
+  "arm": "biasf-t0p1m0r1-981768",
+  "model": "deepseek-v4-flash"
+ },
+ "473": {
+  "arm": "biasf-t0p1m0r2-981768",
+  "model": "deepseek-v4-flash"
+ },
+ "179": {
+  "arm": "biasf-t0p1m0r3-981768",
+  "model": "deepseek-v4-flash"
+ },
+ "186": {
+  "arm": "biasf-t0p1m0r4-981768",
+  "model": "deepseek-v4-flash"
+ },
+ "720": {
+  "arm": "biasf-t0p1m0r5-981768",
+  "model": "deepseek-v4-flash"
+ },
+ "650": {
+  "arm": "biasf-t0p1m0r6-981768",
+  "model": "deepseek-v4-flash"
+ },
+ "335": {
+  "arm": "biasf-t0p1m0r7-981768",
+  "model": "deepseek-v4-flash"
+ },
+ "800": {
+  "arm": "e11-t0p0m0r0",
+  "model": "[codex]gpt-5.6-luna"
+ },
+ "786": {
+  "arm": "e11-t0p0m0r1",
+  "model": "[codex]gpt-5.6-luna"
+ },
+ "651": {
+  "arm": "e11-t0p0m0r2",
+  "model": "[codex]gpt-5.6-luna"
+ },
+ "723": {
+  "arm": "e11-t0p0m0r3",
+  "model": "[codex]gpt-5.6-luna"
+ },
+ "250": {
+  "arm": "e11-t0p0m0r4",
+  "model": "[codex]gpt-5.6-luna"
+ },
+ "192": {
+  "arm": "e11-t0p0m0r5",
+  "model": "[codex]gpt-5.6-luna"
+ },
+ "744": {
+  "arm": "e11-t0p0m0r6",
+  "model": "[codex]gpt-5.6-luna"
+ },
+ "987": {
+  "arm": "e11-t0p0m0r7",
+  "model": "[codex]gpt-5.6-luna"
+ },
+ "839": {
+  "arm": "e11-t0p0m1r0",
+  "model": "[酒馆专用0.9刀/次]gemini-2.5-pro"
+ },
+ "615": {
+  "arm": "e11-t0p0m1r1",
+  "model": "[酒馆专用0.9刀/次]gemini-2.5-pro"
+ },
+ "536": {
+  "arm": "e11-t0p0m1r2",
+  "model": "[酒馆专用0.9刀/次]gemini-2.5-pro"
+ },
+ "638": {
+  "arm": "e11-t0p0m1r3",
+  "model": "[酒馆专用0.9刀/次]gemini-2.5-pro"
+ },
+ "159": {
+  "arm": "e11-t0p0m1r4",
+  "model": "[酒馆专用0.9刀/次]gemini-2.5-pro"
+ },
+ "972": {
+  "arm": "e11-t0p0m1r5",
+  "model": "[酒馆专用0.9刀/次]gemini-2.5-pro"
+ },
+ "535": {
+  "arm": "e11-t0p0m1r6",
+  "model": "[酒馆专用0.9刀/次]gemini-2.5-pro"
+ },
+ "673": {
+  "arm": "e11-t0p0m1r7",
+  "model": "[酒馆专用0.9刀/次]gemini-2.5-pro"
+ },
+ "891": {
+  "arm": "e11-t0p1m0r0",
+  "model": "[codex]gpt-5.6-luna"
+ },
+ "661": {
+  "arm": "e11-t0p1m0r1",
+  "model": "[codex]gpt-5.6-luna"
+ },
+ "926": {
+  "arm": "e11-t0p1m0r2",
+  "model": "[codex]gpt-5.6-luna"
+ },
+ "998": {
+  "arm": "e11-t0p1m0r3",
+  "model": "[codex]gpt-5.6-luna"
+ },
+ "117": {
+  "arm": "e11-t0p1m0r4",
+  "model": "[codex]gpt-5.6-luna"
+ },
+ "522": {
+  "arm": "e11-t0p1m0r5",
+  "model": "[codex]gpt-5.6-luna"
+ },
+ "219": {
+  "arm": "e11-t0p1m0r6",
+  "model": "[codex]gpt-5.6-luna"
+ },
+ "822": {
+  "arm": "e11-t0p1m0r7",
+  "model": "[codex]gpt-5.6-luna"
+ },
+ "208": {
+  "arm": "e11-t0p1m1r0",
+  "model": "[酒馆专用0.9刀/次]gemini-2.5-pro"
+ },
+ "654": {
+  "arm": "e11-t0p1m1r1",
+  "model": "[酒馆专用0.9刀/次]gemini-2.5-pro"
+ },
+ "985": {
+  "arm": "e11-t0p1m1r2",
+  "model": "[酒馆专用0.9刀/次]gemini-2.5-pro"
+ },
+ "266": {
+  "arm": "e11-t0p1m1r3",
+  "model": "[酒馆专用0.9刀/次]gemini-2.5-pro"
+ },
+ "543": {
+  "arm": "e11-t0p1m1r4",
+  "model": "[酒馆专用0.9刀/次]gemini-2.5-pro"
+ },
+ "848": {
+  "arm": "e11-t0p1m1r5",
+  "model": "[酒馆专用0.9刀/次]gemini-2.5-pro"
+ },
+ "263": {
+  "arm": "e11-t0p1m1r6",
+  "model": "[酒馆专用0.9刀/次]gemini-2.5-pro"
+ },
+ "450": {
+  "arm": "e11-t0p1m1r7",
+  "model": "[酒馆专用0.9刀/次]gemini-2.5-pro"
+ }
+}
