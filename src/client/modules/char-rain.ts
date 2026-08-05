@@ -260,7 +260,7 @@ function _charRainCore(
 
 /**
  * 从容器 children 中过滤 title-* / file-* 行，创建字符雨。
- * 与旧签名完全兼容，调用方无需修改。
+ * @param depth 当前嵌套深度（用于性能优化：深层跳过字符雨）
  */
 export function setupCharRainTweens(
   container: Box,
@@ -270,11 +270,12 @@ export function setupCharRainTweens(
   tl: AnimTimeline,
   baseDelay: number,
   direction: 'expand' | 'collapse' = 'expand',
+  depth: number = 0,
 ): CharRainCleanup | null {
   const rows = container.children.filter((c) =>
     c.id?.startsWith("title-") || c.id?.startsWith("file-")
   );
-  return _charRainCore(rows, rowTargetYs, container, overlayContainer, root, tl, baseDelay, direction);
+  return _charRainCore(rows, rowTargetYs, container, overlayContainer, root, tl, baseDelay, direction, depth);
 }
 
 // ============================================================

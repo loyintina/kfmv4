@@ -879,3 +879,37 @@ regression('BAR-SESSIONCARD-PROVIDER-01', 'ui/session-card', '会话卡 metaRow 
   const card = readFileSync('src/client/cards/plugins/session.card.ts', 'utf-8');
   assert(!card.includes('<span>${session.providerId}</span>'), 'metaRow 不得追加 providerId');
 });
+
+// ==========================================================================
+// BAR-TREE-PERF-01: 文件树深层展开性能优化（批量 notify）
+//
+// 背景：深层展开时（如 /root/a/b/c/d/e/f），fetchDirRecursive 递归 N 层，
+// 每层调用 KFMState.setFile → notify() → rebuildTree()，导致 N 次全树重建。
+// 修复：批量写入 KFMState.files，全部完成后只 notify 一次。
+// ==========================================================================
+
+group('tree-loader — 批量 notify 性能优化（BAR-TREE-PERF-01）');
+
+regression('BAR-TREE-PERF-01', 'tree-loader', 'fetchDirRecursive 批量写入 files，只 notify 一次（源码断言）', () => {
+  const src = readFileSync('src/client/modules/tree-loader.ts', 'utf-8');
+  // ingestTree 必须接收 batch 参数
+  assert(src.includes('function ingestTree(parentPath: string, items: any[], batch: Map'), 'ingestTree 必须接收 batch 参数');
+  // 必须用 batch.set 而非 KFMState.setFile
+  assert(src.includes('batch.set(parentPath'), '必须用 batch.set 写入');
+  // 必须在循环后统一写入 + notify
+  assert(src.includes('for (const [path, node] of batch)'), '必须遍历 batch 统一写入');
+  assert(src.includes('KFMState.files[path] = node'), '必须直接写入 files 而非调用 setFile');
+  // setFile 会 notify，批量写入时不得调用
+  const ingestBody = src.split('function ingestTree')[1]?.split('\\n}\\n')[0] || '';
+  assert(!ingestBody.includes('KFMState.setFile'), 'ingestTree 内部不得调用 KFMState.setFile（会触发多次 notify）');
+});
+
+regression('BAR-TREE-PERF-02', 'tree-loader', 'loadFileTree 动画串行但不再重复 notify（源码断言）', () => {
+  const src = readFileSync('src/client/modules/tree-loader.ts', 'utf-8');
+  const loadBody = src.split('export async function loadFileTree')[1]?.split('Registry.registerContentGenerator')[0] || '';
+  // 动画循环内不得再 notify
+  const loopBody = loadBody.split('for (const child of rootNode.children)')[1]?.split('}\\n')[0] || '';
+  assert(!loopBody.includes('KFMState.notify()'), '动画循环内不得调用 notify（数据已加载完成）');
+  // 必须调用 triggerExpandAnimation
+  assert(loopBody.includes('triggerExpandAnimation(child.path)'), '动画循环必须调用 triggerExpandAnimation');
+});

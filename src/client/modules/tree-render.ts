@@ -619,11 +619,13 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
 
   // === overlay 模式 ===
   assert(activeOverlayCount() === 0, 'overlays not empty before expand');
-  const pack = setupExpandOverlays(container, fullHeight);
+  // 计算当前容器的深度：从 expanded-* ID 中提取路径，数斜杠数量
+  const depth = (path.match(/\//g) || []).length - 1;
+  const pack = setupExpandOverlays(container, fullHeight, true, depth);
 
   // 扁平化收集所有子容器 target，一次性搭建 overlay
   const subTargets = flattenExpandTree(container, 1);
-  const subPacks = subTargets.map(st => setupExpandOverlays(st.container, st.fullHeight, false));
+  const subPacks = subTargets.map(st => setupExpandOverlays(st.container, st.fullHeight, false, st.level + depth));
 
   // 构建独立动画树并设置到渲染器（双树渲染）
   const overlayRoot = buildAndSetOverlayTree(pack, subTargets, subPacks, root);
@@ -647,7 +649,7 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
   const topCleanup = setupCharRainTweens(
     container, charLayer, root,
     pack.rowOverlays.map(r => r.y),
-    ts, 0
+    ts, 0, 'expand', depth
   );
   if (topCleanup) charRainCleanups.push(topCleanup);
 
@@ -667,11 +669,12 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
     if (realContainer) {
       const subParent = sp.containerOverlay.parent!;
       const subCharLayer = createCharLayer(sp.containerOverlay.x, sp.containerOverlay.y, subParent);
+      const subDepth = subTargets.find(st => st.container.id === sp.containerOverlay.id?.replace('ov-expanded-', 'expanded-'))?.level ?? 1;
       // 容器内部行的字符雨
       const subCleanup = setupCharRainTweens(
         realContainer, subCharLayer, root,
         sp.rowOverlays.map(r => r.y),
-        ts, delay
+        ts, delay, 'expand', depth + subDepth
       );
       if (subCleanup) charRainCleanups.push(subCleanup);
     }
@@ -749,11 +752,12 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
   }
 
   // 搭建折叠 overlay
-  const pack = setupCollapseOverlays(container, fullH);
+  const depth = (hitData.path.match(/\//g) || []).length - 1;
+  const pack = setupCollapseOverlays(container, fullH, true, depth);
 
   // 扁平化收集子容器
   const subTargets = flattenExpandTree(container, 1);
-  const subPacks = subTargets.map(st => setupCollapseOverlays(st.container, st.fullHeight, false));
+  const subPacks = subTargets.map(st => setupCollapseOverlays(st.container, st.fullHeight, false, st.level + depth));
 
   // 构建独立动画树（折叠）
   const overlayRoot = buildAndSetOverlayTree(pack, subTargets, subPacks, root);
@@ -775,7 +779,7 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
   const topCleanup = setupCharRainTweens(
     container, charLayer, root,
     pack.rowOverlays.map(r => r.y),
-    ts, collapseBaseDelay, 'collapse',
+    ts, collapseBaseDelay, 'collapse', depth
   );
   if (topCleanup) charRainCleanups.push(topCleanup);
 
@@ -789,7 +793,7 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
       const subCleanup = setupCharRainTweens(
         realContainer, subCharLayer, root,
         sp.rowOverlays.map(r => r.y),
-        ts, delay, 'collapse',
+        ts, delay, 'collapse', depth + subLevel
       );
       if (subCleanup) charRainCleanups.push(subCleanup);
     }

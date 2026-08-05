@@ -208,7 +208,7 @@ export interface OverlayPack {
 }
 
 /** 搭建展开动画的 overlay 集合 */
-export function setupExpandOverlays(container: Box, fullHeight: number, siblingCloneLabels = true): OverlayPack {
+export function setupExpandOverlays(container: Box, fullHeight: number, siblingCloneLabels = true, depth: number = 0): OverlayPack {
   const parent = container.parent!;
 
   // 1. 容器 overlay (height=0, 即将动画到 fullHeight)
@@ -265,7 +265,7 @@ export function setupExpandOverlays(container: Box, fullHeight: number, siblingC
 }
 
 /** 搭建折叠动画的 overlay 集合 */
-export function setupCollapseOverlays(container: Box, fullH: number, siblingCloneLabels = true): OverlayPack {
+export function setupCollapseOverlays(container: Box, fullH: number, siblingCloneLabels = true, depth: number = 0): OverlayPack {
   const parent = container.parent!;
 
   // 1. 容器 overlay (height=fullH, 即将动画到 0)
