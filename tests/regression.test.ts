@@ -13,7 +13,7 @@ import * as clickQueue from '../src/client/modules/click-queue.js';
 import { L } from '../src/client/modules/renderer-lifecycle.js';
 import { KFMState, getFileRowData } from '../src/client/modules/state.js';
 import { buildSidebarTree } from '../src/client/modules/tree-model.js';
-import * as da from '../src/client/modules/debug-assert.js';
+import * as da from '../src/client/modules/debug-assert.ts';
 import { anim } from '../src/client/modules/animation-registry.js';
 import * as sr from '../src/client/modules/style-registry.js';
 import { triggerExpandAnimation } from '../src/client/modules/tree-render.js';
