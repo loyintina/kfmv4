@@ -45,9 +45,10 @@ agent 原件，不是 agent 应用。三明治：**机械组装输入 → agent 
 
 ## provider 兜底链
 
-`providers.config.json` 有序列表：Opencode Go Google/deepseek-v4-flash →
-OpenCode Go GitHub/deepseek-v4-flash（429 月限额兜底位，复位后自动回主）→
-deepseek/deepseek-v4-flash → 阶跃星辰/step-3.7-flash（2026-07-30 用户拍板重排）。
+`providers.config.json` 单臂链：deepseek/deepseek-v4-flash（2026-08-05 两次重排收敛：
+opencode 网关两臂额度耗尽撤下、阶跃星辰顺位也撤——全链只留自有额度官方臂；
+失败原地重试 2 次（runAgent `retries` 默认 2），仍失败显式报错透传 errors，
+不再顺位兜底——错误可见性优先于成功率）。
 key 从 `~/.kfmv4/providers.json` 按 id 读；调用失败自动落下一个；
 可选 `params` 覆盖请求参数（现配 `response_format: json_object`——「只输出 JSON」从 prompt 约束升级为端点约束，与 validate 重试双保险）。
 
@@ -73,7 +74,10 @@ inter-workflows 大 prompt 探针双端 60s 超时失败教训）。
 （2026-07-30 用户拍板撤下 Kimi/kimi-for-coding-highspeed 链首位：端点过严——审计大 prompt
 连续空响应，且该系只允许 temperature=1 与「只输出 JSON」任务相克，原 infra code-map 漂移 12 结案。
 同日链路重排：Opencode Go Google/deepseek-v4-flash → OpenCode Go GitHub（429 月限额，8 天复位）
-→ deepseek 官方 → 阶跃星辰。）
+→ deepseek 官方 → 阶跃星辰。
+2026-08-05 再重排：opencode 网关两臂（Go Google / Go GitHub）额度耗尽撤下；同日
+阶跃星辰顺位亦撤（用户拍板：自有额度官方臂失败即显式报错，不静默顺位）——链收敛为
+deepseek 官方单臂，见上文「provider 兜底链」。）
 未来前端设置卡负责该链的可视化编排 + key 健康状态（STACK #3 配套）。
 
 ## 输出可控性

@@ -49,6 +49,7 @@ import './check-deploy-freshness.test.js';
 import './provider-env.test.js';
 import './gen-pipeline.test.js';
 import './semantic-chain.test.js';
+import './semantic-audit.test.js';
 import './stack-numbering.test.js';
 import './doc-scripts.test.js';
 import './session-flush.test.js';

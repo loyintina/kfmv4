@@ -53,9 +53,10 @@ esbuild server ESM + client IIFE（external 硬编码 build.mjs）→ checkFresh
 
 ## 持久化/外部边界
 
-- **写 git 跟踪文件**：build.mjs 改写 tracked 的 public/index.html（:131）+
-  public/css/*.css（sass）——每次构建让工作区变脏（见漂移 10）；sync-counts 回写
-  README/CLAUDE/contract/testing.md；gen-code-inventory 写 code-inventory.md
+- **写 git 跟踪文件**：build.mjs 改写 tracked 的 public/index.html（:128，仅内容变化才
+  重写——F4/BAR-BUILD-06 后同一提交多次构建不再变脏，见漂移 10 已结案）+
+  public/css/*.css（sass）；sync-counts 回写 README/CLAUDE/contract/testing.md；
+  gen-code-inventory 写 code-inventory.md
 - 网络：agent-runner fetch OpenAI 兼容端点（120s 超时，runAgent timeoutMs 可配）；deploy/kfm-restart curl 本机
 - 仓库外：~/.kfmv4/providers.json（agent-runner 读 key；src/server/index.ts:145-149
   另有权限检查——server 域越界读 agent 配置）
@@ -86,7 +87,7 @@ esbuild server ESM + client IIFE（external 硬编码 build.mjs）→ checkFresh
 4. **【已结案 2026-07-29】tag-advisor 机械下限注释曾 ≠ 代码**：头注释曾写「有 feat → minor」，
    代码 floor = breaking>0 ? major : total>0 ? patch : none（:33）。修复：头注释改为
    与代码一致（feat 不抬下限，级别归语义层）（语义审计 B2 附带）。
-5. **死代码**：renderTemplate（agent-runner.mjs:32）全仓库无调用，尽管头注释把
+5. **死代码**：renderTemplate（agent-runner.mjs:75）全仓库无调用，尽管头注释把
    「{{var}} 模板注入」列为设计支柱。
 6. **infra 域映射残缺（本次测绘已修）**：DOMAIN_SRC 的 infra 条目原只有
    build.mjs/scripts/check//tests//public/css/，契约文件清单声称的 scripts/deploy.sh、
@@ -96,12 +97,13 @@ esbuild server ESM + client IIFE（external 硬编码 build.mjs）→ checkFresh
 7. **contract 样式节失真**：只提 base.scss → base.css，实际 sass 编译 base+sidebar
    两份；5 个 css 中 tmux-card/xterm/z-index 无 scss 源，陷阱 1 对它们不适用。
 8. **check-test-patterns 注释指向错误**：头注释称计数模式在 check-consistency.mjs，
-   实际在 sync-counts.mjs:37；check-consistency 是 CLAUDE.md 路由表检查。
+   实际在 sync-counts.mjs:40；check-consistency 是 CLAUDE.md 路由表检查。
 9. **smoke.mjs:4 注释硬编码「287 个测试」**，实测 456——sync-counts 的 TARGETS
    不覆盖 smoke.mjs。
-10. **构建制造未提交改动**：build.mjs 改写 tracked 的 index.html + css，每次构建让
-    工作区变脏，与 check-uncommitted 的心法 14 形成张力——chain.mjs 的 --soft 降级
-    或许正是 workaround（存疑）。
+10. **【已结案 2026-08-04】构建制造未提交改动**（BAR-BUILD-06）：build.mjs 曾每次构建
+    改写 tracked 的 index.html + css 使工作区变脏。修复：BUILD_TIME 改 git 提交时间 +
+    index.html 版本戳改内容 hash——同一提交多次构建 index.html 不变（:128 仅内容变化
+    才重写），脏树消灭；新提交构建仍正确刷缓存。
 11. **【已结案 2026-07-30】gen-code-inventory 无管线挂接**：已移入 scripts/check/ 并加
     --check-only 挂 check 链（sync-counts 后、tsc 前）+ 探针负例——清单不新鲜即中断，
     不再靠人记得重跑。

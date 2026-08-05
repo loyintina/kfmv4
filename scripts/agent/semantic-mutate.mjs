@@ -36,7 +36,7 @@ export const MUTATIONS = [
   // ---- L1 回归层：历史真案例复刻 ----
   {
     id: 'M01', level: 'L1', sem: 'SEM001', file: 'README.md', expect: 'report',
-    find: '**40 个 check-* 脚本 + 517 个回归测试**',
+    find: '**40 个 check-* 脚本 + 522 个回归测试**',
     replace: '**36 个 check-* 脚本 + 499 个回归测试**',
     tasks: ['readme-vs-maps', 'inter-readme-codemap'],
     note: 'check 计数应为 36（锚点 2026-08-03 随 493→498 迁移）',
@@ -109,7 +109,7 @@ export const MUTATIONS = [
   // ---- L2 矩阵填充（2026-07-30 扩卷）：SEM × 文档元素空格系统补齐 ----
   {
     id: 'M11', level: 'L2', sem: 'SEM001', file: 'docs/guides/testing.md', expect: 'report',
-    find: '517 个测试（单元/集成/冒烟/不变量），~1.3s',
+    find: '522 个测试（单元/集成/冒烟/不变量），~1.3s',
     replace: '420 个测试（单元/集成/冒烟/不变量），~1.3s',
     tasks: ['guides-testing-vs-infra'],
     note: '测试计数漂移（锚点 2026-08-03 随 493→498 迁移——baseline 可逮）',

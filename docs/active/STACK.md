@@ -22,7 +22,7 @@
      → 24 条修复 → 结晶三件套进确定区 → semantic-audit.yaml 制度化；账本 ledger/semantic-provenance.md，
      复盘与「编译≠检查」三档阶梯见 semantic-compiler-seed.md 末节）
    — 语义编译器体系（双区管线/SEM 错误码/冷启动 e2e/集群统计）→ [semantic-compiler-seed.md]，批 1.5 试点
-3. agent 任务执行器（agent-runner）设计（2026-07-29 立项，用户动议）
+3. ✅ agent 任务执行器（agent-runner）设计（2026-07-29 立项，用户动议；主体闭环，远期/待设计子项见正文）
    — 通用运行模式：固定提示词 + 输出可控 + 独立任务——发版（版本判定/账本回写/tag）、
      语义审计（批 1.5）、集群冷启动 e2e 都是其实例，与 semantic-compiler-seed.md 双区管线一脉
    — 形态收敛：A=独立 agent 脚本（洁净室/可进 cron/exit code 语义，新建）；
@@ -124,12 +124,12 @@
      统计——有设计沉淀 avg fix 链 1.58 vs 无沉淀 2.58（-39%，置换检验 p=0.004，pre/post-v7
      两时代方向一致，厚尾率 12.7% vs 21.0%）——心法 34 获数据支持，报告
      decisions/case-study-iceberg-experiment.md（三条新心法首次联合实战）
-4. 卡片类需求四件（2026-07-29 记，优先级后排）
+4. ⏳ 卡片类需求四件（2026-07-29 记，优先级后排；1/4 已闭环，其余待做）
    — 工作流实体卡片插件：workflows/ 的实体卡进卡片堆（形态参照现有 tool 卡）
    — 中央面板网格线升级 + 实时统计信息
-   — 会话卡逻辑修复（具体病灶待补充）
+   — 会话卡逻辑修复 ✅ 已闭环（2026-08-01，BAR-SESSION-01，明细见条目 5）
    — 审查文件卡代码高亮问题修正（具体病灶待补充）
-5. server 会话/prompts 域 bug 池（2026-07-29 记；初始主题=提示词注入约束修复，病灶待补充；后收编 bug 见子项）
+5. ✅ server 会话/prompts 域 bug 池（2026-07-29 记；前身=提示词注入约束修复主题，池内 4 bug 全部闭环——BAR-BUG-01/BAR-SESSION-01/BAR-SEC-14/15，明细见子项）
    — 另：面板发送消息无响应（2026-07-29 记，用户反馈的活 bug；**用户 08-03 确认早已修复**）
      ——已追溯登记 BAR-BUG-01（F2 现场，R4 入口门后此类不再发生）
    — 另：会话删除后服务端串档（2026-07-30 记，冷启动实验 terra 臂尸检发现）：删除会话卡只删
@@ -146,7 +146,7 @@
    — 另：tag-advisor shell 注入 P0（2026-07-31 记，同臂发现；BAR-SEC-15 已钉）：argv ref 直插 execSync
      模板串。**✅ 已修复（BAR-SEC-15）**：execFileSync 参数数组 + REF_RE 白名单，
      tests/tag-advisor.test.ts 3 钉 revert 验证
-6. 全量代码分析 → domains 填充（2026-07-29 提前完成，用户动议）
+6. ✅ 全量代码分析 → domains 填充（2026-07-29 主体完成，用户动议；后续队列 ④⑤⑥ 仍活，见下）
    — ✅ 六域 code-map + cross-domain.md（2026-07-29，99 条漂移带 file:line，0cecc62/3906707）
    — ✅ 机械层：gen-code-inventory.mjs（2026-07-29，已移 scripts/check/ 并 --check-only 挂链，鲜度不再靠人）
    — ✅ 溯源审计（2026-07-29）：22 subagent 考古 → ledger/drift-provenance.md（105 行普查 + 8 案深潜）
@@ -175,7 +175,7 @@
      无沉淀 2.58，p=0.004 已证「前置投入有效」）——测试先行是前置投入的具体形态
    — 现状锚点：bug-fix 流程已有「先钉回归测试再修」先例（BAR 系列 revert 钉），
      feat 流程无对应约束——讨论适配形态后候选进 workflows feat 类卡 / 心法
-9. 冷启动试卷体系长期化（2026-08-01 用户动议）
+9. ⏳ 冷启动试卷体系长期化（2026-08-01 用户动议；资产已入库，①-③ 机制未建）
    — 现状：同一提示词 + lab 基线的多 harness 对照实验已产出 100+ 臂带尸检数据，
      资产已入库 experiments/coldstart/（2026-08-01 起，sessions 在 .kfmv4 私有区）
    — 方向：① 定期复测对照（模型版本迭代/harness 演进后的行为漂移追踪）
@@ -217,7 +217,7 @@
      现行无实现。要么实现，要么正式否决记 decisions/
    — CONTEXT_ASSEMBLY_SPEC §7 两开放问题（多角色卡同载、工具卡工具定义来源）：
      detail-runtime 未覆盖，需裁决或补文档
-16. archive (a) 结算发现的三个真遗留（2026-07-29，旧审计开放项在新文档系统失联）
+16. archive (a) 结算发现的三个真遗留（2026-07-29，旧审计开放项在新文档系统失联；1/3 已定性非债，①② 未做）
    — v6.8 审计 #10：服务端 console.log 残留 ~12 处（ws-server.ts/index.ts/ai/chat.ts），
      应统一为 warn/error（客户端侧已清，debug-tools.md:115 有服务端惯例）
    — HANDOFF_2026-06-03_AUDIT_FIX_DEEP「留给下一轮」三项：_rowIndex 显式接口化
@@ -229,7 +229,7 @@
      handler + WS 协议面）保留为「AI 之手」预留基础设施——未来做 AI 操作页面时重建
      服务端触发即可，不算技术债；同日幽灵能力注册（file-search/file-read/file-write，
      无执行面误导 AI）已删，能力管道留空待 AI 之手重建
-17. 接手审计五缺口（2026-08-03 记，QoderCN 冷启动审计；F1 已修 ✅，F2-F5 待裁决，裁决后拆解）
+17. 接手审计五缺口（2026-08-03 记，QoderCN 冷启动审计；F1-F4 已闭环 ✅，F5 待裁决）
    — 共性：「反复出现的失败类还没有机械化主人」——责任真空型缺口
    — 08-03 追加：语义审计积压裁决完成——13 条逐条落账，牵出机械层「静默丢事实」
      家族三 bug（BAR-GENLIST-01 \Z 截断 / BAR-GENINV-01 CODE_EXT 蒸发 / BAR-SYNCCOUNTS-01
@@ -248,8 +248,9 @@
    — F2 bug 入口无强制通道（2026-08-04 已机械化 ✅）：check-stack-status R4
      入口门——STACK bug 状态条目必须带 BAR 编号（条目级，bugs.md 引用豁免）；
      现场清理：面板无响应追溯登记 BAR-BUG-01、路径穿越/注入补 BAR-SEC-14/15 引用
-   — F3 STACK 编号碰撞：主列表 1,2,3,8..16,4..7 插入序混乱，研究参考区 0./0b./9./10.
-     与主列表 #9/#10 撞号，引用歧义；check-stack-status 切分正则也会吞研究参考条目
+   — F3 STACK 编号碰撞 ✅ 已修（2026-08-04，BAR-STACKNUM-01）：主列表重排 1..N 连续 +
+     研究参考区迁 R1 独立命名空间 + 编号规范入 STACK 头注 + check-stack-status R3
+     编号纪律（断号/撞号即拦）
    — F4 构建自产永久脏树（BAR-BUILD-06）✅ 已修（2026-08-04）：BUILD_TIME 改 git 提交
      时间 + index.html 版本戳改内容 hash——同一提交多次构建 index.html 不变
      （脏树消灭，「未提交=危险」铁律恢复纯度）；新提交构建仍正确刷缓存

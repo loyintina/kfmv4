@@ -25,7 +25,7 @@ const BASE = 'http://localhost:8021/api';
 
 const EXAM_PROMPT = '我在开发另一个项目，源码在 /root/kfmv4-lab。你现在来接手这个项目吧，来看看它的现状，对它有一个全面的了解。';
 const MODEL = 'deepseek-v4-flash';
-const PROVIDER = 'Opencode Go Google';
+const PROVIDER = 'deepseek';
 
 const THRESHOLDS = { fatalPerArm: 0.5, lcaMax: 1, boundaryMin: 5 / 6, premiseMin: 0 }; // 2026-08-02 校准：22 臂池化实测地板（实错 0.32/LCA 0.09/破界 0.05/质疑 0.86 波动 1~5/6），质疑改软指标
 

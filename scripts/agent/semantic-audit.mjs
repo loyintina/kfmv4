@@ -17,7 +17,8 @@
  * - per-任务记账：reported/kept/dropped/provider/attempts 全量记 state，精确率迭代的数据源
  *
  * 用法：
- *   node scripts/agent/semantic-audit.mjs [--full] [--dry-run] [--task=<id>]
+ *   node scripts/agent/semantic-audit.mjs [--full] [--dry-run] [--task=<id1,id2,...>]
+ *   --task 支持逗号分隔多任务：走内部并发池（CONCURRENCY），单进程统一写 state 无竞态
  * exit 0 = 流程跑完（发现是产出不是失败）；exit 2 = 全部任务失败或环境缺 provider
  */
 
@@ -78,7 +79,12 @@ const SEM_TYPES = ['SEM001', 'SEM002', 'SEM003', 'SEM004', 'SEM005'];
 const args = process.argv.slice(2);
 const FULL = args.includes('--full');
 const DRY_RUN = args.includes('--dry-run');
-const ONLY = (args.find(a => a.startsWith('--task=')) || '').slice(7) || null;
+// --task=a,b,c：逗号分隔多任务（空 → null = 全量模式）。纯函数导出供测试（BAR-SEMCHAIN-03）。
+export function parseOnly(args) {
+  const raw = (args.find(a => a.startsWith('--task=')) || '').slice(7).trim();
+  return raw ? raw.split(',').map(s => s.trim()).filter(Boolean) : null;
+}
+const ONLY = parseOnly(args);
 
 // ========== 文档装载（目录展开为文件） ==========
 
@@ -319,9 +325,9 @@ const IS_MAIN = !!process.argv[1] && resolve(process.argv[1]) === fileURLToPath(
 
 if (IS_MAIN) {
 const state = loadState();
-let selected = TASKS.filter(t => !ONLY || t.id === ONLY);
+let selected = TASKS.filter(t => !ONLY || ONLY.includes(t.id));
 if (ONLY && selected.length === 0) {
-  console.error(`[semantic-audit] 无任务 id=${ONLY}（可选：${TASKS.map(t => t.id).join(', ')}）`);
+  console.error(`[semantic-audit] 无任务 id=${ONLY.join(',')}（可选：${TASKS.map(t => t.id).join(', ')}）`);
   process.exit(2);
 }
 
@@ -371,12 +377,16 @@ const results = await pool(willRun, CONCURRENCY, async ({ task, files, hash }) =
     : await runAgent({
         ...baseAgent,
         // 首轮教训（2026-07-30）：2000 被推理模型的思考链吃光，三棒全空响应；
-        // 审计 prompt 大 → 思考长 → 上限必须给足
-        maxTokens: 16000,
+        // 审计 prompt 大 → 思考长 → 上限必须给足。2026-08-05 升 32000 与工具流对齐：
+        // inter-workflows-infra（21 文件大 prompt）在 16000 下持续「空响应」——
+        // 思考链吃掉全部输出预算 → content 空。配官方标配 thinking enabled +
+        // reasoning_effort low（实测 low 控思考长度，难任务 1788 vs max 6272 字符），
+        // 思考留 reasoning 通道不外溢（保持 JSON 输出纪律）。
+        maxTokens: 32000,
         // 2026-08-02 超时根因修复：providers.config.json 全局带 response_format=json_object，
         // 大 prompt+长思考链下 ds-flash 内容空 → 校验重问 → 落链 → 单任务 15-25 分钟。
         // 剥离（extractJson 容错围栏）+ 大 prompt 超时给足——judge-batch 同款药方。
-        params: { response_format: undefined },
+        params: { response_format: undefined, thinking: { type: 'enabled' }, reasoning_effort: 'low' },
         timeoutMs: 300_000,
       });
   if (!result.ok) {

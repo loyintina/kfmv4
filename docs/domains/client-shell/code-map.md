@@ -32,7 +32,7 @@
 ## 状态所有权
 
 - KFMState 常规写走方法；**但 expandedPaths 被 tree-render.ts:524、tree-loader.ts:178
-  直写绕过 setter（无 notify）**；currentRoot 由 main.ts:99 直接赋值
+  直写绕过 setter（无 notify）**；currentRoot 由 main.ts:122 直接赋值
 - 手势内部态：gesture-registry 独占；drag-handler 每次 create 一个闭包 DragState
 - orb 模块级变量（orb.ts:63 起）：orbState/panelState 等 orb.ts 独占写；
   chatMessages 已随拆分迁 orb-chat-host.ts（ai-chat 域）——跨界共享结案（见漂移 8）
@@ -45,8 +45,8 @@ initApp → initUI → initGestures → initOrb（ensurePanel、sessionStore 初
 持久 run 恢复、tryAutoResume）→ initTreeRenderer → initCardStack → initFloatingCards
 → initWsChannel（main.ts:75）→ establishRoot → loadFileTree → initLazyLoader。
 
-**手势一帧**：pointerdown → _handleStart（gesture-registry.ts:224）→ preMatch hooks →
-按 priority 降序匹配（命中即 break :281）→ drag-handler onStart（长按计时 600ms）→
+**手势一帧**：pointerdown → _handleStart（gesture-registry.ts:189）→ preMatch hooks →
+按 priority 降序匹配（命中即 break :242）→ drag-handler onStart（长按计时 600ms）→
 超 15px 阈值转拖动 → onEnd 分流 tap/exitEdit/savePosition → orb onTap=togglePanel。
 
 ## 持久化/外部边界
@@ -67,16 +67,17 @@ initApp → initUI → initGestures → initOrb（ensurePanel、sessionStore 初
 
 ## 强制不变量（附证据）
 
-- 手势互斥：priority 降序 + 命中即 break + 同 id 替换（gesture-registry.ts:82-86,281）
+- 手势互斥：priority 降序 + 命中即 break + 同 id 替换（gesture-registry.ts:82-86,242）
 - GSAP 白名单：全 src 唯一 import gsap 是 animation-registry.ts:12（check-anim 构建期强制）
 - z-index JS↔CSS 一致：check-zindex.mjs 构建期强制
-- orb 位置钳制：`clampOrbPosition`（orb.ts:171-183）
+- orb 位置钳制：`clampOrbPosition`（orb.ts:112）
 - 长按/拖拽阈值常量唯一来源 interaction-constants.ts
 
 ## 漂移清单（实然 ≠ 应然）
 
 1. **初始化链漂移**：契约顺序与实然不符——initCardStack/initFloatingCards 在
-   loadFileTree 之前同步执行（main.ts:72-73 vs :129-134），initWsChannel 不在契约链上。
+   loadFileTree 之前同步执行（main.ts:87-88 vs 原契约序在 loadFileTree 后），
+   initWsChannel 不在契约链上；loadFileTree 经 establishRoot 异步触发（main.ts:123）。
 2. **【已结案】手势优先级表漂移**：契约表已按代码重测绘（实然 14 个 handler 全列，
    含平手靠注册序警告）。pinch-zoom 与 mode-btn 同为 90 的平手保留并在契约标注。
 3. **【已结案】orb 状态机漂移**：契约已改为实然 3 态（过渡态由 GSAP 承担）；

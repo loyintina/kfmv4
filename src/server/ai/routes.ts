@@ -55,7 +55,7 @@ export function setupAiRoutes(router: Router, wsServer: WsServer, startRunFn: St
     const run = startRunFn(
       sessionId, messages,
       model || 'deepseek-v4-flash',
-      provider || 'opencode-go',
+      provider || 'deepseek',
       wsServer,
       typeof roleFile === 'string' ? roleFile : undefined,
       undefined, // streamFn 默认

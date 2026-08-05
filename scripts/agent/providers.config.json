@@ -1,25 +1,7 @@
 [
   {
-    "providerId": "Opencode Go Google",
-    "model": "deepseek-v4-flash",
-    "params": {
-      "response_format": {
-        "type": "json_object"
-      }
-    }
-  },
-  {
     "providerId": "deepseek",
     "model": "deepseek-v4-flash",
-    "params": {
-      "response_format": {
-        "type": "json_object"
-      }
-    }
-  },
-  {
-    "providerId": "阶跃星辰",
-    "model": "step-3.7-flash",
     "params": {
       "response_format": {
         "type": "json_object"

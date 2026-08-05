@@ -29,61 +29,26 @@
       "attempts": 2
     },
     "stack-vs-ledger": {
-      "hash": "ebca6b0685b865415b79df4edf265248f5e28d33",
-      "lastRun": "2026-08-04",
+      "hash": "fce19050c340b6fbd9765e2f06e673b44a84e109",
+      "lastRun": "2026-08-05",
       "status": "ok",
       "tooled": false,
       "fallback": false,
-      "reported": 6,
-      "kept": 6,
-      "dropped": 0,
-      "keptFindings": [
+      "reported": 1,
+      "kept": 0,
+      "dropped": 1,
+      "keptFindings": [],
+      "droppedFindings": [
         {
           "type": "SEM001",
-          "claim": "docs/active/STACK.md:4 标题状态",
-          "against": "docs/ledger/bugs.md:BAR-SESSION-01 行",
-          "quote": "卡片类需求四件",
-          "note": "子项「会话卡逻辑修复」已随BAR-SESSION-01闭环，条目4标题未标✅，属已闭环未标注"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/active/STACK.md:9 标题状态",
-          "against": "docs/active/STACK.md:13 行",
-          "quote": "冷启动试卷体系长期化",
-          "note": "实验资产已入库，收尾依赖的#13已闭环，条目9标题未标✅，属已闭环未标注"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/active/STACK.md:16 标题状态",
-          "against": "docs/active/STACK.md:16 子项3",
-          "quote": "archive (a) 结算发现",
-          "note": "子项「file-tree命令已实现」已闭环，条目16标题未标✅，属已闭环未标注"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/active/STACK.md:17 F3 状态",
-          "against": "docs/ledger/bugs.md:BAR-STACKNUM-01 行",
-          "quote": "F3 STACK 编号碰撞",
-          "note": "BAR-STACKNUM-01已钉，编号已修正连续无撞号，条目17 F3子项未标✅，属已闭环未标注"
-        },
-        {
-          "type": "SEM005",
-          "claim": "docs/active/STACK.md:5 标题主题声明",
-          "against": "docs/active/STACK.md:5 子项列表",
-          "quote": "初始主题=提示词注入约束修复",
-          "note": "标题声明初始主题为提示词注入约束修复，子项无任何相关内容，全为会话/安全/面板类bug，内容自相矛盾"
-        },
-        {
-          "type": "SEM005",
-          "claim": "docs/active/STACK.md:6 标题完成声明",
-          "against": "docs/active/STACK.md:6 后续队列",
-          "quote": "2026-07-29 提前完成",
-          "note": "标题声明全量代码分析提前完成，子项列后续队列仍有活项，状态与详情矛盾"
+          "claim": "docs/active/STACK.md:5",
+          "against": "docs/ledger/bugs.md:BAR-BUG-01",
+          "quote": "用户 08-03 确认早已修复",
+          "note": "STACK条目5标题称4 bug全部闭环，但BAR-BUG-01对应子项未标✅，与bugs.md中该条✅状态矛盾"
         }
       ],
-      "droppedFindings": [],
       "provider": "阶跃星辰/step-3.7-flash",
-      "attempts": 3
+      "attempts": 2
     },
     "inter-vision-invariants": {
       "hash": "adfd73ecadb27757981cab64bf8845fa0660a8b8",
@@ -381,34 +346,18 @@
       "attempts": 1
     },
     "inter-workflows-infra": {
-      "hash": "95dd70f65b3ef91032c6dbe1d889b52c115f556a",
-      "lastRun": "2026-08-04",
+      "hash": "570280b6be67b01be6043d6a230e5cb389d10f48",
+      "lastRun": "2026-08-05",
       "status": "ok",
       "tooled": false,
       "fallback": false,
-      "reported": 2,
-      "kept": 1,
-      "dropped": 1,
-      "keptFindings": [
-        {
-          "type": "SEM002",
-          "claim": "docs/domains/infra/contract.md:检查管线标题行",
-          "against": "docs/domains/infra/contract.md:chain:auto 块行号",
-          "quote": "40 脚本，顺序固定",
-          "note": "标题称 check 管线有 40 个脚本，chain:auto 实际枚举 check-* 脚本仅 38 个，数量冲突"
-        }
-      ],
-      "droppedFindings": [
-        {
-          "type": "SEM002",
-          "claim": "docs/domains/infra/contract.md:硬规则 12 行",
-          "against": "docs/domains/infra/contract.md:硬规则 14 行",
-          "quote": "14. 语义生成",
-          "note": "硬规则编号从 12 直接跳至 14，缺失 13 号规则，编号体系自相矛盾"
-        }
-      ],
-      "provider": "阶跃星辰/step-3.7-flash",
-      "attempts": 2
+      "reported": 0,
+      "kept": 0,
+      "dropped": 0,
+      "keptFindings": [],
+      "droppedFindings": [],
+      "provider": "deepseek/deepseek-v4-flash",
+      "attempts": 1
     },
     "inter-provenance-bugs": {
       "hash": "3b2922dbcd86b8d457ed93d0814868f752f7e8bf",
@@ -453,37 +402,15 @@
       "attempts": 3
     },
     "code-map-vs-src": {
-      "hash": "cbafbf723bd74ca59bdf4674bef05382ce44524e",
-      "lastRun": "2026-08-04",
+      "hash": "248ae544291db49debc99c5f1504ff95a955bc1a",
+      "lastRun": "2026-08-05",
       "status": "ok",
       "tooled": true,
       "fallback": false,
-      "reported": 3,
-      "kept": 3,
+      "reported": 0,
+      "kept": 0,
       "dropped": 0,
-      "keptFindings": [
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/infra/code-map.md:57",
-          "against": "build.mjs:128",
-          "quote": "每次构建让工作区变脏",
-          "note": "F4(2026-08-04)已消灭每次构建脏树：index.html 仅内容变化才重写(:128 if html3!==html2)，:112注释明言'消灭每次"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/infra/code-map.md:89",
-          "against": "scripts/agent/agent-runner.mjs:75",
-          "quote": "renderTemplate（",
-          "note": "漂移5称 renderTemplate 位于 agent-runner.mjs:32，grep 实测定义在 :75；:32 无此函数"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/infra/code-map.md:99",
-          "against": "scripts/check/sync-counts.mjs:40",
-          "quote": "实际在 sync-counts",
-          "note": "漂移8称计数模式在 sync-counts.mjs:37，实测 test/regression 计数正则位于 :40，:37 仅是 testCount 初始化"
-        }
-      ],
+      "keptFindings": [],
       "droppedFindings": [],
       "provider": "deepseek/deepseek-v4-flash",
       "attempts": 1
@@ -503,53 +430,16 @@
       "attempts": 1
     },
     "code-map-vs-src-ai-chat": {
-      "hash": "4243f94203ca61c532bb4c40ecd171c16a86672d",
-      "lastRun": "2026-08-04",
+      "hash": "7dc544999401cbf3eaff6b9b3e6b5067ea8377b9",
+      "lastRun": "2026-08-05",
       "status": "ok",
       "tooled": true,
       "fallback": false,
-      "reported": 5,
-      "kept": 3,
-      "dropped": 2,
-      "keptFindings": [
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/ai-chat/code-map.md:61",
-          "against": "src/server/ai/chat.ts:462",
-          "quote": "工具本地并行执行（chat.ts:382）",
-          "note": "链路 step7 称工具并行执行在 chat.ts:382，实测 Promise.all 在 chat.ts:462，差 80 行"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/ai-chat/code-map.md:61",
-          "against": "src/server/ai/chat.ts:240",
-          "quote": "上限 50 轮（chat.ts:188）",
-          "note": "称 50 轮上限在 chat.ts:188，实测 MAX_TURNS=50 定义在 chat.ts:240，差 52 行"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/ai-chat/code-map.md:60",
-          "against": "src/server/ai/chat.ts:209",
-          "quote": "chat.ts:151-178",
-          "note": "称 system+边界规范化在 chat.ts:151-178，实测规范化 186-208、system 组装 209-236，整体后移"
-        }
-      ],
-      "droppedFindings": [
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/ai-chat/code-map.md:42",
-          "against": "src/server/ai/chat.ts:139",
-          "quote": "chat.ts:116（服务端）",
-          "note": "承重入口表称 streamChat() 在 chat.ts:116，实测定义在 chat.ts:139（差 23 行），行号已漂移"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/ai-chat/code-map.md:42",
-          "against": "src/server/ai/run-manager.ts:105",
-          "quote": "run-manager.ts:86（唯一）",
-          "note": "称 streamChat 唯一调用方在 run-manager.ts:86，实测默认 streamFn=streamChat 在 :105、调用在 :134"
-        }
-      ],
+      "reported": 0,
+      "kept": 0,
+      "dropped": 0,
+      "keptFindings": [],
+      "droppedFindings": [],
       "provider": "deepseek/deepseek-v4-flash",
       "attempts": 1
     },
@@ -568,51 +458,15 @@
       "attempts": 1
     },
     "code-map-vs-src-client-shell": {
-      "hash": "c0f70a5542bcf01482e641f5f1f80f6898f5f227",
-      "lastRun": "2026-08-04",
+      "hash": "81071075ea47df5d0cd07dbb948572fb825b29c4",
+      "lastRun": "2026-08-05",
       "status": "ok",
       "tooled": true,
       "fallback": false,
-      "reported": 5,
-      "kept": 5,
+      "reported": 0,
+      "kept": 0,
       "dropped": 0,
-      "keptFindings": [
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/client-shell/code-map.md:79",
-          "against": "src/client/main.ts:64",
-          "quote": "vs :129-134）",
-          "note": "漂移1 引 main.ts:129-134 不存在（文件仅约107行）；同步链实为 main.ts:64-65，loadFileTree 异步:104"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/client-shell/code-map.md:73",
-          "against": "src/client/modules/orb.ts:112",
-          "quote": "orb.ts:171-183）",
-          "note": "clampOrbPosition 实际定义于 orb.ts:112，非 171-183，行锚漂移约59行"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/client-shell/code-map.md:48",
-          "against": "src/client/modules/gesture-registry.ts:189",
-          "quote": "_handleStart（g",
-          "note": "_handleStart 实际定义于 gesture-registry.ts:189，非 :224"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/client-shell/code-map.md:49",
-          "against": "src/client/modules/gesture-registry.ts:242",
-          "quote": "命中即 break :281",
-          "note": "priority 匹配命中 break 实际在 gesture-registry.ts:242，非 :281"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/client-shell/code-map.md:35",
-          "against": "src/client/main.ts:103",
-          "quote": "main.ts:99 直接赋值",
-          "note": "currentRoot 实际赋值于 main.ts:103，非 :99"
-        }
-      ],
+      "keptFindings": [],
       "droppedFindings": [],
       "provider": "deepseek/deepseek-v4-flash",
       "attempts": 1
@@ -1031,6 +885,41 @@
       "skipped": 1,
       "kept": 18,
       "dropped": 11
+    },
+    {
+      "date": "2026-08-05",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 4,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-05",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 1
+    },
+    {
+      "date": "2026-08-05",
+      "ran": 4,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-05",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-05",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 0
     }
   ]
 }

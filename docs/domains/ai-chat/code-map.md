@@ -25,7 +25,7 @@
 | `resumeRun()` | orb-chat-run.ts:354 | orb-chat-host.ts（刷新恢复 + kfm-restart 冷恢复） |
 | `patchEvent()` | chat-dom.ts:806 | 经 setEventHook 注入，SSE 事件 → DOM 唯一投影口 |
 | `sessionStore` 单例 | session-client.ts:149 | orb-chat-host.ts / orb-panel.ts / 域外两张卡片 |
-| `streamChat()` | chat.ts:116（服务端） | run-manager.ts:86（唯一） |
+| `streamChat()` | chat.ts:139（服务端） | run-manager.ts:86（唯一） |
 | `promoteReasoningBlocks()` | message-normalize.ts:21 | 写时 orb-chat-run.ts:128；读时 session-client.ts:260,282 |
 | `startWaitingIndicator()` | orb-chat-hints.ts:27 | orb-chat-host.ts（发送/恢复三处） |
 
@@ -54,8 +54,8 @@
    （调用点：orb-chat-host.ts:197 冷恢复 / orb-chat-run.ts:438 doSend）
 5. 新会话先 sessionStore.saveMessages 建文件（orb-chat-run.ts:456）
 6. POST /api/ai/chat/start → session-store.appendUserMessage（幂等）→ run-manager.startRun
-7. streamChat 组装 system + 边界规范化（chat.ts:151-178）→ POST 上游 → 解析 SSE
-   → 工具本地并行执行（chat.ts:382），上限 50 轮（chat.ts:188）
+7. streamChat 组装 system + 边界规范化（chat.ts:193-241）→ POST 上游 → 解析 SSE
+   → 工具本地并行执行（chat.ts:475），上限 50 轮（chat.ts:253）
 8. 每事件三向分发：run 缓冲 / session-store 落盘 / 广播订阅者（run-manager.ts:114-126）
 9. 客户端 SSE 续读 /api/ai/chat/:runId/stream?from=N → _applyEvent 写数据层
    → patchEvent 投影 DOM；首个 text/thinking delta 到达即停等待提示
@@ -82,8 +82,9 @@
 
 ## 代码强制的不变量（附证据）
 
-- content 类型归一 fail-closed：非字符串一律 JSON.stringify（chat.ts:156）；
-  无 tool_calls 的空 assistant 一律丢弃（chat.ts:165；客户端同策略 to-openai-messages.ts:234-236）
+- content 类型归一 fail-closed：非字符串一律 JSON.stringify（chat.ts:202）；
+  无 tool_calls 的空 assistant 一律丢弃（chat.ts:213-215；客户端同策略
+  to-openai-messages.ts:285-292）
 - 空壳消息 reasoning 归位：写时 + 读时双挂点（见承重入口表）
 - 块索引连续化：block-idx.ts:13-23，text 恒 0、工具块从 1 连续
 - 压缩硬性豁免：G2 ≤300 / G3 失败 ≤500 early-return（tool-compaction/index.ts:202-203）；

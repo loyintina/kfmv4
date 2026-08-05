@@ -7,8 +7,9 @@
 
 ## 检查管线（npm run check，40 脚本，顺序固定）
 
-（下方生成区枚举的链步数多于标题脚本数：sass、gen-* 验证步（--check-only）、sync-counts、
-npm test、tsc 均非 check-* 脚本，不计入标题脚本数。）
+（下方生成区枚举的链步数多于标题脚本数：40 = check-*.mjs 文件数，链上 38 个以 check-
+前缀书写——deploy-freshness/doc-coverage 在链上省前缀；sass、gen-* 验证步（--check-only）、
+sync-counts、npm test、tsc 均非 check-* 脚本，不计入标题数。）
 
 <!-- chain:auto 由 sync-counts 生成，禁止手改 -->
 `check-uncommitted`（>3 未提交即中断，首位） → deploy-freshness → versions → checks → doc-coverage → sass →
