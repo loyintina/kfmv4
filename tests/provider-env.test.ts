@@ -19,6 +19,7 @@ import {
 } from '../src/server/env-store.js';
 import { KFM_DATA_DIR } from '../src/server/path-utils.js';
 import { setupProvidersRoutes } from '../src/server/routes/providers.js';
+import { findApiProvider } from '../src/server/ai/chat.js';
 
 group('env-store — 代字解析');
 
@@ -133,4 +134,33 @@ test('providers 非数组 → 400', () => {
   const res = makeRes();
   save({ body: { providers: 'not-array' } }, res);
   assert(res._r.statusCode === 400, `期望 400，得 ${res._r.statusCode}`);
+});
+
+// ==========================================================================
+// findApiProvider — BAR-PROVIDER-MATCH-01 回归钉（2026-08-05）
+// 事故：旧逻辑只按 id 匹配且静默回退 providers[0]，硅基流动传中文名时
+// 全部请求被静默路由到 OpenCode Go GitHub（上游报 Model is not supported），
+// 实验臂打到错误网关还以为是目标模型不稳——静默回退 = 数据污染源。
+// ==========================================================================
+
+group('findApiProvider — BAR-PROVIDER-MATCH-01 回归钉');
+
+const PROVIDER_POOL = [
+  { id: 'opencode-go', name: 'OpenCode Go GitHub', baseUrl: '', apiKey: '', models: [] },
+  { id: 'siliconflow', name: '硅基流动', baseUrl: '', apiKey: '', models: [] },
+  { id: 'deepseek', name: 'deepseek', baseUrl: '', apiKey: '', models: [] },
+];
+
+test('按 id 匹配', () => {
+  assert(findApiProvider(PROVIDER_POOL, 'siliconflow')?.id === 'siliconflow');
+});
+
+test('按 name 匹配（中文名不再静默打到 providers[0]）', () => {
+  const hit = findApiProvider(PROVIDER_POOL, '硅基流动');
+  assert(hit?.id === 'siliconflow', `name 匹配失败/路由错: ${hit?.id}`);
+});
+
+test('匹配不上 → null（显式报错路径），绝不回退 providers[0]', () => {
+  assert(findApiProvider(PROVIDER_POOL, '不存在的网关') === null, '未知 provider 竟有命中');
+  assert(findApiProvider(PROVIDER_POOL, undefined) === null, 'undefined 竟有命中');
 });

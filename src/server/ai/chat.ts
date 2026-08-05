@@ -135,6 +135,17 @@ function loadProviders(): ApiProvider[] {
   }
 }
 
+/** provider 解析（BAR-PROVIDER-MATCH-01，2026-08-05）：按 id 或 name 匹配——
+ *  旧逻辑只按 id 且静默回退 providers[0]，provider 传 name（如「硅基流动」，
+ *  id=siliconflow）时请求被静默路由到 providers[0]（OpenCode Go GitHub），
+ *  上游报「Model is not supported」，排查半天才发现路由错了。静默回退 = 数据污染
+ *  源（实验臂会打到错误的网关还以为是目标模型不稳），匹配不上必须显式报错（返回 null）。
+ *  抽出成纯函数供回归钉直接测（tests/provider-env.test.ts）。 */
+export function findApiProvider(providers: ApiProvider[], provider: string | undefined): ApiProvider | null {
+  if (!provider) return null;
+  return providers.find(p => p.id === provider || p.name === provider) ?? null;
+}
+
 /** 流式对话。roleFile 供每轮重组 system prompt（读角色卡 promptFiles，含动态 page-state）。 */
 export async function* streamChat(
   messages: ChatMessage[],
@@ -161,10 +172,15 @@ export async function* streamChat(
 
   // 读取 API 配置
   const providers = loadProviders();
-  const apiProvider = providers.find(p => p.id === provider) || providers[0];
+  // BAR-PROVIDER-MATCH-01：匹配逻辑见 findApiProvider（id/name 匹配，无静默回退）
+  const apiProvider = provider
+    ? findApiProvider(providers, provider)
+    : null;
 
   if (!apiProvider) {
-    yield { type: 'error', content: '未配置 API Provider，请先在 API 卡中添加。' };
+    yield { type: 'error', content: provider
+      ? `Provider「${provider}」不存在（id/name 均未匹配）——请检查 providers.json 或面板 API 卡。`
+      : '未配置 API Provider，请先在 API 卡中添加。' };
     return;
   }
 
