@@ -62,7 +62,7 @@ export function markRebuildEnd(boxCount: number, depth: number): void {
   // 保留最近 100 次数据
   if (_state.rebuildTimes.length > 100) _state.rebuildTimes.shift();
   
-  console.log(`[tree-perf] rebuildTree: ${ms.toFixed(2)}ms, boxes=${boxCount}, depth=${depth}`);
+  log(`[tree-perf] rebuildTree: ${ms.toFixed(2)}ms, boxes=${boxCount}, depth=${depth}`);
 }
 
 /** 记录 Box 创建（批量计数用） */
@@ -80,7 +80,7 @@ export function markAnimEnd(): void {
   const ms = performance.now() - _animStart;
   _state.animTimes.push(ms);
   if (_state.animTimes.length > 100) _state.animTimes.shift();
-  console.log(`[tree-perf] animation: ${ms.toFixed(2)}ms`);
+  log(`[tree-perf] animation: ${ms.toFixed(2)}ms`);
 }
 
 /** 记录 Overlay 创建 */
@@ -97,7 +97,7 @@ export function reset(): void {
   _state.overlayCreateCount = 0;
   _state.maxTreeDepth = 0;
   _state.animTimes = [];
-  console.log('[tree-perf] reset');
+  log('[tree-perf] reset');
 }
 
 /** 获取性能快照 */
@@ -120,13 +120,13 @@ export function getData(): PerfSnapshot {
 /** 打印性能摘要到控制台 */
 export function printSummary(): void {
   const data = getData();
-  console.group('[tree-perf] Summary');
-  console.log(`rebuildTree: count=${data.rebuildCount}, avg=${data.rebuildAvgMs.toFixed(2)}ms, max=${data.rebuildMaxMs.toFixed(2)}ms`);
-  console.log(`Box 创建：${data.boxCreateCount}`);
-  console.log(`Overlay 创建：${data.overlayCreateCount}`);
-  console.log(`最大深度：${data.maxTreeDepth}`);
-  console.log(`动画总耗时：${data.animTotalMs.toFixed(2)}ms`);
-  console.groupEnd();
+  log('[tree-perf] Summary');
+  log(`rebuildTree: count=${data.rebuildCount}, avg=${data.rebuildAvgMs.toFixed(2)}ms, max=${data.rebuildMaxMs.toFixed(2)}ms`);
+  log(`Box 创建：${data.boxCreateCount}`);
+  log(`Overlay 创建：${data.overlayCreateCount}`);
+  log(`最大深度：${data.maxTreeDepth}`);
+  log(`动画总耗时：${data.animTotalMs.toFixed(2)}ms`);
+  log('[tree-perf] Summary End');
 }
 
 // 挂载到 window 供调试
