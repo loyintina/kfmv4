@@ -9,6 +9,11 @@
  *
  * 双树设计：字符盒子建在 overlay 树的容器克隆上，不碰主树。
  * 主树的 container 参数仅用于读取行数据（标签文字、字体、颜色等）。
+ *
+ * 性能约束：
+ * - CHAR_RAIN_DEPTH_THRESHOLD=1：只对顶层容器（depth=0）运行字符雨，
+ *   depth≥2 的子容器全部跳过，避免深层展开时每层都创建大量 Box + tween
+ * - MAX_CHAR_BOXES=80：每个容器的字符雨 Box 上限，防止大目录产生过多对象
  */
 
 import { Box } from "../engine/v2/box.js";
