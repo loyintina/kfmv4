@@ -191,41 +191,28 @@ test('nested expand produces nested containers', () => {
 // ==========================================================================
 // 回归钉：深层文件夹展开性能问题（MAX_EXPAND_DEPTH 限制）
 // 问题：深层嵌套文件夹展开时，Box 数量指数级增长导致掉帧卡顿
-// 修复：tree-model.ts 中 buildExpanded 递归时检查深度，超过 MAX_EXPAND_DEPTH(5) 时不再展开
+// 修复：tree-model.ts 中 buildExpanded 递归时检查深度，超过 MAX_EXPAND_DEPTH(10) 时不再展开
+// 阈值变更（2026-08-05 用户拍板）：5 → 10——实际场景常有 10+ 层嵌套，未来卡片折叠式重构后消亡
 // ==========================================================================
-test('MAX_EXPAND_DEPTH prevents deep recursion — depth 5 stops expanding', () => {
-  // 构造深度为 7 的嵌套文件夹结构
-  const deepPath = './d1/d2/d3/d4/d5/d6/d7';
-  const deepChildren: any[] = [{ name: 'deep-file.txt', path: deepPath + '/deep-file.txt', isDir: false, isLink: false }];
-  
-  seedState({
+test('MAX_EXPAND_DEPTH prevents deep recursion — depth 10 stops expanding', () => {
+  // 构造深度为 12 的嵌套文件夹结构（超过限制 2 层，验证阻断生效）
+  const files: Record<string, any> = {
     '.': { name: 'root', path: '.', isDir: true, children: [{ name: 'd1', path: './d1', isDir: true, isLink: false }] },
-    './d1': { name: 'd1', path: './d1', isDir: true, children: [{ name: 'd2', path: './d1/d2', isDir: true, isLink: false }] },
-    './d1/d2': { name: 'd2', path: './d1/d2', isDir: true, children: [{ name: 'd3', path: './d1/d2/d3', isDir: true, isLink: false }] },
-    './d1/d2/d3': { name: 'd3', path: './d1/d2/d3', isDir: true, children: [{ name: 'd4', path: './d1/d2/d3/d4', isDir: true, isLink: false }] },
-    './d1/d2/d3/d4': { name: 'd4', path: './d1/d2/d3/d4', isDir: true, children: [{ name: 'd5', path: './d1/d2/d3/d4/d5', isDir: true, isLink: false }] },
-    './d1/d2/d3/d4/d5': { name: 'd5', path: './d1/d2/d3/d4/d5', isDir: true, children: [{ name: 'd6', path: './d1/d2/d3/d4/d5/d6', isDir: true, isLink: false }] },
-    './d1/d2/d3/d4/d5/d6': { name: 'd6', path: './d1/d2/d3/d4/d5/d6', isDir: true, children: deepChildren },
-    './d1/d2/d3/d4/d5/d6/d7': { name: 'd7', path: './d1/d2/d3/d4/d5/d6/d7', isDir: true, children: deepChildren },
-  });
-  
-  // 展开所有层级（包括超过 MAX_EXPAND_DEPTH=5 的层级）
-  KFMState.expandedPaths = {
-    '.': true,
-    './d1': true,
-    './d1/d2': true,
-    './d1/d2/d3': true,
-    './d1/d2/d3/d4': true,
-    './d1/d2/d3/d4/d5': true,  // depth=5，这是最后一层会实际展开的
-    './d1/d2/d3/d4/d5/d6': true,  // depth=6，应该被阻止
-    './d1/d2/d3/d4/d5/d6/d7': true,  // depth=7，应该被阻止
   };
-  
+  const expanded: Record<string, boolean> = { '.': true };
+  for (let i = 1; i <= 12; i++) {
+    const path = './' + Array.from({ length: i }, (_, j) => `d${j + 1}`).join('/');
+    files[path] = {
+      name: `d${i}`, path, isDir: true, isLink: false,
+      children: [{ name: `d${i + 1}`, path: `${path}/d${i + 1}`, isDir: true, isLink: false }],
+    };
+    expanded[path] = true;
+  }
+  seedState(files);
+  KFMState.expandedPaths = expanded;
+
   const tree = buildSidebarTree(295, 287);
-  
-  // 计算实际展开的容器数量
-  // 预期：只有 depth 0-5 会展开（共 6 层：., d1, d2, d3, d4, d5）
-  // depth 6 和 7 的文件夹应该只显示标题行，不展开子内容
+
   function countExpandedContainers(box: any, depth = 0): { count: number; maxDepth: number } {
     let count = (box.id || '').startsWith('expanded-') ? 1 : 0;
     let maxDepth = (box.id || '').startsWith('expanded-') ? depth : -1;
@@ -236,12 +223,11 @@ test('MAX_EXPAND_DEPTH prevents deep recursion — depth 5 stops expanding', () 
     }
     return { count, maxDepth };
   }
-  
+
   const result = countExpandedContainers(tree);
-  // MAX_EXPAND_DEPTH = 5，检查条件是 depth + 1 >= 5，所以 depth 0-4 共 5 层会展开
-  // depth=4 (d4) 时检查 4+1>=5=true，d4 的子目录不会展开
-  if (result.count !== 5) throw new Error(`expected 5 expanded containers (depth 0-4), got ${result.count}`);
-  if (result.maxDepth !== 4) throw new Error(`expected max depth 4, got ${result.maxDepth}`);
+  // MAX_EXPAND_DEPTH = 10：depth 0-9 共 10 层展开，depth 10/11 只显示标题行
+  if (result.count !== 10) throw new Error(`expected 10 expanded containers (depth 0-9), got ${result.count}`);
+  if (result.maxDepth !== 9) throw new Error(`expected max depth 9, got ${result.maxDepth}`);
 });
 // ==========================================================================
 // 4. debug-assert
@@ -631,7 +617,7 @@ import { assert as dbgAssert } from '../src/client/modules/debug-assert.js';
 
 test('assert logs to console on false', () => {
   const prev = __testLogs.length;
-  dbgAssert(true, 'test assertion failure'); // Temporarily set to true to avoid error log
+  dbgAssert(false, 'test assertion failure');
   assert(__testLogs.length > prev, 'should log assertion failure');
 });
 

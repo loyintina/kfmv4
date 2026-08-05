@@ -108,6 +108,8 @@ async function startRun(sessionId, messages, userText, model, provider, roleFile
       userText,
       model,
       provider,
+      // script 会话权限档案：未显式 --tools 时服务端默认只读白名单 read/grep/glob（BAR-EXPERIMENT-SANDBOX）
+      sessionClass: 'script',
       ...(roleFile ? { roleFile } : {}),
       ...(tools?.length ? { tools } : {}),
     }),

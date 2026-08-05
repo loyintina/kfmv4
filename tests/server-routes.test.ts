@@ -104,6 +104,32 @@ test('合法请求 → 200 + runId', () => {
   assert((res._r.body as any)?.runId === 'run_test123', '响应体应含 runId');
 }, { tag: 'integration' });
 
+// 会话权限档案：script 类会话未显式传 tools 时服务端默认只读白名单 read/grep/glob
+// （实验臂污染事故后立规——曾 write 污染 repo/sed 改源码/rm 删会话）；
+// panel（缺省）保持全量（undefined）；显式 tools 原样透传。
+regression('BAR-SESSION-PROFILE-01', 'pending-commit', 'script 会话缺省 tools 收到只读白名单，显式透传，panel 全量', () => {
+  const seen: Array<{ tools: unknown }> = [];
+  const fakeStart: StartRunFn = (...args: unknown[]) => {
+    seen.push({ tools: args[7] }); // startRun 第 8 参 = tools 白名单
+    return { id: 'run_profile', done: false } as any;
+  };
+  const routes = collectRoutes(fakeStart);
+  const start = routes.get('POST /ai/chat/start')!;
+  const base = { sessionId: 'sess-prof', messages: [{ role: 'user', content: 'hi' }] };
+  const call = (body: Record<string, unknown>) => { const res = makeRes(); start({ body }, res); assert(res._r.statusCode === 200, `应 200，得 ${res._r.statusCode}`); };
+
+  call({ ...base, sessionClass: 'script' });
+  assert(JSON.stringify(seen[0]!.tools) === JSON.stringify(['read', 'grep', 'glob']),
+    `script 缺省应只读白名单，得 ${JSON.stringify(seen[0]!.tools)}`);
+
+  call({ ...base, sessionClass: 'script', tools: ['read'] });
+  assert(JSON.stringify(seen[1]!.tools) === JSON.stringify(['read']),
+    `显式 tools 应原样透传，得 ${JSON.stringify(seen[1]!.tools)}`);
+
+  call({ ...base });
+  assert(seen[2]!.tools === undefined, `panel 缺省应全量（undefined），得 ${JSON.stringify(seen[2]!.tools)}`);
+});
+
 // ---- 其他路由 ----
 
 regression('BAR-ORIGIN-GUARD-01', '4d3b251', '/ai/chat/start 挂 verifyLocalOrigin 中间件（drive-by 防护）', () => {

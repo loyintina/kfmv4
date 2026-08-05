@@ -25,8 +25,8 @@ export function setupAiRoutes(router: Router, wsServer: WsServer, startRunFn: St
    * 返回: { runId, fromIndex } —— fromIndex 是客户端应从该索引开始读的事件位置
    */
   router.post('/ai/chat/start', verifyLocalOrigin, (req, res) => {
-    // body: { sessionId, messages, model, provider, roleFile, userText, tools, extraSystem, maxTokens, params }
-    const { sessionId, messages, model, provider, roleFile, userText, tools, extraSystem, maxTokens, params } = req.body;
+    // body: { sessionId, messages, model, provider, roleFile, userText, tools, extraSystem, maxTokens, params, sessionClass }
+    const { sessionId, messages, model, provider, roleFile, userText, tools, extraSystem, maxTokens, params, sessionClass } = req.body;
     if (!sessionId || !messages || !Array.isArray(messages) || messages.length === 0) {
       res.status(400).json({ error: '缺少 sessionId 或 messages 参数' });
       return;
@@ -45,6 +45,13 @@ export function setupAiRoutes(router: Router, wsServer: WsServer, startRunFn: St
     if (rawUserText.trim()) {
       sessionStore.appendUserMessage(sessionId, rawUserText, model, provider);
     }
+    // 会话权限档案（2026-08-05 用户拍板，实验臂污染事故后立规）：
+    // script 类会话（实验跑批）未显式指定工具时默认只读白名单——实验臂与运维者同权限，
+    // 曾 write 污染 repo/sed 改源码/rm 删会话（experiments/paradigm/index.md §工具权限纪律）。
+    // panel（缺省）保持全量工具。显式 tools 透传不变（Enforcement by construction：
+    // 不给白名单的模型根本看不到 bash/write）。
+    const explicitTools = Array.isArray(tools) ? tools.filter((t): t is string => typeof t === 'string') : undefined;
+    const toolWhitelist = explicitTools ?? (sessionClass === 'script' ? ['read', 'grep', 'glob'] : undefined);
     const run = startRunFn(
       sessionId, messages,
       model || 'deepseek-v4-flash',
@@ -52,7 +59,7 @@ export function setupAiRoutes(router: Router, wsServer: WsServer, startRunFn: St
       wsServer,
       typeof roleFile === 'string' ? roleFile : undefined,
       undefined, // streamFn 默认
-      Array.isArray(tools) ? tools.filter((t): t is string => typeof t === 'string') : undefined,
+      toolWhitelist,
       typeof extraSystem === 'string' ? extraSystem : undefined,
       typeof maxTokens === 'number' && Number.isFinite(maxTokens) && maxTokens > 0 ? Math.floor(maxTokens) : undefined,
       params && typeof params === 'object' && !Array.isArray(params) ? params as Record<string, unknown> : undefined,

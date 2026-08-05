@@ -12,6 +12,7 @@ export const DOMAIN_SRC = {
     'src/client/modules/tree-render.ts', 'src/client/modules/tree-overlay.ts',
     'src/client/modules/tree-animation.ts', 'src/client/modules/tree-swipe.ts',
     'src/client/modules/tree-model.ts', 'src/client/modules/tree-loader.ts',
+    'src/client/modules/tree-perf.ts',
     'src/client/modules/canvas-cursor.ts', 'src/client/modules/liquid-geometry.ts',
     'src/client/modules/canvas-scroll.ts', 'src/client/modules/canvas-utils.ts',
     'src/client/modules/style-registry.ts', 'src/client/modules/theme.ts',

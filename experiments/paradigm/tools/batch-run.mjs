@@ -15,7 +15,7 @@
  *   --paradigms "无" = 对照组（无范式包）；其他名 = .kfmv4/paradigms/<名>.md
  *   --arms N = 每配置重复次数（重复测量——模型随机性需多次取统计）
  */
-import { existsSync, mkdirSync, readFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import { fileURLToPath } from 'url';
@@ -37,7 +37,7 @@ const arms = Number(get('arms') || 1);
 const concurrency = Number(get('concurrency') || 4);
 const provider = get('provider') || 'Opencode Go Google';
 const prefix = get('prefix') || 'bi-';
-const tools = get('tools')?.split(',').map(s => s.trim()).filter(Boolean);
+const tools = get('tools') ? get('tools').split(',').map(s => s.trim()).filter(Boolean) : ['read', 'grep', 'glob']; // 实验纪律：跑批默认只读白名单（服务端 sessionClass=script 也兜底同一份）
 const retries = Number(get('retries') || 2); // 失败臂自动重跑次数（断连/抖动用；服务重启掐 SSE 时重连仍可兜）
 
 if (!tasks.length) {
@@ -62,6 +62,19 @@ const armId = (s) => `${prefix}t${s.ti}p${s.pi}m${s.mi}r${s.n}`;
 // 断点续跑：已归档的跳过
 const todo = armSpecs.filter(s => !existsSync(join(SCRIPT, `${armId(s)}.json`)));
 console.log(`[batch-run] 变体 ${tasks.length} 任务 × ${paradigms.length} 范式 × ${models.length} 模型 × ${arms} 重复 = ${armSpecs.length} 臂；跳过已完成 ${armSpecs.length - todo.length}，本次 ${todo.length}（并发 ${concurrency}）`);
+
+/** 错误桩检测（2026-08-05，e9 尸检）：上游 4xx/5xx 被面板吞成正文「[错误: …]」
+ *  照常归档——断点续跑会把这些臂当完成跳过， silently 污染数据。
+ *  归档后检查末条 AI 消息：错误桩 → 删档 + 抛错走重试。 */
+function isErrorStub(outPath) {
+  try {
+    const d = JSON.parse(readFileSync(outPath, 'utf-8'));
+    const ai = [...(d.messages || [])].reverse().find(m => m?.role === 'ai');
+    if (!ai) return false;
+    const txt = (ai.content || []).filter(b => b?.type === 'text').map(b => b.text || '').join('').trimStart();
+    return txt.startsWith('[错误') || txt.slice(0, 80).includes('API 请求失败');
+  } catch { return false; }
+}
 
 /** 并发 pool（hallucinate-batch 同款：并发 n，完成即取下一个） */
 async function pool(items, worker, n) {
@@ -94,9 +107,13 @@ const results = await pool(todo, async (s) => {
         model: s.model,
         provider,
         paradigm: paradigmText,
-        tools, // --tools 白名单透传（无 = 服务端全量工具）
+        tools, // --tools 白名单透传（缺省 = 只读白名单 read/grep/glob，见服务端会话权限档案）
         out: join(SCRIPT, `${id}.json`), // 重试也归档到原臂 id
       });
+      if (isErrorStub(join(SCRIPT, `${id}.json`))) {
+        unlinkSync(join(SCRIPT, `${id}.json`)); // 删档防断点续跑跳过
+        throw new Error('归档为错误桩（[错误: …]），按失败臂处理');
+      }
       console.log(`[batch-run] ${id} OK${n > 0 ? `（第 ${n} 次重试成功）` : ''}（${((Date.now() - t1) / 1000).toFixed(0)}s${paradigmText ? ` 范式=${s.paradigm}` : ' 对照'}${res.reconnects ? ` 重连${res.reconnects}` : ''}）`);
       return { id, ok: true, ms: res.ms, tries: n + 1 };
     } catch (e) {

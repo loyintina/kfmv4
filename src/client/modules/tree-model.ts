@@ -196,7 +196,9 @@ export function clearBoxCache(): void {
 }
 
 /** 最大展开深度：超过此深度的文件夹不实际展开（防止指数级 Box 创建） */
-const MAX_EXPAND_DEPTH = 5;
+// 2026-08-05 用户拍板：5 → 10。实际场景常有 10+ 层嵌套，压 5 层会误伤正常浏览；
+// 未来文件树改卡片折叠式根本重构后，此限制随旧架构消亡。
+const MAX_EXPAND_DEPTH = 10;
 
 export function buildSidebarTree(containerWidth?: number, rightMargin?: number): Box {
   const state = KFMState;

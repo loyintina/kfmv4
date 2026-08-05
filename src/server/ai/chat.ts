@@ -223,10 +223,16 @@ export async function* streamChat(
 
   // system 消息只构建一次（静态前缀，利于 API 缓存命中）。
   // 动态内容（page-state 等）改由工具循环末尾注入对话尾部，不再每轮重建 system。
-  const systemMessages: Array<Record<string, unknown>> = [];
+  const systemParts: string[] = [];
   const roleSystem = assembleRoleSystemPrompt(roleFile);
-  if (roleSystem) systemMessages.push({ role: 'system', content: roleSystem });
-  for (const part of staticSystemParts) systemMessages.push({ role: 'system', content: part });
+  if (roleSystem) systemParts.push(roleSystem);
+  systemParts.push(...staticSystemParts);
+  // 严格端点适配（BAR-QWEN-01，2026-08-05）：硅基流动 Qwen 系 400
+  // 「System message must be at the beginning」——多条 system 段被拒。
+  // 所有 system 段合并为单条（\n\n 拼接），内容/顺序不变，缓存前缀不受影响。
+  const systemMessages: Array<Record<string, unknown>> = systemParts.length
+    ? [{ role: 'system', content: systemParts.join('\n\n') }]
+    : [];
 
   // 首轮前刷新一次 page-state（AI 发第一条前先看到当前页面）。
   refreshPageState(wsServer);
