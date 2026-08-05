@@ -5,10 +5,6 @@
 
 ## 构建（build.mjs）
 
-- client：esbuild IIFE bundle + minify；`?v=` 缓存指纹（immutable 缓存头）。
-- server：ESM bundle——**external 列表是生死线**（CJS 包打进去启动即崩）。
-- 样式：`sass public/css/:public/css/`（目录级全量编译，check 链内自动执行）。
-
 ## 检查管线（npm run check，40 脚本，顺序固定）
 
 （下方生成区枚举的链步数多于标题脚本数：sass、gen-* 验证步（--check-only）、sync-counts、
