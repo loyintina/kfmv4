@@ -9,6 +9,7 @@
 import { buildSidebarTree } from './tree-model.js';
 import { KFMState, getFileRowData, type FileRowData } from './state.js';
 import { anim } from './animation-registry.js';
+import { setupCharRainTweens, cleanupCharRain, type CharRainCleanup } from "./char-rain.js";
 import { closeSidebar } from './ui.js';
 import { collapseOrbPanel } from './orb.js';
 import { Z } from './z-index-layers.js';
@@ -30,7 +31,7 @@ import { getCardType } from './card-registry.js';
 import { cardAccent, pathBasename } from './color-utils.js';
 import {
   type OverlayMeta, type OverlayPack, type FlatSubTarget,
-  removeAllOverlays, collectSiblingsAfter,
+  removeAllOverlays, createCharLayer, collectSiblingsAfter,
   buildAndSetOverlayTree, createVisualClone,
   setupExpandOverlays, setupCollapseOverlays, collectAncestorSiblings, collectAncestorContainers,
   flattenExpandTree, ensureMetaFromExpandedState,
@@ -85,37 +86,33 @@ function _ensureSubscribed(): void {
   KFMState.subscribe(fn);
 }
 
-/** 遍历 Box 树，为每个可见文件行重建 _boxLocationMap。
- *  关键优化：遍历时传递累积位置，避免每个节点重复调用 getAbsolutePosition()
- *  （原实现 O(n × depth)，优化后 O(n)）。
- */
+/** 遍历 Box 树，为每个可见文件行重建 _boxLocationMap */
 function _rebuildBoxLocationMap(root: Box): void {
   _boxLocationMap.clear();
   let rowIndex = 0;
-  function walk(box: Box, parentX: number, parentY: number): void {
-    const accX = parentX + box.x;
-    const accY = parentY + box.y;
+  function walk(box: Box): void {
     for (const child of box.children) {
       if (!child.visible || child.disabled) continue;
       const data = getFileRowData(child.data);
       if (data && child.gesture?.onTap) {
+        const abs = child.getAbsolutePosition();
         _boxLocationMap.set(data.path, {
           path: data.path,
           box: child,
           rowIndex,
           screenRect: {
-            x: accX + child.x,
-            y: accY + child.y,
+            x: abs.x,
+            y: abs.y,
             width: child.width,
             height: child.height,
           },
         });
         rowIndex++;
       }
-      walk(child, accX, accY);
+      walk(child);
     }
   }
-  walk(root, 0, 0);
+  walk(root);
 }
 
 /** 通过文件路径直接触发 Canvas 文件行操作（tap），路径不可见时静默失败 */
@@ -618,19 +615,23 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
 
   // === overlay 模式 ===
   assert(activeOverlayCount() === 0, 'overlays not empty before expand');
-  // 计算当前容器的深度：从 expanded-* ID 中提取路径，数斜杠数量
-  const depth = (path.match(/\//g) || []).length - 1;
-  const pack = setupExpandOverlays(container, fullHeight, true, depth);
+  const pack = setupExpandOverlays(container, fullHeight);
 
   // 扁平化收集所有子容器 target，一次性搭建 overlay
   const subTargets = flattenExpandTree(container, 1);
-  const subPacks = subTargets.map(st => setupExpandOverlays(st.container, st.fullHeight, false, st.level + depth));
+  const subPacks = subTargets.map(st => setupExpandOverlays(st.container, st.fullHeight, false));
 
   // 构建独立动画树并设置到渲染器（双树渲染）
   const overlayRoot = buildAndSetOverlayTree(pack, subTargets, subPacks, root);
 
+  // 字符雨层：与容器Ov平级，不受 overflow:hidden 裁剪
+  const charLayer = createCharLayer(pack.containerOverlay.x, pack.containerOverlay.y, overlayRoot);
+
   L.beginOp(path, 'expand');
   const animRoot = L.renderer!.getRoot()!;
+
+  // 所有 overlay tween + 字符雨 cleanup 信息收集
+  const charRainCleanups: CharRainCleanup[] = [];
 
   // 本层 overlay tween
   ts.to(pack.containerOverlay, { height: fullHeight, duration: 0.05, ease: 'back.out(1.15)' }, 0);
@@ -638,15 +639,15 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
     ts.to(sibOv, { y: (sibOv as Box & OverlayMeta)._targetY!, duration: 0.05, ease: 'back.out(1.15)' }, 0);
   }
 
-  // 文字逐行淡入（替代字符雨：消除每字符一个 Box 的 O(n²) 开销）
-  for (let j = 0; j < pack.rowOverlays.length; j++) {
-    pack.rowOverlays[j]!.opacity = 0;
-  }
-  for (let j = 0; j < pack.rowOverlays.length; j++) {
-    ts.to(pack.rowOverlays[j]!, { opacity: 1, duration: 0.2, ease: 'power2.out' }, j * 0.015);
-  }
+  // 本层字符雨 tween（行已在 final 位置，rowOv.y = expandedY）
+  const topCleanup = setupCharRainTweens(
+    container, charLayer, root,
+    pack.rowOverlays.map(r => r.y),
+    ts, 0
+  );
+  if (topCleanup) charRainCleanups.push(topCleanup);
 
-  // 所有子容器 overlay + 文字淡入，按层 staggered delay
+  // 所有子容器 overlay + 字符雨，按层 staggered delay
   for (const sp of subPacks) {
     const subLevel = subTargets.find(st => st.container.id === sp.containerOverlay.id?.replace('ov-expanded-', 'expanded-'))?.level ?? 1;
     const delay = subLevel * 0.05;
@@ -657,12 +658,18 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
     for (const sibOv of sp.siblingOverlays) {
       ts.to(sibOv, { y: (sibOv as Box & OverlayMeta)._targetY!, duration: 0.05, ease: 'back.out(1.15)' }, delay);
     }
-    // 子层文字逐行淡入
-    for (let j = 0; j < sp.rowOverlays.length; j++) {
-      sp.rowOverlays[j]!.opacity = 0;
-    }
-    for (let j = 0; j < sp.rowOverlays.length; j++) {
-      ts.to(sp.rowOverlays[j]!, { opacity: 1, duration: 0.2, ease: 'power2.out' }, delay + j * 0.015);
+    // 子层字符雨（在独立的子层字符层上创建字符 Box）
+    const realContainer = subTargets.find(st => `ov-${st.container.id}` === sp.containerOverlay.id)?.container;
+    if (realContainer) {
+      const subParent = sp.containerOverlay.parent!;
+      const subCharLayer = createCharLayer(sp.containerOverlay.x, sp.containerOverlay.y, subParent);
+      // 容器内部行的字符雨
+      const subCleanup = setupCharRainTweens(
+        realContainer, subCharLayer, root,
+        sp.rowOverlays.map(r => r.y),
+        ts, delay
+      );
+      if (subCleanup) charRainCleanups.push(subCleanup);
     }
   }
 
@@ -673,6 +680,7 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
     // 先释放锁（无论 root 是否已变，锁必须释放，否则 3s 超时）
     L.endOp();
     if (L.renderer?.getRoot() !== animRoot) { return; }
+    for (const cu of charRainCleanups) cleanupCharRain(cu);
     removeAllOverlays();
     L.renderer?.setOverlayRoot(null);
     for (const p of [pack, ...subPacks]) {
@@ -737,12 +745,11 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
   }
 
   // 搭建折叠 overlay
-  const depth = (hitData.path.match(/\//g) || []).length - 1;
-  const pack = setupCollapseOverlays(container, fullH, true, depth);
+  const pack = setupCollapseOverlays(container, fullH);
 
   // 扁平化收集子容器
   const subTargets = flattenExpandTree(container, 1);
-  const subPacks = subTargets.map(st => setupCollapseOverlays(st.container, st.fullHeight, false, st.level + depth));
+  const subPacks = subTargets.map(st => setupCollapseOverlays(st.container, st.fullHeight, false));
 
   // 构建独立动画树（折叠）
   const overlayRoot = buildAndSetOverlayTree(pack, subTargets, subPacks, root);
@@ -753,26 +760,40 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
   // 祖先容器盒子收缩（父容器的渐变边框/背景跟随内容同步缩小）
   const ancestorContainers = collectAncestorContainers(container, fullH);
 
-  const maxLevel = subTargets.length > 0 ? Math.max(...subTargets.map(st => st.level)) : 0;
+  // 字符雨层：与容���Ov平级，不受 overflow:hidden 裁剪
+  const charLayer = createCharLayer(pack.containerOverlay.x, pack.containerOverlay.y, overlayRoot);
 
-  // 文字逐行淡出（替代字符雨：消除每字符一个 Box 的 O(n²) 开销）
-  // collapse 时行从 opacity=1 → 0，与盒子收缩同步
+  const maxLevel = subTargets.length > 0 ? Math.max(...subTargets.map(st => st.level)) : 0;
+  const charRainCleanups: CharRainCleanup[] = [];
+
+  // 字符雨：方向 collapse，最深层先飞（delay 从最深层的展开延迟对称）
   const collapseBaseDelay = maxLevel * 0.05;
-  for (let j = 0; j < pack.rowOverlays.length; j++) {
-    const delay = collapseBaseDelay + j * 0.015;
-    ts.to(pack.rowOverlays[j]!, { opacity: 0, duration: 0.15, ease: 'power2.in' }, delay);
-  }
+  const topCleanup = setupCharRainTweens(
+    container, charLayer, root,
+    pack.rowOverlays.map(r => r.y),
+    ts, collapseBaseDelay, 'collapse',
+  );
+  if (topCleanup) charRainCleanups.push(topCleanup);
+
   for (const sp of subPacks) {
     const subLevel = subTargets.find(st => st.container.id === sp.containerOverlay.id?.replace('ov-expanded-', 'expanded-'))?.level ?? 1;
     const delay = collapseBaseDelay - subLevel * 0.05;
-    for (let j = 0; j < sp.rowOverlays.length; j++) {
-      ts.to(sp.rowOverlays[j]!, { opacity: 0, duration: 0.15, ease: 'power2.in' }, delay + j * 0.015);
+    const realContainer = subTargets.find(st => `ov-${st.container.id}` === sp.containerOverlay.id)?.container;
+    if (realContainer) {
+      const subParent = sp.containerOverlay.parent!;
+      const subCharLayer = createCharLayer(sp.containerOverlay.x, sp.containerOverlay.y, subParent);
+      const subCleanup = setupCharRainTweens(
+        realContainer, subCharLayer, root,
+        sp.rowOverlays.map(r => r.y),
+        ts, delay, 'collapse',
+      );
+      if (subCleanup) charRainCleanups.push(subCleanup);
     }
   }
 
-  // 盒子收缩：从内到外（最深层先收缩），与文字淡出同步结束
-  // 文字淡出 ≈ 0.15s，盒子 0.05s → 偏移 0.10s
-  const COLLAPSE_BOX_OFFSET = 0.10;
+  // 盒子收缩：从内到外（最深层先收缩），与字符雨同步结束
+  // 字符雨 ≈ BASE_DUR(0.22s)，盒子 0.05s → 偏移 0.17s
+  const COLLAPSE_BOX_OFFSET = 0.17;
   const topBoxDelay = collapseBaseDelay + COLLAPSE_BOX_OFFSET;
   ts.to(pack.containerOverlay, {
     height: 0, duration: 0.05, ease: 'power2.in',
@@ -813,6 +834,7 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
     // 先释放锁（无论 root 是否已变，锁必须释放，否则 3s 超时）
     L.endOp();
     if (L.renderer?.getRoot() !== animRoot) return;
+    for (const cu of charRainCleanups) cleanupCharRain(cu);
     removeAllOverlays();
     L.renderer?.setOverlayRoot(null);
     assert(activeOverlayCount() === 0, 'overlays leaked after doCollapse');

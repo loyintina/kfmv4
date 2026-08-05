@@ -4,14 +4,14 @@
  * 职责：
  * - 持有每个 session 的 Message[]（从磁盘 hydrate）
  * - 接收 StreamEvent，用 shared reducer 更新内存态
- * - 防抖 200ms 异步落盘（writeFile，非 sync）
+ * - 防抖 200ms 落盘（同步 writeFileSync——见 _writeToDisk 注释：异步写与同步写不互斥曾致文件交错）
  * - tool_result / done / abort 时强制 flush（生死线）
  * - 计算顶层 messageCount / tokenCount（sessions/list 只读顶层）
  *
  * 不做：渲染、发事件、管 run。
  */
 
-import { mkdirSync, existsSync, readFileSync, readdirSync, writeFile, writeFileSync } from 'fs';
+import { mkdirSync, existsSync, readFileSync, readdirSync, writeFileSync } from 'fs';
 import { join, resolve, sep } from 'path';
 import { KFM_DATA_DIR, isValidSessionId } from '../path-utils.js';
 import { applyEvent, type ReduceContext } from '../../shared/chat-protocol/reducer.js';
@@ -27,8 +27,6 @@ interface SessionState {
   meta: Record<string, unknown>;
   flushTimer: ReturnType<typeof setTimeout> | null;
   dirty: boolean;
-  writing: boolean;      // 异步写中（BAR-SESSION-FLUSH-01：防抖写与强制写并发交错文件）
-  pendingWrite: boolean; // 写中期间又变脏 → 写完回调续写最新快照
 }
 
 const _sessions = new Map<string, SessionState>();
@@ -53,7 +51,7 @@ function _loadFromDisk(sessionId: string): SessionState {
   const filePath = _sessionFilePath(sessionId);
   if (!filePath) {
     console.error('[session-store] 拒绝非法 sessionId 读取:', sessionId);
-    return { ctx: { messages: [], msgIdx: -1 }, meta: { id: sessionId }, flushTimer: null, dirty: false, writing: false, pendingWrite: false };
+    return { ctx: { messages: [], msgIdx: -1 }, meta: { id: sessionId }, flushTimer: null, dirty: false };
   }
   let meta: Record<string, unknown> = { id: sessionId, title: sessionId, createdAt: new Date().toISOString() };
   const messages: ChatMessage[] = [];
@@ -75,7 +73,7 @@ function _loadFromDisk(sessionId: string): SessionState {
   }
 
   const ctx: ReduceContext = { messages, msgIdx: -1 };
-  return { ctx, meta, flushTimer: null, dirty: false, writing: false, pendingWrite: false };
+  return { ctx, meta, flushTimer: null, dirty: false };
 }
 
 function _get(sessionId: string): SessionState {
@@ -118,12 +116,12 @@ function _computeStats(messages: ChatMessage[]): { messageCount: number; tokenCo
   return { messageCount: mc, tokenCount: Math.round(tc / 3), fullTokenCount: Math.round(fc / 3) };
 }
 
-/** 异步落盘（非阻塞）。写锁串行化：写中时新请求只置 pendingWrite，写完回调续写最新快照——
- *  防抖写与强制写（tool_result/done/abort）并发 writeFile 同一文件导致内容交错损坏
- *  （BAR-SESSION-FLUSH-01，2026-08-04 并发标定实验实锤）。 */
+/** 落盘（同步 writeFileSync）。曾用 async writeFile + writing/pendingWrite 锁串行化，
+ *  但锁只挡得住同层调用——flushSync 的 writeFileSync 不与在途异步写互斥（BAR-SESSION-FLUSH-01
+ *  2026-08-05 复发实锤，e9c-t0p0m0r3.json 尸检：异步 fd 线程池滞后，把旧快照头覆盖在新快照上
+ *  → 完整旧档 + 新档尾巴交错）。事件循环单线程下同步写天然串行，从构造上根除此类交错；
+ *  防抖 200ms 已合并写入频率，单次 sync 写毫秒级，面板无感。 */
 function _writeToDisk(sessionId: string, s: SessionState): void {
-  if (s.writing) { s.pendingWrite = true; return; } // 写中：标记待写，写完回调续写
-  s.writing = true;
   s.dirty = false;
   const { messageCount, tokenCount, fullTokenCount } = _computeStats(s.ctx.messages);
   const out = {
@@ -137,15 +135,15 @@ function _writeToDisk(sessionId: string, s: SessionState): void {
   const filePath = _sessionFilePath(sessionId);
   if (!filePath) {
     console.error('[session-store] 拒绝非法 sessionId 落盘:', sessionId);
-    s.writing = false;
     return;
   }
   _ensureDir();
-  writeFile(filePath, JSON.stringify(out, null, 2), 'utf-8', (err) => {
-    if (err) console.error('[session-store] write failed:', sessionId, err.message);
-    s.writing = false;
-    if (s.pendingWrite) { s.pendingWrite = false; _writeToDisk(sessionId, s); } // 写期间有新脏 → 续写最新
-  });
+  try {
+    writeFileSync(filePath, JSON.stringify(out, null, 2), 'utf-8');
+  } catch (err: any) {
+    console.error('[session-store] write failed:', sessionId, err?.message);
+    s.dirty = true; // 写失败保脏，下个事件/防抖窗重试
+  }
 }
 
 function _scheduleFlush(sessionId: string, s: SessionState): void {
@@ -170,9 +168,8 @@ export function appendEvent(sessionId: string, event: StreamEvent): void {
 }
 
 /**
- * 强制同步落盘（生死线：tool_result / done / abort 时调用）。
- * 注意：底层仍是 async writeFile，但保证在下一个事件前完成调度。
- * 进程即将死亡前（kfm-restart）需要 writeFileSync 保证——由调用方决定。
+ * 强制落盘（生死线：tool_result / done / abort 时调用）。
+ * 清防抖计时器后立即同步写——writeFileSync 天然保证在下一个事件前完成落盘。
  */
 export function flush(sessionId: string): void {
   const s = _sessions.get(sessionId);
@@ -184,32 +181,10 @@ export function flush(sessionId: string): void {
 /**
  * 同步落盘（进程即将死亡前的最后保障）。
  * 用于 kfm-restart 的 abort.finally 路径。
+ * 2026-08-05 起与 flush 同体：_writeToDisk 已全面同步化（见 BAR-SESSION-FLUSH-01 复发根治）。
  */
 export function flushSync(sessionId: string): void {
-  const s = _sessions.get(sessionId);
-  if (!s || !s.dirty) return;
-  if (s.flushTimer) { clearTimeout(s.flushTimer); s.flushTimer = null; }
-  const { messageCount, tokenCount, fullTokenCount } = _computeStats(s.ctx.messages);
-  const out = {
-    ...s.meta,
-    messages: s.ctx.messages,
-    messageCount,
-    tokenCount,
-    fullTokenCount,
-    updatedAt: new Date().toISOString(),
-  };
-  const filePath = _sessionFilePath(sessionId);
-  if (!filePath) {
-    console.error('[session-store] 拒绝非法 sessionId 同步落盘:', sessionId);
-    s.dirty = false;
-    return;
-  }
-  _ensureDir();
-  writeFileSync(filePath, JSON.stringify(out, null, 2), 'utf-8');
-  s.dirty = false;
-  // 同步写是最新全量快照：在途异步写已无意义，重置写锁防残留死锁（后续异步写不会被吞）
-  s.writing = false;
-  s.pendingWrite = false;
+  flush(sessionId);
 }
 
 /**

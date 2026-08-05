@@ -118,6 +118,13 @@ const results = await pool(todo, async (s) => {
       return { id, ok: true, ms: res.ms, tries: n + 1 };
     } catch (e) {
       if (n === retries) {
+        // 清面板区孤儿：runSession 在归档前失败（超时/断流/错误桩），生产区 sessions/ 会
+        // 留下 <tryId>.json——面板「最新会话」自动选中它，失控臂 1MB 载荷曾把页面冻死
+        // （2026-08-05 e9b-t0p4m0r7 实案）。归档成功的不动（已 rm 源文件），只清失败残留。
+        for (let k = 0; k <= retries; k++) {
+          const orphan = join(homedir(), '.kfmv4', 'sessions', k === 0 ? `${id}.json` : `${id}-t${k}.json`);
+          try { unlinkSync(orphan); } catch { /* 不存在即正常 */ }
+        }
         console.error(`[batch-run] ${id} 失败（重试 ${retries} 次后）: ${e.message.slice(0, 120)}`);
         return { id, ok: false, error: e.message.slice(0, 120) };
       }

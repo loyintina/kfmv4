@@ -52,8 +52,27 @@ import { anim } from './modules/animation-registry.js';
 
 // 全局未捕获错误 → 调试卡
 import { log } from './modules/logger.js';
-window.addEventListener('error', e => log('GLOBAL error: ' + (e.error?.message || e.message) + ' ' + (e.error?.stack || e.filename + ':' + e.lineno)));
-window.addEventListener('unhandledrejection', e => log('GLOBAL unhandled: ' + (e.reason?.message || String(e.reason))));
+// 客户端错误直报（2026-08-05 幽灵卡片堆排查装）：console 之外同步上报服务端落盘
+// ~/.kfmv4/logs/client-errors.jsonl——手机端无 devtools，异常不能靠猜
+function reportClientError(source: string, message: string, stack?: string): void {
+  try {
+    const apiBase = location.pathname.startsWith('/kfmv4/') ? '/kfmv4/api/' : '/api/';
+    fetch(apiBase + 'client-error', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source, message: String(message).slice(0, 2000), stack: (stack || '').slice(0, 4000), ua: navigator.userAgent }),
+      keepalive: true,
+    }).catch(() => { /* 上报失败静默 */ });
+  } catch { /* 上报通道自身不得炸 */ }
+}
+window.addEventListener('error', e => {
+  log('GLOBAL error: ' + (e.error?.message || e.message) + ' ' + (e.error?.stack || e.filename + ':' + e.lineno));
+  reportClientError('onerror', e.error?.message || e.message, e.error?.stack || `${e.filename}:${e.lineno}`);
+});
+window.addEventListener('unhandledrejection', e => {
+  log('GLOBAL unhandled: ' + (e.reason?.message || String(e.reason)));
+  reportClientError('unhandledrejection', e.reason?.message || String(e.reason), e.reason?.stack);
+});
 
 gestures.init();
 initApp();

@@ -48,6 +48,19 @@ const apiRoutes = express.Router();
 setupFileRoutes(apiRoutes);
 setupProxyRoutes(apiRoutes);
 setupProvidersRoutes(apiRoutes);
+// 客户端错误直报（2026-08-05 幽灵卡片堆排查装：手机端无 devtools，JS 异常即瞎猜——
+// window.onerror/unhandledrejection 落盘 jsonl，服务端日志可见）
+apiRoutes.post('/client-error', (req, res) => {
+  try {
+    const { message, stack, source, ua } = req.body || {};
+    const line = JSON.stringify({ ts: new Date().toISOString(), message, stack, source, ua });
+    const dir = path.join(KFM_DATA_DIR, 'logs');
+    fs.mkdirSync(dir, { recursive: true });
+    fs.appendFileSync(path.join(dir, 'client-errors.jsonl'), line + '\n');
+    console.error('[client-error]', message, source || '');
+  } catch { /* 上报通道自身不得炸 */ }
+  res.json({ ok: true });
+});
 app.use('/api', apiRoutes);
 app.use('/kfmv4/api', apiRoutes);
 

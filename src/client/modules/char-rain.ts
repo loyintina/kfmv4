@@ -9,11 +9,6 @@
  *
  * 双树设计：字符盒子建在 overlay 树的容器克隆上，不碰主树。
  * 主树的 container 参数仅用于读取行数据（标签文字、字体、颜色等）。
- *
- * 性能约束：
- * - CHAR_RAIN_DEPTH_THRESHOLD=1：只对顶层容器（depth=0）运行字符雨，
- *   depth≥2 的子容器全部跳过，避免深层展开时每层都创建大量 Box + tween
- * - MAX_CHAR_BOXES=80：每个容器的字符雨 Box 上限，防止大目录产生过多对象
  */
 
 import { Box } from "../engine/v2/box.js";
@@ -48,7 +43,6 @@ export interface CharRainCleanup {
  * @param tl             timeline
  * @param baseDelay      起始延迟
  * @param direction      'expand' 或 'collapse'
- * @param depth          当前嵌套深度（用于性能优化：深层跳过字符雨）
  */
 function _charRainCore(
   rows: Box[],
@@ -59,14 +53,7 @@ function _charRainCore(
   tl: AnimTimeline,
   baseDelay: number,
   direction: 'expand' | 'collapse',
-  depth: number = 0,
 ): CharRainCleanup | null {
-  // 性能优化：嵌套深度超过阈值时跳过字符雨动画（每字符一个 Box 开销大）
-  // 阈值设为 2：根目录 (0) → 一级 (1) → 二级 (2) → 三级及以上跳过
-  const CHAR_RAIN_DEPTH_THRESHOLD = 2;
-  if (depth > CHAR_RAIN_DEPTH_THRESHOLD) {
-    return null;
-  }
   const isCollapse = direction === 'collapse';
   if (rows.length === 0) return null;
 
@@ -265,7 +252,7 @@ function _charRainCore(
 
 /**
  * 从容器 children 中过滤 title-* / file-* 行，创建字符雨。
- * @param depth 当前嵌套深度（用于性能优化：深层跳过字符雨）
+ * 与旧签名完全兼容，调用方无需修改。
  */
 export function setupCharRainTweens(
   container: Box,
@@ -275,12 +262,11 @@ export function setupCharRainTweens(
   tl: AnimTimeline,
   baseDelay: number,
   direction: 'expand' | 'collapse' = 'expand',
-  depth: number = 0,
 ): CharRainCleanup | null {
   const rows = container.children.filter((c) =>
     c.id?.startsWith("title-") || c.id?.startsWith("file-")
   );
-  return _charRainCore(rows, rowTargetYs, container, overlayContainer, root, tl, baseDelay, direction, depth);
+  return _charRainCore(rows, rowTargetYs, container, overlayContainer, root, tl, baseDelay, direction);
 }
 
 // ============================================================

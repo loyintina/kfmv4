@@ -12,7 +12,7 @@ import assert from 'assert';
 import { group, regression, test } from './runner.js';
 import { setupAiRoutes } from '../src/server/ai/routes.js';
 import type { StartRunFn } from '../src/server/ai/routes.js';
-import { sliceMessages } from '../src/server/routes/files.js';
+import { sliceMessages, capMessagesPayload } from '../src/server/routes/files.js';
 
 group('ai/routes — /ai/chat/start 参数校验');
 
@@ -320,6 +320,37 @@ regression('BAR-ORB-SEG-01g', 'files.ts', '空数组：返回空数组不报错'
     [],
     'head 空数组应返回 []',
   );
+});
+
+// BAR-MSG-PAYLOAD-01（2026-08-05，e9b-t0p4m0r7 实案）：失控实验臂单条消息超 300KB，
+// 面板刷新恢复会话时 limit=12 尾部切片返回 1MB+ → 移动端 JSON.parse+渲染把主线程打满，
+// 页面 1-2 秒后完全冻死。契约：/sessions/messages 响应经 capMessagesPayload 封顶——
+// 条数语义不变，超限 text 块截断并标注，总预算 400KB / 单条 100KB。
+regression('BAR-MSG-PAYLOAD-01', 'pending-commit', 'capMessagesPayload 载荷封顶：巨条截断+标注，总量预算，小消息不动', () => {
+  const giant = 'x'.repeat(300_000);
+  const msgs = [
+    { role: 'user', content: [{ type: 'text', text: '小问题' }] },
+    { role: 'ai', content: [{ type: 'text', text: giant }, { type: 'tool', name: 'read' }] },
+    { role: 'ai', content: [{ type: 'text', text: '正常回复' }] },
+  ];
+  const out = capMessagesPayload(msgs) as any[];
+  // 条数不变
+  assert(out.length === 3, '条数语义不变');
+  // 巨条被截断到单条上限并带标注
+  const t1 = out[1]!.content[0]!.text as string;
+  assert(t1.length < 101_000, `巨条应截到 100KB 级，实得 ${t1.length}`);
+  assert(t1.includes('[已截断：原消息 300000 字符'), '截断标注缺失');
+  // 非 text 块原样
+  assert(out[1]!.content[1]!.type === 'tool', '非 text 块不应被动');
+  // 小消息原样（引用相等 = 未重建）
+  assert(out[0] === msgs[0] && out[2] === msgs[2], '小消息应保持原样');
+  // 总预算：连续巨条时后面的预算被压缩
+  const two = capMessagesPayload([
+    { role: 'ai', content: [{ type: 'text', text: giant }] },
+    { role: 'ai', content: [{ type: 'text', text: giant }] },
+  ]) as any[];
+  const sum = two.reduce((s, m) => s + (m.content[0].text as string).length, 0);
+  assert(sum < 410_000, `总量应封顶 400KB 级，实得 ${sum}`);
 });
 
 // 最关键：head(0,k) ++ tail(0, total-k) 必须严格等于完整数组（无重叠、无缺口）。

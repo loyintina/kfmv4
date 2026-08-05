@@ -50,6 +50,30 @@ export function sliceMessages<T>(all: T[], from: 'head' | 'tail', offset: number
   return all.slice(offset, offset + lim);
 }
 
+/** 单次响应文本预算（2026-08-05，e9b-t0p4m0r7 实案）：失控臂单条消息可超 300KB，
+ *  「limit=12 取尾部」返回 1MB+ 垃圾 → 手机端 JSON.parse + md 渲染把主线程打满（页面冻死）。
+ *  条数语义不变（limit 仍按条切），只截断超限 text 块并标注，客户端渲染不受影响。 */
+export const MSG_PAYLOAD_BUDGET = 400_000; // 单次响应 text 总量上限（字节近似，按字符数计）
+export const MSG_SINGLE_CAP = 100_000;     // 单条消息 text 上限
+
+export function capMessagesPayload<T>(messages: T[], budget: number = MSG_PAYLOAD_BUDGET, singleCap: number = MSG_SINGLE_CAP): T[] {
+  let used = 0;
+  return messages.map((m: any) => {
+    if (!m || !Array.isArray(m.content)) return m;
+    let changed = false;
+    const content = m.content.map((b: any) => {
+      if (!b || b.type !== 'text' || typeof b.text !== 'string') return b;
+      const room = Math.min(singleCap, Math.max(0, budget - used));
+      if (b.text.length <= room) { used += b.text.length; return b; }
+      changed = true;
+      const kept = b.text.slice(0, room);
+      used += kept.length;
+      return { ...b, text: kept + `\n\n…[已截断：原消息 ${b.text.length} 字符，完整内容见会话文件]` };
+    });
+    return changed ? { ...m, content } : m;
+  });
+}
+
 // ========== 路由注册 ==========
 
 export function setupFileRoutes(router: Router): void {
@@ -211,7 +235,9 @@ export function setupFileRoutes(router: Router): void {
       const total = all.length;
       const limit = rawLimit > 0 ? rawLimit : total;
       const slice = sliceMessages(all, from, offset, limit);
-      res.json({ total, offset, limit, from, messages: slice });
+      // 载荷保险丝：条数按 limit 切，但 text 总量封顶（失控会话单条可超 300KB，
+      // limit=12 曾返回 1MB+ 把移动端主线程打满——见 capMessagesPayload 注释）
+      res.json({ total, offset, limit, from, messages: capMessagesPayload(slice) });
     } catch (err: unknown) {
       res.json({ error: err instanceof Error ? err.message : 'unknown error' });
     }

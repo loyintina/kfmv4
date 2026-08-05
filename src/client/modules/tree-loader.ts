@@ -58,15 +58,14 @@ async function fetchDirRecursive(
     }
 
     // 将递归树结构写入 KFMState.files
-    // 性能优化：批量写入，避免每层递归都 notify() 触发 rebuildTree
-    function ingestTree(parentPath: string, items: any[], batch: Map<string, FileNode>): void {
+    function ingestTree(parentPath: string, items: any[]): void {
       const children: FileNode[] = items.map(item => ({
         name: item.name,
         path: item.path,
         isDir: item.isDir,
         isLink: false,
       }));
-      batch.set(parentPath, {
+      KFMState.setFile(parentPath, {
         name: parentPath.split('/').pop() || parentPath,
         path: parentPath,
         isDir: true,
@@ -75,18 +74,12 @@ async function fetchDirRecursive(
       });
       for (const item of items) {
         if (item.isDir && item.children && item.children.length > 0) {
-          ingestTree(item.path, item.children, batch);
+          ingestTree(item.path, item.children);
         }
       }
     }
 
-    const batch = new Map<string, FileNode>();
-    ingestTree(dirPath, tree, batch);
-    // 批量写入，只 notify 一次
-    for (const [path, node] of batch) {
-      KFMState.files[path] = node;
-    }
-    KFMState.notify();
+    ingestTree(dirPath, tree);
     return true;
   } catch (e) {
     log('[tree-loader] fetchDirRecursive failed: ' + (e instanceof Error ? e.message : String(e)));
@@ -143,15 +136,14 @@ export async function loadFileTree(rootPath: string): Promise<void> {
   markAnimatingPath(rootPath);
   KFMState.notify();
 
-  // 依次触发展开动画（动画串行，但不再重复 notify）
+  // 依次触发展开动画
   await waitForAnimUnlock();
   const rootNode = KFMState.files[rootPath];
   if (rootNode?.children) {
     for (const child of rootNode.children) {
       if (child.isDir && KFMState.expandedPaths[child.path]) {
         markAnimatingPath(child.path);
-        // 不再 notify：数据已加载完成，只需触发单个子树的展开动画
-        triggerExpandAnimation(child.path);
+        KFMState.notify();
         await waitForAnimUnlock();
       }
     }

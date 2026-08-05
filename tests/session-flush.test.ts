@@ -9,7 +9,10 @@ import { KFM_DATA_DIR } from '../src/server/path-utils.js';
 // BAR-SESSION-FLUSH-01（2026-08-04 并发标定实验实锤）：session-store 落盘无写锁——
 // 防抖 flush 与强制 flush（tool_result/done/abort）可并发 writeFile 同一文件，
 // 大文件多块写交错 → 会话文件拼接损坏（bi-r2-t0p0m0r5.json「Extra data」实案）。
-// 平时不炸：面板人慢速对话事件间隔 > 防抖窗，脚本快速多轮必现。
+// 2026-08-05 复发根治：首版修复是 async writeFile + writing/pendingWrite 锁，但锁只挡得住
+// 同层调用——flushSync 的 writeFileSync 不与在途异步写互斥（异步 fd 线程池滞后，把旧快照头
+// 覆盖在新快照上 → 完整旧档+新档尾巴交错，e9c-t0p0m0r3.json 尸检实锤）。
+// 根治：_writeToDisk 全面同步化（writeFileSync），事件循环单线程下同步写天然串行。
 
 const SESSIONS_DIR = join(KFM_DATA_DIR, 'sessions');
 const SID = '__test_flush_race__';
@@ -17,11 +20,11 @@ const _file = (sid: string) => join(SESSIONS_DIR, `${sid}.json`);
 const _cleanup = (sid: string) => { invalidateSession(sid); try { rmSync(_file(sid), { force: true }); } catch { /* 已清理 */ } };
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
-regression('BAR-SESSION-FLUSH-01', 'flush-write-lock', 'session-store 落盘必须有写锁串行化：写中时新请求置 pendingWrite 写完续写，禁止并发 writeFile 同一文件（会话文件交错损坏根因）', () => {
+regression('BAR-SESSION-FLUSH-01', 'flush-sync-write', 'session-store 落盘必须全面同步 writeFileSync——异步 writeFile 与 writeFileSync 不互斥，在途异步写会把旧快照头盖到新快照上（会话文件交错损坏根因）', () => {
   const src = readFileSync(fileURLToPath(new URL('../src/server/ai/session-store.ts', import.meta.url)), 'utf-8');
-  assert(/if \(s\.writing\)/.test(src), '写锁守卫缺席——防抖写与强制写仍可并发 writeFile（回 BAR-SESSION-FLUSH-01 病根）');
-  assert(/pendingWrite/.test(src), 'pendingWrite 续写机制缺席——写中变脏会被吞');
-  assert(/s\.writing = false;\n\s*s\.pendingWrite = false;/.test(src), 'flushSync 未重置写锁——同步写后 writing 残留 true 会吞掉后续异步写');
+  assert(!/writeFile\(/.test(src.replace(/writeFileSync\(/g, '')), '异步 writeFile( 残留——与同步写不互斥，在途写可交错（回 BAR-SESSION-FLUSH-01 病根）');
+  assert(/writeFileSync\(filePath/.test(src), '_writeToDisk 必须同步 writeFileSync 落盘');
+  assert(!/s\.writing|pendingWrite\s*[=:]/.test(src), 'writing/pendingWrite 锁残留——全面同步化后锁已无意义，残留即未根治');
 });
 
 test('密集追加 + 强制 flush 交错后，会话文件必须仍是合法完整 JSON（写锁串行化不破坏正常路径）', async () => {

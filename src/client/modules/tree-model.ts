@@ -3,7 +3,6 @@
  */
 
 import { Box } from '../engine/v2/box.js';
-import { recordBoxCreate } from './tree-perf.js';
 import { KFMState, type FileNode } from './state.js';
 import { DIMENSIONS, TEXT_STYLES, createBox, LINE_HEIGHT, MAX_LINES, FONT, getShift } from './style-registry.js';
 import { currentTheme as theme } from './theme.js';
@@ -147,15 +146,9 @@ function buildExpanded(path: string, children: FileNode[], ctx: BuildCtx, depth:
       cy += folderRow.height;
 
       if (ctx.expandedPaths[item.path]) {
-        // 深度限制：超过 MAX_EXPAND_DEPTH 时不再递归展开，防止指数级 Box 增长
-        if (depth + 1 >= MAX_EXPAND_DEPTH) {
-          // 深层文件夹只显示标题行，不展开内容
-          // 用户可折叠后再展开以重置深度计数
-        } else {
-          const ch = KFMState.files[item.path]?.children ?? item.children ?? [];
-          const sub = buildExpanded(item.path, ch, ctx, depth + 1, getShift(depth), w);
-          sub.y = cy; container.addChild(sub); cy += sub.height;
-        }
+        const ch = KFMState.files[item.path]?.children ?? item.children ?? [];
+        const sub = buildExpanded(item.path, ch, ctx, depth + 1, getShift(depth), w);
+        sub.y = cy; container.addChild(sub); cy += sub.height;
       }
     } else {
       const fileRow = innerFileRow(item, cy, w, ctx, depth);
@@ -186,19 +179,6 @@ export function buildTree(items: FileNode[], options: TreeOptions = {}): Box {
   rootBox.scrollY = 0;
   return rootBox;
 }
-
-/** Box 缓存：path → Box 子树。用于增量构建，避免重复创建 */
-const _boxCache = new Map<string, Box>();
-
-/** 清除缓存（侧栏关闭或需要强制刷新时调用） */
-export function clearBoxCache(): void {
-  _boxCache.clear();
-}
-
-/** 最大展开深度：超过此深度的文件夹不实际展开（防止指数级 Box 创建） */
-// 2026-08-05 用户拍板：5 → 10。实际场景常有 10+ 层嵌套，压 5 层会误伤正常浏览；
-// 未来文件树改卡片折叠式根本重构后，此限制随旧架构消亡。
-const MAX_EXPAND_DEPTH = 10;
 
 export function buildSidebarTree(containerWidth?: number, rightMargin?: number): Box {
   const state = KFMState;

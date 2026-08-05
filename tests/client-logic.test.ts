@@ -881,35 +881,40 @@ regression('BAR-SESSIONCARD-PROVIDER-01', 'ui/session-card', '会话卡 metaRow 
 });
 
 // ==========================================================================
-// BAR-TREE-PERF-01: 文件树深层展开性能优化（批量 notify）
-//
-// 背景：深层展开时（如 /root/a/b/c/d/e/f），fetchDirRecursive 递归 N 层，
-// 每层调用 KFMState.setFile → notify() → rebuildTree()，导致 N 次全树重建。
-// 修复：批量写入 KFMState.files，全部完成后只 notify 一次。
+// 2026-08-05 幽灵卡片堆三连修（GHOST-02 状态机卡死 + GHOST-03 双重触发 +
+// ACCENT-01 反向重开跳色）。动画时序无单测载体，源码断言钉住结构不变量。
 // ==========================================================================
 
-group('tree-loader — 批量 notify 性能优化（BAR-TREE-PERF-01）');
-
-regression('BAR-TREE-PERF-01', 'tree-loader', 'fetchDirRecursive 批量写入 files，只 notify 一次（源码断言）', () => {
-  const src = readFileSync('src/client/modules/tree-loader.ts', 'utf-8');
-  // ingestTree 必须接收 batch 参数
-  assert(src.includes('function ingestTree(parentPath: string, items: any[], batch: Map'), 'ingestTree 必须接收 batch 参数');
-  // 必须用 batch.set 而非 KFMState.setFile
-  assert(src.includes('batch.set(parentPath'), '必须用 batch.set 写入');
-  // 必须在循环后统一写入 + notify
-  assert(src.includes('for (const [path, node] of batch)'), '必须遍历 batch 统一写入');
-  assert(src.includes('KFMState.files[path] = node'), '必须直接写入 files 而非调用 setFile');
-  // setFile 会 notify，批量写入时不得调用
-  const ingestBody = src.split('function ingestTree')[1]?.split('\\n}\\n')[0] || '';
-  assert(!ingestBody.includes('KFMState.setFile'), 'ingestTree 内部不得调用 KFMState.setFile（会触发多次 notify）');
+regression('BAR-CARD-GHOST-02', 'card-stack', 'closeCardStack 的 opening→closing 反向分支不得杀在途补间（kill-then-reverse 空壳 timeline 永不回调 → 永久卡 closing 幽灵堆）', () => {
+  const src = readFileSync('src/client/modules/card-stack.ts', 'utf-8');
+  const fnStart = src.indexOf('export function closeCardStack');
+  const fnEnd = src.indexOf('export function', fnStart + 1);
+  const fn = src.slice(fnStart, fnEnd);
+  const branchIdx = fn.indexOf("if (_state === 'opening' && _tl)");
+  const killIdx = fn.indexOf('killAllCardTweens();');
+  assert(branchIdx !== -1, 'closeCardStack 必须有 opening→closing 反向分支');
+  assert(killIdx !== -1, 'closeCardStack 全量关闭分支必须保留 killAllCardTweens（GHOST-01 防护）');
+  assert(branchIdx < killIdx, '反向分支必须位于 killAllCardTweens 之前（先 return，杀补间只在全量关闭分支）');
 });
 
-regression('BAR-TREE-PERF-02', 'tree-loader', 'loadFileTree 动画串行但不再重复 notify（源码断言）', () => {
-  const src = readFileSync('src/client/modules/tree-loader.ts', 'utf-8');
-  const loadBody = src.split('export async function loadFileTree')[1]?.split('Registry.registerContentGenerator')[0] || '';
-  // 动画循环内不得再 notify
-  const loopBody = loadBody.split('for (const child of rootNode.children)')[1]?.split('}\\n')[0] || '';
-  assert(!loopBody.includes('KFMState.notify()'), '动画循环内不得调用 notify（数据已加载完成）');
-  // 必须调用 triggerExpandAnimation
-  assert(loopBody.includes('triggerExpandAnimation(child.path)'), '动画循环必须调用 triggerExpandAnimation');
+regression('BAR-CARD-GHOST-03', 'card-stack', '手势 onEnd「堆外 tap 关堆」必须豁免召唤按钮（否则 onEnd 先关堆、按钮 click 又重开 → 关→秒重开）', () => {
+  const src = readFileSync('src/client/modules/card-stack.ts', 'utf-8');
+  assert(src.includes("closest('#cardStackToggleBtn')"), 'onEnd 必须豁免 #cardStackToggleBtn');
+  // 豁免必须在 closeCardStack() 调用之前
+  const endIdx = src.indexOf('onEnd: (e, dx, dy)');
+  const exemptIdx = src.indexOf("closest('#cardStackToggleBtn')", endIdx);
+  const closeIdx = src.indexOf('closeCardStack();', endIdx);
+  assert(exemptIdx !== -1 && exemptIdx < closeIdx, '豁免判断必须在 onEnd 的 closeCardStack() 之前');
+});
+
+regression('BAR-CARD-ACCENT-01', 'card-stack', 'closing→opening 反向重开不得重新随机配色（卡片在屏上换色 = 可见跳色）', () => {
+  const src = readFileSync('src/client/modules/card-stack.ts', 'utf-8');
+  const fnStart = src.indexOf('export function openCardStack');
+  const fnEnd = src.indexOf('export function', fnStart + 1);
+  const fn = src.slice(fnStart, fnEnd);
+  const branchIdx = fn.indexOf("if (_state === 'closing' && _tl)");
+  const randomIdx = fn.indexOf('_generateRandomAccents();');
+  assert(branchIdx !== -1, 'openCardStack 必须有 closing→opening 反向分支');
+  assert(randomIdx !== -1, '全量打开路径必须保留 _generateRandomAccents（卡片在屏外换色不可见）');
+  assert(branchIdx < randomIdx, '反向分支必须先 return，随机配色只在全量打开路径');
 });

@@ -121,6 +121,7 @@ let _tl: AnimTimeline | null = null;
 
 
 
+
 // ========== DOM 构建 ==========
 
 function createCard(index: number): HTMLElement {
@@ -286,8 +287,8 @@ function _updateCardStyles(): void {
 export function openCardStack(): void {
   if (_state === 'open' || _state === 'opening') return;
   if (_state === 'closing' && _tl) {
-    _generateRandomAccents();
-    _updateCardStyles();
+    // 反向重开：卡片就在屏幕上，绝不能重新随机配色（可见跳色）。
+    // 沿用本次打开时已生成的 _currentAccents，观感一致。
     _state = 'opening';
     Registry.notifyStateChange('card-stack');
     _tl.reverse();
@@ -344,16 +345,21 @@ function killAllCardTweens(): void {
 
 export function closeCardStack(): void {
   if (_state === 'closed' || _state === 'closing') return;
-  // 状态迁移先清理在途补间（BAR-CARD-GHOST-01：pull 反馈回弹与关闭动画竞态）
-  killAllCardTweens();
-  // 关闭卡片堆时销毁已召唤的浮卡
 
+  // opening→closing 走 _tl.reverse() 反向播放，绝不能杀在途补间——killTweensOf
+  // 会把 _tl 内部补间一并杀掉，空壳 timeline 的 reverse 永不触发 onReverseComplete，
+  // 状态永远卡在 'closing' → 幽灵堆（BAR-CARD-GHOST-02）。与 openCardStack 的
+  // closing→opening 反向分支对称。
   if (_state === 'opening' && _tl) {
     _state = 'closing';
     Registry.notifyStateChange('card-stack');
     _tl.reverse();
     return;
   }
+
+  // 全量关闭分支才清理在途补间（BAR-CARD-GHOST-01：pull 反馈回弹与关闭动画竞态）
+  killAllCardTweens();
+  // 关闭卡片堆时销毁已召唤的浮卡
 
   _state = 'closing';
   Registry.notifyStateChange('card-stack');
@@ -430,6 +436,10 @@ export function initCardStack(): void {
       if (Math.abs(dx) > 10 || Math.abs(dy) > 10) return;
       const t = e.target as HTMLElement | null;
       if (t && typeof t.closest === 'function' && t.closest('.stack-card')) return;
+      // 豁免召唤按钮：它是控件不是「堆外空白」。否则 onEnd 先关堆（state→closing），
+      // 紧随的按钮 click 看到 isCardStackOpen()=false 又会重开 → 关 → 秒重开，
+      // 表现为「按钮点了关不上」（BAR-CARD-GHOST-03 双重触发竞态）。
+      if (t && typeof t.closest === 'function' && t.closest('#cardStackToggleBtn')) return;
       closeCardStack();
     },
   });

@@ -17,10 +17,18 @@
 
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import { fileURLToPath } from 'url';
 
 /** 根目录（环境变量或 HOME）— 不可变，KFM_DATA_DIR 永远基于此 */
-export const ROOT_DIR = process.env.KFM_ROOT || process.env.HOME || '.';
+// BAR-TEST-ENV-01 结构加固（2026-08-05）：preload 的 KFM_ROOT 重定向只管得住 npm test
+// 包装；直跑 tsx tests/xxx.test.ts（agent 手工调试常这么干）绕过 preload，垃圾会话
+// 写进生产（08-05 04:49 s-basic/sess-x 等 9 个实案）。构造上堵漏：入口是 tests/ 下
+// 文件且未显式设 KFM_ROOT 时自动隔离到临时目录——直跑与包装跑行为一致。
+export const ROOT_DIR = process.env.KFM_ROOT
+  || (process.argv[1]?.includes(`${path.sep}tests${path.sep}`)
+    ? fs.mkdtempSync(path.join(os.tmpdir(), 'kfmv4-test-root-'))
+    : (process.env.HOME || '.'));
 
 /** 项目根：基于本文件位置推导（src/server/path-utils.ts → 上两级），
  *  不依赖 process.cwd()——服务从任何目录启动，工具默认工作目录都确定。

@@ -13,7 +13,7 @@ import * as clickQueue from '../src/client/modules/click-queue.js';
 import { L } from '../src/client/modules/renderer-lifecycle.js';
 import { KFMState, getFileRowData } from '../src/client/modules/state.js';
 import { buildSidebarTree } from '../src/client/modules/tree-model.js';
-import * as da from '../src/client/modules/debug-assert.ts';
+import * as da from '../src/client/modules/debug-assert.js';
 import { anim } from '../src/client/modules/animation-registry.js';
 import * as sr from '../src/client/modules/style-registry.js';
 import { triggerExpandAnimation } from '../src/client/modules/tree-render.js';
@@ -186,48 +186,6 @@ test('nested expand produces nested containers', () => {
     return n;
   }
   if (countExpanded(tree) !== 2) throw new Error('expected 2 expanded containers for nested expand');
-});
-
-// ==========================================================================
-// 回归钉：深层文件夹展开性能问题（MAX_EXPAND_DEPTH 限制）
-// 问题：深层嵌套文件夹展开时，Box 数量指数级增长导致掉帧卡顿
-// 修复：tree-model.ts 中 buildExpanded 递归时检查深度，超过 MAX_EXPAND_DEPTH(10) 时不再展开
-// 阈值变更（2026-08-05 用户拍板）：5 → 10——实际场景常有 10+ 层嵌套，未来卡片折叠式重构后消亡
-// ==========================================================================
-test('MAX_EXPAND_DEPTH prevents deep recursion — depth 10 stops expanding', () => {
-  // 构造深度为 12 的嵌套文件夹结构（超过限制 2 层，验证阻断生效）
-  const files: Record<string, any> = {
-    '.': { name: 'root', path: '.', isDir: true, children: [{ name: 'd1', path: './d1', isDir: true, isLink: false }] },
-  };
-  const expanded: Record<string, boolean> = { '.': true };
-  for (let i = 1; i <= 12; i++) {
-    const path = './' + Array.from({ length: i }, (_, j) => `d${j + 1}`).join('/');
-    files[path] = {
-      name: `d${i}`, path, isDir: true, isLink: false,
-      children: [{ name: `d${i + 1}`, path: `${path}/d${i + 1}`, isDir: true, isLink: false }],
-    };
-    expanded[path] = true;
-  }
-  seedState(files);
-  KFMState.expandedPaths = expanded;
-
-  const tree = buildSidebarTree(295, 287);
-
-  function countExpandedContainers(box: any, depth = 0): { count: number; maxDepth: number } {
-    let count = (box.id || '').startsWith('expanded-') ? 1 : 0;
-    let maxDepth = (box.id || '').startsWith('expanded-') ? depth : -1;
-    for (const c of box.children || []) {
-      const childResult = countExpandedContainers(c, (box.id || '').startsWith('expanded-') ? depth + 1 : depth);
-      count += childResult.count;
-      maxDepth = Math.max(maxDepth, childResult.maxDepth);
-    }
-    return { count, maxDepth };
-  }
-
-  const result = countExpandedContainers(tree);
-  // MAX_EXPAND_DEPTH = 10：depth 0-9 共 10 层展开，depth 10/11 只显示标题行
-  if (result.count !== 10) throw new Error(`expected 10 expanded containers (depth 0-9), got ${result.count}`);
-  if (result.maxDepth !== 9) throw new Error(`expected max depth 9, got ${result.maxDepth}`);
 });
 // ==========================================================================
 // 4. debug-assert
