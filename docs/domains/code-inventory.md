@@ -1,16 +1,16 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 9582305a · 生成于 2026-08-05 -->
+<!-- 基准 commit 82e962f6 · 生成于 2026-08-05 -->
 
 # 代码清单（机械层）
 
 > 这是什么：全量代码文件的域归属、行数、导出符号，脚本生成可重跑。
 > 语义层现状 → 各域 code-map.md；域契约（应然）→ 各域 contract.md。
 
-## canvas-tree（26 文件 · 8168 行）
+## canvas-tree（25 文件 · 8001 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/client/modules/tree-render.ts | 983 | executeOnPath, markAnimatingPath, triggerExpandAnimation, isAnimLocked, onSidebarOpen, onSidebarClose, initTreeRenderer |
+| src/client/modules/tree-render.ts | 1005 | executeOnPath, markAnimatingPath, triggerExpandAnimation, isAnimLocked, onSidebarOpen, onSidebarClose, initTreeRenderer |
 | src/client/engine/v2/renderer.ts | 903 | RendererOptions, Renderer |
 | src/client/modules/tree-swipe.ts | 730 | isDimmed, bounceCursorRow, handleRowSwipe, updateFocus, focusNext, focusPrev, dismissFocusedCard, dismissAllCards, deployAllCards, selectFilesForPrompt, promptSelectSingle, initTempCardGesture, clearTempCards |
 | src/client/engine/v2/box.ts | 628 | BoxOptions, Box |
@@ -20,24 +20,23 @@
 | src/client/modules/tree-overlay.ts | 414 | OverlayMeta, removeAllOverlays, createCharLayer, collectSiblingsAfter, buildAndSetOverlayTree, createVisualClone, OverlayPack, setupExpandOverlays, setupCollapseOverlays, collectAncestorSiblings, collectAncestorContainers, FlatSubTarget, flattenExpandTree, ensureMetaFromExpandedState, activeOverlayCount |
 | src/client/modules/canvas-cursor.ts | 393 | setLiquidColor, setCursorColor, ensureCursorBox, setModeAccent, moveCursorTo, getCursorRowIndex, moveCursorBySteps, isCursorMode, getCenterRowIndex, snapCursorToCenter, scrollToCenterCursor |
 | src/client/modules/canvas-scroll.ts | 359 | bindWheelEvents, initScrollGesture |
-| src/client/modules/char-rain.ts | 299 | CharRainCleanup, setupCharRainTweens, cleanupCharRain |
+| src/client/modules/char-rain.ts | 285 | CharRainCleanup, setupCharRainTweens, cleanupCharRain |
 | src/client/engine/v2/BorderDrawer.ts | 267 | drawBorders |
 | src/client/engine/v2/flex.ts | 245 | applyFlexLayout |
 | src/client/modules/theme.ts | 228 | ThemeConfig, nebula, currentTheme |
-| src/client/modules/tree-model.ts | 211 | TreeOptions, buildTree, clearBoxCache, buildSidebarTree |
-| src/client/modules/tree-loader.ts | 196 | loadFileTree, initLazyLoader |
+| src/client/modules/tree-model.ts | 191 | TreeOptions, buildTree, buildSidebarTree |
+| src/client/modules/tree-loader.ts | 188 | loadFileTree, initLazyLoader |
 | src/client/modules/style-registry.ts | 162 | DIMENSIONS, FONT, LINE_HEIGHT, MAX_LINES, TEXT_STYLES, styleRegistry, getShift, createBox |
 | src/client/modules/sibling-switcher.ts | 158 | initSiblingSwitcher, isSwitcherOpen, closeSwitcher |
 | src/client/engine/v2/StyleConfig.ts | 156 | BorderSide, BorderState, BorderConfig, GradientStop, BoxStyle, CornerAction, getCornerAction, getNeighbor, DEFAULT_BOX_STYLE, PRESETS, resolveStyle |
-| src/client/modules/tree-perf.ts | 146 | PerfSnapshot, markRebuildStart, markRebuildEnd, recordBoxCreate, markAnimStart, markAnimEnd, recordOverlayCreate, reset, getData, printSummary |
 | src/client/modules/liquid-geometry.ts | 109 | LiquidPoint, LiquidGeomParams, pathToPhysical, liquidPathLen, computeLiquidSegments |
 | src/client/modules/tree-animation.ts | 74 | animateInsertion, animateRemoval |
-| src/client/modules/canvas-utils.ts | 62 | getRootScrollY, setRootScrollY, _rebuildRowIndex, findBoxById |
+| src/client/modules/canvas-utils.ts | 61 | getRootScrollY, setRootScrollY, _rebuildRowIndex, findBoxById |
 | src/client/modules/color-utils.ts | 46 | HUE_BLUE, HUE_PURPLE, rgba, hslToHex, cardAccent, pathBasename |
 | src/client/engine/v2/animation.ts | 40 | ease |
 | src/client/engine/v2/utils.ts | 24 | uniformSpacing, hvSpacing, ZERO_SPACING |
 
-## floating-card（29 文件 · 6951 行）
+## floating-card（29 文件 · 6961 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -47,7 +46,7 @@
 | src/client/cards/plugins/session.card.ts | 616 | — |
 | src/client/cards/plugins/config.card.ts | 600 | — |
 | src/client/cards/plugins/api.card.ts | 562 | — |
-| src/client/modules/card-stack.ts | 472 | getCardCount, getCard, getCardName, getCardId, hexToRgba, cardGradient, cardBg, getFocusIndex, getCurrentAccent, getCardHandler, getFocusedCardRect, animateStackPullFeedback, launchFocusedCard, openCardStack, closeCardStack, isCardStackOpen, focusNext, focusPrev, initCardStack |
+| src/client/modules/card-stack.ts | 482 | getCardCount, getCard, getCardName, getCardId, hexToRgba, cardGradient, cardBg, getFocusIndex, getCurrentAccent, getCardHandler, getFocusedCardRect, animateStackPullFeedback, launchFocusedCard, openCardStack, closeCardStack, isCardStackOpen, focusNext, focusPrev, initCardStack |
 | src/client/cards/plugins/tools.card.ts | 308 | — |
 | src/client/modules/tmux-card.ts | 306 | TmuxCardMeta, createTmuxCardHandler |
 | src/client/modules/renderers/handler-factory.ts | 296 | createFileHandler |
@@ -71,7 +70,7 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（23 文件 · 3395 行）
+## client-shell（23 文件 · 3414 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -86,7 +85,7 @@
 | src/client/modules/renderer-lifecycle.ts | 172 | RenderContext, RendererLifecycle, L |
 | src/client/modules/state.ts | 165 | API, FileNode, ViewportState, KFMStateType, KFMState, FileRowData, getFileRowData |
 | src/client/modules/drag-handler.ts | 134 | DragConfig, createDragHandler |
-| src/client/main.ts | 107 | — |
+| src/client/main.ts | 126 | — |
 | src/client/modules/z-index-layers.ts | 105 | Z, ZLayer |
 | src/client/modules/animation-registry.ts | 75 | AnimTimeline, anim |
 | src/client/modules/ui.ts | 71 | openSidebar, closeSidebar, initUI |
@@ -99,7 +98,7 @@
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（55 文件 · 11777 行）
+## ai-chat（55 文件 · 11752 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -118,10 +117,10 @@
 | src/server/ai/tools/omp/browser/tab-supervisor.ts | 320 | WorkerHandle, TabSession, PendingRun, AcquireTabOptions, RunInTabOptions, getTab, acquireTab, runInTab, releaseTab, releaseAllTabs |
 | src/server/ai/tools/omp/debug/kfmv4-views.ts | 318 | Kfmv4ViewName, Kfmv4ViewResult, RENDERER_SNAPSHOT_SCRIPT, ANIMATION_TIMELINE_SCRIPT, GESTURE_TRACE_SCRIPT, STATE_HISTORY_SCRIPT, CARD_LIFECYCLE_SCRIPT, KFMV4_SCRIPT_MAP, formatRendererSnapshot, formatAnimationTimeline, formatGestureTrace, formatStateHistory, formatCardLifecycle |
 | src/shared/chat-protocol/to-openai-messages.ts | 297 | OpenAiToolCall, OpenAiMessage, ToOpenAiOptions, ToOpenAiResult, toOpenAiMessages |
-| src/server/ai/session-store.ts | 248 | appendEvent, flush, flushSync, invalidateSession, appendUserMessage |
 | src/server/ai/tools/omp/debug/cdp-connection.ts | 242 | CdpSession, CdpLaunchOptions, CdpAttachOptions, CdpPausedEvent, sendCmd, onCdpEvent, launchCdp, attachCdp, closeCdp |
 | src/server/ai/run-manager.ts | 236 | _setStallMsForTest, getActiveRun, getRun, StreamFn, startRun, attachRun, cancelRun |
 | src/client/modules/orb-chat-hints.ts | 225 | startWaitingIndicator, TODO_DISMISS_KEY, todosFingerprint, clearTodoPanel, dismissTodoPanel, updateTodoFromTool |
+| src/server/ai/session-store.ts | 223 | appendEvent, flush, flushSync, invalidateSession, appendUserMessage |
 | src/server/ai/page-state.ts | 148 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
 | src/server/ai/tools/index.ts | 145 | getAllTools, getToolDefinitions, executeTool, hasTool, getTool |
 | src/server/ai/permissions.ts | 134 | RiskClass, TOOL_RISK, Decision, AuditEntry, riskClassOf, evaluate |
@@ -159,33 +158,33 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（9 文件 · 1523 行）
+## server（9 文件 · 1570 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/server/routes/files.ts | 373 | FileItem, sliceMessages, setupFileRoutes |
+| src/server/routes/files.ts | 399 | FileItem, sliceMessages, MSG_PAYLOAD_BUDGET, MSG_SINGLE_CAP, capMessagesPayload, setupFileRoutes |
 | src/server/ws-server.ts | 315 | WsServer |
-| src/server/index.ts | 169 | — |
-| src/server/path-utils.ts | 160 | ROOT_DIR, PROJECT_ROOT, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, SESSION_ID_RE, isValidSessionId, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
+| src/server/index.ts | 182 | — |
+| src/server/path-utils.ts | 168 | ROOT_DIR, PROJECT_ROOT, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, SESSION_ID_RE, isValidSessionId, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
 | src/server/ai/permissions.ts | 134 | RiskClass, TOOL_RISK, Decision, AuditEntry, riskClassOf, evaluate |
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/env-store.ts | 103 | ENV_PATH, parseEnv, loadEnvFile, isEnvRef, ResolvedKey, resolveKey, envNameForProvider, upsertEnvVar |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（142 文件 · 17194 行）
+## infra（142 文件 · 17190 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| tests/client-logic.test.ts | 916 | — |
-| tests/regression.test.ts | 693 | — |
+| tests/client-logic.test.ts | 921 | — |
+| tests/regression.test.ts | 651 | — |
 | experiments/coldstart/tools/normalize-arms.mjs | 587 | — |
 | tests/tool-compaction.test.ts | 505 | — |
 | scripts/agent/semantic-audit.mjs | 460 | taskFiles, buildPrompt, makeValidate, recheckRef, recheckQuote |
 | tests/preload.mjs | 423 | — |
 | tests/cards.test.ts | 410 | — |
+| tests/server-routes.test.ts | 378 | — |
 | tests/visual-baseline.test.ts | 367 | — |
-| tests/server-routes.test.ts | 347 | — |
 | scripts/agent/agent-runner.mjs | 325 | renderTemplate, extractJson, runAgent, parseToolStream, runAgentTooled |
 | tests/box.test.ts | 309 | — |
 | tests/mocks/gsap.ts | 305 | gsap |
@@ -265,9 +264,9 @@
 | scripts/check/check-card-meta.mjs | 68 | — |
 | scripts/check/check-ledger-commits.mjs | 68 | — |
 | tests/floating-state.test.ts | 66 | — |
-| scripts/check/domain-src.mjs | 64 | DOMAIN_SRC |
 | scripts/agent/test-tag-advisor.mjs | 64 | — |
 | scripts/check/check-fix-tests.mjs | 63 | — |
+| scripts/check/domain-src.mjs | 63 | DOMAIN_SRC |
 | scripts/check/check-active-stack.mjs | 62 | — |
 | scripts/check/check-doc-schema.mjs | 60 | — |
 | scripts/check/check-commit-docs.mjs | 59 | — |
@@ -282,8 +281,8 @@
 | tests/stack-numbering.test.ts | 51 | — |
 | scripts/check/gen-route-table.mjs | 49 | — |
 | tests/permissions.test.ts | 49 | — |
+| tests/session-flush.test.ts | 48 | — |
 | package.json | 47 | — |
-| tests/session-flush.test.ts | 45 | — |
 | scripts/check/check-doc-budget.mjs | 44 | — |
 | scripts/clean-npm-temp.cjs | 44 | — |
 | scripts/check/check-release-radar.mjs | 42 | — |
@@ -374,7 +373,7 @@
 
 - src/client/modules/tree-render.ts → src/client/modules/ws-channel.ts
 
-### canvas-tree → client-shell（54 边）
+### canvas-tree → client-shell（53 边）
 
 - src/client/modules/canvas-cursor.ts → src/client/modules/animation-registry.ts
 - src/client/modules/canvas-cursor.ts → src/client/modules/dom-refs.ts
@@ -409,7 +408,6 @@
 - src/client/modules/tree-loader.ts → src/client/modules/ui-registry.ts
 - src/client/modules/tree-model.ts → src/client/modules/state.ts
 - src/client/modules/tree-overlay.ts → src/client/modules/renderer-lifecycle.ts
-- src/client/modules/tree-perf.ts → src/client/modules/logger.ts
 - src/client/modules/tree-render.ts → src/client/modules/animation-registry.ts
 - src/client/modules/tree-render.ts → src/client/modules/click-queue.ts
 - src/client/modules/tree-render.ts → src/client/modules/debug-assert.ts
@@ -631,4 +629,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 284 文件 · 49008 行 · 跨域边 249 条
+合计 283 文件 · 48888 行 · 跨域边 248 条

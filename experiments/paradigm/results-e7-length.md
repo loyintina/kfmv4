@@ -1,8 +1,30 @@
 # 实验 7 记录：元认知范式包长度梯度（2026-08-05）——8k 已饱和
 
 > 实验线：paradigm 研究。H5「长度倒 U 形」的核心验证——同一元认知素材的
-> 严格嵌套梯度（唯一变量 = 长度）。96 臂全绿（523s）。
+> 严格嵌套梯度（唯一变量 = 长度）。首批 96 臂全绿（523s）。
 > 复现：`node experiments/paradigm/tools/batch-run.mjs --task-file /tmp/exp5-task.txt --paradigms "无,metacognition,metacognition-32k,metacognition-48k,metacognition-64k,metacognition-96k" --models "minimax-m3,deepseek-v4-flash" --arms 8 --concurrency 12 --prefix "e7-"`
+
+## 批次沿革与数据完整性（2026-08-05 四连补跑后盘点）
+
+> 首批 e7 之后，同一矩阵（6 档 × 8 臂）向四个模型池扩测。
+> 有效臂 = 归档文件合法 JSON 且非错误桩；损坏件隔离 `sessions/script/_quarantine/`。
+
+| 批次 | 模型池 | 模型 | 有效/计划 | 备注 |
+|------|--------|------|-----------|------|
+| e7 | Opencode | minimax-m3, deepseek-v4-flash | 96/96 | 首批，全绿 |
+| e7b | Opencode | qwen3.5-plus, mm-m2.7, mm-m2.5, kimi-k2.5, glm-5 | 240/240 | |
+| e7b | Opencode | mimo-v2.5 | 47/48 | **丢 1 臂**（e7b-t0p5m0r5，96k 档）：写竞态损坏（BAR-SESSION-FLUSH-01），opencode 已死无法补跑 → 记丢 |
+| e9 | siliconflow | DeepSeek-V3, DeepSeek-R1 | 96/96 | |
+| e9 | siliconflow | Qwen3.5-9B / 3.5-27B | 38/48, 26/48 | 重试 2 次耗尽，上游间歇错误 |
+| e9 | siliconflow | Qwen3.6-35B-A3B, Qwen3.5-4B | **0/48, 0/48** | 免费端点挂起/全灭，两模型整列记丢 |
+| e9b | siliconflow | MiniMax-M2.5, Ling-mini-2.0 | 48/48, 46/48 | |
+| e9b | siliconflow | GLM-4.5-Air, Step-3.5-Flash, GLM-Z1-9B | 24/48, 20/48, 16/48 | 免费模型大面积上游 500/挂起 |
+| e9c | siliconflow | GLM-4-32B-0414 | **0/24** | 上游 500 全灭（2 个损坏文件为错误桩残骸，已隔离） |
+| e10 | 聚光 | gpt-5-mini, gpt-5.6-luna, gpt-5.4-mini | 144/144 | |
+| e10 | 聚光 | gemini-2.5-pro, gemini-3-pro, gemini-3.5-flash | 47/48, 47/48, 43/48 | 零星上游错误 |
+
+**合计：有效 979 臂 / 计划 1128**（到场率 86.8%）。丢臂集中在上游侧（免费端点），
+非实验设计问题；判卷时按「模型 × 档」格内实际臂数取均值，不足 4 臂的格子标注低置信。
 
 ## 素材管线（纯度优先，用户定标准：每一块都跟「元」有关）
 
