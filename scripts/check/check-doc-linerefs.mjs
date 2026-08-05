@@ -9,6 +9,10 @@
  *    basename 索引解析（basename 不唯一则跳过，不误报）。
  *   文件/.basename 找不到 → 跳过（归 check-doc-symbols / check-code-doc-refs 管）。
  *   行号超出文件实际行数 → 中断。范围写法 :24-27 取首数核对。
+ *   「符号名（file:line）」模式锚点（符号名紧跟中文括号/反引号包裹，如
+ *   `renderTemplate（agent-runner.mjs:75）`）→ 另校验该行文本确实含该符号名——
+ *   :32 存在但不含 renderTemplate 这类「行号在界但锚错位」漂移同样中断
+ *   （2026-08-05 A 线升级：G3 错位拦截，从 LLM 抽样升级为构建期全量强制）。
  *
  * 历史叙述豁免：同行含「考古/历史/修复前/结案/漂移/曾/原/旧/引入/v7/v8.x/删除/批次」
  * 标记的行跳过——那些行号指向历史版本，本就允许悬空。
@@ -71,15 +75,21 @@ function resolveRef(refPath) {
 
 // ========== 扫描 ==========
 
+// 符号锚点前缀模式：仅反引号包裹的代码符号引用（`symbolName`（file:line））做行级校验
+// ——反引号 = 显式「代码符号声明」（与 check-doc-symbols 同款契约），零误报。
+// 直接模式（renderTemplate（file:line））不做符号校验：英文机制词（30s interval/
+// switch/reject 等）贴中文括号会被误判为符号，契约推反引号写法，存量由探针兜底。
+const SYM_ANCHOR_RE = /`([A-Za-z_$][A-Za-z0-9_$]*(?:\(\))?)`\s*（\s*$/;
+
 let errors = 0;
 let checked = 0;
-const lineCountCache = new Map();
+const linesCache = new Map();
 
-function lineCountOf(absPath) {
-  if (!lineCountCache.has(absPath)) {
-    lineCountCache.set(absPath, readFileSync(absPath, 'utf-8').split('\n').length);
+function linesOf(absPath) {
+  if (!linesCache.has(absPath)) {
+    linesCache.set(absPath, readFileSync(absPath, 'utf-8').split('\n'));
   }
-  return lineCountCache.get(absPath);
+  return linesCache.get(absPath);
 }
 
 const docDir = join(ROOT, DOCS_ROOT, 'domains');
@@ -97,10 +107,21 @@ for (const f of walk(docDir, '.md')) {
       const n = parseInt(refLine, 10);
       const key = `${rel}:${i + 1}:${refPath}:${n}`;
       if (WHITELIST.has(key)) continue;
-      const max = lineCountOf(abs);
+      const targetLines = linesOf(abs);
+      const max = targetLines.length;
       if (n > max) {
         console.error(
           `[check-doc-linerefs] domains/${rel}:${i + 1}: 引用 ${refPath}:${n} 超出文件实际行数（共 ${max} 行）——行号引用已悬空（G3 漂移；历史叙述请加标记或登记豁免）`
+        );
+        errors++;
+        continue;
+      }
+      // 符号锚点行级校验：`` `符号名`（file:line）`` 模式 → 该行必须含符号名
+      const symMatch = line.slice(0, m.index).match(SYM_ANCHOR_RE);
+      const sym = symMatch ? symMatch[1].replace('()', '') : null;
+      if (sym && !(targetLines[n - 1] || '').includes(sym)) {
+        console.error(
+          `[check-doc-linerefs] domains/${rel}:${i + 1}: 锚点错位——${refPath}:${n} 声称符号 ${sym}，该行实际不含（行内容：「${(targetLines[n - 1] || '').trim().slice(0, 60)}」）——G3 漂移（符号改名/移动后行号未同步；历史叙述请加标记或登记豁免）`
         );
         errors++;
       }
