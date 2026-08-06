@@ -138,6 +138,7 @@ for (let round = 1; round <= retryRounds; round++) {
       '--tools', splitList(r.tools, 'read,grep,glob').join(','),
     ];
     if (r.sandboxTemplate) args.push('--sandbox-template', r.sandboxTemplate);
+    if (r.position) args.push('--position', r.position); // e15 注入位置实验（缺省 first-user）
     log(`run[${i}] 调 batch-run: ${r.taskFile}`);
     const res = spawnSync('node', args, { stdio: 'inherit', cwd: REPO });
     if (res.error) log(`run[${i}] spawn 失败: ${res.error.message}（不中断，继续）`);

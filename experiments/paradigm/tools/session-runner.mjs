@@ -29,15 +29,33 @@ function validSessionId(id) {
   return /^[\p{L}\p{N}_-]{1,128}$/u.test(id);
 }
 
-/** 范式包拼进首条 user 消息（示范性上下文——AI 被同化到范式，非指令注入） */
-function applyParadigm(messages, paradigm) {
-  if (!paradigm) return messages;
+/**
+ * 范式包注入（示范性上下文——AI 被同化到范式，非指令注入）。
+ * position 三档（2026-08-06，e15 注入位置实验）：
+ *   first-user（默认）——包拼进首条 user 消息（与任务同体，历史行为）；
+ *   pre-task-user ——包作为独立 user 消息插到最后一条消息（任务）之前，
+ *     与任务分体、user 侧最靠后（缓存友好）；
+ *   system ——不在消息层注入（chat.ts:209 会过滤消息里的 role==='system'，
+ *     消息层 system 必丢）；由 runSession 改走 startRun 的 extraSystem 字段，
+ *     落在服务端静态 system 段（全局预设之后，chat.ts:234）。
+ * 三档标记文本完全一致——唯一变量是位置，文本差不是实验变量。
+ */
+export const PACK_MARK = (paradigm, tail = '') => `〔范式包〕以下是你要同化的思维/行为范式（示范性上下文）：\n\n${paradigm}${tail}`;
+
+export function applyParadigm(messages, paradigm, position = 'first-user') {
+  if (!paradigm || position === 'system') return messages; // system 档走 extraSystem，消息层不动
+  const packText = (tail) => PACK_MARK(paradigm, tail);
+  if (position === 'pre-task-user') {
+    if (!messages.length) return [{ role: 'user', content: [{ type: 'text', text: packText('') }] }];
+    const packMsg = { role: 'user', content: [{ type: 'text', text: packText('') }] };
+    return [...messages.slice(0, -1), packMsg, messages[messages.length - 1]];
+  }
   return messages.map((m, i) => {
     if (i !== 0 || m.role !== 'user') return m;
     // 保留块结构：范式作为新 text 块，原文本拼接其后（不能拼成字符串——toOpenAi 假设 content 是块数组）
     const original = (m.content || []).filter(b => b?.type === 'text').map(b => b.text || '').join('');
     const nonText = (m.content || []).filter(b => b?.type !== 'text');
-    return { ...m, content: [{ type: 'text', text: `〔范式包〕以下是你要同化的思维/行为范式（示范性上下文）：\n\n${paradigm}\n\n————\n${original}` }, ...nonText] };
+    return { ...m, content: [{ type: 'text', text: packText(`\n\n————\n${original}`) }, ...nonText] };
   });
 }
 
@@ -98,7 +116,7 @@ export function loadSessionMessages(sessionId) {
   return null;
 }
 
-async function startRun(sessionId, messages, userText, model, provider, roleFile, tools, sandboxRoot) {
+async function startRun(sessionId, messages, userText, model, provider, roleFile, tools, sandboxRoot, extraSystem) {
   const res = await fetch(`${BASE}/ai/chat/start`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -112,6 +130,8 @@ async function startRun(sessionId, messages, userText, model, provider, roleFile
       sessionClass: 'script',
       // 写监狱（2026-08-06 e13 逃逸事故）：write/edit 路径强制限制在沙箱内
       ...(sandboxRoot ? { sandboxRoot } : {}),
+      // 外部 system 注入（e15 system 档：范式包落服务端静态 system 段）
+      ...(extraSystem ? { extraSystem } : {}),
       ...(roleFile ? { roleFile } : {}),
       ...(tools?.length ? { tools } : {}),
     }),
@@ -186,17 +206,23 @@ async function waitRun(runId, maxMs = 600_000) {
  * @param {string} opts.provider
  * @param {string} [opts.roleFile] 角色卡名（.kfmv4/roles/<name>.json）
  * @param {string} [opts.paradigm] 范式包名（.kfmv4/paradigms/<name>.md）或直接文本
+ * @param {string} [opts.position] 注入位置：first-user（默认）/ pre-task-user / system
  * @param {string} [opts.out] 归档路径（默认 ~/.kfmv4/sessions/<sessionId>.json）
  * @returns {Promise<{runId, events, ms, sessionPath}>}
  */
-export async function runSession({ sessionId, messages, userText, model, provider, roleFile, paradigm, tools, out, sandboxRoot }) {
+export async function runSession({ sessionId, messages, userText, model, provider, roleFile, paradigm, position, tools, out, sandboxRoot }) {
   if (!validSessionId(sessionId)) throw new Error(`sessionId 不合法: ${sessionId}`);
+  if (position && !['first-user', 'pre-task-user', 'system'].includes(position)) {
+    throw new Error(`position 不合法: ${position}（可选 first-user / pre-task-user / system）`);
+  }
   const paradigmText = paradigm && !paradigm.includes('\n')
     ? loadParadigm(paradigm) || paradigm   // 名字→读文件；不是文件名则当文本
     : (paradigm || '');
-  const msgs = applyParadigm(messages, paradigmText);
+  const msgs = applyParadigm(messages, paradigmText, position);
+  // system 档：包不进消息层（chat.ts:209 会过滤），改走 extraSystem 落服务端静态 system 段
+  const extraSystem = position === 'system' && paradigmText ? PACK_MARK(paradigmText) : undefined;
   const apiMessages = toOpenAi(msgs); // 原始格式 → OpenAI 格式（provider 不认 role:'ai'）
-  const { runId } = await startRun(sessionId, apiMessages, userText, model, provider, roleFile, tools, sandboxRoot);
+  const { runId } = await startRun(sessionId, apiMessages, userText, model, provider, roleFile, tools, sandboxRoot, extraSystem);
   const src = join(SESSIONS, `${sessionId}.json`);
   try {
     const { events, ms } = await waitRun(runId);
@@ -248,11 +274,12 @@ if (isMain && argv.length > 0) {
   const get = (k) => { const i = argv.indexOf(`--${k}`); return i >= 0 ? argv[i + 1] : undefined; };
   const prompt = get('prompt');
   const cont = get('continue');
-  if (!prompt && !cont) { console.error('用法: --prompt <文本> [--tools read,bash,grep] [--provider <名>] [--model <名>] [--role <角色>] [--paradigm <范式包名>] [--session <id>] [--out <路径>]'); process.exit(2); }
+  if (!prompt && !cont) { console.error('用法: --prompt <文本> [--tools read,bash,grep] [--provider <名>] [--model <名>] [--role <角色>] [--paradigm <范式包名>] [--position first-user|pre-task-user|system] [--session <id>] [--out <路径>]'); process.exit(2); }
   const provider = get('provider') || 'Opencode Go Google';
   const model = get('model') || 'deepseek-v4-flash';
   const role = get('role');
   const paradigm = get('paradigm');
+  const position = get('position');
   const sessionId = get('session') || (cont ? (cont.includes('/') ? 'bi-cont' : cont) : `bi-${Date.now().toString(36)}`);
   const out = get('out');
   const tools = get('tools')?.split(',').map(s => s.trim()).filter(Boolean);
@@ -270,7 +297,7 @@ if (isMain && argv.length > 0) {
   const t0 = Date.now();
   console.log(`[session-runner] ${model} @ ${provider}${role ? ` 角色=${role}` : ''}${paradigm ? ` 范式包=${paradigm}` : ''} 会话=${sessionId}${cont ? '（多轮）' : ''}`);
   const res = await runSession({
-    sessionId, messages, userText: prompt, model, provider, roleFile: role, paradigm, tools, out,
+    sessionId, messages, userText: prompt, model, provider, roleFile: role, paradigm, position, tools, out,
   });
   console.log(`[session-runner] 完成（${((Date.now() - t0) / 1000).toFixed(0)}s，${res.events} 事件）→ ${res.sessionPath}`);
 }

@@ -54,6 +54,15 @@ if (sandboxTemplate && !existsSync(sandboxTemplate)) {
   console.error(`[batch-run] --sandbox-template 目录不存在: ${sandboxTemplate}`);
   process.exit(2);
 }
+// --position <first-user|pre-task-user|system>（2026-08-06，e15 注入位置实验）：
+// 范式包注入位置透传 runSession。显式传入时折进臂哈希——同 task|paradigm|model
+// 不同位置是同前缀下的不同臂，不折叠会语义撞名互相误判「已跑过」；
+// 不传（默认 first-user）保持历史臂 id 逐字节兼容。
+const position = get('position');
+if (position && !['first-user', 'pre-task-user', 'system'].includes(position)) {
+  console.error(`[batch-run] --position 不合法: ${position}（可选 first-user / pre-task-user / system）`);
+  process.exit(2);
+}
 
 if (!tasks.length) {
   console.error('用法: --tasks "任务1,任务2" | --task-file <路径> [--paradigms "无,范式包名"] [--models m1,m2] [--arms N] [--concurrency N] [--provider 名] [--tools "read,grep,glob"] [--prefix bi-]');
@@ -76,7 +85,7 @@ for (let ti = 0; ti < tasks.length; ti++) {
 // 不同批次只要「任务数/范式数/模型数」位置对齐就撞名——批2（浓缩×2）全部被误判
 // 已跑过而跳过；若强行重跑还会覆盖批1 归档。哈希把 task+paradigm+model 编进文件名，
 // 跨批次天然唯一，同前缀共存无碰撞。
-const armHash = (s) => createHash('md5').update(`${s.task}|${s.paradigm}|${s.model}`).digest('hex').slice(0, 6);
+const armHash = (s) => createHash('md5').update(`${s.task}|${s.paradigm}|${s.model}${position ? `|${position}` : ''}`).digest('hex').slice(0, 6);
 const armId = (s) => `${prefix}t${s.ti}p${s.pi}m${s.mi}r${s.n}-${armHash(s)}`;
 
 // 调用级 nonce（2026-08-06 自中毒尸检，根因报告 §6）：sessionId 每次调用全新。
@@ -178,6 +187,7 @@ const results = await pool(todo, async (s) => {
         model: s.model,
         provider,
         paradigm: paradigmText,
+        position, // --position 透传（e15；undefined = first-user 历史行为）
         tools, // --tools 白名单透传（缺省 = 只读白名单 read/grep/glob，见服务端会话权限档案）
         out: join(SCRIPT, `${id}.json`), // 重试也归档到原臂 id
         sandboxRoot: sandboxDir || undefined, // 写监狱：有沙箱的臂 write/edit 强制限制在沙箱内

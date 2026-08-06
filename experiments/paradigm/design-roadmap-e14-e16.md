@@ -47,8 +47,14 @@ matrix v2 已含跨模型同任务同尺读数，直接可比：
 - **依赖（基建改动）**：session-runner 加 `--position` 参数（first-user 默认 /
   system / pre-task-user）。**等 e13 收工后改**——e13 循环每轮重新 import
   session-runner，跑数期间不动它。
-- **风险**：硅基系部分模型不接受 system 角色或行为不一——跑前先 1 臂探针
-  验证 4 模型 × system 位置存活。
+  **【2026-08-06 晚已落地】**session-runner/batch-run/exp-driver 三件套已通
+  （batch-run 显式 --position 时折进臂哈希防撞名；冒烟测试 7 项全绿）。
+  实施时发现并解决：消息层 role==='system' 被 chat.ts:209 过滤必丢——
+  system 档改走服务端既有 extraSystem 通道（chat.ts:234 静态 system 段），
+  零服务端改动。
+- **风险**：硅基系部分模型对 system 段敏感度不一（extraSystem 与全局预设同段，
+  不存在「不收 system」问题，但权重感知可能不同）——跑前先 1 臂探针
+  验证 4 模型 × system 位置输出非空。
 
 ## e16 结构 S5/S6（变量 2 剩余）
 

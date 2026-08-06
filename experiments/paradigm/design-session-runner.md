@@ -21,8 +21,11 @@ runSession({
   configId,      // 配置卡 id → 解析 providerId/modelId/sessionId/roleFile
   messages,      // 完整消息列表（续写 = 读 session 历史 + 追加新消息后全量重发）
   userText,      // 落盘原文（防 ts 前缀污染——routes.ts 语义）
-  paradigm,  // 范式包文本：拼进首条 user 消息前（不能走 system——chat.ts
-                 //   会过滤 role==='system'；范式包=上下文注入，正是其本质）
+  paradigm,      // 范式包文本（注入位置由 position 定）
+  position,      // 注入位置（2026-08-06，e15）：first-user 默认（拼进首条 user
+                 //   与任务同体）/ pre-task-user（独立 user 消息插任务前，缓存友好）
+                 //   / system（走 extraSystem 落服务端静态 system 段——消息层
+                 //   role==='system' 被 chat.ts:209 过滤，必走 extraSystem 通道）
   overrides,     // 实验覆盖：{ sessionId?, model?, roleFile? }——实验每臂新会话
   base,          // http://localhost:8021/api
   timeoutMs,
