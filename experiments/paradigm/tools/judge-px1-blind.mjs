@@ -26,8 +26,10 @@ const argv = process.argv.slice(2);
 const get = (k, d) => { const i = argv.indexOf(`--${k}`); return i >= 0 ? argv[i + 1] : d; };
 const SCRIPT_DIR = join(homedir(), '.kfmv4', 'sessions', 'script');
 const META_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'meta-pool');
-const OUT = join(META_DIR, 'judge-px1-blind.json');
-const KEYMAP = join(META_DIR, 'judge-px1-blind.keymap.json');
+// --out/--keymap：分实验分文件（2026-08-06 px-base/px-hl 接入）——缺省保持 px-1
+// 原路径；判别的实验必须显式分文件，避免混进 px-1 归档。
+const OUT = get('out') || join(META_DIR, 'judge-px1-blind.json');
+const KEYMAP = get('keymap') || OUT.replace(/\.json$/, '.keymap.json');
 const concurrency = Number(get('concurrency', 6));
 const judgeModel = get('judge-model', 'deepseek-v4-flash');
 const judgeProvider = get('judge-provider', 'deepseek');
@@ -86,18 +88,51 @@ function phasesFor(run, nTurns) {
 }
 
 // ===== 抽轮 =====
+// 数据源三级（2026-08-06 两轮实测教训）：
+//   ① transcript.md 解析（全时代完整 + 保原始轮号——相位标注（attach@T/detach@T）
+//      按原始轮号对齐，过滤短轮后不错位；px-hl 相位实验的生命线）
+//   ② exam-state.json 的 cleanHistory（新代码完整无包历史，但扁平消息列表丢原始
+//      轮号——短轮被滤后序号收缩，相位会错位；仅 transcript 缺失时用，相位实验慎用）
+//   ③ <run>.json 归档（重试会话写档/服务端残留会短，px-base 4 跑仅 1 跑完整，仅兜底）
+// 返回 [{no, text}]——no 是原始轮号（①）或顺序号（②③）。
 function extractTurns(run) {
-  const d = JSON.parse(readFileSync(join(SCRIPT_DIR, `${run}.json`), 'utf-8'));
-  const ais = (d.messages || []).filter(m => m.role === 'ai');
+  const transcriptPath = join(SCRIPT_DIR, `${run}.transcript.md`);
+  if (existsSync(transcriptPath)) {
+    const md = readFileSync(transcriptPath, 'utf-8');
+    const turnsByNo = new Map();
+    // 节标题：## [MM-DD hh:mm:ss] ◀ 第 N 轮 · 考生回复（推理通道的不取——那是思考不是回复）
+    const re = /## \[[^\]]+\] ◀ 第 (\d+) 轮 · 考生回复\n\n([\s\S]*?)(?=\n## \[|$)/g;
+    for (const m of md.matchAll(re)) {
+      if (!turnsByNo.has(Number(m[1]))) turnsByNo.set(Number(m[1]), m[2].trim());
+    }
+    const turns = [...turnsByNo.entries()].sort((a, b) => a[0] - b[0])
+      .filter(([, t]) => t.length >= 100) // 过短轮（错误/寒暄收尾）不入判
+      .map(([no, t]) => ({ no, text: t }));
+    if (turns.length) return turns;
+  }
+  const statePath = join(SCRIPT_DIR, `${run}.exam-state.json`);
+  if (existsSync(statePath)) {
+    const st = JSON.parse(readFileSync(statePath, 'utf-8'));
+    if (Array.isArray(st.cleanHistory) && st.cleanHistory.length) {
+      return st.cleanHistory.filter(m => m.role === 'ai').map(m => {
+        const c = m.content || [];
+        let txt = c.filter(b => b && b.type === 'text').map(b => b.text).join('');
+        if (!txt) txt = c.map(b => (b && b.reasoning) || '').join('');
+        return txt.trim();
+      }).filter(t => t.length >= 100).map((t, i) => ({ no: i + 1, text: t }));
+    }
+  }
+  console.warn(`[warn] ${run} 无 transcript/exam-state，回落 .json 归档（可能不完整）`);
+  const msgs = JSON.parse(readFileSync(join(SCRIPT_DIR, `${run}.json`), 'utf-8')).messages || [];
   const turns = [];
-  for (const m of ais) {
+  for (const m of msgs.filter(m => m.role === 'ai')) {
     const c = m.content || [];
     let txt = c.filter(b => b && b.type === 'text').map(b => b.text).join('');
     if (!txt) txt = c.map(b => (b && b.reasoning) || '').join(''); // 推理通道回落
     txt = txt.trim();
     if (txt.length >= 100) turns.push(txt); // 过短轮（错误/残句）不入判
   }
-  return turns;
+  return turns.map((t, i) => ({ no: i + 1, text: t }));
 }
 
 // ===== 洗牌（固定种子，可复现）=====
@@ -115,8 +150,9 @@ function shuffle(arr, seed = 42) {
 const items = [];
 for (const run of RUNS) {
   const turns = extractTurns(run);
-  const phase = phasesFor(run, turns.length);
-  turns.forEach((text, i) => items.push({ run, turn: i + 1, phase: phase[i + 1], text }));
+  const maxNo = Math.max(...turns.map(t => t.no));
+  const phase = phasesFor(run, maxNo);
+  turns.forEach(t => items.push({ run, turn: t.no, phase: phase[t.no], text: t.text }));
 }
 shuffle(items);
 const keymap = {};
