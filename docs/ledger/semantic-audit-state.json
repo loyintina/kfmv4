@@ -57,23 +57,15 @@
       "attempts": 2
     },
     "inter-readme-codemap": {
-      "hash": "72c2f6a41ca24b6d420febe8a07957ab787959b1",
-      "lastRun": "2026-08-05",
+      "hash": "40a3475b10ebaad3cb3933da997c3a6a80c83480",
+      "lastRun": "2026-08-06",
       "status": "ok",
       "tooled": false,
       "fallback": false,
-      "reported": 1,
-      "kept": 1,
+      "reported": 0,
+      "kept": 0,
       "dropped": 0,
-      "keptFindings": [
-        {
-          "type": "SEM002",
-          "claim": "README.md:3",
-          "against": null,
-          "quote": "40 个 check-* 脚本",
-          "note": "README 声称 40 个 check-* 脚本，但机械清单 infra 域仅列出 39 个以 check- 开头的 .mjs 文件。"
-        }
-      ],
+      "keptFindings": [],
       "droppedFindings": [],
       "provider": "deepseek/deepseek-v4-flash",
       "attempts": 1
@@ -121,23 +113,15 @@
       "attempts": 1
     },
     "readme-vs-maps": {
-      "hash": "d6a5396f3bddc8acc51b91c42faaf527f5f1deb9",
-      "lastRun": "2026-08-05",
+      "hash": "d8efc28a1fed72ad02ec31fc83229fd4d82be53d",
+      "lastRun": "2026-08-06",
       "status": "ok",
       "tooled": false,
       "fallback": false,
-      "reported": 1,
-      "kept": 1,
+      "reported": 0,
+      "kept": 0,
       "dropped": 0,
-      "keptFindings": [
-        {
-          "type": "SEM001",
-          "claim": "README.md:4",
-          "against": null,
-          "quote": "522 个回归测试",
-          "note": "基准 infra code-map 漂移9 实测测试数为 456，与 README 声称 522 不符。"
-        }
-      ],
+      "keptFindings": [],
       "droppedFindings": [],
       "provider": "deepseek/deepseek-v4-flash",
       "attempts": 1
@@ -207,23 +191,15 @@
       "attempts": 1
     },
     "contract-vs-map-ai-chat": {
-      "hash": "e3d637f724bbe1a9fe5b7bfa8c115c1943f948d4",
-      "lastRun": "2026-08-05",
+      "hash": "bd9ee83e45d30866068df89d67902913c59f5a57",
+      "lastRun": "2026-08-06",
       "status": "ok",
       "tooled": false,
       "fallback": false,
-      "reported": 1,
-      "kept": 1,
+      "reported": 0,
+      "kept": 0,
       "dropped": 0,
-      "keptFindings": [
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/ai-chat/code-map.md:116",
-          "against": "docs/domains/ai-chat/contract.md:136",
-          "quote": "已定型陷阱见",
-          "note": "code-map 称 contract #陷阱 10 条；合同实列编号 1–13 共 13 条，计数断言失配"
-        }
-      ],
+      "keptFindings": [],
       "droppedFindings": [],
       "provider": "deepseek/deepseek-v4-flash",
       "attempts": 1
@@ -945,6 +921,27 @@
       "skipped": 12,
       "kept": 3,
       "dropped": 1
+    },
+    {
+      "date": "2026-08-06",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-06",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-06",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 0
     }
   ]
 }
