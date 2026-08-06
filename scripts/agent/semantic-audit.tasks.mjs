@@ -100,9 +100,9 @@ export const TASKS = [
   },
   {
     id: 'stack-vs-ledger', kind: 'intra', sem: ['SEM001', 'SEM005'],
-    feeds: ['docs/active/STACK.md'],
+    feeds: ['docs/active/stack.yaml'],
     baseline: ['docs/ledger/bugs.md', 'docs/ledger/semantic-provenance.md'],
-    question: '找出 STACK 队列中已闭环但未标注、或与账本状态矛盾的条目（状态无同步机制类），以及条目状态词与同条目详情自相矛盾处（如标「进行中」但下行全是完成结算语气——against 指向同条目详情行）',
+    question: '找出 STACK 队列中 status 字段与账本状态矛盾的条目（已闭环但 status 未改 done 的状态无同步类），以及 status 字段与同条目 detail 自相矛盾处（如 status: todo 但 detail 全是完成结算语气——against 指向同条目 detail）',
   },
   // 六域：契约（应然）↔ code-map（实然）逐域对账
   ...DOMAINS.map(d => ({

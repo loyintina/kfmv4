@@ -69,11 +69,12 @@ initApp → initUI → initGestures → initOrb（ensurePanel、sessionStore 初
 - 结构：主卡 `.obs-card`（deepseek 余额 + 秒级时钟，5s 轮询刷新）+ 双信息框行
   `.obs-row`（宽 372=主卡宽，space-between 两端贴齐——取代信箱单框时代的
   translateX(-106px) 补偿）：信箱卡 `.obs-inbox`（巡逻 verdict 时间线）+ 待办卡
-  `.obs-stack`（STACK.md ⏳⚠️ 条目，2026-08-06 用户动议：格式纪律 → 机器消费）。
+  `.obs-stack`（stack.yaml 工作栈全状态渲染：todo/hold 全亮 + done 渐淡殿后，
+  2026-08-06 用户拍板：废 STACK.md，yaml 单一出处，状态=字段非散文标记）。
   两卡同构：点击条目进详情、滚动框内左上 ‹ 返回；固定高 150px 超出滚动
 - 数据流：GET `/api/obs/hud`（server 域 routes/obs.ts：deepseek 余额 5s 缓存 +
   信箱现场解析 docs/ledger/semantic-chain-inbox.md + 待办现场解析
-  docs/active/STACK.md——「## 研究参考」节嵌主列表中段，遇 `## `/`Rn.` 挂起不刹车，
+  docs/active/stack.yaml（js-yaml；schema 由 check-stack-status R0 把关），
   均不缓存副本）
 - 配套基建：`/test` 视口校准页（routes/obs.ts `setupObsPages`，POST
   /api/obs/viewport 存 ~/.kfmv4/browser-relay/viewport.json）+ 守视

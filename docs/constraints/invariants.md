@@ -459,7 +459,7 @@ bug 账本见 `ledger/bugs.md`）。改代码时遵守：
 
 如果 LEVEL 1 的修复在当前会话中不可行（根因是 P3 架构改造）：
 1. 在代码中用 `// P3:` 标记
-2. 在 active/STACK.md 登记跟踪项（原「HANDBOOK 登记」已随 v8.2 注销；「写入 HANDOFF_AUDIT.md」系规划产物从未落地——语义审计 A7 修订）
+2. 在 active/stack.yaml 登记跟踪项（原「HANDBOOK 登记」已随 v8.2 注销；「写入 HANDOFF_AUDIT.md」系规划产物从未落地——语义审计 A7 修订）
 
 ---
 

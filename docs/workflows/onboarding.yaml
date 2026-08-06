@@ -4,7 +4,7 @@ trigger: 新会话接手项目——上下文为零 / 换模型 / 长任务跨�
 frequency: 中频（每次新开项目会话；git 里无身影，但 v7 时代代码与文档风格打架即其痕迹——未走此流的 agent 各带一套理解硬拼）
 reads:
   - guides/orientation.md（心智模型：三层体系怎么咬合）
-  - active/STACK.md（当前焦点；电报体读法见 orientation）
+  - active/stack.yaml（当前焦点；电报体读法见 orientation）
   - ledger/history.md 尾部（最近发生了什么）
   - ledger/semantic-chain-inbox.md 尾部（语义巡逻信箱；有 ⚠️ 行进 semantic-audit 裁决流）
 steps:

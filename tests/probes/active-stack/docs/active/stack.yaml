@@ -1,0 +1,7 @@
+# 工作栈（负例夹具：栈项引用幽灵文件）
+entries:
+  - id: 1
+    title: 指向不存在的文件
+    status: todo
+    created: '2026-08-06'
+    note: 详见 [ghost.md] 的说明

@@ -2,8 +2,9 @@
  * check-active-stack.mjs — 工作栈与 active/ 目录健康检查（v8.2 新增）
  *
  * 检查项：
- *   1. active/STACK.md 引用的文件全部存在（栈项指向的目标不能是空气）
- *   2. active/ 下每个 .md 都被 STACK.md 或 CLAUDE.md 引用（防孤儿文件——
+ *   1. active/stack.yaml 引用的文件全部存在（栈项指向的目标不能是空气；
+ *      2026-08-06 yaml 化后按文本扫描——引用形态不变，路径仍是文本）
+ *   2. active/ 下每个 .md 都被 stack.yaml 或 CLAUDE.md 引用（防孤儿文件——
  *      active/ 是临时工位，没人引用的文件说明完成态没结算）
  *
  * 挂入 npm run check，失败 → 构建中断。
@@ -22,11 +23,11 @@ function error(msg) {
 }
 
 const activeDir = join(ROOT, DOCS_ROOT, 'active');
-const stackPath = join(activeDir, 'STACK.md');
+const stackPath = join(activeDir, 'stack.yaml');
 const stack = readFileSync(stackPath, 'utf-8');
 const claude = readFileSync(join(ROOT, 'CLAUDE.md'), 'utf-8');
 
-// ========== 1. STACK.md 引用存在性 ==========
+// ========== 1. stack.yaml 引用存在性 ==========
 
 // 引用形态：[vision.md]（active 内相对）或 domains/... 等 DOCS_ROOT 相对路径
 const refRe = /\[([\w.-]+\.md)\]|((?:domains|guides|constraints|ledger|decisions|workflows|active)\/[\w./-]+\.(?:md|yaml))/g;
@@ -40,22 +41,21 @@ while ((m = refRe.exec(stack)) !== null) {
   if (refs.has(label)) continue;
   refs.add(label);
   if (!existsSync(target)) {
-    error(`STACK.md 引用 "${label}" 不存在（栈项指向了不存在的文件）`);
+    error(`stack.yaml 引用 "${label}" 不存在（栈项指向了不存在的文件）`);
   }
 }
 
 // ========== 2. active/ 孤儿检查 ==========
 
 for (const f of readdirSync(activeDir).filter(f => f.endsWith('.md'))) {
-  if (f === 'STACK.md') continue;
   if (!stack.includes(f) && !claude.includes(`active/${f}`)) {
-    error(`active/${f} 既未被 STACK.md 引用也未被 CLAUDE.md 路由表引用（孤儿文件——完成态未结算？）`);
+    error(`active/${f} 既未被 stack.yaml 引用也未被 CLAUDE.md 路由表引用（孤儿文件——完成态未结算？）`);
   }
 }
 
 if (errors > 0) {
   console.error(`\n[check-active-stack] 检查失败，构建中断。`);
-  console.error('[check-active-stack] ⛳ MECH-FLOW-08：STACK 与事实漂移——读 docs/active/STACK.md，走 workflows/state-sync.yaml');
+  console.error('[check-active-stack] ⛳ MECH-FLOW-08：STACK 与事实漂移——读 docs/active/stack.yaml，走 workflows/state-sync.yaml');
   process.exit(1);
 }
 console.log(`[check-active-stack] OK — STACK ${refs.size} 条引用有效，active/ 无孤儿`);

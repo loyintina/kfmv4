@@ -8,8 +8,8 @@
  * 载体现状（登记制：新状态类载体必须在此登记，未登记 = 无门 = 禁止）：
  *   - docs/ledger/semantic-exemptions.md（R1：哈希 + 临时必带 review-by）
  *   - docs/ledger/bugs.md（R2：无钉条目「✅ 修复/待钉/兜底」必带复核日）
- *   - docs/active/STACK.md（R3：状态词 `✅`/`⏳`/`⚠️` 同行带日期——格式规范已有，
- *     本脚本抽查新近条目）
+ *   - docs/active/stack.yaml（R3：created 日期字段在场——yaml 化后 schema 由
+ *     check-stack-status R0 把关，本规则退化为在场确认）
  */
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
@@ -65,20 +65,12 @@ for (const line of bugsLines) {
 if (noNail === 0) ok('R2: 无钉条目 0 条');
 else console.log(`  R2: ${noNail} 条无钉条目`);
 
-// ---- R3 STACK：状态词同行带日期（抽查最近 20 条 ✅/⏳） ----
-console.log('[check-state-freshness] R3 STACK 状态同行日期');
-const stackLines = readFileSync(join(ROOT, 'docs/active/STACK.md'), 'utf-8').split('\n');
-let r3checked = 0;
-for (const line of stackLines) {
-  // 只查「状态词 = 条目标题行首标记」——中缀 ✅（如「批 0 归拢 ✅」）是描述进度不是状态
-  const statusAtStart = /^\s*—\s*(✅|⏳)|^\d+\.\s.*—\s*(✅|⏳)/.exec(line) || /^\s*(\d+)\.\s/.test(line) && /—\s*(✅|⏳)/.test(line);
-  if (!statusAtStart) continue;
-  if (/^\s*[>#]/.test(line)) continue; // 跳过引用/标题
-  const hasDate = /\d{4}-\d{2}-\d{2}/.test(line);
-  r3checked++;
-  if (!hasDate) bad(`R3: STACK 状态词无日期 → 「${line.trim().slice(0, 50)}」`);
-}
-ok(`R3: 抽查 ${r3checked} 条状态行`);
+// ---- R3 STACK：状态日期在场（yaml 化后 = created 字段必填且合法，check-stack-status R0 已机械把关；本规则退化为在场确认） ----
+console.log('[check-state-freshness] R3 STACK 状态日期（yaml created 字段）');
+const stackYaml = readFileSync(join(ROOT, 'docs/active/stack.yaml'), 'utf-8');
+const createdLines = stackYaml.split('\n').filter(l => /^\s+created: '\d{4}-\d{2}-\d{2}'$/.test(l));
+if (createdLines.length === 0) bad('R3: stack.yaml 无 created 日期行（schema 面坏了——check-stack-status R0 应已拦截）');
+ok(`R3: ${createdLines.length} 条 created 日期行在场（必填+格式由 check-stack-status R0 把关）`);
 
 // ---- 汇总 ----
 console.log('---');

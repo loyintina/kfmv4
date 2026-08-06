@@ -1,5 +1,5 @@
 > 这是什么：agent 脚本执行器（agent 原件形态 A）的设计与用法。
-> 别的去哪找：语义层母体 → ../active/semantic-compiler-seed.md；检查管线 → ../domains/infra/contract.md；立项 → ../active/STACK.md #3。
+> 别的去哪找：语义层母体 → ../active/semantic-compiler-seed.md；检查管线 → ../domains/infra/contract.md；立项 → ../active/stack.yaml #3。
 
 # 指南：agent-runner（agent 脚本执行器）
 

@@ -18,6 +18,7 @@
 import type { Router } from 'express';
 import fs from 'fs';
 import path from 'path';
+import { load as yamlLoad } from 'js-yaml';
 import { resolveKey } from '../env-store.js';
 import { KFM_DATA_DIR, PROJECT_ROOT } from '../path-utils.js';
 
@@ -156,44 +157,46 @@ function parseInbox(): InboxEntry[] {
   }
 }
 
-// ========== 待办解析（STACK.md 工作栈，2026-08-06 用户动议：格式纪律 → 机器消费） ==========
-// 条目格式（check-stack-status 机械 enforcement）：`N. 标题行` 顶格，状态 = 标题行
-// 第一个 ✅/⏳/⚠️；延续行 `   — ` 承载详情。「## 研究参考」节嵌在主列表中段
-// （R 编号空间）——遇 `## ` 标题或 `Rn.` 行挂起当前条目（不收延续行），编号行继续。
-// 单一出处：现场读文件，不缓存副本。只出 ⏳/⚠️（待办/有保留），✅ 折叠成计数。
+// ========== 待办解析（stack.yaml 工作栈，2026-08-06 用户拍板：废 STACK.md，yaml 单一出处） ==========
+// 状态从散文标记升级为字段（check-stack-status R0 机械把关 schema）——「无标记黑户」
+// 从构造上不存在。面板渲染全状态：todo/hold 全亮在前，done 渐淡殿后（用户问过
+// 「19 条为什么只显示 3 条」——藏起 done 是旧设计的诚实性缺陷）。
+// 单一出处：现场读文件，不缓存副本。
 
 interface StackEntry {
   n: number;
-  status: 'todo' | 'hold';
+  status: 'done' | 'todo' | 'hold';
   title: string;
+  created: string;
+  note: string;
   detail: string;
 }
 
-const STACK_PATH = path.join(PROJECT_ROOT, 'docs', 'active', 'STACK.md');
+const STACK_PATH = path.join(PROJECT_ROOT, 'docs', 'active', 'stack.yaml');
 
-function parseStack(): { entries: StackEntry[]; doneCount: number } {
+function parseStack(): { entries: StackEntry[]; counts: { todo: number; hold: number; done: number } } {
+  const counts = { todo: 0, hold: 0, done: 0 };
   try {
-    const text = fs.readFileSync(STACK_PATH, 'utf-8');
+    const doc = yamlLoad(fs.readFileSync(STACK_PATH, 'utf-8')) as { entries?: Array<Record<string, unknown>> };
+    const all = Array.isArray(doc?.entries) ? doc.entries : [];
     const entries: StackEntry[] = [];
-    let doneCount = 0;
-    let cur: { n: number; titleLine: string; cont: string[] } | null = null;
-    const flush = () => {
-      if (!cur) return;
-      const mark = cur.titleLine.match(/✅|⏳|⚠️/)?.[0];
-      if (mark === '✅') { doneCount++; return; }
-      if (mark !== '⏳' && mark !== '⚠️') return; // 无标记旧格式条目不进待办窗
-      const title = cur.titleLine.replace(/✅|⏳|⚠️/g, '').replace(/\s+/g, ' ').trim();
-      entries.push({ n: cur.n, status: mark === '⏳' ? 'todo' : 'hold', title, detail: [title, ...cur.cont].join('\n') });
-    };
-    for (const line of text.split('\n')) {
-      if (/^##\s/.test(line) || /^R\d+\./.test(line)) { flush(); cur = null; continue; } // 研究参考节挂起
-      const hm = line.match(/^(\d+)\.\s+(.*)$/);
-      if (hm) { flush(); cur = { n: Number(hm[1]), titleLine: hm[2], cont: [] }; continue; }
-      if (cur && /^\s+—/.test(line)) cur.cont.push(line.trim());
+    for (const e of all) {
+      const status = String(e.status) as StackEntry['status'];
+      if (status !== 'done' && status !== 'todo' && status !== 'hold') continue;
+      counts[status]++;
+      entries.push({
+        n: Number(e.id),
+        status,
+        title: String(e.title ?? ''),
+        created: String(e.created ?? ''),
+        note: String(e.note ?? ''),
+        detail: [String(e.title ?? ''), typeof e.detail === 'string' ? e.detail : ''].filter(Boolean).join('\n'),
+      });
     }
-    flush();
-    return { entries, doneCount };
+    // todo/hold 在前（活跃优先），done 殿后；各组内按 id 序
+    entries.sort((a, b) => (a.status === 'done' ? 1 : 0) - (b.status === 'done' ? 1 : 0) || a.n - b.n);
+    return { entries, counts };
   } catch {
-    return { entries: [], doneCount: 0 };
+    return { entries: [], counts };
   }
 }

@@ -1,0 +1,12 @@
+# 工作栈（负例夹具：bug 状态条目未带 BAR——R4 入口门）
+entries:
+  - id: 1
+    title: bug 池
+    status: todo
+    created: '2026-07-29'
+    note: 面板发送消息无响应（用户反馈的活 bug，已修复）——未登记 BAR
+  - id: 2
+    title: 正常开放条目
+    status: todo
+    created: '2026-07-30'
+    note: 尚无进展，这条不该触发任何规则

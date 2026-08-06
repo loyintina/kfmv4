@@ -109,4 +109,4 @@
 
 - 域内漂移 → 六份 code-map.md 漂移清单（共 87 条）
 - 安全面（origin 防护、PTY 所有权）→ server/code-map.md 漂移 7-9
-- 后续动作统一登记 → ../active/STACK.md
+- 后续动作统一登记 → ../active/stack.yaml

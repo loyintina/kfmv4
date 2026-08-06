@@ -71,11 +71,11 @@ export const MUTATIONS = [
   },
   // ---- L2 枚举层：SEM × 文档元素矩阵 ----
   {
-    id: 'M06', level: 'L2', sem: 'SEM005', file: 'docs/active/STACK.md', expect: 'report',
+    id: 'M06', level: 'L2', sem: 'SEM005', file: 'docs/active/stack.yaml', expect: 'report',
     find: '批 1.5 语义审计试点 ✅ 结案（2026-07-30',
     replace: '批 1.5 语义审计试点（2026-07-30',
     tasks: ['stack-vs-ledger'],
-    note: '状态词摘除：已闭环但未标注，账本（semantic-provenance G1-G6）仍记结案',
+    note: '状态词摘除（yaml 化后锚定 detail 散文层）：已闭环但未标注，账本（semantic-provenance G1-G6）仍记结案',
   },
   {
     id: 'M07', level: 'L2', sem: 'SEM004', file: 'docs/active/vision.md', expect: 'report',
@@ -161,11 +161,11 @@ export const MUTATIONS = [
     note: '同文件 17-19 行明记 exit 0/2 且 exit 1 未实现——自相矛盾，无需外部知识（M05 拼写难点摘除）',
   },
   {
-    id: 'MID-3', level: 'MID', sem: 'SEM005', file: 'docs/active/STACK.md', expect: 'report',
-    find: 'v8.2 文档系统重构 — ✅ 完成（2026-07-29 切换提交）',
-    replace: 'v8.2 文档系统重构 — 进行中（2026-07-29 切换提交）',
+    id: 'MID-3', level: 'MID', sem: 'SEM005', file: 'docs/active/stack.yaml', expect: 'report',
+    find: 'title: v8.2 文档系统重构',
+    replace: 'title: v8.2 文档系统重构（进行中）',
     tasks: ['stack-vs-ledger'],
-    note: '状态词翻转（比 M06 摘除更响）——下行「65 份结算/压缩轮/设计文档已自我分散」全是完成语气，自打架',
+    note: '状态翻转（yaml 化后单行锚等价物，比 M06 摘除更响）——title 标「进行中」但 status: done 且 detail「65 份结算/压缩轮/设计文档已自我分散」全是完成语气，自打架',
   },
   {
     id: 'MID-4', level: 'MID', sem: 'SEM005', file: 'docs/active/vision.md', expect: 'report',

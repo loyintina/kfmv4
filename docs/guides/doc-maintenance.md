@@ -83,11 +83,12 @@
 - 事件行：`- YYYY-MM-DD …` 开头；归属子行缩进两格，不独立成行
 - 消费者：版本对齐（已有）+ 时间线统计（批 3 仪表盘）
 
-### active/STACK.md — 栈项
+### active/stack.yaml — 栈项（2026-08-06 起，前身 STACK.md 已废）
 
-- 栈项行：`N. ` 开头，可带 `[文件名.md]` active 内引用；续行缩进三格，`—` 或 `（` 开头
-- 完成项标 `✅ 完成（日期）` 并保留一行结算注，不静默消失
-- 消费者：check-active-stack（已有）+ 栈项解析升级（批 2）
+- 条目结构：`{id, title, status, created, note, detail}`——status 枚举
+  done/todo/hold（状态=字段，散文标记时代终结）；id = 物理顺序 1..N 连续
+- 完成项 status: done 并保留 note 结算注，不静默消失；研究参考区 research R 独立命名
+- 消费者：check-stack-status（schema/编号/bug 入口）+ check-active-stack + HUD 待办窗
 
 ## 方向性文档纪律（自 AGENTS.md §二迁入）
 

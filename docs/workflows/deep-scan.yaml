@@ -6,7 +6,7 @@ frequency: 随发版周期（历史节奏约 2-4 周一版）
 reads:
   - active/vision.md
   - constraints/invariants.md
-  - active/STACK.md
+  - active/stack.yaml
   - workflows/（纲领层全部）
 steps:
   1. 每份核心文档放一个 explore subagent（洁净室、单文档 scope、thorough）

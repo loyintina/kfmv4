@@ -1,5 +1,5 @@
 > 这是什么：项目远景——打算做成什么、为什么这么设计、还没定什么。
-> 别的去哪找：当前待办 → STACK.md；改代码约束 → ../constraints/invariants.md；排查经验 → ../constraints/diagnostics.md。
+> 别的去哪找：当前待办 → stack.yaml；改代码约束 → ../constraints/invariants.md；排查经验 → ../constraints/diagnostics.md。
 
 # KFM v4 — 愿景与方向
 
@@ -289,7 +289,7 @@ Agent 会话到期后，新 Agent 如何"接上"当前进度？
   - 成本极低，但对 Agent 交接效率的提升显著
 ```
 
-（2026-07-28 注：`active/STACK.md` 已承担「当前进度随手记」职能；正式的会话日志机制是否还需要，仍开放。）
+（2026-07-28 注：`active/stack.yaml`（原 STACK.md，2026-08-06 迁移）已承担「当前进度随手记」职能；正式的会话日志机制是否还需要，仍开放。）
 
 ---
 

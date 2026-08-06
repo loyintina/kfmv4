@@ -1,5 +1,5 @@
 > 这是什么：案例研究——冰山工作量验证实验（git 历史统计：feat 前有无设计沉淀 vs 后续 fix 链长度）。
-> 别的去哪找：被验证的心法 34 → ../constraints/invariants.md §二；实验登记 → ../active/STACK.md #3。
+> 别的去哪找：被验证的心法 34 → ../constraints/invariants.md §二；实验登记 → ../active/stack.yaml #3。
 
 # 案例研究：冰山工作量验证实验（2026-07-30）
 

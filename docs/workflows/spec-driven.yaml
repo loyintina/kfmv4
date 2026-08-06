@@ -4,7 +4,7 @@ trigger: 跨 3+ 文件 / 多阶段 / 引入隐式契约的改动
 frequency: 每周 1-2 次
 reads:
   - guides/spec-driven.md（SOP 正文：步骤 1-7，含 3a 心法回溯 / 3b 设计讨论 / 沉淀五问）
-  - active/STACK.md（当前工作栈）
+  - active/stack.yaml（当前工作栈）
   - constraints/invariants.md §二（心法表，步骤 3a/3b 的回溯对象）
 steps:
   1. 需求提出 → 现状分析 → 设计确认（暴露所有已知缺口 + 5 场景压力测试）

@@ -2,7 +2,7 @@
  * obs-hud.ts — 观测台 HUD（8.5 史官制度 · L1 中央内容层，2026-08-05 立项）
  *
  * 背景信息窗：主卡（deepseek 余额）+ 双信息框（信箱=语义巡逻 verdict 时间线 /
- * 待办=STACK.md 工作栈 ⏳⚠️ 条目，2026-08-06 用户动议：格式纪律 → 机器消费）。
+ * 待办=stack.yaml 工作栈全状态渲染，2026-08-06 用户拍板：状态=字段非散文标记）。
  * 纯展示为主，列表局部可触摸滚动（pointer-events auto 仅滚动区）。
  *
  * 呈现哲学（依据 semantic-compiler-seed）：信箱是概率区非阻断信号——柔和状态
@@ -42,13 +42,12 @@ const INBOX_LABEL: Record<string, string> = {
   warn: '待裁决', ok: '干净', dead: '崩溃', stat: '统计', other: '记录',
 };
 
-/** 待办状态标记（○ 待办 / ⚠ 有保留——单字符字形，⏳ 在无 emoji 字体环境出豆腐块） */
-const STACK_MARK: Record<string, string> = { todo: '○', hold: '⚠' };
-const STACK_LABEL: Record<string, string> = { todo: '待办', hold: '有保留' };
+/** 待办状态（todo 待办 / hold 有保留 / done 已闭环——yaml status 字段直译） */
+const STACK_LABEL: Record<string, string> = { todo: '待办', hold: '有保留', done: '已闭环' };
 
 interface InboxEntry { date: string; time: string; type: string; text: string }
-interface StackEntry { n: number; status: string; title: string; detail: string }
-interface StackData { entries: StackEntry[]; doneCount: number }
+interface StackEntry { n: number; status: string; title: string; created: string; note: string; detail: string }
+interface StackData { entries: StackEntry[]; counts: { todo: number; hold: number; done: number } }
 
 export function initObsHud(): void {
   if (inited) return;
@@ -93,7 +92,7 @@ export function initObsHud(): void {
 
   let inboxEntries: InboxEntry[] = [];
   let inboxDetail: InboxEntry | null = null;
-  let stackData: StackData = { entries: [], doneCount: 0 };
+  let stackData: StackData = { entries: [], counts: { todo: 0, hold: 0, done: 0 } };
   let stackDetail: StackEntry | null = null;
 
   // 本地时钟（每秒）
@@ -157,29 +156,34 @@ export function initObsHud(): void {
     }
   });
 
-  // 渲染待办列表（编号序；条目 = 状态标记+#编号+标题单行流，两行截断）
+  // 渲染待办列表（todo/hold 全亮在前，done 渐淡殿后，分组计数；条目 = 状态点+#编号+标题两行截断）
   function renderStackList(): void {
-    const { entries, doneCount } = stackData;
-    stackStatusEl.textContent = entries.length
-      ? `${entries.length} 项 · ${doneCount} 已闭环`
-      : `${STACK_MARK.todo} 空 · ${doneCount} 已闭环`;
+    const { entries, counts } = stackData;
+    stackStatusEl.textContent = `${counts.todo} 待 · ${counts.done} 闭环`;
+    let prevDone = false;
     stackListEl.innerHTML = entries.map((e, i) => {
-      const mark = STACK_MARK[e.status] ?? '·';
-      const dim = e.status === 'hold' ? ' obs-stack-item-hold' : '';
-      return `<div class="obs-inbox-item${dim}" data-i="${i}"><span class="obs-inbox-item-flow"><span class="obs-stack-mark">${mark}</span><span class="obs-inbox-meta">#${e.n}</span> ${e.title}</span></div>`;
+      const divider = e.status === 'done' && !prevDone ? `<div class="obs-stack-divider">已闭环</div>` : '';
+      prevDone = e.status === 'done';
+      const cls = e.status === 'done' ? ' obs-stack-item-done' : e.status === 'hold' ? ' obs-stack-item-hold' : '';
+      return `${divider}<div class="obs-inbox-item${cls}" data-i="${i}"><span class="obs-inbox-item-flow"><span class="obs-dot obs-dot-stack-${e.status}"></span><span class="obs-inbox-meta">#${e.n}</span> ${e.title}<br><span class="obs-stack-note">${e.note}</span></span></div>`;
     }).join('');
   }
 
-  // 待办详情：头部显示编号；滚动框内左上角返回按钮 + 状态徽标，下接标题+延续行全文
+  // 待办详情：头部显示编号；滚动框内左上角返回按钮 + 状态 chip，下接标题/日期/note/detail 全文
   function renderStackDetail(): void {
     if (!stackDetail) return;
-    const mark = STACK_MARK[stackDetail.status] ?? '·';
     const label = STACK_LABEL[stackDetail.status] ?? stackDetail.status;
+    // 服务端 detail 首行 = title（详情锚），此处单独渲染标题后剥掉首行防重复
+    const body = stackDetail.detail.split('\n').slice(1).join('\n').trim();
     stackStatusEl.textContent = `#${stackDetail.n}`;
     stackListEl.innerHTML = `
       <div class="obs-inbox-detail">
-        <div class="obs-inbox-detail-top"><button class="obs-inbox-back obs-stack-back">‹</button><span class="obs-inbox-detail-meta">${mark} ${label}</span></div>
-        <div class="obs-inbox-detail-text">${stackDetail.detail}</div>
+        <div class="obs-inbox-detail-top"><button class="obs-inbox-back obs-stack-back">‹</button><span class="obs-stack-chip obs-stack-chip-${stackDetail.status}">${label}</span></div>
+        <div class="obs-inbox-detail-text"><span class="obs-stack-detail-title">${stackDetail.title}</span>
+<span class="obs-inbox-meta">${stackDetail.created}</span>
+${stackDetail.note}
+
+${body}</div>
       </div>`;
   }
 

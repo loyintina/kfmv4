@@ -5,11 +5,11 @@ frequency: 每次改代码
 reads: []
 steps:
   1. ledger/history.md 追加一行（什么变了，为什么）
-  2. 影响当前工作时更新 active/STACK.md
+  2. 影响当前工作时更新 active/stack.yaml
   3. 版本级变化 → 走 release 工作流
 writes:
   - ledger/history.md
-  - active/STACK.md
+  - active/stack.yaml
 exit_condition: npm run check 绿（check-contract-freshness 兜底）
 natural_next: none
 metric: check-contract-freshness（代码 ≥5 提交未同步 → hard fail，已有）

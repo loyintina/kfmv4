@@ -1,5 +1,5 @@
 > 这是什么：AI Agent 调试能力体系设计（进行中）——能力矩阵 + 缺位分析 + 演化路线。
-> 别的去哪找：当前工作栈 → STACK.md；压缩契约 → ../domains/ai-chat/detail-tool-compaction.md；运行时契约 → ../domains/ai-chat/detail-runtime.md。
+> 别的去哪找：当前工作栈 → stack.yaml；压缩契约 → ../domains/ai-chat/detail-tool-compaction.md；运行时契约 → ../domains/ai-chat/detail-runtime.md。
 
 # AI Agent 调试能力设计
 
