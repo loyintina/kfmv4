@@ -32,8 +32,8 @@ export function initObsHud(): void {
   hud.innerHTML = `
     <div class="obs-card">
       <div class="obs-provider">deepseek 官方</div>
-      <div class="obs-clock">--:--:--</div>
       <div class="obs-balance">¥--</div>
+      <div class="obs-clock">--:--:--</div>
     </div>
   `;
   hud.style.zIndex = String(Z.CENTER_CONTENT); // L1 中央内容层（< SUMMON_BTN 200，不盖按钮）
