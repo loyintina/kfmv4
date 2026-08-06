@@ -2,14 +2,16 @@
  * obs-hud.ts — 观测台 HUD（8.5 史官制度 · L1 中央内容层，2026-08-05 立项）
  *
  * 背景信息窗：主卡（deepseek 余额）+ 双信息框（信箱=语义巡逻 verdict 时间线 /
- * 待办=stack.yaml 工作栈全状态渲染，2026-08-06 用户拍板：状态=字段非散文标记）。
- * 纯展示为主，列表局部可触摸滚动（pointer-events auto 仅滚动区）。
+ * 待办=stack.yaml 工作栈全状态渲染，2026-08-06 用户拍板：状态=字段非散文标记）
+ * + 左缘 SYS 窄竖条（2026-08-06 用户定稿：服务器四数 + 服务灯 + cron 8 条状态，
+ * 顶到底，只读 v1）。纯展示为主，列表局部可触摸滚动（pointer-events auto 仅滚动区）。
  *
  * 呈现哲学（依据 semantic-compiler-seed）：信箱是概率区非阻断信号——柔和状态
  * 徽标而非警报条；数据单一出处（服务端现场解析 inbox/STACK 文件，不缓存副本
- * ——语义生成原则）。
+ * ——语义生成原则）。SYS 阈值变色：平时灰，越限琥珀/红——出事才跳色。
  *
- * 刷新：余额+信箱+待办 5s 轮询（服务端 5s 缓存外部 deepseek 余额调用）；时间本地每秒。
+ * 刷新：余额+信箱+待办+SYS 5s 轮询（服务端 5s 缓存外部 deepseek 余额调用，
+ * SYS 指标 30s / cron 5min 缓存）；时间本地每秒。
  */
 import { API } from './state.js';
 import { Z } from './z-index-layers.js';
@@ -48,6 +50,10 @@ const STACK_LABEL: Record<string, string> = { todo: '待办', hold: '有保留',
 interface InboxEntry { date: string; time: string; type: string; text: string }
 interface StackEntry { n: number; status: string; title: string; created: string; note: string; detail: string }
 interface StackData { entries: StackEntry[]; counts: { todo: number; hold: number; done: number } }
+interface SysMetric { label: string; value: string; pct: number | null }
+interface SysService { name: string; ok: boolean }
+interface SysCron { name: string; status: 'ok' | 'fail' | 'unknown'; ago: string }
+interface SysData { metrics: SysMetric[]; services: SysService[]; cron: SysCron[] }
 
 export function initObsHud(): void {
   if (inited) return;
@@ -82,6 +88,23 @@ export function initObsHud(): void {
   `;
   hud.style.zIndex = String(Z.CENTER_CONTENT); // L1 中央内容层（< SUMMON_BTN 200）
   document.body.appendChild(hud);
+
+  // 左缘 SYS 窄竖条（2026-08-06 用户定稿：顶到底只读 v1）——独立于 hud 居中文本流，
+  // 固定左缘；top 76px 避开顶部召唤按钮区（backdrop-filter 垂直叠加按钮会致其视觉消失）
+  const rail = document.createElement('div');
+  rail.className = 'obs-rail';
+  rail.innerHTML = `
+    <div class="obs-rail-sec obs-rail-sys"></div>
+    <div class="obs-rail-div"></div>
+    <div class="obs-rail-sec obs-rail-svc"></div>
+    <div class="obs-rail-div"></div>
+    <div class="obs-rail-sec obs-rail-cron"></div>
+  `;
+  rail.style.zIndex = String(Z.CENTER_CONTENT);
+  document.body.appendChild(rail);
+  const railSysEl = rail.querySelector<HTMLElement>('.obs-rail-sys')!;
+  const railSvcEl = rail.querySelector<HTMLElement>('.obs-rail-svc')!;
+  const railCronEl = rail.querySelector<HTMLElement>('.obs-rail-cron')!;
 
   const clockEl = hud.querySelector<HTMLElement>('.obs-clock')!;
   const balanceEl = hud.querySelector<HTMLElement>('.obs-balance')!;
@@ -211,16 +234,33 @@ ${body}</div>
     }
   });
 
-  // 余额 + 信箱 + 待办刷新（5s 轮询；服务端缓存外部 deepseek 调用）
+  // 渲染 SYS 竖条三段（阈值变色：平时灰，越限琥珀/红——出事才跳色）
+  const metricCls = (pct: number | null): string =>
+    pct == null ? '' : pct > 85 ? ' obs-rail-num-red' : pct >= 70 ? ' obs-rail-num-amber' : '';
+  function renderSys(sys: SysData): void {
+    railSysEl.innerHTML = sys.metrics.map(m =>
+      `<div class="obs-rail-cell"><span class="obs-rail-label">${m.label}</span><span class="obs-rail-num${metricCls(m.pct)}">${m.value}</span></div>`
+    ).join('');
+    railSvcEl.innerHTML = sys.services.map(s =>
+      `<div class="obs-rail-cell"><span class="obs-dot ${s.ok ? 'obs-dot-ok' : 'obs-dot-dead'}"></span><span class="obs-rail-label">${s.name}</span></div>`
+    ).join('');
+    railCronEl.innerHTML = sys.cron.map(c => {
+      const dot = c.status === 'ok' ? 'obs-dot-ok' : c.status === 'fail' ? 'obs-dot-dead' : 'obs-dot-other';
+      return `<div class="obs-rail-cell obs-rail-cron-row"><span class="obs-dot ${dot}"></span><span class="obs-rail-label">${c.name}</span><span class="obs-rail-ago">${c.ago}</span></div>`;
+    }).join('');
+  }
+
+  // 余额 + 信箱 + 待办 + SYS 刷新（5s 轮询；服务端缓存外部 deepseek 调用）
   // 数据未变不重渲染——innerHTML 重建会重置滚动位置，5s 一次等于禁止翻列表
   let lastTotal = '';
   let lastInboxKey = '';
   let lastStackKey = '';
+  let lastSysKey = '';
   const refresh = async () => {
     try {
       const res = await fetch(`${API}/obs/hud`, { signal: AbortSignal.timeout(5000) });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const j = await res.json() as { balance?: { total?: string; error?: string }; inbox?: InboxEntry[]; stack?: StackData };
+      const j = await res.json() as { balance?: { total?: string; error?: string }; inbox?: InboxEntry[]; stack?: StackData; sys?: SysData };
       const b = j?.balance;
       if (b && !b.error && b.total != null) {
         balanceEl.textContent = fmtBalance(b.total);
@@ -251,6 +291,13 @@ ${body}</div>
           const st = stackListEl.scrollTop;
           if (stackDetail) renderStackDetail(); else renderStackList();
           stackListEl.scrollTop = st;
+        }
+      }
+      if (j?.sys && Array.isArray(j.sys.metrics)) {
+        const key = JSON.stringify(j.sys);
+        if (key !== lastSysKey) {
+          lastSysKey = key;
+          renderSys(j.sys);
         }
       }
     } catch {

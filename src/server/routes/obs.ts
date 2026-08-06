@@ -17,7 +17,9 @@
  */
 import type { Router } from 'express';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
+import { execSync } from 'child_process';
 import { load as yamlLoad } from 'js-yaml';
 import { resolveKey } from '../env-store.js';
 import { KFM_DATA_DIR, PROJECT_ROOT } from '../path-utils.js';
@@ -75,7 +77,7 @@ async function fetchDeepseekBalance(): Promise<Balance> {
 export function setupObsRoutes(router: Router): void {
   router.get('/obs/hud', async (_req, res) => {
     const balance = await fetchDeepseekBalance();
-    res.json({ balance, inbox: parseInbox(), stack: parseStack(), serverTime: new Date().toISOString() });
+    res.json({ balance, inbox: parseInbox(), stack: parseStack(), sys: collectSys(), serverTime: new Date().toISOString() });
   });
 
   // 守视视口校准回传：/test 页 POST 真机实测视口 → 存 viewport.json（browser-relay 读）
@@ -199,4 +201,153 @@ function parseStack(): { entries: StackEntry[]; counts: { todo: number; hold: nu
   } catch {
     return { entries: [], counts };
   }
+}
+
+// ========== SYS 竖条采集（2026-08-06 用户定稿：左缘窄竖条，顶到底） ==========
+// 三段：SYS 四数（盘/存/载/kfm RSS）+ 服务灯（8021 自己恒绿，ngx/ssh 看端口）
+// + cron 清单（crontab 现场解析 → 逐脚本成败标记表末位对比判状态，见 CRON_MARKERS）。
+// 缓存：指标/端口 30s（statfs/meminfo 便宜但 execSync 贵），cron 5min（crontab 极少变）。
+
+interface SysMetric { label: string; value: string; pct: number | null }
+interface SysService { name: string; ok: boolean }
+interface SysCron { name: string; status: 'ok' | 'fail' | 'unknown'; ago: string }
+interface SysData { metrics: SysMetric[]; services: SysService[]; cron: SysCron[] }
+
+const SYS_CACHE_MS = 30_000;
+const CRON_CACHE_MS = 300_000;
+let sysCache: { data: Omit<SysData, 'cron'>; ts: number } | null = null;
+let cronCache: { data: SysCron[]; ts: number } | null = null;
+
+// auto-push.sh 无 >> 重定向但脚本内部自记日志——crontab 解析的特例补丁表
+const CRON_INTERNAL_LOG: Record<string, string> = {
+  'auto-push.sh': '/var/log/kfmv4-autopush.log',
+};
+
+// 状态判据：逐脚本成败标记表 + 末位对比（尾 8KB 内最后一个 err 匹配晚于最后一个
+// ok 匹配 → fail）。为什么不用通用关键字：entry 的 4KB 窗会吞进上一轮 FAIL（本轮
+// 其实 PASS）；obs-agg 的报告正文自带「失败 288」统计字样；sync 的成功输出就是
+// git 噪音无 ok 标记——通用正则三种都判错（2026-08-06 实测）。表外新条目走
+// DEFAULT 通用回退。诚实边界：脚本崩溃无输出 → unknown（ago 变老是旁证）。
+interface CronMarker { ok?: RegExp; err?: RegExp }
+const CRON_MARKERS: Record<string, CronMarker> = {
+  'sync':        { err: /fatal|failed to push|error: failed/i }, // 成功输出=git 噪音，无 ok 标记
+  'clean':       {},                                             // 静默脚本
+  'chain':       { ok: /信箱 ←/, err: /💀|Traceback|Command failed/ },
+  'chain-bench': { ok: /信箱 ←/, err: /💀|Traceback|Command failed/ },
+  'entry':       { ok: /✅ PASS/, err: /❌ FAIL/ },
+  'obs-agg':     { err: /Traceback|Command failed|💀/ }, // 报告正文含「失败 N」统计字样，不算错
+  'auto-push':   { ok: /部署成功/, err: /部署失败/ },
+  'retain':      { err: /Traceback|Error|失败/ },
+};
+const CRON_MARKER_DEFAULT: CronMarker = { err: /fatal|error|failed|失败|Traceback|❌|✗/i };
+
+function lastIndexOf(re: RegExp | undefined, text: string): number {
+  if (!re) return -1;
+  const g = new RegExp(re.source, re.flags.includes('g') ? re.flags : re.flags + 'g');
+  let last = -1, m: RegExpExecArray | null;
+  while ((m = g.exec(text)) !== null) { last = m.index; if (m[0] === '') break; }
+  return last;
+}
+
+function fmtAgo(mtimeMs: number): string {
+  const h = (Date.now() - mtimeMs) / 3_600_000;
+  if (h < 1) return `${Math.max(1, Math.round(h * 60))}m`;
+  if (h < 24) return `${Math.round(h)}h`;
+  const d = h / 24;
+  if (d < 7) return `${Math.round(d)}d`;
+  return `${Math.round(d / 7)}w`;
+}
+
+function collectCron(): SysCron[] {
+  const now = Date.now();
+  if (cronCache && now - cronCache.ts < CRON_CACHE_MS) return cronCache.data;
+  let out: SysCron[] = [];
+  try {
+    const tab = execSync('crontab -l', { encoding: 'utf-8', timeout: 5000 });
+    for (const line of tab.split('\n')) {
+      const t = line.trim();
+      if (!t || t.startsWith('#')) continue;
+      // 名字 = 行内第一个脚本 basename 去扩展名缩写（先去前导点：/root/.kfmv4-sync.sh）
+      const sm = t.match(/([\w.-]+\.(?:sh|mjs|cjs|js))/);
+      if (!sm) continue;
+      const name = sm[1].replace(/\.(sh|mjs|cjs|js)$/, '').replace(/^\./, '')
+        .replace(/^kfmv4-/, '').replace(/^semantic-/, '').replace(/^routine-entry-validation/, 'entry')
+        .replace(/^session-retention/, 'retain').replace(/^obs-aggregate/, 'obs-agg')
+        .replace(/^clean-npm-temp/, 'clean');
+      // 同一脚本多行（chain 每日 + --with-bench 周一）：带参数的给后缀区分
+      const suffix = t.includes('--with-bench') ? '-bench' : '';
+      const logM = t.match(/>>\s*(\/var\/log\/[\w.-]+)/);
+      const logPath = logM?.[1] ?? CRON_INTERNAL_LOG[sm[1]];
+      let status: SysCron['status'] = 'unknown';
+      let ago = '—';
+      if (logPath) {
+        try {
+          const st = fs.statSync(logPath);
+          ago = fmtAgo(st.mtimeMs);
+          if (st.size > 0) {
+            const fd = fs.openSync(logPath, 'r');
+            const buf = Buffer.alloc(Math.min(8192, st.size));
+            fs.readSync(fd, buf, 0, buf.length, Math.max(0, st.size - buf.length));
+            fs.closeSync(fd);
+            const tail = buf.toString('utf-8');
+            const mk = CRON_MARKERS[name + suffix] ?? CRON_MARKER_DEFAULT;
+            status = lastIndexOf(mk.err, tail) > lastIndexOf(mk.ok, tail) ? 'fail' : 'ok';
+          }
+        } catch { /* 日志还没产生 → unknown */ }
+      }
+      const full = name + suffix;
+      if (!out.some(c => c.name === full)) out.push({ name: full, status, ago });
+    }
+  } catch { /* crontab 不可用 → 空列表 */ }
+  cronCache = { data: out, ts: now };
+  return out;
+}
+
+function collectSysFast(): Omit<SysData, 'cron'> {
+  const now = Date.now();
+  if (sysCache && now - sysCache.ts < SYS_CACHE_MS) return sysCache.data;
+  // 磁盘（statfs：bavail 口径≈df Use%）
+  let diskPct = 0;
+  try {
+    const s = fs.statfsSync('/');
+    diskPct = Math.round((1 - Number(s.bavail) / Number(s.blocks)) * 100);
+  } catch { /* 保留 0 */ }
+  // 内存（/proc/meminfo：1 - MemAvailable/MemTotal）
+  let memPct = 0;
+  try {
+    const mi = fs.readFileSync('/proc/meminfo', 'utf-8');
+    const total = Number(mi.match(/MemTotal:\s+(\d+)/)?.[1]);
+    const avail = Number(mi.match(/MemAvailable:\s+(\d+)/)?.[1]);
+    if (total > 0 && avail >= 0) memPct = Math.round((1 - avail / total) * 100);
+  } catch { /* 保留 0 */ }
+  // 负载（1 分钟 loadavg / 核数——除以核数才是强度）
+  const loadPct = Math.round((os.loadavg()[0] / Math.max(1, os.cpus().length)) * 100);
+  // kfmv4 进程自身 RSS（MB）——内存泄漏直读仪
+  const kfmRssMb = Math.round(process.memoryUsage().rss / 1e6);
+  // 端口存活（一次 ss 全取）
+  let ngx = false, ssh = false;
+  try {
+    const ss = execSync('ss -tlnH', { encoding: 'utf-8', timeout: 5000 });
+    ngx = /:80\s/.test(ss);
+    ssh = /:22\s/.test(ss);
+  } catch { /* ss 不可用 → 全 false（灯自己会说话） */ }
+  const data: Omit<SysData, 'cron'> = {
+    metrics: [
+      { label: '盘', value: `${diskPct}%`, pct: diskPct },
+      { label: '存', value: `${memPct}%`, pct: memPct },
+      { label: '载', value: `${loadPct}%`, pct: loadPct },
+      { label: 'kfm', value: `${kfmRssMb}M`, pct: null },
+    ],
+    services: [
+      { name: '8021', ok: true }, // 能响应这个请求本身就是绿的
+      { name: 'ngx', ok: ngx },
+      { name: 'ssh', ok: ssh },
+    ],
+  };
+  sysCache = { data, ts: now };
+  return data;
+}
+
+function collectSys(): SysData {
+  return { ...collectSysFast(), cron: collectCron() };
 }
