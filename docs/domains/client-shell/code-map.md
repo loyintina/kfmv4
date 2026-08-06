@@ -27,7 +27,9 @@
 | `initOrb()` | orb.ts（529 行纯 DOM 壳，宿主已拆出） | main.ts:61（唯一） |
 | `createDragHandler()` | drag-handler.ts:68 | orb.ts:471、floating-card.ts |
 
-公共底座（logger/dom-refs/z-index-layers/animation-registry）被全仓三域共用。
+公共底座（logger.ts / dom-refs.ts / z-index-layers.ts / ui-registry.ts /
+animation-registry.ts）被全仓三域共用。version-watch.ts：版本横幅——bundle 内嵌
+KFM_BUILD_TIME 与服务端 build-info.json 比对报旧包（构建链保证两出处同值）。
 
 ## 状态所有权
 
@@ -56,6 +58,24 @@ initApp → initUI → initGestures → initOrb（ensurePanel、sessionStore 初
 - .kfmv4/active.json：orb.ts:43,55（fire-and-forget 不 await）与 ai-chat 的
   session-client **双写者**
 - custom-select/confirm-dialog 把 DOM 挂 body + document 级监听（destroy 时移除）
+
+## 部件：观测台 HUD（obs-hud.ts，2026-08-06 补登）
+
+背景信息层（非卡片部件，与 orb/卡片堆/文件树同级的启动直挂部件）：
+
+- 启动：`initObsHud()`（main.ts:100，异步尾链）；DOM 直挂 body 的 `.obs-hud`
+  （fixed 全屏、`pointer-events:none`，仅信箱滚动区/头部局部 `auto`）
+- z 层：`Z.CENTER_CONTENT`（z-index-layers.ts），低于召唤按钮层（SUMMON_BTN 200）
+- 结构：主卡 `.obs-card`（deepseek 余额 + 秒级时钟，5s 轮询刷新）+ 信箱卡
+  `.obs-inbox`（巡逻 verdict 时间线，点击条目进详情、滚动框内左上 ‹ 返回；
+  固定高 150px 超出滚动；与主卡左缘对齐用 `transform:translateX(-106px)`——
+  flex 居中的是 margin-box，负 margin 会被抵消一半，陷阱）
+- 数据流：GET `/api/obs/hud`（server 域 routes/obs.ts：deepseek 余额 5s 缓存 +
+  信箱现场解析 docs/ledger/semantic-chain-inbox.md 不缓存副本）
+- 配套基建：`/test` 视口校准页（routes/obs.ts `setupObsPages`，POST
+  /api/obs/viewport 存 ~/.kfmv4/browser-relay/viewport.json）+ 守视
+  `scripts/agent/browser-relay.mjs`（headless Chrome 视觉自测，agent 截图闭环）
+- 样式：base.scss `.obs-*` 段（同文件唯一出处）
 
 ## 跨域边界
 
