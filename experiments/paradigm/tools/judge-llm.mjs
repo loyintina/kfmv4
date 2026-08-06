@@ -7,6 +7,7 @@
 import { readFileSync, readdirSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { runSession } from '/root/kfmv4/experiments/paradigm/tools/session-runner.mjs';
+import { DB_PATH, iterArms } from '/root/kfmv4/experiments/paradigm/tools/arm-store.mjs';
 
 const dir = '/root/.kfmv4/sessions/script';
 const argv = process.argv.slice(2);
@@ -93,31 +94,50 @@ ${out.slice(0, 20000)}
 
 const PROMPT = rubric === 'v2' ? PROMPT_V2 : PROMPT_V1;
 
-// 收集臂
+// 从会话对象提取判卷输入（正文优先，推理模型回落 reasoning 通道）
+function extractOut(d) {
+  const msgs = d.messages || [];
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    if (msgs[i].role !== 'ai') continue;
+    const texts = (msgs[i].content || []).filter(b => b && b.type === 'text' && b.text).map(b => b.text);
+    if (texts.length) return { out: texts.join('\n'), chan: 'text' };
+  }
+  // 推理模型适配（2026-08-05 GLM-Z1-9B 探针实测）：正文全空时回落 reasoning 通道，
+  // 否则推理模型的元认知全在思考通道里，判卷会误判成空输出
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    if (msgs[i].role !== 'ai') continue;
+    const rs = (msgs[i].content || []).map(b => (b && b.reasoning) || '').filter(Boolean);
+    if (rs.length) return { out: rs.join('\n'), chan: 'reasoning' };
+  }
+  return { out: '', chan: 'empty' };
+}
+
+// 收集臂：双源并集（arm-store，2026-08-06）——arms.db 与 sessions/script 文件
+// 都查，按臂 id 去重（库优先）。过渡期库文件各有一半也能拿全；迁移完成后
+// 文件侧自然为空，纯走库。库路径附带语义列（paradigm/model 写入时已落定）。
 const arms = [];
+const seen = new Set();
+const pushArm = (id, batch, pi, mi, model, paradigm, d) => {
+  if (seen.has(id)) return;
+  seen.add(id);
+  const { out, chan } = extractOut(d);
+  arms.push({ id, batch, pi, mi, model, paradigm, out, chan });
+};
+if (existsSync(DB_PATH)) {
+  for (const a of iterArms({ prefixes })) {
+    const m = a.arm_id.match(/^([a-z0-9]+-t0)p(\d+)m(\d+)r(\d+)/);
+    if (!m) continue;
+    pushArm(a.arm_id, m[1], Number(m[2]), Number(m[3]),
+      a.model || a.content.modelId || 'unknown', a.paradigm, a.content);
+  }
+}
 for (const f of readdirSync(dir)) {
   if (!f.endsWith('.json')) continue;
   if (!prefixes.some(p => f.startsWith(p))) continue;
   const m = f.match(/^([a-z0-9]+-t0)p(\d)m(\d)r(\d)/);
   if (!m) continue;
   const d = JSON.parse(readFileSync(join(dir, f), 'utf-8'));
-  const msgs = d.messages || [];
-  let out = '', chan = 'empty';
-  for (let i = msgs.length - 1; i >= 0; i--) {
-    if (msgs[i].role !== 'ai') continue;
-    const texts = (msgs[i].content || []).filter(b => b && b.type === 'text' && b.text).map(b => b.text);
-    if (texts.length) { out = texts.join('\n'); chan = 'text'; break; }
-  }
-  // 推理模型适配（2026-08-05 GLM-Z1-9B 探针实测）：正文全空时回落 reasoning 通道，
-  // 否则推理模型的元认知全在思考通道里，判卷会误判成空输出
-  if (!out) {
-    for (let i = msgs.length - 1; i >= 0; i--) {
-      if (msgs[i].role !== 'ai') continue;
-      const rs = (msgs[i].content || []).map(b => (b && b.reasoning) || '').filter(Boolean);
-      if (rs.length) { out = rs.join('\n'); chan = 'reasoning'; break; }
-    }
-  }
-  arms.push({ id: f.replace('.json', ''), batch: m[1], pi: Number(m[2]), mi: Number(m[3]), model: d.modelId || 'unknown', out, chan });
+  pushArm(f.replace('.json', ''), m[1], Number(m[2]), Number(m[3]), d.modelId || 'unknown', undefined, d);
 }
 // 断点续判：已判过的跳过
 const done = existsSync(OUT) ? JSON.parse(readFileSync(OUT, 'utf-8')) : {};

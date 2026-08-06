@@ -21,6 +21,7 @@ import { homedir } from 'os';
 import { createHash } from 'crypto';
 import { fileURLToPath } from 'url';
 import { runSession, loadParadigm } from './session-runner.mjs';
+import { registerBatch, putArm, hasArm } from './arm-store.mjs';
 
 const REPO = join(fileURLToPath(new URL('../../..', import.meta.url)));
 const SCRIPT = join(homedir(), '.kfmv4', 'sessions', 'script');
@@ -65,8 +66,15 @@ for (let ti = 0; ti < tasks.length; ti++) {
 const armHash = (s) => createHash('md5').update(`${s.task}|${s.paradigm}|${s.model}`).digest('hex').slice(0, 6);
 const armId = (s) => `${prefix}t${s.ti}p${s.pi}m${s.mi}r${s.n}-${armHash(s)}`;
 
-// 断点续跑：已归档的跳过
-const todo = armSpecs.filter(s => !existsSync(join(SCRIPT, `${armId(s)}.json`)));
+// 批次注册（arm-store，2026-08-06）：启动时把 tasks/paradigms/models 清单写库——
+// 下标歧义（p/m 是每批次独立编号）从此在写入侧根治；signature 去重，断点续跑复用批次行。
+const batchId = registerBatch({
+  prefix, taskFile: taskFile || null, tasks, paradigms, models, provider,
+  armsPlanned: armSpecs.length,
+});
+
+// 断点续跑：已归档的跳过（文件 或 已入库——入库后文件即删，两路都要查）
+const todo = armSpecs.filter(s => !existsSync(join(SCRIPT, `${armId(s)}.json`)) && !hasArm(armId(s)));
 console.log(`[batch-run] 变体 ${tasks.length} 任务 × ${paradigms.length} 范式 × ${models.length} 模型 × ${arms} 重复 = ${armSpecs.length} 臂；跳过已完成 ${armSpecs.length - todo.length}，本次 ${todo.length}（并发 ${concurrency}）`);
 
 /** 错误桩检测（2026-08-05，e9 尸检）：上游 4xx/5xx 被面板吞成正文「[错误: …]」
@@ -132,6 +140,18 @@ const results = await pool(todo, async (s) => {
       if (isErrorStub(join(SCRIPT, `${id}.json`))) {
         unlinkSync(join(SCRIPT, `${id}.json`)); // 删档防断点续跑跳过
         throw new Error('归档为错误桩（[错误: …]），按失败臂处理');
+      }
+      // 臂入库（arm-store）：语义列写入时直给，统计列自动算；入库成功才删文件，
+      // 库写失败保留文件兜底（下次重跑/迁移仍可收）——宁可双份，不可丢失。
+      try {
+        putArm({
+          batchId, armId: id, taskIdx: s.ti, paradigmIdx: s.pi, modelIdx: s.mi, rep: s.n,
+          task: s.task, paradigm: s.paradigm, model: s.model, provider,
+          content: readFileSync(join(SCRIPT, `${id}.json`), 'utf-8'),
+        });
+        unlinkSync(join(SCRIPT, `${id}.json`));
+      } catch (dbErr) {
+        console.warn(`[batch-run] ${id} 入库失败（文件保留）: ${dbErr.message.slice(0, 80)}`);
       }
       console.log(`[batch-run] ${id} OK${n > 0 ? `（第 ${n} 次重试成功）` : ''}（${((Date.now() - t1) / 1000).toFixed(0)}s${paradigmText ? ` 范式=${s.paradigm}` : ' 对照'}${res.reconnects ? ` 重连${res.reconnects}` : ''}）`);
       return { id, ok: true, ms: res.ms, tries: n + 1 };
