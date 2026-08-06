@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit aa6047c4 · 生成于 2026-08-06 -->
+<!-- 基准 commit 91341278 · 生成于 2026-08-06 -->
 
 # 代码清单（机械层）
 
@@ -70,7 +70,7 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（24 文件 · 3498 行）
+## client-shell（24 文件 · 3452 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -81,10 +81,10 @@
 | src/client/modules/orb-panel.ts | 221 | PanelConfig, buildPanelContent |
 | src/client/modules/gestures.ts | 217 | initGestures |
 | src/client/modules/confirm-dialog.ts | 192 | ConfirmOptions, showConfirm |
-| src/client/modules/app.ts | 177 | initApp |
 | src/client/modules/renderer-lifecycle.ts | 172 | RenderContext, RendererLifecycle, L |
 | src/client/modules/state.ts | 165 | API, FileNode, ViewportState, KFMStateType, KFMState, FileRowData, getFileRowData |
 | src/client/modules/drag-handler.ts | 134 | DragConfig, createDragHandler |
+| src/client/modules/app.ts | 131 | initApp |
 | src/client/main.ts | 128 | — |
 | src/client/modules/z-index-layers.ts | 105 | Z, ZLayer |
 | src/client/modules/obs-hud.ts | 82 | initObsHud |
@@ -174,7 +174,7 @@
 | src/server/routes/obs.ts | 73 | setupObsRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（143 文件 · 17293 行）
+## infra（143 文件 · 17291 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -191,7 +191,7 @@
 | tests/box.test.ts | 309 | — |
 | tests/mocks/gsap.ts | 305 | gsap |
 | tests/run-manager.test.ts | 300 | — |
-| scripts/check/check-registry.mjs | 294 | — |
+| scripts/check/check-registry.mjs | 292 | — |
 | tests/gesture-registry.test.ts | 263 | — |
 | scripts/agent/semantic-mutate.mjs | 261 | MUTATIONS |
 | tests/invariants.test.ts | 245 | — |
@@ -633,4 +633,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 286 文件 · 49166 行 · 跨域边 249 条
+合计 286 文件 · 49118 行 · 跨域边 249 条

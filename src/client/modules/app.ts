@@ -52,35 +52,9 @@ export async function initApp(): Promise<void> {
     });
   }
 
-  // 侧栏召唤按钮
-  const toggleBtn = DOM.sidebarToggleBtn;
-  if (toggleBtn) {
-    toggleBtn.addEventListener('click', () => {
-      const sidebar = DOM.sidebar;
-      if (sidebar) {
-        if (sidebar.classList.contains('open')) {
-          closeSidebar();
-        } else {
-          openSidebar();
-        }
-      }
-    });
-  }
-
-  // 卡片堆召唤按钮
-  const cardBtn = DOM.cardStackToggleBtn;
-  if (cardBtn) {
-    cardBtn.addEventListener('click', () => {
-      if (isCardStackOpen()) {
-        closeCardStack();
-        cardBtn.classList.remove('active');
-      } else {
-        openCardStack();
-        cardBtn.classList.add('active');
-      }
-
-    });
-  }
+  // 侧栏/卡片堆召唤改手势入口（2026-08-06 定稿：原顶部按钮因 HUD 卡覆盖区域在
+  // 真机渲染不可见且与 HUD 布局冲突，移除；替代：右滑开文件树、左滑呼出卡片堆，
+  // 见 gestures.ts 头注——手势通道已在，无需按钮）
 
   // AI输入框自动高度
   const aiInput = DOM.aiInput;
@@ -95,26 +69,6 @@ export async function initApp(): Promise<void> {
   // ========== UI Element Registry 注册 ==========
 
   // 使用 registerElement() 便捷方法：一步完成 register + registerStateGetter
-  Registry.registerElement({
-    id: 'sidebar-toggle-btn',
-    type: 'button',
-    label: '侧栏开关',
-    description: '打开/关闭左侧文件树侧栏',
-    state: DOM.sidebar?.classList.contains('open') ? 'open' : 'closed',
-    enabled: true,
-    effect: '点击切换侧栏打开/关闭状态',
-    source: 'app.ts',
-  }, () => DOM.sidebar?.classList.contains('open') ? 'open' : 'closed');
-  Registry.registerElement({
-    id: 'card-stack-toggle-btn',
-    type: 'button',
-    label: '卡片堆开关',
-    description: '打开/关闭堆叠卡片面板',
-    state: 'closed',
-    enabled: true,
-    effect: '点击切换卡片堆打开/关闭状态',
-    source: 'app.ts',
-  }, () => isCardStackOpen() ? 'open' : 'closed');
   Registry.registerElement({
     id: 'close-sidebar-btn',
     type: 'button',

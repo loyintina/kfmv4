@@ -62,54 +62,6 @@ body {
   transform: translateX(min(75%, 360px));
 }
 
-/* 侧栏召唤按钮 */
-.sidebar-toggle-btn {
-  position: fixed;
-  top: 16px;
-  left: 16px;
-  z-index: var(--z-summon-btn);
-  width: 40px;
-  height: 40px;
-  border: 1px solid transparent;
-  border-radius: 12px;
-  background: linear-gradient(rgba(18, 18, 26, 0.75), rgba(18, 18, 26, 0.75)) padding-box, linear-gradient(90deg, rgba(0, 212, 255, 0.2), rgba(124, 58, 237, 0.15)) border-box;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.sidebar-toggle-btn:hover {
-  transform: translateY(-1px) scale(1.05);
-  background: linear-gradient(rgba(18, 18, 26, 0.75), rgba(18, 18, 26, 0.75)) padding-box, linear-gradient(90deg, rgba(0, 212, 255, 0.5), rgba(124, 58, 237, 0.35)) border-box;
-  box-shadow: 0 6px 24px rgba(124, 58, 237, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-}
-
-.sidebar-toggle-btn:active {
-  transform: scale(0.92);
-}
-
-.sidebar-toggle-btn span {
-  display: block;
-  width: 20px;
-  height: 2px;
-  border-radius: 2px;
-  background: linear-gradient(90deg, #7c3aed, #00d4ff);
-  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-  opacity: 0.85;
-}
-
-.sidebar-toggle-btn:hover span {
-  opacity: 1;
-  box-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
-}
-
 /* 悬浮光球 */
 .light-orb {
   position: fixed;
@@ -222,24 +174,6 @@ body {
 
 .orb-panel-content::-webkit-scrollbar {
   display: none;
-}
-
-/* 卡片堆召唤按钮（右上角） */
-.card-stack-toggle-btn {
-  left: auto;
-  right: 16px;
-}
-
-.card-stack-toggle-btn:hover .stack-icon rect {
-  filter: drop-shadow(0 0 5px rgba(0, 212, 255, 0.3));
-}
-
-.card-stack-toggle-btn.active .stack-icon rect:first-child {
-  opacity: 0.85;
-}
-
-.card-stack-toggle-btn.active .stack-icon rect:last-child {
-  filter: drop-shadow(0 0 6px rgba(0, 212, 255, 0.5));
 }
 
 /* 浮卡全屏模式：禁止浏览器接管触控，防止 pointercancel 截断手势 */

@@ -22,8 +22,6 @@ const ELEMENT_MANIFEST = [
   'orb',                  // orb.ts — 悬浮光球（AI Chat 入口）
   'orb-panel',            // orb.ts — AI 对话面板（光球展开后）
   'sidebar',              // ui.ts — 文件树侧栏
-  'sidebar-toggle-btn',   // app.ts — 侧栏召唤按钮
-  'card-stack-toggle-btn', // app.ts — 卡片堆召唤按钮
   'close-sidebar-btn',    // app.ts — 关闭侧栏按钮
   'eye-btn',              // app.ts — 显示隐藏文件开关
   'card-stack',           // card-stack.ts — 堆叠卡片面板

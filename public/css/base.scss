@@ -19,54 +19,6 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 
 
 
-/* 侧栏召唤按钮 */
-.sidebar-toggle-btn{
-  position:fixed;
-  top:16px;
-  left:16px;
-  z-index:var(--z-summon-btn);
-  width:40px;
-  height:40px;
-  border:1px solid transparent;
-  border-radius:12px;
-  background:
-    linear-gradient(rgba(18,18,26,.75), rgba(18,18,26,.75)) padding-box,
-    linear-gradient(90deg, rgba(0,212,255,.2), rgba(124,58,237,.15)) border-box;
-  backdrop-filter:blur(8px);
-  -webkit-backdrop-filter:blur(8px);
-  cursor:pointer;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  gap:5px;
-  box-shadow:0 4px 16px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.08);
-  transition:all .25s cubic-bezier(.34,1.56,.64,1);
-}
-.sidebar-toggle-btn:hover{
-  transform:translateY(-1px) scale(1.05);
-  background:
-    linear-gradient(rgba(18,18,26,.75), rgba(18,18,26,.75)) padding-box,
-    linear-gradient(90deg, rgba(0,212,255,.5), rgba(124,58,237,.35)) border-box;
-  box-shadow:0 6px 24px rgba(124,58,237,.25),inset 0 1px 0 rgba(255,255,255,.1)
-}
-.sidebar-toggle-btn:active{
-  transform:scale(.92)
-}
-.sidebar-toggle-btn span{
-  display:block;
-  width:20px;
-  height:2px;
-  border-radius:2px;
-  background:linear-gradient(90deg,#7c3aed,#00d4ff);
-  transition:all .25s cubic-bezier(.34,1.56,.64,1);
-  opacity:.85
-}
-.sidebar-toggle-btn:hover span{
-  opacity:1;
-  box-shadow:0 0 8px rgba(0,212,255,.3)
-}
-
 /* 悬浮光球 */
 .light-orb{position:fixed;width:36px;height:36px;background:radial-gradient(circle at 30% 30%,rgba(124,58,237,.9),rgba(124,58,237,.4),transparent 70%);border-radius:50%;cursor:grab;box-shadow:0 0 16px 6px rgba(124,58,237,.5),0 0 32px 12px rgba(124,58,237,.3);transition:box-shadow .2s;bottom:140px;right:24px;touch-action:none}
 .light-orb:active{cursor:grabbing;box-shadow:0 0 24px 10px rgba(124,58,237,.6),0 0 48px 20px rgba(124,58,237,.4)}/* AI输入栏高级样式 */
@@ -142,21 +94,6 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 /* 光球面板内容区 — 隐藏滚动条，保留滚动 */
 .orb-panel-content{scrollbar-width:none;-ms-overflow-style:none}
 .orb-panel-content::-webkit-scrollbar{display:none}
-
-/* 卡片堆召唤按钮（右上角） */
-.card-stack-toggle-btn{
-  left:auto;
-  right:16px;
-}
-.card-stack-toggle-btn:hover .stack-icon rect{
-  filter:drop-shadow(0 0 5px rgba(0,212,255,.3));
-}
-.card-stack-toggle-btn.active .stack-icon rect:first-child{
-  opacity:.85;
-}
-.card-stack-toggle-btn.active .stack-icon rect:last-child{
-  filter:drop-shadow(0 0 6px rgba(0,212,255,.5));
-}
 
 /* 浮卡全屏模式：禁止浏览器接管触控，防止 pointercancel 截断手势 */
 .floating-card.fullscreen,
