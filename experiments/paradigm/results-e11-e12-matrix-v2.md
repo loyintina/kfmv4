@@ -84,8 +84,10 @@ Step B-89.8k/C-91.5k、27B D-94.9k、9B D-94.9k 等空缺为硅基档臂未补�
 - **方法论警告**：含伪影模型的版本会在 45% 处读出一个假拐点（−0.56）——
   那完全是 Ling-mini 整列零分拖出来的。**凡不看存活率直接平均的占用率分析，
   结论都会偏向「长上下文有害」，这是伪影污染，不是真效应。**
-- 占用率口径：arms.db 的 occupancy 列由 fullTokenCount（增量计数）算出，不反映
-  真实上下文，**不可用**；本分析用包标称尺寸 ÷ model-econ.md 登记窗口。
+- 占用率口径：arms.db 旧 occupancy 列（fullTokenCount 增量计数分带）已废弃不可用；
+  本分析用包标称尺寸 ÷ model-econ.md 登记窗口。**2026-08-06 起该口径已落库为
+  arms.occ_ratio 列**（tools/occupancy.mjs 登记表，写入时计算+旧行回填），
+  后续分析直接 SELECT occ_ratio 即可。
 
 ### V-F2 H8 成立：重复能救长上下文稀释（两例同幅度实锤）
 

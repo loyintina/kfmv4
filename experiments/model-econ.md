@@ -68,9 +68,21 @@ Step-3.5-Flash p1/p2/p4/p5、Ling-mini p3-p5、GLM-4.5-Air p2/p3/p5）——
 疑似正文近空（思考走 reasoning 通道或静默截断），而 GLM-Z1-9B p3 反向冲到 39.6k。
 **判卷前必须先剔除/单独处理这些臂**，否则 48-token 臂会把长档分数拉成假零。
 
+## 登记纪律（2026-08-06 起）
+
+- **新模型入场**：必须在上表登记窗口列，并同步登记到
+  `paradigm/tools/occupancy.mjs` 的 `MODEL_WINDOWS_K`——arms.db 的 `occ_ratio` 列
+  （真实占用率 = 包标称尺寸 ÷ 窗口）写入时即靠它计算，漏登记 = 该模型臂 occ_ratio 为
+  NULL，占用率分析直接缺席。
+- **新范式包入场**：同步登记 `occupancy.mjs` 的 `PACK_TOKENS_K`（标称尺寸 k tokens）。
+- arms.occupancy 旧列（fullTokenCount 分带）已废弃——fullTokenCount 是增量计数，
+  不反映真实上下文；占用率分析一律用 occ_ratio。
+
 ## 已知缺口
 
 - 归档会话不含上游真实 usage（tokenCount 是服务器字符估算）——
   session-runner/面板服务端均未透传 API usage，记为观测台改进项（未来补真实计量）
 - [codex]gpt-5.6-luna 阶梯计费表达式未解析（`billing_expr`，≤272k 分界），用前需实测一次核账
 - 聚光按量模型的窗口为系族估算值，未逐测
+- 以下在库模型窗口未核实（occ_ratio 计 NULL，宁缺毋假）：deepseek-v4-flash、glm-5、
+  kimi-k2.5、mimo-v2.5、minimax-m2.5/m2.7/m3（聚光按次版）、qwen3.5-plus

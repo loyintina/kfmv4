@@ -20,6 +20,7 @@ import { existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { homedir } from 'os';
 import { createHash } from 'crypto';
+import { occRatio } from './occupancy.mjs';
 
 export const DB_PATH = join(homedir(), '.kfmv4', 'experiments', 'arms.db');
 
@@ -56,7 +57,11 @@ function db() {
       status TEXT NOT NULL DEFAULT 'ok',   -- ok / error-stub / censored
       message_count INTEGER, token_count INTEGER, full_token_count INTEGER,
       chan TEXT,                 -- text / reasoning / empty（末条 AI 消息通道分桶）
-      occupancy TEXT,            -- full_token_count 绝对分带：<8k/8-16k/…/128k+
+      occupancy TEXT,            -- ⚠️ 废弃（fullTokenCount 是增量计数，不反映真实上下文，
+                                 --   实测 <8k 带挤进 1232 臂）；保留仅为旧行兼容，
+                                 --   占用率分析一律用 occ_ratio
+      occ_ratio REAL,            -- 真实占用率 = 包标称尺寸÷模型窗口（occupancy.mjs，
+                                 --   未登记为 NULL；写入时算好，旧行由 backfill 补齐）
       decode TEXT,               -- 语义解码来源：write(写入时直给) / hash(哈希重算)
                                  --   / registry(遗留注册表) / undecoded(未解码，paradigm='?')
       created_at TEXT, updated_at TEXT,
@@ -66,10 +71,25 @@ function db() {
     CREATE INDEX IF NOT EXISTS idx_arms_batch ON arms(batch_id);
     CREATE INDEX IF NOT EXISTS idx_arms_status ON arms(status);
   `);
+  // 旧库迁移：补 occ_ratio 列并回填（幂等）
+  const cols = _db.prepare(`PRAGMA table_info(arms)`).all().map(c => c.name);
+  if (!cols.includes('occ_ratio')) {
+    _db.exec(`ALTER TABLE arms ADD COLUMN occ_ratio REAL`);
+  }
+  backfillOccRatio(_db);
   return _db;
 }
 
-/** 占用率分带（绝对 token 带——模型上下文表未建前的 harness 无关口径） */
+/** 旧行回填 occ_ratio（写入时直给之前的存量臂；幂等，只碰 NULL 行） */
+function backfillOccRatio(d) {
+  const rows = d.prepare(`SELECT arm_id, paradigm, model FROM arms WHERE occ_ratio IS NULL`).all();
+  if (!rows.length) return;
+  const upd = d.prepare(`UPDATE arms SET occ_ratio = ? WHERE arm_id = ?`);
+  for (const r of rows) upd.run(occRatio(r.paradigm, r.model), r.arm_id);
+}
+
+/** ⚠️ 废弃：占用率分带（fullTokenCount 增量计数的绝对分带，不反映真实上下文）。
+ *  仅为旧行兼容保留写入；占用率分析用 occ_ratio（occupancy.mjs）。 */
 export function occupancyBand(fullTokens) {
   const t = Number(fullTokens) || 0;
   for (const [band, hi] of [['<8k', 8192], ['8-16k', 16384], ['16-32k', 32768],
@@ -117,14 +137,15 @@ export function putArm({ batchId, armId, taskIdx = null, paradigmIdx = null, mod
   db().prepare(`INSERT OR REPLACE INTO arms
     (arm_id, batch_id, experiment, task_idx, paradigm_idx, model_idx, rep,
      task, paradigm, model, provider, status,
-     message_count, token_count, full_token_count, chan, occupancy, decode,
+     message_count, token_count, full_token_count, chan, occupancy, occ_ratio, decode,
      created_at, updated_at, content)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
     armId, batchId, experiment, taskIdx, paradigmIdx, modelIdx, rep,
     task, paradigm, model, provider, status,
     parsed.messageCount ?? (parsed.messages || []).length,
     parsed.tokenCount ?? null, parsed.fullTokenCount ?? null,
-    chanOf(parsed), occupancyBand(parsed.fullTokenCount), decode,
+    chanOf(parsed), occupancyBand(parsed.fullTokenCount),
+    occRatio(paradigm, model), decode,
     parsed.createdAt ?? null, parsed.updatedAt ?? null, c);
 }
 
@@ -153,7 +174,7 @@ export function listArms(filter = {}) {
   }
   const sql = `SELECT arm_id, batch_id, experiment, task_idx, paradigm_idx, model_idx, rep,
     task, paradigm, model, provider, status, message_count, token_count, full_token_count,
-    chan, occupancy, decode, created_at, updated_at
+    chan, occupancy, occ_ratio, decode, created_at, updated_at
     FROM arms${where.length ? ' WHERE ' + where.join(' AND ') : ''} ORDER BY arm_id`;
   return db().prepare(sql).all(...args);
 }
