@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 30349a64 · 生成于 2026-08-06 -->
+<!-- 基准 commit d6b32d9d · 生成于 2026-08-06 -->
 
 # 代码清单（机械层）
 
@@ -174,7 +174,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（147 文件 · 17858 行）
+## infra（148 文件 · 17922 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -269,6 +269,7 @@
 | scripts/check/check-experiment-registry.mjs | 67 | — |
 | tests/floating-state.test.ts | 66 | — |
 | scripts/check/domain-src.mjs | 64 | DOMAIN_SRC |
+| scripts/agent/session-retention.mjs | 64 | — |
 | scripts/agent/test-tag-advisor.mjs | 64 | — |
 | scripts/check/check-code-map-coverage.mjs | 63 | — |
 | scripts/check/check-fix-tests.mjs | 63 | — |
@@ -638,4 +639,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 290 文件 · 49932 行 · 跨域边 250 条
+合计 291 文件 · 49996 行 · 跨域边 250 条

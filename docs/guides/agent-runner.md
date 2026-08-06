@@ -194,3 +194,12 @@ deepseek 官方单臂，见上文「provider 兜底链」。）
 （LLM 调用：provider/耗时/成败）、`~/.kfmv4/permission-audit.jsonl`（工具调用审计：
 RiskClass/判定）、`docs/ledger/semantic-chain-inbox.md`（文档健康趋势）→ 周报文本
 stdout，`--mailbox` 投信箱。用法：`node scripts/agent/obs-aggregate.mjs [--days=7] [--mailbox]`。
+
+## 六号负载：session-retention.mjs（巡逻会话生命周期，2026-08-06 用户拍板）
+
+sessions/script/ 只进不出必淤积——治药是生命周期不是换数据库（用户判断：
+访问模式=写一次/整篇读/按时间列，文件系统天然适配；全文检索需求出现时再议入库）。
+规则：`patrol-*.json` 超龄 90 天 → tar.gz 进 `sessions/script/archive/`（按运行日命名），
+原件删除。只碰 patrol- 前缀——bi-/px-/sandbox-/_quarantine 归 paradigm 进程自治，
+面板区人工会话永不进视野。用法：`node scripts/agent/session-retention.mjs [--days=90] [--dry-run]`，
+测试注入 KFM_DATA_DIR。cron 每日 04:53（巡逻 04:17 之后）。
