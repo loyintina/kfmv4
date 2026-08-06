@@ -15,9 +15,9 @@ import { resolveKey } from '../env-store.js';
 import { KFM_DATA_DIR } from '../path-utils.js';
 
 const DEEPSEEK_BALANCE_URL = 'https://api.deepseek.com/user/balance';
-// 余额缓存：余额只有调用消耗才变（分钟级），客户端秒级轮询的是本地接口；
-// 外部 deepseek 请求 60s 一次受控（秒级轮询外部 API = 8.6 万次/天，无谓且易触限流）。
-const BALANCE_CACHE_MS = 60_000;
+// 余额缓存：deepseek /user/balance 接口免费轻量（无 chat 接口的并发压力），
+// 10s 一次外部请求 = 8640 次/天，强度很低（2026-08-06 用户定稿 10s 轮询）。
+const BALANCE_CACHE_MS = 10_000;
 
 interface BalanceOk {
   total: string;

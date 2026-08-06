@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit e4e370af · 生成于 2026-08-06 -->
+<!-- 基准 commit c3bbbdbd · 生成于 2026-08-06 -->
 
 # 代码清单（机械层）
 
@@ -70,7 +70,7 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（24 文件 · 3494 行）
+## client-shell（24 文件 · 3496 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -87,7 +87,7 @@
 | src/client/modules/drag-handler.ts | 134 | DragConfig, createDragHandler |
 | src/client/main.ts | 128 | — |
 | src/client/modules/z-index-layers.ts | 105 | Z, ZLayer |
-| src/client/modules/obs-hud.ts | 78 | initObsHud |
+| src/client/modules/obs-hud.ts | 80 | initObsHud |
 | src/client/modules/animation-registry.ts | 75 | AnimTimeline, anim |
 | src/client/modules/ui.ts | 71 | openSidebar, closeSidebar, initUI |
 | src/client/modules/version-watch.ts | 60 | initVersionWatch |
@@ -633,4 +633,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 286 文件 · 49162 行 · 跨域边 249 条
+合计 286 文件 · 49164 行 · 跨域边 249 条

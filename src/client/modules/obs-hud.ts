@@ -2,23 +2,25 @@
  * obs-hud.ts — 观测台 HUD（8.5 史官制度 · L1 中央内容层，2026-08-05 立项）
  *
  * 背景信息窗·简约版（2026-08-06 用户定稿）：单张毛玻璃卡，三元素——
- *   deepseek 官方（标签）· 秒级时间 · 余额数字（4 位小数、秒级刷新）。
+ *   deepseek 官方（标签）· 秒级时间 · 余额数字（2 位小数、10s 刷新）。
  * 纯展示（pointer-events: none，不挡手势/卡片/召唤按钮——z 低于 SUMMON_BTN）。
  *
- * 刷新策略（性能权衡）：时间本地每秒 tick；余额客户端每秒 fetch 本地 /api/obs/hud
- * （本地请求极轻），服务端对 deepseek 外部接口做 60s 缓存——外部调用受控，
- * 秒级跳动的是展示层，余额真实变动（分钟级）秒级内可见。
+ * 刷新策略（2026-08-06 用户定稿）：时间本地每秒；余额客户端每 10s fetch 本地
+ * /api/obs/hud，服务端对 deepseek 外部余额接口做 10s 缓存（免费轻量，8640 次/天）。
  */
 import { API } from './state.js';
 import { Z } from './z-index-layers.js';
 
+/** 余额轮询周期（10s） */
+const BALANCE_REFRESH_MS = 10_000;
+
 let inited = false;
 
-/** 余额固定 4 位小数（用户定稿 2026-08-06：要更具体；API 2 位精度时补尾零对齐） */
+/** 余额固定 2 位小数（用户定稿） */
 function fmtBalance(v: string): string {
   const n = Number(v);
   if (!Number.isFinite(n)) return v;
-  return `¥${n.toFixed(4)}`;
+  return `¥${n.toFixed(2)}`;
 }
 
 export function initObsHud(): void {
@@ -49,7 +51,7 @@ export function initObsHud(): void {
   tick();
   setInterval(tick, 1000);
 
-  // 余额秒级刷新（本地接口；服务端 60s 缓存外部 deepseek 调用）
+  // 余额 10s 刷新（本地接口；服务端 10s 缓存外部 deepseek 调用）
   let lastTotal = '';
   const refresh = async () => {
     try {
@@ -73,5 +75,5 @@ export function initObsHud(): void {
     }
   };
   refresh();
-  setInterval(refresh, 1000);
+  setInterval(refresh, BALANCE_REFRESH_MS);
 }
