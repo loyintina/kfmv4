@@ -11,6 +11,10 @@
 前缀书写——deploy-freshness/doc-coverage 在链上省前缀；sass、gen-* 验证步（--check-only）、
 sync-counts、npm test、tsc 均非 check-* 脚本，不计入标题数。）
 
+**域映射纪律（2026-08-06 定稿）**：新增 src/ 文件必须登记 `scripts/check/domain-src.mjs`
+对应域（client-shell 模块级枚举 / server·infra 目录级）——未登记的文件 check-contract-freshness
+对它的文档同步永久失明（obs-hud.ts 首犯，2026-08-06 被链当场拦下）。
+
 <!-- chain:auto 由 sync-counts 生成，禁止手改 -->
 `check-uncommitted`（>3 未提交即中断，首位） → deploy-freshness → versions → checks → doc-coverage → sass →
 css-wiring → tool-compaction → anim → as-any → card-meta → registry → zindex → console → secrets →

@@ -52,7 +52,18 @@ renderer-lifecycle → canvas-utils → canvas-cursor → canvas-scroll → tree
 ```
 main.ts → gestures.init() → initApp() → initUI() → initGestures() → initOrb()
         → initTreeRenderer() → loadFileTree() → initLazyLoader() → initCardStack()
+        → initWsChannel() → initVersionWatch() → initObsHud()（观测台 HUD）
 ```
+
+## 观测台 HUD（8.5 史官制度，2026-08-06 立项）
+
+- 模块：`src/client/modules/obs-hud.ts`（域映射：client-shell）
+- 形态：L1 中央内容层（`Z.CENTER_CONTENT`，100）贴顶居中渐变边框卡——纯展示
+  （`pointer-events: none`，不挡手势/卡片）；按钮层（`SUMMON_BTN` 200）在卡外两侧，
+  **禁止卡片横贯全宽**——双 backdrop-filter 垂直叠加在移动端合成异常会致按钮视觉消失
+- 内容（重要性排序，用户定稿）：余额大字焦点（4 位/2 位小数）> deepseek 标签 > 秒级时间弱化
+- 数据：`/api/obs/hud`（服务端 routes/obs.ts，deepseek 官方余额 5s 缓存轮询）
+- 扩展面：后续数据框（调用统计/网关健康/运行任务/定时脚本/服务器状态）沿此卡增长
 
 ## GSAP 动画治理（2026-07-29 按 ADR-004 裁决二修订）
 
