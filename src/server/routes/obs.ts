@@ -230,15 +230,17 @@ const CRON_INTERNAL_LOG: Record<string, string> = {
 // DEFAULT 通用回退。诚实边界：脚本崩溃无输出 → unknown（ago 变老是旁证）。
 interface CronMarker { ok?: RegExp; err?: RegExp }
 const CRON_MARKERS: Record<string, CronMarker> = {
-  'sync':        { err: /fatal|failed to push|error: failed/i }, // 成功输出=git 噪音，无 ok 标记
-  'clean':       {},                                             // 静默脚本
-  'chain':       { ok: /信箱 ←/, err: /💀|Traceback|Command failed/ },
-  'chain-bench': { ok: /信箱 ←/, err: /💀|Traceback|Command failed/ },
-  'entry':       { ok: /✅ PASS/, err: /❌ FAIL/ },
-  'obs-agg':     { err: /Traceback|Command failed|💀/ }, // 报告正文含「失败 N」统计字样，不算错
-  'auto-push':   { ok: /部署成功/, err: /部署失败/ },
-  'retain':      { err: /Traceback|Error|失败/ },
+  'sync':  { err: /fatal|failed to push|error: failed/i }, // 成功输出=git 噪音，无 ok 标记
+  'clean': {},                                             // 静默脚本
+  'chain': { ok: /信箱 ←/, err: /💀|Traceback|Command failed/ },
+  'bench': { ok: /信箱 ←/, err: /💀|Traceback|Command failed/ },
+  'entry': { ok: /✅ PASS/, err: /❌ FAIL/ },
+  'agg':   { err: /Traceback|Command failed|💀/ }, // 报告正文含「失败 N」统计字样，不算错
+  'push':  { ok: /部署成功/, err: /部署失败/ },
+  'retain':{ err: /Traceback|Error|失败/ },
 };
+// 显示名别名（竖条 48px 内容宽放不下长名——chain-bench/obs-agg/auto-push 实测换行难看）
+const CRON_NAME_ALIAS: Record<string, string> = { 'chain-bench': 'bench', 'obs-agg': 'agg', 'auto-push': 'push' };
 const CRON_MARKER_DEFAULT: CronMarker = { err: /fatal|error|failed|失败|Traceback|❌|✗/i };
 
 function lastIndexOf(re: RegExp | undefined, text: string): number {
@@ -290,12 +292,12 @@ function collectCron(): SysCron[] {
             fs.readSync(fd, buf, 0, buf.length, Math.max(0, st.size - buf.length));
             fs.closeSync(fd);
             const tail = buf.toString('utf-8');
-            const mk = CRON_MARKERS[name + suffix] ?? CRON_MARKER_DEFAULT;
+            const mk = CRON_MARKERS[CRON_NAME_ALIAS[name + suffix] ?? name + suffix] ?? CRON_MARKER_DEFAULT;
             status = lastIndexOf(mk.err, tail) > lastIndexOf(mk.ok, tail) ? 'fail' : 'ok';
           }
         } catch { /* 日志还没产生 → unknown */ }
       }
-      const full = name + suffix;
+      const full = CRON_NAME_ALIAS[name + suffix] ?? name + suffix;
       if (!out.some(c => c.name === full)) out.push({ name: full, status, ago });
     }
   } catch { /* crontab 不可用 → 空列表 */ }
