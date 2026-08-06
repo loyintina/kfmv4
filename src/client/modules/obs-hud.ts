@@ -156,7 +156,9 @@ export function initObsHud(): void {
     }
   });
 
-  // 渲染待办列表（todo/hold 全亮在前，done 渐淡殿后，分组计数；条目 = 状态点+#编号+标题两行截断）
+  // 渲染待办列表（todo/hold 全亮在前，done 渐淡殿后，分组计数；条目 = 状态点+#编号+标题
+  // （独立 clamp 2）+ note 次行（独立单行截断）——标题与 note 同层共用一个 clamp 时，
+  // 标题占满两行会顶掉 note 并白挂省略号（2026-08-06 用户实拍反馈）
   function renderStackList(): void {
     const { entries, counts } = stackData;
     stackStatusEl.textContent = `${counts.todo} 待 · ${counts.done} 闭环`;
@@ -165,7 +167,7 @@ export function initObsHud(): void {
       const divider = e.status === 'done' && !prevDone ? `<div class="obs-stack-divider">已闭环</div>` : '';
       prevDone = e.status === 'done';
       const cls = e.status === 'done' ? ' obs-stack-item-done' : e.status === 'hold' ? ' obs-stack-item-hold' : '';
-      return `${divider}<div class="obs-inbox-item${cls}" data-i="${i}"><span class="obs-inbox-item-flow"><span class="obs-dot obs-dot-stack-${e.status}"></span><span class="obs-inbox-meta">#${e.n}</span> ${e.title}<br><span class="obs-stack-note">${e.note}</span></span></div>`;
+      return `${divider}<div class="obs-inbox-item${cls}" data-i="${i}"><span class="obs-inbox-item-flow"><span class="obs-dot obs-dot-stack-${e.status}"></span><span class="obs-inbox-meta">#${e.n}</span> ${e.title}</span><span class="obs-stack-note">${e.note}</span></div>`;
     }).join('');
   }
 
