@@ -1,0 +1,282 @@
+{
+  "generated": "2026-08-06T21:51:59.386Z",
+  "e15": {
+    "unmatched": 0,
+    "cells": {
+      "system": {
+        "meta": {
+          "n": 32,
+          "mean": 3.22
+        },
+        "dissect": {
+          "n": 32,
+          "mean": 2.97
+        },
+        "bound": {
+          "n": 32,
+          "mean": 1.94
+        },
+        "vis": {
+          "n": 32,
+          "mean": 4.03
+        }
+      },
+      "pre-task-user": {
+        "meta": {
+          "n": 32,
+          "mean": 3.38
+        },
+        "dissect": {
+          "n": 32,
+          "mean": 3.09
+        },
+        "bound": {
+          "n": 32,
+          "mean": 2.22
+        },
+        "vis": {
+          "n": 32,
+          "mean": 4.22
+        }
+      },
+      "first-user(e14b复用)": {
+        "meta": {
+          "n": 32,
+          "mean": 3.22
+        },
+        "dissect": {
+          "n": 32,
+          "mean": 3.31
+        },
+        "bound": {
+          "n": 32,
+          "mean": 1.84
+        },
+        "vis": {
+          "n": 32,
+          "mean": 4.16
+        }
+      }
+    },
+    "contrasts": [
+      {
+        "label": "meta: first-user vs system",
+        "z": 0.06,
+        "p": 0.952
+      },
+      {
+        "label": "dissect: first-user vs system",
+        "z": 2.16,
+        "p": 0.026
+      },
+      {
+        "label": "bound: first-user vs system",
+        "z": -0.19,
+        "p": 0.846
+      },
+      {
+        "label": "vis: first-user vs system",
+        "z": 0.38,
+        "p": 0.707
+      },
+      {
+        "label": "meta: first-user vs pre-task-user",
+        "z": -0.66,
+        "p": 0.509
+      },
+      {
+        "label": "dissect: first-user vs pre-task-user",
+        "z": 1.39,
+        "p": 0.159
+      },
+      {
+        "label": "bound: first-user vs pre-task-user",
+        "z": -0.91,
+        "p": 0.362
+      },
+      {
+        "label": "vis: first-user vs pre-task-user",
+        "z": -0.85,
+        "p": 0.395
+      }
+    ]
+  },
+  "e16": {
+    "cells": {
+      "无包": {
+        "t2b": {
+          "n": 32,
+          "mean": 0.19,
+          "sum": 6
+        },
+        "t2c": {
+          "n": 32,
+          "mean": 0.03,
+          "sum": 1
+        },
+        "meta": {
+          "n": 32,
+          "mean": 0.38,
+          "sum": 12
+        },
+        "dissect": {
+          "n": 32,
+          "mean": 0.31,
+          "sum": 10
+        },
+        "bound": {
+          "n": 32,
+          "mean": 0.19,
+          "sum": 6
+        },
+        "vis": {
+          "n": 32,
+          "mean": 0.22,
+          "sum": 7
+        },
+        "t2d": {
+          "n": 5,
+          "mean": 0.2,
+          "sum": 1
+        }
+      },
+      "S2(bd)": {
+        "t2b": {
+          "n": 32,
+          "mean": 0.28,
+          "sum": 9
+        },
+        "t2c": {
+          "n": 32,
+          "mean": 0.06,
+          "sum": 2
+        },
+        "meta": {
+          "n": 32,
+          "mean": 0.44,
+          "sum": 14
+        },
+        "dissect": {
+          "n": 32,
+          "mean": 0.22,
+          "sum": 7
+        },
+        "bound": {
+          "n": 32,
+          "mean": 0.13,
+          "sum": 4
+        },
+        "vis": {
+          "n": 32,
+          "mean": 0.28,
+          "sum": 9
+        },
+        "t2d": {
+          "n": 10,
+          "mean": 0.1,
+          "sum": 1
+        }
+      },
+      "S5对比对": {
+        "t2b": {
+          "n": 32,
+          "mean": 0.19,
+          "sum": 6
+        },
+        "t2c": {
+          "n": 32,
+          "mean": 0,
+          "sum": 0
+        },
+        "meta": {
+          "n": 32,
+          "mean": 0.38,
+          "sum": 12
+        },
+        "dissect": {
+          "n": 32,
+          "mean": 0.28,
+          "sum": 9
+        },
+        "bound": {
+          "n": 32,
+          "mean": 0.19,
+          "sum": 6
+        },
+        "vis": {
+          "n": 32,
+          "mean": 0.31,
+          "sum": 10
+        },
+        "t2d": {
+          "n": 9,
+          "mean": 0,
+          "sum": 0
+        }
+      },
+      "S6复盘": {
+        "t2b": {
+          "n": 32,
+          "mean": 0.22,
+          "sum": 7
+        },
+        "t2c": {
+          "n": 32,
+          "mean": 0.03,
+          "sum": 1
+        },
+        "meta": {
+          "n": 32,
+          "mean": 0.66,
+          "sum": 21
+        },
+        "dissect": {
+          "n": 32,
+          "mean": 0.34,
+          "sum": 11
+        },
+        "bound": {
+          "n": 32,
+          "mean": 0.28,
+          "sum": 9
+        },
+        "vis": {
+          "n": 32,
+          "mean": 0.41,
+          "sum": 13
+        },
+        "t2d": {
+          "n": 9,
+          "mean": 0.22,
+          "sum": 2
+        }
+      }
+    },
+    "contrasts": [
+      {
+        "label": "T2-b 无包 vs S2(bd)（e13 锚点复核）",
+        "a": "6/32",
+        "b": "9/32",
+        "p": 0.556
+      },
+      {
+        "label": "T2-b S2 vs S5对比对",
+        "a": "9/32",
+        "b": "6/32",
+        "p": 0.556
+      },
+      {
+        "label": "T2-b S2 vs S6复盘",
+        "a": "9/32",
+        "b": "7/32",
+        "p": 0.774
+      },
+      {
+        "label": "T2-b S5 vs S6",
+        "a": "6/32",
+        "b": "7/32",
+        "p": 1
+      }
+    ]
+  }
+}

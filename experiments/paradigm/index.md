@@ -438,6 +438,8 @@ batch-run（计划中）：批量跑所有组合臂（并发+断点续跑）+ �
   / aggregate-e13.mjs（e13 汇总：脚本判卷+LLM 盲判按键名归一化合并出格均值，
   产出 meta-pool/aggregate-e13.json）/ aggregate-e14.mjs（e14 H3 汇总：组合对照
   Fisher/MWU 直接可引，幂等随跑数重跑，产出 meta-pool/aggregate-e14.json）
+  / aggregate-e15-e16.mjs（e15 位置哈希分辨 + e16 结构对照，一器双析，
+  产出 meta-pool/aggregate-e15-e16.json）
   / cost-stats.py / audit-arms.py（臂审计+通道分桶）/ bug-scan.py
   / migrate-arms-to-db.mjs / migrate-px-to-db.mjs（px 臂入库）
   / e16-mine.mjs（e16 S5/S6 素材开矿：错误信号+复盘标签粗筛，产出 meta-pool/e16-candidates.json）
@@ -454,4 +456,5 @@ batch-run（计划中）：批量跑所有组合臂（并发+断点续跑）+ �
   results-h2-h4-analysis.md / results-h5-length.md / results-harness-artifacts.md /
   results-judge-bias.md / results-px1-plugin.md / results-px-baseline-halflife.md /
   results-px-tripod.md / results-rubric-v2.md / results-session-leak-rootcause.md /
-  results-e13-trap.md
+  results-e13-trap.md / results-e14-combination.md / results-e15-position.md /
+  results-e16-structure.md

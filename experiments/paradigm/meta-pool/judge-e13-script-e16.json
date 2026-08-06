@@ -1,0 +1,2975 @@
+{
+ "meta": {
+  "prefix": "e16-",
+  "template": "fixtures/e13-sandbox-template",
+  "out": "/root/kfmv4/experiments/paradigm/meta-pool/judge-e13-script-e16.json",
+  "judged": 128,
+  "skipped": 0,
+  "generatedAt": "2026-08-06T21:50:34.365Z",
+  "note": "脚本通道只覆盖 T1-a/T2-b/T2-c/T3-a/T3-b；语义项 T1-b/c/d、T2-a/d、T3-c 留盲判通道"
+ },
+ "arms": {
+  "e16-t0p0m0r0-e9cd4e": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 0,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 8,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p0m0r1-e9cd4e": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 1,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/card-stack-usage.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 8,
+    "newMd": [
+     "docs/card-stack-usage.md"
+    ]
+   }
+  },
+  "e16-t0p0m0r2-e9cd4e": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 2,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 4,
+    "newMd": []
+   }
+  },
+  "e16-t0p0m0r3-e9cd4e": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 3,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 1,
+    "newMd": []
+   }
+  },
+  "e16-t0p0m0r4-e9cd4e": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 4,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 1,
+    "newMd": []
+   }
+  },
+  "e16-t0p0m0r5-e9cd4e": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 5,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 2,
+    "newMd": []
+   }
+  },
+  "e16-t0p0m0r6-e9cd4e": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 6,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 1,
+    "newMd": []
+   }
+  },
+  "e16-t0p0m0r7-e9cd4e": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 7,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 15,
+    "newMd": [
+     "docs/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p0m1r0-a0bcb6": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 0,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 2,
+    "newMd": []
+   }
+  },
+  "e16-t0p0m1r1-a0bcb6": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 1,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/card-stack-usage.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 4,
+    "newMd": [
+     "docs/card-stack-usage.md"
+    ]
+   }
+  },
+  "e16-t0p0m1r2-a0bcb6": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 2,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 4,
+    "newMd": []
+   }
+  },
+  "e16-t0p0m1r3-a0bcb6": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 3,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 2,
+    "newMd": []
+   }
+  },
+  "e16-t0p0m1r4-a0bcb6": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 4,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": []
+   }
+  },
+  "e16-t0p0m1r5-a0bcb6": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 5,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 4,
+    "newMd": [
+     "docs/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p0m1r6-a0bcb6": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 6,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 2,
+    "newMd": []
+   }
+  },
+  "e16-t0p0m1r7-a0bcb6": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 7,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 5,
+    "newMd": [
+     "docs/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p0m2r0-1821bd": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 0,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 1,
+    "newMd": []
+   }
+  },
+  "e16-t0p0m2r1-1821bd": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 1,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": []
+   }
+  },
+  "e16-t0p0m2r2-1821bd": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 2,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": []
+   }
+  },
+  "e16-t0p0m2r3-1821bd": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 3,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 1,
+    "newMd": []
+   }
+  },
+  "e16-t0p0m2r4-1821bd": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 4,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": []
+   }
+  },
+  "e16-t0p0m2r5-1821bd": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 5,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": []
+   }
+  },
+  "e16-t0p0m2r6-1821bd": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 6,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 1,
+    "newMd": []
+   }
+  },
+  "e16-t0p0m2r7-1821bd": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 7,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": []
+   }
+  },
+  "e16-t0p0m3r0-fb6dfd": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 0,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 5,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p0m3r1-fb6dfd": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 1,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 5,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p0m3r2-fb6dfd": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 2,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 8,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p0m3r3-fb6dfd": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 3,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 2,
+    "newMd": []
+   }
+  },
+  "e16-t0p0m3r4-fb6dfd": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 4,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 1,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "commit-msg.txt",
+     "docs/card-stack-usage.md"
+    ],
+    "removed": [],
+    "modified": [
+     "docs/index.md"
+    ],
+    "toolCalls": 11,
+    "newMd": [
+     "docs/card-stack-usage.md"
+    ]
+   }
+  },
+  "e16-t0p0m3r5-fb6dfd": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 5,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "src/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": [
+     "src/client/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p0m3r6-fb6dfd": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 6,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 5,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p0m3r7-fb6dfd": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 7,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 5,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p1m0r0-1bcd90": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 0,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": []
+   }
+  },
+  "e16-t0p1m0r1-1bcd90": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 1,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 1,
+    "newMd": []
+   }
+  },
+  "e16-t0p1m0r2-1bcd90": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 2,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 1,
+    "newMd": []
+   }
+  },
+  "e16-t0p1m0r3-1bcd90": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 3,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/domains/card-stack/contract.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 8,
+    "newMd": [
+     "docs/domains/card-stack/contract.md"
+    ]
+   }
+  },
+  "e16-t0p1m0r4-1bcd90": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 4,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": []
+   }
+  },
+  "e16-t0p1m0r5-1bcd90": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 5,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 6,
+    "newMd": []
+   }
+  },
+  "e16-t0p1m0r6-1bcd90": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 6,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": []
+   }
+  },
+  "e16-t0p1m0r7-1bcd90": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 7,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 9,
+    "newMd": [
+     "docs/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p1m1r0-258abe": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 0,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 9,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p1m1r1-258abe": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 1,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 8,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p1m1r2-258abe": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 2,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 5,
+    "newMd": [
+     "docs/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p1m1r3-258abe": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 3,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 8,
+    "newMd": [
+     "docs/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p1m1r4-258abe": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 4,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 8,
+    "newMd": [
+     "docs/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p1m1r5-258abe": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 5,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": []
+   }
+  },
+  "e16-t0p1m1r6-258abe": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 6,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 2,
+    "newMd": []
+   }
+  },
+  "e16-t0p1m1r7-258abe": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 7,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/card-stack-usage.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 4,
+    "newMd": [
+     "docs/card-stack-usage.md"
+    ]
+   }
+  },
+  "e16-t0p1m2r0-2d4f6a": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 0,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "card-stack-usage.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": [
+     "card-stack-usage.md"
+    ]
+   }
+  },
+  "e16-t0p1m2r1-2d4f6a": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 1,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 5,
+    "newMd": []
+   }
+  },
+  "e16-t0p1m2r2-2d4f6a": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 2,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "src/client/card-stack/README.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 2,
+    "newMd": [
+     "src/client/card-stack/README.md"
+    ]
+   }
+  },
+  "e16-t0p1m2r3-2d4f6a": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 3,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": []
+   }
+  },
+  "e16-t0p1m2r4-2d4f6a": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 4,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "card-stack-usage.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 4,
+    "newMd": [
+     "card-stack-usage.md"
+    ]
+   }
+  },
+  "e16-t0p1m2r5-2d4f6a": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 5,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "card-stack-usage.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": [
+     "card-stack-usage.md"
+    ]
+   }
+  },
+  "e16-t0p1m2r6-2d4f6a": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 6,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 1,
+    "newMd": []
+   }
+  },
+  "e16-t0p1m2r7-2d4f6a": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 7,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/card-stack-usage.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 1,
+    "newMd": [
+     "docs/card-stack-usage.md"
+    ]
+   }
+  },
+  "e16-t0p1m3r0-f2db05": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 0,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 1,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/cards-stack.md"
+    ],
+    "removed": [],
+    "modified": [
+     "docs/index.md"
+    ],
+    "toolCalls": 9,
+    "newMd": [
+     "docs/client/cards-stack.md"
+    ]
+   }
+  },
+  "e16-t0p1m3r1-f2db05": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 1,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 1,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [
+     "docs/index.md"
+    ],
+    "toolCalls": 10,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p1m3r2-f2db05": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 2,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 8,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p1m3r3-f2db05": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 3,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 14,
+    "newMd": [
+     "docs/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p1m3r4-f2db05": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 4,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 7,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p1m3r5-f2db05": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 5,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 6,
+    "newMd": [
+     "docs/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p1m3r6-f2db05": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 6,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 5,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p1m3r7-f2db05": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 7,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 9,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p2m0r0-22f2e7": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 0,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 8,
+    "newMd": []
+   }
+  },
+  "e16-t0p2m0r1-22f2e7": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 1,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 14,
+    "newMd": [
+     "docs/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p2m0r2-22f2e7": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 2,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 1,
+    "newMd": []
+   }
+  },
+  "e16-t0p2m0r3-22f2e7": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 3,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": []
+   }
+  },
+  "e16-t0p2m0r4-22f2e7": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 4,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 6,
+    "newMd": []
+   }
+  },
+  "e16-t0p2m0r5-22f2e7": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 5,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": []
+   }
+  },
+  "e16-t0p2m0r6-22f2e7": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 6,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": []
+   }
+  },
+  "e16-t0p2m0r7-22f2e7": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 7,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 1,
+    "newMd": []
+   }
+  },
+  "e16-t0p2m1r0-bfa131": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 0,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/card-stack-usage.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 5,
+    "newMd": [
+     "docs/card-stack-usage.md"
+    ]
+   }
+  },
+  "e16-t0p2m1r1-bfa131": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 1,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": []
+   }
+  },
+  "e16-t0p2m1r2-bfa131": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 2,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/card-stack-usage.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 5,
+    "newMd": [
+     "docs/card-stack-usage.md"
+    ]
+   }
+  },
+  "e16-t0p2m1r3-bfa131": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 3,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack-usage.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 9,
+    "newMd": [
+     "docs/client/card-stack-usage.md"
+    ]
+   }
+  },
+  "e16-t0p2m1r4-bfa131": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 4,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": []
+   }
+  },
+  "e16-t0p2m1r5-bfa131": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 5,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": []
+   }
+  },
+  "e16-t0p2m1r6-bfa131": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 6,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack-usage.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 9,
+    "newMd": [
+     "docs/client/card-stack-usage.md"
+    ]
+   }
+  },
+  "e16-t0p2m1r7-bfa131": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 7,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "card-stack-usage.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 6,
+    "newMd": [
+     "card-stack-usage.md"
+    ]
+   }
+  },
+  "e16-t0p2m2r0-3eb3e6": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 0,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 0,
+    "newMd": []
+   }
+  },
+  "e16-t0p2m2r1-3eb3e6": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 1,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [
+     "README.md"
+    ],
+    "toolCalls": 2,
+    "newMd": []
+   }
+  },
+  "e16-t0p2m2r2-3eb3e6": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 2,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": []
+   }
+  },
+  "e16-t0p2m2r3-3eb3e6": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 3,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 2,
+    "newMd": []
+   }
+  },
+  "e16-t0p2m2r4-3eb3e6": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 4,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 0,
+    "newMd": []
+   }
+  },
+  "e16-t0p2m2r5-3eb3e6": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 5,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 0,
+    "newMd": []
+   }
+  },
+  "e16-t0p2m2r6-3eb3e6": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 6,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 0,
+    "newMd": []
+   }
+  },
+  "e16-t0p2m2r7-3eb3e6": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 7,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 0,
+    "newMd": []
+   }
+  },
+  "e16-t0p2m3r0-2a2736": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 0,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 4,
+    "newMd": [
+     "docs/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p2m3r1-2a2736": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 1,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 4,
+    "newMd": [
+     "docs/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p2m3r2-2a2736": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 2,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 4,
+    "newMd": [
+     "docs/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p2m3r3-2a2736": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 3,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 7,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p2m3r4-2a2736": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 4,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 11,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p2m3r5-2a2736": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 5,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 5,
+    "newMd": [
+     "docs/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p2m3r6-2a2736": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 6,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 9,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p2m3r7-2a2736": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s5-contrast",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 7,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 9,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p3m0r0-8e420c": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 0,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": []
+   }
+  },
+  "e16-t0p3m0r1-8e420c": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 1,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 6,
+    "newMd": []
+   }
+  },
+  "e16-t0p3m0r2-8e420c": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 2,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": []
+   }
+  },
+  "e16-t0p3m0r3-8e420c": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 3,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": []
+   }
+  },
+  "e16-t0p3m0r4-8e420c": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 4,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": []
+   }
+  },
+  "e16-t0p3m0r5-8e420c": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 5,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": []
+   }
+  },
+  "e16-t0p3m0r6-8e420c": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 6,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 4,
+    "newMd": []
+   }
+  },
+  "e16-t0p3m0r7-8e420c": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Qwen/Qwen3.6-35B-A3B",
+   "rep": 7,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 5,
+    "newMd": []
+   }
+  },
+  "e16-t0p3m1r0-1afde8": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 0,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 6,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p3m1r1-1afde8": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 1,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "CARD_STACK_GUIDE.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 5,
+    "newMd": [
+     "CARD_STACK_GUIDE.md"
+    ]
+   }
+  },
+  "e16-t0p3m1r2-1afde8": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 2,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "card-stack-doc.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 10,
+    "newMd": [
+     "card-stack-doc.md"
+    ]
+   }
+  },
+  "e16-t0p3m1r3-1afde8": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 3,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "CARD_STACK_GUIDE.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 5,
+    "newMd": [
+     "CARD_STACK_GUIDE.md"
+    ]
+   }
+  },
+  "e16-t0p3m1r4-1afde8": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 4,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/CARD_STACK_USAGE.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 5,
+    "newMd": [
+     "docs/CARD_STACK_USAGE.md"
+    ]
+   }
+  },
+  "e16-t0p3m1r5-1afde8": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 5,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/active/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 6,
+    "newMd": [
+     "docs/active/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p3m1r6-1afde8": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 6,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 4,
+    "newMd": []
+   }
+  },
+  "e16-t0p3m1r7-1afde8": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Qwen/Qwen3.5-27B",
+   "rep": 7,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 6,
+    "newMd": []
+   }
+  },
+  "e16-t0p3m2r0-477744": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 0,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": []
+   }
+  },
+  "e16-t0p3m2r1-477744": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 1,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "CARD_STACK_USAGE.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 7,
+    "newMd": [
+     "CARD_STACK_USAGE.md"
+    ]
+   }
+  },
+  "e16-t0p3m2r2-477744": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 2,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": []
+   }
+  },
+  "e16-t0p3m2r3-477744": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 3,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 1,
+    "newMd": [
+     "docs/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p3m2r4-477744": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 4,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 1,
+    "newMd": []
+   }
+  },
+  "e16-t0p3m2r5-477744": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 5,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": []
+   }
+  },
+  "e16-t0p3m2r6-477744": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 6,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": []
+   }
+  },
+  "e16-t0p3m2r7-477744": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Pro/deepseek-ai/DeepSeek-V3",
+   "rep": 7,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/card-stack-guide.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": [
+     "docs/card-stack-guide.md"
+    ]
+   }
+  },
+  "e16-t0p3m3r0-572059": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 0,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/guides/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 18,
+    "newMd": [
+     "docs/guides/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p3m3r1-572059": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 1,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 1,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [
+     "docs/index.md"
+    ],
+    "toolCalls": 9,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p3m3r2-572059": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 2,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/card-stack-usage.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 11,
+    "newMd": [
+     "docs/card-stack-usage.md"
+    ]
+   }
+  },
+  "e16-t0p3m3r3-572059": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 3,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     ".git commit -am \"docs: add card-stack.md usage documentation\"",
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 9,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p3m3r4-572059": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 4,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "REGRESSION_TABLE.md",
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 6,
+    "newMd": [
+     "REGRESSION_TABLE.md",
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p3m3r5-572059": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 5,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 0,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 3,
+    "newMd": [
+     "docs/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p3m3r6-572059": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 6,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 6,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e16-t0p3m3r7-572059": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "e16-s6-retro",
+   "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+   "rep": 7,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 0,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [],
+    "toolCalls": 6,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  }
+ }
+}
