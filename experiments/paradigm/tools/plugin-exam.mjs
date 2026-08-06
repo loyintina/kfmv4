@@ -16,14 +16,23 @@
  *   node experiments/paradigm/tools/plugin-exam.mjs \
  *     --id px-test1 --scenario-file /tmp/px-scenario.txt \
  *     --examiner-model "THUDM/GLM-Z1-9B-0414" --examiner-provider "硅基流动" \
- *     --pack metacognition --turns 6 [--examiner-role kfm-dev]
+ *     --pack metacognition --turns 6 [--examiner-role kfm-dev] [--schedule attach@2,detach@5]
  *
  * --examiner-role：考生角色卡名（~/.kfmv4/roles/<名>.json）。
  *   不传时服务端回落到面板当前激活角色（prompt-assembler 的 getActiveRoleFile），
  *   即考生的「人格底材」会被面板状态污染——跑实验建议显式指定。
+ * --schedule：时刻表模式（残留半衰期专项，2026-08-05）——挂载/摘除按固定轮次
+ *   强制执行（attach@T = 第 T 轮末挂载，包裹第 T+1 轮 user 消息），教官只负责
+ *   聊天，其 action 决策被时刻表覆盖（含 end，全程无权提前结束）。
+ * --fresh：忽略断点状态从头跑。默认行为相反——存在 <id>.exam-state.json 时
+ *   自动断点续跑（服务器重启/进程被杀后由 wrapper 重试拉起，2026-08-05 三次
+ *   部署误杀实验后加的保命机制）：每轮结束落盘完整状态（cleanHistory 是全量
+ *   无包历史，续跑时视图重建天然兼容），transcript 追加「↻ 断点续跑」节。
+ *   中止退场的跑次写 exam-meta.json 时带 aborted:true 且退出码 1，供 wrapper
+ *   重试循环识别。
  */
 import { runSession, loadParadigm } from './session-runner.mjs';
-import { readFileSync, writeFileSync, appendFileSync } from 'fs';
+import { readFileSync, writeFileSync, appendFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { homedir } from 'os';
 import { fileURLToPath } from 'url';
@@ -43,10 +52,22 @@ const scenarioFile = get('scenario-file');
 const maxTurns = parseInt(get('turns', '10'), 10);
 const tools = get('examiner-tools', 'read,grep,glob').split(',');
 const examinerRole = get('examiner-role', ''); // 考生角色卡；空 = 服务端回落面板激活角色
+const fresh = argv.includes('--fresh'); // 忽略断点状态从头跑
+// 时刻表模式：attach@T,detach@T —— 挂摘决策被时刻表强制接管，教官无权决策
+const scheduleMap = {};
+const scheduleRaw = get('schedule', '');
+if (scheduleRaw) {
+  for (const part of scheduleRaw.split(',')) {
+    const [a, t] = part.split('@');
+    if ((a === 'attach' || a === 'detach') && Number(t) > 0) scheduleMap[Number(t)] = a;
+  }
+  if (!Object.keys(scheduleMap).length) { console.error(`--schedule 格式错误: ${scheduleRaw}`); process.exit(2); }
+}
 
 const SCRIPT_DIR = join(homedir(), '.kfmv4', 'sessions', 'script');
 const transcriptPath = join(SCRIPT_DIR, `${id}.transcript.md`);
 const metaPath = join(SCRIPT_DIR, `${id}.exam-meta.json`);
+const statePath = join(SCRIPT_DIR, `${id}.exam-state.json`);
 
 // ===== 可观测性：实时记录（用户随时打开 transcript 检查）=====
 function log(section, body) {
@@ -155,20 +176,58 @@ if (!packText) { console.error(`范式包不存在: ${packName}`); process.exit(
 const instructorSys = readFileSync(instructorFile, 'utf-8');
 const sessionFile = join(SCRIPT_DIR, `${id}.json`);
 
-writeFileSync(transcriptPath,
-  `# 插件实验 ${id}\n\n- 考生: ${examinerModel} @ ${examinerProvider}\n` +
-  `- 教官: ${instructorModel} @ ${instructorProvider}\n- 范式包: ${packName}（${packText.length} 字符）\n` +
-  `- 考生角色卡: ${examinerRole || '（未指定，回落面板激活角色）'}\n` +
-  `- 教官提示词: ${instructorFile}\n- 轮次上限: ${maxTurns}\n- 开始: ${new Date().toISOString()}\n`);
-console.log(`[plugin-exam] ${id} 考生=${examinerModel} 教官=${instructorModel} 包=${packName} 角色=${examinerRole || '面板默认'} 上限=${maxTurns}轮`);
-console.log(`[plugin-exam] 实时记录: ${transcriptPath}`);
-
-const cleanHistory = [];
+// ===== 断点续跑：状态落盘/加载 =====
+// cleanHistory 是全量无包历史、每轮本来就是全量重发（runSession out=sessionFile），
+// 所以续跑只需重建这些变量并从 turn+1 继续，视图（buildView）天然兼容。
+let cleanHistory = [];
 const mountLog = [];
 let nextUser = scenario;
 let instructorNote = '';
+let startTurn = 1;
+let resumed = false;
 
-for (let turn = 1; turn <= maxTurns; turn++) {
+if (!fresh && existsSync(statePath)) {
+  try {
+    const st = JSON.parse(readFileSync(statePath, 'utf-8'));
+    if (st.id === id && Number(st.turn) >= 1 && Array.isArray(st.cleanHistory)) {
+      resumed = true;
+      startTurn = st.turn + 1;
+      cleanHistory = st.cleanHistory;
+      mounted = !!st.mounted;
+      mountIdx = st.mounted ? st.mountIdx : -1;
+      nextUser = st.nextUser;
+      instructorNote = st.instructorNote || '';
+      mountLog.push(...(st.mountLog || []));
+    }
+  } catch (e) {
+    console.error(`[plugin-exam] 状态文件损坏，从头开始: ${e.message}`);
+  }
+}
+
+function saveState(turn) {
+  writeFileSync(statePath, JSON.stringify({
+    id, turn, cleanHistory, mounted, mountIdx, nextUser, instructorNote, mountLog,
+  }));
+}
+
+if (resumed) {
+  appendFileSync(transcriptPath, `\n---\n\n# ↻ 断点续跑（${new Date().toISOString()}）\n\n` +
+    `从第 ${startTurn} 轮继续（已完成 ${startTurn - 1} 轮，历史 ${cleanHistory.length} 条消息，` +
+    `挂载状态：${mounted ? `已挂载 ${packName} @${mountIdx}` : '未挂载'}）。\n`);
+  console.log(`[plugin-exam] ↻ 断点续跑 ${id}：从第 ${startTurn} 轮继续（已完成 ${startTurn - 1} 轮）`);
+} else {
+  writeFileSync(transcriptPath,
+    `# 插件实验 ${id}\n\n- 考生: ${examinerModel} @ ${examinerProvider}\n` +
+    `- 教官: ${instructorModel} @ ${instructorProvider}\n- 范式包: ${packName}（${packText.length} 字符）\n` +
+    `- 考生角色卡: ${examinerRole || '（未指定，回落面板激活角色）'}\n` +
+    (scheduleRaw ? `- 时刻表模式: ${scheduleRaw}（教官决策被强制接管）\n` : '') +
+    `- 教官提示词: ${instructorFile}\n- 轮次上限: ${maxTurns}\n- 开始: ${new Date().toISOString()}\n`);
+}
+console.log(`[plugin-exam] ${id} 考生=${examinerModel} 教官=${instructorModel} 包=${packName} 角色=${examinerRole || '面板默认'} 上限=${maxTurns}轮`);
+console.log(`[plugin-exam] 实时记录: ${transcriptPath}`);
+
+let aborted = false;
+for (let turn = startTurn; turn <= maxTurns; turn++) {
   // --- 考生回话 ---
   log(`▶ 第 ${turn} 轮 · 用户发言${mounted ? `（挂载 ${packName}）` : ''}`, nextUser);
   let r;
@@ -176,6 +235,7 @@ for (let turn = 1; turn <= maxTurns; turn++) {
     r = await examinerTurn(cleanHistory, nextUser, packText, sessionFile);
   } catch (e) {
     log('✗ 考生两轮均失败，实验中止', String(e.message || e).slice(0, 300));
+    aborted = true;
     break;
   }
   cleanHistory.push({ role: 'user', content: [{ type: 'text', text: nextUser }] }, ...r.newTurns);
@@ -203,12 +263,20 @@ for (let turn = 1; turn <= maxTurns; turn++) {
   }
   if (!dec) {
     log('✗ 教官连续 8 次异常，实验中止', '');
+    aborted = true;
     break;
   }
   log(`★ 第 ${turn} 轮 · 教官分析`, dec.analysis || '（无）');
 
   // --- 执行挂载决策（方案 A）---
-  const action = dec.action || 'none';
+  let action = dec.action || 'none';
+  if (scheduleRaw) {
+    const forced = scheduleMap[turn] || 'none';
+    if (action !== 'none' && action !== forced) {
+      log(`⏭ 时刻表覆盖教官决策（第 ${turn} 轮）`, `教官=${action} → 时刻表=${forced}`);
+    }
+    action = forced; // 时刻表模式：end 也被覆盖为 none，教官无权提前结束
+  }
   if (action === 'attach' && !mounted) {
     mounted = true;
     mountIdx = cleanHistory.length; // 包裹下一轮 user 消息
@@ -225,10 +293,12 @@ for (let turn = 1; turn <= maxTurns; turn++) {
     break;
   }
   nextUser = dec.message;
+  saveState(turn); // 每轮结束落盘：进程被杀/服务器重启后由 wrapper 重试拉起续跑
 }
 
 writeFileSync(metaPath, JSON.stringify({
   id, examinerModel, examinerProvider, instructorModel, instructorProvider,
-  packName, maxTurns, mountLog, endedAt: new Date().toISOString(),
+  packName, maxTurns, mountLog, resumed, aborted, endedAt: new Date().toISOString(),
 }, null, 1));
-console.log(`[plugin-exam] 结束。记录: ${transcriptPath} 元数据: ${metaPath}`);
+console.log(`[plugin-exam] 结束${aborted ? '（中止，可断点续跑）' : ''}。记录: ${transcriptPath} 元数据: ${metaPath}`);
+if (aborted) process.exit(1); // 供 wrapper 重试循环识别

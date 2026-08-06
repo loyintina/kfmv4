@@ -2,9 +2,23 @@
 # kfm-restart — 安全重启 kfmv4 服务
 # 通过 HTTP 端点触发重启（先响应后重启，不会中断调用方）
 # 然后轮询等待服务恢复，最后刷新浏览器页面
+#
+# 在跑实验闸门（2026-08-06）：重启会杀掉所有实验进程（三次部署误杀的教训），
+# 重启前必须过 check-active-runs.sh；有在跑实验时默认拒绝重启，
+# 显式放行：KFM_RESTART_IGNORE_ACTIVE=1 bash scripts/kfm-restart.sh
+# （plugin-exam 跑次可断点续跑，但中断轮重烧 token，能等则等）
 
 PORT="${1:-8021}"
 BASE="http://127.0.0.1:${PORT}"
+
+if [ "${KFM_RESTART_IGNORE_ACTIVE:-0}" != "1" ]; then
+  CHECK="$(dirname "$0")/../experiments/paradigm/tools/check-active-runs.sh"
+  if [ -x "$CHECK" ] && ! bash "$CHECK"; then
+    echo "[kfm-restart] ❌ 有在跑实验，重启已阻止。等它们完成，或确认后放行："
+    echo "    KFM_RESTART_IGNORE_ACTIVE=1 bash scripts/kfm-restart.sh ${PORT}"
+    exit 1
+  fi
+fi
 
 echo "[kfm-restart] 正在请求安全重启..."
 RESP=$(curl -s -X POST "${BASE}/api/system/restart" 2>/dev/null)

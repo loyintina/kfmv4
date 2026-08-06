@@ -43,3 +43,8 @@
 照 ../workflows/release.yaml 的 steps：package.json 版本 → README 版本标记 →
 ledger/history.md 条目（含主题与注记）→ `release: vX.Y.Z — 主题` commit →
 git tag → npm run check 全绿 → 部署握手（scripts/deploy.sh）。
+
+重启在跑实验闸门（2026-08-06）：scripts/kfm-restart.sh 重启前先跑
+experiments/paradigm/tools/check-active-runs.sh，有在跑实验默认拒绝
+（放行：KFM_RESTART_IGNORE_ACTIVE=1）。机制细节 →
+../../experiments/paradigm/design-session-runner.md「抗重启」节。

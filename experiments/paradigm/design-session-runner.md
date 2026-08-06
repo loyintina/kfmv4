@@ -76,3 +76,31 @@ experiments/paradigm/
 - 递归深度控制（subagent 里调 subagent 限深）、并发隔离（每臂独立 session）、超时治理
 - 范式包质量须经 check 级检验（弱模型忠实模仿错误——负迁移风险）
 - 会话落盘清理：研究臂归档后清生产区副本（routine 已有此模式）
+
+## 抗重启：断点续跑与部署前检查（2026-08-06 定型）
+
+背景：8021 服务器重启会杀掉所有实验进程（2026-08-05/06 三次部署误杀实验，
+px-base-g25-1 烧到 R8 归零、px-hl 两跑死第 1 轮）。各链路的续跑能力盘点：
+
+| 工具 | 续跑机制 | 状态 |
+|------|---------|------|
+| batch-run | 臂级：归档文件 existsSync 跳过 + 重试 | 原生已有 |
+| judge-llm | 判卷归档存在则跳过已判 | 原生已有 |
+| plugin-exam | **每轮落盘 `<id>.exam-state.json`**（cleanHistory 全量无包历史 +
+  mounted/mountIdx/nextUser/instructorNote/mountLog/turn），启动时存在即
+  从 turn+1 续跑（`--fresh` 强制重跑）；中止退场写 `aborted:true` 且退出码 1 | 本次补齐 |
+
+plugin-exam 续跑天然兼容的原理：每轮本来就是全量重发（runSession
+out=sessionFile），视图（buildView）按需包装——状态文件重建变量后从
+turn+1 继续即可，transcript 追加「↻ 断点续跑」节、meta 记 `resumed:true`。
+
+**wrapper 幂等+重试模板**（run-px-baseline.sh / run-px-halflife.sh 为范本，
+新 wrapper 照抄）：① exam-meta.json 存在且无 `aborted:true` → 跳过；
+② 每个 id 最多 3 次尝试，失败（含被 SIGKILL，退出码非 0）sleep 10 后重跑
+——plugin-exam 自动断点续跑。注意旧代码退场写 meta 无 aborted 字段：
+零数据跑次要手动删 stale meta 才会重跑。
+
+**部署前检查**：`tools/check-active-runs.sh`——扫描「有 exam-state.json 无
+完成 meta」的在跑插件实验 + pgrep 实验进程；有在跑实验时退出码 1。
+**任何重启 8021 的操作（含部署、kfm_restart）之前必须先跑它**——这条同时
+记入部署纪律文档。
