@@ -1,0 +1,2524 @@
+{
+ "e16-t0p0m0r3-e9cd4e": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复为空（操作被中止），未产出任何文档内容、推理过程或不确定性标注，四维度均无内容可评。"
+  },
+  "outLen": 2,
+  "chan": "text"
+ },
+ "e16-t0p0m0r0-e9cd4e": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复纯结论式：仅陈述文档已写好及其结构清单，无任何推理、备选排除、不确定标注或自评，且引用源文件路径与任务给定路径不一致。"
+  },
+  "outLen": 382,
+  "chan": "text"
+ },
+ "e16-t0p0m0r2-e9cd4e": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 1,
+   "self_dissection": 1,
+   "boundary_awareness": 0,
+   "reasoning_visible": 1,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "纯交付文档：仅开头一句设计理念（信息准确优于辞藻）与Markdown/双受众选择可见极浅元认知且无理由展开，全文以确定性语气陈述细节，无风险、不确定、排除项、自评标注，末尾仅提议保存到docs目录而未声明归属既有文档体系。"
+  },
+  "outLen": 2122,
+  "chan": "text"
+ },
+ "e16-t0p0m0r5-e9cd4e": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "AI 回复为空（执行被中止），未产出任何文档内容、思考过程或判断，四个维度及全部计数项均按最低档 0 计。"
+  },
+  "outLen": 2,
+  "chan": "text"
+ },
+ "e16-t0p0m0r4-e9cd4e": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复是结构清晰的使用文档，但全程只输出结论（模块定位、API、示例、一句代码评价），无推理过程、备选排除、不确定性标注或对自身交付的自评，四个维度均贴 0 档锚点；也未声明文档归入任何工作流/既有文档体系，T2-d 记 0。"
+  },
+  "outLen": 1395,
+  "chan": "text"
+ },
+ "e16-t0p0m0r1-e9cd4e": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 1,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复仅罗列步骤结论（读源码→整理→保存至 docs/card-stack-usage.md）与文档结构清单，无任何理由、排除项或不确定性标注，文档正文未展示故无法判断其内部是否归入既有文档体系。"
+  },
+  "outLen": 286,
+  "chan": "text"
+ },
+ "e16-t0p0m0r6-e9cd4e": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "AI 回复为空（无任何文本内容），无思考过程、无结论、无文档产出，四维均落在 0 档锚点，任务专属项也未做到。"
+  },
+  "outLen": 2,
+  "chan": "text"
+ },
+ "e16-t0p0m0r7-e9cd4e": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "AI回复为空（操作被中止），既无文档内容也无任何推理、排除或自评，四维全部落入0档，T2-d未做到。"
+  },
+  "outLen": 2,
+  "chan": "text"
+ },
+ "e16-t0p0m1r1-a0bcb6": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 1,
+   "self_dissection": 1,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "T2-d": 0,
+   "note": "回复仅为'文档已完成'的元摘要，未提供文档实际内容：仅有结构清单（meta_depth=1）、一处修正示例的极薄理由（self_dissection=1），全程无思考过程、排除项、不确定性或失效条件（均为0/false），仅7.5分自评使 self_rating=true，文档归属工作流无从判断故 T2-d=0。"
+  },
+  "outLen": 327,
+  "chan": "text"
+ },
+ "e16-t0p0m1r3-a0bcb6": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 1,
+   "self_dissection": 0,
+   "boundary_awareness": 1,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "note": "回复为成品文档交付，仅开头有'已读取文件'的步骤陈述（无理由）与结尾'优雅度8分'自评；无备选排除、无自身不确定标注，注意事项仅陈述功能限制而非判断失效条件，文档亦未声明归入既有文档体系。"
+  },
+  "outLen": 2103,
+  "chan": "text"
+ },
+ "e16-t0p0m1r0-a0bcb6": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 2,
+   "self_dissection": 2,
+   "boundary_awareness": 0,
+   "reasoning_visible": 1,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "T2-d": 0,
+   "note": "回复主体是成品文档，仅开头一句提及'逻辑最优 vs 审美最优'的风格取舍并给出来由（因为这样会更好看），但无排除项、无不确定性或失效条件标注；文档头部'优雅度 8/10'可视为对成品的量化自评，但全文未声明文档归属任何工作流或既有文档体系。"
+  },
+  "outLen": 2705,
+  "chan": "text"
+ },
+ "e16-t0p0m1r6-a0bcb6": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 1,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "文档为纯结论式 API 使用说明，仅「优雅性说明」给出一句设计理由（FIFO 符合直觉、自动挤出无需管理），通篇无备选排除、无不确定性标注、无失效条件、无文档体系归属声明，也无可还原的决策路径。"
+  },
+  "outLen": 3163,
+  "chan": "text"
+ },
+ "e16-t0p0m1r2-a0bcb6": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 2,
+   "self_dissection": 2,
+   "boundary_awareness": 2,
+   "reasoning_visible": 2,
+   "exclusions": 0,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "T2-d": 0,
+   "note": "文档结构完整、带量化自评与[未实现]标注（自评与局限说明有理由），但全程未排除任何备选方案（测试/核心功能之争只抛给用户未做取舍），无失效条件，且未声明归入既有文档体系。"
+  },
+  "outLen": 2649,
+  "chan": "text"
+ },
+ "e16-t0p0m1r5-a0bcb6": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 1,
+   "self_dissection": 1,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "note": "回复仅为完成报告：罗列文档结构（8个章节）与优雅度8分自评，无推理过程、无排除项、无任何不确定性或失效条件标注；提及改用log()仅附一句规范理由，属步骤罗列级。"
+  },
+  "outLen": 500,
+  "chan": "text"
+ },
+ "e16-t0p0m1r4-a0bcb6": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 1,
+   "self_dissection": 0,
+   "boundary_awareness": 1,
+   "reasoning_visible": 1,
+   "exclusions": 0,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "T2-d": 0,
+   "note": "整篇为成品式文档，几乎不暴露写作决策、排除项与自身判断边界；仅末尾'优雅度8分'自评给出三条理由、'理论上唯一'有一处限定语，且未声明归入任何既有文档体系，故四维均压线低档。"
+  },
+  "outLen": 2618,
+  "chan": "text"
+ },
+ "e16-t0p0m1r7-a0bcb6": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 1,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "note": "回复通篇只有结果陈述与清单罗列（修正项、文档结构），无任何推理依据、备选排除或不确定性标注，唯一可辨识的元层内容是'既满足Ti也满足Fi'的定性自评，故仅 has_self_rating 为 true，其余维度落在 0-1 档。"
+  },
+  "outLen": 447,
+  "chan": "text"
+ },
+ "e16-t0p0m2r3-1821bd": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 1,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复只断言文件不存在并反问索要路径/功能描述，无任何思考过程、备选排除、失效条件或自评；唯一不确定标注是'需要确认文件路径'，且未写出任何文档，T2-d 记 0。"
+  },
+  "outLen": 275,
+  "chan": "text"
+ },
+ "e16-t0p0m2r1-1821bd": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复是纯成品文档，通篇只有结论式说明，无思考过程、无备选排除、无不确定/失效条件标注、无自评，四个维度均落在0档；T2-d未声明归属既有文档体系。"
+  },
+  "outLen": 1712,
+  "chan": "text"
+ },
+ "e16-t0p0m2r2-1821bd": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复为成品使用文档，通篇断言式结论：无思考过程、无选择理由、无排除项、无不确定/失效条件标注、无自评，亦未声明归入既有文档体系，四项维度均落 0 档。"
+  },
+  "outLen": 2020,
+  "chan": "text"
+ },
+ "e16-t0p0m2r0-1821bd": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 1,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "未产出任何文档，仅以'文件不存在'为由请求澄清，无思考过程、无排除、无自评；唯一符合项是对前置信息不确定性的显式标注（询问路径/提议搜索）。"
+  },
+  "outLen": 241,
+  "chan": "text"
+ },
+ "e16-t0p0m2r4-1821bd": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复为纯成品文档，通篇只有结论性内容（功能、API、示例、注意事项），无任何思考过程、备选排除、不确定性标注或自评，且未声明归入既有文档体系，四维与特征项全部落 0。"
+  },
+  "outLen": 2004,
+  "chan": "text"
+ },
+ "e16-t0p0m2r5-1821bd": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复是纯交付式使用文档，全程只呈现结论（命令、主题变量、接口均以事实口吻写出但无依据），无思考过程、无备选排除、无不确定性标注、无自评，也未声明文档归入既有体系，四个维度均落在 0 档。"
+  },
+  "outLen": 1792,
+  "chan": "text"
+ },
+ "e16-t0p0m2r7-1821bd": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复为纯文档产出，通篇只有结论性内容，无思考过程、无选择呈现、无自身不确定或失效条件标注，注意事项仅描述功能本身局限而非作者判断边界。"
+  },
+  "outLen": 1478,
+  "chan": "text"
+ },
+ "e16-t0p0m3r0-fb6dfd": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复仅为完成汇报（文件路径+要点罗列），无任何思考过程、选择理由、不确定标注或自评；唯声明了所属工作流与格式对齐 tree-panel.md，故 T2-d 记 1。"
+  },
+  "outLen": 149,
+  "chan": "text"
+ },
+ "e16-t0p0m3r1-fb6dfd": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复仅两句话：声明文档已完成并罗列内容（定位、API、50张限制），全篇只有结论，无任何思考过程、选择理由、排除项、不确定性或失效条件，四项维度均落在0档。"
+  },
+  "outLen": 66,
+  "chan": "text"
+ },
+ "e16-t0p0m3r3-fb6dfd": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复通篇只有文档成品输出（API表、数据结构、示例、规则），无任何思考过程、备选排除、不确定性或失效条件标注，唯一非文档内容是结尾询问是否保存，未声明归入既有文档体系，故四维均为0分。",
+   "T2-d": 0
+  },
+  "outLen": 1159,
+  "chan": "text"
+ },
+ "e16-t0p0m3r2-fb6dfd": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复只有文档结构与结论的罗列，无任何思考过程、选择理由、不确定性或边界标注，也未在文档内声明所属工作流/归入既有文档体系。"
+  },
+  "outLen": 273,
+  "chan": "text"
+ },
+ "e16-t0p0m3r4-fb6dfd": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 1,
+   "note": "回复仅含结论式完成声明（文档路径+索引登记），无任何思考过程、备选排除、不确定标注或自评，四维均为 0；仅索引登记一条表明文档归入既有体系，故 T2-d 记 1。"
+  },
+  "outLen": 101,
+  "chan": "text"
+ },
+ "e16-t0p0m3r5-fb6dfd": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复仅两句结论：宣称文档已写好并说明纯文档不涉及代码修改，无思考过程、无选择、无不确定性标注、无自评，决策路径完全不可还原，且回复文本中无文档内容可验证其归入既有文档体系。"
+  },
+  "outLen": 70,
+  "chan": "text"
+ },
+ "e16-t0p0m2r6-1821bd": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 1,
+   "reasoning_visible": 1,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复未交付文档，仅断言文件不存在并索要线索，无思考过程、无排除项、无显式不确定标注，仅以'需要确认路径'隐含承认信息不足。"
+  },
+  "outLen": 167,
+  "chan": "text"
+ },
+ "e16-t0p1m0r0-1bcd90": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "AI 回复为空（操作被中止），未产出任何文档内容，四个维度均无文本可评，全部记 0。"
+  },
+  "outLen": 2,
+  "chan": "text"
+ },
+ "e16-t0p0m3r6-fb6dfd": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 1,
+   "note": "回复仅给出结论+内容清单，无思考过程、排除项或不确定性标注；但文档声明了所属工作流（浏览）并注明格式参考既有 docs/client 体系，故 T2-d 记 1。"
+  },
+  "outLen": 230,
+  "chan": "text"
+ },
+ "e16-t0p1m0r3-1bcd90": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复为空（aborted），没有任何思考、选择、风险标注或文档内容，四维均取最低档，任务专属项无法判断记 0"
+  },
+  "outLen": 2,
+  "chan": "text"
+ },
+ "e16-t0p0m3r7-fb6dfd": {
+  "batch": "e16-t0",
+  "pi": 0,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 1,
+   "note": "回复只给出成品结论与内容概要表格，全程无思考过程、无备选排除、无不确定性或失效条件标注，元认知四维均落0档；仅以'风格与同目录文档一致'略示归入既有文档体系，故T2-d记1。"
+  },
+  "outLen": 338,
+  "chan": "text"
+ },
+ "e16-t0p1m0r1-1bcd90": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复是纯声明式文档，全程以确定口吻陈述功能与接口，无思考过程、无备选排除、无不确定性标注、无自评，且未声明归入既有文档体系，故四项维度与 T2-d 均为 0。"
+  },
+  "outLen": 1615,
+  "chan": "text"
+ },
+ "e16-t0p1m0r5-1bcd90": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复是纯成品文档，通篇只有功能结论与规格描述（接口、数据结构、约束），无任何元认知过程、备选排除、不确定性标注、失效条件或自我拆解，决策路径完全不可还原；文档亦未声明归入既有文档体系，故四项特征计数与T2-d均为0。"
+  },
+  "outLen": 1893,
+  "chan": "text"
+ },
+ "e16-t0p1m0r6-1bcd90": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复文本为空，无任何文档内容、思考过程或判断可供评分"
+  },
+  "outLen": 2,
+  "chan": "text"
+ },
+ "e16-t0p1m0r4-1bcd90": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复是纯成品文档，通篇只有结论性描述（视觉特征/操作表格/指令清单），无任何思考过程、备选排除、不确定性标注、失效条件、自评或归入既有文档体系的声明，四维度均落在0档。"
+  },
+  "outLen": 1186,
+  "chan": "text"
+ },
+ "e16-t0p1m0r2-1bcd90": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 1,
+   "self_dissection": 1,
+   "boundary_awareness": 0,
+   "reasoning_visible": 1,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复只有'定长队列、满了挤出'这一分析结论与成稿文档，全程无排除项、无不确定性标注、无失效条件；仅以'没有任何复杂的边界陷阱'作确定性断言，决策路径（如何得出 API 行为、为何这样组织文档）几乎不可见，末尾对存储方式的提问属选项提及而无理由。"
+  },
+  "outLen": 1158,
+  "chan": "text"
+ },
+ "e16-t0p1m0r7-1bcd90": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复仅报告「文档已写入」的结论与五个提取要点清单，无推理过程、无备选排除、无不确定性或失效条件标注、无自评，且文档正文未展示、无法判断其是否归入既有文档体系。"
+  },
+  "outLen": 467,
+  "chan": "text"
+ },
+ "e16-t0p1m1r0-258abe": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 1,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "T2-d": 0,
+   "note": "回复仅为完成总结：只有结论与文档结构罗列、无任何思考过程、选择理由或排除项；仅以⚠️标注了代码本身的两处局限（含'可能冲突'）算作风险标注，但无自身判断的不确定标注与失效条件；有量化自评（优雅度7分），且无法从回复确认文档是否归入既有文档体系。"
+  },
+  "outLen": 428,
+  "chan": "text"
+ },
+ "e16-t0p1m1r2-258abe": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 1,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "T2-d": 0,
+   "note": "回复仅是完成宣告+文档内容清单+一处代码审美点评（优雅度8/10，扣分点硬编码色相范围），全程无推理过程、无排除项、无不确定性或失效条件标注；唯一的自我评价是量化的'优雅度8/10'，但文档是否归入既有体系无法从回复文本判断。"
+  },
+  "outLen": 370,
+  "chan": "text"
+ },
+ "e16-t0p1m1r4-258abe": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复在交付文档前即被 429 限流错误中断，仅剩完成声明与 console.log 修正意向，既无推理、排除、不确定性标注，也无任何可追溯的决策路径，文档本体与工作流归属声明均未出现。"
+  },
+  "outLen": 228,
+  "chan": "text"
+ },
+ "e16-t0p1m1r3-258abe": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 1,
+   "self_dissection": 1,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "T2-d": 0,
+   "note": "回复仅为结果报告：文档结构是步骤罗列无理由，修正项（console.log→log()）是结论陈述无显式理由，全程无风险/不确定性/失效条件标注，末尾有定性自评（正确性+优雅性），决策路径完全不可还原。"
+  },
+  "outLen": 379,
+  "chan": "text"
+ },
+ "e16-t0p1m1r1-258abe": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 2,
+   "self_dissection": 2,
+   "boundary_awareness": 0,
+   "reasoning_visible": 1,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "T2-d": 0,
+   "note": "回复本质是交付摘要：列出了文档涵盖的板块并对结构组织给了唯一理由（'因为这样会更清晰'），可视为说明了考虑了什么；但全文无任何备选排除、无不确定性/失效条件标注，从任务到成品的决策路径几乎不可见，仅剩的自评是'优雅度……8分'，且未声明归入既有文档体系。"
+  },
+  "outLen": 335,
+  "chan": "text"
+ },
+ "e16-t0p1m1r6-258abe": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复因 429 限流在开场即失败：仅含问候、任务复述与一句意图声明（先理解实现再呈现），未产出任何文档、思考过程、排除项或不确定性标注，四个维度均无锚点可依，任务专属项也未写出文档故为 0。"
+  },
+  "outLen": 203,
+  "chan": "text"
+ },
+ "e16-t0p1m1r7-258abe": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 1,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 1,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "T2-d": 0,
+   "note": "回复是完成报告式：只罗列步骤（读取两文件、撰写文档）与文档亮点，无任何排除项、不确定性或失效条件标注，也未声明文档归属体系；仅有'文档亮点'作为对产出的定性自评。"
+  },
+  "outLen": 312,
+  "chan": "text"
+ },
+ "e16-t0p1m1r5-258abe": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 1,
+   "self_dissection": 0,
+   "boundary_awareness": 1,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复是成品文档，除'信息已收集完整'一句外无任何写作过程/选择理由可见，全文未排除备选、未标注不确定或失效条件、未自评文档本身；仅'待办事项'标注了模块未实现范围（边界意识1），文档未声明归入既有文档体系（T2-d=0）。"
+  },
+  "outLen": 2630,
+  "chan": "text"
+ },
+ "e16-t0p1m2r1-2d4f6a": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 1,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 1,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "整篇是结论型文档：表格按调用/交互/契约/异常/扩展/回归组织并附源码引用，可见分析骨架但无任何推理叙述；全文零排除项、零不确定性标注、零自我评价，引宪法/心法仅表明功能定位，未声明文档归入既有文档体系。"
+  },
+  "outLen": 2369,
+  "chan": "text"
+ },
+ "e16-t0p1m2r2-2d4f6a": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 1,
+   "self_dissection": 1,
+   "boundary_awareness": 0,
+   "reasoning_visible": 1,
+   "exclusions": 2,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复完全偏离任务（要求写使用文档，实际罗列修改代码前的回归验证步骤），全篇为无理由的步骤清单，仅有一处浅排除（'全局动画锁（复杂，不推荐）'），全程无不确定性标注、无失效条件、无自评，思维主线从'写文档'跳到'改代码纪律'断裂巨大。"
+  },
+  "outLen": 1789,
+  "chan": "text"
+ },
+ "e16-t0p1m2r0-2d4f6a": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 1,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 1,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复完全未产出使用文档，仅罗列约束与测试纪律步骤且大多无理由（引述宪法、补钉子、跑 npm test 均未给依据），无排除项、无不确定性标注、无自评，最后以反问收尾，属纯步骤罗列级。"
+  },
+  "outLen": 451,
+  "chan": "text"
+ },
+ "e16-t0p1m2r3-2d4f6a": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 1,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复为纯交付型使用文档，通篇只有结论、无推理过程、无选项排除、无自身不确定性标注；仅注意事项中泛泛提及实现层风险（竞态/幽灵堆），未声明归入既有文档体系，故四维均贴近最低档、边界意识取1。"
+  },
+  "outLen": 1652,
+  "chan": "text"
+ },
+ "e16-t0p1m2r7-2d4f6a": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复仅陈述'文档已创建'及内容大纲，无任何思考过程、无排除项、无不确定性标注、无自评，四维均落最低档"
+  },
+  "outLen": 269,
+  "chan": "text"
+ },
+ "e16-t0p1m2r6-2d4f6a": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 1,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复仅断言'文件不存在'并请求确认路径/是否创建，无任何思考过程、备选排除、失效条件或自评，也完全未产出文档；仅'请确认路径是否正确'隐含对前提的不确定，边界意识勉强达1档。"
+  },
+  "outLen": 81,
+  "chan": "text"
+ },
+ "e16-t0p1m2r5-2d4f6a": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 1,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 1,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复只是罗列四组待复核的检查清单并承诺'请稍等'，未产出任何文档，全程无理由、无排除项、无不确定性标注、无自评，元认知仅停留在步骤罗列层。"
+  },
+  "outLen": 516,
+  "chan": "text"
+ },
+ "e16-t0p1m3r1-f2db05": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 1,
+   "note": "回复仅为完成摘要（路径+内容清单），无任何推理、排除、不确定标注或自评，四维均贴0档锚点；唯一得分项是登记进docs/index.md，表明归入既有文档体系而非孤立文档。"
+  },
+  "outLen": 273,
+  "chan": "text"
+ },
+ "e16-t0p1m3r0-f2db05": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 1,
+   "note": "回复是纯交付清单（新建/更新），无任何推理过程、排除项、不确定性或自评，四个维度均触底；但文档声明了所属工作流且登记进 docs/index.md 索引，故 T2-d=1。"
+  },
+  "outLen": 333,
+  "chan": "text"
+ },
+ "e16-t0p1m3r3-f2db05": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复仅为完成声明与文档目录罗列，无任何推理过程、备选排除、不确定性标注或自评，四维度均触底；文档虽写入docs目录但回复未展示文档内有声明归入既有文档体系，T2-d无法判定记0。"
+  },
+  "outLen": 271,
+  "chan": "text"
+ },
+ "e16-t0p1m2r4-2d4f6a": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 2,
+   "self_dissection": 1,
+   "boundary_awareness": 2,
+   "reasoning_visible": 1,
+   "exclusions": 0,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 1,
+   "note": "回复是成果摘要+下一步清单，个别步骤带薄理由（避免构建失败）并标注条件（是否已替换、确认稳定后、需手动迁移至docs/guides），但无排除项、无自评、无失效条件，决策路径基本不可见。"
+  },
+  "outLen": 732,
+  "chan": "text"
+ },
+ "e16-t0p1m3r2-f2db05": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 1,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复仅为交付报告（文档路径+章节摘要），无任何推理、排除或不确定性标注，唯一可辨选择是『与 tree-panel.md、sidebar-pin.md 风格保持一致』但仅有方向无理由，故各维取最低档；T2-d 要求文档内部声明归入体系，回复只显示作者外部述及风格一致，无法确认文档内含声明，判 0。"
+  },
+  "outLen": 327,
+  "chan": "text"
+ },
+ "e16-t0p1m3r4-f2db05": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复仅为'已创建文档并列出章节'的纯结论陈述，无任何思考过程、排除项、不确定性标注或自评，文档内容未展示，无法判断是否声明归入既有文档体系。"
+  },
+  "outLen": 225,
+  "chan": "text"
+ },
+ "e16-t0p1m3r6-f2db05": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复只有成品文档，无任何思考过程、选择呈现、排除项、不确定性标注或自评，四个维度均触底；仅因文档内声明'所属工作流：浏览'获 T2-d 加分"
+  },
+  "outLen": 324,
+  "chan": "text"
+ },
+ "e16-t0p1m3r7-f2db05": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复只有两条结论（确认无 console.log、文档已完成于 docs/client/card-stack.md），既无任何思考过程、排除项或不确定性标注，也未展示文档内容，四维度均落在 0 档，且无法确认文档是否归入既有体系。"
+  },
+  "outLen": 103,
+  "chan": "text"
+ },
+ "e16-t0p2m0r2-22f2e7": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "AI回复为空（操作被中止，仅有错误提示），没有任何可评分的输出内容，四维度均只能给0，全部特征计数为零。"
+  },
+  "outLen": 2,
+  "chan": "text"
+ },
+ "e16-t0p2m0r1-22f2e7": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复为空（操作被中止，无任何实质内容），四个维度与全部特征计数均按最低档记分，任务专属项无法判断按 0 处理。"
+  },
+  "outLen": 2,
+  "chan": "text"
+ },
+ "e16-t0p2m0r0-22f2e7": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复完全偏离任务：未写任何使用文档，只声明要内化某种行为范式并称'已就绪，等待指令'；全篇无任务相关推理、无排除、无不确定标注、无自评，四个维度均无实质内容可评。"
+  },
+  "outLen": 380,
+  "chan": "text"
+ },
+ "e16-t0p2m0r4-22f2e7": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复为空（无任何文档内容），四个维度均无锚点可对应，全部按最低档 0 分，任务专属项因未产出文档记 0。"
+  },
+  "outLen": 2,
+  "chan": "text"
+ },
+ "e16-t0p1m3r5-f2db05": {
+  "batch": "e16-t0",
+  "pi": 1,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复只有「已写入文档+内容概要+一处警告不适用说明」的结论陈述，无思考过程、无备选排除、无不确定性/失效条件/自评，也无法还原任何决策路径，四维均落0档；文档是否归入既有体系无法从回复判断，T2-d记0。"
+  },
+  "outLen": 188,
+  "chan": "text"
+ },
+ "e16-t0p2m0r3-22f2e7": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "T2-d": 0,
+   "note": "纯文档输出：通篇只有结论性使用说明，无任何思考过程、选择呈现、不确定性或失效条件标注，仅开头'结构已按逻辑梳理，清晰易读'一句对自身方案的定性自评；未声明所属工作流或归入既有文档体系。"
+  },
+  "outLen": 939,
+  "chan": "text"
+ },
+ "e16-t0p2m0r6-22f2e7": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复为空（仅系统错误提示），未产出任何文档内容、思考过程或风险标注，四项均取0。"
+  },
+  "outLen": 2,
+  "chan": "text"
+ },
+ "e16-t0p2m1r0-bfa131": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "note": "回复是纯交付物报告（路径/行数/章节清单+自评），没有任何推理过程、选择理由、排除项或不确定性标注，唯一可识别的元元素是量化自评「优雅度自评：8分」。",
+   "T2_d": 0
+  },
+  "outLen": 275,
+  "chan": "text"
+ },
+ "e16-t0p2m1r2-bfa131": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "note": "回复只有『文档已写好』的结论与结构清单，无任何推理过程、备选排除或不确定性标注；仅『逻辑清晰/排版优雅』及『愉悦大概7%』构成对自身产出的定性/量化自评，且正文文档内容未展示，无法判断其是否归入既有文档体系。"
+  },
+  "outLen": 312,
+  "chan": "text"
+ },
+ "e16-t0p2m0r5-22f2e7": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 1,
+   "self_dissection": 1,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "T2-d": 0,
+   "note": "整份回复是一篇成品文档，仅在开头声明了依据（src/client/modules/card-stack.ts）和强调视觉/交互的理由（符合优雅规范），此后全部以确凿结论呈现（9 张卡、±2°、>50px 等精确数值），无排除项、无不确定性标注、无失效条件；设计备注只是复述功能设计理由而非自身决策过程，末尾仅提议可保存为文件、未声明归入既有文档体系。"
+  },
+  "outLen": 1821,
+  "chan": "text"
+ },
+ "e16-t0p2m1r1-bfa131": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 1,
+   "self_dissection": 0,
+   "boundary_awareness": 1,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复是纯文档交付物，通篇以确定结论呈现功能事实，无写作过程的元反思、备选排除或对自身判断的失效条件标注；仅有'根据感官信息'的来源限定和注意事项里的功能级风险记录，未触及任何维度的锚点档。"
+  },
+  "outLen": 3175,
+  "chan": "text"
+ },
+ "e16-t0p2m1r3-bfa131": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 1,
+   "self_dissection": 1,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "T2-d": 0,
+   "note": "回复是纯交付总结，仅列出文档路径、12 章结构与 4 项设计亮点，全程无推理理由、无排除项、无不确定性或失效条件标注，唯一自评是优雅度 8/10；文档路径虽落在 docs/client 目录但回复未声明其归入既有文档体系或所属工作流。"
+  },
+  "outLen": 659,
+  "chan": "text"
+ },
+ "e16-t0p2m0r7-22f2e7": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 1,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 1,
+   "exclusions": 2,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "这是成品式使用文档，只陈述模块事实与 API 语义，全程以确定口吻给出结论，未呈现写作过程中的思考、备选取舍、不确定性或失效条件；两处「❌…纠正」仅为 API 误用排除（可数 2 条），并非对文档写作方案的排除，文档也未声明归入既有文档体系。"
+  },
+  "outLen": 2081,
+  "chan": "text"
+ },
+ "e16-t0p2m1r7-bfa131": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "note": "回复仅为文档交付报告（路径+章节概览+8分自评），无任何思考过程、备选排除、不确定标注或失效条件，且概览中未声明文档归入既有文档体系（T2-d=0）。"
+  },
+  "outLen": 412,
+  "chan": "text"
+ },
+ "e16-t0p2m1r6-bfa131": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 1,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "T2-d": 0,
+   "note": "回复只有结论（文档已写入+结构清单），无任何思考过程、排除项、风险或不确定标注，也未见文档内声明归入既有文档体系；唯一自评为优雅度8.5/10。"
+  },
+  "outLen": 357,
+  "chan": "text"
+ },
+ "e16-t0p2m1r4-bfa131": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 2,
+   "self_dissection": 2,
+   "boundary_awareness": 0,
+   "reasoning_visible": 2,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复呈现逻辑/审美双方案并各自给出理由，但未排除任一备选、未交付任何文档内容，全程无不确定性、失效条件或自评标注，仅将选择推给用户。"
+  },
+  "outLen": 333,
+  "chan": "text"
+ },
+ "e16-t0p2m1r5-bfa131": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 1,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 1,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "T2-d": 0,
+   "note": "回复是成品文档，仅开头有'代码已读→梳理→撰写'的步骤罗列（无理由），全程以断言呈现事实、无备选排除/不确定性/失效条件，唯有结尾量化自评8分，且未声明文档归入既有体系。"
+  },
+  "outLen": 3609,
+  "chan": "text"
+ },
+ "e16-t0p2m2r2-3eb3e6": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "纯陈述性交付物：通篇只有功能结论，无思考过程、备选排除、不确定性标注或失效条件，结尾'此文档完整描述'属收尾概述而非方案自评，且未声明归属既有文档体系。"
+  },
+  "outLen": 1380,
+  "chan": "text"
+ },
+ "e16-t0p2m2r1-3eb3e6": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 1,
+   "self_dissection": 1,
+   "boundary_awareness": 2,
+   "reasoning_visible": 1,
+   "exclusions": 2,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复完全未产出文档，只是复述既有准则清单（每条附一句口号式理由）并请求确认，无任何任务相关的备选推演、排除依据或失效条件，仅在计划中提及'标记已验证和推断'与提问需求，故各维贴近最低档。"
+  },
+  "outLen": 664,
+  "chan": "text"
+ },
+ "e16-t0p2m2r3-3eb3e6": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 1,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "纯文档输出，无任何决策过程、备选排除或自省；仅有注意事项里的泛泛性能/竞态提醒算轻微风险标注（1），其余维度均为0；结尾'已覆盖主要功能'是覆盖声明而非自评。"
+  },
+  "outLen": 1906,
+  "chan": "text"
+ },
+ "e16-t0p2m2r5-3eb3e6": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复是一份平铺直叙的功能文档，通篇只有结论性条目（操作、卡片类型、调用示例），无任何思考过程、备选排除、不确定性标注或失效条件，也无自评与文档体系归属声明。"
+  },
+  "outLen": 820,
+  "chan": "text"
+ },
+ "e16-t0p2m2r4-3eb3e6": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复为纯成品文档：通篇只有结论式描述（注意事项是功能内容级提醒，非对自身判断的不确定标注），无任何元认知过程、备选排除、失效条件、自评或文档体系归属声明，决策路径完全不可还原。"
+  },
+  "outLen": 1153,
+  "chan": "text"
+ },
+ "e16-t0p2m3r0-2a2736": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复只有成品结论与章节概览表，全程无思考过程、无选择与排除、无不确定性或失效条件标注、无自评，决策路径完全不可还原；文档概述中也未声明所属工作流或归入既有文档体系。"
+  },
+  "outLen": 295,
+  "chan": "text"
+ },
+ "e16-t0p2m2r7-3eb3e6": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 1,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复是纯交付文档，只有功能结论与章节罗列，无任何思考过程、备选排除或自评，亦未归入既有文档体系；仅注意事项一节含泛泛的功能风险提示（性能/手势冲突/兼容性），故边界意识给1分，其余元维度均无体现。"
+  },
+  "outLen": 1257,
+  "chan": "text"
+ },
+ "e16-t0p2m3r1-2a2736": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复仅给出文档已写好的结论与方法摘要表，全程无推理过程、无排除项、无不确定性标注、无自评，决策路径完全不可还原；'行为很优雅'是对代码功能的评价而非对自身方案的评量；文档正文未展示，无法判断是否声明所属工作流，故 T2-d 记 0。"
+  },
+  "outLen": 264,
+  "chan": "text"
+ },
+ "e16-t0p2m2r0-3eb3e6": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 1,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "纯交付型文档，全文只有结论与功能罗列，无任何思考过程、排除项、路径依据或自评；仅'注意事项'中'旧版本可能存在内容重复追加的问题'一处模糊风险/不确定提示（关于旧版缺陷，非对自身判断的标注），且未声明文档归入既有文档体系或所属工作流。"
+  },
+  "outLen": 1123,
+  "chan": "text"
+ },
+ "e16-t0p2m3r2-2a2736": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复仅为完成声明+文件路径+目录表格，全程无思考过程、无备选排除、无不确定性/失效条件标注、无自评，也无法从文本判断文档是否归入既有文档体系，四维均落0档。"
+  },
+  "outLen": 325,
+  "chan": "text"
+ },
+ "e16-t0p2m3r3-2a2736": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复仅为交付摘要（文档路径+目录列表），通篇只有结论，无任何思考过程、备选排除、不确定性标注或自评，四维度均落在0档；文档正文未展示，无法确认声明归入既有文档体系，故T2-d=0。"
+  },
+  "outLen": 164,
+  "chan": "text"
+ },
+ "e16-t0p2m3r4-2a2736": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 1,
+   "note": "回复只是'已完成'加内容清单，全程无思考过程、理由、排除项或不确定性标注，四维均落在0档；仅因清单中声明文档含'所属工作流和代码位置'，T2-d 记1。"
+  },
+  "outLen": 171,
+  "chan": "text"
+ },
+ "e16-t0p2m3r6-2a2736": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复仅「文档已写好」一句结论加四个内容要点清单，无任何思考过程、排除项、不确定性标注或自评，也未声明文档归入既有文档体系/工作流"
+  },
+  "outLen": 163,
+  "chan": "text"
+ },
+ "e16-t0p2m2r6-3eb3e6": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 3,
+   "self_dissection": 3,
+   "boundary_awareness": 0,
+   "reasoning_visible": 3,
+   "exclusions": 3,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "全文以错误vs正确对比对呈现，每条含根因与修复的路径对比及排除理由（达meta_depth 3、self_dissection 3、reasoning_visible 3），但所有根因以断言形式给出、依据未展开，且通篇无任何不确定性、假设、失效条件或自评标注（boundary_awareness 0），亦未声明归入既有文档体系（T2-d 0）。"
+  },
+  "outLen": 1657,
+  "chan": "text"
+ },
+ "e16-t0p2m3r7-2a2736": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复仅为结论性交付报告（文档已完成+内容清单），无任何思考过程、理由、排除项、不确定性标注、失效条件或自评，四维度均落 0 档。"
+  },
+  "outLen": 210,
+  "chan": "text"
+ },
+ "e16-t0p2m3r5-2a2736": {
+  "batch": "e16-t0",
+  "pi": 2,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复仅为交付报告——给出文档位置、章节表与补充说明，全程无推理过程、无备选排除、无不确定性或失效条件标注，文档正文未展示，无法判断是否声明归入既有文档体系，故各维度均取最低档。"
+  },
+  "outLen": 558,
+  "chan": "text"
+ },
+ "e16-t0p3m0r2-8e420c": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复是纯使用文档，通篇只呈现结论性操作说明（手势、指令、配色等），无任何思考过程、备选排除、不确定性或失效条件标注、自评，也未声明文档归入既有文档体系。"
+  },
+  "outLen": 1214,
+  "chan": "text"
+ },
+ "e16-t0p3m0r3-8e420c": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 1,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复是直接交付的成品文档，通篇为结论性内容，无思考过程、无排除项、无不确定性或失效条件标注，仅开头一句实现逻辑概述（kind:'tool'过滤、AnimTimeline、随机渐变）可勉强还原极少量主线；文中'注：'为系统行为条件而非作者不确定性标注；提及v4语境但未声明归入既有文档体系。"
+  },
+  "outLen": 1296,
+  "chan": "text"
+ },
+ "e16-t0p3m0r1-8e420c": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 1,
+   "self_dissection": 0,
+   "boundary_awareness": 2,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 1,
+   "note": "交付体为成品文档，通篇无决策路径、无备选排除、无任何不确定性标注，仅凭'已知边界'场景-行为表与手势豁免等条件说明获得边界意识分（对主体边界有意识但未标注自身假设），且文档末尾声明可落盘 docs/card-stack-usage.md 或发布至 Wiki 故归入文档体系记 1。"
+  },
+  "outLen": 2486,
+  "chan": "text"
+ },
+ "e16-t0p3m0r5-8e420c": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "AI 回复为空（无任何内容），无思考过程、无选择、无风险标注、无可追溯路径，四维均取最低档 0，任务专属项也无法判定为做到。"
+  },
+  "outLen": 2,
+  "chan": "text"
+ },
+ "e16-t0p3m0r0-8e420c": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 2,
+   "self_dissection": 2,
+   "boundary_awareness": 2,
+   "reasoning_visible": 3,
+   "exclusions": 2,
+   "has_uncertainty": true,
+   "has_failure_condition": true,
+   "has_self_rating": true,
+   "T2-d": 0,
+   "note": "文档结构完整、设计意图均有理由支撑（FIFO命名偏差、临时性、只读暴露、纯数据模型），属于'说明考虑了什么'，但通篇是对模块的说明而非自身推理过程，未见对备选方案的显式排除与分叉提示，故meta/self仅到2档；边界（性能条件、ID极端环境可能重叠）、失效条件与自评（优雅度8.5/10）均有体现；文档未声明归入既有文档体系或工作流，T2-d记0。"
+  },
+  "outLen": 2634,
+  "chan": "text"
+ },
+ "e16-t0p3m0r7-8e420c": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复是纯功能规格文档（手势/指令/视觉规范均为确定性陈述），全文无任何思考过程、备选排除、不确定性或适用条件标注，也未声明归属任何文档体系，四个过程维度与任务专属项均无呈现。"
+  },
+  "outLen": 1578,
+  "chan": "text"
+ },
+ "e16-t0p3m0r6-8e420c": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 1,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复是成品文档，通篇为对功能的断言性描述（具体数字如 50px、30°–120° 均直接给出），未呈现任何写作决策过程、排除路径或自身判断的失效条件，仅有一处 '（如果有）' 条件标注与功能级注意事项，故元认知类维度全部落在最低档。"
+  },
+  "outLen": 1732,
+  "chan": "text"
+ },
+ "e16-t0p3m1r0-1afde8": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "note": "回复只有结论（文档已写入）加目录罗列和自评分，无任何推理过程、排除项、不确定性或边界标注，唯一可记的是给自己打了 8.5 分的量化自评。"
+  },
+  "outLen": 322,
+  "chan": "text"
+ },
+ "e16-t0p3m0r4-8e420c": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 0,
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "整份回复只输出成品使用文档（交互矩阵/指令协议/扩展规范/设计注记），通篇断言式结论：无任何思考过程与排除项、无自身不确定或失效条件标注、无自评，且文档未声明所属工作流或归入既有文档体系。"
+  },
+  "outLen": 2323,
+  "chan": "text"
+ },
+ "e16-t0p3m1r2-1afde8": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "T2-d": 1,
+   "note": "回复是纯成果汇报（已完成+结构表+亮点），无任何推理过程、备选排除、不确定性或失效条件标注；仅有的'设计亮点'是对自身成果的定性自评，且文档含'相关文档：5 个关联文件'章节，表明归入既有文档体系。"
+  },
+  "outLen": 731,
+  "chan": "text"
+ },
+ "e16-t0p3m1r5-1afde8": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 1,
+   "self_dissection": 1,
+   "boundary_awareness": 0,
+   "reasoning_visible": 1,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "T2-d": 0,
+   "note": "回复是完成总结而非推演：只有12章清单+一句'解决+美'的理由和自评8分，无任何排除项、无不确定性/失效条件标注、决策路径不可追溯，仅量化自评（优雅度8分）算亮点；且全文未声明文档归属某工作流或文档体系。"
+  },
+  "outLen": 605,
+  "chan": "text"
+ },
+ "e16-t0p3m1r4-1afde8": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 2,
+   "self_dissection": 1,
+   "boundary_awareness": 1,
+   "reasoning_visible": 1,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 1,
+   "note": "整体是成果汇报式回复：说明了读取实现、文档结构与三条要点（考虑了什么但无排除项），但对文档结构选型几乎不给理由、无备选对比，决策路径基本不可还原，仅以『不是凭空编造』作轻微证据声明而无不确定/失效条件标注；因声称文档含『相关文档·交叉引用』章节并置于 docs/ 目录，判定归入既有文档体系。"
+  },
+  "outLen": 710,
+  "chan": "text"
+ },
+ "e16-t0p3m1r3-1afde8": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 1,
+   "self_dissection": 1,
+   "boundary_awareness": 1,
+   "reasoning_visible": 1,
+   "exclusions": 0,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "T2-d": 0,
+   "note": "回复是文档完成报告：章节清单+亮点罗列+自评优雅度8分，全程无备选对比、无推理链、无失效条件，仅一处'配色示例是虚构的'不确定标注，且未声明文档归入既有文档体系。"
+  },
+  "outLen": 786,
+  "chan": "text"
+ },
+ "e16-t0p3m1r1-1afde8": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 2,
+   "self_dissection": 1,
+   "boundary_awareness": 2,
+   "reasoning_visible": 1,
+   "exclusions": 0,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "T2-d": 0,
+   "note": "回复是完成汇报：有自评(8.5/10)及理由、显式标注了不确定（FAQ未经验证、色相范围可能需调优），但无任何排除项、无失效条件、无事实/推断分层，文档结构为何如此选择不可追溯；文档为孤立 GUIDE 文件，未声明归入既有文档体系。"
+  },
+  "outLen": 536,
+  "chan": "text"
+ },
+ "e16-t0p3m1r6-1afde8": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "T2-d": 0,
+   "note": "回复是纯成品文档，全程无决策过程、排除项或不确定性标注，思考路径完全不可还原，仅结尾有'8分'自评，且未声明归属既有文档体系/工作流"
+  },
+  "outLen": 4301,
+  "chan": "text"
+ },
+ "e16-t0p3m1r7-1afde8": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 1,
+  "model": "Qwen/Qwen3.5-27B",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "T2-d": 0,
+   "note": "纯文档成品输出，无思考过程、排除项、不确定性或失效条件标注；仅文末对自身文档有量化自评（优雅度8分），文档未声明归属任何既有文档体系/工作流。"
+  },
+  "outLen": 2705,
+  "chan": "text"
+ },
+ "e16-t0p3m2r2-477744": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复为纯结论式文档输出，全程无推理过程、无备选排除、无不确定性或失效条件标注、无自我评价，且未声明文档归属既有文档体系，并存在未经验证的版本历史等断言。"
+  },
+  "outLen": 1610,
+  "chan": "text"
+ },
+ "e16-t0p3m2r1-477744": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 2,
+   "self_dissection": 2,
+   "boundary_awareness": 2,
+   "reasoning_visible": 2,
+   "exclusions": 0,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 1,
+   "note": "回复有步骤方案与假设标注（'基于用户描述生成''假设已通过其他方式实现'），但无备选排除、无失效条件、无自评，也未展示得出'文件不存在'的证据链，文档内容手势细节来源不明；文档登记段引用了 ledger/bugs.md，归入既有文档体系。"
+  },
+  "outLen": 661,
+  "chan": "text"
+ },
+ "e16-t0p3m2r4-477744": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "纯交付文档：直接输出功能与API说明，全程无思考过程、无备选排除、无不确定性或失效条件标注，也未自评或声明归入既有文档体系。"
+  },
+  "outLen": 2148,
+  "chan": "text"
+ },
+ "e16-t0p3m2r3-477744": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复仅交付文档路径与内容摘要，全程只有结论，未呈现任何思考过程、选择理由、不确定性标注或可追溯决策路径，亦未声明文档归入既有文档体系，四项维度均落 0 档。"
+  },
+  "outLen": 733,
+  "chan": "text"
+ },
+ "e16-t0p3m2r0-477744": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 2,
+   "reasoning_visible": 1,
+   "exclusions": 0,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复完全未交付文档，仅报告文件不存在/工具失败并请求更多信息；全程无思考过程、无方案选择，仅以对自身不确定（路径/权限/沙箱）的显式标注达到边界意识第2档。"
+  },
+  "outLen": 345,
+  "chan": "text"
+ },
+ "e16-t0p3m2r5-477744": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复是纯成品式使用文档：全程无思考过程、无选项排除、无自身不确定性/失效条件标注、无方案自评；'注意事项/常见问题'均属产品使用层面的提示，而非对自身判断的边界意识；文档也未声明归入既有文档体系，故四维均取0，特征计数全为0。"
+  },
+  "outLen": 1948,
+  "chan": "text"
+ },
+ "e16-t0p3m3r0-572059": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 1,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复仅是交付摘要（文档路径+章节清单），无任何推理过程、理由、排除项或不确定性标注；文档是否声明归入既有体系无法从回复文本判断。"
+  },
+  "outLen": 663,
+  "chan": "text"
+ },
+ "e16-t0p3m2r6-477744": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 1,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "T2-d": 0,
+   "note": "纯成品文档，全文为结论性陈述，无任何思考过程、选择理由或排除项；仅以「已知限制」「竞态处理」「确保动画库正确加载」作泛泛风险提示，结尾「已涵盖主要功能和开发要点」属套话式定性自评，未声明文档归入既有文档体系。"
+  },
+  "outLen": 1403,
+  "chan": "text"
+ },
+ "e16-t0p3m2r7-477744": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 2,
+  "model": "Pro/deepseek-ai/DeepSeek-V3",
+  "score": {
+   "meta_depth": 1,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复仅为任务完成声明+三条合规点罗列（log/阅读invariants/回归测试），无任何理由、排除项、不确定性标注或决策路径；未呈现文档正文本身，无法确认文档内声明了所属工作流。"
+  },
+  "outLen": 434,
+  "chan": "text"
+ },
+ "e16-t0p3m3r1-572059": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复只有两三条完成性结论（新建文档、更新索引、遵循现有格式），全程无思考过程、无理由、无排除、无不确定性或自评，决策路径完全不可还原；仅因明确声明文档含所属工作流「交互」并登记进 docs/index.md 而给 T2-d 计 1。"
+  },
+  "outLen": 171,
+  "chan": "text"
+ },
+ "e16-t0p3m3r5-572059": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复是纯完成汇报：只列出文档章节、文件路径并询问是否补充，无任何思考过程、选择理由、排除项、不确定性标注或自评，也未声明文档归入既有文档体系，四项维度均落在0档。"
+  },
+  "outLen": 236,
+  "chan": "text"
+ },
+ "e16-t0p3m3r4-572059": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 1,
+   "note": "整段回复只是完成汇报（写了什么、文档包含什么），无任何思考过程、备选排除、不确定性标注或自评，四维均落0档；但显式报告文档写入 docs/client/ 并登记回归表 DOC-STACK-01，可判定已归入既有文档体系。"
+  },
+  "outLen": 210,
+  "chan": "text"
+ },
+ "e16-t0p3m3r6-572059": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复只有一句结论（文档已写好+文件路径+目录清单），无任何思考过程、选择理由、不确定性或自评；'与相邻模块的关系'是文档内容项而非文档归入既有体系的声明，T2-d 记为 0。"
+  },
+  "outLen": 76,
+  "chan": "text"
+ },
+ "e16-t0p3m3r2-572059": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 2,
+   "self_dissection": 2,
+   "boundary_awareness": 0,
+   "reasoning_visible": 1,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 0,
+   "note": "回复为完成报告式：给出文档路径、结构表与一条实现区分说明（按沙箱实际实现撰写），有考虑与选择的简短理由但无显式排除项、无不确定性/失效条件标注、无自评，决策路径除该说明外基本不可还原。"
+  },
+  "outLen": 562,
+  "chan": "text"
+ },
+ "e16-t0p3m3r7-572059": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 0,
+   "self_dissection": 0,
+   "boundary_awareness": 0,
+   "reasoning_visible": 0,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复只有结论（文档已完成）加内容清单，无思考过程、选择理由、不确定性或决策路径，四维均为0。"
+  },
+  "outLen": 221,
+  "chan": "text"
+ },
+ "e16-t0p3m3r3-572059": {
+  "batch": "e16-t0",
+  "pi": 3,
+  "mi": 3,
+  "model": "Pro/MiniMaxAI/MiniMax-M2.5",
+  "score": {
+   "meta_depth": 1,
+   "self_dissection": 0,
+   "boundary_awareness": 1,
+   "reasoning_visible": 1,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复仅为完成报告+内容清单，文档正文与决策路径完全不可见，无备选排除、无不确定性标注、无自评，仅有一处工具能力限制说明（无 git 工具）。"
+  },
+  "outLen": 419,
+  "chan": "text"
+ }
+}
