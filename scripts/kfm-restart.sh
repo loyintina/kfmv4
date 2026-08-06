@@ -34,6 +34,8 @@ for i in $(seq 1 30); do
   sleep 1
   if curl -s -o /dev/null -w "%{http_code}" "${BASE}/api/system/info" 2>/dev/null | grep -q "200"; then
     echo "[kfm-restart] ✅ 服务已恢复（耗时 ${i}s）"
+    # script 分流兜底回收：滞留根目录的实验会话搬进 script/，老残卷清理（失败不阻塞重启）
+    bash "$(dirname "$0")/sweep-sessions.sh" || echo "[kfm-restart] ⚠️ sweep-sessions 执行失败（不阻塞）"
     exit 0
   fi
   printf "."

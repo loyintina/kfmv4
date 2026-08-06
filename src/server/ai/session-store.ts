@@ -11,7 +11,7 @@
  * 不做：渲染、发事件、管 run。
  */
 
-import { mkdirSync, existsSync, readFileSync, readdirSync, writeFileSync } from 'fs';
+import { mkdirSync, existsSync, readFileSync, readdirSync, writeFileSync, renameSync } from 'fs';
 import { join, resolve, sep } from 'path';
 import { KFM_DATA_DIR, isValidSessionId } from '../path-utils.js';
 import { applyEvent, type ReduceContext } from '../../shared/chat-protocol/reducer.js';
@@ -20,7 +20,18 @@ import type { ChatMessage } from '../../shared/chat-protocol/messages.js';
 import { toOpenAiMessages } from '../../shared/chat-protocol/to-openai-messages.js';
 
 const SESSIONS_DIR = join(KFM_DATA_DIR, 'sessions');
+const SCRIPT_SESSIONS_DIR = join(SESSIONS_DIR, 'script');
 const FLUSH_DEBOUNCE_MS = 200;
+
+/**
+ * script 类会话分流注册表（2026-08-06 泄漏根治：服务端分流修法①，
+ * 根因报告 experiments/paradigm/results-session-leak-rootcause.md）。
+ * 此前服务端只有根目录一条写路径，sessions/script/ 全靠客户端事后搬运，
+ * 搬运失败（重试换 id/超时/重启掐 run）即泄漏进面板区。
+ * 现在 /ai/chat/start 收 sessionClass:'script' 时先调 markSessionScript 登记，
+ * 该会话的落盘/hydrate 直接走 sessions/script/——从构造上不进面板区。
+ */
+const _scriptSessions = new Set<string>();
 
 interface SessionState {
   ctx: ReduceContext;
@@ -33,15 +44,39 @@ const _sessions = new Map<string, SessionState>();
 
 function _ensureDir(): void {
   mkdirSync(SESSIONS_DIR, { recursive: true });
+  mkdirSync(SCRIPT_SESSIONS_DIR, { recursive: true });
+}
+
+/**
+ * 登记 script 类会话（/ai/chat/start 收 sessionClass:'script' 时调用，
+ * 必须先于任何 appendUserMessage/appendEvent——hydrate 路径随之切换）。
+ * legacy 迁移：根目录已有同名文件而 script/ 没有（分流部署前开跑的会话），
+ * 搬到 script/ 并失效内存缓存——否则 hydrate 落空、新旧历史裂成两份。
+ */
+export function markSessionScript(sessionId: string): void {
+  if (!isValidSessionId(sessionId)) return;
+  if (_scriptSessions.has(sessionId)) return;
+  const rootPath = _sessionFilePath(sessionId);   // 登记前 = 根目录路径
+  _scriptSessions.add(sessionId);
+  const scriptPath = _sessionFilePath(sessionId); // 登记后 = script/ 路径
+  try {
+    if (rootPath && scriptPath && existsSync(rootPath) && !existsSync(scriptPath)) {
+      mkdirSync(SCRIPT_SESSIONS_DIR, { recursive: true });
+      renameSync(rootPath, scriptPath);
+    }
+  } catch { /* 迁移失败不致命——下轮 flush 会在 script/ 重建 */ }
+  invalidateSession(sessionId);
 }
 
 /**
  * 构造会话文件路径（BAR-SEC-14 纵深防御）：格式白名单 + join 后 containment 复查。
  * 非法 sessionId 返回 null——调用方必须 fail-closed（不读写磁盘）。
+ * script 登记会话落 sessions/script/（面板 /sessions/list 只读根目录，天然隔离）。
  */
 function _sessionFilePath(sessionId: string): string | null {
   if (!isValidSessionId(sessionId)) return null;
-  const filePath = join(SESSIONS_DIR, `${sessionId}.json`);
+  const dir = _scriptSessions.has(sessionId) ? SCRIPT_SESSIONS_DIR : SESSIONS_DIR;
+  const filePath = join(dir, `${sessionId}.json`);
   const resolved = resolve(filePath);
   if (!resolved.startsWith(SESSIONS_DIR + sep)) return null; // 逃逸复查（双重保险）
   return filePath;

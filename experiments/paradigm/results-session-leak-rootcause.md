@@ -2,8 +2,9 @@
 
 > 现象：跑实验判卷/px 实验期间，`~/.kfmv4/sessions/` 根目录（面板区）持续出现
 > judge-* / px-* 会话副本，挤占面板会话卡与文件树。
-> 本报告为只读调查结论；**客户端兜底修复已落地**（session-runner.mjs），
-> **服务端根治属主线域，需与主线 agent 协调**（见 §4-1）。
+> 本报告为只读调查结论；**客户端兜底已落地**（session-runner.mjs），
+> **服务端根治已落地**（§4-1，2026-08-06：session-store 登记分流 + routes 标记 +
+> runner 直写适配 + sweep-sessions.sh 清扫钩挂 kfm-restart，BAR-SEC-14 单点守卫不变）。
 
 ## 1. 写路径真相：服务端只有一个，永远写根目录
 
@@ -36,17 +37,20 @@ b5ab2f02（断连重连）、afb7b12f（flush 写锁）是韧性修复，不改�
 
 ## 4. 修法与落地状态
 
-1. **根治——服务端分流（主线域，待协调）**：`/ai/chat/start` 收
-   `sessionClass: 'script'` 时 session-store 直接写 `sessions/script/`
-   （startRun 入口登记 per-session 目录标记，`_sessionFilePath` 据此选目录；
-   保持 BAR-SEC-14 白名单 + containment 复查）。客户端 copy+rm 整段可删。
-   读取侧：`loadSessionMessages`（session-runner.mjs:91）已把 script/ 列为候选，
-   兼容成本低；`/sessions/messages`（files.ts:227）需同样分流。
+1. **根治——服务端分流（已落地，2026-08-06）**：`/ai/chat/start` 收
+   `sessionClass: 'script'` 时调 `sessionStore.markSessionScript()`（先于
+   appendUserMessage），登记 per-session 目录标记，`_sessionFilePath` 据此选
+   `sessions/script/`；legacy 迁移走同一单点守卫（登记前取根目录路径、登记后
+   取 script/ 路径，renameSync 搬迁 + invalidateSession），BAR-SEC-14 白名单 +
+   containment 复查与 join 单点钉全部保持。客户端 copy+rm 已改直写适配：
+   根目录无副本且 script/ 已有直写文件时直接返回。
 2. **客户端兜底（已落地，本批提交）**：runSession 改 try/catch——失败路径把
    根目录副本搬到 `script/<id>.stranded-<ts>.json` 残卷区（保留供尸检，
    .stranded 后缀防断点续跑误当完成臂），不再滞留面板区。
-3. **运维清扫（建议，未做）**：kfm-restart.sh 定期把根目录中在 script/ 已有
-   同名归档、或无活跃 run 的已知脚本前缀文件移走——治标，回收存量泄漏。
+3. **运维清扫（已落地，2026-08-06）**：`scripts/sweep-sessions.sh`——根目录
+   24h 未动的已知 script 前缀文件移入 script/ 加 .stranded 后缀；script/ 下
+   14 天前的 .stranded 残卷删除。挂在 kfm-restart.sh 服务恢复后执行。
+   24h 余量保 px 断点续跑跨重启读历史。
 
 ## 5. 残留风险（客户端兜底方案未覆盖的边）
 

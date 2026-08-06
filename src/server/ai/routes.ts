@@ -42,6 +42,12 @@ export function setupAiRoutes(router: Router, wsServer: WsServer, startRunFn: St
     // userText 缺省时退回旧路径（老客户端兼容）。
     const rawUserText = typeof userText === 'string' && userText.trim() ? userText
       : (() => { const m = [...messages].reverse().find((x: any) => x?.role === 'user'); return m && typeof m.content === 'string' ? m.content : ''; })();
+    // script 类会话落盘分流（2026-08-06 泄漏根治）：先登记再写任何消息——
+    // hydrate/落盘路径随之切到 sessions/script/，从构造上不进面板区。
+    // 须先于 appendUserMessage（它内部即触发 hydrate+flush）。
+    if (sessionClass === 'script') {
+      sessionStore.markSessionScript(sessionId);
+    }
     if (rawUserText.trim()) {
       sessionStore.appendUserMessage(sessionId, rawUserText, model, provider);
     }

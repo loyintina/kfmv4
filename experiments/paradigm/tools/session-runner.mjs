@@ -200,7 +200,15 @@ export async function runSession({ sessionId, messages, userText, model, provide
     const { events, ms } = await waitRun(runId);
     // 等服务端 flush 会话文件
     await new Promise(r => setTimeout(r, 1500));
-    if (!existsSync(src)) throw new Error(`会话未落盘: ${src}`);
+    // 服务端分流（2026-08-06 起）：script 会话直写 sessions/script/，
+    // 根目录副本不再产生——默认归档路径即真相源，直接用。
+    if (!existsSync(src)) {
+      const direct = join(SCRIPT_SESSIONS, `${sessionId}.json`);
+      if (out === undefined && existsSync(direct)) {
+        return { runId, events, ms, sessionPath: direct };
+      }
+      throw new Error(`会话未落盘: ${src}`);
+    }
     // 默认归档到 sessions/script/（脚本会话区，不进面板会话卡）；--out 覆盖
     const dest = out || join(SCRIPT_SESSIONS, `${sessionId}.json`);
     mkdirSync(dirname(dest), { recursive: true });

@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 1807e07e · 生成于 2026-08-06 -->
+<!-- 基准 commit 0c2d6793 · 生成于 2026-08-06 -->
 
 # 代码清单（机械层）
 
@@ -99,7 +99,7 @@
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（55 文件 · 11768 行）
+## ai-chat（55 文件 · 11809 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -118,14 +118,14 @@
 | src/server/ai/tools/omp/browser/tab-supervisor.ts | 320 | WorkerHandle, TabSession, PendingRun, AcquireTabOptions, RunInTabOptions, getTab, acquireTab, runInTab, releaseTab, releaseAllTabs |
 | src/server/ai/tools/omp/debug/kfmv4-views.ts | 318 | Kfmv4ViewName, Kfmv4ViewResult, RENDERER_SNAPSHOT_SCRIPT, ANIMATION_TIMELINE_SCRIPT, GESTURE_TRACE_SCRIPT, STATE_HISTORY_SCRIPT, CARD_LIFECYCLE_SCRIPT, KFMV4_SCRIPT_MAP, formatRendererSnapshot, formatAnimationTimeline, formatGestureTrace, formatStateHistory, formatCardLifecycle |
 | src/shared/chat-protocol/to-openai-messages.ts | 297 | OpenAiToolCall, OpenAiMessage, ToOpenAiOptions, ToOpenAiResult, toOpenAiMessages |
+| src/server/ai/session-store.ts | 258 | markSessionScript, appendEvent, flush, flushSync, invalidateSession, appendUserMessage |
 | src/server/ai/tools/omp/debug/cdp-connection.ts | 242 | CdpSession, CdpLaunchOptions, CdpAttachOptions, CdpPausedEvent, sendCmd, onCdpEvent, launchCdp, attachCdp, closeCdp |
 | src/server/ai/run-manager.ts | 236 | _setStallMsForTest, getActiveRun, getRun, StreamFn, startRun, attachRun, cancelRun |
 | src/client/modules/orb-chat-hints.ts | 225 | startWaitingIndicator, TODO_DISMISS_KEY, todosFingerprint, clearTodoPanel, dismissTodoPanel, updateTodoFromTool |
-| src/server/ai/session-store.ts | 223 | appendEvent, flush, flushSync, invalidateSession, appendUserMessage |
 | src/server/ai/page-state.ts | 148 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
 | src/server/ai/tools/index.ts | 145 | getAllTools, getToolDefinitions, executeTool, hasTool, getTool |
 | src/server/ai/permissions.ts | 134 | RiskClass, TOOL_RISK, Decision, AuditEntry, riskClassOf, evaluate |
-| src/server/ai/routes.ts | 128 | StartRunFn, setupAiRoutes |
+| src/server/ai/routes.ts | 134 | StartRunFn, setupAiRoutes |
 | src/server/ai/prompt-assembler.ts | 124 | getActiveRoleFile, assembleRoleSystemPrompt, assembleDynamicPrompt |
 | src/shared/chat-protocol/reducer.ts | 122 | ReduceContext, applyEvent, reduceEvents |
 | src/server/ai/tools/kfmv4/logs.ts | 119 | kfmLogsTool |
@@ -159,22 +159,22 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（10 文件 · 1687 行）
+## server（10 文件 · 1732 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/server/routes/files.ts | 399 | FileItem, sliceMessages, MSG_PAYLOAD_BUDGET, MSG_SINGLE_CAP, capMessagesPayload, setupFileRoutes |
 | src/server/ws-server.ts | 315 | WsServer |
-| src/server/index.ts | 184 | — |
+| src/server/index.ts | 186 | — |
 | src/server/path-utils.ts | 168 | ROOT_DIR, PROJECT_ROOT, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, SESSION_ID_RE, isValidSessionId, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
+| src/server/routes/obs.ts | 158 | setupObsRoutes, setupObsPages |
 | src/server/ai/permissions.ts | 134 | RiskClass, TOOL_RISK, Decision, AuditEntry, riskClassOf, evaluate |
-| src/server/routes/obs.ts | 115 | setupObsRoutes |
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/env-store.ts | 103 | ENV_PATH, parseEnv, loadEnvFile, isEnvRef, ResolvedKey, resolveKey, envNameForProvider, upsertEnvVar |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（143 文件 · 17291 行）
+## infra（144 文件 · 17616 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -188,6 +188,7 @@
 | tests/server-routes.test.ts | 378 | — |
 | tests/visual-baseline.test.ts | 367 | — |
 | scripts/agent/agent-runner.mjs | 325 | renderTemplate, extractJson, runAgent, parseToolStream, runAgentTooled |
+| scripts/agent/browser-relay.mjs | 323 | — |
 | tests/box.test.ts | 309 | — |
 | tests/mocks/gsap.ts | 305 | gsap |
 | tests/run-manager.test.ts | 300 | — |
@@ -285,8 +286,8 @@
 | tests/permissions.test.ts | 49 | — |
 | tests/session-flush.test.ts | 48 | — |
 | package.json | 47 | — |
+| scripts/kfm-restart.sh | 46 | — |
 | scripts/check/check-doc-budget.mjs | 44 | — |
-| scripts/kfm-restart.sh | 44 | — |
 | scripts/clean-npm-temp.cjs | 44 | — |
 | scripts/check/check-release-radar.mjs | 42 | — |
 | tests/reset-hooks.ts | 41 | — |
@@ -633,4 +634,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 286 文件 · 49255 行 · 跨域边 249 条
+合计 287 文件 · 49666 行 · 跨域边 249 条
