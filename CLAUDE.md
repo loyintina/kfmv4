@@ -41,7 +41,7 @@
 | 大改动 spec-driven 流程 | workflows/spec-driven.yaml |
 | 活跃状态同步 | workflows/state-sync.yaml |
 <!-- /gen:route-table -->
-| 理解项目方向/为什么这么设计 | active/vision.md |
+| 理解项目方向/为什么这么设计 · 范式包实验研究 | active/vision.md · ../experiments/paradigm/index.md（实验登记面） |
 | 写/跑 agent 脚本（发版建议等）· UI 视觉自测/截图（守视 §四号负载） | guides/agent-runner.md |
 | **无匹配** | 完成后记录；同类操作重复 3 次 → workflows/_template.yaml 固化 |
 
@@ -50,7 +50,7 @@
 ```bash
 npm run dev      # 全链路（check → esbuild client+server → smoke → 启动）
 npm run watch    # 全链路通过后 → 持续监听、快速重编（开发时一直开着）
-npm run check    # 42 个 check-*.mjs + tsc --noEmit（仅检查，不构建）
+npm run check    # 43 个 check-*.mjs + tsc --noEmit（仅检查，不构建）
 npm run start    # 启动生产构建 http://localhost:8021
 npm run test     # 524 个回归测试
 ```

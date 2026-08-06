@@ -396,3 +396,52 @@ batch-run（计划中）：批量跑所有组合臂（并发+断点续跑）+ �
 - **会话泄漏兜底**：session-runner 失败路径根目录副本搬 script/ 残卷；
   服务端根治（sessionClass 分流）属主线域，见 results-session-leak-rootcause.md
 - **px 臂入库**：migrate-px-to-db.mjs，25 臂（px-1/px-base/px-hl/px-ft）
+
+## 产物登记面（DOC-FLOW-11 机械门，check-experiment-registry）
+
+> 本目录新产物（tools/*.{mjs,py,sh}、specs/*.json、results-*/design-*/proposal-*/pack-*/spec-*.md）
+> 必须在本节留纯文件名——发现路径的机械主人。数据区（meta-pool/、arm-artifacts/、
+> fixtures/、scenarios/、instructors/）豁免。质量归人，存在归机械。
+
+### 跑批与判卷（常驻内核）
+
+- 跑批内核：batch-run.mjs（矩阵×重复×并发，语义三键幂等续跑）/ session-runner.mjs
+  （会话驱动内核：configId 解析+包拼接+直写归档）/ arm-store.mjs（arms.db 存储层）
+  / occupancy.mjs（占用率登记表，arms.occ_ratio 写入+回填）
+- 编排：exp-driver.mjs（spec JSON 驱动跑数重试循环+自动判卷，--check 干跑校验；
+  2026-08-06 起新实验不再手写 run-*.sh）/ specs/e14a.json / specs/e14b.json（e14 双前缀 spec）
+- 判卷：judge-llm.mjs（LLM 盲判主通道，rubric v1/v2）/ judge-e13-script.mjs
+  （e13 零成本脚本判卷：沙箱 diff+工具痕迹）/ judge-px1-blind.mjs（px 轮号对齐盲判）
+  / bench-score.mjs / blind-anonymize.py（盲判匿名化）
+- 制包：build-e14-combo.mjs（e14 组合包构建器，幂等）/ build-length-paradigms.py（长度梯度档）
+- 部署守卫：check-active-runs.sh（kfm-restart 前拦在跑实验）
+- 历史手写循环（exp-driver 时代不再新增，留存考古）：run-e13.sh / run-e11-gapfill.sh /
+  run-judge-v2.sh / run-px-baseline.sh / run-px-fatigue.sh / run-px-halflife.sh /
+  run-px-matrix.sh / run-silicon-backfill.sh / run-silicon-backfill.round1.sh
+- 考官-考生：plugin-exam.mjs（px 三足实验驱动，instructors/ 提示词配套）
+
+### 素材库管线（提取/标注/摘要，多为一次性，留存考古）
+
+- 提取：extract-all.py / extract-operit.py / extract-omp.py / extract-omp-jsonl.py /
+  extract-omp-db.py / extract-kimi-full.py / extract-convo.mjs / extract-session.py
+- 标注与切片：annotate-pattern.py / annotate-pattern.mjs / annotate-operit.py /
+  build-episodes.py / review-episodes.py / restore-annotations.py / restore-from-history.py
+- 索引与摘要：gen-slices-summary.py / material-index.py
+
+### 分析与迁移
+
+- recompute-cells.py（判卷归档→格均值，DB 版）/ meta-density.py（metaRe 词频粗筛尺）
+  / cost-stats.py / audit-arms.py（臂审计+通道分桶）/ bug-scan.py
+  / migrate-arms-to-db.mjs / migrate-px-to-db.mjs（px 臂入库）
+
+### 设计与结果文档
+
+- 设计：design-arm-store.md / design-behavior-discipline-pack.md / design-e13-trap-tasks.md /
+  design-roadmap-e14-e16.md / design-session-runner.md / proposal-sentinel-layer.md /
+  pack-behavior-discipline-notes.md / spec-v1.md
+- 结果（各实验节有正文，此处纯登记）：results-e1.md / results-e4-matrix.md / results-e5.md /
+  results-e7-length.md / results-e11-repeat.md / results-e12-wrappers.md /
+  results-e11-e12-matrix-v2.md / results-flash-calibration-01.md / results-h1-paradigm.md /
+  results-h2-h4-analysis.md / results-h5-length.md / results-harness-artifacts.md /
+  results-judge-bias.md / results-px1-plugin.md / results-px-baseline-halflife.md /
+  results-px-tripod.md / results-rubric-v2.md / results-session-leak-rootcause.md
