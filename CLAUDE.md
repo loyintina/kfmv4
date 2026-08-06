@@ -42,8 +42,7 @@
 | 活跃状态同步 | workflows/state-sync.yaml |
 <!-- /gen:route-table -->
 | 理解项目方向/为什么这么设计 | active/vision.md |
-| 写/跑 agent 脚本（发版建议等） | guides/agent-runner.md |
-| UI 视觉自测/截图验证（守视 browser-relay） | guides/agent-runner.md §四号负载 |
+| 写/跑 agent 脚本（发版建议等）· UI 视觉自测/截图（守视 §四号负载） | guides/agent-runner.md |
 | **无匹配** | 完成后记录；同类操作重复 3 次 → workflows/_template.yaml 固化 |
 
 ## 构建与运行
