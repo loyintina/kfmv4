@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 5af35814 · 生成于 2026-08-06 -->
+<!-- 基准 commit f23dda5d · 生成于 2026-08-06 -->
 
 # 代码清单（机械层）
 
@@ -159,12 +159,12 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（10 文件 · 1928 行）
+## server（10 文件 · 1930 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/server/routes/files.ts | 399 | FileItem, sliceMessages, MSG_PAYLOAD_BUDGET, MSG_SINGLE_CAP, capMessagesPayload, setupFileRoutes |
-| src/server/routes/obs.ts | 354 | setupObsRoutes, setupObsPages |
+| src/server/routes/obs.ts | 356 | setupObsRoutes, setupObsPages |
 | src/server/ws-server.ts | 315 | WsServer |
 | src/server/index.ts | 186 | — |
 | src/server/path-utils.ts | 168 | ROOT_DIR, PROJECT_ROOT, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, SESSION_ID_RE, isValidSessionId, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
@@ -639,4 +639,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 291 文件 · 50334 行 · 跨域边 250 条
+合计 291 文件 · 50336 行 · 跨域边 250 条
