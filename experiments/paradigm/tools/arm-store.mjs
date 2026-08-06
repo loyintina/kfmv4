@@ -130,10 +130,12 @@ export function registerBatch({ prefix, taskFile = null, tasks, paradigms, model
 
 /** 臂入库（content 为会话 JSON 对象或字符串；统计列自动算） */
 export function putArm({ batchId, armId, taskIdx = null, paradigmIdx = null, modelIdx = null,
-  rep = null, task, paradigm, model, provider, status = 'ok', decode = 'write', content }) {
+  rep = null, task, paradigm, model, provider, status = 'ok', decode = 'write',
+  experiment: experimentOverride = null, content }) {
   const c = typeof content === 'string' ? content : JSON.stringify(content);
   const parsed = typeof content === 'string' ? JSON.parse(content) : content;
-  const experiment = armId.match(/^([a-z0-9]+?)-t\d/)?.[1] || armId.split('-')[0];
+  const experiment = experimentOverride
+    || armId.match(/^([a-z0-9]+?)-t\d/)?.[1] || armId.split('-')[0];
   db().prepare(`INSERT OR REPLACE INTO arms
     (arm_id, batch_id, experiment, task_idx, paradigm_idx, model_idx, rep,
      task, paradigm, model, provider, status,
@@ -151,6 +153,15 @@ export function putArm({ batchId, armId, taskIdx = null, paradigmIdx = null, mod
 
 export function hasArm(armId) {
   return !!db().prepare('SELECT 1 FROM arms WHERE arm_id = ?').get(armId);
+}
+
+/** 语义级断点查重（2026-08-06 补臂事故修复）：臂 id 含批次内下标（p/m 是每批次
+ *  独立编号），矩阵形状一变下标就变，hasArm(armId) 查不到同语义的存量臂——
+ *  e11 D 档补臂时 GLM-Z1 既有 5 臂「跳过 0」就是这么来的。
+ *  语义键 = prefix + 内容哈希（md5(task|paradigm|model) 前 6 位）+ rep。 */
+export function hasArmSem({ prefix, hash, rep }) {
+  return !!db().prepare('SELECT 1 FROM arms WHERE arm_id LIKE ? AND arm_id LIKE ? AND rep IS ?')
+    .get(`${prefix}%`, `%-${hash}`, rep);
 }
 
 /** 取单臂完整内容（返回解析后的会话对象） */

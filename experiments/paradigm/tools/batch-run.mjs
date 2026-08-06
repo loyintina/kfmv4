@@ -15,13 +15,13 @@
  *   --paradigms "无" = 对照组（无范式包）；其他名 = .kfmv4/paradigms/<名>.md
  *   --arms N = 每配置重复次数（重复测量——模型随机性需多次取统计）
  */
-import { existsSync, mkdirSync, readFileSync, unlinkSync } from 'fs';
+import { mkdirSync, readFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import { createHash } from 'crypto';
 import { fileURLToPath } from 'url';
 import { runSession, loadParadigm } from './session-runner.mjs';
-import { registerBatch, putArm, hasArm } from './arm-store.mjs';
+import { registerBatch, putArm, hasArmSem } from './arm-store.mjs';
 
 const REPO = join(fileURLToPath(new URL('../../..', import.meta.url)));
 const SCRIPT = join(homedir(), '.kfmv4', 'sessions', 'script');
@@ -73,8 +73,17 @@ const batchId = registerBatch({
   armsPlanned: armSpecs.length,
 });
 
-// 断点续跑：已归档的跳过（文件 或 已入库——入库后文件即删，两路都要查）
-const todo = armSpecs.filter(s => !existsSync(join(SCRIPT, `${armId(s)}.json`)) && !hasArm(armId(s)));
+// 断点续跑：已归档的跳过。语义级查重（2026-08-06 补臂事故修复）——
+// 臂 id 含批次内下标，矩阵形状一变下标就变，按完整 id 查会漏掉同语义存量臂
+// （e11 D 档补臂时 GLM-Z1 既有 5 臂「跳过 0」事故）。改按
+// prefix + 内容哈希 + rep 三键查：DB（hasArmSem）+ 文件兜底（同 hash 任意下标）。
+const scriptFiles = (() => { try { return readdirSync(SCRIPT); } catch { return []; } })();
+const todo = armSpecs.filter(s => {
+  const h = armHash(s);
+  if (hasArmSem({ prefix, hash: h, rep: s.n })) return false;
+  if (scriptFiles.some(f => f.startsWith(prefix) && f.endsWith(`r${s.n}-${h}.json`))) return false;
+  return true;
+});
 console.log(`[batch-run] 变体 ${tasks.length} 任务 × ${paradigms.length} 范式 × ${models.length} 模型 × ${arms} 重复 = ${armSpecs.length} 臂；跳过已完成 ${armSpecs.length - todo.length}，本次 ${todo.length}（并发 ${concurrency}）`);
 
 /** 错误桩检测（2026-08-05，e9 尸检）：上游 4xx/5xx 被面板吞成正文「[错误: …]」

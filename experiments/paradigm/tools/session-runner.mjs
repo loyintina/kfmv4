@@ -195,17 +195,34 @@ export async function runSession({ sessionId, messages, userText, model, provide
   const msgs = applyParadigm(messages, paradigmText);
   const apiMessages = toOpenAi(msgs); // 原始格式 → OpenAI 格式（provider 不认 role:'ai'）
   const { runId } = await startRun(sessionId, apiMessages, userText, model, provider, roleFile, tools);
-  const { events, ms } = await waitRun(runId);
-  // 等服务端 flush 会话文件
-  await new Promise(r => setTimeout(r, 1500));
   const src = join(SESSIONS, `${sessionId}.json`);
-  if (!existsSync(src)) throw new Error(`会话未落盘: ${src}`);
-  // 默认归档到 sessions/script/（脚本会话区，不进面板会话卡）；--out 覆盖
-  const dest = out || join(SCRIPT_SESSIONS, `${sessionId}.json`);
-  mkdirSync(dirname(dest), { recursive: true });
-  copyFileSync(src, dest);
-  rmSync(src); // 清理生产区副本（临时会话语义）
-  return { runId, events, ms, sessionPath: dest };
+  try {
+    const { events, ms } = await waitRun(runId);
+    // 等服务端 flush 会话文件
+    await new Promise(r => setTimeout(r, 1500));
+    if (!existsSync(src)) throw new Error(`会话未落盘: ${src}`);
+    // 默认归档到 sessions/script/（脚本会话区，不进面板会话卡）；--out 覆盖
+    const dest = out || join(SCRIPT_SESSIONS, `${sessionId}.json`);
+    mkdirSync(dirname(dest), { recursive: true });
+    copyFileSync(src, dest);
+    rmSync(src); // 清理生产区副本（临时会话语义）
+    return { runId, events, ms, sessionPath: dest };
+  } catch (e) {
+    // 兜底清理（2026-08-06 泄漏根因修复，根因报告见 experiments/paradigm/
+    // results-harness-artifacts.md 同线索）：服务端无 script 分流，落盘永远写
+    // sessions/ 根目录，copy+rm 只覆盖 happy path——重试换 sessionId、超时、
+    // 服务重启掐 run 等失败路径都会把根目录副本滞留面板区。失败时把副本搬到
+    // script/ 残卷（.stranded 后缀防被断点续跑误当完成臂），保留供尸检。
+    try {
+      if (existsSync(src)) {
+        const salvage = join(SCRIPT_SESSIONS, `${sessionId}.stranded-${Date.now()}.json`);
+        mkdirSync(dirname(salvage), { recursive: true });
+        copyFileSync(src, salvage);
+        rmSync(src);
+      }
+    } catch { /* 清理失败不掩盖原错误 */ }
+    throw e;
+  }
 }
 
 // ====== CLI（isMain guard：被 import 时不执行——batch-run 等模块复用）======
