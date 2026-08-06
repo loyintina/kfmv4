@@ -12,7 +12,7 @@ import type { Router } from 'express';
 import fs from 'fs';
 import path from 'path';
 import { resolveKey } from '../env-store.js';
-import { KFM_DATA_DIR } from '../path-utils.js';
+import { KFM_DATA_DIR, PROJECT_ROOT } from '../path-utils.js';
 
 const DEEPSEEK_BALANCE_URL = 'https://api.deepseek.com/user/balance';
 // 余额缓存：deepseek /user/balance 接口免费轻量（无 chat 接口的并发压力），
@@ -67,6 +67,48 @@ async function fetchDeepseekBalance(): Promise<Balance> {
 export function setupObsRoutes(router: Router): void {
   router.get('/obs/hud', async (_req, res) => {
     const balance = await fetchDeepseekBalance();
-    res.json({ balance, serverTime: new Date().toISOString() });
+    res.json({ balance, inbox: parseInbox(), serverTime: new Date().toISOString() });
   });
+}
+
+// ========== 信箱解析（semantic-chain-inbox.md，ledger 层账本·只追加） ==========
+// 每行：`- YYYY-MM-DD [HH:MM] <标记> <内容>`——标记家族：⚠️ 待裁决 / ✅ 干净 /
+// 💀 崩溃 / 📊 观测统计 / 其他中性。单一出处：现场读文件，不缓存副本（语义生成原则）。
+// 最新在前（账本倒序时间线）。
+
+interface InboxEntry {
+  date: string;
+  time: string;
+  type: 'warn' | 'ok' | 'dead' | 'stat' | 'other';
+  text: string;
+}
+
+const INBOX_PATH = path.join(PROJECT_ROOT, 'docs', 'ledger', 'semantic-chain-inbox.md');
+const INBOX_LINE_RE = /^-?\s*(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2})?\s*(⚠️|✅|💀|📊)?\s*(.*)$/;
+
+function inboxTypeOf(mark: string | undefined): InboxEntry['type'] {
+  switch (mark) {
+    case '⚠️': return 'warn';
+    case '✅': return 'ok';
+    case '💀': return 'dead';
+    case '📊': return 'stat';
+    default: return 'other';
+  }
+}
+
+function parseInbox(): InboxEntry[] {
+  try {
+    const text = fs.readFileSync(INBOX_PATH, 'utf-8');
+    const entries: InboxEntry[] = [];
+    for (const line of text.split('\n')) {
+      if (line.trim().startsWith('#')) continue; // 头部注释
+      const m = line.match(INBOX_LINE_RE);
+      if (!m) continue;
+      const [, date, time = '', mark, body] = m;
+      entries.push({ date, time, type: inboxTypeOf(mark), text: body.trim() });
+    }
+    return entries.reverse(); // 最新在前
+  } catch {
+    return [];
+  }
 }

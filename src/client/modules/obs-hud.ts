@@ -1,18 +1,19 @@
 /**
  * obs-hud.ts — 观测台 HUD（8.5 史官制度 · L1 中央内容层，2026-08-05 立项）
  *
- * 背景信息窗·简约版（2026-08-06 用户定稿）：单张毛玻璃卡，三元素——
- *   deepseek 官方（标签）· 秒级时间 · 余额数字（2 位小数、5s 刷新）。
- * 纯展示（pointer-events: none，不挡手势/卡片/召唤按钮——z 低于 SUMMON_BTN）。
+ * 背景信息窗：主卡（deepseek 余额）+ 信箱卡（语义巡逻 verdict 时间线）。
+ * 纯展示为主，信箱列表局部可触摸滚动（pointer-events auto 仅滚动区）。
  *
- * 刷新策略（2026-08-06 用户定稿）：时间本地每秒；余额客户端每 5s fetch 本地
- * /api/obs/hud，服务端对 deepseek 外部余额接口做 5s 缓存（免费轻量，17280 次/天）。
+ * 呈现哲学（依据 semantic-compiler-seed）：信箱是概率区非阻断信号——柔和状态
+ * 徽标而非警报条；数据单一出处（现场解析 inbox 文件，不缓存副本——语义生成原则）。
+ *
+ * 刷新：余额+信箱 5s 轮询（服务端 5s 缓存外部 deepseek 余额调用）；时间本地每秒。
  */
 import { API } from './state.js';
 import { Z } from './z-index-layers.js';
 
-/** 余额轮询周期（5s） */
-const BALANCE_REFRESH_MS = 5_000;
+/** 轮询周期（5s，2026-08-06 用户定稿） */
+const REFRESH_MS = 5_000;
 
 let inited = false;
 
@@ -22,6 +23,20 @@ function fmtBalance(v: string): string {
   if (!Number.isFinite(n)) return v;
   return `¥${n.toFixed(2)}`;
 }
+
+/** 信箱类型 → 徽标类名（柔和状态色，非警报化） */
+const INBOX_DOT_CLASS: Record<string, string> = {
+  warn: 'obs-dot-warn',
+  ok: 'obs-dot-ok',
+  dead: 'obs-dot-dead',
+  stat: 'obs-dot-stat',
+  other: 'obs-dot-other',
+};
+const INBOX_MARK: Record<string, string> = {
+  warn: '⚠', ok: '✓', dead: '✕', stat: '▤', other: '·',
+};
+
+interface InboxEntry { date: string; time: string; type: string; text: string }
 
 export function initObsHud(): void {
   if (inited) return;
@@ -37,14 +52,23 @@ export function initObsHud(): void {
       </div>
       <div class="obs-balance">¥--</div>
     </div>
+    <div class="obs-inbox">
+      <div class="obs-inbox-head">
+        <span class="obs-inbox-title">信箱</span>
+        <span class="obs-inbox-status"></span>
+      </div>
+      <div class="obs-inbox-list"></div>
+    </div>
   `;
-  hud.style.zIndex = String(Z.CENTER_CONTENT); // L1 中央内容层（< SUMMON_BTN 200，不盖按钮）
+  hud.style.zIndex = String(Z.CENTER_CONTENT); // L1 中央内容层（< SUMMON_BTN 200）
   document.body.appendChild(hud);
 
   const clockEl = hud.querySelector<HTMLElement>('.obs-clock')!;
   const balanceEl = hud.querySelector<HTMLElement>('.obs-balance')!;
+  const inboxStatusEl = hud.querySelector<HTMLElement>('.obs-inbox-status')!;
+  const inboxListEl = hud.querySelector<HTMLElement>('.obs-inbox-list')!;
 
-  // 秒级时钟（本地）
+  // 本地时钟（每秒）
   const tick = () => {
     const d = new Date();
     const p = (n: number) => String(n).padStart(2, '0');
@@ -53,29 +77,50 @@ export function initObsHud(): void {
   tick();
   setInterval(tick, 1000);
 
-  // 余额 5s 刷新（本地接口；服务端 5s 缓存外部 deepseek 调用）
+  // 渲染信箱列表（最新在前，历史渐淡）
+  function renderInbox(entries: InboxEntry[]): void {
+    // 头部摘要 = 最新一条待裁决（当前未结状态），无则显示干净
+    const latestWarn = entries.find(e => e.type === 'warn');
+    inboxStatusEl.textContent = latestWarn
+      ? `· ${INBOX_MARK.warn} ${latestWarn.text.slice(0, 14)}`
+      : `· ${INBOX_MARK.ok} 干净`;
+    inboxListEl.innerHTML = entries.map((e, i) => {
+      const dot = INBOX_DOT_CLASS[e.type] ?? 'obs-dot-other';
+      const mark = INBOX_MARK[e.type] ?? '·';
+      const date = e.date.slice(5).replace('-', '/'); // MM-DD → MM/DD
+      const highlight = i === 0 ? ' obs-inbox-item-new' : '';
+      return `<div class="obs-inbox-item${highlight}">
+        <span class="obs-dot ${dot}"></span>
+        <span class="obs-inbox-meta">${mark} ${date}${e.time ? ' ' + e.time : ''}</span>
+        <span class="obs-inbox-text">${e.text}</span>
+      </div>`;
+    }).join('');
+  }
+
+  // 余额 + 信箱刷新（5s 轮询；服务端缓存外部 deepseek 调用）
   let lastTotal = '';
   const refresh = async () => {
     try {
       const res = await fetch(`${API}/obs/hud`, { signal: AbortSignal.timeout(5000) });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const j = await res.json() as { balance?: { total?: string; error?: string } };
+      const j = await res.json() as { balance?: { total?: string; error?: string }; inbox?: InboxEntry[] };
       const b = j?.balance;
       if (b && !b.error && b.total != null) {
         balanceEl.textContent = fmtBalance(b.total);
         if (b.total !== lastTotal) {
           lastTotal = b.total;
           balanceEl.classList.remove('obs-flash');
-          void balanceEl.offsetWidth; // 重触发刷新闪烁（余额真实变化时）
+          void balanceEl.offsetWidth;
           balanceEl.classList.add('obs-flash');
         }
       } else {
         balanceEl.textContent = '—';
       }
+      if (Array.isArray(j?.inbox)) renderInbox(j.inbox);
     } catch {
       balanceEl.textContent = '—';
     }
   };
   refresh();
-  setInterval(refresh, BALANCE_REFRESH_MS);
+  setInterval(refresh, REFRESH_MS);
 }
