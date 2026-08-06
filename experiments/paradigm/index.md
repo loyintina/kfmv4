@@ -340,3 +340,39 @@ batch-run（计划中）：批量跑所有组合臂（并发+断点续跑）+ �
   范式包原句（n-gram 重合检测）
 - **批次命令**：paradigms "e12-w1-seamless,e12-w2-lightmark,e12-w3-declaration,e12-w4-boundary"
   × 同 4 模型 × 8 臂，前缀 e12-，余同 e11
+
+## e11/e12 全矩阵 v2（2026-08-06 完成，见 results-e11-e12-matrix-v2.md）
+
+- 14 模型 1778 臂全量 v2 判卷（0-20 主尺），**升级替代 v1 两文档**
+- 结论速览：占用率 65% 内效应 +0.4 平台、≥65% 转负（45% 假拐点 = 伪影污染警告）；
+  **H8 成立**（重复救稀释 +4.00×2：M2.5/R1）；主战场 = 35B 画像
+  （+3.62 且长档不衰减）；opus 饱和别再烧；e12 包装无通用赢家、W3 最频繁登顶
+- 伪影纪律：Ling-mini/GLM-Z1 只作存活率（results-harness-artifacts.md），
+  不进效应分析
+- 硅基 D 高档补臂进行中（tools/run-e11-gapfill.sh 重试到齐循环，
+  主线部署杀风暴对策）——齐后刷新 ≥65% 占用桶
+
+## px 三足实验（2026-08-06 完成，见 results-px-tripod.md + results-px-baseline-halflife.md）
+
+- px-base（永不挂载）/ px-hl（attach@2,detach@5）/ px-ft（attach@2 永不摘除），
+  固定时刻表消除教官×挂载耦合，盲判 v3（judge-px1-blind.mjs 轮号对齐终版）
+- 结论速览：基线 13.47/15 高而稳（无挂载也有 R1→R3 自然升温——px-1 时代
+  「挂载跳变」最大混淆源已钉死）；挂载 +2.62、摘除残留 +1.40 十轮不衰减；
+  **持续挂载 13 轮无疲劳**；摘除晃动实锤与摘除事件相关（同模型同轮位对照）；
+  产品含义「挂上就别频繁摘」
+
+## 范式包第二家族：行为纪律包（2026-08-06 设计+初稿，见 design-behavior-discipline-pack.md）
+
+- `.kfmv4/paradigms/behavior-discipline.md`（7.2k，六节真实切片：
+  补丁vs根因/验证诚实/回归钉/可回退铁律/边界控制/复盘沉淀）
+- 元认知包管「怎么想」、本包管「怎么做」；e13 陷阱任务实验设计已预留（不烧臂待排期）
+
+## 基建与事故修复（2026-08-06）
+
+- **arms.occ_ratio**：真实占用率列（包标称尺寸÷模型窗口，tools/occupancy.mjs
+  登记表），3679 臂回填；旧 occupancy 列废弃；登记纪律入 experiments/model-econ.md
+- **batch-run 语义查重**：断点续跑改 prefix+内容哈希+rep 三键（臂 id 含批次内
+  下标，矩阵形状一变就漏查的事故修复）
+- **会话泄漏兜底**：session-runner 失败路径根目录副本搬 script/ 残卷；
+  服务端根治（sessionClass 分流）属主线域，见 results-session-leak-rootcause.md
+- **px 臂入库**：migrate-px-to-db.mjs，25 臂（px-1/px-base/px-hl/px-ft）
