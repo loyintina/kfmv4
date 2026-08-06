@@ -583,8 +583,9 @@ body {
   word-break: break-word;
 }
 
-/* ===== 待办卡（STACK.md 工作栈 ⏳⚠️ 条目，2026-08-06 用户动议） ===== */
-/* 行内右框，与信箱同宽同构；复用 obs-inbox-* 内部件类（head/list/item/detail/back）。 */
+/* ===== 待办卡（stack.yaml 工作栈，2026-08-06 用户拍板：废 STACK.md，yaml 单一出处） ===== */
+/* 行内右框，与信箱同宽同构；复用 obs-inbox-* 内部件类（head/list/item/detail/back）。
+   全状态渲染：todo/hold 全亮在前，done 渐淡殿后（藏起 done 是旧设计的诚实性缺陷）。 */
 .obs-stack {
   width: 160px;
   box-sizing: border-box;
@@ -619,18 +620,80 @@ body {
   display: none;
 }
 
-.obs-stack-mark {
-  font-size: 9px;
-  margin-right: 4px;
+/* 状态点（复用 obs-dot 几何，色按状态） */
+.obs-dot-stack-todo {
+  background: #06b6d4;
+  box-shadow: 0 0 4px rgba(6, 182, 212, 0.4);
 }
 
-/* 待办条目默认全亮（与信箱的历史渐淡相反——待办全是现在时）；⚠️ 有保留稍淡 */
+.obs-dot-stack-hold {
+  background: #f59e0b;
+  box-shadow: 0 0 4px rgba(245, 158, 11, 0.5);
+}
+
+.obs-dot-stack-done {
+  background: #22c55e;
+  box-shadow: 0 0 4px rgba(34, 197, 94, 0.3);
+}
+
+/* 待办条目默认全亮（与信箱的历史渐淡相反——待办全是现在时）；⚠️ 稍淡，done 殿后更淡 */
 .obs-stack .obs-inbox-item {
   opacity: 0.9;
 }
 
 .obs-stack .obs-inbox-item.obs-stack-item-hold {
   opacity: 0.55;
+}
+
+.obs-stack .obs-inbox-item.obs-stack-item-done {
+  opacity: 0.3;
+}
+
+.obs-stack-note {
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 0.3px;
+}
+
+.obs-stack-divider {
+  padding: 4px 10px 2px;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: rgba(0, 212, 255, 0.5);
+  border-top: 1px solid rgba(124, 58, 237, 0.15);
+  margin-top: 2px;
+}
+
+/* 状态 chip（详情页徽标：描边小胶囊，色随状态） */
+.obs-stack-chip {
+  flex: none;
+  font-size: 9px;
+  letter-spacing: 1px;
+  padding: 2px 7px;
+  border-radius: 8px;
+  border: 1px solid;
+  white-space: nowrap;
+}
+
+.obs-stack-chip-todo {
+  color: #06b6d4;
+  border-color: rgba(6, 182, 212, 0.4);
+}
+
+.obs-stack-chip-hold {
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.obs-stack-chip-done {
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.obs-stack-detail-title {
+  font-size: 12px;
+  color: var(--text);
+  font-weight: 600;
 }
 
 /* 待办返回按钮复用信箱样式（事件类名单独 .obs-stack-back 便于委托区分） */

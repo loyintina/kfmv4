@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 239ae2cc · 生成于 2026-08-06 -->
+<!-- 基准 commit 3e46372b · 生成于 2026-08-06 -->
 
 # 代码清单（机械层）
 
@@ -70,15 +70,15 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（24 文件 · 3612 行）
+## client-shell（24 文件 · 3616 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/client/modules/orb.ts | 538 | type OrbState, collapseOrbPanel, initOrb |
 | src/client/modules/gesture-registry.ts | 346 | GestureHandler, GestureRegistry, gestures |
 | src/client/modules/ui-registry.ts | 334 | UIElementType, UIElementState, InteractiveElement, ContentBlock, Capability, PageDescription, RegistryChangeHandler, UIElementRegistry, Registry |
+| src/client/modules/obs-hud.ts | 246 | initObsHud |
 | src/client/modules/custom-select.ts | 246 | SelectItem, CustomSelectOptions, CustomSelect, createCustomSelect |
-| src/client/modules/obs-hud.ts | 242 | initObsHud |
 | src/client/modules/orb-panel.ts | 221 | PanelConfig, buildPanelContent |
 | src/client/modules/gestures.ts | 217 | initGestures |
 | src/client/modules/confirm-dialog.ts | 192 | ConfirmOptions, showConfirm |
@@ -159,13 +159,13 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（10 文件 · 1774 行）
+## server（10 文件 · 1777 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/server/routes/files.ts | 399 | FileItem, sliceMessages, MSG_PAYLOAD_BUDGET, MSG_SINGLE_CAP, capMessagesPayload, setupFileRoutes |
 | src/server/ws-server.ts | 315 | WsServer |
-| src/server/routes/obs.ts | 200 | setupObsRoutes, setupObsPages |
+| src/server/routes/obs.ts | 203 | setupObsRoutes, setupObsPages |
 | src/server/index.ts | 186 | — |
 | src/server/path-utils.ts | 168 | ROOT_DIR, PROJECT_ROOT, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, SESSION_ID_RE, isValidSessionId, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
 | src/server/ai/permissions.ts | 134 | RiskClass, TOOL_RISK, Decision, AuditEntry, riskClassOf, evaluate |
@@ -174,7 +174,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（148 文件 · 17922 行）
+## infra（148 文件 · 17923 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -239,19 +239,19 @@
 | tests/semantic-chain.test.ts | 108 | — |
 | scripts/check/check-cards.mjs | 105 | — |
 | scripts/check/check-contract-freshness.mjs | 104 | — |
-| scripts/check/check-stack-status.mjs | 102 | — |
 | scripts/check/check-test-patterns.mjs | 102 | — |
 | scripts/check/gen-rules-map.mjs | 102 | — |
 | scripts/check/check-doc-orphans.mjs | 101 | — |
 | tests/session-invalidate.test.ts | 100 | — |
 | scripts/check/check-anim.mjs | 99 | — |
-| scripts/check/check-state-freshness.mjs | 92 | — |
+| scripts/check/check-stack-status.mjs | 99 | — |
 | scripts/check/check-versions.mjs | 91 | — |
 | scripts/check/check-deploy-freshness.mjs | 87 | — |
 | scripts/check/check-workflow-integrity.mjs | 87 | — |
 | scripts/check/check-probes.mjs | 86 | — |
 | scripts/agent/exp-probe-matrix.mjs | 86 | — |
 | tests/engine.test.ts | 85 | — |
+| scripts/check/check-state-freshness.mjs | 84 | — |
 | scripts/check/gen-experiments-list.mjs | 84 | — |
 | scripts/check/check-experiment-index.mjs | 81 | — |
 | scripts/check/check-hooks.mjs | 81 | — |
@@ -274,6 +274,7 @@
 | scripts/check/check-code-map-coverage.mjs | 63 | — |
 | scripts/check/check-fix-tests.mjs | 63 | — |
 | scripts/check/check-active-stack.mjs | 62 | — |
+| tests/stack-numbering.test.ts | 61 | — |
 | scripts/check/check-doc-schema.mjs | 60 | — |
 | scripts/check/check-commit-docs.mjs | 59 | — |
 | tests/omp-glob.test.ts | 58 | — |
@@ -285,11 +286,10 @@
 | scripts/check/check-consistency.mjs | 51 | — |
 | scripts/check/check-uncommitted.mjs | 51 | — |
 | tests/doc-scripts.test.ts | 51 | — |
-| tests/stack-numbering.test.ts | 51 | — |
 | scripts/check/gen-route-table.mjs | 49 | — |
 | tests/permissions.test.ts | 49 | — |
+| package.json | 49 | — |
 | tests/session-flush.test.ts | 48 | — |
-| package.json | 47 | — |
 | scripts/kfm-restart.sh | 46 | — |
 | scripts/check/check-doc-budget.mjs | 44 | — |
 | scripts/clean-npm-temp.cjs | 44 | — |
@@ -639,4 +639,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 291 文件 · 50111 行 · 跨域边 250 条
+合计 291 文件 · 50119 行 · 跨域边 250 条
