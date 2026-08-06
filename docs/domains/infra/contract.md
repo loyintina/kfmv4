@@ -74,6 +74,10 @@ agent 脚本层——检测归自动化，裁决归会话内 agent，**永远不
     ~/.kfmv4/agent-calls.jsonl（provider/耗时/成败）——观测台聚合器
     scripts/agent/obs-aggregate.mjs 周报（周一 04:37 投信箱）；工具调用审计
     permission-audit.jsonl（权限引擎影子模式）同源；新增数据流必须登记观测台。
+    （2026-08-06 登记：左缘 SYS 竖条数据面——routes/obs.ts collectSys 现场采集
+    盘/存/载/进程 RSS + 端口灯 + crontab 清单；cron 成败判据 = 逐脚本标记表
+    CRON_MARKERS 末位对比，通用关键字实测三处误判已弃用；指标 30s/cron 5min
+    缓存，新增 cron 条目只需在标记表/别名表登记）
 14. **语义生成**（2026-08-02，登记表 P0 完成）：契约清单生成器
     gen-contract-lists（6 域清单单一出处）、路由表生成器 gen-route-table
     （工作流行从 workflows/ 生成）——生成区标记 gen:xxx，幂等 + --check-only
