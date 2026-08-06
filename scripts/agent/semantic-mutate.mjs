@@ -86,7 +86,7 @@ export const MUTATIONS = [
   },
   {
     id: 'M08', level: 'L2', sem: 'SEM002', file: 'docs/domains/infra/contract.md', expect: 'report',
-    find: '## 检查管线（npm run check，41 脚本，顺序固定）',
+    find: '## 检查管线（npm run check，42 脚本，顺序固定）',
     replace: '## 检查管线（npm run check，29 脚本，顺序固定）',
     tasks: ['contract-vs-map-infra'],
     note: '契约计数 29 vs code-map「30 个 check（含 check-checks 自身）」冲突（锚点随 31 迁移）',

@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 035b5451 · 生成于 2026-08-06 -->
+<!-- 基准 commit 9b07b2f1 · 生成于 2026-08-06 -->
 
 # 代码清单（机械层）
 
@@ -174,7 +174,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（146 文件 · 17781 行）
+## infra（146 文件 · 17782 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -209,7 +209,7 @@
 | tests/provider-env.test.ts | 167 | — |
 | experiments/coldstart/tools/hallucinate-batch.mjs | 164 | — |
 | tests/protocol-reducer.test.ts | 161 | — |
-| scripts/check/sync-counts.mjs | 156 | — |
+| scripts/check/sync-counts.mjs | 157 | — |
 | experiments/coldstart/tools/routine-entry-validation.mjs | 152 | — |
 | scripts/agent/semantic-bench.mjs | 149 | — |
 | tests/probes/gen-page-state-schema/src/server/ai/page-state.ts | 149 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
@@ -637,4 +637,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 289 文件 · 49855 行 · 跨域边 250 条
+合计 289 文件 · 49856 行 · 跨域边 250 条

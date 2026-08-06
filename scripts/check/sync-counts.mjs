@@ -69,7 +69,8 @@ const TARGETS = [
       .replace(/(\d+) 个 check-\* 脚本/g, `${checkCount} 个 check-* 脚本`)
       .replace(/(\d+) 个回归测试/g, `${testCount} 个回归测试`)
       .replace(/(\d+) 个测试（单元/g, `${testCount} 个测试（单元`)
-      .replace(/(\d+) 个 check-\*\.mjs/g, `${checkCount} 个 check-*.mjs`)}'`],
+      .replace(/(\d+) 个 check-\*\.mjs/g, `${checkCount} 个 check-*.mjs`)
+      .replace(/(检查管线（npm run check，)(\d+)( 脚本，顺序固定）)/g, `$1${checkCount}$3`)}'`],
   ] },
 ];
 
