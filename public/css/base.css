@@ -390,16 +390,18 @@ body {
 
 /* 横贯顶栏（2026-08-06 定稿）：全宽 + 横排三端分布；左右 padding 76px 避开召唤按钮
    区（文件树按钮左 16-56px / 卡片堆按钮右）——按钮 z(200) 盖在框(z 100)上，文字不进按钮区。 */
-/* 贴顶居中卡（2026-08-06 定稿）：内容宽 + 渐变边框圆角——不横贯。
-   按钮（z 200）在卡外两侧，无 backdrop-filter 叠加（横贯版按钮视觉消失的
-   根因 = 双 backdrop-filter 垂直叠加的移动端合成 bug，回内容宽即规避）。
-   内容重要性（用户定稿）：余额 > deepseek > 时间——余额大字焦点、时间弱化小字。 */
+/* 贴顶居中卡（2026-08-06 定稿 v2）：宽 372px（网格 7 格 +168）居中——左右分区：
+   左列两行（deepseek 标签 + 秒级时间）· 右列余额大字单独放（重点）。
+   左右 padding 56px 避开召唤按钮区（16-56/344-384）——按钮 z(200) 在卡上不遮字。
+   禁全宽横贯：双 backdrop-filter 垂直叠加移动端合成异常会致按钮视觉消失。 */
 .obs-card {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 2px;
-  padding: 14px 30px;
+  justify-content: space-between;
+  width: 372px;
+  box-sizing: border-box;
+  padding: 14px 56px;
   border-radius: 20px;
   background: rgba(18, 18, 26, 0.5);
   border: 1px solid transparent;
@@ -410,15 +412,29 @@ body {
   box-shadow: 0 4px 30px rgba(124, 58, 237, 0.08);
 }
 
+.obs-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
 .obs-provider {
-  font-size: 13px;
-  letter-spacing: 4px;
+  font-size: 12px;
+  letter-spacing: 3px;
   color: rgba(0, 212, 255, 0.75);
   text-transform: uppercase;
 }
 
+.obs-clock {
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
 .obs-balance {
-  font-size: clamp(30px, 8vw, 48px);
+  font-size: clamp(24px, 6.5vw, 32px);
   font-weight: 700;
   line-height: 1.1;
   background: linear-gradient(90deg, #e0e0e0, #00d4ff);
@@ -426,13 +442,6 @@ body {
   background-clip: text;
   color: transparent;
   letter-spacing: 1px;
-  font-variant-numeric: tabular-nums;
-}
-
-.obs-clock {
-  font-size: 12px;
-  letter-spacing: 2px;
-  color: var(--text-dim);
   font-variant-numeric: tabular-nums;
 }
 
