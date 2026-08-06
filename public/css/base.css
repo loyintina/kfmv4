@@ -381,8 +381,9 @@ body {
   bottom: 0;
   pointer-events: none;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  padding-top: 14px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   user-select: none;
 }
