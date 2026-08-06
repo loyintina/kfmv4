@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit d6b32d9d · 生成于 2026-08-06 -->
+<!-- 基准 commit 239ae2cc · 生成于 2026-08-06 -->
 
 # 代码清单（机械层）
 
@@ -70,7 +70,7 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（24 文件 · 3539 行）
+## client-shell（24 文件 · 3612 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -78,11 +78,11 @@
 | src/client/modules/gesture-registry.ts | 346 | GestureHandler, GestureRegistry, gestures |
 | src/client/modules/ui-registry.ts | 334 | UIElementType, UIElementState, InteractiveElement, ContentBlock, Capability, PageDescription, RegistryChangeHandler, UIElementRegistry, Registry |
 | src/client/modules/custom-select.ts | 246 | SelectItem, CustomSelectOptions, CustomSelect, createCustomSelect |
+| src/client/modules/obs-hud.ts | 242 | initObsHud |
 | src/client/modules/orb-panel.ts | 221 | PanelConfig, buildPanelContent |
 | src/client/modules/gestures.ts | 217 | initGestures |
 | src/client/modules/confirm-dialog.ts | 192 | ConfirmOptions, showConfirm |
 | src/client/modules/renderer-lifecycle.ts | 172 | RenderContext, RendererLifecycle, L |
-| src/client/modules/obs-hud.ts | 169 | initObsHud |
 | src/client/modules/state.ts | 165 | API, FileNode, ViewportState, KFMStateType, KFMState, FileRowData, getFileRowData |
 | src/client/modules/drag-handler.ts | 134 | DragConfig, createDragHandler |
 | src/client/modules/app.ts | 131 | initApp |
@@ -159,15 +159,15 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（10 文件 · 1732 行）
+## server（10 文件 · 1774 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/server/routes/files.ts | 399 | FileItem, sliceMessages, MSG_PAYLOAD_BUDGET, MSG_SINGLE_CAP, capMessagesPayload, setupFileRoutes |
 | src/server/ws-server.ts | 315 | WsServer |
+| src/server/routes/obs.ts | 200 | setupObsRoutes, setupObsPages |
 | src/server/index.ts | 186 | — |
 | src/server/path-utils.ts | 168 | ROOT_DIR, PROJECT_ROOT, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, SESSION_ID_RE, isValidSessionId, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
-| src/server/routes/obs.ts | 158 | setupObsRoutes, setupObsPages |
 | src/server/ai/permissions.ts | 134 | RiskClass, TOOL_RISK, Decision, AuditEntry, riskClassOf, evaluate |
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/env-store.ts | 103 | ENV_PATH, parseEnv, loadEnvFile, isEnvRef, ResolvedKey, resolveKey, envNameForProvider, upsertEnvVar |
@@ -639,4 +639,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 291 文件 · 49996 行 · 跨域边 250 条
+合计 291 文件 · 50111 行 · 跨域边 250 条

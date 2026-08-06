@@ -197,12 +197,15 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 .obs-balance.obs-flash{animation:obsFlash .6s ease-out}
 @keyframes obsFlash{0%{opacity:.15}100%{opacity:1}}
 
+/* ===== 双信息框行（信箱+待办，2026-08-06 用户定稿：信箱右侧同宽） ===== */
+/* 行宽 372 = 主卡宽：左框贴主卡左界、右框贴主卡右界，space-between 天然对齐，
+   取代信箱单框时代的 translateX(-106px) 补偿。 */
+.obs-row{display:flex;flex-direction:row;justify-content:space-between;width:372px;align-self:center;margin-top:10px}
+
 /* ===== 信箱卡（语义巡逻 verdict 时间线，2026-08-06） ===== */
-/* 窄竖长信箱造型（1/3 屏宽），主卡左下角；柔和状态徽标（概率区非阻断哲学）；
+/* 窄竖长信箱造型，行内左框；柔和状态徽标（概率区非阻断哲学）；
    列表局部 pointer-events auto 支持触摸滚动（其余区域保持穿透）。 */
-/* 左界对齐主卡：主卡 372/信箱 160 均居中，border-box 居中后左移 (372-160)/2=106px——
-   必须用 transform 不能用负 margin（flex 居中的是 margin-box，负 margin 会抵消一半） */
-.obs-inbox{width:160px;box-sizing:border-box;align-self:center;margin-top:10px;transform:translateX(-106px);border-radius:16px;background:rgba(18,18,26,.5);border:1px solid transparent;background-clip:padding-box;border-image:linear-gradient(135deg,rgba(124,58,237,.4),rgba(0,212,255,.25)) 1;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);overflow:hidden}
+.obs-inbox{width:160px;box-sizing:border-box;border-radius:16px;background:rgba(18,18,26,.5);border:1px solid transparent;background-clip:padding-box;border-image:linear-gradient(135deg,rgba(124,58,237,.4),rgba(0,212,255,.25)) 1;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);overflow:hidden}
 .obs-inbox-head{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid rgba(124,58,237,.18);pointer-events:auto}
 .obs-inbox-title{font-size:11px;letter-spacing:2px;color:rgba(0,212,255,.75);text-transform:uppercase;white-space:nowrap;flex:none}
 .obs-inbox-status{font-size:10px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -230,3 +233,15 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 .obs-inbox-back:active{background:rgba(124,58,237,.25)}
 .obs-inbox-detail-meta{font-size:9px;color:var(--text-dim);letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .obs-inbox-detail-text{font-size:11px;color:var(--text);line-height:1.5;white-space:pre-wrap;word-break:break-word}
+
+/* ===== 待办卡（STACK.md 工作栈 ⏳⚠️ 条目，2026-08-06 用户动议） ===== */
+/* 行内右框，与信箱同宽同构；复用 obs-inbox-* 内部件类（head/list/item/detail/back）。 */
+.obs-stack{width:160px;box-sizing:border-box;border-radius:16px;background:rgba(18,18,26,.5);border:1px solid transparent;background-clip:padding-box;border-image:linear-gradient(135deg,rgba(0,212,255,.35),rgba(124,58,237,.35)) 1;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);overflow:hidden}
+.obs-stack-status{font-size:10px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.obs-stack-list{height:150px;overflow-y:auto;pointer-events:auto;padding:4px 0;scrollbar-width:none;-ms-overflow-style:none}
+.obs-stack-list::-webkit-scrollbar{display:none}
+.obs-stack-mark{font-size:9px;margin-right:4px}
+/* 待办条目默认全亮（与信箱的历史渐淡相反——待办全是现在时）；⚠️ 有保留稍淡 */
+.obs-stack .obs-inbox-item{opacity:.9}
+.obs-stack .obs-inbox-item.obs-stack-item-hold{opacity:.55}
+/* 待办返回按钮复用信箱样式（事件类名单独 .obs-stack-back 便于委托区分） */

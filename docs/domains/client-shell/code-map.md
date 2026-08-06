@@ -66,12 +66,15 @@ initApp → initUI → initGestures → initOrb（ensurePanel、sessionStore 初
 - 启动：`initObsHud()`（main.ts:100，异步尾链）；DOM 直挂 body 的 `.obs-hud`
   （fixed 全屏、`pointer-events:none`，仅信箱滚动区/头部局部 `auto`）
 - z 层：`Z.CENTER_CONTENT`（z-index-layers.ts），低于召唤按钮层（SUMMON_BTN 200）
-- 结构：主卡 `.obs-card`（deepseek 余额 + 秒级时钟，5s 轮询刷新）+ 信箱卡
-  `.obs-inbox`（巡逻 verdict 时间线，点击条目进详情、滚动框内左上 ‹ 返回；
-  固定高 150px 超出滚动；与主卡左缘对齐用 `transform:translateX(-106px)`——
-  flex 居中的是 margin-box，负 margin 会被抵消一半，陷阱）
+- 结构：主卡 `.obs-card`（deepseek 余额 + 秒级时钟，5s 轮询刷新）+ 双信息框行
+  `.obs-row`（宽 372=主卡宽，space-between 两端贴齐——取代信箱单框时代的
+  translateX(-106px) 补偿）：信箱卡 `.obs-inbox`（巡逻 verdict 时间线）+ 待办卡
+  `.obs-stack`（STACK.md ⏳⚠️ 条目，2026-08-06 用户动议：格式纪律 → 机器消费）。
+  两卡同构：点击条目进详情、滚动框内左上 ‹ 返回；固定高 150px 超出滚动
 - 数据流：GET `/api/obs/hud`（server 域 routes/obs.ts：deepseek 余额 5s 缓存 +
-  信箱现场解析 docs/ledger/semantic-chain-inbox.md 不缓存副本）
+  信箱现场解析 docs/ledger/semantic-chain-inbox.md + 待办现场解析
+  docs/active/STACK.md——「## 研究参考」节嵌主列表中段，遇 `## `/`Rn.` 挂起不刹车，
+  均不缓存副本）
 - 配套基建：`/test` 视口校准页（routes/obs.ts `setupObsPages`，POST
   /api/obs/viewport 存 ~/.kfmv4/browser-relay/viewport.json）+ 守视
   `scripts/agent/browser-relay.mjs`（headless Chrome 视觉自测，agent 截图闭环）

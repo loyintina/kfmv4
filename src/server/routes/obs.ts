@@ -74,7 +74,7 @@ async function fetchDeepseekBalance(): Promise<Balance> {
 export function setupObsRoutes(router: Router): void {
   router.get('/obs/hud', async (_req, res) => {
     const balance = await fetchDeepseekBalance();
-    res.json({ balance, inbox: parseInbox(), serverTime: new Date().toISOString() });
+    res.json({ balance, inbox: parseInbox(), stack: parseStack(), serverTime: new Date().toISOString() });
   });
 
   // 守视视口校准回传：/test 页 POST 真机实测视口 → 存 viewport.json（browser-relay 读）
@@ -153,5 +153,47 @@ function parseInbox(): InboxEntry[] {
     return entries.reverse(); // 最新在前
   } catch {
     return [];
+  }
+}
+
+// ========== 待办解析（STACK.md 工作栈，2026-08-06 用户动议：格式纪律 → 机器消费） ==========
+// 条目格式（check-stack-status 机械 enforcement）：`N. 标题行` 顶格，状态 = 标题行
+// 第一个 ✅/⏳/⚠️；延续行 `   — ` 承载详情。「## 研究参考」节嵌在主列表中段
+// （R 编号空间）——遇 `## ` 标题或 `Rn.` 行挂起当前条目（不收延续行），编号行继续。
+// 单一出处：现场读文件，不缓存副本。只出 ⏳/⚠️（待办/有保留），✅ 折叠成计数。
+
+interface StackEntry {
+  n: number;
+  status: 'todo' | 'hold';
+  title: string;
+  detail: string;
+}
+
+const STACK_PATH = path.join(PROJECT_ROOT, 'docs', 'active', 'STACK.md');
+
+function parseStack(): { entries: StackEntry[]; doneCount: number } {
+  try {
+    const text = fs.readFileSync(STACK_PATH, 'utf-8');
+    const entries: StackEntry[] = [];
+    let doneCount = 0;
+    let cur: { n: number; titleLine: string; cont: string[] } | null = null;
+    const flush = () => {
+      if (!cur) return;
+      const mark = cur.titleLine.match(/✅|⏳|⚠️/)?.[0];
+      if (mark === '✅') { doneCount++; return; }
+      if (mark !== '⏳' && mark !== '⚠️') return; // 无标记旧格式条目不进待办窗
+      const title = cur.titleLine.replace(/✅|⏳|⚠️/g, '').replace(/\s+/g, ' ').trim();
+      entries.push({ n: cur.n, status: mark === '⏳' ? 'todo' : 'hold', title, detail: [title, ...cur.cont].join('\n') });
+    };
+    for (const line of text.split('\n')) {
+      if (/^##\s/.test(line) || /^R\d+\./.test(line)) { flush(); cur = null; continue; } // 研究参考节挂起
+      const hm = line.match(/^(\d+)\.\s+(.*)$/);
+      if (hm) { flush(); cur = { n: Number(hm[1]), titleLine: hm[2], cont: [] }; continue; }
+      if (cur && /^\s+—/.test(line)) cur.cont.push(line.trim());
+    }
+    flush();
+    return { entries, doneCount };
+  } catch {
+    return { entries: [], doneCount: 0 };
   }
 }
