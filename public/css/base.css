@@ -396,10 +396,11 @@ body {
 /* 窄竖长信箱造型（1/3 屏宽），主卡左下角；柔和状态徽标（概率区非阻断哲学）；
    列表局部 pointer-events auto 支持触摸滚动（其余区域保持穿透）。 */
 .obs-inbox {
-  width: 33.3333333333%;
+  width: 160px;
   box-sizing: border-box;
   align-self: flex-start;
   margin-top: 10px;
+  margin-left: 2px;
   border-radius: 16px;
   background: rgba(18, 18, 26, 0.5);
   border: 1px solid transparent;
@@ -416,6 +417,7 @@ body {
   gap: 6px;
   padding: 8px 10px;
   border-bottom: 1px solid rgba(124, 58, 237, 0.18);
+  pointer-events: auto;
 }
 
 .obs-inbox-title {
@@ -423,6 +425,8 @@ body {
   letter-spacing: 2px;
   color: rgba(0, 212, 255, 0.75);
   text-transform: uppercase;
+  white-space: nowrap;
+  flex: none;
 }
 
 .obs-inbox-status {
@@ -453,6 +457,12 @@ body {
   padding: 5px 10px;
   border-left: 2px solid transparent;
   opacity: 0.55;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.obs-inbox-item:active {
+  background: rgba(124, 58, 237, 0.15);
 }
 
 .obs-inbox-item-new {
@@ -510,4 +520,54 @@ body {
 
 .obs-dot-other {
   background: rgba(224, 224, 224, 0.35);
+}
+
+/* ===== 信箱详情视图（点击条目进入，2026-08-06） ===== */
+.obs-inbox-back {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 212, 255, 0.25);
+  background: rgba(18, 18, 26, 0.6);
+  color: rgba(0, 212, 255, 0.85);
+  font-size: 15px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.obs-inbox-back:active {
+  background: rgba(124, 58, 237, 0.25);
+}
+
+.obs-inbox-head-detail {
+  padding-left: 6px;
+}
+
+.obs-inbox-detail {
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.obs-inbox-detail-meta {
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.obs-inbox-detail-text {
+  font-size: 11px;
+  color: var(--text);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
