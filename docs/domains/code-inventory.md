@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit a8d81b3c · 生成于 2026-08-06 -->
+<!-- 基准 commit e4e370af · 生成于 2026-08-06 -->
 
 # 代码清单（机械层）
 
@@ -70,7 +70,7 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（24 文件 · 3505 行）
+## client-shell（24 文件 · 3494 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -87,7 +87,7 @@
 | src/client/modules/drag-handler.ts | 134 | DragConfig, createDragHandler |
 | src/client/main.ts | 128 | — |
 | src/client/modules/z-index-layers.ts | 105 | Z, ZLayer |
-| src/client/modules/obs-hud.ts | 89 | initObsHud |
+| src/client/modules/obs-hud.ts | 78 | initObsHud |
 | src/client/modules/animation-registry.ts | 75 | AnimTimeline, anim |
 | src/client/modules/ui.ts | 71 | openSidebar, closeSidebar, initUI |
 | src/client/modules/version-watch.ts | 60 | initVersionWatch |
@@ -159,7 +159,7 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（10 文件 · 1635 行）
+## server（10 文件 · 1645 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -171,10 +171,10 @@
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/env-store.ts | 103 | ENV_PATH, parseEnv, loadEnvFile, isEnvRef, ResolvedKey, resolveKey, envNameForProvider, upsertEnvVar |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
+| src/server/routes/obs.ts | 73 | setupObsRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
-| src/server/routes/obs.ts | 63 | setupObsRoutes |
 
-## infra（143 文件 · 17279 行）
+## infra（143 文件 · 17293 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -286,11 +286,11 @@
 | tests/session-flush.test.ts | 48 | — |
 | package.json | 47 | — |
 | scripts/check/check-doc-budget.mjs | 44 | — |
+| scripts/kfm-restart.sh | 44 | — |
 | scripts/clean-npm-temp.cjs | 44 | — |
 | scripts/check/check-release-radar.mjs | 42 | — |
 | tests/reset-hooks.ts | 41 | — |
 | tests/runner.ts | 33 | test, group, runAll, regression, beforeEach, TestFileNode, singleFolder, nestedFolders |
-| scripts/kfm-restart.sh | 30 | — |
 | scripts/deploy.sh | 29 | — |
 | .githooks/pre-push | 28 | — |
 | tests/semantic-audit.test.ts | 26 | — |
@@ -633,4 +633,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 286 文件 · 49149 行 · 跨域边 249 条
+合计 286 文件 · 49162 行 · 跨域边 249 条

@@ -15,6 +15,9 @@ import { resolveKey } from '../env-store.js';
 import { KFM_DATA_DIR } from '../path-utils.js';
 
 const DEEPSEEK_BALANCE_URL = 'https://api.deepseek.com/user/balance';
+// 余额缓存：余额只有调用消耗才变（分钟级），客户端秒级轮询的是本地接口；
+// 外部 deepseek 请求 60s 一次受控（秒级轮询外部 API = 8.6 万次/天，无谓且易触限流）。
+const BALANCE_CACHE_MS = 60_000;
 
 interface BalanceOk {
   total: string;
@@ -28,7 +31,12 @@ interface BalanceErr {
 }
 type Balance = BalanceOk | BalanceErr;
 
+let balanceCache: { data: Balance; ts: number } | null = null;
+
 async function fetchDeepseekBalance(): Promise<Balance> {
+  if (balanceCache && Date.now() - balanceCache.ts < BALANCE_CACHE_MS) {
+    return balanceCache.data;
+  }
   try {
     const provs = JSON.parse(fs.readFileSync(path.join(KFM_DATA_DIR, 'providers.json'), 'utf-8'));
     const ds = (provs as Array<{ id: string; apiKey: string }>).find(p => p.id === 'deepseek');
@@ -42,13 +50,15 @@ async function fetchDeepseekBalance(): Promise<Balance> {
     if (!res.ok) return { error: `balance HTTP ${res.status}` };
     const j = await res.json() as { is_available?: boolean; balance_infos?: Array<Record<string, unknown>> };
     const info = j.balance_infos?.[0] ?? {};
-    return {
+    const data: Balance = {
       total: String(info.total_balance ?? '?'),
       granted: String(info.granted_balance ?? '0'),
       toppedUp: String(info.topped_up_balance ?? '0'),
       isAvailable: !!j.is_available,
       fetchedAt: new Date().toISOString(),
     };
+    balanceCache = { data, ts: Date.now() };
+    return data;
   } catch (e) {
     return { error: e instanceof Error ? e.message.slice(0, 80) : String(e) };
   }
