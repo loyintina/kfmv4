@@ -7,6 +7,13 @@
  * 余额数据源：GET https://api.deepseek.com/user/balance（官方开放平台唯一账户接口，
  * 返回 is_available + balance_infos[]：total/granted/topped_up 分解）。
  * 「实时更新」= 每次请求直接拉官方（不缓存）——余额接口免费且轻量，30s 级轮询无压力。
+ *
+ * /test 校准页 + /api/obs/viewport 回传（2026-08-06，守视基建）：手机浏览器开
+ * /kfmv4/test（经 nginx /kfmv4/ 整段代理直达，无需新增映射规则）→ 页面自动量
+ * innerWidth/innerHeight/devicePixelRatio POST 回 /api/obs/viewport → 存
+ * ~/.kfmv4/browser-relay/viewport.json，scripts/agent/browser-relay.mjs 下次开
+ * 标签即按真机视口渲染。挂 8021 常驻服务而非 daemon 自身：daemon 闲置会退，
+ * 校准页须随时可开。
  */
 import type { Router } from 'express';
 import fs from 'fs';
@@ -69,6 +76,42 @@ export function setupObsRoutes(router: Router): void {
     const balance = await fetchDeepseekBalance();
     res.json({ balance, inbox: parseInbox(), serverTime: new Date().toISOString() });
   });
+
+  // 守视视口校准回传：/test 页 POST 真机实测视口 → 存 viewport.json（browser-relay 读）
+  router.post('/obs/viewport', (req, res) => {
+    const b = req.body || {};
+    const w = Math.round(Number(b.width)), h = Math.round(Number(b.height)), d = Number(b.deviceScaleFactor) || 2;
+    if (!(w >= 100 && w <= 2000 && h >= 100 && h <= 4000 && d > 0 && d <= 5)) {
+      res.status(400).json({ ok: false, error: '视口数值不合理' });
+      return;
+    }
+    const viewport = { width: w, height: h, deviceScaleFactor: d, userAgent: String(b.userAgent || ''), updatedAt: new Date().toISOString() };
+    const dir = path.join(KFM_DATA_DIR, 'browser-relay');
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'viewport.json'), JSON.stringify(viewport, null, 2));
+    res.json({ ok: true, viewport });
+  });
+}
+
+// 校准页挂在 app 上（非 /api 路由）：GET /test 与 /kfmv4/test 均可达——
+// 后者经 nginx /kfmv4/ 代理供手机外网访问。页面用相对路径 POST api/obs/viewport，
+// 两种前缀下都解析到已挂载的 /obs/viewport 端点。
+const CALIBRATE_HTML = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>守视校准</title><body style="font:16px/2 monospace;background:#111;color:#eee;padding:24px">
+<h3>守视 · 视口校准</h3><div id="m">测量中…</div>
+<script>
+const v = { width: window.innerWidth, height: window.innerHeight, deviceScaleFactor: window.devicePixelRatio, userAgent: navigator.userAgent };
+fetch('api/obs/viewport', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(v) }).then(r => r.json()).then(r => {
+  document.getElementById('m').textContent = r.ok
+    ? '已记录：' + r.viewport.width + '×' + r.viewport.height + ' @' + r.viewport.deviceScaleFactor + 'x（守视新开标签页生效）'
+    : '记录失败：' + r.error;
+});
+</script>`;
+
+export function setupObsPages(app: { get: (p: string, h: (_req: unknown, res: { type: (t: string) => { send: (s: string) => void } }) => void) => void }): void {
+  const handler = (_req: unknown, res: { type: (t: string) => { send: (s: string) => void } }) => res.type('html').send(CALIBRATE_HTML);
+  app.get('/test', handler);
+  app.get('/kfmv4/test', handler);
 }
 
 // ========== 信箱解析（semantic-chain-inbox.md，ledger 层账本·只追加） ==========

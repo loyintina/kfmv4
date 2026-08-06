@@ -18,7 +18,7 @@ import { fileURLToPath } from 'url';
 import { setupFileRoutes } from './routes/files.js';
 import { setupProxyRoutes } from './routes/proxy.js';
 import { setupProvidersRoutes } from './routes/providers.js';
-import { setupObsRoutes } from './routes/obs.js';
+import { setupObsRoutes, setupObsPages } from './routes/obs.js';
 import { setupAiRoutes } from './ai/routes.js';
 import { WsServer } from './ws-server.js';
 import { verifyLocalOrigin } from './path-utils.js';
@@ -65,6 +65,8 @@ apiRoutes.post('/client-error', (req, res) => {
 });
 app.use('/api', apiRoutes);
 app.use('/kfmv4/api', apiRoutes);
+// 守视校准页（GET /test 与 /kfmv4/test，后者经 nginx 代理供手机外网校准视口）
+setupObsPages(app);
 
 // WebSocket + AI
 const PORT = parseInt(process.env.KFM_PORT || '8021', 10);
