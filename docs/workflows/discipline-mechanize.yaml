@@ -11,6 +11,10 @@ steps:
   3. 挂入 npm run check 链
   4. 验证：复现场景必须被拦截
   5. 登记 bugs.md（模式已机械化，不再依赖自觉）
+  6. 元规则自查（2026-08-06 用户拍板）：本批是否出现了新的重要产物类型？
+     若有，必须问「它的发现路径有机械主人吗」——脱离第一手作者后接手者
+     如何知道它存在？无主人则补发现门（参照 check-code-map-coverage /
+     check-agent-script-docs 的「文件名必须出现在发现面」模式）或登记豁免面。
 writes:
   - check-*.mjs
   - package.json（check 链）

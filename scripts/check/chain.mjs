@@ -49,6 +49,7 @@ export const STEPS = [
   'node scripts/check/check-checks.mjs',
   'node scripts/check/check-doc-coverage.mjs',
   'node scripts/check/check-code-map-coverage.mjs',
+  'node scripts/check/check-agent-script-docs.mjs',
   'npx sass --no-source-map public/css/:public/css/',
   'node scripts/check/check-css-wiring.mjs',
   'node scripts/check/check-tool-compaction.mjs --check-only',

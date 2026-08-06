@@ -36,7 +36,7 @@ export const MUTATIONS = [
   // ---- L1 回归层：历史真案例复刻 ----
   {
     id: 'M01', level: 'L1', sem: 'SEM001', file: 'README.md', expect: 'report',
-    find: '**41 个 check-* 脚本 + 524 个回归测试**',
+    find: '**42 个 check-* 脚本 + 524 个回归测试**',
     replace: '**36 个 check-* 脚本 + 499 个回归测试**',
     tasks: ['readme-vs-maps', 'inter-readme-codemap'],
     note: 'check 计数应为 36（锚点 2026-08-03 随 493→498 迁移）',
@@ -94,7 +94,7 @@ export const MUTATIONS = [
   // ---- L3 对抗层：near-miss 负例（报了即误报） ----
   {
     id: 'M09', level: 'L3', sem: 'NC', file: 'README.md', expect: 'silent',
-    find: '| 自动化检查管线 | 41 个 check-* 脚本',
+    find: '| 自动化检查管线 | 42 个 check-* 脚本',
     replace: '| 自动化检查管线 | 37（三十七）个 check-* 脚本',
     tasks: ['readme-vs-maps', 'inter-readme-codemap'],
     note: '正确计数的表述变体——不应报告（三轮假发现改造）',
@@ -116,7 +116,7 @@ export const MUTATIONS = [
   },
   {
     id: 'M12', level: 'L2', sem: 'SEM002', file: 'CLAUDE.md', expect: 'report',
-    find: 'npm run check    # 41 个 check-*.mjs + tsc --noEmit（仅检查，不构建）',
+    find: 'npm run check    # 42 个 check-*.mjs + tsc --noEmit（仅检查，不构建）',
     replace: 'npm run check    # 36 个 check-*.mjs + tsc --noEmit（仅检查，不构建）',
     tasks: ['claude-vs-docs'],
     note: '入口文档计数 30 vs infra 契约「31 脚本」冲突（锚点随 31 迁移）',

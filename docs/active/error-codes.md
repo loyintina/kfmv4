@@ -24,6 +24,7 @@
 | DOC-FLOW-07 | 加载类文档超预算线（check-doc-budget） | doc-architecture §读/存分区 | 第 1 步 |
 | DOC-FLOW-08 | 新代码文件无文档家（check-doc-coverage） | 对应域 contract.md 文件清单 | 第 4 步 |
 | DOC-FLOW-09 | 新部件无 code-map 家（check-code-map-coverage：main.ts 直挂部件未入图） | 对应域 code-map.md（实然测绘） | 第 4 步 |
+| DOC-FLOW-10 | 新 agent 脚本无发现路径（check-agent-script-docs：scripts/agent/*.mjs 未登记，exp-* 豁免） | guides/agent-runner.md 负载登记节 | 第 4 步 |
 
 ## TEST-FLOW（测试/账本纪律：bug-fix 流程）
 

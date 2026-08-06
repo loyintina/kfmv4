@@ -9,7 +9,8 @@ agent 原件，不是 agent 应用。三明治：**机械组装输入 → agent 
 ## 两种形态的分工
 
 - **形态 A（本体系，scripts/agent/）**：独立脚本，洁净室上下文，可进 cron/管线，输出 exit code 语义。
-  输入一律机械预装，原件不带工具（可控性来源）。
+  输入一律机械预装，原件不带工具（可控性来源）。运行库 = `agent-runner.mjs`
+  （`runAgent`/`runAgentTooled` 单臂 deepseek 官方链，重试两次后显式透传报错）。
 - **形态 B（存量）**：提示词文件由 agent 执行（workflows/ 卡 + subagent）——交互式、需要工具的任务。
 
 ## 形态 A 工具流扩展（runAgentTooled，2026-08-04）
@@ -167,3 +168,29 @@ deepseek 官方单臂，见上文「provider 兜底链」。）
   基准有 API 成本，cron 每周一次即可
 - **cron 安装**（2026-07-30 装机）：每日 `17 4 * * *` 巡逻 + 每周一 `23 4 * * 1` 带基准，
   日志 `/var/log/semantic-chain.log`
+
+
+## 四号负载：browser-relay.mjs（守视——视觉自测基建，2026-08-06 用户拍板）
+
+常驻服务型工具（与一次性负载不同：daemon + CLI，任何 agent 可调用，含未来 kfmv4
+面板 agent）。用途：UI 开发的「改 → 自己看 → 再改」闭环——headless Chrome 截图
+落盘，agent 读图验证排版/遮挡/交互，替代「用户描述 → 猜」。
+
+- **用法**：`node scripts/agent/browser-relay.mjs <cmd>`（open/shot/click/type/eval/
+  wait/state/tabs/close/viewport/stop），stdout 单行 JSON；shot 返回 png 路径供读图。
+  daemon 未启动时 CLI 自动拉起，端口 8033（控制面只认 127.0.0.1）
+- **视口校准**：真机开 `http://<服务器>/kfmv4/test`（8021 常驻校准页，POST 存
+  ~/.kfmv4/browser-relay/viewport.json），新开标签按真机视口渲染；未校准默认 400×812@2x
+- **长跑自洁**：闲置 10min 自退（/health 不算活动）/ 标签上限 8 LRU / 截图留最新 50 /
+  每次启动全新 profile 禁磁盘缓存 / 6h 强制退休兜底
+- **陷阱**：bundle/css 是 immutable 缓存——验证前端改动前必须 `stop` 重启 daemon，
+  否则新标签也吃旧包（2026-08-06 实测踩中）
+- 视觉断言回归化（几何断言固化为测试钉）为候选方向，尚未立项
+
+
+## 五号负载：obs-aggregate.mjs（观测台聚合器，史官制度 8.5）
+
+周报生成（cron 每周聚合）：读三本 append-only 账本——`~/.kfmv4/agent-calls.jsonl`
+（LLM 调用：provider/耗时/成败）、`~/.kfmv4/permission-audit.jsonl`（工具调用审计：
+RiskClass/判定）、`docs/ledger/semantic-chain-inbox.md`（文档健康趋势）→ 周报文本
+stdout，`--mailbox` 投信箱。用法：`node scripts/agent/obs-aggregate.mjs [--days=7] [--mailbox]`。

@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 1e552978 · 生成于 2026-08-06 -->
+<!-- 基准 commit 035b5451 · 生成于 2026-08-06 -->
 
 # 代码清单（机械层）
 
@@ -174,7 +174,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（145 文件 · 17729 行）
+## infra（146 文件 · 17781 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -222,7 +222,7 @@
 | build.mjs | 133 | — |
 | scripts/check/check-checks.mjs | 132 | — |
 | scripts/check/check-tool-compaction.mjs | 130 | — |
-| scripts/check/chain.mjs | 127 | STEPS |
+| scripts/check/chain.mjs | 128 | STEPS |
 | scripts/check/check-mutation-anchors.mjs | 127 | — |
 | scripts/check/gen-permission-map.mjs | 126 | — |
 | tests/session-security.test.ts | 125 | — |
@@ -279,6 +279,7 @@
 | tests/tool-schema.test.ts | 54 | — |
 | scripts/check/check-secrets.mjs | 52 | — |
 | tests/gen-pipeline.test.ts | 52 | — |
+| scripts/check/check-agent-script-docs.mjs | 51 | — |
 | scripts/check/check-consistency.mjs | 51 | — |
 | scripts/check/check-uncommitted.mjs | 51 | — |
 | tests/doc-scripts.test.ts | 51 | — |
@@ -636,4 +637,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 288 文件 · 49803 行 · 跨域边 250 条
+合计 289 文件 · 49855 行 · 跨域边 250 条
