@@ -584,10 +584,11 @@ body {
 }
 
 /* ===== 待办卡（stack.yaml 工作栈，2026-08-06 用户拍板：废 STACK.md，yaml 单一出处） ===== */
-/* 行内右框，与信箱同宽同构；复用 obs-inbox-* 内部件类（head/list/item/detail/back）。
+/* 行内右框；2026-08-06 加宽 160→200（用户定稿：中央空隙太大，空隙 52→12，行宽 372 不动，
+   左界仍贴主卡）。复用 obs-inbox-* 内部件类（head/list/item/detail/back）。
    全状态渲染：todo/hold 全亮在前，done 渐淡殿后（藏起 done 是旧设计的诚实性缺陷）。 */
 .obs-stack {
-  width: 160px;
+  width: 200px;
   box-sizing: border-box;
   border-radius: 16px;
   background: rgba(18, 18, 26, 0.5);
@@ -649,10 +650,16 @@ body {
   opacity: 0.3;
 }
 
+/* note 次行独立成块单行截断（与标题 clamp 分层——同层共 clamp 会让两行标题白挂省略号） */
 .obs-stack-note {
+  display: block;
   font-size: 9px;
   color: var(--text-dim);
   letter-spacing: 0.3px;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .obs-stack-divider {
