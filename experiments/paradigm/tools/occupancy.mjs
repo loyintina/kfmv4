@@ -36,6 +36,7 @@ export const PACK_TOKENS_K = {
   'measured-decision': 2.9,
   'measured-decision-full': 4.1,
   'root-cause-first': 7.8,
+  'behavior-discipline': 7.2,
 };
 
 /** 模型窗口（k tokens）。键为模型名片段（includes 匹配，长片段优先）。 */
