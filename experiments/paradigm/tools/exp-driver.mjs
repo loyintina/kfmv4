@@ -178,6 +178,10 @@ if (spec.judge) {
       '--concurrency', String(Number(j.concurrency || 8)),
     ];
     if (j.out) args.push('--out', j.out);
+    // 任务专属语义项（e13/e14a 陷阱任务）：itemsFiles = { 臂前缀: items 文件 }，
+    // 与 taskFiles 平行——e14a 复用 e13-t1-items.json，判卷口径与 e13 完全同尺
+    const itemsFile = (j.itemsFiles || {})[armPrefix];
+    if (itemsFile) args.push('--items-file', itemsFile);
     log(`judge: --prefixes ${armPrefix} --task-file ${taskFile}`);
     const res = spawnSync('node', args, { stdio: 'inherit', cwd: REPO });
     if (res.error) log(`judge ${armPrefix} spawn 失败: ${res.error.message}（继续下一个）`);

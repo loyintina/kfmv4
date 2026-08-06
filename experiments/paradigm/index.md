@@ -410,6 +410,8 @@ batch-run（计划中）：批量跑所有组合臂（并发+断点续跑）+ �
   / occupancy.mjs（占用率登记表，arms.occ_ratio 写入+回填）
 - 编排：exp-driver.mjs（spec JSON 驱动跑数重试循环+自动判卷，--check 干跑校验；
   2026-08-06 起新实验不再手写 run-*.sh）/ specs/e14a.json / specs/e14b.json（e14 双前缀 spec）
+  / specs/e15.json（注入位置：system+pre-task-user 双 run，first-user 档复用 e14b）
+  / specs/e16.json（S5/S6 结构矩阵，同 e13-t2 尺）
 - 判卷：judge-llm.mjs（LLM 盲判主通道，rubric v1/v2）/ judge-e13-script.mjs
   （e13 零成本脚本判卷：沙箱 diff+工具痕迹）/ judge-px1-blind.mjs（px 轮号对齐盲判）
   / bench-score.mjs / blind-anonymize.py（盲判匿名化）
@@ -449,4 +451,5 @@ batch-run（计划中）：批量跑所有组合臂（并发+断点续跑）+ �
   results-e11-e12-matrix-v2.md / results-flash-calibration-01.md / results-h1-paradigm.md /
   results-h2-h4-analysis.md / results-h5-length.md / results-harness-artifacts.md /
   results-judge-bias.md / results-px1-plugin.md / results-px-baseline-halflife.md /
-  results-px-tripod.md / results-rubric-v2.md / results-session-leak-rootcause.md
+  results-px-tripod.md / results-rubric-v2.md / results-session-leak-rootcause.md /
+  results-e13-trap.md
