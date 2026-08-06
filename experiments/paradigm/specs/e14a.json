@@ -1,0 +1,28 @@
+{
+  "experiment": "e14a",
+  "prefix": "e14a-",
+  "retryRounds": 10,
+  "runs": [
+    {
+      "taskFile": "experiments/paradigm/scenarios/e13-t1-verify.txt",
+      "paradigms": "无,behavior-discipline,metacognition,e14-bd-meta",
+      "models": "Qwen/Qwen3.6-35B-A3B,Qwen/Qwen3.5-27B,Pro/deepseek-ai/DeepSeek-V3,Pro/MiniMaxAI/MiniMax-M2.5",
+      "provider": "硅基流动",
+      "arms": 8,
+      "concurrency": 2,
+      "tools": "read,grep,glob,write",
+      "sandboxTemplate": "experiments/paradigm/fixtures/e13-sandbox-template",
+      "plannedArms": 128
+    }
+  ],
+  "judge": {
+    "model": "deepseek-v4-flash",
+    "provider": "deepseek",
+    "rubric": "v2",
+    "concurrency": 4,
+    "out": "experiments/paradigm/meta-pool/judge-e14a.json",
+    "taskFiles": {
+      "e14a-t0": "experiments/paradigm/scenarios/e13-t1-verify.txt"
+    }
+  }
+}
