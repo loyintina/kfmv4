@@ -1,0 +1,15 @@
+{
+ "generated": "2026-08-06T11:48:28.727Z",
+ "jail_live_at": "2026-08-06T09:29:00Z（17:29 本地重启）",
+ "method": "arms.content 逐调用配对 tool_result，路径过滤（绝对路径/../ /仓库前缀）",
+ "pre_jail": {
+  "succeeded": 17,
+  "blocked": 2,
+  "note": "旧服务端无监狱时代，ground truth 核实真仓库/fixture 零污染，唯一落地证据 /tmp/report.json"
+ },
+ "post_jail": {
+  "succeeded": 0,
+  "blocked": 27,
+  "note": "写监狱实战验证通过：越狱上线后全部越界写尝试被拦，零泄漏"
+ }
+}
