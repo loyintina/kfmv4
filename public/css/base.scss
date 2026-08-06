@@ -240,3 +240,21 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 .orb-msg-new {
   animation: orbMsgSlideIn 0.25s ease-out;
 }
+
+/* ========== 观测台 HUD（8.5 史官制度 · L1 中央内容层，2026-08-05） ========== */
+/* 背景信息窗：全屏分框、纯展示（pointer-events none）、毛玻璃 + 霓虹描边。 */
+.obs-hud{position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;display:flex;flex-direction:column;gap:8px;padding:10px 12px;box-sizing:border-box;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;user-select:none}
+.obs-top{display:flex;justify-content:space-between;align-items:baseline;padding:0 2px;color:var(--text-dim)}
+.obs-clock{font-size:clamp(18px,4.5vw,26px);font-weight:600;letter-spacing:2px;color:var(--text)}
+.obs-top-right{font-size:11px;color:var(--text-dim)}
+.obs-main{background:rgba(18,18,26,.55);border:1px solid transparent;border-radius:16px;padding:12px 16px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);background-clip:padding-box;border-image:linear-gradient(135deg,rgba(124,58,237,.5),rgba(0,212,255,.3)) 1}
+.obs-balance{font-size:clamp(40px,10vw,64px);font-weight:700;line-height:1.05;background:linear-gradient(90deg,#e0e0e0,#00d4ff);-webkit-background-clip:text;background-clip:text;color:transparent;transition:opacity .3s}
+.obs-balance-sub{font-size:11px;color:var(--text-dim);margin-top:4px}
+.obs-balance.obs-flash{animation:obsFlash .5s ease-out}
+@keyframes obsFlash{0%{opacity:.2}100%{opacity:1}}
+.obs-row2{display:flex;gap:8px;flex:1.2}
+.obs-row3{display:flex;gap:8px;flex:1}
+.obs-row4{display:flex;gap:8px;flex:1}
+.obs-box{flex:1;background:rgba(18,18,26,.35);border:1px solid rgba(124,58,237,.22);border-radius:12px;display:flex;align-items:center;justify-content:center;color:rgba(224,224,224,.18);font-size:11px;letter-spacing:2px;position:relative}
+.obs-box::before{content:attr(data-title);opacity:.5}
+.obs-bar{height:24px;border-top:1px solid rgba(124,58,237,.25);color:rgba(224,224,224,.2);font-size:10px;display:flex;align-items:center;padding:0 4px;letter-spacing:1px}

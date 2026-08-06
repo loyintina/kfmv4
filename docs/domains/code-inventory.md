@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 82e962f6 · 生成于 2026-08-05 -->
+<!-- 基准 commit a8d81b3c · 生成于 2026-08-06 -->
 
 # 代码清单（机械层）
 
@@ -70,7 +70,7 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（23 文件 · 3414 行）
+## client-shell（24 文件 · 3505 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -85,8 +85,9 @@
 | src/client/modules/renderer-lifecycle.ts | 172 | RenderContext, RendererLifecycle, L |
 | src/client/modules/state.ts | 165 | API, FileNode, ViewportState, KFMStateType, KFMState, FileRowData, getFileRowData |
 | src/client/modules/drag-handler.ts | 134 | DragConfig, createDragHandler |
-| src/client/main.ts | 126 | — |
+| src/client/main.ts | 128 | — |
 | src/client/modules/z-index-layers.ts | 105 | Z, ZLayer |
+| src/client/modules/obs-hud.ts | 89 | initObsHud |
 | src/client/modules/animation-registry.ts | 75 | AnimTimeline, anim |
 | src/client/modules/ui.ts | 71 | openSidebar, closeSidebar, initUI |
 | src/client/modules/version-watch.ts | 60 | initVersionWatch |
@@ -98,7 +99,7 @@
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（55 文件 · 11752 行）
+## ai-chat（55 文件 · 11768 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -106,7 +107,7 @@
 | src/client/data/waiting-hints.ts | 1108 | WAITING_HINTS |
 | src/server/ai/tools/omp/browser/tab-worker.ts | 921 | WorkerCore |
 | src/server/ai/tools/omp/browser/launch.ts | 603 | DEFAULT_VIEWPORT, BROWSER_PROTOCOL_TIMEOUT_MS, loadPuppeteer, loadPuppeteerInWorker, LaunchHeadlessOptions, launchHeadlessBrowser, applyViewport, UserAgentOverride, UserAgentSession, applyStealthPatches |
-| src/server/ai/chat.ts | 542 | ChatMessage, StreamEvent, createClientIdxMapper |
+| src/server/ai/chat.ts | 558 | ChatMessage, StreamEvent, createClientIdxMapper, findApiProvider |
 | src/client/modules/session-client.ts | 529 | SessionMessage, Session, extractMessageText, countTextMessages, sessionStore |
 | src/client/modules/orb-chat-run.ts | 512 | ChatMessage, StreamEvent, getActiveRunId, getActiveCursor, setEventHook, readPersistedRun, clearPersistedRun, settlePendingToolBlocks, resumeRun, doSend |
 | src/client/modules/ws-channel.ts | 426 | wsChannel, initWsChannel |
@@ -158,29 +159,30 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（9 文件 · 1570 行）
+## server（10 文件 · 1635 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/server/routes/files.ts | 399 | FileItem, sliceMessages, MSG_PAYLOAD_BUDGET, MSG_SINGLE_CAP, capMessagesPayload, setupFileRoutes |
 | src/server/ws-server.ts | 315 | WsServer |
-| src/server/index.ts | 182 | — |
+| src/server/index.ts | 184 | — |
 | src/server/path-utils.ts | 168 | ROOT_DIR, PROJECT_ROOT, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, SESSION_ID_RE, isValidSessionId, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
 | src/server/ai/permissions.ts | 134 | RiskClass, TOOL_RISK, Decision, AuditEntry, riskClassOf, evaluate |
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/env-store.ts | 103 | ENV_PATH, parseEnv, loadEnvFile, isEnvRef, ResolvedKey, resolveKey, envNameForProvider, upsertEnvVar |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
+| src/server/routes/obs.ts | 63 | setupObsRoutes |
 
-## infra（142 文件 · 17190 行）
+## infra（143 文件 · 17279 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | tests/client-logic.test.ts | 921 | — |
-| tests/regression.test.ts | 651 | — |
+| tests/regression.test.ts | 652 | — |
 | experiments/coldstart/tools/normalize-arms.mjs | 587 | — |
 | tests/tool-compaction.test.ts | 505 | — |
-| scripts/agent/semantic-audit.mjs | 460 | taskFiles, buildPrompt, makeValidate, recheckRef, recheckQuote |
+| scripts/agent/semantic-audit.mjs | 470 | parseOnly, taskFiles, buildPrompt, makeValidate, recheckRef, recheckQuote |
 | tests/preload.mjs | 423 | — |
 | tests/cards.test.ts | 410 | — |
 | tests/server-routes.test.ts | 378 | — |
@@ -203,6 +205,7 @@
 | scripts/agent/semantic-chain.mjs | 185 | — |
 | scripts/check/gen-code-inventory.mjs | 184 | — |
 | tests/chat-protocol.test.ts | 169 | — |
+| tests/provider-env.test.ts | 167 | — |
 | experiments/coldstart/tools/hallucinate-batch.mjs | 164 | — |
 | tests/protocol-reducer.test.ts | 161 | — |
 | scripts/check/sync-counts.mjs | 156 | — |
@@ -212,7 +215,7 @@
 | scripts/check/check-docs.mjs | 146 | — |
 | scripts/check/check-bar-ledger.mjs | 143 | — |
 | scripts/check/check-doc-scripts.mjs | 139 | — |
-| tests/provider-env.test.ts | 137 | — |
+| scripts/check/check-doc-linerefs.mjs | 137 | — |
 | experiments/coldstart/tools/judge-batch.mjs | 135 | — |
 | scripts/agent/exp-iceberg.mjs | 134 | — |
 | build.mjs | 133 | — |
@@ -226,7 +229,6 @@
 | scripts/check/gen-tool-docs.mjs | 121 | — |
 | tests/liquid-geometry.test.ts | 120 | — |
 | scripts/agent/exp-probe-decompose.mjs | 117 | — |
-| scripts/check/check-doc-linerefs.mjs | 116 | — |
 | tests/harness.ts | 116 | TestTag, TestOpts, test, regression, group, beforeEach, runAll |
 | scripts/check/gen-page-state-schema.mjs | 113 | — |
 | scripts/check/check-doc-coverage.mjs | 111 | — |
@@ -264,9 +266,9 @@
 | scripts/check/check-card-meta.mjs | 68 | — |
 | scripts/check/check-ledger-commits.mjs | 68 | — |
 | tests/floating-state.test.ts | 66 | — |
+| scripts/check/domain-src.mjs | 64 | DOMAIN_SRC |
 | scripts/agent/test-tag-advisor.mjs | 64 | — |
 | scripts/check/check-fix-tests.mjs | 63 | — |
-| scripts/check/domain-src.mjs | 63 | DOMAIN_SRC |
 | scripts/check/check-active-stack.mjs | 62 | — |
 | scripts/check/check-doc-schema.mjs | 60 | — |
 | scripts/check/check-commit-docs.mjs | 59 | — |
@@ -291,6 +293,7 @@
 | scripts/kfm-restart.sh | 30 | — |
 | scripts/deploy.sh | 29 | — |
 | .githooks/pre-push | 28 | — |
+| tests/semantic-audit.test.ts | 26 | — |
 | tests/check-deploy-freshness.test.ts | 19 | — |
 | tests/probes/gen-permission-map/src/server/ai/tools/index.ts | 19 | getToolDefinitions, getAllTools |
 | tests/gsap-hook.mjs | 17 | resolve |
@@ -533,7 +536,7 @@
 - src/client/modules/terminal-card-04.ts → src/client/modules/z-index-layers.ts
 - src/client/modules/tmux-card.ts → src/client/modules/gesture-registry.ts
 
-### infra → ai-chat（24 边）
+### infra → ai-chat（25 边）
 
 - tests/chat-protocol.test.ts → src/client/modules/orb-chat.ts
 - tests/chat-protocol.test.ts → src/server/ai/chat.ts
@@ -545,6 +548,7 @@
 - tests/protocol-reducer.test.ts → src/shared/chat-protocol/events.ts
 - tests/protocol-reducer.test.ts → src/shared/chat-protocol/messages.ts
 - tests/protocol-reducer.test.ts → src/shared/chat-protocol/reducer.ts
+- tests/provider-env.test.ts → src/server/ai/chat.ts
 - tests/run-manager.test.ts → src/server/ai/chat.ts
 - tests/run-manager.test.ts → src/server/ai/run-manager.ts
 - tests/run-manager.test.ts → src/server/ai/tools/omp/bash.ts
@@ -629,4 +633,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 283 文件 · 48888 行 · 跨域边 248 条
+合计 286 文件 · 49149 行 · 跨域边 249 条

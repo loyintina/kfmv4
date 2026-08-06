@@ -18,6 +18,7 @@ import { fileURLToPath } from 'url';
 import { setupFileRoutes } from './routes/files.js';
 import { setupProxyRoutes } from './routes/proxy.js';
 import { setupProvidersRoutes } from './routes/providers.js';
+import { setupObsRoutes } from './routes/obs.js';
 import { setupAiRoutes } from './ai/routes.js';
 import { WsServer } from './ws-server.js';
 import { verifyLocalOrigin } from './path-utils.js';
@@ -47,6 +48,7 @@ app.use(express.static(path.join(__dirname, '../../public'), {
 const apiRoutes = express.Router();
 setupFileRoutes(apiRoutes);
 setupProxyRoutes(apiRoutes);
+setupObsRoutes(apiRoutes);
 setupProvidersRoutes(apiRoutes);
 // 客户端错误直报（2026-08-05 幽灵卡片堆排查装：手机端无 devtools，JS 异常即瞎猜——
 // window.onerror/unhandledrejection 落盘 jsonl，服务端日志可见）
