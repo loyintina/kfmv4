@@ -414,6 +414,8 @@ batch-run（计划中）：批量跑所有组合臂（并发+断点续跑）+ �
   （e13 零成本脚本判卷：沙箱 diff+工具痕迹）/ judge-px1-blind.mjs（px 轮号对齐盲判）
   / bench-score.mjs / blind-anonymize.py（盲判匿名化）
 - 制包：build-e14-combo.mjs（e14 组合包构建器，幂等）/ build-length-paradigms.py（长度梯度档）
+  / build-e16-packs.mjs（e16 S5/S6 精选制包：e16-scores 纯度过滤+预算贪心，幂等，
+  产出 paradigms/e16-s5-contrast.md / e16-s6-retro.md + meta-pool/e16-packs-manifest.json）
 - 部署守卫：check-active-runs.sh（kfm-restart 前拦在跑实验）
 - 历史手写循环（exp-driver 时代不再新增，留存考古）：run-e13.sh / run-e11-gapfill.sh /
   run-judge-v2.sh / run-px-baseline.sh / run-px-fatigue.sh / run-px-halflife.sh /
@@ -431,7 +433,8 @@ batch-run（计划中）：批量跑所有组合臂（并发+断点续跑）+ �
 ### 分析与迁移
 
 - recompute-cells.py（判卷归档→格均值，DB 版）/ meta-density.py（metaRe 词频粗筛尺）
-  / cost-stats.py / audit-arms.py（臂审计+通道分桶）/ bug-scan.py
+  / aggregate-e13.mjs（e13 汇总：脚本判卷+LLM 盲判按键名归一化合并出格均值，
+  产出 meta-pool/aggregate-e13.json）/ cost-stats.py / audit-arms.py（臂审计+通道分桶）/ bug-scan.py
   / migrate-arms-to-db.mjs / migrate-px-to-db.mjs（px 臂入库）
   / e16-mine.mjs（e16 S5/S6 素材开矿：错误信号+复盘标签粗筛，产出 meta-pool/e16-candidates.json）
   / e16-cut.mjs（e16 候选切块：按用户消息切，产出 meta-pool/e16-blocks/ + 索引）
