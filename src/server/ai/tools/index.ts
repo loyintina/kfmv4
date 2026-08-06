@@ -12,7 +12,7 @@
 import type { KfmTool, ToolContext, ToolResult, ToolUpdate, ContentBlock } from './types.js';
 import { evaluate } from '../permissions.js';
 import { appendFileSync, mkdirSync } from 'fs';
-import { join, dirname } from 'path';
+import { join, dirname, resolve, sep } from 'path';
 import { homedir } from 'os';
 
 /**
@@ -116,6 +116,18 @@ export async function executeTool(
   const tool = tools.get(name);
   if (!tool) {
     return { content: [{ type: 'text', text: `未知工具: ${name}` }], isError: true };
+  }
+  // 写监狱（2026-08-06 e13 沙箱逃逸事故）：sandboxRoot 设置时，write/edit 的
+  // path 必须落在沙箱内——逃逸在扼点拒绝，不进执行。omp write/edit 用 fs 直写
+  // （相对路径按 process.cwd() 解析），与 ctx.cwd 语义并存——两者任一落在沙箱外
+  // 即拒（fail-closed；生产里两者同为 PROJECT_ROOT，判定一致）。
+  if (ctx.sandboxRoot && (name === 'write' || name === 'edit') && typeof params.path === 'string') {
+    const jail = resolve(ctx.sandboxRoot);
+    const candidates = [resolve(ctx.cwd, params.path), resolve(process.cwd(), params.path)];
+    if (candidates.some(r => r !== jail && !r.startsWith(jail + sep))) {
+      return { content: [{ type: 'text', text: `沙箱限制：只能写沙箱目录（${ctx.sandboxRoot}）内的文件，` +
+        `「${params.path}」在沙箱外，已拒绝。请改用沙箱内路径。` }], isError: true };
+    }
   }
   // 8.5.0 权限引擎影子模式：判定 + 审计（不拦截）；8.5.1 起 deny/ask 真正生效
   const decision = evaluate(name, params, ctx);

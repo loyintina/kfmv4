@@ -12,7 +12,8 @@ import { Router } from 'express';
 import { getToolDefinitions } from './tools/index.js';
 import { startRun, attachRun, cancelRun, getActiveRun, getRun } from './run-manager.js';
 import * as sessionStore from './session-store.js';
-import { verifyLocalOrigin, isValidSessionId } from '../path-utils.js';
+import { verifyLocalOrigin, isValidSessionId, KFM_DATA_DIR } from '../path-utils.js';
+import { resolve, join, sep } from 'path';
 import type { WsServer } from '../ws-server.js';
 
 /** 可注入的 startRun 签名（测试用，生产走默认值） */
@@ -25,8 +26,8 @@ export function setupAiRoutes(router: Router, wsServer: WsServer, startRunFn: St
    * 返回: { runId, fromIndex } —— fromIndex 是客户端应从该索引开始读的事件位置
    */
   router.post('/ai/chat/start', verifyLocalOrigin, (req, res) => {
-    // body: { sessionId, messages, model, provider, roleFile, userText, tools, extraSystem, maxTokens, params, sessionClass }
-    const { sessionId, messages, model, provider, roleFile, userText, tools, extraSystem, maxTokens, params, sessionClass } = req.body;
+    // body: { sessionId, messages, model, provider, roleFile, userText, tools, extraSystem, maxTokens, params, sessionClass, sandboxRoot }
+    const { sessionId, messages, model, provider, roleFile, userText, tools, extraSystem, maxTokens, params, sessionClass, sandboxRoot } = req.body;
     if (!sessionId || !messages || !Array.isArray(messages) || messages.length === 0) {
       res.status(400).json({ error: '缺少 sessionId 或 messages 参数' });
       return;
@@ -58,6 +59,16 @@ export function setupAiRoutes(router: Router, wsServer: WsServer, startRunFn: St
     // 不给白名单的模型根本看不到 bash/write）。
     const explicitTools = Array.isArray(tools) ? tools.filter((t): t is string => typeof t === 'string') : undefined;
     const toolWhitelist = explicitTools ?? (sessionClass === 'script' ? ['read', 'grep', 'glob'] : undefined);
+    // 写监狱沙箱根（2026-08-06 e13 逃逸事故）：仅 script 会话可设，且必须落在
+    // sessions/script/ 内——防任意目录被宣称为"沙箱"（监狱语义是 script 会话的
+    // 臂级隔离，不是通用 chroot）。面板会话传了也忽略。
+    let jailRoot: string | undefined;
+    if (sessionClass === 'script' && typeof sandboxRoot === 'string' && sandboxRoot.trim()) {
+      const resolved = resolve(sandboxRoot);
+      const allowed = resolve(join(KFM_DATA_DIR, 'sessions', 'script')) + sep;
+      if (resolved.startsWith(allowed)) jailRoot = resolved;
+      else console.warn('[ai/chat/start] sandboxRoot 越出 sessions/script/，忽略:', sandboxRoot.slice(0, 80));
+    }
     const run = startRunFn(
       sessionId, messages,
       model || 'deepseek-v4-flash',
@@ -69,6 +80,7 @@ export function setupAiRoutes(router: Router, wsServer: WsServer, startRunFn: St
       typeof extraSystem === 'string' ? extraSystem : undefined,
       typeof maxTokens === 'number' && Number.isFinite(maxTokens) && maxTokens > 0 ? Math.floor(maxTokens) : undefined,
       params && typeof params === 'object' && !Array.isArray(params) ? params as Record<string, unknown> : undefined,
+      jailRoot,
     );
     res.json({ runId: run.id, fromIndex: 0, done: run.done });
   });

@@ -158,6 +158,7 @@ export async function* streamChat(
   extraSystem?: string, // 外部 system 约束注入（脚本工具流会话用——如探针的「只输出 JSON」；非角色卡）
   maxTokens?: number, // 单轮输出预算覆盖（默认 16384；工具流思考型探针需放宽——思考链计入 max_tokens，预算被吃光则 text 为 0，2026-08-04 试点事故）
   params?: Record<string, unknown>, // 上游请求参数透传（provider 特定：thinking 开关等；与 tools/max_tokens 平级合并进 requestBody）
+  sandboxRoot?: string, // script 会话写监狱沙箱根（2026-08-06 e13 逃逸事故）；设置后 write/edit 路径强制限制在内
 ): AsyncGenerator<StreamEvent> {
   const tools = allowTools?.length
     ? getToolDefinitions().filter(t => allowTools.includes(t.name))
@@ -168,6 +169,7 @@ export async function* streamChat(
     cwd: PROJECT_ROOT,
     wsServer,
     signal, // run 中止信号透传（BAR-BASH-HANG-01：看门狗/取消要能杀死原生子进程）
+    sandboxRoot, // script 会话写监狱（未设置 = 不限制，面板会话不受影响）
   };
 
   // 读取 API 配置

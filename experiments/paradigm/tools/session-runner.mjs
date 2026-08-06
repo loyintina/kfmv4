@@ -98,7 +98,7 @@ export function loadSessionMessages(sessionId) {
   return null;
 }
 
-async function startRun(sessionId, messages, userText, model, provider, roleFile, tools) {
+async function startRun(sessionId, messages, userText, model, provider, roleFile, tools, sandboxRoot) {
   const res = await fetch(`${BASE}/ai/chat/start`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -110,6 +110,8 @@ async function startRun(sessionId, messages, userText, model, provider, roleFile
       provider,
       // script 会话权限档案：未显式 --tools 时服务端默认只读白名单 read/grep/glob（BAR-EXPERIMENT-SANDBOX）
       sessionClass: 'script',
+      // 写监狱（2026-08-06 e13 逃逸事故）：write/edit 路径强制限制在沙箱内
+      ...(sandboxRoot ? { sandboxRoot } : {}),
       ...(roleFile ? { roleFile } : {}),
       ...(tools?.length ? { tools } : {}),
     }),
@@ -187,14 +189,14 @@ async function waitRun(runId, maxMs = 600_000) {
  * @param {string} [opts.out] 归档路径（默认 ~/.kfmv4/sessions/<sessionId>.json）
  * @returns {Promise<{runId, events, ms, sessionPath}>}
  */
-export async function runSession({ sessionId, messages, userText, model, provider, roleFile, paradigm, tools, out }) {
+export async function runSession({ sessionId, messages, userText, model, provider, roleFile, paradigm, tools, out, sandboxRoot }) {
   if (!validSessionId(sessionId)) throw new Error(`sessionId 不合法: ${sessionId}`);
   const paradigmText = paradigm && !paradigm.includes('\n')
     ? loadParadigm(paradigm) || paradigm   // 名字→读文件；不是文件名则当文本
     : (paradigm || '');
   const msgs = applyParadigm(messages, paradigmText);
   const apiMessages = toOpenAi(msgs); // 原始格式 → OpenAI 格式（provider 不认 role:'ai'）
-  const { runId } = await startRun(sessionId, apiMessages, userText, model, provider, roleFile, tools);
+  const { runId } = await startRun(sessionId, apiMessages, userText, model, provider, roleFile, tools, sandboxRoot);
   const src = join(SESSIONS, `${sessionId}.json`);
   try {
     const { events, ms } = await waitRun(runId);

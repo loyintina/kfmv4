@@ -10,8 +10,11 @@
 
 import assert from 'assert';
 import { group, regression, test } from './runner.js';
+import { join } from 'path';
 import { setupAiRoutes } from '../src/server/ai/routes.js';
 import type { StartRunFn } from '../src/server/ai/routes.js';
+import { executeTool } from '../src/server/ai/tools/index.js';
+import { KFM_DATA_DIR } from '../src/server/path-utils.js';
 import { sliceMessages, capMessagesPayload } from '../src/server/routes/files.js';
 
 group('ai/routes — /ai/chat/start 参数校验');
@@ -128,6 +131,52 @@ regression('BAR-SESSION-PROFILE-01', 'pending-commit', 'script 会话缺省 tool
 
   call({ ...base });
   assert(seen[2]!.tools === undefined, `panel 缺省应全量（undefined），得 ${JSON.stringify(seen[2]!.tools)}`);
+});
+
+// 写监狱（2026-08-06 e13 沙箱逃逸事故：V3 写穿 fixture 模板、27B 写进真仓库
+// docs/——提示词约定不防呆，write/edit 路径在 executeTool 扼点强制沙箱 containment）。
+// 路由层纪律：仅 script 会话可设、必须落 sessions/script/ 内，其余忽略。
+regression('BAR-SANDBOX-JAIL-01', 'pending-commit', 'sandboxRoot 仅 script+script/ 内路径才透传为写监狱根', () => {
+  const seen: Array<{ jail: unknown }> = [];
+  const fakeStart: StartRunFn = (...args: unknown[]) => {
+    seen.push({ jail: args[11] }); // startRun 第 12 参 = sandboxRoot
+    return { id: 'run_jail', done: false } as any;
+  };
+  const routes = collectRoutes(fakeStart);
+  const start = routes.get('POST /ai/chat/start')!;
+  const base = { sessionId: 'sess-jail', messages: [{ role: 'user', content: 'hi' }] };
+  const call = (body: Record<string, unknown>) => { const res = makeRes(); start({ body }, res); assert(res._r.statusCode === 200, `应 200，得 ${res._r.statusCode}`); };
+  const scriptDir = join(KFM_DATA_DIR, 'sessions', 'script');
+
+  call({ ...base, sessionClass: 'script', sandboxRoot: join(scriptDir, 'sandbox-x1') });
+  assert(typeof seen[0]!.jail === 'string' && (seen[0]!.jail as string).endsWith('sandbox-x1'),
+    `script 会话合法 sandboxRoot 应透传，得 ${JSON.stringify(seen[0]!.jail)}`);
+
+  call({ ...base, sandboxRoot: join(scriptDir, 'sandbox-x2') });
+  assert(seen[1]!.jail === undefined, `panel 会话 sandboxRoot 应忽略，得 ${JSON.stringify(seen[1]!.jail)}`);
+
+  call({ ...base, sessionClass: 'script', sandboxRoot: '/etc' });
+  assert(seen[2]!.jail === undefined, `越出 sessions/script/ 的 sandboxRoot 应忽略，得 ${JSON.stringify(seen[2]!.jail)}`);
+
+  call({ ...base, sessionClass: 'script' });
+  assert(seen[3]!.jail === undefined, `不传 sandboxRoot 应不限制（undefined），得 ${JSON.stringify(seen[3]!.jail)}`);
+});
+
+// 写监狱扼点：executeTool 在 sandboxRoot 下拒绝沙箱外 write/edit（fail-closed：
+// ctx.cwd 与 process.cwd() 双解析任一越界即拒），沙箱内放行，未设根不限制。
+regression('BAR-SANDBOX-JAIL-02', 'pending-commit', 'executeTool 沙箱外 write/edit 拒绝、沙箱内放行', async () => {
+  const jail = join(KFM_DATA_DIR, 'sessions', 'script', 'sandbox-jailtest');
+  const ctx = { cwd: '/root/kfmv4', wsServer: {} as never, sandboxRoot: jail };
+  const outside = await executeTool('write', { path: 'docs/evil.md', content: 'x' }, ctx);
+  assert(outside.isError === true, '相对路径逃逸应拒绝');
+  assert(String(outside.content[0]!.text).includes('沙箱限制'), '拒绝文案应指回沙箱');
+  const outsideAbs = await executeTool('edit', { path: '/root/kfmv4/src/x.ts', old: 'a', new: 'b' }, ctx);
+  assert(outsideAbs.isError === true, '绝对路径逃逸应拒绝');
+  const inside = await executeTool('write', { path: join(jail, 'ok.md'), content: 'x' }, ctx);
+  assert(inside.isError !== true, `沙箱内写入应放行，得 ${JSON.stringify(inside.content[0])}`);
+  const noJail = await executeTool('write', { path: '/tmp/nojail-ok.md', content: 'x' },
+    { cwd: '/root/kfmv4', wsServer: {} as never });
+  assert(noJail.isError !== true, '未设 sandboxRoot 不应限制');
 });
 
 // ---- 其他路由 ----

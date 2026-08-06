@@ -180,6 +180,7 @@ const results = await pool(todo, async (s) => {
         paradigm: paradigmText,
         tools, // --tools 白名单透传（缺省 = 只读白名单 read/grep/glob，见服务端会话权限档案）
         out: join(SCRIPT, `${id}.json`), // 重试也归档到原臂 id
+        sandboxRoot: sandboxDir || undefined, // 写监狱：有沙箱的臂 write/edit 强制限制在沙箱内
       });
       if (isErrorStub(join(SCRIPT, `${id}.json`))) {
         unlinkSync(join(SCRIPT, `${id}.json`)); // 删档防断点续跑跳过

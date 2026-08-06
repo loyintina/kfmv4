@@ -32,6 +32,10 @@ export interface ToolContext {
   wsServer: WsServer;
   /** run 级中止信号（用户取消 / 停摆看门狗）——能中止的工具必须传入底层 */
   signal?: AbortSignal;
+  /** 沙箱根（script 会话写监狱，2026-08-06 e13 逃逸事故）：设置后 write/edit
+   *  的 path 强制限制在该目录内，逃逸在 executeTool 扼点直接拒绝。
+   *  提示词约定不防呆——V3 曾写穿 fixture 模板、27B 曾写进真仓库 docs/。 */
+  sandboxRoot?: string;
 }
 
 /** kfmv4 工具定义 */
