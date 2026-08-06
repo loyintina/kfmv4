@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 9b07b2f1 · 生成于 2026-08-06 -->
+<!-- 基准 commit e6542a37 · 生成于 2026-08-06 -->
 
 # 代码清单（机械层）
 
@@ -174,7 +174,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（146 文件 · 17782 行）
+## infra（147 文件 · 17850 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -222,7 +222,7 @@
 | build.mjs | 133 | — |
 | scripts/check/check-checks.mjs | 132 | — |
 | scripts/check/check-tool-compaction.mjs | 130 | — |
-| scripts/check/chain.mjs | 128 | STEPS |
+| scripts/check/chain.mjs | 129 | STEPS |
 | scripts/check/check-mutation-anchors.mjs | 127 | — |
 | scripts/check/gen-permission-map.mjs | 126 | — |
 | tests/session-security.test.ts | 125 | — |
@@ -266,6 +266,7 @@
 | scripts/check/check-code-doc-refs.mjs | 69 | — |
 | scripts/check/check-card-meta.mjs | 68 | — |
 | scripts/check/check-ledger-commits.mjs | 68 | — |
+| scripts/check/check-experiment-registry.mjs | 67 | — |
 | tests/floating-state.test.ts | 66 | — |
 | scripts/check/domain-src.mjs | 64 | DOMAIN_SRC |
 | scripts/agent/test-tag-advisor.mjs | 64 | — |
@@ -637,4 +638,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 289 文件 · 49856 行 · 跨域边 250 条
+合计 290 文件 · 49924 行 · 跨域边 250 条
