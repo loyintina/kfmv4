@@ -248,10 +248,10 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 .obs-hud{position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;display:flex;align-items:flex-start;justify-content:center;padding-top:14px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;user-select:none}
 /* 横贯顶栏（2026-08-06 定稿）：全宽 + 横排三端分布；左右 padding 76px 避开召唤按钮
    区（文件树按钮左 16-56px / 卡片堆按钮右）——按钮 z(200) 盖在框(z 100)上，文字不进按钮区。 */
-/* 横贯顶栏（2026-08-06 定稿）：全宽卡 + 三元素竖排居中——宽度撑满（第一版宽度）、
-   文字垂直撑开；竖排居中纵列（x≈150-250）天然避开左右召唤按钮区（16-56/344-384），
-   按钮 z(200) 盖在框(z 100)上也不遮字。 */
-.obs-card{display:flex;flex-direction:column;align-items:center;gap:3px;width:100%;box-sizing:border-box;padding:12px 16px;border-radius:0 0 16px 16px;background:rgba(18,18,26,.5);border:1px solid transparent;border-top:none;background-clip:padding-box;border-image:linear-gradient(135deg,rgba(124,58,237,.5),rgba(0,212,255,.3)) 1;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 4px 30px rgba(124,58,237,.08)}
+/* 贴顶居中卡（2026-08-06 定稿）：内容宽 + 渐变边框圆角——不横贯。
+   按钮（z 200）在卡外两侧，无 backdrop-filter 叠加（横贯版按钮视觉消失的
+   根因 = 双 backdrop-filter 垂直叠加的移动端合成 bug，回内容宽即规避）。 */
+.obs-card{display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 30px;border-radius:20px;background:rgba(18,18,26,.5);border:1px solid transparent;background-clip:padding-box;border-image:linear-gradient(135deg,rgba(124,58,237,.5),rgba(0,212,255,.3)) 1;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 4px 30px rgba(124,58,237,.08)}
 .obs-provider{font-size:12px;letter-spacing:4px;color:rgba(0,212,255,.75);text-transform:uppercase}
 .obs-clock{font-size:clamp(28px,7vw,44px);font-weight:700;letter-spacing:3px;color:var(--text);line-height:1.1;font-variant-numeric:tabular-nums}
 .obs-balance{font-size:clamp(20px,5vw,30px);font-weight:600;background:linear-gradient(90deg,#e0e0e0,#00d4ff);-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:1px;font-variant-numeric:tabular-nums}
