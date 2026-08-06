@@ -6,7 +6,9 @@ import glob, hashlib, json, os, re
 from collections import defaultdict
 
 SCRIPT = os.path.expanduser('~/.kfmv4/sessions/script')
-TASK = open('/tmp/exp8-task.txt', encoding='utf-8').read().strip()
+# 任务文本：仓库副本为准（/tmp 会蒸发），/tmp 兜底兼容旧流程
+_TASK_REPO = os.path.join(os.path.dirname(__file__), '..', 'scenarios', 'e8-task.txt')
+TASK = open(_TASK_REPO if os.path.exists(_TASK_REPO) else '/tmp/exp8-task.txt', encoding='utf-8').read().strip()
 
 AB_L = ['A 无包', 'B-8.1k', 'B-30.1k', 'B-47.4k', 'B-64.5k', 'B-89.8k']
 C_L = ['C-8.0k', 'C-31.0k', 'C-48.7k', 'C-65.1k', 'C-91.5k']

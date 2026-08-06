@@ -29,7 +29,9 @@ EXP = {
                     ['W1 无缝', 'W2 轻标记', 'W3 显式宣言', 'W4 边界声明'])],
     },
 }
-TASK = open('/tmp/exp8-task.txt', encoding='utf-8').read().strip()
+# 任务文本：仓库副本为准（/tmp 会蒸发），/tmp 兜底兼容旧流程
+_TASK_REPO = os.path.join(os.path.dirname(__file__), '..', 'scenarios', 'e8-task.txt')
+TASK = open(_TASK_REPO if os.path.exists(_TASK_REPO) else '/tmp/exp8-task.txt', encoding='utf-8').read().strip()
 
 def ai_text(path):
     d = json.load(open(path, encoding='utf-8'))

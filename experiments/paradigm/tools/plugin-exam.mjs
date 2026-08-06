@@ -188,20 +188,21 @@ for (let turn = 1; turn <= maxTurns; turn++) {
     return `【${m.role === 'user' ? '用户' : '考生'}】${t}`;
   }).join('\n\n') + `\n\n【说明】对话中用户的下一句发言由你（教官）产出。范式包内容不展示给你，你只决策挂载时机。`;
   let dec = null;
-  // 教官重试：空响应/JSON 异常是上游间歇病（2026-08-05 px-1 实测 flash 多次空回），
-  // 2 次不够——4 次 + 递增退避，仍败才中止
-  for (let n = 0; n < 4 && !dec; n++) {
+  // 教官重试：空响应/JSON 异常是上游间歇病且时间聚簇（2026-08-05 px-1 实测：
+  // 4 次×短退避穿不透 ~90s 故障窗口，两跑因此夭折）——8 次 + 递增退避（10s×n，封顶 60s），
+  // 总忍耐 ~5 分钟，仍败才中止
+  for (let n = 0; n < 8 && !dec; n++) {
     try {
       dec = await callInstructor(instructorSys, view, instructorNote ||
         (n ? `上次输出解析失败（第 ${n} 次），请严格只输出 JSON。` : ''));
       instructorNote = '';
     } catch (e) {
       log(`⚠️ 教官第 ${n + 1} 次输出异常`, String(e.message || e).slice(0, 200));
-      if (n < 3) await new Promise(r => setTimeout(r, 5000 * (n + 1)));
+      if (n < 7) await new Promise(r => setTimeout(r, Math.min(10000 * (n + 1), 60000)));
     }
   }
   if (!dec) {
-    log('✗ 教官连续 4 次异常，实验中止', '');
+    log('✗ 教官连续 8 次异常，实验中止', '');
     break;
   }
   log(`★ 第 ${turn} 轮 · 教官分析`, dec.analysis || '（无）');

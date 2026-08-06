@@ -74,14 +74,23 @@ console.log(`[batch-run] 变体 ${tasks.length} 任务 × ${paradigms.length} �
  *  归档后检查末条 AI 消息：错误桩 → 删档 + 抛错走重试。
  *  2026-08-05 e11 尸检补两漏检形态：① 空输出（len<50，思考型模型预算
  *  耗尽/上游静默断流 → 正文为空，6/8 残臂都是这种，判卷按 0 分污染格均值）；
- *  ② 中途断流（正文中段追加「[错误: terminated]」，不开头 → 原检测漏检）。 */
+ *  ② 中途断流（正文中段追加「[错误: terminated]」，不开头 → 原检测漏检）。
+ *  2026-08-05 round2 尸检再补：① 的正文判空对推理模型是误杀——
+ *  GLM-Z1/Step-3.5 正文可全空但 reasoning 通道有货，须回落 reasoning 再判。 */
 function isErrorStub(outPath) {
   try {
     const d = JSON.parse(readFileSync(outPath, 'utf-8'));
     const ai = [...(d.messages || [])].reverse().find(m => m?.role === 'ai');
     if (!ai) return true; // 无 AI 消息 = 空臂
     const txt = (ai.content || []).filter(b => b?.type === 'text').map(b => b.text || '').join('').trimStart();
-    if (txt.length < 50) return true; // 空输出/极短残句
+    if (txt.length < 50) {
+      // 推理模型适配（2026-08-05 round2 尸检）：GLM-Z1/Step-3.5 等推理模型正文可全空、
+      // 内容全在 reasoning 通道——只看正文会把正常臂误判空输出，删档→重试→同样空→∞ 循环，
+      // 这两模型缺口 round2 几乎零收复就是这么来的。回落 reasoning 通道再判。
+      const rs = (ai.content || []).map(b => b?.reasoning || '').join('').trim();
+      if (rs.length >= 50) return rs.startsWith('[错误') || rs.includes('[错误: terminated]');
+      return true; // 正文空 + reasoning 也空 = 真空臂
+    }
     return txt.startsWith('[错误') || txt.includes('[错误: terminated]') || txt.slice(0, 80).includes('API 请求失败');
   } catch { return false; }
 }
