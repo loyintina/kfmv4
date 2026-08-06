@@ -395,12 +395,14 @@ body {
 /* ===== 信箱卡（语义巡逻 verdict 时间线，2026-08-06） ===== */
 /* 窄竖长信箱造型（1/3 屏宽），主卡左下角；柔和状态徽标（概率区非阻断哲学）；
    列表局部 pointer-events auto 支持触摸滚动（其余区域保持穿透）。 */
+/* 左界对齐主卡：主卡 372/信箱 160 均居中，border-box 居中后左移 (372-160)/2=106px——
+   必须用 transform 不能用负 margin（flex 居中的是 margin-box，负 margin 会抵消一半） */
 .obs-inbox {
   width: 160px;
   box-sizing: border-box;
-  align-self: flex-start;
+  align-self: center;
   margin-top: 10px;
-  margin-left: 2px;
+  transform: translateX(-106px);
   border-radius: 16px;
   background: rgba(18, 18, 26, 0.5);
   border: 1px solid transparent;
@@ -437,8 +439,9 @@ body {
   text-overflow: ellipsis;
 }
 
+/* 固定高度（用户定稿 2026-08-06）：内容不足不收缩，超出滚动 */
 .obs-inbox-list {
-  max-height: 150px;
+  height: 150px;
   overflow-y: auto;
   pointer-events: auto;
   padding: 4px 0;
@@ -450,15 +453,25 @@ body {
   display: none;
 }
 
+/* 条目 = 圆点+日期+文字单行流；clamp 在内层 flow 上（clamp 与外 padding 同层会透出下一行残影） */
 .obs-inbox-item {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
+  display: block;
   padding: 5px 10px;
   border-left: 2px solid transparent;
   opacity: 0.55;
   cursor: pointer;
   transition: background 0.15s;
+}
+
+.obs-inbox-item-flow {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 10px;
+  color: var(--text);
+  line-height: 1.4;
+  word-break: break-word;
 }
 
 .obs-inbox-item:active {
@@ -474,19 +487,6 @@ body {
   font-size: 9px;
   color: var(--text-dim);
   letter-spacing: 0.5px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.obs-inbox-text {
-  font-size: 10px;
-  color: var(--text);
-  line-height: 1.3;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 .obs-dot {
@@ -495,6 +495,7 @@ body {
   border-radius: 50%;
   display: inline-block;
   margin-right: 4px;
+  vertical-align: 1px;
   flex: none;
 }
 
@@ -523,6 +524,20 @@ body {
 }
 
 /* ===== 信箱详情视图（点击条目进入，2026-08-06） ===== */
+/* 返回按钮在滚动框内左上角（详情顶行：‹ + 圆点 + 类型徽标） */
+.obs-inbox-detail {
+  padding: 6px 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.obs-inbox-detail-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .obs-inbox-back {
   flex: none;
   width: 22px;
@@ -542,17 +557,6 @@ body {
 
 .obs-inbox-back:active {
   background: rgba(124, 58, 237, 0.25);
-}
-
-.obs-inbox-head-detail {
-  padding-left: 6px;
-}
-
-.obs-inbox-detail {
-  padding: 8px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
 }
 
 .obs-inbox-detail-meta {

@@ -35,6 +35,10 @@ const INBOX_DOT_CLASS: Record<string, string> = {
 const INBOX_MARK: Record<string, string> = {
   warn: '⚠', ok: '✓', dead: '✕', stat: '▤', other: '·',
 };
+/** 类型中文标签（详情页徽标） */
+const INBOX_LABEL: Record<string, string> = {
+  warn: '待裁决', ok: '干净', dead: '崩溃', stat: '统计', other: '记录',
+};
 
 interface InboxEntry { date: string; time: string; type: string; text: string }
 
@@ -54,7 +58,6 @@ export function initObsHud(): void {
     </div>
     <div class="obs-inbox">
       <div class="obs-inbox-head">
-        <button class="obs-inbox-back" hidden>‹</button>
         <span class="obs-inbox-title">信箱</span>
         <span class="obs-inbox-status"></span>
       </div>
@@ -66,11 +69,8 @@ export function initObsHud(): void {
 
   const clockEl = hud.querySelector<HTMLElement>('.obs-clock')!;
   const balanceEl = hud.querySelector<HTMLElement>('.obs-balance')!;
-  const inboxStatusEl = hud.querySelector<HTMLElement>('.obs-inbox-status')!;
   const inboxListEl = hud.querySelector<HTMLElement>('.obs-inbox-list')!;
-  const inboxHeadEl = hud.querySelector<HTMLElement>('.obs-inbox-head')!;
-  const inboxTitleEl = hud.querySelector<HTMLElement>('.obs-inbox-title')!;
-  const backBtn = hud.querySelector<HTMLElement>('.obs-inbox-back')!;
+  const inboxStatusEl = hud.querySelector<HTMLElement>('.obs-inbox-status')!;
 
   let inboxEntries: InboxEntry[] = [];
   let inboxDetail: InboxEntry | null = null;
@@ -84,36 +84,31 @@ export function initObsHud(): void {
   tick();
   setInterval(tick, 1000);
 
-  // 渲染信箱列表（最新在前，历史渐淡）
+  // 渲染信箱列表（最新在前，历史渐淡；条目 = 圆点+日期+文字单行流，两行截断）
   function renderInboxList(): void {
     const latestWarn = inboxEntries.find(e => e.type === 'warn');
-    inboxTitleEl.textContent = '信箱';
+    const warnCount = latestWarn?.text.match(/^\d+\s*条待裁决/)?.[0];
     inboxStatusEl.textContent = latestWarn
-      ? `· ${INBOX_MARK.warn} ${latestWarn.text.slice(0, 14)}`
-      : `· ${INBOX_MARK.ok} 干净`;
+      ? `${INBOX_MARK.warn} ${warnCount ?? latestWarn.text.slice(0, 10)}`
+      : `${INBOX_MARK.ok} 干净`;
     inboxListEl.innerHTML = inboxEntries.map((e, i) => {
       const dot = INBOX_DOT_CLASS[e.type] ?? 'obs-dot-other';
-      const mark = INBOX_MARK[e.type] ?? '·';
       const date = e.date.slice(5).replace('-', '/'); // MM-DD → MM/DD
       const highlight = i === 0 ? ' obs-inbox-item-new' : '';
-      return `<div class="obs-inbox-item${highlight}" data-i="${i}">
-        <span class="obs-dot ${dot}"></span>
-        <span class="obs-inbox-meta">${mark} ${date}${e.time ? ' ' + e.time : ''}</span>
-        <span class="obs-inbox-text">${e.text}</span>
-      </div>`;
+      return `<div class="obs-inbox-item${highlight}" data-i="${i}"><span class="obs-inbox-item-flow"><span class="obs-dot ${dot}"></span><span class="obs-inbox-meta">${date}${e.time ? ' ' + e.time : ''}</span> ${e.text}</span></div>`;
     }).join('');
   }
 
-  // 详情视图：单条完整信息 + 左上角返回
+  // 详情视图：头部显示日期；滚动框内左上角返回按钮 + 类型徽标，下接完整原文
   function renderInboxDetail(): void {
     if (!inboxDetail) return;
     const dot = INBOX_DOT_CLASS[inboxDetail.type] ?? 'obs-dot-other';
     const mark = INBOX_MARK[inboxDetail.type] ?? '·';
-    inboxTitleEl.textContent = inboxDetail.date + (inboxDetail.time ? ' ' + inboxDetail.time : '');
-    inboxStatusEl.textContent = `${mark} ${inboxDetail.type}`;
+    const label = INBOX_LABEL[inboxDetail.type] ?? inboxDetail.type;
+    inboxStatusEl.textContent = inboxDetail.date + (inboxDetail.time ? ' ' + inboxDetail.time : '');
     inboxListEl.innerHTML = `
       <div class="obs-inbox-detail">
-        <div class="obs-inbox-detail-meta"><span class="obs-dot ${dot}"></span>${mark} ${inboxDetail.type} · ${inboxDetail.date}${inboxDetail.time ? ' ' + inboxDetail.time : ''}</div>
+        <div class="obs-inbox-detail-top"><button class="obs-inbox-back">‹</button><span class="obs-dot ${dot}"></span><span class="obs-inbox-detail-meta">${mark} ${label}</span></div>
         <div class="obs-inbox-detail-text">${inboxDetail.text}</div>
       </div>`;
   }
@@ -122,27 +117,24 @@ export function initObsHud(): void {
     const e = inboxEntries[i];
     if (!e) return;
     inboxDetail = e;
-    backBtn.hidden = false;
-    inboxHeadEl.classList.add('obs-inbox-head-detail');
     renderInboxDetail();
   }
   function showInboxList(): void {
     inboxDetail = null;
-    backBtn.hidden = true;
-    inboxHeadEl.classList.remove('obs-inbox-head-detail');
     renderInboxList();
   }
 
-  // 点击条目 → 详情；返回按钮 → 列表（事件委托，滚动区已局部 pointer-events auto）
+  // 点击条目 → 详情；详情内返回按钮 → 列表（事件委托，滚动区已局部 pointer-events auto）
   inboxListEl.addEventListener('click', e => {
+    const target = e.target as HTMLElement;
+    if (target.closest('.obs-inbox-back')) { showInboxList(); return; }
     if (inboxDetail) return;
-    const item = (e.target as HTMLElement).closest<HTMLElement>('.obs-inbox-item');
+    const item = target.closest<HTMLElement>('.obs-inbox-item');
     if (item) {
       const i = Number(item.dataset.i);
       if (Number.isInteger(i)) showInboxDetail(i);
     }
   });
-  backBtn.addEventListener('click', showInboxList);
 
   // 余额 + 信箱刷新（5s 轮询；服务端缓存外部 deepseek 调用）
   let lastTotal = '';
