@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit e6542a37 · 生成于 2026-08-06 -->
+<!-- 基准 commit 30349a64 · 生成于 2026-08-06 -->
 
 # 代码清单（机械层）
 
@@ -174,7 +174,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（147 文件 · 17850 行）
+## infra（147 文件 · 17858 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -187,7 +187,7 @@
 | tests/preload.mjs | 423 | — |
 | tests/cards.test.ts | 410 | — |
 | tests/visual-baseline.test.ts | 367 | — |
-| scripts/agent/agent-runner.mjs | 325 | renderTemplate, extractJson, runAgent, parseToolStream, runAgentTooled |
+| scripts/agent/agent-runner.mjs | 326 | renderTemplate, extractJson, runAgent, parseToolStream, runAgentTooled |
 | scripts/agent/browser-relay.mjs | 323 | — |
 | tests/box.test.ts | 309 | — |
 | tests/mocks/gsap.ts | 305 | gsap |
@@ -236,13 +236,13 @@
 | scripts/check/check-zindex.mjs | 110 | — |
 | experiments/coldstart/tools/gen-hallucination-inputs.mjs | 110 | — |
 | scripts/agent/exp-vision-internal.mjs | 109 | — |
+| tests/semantic-chain.test.ts | 108 | — |
 | scripts/check/check-cards.mjs | 105 | — |
 | scripts/check/check-contract-freshness.mjs | 104 | — |
 | scripts/check/check-stack-status.mjs | 102 | — |
 | scripts/check/check-test-patterns.mjs | 102 | — |
 | scripts/check/gen-rules-map.mjs | 102 | — |
 | scripts/check/check-doc-orphans.mjs | 101 | — |
-| tests/semantic-chain.test.ts | 101 | — |
 | tests/session-invalidate.test.ts | 100 | — |
 | scripts/check/check-anim.mjs | 99 | — |
 | scripts/check/check-state-freshness.mjs | 92 | — |
@@ -638,4 +638,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 290 文件 · 49924 行 · 跨域边 250 条
+合计 290 文件 · 49932 行 · 跨域边 250 条
