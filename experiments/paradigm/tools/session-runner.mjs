@@ -201,11 +201,17 @@ export async function runSession({ sessionId, messages, userText, model, provide
     // 等服务端 flush 会话文件
     await new Promise(r => setTimeout(r, 1500));
     // 服务端分流（2026-08-06 起）：script 会话直写 sessions/script/，
-    // 根目录副本不再产生——默认归档路径即真相源，直接用。
+    // 根目录副本不再产生——直写文件即真相源。
     if (!existsSync(src)) {
       const direct = join(SCRIPT_SESSIONS, `${sessionId}.json`);
-      if (out === undefined && existsSync(direct)) {
-        return { runId, events, ms, sessionPath: direct };
+      if (existsSync(direct)) {
+        if (out === undefined || resolve(out) === resolve(direct)) {
+          return { runId, events, ms, sessionPath: direct }; // 默认路径或 out 恰为直写路径
+        }
+        mkdirSync(dirname(out), { recursive: true });
+        copyFileSync(direct, out);
+        rmSync(direct);
+        return { runId, events, ms, sessionPath: out };
       }
       throw new Error(`会话未落盘: ${src}`);
     }
