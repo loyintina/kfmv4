@@ -133,6 +133,7 @@ if (existsSync(DB_PATH)) {
 }
 for (const f of readdirSync(dir)) {
   if (!f.endsWith('.json')) continue;
+  if (f.includes('.stranded')) continue; // 残卷/僵尸不是臂（错误桩尸检件），吃进判卷会污染分数
   if (!prefixes.some(p => f.startsWith(p))) continue;
   const m = f.match(/^([a-z0-9]+-t0)p(\d)m(\d)r(\d)/);
   if (!m) continue;
