@@ -1,0 +1,78 @@
+/* login.css — 登录页 + 卡片瓷砖样式（同文件多组件，历史如此） */
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #f4f5f7;
+}
+
+.a1 {
+  color: #333;
+  font-size: 14px;
+}
+
+.x-wrap-2 {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.blueBox {
+  background: #e6f0ff;
+  border: 1px solid #9cc4ff;
+  padding: 8px;
+}
+
+.card-tile {
+  display: inline-block;
+  padding: 12px;
+  background: #fff;
+  border-radius: 6px;
+}
+
+.card-tile {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.login-box {
+  max-width: 360px;
+  margin: 48px auto;
+  padding: 24px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.login-btn {
+  display: block;
+  width: 100%;
+  padding: 12px 24px;
+  border: 0;
+  border-radius: 6px;
+  background: #2463eb;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+@media (max-width: 480px) {
+  .a1 {
+    font-size: 13px;
+  }
+
+  .blueBox {
+    padding: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-box {
+    margin: 16px;
+    padding: 16px;
+  }
+
+  .login-btn {
+    width: 100%;
+    padding: 14px 24px;
+    font-size: 18px;
+  }
+}

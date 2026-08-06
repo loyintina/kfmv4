@@ -14,8 +14,14 @@
  *     --arms 2 --concurrency 4
  *   --paradigms "无" = 对照组（无范式包）；其他名 = .kfmv4/paradigms/<名>.md
  *   --arms N = 每配置重复次数（重复测量——模型随机性需多次取统计）
+ *   --sandbox-template <dir> = 沙箱实验（e13）：每臂开跑前把模板目录复制到
+ *     ~/.kfmv4/sessions/script/sandbox-<armId>/（已存在先 rm -rf 重建，臂间独立、
+ *     重跑幂等），并把任务文本里的 {{SANDBOX}} 占位符替换为该臂沙箱绝对路径后
+ *     再发给模型。替换只发生在 task 字符串层面（runSession 调用前）——臂 id 哈希
+ *     仍按原 task 算（查重语义不受沙箱影响）；沙箱目录臂归档后保留，供判卷脚本
+ *     对每个臂做 fixture diff 检出。不传本参数时行为与旧版完全一致。
  */
-import { mkdirSync, readFileSync, unlinkSync } from 'fs';
+import { mkdirSync, readFileSync, unlinkSync, rmSync, cpSync, existsSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import { createHash } from 'crypto';
@@ -41,6 +47,13 @@ const provider = get('provider') || 'Opencode Go Google';
 const prefix = get('prefix') || 'bi-';
 const tools = get('tools') ? get('tools').split(',').map(s => s.trim()).filter(Boolean) : ['read', 'grep', 'glob']; // 实验纪律：跑批默认只读白名单（服务端 sessionClass=script 也兜底同一份）
 const retries = Number(get('retries') || 2); // 失败臂自动重跑次数（断连/抖动用；服务重启掐 SSE 时重连仍可兜）
+// --sandbox-template <dir>（e13）：沙箱模板目录。启用后每臂开跑前复制为独立沙箱
+// 并把任务文本 {{SANDBOX}} 替换为该臂沙箱路径（见头部用法注释）；不传 = 零差异。
+const sandboxTemplate = get('sandbox-template');
+if (sandboxTemplate && !existsSync(sandboxTemplate)) {
+  console.error(`[batch-run] --sandbox-template 目录不存在: ${sandboxTemplate}`);
+  process.exit(2);
+}
 
 if (!tasks.length) {
   console.error('用法: --tasks "任务1,任务2" | --task-file <路径> [--paradigms "无,范式包名"] [--models m1,m2] [--arms N] [--concurrency N] [--provider 名] [--tools "read,grep,glob"] [--prefix bi-]');
@@ -131,15 +144,30 @@ const results = await pool(todo, async (s) => {
   const id = armId(s);
   const t1 = Date.now();
   const paradigmText = s.paradigm === '无' ? '' : loadParadigm(s.paradigm);
+  // 沙箱（--sandbox-template）：每臂独立副本——已存在先 rm -rf 重建（臂间独立、
+  // 重跑幂等）；{{SANDBOX}} 替换只作用于发给模型的文本，臂 id 哈希与入库 task
+  // 仍用原文（查重语义不受沙箱影响）。归档后沙箱保留，供判卷 diff 检出。
+  const sandboxDir = sandboxTemplate ? join(SCRIPT, `sandbox-${id}`) : null;
+  const taskText = sandboxDir ? s.task.replaceAll('{{SANDBOX}}', sandboxDir) : s.task;
+  if (sandboxDir) {
+    rmSync(sandboxDir, { recursive: true, force: true });
+    cpSync(sandboxTemplate, sandboxDir, { recursive: true });
+  }
   // 失败臂自动重跑：新 sessionId（id-tN）避免服务端内存态残留接续旧 ctx，
   // out 归档回原 id 文件——断点续跑语义不变（成功即原 id 文件在场）
   for (let n = 0; n <= retries; n++) {
     const tryId = n === 0 ? id : `${id}-t${n}`;
     try {
+      if (sandboxDir && n > 0) {
+        // 重试前重建沙箱：上一次失败尝试可能已在沙箱里留了改动，
+        // 不还原会让陷阱题在脏底子上重跑
+        rmSync(sandboxDir, { recursive: true, force: true });
+        cpSync(sandboxTemplate, sandboxDir, { recursive: true });
+      }
       const res = await runSession({
         sessionId: tryId,
-        messages: [{ role: 'user', content: [{ type: 'text', text: s.task }] }],
-        userText: s.task,
+        messages: [{ role: 'user', content: [{ type: 'text', text: taskText }] }],
+        userText: taskText,
         model: s.model,
         provider,
         paradigm: paradigmText,
