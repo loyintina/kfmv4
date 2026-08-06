@@ -246,7 +246,12 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 /* 背景信息窗·简约版（2026-08-06 定稿）：单张毛玻璃卡，三元素——deepseek/秒级时间/余额。
    纯展示（pointer-events none）；z = L1 中央内容层（< SUMMON_BTN 200，不盖召唤按钮）。 */
 .obs-hud{position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;display:flex;align-items:flex-start;justify-content:center;padding-top:14px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;user-select:none}
-.obs-card{display:flex;flex-direction:column;align-items:center;gap:6px;padding:18px 28px;border-radius:20px;background:rgba(18,18,26,.5);border:1px solid transparent;background-clip:padding-box;border-image:linear-gradient(135deg,rgba(124,58,237,.5),rgba(0,212,255,.3)) 1;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 0 40px rgba(124,58,237,.08)}
+/* 横贯顶栏（2026-08-06 定稿）：全宽 + 横排三端分布；左右 padding 76px 避开召唤按钮
+   区（文件树按钮左 16-56px / 卡片堆按钮右）——按钮 z(200) 盖在框(z 100)上，文字不进按钮区。 */
+/* 横贯顶栏（2026-08-06 定稿）：全宽卡 + 三元素竖排居中——宽度撑满（第一版宽度）、
+   文字垂直撑开；竖排居中纵列（x≈150-250）天然避开左右召唤按钮区（16-56/344-384），
+   按钮 z(200) 盖在框(z 100)上也不遮字。 */
+.obs-card{display:flex;flex-direction:column;align-items:center;gap:3px;width:100%;box-sizing:border-box;padding:12px 16px;border-radius:0 0 16px 16px;background:rgba(18,18,26,.5);border:1px solid transparent;border-top:none;background-clip:padding-box;border-image:linear-gradient(135deg,rgba(124,58,237,.5),rgba(0,212,255,.3)) 1;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 4px 30px rgba(124,58,237,.08)}
 .obs-provider{font-size:12px;letter-spacing:4px;color:rgba(0,212,255,.75);text-transform:uppercase}
 .obs-clock{font-size:clamp(28px,7vw,44px);font-weight:700;letter-spacing:3px;color:var(--text);line-height:1.1;font-variant-numeric:tabular-nums}
 .obs-balance{font-size:clamp(20px,5vw,30px);font-weight:600;background:linear-gradient(90deg,#e0e0e0,#00d4ff);-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:1px;font-variant-numeric:tabular-nums}
