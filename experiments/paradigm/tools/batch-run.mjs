@@ -79,6 +79,13 @@ for (let ti = 0; ti < tasks.length; ti++) {
 const armHash = (s) => createHash('md5').update(`${s.task}|${s.paradigm}|${s.model}`).digest('hex').slice(0, 6);
 const armId = (s) => `${prefix}t${s.ti}p${s.pi}m${s.mi}r${s.n}-${armHash(s)}`;
 
+// 调用级 nonce（2026-08-06 自中毒尸检，根因报告 §6）：sessionId 每次调用全新。
+// 跨调用复用同一 sessionId，服务端会把范式+任务反复追加进旧上下文——e11 r6/r7
+// 攒 11 份后每发必爆 TPM 429，秒回错误桩，越失败越追加，永久死锁。臂 id 保持
+// 稳定（幂等查重不受影响），只有服务端会话名带 nonce。
+const RUN_NONCE = Date.now().toString(36);
+const tryIdOf = (id, n) => `${id}-x${RUN_NONCE}${n === 0 ? '' : '-t' + n}`;
+
 // 批次注册（arm-store，2026-08-06）：启动时把 tasks/paradigms/models 清单写库——
 // 下标歧义（p/m 是每批次独立编号）从此在写入侧根治；signature 去重，断点续跑复用批次行。
 const batchId = registerBatch({
@@ -153,10 +160,10 @@ const results = await pool(todo, async (s) => {
     rmSync(sandboxDir, { recursive: true, force: true });
     cpSync(sandboxTemplate, sandboxDir, { recursive: true });
   }
-  // 失败臂自动重跑：新 sessionId（id-tN）避免服务端内存态残留接续旧 ctx，
+  // 失败臂自动重跑：sessionId 带调用级 nonce（见 RUN_NONCE 注释），
   // out 归档回原 id 文件——断点续跑语义不变（成功即原 id 文件在场）
   for (let n = 0; n <= retries; n++) {
-    const tryId = n === 0 ? id : `${id}-t${n}`;
+    const tryId = tryIdOf(id, n);
     try {
       if (sandboxDir && n > 0) {
         // 重试前重建沙箱：上一次失败尝试可能已在沙箱里留了改动，
@@ -194,12 +201,14 @@ const results = await pool(todo, async (s) => {
       return { id, ok: true, ms: res.ms, tries: n + 1 };
     } catch (e) {
       if (n === retries) {
-        // 清面板区孤儿：runSession 在归档前失败（超时/断流/错误桩），生产区 sessions/ 会
-        // 留下 <tryId>.json——面板「最新会话」自动选中它，失控臂 1MB 载荷曾把页面冻死
-        // （2026-08-05 e9b-t0p4m0r7 实案）。归档成功的不动（已 rm 源文件），只清失败残留。
+        // 清孤儿：runSession 在归档前失败（超时/断流/错误桩），会话文件（根目录或
+        // 分流后 script/ 直写）留下 <tryId>.json——面板「最新会话」自动选中它，
+        // 失控臂 1MB 载荷曾把页面冻死（2026-08-05 e9b-t0p4m0r7 实案）。
+        // 归档成功的不动（已 rm 源文件），只清失败残留。
         for (let k = 0; k <= retries; k++) {
-          const orphan = join(homedir(), '.kfmv4', 'sessions', k === 0 ? `${id}.json` : `${id}-t${k}.json`);
-          try { unlinkSync(orphan); } catch { /* 不存在即正常 */ }
+          for (const dir of [join(homedir(), '.kfmv4', 'sessions'), SCRIPT]) {
+            try { unlinkSync(join(dir, `${tryIdOf(id, k)}.json`)); } catch { /* 不存在即正常 */ }
+          }
         }
         console.error(`[batch-run] ${id} 失败（重试 ${retries} 次后）: ${e.message.slice(0, 120)}`);
         return { id, ok: false, error: e.message.slice(0, 120) };
