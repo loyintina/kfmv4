@@ -5,6 +5,8 @@
 #   1. 根目录下 24h 未动（mtime）的已知 script 前缀会话文件
 #      → 移到 sessions/script/，文件名加 .stranded 后缀（僵尸/残骸形态，不再参与任何读写）
 #   2. sessions/script/ 下 14 天前的 .stranded 残卷 → 删除
+#   3. sessions/script/ 下 14 天前的 sandbox-* 臂沙箱目录 → 删除
+#      （沙箱唯一用途是脚本判卷 diff，判卷产出已落盘 meta-pool；超期老臂判卷标 skip）
 #
 # 24h 余量的理由：在跑的臂会持续 append（mtime 新鲜），plugin-exam 断点续跑
 # 跨重启要读历史会话文件，24h 不动 = 确认死亡才回收。
@@ -53,4 +55,18 @@ while IFS= read -r -d '' f; do
   deleted=$((deleted + 1))
 done < <(find "$SCRIPT_DIR" -maxdepth 1 -type f -name '*.stranded.json' -mtime +14 -print0)
 
-echo "[sweep-sessions] 滞留回收 ${moved} 个，残卷删除 ${deleted} 个$([ "$DRY_RUN" = "1" ] && echo '（dry-run）')"
+# 规则 3（2026-08-06 用户拍板）：script/ 下 14 天前的 sandbox-* 臂沙箱目录 → 删除。
+# 沙箱 = 逐臂 fixture 副本，唯一用途是脚本判卷 diff（judge-e13-script），判卷产出
+# 已落盘 meta-pool/judge-*.json；14 天余量覆盖「跑数→判卷→复核」全周期。
+# 超期再判的老臂会被标 skip（判卷脚本对无沙箱臂不报错，语义安全）。
+sbox=0
+while IFS= read -r -d '' d; do
+  if [ "$DRY_RUN" = "1" ]; then
+    echo "[dry-run] 沙箱删除: $(basename "$d")"
+  else
+    rm -rf "$d"
+  fi
+  sbox=$((sbox + 1))
+done < <(find "$SCRIPT_DIR" -maxdepth 1 -type d -name 'sandbox-*' -mtime +14 -print0)
+
+echo "[sweep-sessions] 滞留回收 ${moved} 个，残卷删除 ${deleted} 个，沙箱删除 ${sbox} 个$([ "$DRY_RUN" = "1" ] && echo '（dry-run）')"

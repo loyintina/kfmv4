@@ -87,7 +87,9 @@ agent 脚本层——检测归自动化，裁决归会话内 agent，**永远不
     直写 `~/.kfmv4/sessions/script/`（sessionClass:'script' 登记分流），面板区
     根目录只放人手会话；`scripts/sweep-sessions.sh` 兜底回收——根目录 24h 未动
     的已知 script 前缀文件移入 script/ 加 `.stranded` 后缀，script/ 下 14 天
-    `.stranded` 残卷删除；挂在 `kfm-restart.sh` 服务恢复后自动执行。新增实验
+    `.stranded` 残卷删除、14 天 `sandbox-*` 臂沙箱目录删除（沙箱唯一用途是
+    脚本判卷 diff，产出已落盘 meta-pool，超期老臂判卷标 skip）；挂在
+    `kfm-restart.sh` 服务恢复后自动执行。新增实验
     脚本前缀须同步 sweep 白名单（patrol- 属主线巡逻，永远排除）。
 
 ## #陷阱
