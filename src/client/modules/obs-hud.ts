@@ -210,7 +210,10 @@ ${body}</div>
   });
 
   // 余额 + 信箱 + 待办刷新（5s 轮询；服务端缓存外部 deepseek 调用）
+  // 数据未变不重渲染——innerHTML 重建会重置滚动位置，5s 一次等于禁止翻列表
   let lastTotal = '';
+  let lastInboxKey = '';
+  let lastStackKey = '';
   const refresh = async () => {
     try {
       const res = await fetch(`${API}/obs/hud`, { signal: AbortSignal.timeout(5000) });
@@ -229,12 +232,24 @@ ${body}</div>
         balanceEl.textContent = '—';
       }
       if (Array.isArray(j?.inbox)) {
+        const key = JSON.stringify(j.inbox);
         inboxEntries = j.inbox;
-        if (inboxDetail) renderInboxDetail(); else renderInboxList();
+        if (key !== lastInboxKey) {
+          lastInboxKey = key;
+          const st = inboxListEl.scrollTop;
+          if (inboxDetail) renderInboxDetail(); else renderInboxList();
+          inboxListEl.scrollTop = st;
+        }
       }
       if (j?.stack && Array.isArray(j.stack.entries)) {
+        const key = JSON.stringify(j.stack);
         stackData = j.stack;
-        if (stackDetail) renderStackDetail(); else renderStackList();
+        if (key !== lastStackKey) {
+          lastStackKey = key;
+          const st = stackListEl.scrollTop;
+          if (stackDetail) renderStackDetail(); else renderStackList();
+          stackListEl.scrollTop = st;
+        }
       }
     } catch {
       balanceEl.textContent = '—';
