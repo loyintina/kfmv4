@@ -98,3 +98,10 @@ regression('BAR-SEMCHAIN-02', 'parse-tool-stream', 'parseToolStream 拼接 text_
   const t3 = await parseToolStream(fakeReader(sse3));
   assert.strictEqual(t3, '半截', '流中断应返回已收集文本');
 });
+
+regression('BAR-SEMCHAIN-04', 'script-class-routed', 'tooledOnce 必须传 sessionClass:script——巡逻会话落盘分流 sessions/script/，不得进面板区', async () => {
+  const arSrc = src('../scripts/agent/agent-runner.mjs');
+  // 事故（2026-08-06）：tooledOnce 未传 sessionClass → 巡逻会话落 sessions/ 根目录 →
+  // /sessions/list（面板会话列表）无过滤全列 → 探针档案裸奔进用户会话列表。
+  assert(/sessionClass:\s*'script'/.test(arSrc), 'tooledOnce 的 /ai/chat/start 负载必须含 sessionClass:\'script\'（routes.ts 分流闸只认这个字段）');
+});

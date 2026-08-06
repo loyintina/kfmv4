@@ -221,6 +221,7 @@ async function tooledOnce({ base, sid, system, prompt, model, providerId, tools,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         sessionId: sid,
+        sessionClass: 'script', // 落盘分流 sessions/script/——巡逻会话不得进面板区（BAR-SEMCHAIN-04）
         messages: [{ role: 'user', content: prompt }],
         userText: prompt,
         model,
