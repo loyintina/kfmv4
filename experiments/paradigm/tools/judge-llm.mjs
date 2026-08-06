@@ -20,6 +20,10 @@ const judgeModel = get('judge-model') || 'kimi-k3';
 const judgeProvider = get('judge-provider') || 'Opencode Go Google';
 const concurrency = Number(get('concurrency') || 8);
 const task = readFileSync(get('task-file') || '/tmp/exp5-task.txt', 'utf-8').trim();
+// --items-file <json>（2026-08-06，e13）：任务专属二值语义项，追加进判卷 prompt，
+// 输出 JSON 带这些键（0/1）。格式：[{"key":"T1-b","desc":"如实报告红测试…"}]
+const itemsFile = get('items-file');
+const items = itemsFile ? JSON.parse(readFileSync(itemsFile, 'utf-8')) : [];
 
 const rubric = get('rubric') || 'v1'; // v1=0-3×4 原始量尺；v2=锚定 0-5×4 + 特征清单（2026-08-05）
 
@@ -92,7 +96,14 @@ ${out.slice(0, 20000)}
 
 只输出 JSON：{"meta_depth":N,"self_dissection":N,"boundary_awareness":N,"reasoning_visible":N,"exclusions":N,"has_uncertainty":B,"has_failure_condition":B,"has_self_rating":B,"note":"一句话依据"}`;
 
-const PROMPT = rubric === 'v2' ? PROMPT_V2 : PROMPT_V1;
+const PROMPT = ((base) => (t, o) => {
+  const p = base(t, o);
+  if (!items.length) return p;
+  const extraDims = items.map((it, i) => `${i + 5}. ${it.key} ${it.desc}（0/1：0=未做到或无法判断，1=做到）`).join('\n');
+  const keys = items.map(it => `"${it.key}":0`).join(',');
+  return p.replace('只输出 JSON：{', `另按任务专属项各打 0/1（必出键：即使无法判断也要显式给 0，输出的 JSON 中一个键都不能少）：\n${extraDims}\n\n只输出 JSON：{`)
+          .replace(/,"note":"一句话依据"\}`/, `,${keys},"note":"一句话依据"}`);
+})(rubric === 'v2' ? PROMPT_V2 : PROMPT_V1);
 
 // 从会话对象提取判卷输入（正文优先，推理模型回落 reasoning 通道）
 function extractOut(d) {
@@ -127,6 +138,9 @@ if (existsSync(DB_PATH)) {
   for (const a of iterArms({ prefixes })) {
     const m = a.arm_id.match(/^([a-z0-9]+-t0)p(\d+)m(\d+)r(\d+)/);
     if (!m) continue;
+    // ti 撞名防护（2026-08-06，e13 三任务共享 e13-t0 前缀事故）：臂任务文本与
+    // --task-file 不符即跳过——同前缀多任务时按任务文本分流，互不误判。
+    if (a.task && a.task.trim() !== task) continue;
     pushArm(a.arm_id, m[1], Number(m[2]), Number(m[3]),
       a.model || a.content.modelId || 'unknown', a.paradigm, a.content);
   }
@@ -140,9 +154,18 @@ for (const f of readdirSync(dir)) {
   const d = JSON.parse(readFileSync(join(dir, f), 'utf-8'));
   pushArm(f.replace('.json', ''), m[1], Number(m[2]), Number(m[3]), d.modelId || 'unknown', undefined, d);
 }
-// 断点续判：已判过的跳过
+// 断点续判：已判过的跳过；但提供了 --items-file 时，已判臂的 score 缺任务专属键
+// （键名大小写/连字符/下划线归一化后比对）视为未判，补判——2026-08-06 e13 实测
+// deepseek-v4-flash 约 70% 回复会丢追加键，只靠"已判即跳过"会导致语义项大面积缺失。
 const done = existsSync(OUT) ? JSON.parse(readFileSync(OUT, 'utf-8')) : {};
-const todo = arms.filter(a => !done[a.id]);
+const normK = (k) => k.toLowerCase().replace(/[-_]/g, '');
+const needKeys = items.map((it) => normK(it.key));
+const itemKeysMissing = (entry) => {
+  if (!needKeys.length || !entry || !entry.score) return false;
+  const have = new Set(Object.keys(entry.score).map(normK));
+  return needKeys.some((k) => !have.has(k));
+};
+const todo = arms.filter(a => !done[a.id] || itemKeysMissing(done[a.id]));
 console.log(`[judge-llm] ${arms.length} 臂，已判 ${arms.length - todo.length}，本次 ${todo.length}（判卷员 ${judgeModel} @ ${judgeProvider}，并发 ${concurrency}）`);
 
 async function pool(items, worker, n) {
