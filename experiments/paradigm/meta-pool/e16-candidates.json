@@ -1,0 +1,3405 @@
+{
+ "generated": "2026-08-06T10:55:02.311Z",
+ "phrases": [
+  "不对",
+  "错了",
+  "修坏",
+  "还原",
+  "回退",
+  "不是根因",
+  "你确定",
+  "又坏",
+  "还是不行",
+  "改坏",
+  "破坏",
+  "幽灵",
+  "bug",
+  "报错"
+ ],
+ "s6_patterns": [
+  "补丁vs根因",
+  "可回退铁律",
+  "重构优于补丁",
+  "溯源审计",
+  "版本回退",
+  "回归定位",
+  "调试困境"
+ ],
+ "candidates": [
+  {
+   "episode_id": 1043,
+   "uid": "P083",
+   "session_id": "operit-07",
+   "source": "manual",
+   "kind": "feature",
+   "status": "discussion",
+   "topic": "还是不行。那么，问题既然在那个裁切，我们能不能从根源上改掉裁切？",
+   "pattern": "补丁vs根因,重构优于补丁",
+   "msgs": 93,
+   "user_msgs": 47,
+   "chars": 144021,
+   "est_tokens": 108016,
+   "s5_error_hits": 17,
+   "s5_samples": [
+    "还是不行。那么，问题既然在那个裁切，我们能不能从根源上改掉裁切？",
+    "虽然改动较大，但我们有git版本控制，随时可以回退，而且这样设计，未来的扩展性肯定是能特别高的。所以，你现在来读一下所有的代码，然后给一个方案，告诉我你会如何改"
+   ],
+   "s6_patterns": [
+    "补丁vs根因",
+    "重构优于补丁"
+   ],
+   "score": 36
+  },
+  {
+   "episode_id": 850,
+   "uid": "C230-245",
+   "session_id": "omp-2026-07-07T06-14-00-892Z_019f3b36-47bc-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "卡片堆投卡手感（幽灵卡 bug 现场）+ 三行代码引入大量 bug + 补丁质疑",
+   "pattern": "补丁vs根因,可回退铁律",
+   "msgs": 47,
+   "user_msgs": 16,
+   "chars": 6276,
+   "est_tokens": 4707,
+   "s5_error_hits": 8,
+   "s5_samples": [
+    "你好像把代码改坏了，现在卡片堆的样式不对，召唤出来的是一个纯色的背景，同时卡片的关闭手势也失效了，召唤出来的卡片虽然是全屏的，但如果我点击撤回成浮卡状态，这个浮",
+    "卡片样式依然是纯色背景卡，而且依然关闭不了。这个问题很大，我们用git还原版本吧。"
+   ],
+   "s6_patterns": [
+    "补丁vs根因",
+    "可回退铁律"
+   ],
+   "score": 19
+  },
+  {
+   "episode_id": 503,
+   "uid": "B1",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "文件行右滑动画漂移",
+   "pattern": "全链路验证,追源",
+   "msgs": 89,
+   "user_msgs": 21,
+   "chars": 23012,
+   "est_tokens": 17259,
+   "s5_error_hits": 8,
+   "s5_samples": [
+    "好的，那么，我们来尝试修一个bug，在文件行右滑，它会播放一个有回弹的动画，如果在动画没播放结束时再次右滑，它就会在当前位置继续右滑，那么它的位置就变了。如果这",
+    "你看，你的改动依然是没有生效的，这就是历史上出现过的问题，所以我需要你版本回退，然后重新讨论一下。你不要着急修代码。"
+   ],
+   "s6_patterns": [],
+   "score": 17
+  },
+  {
+   "episode_id": 615,
+   "uid": "B2",
+   "session_id": "ses_063fd57d7ffepMZzVsdv2wNXM2",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "\"Unexpected token '<'\" 报错",
+   "pattern": "全链路验证,验证优先",
+   "msgs": 84,
+   "user_msgs": 25,
+   "chars": 14361,
+   "est_tokens": 10771,
+   "s5_error_hits": 8,
+   "s5_samples": [
+    "请求失败: Unexpected token '<', \"<html>\n<h\"... is not valid JSON,会出现这个报错",
+    "现在ai回复完后会出现请求失败: Unexpected token '<', \"<html>\n<h\"... is not valid JSON的报错"
+   ],
+   "s6_patterns": [],
+   "score": 17
+  },
+  {
+   "episode_id": 533,
+   "uid": "B27",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "右滑出卡方向判定（重大）",
+   "pattern": "简化方案,深度归因,重构视角",
+   "msgs": 48,
+   "user_msgs": 18,
+   "chars": 14438,
+   "est_tokens": 10829,
+   "s5_error_hits": 5,
+   "s5_samples": [
+    "还是不行啊？我说？不是，逻辑不应该是很简单的吗？你在坐标系上画两个线，一个是75度线，一个是105度线，这两个相交后，分成四个区域，右侧区域是一个150度的扇形",
+    "但经过我的测试，还是不对，我只要往右的时候，有微小的向上偏移，光标就会向下移动一行，然后出卡。如果你已经设置好了这个区域范围，那么理论上就不应该出现这个问题，所"
+   ],
+   "s6_patterns": [],
+   "score": 11
+  },
+  {
+   "episode_id": 549,
+   "uid": "B37",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "终端滚动方向/截停（超长拉锯，十几轮）",
+   "pattern": "机制重构,删旧留新,验证优先",
+   "msgs": 136,
+   "user_msgs": 45,
+   "chars": 36555,
+   "est_tokens": 27416,
+   "s5_error_hits": 5,
+   "s5_samples": [
+    "还是不行，依然是一行一行的，而且现在甚至会有随机的一行半出现。所以，是不是我们又陷入了补丁循环的困境了？为什么同一个问题总是无法解决？我们是不是需要重新设计机制",
+    "有了，但是方向不对，反了。而且这灵敏度也太高了，我滑动，移动的速度特别快，而且好像我手指不移动，在滑动后不离开屏幕，它会一直滚。我想要它像正常跟手上滑的那个感觉"
+   ],
+   "s6_patterns": [],
+   "score": 11
+  },
+  {
+   "episode_id": 824,
+   "uid": "B17-27",
+   "session_id": "omp-2026-05-29T05-12-43-275Z_019e7226-260b-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "solved",
+   "topic": "文件树导航设想 + 隐式关联 + 强约束先提方案",
+   "pattern": "实现边界控制,补丁vs根因",
+   "msgs": 141,
+   "user_msgs": 11,
+   "chars": 11816,
+   "est_tokens": 8862,
+   "s5_error_hits": 5,
+   "s5_samples": [
+    "先提交一个git，然后做这个事情，确保可以回退。然后做完后，提交一个大版本的版本号。",
+    "不不不，这是一个乌龙，我们之前讨论的样子不是当前代码的实现，是一个很理想的详细的状态，但是实际上，代码写出来，却是第一幕的样子，我尝试修改调整，然后会话就中断了"
+   ],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 11
+  },
+  {
+   "episode_id": 1015,
+   "uid": "P018",
+   "session_id": "operit-07",
+   "source": "manual",
+   "kind": "feature",
+   "status": "discussion",
+   "topic": "版本回退到4ef306c",
+   "pattern": "可回退铁律",
+   "msgs": 75,
+   "user_msgs": 38,
+   "chars": 99686,
+   "est_tokens": 74765,
+   "s5_error_hits": 5,
+   "s5_samples": [
+    "版本回退到4ef306c",
+    "版本回退dc9843e"
+   ],
+   "s6_patterns": [
+    "可回退铁律"
+   ],
+   "score": 11
+  },
+  {
+   "episode_id": 532,
+   "uid": "B26",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "相同卡竞态（重大，长拉锯）",
+   "pattern": "补丁vs根因,竞态",
+   "msgs": 125,
+   "user_msgs": 30,
+   "chars": 26273,
+   "est_tokens": 19705,
+   "s5_error_hits": 4,
+   "s5_samples": [
+    "我发现一个bug，如果我同时投放了两张相同的卡，那么肯定有一张卡在调整大小的时候，长按右下角光球，本来应该是进入编辑模式的，现在却直接收回紧缩态了。然后我在召唤",
+    "bug1的修复会不会导致click都失效了？"
+   ],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 10
+  },
+  {
+   "episode_id": 504,
+   "uid": "B2",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "卡片堆聚焦状态错乱",
+   "pattern": "全链路验证,验证优先",
+   "msgs": 43,
+   "user_msgs": 11,
+   "chars": 7499,
+   "est_tokens": 5624,
+   "s5_error_hits": 4,
+   "s5_samples": [
+    "两个问题，铺开后原来的全局自动压缩间距效果没了，二是这个卡片个z-index不对，不应该是最高，而应该是卡片中央。",
+    "还是不对，压缩多了后，卡片的位置还是会出现那个布局，你能给我讲讲是怎么实现的吗？理论上的设计为什么会和实际不符？正常来说卡片的状态的y值不应该是固定的吗？同一个"
+   ],
+   "s6_patterns": [],
+   "score": 9
+  },
+  {
+   "episode_id": 521,
+   "uid": "B19",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "左竖线粒子衔接/长度守恒（重大）",
+   "pattern": "设计主权,简化方案,像素守恒",
+   "msgs": 70,
+   "user_msgs": 32,
+   "chars": 19637,
+   "est_tokens": 14728,
+   "s5_error_hits": 4,
+   "s5_samples": [
+    "你确定这个方案能达到完美的预期效果吗？而且你知道我的预期的效果是什么吗？",
+    "那你确定这样修改能很简单地实现预期的效果不会发生问题吗？"
+   ],
+   "s6_patterns": [],
+   "score": 9
+  },
+  {
+   "episode_id": 529,
+   "uid": "B23",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "文件夹收缩动画不同步",
+   "pattern": "追源,心法前置",
+   "msgs": 58,
+   "user_msgs": 20,
+   "chars": 15270,
+   "est_tokens": 11453,
+   "s5_error_hits": 4,
+   "s5_samples": [
+    "我发现一个bug，在文件树深处某个文件夹关闭的时候，它下面的兄弟文件夹会先有文字上移，然后盒子才收缩，但以前我调试的时候是没有这个情况的，这是哪里出现了问题导致",
+    "你确定这是跟心法文档规定的一样，最正确的方案吗？"
+   ],
+   "s6_patterns": [],
+   "score": 9
+  },
+  {
+   "episode_id": 571,
+   "uid": "B49",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "unresolved",
+   "topic": "tmux 卡缩放重排不跟手 +",
+   "pattern": "补丁vs根因,回退语义冲突",
+   "msgs": 76,
+   "user_msgs": 19,
+   "chars": 17683,
+   "est_tokens": 13262,
+   "s5_error_hits": 4,
+   "s5_samples": [
+    "但，问题是只有终端卡片才有的？我们得先把刚刚的修改版本回退，然后在考虑重新实现的方案",
+    "依然不行，而且现在比较难触发重排了，好像问题的根因并不在这里。你先把修改回退一下吧，然后再想想解决方案"
+   ],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 9
+  },
+  {
+   "episode_id": 598,
+   "uid": "O1109-1165",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "heuristic",
+   "kind": "bug",
+   "status": "unresolved",
+   "topic": "4.1 版本改坏→回退 4.0；日志卡定位；多次无效修改（与 B53/B54 同族）",
+   "pattern": "版本回退,验证优先",
+   "msgs": 137,
+   "user_msgs": 57,
+   "chars": 43832,
+   "est_tokens": 32874,
+   "s5_error_hits": 4,
+   "s5_samples": [
+    "不对啊，这个4.1版本改得更坏了，版本先回退到4.0吧",
+    "这个问题终于解决了。看起来好像没有bug了。真不容易。我们复盘一下吧，为什么这次这个问题这么严重？尝试了这么多次，还经历了一次压缩上下文，才真正解决？是我们的心"
+   ],
+   "s6_patterns": [
+    "版本回退"
+   ],
+   "score": 9
+  },
+  {
+   "episode_id": 886,
+   "uid": "G24-40",
+   "session_id": "omp-2026-06-03T14-24-49-802Z_019e8ddf-6a8a-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "solved",
+   "topic": "光球面板重构迭代（样式不符/心法错误/紧缩态尺寸/气泡布局/动态字号）",
+   "pattern": "补丁vs根因",
+   "msgs": 204,
+   "user_msgs": 17,
+   "chars": 9049,
+   "est_tokens": 6787,
+   "s5_error_hits": 4,
+   "s5_samples": [
+    "我的意思是，不仅仅是这个问题，紧缩态卡片大小应该是0，而且上面也不应该有字，展开态的边框样式也没有了。模拟的ai对话样式也不对，不是渐变边框，跟原版的差异特别大",
+    "还是不对，紧缩态的尺寸应该是0，我依然能看到一个像素点。然后，里面的气泡布局也不对，最外层边框的渐变颜色也不对，你好好对照一下旧代码的实现方式，你是不是又进行补"
+   ],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 9
+  },
+  {
+   "episode_id": 936,
+   "uid": "L20-31",
+   "session_id": "omp-2026-07-14T01-05-45-581Z_019f5e28-946d-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "浮卡滚动失效（手势系统/隐藏规则/canvas 手势注册表）",
+   "pattern": "读码优先,复盘沉淀",
+   "msgs": 30,
+   "user_msgs": 12,
+   "chars": 11480,
+   "est_tokens": 8610,
+   "s5_error_hits": 4,
+   "s5_samples": [
+    "现在所有的卡在浮卡页面都不支持上下滑动滚动了？这是什么情况？全屏却是好的，是不是又把什么代码改坏了？",
+    "那是该更新，但我现在进行测试，依然是没有这个上下滚动的效果？有没有可能是卡片规范写错了？只有它是7.0版本后写的"
+   ],
+   "s6_patterns": [],
+   "score": 9
+  },
+  {
+   "episode_id": 981,
+   "uid": "W1-25",
+   "session_id": "omp-2026-05-29T03-33-18-586Z_019e71cb-227a-7",
+   "source": "manual",
+   "kind": "other",
+   "status": "solved",
+   "topic": "omp 版本更新运维（update 6→10/启动命令/清理）",
+   "pattern": "版本哲学,可回退铁律",
+   "msgs": 93,
+   "user_msgs": 25,
+   "chars": 9707,
+   "est_tokens": 7280,
+   "s5_error_hits": 4,
+   "s5_samples": [
+    "不对啊？我已经用上你了，而且你也是在终端里启动的？我感觉有点乱？是当前你的版本不一样吗？",
+    "那不对啊？那我跟你聊天的这个key是哪来的？我只是跟你开启了就聊天，如果没配key，那我是怎么跟你顺利通话的？"
+   ],
+   "s6_patterns": [
+    "可回退铁律"
+   ],
+   "score": 9
+  },
+  {
+   "episode_id": 1041,
+   "uid": "P078",
+   "session_id": "operit-07",
+   "source": "manual",
+   "kind": "feature",
+   "status": "discussion",
+   "topic": "中间有一些上下文丢失，现在的git版本已经更新了。现在的状态是这样的：\n我刚刚测试了一下，我如果初次",
+   "pattern": "补丁vs根因,深挖根因+对标成熟",
+   "msgs": 49,
+   "user_msgs": 25,
+   "chars": 75359,
+   "est_tokens": 56519,
+   "s5_error_hits": 4,
+   "s5_samples": [
+    "还是不对，没从根本上解决问题。我们先把版本回退到2cd吧，我们重新分析。",
+    "你确定版本回退了吗？ 2cdc726这个版本？"
+   ],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 9
+  },
+  {
+   "episode_id": 871,
+   "uid": "E55-71",
+   "session_id": "omp-2026-07-23T14-14-20-532Z_019f8f53-c874-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "文件树崩溃 + root 兄弟目录理解 + 沙漏叹号 + 下拉方向",
+   "pattern": "补丁vs根因",
+   "msgs": 76,
+   "user_msgs": 17,
+   "chars": 8081,
+   "est_tokens": 6061,
+   "s5_error_hits": 3,
+   "s5_samples": [
+    "你越改越坏了，我说，现在整个文件树都不渲染了。这是哪里出错了吧",
+    "还是不行，你好好看看原因呢？文件树依然崩溃"
+   ],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 8
+  },
+  {
+   "episode_id": 888,
+   "uid": "G48-53",
+   "session_id": "omp-2026-06-03T14-24-49-802Z_019e8ddf-6a8a-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "git 版本回退（改动太多 bug）+ 光球 svg/功能丢失找回",
+   "pattern": "可回退铁律",
+   "msgs": 21,
+   "user_msgs": 6,
+   "chars": 2274,
+   "est_tokens": 1706,
+   "s5_error_hits": 3,
+   "s5_samples": [
+    "算了，我突然觉得这不是一个好方式，你的改动造成了太多bug了。你能查找一下我们历史上都有哪些git版本提交吗？我找一个回退",
+    "你确定这个版本真的回退干净了吗？为什么浮卡的光球上面的svg"
+   ],
+   "s6_patterns": [
+    "可回退铁律"
+   ],
+   "score": 8
+  },
+  {
+   "episode_id": 509,
+   "uid": "B7",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "边界压缩记忆回弹",
+   "pattern": "复用既有,时序",
+   "msgs": 24,
+   "user_msgs": 10,
+   "chars": 4915,
+   "est_tokens": 3686,
+   "s5_error_hits": 3,
+   "s5_samples": [
+    "召唤出的卡片，从紧缩态扩展到展开态后，光球的位置不对了。这是什么原因？你能给我讲讲吗？",
+    "行为依然不对，现在把卡片移动到压缩的位置，松手，它自己会弹回去"
+   ],
+   "s6_patterns": [],
+   "score": 7
+  },
+  {
+   "episode_id": 558,
+   "uid": "B40",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "终端滚动条/滚动失效",
+   "pattern": "一致性质疑,日志定位",
+   "msgs": 78,
+   "user_msgs": 36,
+   "chars": 22185,
+   "est_tokens": 16639,
+   "s5_error_hits": 3,
+   "s5_samples": [
+    "你确定这个改动是能解决问题的，而不是一个补丁？",
+    "但现在所有的手势都不管用了，要不你把修改回退一下，我们不能丢了已有的完好功能"
+   ],
+   "s6_patterns": [],
+   "score": 7
+  },
+  {
+   "episode_id": 563,
+   "uid": "B45",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "全屏卡片 z-index/布局（拉锯）",
+   "pattern": "验证优先,原版复用",
+   "msgs": 66,
+   "user_msgs": 23,
+   "chars": 18702,
+   "est_tokens": 14027,
+   "s5_error_hits": 3,
+   "s5_samples": [
+    "从全屏回到卡片状态，我发现光球上的四图标的位置不对，偏上的很明显。你看看代码，是什么原因导致的？另外，这个全屏卡的高度，得比底部输入栏要低才行，现在它会把输入栏",
+    "我说的高度是zindex，你确定你真的找到是什么原因了吗？不要去猜，如果你没把握，可以去加日志确认"
+   ],
+   "s6_patterns": [],
+   "score": 7
+  },
+  {
+   "episode_id": 614,
+   "uid": "B1",
+   "session_id": "ses_063fd57d7ffepMZzVsdv2wNXM2",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "会话保存失败/刷新丢失（超长拉锯）",
+   "pattern": "全链路验证,追源",
+   "msgs": 57,
+   "user_msgs": 17,
+   "chars": 10704,
+   "est_tokens": 8028,
+   "s5_error_hits": 3,
+   "s5_samples": [
+    "请求失败: Unexpected token '<', \"<html>\n<h\"... is not valid JSON,会出现这个报错",
+    "现在ai回复完后会出现请求失败: Unexpected token '<', \"<html>\n<h\"... is not valid JSON的报错"
+   ],
+   "s6_patterns": [],
+   "score": 7
+  },
+  {
+   "episode_id": 851,
+   "uid": "C246-263",
+   "session_id": "omp-2026-07-07T06-14-00-892Z_019f3b36-47bc-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "全局手势推广（浮卡左右滑召唤侧栏）+ tmux/滚动修复 + 隐式契约记录",
+   "pattern": "实现边界控制,复盘沉淀",
+   "msgs": 49,
+   "user_msgs": 18,
+   "chars": 5824,
+   "est_tokens": 4368,
+   "s5_error_hits": 3,
+   "s5_samples": [
+    "不对，我确认手势是超过了60px的，是有什么让它截断了。这个情况好像很熟悉，你看看文档里，好像有对应情况的记录？",
+    "依然不行？你移除的这个是什么？你好像误会了我的意思，我的意思 ，所有的浮卡都不支持这个全屏手势。你是不是改错了？"
+   ],
+   "s6_patterns": [],
+   "score": 7
+  },
+  {
+   "episode_id": 865,
+   "uid": "E10-16",
+   "session_id": "omp-2026-07-23T14-14-20-532Z_019f8f53-c874-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "solved",
+   "topic": "工具框输出动画（340ms→1000ms/滚动动画/回退代码高亮版）",
+   "pattern": "实现边界控制,可回退铁律",
+   "msgs": 39,
+   "user_msgs": 7,
+   "chars": 10198,
+   "est_tokens": 7649,
+   "s5_error_hits": 3,
+   "s5_samples": [
+    "还是不对，没有滚动和停留的动画，先把340ms改成1000ms看看效果",
+    "还是不行，要不我们把改动回退到没有代码高亮的流式输出那个版本，不过在那个版本前你先确认一下，性能问题是不是能解决？"
+   ],
+   "s6_patterns": [
+    "可回退铁律"
+   ],
+   "score": 7
+  },
+  {
+   "episode_id": 547,
+   "uid": "B35",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "召唤不出卡片",
+   "pattern": "追源,调试困境",
+   "msgs": 17,
+   "user_msgs": 6,
+   "chars": 4204,
+   "est_tokens": 3153,
+   "s5_error_hits": 2,
+   "s5_samples": [
+    "？这合理吗？我们的bug就是召唤不出卡片了，我还怎么召唤日志卡来看日志呢？",
+    "或者你再排查一下呢？我们出现这个bug，一定是我们历史上的一些改动，在我们开始注册表修复之前，是没有这个问题的。"
+   ],
+   "s6_patterns": [
+    "调试困境"
+   ],
+   "score": 6
+  },
+  {
+   "episode_id": 836,
+   "uid": "C13-22",
+   "session_id": "omp-2026-07-07T06-14-00-892Z_019f3b36-47bc-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "solved",
+   "topic": "手势系统设计（双指缩放实时重排/终端卡降级）+ 全屏卡片滚动",
+   "pattern": "重构优于补丁,可回退铁律",
+   "msgs": 35,
+   "user_msgs": 10,
+   "chars": 6887,
+   "est_tokens": 5165,
+   "s5_error_hits": 2,
+   "s5_samples": [
+    "不对，好像你的改动完全没生效，是不是没重新构建代码重启服务？",
+    "不对啊？怎么卡片中上光球点击切换全屏模式这个按钮点击没反应了？而且文件树点击某文件，直接投的卡应该也是全屏卡片才对，现在怎么又变成浮卡态了？"
+   ],
+   "s6_patterns": [
+    "可回退铁律",
+    "重构优于补丁"
+   ],
+   "score": 6
+  },
+  {
+   "episode_id": 895,
+   "uid": "H36-47",
+   "session_id": "omp-2026-05-27T17-10-59-698Z_019e6a6b-0772-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "solved",
+   "topic": "卡片堆清理（01 设置/02 日志）+ 日志系统 + 补丁vs重构 + 可回退",
+   "pattern": "补丁vs根因,可回退铁律",
+   "msgs": 105,
+   "user_msgs": 12,
+   "chars": 13571,
+   "est_tokens": 10178,
+   "s5_error_hits": 2,
+   "s5_samples": [
+    "我来报告一个bug和需要修正的地方。02的卡片堆上，得有文字，不然不完整。浮卡上也得有日志这个字。然后，bug是，如果我反复点击右下角的光球，展开和收缩，里面的",
+    "如果有好的实现办法，那当然要用。所以我们先把当前版本提交git做一个可回退的记录点，然后开始试试吧。顺便，我们是不是可以在自查清单里加入新的约束，不能只追求代码"
+   ],
+   "s6_patterns": [
+    "补丁vs根因",
+    "可回退铁律"
+   ],
+   "score": 6
+  },
+  {
+   "episode_id": 896,
+   "uid": "H48-51",
+   "session_id": "omp-2026-05-27T17-10-59-698Z_019e6a6b-0772-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "文件树渲染 bug（隐式关联/硬编码立约束）",
+   "pattern": "补丁vs根因",
+   "msgs": 53,
+   "user_msgs": 4,
+   "chars": 1936,
+   "est_tokens": 1452,
+   "s5_error_hits": 2,
+   "s5_samples": [
+    "我发现，不知道从哪个修改开始后，左侧文件树不能正确渲染了。你能排查一下是什么原因吗？历史上曾经多次出现过这个现象，当时的解释是，有某个隐式的关联被忽略了，导致报",
+    "这个问题感觉是一个比较严重的问题，我们在写代码的时候，总有为了方便而使用硬编码的情况，这跟为了效率最高而对bug采用补丁而不是重构的情况一样，都是解决表面问题，"
+   ],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 6
+  },
+  {
+   "episode_id": 941,
+   "uid": "L70-76",
+   "session_id": "omp-2026-07-14T01-05-45-581Z_019f5e28-946d-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "新对话无法加载/旧数据覆盖 + git 回退（前端代码/ts→js）+ 案例写文档",
+   "pattern": "可回退铁律",
+   "msgs": 22,
+   "user_msgs": 7,
+   "chars": 4297,
+   "est_tokens": 3223,
+   "s5_error_hits": 2,
+   "s5_samples": [
+    "另外，我们的代码不是ts嘛？最终构建的是js，回退的时候同名的js文件也不行吗？",
+    "好吧，那至少你应该还有一部分历史记忆吧？你告诉我都有什么回退丢失了？"
+   ],
+   "s6_patterns": [
+    "可回退铁律"
+   ],
+   "score": 6
+  },
+  {
+   "episode_id": 942,
+   "uid": "L77-84",
+   "session_id": "omp-2026-07-14T01-05-45-581Z_019f5e28-946d-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "会话卡二级卡消失 + 保存新建位置/限高 70%/固定 + 吞消息回退 + git 习惯",
+   "pattern": "可回退铁律",
+   "msgs": 24,
+   "user_msgs": 8,
+   "chars": 2186,
+   "est_tokens": 1640,
+   "s5_error_hits": 2,
+   "s5_samples": [
+    "然后，光球面板的ai回复怎么又开始吞消息了？而且原本好的md渲染和代码高亮也没了？这个一直接复用文件卡的那个，你是不是一起回退导致的？",
+    "？不对，不应该是这样的，你现在是不是改动随时提交git了？我们把这次的改动回退"
+   ],
+   "s6_patterns": [
+    "可回退铁律"
+   ],
+   "score": 6
+  },
+  {
+   "episode_id": 512,
+   "uid": "B10",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "三按钮点击无响应",
+   "pattern": "约束前置,手势注册表",
+   "msgs": 15,
+   "user_msgs": 6,
+   "chars": 3597,
+   "est_tokens": 2698,
+   "s5_error_hits": 2,
+   "s5_samples": [
+    "不对，点击这三个按钮，响应的是展开关闭文件树。",
+    "还是不对，点击按钮位置依然没有触发"
+   ],
+   "s6_patterns": [],
+   "score": 5
+  },
+  {
+   "episode_id": 515,
+   "uid": "B13",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "展开文件夹时全部三角形变颜色（应只光标下那个）",
+   "pattern": "状态作用域,同步漏改",
+   "msgs": 9,
+   "user_msgs": 3,
+   "chars": 752,
+   "est_tokens": 564,
+   "s5_error_hits": 2,
+   "s5_samples": [
+    "我发现如果在对应颜色的光标里(黄/绿)，展开对应的文件夹，会导致所有的三角形都变颜色，这是不对的，不管什么时候，哪怕展开或者显示隐藏文件，在黄/绿按钮被聚焦的时",
+    "不对，看起来像是你的改动没生效，还是暗的墨绿色，我想要的是亮的草绿色之类的。"
+   ],
+   "s6_patterns": [],
+   "score": 5
+  },
+  {
+   "episode_id": 523,
+   "uid": "B21",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "复制路径后卡顿",
+   "pattern": "字段契约,环境",
+   "msgs": 22,
+   "user_msgs": 10,
+   "chars": 4318,
+   "est_tokens": 3239,
+   "s5_error_hits": 2,
+   "s5_samples": [
+    "不对啊，我是关闭抽屉后，发现进行其他操作，响应变得不流畅了。",
+    "先把删除的bug解决了再说"
+   ],
+   "s6_patterns": [],
+   "score": 5
+  },
+  {
+   "episode_id": 546,
+   "uid": "B34",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "终端编号/状态混用（重大）",
+   "pattern": "初心对齐,机制设计,读码优先",
+   "msgs": 174,
+   "user_msgs": 55,
+   "chars": 53592,
+   "est_tokens": 40194,
+   "s5_error_hits": 2,
+   "s5_samples": [
+    "？这合理吗？我们的bug就是召唤不出卡片了，我还怎么召唤日志卡来看日志呢？",
+    "或者你再排查一下呢？我们出现这个bug，一定是我们历史上的一些改动，在我们开始注册表修复之前，是没有这个问题的。"
+   ],
+   "s6_patterns": [],
+   "score": 5
+  },
+  {
+   "episode_id": 551,
+   "uid": "B39",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "缩小后终端内容消失（ls 内容不见只留服务器名）——根源讨论\"不同模型互相打架\"",
+   "pattern": "根源追问,两机制打架",
+   "msgs": 12,
+   "user_msgs": 6,
+   "chars": 4944,
+   "est_tokens": 3708,
+   "s5_error_hits": 2,
+   "s5_samples": [
+    "嘿，又一个bug，现在我缩小页面，终端的内容会消失，然后松手才出现，但这时候，如果页面里有内容，比如我ls了一下，那么内容就不见了，只剩下我的服务器的名字。",
+    "那，聊点根源的，你知道为什么我要你如此改，这个bug修复，更深层次是什么原因，你知道吗？或者说，我想要一个什么效果？"
+   ],
+   "s6_patterns": [],
+   "score": 5
+  },
+  {
+   "episode_id": 569,
+   "uid": "B47",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "双指缩放无响应（捏合日志定位 pinchCb=false/单指被误配）",
+   "pattern": "验证优先,日志定位",
+   "msgs": 41,
+   "user_msgs": 14,
+   "chars": 10021,
+   "est_tokens": 7516,
+   "s5_error_hits": 2,
+   "s5_samples": [
+    "嘿，我召唤卡片的时候，会出现一条日志，但我缩放时，并没有日志变化：[08:48:36.931] [CARD-STACK] buildCards called →",
+    "[08:53:37.968] [CARD-STACK] buildCards called → [08:53:37.970] [CARD-STACK] buil"
+   ],
+   "s6_patterns": [],
+   "score": 5
+  },
+  {
+   "episode_id": 827,
+   "uid": "B46-67",
+   "session_id": "omp-2026-05-29T05-12-43-275Z_019e7226-260b-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "solved",
+   "topic": "导航面板实现迭代（项目根/宽度/遮罩/硬编码/隐式关联文档）",
+   "pattern": "补丁vs根因",
+   "msgs": 116,
+   "user_msgs": 22,
+   "chars": 12575,
+   "est_tokens": 9431,
+   "s5_error_hits": 2,
+   "s5_samples": [
+    "不对，你这还是打补丁吧？你再详细看看代码？要克服你的这种倾向确实是需要我时刻提醒的，但也理解一下，我们的项目推进，不能靠你的想当然。不然对未来是毁灭性的打击。",
+    "行为不对，点击后，整个底栏浮上去了。这是因为什么？你查一下原因，不要更改，我觉得这暴露出了你更深层次的原因。这些常识，理论上不应该出现这种行为变化的。"
+   ],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 5
+  },
+  {
+   "episode_id": 830,
+   "uid": "B96-104",
+   "session_id": "omp-2026-05-29T05-12-43-275Z_019e7226-260b-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "solved",
+   "topic": "手势注册表彻底方案 + 复制函数全复制 + 补丁质疑",
+   "pattern": "复用既有,补丁vs根因",
+   "msgs": 84,
+   "user_msgs": 9,
+   "chars": 4794,
+   "est_tokens": 3596,
+   "s5_error_hits": 2,
+   "s5_samples": [
+    "那你直接复制函数啊？不要自己写，这也是暴露出来的问题，重构过程中，如果是需要复制代码的操作，你往往都不是完全复制代码，而是自己写一个类似的，并把它叫作复制了。这",
+    "不对，问题还是存在，而且，点击不也应该注册进手势注册表吗？你的这个行为是不是又在打补丁了？"
+   ],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 5
+  },
+  {
+   "episode_id": 837,
+   "uid": "C23-31",
+   "session_id": "omp-2026-07-07T06-14-00-892Z_019f3b36-47bc-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "solved",
+   "topic": "投卡全屏行为修正 + 版本 + readme 自动更新管线",
+   "pattern": "补丁vs根因,删繁",
+   "msgs": 24,
+   "user_msgs": 9,
+   "chars": 2560,
+   "est_tokens": 1920,
+   "s5_error_hits": 2,
+   "s5_samples": [
+    "点击文件的路径不对，不应该是先投浮卡再点击全屏，而是点击的时候直接全屏。",
+    "还是不行"
+   ],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 5
+  },
+  {
+   "episode_id": 857,
+   "uid": "D22-31",
+   "session_id": "omp-2026-07-22T03-58-36-090Z_019f87f9-b23a-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "solved",
+   "topic": "版本 7.3.1 + 修 bug 流程记录 + 工具失败注入提示 + 连续调用",
+   "pattern": "可回退铁律,复盘沉淀",
+   "msgs": 58,
+   "user_msgs": 10,
+   "chars": 5801,
+   "est_tokens": 4351,
+   "s5_error_hits": 2,
+   "s5_samples": [
+    "然后，我们刚刚这个，修bug，验证测试通过，钉钉子，登记进文档，这个流程有没有哪里记录？",
+    "奇怪，还是不行，我注意到，ai用bash删除的时候会用一个复合指令，先清，然后ls读取这个路径，如果失败，则证明清除成功。那么，这种工具失败的情况，是不是没更新"
+   ],
+   "s6_patterns": [
+    "可回退铁律"
+   ],
+   "score": 5
+  },
+  {
+   "episode_id": 874,
+   "uid": "F10-14",
+   "session_id": "omp-2026-07-17T15-47-14-913Z_019f70c2-af61-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "改动不生效 + 工具失败重复无截断 + 输出逻辑 + 追底 + md 渲染消失",
+   "pattern": "验证优先",
+   "msgs": 39,
+   "user_msgs": 5,
+   "chars": 6599,
+   "est_tokens": 4949,
+   "s5_error_hits": 2,
+   "s5_samples": [
+    "反馈，工具失败我让ai重复了5次，都没有截断提示。而1和2问题解决了，现在有一个新的问题，信息输出的逻辑不对，现在所有的工具调用出现在同一个气泡下面，而本应该出",
+    "我经过了测试，现在的实际效果是，先有对话气泡，然后下面列工具调用，然后没有第二个气泡，而是在第一个气泡处重新刷新新的内容，等结束后，工具调用框消失。这个行为不对"
+   ],
+   "s6_patterns": [],
+   "score": 5
+  },
+  {
+   "episode_id": 917,
+   "uid": "J12-14",
+   "session_id": "omp-2026-07-21T13-58-23-566Z_019f84f8-764e-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "终端/tmux 卡 ws:off + 历史修复模式抓类似 bug",
+   "pattern": "验证优先",
+   "msgs": 52,
+   "user_msgs": 3,
+   "chars": 11194,
+   "est_tokens": 8396,
+   "s5_error_hits": 2,
+   "s5_samples": [
+    "那，来抓bug吧，现在终端和tmux卡完全用不了了，是ws:off，日志里显示是这一：[23:47:03.765] [CARD-STACK] buildCard",
+    "好的，我注意到，你总是能在推进项目的过程中发现额外的bug，那么，你能不能结合我们历史上的修复，看看其他地方有没有类似的角落存在类似的bug？"
+   ],
+   "s6_patterns": [],
+   "score": 5
+  },
+  {
+   "episode_id": 934,
+   "uid": "L10-15",
+   "session_id": "omp-2026-07-14T01-05-45-581Z_019f5e28-946d-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "solved",
+   "topic": "发送按钮圆角方形 + api 卡 model 下拉缺失（历史实现被破坏）",
+   "pattern": "补丁vs根因,复盘沉淀",
+   "msgs": 12,
+   "user_msgs": 6,
+   "chars": 6851,
+   "est_tokens": 5138,
+   "s5_error_hits": 2,
+   "s5_samples": [
+    "好的，下一个需要调整的bug是，现在的api卡，provide有下拉框，但model后面却是一个横线，没有可选的模型，也没有下拉框，model还是暗的。进行测试",
+    "要修，但很奇怪，这些内容是历史上曾是实现出来并证明好用的，是从什么时候开始被修改破坏了呢？"
+   ],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 5
+  },
+  {
+   "episode_id": 991,
+   "uid": "AB6-16",
+   "session_id": "omp-2026-07-27T00-23-12-649Z_019fa0f4-4c09-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "solved",
+   "topic": "v8 工作继续实现",
+   "pattern": "补丁vs根因,实现边界控制",
+   "msgs": 37,
+   "user_msgs": 11,
+   "chars": 9997,
+   "est_tokens": 7498,
+   "s5_error_hits": 2,
+   "s5_samples": [
+    "还是不行，展开面板后聊天记录还是不显示",
+    "还是不行，面板展开后没有聊天记录"
+   ],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 5
+  },
+  {
+   "episode_id": 1011,
+   "uid": "P006",
+   "session_id": "operit-07",
+   "source": "manual",
+   "kind": "feature",
+   "status": "discussion",
+   "topic": "版本先回退到b2734fe吧，然后在这个基础上，保证光标跟盒子分离的前提，让光标绑定在盒子上，跟随盒",
+   "pattern": "版本哲学,可回退铁律",
+   "msgs": 9,
+   "user_msgs": 5,
+   "chars": 13514,
+   "est_tokens": 10136,
+   "s5_error_hits": 2,
+   "s5_samples": [
+    "版本先回退到b2734fe吧，然后在这个基础上，保证光标跟盒子分离的前提，让光标绑定在盒子上，跟随盒子的状态。光标只在移动的时候，进行平滑移动，然后进入另一个盒",
+    "还是不对，我们再回到b2734那个版本，先不要有动作，我们一点一点来。"
+   ],
+   "s6_patterns": [
+    "可回退铁律"
+   ],
+   "score": 5
+  },
+  {
+   "episode_id": 1016,
+   "uid": "P023",
+   "session_id": "operit-07",
+   "source": "manual",
+   "kind": "feature",
+   "status": "discussion",
+   "topic": "算了，回退a466dbc吧",
+   "pattern": "可回退铁律",
+   "msgs": 15,
+   "user_msgs": 8,
+   "chars": 19869,
+   "est_tokens": 14902,
+   "s5_error_hits": 2,
+   "s5_samples": [
+    "算了，回退a466dbc吧",
+    "依然没有。我们再回退一下a46"
+   ],
+   "s6_patterns": [
+    "可回退铁律"
+   ],
+   "score": 5
+  },
+  {
+   "episode_id": 1018,
+   "uid": "P029",
+   "session_id": "operit-07",
+   "source": "manual",
+   "kind": "feature",
+   "status": "discussion",
+   "topic": "欸，那，kfmv3好像就是一个完整的盒子生态吧？有各种高级效果的那种。我在想，要不我们把版本回退到还",
+   "pattern": "可回退铁律,版本哲学",
+   "msgs": 3,
+   "user_msgs": 2,
+   "chars": 3890,
+   "est_tokens": 2918,
+   "s5_error_hits": 2,
+   "s5_samples": [
+    "欸，那，kfmv3好像就是一个完整的盒子生态吧？有各种高级效果的那种。我在想，要不我们把版本回退到还没开始覆盖canvas层之前的那个稳定版本，然后重新研究一下",
+    "可以，回退这个先。然后我们再研究一下如何移植。我的初步想法是，我们先创建个分支，专门用来做完全canvas化的文件树，等调试差不多了，再把代码跟这个稳定版本的进"
+   ],
+   "s6_patterns": [
+    "可回退铁律"
+   ],
+   "score": 5
+  },
+  {
+   "episode_id": 1087,
+   "uid": "P003",
+   "session_id": "operit-01",
+   "source": "manual",
+   "kind": "feature",
+   "status": "discussion",
+   "topic": "那，从浮卡按钮进入的卡片，如果全屏了，按照你的描述，再点击另一个文件树里的全屏卡片，它会被覆盖？这可",
+   "pattern": "可回退铁律,全链路验证",
+   "msgs": 17,
+   "user_msgs": 9,
+   "chars": 19117,
+   "est_tokens": 14338,
+   "s5_error_hits": 2,
+   "s5_samples": [
+    "那，从浮卡按钮进入的卡片，如果全屏了，按照你的描述，再点击另一个文件树里的全屏卡片，它会被覆盖？这可不行，它应该回退到展开卡片状态才行，我期望的还是跟我之前说的",
+    "不对啊？不矛盾啊？你看啊，现在是，第一次点击，光标移动，第二次点击同一个位置，执行动作，这并不是一个次数的问题，是如果点击位置有光标，那么执行动作。那么，第一次"
+   ],
+   "s6_patterns": [
+    "可回退铁律"
+   ],
+   "score": 5
+  },
+  {
+   "episode_id": 572,
+   "uid": "B50",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "一整天工作全毁事故",
+   "pattern": "可回退铁律,教训制度化",
+   "msgs": 2,
+   "user_msgs": 1,
+   "chars": 150,
+   "est_tokens": 113,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "然后记得每次改动代码后都要进行提交和重新构建代码。这是一次十分严重的错误，它是特别值得写进心法约束里的，每一次改动都要确保可回退。这是特别重要的事情。因为刚刚的"
+   ],
+   "s6_patterns": [
+    "可回退铁律"
+   ],
+   "score": 4
+  },
+  {
+   "episode_id": 817,
+   "uid": "A57-67",
+   "session_id": "omp-2026-07-18T15-23-52-107Z_019f75d3-a3ab-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "工具截断 + canvas 消息窗口构想 + 视口裁剪 + 并发卡顿 + 流式滚动",
+   "pattern": "全链路验证,补丁vs根因",
+   "msgs": 149,
+   "user_msgs": 11,
+   "chars": 60511,
+   "est_tokens": 45383,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "问题应该还是在api对工具的输入不对，导致的，他说他输入很长的bash命令会导致输出被截断。嗯，不过这些都不重要，在我跟他进行了一些测试后，我发现跟他对话越来越"
+   ],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 4
+  },
+  {
+   "episode_id": 820,
+   "uid": "A83-89",
+   "session_id": "omp-2026-07-18T15-23-52-107Z_019f75d3-a3ab-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "会话卡删除/等待提示 + 文档更新 + 临时卡组 zindex + 粒子动画",
+   "pattern": "删繁,补丁vs根因",
+   "msgs": 158,
+   "user_msgs": 7,
+   "chars": 37615,
+   "est_tokens": 28211,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "又发现一处问题，文件树有一个右滑召唤临时卡组，批量处理的功能，用于复制/移动/删除/加入角色卡提示词，但它的层级不对，这些临时卡组的zindex位于背景之下了。"
+   ],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 4
+  },
+  {
+   "episode_id": 822,
+   "uid": "B1-3",
+   "session_id": "omp-2026-05-29T05-12-43-275Z_019e7226-260b-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "接手同步 + 边框 bug 救场（意图没生效/打补丁没研究根因）",
+   "pattern": "补丁vs根因,验证优先",
+   "msgs": 21,
+   "user_msgs": 3,
+   "chars": 2974,
+   "est_tokens": 2231,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "理论上，如果实现模式是跟左右两个按钮的样式是相同的，那表现的效果应该也是相同的才对？但为什么会出现这样的情况呢？我还是看不到那个边框，我怀疑你改错了边框，你能告"
+   ],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 4
+  },
+  {
+   "episode_id": 829,
+   "uid": "B78-95",
+   "session_id": "omp-2026-05-29T05-12-43-275Z_019e7226-260b-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "面板动画/位置/高度/手势劫持拉锯",
+   "pattern": "补丁vs根因,实现边界控制",
+   "msgs": 137,
+   "user_msgs": 18,
+   "chars": 6341,
+   "est_tokens": 4756,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "不对，行为完全不对，你再看看代码？我怀疑你又陷入了最小改动的循环里。"
+   ],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 4
+  },
+  {
+   "episode_id": 841,
+   "uid": "C65-73",
+   "session_id": "omp-2026-07-07T06-14-00-892Z_019f3b36-47bc-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "终端卡后端 + 拖动逻辑重复（3 次回退）+ 动画锁",
+   "pattern": "复用既有,可回退铁律",
+   "msgs": 18,
+   "user_msgs": 9,
+   "chars": 4592,
+   "est_tokens": 3444,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "拖动逻辑重复，这个问题尝试了3次，回退了3次，你觉得你有把握把它给做好吗？"
+   ],
+   "s6_patterns": [
+    "可回退铁律"
+   ],
+   "score": 4
+  },
+  {
+   "episode_id": 856,
+   "uid": "D16-21",
+   "session_id": "omp-2026-07-22T03-58-36-090Z_019f87f9-b23a-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "400 报错 + 文件树状态检测比对 + 钉子机制",
+   "pattern": "补丁vs根因,验证优先",
+   "msgs": 56,
+   "user_msgs": 6,
+   "chars": 4147,
+   "est_tokens": 3110,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "现在请求报错400了"
+   ],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 4
+  },
+  {
+   "episode_id": 860,
+   "uid": "D45-50",
+   "session_id": "omp-2026-07-22T03-58-36-090Z_019f87f9-b23a-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "钉子机制 + 追底抖动/跳动（滑动距离处跳动）",
+   "pattern": "可回退铁律",
+   "msgs": 112,
+   "user_msgs": 6,
+   "chars": 14112,
+   "est_tokens": 10584,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "好，下一个是一个反复出现的问题，ai生成消息的时候，是会自动追底的，但它还有一个机制，如果此时上滑，那么追底取消，能正常浏览对话。然后再下滑到最底回到追底状态。"
+   ],
+   "s6_patterns": [
+    "可回退铁律"
+   ],
+   "score": 4
+  },
+  {
+   "episode_id": 976,
+   "uid": "U1-4",
+   "session_id": "omp-2026-07-13T07-34-42-010Z_019f5a66-4e5a-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "上个 agent 瓶颈接手 + 会话管理器修复（双处同文件同步读写）",
+   "pattern": "深挖根因+对标成熟,补丁vs根因",
+   "msgs": 10,
+   "user_msgs": 4,
+   "chars": 10155,
+   "est_tokens": 7616,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "那你确定这个方案能从根本性解决你发现的这个问题吗？"
+   ],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 4
+  },
+  {
+   "episode_id": 1027,
+   "uid": "P050",
+   "session_id": "operit-07",
+   "source": "manual",
+   "kind": "feature",
+   "status": "discussion",
+   "topic": "看起来还是比较生硬的。我现在来提具体的需求，你先把版本回退到加动画之前。\n我的需求是，展开时，三角形",
+   "pattern": "可回退铁律,补丁vs根因",
+   "msgs": 21,
+   "user_msgs": 11,
+   "chars": 37275,
+   "est_tokens": 27956,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "看起来还是比较生硬的。我现在来提具体的需求，你先把版本回退到加动画之前。\n我的需求是，展开时，三角形会顺转90度，然后文字下面像抽屉一样拉出子元素。这些子元素会"
+   ],
+   "s6_patterns": [
+    "补丁vs根因",
+    "可回退铁律"
+   ],
+   "score": 4
+  },
+  {
+   "episode_id": 507,
+   "uid": "B5",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "收卡顺序推演（与 B3 同族，可能合并）",
+   "pattern": "全链路验证",
+   "msgs": 6,
+   "user_msgs": 1,
+   "chars": 1584,
+   "est_tokens": 1188,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "回撤的顺序不对，说不出的怪，跟出卡的顺序不太一样，你推演一下"
+   ],
+   "s6_patterns": [],
+   "score": 3
+  },
+  {
+   "episode_id": 508,
+   "uid": "B6",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "卡片展开态大小回缩",
+   "pattern": "架构性质校验",
+   "msgs": 11,
+   "user_msgs": 4,
+   "chars": 2221,
+   "est_tokens": 1666,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "是这个意思，但我发现了一个bug，如果我点击卡片到展开态，然后再移动光球，卡片的大小会变回紧缩态的大小。卡片变成其他大小，两个状态，移动光球都会打回原型 。这是"
+   ],
+   "s6_patterns": [],
+   "score": 3
+  },
+  {
+   "episode_id": 519,
+   "uid": "B17",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "中央光球/文件树/卡片堆打不开——build 缓存问题（O/B 混合，含\"缓存问题绝对不可能再出现\"的需求）",
+   "pattern": "心法前置,根治需求",
+   "msgs": 10,
+   "user_msgs": 5,
+   "chars": 2747,
+   "est_tokens": 2060,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "不对，你是不是改错了其他东西？为什么我现在打不开中央页面的光球，文件树和卡片堆了？"
+   ],
+   "s6_patterns": [],
+   "score": 3
+  },
+  {
+   "episode_id": 520,
+   "uid": "B18",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "呼吸效果没生效 + 白名单 10 处逃逸（机制质疑）",
+   "pattern": "时序,机制质疑",
+   "msgs": 17,
+   "user_msgs": 4,
+   "chars": 1700,
+   "est_tokens": 1275,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "怎么不在范围里了？改动很大会引发更多bug吗？"
+   ],
+   "s6_patterns": [],
+   "score": 3
+  },
+  {
+   "episode_id": 530,
+   "uid": "B24",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "md 文件卡编辑/预览不对称",
+   "pattern": "模式一致性",
+   "msgs": 21,
+   "user_msgs": 10,
+   "chars": 2815,
+   "est_tokens": 2111,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "感觉依然不对，就好像编辑和预览用的是两个不同的页面一样，它们的布局都是一样的，为什么行为会不一样呢？预览是好的，但编辑却不行，还是没有自动跟随重排版。"
+   ],
+   "s6_patterns": [],
+   "score": 3
+  },
+  {
+   "episode_id": 559,
+   "uid": "B41",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "终端内容记忆丢失",
+   "pattern": "状态区分",
+   "msgs": 20,
+   "user_msgs": 9,
+   "chars": 7488,
+   "est_tokens": 5616,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "你确定这个改动是能解决问题的，而不是一个补丁？"
+   ],
+   "s6_patterns": [],
+   "score": 3
+  },
+  {
+   "episode_id": 573,
+   "uid": "B52",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "tmux 开 opencode 表格渲染拖影 + 放大重排延迟（降级 canvas 决策）",
+   "pattern": "可回退支撑决策,降级决策",
+   "msgs": 27,
+   "user_msgs": 5,
+   "chars": 5809,
+   "est_tokens": 4357,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "反正我们现在有版本回退，这应该是可控的吧？大胆降级吧"
+   ],
+   "s6_patterns": [],
+   "score": 3
+  },
+  {
+   "episode_id": 600,
+   "uid": "O1307-1314",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "heuristic",
+   "kind": "bug",
+   "status": "unresolved",
+   "topic": "git 版本功能消失（版本回退事故链——与 B49/B50 相关）",
+   "pattern": "可回退铁律",
+   "msgs": 15,
+   "user_msgs": 8,
+   "chars": 7050,
+   "est_tokens": 5288,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "那你还不如重新版本回退我一点点重新给你说我要什么呢。你这些东西都是没有用的。"
+   ],
+   "s6_patterns": [
+    "可回退铁律"
+   ],
+   "score": 3
+  },
+  {
+   "episode_id": 604,
+   "uid": "B2",
+   "session_id": "ses_097843368ffejJGDPa2PNXgmfI",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "面板与会话卡不同步（大）",
+   "pattern": "全链路验证,验证优先",
+   "msgs": 14,
+   "user_msgs": 6,
+   "chars": 7465,
+   "est_tokens": 5599,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "你确定这个是跟实际代码符合的吗？"
+   ],
+   "s6_patterns": [],
+   "score": 3
+  },
+  {
+   "episode_id": 618,
+   "uid": "B5",
+   "session_id": "ses_063fd57d7ffepMZzVsdv2wNXM2",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "项目被自己关闭 502 / 进程被 kill（zsh: killed）；端口 8021 必须保留（nginx 暴露）",
+   "pattern": "全链路验证",
+   "msgs": 31,
+   "user_msgs": 12,
+   "chars": 3064,
+   "est_tokens": 2298,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "但我刚刚那个会话发消息又开始报这个错了：请求失败: Unexpected token '<', \"<html><h\"... is not valid JSON"
+   ],
+   "s6_patterns": [],
+   "score": 3
+  },
+  {
+   "episode_id": 619,
+   "uid": "B6",
+   "session_id": "ses_063fd57d7ffepMZzVsdv2wNXM2",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "长程对话卡顿（内存爆炸疑）",
+   "pattern": "架构性质校验",
+   "msgs": 11,
+   "user_msgs": 2,
+   "chars": 1588,
+   "est_tokens": 1191,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "不对啊，设计上，一切都在服务端完成，客户端就只是一个转发窗口，转发需要显示的内容而已，按理说不应该出现这种情况？"
+   ],
+   "s6_patterns": [],
+   "score": 3
+  },
+  {
+   "episode_id": 627,
+   "uid": "B1",
+   "session_id": "ses_141744654ffehLxZxWEQSrD8RN",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "逐条审计修复（13 条）",
+   "pattern": "全链路验证,追源",
+   "msgs": 95,
+   "user_msgs": 34,
+   "chars": 31748,
+   "est_tokens": 23811,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "改嘛，反正能回退不怕改坏。记得告诉我我得如何验证"
+   ],
+   "s6_patterns": [],
+   "score": 3
+  },
+  {
+   "episode_id": 658,
+   "uid": "B2",
+   "session_id": "qoder-08199521-0067-4640-807f-4fe2f965434a",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "代码调研（buildSystemMessages/refreshPageState 时序）+ 缓存命中验证（deepse",
+   "pattern": "成本观察",
+   "msgs": 9,
+   "user_msgs": 9,
+   "chars": 831,
+   "est_tokens": 623,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "不要用subagent，这个有bug而且效率巨低"
+   ],
+   "s6_patterns": [],
+   "score": 3
+  },
+  {
+   "episode_id": 787,
+   "uid": "O633-645",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "文件树深层展开卡顿性能排查（视口裁剪/阴影/字符雨）",
+   "pattern": "md编辑器分类",
+   "msgs": 60,
+   "user_msgs": 13,
+   "chars": 18740,
+   "est_tokens": 14055,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "但按你的说法，我展开了很多层后，如果滚动到展开层数比较少的视口部分，帧率是一样卡顿的？但实际上，这时候帧率没那么卡顿？而且，怎么可能没有视口裁剪呢？这个项目最开"
+   ],
+   "s6_patterns": [],
+   "score": 3
+  },
+  {
+   "episode_id": 807,
+   "uid": "A1-3",
+   "session_id": "omp-2026-07-18T15-23-52-107Z_019f75d3-a3ab-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "AI 对话面板无消息救场（消息结构重设计后气泡/工具渲染丢失）",
+   "pattern": "验证优先",
+   "msgs": 26,
+   "user_msgs": 3,
+   "chars": 6459,
+   "est_tokens": 4844,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "还是不行，你看看是改动没生效还是其他原因？"
+   ],
+   "s6_patterns": [],
+   "score": 3
+  },
+  {
+   "episode_id": 814,
+   "uid": "A36-41",
+   "session_id": "omp-2026-07-18T15-23-52-107Z_019f75d3-a3ab-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "追底 bug（生成中无法取消追底/发送不归底）+ 提示词库 100→1000",
+   "pattern": "架构性质校验,全量原则",
+   "msgs": 29,
+   "user_msgs": 6,
+   "chars": 7603,
+   "est_tokens": 5702,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "我重新刷新了一下，依然不对，发送依然未追底，而且对话进行中无法取消追底"
+   ],
+   "s6_patterns": [],
+   "score": 3
+  },
+  {
+   "episode_id": 855,
+   "uid": "D12-15",
+   "session_id": "omp-2026-07-22T03-58-36-090Z_019f87f9-b23a-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "api 兼容排查（多个 api 换用） + 会话卡工具思考折叠",
+   "pattern": "验证优先",
+   "msgs": 9,
+   "user_msgs": 4,
+   "chars": 2907,
+   "est_tokens": 2180,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "这不对啊，这应该是顺序的问题，我们之前有一个版本的修改是，保证会话卡里不要有工具和思考的调用，因为卡片ui比较小，工具和思考的调用，有点占空间。然后就让他在生成"
+   ],
+   "s6_patterns": [],
+   "score": 3
+  },
+  {
+   "episode_id": 858,
+   "uid": "D32-35",
+   "session_id": "omp-2026-07-22T03-58-36-090Z_019f87f9-b23a-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "会话卡无法读取/保存对话记录（渲染失败）",
+   "pattern": "验证优先",
+   "msgs": 61,
+   "user_msgs": 4,
+   "chars": 9462,
+   "est_tokens": 7097,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "但不对哦，只有会话卡无法读取记录？"
+   ],
+   "s6_patterns": [],
+   "score": 3
+  },
+  {
+   "episode_id": 861,
+   "uid": "D51-55",
+   "session_id": "omp-2026-07-22T03-58-36-090Z_019f87f9-b23a-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "solved",
+   "topic": ".kfmv4 双仓库问题 + 私有仓库自动推送",
+   "pattern": "重构优于补丁,版本哲学",
+   "msgs": 30,
+   "user_msgs": 5,
+   "chars": 5994,
+   "est_tokens": 4496,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "好，刚刚我又看了一下，你还记得那个追底bug吗？现在我测试了一下，虽然能正常脱离追底状态了，但好像如果有工具或思考框出现，它又会强制追底，这是哪里没清理干净吗？"
+   ],
+   "s6_patterns": [
+    "重构优于补丁"
+   ],
+   "score": 3
+  },
+  {
+   "episode_id": 864,
+   "uid": "E8-9",
+   "session_id": "omp-2026-07-23T14-14-20-532Z_019f8f53-c874-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "面板卡住（泄露）+ 刷新记录被吞 + 新旧会话",
+   "pattern": "验证优先",
+   "msgs": 20,
+   "user_msgs": 2,
+   "chars": 5387,
+   "est_tokens": 4040,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "刚刚我进行了测试，在旧会话里发送消息，依然会卡，然后刷新网页要等比较久的时间，刷新后，记录就被吞了。然后我开了一个新会话，结果旧会话的内容被覆盖，那些记录消失。"
+   ],
+   "s6_patterns": [],
+   "score": 3
+  },
+  {
+   "episode_id": 867,
+   "uid": "E24-29",
+   "session_id": "omp-2026-07-23T14-14-20-532Z_019f8f53-c874-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "solved",
+   "topic": "不用 subagent + 冒烟测试必要性论证 + 版本 7.3.2 + 推送频率 3 次/天",
+   "pattern": "可回退铁律",
+   "msgs": 59,
+   "user_msgs": 6,
+   "chars": 11877,
+   "est_tokens": 8908,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "不要用subagent，我们当前的omp有bug"
+   ],
+   "s6_patterns": [
+    "可回退铁律"
+   ],
+   "score": 3
+  },
+  {
+   "episode_id": 868,
+   "uid": "E30-36",
+   "session_id": "omp-2026-07-23T14-14-20-532Z_019f8f53-c874-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "discussion",
+   "topic": "动态文件机制（角色卡提示词拼接/可视化优先/工具调用实时改 system）",
+   "pattern": "补丁vs根因",
+   "msgs": 25,
+   "user_msgs": 7,
+   "chars": 15417,
+   "est_tokens": 11563,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "如果架构不支持，就改成支持的架构，代码都是我们从零开始写的，我们也有随时回退的能力"
+   ],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 3
+  },
+  {
+   "episode_id": 870,
+   "uid": "E45-54",
+   "session_id": "omp-2026-07-23T14-14-20-532Z_019f8f53-c874-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "solved",
+   "topic": "文件树 root 切换树（兄弟分支）+ 按钮样式消失拉锯",
+   "pattern": "补丁vs根因,设计主权",
+   "msgs": 52,
+   "user_msgs": 10,
+   "chars": 4587,
+   "est_tokens": 3440,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "提交吧，不然回退版本内容又丢失了"
+   ],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 3
+  },
+  {
+   "episode_id": 893,
+   "uid": "H15-20",
+   "session_id": "omp-2026-05-27T17-10-59-698Z_019e6a6b-0772-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "类型逃逸解决 + 代码审计（p2 以上问题）",
+   "pattern": "验证优先",
+   "msgs": 21,
+   "user_msgs": 6,
+   "chars": 3400,
+   "est_tokens": 2550,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "会出现bug吗？现在的状态是稳定的，而回归测试目前也是手动的，需要牵涉的精力很多。"
+   ],
+   "s6_patterns": [],
+   "score": 3
+  },
+  {
+   "episode_id": 902,
+   "uid": "I9-16",
+   "session_id": "omp-2026-07-11T02-40-24-324Z_019f4f0c-2704-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "discussion",
+   "topic": "omp 接入对话（单次模式/外部工具/通用 cli/导入 provide/ui 外置）",
+   "pattern": "复用既有,补丁vs根因",
+   "msgs": 25,
+   "user_msgs": 8,
+   "chars": 12038,
+   "est_tokens": 9029,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "感觉还是怪怪的，虽然思路对，但不应该这样实现。先停一下吧，把版本回退到决定替换omp之前的那个版本。我们重新理一下思路"
+   ],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 3
+  },
+  {
+   "episode_id": 909,
+   "uid": "I91-102",
+   "session_id": "omp-2026-07-11T02-40-24-324Z_019f4f0c-2704-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "api 卡内容丢失 + 下拉框样式 + 多次修改同一问题复盘 + 心法管理",
+   "pattern": "复盘沉淀",
+   "msgs": 44,
+   "user_msgs": 12,
+   "chars": 7511,
+   "est_tokens": 5633,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "下拉方向也不对，下行的出现应该在上方啊？然后上行为什么点击无响应？你是不是现在处在一种遇到问题直接改补丁而不是像文档里说的遵守补丁的情况的状态啊？我跟你说的提示"
+   ],
+   "s6_patterns": [],
+   "score": 3
+  },
+  {
+   "episode_id": 928,
+   "uid": "K53-61",
+   "session_id": "omp-2026-07-12T03-47-42-491Z_019f5470-211b-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "solved",
+   "topic": "卡片高度限制（80px 补丁质疑）+ 路径显示省略号",
+   "pattern": "补丁vs根因",
+   "msgs": 26,
+   "user_msgs": 9,
+   "chars": 3888,
+   "est_tokens": 2916,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "我进行了测试，你的这个强制高度有点补丁的意味了，卡片的下边框没了，卡片里的拖拽柄的高度也不对，点的位置也不对，内容确实是截断的，但你似乎没考虑其他ui的影响，你"
+   ],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 3
+  },
+  {
+   "episode_id": 930,
+   "uid": "K66-73",
+   "session_id": "omp-2026-07-12T03-47-42-491Z_019f5470-211b-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "solved",
+   "topic": "角色管理 json 存储 + 清理 + 保存反馈 + 角色卡加载失败",
+   "pattern": "补丁vs根因",
+   "msgs": 28,
+   "user_msgs": 8,
+   "chars": 3360,
+   "est_tokens": 2520,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "然后是角色卡的角色管理，文件是不是以json的形式存的？但为什么我在.kfmv4/roles文件夹里看到了一大堆文件？这个储存方式不对吧？不应该是只读取同一个文"
+   ],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 3
+  },
+  {
+   "episode_id": 950,
+   "uid": "M58-64",
+   "session_id": "omp-2026-07-15T00-37-13-069Z_019f6334-ceed-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "discussion",
+   "topic": "全链路构建防偷懒（物理杜绝）+ git 提交提醒 + 未提交硬性机制",
+   "pattern": "补丁vs根因,实现边界控制",
+   "msgs": 13,
+   "user_msgs": 7,
+   "chars": 1393,
+   "est_tokens": 1045,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "但我当初设计每一个选项都边成全链路构建，就是为了防止改动后出现不通过导致bug的情况，为什么我设置好了后，你就不爱用了？"
+   ],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 3
+  },
+  {
+   "episode_id": 951,
+   "uid": "N1-10",
+   "session_id": "omp-2026-07-25T02-58-55-859Z_019f9736-24f3-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "对话截断问题（cgroup/进程组一荣俱荣）+ kfmv4 重启杀 tmux 修复",
+   "pattern": "复盘沉淀,全链路验证",
+   "msgs": 41,
+   "user_msgs": 10,
+   "chars": 8459,
+   "est_tokens": 6344,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "哦，你的意思是，正常的关联应该是，kfmv4服务重启，应该是与tmux断联，等重启后恢复连接，但问题就在，kfmv4重启，直接把tmux杀死了，这是不对的，是这"
+   ],
+   "s6_patterns": [],
+   "score": 3
+  },
+  {
+   "episode_id": 953,
+   "uid": "N15-21",
+   "session_id": "omp-2026-07-25T02-58-55-859Z_019f9736-24f3-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "构建卡顿（tsx/tsc 资源抢占/异步）",
+   "pattern": "深挖根因+对标成熟,复盘沉淀",
+   "msgs": 24,
+   "user_msgs": 7,
+   "chars": 2845,
+   "est_tokens": 2134,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "不对，以前构建就不会这样慢的"
+   ],
+   "s6_patterns": [],
+   "score": 3
+  },
+  {
+   "episode_id": 998,
+   "uid": "AH1-6",
+   "session_id": "omp-2026-07-25T00-58-38-166Z_019f96c8-02d6-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "omp 工具历史问题检查（调工具中断/杀进程/start 脚本）",
+   "pattern": "复盘沉淀",
+   "msgs": 16,
+   "user_msgs": 6,
+   "chars": 4372,
+   "est_tokens": 3279,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "但这都是omp在调用某些工具的时候中断的，这个情况你确定不是omp自己杀进程造成的吗？"
+   ],
+   "s6_patterns": [],
+   "score": 3
+  },
+  {
+   "episode_id": 1002,
+   "uid": "O-1",
+   "session_id": "omp-2026-07-25T00-44-50-819Z_019f96bb-6303-7",
+   "source": "manual",
+   "kind": "other",
+   "status": "solved",
+   "topic": "唉，你再看看omp的前几轮历史对话吧，总是会被莫名地截断。",
+   "pattern": "溯源审计",
+   "msgs": 8,
+   "user_msgs": 6,
+   "chars": 244,
+   "est_tokens": 183,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "你的检查也不对啊？怎么剋能是这句？后面我还说话了？"
+   ],
+   "s6_patterns": [
+    "溯源审计"
+   ],
+   "score": 3
+  },
+  {
+   "episode_id": 1004,
+   "uid": "O-1",
+   "session_id": "omp-2026-07-25T00-32-48-759Z_019f96b0-5e75-7",
+   "source": "manual",
+   "kind": "other",
+   "status": "solved",
+   "topic": "你看看上一轮历史对话发生了什么？你是omp哦",
+   "pattern": "溯源审计",
+   "msgs": 5,
+   "user_msgs": 3,
+   "chars": 3188,
+   "est_tokens": 2391,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "不对，重点不在这，重点在，已经出现了两次会话窗口崩溃的情况了。"
+   ],
+   "s6_patterns": [
+    "溯源审计"
+   ],
+   "score": 3
+  },
+  {
+   "episode_id": 1010,
+   "uid": "P004",
+   "session_id": "operit-07",
+   "source": "manual",
+   "kind": "feature",
+   "status": "discussion",
+   "topic": "嗯，还是不太对，你再回退一下版本先",
+   "pattern": "可回退铁律",
+   "msgs": 7,
+   "user_msgs": 4,
+   "chars": 8621,
+   "est_tokens": 6466,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "嗯，还是不太对，你再回退一下版本先"
+   ],
+   "s6_patterns": [
+    "可回退铁律"
+   ],
+   "score": 3
+  },
+  {
+   "episode_id": 1021,
+   "uid": "P035",
+   "session_id": "operit-07",
+   "source": "manual",
+   "kind": "feature",
+   "status": "discussion",
+   "topic": "效果还是不对，看起来依然是相对自己上级盒子，而不是统一的相对根目录盒子。",
+   "pattern": "补丁vs根因,现象vs指标",
+   "msgs": 7,
+   "user_msgs": 4,
+   "chars": 9023,
+   "est_tokens": 6767,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "效果还是不对，看起来依然是相对自己上级盒子，而不是统一的相对根目录盒子。"
+   ],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 3
+  },
+  {
+   "episode_id": 1042,
+   "uid": "P079",
+   "session_id": "operit-07",
+   "source": "manual",
+   "kind": "feature",
+   "status": "discussion",
+   "topic": "不是，我让你回退版本，没让你做改动啊？再回退回去。",
+   "pattern": "可回退铁律",
+   "msgs": 31,
+   "user_msgs": 16,
+   "chars": 51963,
+   "est_tokens": 38972,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "不是，我让你回退版本，没让你做改动啊？再回退回去。"
+   ],
+   "s6_patterns": [
+    "可回退铁律"
+   ],
+   "score": 3
+  },
+  {
+   "episode_id": 1062,
+   "uid": "P132",
+   "session_id": "operit-07",
+   "source": "manual",
+   "kind": "feature",
+   "status": "discussion",
+   "topic": "那，我关于你的方案取舍，我只有一个要求，就是一定要考虑到，如果未来做了其他改动，你的方案不会造成大面",
+   "pattern": "可回退铁律,实现边界控制",
+   "msgs": 3,
+   "user_msgs": 2,
+   "chars": 1487,
+   "est_tokens": 1115,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "那，我关于你的方案取舍，我只有一个要求，就是一定要考虑到，如果未来做了其他改动，你的方案不会造成大面积崩溃的现象，让我做一个改动，出一个bug。这个条件下，你会"
+   ],
+   "s6_patterns": [
+    "可回退铁律"
+   ],
+   "score": 3
+  },
+  {
+   "episode_id": 1065,
+   "uid": "P137",
+   "session_id": "operit-07",
+   "source": "manual",
+   "kind": "feature",
+   "status": "discussion",
+   "topic": "要不你还是版本回退到相修改前吧。这两个问题全都没修好。我们重新慢慢地研究问题。",
+   "pattern": "可回退铁律,深挖根因+对标成熟",
+   "msgs": 1,
+   "user_msgs": 1,
+   "chars": 39,
+   "est_tokens": 29,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "要不你还是版本回退到相修改前吧。这两个问题全都没修好。我们重新慢慢地研究问题。"
+   ],
+   "s6_patterns": [
+    "可回退铁律"
+   ],
+   "score": 3
+  },
+  {
+   "episode_id": 1080,
+   "uid": "P008",
+   "session_id": "operit-26",
+   "source": "manual",
+   "kind": "feature",
+   "status": "discussion",
+   "topic": "先等等，刚刚你的分身不小心把nginx的配置给清理了。她恢复不过来，好像我们的kfm也受到了影响，现",
+   "pattern": "补丁vs根因,落盘兜底机制",
+   "msgs": 9,
+   "user_msgs": 5,
+   "chars": 13347,
+   "est_tokens": 10010,
+   "s5_error_hits": 1,
+   "s5_samples": [
+    "问题就在这儿，default被你的分身那个电子笨蛋给删除个一干二净。然后他又写了一个配置文件，所以就是这里出现了问题。我们之前的前后端配合得很好的。就是ngin"
+   ],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 3
+  },
+  {
+   "episode_id": 560,
+   "uid": "B42",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "终端上下缩放不生效（卡片扩大底端不增加）",
+   "pattern": "补丁vs根因,布局时机",
+   "msgs": 9,
+   "user_msgs": 5,
+   "chars": 1349,
+   "est_tokens": 1012,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 2
+  },
+  {
+   "episode_id": 744,
+   "uid": "F22",
+   "session_id": "kimi-0e56b3a5-bfda-4c82-8e48-5629a00532a3",
+   "source": "manual",
+   "kind": "feature",
+   "status": "discussion",
+   "topic": "**溯源审计需求**（drift-provenance 源头）+ 三架构分歧裁决（重构优于补丁）+ 跨域审计——disc",
+   "pattern": "溯源审计,重构优于补丁",
+   "msgs": 13,
+   "user_msgs": 4,
+   "chars": 5854,
+   "est_tokens": 4391,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "重构优于补丁",
+    "溯源审计"
+   ],
+   "score": 2
+  },
+  {
+   "episode_id": 854,
+   "uid": "D5-11",
+   "session_id": "omp-2026-07-22T03-58-36-090Z_019f87f9-b23a-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "显示隐藏按钮/权限拒绝 + 文件树实时更新（增删文件需刷新）",
+   "pattern": "验证优先,补丁vs根因",
+   "msgs": 57,
+   "user_msgs": 7,
+   "chars": 9126,
+   "est_tokens": 6845,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 2
+  },
+  {
+   "episode_id": 882,
+   "uid": "G1-2",
+   "session_id": "omp-2026-06-03T14-24-49-802Z_019e8ddf-6a8a-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "discussion",
+   "topic": "读取同步 + ui 注册表设计文档对照（代码差距审查）",
+   "pattern": "补丁vs根因,溯源审计",
+   "msgs": 19,
+   "user_msgs": 2,
+   "chars": 4153,
+   "est_tokens": 3115,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "补丁vs根因",
+    "溯源审计"
+   ],
+   "score": 2
+  },
+  {
+   "episode_id": 510,
+   "uid": "B8",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "省略号截断内容未隐藏（下一行又出现）",
+   "pattern": "深挖根因+对标成熟,实现边界控制",
+   "msgs": 2,
+   "user_msgs": 1,
+   "chars": 269,
+   "est_tokens": 202,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [],
+   "score": 1
+  },
+  {
+   "episode_id": 511,
+   "uid": "B9",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "渐变按钮不显示/渲染异常",
+   "pattern": "全链路验证,渲染原理",
+   "msgs": 16,
+   "user_msgs": 5,
+   "chars": 2060,
+   "est_tokens": 1545,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [],
+   "score": 1
+  },
+  {
+   "episode_id": 513,
+   "uid": "B11",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "渐变颜色调试异常（垃圾桶变纯色/黄绿红渐变不明显——视觉 bug，与 F9 交织）",
+   "pattern": "视觉原理",
+   "msgs": 18,
+   "user_msgs": 7,
+   "chars": 2356,
+   "est_tokens": 1767,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [],
+   "score": 1
+  },
+  {
+   "episode_id": 514,
+   "uid": "B12",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "卡片堆关闭后光标状态未归位",
+   "pattern": "状态复位",
+   "msgs": 2,
+   "user_msgs": 1,
+   "chars": 119,
+   "est_tokens": 89,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [],
+   "score": 1
+  },
+  {
+   "episode_id": 540,
+   "uid": "B28",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "终端棋盘格/角标位置偏差（验证细节）",
+   "pattern": "布局时序",
+   "msgs": 25,
+   "user_msgs": 10,
+   "chars": 6415,
+   "est_tokens": 4811,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [],
+   "score": 1
+  },
+  {
+   "episode_id": 541,
+   "uid": "B29",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "分隔线颜色不持久（关卡重开还原）+ fallback 机制质疑",
+   "pattern": "状态持久,机制简化",
+   "msgs": 7,
+   "user_msgs": 3,
+   "chars": 2497,
+   "est_tokens": 1873,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [],
+   "score": 1
+  },
+  {
+   "episode_id": 542,
+   "uid": "B30",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "步骤 3 文字大小不一致（首次召唤 vs 收起再展开——两状态尺寸差，用户给数值 32×23 vs 39×29）",
+   "pattern": "状态尺寸",
+   "msgs": 31,
+   "user_msgs": 14,
+   "chars": 7558,
+   "est_tokens": 5669,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [],
+   "score": 1
+  },
+  {
+   "episode_id": 543,
+   "uid": "B31",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "ANSI 颜色渲染错误（红=白、蓝底白字被盖、右半边透明、汉字偏左上）——终端渲染细节",
+   "pattern": "渲染细节",
+   "msgs": 35,
+   "user_msgs": 14,
+   "chars": 9835,
+   "est_tokens": 7376,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [],
+   "score": 1
+  },
+  {
+   "episode_id": 545,
+   "uid": "B33",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "终端编号不递增（都显示终端1/点击 canvas 不弹输入法）",
+   "pattern": "平台机制",
+   "msgs": 17,
+   "user_msgs": 7,
+   "chars": 9362,
+   "est_tokens": 7022,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [],
+   "score": 1
+  },
+  {
+   "episode_id": 548,
+   "uid": "B36",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "unresolved",
+   "topic": "缩放终端页面消失/文字重复/不重新排版（termux 会重排的对比）",
+   "pattern": "补丁vs根因,平台对比",
+   "msgs": 22,
+   "user_msgs": 9,
+   "chars": 4411,
+   "est_tokens": 3308,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 1
+  },
+  {
+   "episode_id": 550,
+   "uid": "B38",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "拆字 bug（窗口缩小字母一行一个）",
+   "pattern": "冗余代码",
+   "msgs": 4,
+   "user_msgs": 2,
+   "chars": 846,
+   "est_tokens": 635,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [],
+   "score": 1
+  },
+  {
+   "episode_id": 562,
+   "uid": "B44",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "03/04 卡内容串卡",
+   "pattern": "心法前置,消息归属",
+   "msgs": 6,
+   "user_msgs": 3,
+   "chars": 2338,
+   "est_tokens": 1754,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [],
+   "score": 1
+  },
+  {
+   "episode_id": 564,
+   "uid": "B46",
+   "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "全屏关闭按钮遮挡下方编辑/预览按钮；标题栏右沿没被挤",
+   "pattern": "设计主张,理解纠正",
+   "msgs": 15,
+   "user_msgs": 7,
+   "chars": 4467,
+   "est_tokens": 3350,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [],
+   "score": 1
+  },
+  {
+   "episode_id": 603,
+   "uid": "B1",
+   "session_id": "ses_097843368ffejJGDPa2PNXgmfI",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "会话下拉框消失",
+   "pattern": "全链路验证,追源",
+   "msgs": 16,
+   "user_msgs": 3,
+   "chars": 2999,
+   "est_tokens": 2249,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [],
+   "score": 1
+  },
+  {
+   "episode_id": 636,
+   "uid": "B1",
+   "session_id": "ses_0b64338f0ffe19Oza4gW1ACwZb",
+   "source": "manual",
+   "kind": "bug",
+   "status": "unresolved",
+   "topic": "tmux 卡滚动只有一行",
+   "pattern": "追源,回归定位",
+   "msgs": 2,
+   "user_msgs": 2,
+   "chars": 192,
+   "est_tokens": 144,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "回归定位"
+   ],
+   "score": 1
+  },
+  {
+   "episode_id": 638,
+   "uid": "B1",
+   "session_id": "ses_0912cd17dffe6W2r9h34Ia0s4w",
+   "source": "manual",
+   "kind": "bug",
+   "status": "unresolved",
+   "topic": "并行工具调用渲染 bug",
+   "pattern": "补丁vs根因,一并解决",
+   "msgs": 2,
+   "user_msgs": 2,
+   "chars": 144,
+   "est_tokens": 108,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 1
+  },
+  {
+   "episode_id": 646,
+   "uid": "B1",
+   "session_id": "qoder-f4fde5d9-3141-414b-bc00-a9b2ebe72de0",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "api/角色/配置卡读取失败（缓存问题，刷新正常）",
+   "pattern": "缓存",
+   "msgs": 2,
+   "user_msgs": 2,
+   "chars": 78,
+   "est_tokens": 59,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [],
+   "score": 1
+  },
+  {
+   "episode_id": 669,
+   "uid": "B1",
+   "session_id": "qoder-1a83caf2-f9d3-4162-9a55-bbf55a424827",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "文档系统审计 +",
+   "pattern": "warning失效,hardfail源头",
+   "msgs": 7,
+   "user_msgs": 7,
+   "chars": 2691,
+   "est_tokens": 2018,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [],
+   "score": 1
+  },
+  {
+   "episode_id": 676,
+   "uid": "B1",
+   "session_id": "qoder-ef557a52-ed18-4115-b7ba-c564b2c5558b",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "tmux 卡重新设计（找 omp 最近对话+结合代码现状重实现）",
+   "pattern": "彻底重构决策,复盘沉淀",
+   "msgs": 3,
+   "user_msgs": 3,
+   "chars": 631,
+   "est_tokens": 473,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [],
+   "score": 1
+  },
+  {
+   "episode_id": 677,
+   "uid": "B2",
+   "session_id": "qoder-ef557a52-ed18-4115-b7ba-c564b2c5558b",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "不用 subagent（易卡）+ 顺带修问题",
+   "pattern": "工具否决",
+   "msgs": 2,
+   "user_msgs": 2,
+   "chars": 34,
+   "est_tokens": 26,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [],
+   "score": 1
+  },
+  {
+   "episode_id": 733,
+   "uid": "F11",
+   "session_id": "kimi-0e56b3a5-bfda-4c82-8e48-5629a00532a3",
+   "source": "manual",
+   "kind": "feature",
+   "status": "discussion",
+   "topic": "**newdoc 迁移方案**（逐份迁移→删旧改名——v8.2 方法论）——discussion",
+   "pattern": "补丁vs根因,复盘沉淀",
+   "msgs": 4,
+   "user_msgs": 0,
+   "chars": 1027,
+   "est_tokens": 770,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 1
+  },
+  {
+   "episode_id": 754,
+   "uid": "F34",
+   "session_id": "kimi-0e56b3a5-bfda-4c82-8e48-5629a00532a3",
+   "source": "manual",
+   "kind": "feature",
+   "status": "discussion",
+   "topic": "**一切皆卡片与文件树冲突**（未来重构记远景）——discussion",
+   "pattern": "两机制打架,重构优于补丁",
+   "msgs": 2,
+   "user_msgs": 1,
+   "chars": 1235,
+   "est_tokens": 926,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "重构优于补丁"
+   ],
+   "score": 1
+  },
+  {
+   "episode_id": 765,
+   "uid": "B6",
+   "session_id": "kimi-0e56b3a5-bfda-4c82-8e48-5629a00532a3",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "面板 sessionId 报错修复——solved",
+   "pattern": "验证优先,复盘沉淀",
+   "msgs": 3,
+   "user_msgs": 0,
+   "chars": 1266,
+   "est_tokens": 950,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [],
+   "score": 1
+  },
+  {
+   "episode_id": 779,
+   "uid": "F54",
+   "session_id": "kimi-0e56b3a5-bfda-4c82-8e48-5629a00532a3",
+   "source": "manual",
+   "kind": "feature",
+   "status": "discussion",
+   "topic": "**错误码体系 + 自我修正负反馈**——discussion",
+   "pattern": "版本哲学,补丁vs根因",
+   "msgs": 6,
+   "user_msgs": 0,
+   "chars": 2517,
+   "est_tokens": 1888,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 1
+  },
+  {
+   "episode_id": 782,
+   "uid": "B9",
+   "session_id": "kimi-0e56b3a5-bfda-4c82-8e48-5629a00532a3",
+   "source": "manual",
+   "kind": "bug",
+   "status": "unresolved",
+   "topic": "tmux 半屏 bug（锁屏/切换/断线重连）——unresolved",
+   "pattern": "补丁vs根因,全链路验证",
+   "msgs": 5,
+   "user_msgs": 1,
+   "chars": 2076,
+   "est_tokens": 1557,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 1
+  },
+  {
+   "episode_id": 812,
+   "uid": "A26-28",
+   "session_id": "omp-2026-07-18T15-23-52-107Z_019f75d3-a3ab-7",
+   "source": "manual",
+   "kind": "other",
+   "status": "solved",
+   "topic": "版本提交 + 推送 GitHub（更新 readme）",
+   "pattern": "可回退铁律",
+   "msgs": 3,
+   "user_msgs": 3,
+   "chars": 48,
+   "est_tokens": 36,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "可回退铁律"
+   ],
+   "score": 1
+  },
+  {
+   "episode_id": 813,
+   "uid": "A29-35",
+   "session_id": "omp-2026-07-18T15-23-52-107Z_019f75d3-a3ab-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "工具调用不流式排查 + 随机提示复用 + 上下文压缩",
+   "pattern": "冰山理论,删繁",
+   "msgs": 17,
+   "user_msgs": 7,
+   "chars": 2190,
+   "est_tokens": 1643,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [],
+   "score": 1
+  },
+  {
+   "episode_id": 828,
+   "uid": "B68-77",
+   "session_id": "omp-2026-05-29T05-12-43-275Z_019e7226-260b-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "solved",
+   "topic": "文字渐变样式 + 复盘（最小倾向改动）",
+   "pattern": "补丁vs根因,复盘沉淀",
+   "msgs": 43,
+   "user_msgs": 10,
+   "chars": 3733,
+   "est_tokens": 2800,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 1
+  },
+  {
+   "episode_id": 842,
+   "uid": "C74-90",
+   "session_id": "omp-2026-07-07T06-14-00-892Z_019f3b36-47bc-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "discussion",
+   "topic": "手势覆盖 + 测试拆分 + 卡片插件系统（统一文档）",
+   "pattern": "补丁vs根因,删繁",
+   "msgs": 54,
+   "user_msgs": 17,
+   "chars": 11727,
+   "est_tokens": 8795,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 1
+  },
+  {
+   "episode_id": 853,
+   "uid": "D1-4",
+   "session_id": "omp-2026-07-22T03-58-36-090Z_019f87f9-b23a-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "接手同步 + 数据目录 .kfmv4 不可见/配置丢失",
+   "pattern": "验证优先",
+   "msgs": 51,
+   "user_msgs": 4,
+   "chars": 20246,
+   "est_tokens": 15185,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [],
+   "score": 1
+  },
+  {
+   "episode_id": 866,
+   "uid": "E17-23",
+   "session_id": "omp-2026-07-23T14-14-20-532Z_019f8f53-c874-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "会话卡状态同步/加载慢/切换黑屏 + 追底卡顿 + 钉子",
+   "pattern": "深挖根因+对标成熟,全链路验证",
+   "msgs": 92,
+   "user_msgs": 7,
+   "chars": 28100,
+   "est_tokens": 21075,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [],
+   "score": 1
+  },
+  {
+   "episode_id": 875,
+   "uid": "F15-20",
+   "session_id": "omp-2026-07-17T15-47-14-913Z_019f70c2-af61-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "md 渲染失效排查（文件卡/面板/回归检查）+ 本地 8021 vs 外部 nginx",
+   "pattern": "验证优先",
+   "msgs": 44,
+   "user_msgs": 6,
+   "chars": 9177,
+   "est_tokens": 6883,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [],
+   "score": 1
+  },
+  {
+   "episode_id": 884,
+   "uid": "G11-17",
+   "session_id": "omp-2026-06-03T14-24-49-802Z_019e8ddf-6a8a-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "discussion",
+   "topic": "代码去重重构决策（光球面板/浮卡三套合一，浮卡唯一实现）",
+   "pattern": "重构优于补丁",
+   "msgs": 18,
+   "user_msgs": 7,
+   "chars": 13108,
+   "est_tokens": 9831,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "重构优于补丁"
+   ],
+   "score": 1
+  },
+  {
+   "episode_id": 885,
+   "uid": "G18-23",
+   "session_id": "omp-2026-06-03T14-24-49-802Z_019e8ddf-6a8a-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "solved",
+   "topic": "readme/claude 更新 + 版本固定 + 光球紧缩态位置（近似极限思路）",
+   "pattern": "可回退铁律",
+   "msgs": 16,
+   "user_msgs": 6,
+   "chars": 3864,
+   "est_tokens": 2898,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "可回退铁律"
+   ],
+   "score": 1
+  },
+  {
+   "episode_id": 890,
+   "uid": "H1-3",
+   "session_id": "omp-2026-05-27T17-10-59-698Z_019e6a6b-0772-7",
+   "source": "manual",
+   "kind": "other",
+   "status": "solved",
+   "topic": "介绍/环境/项目了解（初始对话）",
+   "pattern": "架构性质校验,溯源审计",
+   "msgs": 5,
+   "user_msgs": 3,
+   "chars": 718,
+   "est_tokens": 539,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "溯源审计"
+   ],
+   "score": 1
+  },
+  {
+   "episode_id": 892,
+   "uid": "H9-14",
+   "session_id": "omp-2026-05-27T17-10-59-698Z_019e6a6b-0772-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "solved",
+   "topic": "安全审计（泄露排查/认证/nginx 反代/注意事项）",
+   "pattern": "溯源审计,全量原则",
+   "msgs": 50,
+   "user_msgs": 6,
+   "chars": 4541,
+   "est_tokens": 3406,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "溯源审计"
+   ],
+   "score": 1
+  },
+  {
+   "episode_id": 900,
+   "uid": "I1-3",
+   "session_id": "omp-2026-07-11T02-40-24-324Z_019f4f0c-2704-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "循环关闭 omp/tmux 进程 + opencode 数据库疑问 + kfmv4 重启影响",
+   "pattern": "复盘沉淀,实现边界控制",
+   "msgs": 9,
+   "user_msgs": 3,
+   "chars": 1698,
+   "est_tokens": 1274,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [],
+   "score": 1
+  },
+  {
+   "episode_id": 901,
+   "uid": "I4-8",
+   "session_id": "omp-2026-07-11T02-40-24-324Z_019f4f0c-2704-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "思考流式展示缺失 + 思考 auto 字段（非 high/max）+ 未获取回复",
+   "pattern": "深挖根因+对标成熟,全链路验证",
+   "msgs": 43,
+   "user_msgs": 5,
+   "chars": 6056,
+   "est_tokens": 4542,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [],
+   "score": 1
+  },
+  {
+   "episode_id": 907,
+   "uid": "I72-81",
+   "session_id": "omp-2026-07-11T02-40-24-324Z_019f4f0c-2704-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "solved",
+   "topic": "会话保存/自动命名 + 配置卡联动（面板↔配置卡同步）",
+   "pattern": "补丁vs根因",
+   "msgs": 38,
+   "user_msgs": 10,
+   "chars": 12718,
+   "est_tokens": 9539,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 1
+  },
+  {
+   "episode_id": 910,
+   "uid": "I103-111",
+   "session_id": "omp-2026-07-11T02-40-24-324Z_019f4f0c-2704-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "solved",
+   "topic": "思考流式上滑取消追底失效 + 新功能致旧功能失效反思 + 心法分级/合并",
+   "pattern": "补丁vs根因,复盘沉淀",
+   "msgs": 29,
+   "user_msgs": 9,
+   "chars": 8750,
+   "est_tokens": 6563,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 1
+  },
+  {
+   "episode_id": 915,
+   "uid": "J6-9",
+   "session_id": "omp-2026-07-21T13-58-23-566Z_019f84f8-764e-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "solved",
+   "topic": "无轮次上限原因（ai 自跑工具截断）+ 修复讲解 + 提交",
+   "pattern": "补丁vs根因,心法前置",
+   "msgs": 45,
+   "user_msgs": 4,
+   "chars": 9228,
+   "est_tokens": 6921,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 1
+  },
+  {
+   "episode_id": 920,
+   "uid": "J26-28",
+   "session_id": "omp-2026-07-21T13-58-23-566Z_019f84f8-764e-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "数据消失排查（api 配置/会话历史/角色提示词 + .kfmv4 空）",
+   "pattern": "验证优先",
+   "msgs": 8,
+   "user_msgs": 3,
+   "chars": 1404,
+   "est_tokens": 1053,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [],
+   "score": 1
+  },
+  {
+   "episode_id": 929,
+   "uid": "K62-65",
+   "session_id": "omp-2026-07-12T03-47-42-491Z_019f5470-211b-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "文件树深层展开掉帧（夜间省电误判）",
+   "pattern": "深挖根因+对标成熟",
+   "msgs": 8,
+   "user_msgs": 4,
+   "chars": 1529,
+   "est_tokens": 1147,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [],
+   "score": 1
+  },
+  {
+   "episode_id": 931,
+   "uid": "K74-79",
+   "session_id": "omp-2026-07-12T03-47-42-491Z_019f5470-211b-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "solved",
+   "topic": "删除/重命名 api + 文件树同步 + 补丁模式质疑 + 角色池光标重复",
+   "pattern": "补丁vs根因",
+   "msgs": 18,
+   "user_msgs": 6,
+   "chars": 1966,
+   "est_tokens": 1475,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 1
+  },
+  {
+   "episode_id": 961,
+   "uid": "O3-5",
+   "session_id": "omp-2026-06-02T19-48-48-280Z_019e89e1-aa17-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "solved",
+   "topic": "自主完善（完全信任无确认自主改动）+ 状态同步提交",
+   "pattern": "设计主权,可回退铁律",
+   "msgs": 80,
+   "user_msgs": 3,
+   "chars": 3089,
+   "est_tokens": 2317,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "可回退铁律"
+   ],
+   "score": 1
+  },
+  {
+   "episode_id": 974,
+   "uid": "T1-2",
+   "session_id": "omp-2026-06-03T00-31-57-309Z_019e8ae4-e57d-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "solved",
+   "topic": "读取同步 + ui 注册表对照（真实代码差距）",
+   "pattern": "复用既有,溯源审计",
+   "msgs": 2,
+   "user_msgs": 2,
+   "chars": 37,
+   "est_tokens": 28,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "溯源审计"
+   ],
+   "score": 1
+  },
+  {
+   "episode_id": 990,
+   "uid": "AB1-5",
+   "session_id": "omp-2026-07-27T00-23-12-649Z_019fa0f4-4c09-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "solved",
+   "topic": "接手 + v8 审计结果 + 能做的都做",
+   "pattern": "补丁vs根因,复盘沉淀",
+   "msgs": 10,
+   "user_msgs": 5,
+   "chars": 6655,
+   "est_tokens": 4991,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 1
+  },
+  {
+   "episode_id": 996,
+   "uid": "AF1-4",
+   "session_id": "omp-2026-07-25T02-36-48-662Z_019f9721-e496-7",
+   "source": "manual",
+   "kind": "bug",
+   "status": "solved",
+   "topic": "omp 历史会话检查（tmux 杀进程/会话截断原因）",
+   "pattern": "复盘沉淀",
+   "msgs": 16,
+   "user_msgs": 4,
+   "chars": 5204,
+   "est_tokens": 3903,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [],
+   "score": 1
+  },
+  {
+   "episode_id": 997,
+   "uid": "AG1-3",
+   "session_id": "omp-2026-07-11T02-21-58-150Z_019f4efb-4606-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "solved",
+   "topic": "接手 kfmv4 + 输入栏消息不回复研究",
+   "pattern": "补丁vs根因,实现边界控制",
+   "msgs": 11,
+   "user_msgs": 3,
+   "chars": 1908,
+   "est_tokens": 1431,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 1
+  },
+  {
+   "episode_id": 1000,
+   "uid": "O-1",
+   "session_id": "omp-2026-07-25T00-01-15-306Z_019f9693-7a25-7",
+   "source": "manual",
+   "kind": "other",
+   "status": "solved",
+   "topic": "你能看看刚刚",
+   "pattern": "溯源审计",
+   "msgs": 12,
+   "user_msgs": 7,
+   "chars": 2151,
+   "est_tokens": 1613,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "溯源审计"
+   ],
+   "score": 1
+  },
+  {
+   "episode_id": 1003,
+   "uid": "O-1",
+   "session_id": "omp-2026-07-10T23-46-46-640Z_019f4e6d-30f0-7",
+   "source": "manual",
+   "kind": "other",
+   "status": "solved",
+   "topic": "您好？",
+   "pattern": "溯源审计",
+   "msgs": 7,
+   "user_msgs": 7,
+   "chars": 107,
+   "est_tokens": 80,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "溯源审计"
+   ],
+   "score": 1
+  },
+  {
+   "episode_id": 1005,
+   "uid": "O-1",
+   "session_id": "omp-2026-07-24T23-48-38-077Z_019f9687-ec3c-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "solved",
+   "topic": "接手 kfmv4（看看+接手）",
+   "pattern": "溯源审计",
+   "msgs": 5,
+   "user_msgs": 2,
+   "chars": 1579,
+   "est_tokens": 1184,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "溯源审计"
+   ],
+   "score": 1
+  },
+  {
+   "episode_id": 1006,
+   "uid": "O-1",
+   "session_id": "omp-2026-07-14T01-03-15-451Z_019f5e26-49fb-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "solved",
+   "topic": "上个 agent 问题继续接手",
+   "pattern": "溯源审计",
+   "msgs": 1,
+   "user_msgs": 1,
+   "chars": 52,
+   "est_tokens": 39,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "溯源审计"
+   ],
+   "score": 1
+  },
+  {
+   "episode_id": 1009,
+   "uid": "O-1",
+   "session_id": "omp-2026-07-26T01-11-20-054Z_019f9bf9-fef6-7",
+   "source": "manual",
+   "kind": "feature",
+   "status": "solved",
+   "topic": "面板对话消息无法保存到会话（诊断）",
+   "pattern": "深挖根因+对标成熟,溯源审计",
+   "msgs": 1,
+   "user_msgs": 1,
+   "chars": 54,
+   "est_tokens": 41,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "溯源审计"
+   ],
+   "score": 1
+  },
+  {
+   "episode_id": 1035,
+   "uid": "P065",
+   "session_id": "operit-07",
+   "source": "manual",
+   "kind": "feature",
+   "status": "discussion",
+   "topic": "依然会有这个问题哦，我仔细观察了一下，这个文字看起来似乎初始状态本来就在那个位置，只是盒子展开到那个",
+   "pattern": "补丁vs根因,现象vs指标",
+   "msgs": 3,
+   "user_msgs": 2,
+   "chars": 4131,
+   "est_tokens": 3098,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 1
+  },
+  {
+   "episode_id": 1044,
+   "uid": "P087",
+   "session_id": "operit-07",
+   "source": "manual",
+   "kind": "feature",
+   "status": "discussion",
+   "topic": "蔚然，现在已经过去了很久了，我用另外的一个你做了很多工作，你先读取一下代码和git状态，看看同步一下",
+   "pattern": "读码优先,溯源审计",
+   "msgs": 5,
+   "user_msgs": 3,
+   "chars": 8213,
+   "est_tokens": 6160,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "溯源审计"
+   ],
+   "score": 1
+  },
+  {
+   "episode_id": 1045,
+   "uid": "P088",
+   "session_id": "operit-07",
+   "source": "manual",
+   "kind": "feature",
+   "status": "discussion",
+   "topic": "你再检查一下另外分身的工作吧，现在又是一个新的状态了。",
+   "pattern": "读码优先,溯源审计",
+   "msgs": 47,
+   "user_msgs": 24,
+   "chars": 58796,
+   "est_tokens": 44097,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "溯源审计"
+   ],
+   "score": 1
+  },
+  {
+   "episode_id": 1060,
+   "uid": "P124",
+   "session_id": "operit-07",
+   "source": "manual",
+   "kind": "feature",
+   "status": "discussion",
+   "topic": "这个是对的，我们绕了这么大一圈，早干什么了，为什么会出现这样的问题呢？明明很简单的逻辑，却出现了这样",
+   "pattern": "复盘沉淀,补丁vs根因",
+   "msgs": 5,
+   "user_msgs": 3,
+   "chars": 5674,
+   "est_tokens": 4256,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "补丁vs根因"
+   ],
+   "score": 1
+  },
+  {
+   "episode_id": 1071,
+   "uid": "P007",
+   "session_id": "operit-25",
+   "source": "manual",
+   "kind": "feature",
+   "status": "discussion",
+   "topic": "可以，方案b吧！然后同步写入到记忆里。",
+   "pattern": "可回退铁律,复用既有",
+   "msgs": 8,
+   "user_msgs": 4,
+   "chars": 16090,
+   "est_tokens": 12068,
+   "s5_error_hits": 0,
+   "s5_samples": [],
+   "s6_patterns": [
+    "可回退铁律"
+   ],
+   "score": 1
+  }
+ ]
+}

@@ -433,6 +433,7 @@ batch-run（计划中）：批量跑所有组合臂（并发+断点续跑）+ �
 - recompute-cells.py（判卷归档→格均值，DB 版）/ meta-density.py（metaRe 词频粗筛尺）
   / cost-stats.py / audit-arms.py（臂审计+通道分桶）/ bug-scan.py
   / migrate-arms-to-db.mjs / migrate-px-to-db.mjs（px 臂入库）
+  / e16-mine.mjs（e16 S5/S6 素材开矿：错误信号+复盘标签粗筛，产出 meta-pool/e16-candidates.json）
 
 ### 设计与结果文档
 
