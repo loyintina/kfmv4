@@ -762,6 +762,11 @@ body {
   flex: none;
 }
 
+/* 端口区：JS 钉死 4 行窗口高，超出自动切屏轮播（obs-hud sizePorts） */
+.obs-rail-ports {
+  overflow: hidden;
+}
+
 /* 指标块：文字行 + 下方滚动柱状图 */
 .obs-sys-metric {
   display: flex;
