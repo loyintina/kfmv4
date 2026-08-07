@@ -146,7 +146,7 @@ export function initObsHud(): void {
       const dot = INBOX_DOT_CLASS[e.type] ?? 'obs-dot-other';
       const date = e.date.slice(5).replace('-', '/'); // MM-DD → MM/DD
       const highlight = i === 0 ? ' obs-inbox-item-new' : '';
-      return `<div class="obs-inbox-item${highlight}" data-i="${i}"><span class="obs-inbox-item-flow"><span class="obs-dot ${dot}"></span><span class="obs-inbox-meta">${date}${e.time ? ' ' + e.time : ''}</span> ${e.text}</span></div>`;
+      return `<div class="obs-inbox-item${highlight}" data-i="${i}"><span class="obs-inbox-item-flow"><span class="obs-dot ${dot}" style="${pulseStyle(e.date + e.time + e.type)}"></span><span class="obs-inbox-meta">${date}${e.time ? ' ' + e.time : ''}</span> ${e.text}</span></div>`;
     }).join('');
   }
 
@@ -198,7 +198,7 @@ export function initObsHud(): void {
       const divider = e.status === 'done' && !prevDone ? `<div class="obs-stack-divider">已闭环</div>` : '';
       prevDone = e.status === 'done';
       const cls = e.status === 'done' ? ' obs-stack-item-done' : e.status === 'hold' ? ' obs-stack-item-hold' : '';
-      return `${divider}<div class="obs-inbox-item${cls}" data-i="${i}"><span class="obs-inbox-item-flow"><span class="obs-dot obs-dot-stack-${e.status}"></span><span class="obs-inbox-meta">#${e.n}</span> ${e.title}</span><span class="obs-stack-note">${e.note}</span></div>`;
+      return `${divider}<div class="obs-inbox-item${cls}" data-i="${i}"><span class="obs-inbox-item-flow"><span class="obs-dot obs-dot-stack-${e.status}" style="${pulseStyle('#' + e.n)}"></span><span class="obs-inbox-meta">#${e.n}</span> ${e.title}</span><span class="obs-stack-note">${e.note}</span></div>`;
     }).join('');
   }
 
@@ -266,6 +266,14 @@ ${body}</div>
     return `<span class="obs-bar ${cls}" style="height:${h}px"></span>`;
   }
   const HISTORY_KEYS = ['disk', 'mem', 'load', 'rss'] as const;
+  // 光点呼吸节奏伪随机（端口同款思路）：字符串种子取模 → 九档时长（2.2~4.1s）+ 十三档相位——
+  // 确定性（同一条目重绘节奏不变，不跳变）而非真随机；种子：信箱用 date+time+type，待办用 #编号
+  function pulseStyle(seed: string): string {
+    let h = 0;
+    for (const ch of seed) h = (h * 31 + ch.charCodeAt(0)) | 0;
+    h = Math.abs(h);
+    return `animation-duration:${(2.2 + (h % 9) * 0.23).toFixed(2)}s;animation-delay:${(-(h % 13) * 0.31).toFixed(2)}s`;
+  }
   function renderSys(sys: SysData): void {
     const hists = HISTORY_KEYS.map(k => sys.history?.[k] ?? []);
     sys.metrics.forEach((m, i) => {
@@ -305,12 +313,9 @@ ${body}</div>
         tr.style.transform = `translateX(-${BAR_STEP}px)`;
       });
     }
-    railPortsEl.innerHTML = sys.ports.map(p => {
-      // 呼吸节奏伪随机：端口号取模出九档时长（2.2~4.1s）+ 错相位——确定性（重绘不跳变）而非真随机
-      const dur = (2.2 + (p.port % 9) * 0.23).toFixed(2);
-      const del = (-(p.port % 13) * 0.31).toFixed(2);
-      return `<div class="obs-port-row"><span class="obs-port-dot obs-port-dot-${p.scope}" style="animation-duration:${dur}s;animation-delay:${del}s"></span><span class="obs-port-num">${p.port}</span><span class="obs-port-name">${p.name}</span><span class="obs-port-conns">${(p.conns ?? 0) > 0 ? '×' + p.conns : ''}</span></div>`;
-    }).join('');
+    railPortsEl.innerHTML = sys.ports.map(p =>
+      `<div class="obs-port-row"><span class="obs-port-dot obs-port-dot-${p.scope}" style="${pulseStyle(String(p.port))}"></span><span class="obs-port-num">${p.port}</span><span class="obs-port-name">${p.name}</span><span class="obs-port-conns">${(p.conns ?? 0) > 0 ? '×' + p.conns : ''}</span></div>`
+    ).join('');
   }
 
   // 余额 + 信箱 + 待办 + SYS 刷新（5s 轮询；服务端缓存外部 deepseek 调用）

@@ -217,12 +217,13 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 .obs-inbox-item:active{background:rgba(124,58,237,.15)}
 .obs-inbox-item-new{opacity:1;background:rgba(124,58,237,.08)}
 .obs-inbox-meta{font-size:9px;color:var(--text-dim);letter-spacing:.5px}
-.obs-dot{width:5px;height:5px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:1px;flex:none}
-.obs-dot-warn{background:#f59e0b;box-shadow:0 0 4px rgba(245,158,11,.5)}
-.obs-dot-ok{background:#22c55e;box-shadow:0 0 4px rgba(34,197,94,.4)}
-.obs-dot-dead{background:#ef4444;box-shadow:0 0 4px rgba(239,68,68,.5)}
-.obs-dot-stat{background:#06b6d4;box-shadow:0 0 4px rgba(6,182,212,.4)}
-.obs-dot-other{background:rgba(224,224,224,.35)}
+/* 信箱/待办光点：同 obs-port-pulse 低调呼吸（2026-08-07 用户定稿随机脉冲），时长/相位由 obs-hud pulseStyle 注入 */
+.obs-dot{width:5px;height:5px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:1px;flex:none;animation:obs-port-pulse 3s ease-in-out infinite}
+.obs-dot-warn{background:#f59e0b;color:#f59e0b;box-shadow:0 0 4px rgba(245,158,11,.5)}
+.obs-dot-ok{background:#22c55e;color:#22c55e;box-shadow:0 0 4px rgba(34,197,94,.4)}
+.obs-dot-dead{background:#ef4444;color:#ef4444;box-shadow:0 0 4px rgba(239,68,68,.5)}
+.obs-dot-stat{background:#06b6d4;color:#06b6d4;box-shadow:0 0 4px rgba(6,182,212,.4)}
+.obs-dot-other{background:rgba(224,224,224,.35);color:rgba(224,224,224,.35)}
 
 /* ===== 信箱详情视图（点击条目进入，2026-08-06） ===== */
 /* 返回按钮在滚动框内左上角（详情顶行：‹ + 圆点 + 类型徽标） */
@@ -241,10 +242,10 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 .obs-stack-status{font-size:10px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .obs-stack-list{height:150px;overflow-y:auto;pointer-events:auto;padding:4px 0;scrollbar-width:none;-ms-overflow-style:none}
 .obs-stack-list::-webkit-scrollbar{display:none}
-/* 状态点（复用 obs-dot 几何，色按状态） */
-.obs-dot-stack-todo{background:#06b6d4;box-shadow:0 0 4px rgba(6,182,212,.4)}
-.obs-dot-stack-hold{background:#f59e0b;box-shadow:0 0 4px rgba(245,158,11,.5)}
-.obs-dot-stack-done{background:#22c55e;box-shadow:0 0 4px rgba(34,197,94,.3)}
+/* 状态点（复用 obs-dot 几何+呼吸，色按状态） */
+.obs-dot-stack-todo{background:#06b6d4;color:#06b6d4;box-shadow:0 0 4px rgba(6,182,212,.4)}
+.obs-dot-stack-hold{background:#f59e0b;color:#f59e0b;box-shadow:0 0 4px rgba(245,158,11,.5)}
+.obs-dot-stack-done{background:#22c55e;color:#22c55e;box-shadow:0 0 4px rgba(34,197,94,.3)}
 /* 待办条目默认全亮（与信箱的历史渐淡相反——待办全是现在时）；⚠️ 稍淡，done 殿后更淡 */
 .obs-stack .obs-inbox-item{opacity:.9}
 .obs-stack .obs-inbox-item.obs-stack-item-hold{opacity:.55}
