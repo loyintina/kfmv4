@@ -401,6 +401,7 @@ body {
   width: 372px;
   align-self: center;
   margin-top: 10px;
+  align-items: flex-start;
 }
 
 /* ===== 信箱卡（语义巡逻 verdict 时间线，2026-08-06） ===== */
