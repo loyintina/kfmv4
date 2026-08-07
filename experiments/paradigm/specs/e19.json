@@ -1,0 +1,27 @@
+{
+  "experiment": "e19",
+  "prefix": "e19-",
+  "retryRounds": 10,
+  "runs": [
+    {
+      "taskFile": "experiments/paradigm/scenarios/e8-task.txt",
+      "paradigms": "meta-corpus-32k,meta-corpus-128k,meta-corpus-256k,meta-corpus-512k,meta-corpus-512k-dup",
+      "models": "deepseek-v4-flash",
+      "provider": "deepseek",
+      "arms": 8,
+      "concurrency": 16,
+      "position": "pre-task-user",
+      "plannedArms": 40
+    }
+  ],
+  "judge": {
+    "model": "deepseek-v4-flash",
+    "provider": "deepseek",
+    "rubric": "v2",
+    "concurrency": 4,
+    "out": "experiments/paradigm/meta-pool/judge-e19.json",
+    "taskFiles": {
+      "e19-t0": "experiments/paradigm/scenarios/e8-task.txt"
+    }
+  }
+}

@@ -415,17 +415,26 @@ batch-run（计划中）：批量跑所有组合臂（并发+断点续跑）+ �
   / specs/e17.json（复盘质量线专项：纯 S6 × e8，预注册主终点 self_dissection）
   / specs/e18a.json / specs/e18b.json / specs/e18c.json（e18 v4-flash 专项：
   e8 四类包 32 臂 / T2 陷阱 16 臂 / 长度梯度 24 臂，DS 官方并发 16）
+  / specs/e19.json（e19 拥挤区占用率：同源嵌套 32/128/256/512k + 512k-dup，
+  40 臂，pre-task-user 位）
 - 判卷：judge-llm.mjs（LLM 盲判主通道，rubric v1/v2）/ judge-e13-script.mjs
   （e13 零成本脚本判卷：沙箱 diff+工具痕迹）/ judge-px1-blind.mjs（px 轮号对齐盲判）
   / bench-score.mjs / blind-anonymize.py（盲判匿名化）
 - 制包：build-e14-combo.mjs（e14 组合包构建器，幂等）/ build-length-paradigms.py（长度梯度档）
   / build-e16-packs.mjs（e16 S5/S6 精选制包：e16-scores 纯度过滤+预算贪心，幂等，
   产出 paradigms/e16-s5-contrast.md / e16-s6-retro.md + meta-pool/e16-packs-manifest.json）
+  / build-e19-packs.mjs（e19 语料组装+同源嵌套切包：5 线 cleanHistory →
+  32k⊂128k⊂256k⊂512k + 512k-dup 平铺对照，轮边界切档，尺寸回填 occupancy）
 - 部署守卫：check-active-runs.sh（kfm-restart 前拦在跑实验）
 - 历史手写循环（exp-driver 时代不再新增，留存考古）：run-e13.sh / run-e11-gapfill.sh /
   run-judge-v2.sh / run-px-baseline.sh / run-px-fatigue.sh / run-px-halflife.sh /
   run-px-matrix.sh / run-silicon-backfill.sh / run-silicon-backfill.round1.sh
-- 考官-考生：plugin-exam.mjs（px 三足实验驱动，instructors/ 提示词配套）
+- 考官-考生：plugin-exam.mjs（px 三足实验驱动，instructors/ 提示词配套；
+  e19 复用为语料生成管线：instructors/e19-corpus-gen-line{1..5}.md 大纲驱动教官
+  + instructors/e19-corpus-gen-cyc{2,3}.md（实战演示/反例边界通用教官）
+  + fixtures/e19-corpus-outline.md 40 节大纲 + scenarios/e19-line{1..5}-open.txt
+  与 scenarios/e19-cyc{2,3}-line{1..5}-open.txt 开场，
+  考生挂 metacognition 种子包 schedule attach@1，角色卡 ~/.kfmv4/roles/e19-corpus.json）
 
 ### 素材库管线（提取/标注/摘要，多为一次性，留存考古）
 
