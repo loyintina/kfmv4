@@ -248,21 +248,52 @@ ${body}</div>
   const metricCls = (pct: number | null): string =>
     pct == null ? '' : pct > 85 ? ' obs-rail-num-red' : pct >= 70 ? ' obs-rail-num-amber' : '';
   const BAR_SHOW = 24; // 面板宽度只放得下最近 24 根（12 分钟窗）
-  function bars(values: number[] | undefined, pct: number | null): string {
-    if (!values || values.length === 0) return '<div class="obs-sys-bars"></div>';
-    const take = values.slice(-BAR_SHOW);
-    const vmax = pct != null ? 100 : Math.max(...take, 1);
-    return `<div class="obs-sys-bars">${take.map(v => {
-      const cls = pct == null ? 'obs-bar-cyan' : v > 85 ? 'obs-bar-red' : v >= 70 ? 'obs-bar-amber' : 'obs-bar-green';
-      const h = Math.max(2, Math.round(Math.min(1, v / vmax) * 16));
-      return `<span class="obs-bar ${cls}" style="height:${h}px"></span>`;
-    }).join('')}</div>`;
+  const BAR_STEP = 5; // 柱宽 4px + 间距 1px，与 base.scss .obs-bar 同步
+  // 缓动设计（2026-08-07 用户定稿）：动画时长 = 服务端采样间隔（obs.ts tick 30s），
+  // 速度 = 单柱步长 / 采样间隔，新柱恰好随下一拍匀速流入，跳变变连续波形
+  const BAR_ANIM_MS = 30_000;
+  type MetricRec = { row: HTMLElement; track: HTMLElement; len: number; tail: number | undefined };
+  const metricRecs = new Map<string, MetricRec>();
+  function barHtml(v: number, pct: number | null, vmax: number): string {
+    const cls = pct == null ? 'obs-bar-cyan' : v > 85 ? 'obs-bar-red' : v >= 70 ? 'obs-bar-amber' : 'obs-bar-green';
+    const h = Math.max(2, Math.round(Math.min(1, v / (pct != null ? 100 : vmax)) * 16));
+    return `<span class="obs-bar ${cls}" style="height:${h}px"></span>`;
   }
   const HISTORY_KEYS = ['disk', 'mem', 'load', 'rss'] as const;
   function renderSys(sys: SysData): void {
-    railSysEl.innerHTML = sys.metrics.map((m, i) =>
-      `<div class="obs-sys-metric"><div class="obs-sys-row"><span class="obs-sys-label">${m.label}</span><span class="obs-rail-num${metricCls(m.pct)}">${m.value}</span><span class="obs-sys-pair">${m.pair ?? ''}</span></div>${bars(sys.history?.[HISTORY_KEYS[i]], m.pct)}</div>`
-    ).join('');
+    sys.metrics.forEach((m, i) => {
+      const key = HISTORY_KEYS[i];
+      const hist = sys.history?.[key] ?? [];
+      let rec = metricRecs.get(key);
+      if (!rec) {
+        // 首次构建：DOM 分「文字行 + 轨道」两段，之后文字行 5s 重绘、轨道只在采样变化时增量滑动
+        const wrap = document.createElement('div');
+        wrap.className = 'obs-sys-metric';
+        wrap.innerHTML = '<div class="obs-sys-row"></div><div class="obs-sys-bars"><div class="obs-sys-track"></div></div>';
+        railSysEl.appendChild(wrap);
+        const track = wrap.querySelector<HTMLElement>('.obs-sys-track')!;
+        const vmax = Math.max(...hist.slice(-BAR_SHOW), 1);
+        track.innerHTML = hist.slice(-BAR_SHOW).map(v => barHtml(v, m.pct, vmax)).join('');
+        rec = { row: wrap.querySelector<HTMLElement>('.obs-sys-row')!, track, len: hist.length, tail: hist[hist.length - 1] };
+        metricRecs.set(key, rec);
+      } else {
+        const tail = hist[hist.length - 1];
+        // 新样本判定：缓冲未满看长度，缓冲满后（shift+push）看尾值；同值连拍漏一拍动画，视觉无害
+        if (hist.length > 0 && (hist.length !== rec.len || tail !== rec.tail)) {
+          const tr = rec.track;
+          if (tr.children.length >= BAR_SHOW) tr.firstElementChild!.remove(); // 已滑出视野的最旧柱
+          tr.style.transition = 'none';
+          tr.style.transform = 'translateX(0)'; // 复位：删首柱 + 归零，视觉与滑完态无缝衔接
+          tr.insertAdjacentHTML('beforeend', barHtml(tail!, m.pct, Math.max(...hist.slice(-BAR_SHOW), 1)));
+          void tr.offsetWidth; // 强制 reflow，让复位先生效再启动过渡
+          tr.style.transition = `transform ${BAR_ANIM_MS}ms linear`;
+          tr.style.transform = `translateX(-${BAR_STEP}px)`;
+          rec.len = hist.length;
+          rec.tail = tail;
+        }
+      }
+      rec.row.innerHTML = `<span class="obs-sys-label">${m.label}</span><span class="obs-rail-num${metricCls(m.pct)}">${m.value}</span><span class="obs-sys-pair">${m.pair ?? ''}</span>`;
+    });
     railPortsEl.innerHTML = sys.ports.map(p =>
       `<div class="obs-port-row"><span class="obs-port-scope obs-port-scope-${p.scope}">${p.scope === 'public' ? '公' : '本'}</span><span class="obs-port-num">${p.port}</span><span class="obs-port-name">${p.name}</span><span class="obs-port-conns">${(p.conns ?? 0) > 0 ? '×' + p.conns : ''}</span></div>`
     ).join('');
