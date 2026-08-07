@@ -350,6 +350,7 @@ batch-run：批量跑所有组合臂（并发+断点续跑）+ 判卷后自动�
 - 设计（design/）：design-arm-store.md / design-behavior-discipline-pack.md /
   design-e13-trap-tasks.md / design-roadmap-e14-e16.md / design-session-runner.md /
   proposal-sentinel-layer.md / spec-v1.md / design-e20-half-life.md /
+  direction-scenario-taxonomy.md（场景分类法：e22+ 推广蓝图，机制四分） /
   history-e1-e16.md（e1~e16 实验流水史，2026-08-07 自本文件抽出）
 - 笔记（notes/）：pack-behavior-discipline-notes.md
 - 结果（results/，纯登记）：results-e1.md / results-e4-matrix.md / results-e5.md /
