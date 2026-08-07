@@ -432,6 +432,7 @@ batch-run（计划中）：批量跑所有组合臂（并发+断点续跑）+ �
 - 考官-考生：plugin-exam.mjs（px 三足实验驱动，instructors/ 提示词配套；
   e19 复用为语料生成管线：instructors/e19-corpus-gen-line{1..5}.md 大纲驱动教官
   + instructors/e19-corpus-gen-cyc{2,3}.md（实战演示/反例边界通用教官）
+  + instructors/e19-corpus-gen-cyc4.md（真实工作流应用篇，512k 档补产）
   + fixtures/e19-corpus-outline.md 40 节大纲 + scenarios/e19-line{1..5}-open.txt
   与 scenarios/e19-cyc{2,3}-line{1..5}-open.txt 开场，
   考生挂 metacognition 种子包 schedule attach@1，角色卡 ~/.kfmv4/roles/e19-corpus.json）

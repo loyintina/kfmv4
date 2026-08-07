@@ -21,7 +21,7 @@ const SCRIPT_DIR = join(homedir(), '.kfmv4', 'sessions', 'script');
 const PACK_DIR = join(homedir(), '.kfmv4', 'paradigms');
 const DRY = process.argv.includes('--dry');
 const LINES = [1, 2, 3, 4, 5].flatMap(n => [`e19g-line${n}`, `e19g-line${n}-c2`, `e19g-line${n}-c3`,
-  `e19g-line${n}-r2`, `e19g-line${n}-c2-r2`, `e19g-line${n}-c3-r2`]);
+  `e19g-line${n}-r2`, `e19g-line${n}-c2-r2`, `e19g-line${n}-c3-r2`, `e19g-line${n}-c4`]);
 const TARGETS_K = [32, 128, 256, 512]; // 标称档（k tok）
 const CHARS_PER_TOK = 3.2;
 
