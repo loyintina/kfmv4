@@ -247,7 +247,7 @@ ${body}</div>
   // 端口行 = 作用域标（公/本）+ 端口号 + 进程名 + 活跃连接数）
   const metricCls = (pct: number | null): string =>
     pct == null ? '' : pct > 85 ? ' obs-rail-num-red' : pct >= 70 ? ' obs-rail-num-amber' : '';
-  const BAR_SHOW = 24; // 窗口恰好显示 24 根（119px，5s 采样 ≈ 2 分钟窗）
+  const BAR_SHOW = 16; // 窗口恰好显示 16 根（79px，与收窄后的端口行自然宽度对齐，5s 采样 ≈ 80s 窗）
   const BAR_STEP = 5; // 柱宽 4px + 间距 1px，与 base.scss .obs-bar 同步
   // 缓动设计（2026-08-07 用户定稿 v2）：动画时长 = 服务端采样间隔（obs.ts tick 5s），
   // 速度 = 单柱步长 / 采样间隔，新柱恰好随下一拍匀速流入。
@@ -306,7 +306,7 @@ ${body}</div>
       });
     }
     railPortsEl.innerHTML = sys.ports.map(p =>
-      `<div class="obs-port-row"><span class="obs-port-scope obs-port-scope-${p.scope}">${p.scope === 'public' ? '公' : '本'}</span><span class="obs-port-num">${p.port}</span><span class="obs-port-name">${p.name}</span><span class="obs-port-conns">${(p.conns ?? 0) > 0 ? '×' + p.conns : ''}</span></div>`
+      `<div class="obs-port-row"><span class="obs-port-dot obs-port-dot-${p.scope}"></span><span class="obs-port-num">${p.port}</span><span class="obs-port-name">${p.name}</span><span class="obs-port-conns">${(p.conns ?? 0) > 0 ? '×' + p.conns : ''}</span></div>`
     ).join('');
   }
 

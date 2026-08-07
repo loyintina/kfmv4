@@ -120,7 +120,7 @@ export function setupObsPages(app: { get: (p: string, h: (_req: unknown, res: { 
 // ========== 信箱解析（semantic-chain-inbox.md，ledger 层账本·只追加） ==========
 // 每行：`- YYYY-MM-DD [HH:MM] <标记> <内容>`——标记家族：⚠️ 待裁决 / ✅ 干净 /
 // 💀 崩溃 / 📊 观测统计 / 其他中性。单一出处：现场读文件，不缓存副本（语义生成原则）。
-// 最新在前（账本倒序时间线）。
+// 最新在前（按 date+time 排序，非文件行序）。
 
 interface InboxEntry {
   date: string;
@@ -153,7 +153,9 @@ function parseInbox(): InboxEntry[] {
       const [, date, time = '', mark, body] = m;
       entries.push({ date, time, type: inboxTypeOf(mark), text: body.trim() });
     }
-    return entries.reverse(); // 最新在前
+    // 按时间倒序（最新在前）——不能靠文件物理行序：多臂并行追加，写入顺序≠时间顺序
+    // （2026-08-07 实测：体检臂后写的 08-06 条目压过巡逻臂的 08-07，首条高亮错位）
+    return entries.sort((a, b) => `${b.date} ${b.time || '00:00'}`.localeCompare(`${a.date} ${a.time || '00:00'}`));
   } catch {
     return [];
   }
@@ -415,7 +417,7 @@ function collectSys(): SysData {
       { label: '硬盘', value: `${r.disk}%`, pair: `${r.diskUsedG}/${r.diskTotalG}G`, pct: r.disk },
       { label: '内存', value: `${r.mem}%`, pair: `${r.memUsedG}/${r.memTotalG}G`, pct: r.mem },
       { label: '负载', value: `${r.load}%`, pair: `${r.loadRaw.toFixed(2)}/${r.cores}`, pct: r.load },
-      { label: '进程', value: `${r.rss}M`, pair: `${r.memTotalG}G 总`, pct: null },
+      { label: '进程', value: `${r.rss}M`, pair: `/${r.memTotalG}G`, pct: null },
     ],
     history: { disk: historyOf('disk'), mem: historyOf('mem'), load: historyOf('load'), rss: historyOf('rss') },
     ports: collectPorts(),
