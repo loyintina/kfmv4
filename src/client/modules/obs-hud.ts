@@ -278,7 +278,7 @@ ${body}</div>
   // 每会话一条发光轨道：横轴时间（右端=现在），线长=活跃跨度（createdAt→updatedAt），
   // 线宽/亮度=tokenCount（sqrt 压缩动态范围），48h 内活跃会话末端挂呼吸光点
   // （pulseStyle 伪随机节奏，与端口/信箱/待办同族）；聚合轨虚线细轨；底部 MM/DD 刻度行。
-  // 行距按轨道数自适应（13~24px），会话增多不挤爆。
+  // 行距半格 12px（2026-08-08 用户定稿），高度随轨道数自然变化。
   function renderStarmap(a: ArchiveData): void {
     const fmtK = (v: number) => v >= 1e6 ? `${(v / 1e6).toFixed(1)}M` : v >= 1e3 ? `${Math.round(v / 1e3)}K` : String(v);
     starmapStatusEl.textContent = `${a.sessions} 会话 · Σ${fmtK(a.totalTokens)}`;
@@ -286,9 +286,9 @@ ${body}</div>
       starmapBodyEl.innerHTML = '<div class="obs-starmap-empty">暂无会话</div>';
       return;
     }
-    const W = 184, PADX = 4, AXIS_H = 14, PADY = 5, TARGET_H = 140; // 卡高向信箱（150 列表）看齐
+    const W = 184, PADX = 4, AXIS_H = 14, PADY = 5;
     const n = a.tracks.length;
-    const rowH = Math.max(13, Math.min(32, (TARGET_H - PADY * 2 - AXIS_H) / n));
+    const rowH = 12; // 行距半格（网格 24px/格，2026-08-08 用户定稿：整格太疏，高度随轨道数自然变化）
     const H = Math.round(PADY * 2 + n * rowH + AXIS_H);
     const now = Date.now();
     const tMin = Math.min(...a.tracks.map(t => new Date(t.t0).getTime()));

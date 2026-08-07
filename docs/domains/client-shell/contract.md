@@ -67,7 +67,7 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
      verdict 时间线（可点详情）；星轨=档案馆会话可视化（2026-08-07 定稿：
      每会话一条发光轨道线，横轴时间右端=现在，线长=活跃跨度，线宽=tokenCount
      sqrt 压缩，48h 活跃末端呼吸光点，TOP8 + 聚合虚线轨，底部 MM/DD 刻度，
-     行距按轨道数自适应 13~32px，SVG 总高钉 140 向信箱看齐）
+     行距半格 12px——2026-08-08 定稿：整格太疏，高度随轨道数自然变化）
   3. **待办卡**（2026-08-07 下移定稿：脱离 .obs-row 改 fixed 右下，右缘与主卡
      右缘对齐 `right:calc(50% - 186px)`，底缘贴输入栏上方 bottom:92px）：
      stack.yaml 全状态（todo/hold/done 分组，标题/note 分层截断——同层共
