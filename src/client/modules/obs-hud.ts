@@ -50,8 +50,9 @@ const STACK_LABEL: Record<string, string> = { todo: '待办', hold: '有保留',
 interface InboxEntry { date: string; time: string; type: string; text: string }
 interface StackEntry { n: number; status: string; title: string; created: string; note: string; detail: string }
 interface StackData { entries: StackEntry[]; counts: { todo: number; hold: number; done: number } }
-interface SysMetric { label: string; value: string; pair: string; pct: number | null }
-interface SysPort { port: number; name: string; scope: 'public' | 'local'; conns: number }
+// pair/conns 为服务端 v4 新字段；旧服务端（未重启/旧缓存）缺字段时兜底，禁止露出 undefined
+interface SysMetric { label: string; value: string; pair?: string; pct: number | null }
+interface SysPort { port: number; name: string; scope: 'public' | 'local'; conns?: number }
 interface SysCron { name: string; status: 'ok' | 'fail' | 'unknown'; ago: string }
 interface SysHistory { disk: number[]; mem: number[]; load: number[]; rss: number[] }
 interface SysData { metrics: SysMetric[]; history: SysHistory; ports: SysPort[]; cron: SysCron[] }
@@ -260,10 +261,10 @@ ${body}</div>
   const HISTORY_KEYS = ['disk', 'mem', 'load', 'rss'] as const;
   function renderSys(sys: SysData): void {
     railSysEl.innerHTML = sys.metrics.map((m, i) =>
-      `<div class="obs-sys-metric"><div class="obs-sys-row"><span class="obs-sys-label">${m.label}</span><span class="obs-rail-num${metricCls(m.pct)}">${m.value}</span><span class="obs-sys-pair">${m.pair}</span></div>${bars(sys.history?.[HISTORY_KEYS[i]], m.pct)}</div>`
+      `<div class="obs-sys-metric"><div class="obs-sys-row"><span class="obs-sys-label">${m.label}</span><span class="obs-rail-num${metricCls(m.pct)}">${m.value}</span><span class="obs-sys-pair">${m.pair ?? ''}</span></div>${bars(sys.history?.[HISTORY_KEYS[i]], m.pct)}</div>`
     ).join('');
     railPortsEl.innerHTML = sys.ports.map(p =>
-      `<div class="obs-port-row"><span class="obs-port-scope obs-port-scope-${p.scope}">${p.scope === 'public' ? '公' : '本'}</span><span class="obs-port-num">${p.port}</span><span class="obs-port-name">${p.name}</span><span class="obs-port-conns">${p.conns > 0 ? '×' + p.conns : ''}</span></div>`
+      `<div class="obs-port-row"><span class="obs-port-scope obs-port-scope-${p.scope}">${p.scope === 'public' ? '公' : '本'}</span><span class="obs-port-num">${p.port}</span><span class="obs-port-name">${p.name}</span><span class="obs-port-conns">${(p.conns ?? 0) > 0 ? '×' + p.conns : ''}</span></div>`
     ).join('');
   }
 
