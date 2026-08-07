@@ -462,7 +462,7 @@ body {
 /* 条目 = 圆点+日期+文字单行流；clamp 在内层 flow 上（clamp 与外 padding 同层会透出下一行残影） */
 .obs-inbox-item {
   display: block;
-  padding: 5px 10px;
+  padding: 3px 10px;
   border-left: 2px solid transparent;
   opacity: 0.55;
   cursor: pointer;
@@ -476,7 +476,7 @@ body {
   overflow: hidden;
   font-size: 10px;
   color: var(--text);
-  line-height: 1.4;
+  line-height: 1.3;
   word-break: break-word;
 }
 
@@ -713,9 +713,9 @@ body {
 .obs-rail {
   position: fixed;
   bottom: 0;
-  width: 140px;
+  width: 98px;
   box-sizing: border-box;
-  padding: 10px 10px 0;
+  padding: 8px 8px 0;
   display: flex;
   flex-direction: column;
   pointer-events: none;
@@ -790,7 +790,7 @@ body {
 }
 
 .obs-sys-pair {
-  font-size: 8px;
+  font-size: 7px;
   color: var(--text-dim);
   white-space: nowrap;
   overflow: hidden;
@@ -798,11 +798,11 @@ body {
 
 /* 滚动柱状图：逐样本上色（绿<70/黄 70-85/红>85/进程青），新样本右侧匀速流入（轨道 transform 过渡，见 obs-hud） */
 /* 顶满虚线 = 100% 参考线，柱高直接读出百分比位置 */
-/* 窗口精确 24 根（24×4+23×1=119px）：轨道恒渲染 25 根，新柱在右界外随滑入进场（见 obs-hud 缓动不变式） */
+/* 窗口精确 16 根（16×4+15×1=79px）：轨道恒渲染 17 根，新柱在右界外随滑入进场（见 obs-hud 缓动不变式） */
 .obs-sys-bars {
   position: relative;
   overflow: hidden;
-  width: 119px;
+  width: 79px;
   height: 16px;
 }
 
@@ -857,23 +857,33 @@ body {
   font-size: 9px;
 }
 
-.obs-port-scope {
+/* 脉冲呼吸光点（2026-08-07 用户定稿：废公/本文字胶囊）——公网青、本机绿，呼吸 = 透明度+光晕脉动 */
+@keyframes obs-port-pulse {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 5px 1.5px currentColor;
+  }
+  50% {
+    opacity: 0.3;
+    box-shadow: 0 0 1px 0 currentColor;
+  }
+}
+.obs-port-dot {
   flex: none;
-  font-size: 8px;
-  padding: 0 3px;
-  border-radius: 4px;
-  border: 1px solid;
-  line-height: 1.5;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  animation: obs-port-pulse 2.4s ease-in-out infinite;
 }
 
-.obs-port-scope-public {
+.obs-port-dot-public {
+  background: #06b6d4;
   color: #06b6d4;
-  border-color: rgba(6, 182, 212, 0.4);
 }
 
-.obs-port-scope-local {
+.obs-port-dot-local {
+  background: #22c55e;
   color: #22c55e;
-  border-color: rgba(34, 197, 94, 0.35);
 }
 
 .obs-port-num {
