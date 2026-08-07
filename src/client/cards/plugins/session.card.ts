@@ -15,7 +15,7 @@ import { createCustomSelect } from '../../modules/custom-select.js';
 import type { Session } from '../../modules/session-client.js';
 import { sessionStore, extractMessageText as extractMsgText, countTextMessages } from '../../modules/session-client.js';
 import { Z } from '../../modules/z-index-layers.js';
-import { innerCardStyle } from '../card-ui.js';
+import { innerCardStyle, flashSaved } from '../card-ui.js';
 
 const SESSIONS_PATH = '.kfmv4/sessions';
 
@@ -506,6 +506,9 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
         sessions = sessionStore.list.slice();
         if (activeSessionId !== sessionStore.activeId) activeSessionId = sessionStore.activeId;
         renderAll();
+        // 成功反馈（BAR-SESSION-FEEDBACK-01）：真正发生保存动作时给视觉确认，
+        // 复用 card-ui 共享 helper（config/paradigm 同款）——消除「保存无反馈」的静默感。
+        flashSaved(saveBtn);
       };
 
       const saveBtn = document.createElement('button');

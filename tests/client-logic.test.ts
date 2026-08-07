@@ -918,3 +918,21 @@ regression('BAR-CARD-ACCENT-01', 'card-stack', 'closing→opening 反向重开�
   assert(randomIdx !== -1, '全量打开路径必须保留 _generateRandomAccents（卡片在屏外换色不可见）');
   assert(branchIdx < randomIdx, '反向分支必须先 return，随机配色只在全量打开路径');
 });
+
+// ==========================================================================
+// BAR-SESSION-FEEDBACK-01: session.card 保存按钮必须含成功反馈
+// 病灶（2026-08-07 排查实锤）：saveName 只有 dirty 去重静默 return，
+// 无 flashSaved——blur 先保存成功、click 被去重吞掉，用户无任何视觉确认。
+// config/paradigm 均复用 card-ui.flashSaved（config:349 / paradigm:171），
+// session.card 缺失即「保存无反馈」回归点。
+// revert 验证：删掉 session.card.ts 的 flashSaved 调用 → 本钉红。
+// ==========================================================================
+regression('BAR-SESSION-FEEDBACK-01', 'session-save-feedback', 'session.card 保存按钮必须含成功反馈（flashSaved）——不得回归到无反馈保存', () => {
+  const src = readFileSync('src/client/cards/plugins/session.card.ts', 'utf-8');
+  assert(src.includes('flashSaved'), 'session.card 必须 import flashSaved（card-ui 共享成功反馈 helper）');
+  // flashSaved 必须位于 saveName 保存成功路径内（而非仅 import 未调用）
+  const saveNameStart = src.indexOf('const saveName =');
+  assert(saveNameStart !== -1, 'saveName 必须存在');
+  const saveNameBody = src.slice(saveNameStart, src.indexOf('const saveBtn', saveNameStart));
+  assert(saveNameBody.includes('flashSaved(saveBtn)'), 'saveName 保存成功路径必须调用 flashSaved(saveBtn)（无反馈 = 回归）');
+});
