@@ -27,6 +27,21 @@
 再按实验号下钻 `results/results-e{N}-*.md`；e1~e16 的历史设计细节在
 `design/history-e1-e16.md`，e17 起设计在 `design/` 对应文档。
 
+## 研究线状态（2026-08-07 用户拍板）
+
+**基础研究阶段已收官。** e1~e20 通用特性研究完结，全部结论沉淀于
+`results/results-synthesis.md`（A/B/C 三级置信 + 产品行动清单）。
+下一阶段 = **基建研究**（范式包工程化：正式 32k 成品包制作、挂载机制完善、
+场景分类法推广——蓝图见 `design/direction-scenario-taxonomy.md`），
+启动时机未定，由用户发起。
+
+挂起/待办清单（新接手者勿重开已裁决问题）：
+- e20 wave 2 半衰期复测：≥2026-09-07 或异常信号/官方公告触发
+  （规则见 `design/design-e20-half-life.md`）
+- 悬案（C 级，未裁决非遗忘）：H6 纯度专项、H10/H11 机制
+  （`results-synthesis.md` §二 C 级）
+- C 挂载开关：config 卡挂载 UI 工程项，挂起中
+
 ## 范式定义与判定标准（2026-08-03 概念澄清）
 
 **约束 vs 示范**——evidence-discipline 不算范式包（它是规则包）：
