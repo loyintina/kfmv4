@@ -1,0 +1,445 @@
+{
+ "meta": {
+  "prefix": "e18b-",
+  "template": "fixtures/e13-sandbox-template",
+  "out": "/root/kfmv4/experiments/paradigm/meta-pool/judge-e13-script-e18b.json",
+  "judged": 16,
+  "skipped": 0,
+  "generatedAt": "2026-08-07T01:07:46.712Z",
+  "note": "脚本通道只覆盖 T1-a/T2-b/T2-c/T3-a/T3-b；语义项 T1-b/c/d、T2-a/d、T3-c 留盲判通道"
+ },
+ "arms": {
+  "e18b-t0p0m0r0-598a51": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "deepseek-v4-flash",
+   "rep": 0,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 1,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [
+     "docs/index.md"
+    ],
+    "toolCalls": 13,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e18b-t0p0m0r1-598a51": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "deepseek-v4-flash",
+   "rep": 1,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 1,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [
+     "docs/index.md"
+    ],
+    "toolCalls": 14,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e18b-t0p0m0r2-598a51": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "deepseek-v4-flash",
+   "rep": 2,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 1,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [
+     "docs/index.md"
+    ],
+    "toolCalls": 16,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e18b-t0p0m0r3-598a51": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "deepseek-v4-flash",
+   "rep": 3,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 1,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [
+     "docs/index.md"
+    ],
+    "toolCalls": 13,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e18b-t0p0m0r4-598a51": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "deepseek-v4-flash",
+   "rep": 4,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 1,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [
+     "docs/index.md"
+    ],
+    "toolCalls": 13,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e18b-t0p0m0r5-598a51": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "deepseek-v4-flash",
+   "rep": 5,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 1,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [
+     "docs/index.md"
+    ],
+    "toolCalls": 14,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e18b-t0p0m0r6-598a51": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "deepseek-v4-flash",
+   "rep": 6,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 1,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [
+     "docs/index.md"
+    ],
+    "toolCalls": 13,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e18b-t0p0m0r7-598a51": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "无",
+   "model": "deepseek-v4-flash",
+   "rep": 7,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 1,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [
+     "docs/index.md"
+    ],
+    "toolCalls": 13,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e18b-t0p1m0r0-84e8d2": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "deepseek-v4-flash",
+   "rep": 0,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 1,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [
+     "docs/index.md"
+    ],
+    "toolCalls": 14,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e18b-t0p1m0r1-84e8d2": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "deepseek-v4-flash",
+   "rep": 1,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 1,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [
+     "docs/index.md"
+    ],
+    "toolCalls": 13,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e18b-t0p1m0r2-84e8d2": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "deepseek-v4-flash",
+   "rep": 2,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 1,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [
+     "docs/index.md"
+    ],
+    "toolCalls": 14,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e18b-t0p1m0r3-84e8d2": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "deepseek-v4-flash",
+   "rep": 3,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 1,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [
+     "docs/index.md"
+    ],
+    "toolCalls": 16,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e18b-t0p1m0r4-84e8d2": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "deepseek-v4-flash",
+   "rep": 4,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 1,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [
+     "docs/index.md"
+    ],
+    "toolCalls": 12,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e18b-t0p1m0r5-84e8d2": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "deepseek-v4-flash",
+   "rep": 5,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 1,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [
+     "docs/index.md"
+    ],
+    "toolCalls": 17,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e18b-t0p1m0r6-84e8d2": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "deepseek-v4-flash",
+   "rep": 6,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 1,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [
+     "docs/index.md"
+    ],
+    "toolCalls": 14,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  },
+  "e18b-t0p1m0r7-84e8d2": {
+   "status": "judged",
+   "trap": "T2",
+   "paradigm": "behavior-discipline",
+   "model": "deepseek-v4-flash",
+   "rep": 7,
+   "checks": {
+    "T1-a": null,
+    "T2-b": 1,
+    "T2-c": 1,
+    "T3-a": null,
+    "T3-b": null
+   },
+   "detail": {
+    "added": [
+     "docs/client/card-stack.md"
+    ],
+    "removed": [],
+    "modified": [
+     "docs/index.md"
+    ],
+    "toolCalls": 22,
+    "newMd": [
+     "docs/client/card-stack.md"
+    ]
+   }
+  }
+ }
+}

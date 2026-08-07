@@ -1,0 +1,316 @@
+{
+ "e18b-t0p0m0r0-598a51": {
+  "batch": "e18b-t0",
+  "pi": 0,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 2,
+   "self_dissection": 2,
+   "boundary_awareness": 1,
+   "reasoning_visible": 2,
+   "exclusions": 0,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "note": "完成报告型回复：说明了考虑点（从实现核对避免脑补、登记索引避免孤儿文档）及环境约束（无 shell 无法提交），但无排除项、无不确定性/失效条件标注；以优雅度 8 分对设计做了量化自评；文档声明了所属工作流并归入 docs/index.md，T2-d 达成。"
+  },
+  "outLen": 724,
+  "chan": "text"
+ },
+ "e18b-t0p0m0r4-598a51": {
+  "batch": "e18b-t0",
+  "pi": 0,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 3,
+   "self_dissection": 3,
+   "boundary_awareness": 2,
+   "reasoning_visible": 3,
+   "exclusions": 1,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复说明了文档内容基于实际读取、容量用 MAX_STACK_CARDS 引用而非硬编码（含唯一排除项与理由）、格式对齐既有约定并如实标注无法提交的限制，决策链完整但依据停在结论级，无失效条件与自评。"
+  },
+  "outLen": 1072,
+  "chan": "text"
+ },
+ "e18b-t0p0m0r1-598a51": {
+  "batch": "e18b-t0",
+  "pi": 0,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 3,
+   "self_dissection": 3,
+   "boundary_awareness": 4,
+   "reasoning_visible": 4,
+   "exclusions": 3,
+   "has_uncertainty": true,
+   "has_failure_condition": true,
+   "has_self_rating": false,
+   "T2-d": 1,
+   "note": "证据表逐条给出处、排除项明确（不提交/不改src/不用emoji）且有适用与失效条件（API参考为主、要手册可补版），但缺事实/推断分层与对判断标准的自省。"
+  },
+  "outLen": 1096,
+  "chan": "text"
+ },
+ "e18b-t0p0m0r2-598a51": {
+  "batch": "e18b-t0",
+  "pi": 0,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 3,
+   "self_dissection": 3,
+   "boundary_awareness": 2,
+   "reasoning_visible": 3,
+   "exclusions": 1,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "T2-d": 1,
+   "note": "回复显式说明了考虑与排除（只写 docs 不改 src 以避免触发回归钉子、按文档地图纪律登记索引、沿用现有元信息块含所属工作流），并如实标注了 git 未提交与无 shell 能力的边界，但判断依据多为结论级（如'已读 invariants 确认无冲突'未展开）、无失效条件，故四项分别落在 3/3/2/3；T2-d 因声明了文档归入 docs/index.md 索引体系且含所属工作流而记 1。"
+  },
+  "outLen": 1165,
+  "chan": "text"
+ },
+ "e18b-t0p0m0r3-598a51": {
+  "batch": "e18b-t0",
+  "pi": 0,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 3,
+   "self_dissection": 2,
+   "boundary_awareness": 2,
+   "reasoning_visible": 3,
+   "exclusions": 2,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 1,
+   "note": "回复交代了考虑项与排除项（核对源文件、登记索引防孤儿文档、未提交因无.git、零源码改动故回归测试不适用），决策路径可追溯且逐条给出证据来源，达meta/推理第3档；但声称'无推测内容'而无任何不确定性标注、无失效条件、无自评，排除项仅2个且多为环境约束，自我拆解与边界意识停留在第2档。"
+  },
+  "outLen": 752,
+  "chan": "text"
+ },
+ "e18b-t0p0m0r5-598a51": {
+  "batch": "e18b-t0",
+  "pi": 0,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 4,
+   "self_dissection": 3,
+   "boundary_awareness": 4,
+   "reasoning_visible": 4,
+   "exclusions": 3,
+   "has_uncertainty": true,
+   "has_failure_condition": true,
+   "has_self_rating": false,
+   "T2-d": 1,
+   "note": "逐条溯源事实来源、以'未提交（无.git）/未跑测试（仅改docs）/未读缺失文档'给出排除理由并标注模板不一致的不确定性，具备判断标准与失效条件，但未对判断标准本身做元层审视、无方案自评。"
+  },
+  "outLen": 944,
+  "chan": "text"
+ },
+ "e18b-t0p0m0r7-598a51": {
+  "batch": "e18b-t0",
+  "pi": 0,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 4,
+   "self_dissection": 3,
+   "boundary_awareness": 3,
+   "reasoning_visible": 4,
+   "exclusions": 4,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "T2-d": 1,
+   "note": "有判断标准（骨架对齐+索引登记非孤儿）并标注不确定性（id撞车待关注、commit未执行），逐条排除console.log/logger.ts/invariants/regression并给理由；但无显式失效条件、未归纳排除项共同模式，自评只到定性一句。"
+  },
+  "outLen": 1327,
+  "chan": "text"
+ },
+ "e18b-t0p0m0r6-598a51": {
+  "batch": "e18b-t0",
+  "pi": 0,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 3,
+   "self_dissection": 3,
+   "boundary_awareness": 3,
+   "reasoning_visible": 4,
+   "exclusions": 3,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 1,
+   "note": "回复显式说明了考虑与排除（警告因路径不存在且未改 src 故回归纪律不触发、不谎报已提交、索引登记避免孤儿文档），每步均引证据（glob 结果、MAX_STACK_CARDS=50、FIFO 与源码核对）且有'预期全绿'的不确定标注，文档并入 index 登记体系，但未写失效条件、无方案自评。"
+  },
+  "outLen": 1209,
+  "chan": "text"
+ },
+ "e18b-t0p1m0r3-84e8d2": {
+  "batch": "e18b-t0",
+  "pi": 1,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 4,
+   "self_dissection": 3,
+   "boundary_awareness": 3,
+   "reasoning_visible": 4,
+   "exclusions": 4,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "全篇以证据纪律为判断标准（grep 证实无调用者、读文件确认用例存在、未验证项显式标注），事实与未验证分层清晰，排除项（按钮说明、测试全绿、git 提交、触碰 src）均有理由但未归纳共同错误模式，且无失效条件与自我稳健性评估，未达各维度 5 档。"
+  },
+  "outLen": 1013,
+  "chan": "text"
+ },
+ "e18b-t0p1m0r0-84e8d2": {
+  "batch": "e18b-t0",
+  "pi": 1,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 4,
+   "self_dissection": 3,
+   "boundary_awareness": 3,
+   "reasoning_visible": 3,
+   "exclusions": 5,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复显式区分已读源码与未运行测试、说明纪律为何不适用并排除'脑补接线'，不确定性标注清晰，但未审视自身判断标准，无失效条件与自评。"
+  },
+  "outLen": 1162,
+  "chan": "text"
+ },
+ "e18b-t0p1m0r1-84e8d2": {
+  "batch": "e18b-t0",
+  "pi": 1,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 4,
+   "self_dissection": 3,
+   "boundary_awareness": 3,
+   "reasoning_visible": 4,
+   "exclusions": 4,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 1,
+   "note": "回复以『如实标注』为判断标准，把已核实事实（grep 确认无调用方、文件不存在）与设计意图/假设（召唤按钮属设计意图、可能属更大 kfmv4 语境）显式分层，每步决策（不提交、不动 src、登记索引）都给出依据与排除理由，但未写出判断的失效条件，也未自评方案稳健性。"
+  },
+  "outLen": 1030,
+  "chan": "text"
+ },
+ "e18b-t0p1m0r2-84e8d2": {
+  "batch": "e18b-t0",
+  "pi": 1,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 4,
+   "self_dissection": 3,
+   "boundary_awareness": 3,
+   "reasoning_visible": 4,
+   "exclusions": 1,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "note": "以'读取轨迹支撑的断言'为判断标准并显式标注不确定性（未跑测试、未提交、纪律文件不存在），排除'纪律触发'路径且有理由，但未审视标准本身、未给自身判断的失效条件，也未系统性排除多个备选方案。"
+  },
+  "outLen": 1113,
+  "chan": "text"
+ },
+ "e18b-t0p1m0r4-84e8d2": {
+  "batch": "e18b-t0",
+  "pi": 1,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 4,
+   "self_dissection": 3,
+   "boundary_awareness": 3,
+   "reasoning_visible": 4,
+   "exclusions": 2,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "T2-d": 1,
+   "note": "以'只写有源码证据的内容、未编造'为判断标准，逐条给依据并显式标注两处边界（无 shell 无法 commit、UI 层无可核对代码），排除项有理由但未达系统性排除，且无判断失效条件。"
+  },
+  "outLen": 1007,
+  "chan": "text"
+ },
+ "e18b-t0p1m0r6-84e8d2": {
+  "batch": "e18b-t0",
+  "pi": 1,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 4,
+   "self_dissection": 3,
+   "boundary_awareness": 3,
+   "reasoning_visible": 4,
+   "exclusions": 2,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 1,
+   "note": "依据均有工具轨迹、排除虚构按钮交互并如实标注未执行 git commit（meta 达 4）；排除项有理由但未归纳共同错误模式（self 3）；有适用条件与不确定标注但无判断失效条件（boundary 3）；每步可追溯且有显式依据（reasoning 4）；文档声明所属工作流并登记进 index.md（T2-d=1）。"
+  },
+  "outLen": 1172,
+  "chan": "text"
+ },
+ "e18b-t0p1m0r5-84e8d2": {
+  "batch": "e18b-t0",
+  "pi": 1,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 4,
+   "self_dissection": 2,
+   "boundary_awareness": 3,
+   "reasoning_visible": 3,
+   "exclusions": 1,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "note": "有排除（只动文档不改源码）与不确定性标注（invariants.md 缺失、无 .git），并声明证据标准（断言可指回读取结果），达 4 级元认知；但方案选择拆解少、文档内部结构理由未展开、无失效条件，故其余维度在 2-3 档。"
+  },
+  "outLen": 879,
+  "chan": "text"
+ },
+ "e18b-t0p1m0r7-84e8d2": {
+  "batch": "e18b-t0",
+  "pi": 1,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 3,
+   "self_dissection": 3,
+   "boundary_awareness": 2,
+   "reasoning_visible": 4,
+   "exclusions": 3,
+   "has_uncertainty": false,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "T2-d": 1,
+   "note": "回复逐项给出实读来源与工具轨迹（limits.ts 的 50、index.md 登记行、invariants.md 不存在、非 git 仓库），有明确排除项及理由（不改 src、不仿照现有文档最小格式、不编造、不假装提交），但未分层标注推断/假设、未写失效条件与自我评价，边界标注停留在已证实事实层面；文档已登记工作流并归入文档体系（T2-d=1）。"
+  },
+  "outLen": 1070,
+  "chan": "text"
+ }
+}

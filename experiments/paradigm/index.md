@@ -464,4 +464,4 @@ batch-run（计划中）：批量跑所有组合臂（并发+断点续跑）+ �
   results-judge-bias.md / results-px1-plugin.md / results-px-baseline-halflife.md /
   results-px-tripod.md / results-rubric-v2.md / results-session-leak-rootcause.md /
   results-e13-trap.md / results-e14-combination.md / results-e15-position.md /
-  results-e16-structure.md / results-e17-retro-quality.md
+  results-e16-structure.md / results-e17-retro-quality.md / results-e18-v4flash.md

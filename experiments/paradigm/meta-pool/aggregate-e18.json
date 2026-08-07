@@ -1,0 +1,169 @@
+{
+  "generated": "2026-08-07T01:07:29.119Z",
+  "e18a": {
+    "cells": {
+      "无包": {
+        "meta": {
+          "n": 8,
+          "mean": 3.75
+        },
+        "dissect": {
+          "n": 8,
+          "mean": 3.5
+        },
+        "bound": {
+          "n": 8,
+          "mean": 2.75
+        },
+        "vis": {
+          "n": 8,
+          "mean": 4.25
+        }
+      },
+      "bd": {
+        "meta": {
+          "n": 8,
+          "mean": 3.88
+        },
+        "dissect": {
+          "n": 8,
+          "mean": 3.88
+        },
+        "bound": {
+          "n": 8,
+          "mean": 2.25
+        },
+        "vis": {
+          "n": 8,
+          "mean": 4.25
+        }
+      },
+      "meta": {
+        "meta": {
+          "n": 8,
+          "mean": 4.63
+        },
+        "dissect": {
+          "n": 8,
+          "mean": 4.63
+        },
+        "bound": {
+          "n": 8,
+          "mean": 4.5
+        },
+        "vis": {
+          "n": 8,
+          "mean": 5
+        }
+      },
+      "S6复盘": {
+        "meta": {
+          "n": 8,
+          "mean": 4.13
+        },
+        "dissect": {
+          "n": 8,
+          "mean": 4
+        },
+        "bound": {
+          "n": 8,
+          "mean": 2.5
+        },
+        "vis": {
+          "n": 8,
+          "mean": 4.38
+        }
+      }
+    },
+    "contrasts": [
+      {
+        "label": "dissect: 无包 vs S6复盘",
+        "a": 3.5,
+        "b": 4,
+        "z": -1.47,
+        "p": 0.135
+      },
+      {
+        "label": "dissect: 无包 vs bd",
+        "a": 3.5,
+        "b": 3.88,
+        "z": -1.26,
+        "p": 0.202
+      },
+      {
+        "label": "meta: 无包 vs meta",
+        "a": 3.75,
+        "b": 4.63,
+        "z": -2.42,
+        "p": 0.012
+      },
+      {
+        "label": "dissect: 无包 vs meta",
+        "a": 3.5,
+        "b": 4.63,
+        "z": -2.73,
+        "p": 0.004
+      },
+      {
+        "label": "meta: bd vs meta",
+        "a": 3.88,
+        "b": 4.63,
+        "z": -2,
+        "p": 0.04
+      }
+    ]
+  },
+  "e18b": {
+    "cells": {
+      "无包": {
+        "T2-d": {
+          "n": 6,
+          "mean": 1
+        }
+      },
+      "bd": {
+        "T2-d": {
+          "n": 4,
+          "mean": 1
+        }
+      }
+    },
+    "contrasts": [
+      {
+        "label": "T2-d: 无包 vs bd",
+        "a": 1,
+        "b": 1,
+        "z": 0,
+        "p": 1
+      }
+    ]
+  },
+  "e18c": {
+    "trend": [
+      {
+        "pack": "metacognition(8k锚,e18a)",
+        "k": 8.1,
+        "n": 8,
+        "meta": 4.63
+      },
+      {
+        "pack": "metacognition-32k",
+        "k": 30.1,
+        "n": 8,
+        "meta": 4.88
+      },
+      {
+        "pack": "metacognition-64k",
+        "k": 64.5,
+        "n": 8,
+        "meta": 4.5
+      },
+      {
+        "pack": "metacognition-96k",
+        "k": 89.8,
+        "n": 8,
+        "meta": 4.38
+      }
+    ]
+  }
+}
