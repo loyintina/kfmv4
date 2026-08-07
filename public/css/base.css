@@ -318,14 +318,14 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  padding: 14px 12px 0 68px;
+  padding: 14px 12px 0;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   user-select: none;
 }
 
 /* 横贯顶栏（2026-08-06 定稿）：全宽 + 横排三端分布；左右 padding 76px 避开召唤按钮
    区（文件树按钮左 16-56px / 卡片堆按钮右）——按钮 z(200) 盖在框(z 100)上，文字不进按钮区。 */
-/* 贴顶居中卡（2026-08-06 定稿 v3）：宽 340px 居中（内容区 = 视口 - 左缘 SYS 竖条 68px 让位）——左右分区：
+/* 贴顶居中卡（2026-08-06 定稿 v4）：宽 372px 居中——左右分区：
    左列两行（deepseek 标签 + 秒级时间）· 右列余额大字单独放（重点）。
    禁全宽横贯：双 backdrop-filter 垂直叠加移动端合成异常会致按钮视觉消失。 */
 .obs-card {
@@ -333,9 +333,9 @@ body {
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  width: 340px;
+  width: 372px;
   box-sizing: border-box;
-  padding: 14px 32px;
+  padding: 14px 56px;
   border-radius: 20px;
   background: rgba(18, 18, 26, 0.5);
   border: 1px solid transparent;
@@ -392,13 +392,13 @@ body {
   }
 }
 /* ===== 双信息框行（信箱+待办，2026-08-06 用户定稿：信箱右侧同宽） ===== */
-/* 行宽 340 = 主卡宽（SYS 竖条让位后同步收窄 372→340）：左框贴主卡左界、右框贴主卡右界，
-   space-between 天然对齐，取代信箱单框时代的 translateX(-106px) 补偿。 */
+/* 行宽 372 = 主卡宽：左框贴主卡左界、右框贴主卡右界，space-between 天然对齐，
+   取代信箱单框时代的 translateX(-106px) 补偿。 */
 .obs-row {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
-  width: 340px;
+  width: 372px;
   align-self: center;
   margin-top: 10px;
 }
@@ -407,7 +407,7 @@ body {
 /* 窄竖长信箱造型，行内左框；柔和状态徽标（概率区非阻断哲学）；
    列表局部 pointer-events auto 支持触摸滚动（其余区域保持穿透）。 */
 .obs-inbox {
-  width: 146px;
+  width: 160px;
   box-sizing: border-box;
   border-radius: 16px;
   background: rgba(18, 18, 26, 0.5);
@@ -583,11 +583,11 @@ body {
 }
 
 /* ===== 待办卡（stack.yaml 工作栈，2026-08-06 用户拍板：废 STACK.md，yaml 单一出处） ===== */
-/* 行内右框；2026-08-06 加宽 160→200（中央空隙 52→12），SYS 竖条让位后随行宽
-   收窄至 182（空隙保持 12）。复用 obs-inbox-* 内部件类（head/list/item/detail/back）。
+/* 行内右框；2026-08-06 加宽 160→200（用户定稿：中央空隙 52→12，行宽 372 不动，
+   左界仍贴主卡）。复用 obs-inbox-* 内部件类（head/list/item/detail/back）。
    全状态渲染：todo/hold 全亮在前，done 渐淡殿后（藏起 done 是旧设计的诚实性缺陷）。 */
 .obs-stack {
-  width: 182px;
+  width: 200px;
   box-sizing: border-box;
   border-radius: 16px;
   background: rgba(18, 18, 26, 0.5);
@@ -703,14 +703,13 @@ body {
 }
 
 /* 待办返回按钮复用信箱样式（事件类名单独 .obs-stack-back 便于委托区分） */
-/* ===== 左缘 SYS 窄竖条（2026-08-06 用户定稿：靠左边界顶到底，只读 v1） ===== */
-/* 三段：SYS 四数（阈值变色：平时灰/70 琥珀/85 红）+ 服务灯 + cron 状态清单。
-   top 76px 避开顶部召唤按钮区（backdrop-filter 垂直叠加按钮致其视觉消失的前科）；
-   内容区由 .obs-hud padding-left:68px 让位；宽 60px，纯展示 pointer-events:none。 */
+/* ===== SYS 窄竖条（2026-08-06 用户定稿 v2：信箱块正下方靠左，向下顶到底） ===== */
+/* 左线与信箱块/主卡左线对齐——left/top 由 JS 按 .obs-inbox getBoundingClientRect
+   实测注入（v1 贴屏幕左缘被用户实拍打回：竖条是信箱列的延伸，不是屏幕边缘条）。
+   三段：SYS 四数（阈值变色：平时灰/70 琥珀/85 红）+ 服务灯 + cron 状态清单。
+   宽 60px，纯展示 pointer-events:none。 */
 .obs-rail {
   position: fixed;
-  left: 0;
-  top: 76px;
   bottom: 0;
   width: 60px;
   box-sizing: border-box;
