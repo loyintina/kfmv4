@@ -55,15 +55,27 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
         → initWsChannel() → initVersionWatch() → initObsHud()（观测台 HUD）
 ```
 
-## 观测台 HUD（8.5 史官制度，2026-08-06 立项）
+## 观测台 HUD（8.5 史官制度，2026-08-06 立项；2026-08-07 四面定稿）
 
 - 模块：`src/client/modules/obs-hud.ts`（域映射：client-shell）
-- 形态：L1 中央内容层（`Z.CENTER_CONTENT`，100）贴顶居中渐变边框卡——纯展示
+- 形态：L1 中央内容层（`Z.CENTER_CONTENT`，100）——纯展示
   （`pointer-events: none`，不挡手势/卡片）；按钮层（`SUMMON_BTN` 200）在卡外两侧，
   **禁止卡片横贯全宽**——双 backdrop-filter 垂直叠加在移动端合成异常会致按钮视觉消失
-- 内容（重要性排序，用户定稿）：余额大字焦点（4 位/2 位小数）> deepseek 标签 > 秒级时间弱化
-- 数据：`/api/obs/hud`（服务端 routes/obs.ts，deepseek 官方余额 5s 缓存轮询）
-- 扩展面：后续数据框（调用统计/网关健康/运行任务/定时脚本/服务器状态）沿此卡增长
+- 四个信息面（用户逐轮实拍定稿）：
+  1. **余额卡**（贴顶居中 372px）：余额大字焦点（2 位小数）> deepseek 标签 > 秒级时间
+  2. **双信息框行**（372px，信箱 160 + 待办 200，间隙 12）：信箱=语义巡逻
+     verdict 时间线（可点详情），待办=stack.yaml 全状态（todo/hold/done 分组，
+     标题/note 分层截断——同层共 clamp 会让两行标题白挂省略号）
+  3. **SYS 监控面板**（信箱正下方靠左，宽 140 必须比信箱窄，向下顶到底）：
+     系统四指标（文字行=标签+百分号+xx/xx 实值对，下方滚动柱状图——
+     绿<70/黄 70-85/红>85 逐样本上色）+ 监听端口行（公/本作用域标 +
+     端口号 + 进程名 + 活跃连接数）；位置按 .obs-inbox 实测矩形注入
+- 数据：`/api/obs/hud` 5s 轮询（余额服务端 5s 缓存；SYS 30s 独立采样器
+  环形 40 点落 ~/.kfmv4/sys-metrics.json，端口 30s/cron 5min 缓存）
+- **渲染纪律：数据未变不重渲染**（JSON key 比对）——innerHTML 重建重置滚动位，
+  5s 一次等于禁止翻列表（2026-08-06 守视实拍抓获）；变时保存/恢复 scrollTop
+- 扩展面：调用统计（agent-calls 聚合）、cron 状态（2026-08-07 从 SYS 面板
+  移出待另置）为下一批候选
 
 ## GSAP 动画治理（2026-07-29 按 ADR-004 裁决二修订）
 
