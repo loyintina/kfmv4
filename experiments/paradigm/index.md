@@ -417,6 +417,8 @@ batch-run（计划中）：批量跑所有组合臂（并发+断点续跑）+ �
   e8 四类包 32 臂 / T2 陷阱 16 臂 / 长度梯度 24 臂，DS 官方并发 16）
   / specs/e19.json（e19 拥挤区占用率：同源嵌套 32/128/256/512k + 512k-dup，
   40 臂，pre-task-user 位）
+  / specs/e20.json（e20 版本半衰期锚点：e18a 四格 + e19 峰值格，40 臂冻结矩阵；
+  每 wave 复制为 e20w{N}.json 仅改波号，见 design-e20-half-life.md）
 - 判卷：judge-llm.mjs（LLM 盲判主通道，rubric v1/v2）/ judge-e13-script.mjs
   （e13 零成本脚本判卷：沙箱 diff+工具痕迹）/ judge-px1-blind.mjs（px 轮号对齐盲判）
   / bench-score.mjs / blind-anonymize.py（盲判匿名化）
@@ -468,7 +470,7 @@ batch-run（计划中）：批量跑所有组合臂（并发+断点续跑）+ �
 
 - 设计：design-arm-store.md / design-behavior-discipline-pack.md / design-e13-trap-tasks.md /
   design-roadmap-e14-e16.md / design-session-runner.md / proposal-sentinel-layer.md /
-  pack-behavior-discipline-notes.md / spec-v1.md
+  pack-behavior-discipline-notes.md / spec-v1.md / design-e20-half-life.md
 - 结果（各实验节有正文，此处纯登记）：results-e1.md / results-e4-matrix.md / results-e5.md /
   results-e7-length.md / results-e11-repeat.md / results-e12-wrappers.md /
   results-e11-e12-matrix-v2.md / results-flash-calibration-01.md / results-h1-paradigm.md /
