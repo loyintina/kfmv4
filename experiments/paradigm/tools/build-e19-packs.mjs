@@ -20,7 +20,8 @@ import { homedir } from 'node:os';
 const SCRIPT_DIR = join(homedir(), '.kfmv4', 'sessions', 'script');
 const PACK_DIR = join(homedir(), '.kfmv4', 'paradigms');
 const DRY = process.argv.includes('--dry');
-const LINES = [1, 2, 3, 4, 5].flatMap(n => [`e19g-line${n}`, `e19g-line${n}-c2`, `e19g-line${n}-c3`]);
+const LINES = [1, 2, 3, 4, 5].flatMap(n => [`e19g-line${n}`, `e19g-line${n}-c2`, `e19g-line${n}-c3`,
+  `e19g-line${n}-r2`, `e19g-line${n}-c2-r2`, `e19g-line${n}-c3-r2`]);
 const TARGETS_K = [32, 128, 256, 512]; // 标称档（k tok）
 const CHARS_PER_TOK = 3.2;
 
@@ -29,7 +30,13 @@ function textOf(msg) {
 }
 
 // ===== 组装语料（轮为单位）=====
+// 质量门（2026-08-07 语料退化事故）：剔除两类退化轮——
+//   ① 失控超长轮（>20000 字：工具循环写论文/公式垃圾的标志性形态）
+//   ② 乱码轮（谚文等非目标文字 >30 字：长失控输出里的语言串台标志）
+const MAX_TURN_CHARS = 40000;
+const isGarbage = (t) => (t.match(/[\uac00-\ud7af]/g) || []).length > 30;
 const turns = [];
+let droppedLong = 0, droppedGarbage = 0;
 for (const id of LINES) {
   const stPath = join(SCRIPT_DIR, `${id}.exam-state.json`);
   if (!existsSync(stPath)) { console.error(`[缺线] ${stPath} 不存在，跳过`); continue; }
@@ -40,11 +47,14 @@ for (const id of LINES) {
     if (!t) continue;
     // 保险：若 clean 历史里混入包包裹，剥掉（正常不应出现）
     const clean = t.includes('〔范式包〕') ? t.split('————\n').slice(1).join('————\n') : t;
+    if (clean.length > MAX_TURN_CHARS) { droppedLong++; continue; }
+    if (isGarbage(clean)) { droppedGarbage++; continue; }
     turns.push({ role: m.role === 'ai' ? '答' : '问', text: clean });
     n++;
   }
   console.log(`[组装] ${id}: ${n} 轮（累计 ${turns.length}）`);
 }
+console.log(`[质量门] 剔除失控超长轮 ${droppedLong}、乱码轮 ${droppedGarbage}`);
 if (!turns.length) { console.error('语料为空，退出'); process.exit(1); }
 
 // ===== 嵌套切档（轮边界）=====

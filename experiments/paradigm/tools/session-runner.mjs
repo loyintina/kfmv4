@@ -116,7 +116,7 @@ export function loadSessionMessages(sessionId) {
   return null;
 }
 
-async function startRun(sessionId, messages, userText, model, provider, roleFile, tools, sandboxRoot, extraSystem) {
+async function startRun(sessionId, messages, userText, model, provider, roleFile, tools, sandboxRoot, extraSystem, maxTokens) {
   const res = await fetch(`${BASE}/ai/chat/start`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -133,7 +133,11 @@ async function startRun(sessionId, messages, userText, model, provider, roleFile
       // 外部 system 注入（e15 system 档：范式包落服务端静态 system 段）
       ...(extraSystem ? { extraSystem } : {}),
       ...(roleFile ? { roleFile } : {}),
-      ...(tools?.length ? { tools } : {}),
+      // 显式空数组 = 真无工具（e19 语料退化事故根治：routes.ts 对空数组给空白名单，
+      // 工具循环从根上断；undefined 才回落服务端默认只读白名单）
+      ...(Array.isArray(tools) ? { tools } : {}),
+      // 单轮输出预算覆盖（e19 语料退化事故：防工具循环写论文失控，2026-08-07）
+      ...(maxTokens ? { maxTokens } : {}),
     }),
     signal: AbortSignal.timeout(30_000),
   });
@@ -210,7 +214,7 @@ async function waitRun(runId, maxMs = 600_000) {
  * @param {string} [opts.out] 归档路径（默认 ~/.kfmv4/sessions/<sessionId>.json）
  * @returns {Promise<{runId, events, ms, sessionPath}>}
  */
-export async function runSession({ sessionId, messages, userText, model, provider, roleFile, paradigm, position, tools, out, sandboxRoot }) {
+export async function runSession({ sessionId, messages, userText, model, provider, roleFile, paradigm, position, tools, out, sandboxRoot, maxTokens }) {
   if (!validSessionId(sessionId)) throw new Error(`sessionId 不合法: ${sessionId}`);
   if (position && !['first-user', 'pre-task-user', 'system'].includes(position)) {
     throw new Error(`position 不合法: ${position}（可选 first-user / pre-task-user / system）`);
@@ -222,7 +226,7 @@ export async function runSession({ sessionId, messages, userText, model, provide
   // system 档：包不进消息层（chat.ts:209 会过滤），改走 extraSystem 落服务端静态 system 段
   const extraSystem = position === 'system' && paradigmText ? PACK_MARK(paradigmText) : undefined;
   const apiMessages = toOpenAi(msgs); // 原始格式 → OpenAI 格式（provider 不认 role:'ai'）
-  const { runId } = await startRun(sessionId, apiMessages, userText, model, provider, roleFile, tools, sandboxRoot, extraSystem);
+  const { runId } = await startRun(sessionId, apiMessages, userText, model, provider, roleFile, tools, sandboxRoot, extraSystem, maxTokens);
   const src = join(SESSIONS, `${sessionId}.json`);
   try {
     const { events, ms } = await waitRun(runId);

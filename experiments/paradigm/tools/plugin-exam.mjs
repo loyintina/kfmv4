@@ -50,7 +50,8 @@ const instructorFile = get('instructor-file',
 const packName = get('pack', 'metacognition');
 const scenarioFile = get('scenario-file');
 const maxTurns = parseInt(get('turns', '10'), 10);
-const tools = get('examiner-tools', 'read,grep,glob').split(',');
+const tools = get('examiner-tools', 'read,grep,glob').split(',').filter(Boolean); // 空串 = 无工具（e19 语料线防工具循环退化，2026-08-07）
+const maxTokens = parseInt(get('max-tokens', '0'), 10); // 单轮输出预算上限，0 = 服务端默认（e19 语料线防失控）
 const examinerRole = get('examiner-role', ''); // 考生角色卡；空 = 服务端回落面板激活角色
 const fresh = argv.includes('--fresh'); // 忽略断点状态从头跑
 // 时刻表模式：attach@T,detach@T —— 挂摘决策被时刻表强制接管，教官无权决策
@@ -151,6 +152,7 @@ async function examinerTurn(cleanHistory, userText, packText, sessionFile) {
         provider: examinerProvider,
         roleFile: examinerRole || undefined,
         tools,
+        maxTokens: maxTokens || undefined,
         out: sessionFile,
       });
       const d = JSON.parse(readFileSync(sessionFile, 'utf-8'));
