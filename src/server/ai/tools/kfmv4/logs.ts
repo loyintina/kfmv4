@@ -2,7 +2,7 @@
  * kfm-logs 工具
  *
  * 读取 kfmv4 日志卡的内容
- * 通过 WebSocket 获取实时日志
+ * 读取 wsServer 最新快照中的日志元素（非实时订阅流，每次调用即当前状态）
  */
 
 import type { KfmTool, ToolResult } from '../types.js';
