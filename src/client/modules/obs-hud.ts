@@ -277,8 +277,8 @@ ${body}</div>
   const BAR_ANIM_MS = 5_000;
   type MetricRec = { row: HTMLElement; track: HTMLElement };
   const metricRecs = new Map<string, MetricRec>();
-  let lastBarLen = -1;
-  let lastBarSig = '';
+  let lastWinSig = '';
+  let lastWins: number[][] = [];
   function barHtml(v: number, pct: number | null, vmax: number): string {
     const cls = pct == null ? 'obs-bar-cyan' : v > 85 ? 'obs-bar-red' : v >= 70 ? 'obs-bar-amber' : 'obs-bar-green';
     const h = Math.max(2, Math.round(Math.min(1, v / (pct != null ? 100 : vmax)) * 16));
@@ -314,23 +314,40 @@ ${body}</div>
       }
       rec.row.innerHTML = `<span class="obs-sys-label">${m.label}</span><span class="obs-rail-num${metricCls(m.pct)}">${m.value}</span><span class="obs-sys-pair">${m.pair ?? ''}</span>`;
     });
-    // 新样本判定：四列同拍，缓冲未满看长度，满后看四列尾值联合签名；四列全同值连拍漏一拍，无新信息不滑
-    const len = hists[0].length;
-    const sig = hists.map(h => h[h.length - 1]).join('|');
-    if (len > 0 && (len !== lastBarLen || sig !== lastBarSig)) {
-      lastBarLen = len;
-      lastBarSig = sig;
-      HISTORY_KEYS.forEach((k, i) => {
-        const tr = metricRecs.get(k)!.track;
-        if (tr.children.length > BAR_SHOW) tr.firstElementChild!.remove(); // 已滑出左界的最旧柱
-        tr.style.transition = 'none';
-        tr.style.transform = 'translateX(0)'; // 复位：删首柱 + 归零，与滑完态无缝衔接
-        const h = hists[i];
-        tr.insertAdjacentHTML('beforeend', barHtml(h[h.length - 1], sys.metrics[i].pct, Math.max(...h.slice(-BAR_SHOW), 1))); // 新柱落在右界外
-        void tr.offsetWidth; // 强制 reflow，让复位先生效再启动过渡
-        tr.style.transition = `transform ${BAR_ANIM_MS}ms linear`;
-        tr.style.transform = `translateX(-${BAR_STEP}px)`;
+    // 新样本判定：四列同拍，比较最近 17 根窗口签名。
+    // 恰好新增一根（各列 cur = prev.slice(1)+[new]）→ 走缓动；跳多拍（失焦/锁屏期间轮询被
+    // 浏览器冷冻而服务端采样照跑，攒了一批）或历史重置 → 直接重建轨道稳态，下一拍恢复滑动。
+    const wins = hists.map(h => h.slice(-(BAR_SHOW + 1)));
+    const winSig = wins.map(w => w.join(',')).join('|');
+    if (hists[0].length > 0 && winSig !== lastWinSig) {
+      const shiftOne = lastWins.length === 4 && wins.every((w, i) => {
+        const p = lastWins[i];
+        return p.length > 1 && w.length > 1 && p.slice(1).join(',') === w.slice(0, w.length - 1).join(',');
       });
+      if (shiftOne) {
+        HISTORY_KEYS.forEach((k, i) => {
+          const tr = metricRecs.get(k)!.track;
+          if (tr.children.length > BAR_SHOW) tr.firstElementChild!.remove(); // 已滑出左界的最旧柱
+          tr.style.transition = 'none';
+          tr.style.transform = 'translateX(0)'; // 复位：删首柱 + 归零，与滑完态无缝衔接
+          const h = hists[i];
+          tr.insertAdjacentHTML('beforeend', barHtml(h[h.length - 1], sys.metrics[i].pct, Math.max(...h.slice(-BAR_SHOW), 1))); // 新柱落在右界外
+          void tr.offsetWidth; // 强制 reflow，让复位先生效再启动过渡
+          tr.style.transition = `transform ${BAR_ANIM_MS}ms linear`;
+          tr.style.transform = `translateX(-${BAR_STEP}px)`;
+        });
+      } else {
+        // 重建轨道（无动画硬重置）——覆盖失焦积累、服务端重启历史重置等一切错位场景
+        HISTORY_KEYS.forEach((k, i) => {
+          const tr = metricRecs.get(k)!.track;
+          const vmax = Math.max(...wins[i], 1);
+          tr.style.transition = 'none';
+          tr.innerHTML = wins[i].map(v => barHtml(v, sys.metrics[i].pct, vmax)).join('');
+          tr.style.transform = wins[i].length > BAR_SHOW ? `translateX(-${BAR_STEP}px)` : 'translateX(0)';
+        });
+      }
+      lastWinSig = winSig;
+      lastWins = wins;
     }
     railPortsEl.innerHTML = sys.ports.map(p =>
       `<div class="obs-port-row"><span class="obs-port-dot obs-port-dot-${p.scope}" style="${pulseStyle(String(p.port))}"></span><span class="obs-port-num">${p.port}</span><span class="obs-port-name">${p.name}</span><span class="obs-port-conns">${(p.conns ?? 0) > 0 ? '×' + p.conns : ''}</span></div>`
@@ -394,4 +411,6 @@ ${body}</div>
   };
   refresh();
   setInterval(refresh, REFRESH_MS);
+  // 锁屏/失焦回前台：立即重同步（轮询被冷冻期间服务端采样照跑，窗口签名比对会走重建分支复位）
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
 }
