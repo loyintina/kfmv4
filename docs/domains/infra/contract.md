@@ -80,6 +80,13 @@ agent 脚本层——检测归自动化，裁决归会话内 agent，**永远不
     ~/.kfmv4/sys-metrics.json 供面板历史柱状图；cron 成败判据 = 逐脚本标记表
     CRON_MARKERS 末位对比，通用关键字实测三处误判已弃用；端口 30s/cron 5min
     缓存，新增 cron 条目只需在标记表/别名表登记）
+    （2026-08-07 登记①：RSS 参照改自身 cgroup memory.high（800M 墙），按
+    /proc/self/cgroup 相对路径拼读——根路径是根 cgroup 的 max，直读必失效；
+    rss 历史下发前转占限额百分比，柱状图口径统一「样本值=百分比」）
+    （2026-08-07 登记②：星轨数据面 collectArchive——读 ~/.kfmv4/sessions/*.json
+    顶层字段（title/createdAt/updatedAt/messageCount/tokenCount），msgs≤2 测试
+    残留过滤、缺 count 旧会话以 messages.length 兜底，按 tokenCount 降序 TOP8 +
+    其余聚合「其他 ×N」轨，30s 缓存；sessions/script/ 分流目录不读）
 14. **语义生成**（2026-08-02，登记表 P0 完成）：契约清单生成器
     gen-contract-lists（6 域清单单一出处）、路由表生成器 gen-route-table
     （工作流行从 workflows/ 生成）——生成区标记 gen:xxx，幂等 + --check-only
