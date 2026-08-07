@@ -1,5 +1,5 @@
 /**
- * KFM v4 — console 日志扫描
+ * check-console.mjs — console 日志扫描
  *
  * 确保所有客户端日志通过 logger.ts 的 log() 输出，
  * 禁止散落的 console.log/warn/error。

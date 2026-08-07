@@ -88,6 +88,7 @@ export const STEPS = [
   'node scripts/check/gen-permission-map.mjs --check-only',
   'node scripts/check/gen-rules-map.mjs --check-only',
   'node scripts/check/gen-experiments-list.mjs --check-only',
+  'node scripts/check/gen-scripts-catalog.mjs --check-only',
   'node scripts/check/check-doc-orphans.mjs',
   'node scripts/check/check-probes.mjs',
   'node scripts/check/check-release-radar.mjs',

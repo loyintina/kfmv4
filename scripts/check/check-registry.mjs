@@ -1,5 +1,5 @@
 /**
- * KFM v4 — UI Element Registry 完整性验证
+ * check-registry.mjs — UI Element Registry 完整性验证
  *
  * 检查所有预期注册的 UI 元素是否在源码中有对应的 Registry.register() 调用。
  * 挂入 npm run check，不注册 = 构建中断。

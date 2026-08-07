@@ -1,5 +1,5 @@
 /**
- * KFM v4 — Z-Index 层级注册表完整性校验
+ * check-zindex.mjs — Z-Index 层级注册表完整性校验
  *
  * 挂入 npm run check / build，违规 = 构建中断。
  *

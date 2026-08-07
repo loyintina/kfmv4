@@ -1,5 +1,5 @@
 /**
- * KFM v4 - 动画导入检查
+ * check-anim.mjs — 动画导入检查
  *
  * 扫描 src/client/ 下所有 .ts 文件，确保：
  *   除白名单外，所有文件不直接 import gsap，必须通过 animation-registry。

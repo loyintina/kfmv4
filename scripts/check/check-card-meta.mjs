@@ -1,5 +1,5 @@
 /**
- * KFM v4 - card.meta 类型逃逸检查
+ * check-card-meta.mjs — card.meta 类型逃逸检查
  *
  * 扫描 src/client/modules/ 下所有 .ts 文件，确保 card.meta 字段访问
  * 不通过 as 断言进行类型窄化。

@@ -1,5 +1,5 @@
 /**
- * KFM v4 - 类型逃逸检查（as any / as unknown as）
+ * check-as-any.mjs — 类型逃逸检查（as any / as unknown as）
  *
  * 捕获两类逃逸：
  *   - `as any`         —— 关闭类型检查

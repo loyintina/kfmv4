@@ -19,3 +19,4 @@ import './plugins/config.card.js';
 import './plugins/paradigm.card.js';
 import './plugins/role.card.js';
 import './plugins/tools.card.js';
+import './plugins/scripts.card.js';

@@ -1,5 +1,5 @@
 /**
- * KFM v4 — 版本号一致性检查（v8.2 适配：HANDBOOK 锚点 → README + ledger/history）
+ * check-versions.mjs — 版本号一致性检查（v8.2 适配：HANDBOOK 锚点 → README + ledger/history）
  *
  * 从 package.json 读取权威版本号，检查：
  *  1. git tag "v{version}" 是否存在（防止忘打 tag）

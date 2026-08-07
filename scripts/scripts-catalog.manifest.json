@@ -1,0 +1,385 @@
+{
+  "$comment": "脚本目录登记面（gen-scripts-catalog.mjs 的三号数据源）。检查器/生成器/范式考古三类走 categoryDefaults 兜底；其余类别的每个脚本必须在 scripts 里登记 permission/prompt（effect 缺省回落头部描述）。desc 字段仅用于头部无「name — 描述」惯例时的兜底。",
+  "categoryDefaults": {
+    "检查器": {
+      "permission": "构建链内只读检查（无网络、无写盘副作用）",
+      "prompt": "无（机械检查）"
+    },
+    "生成器": {
+      "permission": "回写生成物；--check-only 只读校验",
+      "prompt": "无（机械拼接）"
+    },
+    "范式考古": {
+      "permission": "只读素材库/写实验数据区（一次性脚本，已归档留存）",
+      "prompt": "部分内置提取/标注规则（考古级，不再维护）"
+    }
+  },
+  "scripts": {
+    "scripts/agent/agent-runner.mjs": {
+      "permission": "联网调 LLM API（provider 有序兜底链，key 从 ~/.kfmv4/providers.json 按 id 读）；只追加写 ~/.kfmv4/agent-calls.jsonl 调用账本；不写仓库",
+      "prompt": "无内置业务提示词——prompt 模板由调用方传入（{{var}} 注入）",
+      "effect": "洁净室 agent 运行时：机械组装输入 → 调 LLM → 机械校验输出，返回 {ok, data, raw, provider, errors}"
+    },
+    "scripts/agent/browser-relay.mjs": {
+      "permission": "常驻 daemon（serve 模式暴露 HTTP 控制面）+ 一次性 CLI 双形态；拉起 headless Chrome（puppeteer-core）；写截图等到 ~/.kfmv4/browser-relay/；不连 LLM API（浏览器可开任意 URL）",
+      "prompt": "无（机械）",
+      "effect": "浏览器守视：开页/截图/点击/输入/求值等命令，stdout 单行 JSON + 截图路径"
+    },
+    "scripts/agent/exp-iceberg.mjs": {
+      "permission": "只读（execSync git log/tag，不改动仓库）；不写文件、不联网",
+      "prompt": "无（机械统计）",
+      "effect": "冰山工作量验证：按口径统计 feat/fix 链与前置设计讨论，stdout 报表",
+      "desc": "冰山工作量验证实验（一次性）：feat 后 fix 链长度 × 前置讨论有无"
+    },
+    "scripts/agent/exp-probe-decompose.mjs": {
+      "permission": "联网调 LLM（经 agent-runner）；只读 tmp/semantic-bench 沙盒与仓库文档；不写文件",
+      "prompt": "内置断言抽取器与判断器提示词常量（本文件 system/prompt 字符串），复用 semantic-audit 评分逻辑",
+      "effect": "探针分解实验：no-think 抽取器 + think 判断器两段式，测召回与耗时，stdout 数据"
+    },
+    "scripts/agent/exp-probe-matrix.mjs": {
+      "permission": "联网调 LLM（内部并发池，默认 8）；只读 tmp/semantic-bench 沙盒；不写文件",
+      "prompt": "复用 semantic-audit.mjs 的 buildPrompt 内置审计探针提示词",
+      "effect": "探针能力矩阵：19 探针 × 16 变异全跑，按探针聚合盲区，stdout 报表"
+    },
+    "scripts/agent/exp-thinking.mjs": {
+      "permission": "联网调 LLM（经 agent-runner，两臂交替）；不写 state、不写文件（头部自述）",
+      "prompt": "内置 system 常量 + 复用 semantic-audit.mjs 的 buildPrompt",
+      "effect": "思考开/关两臂对照实验：延迟/尝试次数/报留拦差异，stdout 数据表"
+    },
+    "scripts/agent/exp-vision-internal.mjs": {
+      "permission": "联网调 LLM；先 execSync 跑 semantic-mutate 物化沙盒（写 tmp/semantic-bench，gitignored）；不写仓库",
+      "prompt": "内置四臂提示词变体常量（ARMS：基线/去保守/脚手架/叠加）",
+      "effect": "vision 探针四臂对照实验（M07+MID-4 定向变异），stdout 数据表"
+    },
+    "scripts/agent/obs-aggregate.mjs": {
+      "permission": "只读 ~/.kfmv4/*.jsonl 账本、docs/ledger 信箱与 git log；--mailbox 时追加写 semantic-chain-inbox.md；不联网",
+      "prompt": "无（机械聚合）",
+      "effect": "观测台周报聚合：LLM 调用账本 + 工具审计 + 信箱趋势 → stdout 周报（可投信箱）"
+    },
+    "scripts/agent/semantic-audit.mjs": {
+      "permission": "联网调 LLM（并发 3 洁净室）；写 docs/ledger/semantic-audit-state.json 与 patrol-* 会话归档（sessions/script/）；工具流探针仅读类工具白名单（禁 write/edit/bash）",
+      "prompt": "内置审计探针提示词常量（buildPrompt/SYSTEM，含已登记病灶豁免清单解析）",
+      "effect": "语义审计探针集群编排器：增量对账 + 机械复核幻觉，产出 SEM 清单草案入 state"
+    },
+    "scripts/agent/semantic-audit.tasks.mjs": {
+      "permission": "纯数据模块：无 IO、不联网、不执行进程",
+      "prompt": "探针任务定义在本文件（每任务的问题/feeds/baseline/tools 字段），供 semantic-audit 组装提示词",
+      "effect": "语义审计探针任务清单（组内 17 + 组间 6），被编排器 import"
+    },
+    "scripts/agent/semantic-bench.mjs": {
+      "permission": "联网调 LLM；读 tmp/semantic-bench 沙盒，沙盒缺失或 --remutate 时 execSync 重建（写 tmp/）；不写 state、不进 check 链",
+      "prompt": "复用 semantic-audit.mjs 的 buildPrompt 内置审计提示词",
+      "effect": "变异基准跑分器：对沙盒副本跑受影响探针，按 ground-truth 算召回/误报"
+    },
+    "scripts/agent/semantic-chain.mjs": {
+      "permission": "execFileSync 调 semantic-audit（间接联网 LLM）；追加写 docs/ledger/semantic-chain-inbox.md 与指标 jsonl；永远 exit 0",
+      "prompt": "无自身提示词（探针提示词在 semantic-audit.mjs）",
+      "effect": "语义巡逻总 runner：跑探针集群 → 聚合成 verdict → 投信箱（--with-bench 顺带校准基准）"
+    },
+    "scripts/agent/semantic-mutate.mjs": {
+      "permission": "只读仓库文档与 git 历史；写 tmp/semantic-bench/ 沙盒副本与 ground-truth.json（gitignored）；不联网",
+      "prompt": "无（机械变异注入）",
+      "effect": "变异基准卷：物化变异沙盒 + ground-truth.json，供 bench 对分"
+    },
+    "scripts/agent/session-retention.mjs": {
+      "permission": "读写 ~/.kfmv4/sessions/script/：tar 归档超龄 patrol-*.json 后删原件（execSync tar）；只碰 patrol- 前缀；不联网；--dry-run 只读",
+      "prompt": "无（机械）",
+      "effect": "巡逻会话生命周期：超龄（默认 90 天）patrol 会话归档进 archive/"
+    },
+    "scripts/agent/tag-advisor.mjs": {
+      "permission": "只读 git log（ref 严格格式校验）；联网调 LLM（经 agent-runner）；不写文件",
+      "prompt": "内置发版顾问提示词常量（system + semver 家规 prompt 模板）",
+      "effect": "发版级别建议 {level, reason, notes}：机械算下限 + agent 判级别，exit 码分级"
+    },
+    "scripts/agent/test-tag-advisor.mjs": {
+      "permission": "只读 git tag；全并发 execFile 调 tag-advisor（间接联网，费 API 调用）；不写文件",
+      "prompt": "无自身提示词（提示词在 tag-advisor.mjs）",
+      "effect": "tag 检测器回放测试：历史版本对黄金集算推荐级别一致率"
+    },
+    "experiments/paradigm/tools/aggregate-e13.mjs": {
+      "permission": "只读 meta-pool 判卷归档，写 meta-pool/aggregate-e13.json；不联网",
+      "prompt": "无（机械汇总）",
+      "effect": "一次性汇总：合并 e13 脚本判卷 + LLM 盲判，出格均值表"
+    },
+    "experiments/paradigm/tools/aggregate-e14.mjs": {
+      "permission": "只读 meta-pool 判卷归档，写 meta-pool/aggregate-e14.json；不联网；幂等可重跑",
+      "prompt": "无（机械汇总，含 fisher 精确检验）",
+      "effect": "e14 组合挂载（H3）汇总分析：叠加/协同/稀释对照读数"
+    },
+    "experiments/paradigm/tools/aggregate-e15-e16.mjs": {
+      "permission": "只读 meta-pool 归档，写 meta-pool/aggregate-e15-e16.json；不联网；幂等",
+      "prompt": "无（机械汇总，含 MWU 检验）",
+      "effect": "e15（注入位置）+ e16（结构 S5/S6）汇总分析"
+    },
+    "experiments/paradigm/tools/aggregate-e17.mjs": {
+      "permission": "只读 meta-pool 归档，写 meta-pool/aggregate-e17.json；不联网；幂等",
+      "prompt": "无（机械汇总）",
+      "effect": "e17 复盘质量线专项汇总（预注册主终点 self_dissection，S6 vs 无包）"
+    },
+    "experiments/paradigm/tools/aggregate-e18.mjs": {
+      "permission": "只读 meta-pool 归档，写 meta-pool/aggregate-e18.json；不联网；幂等",
+      "prompt": "无（机械汇总）",
+      "effect": "e18 v4-flash 专项汇总（单模型三预注册读数）"
+    },
+    "experiments/paradigm/tools/aggregate-e19.mjs": {
+      "permission": "只读 meta-pool 归档，写 meta-pool/aggregate-e19.json；不联网；幂等",
+      "prompt": "无（机械汇总）",
+      "effect": "e19 拥挤区占用率专项汇总（meta_depth × 占用率曲线形态）"
+    },
+    "experiments/paradigm/tools/arm-store.mjs": {
+      "permission": "库模块：读写 ~/.kfmv4/experiments/arms.db（node:sqlite，WAL 模式）；不联网",
+      "prompt": "无（机械存储层）",
+      "effect": "实验臂数据库访问层：batches 注册表 + arms 语义列表，统一 DB 入口"
+    },
+    "experiments/paradigm/tools/audit-arms.py": {
+      "permission": "只读 ~/.kfmv4/sessions/script/ 臂文件与任务文本；stdout 输出；不写、不联网",
+      "prompt": "无（机械审计）",
+      "effect": "e11/e12 臂位全量审计：按模型窗口分档期望列出缺失/重复/残臂"
+    },
+    "experiments/paradigm/tools/batch-run.mjs": {
+      "permission": "联网（经 session-runner 走 localhost:8021 面板 API 烧 token）；写 sessions/script 归档、arms.db 与臂沙箱（--sandbox-template 时 rm -rf 重建 sandbox-<armId>/）",
+      "prompt": "无内置提示词——任务文本（--tasks/任务文件）与范式包（.kfmv4/paradigms/<名>.md）均外部传入",
+      "effect": "范式包实验批量驱动：变体矩阵 × 重复臂并发跑会话，断点续跑"
+    },
+    "experiments/paradigm/tools/bench-score.mjs": {
+      "permission": "只读 sessions/script/bi-*.json 与变异基准 ground-truth；stdout 输出；不写、不联网",
+      "prompt": "无（机械对分）",
+      "effect": "面板通道标定对分器：召回 / NC 违规 / extras 三读数"
+    },
+    "experiments/paradigm/tools/blind-anonymize.py": {
+      "permission": "读 sessions/script 臂会话；写 /tmp/blind-judge/ 匿名文件与 meta-pool/blind-map.json 条件映射；不联网",
+      "prompt": "无（机械匿名化）",
+      "effect": "盲判匿名化：臂最终输出抽成随机编号匿名件，映射单独保存",
+      "desc": "盲判匿名化：提取实验臂 AI 最终输出 → 匿名文件（随机编号），条件映射单独保存"
+    },
+    "experiments/paradigm/tools/bug-scan.py": {
+      "permission": "只读 opencode.db（sqlite）与素材会话；stdout 输出；不写、不联网",
+      "prompt": "无（启发式信号词表内置，非 LLM 提示词）",
+      "effect": "素材会话 bug 片段粗扫描：信号词启发式切段，供人工精审"
+    },
+    "experiments/paradigm/tools/build-e14-combo.mjs": {
+      "permission": "读 ~/.kfmv4/paradigms/ 源包，写同目录 e14-bd-meta.md；幂等（逐字节一致）；不联网",
+      "prompt": "无（机械拼接）",
+      "effect": "e14 组合包构建：behavior-discipline + metacognition 全文拼接 + token 估算"
+    },
+    "experiments/paradigm/tools/build-e16-packs.mjs": {
+      "permission": "读 materials.db 与 meta-pool 打分文件，写 ~/.kfmv4/paradigms/ 的 S5/S6 包；不联网",
+      "prompt": "无（机械选材拼接）",
+      "effect": "e16 结构实验制包：按纯度过滤选材，W2 轻标记格式组装 S5/S6 包"
+    },
+    "experiments/paradigm/tools/build-e19-packs.mjs": {
+      "permission": "读 sessions/script 的 e19 语料 exam-state，写 ~/.kfmv4/paradigms/ 嵌套包；--dry 只预览；不联网",
+      "prompt": "无（机械拼接切档）",
+      "effect": "e19 语料组装 + 同源嵌套切包（32k⊂128k⊂256k⊂512k，长度唯一变量）"
+    },
+    "experiments/paradigm/tools/build-episodes.py": {
+      "permission": "读人工 classification 文件，写 materials.db（episodes + turns 两表）；不联网",
+      "prompt": "无（机械落库）",
+      "effect": "段/回合结构落库：人工精切 + 机器预切写入 materials.db"
+    },
+    "experiments/paradigm/tools/build-length-paradigms.py": {
+      "permission": "读 meta-pool episodes/index 与现有范式包，写 ~/.kfmv4/paradigms/ 长度梯度包；不联网",
+      "prompt": "无（机械拼接）",
+      "effect": "嵌套长度梯度范式包 v3：按用户消息块切分，质量序逐块追加 32k⊂64k⊂96k⊂128k",
+      "desc": "拼嵌套长度梯度范式包 v3：按「用户消息」块切分（细粒度），质量序逐块追加，严格嵌套"
+    },
+    "experiments/paradigm/tools/check-active-runs.sh": {
+      "permission": "bash；只读 sessions/script 状态文件与进程表（ps）；exit 0/1；不写、不联网",
+      "prompt": "无（机械检查）",
+      "effect": "重启/部署前的在跑实验闸门：进行中的插件实验 + 存活实验进程"
+    },
+    "experiments/paradigm/tools/cost-stats.py": {
+      "permission": "只读会话归档；stdout 输出；不写、不联网",
+      "prompt": "无（机械统计）",
+      "effect": "实验成本统计：会话归档 × 档包长 × 价格表 → 每模型每档成本"
+    },
+    "experiments/paradigm/tools/e16-cut.mjs": {
+      "permission": "读 meta-pool/e16-candidates.json 与 materials.db，写 meta-pool/e16-blocks/ 与块索引；不联网（零 API）",
+      "prompt": "无（机械切块）",
+      "effect": "e16 候选段切块：按用户消息切成判断单位，供集群打分分批"
+    },
+    "experiments/paradigm/tools/e16-mine.mjs": {
+      "permission": "只读 materials.db，写 meta-pool/e16-candidates.json；不联网（零 API）",
+      "prompt": "无（机械挖掘）",
+      "effect": "e16 S5/S6 素材开矿：错误指出短语 + 复盘 pattern 候选集，带密度打分"
+    },
+    "experiments/paradigm/tools/exp-driver.mjs": {
+      "permission": "spawnSync 调 batch-run / judge-llm（间接联网烧 token）；--check 只校验 spec 不点火；本身不直接写实验数据",
+      "prompt": "无自身提示词（任务/判卷文件由 spec JSON 指定）",
+      "effect": "实验编排器：spec 驱动的跑数重试循环 + 判卷两段式流程"
+    },
+    "experiments/paradigm/tools/gen-slices-summary.py": {
+      "permission": "只读 materials.db，写 slices-summary.md（默认 ~/.kfmv4/materials/，--out 可改）；不联网",
+      "prompt": "无（机械生成）",
+      "effect": "切片摘要汇总：按源分组每段一行，素材库可视化导航层"
+    },
+    "experiments/paradigm/tools/judge-e13-script.mjs": {
+      "permission": "只读臂沙箱（sandbox-<armId>/）与臂会话，写 meta-pool 判卷归档 JSON；不联网（零成本行为检出）",
+      "prompt": "无（机械 diff + 工具痕迹检出清单）",
+      "effect": "e13 脚本判卷通道：沙箱 diff + 工具痕迹 → 每臂 0/1 检出表"
+    },
+    "experiments/paradigm/tools/judge-llm.mjs": {
+      "permission": "联网（经 session-runner 调判卷模型）；写判卷结果 JSON（--out，默认 /tmp）与 /tmp/judge-sessions/；断点续判",
+      "prompt": "内置判卷 prompt 模板；任务文本与语义项经 --task-file/--items-file 外部文件注入",
+      "effect": "LLM 盲判卷：逐臂按结构化维度打分（输入只含任务+回复，不含臂条件）"
+    },
+    "experiments/paradigm/tools/judge-px1-blind.mjs": {
+      "permission": "读 sessions/script 的 px-* 会话与 exam-meta；联网调判卷 LLM；写 meta-pool/judge-px1-blind.json 与 keymap.json",
+      "prompt": "内置量尺常量 RUBRIC（讨论质量 0-15 锚定评分，不含身份/相位信息）",
+      "effect": "px-1 插件实验盲判复核：抹去身份洗牌后逐轮打分，产出分数曲线"
+    },
+    "experiments/paradigm/tools/material-index.py": {
+      "permission": "只读各 AI 工具会话库（opencode/omp/kimi/qoder-cn 元数据）；--write 时写 ~/.kfmv4/materials/index.md；不联网",
+      "prompt": "无（机械索引）",
+      "effect": "工具会话素材索引：按工作目录/主题聚簇成「包」候选清单"
+    },
+    "experiments/paradigm/tools/meta-density.py": {
+      "permission": "只读 sessions/script 臂文件与 paradigms 清单；stdout 输出；不写、不联网",
+      "prompt": "无（机械词频尺，动词表内置且标定后勿改）",
+      "effect": "元认知密度判卷尺：metaRe（我+思考动词）频率/臂，经 e7 标定"
+    },
+    "experiments/paradigm/tools/occupancy.mjs": {
+      "permission": "纯数据模块：导出两张手工维护登记表，无 IO、不联网",
+      "prompt": "无（机械常量表）",
+      "effect": "真实占用率口径：occ_ratio = 范式包标称尺寸 ÷ 模型窗口"
+    },
+    "experiments/paradigm/tools/plugin-exam.mjs": {
+      "permission": "联网（考生走 localhost:8021 工具流 + 教官裸 API 调用）；写 sessions/script 归档、<id>.transcript.md、exam-state/exam-meta；断点续跑",
+      "prompt": "教官提示词在外部文件（默认 experiments/paradigm/instructors/design-discussion.md，--instructor-file 可换）",
+      "effect": "插件生命周期实验驱动器：考生+教官双会话，逐轮挂载/摘除范式包"
+    },
+    "experiments/paradigm/tools/recompute-cells.py": {
+      "permission": "只读 arms.db（不存在时回落 sessions/script 文件）与判卷归档；stdout 输出；不写、不联网",
+      "prompt": "无（机械重算）",
+      "effect": "用判卷归档重算 e11/e12 格均值（v2 主尺，总分 0-20）"
+    },
+    "experiments/paradigm/tools/review-episodes.py": {
+      "permission": "读 materials.db 回合链；--mark 时 UPDATE episodes 标注写回 DB；不联网；交互式 CLI",
+      "prompt": "无（机械工作台，判断由操作者做）",
+      "effect": "段精切工作台：逐段拉回合链 → 写回 status/pattern/note 标注"
+    },
+    "experiments/paradigm/tools/session-runner.mjs": {
+      "permission": "联网（POST localhost:8021 /ai/chat/start + SSE 消费，KFM_BASE 可改）；写 sessions/script/ 归档（CLI 模式）；可作模块 import",
+      "prompt": "无内置提示词——prompt/角色卡/范式包均参数传入",
+      "effect": "会话驱动内核：离线跑 kfm 工具流会话并落盘归档"
+    },
+    "experiments/coldstart/tools/gen-hallucination-inputs.mjs": {
+      "permission": "读 derived/arms.json 与判卷规程文件，写 derived/hallucination-inputs/<armId>.md；本身不联网不调 LLM",
+      "prompt": "判卷规程在外部文件 experiments/coldstart/prompts/judge-hallucination.md（本脚本只把它固化进输入文件）",
+      "effect": "为 subagent 判卷生成输入 md（规程 + 机械候选清单 + 证据包）"
+    },
+    "experiments/coldstart/tools/hallucinate-batch.mjs": {
+      "permission": "联网调 LLM（经 agent-runner provider 兜底链，并发 4）；写 derived/hallucination-scores/<armId>.json；断点续跑",
+      "prompt": "判卷提示词在外部文件 experiments/coldstart/prompts/judge-hallucination.md",
+      "effect": "第二把尺批量驱动：出处反查幻觉率测量，逐臂出评分 JSON"
+    },
+    "experiments/coldstart/tools/judge-batch.mjs": {
+      "permission": "联网调 LLM（经 agent-runner，判官 deepseek-v4-flash @ opencode go，并发 4）；写 derived/scores/ 与 _errors.log；断点续跑",
+      "prompt": "判卷规程/量尺/真相全在外部文件：prompts/judge-v1.md + rubric.md + ground-truth.md",
+      "effect": "coldstart 判卷批量驱动：逐臂出评分卡，失败臂记日志不中断整批"
+    },
+    "experiments/coldstart/tools/normalize-arms.mjs": {
+      "permission": "读 ~/.kfmv4/experiments/coldstart/sessions/ 原始答卷，写 derived/（arms.json + transcripts/）；幂等覆盖；不联网",
+      "prompt": "无（机械归一化）",
+      "effect": "冷启动多臂数据归一化：四类格式统一成元数据数组 + 时间线成绩单"
+    },
+    "experiments/coldstart/tools/routine-entry-validation.mjs": {
+      "permission": "联网（localhost:8021 面板 SSE 驱动验证臂）+ execSync 调 judge-batch 判卷（间接 LLM）；写会话归档、derived 与信箱 verdict 行",
+      "prompt": "无内置提示词——试卷为入口文档原文，判卷规程在 coldstart/prompts 外部文件（经 judge-batch）",
+      "effect": "入口文档常态化验证：跑验证臂 → 判卷 → 对照基线阈值判 PASS/FAIL"
+    },
+    "experiments/coldstart/tools/theme-code.mjs": {
+      "permission": "联网调 LLM（经 agent-runner）；读 derived/coding-digest.md，写 derived/themes/<domain>.json",
+      "prompt": "内置五域编码提示词常量（DOMAINS，每域一个开放编码任务）",
+      "effect": "coldstart 阶段2：五域定性主题编码 → 主题分类学 JSON"
+    },
+    "scripts/auto-push.sh": {
+      "permission": "bash（cron 机制）；跑 freshness 检查/部署脚本/git push（联网推远端，pre-push 钩子跑全链 check）；写 /var/log/kfmv4-autopush.log",
+      "prompt": "无（机械）",
+      "effect": "主仓自动推送：freshness 红先部署、有未提交改动跳过、全链 check 兜底"
+    },
+    "scripts/clean-npm-temp.cjs": {
+      "permission": "node（npm preinstall hook）；删除 node_modules/ 下 npm 残留临时目录（rmSync recursive）；不联网",
+      "prompt": "无（机械清理）",
+      "effect": "清 npm 中断残留临时目录，防 install 时 ENOTEMPTY 死循环",
+      "desc": "npm 残留临时目录清理脚本（preinstall hook 自动运行）"
+    },
+    "scripts/deploy-fast.sh": {
+      "permission": "bash；build.mjs --fast 写 dist/ + 调用 kfm-restart.sh 重启服务 + curl localhost 版本握手；不联外网",
+      "prompt": "无（机械）",
+      "effect": "会话中途快部署：快构建 + 重启 + 握手（跳过全链测试）"
+    },
+    "scripts/deploy.sh": {
+      "permission": "bash；npm run build 写 dist/ + 调用 kfm-restart.sh 重启 + curl localhost 版本握手；不联外网",
+      "prompt": "无（机械）",
+      "effect": "修复部署闭环：构建 → 重启 → 版本握手验证运行进程已加载新包"
+    },
+    "scripts/kfm-restart.sh": {
+      "permission": "bash；curl localhost 重启端点 + 轮询等服务恢复；前置 check-active-runs.sh 闸门（KFM_RESTART_IGNORE_ACTIVE=1 可放行）；不写文件、不联外网",
+      "prompt": "无（机械）",
+      "effect": "安全重启 kfmv4 服务：HTTP 端点触发（先响应后重启），有在跑实验默认拒绝",
+      "desc": "kfm-restart — 安全重启 kfmv4 服务（含在跑实验闸门）"
+    },
+    "scripts/regenerate.sh": {
+      "permission": "bash；跑 sync-counts/gen-code-inventory/gen-contract-lists 回写生成物到仓库文档；--commit 时 git 提交生成物；--check 只读校验；不联网",
+      "prompt": "无（机械）",
+      "effect": "生成器全回写一键化：按依赖顺序回写 + 可选精确提交"
+    },
+    "scripts/sweep-sessions.sh": {
+      "permission": "bash；移动/删除 ~/.kfmv4/sessions/ 下超龄 script 会话与 sandbox-* 沙箱（24h 加后缀、14 天删除）；--dry-run 只预览；不联网",
+      "prompt": "无（机械清扫）",
+      "effect": "sessions 目录清扫：僵尸会话加 .stranded 后缀回收，超期残卷与沙箱删除"
+    },
+    "scripts/check/chain.mjs": {
+      "permission": "spawnSync 逐个跑 check 子进程（构建链内只读检查）；失败时追加写 ~/.kfmv4/check-failures.jsonl 账本；不联网",
+      "prompt": "无（机械编排）",
+      "effect": "check 链唯一出处：STEPS 清单统一执行，--soft 可降级指定步骤为提醒"
+    },
+    "scripts/check/docs-root-const.mjs": {
+      "permission": "纯常量模块：无 IO、不联网",
+      "prompt": "无（机械常量）",
+      "effect": "DOCS_ROOT 共享常量：文档根目录单一出处，切换时只改一处",
+      "desc": "文档根目录共享常量（DOCS_ROOT 单一出处）"
+    },
+    "scripts/check/docs-status.mjs": {
+      "permission": "只读遍历 docs/ 统计层分布等；stdout 输出；不写、不联网；非阻断",
+      "prompt": "无（机械统计）",
+      "effect": "文档系统健康仪表盘：层分布等观测指标，供压缩轮/审计输入"
+    },
+    "scripts/check/domain-src.mjs": {
+      "permission": "纯常量模块：无 IO、不联网",
+      "prompt": "无（机械常量）",
+      "effect": "域 → src 路径映射单一真相源，供契约新鲜度检查与清单生成消费",
+      "desc": "域 → src 路径映射（单一真相源）"
+    },
+    "scripts/check/sync-counts.mjs": {
+      "permission": "回写 README/CLAUDE.md/docs 多处计数锚点与 chain:auto 区块（幂等）；--check-only 只读校验；不联网",
+      "prompt": "无（机械同步）",
+      "effect": "文档计数单一来源化：check 数/测试数从文件系统派生并回写各文档"
+    },
+    "experiments/paradigm/tools/legacy/run-e13.sh": {
+      "desc": "e13 点火循环——重试到齐（192 臂矩阵，幂等零浪费）"
+    },
+    "experiments/paradigm/tools/legacy/run-e11-gapfill.sh": {
+      "desc": "e11 硅基 D 高档补臂循环——部署硬杀后的重试到齐"
+    },
+    "experiments/paradigm/tools/legacy/run-px-baseline.sh": {
+      "desc": "px 基线分布实验跑批——同场景同教官永不挂载，测无包基线"
+    },
+    "experiments/paradigm/tools/legacy/run-px-fatigue.sh": {
+      "desc": "px 疲劳区专项跑批——持续挂载 13 轮测疲劳"
+    },
+    "experiments/paradigm/tools/legacy/run-px-halflife.sh": {
+      "desc": "px 残留半衰期专项跑批——挂载 3 轮摘除后强制观测 10 轮"
+    },
+    "experiments/paradigm/tools/legacy/run-px-matrix.sh": {
+      "desc": "px 插件矩阵跑批——gemini-2.5-pro/sonnet-4-6 挂载实验"
+    },
+    "experiments/paradigm/tools/legacy/run-silicon-backfill.sh": {
+      "desc": "硅基系 e11/e12 补跑（入库版）——按上下文窗口分级，429 降并发"
+    },
+    "experiments/paradigm/tools/legacy/run-silicon-backfill.round1.sh": {
+      "desc": "硅基系 e11/e12 补跑第一轮——排除硅基上游挂死的 4B"
+    }
+  }
+}

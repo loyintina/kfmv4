@@ -1,5 +1,5 @@
 /**
- * KFM v4 — 域契约新鲜度检查（check-handbook-sync + check-desc-freshness 合并继任者）
+ * check-contract-freshness.mjs — 域契约新鲜度检查（check-handbook-sync + check-desc-freshness 合并继任者）
  *
  * 原理：每个 domains/{域}/contract.md 是该域代码的同步契约。如果域内 src 文件
  * 在 contract 最后一次提交之后又积累了 ≥5 次提交，contract 很可能已过时 → 硬阻断。

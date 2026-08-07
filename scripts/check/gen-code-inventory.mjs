@@ -1,5 +1,5 @@
 /**
- * KFM v4 — 机械层代码清单生成器（代码测绘·机械层）
+ * gen-code-inventory.mjs — 机械层代码清单生成器（代码测绘·机械层）
  *
  * 契约：docs/active/semantic-compiler-seed.md / 代码测绘方案——
  *   code-map.md（语义层，agent 测绘）的对比基准必须有一份可再生成的机械层清单：

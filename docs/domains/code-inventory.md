@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit cc944b08 · 生成于 2026-08-07 -->
+<!-- 基准 commit da0c63b4 · 生成于 2026-08-07 -->
 
 # 代码清单（机械层）
 
@@ -36,10 +36,11 @@
 | src/client/engine/v2/animation.ts | 40 | ease |
 | src/client/engine/v2/utils.ts | 24 | uniformSpacing, hvSpacing, ZERO_SPACING |
 
-## floating-card（29 文件 · 6965 行）
+## floating-card（31 文件 · 8539 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
+| src/client/generated/scripts-catalog.ts | 1301 | ScriptCatalogEntry, SCRIPTS_CATALOG, SCRIPT_CATEGORIES |
 | src/client/modules/floating-card.ts | 811 | enterFullscreen, exitFullscreen, dismissFullscreen, updateFullscreenSavedPosition, createFloatingCard, dismissFloatingCard, initFloatingCards, hasFloatingCard, buildCardLayout |
 | src/client/modules/terminal-card-04.ts | 807 | TerminalCardMeta, initTerminalCore, disposeTerminalCore, compactTerminalCore, createTerminal04Handler |
 | src/client/cards/plugins/role.card.ts | 711 | — |
@@ -50,6 +51,7 @@
 | src/client/cards/plugins/tools.card.ts | 308 | — |
 | src/client/modules/tmux-card.ts | 306 | TmuxCardMeta, createTmuxCardHandler |
 | src/client/modules/renderers/handler-factory.ts | 297 | createFileHandler |
+| src/client/cards/plugins/scripts.card.ts | 272 | — |
 | src/client/modules/floating-fullscreen.ts | 214 | enterFullscreen, exitFullscreen, dismissFullscreen |
 | src/client/cards/plugins/paradigm.card.ts | 213 | — |
 | src/client/modules/floating-shared.ts | 173 | FloatingCardAction, nextFloatingCardState, _hexToRgba, _cornerLayout, Z_FLOATING_BASE, Z_FULLSCREEN, TITLE_BAR_H, COMPACT_W, COMPACT_H, FloatingCardConfig, FloatingCardItem, _floatingCards, _allocZ, _brOrbToItem, _scatterPosition, _dismissOne |
@@ -62,7 +64,7 @@
 | src/client/cards/card-ui.ts | 49 | innerCardStyle, inputStyle, btnStyle, flashSaved, mkRow |
 | src/client/modules/renderers/binary-fallback.ts | 37 | renderBinaryInfo |
 | src/client/modules/renderers/text-preview.ts | 26 | renderTextPreview |
-| src/client/cards/registry.ts | 22 | — |
+| src/client/cards/registry.ts | 23 | — |
 | src/client/cards/plugins/file.card.ts | 19 | — |
 | src/client/cards/plugins/terminal.card.ts | 19 | — |
 | src/client/cards/plugins/tmux.card.ts | 19 | — |
@@ -174,7 +176,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（148 文件 · 17950 行）
+## infra（149 文件 · 18108 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -210,6 +212,7 @@
 | experiments/coldstart/tools/hallucinate-batch.mjs | 164 | — |
 | tests/protocol-reducer.test.ts | 161 | — |
 | scripts/check/sync-counts.mjs | 157 | — |
+| scripts/check/gen-scripts-catalog.mjs | 156 | ScriptCatalogEntry, SCRIPTS_CATALOG, SCRIPT_CATEGORIES |
 | experiments/coldstart/tools/routine-entry-validation.mjs | 152 | — |
 | scripts/agent/semantic-bench.mjs | 149 | — |
 | tests/probes/gen-page-state-schema/src/server/ai/page-state.ts | 149 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
@@ -221,8 +224,8 @@
 | scripts/agent/exp-iceberg.mjs | 134 | — |
 | build.mjs | 133 | — |
 | scripts/check/check-checks.mjs | 132 | — |
+| scripts/check/chain.mjs | 130 | STEPS |
 | scripts/check/check-tool-compaction.mjs | 130 | — |
-| scripts/check/chain.mjs | 129 | STEPS |
 | scripts/check/check-mutation-anchors.mjs | 127 | — |
 | scripts/check/gen-permission-map.mjs | 126 | — |
 | tests/session-security.test.ts | 125 | — |
@@ -268,7 +271,7 @@
 | scripts/check/check-card-meta.mjs | 68 | — |
 | scripts/check/check-ledger-commits.mjs | 68 | — |
 | tests/floating-state.test.ts | 66 | — |
-| scripts/check/domain-src.mjs | 64 | DOMAIN_SRC |
+| scripts/check/domain-src.mjs | 65 | DOMAIN_SRC |
 | scripts/agent/session-retention.mjs | 64 | — |
 | scripts/agent/test-tag-advisor.mjs | 64 | — |
 | scripts/check/check-code-map-coverage.mjs | 63 | — |
@@ -494,7 +497,7 @@
 - src/client/modules/floating-shared.ts → src/client/modules/theme.ts
 - src/client/modules/terminal-card-04.ts → src/client/modules/theme.ts
 
-### floating-card → client-shell（44 边）
+### floating-card → client-shell（46 边）
 
 - src/client/cards/plugins/api.card.ts → src/client/modules/confirm-dialog.ts
 - src/client/cards/plugins/api.card.ts → src/client/modules/custom-select.ts
@@ -509,6 +512,8 @@
 - src/client/cards/plugins/role.card.ts → src/client/modules/custom-select.ts
 - src/client/cards/plugins/role.card.ts → src/client/modules/logger.ts
 - src/client/cards/plugins/role.card.ts → src/client/modules/state.ts
+- src/client/cards/plugins/scripts.card.ts → src/client/modules/custom-select.ts
+- src/client/cards/plugins/scripts.card.ts → src/client/modules/z-index-layers.ts
 - src/client/cards/plugins/session.card.ts → src/client/modules/confirm-dialog.ts
 - src/client/cards/plugins/session.card.ts → src/client/modules/custom-select.ts
 - src/client/cards/plugins/session.card.ts → src/client/modules/logger.ts
@@ -639,4 +644,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 291 文件 · 50790 行 · 跨域边 250 条
+合计 294 文件 · 52522 行 · 跨域边 252 条

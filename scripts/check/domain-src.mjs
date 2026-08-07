@@ -24,6 +24,7 @@ export const DOMAIN_SRC = {
     'src/client/modules/floating-card.ts', 'src/client/modules/floating-shared.ts',
     'src/client/modules/floating-fullscreen.ts', 'src/client/modules/terminal-card-04.ts',
     'src/client/modules/tmux-card.ts', 'src/client/cards/', 'src/client/modules/renderers/',
+    'src/client/generated/',
   ],
   'client-shell': [
     'src/client/main.ts', 'src/client/modules/app.ts', 'src/client/modules/ui.ts',
