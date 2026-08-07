@@ -9,14 +9,15 @@
  *      build-e14-combo.mjs 提交时未在 index.md 提名）。
  *
  * 规则：experiments/paradigm/ 的以下产物文件名必须出现在 experiments/paradigm/index.md：
- *   - tools/*.{mjs,py,sh}
+ *   - tools/*.{mjs,py,sh} 与 tools/legacy/*.{mjs,py,sh}
  *   - specs/*.json
- *   - 顶层 results-*.md / design-*.md / proposal-*.md / pack-*.md / spec-*.md
+ *   - design/、results/、notes/ 子目录下的 *.md（2026-08-07 重组后从顶层迁入）
  *
  * 表面克制（宁紧勿宽，零误报优先，与 DOC-FLOW-10 同哲学）：
  *   - 只强制文件名出现（子串匹配），不校验登记质量——质量归人，存在归机械；
  *   - 数据区豁免：meta-pool/、arm-artifacts/、fixtures/、scenarios/（任务输入）、
- *     instructors/（考官提示词由 px 文档统辖）——这些是数据不是产物；
+ *     instructors/（考官提示词由 px 文档统辖）、archive/（已归档中间产物）——
+ *     这些是数据不是产物；
  *   - index.md 自身豁免。
  *
  * 枚举型检查（每次全量重扫），KFM_PROBE_ROOT 可注入（宪法探针条款）。
@@ -33,9 +34,13 @@ const EXP = join(ROOT, 'experiments/paradigm');
 let errors = 0;
 
 const targets = [];
-// tools/*.{mjs,py,sh}
-for (const e of readdirSync(join(EXP, 'tools'), { withFileTypes: true })) {
-  if (e.isFile() && /\.(mjs|py|sh)$/.test(e.name)) targets.push(`tools/${e.name}`);
+// tools/*.{mjs,py,sh} 与 tools/legacy/*.{mjs,py,sh}
+for (const sub of ['tools', 'tools/legacy']) {
+  const dir = join(EXP, sub);
+  if (!existsSync(dir)) continue;
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    if (e.isFile() && /\.(mjs|py|sh)$/.test(e.name)) targets.push(`${sub}/${e.name}`);
+  }
 }
 // specs/*.json
 const specsDir = join(EXP, 'specs');
@@ -44,9 +49,13 @@ if (existsSync(specsDir)) {
     if (e.isFile() && e.name.endsWith('.json')) targets.push(`specs/${e.name}`);
   }
 }
-// 顶层文档类产物
-for (const e of readdirSync(EXP, { withFileTypes: true })) {
-  if (e.isFile() && /^(results|design|proposal|pack|spec)-.+\.md$/.test(e.name)) targets.push(e.name);
+// 文档类产物（2026-08-07 重组：design/ results/ notes/ 三个子目录）
+for (const sub of ['design', 'results', 'notes']) {
+  const dir = join(EXP, sub);
+  if (!existsSync(dir)) continue;
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    if (e.isFile() && e.name.endsWith('.md')) targets.push(`${sub}/${e.name}`);
+  }
 }
 
 const index = readFileSync(join(EXP, 'index.md'), 'utf-8');

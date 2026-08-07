@@ -47,4 +47,4 @@ git tag → npm run check 全绿 → 部署握手（scripts/deploy.sh）。
 重启在跑实验闸门（2026-08-06）：scripts/kfm-restart.sh 重启前先跑
 experiments/paradigm/tools/check-active-runs.sh，有在跑实验默认拒绝
 （放行：KFM_RESTART_IGNORE_ACTIVE=1）。机制细节 →
-../../experiments/paradigm/design-session-runner.md「抗重启」节。
+../../experiments/paradigm/design/design-session-runner.md「抗重启」节。

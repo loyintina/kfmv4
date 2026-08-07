@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # sweep-sessions.sh — sessions 目录清扫（script 分流的兜底回收）
 #
-# 规则（见 experiments/paradigm/results-session-leak-rootcause.md §4-1）：
+# 规则（见 experiments/paradigm/results/results-session-leak-rootcause.md §4-1）：
 #   1. 根目录下 24h 未动（mtime）的已知 script 前缀会话文件
 #      → 移到 sessions/script/，文件名加 .stranded 后缀（僵尸/残骸形态，不再参与任何读写）
 #   2. sessions/script/ 下 14 天前的 .stranded 残卷 → 删除

@@ -25,7 +25,7 @@ const FLUSH_DEBOUNCE_MS = 200;
 
 /**
  * script 类会话分流注册表（2026-08-06 泄漏根治：服务端分流修法①，
- * 根因报告 experiments/paradigm/results-session-leak-rootcause.md）。
+ * 根因报告 experiments/paradigm/results/results-session-leak-rootcause.md）。
  * 此前服务端只有根目录一条写路径，sessions/script/ 全靠客户端事后搬运，
  * 搬运失败（重试换 id/超时/重启掐 run）即泄漏进面板区。
  * 现在 /ai/chat/start 收 sessionClass:'script' 时先调 markSessionScript 登记，

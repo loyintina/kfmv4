@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit efa7cf15 · 生成于 2026-08-07 -->
+<!-- 基准 commit f99af970 · 生成于 2026-08-07 -->
 
 # 代码清单（机械层）
 
@@ -36,14 +36,14 @@
 | src/client/engine/v2/animation.ts | 40 | ease |
 | src/client/engine/v2/utils.ts | 24 | uniformSpacing, hvSpacing, ZERO_SPACING |
 
-## floating-card（29 文件 · 6961 行）
+## floating-card（29 文件 · 6964 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/client/modules/floating-card.ts | 811 | enterFullscreen, exitFullscreen, dismissFullscreen, updateFullscreenSavedPosition, createFloatingCard, dismissFloatingCard, initFloatingCards, hasFloatingCard, buildCardLayout |
 | src/client/modules/terminal-card-04.ts | 807 | TerminalCardMeta, initTerminalCore, disposeTerminalCore, compactTerminalCore, createTerminal04Handler |
 | src/client/cards/plugins/role.card.ts | 711 | — |
-| src/client/cards/plugins/session.card.ts | 616 | — |
+| src/client/cards/plugins/session.card.ts | 619 | — |
 | src/client/cards/plugins/config.card.ts | 600 | — |
 | src/client/cards/plugins/api.card.ts | 562 | — |
 | src/client/modules/card-stack.ts | 482 | getCardCount, getCard, getCardName, getCardId, hexToRgba, cardGradient, cardBg, getFocusIndex, getCurrentAccent, getCardHandler, getFocusedCardRect, animateStackPullFeedback, launchFocusedCard, openCardStack, closeCardStack, isCardStackOpen, focusNext, focusPrev, initCardStack |
@@ -70,14 +70,14 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（24 文件 · 3697 行）
+## client-shell（24 文件 · 3791 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/client/modules/orb.ts | 538 | type OrbState, collapseOrbPanel, initOrb |
+| src/client/modules/obs-hud.ts | 421 | initObsHud |
 | src/client/modules/gesture-registry.ts | 346 | GestureHandler, GestureRegistry, gestures |
 | src/client/modules/ui-registry.ts | 334 | UIElementType, UIElementState, InteractiveElement, ContentBlock, Capability, PageDescription, RegistryChangeHandler, UIElementRegistry, Registry |
-| src/client/modules/obs-hud.ts | 327 | initObsHud |
 | src/client/modules/custom-select.ts | 246 | SelectItem, CustomSelectOptions, CustomSelect, createCustomSelect |
 | src/client/modules/orb-panel.ts | 221 | PanelConfig, buildPanelContent |
 | src/client/modules/gestures.ts | 217 | initGestures |
@@ -159,11 +159,11 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（10 文件 · 1997 行）
+## server（10 文件 · 2005 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/server/routes/obs.ts | 423 | setupObsRoutes, setupObsPages |
+| src/server/routes/obs.ts | 431 | setupObsRoutes, setupObsPages |
 | src/server/routes/files.ts | 399 | FileItem, sliceMessages, MSG_PAYLOAD_BUDGET, MSG_SINGLE_CAP, capMessagesPayload, setupFileRoutes |
 | src/server/ws-server.ts | 315 | WsServer |
 | src/server/index.ts | 186 | — |
@@ -174,11 +174,11 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（148 文件 · 17923 行）
+## infra（148 文件 · 17950 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| tests/client-logic.test.ts | 921 | — |
+| tests/client-logic.test.ts | 939 | — |
 | tests/regression.test.ts | 652 | — |
 | experiments/coldstart/tools/normalize-arms.mjs | 587 | — |
 | tests/tool-compaction.test.ts | 505 | — |
@@ -260,13 +260,13 @@
 | scripts/check/gen-contract-lists.mjs | 77 | — |
 | tests/tag-advisor.test.ts | 77 | — |
 | scripts/check/check-as-any.mjs | 76 | — |
+| scripts/check/check-experiment-registry.mjs | 76 | — |
 | scripts/check/docs-status.mjs | 76 | — |
 | scripts/check/check-doc-symbols.mjs | 75 | — |
 | experiments/coldstart/tools/theme-code.mjs | 75 | — |
 | scripts/check/check-code-doc-refs.mjs | 69 | — |
 | scripts/check/check-card-meta.mjs | 68 | — |
 | scripts/check/check-ledger-commits.mjs | 68 | — |
-| scripts/check/check-experiment-registry.mjs | 67 | — |
 | tests/floating-state.test.ts | 66 | — |
 | scripts/check/domain-src.mjs | 64 | DOMAIN_SRC |
 | scripts/agent/session-retention.mjs | 64 | — |
@@ -639,4 +639,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 291 文件 · 50420 行 · 跨域边 250 条
+合计 291 文件 · 50552 行 · 跨域边 250 条
