@@ -11,7 +11,7 @@
  * ——语义生成原则）。SYS 阈值变色：平时灰，越限琥珀/红——出事才跳色。
  *
  * 刷新：余额+信箱+待办+SYS 5s 轮询（服务端 5s 缓存外部 deepseek 余额调用，
- * SYS 指标 30s / cron 5min 缓存）；时间本地每秒。
+ * SYS 指标 5s 采样 / cron 5min 缓存）；时间本地每秒。
  */
 import { API } from './state.js';
 import { Z } from './z-index-layers.js';
@@ -247,11 +247,11 @@ ${body}</div>
   // 端口行 = 作用域标（公/本）+ 端口号 + 进程名 + 活跃连接数）
   const metricCls = (pct: number | null): string =>
     pct == null ? '' : pct > 85 ? ' obs-rail-num-red' : pct >= 70 ? ' obs-rail-num-amber' : '';
-  const BAR_SHOW = 24; // 面板宽度只放得下最近 24 根（12 分钟窗）
+  const BAR_SHOW = 24; // 面板宽度只放得下最近 24 根（5s 采样 ≈ 2 分钟窗）
   const BAR_STEP = 5; // 柱宽 4px + 间距 1px，与 base.scss .obs-bar 同步
-  // 缓动设计（2026-08-07 用户定稿）：动画时长 = 服务端采样间隔（obs.ts tick 30s），
+  // 缓动设计（2026-08-07 用户定稿）：动画时长 = 服务端采样间隔（obs.ts tick 5s），
   // 速度 = 单柱步长 / 采样间隔，新柱恰好随下一拍匀速流入，跳变变连续波形
-  const BAR_ANIM_MS = 30_000;
+  const BAR_ANIM_MS = 5_000;
   type MetricRec = { row: HTMLElement; track: HTMLElement; len: number; tail: number | undefined };
   const metricRecs = new Map<string, MetricRec>();
   function barHtml(v: number, pct: number | null, vmax: number): string {

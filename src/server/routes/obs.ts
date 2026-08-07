@@ -204,11 +204,13 @@ function parseStack(): { entries: StackEntry[]; counts: { todo: number; hold: nu
 }
 
 // ========== SYS 监控面板采集（2026-08-06 用户定稿 v3：信箱下方的完整监控面板） ==========
-// 三段：系统四指标（硬盘/内存/负载/进程 RSS，带 30s 采样历史折线）+ 监听端口两列
+// 三段：系统四指标（硬盘/内存/负载/进程 RSS，带 5s 采样历史柱状图）+ 监听端口两列
 // （端口号 | 进程名，ss -tlnp 现场解析）+ cron 清单（crontab 现场解析 → 逐脚本
 // 成败标记表末位对比判状态，见 CRON_MARKERS）。
-// 历史：独立 setInterval 30s 采样（不靠请求驱动——没人看面板时历史也在积累），
-// 环形 40 点（≈20 分钟窗），落 ~/.kfmv4/sys-metrics.json 抗重启（重启后折线不清零）。
+// 历史：独立 setInterval 5s 采样（不靠请求驱动——没人看面板时历史也在积累；
+// 2026-08-07 从 30s 加密到 5s：客户端柱状图缓动速度=柱宽/采样间隔，30s 慢到肉眼
+// 不可见，5s 才能看到持续流动），环形 40 点（≈3 分钟窗），落 ~/.kfmv4/sys-metrics.json
+// 抗重启（重启后柱状图不清零）。
 // 缓存：端口 30s（execSync 贵），cron 5min（crontab 极少变）。
 
 interface SysMetric { label: string; value: string; pair: string; pct: number | null }
@@ -219,7 +221,7 @@ interface SysData { metrics: SysMetric[]; history: SysHistory; ports: SysPort[];
 
 const PORTS_CACHE_MS = 30_000;
 const CRON_CACHE_MS = 300_000;
-const HISTORY_MAX = 40; // 40 × 30s ≈ 20 分钟窗
+const HISTORY_MAX = 40; // 40 × 5s ≈ 3 分钟窗（覆盖客户端 24 根 ≈ 2 分钟显示窗）
 const HISTORY_PATH = path.join(KFM_DATA_DIR, 'sys-metrics.json');
 let portsCache: { data: SysPort[]; ts: number } | null = null;
 let cronCache: { data: SysCron[]; ts: number } | null = null;
@@ -261,7 +263,7 @@ function readMetricsRaw(): RawMetrics {
   return { disk, mem, load, rss, diskUsedG, diskTotalG, memUsedG, memTotalG, loadRaw, cores };
 }
 
-// 30s 采样器：环形缓冲 + 每次落盘（文件极小，重启后续上）
+// 5s 采样器：环形缓冲 + 每次落盘（文件极小，重启后续上）
 function startSysSampler(): void {
   if (samplerStarted) return;
   samplerStarted = true;
@@ -275,7 +277,7 @@ function startSysSampler(): void {
     try { fs.writeFileSync(HISTORY_PATH, JSON.stringify(history)); } catch { /* 落盘失败不致命 */ }
   };
   tick();
-  setInterval(tick, 30_000).unref();
+  setInterval(tick, 5_000).unref();
 }
 
 // 监听端口两列（ss -tlnp 现场解析；ipv4/ipv6 同端口去重；名从进程名 + 友好别名）
