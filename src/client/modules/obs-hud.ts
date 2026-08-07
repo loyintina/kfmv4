@@ -247,13 +247,19 @@ ${body}</div>
   // 端口行 = 作用域标（公/本）+ 端口号 + 进程名 + 活跃连接数）
   const metricCls = (pct: number | null): string =>
     pct == null ? '' : pct > 85 ? ' obs-rail-num-red' : pct >= 70 ? ' obs-rail-num-amber' : '';
-  const BAR_SHOW = 24; // 面板宽度只放得下最近 24 根（5s 采样 ≈ 2 分钟窗）
+  const BAR_SHOW = 24; // 窗口恰好显示 24 根（119px，5s 采样 ≈ 2 分钟窗）
   const BAR_STEP = 5; // 柱宽 4px + 间距 1px，与 base.scss .obs-bar 同步
-  // 缓动设计（2026-08-07 用户定稿）：动画时长 = 服务端采样间隔（obs.ts tick 5s），
-  // 速度 = 单柱步长 / 采样间隔，新柱恰好随下一拍匀速流入，跳变变连续波形
+  // 缓动设计（2026-08-07 用户定稿 v2）：动画时长 = 服务端采样间隔（obs.ts tick 5s），
+  // 速度 = 单柱步长 / 采样间隔，新柱恰好随下一拍匀速流入。
+  // 两个关键不变式：
+  // ① 四轨同步——四列同拍采样，任一新样本四轨齐滑（值未变的补同高柱），各自动会显得随机；
+  // ② 轨道恒渲染 BAR_SHOW+1 根、稳态 translateX(-5px)——新柱 append 后恰在右界外，
+  //    滑入全程无闪现；复位 = 删左界外首柱 + 无过渡归零，与滑完态逐像素一致。
   const BAR_ANIM_MS = 5_000;
-  type MetricRec = { row: HTMLElement; track: HTMLElement; len: number; tail: number | undefined };
+  type MetricRec = { row: HTMLElement; track: HTMLElement };
   const metricRecs = new Map<string, MetricRec>();
+  let lastBarLen = -1;
+  let lastBarSig = '';
   function barHtml(v: number, pct: number | null, vmax: number): string {
     const cls = pct == null ? 'obs-bar-cyan' : v > 85 ? 'obs-bar-red' : v >= 70 ? 'obs-bar-amber' : 'obs-bar-green';
     const h = Math.max(2, Math.round(Math.min(1, v / (pct != null ? 100 : vmax)) * 16));
@@ -261,39 +267,44 @@ ${body}</div>
   }
   const HISTORY_KEYS = ['disk', 'mem', 'load', 'rss'] as const;
   function renderSys(sys: SysData): void {
+    const hists = HISTORY_KEYS.map(k => sys.history?.[k] ?? []);
     sys.metrics.forEach((m, i) => {
       const key = HISTORY_KEYS[i];
-      const hist = sys.history?.[key] ?? [];
       let rec = metricRecs.get(key);
       if (!rec) {
-        // 首次构建：DOM 分「文字行 + 轨道」两段，之后文字行 5s 重绘、轨道只在采样变化时增量滑动
+        // 首次构建：DOM 分「文字行 + 轨道」两段；历史够长则直接以稳态（25 根 + 左移 5px）落位
         const wrap = document.createElement('div');
         wrap.className = 'obs-sys-metric';
         wrap.innerHTML = '<div class="obs-sys-row"></div><div class="obs-sys-bars"><div class="obs-sys-track"></div></div>';
         railSysEl.appendChild(wrap);
         const track = wrap.querySelector<HTMLElement>('.obs-sys-track')!;
-        const vmax = Math.max(...hist.slice(-BAR_SHOW), 1);
-        track.innerHTML = hist.slice(-BAR_SHOW).map(v => barHtml(v, m.pct, vmax)).join('');
-        rec = { row: wrap.querySelector<HTMLElement>('.obs-sys-row')!, track, len: hist.length, tail: hist[hist.length - 1] };
+        const take = hists[i].slice(-(BAR_SHOW + 1));
+        const vmax = Math.max(...take, 1);
+        track.innerHTML = take.map(v => barHtml(v, m.pct, vmax)).join('');
+        if (take.length > BAR_SHOW) track.style.transform = `translateX(-${BAR_STEP}px)`;
+        rec = { row: wrap.querySelector<HTMLElement>('.obs-sys-row')!, track };
         metricRecs.set(key, rec);
-      } else {
-        const tail = hist[hist.length - 1];
-        // 新样本判定：缓冲未满看长度，缓冲满后（shift+push）看尾值；同值连拍漏一拍动画，视觉无害
-        if (hist.length > 0 && (hist.length !== rec.len || tail !== rec.tail)) {
-          const tr = rec.track;
-          if (tr.children.length >= BAR_SHOW) tr.firstElementChild!.remove(); // 已滑出视野的最旧柱
-          tr.style.transition = 'none';
-          tr.style.transform = 'translateX(0)'; // 复位：删首柱 + 归零，视觉与滑完态无缝衔接
-          tr.insertAdjacentHTML('beforeend', barHtml(tail!, m.pct, Math.max(...hist.slice(-BAR_SHOW), 1)));
-          void tr.offsetWidth; // 强制 reflow，让复位先生效再启动过渡
-          tr.style.transition = `transform ${BAR_ANIM_MS}ms linear`;
-          tr.style.transform = `translateX(-${BAR_STEP}px)`;
-          rec.len = hist.length;
-          rec.tail = tail;
-        }
       }
       rec.row.innerHTML = `<span class="obs-sys-label">${m.label}</span><span class="obs-rail-num${metricCls(m.pct)}">${m.value}</span><span class="obs-sys-pair">${m.pair ?? ''}</span>`;
     });
+    // 新样本判定：四列同拍，缓冲未满看长度，满后看四列尾值联合签名；四列全同值连拍漏一拍，无新信息不滑
+    const len = hists[0].length;
+    const sig = hists.map(h => h[h.length - 1]).join('|');
+    if (len > 0 && (len !== lastBarLen || sig !== lastBarSig)) {
+      lastBarLen = len;
+      lastBarSig = sig;
+      HISTORY_KEYS.forEach((k, i) => {
+        const tr = metricRecs.get(k)!.track;
+        if (tr.children.length > BAR_SHOW) tr.firstElementChild!.remove(); // 已滑出左界的最旧柱
+        tr.style.transition = 'none';
+        tr.style.transform = 'translateX(0)'; // 复位：删首柱 + 归零，与滑完态无缝衔接
+        const h = hists[i];
+        tr.insertAdjacentHTML('beforeend', barHtml(h[h.length - 1], sys.metrics[i].pct, Math.max(...h.slice(-BAR_SHOW), 1))); // 新柱落在右界外
+        void tr.offsetWidth; // 强制 reflow，让复位先生效再启动过渡
+        tr.style.transition = `transform ${BAR_ANIM_MS}ms linear`;
+        tr.style.transform = `translateX(-${BAR_STEP}px)`;
+      });
+    }
     railPortsEl.innerHTML = sys.ports.map(p =>
       `<div class="obs-port-row"><span class="obs-port-scope obs-port-scope-${p.scope}">${p.scope === 'public' ? '公' : '本'}</span><span class="obs-port-num">${p.port}</span><span class="obs-port-name">${p.name}</span><span class="obs-port-conns">${(p.conns ?? 0) > 0 ? '×' + p.conns : ''}</span></div>`
     ).join('');

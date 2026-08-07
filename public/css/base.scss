@@ -281,9 +281,10 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 .obs-sys-pair{font-size:8px;color:var(--text-dim);white-space:nowrap;overflow:hidden}
 /* 滚动柱状图：逐样本上色（绿<70/黄 70-85/红>85/进程青），新样本右侧匀速流入（轨道 transform 过渡，见 obs-hud） */
 /* 顶满虚线 = 100% 参考线，柱高直接读出百分比位置 */
-.obs-sys-bars{position:relative;overflow:hidden;height:16px}
+/* 窗口精确 24 根（24×4+23×1=119px）：轨道恒渲染 25 根，新柱在右界外随滑入进场（见 obs-hud 缓动不变式） */
+.obs-sys-bars{position:relative;overflow:hidden;width:119px;height:16px}
 .obs-sys-bars::before{content:'';position:absolute;top:0;left:0;right:0;border-top:1px dashed rgba(255,255,255,.28);z-index:1;pointer-events:none}
-.obs-sys-track{display:flex;align-items:flex-end;justify-content:flex-end;gap:1px;height:16px;will-change:transform}
+.obs-sys-track{display:flex;align-items:flex-end;justify-content:flex-start;gap:1px;height:16px;will-change:transform}
 .obs-bar{flex:none;width:4px;border-radius:1px 1px 0 0;opacity:.8}
 .obs-bar-green{background:#22c55e}
 .obs-bar-amber{background:#f59e0b}
