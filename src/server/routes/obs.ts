@@ -242,19 +242,28 @@ interface RawMetrics {
   rssLimitMB: number; // 进程 RSS 天花板（cgroup memory.high；0 = 无限制，退回整机内存参照）
 }
 
-// 进程自身 cgroup 内存软限（MemoryHigh）——kfmv4 经 systemd 跑在独立 cgroup，
-// /sys/fs/cgroup/memory.high 就是它自己的墙（2026-08-07 用户指正：进程项参照 3.4G 整机失真，
-// 天花板实为 800M 软限；柱高按限额归一后，100% 参考线 = 刹车墙距离）
+// 进程自身 cgroup 内存软限（MemoryHigh）——kfmv4 经 systemd 跑在独立 cgroup。
+// 注意主机上 /sys/fs/cgroup 是整棵树，根下的 memory.high 是根 cgroup 的（max），
+// 必须按 /proc/self/cgroup 的相对路径拼（2026-08-07 第一版直读根路径踩坑实测）。
+// 柱高按限额归一后，100% 参考线 = 刹车墙距离（用户指正：进程项参照 3.4G 整机失真）。
 function readRssLimitMB(): number {
-  for (const p of ['/sys/fs/cgroup/memory.high', '/sys/fs/cgroup/memory.max']) { // cgroup v2
-    try {
-      const v = fs.readFileSync(p, 'utf-8').trim();
-      if (v !== 'max') { const n = Number(v); if (n > 0 && n < 1e15) return Math.round(n / 1048576); }
-    } catch { /* 下一候选 */ }
-  }
-  try { // cgroup v1
-    const n = Number(fs.readFileSync('/sys/fs/cgroup/memory/memory.limit_in_bytes', 'utf-8').trim());
-    if (n > 0 && n < 1e15) return Math.round(n / 1048576);
+  try { // cgroup v2：/proc/self/cgroup 形如 0::/system.slice/kfmv4.service
+    const rel = fs.readFileSync('/proc/self/cgroup', 'utf-8').match(/^0::(.+)$/m)?.[1]?.trim();
+    if (rel) {
+      for (const f of ['memory.high', 'memory.max']) {
+        try {
+          const v = fs.readFileSync(`/sys/fs/cgroup${rel}/${f}`, 'utf-8').trim();
+          if (v !== 'max') { const n = Number(v); if (n > 0 && n < 1e15) return Math.round(n / 1048576); }
+        } catch { /* 下一候选 */ }
+      }
+    }
+  } catch { /* 非 v2 */ }
+  try { // cgroup v1：找 memory 子系统行
+    const rel = fs.readFileSync('/proc/self/cgroup', 'utf-8').split('\n').find(l => l.includes(':memory:'))?.split(':')[2]?.trim();
+    if (rel) {
+      const n = Number(fs.readFileSync(`/sys/fs/cgroup/memory${rel}/memory.limit_in_bytes`, 'utf-8').trim());
+      if (n > 0 && n < 1e15) return Math.round(n / 1048576);
+    }
   } catch { /* 无限制 */ }
   return 0;
 }
