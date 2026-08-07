@@ -9,7 +9,7 @@
 import { buildSidebarTree } from './tree-model.js';
 import { KFMState, getFileRowData, type FileRowData } from './state.js';
 import { anim } from './animation-registry.js';
-import { setupCharRainTweens, cleanupCharRain, type CharRainCleanup } from "./char-rain.js";
+import { setupCharRainTweens, cleanupCharRain, rainCost, MAX_RAIN_CHARS, type CharRainCleanup } from "./char-rain.js";
 import { closeSidebar } from './ui.js';
 import { collapseOrbPanel } from './orb.js';
 import { Z } from './z-index-layers.js';
@@ -639,11 +639,14 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
     ts.to(sibOv, { y: (sibOv as Box & OverlayMeta)._targetY!, duration: 0.05, ease: 'back.out(1.15)' }, 0);
   }
 
+  // 字符雨预算：本层+所有子层一次评估，超预算则整次动画跳过字符雨（巨目录保护）
+  const skipRain = rainCost([container, ...subTargets.map(st => st.container)]) > MAX_RAIN_CHARS;
+
   // 本层字符雨 tween（行已在 final 位置，rowOv.y = expandedY）
   const topCleanup = setupCharRainTweens(
     container, charLayer, root,
     pack.rowOverlays.map(r => r.y),
-    ts, 0
+    ts, 0, 'expand', skipRain
   );
   if (topCleanup) charRainCleanups.push(topCleanup);
 
@@ -667,7 +670,7 @@ function _runExpandAnimation(params: ExpandAnimParams): void {
       const subCleanup = setupCharRainTweens(
         realContainer, subCharLayer, root,
         sp.rowOverlays.map(r => r.y),
-        ts, delay
+        ts, delay, 'expand', skipRain
       );
       if (subCleanup) charRainCleanups.push(subCleanup);
     }
@@ -766,12 +769,15 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
   const maxLevel = subTargets.length > 0 ? Math.max(...subTargets.map(st => st.level)) : 0;
   const charRainCleanups: CharRainCleanup[] = [];
 
+  // 字符雨预算：本层+所有子层一次评估，超预算则整次动画跳过字符雨（巨目录保护）
+  const skipRain = rainCost([container, ...subTargets.map(st => st.container)]) > MAX_RAIN_CHARS;
+
   // 字符雨：方向 collapse，最深层先飞（delay 从最深层的展开延迟对称）
   const collapseBaseDelay = maxLevel * 0.05;
   const topCleanup = setupCharRainTweens(
     container, charLayer, root,
     pack.rowOverlays.map(r => r.y),
-    ts, collapseBaseDelay, 'collapse',
+    ts, collapseBaseDelay, 'collapse', skipRain,
   );
   if (topCleanup) charRainCleanups.push(topCleanup);
 
@@ -785,7 +791,7 @@ function doCollapse(hit: Box, hitData: FileRowData): void {
       const subCleanup = setupCharRainTweens(
         realContainer, subCharLayer, root,
         sp.rowOverlays.map(r => r.y),
-        ts, delay, 'collapse',
+        ts, delay, 'collapse', skipRain,
       );
       if (subCleanup) charRainCleanups.push(subCleanup);
     }

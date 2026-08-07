@@ -29,6 +29,34 @@ export interface CharRainCleanup {
 }
 
 // ============================================================
+// 字符雨预算（巨目录保护）
+// ============================================================
+
+/**
+ * 单次动画允许创建的字符盒上限（按可见行标签总字符数估算）。
+ * 超过则跳过字符雨、只播盒子展开动画——巨目录（几百个文件的 sessions/ 类）
+ * 逐字符建盒会瞬间创建数千 Box+tween，手机 Canvas 每帧数千次 fillText 直接卡死。
+ * 权宜方案；根治靠未来的文件树虚拟化/卡片折叠式重构。
+ */
+export const MAX_RAIN_CHARS = 1200;
+
+/**
+ * 估算一组容器内可见行（title-* / file-*）的标签总字符数。
+ * 调用方把本层容器与所有子层容器一起传入，得到整次动画的总成本。
+ */
+export function rainCost(containers: Box[]): number {
+  let total = 0;
+  for (const container of containers) {
+    for (const row of container.children) {
+      if (!(row.id?.startsWith("title-") || row.id?.startsWith("file-"))) continue;
+      const label = row.children.find((c) => c.id?.startsWith("label-"));
+      if (label?.textStyle?.content) total += label.textStyle.content.length;
+    }
+  }
+  return total;
+}
+
+// ============================================================
 // 核心：给定行列表，为每行创建字符雨动画
 // ============================================================
 
@@ -253,6 +281,7 @@ function _charRainCore(
 /**
  * 从容器 children 中过滤 title-* / file-* 行，创建字符雨。
  * 与旧签名完全兼容，调用方无需修改。
+ * skipRain=true 时直接跳过（巨目录预算保护，见 MAX_RAIN_CHARS）。
  */
 export function setupCharRainTweens(
   container: Box,
@@ -262,7 +291,9 @@ export function setupCharRainTweens(
   tl: AnimTimeline,
   baseDelay: number,
   direction: 'expand' | 'collapse' = 'expand',
+  skipRain: boolean = false,
 ): CharRainCleanup | null {
+  if (skipRain) return null;
   const rows = container.children.filter((c) =>
     c.id?.startsWith("title-") || c.id?.startsWith("file-")
   );
