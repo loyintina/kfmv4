@@ -110,9 +110,19 @@ export function initObsHud(): void {
     const r = hud.querySelector<HTMLElement>('.obs-inbox')!.getBoundingClientRect();
     rail.style.left = `${r.left}px`;
     rail.style.top = `${r.bottom + 10}px`;
+    // 高度收回内容自然高（2026-08-07 用户定稿：废 bottom:0 顶满，下半空白浪费）；
+    // 上限 = 视口高 - top - 底部输入栏预留 92px，超出部分走下方自动切屏
+    rail.style.maxHeight = `${window.innerHeight - (r.bottom + 10) - 92}px`;
   };
   placeRail();
   window.addEventListener('resize', placeRail);
+  // 内容超高自动切屏轮播（信息屏式：每 5s 平滑滚一屏、保留 24px 上下文重叠、到底回顶；
+  // 不开手势——rail 全程 pointer-events:none 穿透）
+  setInterval(() => {
+    if (rail.scrollHeight <= rail.clientHeight + 4) return;
+    const next = rail.scrollTop + rail.clientHeight - 24;
+    rail.scrollTo({ top: next >= rail.scrollHeight - rail.clientHeight ? 0 : next, behavior: 'smooth' });
+  }, 5_000);
 
   const clockEl = hud.querySelector<HTMLElement>('.obs-clock')!;
   const balanceEl = hud.querySelector<HTMLElement>('.obs-balance')!;

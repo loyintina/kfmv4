@@ -268,7 +268,7 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
    v4 布局：指标行 = 文字行（标签+百分号+xx/xx 实值对）+ 下方滚动柱状图
    （绿<70/黄 70-85/红>85 逐样本上色）；柱状图下移后宽度收窄 200→140
    （用户定稿：必须比信箱 160 窄）。定时区移出（2026-08-07 用户裁决另置）。 */
-.obs-rail{position:fixed;bottom:0;width:98px;box-sizing:border-box;padding:8px 8px 0;display:flex;flex-direction:column;pointer-events:none;background:rgba(18,18,26,.5);border:1px solid transparent;border-bottom:none;background-clip:padding-box;border-image:linear-gradient(180deg,rgba(124,58,237,.4),rgba(0,212,255,.2)) 1;border-radius:16px 16px 0 0;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);overflow:hidden;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.obs-rail{position:fixed;width:98px;box-sizing:border-box;padding:8px 8px 0;display:flex;flex-direction:column;pointer-events:none;background:rgba(18,18,26,.5);border:1px solid transparent;background-clip:padding-box;border-image:linear-gradient(180deg,rgba(124,58,237,.4),rgba(0,212,255,.2)) 1;border-radius:16px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);overflow:hidden;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 .obs-rail-head{flex:none;font-size:9px;letter-spacing:2px;color:rgba(0,212,255,.7);padding:7px 0 5px;border-bottom:1px solid rgba(124,58,237,.18);margin-bottom:2px;white-space:nowrap}
 .obs-rail-head:first-child{padding-top:0}
 .obs-rail-sec{display:flex;flex-direction:column;gap:8px;padding:4px 0;flex:none}
