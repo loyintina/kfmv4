@@ -272,6 +272,8 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 .obs-rail-head{flex:none;font-size:9px;letter-spacing:2px;color:rgba(0,212,255,.7);padding:7px 0 5px;border-bottom:1px solid rgba(124,58,237,.18);margin-bottom:2px;white-space:nowrap}
 .obs-rail-head:first-child{padding-top:0}
 .obs-rail-sec{display:flex;flex-direction:column;gap:8px;padding:4px 0;flex:none}
+/* 端口区：JS 钉死 4 行窗口高，超出自动切屏轮播（obs-hud sizePorts） */
+.obs-rail-ports{overflow:hidden}
 /* 指标块：文字行 + 下方滚动柱状图 */
 .obs-sys-metric{display:flex;flex-direction:column;gap:3px}
 .obs-sys-row{display:flex;align-items:baseline;gap:4px}

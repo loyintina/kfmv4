@@ -110,18 +110,23 @@ export function initObsHud(): void {
     const r = hud.querySelector<HTMLElement>('.obs-inbox')!.getBoundingClientRect();
     rail.style.left = `${r.left}px`;
     rail.style.top = `${r.bottom + 10}px`;
-    // 高度收回内容自然高（2026-08-07 用户定稿：废 bottom:0 顶满，下半空白浪费）；
-    // 上限 = 视口高 - top - 底部输入栏预留 92px，超出部分走下方自动切屏
-    rail.style.maxHeight = `${window.innerHeight - (r.bottom + 10) - 92}px`;
   };
   placeRail();
   window.addEventListener('resize', placeRail);
-  // 内容超高自动切屏轮播（信息屏式：每 5s 平滑滚一屏、保留 24px 上下文重叠、到底回顶；
-  // 不开手势——rail 全程 pointer-events:none 穿透）
+  // 竖条高度钉死 = 系统区 + 端口区恰好 4 行窗口（2026-08-07 用户定稿：废动态高度/上限切屏）；
+  // 端口超出 4 行 → 端口窗口内自动切屏轮播（每 5s 平滑滚一屏、重叠一行保持连贯、到底回顶；无手势穿透）
+  const sizePorts = () => {
+    const rows = railPortsEl.children;
+    if (rows.length === 0) { railPortsEl.style.height = ''; return; }
+    const n = Math.min(4, rows.length);
+    const first = rows[0] as HTMLElement;
+    const last = rows[n - 1] as HTMLElement;
+    railPortsEl.style.height = `${last.offsetTop + last.offsetHeight - first.offsetTop}px`;
+  };
   setInterval(() => {
-    if (rail.scrollHeight <= rail.clientHeight + 4) return;
-    const next = rail.scrollTop + rail.clientHeight - 24;
-    rail.scrollTo({ top: next >= rail.scrollHeight - rail.clientHeight ? 0 : next, behavior: 'smooth' });
+    if (railPortsEl.scrollHeight <= railPortsEl.clientHeight + 4) return;
+    const next = railPortsEl.scrollTop + railPortsEl.clientHeight - 19; // 重叠一行（行高+间距 ≈ 19px）
+    railPortsEl.scrollTo({ top: next >= railPortsEl.scrollHeight - railPortsEl.clientHeight ? 0 : next, behavior: 'smooth' });
   }, 5_000);
 
   const clockEl = hud.querySelector<HTMLElement>('.obs-clock')!;
@@ -326,6 +331,7 @@ ${body}</div>
     railPortsEl.innerHTML = sys.ports.map(p =>
       `<div class="obs-port-row"><span class="obs-port-dot obs-port-dot-${p.scope}" style="${pulseStyle(String(p.port))}"></span><span class="obs-port-num">${p.port}</span><span class="obs-port-name">${p.name}</span><span class="obs-port-conns">${(p.conns ?? 0) > 0 ? '×' + p.conns : ''}</span></div>`
     ).join('');
+    sizePorts(); // 端口窗口钉死 4 行高（行数变化后重测）
   }
 
   // 余额 + 信箱 + 待办 + SYS 刷新（5s 轮询；服务端缓存外部 deepseek 调用）
