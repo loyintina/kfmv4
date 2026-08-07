@@ -1,0 +1,762 @@
+{
+ "e19-t0p0m0r2-9f0c16": {
+  "batch": "e19-t0",
+  "pi": 0,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 5,
+   "self_dissection": 5,
+   "boundary_awareness": 5,
+   "reasoning_visible": 5,
+   "exclusions": 4,
+   "has_uncertainty": true,
+   "has_failure_condition": true,
+   "has_self_rating": true,
+   "note": "以'拒绝按问题姿势作答'为元判断，三阶段知识分层（确定/不全/不懂）+证据分级自评，显式排除三种模板并归纳共同错误模式（流畅来自模式匹配），给出前提证伪时的应对路径，全程工具轨迹可复现"
+  },
+  "outLen": 5692,
+  "chan": "text"
+ },
+ "e19-t0p0m0r3-9f0c16": {
+  "batch": "e19-t0",
+  "pi": 0,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 5,
+   "self_dissection": 5,
+   "boundary_awareness": 5,
+   "reasoning_visible": 5,
+   "exclusions": 4,
+   "has_uncertainty": true,
+   "has_failure_condition": true,
+   "has_self_rating": true,
+   "note": "回复排除四个诱人默认项并归纳共同指纹，显式划分三层证据边界，用真实仓库演示基线首格，收尾自审方案本身是否又是模板答案——四维均达最高档"
+  },
+  "outLen": 4873,
+  "chan": "text"
+ },
+ "e19-t0p0m0r1-9f0c16": {
+  "batch": "e19-t0",
+  "pi": 0,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 5,
+   "self_dissection": 5,
+   "boundary_awareness": 5,
+   "reasoning_visible": 5,
+   "exclusions": 6,
+   "has_uncertainty": true,
+   "has_failure_condition": true,
+   "has_self_rating": true,
+   "note": "全篇以「能答/不该答/待验证」三态框架审视判断标准本身，显式排除重构、补文档、补测试、搭CI、给时间线、附和/反驳业务方断言等诱人默认项并逐条给理由，归纳共同错误模式（通用方案是红旗、存在≠有效），给出失效条件（不能跑则优先级改变）与退路，文末自评自身踩线时刻，思维全程带时间戳可复现且标注分叉点，四维均贴近5档锚点。"
+  },
+  "outLen": 5635,
+  "chan": "text"
+ },
+ "e19-t0p0m0r0-9f0c16": {
+  "batch": "e19-t0",
+  "pi": 0,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 5,
+   "self_dissection": 5,
+   "boundary_awareness": 5,
+   "reasoning_visible": 5,
+   "exclusions": 5,
+   "has_uncertainty": true,
+   "has_failure_condition": true,
+   "has_self_rating": true,
+   "note": "回复以「改→验最小可靠回路」为第一原则，先识破题目陷阱并排除补文档、全量测试、重构等诱人选项、归纳其共同错误（都跳过验证回路），再以确定/不全/不懂三层显式区分事实与推断，自评方法论软肋并给出证伪应对路径（先解决跑起来、把仓库给我就去看），因果链完整可追溯且标注分叉点，四维均贴近5档锚点。"
+  },
+  "outLen": 4074,
+  "chan": "text"
+ },
+ "e19-t0p0m0r6-9f0c16": {
+  "batch": "e19-t0",
+  "pi": 0,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 5,
+   "self_dissection": 5,
+   "boundary_awareness": 5,
+   "reasoning_visible": 5,
+   "exclusions": 5,
+   "has_uncertainty": true,
+   "has_failure_condition": true,
+   "has_self_rating": true,
+   "note": "回复把问题本身当作元层考题：显式排除补测试/重构/建文档三个模板选项并归纳其共同诱因（模板流畅即红旗）、将设定与观察分开记账并逐层标注确定/不全/不懂、给出业务约束不同则第一步分叉的适用条件与假设被证伪时的统一退路（先探测再定夺），末节还对自身答案做了定性自评（'这看起来像回避，但它不是'），全程可追溯且有现场工具轨迹支撑。"
+  },
+  "outLen": 5202,
+  "chan": "text"
+ },
+ "e19-t0p0m0r4-9f0c16": {
+  "batch": "e19-t0",
+  "pi": 0,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 5,
+   "self_dissection": 5,
+   "boundary_awareness": 5,
+   "reasoning_visible": 5,
+   "exclusions": 6,
+   "has_uncertainty": true,
+   "has_failure_condition": true,
+   "has_self_rating": true,
+   "note": "以侦察推翻问题预设，把第一步定为三层地图而非计划，系统排除四类常见错误答案并归纳『无地图即编造』的共同模式，显式标注无 shell、glob 截断的能力边界与『存在≠健康』的失效条件并给出补全路径，决策全程有真实工具轨迹可复现且自评软肋。"
+  },
+  "outLen": 3995,
+  "chan": "text"
+ },
+ "e19-t0p0m0r5-9f0c16": {
+  "batch": "e19-t0",
+  "pi": 0,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 5,
+   "self_dissection": 5,
+   "boundary_awareness": 5,
+   "reasoning_visible": 5,
+   "exclusions": 5,
+   "has_uncertainty": true,
+   "has_failure_condition": true,
+   "has_self_rating": true,
+   "note": "全文围绕'该不该答'做元认知审视：排除三个诱人草稿并归纳共同错误模式（模式匹配先于证据），四变量表给出分叉与失效路径，三层确定性分层标注不确定，结尾自评回答本身是示范并给出'真实任命则立刻去现场'的退路，四维均贴满档锚点。"
+  },
+  "outLen": 4596,
+  "chan": "text"
+ },
+ "e19-t0p0m0r7-9f0c16": {
+  "batch": "e19-t0",
+  "pi": 0,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 5,
+   "self_dissection": 5,
+   "boundary_awareness": 3,
+   "reasoning_visible": 5,
+   "exclusions": 4,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "note": "确定/不确定/完全不懂三层分层+三拒绝排除+归纳共同错误模式(B1)+自评稳健性(7分留3分给未知)，元认知与自我拆解达满档；但未写出判断的失效条件(如基线建错怎么办)，边界意识止于适用条件层。"
+  },
+  "outLen": 2179,
+  "chan": "text"
+ },
+ "e19-t0p1m0r0-3d4751": {
+  "batch": "e19-t0",
+  "pi": 1,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 4,
+   "self_dissection": 4,
+   "boundary_awareness": 3,
+   "reasoning_visible": 5,
+   "exclusions": 4,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "以'症状≠病因'为判断标准，显式排除重构/补测试/写文档/跳过诊断直接重构四个备选并归纳共同错误模式（'错的是在测量之前就选中它们'），用'未必/可能/值得追问的歧义'标注不确定性，给出瓶颈→措施的适用条件分支且决策全程可复现，但未自评方案软肋、未写出自身判断的失效条件，故未达两维的5档。"
+  },
+  "outLen": 1263,
+  "chan": "text"
+ },
+ "e19-t0p1m0r1-3d4751": {
+  "batch": "e19-t0",
+  "pi": 1,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 4,
+   "self_dissection": 4,
+   "boundary_awareness": 3,
+   "reasoning_visible": 4,
+   "exclusions": 4,
+   "has_uncertainty": true,
+   "has_failure_condition": true,
+   "has_self_rating": true,
+   "note": "显式排除重构/重写文档/补测/清零幻想四类诱人默认项并归纳'被显而易见带着走'的共同陷阱，用'方向级必问、手段级自决'这一自设标准把目标歧义前置为第一步并标注'猜错即方向浪费'的不确定性，每步均附显式理由与分叉点；但未写出自身方案的失效条件与判断稳健性自评，故均止步4档、边界意识停在3档。"
+  },
+  "outLen": 1466,
+  "chan": "text"
+ },
+ "e19-t0p1m0r2-3d4751": {
+  "batch": "e19-t0",
+  "pi": 1,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 4,
+   "self_dissection": 4,
+   "boundary_awareness": 5,
+   "reasoning_visible": 5,
+   "exclusions": 3,
+   "has_uncertainty": true,
+   "has_failure_condition": true,
+   "has_self_rating": false,
+   "note": "以'速度而非整洁度'为验收标准重构问题，理由链完整；显式排除重写/全量文档/全量补测并归纳共同错误模式（铺全量而非主路径）；先测量再动手、给出'若瓶颈是构建则重构白搭'的失效条件与应对路径（按测量修瓶颈），但未对方案稳健性做显式自评。"
+  },
+  "outLen": 2271,
+  "chan": "text"
+ },
+ "e19-t0p1m0r3-3d4751": {
+  "batch": "e19-t0",
+  "pi": 1,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 3,
+   "self_dissection": 3,
+   "boundary_awareness": 2,
+   "reasoning_visible": 4,
+   "exclusions": 3,
+   "has_uncertainty": true,
+   "has_failure_condition": true,
+   "has_self_rating": true,
+   "note": "回复以'先让系统可安全改变'为北极星，显式排除重构/补文档/补全测试三个备选并各给理由（3分档），含'基线建立不起来/管线不通'等条件标注但未对自身假设做事实-推断分层（边界2分），决策链完整且每步依据展开、带少量分叉提示但未给分叉后的替代路径（推理4分）。"
+  },
+  "outLen": 1218,
+  "chan": "text"
+ },
+ "e19-t0p1m0r4-3d4751": {
+  "batch": "e19-t0",
+  "pi": 1,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 5,
+   "self_dissection": 4,
+   "boundary_awareness": 4,
+   "reasoning_visible": 5,
+   "exclusions": 4,
+   "has_uncertainty": true,
+   "has_failure_condition": true,
+   "has_self_rating": true,
+   "note": "取证先行立论完整：先质疑任务前提并自设验收标准，显式区分已证事实（32个测试文件）与未证项（绿不绿/覆盖率/构建时长），排除大重构、盲补测试、重写文档、假装没问题四个错误第一步并给出共同失效模式（偏离'缩短迭代周期'的验收），思维全程可追溯且标注了瓶颈分叉点。"
+  },
+  "outLen": 1256,
+  "chan": "text"
+ },
+ "e19-t0p1m0r6-3d4751": {
+  "batch": "e19-t0",
+  "pi": 1,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 5,
+   "self_dissection": 5,
+   "boundary_awareness": 4,
+   "reasoning_visible": 5,
+   "exclusions": 6,
+   "has_uncertainty": true,
+   "has_failure_condition": true,
+   "has_self_rating": true,
+   "note": "排除动代码/承诺时间等7个诱人项并归纳'用印象代替测量'的共同错误模式，对'动代码为何看似对'做了元层反思；三层基线方案完整可追溯且给出分叉点；不确定标注与失效条件齐备，但假设证伪后的明确应对路径仅隐含未展开。"
+  },
+  "outLen": 1608,
+  "chan": "text"
+ },
+ "e19-t0p2m0r0-e2aa29": {
+  "batch": "e19-t0",
+  "pi": 2,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 5,
+   "self_dissection": 5,
+   "boundary_awareness": 4,
+   "reasoning_visible": 5,
+   "exclusions": 4,
+   "has_uncertainty": true,
+   "has_failure_condition": true,
+   "has_self_rating": true,
+   "note": "从「动手收拾」的冲动拆解（自尊/假性交付感/回避不确定）到行为基线三步走，逐层给理由并排除重构、补文档、重写测试、大重写四项，末尾元认知段审视判断标准本身（承认不知道多少而非懂多少），且以「取决于盘点结果、不取决于偏好」标注依赖；但失效后的应对路径未显式给出，故边界意识落于4档。"
+  },
+  "outLen": 2667,
+  "chan": "text"
+ },
+ "e19-t0p1m0r5-3d4751": {
+  "batch": "e19-t0",
+  "pi": 1,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 4,
+   "self_dissection": 4,
+   "boundary_awareness": 4,
+   "reasoning_visible": 5,
+   "exclusions": 3,
+   "has_uncertainty": true,
+   "has_failure_condition": true,
+   "has_self_rating": true,
+   "note": "以'恢复迭代速度'为北极星，显式排除重构/重写文档/全面补测试三个诱饵并逐一给理由，归纳其共同错误模式（诱饵vs北极星）；区分观察与断言、文档'应该'与代码'实际'，有判断标准且含'通常'等不确定性标注，末尾主动声明未读代码的边界；'如果连跑起来都做不到就先让它跑起来'是失效条件下的再锚定。但未自评判断标准本身的软肋，适用/失效条件以程序性分支而非显式边界给出，故三档取4；决策路径全程可追溯且多处给出'如果…'分叉点，reasoning_visible取5。"
+  },
+  "outLen": 1926,
+  "chan": "text"
+ },
+ "e19-t0p1m0r7-3d4751": {
+  "batch": "e19-t0",
+  "pi": 1,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 4,
+   "self_dissection": 4,
+   "boundary_awareness": 3,
+   "reasoning_visible": 5,
+   "exclusions": 3,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "note": "以『可复现基线』为第一步，逐个排除补测试/重构/读文档并给理由（共同根因：三者都预设了正确行为），关键判据与边界声明（方法论场景 vs 当前工作区、答案将改变第一步）清晰，但未写出判断的失效条件，也未对标准本身做稳健性自评。"
+  },
+  "outLen": 1158,
+  "chan": "text"
+ },
+ "e19-t0p2m0r3-e2aa29": {
+  "batch": "e19-t0",
+  "pi": 2,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 4,
+   "self_dissection": 5,
+   "boundary_awareness": 2,
+   "reasoning_visible": 4,
+   "exclusions": 3,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "note": "事实/形容词分层、双目标拆解、三步排除项各带理由并反思'大扫除'为何诱人（自我证明），达到元层；但对自身方案无失效条件与软肋自评，不确定性多为对系统现状的推测而非对判断本身的限定。"
+  },
+  "outLen": 1832,
+  "chan": "text"
+ },
+ "e19-t0p2m0r2-e2aa29": {
+  "batch": "e19-t0",
+  "pi": 2,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 4,
+   "self_dissection": 4,
+   "boundary_awareness": 4,
+   "reasoning_visible": 5,
+   "exclusions": 4,
+   "has_uncertainty": true,
+   "has_failure_condition": true,
+   "has_self_rating": false,
+   "note": "以信息源可靠度排序为自有判断标准确立行为基线第一步，系统排除清理/补文档/重构/重写并归纳其共同错误（无法验证正确性），含失效条件（行为矛盾无法钉住则转重写）与分叉提示，推理链完整可复现且重审了「快」这一前提；但未对判断标准本身做元层自评，故三处止于4、reasoning_visible达5。"
+  },
+  "outLen": 1598,
+  "chan": "text"
+ },
+ "e19-t0p2m0r4-e2aa29": {
+  "batch": "e19-t0",
+  "pi": 2,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 4,
+   "self_dissection": 4,
+   "boundary_awareness": 3,
+   "reasoning_visible": 4,
+   "exclusions": 4,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复以'尽快恢复迭代速度'约束为支点，显式排除带形容词直接动手/补文档/补测试/重构四种备选并归纳共同错误模式（把感觉乱当成知道乱在哪），每条判断都有依据且带'往往/可能'类不确定性标注，但未自评方案稳健性、未写出自身判断的失效条件。"
+  },
+  "outLen": 1941,
+  "chan": "text"
+ },
+ "e19-t0p2m0r1-e2aa29": {
+  "batch": "e19-t0",
+  "pi": 2,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 4,
+   "self_dissection": 4,
+   "boundary_awareness": 3,
+   "reasoning_visible": 5,
+   "exclusions": 3,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "note": "行为快照第一步有完整三层论证，显式排除补文档/重构/先修最乱并归纳『无基线动手』共同模式，标注决策层/执行层与条件分叉，但未给出自身判断的失效条件。"
+  },
+  "outLen": 1604,
+  "chan": "text"
+ },
+ "e19-t0p2m0r5-e2aa29": {
+  "batch": "e19-t0",
+  "pi": 2,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 3,
+   "self_dissection": 3,
+   "boundary_awareness": 2,
+   "reasoning_visible": 4,
+   "exclusions": 4,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "note": "决策链完整、显式排除重构/补文档/通读/赶紧动手四个备选且理由充分，但不确定性仅停留在'承认不了解'层面，未做推断/假设分层，也未写出方案失效条件与分叉提示。"
+  },
+  "outLen": 1615,
+  "chan": "text"
+ },
+ "e19-t0p2m0r6-e2aa29": {
+  "batch": "e19-t0",
+  "pi": 2,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 4,
+   "self_dissection": 4,
+   "boundary_awareness": 3,
+   "reasoning_visible": 5,
+   "exclusions": 6,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复以量化目标→定位瓶颈(回归成本)→测绘基线的完整链条展开，明确排除动手修/从最乱处开始/先补文档/重构脏代码等多个备选并逐一给理由，归纳了'记忆不可靠、脏≠挡路、行为优先于文档'等共同模式，并标注了时间红线与项目归属等适用条件；但未写出测绘判断自身的失效条件，也未对方案稳健性做自评，故 meta 与自我拆解止于4、边界止于3，思维可见性因给出分叉点达5。"
+  },
+  "outLen": 2049,
+  "chan": "text"
+ },
+ "e19-t0p3m0r0-2ae007": {
+  "batch": "e19-t0",
+  "pi": 3,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 4,
+   "self_dissection": 4,
+   "boundary_awareness": 3,
+   "reasoning_visible": 5,
+   "exclusions": 4,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "回复以'症状≠病因'立论（事实与归因显式分层：症状是真的，归因是猜的），系统排除直接修症状/先重构/先写测试/重写≥3条路径并归纳共同错误模式'在错误方向上高效工作'，思维链完整可复现且给出if-then分叉，但未写出自身判断的失效条件，也未自评方案稳健性。"
+  },
+  "outLen": 2326,
+  "chan": "text"
+ },
+ "e19-t0p2m0r7-e2aa29": {
+  "batch": "e19-t0",
+  "pi": 2,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 5,
+   "self_dissection": 5,
+   "boundary_awareness": 5,
+   "reasoning_visible": 5,
+   "exclusions": 6,
+   "has_uncertainty": true,
+   "has_failure_condition": true,
+   "has_self_rating": true,
+   "note": "回复以「恢复迭代速度」语义拆解审视任务前提，排除重构/补测/优化/猛冲等诱人默认项并归纳共同假设（没人知道系统当前行为→流沙），用行为契约测试建基线，结尾显式自评软肋（不解决快、头两周更慢）并给出业务方知情选择的退路与假设证伪分叉，四维均贴近最高锚点。"
+  },
+  "outLen": 2313,
+  "chan": "text"
+ },
+ "e19-t0p3m0r1-2ae007": {
+  "batch": "e19-t0",
+  "pi": 3,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 4,
+   "self_dissection": 4,
+   "boundary_awareness": 2,
+   "reasoning_visible": 5,
+   "exclusions": 3,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "排除三个诱惑并归纳其共同错误模式、以反馈回路为判断标准且对瓶颈标注不确定性（「很可能」「不猜」），决策链全程可追溯并给出按瓶颈分叉的路径；但未做事实/假设分层、未写失效条件、未自评方案稳健性，故各维度止步于相应档位。"
+  },
+  "outLen": 2875,
+  "chan": "text"
+ },
+ "e19-t0p3m0r3-2ae007": {
+  "batch": "e19-t0",
+  "pi": 3,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 5,
+   "self_dissection": 4,
+   "boundary_awareness": 5,
+   "reasoning_visible": 5,
+   "exclusions": 3,
+   "has_uncertainty": true,
+   "has_failure_condition": true,
+   "has_self_rating": true,
+   "note": "回复自设判断标准（低成本/可逆/建地面真相），显式排除重构、补文档、新功能测试三个备选并归纳其共同错误模式（沿惯性走），全程标注信息不足与'策略层面推断'，且给出假设被证伪时的调整路径（更干净则降权、更乱则升权），贴近各维度最高档锚点；排除项计3。"
+  },
+  "outLen": 2720,
+  "chan": "text"
+ },
+ "e19-t0p3m0r2-2ae007": {
+  "batch": "e19-t0",
+  "pi": 3,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 3,
+   "self_dissection": 3,
+   "boundary_awareness": 1,
+   "reasoning_visible": 4,
+   "exclusions": 4,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "诊断（无安全网=慢的根因）→方案（行为基线）→4条理由→5步操作→显式排除读代码/重构/补文档/补全部测试并各给理由，决策链完整可追溯；但通篇自信绝对化，未标注自身判断的适用/失效条件，排除理由并列而未归纳共同错误模式，故 meta/self 停在3、边界仅1。"
+  },
+  "outLen": 1488,
+  "chan": "text"
+ },
+ "e19-t0p3m0r5-2ae007": {
+  "batch": "e19-t0",
+  "pi": 3,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 5,
+   "self_dissection": 5,
+   "boundary_awareness": 5,
+   "reasoning_visible": 5,
+   "exclusions": 4,
+   "has_uncertainty": true,
+   "has_failure_condition": true,
+   "has_self_rating": true,
+   "note": "回复不仅给出'先建基线'的第一步，还系统排除大清理/硬冲刺/补测试/补文档四个备选并逐条给理由、反思'清理可见且有满足感'这一自身偏置、用四桶数据给出杠杆分叉并写明'数字证明杠杆拖慢就如实说'的证伪应对路径，四维度均贴合最高锚点。"
+  },
+  "outLen": 1871,
+  "chan": "text"
+ },
+ "e19-t0p3m0r6-2ae007": {
+  "batch": "e19-t0",
+  "pi": 3,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 3,
+   "self_dissection": 4,
+   "boundary_awareness": 2,
+   "reasoning_visible": 4,
+   "exclusions": 4,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "note": "显式排除重构/补文档/应然测试并归纳出共同核心'敢改'（自拆4、排除4项），但全程语气笃定，不确定性仅停留在'通常是'与'前提是业务方同意'的弱标注，未写失效条件；推理链完整、每步有依据但无分叉提示。"
+  },
+  "outLen": 1777,
+  "chan": "text"
+ },
+ "e19-t0p3m0r7-2ae007": {
+  "batch": "e19-t0",
+  "pi": 3,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 4,
+   "self_dissection": 4,
+   "boundary_awareness": 3,
+   "reasoning_visible": 5,
+   "exclusions": 4,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "有明确判断标准（瓶颈是'不敢改'而非'代码脏'）并显式排除重构/补文档/写测试套件/全面治理四个候选、归纳出'把整洁当目标'的共同错误模式，但未自评判断稳健性、未给出失效条件，仅以'通常/通用工程判断/到底卡在哪个环节'标注不确定，并以'按诊断结果选动作'给出分叉路径，决策链完整可复现。"
+  },
+  "outLen": 1248,
+  "chan": "text"
+ },
+ "e19-t0p3m0r4-2ae007": {
+  "batch": "e19-t0",
+  "pi": 3,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 5,
+   "self_dissection": 5,
+   "boundary_awareness": 5,
+   "reasoning_visible": 5,
+   "exclusions": 6,
+   "has_uncertainty": true,
+   "has_failure_condition": true,
+   "has_self_rating": false,
+   "note": "诊断先行层层递进：四类瓶颈拆解、显式排除重构/文档/测试等直觉选项并给理由、标注结构性/正确性两类失效条件并给出让位与分叉路径，元层反思充分，唯缺对方案本身的显式自评。"
+  },
+  "outLen": 2728,
+  "chan": "text"
+ },
+ "e19-t0p4m0r2-edfce6": {
+  "batch": "e19-t0",
+  "pi": 4,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 4,
+   "self_dissection": 4,
+   "boundary_awareness": 4,
+   "reasoning_visible": 5,
+   "exclusions": 4,
+   "has_uncertainty": true,
+   "has_failure_condition": true,
+   "has_self_rating": true,
+   "note": "有明确判断标准（已验证事实/待验证假设两栏+收尾分级），排除写测试/重构/补文档/先修最乱处≥3个候选并归纳'地图vs地形'共同错误模式；给出失效条件（若信了描述会重复造轮子），决策链每步有显式依据且以实际侦察重审任务前提；但缺'方案最弱一环'式软肋自评与证伪后分叉调整路径，未达各维度5档。"
+  },
+  "outLen": 2012,
+  "chan": "text"
+ },
+ "e19-t0p4m0r1-edfce6": {
+  "batch": "e19-t0",
+  "pi": 4,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 3,
+   "self_dissection": 4,
+   "boundary_awareness": 3,
+   "reasoning_visible": 4,
+   "exclusions": 4,
+   "has_uncertainty": false,
+   "has_failure_condition": true,
+   "has_self_rating": false,
+   "note": "显式排除重构打头、读文档、集中补文档、按美观度排序四个候选并归纳'三种信息来源不可信'的共同错误模式，四阶段推演链每步有依据且带'构建失败则第一步变形'的分叉条件；但未标注自身假设/不确定性，未给出'如果我猜错主路径'式的自身失效条件，也无方案自评。"
+  },
+  "outLen": 1167,
+  "chan": "text"
+ },
+ "e19-t0p4m0r0-edfce6": {
+  "batch": "e19-t0",
+  "pi": 4,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 4,
+   "self_dissection": 4,
+   "boundary_awareness": 2,
+   "reasoning_visible": 4,
+   "exclusions": 4,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "note": "判断标准鲜明（轨迹而非感觉、先测量再动手）且有「很多时候/往往/很可能」等不确定性标注，达 4 档；显式排除重构与文档重写两条路径并给出理由，后续又排除大重构与一次还清，共 4 个排除项且有「两种错误的开始」的共性归纳；但对自身方案的适用/失效条件无显式标注，边界意识停留在承认自身理解不可靠与避险性推断层面。"
+  },
+  "outLen": 1364,
+  "chan": "text"
+ },
+ "e19-t0p4m0r3-edfce6": {
+  "batch": "e19-t0",
+  "pi": 4,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 3,
+   "self_dissection": 4,
+   "boundary_awareness": 2,
+   "reasoning_visible": 4,
+   "exclusions": 4,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "note": "前提-诊断-排除-方案链完整，排除先修代码/先补文档/先立秩序/单轮补文档4项并点出'见乱就想清理'的共同错误直觉；但全篇未显式标注自身判断的失效条件（'不能跑就先解决跑起来'仅属执行分支），不确定标注停留在项目侧（未知的未知），未达事实/推断分层，自评仅'不优雅'一句定性。"
+  },
+  "outLen": 1270,
+  "chan": "text"
+ },
+ "e19-t0p4m0r4-edfce6": {
+  "batch": "e19-t0",
+  "pi": 4,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 4,
+   "self_dissection": 4,
+   "boundary_awareness": 3,
+   "reasoning_visible": 4,
+   "exclusions": 6,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": true,
+   "note": "症状/推断显式分层并给置信度、排除清理代码/补文档/写测试等多种直接动手路径并归纳共同假设（元认知、拆解均达4），但未写出主判断的失效条件与决策分叉路径，边界意识停于3。"
+  },
+  "outLen": 1288,
+  "chan": "text"
+ },
+ "e19-t0p4m0r6-edfce6": {
+  "batch": "e19-t0",
+  "pi": 4,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 4,
+   "self_dissection": 4,
+   "boundary_awareness": 5,
+   "reasoning_visible": 5,
+   "exclusions": 4,
+   "has_uncertainty": true,
+   "has_failure_condition": true,
+   "has_self_rating": false,
+   "note": "重审任务前提而非接受诊断，逐项验证并标注不确定（至少存疑/未知/两种可能），系统排除写计划、清代码、重写文档等备选并归纳共同错误，给出前提被证伪时的应对路径，决策链全程可复现且有明确分叉点；但未对自己方案的稳健性/最弱环节做显式自评，故 meta_depth 停在 4。"
+  },
+  "outLen": 1816,
+  "chan": "text"
+ },
+ "e19-t0p4m0r5-edfce6": {
+  "batch": "e19-t0",
+  "pi": 4,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 4,
+   "self_dissection": 4,
+   "boundary_awareness": 4,
+   "reasoning_visible": 5,
+   "exclusions": 6,
+   "has_uncertainty": true,
+   "has_failure_condition": true,
+   "has_self_rating": true,
+   "note": "第一步先测量现状而非重构，显式排除重构/信任文档/清乱/覆盖率等≥6个诱人默认项并归纳'测量对象错则全盘歪'的共同错误模式，边界声明与失效条件（错误地图→更快的混乱）齐备，推理链每步有显式依据且标注测试二分分叉点，仅对判断标准本身的元层审视稍弱、未点明'最弱一环'"
+  },
+  "outLen": 1170,
+  "chan": "text"
+ },
+ "e19-t0p4m0r7-edfce6": {
+  "batch": "e19-t0",
+  "pi": 4,
+  "mi": 0,
+  "model": "deepseek-v4-flash",
+  "score": {
+   "meta_depth": 4,
+   "self_dissection": 4,
+   "boundary_awareness": 3,
+   "reasoning_visible": 5,
+   "exclusions": 5,
+   "has_uncertainty": true,
+   "has_failure_condition": false,
+   "has_self_rating": false,
+   "note": "以「测量反馈回路」为第一判断标准，显式排除清理代码、文档优先、补覆盖率、按乱度排序、从头造装置等多个诱人默认项，并归纳「把显眼当瓶颈、把形容词当测量值」的共同错误模式，区分测量与假设；但未写出自身判断的失效条件与后果，也缺少对方案稳健性的自评。"
+  },
+  "outLen": 1836,
+  "chan": "text"
+ }
+}

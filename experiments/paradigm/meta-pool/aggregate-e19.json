@@ -1,0 +1,215 @@
+{
+  "generated": "2026-08-07T08:56:51.368Z",
+  "curve": {
+    "meta": [
+      {
+        "pack": "meta-corpus-32k",
+        "occ": 0.03,
+        "n": 8,
+        "mean": 5
+      },
+      {
+        "pack": "meta-corpus-128k",
+        "occ": 0.13,
+        "n": 8,
+        "mean": 4.13
+      },
+      {
+        "pack": "meta-corpus-256k",
+        "occ": 0.26,
+        "n": 8,
+        "mean": 4.13
+      },
+      {
+        "pack": "meta-corpus-512k",
+        "occ": 0.51,
+        "n": 8,
+        "mean": 4.13
+      },
+      {
+        "pack": "meta-corpus-512k-dup",
+        "occ": 0.51,
+        "n": 8,
+        "mean": 3.75
+      }
+    ],
+    "dissect": [
+      {
+        "pack": "meta-corpus-32k",
+        "occ": 0.03,
+        "n": 8,
+        "mean": 5
+      },
+      {
+        "pack": "meta-corpus-128k",
+        "occ": 0.13,
+        "n": 8,
+        "mean": 4
+      },
+      {
+        "pack": "meta-corpus-256k",
+        "occ": 0.26,
+        "n": 8,
+        "mean": 4.25
+      },
+      {
+        "pack": "meta-corpus-512k",
+        "occ": 0.51,
+        "n": 8,
+        "mean": 4.13
+      },
+      {
+        "pack": "meta-corpus-512k-dup",
+        "occ": 0.51,
+        "n": 8,
+        "mean": 4
+      }
+    ],
+    "bound": [
+      {
+        "pack": "meta-corpus-32k",
+        "occ": 0.03,
+        "n": 8,
+        "mean": 4.75
+      },
+      {
+        "pack": "meta-corpus-128k",
+        "occ": 0.13,
+        "n": 8,
+        "mean": 3.5
+      },
+      {
+        "pack": "meta-corpus-256k",
+        "occ": 0.26,
+        "n": 8,
+        "mean": 3.25
+      },
+      {
+        "pack": "meta-corpus-512k",
+        "occ": 0.51,
+        "n": 8,
+        "mean": 3.25
+      },
+      {
+        "pack": "meta-corpus-512k-dup",
+        "occ": 0.51,
+        "n": 8,
+        "mean": 3.25
+      }
+    ],
+    "vis": [
+      {
+        "pack": "meta-corpus-32k",
+        "occ": 0.03,
+        "n": 8,
+        "mean": 5
+      },
+      {
+        "pack": "meta-corpus-128k",
+        "occ": 0.13,
+        "n": 8,
+        "mean": 4.75
+      },
+      {
+        "pack": "meta-corpus-256k",
+        "occ": 0.26,
+        "n": 8,
+        "mean": 4.63
+      },
+      {
+        "pack": "meta-corpus-512k",
+        "occ": 0.51,
+        "n": 8,
+        "mean": 4.75
+      },
+      {
+        "pack": "meta-corpus-512k-dup",
+        "occ": 0.51,
+        "n": 8,
+        "mean": 4.5
+      }
+    ]
+  },
+  "cliffTest": [
+    {
+      "dim": "meta",
+      "step": "meta-corpus-32k→meta-corpus-128k",
+      "drop": 0.87,
+      "prevDrop": null,
+      "z": 2.52,
+      "p": 0.009,
+      "cliff": false
+    },
+    {
+      "dim": "meta",
+      "step": "meta-corpus-128k→meta-corpus-256k",
+      "drop": 0,
+      "prevDrop": 0.87,
+      "z": 0,
+      "p": 1,
+      "cliff": false
+    },
+    {
+      "dim": "meta",
+      "step": "meta-corpus-256k→meta-corpus-512k",
+      "drop": 0,
+      "prevDrop": 0.87,
+      "z": -0.05,
+      "p": 0.958,
+      "cliff": false
+    },
+    {
+      "dim": "dissect",
+      "step": "meta-corpus-32k→meta-corpus-128k",
+      "drop": 1,
+      "prevDrop": null,
+      "z": 2.94,
+      "p": 0.002,
+      "cliff": false
+    },
+    {
+      "dim": "dissect",
+      "step": "meta-corpus-128k→meta-corpus-256k",
+      "drop": -0.25,
+      "prevDrop": 1,
+      "z": -0.74,
+      "p": 0.46,
+      "cliff": false
+    },
+    {
+      "dim": "dissect",
+      "step": "meta-corpus-256k→meta-corpus-512k",
+      "drop": 0.12,
+      "prevDrop": 1,
+      "z": 0.37,
+      "p": 0.713,
+      "cliff": false
+    }
+  ],
+  "dupContrast": {
+    "meta": {
+      "corpus": 4.13,
+      "dup": 3.75,
+      "z": 0.95,
+      "p": 0.341
+    },
+    "dissect": {
+      "corpus": 4.13,
+      "dup": 4,
+      "z": 0.42,
+      "p": 0.674
+    },
+    "bound": {
+      "corpus": 3.25,
+      "dup": 3.25,
+      "z": -0.05,
+      "p": 0.958
+    },
+    "vis": {
+      "corpus": 4.75,
+      "dup": 4.5,
+      "z": 0.84,
+      "p": 0.398
+    }
+  }
+}

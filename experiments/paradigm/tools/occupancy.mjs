@@ -38,6 +38,12 @@ export const PACK_TOKENS_K = {
   'root-cause-first': 7.8,
   'behavior-discipline': 7.2,
   'e16-s6-retro': 7.8,
+  // e19 占用率专项（实测，字符数/3.2，build-e19-packs.mjs 产物）
+  'meta-corpus-32k': 34.3,
+  'meta-corpus-128k': 130.3,
+  'meta-corpus-256k': 256.7,
+  'meta-corpus-512k': 512.6,
+  'meta-corpus-512k-dup': 512.0,
 };
 
 /** 模型窗口（k tokens）。键为模型名片段（includes 匹配，长片段优先）。 */
