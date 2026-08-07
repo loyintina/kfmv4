@@ -495,6 +495,7 @@ body {
   letter-spacing: 0.5px;
 }
 
+/* 信箱/待办光点：同 obs-port-pulse 低调呼吸（2026-08-07 用户定稿随机脉冲），时长/相位由 obs-hud pulseStyle 注入 */
 .obs-dot {
   width: 5px;
   height: 5px;
@@ -503,30 +504,36 @@ body {
   margin-right: 4px;
   vertical-align: 1px;
   flex: none;
+  animation: obs-port-pulse 3s ease-in-out infinite;
 }
 
 .obs-dot-warn {
   background: #f59e0b;
+  color: #f59e0b;
   box-shadow: 0 0 4px rgba(245, 158, 11, 0.5);
 }
 
 .obs-dot-ok {
   background: #22c55e;
+  color: #22c55e;
   box-shadow: 0 0 4px rgba(34, 197, 94, 0.4);
 }
 
 .obs-dot-dead {
   background: #ef4444;
+  color: #ef4444;
   box-shadow: 0 0 4px rgba(239, 68, 68, 0.5);
 }
 
 .obs-dot-stat {
   background: #06b6d4;
+  color: #06b6d4;
   box-shadow: 0 0 4px rgba(6, 182, 212, 0.4);
 }
 
 .obs-dot-other {
   background: rgba(224, 224, 224, 0.35);
+  color: rgba(224, 224, 224, 0.35);
 }
 
 /* ===== 信箱详情视图（点击条目进入，2026-08-06） ===== */
@@ -620,19 +627,22 @@ body {
   display: none;
 }
 
-/* 状态点（复用 obs-dot 几何，色按状态） */
+/* 状态点（复用 obs-dot 几何+呼吸，色按状态） */
 .obs-dot-stack-todo {
   background: #06b6d4;
+  color: #06b6d4;
   box-shadow: 0 0 4px rgba(6, 182, 212, 0.4);
 }
 
 .obs-dot-stack-hold {
   background: #f59e0b;
+  color: #f59e0b;
   box-shadow: 0 0 4px rgba(245, 158, 11, 0.5);
 }
 
 .obs-dot-stack-done {
   background: #22c55e;
+  color: #22c55e;
   box-shadow: 0 0 4px rgba(34, 197, 94, 0.3);
 }
 
