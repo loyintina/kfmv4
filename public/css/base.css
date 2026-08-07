@@ -798,9 +798,11 @@ body {
 
 /* 滚动柱状图：逐样本上色（绿<70/黄 70-85/红>85/进程青），新样本右侧匀速流入（轨道 transform 过渡，见 obs-hud） */
 /* 顶满虚线 = 100% 参考线，柱高直接读出百分比位置 */
+/* 窗口精确 24 根（24×4+23×1=119px）：轨道恒渲染 25 根，新柱在右界外随滑入进场（见 obs-hud 缓动不变式） */
 .obs-sys-bars {
   position: relative;
   overflow: hidden;
+  width: 119px;
   height: 16px;
 }
 
@@ -818,7 +820,7 @@ body {
 .obs-sys-track {
   display: flex;
   align-items: flex-end;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 1px;
   height: 16px;
   will-change: transform;
