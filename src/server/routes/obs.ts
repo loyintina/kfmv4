@@ -219,7 +219,7 @@ interface SysMetric { label: string; value: string; pair: string; pct: number | 
 interface SysPort { port: number; name: string; scope: 'public' | 'local'; conns: number }
 interface SysCron { name: string; status: 'ok' | 'fail' | 'unknown'; ago: string }
 interface SysHistory { disk: number[]; mem: number[]; load: number[]; rss: number[] }
-interface SysData { metrics: SysMetric[]; history: SysHistory; ports: SysPort[]; cron: SysCron[] }
+interface SysData { metrics: SysMetric[]; history: SysHistory; ports: SysPort[]; cron: SysCron[]; seq: number }
 
 const PORTS_CACHE_MS = 30_000;
 const CRON_CACHE_MS = 300_000;
@@ -228,6 +228,8 @@ const HISTORY_PATH = path.join(KFM_DATA_DIR, 'sys-metrics.json');
 let portsCache: { data: SysPort[]; ts: number } | null = null;
 let cronCache: { data: SysCron[]; ts: number } | null = null;
 let history: Array<{ ts: number; disk: number; mem: number; load: number; rss: number }> = [];
+let sampleSeq = 0; // 采样拍序号（每次 tick +1）——客户端按「seq 变了 = 新拍」做时钟驱动滑动，
+// 不依赖值变化（稳态下负载/内存值几分钟不变，值驱动会彻底静止，2026-08-07 用户实测）
 let samplerStarted = false;
 
 // 原始指标读取（statfs/meminfo/loadavg/RSS——都是便宜本地读，采样器与请求路径共用）
@@ -274,6 +276,7 @@ function startSysSampler(): void {
     if (Array.isArray(j)) history = j.slice(-HISTORY_MAX);
   } catch { /* 无历史文件 → 从零积累 */ }
   const tick = () => {
+    sampleSeq++;
     history.push({ ts: Date.now(), ...readMetricsRaw() });
     if (history.length > HISTORY_MAX) history.shift();
     try { fs.writeFileSync(HISTORY_PATH, JSON.stringify(history)); } catch { /* 落盘失败不致命 */ }
@@ -422,5 +425,6 @@ function collectSys(): SysData {
     history: { disk: historyOf('disk'), mem: historyOf('mem'), load: historyOf('load'), rss: historyOf('rss') },
     ports: collectPorts(),
     cron: collectCron(),
+    seq: sampleSeq,
   };
 }

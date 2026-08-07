@@ -55,7 +55,7 @@ interface SysMetric { label: string; value: string; pair?: string; pct: number |
 interface SysPort { port: number; name: string; scope: 'public' | 'local'; conns?: number }
 interface SysCron { name: string; status: 'ok' | 'fail' | 'unknown'; ago: string }
 interface SysHistory { disk: number[]; mem: number[]; load: number[]; rss: number[] }
-interface SysData { metrics: SysMetric[]; history: SysHistory; ports: SysPort[]; cron: SysCron[] }
+interface SysData { metrics: SysMetric[]; history: SysHistory; ports: SysPort[]; cron: SysCron[]; seq?: number }
 
 export function initObsHud(): void {
   if (inited) return;
@@ -279,6 +279,7 @@ ${body}</div>
   const metricRecs = new Map<string, MetricRec>();
   let lastWinSig = '';
   let lastWins: number[][] = [];
+  let lastSeq = -1;
   function barHtml(v: number, pct: number | null, vmax: number): string {
     const cls = pct == null ? 'obs-bar-cyan' : v > 85 ? 'obs-bar-red' : v >= 70 ? 'obs-bar-amber' : 'obs-bar-green';
     const h = Math.max(2, Math.round(Math.min(1, v / (pct != null ? 100 : vmax)) * 16));
@@ -314,12 +315,14 @@ ${body}</div>
       }
       rec.row.innerHTML = `<span class="obs-sys-label">${m.label}</span><span class="obs-rail-num${metricCls(m.pct)}">${m.value}</span><span class="obs-sys-pair">${m.pair ?? ''}</span>`;
     });
-    // 新样本判定：四列同拍，比较最近 17 根窗口签名。
-    // 恰好新增一根（各列 cur = prev.slice(1)+[new]）→ 走缓动；跳多拍（失焦/锁屏期间轮询被
-    // 浏览器冷冻而服务端采样照跑，攒了一批）或历史重置 → 直接重建轨道稳态，下一拍恢复滑动。
+    // 滑动驱动 = 时钟驱动（2026-08-07 用户定稿）：服务端每拍采样 seq+1，seq 变了就是新拍——
+    // 值相同也照滑（补同高柱），不因稳态值不变而静止；旧服务端无 seq 退回窗口签名判定。
+    // 内容恰好平移一根（各列 cur = prev.slice(1)+[new]）→ 走缓动；跳多拍（失焦冷冻期间
+    // 采样积累）或历史重置 → 直接重建轨道稳态，下一拍恢复滑动。
     const wins = hists.map(h => h.slice(-(BAR_SHOW + 1)));
     const winSig = wins.map(w => w.join(',')).join('|');
-    if (hists[0].length > 0 && winSig !== lastWinSig) {
+    const hasNew = sys.seq != null ? sys.seq !== lastSeq : winSig !== lastWinSig;
+    if (hists[0].length > 0 && hasNew) {
       const shiftOne = lastWins.length === 4 && wins.every((w, i) => {
         const p = lastWins[i];
         return p.length > 1 && w.length > 1 && p.slice(1).join(',') === w.slice(0, w.length - 1).join(',');
@@ -348,6 +351,7 @@ ${body}</div>
       }
       lastWinSig = winSig;
       lastWins = wins;
+      lastSeq = sys.seq ?? lastSeq;
     }
     railPortsEl.innerHTML = sys.ports.map(p =>
       `<div class="obs-port-row"><span class="obs-port-dot obs-port-dot-${p.scope}" style="${pulseStyle(String(p.port))}"></span><span class="obs-port-num">${p.port}</span><span class="obs-port-name">${p.name}</span><span class="obs-port-conns">${(p.conns ?? 0) > 0 ? '×' + p.conns : ''}</span></div>`
