@@ -134,11 +134,29 @@ export function setupFileRoutes(router: Router): void {
     } catch (error: any) { res.json({ error: error.message }); }
   });
 
+  // 已知二进制扩展名：文本读取直接拒绝（2026-08-07 事故：用户文件树点开 materials.db 250MB，
+  // readFileSync 全量进内存 + utf-8 解码 + res.json 序列化，单次峰值 700M+，cgroup MemoryHigh
+  // 刹车直接踩死事件循环——前端无响应）
+  const READ_DENY_EXT = new Set(['.db', '.sqlite', '.sqlite3', '.bin', '.so', '.wasm', '.zip', '.gz', '.tar', '.7z', '.rar', '.exe', '.dll', '.ico', '.icns']);
+  // 文本读取硬上限：超出给截断预览（手机端渲染 1MB+ JSON 也会冻死主线程，见上方 sliceMessages 注释同款教训）
+  const READ_MAX_BYTES = 2 * 1024 * 1024;
+
   router.post('/files/read', (req, res) => {
     try {
       const targetPath = sanitizePath(req.body.path);
       if (!targetPath) { res.json({ error: '路径不合法' }); return; }
       if (!fs.existsSync(targetPath)) { res.json({ error: '文件不存在' }); return; }
+      const ext = path.extname(targetPath).toLowerCase();
+      if (READ_DENY_EXT.has(ext)) { res.json({ error: `二进制文件（${ext}）不支持文本预览` }); return; }
+      const size = fs.statSync(targetPath).size;
+      if (size > READ_MAX_BYTES) {
+        const fd = fs.openSync(targetPath, 'r');
+        const buf = Buffer.alloc(READ_MAX_BYTES);
+        fs.readSync(fd, buf, 0, READ_MAX_BYTES, 0);
+        fs.closeSync(fd);
+        res.json({ path: targetPath, content: buf.toString('utf-8'), truncated: true, totalSize: size });
+        return;
+      }
       res.json({ path: targetPath, content: fs.readFileSync(targetPath, 'utf-8') });
     } catch (error: any) { res.json({ error: error.message }); }
   });

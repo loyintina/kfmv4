@@ -277,6 +277,7 @@ export function createFileHandler(meta: Record<string, unknown>): { activate: (c
         const data = await res.json();
         if (data.content !== undefined && data.content !== null) {
           _rawContent = data.content;
+          if (data.truncated) _rawContent += `\n\n—— ✂ 文件过大（${(data.totalSize / 1048576).toFixed(1)}MB），仅显示前 2MB ——`;
           _renderPreview();
         } else {
           renderBinaryInfo(contentEl, filePath, data.size, card?.accents?.color1, card?.accents?.color2);
