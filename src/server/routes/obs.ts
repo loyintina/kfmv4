@@ -509,6 +509,7 @@ function collectArchive(): ArchiveData {
         });
       } catch { /* 单个坏文件不拖垮整轨 */ }
     }
+    tracks.push(...collectKimiTracks(now));
     const totalTokens = tracks.reduce((s, t) => s + t.tokens, 0);
     tracks.sort((a, b) => b.tokens - a.tokens);
     const top = tracks.slice(0, ARCHIVE_TOP_N);
@@ -527,5 +528,82 @@ function collectArchive(): ArchiveData {
     out = { sessions: tracks.length, totalTokens, tracks: top };
   } catch { /* sessions 目录不存在 → 空 */ }
   archiveCache = { data: out, ts: now };
+  return out;
+}
+
+// ========== kimi-code 长会话并入星轨（2026-08-08 用户指令：两条长 session 上轨） ==========
+// 入选规则：~/.kimi-code/sessions/*//session_*\/agents/main/wire.jsonl ≥ 1MB——
+// 当前恰好 = 研究臂 84M + 主线 14M 两条；短会话（40~440K）不入选，规则自然泛化。
+// token 口径 = 新处理 token（inputOther + inputCacheCreation + output），**不含
+// inputCacheRead**——cacheRead 每轮重读全量上下文，研究臂含它 4.77G、不含 49.8M，
+// 计入会把 kfm 轨道（190K 级）在 sqrt 刻度上压成不可见（2026-08-08 实测两口径）。
+// msgs 口径 = LLM 调用次数（usage 记录数），非消息条数，tooltip 自行注意。
+// 增量扫描：按 offset 只读新增尾部（kimi 会话是活的，主线臂每轮都在追加）；
+// 文件截断（轮转）则归零重扫。进程重启后首次全量扫 84M 约 1s，可接受。
+
+const KIMI_SESSIONS_ROOT = path.join(os.homedir(), '.kimi-code', 'sessions');
+const KIMI_WIRE_MIN_BYTES = 1_000_000;
+
+interface KimiWireState { offset: number; tokens: number; calls: number }
+const kimiWireState = new Map<string, KimiWireState>();
+
+function scanKimiWire(file: string, size: number): KimiWireState {
+  const st = kimiWireState.get(file) ?? { offset: 0, tokens: 0, calls: 0 };
+  if (size < st.offset) { st.offset = 0; st.tokens = 0; st.calls = 0; } // 轮转截断 → 重扫
+  if (size > st.offset) {
+    const fd = fs.openSync(file, 'r');
+    const len = size - st.offset;
+    const buf = Buffer.alloc(len);
+    fs.readSync(fd, buf, 0, len, st.offset);
+    fs.closeSync(fd);
+    let lastNl = -1; // 只处理完整行，半截行留下一轮（文件只追加）
+    for (let i = buf.length - 1; i >= 0; i--) if (buf[i] === 10) { lastNl = i; break; }
+    if (lastNl >= 0) {
+      const text = buf.subarray(0, lastNl).toString('utf-8');
+      for (const m of text.matchAll(/"usage":\{[^}]*\}/g)) {
+        const u = m[0];
+        const num = (k: string) => Number(u.match(new RegExp(`"${k}":(\\d+)`))?.[1] ?? 0);
+        st.tokens += num('inputOther') + num('inputCacheCreation') + num('output');
+        st.calls++;
+      }
+      st.offset += lastNl + 1;
+    }
+  }
+  kimiWireState.set(file, st);
+  return st;
+}
+
+function collectKimiTracks(now: number): ArchiveTrack[] {
+  const out: ArchiveTrack[] = [];
+  let wds: string[] = [];
+  try { wds = fs.readdirSync(KIMI_SESSIONS_ROOT).map(d => path.join(KIMI_SESSIONS_ROOT, d)); } catch { return out; }
+  for (const wd of wds) {
+    let sessDirs: string[] = [];
+    try { sessDirs = fs.readdirSync(wd).filter(d => d.startsWith('session_')); } catch { continue; }
+    for (const sd of sessDirs) {
+      const wire = path.join(wd, sd, 'agents', 'main', 'wire.jsonl');
+      try {
+        const fst = fs.statSync(wire);
+        if (fst.size < KIMI_WIRE_MIN_BYTES) continue;
+        const w = scanKimiWire(wire, fst.size);
+        let title = sd.slice(8, 16);
+        let t0 = new Date(fst.birthtimeMs > 0 ? fst.birthtimeMs : fst.mtimeMs).toISOString();
+        let t1 = new Date(fst.mtimeMs).toISOString();
+        try {
+          const sj = JSON.parse(fs.readFileSync(path.join(wd, sd, 'state.json'), 'utf-8')) as Record<string, unknown>;
+          if (sj.title) title = String(sj.title).slice(0, 14);
+          if (sj.createdAt) t0 = String(sj.createdAt);
+          if (sj.updatedAt && new Date(String(sj.updatedAt)).getTime() > new Date(t1).getTime()) t1 = String(sj.updatedAt);
+        } catch { /* state.json 缺失/损坏 → 用 wire 时间戳 */ }
+        out.push({
+          title: `kimi·${title}`,
+          tokens: w.tokens,
+          msgs: w.calls,
+          t0, t1,
+          active: now - new Date(t1).getTime() < ACTIVE_WINDOW_MS,
+        });
+      } catch { /* 无 wire 或读取失败 → 跳过 */ }
+    }
+  }
   return out;
 }
