@@ -3,8 +3,8 @@
  *
  * 背景信息窗：主卡（deepseek 余额）+ 双信息框（信箱=语义巡逻 verdict 时间线 /
  * 待办=stack.yaml 工作栈全状态渲染，2026-08-06 用户拍板：状态=字段非散文标记）
- * + 左缘 SYS 窄竖条（2026-08-06 用户定稿：服务器四数 + 服务灯 + cron 8 条状态，
- * 顶到底，只读 v1）。纯展示为主，列表局部可触摸滚动（pointer-events auto 仅滚动区）。
+ * + SYS 窄竖条（2026-08-06 用户定稿：信箱块正下方靠左、左线对齐主卡左线、
+ * 向下顶到底；服务器四数 + 服务灯 + cron 8 条状态，只读 v1）。纯展示为主，列表局部可触摸滚动（pointer-events auto 仅滚动区）。
  *
  * 呈现哲学（依据 semantic-compiler-seed）：信箱是概率区非阻断信号——柔和状态
  * 徽标而非警报条；数据单一出处（服务端现场解析 inbox/STACK 文件，不缓存副本
@@ -89,8 +89,8 @@ export function initObsHud(): void {
   hud.style.zIndex = String(Z.CENTER_CONTENT); // L1 中央内容层（< SUMMON_BTN 200）
   document.body.appendChild(hud);
 
-  // 左缘 SYS 窄竖条（2026-08-06 用户定稿：顶到底只读 v1）——独立于 hud 居中文本流，
-  // 固定左缘；top 76px 避开顶部召唤按钮区（backdrop-filter 垂直叠加按钮会致其视觉消失）
+  // SYS 窄竖条（2026-08-06 用户定稿 v2：信箱块正下方靠左，左线与信箱/主卡左线对齐，
+  // 向下顶到底）——位置按 .obs-inbox 实测矩形注入，随 resize 重算
   const rail = document.createElement('div');
   rail.className = 'obs-rail';
   rail.innerHTML = `
@@ -105,6 +105,13 @@ export function initObsHud(): void {
   const railSysEl = rail.querySelector<HTMLElement>('.obs-rail-sys')!;
   const railSvcEl = rail.querySelector<HTMLElement>('.obs-rail-svc')!;
   const railCronEl = rail.querySelector<HTMLElement>('.obs-rail-cron')!;
+  const placeRail = () => {
+    const r = hud.querySelector<HTMLElement>('.obs-inbox')!.getBoundingClientRect();
+    rail.style.left = `${r.left}px`;
+    rail.style.top = `${r.bottom + 10}px`;
+  };
+  placeRail();
+  window.addEventListener('resize', placeRail);
 
   const clockEl = hud.querySelector<HTMLElement>('.obs-clock')!;
   const balanceEl = hud.querySelector<HTMLElement>('.obs-balance')!;

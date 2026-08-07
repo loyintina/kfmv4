@@ -182,13 +182,13 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 /* ========== 观测台 HUD（8.5 史官制度 · L1 中央内容层，2026-08-05） ========== */
 /* 背景信息窗·简约版（2026-08-06 定稿）：单张毛玻璃卡，三元素——deepseek/秒级时间/余额。
    纯展示（pointer-events none）；z = L1 中央内容层（< SUMMON_BTN 200，不盖召唤按钮）。 */
-.obs-hud{position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:14px 12px 0 68px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;user-select:none}
+.obs-hud{position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:14px 12px 0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;user-select:none}
 /* 横贯顶栏（2026-08-06 定稿）：全宽 + 横排三端分布；左右 padding 76px 避开召唤按钮
    区（文件树按钮左 16-56px / 卡片堆按钮右）——按钮 z(200) 盖在框(z 100)上，文字不进按钮区。 */
-/* 贴顶居中卡（2026-08-06 定稿 v3）：宽 340px 居中（内容区 = 视口 - 左缘 SYS 竖条 68px 让位）——左右分区：
+/* 贴顶居中卡（2026-08-06 定稿 v4）：宽 372px 居中——左右分区：
    左列两行（deepseek 标签 + 秒级时间）· 右列余额大字单独放（重点）。
    禁全宽横贯：双 backdrop-filter 垂直叠加移动端合成异常会致按钮视觉消失。 */
-.obs-card{display:flex;flex-direction:row;align-items:center;justify-content:space-between;width:340px;box-sizing:border-box;padding:14px 32px;border-radius:20px;background:rgba(18,18,26,.5);border:1px solid transparent;background-clip:padding-box;border-image:linear-gradient(135deg,rgba(124,58,237,.5),rgba(0,212,255,.3)) 1;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 4px 30px rgba(124,58,237,.08)}
+.obs-card{display:flex;flex-direction:row;align-items:center;justify-content:space-between;width:372px;box-sizing:border-box;padding:14px 56px;border-radius:20px;background:rgba(18,18,26,.5);border:1px solid transparent;background-clip:padding-box;border-image:linear-gradient(135deg,rgba(124,58,237,.5),rgba(0,212,255,.3)) 1;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 4px 30px rgba(124,58,237,.08)}
 .obs-left{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
 .obs-provider{font-size:12px;letter-spacing:3px;color:rgba(0,212,255,.75);text-transform:uppercase}
 .obs-clock{font-size:12px;letter-spacing:2px;color:var(--text-dim);font-variant-numeric:tabular-nums}
@@ -197,14 +197,14 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 @keyframes obsFlash{0%{opacity:.15}100%{opacity:1}}
 
 /* ===== 双信息框行（信箱+待办，2026-08-06 用户定稿：信箱右侧同宽） ===== */
-/* 行宽 340 = 主卡宽（SYS 竖条让位后同步收窄 372→340）：左框贴主卡左界、右框贴主卡右界，
-   space-between 天然对齐，取代信箱单框时代的 translateX(-106px) 补偿。 */
-.obs-row{display:flex;flex-direction:row;justify-content:space-between;width:340px;align-self:center;margin-top:10px}
+/* 行宽 372 = 主卡宽：左框贴主卡左界、右框贴主卡右界，space-between 天然对齐，
+   取代信箱单框时代的 translateX(-106px) 补偿。 */
+.obs-row{display:flex;flex-direction:row;justify-content:space-between;width:372px;align-self:center;margin-top:10px}
 
 /* ===== 信箱卡（语义巡逻 verdict 时间线，2026-08-06） ===== */
 /* 窄竖长信箱造型，行内左框；柔和状态徽标（概率区非阻断哲学）；
    列表局部 pointer-events auto 支持触摸滚动（其余区域保持穿透）。 */
-.obs-inbox{width:146px;box-sizing:border-box;border-radius:16px;background:rgba(18,18,26,.5);border:1px solid transparent;background-clip:padding-box;border-image:linear-gradient(135deg,rgba(124,58,237,.4),rgba(0,212,255,.25)) 1;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);overflow:hidden}
+.obs-inbox{width:160px;box-sizing:border-box;border-radius:16px;background:rgba(18,18,26,.5);border:1px solid transparent;background-clip:padding-box;border-image:linear-gradient(135deg,rgba(124,58,237,.4),rgba(0,212,255,.25)) 1;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);overflow:hidden}
 .obs-inbox-head{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid rgba(124,58,237,.18);pointer-events:auto}
 .obs-inbox-title{font-size:11px;letter-spacing:2px;color:rgba(0,212,255,.75);text-transform:uppercase;white-space:nowrap;flex:none}
 .obs-inbox-status{font-size:10px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -234,10 +234,10 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 .obs-inbox-detail-text{font-size:11px;color:var(--text);line-height:1.5;white-space:pre-wrap;word-break:break-word}
 
 /* ===== 待办卡（stack.yaml 工作栈，2026-08-06 用户拍板：废 STACK.md，yaml 单一出处） ===== */
-/* 行内右框；2026-08-06 加宽 160→200（中央空隙 52→12），SYS 竖条让位后随行宽
-   收窄至 182（空隙保持 12）。复用 obs-inbox-* 内部件类（head/list/item/detail/back）。
+/* 行内右框；2026-08-06 加宽 160→200（用户定稿：中央空隙 52→12，行宽 372 不动，
+   左界仍贴主卡）。复用 obs-inbox-* 内部件类（head/list/item/detail/back）。
    全状态渲染：todo/hold 全亮在前，done 渐淡殿后（藏起 done 是旧设计的诚实性缺陷）。 */
-.obs-stack{width:182px;box-sizing:border-box;border-radius:16px;background:rgba(18,18,26,.5);border:1px solid transparent;background-clip:padding-box;border-image:linear-gradient(135deg,rgba(0,212,255,.35),rgba(124,58,237,.35)) 1;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);overflow:hidden}
+.obs-stack{width:200px;box-sizing:border-box;border-radius:16px;background:rgba(18,18,26,.5);border:1px solid transparent;background-clip:padding-box;border-image:linear-gradient(135deg,rgba(0,212,255,.35),rgba(124,58,237,.35)) 1;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);overflow:hidden}
 .obs-stack-status{font-size:10px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .obs-stack-list{height:150px;overflow-y:auto;pointer-events:auto;padding:4px 0;scrollbar-width:none;-ms-overflow-style:none}
 .obs-stack-list::-webkit-scrollbar{display:none}
@@ -260,11 +260,12 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 .obs-stack-detail-title{font-size:12px;color:var(--text);font-weight:600}
 /* 待办返回按钮复用信箱样式（事件类名单独 .obs-stack-back 便于委托区分） */
 
-/* ===== 左缘 SYS 窄竖条（2026-08-06 用户定稿：靠左边界顶到底，只读 v1） ===== */
-/* 三段：SYS 四数（阈值变色：平时灰/70 琥珀/85 红）+ 服务灯 + cron 状态清单。
-   top 76px 避开顶部召唤按钮区（backdrop-filter 垂直叠加按钮致其视觉消失的前科）；
-   内容区由 .obs-hud padding-left:68px 让位；宽 60px，纯展示 pointer-events:none。 */
-.obs-rail{position:fixed;left:0;top:76px;bottom:0;width:60px;box-sizing:border-box;padding:8px 6px;display:flex;flex-direction:column;pointer-events:none;background:rgba(18,18,26,.45);border-right:1px solid rgba(124,58,237,.25);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);overflow:hidden;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+/* ===== SYS 窄竖条（2026-08-06 用户定稿 v2：信箱块正下方靠左，向下顶到底） ===== */
+/* 左线与信箱块/主卡左线对齐——left/top 由 JS 按 .obs-inbox getBoundingClientRect
+   实测注入（v1 贴屏幕左缘被用户实拍打回：竖条是信箱列的延伸，不是屏幕边缘条）。
+   三段：SYS 四数（阈值变色：平时灰/70 琥珀/85 红）+ 服务灯 + cron 状态清单。
+   宽 60px，纯展示 pointer-events:none。 */
+.obs-rail{position:fixed;bottom:0;width:60px;box-sizing:border-box;padding:8px 6px;display:flex;flex-direction:column;pointer-events:none;background:rgba(18,18,26,.45);border-right:1px solid rgba(124,58,237,.25);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);overflow:hidden;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 .obs-rail-sec{display:flex;flex-direction:column;gap:7px;padding:6px 0}
 .obs-rail-div{flex:none;height:1px;margin:2px 0;background:linear-gradient(90deg,rgba(0,212,255,.25),rgba(124,58,237,.25))}
 .obs-rail-cell{display:flex;flex-direction:column;align-items:flex-start;gap:1px}
