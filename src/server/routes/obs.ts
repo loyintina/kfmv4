@@ -442,6 +442,9 @@ function collectSys(): SysData {
   startSysSampler();
   const r = readMetricsRaw();
   const historyOf = (k: 'disk' | 'mem' | 'load' | 'rss') => history.map(s => s[k]);
+  // rss 历史下发前转成占限额百分比（有限额时）——柱状图判色/柱高按「样本值=百分比」口径，
+  // MB 原值 115>85 会误判红且柱高顶满（2026-08-07 用户实测全红）；无限制环境保持 MB + pct null 旧行为
+  const rssHist = historyOf('rss');
   return {
     metrics: [
       { label: '硬盘', value: `${r.disk}%`, pair: `${r.diskUsedG}/${r.diskTotalG}G`, pct: r.disk },
@@ -449,7 +452,7 @@ function collectSys(): SysData {
       { label: '负载', value: `${r.load}%`, pair: `${r.loadRaw.toFixed(2)}/${r.cores}`, pct: r.load },
       { label: '进程', value: `${r.rss}M`, pair: r.rssLimitMB > 0 ? `/${(r.rssLimitMB / 1024).toFixed(1)}G` : `/${r.memTotalG}G`, pct: r.rssLimitMB > 0 ? Math.round((r.rss / r.rssLimitMB) * 100) : null },
     ],
-    history: { disk: historyOf('disk'), mem: historyOf('mem'), load: historyOf('load'), rss: historyOf('rss') },
+    history: { disk: historyOf('disk'), mem: historyOf('mem'), load: historyOf('load'), rss: r.rssLimitMB > 0 ? rssHist.map(v => Math.round((v / r.rssLimitMB) * 100)) : rssHist },
     ports: collectPorts(),
     cron: collectCron(),
     seq: sampleSeq,
