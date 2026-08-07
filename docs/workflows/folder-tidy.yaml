@@ -1,0 +1,39 @@
+id: folder-tidy
+name: 文件夹整理（重组/归档）
+trigger: 某条线收官（研究线/功能线），或某文件夹「失控感」——平铺文件多到说不清各自是什么；
+  典型信号：根目录 md 混放三类以上、工具目录常驻与一次性混杂、中间产物文件数 >> 现役文件数
+frequency: 低频（每条线收官时一次；2026-08-07 paradigm 重组为首例实战）
+reads:
+  - workflows/doc-write.yaml（新文档/移动文档的入口纪律）
+  - ../experiments/paradigm/index.md（目录地图节——重组后的目标形态样例）
+steps:
+  1. 盘点：数清楚——`find <dir> -type f | wc -l`、按子目录分布、按文件名前缀分组；
+     把文件分成四类：常驻（被运行中服务/内核引用）/ 现役（幂等可重跑，人会再用）/
+     归档（有历史价值但不再用）/ 垃圾（可再生或无价值——默认不删，进归档）
+  2. 查耦合（动手前 MUST）：grep 全仓引用——谁引用了这个目录的路径？
+     运行中服务、重启脚本、checker、文档链接、其他脚本内部调用；
+     每个命中点决定去留（留根 or 移动后同步改引用）
+  3. 设计目标结构：按「人怎么找东西」分子目录（design/results/notes/legacy/archive 是
+     paradigm 首例外样例）；数据区与产物区分开；写一个目录地图节放进该目录的 index/README
+  4. 执行：一律 `git mv`（保历史）；批量中间产物先 tar czf 进 archive/ 再 `git rm -r`
+     （tarball 附 README 写明内容与再生路径）；不物理删除任何东西
+  5. 修门与引用：checker 扫描规则扩展/豁免同步改（首例外：check-experiment-registry
+     加 design/results/notes/tools-legacy 扫描 + archive 豁免）；第 2 步查到的引用点逐个改
+  6. 登记：目录的 index/README 更新（目录地图 + 登记面路径）；新文档走 doc-write 挂入口
+  7. 验证：相关 checker 全绿 + 内核链路抽验（首例外：exp-driver --check 干跑通过）
+  8. 分块提交：骨架移动 / 归档 / index 重组 / 工作流或文档落档 各一块，每块 checker 绿再提下一块
+writes:
+  - 目标目录的新结构（git mv 保留历史）
+  - 归档目录的 README（归档内容与再生路径）
+  - 目录 index/README 的目录地图节
+  - checker 规则与引用点修复
+exit_condition: 相关 checker 全绿 + 目录文件数显著下降 + 每个文件能一句话说清归属 + git log 可分块回退
+natural_next: doc-write（新 index 节或新文档需要挂入口时）
+metric: 目录文件数 / 平铺率（根目录文件占比）/ checker 一次通过率
+hard_rules:
+  - 不动数据区（判卷归档、specs、scenarios 等被相对路径引用的数据）
+  - 不动运行中服务/重启脚本引用的路径（首例外：部署守卫脚本被 kfm-restart 引用，
+    重组时留在 tools/ 根不随 legacy 迁移）
+  - 先查耦合再动手，顺序不可颠倒
+  - 同仓有并行 agent 时，先 git status 确认 staging 范围，不 stage 别人的文件
+  - 全部操作可 git revert 回退；不物理删除

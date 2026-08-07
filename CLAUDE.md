@@ -15,8 +15,7 @@
 
 ## 会话启动（每次对话，1 跳）
 0. 首次接触 → orientation.md + onboarding.yaml；随后读 stack.yaml + history.md 尾
-3. 读 semantic-chain-inbox.md 尾 — 信箱 ⚠️ → 裁决流
-4. 改代码前 → pre-code-gate
+3. 读 semantic-chain-inbox.md 尾（信箱 ⚠️→裁决流）；改代码前 → pre-code-gate
 
 ## 任务 → 路由表
 | 任务 | 去向 |
@@ -32,6 +31,7 @@
 | 范式级讨论研究 | workflows/discussion-study.yaml |
 | 文档树同步 | workflows/doc-tree-sync.yaml |
 | 文档写入 | workflows/doc-write.yaml |
+| 文件夹整理 | workflows/folder-tidy.yaml |
 | 新 agent 接手 | workflows/onboarding.yaml |
 | 平行多轨讨论 | workflows/parallel-tracks.yaml |
 | 改代码前约束加载 | workflows/pre-code-gate.yaml |
