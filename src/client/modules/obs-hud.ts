@@ -113,20 +113,24 @@ export function initObsHud(): void {
   };
   placeRail();
   window.addEventListener('resize', placeRail);
-  // 竖条高度钉死 = 系统区 + 端口区恰好 4 行窗口（2026-08-07 用户定稿：废动态高度/上限切屏）；
-  // 端口超出 4 行 → 端口窗口内自动切屏轮播（每 5s 平滑滚一屏、重叠一行保持连贯、到底回顶；无手势穿透）
+  // 竖条高度钉死 = 系统区 + 端口区恰好 4 行窗口（2026-08-07 用户定稿 v2：4 整行硬切，
+  // 无重叠无平滑）；端口超出 4 行 → 窗口内每 5s 硬切一屏，最后一屏定格、再击回顶；无手势穿透
+  let portStride = 0; // 一屏步长 = 第 5 行与第 1 行的位置差（4 行 + 4 间距）
   const sizePorts = () => {
     const rows = railPortsEl.children;
-    if (rows.length === 0) { railPortsEl.style.height = ''; return; }
+    if (rows.length === 0) { railPortsEl.style.height = ''; portStride = 0; return; }
     const n = Math.min(4, rows.length);
     const first = rows[0] as HTMLElement;
     const last = rows[n - 1] as HTMLElement;
     railPortsEl.style.height = `${last.offsetTop + last.offsetHeight - first.offsetTop}px`;
+    portStride = rows.length > 4 ? (rows[4] as HTMLElement).offsetTop - first.offsetTop : 0;
   };
   setInterval(() => {
-    if (railPortsEl.scrollHeight <= railPortsEl.clientHeight + 4) return;
-    const next = railPortsEl.scrollTop + railPortsEl.clientHeight - 19; // 重叠一行（行高+间距 ≈ 19px）
-    railPortsEl.scrollTo({ top: next >= railPortsEl.scrollHeight - railPortsEl.clientHeight ? 0 : next, behavior: 'smooth' });
+    if (!portStride) return;
+    const el = railPortsEl;
+    const maxTop = el.scrollHeight - el.clientHeight;
+    if (el.scrollTop >= maxTop - 2) el.scrollTo({ top: 0, behavior: 'auto' });
+    else el.scrollTo({ top: Math.min(el.scrollTop + portStride, maxTop), behavior: 'auto' });
   }, 5_000);
 
   const clockEl = hud.querySelector<HTMLElement>('.obs-clock')!;
