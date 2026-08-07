@@ -13,6 +13,10 @@ Express 4 + WebSocket，`index.ts` 统一入口编排（协调层）。
 - **`env-store.ts`（安全关键）**：`.kfmv4/.env` 解析（mtime 缓存）+ apiKey 代字 `resolveKey`（process.env 优先）+ `upsertEnvVar`（chmod 600）
 - **`path-utils.ts`（安全关键）**：`SAFE_ROOT` + `sanitizePath()` 路径逃逸守卫
 - `terminal-pty.ts`：PTY 会话管理（spawn/write/resize/kill）
+- `routes/obs.ts`：观测台 HUD 数据聚合 `/obs/hud`（deepseek 余额 5s 缓存直连官方 +
+  信箱/待办现场解析单一出处 + SYS 5s 独立采样器环形 40 点落 sys-metrics.json +
+  端口 30s/cron 5min 缓存 + 星轨 archive 30s 缓存读 sessions/*.json 顶层字段）+
+  守视校准页 `/test` 与 `/obs/viewport` 视口回传
 - `ws-server.ts`：WS 连接管理；**30s 协议级 ping 半开检测 → killAll 清 PTY**
 - `ai/`：AI 对话子系统 → ../ai-chat/contract.md
 
@@ -33,6 +37,13 @@ Express 4 + WebSocket，`index.ts` 统一入口编排（协调层）。
 7. **apiKey 代字必须在使用点展开**——加载点展开会让 API 卡编辑回写把 `${VAR}` 引用
    冲成明文（且明文流经客户端）。持久化/编辑视图永远 raw，resolve 只在请求前
    （env-store.ts `resolveKey`）；`.env` 行格式是冻结契约（agent-runner 有同语义副本）。
+8. **cgroup 读取必须按 `/proc/self/cgroup` 相对路径拼**——主机 `/sys/fs/cgroup` 是
+   整棵树，根下的 memory.high 是根 cgroup 的（max），直读根路径必失效
+   （2026-08-07 RSS 限额参照第一版踩坑，8021 实测回退整机内存）。
+9. **文件读取端点必须有体量防护**——`/files/read` 三层：二进制扩展名拒绝 / 2MB 硬
+   上限截断（带 totalSize 标注）/ 前端截断提示。无防护 readFileSync 大文件
+   （2026-08-07 事故：materials.db 250MB 单次峰值 700M+）会撞 cgroup MemoryHigh
+   刹车，事件循环被踩死表现为「前端整体无响应」——内存墙下 OOM 不是崩溃是冻死。
 
 ## 素材考古（原文已随 archive 注销，`git show v8.1.1:docs/archive/design/…` 可挖）
 

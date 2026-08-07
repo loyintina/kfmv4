@@ -55,6 +55,18 @@
 11. **手动投全屏联动折叠光球面板，AI 召唤不折叠**（61579a7）：`collapseOrbPanel`
     只挂两条手动路径——tree-render `createFileFloatingCard` 与 card-stack 的 click
     处理器；共享层（floating-fullscreen）刻意不挂，AI 自动召唤页面操作不折叠面板。
+12. **反向分支绝不杀在途补间**（BAR-CARD-GHOST-02，2026-08-05）：`closeCardStack`
+    的 opening→closing 反向分支走 `_tl.reverse()` 时禁止 `killAllCardTweens()`——
+    `killTweensOf` 会把 `_tl` 内部补间一并杀掉，空壳 timeline 的 reverse 永不触发
+    onReverseComplete → 状态机永卡 closing（幽灵堆 II 型，快速双击召唤按钮必现）。
+    killAllCardTweens 只在全量开/关分支（GHOST-01 防护点）。
+13. **「点击空白关闭」类手势必须豁免同状态控件**（BAR-CARD-GHOST-03）：手势
+    onEnd「堆外 tap 关堆」豁免 `#cardStackToggleBtn`——touchend 先于 click 触发，
+    手势先关堆（state=closing 不算 open），紧随的 click 误判已关又重开，
+    净效果「按钮点了关不上」。任何改变同一状态的控件都不是「空白」。
+14. **随机配色只在全量打开路径生成**（BAR-CARD-ACCENT-01）：`_generateRandomAccents`
+    +`_updateCardStyles` 为「全新打开」设计（卡片在屏外，换色不可见）；closing→opening
+    反向重开卡片就在屏中央，必须沿用本次已生成的 `_currentAccents`，否则可见跳色。
 
 ## 素材考古（原文已随 archive 注销，`git show v8.1.1:docs/archive/design/…` 可挖）
 
