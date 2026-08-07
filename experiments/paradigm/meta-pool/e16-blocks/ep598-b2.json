@@ -1,0 +1,12 @@
+{
+ "id": "ep598-b2",
+ "episode_id": 598,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "heuristic",
+ "topic": "4.1 版本改坏→回退 4.0；日志卡定位；多次无效修改（与 B53/B54 同族）",
+ "pattern": "版本回退,验证优先",
+ "ep_score": 9,
+ "chars": 850,
+ "truncated": false,
+ "text": "**用户：**\n你在日志卡里加个日志不就知道了？\n\n**AI：**\n好，计划很简单：在键盘 handler 和 `onMoveNormal` 里加 `log()` 输出关键数值，硬刷新后在终端里 `log()` 命令看输出。\n\n**加的日志点**（4 处，每处一行 `log()`）：\n\n**1. 键盘开路径**（`clamped.y < orbRect.top` 分支内，derive 之前）：\n```\nlog('[kb] open: orbRect.top=%d clamped.y=%d saved.orbTop=%d rH=%d cardTop(el)=%d',\n    orbRect.top, clamped.y, s?.orbTop, rH, T);\n```\n\n**2. 键盘关路径**（`else if` 分支内）：\n```\nlog('[kb] close: t=%d s.cardTop=%d h=%d s.cardH=%d',\n    t, s.cardTop, parseFloat(item.el.style.height)||0, s.cardH);\n```\n\n**3. onMoveNormal 起手帧**（`dx===0 && dy===0` 时）：\n```\nlog('[drag] start: startOrbY=%d startCardH=%d availTop=%d renderH=%d',\n    startOrbY, startCardH, orbCY-margin, renderH);\n```\n\n**4. fSyncCorners 被调用时**（仅在键盘 handler 的 onUpdate 里调时记录）：\n```\nlog('[kb] fSync: w=%d h=%d orbY(el)=%d',\n    w, h, parseFloat(item.brOrb?.style.top)||0);\n```\n\n总共 4 行 `log()`。能开始执行吗？"
+}

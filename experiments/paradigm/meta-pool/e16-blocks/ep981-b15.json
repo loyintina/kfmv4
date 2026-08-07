@@ -1,0 +1,12 @@
+{
+ "id": "ep981-b15",
+ "episode_id": 981,
+ "session_id": "omp-2026-05-29T03-33-18-586Z_019e71cb-227a-7",
+ "source": "manual",
+ "topic": "omp 版本更新运维（update 6→10/启动命令/清理）",
+ "pattern": "版本哲学,可回退铁律",
+ "ep_score": 9,
+ "chars": 427,
+ "truncated": false,
+ "text": "**用户：**\n不对，这两个路径如果都设置了omp，那启动命令的时候不就冲突了吗？\n\n**AI：**\n不冲突，取决于 PATH 顺序。看看当前：\n\n```\nPATH=/root/.npm-global/bin:/root/.local/bin:...\n```\n\n`/root/.npm-global/bin` 在 `/root/.local/bin` 前面，所以默认走**npm 版（15.5.10）**。\n\n如果你要指定跑旧的 standalone binary：\n\n```bash\n/root/.local/bin/omp\n```\n\n或者反过来，把 local 放前面：\n\n```bash\nPATH=/root/.local/bin:$PATH omp\n```\n\n默认就是 npm 版，没啥问题。你觉得乱的话，可以把旧的删掉：\n\n```bash\nrm /root/.local/bin/omp\n```\n\n这样系统里就只剩一个 `omp` 了。要删吗？"
+}

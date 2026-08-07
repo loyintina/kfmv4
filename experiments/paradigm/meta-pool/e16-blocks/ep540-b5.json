@@ -1,0 +1,12 @@
+{
+ "id": "ep540-b5",
+ "episode_id": 540,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端棋盘格/角标位置偏差（验证细节）",
+ "pattern": "布局时序",
+ "ep_score": 1,
+ "chars": 1244,
+ "truncated": false,
+ "text": "**用户：**\n好，那，步骤2是做什么？\n\n**AI：**\n## 步骤 2：文字渲染\n\n目标是把字符串写到格子里，画出来。\n\n---\n\n### 做了什么\n\n**1. `_write(text: string)` 方法**\n\n遍历输入字符串的每个字符：\n\n| 字符 | 行为 |\n|------|------|\n| `\\n` | `_cursorR++`，`_cursorC = 0`。如果到底部了，网格上滚一行 |\n| `\\r` | `_cursorC = 0`（回行首） |\n| `\\b` | `_cursorC = max(0, _cursorC - 1)`（退一格） |\n| 可打印字符 | 写入 `_cells[_cursorR][_cursorC]`，`_cursorC++` |\n\n**2. `_render()` 方法**\n\n遍历所有格子，逐个画：\n\n```\nfor each row, col:\n  cell = _cells[row][col]\n  if cell.bg != 默认黑底:                // 跳过纯黑背景，省操作\n    fillRect(col*cellW, row*cellH, cellW, cellH)\n  if cell.char != ' ':                   // 空格不画\n    fillText(cell.char, col*cellW, (row+0.5)*cellH)\n```\n\n**3. 关联起来**\n\n`_write()` 改完格子后，调 `_render()` 重绘。或者用一个 `requestAnimationFrame` 循环持续渲染，`_write()` 只改数据。\n\n---\n\n### 输入输出\n\n```\n输入:  _write('hello\\n> ')\n输出:  canvas 上显示第一行 hello，第二行 > 加光标\n```\n\n---\n\n### 验证方式\n\n在 `activate()` 里不调 `testRender()`，改调：\n\n```typescript\nrenderer.write('hello\\r\\n');\nrenderer.write('world\\r\\n');\nrenderer.write('> ');\n```\n\n应该看到：\n```\nhello\nworld\n> █\n```\n\n---\n\n### 和步骤 1 的关系\n\n- 步骤 1 建的 `_cells[][]` 网格 → 步骤 2 的 `_write()` 往里写\n- 步骤 1 的 Canvas + ctx → 步骤 2 的 `_render()` 往上面画\n- 步骤 1 的 `testRender()` 临时验证 → 步骤 2 完成后删掉\n\n---\n\n### 代码量\n\n约 35 行：`_write()` ~20 行 + `_render()` ~15 行。\n\n要切 build 模式开始吗？"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep542-b7",
+ "episode_id": 542,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "步骤 3 文字大小不一致（首次召唤 vs 收起再展开——两状态尺寸差，用户给数值 32×23 vs 39×29）",
+ "pattern": "状态尺寸",
+ "ep_score": 1,
+ "chars": 1158,
+ "truncated": false,
+ "text": "**用户：**\n不太对，我刚刚跟你说的那个情况依然存在，刚召唤出来是一个大小，再召唤出来就是另一个大小了。我觉得大可能是初始卡片偏大，后续点击收起再展开，就回到正常大小。再看看是什么原因？\n\n**AI：**\n你说得对，问题还在。让我重新梳理。\n\n---\n\n## 问题现象\n\n| 时机 | 文字大小 | 格子数 |\n|------|---------|--------|\n| 首次发射 | **大** | 多列？ |\n| 紧缩→展开 | 正常 | 少列？ |\n\n两个路径走到同一个 `_layout()`，但 `getBoundingClientRect()` 给了不同的宽度。说明 rAF 触发那一刻，卡片的 CSS 宽度不一样。\n\n---\n\n## 关键嫌疑：outer `el` 的 `padding` 和 `bgLayer`\n\n`floating-card.ts` 外层壳：\n\n```\nel (240×288, padding:1px, padding-left:3px)\n  bgLayer (width:100%, height:100%, overflow:hidden)\n    contentEl (inset:0)\n      wrapper (inset:0, padding:0 10px)\n        body → canvas\n```\n\n`el` 的**内容区宽度 = 240 - 4 = 236px**。但 `padding-left:3px` 覆盖了默认 `padding:1px`，右边还是 1px。所以：\n\n```\nel 内容区 = 240 - 3 - 1 = 236\nbgLayer = width:100% = 236\ncontentEl = inset:0 = 236\ncontentEl 内容区 = 236 - 2×8 = 220 (padding:8px)\nwrapper 内容区 = 220 - 2×10 = 200\ncols(9px,cellW=5.4) = floor(200/5.4) = 37\n```\n\n但 `cellW` 不是硬编码的，是运行时测的。如果实际 `cellW=5.5`：\n\n```\nfloor(200/5.5) = 36\n```\n\n如果某个路径少算了一点 padding，`200` 变成 `204→208`，列数就差 1。\n\n---\n\n## 需要确认\n\n我不知道当前 9px 字体的实际 `cellW` 和两种路径下的实际容器宽度。最快的方式是**把尺寸标注加回来**——在 `_render()` 左下角画一行 `cols×rows cw=X.X ch=Y.Y w=Z`，然后对比首次打开和紧缩→展开的两组数字，就能定位。\n\n要我加回来吗？"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep619-b1",
+ "episode_id": 619,
+ "session_id": "ses_063fd57d7ffepMZzVsdv2wNXM2",
+ "source": "manual",
+ "topic": "长程对话卡顿（内存爆炸疑）",
+ "pattern": "架构性质校验",
+ "ep_score": 3,
+ "chars": 768,
+ "truncated": false,
+ "text": "**用户：**\n不对啊，设计上，一切都在服务端完成，客户端就只是一个转发窗口，转发需要显示的内容而已，按理说不应该出现这种情况？\n\n**AI：**\n你说得对。架构上服务端掌管一切，客户端只渲染。卡顿的真正来源就是那个 `renderChatContent` 每次重走全量 `innerHTML` 重建——即使有裁剪和缓存，500 条消息的 JS 循环 + HTML 字符串拼装 + 浏览器解析 DOM 的代价还是会涨。\n\n这个架构问题是累积形成的，不是一次性能修干净的。但两个极低成本且高收益的改动可以先做：\n\n**1. `sessions/list` 不要解析 `messages` 数组**——`messageCount` 和 `tokenCount` 存为顶层字段，以后只读字段不碰数组\n\n**2. `_msgHeights` 切换会话时清理**\nNow update `saveSessionFile` to write the fields:\nAlso update routes.ts save to include the fields:\nNow fix `_msgHeights` leak in `orb.ts`:\nExport a cleanup from orb-chat.ts:\nAdd import and call in orb.ts:\n0.086 秒 ——之前是秒级的全文件解析。提交：\n改完了。`sessions/list` 从每次读 3 个会话文件 → **跳过 `messages` 数组，只读顶层 `messageCount`/`tokenCount` 字段**，响应时间降到 86ms。`_msgHeights` 在切换会话时清空。`saveSessionFile` 每次写入同步算好这两个字段。"
+}

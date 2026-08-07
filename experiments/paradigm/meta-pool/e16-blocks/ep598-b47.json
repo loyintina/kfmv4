@@ -1,0 +1,12 @@
+{
+ "id": "ep598-b47",
+ "episode_id": 598,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "heuristic",
+ "topic": "4.1 版本改坏→回退 4.0；日志卡定位；多次无效修改（与 B53/B54 同族）",
+ "pattern": "版本回退,验证优先",
+ "ep_score": 9,
+ "chars": 503,
+ "truncated": false,
+ "text": "**用户：**\n好\n\n**AI：**\nNow extracting `initTerminalCore` from `terminal-card-04.ts`:\nNow `tmux-card.ts` — complete rewrite:\nThere's a bug — auto-attach sends to `sessionId: ''`. Let me fix and remove dead code:\nNow clean `ws-server.ts` — remove window handlers, keep `list-sessions`:\nNow CSS:\n已提交。硬刷新测试：\n\n1. card03 跑 `tmux` → card04 打开 → 应该自动 `clear && tmux attach -t oc`（因为只有一个 session）\n2. 再开第二个 session（card03 里 `C-b :new-session -s dev`）→ card04 应该显示 picker `[oc] [dev]` → 点哪个 attach 哪个\n3. 两个卡可以同时开着，互不干扰"
+}

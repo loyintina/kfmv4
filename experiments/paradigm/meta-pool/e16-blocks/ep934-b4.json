@@ -1,0 +1,12 @@
+{
+ "id": "ep934-b4",
+ "episode_id": 934,
+ "session_id": "omp-2026-07-14T01-05-45-581Z_019f5e28-946d-7",
+ "source": "manual",
+ "topic": "发送按钮圆角方形 + api 卡 model 下拉缺失（历史实现被破坏）",
+ "pattern": "补丁vs根因,复盘沉淀",
+ "ep_score": 5,
+ "chars": 626,
+ "truncated": false,
+ "text": "**用户：**\n都修吧，你要如何修复？\n\n**AI：**\n全部完成。`tsc` ✅ | bundle ✅ | 191 tests ✅\n\n---\n\n### 修复汇总\n\n**P1 — role.card.ts 全局 ID**\n\n| 问题 | 修复 |\n|------|------|\n| `document.getElementById('role-name-input')` 多实例串扰 | 改为闭包变量 `_nameInput`，创建时捕获引用 |\n| `editingRole = role` 赋值在编辑中丢失 | 恢复到 `fillEditor()` |\n| `nameInput` 未声明引用 | 全部改为 `_nameInput` |\n\n**P2 — 17 个空 catch 块全部加 `log()`**\n\n| 文件 | 修复数 |\n|------|:--:|\n| `api.card.ts` | 4 |\n| `config.card.ts` | 8 |\n| `role.card.ts` | 2 |\n| `session.card.ts` | 1 |\n| `orb.ts` | 1 (已有 log，补了注释) |\n\n每个 `catch {}` → `catch (e) { log('[模块] 操作名 失败: ' + (e instanceof Error ? e.message : String(e))); }`，错误上下文可见于调试卡。"
+}

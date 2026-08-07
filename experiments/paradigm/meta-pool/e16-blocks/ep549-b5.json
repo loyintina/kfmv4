@@ -1,0 +1,12 @@
+{
+ "id": "ep549-b5",
+ "episode_id": 549,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端滚动方向/截停（超长拉锯，十几轮）",
+ "pattern": "机制重构,删旧留新,验证优先",
+ "ep_score": 11,
+ "chars": 1101,
+ "truncated": false,
+ "text": "**用户：**\n似乎没作用？而且终端框的下沿还是设置一下，距离卡片下沿有一定的距离吧，比如4px或其他？因为我发现，当前终端最后一行其实有半行是被下面的卡片下沿给遮住了。\n\n**AI：**\nLet me analyze both issues. First, let me check if the `.terminal-canvas` class is being set correctly and if the GestureRegistry dispatch can see it.\n`return; // 只匹配优先级最高的一个` —— 同一优先级只能激活**一个** handler。让我看 sidebar-scroll（也是 60）的条件是什么。\n找到了。两个问题：\n\n---\n\n## Issue 1：滚动失效的原因\n\n`sidebar-scroll` 和 `terminal-scroll` 都是 priority **60**。sidebar-scroll 的 `targetFilter: () => true`**匹配所有元素**。当 sidebar 打开时（`!L.isSidebarClosed()`），sidebar-scroll 先注册、先匹配、先赢。terminal-scroll 永远轮不到。\n\n**修复**：terminal-scroll priority **60 → 61**。更高优先级 + 更精确的 targetFilter（`.terminal-canvas`）确保触摸终端时 terminal-scroll 优先胜出。\n\n---\n\n## Issue 2：末尾行被卡片底沿遮挡\n\nbgLayer 有 `border-radius:11px` + `overflow:hidden`，圆角区域会裁切靠近底边的内容。当前 contentEl padding:8px，canvas 底部边缘离卡片底沿只有 ~8px。\n\n**修复**：`buildCardLayout` 的 body 加 `padding-bottom:4px`。Canvas 上缩 4px，跟 topPad 对称，末尾行自然避开底圆角裁切。\n\n---\n\n## 改动汇总\n\n| 文件 | 改什么 | 行 |\n|------|--------|-----|\n| `terminal-card.ts` | priority 60 → 61 | +1 |\n| `floating-card.ts` | body `padding-bottom:4px` | +1 |\n\n确认后切 build 模式执行？"
+}

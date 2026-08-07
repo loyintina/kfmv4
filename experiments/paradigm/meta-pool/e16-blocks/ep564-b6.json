@@ -1,0 +1,12 @@
+{
+ "id": "ep564-b6",
+ "episode_id": 564,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "全屏关闭按钮遮挡下方编辑/预览按钮；标题栏右沿没被挤",
+ "pattern": "设计主张,理解纠正",
+ "ep_score": 1,
+ "chars": 475,
+ "truncated": false,
+ "text": "**用户：**\n有这两个按钮了，但标题栏的右沿并没有被往左挤，现在依然是覆盖的。这是什么情况？你的修改跟你的计划不一样？\n\n**AI：**\n你说得对，我没按计划做。我做的是浮动覆盖在右上角的 `position:absolute` toolbar，不是插进内容标题栏里。\n\n计划是：找到内容区的 header 行，往它右边追加 spacer + 两个按钮，自然把内容区原有按钮往左挤。\n\n需要先确认——内容区 header 行的 DOM 结构是：\n\n```\ncontentEl > div(wrap) > div(header, display:flex)\n```\n\n查询路径：`contentEl.firstElementChild?.firstElementChild`\n\n然后在 header 里 append spacer + □ + ✕。\n\n问题是：如果内容不是文件卡（比如终端卡），header 不存在，需要 fallback 到浮动按钮。不过当前只有文件卡进全屏，所以可以先只处理文件卡的情况，fallback 留空。\n\n要按这个做吗？"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep1000-b4",
+ "episode_id": 1000,
+ "session_id": "omp-2026-07-25T00-01-15-306Z_019f9693-7a25-7",
+ "source": "manual",
+ "topic": "你能看看刚刚",
+ "pattern": "溯源审计",
+ "ep_score": 1,
+ "chars": 802,
+ "truncated": false,
+ "text": "**用户：**\ne的验证，不知道为什么，把omp这个tmux窗口给截断了，导致对话进程中断，这是怎么回事？\n\n**AI：**\n找到原因了。从日志看，时间线非常清晰：\n\n```\n23:59:47.146 — bash 工具启动 `npm run start 2>&1 &`\n23:59:47.157 — 工具返回 \"Background job bg_1 started\"\n23:59:47.431 — omp 收到 SIGTERM，会话退出\n```\n\n**间隔只有 274ms**，omp 就死了。\n\n## 根本原因\n\n`npm run start` 的脚本是：\n```bash\nfuser -k 8021/tcp 2>/dev/null; node dist/server/index.js\n```\n\n问题出在 **后台进程的 stdout/stderr 没有重定向**。虽然用了 `&` 把 npm 放到后台，但它继承了 shell 的终端输出。当 npm/node 开始往终端写日志时：\n\n1. **输出直接写到终端**，绕过了 omp 的 TUI 渲染\n2. 这些输出**破坏了 omp 的终端界面**\n3. tmux 窗口被这些不受控制的输出\"截断\"或覆盖\n4. 最终 omp 进程收到了 SIGTERM（可能是你按了 Ctrl-C 试图停止输出，或者 tmux/终端因为显示混乱发送了信号）\n\n## 正确的做法\n\n如果要后台启动长期运行的服务，应该 **完全重定向输出**：\n\n```bash\nnpm run start > /tmp/kfm-server.log 2>&1 &\n```\n\n或者用 omp 的 `async: true` 参数（如果 bash 工具支持），让 omp 自己管理后台进程的输出。\n\n---\n\n需要我现在重新启动服务器并做 E2E 验证吗？这次我会正确重定向输出。"
+}

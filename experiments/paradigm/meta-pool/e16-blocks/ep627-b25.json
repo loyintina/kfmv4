@@ -1,0 +1,12 @@
+{
+ "id": "ep627-b25",
+ "episode_id": 627,
+ "session_id": "ses_141744654ffehLxZxWEQSrD8RN",
+ "source": "manual",
+ "topic": "逐条审计修复（13 条）",
+ "pattern": "全链路验证,追源",
+ "ep_score": 3,
+ "chars": 559,
+ "truncated": false,
+ "text": "**用户：**\n9号是什么意思？\n\n**AI：**\n**#9：catch {} 吞 fetch 错误**\n\n`tree-loader.ts:83` 有一处空的 `catch`：\n\n```typescript\n  } catch {\n    return false;\n  }\n```\n\n`fetchDirRecursive` 函数中，如果 API 请求失败（网络断开、服务端 500），错误完全被吞掉——没有 `console.error`，没有 toast 提示。调用方只看到返回值 `false`，不知道是网络问题、路径不存在还是服务器崩了。\n\n修复方案：加一行 `console.error`：\n\n```typescript\n  } catch (e) {\n    console.error('[tree-loader] fetchDirRecursive failed:', e);\n    return false;\n  }\n```\n\n同时类似的模式在 `tree-loader.ts` 还有几处（第 83 行的 catch，以及其他一些 `try/catch` 里只有 `return false` 或 `return []`）。可以一并加上日志。\n\n这是最轻量的修复——改 1 行，零逻辑变化。要修吗？"
+}

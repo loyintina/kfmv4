@@ -1,0 +1,12 @@
+{
+ "id": "ep563-b8",
+ "episode_id": 563,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "全屏卡片 z-index/布局（拉锯）",
+ "pattern": "验证优先,原版复用",
+ "ep_score": 7,
+ "chars": 1427,
+ "truncated": false,
+ "text": "**用户：**\n[09:15:35.274] [CARD-STACK] buildCards called → [09:15:35.276] [CARD-STACK] buildCards done, cards=7 → [09:15:35.281] [ws-channel] 初始化完成 → [09:15:35.484] [ws-channel] 已连接到服务端 ws://8.145.46.182/ws → [09:15:42.538] [fullscreen] card.z=20 card.transform=(none) bar.z=200 bar.pos=777/854 fullH=777.0714721679688 我又观察到，这个全屏卡片好像没有锁那个触摸后提高到最高的机制，有可能是导致zindex出现问题的部分因素？你再看看代码呢？\n\n**AI：**\n日志很清楚：\n\n```\ncard.z=20       card.transform=(none)    bar.z=200    bar.pos=777/854    fullH=777\n```\n\nz-index 和 transform 都没问题——卡 20，输入栏 200，按理应该输入栏在上。**但你指出的 preMatch 钩子就是根因。**\n\n回头看 preMatch hook（`initFloatingCards` 底部）：\n\n```ts\ngestures.addPreMatchHook((e) => {\n  const el = (e.target).closest('.floating-card');\n  if (!el) return;\n  const item = _floatingCards.find(i => i.el === el);\n  if (!item || ...) return;\n  // 这行把 z-index 抬到 _nextFloatingZ++！\n  item.zIndex = _nextFloatingZ++;\n  item.el.style.zIndex = String(item.zIndex);\n});\n```\n\n**流程：** `enterFullscreen` 设 z-index=20 → 用户触摸全屏卡 → preMatch 触发 → `el.style.zIndex = _nextFloatingZ++`（50, 51, 52...）→ 卡被抬到输入栏之上 → 盖住了输入栏。\n\n完全没有锁全屏卡的机制。修复：preMatch hook 中跳过全屏卡。\n\n### 两件事的修复方案\n\n| 问题 | 根因 | 修复 |\n|------|------|------|\n| 输入栏被盖住 | preMatch hook 抬高了全屏卡的 z-index | preMatch 加 `if (item.isFullscreen) return;` |\n| SVG 图标偏上 | `_launchCard` 和 exitFullscreen saved 路径没有 `onUpdate` 同步光球位置 | 两处 `anim.to` 都加 `onUpdate`，每帧 `fSyncCorners` |\n| 另外：`_toggleExpandCollapse` 已 guard | ✅ 之前已做了 | |\n\n要开始改吗？"
+}

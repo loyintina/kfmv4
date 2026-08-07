@@ -1,0 +1,12 @@
+{
+ "id": "ep890-b1",
+ "episode_id": 890,
+ "session_id": "omp-2026-05-27T17-10-59-698Z_019e6a6b-0772-7",
+ "source": "manual",
+ "topic": "介绍/环境/项目了解（初始对话）",
+ "pattern": "架构性质校验,溯源审计",
+ "ep_score": 1,
+ "chars": 467,
+ "truncated": false,
+ "text": "**用户：**\n那么，当前环境是什么？\n\n**AI：**\n当前工作目录是 `~/kfmv4`，一个前端项目。从布局看是个卡牌游戏/UI 应用：\n\n- **public/bundle.js** — 打包产物（539KB，3 分钟前构建）\n- **public/index.html** — 入口 HTML\n- **public/css/** — 样式文件（base.css, z-index.css, sidebar.css）\n- **docs/** — 设计文档、Bug 审计、架构记录（中文 + 英文混合）\n- **CLAUDE.md** — 项目规则（13KB）\n- **package.json** — npm 项目\n\n运行环境是 Linux x64，无 GPU。终端用的 tmux。附近有一些 Python 脚本（patch.py, refactor-theme-orb-v2.py 等），看起来是自动化重构/修复用的。\n\n任务框架（Oh My Pi）已就绪：LSP、AST grep、浏览器调试、任务并行等工具都能直接调用。"
+}

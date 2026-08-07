@@ -1,0 +1,12 @@
+{
+ "id": "ep871-b5",
+ "episode_id": 871,
+ "session_id": "omp-2026-07-23T14-14-20-532Z_019f8f53-c874-7",
+ "source": "manual",
+ "topic": "文件树崩溃 + root 兄弟目录理解 + 沙漏叹号 + 下拉方向",
+ "pattern": "补丁vs根因",
+ "ep_score": 8,
+ "chars": 573,
+ "truncated": false,
+ "text": "**用户：**\n定这样的话文件树就又崩溃了，这是不是某些机制在相互打架？还是你并没有完全了解当前的代码现状？\n\n**AI：**\n就是 `KFMState.currentRoot` 的写入在 triggering 什么东西。让我看 state.ts 里写入 `currentRoot` 有没有副作用。\n零外部依赖——不 import 任何模块，不和 `KFMState` 交互。\n测试环境没有 `window`。把 `_API` 改成惰性计算。\n零残留、tsc 干净、330 tests 全绿。\n最终修复。**这次 sibling-switcher 完全零外部依赖**：\n\n- 不 import `state.js`（不碰 `KFMState`）\n- 不 import `tree-loader`、`dom-refs`、`theme` 等任何客户端模块\n- 只用 `localStorage`、`fetch`、`DOM API`\n- `API` 路径从惰性函数 `_apiBase()` 获取\n- 切换目录后写 `localStorage` + `window.location.reload()`\n- 标签更新同理——只操作 `localStorage`，不碰 `KFMState.currentRoot`\n\n刷新页面，文件树和按钮应该都正常了。"
+}

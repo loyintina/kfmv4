@@ -1,0 +1,12 @@
+{
+ "id": "ep627-b21",
+ "episode_id": 627,
+ "session_id": "ses_141744654ffehLxZxWEQSrD8RN",
+ "source": "manual",
+ "topic": "逐条审计修复（13 条）",
+ "pattern": "全链路验证,追源",
+ "ep_score": 3,
+ "chars": 559,
+ "truncated": false,
+ "text": "**用户：**\n它们是怎么来的？为什么是硬编码？\n\n**AI：**\n历史脉络很清楚：\n\n**① `card-stack.ts` 最先写死 155px**\n```\nc58ea16  style: 卡片堆宽度从 260px 缩至 155px，只保留可见部分\n```\n最早的 card-stack 在写卡片 DOM 时直接内联 `width:155px`。\n\n**② `floating-card.ts` 后来提取为常量**\n```\n84419a1  refactor(floating-card): Phase 2-3 — 模板提取\n```\n重构浮卡系统时，作者在新文件里定义了 `FLOATING_CARD_W = 155`，但**只在新模块里用了**，没去改 card-stack 的旧硬编码。\n\n**③ `tree-swipe.ts` 从 card-stack 复制了同样模式**\n```\n9b46dd9  refactor: tree-render 拆分\n```\ntree-swipe 从 card-stack 拆出来时，作者复制了卡片创建的代码，也就复制了 `width:155px` 的写法。\n\n所以问题不是有人故意写死——是三个 agent 分三批改了三个文件，没人意识到他们改的是同一个数值。要现在统一吗？"
+}

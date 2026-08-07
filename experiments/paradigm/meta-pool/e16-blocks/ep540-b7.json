@@ -1,0 +1,12 @@
+{
+ "id": "ep540-b7",
+ "episode_id": 540,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端棋盘格/角标位置偏差（验证细节）",
+ "pattern": "布局时序",
+ "ep_score": 1,
+ "chars": 315,
+ "truncated": false,
+ "text": "**用户：**\n确实能看到，而且文字是紧贴上面的标题栏的，用不用加一个小间距？还是后续会解决这个问题？\n\n**AI：**\n这不是步骤问题，是容器缺了个 `padding-top`。一句话就能修：\n\n```css\ncanvasContainer.style.cssText = 'flex:1;overflow:hidden;padding-top:4px;...'\n```\n\n4px 的间距让第一行文字跟分隔线之间有个呼吸距离。不影响格子计算——容器高度减了 4px，`_rows` 也跟着减一行的可能性极小（4 / 17 ≈ 0.2 行）。\n\n后续实现可能会加更多终端内的留白，但现在加这个小间距是合理的。要现在修还是攒到后面？"
+}

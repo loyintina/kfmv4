@@ -1,0 +1,12 @@
+{
+ "id": "ep598-b34",
+ "episode_id": 598,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "heuristic",
+ "topic": "4.1 版本改坏→回退 4.0；日志卡定位；多次无效修改（与 B53/B54 同族）",
+ "pattern": "版本回退,验证优先",
+ "ep_score": 9,
+ "chars": 815,
+ "truncated": false,
+ "text": "**用户：**\n[07:21:33.229] [CARD-STACK] buildCards called → [07:21:33.230] [CARD-STACK] buildCards done, cards=7 → [07:21:33.231] [ws-channel] 初始化完成 → [07:21:33.394] [ws-channel] 已连接到服务端 ws://8.145.46.182/ws → [07:21:47.943] [tmux] send: cmd=%s args=%s list-sessions  → [07:21:48.074] [tmux] send: cmd=%s args=%s list-windows oc → [07:21:52.244] [tmux] tap: target=%s className=%s DIV tmux-row active → [07:21:52.245] [tmux] send: cmd=%s args=%s select-window oc,0 → [07:21:52.361] [tmux] send: cmd=%s args=%s list-windows oc 另外，我发现04卡的紧缩态怎么不对呢？\n\n**AI：**\n日志说明客户端链路完全正常：tap → send → select-window → list-windows 全走通了。现在需要看服务端：\n\n**把服务端日志贴给我** — `/tmp/kfmv4-server.log` 里应该有 `[tmux-cmd]` 行。如果没出现，说明 WS 消息到服务端后没命中 handler。\n\n然后关于紧缩态：`deactivate` 清掉了所有状态（`_bodyEl=null`、注销 WS listener），这个我看到了——需要在 compact 时保留状态。但我先确认主链路能通再修。"
+}

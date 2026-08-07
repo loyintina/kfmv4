@@ -1,0 +1,12 @@
+{
+ "id": "ep861-b0",
+ "episode_id": 861,
+ "session_id": "omp-2026-07-22T03-58-36-090Z_019f87f9-b23a-7",
+ "source": "manual",
+ "topic": ".kfmv4 双仓库问题 + 私有仓库自动推送",
+ "pattern": "重构优于补丁,版本哲学",
+ "ep_score": 3,
+ "chars": 1270,
+ "truncated": false,
+ "text": "**用户：**\n/root/.kfmv4，/root/.kfmv4-data，为什么出现了两个一样的仓库？是不是kfmv4的项目引用出现了问题？\n\n**AI：**\n两个目录内容几乎一样，但关键区别：`.kfmv4-data` 有 `.git`，`.kfmv4` 没有。让我查来源：\n清楚了。这**不是项目引用出问题**——是两个独立的东西：\n\n- **`/root/.kfmv4/`** — KFM 项目的**运行时数据目录**（`KFM_DATA_DIR`，由 `path-utils.ts` 定义），存 providers/sessions/roles/configs。项目代码只认这个。**无 git**。\n- **`/root/.kfmv4-data/`** — 一个**独立的 git 备份仓库**（remote 是 `github.com/loyintina/kfmv4-data.git`），有定时任务\"自动备份 2026-07-23 03:00\"。它是 `.kfmv4/` 的**数据备份**，推到单独的 GitHub 仓库存档。\n\n验证一下这个判断——查有没有备份脚本/定时任务在同步:\n确认了。有一个 cron 定时任务每天凌晨 3 点跑 `/root/.kfmv4-sync.sh`。看它做什么:\n一切正常，**不是项目引用出问题**。这是有意设计的双仓库备份机制：\n\n| 目录 | 角色 |\n|------|------|\n| `/root/.kfmv4/` | **运行时数据目录**（`KFM_DATA_DIR`）。项目代码唯一读写的地方。无 git。 |\n| `/root/.kfmv4-data/` | **备份镜像**。每天 3:00 由 `/root/.kfmv4-sync.sh` 用 `rsync -a --delete` 从 `.kfmv4/` 单向同步过来，然后 git commit + push 到 `github.com/loyintina/kfmv4-data.git` 私有仓库存档。 |\n\n`kfmv4-sync.sh` 做两件事：\n1. `.kfmv4/`（含 API key 的 providers.json、会话记录）→ rsync 到 `.kfmv4-data/` → 推私有数据仓库（跟你说的\"公开仓库不放数据\"配套——数据走单独私有仓库）\n2. 主项目 `/root/kfmv4/` 未推送的 commit → 推源码仓库\n\n所以两个\"一样的仓库\"是**源码和数据分离存档**的设计：源码在 `kfmv4` 公开仓库，用户数据在 `kfmv4-data` 私有仓库，`.kfmv4/` 本身只是运行时目录不进任何仓库。\n\n内容有细微差异（`.kfmv4/active.json` 是今天 09:53、`.kfmv4-data/` 的是昨天 17:07）是正常的——昨天 3:00 备份后 `.kfmv4/` 又有新改动，等今晚 3:00 才会再同步。项目引用没有任何问题。"
+}

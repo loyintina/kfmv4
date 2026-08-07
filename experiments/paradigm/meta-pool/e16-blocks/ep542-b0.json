@@ -1,0 +1,12 @@
+{
+ "id": "ep542-b0",
+ "episode_id": 542,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "步骤 3 文字大小不一致（首次召唤 vs 收起再展开——两状态尺寸差，用户给数值 32×23 vs 39×29）",
+ "pattern": "状态尺寸",
+ "ep_score": 1,
+ "chars": 594,
+ "truncated": false,
+ "text": "**用户：**\n好的，然后到了什么阶段了？\n\n**AI：**\n步骤 0-3 全部完成。当前终端卡的状态：\n\n```\nhello         ← write() 写入\nworld\n> █           ← 光标常亮，颜色跟随卡色\n```\n\n---\n\n## 已完成的\n\n| 步骤 | 内容 |\n|------|------|\n| 0 | 字体测量（`measureFontMetrics` → `cellW`/`cellH`） |\n| 1 | Canvas 挂载 + 格子模型（`TerminalRenderer` + `_cells[][]`） |\n| 2 | 文字渲染（`write()` 处理 `\\n\\r\\b` + `_render()` 绘制） |\n| 3 | 光标（常亮青色方块，`setAccent()` 跟随卡色） |\n| — | 卡片布局统一（`buildCardLayout`）、分隔线色跟随卡色、dataset 数据流 |\n\n---\n\n## 下一个：步骤 4 — ANSI SGR 颜色\n\n做完后终端能从 PTY 接收彩色输出：\n\n```\n\\x1b[31m红色\\x1b[0m → 屏幕上 \"红色\" 两个红字\n```\n\n需要：状态机解析 `ESC[` 起始 + `m` 终结，维护当前 fg/bg/bold 状态，写字符时继承状态写入格子。\n\n要继续步骤 4 吗？"
+}

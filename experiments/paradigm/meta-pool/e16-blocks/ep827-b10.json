@@ -1,0 +1,12 @@
+{
+ "id": "ep827-b10",
+ "episode_id": 827,
+ "session_id": "omp-2026-05-29T05-12-43-275Z_019e7226-260b-7",
+ "source": "manual",
+ "topic": "导航面板实现迭代（项目根/宽度/遮罩/硬编码/隐式关联文档）",
+ "pattern": "补丁vs根因",
+ "ep_score": 5,
+ "chars": 604,
+ "truncated": false,
+ "text": "**用户：**\n可以\n\n**AI：**\n开始实施。检查一下 Renderer 构造函数签名：\n好，开始写 Canvas 版本的 root-picker。同时改 sidebar 布局使其支持 flex 伸缩：\n现在改 sidebar.scss 使侧栏支持 flex 伸缩布局：\n.\n现在加 picker 容器和确认按钮样式：\n.\n.\n`.root-picker-confirm:active` 被覆盖了，恢复：\n构建验证：\n多项类型错误，检查引擎的接口签名：\n.\n.\n.\n现在对 API 有了清楚的认识。用正确的接口重写：\n.\n.\n.\n文件 hash 变了，直接重写整个文件带修正：\n.\n文件被 edit 工具切乱了。直接重写整个文件：\n.\n.\n.\n.\n.\n.\n构建通过。提交：\n完成。测试步骤：\n\n1. **刷新页面**，打开侧栏\n2. 标签应该显示 `kfmv4`（取自 API）\n3. **点击标签**，左栏底部半屏展开 Canvas 目录列表，显示 `src/`、`docs/`、`public/` 等文件夹\n4. **上下滑动**，fling 惯性滚动\n5. **点击 `src`** ，进入该目录，列表刷新为 `client/`、`server/`\n6. **点击 `..`** ，回到上级\n7. **滑动到顶部，点击确认按钮**，文件树从 `src/` 重建\n8. **标签更新**为 `src`"
+}

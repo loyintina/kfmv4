@@ -1,0 +1,12 @@
+{
+ "id": "ep546-b51",
+ "episode_id": 546,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端编号/状态混用（重大）",
+ "pattern": "初心对齐,机制设计,读码优先",
+ "ep_score": 5,
+ "chars": 1488,
+ "truncated": false,
+ "text": "**用户：**\n我确定我点击的是右上角的光球，而且两个光球差得很远，小半个屏幕，不可能误触。：[17:49:10.994] [CARD-STACK] buildCards called → [17:49:10.995] [CARD-STACK] buildCards done, cards=7 → [17:49:10.996] [ws-channel] 初始化完成 → [17:49:11.194] [ws-channel] 已连接到服务端 ws://8.145.46.182/ws → [17:49:15.326] cr allocId pool=card03 result=1 used=1 → [17:49:16.864] cr allocId pool=card03 result=2 used=1,2 → [17:49:18.127] dismiss-one stack-2 → [17:49:18.127] td deactivate reason=compact tid=2 sid=be475082-0c45-44be-b49f-2958794ad791 → [17:49:19.119] cr allocId pool=card03 result=3 used=1,2,3 → [17:49:21.333] dismiss-one stack-2 → [17:49:21.334] td deactivate reason=compact tid=3 sid=f34b13ba-a8dc-4f57-b9be-bc4ac1effefd \n\n**AI：**\n日志把真相说得很清楚：\n\n```\ndismiss-one stack-2              ← _dismissOne 确实被调了！\ntd deactivate reason=compact     ← 但传给 deactivate 的是 compact，不是 dismiss\n```\n\n`_dismissOne` 被调了，但它传的 reason 是 `compact` 而不是 `dismiss`。让我确认 bundle 里 _dismissOne 到底写的是哪个值。\n`_dismissOne` 在 bundle 里**真的传了 `\"compact\"`，不是 `\"dismiss\"`**。让我看源码确认。\n找到根因了。源码第 374 行：\n\n```typescript\n// _dismissOne 里\nif (ci) item.config.contentHandler?.deactivate?.(item.contentEl, ci, 'compact');\n```\n\n**应该是 `'dismiss'`，却是 `'compact'`**。\n\n---\n\n## 怎么发生的\n\n上游修改时，collapse 路径和 `_dismissOne` 都写了 `'dismiss'`。我修 collapse 时用了一次编辑，但那个字符串在文件中出现两次——工具匹配到了第一个（`_dismissOne`），把它从 `'dismiss'` 改成 `'compact'`，而 collapse 的那行没被改到。\n\n然后再修 collapse 一行时把它也改了。结果两个都成 `'compact'` 了——没人传 `'dismiss'`。\n\n---\n\n## 修复\n\n一行：`floating-card.ts:374` — `'compact'` → `'dismiss'`。\n\n切 build 模式修？"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep533-b14",
+ "episode_id": 533,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "右滑出卡方向判定（重大）",
+ "pattern": "简化方案,深度归因,重构视角",
+ "ep_score": 11,
+ "chars": 558,
+ "truncated": false,
+ "text": "**用户：**\n我们先按照我们刚刚讨论的那个最终的12px版本，先实现一个，看看能不能解决问题吧。\n\n**AI：**\nLet me also verify onEnd is consistent:\n完成。改动三处：\n\n| 改前 | 改后 |\n|------|------|\n| 阈值 20px | 阈值 12px |\n| `absDy > 20` 无条件锁垂直 | `absDy > 12 && absDx < 5` 近纯竖向才提前解锁 |\n| `axis==='none' && _touchIsCursor` return | `axis==='none'` return（统一冻结） |\n| 扇形 `absDy < absDx * 3.73` | 不变（150°） |\n\n逻辑：\n\n```\n12px 内: 什么都没反应（手指刚接触，死区）\n\n12px 后 dx 先到:\n    |dy| < dx*3.73 → 水平 → 冻结到底 → 松手出卡\n    否则 → 垂直 → 自由跟手\n\n12px 后 dy 先到且 dx<5:\n    近纯竖向 → 垂直 → 自由跟手\n\n12px 后 dy 先到但 dx≥5:\n    有右滑嫌疑 → 继续冻 → 等 dx 到 12 → 扇形判\n```\n\n刷新测试各种角度右滑。"
+}

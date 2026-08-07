@@ -1,0 +1,12 @@
+{
+ "id": "ep558-b9",
+ "episode_id": 558,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端滚动条/滚动失效",
+ "pattern": "一致性质疑,日志定位",
+ "ep_score": 7,
+ "chars": 1980,
+ "truncated": false,
+ "text": "**用户：**\n再展开后，页面完全消失了\n\n**AI：**\nThe issue is `term.open()` being called a second time on the same Terminal instance — xterm.js only supports calling `open()` once per Terminal. When the old DOM was destroyed by `contentEl.innerHTML = ''`, and we create new DOM and call `term.open()` again, it breaks.\n\n## 根因\n\n`termEl`（xterm 的容器 div）是 `activate()` 里的局部变量，从未存到 `card.meta`。compact 时 `contentEl.innerHTML = ''` 把它连同 xterm 的内部 DOM 一起销毁了。expand 时我们创建新的 DOM 再调 `term.open()` —— xterm.js 不允许多次 open。\n\n## 修复：把 xterm DOM 从页面里拔出来，塞进 meta，再展开时插回去\n\n**不创建新 DOM，不调 `term.open()` 第二次。** 只移动已有 DOM 树。\n\n### 改三处\n\n**1. `activate()` init 分支 — 存 `termEl`**\n\n```typescript\ncard.meta._termEl = termEl;  // ← 加这一行\n```\n\n**2. `deactivate()` compact 分支 — 拔 DOM**\n\n```typescript\n// compact: 保留 Terminal + WS，只清理 DOM\nif (card.meta._observer) { disconnect }\nif (card.meta._xtermEl) { _termMap.delete }\n// 从 DOM 拔出但不销毁\nconst termEl = card.meta._termEl as HTMLElement;\nif (termEl && termEl.parentNode) termEl.parentNode.removeChild(termEl);\ncontentEl.innerHTML = '';\n```\n\n**3. `activate()` compact→expand 分支 — 插回 DOM**\n\n```typescript\n// 紧缩→展开：复用已有 Terminal，不重开 PTY\nif (card.meta._term) {\n    const term = card.meta._term as Terminal;\n    const fit = card.meta._fit as FitAddon;\n    const termEl = card.meta._termEl as HTMLElement;\n    const xtermEl = termEl.querySelector('.xterm') as HTMLElement;\n    const { bodyEl } = buildCardLayout(contentEl, ...);\n    bodyEl.appendChild(termEl);          // 插回已有 DOM（不调 term.open）\n    if (xtermEl) { xtermEl.style.touchAction = 'none'; _termMap.set(xtermEl, term); }\n    fit.fit();                            // 只 resize\n    card.meta._xtermEl = xtermEl;\n    // 新建 ResizeObserver\n    const observer = new ResizeObserver(() => { try { fit.fit(); } catch {} });\n    observer.observe(termEl);\n    card.meta._observer = observer;\n    return;\n}\n```\n\n核心：**把 xterm 的完整 DOM（div + 内部 .xterm + canvas + textarea）当旅行箱拎出来，存进 meta，下次展开时原样放回去。** `term.open()` 只调一次，终生不变。\n\n要切 build 模式实施吗？"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep931-b1",
+ "episode_id": 931,
+ "session_id": "omp-2026-07-12T03-47-42-491Z_019f5470-211b-7",
+ "source": "manual",
+ "topic": "删除/重命名 api + 文件树同步 + 补丁模式质疑 + 角色池光标重复",
+ "pattern": "补丁vs根因",
+ "ep_score": 1,
+ "chars": 354,
+ "truncated": false,
+ "text": "**用户：**\n不，我的意思是，既然你删除文件能调api，那重命名不一样也能调api，为什么要删除？重命名又不是复制？文件树里绝对有重命名的功能，你看看代码呢？\n\n**AI：**\n确实！`files/rename` 就是 `fs.renameSync`，一条请求搞定。\n现在重命名走 `files/rename` API——`fs.renameSync`，一条请求，不改内容。流程：\n\n```\n保存时名字变了:\n  1. loadRoles() → 找到旧角色 → 拿到旧文件名\n  2. 新旧文件名不同 → renameFile(旧路径, 新文件名)\n  3. writeFile(新路径, 新内容)\n```\n\n刷新测试：改角色名 → 保存 → `.kfmv4/roles/` 里旧文件消失，新文件名出现。"
+}

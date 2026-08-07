@@ -1,0 +1,12 @@
+{
+ "id": "ep886-b3",
+ "episode_id": 886,
+ "session_id": "omp-2026-06-03T14-24-49-802Z_019e8ddf-6a8a-7",
+ "source": "manual",
+ "topic": "光球面板重构迭代（样式不符/心法错误/紧缩态尺寸/气泡布局/动态字号）",
+ "pattern": "补丁vs根因",
+ "ep_score": 9,
+ "chars": 710,
+ "truncated": false,
+ "text": "**用户：**\n呃，页面上依然不存在？你看看是因为什么原因？你的改动没生效吗？\n\n**AI：**\n想到了。`createFloatingCard` 在初始 CSS 里用了 `cardGradient(0, 0.85)`，但 `cardGradient` 依赖 `_currentAccents`，而 `_currentAccents` 只在 `initCardStack()` 中初始化。`initOrbCard()` 被调用时 `initCardStack()` 还没跑——所以 `_currentAccents` 是 `null`，`cardGradient` 抛异常，卡片创建失败。\n.\nNow let's build and check.\nBuild 成功。提交。\n问题是两层的：\n\n1. **bundle 没重建** — 旧 `bundle.js` 没有 `orb-card.ts` 的代码。现在已 `npm run build` 重新打包。\n2. **初始化顺序 bug** — `createFloatingCard` 初始 CSS 里用了 `cardGradient(0, 0.85)`，但 `cardGradient` 依赖 `_currentAccents`，这个变量只在 `initCardStack()` → `_generateRandomAccents()` 中初始化。之前 `initOrbCard()` 跑在 `initCardStack()` 之前 → `cardGradient` 访问 `null[0]` 抛异常 → 卡片创建中断 → 光球不存在。\n\n现在两个都修了。重启服务看看？"
+}

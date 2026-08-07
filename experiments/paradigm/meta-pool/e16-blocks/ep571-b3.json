@@ -1,0 +1,12 @@
+{
+ "id": "ep571-b3",
+ "episode_id": 571,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "tmux 卡缩放重排不跟手 +",
+ "pattern": "补丁vs根因,回退语义冲突",
+ "ep_score": 9,
+ "chars": 1270,
+ "truncated": false,
+ "text": "**用户：**\n好，那就先试试吧。\n\n**AI：**\nOK, let me implement. The core change: memory stores un-zoomed base dimensions, zoom is applied as a multiplier at the point of use.\nNow apply zoom in expand animation:\nApply zoom in collapse animation:\nUn-zoom in edit mode when storing to memory:\nApply zoom in `_launchCard` onComplete:\nThe CSS at line 348-351 overrides the dimensions set by `applyZoom`. Move `applyZoom` after the CSS:\nNow let me also move `activate` before the expand animation so the terminal can track size changes:\nNow remove the duplicate `activate` from `onComplete`:\n`fSyncCorners` is a closure inside `initFloatingCards()`, not accessible from module-level `applyZoom`. Let me fix this by moving the orb sync logic inline:\n完成。改动汇总：\n\n| 改动 | 说明 |\n|------|------|\n| `applyZoom` 重写 | 不再用 CSS zoom，直接改卡片实际 `width`/`height`。`ResizeObserver` 自然触发 |\n| expand 动画 | 目标尺寸 × `contentZoom`；`activate` 提前到动画前，终端挂载后 ResizeObserver 跟踪每帧 |\n| collapse 动画 | 目标尺寸 × `contentZoom` |\n| `onMoveEditing` | 存入 memory 时除以 `contentZoom`，保持 un-zoomed 基准值 |\n| `_launchCard` | 飞入目标和 onComplete 尺寸 × `contentZoom` |\n| `_createCardElement` | 初始尺寸 × `contentZoom`；删掉 CSS zoom |\n\n**架构改进**：zoom 从\"视觉缩放（CSS zoom）\"改为\"实际尺寸变化\"。终端的 `ResizeObserver` 自然触发 `fit()`，不需要任何跨模块调用。未来任何有 `ResizeObserver` 的内容都自动响应。"
+}

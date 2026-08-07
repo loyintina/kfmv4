@@ -1,0 +1,12 @@
+{
+ "id": "ep503-b1",
+ "episode_id": 503,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "文件行右滑动画漂移",
+ "pattern": "全链路验证,追源",
+ "ep_score": 17,
+ "chars": 556,
+ "truncated": false,
+ "text": "**用户：**\n你看，你的改动依然是没有生效的，这就是历史上出现过的问题，所以我需要你版本回退，然后重新讨论一下。你不要着急修代码。\n\n**AI：**\n退回成功。让我重新深入理解这个 bug——先看触发链：\n让我仔细看还有什么会修改 `rowBox.x`——也许不是回弹动画的问题：\n回退了。让我重新梳理，先不做任何代码修改。\n\n---\n\n**Bug 现象**：每次右滑，行回弹 8px 后归位。但如果在动画结束前再次右滑，行会从动画中间值出发再 +8，位置漂移。多次后光标高亮和文字错位。\n\n**触发链**（已确认）：\n```\ncanvas-scroll OnEnd → dx > 50  → L.triggerRowSwipe()\n  → _swipeGuard 300ms 防抖\n  → handleRowSwipe()  → bounceCursorRow()\n```\n\n**防抖 300ms，动画 400ms**。用户等防抖结束后再次右滑，第一次动画仍在进行中。\n\n---\n\n我刚才的解法是 `killTweensOf + set + 缓存原始值`。理论上这应该能工作——杀旧动画 → 强设回原始位置 → 新动画从正确位置出发。\n\n但它失败的原因，我怀疑在底层 GSAP 的行为。让我验证一个关键假设："
+}

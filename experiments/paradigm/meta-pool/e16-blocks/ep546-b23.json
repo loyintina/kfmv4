@@ -1,0 +1,12 @@
+{
+ "id": "ep546-b23",
+ "episode_id": 546,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端编号/状态混用（重大）",
+ "pattern": "初心对齐,机制设计,读码优先",
+ "ep_score": 5,
+ "chars": 1143,
+ "truncated": false,
+ "text": "**用户：**\n我们是不是需要一个构建机制来保证如果有非法的卡片注册能发觉并阻止？\n\n**AI：**\n需要。现在 `registerCardType()` 只是一个函数调用，没人管你是不是必须走它。未来如果有人直接写一个 `createHandler()` 返回 `{ activate, deactivate }` 然后塞给 `createFloatingCard()` 而不经过 `registerCardType()`，不会报错，也不会提醒。\n\n---\n\n## 可以做的\n\n### 方案：加一个 `check-cards.mjs`\n\n跟 `check-as-any.mjs`、`check-anim.mjs` 一样，作为 `npm run check` 的一环。\n\n它可以检查三条规则：\n\n| 规则 | 检查什么 | 防什么 |\n|------|---------|--------|\n| 1 | `_cards` 数组中每个有 icon/name 的条目，必须在代码里调了 `registerCardType({ typeId: xxx })` | card-stack 和 registry 不同步 |\n| 2 | 文件里出现 `return { activate, deactivate }` 模式但没有被 `registerCardType` 引用 → 报错 | 偷偷创建了 handler 但没登记 |\n| 3 | `createFloatingCard` 传入的 contentHandler 必须来自 `getCardType(id)?.createHandler()`，不允许裸写 `{ activate, deactivate }` | 绕过注册表直接创建 |\n\n---\n\n## 复杂度评估\n\n规则 1 最容易实现——正则扫 `registerCardType({ typeId: 'xxx' })` 收集已登记的类型，再扫 `_cards` 数组的 `id: 'xxx'` 收集面板槽位，比对交集。\n\n规则 2 需要 AST 级分析（区分\"返回 `{ activate, deactivate }`\"和\"在 `createHandler` 工厂里返回\"），正则不够，可能过度工程。\n\n规则 3 也需要 AST。\n\n---\n\n## 建议\n\n**先做规则 1**（~30 行 check 脚本），规则 2 和 3 留到发现实际违规后再补。现在的代码库里没有违规的 case，规则 1 就够了。\n\n这个检查会放进 `npm run check` 的 8 个脚本之一，不通过就不让 build。\n\n---\n\n要写进设计文档吗？还是直接切 build 模式实现规则 1？"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep571-b5",
+ "episode_id": 571,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "tmux 卡缩放重排不跟手 +",
+ "pattern": "补丁vs根因,回退语义冲突",
+ "ep_score": 9,
+ "chars": 500,
+ "truncated": false,
+ "text": "**用户：**\n但，问题是只有终端卡片才有的？我们得先把刚刚的修改版本回退，然后在考虑重新实现的方案\n\n**AI：**\n先把改动回退。\nNow revert the `activate` back to `onComplete`:\n回退完成。当前状态：\n\n- `applyZoom`：恢复为 CSS zoom（不改卡片尺寸）\n- `_createCardElement`：恢复为 `FLOATING_CARD_W × FLOATING_CARD_H`\n- `_launchCard`：恢复为固定尺寸\n- expand/collapse：恢复为 un-zoomed memory values\n- `onMoveEditing`：恢复为直接存储\n- `activate`：恢复为 expand `onComplete` 调用\n\n**保留的改动**：topMidOrb、fullscreen、_blendColor、_launchCard 拆分等都不受影响。\n\n现在 zoom 行为回到原样：卡片大小不变，CSS zoom 作用于 `contentEl`。终端不重排的问题仍然存在，但可以重新规划方案了。"
+}

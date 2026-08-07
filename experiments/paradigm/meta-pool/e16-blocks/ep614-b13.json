@@ -1,0 +1,12 @@
+{
+ "id": "ep614-b13",
+ "episode_id": 614,
+ "session_id": "ses_063fd57d7ffepMZzVsdv2wNXM2",
+ "source": "manual",
+ "topic": "会话保存失败/刷新丢失（超长拉锯）",
+ "pattern": "全链路验证,追源",
+ "ep_score": 7,
+ "chars": 518,
+ "truncated": false,
+ "text": "**用户：**\n好\n\n**AI：**\nAlso fix `resumeRun` cancel path:\nNow add dirty flag to `sessionStore`:\nAlso set `_lastSaveError` in the catch block for the read error case:\n改动两处：\n\n**1. 取消路径 `saveMessages` 改为 `await`（`orb-chat.ts`）**\n\n`doSend` 和 `resumeRun` 的取消分支里，`saveMessages(...)` 从 fire-and-forget（`.catch(()=>{})`）改为 `try { await ... } catch {}`。取消后的中间态（AI 部分回复 + `[已取消]`）**同步落盘完成**后，下一次发送才开始。消除了\"取消未落盘 → 紧接新发送 → 链背压\"的路径。\n\n**2. `_sessionStore._lastSaveError` 脏标记（`session-store.ts`）**\n\n重试全部失败或读取报错时设置，成功写入后清零。供外部判断最近一次是否真正落盘。"
+}

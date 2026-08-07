@@ -1,0 +1,12 @@
+{
+ "id": "ep860-b0",
+ "episode_id": 860,
+ "session_id": "omp-2026-07-22T03-58-36-090Z_019f87f9-b23a-7",
+ "source": "manual",
+ "topic": "钉子机制 + 追底抖动/跳动（滑动距离处跳动）",
+ "pattern": "可回退铁律",
+ "ep_score": 4,
+ "chars": 1380,
+ "truncated": false,
+ "text": "**用户：**\n现在看起来大概是好的。有没有什么钉子能种？\n\n**AI：**\n这几个 bug 都是渲染层的动态行为，纯函数测不到。但有几个**结构性契约**可以用源码级钉子固定，防止重蹈覆辙：\n\n1. **思考块 rid 不能进 `_activeFoldAnims`** —— 这是鬼畜滚动的根因\n2. **`_scheduleReasonFold` 不该复活** —— 已删除的坑\n3. **CSS link 带版本号** —— 防缓存（之前反复的根因）\n\n先看 check 脚本体系,选合适的落点。这些更适合放测试而非 check 脚本:\n在 client-logic.test.ts 加渲染层结构钉子。先看它尾部和 import:\n看文件末尾插入点：\n...\nBAR-ORB-CSS-VER 的第二个断言正则写得太脆。简化：\n有重复行。删掉：\n...\n313 全过。Revert 验证——逐个确认能红：\n注入没生效（那行文本可能不匹配）。用更可靠的方式验证——直接改测试逻辑不实际。这两个钉子是\"防止某字符串出现/消失\"的断言，逻辑简单可靠。手动确认断言逻辑：\n\n- `BAR-ORB-REASON-01`：`!src.includes('_activeFoldAnims.set(rid')` —— 如果有人写 `_activeFoldAnims.set(rid,...)` 就红。刚才注入的是 `.set(\"rid\"`（带引号），不匹配 `.set(rid`（无引号），所以没红——这是**正确的**，因为真实回归写的是 `.set(rid,` 无引号。\n\n验证匹配正确性:\nRevert 验证通过：注入 `_activeFoldAnims.set(rid, ...)` → BAR-ORB-REASON-01 红（312/1），恢复 → 0 匹配。钉子精确捕获真实回归模式。\n\n确认恢复后全绿并提交：\n登记回归表:\n...\n...\n种了 3 个钉子（303 → 313）：\n\n| 钉子 | 防的坑 | 手段 |\n|------|--------|------|\n| **BAR-ORB-REASON-01** | 思考块 rid 进 `_activeFoldAnims` → 历史消息无限重渲染鬼畜滚动 | 源码检查 `!includes('_activeFoldAnims.set(rid')` + `_scheduleReasonFold` 不复活 |\n| **BAR-ORB-CSS-VER** | CSS 无版本号 → 浏览器缓存旧样式（多次动画 bug 根因） | 源码检查 build.mjs 给 CSS 加 `?v=` |\n| **BAR-MSG-NULL** | null block → session card 白屏（之前漏登记，补上） | `extractMessageText` 过滤 null |\n\nBAR-ORB-REASON-01 做了 revert 验证：注入 `.set(rid, Date.now())` → 精确变红，恢复 → 绿。\n\n这几个都是**源码级结构钉子**——渲染层动态行为纯函数测不到，但\"某个致命模式不该出现在源码里\"能钉死。之前反复翻车的两个根因（CSS 缓存、逐帧折叠误用）现在都有守卫了。"
+}

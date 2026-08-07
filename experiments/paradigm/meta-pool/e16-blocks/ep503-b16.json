@@ -1,0 +1,12 @@
+{
+ "id": "ep503-b16",
+ "episode_id": 503,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "文件行右滑动画漂移",
+ "pattern": "全链路验证,追源",
+ "ep_score": 17,
+ "chars": 691,
+ "truncated": false,
+ "text": "**用户：**\n但这样的改动比较卡顿，一卡一卡的，而且根目录和第一层目录的光标和文字是分离的，光标右偏移了不少，第二层目录以后才正常。那我的设想，动画还是保留原来的风格，可以不断往右移动，只要最后回到原来的位置就好，让回弹动画多走一点路，这个效果能实现吗？\n\n**AI：**\n根因清楚了。之前多次修不好很可能是因为改完代码只跑了 `npm run check` 没跑 `npm run build`，浏览器一直在加载旧 bundle。\n\n现在的方案：用 `transform.translateX` 做动画目标（与布局属性 `x` 分离），两步 timeline（当前→+8→0），不再缓存原始位置，不再需要 yoyo。\n现在移除 `resetBounceOrigin` 在 tree-render.ts 中的导入和调用：\nbundle 里确认是 `transform.translateX` 两步动画，无 yoyo，无缓存。\n\n与旧方案的核心区别：\n\n1. **动画目标**：`transform.translateX` 而非 `box.x` — 布局属性完全隔离，`moveCursorTo()` 写 `x` 不干扰弹跳\n2. **两步 timeline**：当前 → +8 → 0，不用 yoyo — 中断时从当前位置续走，不卡顿也不漂移\n3. **timeline 引用**：`_rowBounceTl?.kill()` 只杀弹跳 timeline，不误杀 `moveCursorTo` 的 tween\n\n记得浏览器测试前一定要 `npm run build` 再刷新页面。"
+}

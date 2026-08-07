@@ -1,0 +1,12 @@
+{
+ "id": "ep521-b12",
+ "episode_id": 521,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "左竖线粒子衔接/长度守恒（重大）",
+ "pattern": "设计主权,简化方案,像素守恒",
+ "ep_score": 9,
+ "chars": 395,
+ "truncated": false,
+ "text": "**用户：**\n不是啊，现在的状态，你看看代码，左竖线上的粒子长度是多长？\n\n**AI：**\n当前竖线粒子有三种长度：\n\n```\n竖线 32px (realVert), segLenVert=4, margin=4, hlDef=6:\n\n|  边界缓冲 10px  |      cap 区 12px      |  边界缓冲 10px  |\n|  os < topW+4    |  os≥topW+4 && oe≤segTop+28 |  oe > segTop+28 |\n|  天然 12px w=3  |   4px 居中 w=3      |  天然 12px w=3   |\n```\n\n**大部分时间是 12px（w=3）**，只有深入竖管中心 12px 窄区才缩成 4px。因为 `margin = segLenVert(4) + hlDef(6) = 10` 缓冲区太大了。"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep598-b13",
+ "episode_id": 598,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "heuristic",
+ "topic": "4.1 版本改坏→回退 4.0；日志卡定位；多次无效修改（与 B53/B54 同族）",
+ "pattern": "版本回退,验证优先",
+ "ep_score": 9,
+ "chars": 741,
+ "truncated": false,
+ "text": "**用户：**\n这是补丁吗？\n\n**AI：**\n不是补丁。理由是：\n\n**补丁的特征**：回避根因，在旁边加一个屏障，不知道它和原路径什么时候打架。\n\n**这个改动的本质**：BR orb 被设计为一个独立交互面——它有自己的 pointer event handler（GestureRegistry）、有 `pointer-events: auto`、有优先级 100 最高。但它漏了 `touchstart`。在 mobile 上 `touchstart` 先于 `pointerdown` 触发，浏览器在这个阶段做了 orb 不应该拥有的事（自动聚焦附近的可聚焦元素）。补上 `touchstart.preventDefault()` 是**补全 orb 的事件处理**，不是在旁边开补偿路径。\n\n类比：如果 Canvas 元素漏设了 `touch-action: none`，补上它不是补丁，是完善配置。\n\n对比真正的补丁做法（我不会做的）：\n\n| 补丁做法 | 本做法 |\n|---------|-------|\n| 在 `_toggleExpandCollapse` 里 `setTimeout(() => blur(), 100)` | orb 声明\"我处理 touch，别做默认动作\" |\n| 给 xterm textarea 设 `tabIndex=-1`、开关时来回改 | 不碰 xterm 半行代码 |\n| GestureRegistry 加 `touchstart` 拦截 | orb 的元素层声明，不走注册中心 |\n\n这是最标准的 web 平台手法：自定义交互元素 → `touchstart.preventDefault()` 宣告事件主权。可以执行。"
+}

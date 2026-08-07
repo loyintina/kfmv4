@@ -1,0 +1,12 @@
+{
+ "id": "ep598-b38",
+ "episode_id": 598,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "heuristic",
+ "topic": "4.1 版本改坏→回退 4.0；日志卡定位；多次无效修改（与 B53/B54 同族）",
+ "pattern": "版本回退,验证优先",
+ "ep_score": 9,
+ "chars": 885,
+ "truncated": false,
+ "text": "**用户：**\n[10:49:54.412] [CARD-STACK] buildCards called → [10:49:54.414] [CARD-STACK] buildCards done, cards=7 → [10:49:54.415] [ws-channel] 初始化完成 → [10:49:54.606] [ws-channel] 已连接到服务端 ws://8.145.46.182/ws → [10:50:01.442] [tmux] send: cmd=%s args=%s list-sessions  → [10:50:01.552] [tmux] send: cmd=%s args=%s list-windows oc 点击窗口没有任何动作响应\n\n**AI：**\nNo `[tmux] tap` at all — gesture `onEnd` never fires. Check the `_matchTarget` logic:\n`_matchTarget` 走 `target.closest(handler.targetFilter)`（行 134），逻辑没问题。**根因是 `touch-action`**：tmux 卡的行没有设 `touch-action: none`，浏览器在 `pointerdown` 和 `pointerup` 之间检测到可能的滚动手势 → 发 `pointercancel` → GestureRegistry 的 `_handleEnd` 清除 `_active` → 用户手指抬起的 `pointerup` 时 `_active` 是 null → `onEnd` 不触发。\n\n这和 xterm 终端当时的问题一模一样（B.A.R. #001/#007）。\n\n**修复**：`activate` 里，`buildCardLayout` 返回的 `bodyEl` 加一行：\n\n```typescript\nbodyEl.style.touchAction = 'none';\n```\n\n要我执行吗？"
+}

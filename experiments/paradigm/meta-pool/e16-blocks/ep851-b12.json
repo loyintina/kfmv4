@@ -1,0 +1,12 @@
+{
+ "id": "ep851-b12",
+ "episode_id": 851,
+ "session_id": "omp-2026-07-07T06-14-00-892Z_019f3b36-47bc-7",
+ "source": "manual",
+ "topic": "全局手势推广（浮卡左右滑召唤侧栏）+ tmux/滚动修复 + 隐式契约记录",
+ "pattern": "实现边界控制,复盘沉淀",
+ "ep_score": 7,
+ "chars": 404,
+ "truncated": false,
+ "text": "**用户：**\n不对，我确认手势是超过了60px的，是有什么让它截断了。这个情况好像很熟悉，你看看文档里，好像有对应情况的记录？\n\n**AI：**\n文档 §1.2 写得清清楚楚：\n\n> **不要**使用 `touch-action: pan-y` 或 `auto`——本项目没有浏览器原生滚动，所有滚动由代码实现。\n> **违规后果**：浏览器接管触摸 → `pointercancel` 截断手势，每手势仅 1-2 帧 move。\n\nAPI 卡的 `scrollArea` 设了 `touch-action: pan-y`——就这个导致的。删掉。\nRemove debug logs and build:\n`touch-action: pan-y` 已从 API 卡的 `scrollArea` 移除（改为 `none`）。刷新试试在浮卡上左右滑动——应该不会再被 `pointercancel` 截断了。"
+}

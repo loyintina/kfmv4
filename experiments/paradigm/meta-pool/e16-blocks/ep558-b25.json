@@ -1,0 +1,12 @@
+{
+ "id": "ep558-b25",
+ "episode_id": 558,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端滚动条/滚动失效",
+ "pattern": "一致性质疑,日志定位",
+ "ep_score": 7,
+ "chars": 904,
+ "truncated": false,
+ "text": "**用户：**\n还是不行，我们把git版本回退到刚刚修改前的那个版本吧，然后重新实现\n\n**AI：**\n两个发现：\n\n### 1. xterm.js v6 **内置回流**\n\n源码里有 `_reflow(e, t)` 方法，在 `resize()` 里自动调用。条件是 scrollback > 0 且 `windowsMode = false`——我们满足。所以缩窄后内容会软换行、拉宽后内容会自动合回——**不需要我们做任何事。**\n\n用户之前说\"不回流\"可能是其他原因（比如那轮改的手势有问题）。\n\n### 2. tmux 滚动：无可靠的通用方案\n\nxterm.js 内部处理 wheel 事件的逻辑是：检查是否 mouse mode（DECSET ?1000h），是则发 `\\x1b[M` 序列到 PTY，否则调 `scrollLines()`。我们无法从外部知道\"当前 mouse mode 是否开\"——这是 xterm.js 的内部状态。\n\n两种路径：\n- `scrollLines()`：普通终端 ✓，tmux ✗\n- `dispatchEvent(WheelEvent)`：tmux(mouse on 时) ✓，普通终端 ✗（会双滚）\n- 直接发 `\\x1b[M` 序列到 PTY：tmux ✓，普通终端会输出垃圾字符 ✗\n\n**没有一条路径能同时工作**——需要\"知道当前是不是 tmux/mouse mode\"，而这个信息在 xterm.js 内部，API 不暴露。\n\n---\n\n## 方案\n\n**回退到 `9649c5f`，保持 `scrollLines()` 作为普通终端滚动（已验证工作）。tmux 的滚动交给 xterm.js 原生 wheel 处理（触摸板双指、鼠标滚轮），不在单指滑动中尝试。**\n\n这是架构边界——xterm.js 接管了 buffer，我们就失去了对\"何时发滚轮序列 vs 调 scrollLines\"的判断能力。这是用 xterm.js 换 VT 兼容性的代价。\n\n---\n\n要执行回退吗？`git reset --hard 9649c5f` 一条命令。"
+}

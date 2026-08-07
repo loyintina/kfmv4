@@ -1,0 +1,12 @@
+{
+ "id": "ep669-b5",
+ "episode_id": 669,
+ "session_id": "qoder-1a83caf2-f9d3-4162-9a55-bbf55a424827",
+ "source": "manual",
+ "topic": "文档系统审计 +",
+ "pattern": "warning失效,hardfail源头",
+ "ep_score": 1,
+ "chars": 1156,
+ "truncated": false,
+ "text": "**用户：**\nIn /root/kfmv4, read ALL check-*.mjs files at the project root. For each file, identify every place where:\n1. A warning is emitted but does NOT cause a non-zero exit (e.g. console.log with \"warn\"/\"⚠\"/\"warning\", or issues pushed to a warnings array that doesn't affect exit code)\n2. A try/catch silently swallows an error (catch → continue, or catch → just log)\n3. An existsSync guard skips a check silently when a file is missing\n4. Any condition that represents a real problem but only logs instead of failing the build\n\nFor each finding, report:\n- File name and line number(s)\n- What the code does (the warning/skip logic)\n- Whether it's a legitimate warning (informational, no action needed) or should be a hard error (something is actually wrong)\n\nBe exhaustive — read every file completely. The check scripts are: check-uncommitted.mjs, check-versions.mjs, check-checks.mjs, check-doc-coverage.mjs, check-css-wiring.mjs, check-anim.mjs, check-as-any.mjs, check-card-meta.mjs, check-registry.mjs, check-zindex.mjs, check-console.mjs, check-docs.mjs, check-linecount.mjs, check-consistency.mjs, check-cards.mjs, check-handbook-sync.mjs\n\n**AI：**\n"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep928-b5",
+ "episode_id": 928,
+ "session_id": "omp-2026-07-12T03-47-42-491Z_019f5470-211b-7",
+ "source": "manual",
+ "topic": "卡片高度限制（80px 补丁质疑）+ 路径显示省略号",
+ "pattern": "补丁vs根因",
+ "ep_score": 3,
+ "chars": 1073,
+ "truncated": false,
+ "text": "**用户：**\n现在的视觉效果是，路径都是以三个点的省略号开头，后面跟着正正常的路径，路径结束后，后面又接了三个点的省略号。然后，如果放大文字，那么路径的最尾端就会被这个省略号吞掉。而如果缩小，那么路径会维持住左边的省略号不变，保持省略号跟整个露出来的路径末端的长度，一起缩小。是靠左的。而我想要的效果是，右边没有省略号，而且整个路径是水平居右的，如果放大或缩小，路径左边的省略号能正确地吞或释放内容。这个问题我之前提出过很多轮，但都没有达到正确的改进效果，你能看看是怎么回事吗？为什么实现的代码跟预期不符呢？\n\n**AI：**\n问题很清楚了。\n\n### 为什么出现两个省略号\n\n```\n_ pathDisplay() 产出:  …/handoffs/AUDIT_2026-07-12.md    ← JS 加的左边 …\n                       ↑\npathEl CSS:  text-overflow:ellipsis                       ← CSS 加的右边 …\n             \n结果:  …/handoffs/AUDIT_2026-07-…                         ← 两个省略号！\n```\n\n`_pathDisplay` 已经在字符串左边加了 `…/`，CSS 又用 `text-overflow:ellipsis` 在右边加 `…`。两边打架。\n\n### 为什么 `direction:rtl` 之前没效\n\n因为 `_pathDisplay` 已经截断了字符串——传给 DOM 的是一个不含前缀目录的短字符串，CSS 的 `text-overflow` 判断\"够宽，不需要省略号\"。左边 `…` 是 JS 写死的，不会随宽度变化。\n\n### 正确做法\n\n既然左边 `…` 需要动态随宽度变化，就**交给 CSS 做**，JS 别插手：\n\n```css\ntext-align: right;           /* 右对齐，路径末端贴在右边 */\ndirection: rtl;              /* RTL 让 text-overflow 从左边截 */\nunicode-bidi: plaintext;     /* 但 ASCII 内容保持自然 LTR 顺序 */\ntext-overflow: ellipsis;     /* 只有左边出现 … */\n```\n\nJS 端：直接传原始 `filePath`，不再预处理。\n\n要不要这样改？"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep857-b4",
+ "episode_id": 857,
+ "session_id": "omp-2026-07-22T03-58-36-090Z_019f87f9-b23a-7",
+ "source": "manual",
+ "topic": "版本 7.3.1 + 修 bug 流程记录 + 工具失败注入提示 + 连续调用",
+ "pattern": "可回退铁律,复盘沉淀",
+ "ep_score": 5,
+ "chars": 730,
+ "truncated": false,
+ "text": "**用户：**\n下一个问题，我注意到，让ai删除某文件，树的状态依然不会同步更新。\n\n**AI：**\n让我查一下目录指纹对比的范围——问题可能是 bash 删的文件不在 CWD 里，指纹对比只看 CWD 根目录。\n问题找到了。`readdirSync(toolCtx.cwd)` 只看 CWD 根目录——`bash` 删子目录里的文件（如 `rm /root/.config/jcode/foo`）时根目录列表不变，`filesChanged` 仍为 `false`。\n\n指纹对比只对顶层有效，对子目录无效。正确做法：**文件工具成功执行就直接设 `filesChanged = true`**，不搞指纹。bash 可以改任何地方，指纹覆盖不了。\n现在在 yield 循环里加上 `filesChanged` 标记：\n`filesChanged` 变量已经声明了但还是 `false`——需要在工具成功时赋值。改 yield 循环：\n删掉之前的 `let filesChanged = false;` 重复声明：\n删掉重复的：\n也要删掉之前残留的 fingerprint 相关 import（`readdirSync` 已经在顶部 import 了，没问题）。构建测试：\n根因：`readdirSync(CWD)` 只看项目根目录。AI 用 bash 删 `/root/.config/jcode/` 这种子目录文件时，根目录列表不变 → `filesChanged = false` → 文件树不刷新。\n\n修法：去掉指纹对比，`write`/`edit`/`bash` 任一成功执行就直接 `filesChanged = true`。简单可靠。刷新页面试试。"
+}

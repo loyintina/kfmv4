@@ -1,0 +1,12 @@
+{
+ "id": "ep533-b5",
+ "episode_id": 533,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "右滑出卡方向判定（重大）",
+ "pattern": "简化方案,深度归因,重构视角",
+ "ep_score": 11,
+ "chars": 441,
+ "truncated": false,
+ "text": "**用户：**\n好\n\n**AI：**\nReplace onMove axis lock:\nReplace onEnd trigger:\nBuild:\n完全重写，删掉所有补丁，换成一个简单的扇形判断。\n\n核心逻辑只有两行：\n\n```typescript\n// onMove: 锁定方向\nif (dx > 20 && Math.abs(dy) < dx * 3.73)  →  水平（右滑）\nelse if (dy > 20)                           →  垂直（光标/滚动）\n\n// onEnd: 触发右滑\nif (axis === 'horizontal' && dx > 50)       →  投卡\n```\n\n`dx * 3.73 = dx * tan(75°)`，右侧 150° 扇形（以水平线为轴，上下各 75°）全部算水平右滑——手指只要有右向分量并且上下偏移不超过横向 3.73 倍，光标就不会动，最后触发投卡。\n\n刷新测试各种角度的右滑。"
+}

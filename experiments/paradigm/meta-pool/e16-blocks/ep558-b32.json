@@ -1,0 +1,12 @@
+{
+ "id": "ep558-b32",
+ "episode_id": 558,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端滚动条/滚动失效",
+ "pattern": "一致性质疑,日志定位",
+ "ep_score": 7,
+ "chars": 1853,
+ "truncated": false,
+ "text": "**用户：**\n[10:38:20.140] [CARD-STACK] buildCards called → [10:38:20.142] [CARD-STACK] buildCards done, cards=7 → [10:38:20.143] [ws-channel] 初始化完成 → [10:38:20.349] [ws-channel] 已连接到服务端 ws://8.145.46.182/ws → [10:38:42.929] [\"xscr\",\"mouse dy=-8 proto=ANY enc=SGR sid=Y\"] → [10:38:42.936] [\"xscr\",\"mouse dy=-6 proto=ANY enc=SGR sid=Y\"] → [10:38:42.945] [\"xscr\",\"mouse dy=-7 proto=ANY enc=SGR sid=Y\"] → [10:38:42.953] [\"xscr\",\"mouse dy=-8 proto=ANY enc=SGR sid=Y\"] → [10:38:42.961] [\"xscr\",\"mouse dy=-6 proto=ANY enc=SGR sid=Y\"] → [10:38:42.970] [\"xscr\",\"mouse dy=-6 proto=ANY enc=SGR sid=Y\"] → [10:38:42.978] [\"xscr\",\"mouse dy=-6 proto=ANY enc=SGR sid=Y\"] → [10:38:42.986] [\"xscr\",\"mouse dy=-6 proto=ANY enc=SGR sid=Y\"] → [10:38:42.995] [\"xscr\",\"mouse dy=-5 proto=ANY enc=SGR sid=Y\"] → [10:38:43.003] [\"xscr\",\"mouse dy=-5 proto=ANY enc=SGR sid=Y\"] → [10:38:43.011] [\"xscr\",\"mouse dy=-4 proto=ANY enc=SGR sid=Y\"] → [10:38:43.028] [\"xscr\",\"mouse dy=-7 proto=ANY enc=SGR sid=Y\"] → [10:38:43.045] [\"xscr\",\"mouse dy=-5 proto=ANY enc=SGR sid=Y\"] 我只滑动了一次，但这一次页面上什么动作都没有。tmux窗口也没有滚动\n\n**AI：**\n## 根因分析\n\n日志很清楚：序列在发、事件在到、sid 有值。问题在**二进制字节在 JSON 序列化中被破坏了**。\n\n`\\x1b[M\\x60\\x20\\x20` 里有不可打印字符（`\\x1b`=ESC, `\\x60`=`backtick`），经 `JSON.stringify` → `JSON.parse` 后字节可能被转义或丢弃。X10 编码天生不适合 JSON 传输。\n\n**SGR 编码全部是可打印 ASCII**（`\\x1b[<64;1;1M`），JSON 无损。但我们同时发了 X10+SGR，tmux 收到了垃圾半截序列。\n\n---\n\n## 修复计划\n\n**只发 SGR 编码，拆掉 X10。** 三处改动：\n\n1. 删 X10 编码行\n2. `log()` 里加 `msg:` 打印实际发出的字符串原文（确认格式）\n3. 把 SGR 的坐标参数用 `term.cols/term.rows` 动态算（不用硬编码的 `;1;1`）\n\n```typescript\nconst cols = _activeTerm.cols, rows = _activeTerm.rows;\nconst cx = Math.min(cols, Math.max(1, Math.round(cols / 2)));\nconst cy = Math.min(rows, Math.max(1, Math.round(rows / 2)));\nconst sgr = '\\x1b[<' + btn + ';' + cx + ';' + cy + 'M';\nwsChannel.sendMessage('terminal-input', { sessionId: _activeSid, input: sgr });\n```\n\n要切 build 模式？"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep549-b23",
+ "episode_id": 549,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端滚动方向/截停（超长拉锯，十几轮）",
+ "pattern": "机制重构,删旧留新,验证优先",
+ "ep_score": 11,
+ "chars": 345,
+ "truncated": false,
+ "text": "**用户：**\n所以又是大补丁导致的竟态吗？\n\n**AI：**\n是。不是竞态——是**方法本身设计的缺陷**。\n\n逐行手工算 `py` 偏移本质上是\"在每个格子上打补丁\"，`pixelOff` 跨整数边界时行选择变化和像素偏移变化同时发生，画面一定跳。\n\n`ctx.translate()` 不是补丁——是 Canvas 标准的 \"viewport 移动\"API。整个画面连续平移，不碰每行坐标。\n\n我之前没往这个方向想是因为一开始就把 `_render()` 写成了逐行循环，没意识到 viewport 级变换才是正确解。\n\n---\n\n要切 build 模式，我把 `_render()` 里所有 `py` 手工计算删掉，换成 `ctx.translate(0, -pixelOff)`？"
+}

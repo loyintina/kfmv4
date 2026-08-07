@@ -1,0 +1,12 @@
+{
+ "id": "ep504-b4",
+ "episode_id": 504,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "卡片堆聚焦状态错乱",
+ "pattern": "全链路验证,验证优先",
+ "ep_score": 9,
+ "chars": 422,
+ "truncated": false,
+ "text": "**用户：**\n好的，然后是压缩后的情况，卡片数量比较多时，正常的加入卡片，能正常压缩，但当我滑动了一次切换光标后，布局突然变得很奇怪，中间密，两边疏。这是什么原因造成的？\n\n**AI：**\n`updateFocus()` 里的 `killTweensOf` 杀掉了每张卡的 Y 位置 tween，导致 Y 值停留在动画中段而非最终位置。非聚焦卡应该也用 `overwrite: 'auto'`：\n根因：滑动切换聚焦时 `updateFocus()` 对所有非聚焦卡调 `killTweensOf`，把 forEach 创建的 Y 位置 tween 一并杀了。卡的 Y 值停在动画中段（比目标位置高/低），被后接的 x/scale/rotation tween 固化在那个错误位置，形成「中间密两边疏」。\n\n修复：非聚焦卡也改用 `overwrite: 'auto'`，只覆盖冲突的 x/scale/rotation，Y tween 不受影响。"
+}

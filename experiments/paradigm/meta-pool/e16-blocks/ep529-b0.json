@@ -1,0 +1,12 @@
+{
+ "id": "ep529-b0",
+ "episode_id": 529,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "文件夹收缩动画不同步",
+ "pattern": "追源,心法前置",
+ "ep_score": 9,
+ "chars": 782,
+ "truncated": false,
+ "text": "**用户：**\n我发现一个bug，在文件树深处某个文件夹关闭的时候，它下面的兄弟文件夹会先有文字上移，然后盒子才收缩，但以前我调试的时候是没有这个情况的，这是哪里出现了问题导致盒子跟文字不同步收缩？是引入了新代码导致的吗？\n\n**AI：**\n查完了。**Phase 7 代码和文件树折叠动画之间没有因果通路：**\n\n| 改动 | 折叠动画影响 |\n|------|------------|\n| `box.ts` +`scrollPaddingBottom` | overlay 管线不读这个属性（`createVisualClone` 不拷贝，`buildAndSetOverlayTree` 不读） |\n| `box.ts` `getMaxScroll()` 公式变 | 动画函数 `doCollapse` / `_runExpandAnimation` 不调用 `getMaxScroll` |\n| `renderer.ts` scrollbar thumbHeight | 只影响滚动条绘制，不参与动画 |\n| `tree-render.ts` | **零改动** |\n| `tree-overlay.ts` | **零改动** |\n| `canvas-scroll.ts` +`!isRenaming()` | 折叠动画中 `isRenaming()=false`，手势行为不变 |\n\n**这个 bug 很可能是早于 Phase 7 存在的。** 建议：\n1. 先 `git stash` 暂存当前改动 → `git checkout eed2baf`（Phase 7 第一个 commit 之前）→ 验证是否复现\n2. 如果也复现 → 跟 Phase 7 无关，是更早的回归\n3. 如果消失 → 我继续逐 commit bisect 定位\n\n你测一下？"
+}

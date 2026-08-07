@@ -1,0 +1,12 @@
+{
+ "id": "ep604-b5",
+ "episode_id": 604,
+ "session_id": "ses_097843368ffejJGDPa2PNXgmfI",
+ "source": "manual",
+ "topic": "面板与会话卡不同步（大）",
+ "pattern": "全链路验证,验证优先",
+ "ep_score": 3,
+ "chars": 636,
+ "truncated": false,
+ "text": "**用户：**\n好\n\n**AI：**\nTypeScript 报错：async 函数不能直接 cast 到 EventListener。用 IIFE 包裹：\n完成。两处改动都在 `session.card.ts`：\n\n| # | 位置 | 改了什么 |\n|---|------|---------|\n| A | 气泡编辑回调（第 393 行 `renderAll()` 后） | 加 `window.dispatchEvent(kfm-session-change)`，面板能感知到消息变了 |\n| B | `kfm-session-change` 监听器（第 555-563 行） | 去掉 `sessionId !== activeSessionId` 守卫 → 每次事件都 `sessions = await loadSessions()` → `renderAll()` |\n\n现在四向覆盖完整：\n\n| 操作 | 谁做的 | 另一边感知 |\n|------|--------|----------|\n| 新建会话 | 面板 | 会话卡 ✓（loadSessions 捡到新文件） |\n| 编辑/删除消息 | 面板 | 会话卡 ✓（同 sessionId 也触发 reload） |\n| 编辑/删除消息 | 会话卡 | 面板 ✓（新派发的事件） |\n| 切换/删除会话 | 任意 | 对面 ✓（本来就通） |\n\n服务在 `http://127.0.0.1:8021`。"
+}

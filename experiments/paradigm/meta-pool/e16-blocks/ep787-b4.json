@@ -1,0 +1,12 @@
+{
+ "id": "ep787-b4",
+ "episode_id": 787,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "文件树深层展开卡顿性能排查（视口裁剪/阴影/字符雨）",
+ "pattern": "md编辑器分类",
+ "ep_score": 3,
+ "chars": 952,
+ "truncated": false,
+ "text": "**用户：**\n可以\n\n**AI：**\n### 方案 1：视口裁剪\nNow I'll apply the three edits. First, the function signature:\nNow the viewport culling logic around the children loop:\n方案 1 完成。现在方案 2：缓存 `layoutWithLines` 结果。\n方案 2 完成。方案 3：跳过无意义 flatten。\n三个方案都完成了。现在构建验证。\n构建通过，零错误。启动并验证：\n159 测试全过，零失败。提交：\n三个优化已提交，构建/测试全过。汇总：\n\n---\n\n### 改动：`src/client/engine/v2/renderer.ts` —— 3 处，+30/-16 行\n\n**方案 1 — 视口裁剪**（`_tickAndRender` 子遍历）\n\n滚动的父容器传 `clipViewport`（`{y1:scrollY, y2:scrollY+viewportH}`）给子树，非滚动容器逐层减去自己的 `y` 调整窗口。子 Box 的 `y + height` 完全在窗口外的直接 `continue` 跳过，不再走 `tickAndRender` → 绘制管线。\n\n展开 10 层的离屏行之前每帧全量画，现在只画视口内 ~30 行。\n\n**方案 2 — `layoutWithLines` 缓存**\n\n`_drawText` 之前的缓存 key 只有 `font::text`（只缓了 `prepareWithSegments`），`layoutWithLines` 每帧重算。现在 key 扩展为 `font::text::maxWidth::lineHeight`，layout 结果一并缓存。同文本换行结果不再重算。\n\n**方案 3 — `_manageInputs` 快速路径**\n\n文件树渲染器每帧 `root.flatten()` 把几百个 Box 铺成数组再 `filter` 到空。加一行 `if (_inputElements.size === 0 && !root.inputable?.enabled) return`，跳过无效遍历。"
+}

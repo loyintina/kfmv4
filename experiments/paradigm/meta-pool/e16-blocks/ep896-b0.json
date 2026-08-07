@@ -1,0 +1,12 @@
+{
+ "id": "ep896-b0",
+ "episode_id": 896,
+ "session_id": "omp-2026-05-27T17-10-59-698Z_019e6a6b-0772-7",
+ "source": "manual",
+ "topic": "文件树渲染 bug（隐式关联/硬编码立约束）",
+ "pattern": "补丁vs根因",
+ "ep_score": 6,
+ "chars": 1013,
+ "truncated": false,
+ "text": "**用户：**\n我发现，不知道从哪个修改开始后，左侧文件树不能正确渲染了。你能排查一下是什么原因吗？历史上曾经多次出现过这个现象，当时的解释是，有某个隐式的关联被忽略了，导致报错。\n\n**AI：**\n先看构建有没有报错，再看浏览器端有什么异常。\n构建通过。在浏览器中查看运行时状态。\n。\n.\n。\n。\n。\n.\n.\n.\n.\n让我仔细排查。先看一下最近的提交历史，找到第一个可能导致问题的改动。\n.\n.\n.\n找到根因了。`tree-model.ts` 第 224 行硬编码了 `'/root'`。\n检查一下 `tree-model.ts` 有没有其他 `/root` 硬编码。\n.\n。\n也改掉 `buildTree` 中的硬编码 `/root`，保持一致性。\n检查 `tree-render.ts` 中有没有 `/root` 硬编码。\n构建验证。\n测试种子数据也用了硬编码 `/root`。\n测试种子数据需要同步更新。\n编辑重复了——旧的测试还在下面。删掉。\n.\n需要恢复被误删的 section 标题。\n构建测试。\n.\n.\n.\n.\n嵌套展开测试结尾缺了 `});`。\n.\n.\n测试数据路径不匹配。更新 `nestedFolders` 和 `singleFolder` 中的路径。\n.\n.\n。\n回退到基准线——63 通过、8 前置失败。提交推送。\n根因找到了。`loadFileTree('/root')` → `loadFileTree('.')` 的改动只有 `main.ts` 改了，但 `tree-model.ts` 的 `buildSidebarTree` 和 `buildTree` 里还有两处硬编码 `/root`：\n\n| 位置 | 行 | 旧值 | 新值 |\n|------|-----|------|------|\n| `tree-model.ts` `buildSidebarTree` | 224 | `state.files['/root']?.children` | `state.files['.']?.children` |\n| `tree-model.ts` `buildTree` | 171 | `buildExpanded('/root', ...)` | `buildExpanded('.', ...)` |\n\n树据此找不到根节点，传入空数组，所以文件树一片空白。测试数据也同步更新了路径。"
+}

@@ -1,0 +1,31 @@
+{
+  "experiment": "e18b",
+  "prefix": "e18b-",
+  "retryRounds": 10,
+  "runs": [
+    {
+      "taskFile": "experiments/paradigm/scenarios/e13-t2-docplace.txt",
+      "paradigms": "无,behavior-discipline",
+      "models": "deepseek-v4-flash",
+      "provider": "deepseek",
+      "arms": 8,
+      "concurrency": 16,
+      "tools": "read,grep,glob,write",
+      "sandboxTemplate": "experiments/paradigm/fixtures/e13-sandbox-template",
+      "plannedArms": 16
+    }
+  ],
+  "judge": {
+    "model": "deepseek-v4-flash",
+    "provider": "deepseek",
+    "rubric": "v2",
+    "concurrency": 4,
+    "out": "experiments/paradigm/meta-pool/judge-e18b.json",
+    "taskFiles": {
+      "e18b-t0": "experiments/paradigm/scenarios/e13-t2-docplace.txt"
+    },
+    "itemsFiles": {
+      "e18b-t0": "experiments/paradigm/scenarios/e13-t2-items.json"
+    }
+  }
+}

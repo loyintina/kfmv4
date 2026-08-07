@@ -1,0 +1,12 @@
+{
+ "id": "ep885-b4",
+ "episode_id": 885,
+ "session_id": "omp-2026-06-03T14-24-49-802Z_019e8ddf-6a8a-7",
+ "source": "manual",
+ "topic": "readme/claude 更新 + 版本固定 + 光球紧缩态位置（近似极限思路）",
+ "pattern": "可回退铁律",
+ "ep_score": 1,
+ "chars": 691,
+ "truncated": false,
+ "text": "**用户：**\n那，你还有没有类似的情况出现？\n\n**AI：**\n我重新审视了一遍整个方案，发现**没有**其他类似的问题。\n\n我逐一检查了边界情况：\n\n| 疑点 | 结论文 |\n|---|---|\n| BR 光球屏幕位置与卡片尺寸无关 | ✅ `screenRight - margin - offset`，`cardWidth` 消掉 |\n| 展开动画数学能否处理 1×1 → 300×350 | ✅ 现有代码从右下角锚点计算，1×1 不影响公式 |\n| 紧缩态点击区域 | ✅ 交互走 BR 光球（`.floating-br-orb`），不是卡片体 |\n| TL/TR/BL 角光球 | ✅ `config.cornerTL: false`，引擎不创建 |\n| 浮卡冲突 | ✅ 光球和其他浮卡共用 gesture-registry，不同 targetFilter 隔离 |\n| 输入法避让 | ✅ 现有 `orb.ts` 的 `initInputBarWatcher()` 需要搬进引擎，作为 `inputBarAvoid: true` 的内建功能——这是唯一真正需要新增的代码，不是补丁 |\n| alwaysOnTop | ✅ 引擎分配高值 z-index |\n\n真正的结论是：**现有 floating-card.ts 的数学本来就是自洽的。只需要给引擎加一个输入法避让开关（~20 行）和一个 `initialPosition` 配置，再写一个 80 行的 orb-card 插件，就能删掉整个 `orb.ts`。**\n\n没有补丁，没有特殊 case，没有 hack。"
+}

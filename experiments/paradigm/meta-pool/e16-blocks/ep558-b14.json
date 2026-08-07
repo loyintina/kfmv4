@@ -1,0 +1,12 @@
+{
+ "id": "ep558-b14",
+ "episode_id": 558,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端滚动条/滚动失效",
+ "pattern": "一致性质疑,日志定位",
+ "ep_score": 7,
+ "chars": 762,
+ "truncated": false,
+ "text": "**用户：**\n那我们能自己做吗？\n\n**AI：**\nxterm.js 的 buffer 是自管理的，API 只给读不给写。自己做回流只有两条路，都走不通：\n\n### 路 1：读 buffer + reset + 重写\n\n用 `term.buffer.active.getLine(y)` 读每行文本、`isWrapped` 识别软换行 → 合并 → `term.reset()` 清空 → 把合并后的文本按新列宽 `term.write()` 回去。\n\n**死穴**：`reset()` 清空一切，包括 ANSI 颜色；`write()` 回去的是纯文本，所有颜色/加粗/斜体全部丢失。终端变成黑白。\n\n### 路 2：拦截 write + resize 时重放\n\n保存所有 `term.write(data)` 的原始 ANSI 输出 → resize 时 `reset()` + 重放。\n\n**死穴**：原始 ANSI 是按旧列宽格式化的。重放在新列宽下，软换行位置不会变——该断在哪还是断在哪，完全没回流效果。\n\n### 路 3：xterm.js 内置\n\n`terminal.reflow()` —— v6 **没有这个方法**。翻了一遍 API，没找到任何 reflow 相关的接口或 addon。\n\n---\n\n## 结论\n\n回流是自研渲染器的一个卖点——因为你自己管 buffer，才有能力做。换到 xterm.js，你把 buffer 的控制权交出去了，换来了 VT 兼容性、文本选择、键盘映射。**回流是这笔交易的代价。**\n\n大多数终端都没有回流（VS Code、macOS Terminal、iTerm2 默认关闭）。只有 Termux 和 Alacritty 少数几个做了。这不是 bug，是架构边界。"
+}

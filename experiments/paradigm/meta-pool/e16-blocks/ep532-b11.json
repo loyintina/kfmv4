@@ -1,0 +1,12 @@
+{
+ "id": "ep532-b11",
+ "episode_id": 532,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "相同卡竞态（重大，长拉锯）",
+ "pattern": "补丁vs根因,竞态",
+ "ep_score": 10,
+ "chars": 671,
+ "truncated": false,
+ "text": "**用户：**\n好\n\n**AI：**\nAdd import:\nNow add logs at 5 locations:\n**1. canStart:**\n**2. onTap + 3. onEnterEdit + 4. onExitEdit:**\n**5. BR orb click handler:**\nBuild:\n完成。5 个追踪点已加入日志卡：\n\n| 日志标记 | 含义 |\n|----------|------|\n| `[BR] canStart blocked state=...` | 状态被拒（只会在非 active/compact/editing 时出现） |\n| `[BR] onEnterEdit` | 长按600ms成功，进入编辑 |\n| `[BR] onExitEdit` | 松手退出编辑 |\n| `[BR] onTap` | 短按触发（不应在长按后出现） |\n| `[BR] click state=...` | BR 光球 click 处理器执行 |\n| `[BR] click SUPPRESSED` | click 被 `_suppressNextClick` 拦截 |\n\n刷新后部署两张相同文件卡，长按出 bug 的那张。然后打开 `#2` 日志卡查看输出。正常的长按路径应该是：\n\n```\nonEnterEdit → onExitEdit → (click 被 SUPPRESSED)\n```\n\n如果有异常会看到 `canStart blocked` 或 `onTap` 出现在长按之后。把日志贴给我。"
+}

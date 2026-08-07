@@ -1,0 +1,12 @@
+{
+ "id": "ep615-b17",
+ "episode_id": 615,
+ "session_id": "ses_063fd57d7ffepMZzVsdv2wNXM2",
+ "source": "manual",
+ "topic": "\"Unexpected token '<'\" 报错",
+ "pattern": "全链路验证,验证优先",
+ "ep_score": 17,
+ "chars": 1290,
+ "truncated": false,
+ "text": "**用户：**\n你确定这样是能从根本上解决会话同步保存的问题吗？我在想，好像我们的对话是在服务端就完成的，客户端只是一个播放窗口，那么理论上存个数据应该很快才对？为什么会这样麻烦呢？\n\n**AI：**\n你说到根上了。当前架构的错位是：\n\n```\n客户端（播放窗口） → HTTP fetch → 服务端 → fs.writeFileSync → 磁盘\n      ↑ 事件到达后才拼装，永远落后一拍        ↑ 一步到位，但客户端不够快\n```\n\n服务端有全部数据（入站消息 + 出站 SSE 事件 + 工具执行结果）、有本地磁盘直写、没有网络往返。**保存理应在服务端完成**，客户端只是冗余备份。\n\n## 方案：服务端直写会话\n\n在 `src/server/ai/chat.ts` 的 `streamChat` 里加三处保存点：\n\n| 时机 | 位置 | 保存什么 |\n|------|------|---------|\n| 请求到达时 | `/ai/chat/start` 路由 handler，调用 `streamChat` 之前 | 用户消息已入队，立刻落盘 |\n| 每个工具轮次执行前 | `content_block_stop` 全部 yield 后、`Promise.all` 执行前 | 包含当前轮 AI 文本 + 所有工具块（输入完整） |\n| 流结束后 | `yield done` 之前 | 全量 |\n\n核心：服务端维护一个 `serverMessages: ContentBlock[]`，用与客户端 `_applyEvent` 同一套逻辑（可抽取为共享纯函数）在 yield 每个事件时同步更新。保存用 `fs.writeFileSync`，没有网络开销、没有链背压。\n\n## 客户端精简\n\n服务端接管保存后，客户端仅保留一处：**用户消息入队后立即保存**（确保用户消息在 AI 启动前落盘）。删除 `_saveChain`、`onToolCall`、取消路径的 save。\n\n## 改动范围\n\n| 文件 | 改什么 |\n|------|--------|\n| `src/server/ai/chat.ts` | 新增 `accumulateServerMessages()` 逻辑 + 三处 `saveSessionFile()` 调用 |\n| `src/server/ai/routes.ts` | `/ai/chat/start` 接收 `clientMessages: ContentBlock[]` 字段，启动前落盘 |\n| `src/client/modules/orb-chat.ts` | `doSend` 在启动请求中增加 `clientMessages` 字段；移除 `onToolCall` |\n| `src/client/modules/session-store.ts` | 大幅简化：保留 `cleanBlockForSave` 和基本 `saveMessages`，移除链/锁/重试（服务端接管） |\n\n要执行吗？"
+}

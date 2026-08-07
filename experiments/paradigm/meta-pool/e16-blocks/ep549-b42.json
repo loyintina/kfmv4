@@ -1,0 +1,12 @@
+{
+ "id": "ep549-b42",
+ "episode_id": 549,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端滚动方向/截停（超长拉锯，十几轮）",
+ "pattern": "机制重构,删旧留新,验证优先",
+ "ep_score": 11,
+ "chars": 854,
+ "truncated": false,
+ "text": "**用户：**\n但方向依然是反的\n\n**AI：**\n## 方向修复方案\n\n已确认：`sb=103` 历史够，`base` 在变（0→2→2.8）说明滚动机制在工作。问题纯粹是**方向映射**。\n\n### 三条改动\n\n**1. `touchScrollMove` — 翻转 delta**\n\n```typescript\n// 现: const deltaPx = startY - rawY;\n// 改: const deltaPx = rawY - startY;\n```\n\n效果：上滑 → deltaPx 负 → `_scrollOffset` 减小 → yOff 更负 → 画面上移 ✓\n\n**2. 两处 clamp 拆掉下限 `Math.max(0, ...)`**\n\n```typescript\n// touchScrollMove 和 scrollBy 各一处:\n// 现: Math.max(0, Math.min(this._scrollback.length, this._scrollOffset))\n// 改: Math.min(this._scrollback.length, this._scrollOffset)\n```\n\n允许 `_scrollOffset` 为负（过滚）。上滑到底时画面继续上移、底部露白——iOS 式弹性手感。\n\n**3. `startFling` — 松手弹回**\n\nfling 动画结束后，若 `_scrollOffset < 0`，钳回 0：\n\n```typescript\nif (this._scrollOffset < 0) {\n    this._scrollOffset = 0;\n    this._render();\n}\n```\n\n---\n\n至此滚动手感为：上滑 → 内容上移 → 过滚露白 → 松手弹回。下滑 → 内容下移 → 顶部露出历史。\n\n日志节流也顺便从 `% 8` 降到 `% 2`，move 轨迹可见。\n\n切 build 模式？"
+}

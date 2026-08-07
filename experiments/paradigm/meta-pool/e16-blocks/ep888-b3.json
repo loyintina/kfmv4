@@ -1,0 +1,12 @@
+{
+ "id": "ep888-b3",
+ "episode_id": 888,
+ "session_id": "omp-2026-06-03T14-24-49-802Z_019e8ddf-6a8a-7",
+ "source": "manual",
+ "topic": "git 版本回退（改动太多 bug）+ 光球 svg/功能丢失找回",
+ "pattern": "可回退铁律",
+ "ep_score": 8,
+ "chars": 386,
+ "truncated": false,
+ "text": "**用户：**\n不见了？而且它们的功能似乎也没了？\n\n**AI：**\n让我确认回退是否真的干净。\n.\n回退是干净的：\n- `orb.ts` 恢复了 ✅\n- `orb-card.ts` 删除了 ✅（不存在了）\n- `.light-orb` 元素回到了 HTML ✅\n- `floating-card.ts` 回到了拆分后的原始版本\n\n但你需要**强制刷新浏览器**（Ctrl+F5 或 Cmd+Shift+R），因为 `public/bundle.js` 已经重建了，但浏览器可能还在用旧的缓存。\n\n另外说一句：原始 `floating-card.ts` 里的浮卡角光球本身就是纯色圆点，没有 SVG 图标——SVG 是卡片堆面板卡片（`card-stack.ts` 的 `createCard`）上的 `stack-card-icon`。你先硬刷新一次，看看问题还在不在？"
+}

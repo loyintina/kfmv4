@@ -1,0 +1,12 @@
+{
+ "id": "ep521-b22",
+ "episode_id": 521,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "左竖线粒子衔接/长度守恒（重大）",
+ "pattern": "设计主权,简化方案,像素守恒",
+ "ep_score": 9,
+ "chars": 798,
+ "truncated": false,
+ "text": "**用户：**\n？不是这个啊？是更简单的，你说的双粒子状态机的那个？\n\n**AI：**\n好，让我回到你的原始设计，诚实地说：\n\n## 你的设计\n\n```\n粒子 → 环形循环 → 碰到\"传送门区域\" → 触发状态切换：\n  消失端: 粒子从满长 → clamp 到 0，播放 shrink\n  出现端: 粒子从 0 → 满长，播放 grow\n  两端同步，像素量守恒\n```\n\n## 当前简化实现可以达到的效果\n\n删掉 `_rangeToPhysicalPoints` 内的 cap 条件和锚点，**竖线只做一件事**：\n\n```\n竖线输出 len = min(rawLen, segLenVert)\n```\n\n不检查 `s >= topW`、不检查 margin、不检查深度。就是取 `rawLen` 和 `segLenVert` 的最小值。\n\n**效果**：\n```\n粒子跨管时：\n  竖线 rawLen=8 → min(8,4)=4px w=3（砍掉溢出部分）\n  上线 rawLen=4 → 4px w=1（自然 overlap）\n  \n  中心往竖线移：\n  竖线 rawLen=10 → min(10,4)=4px w=3\n  上线 rawLen=2 → 2px w=1（自然缩）\n\n  中心继续下移：\n  竖线 rawLen=12 → min(12,4)=4px w=3（碰不到边界，自然居中）\n  上线 rawLen=0 → 无\n```\n\n这就是你描述的 **\"shrink + grow 同步\"** —上线端自然缩，竖线端到 4px 就停住。消失和生长是 `rawLen` 的自然变化，不需要状态机。\n\n**改动量**：1 行。竖线分支 `rawLen` 后面，`Math.min(rawLen, segLenVert)`。\n\n这就是你最开始的方案，只是我之前把它搞复杂了。对吗？"
+}

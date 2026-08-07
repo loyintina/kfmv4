@@ -1,0 +1,12 @@
+{
+ "id": "ep981-b16",
+ "episode_id": 981,
+ "session_id": "omp-2026-05-29T03-33-18-586Z_019e71cb-227a-7",
+ "source": "manual",
+ "topic": "omp 版本更新运维（update 6→10/启动命令/清理）",
+ "pattern": "版本哲学,可回退铁律",
+ "ep_score": 9,
+ "chars": 749,
+ "truncated": false,
+ "text": "**用户：**\n先别着急，你能看看从6到10都更新了哪些东西吗？\n\n**AI：**\n本地的 CHANGELOG 只到 15.5.6。npm 安装的新包里可能带了更新日志：\n从 15.5.6 → 15.5.10，中间跨了 7 和 8 两个版本。主要变化：\n\n**15.5.7**\n- 新增 `generate_image` 工具支持 xAI Grok Imagine 生图\n- 新增 `tts` 语音合成工具（xAI Grok Voice）\n- OpenRouter 支持路由变体后缀（`:nitro`、`:floor` 等）\n- 修复 plan 模式重入问题、URL 读取 Jina 超时回退\n\n**15.5.8**\n- **Hashline 编辑语法大改**（breaking change）— 删除了旧的 `↑`/`↓` 箭头符号，改用 `^` 重复语法和显式范围写法\n- 新增 **Obsidian Vault 支持**（`vault://` 内部 URL）\n- auth-gateway 新增 `--strict` 模式，真实请求各 provider 的 chat 端点验证凭据有效性\n- 修复多处：`eval` 工具图片缩放、`write` 工具剥离散落的 hashline 头、auth-gateway 处理用量限制错误、`sessionId` 穿透问题等\n- 安全：`vault://` 路径遍历防护\n\n**15.5.10**（上一版）\n- 新增 `/drop-images` 斜杠命令，一键清空 session 里的所有图片\n- 修复 compaction 失败时暴露原始 HTTP 401/403（而非路由到备用模型）的问题\n\n> 注：15.5.9 跳过了，直接从 8 → 10。"
+}

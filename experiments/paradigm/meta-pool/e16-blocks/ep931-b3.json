@@ -1,0 +1,12 @@
+{
+ "id": "ep931-b3",
+ "episode_id": 931,
+ "session_id": "omp-2026-07-12T03-47-42-491Z_019f5470-211b-7",
+ "source": "manual",
+ "topic": "删除/重命名 api + 文件树同步 + 补丁模式质疑 + 角色池光标重复",
+ "pattern": "补丁vs根因",
+ "ep_score": 1,
+ "chars": 491,
+ "truncated": false,
+ "text": "**用户：**\n那得同步刷新一下文件树啊？不然卡片编辑了，文件树还是旧的状态，另外，重命名为什么文件树里依然是复制后重命名的效果，而我删除这个重命名的文件，两个都删除了？这是什么原因？跟我们的设计有哪里不一样吗？\n\n**AI：**\n两个问题。\n\n**问题 1**：保存/删除后没刷新文件树。\n\n**问题 2**：`saveRole` 先 rename 再 write——如果 rename 失败（静默吞错），write 会创建新文件，旧文件还在，看起来像\"复制\"。\n\n两个一起修：改为先写新文件再删旧文件，不用 rename（更可靠）；加上文件树刷新。\n改完：\n\n- **重命名**：先 `writeFile` 新文件，再 `deleteFile` 旧文件。避免 rename API 静默失败导致双文件残留\n- **文件树刷新**：`saveRole` / `deleteRole` 后自动调 `loadFileTree(KFMState.currentRoot)`\n- **删掉了 `renameFile` 函数**，不再需要\n\n刷新测试：改角色名保存，文件树应该只显示新文件。"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep942-b1",
+ "episode_id": 942,
+ "session_id": "omp-2026-07-14T01-05-45-581Z_019f5e28-946d-7",
+ "source": "manual",
+ "topic": "会话卡二级卡消失 + 保存新建位置/限高 70%/固定 + 吞消息回退 + git 习惯",
+ "pattern": "可回退铁律",
+ "ep_score": 6,
+ "chars": 411,
+ "truncated": false,
+ "text": "**用户：**\n修改名称的框前面是不是应该有一个文字的？另外，这个保存/新建放在对话内容框的下面吧。然后，我们应该是有一个固定高度，超出后可滚动的设计吧？你看看其他卡有没有这个设计，如果没有，也同步做一下。\n\n**AI：**\nNow check other cards' scroll design:\n所有管理卡都有 `overflow-y: auto` 在内容区——API 用 `scrollArea`，配置/角色/会话用 `bodyEl`。会话卡的 `previewCard: max-height:55%` 是四个卡里唯一设定高上限的——因为预览框和池框要共用一个滚动空间。\n\n编译提交：\n\"名称\"标签本来就有（L406-407），之前预览框没 `appendChild` 到 `bodyEl` 所以你看不到。现在按钮也移到了气泡区下方。其他三张管理卡都已有 `overflow-y:auto` 滚动设计，不需要改。"
+}

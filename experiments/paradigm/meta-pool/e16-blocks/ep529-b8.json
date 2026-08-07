@@ -1,0 +1,12 @@
+{
+ "id": "ep529-b8",
+ "episode_id": 529,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "文件夹收缩动画不同步",
+ "pattern": "追源,心法前置",
+ "ep_score": 9,
+ "chars": 562,
+ "truncated": false,
+ "text": "**用户：**\n那我们刚刚的改动是不是没有用的？\n\n**AI：**\n对，那 9 处改动是**纯诊断**——用来排除 `64b8079` 不是诱因。它成功排除了，但没修 bug。应该还原回去。\n\n---\n\n## 最终修复计划（2 步）\n\n### 1. 还原 9 处诊断改动\n\ntree-overlay.ts 和 tree-render.ts 里 `opacity` 改回 `visible`（恢复到 `64b8079` 的正确状态）。\n\n### 2. 改 `COLLAPSE_BOX_OFFSET`\n\n```typescript\n// tree-render.ts:791\nconst COLLAPSE_BOX_OFFSET = 0;  // 原 0.17 → 字符雨和盒子收缩同步\n```\n\n### 汇总\n\n| 文件 | 改动 | 数量 |\n|------|------|------|\n| tree-overlay.ts | `opacity` → `visible`（还原 6 处） | 6 |\n| tree-render.ts | `opacity` → `visible`（还原 3 处） | 3 |\n| tree-render.ts | `0.17` → `0` | 1 |\n\n确认后切 plan mode 实施？"
+}

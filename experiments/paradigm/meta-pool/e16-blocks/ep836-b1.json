@@ -1,0 +1,12 @@
+{
+ "id": "ep836-b1",
+ "episode_id": 836,
+ "session_id": "omp-2026-07-07T06-14-00-892Z_019f3b36-47bc-7",
+ "source": "manual",
+ "topic": "手势系统设计（双指缩放实时重排/终端卡降级）+ 全屏卡片滚动",
+ "pattern": "重构优于补丁,可回退铁律",
+ "ep_score": 6,
+ "chars": 1590,
+ "truncated": false,
+ "text": "**用户：**\n好的，我期望的是，所有卡片都支持双指缩放和实时布局重排，但是终端卡好像因为一些限制，无法实现实时重排，那就降级成缩放后重排。然后，同时，我需要让所有卡片在全屏模式下，都支持上下的页面滚动，和左右滑的全局召唤文件树和卡片堆。这就是我的需求，但现状是，所有种类的卡片在全屏模式下，左右都无法滚动，然后文件卡和代码卡，同时也无法上下滚动。但现在的缩放模式是拥有的，准确的。这是现在的问题。你有什么解决思路，看看问题到底是出现在哪里？\n\n**AI：**\n好，先让我理清当前手势系统的布局——各处理器优先级和过滤条件。\nAll single-finger handlers have `onStart`. The only exception is `pinch-zoom`. 改动安全。\n\n现在我实施修复：\n\n**第 1 步**：在 `_handleStart` 中跳过没有 `onStart` 的处理器\nfix 完成。梳理一下修复前后的状态和剩余问题。\n只有一个改动，但直接命中根因：\n\n**改动**：`gesture-registry.ts:247` — 在 `_handleStart` 匹配循环开头加了 `if (!handler.onStart) continue;`\n\n**原理**：`pinch-zoom`（优先级 90）的 `targetFilter` 是 `.floating-card .card-content`，这匹配全屏卡片的任何触摸点。但它 **只有 `onPinchStart/Move/End`，没有 `onStart`**。原来流程是：匹配 → 锁 `_active` → 不调 `onStart` → break。单指事件到了无人处理。现在改为：匹配到没 `onStart` 的处理器直接跳过，继续找下一个。\n\n### 修复后的行为\n\n| 场景 | 原来 | 现在 |\n|------|------|------|\n| 全屏终端卡 → 左滑 | pinch-zoom 拦截，`xterm-scroll` 不触发 | xterm-scroll（61）接手，它有全屏水平检测 → 开侧栏/卡片堆 |\n| 全屏文件卡 → 左滑 | pinch-zoom 拦截 | `gestures-page-swipe`（50）接手 → 左右滑开侧栏/卡片堆 |\n| 全屏文件卡 → 双指缩放 | 被单指占着，`_tryStartPinch` 中断后启动 | **不变** — `_tryStartPinch` 在 `_handleStart` 之后检查 `_pointers.size === 2`，不受影响 |\n| 终端卡垂直滚动 | xterm-scroll 被 pinch-zoom 挡掉 | xterm-scroll 接手 → 正常滚动 |\n\n### 但文件卡/代码卡上下滚动还没解决\n\n这是另一个问题——没有注册处理垂直滚动的手势处理器。`gestures-page-swipe` 水平方向接手了，但垂直方向被它的 `if (_axisLock !== 'horizontal') return;` 丢弃。\n\n文件卡/代码卡内部的内容是渲染器生成的（`handler-factory.ts` 分发到 code-highlight、text-preview 等），需要一个垂直滚动处理器。我建议在 `gestures.ts` 里加一个：\n\n- 优先级 55（在 pinch-zoom 90 和 page-swipe 50 之间）\n- `targetFilter: '.floating-card .card-content'`\n- 只处理垂直轴，水平轴 drop-through 给 `gestures-page-swipe`\n\n要我现在做这个？"
+}

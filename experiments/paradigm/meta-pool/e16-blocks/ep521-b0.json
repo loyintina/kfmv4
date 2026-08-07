@@ -1,0 +1,12 @@
+{
+ "id": "ep521-b0",
+ "episode_id": 521,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "左竖线粒子衔接/长度守恒（重大）",
+ "pattern": "设计主权,简化方案,像素守恒",
+ "ep_score": 9,
+ "chars": 718,
+ "truncated": false,
+ "text": "**用户：**\n好的，我们继续来做调整，现在的左竖线里的粒子的行为和上下线的衔接看起来有点怪，但我说不出是因为什么，就好像粒子还没接触到做左竖线的下端消失处，下线左端就已经出现粒子了。这是什么原因？没看看代码？\n\n**AI：**\n## 根因\n\n当前竖线段 cap 用的是**居中**策略：\n\n```\n粒子范围占竖线 9px → cap 到 4px → 居中 → 粒子离上下边界各 2.5px\n```\n\n这导致粒子中心距下端还有距离时，4px 的竖线粒子悬在中间，但下线粒子已经从下端冒出了。\n\n## 修复\n\n竖线段 cap 改为**贴边**策略——锚到离得近的那端：\n\n```\n接近上边界 → 4px 粒子贴顶 |████░░░░|\n接近下边界 → 4px 粒子贴底 |░░░░████|\n中间 → 居中（同现状）     |░░████░░|\n```\n\n粒子\"碰到\"边界才从另一端冒出，不再是悬空出现。\n\n## 改动\n\n仅 `_rangeToPhysicalPoints` 竖线段（`i===1`）一处，插入 4 行锚点判断：\n\n```typescript\nconst distToTop = phyS - (by + R);\nconst distToBot = (by + h - R) - phyE;\nif (distToTop < distToBot) {\n  // 贴顶\n  cs = phyS;\n  ce = Math.min(phyE, cs + capLen);\n} else {\n  // 贴底\n  ce = phyE;\n  cs = Math.max(phyS, ce - capLen);\n}\n```\n\n确认实施？"
+}

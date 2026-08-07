@@ -1,0 +1,12 @@
+{
+ "id": "ep563-b11",
+ "episode_id": 563,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "全屏卡片 z-index/布局（拉锯）",
+ "pattern": "验证优先,原版复用",
+ "ep_score": 7,
+ "chars": 362,
+ "truncated": false,
+ "text": "**用户：**\n好，开始吧\n\n**AI：**\nNow add `onUpdate` to `_launchCard`:\nNow add `onUpdate` to `exitFullscreen`'s saved path:\nNow clean up — remove debug log and `log` import:\n全部通过。改了三处：\n\n1. **preMatch hook** — `|| item.isFullscreen` 跳过全屏卡，保证 z-index 始终 20，不会被抬到输入栏之上\n2. **`_launchCard`** — `anim.to` 加 `onUpdate`，每帧按当前尺寸重算四角光球位置\n3. **`exitFullscreen` saved 路径** — 同上\n\n可以测试了。"
+}

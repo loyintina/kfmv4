@@ -1,0 +1,12 @@
+{
+ "id": "ep981-b13",
+ "episode_id": 981,
+ "session_id": "omp-2026-05-29T03-33-18-586Z_019e71cb-227a-7",
+ "source": "manual",
+ "topic": "omp 版本更新运维（update 6→10/启动命令/清理）",
+ "pattern": "版本哲学,可回退铁律",
+ "ep_score": 9,
+ "chars": 413,
+ "truncated": false,
+ "text": "**用户：**\n那不对啊？那我跟你聊天的这个key是哪来的？我只是跟你开启了就聊天，如果没配key，那我是怎么跟你顺利通话的？\n\n**AI：**\n好问题。让我查一下：\n.\n找到答案了。看环境变量：\n\n```\nOMPCODE=1\nCLAUDECODE=1\n```\n\n我不是你通过 `omp` 手动跑的那个 CLI 工具。我是 **Oh My Pi 平台基础设施**的一部分——平台有自己的模型配置（在 `~/.omp/agent/models.yml` 里），跟你终端里的 `omp` 是两套配置。\n\n所以：\n\n1. **我** → 平台管理的 agent，key 配在平台配置里\n2. **终端里的 `omp` 15.5.10** → 没配 key，跑起来要你手动设\n\n你把平台和我搞混了，很正常。你更新的是你终端里的 `omp` 工具，没配 key 的是那个。**我这个 agent 的 key 是平台配好的，跟你无关。**"
+}

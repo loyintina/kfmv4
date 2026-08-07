@@ -1,0 +1,12 @@
+{
+ "id": "ep549-b2",
+ "episode_id": 549,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端滚动方向/截停（超长拉锯，十几轮）",
+ "pattern": "机制重构,删旧留新,验证优先",
+ "ep_score": 11,
+ "chars": 506,
+ "truncated": false,
+ "text": "**用户：**\n好\n\n**AI：**\nNow I'm in build mode. Let me implement all three changes:\n\n1. `floating-card.ts`: body add `overflow:hidden`\n2. `terminal-renderer.ts`: add `scrollBy()` method\n3. `terminal-card.ts`: canvas class + GestureRegistry handler\nFix body overflow:\nNow terminal-card.ts — canvas class + GestureRegistry:\nNow register renderer in activate and add canvas class:\nAdd CSS class in mount():\n修好了。`npm run dev` 重启后：\n\n- 单指在终端区域上下滑动 → 浏览历史输出\n- `seq 1 100` 后上滑 → 看到前面的行\n- 敲新命令 → 自动回底部\n- 缩小卡片 → 标题栏不会再跟着滚了"
+}

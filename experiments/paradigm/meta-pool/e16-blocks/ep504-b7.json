@@ -1,0 +1,12 @@
+{
+ "id": "ep504-b7",
+ "episode_id": 504,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "卡片堆聚焦状态错乱",
+ "pattern": "全链路验证,验证优先",
+ "ep_score": 9,
+ "chars": 651,
+ "truncated": false,
+ "text": "**用户：**\n确实正常了，我经过测试，还有最后一个问题，如果卡片足够多，压缩了很多卡片，会有几率在加入卡片的同时，随机某个卡片突然变成了聚焦状态，然后滚动过去能平复，但继续加入卡片，就又还原回聚焦态了。导致页面会出现像一个冰棍上面突然插了几根刺一样的观感，感觉很不好。这是什么原因导致已有的卡片突然聚焦？而且还是随机的，找不到规律，是内存泄露吗？还是其他原因？\n\n**AI：**\n问题出在 `_prevFocusIndex`。splice 插入后数组变了，但 `_prevFocusIndex` 还指向 splice 前的索引，该位置的卡可能已经不是旧聚焦卡了。\n\n例如：[A, B, C]，聚焦 C (index 2)。插入新卡在 index 1：数组变为 [A, new, B, C]，但 `_prevFocusIndex` 还指向 index 2 = B。下次 `updateFocus` 就会错误地把 B 当旧聚焦卡来失焦——而实际上 C 没被失焦，留在了聚焦态。\n根因：`_prevFocusIndex = prevFocusIdx` 用的是 splice **前**的索引。splice 后数组变了，该索引位置很可能已经是另一张卡。后续 `updateFocus` 按这个错位索引去失焦，真正该失焦的旧卡被跳过，留在聚焦态变成\"刺\"。\n\n修复：`_prevFocusIndex = _tempCardEls.indexOf(oldEl)`，取 splice **后**纯卡的真实所在位置。"
+}

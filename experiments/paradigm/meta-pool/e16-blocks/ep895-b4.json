@@ -1,0 +1,12 @@
+{
+ "id": "ep895-b4",
+ "episode_id": 895,
+ "session_id": "omp-2026-05-27T17-10-59-698Z_019e6a6b-0772-7",
+ "source": "manual",
+ "topic": "卡片堆清理（01 设置/02 日志）+ 日志系统 + 补丁vs重构 + 可回退",
+ "pattern": "补丁vs根因,可回退铁律",
+ "ep_score": 6,
+ "chars": 1426,
+ "truncated": false,
+ "text": "**用户：**\n好的，提交一个检查点，然后我们来做日志系统，用02的卡片，把青色的那个光球的内容复刻进去。你会如何做？\n\n**AI：**\n先提交检查点。\n好，检查点已提交。下面是方案。\n\n---\n\n### 要做的事\n\n**目标**：02 号浮卡展开时，显示当前调试面板（青色光球）中同样的日志内容。\n\n### 现状分析\n\n调试面板（`debug-panel.ts`）的核心资产：\n\n```\n日志数组（模块内私有） → debugLog() / debugClear() / debugCopy()\n日志渲染 → buildPanelContent() / flushLogUI()\n\nUI 结构：\n  ┌─ 调试面板 ───────────────┐\n  │  日志列表（滚动）            │\n  │  [清空] [复制]             │\n  └───────────────────────────┘\n```\n\n浮卡 02 展开时（`_buildExpandedLayout` 后），`contentEl` 是一个空的 `position:absolute;inset:0` 容器。\n\n### 改动点\n\n**`debug-panel.ts`**：\n\n| 改什么 | 为什么 |\n|--------|--------|\n| 导出 `getLogLines(): string[]` | 让卡片能读到日志数据 |\n| 导出 `debugClear` / `debugCopy` | 让卡片能复用清空/复制功能 |\n\n（不改任何现有行为，只加导出）\n\n**`card-stack.ts`**：\n\n`_buildExpandedLayout` 中增加按卡片 ID 分支渲染：\n\n```\n_buildExpandedLayout(el, cc):\n  item = _floatingCards.find(i => i.el === el)\n  cardId = CARDS[item.sourceIndex].id\n\n  if cardId === 'debug':\n    → 在 contentEl 中渲染调试面板：\n       - 日志列表 div（内部用 debugLogLines 填充）\n       - 底部按钮栏：[清空] [复制]\n    → 定时刷新（MutationObserver 或 rAF 轮询？最好轻量）\n\n  else:\n    → 现有逻辑：空容器（_renderFloatingContent）\n```\n\n### 不做的事\n\n- 不改青色光球 `initDebugPanel()` 的注册和初始化\n- 不改青色光球的拖动/编辑逻辑\n- 不改日志数据流（`debugLog()` 调用点）\n- 浮卡 02 和青色光球**显示同一份日志**，共享 `logLines`\n\n### 要决定的\n\n| 问题 | 选项 |\n|------|------|\n| 日志列表刷新方式 | A: 在卡片展开时设一个 rAF 循环，每秒刷新 DOM <br> B: `debugLog()` 直接调用一个回调，卡片注册该回调 <br> **倾向 B**——推送比轮询干净 |\n| 卡片收起时 | 停止刷新还是保持最后一次状态？**倾向保持最后一次快照** |\n\n你觉得这个方向对吗？还是你想先看一下具体效果再决定细节？"
+}

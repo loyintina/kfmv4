@@ -1,0 +1,12 @@
+{
+ "id": "ep521-b23",
+ "episode_id": 521,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "左竖线粒子衔接/长度守恒（重大）",
+ "pattern": "设计主权,简化方案,像素守恒",
+ "ep_score": 9,
+ "chars": 1003,
+ "truncated": false,
+ "text": "**用户：**\n不是，你为什么一定要简化当前实现？我要你重新按照我的设计，完全彻底的重构，放弃你的补丁倾向就这么难吗？我们有版本回退，又不缺时间，为什么你一定要偏离我的意愿绕弯子？？\n\n**AI：**\n## 诚实回答\n\n我一直在\"现有代码上再改一行\"的思维里转，你纠正了三次我都下意识绕回去了。抱歉。\n\n## 你的设计——用我的理解复述确认\n\n```\n8 粒子环行三段\n  水平段 (上下线): 12px × 1px 粒子\n  竖直段 (左竖线):  4px × 3px 粒子\n  速度: 竖线 verticalMul=2.5 倍慢\n  像素守恒: 1×12 = 3×4 = 12□\n\n\n拐角 (Portal):\n  ┌─ 离岸端 ─┐    ┌─ 到岸端 ─┐\n  10→8→6→4→2→0    0→1→2→3→4  (同步播放)\n  12px渐缩消失      4px渐长出现\n```\n\n粒子中心在拐角 ±6px 窗口内时，自然切割成两段，离岸段缩、到岸段涨。离岸无残留、到岸无瞬跳。这是 overlap 的天然行为，只是之前被多层条件（cap中心/锚点/margin/os-vs-s）掩盖了。\n\n## 重构计划\n\n### 删\n- `_rangeToPhysicalPoints` 函数体（现在的 `if(s>=topW)` cap → else 自然 → 中间逻辑）\n\n### 替\n- 一个新函数，输入粒子未裁剪范围 `[s, e]` 和三段边界，输出 1~3 个 `LiquidPoint`：\n  - 计算 overlap\n  - 每段最大长 = 该段的 `maxLen`（水平 `segLen`，竖直 `segLenVertical`）\n  - 输出 `min(overlap, maxLen)`\n\n### 不动\n- `_pathToPhysical`、`_startLiquidLoop`、`_emitLiquidSegments` 调用结构、所有 theme 参数、渲染端\n\n### 净效果\n- 删掉 `_rangeToPhysicalPoints` 内所有 cap 条件/锚点/margin/osoe 判断\n- 加一个纯 overlap → min 的简单映射\n- 代码行数：删 ~15 行，加 ~10 行，**净减 5 行**\n\n确认这是你要的方案，然后我退出 plan 模式开始实施？"
+}

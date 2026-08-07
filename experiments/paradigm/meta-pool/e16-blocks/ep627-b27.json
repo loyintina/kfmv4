@@ -1,0 +1,12 @@
+{
+ "id": "ep627-b27",
+ "episode_id": 627,
+ "session_id": "ses_141744654ffehLxZxWEQSrD8RN",
+ "source": "manual",
+ "topic": "逐条审计修复（13 条）",
+ "pattern": "全链路验证,追源",
+ "ep_score": 3,
+ "chars": 1681,
+ "truncated": false,
+ "text": "**用户：**\n可以，另外，我在想，能不能做一个log转发，如果以后想加调试日志，只能写log，然后统一转发到console，如果在代码里发现了散落的控制台代码，则不通过构建。这可行吗？\n\n**AI：**\n完全可以。这个模式已经在用——`check-anim.mjs` 扫描 `import gsap`，`check-as-any.mjs` 扫描 `(as any)`。加一个 `check-console.mjs` 走同样的逻辑。\n\n### 方案\n\n**`logger.ts` 改造：**\n\n```typescript\n// 当前 log() 只写内部数组。加一个转发到 console：\nexport function log(msg: string): void {\n  _logs.push(`[${_fmt()}] ${msg}`);\n  console.log(`[KFM] ${msg}`);  // ← 加这行：统一转发\n  if (_logs.length > MAX_LOG_LINES) _logs.shift();\n  const snapshot = [..._logs];\n  _subs.forEach(cb => { try { cb(snapshot); } catch { /* 安全的订阅者清理 */ } });\n}\n```\n\n**`check-console.mjs`（新建）：** 正则扫描所有 `.ts` 文件，排除白名单中的文件（`logger.ts` 自身）。\n\n```\n白名单示例：\n  src/client/modules/logger.ts       # log() 自身需要 console.log\n  src/client/main.ts                 # 全局 error handler\n  src/client/modules/debug-assert.ts  # assert 需要 console.error\n```\n\n**替换流程：** 代码库中当前约 43 处 `console.xxx` 调用。需要逐一判断：\n- 调试日志（`console.log('xxx')`） → 改为 `log('xxx')`\n- 有意义的错误上报（`console.error`）→ 改为 `log('[error] xxx')`\n- 白名单保留的（assert、全局 error handler）→ 加在 `check-console.mjs` 的白名单里\n\n### 实施步骤\n\n| 步骤 | 内容 | 估时 |\n|------|------|------|\n| 1 | 写 `check-console.mjs`（~30 行，正则扫描 + 白名单） | 5min |\n| 2 | `logger.ts` 加 console 转发 | 1min |\n| 3 | 全库替换 `console.xxx` → `log()`（~30 处） | 10min |\n| 4 | 挂入 `npm run check` 管线 | 1min |\n| 5 | 验证 | 2min |\n\n### 注意事项\n\n当前代码库中的 `console.xxx` 分三类：\n\n| 类别 | 约数量 | 处理 |\n|------|--------|------|\n| 调试 log (`console.log('[CARD-STACK]'...)` | ~15 | → `log()` |\n| 错误/警告 (`console.warn/error`) | ~20 | → `log('[warn/error] ...')` |\n| 白名单（logger/main.ts/debug-assert） | ~8 | 白名单保留 |\n\n**要不要做？** 如果做的话，建议先完成 #9（改 tree-loader.ts 的那两处）作为例子，再统一写 `check-console.mjs` 一次性替换全库，避免分两轮改同一个模式。"
+}

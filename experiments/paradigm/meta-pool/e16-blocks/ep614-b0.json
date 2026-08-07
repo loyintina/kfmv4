@@ -1,0 +1,12 @@
+{
+ "id": "ep614-b0",
+ "episode_id": 614,
+ "session_id": "ses_063fd57d7ffepMZzVsdv2wNXM2",
+ "source": "manual",
+ "topic": "会话保存失败/刷新丢失（超长拉锯）",
+ "pattern": "全链路验证,追源",
+ "ep_score": 7,
+ "chars": 1433,
+ "truncated": false,
+ "text": "**用户：**\n现在kfmv4在浏览器里的面板对话，无法正常保存了，导致每次刷新网页都会回到最开始，我已经在一个会话里重复被吞了很多轮对话，你如果看.kfmv4里的会话记录也许也能看到。你能看看是这什么原因吗？\n\n**AI：**\n以下是诊断分析结果：\n\n## 会话保存现状\n\n- 会话文件 `~/.kfmv4/sessions/todo工具测试.json` 存在且包含 **357 条消息**（53 user + 304 AI），最后修改于 `09:03`，文件大小 **954KB**。消息内容结构完整，无动画残留状态。说明保存**曾经**有效。\n\n## 保存链路（最近两次修复）\n\n最近两个 commit (`2803db5`, `2e8e244`) 针对\"消息丢失\"做了三次保存时机：\n\n| 时机 | 位置 | 是否 await |\n|------|------|-----------|\n| 发送用户消息后 | `doSend:1550` | `await` |\n| 每轮 `message_stop` | `onMessageStop` 回调 | 火即忘（`.catch(()=>{})`） |\n| 流结束后 | `_finalizeRun:1398` | `await` |\n\n三层保存最终都落在 `sessionStore._doSaveMessages`，其逻辑是：**读文件 → 覆盖 messages → 写文件**，通过 `_saveChain` Promise 链串行化防止并发写冲突。\n\n## 我发现的潜在问题\n\n### 1. 增量保存的深度拷贝不足（关键）\n`saveMessages` 的快照写法是：\n```ts\nconst snapshot = messages.map(m => ({ role: m.role, content: m.content }));\n```\n`m.content` 是**引用**拷贝，而非深拷贝。当 `_saveChain` 异步序列化时，block 内容可能已被后续事件原地修改（`block.text += delta`、`block.result = ...`）。虽然最终保存前有 `settlePendingToolBlocks` 清理，但中间增量保存可能将打字机动画中间态（`_animText` 等字段）写入磁盘。\n\n### 2. `_doSaveMessages` 无 `sessionId` 参数\n保存永远使用 `sessionStore.activeId`。如果在保存链中发生标题自动重命名（`_generateTitle` → `setTitle` → 修改 `activeId`），后续链环节可能写错文件。\n\n### 3. 大文件（954KB）每次保存都读写全量\n每次保存都要对近 1MB 的 JSON 做 `JSON.parse` + `JSON.stringify` + 两次网络请求，耗时可能达到几百毫秒。如果用户刷新时保存链尚未完成，数据丢失。\n\n---\n\n我需要确认几个信息来精确定位：\n\n1. **\"回到最开始\"的具体表现**：是会话回到空白（0 条消息），还是回到某个更早的消息点（如昨天某个轮次）？\n2. **刷新时机**：你是在 AI 回复**显示完成后**立刻刷新，还是在**回复还在流式生成中**就刷新了？\n3. **你是单个浏览器标签页在用，还是多开？**"
+}

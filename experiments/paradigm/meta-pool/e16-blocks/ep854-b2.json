@@ -1,0 +1,12 @@
+{
+ "id": "ep854-b2",
+ "episode_id": 854,
+ "session_id": "omp-2026-07-22T03-58-36-090Z_019f87f9-b23a-7",
+ "source": "manual",
+ "topic": "显示隐藏按钮/权限拒绝 + 文件树实时更新（增删文件需刷新）",
+ "pattern": "验证优先,补丁vs根因",
+ "ep_score": 2,
+ "chars": 725,
+ "truncated": false,
+ "text": "**用户：**\n哦，不是按钮没了，是按按钮没有对应的动作了\n\n**AI：**\n`KFMState.toggleHidden()` 切换 `showHidden` 后，要触发文件树重新加载。\n\n<br>\n\n让我查一下树是怎么响应 state 变化的：\n`toggleHidden()` 只调了 `KFMState.notify()`，而 `rebuildTree` 里用的是 `KFMState.files` 里已缓存的数据，不会重新向服务器拉取。`tree-model.ts` 的过滤（第142行）只是在客户端渲染时跳过点文件——但如果数据本来就没有，那过滤没用。\n\n问题路径：\n1. 按眼睛按钮 → `toggleHidden()` → `KFMState.notify()` → `rebuildTree()`  \n2. `rebuildTree` 用缓存数据 rebuild，但 `KFMState.files` 里隐藏文件从来没加载过\n3. 需要重新调 `loadFileTree` 才能拿到隐藏文件\n\n两处需改：\n- `toggleHidden` 后触发 `loadFileTree(currentRoot)` \n- app.ts 里眼睛按钮点击逻辑\n\n先看 `initTreeRenderer` 订阅方式确认：[Tool call skipped: upstream generated invalid or incomplete parameters for read.][Tool call skipped: upstream generated invalid or incomplete parameters for read.]"
+}

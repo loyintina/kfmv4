@@ -1,0 +1,12 @@
+{
+ "id": "ep910-b1",
+ "episode_id": 910,
+ "session_id": "omp-2026-07-11T02-40-24-324Z_019f4f0c-2704-7",
+ "source": "manual",
+ "topic": "思考流式上滑取消追底失效 + 新功能致旧功能失效反思 + 心法分级/合并",
+ "pattern": "补丁vs根因,复盘沉淀",
+ "ep_score": 1,
+ "chars": 1245,
+ "truncated": false,
+ "text": "**用户：**\n我经过了测试，你的改动似乎没生效？为什么你的改动会让以前做好的功能失效呢？另外，再做一次ui调整吧，包括后续做对话框的时候也要注意一下，名字为“你”的对话框不要顶满，就算动态伸长，也得留一些空隙，“蔚然”的框可以顶满，因为这是重要的信息，需要更多空间。\n\n**AI：**\n让我先检查为什么修复没生效：\n找到问题了！`renderChatContent()` 替换 `innerHTML` 会重置滚动位置。让我修复：\n构建通过！重建客户端并重启服务：\n## 修复完成！\n\n### 问题原因\n\n1. **滚动失效**：`renderChatContent()` 替换 `innerHTML` 会重置滚动位置，导致用户上滑后被强制拉回底部\n2. **用户消息顶满**：用户消息和 AI 消息使用相同的 `max-width`\n\n### 修复内容\n\n**1. 保存和恢复滚动位置**\n```typescript\n// 保存滚动位置\nconst scrollTop = contentArea.scrollTop;\nconst scrollHeight = contentArea.scrollHeight;\nconst clientHeight = contentArea.clientHeight;\nconst wasAtBottom = scrollTop + clientHeight >= scrollHeight - 50;\n\n// ... 渲染内容 ...\n\n// 恢复滚动位置\nif (wasAtBottom) {\n  contentArea.scrollTop = contentArea.scrollHeight;\n} else {\n  contentArea.scrollTop = scrollTop;\n}\n```\n\n**2. 用户消息不顶满**\n```typescript\n// 用户消息不顶满，留出空隙；AI 消息可以顶满\nconst maxWidth = isUser ? Math.min(innerWidth - 8, innerWidth * 0.85) : innerWidth - 8;\n```\n\n### 行为说明\n\n| 场景 | 行为 |\n|------|------|\n| 用户在底部 | ✅ 自动滚动到新内容 |\n| 用户上滑查看历史 | ✅ 保持当前位置，不强制滚动 |\n| 用户滚回底部 | ✅ 恢复自动滚动 |\n| 用户消息宽度 | ✅ 最大 85%，留出空隙 |\n| AI 消息宽度 | ✅ 可以顶满 |\n\n### 测试方法\n\n1. 刷新浏览器 `http://localhost:8021`\n2. 点击光球展开面板\n3. 发送消息让 AI 回复\n4. 在 AI 流式输出时**向上滑动**\n5. 观察：\n   - 内容不会强制滚动到底部\n   - 用户消息右侧有空隙\n   - AI 消息可以顶满宽度\n\n---\n\n刷新页面试试！"
+}

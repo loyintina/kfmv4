@@ -1,0 +1,12 @@
+{
+ "id": "ep842-b5",
+ "episode_id": 842,
+ "session_id": "omp-2026-07-07T06-14-00-892Z_019f3b36-47bc-7",
+ "source": "manual",
+ "topic": "手势覆盖 + 测试拆分 + 卡片插件系统（统一文档）",
+ "pattern": "补丁vs根因,删繁",
+ "ep_score": 1,
+ "chars": 488,
+ "truncated": false,
+ "text": "**用户：**\n这些是不是都会加入自动化管线里？\n\n**AI：**\n是的——`regression.test.ts` 在文件顶部用 `import './box.test.js'` 等导入了所有拆分文件，`npm test` 跑的是同一个入口，191 个测试全部覆盖。\n\n不过如果要**独立执行单个文件**（比如开发时只跑 Box 测试），现在每个拆分文件末尾没有 `await runAll()`，所以需要手动加一行。要不要在每个文件末尾加一个自动检测入口点的模式？\n\n```typescript\n// 当文件被直接执行（而非被 import）时自动运行\nconst isEntry = process.argv[1]?.endsWith('box.test.ts');\nif (isEntry) await runAll();\n```\n\n这样 `npx tsx --import ./tests/preload.mjs ./tests/box.test.ts` 就能单独跑 Box 测试，而作为子模块被 `regression.test.ts` import 时不会冲突。"
+}

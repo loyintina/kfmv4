@@ -1,0 +1,12 @@
+{
+ "id": "ep542-b4",
+ "episode_id": 542,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "步骤 3 文字大小不一致（首次召唤 vs 收起再展开——两状态尺寸差，用户给数值 32×23 vs 39×29）",
+ "pattern": "状态尺寸",
+ "ep_score": 1,
+ "chars": 763,
+ "truncated": false,
+ "text": "**用户：**\n那我实际上有种字体有点大的感觉，你看文件树的字的大小，卡片标题的大小，这种终端字大的感觉是因为什么呢？\n\n**AI：**\n对比一下：\n\n| 元素 | 字体 | 大小 | 视觉感受 |\n|------|------|------|---------|\n| 卡片标题 | `system-ui`, 600 粗体 | 11px | 正常 |\n| 文件树 | `system-ui, sans-serif` | 11px | 正常 |\n| 终端 | `monospace` | 11px | **偏大** |\n\n同样 11px，等宽字看起来比比例字大。原因：\n\n1. 等宽字体的字面更宽——`W` 和 `i` 占同样格子，整体显得\"撑开\"\n2. `measureText('Ag')` 测出的 `cellH` 是实际绘制高度，比字号的 em-square（11px）大很多——你之前看到的是 ch=11 算很紧的了，但视觉上等比列字大\n\n---\n\n## 方案\n\n终端降到 **10px**，这在命令行工具里是很常见的尺寸：\n\n| 改动 | 前的 11px | 后的 10px |\n|------|----------|----------|\n| cellW | ~6.6px | ~6.0px |\n| cellH | ~11-17px | ~10-15px |\n| 240px 宽度的列数 | ~36 | ~40 |\n| 感受 | 比标题大 | 跟标题协调 |\n\n只需要改 `terminal-renderer.ts` 一行：\n\n```typescript\nconst FONT = '10px monospace';  // 原来是 11px\n```\n\n大小协调、行列更多、终端密度更高。要切 build 模式改吗？"
+}

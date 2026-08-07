@@ -1,0 +1,12 @@
+{
+ "id": "ep549-b27",
+ "episode_id": 549,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端滚动方向/截停（超长拉锯，十几轮）",
+ "pattern": "机制重构,删旧留新,验证优先",
+ "ep_score": 11,
+ "chars": 1406,
+ "truncated": false,
+ "text": "**用户：**\n好\n\n**AI：**\nNow let me read the terminal-card.ts GestureRegistry registration and the `_getRow` method.\nI found the root cause. Here's the plan:\n\n## Analysis\n\nThe bug is `pixelOff` direction reversal — **one sign in one line**.\n\n### What happens now (wrong)\n\nWhen user swipes UP to see history (`_scrollOffset` increases):\n1. `ctx.translate(0, -pixelOff)` shifts content **UP** — content moves in the **same** direction as the swipe\n2. Visible content slides off the top, empty space opens at bottom\n3. At integer boundary, `pixelOff` resets from ~ch to 0, translate snaps back → content jumps **DOWN** by ~2ch\n4. User sees: 12px of wrong-direction animation, then a violent downward snap\n\nThis is the \"几px 移动后被截停反方向瞬移\" pattern.\n\n### What should happen\n\nWhen swiping UP to see history:\n1. Content shifts **DOWN** (exposing older rows at the top)\n2. At integer boundary, `visibleStart` advances by 1 row, new row fills the gap naturally\n3. All existing rows barely move (~0.01ch adjustment)\n\n### The fix\n\nOne line in `_render()`:\n\n```\n- ctx.translate(0, -pixelOff);\n+ ctx.translate(0, pixelOff);    // positive: shift content DOWN\n```\n\nThat's it. The `visibleStart` formula, `baseOff`, `_scrollOffset`, touch handlers, and fling logic are all correct. The translate sign was flipped from the start (it was also flipped in the old per-row `py = topPad + vr*ch - pixelOff`).\n\nWant me to apply this fix?"
+}

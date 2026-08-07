@@ -1,0 +1,12 @@
+{
+ "id": "ep532-b15",
+ "episode_id": 532,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "相同卡竞态（重大，长拉锯）",
+ "pattern": "补丁vs根因,竞态",
+ "ep_score": 10,
+ "chars": 810,
+ "truncated": false,
+ "text": "**用户：**\n你的意思是，我们的点击事件没走手势注册表，导致了现在的问题对吗？\n\n**AI：**\n对。跨系统接力就是问题。\n\n当前 BR 光球有两个独立系统各管一半：\n\n| 系统 | 处理 | 触发方式 |\n|------|------|---------|\n| **GestureRegistry → drag-handler** | 拖拽移动、长按编辑 | pointerdown/pointerup |\n| **原生 `click` 事件** | 展开/收缩 | 浏览器合成 click |\n\n`onTap()` 是两系统之间的桥——发现是短按，就手动调 `brOrb.click()`。但浏览器也独立合成一个 click，结果每点一下就是两次：\n\n```\nonTap → brOrb.click() → 第1次触发\n浏览器合成 click    → 第2次触发\n```\n\n`_suppressNextClick` 试图标记拦截，但只拦得住第一次，拦不住第二次。\n\n---\n\n## 根解\n\n**删原生 click 处理器**，把展开/收缩逻辑直接放进 `onTap()`。BR 光球所有交互全走 GestureRegistry 一条路：\n\n```\n短按 → GestureRegistry → onTap() → 直接展开/收缩（不再调 brOrb.click()）\n长按 → GestureRegistry → onEnterEdit() → 编辑\n```\n\n不再有原生 click，也就不会有双发。`_suppressNextClick` 也可以删掉。\n\n唯一的挑战是 `onTap` 在模块级 `dragCfg` 里，展开/收缩需要读 `dragItem`（模块级变量），所有数据都能通过 `dragItem.el / .brOrb / .contentEl / .config` 取到。\n\n要开始实施吗？"
+}

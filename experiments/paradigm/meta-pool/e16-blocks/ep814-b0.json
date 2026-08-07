@@ -1,0 +1,12 @@
+{
+ "id": "ep814-b0",
+ "episode_id": 814,
+ "session_id": "omp-2026-07-18T15-23-52-107Z_019f75d3-a3ab-7",
+ "source": "manual",
+ "topic": "追底 bug（生成中无法取消追底/发送不归底）+ 提示词库 100→1000",
+ "pattern": "架构性质校验,全量原则",
+ "ep_score": 3,
+ "chars": 784,
+ "truncated": false,
+ "text": "**用户：**\n两个小问题，一是现在我又无法在ai生成回复的过程中上滑取消追底了，二是，如果我没在底部，当我发送消息的时候，页面没有强制归底。\n\n**AI：**\n看 `handleSend` 的 `onRender` 回调逻辑：\n问题清楚了：\n\n1. **无法取消追底**：`userScrolled` 标志和 scroll 事件监听有竞态——`innerHTML` 重建时 scrollTop 瞬间归零触发 scroll 事件，干扰标志状态。\n2. **发送时不追底**：`_renderChat('follow')` 在 `doSend` 推入用户消息之前调用，用户消息还没进 `chatMessages`，所以追的是旧内容。第一次 `onRender` 回调只启动 hint 不调 `_renderChat`。\n\n修法：删掉 `userScrolled` 标志和 scroll 监听器，全程用 `'auto'`（`renderChatContent` 已有 `wasAtBottom` 启发式判断）；第一次 `onRender` 回调里加 `_renderChat('follow')` 强制归底。\n修好了，两个问题：\n\n1. **发送不追底**：`_renderChat('follow')` 之前在 `doSend` 推入用户消息**之前**调用，追的是旧内容。现在移到第一次 `onRender` 回调里（用户消息已入队），正确追底。\n\n2. **无法取消追底**：删掉了 `userScrolled` 标志和 scroll 事件监听（有竞态），改用 `'auto'` 模式——`renderChatContent` 内部的 `wasAtBottom` 启发式天然处理：上滑离开底部就 preserve，滑回底部就 follow。\n\n服务已重启，可以测试。"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep523-b6",
+ "episode_id": 523,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "复制路径后卡顿",
+ "pattern": "字段契约,环境",
+ "ep_score": 5,
+ "chars": 448,
+ "truncated": false,
+ "text": "**用户：**\n删除没立刻更新，还需要我刷新页面才能更新，这太影响了。有什么办法吗？\n\n**AI：**\n问题在：`forceRebuildTree()` 只重建 Canvas，不重载数据。删除请求在服务端成功了，但 `KFMState.files` 还是旧数据，所以 Canvas 重建出来还是老样子。\n\n`tree-swipe.ts` 的模式执行用的是 `loadFileTree()`，它先 fetch 服务端再建树。`file-action-bar.ts` 应该同样：\n\n```\nforceRebuildTree()      → 只重建，数据不刷新\nloadFileTree()           → fetch 最新数据 → 更新 KFMState.files → 重建 Canvas\n```\n\n修复：_deleteFile 里把 `forceRebuildTree()` 换成动态 import `loadFileTree()`。让我确认一下 `loadFileTree` 的导出。"
+}

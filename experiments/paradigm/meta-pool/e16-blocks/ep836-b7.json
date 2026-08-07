@@ -1,0 +1,12 @@
+{
+ "id": "ep836-b7",
+ "episode_id": 836,
+ "session_id": "omp-2026-07-07T06-14-00-892Z_019f3b36-47bc-7",
+ "source": "manual",
+ "topic": "手势系统设计（双指缩放实时重排/终端卡降级）+ 全屏卡片滚动",
+ "pattern": "重构优于补丁,可回退铁律",
+ "ep_score": 6,
+ "chars": 872,
+ "truncated": false,
+ "text": "**用户：**\n当然要做。而且，你没懂我的意思，你看文件树的滚动，浮卡展开态的内容区的滚动，这两个响应的模式是正确的，是好的，你的这个完全是打了个补丁啊？我想让你告诉我，我说的这两个滚动模式是如何实现的，你能不能弄一个同款？\n\n**AI：**\n好，我看看现有两个正确的滚动模式是怎么实现的。\n明白了！关键是：**非全屏卡滚动靠的是原生浏览器滚动，不是自定义手势。**\n\n流程：\n- 非全屏态 → `contentEl` 设了 `overflow-y: auto`（行 387），没有 `touch-action: none` → **浏览器原生触控滚动生效**\n- 全屏态 → CSS 规则 `.floating-card.fullscreen * { touch-action: none; }` 覆盖所有后代 → **原生滚动被杀死**\n\n所以正确的修法是：**去掉我的补丁，在全屏入口给 contentEl 设 `touch-action: pan-y`，恢复原生滚动。**\ngestures.ts 已恢复原始。现在在 `enterFullscreen` 中加一行恢复原生滚动——替代我那个补丁。\n现在打包重启。\n好了。这次的方式和之前区别很大：\n\n**之前我做的（已删除）**：在 `gestures.ts` 的 `gestures-page-swipe` 里加了 `onMove` 中垂直方向的分支，手动算 `scrollTop -= dy * 0.5`。补丁。\n\n**现在做的**：一行代码。在全屏入口处，CSS 的 `.floating-card.fullscreen * { touch-action: none }` 杀死了所有后代的原生滚动。我在 `enterFullscreen` 里给 `contentEl` 加了 `touch-action: pan-y`，让它的 `overflow-y: auto` 重新生效。和**非全屏浮卡用的一模一样的滚动机制**——原生浏览器触控滚动。\n\n文件树投卡直接全屏那个要接着做吗？"
+}

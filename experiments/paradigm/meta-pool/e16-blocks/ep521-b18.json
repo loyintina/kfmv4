@@ -1,0 +1,12 @@
+{
+ "id": "ep521-b18",
+ "episode_id": 521,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "左竖线粒子衔接/长度守恒（重大）",
+ "pattern": "设计主权,简化方案,像素守恒",
+ "ep_score": 9,
+ "chars": 927,
+ "truncated": false,
+ "text": "**用户：**\n你看，我经过验证后，还是有问题，左竖线里，粒子从零到完全出现的过程，粒子依然是12px，然后完全出现后，才瞬移成4px，然后接触到了消失处，就又变回了12px\n\n**AI：**\n## 问题定位\n\n`cap` 是二进制开关。粒子中心距边界 ≥6px → 触发 cap → 12px 瞬间跳 4px。\n\n## 方案\n\n改为**线性平滑过渡**。用 `depth`（粒子深入竖线的深度）作插值因子 `t`：\n\n```\nt = 0  (刚接触边界) → target = rawLen (自然 overlap, 12~8px)\nt = 1  (深入 ≥6px)  → target = segLenVert (4px)\nt 在中间            → target 平滑过渡\n```\n\n### 改动\n\n仅 `_rangeToPhysicalPoints` 竖线分支，用 `depth = Math.max(0, Math.min(s - topW, topW + realVert - e))` 算深度，线性插值算 `capLen = segLenVert + (rawLen - segLenVert) * (1 - t)`。\n\n需多传一个 `hlDef` 参数（当前函数已有 `s, e, bx, by, h, topW, botW, segLenVert` 8 个参数，加第 9 个 `hlDef`）。\n\n三角验证：\n\n```\n粒子刚进竖线: s=topW-2, e=topW+10\n  depth = min(topW-2-topW, ...)=0 → t=0 → 无 cap, rawLen=10 ✓\n\n粒子深入中间: s=topW+5, e=topW+17\n  depth = min(5, realVert-17→假设15)=5 → t≈0.83 → capLen≈4.7 ✓\n\n粒子深入内部: s=topW+8, e=topW+20\n  depth = min(8, realVert-20→12)=8 → t=1 → capLen=4 ✓\n```\n\n生效速度快（`depth` vs `s>=topW`），无瞬跳。要实施？"
+}

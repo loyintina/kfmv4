@@ -1,0 +1,12 @@
+{
+ "id": "ep996-b2",
+ "episode_id": 996,
+ "session_id": "omp-2026-07-25T02-36-48-662Z_019f9721-e496-7",
+ "source": "manual",
+ "topic": "omp 历史会话检查（tmux 杀进程/会话截断原因）",
+ "pattern": "复盘沉淀",
+ "ep_score": 1,
+ "chars": 1363,
+ "truncated": false,
+ "text": "**用户：**\n但96c8那个会话虽然说是修复了，但实际上却还是被截断了，这是相同原因吗？\n\n**AI：**\n找到了 — **96c8 确实也有 `session_exit`**，和我之前 grep 没找到是搜索方式的问题。让我看完整的退出记录：\n**是同一个症状，但修复无效——说明根因不同。**\n\n## 三次崩溃对比\n\n| | 9687 | 9693 | 96c8 |\n|---|---|---|---|\n| 最后的 bash 命令 | `npm run start 2>&1 &` | `fuser -k 8021/tcp; node ... &` | `npm run start 2>&1` |\n| start 脚本里的杀手 | `fuser -k` (SIGKILL) | `fuser -k` (SIGKILL) | `kill $(lsof ...)` (SIGTERM) |\n| 启动→死亡间隔 | 274ms | 87ms | **238ms** |\n| `session_exit` 记录 | **无**（SIGKILL 无法捕获） | **无** | **有**（SIGTERM 被捕获） |\n| 会话文件状态 | 硬截断，无退出标记 | 硬截断，无退出标记 | 有退出标记 `reason:sigterm` |\n\n## 关键结论\n\n`fuser -k` → `kill $(lsof ...)` 这个修复**没有解决根本问题**。证据：\n\n- 96c8 的 start 脚本已经改成了 `kill $(lsof -t -i:8021)`（SIGTERM，不是 SIGKILL）\n- omp 确实**能**捕获 SIGTERM 并写入了 `session_exit`（这是改进）\n- 但 omp **仍然收到了 SIGTERM**，在 `npm run start` 启动后 238ms\n\n这说明 **SIGTERM 不是来自 `fuser -k`，也不是来自 `kill $(lsof ...)`**——这两个命令针对的是 8021 端口上的进程（kfmv4 node 服务器 PID 60000），不会命中 omp 自身。\n\n## 真正的嫌疑方向\n\nomp 的 bash 工具通过 native Rust 的 `Shell.run()` 执行命令。`npm run start` 启动后不到 300ms 就收到 SIGTERM——这太快了，不像是 `node dist/server/index.js` 启动完成后才发信号的。更可能是：\n\n1. **omp native shell executor 的 bug**：启动子进程时的进程组/信号处理有问题，子进程的终止信号传播到了 omp\n2. **bash 工具 timeout 机制的 bug**：10s timeout 可能在清理子进程时误发了信号给 omp 自身\n3. **npm 自身的进程管理**：npm 在 spawn node 子进程时可能触发了某种信号传播\n\n这三种和 `fuser -k` 无关——所以你之前手动启动 `npm run start` 不会触发 omp 崩溃，但 omp 通过自己的 bash 工具调用时就会触发。"
+}

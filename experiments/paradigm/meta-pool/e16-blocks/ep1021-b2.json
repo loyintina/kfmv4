@@ -1,0 +1,12 @@
+{
+ "id": "ep1021-b2",
+ "episode_id": 1021,
+ "session_id": "operit-07",
+ "source": "manual",
+ "topic": "效果还是不对，看起来依然是相对自己上级盒子，而不是统一的相对根目录盒子。",
+ "pattern": "补丁vs根因,现象vs指标",
+ "ep_score": 3,
+ "chars": 947,
+ "truncated": false,
+ "text": "**用户：**\n你是如何实现的？用深度作为变量算函数，然后减去上一层的这个函数值获得差值作为增量吗？\n\n**AI：**\n不是差值。我用的是更简单的方法——**两个定位规则**：\n\n### 规则\n\n| 挂载位置 | 容器的 `x` | 内部子行的 `x` |\n|----------|-----------|---------------|\n| **根 `rootBox` 下** | `absX(depth)` = 深度×18 | — |\n| **父容器内** | `SHIFT` = 18 | `0` |\n\n### 为什么有效\n\n引擎的 `getBounds()` 会**自动累加所有父节点的偏移**。所以：\n\n```\ndepth=1 容器 x=18（挂 rootBox）\n  → bounds.x = 18  ✅\n\ndepth=2 容器 x=18（挂 depth=1 容器内）\n  → bounds.x = 18 + 18 = 36  ✅\n\ndepth=3 容器 x=18（挂 depth=2 容器内）\n  → bounds.x = 18 + 18 + 18 = 54  ✅\n```\n\n每层容器只写 `x=18`，引擎自动叠加。**不需要算差值，不需要绝对坐标函数，只要每层偏移量恒等**。\n\n### 换间距算法时\n\n现在 `SHIFT=18` 是硬编码常量。如果要做对数缩进，只需要把 `SHIFT` 改成函数：\n\n```ts\n// 等距\nconst SHIFT = 18;\n\n// 对数（浅层密、深层疏）\nfunction getShift(depth) { return Math.round(12 + Math.log(depth + 1) * 6); }\n```\n\n然后把 `buildExpanded` 里的 `x: SHIFT` 改为 `x: getShift(depth)` 就行——因为引擎依然自动累加，每层写自己的增量就够了。\n\n这就是你说的\"用深度算函数，算差值作为增量\"——只不过**增量本身就直接等于 `x`**，不需要再减上一层，因为引擎的父子偏移叠加机制替我们做了累加。\n\n<status type=\"wait_for_user_need\"></status>"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep951-b2",
+ "episode_id": 951,
+ "session_id": "omp-2026-07-25T02-58-55-859Z_019f9736-24f3-7",
+ "source": "manual",
+ "topic": "对话截断问题（cgroup/进程组一荣俱荣）+ kfmv4 重启杀 tmux 修复",
+ "pattern": "复盘沉淀,全链路验证",
+ "ep_score": 3,
+ "chars": 1164,
+ "truncated": false,
+ "text": "**用户：**\n那，23号前就没有这个问题，这个问题是如何导致的呢？\n\n**AI：**\n好问题。让我追踪 omp 是怎么进入 kfmv4 cgroup 的。\n完整链条如下：\n\n---\n\n## omp 为什么在 kfmv4 cgroup 里\n\nkfmv4 有一个 **WebSocket PTY 终端** (`terminal-pty.ts`)，通过 `node-pty` 启动交互 shell：\n\n```\n浏览器 → WebSocket → kfmv4 server → pty.spawn($SHELL) → bash → tmux → omp\n```\n\n由于 kfmv4 进程在 `kfmv4.service` cgroup 里，它 spawn 的所有子进程（包括你的 shell、tmux、omp）全部继承这个 cgroup。**sshd 在 `ssh.service` 自己的 cgroup 里**，user.slice 完全是空的——说明你没走 SSH，是从 kfmv4 的 Web 终端进来的。\n\n## 为什么 7/24 之前没问题\n\n关键在于 **systemd 的 `Restart=always` + `KillMode=control-group` 一直存在**（6/13 至今），但它只在实际触发 service restart 时才清 cgroup。\n\n7/23 之前的情况：\n- 你用 `systemctl restart kfmv4` 重启服务 → **预期内**的行为，你知道会话会断\n- 或通过 SSH 连 → omp 在 `ssh.service` cgroup，不受影响\n\n7/24 的变化：\n- 你在 **omp 会话内** 跑了 `npm run start`（等价于 `kill $(lsof -t -i:8021)` + 起新服务）\n- 这个 `kill` 杀死了 systemd 的主进程 → systemd 触发 **非预期的 restart**\n- `KillMode=control-group` → **SIGTERM 炸了整个 cgroup** → omp/tmux 全死\n\n**之前用 `fuser -k` 或 `npm run start` 没崩溃**，是因为那时候你的 omp 不在 kfmv4 cgroup 里（可能走的 SSH，或 systemd 还没被配置成 crash-loop 重启模式导致连接方式不同）。\n\n一句话总结：**你一直在一个\"房子里\"（kfmv4 cgroup）工作，但以前\"拆房子\"（`systemctl restart`）是你主动做的；7/24 开始你在房子里按了一个按钮（`npm run start`），它意外触发了拆房子的炸药。**"
+}

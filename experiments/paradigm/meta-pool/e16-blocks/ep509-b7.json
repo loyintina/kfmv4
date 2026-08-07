@@ -1,0 +1,12 @@
+{
+ "id": "ep509-b7",
+ "episode_id": 509,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "边界压缩记忆回弹",
+ "pattern": "复用既有,时序",
+ "ep_score": 7,
+ "chars": 382,
+ "truncated": false,
+ "text": "**用户：**\n那上次为什么要做这样的简化？是为了解决什么问题吗？\n\n**AI：**\n上次简化是为了解决\"松手后卡片弹回\"：\n\n1. `onSavePosition` 在松手时用 `cardWidth` 恢复 DOM 尺寸 → 边界压缩的卡片一松手就跳回去\n2. 我当时想\"既然压缩逻辑导致弹回，干脆去掉压缩，跟 orb 一样只改位置不改大小\"\n\n这个简化过度了。正确的修法不是去掉压缩，而是：\n\n- **边界压缩保留**（`onMoveNormal` 原版逻辑）\n- **不写 `cardWidth/H`**（只改 DOM）\n- **松手不恢复**（删掉 `onSavePosition` 里的恢复代码）\n\n这样压缩时卡片缩、拉开时卡片涨、松手保持不动，下次拖借助 `_fStartCardW`（来自永久 `cardWidth`）自然恢复——全部动态，没有跳变。"
+}

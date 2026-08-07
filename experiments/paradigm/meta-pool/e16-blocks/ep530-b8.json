@@ -1,0 +1,12 @@
+{
+ "id": "ep530-b8",
+ "episode_id": 530,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "md 文件卡编辑/预览不对称",
+ "pattern": "模式一致性",
+ "ep_score": 3,
+ "chars": 757,
+ "truncated": false,
+ "text": "**用户：**\n但理论上两种模式不应该是对称的吗？\n\n**AI：**\n你说得对——应该对称。真正的根因是：**wrapper 的 `height:100%` 在 `contentEl` 的 scroll container 里不可靠。**\n\n两种模式应该用同一种定位策略。让 wrapper 自身做 `position:absolute;inset:0`，把整个链从\"依赖百分比高度\"变成\"依赖绝对定位锚定\"：\n\n```\ncontentEl (overflow-y:auto)           ← _renderFloatingContent 框架层，不动\n  └── wrap (position:absolute; inset:0; flex-column)  ← 不依赖 height:100%，可靠填充\n       ├── header (flex-shrink:0)\n       ├── line (flex-shrink:0)\n       └── _body (flex:1; position:relative; overflow-y:auto)\n            ├── preview: <pre> 或 marked HTML  ← 块元素，自然填充\n            └── edit: textarea (position:absolute; inset:0) ← 正确锚定在 _body 上\n```\n\n**只改一行**：`handler-factory.ts` 中 `wrap.style.cssText` 从 `height:100%` 改为 `position:absolute;inset:0`。\n\n预览和编辑两种模式从此用一个容器的同一套锚定链——对称。确认？"
+}

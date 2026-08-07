@@ -1,0 +1,12 @@
+{
+ "id": "ep504-b9",
+ "episode_id": 504,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "卡片堆聚焦状态错乱",
+ "pattern": "全链路验证,验证优先",
+ "ep_score": 9,
+ "chars": 907,
+ "truncated": false,
+ "text": "**用户：**\n好的，经过我的测试，如果卡片超过40张了，那么在我加入卡片，滚动切换聚焦，再加入卡片，再切换聚焦，这样的循环里，就有概率让随机卡片变成聚焦态。也有可能是我的某个操作区域影响的？随着我的这个模式增多，随机出现的聚焦态卡片会增多，这是每次出现都有的现象。你能排查一下这是什么原因？\n\n**AI：**\n让我换个思路——当前有两套聚焦机制（handleRowSwipe 内联 + updateFocus），它们的 `_prevFocusIndex` 更新逻辑不同，容易不同步。统一为一个入口：\nNow all focus changes go through a single path: `updateFocus()`. No more inline focus/unfocus code. Let me verify:\nOne more thing—the swipe gesture uses `_CARD_GAP` (fixed 26) to calculate focus step, but with 40+ cards the actual compressed gap might be 6px. This mismatch makes the swipe skip cards without unfocusing them properly.\n改动要点：\n\n1. **统一入口**：`handleRowSwipe` 不再自己内联做聚焦/失焦，改为设好 `_focusIndex` 和 `_prevFocusIndex` 后调 `updateFocus()`——和点击、滑动同一个路径，消除两套机制的状态不同步。\n\n2. **_prevFocusIndex 正确**：指向旧聚焦卡在 splice **后**数组中的实际位置（`indexOf(oldEl)`），保证后续 `updateFocus` 能找到该失焦的正确卡片。\n\n3. **滑动步进准确**：滑动手势步进从固定的 `_CARD_GAP=26` 改为 `_lastGap`（当前实际压缩间距），压缩后不会一次滑动跳过十几张卡。"
+}

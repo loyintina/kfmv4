@@ -1,0 +1,12 @@
+{
+ "id": "ep1043-b3",
+ "episode_id": 1043,
+ "session_id": "operit-07",
+ "source": "manual",
+ "topic": "还是不行。那么，问题既然在那个裁切，我们能不能从根源上改掉裁切？",
+ "pattern": "补丁vs根因,重构优于补丁",
+ "ep_score": 36,
+ "chars": 1138,
+ "truncated": false,
+ "text": "**用户：**\n可以，开始吧，先告诉我你首先要做什么，然后我确认后开始。\n\n**AI：**\n<think>用户确认方案可行，要求我开始实施。我需要先告诉他我要做的第一步，等他确认后再开始。\n\n按照方案，阶段1是基础设施：\n1. types.ts 新增类型定义\n2. box.ts 新增属性\n3. renderer.ts 支持静态 clipZone\n\n让我先说明第一步的具体内容。</think>好的，让我明确第一步要做什么：\n\n---\n\n## 阶段1：基础设施\n\n### 1.1 types.ts 新增类型\n\n```typescript\n/** 静态裁切区域（不受动态 bounds 影响） */\nexport interface ClipZone {\n  x: number;\n  y: number;\n  width: number;\n  height: number;\n}\n\n/** 分层配置 */\nexport interface BoxLayerConfig {\n  /** 盖子：覆盖上方内容的遮挡层 */\n  lid?: {\n    height: number;        // 盖子高度\n    backgroundColor?: string;\n    borderRadius?: number;\n  };\n  /** 底座：底部背景层 */\n  base?: {\n    offset: number;         // 底座起始 y 偏移（相对于盒子顶部）\n    backgroundColor?: string;\n  };\n  /** 文字层 z-index（默认 5，在盖子和底座之间） */\n  textZIndex?: number;\n}\n```\n\n### 1.2 box.ts 新增属性\n\n```typescript\n// 在 BoxOptions 中新增：\nclipZone?: ClipZone;        // 静态裁切区域\nlayers?: BoxLayerConfig;    // 分层配置\n\n// 在 Box 类中新增：\nclipZone: ClipZone | null;\nlayers: BoxLayerConfig | null;\n```\n\n### 1.3 renderer.ts 支持静态裁切\n\n- 如果 `box.clipZone` 存在，用静态区域裁切\n- 否则保持原有 `overflow: hidden` 逻辑\n\n---\n\n### 目标\n\n阶段1完成后：\n- 类型系统就绪\n- Box 支持新属性\n- 渲染器支持静态裁切\n\n**不改变任何现有行为**，只是添加基础设施。\n\n---\n\n确认开始吗？"
+}

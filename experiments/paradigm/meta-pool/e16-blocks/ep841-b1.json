@@ -1,0 +1,12 @@
+{
+ "id": "ep841-b1",
+ "episode_id": 841,
+ "session_id": "omp-2026-07-07T06-14-00-892Z_019f3b36-47bc-7",
+ "source": "manual",
+ "topic": "终端卡后端 + 拖动逻辑重复（3 次回退）+ 动画锁",
+ "pattern": "复用既有,可回退铁律",
+ "ep_score": 4,
+ "chars": 524,
+ "truncated": false,
+ "text": "**用户：**\n我们现在的终端卡能用啊？你说的终端卡后端具体是什么？\n\n**AI：**\n你说得对，我错了。`terminal-pty.ts` 不是占位符——它有完整的 `PtyManager`（spawn/write/resize/kill），前端 `terminal-card-04.ts` 是 745 行的 xterm.js 完整集成。我说的\"终端卡后端\"其实已经有了。\n\n纠正后的可工作方向：\n\n1. **orb / card-stack 拖动逻辑重复**（\"持续观察\"遗留）— 两个模块各自实现 `pointerdown/move/up`，本应由 `gesture-registry` 统一调度\n2. **测试文件拆分** — `regression.test.ts` 1849 行，离 2500 行阈值还有空间但开始接近\n3. **动画锁 3000ms 超时** — 陷阱 #9 写在注释里的\"设计缺陷\"，某条 `beginOp/endOp` 路径没走到\n4. **浏览器级测试** — Playwright/Puppeteer，测试文档的开放问题\n5. **卡片插件系统** — 设计文档有规范，但实际搭建未开始\n\n你对哪个方向感兴趣？"
+}

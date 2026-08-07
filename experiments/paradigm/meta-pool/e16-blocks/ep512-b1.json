@@ -1,0 +1,12 @@
+{
+ "id": "ep512-b1",
+ "episode_id": 512,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "三按钮点击无响应",
+ "pattern": "约束前置,手势注册表",
+ "ep_score": 5,
+ "chars": 811,
+ "truncated": false,
+ "text": "**用户：**\n还是不对，点击按钮位置依然没有触发\n\n**AI：**\nLet me dig deeper — the ✓/✗ buttons work, so the issue is specific to the mode button wrappers' DOM nesting.\n分析完毕。问题根源：wrapper 夹在两层 `pointer-events:none` 之间（`_toolbar` → `row2` → wrapper），浏览器 hit testing 在 `row2` 层就跳过了，wrapper 的事件监听器从未被触发。✓/✗ 按钮能工作是因为它们是 `_toolbar` 的直接子元素。\n\n**两种方案：**\n\n| | A（推荐） | B |\n|---|---|---|\n| 思路 | 模式按钮改为直接挂 `_toolbar` 下，`position:absolute` 手动定位，同 ✓/✗ 模式 | 去嵌套，wrapper 保留但挂 toolbar 直接子 |\n| 差异 | 不用 wrapper，选中态用 `outline-offset` 实现 | 保留 wrapper div 结构 |\n| 优点 | 零额外 DOM，事件路径已验证有效 | 视觉外框效果更精确 |\n| 风险 | outline 圆角兼容性 | 同 A |\n\n**A 的具体位置计算**（top:55px，同当前 row2）：\n- copy：left 对齐 ✓（`left:0`）\n- delete：right 对齐 ✗（`left:spanW - 34`）\n- move：居中（`left: (spanW - 34) / 2`）\n\n选中态用 `outline: 2px solid rgba(255,255,255,0.7); outline-offset: 2px` 实现白框。无额外 wrapper。\n\n选 A？"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep598-b32",
+ "episode_id": 598,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "heuristic",
+ "topic": "4.1 版本改坏→回退 4.0；日志卡定位；多次无效修改（与 B53/B54 同族）",
+ "pattern": "版本回退,验证优先",
+ "ep_score": 9,
+ "chars": 430,
+ "truncated": false,
+ "text": "**用户：**\n能，但点击进不去？\n\n**AI：**\n没有服务端日志——说明 `tmux-cmd` 消息根本没到服务端。问题在客户端发送或手势触发环节。\n\n需要加 3 行诊断日志确认断点在哪：\n\n| 位置 | 日志 | 作用 |\n|------|------|------|\n| `tmux-card.ts` `onEnd` 开头 | `log('[tmux] tap: target=%s', target.className)` | 手势是否触发 |\n| `tmux-card.ts` `send` 里 | `log('[tmux] send: cmd=%s args=%s', cmd, args)` | send 是否调用 |\n| `ws-server.ts` `tmux-cmd` case 开头 | `console.log('[tmux-cmd] %s %s', p.cmd, p.args)` | 消息是否到服务端 |\n\n要我现在加上去测试吗？"
+}

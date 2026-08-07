@@ -1,0 +1,12 @@
+{
+ "id": "ep857-b2",
+ "episode_id": 857,
+ "session_id": "omp-2026-07-22T03-58-36-090Z_019f87f9-b23a-7",
+ "source": "manual",
+ "topic": "版本 7.3.1 + 修 bug 流程记录 + 工具失败注入提示 + 连续调用",
+ "pattern": "可回退铁律,复盘沉淀",
+ "ep_score": 5,
+ "chars": 379,
+ "truncated": false,
+ "text": "**用户：**\n这个当然要追加\n\n**AI：**\n补好了。§5.3 微循环从 5 步扩展到 7 步：\n\n```\n1. git show <commit>            读懂当时错在哪\n2. 修 bug → npm test 全绿       确认修复不破坏已有测试\n3. regression('BAR-xxx', ...)   写钉子\n4. 临时回退 fix → 必须变红      revert 验证\n5. 恢复 fix → 转绿\n6. 更新 BUG_REGRESSION_REGISTRY  登记\n7. 更新文档 + 打 tag（版本发布时）\n   - package.json / README / CLAUDE.md / HANDBOOK\n   - git commit + git tag + check-versions.mjs\n```"
+}

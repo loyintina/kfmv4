@@ -1,0 +1,12 @@
+{
+ "id": "ep892-b2",
+ "episode_id": 892,
+ "session_id": "omp-2026-05-27T17-10-59-698Z_019e6a6b-0772-7",
+ "source": "manual",
+ "topic": "安全审计（泄露排查/认证/nginx 反代/注意事项）",
+ "pattern": "溯源审计,全量原则",
+ "ep_score": 1,
+ "chars": 1357,
+ "truncated": false,
+ "text": "**用户：**\n认证是什么意思？\n\n**AI：**\n你的服务器本质上是一个**文件读写 API**，可以读取/写入/删除服务器上的任何文件（在 `KFM_ROOT` 限定的范围内）。\n\n看这段代码：\n\n```ts\nrouter.post('/files/read', (req, res) => {\n  const targetPath = sanitizePath(req.body.path);\n  res.json({ path: targetPath, content: fs.readFileSync(targetPath, 'utf-8') });\n});\n\nrouter.post('/files/write', (req, res) => {\n  const targetPath = sanitizePath(req.body.path);\n  fs.writeFileSync(targetPath, req.body.content, 'utf-8');\n  res.json({ success: true });\n});\n```\n\n任何人只要能连接到 `http://你的服务器IP:8021`，就可以直接调这些 API 读文件、写文件。没有任何登录、密码、Token 检查。\n\n在你的场景里，这通常意味着：\n\n| 连接来源 | 风险 |\n|---------|------|\n| 你同一台机器上的浏览器访问 `localhost:8021` | 无风险，只有你自己 |\n| 同一 WiFi 下的其他人访问 `http://192.168.x.x:8021` | 可以读写你的文件 |\n| 如果服务器暴露在公网，任何人都可以 | 很危险 |\n\n现在它监听 `0.0.0.0`，意味着**只要你的防火墙/路由器允许该端口访问，互联网上任何人都能直接操作你的文件**。\n\n### 怎么解决（三种方式，从易到难）\n\n**A. 只监听本地** — 最简单，改一行代码：\n```ts\napp.listen(PORT, '127.0.0.1', () => {  // 不改也可，启动前设环境变量\n```\n这样只有你这台机器能访问 API，同 WiFi 的其他设备都不行。\n\n**B. 加一个简单的 Token 校验** — 服务端改几行：\n```ts\nconst AUTH_TOKEN = process.env.KFM_TOKEN || '';\napp.use('/api', (req, res, next) => {\n  if (AUTH_TOKEN && req.headers.authorization !== `Bearer ${AUTH_TOKEN}`) {\n    return res.status(401).json({ error: 'unauthorized' });\n  }\n  next();\n});\n```\n\n**C. 不管它** — 对于你的个人工作台，如果只在手机上用，不暴露端口到公网（没做路由器端口转发），那 `0.0.0.0` 实际上也没人能访问到。`HANDOFF_AUDIT.md` 里说的就是这个意思。\n\n要我改吗？推荐方案 A（一行改动，零成本）。"
+}

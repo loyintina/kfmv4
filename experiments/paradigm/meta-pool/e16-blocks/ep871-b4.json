@@ -1,0 +1,12 @@
+{
+ "id": "ep871-b4",
+ "episode_id": 871,
+ "session_id": "omp-2026-07-23T14-14-20-532Z_019f8f53-c874-7",
+ "source": "manual",
+ "topic": "文件树崩溃 + root 兄弟目录理解 + 沙漏叹号 + 下拉方向",
+ "pattern": "补丁vs根因",
+ "ep_score": 8,
+ "chars": 572,
+ "truncated": false,
+ "text": "**用户：**\n文件树正常了，但那个按钮依然看不到框，只有一个点，也不是root。你看看文档里有没有相关的记载？我们已经为此浪费了很多时间了。\n\n**AI：**\n你说得对，文档里不会有答案。问题是我在上次重写时删了 `KFMState.currentRoot = data.path` 那行——异步请求拿到真实路径后没存回去，`renderLabel` 又读了一遍 localStorage 和 currentRoot（还是 `.`），所以标签永远是点。而且 Canvas 初始设了 `height:40px` 但**没有设置圆角/背景色**，纯透明背景，所以看不见框。\n找到根因了——异步请求拿到真实路径后 `renderLabel()` 又被调了一次，但它还是读 `KFMState.currentRoot`（`.`），没写回去。补上保存。\n构建提交。\n解决：异步请求拿到真实路径 `data.path`（如 `/root/kfmv4`）后没保存，`renderLabel` 读到的一直是 `.`——所以永远画一个小点。补上写回 `localStorage` + `KFMState.currentRoot` 后，标签会更新成 `kfmv4`。Canvas 透明背景，框的效果靠渐变文字本身（紫→蓝、粗体 13px），文字可见了框就可见了。"
+}

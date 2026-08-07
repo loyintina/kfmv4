@@ -1,0 +1,12 @@
+{
+ "id": "ep503-b17",
+ "episode_id": 503,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "文件行右滑动画漂移",
+ "pattern": "全链路验证,追源",
+ "ep_score": 17,
+ "chars": 654,
+ "truncated": false,
+ "text": "**用户：**\n呃，现在完全不触发动画了\n\n**AI：**\n问题可能是 GSAP 不支持对自定义类实例用点号属性路径 `'transform.translateX'`。改为直接对 `rowBox.transform` 对象做 tween：\n问题明确了：GSAP 不认识 Box 实例上的 `'transform.translateX'` 点号路径。应该直接对 `rowBox.transform` 普通对象做 tween：\n现在 `anim.to(rowBox.transform, { translateX: 8 })` 直接作用于普通 JS 对象，GSAP 完全能处理。\n\n之前不生效是因为对 Box 类实例用了 `'transform.translateX'` 点号路径，GSAP 不认这种嵌套属性的写法。现在改为直接 tween `rowBox.transform`（普通对象）的 `translateX` 属性。\n\n关键设计变动：\n- **动画目标**：`transform.translateX`（渲染偏移量），不是 `box.x`（布局真值）\n- **为什么能修复漂移**：`box.x` 永远不被修改，`moveCursorTo()` 写 `x` 不与弹跳冲突；`translateX` 从当前值续走，最后必回 0\n- **为什么之前不生效**：GSAP 对自定义类实例的多层属性路径不工作，必须直接对普通 JS 对象做 tween\n\n`npm run build` 已执行，刷新浏览器试试。"
+}

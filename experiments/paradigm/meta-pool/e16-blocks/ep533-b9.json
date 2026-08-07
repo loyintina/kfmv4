@@ -1,0 +1,12 @@
+{
+ "id": "ep533-b9",
+ "episode_id": 533,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "右滑出卡方向判定（重大）",
+ "pattern": "简化方案,深度归因,重构视角",
+ "ep_score": 11,
+ "chars": 1562,
+ "truncated": false,
+ "text": "**用户：**\n但为什么会出现两个动作混合在一起的情况呢？你的垂直锁触发得早，这个垂直锁是锁垂直方向还是锁水平方向？如果是锁垂直方向的移动，那为什么还会有一行的光标垂直移动呢？如果是锁水平方向，那freeze又接着运作，这是两个机制在打架吗？我没看懂你的讲解，你能再详细讲讲吗？\n\n**AI：**\n让我直接用时序表解释，一步一步。\n\n---\n\n## 60° 右滑的当前执行流\n\n设右滑总距离约 100px，60° 上偏。此时 dx 和 dy 的增长比为 `sin(60)/cos(60) = 1.73`——dy 增长速度是 dx 的 1.73 倍。\n\n```\n帧1: dx=5,  dy=9   → dx<20, dy<20 → axis='none' → Guard B → return (光标不动) ✓\n帧2: dx=10, dy=17  → dx<20, dy<20 → axis='none' → Guard B → return ✓\n帧3: dx=14, dy=24  → dx<20, dy≥20 → 走 else if(absDy>20) → axis='vertical' ← 锁死了！\n```\n\n关键点：**dy 先到 20，触发了 `else if(absDy>20)` 这个分支。这个分支不看角度，直接无条件锁为 `'vertical'`。**\n\n```\n帧4: dx=18, dy=31 → axis 已经是 'vertical' → Guard A(horizontal?) 否 → Guard B(axis=='none'?) 否\n                   → 穿透到竖向处理 → 光标开始移 ← Bug 来了\n帧5: dx=22, dy=38 → dx≥20 了 → 但 if(_gestureAxis==='none') 已是 false → 扇形分区跳过了\n                   → 光标继续移\n帧N: 松手 → onEnd → axis='vertical' → horizontal 分支不触发 → 右滑无效\n```\n\n这就是为什么**光标移了但右滑不触发**——不是两个打架，是垂直锁抢在了扇形分区前面，导致 guard B（冷冻）失效，而 guard A（水平）永远不会为 true。\n\n**那为什么光标只移一行？** 因为 dy 到 20 时 dx 才 14，你手指还在起点附近。dy 到 20 意味着光标滚了一行（一行高度约 26px），然后就锁死了光标位置直到手势结束。\n\n---\n\n## 为什么用户感觉\"光标动了也投了卡\"\n\n这不是 `canvas-scroll` 投的——`_gestureAxis` 始终是 `'vertical'`，`onEnd` 不会调 `L.triggerRowSwipe()`。但可能你松手后立刻又做了一个微小右滑（或手指在松手时有横向反弹），第二个手势判为水平，投出了已经偏位的光标行。\n\n---\n\n## 修复逻辑——一行改\n\n```diff\n- } else if (absDy > 20) {\n+ } else if (absDy > 25 && absDy > absDx * 4) {\n```\n\n意思：只有**近乎纯竖向**（dy 是 dx 的 4 倍以上，即偏离垂线不超过 ~14°）才提前锁垂直。其余情况保持 `'none'`，等 dx 到 20 后走扇形分区。\n\n60° 右滑就不满足 `dy > dx * 4`（1.73 < 4），不会提前锁垂直 → freeze 一直生效 → dx 到 20 → 扇形分区判为水平 → `return` → 光标从始至终没动 → 松手投卡，行正确。\n\n要开始吗？"
+}

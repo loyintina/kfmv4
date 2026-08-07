@@ -1,0 +1,12 @@
+{
+ "id": "ep901-b3",
+ "episode_id": 901,
+ "session_id": "omp-2026-07-11T02-40-24-324Z_019f4f0c-2704-7",
+ "source": "manual",
+ "topic": "思考流式展示缺失 + 思考 auto 字段（非 high/max）+ 未获取回复",
+ "pattern": "深挖根因+对标成熟,全链路验证",
+ "ep_score": 1,
+ "chars": 1238,
+ "truncated": false,
+ "text": "**用户：**\n然后，这个思考有没有auto字段而不是high和max？有些问题并不需要那么多思考，有些复杂问题才适合这种高强度思考？另外，输入栏回车，我希望的是能切到下一行，而不是直接发送，不然我做那个发送按钮做什么？另外，输出的正文，依然是被吞的，不完整的。\n\n**AI：**\n三个问题，一起修：\n找到三个问题的根因了：\n\n1. `reasoning_effort: 'high'` → 改 `'auto'`\n2. Enter 直接发送 → 改为 Enter 换行，Shift+Enter 或按钮发送\n3. **流结束后 buffer 残留未处理** + `catch {}` 吞掉了错误\n那个 `catch {}` 是解析字体大小的，不是流式相关，没问题。验证一下关键改动：\n正确。现在构建并重启：\n## 三个修复\n\n### 1. `reasoning_effort: 'auto'` — 让模型自己决定思考深度\n\n```typescript\n// 之前: 'high' (固定高强度)\n// 现在: 'auto' (简单问题轻思考，复杂问题深思考)\n```\n\n### 2. Enter 换行，Shift+Enter 发送\n\n```typescript\n// 之前: Enter 发送\n// 现在: Shift+Enter 发送，Enter 正常换行\n```\n\n### 3. 修复内容截断 — 两个关键问题\n\n**问题 A：流结束后 buffer 残留丢弃**\n```typescript\n// 之前: while 循环结束后直接显示 \"未获取到回复\"\n// 现在: 循环结束后处理 buffer 中的残留数据\nif (buffer.trim()) processSseLines(buffer);\n```\n\n**问题 B：chunk 边界切分 JSON 导致解析失败**\n\n之前的逻辑是 `split('\\n')` 后处理每一行，但如果一个 chunk 在 `\\n` 之前截断，那行会留在 buffer 里。下一个 chunk 来了才能拼完整。\n\n但问题是：如果一个 chunk 包含 `data: {...}\\n` 和 `data: {...`（第二行不完整），旧代码会把两行都处理了，第二行 JSON.parse 失败被 `catch {}` 吞掉。\n\n新逻辑：只处理 `\\n` 之前**完整的行**，不完整的留在 buffer 里等下一个 chunk：\n\n```typescript\nconst lastNl = buffer.lastIndexOf('\\n');\nif (lastNl >= 0) {\n  const complete = buffer.slice(0, lastNl);\n  buffer = buffer.slice(lastNl + 1);\n  processSseLines(complete);\n}\n```\n\n---\n\n刷新页面试试。"
+}

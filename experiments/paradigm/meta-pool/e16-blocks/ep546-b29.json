@@ -1,0 +1,12 @@
+{
+ "id": "ep546-b29",
+ "episode_id": 546,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端编号/状态混用（重大）",
+ "pattern": "初心对齐,机制设计,读码优先",
+ "ep_score": 5,
+ "chars": 541,
+ "truncated": false,
+ "text": "**用户：**\n好\n\n**AI：**\nNow add to package.json check chain:\n验证：\n`check-cards.mjs` 就位。`npm run check` 零错误，`npm run build` 通过。\n\n---\n\n## 效果\n\n```\n[check-cards] OK — 3 types registered, 1 referenced\n```\n\n当前注册：`debug` / `card03` / `file`。引用：`getCardType('file')` → 匹配 ✓。\n\n如果未来有人写了 `getCardType('shop')` 但没调 `registerCardType({ typeId: 'shop' })`，`npm run check` 会报：\n\n```\n[check-cards] getCardType('shop') 引用了未登记的卡片类型，出现在: ...\n  请添加 registerCardType({ typeId: 'shop', ... }); 声明\n[check-cards] 1 error(s) — BLOCKED\n```\n\nbuild 阻断。要继续做终端卡 Phase 8 的步骤 7 吗？"
+}

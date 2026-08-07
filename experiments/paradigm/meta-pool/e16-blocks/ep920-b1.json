@@ -1,0 +1,12 @@
+{
+ "id": "ep920-b1",
+ "episode_id": 920,
+ "session_id": "omp-2026-07-21T13-58-23-566Z_019f84f8-764e-7",
+ "source": "manual",
+ "topic": "数据消失排查（api 配置/会话历史/角色提示词 + .kfmv4 空）",
+ "pattern": "验证优先",
+ "ep_score": 1,
+ "chars": 653,
+ "truncated": false,
+ "text": "**用户：**\n但我点开文件树的.kfmv4这个文件夹，里面确实也没有东西。是不是历史上某次安全修改把它截断了？\n\n**AI：**\n这就是谜底了。\n\n**v7.0.0 做了一次迁移**：数据目录从项目根 `~/kfmv4/.kfmv4/` 搬到了 `~/.kfmv4/`（家目录）。你在文件树里看到的是 `~/kfmv4/`（项目目录），所以当然没有 `.kfmv4`——它不在那里了。\n\n实际数据在 `~/.kfmv4/`，刚才已经确认存在：\n- `providers.json` — ✅ 4 个 API Provider\n- `roles/` — ✅ 蔚然.json、kfm-dev.json\n- `configs/` — ✅ 主配置、测试配置\n- `active.json` — ✅ 当前选中的Provider/Model/角色\n\n**唯一真正丢的是`sessions/`（对话历史）**，目录是空的。这和安全修改无关——`sanitizePath` 只拦截路径逃逸，不会删文件。最可能的原因是 v7.0.0 迁移时，旧的 `~/kfmv4/.kfmv4/sessions/` 没有被复制过来，或者中间某次测试清空了。\n\n所以：**API 配置、角色、设置都还在，只有对话历史是真的没了**。文件树里看不到数据是因为数据在家目录，不在项目目录。\n\n如果你希望文件树能浏览 `~/.kfmv4/`，需要把文件树的根目录切换到 `~` 而不是 `~/kfmv4`——这是 root-picker 的功能。"
+}

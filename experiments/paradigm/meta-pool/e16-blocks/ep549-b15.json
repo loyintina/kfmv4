@@ -1,0 +1,12 @@
+{
+ "id": "ep549-b15",
+ "episode_id": 549,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端滚动方向/截停（超长拉锯，十几轮）",
+ "pattern": "机制重构,删旧留新,验证优先",
+ "ep_score": 11,
+ "chars": 636,
+ "truncated": false,
+ "text": "**用户：**\n方向还是反的，而且依然是一卡一卡，现在更严重了，甚至很难让页面滚动起来。是因为你的上下文太长了导致你的思路不准确了吗？\n\n**AI：**\n方向问题和卡顿是同一个根因——`_render()` 里 `pixelOff` 的符号反了。\n\n---\n\n## 问题定位\n\n当手指上滑想看历史时：\n\n```\n_scrollOffset = 0 → 3.33（正确增大）\nvisibleStart 选对了更早的行（正确）\n但 py = topPad + vr*ch - pixelOff  ← 减号\n```\n\n`- pixelOff` 把行**上移**了——视觉上是内容往上跑，看起来像\"手指往上推，内容往上去\"——方向反了。\n\n**修复**：两遍渲染都改成 `+ pixelOff`：\n\n```\npy = topPad + vr * ch + pixelOff\n```\n\n行下移 → 顶部露出上方的行 → 手指上滑看到历史 → 方向对。\n\n\"一卡一卡\"的症状也是这个——`- pixelOff` 和 `+ pixelOff` 的渲染方向跟数据选行方向打架，每一帧都在跳。\n\n---\n\n## 改动量\n\n`terminal-renderer.ts` 两处 `- pixelOff` → `+ pixelOff`：\n\n1. 背景 pass 的 `fillRect` x坐标\n2. 文字 pass 的 `fillText` x坐标\n\n---\n\n确认后切 build 模式执行？"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep520-b0",
+ "episode_id": 520,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "呼吸效果没生效 + 白名单 10 处逃逸（机制质疑）",
+ "pattern": "时序,机制质疑",
+ "ep_score": 3,
+ "chars": 408,
+ "truncated": false,
+ "text": "**用户：**\n改动没生效吗？我一点没看到你说的呼吸效果？\n\n**AI：**\n## 两个问题\n\n1. **`_liquidPulseBase` 时机错误**：`setCursorColor` 里取 `_liquidColor` 时它还是旧值（`setLiquidColor` 还没被调用）\n2. **alpha 幅宽太小**：`0.65↔0.82` 太难察觉\n\n**修**：`_liquidPulseBase` 迁移到 `setLiquidColor` 里设置；alpha 扩到 `0.4↔0.85`：\n两个修复：\n\n1. **`_liquidPulseBase` 现在在 `setLiquidColor` 里设置**——不再依赖调用顺序，粒子 pulse 必生效\n2. **alpha 摆幅 `0.4 ↔ 0.85`**——原来 `0.65↔0.82` 太窄看不出来\n\n光标边框和粒子同步呼吸，幅度明显。强刷验证。"
+}

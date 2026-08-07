@@ -1,0 +1,12 @@
+{
+ "id": "ep504-b5",
+ "episode_id": 504,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "卡片堆聚焦状态错乱",
+ "pattern": "全链路验证,验证优先",
+ "ep_score": 9,
+ "chars": 461,
+ "truncated": false,
+ "text": "**用户：**\n依然会出现这个情况，两种布局切换，能不能只使用那个好的布局，现在依然是中间密的情况。\n\n**AI：**\n原因是 `updateFocus()` 对**所有**非聚焦卡都重新创建了 x/scale/rotation tween，即使那些卡状态根本没变。改为只动画状态实际变化的两张卡：\nAlso need to update `_prevFocusIndex` in handleRowSwipe and clearTempCards:\n关键改动：`updateFocus()` 现在只动画**两张**卡片——失焦的那张和聚焦的那张。其余卡片完全不动。用 `_prevFocusIndex` 追踪上次聚焦位置来判断哪些卡的状态实际变了。\n\n这样两个操作路径互不干扰：\n- **插入新卡**（handleRowSwipe）→ forEach 设 Y 布局 + 内联改旧卡/新卡样式\n- **滑动/点击切换**（updateFocus）→ 只改两张卡的 x/scale/rotation，不动任何 Y tween"
+}

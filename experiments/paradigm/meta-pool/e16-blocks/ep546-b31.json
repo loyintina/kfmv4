@@ -1,0 +1,12 @@
+{
+ "id": "ep546-b31",
+ "episode_id": 546,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端编号/状态混用（重大）",
+ "pattern": "初心对齐,机制设计,读码优先",
+ "ep_score": 5,
+ "chars": 900,
+ "truncated": false,
+ "text": "**用户：**\n那，是不是需要更新文档系统？\n\n**AI：**\n需要。以下文档已过时：\n\n---\n\n## 需要更新的文档\n\n| 文档 | 过时内容 | 更新什么 |\n|------|---------|---------|\n| `CARD_REGISTRY_SPEC.md` §2 | `CardTypeDef.createHandler` 还是 `() =>` 无参 | 改为 `(meta) =>` |\n| `CARD_REGISTRY_SPEC.md` §4.1 | 只说 card-stack 用 `registerCardType`，没提文件卡 | 加 tree-swipe 登记 file 类型 |\n| `CARD_REGISTRY_SPEC.md` §3.1 | `FloatingCardConfig` 没列 `typeId` | 补充 |\n| `CARD_REGISTRY_SPEC.md` §8 | 开放问题 `allocId` 和 AI 通道已回答，未更新状态 | 标记已决策 |\n| `CARD_REGISTRY_SPEC.md` 新增 | check-cards.mjs 未提及 | 加一小节 |\n| `HANDBOOK.md` §2 | card-registry.ts 行数还是 2 行占位 | 更新为实际 145 行 |\n\n---\n\n## 不需要更新的\n\n| 文档 | 原因 |\n|------|------|\n| `TERMINAL_CARD_SPEC.md` | 终端卡的业务逻辑没变，状态改用 CardInstance 是实现细节 |\n| `WORKBENCH_SPEC.md` | CardRegistry 是基础设施，不改变卡片工作台的 Phase 结构 |\n| `CLAUDE.md` | 文档树已包含 CARD_REGISTRY_SPEC.md |\n\n---\n\n## 主要工作量\n\n`CARD_REGISTRY_SPEC.md` 约 6 处需要同步修改（总 ~15 行改动）。`HANDBOOK.md` 一行的行数更新。\n\n要我切 build 模式执行？"
+}

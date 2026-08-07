@@ -1,0 +1,12 @@
+{
+ "id": "ep563-b15",
+ "episode_id": 563,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "全屏卡片 z-index/布局（拉锯）",
+ "pattern": "验证优先,原版复用",
+ "ep_score": 7,
+ "chars": 1368,
+ "truncated": false,
+ "text": "**用户：**\n[12:20:53.000] [CARD-STACK] buildCards called → [12:20:53.001] [CARD-STACK] buildCards done, cards=7 → [12:20:53.002] [ws-channel] 初始化完成 → [12:20:53.162] [ws-channel] 已连接到服务端 ws://8.145.46.182/ws → [12:21:14.062] [fs-dbg] card: z=20 cs=fixed tr=none bottom=124.333px →   bar: z=200 cs=fixed tr=none bottom=47.819px →   card.parents=BODY ← HTML →   bar.parents=MAIN#main.main ← BODY ← HTML →   fullH=728.9285888671875 iH=853 bar.rect.top=729 →   card.rect=0,0,729 输入栏有没有对应的层级高度日志？\n\n**AI：**\n找到根因了。\n\n```\nbar.parents=MAIN#main.main ← BODY ← HTML\n```\n\n**输入栏在 `MAIN#main.main` 里面，而 `.main` 有 `transform: translateX(...)`（base.css:63）。** CSS 规定：`position: fixed` 元素的祖先如果有 `transform`，那个祖先就成为 `fixed` 的包含块——输入栏的 `position: fixed; z-index: 200` 被限制在 `.main` 的层叠上下文中，跟外层`body`的层叠上下文隔离了。\n\n```\n根层叠上下文：\n  BODY\n    ├─ .main (z-index: auto)        ← 输入栏在这里，z-index 200 困在 .main 内部\n    │   └─ .ai-input-bar (z: 200)\n    └─ .floating-card (z: 20)       ← 卡在 body 直接下，高于 .main (auto)\n```\n\n卡在 z-index 20，而 `.main` 是 z-index auto → 卡在 `.main` 之上 → 输入栏即使 z-index 200 也盖不住卡。\n\n### 修复方案\n\n**方案 A（推荐）**：把 `#aiInputBar` 从 `.main` 内部挪出来，放到 `body` 的直接子级。这样输入栏和卡在同一个层叠上下文，`z-index 200 > 20` 生效。改 HTML 模板一行。\n\n**方案 B**：给 `.main` 加 `position: relative; z-index: 25`，让 `.main` 的层叠上下文高于卡（20）但低于其他浮卡（50+）。副作用：`.main` 的所有子元素都会受到这个 z-index 影响。\n\nA 最干净，但需要确认 HTML 模板里 `.main` 的结构。要我查一下 HTML 文件看看怎么改吗？"
+}

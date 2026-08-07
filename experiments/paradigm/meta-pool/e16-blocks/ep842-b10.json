@@ -1,0 +1,12 @@
+{
+ "id": "ep842-b10",
+ "episode_id": 842,
+ "session_id": "omp-2026-07-07T06-14-00-892Z_019f3b36-47bc-7",
+ "source": "manual",
+ "topic": "手势覆盖 + 测试拆分 + 卡片插件系统（统一文档）",
+ "pattern": "补丁vs根因,删繁",
+ "ep_score": 1,
+ "chars": 883,
+ "truncated": false,
+ "text": "**用户：**\n好，那，开始吧。\n\n**AI：**\n好，开始搭。\n现在接线：`main.ts` 导入注册中心，删除旧注册。\n191 通过。跑一下完整的 `npm run check` 验证 tsc 无错。\n插件系统搭好了。现在写开发指南。\n全部完成。最终产物：\n\n**`src/client/cards/` — 卡片插件目录**\n\n```\nsrc/client/cards/\n  types.ts              — 公开类型 re-export\n  plugins/\n    debug.card.ts       — 日志管理卡（从 card-stack.ts 抽出）\n    terminal.card.ts    — 终端卡\n    tmux.card.ts        — tmux 卡\n    file.card.ts        — 文件卡片\n  registry.ts           — 注册中心（import 所有 .card.ts）\n```\n\n**`docs/development/CARD_DEV_GUIDE.md` — 开发指南（9 章）**\n\n覆盖：最简示例 → 文件规范 → 接口定义 → activate/deactivate 生命周期 → 注册流程 → 手势接入 → 主题/状态/UI 注册表 → 工具卡 vs 文件卡 → 检核清单。\n\n**改动摘要**\n\n- `card-stack.ts` 删除 86 行内联逻辑（已移到 `debug.card.ts`）\n- `tree-swipe.ts` 删除 `registerCardType` 调用（已移到 `file.card.ts`）\n- `main.ts` 加一行 `import './cards/registry.js'`\n- `CLAUDE.md` / `HANDBOOK.md` 加上指引引用\n- 191 测试通过\n\n加新卡流程：`plugins/` 下新建 `xxx.card.ts` → `registry.ts` 加一行 import → 完成。"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep542-b2",
+ "episode_id": 542,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "步骤 3 文字大小不一致（首次召唤 vs 收起再展开——两状态尺寸差，用户给数值 32×23 vs 39×29）",
+ "pattern": "状态尺寸",
+ "ep_score": 1,
+ "chars": 1264,
+ "truncated": false,
+ "text": "**用户：**\n呃，两种状态左下角并没有你说的标注，这在之前的版本已经被你移除了。\n\n**AI：**\n你说得对——`testRender()` 的标注随着步骤 2 被替换成了 `write('hello\\r\\nworld\\r\\n> ')`。\n\n我需要搞清楚首次展开和紧缩→展开的下游调用顺序差异。让我读相关代码确认。\n找到了。看第 439-466 行：\n\n```\ncompact → expand:\n  0.0s ─ GSAP 开始放大卡片（0.3s, back.out）\n  0.0s ─ contentEl 淡出（0.1s）\n        │\n  0.1s ─ 淡出完成 → activate(contentEl) → mount → rAF 预约\n        └─ 然后 _renderFloatingContent(...'active')\n        │\n  0.3s ─ 卡片放大完成\n```\n\nrAF 在 0.1s 后触发，但卡片到 0.3s 才长到全尺寸。**rAF 在动画中途读了中间态宽度**。\n\n对比首次打开：\n\n```\n首次打开：\n  activate → mount → rAF 预约\n  同步：_renderFloatingContent\n  卡片已经是静态 240×288，无动画在跑\n  rAF 触发 → 读到全尺寸 240×288 ✅\n```\n\n---\n\n## 根因\n\n`_toggleExpandCollapse` 在 GSAP 放大动画**完成前**调了 `activate`。rAF 在动画中途读到半宽，算出比实际少的列数。首次打开没这个竞态，读到全宽。\n\n---\n\n## 修复方案\n\n把 `activate` 从淡出回调挪到放大动画完成之后：\n\n```\n// 当前：\nanim.to(el, { left, top, width, height, duration: 0.3, ... });\n\n// anim.to(contentEl, { opacity: 0, onComplete: () => activate + setCssText });\n\n// 改后：\nanim.to(contentEl, { opacity: 0, duration: 0.1, onComplete });  // 只淡出\nanim.to(el, { left, top, width, height, duration: 0.3, ..., onComplete: () => {\n    activate(contentEl);\n    _renderFloatingContent(contentEl, 'active');\n    anim.to(contentEl, { opacity: 1, duration: 0.15 });\n}});\n```\n\n这样 rAF 触发时卡片已到全宽。改 `floating-card.ts` 约 10 行。\n\n要切 build 模式修吗？"
+}

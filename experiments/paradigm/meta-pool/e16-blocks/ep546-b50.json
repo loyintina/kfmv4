@@ -1,0 +1,12 @@
+{
+ "id": "ep546-b50",
+ "episode_id": 546,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端编号/状态混用（重大）",
+ "pattern": "初心对齐,机制设计,读码优先",
+ "ep_score": 5,
+ "chars": 309,
+ "truncated": false,
+ "text": "**用户：**\n好\n\n**AI：**\nAlso log the collapse path:\n发现源码 bug！collapse 路径写的是 `'dismiss'` 而不是 `'compact'`。修正：\n服务器就绪。现在重复之前操作：\n\n1. 刷页面 → 开 02 日志卡\n2. 发射终端 1 → 发射终端 2\n3. **点击 TR 右上光球关闭终端 2**\n4. 看日志卡有没有 `dismiss-one` 这行\n\n**如果看到 `dismiss-one`**：说明关闭走了 dismiss 路径，问题在其他地方\n**如果看不到 `dismiss-one`**：说明 TR 光球点击根本没触发关闭逻辑，被手势拦截了"
+}

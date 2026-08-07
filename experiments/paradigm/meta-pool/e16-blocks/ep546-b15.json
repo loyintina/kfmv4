@@ -1,0 +1,12 @@
+{
+ "id": "ep546-b15",
+ "episode_id": 546,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端编号/状态混用（重大）",
+ "pattern": "初心对齐,机制设计,读码优先",
+ "ep_score": 5,
+ "chars": 598,
+ "truncated": false,
+ "text": "**用户：**\n那么，根据文档，我们现在要做什么事情？\n\n**AI：**\n按 §7 的实施计划，5 步，有明确的依赖链：\n\n```\n第一步：新建 card-registry.ts\n  └─ 纯加文件，不影响任何现有代码\n    ├── 第二步：card-stack.ts 改用 registerCardType()\n    └── 第三步：floating-card.ts 接入实例注册 + 改 ContentHandler 签名\n          ├── 第四步：terminal-card.ts 删补丁，用 card 参数\n          └── 第五步：handler-factory.ts 签名字段适配\n```\n\n---\n\n## 建议第一步：新建 `card-registry.ts`\n\n安全、独立、不碰任何现有代码。做完后 `npm run check` + `npm run build` 应该零错误。第二步之后才开始动现有模块。\n\n---\n\n## 这跟 Phase 8 终端卡的关系\n\nCardRegistry 建成后，终端卡当前的三个补丁（`_states` Map、`_terminalId` 自增、`dataset` 偷渡）才能卸掉。之后继续 Phase 8 的后续步骤（7 尺寸自适应、8 256 色、9 滚动缓冲）才在一个干净的基座上。\n\n---\n\n要开始第一步吗？"
+}

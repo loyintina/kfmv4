@@ -1,0 +1,12 @@
+{
+ "id": "ep827-b19",
+ "episode_id": 827,
+ "session_id": "omp-2026-05-29T05-12-43-275Z_019e7226-260b-7",
+ "source": "manual",
+ "topic": "导航面板实现迭代（项目根/宽度/遮罩/硬编码/隐式关联文档）",
+ "pattern": "补丁vs根因",
+ "ep_score": 5,
+ "chars": 601,
+ "truncated": false,
+ "text": "**用户：**\n那，这样的话，我们有一个专门记录隐式关联的文档，那个文档就能起到这样的职能了。我们还有没有必要用专门的文档体系来记录？\n\n**AI：**\n你说得对。BUG_AUDIT_REGISTRY.md 就是干这个的。它的第一章叫\"隐性契约\"，本质上就是\"代码里没写出来但你不能违反的规则\"。sidebar 的这个布局约束就是一条隐性契约——和\"手势只能走 PointerEvent\"、\"卡片堆是全局模式\"是一个层面的东西。\n\n只需要给它加一条，不需要单独开文档体系：\n\n```\n### 1.10 侧栏布局方程：content + tools = 100dvh\n\n涉及模块：sidebar.scss、tree-render.ts、root-picker.ts\n\n契约内容：\n- .sidebar-content 和 .sidebar-tools 两等分侧栏高度\n- 任何新侧栏内面板必须用 position:absolute/position:fixed 覆盖，不参与流式布局\n- 不改动 .sidebar-content 的 calc(100% - 52px)，不改动 .sidebar-tools 的 position:sticky\n\n违规后果：工具栏错位、文件树 Canvas 尺寸计算错误、点击区域偏移\n```\n\n要不要现在就加上去？另外，你刚才说的\"后续还有很多微调\"，你看到了哪些问题？"
+}

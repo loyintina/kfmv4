@@ -1,0 +1,12 @@
+{
+ "id": "ep547-b3",
+ "episode_id": 547,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "召唤不出卡片",
+ "pattern": "追源,调试困境",
+ "ep_score": 6,
+ "chars": 803,
+ "truncated": false,
+ "text": "**用户：**\nundefined\n\n**AI：**\n找到了！`crypto.randomUUID()` 在你的浏览器上是 `undefined`——这就是全部卡片出不来的根因。\n\n---\n\n## 为什么之前没问题\n\n`crypto.randomUUID()` 只在这次改动里引入了——`card-registry.ts` 的 `createInstance()` 每次创建卡片都调它。之前的代码不调这个 API。\n\n---\n\n## 修复方案\n\n`card-registry.ts` 一行替换。把 `crypto.randomUUID()` 换成手动 UUID 生成——兼容所有浏览器：\n\n```typescript\n// 替掉 crypto.randomUUID()\nfunction _uuid(): string {\n  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {\n    const r = Math.random() * 16 | 0;\n    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);\n  });\n}\n\n// createInstance 里改用 _uuid()\ninstanceId: _uuid(),\n```\n\n`ws-server.ts` 不受影响——Node.js 端 `crypto.randomUUID()` 正常（v19+）。\n\n---\n\n## 改动量\n\n| 文件 | 改什么 |\n|------|--------|\n| `card-registry.ts` | 加 `_uuid()` 函数 + 替换 `crypto.randomUUID()` 调用 |\n\n一行函数 + 一处替换。确认后切 build 模式执行？"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep830-b3",
+ "episode_id": 830,
+ "session_id": "omp-2026-05-29T05-12-43-275Z_019e7226-260b-7",
+ "source": "manual",
+ "topic": "手势注册表彻底方案 + 复制函数全复制 + 补丁质疑",
+ "pattern": "复用既有,补丁vs根因",
+ "ep_score": 5,
+ "chars": 486,
+ "truncated": false,
+ "text": "**用户：**\n我的手机浏览器没法调控制台\n\n**AI：**\n诚实地说：没法 100% 保证。但我能做四件事把风险压到最低：\n\n**1. 逐次提交，每一步独立可回滚**\n\n每个 handler 迁移后独立 commit，错了就 `git revert`。\n\n**2. 逻辑本身不变，只换调用方式**\n\n`bindScrollEvents` 的 `e.clientY`、`performance.now()` 这些在 gesture-registry 的 `onMove(e)` 里同样可用。我不改写滚动算法，只换函数的注册方式。\n\n**3. 一步一测——构建 + 运行已有测试**\n\n每一步改完立刻 `npm run build && npm test`。已有的 gesture-registry 测试会验证注册/注销/优先级匹配是否被破坏。\n\n**4. 你先试，我随时回退**\n\n每步提交后你手机上试，有任何不对我立刻 revert。\n\n现在开始第一步——给 canvas-scroll.ts 注册一个 handler，不动原来的 `bindScrollEvents`。"
+}

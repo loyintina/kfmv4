@@ -1,0 +1,12 @@
+{
+ "id": "ep857-b6",
+ "episode_id": 857,
+ "session_id": "omp-2026-07-22T03-58-36-090Z_019f87f9-b23a-7",
+ "source": "manual",
+ "topic": "版本 7.3.1 + 修 bug 流程记录 + 工具失败注入提示 + 连续调用",
+ "pattern": "可回退铁律,复盘沉淀",
+ "ep_score": 5,
+ "chars": 750,
+ "truncated": false,
+ "text": "**用户：**\n依然没有实时删除更新文件树，是不是代码没有重新构建？\n\n**AI：**\n构建+重启完成。让我确认客户端确实有 `filesChanged` 处理逻辑：\n客户端逻辑在。但问题可能是：`filesChanged` 只在**最后一个** `tool_result` 事件上带。但看服务端代码——我们现在把每个工具的 `tool_result` 单独 yield，然后在最后额外 yield 一个带 `filesChanged` 的。但客户端收到第一个 `tool_result` 时就处理了工具结果动画，最后那个额外的 `tool_result` 可能被忽略了（因为找不到对应的 tool block）。\n\n让我确认：\n问题找到了！循环里**没有 yield tool_result**——之前我把 yield 删掉了，只在循环外 yield 最后一个。但客户端处理 `tool_result` 时需要每个工具都收到事件才能更新动画。而且更重要的是：循环里**没有 yield 每个工具的 tool_result**！\n\n看 366-382 行：循环只做了 `apiMessages.push`，没有 `yield`。然后 385-388 只 yield 最后一个。前面的工具结果全丢了。\n重启服务：\n之前有个严重 bug：循环里只做了 `apiMessages.push` 但**没有 yield tool_result**，然后循环外只 yield 最后一个。前面所有工具的 SSE 事件都丢了，客户端收不到。\n\n现在每个工具都 yield `tool_result`，最后一个带 `filesChanged: true`。服务已重启，刷新页面试试 AI 删除文件后文件树是否自动更新。"
+}

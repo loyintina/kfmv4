@@ -1,0 +1,12 @@
+{
+ "id": "ep547-b1",
+ "episode_id": 547,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "召唤不出卡片",
+ "pattern": "追源,调试困境",
+ "ep_score": 6,
+ "chars": 961,
+ "truncated": false,
+ "text": "**用户：**\n？这合理吗？我们的bug就是召唤不出卡片了，我还怎么召唤日志卡来看日志呢？\n\n**AI：**\n你说得对，是我犯蠢了。卡片都出不来，自然打不开日志卡。\n\n---\n\n## 不用控制台也能诊断\n\nKFM 有 `showToast()`——一个页面顶部的短暂文字提示，不依赖卡片系统。在 `createFloatingCard` 入口加一行：\n\n```typescript\nshowToast('cf ' + config.typeId);\n```\n\n然后在关键路径上再加 2 处：\n\n```typescript\n// 创建实例后\nshowToast('reg:' + cardInstance.instanceId.substring(0,4));\n\n// DOM 挂载后\nshowToast('ok');\n```\n\n然后发射终端卡。如果：\n\n| 看到 | 说明 |\n|------|------|\n| 什么都没出现 | 调用根本没到达 `createFloatingCard`——问题在卡片堆手势或 tree-swipe |\n| `cf card03` 闪了一下 | `createFloatingCard` 被调了，但里面某一行崩了 |\n| `reg:abcd` 闪了 | 实例创建成功，崩在激活或者挂载 |\n| `ok` 闪了 | 全部跑完了，问题在渲染层（CSS/Canvas/动画） |\n\n---\n\n## 需要动哪些文件\n\n| 文件 | 加什么 |\n|------|--------|\n| `floating-card.ts` | 在 `createFloatingCard` 入口加一行 `showToast('cf ' + config.typeId)` |\n| `floating-card.ts` | 在 `cardInstance` 创建后加 `showToast('reg:...')` |\n| `floating-card.ts` | 在 `document.body.appendChild(el)` 后加 `showToast('ok')` |\n\n不用 new import——`showToast` 已经是项目的全局函数。\n\n---\n\n切 build 模式加这 3 行 toast？"
+}

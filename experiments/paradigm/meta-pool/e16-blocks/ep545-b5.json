@@ -1,0 +1,12 @@
+{
+ "id": "ep545-b5",
+ "episode_id": 545,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端编号不递增（都显示终端1/点击 canvas 不弹输入法）",
+ "pattern": "平台机制",
+ "ep_score": 1,
+ "chars": 945,
+ "truncated": false,
+ "text": "**用户：**\n那，你说的那个太重的卡片注册表设计，重在哪？\n\n**AI：**\n对比一下：\n\n---\n\n## 原始设计（`CARD_SYSTEM_DESIGN.md`）vs 现在需要的\n\n| 维度 | 原始 CardManager | 现在要的 CardRegistry |\n|------|-----------------|---------------------|\n| **注册方式** | 插件文件放在 `src/client/cards/` 目录下，构建时扫描 | `createFloatingCard()` 时一个 `register()` 调用 |\n| **生命周期** | `open()` / `close()` / `focus()` / `blur()` 全套钩子 | `register()` / `unregister()` 两个方法 |\n| **插件系统** | `.card.ts` 文件导出 `CardDefinition`，build 时自动生成注册表 | 不需要。卡片还是现在的方式定义 |\n| **目录结构** | 新建 `src/client/cards/plugins/` 目录 | 不增文件 |\n| **构建变更** | build.mjs 加扫描逻辑 + 生成 `_generated.ts` | 不改 |\n| **替换范围** | 全部卡片入口要改写（文件树右滑、卡片堆、预览） | 不动现有入口 |\n\n---\n\n## 所以\"重\"在哪\n\n原始设计想造的是一个**可热插拔的卡片插件系统**——给开发者准备的。要改构建、要新建目录、要所有卡片入口换实现。\n\n现在要的只是一个**运行时登记表**——给内容处理器准备的。三句话说清楚：\n\n> 卡片创建时登记一下 id。内容处理器激活时告诉它所属卡片是谁。卡片销毁时注销。\n\n不需要新目录，不需要 build 改，不需要插件发现机制。就是给 `floating-card.ts` 内部加一个 `Map` 和两个方法，顺便把 `CardContentHandler` 接口多传一个参数。\n\n---\n\n所以不是\"原始设计太重所以不做\"，是\"我们现在不需要那个量级的东西\"——一个运行时登记表足够了。"
+}

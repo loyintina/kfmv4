@@ -1,0 +1,12 @@
+{
+ "id": "ep532-b9",
+ "episode_id": 532,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "相同卡竞态（重大，长拉锯）",
+ "pattern": "补丁vs根因,竞态",
+ "ep_score": 10,
+ "chars": 658,
+ "truncated": false,
+ "text": "**用户：**\n嗯，所以你的意思是，相同卡片产生了竟态嘛？\n\n**AI：**\n不是竞态。GestureRegistry 的 `_handleStart` 每次创建一个新的 `_active` session，旧的在 `_handleEnd` 时清掉。不存在双 session 打架。\n\n我重新完整追踪了一遍所有路径，`_suppressNextClick` 标记的逻辑在每个分支都是对的。如果 bug 仍然存在，说明问题出在某个我没看到的路径上。\n\n现在只能通过排查运行时行为来定位。加几行日志追踪关键节点：\n\n---\n\n## 计划：加临时日志追踪\n\n在 5 个关键点各加一行 `console.log`：\n\n| 位置 | 内容 |\n|------|------|\n| `canStart()` | 打印 `dragItem?.state`，看是否有非期望状态返回 false |\n| `onEnterEdit()` | 打印 \"enterEdit\" |\n| `onExitEdit()` | 打印 \"exitEdit\" + `_suppressNextClick` 是否设置 |\n| `onTap()` | 打印 \"onTap fired\" |\n| BR orb click handler | 打印 \"click\" + `item.state` + `_suppressNextClick === item` |\n\n然后你复现 bug，看控制台输出——哪一步没按预期走，一目了然。\n\n就加 5 行日志。要开始吗？"
+}

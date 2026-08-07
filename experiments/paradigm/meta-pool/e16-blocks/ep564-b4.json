@@ -1,0 +1,12 @@
+{
+ "id": "ep564-b4",
+ "episode_id": 564,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "全屏关闭按钮遮挡下方编辑/预览按钮；标题栏右沿没被挤",
+ "pattern": "设计主张,理解纠正",
+ "ep_score": 1,
+ "chars": 1440,
+ "truncated": false,
+ "text": "**用户：**\n把这一行的右边沿往左移动一些，多余的空间放两个按钮，按钮有自己的svg图标，一个是方框，一个是叉号，方框就是直接把现有的那个缩小成浮卡展开态的功能，也就是现有的唯一一个关闭按钮给继承上功能。而新的叉号点击后，是把这个全屏卡片完全关闭。这两个按钮是全屏卡片自己的特性，你能明白吗？\n\n**AI：**\n明白。一行里放三个区：\n\n```\n┌────────────────────────────────────────────┐\n│ 内容区标题栏（包含预览/编辑）   [□窗口化] [✕关闭] │\n├────────────────────────────────────────────┤\n│ body                                       │\n```\n\n内容区原有按钮不动，右边加两个全屏专属按钮在同一行。\n\n### 方案\n\n不改内容 handler。在 `enterFullscreen` 中，把两个按钮注入到 `contentEl` 内 header 行的右侧。\n\n实现方式：\n\n```ts\n// enterFullscreen，注入位置在隐藏完光球之后、加按钮之前\n// 找到内容区的 header 行（file handler 创建的）\nconst hdr = contentEl.querySelector('div > div:first-child') as HTMLElement | null;\n// contentEl → wrap(div) → header(div:first-child)\nif (hdr) {\n  // 分隔弹性空间\n  const spacer = document.createElement('div');\n  spacer.style.cssText = 'flex:1;min-width:4px';\n  hdr.appendChild(spacer);\n\n  // □ 窗口化\n  const winBtn = document.createElement('button');\n  // ...样式+图标...\n\n  // ✕ 关闭\n  const closeBtn = document.createElement('button');\n  // ...样式+图标...\n\n  hdr.appendChild(winBtn);\n  hdr.appendChild(closeBtn);\n}\n```\n\n`exitFullscreen` 中删掉这两个按钮。\n\n### 按钮功能\n\n| 按钮 | 功能 | 实现 |\n|------|------|------|\n| □ | 退出全屏，回到展开态浮卡 | `exitFullscreen(instanceId)` |\n| ✕ | 彻底关闭全屏卡 | `dismissFloatingCard(true, el)` |\n\n### 心法\n\n| 心法 | 检查 |\n|------|------|\n| **3** 不跨模块依赖 | 注入 DOM 是向内容区追加子节点，不改变内容 handler 的逻辑，不构成模块依赖 |\n| **17** 不另开一条路 | 替换现有 exitBtn 的创建逻辑，不是建新路 |\n| **5** 代码变少 | 替换现有一处 exitBtn 创建，增加约 30 行（两个按钮） |\n\n要这样改吗？"
+}

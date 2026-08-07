@@ -1,0 +1,12 @@
+{
+ "id": "ep868-b3",
+ "episode_id": 868,
+ "session_id": "omp-2026-07-23T14-14-20-532Z_019f8f53-c874-7",
+ "source": "manual",
+ "topic": "动态文件机制（角色卡提示词拼接/可视化优先/工具调用实时改 system）",
+ "pattern": "补丁vs根因",
+ "ep_score": 3,
+ "chars": 1191,
+ "truncated": false,
+ "text": "**用户：**\n动态文件你懂了，但还需要把这个动态文件支持拼进角色卡的提示词设置里，然后由这个路工具调用，实时更改系统提示词，而不是追加工具后面。不然其他没有眼睛的角色也能看到了，这不好。\n\n**AI：**\n啊，我明白了——我之前想岔了。你要的不是\"追加在 role:tool 后面\"（那样对所有角色一视同仁，没眼睛的也被塞了），而是：\n\n**房间描述通过角色卡的 `promptFiles` 进 system prompt，且这个 system prompt 在工具循环内每轮实时重建。**\n\n这样：\n- 有眼睛的角色 = `promptFiles` 里列了 `page-state.md` → 每轮工具后 system 重读它 → 看到刷新的房间\n- 没眼睛的角色 = 没列 → system 里根本没这段 → 完全无感\n\n角色卡是唯一开关，干净。\n\n但这里有个**架构现实**要跟你摊开讲，因为它决定怎么做：\n\n## 现状：system prompt 进了工具循环就冻结了\n\n我查过的事实链：\n- system prompt 在**客户端** `doSend`（`orb-chat.ts:1214-1236`）组装，读角色 + `promptFiles`，拼成一个字符串\n- 发给服务端后，`chat.ts:179` `const apiMessages = [...baseMessages]`，**system 消息在进工具循环前就定死了**\n- 循环内每轮（`chat.ts:183` while）只往 `apiMessages` 尾部追加 `role:tool`、`role:assistant`，**从不回头改 system**\n\n也就是说——**当前架构下，system prompt 在一次 `doSend` 内是冻结的**。你要\"工具循环内每轮实时重建 system\"，本质是要改这个循环：每轮 LLM 调用前，重新读一次 `page-state.md`，替换掉 system 里那段。\n\n## 而这里有个客户端/服务端的边界问题\n\n- `page-state.md` 由谁写？服务端有 `_latestSnapshot`（`ws-server.ts:148`），能写盘。✓\n- 角色卡的 `promptFiles` 逻辑现在在**客户端**（`orb-chat.ts:1226` 读文件拼 prompt）。但工具循环在**服务端**，循环内客户端插不上手。\n\n所以要让\"工具循环内每轮重读 page-state 进 system\"成立，需要：**服务端知道当前角色的 `promptFiles` 里哪个是动态文件，每轮循环前重读它、重建 system 消息。**\n\n这就引出方案选择——我需要你拍一个方向，因为两种做法对\"角色卡如何标记动态文件\"的设计不同："
+}

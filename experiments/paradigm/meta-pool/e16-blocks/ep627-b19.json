@@ -1,0 +1,12 @@
+{
+ "id": "ep627-b19",
+ "episode_id": 627,
+ "session_id": "ses_141744654ffehLxZxWEQSrD8RN",
+ "source": "manual",
+ "topic": "逐条审计修复（13 条）",
+ "pattern": "全链路验证,追源",
+ "ep_score": 3,
+ "chars": 420,
+ "truncated": false,
+ "text": "**用户：**\n我得如何测试确保6号修复是正常的？\n\n**AI：**\n验证逻辑分三步：\n\n**① 确认无人依赖被删的功能**\n**验证结论：**\n\n| 检查 | 结果 |\n|------|------|\n| 生产代码是否调用了 `styleRegistry.set/patch` | ✅ 无。只有测试调，测试只检查模板数据不依赖 notify |\n| `styleRegistry.subscribe/unsubscribe` 是否有人用 | ✅ 无人用，安全删除 |\n| style-registry.ts 中还有 KFMState 残留吗 | ✅ 已清空 |\n| `npm run check` | ✅ 零错误 |\n| `npm test`（含 style-registry 测试） | ✅ 159/159 通过 |\n| `npm run build` | ✅ Build OK |\n\n影响域是零——删的是没人依赖的代码。继续下一条吗？"
+}

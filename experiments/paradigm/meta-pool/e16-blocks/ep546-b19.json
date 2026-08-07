@@ -1,0 +1,12 @@
+{
+ "id": "ep546-b19",
+ "episode_id": 546,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端编号/状态混用（重大）",
+ "pattern": "初心对齐,机制设计,读码优先",
+ "ep_score": 5,
+ "chars": 649,
+ "truncated": false,
+ "text": "**用户：**\n唉，这个问题出现了很多次了。你来告诉我有什么方式可以来验证的吧？\n\n**AI：**\n用 git 来验证。三样东西就够了：\n\n---\n\n## 1. 看提交历史：到底哪几步一起做了\n\n```bash\ngit log --oneline -5\n```\n\n会显示最近 5 个 commit，你能看到 2+3 是合在一起的。\n\n---\n\n## 2. 看每个 commit 具体改了什么\n\n```bash\ngit show bb218ca --stat        # 步骤 4 改了什么文件\ngit show 116d7f5 --stat        # 步骤 2+3 改了什么文件\n```\n\n---\n\n## 3. 看当前代码跟某个基线差多少\n\n```bash\ngit diff 67d8699              # 当前 vs 步骤 1（刚建好 card-registry.ts）\ngit diff 017a63e              # 当前 vs 设计文档提交前\n```\n\n---\n\n## 用这些你可以决定\n\n- 如果步骤 3 和 4 的改动你看完觉得可以保留 → 什么都不用做\n- 如果想把步骤 4 回退（terminal-card.ts）→ `git revert bb218ca`\n- 如果想把步骤 3 也回退（floating-card.ts）→ `git revert 116d7f5`\n\n这是纯读操作，我切 build 模式来执行这些 git 命令给你看？"
+}

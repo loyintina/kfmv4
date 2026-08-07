@@ -1,0 +1,12 @@
+{
+ "id": "ep627-b12",
+ "episode_id": 627,
+ "session_id": "ses_141744654ffehLxZxWEQSrD8RN",
+ "source": "manual",
+ "topic": "逐条审计修复（13 条）",
+ "pattern": "全链路验证,追源",
+ "ep_score": 3,
+ "chars": 734,
+ "truncated": false,
+ "text": "**用户：**\n那，5号内容是什么？\n\n**AI：**\n**#5：animation-registry.ts 死类型导出**\n\n`animation-registry.ts` 导出了 4 个类型，但只有 1 个被外部使用：\n\n| 导出类型 | 被谁 import | 行数 |\n|----------|------------|------|\n| `AnimTimeline` | `card-stack.ts`, `char-rain.ts` | ✅ 在用 |\n| `AnimTween` | **无人 import** | ❌ 死代码 |\n| `AnimTimelineVars` | **无人 import** | ❌ 死代码 |\n| `AnimTweenVars` | **无人 import** | ❌ 死代码 |\n\n### 修复方案\n\n删 3 行 `export type` 声明即可：\n\n```typescript\n// animation-registry.ts:15-18\nexport type AnimTimeline = gsap.core.Timeline;     // ✅ 保留\nexport type AnimTween = gsap.core.Tween;            // ← 删\nexport type AnimTimelineVars = gsap.TimelineVars;   // ← 删\nexport type AnimTweenVars = gsap.TweenVars;         // ← 删\n```\n\n改动量：3 行删除。验证：`npm run check` + `npm test`。要继续吗？"
+}

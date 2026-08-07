@@ -1,0 +1,12 @@
+{
+ "id": "ep857-b3",
+ "episode_id": 857,
+ "session_id": "omp-2026-07-22T03-58-36-090Z_019f87f9-b23a-7",
+ "source": "manual",
+ "topic": "版本 7.3.1 + 修 bug 流程记录 + 工具失败注入提示 + 连续调用",
+ "pattern": "可回退铁律,复盘沉淀",
+ "ep_score": 5,
+ "chars": 1820,
+ "truncated": false,
+ "text": "**用户：**\n好，下一个问题是，以前曾经实现过一个，如果文件树的状态是显示了隐藏的文件，那么刷新页面后，就不会重置，而是固定住状态，但现在网页刷新后，就重置了，我们用刚刚的流程做喳，不要打版本号\n\n**AI：**\n好，按微循环来。先查 `showHidden` 的持久化机制。\n问题清楚了。`showHidden` 硬编码为 `false`，`toggleHidden()` 只翻转内存值，没有 `localStorage` 持久化。看看其他状态怎么持久化的：\n模式清楚了。`currentRoot` 和 `expandedPaths` 都用 `localStorage.getItem` 初始化。`showHidden` 硬编码 `false`，`toggleHidden` 没存。\n\n**修复**：初始化时从 `localStorage` 读，`toggleHidden` 时写入。\n还需要在 app.ts 里 eye button 初始化时同步 CSS class（刷新后 `showHidden` 从 localStorage 恢复为 true，但按钮的 `.active` class 没加）：\n构建测试：\n全绿。现在钉钉子——检查源码里 `showHidden` 有 localStorage 持久化：\n有重复 import `readFileSync`，看看当前：\n重复 import，删掉第二个：\n测试在检查编译后的文件（`dist/` 还是旧的），需要先 build。但等等——测试读的是 `src/client/modules/state.ts`，不是 dist。让我确认源码：\n源码有。但测试可能读的是 ts 源码而不是编译后的——测试 runner 用 tsx 直接跑 .ts。让我看看测试失败的具体原因：\n奇怪，`has setItem: false` 但 LINE 显示有那行。可能是引号问题——`includes` 匹配的引号和源码里的不一样。让我检查：\n引号正常。但测试断言用了双引号包裹单引号字符串——`src.includes(\"localStorage.setItem('kfmv4_showHidden')\")`，这应该匹配。让我直接跑测试看完整错误：\n找到了！needle 是 `\"localStorage.setItem('kfmv4_showHidden')\"`（双引号包裹），但源码里是 `localStorage.setItem('kfmv4_showHidden', String(this.showHidden))`——**后面有 `, String(this.showHidden)`**。needle 没匹配上是因为它只检查了前半部分... 等等，`includes` 应该匹配子串才对。\n\n让我再看：needle = `localStorage.setItem('kfmv4_showHidden')`，源码行 = `localStorage.setItem('kfmv4_showHidden', String(this.showHidden))`。`includes` 应该返回 true 才对... \n\n啊，看到了！needle 里是 `setItem('kfmv4_showHidden')`，但源码里是 `setItem('kfmv4_showHidden',`——needle 结尾是 `)` 而源码是 `,`。所以不匹配。\n\n修复测试断言——去掉末尾的 `)`：\n307 全绿。Revert 验证——临时去掉 setItem，确认钉子变红：\n没红——注释行也包含子串。需要更精确的断言：\n红了。恢复修复：\nRevert 验证通过。登记回归表：\n微循环完整走完：\n\n1. ✅ 查问题 — `showHidden` 硬编码 `false`，无 localStorage\n2. ✅ 修 bug — 初始化从 localStorage 读 + toggleHidden 写入 + eye button 恢复 class\n3. ✅ 307 全绿\n4. ✅ 钉钉子 — BAR-TREE-HIDDEN-04（排除注释行的源码检查）\n5. ✅ revert 验证 — 注释掉 setItem → 红，恢复 → 绿\n6. ✅ 登记回归表\n7. ✅ 提交 + build，未打版本号"
+}

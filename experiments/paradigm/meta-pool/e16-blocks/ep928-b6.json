@@ -1,0 +1,12 @@
+{
+ "id": "ep928-b6",
+ "episode_id": 928,
+ "session_id": "omp-2026-07-12T03-47-42-491Z_019f5470-211b-7",
+ "source": "manual",
+ "topic": "卡片高度限制（80px 补丁质疑）+ 路径显示省略号",
+ "pattern": "补丁vs根因",
+ "ep_score": 3,
+ "chars": 700,
+ "truncated": false,
+ "text": "**用户：**\n好，你能确保它真的有效吗？如果能，就试试。另外，你能顺便给我讲讲js实现和css实现有什么区别吗？\n\n**AI：**\n改完。\n\n---\n\n### JS vs CSS 实现的区别\n\n**JS 截断**：数字符，砍字符串。\n\n```\n\"docs/archive/handoffs/AUDIT_2026-07-12.md\"  (43 字符)\n        ↓ _pathDisplay 数到 2 个 / 后砍掉前面\n\"…/handoffs/AUDIT_2026-07-12.md\"             (固定结果)\n```\n\n但它不知道 `iiiiiiiiii` 和 `WWWWWWWWWW` 在屏幕上宽度差一倍。也不知道用户双指缩放后字号变了、容器宽度变了。所以要么截太多（浪费空间），要么截太少（右边又出省略号）。\n\n**CSS 截断**：浏览器算像素。\n\n```\n\"docs/archive/handoffs/AUDIT_2026-07-12.md\"  ← 完整原文\n        ↓ 浏览器测量每个字的实际像素宽度\n        ↓ 容器宽度 - 路径自然宽度 = 溢出量\n        ↓ 从左边精确切掉溢出量的像素\n\"…/handoffs/AUDIT_2026-07-12.md\"             ← 动态结果\n```\n\n浏览器知道字体、字号、每个字的实际渲染宽度。`direction:rtl` 让 `text-overflow:ellipsis` 从左边截。缩放时浏览器实时重算。永远刚好填满。\n\n刷新试试。路径末尾应该贴在卡片右边，省略号只出现在左边。"
+}

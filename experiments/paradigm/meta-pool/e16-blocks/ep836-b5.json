@@ -1,0 +1,12 @@
+{
+ "id": "ep836-b5",
+ "episode_id": 836,
+ "session_id": "omp-2026-07-07T06-14-00-892Z_019f3b36-47bc-7",
+ "source": "manual",
+ "topic": "手势系统设计（双指缩放实时重排/终端卡降级）+ 全屏卡片滚动",
+ "pattern": "重构优于补丁,可回退铁律",
+ "ep_score": 6,
+ "chars": 458,
+ "truncated": false,
+ "text": "**用户：**\n不对啊？怎么卡片中上光球点击切换全屏模式这个按钮点击没反应了？而且文件树点击某文件，直接投的卡应该也是全屏卡片才对，现在怎么又变成浮卡态了？\n\n**AI：**\n根因找到了。`floating-topmid-orb` 只有 `onEnd` 没有 `onStart`，被我的一刀切 `if (!handler.onStart) continue;` 跳过了。条件是太宽了。\n\n应该跳过的是**完全没有单指回调**的处理器（只有 `onPinch*` 的那种），而不是要求必须有 `onStart`。\n确认 `pinch-zoom` 确实只有 `onPinch*`，新条件正确。重新打包重启。\n200。你刷新页面试试，两个问题应该都恢复了：\n\n1. **全屏按钮** — `floating-topmid-orb`（只有 `onEnd` 无 `onStart`）不再被跳过\n2. **文件树投卡** — 不受影响（文件树点击走 Box gesture `onTap`，不走 GestureRegistry）"
+}

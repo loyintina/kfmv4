@@ -1,0 +1,12 @@
+{
+ "id": "ep551-b4",
+ "episode_id": 551,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "缩小后终端内容消失（ls 内容不见只留服务器名）——根源讨论\"不同模型互相打架\"",
+ "pattern": "根源追问,两机制打架",
+ "ep_score": 5,
+ "chars": 1120,
+ "truncated": false,
+ "text": "**用户：**\n那你这样设计，我缩小窗口后，会有很多行我的服务器的名字出现在同一窗口里。这是因为什么？不要纠结于局部代码哦。\n\n**AI：**\n## 根因\n\n`_lineBuffer` 是**顺序追加日志**，但终端是**栅格寻址**的。这两个模型不一致。\n\n当程序用 `\\x1b[H`（光标归位）、`\\x1b[A`（上移）等 ANSI 序列在屏幕上原地重绘内容时：\n\n- `_cells` 正确：因为写的是 `_cells[_cursorR][_cursorC]`，光标移动 → 写对格子 → 旧内容被覆盖 ✓\n- `_lineBuffer` 错误：不管光标在哪，都是 `+= ch` 追加。重绘的提示符被追加到长字符串末尾 ✗\n\n结果：运行几个命令后，`_lineBuffer` 积累成 `root@server:~# lsroot@server:~# pwdroot@server:~# ` 这种巨长字符串。resize 回流时，整个长串当成一条逻辑行折行——每 20 个字符就断一次，每段前面都是 `root@server`。\n\n---\n\n## 根解\n\n**把 `\\n` 时的行文本采集方式从\"追日志\"改为\"读格子\"。**\n\n不再维护 `_lineBuffer` 这个顺序追加缓存。改为：当 `\\n` 被处理时，从 `_cells[_cursorR]`（即刚完成的那一行格子）中提取文本，推入 `_logicalLines`。\n\n### 关键\n\n`\\n` 发生时那一行已经写完了——格子里的内容就是正确答案，不管中间经过了多少次 `\\x1b[H` 重绘。从格子读**天然适配栅格寻址模型**，不需要单独追踪光标位置。\n\nresize 时也不再有 `_lineBuffer` 了——最后一行未提交的文本也从格子读：取 `_cells` 最后有内容的行。\n\n### 改动\n\n1. **删 `_lineBuffer` 字段**——不再维护\n2. **`\\n` 处理改为**：提交 `_rowText(_cells[_cursorR])`（该行格子内容）\n3. **`write()` 中去掉所有 `_lineBuffer += ch`**\n4. **`_reflowLines()` 调整**：`allLines` 只读 `_logicalLines`，最后追加从格子读取的最后一行未完成文本\n5. **加 `_rowText(row: Cell[]): string`**——从行格子中提取文本（非空格字符拼接，去尾空）\n\n根本变化：文本真相源从\"写到哪追加到哪的日志\"变成\"每个 `\\n` 时刻从栅格快照\"。要切 build 模式吗？"
+}

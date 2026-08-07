@@ -1,0 +1,12 @@
+{
+ "id": "ep870-b8",
+ "episode_id": 870,
+ "session_id": "omp-2026-07-23T14-14-20-532Z_019f8f53-c874-7",
+ "source": "manual",
+ "topic": "文件树 root 切换树（兄弟分支）+ 按钮样式消失拉锯",
+ "pattern": "补丁vs根因,设计主权",
+ "ep_score": 3,
+ "chars": 723,
+ "truncated": false,
+ "text": "**用户：**\n还是没有\n\n**AI：**\n让我直接跑个诊断——看看 DOM 里到底有没有创建按钮、sidebar-tools 元素存不存在。\nDOM 结构没问题，`sidebar-tools` 和 `closeSidebarBtn` 都在。看 CSS 有没有什么把我的 canvas 藏了。\n发现了——循环依赖！`tree-render` → `sibling-switcher` → `tree-loader` → `tree-render`。模块初始化时炸了，整个侧栏渲染失败。\n循环依赖不是问题（旧的 root-picker 也有同样的 import 链且能工作）。但 flex 容器里 `width:100%` 的行为可能不同——加 `flex:1` 保底。\n**`_btn = c` 漏了！** `createSiblingSwitcher` 里只 `insertBefore` 了 canvas，但从没把 `c` 赋给 `_btn`。`renderLabel` 第一行检查 `if (!_btn) return` 直接退出——label 从来没被渲染过。\n同时加 `flex:1` 保底。\n是 `_btn = c` 漏了一行。canvas 确实插入 DOM 了，但模块级变量 `_btn` 始终是 `null`。`renderLabel` 第一行 `if (!_btn) return` 直接退出了——Canvas 2D 渲染从来没执行过，canvas 在 DOM 里但没有像素。加上 `flex:1;min-width:0` 替换 `width:100%` 在 flex 容器里更稳健。\n\n刷新页面应该能看到带渐变的目录名按钮了。"
+}

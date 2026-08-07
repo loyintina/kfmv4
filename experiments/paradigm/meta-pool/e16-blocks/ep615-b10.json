@@ -1,0 +1,12 @@
+{
+ "id": "ep615-b10",
+ "episode_id": 615,
+ "session_id": "ses_063fd57d7ffepMZzVsdv2wNXM2",
+ "source": "manual",
+ "topic": "\"Unexpected token '<'\" 报错",
+ "pattern": "全链路验证,验证优先",
+ "ep_score": 17,
+ "chars": 1408,
+ "truncated": false,
+ "text": "**用户：**\n还是不行，我描述一下，现在的情况是，我发送一个消息，然后ai输出回复，我中断输出，然后刷新网页，结果是我发送的消息跟ai的被中断的输出全都被吞了。\n\n**AI：**\n## 根因定位\n\n场景：发送消息 → AI 回复中 → 取消 → 刷新 → **全部丢失**。\n\n核心原因是 **`_doSaveMessages` 中的 `_generateTitle` 被误触发**，导致会话文件被重命名、`kfm-session-change` 事件被派发、`chatMessages` 被清空。\n\n具体链路：\n\n1. 用户发送消息 → `doSend` 保存用户消息，文件有 `manuallyNamed: false`（这是正常的，376 条的会话从来没被人工命名过）\n2. AI 开始回复，event 到达，一条 AI 消息被推入 `chatMessages`\n3. 用户取消 → `doSend` catch 调用 `await saveMessages(messages)`\n4. `_doSaveMessages` 读取文件，**用 snapshot（此时只有 2 条：user + AI）覆盖 `session.messages`**\n5. 覆盖后满足条件：`!session.manuallyNamed`（文件里的旧值，`false`）**且 `session.messages.length === 2`**\n6. **`_generateTitle` 被错误触发** → `setTitle` 重命名文件 → 派发 `kfm-session-change`\n7. `orb.ts` 监听器收到事件：**`chatMessages.length = 0`**（清空整个消息数组）\n8. 然后走 `loadSessionInto(sid)` 重载——如果重命名过程中出现任何文件 I/O 问题（新文件写失败、旧文件被删），重载得到的就是空结果\n9. 用户刷到空内容\n\n## 修复计划\n\n一个改动：**`_generateTitle` 只在\"此前不存在会话\"时才执行，而非仅凭 snapshot 长度判断。** 在 `session-store.ts` 中：\n\n1. 新增 `_pendingAutoTitle: false` 标记\n2. 在 `if (!this.activeId) { ... auto-create ... }` 块内置 `_pendingAutoTitle = true`\n3. `_generateTitle` 的条件从 `!session.manuallyNamed && session.messages.length === 2` 改为 `this._pendingAutoTitle && messages.length >= 2`\n4. 触发后重置 `this._pendingAutoTitle = false`\n\n只有真正的新会话（由 auto-create 路径产生）才会触发自动命名。已有 365 条消息的会话读到 `snapshot.length === 2` 也不会误触。\n\n另外 `saveMessages` 初始保存的 `try/catch` 也撤掉——恢复为 `await` 直接报错，让调用方感知。现在不报错反而导致问题沉底看不到。\n\n执行？"
+}

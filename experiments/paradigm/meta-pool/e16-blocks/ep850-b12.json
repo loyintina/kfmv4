@@ -1,0 +1,12 @@
+{
+ "id": "ep850-b12",
+ "episode_id": 850,
+ "session_id": "omp-2026-07-07T06-14-00-892Z_019f3b36-47bc-7",
+ "source": "manual",
+ "topic": "卡片堆投卡手感（幽灵卡 bug 现场）+ 三行代码引入大量 bug + 补丁质疑",
+ "pattern": "补丁vs根因,可回退铁律",
+ "ep_score": 19,
+ "chars": 548,
+ "truncated": false,
+ "text": "**用户：**\n你的意思是，先只改召唤出的卡片出现的样式，从浮卡变成全屏态对吗？你看，文件树的直接点击行出卡，出的也是全屏模式，这两个你对比一下，有什么不一样的地方吗？能不能直接复用？\n\n**AI：**\n对，文件树的 `createFileFloatingCard` 就是：\n\n```typescript\ncreateFloatingCard({\n    ...,\n    startInFullscreen: true,\n    contentHandler: ...,\n});\ncloseSidebar();  // 用 CSS class，无动画冲突\n```\n\n卡片堆这边一样做——只加 `startInFullscreen: true`，不关堆：\n**Step 1 完成**。改动只两处：\n\n- `launchFocusedCard(fullscreen?)` — 接受可选参数，传入 `startInFullscreen: true`\n- 单击卡片 → `launchFocusedCard(true)` — 发射全屏卡，**不关卡片堆**\n\n左滑手势没动，还是原来的浮卡模式。\n\n刷新试试？看：\n1. 卡片堆样式是否正常？\n2. 单击是否出全屏卡？\n3. 退出全屏回浮卡，位置对不对？"
+}

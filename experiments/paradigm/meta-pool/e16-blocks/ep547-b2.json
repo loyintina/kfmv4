@@ -1,0 +1,12 @@
+{
+ "id": "ep547-b2",
+ "episode_id": 547,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "召唤不出卡片",
+ "pattern": "追源,调试困境",
+ "ep_score": 6,
+ "chars": 1131,
+ "truncated": false,
+ "text": "**用户：**\n或者你再排查一下呢？我们出现这个bug，一定是我们历史上的一些改动，在我们开始注册表修复之前，是没有这个问题的。\n\n**AI：**\n你说得对。让我从注册表改动之前的最后正常状态（`23f1342`）到现在的全部 diff 里找根因，专注 `floating-card.ts`——它影响所有卡片创建路径。\n看完完整 diff。能确定问题的推理链：\n\n---\n\n## 排除的\n\n| 可疑点 | 为什么不是 |\n|--------|-----------|\n| `cardRegistry.createInstance` 崩了 | 纯对象创建 + Map.set，不可能抛异常 |\n| `activate(contentEl, cardInstance)` 签名不匹配 | TypeScript 编译零错误 |\n| `getCardType(id)` 查不到 | `registerCardType` 在模块加载时就执行了 |\n| 少传了 `typeId` | tsc 零错误——`FloatingCardConfig` 强制 `typeId: string` |\n| `dataset.cardAccent` 被删导致崩 | `!` 非空断言只影响 TS 编译，运行时崩不了 |\n\n---\n\n## 定位到\n\n**diff 里只增了两个运行时调用**：`cardRegistry.createInstance()`（keySet）和 `cardRegistry.getInstance()`（长缩/拓）。这两都不抛异常。\n\n但有一个**隐式变化**：`crypto.randomUUID()`。TypeScript 声明里 `crypto` 是浏览器全局——但万一本机esbuild 的 `target: es2019` 把这个调用 transpile 成不存在的 polyfill，或者当前浏览器没暴露 `crypto.randomUUID`，`createInstance` 一行就崩了，`createFloatingCard` 全函数抛异常，任何卡片都出不俩。\n\n---\n\n## 验证\n\n不用 toast、不改码。直接对这个页面作一次 Console 指令看能不能跑：\n\n在浏览器打开的 KFM 页面里，地址栏输入：\n\n```javascript\njavascript:void(alert(typeof crypto.randomUUID))\n```\n\n如果弹窗显示 `\"function\"`，`crypto.randomUUID` 可用，那就不是这个问题，还需要继续排查。如果显示 `\"undefined\"` 或没弹窗，就是根因。\n\n你试试？"
+}

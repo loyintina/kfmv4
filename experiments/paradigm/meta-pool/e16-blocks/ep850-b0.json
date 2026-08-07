@@ -1,0 +1,12 @@
+{
+ "id": "ep850-b0",
+ "episode_id": 850,
+ "session_id": "omp-2026-07-07T06-14-00-892Z_019f3b36-47bc-7",
+ "source": "manual",
+ "topic": "卡片堆投卡手感（幽灵卡 bug 现场）+ 三行代码引入大量 bug + 补丁质疑",
+ "pattern": "补丁vs根因,可回退铁律",
+ "ep_score": 19,
+ "chars": 419,
+ "truncated": false,
+ "text": "**用户：**\n测试依然连接失败哦？另外，卡片的缩放文字字号能固定一下吗？每次我重新刷新后，都要重新调整字号大小。\n\n**AI：**\n两个问题。\n\n**问题1：** 代理路径又忘了加前缀 `/kfmv4/`。已用 `API_BASE` 统一修复。\n\n**问题2：** 字号重置的原因是 `_renderFloatingContent(contentEl, 'active')` 会设 `contentEl.style.cssText`，把 `activate` 里设的 `--card-font-size` 覆盖掉了。需要把变量设在 `bodyEl` 上（它是 `contentEl` 的子元素，不会被 wipe）。\n搞定。刷新试试：\n\n1. **测试连接** 和 **点 + 拉模型** — 现在走服务端代理，不再被 CORS 拦截\n2. **字号记忆** — 双指缩放后刷新，字号会保持（变量设在 `bodyEl` 上，不被打回原形）"
+}

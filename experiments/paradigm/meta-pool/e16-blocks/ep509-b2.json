@@ -1,0 +1,12 @@
+{
+ "id": "ep509-b2",
+ "episode_id": 509,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "边界压缩记忆回弹",
+ "pattern": "复用既有,时序",
+ "ep_score": 7,
+ "chars": 339,
+ "truncated": false,
+ "text": "**用户：**\n行为依然不对，现在把卡片移动到压缩的位置，松手，它自己会弹回去\n\n**AI：**\n问题在于 `onSavePosition` 只恢复了宽高，但 `left/top` 还是用压缩尺寸算的，导致卡片位置跳动。\n\n修复：恢复尺寸后同时重新计算 `left/top`，保证右下光球停留在拖到的位置不动。\n问题的根源更深——`onMoveNormal` 本身就应该只改位置不改尺寸。光球的拖动跟卡片大小无关，压缩是设计失误。\n\n参照 orb.ts：拖动只改 `left/top`，尺寸永远不变。编辑模式才改尺寸。\n已修复。`onMoveNormal` 现在只改 `left/top` 不改尺寸，跟 orb.ts 完全对齐。拖动不再压缩卡片，尺寸永久记忆自然生效。刷新测试。"
+}

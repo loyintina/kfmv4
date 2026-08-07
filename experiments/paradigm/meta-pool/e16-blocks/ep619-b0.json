@@ -1,0 +1,12 @@
+{
+ "id": "ep619-b0",
+ "episode_id": 619,
+ "session_id": "ses_063fd57d7ffepMZzVsdv2wNXM2",
+ "source": "manual",
+ "topic": "长程对话卡顿（内存爆炸疑）",
+ "pattern": "架构性质校验",
+ "ep_score": 3,
+ "chars": 863,
+ "truncated": false,
+ "text": "**用户：**\n好，下一个问题是，我的kfmv4项目总是运行着就突然卡顿，尤其在长程对话里。这是什么情况？是不是内存爆炸了？\n\n**AI：**\n审计结果很清楚。两个瓶颈：\n\n## 核心卡顿原因\n\n### 1. `sessions/list` 每次都解析全部会话的完整 `messages`（最致命）\n\n`/api/sessions/list` 端点（`files.ts:109-153`）为了统计 `messageCount` 和 `tokenCount`，每次调用都把**所有会话文件的完整 messages 数组**读出来 + JSON.parse。你的主会话是 1.5MB，3 个会话合计 ~2.1MB 磁盘 IO + 解析，**每次切换会话/刷新/创建会话都跑一遍**。\n\n### 2. `_msgHeights` Map 从不清理（`orb-chat.ts:377`）\n\n消息高度缓存累积了所有加载过的会话历史消息索引——切换会话不重置，旧数据残留。\n\n## 修复计划\n\n| # | 问题 | 改法 | 文件 |\n|---|------|------|------|\n| 1 | `sessions/list` 全量解析 | 把 `messageCount` 和 `tokenCount` 存为文件顶层字段，`saveSessionFile` 写入时更新。`/sessions/list` 只读顶层字段，跳过 `messages` 数组 | `files.ts` + `chat.ts` |\n| 2 | `_msgHeights` 泄漏 | `loadSessionInto` 开头 `_msgHeights.clear()` | `orb.ts` |\n| 3 | 服务端+客户端双写竞争 | 客户端 `saveMessages` 调用降为仅 `cancel` 时执行，其他由服务端 `saveSessionFile` 接管 | `orb-chat.ts` + `session-store.ts` |\n\n要执行吗？"
+}

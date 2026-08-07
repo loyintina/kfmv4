@@ -1,0 +1,12 @@
+{
+ "id": "ep563-b19",
+ "episode_id": 563,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "全屏卡片 z-index/布局（拉锯）",
+ "pattern": "验证优先,原版复用",
+ "ep_score": 7,
+ "chars": 384,
+ "truncated": false,
+ "text": "**用户：**\n好\n\n**AI：**\nAdd the module-level map after `_brOrbToItem`:\nNow add unregistration in `exitFullscreen`:\nNow add unregistration to `_dismissOne`'s fullscreen branch:\nNow remove the unused `log` import:\n全绿。刷新页面测试，现在：\n\n- **`visualViewport.resize` 时**：全屏卡高度自动跟随输入栏顶部重算\n- **退出全屏 / 关闭时**：handler 自动注销\n- z-index 问题已修（输入栏移出 `.main` → 同层叠上下文）\n- SVG 图标位置已修（`onUpdate` + `onComplete` 同步光球）"
+}

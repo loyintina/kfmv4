@@ -1,0 +1,12 @@
+{
+ "id": "ep841-b7",
+ "episode_id": 841,
+ "session_id": "omp-2026-07-07T06-14-00-892Z_019f3b36-47bc-7",
+ "source": "manual",
+ "topic": "终端卡后端 + 拖动逻辑重复（3 次回退）+ 动画锁",
+ "pattern": "复用既有,可回退铁律",
+ "ep_score": 4,
+ "chars": 839,
+ "truncated": false,
+ "text": "**用户：**\n动画锁3000ms是什么意思？\n\n**AI：**\n这个 3000ms 超时在 `tree-loader.ts` 的 `waitForAnimUnlock()` 里：\n\n```typescript\nasync function waitForAnimUnlock(): Promise<void> {\n  if (!isAnimLocked()) return;\n  const start = Date.now();\n  while (isAnimLocked()) {\n    if (Date.now() - start > 3000) break;  // ← 硬超时\n    await sleep(50);\n  }\n}\n```\n\n逻辑很直白：懒加载文件数据的时候，等动画锁释放。如果等 3 秒还不放，强行继续。\n\n**为什么说它是设计缺陷**（陷阱 #9 原文）：\n\n动画锁的正常路径是 `L.beginOp()` → 动画完成 → `L.endOp()`。如果某条动画路径上 `endOp()` 没走到（比如 `onComplete` 回调因为 `reverse()` 被清了、或者抛异常了、或者某个展开/折叠分支没调 `endOp()`），锁就永远不释放。3000ms 超时是兜底——它在掩盖某条 `beginOp` 没有配对的 `endOp`。\n\n**它有什么影响**：\n\n3 秒内的点击会堆积在 `clickQueue` 里。等 3 秒后锁释放，重建动画——用户等得起 3 秒，但万一那条 `endOp` 丢失的路径修了之后又来一个，就再等 3 秒。不是崩溃，是迟钝。\n\n**修它的方式**：\n\n审计所有 `L.beginOp()` 的调用链，确保每条路径都有对应的 `L.endOp()`——然后删掉这个 3 秒兜底。超时兜底消除后，如果还有某条路径漏了 `endOp`，锁扇区会立即暴露而不是被 3 秒掩盖。\n\n想深入看这个还是有别的方向？"
+}

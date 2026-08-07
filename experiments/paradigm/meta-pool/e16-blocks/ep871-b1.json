@@ -1,0 +1,12 @@
+{
+ "id": "ep871-b1",
+ "episode_id": 871,
+ "session_id": "omp-2026-07-23T14-14-20-532Z_019f8f53-c874-7",
+ "source": "manual",
+ "topic": "文件树崩溃 + root 兄弟目录理解 + 沙漏叹号 + 下拉方向",
+ "pattern": "补丁vs根因",
+ "ep_score": 8,
+ "chars": 542,
+ "truncated": false,
+ "text": "**用户：**\n你越改越坏了，我说，现在整个文件树都不渲染了。这是哪里出错了吧\n\n**AI：**\n先把 HTML 弄坏的地方修了——上次编辑可能搞乱了标签。\n循环依赖 `tree-render → sibling-switcher → tree-loader → tree-render` 是罪魁祸首。去掉 tree-render 对 sibling-switcher 的 import，改用 DOM 查询直接关弹窗。\nReplace all three with DOM-based equivalents.\n循环依赖导致 tree-render 模块初始化失败，整个文件树崩溃。链是 `tree-render → sibling-switcher → tree-loader → tree-render`。已修复：tree-render 对 sibling-switcher 的两个函数（`isSwitcherOpen` / `closeSwitcher`）全替换为原生 DOM 查询（`document.querySelector('.sibling-switcher-popup')`），彻底切断循环。build OK，330 pass，服务已重启。刷新页面文件树应该恢复了。"
+}

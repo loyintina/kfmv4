@@ -1,0 +1,26 @@
+{
+  "experiment": "e18a",
+  "prefix": "e18a-",
+  "retryRounds": 10,
+  "runs": [
+    {
+      "taskFile": "experiments/paradigm/scenarios/e8-task.txt",
+      "paradigms": "无,behavior-discipline,metacognition,e16-s6-retro",
+      "models": "deepseek-v4-flash",
+      "provider": "deepseek",
+      "arms": 8,
+      "concurrency": 16,
+      "plannedArms": 32
+    }
+  ],
+  "judge": {
+    "model": "deepseek-v4-flash",
+    "provider": "deepseek",
+    "rubric": "v2",
+    "concurrency": 4,
+    "out": "experiments/paradigm/meta-pool/judge-e18a.json",
+    "taskFiles": {
+      "e18a-t0": "experiments/paradigm/scenarios/e8-task.txt"
+    }
+  }
+}

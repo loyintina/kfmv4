@@ -1,0 +1,12 @@
+{
+ "id": "ep936-b1",
+ "episode_id": 936,
+ "session_id": "omp-2026-07-14T01-05-45-581Z_019f5e28-946d-7",
+ "source": "manual",
+ "topic": "浮卡滚动失效（手势系统/隐藏规则/canvas 手势注册表）",
+ "pattern": "读码优先,复盘沉淀",
+ "ep_score": 9,
+ "chars": 1042,
+ "truncated": false,
+ "text": "**用户：**\n这个问题文档里有相关记载吗？\n\n**AI：**\n有记载，但**互相矛盾**。这就是问题反复出现的根因。\n\n---\n\n### 三份文档，三个说法\n\n| 文档 | 说法 | 正确？ |\n|------|------|:--:|\n| `DIAGNOSTICS.md` §1.2 (L43) | \"**不要**使用 `touch-action: pan-y`——本项目没有浏览器原生滚动\" | ❌ |\n| `BUG_AUDIT_REGISTRY.md` §1.2 (L42) | 同上 | ❌ |\n| `CARD_DEV_GUIDE.md` §10 (L542) | \"内容区滚动：`overflow-y: auto; touch-action: pan-y`\" | ✅ |\n\n`DIAGNOSTICS.md` 甚至写了一句**事实错误**：\n\n> \"`touch-action` 不是 CSS 继承属性。即使父元素设为 `none`，子元素仍使用默认值 `auto`。\"\n\n这是错的——`touch-action` **是**继承属性（[CSSOM spec](https://w3c.github.io/pointerevents/#the-touch-action-css-property) 明确标注 inherited: yes）。基于这个错误认知，才推导出\"必须全局 `none`，不能在局部用 `pan-y`\"的错误结论。\n\n---\n\n### 这条规则当初为什么是对的（后来为什么又不成立了）\n\nv6.x 时代所有滚动都是 Canvas 自绘（文件树、终端），确实没有浏览器原生滚动，全局 `none` 是对的。v6.11.0 加了全屏卡片原生滚动后，出现了第一个例外，但只有全屏路径设了 `pan-y`（`enterFullscreen` L564）。浮卡 active 态没人记得也要改，于是 `ce14d9a` 反而给加了 `none`，雪上加霜。\n\n---\n\n### 应该更新的文档\n\n`DIAGNOSTICS.md` §1.2 和 `BUG_AUDIT_REGISTRY.md` §1.2 需要改成：\n\n> 全局 `body` / `.main` / fixed 覆盖层 → `touch-action: none`\n> 卡片内容区（有 `overflow-y: auto` 的） → `touch-action: pan-y`\n\n要我现在更新文档吗？"
+}

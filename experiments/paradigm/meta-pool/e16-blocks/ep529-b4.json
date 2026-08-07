@@ -1,0 +1,12 @@
+{
+ "id": "ep529-b4",
+ "episode_id": 529,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "文件夹收缩动画不同步",
+ "pattern": "追源,心法前置",
+ "ep_score": 9,
+ "chars": 888,
+ "truncated": false,
+ "text": "**用户：**\na,先看看\n\n**AI：**\n## 实证验证计划\n\n临时回退 `64b8079` 的全部改动，不保留 dim 分离（纯诊断）。\n\n### 改 `tree-overlay.ts`（6 处 `visible` → `opacity`）\n\n| 行 | 还原 |\n|----|------|\n| 223 | `container.visible = false` → `container.opacity = 0` |\n| 243 | `child.visible = false` → `child.opacity = 0` |\n| 260 | `sib.visible = false` → `sib.opacity = 0` |\n| 278 | `container.visible = false` → `container.opacity = 0` |\n| 293 | `child.visible = false` → `child.opacity = 0` |\n| 324 | `sib.visible = false` → `sib.opacity = 0` |\n\n### 改 `tree-render.ts`（6 处 `visible` → `opacity`，onComplete 恢复）\n\n两处（expand + collapse 的 onComplete）各 3 行：\n```\np.hiddenContainer.visible = true  →  p.hiddenContainer.opacity = 1\nchild.visible = true              →  child.opacity = 1\nsib.visible = true                →  sib.opacity = 1\n```\n\n### 操作步骤\n1. 改 12 处\n2. `npm run build` → 重启\n3. 你测试折叠动画：问题消失 = `visible` 是诱因 / 仍在 = 不是它\n\n确认后切出 plan mode？"
+}

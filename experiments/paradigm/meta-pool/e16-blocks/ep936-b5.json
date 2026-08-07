@@ -1,0 +1,12 @@
+{
+ "id": "ep936-b5",
+ "episode_id": 936,
+ "session_id": "omp-2026-07-14T01-05-45-581Z_019f5e28-946d-7",
+ "source": "manual",
+ "topic": "浮卡滚动失效（手势系统/隐藏规则/canvas 手势注册表）",
+ "pattern": "读码优先,复盘沉淀",
+ "ep_score": 9,
+ "chars": 1086,
+ "truncated": false,
+ "text": "**用户：**\n但现在浮卡上左右召唤的全局手势也没了，上下滚动依然没法生效，问题似乎更严重了？是不是我们的手势系统的设计从根本上就有问题？现在是一种竞态？\n\n**AI：**\n代码回退一步——把浮动卡排除加回去是对的思路，但做法错了。问题不是\"排除浮动卡\"，而是 `touch-action: pan-y` 没有被浏览器尊重。\n\n让我检查实际生效的 `touch-action` 值。\n你说得对，这确实是竞态问题。手势系统在 `pointerdown` 阶段就锁定了处理器，之后所有 `pointermove`——无论方向——都发给它。`touch-action: pan-y` 的语义是\"浏览器可以处理垂直滚动\"，但如果 JS 层的 `pointerdown` 已经以 `passive: false` 注册并锁定了 handler，浏览器就**不会**接管——它在等 JS 先说\"我不要这个事件\"。\n\n看 `gesture-registry.ts:141`：\n\n```typescript\ndocument.addEventListener('pointerdown', this._onStart, { passive: false });\n```\n\n`passive: false` = \"JS 可能调用 `preventDefault()`\" → 浏览器必须等 → 不会启动原生滚动。即使 `touch-action: pan-y` 允许，浏览器也不敢动，因为 JS 还没表态。\n\n全屏卡能滚动是因为有 CSS 规则专门处理：\n```css\n.floating-card.fullscreen .card-content,\n.floating-card.fullscreen .card-content * { touch-action: pan-y; }\n```\n而且全屏卡**不在** `gestures-page-swipe` 的目标区域——全屏卡覆盖了整个屏幕，手势系统匹配不到。\n\n**浮卡的根本问题是**：它在 `gestures-page-swipe` 的目标区域内（`target.closest('.floating-card')` 未被排除），手势系统抢走了触摸，`touch-action: pan-y` 形同虚设。\n\n**正确解法**不是简单地排除浮卡（那会把横向手势也丢了），而是在手势系统里加**提前释放**机制：当匹配到页滑处理器、但触摸在可滚动元素内部、且移动方向为垂直时，手势系统主动释放触摸还给浏览器。\n\n要不要按这个思路重构？"
+}

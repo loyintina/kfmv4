@@ -1,0 +1,12 @@
+{
+ "id": "ep934-b3",
+ "episode_id": 934,
+ "session_id": "omp-2026-07-14T01-05-45-581Z_019f5e28-946d-7",
+ "source": "manual",
+ "topic": "发送按钮圆角方形 + api 卡 model 下拉缺失（历史实现被破坏）",
+ "pattern": "补丁vs根因,复盘沉淀",
+ "ep_score": 5,
+ "chars": 1308,
+ "truncated": false,
+ "text": "**用户：**\n那，这种类似的情况还有吗？\n\n**AI：**\n### 审计结论\n\n其他三张卡（config / role / session）**没有 api.card.ts 那种\"函数定义了但没调用\"的功能性 bug**——它们的 `load*()` 都在 `activate()` 里正确调用了：\n\n```\nrole.card.ts:     await Promise.all([loadRoles(), loadActiveRoleId()])   ✅\nconfig.card.ts:   await Promise.all([loadProviders(), loadSessions(), loadConfigs(), loadActiveConfigFileName()])  ✅\nsession.card.ts:  sessions = await loadSessions()                       ✅\n```\n\n但有三类**系统性问题**横跨所有卡片插件：\n\n---\n\n### 1. 大量静默 `catch {}`（P2 技术债务）\n\nAUDIT_2026-07-12 的 #8 已经提过，但未被修复。计数量：\n\n| 文件 | 空 catch 数 |\n|------|:--:|\n| `api.card.ts` | 5 |\n| `config.card.ts` | 7 |\n| `role.card.ts` | 3 |\n| `session.card.ts` | 1 |\n| `orb.ts` | 1 |\n\n都是 JSON 解析失败或文件读取失败被静默吞掉，生产环境问题完全无迹可查。\n\n---\n\n### 2. `document.getElementById` 全局 ID 冲突风险\n\n`role.card.ts:219` — `document.getElementById('role-name-input')`。如果同时打开两张角色卡，第二个实例会找到第一个实例的 DOM 元素，编辑时写入错误字段。跟 api.card.ts 的 `api-current-model` 同一个根因。\n\n---\n\n### 3. `orb.ts:602` 空 catch — `collapsePanel()` 里的 `panelEl?.remove()` 被 try/catch 包裹但 catch 为空\n\n```typescript\ntry { panelEl?.remove(); } catch {}\n```\n\n如果 `panelEl` 已经被移除，这里静默失败也没问题。但如果是因为其他原因失败（比如 DOM 异常），不会留下任何线索。\n\n---\n\n### 优先级\n\n```\nP1: role.card.ts 的 getElementById 全局 ID → 跟 api.card.ts 同样的修复\nP2: 17 个空 catch 块 → 加 log() 输出错误上下文（批量改）\nP3: orb.ts:602 的空 catch → 加注释说明意图即可\n```\n\n要修哪些？"
+}

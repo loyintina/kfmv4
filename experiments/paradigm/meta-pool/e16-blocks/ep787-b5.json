@@ -1,0 +1,12 @@
+{
+ "id": "ep787-b5",
+ "episode_id": 787,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "文件树深层展开卡顿性能排查（视口裁剪/阴影/字符雨）",
+ "pattern": "md编辑器分类",
+ "ep_score": 3,
+ "chars": 1612,
+ "truncated": false,
+ "text": "**用户：**\n感觉还是会掉帧，这种掉帧感比较奇怪，就好像，滚动能跟随我的响应，如果以前流畅的时候每秒刷新90次，那现在每秒只刷新30次，导致我的操作虽然能让它实时响应，但肉眼可见地页面像ppt一样。而以前则是每一帧都有，但帧与帧之间的时间增加了。这是什么原因？\n\n**AI：**\n你这个描述非常关键。帧跟随手指没问题说明滚动 handler 响应正常，但视觉刷新慢说明**每帧渲染计算本身超过了 16ms 预算**。视口裁剪减少了离屏 Box 的处理，但视口内在屏的 Box 的绘制成本仍然太高。\n\n让我追查视口内单个 Box 的具体开销——特别是 `_drawBorder`(KFM 圆角边框)、`_drawShadow`(evenodd 阴影)、`_drawLiquidSegments`(光标粒子) 这几个最贵的函数。\nNow let me read the `BorderDrawer` to understand the KFM border cost:\n分析结果很清晰。逐一排查完渲染路径后，剩余消耗集中在几个地方。\n\n---\n\n## 每帧剩余开销（视口裁剪落地后）\n\n视口裁剪已经生效——离屏 Box 的绘制管线被跳过了。但以下操作**仍然每帧运行，不依赖视口内 Box 数量**：\n\n| 操作 | 行号 | 频次 | 说明 |\n|------|------|------|------|\n| `root.tickAnimations(now)` | 200 | 递归遍历**全部** ~1000 个 Box | 逐个 filter 空 animations 数组 + 递归子元素 |\n| `_findCursorBox(root)` | 189-195 | 递归扫描**全部** ~1000 个 Box | 逐 Box 检查 `data?.cursorDynamicLines` |\n| `_drawLiquidSegments()` | 607-641 | 每帧渲染光标粒子 | 每个 segment 做 translate+rotate+roundRect+fill |\n| `_drawShadow()` | 385-407 | 每个深度 >0 的 expanded 容器 | **evenodd clip + shadowBlur**——移动端 GPU 杀手 |\n\n其中 `_drawShadow` 最重：画 20000×20000 的巨矩形，配 `shadowBlur: 12` + `evenodd` 裁剪。每个可见容器走一遍。深度展开越多，可见容器越多，阴影开销线性增长。\n\n---\n\n## 修复计划\n\n**方案 A：`_findCursorBox` 缓存引用**——光标 Box 不会自己变位置，只需在 `rebuildTree` / `moveCursorTo` 时更新引用。干掉每帧的全树扫描。`renderer.ts:189`\n\n**方案 B：`tickAnimations` 只 tick 活跃的**——没有动画的 Box 根本不需要 walk。维护一个 `_activeAnimBoxes` 集合，只在有动画时 tick。没有活跃动画时直接跳过全树 walk。`box.ts:540`\n\n**方案 C：`_drawShadow` 简化**——当前 evenodd 技法是用来做\"容器外部环绕阴影\"的效果。可以换成更便宜的方案（如在容器绘制前用 `ctx.shadow*` 画一个普通 rect），去掉 20000px 巨 rect 和 evenodd。`renderer.ts:385`\n\n三个互不冲突。收益预估：A ~1ms、B ~1ms、C ~5-15ms（取决于可见容器数）。C 收益最大但改动需斟酌视觉效果。\n\n---\n\n要开始实施吗？建议按 B → A → C 的顺序。"
+}

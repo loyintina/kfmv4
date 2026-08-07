@@ -1,0 +1,12 @@
+{
+ "id": "ep902-b5",
+ "episode_id": 902,
+ "session_id": "omp-2026-07-11T02-40-24-324Z_019f4f0c-2704-7",
+ "source": "manual",
+ "topic": "omp 接入对话（单次模式/外部工具/通用 cli/导入 provide/ui 外置）",
+ "pattern": "复用既有,补丁vs根因",
+ "ep_score": 3,
+ "chars": 779,
+ "truncated": false,
+ "text": "**用户：**\n我的意思是，直接把omp内置的那些provide，导入到api卡里？就相当于给omp做了一个外置ui，叫作kfmv4？而不是你说的加桥脚本同步\n\n**AI：**\n明白了！反过来——把 omp 的 provider 读进 kfmv4 的 API 卡。kfmv4 就是 omp 的外置 UI。\n完成！kfmv4 的 API 卡现在有了 omp 的所有 provider：\n\n| Provider | 模型数 | API Key |\n|----------|--------|---------|\n| opencode-go | 20 | ✅ 已导入 |\n| deepseek | 2 | ✅ 已导入 |\n| opencode-zen | 67 | ⚠️ 需配置 |\n| google-vertex | 28 | ⚠️ 需配置 |\n| zenmux | 199 | ⚠️ 需配置 |\n\n**共 5 个 provider，316 个模型。**\n\n## 脚本\n\n```bash\n# 从 omp 导入 provider 到 kfmv4 API 卡\nnode scripts/import-omp-providers.mjs\n```\n\n## 架构\n\n```\nomp models.db (provider 源头)\n       ↓\nimport-omp-providers.mjs\n       ↓\nkfmv4 providers.json (API 卡配置)\n       ↓\nkfmv4 UI (模型选择器)\n```\n\nkfmv4 就是 omp 的外置 UI。以后在 omp 里加了新 provider，跑一下 import 脚本就能同步到 kfmv4。\n\n---\n\n下一步：实现 kfmv4 → omp 的桥接，让对话面板真正用上 omp。要继续吗？"
+}

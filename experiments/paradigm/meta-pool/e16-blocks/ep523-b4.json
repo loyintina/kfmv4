@@ -1,0 +1,12 @@
+{
+ "id": "ep523-b4",
+ "episode_id": 523,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "复制路径后卡顿",
+ "pattern": "字段契约,环境",
+ "ep_score": 5,
+ "chars": 641,
+ "truncated": false,
+ "text": "**用户：**\n不对啊，我是关闭抽屉后，发现进行其他操作，响应变得不流畅了。\n\n**AI：**\n问题不在 drawer 打开时，而是**关闭后**。关闭流程看看是否有资源残留：\n分析 dismiss 流程没明显泄露——GSAP 直透传无缓存，`onComplete` 正确 remove。但有两个怀疑点：\n\n### 怀疑 1：GSAP 残留 transform 层\n\n抽屉关闭后 `y: '100%'` 动画结束后 GSAP 可能残留 `transform: translateY(...)` 在已移除的 DOM 元素上，导致浏览器持有 GPU 合成层。用 `anim.killTweensOf()` 强制杀。\n\n### 怀疑 2：关机时 GSAP 没彻底清理\n\n当前 dismiss 后 GSAP tween 还在跑 200ms，目标元素虽已在 DOM 外但 GSAP 内部仍持有引用。改为先 kill 再 remove：\n\n```typescript\nanim.killTweensOf([d, w]);\nd?.remove();\nw?.remove();\n```\n\n不做退出动画，直接移除。\n\n---\n\n### 诊断方案\n\n先试**去掉退出动画**，看卡顿是否消失。\n\n- 如果消失 → GSAP 退出动画是根因，换成无动画 dismiss 或确认 GSAP 版本行为\n- 如果还在 → 跟 drawer 无关，卡顿来自 Canvas 渲染层或别的模块\n\n你觉得先这样诊断吗？"
+}

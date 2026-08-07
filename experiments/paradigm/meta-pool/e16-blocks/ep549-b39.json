@@ -1,0 +1,12 @@
+{
+ "id": "ep549-b39",
+ "episode_id": 549,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端滚动方向/截停（超长拉锯，十几轮）",
+ "pattern": "机制重构,删旧留新,验证优先",
+ "ep_score": 11,
+ "chars": 857,
+ "truncated": false,
+ "text": "**用户：**\n？你不知道日志卡是什么东西吗？\n\n**AI：**\n你说得对——我应该用到已有的日志卡。让我查一下它的实现。\n明白了！\"日志卡\"就是 `debug` 类型卡片（🔧 日志管理），它通过 `logger.ts` 的 `log()` 函数接收并显示日志。我应该用 `log()` 把诊断信息推送到日志卡里。\n\n## Plan\n\n### 1. `terminal-renderer.ts` 导入 `log`\n\n```\nimport { log } from './logger.js';\n```\n\n### 2. 在 `touchScrollStart` 写入诊断\n\n```\ntouchScrollStart(rawY: number): void {\n    ...\n    log('[TERM] scrollStart sb=' + this._scrollback.length + ' rows=' + this._rows + ' ch=' + this._cellH.toFixed(1));\n}\n```\n\n### 3. 在 `touchScrollMove` 写入诊断（用节流，避免刷屏）\n\n```\ntouchScrollMove(rawY: number, startY: number): void {\n    ...\n    if (++this._logThrottle % 8 === 0) {\n        log('[TERM] move off=' + this._scrollOffset.toFixed(1) + ' dy=' + deltaPx.toFixed(0));\n    }\n    ...\n}\n```\n\n### 4. 删掉 canvas 左上角的黄色诊断文字\n\n恢复 `_render()` 中的 status 显示（或直接删掉 debug 块）。\n\n### 5. 加一个 `_logThrottle` 计数器字段\n\n---\n\n要切 build 模式实施吗？"
+}

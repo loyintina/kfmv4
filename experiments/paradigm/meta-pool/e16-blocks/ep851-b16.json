@@ -1,0 +1,12 @@
+{
+ "id": "ep851-b16",
+ "episode_id": 851,
+ "session_id": "omp-2026-07-07T06-14-00-892Z_019f3b36-47bc-7",
+ "source": "manual",
+ "topic": "全局手势推广（浮卡左右滑召唤侧栏）+ tmux/滚动修复 + 隐式契约记录",
+ "pattern": "实现边界控制,复盘沉淀",
+ "ep_score": 7,
+ "chars": 827,
+ "truncated": false,
+ "text": "**用户：**\n[13:49:05.998] [swipe] dx: 1 axis: none snap: both-closed → [13:49:06.011] [swipe] dx: 4 axis: none snap: both-closed → [13:49:06.013] [swipe] dx: 8 axis: none snap: both-closed → [13:49:06.015] [gesture] END, type: pointercancel handler: gestures-page-swipe dx: -136 → [13:49:08.303] [swipe] dx: -3 axis: none snap: both-closed → [13:49:08.311] [swipe] dx: -10 axis: none snap: both-closed → [13:49:08.313] [gesture] END, type: pointercancel handler: gestures-page-swipe dx: -251 → [13:49:09.804] [gesture] END, type: pointerup handler: gestures-page-swipe dx: 0\n\n**AI：**\n找到根因了！`exitFullscreen` 函数把 `contentEl` 的 `touch-action` 清空了（设为 `''` → 默认 `auto`→ 浏览器重新接管）。日志证实 `pointercancel` 确实在浮卡状态发生。\nAlso fix `dismissFullscreen`:\n刷新试试。这次 `exitFullscreen` 不再把 `touch-action` 清成 `auto`，而是设成 `none`。日志应该不会再出现 `pointercancel` 了。"
+}

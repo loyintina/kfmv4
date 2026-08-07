@@ -1,0 +1,12 @@
+{
+ "id": "ep614-b4",
+ "episode_id": 614,
+ "session_id": "ses_063fd57d7ffepMZzVsdv2wNXM2",
+ "source": "manual",
+ "topic": "会话保存失败/刷新丢失（超长拉锯）",
+ "pattern": "全链路验证,追源",
+ "ep_score": 7,
+ "chars": 633,
+ "truncated": false,
+ "text": "**用户：**\n请求失败: Unexpected token '<', \"<html>\n<h\"... is not valid JSON,会出现这个报错\n\n**AI：**\n这个报错说明 `/ai/chat/start` 返回了 HTML（通常是 404/502 页面）而非 JSON。看起来是服务端的问题，不是会话保存导致的。让我排查一下。\n服务端 `/ai/chat/start` 正常运行，返回正确 JSON。这个报错不是你当前启动的服务端导致的。让我检查一下是否有残留的旧进程或者 `index.html` 没有提交：\n找到了。错误来自我的 `throw e` 改动——旧代码里 `_doSaveMessages` 的保存失败被静默吞掉，现在上抛后阻塞了 `doSend` 的 AI 调用。**但这不是真正的 bug**——它只是暴露了：`files/read` 请求那时收到了 HTML（服务端不可达或报错），导致保存用户消息这一步失败。\n\n正确的处理方式是：用户消息保存失败不应阻塞 AI 生成——后续增量/最终保存会覆盖。修复：\n已修复。改动很小（`orb-chat.ts:1550`）：把 `await saveMessages(...)` 包了 try-catch，用户消息保存失败不再阻塞 AI 生成——错误由 `session-store.ts` 内部日志记录，消息内容会在后续增量/最终落盘中一并写入。\n\n`npm run dev` 重启试试。"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep892-b4",
+ "episode_id": 892,
+ "session_id": "omp-2026-05-27T17-10-59-698Z_019e6a6b-0772-7",
+ "source": "manual",
+ "topic": "安全审计（泄露排查/认证/nginx 反代/注意事项）",
+ "pattern": "溯源审计,全量原则",
+ "ep_score": 1,
+ "chars": 847,
+ "truncated": false,
+ "text": "**用户：**\n那么，未来我继续开发项目，有什么需要注意的吗？\n\n**AI：**\n几条关键原则：\n\n### 不要提交的\n\n- **任何 token/密码/API key** — 即使只在本地用，commit 后就进了 git 历史永远删不干净（这次能清是因为仓库刚建，以后历史积累了就麻烦了）\n- **`public/bundle.js` 和 `dist/`** — 已经是 `.gitignore` 了，不要手动 `git add -f`\n- **`node_modules/`** — 同上\n\n### 配 SSH 而不是 Token\n\n你现在配的是 HTTPS + credential store。它在终端下可以工作。但如果未来你换环境或者想用 `git push` 更干净，建议改用 SSH key 配到 GitHub 账户上——这样 key 在机器上，不需要在 git 配置里存 token。\n\n### 改动前\n\n项目有**开工前必读文档** `docs/KFM_V4_INVARIANTS.md`（AI 修改约束协议）。每次继续开发前先读一遍，里面有心法原则+自查清单。尤其是：\n\n- 不要打补丁，查根因\n- 改完后代码不应变多\n- 检查全系统关联模块（改事件系统时查一下还有谁消费事件）\n\n### 关于远程开发\n\n如果你在新电脑上：\n\n```bash\ngit clone https://github.com/loyintina/kfmv4.git\ncd kfmv4\nnpm install\nnpm run build\n# 配好 nginx 反代 → 可选\nnpm run start    # 127.0.0.1:8021\n```\n\nAI 在那边也要配置 GitHub token 才能 push 代码回来。\n\n### 安全底线\n\n- 不要往代码里写任何真实的 token/key\n- 如果必须用某种密钥（比如 AI 模型 API key），走环境变量或运行时配置，永远不进代码"
+}

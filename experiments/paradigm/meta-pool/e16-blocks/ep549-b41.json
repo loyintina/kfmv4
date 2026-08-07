@@ -1,0 +1,12 @@
+{
+ "id": "ep549-b41",
+ "episode_id": 549,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端滚动方向/截停（超长拉锯，十几轮）",
+ "pattern": "机制重构,删旧留新,验证优先",
+ "ep_score": 11,
+ "chars": 1151,
+ "truncated": false,
+ "text": "**用户：**\n[10:38:28.516] [CARD-STACK] buildCards called → [10:38:28.518] [CARD-STACK] buildCards done, cards=7 → [10:38:28.518] [ws-channel] 初始化完成 → [10:38:28.742] [ws-channel] 已连接到服务端 ws://8.145.46.182/ws → [10:38:34.325] [TERM] scrollStart sb=0 rows=28 cellH=9.0 base=0.0 → [10:38:48.380] [TERM] scrollStart sb=103 rows=28 cellH=9.0 base=0.0 → [10:38:51.099] [TERM] scrollStart sb=103 rows=28 cellH=9.0 base=0.0 → [10:38:51.941] [TERM] scrollStart sb=103 rows=28 cellH=9.0 base=0.0 → [10:38:53.525] [TERM] scrollStart sb=103 rows=28 cellH=9.0 base=2.0 → [10:38:54.590] [TERM] scrollStart sb=103 rows=28 cellH=9.0 base=2.8 \n\n**AI：**\n数据出来了，非常关键：\n\n- **sb=103** — 103 行历史，不是 1 行。滚动范围完全足够 ✓\n- **cellH=9.0px** — 格高很小\n- **scrollStart 反复出现，但 move 日志一条没有** — 手势在频繁重启，每次 gesture 的 move 事件 < 8 帧，节流阀卡死了日志\n\n所以 `touchScrollMove` 确实在执行（`base` 从 0 变 2 变 2.8），只是 `_logThrottle % 8` 节流让日志不可见。\n\n现在诊断已明确核心问题。两个修复并行：\n\n1. **去掉日志节流** — `_logThrottle % 2` 或直接不加条件，能看见 move 轨迹\n2. **修复方向** — 翻转 `deltaPx` + 允许负向过滚 + 松手弹回\n\n```\n// touchScrollMove\nconst deltaPx = rawY - startY;  // 翻转：上滑 → off 减小\n// clamp 去掉 Math.max(0, ...)\n// 松手时 startFling 结束后 clamp 回 >=0\n```\n\n切 build 模式实施？"
+}

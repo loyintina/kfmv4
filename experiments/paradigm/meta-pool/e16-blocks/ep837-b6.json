@@ -1,0 +1,12 @@
+{
+ "id": "ep837-b6",
+ "episode_id": 837,
+ "session_id": "omp-2026-07-07T06-14-00-892Z_019f3b36-47bc-7",
+ "source": "manual",
+ "topic": "投卡全屏行为修正 + 版本 + readme 自动更新管线",
+ "pattern": "补丁vs根因,删繁",
+ "ep_score": 5,
+ "chars": 445,
+ "truncated": false,
+ "text": "**用户：**\n然后，更新一下根目录的readme吧，这个能不能也加进自动管线里？远程推送代码到git前，先更新readme状态？\n\n**AI：**\n现在把 README.md 加入 `check-versions.mjs` 的版本标记验证，再创建一个 pre-push git hook。\n搞定了。新加的机制：\n\n**自动验证**：`check-versions.mjs` 现在把 `README.md` 也纳入版本标记检查——版本号不匹配会阻断构建。\n\n**推送守卫**：`.githooks/pre-push` — 在 `git push` 前自动跑 `npm run check`，检查不通过无法推送。团队成员执行一次即可启用：\n\n```bash\ngit config core.hooksPath .githooks\n```\n\n之后每次 `git push` 都会先跑完整的 check 管线，文档没同步、版本号没更新、新增代码文件没加入 HANDBOOK §7 表都会阻断推送。"
+}

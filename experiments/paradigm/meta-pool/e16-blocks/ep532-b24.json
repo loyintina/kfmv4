@@ -1,0 +1,12 @@
+{
+ "id": "ep532-b24",
+ "episode_id": 532,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "相同卡竞态（重大，长拉锯）",
+ "pattern": "补丁vs根因,竞态",
+ "ep_score": 10,
+ "chars": 1054,
+ "truncated": false,
+ "text": "**用户：**\n所以问题是还有没注册进手势注册表的手势登记吗？\n\n**AI：**\n不是注册问题。GestureRegistry 已经正确把事件发到了 `drag.onStart`。问题在**浏览器本身的长按行为抢走了手势**：\n\n1. 你按住光球 600ms → 同时手指下方就是卡片的**标题文字**\n2. 浏览器在 ~500ms 检测到长按 → 触发文字选择 → 发 `pointercancel`\n3. GestureRegistry 监听 `pointercancel` → 调 `_handleEnd` → `drag.onEnd`\n4. `drag.onEnd` 没区分 `pointercancel` 和 `pointerup` → 看到 `longFired=false` → 当成短按 → `onTap` → 收缩\n\n所以根因有两个：\n- **源头**：卡片标题文字是可选中的（`user-select: auto`），浏览器长按触发选择 → 发 `pointercancel`\n- **放大**：`pointercancel` 被当成 `pointerup` 处理，`onEnd` 不做区分\n\n---\n\n## 修复计划（两个都在 plan mode，等你确认再改）\n\n**方案 A**（`floating-card.ts`）：BR 光球 `pointer-events: auto` 的子元素加 `user-select: none` — 阻止浏览器文字选择，不触发 `pointercancel`。\n\n不对，文字在卡的标题栏，不在光球上。文字是另一张卡的。`pointercancel` 是因为手指按在光球上，但光球下有其他卡的内容。\n\n实际上 `e.preventDefault()` 已经在 `drag.onStart` 调了，但 `passive: false` 对 `pointerdown` 有效。关键：`touch-action: none` 在 `document.body` 设了（gesture-registry.ts:111），但这只阻止浏览器默认的滚动手势，不阻止文字选择。\n\n**方案 B**（更根本）：`drag-handler.ts` 的 `onEnd` 加一个 `pointercancel` 守卫——`pointercancel` 来了就清 timer + reset，不调 `onTap`。\n\n只改 `drag-handler.ts` 两行。要开始吗？"
+}

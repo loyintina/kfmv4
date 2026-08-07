@@ -1,0 +1,12 @@
+{
+ "id": "ep529-b14",
+ "episode_id": 529,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "文件夹收缩动画不同步",
+ "pattern": "追源,心法前置",
+ "ep_score": 9,
+ "chars": 716,
+ "truncated": false,
+ "text": "**用户：**\n好\n\n**AI：**\n### 1. `tree-overlay.ts` — 新函数\n### 2. `tree-render.ts` — import + 调用\nNow add the call in `doCollapse` — after `buildAndSetOverlayTree`, before box shrink tweens：\nNow add ancestor sibling GSAP tweens alongside the box shrink：\nThe edit accidentally matched both collapse AND expand. Let me check and fix both spots.\n误匹配了 expand。先删 expand 里的，再单独加到 collapse。\nNow add ancestor code only to collapse version：\n改完。改了 3 个文件：\n\n| 文件 | 改动 |\n|------|------|\n| `tree-overlay.ts` | +`setupAncestorSiblingOverlays()` — 沿 `expanded-*` 链向上递推，为每层祖先后方兄弟建 overlay clone + 隐藏主树原件 |\n| `tree-render.ts` | `doCollapse` 里调用：建完 overlay tree 后挂入祖先兄弟 overlay + 同步 GSAP tween（`topBoxDelay`） |\n\n刷新测深层文件夹折叠——叔叔辈的文件夹和兄弟辈应该一起同步上移了。"
+}

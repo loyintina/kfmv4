@@ -1,0 +1,12 @@
+{
+ "id": "ep744-b3",
+ "episode_id": 744,
+ "session_id": "kimi-0e56b3a5-bfda-4c82-8e48-5629a00532a3",
+ "source": "manual",
+ "topic": "**溯源审计需求**（drift-provenance 源头）+ 三架构分歧裁决（重构优于补丁）+ 跨域审计——disc",
+ "pattern": "溯源审计,重构优于补丁",
+ "ep_score": 2,
+ "chars": 602,
+ "truncated": false,
+ "text": "**用户：**\n好，我们继续逐工具细化吧。下一个是write和edit，为什么它两个要放在一起？\n\n**AI：**\n好问题——这个分组本身就是设计判断，值得先说清。我先拉一下 write/edit 在真实会话里的输入形态，用数据来回答。\n\n**（AI 思考节选）：**\nNow pins. Add to tests/client-logic.test.ts:\n\n- BAR-ORB-PANEL-11: thinking auto-collapse (helper exists, called in text_delta/message_stop/tool_result paths).\n- BAR-ORB-PANEL-12: streaming MD (schedule fn, throttled marked without preprocessMd, cancel before final render, cleared in clearChatDom).\n\nWrite them, then revert-verify, run check/test/build, commit, restart service (server changed — chat.ts timing logs; need rebuild + restart for those logs to be live)."
+}

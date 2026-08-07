@@ -1,0 +1,12 @@
+{
+ "id": "ep598-b21",
+ "episode_id": 598,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "heuristic",
+ "topic": "4.1 版本改坏→回退 4.0；日志卡定位；多次无效修改（与 B53/B54 同族）",
+ "pattern": "版本回退,验证优先",
+ "ep_score": 9,
+ "chars": 1439,
+ "truncated": false,
+ "text": "**用户：**\n然后，我想要一个04卡的tmux窗口管理器，基于现有的03卡的代码，给tmux做一个ui入口，最起码能创建新窗口，显示现有窗口，快速进入已有窗口。这个好做吗？你能如何设计？\n\n**AI：**\n## 架构分析\n\n当前 card04 是空占位。card03（终端）的 WS 通道只支持原始 PTY I/O（`terminal-input`→PTY→`terminal-output`），没有结构化的 tmux 操作。两个可行方向：\n\n### 方案 A：纯客户端（0 服务端改动）\n\ncard04 向 card03 的 session PTY 发送 tmux 按键序列（`C-b c` = 新窗口、`C-b n` = 下一个）。列出窗口时发送 `tmux list-windows\\n` 也走终端输出，解析靠客户端。\n\n- **优点**：零服务端改动，快速实现\n- **缺点**：窗口列表解析不可靠（混在终端输出里）、需要知道 card03 的 sessionId、card04 和 card03 共享输出流\n\n### 方案 B：服务端 tmux 命令通道（推荐）\n\n服务端新增一个 WS 消息类型 `tmux-cmd`，通过 `child_process.exec` 直接执行 tmux 命令（不走 PTY），结构化返回结果。\n\n| WS 消息 | 方向 | 内容 |\n|---------|------|------|\n| `tmux-cmd` | C→S | `{ cmd: 'list-windows' \\| 'new-window' \\| 'select-window' }` |\n| `tmux-result` | S→C | `{ stdout, stderr, exitCode }` |\n\ncard04 用这些结构化结果渲染 UI：\n\n```\n┌─────────────────────────────┐\n│ [ ] 终端窗口管理              │ ← buildCardLayout header\n├─────────────────────────────┤\n│  ● 0:zsh    [active]        │ ← 点击 → select-window 0\n│    1:htop                   │\n│    2:logs                   │\n├─────────────────────────────┤\n│  [+ 新建]    [↻ 刷新]        │\n└─────────────────────────────┘\n```\n\n**优点**：可靠（不走 PTY 解析）、独立（不依赖 card03 的 session）、干净（用 `-F` 格式输出解析）\n\n**需要改的文件**：\n1. `src/client/modules/tmux-card.ts` — 新文件，~150 行，复用 `buildCardLayout` + `wsChannel.send/onMessage`\n2. `src/card-stack.ts` — card04 entry 填 icon/name/desc + `registerCardType`\n3. `src/server/ws-server.ts` — 加 `tmux-cmd` handler，~20 行\n\n你选哪个方向？"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep549-b30",
+ "episode_id": 549,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端滚动方向/截停（超长拉锯，十几轮）",
+ "pattern": "机制重构,删旧留新,验证优先",
+ "ep_score": 11,
+ "chars": 919,
+ "truncated": false,
+ "text": "**用户：**\n你刚刚不是说，有两个机制在打架嘛，我的意思是，只保留一开始那个正常的平滑移动，把截停后瞬移一行的这个移动方式删除，不就好了？\n\n**AI：**\n你说得对。\n\n那两套机制本质是：`translate` 做像素级平滑，`visibleStart` 做整数行切换。它们在整数边界处\"打架\"——translate 归零的同时 visibleStart 跳一行，画面必然不连续。\n\n把 `visibleStart`/`baseOff` 这套离散机制**删掉**，只保留 translate。做法：\n\n**把所有行（scrollback + cells）画成一条连续长条，用 translate 整体平移。Canvas 自动裁剪屏幕外内容。**\n\n```typescript\n// 删掉 baseOff / visibleStart / Math.floor / pixelOff 整数取余\n// 只保留一个连续的 translate 偏移：\nconst pixelOff = this._scrollOffset * ch;  // 连续，不取余\n\nctx.save();\n// 把长条定位到：_scrollOffset=0 时最底 rows 行在视口内\nctx.translate(0, pixelOff - (allRows - this._rows) * ch);\n\n// 遍历所有行，画在自然位置（py = topPad + i*ch）\nfor (let i = 0; i < allRows; i++) {\n  const py = topPad + i * ch;\n  // ... 背景 → 文字 → 光标\n}\n\nctx.restore();\n```\n\n**只剩一套机制：translate 平移。** 没有 `Math.floor`，没有 `visibleStart` 突变，没有整数跨界的打架帧。\n\n代价：每帧遍历所有 scrollback 行。但 Canvas `fillRect`/`fillText` 在屏幕外的调用几乎零开销，几千行不成问题。后续嫌慢可以加个简单的边界跳过。\n\n要切 build 模式改吗？"
+}

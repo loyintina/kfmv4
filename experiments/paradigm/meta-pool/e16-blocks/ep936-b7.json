@@ -1,0 +1,12 @@
+{
+ "id": "ep936-b7",
+ "episode_id": 936,
+ "session_id": "omp-2026-07-14T01-05-45-581Z_019f5e28-946d-7",
+ "source": "manual",
+ "topic": "浮卡滚动失效（手势系统/隐藏规则/canvas 手势注册表）",
+ "pattern": "读码优先,复盘沉淀",
+ "ep_score": 9,
+ "chars": 694,
+ "truncated": false,
+ "text": "**用户：**\n那你这样修改试试吧\n\n**AI：**\n`tsc` ✅ | bundle ✅ | 191 tests ✅\n\n---\n\n### 改动\n\n| 文件 | 改动 | 原因 |\n|------|------|------|\n| `gesture-registry.ts:141` | `passive: false` → `passive: true` | 浏览器不再等 JS 表态，直接根据 `touch-action` 决定是否接管 |\n| `drag-handler.ts:82` | 移除 `e.preventDefault()` | 光球已有 `touch-action: none`，`preventDefault` 冗余且 passive:true 下无效果 |\n| `tmux-card.ts:74` | 按钮加 `touch-action: none` | 替代 `preventDefault`，告知浏览器不干预 |\n\n### 现在的行为\n\n```\n浮卡内容区垂直滑动:\n  touch-action: pan-y → 浏览器直接接管 → 原生滚动 ✅\n  手势系统收到 pointercancel → 优雅释放 ✅\n\n浮卡内容区横向滑动:\n  touch-action: pan-y（只允许垂直） → 浏览器不接管 → pointermove 发给 JS ✅\n  手势系统正常匹配 → 侧栏/卡片堆唤出 ✅\n\n光球 / Canvas / 全局区域:\n  touch-action: none → 浏览器完全不干预 → 手势系统全权处理 ✅\n```\n\n硬刷新测试。"
+}

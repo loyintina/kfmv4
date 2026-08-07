@@ -1,0 +1,12 @@
+{
+ "id": "ep546-b46",
+ "episode_id": 546,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端编号/状态混用（重大）",
+ "pattern": "初心对齐,机制设计,读码优先",
+ "ep_score": 5,
+ "chars": 966,
+ "truncated": false,
+ "text": "**用户：**\n我按照你的方法清除了缓存，但我现在召唤2卡，右上光球关闭2卡，再召唤出来，依然是3卡，而不是2卡。\n\n**AI：**\n让我直接查 collapse 路径在 bundle 里传的是什么 reason。\n代码逻辑和 bundle 全都正确：`deactivate(card, 'dismiss')` → `freeId`，`allocateId` → 找最小空闲号。我只能想到两种可能：\n\n---\n\n## 可能 1：浏览器缓存顽固\n\n某些手机浏览器 `javascript:void(location.reload(true))` 不清缓存。试这个：\n\n```javascript\njavascript:void(fetch('/bundle.js').then(r=>r.text()).then(t=>alert(t.substring(t.indexOf('freeId'),t.indexOf('freeId')+80))))\n```\n\n如果弹窗里看不到 `freeId(\"card03\"`，说明还是旧 bundle。\n\n---\n\n## 可能 2：compact→dismiss 时序有漏\n\n关闭卡的时候，如果你先点了 BR（收缩），再点 TR（关闭），deactivate 会被调两次：\n\n```\n1. deactivate('compact') — 不断 PTY，保留 terminalId\n2. deactivate('dismiss') — freeId，删 terminalId\n```\n\n第二步执行时 `card.meta.terminalId` 应该还在。但如果中间有任何操作（比如 GSAP 动画 `onComplete` 里 destroyInstance 在第一步之后、第二步之前执行了），第二步的 `card` 对象就已经销毁了。\n\n---\n\n为了精准定位，我建议在终端卡 deactivate 函数里加一行 toast 诊断——`showToast('free ' + card.meta.terminalId)` 只在 `reason === 'dismiss'` 时打。你关闭卡片时如果没看到这个 toast=说明 freeId 确实没被调用。\n\n要切 build 模式加这个诊断吗？"
+}

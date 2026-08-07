@@ -1,0 +1,12 @@
+{
+ "id": "ep627-b5",
+ "episode_id": 627,
+ "session_id": "ses_141744654ffehLxZxWEQSrD8RN",
+ "source": "manual",
+ "topic": "逐条审计修复（13 条）",
+ "pattern": "全链路验证,追源",
+ "ep_score": 3,
+ "chars": 1756,
+ "truncated": false,
+ "text": "**用户：**\n可以\n\n**AI：**\n好，三处修复的具体方案和验证方式。\n\n---\n\n## 修复 #2：CSS transition → GSAP\n\n### 改动 A — `orb.ts:109` 面板淡入\n\n**当前代码**（`createPanel()` 内）：\n```typescript\npanel.style.cssText = `\n  ...\n  opacity: 0;\n  transition: opacity 0.3s ease;   /* 删掉这行 */\n  ...\n`;\n```\n\n**展开时**（`expandPanel()`，约 line 234）：\n```typescript\n// 替换：\npanelEl.style.opacity = '1';\n// 为：\nanim.to(panelEl, { opacity: 1, duration: 0.3, ease: 'power2.out' });\n```\n\n**折叠时**（`collapsePanel()`，约 line 241）：\n```typescript\n// 替换：\npanelEl.style.opacity = '0';\n// 为：\nanim.to(panelEl, { opacity: 0, duration: 0.3, ease: 'power2.out',\n  onComplete: () => { panelEl!.style.pointerEvents = 'none'; }\n});\n// 注意：pointerEvents = 'none' 移进 onComplete，确保淡出完成后再禁止交互\n```\n\n**验证**：`check-anim.mjs` 不会警告（无新增 `import gsap`），`npm run check` 通过。手动测试展开/折叠 10 次，无闪烁或残留。\n\n### 改动 B — `tree-swipe.ts:714` ✓/✗ 按钮 CSS transition\n\n**删一行**（`_BTN_CSS` 数组）：\n```typescript\nconst _BTN_CSS = [\n  ...\n  'transition:all 0.25s cubic-bezier(0.34,1.56,0.64,1)',  // ← 删\n  ...\n].join(';');\n```\n\n按压制已有 `_unregCheckBtns.onStart/onEnd` 直接操作 `style.background` 和 `style.boxShadow`，CSS transition 会与 GSAP 抢控制权。删掉后 GSAP 完全接管。\n\n### 改动 C — `tree-swipe.ts:801` 模式按钮背景\n\n**删一行**：\n```typescript\nwrapper.style.cssText = [\n  ...\n  'transition:background 0.15s',   // ← 删\n  ...\n].join(';');\n```\n\n选中态切换由 `_updateModeSelection()` 直接改 `wrapper.style.background`，改为用 `anim.to(wrapper, { backgroundColor: ..., duration: 0.15 })` 驱动。\n\n### 验证清单\n\n| # | 操作 | 预期 |\n|---|------|------|\n| 1 | 点击光球展开面板 | 面板平滑淡入（0.3s） |\n| 2 | 再次点击折叠面板 | 面板平滑淡出后 pointerEvents 自动关 |\n| 3 | 快速连续点 5 次光球 | 每次正常切换，无残留 transition |\n| 4 | 文件树右滑 → 出现临时卡片堆 | ✓/✗ 按钮无异常闪烁，按压反馈正常 |\n| 5 | 点模式按钮切换 copy/move | 背景色切换平滑，无延迟残留 |\n| 6 | `npm run check` | 零错误 |\n| 7 | `npm test` | 159/159 通过 |\n\n---\n\n确认后我逐一执行。"
+}

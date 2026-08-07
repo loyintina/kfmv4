@@ -1,0 +1,12 @@
+{
+ "id": "ep532-b3",
+ "episode_id": 532,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "相同卡竞态（重大，长拉锯）",
+ "pattern": "补丁vs根因,竞态",
+ "ep_score": 10,
+ "chars": 924,
+ "truncated": false,
+ "text": "**用户：**\n好\n\n**AI：**\nLet me verify the GestureRegistry's pointer event handling before committing to the plan.\n关键发现：`pointerup` 注册为 `passive: true`（gesture-registry.ts:115），`e.preventDefault()` 在 passive 监听器里无效。所以 Bug 1 不能用那个方案。\n\n---\n\n## 修正后的根解方案\n\n### Bug 1\n\nBR 光球有两个冲突的交互模型：\n- **GestrueRegistry → drag-handler**：处理拖拽/长按编辑\n- **原生 `click` 事件**：处理展开/收缩\n\n长按松手后，drag-handler 的 `onTap()` 被正确跳过，但浏览器原生 `click` 还是独立触发了。\n\n**根解：合并。** 把展开/收缩逻辑从原生 `click` handler 移到 drag-handler 的 `onTap()` 里，删掉原生 `click` 事件监听。短按和长按全走 GestureRegistry → drag-handler 这一条路，长按结束后不触发 `onTap`，也就不会有无关收缩。\n\n```typescript\n// onTap 改成直接调展开/收缩逻辑，不再走 brOrb.click()\nonTap() {\n  // 移入 current 的 compact→active / active→compact 逻辑\n},\n```\n\n改动：`floating-card.ts` 一处——把 BR 光球的 `addEventListener('click', ...)` 删掉，对应逻辑搬进 `onTap()`。\n\n### Bug 2\n\n状态白名单守卫删掉。`_cardAbove` / `_cardBelow` / `_swapZIndex` 只操作 z-index 数字，任何状态都安全。\n\n改动：删两行 `if (...)` 守卫。\n\n---\n\n总共一个文件，两处改。这个方案干净吗？"
+}

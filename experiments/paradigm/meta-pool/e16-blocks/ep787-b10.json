@@ -1,0 +1,12 @@
+{
+ "id": "ep787-b10",
+ "episode_id": 787,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "文件树深层展开卡顿性能排查（视口裁剪/阴影/字符雨）",
+ "pattern": "md编辑器分类",
+ "ep_score": 3,
+ "chars": 1858,
+ "truncated": false,
+ "text": "**用户：**\n确实流畅了，很明显，但我发现如果在深层的时候，展开，部分文件夹没有字符雨动画了，目前没找到规律，不过前几层是有动画的，深层开始出现没有动画直接出现的情况。这是怎么回事呢？\n\n**AI：**\n好问题。这一定是 tickAnimations 的改动导致的——动画 setup 和 tick 的执行时机变了。让我查一下字符雨的动画是怎么驱动的。\n确认了——char rain 完全用 GSAP（`gsap.to(box, {x, y, opacity})`），不依赖 `Box.animations`。所以 `tickAnimations` 的改动理论上不应影响它。但用户确认这是新引入的 bug。\n\n现在有两个可能方向：\n1. tickAnimations 集中 tick 后，`_render` 内的执行时序变了，间接触发了某个状态问题\n2. 跟 tickAnimations 无关，是某个已有 bug 现在被用户在高帧率下观察到了（之前卡顿掩盖了缺失动画）\n\n我需要继续深入排查 `_runExpandAnimation` 的完整流程。让我读一下那块被删的空白代码附近的 git blame：\nLet me look at those suspicious empty lines in `_runExpandAnimation` and trace the char rain setup for deeply nested sub-containers:\n找到了。不是 `tickAnimations` 的锅——是**视口裁剪**这把双刃剑。\n\n---\n\n## 根因\n\n字符雨 Box 的**起始位置在容器上方**（`initY = fromY - 80 - Math.random() * 140`），然后 GSAP 动画把它移到目标位置。但视口裁剪（`00d13d0`）在 `_tickAndRender` 里检查子 Box 是否在 `clipViewport` 窗口内——起始位置的字符 Box 在视口上方，被判定为「完全在视口外」→ `continue` 跳过 → **从不渲染 → GSAP 动画永远不可见**。\n\n```\n字符雨 Box  initY = 行Y - 80~220  ← 视口裁剪判定：在视口上方 → 跳过\n                ↓ GSAP tween（不会触发，因为 Box 从未进入渲染）\n字符雨 Box  targetY = 行Y         ← 应该在视口内\n```\n\n表层文件夹不影响是因为它们的 `initY` 恰好在视口内。深层文件夹的子容器起始位置经常在视口上边界附近或上方，字符雨的 initY 必定越界。\n\n---\n\n## 修复计划\n\n视口裁剪对**主树**收益巨大（跳过离屏几百行），但对 **overlay 树**不应启用——overlay 树只在动画期间存在，本身 Box 量少，但字符雨粒子需要从视口外飞入。\n\n改动很简单：`_tickAndRender` 遍历 overlay 树时不传 `clipViewport`，主树照常裁剪。\n\n```diff\n  // 渲染动画树\n  if (this._overlayRoot) {\n-   this._tickAndRender(this._overlayRoot, now, 1);\n+   this._tickAndRender(this._overlayRoot, now, 1);  // 不传 clipViewport\n  }\n```\n\n当前代码 overlay 树的调用已经没传 `clipViewport`，问题是 overlay 根也是 `scrollable: true`（`buildAndSetOverlayTree` 创建 overlayRoot 时设的），所以它**内部会自算** `_cvp = { y1: scrollY, y2: scrollY + height }`，然后这个窗口被往下传，最终把字符雨粒子裁掉。\n\n修复：给 overlayRoot 一个标记（如 `_noCull = true`），或者在 `_tickAndRender` 里对 overlayRoot 不走裁剪分支。最简单的做法：让 `clipViewport` 能显式传递 `null` 表示\"不裁剪\"，然后在调用 overlay 树时传 `null`。\n\n要开始实施吗？"
+}

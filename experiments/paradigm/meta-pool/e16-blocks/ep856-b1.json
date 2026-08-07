@@ -1,0 +1,12 @@
+{
+ "id": "ep856-b1",
+ "episode_id": 856,
+ "session_id": "omp-2026-07-22T03-58-36-090Z_019f87f9-b23a-7",
+ "source": "manual",
+ "topic": "400 报错 + 文件树状态检测比对 + 钉子机制",
+ "pattern": "补丁vs根因,验证优先",
+ "ep_score": 4,
+ "chars": 1100,
+ "truncated": false,
+ "text": "**用户：**\n然后是文件树的刷新状态，能不能在工具调用后加一个检测比对文件树状态和实际文件，如果有变化就更新？是不是比现在的机制要好？\n\n**AI：**\n你说得对，现在的机制有两个弱点：\n1. WS 广播可能丢失（连接状态不好时）\n2. 广播和 SSE 工具结果走不同通道，时序不确定\n\n更好的方案：**把文件变更检测嵌入 SSE 工具结果事件**。服务端在工具执行前后对比目录列表，有变化就在 `tool_result` 事件里带 `filesChanged: true`，客户端收到后刷新。同一个通道，不会丢。\n方案：工具执行前后对 CWD 做一次快速目录指纹，有变化就在 `tool_result` 事件里带标记，客户端从 SSE 收到后刷新。比 WS 广播可靠。\n方案清楚了。改为：\n\n1. **StreamEvent** 加 `filesChanged` 字段\n2. **chat.ts** 工具执行前后对比目录指纹，有变化就在 `tool_result` 事件里带标记\n3. **orb-chat.ts** 收到带 `filesChanged` 的 `tool_result` 时调 `loadFileTree`\n4. 移除 WS 广播方式\n现在改 chat.ts 工具执行循环——加目录指纹对比：\n现在改工具执行循环——加目录指纹对比，替换 WS 广播：\n现在改客户端——从 SSE `tool_result` 事件里读 `filesChanged`，替换 WS 监听：\n在 `tool_result` case 的 `break` 前加 `filesChanged` 检测：\n需要 import `loadFileTree` 和 `KFMState`。检查 orb-chat.ts 顶部：\n需要加 `loadFileTree` 和 `KFMState` 的 import：\n现在移除 app.ts 里的 WS 监听（已被 SSE 方式替代），然后构建测试：\n也移除 chat.ts 里的 WS 广播代码：\nWS 广播代码已在之前的编辑中被替换掉了（现在用目录指纹 + SSE 标记）。构建测试：\n重启服务：\n搞定。新机制比旧的好在：\n\n- **旧方案**：WS 广播和 SSE 走两个独立通道，时序不确定，可能丢失\n- **新方案**：服务端工具执行前后 `readdirSync` 对比目录指纹，有变化就在同一个 SSE `tool_result` 事件里带 `filesChanged: true`，客户端收到后刷新。同一通道，不会丢，且只在真正有变化时才刷新\n\n刷新页面试试。"
+}

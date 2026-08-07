@@ -1,0 +1,12 @@
+{
+ "id": "ep886-b2",
+ "episode_id": 886,
+ "session_id": "omp-2026-06-03T14-24-49-802Z_019e8ddf-6a8a-7",
+ "source": "manual",
+ "topic": "光球面板重构迭代（样式不符/心法错误/紧缩态尺寸/气泡布局/动态字号）",
+ "pattern": "补丁vs根因",
+ "ep_score": 9,
+ "chars": 1533,
+ "truncated": false,
+ "text": "**用户：**\n但，中央页面的光球消失了？理论上，它应该出现的？\n\n**AI：**\n你说到关键点了。让我看看怎么回事。\n\n问题出在两个地方：\n\n**1. BR 光球尺寸不对**\n\n旧光球：36×36，独立的径向渐变紫色圆球\nBR 光球：`theme.cornerOrb.size` = **10×10**，角落装饰小圆点\n\n**2. 位置数学不对**\n\n```\ncompactWidth: 1\nBR 光球 left = 1 - rightOff(12) - cornerSize(10) = -21px\n卡片 left   = screenWidth - 8(边距) - 1(卡片宽) ≈ screenRight - 9\nBR 光球屏幕位置 ≈ screenRight - 9 - 21 = screenRight - 30\n```\n\n光球应该出现在右下角 `(right: 24px, bottom: 140px)`，但现在被算到 `right: 30px` 的一个 10px 小点。\n\n**根因**：BR 光球是角落装饰，不是独立交互元素。用 compactWidth=1 把卡片体\"藏起来\"的想法在数学上不成立——卡片体的尺寸参与光球定位计算。\n\n---\n\n**修复方案**：`orb-card.ts` 插件不依赖引擎创建的光球，而是自行创建一个大光球 DOM，挂到卡片体上。引擎仍然管理状态机、拖拽和位置。\n问题确认——需要插件自己创建光球 DOM。在 `onCreate` 中创建一个 36px 的圆球。\n.\n.\nAlso need to fix the orb dragging — the gesture handler listens for `.floating-br-orb` but the main orb has a custom class. Let me register the main orb with `_brOrbToItem`.\n.\nThe edit broke `createDecoratedCorner`. Fix it.\n.\n.\n.\nLet me take a different, cleaner approach. Instead of a separate orb, use `compactWidth: 36` and have the plugin swap the engine's BR orb for a 36px one.\nThe orb swap breaks gesture drag. Cleaner approach: add `brOrbSize` config to the engine.\n.\nThe interface is damaged. Let me rewrite it from `compactWidth` to the end.\n.\n.\nNow use `brOrbSize` in the BR orb creation in `createFloatingCard`.\n.\n.\nNow update `orb-card.ts` to use `brOrbSize: 36` with correct positioning.\n.\nNow remove the unused `registerExternalOrb` from floating-card.ts since we no longer need it.\n.\n.\n.\n.\n.\n.\n.\n零错误，105/105 通过。提交。\n完成了。现在光球应该出现在右下角——36px 紫色圆球，可拖拽可缩放可点击展开。"
+}

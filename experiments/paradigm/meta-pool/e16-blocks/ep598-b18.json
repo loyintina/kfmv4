@@ -1,0 +1,12 @@
+{
+ "id": "ep598-b18",
+ "episode_id": 598,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "heuristic",
+ "topic": "4.1 版本改坏→回退 4.0；日志卡定位；多次无效修改（与 B53/B54 同族）",
+ "pattern": "版本回退,验证优先",
+ "ep_score": 9,
+ "chars": 833,
+ "truncated": false,
+ "text": "**用户：**\n可以，然后研究一下项目根目录的那个readme该怎么重新写一下？\n\n**AI：**\n研究完毕。当前 README 是项目还叫\"Vibe Coding 实验\"时写的，现在已经长成了一个有愿景、有文档体系、有完整功能集的个人工作台原型。需要对齐。\n\n**建议的新结构**：\n\n```markdown\n# KFM v4（咖啡猫）\n\n> AI 人机交互个人工作台原型，面向移动端浏览器。核心理念：一切皆卡片。\n\n## 这是什么\n\n一个完全由 AI 生成的个人工作台。文件浏览、终端、AI 对话、调试面板——\n都以\"卡片\"形式在屏幕上浮动，统一的拖拽/展开/缩放/关闭交互。\n\n## 功能\n\n- Canvas 自研渲染引擎 + 文件树（展开折叠动画、字符雨）\n- 卡片工作台（文件卡、终端卡 xterm.js、AI 对话卡）\n- 终端支持 tmux mouse mode、触控滚动、键盘自动避让\n- AI 对话面板，WebSocket 双向通道\n- 模式系统（copy/move/delete），色系联动光标+卡片\n- 10 个自动化检查脚本 + 159 个回归测试\n\n## 快速开始\n\n... (现有内容保持)\n\n## 文档\n\n详细的架构、约束、设计文档见 `docs/`：\n- CLAUDE.md — 项目入口，文档导航\n- HANDBOOK.md — 架构 + 调试 + 待办\n- KFM_V4_INVARIANTS.md — 修改约束协议\n- design/VISION_AND_ROADMAP.md — 远景 + 路线图\n\n## 协议\n\nMIT\n```\n\n改动要点：\n- \"Vibe Coding 玩具\" → \"AI 人机交互个人工作台原型\"\n- 功能表增加终端卡（xterm.js + tmux + 键盘避让）\n- 去\"不保证质量、随时推翻\"的自贬语气\n- 增加 docs/ 文档导航\n- 保留 MIT + \"公开仓库仅用于存档\"\n\n这个方向对吗？"
+}

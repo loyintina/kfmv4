@@ -1,0 +1,12 @@
+{
+ "id": "ep996-b0",
+ "episode_id": 996,
+ "session_id": "omp-2026-07-25T02-36-48-662Z_019f9721-e496-7",
+ "source": "manual",
+ "topic": "omp 历史会话检查（tmux 杀进程/会话截断原因）",
+ "pattern": "复盘沉淀",
+ "ep_score": 1,
+ "chars": 2142,
+ "truncated": false,
+ "text": "**用户：**\n你来看看omp的历史会话记录\n\n**AI：**\n会话记录存在 `~/.omp/agent/sessions/` 下，JSONL 格式。让我看看实际的记录：\n有两个工作目录的项目：`-tmp`（/tmp）和 `-kfmv4`（某个项目）。先看概览，再看 history.db 里的 prompt 记录和最近的 session 内容。\n再看看当前 session（/tmp）的头和最近的几条消息，以及 kfmv4 最近的 session 头：\n以下是 omp 历史会话记录的完整概览：\n\n---\n\n## 存储位置\n\n| 组件 | 路径 |\n|---|---|\n| 会话文件 (JSONL) | `~/.omp/agent/sessions/` |\n| Prompt 历史 (SQLite) | `~/.omp/agent/history.db` (668KB, 1566 条 prompt) |\n| Terminal 面包屑 | `~/.omp/agent/terminal-sessions/` |\n\n## 会话总量\n\n- **总大小**: 134 MB\n- **总条目**: ~44,462 行 JSONL（跨 52 个 session 文件）\n- **Prompt 记录**: 1,566 条（history.db）\n\n## 两个工作目录\n\n### `/tmp`（当前）— `-tmp/` 目录\n共 15 个 session，从 5/27 到 7/25。当前 session：\n- `2026-07-25T02-36-48` — **\"Review OMP historical sessions\"**（38 行，刚创建），模型 `opencode-go/deepseek-v4-pro`\n\n较大的 /tmp session：\n- `2026-07-11T02-40-24` — **4,828 行**\n- `2026-07-12T03-47-42` — **1,929 行**\n\n### `/root/kfmv4` — `-kfmv4/` 目录\n共 37 个 session，从 5/27 到 7/25。最近的几个：\n\n| Session | 行数 | 标题 | 时间 |\n|---|---|---|---|\n| `...96c8` | 192 | Debug OMP tmux disconnection | 7/25 00:58 |\n| `...96bb` | 242 | (无标题) | 7/25 00:44 |\n| `...96b0` | 106 | (无标题) | 7/25 00:32 |\n| `...9693` | 151 | (无标题) | 7/25 00:01 |\n| `...9687` | 133 | (无标题) | 7/24 23:48 |\n| `...8f53` | 3,388 | (无标题) | 7/23 14:14 |\n| `...87f9` | 2,492 | (无标题) | 7/22 03:58 |\n| `...84f8` | 1,752 | (无标题) | 7/21 13:58 |\n| `...75d3` | **5,335** | (无标题) | 7/18 15:23 |\n\n最大的 session：\n- `2026-07-07T06-14` — **6,501 行**\n- `2026-07-18T15-23` — **5,335 行**\n- `2026-07-11T02-40` — **4,828 行**\n\n## 最近的 Prompt 历史（最近 10 条）\n\n| # | Prompt | 会话 |\n|---|---|---|\n| 1566 | 你来看看omp的历史会话记录 | `/tmp` (当前) |\n| 1565 | 那你再试试测试一下看看效果？ | kfmv4 `96c8` |\n| 1564 | 好 | kfmv4 `96c8` |\n| 1563 | start脚本是什么？怎么之前没见过… | kfmv4 `96c8` |\n| 1562 | 但这都是omp在调用某些工具的时候中断的… | kfmv4 `96c8` |\n| 1561 | 不是kfmv4，是omp，你有没有好好听我讲话？ | kfmv4 `96c8` |\n| 1560 | 好的，我的朋友，你检查一下omp这个工具… | kfmv4 `96c8` |\n| 1559 | /model | kfmv4 `96c8` |\n| 1558 | /new | kfmv4 `96c8` |\n| 1557 | 算了，你别检查了。我换一个 | kfmv4 `96bb` |\n\n从 history 看，你在 kfmv4 项目里主要在做两件事：\n1. **kfmv4 前端功能开发**（下拉栏方向、按钮沙漏、文件树等 UI 问题）\n2. **omp 自身问题排查**（tmux 窗口挂断、omp 工具调用中断）\n\n两个问题域在 `96c8` 和 `96bb` 两个 session 里交叉了——你反复纠正 omp 让它看 omp 而不是 kfmv4。"
+}

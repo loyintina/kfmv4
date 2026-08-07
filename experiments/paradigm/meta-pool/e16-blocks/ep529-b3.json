@@ -1,0 +1,12 @@
+{
+ "id": "ep529-b3",
+ "episode_id": 529,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "文件夹收缩动画不同步",
+ "pattern": "追源,心法前置",
+ "ep_score": 9,
+ "chars": 714,
+ "truncated": false,
+ "text": "**用户：**\n你确定这是跟心法文档规定的一样，最正确的方案吗？\n\n**AI：**\n你给我推回来，让我再想深一层。关键不在 `visible` vs `opacity` 的表面差异，而在**渲染管线如何处理这两种隐藏**。让我查渲染器的 `renderBox` 逻辑。\n读完了 `_tickAndRender` 和 `tickAnimations`。诚实地说：\n\n**两种隐藏方式在渲染管线中的行为完全等价**：\n1. `visible = false` → `_tickAndRender` 第 202 行 `return`，不渲染\n2. `opacity = 0` → 第 203-208 行执行后 `opacity <= 0`，第 205 行 `return`，一样不渲染\n\n两者都不触碰子节点渲染，都走了 `tickAnimations`，ctx save/restore 的差异被主/overlay 独立渲染隔离。**我无法通过代码分析找到 `64b8079` 导致视觉错位的机制。**\n\n---\n\n### 两条路\n\n**A. 实证验证（推荐）**  \n把 6 处 `visible` 临时改回 `opacity`，刷新 → 如果问题消失 → `visible` 确实是诱因（机制需进一步深入引擎帧时序）。如果还在 → 不是它，往更早 commit bisect。\n\n**B. 假设驱动**  \n继续挖渲染器在两个渲染 pass（主树→overlay）之间的帧合成逻辑，看 `ctx.save/restore` 次数差会不会影响 GSAP 在 `power2.in` easing 下的逐帧精度。\n\n选 A 还是 B？"
+}

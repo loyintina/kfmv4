@@ -1,0 +1,12 @@
+{
+ "id": "ep571-b16",
+ "episode_id": 571,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "tmux 卡缩放重排不跟手 +",
+ "pattern": "补丁vs根因,回退语义冲突",
+ "ep_score": 9,
+ "chars": 309,
+ "truncated": false,
+ "text": "**用户：**\n你回退的是哪个版本？\n\n**AI：**\n代码文件全部回退到了最后一次 commit（`v6.10.1`）。这次会话中所有未提交的代码改动都丢失了：\n\n- topMidOrb（全屏光球）\n- fullscreen 支持（enterFullscreen/exitFullscreen）\n- Zoom 机制（applyZoom + setZoom）\n- _blendColor、_launchCard 拆分\n- tree-render 的文件点击→全屏\n- gesture-registry 诊断日志（已清理的）\n\n只保留了文档/HTML 的少量改动。\n\n这次会话的工作需要重新实现。你想从哪个功能开始恢复？"
+}

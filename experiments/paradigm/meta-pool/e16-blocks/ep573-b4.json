@@ -1,0 +1,12 @@
+{
+ "id": "ep573-b4",
+ "episode_id": 573,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "tmux 开 opencode 表格渲染拖影 + 放大重排延迟（降级 canvas 决策）",
+ "pattern": "可回退支撑决策,降级决策",
+ "ep_score": 3,
+ "chars": 1014,
+ "truncated": false,
+ "text": "**用户：**\n \n\n**AI：**\n开始降级。\n卸载成功。现在安装 v5 版本。\n安装成功。现在修改代码。\n现在修改代码。先读取当前文件状态。\n现在修改代码。\n更新接口。\n现在找到并修改 WebGL addon 加载代码。\n修改 WebGL addon 加载代码为 Canvas addon。\n检查是否还有其他引用 `_webglAddon` 或 `WebglAddon` 的代码。\n没有其他引用。现在检查 check-as-any.mjs 的行号是否需要更新。\n行号没有变化。现在运行检查。\n检查通过。现在运行测试。\n测试失败了，因为 Canvas addon 在 Node.js 环境中无法加载（缺少 `self` 全局变量）。需要修改为动态导入。\n更新接口和加载代码。\n现在修改 Canvas addon 加载代码为动态导入。\n现在运行测试。\n测试通过。现在构建客户端 bundle。\n构建成功。bundle 大小 1.6MB。现在提交。\n## 完成\n\n降级已成功完成。所有检查通过，测试通过。\n\n### 改动总结\n\n| 项目 | 降级前 | 降级后 |\n|------|--------|--------|\n| xterm.js | v6 | v5 |\n| 渲染器 | WebGL | Canvas |\n| bundle 大小 | 1.7MB | 1.6MB |\n\n### 关键改动\n\n1. **卸载**：`@xterm/xterm@6`、`@xterm/addon-fit`、`@xterm/addon-webgl`\n2. **安装**：`@xterm/xterm@5`、`@xterm/addon-fit@0.10.0`、`@xterm/addon-canvas@0.7.0`\n3. **代码**：移除 WebGL 导入，使用动态导入 Canvas addon\n\n### 验证\n\n- [x] `npm run check` 零错误\n- [x] `npm run test` 178 个测试全部通过\n- [x] 客户端 bundle 构建成功（1.6MB）\n- [x] 已提交：`44c9712`\n\n### 回退方法\n\n如果出现问题：\n```bash\ngit reset --hard HEAD~1\n```\n\n---\n\n现在可以测试了。打开终端卡或 tmux 卡，看看 Canvas 渲染器是否解决了拖影和重排问题。"
+}

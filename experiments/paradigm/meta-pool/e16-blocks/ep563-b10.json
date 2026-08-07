@@ -1,0 +1,12 @@
+{
+ "id": "ep563-b10",
+ "episode_id": 563,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "全屏卡片 z-index/布局（拉锯）",
+ "pattern": "验证优先,原版复用",
+ "ep_score": 7,
+ "chars": 919,
+ "truncated": false,
+ "text": "**用户：**\n对照心法，是符合的吗？\n\n**AI：**\n对照 SOP Step 3a 逐条检查：\n\n### 改动 1：preMatch hook 加 `|| item.isFullscreen`\n\n| 心法 | 级别 | 检查 | 结论 |\n|------|------|------|------|\n| **17（不另开一条路）** | LEVEL 1 | 不是在旁边建新路，是在**现有分支加一个条件**。preMatch hook 本意是\"浮卡触摸时提 z-index 聚焦\"，全屏卡不需要这个行为——这是原有逻辑的缺失条件，不是补丁 | ✅ |\n| **16（唯一生产者）** | LEVEL 1 | 只读 `isFullscreen`，不写 | ✅ |\n| **12（补丁根除）** | LEVEL 1 | 不是补丁。preMatch hook 先于全屏功能存在，加全屏时漏了 guard。现在补回去——根因是\"功能增 加了新状态但没更新已有钩子的守卫\"，不是绕 bug。 | ✅ |\n\n### 改动 2：`_launchCard` / `exitFullscreen` 加 `onUpdate`\n\n| 心法 | 级别 | 检查 | 结论 |\n|------|------|------|------|\n| **17（不另开一条路）** | LEVEL 1 | 是**补充已有路径的缺失环节**。`anim.to` 的 `onComplete` 已经设了 `cardWidth`，但动画过程里的角坐标没人维护——这是单条路径上的断点，不是平行路 | ✅ |\n| **2（派生不存）** | LEVEL 2 | `onUpdate` 每帧从卡尺寸计算角坐标写到 DOM——**是实时渲染推导，不是存储**。写 DOM（视觉）不算\"存状态\" | ✅ 可接受 |\n| **5（代码变少）** | LEVEL 2 | 新增 ~20 行。是补全功能缺失（原本就没有光球动画同步），不是重构冗余 | ✅ 正向 |\n\n### 结论\n\n**无 LEVEL 1 违反。** 两个 LEVEL 2（心法 2 / 心法 5）都有明确理由。可以实施。"
+}

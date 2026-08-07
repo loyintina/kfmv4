@@ -1,0 +1,12 @@
+{
+ "id": "ep563-b5",
+ "episode_id": 563,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "全屏卡片 z-index/布局（拉锯）",
+ "pattern": "验证优先,原版复用",
+ "ep_score": 7,
+ "chars": 950,
+ "truncated": false,
+ "text": "**用户：**\n你别大概率啊，我说的是要调整卡片的z-index高度，你怎么就听不懂呢？你高搞准一点，别猜啊？\n\n**AI：**\n抱歉，我理解错了。你说的对——不是算高度，是 z-index 层级问题。\n\n让我看一下输入栏的 z-index：\n找到了。输入栏的 z-index 是 **200**（`public/css/z-index.css`），而全屏卡的 `FS_Z = 20`。按说 20 < 200，卡应该在输入栏之下。\n\n但你说盖住了——说明运行时输入栏的 z-index 或卡的 z-index 和预期不符。让我确认一下当前 `FS_Z` 的值和输入栏的运行时状态：\n你说得对，我不该猜。让我重新确认。\n\n输入栏的 CSS：\n\n```css\n.ai-input-bar { position: fixed; z-index: 200; }\n```\n\n全屏卡：`FS_Z = 20`。按 CSS 规则 `200 > 20`，输入栏应该在卡之上。\n\n但我忽略了一点——`enterFullscreen` 的 `anim.to` 给卡片设了 `scale: 1`（虽然 GSAP 最后清掉了，但 **anim.set(el, { scale: 0.8 }) 在 launchCard 中**会留下 `transform: scale(0.8)` → `transform: scale(1)`）。CSS `transform` 在 `position: fixed` 元素上**创建一个新的层叠上下文（stacking context）**，让卡和输入栏的 z-index 不在同一个上下文中比较——卡的实际渲染顺序可能被抬高，盖住了输入栏。\n\n修复方案：\n\n1. **`FS_Z` 改为 5**（远低于输入栏的 200，杜绝任何 stacking context 干扰）\n2. **`_launchCard` 加 `onUpdate`** 每帧同步光球位置，解决 SVG 图标偏上\n\n另外你之前说的\"全屏卡高度要低于输入栏\"——当前代码计算的是 `inputBar.getBoundingClientRect().top`，按说卡底边应该在输入栏上方。需要我同时确认一下这个计算是否正确吗？"
+}

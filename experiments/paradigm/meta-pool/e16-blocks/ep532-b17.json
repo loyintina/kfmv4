@@ -1,0 +1,12 @@
+{
+ "id": "ep532-b17",
+ "episode_id": 532,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "相同卡竞态（重大，长拉锯）",
+ "pattern": "补丁vs根因,竞态",
+ "ep_score": 10,
+ "chars": 799,
+ "truncated": false,
+ "text": "**用户：**\n好\n\n**AI：**\nRead the current expand/collapse logic in the click handler:\n### Step 1: Insert `_toggleExpandCollapse` at module level\n### Step 2: Change `onTap`\n### Step 3: Remove native click handler + `_suppressNextClick`\nRemove `_suppressNextClick` declaration:\nRemove `_suppressNextClick` from `onExitEdit`:\nBuild:\nBuild OK. Commit:\n完成。改动汇总：\n\n| 改动 | 说明 |\n|------|------|\n| 新增 `_toggleExpandCollapse`（模块级） | 展开/收缩逻辑从 `dragItem` 读取所有状态，108 行 |\n| `onTap()` | `brOrb.click()` → `_toggleExpandCollapse()` |\n| 删除原生 `click` 处理器 | 100 行删掉，不再有双发 |\n| 删除 `_suppressNextClick` | 标记 + 设置 + 检查全删 |\n\nBR 光球所有交互现在全走 GestureRegistry 一条路：\n\n```\n短按 → GestureRegistry → onTap → _toggleExpandCollapse\n长按 → GestureRegistry → onEnterEdit → 编辑模式\n长按松手 → onExitEdit → 恢复状态（无残留 click）\n```\n\n刷新生效，测试长按编辑 + 短按展开/收缩 + 双卡场景。"
+}

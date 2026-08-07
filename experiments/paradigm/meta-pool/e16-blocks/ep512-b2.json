@@ -1,0 +1,12 @@
+{
+ "id": "ep512-b2",
+ "episode_id": 512,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "三按钮点击无响应",
+ "pattern": "约束前置,手势注册表",
+ "ep_score": 5,
+ "chars": 657,
+ "truncated": false,
+ "text": "**用户：**\n点击事件不是应该注册进手势注册表里吗？\n\n**AI：**\n你说得对，违反了项目约束——全项目应统一走 GestureRegistry，不该直接 `addEventListener`。\n\n**修正方案：**\n\n1. 移除 wrapper 上直接的 `pointerdown` + `click` 监听器\n2. 模式按钮加 `data-mode-btn=\"copy|move|delete\"` 属性\n3. 通过 `gestures.register()` 注册 handler：\n\n```\nid: 'mode-btn'\ntargetFilter: '[data-mode-btn]'\npriority: 90 （高于 card-stack-global 的 80）\ncondition: () => _bgCard !== null\nstopPropagation: { start: true }  ← GestureRegistry 内置机制\nonStart: 处理 toggle 逻辑\n```\n\n4. 同时修复 `pointer-events` 嵌套链 — `row2` 的 `pointer-events:none` 导致浏览器 hit testing 在第二层就跳过 wrapper，GestureRegistry 也收不到事件。方案：row2 改 `pointer-events:auto`，wrapper 显式设 `pointer-events:auto`。\n\n要按这个思路出改动清单吗？"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep504-b3",
+ "episode_id": 504,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "卡片堆聚焦状态错乱",
+ "pattern": "全链路验证,验证优先",
+ "ep_score": 9,
+ "chars": 795,
+ "truncated": false,
+ "text": "**用户：**\n压缩前还有最后一个问题，就是，它上面的卡片是能回到位置上的，但它下面的卡片会保持聚焦的伸出状态，而不归位，导致在我不断添加卡片的过程中，出现了一个像楼梯一样的布局。在这个布局里，如果我滑动切换光标，那所有布局都会正常，光标也能跟着移动。光标留在上半部分，再插入卡，聚焦能正常回到中央，但如果光标留在下半部分，那么插入卡后，那个位置的光标依然会保留聚焦状态。然后等下一次再滚动时才会恢复。\n\n**AI：**\n问题出在 splice 插入后数组索引变了，但 `after-forEach` 里用 `_tempCardEls[prevFocusIdx]` 重新去取旧卡，拿到的是插入位置的新卡或错位卡，导致失焦逻辑被跳过。\n\n修复思路：在 splice 前就保存旧卡的引用，之后直接用引用而非重新索引。\nThe `oldEl` is scoped inside the `if` block. I need to hoist it so the after-forEach can use the same reference (not re-index after splice):\nNow fix the after-forEach to use `oldEl` (saved reference) instead of re-indexing:\n根因：`splice` 插入后数组变了，`after-forEach` 重新用 `_tempCardEls[prevFocusIdx]` 索引拿到的不一定是旧聚焦卡。如果插入位置 ≤ 旧聚焦位，`_tempCardEls[prevFocusIdx]` 就指向了新卡或移位卡，导致 `!== card` 条件失败，失焦动画被跳过。\n\n修复：在 splice 前把 `oldEl` 提到外层保存引用，后面直接用引用，不依赖数组索引。"
+}

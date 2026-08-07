@@ -1,0 +1,12 @@
+{
+ "id": "ep549-b33",
+ "episode_id": 549,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端滚动方向/截停（超长拉锯，十几轮）",
+ "pattern": "机制重构,删旧留新,验证优先",
+ "ep_score": 11,
+ "chars": 650,
+ "truncated": false,
+ "text": "**用户：**\n我的滑动依然只能让它移动很小的距离，而且方向还是反的，我从下向上滑会导致它画面向下落。\n\n**AI：**\nLet me verify the bundle actually contains the new code.\n`public/bundle.js` 确认含有新代码（`scrollOffset*ch - (totalRows - rows)*ch`），旧的 `baseOff`/`visibleStart` 已全部删除。浏览器拿到的是新版本。\n\n现在需要澄清方向预期。目前的行为：\n\n| 手指方向 | `deltaPx` | `_scrollOffset` | `yOff` | 画面 | 看到的内容 |\n|---|---|---|---|---|---|\n| 上滑 (↓→↑) | `startY - rawY` > 0 | 增大 | 更少负 → 下移 | **画面下落** | 顶部露出**更早行**（历史） |\n| 下滑 (↑→↓) | `startY - rawY` < 0 | 减小 | 更多负 → 上移 | **画面上升** | 底部露出**较新行** |\n\n你说的\"方向反\"是指：**你期望上滑时画面应该上升，而不是下落？** 也就是说你要的是反向滚动（类似非自然的 \"reverse scrolling\"）？\n\n另外\"只能移动很小距离\"——在 `seq 1 100` 输出完成后，你滑动时画面大约移动了多少像素？是完全不动，还是动了 12-24px 就卡住了？"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep865-b5",
+ "episode_id": 865,
+ "session_id": "omp-2026-07-23T14-14-20-532Z_019f8f53-c874-7",
+ "source": "manual",
+ "topic": "工具框输出动画（340ms→1000ms/滚动动画/回退代码高亮版）",
+ "pattern": "实现边界控制,可回退铁律",
+ "ep_score": 7,
+ "chars": 1196,
+ "truncated": false,
+ "text": "**用户：**\n字号调小和代码高亮是不是同一次修改的？我要这个版本，但是只把字号调小\n\n**AI：**\n先看清楚这两个改动的边界。\n명확하게 분리되어 있다. CSS 변경(`.orb-tool-md.md-body` 선택자 + `font-size: 9px`)은 `orb-chat.ts` 변경(스트리밍 중 highlight 추가)과 완전히 독립적이다.\n\n两件事完全独立：\n\n- **字号修复**：只涉及 CSS（`base.css` / `base.scss`），把 `.orb-tool-md` 改成 `.orb-tool-md.md-body` 提高优先级 + 固定 9px\n- **流式高亮**：只涉及 `orb-chat.ts`，在 `streaming` 分支加了 `highlightAll(wrap)` 调用\n\n你要的目标版本是：`5ff9495`（流式高亮那个 commit）**之前**的状态，但保留字号修复。\n\n让我先确认一下性能问题，再决定怎么回退：\n\n`5ff9495` 之前（也就是 `85503d7`）的打字机版本，原始 CPU 爆炸根因是：`_animText` 打字机每 16ms 一个 tick，每 tick 调 `scheduleRender()`，每次重跑 `marked + highlight + math`。这个问题在 `e22944d` 时其实已经部分存在（流式加了 highlight），`d64ba51` 才彻底删掉了打字机。\n\n**直接回退到 `5ff9495` 之前会把性能问题带回来**。更干净的做法是：基于现在的代码（已无打字机），只把这次我搞坏的工具框动画逻辑简化掉，换回你最初那个能用的 `_animText` 打字机但不做 highlight 的版本。\n\n不过你说的「回退到没有代码高亮的流式输出那个版本」，结合上面分析，我理解是：**保留打字机流式体验（内容逐字出现），不做 highlight，字号 9px**。这个状态性能会不会炸？\n\n`_animText` 打字机每 tick 只改字符串、重跑 `marked`（不含 highlight），`scheduleRender` 保证每帧最多渲染一次，`_mdCache` 让历史消息不重复渲染。这套在 `7aa42a6` 加了 md 缓存之后性能是基本可控的——**当时炸是因为同时并发十几个工具框各自 tick、加上 highlight 一起跑**。单个工具框只跑 `marked`（纯 JS 字符串解析），配合 `scheduleRender` 合批，手机上会有些重但不会打死。\n\n要我现在就把工具框动画还原成打字机版本（无高亮），同时保留字号 9px，并把这轮我改乱的 scroll-reveal/wait-phase 全部清除？确认一声我就动手。"
+}

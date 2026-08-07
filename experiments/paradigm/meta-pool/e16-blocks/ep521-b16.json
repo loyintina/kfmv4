@@ -1,0 +1,12 @@
+{
+ "id": "ep521-b16",
+ "episode_id": 521,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "左竖线粒子衔接/长度守恒（重大）",
+ "pattern": "设计主权,简化方案,像素守恒",
+ "ep_score": 9,
+ "chars": 642,
+ "truncated": false,
+ "text": "**用户：**\n那你会如何做改动？\n\n**AI：**\n## 改动：1 行，1 个文件，1 个字符\n\n**文件**：`src/client/modules/canvas-cursor.ts`\n\n**位置**：`_rangeToPhysicalPoints` 函数，`i === 1` 分支，条件行\n\n**改前**：\n```typescript\nif (os >= segTop + margin && oe <= segBot - margin) {\n```\n\n**改后**：\n```typescript\nif (s >= segTop && e <= segBot) {\n```\n\n### 原理\n\n| | `os`/`oe` (裁剪后) | `s`/`e` (未裁剪) |\n|---|---|---|\n| 跨上线-竖线 | os=segTop, 凑巧不触发 cap | s<segTop, 逻辑正确不触发 |\n| 全程竖线 | os≥segTop, ok | s≥segTop && e≤segBot ✓ |\n| 跨竖线-下线 | oe=segBot, 凑巧不触发 cap | e>segBot, 逻辑正确不触发 |\n\n`segTop`/`segBot` 已有，`margin` 变量变成无人引用 → 顺带删掉。\n\n### 不动\n\n`verticalMul`、`segLenVertical`、`hlDef`、`segLen` 全保持不变。变速、密度、长度守恒不受影响。\n\n确认实施？"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep563-b21",
+ "episode_id": 563,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "全屏卡片 z-index/布局（拉锯）",
+ "pattern": "验证优先,原版复用",
+ "ep_score": 7,
+ "chars": 371,
+ "truncated": false,
+ "text": "**用户：**\n但是，不对啊？回到卡片展开状态，那个卡片模式的代码不应该直接用上嘛？理论上不应该出现这个问题？你是不是又自己复制了一遍代码自己实现了，而没用原版的代码？\n\n**AI：**\n你说得对。根因就是这个——`createDecoratedCorner` 设的是 `display:flex`，但我恢复时用了 `display:''`，变成了 `display:block`，SVG 不再居中。\n\n这不是\"重复实现\"的问题——`enterFullscreen`/`exitFullscreen` 管全屏态的显隐，不存在现有代码可以借。但恢复值用错了，应该是 `'flex'` 不是 `''`。\n\n**修复：** `exitFullscreen` 中 4 处 `display: ''` → `display: 'flex'`\n\n要改吗？"
+}

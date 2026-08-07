@@ -1,0 +1,12 @@
+{
+ "id": "ep896-b1",
+ "episode_id": 896,
+ "session_id": "omp-2026-05-27T17-10-59-698Z_019e6a6b-0772-7",
+ "source": "manual",
+ "topic": "文件树渲染 bug（隐式关联/硬编码立约束）",
+ "pattern": "补丁vs根因",
+ "ep_score": 6,
+ "chars": 401,
+ "truncated": false,
+ "text": "**用户：**\n所以，问题在于硬编码对吗？\n\n**AI：**\n对。而且不止这一处——根路径目前分散在：\n\n| 文件 | 位置 | 值 |\n|------|------|-----|\n| `main.ts` | `loadFileTree('.')` | `.` |\n| `tree-model.ts` | `state.files['.']` + `buildExpanded('.')` | `.` |\n| `tests/regression.test.ts` | 种子数据 + 断言 | `.` |\n| `server/index.ts` | `ROOT_DIR = process.env.KFM_ROOT || '.'` | `.` |\n\n五个地方，如果下次再改，又会漏。\n\n要把它收成一个共享常量吗？比如在 `state.ts` 或 `app.ts` 里定义，其他模块从那里引用，改一次全动。"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep829-b10",
+ "episode_id": 829,
+ "session_id": "omp-2026-05-29T05-12-43-275Z_019e7226-260b-7",
+ "source": "manual",
+ "topic": "面板动画/位置/高度/手势劫持拉锯",
+ "pattern": "补丁vs根因,实现边界控制",
+ "ep_score": 4,
+ "chars": 381,
+ "truncated": false,
+ "text": "**用户：**\n然后，虽然黑色遮罩取消了，但我还是希望全局的手势都无响应，或者把全局的手势都劫持到面板上。另外，展开淡入也取消掉吧。\n\n**AI：**\n.\n.\n.\n文件乱了，重写 _openPanel 和 _destroyPicker：\n.\n`_destroyPicker` 函数头没了：\n.\n.\n现在取消弹入动画的淡入效果：\n.\n.\n.\n67 个 `{` 对 66 个 `}`。找到缺的那个：\n.\n.\n.\n.\n.\n.\n一行行扫描找多出来的 `{`：\n.\n.\n`_parentPath` 的 `}` 在之前的 edit 中被吞了。补：\n.\n.\n.\n.\n通过。现在：\n- 无淡入（弹入只有平移）\n- 无淡出（收拢只有下滑）\n- 有全局手势阻挡层（picker 打开时所有手势被透明 overlay 捕获，不会穿透到 gesture-registry）\n\n刷新试试？"
+}

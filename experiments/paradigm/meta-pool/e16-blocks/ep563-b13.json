@@ -1,0 +1,12 @@
+{
+ "id": "ep563-b13",
+ "episode_id": 563,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "全屏卡片 z-index/布局（拉锯）",
+ "pattern": "验证优先,原版复用",
+ "ep_score": 7,
+ "chars": 554,
+ "truncated": false,
+ "text": "**用户：**\n两个都在，依然盖住了输入栏和按钮，然后点击关闭按钮后，这个开篇的四个角的光球上的svg图标还是整体偏上。唯一有效果的是，卡片zindex确实锁上了，现在其他卡片在上面，也不会被全屏卡片覆盖，但唯独这个输入栏，依然被全屏卡片覆盖。\n\n**AI：**\n日志已经确认 `bar.z=200`，理论上 200 > 20，输入栏应该在卡之上。但你说依然盖住了。这说明有一个我没想到的因素。\n\n让我查一下：卡或输入栏有没有什么 CSS 属性改变了层叠上下文。\n`closeSidebar` 不动输入栏。z-index 20 vs 200 按理应该工作。但我没招了，需要运行时确认到底是什么盖住了输入栏。\n\n我可以加一行日志打在 `enterFullscreen` 动画完成后的 `onComplete` 里，打出：\n\n```\n卡的实际 z-index（getComputedStyle）\n输入栏的实际 z-index（getComputedStyle）\n输入栏的 DOM 父级链（看有没有 transform 祖先）\n输入栏是否被其他元素覆盖\n```\n\n这样就能确定：是输入栏 z-index 被覆盖了？还是层叠上下文不对？还是卡的确覆盖了但 z-index 正常（说明有其他因素）？\n\n要加这个日志吗？"
+}

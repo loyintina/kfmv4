@@ -1,0 +1,12 @@
+{
+ "id": "ep598-b49",
+ "episode_id": 598,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "heuristic",
+ "topic": "4.1 版本改坏→回退 4.0；日志卡定位；多次无效修改（与 B53/B54 同族）",
+ "pattern": "版本回退,验证优先",
+ "ep_score": 9,
+ "chars": 694,
+ "truncated": false,
+ "text": "**用户：**\n好\n\n**AI：**\n**步骤 1**：PtyManager 加 `command` 参数：\nNow ws-server.ts — pass command through:\nNow `tmux-card.ts` — auto-attach 用 `terminal-open` 带 `command`：\nLet me rethink the approach. The cleanest way: `initTerminalCore` adds a `autoOpen` flag. When `false`, the caller sends `terminal-open` manually.\nActually, simpler approach — keep `initTerminalCore` unchanged, just handle the switch in tmux-card's `onResult`:\nLet me add `autoOpen` to `initTerminalCore` instead:\nNow `floating-card.ts` — card04 keyboard avoidance:\n已提交。硬刷新测试：\n\n1. card04 单 session → 直接进 tmux，**看不到 `tmux attach` 命令回显**\n2. card04 多 session → picker 显示 session 按钮，点哪个 attach 哪个\n3. card04 点输入区 → 键盘弹起 → 卡片上移（和 card03 一样）"
+}

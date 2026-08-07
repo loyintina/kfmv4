@@ -1,0 +1,12 @@
+{
+ "id": "ep942-b3",
+ "episode_id": 942,
+ "session_id": "omp-2026-07-14T01-05-45-581Z_019f5e28-946d-7",
+ "source": "manual",
+ "topic": "会话卡二级卡消失 + 保存新建位置/限高 70%/固定 + 吞消息回退 + git 习惯",
+ "pattern": "可回退铁律",
+ "ep_score": 6,
+ "chars": 803,
+ "truncated": false,
+ "text": "**用户：**\n然后，顺便把每个卡片的保存/新建固定在所在卡片的下行上，保证如果内容超出滚动，这两个按钮还在。\n\n**AI：**\nThis requires restructuring — add a scroll wrapper inside each frame, with sticky buttons. Let me do all four cards:\nNow config card:\nLet me take a more efficient approach — use a script to add the scroll wrapper pattern to all four cards:\n`tsc` ✅ | bundle ✅ | committed\n\n四张管理卡全部统一：\n\n```\n┌─ 编辑器框（max-height:70vh, flex column）─┐\n│  ┌─ 滚动区（flex:1, overflow-y:auto）──┐  │\n│  │  选择器                              │  │\n│  │  名称 / 地址 / Key...                │  │\n│  │  模型标签                            │  │\n│  └─────────────────────────────────────┘  │\n│  [新建] [保存] [测试]    ← 粘性底部       │\n└──────────────────────────────────────────┘\n```\n\n- API/配置/角色：内容区 `overflow-y:auto` + 按钮 `flex-shrink:0`，滚内容不滚按钮\n- 会话：预览框 `max-height:70%`（从 55% 上调），按钮在气泡区下方"
+}

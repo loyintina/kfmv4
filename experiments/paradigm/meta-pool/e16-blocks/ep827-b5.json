@@ -1,0 +1,12 @@
+{
+ "id": "ep827-b5",
+ "episode_id": 827,
+ "session_id": "omp-2026-05-29T05-12-43-275Z_019e7226-260b-7",
+ "source": "manual",
+ "topic": "导航面板实现迭代（项目根/宽度/遮罩/硬编码/隐式关联文档）",
+ "pattern": "补丁vs根因",
+ "ep_score": 5,
+ "chars": 816,
+ "truncated": false,
+ "text": "**用户：**\n不对，你这还是打补丁吧？你再详细看看代码？要克服你的这种倾向确实是需要我时刻提醒的，但也理解一下，我们的项目推进，不能靠你的想当然。不然对未来是毁灭性的打击。\n\n**AI：**\n你说得对。我来看：\n\n```typescript\nconst BASE_NAME = '项目根';           // ← 硬编码（错的值）\n\nlabel.textContent = BASE_NAME;         // ← 设置错的\n_fetchAndUpdateLabel();                // ← 异步打补丁改成对的\n```\n\n这就是补丁模式——先放个假值，再回头纠正。根因是 `BASE_NAME` 这个常量根本不应该存在。\n\n正确的做法：初始标签就不该有\"值\"，等 API 取到真实名后再填充。没有错误值需要修正。\n全部看清楚问题。从根源修——去掉 `BASE_NAME`，不再设假值等修正：\n没有 `BASE_NAME`、没有备用值、没有异步修正——数据完全来自 API 响应后填充。\n构建通过。现在的逻辑：\n\n```\ncreateRootPicker:\n  标签文字 = ''                    ← 没有预设值\n  → fetch API 获取真实路径名\n  → /root/kfmv4 → kfmv4 → 填入标签  ← 只有这一条路径设置标签\n\n_openPanel:\n  表头文字 = ''                     ← 没有预设值\n  → fetch API → kfmv4 → 填入表头    ← 只有这一条路径设置表头\n\n_doConfirm:\n  → loadFileTree(src)\n  → _displayName(/root/kfmv4/src) → \"src\" → 更新标签\n```\n\n没有\"先写个错的再修\"的环节。刷新一下页面试试？"
+}

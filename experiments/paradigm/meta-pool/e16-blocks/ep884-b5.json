@@ -1,0 +1,12 @@
+{
+ "id": "ep884-b5",
+ "episode_id": 884,
+ "session_id": "omp-2026-06-03T14-24-49-802Z_019e8ddf-6a8a-7",
+ "source": "manual",
+ "topic": "代码去重重构决策（光球面板/浮卡三套合一，浮卡唯一实现）",
+ "pattern": "重构优于补丁",
+ "ep_score": 1,
+ "chars": 1844,
+ "truncated": false,
+ "text": "**用户：**\n就是这个意思，然后，如果未来我添加定制更多的浮卡，或者其他卡片，就可以根据这个，导入文件，直接引用功能函数组装。比如现在的卡片堆的02浮卡。这个也是个独立文件吧？然后，这些都作为插件文件夹里的文件，未来如果要做其他浮卡或特殊面板，就做一个ts文件放在这个文件夹里面，可插拔。\n\n**AI：**\n让我确认一下我准确理解了这个愿景，然后给出方案。\n\n---\n\n## 愿景验证\n\n| 概念 | 解释 |\n|---|---|\n| 一份实现 | `floating-card.ts` = 唯一引擎，orb、卡片堆浮卡、未来所有浮卡都通过配置化创建 |\n| 插件化 | 每张浮卡是一个 `cards/plugins/<name>.ts`，导入 floating-card.ts，传配置参数组装 |\n| 彻底删除 | `orb.ts` 整文件删除，它的所有功能由浮卡引擎 + 插件配置替代 |\n\n这是你的意思吗？\n\n---\n\n## 合并后的架构\n\n```\nfloating-card.ts  ← 唯一的引擎（~900 行）\n  ├── 创建浮卡 DOM（四角光球、毛玻璃、内容区）\n  ├── 状态机（compact → expanding → active → collapsing → compact）\n  ├── 拖拽（gesture-registry，BR 光球 + 卡片体）\n  ├── 编辑缩放\n  ├── 边界钳制\n  └── 输入法避让\n\ncards/plugins/\n  ├── orb-card.ts          ← ~80 行，配置 AI 对话浮卡\n  │   compact: 0×0（隐藏），active: 300×350，只有 BR 光球\n  │   内容区: 渲染聊天消息 + 输入栏\n  │   行为: alwaysOnTop + inputBarAvoid\n  │\n  ├── debug-card.ts        ← 未来的调试卡片\n  └── ...\n\ncard-stack.ts  ← 保留，但\"发射浮卡\"改为调 createFloatingCard()\n```\n\n### orb.ts 消失后，它的什么变成了什么\n\n| orb.ts 的功能 | 浮卡引擎中的位置 |\n|---|---|\n| `orbEl` DOM | 引擎自动创建 |\n| `panelEl` DOM | 引擎的内容区，插件通过 `renderActive()` 回调填入 |\n| `chatMessages`, `renderChatContent()` | 搬到 `orb-card.ts` 插件里或公共工具 |\n| `initInputBarWatcher()` | 引擎内建，配置 `inputBarAvoid: true` 启用 |\n| `clampOrbPosition()` | 引擎内建的基础边界钳制 |\n| `startDrag/moveDrag/endDrag` | 引擎内建的 gesture-registry 处理 |\n| `togglePanel/expandPanel/collapsePanel` | 引擎的状态机 `toggleCompact()` |\n| `Registry.registerElement` 注册 orb / orb-panel | `orb-card.ts` 插件里配置 |\n| `wsChannel.onCommand('expand-orb')` | `orb-card.ts` 插件里注册 |\n\n### 数量对比\n\n| 指标 | 现在 | 统一后 |\n|---|---|---|\n| 浮卡相关的行数 | 567 (orb) + 847 (floating) = **1414 行** | ~900 行引擎 + ~80 行配置 = **~980 行** |\n| 独立的拖拽骨架 | 3 份 | 1 份 |\n| 独立的状态机 | 2 套（orbState/panelState + FloatingCardItem.state） | 1 套 |\n| 独立的边界钳制 | 3 个函数 | 1 个函数 |\n| 新建一种浮卡 | 复制 + 改参数，~500 行 | 配置，~80 行 |\n\n这个方式就是我理解的\"极致架构简洁\"——**不是用抽象层取代代码，而是发现它们本质上是同一个东西，只留一份**。\n\n要推进吗？"
+}

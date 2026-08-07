@@ -1,0 +1,12 @@
+{
+ "id": "ep850-b11",
+ "episode_id": 850,
+ "session_id": "omp-2026-07-07T06-14-00-892Z_019f3b36-47bc-7",
+ "source": "manual",
+ "topic": "卡片堆投卡手感（幽灵卡 bug 现场）+ 三行代码引入大量 bug + 补丁质疑",
+ "pattern": "补丁vs根因,可回退铁律",
+ "ep_score": 19,
+ "chars": 948,
+ "truncated": false,
+ "text": "**用户：**\n别着急啊，你还没告诉我你要如何一步一步加进去呢。\n\n**AI：**\n好，按这个顺序测试，每一步测试后告诉我现象：\n\n**Step 1** — 只改 click handler，直接创建 `startInFullscreen: true` 的浮卡，不关卡片堆：\n\n```typescript\nel.addEventListener(\"click\", (e) => {\n    _focusIndex = idx;\n    updateFocus();\n    // 直接发射全屏卡，不关堆\n    const cardRect = getFocusedCardRect();\n    if (!cardRect) return;\n    const cc = getCurrentAccent(idx);\n    if (!cc) return;\n    createFloatingCard({\n      id: 'stack-' + idx,\n      typeId: getCardId(idx),\n      color1: cc.color1, color2: cc.color2,\n      name: getCardName(idx),\n      sourceX: cardRect.left, sourceY: cardRect.top,\n      startInFullscreen: true,\n      contentHandler: getCardType(getCardId(idx))?.createHandler({}),\n    });\n});\n```\n\n这一步只测：\n- 卡片堆样式是否正常？（纯色背景？）\n- 卡片是否全屏出现？\n- 退出全屏回浮卡，位置对不对？（Bug 3）\n\n**Step 2** — 在 Step 1 基础上加 `closeCardStack()`：\n\n```typescript\ncreateFloatingCard({...});\ncloseCardStack();\n```\n\n测：\n- 卡片堆是否正常收起？\n- 残影？关不掉？\n\n**Step 3** — 同步改 swipe handler。\n\n要开始吗？"
+}

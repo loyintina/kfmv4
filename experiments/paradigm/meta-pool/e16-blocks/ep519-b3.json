@@ -1,0 +1,12 @@
+{
+ "id": "ep519-b3",
+ "episode_id": 519,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "中央光球/文件树/卡片堆打不开——build 缓存问题（O/B 混合，含\"缓存问题绝对不可能再出现\"的需求）",
+ "pattern": "心法前置,根治需求",
+ "ep_score": 3,
+ "chars": 837,
+ "truncated": false,
+ "text": "**用户：**\n但我的目的就是为了保证未来绝对不可能出现这个缓存问题？\n\n**AI：**\n好问题。`rmSync` 的意图是对的（要保证新鲜），但手段错了（删了就没退路）。\n\n## 正确方案\n\n**构建后校验，不是构建前删除。**\n\n```js\n// build.mjs 末尾，esbuild 完成后：\nimport { statSync } from 'fs';\n\nfunction fresherThanSource(outfile: string): boolean {\n  const outTime = statSync(outfile).mtimeMs;\n  // 递归遍历 src/ 找最新源文件时间\n  for (const f of walkSync('src')) {\n    if (statSync(f).mtimeMs > outTime) return false;\n  }\n  return true;\n}\n\nif (!fresherThanSource('public/bundle.js') || !fresherThanSource('dist/server/index.js')) {\n  console.error('[build] 产物比源码旧，构建不完整或中断');\n  process.exit(1);\n}\n```\n\n## 对比\n\n| | rmSync 方案 | 校验方案 |\n|---|---|---|\n| 被截断时 | 文件消失 → 全毁 | 旧文件保留 → 退出码 1 |\n| 缓存问题 | 兜底兜住 | 精确检测，拒绝通过 |\n| 心法 2（源头简化） | 否，额外防御层 | 是，验证不变量 |\n| 心法 8（自然约束） | 否，引入危险窗口 | 是，build 成功 ⇔ 文件新鲜 |\n\n`build 成功` 本就该等于 `产物从源码重建`。校验方案是把这个不变量显式编码验证，而不是靠删文件来强行保证。\n\n要实施？"
+}

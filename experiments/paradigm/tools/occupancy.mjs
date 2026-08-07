@@ -37,6 +37,7 @@ export const PACK_TOKENS_K = {
   'measured-decision-full': 4.1,
   'root-cause-first': 7.8,
   'behavior-discipline': 7.2,
+  'e16-s6-retro': 7.8,
 };
 
 /** 模型窗口（k tokens）。键为模型名片段（includes 匹配，长片段优先）。 */
@@ -60,7 +61,9 @@ export const MODEL_WINDOWS_K = {
   'claude-opus': 200,
   'claude-sonnet': 200,
   'claude-haiku': 200,
-  // 未登记（窗口未核实，occ_ratio 计 NULL）：deepseek-v4-flash / glm-5 /
+  'deepseek-v4-flash': 1024, // DS 官方 1M（api-docs.deepseek.com 2026-08-07；hermes-agent#15983 亦记 1M）
+  'deepseek-v4-pro': 1024, // 同上
+  // 未登记（窗口未核实，occ_ratio 计 NULL）：glm-5 /
   // kimi-k2.5 / mimo-v2.5 / minimax-m2.5|m2.7|m3（聚光按次版）/ qwen3.5-plus
 };
 

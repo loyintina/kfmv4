@@ -1,0 +1,12 @@
+{
+ "id": "ep991-b2",
+ "episode_id": 991,
+ "session_id": "omp-2026-07-27T00-23-12-649Z_019fa0f4-4c09-7",
+ "source": "manual",
+ "topic": "v8 工作继续实现",
+ "pattern": "补丁vs根因,实现边界控制",
+ "ep_score": 5,
+ "chars": 1147,
+ "truncated": false,
+ "text": "**用户：**\n那，那个预存问题是什么？好修吗？顺便，现在的v8能归档了吗？\n\n**AI：**\n让我先看看那个预存的测试失败问题。\n\n\n预存问题找到了。`sibling-switcher.ts` 有一个测试 `BAR-ORB-TREE-01` 要求零外部依赖（防止循环依赖导致文件树崩溃），但代码实际有 3 个 import：\n\n```typescript\nimport { KFMState, API } from './state.js';\nimport { loadFileTree } from './tree-loader.js';\nimport { log } from './logger.js';\n```\n\n**历史原因**：\n- 早期版本（`3dfdf55`）确实是零依赖的，用 `window.location.reload()` 刷新页面切换目录\n- 后来改成了不刷新页面的方式（更新 KFMState + 调用 loadFileTree），但测试没更新\n- 注释仍说\"零外部依赖\"，但实际有依赖\n\n**修复方案**：\n1. **恢复零依赖版本**（推荐）：删除 import，用 `_apiBase()` 动态计算 API base，切换后刷新页面\n2. **更新测试**：允许这些依赖，但需要确认循环依赖问题不存在\n\n我推荐方案 1，简单且符合测试要求。要我修复吗？\n\n---\n\n关于 v8 归档：**可以归档了**。所有审计项已完成：\n\n✅ **代码清理**\n- 死代码删除（saveSessionFile、serverMessages、动画代码）\n- 模块重命名（session-store → session-client）\n- 注释清理（renderChatContent 引用）\n\n✅ **性能优化**\n- flushSync 分流（delta 防抖，结构性事件同步）\n\n✅ **架构改进**\n- orb-chat.ts 拆分（706 行 → 3 文件）\n- content_block_stop 区分 text/tool block\n- tryAutoResume 抽取\n\n✅ **文档同步**\n- V8_ARCHITECTURE.md（Phase 状态 + 推迟标注）\n- AI_CHAT_RUNTIME.md（架构图 + 冷恢复章节）\n- HANDBOOK.md（审计表 + 版本历史）\n- README.md + CLAUDE.md + package.json（版本号）\n\n✅ **验证通过**\n- `npm run build` ✅\n- `npm test` 359 passed, 1 failed（预存问题）\n\n要我修复预存问题然后归档吗？\n"
+}

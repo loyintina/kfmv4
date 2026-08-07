@@ -1,0 +1,12 @@
+{
+ "id": "ep546-b25",
+ "episode_id": 546,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端编号/状态混用（重大）",
+ "pattern": "初心对齐,机制设计,读码优先",
+ "ep_score": 5,
+ "chars": 2009,
+ "truncated": false,
+ "text": "**用户：**\n方案b，因为未来要做文件编辑卡，或者特殊的编辑器卡，这跟文件预览的编辑是共通的。\n\n**AI：**\n让我理清需要改的东西。\n\n---\n\n## 现状的问题\n\n`createFloatingCard` 里把 `config.id` 当 `typeId` 传给注册表：\n\n```typescript\n// config.id = 'stack-0'（card-stack 产生的）或 'temp-xxx.md'（tree-swipe 产生的）\ncardRegistry.createInstance(config.id, ...);\n```\n\n但实际上 `'stack-0'` 不是一个 CardTypeDef——注册表里没有这个名字。`cardInstance.typeId` 现在是错的。\n\n---\n\n## 需要改动的地方\n\n### 1. `FloatingCardConfig` 加 `typeId` 字段\n\n```typescript\nexport interface FloatingCardConfig {\n  id: string;           // 显示标识，保持现样（'stack-0', 'temp-xxx'）\n  typeId: string;       // 类型标识（'debug', 'card03', 'file'） ← 新增\n  color1: string; ...\n  contentHandler?: ...;\n}\n```\n\n### 2. `CardTypeDef.createHandler` 签名字段改\n\n从：\n\n```typescript\ncreateHandler: () => CardContentHandler\n```\n\n改为：\n\n```typescript\ncreateHandler: (meta: Record<string, unknown>) => CardContentHandler\n```\n\n工具卡无视 meta，文件卡从 meta 里读文件路径。\n\n### 3. `createFloatingCard` 调用处全部更新\n\n| 调用处 | 现在传什么 | 改后传什么 |\n|--------|-----------|-----------|\n| `card-stack.ts:launchFocusedCard` | `id: 'stack-' + idx` | 加 `typeId: getCardId(idx)` |\n| `tree-swipe.ts:deployAllCards` | 直接调 `createFileHandler(...)` | 改走 registry：`getCardType('file')?.createHandler({ filePath, accent })` |\n\n### 4. `tree-swipe.ts` 加入注册表体系\n\n文件卡也要 `registerCardType({ typeId: 'file', createHandler: (meta) => createFileHandler(...) })`。\n\n### 5. 检查脚本（后续补）\n\n建 `check-cards.mjs` 验证所有 `createFloatingCard` 调用都有合法的 `typeId`。\n\n---\n\n## 估行\n\n| 文件 | 改动 |\n|------|------|\n| `card-registry.ts` | `createHandler` 签名 +meta 参数 | ~3 |\n| `floating-card.ts` | `FloatingCardConfig` +`typeId`；`createFloatingCard` 用 config.typeId | ~5 |\n| `card-stack.ts` | `launchFocusedCard` 加 typeId | ~3 |\n| `tree-swipe.ts` | 改用 registry + registerCardType('file') | ~10 |\n| `handler-factory.ts` | `createFileHandler` 要接收 meta 对象（或保持原样 + 加 wrapper） | ~5 |\n| **合计** | | **~26** |\n\n---\n\n这个设计确保：无论是工具卡还是文件卡，**所有卡片类型都走 `registerCardType` 登记**，所有卡片实例都走 `cardRegistry.createInstance` 创建。不存在 \"tree-swipe 是特例\" 的情况。\n\n确认后我把这个写入 `CARD_REGISTRY_SPEC.md` 的设计文档，然后逐步骤实施。"
+}

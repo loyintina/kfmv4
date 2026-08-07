@@ -1,0 +1,12 @@
+{
+ "id": "ep990-b2",
+ "episode_id": 990,
+ "session_id": "omp-2026-07-27T00-23-12-649Z_019fa0f4-4c09-7",
+ "source": "manual",
+ "topic": "接手 + v8 审计结果 + 能做的都做",
+ "pattern": "补丁vs根因,复盘沉淀",
+ "ep_score": 1,
+ "chars": 1322,
+ "truncated": false,
+ "text": "**用户：**\n可以，开始吧\n\n**AI：**\nv8 审计清理完成。\n\n## 完成的工作\n\n**死代码清理（~160 行）**\n- `chat.ts`: 删除 `saveSessionFile` 死函数 + `serverMessages` 累加器，移除 `sessionId`/`clientMessages` 参数\n- `orb-chat.ts`: 删除 `_applyEvent` 动画调度代码（打字机/折叠动画）、`scheduleRender` 机制、`_activeAnimTimers`/`_activeFoldAnims` 追踪\n- `run-manager.ts` + `routes.ts`: 同步移除 `sessionId`/`clientMessages` 参数\n\n**auto-resume 防护**\n- `orb.ts`: 冷恢复 IIFE 加 `restartCount` 计数器（localStorage，MAX=3），防止无限循环；用户手动发送时重置计数\n\n**文档同步（6 个文件）**\n- `V8_ARCHITECTURE.md`: Phase 0-4/6 标 ✅，Phase 5 标\"推迟\"，移除 `?renderer=v8` flag 引用\n- `AI_CHAT_RUNTIME.md`: 架构图更新（chat-dom.ts 为唯一渲染路径）、文件列表补充（+5 shared +1 server）、新增 §10 冷恢复文档\n- `HANDBOOK.md`: v8.0.0 版本条目、审计表行数更新（orb-chat 844→707）、补充 shared/server 文件条目\n- `README.md`: 版本号 7.3.3→8.0.0、修复\"localStorage 持久化\"事实错误\n- `CLAUDE.md`: 文档树补充 `V8_AUDIT_REPORT.md`\n- `package.json`: 版本号 7.3.3→8.0.0\n\n**构建管线修复**\n- `check-consistency.mjs`: 修复模块计数正则，排除 `../src/shared/` 和 `../src/server/` 路径\n\n## 验证结果\n\n```\nnpm run check  ✅ 全量通过（14 个检查脚本 + tsc --noEmit）\nnpm test       359 passed, 1 failed\n```\n\n**1 个失败测试是预存问题**：`BAR-ORB-TREE-01` 测试 `sibling-switcher.ts` 零导入，但文件实际有 3 个 import。此测试在 v8 审计前已失败，与本次清理无关。\n\n## 提交记录\n\n```\n16eae5c fix: 恢复 orb.ts 冷恢复 IIFE 中 sid 声明\n6894ca5 fix: check-consistency 排除 shared/server 文件计数\n5862516 v8.0.0: 删除死代码 + 文档同步 + restartCount 防护\n```\n\ngit tag `v8.0.0` 已创建。"
+}

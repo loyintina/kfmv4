@@ -1,0 +1,12 @@
+{
+ "id": "ep615-b14",
+ "episode_id": 615,
+ "session_id": "ses_063fd57d7ffepMZzVsdv2wNXM2",
+ "source": "manual",
+ "topic": "\"Unexpected token '<'\" 报错",
+ "pattern": "全链路验证,验证优先",
+ "ep_score": 17,
+ "chars": 308,
+ "truncated": false,
+ "text": "**用户：**\n我刚刚又看到一个问题，如果会话里的ai，自己执行了服务重启，然后自己把自己的进程杀死，那么这个消息记录也会被吞。我们能不能有一个机制，确保只要调用工具了就写进会话文件哦？\n\n**AI：**\n只加了 6 行有效代码：\n\n在 `_applyEvent` 收到 `tool_use` block 的瞬间（工具名字出现在流里、客户端刚创建工具卡）→ 调 `sessionStore.saveMessages()` 落盘。\n\n时机画在工具执行**之前**。如果 AI 调 `bash` 杀掉了自己的服务进程，消息在磁盘上已经安全了。\n\n`doSend` 和 `resumeRun` 两处都已注入。刷新页面试用。"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep543-b3",
+ "episode_id": 543,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "ANSI 颜色渲染错误（红=白、蓝底白字被盖、右半边透明、汉字偏左上）——终端渲染细节",
+ "pattern": "渲染细节",
+ "ep_score": 1,
+ "chars": 1551,
+ "truncated": false,
+ "text": "**用户：**\n中文汉字挤在一起了\n\n**AI：**\n等宽字体的中文是**全角字符**，占 2 个格子宽。但现在 `write()` 每个字只分配 1 个格子（`cellW ≈ 5.4px`），汉字需要 10.8px，被挤在 5.4px 里，所以重叠。\n\n---\n\n## 修复方案\n\n### 检测全角字符\n\nUnicode 全角范围包括 CJK、全角符号、中文标点等。核心判断：\n\n```typescript\nfunction _isFullWidth(ch: string): boolean {\n  const code = ch.charCodeAt(0);\n  // CJK 统一汉字 + 中文标点 + 全角字母/数字\n  return code >= 0x1100\n      && (code <= 0x115F              // Hangul\n          || code === 0x2329 || code === 0x232A  // 〈 〉\n          || (code >= 0x2E80 && code <= 0xA4CF)  // CJK 部首-彝文\n          || (code >= 0xAC00 && code <= 0xD7A3)  // Hangul 音节\n          || (code >= 0xF900 && code <= 0xFAFF)  // CJK 兼容\n          || (code >= 0xFE10 && code <= 0xFE19)  // 竖排\n          || (code >= 0xFE30 && code <= 0xFE6F)  // CJK 兼容形式\n          || (code >= 0xFF01 && code <= 0xFF60)  // 全角 ASCII\n          || (code >= 0xFFE0 && code <= 0xFFE6)  // 全角符号\n          || (code >= 0x20000 && code <= 0x3FFFF));  // 扩展 CJK\n}\n```\n\n### write() 写字符时跳 2 列\n\n```typescript\nconst wide = _isFullWidth(ch);\nif (cursorC < cols - (wide ? 1 : 0)) {  // 够放\n  cells[cursorR][cursorC] = { char: ch, fg: ..., bg: ... };\n  if (wide) cells[cursorR][cursorC + 1].char = '';  // 第二个格标记为空\n}\ncursorC += wide ? 2 : 1;\n```\n\n### render() 画字符时占双宽\n\n```typescript\nconst wide = _isFullWidth(cell.char);\nfillText(cell.char, c * cellW, y);\n// 不需要特殊处理—— fillText 本身会按字符实际宽度画，只是格子只占 2×cellW\n```\n\n画的时候 `fillText` 会按文字实际宽度渲染。但要防止右边格子被遮挡——需要在每个 wide 字符后面一格跳过绘制（已标记 `char=''`）。\n\n---\n\n### 代码量\n\n约 20 行：`_isFullWidth()` 判断 ~12 行 + `write()` 调整 ~5 行 + `_render()` 调整 ~3 行。\n\n---\n\n要我切 build 修复吗？"
+}

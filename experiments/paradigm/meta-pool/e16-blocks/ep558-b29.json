@@ -1,0 +1,12 @@
+{
+ "id": "ep558-b29",
+ "episode_id": 558,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端滚动条/滚动失效",
+ "pattern": "一致性质疑,日志定位",
+ "ep_score": 7,
+ "chars": 456,
+ "truncated": false,
+ "text": "**用户：**\n \n\n**AI：**\nNow modify the gesture handler to branch on `activeProtocol`:\nNow add `_sidMap` set/delete. Let me find the sessionId setting and cleanup points:\n完成。手势现在分两条路：\n\n```\nonMove → 读 _activeTerm._core.coreMouseService.activeProtocol\n  ├── \"NONE\" → scrollLines(dy/9)               ← 普通终端，已验证\n  └── \"VT200\" 等 → wsChannel send X10 滚轮序列  ← tmux/vim(mouse on)\n```\n\n硬刷新后：\n- 普通终端：单指滑动正常（scrollLines 路径没变）\n- tmux：先 `set -g mouse on`，再单指滑动——应该能翻 pane 内容了"
+}

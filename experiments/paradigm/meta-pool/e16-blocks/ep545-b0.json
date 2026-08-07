@@ -1,0 +1,12 @@
+{
+ "id": "ep545-b0",
+ "episode_id": 545,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端编号不递增（都显示终端1/点击 canvas 不弹输入法）",
+ "pattern": "平台机制",
+ "ep_score": 1,
+ "chars": 1346,
+ "truncated": false,
+ "text": "**用户：**\n呃，点击canvas并没有弹出手机输入法，而且当我多召唤其他卡片时，并不是终端2，终端3，而依然是终端1.\n\n**AI：**\n两个都是 bug，根因不同。\n\n---\n\n## Bug 1：Canvas 聚焦不弹出键盘\n\n手机虚拟键盘**只在 `<input>` / `<textarea>` / `contenteditable` 获取焦点时才弹出**。Canvas 设了 `tabIndex=0` 也不触发。\n\n**修复**：在 Canvas 下面放一个透明的隐藏 `<textarea>`。点击 Canvas 时聚焦 textarea，键盘弹出；textarea 收到输入后转发给 `renderer.write()`。\n\n```\n<canvas>\n<textarea style=\"position:absolute;opacity:0;width:0;height:0\">  ← 键盘接收器\n```\n\n---\n\n## Bug 2：多终端卡都叫\"终端 1\"\n\n`createTerminalHandler()` **只被调用一次**（`card-stack.ts` 注册时），`_terminalCounter` 被固定在 1。后续每次发射终端卡都复用同一个 handler，复用同一个 `terminalName`。\n\n**修复**：把 `_terminalCounter++` 和 `terminalName` 移到 `activate()` 里。同时把 `_renderer` / `_sessionId` 从 handler 闭包改为 `Map<contentEl, state>`——不然第二个终端卡的 `_renderer` 会覆盖第一个的，键盘输入串到错的会话。\n\n```\nconst _states = new Map();  // keyed by contentEl\nlet _terminalId = 0;\n\nactivate(contentEl):\n  _terminalId++\n  renderer = new TerminalRenderer()\n  _states.set(contentEl, { renderer, sessionId: null, name: '终端 ' + _terminalId })\n  ...\n\ndeactivate(contentEl):\n  state = _states.get(contentEl)\n  dispose + delete\n```\n\n---\n\n## 改动汇总\n\n| 文件 | 改什么 | 行 |\n|------|--------|-----|\n| `terminal-renderer.ts` | mount() 内加隐藏 `<textarea>` + 点击→聚焦→转发输入 | +10 |\n| `terminal-card.ts` | 去掉 handler 闭包共享状态，改为 `Map<contentEl, state>` + 计数器放 activate 里 | ~15 行改动 |\n\n两个改完：多终端卡各自独立命名、各自独立 PTY、键盘弹出正常。\n\n要切 build 模式执行吗？"
+}

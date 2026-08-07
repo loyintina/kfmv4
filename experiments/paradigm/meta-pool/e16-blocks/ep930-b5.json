@@ -1,0 +1,12 @@
+{
+ "id": "ep930-b5",
+ "episode_id": 930,
+ "session_id": "omp-2026-07-12T03-47-42-491Z_019f5470-211b-7",
+ "source": "manual",
+ "topic": "角色管理 json 存储 + 清理 + 保存反馈 + 角色卡加载失败",
+ "pattern": "补丁vs根因",
+ "ep_score": 3,
+ "chars": 1091,
+ "truncated": false,
+ "text": "**用户：**\n在我刚刚保存了两个配置后，刷新网页，角色卡彻底加载不出来内容了，什么内容都加载不出来。你能看看是哪里的问题吗？不要打补丁，深入分析一下。\n\n**AI：**\n深层分析。\n\n### 问题链\n\n```python\n# 服务端 files/list 返回\n{ items: [{ name: \"abc.json\", path: \"/...\", isDir: false, ... }, ...] }\n                                    ↑ 对象数组\n\n# 我之前修了 client listDir\nreturn data.items || []              # ← 现在能读到数据了\n\n# 但 loadRoles 是这样消费的\nfor (const file of files) {\n  if (!file.endsWith('.json'))       # ← file 是对象，没有 .endsWith()!\n  continue;                           #   抛 TypeError，整条链路炸掉\n}\n```\n\n`data.files` 永远是 `undefined` → `[]`，所以这条代码路径**从未真正跑过**。我改成 `data.items` 后第一次跑到了循环体，`{ name: \"...\" }.endsWith()` 直接抛异常，`activate()` 被中断，整卡白屏。\n\n### 修复\n\n`listDir` 应该返回纯文件名数组，匹配消费方的预期。\n同样修 config 和 session。\n根因总结：\n\n| 层 | 问题 |\n|---|---|\n| 服务端 | `files/list` 返回 `{ items: [{name, path, ...}, ...] }` — 对象数组 |\n| 客户端（旧） | `data.files` — 字段名不对，永远 `undefined` → `[]` → 从没跑通过 |\n| 客户端（我修的） | `data.items` — 字段名对了，但返回对象数组，`file.endsWith()` 在对象上调 `TypeError` |\n\n三轮 bug 链：`files` 字段不存在 → 永远返回空 → 不知道有 bug → 改成 `items` → 第一次跑到真数据 → 炸了。\n\n现在 `listDir` 返回 `data.items.map(f => f.name)` 纯字符串数组，消费方正常工作。刷新试试。"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep546-b16",
+ "episode_id": 546,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端编号/状态混用（重大）",
+ "pattern": "初心对齐,机制设计,读码优先",
+ "ep_score": 5,
+ "chars": 425,
+ "truncated": false,
+ "text": "**用户：**\n好\n\n**AI：**\n第一步完成。`card-registry.ts` 145 行，零错误。\n\n现在 `cardRegistry` 存在但没被任何模块调用——它是孤立的。下一步是让它有使用者：\n\n| 步骤 | 内容 | 估行 |\n|------|------|------|\n| 2 | `card-stack.ts` — 改用 `registerCardType()` 登记 | ~15 |\n| 3 | `floating-card.ts` — 接入 `createInstance/destroyInstance` + 改 `ContentHandler` 签名 | ~20 |\n| 4 | `terminal-card.ts` — 删 `_states` / `_terminalId` / `dataset` | ~15 |\n| 5 | `handler-factory.ts` — 签名适配 | ~3 |\n\n要继续第二步吗？"
+}

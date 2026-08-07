@@ -1,0 +1,12 @@
+{
+ "id": "ep598-b55",
+ "episode_id": 598,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "heuristic",
+ "topic": "4.1 版本改坏→回退 4.0；日志卡定位；多次无效修改（与 B53/B54 同族）",
+ "pattern": "版本回退,验证优先",
+ "ep_score": 9,
+ "chars": 674,
+ "truncated": false,
+ "text": "**用户：**\n那这样就能确保万无一失了吗？\n\n**AI：**\n补充一个你提醒后才想到的边角：\n\n## 还漏的\n\n**`terminal-opened` handler 永久不毁 → 积累**。每次 `initTerminalCore` 新调（dismiss 后重开）会注册新 handler，旧的不走得清理。需要在 `disposeTerminalCore` 里加 `offMessage`，删 `card.meta._onOpened`。\n\n**`_initDone` 跨生命周期不重置**。dismiss→重开后 `_initDone` 仍是 `true` → `list-sessions` 被跳过。`deactivate('dismiss')` 要复位。\n\n## 完整改动\n\n| 文件 | 改动 | 行 |\n|------|------|-----|\n| `terminal-card-04.ts` | handler 永久注册：`card.meta._welcomed` 防重复欢迎 → 存 `_onOpened` 引用 | ~8 |\n| `terminal-card-04.ts` | `disposeTerminalCore` 加 `offMessage('terminal-opened')` | ~3 |\n| `tmux-card.ts` | 删 51-56 行手写 handler | -6 |\n| `tmux-card.ts` | 加 `_initDone` flag + dismiss 复位 | +3 |\n\n确认后执行。"
+}

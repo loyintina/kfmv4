@@ -1,0 +1,12 @@
+{
+ "id": "ep563-b6",
+ "episode_id": 563,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "全屏卡片 z-index/布局（拉锯）",
+ "pattern": "验证优先,原版复用",
+ "ep_score": 7,
+ "chars": 645,
+ "truncated": false,
+ "text": "**用户：**\n我说的高度是zindex，你确定你真的找到是什么原因了吗？不要去猜，如果你没把握，可以去加日志确认\n\n**AI：**\n你说得对，我不该猜。加日志确认。在 `enterFullscreen` 设完 z-index 后加一行，打出两者的实际 z-index 和 transform 状态：\n\n```ts\nlog(`[fullscreen] card.z=${el.style.zIndex} card.transform=${el.style.transform || '(none)'}` +\n  ` bar.z=${(() => { const b = document.getElementById('aiInputBar'); return b ? getComputedStyle(b).zIndex : 'null'; })()}` +\n  ` bar.cssText=${(() => { const b = document.getElementById('aiInputBar'); return b ? b.style.cssText.slice(0, 60) : 'null'; })()}`);\n```\n\n跑一次全屏，把日志给我，我就能看到：\n- 卡的 z-index 实际是多少\n- 卡有没有残留的 `transform`（导致 stacking context）\n- 输入栏的 computed z-index 是不是真的 200\n\n要加这个日志吗？"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep543-b12",
+ "episode_id": 543,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "ANSI 颜色渲染错误（红=白、蓝底白字被盖、右半边透明、汉字偏左上）——终端渲染细节",
+ "pattern": "渲染细节",
+ "ep_score": 1,
+ "chars": 349,
+ "truncated": false,
+ "text": "**用户：**\n而且感觉要往右一些？\n\n**AI：**\n同样原因——CJK 字符从格子左边缘起画，但实际占 2 格宽，在双格区里偏左。加一个 x 方向偏移就对了。\n\n---\n\n## 修复\n\n`_render()` 第二遍，x 坐标也加偏移：\n\n```typescript\nconst wide = _isFullWidth(cell.char);\nconst yOff = wide ? 1 : 0;\nconst xOff = wide ? 1 : 0;\nctx.fillText(cell.char, c * cw + xOff, topPad + (r + 0.5) * ch + yOff);\n```\n\n1px 把字略微向右推，在 2 格区块里居中。\n\n---\n\n切 build 模式我来改？"
+}

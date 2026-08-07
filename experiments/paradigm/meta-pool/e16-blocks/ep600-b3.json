@@ -1,0 +1,12 @@
+{
+ "id": "ep600-b3",
+ "episode_id": 600,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "heuristic",
+ "topic": "git 版本功能消失（版本回退事故链——与 B49/B50 相关）",
+ "pattern": "可回退铁律",
+ "ep_score": 3,
+ "chars": 1871,
+ "truncated": false,
+ "text": "**用户：**\n你给我讲讲这些改动都是什么？\n\n**AI：**\n逐块解释：\n\n---\n\n**1. `_blendColor` 辅助函数**（新）\n把两个 hex 颜色按比例混合。topMidOrb 用它来生成 70% color1 + 30% color2 的混合色，匹配卡片 135° 渐变在上边中点的实际颜色。\n\n**2. 缩放系统**（`_loadZoom` / `_saveZoom` / `applyZoom`）\n按卡类型从 localStorage 读写 zoom 值，用 CSS `zoom` 作用于 `contentEl`。这是基础框架，但 CSS zoom 对终端不生效，需要后续重设计。\n\n**3. 常量**（`FS_Z` / `ZOOM_MIN` / `ZOOM_MAX`）\n全屏 z-index 为 20（低于浮卡 50+），zoom 范围 0.3-3.0。\n\n**4. `FloatingCardItem` 接口扩展**\n- `topMidOrb`：上边中点全屏光球元素\n- `isFullscreen`：是否全屏态\n- `_fullscreenSaved`：全屏前保存的位置尺寸，退出全屏时恢复\n- `contentZoom`：当前 zoom 值\n\n**5. `_fsResizeHandlers`**\n全屏时监听 `visualViewport` resize 事件的回调 Map，退出全屏时清理。\n\n**6. `_createCardElement`（原 `createFloatingCard` 拆分）**\n把创建卡 DOM 的逻辑拆成内部函数，不含飞入动画。新增了 topMidOrb 创建（混合色、四角括号图标、点击进入全屏）和 zoom 初始化。\n\n**7. `_launchCard`（新）**\n飞入动画独立函数。新增了 `onUpdate` 和 `onComplete` 里的光球位置同步，确保飞入动画时光球跟着卡片走。\n\n**8. `createFloatingCard`（改为组合）**\n现在是 `_createCardElement` + `_launchCard` 的组合。行为不变。\n\n**9. `createCardElement`（新导出）**\n只创建卡 DOM 不飞入，供全屏路径使用（tree-render 点击文件时直接进全屏）。\n\n**10. `_dismissOne` 全屏处理（新增分支）**\n全屏卡关闭时直接移除 DOM，不走缩放动画。同时清理 viewport resize 监听。\n\n**11. `enterFullscreen`（新）**\n- 关闭其他全屏卡（单槽）\n- 保存当前位置尺寸到 `_fullscreenSaved`\n- 隐藏所有 5 个光球\n- 注入缩小按钮（虚线矩形）+ 关闭按钮（X）到 header\n- z-index 降到 20（浮卡之下）\n- 动画到全屏（`window.innerWidth` × 输入栏顶部）\n- 注册键盘避让（`visualViewport` resize）\n\n**12. `exitFullscreen`（新）**\n- 清理 viewport resize 监听\n- 移除注入的按钮\n- 恢复所有光球\n- 恢复 z-index\n- 如果有保存位置：动画恢复原位，光球位置同步\n- 如果没有保存位置（直接创建的全屏卡）：走 `_launchCard` 散射\n\n**13. expand/collapse 动画里的 topMidOrb**\n- expand 开始时：`display = 'flex'`（跟卡片同步出现）\n- expand `onUpdate`：位置同步 `x = w/2 - 13`\n- expand `onComplete`：位置最终同步\n- collapse `onUpdate`：位置同步\n- collapse `onComplete`：`display = 'none'`（跟卡片同步消失）\n\n**14. tree-render.ts 文件点击 → 全屏**\n侧栏文件点击从原来的 `hit.gesture?.onTap?.()`（创建浮卡飞入）改为 `createCardElement` + `enterFullscreen`（直接全屏）。\n\n---\n\n**消失的功能**：zoom 重排机制（`setZoom` 接口 + 终端字号调整）。CSS zoom 方案对终端不生效，需要重新设计。"
+}

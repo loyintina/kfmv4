@@ -1,0 +1,12 @@
+{
+ "id": "ep549-b0",
+ "episode_id": 549,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端滚动方向/截停（超长拉锯，十几轮）",
+ "pattern": "机制重构,删旧留新,验证优先",
+ "ep_score": 11,
+ "chars": 588,
+ "truncated": false,
+ "text": "**用户：**\n好像并不支持双指上滑，手势注册表里没注册，而且，单指上下滑就够了吧？\n\n**AI：**\n你说得对，`wheel` 只支持鼠标滚轮和触控板，手机单指滑不动。而且双指没必要——终端里单指上下翻就够。\n\n---\n\n## 修复计划\n\n终端 canvas 上加触摸垂直滚动：\n\n1. Canvas CSS 设 `touch-action: pan-y`（告诉浏览器\"这个区域要自己处理纵向滑动\"）\n2. 加 `touchstart` / `touchmove` 事件，记录手指起始 Y 坐标，算 delta\n3. 滑动时调 `_scrollOffset`，重绘\n4. `touchstart` 时 `e.stopPropagation()` 防止手势注册表拦截\n\n**注意事项**：\n- `KFM_V4_INVARIANTS.md` 要求全项目走 `GestureRegistry`，但终端内的滚动是组件内手势——跟 `wheel` 事件一样，属于\"Canvas 内部内容滚动\"，不是卡片级交互。这种情况 `touch-action: pan-y` + 停传事件是合理的\n- 或者走 GestureRegistry 注册一个 `id: 'terminal-scroll'` 的低优先级手势——更合规但需要更多代码\n\n---\n\n你倾向哪种实现？切 build 模式我来做。"
+}

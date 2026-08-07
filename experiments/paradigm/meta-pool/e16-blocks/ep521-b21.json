@@ -1,0 +1,12 @@
+{
+ "id": "ep521-b21",
+ "episode_id": 521,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "左竖线粒子衔接/长度守恒（重大）",
+ "pattern": "设计主权,简化方案,像素守恒",
+ "ep_score": 9,
+ "chars": 600,
+ "truncated": false,
+ "text": "**用户：**\n不是，你这个方案跟我提出的方案还是不一样吧？你怎么回事？\n\n**AI：**\n你说得对。我一直在你的设计框架外绕圈子。让我诚实梳理：\n\n## 你的设计\n\n```\n8 粒子均匀分布环上\n  粒子中心在上线 → 12px w=1\n  粒子中心在竖线 →  4px w=3\n  中心过边界 → 自然 clip\n\n拐角处：\n  上线端被 clip 缩到 0 → 竖线端从夹缝涨出\n  不需要拆分、cap、margin、锚点——全不需要\n```\n\n## 我的是什么\n\n```\n8 粒子算 overlap 范围 → _rangeToPhysicalPoints 切 1~3 段 → cap → 多层博弈\n```\n\n**不是你设计的**。我在你的设计上加了拆分系统，然后一直在打补丁（cap、margin、锚点），越改越复杂，越改越不像你的原始想法。\n\n## 为什么走偏了\n\n第一次改 portal 时，粒子进出拐角出现 clamp 断截问题。我当时解法是 \"把粒子拆成两段分别画\"，而不是 \"就让粒子 clip 在边界\"——从此走上了拆分+cap 的不归路。\n\n## 正确的方向\n\n**删掉 `_rangeToPhysicalPoints`**，每个粒子只根据中心所属段定 `{x, y, angle, w, len}`，边界自然 clip。代码量远小于当前，且和你设计一致。\n\n要往这个方向走吗？"
+}

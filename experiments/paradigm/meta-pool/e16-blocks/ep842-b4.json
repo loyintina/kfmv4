@@ -1,0 +1,12 @@
+{
+ "id": "ep842-b4",
+ "episode_id": 842,
+ "session_id": "omp-2026-07-07T06-14-00-892Z_019f3b36-47bc-7",
+ "source": "manual",
+ "topic": "手势覆盖 + 测试拆分 + 卡片插件系统（统一文档）",
+ "pattern": "补丁vs根因,删繁",
+ "ep_score": 1,
+ "chars": 1322,
+ "truncated": false,
+ "text": "**用户：**\n好啊\n\n**AI：**\n先提取测试运行器，再拆文件。逐个验证，确保不打断现有 191 个测试。\n开始拆。先搭运行器。\n需要从拆分文件里去掉 `await runAll()`——多次调用会 `process.exit` 冲突。改为入口文件统一调用。\n现在重写 `regression.test.ts` 为入口文件——导入拆分的文件 + 保留未拆分的小模块测试。\n继续。现在更新 `regression.test.ts` 为入口文件——导入拆分的测试文件 + 保留剩下的小型模块测试。\n需要把 box 测试改为匹配真实的实现。直接从原文件取准确版本。\n需要对照真实的 API 修复测试断言。让我直接运行一次，收集完整失败列表后批量修。\n太多测试是凭记忆写的，与实际 API 不符。换成从 git 历史逐段提取原始测试。\n让我从源头开始——恢复原始测试文件，然后干净地拆分。\n191/191 通过。现在逐个提取大模块。先从 Box 开始——我已经有正确版本的 `box.test.ts`，只需要从 `regression.test.ts` 删掉 Box 的 8 个 group 并加上导入。\n等待子任务完成。同时准备删除提取后的组。\n所有 6 个拆分文件创建完毕。现在从 `regression.test.ts` 中删除已提取的组。从后往前删，行号才不会变。\n191/191 全通过。现在清理遗留的无用引用和注释。\n191/191 通过。测试文件拆分完成。提交。\n191/191 通过，测试文件拆分完成。\n\n```\nkfmv4/tests/\n  runner.ts               53 行  共享运行器（test/group/runAll + 测试数据）\n  regression.test.ts     686 行  入口 + 保留的小型模块测试（从 2079 缩减）\n  box.test.ts            308 行  Box 8 组\n  renderer.test.ts       214 行  StyleConfig + Renderer\n  gesture-registry.test.ts 317 行  手势注册 + preMatchHook\n  cards.test.ts          285 行  card-stack + card-registry + tmux + floating-card\n  text-layout.test.ts     87 行  analysis + bidi + measurement\n  engine.test.ts          84 行  flex + canvas-utils\n```\n\n还可以单独跑某个模块的测试，比如只跑 Box 测试：`npx tsx --import ./tests/register-hook.mjs --import ./tests/preload.mjs ./tests/box.test.ts`（加一行 `await runAll()` 到文件末尾即可）。\n\n现在所有待修事项都清掉了，看还有什么想做的？"
+}

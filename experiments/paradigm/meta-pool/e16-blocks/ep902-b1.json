@@ -1,0 +1,12 @@
+{
+ "id": "ep902-b1",
+ "episode_id": 902,
+ "session_id": "omp-2026-07-11T02-40-24-324Z_019f4f0c-2704-7",
+ "source": "manual",
+ "topic": "omp 接入对话（单次模式/外部工具/通用 cli/导入 provide/ui 外置）",
+ "pattern": "复用既有,补丁vs根因",
+ "ep_score": 3,
+ "chars": 1056,
+ "truncated": false,
+ "text": "**用户：**\n那它支持工具吗？我们外部封装的工具？还有它内置的工具和代码能力？\n\n**AI：**\n能力非常强。整理一下：\n\n## omp 内置工具\n\n| 工具 | 能力 |\n|------|------|\n| `read` | 读文件 |\n| `write` | 写文件 |\n| `edit` | 编辑文件（find/replace） |\n| `bash` | 执行 bash 命令 |\n| `grep` | 搜索文件内容 |\n| `glob` | 按 glob 找文件 |\n| `lsp` | 语言服务器（代码智能） |\n| `python` | 执行 Python |\n| `browser` | Puppeteer 浏览器自动化 |\n| `web_search` | 网络搜索 |\n| `task` | 子 agent 并行任务 |\n| `todo` | 任务列表管理 |\n| `notebook` | Jupyter notebook |\n\n## 工具控制\n\n```bash\n# 只启用特定工具\nomp -p --tools=read,bash,edit,grep \"你的消息\"\n\n# 禁用所有工具（纯对话）\nomp -p --no-tools \"你的消息\"\n\n# 非交互模式自动批准工具调用\nomp -p --auto-approve \"你的消息\"\n```\n\n## 扩展系统\n\n```bash\n# 加载自定义 hook/扩展\nomp -p --hook=./my-hook.js -e ./my-extension.js \"你的消息\"\n\n# 插件管理\nomp plugin install <package>\n```\n\n## 回答你的问题\n\n**支持外部封装的工具吗？** — 支持，通过 `--hook` 和 `-e` 加载扩展。\n\n**内置工具和代码能力？** — 非常完整：文件读写、bash、LSP、Python、浏览器、搜索都有。\n\n**kfmv4 集成方案：**\n\n```bash\n# 服务端 spawn 这个命令\nomp -p --mode=json --auto-approve --cwd=/root/kfmv4 \"用户消息\"\n```\n\n这样 AI 就能：\n- 读写 kfmv4 的代码文件\n- 执行 bash 命令（构建、测试）\n- 用 LSP 做代码智能\n- 用 grep/glob 搜索代码\n\n比现在的 proxy 方案强太多——不只是对话，是**真正的 AI 编程助手**。"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep600-b0",
+ "episode_id": 600,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "heuristic",
+ "topic": "git 版本功能消失（版本回退事故链——与 B49/B50 相关）",
+ "pattern": "可回退铁律",
+ "ep_score": 3,
+ "chars": 334,
+ "truncated": false,
+ "text": "**用户：**\ngit版本里真的没有代码了吗？\n\n**AI：**\n有代码。刚才在 build mode 里我已经重新实现了所有确认过的功能。当前状态：\n\n| 文件 | 改动 |\n|------|------|\n| `floating-card.ts` | +264 行（topMidOrb、fullscreen、_launchCard 拆分、zoom helpers） |\n| `tree-render.ts` | +20 行（文件点击 → 全屏路径） |\n\n`git checkout --` 确实回退了所有代码，但我在同一个 build mode 会话里立刻重新实现了。所以代码是新的，不是从旧版本恢复的。\n\n剩下待做的是终端/tmux 卡的 zoom 重排方案。"
+}

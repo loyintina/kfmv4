@@ -1,0 +1,12 @@
+{
+ "id": "ep549-b17",
+ "episode_id": 549,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端滚动方向/截停（超长拉锯，十几轮）",
+ "pattern": "机制重构,删旧留新,验证优先",
+ "ep_score": 11,
+ "chars": 1451,
+ "truncated": false,
+ "text": "**用户：**\n依然是滑了几个px就不动了，而且方向还是反的，你的改动完全没生效，我想要的是，当我手指从下往上滑，页面的文字开始从下往上滚动，下面的文字开始滚动到上面，这个逻辑你怎么就做不出来呢？\n\n**AI：**\nOn code, a new terminal card opens and `_scrollback` is empty—so `_scrollOffset` is clamped to 0 regardless of gestures. That's why it \"stops after a few px.\"\n\nBut direction is also wrong. The `_render()` passes use `+ pixelOff` to shift content **up** relative to the viewport, which makes older content appear to move **down** on the screen. The user wants `- pixelOff` so that an upward swipe shifts rows **out of the top** of the viewport while the next older row slides in from below.\n\n---\n\n## Clean fix (two things)\n\n### 1. Flip pixelOff back to `-` in both rendering passes\n\n```typescript\n// Background pass\nconst py = topPad + vr * ch - pixelOff;\n\n// Text pass  \nconst py = topPad + vr * ch - pixelOff;\n```\n\n### 2. Make scrolling depend on content being present in the scrollback\n\nKeep `startY - rawY` for deltaPx (`_scrollBaseline = _scrollOffset` already works correctly with clamp). When `_scrollOffset` changes and content is in `_scrollback`, rendered rows will shift via `pixelOff` and the user will see smooth scrolling. When `_scrollback` is empty, `_scrollOffset` stays 0 and nothing moves.\n\n---\n\nIf the terminal is at the bottom with no history in the buffer (most common case), scrolling should do nothing—same as the file tree when every item fits on one screen. That's correct behavior.\n\n---\n\nConfirm to build and execute?"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep981-b11",
+ "episode_id": 981,
+ "session_id": "omp-2026-05-29T03-33-18-586Z_019e71cb-227a-7",
+ "source": "manual",
+ "topic": "omp 版本更新运维（update 6→10/启动命令/清理）",
+ "pattern": "版本哲学,可回退铁律",
+ "ep_score": 9,
+ "chars": 357,
+ "truncated": false,
+ "text": "**用户：**\n那我是不是应该先把你现在的进程退出，重新启动？\n\n**AI：**\n不用急着杀我。先说现状：\n\n**我（这个进程）** — 15.5.6，standalone binary\n**npm 版 `omp`** — 15.5.10，走 bun 启动，功能完全一样\n\n如果你想让我下一个生命周期跑 15.5.10，有两个选择：\n\n**选择 A：直接用 npm 版（已经好了）**\n你现在终端里 `omp` 默认走的就是 npm 版 15.5.10（PATH 优先级高）。把我杀掉再起就是新版。\n\n**选择 B：把 standalone binary 也升级了再重启**\n那个 171MB 的 binary 从 GitHub 下太慢。我可以再试一次下载，放到正确的路径。\n\n你倾向哪个？还是先别管了，继续干活？"
+}

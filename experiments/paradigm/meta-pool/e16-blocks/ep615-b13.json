@@ -1,0 +1,12 @@
+{
+ "id": "ep615-b13",
+ "episode_id": 615,
+ "session_id": "ses_063fd57d7ffepMZzVsdv2wNXM2",
+ "source": "manual",
+ "topic": "\"Unexpected token '<'\" 报错",
+ "pattern": "全链路验证,验证优先",
+ "ep_score": 17,
+ "chars": 643,
+ "truncated": false,
+ "text": "**用户：**\n抱歉，刚刚挂机了。我操作完了\n\n**AI：**\n文件完全没有变化——mtime 停在 `11:15`，消息数没有任何增长。**保存根本没有执行。** \n\n让我做一个关键验证：是不是 `doSend` 开头的 `await saveMessages` 本身就卡住了？\n看到问题了。`mtime` 完全没变——不是保存失败，是**保存链根本没开始执行**。`_saveChain` 上可能卡了一个永不 resolve 的 fetch。加两个前置日志来验证调用链路：\n先刷新一下页面加载新代码，然后操作。我这边实时监控文件：\n**糟糕！我把会话文件搞坏了！** 立刻从 git 恢复！\n这个测试暴露了核心问题。让我彻底简化——**移除 `_saveChain` 串行机制**。当前已没有并发保存（`onMessageStop` 已移除），所有保存都是顺序执行的，无需链。\n核心改动：**`saveMessages` 不再走 `_saveChain` 排队，改为直接调用 `_doSaveMessages`**。之前保存走 Promise 链，如果链上某个 fetch 挂起（未 resolve），后面所有保存全部排着等死——数据写不进磁盘。现在移除了链，每次保存独立执行。\n\n⚠️ 意外：上个诊断步骤中我不小心把会话文件写坏了，已从 git 恢复，丢失了 11:15-12:20 之间的 19 条消息（351 条 → 370 条 → 351 条）。非常抱歉。\n\n刷新页面试用。"
+}

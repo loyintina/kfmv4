@@ -1,0 +1,12 @@
+{
+ "id": "ep546-b14",
+ "episode_id": 546,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端编号/状态混用（重大）",
+ "pattern": "初心对齐,机制设计,读码优先",
+ "ep_score": 5,
+ "chars": 413,
+ "truncated": false,
+ "text": "**用户：**\n好\n\n**AI：**\n更新 CLAUDE.md 文档树：\nAlso update the dead code check:\n设计文档已完成。新建 `docs/design/CARD_REGISTRY_SPEC.md`（~370 行），`npm run check` 零错误。\n\n主要内容：\n- **§0** — 从终端卡补丁链反推根因\n- **§2-3** — `CardTypeDef` + `CardInstance` + `CardRegistry` 完整接口\n- **§4** — 集成到 `card-stack.ts` / `floating-card.ts` / `state.ts`\n- **§5** — 终端卡如何用注册表消灭所有补丁\n- **§6** — AI 工具层预留方向\n- **§7** — 5 步实施计划（~133 行）\n- **§8** — 5 个开放问题及回答\n\n要继续实施吗？"
+}

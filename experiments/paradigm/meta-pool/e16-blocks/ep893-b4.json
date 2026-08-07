@@ -1,0 +1,12 @@
+{
+ "id": "ep893-b4",
+ "episode_id": 893,
+ "session_id": "omp-2026-05-27T17-10-59-698Z_019e6a6b-0772-7",
+ "source": "manual",
+ "topic": "类型逃逸解决 + 代码审计（p2 以上问题）",
+ "pattern": "验证优先",
+ "ep_score": 3,
+ "chars": 845,
+ "truncated": false,
+ "text": "**用户：**\n那，我有点好奇，为什么会出现这个问题呢？虽然它是有记录的，但从历史里，这个代码是怎么出现的？\n\n**AI：**\n.\n.\n.\n现在看清了——这个故事有清晰的脉络。\n.\n从最初就长这样。第一版 `_createVisualClone`（commit `2613823`，P3 overlay 基础设施）一落地就是 `(src as any).data`。\n\n### 为什么会出现\n\n当时 `Box.data` 的类型是 `Record<string, unknown>`。实际上 `{ ...src.data }` 直接写是能编译的——但写这段代码的人已经习惯了\"Box 的 data 字段反正存的是业务数据，类型不安全\"，随手就加了 `as any`。\n\n这就像一个人刚开始在乱桌上工作，觉得\"反正已经乱了，多扔一张纸也无所谓\"。\n\n### 为什么后来没修\n\n一个月后，有人专门做了**类型安全重构**（commit `b19ba91`），定义 `FileRowData` 类型，修了所有**读取** data 的地方（`sidebarTouchArea`、`_findClickPath`、`processClickQueue`）。\n\n但 `_createVisualClone` 是个**拷贝**函数——它不读 data 里的业务字段，只是把 data 对象浅拷贝一份传给克隆体。从行为上看它没错，从类型上看它用 `as any` 绕过了检查，但不影响任何消费者。所以那次重构的时候被忽略了。\n\n之后被记录到 CLAUDE.md 的\"已知遗留\"里，标注为 P2，然后一直放到今天。\n\n### 总结\n\n```\n原始写法（习惯性 as any）→ 有人修了消费者（没修生产者的）\n                                → 标记为已知遗留\n                                → 今天被清掉了\n```\n\n来回就一行代码的事。"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep827-b7",
+ "episode_id": 827,
+ "session_id": "omp-2026-05-29T05-12-43-275Z_019e7226-260b-7",
+ "source": "manual",
+ "topic": "导航面板实现迭代（项目根/宽度/遮罩/硬编码/隐式关联文档）",
+ "pattern": "补丁vs根因",
+ "ep_score": 5,
+ "chars": 1309,
+ "truncated": false,
+ "text": "**用户：**\n并不是一样的，它有很丑的文件夹图标，而且文件夹的高度和密度也都不一样，显得十分割裂。然后交互手势我想在面板打开时完全把手势行为重定向。这是真正的矛盾点，而不是你说的代码一样的同款。\n\n**AI：**\n你说得对。我用 DOM 勉强凑出来的效果，跟 Canvas 渲染的树就是不同的东西。\n\n我现在想清楚了怎么做：\n\n### 布局\n\n```html\n<div class=\"sidebar\">\n  <div class=\"sidebar-content\">     <!-- 文件树 Canvas，flex:1，自然收缩 -->\n    <canvas id=\"tree-canvas\"></canvas>\n  </div>\n  <div class=\"sidebar-tools\">      <!-- 工具栏，flex-shrink:0 -->\n    <span class=\"root-picker-label\">kfmv4</span>\n    [...]\n  </div>\n  <div class=\"sidebar-picker\">      <!-- 打开时插入，flex-shrink:0，max-height: 50vh -->\n    <canvas id=\"picker-canvas\"></canvas>    <!-- 目录列表用同一套渲染引擎 -->\n    <button>✅ 选此目录</button>              <!-- DOM 覆盖层 -->\n  </div>\n</div>\n```\n\n### 渲染\n\n- 目录列表建一个扁平的 **Box 树**（一个 root Box + N 个 row Box），用同一个 Renderer 渲染\n- 同一套 `canvas-cursor.ts` 处理光标（绿色底 + 青左边框）\n- 同一套 `canvas-scroll.ts` 处理 fling 惯性滚动\n- 行高、字号、间距直接复用 `style-registry.ts` 的常量\n\n### 手势\n\npicker 打开时 touch 事件落在 picker 的 Canvas 上，文件树的 Canvas 自然收不到事件。不需要额外的 gesture-registry 重定向。\n\n### 改动量\n\n| 文件 | 改动 |\n|------|------|\n| `root-picker.ts` | 重写——建 Box 树 + Canvas 渲染 + 光标 + 滚动 |\n| `sidebar.scss` | 把 `.sidebar` 改为 flex column，新增 `.sidebar-picker` 样式 |\n| `tree-render.ts` | 加一行 `onSidebarClose` 时清理 picker |\n\n**不动的：** `canvas-scroll.ts`、`canvas-cursor.ts`、`renderer.ts`、`box.ts`、`style-registry.ts`\n\n想听这个方案的边界和取舍，还是直接按这个方向开始？"
+}

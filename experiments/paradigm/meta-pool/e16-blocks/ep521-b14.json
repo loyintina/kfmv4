@@ -1,0 +1,12 @@
+{
+ "id": "ep521-b14",
+ "episode_id": 521,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "左竖线粒子衔接/长度守恒（重大）",
+ "pattern": "设计主权,简化方案,像素守恒",
+ "ep_score": 9,
+ "chars": 876,
+ "truncated": false,
+ "text": "**用户：**\n你确定这个方案是正确的吗？\n\n**AI：**\n好问题，让我仔细验证。\n\n## 当前代码的问题\n\n```typescript\nconst os = Math.max(s, segBounds[i]);    // os 被裁剪到 segBounds[i]\nconst oe = Math.min(e, segBounds[i + 1]); // oe 被裁剪到 segBounds[i+1]\n\nif (os >= segTop + margin && oe <= segBot - margin)  // ← 错的判断依据\n```\n\n`os`/`oe` 是**裁剪后**的值。跨上线-竖线时 `os=segTop`，`os >= segTop + margin` **false** → 不 cap ✓。但这是**凑巧**对，逻辑不对。\n\n## 正确条件\n\n应该用**未裁剪的 `s`/`e`**（函数入参，原始粒子的完整物理范围）：\n\n```typescript\nif (s >= segTop && e <= segBot) {\n  // 全程在竖线 → 居中 cap\n} else {\n  // 跨管 → 自然 overlap\n}\n```\n\n## 三种场景验证\n\n```\n竖线 segTop=80, segBot=112 (32px), s/e 是物理范围:\n\n全程在竖线:  s=86, e=98  → s≥80 ✓, e≤112 ✓  → cap ✓\n跨上线-竖线: s=78, e=90  → s≥80 ✗            → natural ✓\n跨竖线-下线: s=108, e=120 → e≤112 ✗           → natural ✓\n包裹(拆分后): s=110, e=132 → e≤112 ✗           → natural ✓\n```\n\n跨管时 `s` 或 `e` 天然落在段外，判断自动准确。正确且仅改一个变量名（`os`→`s`, `oe`→`e`），不要 margin，不要锚点。"
+}

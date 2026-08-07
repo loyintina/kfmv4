@@ -1,0 +1,12 @@
+{
+ "id": "ep504-b6",
+ "episode_id": 504,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "卡片堆聚焦状态错乱",
+ "pattern": "全链路验证,验证优先",
+ "ep_score": 9,
+ "chars": 1541,
+ "truncated": false,
+ "text": "**用户：**\n还是不对，压缩多了后，卡片的位置还是会出现那个布局，你能给我讲讲是怎么实现的吗？理论上的设计为什么会和实际不符？正常来说卡片的状态的y值不应该是固定的吗？同一个树应该只有同一个状态才对，为什么在滚动后，切换聚焦了，布局状态就变了呢？聚焦会永久改变卡片的状态吗？能不能做一个状态记忆？还是说，有其他原因？你能给我讲讲吗？\n\n**AI：**\nLet me think through this carefully by tracing the full state lifecycle of a card's Y position.\n\nThe core question: **why would Y change when only x/scale/rotation are being animated?**\n\nThe answer lies in how GSAP's internal cache works vs direct DOM writes:\n\n**Card lifecycle:**\n1. `forEach` → if Y needs to change: `anim.to(c, { y: targetTop })` — GSAP manages y, cache updated ✅\n2. `forEach` → if Y doesn't change much: `c.style.transform = 'translate(X, Y) rotate(R)'` — **直接写 DOM，GSAP 缓存不更新** ❌\n3. `updateFocus` → `anim.to(el, { x, scale, rotation, overwrite: 'auto' })` — GSAP 初始化 tween 时从**缓存**读 y 值，拿到了过期的旧值！\nThat's the bug. Line 218: `c.style.transform = ...` bypasses GSAP, leaving its internal cache stale. Later when `updateFocus` creates a GSAP tween, it initializes y from the STALE cache, not the actual DOM position.\n全部通过。根因就是这一行：\n讲一下这个 bug 的本质：\n\n当一个卡片的 Y 只移动 ≤3px 时，forEach 用 `c.style.transform = 'translate(...) rotate(...)'` **直接写 DOM**。于是 GSAP 内部 `_gsap` 缓存里的 y 值停留在了上一次 GSAP 操作的旧位置。\n\n之后滑动切换聚焦调用 `updateFocus`，它对卡片做 `anim.to(el, { x, scale, rotation })`。GSAP 初始化这个 tween 时用**缓存**的 y 值（过期旧值），而不是 DOM 里实际的 y（谁也不知道你用 `style.transform` 绕过 GSAP 改了它）。于是每一帧 GSAP 渲染出错的 y，卡片跳回旧位置。\n\n这类问题本质是：**同一个属性（transform → y）被两条独立路径写入**——GSAP 缓存和原生 DOM API——两者的状态不一致。一旦你混用，必出 bug。\n\n修复：`style.transform = ...` → `anim.set(c, { x, y, rotation })`，让 GSAP 同时更新缓存和 DOM。"
+}

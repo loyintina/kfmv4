@@ -1,0 +1,12 @@
+{
+ "id": "ep532-b26",
+ "episode_id": 532,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "相同卡竞态（重大，长拉锯）",
+ "pattern": "补丁vs根因,竞态",
+ "ep_score": 10,
+ "chars": 572,
+ "truncated": false,
+ "text": "**用户：**\n好\n\n**AI：**\nBuild:\n改动只有 drag-handler.ts 的 `onEnd` 加了一个 `pointercancel` 早退路径：\n\n```typescript\nfunction onEnd(e?: PointerEvent): void {\n    if (e?.type === 'pointercancel') {\n        if (s.longPressTimer) { clearTimeout(s.longPressTimer); s.longPressTimer = null; }\n        reset();\n        return;  // ← 不调 onTap，不收缩\n    }\n    // ... 原有逻辑不变\n}\n```\n\n当浏览器发 `pointercancel`（文字选择抢走手势）时，现在只会清 timer + 重置状态，不触发任何展开/收缩。长按正常走 `onEnterEdit`，不受影响。\n\n刷新测试——部署两张相同的卡，长按出 bug 的 BR 光球。如果修复生效，日志会显示 `[BR] onStart → timer set` 但不会有 `[DRAG] onEnd`（因为 pointercancel 早退了）。卡也不会收缩，文字选择也会消失。"
+}

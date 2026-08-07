@@ -1,0 +1,12 @@
+{
+ "id": "ep529-b12",
+ "episode_id": 529,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "文件夹收缩动画不同步",
+ "pattern": "追源,心法前置",
+ "ep_score": 9,
+ "chars": 2083,
+ "truncated": false,
+ "text": "**用户：**\n呃，卡住了\n\n**AI：**\n现在完全清楚了：\n\n**根因：`doCollapse` 只处理折叠容器的直接兄弟（同 parent 下），不处理\"叔叔辈\"——即祖先的兄弟。**\n\n```\nRoot\n  └── Grandparent\n      ├── Parent (包含 Folder C)\n      │   ├── file\n      │   ├── expanded-Folder-C  ← 正在折叠的容器 (pack)\n      │   │   ├── child1\n      │   │   └── child2\n      │   ├── Sibling-A          ← 直接兄弟 (pack.siblingOverlays ✓)\n      │   └── Sibling-B          ← 直接兄弟 (pack.siblingOverlays ✓)\n      ├── Uncle-1                ← 叔叔辈 (没被 overlay 覆盖 ✗)\n      ├── Uncle-2                ← 叔叔辈 (没被 overlay 覆盖 ✗)\n      └── Uncle-3                ← 叔叔辈 (没被 overlay 覆盖 ✗)\n```\n\n- `pack` 覆盖了 `expanded-Folder-C` 的容器收缩 + Sibling-A/B 的上移 → 同步动画\n- `Uncle-1/2/3` 在**主树**里，动画期间完全不动\n- 动画结束后 `rebuildTree()` → Uncle 们**跳跃**到新位置 → 这就是\"延迟\"的来源\n\n---\n\n### 修复方案\n\n在 `doCollapse` 中，**沿祖先链向上**，为每一层的**祖先后兄弟**补建 overlay 并加入动画时间线。\n\n**改动点（tree-render.ts `doCollapse` 函数内，line ~813 之后）：**\n\n```typescript\n// 4. 祖先兄弟 overlay（补叔叔辈）\n// 沿父链向上，收集每一层 expanded-* 容器之后的兄弟\nlet ancestor = container.parent;  // Parent (expanded-* 容器)\nwhile (ancestor) {\n    const grandparent = ancestor.parent;\n    if (!grandparent) break;\n    const ancestorSiblings = collectSiblingsAfter(ancestor);\n    for (const as of ancestorSiblings) {\n        const asOv = createVisualClone(as, { \n            id: `ov-${as.id || 'anc-sib'}`, y: as.y, \n            opacity: 1, zIndex: OVERLAY_Z \n        }, true);\n        (asOv as Box & OverlayMeta)._targetY = as.y - fullH;\n        _addOverlay(asOv);\n        asOv.parent = grandparent;\n        ts.to(asOv, { y: (asOv as Box & OverlayMeta)._targetY!, \n            duration: 0.05, ease: 'power2.in' }, topBoxDelay);\n        // 隐藏主树祖先兄弟\n        as.visible = false;\n    }\n    // 沿 expanded-* 链向上\n    ancestor = grandparent.id?.startsWith('expanded-') ? grandparent : null;\n    if (ancestor) ancestor = ancestor.parent; // 再上一层\n}\n```\n\n**但这要求：**\n- `collectSiblingsAfter` 已能用\n- `createVisualClone` / `_addOverlay` / `_targetY` 模式已有\n- `ts.to` 时间线可追加\n\n**缺口：**\n- 多层祖先链（爷爷辈、太爷爷辈）的兄弟也需要覆盖，需要循环而非只走一层\n- cleanup 时需要恢复这些祖先兄弟的 `visible`\n\n---\n\n### 更简单的方案\n\n修复 `doCollapse` 中**沿祖先链向上补建 overlay**。确认后我给你精确改动计划。"
+}

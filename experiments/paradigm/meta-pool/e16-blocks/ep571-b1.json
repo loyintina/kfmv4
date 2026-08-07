@@ -1,0 +1,12 @@
+{
+ "id": "ep571-b1",
+ "episode_id": 571,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "tmux 卡缩放重排不跟手 +",
+ "pattern": "补丁vs根因,回退语义冲突",
+ "ep_score": 9,
+ "chars": 1672,
+ "truncated": false,
+ "text": "**用户：**\n这个方案是补丁吗？\n\n**AI：**\n你说得对，dispatch synthetic `resize` 事件确实是补丁。让我重新审视根本原因。\n\n## 根因重新分析\n\n**Expand 动画**：终端 DOM 是在 `onComplete` 才通过 `activate` 挂载的。动画期间终端不在 DOM 里，`ResizeObserver` 无从触发。这不是事件没派发的问题，是**终端根本不存在**。\n\n**Pinch zoom**：`applyZoom` 设了 `contentEl.style.zoom`，但 CSS zoom 改变的是渲染尺寸，不是布局尺寸（`offsetWidth`/`offsetHeight`）。终端的 `fit()` 读的是布局尺寸，所以算出来的 cols/rows 不变。派发 `resize` 事件只是强迫 `fit()` 重跑，但 `fit()` 读到的尺寸仍然是未缩放的值——**结果是错的**。\n\n## 更好的方案\n\n### Expand 动画：让终端跟着动画走\n\nexpand 动画的 `onUpdate` 每帧更新卡片尺寸。如果终端在动画前就挂载了，`ResizeObserver` 自然会跟上。\n\n改动点：把 `activate` 从 `onComplete` 提前到 expand 动画开始前。\n\n```ts\n// 当前：onComplete 里才 activate\nonComplete: () => {\n  item.config.contentHandler?.activate?.(item.contentEl, ci, 'compact');\n  ...\n}\n\n// 改为：anim.to 之前就 activate\nitem.config.contentHandler?.activate?.(item.contentEl, ci, 'compact');\nanim.to(el, { ... });\n```\n\n这样终端在动画第一帧就已经挂载，`ResizeObserver` 能跟踪每一帧的尺寸变化。\n\n**风险**：compact 态的 contentEl 尺寸很小（155×68），终端在小容器里初始化后立刻被拉大。需要确认 xterm 的 `fit()` 能正确处理这个过渡。\n\n### Pinch zoom：修正 `fit()` 的尺寸计算\n\nCSS zoom 不改变 `offsetWidth`/`offsetHeight`，所以 `fit()` 读到的是未缩放的尺寸。真正需要做的是：\n\n1. 在 `applyZoom` 之后，找到终端的 `termEl`\n2. 临时把 zoom 从 `contentEl` 移到 `termEl` 上（让 `fit()` 读到正确的布局尺寸）\n3. 调 `fit()`\n4. 把 zoom 移回 `contentEl`\n\n但这侵入了终端模块。更干净的做法是：**不在 contentEl 上用 CSS zoom，而是直接改终端的 font-size**。\n\n不过这只对终端有效，对其他卡片内容（如文件渲染）CSS zoom 仍然是正确方案。\n\n### 综合建议\n\n| 问题 | 方案 | 性质 |\n|------|------|------|\n| Expand 动画 | `activate` 提前到动画开始前 | 架构改进 |\n| Fullscreen 动画 | `ResizeObserver` 应该能跟上（终端已挂载），如果不行则在 onUpdate 加 `fit()` 调用 | 需验证 |\n| Pinch zoom（终端） | zoom 后手动调 `fit()`（通过 content handler 接口） | 正确修复 |\n| Pinch zoom（其他卡） | CSS zoom 继续用，`ResizeObserver` 应该能跟上 | 无需改动 |\n\n你觉得这个方向对吗？要我展开具体的接口设计吗？"
+}

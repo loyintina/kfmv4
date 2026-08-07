@@ -1,0 +1,12 @@
+{
+ "id": "ep558-b23",
+ "episode_id": 558,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端滚动条/滚动失效",
+ "pattern": "一致性质疑,日志定位",
+ "ep_score": 7,
+ "chars": 1076,
+ "truncated": false,
+ "text": "**用户：**\n但现在所有的手势都不管用了，要不你把修改回退一下，我们不能丢了已有的完好功能\n\n**AI：**\n## 回退 + 重新方案\n\n### 问题诊断\n\n`dispatchEvent(WheelEvent)` 没生效，可能是 xterm.js 的 wheel 监听器注册在特定 DOM 层级或者需要特定属性。纯猜测没有意义——先回退保已有功能。\n\n### 新方案\n\n**保留 `term.scrollLines()` 作为主路径（普通终端已验证工作）。** 在 tmux 场景下，问题的本质是 `scrollLines()` 翻了 xterm 的 scrollback，但 tmux 每帧重绘屏幕把位置弹回去了。\n\n真正的统一路径：**让 xterm.js 自己处理滚轮，不替它决策。**\n\n不用 `dispatchEvent`——改用 xterm 的原生 wheel 监听。但我们不做 dispatch——我们让 ResizeObserver/FitAddon 保持正确的 cols/rows，**并且**给手势传递一个**正确的 context**。\n\n实际上，最简单的修正：**在 dispatchevent 前检查目标元素是否正确**。xterm.js v6 的 wheel handler 可能在 `.xterm` 上而不是 `.xterm-viewport`上。试试 `_activeXterm.dispatchEvent(...)`（不用 viewport）。\n\n---\n\n## 计划\n\n**1. 回退**：恢复 `term.scrollLines()` 调用 + `_termMap` + `_activeTerm`。恢复普通终端滚动。\n\n**2. 修复 WheelEvent 目标**：把手势的 `viewport.dispatchEvent` 改为 `_activeXterm.dispatchEvent`（投给 `.xterm` 本身，而不是 viewport）。保持 `scrollLines()` 作为 fallback（当 dispatchEvent 不被 xterm 处理时）。\n\n**3. 验证**：event handler 不调 `stopPropagation`（让 xterm.js 正常接收）。然后普通终端应该走 scrollLines，tmux 走 wheel 事件。\n\n---\n\n要回退 + 修复吗？只是改两行（恢复 scrollLines + 改 dispatchEvent 目标），不丢已有功能。"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep546-b24",
+ "episode_id": 546,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端编号/状态混用（重大）",
+ "pattern": "初心对齐,机制设计,读码优先",
+ "ep_score": 5,
+ "chars": 1051,
+ "truncated": false,
+ "text": "**用户：**\n那后面要如何发现实际违规？\n\n**AI：**\n实话：**现在已经有一个违规了，而且它是合法的。**\n\n---\n\n## tree-swipe.ts 就是\"绕过注册表\"的 case\n\n`deployAllCards()` 里这样做的：\n\n```typescript\ncreateFloatingCard({\n    contentHandler: createFileHandler(filePath, accent),  // 直接创建，没过 registry\n});\n```\n\n文件卡每张都不一样（不同文件路径、不同内容），不能在 `registerCardType` 时用一个无参工厂创建所有文件卡。\n\n---\n\n## 暴露的设计问题\n\n现在的 `CardTypeDef.createHandler` 是 `() => CardContentHandler`——**无参工厂**。它能覆盖终端卡和日志卡（永远长一样），但覆盖不了文件卡（每次创建需要的参数不同）。\n\n这不是终端卡写得不对，是**类型注册表的设计极限**：factory 模式区分了两种卡：\n\n| | 工具卡（终端/日志/设置） | 文件卡 |\n|---|---|---|\n| 工厂 | `() => handler` | `(filePath, accent) => handler` |\n| 注册时机 | `initCardTypes()` 一次 | `deployAllCards()` 每次 |\n| 注册表参与度 | 全流程 | 不经过 typeId |\n\n---\n\n## 真正的问题不是\"怎么发现违规\"\n\n而是：**文件卡要不要也纳入注册表体系？**\n\n如果纳入，`CardTypeDef.createHandler` 的签名要变——要么加泛型、要么加参数、要么把文件卡当成\"用一个通用文件处理器 + 实例 parameter\"。\n\n---\n\n## 两条路\n\n| | A：只覆盖工具卡 | B：一视同仁 |\n|---|---|---|\n| 文件卡 | 保持现状，不走 registry | 纳入 registry，签名要改 |\n| 复杂度 | 无变化 | 需要重新设计 `CardTypeDef.createHandler` |\n| 检查脚本 | 只验工具卡 | 全部卡都验 |\n| tree-swipe.ts | 不管 | 需要改 |\n\n你倾向哪条？还是先把这个问题记录到 `§8` 开放问题里，继续往前走？"
+}

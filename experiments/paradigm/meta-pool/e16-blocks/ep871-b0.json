@@ -1,0 +1,12 @@
+{
+ "id": "ep871-b0",
+ "episode_id": 871,
+ "session_id": "omp-2026-07-23T14-14-20-532Z_019f8f53-c874-7",
+ "source": "manual",
+ "topic": "文件树崩溃 + root 兄弟目录理解 + 沙漏叹号 + 下拉方向",
+ "pattern": "补丁vs根因",
+ "ep_score": 8,
+ "chars": 984,
+ "truncated": false,
+ "text": "**用户：**\n还是没有框。\n\n**AI：**\n**sibling-switcher 根本不在 bundle 里！** 构建时被 tree-shaking 掉了。看 main.ts 入口有没有引用链。\n干脆不依赖异步请求——直接从 `localStorage` 或 `KFMState.currentRoot` 显示名字，再加个可见的底色让按钮明显。\n树摇把整个 sibling-switcher 模块从 bundle 里删了。换策略——直接在 HTML 里放按钮，JS 只接线。\nNow simplify sibling-switcher——canvas 已在 HTML 里，模块只做渲染+点击。\nNow wire from main.ts(bundle入口)而不是 tree-render(可能被树摇)。\nNow run a quick build before touching more files. \n\nThe real fix is: the canvas sits in HTML, `initSiblingSwitcher()` is called once from main.ts. No tree-shaking ambiguity. Let me typecheck the current state, fix any remaining references, then wire main.ts.先 typecheck 看还有什么破了。\n**在 bundle 里了！** 之前是 minified bundle 的换行导致 grep 失配。现在 `siblingSwitcherBtn` 4处、`kfmv4_currentRoot` 3处、`initSiblingSwitcher` 2处——代码已进 bundle。\n核心改动：canvas 从动态创建（依赖 import 链 → 被树摇）改为**直接在 HTML 里写死** `id=\"siblingSwitcherBtn\"`，JS 只负责 `getElementById` + 渲染 + 点击事件。这样无论树摇怎么摇，HTML 里的 canvas 都在，JS 从 main.ts 直连（入口模块，绝不被摇）。\n\n刷新页面，侧栏底栏应该能看到带渐变的目录名按钮了。点击弹出兄弟目录列表。"
+}

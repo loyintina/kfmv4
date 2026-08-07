@@ -1,0 +1,12 @@
+{
+ "id": "ep546-b49",
+ "episode_id": 546,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端编号/状态混用（重大）",
+ "pattern": "初心对齐,机制设计,读码优先",
+ "ep_score": 5,
+ "chars": 1308,
+ "truncated": false,
+ "text": "**用户：**\n[16:27:11.447] [CARD-STACK] buildCards called → [16:27:11.449] [CARD-STACK] buildCards done, cards=7 → [16:27:11.449] [ws-channel] 初始化完成 → [16:27:11.641] [ws-channel] 已连接到服务端 ws://8.145.46.182/ws → [16:27:15.083] cr allocId pool=card03 result=1 used=1 → [16:27:21.084] cr allocId pool=card03 result=2 used=1,2 → [16:27:23.608] td deactivate reason=compact tid=2 sid=264c9221-a28e-4575-8d43-387fe6e30f76 → [16:27:25.049] cr allocId pool=card03 result=3 used=1,2,3 → [16:27:28.897] td deactivate reason=compact tid=3 sid=e47a4003-b952-4221-bcf5-2e23e2bfa414 → [16:27:30.758] cr allocId pool=card03 result=4 used=1,2,3,4 \n\n**AI：**\n日志太清楚了。\n\n---\n\n## 根因\n\n```\ntd deactivate reason=compact tid=2   ← 关闭操作走的是 compact，不是 dismiss！\ncr allocId result=3                  ← 2 没被释放，跳到 3\n```\n\nTR 光球（关闭按钮）的点击**没有走到 `_dismissOne`**。走了 collapse 路径，`reason=compact`，所以 `freeId` 从不被调用。\n\n---\n\n## 最可能的原因\n\n手机屏幕上 TR 和 BR 光球在右侧上下排列——TR 在右上，BR 在右下。`GestureRegistry` 的 BR 光球手势处理器拦截了你的点击。即使你点在 TR 上，触摸面积稍微偏下，就可能命中 BR 的 `targetClosest('.floating-br-orb')`，触发**收缩而不是关闭**。\n\n---\n\n## 验证\n\n再加一行日志在 `_dismissOne` 开头：\n\n```typescript\nfunction _dismissOne(item, animated) {\n  log('dismiss-one ' + item.config.id);\n  ...\n}\n```\n\n如果点击 TR 后日志卡里出现这行 → dismiss 确实被调了，问题在别处。\n如果日志卡里没有 → 就是 TR 光球事件被手势拦截了，根本没走到 dismiss。\n\n---\n\n同时计划模式，要先切 build 加这行诊断吗？"
+}

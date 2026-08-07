@@ -1,0 +1,12 @@
+{
+ "id": "ep598-b56",
+ "episode_id": 598,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "heuristic",
+ "topic": "4.1 版本改坏→回退 4.0；日志卡定位；多次无效修改（与 B53/B54 同族）",
+ "pattern": "版本回退,验证优先",
+ "ep_score": 9,
+ "chars": 351,
+ "truncated": false,
+ "text": "**用户：**\n好\n\n**AI：**\nNow `tmux-card.ts` — 删手写 handler + 加 `_initDone`：\n已提交。改动清零了手写回调的平行路径：\n\n- `initTerminalCore` 里 `terminal-opened` handler **永久注册**，card03 和 card04 共用同一条路径\n- `reopenWithCommand` 删掉手写回调 6 行，只发 `terminal-close` + `terminal-open`，handler 自动处理\n- `_initDone` 防死循环，`disposeTerminalCore` 清 `_onOpened`\n\n硬刷新：card04 单 session → 自动进 tmux，滑动应该正常。"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep559-b6",
+ "episode_id": 559,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端内容记忆丢失",
+ "pattern": "状态区分",
+ "ep_score": 3,
+ "chars": 1468,
+ "truncated": false,
+ "text": "**用户：**\n你确定这个改动是能解决问题的，而不是一个补丁？\n\n**AI：**\nThe user is in plan mode. Let me carefully think about whether the DOM detach/re-attach fix is correct, then address the reflow issue.\n\n---\n\n## DOM 修复是对的，但不够\n\n紧缩时拔 DOM、展开时插回、不调 `term.open()` 第二次——这个方案解决了\"页面消失\"的问题。\n\n但我忘了一件事：**compact→expand 时新建的 ResizeObserver 只有 `fit.fit()`，没有 WS resize 回调。**\n\n```typescript\n// compact→expand 分支 — 缺了 WS resize 通知\nconst observer = new ResizeObserver(() => {\n    try { fit.fit(); } catch {}\n    // ← 没有 sendMessage('terminal-resize', ...) \n});\n```\n\n这意味着紧缩再展开后，拉动卡片边框时 xterm 视觉尺寸变了，**但 PTY 不知道新尺寸**。shell 仍然按旧列宽格式化输出。\n\n## 但这只影响新输出，不影响已有内容\n\n你看到的\"加宽后内容回不来\"是另一个独立问题：**xterm.js v6 默认不会自动回流**（reflow）。列宽从 80 缩到 40 后，长行被软换行拆开。再从 40 拉回 80——xterm.js 不会把拆开的行拼回去。这不是我们的 bug，是 xterm.js 的行为。\n\n大多数终端（macOS Terminal、iTerm2、VS Code Terminal）都没有这个功能——只有 Termux 和少数终端做了回流。\n\n---\n\n## 所以要改两处\n\n**1. compact→expand 补上 WS resize 回调**（和 init 分支一致）\n\n```typescript\nconst observer = new ResizeObserver(() => {\n    try { fit.fit(); } catch {}\n    if (resizeTimer) clearTimeout(resizeTimer);\n    resizeTimer = setTimeout(() => {\n        if (card.meta.sessionId) {\n            wsChannel.sendMessage('terminal-resize', { ... });\n        }\n        resizeTimer = null;\n    }, 200);\n});\n```\n\n**2. 回流**——可以在每次 `fit.fit()` 后尝试调 `term.reflow()`。查一下 xterm.js v6 是否支持：\n\n```\nterminal.reflow() 在 API 里存在吗？\n```\n\n如果存在——每次 resize 后调用一次即可。如果不存在——告知用户：这是 xterm.js 的限制，大多数终端都没有回流功能，不影响正常使用（只是缩窄后再拉宽不会把之前断开的行拼回去）。\n\n---\n\n要切 build 模式吗？先修 1，再查 2。"
+}

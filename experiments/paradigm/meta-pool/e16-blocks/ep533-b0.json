@@ -1,0 +1,12 @@
+{
+ "id": "ep533-b0",
+ "episode_id": 533,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "右滑出卡方向判定（重大）",
+ "pattern": "简化方案,深度归因,重构视角",
+ "ep_score": 11,
+ "chars": 1292,
+ "truncated": false,
+ "text": "**用户：**\n有，文件树的光标滚动方面的。就是，我发现，只要手指稍微有上下的偏移，就算我是在尝试右滑把卡片扔到卡组里，只要右向有一点点的上偏，光标就会自己下移一行然后触发下一行的卡组，而不是目标行。这需要优化一下，我们当前是如何实现的？我记得以前也曾经尝试解决过这个问题，但好像现在又不行了？\n\n**AI：**\nLet me trace the current gesture axis lock implementation to understand why even slight vertical offset breaks the right-swipe.\n两种手势合二为一：同一个 `canvas-scroll.ts` 里的 `onMove` 同时判断**方向轴锁定** 和**光标滚动**。根因在轴锁定规则太粗糙——12px 阈值、`absDx > absDy` 等权比较，手指轻微纵向偏移就会锁死到竖向，之后整个手势再也回不到横向。\n\n---\n\n## 当前问题（`canvas-scroll.ts:162-168`）\n\n```\nabsDx > 12 || absDy > 12  →  触发锁定\nabsDx > absDy              →  水平\n否则                        →  垂直（一票定终身）\n```\n\n你的右滑场景：`dx=14, dy=13` → 14>12 → 触发 → 14>13 → 水平 ✓  \n有偏的场景：`dx=14, dy=15` → 15>12 → 触发 → 14<15 → **垂直**（永久锁定，右滑没了）\n\n手指只要上偏 1px，就判为垂直滑动手势，光标跟着移动，选中变到了隔壁行。\n\n---\n\n## 修复计划\n\n三处改动，全在 `canvas-scroll.ts`：\n\n**1. 阈值 12→20px** —— 降低手指自然颤动的误触发概率。\n\n**2. 锁方向改为 1.5:1 倾斜比**：\n```diff\n- _gestureAxis = absDx > absDy ? 'horizontal' : 'vertical';\n+ _gestureAxis = absDx > absDy * 1.5 ? 'horizontal' \n+              : absDy > absDx * 1.5 ? 'vertical'\n+              : _gestureAxis; // 不超过1.5倍则不锁定，继续采样\n```\n居中手势（45° 附近）不锁定，等下一帧再判断。\n\n**3. `onEnd` 补横向兜底**（已有左滑兜底，右滑没补）：\n```diff\n+ if (dx > 70 && dx > Math.abs(dy) * 2) {\n+   L.setSwipeGuard();\n+   L.triggerRowSwipe();\n+ }\n```\n\n这样即使轴判定错了，最终的 dx 远超 dy 时右滑照样生效。\n\n---\n\n总共一个文件，三处改动。要开始吗？"
+}

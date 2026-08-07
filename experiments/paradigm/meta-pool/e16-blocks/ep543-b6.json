@@ -1,0 +1,12 @@
+{
+ "id": "ep543-b6",
+ "episode_id": 543,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "ANSI 颜色渲染错误（红=白、蓝底白字被盖、右半边透明、汉字偏左上）——终端渲染细节",
+ "pattern": "渲染细节",
+ "ep_score": 1,
+ "chars": 726,
+ "truncated": false,
+ "text": "**用户：**\n这个白字蓝底，只有左半边有白字，右半边被蓝色盖住了\n\n**AI：**\n问题清楚了。\n\n---\n\n## 根因\n\n`fillText` 画 CJK 字符时从格子左边缘向右延展 ~10px（占 2 格），但渲染是**逐格进行的**：\n\n```\n格子 0: fillRect 蓝底 → fillText \"白\"（延伸到格子 1 区域）\n格子 1: fillRect 蓝底 ← 覆盖了 \"白\" 的右半边！\n```\n\n格子 1 的蓝色背景在格子 0 的 \"白\" 字**之后**绘制，把右半边盖掉了。\n\n---\n\n## 修复\n\n一行：在 `write()` 给 CJK 的第二格设 `bg = DEFAULT_BG`，渲染时不画它的背景，第一格的字符自然延伸到第二格区域。\nI'm in plan mode now so I can't make the edit. Here's the fix:\n\n---\n\n## 改动\n\n`terminal-renderer.ts` 一行：\n\n```typescript\n// 改前：\nnext.bg = this._curBg;\n\n// 改后：\nnext.bg = DEFAULT_BG;\n```\n\n位置在 `write()` 里全角字符的第二格赋值处（大约第 205 行）。\n\n---\n\n## 为什么修好了\n\n格子 1 的 `bg` 变成 `DEFAULT_BG`（`#0a0a0f`），`_render()` 里 `cell.bg !== DEFAULT_BG` 判断为 `false`，不画蓝色方块。第一格 `fillText(\"白\")` 的右半边就不会被覆盖。\n\n---\n\n切 build 模式我来改？"
+}

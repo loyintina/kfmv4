@@ -1,0 +1,12 @@
+{
+ "id": "ep893-b0",
+ "episode_id": 893,
+ "session_id": "omp-2026-05-27T17-10-59-698Z_019e6a6b-0772-7",
+ "source": "manual",
+ "topic": "类型逃逸解决 + 代码审计（p2 以上问题）",
+ "pattern": "验证优先",
+ "ep_score": 3,
+ "chars": 601,
+ "truncated": false,
+ "text": "**用户：**\n那么，接下来，我们可以继续进行设计了。新的版本，我们有什么当务之急吗？\n\n**AI：**\n当前项目的待办剩余这几块：\n\n| 优先级 | 事项 | 说明 |\n|--------|------|------|\n| P2 | `(as any)` 类型逃逸 | `_createVisualClone` 里已知一处 `(src as any).data`，CLAUDE.md 标注了 |\n| P3 | 两个光球拖动逻辑去重 | `orb.ts` 和 `debug-panel.ts` 约 60% 代码重复 |\n| P3 | `doExpand` / `triggerExpandAnimation` 去重 | `tree-render.ts` 里约 60% 展开动画逻辑重复 |\n| P3 | 全局单例 DI 改造 | 让测试不再 mock 得那么痛苦 |\n| — | 统一卡片系统 | `CARD_SYSTEM_DESIGN.md` 里那个大蓝图——把浮卡、光球、调试面板都改成统一卡片架构 |\n\n**如果是我来选方向：**\n\n- **P2 类型逃逸** — 改动最小、收益明确、一个小时搞定的活\n- **两个光球去重** — 提取公共组件，代码量直接减 200+ 行，手感最好\n- **统一卡片系统** — 架构漂亮但牵一发动全身，更像 v5 的事，现在干可能过早\n\n你想先往哪个方向走？"
+}

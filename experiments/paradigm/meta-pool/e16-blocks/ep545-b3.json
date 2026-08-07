@@ -1,0 +1,12 @@
+{
+ "id": "ep545-b3",
+ "episode_id": 545,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端编号不递增（都显示终端1/点击 canvas 不弹输入法）",
+ "pattern": "平台机制",
+ "ep_score": 1,
+ "chars": 1418,
+ "truncated": false,
+ "text": "**用户：**\n我感觉这个问题应该再更深一些讨论，这是不是说明，我们没有一个桌面当前卡片注册表的机制，导致状态混用？但我记得我们以前的代码里曾经实现过啊？\n\n**AI：**\n你说得对，这触及了架构根因。让我查一下历史。\n找到了。你的直觉完全正确。\n\n---\n\n## 架构现状\n\n```\nfloating-card.ts          ← 卡片壳引擎（管理 DOM、动画、拖拽）\n  ├─ _floatingCards[]     ← 卡片实例数组（FloatingCardItem）\n  │     └─ config.id      ← 有 id 字段但从未用于查找\n  └─ 激活时调 contentHandler.activate(contentEl)\n                            ↓ \nterminal-card.ts          ← 内容处理器（自建 Map<contentEl, state>）\nhandler-factory.ts        ← 文件卡处理器（闭包变量）\ncard-stack.ts             ← 日志卡处理器（闭包变量）\n```\n\n**缺失的桥**：内容处理器收到的只是一个裸 `contentEl`——不知道所属卡片的 id、状态、accent 色（得靠 `dataset` 偷渡）。`KFMState.openCards` 是另一个完全不连接的状态数组。\n\n---\n\n## 历史证据\n\n`docs/archive/design/CARD_SYSTEM_DESIGN.md` 曾经设计了 `CardManager` 类：\n\n```typescript\nclass CardManager {\n  register() / unregister() / open() / close() / getCard() / getAllCards()\n}\n```\n\n但这个方案**从没实现过**。统一化尝试（orb.ts + floating-card.ts）做了两次都失败了，card 注册表跟着一起被搁置。\n\n---\n\n## 现在要面对的\n\n这不是\"终端卡编号没回收\"的补丁问题。根本问题：**没有一个卡片运行时注册层来回答三个问题**：\n\n1. 当前有哪些卡片实例在运行？（他们的 id、类型、状态、内容处理器）\n2. 内容处理器属于哪个卡片？（不需要自建 `Map<contentEl, state>`）\n3. 卡片状态变化（compact/active/dismissed）要不要通知处理器？\n\n---\n\n## 两条路\n\n| | 路线 A：建基础 | 路线 B：先补终端 |\n|---|---|---|\n| 做什么 | 实现轻量 `CardRegistry`，给所有卡片一个运行时的家 | 在 `terminal-card.ts` 里继续用 `_states` Map 修编号和紧缩逻辑 |\n| 影响 | 三个内容处理器都要改，涉及 design doc 更新 | 只改 terminal-card.ts，~20 行 |\n| 风险 | 回归测试所有卡片 | 低 |\n| 价值 | 消灭此后再出现类似 bug 的全部根因 | 修了今天的，下次新卡片类型还会踩 |\n\n---\n\n你倾向哪条路？还是先讨论 `CardRegistry` 的设计方向再定？"
+}

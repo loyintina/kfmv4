@@ -1,0 +1,12 @@
+{
+ "id": "ep871-b9",
+ "episode_id": 871,
+ "session_id": "omp-2026-07-23T14-14-20-532Z_019f8f53-c874-7",
+ "source": "manual",
+ "topic": "文件树崩溃 + root 兄弟目录理解 + 沙漏叹号 + 下拉方向",
+ "pattern": "补丁vs根因",
+ "ep_score": 8,
+ "chars": 392,
+ "truncated": false,
+ "text": "**用户：**\n先是一个沙漏，然后马上变成了叹号\n\n**AI：**\n问题出在 `/root` 这个路径本身！`sanitizePath('/root')` 可能被拒绝，但我的测试却成功了——让我再细看。\n自动修又把代码搞坏了。让我读当前状态修。\n`parentPath` 函数定义在编辑中丢了。补回来。\n修复完成。**根因**：`parentPath('.')` 返回 `/`，而服务端 `sanitizePath('/')` 拒绝 `/`（不在 SAFE_ROOT 范围内）→ 请求返回异常 → ⚠。\n\n**修复**：`current === '.'` 时改用相对路径 `'..'`（服务端解析为 `/root`，通过检验），否则用 `parentPath(current)`（对 `/root/kfmv4` 这类已解析路径正常工作）。\n\n现在点击按钮应该能看到兄弟目录弹出列表了。"
+}

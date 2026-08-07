@@ -1,0 +1,12 @@
+{
+ "id": "ep953-b2",
+ "episode_id": 953,
+ "session_id": "omp-2026-07-25T02-58-55-859Z_019f9736-24f3-7",
+ "source": "manual",
+ "topic": "构建卡顿（tsx/tsc 资源抢占/异步）",
+ "pattern": "深挖根因+对标成熟,复盘沉淀",
+ "ep_score": 3,
+ "chars": 476,
+ "truncated": false,
+ "text": "**用户：**\ntsx服务是什么，跟tsc是一样的吗？\n\n**AI：**\n不是。两个东西：\n\n| | tsc | tsx |\n|---|---|---|\n| 全称 | TypeScript Compiler | TypeScript Execute |\n| 做什么 | 类型检查（只查不跑） | 直接跑 `.ts` 文件（不编译） |\n| 用在哪 | `npm run check` 里的 `tsc --noEmit` | systemd 启动 kfmv4 服务：`npx tsx src/server/index.ts` |\n| 类比 | 像 `gcc --syntax-only` | 像 `python script.py` |\n\nkfmv4 的 systemd 服务是 `npx tsx` 启动的一个 **Node.js 常驻进程**——它就是你的 Web 服务器。我前面说\"tsx 服务\"其实是说\"用 tsx 跑的那个 kfmv4 Node 服务\"。它和 tsc 都在读 `src/` 下的 `.ts` 文件，同时跑的时候磁盘 I/O 互抢。"
+}

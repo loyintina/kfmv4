@@ -1,0 +1,12 @@
+{
+ "id": "ep532-b5",
+ "episode_id": 532,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "相同卡竞态（重大，长拉锯）",
+ "pattern": "补丁vs根因,竞态",
+ "ep_score": 10,
+ "chars": 422,
+ "truncated": false,
+ "text": "**用户：**\n呃，怎么你改了这几行，用了那么多修改和操作？你刚刚发生什么了？\n\n**AI：**\n抱歉，刚才犯了一个低级错误——没先读懂文件结构就动手改了。\n\n有两次 `git checkout -- floating-card.ts` 回滚就是因为我改了之后才发现 `createFloatingCard` 在 `return item;` 就结束了，后面的 `dragCfg` 是模块级代码，跟卡创建代码不在同一个作用域。我把 `_toggleExpandCollapse` 放进了已关闭的函数体内，导致 TS 找不到 `item`、`el` 等变量，然后改来改去把括号搞乱了。\n\n最终的方案其实很简洁：长按编辑 → 松手退出 → 浏览器紧接着触发 `click` → 用 `_suppressNextClick` 标记拦截掉这次多余的 click。4 行净增。前面的折腾全是因为方向错了（想合并两个交互模型），一开始就应该走这个简单路线。"
+}

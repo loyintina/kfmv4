@@ -1,0 +1,12 @@
+{
+ "id": "ep951-b7",
+ "episode_id": 951,
+ "session_id": "omp-2026-07-25T02-58-55-859Z_019f9736-24f3-7",
+ "source": "manual",
+ "topic": "对话截断问题（cgroup/进程组一荣俱荣）+ kfmv4 重启杀 tmux 修复",
+ "pattern": "复盘沉淀,全链路验证",
+ "ep_score": 3,
+ "chars": 472,
+ "truncated": false,
+ "text": "**用户：**\n那我也能用手机端的termux开ssh连接服务器进tmux窗口，它不应该只被kfmb4继承吧？但kfmv4里面没了，termux里的tmux也没了？\n\n**AI：**\n对，因为 **tmux server 只有一个进程**，不管几个客户端连进来。\n\n```\nTermux(SSH) ──┐\n               ├── attach ──→ tmux server (PID 64643, cgroup=kfmv4.service)\nKFM Web 终端 ──┘\n```\n\ntmux server 是在 **kfmv4 Web 终端里启动的**，所以 cgroup 落在 kfmv4。SSH 连进来只是 `tmux attach`——客户端不拥有 server 进程。server 一死，所有客户端一起断。\n现在 `KillMode=process` 生效了，`systemctl restart kfmv4` 不会再杀 tmux server。不管从 Web 终端还是 Termux SSH 连进来，tmux 都安全。"
+}

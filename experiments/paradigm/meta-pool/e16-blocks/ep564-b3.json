@@ -1,0 +1,12 @@
+{
+ "id": "ep564-b3",
+ "episode_id": 564,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "全屏关闭按钮遮挡下方编辑/预览按钮；标题栏右沿没被挤",
+ "pattern": "设计主张,理解纠正",
+ "ep_score": 1,
+ "chars": 647,
+ "truncated": false,
+ "text": "**用户：**\n？你没理解我的意思。你先告诉我现在的全屏卡片是什么样的布局？\n\n**AI：**\n好，当前 `enterFullscreen` 生成的 DOM 层级：\n\n```\nel（卡本身，position:fixed，占满屏幕）\n├── bgLayer（毛玻璃，100%×100%）\n│   └── contentEl（position:absolute;inset:0）\n│       └── 内容区（文件卡：标题栏 + 预览/编辑按钮 + body）\n├── 退出按钮（position:absolute;top:8px;right:8px）← 和内容区的预览/编辑按钮重叠\n├── tlOrb（display:none）\n├── trOrb（display:none）\n├── blOrb（display:none）\n└── brOrb（display:none）\n```\n\n内容区（`contentEl` 内部）的文件卡标题栏里已经有一行：\n```\n┌──────────────────────────┐\n│ 文件名          [预览] [编辑] │\n├──────────────────────────┤\n│ body                     │\n```\n\n退出按钮是独立于内容区之外的 DOM 元素（`el` 的直属子级），覆盖在内容区的右上角。全屏卡没有自己的\"标题栏行\"——标题栏是文件内容区自己渲染的。\n\n这就是当前的布局。你想要的改动是什么？"
+}

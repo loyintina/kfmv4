@@ -1,0 +1,12 @@
+{
+ "id": "ep558-b27",
+ "episode_id": 558,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端滚动条/滚动失效",
+ "pattern": "一致性质疑,日志定位",
+ "ep_score": 7,
+ "chars": 1377,
+ "truncated": false,
+ "text": "**用户：**\n你的意思是，先找准函数？\n\n**AI：**\n分两条路：\n\n**第一，我找到了判断函数。** xterm.js 里 `_core.coreMouseService.activeProtocol` 精确告诉你当前是不是 mouse mode：\n\n```\n\"NONE\"   = 普通终端 → 该调 scrollLines()\n\"VT200\"  = tmux + set -g mouse on → 该发鼠标序列到 PTY\n```\n\n不需要猜——一个布尔判断就够了。\n\n**第二，不用 `dispatchEvent`。** WheelEvent 被你之前验证了不可靠。直接在 mouse mode 时通过 `wsChannel.sendMessage('terminal-input', ...)` 发原始的鼠标滚轮序列到 PTY——绕过所有 xterm.js 内部的 `isTrusted` 检查。\n\n---\n\n## 计划\n\n1. **回退**到 `9649c5f`（flex fix，scrollLines 工作状态）\n2. **改手势 handler**：在 `onMove` 里加一条分支：\n\n```typescript\nconst ms = _activeTerm?._core?.coreMouseService;\nif (ms && ms.activeProtocol !== 'NONE') {\n    // mouse mode (tmux/vim with mouse on): 发 X10 滚轮序列到 PTY\n    const seq = dy > 0 ? '\\x1b[M\\x60\\x20\\x20' : '\\x1b[M\\x41\\x20\\x20';\n    wsChannel.sendMessage('terminal-input', { sessionId, input: seq });\n} else {\n    // 普通终端: scrollLines\n    _activeTerm.scrollLines(Math.round(dy / 9));\n}\n```\n\n**3. Pass `sessionId` 进去**：现在手势 handler 需要知道 sessionId。最简单——不用存 sessionId，改为直接通过 `_activeTerm` 发到 PTY：xterm.js 有个内部路径 `term._core.coreService.triggerDataEvent(seq)` 可以直接注入数据，不走 `terminal-input` 消息。\n\n4. **`triggerDataEvent` 验证**——我已经在 xterm.js 源码里看到 `_coreService.triggerDataEvent` 这个方法，它直接写到 PTY 输出流。如果不敢用 `_core` 的私有 API，降级方案是 `term.write(String.fromCharCode(0x1b) + '[M' + ...)`——但这会显示在终端上。实际上用 `wsChannel` 发 `terminal-input` 是最干净的。\n\n---\n\n要我切 build 模式实施吗？需要先回退 commit，再改手势。"
+}

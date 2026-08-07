@@ -1,0 +1,12 @@
+{
+ "id": "ep558-b6",
+ "episode_id": 558,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端滚动条/滚动失效",
+ "pattern": "一致性质疑,日志定位",
+ "ep_score": 7,
+ "chars": 1018,
+ "truncated": false,
+ "text": "**用户：**\n然后是页面历史记忆的问题，现在开了终端卡，里面有一些内容，但如果我点击紧缩态后再展开，内容就消失了。这是什么回事？\n\n**AI：**\n问题很清楚：`deactivate` 不管 reason 是 `'compact'` 还是 `'dismiss'`，都一刀切地做了三件毁灭性操作：\n\n1. `wsChannel.sendMessage('terminal-close')` — 杀了 PTY 会话\n2. `term.dispose()` — 销毁了 xterm 实例（清空所有内部缓冲）\n3. `contentEl.innerHTML = ''` — 拆了 DOM\n\n再 expand 的时候 `activate` 不管 reason 是 `'init'` 还是 `'compact'`，都从零创建新的 Terminal 和新 PTY 会话——所有历史内容自然没了。\n\n---\n\n## 修复：区分 compact 和 dismiss 的生命周期\n\n**`deactivate` 中：**\n\n```\nif (reason === 'dismiss') {\n  → term.dispose()        // 关闭时销毁\n  → 关闭 PTY 会话\n  → 清除 WS 监听器\n  → 释放终端编号\n} else {\n  // reason === 'compact'\n  → 不 dispose Terminal\n  → 不关闭 PTY\n  → 保留 WS 监听器（PTY 还在跑）\n  → 只清理 ResizeObserver + _termMap\n}\n```\n\n**`activate` 中：**\n\n```\nif (card.meta._term) {\n  // reason === 'compact' → 复用已有 Terminal\n  → term.open(newTermEl)  // 重新挂到新 DOM\n  → fit.fit()\n  → 重建 ResizeObserver\n  → 重建 _termMap\n  → 不发送 terminal-open\n} else {\n  // reason === 'init' → 创建全新 Terminal + PTY\n}\n```\n\n效果：紧缩再展开 → 终端内容和 PTY 会话都在，xterm 内部缓冲原样保留。\n\n---\n\n要切 build 模式实施吗？"
+}

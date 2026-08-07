@@ -1,0 +1,12 @@
+{
+ "id": "ep504-b8",
+ "episode_id": 504,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "卡片堆聚焦状态错乱",
+ "pattern": "全链路验证,验证优先",
+ "ep_score": 9,
+ "chars": 826,
+ "truncated": false,
+ "text": "**用户：**\n好像解决了一些，但问题还是存在，另外，我发现规律了，如果我点击了其他卡片，让其他卡片聚焦，那么中央的卡片就不会变成不聚焦的状态，谈后这时加入新卡，我点击聚焦的卡片会失焦，但上一个中央的卡片依然在聚焦，而且聚焦状态被固定了，就导致它也向两边铺开，然后滚动的时候能把它抹回去，但加入新卡就又会回到聚焦状态。这是可复现的。你能看到是什么原因吗？\n\n**AI：**\n找到可复现规律了。问题在于 `_prevFocusIndex` 的含义在各代码路径中被混淆了。\n\n**当前逻辑**：`_prevFocusIndex` 存的是\"上上一张聚焦卡\"的索引（即刚被 handleRowSwipe 失焦的那张）。但 `updateFocus` 需要的是\"**当前聚焦卡**\"的索引——因为点击新卡时，该失焦的是当前那张，不是两轮前的那张。\n\n**场景复现**：\n1. 加入 5 张卡，C4 在 index 2 聚焦，`_prevFocusIndex` = index 1（上一轮失焦的 C3）\n2. 点击 C1（index 0）→ `updateFocus` 失焦 index 1（C3，已经失焦了），聚焦 index 0 → **跳过 index 2（C4），它保持聚焦态** — 这就是那根\"刺\"\n\n修复：`_prevFocusIndex` 应该始终指向\"上次操作后当前聚焦的卡\"，即直接设为 `_focusIndex`：\n修复逻辑：\n\n`_prevFocusIndex` 的作用是告诉 `updateFocus` \"当前聚焦的是哪张卡，需要把它失焦\"。所以它的值应该是**最后一次操作后当前聚焦的卡**，即 `_focusIndex`。\n\n之前错误地设成了 `indexOf(oldEl)`（上一轮被淘汰的旧卡），导致 `updateFocus` 拿着过期的索引去失焦一张早就失焦了的卡，而真正的当前聚焦卡（比如正中间的）被跳过，聚焦态永远解不掉。"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep627-b26",
+ "episode_id": 627,
+ "session_id": "ses_141744654ffehLxZxWEQSrD8RN",
+ "source": "manual",
+ "topic": "逐条审计修复（13 条）",
+ "pattern": "全链路验证,追源",
+ "ep_score": 3,
+ "chars": 597,
+ "truncated": false,
+ "text": "**用户：**\n那除了加控制台外，还得加一个日志卡的引用，我们自己的日志系统。\n\n**AI：**\n好思路。`logger.ts` 提供了 `log()` 函数，所有日志输出集中到调试卡里看。\n\n当前 `tree-loader.ts` 中所有静默吞错误的 catch 块：\n方案：\n\n**改动 1 个文件 `tree-loader.ts`：**\n\n| 操作 | 行 |\n|------|-----|\n| `+ import { log } from './logger.js'` | 在现有 import 后 |\n| `} catch {` → `} catch (e) { log('[tree-loader] fetchDirRecursive failed: ' + (e instanceof Error ? e.message : String(e)));` | 83 行 |\n| `console.error(err)` → `log('[tree-loader] loadAndAnimate failed: ' + (err instanceof Error ? err.message : String(err)))` | 178 行（可选，已有 console 但走 logger 更统一） |\n\n验证：`npm run check` + `npm test`。\n\n要执行吗？"
+}

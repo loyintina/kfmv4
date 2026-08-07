@@ -1,0 +1,12 @@
+{
+ "id": "ep504-b10",
+ "episode_id": 504,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "卡片堆聚焦状态错乱",
+ "pattern": "全链路验证,验证优先",
+ "ep_score": 9,
+ "chars": 841,
+ "truncated": false,
+ "text": "**用户：**\n不对，问题依然存在，说明你的改动没有真正解决问题。我观察了一下，问题在于，如果卡片超过40张，那么把光标滚动到其他位置后，再加入新卡，上一个加入的卡片会变成聚焦态，并固定住，而如果再加一个新卡，行为是正常的，问题在于虽然卡片失焦了，但聚焦状态似乎被莫名其妙地记住了。你针对这个问题看看是什么原因？\n\n**AI：**\n`updateFocus` 只改了卡片的视觉位置（GSAP tween），但**从未更新 `dataset.rx`**！所以失焦卡的 `dataset.rx` 还留在 `_focusRx`。下次 `handleRowSwipe` 的 forEach 读 `dataset.rx` 时拿到的是焦点 x，直接把卡片拍回聚焦位。\nLet me verify all places where `dataset.rx` is read/set to make sure they're consistent:\n这就是根因。\n\n卡片有两个 x：\n\n| | 视觉位置（GSAP） | 数据源（`dataset.rx`） |\n|---|---|---|\n| 聚焦 | GSAP tween → `_focusRx` | `rx = focusRx` ✓ |\n| **失焦** | GSAP tween → `_normalRx` | `rx` 没更新，**还是 `focusRx`** ❌ |\n\n下次 `handleRowSwipe` 的 forEach 从 `dataset.rx` 取值来重排卡片位置，读到的是过期的 `focusRx`，就把卡片拍回了聚焦位。GSAP 的视觉动画是改对了的，但 `dataset.rx` 这个记录层没同步——这是个**数据与视图不一致**的经典双写 bug。\n\n修复：`updateFocus` 聚焦时设 `el.dataset.rx = _focusRx`，失焦时设 `el.dataset.rx = _normalRx`。"
+}

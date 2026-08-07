@@ -1,0 +1,12 @@
+{
+ "id": "ep857-b1",
+ "episode_id": 857,
+ "session_id": "omp-2026-07-22T03-58-36-090Z_019f87f9-b23a-7",
+ "source": "manual",
+ "topic": "版本 7.3.1 + 修 bug 流程记录 + 工具失败注入提示 + 连续调用",
+ "pattern": "可回退铁律,复盘沉淀",
+ "ep_score": 5,
+ "chars": 903,
+ "truncated": false,
+ "text": "**用户：**\n然后，我们刚刚这个，修bug，验证测试通过，钉钉子，登记进文档，这个流程有没有哪里记录？\n\n**AI：**\n在 `docs/KFM_V4_INVARIANTS.md` 心法 24 和 `docs/archive/design/REGRESSION_TESTING_SYSTEM.md` 里有记录。让我确认内容是否覆盖了我们刚才的完整流程：\n已有记录，在两个地方：\n\n1. **`docs/KFM_V4_INVARIANTS.md` 心法 24**（第 265-275 行）— 精简版：\n   > 修 bug → 补钉子 + 登记 + revert 验证：写 `regression('BAR-xxx', commit, 名称, fn)`；临时回退修复必须让测试变红（否则是假测试）；在登记表标「✅ 已钉」。\n\n2. **`docs/archive/design/REGRESSION_TESTING_SYSTEM.md` §5.3 微循环**（第 304-307 行）— 完整版：\n   ```\n   1. git show <commit>  读懂当时错在哪、怎么修的\n   2. 判断正确行为能否用不看屏幕的断言表达 → 能则写，不能则先抽纯函数\n   3. 写 regression() 钉子\n   4. revert 验证（回退修复必须让测试变红）\n   5. 在 BUG_REGRESSION_REGISTRY.md 登记\n   ```\n\n但我们刚才的流程多了几步，实际走的是：\n\n```\n修 bug → npm test 全绿 → 钉钉子 → revert 验证 → 登记回归表 → 更新 HANDBOOK 版本历史/测试计数 → 更新 README/CLAUDE.md → 打 git tag\n```\n\n微循环文档里没有提「更新 HANDBOOK 版本历史 + 测试计数 + README + CLAUDE.md + 打 tag」这步。这步在 `check-versions.mjs` 里有检查（版本号一致性），但没有在微循环里显式记录。\n\n要不要把完整流程补充进微循环文档？"
+}

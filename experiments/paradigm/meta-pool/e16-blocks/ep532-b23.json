@@ -1,0 +1,12 @@
+{
+ "id": "ep532-b23",
+ "episode_id": 532,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "相同卡竞态（重大，长拉锯）",
+ "pattern": "补丁vs根因,竞态",
+ "ep_score": 10,
+ "chars": 1640,
+ "truncated": false,
+ "text": "**用户：**\n[10:51:51.279] [CARD-STACK] buildCards called → [10:51:51.280] [CARD-STACK] buildCards done, cards=7 → [10:51:51.280] [ws-channel] 初始化完成 → [10:51:51.455] [ws-channel] 已连接到服务端 ws://8.145.46.182/ws → [10:52:03.844] [BR] onStart → [10:52:03.845] [BR] getElement target=svg closest=OK → [10:52:03.845] [DRAG] timer set 600ms → [10:52:04.445] [DRAG] timer FIRED → [10:52:05.613] [DRAG] onEnd drag=false longFired=true editing=true → [10:52:06.359] [BR] onStart → [10:52:06.360] [BR] getElement target=line closest=OK → [10:52:06.361] [DRAG] timer set 600ms → [10:52:06.899] [DRAG] onEnd drag=false longFired=false editing=false 进行了两次操作，第一次是好的卡的正常反应，第二次是触发了另一张卡的紧缩态。\n\n**AI：**\n日志非常清楚：\n\n```\n第二张卡（bug）:\n[10:52:06.361] timer set 600ms         ← 应该在 06.961 才着火\n[10:52:06.899] onEnd drag=false longFired=false  ← 但只过了 538ms 就收到 onEnd！\n```\n\n**timer 还没着火就收到了 `onEnd`。** 这不是超时问题——是浏览器在约 500ms 时检测到长按，触发**文字选择**（另一张卡的标题出现选中效果），同时发送了 `pointercancel` 事件。GestureRegistry 监听 `pointerup` **和** `pointercancel`（gesture-registry.ts:115-116），两个都会调 `_handleEnd` → `drag.onEnd`。\n\n`onEnd` 里 `longFired=false`、`dragging=false` → 判定为短按 → 调 `onTap` → 收缩。长按计时器被 `clearTimeout` 废弃。\n\n---\n\n## 修复计划\n\n**方案 A**（`drag-handler.ts`）：`onEnd` 加事件参数，检测到 `e.type === 'pointercancel'` 时跳过 `onTap`。\n\n```diff\n- function onEnd(): void {\n+ function onEnd(e?: PointerEvent): void {\n    ...\n-   if (!s.dragging && !s.longPressFired) { cfg.onTap(); }\n+   if (!s.dragging && !s.longPressFired && (!e || e.type !== 'pointercancel')) { cfg.onTap(); }\n```\n\n**方案 B**（`floating-card.ts`）：加 `user-select: none` 去文字选择，从源头上阻止浏览器发 `pointercancel`。卡片的 DOM 根元素 `el` 的 CSS 加一行。\n\n两个互不冲突，可以一起做。要开始吗？"
+}

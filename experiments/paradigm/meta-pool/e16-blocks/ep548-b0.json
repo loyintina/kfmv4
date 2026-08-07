@@ -1,0 +1,12 @@
+{
+ "id": "ep548-b0",
+ "episode_id": 548,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "缩放终端页面消失/文字重复/不重新排版（termux 会重排的对比）",
+ "pattern": "补丁vs根因,平台对比",
+ "ep_score": 1,
+ "chars": 322,
+ "truncated": false,
+ "text": "**用户：**\n但我现在放大缩小的时候，终端页面会消失，然后有时候松手能出现，但有时候松手就不出现了。这是什么原因？\n\n**AI：**\nResizeObserver 触发 `_layout()` 时重建了网格，但**没有调 `_render()` 重绘**。Canvas 变成空白。偶尔出现是因为 PTY 后来有新数据到达，`write()` 触发了一次渲染。\n\n---\n\n## 修复\n\n`terminal-renderer.ts` `_layout()` 末尾加一行：\n\n```typescript\nthis._render();\n```\n\n这样每次 resize 重建网格后立即重绘，内容不会闪烁消失。\n\n---\n\n切 build 模式修？"
+}

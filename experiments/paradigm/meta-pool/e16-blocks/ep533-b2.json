@@ -1,0 +1,12 @@
+{
+ "id": "ep533-b2",
+ "episode_id": 533,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "右滑出卡方向判定（重大）",
+ "pattern": "简化方案,深度归因,重构视角",
+ "ep_score": 11,
+ "chars": 849,
+ "truncated": false,
+ "text": "**用户：**\n现在我就进行一个测试，我召唤出文件树后，往右上角0到75度大致方向移动，现在它会光标先移动一下再召唤出卡片，我期望的是，在这个动作下，光标不移动，只召唤出卡片。\n\n**AI：**\n找到了。问题不在阈值，而在 `_gestureAxis === 'none'` 阶段。\n\n当前流程：\n\n```\nonMove 第1帧: _gestureAxis='none' → 轴未定 → 穿透到竖线处理 → 光标按 dy 移动\nonMove 第2帧: _gestureAxis='none' → dy 和 dx 接近 45° → 不满足 1.5:1 → 轴仍未定 → 光标继续动\nonMove 第N帧: 同上\nonEnd:       dx > 70 → 右滑兜底触发 → 但光标已经偏到下行\n```\n\n对角线手势（0-75°）时 dx 和 dy 差距不到 1.5 倍，轴始终不锁定，`_gestureAxis` 一直为 `'none'`。光标白走了 N 帧。\n\n---\n\n## 修复计划\n\n一行改动，`canvas-scroll.ts:170`：\n\n```diff\n  if (_gestureAxis === 'horizontal') return;\n+ if (_gestureAxis === 'none' && _touchIsCursor) return;\n```\n\n意思：轴未定 + 光标模式 → 光标不动。等轴锁定后再决定行为。**不影响滚动**（`_touchIsCursor` 为 false 时照常走 scrolling 处理分支）。\n\n轴锁为水平后，光标始终不动（已有 `_gestureAxis === 'horizontal' → return`）。轴锁为垂直后，光标才开始跟随手指移动。\n\n对角线手势的用户体验：\n```\n按下 → 右上移 → 20px后锁水平 → 光标从始至终没动 → 松手 → 右滑兜底触发 → 正确行投卡 ✓\n```\n\n也是不改滚动。要开始吗？"
+}

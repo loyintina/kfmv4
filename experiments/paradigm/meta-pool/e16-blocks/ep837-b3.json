@@ -1,0 +1,12 @@
+{
+ "id": "ep837-b3",
+ "episode_id": 837,
+ "session_id": "omp-2026-07-07T06-14-00-892Z_019f3b36-47bc-7",
+ "source": "manual",
+ "topic": "投卡全屏行为修正 + 版本 + readme 自动更新管线",
+ "pattern": "补丁vs根因,删繁",
+ "ep_score": 5,
+ "chars": 507,
+ "truncated": false,
+ "text": "**用户：**\n还是不行\n\n**AI：**\n我换个思路。问题核心是 CSS 选择器优先级——`.floating-card.fullscreen *` 用 `*` 全匹配，`touch-action: pan-y` 的内联样式按说优先级更高应该赢，但可能存在时序问题让异步创建的元素漏掉。\n\n最可靠的修法：用 CSS 规则直接覆盖，加 `!important`，这样无论元素何时加入 DOM 都生效。\n现在刷新试试。这次的关键区别：\n\n**之前**：靠 JavaScript 在 `enterFullscreen` 里遍历后代设 `touch-action: pan-y`（时序问题——异步加载的子元素来不及覆盖）。\n\n**现在**：CSS 规则 `.floating-card.fullscreen .card-content * { touch-action: pan-y; }`。`.card-content` 的类选择器优先级（0,0,1,0）高于 `*` 选择器（0,0,0,0），所以后代元素无论何时创建、由谁创建，CSS 层叠自然选择 `pan-y` 规则覆盖 `none`。不需要 JS 干预时序。"
+}

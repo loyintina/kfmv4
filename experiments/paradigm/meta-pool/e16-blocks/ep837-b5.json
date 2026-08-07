@@ -1,0 +1,12 @@
+{
+ "id": "ep837-b5",
+ "episode_id": 837,
+ "session_id": "omp-2026-07-07T06-14-00-892Z_019f3b36-47bc-7",
+ "source": "manual",
+ "topic": "投卡全屏行为修正 + 版本 + readme 自动更新管线",
+ "pattern": "补丁vs根因,删繁",
+ "ep_score": 5,
+ "chars": 571,
+ "truncated": false,
+ "text": "**用户：**\n好\n\n**AI：**\nv6.11.0 已提交并打 tag：\n\n```\n53dcf21 v6.11.0: gesture _handleStart 跳过纯双指处理器 + 全屏卡片原生滚动 + 文件点击直接全屏\n```\n\n改动汇总（27 文件，+718/-146）：\n\n- **gesture-registry.ts** — `_handleStart` 跳过无单指回调的处理器\n- **gestures.ts** — 恢复原始逻辑（删除补丁式垂直滚动）\n- **floating-card.ts** — 导出 `enterFullscreen`，新增 `startInFullscreen` 配置，CSS touch-action 覆盖\n- **base.scss** — 新增 `.fullscreen .card-content * { touch-action: pan-y }` 规则\n- **tree-render.ts** — 点击文件直接全屏\n- **文档** — 修复所有审计问题（断裂链接、过时声明、renderers/ 子目录）\n- **检查管线** — `check-checks.mjs`、`check-doc-coverage.mjs` 新增，`check-consistency.mjs` 修复死代码"
+}

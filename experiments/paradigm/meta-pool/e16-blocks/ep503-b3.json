@@ -1,0 +1,12 @@
+{
+ "id": "ep503-b3",
+ "episode_id": 503,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "文件行右滑动画漂移",
+ "pattern": "全链路验证,追源",
+ "ep_score": 17,
+ "chars": 400,
+ "truncated": false,
+ "text": "**用户：**\n可以，试试吧，希望不会出现改动没有效果的情况。\n\n**AI：**\n改好了。策略从 \"在起点纠正动画\" 变成 \"把终点钉死在原始位置\"：\n\n```js\n// 旧：to — 起点取决于当前值，漂移累积\nanim.to(rowBox, { x: origX + 8, yoyo: true });  // origX 可能是补间中间值\n\n// 新：fromTo — 首帧强制拉回缓存值，终点天然就是原始位置\nanim.fromTo(rowBox,\n  { x: _bounceOrigX },           // 首帧强设到原始位置\n  { x: _bounceOrigX + 8, yoyo }  // 弹到 +8，yoyo 自动回到原始\n);\n```\n\n`_bounceOrigX` 在首次弹回时记录，`rebuildTree` 重建 Box 对象后清空重记。你在浏览器里试试看。"
+}

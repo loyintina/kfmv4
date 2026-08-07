@@ -1,0 +1,12 @@
+{
+ "id": "ep569-b3",
+ "episode_id": 569,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "双指缩放无响应（捏合日志定位 pinchCb=false/单指被误配）",
+ "pattern": "验证优先,日志定位",
+ "ep_score": 5,
+ "chars": 513,
+ "truncated": false,
+ "text": "**用户：**\n我觉得这不靠谱，还是以实际日志卡的日志为准。\n\n**AI：**\n好。在 `applyZoom` 加一行日志：\n\n```ts\nfunction applyZoom(item: FloatingCardItem, z: number): void {\n  item.contentZoom = z;\n  if (item.contentEl) item.contentEl.style.zoom = String(z);\n  log('[zoom] ' + item.config.typeId + ' zoom=' + z.toFixed(2));\n  _saveZoom(item.config.typeId, z);\n}\n```\n\n然后你在卡片上捏合或者按 Ctrl + +/-，02 卡会显示类似：\n```\n[zoom] file zoom=1.20\n[zoom] file zoom=1.10\n```\n\n- 如果有日志但内容没变 → `style.zoom` 浏览器不支持\n- 如果没有日志 → 键盘/pinch 回调没触发\n- 如果 zoom 值跳到很大（比如 5.0、0.1）→ 算错了\n\n确认后加。"
+}

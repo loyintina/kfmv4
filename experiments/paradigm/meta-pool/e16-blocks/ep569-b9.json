@@ -1,0 +1,12 @@
+{
+ "id": "ep569-b9",
+ "episode_id": 569,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "双指缩放无响应（捏合日志定位 pinchCb=false/单指被误配）",
+ "pattern": "验证优先,日志定位",
+ "ep_score": 5,
+ "chars": 1671,
+ "truncated": false,
+ "text": "**用户：**\n嘿，我召唤卡片的时候，会出现一条日志，但我缩放时，并没有日志变化：[08:48:36.931] [CARD-STACK] buildCards called → [08:48:36.933] [CARD-STACK] buildCards done, cards=7 → [08:48:36.934] [ws-channel] 初始化完成 → [08:48:37.111] [ws-channel] 已连接到服务端 ws://8.145.46.182/ws → [08:48:38.892] [zoom] debug zoom=1.00 → [08:48:42.607] [zoom] file zoom=1.00 \n\n**AI：**\n`applyZoom` 本身能跑（召唤时有日志），但缩放手势/键盘没触发回调。让我看看 pinch 和键盘缩放的绑定逻辑。\n两个可能的问题点。让我检查 `registerPinch` 和 `focusedInstanceId` 的逻辑。\nLet me check how and when `applyZoom` is called during initialization.\n根据分析，`applyZoom` 本身能跑（召唤时有日志），但 pinch/键盘回调没触发。需要在 gesture-registry 的 `_handleStart` 和 `_handleMove` 里加诊断日志来定位是哪个环节断了。\n`gesture-registry.ts` 没有 `log`。加 import 和两处诊断日志：\n我忘了现在是 plan mode，不能编辑文件。让我把计划整理清楚。\n\n---\n\n## 诊断计划\n\n**问题**：`applyZoom` 本身能跑（召唤时有日志），但 pinch/键盘缩放回调没触发。\n\n**需要在 `gesture-registry.ts` 做的事**：\n\n1. **加 `import { log } from './logger.js';`**（文件顶部）\n\n2. **`_handleStart` 里加诊断日志**（约 line 177）：\n```ts\nthis._activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });\nlog('[gesture] start ptrs=' + this._activePointers.size + ' pinchCb=' + !!this._pinchCb + ' button=' + e.button);\nif (this._activePointers.size === 2) {\n```\n\n3. **`_handleMove` 里加诊断日志**（约 line 226）：\n```ts\nif (this._activePointers.size === 2 && this._pinchCb && this._pinchStartDist > 0) {\n  log('[gesture] pinch scale=' + (Math.hypot(...)/this._pinchStartDist).toFixed(2));\n```\n\n**诊断逻辑**：\n- 如果 `[gesture] start` 没出现 → 手势事件根本没注册上\n- 如果 `ptrs=2` 但 `pinchCb=false` → `initFloatingCards()` 没跑或跑在 `init()` 之后\n- 如果 `ptrs=2` + `pinchCb=true` 但没有第二行日志 → `_pinchStartDist` 没设成功\n- 如果有 pinch 日志但没有 `[zoom]` 日志 → `applyZoom` 里 `e.target.closest('.floating-card')` 匹配失败\n\n确认后我退出 plan mode 来执行。"
+}

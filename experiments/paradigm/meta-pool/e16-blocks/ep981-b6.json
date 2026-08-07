@@ -1,0 +1,12 @@
+{
+ "id": "ep981-b6",
+ "episode_id": 981,
+ "session_id": "omp-2026-05-29T03-33-18-586Z_019e71cb-227a-7",
+ "source": "manual",
+ "topic": "omp 版本更新运维（update 6→10/启动命令/清理）",
+ "pattern": "版本哲学,可回退铁律",
+ "ep_score": 9,
+ "chars": 364,
+ "truncated": false,
+ "text": "**用户：**\n欸？那我现在跟你对话的这个版本是什么？\n\n**AI：**\n我和你对话的这个是 **Oh My Pi 的 coding agent**（就是这个工具本身），只不过我是跑在后台的 agent 实例，帮你完成任务的。\n\n**`omp` 是另一个东西**——它是一个 CLI 工具，你可以自己在终端里跑，启动一个跟你对话式交互的 coding agent，类似我现在做的，但跑在你本地，能直接读写你机器上的文件、跑命令、调 LSP 等等。\n\n简单说：\n- **现在**：你通过 Oh My Pi 跟我对话，我在帮你干活\n- **`omp`**：你自己在终端里启动，得到的是一个类似的本地 coding agent，直接操作你的项目\n\n所以你想试 `omp` 的话，还得配一个你用的 API provider 的 key。"
+}

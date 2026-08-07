@@ -1,0 +1,12 @@
+{
+ "id": "ep546-b40",
+ "episode_id": 546,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端编号/状态混用（重大）",
+ "pattern": "初心对齐,机制设计,读码优先",
+ "ep_score": 5,
+ "chars": 720,
+ "truncated": false,
+ "text": "**用户：**\n好，有终端了，而且点击收缩态和展开态切换，终端编号也不变。但比如说，我召唤了终端2，右上角叉掉了，再召唤一个终端卡片，我期望的是终端2，但再出现的是 终端3.这有什么办法能修改一下吗？\n\n**AI：**\n问题找到了。`_dismissOne` 里设置了 `item.state = 'dismissing'`，但**没同步到 `CardRegistry`**。\n\n---\n\n## 链路分析\n\n关闭终端 2 的流程：\n\n```\n1. dismissFloatingCard → _dismissOne(item)\n2. item.state = 'dismissing'           ← 只改了 item，注册表没同步\n3. cardRegistry.getInstance(instanceId) ← ci.state 还是 'active'\n4. deactivate → isDismissing = false   ← 没认出来这是关闭！\n5. freeId 没执行                       ← 编号 2 没回收\n6. 下次发射 → allocId → 1,2 已被占 → 拿 3\n```\n\n---\n\n## 修复\n\n`_dismissOne` 里加一行：\n\n```typescript\nitem.state = 'dismissing';\ncardRegistry.updateState(item.instanceId, 'dismissing');   // ← 加这行\n```\n\n---\n\n## 改动量\n\n`floating-card.ts` 一行。\n\n确认后切 build 模式修？"
+}

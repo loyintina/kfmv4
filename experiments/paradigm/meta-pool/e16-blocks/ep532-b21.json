@@ -1,0 +1,12 @@
+{
+ "id": "ep532-b21",
+ "episode_id": 532,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "相同卡竞态（重大，长拉锯）",
+ "pattern": "补丁vs根因,竞态",
+ "ep_score": 10,
+ "chars": 1110,
+ "truncated": false,
+ "text": "**用户：**\n[08:12:35.562] [CARD-STACK] buildCards called → [08:12:35.563] [CARD-STACK] buildCards done, cards=7 → [08:12:35.564] [ws-channel] 初始化完成 → [08:12:35.751] [ws-channel] 已连接到服务端 ws://8.145.46.182/ws → [08:12:48.881] [BR] onStart → [08:12:48.883] [BR] getElement target=line closest=OK → [08:12:53.982] [BR] onStart → [08:12:53.983] [BR] getElement target=line closest=OK 我一共进行了两次长按，第一次是一张卡片进入编辑模式，第二次是另一张卡片变回紧缩态。\n\n**AI：**\n日志说明 GestureRegistry 正常收到了两个事件，`getElement` 也找到了光球，`canStart` 没拦截。问题在更深处——长按计时器要么没触发，要么被取消了。\n\n我需要在你同意后给 drag-handler.ts 也加日志，追踪到计时器内部。方案：\n\n## 计划\n\n4 处日志加到 `drag-handler.ts`：\n\n| 位置 | 日志 |\n|------|------|\n| `onStart` 设 timer 后 | `[DRAG] timer set` |\n| timer 火 | `[DRAG] timer FIRED` |\n| `onMove` 超过阈值 | `[DRAG] drag started dx=X dy=Y` |\n| `onEnd` | `[DRAG] onEnd dragging=X longFired=Y editing=Z` |\n\n额外加 `drag-handler.ts` 到 `check-console.mjs` 白名单。\n\n这样日志卡会显示完整路径：\n\n```\n正常: onStart → timer set → timer FIRED → onEnterEdit → onExitEdit → onEnd dragging=0 longFired=1 editing=1\n异常: onStart → timer set → drag started dx=12 dy=0 → onEnd dragging=1 longFired=0 editing=0 (onTap不调)\n```\n\n要开始吗？"
+}

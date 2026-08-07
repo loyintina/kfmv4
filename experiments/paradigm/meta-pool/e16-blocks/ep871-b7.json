@@ -1,0 +1,12 @@
+{
+ "id": "ep871-b7",
+ "episode_id": 871,
+ "session_id": "omp-2026-07-23T14-14-20-532Z_019f8f53-c874-7",
+ "source": "manual",
+ "topic": "文件树崩溃 + root 兄弟目录理解 + 沙漏叹号 + 下拉方向",
+ "pattern": "补丁vs根因",
+ "ep_score": 8,
+ "chars": 1006,
+ "truncated": false,
+ "text": "**用户：**\n打错了，也有一个root名称，但是外面的一圈边框依然没有，点击也没有按钮的交互动画，也不能选择兄弟目录。在这之前，你有没有什么办法能验证文件树是否不崩溃？如果崩溃了就测试不通过，这种钉子能做吗？\n\n**AI：**\n你说得对——没有边框、没有按钮样式、打不开弹窗。先回答钉子的可行性，再修实际问题。\n\n## 关于\"文件树不崩\"的钉子\n\n这个做不了纯逻辑的\"运行时测试\"，因为文件树渲染依赖 Canvas 2D、DOM、服务端文件系统——Node 测试环境里都不可用。但可以做**源码断言钉子**，锁住\"`sibling-switcher` 不 import 任何可能耦合 tree-render 的模块\"这个契约。如果有人以后乱加 import 导致循环依赖，钉子会咬住。\n现在补上 CSS 让按钮有边框和交互动画，同时查弹窗不弹出的可能原因。\nSCSS 会覆盖 CSS 文件。同时改 `sidebar.scss`。\n关于弹窗不弹出：可能的原因是 `/root` 下非隐藏目录太少，只有 `kfmv4` 一个导致 `dirs.length <= 1` 跳过了。加 `showHidden` + 改用静态 API 路径。\n死代码残留（之前替换没删干净的）——tsc 居然没报错？我手动删除。\n331 pass (`+1 TREE-01`)。刷新后按钮应该能看到圆角渐变背景框、手指放上有放大/压扁动画。点击按钮应该弹出兄弟目录列表（包含隐藏目录）。整理一下这轮改的几样东西：\n\n**CSS 按钮样式** — 和 `toggleHiddenBtn` 一样的渐变边框/圆角/阴影/hover:scale/active:scale\n\n**弹窗不弹出的潜在原因修了**：\n- API 路径改用静态 `/kfmv4/api`（和 `state.ts` 一致），不再靠 `window.location.pathname` 计算\n- 获取兄弟目录时加了 `showHidden: true`，否则 `.kfmv4` 这类隐藏文件夹被过滤后可能导致 `dirs.length <= 1` 弹出被跳过\n\n**BAR-ORB-TREE-01 钉子**：锁住 `sibling-switcher.ts` 的 import 数必须为 0——如果有人以后加了 `from './...'` 导致循环依赖崩文件树，测试会咬住。"
+}

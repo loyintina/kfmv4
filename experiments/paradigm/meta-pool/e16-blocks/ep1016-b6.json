@@ -1,0 +1,12 @@
+{
+ "id": "ep1016-b6",
+ "episode_id": 1016,
+ "session_id": "operit-07",
+ "source": "manual",
+ "topic": "算了，回退a466dbc吧",
+ "pattern": "可回退铁律",
+ "ep_score": 5,
+ "chars": 939,
+ "truncated": false,
+ "text": "**用户：**\n11个。\n另外，我问问你，这个粒子动画的原理是不是在盒子上覆盖一个元素，有自己的动画，只是这个动画的坐标变换是基于盒子本身的？\n\n**AI：**\n对，你理解完全正确。原理就是：\n\n```\n盒子（.tree-children-wrap）\n  └── 伪元素（::after，绝对定位在盒子上）\n        └── 自己的动画（从 top:0 到 top:100%）\n```\n\n伪元素的坐标系是相对于盒子本身的，所以不需要 JS 知道盒子的位置——盒子在哪，粒子就在哪。\n\n---\n\n选择器有效（11个），说明问题在**渲染**。我怀疑是 Grid 布局把伪元素放进了隐式 Grid 单元格，导致 `position:absolute` 失效或者被 `overflow:hidden` 的子 div 裁切。\n\n让我在本地验证一下真实的 DOM 结构：\n<tool_RDLV name=\"package_proxy\">\n  <param name=\"params\">{&quot;command&quot;: &quot;cd /root/kfmv4 &amp;&amp; grep -n &apos;tree-children-wrap\\\\|children-wrap&apos; src/client/modules/tree.ts&quot;}</param>\n  <param name=\"tool_name\">linux_ssh:linux_ssh_exec</param>\n</tool_RDLV><tool_result_XTtL name=\"linux_ssh:linux_ssh_exec\" status=\"success\"><content>{\"packageVersion\":\"0.1.0\",\"success\":true,\"timeoutMs\":15000,\"exitCode\":0,\"timedOut\":false,\"output\":\"81:    wrap.className = 'tree-children-wrap';\",\"sessionId\":\"\",\"error\":\"\"}</content></tool_result_XTtL>"
+}

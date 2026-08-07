@@ -1,0 +1,12 @@
+{
+ "id": "ep991-b8",
+ "episode_id": 991,
+ "session_id": "omp-2026-07-27T00-23-12-649Z_019fa0f4-4c09-7",
+ "source": "manual",
+ "topic": "v8 工作继续实现",
+ "pattern": "补丁vs根因,实现边界控制",
+ "ep_score": 5,
+ "chars": 869,
+ "truncated": false,
+ "text": "**用户：**\n还是不行，面板展开后没有聊天记录\n\n**AI：**\n让我加个调试日志直接追踪问题：\n换个思路——把 `loadSessionInto` 提前到手势系统之前执行：\n找到 bug 了！`dom-refs.ts` 里 `aiInput` 的 ID 是 `\"aiInput\"`，和 HTML 匹配。但在 `initOrb` 里用的是 `DOM.aiInput`，而 `DOM` 对象导入后名叫 `DOM.aiInput`... 等等，这没问题。\n\n让我加日志追踪实际数据流：\n不搞日志了。换个更可靠的方案——让 `sessionStore.subscribe` 在数据加载完成后自动触发面板重渲：\n同时简化 `loadSessionInto`，移除冗余的补渲：\n提交了。这次的修复思路换了：\n\n**根因**：`initOrb()` 是异步的，用户点光球→`expandPanel` 执行时，`loadSessionInto` 可能还没跑完，`chatMessages` 是空的 → 跳过渲染。之后 `loadSessionInto` 完成但无人通知面板补渲。\n\n**三重保障**：\n\n1. **`expandPanel` 每次展开都重新 `initChatDom`** — 因为 `buildPanelContent` 的 `innerHTML` 会销毁旧的内容区，不重新初始化的话 `_contentArea` 指向已脱离 DOM 的元素\n\n2. **首次展开时注册 `sessionStore.subscribe` 回调** — 数据异步加载完成后自动检测面板是否展开+是否有数据，触发补渲\n\n3. **`loadSessionInto` 内的 `orbState === 'expanded'` 回退检查** — 不依赖 subscribe，直接在加载完成时判断\n\n如果还是不行，开一下浏览器控制台，展开面板后告诉我有没有 `[expandPanel]` 开头的日志，以及 `chatMessages.length` 的值。"
+}

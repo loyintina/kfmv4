@@ -1,0 +1,12 @@
+{
+ "id": "ep571-b12",
+ "episode_id": 571,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "tmux 卡缩放重排不跟手 +",
+ "pattern": "补丁vs根因,回退语义冲突",
+ "ep_score": 9,
+ "chars": 1484,
+ "truncated": false,
+ "text": "**用户：**\ntmux依然不跟手，或者说，刷新频率太慢了，移动的时候得大概2到3秒才刷新重排一次呢。但终端卡就不会，它的重排还算很跟手\n\n**AI：**\ncard03 能跟手但 card04 要 2-3 秒才刷新，差距太大了。让我查清楚两个 `setZoom` 的实际执行路径。\n让我查一下 `FitAddon.fit()` 的行为——如果容器尺寸没变，`fit()` 可能跳过 `term.resize()`，导致字号改了但终端不重排。\n找到根因了。\n\n## 根因分析\n\nFitAddon 的 `fit()` 调用 `proposeDimensions()` 计算 cols/rows。这个方法读 `getComputedStyle` 拿容器尺寸：\n\n```js\nproposeDimensions() {\n  let r = getComputedStyle(this._terminal.element.parentElement);\n  let l = parseInt(r.getPropertyValue(\"height\"));\n  let a = parseInt(r.getPropertyValue(\"width\"));\n  // ...用 l, a 除以字符宽高算 cols/rows\n}\n```\n\n**CSS zoom 不改 `getComputedStyle` 返回的值**。所以 `proposeDimensions()` 算出的 cols/rows 跟之前一样 → `fit()` 发现没变化 → **跳过 `term.resize()`** → 终端不重排。\n\ncard03 \"能跟手\"可能是因为 bash 的 PTY resize 有副作用触发了重绘，但 card04 的 tmux 没有这个效果。\n\n## 正确方案\n\n**`applyZoom` 里不应该同时用 CSS zoom 和 `setZoom`**。对有 `setZoom` 的卡（终端/tmux），CSS zoom 反而破坏了 `fit()` 的尺寸计算。\n\n```ts\nfunction applyZoom(item: FloatingCardItem, z: number): void {\n  item.contentZoom = z;\n  const ci = cardRegistry.getInstance(item.instanceId);\n  if (ci && item.config.contentHandler?.setZoom) {\n    // 终端/tmux：走字号路径，不用 CSS zoom\n    item.config.contentHandler.setZoom(ci, z);\n  } else {\n    // 其他卡：CSS zoom 视觉缩放\n    if (item.contentEl) item.contentEl.style.zoom = String(z);\n  }\n  _saveZoom(item.config.typeId, z);\n}\n```\n\n**改动量**：`floating-card.ts` 的 `applyZoom` 函数，~8 行改动。\n\n**效果**：\n- 终端/tmux：字号改变 → `fit()` 正确计算新 cols/rows → `resize()` 触发重排 → `refresh()` 强制刷新。卡片大小不变\n- 其他卡：CSS zoom 视觉缩放（原有行为不变）\n\n确认后执行。"
+}

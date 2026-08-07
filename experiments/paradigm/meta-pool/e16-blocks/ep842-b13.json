@@ -1,0 +1,12 @@
+{
+ "id": "ep842-b13",
+ "episode_id": 842,
+ "session_id": "omp-2026-07-07T06-14-00-892Z_019f3b36-47bc-7",
+ "source": "manual",
+ "topic": "手势覆盖 + 测试拆分 + 卡片插件系统（统一文档）",
+ "pattern": "补丁vs根因,删繁",
+ "ep_score": 1,
+ "chars": 478,
+ "truncated": false,
+ "text": "**用户：**\n好\n\n**AI：**\n清楚。`_cards` 有 7 个槽位：settings（占位）+ 3 张真实卡 + 3 个空槽。统一后只显示注册表中 `kind: 'tool'` 的卡（debug, card03, card04），空槽和 settings 占位消失。\n全部完成。卡片堆现在完全由注册表驱动——加新卡只需在 `registry.ts` 加一行 import，卡片自动出现在堆里。删除死代码 24 行，新增 11 行。\n\n当前项目状态总览：\n\n| 事项 | 状态 |\n|------|------|\n| HANDBOOK §二 同步 | ✅ |\n| check-handbook-sync.mjs | ✅ |\n| 动画锁 3000ms 根因修复 | ✅ |\n| 测试文件拆分（7 文件） | ✅ |\n| 卡片插件系统（cards/ 目录） | ✅ |\n| CARD_DEV_GUIDE.md 开发指南 | ✅ |\n| `_cards` 数组统一 | ✅ |\n| 过时的文档标记全部清理 | ✅ |\n\n没有未清的尾巴了。有新方向想做吗？"
+}

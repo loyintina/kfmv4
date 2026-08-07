@@ -1,0 +1,12 @@
+{
+ "id": "ep532-b2",
+ "episode_id": 532,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "相同卡竞态（重大，长拉锯）",
+ "pattern": "补丁vs根因,竞态",
+ "ep_score": 10,
+ "chars": 342,
+ "truncated": false,
+ "text": "**用户：**\nbug1的修复会不会导致click都失效了？\n\n**AI：**\n不会。`e.preventDefault()` 只在 `s.longPressFired === true` 时才调用，正常短按不触发。\n\n具体逻辑：\n\n```\nonEnd(e):\n  if 刚退出编辑态:\n    e.preventDefault()   // ← 只在这条分支，阻止浏览器合成 click\n  if 是短按（无拖动、未触发长按）:\n    onTap()             // ← 手动调 brOrb.click()，正常生效\n```\n\n让我确认 GestureRegistry 是否已经在 pointer 事件上调过 `e.preventDefault()`，这会影响方案。"
+}

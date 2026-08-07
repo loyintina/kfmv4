@@ -1,0 +1,12 @@
+{
+ "id": "ep532-b25",
+ "episode_id": 532,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "相同卡竞态（重大，长拉锯）",
+ "pattern": "补丁vs根因,竞态",
+ "ep_score": 10,
+ "chars": 1134,
+ "truncated": false,
+ "text": "**用户：**\n那会不会影响对编辑模式卡片文字的长按选中？而且，正常来说，不应该对文字本身的位置长按，才会触发选中吗？为什么点一个位置完全无关的光球，也会触发选中呢？\n\n**AI：**\n两个问题分开说：\n\n---\n\n**问 1：影不影响编辑模式的文字选中？**\n\n不影响。编辑模式用的是 `<textarea>`，它的选区是浏览器原生表单行为，不受 `user-select` CSS 影响。修复只在 `drag-handler.ts` 内部——收到 `pointercancel` 时不做 `onTap`，跟文字选择完全不挨着。\n\n---\n\n**问 2：为什么点光球会触发另一张卡的选中？**\n\n这是移动端浏览器的\"就近选中\"行为。你长按光球 600ms，浏览器在 ~500ms 就检测到：\n1. 触摸点附近有可选中文字（另一张卡的标题）\n2. 浏览器判定用户意图是\"文字选择\"\n3. 发 `pointercancel` 给原始触摸目标（光球），同时启动文字选择\n\n光球和文字是**同一张卡的不同层级**——光球画在上面，文字在下面。浏览器看的是 DOM 树中的临近文字节点，不是像素级的 hit test。\n\n---\n\n## 修复计划\n\n两个改动，互不冲突：\n\n**A. `drag-handler.ts` —— 拦截 pointercancel**\n\n```diff\nfunction onEnd(e?: PointerEvent): void {\n+   if (e?.type === 'pointercancel') {\n+     if (s.longPressTimer) { clearTimeout(s.longPressTimer); s.longPressTimer = null; }\n+     reset();\n+     return;\n+   }\n    ...\n```\n\n`pointercancel` 来时只清 timer、不做 `onTap`，不触发展开/收缩。\n\n**B. `drag-handler.ts` —— `onEnd` 签名改接收事件**\n\nGestureRegistry 调 `onEnd` 时传了 `e` 作为第一个参数（gesture-registry.ts:240），当前 `function onEnd(): void` 忽略了它。改成 `function onEnd(e?: PointerEvent)` 就能判断事件类型。调用方 `floating-card.ts` 不需要改——`onEnd: drag.onEnd` 照传。\n\n只改 `drag-handler.ts` 一个文件，5 行。要开始吗？"
+}

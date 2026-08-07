@@ -1,0 +1,12 @@
+{
+ "id": "ep856-b4",
+ "episode_id": 856,
+ "session_id": "omp-2026-07-22T03-58-36-090Z_019f87f9-b23a-7",
+ "source": "manual",
+ "topic": "400 报错 + 文件树状态检测比对 + 钉子机制",
+ "pattern": "补丁vs根因,验证优先",
+ "ep_score": 4,
+ "chars": 376,
+ "truncated": false,
+ "text": "**用户：**\n还有一个re开头的单词，好像是确保钉子确实钉下来了\n\n**AI：**\nRevert 验证——确认钉子真的能红。临时改回 `KFMState.showHidden`，跑钉子，确认变红，再改回来。\n红了。恢复修复：\nRevert 验证通过：改回 `KFMState.showHidden` → BAR-TREE-HIDDEN-03 红（305 pass / 1 fail），恢复 `showHidden: true` → 306 全绿。钉子确实钉住了。\n等等，`git checkout` 会把 tree-loader.ts 恢复到上次 commit 的状态——上次 commit 里已经是 `showHidden: true` 了，所以没问题。确认一下：\n确认。`showHidden: true`，306 全绿，revert 验证完成。"
+}

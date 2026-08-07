@@ -1,0 +1,12 @@
+{
+ "id": "ep503-b15",
+ "episode_id": 503,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "文件行右滑动画漂移",
+ "pattern": "全链路验证,追源",
+ "ep_score": 17,
+ "chars": 1911,
+ "truncated": false,
+ "text": "**用户：**\n好的，我们压缩了上下文，我们现在正在尝试修复这个特别难修复的bug，就是在文件行右滑，动画未播放完毕时，在它未回弹情况下继续右滑，动画在当前位置作为新的起点继续右滑，导致光标和文字一起向右移动的问题。如果是在回弹动画播放的时候右滑，会导致光标和动画不同步。我们得先回退git版本，现在的改动依然没生效。然后你来看看到底是什么原因。\n\n**AI：**\n已回退。现在来查根因——先搞清楚为什么改动在浏览器里不生效。\nbundle.js 里确实是旧代码（`origX + 8`，没有缓存/killTweensOf）。说明代码确实打进去了，但问题是回退后的代码就是 `origX + 8` 版本（yoyo 版）。\n\n让我确认一下当前 git 状态是否真的回退到了 yoyo 版本：\nOK，代码确实回退到了 yoyo 版本。现在让我深入分析问题本质。\n关键发现：`canvas-cursor.ts:133` 中的 `moveCursorTo()` 也对 `cursorBox` 设置了 `x` 属性的 GSAP tween，并且使用了 `overwrite: 'auto'`。这意味着如果 `moveCursorTo()` 在弹跳动画期间被调用，它会**杀死**光标盒上的弹跳 tween，但**不会**影响行盒上的弹跳 tween——导致它们失去同步。\n\n不过用户提到两者会同步偏移，因此 `moveCursorTo()` 可能不是主要问题。让我检查一下弹跳动画之后调用了什么函数：\n根因分析清楚了。关键问题有两个层面：\n\n**第一层（漂移根因）**：`bounceCursorRow()` 每次调用都读 `rowBox.x` 作为 \"原始位置\"，但 GSAP 已经在动画中修改了 `rowBox.x`。第二次右滑时 `origX = rowBox.x` 拿到的是动画中途的值（比如 14 而不是 10），所以目标变成 14+8=22，回弹也是回 14，不是 10。累积漂移。\n\n**第二层（为什么 v4 也不生效）**：需要重新做一次正确的修复并确认 build 流程正确。现在我重写 bounce 逻辑：\n现在将 `resetBounceOrigin` 引入到 `tree-render.ts`:\n好，编译和测试都通过。现在让我确认 bundle 确实包含了新代码：\nbundle 还是旧代码！`npm run check` 不更新 bundle，需要 `npm run build`：\nbundle 现在包含了新代码：`_bounceOrigX`，`killTweensOf`，`overwrite: true`，`onComplete` 回写。\nbundle 完全正确。但这揭示了之前修复无效的**真正原因**——很可能每次改代码后只跑了 `npm run check` 没跑 `npm run build`，导致浏览器一直在加载旧 bundle！\n\n让我确认现在修改是否在源码里也正确：\n好，代码和 bundle 都已更新。以下是分析总结：\n\n## 根因\n\n两层原因叠加：\n\n1. **漂移本身**：原始 `bounceCursorRow()` 用 `const origX = rowBox.x` 读当前值作起点，但 GSAP 的 `yoyo:repeat` 在动画中修改了 `box.x`。右滑时第二次调用拿到的是动画中途值，不是布局原始值，累积漂移。\n\n2. **之前修复不生效的真正原因**：`npm run check` 只做类型检查和 lint，**不重新打包 bundle.js**。必须在 `npm run check` 之后运行 `npm run build` 才会更新 `public/bundle.js`。之前很可能浏览器一直在加载旧 bundle。\n\n## 当前修复\n\n- `_bounceOrigX/CX`：首次弹跳缓存原始位置，`rebuildTree` 时 `resetBounceOrigin()` 清空\n- `anim.killTweensOf()` + `rowBox.x = _bounceOrigX`：每次弹跳前强制复位\n- `overwrite: true`：新 tween 杀死同目标旧 tween\n- `onComplete` 回写：动画结束硬写回原始值，不依赖 yoyo 状态机\n- 去掉 `yoyo: true, repeat: 1`\n\n以后修改代码后务必跑 `npm run build`（不是只 `npm run check`）才能在浏览器看到效果。"
+}

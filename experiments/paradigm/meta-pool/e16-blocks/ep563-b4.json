@@ -1,0 +1,12 @@
+{
+ "id": "ep563-b4",
+ "episode_id": 563,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "全屏卡片 z-index/布局（拉锯）",
+ "pattern": "验证优先,原版复用",
+ "ep_score": 7,
+ "chars": 1276,
+ "truncated": false,
+ "text": "**用户：**\n这两个问题你的理解好像都没清晰，我的意思是，光球的位置看起来是正常的，但svg图标，四个角的这个svg图标的位置，整体偏上。然后关于输入栏，我的浏览器有一个自动隐藏浏览器搜索栏的手势，这会导致输入栏跟随这个浏览器搜索栏，上下移动，但全屏的卡片却是固定的高度，而正常的页面里，页面布局是正常的，如果我手势召唤出了浏览器的搜索栏，页面重新布局，输入栏就出现缝隙或者直接上升到这个全屏卡片的下面。这其实没事，但重点是，当我点击输入栏，要输入内容时候，它是高度在卡片下面，导致我看不到，所以根本的问题是需要让卡片的高度比输入栏的高度低。我是这个意思。\n\n**AI：**\nI need to look at the orb DOM structure and the full `createDecoratedCorner` function, plus understand the `_launchCard` animation more carefully since it lacks `onUpdate` orb syncing.\n好，两个问题都明确了。\n\n### 问题 1：**SVG 图标偏上**\n\n根因：`_launchCard` 的动画没有 `onUpdate` 同步光球位置。\n\n动画开始时光球从 `display: none` 变为可见，但它的 `left/top` 是 155×68 的角坐标。而卡此时还是全屏尺寸（`window.innerWidth × fullH`），光球出现在卡内左上角附近。动画过程中卡的 `left/top/width/height` 在变，但光球的 `left/top` 不动 → 光球 SVG 相对于可见区域的位置一直在错位。\n\n修复：`_launchCard` 加 `onUpdate`，每帧同步光球位置到当前卡尺寸的角坐标。同理 `exitFullscreen` 的 saved 恢复路径也要加。\n\n### 问题 2：**全屏卡盖住输入栏**\n\n大概率是 `getElementById('aiInputBar')` 在调用时返回 null，导致 `fullH = window.innerHeight` 撑满整个屏幕。\n\n`_handleRowAction` 先调 `closeSidebar()` 再调 `enterFullscreen()`——如果侧栏关闭导致了 DOM 结构变化使 `aiInputBar` 暂时不可访问，就会回退到 `innerHeight`。\n\n修复：`enterFullscreen` 中如果 inputBar 为 null 或者 `barTop > window.innerHeight - 40`，就用兜底值 `window.innerHeight - 48`（输入栏估算高度），确保卡不盖住输入区。同时加 `visualViewport` resize 监听，当浏览器搜索栏改变视口时自动调整全屏卡高度。\n\n---\n\n两个修复在 build 模式做？"
+}

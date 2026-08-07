@@ -1,0 +1,12 @@
+{
+ "id": "ep529-b17",
+ "episode_id": 529,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "文件夹收缩动画不同步",
+ "pattern": "追源,心法前置",
+ "ep_score": 9,
+ "chars": 1235,
+ "truncated": false,
+ "text": "**用户：**\n好了，但是还有一个问题，兄弟文件夹所在的根目录的文字能正确回收，叔叔辈也能正常跟随，但兄弟文件夹所在的根目录的盒子没有同步回收。能明显看到左沿竖线有一个延迟\n\n**AI：**\n根因清楚了。\n\n**兄弟文件夹的文字通过 overlay 正确上移了，叔叔辈通过 GSAP 也跟上了。但 `expanded-P` 这个容器盒子本身——它的背景、渐变边框、左沿竖线——还停留在原始高度没缩。** 因为它既不在 overlay 树里，也没被 GSAP 动画命中。\n\n---\n\n## 方案\n\n跟叔叔辈一样：**不建 overlay，直接在主树上用 GSAP 动画祖先容器的高度。**\n\n### `tree-overlay.ts` — 新函数\n\n```typescript\nexport function collectAncestorContainers(\n  container: Box,\n  fullH: number,\n): { original: Box; targetHeight: number }[] {\n  const result: { original: Box; targetHeight: number }[] = [];\n  let ancestor: Box | null = container.parent;\n  while (ancestor) {\n    if (!ancestor.id?.startsWith('expanded-')) break;\n    result.push({ original: ancestor, targetHeight: ancestor.height - fullH });\n    ancestor = ancestor.parent;\n  }\n  return result;\n}\n```\n\n### `tree-render.ts` `doCollapse` — 调用\n\n```typescript\n// 祖先容器盒子收缩（父容器的渐变边框/背景跟随内容同步缩小）\nconst ancestorContainers = collectAncestorContainers(container, fullH);\nfor (const ac of ancestorContainers) {\n    ts.to(ac.original, {\n        height: ac.targetHeight,\n        duration: 0.05, ease: 'power2.in',\n    }, topBoxDelay);\n}\n```\n\n### 效果\n\n`expanded-C` 折叠 → overlay 行文字上移 + overlay 容器缩 → GSAP 叔叔辈上移 + GSAP 祖先容器盒子同步缩 → rebuildTree 归位。**竖线跟文字一起走。**\n\n确认？"
+}

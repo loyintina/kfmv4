@@ -1,0 +1,12 @@
+{
+ "id": "ep573-b1",
+ "episode_id": 573,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "tmux 开 opencode 表格渲染拖影 + 放大重排延迟（降级 canvas 决策）",
+ "pattern": "可回退支撑决策,降级决策",
+ "ep_score": 3,
+ "chars": 1440,
+ "truncated": false,
+ "text": "**用户：**\n降级会有什么影响吗？\n\n**AI：**\n## 降级 xterm.js v6 → v5 的影响分析\n\n### 我们使用的功能\n\n| 功能 | v5 | v6 | 我们是否使用 |\n|------|----|----|-------------|\n| Terminal 类 | ✅ | ✅ | ✅ |\n| FitAddon | ✅ | ✅ | ✅ |\n| WebglAddon | ✅ | ✅ | ✅（想移除） |\n| term.options.fontSize | ✅ | ✅ | ✅ |\n| term.resize() | ✅ | ✅ | ✅ |\n| term.refresh() | ✅ | ✅ | ✅ |\n| term.open() | ✅ | ✅ | ✅ |\n| term.loadAddon() | ✅ | ✅ | ✅ |\n| onData 事件 | ✅ | ✅ | ✅ |\n| onResize 事件 | ✅ | ✅ | ✅ |\n\n**结论**：我们使用的功能在 v5 中都存在，降级应该不会破坏现有代码。\n\n### v6 新增但我们未使用的功能\n\n| 功能 | 说明 |\n|------|------|\n| 同步输出支持 | DEC mode 2026 |\n| Shadow DOM 支持 | WebGL 渲染器 |\n| 详细连字 | 字体渲染优化 |\n| 进度 addon | 新 addon |\n| reflowCursorLine 选项 | 光标行重排 |\n| ESM 支持 | esbuild 支持 |\n| onWriteParsed API | 写入解析事件 |\n| ANSI OSC52 支持 | 剪贴板支持 |\n\n**这些功能我们都没有使用，降级不会影响。**\n\n### 降级的好处\n\n1. **可以使用 Canvas addon**：`@xterm/addon-canvas` 支持 v5\n2. **Canvas 渲染器没有 WebGL 的拖影问题**\n3. **Canvas 渲染器不触发布局回流**\n\n### 降级的风险\n\n1. **兼容性问题**：v5 和 v6 可能有细微的 API 差异\n2. **性能差异**：v6 有性能优化，降级可能会变慢\n3. **安全问题**：v6 可能有安全修复\n\n### 降级的步骤\n\n```bash\n# 1. 卸载当前版本\nnpm uninstall @xterm/xterm @xterm/addon-fit @xterm/addon-webgl\n\n# 2. 安装 v5 版本\nnpm install @xterm/xterm@5 @xterm/addon-fit@0.10.0 @xterm/addon-canvas@0.7.0\n\n# 3. 修改代码\n# - 移除 WebglAddon 的导入和使用\n# - 添加 CanvasAddon 的导入和使用\n```\n\n---\n\n## 推荐方案\n\n**降级到 xterm.js v5 + Canvas 渲染器**，因为：\n1. 我们使用的功能在 v5 中都存在\n2. Canvas 渲染器没有 WebGL 的拖影问题\n3. Canvas 渲染器不触发布局回流\n4. 风险可控\n\n---\n\n## 问题\n\n1. 你希望降级到 xterm.js v5 吗？\n2. 是否需要我先测试降级的兼容性？\n3. 是否可以接受降级的潜在风险（性能差异、安全问题）？"
+}

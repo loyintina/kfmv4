@@ -1,0 +1,12 @@
+{
+ "id": "ep837-b2",
+ "episode_id": 837,
+ "session_id": "omp-2026-07-07T06-14-00-892Z_019f3b36-47bc-7",
+ "source": "manual",
+ "topic": "投卡全屏行为修正 + 版本 + readme 自动更新管线",
+ "pattern": "补丁vs根因,删繁",
+ "ep_score": 5,
+ "chars": 444,
+ "truncated": false,
+ "text": "**用户：**\n奇怪，为什么这样方式直接投的全屏卡，不能上下滚动哦？而右滑投的同样的卡，再自己点击全屏，就是正常的？\n\n**AI：**\n找到根因了。`activate` 是异步的——它先同步创建 DOM 结构，然后 `await fetch` 获取内容，完成后才通过 `_renderPreview()` 添加子元素。但是 `enterFullscreen` 在 `activate()` 刚启动（fetch 还没回来）就执行了，这时 `_body` 存在但它的子元素还没创建。`querySelectorAll('*')` 只拿到了当时的元素，漏掉了后面异步添加的。\n\n正常路径（右滑→手动全屏）不触发这个问题，因为用户点击全屏时 fetch 早就完成了。\n\n修法：在异步内容加载完成后，重新应用 `touch-action: pan-y`。\n好了。点击文件→直接全屏，现在内容加载完成后会自动重新应用 `touch-action: pan-y`，新创建的子元素也会被覆盖到。刷新试试。"
+}

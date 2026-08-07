@@ -1,0 +1,12 @@
+{
+ "id": "ep895-b7",
+ "episode_id": 895,
+ "session_id": "omp-2026-05-27T17-10-59-698Z_019e6a6b-0772-7",
+ "source": "manual",
+ "topic": "卡片堆清理（01 设置/02 日志）+ 日志系统 + 补丁vs重构 + 可回退",
+ "pattern": "补丁vs根因,可回退铁律",
+ "ep_score": 6,
+ "chars": 579,
+ "truncated": false,
+ "text": "**用户：**\n你的建议呢？\n\n**AI：**\n我的建议：\n\n**删掉所有 `debugLog()` 调用。保留日志基础设施作为空壳。**\n\n理由：\n\n- 这 25 处 `debugLog()` 全是为了调试**已经稳定的功能**（浮卡散落算法、展开动画生命周期、字符雨内容）。它们已经没有价值了，留在代码里只是噪声。\n- 但日志基础设施（一个能收集消息、能订阅推送的 logger）本身有价值——未来 agent 做\"构建失败\"、\"文件已修改\"这类操作时，需要能往日志里写东西。如果现在连基础设施都删了，到时候又要从头搭。\n- 放在 `cards/plugins/debug-card/logger.ts` 里，不主动调用，纯等待将来接入。\n\n最终状态：\n\n```\ncards/plugins/debug-card/\n├── index.ts       ← CardDefinition：展开后渲染日志面板（从 getLogs() 读，通常是空的）\n└── logger.ts      ← log() / clearLogs() / copyLogs() / getLogs() / onLog()\n                   ← 当前不被任何生产代码调用，只等将来需要时接入\n```\n\n这样既能清掉所有噪声，又不把路堵死。要按这个方案做吗？"
+}

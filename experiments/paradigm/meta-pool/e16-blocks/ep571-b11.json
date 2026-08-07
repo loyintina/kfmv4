@@ -1,0 +1,12 @@
+{
+ "id": "ep571-b11",
+ "episode_id": 571,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "tmux 卡缩放重排不跟手 +",
+ "pattern": "补丁vs根因,回退语义冲突",
+ "ep_score": 9,
+ "chars": 306,
+ "truncated": false,
+ "text": "**用户：**\n好\n\n**AI：**\n完成。两个 `setZoom` 都加了 `term.refresh(0, term.rows - 1)`：\n\n| 文件 | 改动 |\n|------|------|\n| `terminal-card-04.ts:378` | 加 `term.refresh(0, term.rows - 1)` |\n| `tmux-card.ts:193` | 加 `term.refresh(0, term.rows - 1)` |\n\n`refresh()` 强制 xterm 从第 0 行到最后一行全部重绘，不等 ResizeObserver 帧调度。去试试 tmux 卡能不能跟手了。"
+}

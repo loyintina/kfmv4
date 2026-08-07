@@ -1,0 +1,12 @@
+{
+ "id": "ep563-b16",
+ "episode_id": 563,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "全屏卡片 z-index/布局（拉锯）",
+ "pattern": "验证优先,原版复用",
+ "ep_score": 7,
+ "chars": 933,
+ "truncated": false,
+ "text": "**用户：**\n好，得选一个最符合心法约束的方案哦\n\n**AI：**\n让我查一下 HTML 结构：\n分析完毕。选 **方案 A**，对照心法：\n\n| 心法 | Option A（移出 .main） | Option B（给 .main 加 z-index） |\n|------|----------------------|-------------------------------|\n| **12** 补丁根除 | ✅ **根因修复**：输入栏不该在 transformed 容器里 | ❌ 补丁：加 z-index 绕过了层叠上下文问题但没移出 .main |\n| **17** 不另开一条路 | ✅ 修正 DOM 树，不建新路径 | ❌ 建补偿路径（z-index 补偿 transform 的副作用） |\n| **2** 从源头简化 | ✅ 源头就是 DOM 层级错了 | ❌ 输出端增加（加 z-index 声明） |\n| **5** 代码变少 | ✅ 移一行，不增新代码 | ❌ 增一行 z-index 声明 |\n| **14** 集中化违规 | ✅ 不适用 | ⚠️ 如果以后去掉 .main 的 transform，z-index 补丁就会静默失效 |\n\n**结论**：方案 A 无任何违反，方案 B 违反心法 12/17/2。\n\n### 改动\n\n`public/index.html` 第 52-56 行，把 `</main>` 移到输入栏前面：\n\n```html\n<!-- 改前 -->\n</div>  ← 关闭 home-page\n<div class=\"ai-input-bar\" id=\"aiInputBar\">\n  ...\n</div>\n</main>\n\n<!-- 改后 -->\n</div>  ← 关闭 home-page\n</main>\n<div class=\"ai-input-bar\" id=\"aiInputBar\">\n  ...\n</div>\n```\n\n**不影响任何 JS 代码**——所有引用都用 `document.getElementById('aiInputBar')`，不依赖父级关系。\n\n确认后说\"开始\"就改。"
+}

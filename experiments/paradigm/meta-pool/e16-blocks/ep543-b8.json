@@ -1,0 +1,12 @@
+{
+ "id": "ep543-b8",
+ "episode_id": 543,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "ANSI 颜色渲染错误（红=白、蓝底白字被盖、右半边透明、汉字偏左上）——终端渲染细节",
+ "pattern": "渲染细节",
+ "ep_score": 1,
+ "chars": 1186,
+ "truncated": false,
+ "text": "**用户：**\n呃，现在右半边不是蓝底，反而露出透明的了\n\n**AI：**\n对，上一版把第二格的 bg 设成 `DEFAULT_BG`，渲染时跳过背景，只有黑底透了出来。\n\n---\n\n## 正确方案：两遍渲染\n\n当前渲染是一格走完再走下一格：\n\n```\n格0: fillRect 蓝 → fillText \"白\"（延伸到格1）\n格1: fillRect 蓝 → ← 盖掉 \"白\" 的右半\n```\n\n改成**先画所有背景，再画所有文字**：\n\n```\n第一遍：格0 蓝底 → 格1 蓝底（全部画完）\n第二遍：fillText \"白\"（盖在蓝底上面，右边没人覆盖）\n```\n\n然后把 `write()` 里 `next.bg = DEFAULT_BG` **改回** `next.bg = this._curBg`。\n\n---\n\n## 改动\n\n`terminal-renderer.ts` 两处：\n\n**1. `_render()`：两层循环**\n\n```typescript\n// 第一遍：所有背景\nfor (let r = 0; r < this._rows; r++) {\n  for (let c = 0; c < this._cols; c++) {\n    const cell = this._cells[r][c];\n    if (cell.bg !== DEFAULT_BG) {\n      ctx.fillStyle = cell.bg;\n      ctx.fillRect(c * cw, topPad + r * ch, cw, ch);\n    }\n  }\n}\n// 第二遍：所有文字\nfor (let r = 0; r < this._rows; r++) {\n  for (let c = 0; c < this._cols; c++) {\n    const cell = this._cells[r][c];\n    if (cell.char === ' ' || cell.char === '') continue;\n    ctx.fillStyle = cell.fg;\n    ctx.fillText(cell.char, c * cw, topPad + (r + 0.5) * ch);\n  }\n}\n```\n\n**2. `write()`：`next.bg = DEFAULT_BG` → `next.bg = this._curBg`**\n\n---\n\n## 为什么正确\n\n```\n第一遍：格0 蓝底 → 格1 蓝底（两个连续蓝底方块）\n第二遍：\"白\" 字 fillText 盖在上面（格子 1 不画文字，不覆盖）\n结果：一条连续蓝色背景上的 \"白字蓝底\"，字完整可见\n```\n\n---\n\n切 build 模式我来改？"
+}

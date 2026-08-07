@@ -1,0 +1,12 @@
+{
+ "id": "ep533-b15",
+ "episode_id": 533,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "右滑出卡方向判定（重大）",
+ "pattern": "简化方案,深度归因,重构视角",
+ "ep_score": 11,
+ "chars": 815,
+ "truncated": false,
+ "text": "**用户：**\n嗯，两个问题，这个12px死区后，如果判定成竖滚，那页面会瞬移12px，有这样一个卡顿，其实可以设置成判定竖滚就直接从当前位置开始滚动的。第二个问题是，这样的话，右上的区域就不能设置成75了，设置成65试试就可以，我觉得这样的死区模式我是能接受的。\n\n**AI：**\n两个问题都很明确：\n\n---\n\n## 问题 1：竖滚的 12px 瞬跳\n\n当前死区结束后，竖滚从零开始跟手（`dy` 是总偏移量），导致瞬间跳过 12px。修复：轴从 `'none'` 切换为 `'vertical'` 的瞬间，把竖滚的跟踪变量重置到**当前手指位置**：\n\n```typescript\nfunction _resetVerticalBase(e: PointerEvent) {\n    if (_touchIsCursor) {\n        cursorTouchStartY = e.clientY;\n        cursorTouchBase = getCursorRowIndex();\n    } else {\n        touchStartY = e.clientY;\n        touchScrollY = getRootScrollY() ?? 0;\n    }\n}\n```\n\n在轴锁定为 `'vertical'` 的两个分支里各调一次。这样竖滚从当前手指位置开始，无瞬跳感。\n\n## 问题 2：扇形 75° → 65°\n\n```diff\n- _gestureAxis = absDy < absDx * 3.73 ? 'horizontal' : 'vertical';\n+ _gestureAxis = absDy < absDx * 2.14 ? 'horizontal' : 'vertical';\n```\n\ntan(65°) ≈ 2.14。\n\n---\n\n总共 4 行净增。要开始吗？"
+}

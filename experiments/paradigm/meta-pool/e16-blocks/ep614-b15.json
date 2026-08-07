@@ -1,0 +1,12 @@
+{
+ "id": "ep614-b15",
+ "episode_id": 614,
+ "session_id": "ses_063fd57d7ffepMZzVsdv2wNXM2",
+ "source": "manual",
+ "topic": "会话保存失败/刷新丢失（超长拉锯）",
+ "pattern": "全链路验证,追源",
+ "ep_score": 7,
+ "chars": 457,
+ "truncated": false,
+ "text": "**用户：**\n好\n\n**AI：**\nAlso 2: revert the `try/catch` on `doSend` initial save to plain `await`:\n之前 5 个 commit 围绕保存链路修了很多，但都没碰到真正的根因。这次找到了：\n\n`!_doSaveMessages` 里 `!session.manuallyNamed && session.messages.length === 2` 这个条件，在取消场景下，snapshot 只有 2 条消息（user + AI），满足条件 → 误触发 `_generateTitle` → `setTitle` 重命名文件 → 派发 `kfm-session-change` → `orb.ts` 监听器清空 `chatMessages` → 刷新后全丢。\n\n**修复**：`_generateTitle` 只在 `auto-create` 路径（真正的新会话）才允许执行——用 `_pendingAutoTitle` 标记控制。"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep571-b0",
+ "episode_id": 571,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "tmux 卡缩放重排不跟手 +",
+ "pattern": "补丁vs根因,回退语义冲突",
+ "ep_score": 9,
+ "chars": 2082,
+ "truncated": false,
+ "text": "**用户：**\n好的，下一个内容是一处优化，我发现，只有tmux卡在编辑大小，进入全屏模式互相切换时，是等待内容窗口大小改变结束后，才重新排版布局的。然后，如果是双指缩放，只有终端卡和tmux卡是没有同步变换布局。这种模式会产生一种延迟感，不跟手，你有什么办法让它也能随着大小同步自动调整布局吗？\n\n**AI：**\n让我先了解终端卡和 tmux 卡的 resize 布局机制。\n信息够了，让我梳理两个问题的根因和修复方案。\n\n## 问题分析\n\n### 问题 1：tmux 卡编辑/全屏 — 等动画结束才重排\n\n**根因**：expand 时终端 DOM 是在 `onComplete` 才通过 `activate` 挂载的，动画期间终端根本不在 DOM 里，所以 `ResizeObserver` 不会触发。用户看到的效果：卡片展开到位 → 终端突然出现并适配。\n\nfullscreen 路径不同：终端已经挂载在 DOM 里，`ResizeObserver` 应该能跟上动画。但可能 `fit()` 调用频率跟不上 GSAP 的帧率，或存在时序问题。\n\n### 问题 2：双指缩放 — 终端/tmux 卡布局不跟手\n\n**根因**：`applyZoom` 只设了 `contentEl.style.zoom`。CSS zoom 改变了渲染尺寸，但 xterm 的 `fit()` 可能没有感知到 zoom 变化，不会重新计算 cols/rows。终端的 `ResizeObserver` 监视的是 `termEl`，而 `termEl` 的布局尺寸（`offsetWidth`/`offsetHeight`）可能没变——zoom 只影响视觉缩放。\n\n---\n\n## 修复方案\n\n### Fix 1：pinch zoom 后触发终端重排\n\n在 `applyZoom` 末尾，对 `contentEl` 派发一个合成 `resize` 事件，触发终端的 `ResizeObserver`：\n\n```ts\nfunction applyZoom(item: FloatingCardItem, z: number): void {\n  item.contentZoom = z;\n  if (item.contentEl) item.contentEl.style.zoom = String(z);\n  item.contentEl?.dispatchEvent(new Event('resize', { bubbles: false }));\n  _saveZoom(item.config.typeId, z);\n}\n```\n\n- 不侵入终端模块，不引入终端依赖\n- `ResizeObserver` 会捕获这个事件并调 `fit()`\n- 未来其他卡只要有 `ResizeObserver` 也能自动响应\n\n### Fix 2：fullscreen 动画中同步终端布局\n\n在 `enterFullscreen` 的 `anim.to` 的 `onUpdate` 里，对卡片的 `contentEl` 派发 `resize` 事件：\n\n```ts\nanim.to(el, {\n  left: 0, top: 0, width: fullW, height: fullH,\n  duration: 0.3, ease: 'power2.out',\n  onUpdate: () => {\n    item.contentEl?.dispatchEvent(new Event('resize', { bubbles: false }));\n  },\n  ...\n});\n```\n\n`exitFullscreen` 的 `anim.to` 的 `onUpdate` 同理。\n\n### Fix 3：edit mode 拖拽中同步终端布局\n\n`onMoveEditing` 每帧直接改 `style.width`/`style.height`，`ResizeObserver` 应该自动触发。但为了保险，加一行 dispatch：\n\n```ts\ndragItem.el.style.width = newW + 'px';\ndragItem.el.style.height = newH + 'px';\ndragItem.contentEl?.dispatchEvent(new Event('resize', { bubbles: false }));\n```\n\n---\n\n### 改动范围\n\n仅 `floating-card.ts`，约 4 行新增代码：\n- `applyZoom` 加 1 行 dispatch\n- `enterFullscreen` onUpdate 加 1 行 dispatch\n- `exitFullscreen` onUpdate 加 1 行 dispatch\n- `onMoveEditing` 加 1 行 dispatch\n\n确认后执行。"
+}

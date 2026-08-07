@@ -1,0 +1,12 @@
+{
+ "id": "ep523-b0",
+ "episode_id": 523,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "复制路径后卡顿",
+ "pattern": "字段契约,环境",
+ "ep_score": 5,
+ "chars": 528,
+ "truncated": false,
+ "text": "**用户：**\n而且，我发现，不知道为什么，复制了一次路径后，整个程序变得特别卡顿，是哪里泄露了吗？\n\n**AI：**\n我检查代码，没有明显的内存泄露点：\n\n- `addEventListener` 挂的是行元素本身，行被 `remove()` 后 GC 回收\n- `action-bar-zone` gesture 用 `contains()` 读活引用，dismiss 后 `condition` 直接返回 false\n- 动画 `onComplete` 正确调用 `remove()`\n\n但有一个可能的根因：**`_copiedPaths` 永不清理** — 关闭抽屉时没清，再打开又用 `_copiedPaths.has()` 判断初始状态。虽然一个 Set 不该导致卡顿，但这是唯一的异常点。\n\n修复方案跟刚才说的合并：`dismissFileActionBar()` 里加 `_copiedPaths.clear()`：\n\n```\n① dimsiss 清 _copiedPaths.clear()\n② _createDrawer 里去掉 has() 判断，回到 display:none\n```\n\n两行改动。要我切换到 build 模式执行吗？"
+}

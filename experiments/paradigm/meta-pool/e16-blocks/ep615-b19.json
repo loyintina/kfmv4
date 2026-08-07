@@ -1,0 +1,12 @@
+{
+ "id": "ep615-b19",
+ "episode_id": 615,
+ "session_id": "ses_063fd57d7ffepMZzVsdv2wNXM2",
+ "source": "manual",
+ "topic": "\"Unexpected token '<'\" 报错",
+ "pattern": "全链路验证,验证优先",
+ "ep_score": 17,
+ "chars": 733,
+ "truncated": false,
+ "text": "**用户：**\n不要用subagent，有bug，没有结果的。\n\n**AI：**\n先改 `chat.ts`——加 `saveSessionFile` 辅助函数：\n基础设施已就位（函数签名、`saveSessionFile`），只差调用。让我加保存点和消息累加器。\n\n先加 `serverMessages` 初始化（在 `streamChat` 的 `while(true)` 循环之前）：\nNow client-side — add `clientMessages` to start request, remove `onToolCall`:\nRemove `onToolCall` from `RunConsumeCtx`:\n完成。核心改动：**会话保存从客户端迁至服务端**。\n\n### 服务端 3 个保存点\n\n| 时机 | 位置 | 保证 |\n|------|------|------|\n| 请求到达时 | `routes.ts` `/ai/chat/start` | 用户消息立刻落盘，即使后续失败用户消息也在 |\n| 每轮内容结束、工具执行前 | `chat.ts` `content_block_stop` 后 | AI 文本 + 工具调用已完整，若工具杀服也不丢 |\n| 每轮 `message_stop` / 最终 `done` | `chat.ts` | 含工具 `result`，全量落地 |\n\n### 客户端精简\n\n- `doSend` 传 `clientMessages: messages` 给服务端\n- 删除 `onToolCall`、`RunConsumeCtx` 完整移除该字段\n\n构建 0 错误，333 测试通过。刷新页面试用。"
+}

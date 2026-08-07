@@ -1,0 +1,12 @@
+{
+ "id": "ep1015-b27",
+ "episode_id": 1015,
+ "session_id": "operit-07",
+ "source": "manual",
+ "topic": "版本回退到4ef306c",
+ "pattern": "可回退铁律",
+ "ep_score": 11,
+ "chars": 1289,
+ "truncated": false,
+ "text": "**用户：**\n能不能把约束高度变小？这样是不是能更好解决问题？\n\n**AI：**\n<think>用户想把约束高度变小。约束高度越小，光标越早离开约束区，越早触发步进。这样在慢速滚动时光标移动更频繁（每项都移），感觉更跟手。\n\n但太小的话，快速滚动时会一直在追步，体验也不好。\n\n让我先看看当前值，然后改小试试。</think>对，约束区域越小，光标越早离开触发步进，慢速滚动时就能逐项响应。改成 32px（刚好一项高度）：\n<tool_Yzj1 name=\"package_proxy\">\n  <param name=\"params\">{&quot;command&quot;: &quot;sed -i &apos;s/const CONSTRAINT_HEIGHT = 96/const CONSTRAINT_HEIGHT = 32/&apos; /root/kfmv4/src/client/modules/ui.ts &amp;&amp; cd /root/kfmv4 &amp;&amp; node build.mjs 2&gt;&amp;1 &amp;&amp; pkill -f &apos;node dist/server&apos; 2&gt;/dev/null; sleep 0.3; nohup node dist/server/index.js &gt;/dev/null 2&gt;&amp;1 &amp; sleep 0.5 &amp;&amp; git add -A &amp;&amp; git commit -m &apos;fix: constraint height 96px -&gt; 32px for tighter cursor follow&apos;&quot;}</param>\n  <param name=\"tool_name\">linux_ssh:linux_ssh_exec</param>\n</tool_Yzj1><tool_result_Kh4G name=\"linux_ssh:linux_ssh_exec\" status=\"success\"><content>{\"packageVersion\":\"0.1.0\",\"success\":true,\"timeoutMs\":15000,\"exitCode\":0,\"timedOut\":false,\"output\":\"Build OK\\n[detached HEAD 2ad8201] fix: constraint height 96px -> 32px for tighter cursor follow\\n 2 files changed, 2 insertions(+), 2 deletions(-)\",\"sessionId\":\"\",\"error\":\"\"}</content></tool_result_Kh4G>\ncommit: `2ad8201`\n\n96px → 32px。光标只要偏离中心超过半个项高就触发步进，慢速滚动也能逐项响应了。\n\n洛，刷新验证。"
+}

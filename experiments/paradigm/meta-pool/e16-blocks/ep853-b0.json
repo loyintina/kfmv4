@@ -1,0 +1,12 @@
+{
+ "id": "ep853-b0",
+ "episode_id": 853,
+ "session_id": "omp-2026-07-22T03-58-36-090Z_019f87f9-b23a-7",
+ "source": "manual",
+ "topic": "接手同步 + 数据目录 .kfmv4 不可见/配置丢失",
+ "pattern": "验证优先",
+ "ep_score": 1,
+ "chars": 1879,
+ "truncated": false,
+ "text": "**用户：**\n好，我们来同步一下kfmv4的进度，你来接手工作。不要用subagent\n\n**AI：**\n好的。让我先了解一下 kfmv4 项目的当前状态。\n好，已了解当前进度。继续阅读待办部分：\n好，已同步完成。我来总结当前状态：\n\n## KFM v4 (咖啡猫) 项目状态概览\n\n### 版本与定位\n- **当前版本**: v7.3.0\n- **定位**: AI 人机交互个人工作台原型，面向移动端浏览器\n- **核心理念**: 一切皆卡片\n\n### 技术栈\n- TypeScript 6 + Canvas 2D 自研渲染引擎\n- GSAP 3.15 动画 + Express 4 + WebSocket + esbuild\n- 构建管线：15 个 check-* 脚本 + 303 个回归测试\n\n### v7.3.0 核心成就（最新版本）\n刚完成 **AI 对话后台挂机运行时**，这是跨 10 个文件的复杂子系统：\n1. **后台挂机持久化** — `run-manager.ts`：runId 分配 + 事件缓冲 + 订阅 + 5min 淘汰\n2. **重连续读三处修复** — `startRun` vs `attachRun` 语义分离\n3. **WebSocket 真心跳** — 服务端 30s 协议级 ping + 半开检测 → killAll 清 PTY\n4. **WS 重连恢复终端** — 三层恢复链（ws-channel → terminal-card → tmux-card）\n5. **结束态修复** — `finally` 显式触发 `onDone`，根治发送按钮卡死\n6. **推理模型等待提示** — `onWait(false)` 移到首个实际内容\n7. **会话删除同步** — 统计行更新 + 光球面板清空 + 自动建会话\n8. **Z-Index L8 焦点交互层** — 模态框提到 AI 核心之上（10000+）\n\n### 架构关键点\n**注册中心体系**：\n- `GestureRegistry` — document 级触摸事件统一调度\n- `RendererLifecycle (L)` — 渲染器生命周期单例\n- `Registry` — UI 元素注册表（黄页模式）\n- `card-registry.ts` — 卡片类型/实例统一注册表\n\n**手势优先级**：\n```\npicker-lock(110) > orb(100) > floating-orb(100) > card-stack-global(80)\n> sidebar-scroll(60) > page-swipe(50)\n```\n\n**卡片三层结构**：\n```\ncards/plugins/*.card.ts  ← 插件自注册\n       ↓\ncard-registry.ts         ← 数据层\n   ↙        ↘\ncard-stack  floating-card  ← UI 层\n```\n\n### 活跃待办\n仅剩 **P3 级别**：\n- 🟡 手势系统研究与全局交互区域分权（文档化 touch-action 分区策略）\n\n所有 P0/P1/P2 事项已完成 ✅\n\n### 关键约束（改代码前必读）\n1. **每次改动立即 commit**（心法 14）— 历史教训：多次全天工作丢失\n2. **改代码前先读** `docs/KFM_V4_INVARIANTS.md`（修改约束协议）\n3. **改 CSS 前检查 SCSS 源文件** — `sass base.scss → base.css`\n4. **全项目统一 PointerEvent** — 禁止直接 addEventListener，都走 `gesture-registry.ts`\n5. **`(as any)` 零逃逸** — `check-as-any.mjs` 扫描，已实现零逃逸\n\n### 数据目录\n- 从 v7.0.0 起迁移到 `$HOME/.kfmv4/`（由 `path-utils.ts` 定义）\n- 包含：`providers.json`、`active.json`、`sessions/`、`roles/`、`configs/`\n\n---\n\n**状态**: 项目处于成熟稳定期，核心架构完整，文档体系健全，测试覆盖充分（303 个回归测试）。当前无紧急待办，可接任何新需求或优化任务。\n\n有什么需要我处理的吗？"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep600-b2",
+ "episode_id": 600,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "heuristic",
+ "topic": "git 版本功能消失（版本回退事故链——与 B49/B50 相关）",
+ "pattern": "可回退铁律",
+ "ep_score": 3,
+ "chars": 718,
+ "truncated": false,
+ "text": "**用户：**\n你告诉我你都加了什么功能？\n\n**AI：**\n当前代码里有这些功能：\n\n| # | 功能 | 状态 |\n|---|------|------|\n| 1 | `_blendColor` 颜色混合 | ✅ 有 |\n| 2 | topMidOrb（上边中点全屏光球） | ✅ 有 |\n| 3 | `_launchCard` 拆分 + `createCardElement` 导出 | ✅ 有 |\n| 4 | `enterFullscreen` / `exitFullscreen` | ✅ 有 |\n| 5 | `FloatingCardItem` 扩展（fullscreen/zoom 属性） | ✅ 有 |\n| 6 | expand/collapse 动画中 topMidOrb 显隐+位置同步 | ✅ 有 |\n| 7 | 文件点击 → 全屏路径（tree-render.ts） | ✅ 有 |\n| 8 | `_dismissOne` 全屏处理 | ✅ 有 |\n| 9 | 全屏键盘避让 | ✅ 有 |\n\n**消失了的功能**：\n\n| # | 功能 | 说明 |\n|---|------|------|\n| 10 | **zoom 机制** | `_loadZoom`/`_saveZoom`/`applyZoom` 代码在，但 CSS zoom 对终端不生效，需要重设计 |\n| 11 | **gesture-registry 诊断日志** | 之前加了 `[gesture]` 日志调试 pinch，后来清理了——这是设计的，不算消失 |\n\n所以真正缺的只有 **zoom 重排方案**（#10）。其他功能都完整保留了。"
+}

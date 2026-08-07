@@ -1,0 +1,12 @@
+{
+ "id": "ep598-b1",
+ "episode_id": 598,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "heuristic",
+ "topic": "4.1 版本改坏→回退 4.0；日志卡定位；多次无效修改（与 B53/B54 同族）",
+ "pattern": "版本回退,验证优先",
+ "ep_score": 9,
+ "chars": 1416,
+ "truncated": false,
+ "text": "**用户：**\n重新尝试解决这个问题。到底是为什么不能达到效果呢？\n\n**AI：**\n好，让我冷静从头梳理。问题其实没那么复杂。\n\n## 当前 v4 做了什么\n\n**开路径**（正确）：\n- `saved.orbTop=457` → `fClamp(s.orbLeft, s.orbTop).y=368` → derive card: `(28, 8, 288, 372)`\n- `anim.to` + `onUpdate→fSyncCorners` 把 orb 移到新卡底边 `Y=332`\n\n**关路径**（应该正确）：\n- `orbRect.top=332` → `clamped.y=min(768,332)=332` → 不进开分支 → 进 `else if`\n- `abs(t-s.cardTop)=abs(8-5)=3 > 0.5` → `anim.to((100,5,288,500))`\n\n**关路径凭什么正确？** 因为下一帧 resize：卡已到 `top=5` → `abs(5-5)<=0.5` → 删 `_kbSaved`。动画继续，卡到 500。\n\n## 那用户看到的是什么？\n\n\"关闭键盘也是这个大小地移动\" — **关后卡没回到 500**。\n\n唯一可能：关路径的 animate 和下一帧 resize 之间，发生了某个事件**把动画覆盖了**。或者：**关分支根本没进去**。\n\n**关分支没进去的条件**：`clamped.y < orbRect.top` 仍然为 true。这要求 `getMaxY() < orbRect.top`。\n\n当键盘收了一半（`vvH=500, getMaxY=468`）而 orb 在 `332`：`468 > 332` → 不进开分支 → 进关分支。没问题。\n\n当键盘**还没开始收**，`vvH` 还是 400（键盘全开状态），但用户做了什么导致 resize 事件又触发了。此时 `getMaxY=368`，orb 在 `332`。但等等——**orb 真的是 332 吗**？\n\n如果 `fSyncCorners` 在 open 的 `onUpdate` 里把 orb 移到了 332，那 orb 在 332。但如果 `onUpdate` **没被调用**（GSAP 的 tween 还没到第一帧？），orb 还在 457！\n\n**orb 在 457，getMaxY=368**：`clamped.y = min(368,457) = 368 < 457` → **又进了开分支**！\n\n然后 `_kbSaved.has(item)` 已经是 true（首次开时存了），不重新存。但 derivation 从 `s.orbTop=457` 重算 → 结果和第一次一样 `(28, 8, 288, 372)`。`anim.to` 重新发起，**但不改变结果**（目标相同）。\n\n所以这不应该是问题。开分支重进也没事。\n\n## 换个角度\n\n让我回到最基础的问题：**你实测看到的症状到底是什么？** 逐帧描述：\n\n1. 你有一个高度顶满页面的大卡（高 500）\n2. 你召唤键盘 → 卡压缩到多少？（正确应该是 372 左右）\n3. 你关闭键盘 → 卡归位了吗？高度恢复了吗？\n4. 此时你开始拖拽光球 → 卡跳到多大？\n\n第 2-4 步的具体数值是什么？"
+}

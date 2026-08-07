@@ -1,0 +1,12 @@
+{
+ "id": "ep827-b14",
+ "episode_id": 827,
+ "session_id": "omp-2026-05-29T05-12-43-275Z_019e7226-260b-7",
+ "source": "manual",
+ "topic": "导航面板实现迭代（项目根/宽度/遮罩/硬编码/隐式关联文档）",
+ "pattern": "补丁vs根因",
+ "ep_score": 5,
+ "chars": 1277,
+ "truncated": false,
+ "text": "**用户：**\n你先提出一个解决方案吧，在这个过程里同步加深你对代码的理解。我认为，至少，我们需要把代码的理解，详细理解，做成一个文档，让你在修改时，自己说出来你的代码的意义，添加进这个文档里。也许能起到一点作用。你觉得呢？\n\n**AI：**\n好，我提出方案，先写我理解的原代码工作原理，再出修复。\n\n### 我对原布局的理解\n\n原 CSS 不依赖 flex，用的是精确高度 + sticky：\n\n```css\n.sidebar {\n  position: fixed;\n  height: 100dvh;                    /* 固定为视口高度 */\n}\n.sidebar-content {\n  height: calc(100% - 52px);         /* 固定高度 = 侧栏总高 − 工具栏 */\n}\n.sidebar-tools {\n  position: sticky; bottom: 0;        /* 不管 DOM 顺序，粘在底部 */\n}\n```\n\n**这是一个精确的\"叠层\"布局**——content 和 tools 各自占据固定像素高度，加起来等于 100dvh。tools 用 `sticky` 保证无论如何都粘在底部，不依赖 DOM 顺序。\n\n### 我的错误\n\n我把 `height:calc(100% - 52px)` 换成了 `flex:1`，把 `position:sticky` 换成了 `flex-shrink:0`——用一套我不完全理解的 flex 布局替换了一套工作正常的精确布局。**根源是我把\"加 picker\"和\"改布局\"绑在一起了，实际上两者可以独立。**\n\n### 我的方案\n\n**不动原布局**。picker 用绝对定位，悬浮在 content 和 tools 之间：\n\n```css\n.sidebar-picker {\n  position: absolute;\n  left: 0; right: 0;\n  bottom: 52px;           /* 停在工具栏上方 */\n  max-height: 50vh;\n  z-index: 1100;\n}\n```\n\n- `.sidebar` 本身 `position:fixed`，已经是定位参考系，不需要加 `position:relative`\n- `.sidebar-content` 和 `.sidebar-tools` 的 CSS **一行不动**\n- picker 是覆盖层，不参与流式布局，不会推挤任何元素\n- 关闭 picker 时直接从 DOM 移除，不留痕迹\n\n这么做只有一个代价：picker 会覆盖 `.sidebar-content` 底部的内容（如果文件树内容比容器高，最底部几行会被 picker 遮住）。但因为 picker 有 `max-height:50vh`，而 content 有原生滚动，用户滚动 content 就能看到被遮的部分。\n\n要不要按这个方向做？"
+}

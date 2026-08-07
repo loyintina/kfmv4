@@ -1,0 +1,12 @@
+{
+ "id": "ep546-b47",
+ "episode_id": 546,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "终端编号/状态混用（重大）",
+ "pattern": "初心对齐,机制设计,读码优先",
+ "ep_score": 5,
+ "chars": 495,
+ "truncated": false,
+ "text": "**用户：**\n现在日志卡能用了，你加一下日志来看看呢？\n\n**AI：**\n计划模式不能改代码。计划是加 3 行 `log()`：\n\n| 位置 | 加什么 |\n|------|--------|\n| `terminal-card.ts` deactivate | `log('td deactivate reason=' + reason + ' tid=' + card.meta.terminalId + ' sid=' + card.meta.sessionId)` |\n| `card-registry.ts` freeId | `log('cr freeId pool=' + pool + ' id=' + id)` |\n| `card-registry.ts` allocId | `log('cr allocId pool=' + pool + ' result=' + id)` |\n\n然后 `npm run build` + 重启 `npm run dev`，打开 02 日志卡，执行\"关闭终端 2 → 再发射\"，日志卡里会显示完整数据流。\n\n切 build 模式执行？"
+}

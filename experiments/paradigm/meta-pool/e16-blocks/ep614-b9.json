@@ -1,0 +1,12 @@
+{
+ "id": "ep614-b9",
+ "episode_id": 614,
+ "session_id": "ses_063fd57d7ffepMZzVsdv2wNXM2",
+ "source": "manual",
+ "topic": "会话保存失败/刷新丢失（超长拉锯）",
+ "pattern": "全链路验证,追源",
+ "ep_score": 7,
+ "chars": 884,
+ "truncated": false,
+ "text": "**用户：**\n然后是下一个问题，依然存在的，如果我发送了消息，ai回复了，然后回复完毕后我刷新了网页，那么ai回复的消息会被截断。只有我发送的消息存在。\n\n**AI：**\n让我仔细诊断这个残余问题。AI 回复能渲染但刷新后消失，意味着**保存写错了位置**——写入和读取使用了不同的路径解析方式。\n好的，数据说话了。我现在看清楚了全局：\n\n会话文件确实在增长（从 357 条到了 **365 条**）。但证据显示：**用户消息能被保存，AI 回复的最终保存却间歇性失败**。\n\n```\n[362] AI: \"我在！我没走...\"  ← 这条 AI 回复被保存了\n[363] USER: \"看起来问题好像解决了...\"\n[364] USER: \"好吧，问题还是没解决...\"\n         ← AI 响应了 [364] 但没在文件里！\n```\n\n根因很可能是：`_doSaveMessages` 中的 `files/write` fetch 间歇失败（重试 3 次后放弃），但因为我已经不再 `throw e`，失败被静默吞掉——`doSend` 以为一切正常，但文件里缺了最新消息。\n\n## 修复计划\n\n**A. 最可靠：`doSend` 末尾再加一层兜底保存**\n\n在 `orb-chat.ts` 的 `doSend` 里，catch 块后面、`onRender` 之前，加一个最后的 `await saveMessages()` ——不依赖链，直写一份。\n\n**B. 保存链改为始终记录结果状态**\n\n在 `_doSaveMessages` 的 catch 分支里，写失败的次数和原因到 `sessionStore._lastError`，让调用方能感知。\n\n**C. `saveMessages` 不再创建新 chain entry（合并相邻保存）**\n\n如果 `_saveChain` 已有未完成的 save 且其 snapshot 消息数 ≤ 当前 snapshot，则跳过（最终态会被后续/最终保存覆盖）。\n\n你倾向哪个？或者我直接 A+B 一起做？"
+}

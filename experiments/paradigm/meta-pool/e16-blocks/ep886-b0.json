@@ -1,0 +1,12 @@
+{
+ "id": "ep886-b0",
+ "episode_id": 886,
+ "session_id": "omp-2026-06-03T14-24-49-802Z_019e8ddf-6a8a-7",
+ "source": "manual",
+ "topic": "光球面板重构迭代（样式不符/心法错误/紧缩态尺寸/气泡布局/动态字号）",
+ "pattern": "补丁vs根因",
+ "ep_score": 9,
+ "chars": 559,
+ "truncated": false,
+ "text": "**用户：**\n好的，我们接下来做什么？\n\n**AI：**\n当前项目状态：\n\n**已完成**（v6.4.0）：\n- Registry 设计文档归档\n- CARDS 数组迁移\n- card-stack.ts 拆分面板 + 浮卡\n- 浮卡引擎统一化 → orb.ts 删除，orb-card.ts 插件\n\n**剩余可做的**：\n\n| 优先级 | 事项 | 难度 |\n|---|---|---|\n| 🟢 顺手清理 | 删除 HTML 中废弃的 `.light-orb` 元素（旧光球 DOM，现在浮卡引擎自己创建 BR 光球） | 5 分钟 |\n| 🟡 P3 | 侧栏双重状态源（`DOM.classList` vs `KFMState.sidebarOpen`） | 30 分钟 |\n| 🟡 P3 | 动画锁 3000ms 超时（`processClickQueue` 的兜底） | 需要深入理解动画编排 |\n| 🟡 P3 | `notifyStateChange` 散布自动化检测 | 纯工具链 |\n| ⚪ | 评估 `feat/central-only` 分支合并 | 需要阅读未合并分支的代码 |\n\n推荐顺序：先清掉 5 分钟的 `.light-orb` 垃圾，然后选一个你最感兴趣的 P3。或者有别的想法？"
+}

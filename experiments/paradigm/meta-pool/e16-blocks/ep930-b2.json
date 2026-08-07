@@ -1,0 +1,12 @@
+{
+ "id": "ep930-b2",
+ "episode_id": 930,
+ "session_id": "omp-2026-07-12T03-47-42-491Z_019f5470-211b-7",
+ "source": "manual",
+ "topic": "角色管理 json 存储 + 清理 + 保存反馈 + 角色卡加载失败",
+ "pattern": "补丁vs根因",
+ "ep_score": 3,
+ "chars": 725,
+ "truncated": false,
+ "text": "**用户：**\n然后，我想的设计，也是，一个角色一个文件，文件名字就是角色名字，但这些大量的文件，明显是每次刷新页面，都没有读这个文件夹里的文件，而是重新建了一个新的，导致大量的文件的累计，你看一下这个机制呢？\n\n**AI：**\n我理解错了！你想保持一个角色一个文件，问题是**每次刷新都新建**。根因在这里——\n根因找到了：客户端 `listDir` 读 `data.files`，但服务端 `files/list` 返回的是 `{ path, items }`。`data.files` 永远是 `undefined` → `[]` → 每次都觉得目录是空的 → 新建角色。\n\n先还原存储方式，再修这个字段名 bug。\n现在修同款 bug——检查其他卡片。\n全部中招——`config.card.ts` 和 `session.card.ts` 也是 `data.files`。\n修完了。\n\n**根因**：三张卡片（role、config、session）的 `listDir` 都读 `data.files`，但服务端 `files/list` 返回的是 `{ path, items }`。`data.files` 永远是 `undefined` → `[]`。\n\n**后果**：每次 `loadRoles()` / `loadSessions()` / `loadConfigs()` 都觉得目录是空的 → 新建默认文件 → 日积月累 75 个垃圾角色文件。\n\n**修复**：三处 `data.files` → `data.items`。\n\n刷新后打开角色卡，应该能看到之前真正的角色了（如果有的话）。之前 75 个垃圾文件的目录我已经清了。"
+}

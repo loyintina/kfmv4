@@ -1,0 +1,12 @@
+{
+ "id": "ep929-b2",
+ "episode_id": 929,
+ "session_id": "omp-2026-07-12T03-47-42-491Z_019f5470-211b-7",
+ "source": "manual",
+ "topic": "文件树深层展开掉帧（夜间省电误判）",
+ "pattern": "深挖根因+对标成熟",
+ "ep_score": 1,
+ "chars": 750,
+ "truncated": false,
+ "text": "**用户：**\n这能如何排查？\n\n**AI：**\n追到了。渲染管线是这样的：\n\n```\nrequestAnimationFrame 每帧 (~60fps)\n  ├── tickAnimations(root)        ← 递归遍历整棵树 tick 动画\n  ├── _tickAndRender(root)        ← 递归渲染，有视口裁剪\n  │     └── _cvp 过滤：屏幕外的 Box 跳过 draw\n  ├── _manageInputs(root)         ← 递归遍历整棵树管理 input 元素\n  └── _renderCursorPost(root)     ← 光标特效\n```\n\n视口裁剪是生效的——只有屏幕内的行才真正 `drawText`/`drawBorder`。但每帧仍要**递归遍历整棵 Box 树**做 `tickAnimations` 和可见性判断。目录展开层级多 → Box 树节点多 → 每帧遍历开销大。\n\n### 排查方法\n\n在 Chrome DevTools → Performance 面板，录几秒操作：\n\n1. 看 `_render` 每帧耗时——正常应该 < 5ms，如果 10ms+ 就掉帧\n2. 看 `tickAnimations` 的 self time——如果占比高，说明动画 tick 在空转\n3. 看 `_manageInputs`——这个遍历 input 元素，如果树大也会耗时\n\n最快的验证：在 `_render` 开头加一个 `console.count('frame')` 看帧率，然后注释掉 `this._root.tickAnimations(now)` 看有没有改善。\n\n要我加个临时性能探针吗？"
+}

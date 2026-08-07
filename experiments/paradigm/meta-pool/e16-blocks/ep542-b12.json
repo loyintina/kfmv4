@@ -1,0 +1,12 @@
+{
+ "id": "ep542-b12",
+ "episode_id": 542,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "步骤 3 文字大小不一致（首次召唤 vs 收起再展开——两状态尺寸差，用户给数值 32×23 vs 39×29）",
+ "pattern": "状态尺寸",
+ "ep_score": 1,
+ "chars": 985,
+ "truncated": false,
+ "text": "**用户：**\n第一次是32乘23，5.4，9.0，下一行是177,194,194,194,197。第二次是39乘29，5.4，9.0，下一行是216,236,236,236,240\n\n**AI：**\n找到根因了！\n\n---\n\n## 数据解读\n\n| | 首次打开 | 紧缩→展开 |\n|---|---|---|\n| **el** (卡片壳) | **197** | 240 |\n| bg | 194 | 236 |\n| ce | 194 | 236 |\n| wr | 194 | 236 |\n| cvs | 177 | 216 |\n\n首次打开 `el=197`，但代码设的 `width:240px`。差了 **43px**。\n\n---\n\n## 根因：`getBoundingClientRect` 受 CSS transform 影响\n\n首次打开时 `anim.set(el, { scale: 0.8 })` 把卡片缩小到 80%。`getBoundingClientRect()` 返回的是**变换后的视觉尺寸**，不是布局尺寸。\n\n```\nel 布局宽 = 240\nscale = ~0.81 (rAF 触发时动画进行中)\ngetBoundingClientRect = 240 × 0.81 ≈ 194 ← 加上 padding 总宽 ≈ 197\n```\n\n紧缩→展开时没有 scale 动画，`getBoundingClientRect` 返回真实 240。\n\n---\n\n## 修复\n\n`_layout()` 里把 `getBoundingClientRect()` 换成 `clientWidth` / `clientHeight`——这两个**不受 transform 影响**，永远返回布局尺寸。\n修好了。`npm run dev` 重启后首次打开和紧缩→展开的文字大小应该一致了，左下角调试标注的两组数字也会一样。\n\n根因：`anim.set(el, { scale: 0.8 })` 给卡片壳加了 CSS `transform: scale(0.8)`，`getBoundingClientRect()` 返回的是缩放后的视觉尺寸（≈ 197px 而不是 240px）。`clientWidth` 不受 transform 影响，永远返回布局尺寸。"
+}

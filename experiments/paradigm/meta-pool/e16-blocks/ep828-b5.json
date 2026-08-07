@@ -1,0 +1,12 @@
+{
+ "id": "ep828-b5",
+ "episode_id": 828,
+ "session_id": "omp-2026-05-29T05-12-43-275Z_019e7226-260b-7",
+ "source": "manual",
+ "topic": "文字渐变样式 + 复盘（最小倾向改动）",
+ "pattern": "补丁vs根因,复盘沉淀",
+ "ep_score": 1,
+ "chars": 530,
+ "truncated": false,
+ "text": "**用户：**\n那用canvas呢？\n\n**AI：**\n可以。用一个 `<canvas>` 替代 `<span>`，用 `measureText` 量出文字实际宽度，只在这个宽度内画渐变。\n\n```\n文字 \"kfmv4\" → measureText → 宽度 38px → canvas 上在 0~38px 画紫→青渐变\n文字 \"node_modules\" → measureText → 宽度 86px → canvas 上在 0~86px 画渐变\n```\n\n无论文字多长，渐变始终恰好覆盖文字。这是真正的解决方案。\n\n具体做法：\n- `root-picker.ts` 的 `createRootPicker` 里：创建 canvas 替换 span，设 flex:1 保持布局\n- 写一个 `_renderLabel()` 函数：清空 canvas，量文字宽度，画渐变文字\n- 当标签内容变化时（`_doConfirm` 后），重新调用 `_renderLabel()`\n- hover 效果用 pointer events + 重绘来模拟（或保留一个透明 DOM 做 CSS hover）\n\n文字渐变的问题就彻底解决了，没有硬编码、没有边界情况。要做吗？"
+}

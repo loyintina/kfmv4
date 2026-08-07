@@ -1,0 +1,12 @@
+{
+ "id": "ep627-b8",
+ "episode_id": 627,
+ "session_id": "ses_141744654ffehLxZxWEQSrD8RN",
+ "source": "manual",
+ "topic": "逐条审计修复（13 条）",
+ "pattern": "全链路验证,追源",
+ "ep_score": 3,
+ "chars": 447,
+ "truncated": false,
+ "text": "**用户：**\n好\n\n**AI：**\n好，批量重命名 5 个函数名，涉及 3 个文件：\n全部通过。更新追踪表：\n**#3 修复完成。** 改了 3 个文件，涉及 5 个函数、约 20 处引用：\n\n| 函数 | 旧名 | 新名 |\n|------|------|------|\n| 步进光标 | `_moveCursorBySteps` | `moveCursorBySteps` |\n| 判光标模式 | `_isCursorMode` | `isCursorMode` |\n| 取中心行 | `_getCenterRowIndex` | `getCenterRowIndex` |\n| 吸附居中 | `_snapCursorToCenter` | `snapCursorToCenter` |\n| 滚动居中 | `_scrollToCenterCursor` | `scrollToCenterCursor` |\n\n继续修 **#4：tree-swipe.ts 拆分解耦**？还是先挑个小点的？"
+}

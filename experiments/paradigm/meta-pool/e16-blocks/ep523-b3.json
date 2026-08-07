@@ -1,0 +1,12 @@
+{
+ "id": "ep523-b3",
+ "episode_id": 523,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "复制路径后卡顿",
+ "pattern": "字段契约,环境",
+ "ep_score": 5,
+ "chars": 500,
+ "truncated": false,
+ "text": "**用户：**\n但我还是觉得不流畅？\n\n**AI：**\n分析可能的原因：\n\n| 因素 | 影响 | 可能性 |\n|------|------|--------|\n| `backdrop-filter: blur(12px)` 抽屉 | 每帧采样背后内容做高斯模糊，移动端 GPU 杀手 | **最高** |\n| 5 行渐变边框（`padding-box`/`border-box`） | 每行两个 gradient 叠加，动画期间每帧重绘 | 中等 |\n| Canvas 文件树持续渲染 + dimmer 半透明叠层 | 底层 canvas 每帧跑，dimmer `0.45` 透明度导致必须合成 | 中等 |\n| GSAP `y: '100%'` 动画 | `translateY` 走 GPU 合成层，不应卡 | 低 |\n\n**最可能的根因**：`backdrop-filter: blur(12px)` 在抽屉上。它要求在抽屉区域对背后的每一帧内容做采样→模糊→合成，动画期间连续跑，移动端扛不住。\n\n试试去掉 blur，保留纯色背景+渐变边框。如果还卡再排查渐变边框。\n\n你觉得呢？要不要试？"
+}

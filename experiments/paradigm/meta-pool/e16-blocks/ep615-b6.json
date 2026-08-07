@@ -1,0 +1,12 @@
+{
+ "id": "ep615-b6",
+ "episode_id": 615,
+ "session_id": "ses_063fd57d7ffepMZzVsdv2wNXM2",
+ "source": "manual",
+ "topic": "\"Unexpected token '<'\" 报错",
+ "pattern": "全链路验证,验证优先",
+ "ep_score": 17,
+ "chars": 475,
+ "truncated": false,
+ "text": "**用户：**\n以前为什么不会出现这个问题？\n\n**AI：**\n以前**也**有这个 bug，但那两个刚合的提交把事情变严重了：\n\n`2e8e244` 添加了增量保存——每轮 `message_stop` 都调 `saveMessages`。一次工具密集的 AI 对话可能产生 5-20 轮 `message_stop`，每轮都读+写整个 900KB+ 的会话文件。20 × 900KB = 18MB 的数据传输，`_saveChain` 背压严重。\n\n**以前（`2e8e244` 之前）**：只在流结束后写一次。要么成功要么失败，不会背压。\n\n**现在**：`_saveChain` 上排了 1+N 次全量写，任何一次中间写如果被重试拖住，后面的最终保存就被延迟——用户此时看到 AI 回复完成、按钮复原，但最终保存还没执行完。刷新就是丢数据。\n\n所以修复方向应该是：**减少冗余的全量写，只保留最终的权威写入**。增量 `onMessageStop` 保存对可靠性帮助有限（最终保存覆盖一切），但带来了巨大的链背压代价。\n\n是否按此方向出方案？"
+}

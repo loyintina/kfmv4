@@ -1,0 +1,12 @@
+{
+ "id": "ep551-b2",
+ "episode_id": 551,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "缩小后终端内容消失（ls 内容不见只留服务器名）——根源讨论\"不同模型互相打架\"",
+ "pattern": "根源追问,两机制打架",
+ "ep_score": 5,
+ "chars": 963,
+ "truncated": false,
+ "text": "**用户：**\n那你要如何从根源上解决这个问题？\n\n**AI：**\n## 根解方案\n\n### 模型\n\n```\nwrite() ──→ _logicalLines（真相源，只增不删，每次 \\n push 一行）\n                  │\n                  │ resize 时只读（不写）\n                  ▼\n           _reflowLines() ──→ _cells + _scrollback（派生视图，每次 resize 重建）\n```\n\n`_lineBuffer` 是真相源的**未提交尾部**——当前正在写的行，还没遇到 `\\n`。resize 时不推入 `_logicalLines`（推了会重复），但回流时必须**临时追加**进去，否则最后一行（提示符 + 正在输入的命令）会消失。\n\n### 四个改动\n\n**1. 删 `_captureContent()` 方法**——整个文件删掉\n\n角色冲突：它试图从 `_cells`（派生视图）读取数据补回真相源——反了。真相源不需要从派生视图补数据。\n\n**2. `_reflowLines()` 数据源改为只读**\n\n```typescript\n// 不再读 this._logicalLines 然后末尾写 = []\n// 改为：\nconst allLines = [...this._logicalLines];\nif (this._lineBuffer) allLines.push(this._lineBuffer);\n// ... 回流 allLines，不碰 this._logicalLines\n```\n\n**3. 删 `_reflowLines()` 末尾的 `this._logicalLines = []`**\n\n**4. `_layout()` 中去掉 `_captureContent()` 调用**\n\n```typescript\n// 删:\n// if (!isFirst) { this._captureContent(); }\n```\n\n总共约 -30 行、+2 行。四刀下去，模型就干净了：真相源只增不删，派生视图每 resize 重新算。\n\n要切 build 模式吗？"
+}

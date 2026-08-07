@@ -1,0 +1,12 @@
+{
+ "id": "ep520-b2",
+ "episode_id": 520,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "呼吸效果没生效 + 白名单 10 处逃逸（机制质疑）",
+ "pattern": "时序,机制质疑",
+ "ep_score": 3,
+ "chars": 536,
+ "truncated": false,
+ "text": "**用户：**\n怎么不在范围里了？改动很大会引发更多bug吗？\n\n**AI：**\n可以做到——定义 `CursorBoxData` 类型替代 `as any`，改动小且低风险。\nFix casts in `_emitLiquidSegments`:\nFix `_startLiquidLoop`:\nFix pulse callback liquidColor:\nNow fix renderer.ts — local type instead of `as any`:\nNow clear the whitelist:\n**`(as any)` 零逃逸**。全项目首次。\n完工。改动：\n\n- `canvas-cursor.ts`：定义 `CData` 类型（`Record<string,unknown> & { topLineW, botLineW, color, liquidColor, _liquidSegments }`），所有 `(d as any)` → `(d as CData)`\n- `renderer.ts`：inline 类型替代 `as any`\n- `check-as-any.mjs`：白名单清空，全项目 **`(as any)` 零逃逸**"
+}

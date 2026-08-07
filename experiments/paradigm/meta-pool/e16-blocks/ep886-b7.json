@@ -1,0 +1,12 @@
+{
+ "id": "ep886-b7",
+ "episode_id": 886,
+ "session_id": "omp-2026-06-03T14-24-49-802Z_019e8ddf-6a8a-7",
+ "source": "manual",
+ "topic": "光球面板重构迭代（样式不符/心法错误/紧缩态尺寸/气泡布局/动态字号）",
+ "pattern": "补丁vs根因",
+ "ep_score": 9,
+ "chars": 963,
+ "truncated": false,
+ "text": "**用户：**\n还是不对，紧缩态的尺寸应该是0，我依然能看到一个像素点。然后，里面的气泡布局也不对，最外层边框的渐变颜色也不对，你好好对照一下旧代码的实现方式，你是不是又进行补丁式的修复了？\n\n**AI：**\n你说得对。我又在打补丁了。\n\n根本问题是我一直在\"对抗\"引擎——`onCreate` 设 zero padding，`onActivate` 重新设回来，但由于 `onActivate` 在展开动画开始 0.1s 后才调用，中间那段时序就是有问题的。\n\n让我重新设计：不用引擎的卡片边框，而是让插件在 `onActivate` 时自己设面板样式。`compactWidth: 0` 卡片完全隐藏，光球靠 `rightOff=-12` 延伸到外部。\n是我低估了时序问题的复杂性。`onActivate` 被引擎包裹在 0.1s 淡出动画的回调里——那时卡片已经开始扩展了，再设 padding 会有视觉跳跃。\n\n需要给引擎加一个 `onPreExpand` 回调，在展开动画**开始前**就设置卡片样式。这不是补丁，是 API 的必要扩展。\n.\n.\n.\nNow add the call in the expand handler.\n.\n.\nNow update `orb-card.ts` to use `onPreExpand` with proper styling.\n.\nThere's a duplicate `onCreate`. Let me fix.\n.\n.\n.\n.\n.\n零错误，Build OK。\n现在重启服务看看。这次的区别：\n\n- **紧缩态**：卡片 0×0，`padding:0; border:none` — 完全不可见\n- **光球**：通过 `rightOff=-12` 延伸到卡片外部，36px，紫色径向渐变\n- **展开瞬间**：`onPreExpand` 在动画开始前设置 `padding:1px` + AI 聊天渐变边框 + 毛玻璃 + 阴影 → 卡片从 0→300 的过程中就有正确面板视觉\n- **激活后**：`onActivate`（0.1s 后）填充聊天内容\n- **聊天气泡**：使用 `theme` 主题值 + Pretext `layoutLines` 文本排版"
+}

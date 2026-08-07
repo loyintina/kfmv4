@@ -1,0 +1,12 @@
+{
+ "id": "ep532-b18",
+ "episode_id": 532,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "相同卡竞态（重大，长拉锯）",
+ "pattern": "补丁vs根因,竞态",
+ "ep_score": 10,
+ "chars": 1159,
+ "truncated": false,
+ "text": "**用户：**\n还是存在这样的问题，两个一样的卡投放出来的时候，一定有一个卡，长按不会进入编辑模式，而是回到紧缩态。而且我观察到，出现这个情况，如果长按回到紧缩态，那另外一张卡的标题前两个字会出现一个文字选中效果，就是浏览器长按文字出现的文字选择效果。这是什么情况？\n\n**AI：**\n关键线索是\"另一张卡的标题前两个字出现文字选中效果\"——这说明**浏览器的长按文本选择行为没被 GestureRegistry 拦截到**。换句话说，手指按在 bug 卡的光球上，GestureRegistry 根本没接收到这个 pointer 事件。\n\n让我提出一个精准的排查计划：\n\n---\n\n## 排查：GestureRegistry 是否拿到事件\n\n在 `dragCfg.getElement` 开头加一行日志：\n\n```typescript\ngetElement(e: PointerEvent) {\n    const orbEl = (e.target as HTMLElement).closest('.floating-br-orb') as HTMLElement;\n    log('[BR] getElement target=' + (e.target as HTMLElement).tagName + ' closest=' + (orbEl ? 'OK' : 'NULL'));\n    if (!orbEl) return null;\n    ...\n}\n```\n\n同时在 `drag.onStart` 里加：\n\n```typescript\nfunction onStart(e: PointerEvent): void {\n    e.preventDefault();\n    log('[BR] onStart called');\n    const el = cfg.getElement(e);\n    if (!el) { log('[BR] onStart ABORT: getElement null'); return; }\n    if (!cfg.canStart()) { log('[BR] onStart ABORT: canStart false state=' + dragItem?.state); return; }\n    ...\n}\n```\n\n这样如果 bug 卡的 `targetFilter` 没匹配（`e.target` 不在 `.floating-br-orb` 内），日志会显示 `getElement target=... closest=NULL`，之后只有浏览器的长按文本选择生效。\n\n---\n\n总共就加几行调试日志，比之前更精准。要开始吗？"
+}

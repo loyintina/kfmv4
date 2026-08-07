@@ -1,0 +1,12 @@
+{
+ "id": "ep598-b46",
+ "episode_id": 598,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "heuristic",
+ "topic": "4.1 版本改坏→回退 4.0；日志卡定位；多次无效修改（与 B53/B54 同族）",
+ "pattern": "版本回退,验证优先",
+ "ep_score": 9,
+ "chars": 1797,
+ "truncated": false,
+ "text": "**用户：**\n你总算理解了我的需求，真不容易。那么你要如何具体实现？\n\n**AI：**\n## 实现计划\n\n### 架构\n\ncard03 → `terminal-card-04.ts`\ncard04 → `tmux-card.ts`\n\n两者共享同一套 xterm 初始化代码，只多一点：**终端就绪后检测 tmux session → auto-attach 或显示 picker**。\n\n### 文件改动\n\n**1. `terminal-card-04.ts`** — 提取 `initTerminalCore` 共享函数（~10 行改动）\n\n```typescript\nfunction initTerminalCore(\n  container: HTMLElement,  // xterm 的 DOM 容器\n  card: CardInstance,\n  terminalName: string,\n  onReady?: (sessionId: string) => void,  // ← 新增回调\n): void\n```\n\n内部：xterm 创建、WS 监听、ResizeObserver、`terminal-open` → `terminal-opened` → 调 `onReady(sessionId)`。现有的 `activate` 改调这个函数，传 `onReady` 为 undefined（行为不变）。\n\n**2. `tmux-card.ts`** — 完整重写（~120 行）\n\n```typescript\nactivate(contentEl, card, reason):\n  1. buildCardLayout(contentEl, '▣ tmux', c1, c2)\n  2. 建 picker bar（div，初始 display:none，flex 横排）\n  3. 建 term container（flex:1）\n  4. initTerminalCore(termContainer, card, 'tmux', onReady)\n  \n  onReady(sessionId):\n    wsChannel.sendMessage('tmux-cmd', { cmd: 'list-sessions', args: [] })\n    → 结果:\n      0 sessions → picker 显示 \"no tmux sessions\"\n      1 session → auto: terminal-input `clear && tmux attach -t <name>\\n`\n      2+ sessions → picker 显示 [oc] [dev] [logs] 按钮\n      \n  点 picker 按钮:\n    → terminal-input `clear && tmux attach -t <name>\\n`\n```\n\n**3. `ws-server.ts`** — 删 ~25 行\n\n删 `list-windows`、`new-window`、`select-window` 三个 handler。保留 `list-sessions`。\n\n**4. `tmux-card.css`** — 更新 ~20 行\n\n`.tmux-picker` 横排 pill 按钮，毛玻璃底，accent 色 hover。\n\n### 交互流\n\n```\n开 card04 → 终端 shell 就绪\n           → 检测 tmux\n             ├─ 0: picker \"no tmux sessions\"\n             ├─ 1: auto clear && tmux attach → 终端变成 tmux 界面\n             └─ 2+: picker [oc] [dev] [logs]\n                     → 点 [dev] → attach -t dev → 终端切到 dev\n```\n\n### 不变的部分\n\ncard04 有自己独立的 PTY session。和 card03 互不干扰。两个终端可以同时开着。\n\n---\n\n要开始实现吗？"
+}

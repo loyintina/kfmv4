@@ -1,0 +1,12 @@
+{
+ "id": "ep856-b2",
+ "episode_id": 856,
+ "session_id": "omp-2026-07-22T03-58-36-090Z_019f87f9-b23a-7",
+ "source": "manual",
+ "topic": "400 报错 + 文件树状态检测比对 + 钉子机制",
+ "pattern": "补丁vs根因,验证优先",
+ "ep_score": 4,
+ "chars": 986,
+ "truncated": false,
+ "text": "**用户：**\n我发现，显示隐藏文件的按钮，点击后要等待一段时间才能出现，再次关闭再点击，依然要等，但以前的时候就不需要等，是不是传的时候没把这些隐藏文件传过来，导致点击后需要反复调api获取？\n\n**AI：**\n对，问题就在这里。之前 `toggleHidden()` 只翻转标志 + `notify()`，瞬间从缓存 rebuild（但缓存里没有隐藏文件所以看不见）。现在改成每次 toggle 都 `loadFileTree()` 从服务器拉，所以要等。\n\n正确做法：**初始加载时就把隐藏文件也拉下来缓存好**，toggle 时只翻转标志 + rebuild，瞬间生效。\n看看 `fetchDirRecursive` 和 `tree-model.ts` 的过滤逻辑：\n完美，`tree-model.ts:142` 已经有客户端过滤：`if (!KFMState.showHidden && item.name.startsWith('.')) continue;`\n\n所以正确方案很简单：**始终从服务端拉全部文件（包括隐藏文件）**，客户端 `tree-model.ts` 的过滤负责显示/隐藏。这样 toggle 时只需翻转标志 + rebuild，瞬间生效。\n现在改 app.ts——toggle 时只需翻转标志 + notify，不再 loadFileTree：\n有残留。看看当前完整状态：\n58-62 是残留的旧代码，删掉：\n检查 `loadFileTree` import 是否还需要（app.ts 里可能还有其他地方用）：\n`loadFileTree` 在 app.ts 里已无使用，删掉 import：\n重启服务：\n搞定。改动很小但关键：\n\n- `fetchDirRecursive` 始终传 `showHidden: true`，服务端返回所有文件（包括 `.` 开头的）\n- `tree-model.ts:142` 的 `if (!KFMState.showHidden && item.name.startsWith('.')) continue` 负责客户端过滤\n- `toggleHidden()` 只翻转标志 + `notify()`，`rebuildTree` 从缓存瞬间重建\n\n眼睛按钮现在是瞬间切换，不需要网络请求。刷新页面试试。"
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep563-b1",
+ "episode_id": 563,
+ "session_id": "ses_14a552b2fffeeo6FbB3MQJI7TQ",
+ "source": "manual",
+ "topic": "全屏卡片 z-index/布局（拉锯）",
+ "pattern": "验证优先,原版复用",
+ "ep_score": 7,
+ "chars": 1401,
+ "truncated": false,
+ "text": "**用户：**\n这是补丁吗？这个的根因是什么？你再往深想一想呢？是模式有问题吗？\n\n**AI：**\n你说得对，`fullscreenOnCreate` flag 是**补丁**。它的模式是：\"A 做了一件事 → B 覆盖 → 中间态出了问题 → 在 A 上加个参数跳过\"。根因没动，只是堵了一条路。\n\n### 根因是什么\n\n**`createFloatingCard` 把\"创建 DOM\"和\"启动飞入动画\"绑在了一起。** 现在有两方需要它：\n\n| 调用方 | 需要创建 | 需要飞入动画 |\n|--------|---------|------------|\n| `tree-swipe.ts` 右滑投卡 | ✅ | ✅ |\n| `tree-render.ts` 全屏路径 | ✅ | ❌ |\n\n全屏路径的 `enterFullscreen` 跟在 `createFloatingCard` 后面，做的第一件事就是 `killTweensOf(el)` 杀掉飞入动画——也就是**刚花力气启动的东西立刻杀掉**。\n\n这不是参数问题，是 `createFloatingCard` 同时做了两件事，而第二件事（飞入动画）在全屏场景下不该发生。\n\n### 真正的修复：拆成两个函数\n\n```\ncreateFloatingCard（当前，~130 行）\n  ├── _createCardElement(config)  ← 创建 DOM + 注册，不含动画\n  └── _launchCard(item)           ← 飞入动画（source → scatter）\n```\n\n调用方变成：\n\n```ts\n// 右滑投卡（需要飞入）\ncreateFloatingCard(config);                // 等价于 _createCardElement + _launchCard\n\n// 全屏（不需要飞入）\nconst item = _createCardElement(config);\nenterFullscreen(item.instanceId);          // 干净，没有动画冲突\n```\n\n这样 `_fullscreenSaved` 在 `enterFullscreen` 时存的是 `_createCardElement` 设置的初始坐标 `sourceX/Y`，不是被杀的中间值。退出全屏时如果没 saved 位置（新建卡），就调用 `_launchCard` 让它飞到散射位。\n\n### 心法检查\n\n| 心法 | 分析 | 结论 |\n|------|------|------|\n| **12（补丁根除）** | `fullscreenOnCreate` flag 是补丁封装——**否决**它，走拆函数方案 | ✅ |\n| **5（代码变少）** | 拆分会让总行数多 ~10 行（函数声明 + 组合），但消除了动画冲突的逻辑 | ✅ 正向 |\n| **17（不另开路）** | 没有平行路径——`_createCardElement` 是原函数的前半段，`_launchCard` 是后半段 | ✅ |\n| **9（原样搬运）** | 拆函数时从现有 `createFloatingCard` 原样提取，不改逻辑 | ✅ |\n\n要按这个方案修吗？"
+}

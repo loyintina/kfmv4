@@ -1,0 +1,12 @@
+{
+ "id": "ep870-b7",
+ "episode_id": 870,
+ "session_id": "omp-2026-07-23T14-14-20-532Z_019f8f53-c874-7",
+ "source": "manual",
+ "topic": "文件树 root 切换树（兄弟分支）+ 按钮样式消失拉锯",
+ "pattern": "补丁vs根因,设计主权",
+ "ep_score": 3,
+ "chars": 367,
+ "truncated": false,
+ "text": "**用户：**\n还是没有啊，连那个样式的渐变边框也没有了。你看看以前的实现呢？\n\n**AI：**\n找到了。旧 `_renderLabel` 用了 Canvas 2D API 的 `createLinearGradient` 渐变（`#7c3aed → #00d4ff`）+ 自适应字号 + 省略号截断，我的版本是纯色小字，视觉上完全看不见。把我的 `renderLabel` 改回旧版。\n按钮现在应该能看到了——渐变、自适应字号、省略号截断，和旧 root-picker 完全一致的视觉效果。问题是我之前的 `renderLabel` 用了 `clientWidth`（可能返回 0）、纯色填充、固定 11px 小字，改回旧版的 `getBoundingClientRect` + 渐变 + 自适应字号 + 粗体之后才对。刷新页面看。"
+}

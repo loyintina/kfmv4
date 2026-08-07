@@ -1,0 +1,12 @@
+{
+ "id": "ep991-b0",
+ "episode_id": 991,
+ "session_id": "omp-2026-07-27T00-23-12-649Z_019fa0f4-4c09-7",
+ "source": "manual",
+ "topic": "v8 工作继续实现",
+ "pattern": "补丁vs根因,实现边界控制",
+ "ep_score": 5,
+ "chars": 707,
+ "truncated": false,
+ "text": "**用户：**\n都好了对吗？\n\n**AI：**\n对。v8 审计报告里能做的全做了。\n\n**代码改动（两轮共 4 个 commit）**\n\n| Commit | 内容 |\n|---|---|\n| `5862516` | 删 chat.ts 死代码 + orb-chat.ts 动画死代码 + restartCount 防护 + 文档同步 + 版本号 8.0.0 |\n| `6894ca5` | check-consistency 正则修复 |\n| `95bad64` | content_block_stop 区分 + tryAutoResume 抽取 + session-client 重命名 + 注释清理 |\n| `8a5264b` | event.index undefined guard |\n\n**验证**\n- `npm run check` ✅ 全过（14 个检查脚本 + tsc）\n- `npm test` 359 passed, 1 failed（`BAR-ORB-TREE-01` 是预存问题，sibling-switcher 有 3 个 import 但测试要求零依赖，与 v8 无关）\n\n**剩余 3 项需要研究**\n1. `flushSync` 性能优化 — 报告说\"当前可接受\"，多用户/长对话时再改\n2. `chat-dom.ts` 和 `orb-chat.ts` 的 `tool_result` 处理去重 — 需要设计状态变更与 DOM 操作的边界\n3. `orb-chat.ts` 仍 706 行，可拆分 — SSE 消费 vs 状态管理 vs 等待提示\n\n这三项等你想动的时候再说。"
+}

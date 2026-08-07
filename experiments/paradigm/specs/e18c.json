@@ -1,0 +1,26 @@
+{
+  "experiment": "e18c",
+  "prefix": "e18c-",
+  "retryRounds": 10,
+  "runs": [
+    {
+      "taskFile": "experiments/paradigm/scenarios/e8-task.txt",
+      "paradigms": "metacognition-32k,metacognition-64k,metacognition-96k",
+      "models": "deepseek-v4-flash",
+      "provider": "deepseek",
+      "arms": 8,
+      "concurrency": 16,
+      "plannedArms": 24
+    }
+  ],
+  "judge": {
+    "model": "deepseek-v4-flash",
+    "provider": "deepseek",
+    "rubric": "v2",
+    "concurrency": 4,
+    "out": "experiments/paradigm/meta-pool/judge-e18c.json",
+    "taskFiles": {
+      "e18c-t0": "experiments/paradigm/scenarios/e8-task.txt"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+ "id": "ep836-b3",
+ "episode_id": 836,
+ "session_id": "omp-2026-07-07T06-14-00-892Z_019f3b36-47bc-7",
+ "source": "manual",
+ "topic": "手势系统设计（双指缩放实时重排/终端卡降级）+ 全屏卡片滚动",
+ "pattern": "重构优于补丁,可回退铁律",
+ "ep_score": 6,
+ "chars": 405,
+ "truncated": false,
+ "text": "**用户：**\n不对，好像你的改动完全没生效，是不是没重新构建代码重启服务？\n\n**AI：**\n对，`npm run dev` 只跑服务端，不改 `public/bundle.js`。需要手动重打 bundle。\n已重建 bundle 并重启服务。改动生效了：\n\n- `gesture-registry.ts` — `_handleStart` 跳过纯双指处理器 ✅（bundle 中有 `onStart...continue`）\n- `gestures.ts` — 垂直滚动 + 水平滑动合并处理 ✅（bundle 中有 `scrollTop`）\n\n你现在可以刷新页面试一下。预期行为：\n\n- 全屏文件卡 → 上/下滑动 → 内容滚动；左/右滑动 → 开侧栏/卡片堆\n- 全屏终端卡 → 左/右滑动 → 开侧栏/卡片堆（xterm-scroll 之前就有这个逻辑，现在能被触发了）\n- 双指缩放 → 不受影响"
+}
