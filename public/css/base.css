@@ -722,7 +722,6 @@ body {
    （用户定稿：必须比信箱 160 窄）。定时区移出（2026-08-07 用户裁决另置）。 */
 .obs-rail {
   position: fixed;
-  bottom: 0;
   width: 98px;
   box-sizing: border-box;
   padding: 8px 8px 0;
@@ -731,10 +730,9 @@ body {
   pointer-events: none;
   background: rgba(18, 18, 26, 0.5);
   border: 1px solid transparent;
-  border-bottom: none;
   background-clip: padding-box;
   border-image: linear-gradient(180deg, rgba(124, 58, 237, 0.4), rgba(0, 212, 255, 0.2)) 1;
-  border-radius: 16px 16px 0 0;
+  border-radius: 16px;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   overflow: hidden;
