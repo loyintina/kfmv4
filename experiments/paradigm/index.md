@@ -441,6 +441,8 @@ batch-run（计划中）：批量跑所有组合臂（并发+断点续跑）+ �
   Fisher/MWU 直接可引，幂等随跑数重跑，产出 meta-pool/aggregate-e14.json）
   / aggregate-e15-e16.mjs（e15 位置哈希分辨 + e16 结构对照，一器双析，
   产出 meta-pool/aggregate-e15-e16.json）
+  / aggregate-e17.mjs（e17 复盘质量线：预注册主终点 S6 vs 无包 dissect MWU，
+  产出 meta-pool/aggregate-e17.json）
   / cost-stats.py / audit-arms.py（臂审计+通道分桶）/ bug-scan.py
   / migrate-arms-to-db.mjs / migrate-px-to-db.mjs（px 臂入库）
   / e16-mine.mjs（e16 S5/S6 素材开矿：错误信号+复盘标签粗筛，产出 meta-pool/e16-candidates.json）
