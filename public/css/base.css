@@ -762,9 +762,10 @@ body {
   flex: none;
 }
 
-/* 端口区：JS 钉死 4 行窗口高，超出自动切屏轮播（obs-hud sizePorts） */
+/* 端口区：JS 钉死 4 整行窗口高（content-box 防 padding 吃高），超出 4 行硬切轮播（obs-hud sizePorts） */
 .obs-rail-ports {
   overflow: hidden;
+  box-sizing: content-box;
 }
 
 /* 指标块：文字行 + 下方滚动柱状图 */
