@@ -203,20 +203,92 @@ function parseStack(): { entries: StackEntry[]; counts: { todo: number; hold: nu
   }
 }
 
-// ========== SYS 竖条采集（2026-08-06 用户定稿：左缘窄竖条，顶到底） ==========
-// 三段：SYS 四数（盘/存/载/kfm RSS）+ 服务灯（8021 自己恒绿，ngx/ssh 看端口）
-// + cron 清单（crontab 现场解析 → 逐脚本成败标记表末位对比判状态，见 CRON_MARKERS）。
-// 缓存：指标/端口 30s（statfs/meminfo 便宜但 execSync 贵），cron 5min（crontab 极少变）。
+// ========== SYS 监控面板采集（2026-08-06 用户定稿 v3：信箱下方的完整监控面板） ==========
+// 三段：系统四指标（硬盘/内存/负载/进程 RSS，带 30s 采样历史折线）+ 监听端口两列
+// （端口号 | 进程名，ss -tlnp 现场解析）+ cron 清单（crontab 现场解析 → 逐脚本
+// 成败标记表末位对比判状态，见 CRON_MARKERS）。
+// 历史：独立 setInterval 30s 采样（不靠请求驱动——没人看面板时历史也在积累），
+// 环形 40 点（≈20 分钟窗），落 ~/.kfmv4/sys-metrics.json 抗重启（重启后折线不清零）。
+// 缓存：端口 30s（execSync 贵），cron 5min（crontab 极少变）。
 
 interface SysMetric { label: string; value: string; pct: number | null }
-interface SysService { name: string; ok: boolean }
+interface SysPort { port: number; name: string; scope: 'public' | 'local' }
 interface SysCron { name: string; status: 'ok' | 'fail' | 'unknown'; ago: string }
-interface SysData { metrics: SysMetric[]; services: SysService[]; cron: SysCron[] }
+interface SysHistory { disk: number[]; mem: number[]; load: number[]; rss: number[] }
+interface SysData { metrics: SysMetric[]; history: SysHistory; ports: SysPort[]; cron: SysCron[] }
 
-const SYS_CACHE_MS = 30_000;
+const PORTS_CACHE_MS = 30_000;
 const CRON_CACHE_MS = 300_000;
-let sysCache: { data: Omit<SysData, 'cron'>; ts: number } | null = null;
+const HISTORY_MAX = 40; // 40 × 30s ≈ 20 分钟窗
+const HISTORY_PATH = path.join(KFM_DATA_DIR, 'sys-metrics.json');
+let portsCache: { data: SysPort[]; ts: number } | null = null;
 let cronCache: { data: SysCron[]; ts: number } | null = null;
+let history: Array<{ ts: number; disk: number; mem: number; load: number; rss: number }> = [];
+let samplerStarted = false;
+
+// 原始指标读取（statfs/meminfo/loadavg/RSS——都是便宜本地读，采样器与请求路径共用）
+function readMetricsRaw(): { disk: number; mem: number; load: number; rss: number } {
+  let disk = 0;
+  try {
+    const s = fs.statfsSync('/');
+    disk = Math.round((1 - Number(s.bavail) / Number(s.blocks)) * 100);
+  } catch { /* 保留 0 */ }
+  let mem = 0;
+  try {
+    const mi = fs.readFileSync('/proc/meminfo', 'utf-8');
+    const total = Number(mi.match(/MemTotal:\s+(\d+)/)?.[1]);
+    const avail = Number(mi.match(/MemAvailable:\s+(\d+)/)?.[1]);
+    if (total > 0 && avail >= 0) mem = Math.round((1 - avail / total) * 100);
+  } catch { /* 保留 0 */ }
+  const load = Math.round((os.loadavg()[0] / Math.max(1, os.cpus().length)) * 100);
+  const rss = Math.round(process.memoryUsage().rss / 1e6);
+  return { disk, mem, load, rss };
+}
+
+// 30s 采样器：环形缓冲 + 每次落盘（文件极小，重启后续上）
+function startSysSampler(): void {
+  if (samplerStarted) return;
+  samplerStarted = true;
+  try {
+    const j = JSON.parse(fs.readFileSync(HISTORY_PATH, 'utf-8')) as typeof history;
+    if (Array.isArray(j)) history = j.slice(-HISTORY_MAX);
+  } catch { /* 无历史文件 → 从零积累 */ }
+  const tick = () => {
+    history.push({ ts: Date.now(), ...readMetricsRaw() });
+    if (history.length > HISTORY_MAX) history.shift();
+    try { fs.writeFileSync(HISTORY_PATH, JSON.stringify(history)); } catch { /* 落盘失败不致命 */ }
+  };
+  tick();
+  setInterval(tick, 30_000).unref();
+}
+
+// 监听端口两列（ss -tlnp 现场解析；ipv4/ipv6 同端口去重；名从进程名 + 友好别名）
+const PORT_FRIENDLY: Record<number, string> = {
+  8021: 'kfmv4', 9229: 'kfm·dbg', 8033: 'relay·守视', 80: 'nginx', 22: 'sshd', 53: 'dns', 34267: 'aliyun',
+};
+function collectPorts(): SysPort[] {
+  const now = Date.now();
+  if (portsCache && now - portsCache.ts < PORTS_CACHE_MS) return portsCache.data;
+  let out: SysPort[] = [];
+  try {
+    const ss = execSync('ss -tlnpH', { encoding: 'utf-8', timeout: 5000 });
+    const seen = new Map<number, SysPort>();
+    for (const line of ss.split('\n')) {
+      const m = line.match(/\s([\d.*%[\]\w]+):(\d+)\s+[\w.:*%[\]]+\s+users:\(\("([^"]+)"/);
+      if (!m) continue;
+      const port = Number(m[2]);
+      if (seen.has(port)) continue;
+      seen.set(port, {
+        port,
+        name: PORT_FRIENDLY[port] ?? m[3],
+        scope: m[1] === '0.0.0.0' || m[1] === '[::]' || m[1] === '*' ? 'public' : 'local',
+      });
+    }
+    out = [...seen.values()].sort((a, b) => a.port - b.port);
+  } catch { /* ss 不可用 → 空列表 */ }
+  portsCache = { data: out, ts: now };
+  return out;
+}
 
 // auto-push.sh 无 >> 重定向但脚本内部自记日志——crontab 解析的特例补丁表
 const CRON_INTERNAL_LOG: Record<string, string> = {
@@ -305,51 +377,19 @@ function collectCron(): SysCron[] {
   return out;
 }
 
-function collectSysFast(): Omit<SysData, 'cron'> {
-  const now = Date.now();
-  if (sysCache && now - sysCache.ts < SYS_CACHE_MS) return sysCache.data;
-  // 磁盘（statfs：bavail 口径≈df Use%）
-  let diskPct = 0;
-  try {
-    const s = fs.statfsSync('/');
-    diskPct = Math.round((1 - Number(s.bavail) / Number(s.blocks)) * 100);
-  } catch { /* 保留 0 */ }
-  // 内存（/proc/meminfo：1 - MemAvailable/MemTotal）
-  let memPct = 0;
-  try {
-    const mi = fs.readFileSync('/proc/meminfo', 'utf-8');
-    const total = Number(mi.match(/MemTotal:\s+(\d+)/)?.[1]);
-    const avail = Number(mi.match(/MemAvailable:\s+(\d+)/)?.[1]);
-    if (total > 0 && avail >= 0) memPct = Math.round((1 - avail / total) * 100);
-  } catch { /* 保留 0 */ }
-  // 负载（1 分钟 loadavg / 核数——除以核数才是强度）
-  const loadPct = Math.round((os.loadavg()[0] / Math.max(1, os.cpus().length)) * 100);
-  // kfmv4 进程自身 RSS（MB）——内存泄漏直读仪
-  const kfmRssMb = Math.round(process.memoryUsage().rss / 1e6);
-  // 端口存活（一次 ss 全取）
-  let ngx = false, ssh = false;
-  try {
-    const ss = execSync('ss -tlnH', { encoding: 'utf-8', timeout: 5000 });
-    ngx = /:80\s/.test(ss);
-    ssh = /:22\s/.test(ss);
-  } catch { /* ss 不可用 → 全 false（灯自己会说话） */ }
-  const data: Omit<SysData, 'cron'> = {
-    metrics: [
-      { label: '盘', value: `${diskPct}%`, pct: diskPct },
-      { label: '存', value: `${memPct}%`, pct: memPct },
-      { label: '载', value: `${loadPct}%`, pct: loadPct },
-      { label: 'kfm', value: `${kfmRssMb}M`, pct: null },
-    ],
-    services: [
-      { name: '8021', ok: true }, // 能响应这个请求本身就是绿的
-      { name: 'ngx', ok: ngx },
-      { name: 'ssh', ok: ssh },
-    ],
-  };
-  sysCache = { data, ts: now };
-  return data;
-}
-
 function collectSys(): SysData {
-  return { ...collectSysFast(), cron: collectCron() };
+  startSysSampler();
+  const { disk, mem, load, rss } = readMetricsRaw();
+  const historyOf = (k: 'disk' | 'mem' | 'load' | 'rss') => history.map(s => s[k]);
+  return {
+    metrics: [
+      { label: '硬盘', value: `${disk}%`, pct: disk },
+      { label: '内存', value: `${mem}%`, pct: mem },
+      { label: '负载', value: `${load}%`, pct: load },
+      { label: '进程', value: `${rss}M`, pct: null },
+    ],
+    history: { disk: historyOf('disk'), mem: historyOf('mem'), load: historyOf('load'), rss: historyOf('rss') },
+    ports: collectPorts(),
+    cron: collectCron(),
+  };
 }
