@@ -196,7 +196,7 @@ function createScriptsHandler(_meta: Record<string, unknown>): CardContentHandle
         } catch {}
       }
 
-      const { bodyEl } = buildCardLayout(contentEl, 'tool', c1, c2);
+      const { bodyEl } = buildCardLayout(contentEl, '脚本', c1, c2);
       bodyEl.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:8px;padding:0 10px;overflow-y:auto;touch-action:pan-y';
 
       // ===== 上方：类工具卡（二层 c2→c1 反色） =====
