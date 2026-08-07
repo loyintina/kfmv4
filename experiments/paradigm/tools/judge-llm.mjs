@@ -11,6 +11,15 @@ import { DB_PATH, iterArms } from '/root/kfmv4/experiments/paradigm/tools/arm-st
 
 const dir = '/root/.kfmv4/sessions/script';
 const argv = process.argv.slice(2);
+// 硬约束（2026-08-07，e18b 判官污染事故）：未知 --旗标直接报错退出。
+// 事故经过：补判误用 --model/--provider（正确旗标是 --judge-model/--judge-provider），
+// 被静默忽略后回落默认判官 kimi-k3，7 臂被判官口径污染，只能清空重判。
+const KNOWN = new Set(['out', 'prefixes', 'judge-model', 'judge-provider', 'concurrency', 'task-file', 'items-file', 'rubric']);
+const unknown = argv.filter((a, i) => a.startsWith('--') && !KNOWN.has(a.slice(2)));
+if (unknown.length) {
+  console.error(`[judge-llm] 未知旗标：${unknown.join(' ')}（合法：${[...KNOWN].map(k => '--' + k).join(' ')}）`);
+  process.exit(2);
+}
 const get = (k) => { const i = argv.indexOf(`--${k}`); return i >= 0 ? argv[i + 1] : undefined; };
 // --out：多判卷员对照实验时必须分文件（断点续判按臂 id 跳过，同文件会让
 // 第二个判卷员直接跳过全部臂；条目不记录判卷员身份）。缺省保持原路径。
