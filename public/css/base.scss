@@ -237,9 +237,9 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 /* ===== 待办卡（stack.yaml 工作栈，2026-08-06 用户拍板：废 STACK.md，yaml 单一出处） ===== */
 /* 2026-08-07 下移定稿（用户指令）：脱离 .obs-row 改 fixed 右下——右缘与主卡右缘对齐
    （主卡 372 居中 → 右缘距视口右 50%-186），底缘贴输入栏上方（栏高约 80px + 12 间隙）。
-   原位让给了星轨。复用 obs-inbox-* 内部件类（head/list/item/detail/back）。
+   原位让给了星轨。2026-08-07 再上移 2 格（网格 24px/格，bottom 92→140）。复用 obs-inbox-* 内部件类（head/list/item/detail/back）。
    全状态渲染：todo/hold 全亮在前，done 渐淡殿后（藏起 done 是旧设计的诚实性缺陷）。 */
-.obs-stack{position:fixed;right:calc(50% - 186px);bottom:92px;width:200px;box-sizing:border-box;border-radius:16px;background:rgba(18,18,26,.5);border:1px solid transparent;background-clip:padding-box;border-image:linear-gradient(135deg,rgba(0,212,255,.35),rgba(124,58,237,.35)) 1;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);overflow:hidden}
+.obs-stack{position:fixed;right:calc(50% - 186px);bottom:140px;width:200px;box-sizing:border-box;border-radius:16px;background:rgba(18,18,26,.5);border:1px solid transparent;background-clip:padding-box;border-image:linear-gradient(135deg,rgba(0,212,255,.35),rgba(124,58,237,.35)) 1;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);overflow:hidden}
 .obs-stack-status{font-size:10px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .obs-stack-list{height:150px;overflow-y:auto;pointer-events:auto;padding:4px 0;scrollbar-width:none;-ms-overflow-style:none}
 .obs-stack-list::-webkit-scrollbar{display:none}
