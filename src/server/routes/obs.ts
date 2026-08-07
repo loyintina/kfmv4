@@ -77,7 +77,7 @@ async function fetchDeepseekBalance(): Promise<Balance> {
 export function setupObsRoutes(router: Router): void {
   router.get('/obs/hud', async (_req, res) => {
     const balance = await fetchDeepseekBalance();
-    res.json({ balance, inbox: parseInbox(), stack: parseStack(), sys: collectSys(), serverTime: new Date().toISOString() });
+    res.json({ balance, inbox: parseInbox(), stack: parseStack(), sys: collectSys(), archive: collectArchive(), serverTime: new Date().toISOString() });
   });
 
   // 守视视口校准回传：/test 页 POST 真机实测视口 → 存 viewport.json（browser-relay 读）
@@ -457,4 +457,75 @@ function collectSys(): SysData {
     cron: collectCron(),
     seq: sampleSeq,
   };
+}
+
+// ========== 档案馆 · 会话星轨（2026-08-07 用户定稿：中央面板新增科幻线条框） ==========
+// 数据源：~/.kfmv4/sessions/*.json 顶层字段（title/createdAt/updatedAt/messageCount/
+// tokenCount）。 sessions/script/ 是脚本会话分流目录，不读。
+// 清洗：messageCount≤2 且无 tokenCount 的是测试残留（s1/s2/s3/s-basic… 2026-08-06
+// 20:48 同刻产物），过滤。缺 count 字段的旧会话（蔚然的一次整理）以 messages.length
+// 兜底 messageCount、tokenCount 记 0。
+// 收束：按 tokenCount 降序取 TOP 8，其余聚合为一条「其他 ×N」虚线轨（跨度=min~max）。
+// 30s 缓存——会话文件低频变化，现场 parse 全部顶层文件（当前约 4MB）每 30s 一次可接受。
+
+interface ArchiveTrack {
+  title: string;
+  tokens: number;
+  msgs: number;
+  t0: string;          // createdAt
+  t1: string;          // updatedAt（缺省回落 createdAt）
+  active: boolean;     // 48h 内有更新 → 末端呼吸光点
+  aggregate?: number;  // 聚合轨：被合并的会话数
+}
+interface ArchiveData { sessions: number; totalTokens: number; tracks: ArchiveTrack[] }
+
+const SESSIONS_DIR = path.join(KFM_DATA_DIR, 'sessions');
+const ARCHIVE_CACHE_MS = 30_000;
+const ARCHIVE_TOP_N = 8;
+const ACTIVE_WINDOW_MS = 48 * 3_600_000;
+let archiveCache: { data: ArchiveData; ts: number } | null = null;
+
+function collectArchive(): ArchiveData {
+  const now = Date.now();
+  if (archiveCache && now - archiveCache.ts < ARCHIVE_CACHE_MS) return archiveCache.data;
+  const empty: ArchiveData = { sessions: 0, totalTokens: 0, tracks: [] };
+  let out = empty;
+  try {
+    const files = fs.readdirSync(SESSIONS_DIR).filter(f => f.endsWith('.json'));
+    const tracks: ArchiveTrack[] = [];
+    for (const f of files) {
+      try {
+        const j = JSON.parse(fs.readFileSync(path.join(SESSIONS_DIR, f), 'utf-8')) as Record<string, unknown>;
+        const msgs = Number(j.messageCount) || (Array.isArray(j.messages) ? j.messages.length : 0);
+        const tokens = Number(j.tokenCount) || 0;
+        if (msgs <= 2) continue; // 测试残留（s1/s2/s3/s-basic… 同刻产物，msgs≤2；sess-ok 有 7 token 也是残留）
+        const t0 = String(j.createdAt || '');
+        if (!t0) continue;
+        const t1 = String(j.updatedAt || t0);
+        tracks.push({
+          title: String(j.title || f.replace(/\.json$/, '')),
+          tokens, msgs, t0, t1,
+          active: now - new Date(t1).getTime() < ACTIVE_WINDOW_MS,
+        });
+      } catch { /* 单个坏文件不拖垮整轨 */ }
+    }
+    const totalTokens = tracks.reduce((s, t) => s + t.tokens, 0);
+    tracks.sort((a, b) => b.tokens - a.tokens);
+    const top = tracks.slice(0, ARCHIVE_TOP_N);
+    const rest = tracks.slice(ARCHIVE_TOP_N);
+    if (rest.length > 0) {
+      top.push({
+        title: '其他',
+        tokens: rest.reduce((s, t) => s + t.tokens, 0),
+        msgs: rest.reduce((s, t) => s + t.msgs, 0),
+        t0: rest.map(t => t.t0).sort()[0],
+        t1: rest.map(t => t.t1).sort().at(-1)!,
+        active: rest.some(t => t.active),
+        aggregate: rest.length,
+      });
+    }
+    out = { sessions: tracks.length, totalTokens, tracks: top };
+  } catch { /* sessions 目录不存在 → 空 */ }
+  archiveCache = { data: out, ts: now };
+  return out;
 }

@@ -2,7 +2,8 @@
  * obs-hud.ts — 观测台 HUD（8.5 史官制度 · L1 中央内容层，2026-08-05 立项）
  *
  * 背景信息窗：主卡（deepseek 余额）+ 双信息框（信箱=语义巡逻 verdict 时间线 /
- * 待办=stack.yaml 工作栈全状态渲染，2026-08-06 用户拍板：状态=字段非散文标记）
+ * 星轨=档案馆会话可视化，2026-08-07 用户定稿：科幻线条类，每会话一条发光轨道，
+ * 占原待办位）+ 待办下移（stack.yaml 工作栈全状态渲染，固定右下贴输入栏上方）
  * + SYS 窄竖条（2026-08-06 用户定稿：信箱块正下方靠左、左线对齐主卡左线、
  * 向下顶到底；服务器四数 + 服务灯 + cron 8 条状态，只读 v1）。纯展示为主，列表局部可触摸滚动（pointer-events auto 仅滚动区）。
  *
@@ -56,6 +57,9 @@ interface SysPort { port: number; name: string; scope: 'public' | 'local'; conns
 interface SysCron { name: string; status: 'ok' | 'fail' | 'unknown'; ago: string }
 interface SysHistory { disk: number[]; mem: number[]; load: number[]; rss: number[] }
 interface SysData { metrics: SysMetric[]; history: SysHistory; ports: SysPort[]; cron: SysCron[]; seq?: number }
+// 星轨（档案馆会话，服务端已做残留过滤 + TOP8 + 聚合轨）
+interface ArchiveTrack { title: string; tokens: number; msgs: number; t0: string; t1: string; active: boolean; aggregate?: number }
+interface ArchiveData { sessions: number; totalTokens: number; tracks: ArchiveTrack[] }
 
 export function initObsHud(): void {
   if (inited) return;
@@ -79,13 +83,20 @@ export function initObsHud(): void {
         </div>
         <div class="obs-inbox-list"></div>
       </div>
-      <div class="obs-stack">
+      <div class="obs-starmap">
         <div class="obs-inbox-head">
-          <span class="obs-inbox-title">待办</span>
-          <span class="obs-stack-status"></span>
+          <span class="obs-inbox-title">星轨</span>
+          <span class="obs-starmap-status"></span>
         </div>
-        <div class="obs-stack-list"></div>
+        <div class="obs-starmap-body"></div>
       </div>
+    </div>
+    <div class="obs-stack">
+      <div class="obs-inbox-head">
+        <span class="obs-inbox-title">待办</span>
+        <span class="obs-stack-status"></span>
+      </div>
+      <div class="obs-stack-list"></div>
     </div>
   `;
   hud.style.zIndex = String(Z.CENTER_CONTENT); // L1 中央内容层（< SUMMON_BTN 200）
@@ -139,6 +150,8 @@ export function initObsHud(): void {
   const inboxStatusEl = hud.querySelector<HTMLElement>('.obs-inbox-status')!;
   const stackListEl = hud.querySelector<HTMLElement>('.obs-stack-list')!;
   const stackStatusEl = hud.querySelector<HTMLElement>('.obs-stack-status')!;
+  const starmapBodyEl = hud.querySelector<HTMLElement>('.obs-starmap-body')!;
+  const starmapStatusEl = hud.querySelector<HTMLElement>('.obs-starmap-status')!;
 
   let inboxEntries: InboxEntry[] = [];
   let inboxDetail: InboxEntry | null = null;
@@ -261,6 +274,53 @@ ${body}</div>
     }
   });
 
+  // 渲染星轨（2026-08-07 用户定稿：科幻线条类会话可视化，3:2 横版占原待办位）
+  // 每会话一条发光轨道：横轴时间（右端=现在），线长=活跃跨度（createdAt→updatedAt），
+  // 线宽/亮度=tokenCount（sqrt 压缩动态范围），48h 内活跃会话末端挂呼吸光点
+  // （pulseStyle 伪随机节奏，与端口/信箱/待办同族）；聚合轨虚线细轨；底部 MM/DD 刻度行。
+  // 行距按轨道数自适应（13~24px），会话增多不挤爆。
+  function renderStarmap(a: ArchiveData): void {
+    const fmtK = (v: number) => v >= 1e6 ? `${(v / 1e6).toFixed(1)}M` : v >= 1e3 ? `${Math.round(v / 1e3)}K` : String(v);
+    starmapStatusEl.textContent = `${a.sessions} 会话 · Σ${fmtK(a.totalTokens)}`;
+    if (a.tracks.length === 0) {
+      starmapBodyEl.innerHTML = '<div class="obs-starmap-empty">暂无会话</div>';
+      return;
+    }
+    const W = 184, PADX = 4, AXIS_H = 14, PADY = 5, TARGET_H = 140; // 卡高向信箱（150 列表）看齐
+    const n = a.tracks.length;
+    const rowH = Math.max(13, Math.min(32, (TARGET_H - PADY * 2 - AXIS_H) / n));
+    const H = Math.round(PADY * 2 + n * rowH + AXIS_H);
+    const now = Date.now();
+    const tMin = Math.min(...a.tracks.map(t => new Date(t.t0).getTime()));
+    const span = Math.max(1, now - tMin);
+    const x = (t: number) => PADX + (W - PADX * 2) * ((t - tMin) / span);
+    const maxTok = Math.max(...a.tracks.map(t => t.tokens), 1);
+    const md = (t: number) => { const d = new Date(t); return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`; };
+    const rows = a.tracks.map((t, i) => {
+      const cy = PADY + i * rowH + rowH / 2;
+      const x0 = x(new Date(t.t0).getTime());
+      const x1 = Math.max(x(new Date(t.t1).getTime()), x0 + 3); // 单刻会话保底 3px 段
+      const hue = 190 + (i * 70) / Math.max(n - 1, 1); // 青 → 紫家族渐变
+      const color = `hsl(${hue.toFixed(0)} 90% 65%)`;
+      const wdt = t.aggregate ? 1 : 0.8 + 2.2 * Math.sqrt(t.tokens / maxTok);
+      const dash = t.aggregate ? ' stroke-dasharray="3 3" opacity=".55"' : '';
+      const tip = t.aggregate ? `其他 ×${t.aggregate} · Σ${fmtK(t.tokens)}` : `${t.title} · ${t.msgs} 条 · ${fmtK(t.tokens)}`;
+      const dot = t.active
+        ? `<circle class="obs-star-dot" cx="${x1.toFixed(1)}" cy="${cy.toFixed(1)}" r="2.2" fill="${color}" style="${pulseStyle(t.title + t.t0)}"/>`
+        : `<circle cx="${x1.toFixed(1)}" cy="${cy.toFixed(1)}" r="1.4" fill="${color}" opacity=".5"/>`;
+      return `<g><title>${tip}</title><line x1="${PADX}" y1="${cy.toFixed(1)}" x2="${W - PADX}" y2="${cy.toFixed(1)}" stroke="rgba(160,140,255,.09)" stroke-width="1"/><circle cx="${x0.toFixed(1)}" cy="${cy.toFixed(1)}" r="1.4" fill="${color}" opacity=".5"/><line x1="${x0.toFixed(1)}" y1="${cy.toFixed(1)}" x2="${x1.toFixed(1)}" y2="${cy.toFixed(1)}" stroke="${color}" stroke-width="${wdt.toFixed(1)}" stroke-linecap="round"${dash} style="filter:drop-shadow(0 0 2px ${color})"/>${dot}</g>`;
+    }).join('');
+    // 四分之一位竖向淡网格（填补亮段外的空旷区，与背景网格同族）
+    const grid = [0.25, 0.5, 0.75].map(f =>
+      `<line x1="${(PADX + (W - PADX * 2) * f).toFixed(1)}" y1="${PADY}" x2="${(PADX + (W - PADX * 2) * f).toFixed(1)}" y2="${H - AXIS_H}" stroke="rgba(124,58,237,.07)" stroke-width="1"/>`).join('');
+    const axisY = H - AXIS_H + 9;
+    const axis = `<line x1="${PADX}" y1="${H - AXIS_H}" x2="${W - PADX}" y2="${H - AXIS_H}" stroke="rgba(124,58,237,.25)" stroke-width="1"/>`
+      + `<text x="${PADX}" y="${axisY}" class="obs-star-axis" text-anchor="start">${md(tMin)}</text>`
+      + `<text x="${W / 2}" y="${axisY}" class="obs-star-axis" text-anchor="middle">${md(tMin + span / 2)}</text>`
+      + `<text x="${W - PADX}" y="${axisY}" class="obs-star-axis" text-anchor="end">现在</text>`;
+    starmapBodyEl.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img">${grid}${rows}${axis}</svg>`;
+  }
+
   // 渲染 SYS 面板（2026-08-07 用户定稿：指标行 = 文字行（标签+百分号+xx/xx 实值对）
   // + 下方滚动柱状图（绿<70/黄 70-85/红>85 逐样本上色，新样本右侧滚入）；
   // 端口行 = 作用域标（公/本）+ 端口号 + 进程名 + 活跃连接数）
@@ -378,11 +438,12 @@ ${body}</div>
   let lastInboxKey = '';
   let lastStackKey = '';
   let lastSysKey = '';
+  let lastArchiveKey = '';
   const refresh = async () => {
     try {
       const res = await fetch(`${API}/obs/hud`, { signal: AbortSignal.timeout(5000) });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const j = await res.json() as { balance?: { total?: string; error?: string }; inbox?: InboxEntry[]; stack?: StackData; sys?: SysData };
+      const j = await res.json() as { balance?: { total?: string; error?: string }; inbox?: InboxEntry[]; stack?: StackData; sys?: SysData; archive?: ArchiveData };
       const b = j?.balance;
       if (b && !b.error && b.total != null) {
         balanceEl.textContent = fmtBalance(b.total);
@@ -420,6 +481,13 @@ ${body}</div>
         if (key !== lastSysKey) {
           lastSysKey = key;
           renderSys(j.sys);
+        }
+      }
+      if (j?.archive && Array.isArray(j.archive.tracks)) {
+        const key = JSON.stringify(j.archive);
+        if (key !== lastArchiveKey) {
+          lastArchiveKey = key;
+          renderStarmap(j.archive);
         }
       }
     } catch {
