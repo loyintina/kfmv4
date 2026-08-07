@@ -309,7 +309,15 @@ ${body}</div>
         const take = hists[i].slice(-(BAR_SHOW + 1));
         const vmax = Math.max(...take, 1);
         track.innerHTML = take.map(v => barHtml(v, m.pct, vmax)).join('');
-        if (take.length > BAR_SHOW) track.style.transform = `translateX(-${BAR_STEP}px)`;
+        if (take.length > BAR_SHOW) {
+          // 首屏即启动滑入（2026-08-07 用户反馈：刷新后干等一拍才动）——与节拍滑动同款复位技巧，
+          // 从 translateX(0) 过渡到稳态 -5px，加载完成立刻有流动感
+          track.style.transition = 'none';
+          track.style.transform = 'translateX(0)';
+          void track.offsetWidth;
+          track.style.transition = `transform ${BAR_ANIM_MS}ms linear`;
+          track.style.transform = `translateX(-${BAR_STEP}px)`;
+        }
         rec = { row: wrap.querySelector<HTMLElement>('.obs-sys-row')!, track };
         metricRecs.set(key, rec);
       }
@@ -321,8 +329,13 @@ ${body}</div>
     // 采样积累）或历史重置 → 直接重建轨道稳态，下一拍恢复滑动。
     const wins = hists.map(h => h.slice(-(BAR_SHOW + 1)));
     const winSig = wins.map(w => w.join(',')).join('|');
-    const hasNew = sys.seq != null ? sys.seq !== lastSeq : winSig !== lastWinSig;
-    if (hists[0].length > 0 && hasNew) {
+    if (lastWins.length === 0 && hists[0].length > 0) {
+      // 首次构建：状态同步为当前窗口（动画交给首屏滑入）——不同步则本次 renderSys 的
+      // 判定段会误判跳拍走重建分支，把刚启动的首屏动画掐死
+      lastWinSig = winSig;
+      lastWins = wins;
+      lastSeq = sys.seq ?? -1;
+    } else if (hists[0].length > 0 && (sys.seq != null ? sys.seq !== lastSeq : winSig !== lastWinSig)) {
       const shiftOne = lastWins.length === 4 && wins.every((w, i) => {
         const p = lastWins[i];
         return p.length > 1 && w.length > 1 && p.slice(1).join(',') === w.slice(0, w.length - 1).join(',');
