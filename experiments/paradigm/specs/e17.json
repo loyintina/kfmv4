@@ -1,0 +1,26 @@
+{
+  "experiment": "e17",
+  "prefix": "e17-",
+  "retryRounds": 10,
+  "runs": [
+    {
+      "taskFile": "experiments/paradigm/scenarios/e8-task.txt",
+      "paradigms": "无,behavior-discipline,e16-s6-retro",
+      "models": "Qwen/Qwen3.6-35B-A3B,Qwen/Qwen3.5-27B,Pro/deepseek-ai/DeepSeek-V3,Pro/MiniMaxAI/MiniMax-M2.5",
+      "provider": "硅基流动",
+      "arms": 8,
+      "concurrency": 2,
+      "plannedArms": 96
+    }
+  ],
+  "judge": {
+    "model": "deepseek-v4-flash",
+    "provider": "deepseek",
+    "rubric": "v2",
+    "concurrency": 4,
+    "out": "experiments/paradigm/meta-pool/judge-e17.json",
+    "taskFiles": {
+      "e17-t0": "experiments/paradigm/scenarios/e8-task.txt"
+    }
+  }
+}
