@@ -50,8 +50,8 @@ const STACK_LABEL: Record<string, string> = { todo: '待办', hold: '有保留',
 interface InboxEntry { date: string; time: string; type: string; text: string }
 interface StackEntry { n: number; status: string; title: string; created: string; note: string; detail: string }
 interface StackData { entries: StackEntry[]; counts: { todo: number; hold: number; done: number } }
-interface SysMetric { label: string; value: string; pct: number | null }
-interface SysPort { port: number; name: string; scope: 'public' | 'local' }
+interface SysMetric { label: string; value: string; pair: string; pct: number | null }
+interface SysPort { port: number; name: string; scope: 'public' | 'local'; conns: number }
 interface SysCron { name: string; status: 'ok' | 'fail' | 'unknown'; ago: string }
 interface SysHistory { disk: number[]; mem: number[]; load: number[]; rss: number[] }
 interface SysData { metrics: SysMetric[]; history: SysHistory; ports: SysPort[]; cron: SysCron[] }
@@ -100,14 +100,11 @@ export function initObsHud(): void {
     <div class="obs-rail-sec obs-rail-sys"></div>
     <div class="obs-rail-head">⬡ 端口</div>
     <div class="obs-rail-sec obs-rail-ports"></div>
-    <div class="obs-rail-head">◷ 定时</div>
-    <div class="obs-rail-sec obs-rail-cron"></div>
   `;
   rail.style.zIndex = String(Z.CENTER_CONTENT);
   document.body.appendChild(rail);
   const railSysEl = rail.querySelector<HTMLElement>('.obs-rail-sys')!;
   const railPortsEl = rail.querySelector<HTMLElement>('.obs-rail-ports')!;
-  const railCronEl = rail.querySelector<HTMLElement>('.obs-rail-cron')!;
   const placeRail = () => {
     const r = hud.querySelector<HTMLElement>('.obs-inbox')!.getBoundingClientRect();
     rail.style.left = `${r.left}px`;
@@ -244,34 +241,30 @@ ${body}</div>
     }
   });
 
-  // 渲染 SYS 面板三段（阈值变色：平时灰，越限琥珀/红——出事才跳色；
-  // 历史折线 = 服务端 30s 采样环形 40 点，随 5s 轮询推送）
+  // 渲染 SYS 面板（2026-08-07 用户定稿：指标行 = 文字行（标签+百分号+xx/xx 实值对）
+  // + 下方滚动柱状图（绿<70/黄 70-85/红>85 逐样本上色，新样本右侧滚入）；
+  // 端口行 = 作用域标（公/本）+ 端口号 + 进程名 + 活跃连接数）
   const metricCls = (pct: number | null): string =>
     pct == null ? '' : pct > 85 ? ' obs-rail-num-red' : pct >= 70 ? ' obs-rail-num-amber' : '';
-  const metricColor = (pct: number | null): string =>
-    pct == null ? 'rgba(0,212,255,.75)' : pct > 85 ? '#ef4444' : pct >= 70 ? '#f59e0b' : 'rgba(0,212,255,.75)';
-  function sparkline(values: number[], pct: number | null): string {
-    const w = 76, h = 20;
-    if (!values || values.length < 2) return `<svg class="obs-sys-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"></svg>`;
-    const vmax = pct != null ? 100 : Math.max(...values, 1);
-    const pts = values.map((v, i) =>
-      `${(i / (values.length - 1) * w).toFixed(1)},${(h - 1 - Math.min(1, v / vmax) * (h - 2)).toFixed(1)}`
-    ).join(' ');
-    const c = metricColor(pct);
-    return `<svg class="obs-sys-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="${c}" stroke-width="1.2" stroke-linejoin="round"/></svg>`;
+  const BAR_SHOW = 24; // 面板宽度只放得下最近 24 根（12 分钟窗）
+  function bars(values: number[] | undefined, pct: number | null): string {
+    if (!values || values.length === 0) return '<div class="obs-sys-bars"></div>';
+    const take = values.slice(-BAR_SHOW);
+    const vmax = pct != null ? 100 : Math.max(...take, 1);
+    return `<div class="obs-sys-bars">${take.map(v => {
+      const cls = pct == null ? 'obs-bar-cyan' : v > 85 ? 'obs-bar-red' : v >= 70 ? 'obs-bar-amber' : 'obs-bar-green';
+      const h = Math.max(2, Math.round(Math.min(1, v / vmax) * 16));
+      return `<span class="obs-bar ${cls}" style="height:${h}px"></span>`;
+    }).join('')}</div>`;
   }
   const HISTORY_KEYS = ['disk', 'mem', 'load', 'rss'] as const;
   function renderSys(sys: SysData): void {
     railSysEl.innerHTML = sys.metrics.map((m, i) =>
-      `<div class="obs-sys-row"><span class="obs-sys-label">${m.label}</span><span class="obs-rail-num${metricCls(m.pct)}">${m.value}</span>${sparkline(sys.history?.[HISTORY_KEYS[i]], m.pct)}</div>`
+      `<div class="obs-sys-metric"><div class="obs-sys-row"><span class="obs-sys-label">${m.label}</span><span class="obs-rail-num${metricCls(m.pct)}">${m.value}</span><span class="obs-sys-pair">${m.pair}</span></div>${bars(sys.history?.[HISTORY_KEYS[i]], m.pct)}</div>`
     ).join('');
     railPortsEl.innerHTML = sys.ports.map(p =>
-      `<div class="obs-port-row"><span class="obs-dot ${p.scope === 'public' ? 'obs-dot-stat' : 'obs-dot-ok'}"></span><span class="obs-port-num">${p.port}</span><span class="obs-port-name">${p.name}</span></div>`
+      `<div class="obs-port-row"><span class="obs-port-scope obs-port-scope-${p.scope}">${p.scope === 'public' ? '公' : '本'}</span><span class="obs-port-num">${p.port}</span><span class="obs-port-name">${p.name}</span><span class="obs-port-conns">${p.conns > 0 ? '×' + p.conns : ''}</span></div>`
     ).join('');
-    railCronEl.innerHTML = sys.cron.map(c => {
-      const dot = c.status === 'ok' ? 'obs-dot-ok' : c.status === 'fail' ? 'obs-dot-dead' : 'obs-dot-other';
-      return `<div class="obs-rail-cell obs-rail-cron-row"><span class="obs-dot ${dot}"></span><span class="obs-rail-label">${c.name}</span><span class="obs-rail-ago">${c.ago}</span></div>`;
-    }).join('');
   }
 
   // 余额 + 信箱 + 待办 + SYS 刷新（5s 轮询；服务端缓存外部 deepseek 调用）

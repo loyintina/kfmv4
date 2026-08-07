@@ -211,8 +211,8 @@ function parseStack(): { entries: StackEntry[]; counts: { todo: number; hold: nu
 // 环形 40 点（≈20 分钟窗），落 ~/.kfmv4/sys-metrics.json 抗重启（重启后折线不清零）。
 // 缓存：端口 30s（execSync 贵），cron 5min（crontab 极少变）。
 
-interface SysMetric { label: string; value: string; pct: number | null }
-interface SysPort { port: number; name: string; scope: 'public' | 'local' }
+interface SysMetric { label: string; value: string; pair: string; pct: number | null }
+interface SysPort { port: number; name: string; scope: 'public' | 'local'; conns: number }
 interface SysCron { name: string; status: 'ok' | 'fail' | 'unknown'; ago: string }
 interface SysHistory { disk: number[]; mem: number[]; load: number[]; rss: number[] }
 interface SysData { metrics: SysMetric[]; history: SysHistory; ports: SysPort[]; cron: SysCron[] }
@@ -227,22 +227,38 @@ let history: Array<{ ts: number; disk: number; mem: number; load: number; rss: n
 let samplerStarted = false;
 
 // 原始指标读取（statfs/meminfo/loadavg/RSS——都是便宜本地读，采样器与请求路径共用）
-function readMetricsRaw(): { disk: number; mem: number; load: number; rss: number } {
-  let disk = 0;
+// raw 同时携带实值（used/total），供面板百分号后的 xx/xx 对
+interface RawMetrics {
+  disk: number; mem: number; load: number; rss: number;
+  diskUsedG: number; diskTotalG: number;
+  memUsedG: number; memTotalG: number;
+  loadRaw: number; cores: number;
+}
+function readMetricsRaw(): RawMetrics {
+  let disk = 0, diskUsedG = 0, diskTotalG = 0;
   try {
     const s = fs.statfsSync('/');
-    disk = Math.round((1 - Number(s.bavail) / Number(s.blocks)) * 100);
+    const bsize = Number(s.bsize), blocks = Number(s.blocks), bavail = Number(s.bavail);
+    disk = Math.round((1 - bavail / blocks) * 100);
+    diskTotalG = Math.round(blocks * bsize / 1073741824);
+    diskUsedG = Math.round((blocks - bavail) * bsize / 1073741824);
   } catch { /* 保留 0 */ }
-  let mem = 0;
+  let mem = 0, memUsedG = 0, memTotalG = 0;
   try {
     const mi = fs.readFileSync('/proc/meminfo', 'utf-8');
     const total = Number(mi.match(/MemTotal:\s+(\d+)/)?.[1]);
     const avail = Number(mi.match(/MemAvailable:\s+(\d+)/)?.[1]);
-    if (total > 0 && avail >= 0) mem = Math.round((1 - avail / total) * 100);
+    if (total > 0 && avail >= 0) {
+      mem = Math.round((1 - avail / total) * 100);
+      memTotalG = Math.round(total / 104857.6) / 10;
+      memUsedG = Math.round((total - avail) / 104857.6) / 10;
+    }
   } catch { /* 保留 0 */ }
-  const load = Math.round((os.loadavg()[0] / Math.max(1, os.cpus().length)) * 100);
+  const cores = Math.max(1, os.cpus().length);
+  const loadRaw = os.loadavg()[0];
+  const load = Math.round((loadRaw / cores) * 100);
   const rss = Math.round(process.memoryUsage().rss / 1e6);
-  return { disk, mem, load, rss };
+  return { disk, mem, load, rss, diskUsedG, diskTotalG, memUsedG, memTotalG, loadRaw, cores };
 }
 
 // 30s 采样器：环形缓冲 + 每次落盘（文件极小，重启后续上）
@@ -282,8 +298,19 @@ function collectPorts(): SysPort[] {
         port,
         name: PORT_FRIENDLY[port] ?? m[3],
         scope: m[1] === '0.0.0.0' || m[1] === '[::]' || m[1] === '*' ? 'public' : 'local',
+        conns: 0,
       });
     }
+    // 各端口活跃连接数（established 按本地端口计数——面板的「谁在被真实使用」维度）
+    try {
+      const est = execSync('ss -tnH state established', { encoding: 'utf-8', timeout: 5000 });
+      for (const line of est.split('\n')) {
+        const m = line.match(/\s[\d.*%[\]\w]+:(\d+)\s+[\w.:*%[\]]+\s/);
+        if (!m) continue;
+        const p = seen.get(Number(m[1]));
+        if (p) p.conns++;
+      }
+    } catch { /* 连接数取不到 → 全 0 */ }
     out = [...seen.values()].sort((a, b) => a.port - b.port);
   } catch { /* ss 不可用 → 空列表 */ }
   portsCache = { data: out, ts: now };
@@ -379,14 +406,14 @@ function collectCron(): SysCron[] {
 
 function collectSys(): SysData {
   startSysSampler();
-  const { disk, mem, load, rss } = readMetricsRaw();
+  const r = readMetricsRaw();
   const historyOf = (k: 'disk' | 'mem' | 'load' | 'rss') => history.map(s => s[k]);
   return {
     metrics: [
-      { label: '硬盘', value: `${disk}%`, pct: disk },
-      { label: '内存', value: `${mem}%`, pct: mem },
-      { label: '负载', value: `${load}%`, pct: load },
-      { label: '进程', value: `${rss}M`, pct: null },
+      { label: '硬盘', value: `${r.disk}%`, pair: `${r.diskUsedG}/${r.diskTotalG}G`, pct: r.disk },
+      { label: '内存', value: `${r.mem}%`, pair: `${r.memUsedG}/${r.memTotalG}G`, pct: r.mem },
+      { label: '负载', value: `${r.load}%`, pair: `${r.loadRaw.toFixed(2)}/${r.cores}`, pct: r.load },
+      { label: '进程', value: `${r.rss}M`, pair: `${r.memTotalG}G 总`, pct: null },
     ],
     history: { disk: historyOf('disk'), mem: historyOf('mem'), load: historyOf('load'), rss: historyOf('rss') },
     ports: collectPorts(),
