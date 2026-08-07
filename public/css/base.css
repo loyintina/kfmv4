@@ -703,17 +703,19 @@ body {
 }
 
 /* 待办返回按钮复用信箱样式（事件类名单独 .obs-stack-back 便于委托区分） */
-/* ===== SYS 监控面板（2026-08-06 用户定稿 v3：信箱块正下方靠左，向下顶到底） ===== */
+/* ===== SYS 监控面板（2026-08-07 用户定稿 v4：信箱块正下方靠左，比信箱窄） ===== */
 /* 左线与信箱块/主卡左线对齐——left/top 由 JS 按 .obs-inbox getBoundingClientRect
-   实测注入。边框与信箱/待办卡同款（圆角 + 渐变 border-image + 毛玻璃）——
-   v1/v2 单边框被用户实拍判「跟其他边框不一样」；底边顶到屏幕缘，圆角只留上侧。
-   三段：系统四指标（带历史折线）+ 监听端口两列 + cron 状态清单（flex-1 可滚）。 */
+   实测注入。边框与信箱/待办卡同款（圆角 + 渐变 border-image + 毛玻璃）；
+   底边顶到屏幕缘，圆角只留上侧。
+   v4 布局：指标行 = 文字行（标签+百分号+xx/xx 实值对）+ 下方滚动柱状图
+   （绿<70/黄 70-85/红>85 逐样本上色）；柱状图下移后宽度收窄 200→140
+   （用户定稿：必须比信箱 160 窄）。定时区移出（2026-08-07 用户裁决另置）。 */
 .obs-rail {
   position: fixed;
   bottom: 0;
-  width: 200px;
+  width: 140px;
   box-sizing: border-box;
-  padding: 10px 12px 0;
+  padding: 10px 10px 0;
   display: flex;
   flex-direction: column;
   pointer-events: none;
@@ -747,21 +749,26 @@ body {
 .obs-rail-sec {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   padding: 4px 0;
   flex: none;
 }
 
-/* 系统指标行：标签 + 数值 + 历史折线（flex-1 右端） */
+/* 指标块：文字行 + 下方滚动柱状图 */
+.obs-sys-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
 .obs-sys-row {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  align-items: baseline;
+  gap: 4px;
 }
 
 .obs-sys-label {
   flex: none;
-  width: 28px;
   font-size: 9px;
   color: var(--text-dim);
   letter-spacing: 1px;
@@ -769,7 +776,6 @@ body {
 
 .obs-rail-num {
   flex: none;
-  width: 36px;
   font-size: 11px;
   color: var(--text);
   font-variant-numeric: tabular-nums;
@@ -783,14 +789,45 @@ body {
   color: #ef4444;
 }
 
-.obs-sys-spark {
-  flex: 1;
-  height: 20px;
-  min-width: 0;
-  opacity: 0.85;
+.obs-sys-pair {
+  font-size: 8px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
 }
 
-/* 端口两列：端口号 | 进程名（点色分公网/本地：青=公网监听，绿=仅本地） */
+/* 滚动柱状图：逐样本上色（绿<70/黄 70-85/红>85/进程青），新样本右侧滚入 */
+.obs-sys-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 1px;
+  height: 16px;
+}
+
+.obs-bar {
+  flex: 1;
+  min-width: 2px;
+  border-radius: 1px 1px 0 0;
+  opacity: 0.8;
+}
+
+.obs-bar-green {
+  background: #22c55e;
+}
+
+.obs-bar-amber {
+  background: #f59e0b;
+}
+
+.obs-bar-red {
+  background: #ef4444;
+}
+
+.obs-bar-cyan {
+  background: rgba(0, 212, 255, 0.65);
+}
+
+/* 端口行：作用域标（公/本）+ 端口号 + 进程名 + 活跃连接数 */
 .obs-port-row {
   display: flex;
   align-items: center;
@@ -798,9 +835,28 @@ body {
   font-size: 9px;
 }
 
+.obs-port-scope {
+  flex: none;
+  font-size: 8px;
+  padding: 0 3px;
+  border-radius: 4px;
+  border: 1px solid;
+  line-height: 1.5;
+}
+
+.obs-port-scope-public {
+  color: #06b6d4;
+  border-color: rgba(6, 182, 212, 0.4);
+}
+
+.obs-port-scope-local {
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
 .obs-port-num {
   flex: none;
-  width: 38px;
+  min-width: 30px;
   color: var(--text);
   font-variant-numeric: tabular-nums;
 }
@@ -810,48 +866,12 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-/* cron 区：占满剩余高度，超出滚动（局部 pointer-events auto 支持触摸） */
-.obs-rail-cron {
   flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  pointer-events: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  min-width: 0;
 }
 
-.obs-rail-cron::-webkit-scrollbar {
-  display: none;
-}
-
-.obs-rail-cron .obs-rail-cell {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-}
-
-.obs-rail-label {
-  font-size: 9px;
-  color: var(--text);
-  letter-spacing: 1px;
-  white-space: nowrap;
-}
-
-.obs-rail-ago {
-  font-size: 8px;
-  color: var(--text-dim);
-  width: 100%;
-  padding-left: 9px;
-}
-
-.obs-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  display: inline-block;
+.obs-port-conns {
   flex: none;
+  font-size: 8px;
+  color: rgba(0, 212, 255, 0.6);
 }
