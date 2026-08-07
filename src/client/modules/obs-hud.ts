@@ -305,9 +305,12 @@ ${body}</div>
         tr.style.transform = `translateX(-${BAR_STEP}px)`;
       });
     }
-    railPortsEl.innerHTML = sys.ports.map(p =>
-      `<div class="obs-port-row"><span class="obs-port-dot obs-port-dot-${p.scope}"></span><span class="obs-port-num">${p.port}</span><span class="obs-port-name">${p.name}</span><span class="obs-port-conns">${(p.conns ?? 0) > 0 ? '×' + p.conns : ''}</span></div>`
-    ).join('');
+    railPortsEl.innerHTML = sys.ports.map(p => {
+      // 呼吸节奏伪随机：端口号取模出九档时长（2.2~4.1s）+ 错相位——确定性（重绘不跳变）而非真随机
+      const dur = (2.2 + (p.port % 9) * 0.23).toFixed(2);
+      const del = (-(p.port % 13) * 0.31).toFixed(2);
+      return `<div class="obs-port-row"><span class="obs-port-dot obs-port-dot-${p.scope}" style="animation-duration:${dur}s;animation-delay:${del}s"></span><span class="obs-port-num">${p.port}</span><span class="obs-port-name">${p.name}</span><span class="obs-port-conns">${(p.conns ?? 0) > 0 ? '×' + p.conns : ''}</span></div>`;
+    }).join('');
   }
 
   // 余额 + 信箱 + 待办 + SYS 刷新（5s 轮询；服务端缓存外部 deepseek 调用）

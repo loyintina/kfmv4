@@ -293,8 +293,9 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 /* 端口行：作用域标（公/本）+ 端口号 + 进程名 + 活跃连接数 */
 .obs-port-row{display:flex;align-items:center;gap:5px;font-size:9px}
 /* 脉冲呼吸光点（2026-08-07 用户定稿：废公/本文字胶囊）——公网青、本机绿，呼吸 = 透明度+光晕脉动 */
-@keyframes obs-port-pulse{0%,100%{opacity:1;box-shadow:0 0 5px 1.5px currentColor}50%{opacity:.3;box-shadow:0 0 1px 0 currentColor}}
-.obs-port-dot{flex:none;width:6px;height:6px;border-radius:50%;animation:obs-port-pulse 2.4s ease-in-out infinite}
+/* 低调版：峰值 .9/谷值 .45 微弱起伏，光晕收敛；时长/相位按端口号伪随机错开（见 obs-hud） */
+@keyframes obs-port-pulse{0%,100%{opacity:.9;box-shadow:0 0 2.5px .5px currentColor}50%{opacity:.45;box-shadow:0 0 .5px 0 currentColor}}
+.obs-port-dot{flex:none;width:6px;height:6px;border-radius:50%;animation:obs-port-pulse 3s ease-in-out infinite}
 .obs-port-dot-public{background:#06b6d4;color:#06b6d4}
 .obs-port-dot-local{background:#22c55e;color:#22c55e}
 .obs-port-num{flex:none;min-width:30px;color:var(--text);font-variant-numeric:tabular-nums}
