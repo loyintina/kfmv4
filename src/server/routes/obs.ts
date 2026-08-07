@@ -239,6 +239,24 @@ interface RawMetrics {
   diskUsedG: number; diskTotalG: number;
   memUsedG: number; memTotalG: number;
   loadRaw: number; cores: number;
+  rssLimitMB: number; // 进程 RSS 天花板（cgroup memory.high；0 = 无限制，退回整机内存参照）
+}
+
+// 进程自身 cgroup 内存软限（MemoryHigh）——kfmv4 经 systemd 跑在独立 cgroup，
+// /sys/fs/cgroup/memory.high 就是它自己的墙（2026-08-07 用户指正：进程项参照 3.4G 整机失真，
+// 天花板实为 800M 软限；柱高按限额归一后，100% 参考线 = 刹车墙距离）
+function readRssLimitMB(): number {
+  for (const p of ['/sys/fs/cgroup/memory.high', '/sys/fs/cgroup/memory.max']) { // cgroup v2
+    try {
+      const v = fs.readFileSync(p, 'utf-8').trim();
+      if (v !== 'max') { const n = Number(v); if (n > 0 && n < 1e15) return Math.round(n / 1048576); }
+    } catch { /* 下一候选 */ }
+  }
+  try { // cgroup v1
+    const n = Number(fs.readFileSync('/sys/fs/cgroup/memory/memory.limit_in_bytes', 'utf-8').trim());
+    if (n > 0 && n < 1e15) return Math.round(n / 1048576);
+  } catch { /* 无限制 */ }
+  return 0;
 }
 function readMetricsRaw(): RawMetrics {
   let disk = 0, diskUsedG = 0, diskTotalG = 0;
@@ -264,7 +282,7 @@ function readMetricsRaw(): RawMetrics {
   const loadRaw = os.loadavg()[0];
   const load = Math.round((loadRaw / cores) * 100);
   const rss = Math.round(process.memoryUsage().rss / 1e6);
-  return { disk, mem, load, rss, diskUsedG, diskTotalG, memUsedG, memTotalG, loadRaw, cores };
+  return { disk, mem, load, rss, diskUsedG, diskTotalG, memUsedG, memTotalG, loadRaw, cores, rssLimitMB: readRssLimitMB() };
 }
 
 // 5s 采样器：环形缓冲 + 每次落盘（文件极小，重启后续上）
@@ -420,7 +438,7 @@ function collectSys(): SysData {
       { label: '硬盘', value: `${r.disk}%`, pair: `${r.diskUsedG}/${r.diskTotalG}G`, pct: r.disk },
       { label: '内存', value: `${r.mem}%`, pair: `${r.memUsedG}/${r.memTotalG}G`, pct: r.mem },
       { label: '负载', value: `${r.load}%`, pair: `${r.loadRaw.toFixed(2)}/${r.cores}`, pct: r.load },
-      { label: '进程', value: `${r.rss}M`, pair: `/${r.memTotalG}G`, pct: null },
+      { label: '进程', value: `${r.rss}M`, pair: r.rssLimitMB > 0 ? `/${(r.rssLimitMB / 1024).toFixed(1)}G` : `/${r.memTotalG}G`, pct: r.rssLimitMB > 0 ? Math.round((r.rss / r.rssLimitMB) * 100) : null },
     ],
     history: { disk: historyOf('disk'), mem: historyOf('mem'), load: historyOf('load'), rss: historyOf('rss') },
     ports: collectPorts(),
