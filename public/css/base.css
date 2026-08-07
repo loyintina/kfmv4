@@ -590,10 +590,14 @@ body {
 }
 
 /* ===== 待办卡（stack.yaml 工作栈，2026-08-06 用户拍板：废 STACK.md，yaml 单一出处） ===== */
-/* 行内右框；2026-08-06 加宽 160→200（用户定稿：中央空隙 52→12，行宽 372 不动，
-   左界仍贴主卡）。复用 obs-inbox-* 内部件类（head/list/item/detail/back）。
+/* 2026-08-07 下移定稿（用户指令）：脱离 .obs-row 改 fixed 右下——右缘与主卡右缘对齐
+   （主卡 372 居中 → 右缘距视口右 50%-186），底缘贴输入栏上方（栏高约 80px + 12 间隙）。
+   原位让给了星轨。复用 obs-inbox-* 内部件类（head/list/item/detail/back）。
    全状态渲染：todo/hold 全亮在前，done 渐淡殿后（藏起 done 是旧设计的诚实性缺陷）。 */
 .obs-stack {
+  position: fixed;
+  right: calc(50% - 186px);
+  bottom: 92px;
   width: 200px;
   box-sizing: border-box;
   border-radius: 16px;
@@ -713,6 +717,60 @@ body {
 }
 
 /* 待办返回按钮复用信箱样式（事件类名单独 .obs-stack-back 便于委托区分） */
+/* ===== 星轨卡（档案馆会话可视化，2026-08-07 用户定稿：占原待办位，3:2 横版） ===== */
+/* 同卡片视觉族（圆角+渐变 border-image+毛玻璃）。SVG 轨道线自带 drop-shadow 发光，
+   呼吸光点用 obs-star-pulse（SVG 元素不吃 box-shadow，单独 opacity 脉冲；
+   时长/相位由 obs-hud pulseStyle 注入，与端口/信箱/待办同族伪随机）。 */
+.obs-starmap {
+  width: 200px;
+  box-sizing: border-box;
+  border-radius: 16px;
+  background: rgba(18, 18, 26, 0.5);
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  border-image: linear-gradient(135deg, rgba(0, 212, 255, 0.35), rgba(124, 58, 237, 0.35)) 1;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  overflow: hidden;
+}
+
+.obs-starmap-status {
+  font-size: 10px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.obs-starmap-body {
+  padding: 6px 8px 4px;
+}
+
+.obs-starmap-empty {
+  padding: 14px 10px;
+  font-size: 10px;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+.obs-star-axis {
+  font-size: 8px;
+  fill: var(--text-dim);
+  letter-spacing: 0.5px;
+}
+
+.obs-star-dot {
+  animation: obs-star-pulse 3s ease-in-out infinite;
+}
+
+@keyframes obs-star-pulse {
+  0%, 100% {
+    opacity: 0.95;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
 /* ===== SYS 监控面板（2026-08-07 用户定稿 v4：信箱块正下方靠左，比信箱窄） ===== */
 /* 左线与信箱块/主卡左线对齐——left/top 由 JS 按 .obs-inbox getBoundingClientRect
    实测注入。边框与信箱/待办卡同款（圆角 + 渐变 border-image + 毛玻璃）；
