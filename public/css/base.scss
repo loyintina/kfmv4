@@ -212,10 +212,10 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 .obs-inbox-list{height:150px;overflow:hidden;pointer-events:auto;padding:4px 0;scrollbar-width:none;-ms-overflow-style:none}/* 2026-08-08：手势滑动改自动翻屏，让位全局卡片堆手势 */
 .obs-inbox-list::-webkit-scrollbar{display:none}
 /* 条目 = 圆点+日期+文字单行流；clamp 在内层 flow 上（clamp 与外 padding 同层会透出下一行残影） */
-.obs-inbox-item{display:block;padding:3px 10px;border-left:2px solid transparent;opacity:.55;cursor:pointer;transition:background .15s}
+.obs-inbox-item{display:block;padding:3px 10px;border-left:2px solid transparent;cursor:pointer;transition:background .15s}/* 2026-08-08：历史渐淡（opacity .55）取消——有光点标记就够，太暗不好看 */
 .obs-inbox-item-flow{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:10px;color:var(--text);line-height:1.3;word-break:break-word}
 .obs-inbox-item:active{background:rgba(124,58,237,.15)}
-.obs-inbox-item-new{opacity:1;background:rgba(124,58,237,.08)}
+.obs-inbox-item-new{background:rgba(124,58,237,.08)}
 .obs-inbox-meta{font-size:9px;color:var(--text-dim);letter-spacing:.5px}
 /* 信箱/待办光点：同 obs-port-pulse 低调呼吸（2026-08-07 用户定稿随机脉冲），时长/相位由 obs-hud pulseStyle 注入 */
 .obs-dot{width:5px;height:5px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:1px;flex:none;animation:obs-port-pulse 3s ease-in-out infinite}
@@ -247,10 +247,7 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 .obs-dot-stack-todo{background:#06b6d4;color:#06b6d4;box-shadow:0 0 4px rgba(6,182,212,.4)}
 .obs-dot-stack-hold{background:#f59e0b;color:#f59e0b;box-shadow:0 0 4px rgba(245,158,11,.5)}
 .obs-dot-stack-done{background:#22c55e;color:#22c55e;box-shadow:0 0 4px rgba(34,197,94,.3)}
-/* 待办条目默认全亮（与信箱的历史渐淡相反——待办全是现在时）；⚠️ 稍淡，done 殿后更淡 */
-.obs-stack .obs-inbox-item{opacity:.9}
-.obs-stack .obs-inbox-item.obs-stack-item-hold{opacity:.55}
-.obs-stack .obs-inbox-item.obs-stack-item-done{opacity:.3}
+/* 待办条目全亮（2026-08-08：⚠️稍淡/done殿后更淡的层级渐淡取消——状态有光点标记就够） */
 /* note 次行独立成块单行截断（与标题 clamp 分层——同层共 clamp 会让两行标题白挂省略号） */
 .obs-stack-note{display:block;font-size:9px;color:var(--text-dim);letter-spacing:.3px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .obs-stack-divider{padding:4px 10px 2px;font-size:9px;letter-spacing:2px;color:rgba(0,212,255,.5);border-top:1px solid rgba(124,58,237,.15);margin-top:2px}
