@@ -86,8 +86,8 @@ class EmblemGather {
     }
     g.push({ x: 0.5, y: 0.5 });
     this.glyph = g.map(p => ({ x: p.x * w, y: p.y * h }));
-    this.thr = Math.min(w, h) * 0.30;
-    this.v = Math.hypot(w, h) * 0.10; // 缓速：一轮约走 1.6 条对角线
+    this.thr = Math.min(w, h) * 0.22; // 连接距离收紧（线网太密，2026-08-08 实拍）
+    this.v = Math.hypot(w, h) * 0.13; // 缓速略提：路径更长、轨迹更发散
     this.regen();
   }
   // 分组：0-11 菱形 / 12-19 竖瞳 / 20 瞳心（独组）
@@ -112,8 +112,8 @@ class EmblemGather {
       this.prog[pi] = oldLen > 0 ? (this.prog[pi] / oldLen) * p.len : 0;
     }
     this.k = this.paths.map(p => p.len / EmblemGather.cycleInt());
-    this.thr = Math.min(nw, nh) * 0.30;
-    this.v = Math.hypot(nw, nh) * 0.10;
+    this.thr = Math.min(nw, nh) * 0.22;
+    this.v = Math.hypot(nw, nh) * 0.13;
   }
   // 闭环边（同组相邻 + 首尾相接）：由形状描边层统一画，动态连线跳过以免叠亮
   private static loopEdge(i: number, j: number): boolean {
@@ -163,7 +163,8 @@ class EmblemGather {
         x: 12 + this.R() * (this.w - 24), y: 12 + this.R() * (this.h - 24),
       }));
       let path = this.buildPath(g, wps);
-      if (path.len > 1 && Math.abs(path.len - target) / target > 0.15) {
+      // 归一带放宽到 ±40%：大小环并存，轨迹更发散（全缩一个尺寸会显得挤）
+      if (path.len > 1 && Math.abs(path.len - target) / target > 0.4) {
         const lam = target / path.len;
         const c = { x: wps.reduce((s2, p) => s2 + p.x, 0) / wps.length, y: wps.reduce((s2, p) => s2 + p.y, 0) / wps.length };
         wps = wps.map(p => ({
