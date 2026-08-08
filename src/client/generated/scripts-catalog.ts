@@ -1026,6 +1026,15 @@ export const SCRIPTS_CATALOG: ScriptCatalogEntry[] = [
     "effect": "信箱巡逻心跳（F1 机械化主人，2026-08-03，BAR-SEMCHAIN-01 催生）"
   },
   {
+    "name": "check-kfmv4-data.mjs",
+    "file": "scripts/check/check-kfmv4-data.mjs",
+    "category": "检查器",
+    "description": "数据区结构机械门（~/.kfmv4，2026-08-08 重构定稿）",
+    "permission": "构建链内只读检查（无网络、无写盘副作用）",
+    "prompt": "无（机械检查）",
+    "effect": "数据区结构机械门（~/.kfmv4，2026-08-08 重构定稿）"
+  },
+  {
     "name": "check-ledger-commits.mjs",
     "file": "scripts/check/check-ledger-commits.mjs",
     "category": "检查器",
