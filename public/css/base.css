@@ -981,3 +981,128 @@ body {
   font-size: 8px;
   color: rgba(0, 212, 255, 0.6);
 }
+
+/* ===== 脉搏/执勤（2026-08-08 用户定稿：填屏第二批，史官数据流上屏） ===== */
+/* 同卡片族。位置由 JS 按 SYS 竖条右缘/星轨右缘实测注入（placeRail 同款）。
+   工具 TOP4 横向条 = 标签 + 渐变填充轨 + 数值；cron 八灯两列网格密排。 */
+.obs-pulse, .obs-duty {
+  position: fixed;
+  box-sizing: border-box;
+  border-radius: 16px;
+  background: rgba(18, 18, 26, 0.5);
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  border-image: linear-gradient(135deg, rgba(124, 58, 237, 0.4), rgba(0, 212, 255, 0.25)) 1;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.obs-pulse-body, .obs-duty-body {
+  padding: 6px 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.obs-pulse-status, .obs-duty-status {
+  font-size: 10px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.obs-pulse-line {
+  font-size: 10px;
+  color: var(--text);
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.obs-pulse-key {
+  color: rgba(0, 212, 255, 0.7);
+  letter-spacing: 1px;
+}
+
+.obs-pulse-dim {
+  font-size: 9px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.obs-pulse-bar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9px;
+}
+
+.obs-pulse-bar-label {
+  flex: none;
+  width: 28px;
+  color: var(--text-dim);
+  text-align: right;
+}
+
+.obs-pulse-bar-track {
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(124, 58, 237, 0.12);
+  overflow: hidden;
+}
+
+.obs-pulse-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, rgba(124, 58, 237, 0.7), rgba(0, 212, 255, 0.7));
+  box-shadow: 0 0 3px rgba(0, 212, 255, 0.35);
+}
+
+.obs-pulse-bar-n {
+  flex: none;
+  min-width: 22px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.obs-duty-cron-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px 8px;
+}
+
+.obs-duty-cron {
+  display: flex;
+  align-items: center;
+  font-size: 9px;
+  min-width: 0;
+}
+
+.obs-duty-name {
+  color: var(--text);
+  white-space: nowrap;
+  flex: none;
+}
+
+.obs-duty-ago {
+  flex: none;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  margin-left: 3px;
+}
+
+.obs-duty-sep {
+  margin-top: 3px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(124, 58, 237, 0.15);
+}
+
+.obs-duty-ok {
+  color: #22c55e;
+}
