@@ -13,6 +13,7 @@
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { tmpdir } from 'node:os';
 import puppeteer from 'puppeteer-core';
 import * as browsers from '@puppeteer/browsers';
 import { PUPPETEER_REVISIONS } from 'puppeteer-core/internal/revisions.js';
@@ -21,6 +22,13 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..', '..');
 const PORT = 8029; // 独立端口，避开开发服务器 8021
 const BASE = `http://127.0.0.1:${PORT}`;
+
+/** smoke 数据根：进程级一次性临时目录（smoke 多跑几轮也不残留） */
+let _smokeRoot = null;
+function smokeRoot() {
+  if (!_smokeRoot) _smokeRoot = join(tmpdir(), `kfmv4-smoke-root-${Date.now().toString(36)}`);
+  return _smokeRoot;
+}
 
 let passed = 0, failed = 0;
 const failures = [];
@@ -49,9 +57,10 @@ async function waitForServer(timeoutMs = 15000) {
 }
 
 async function main() {
-  // 1) 起服务端
+  // 1) 起服务端（数据目录隔离：smoke 服务端的会话/账本写临时区，不污染生产
+  //    ~/.kfmv4/ ——2026-08-08 测试残留源头排查（BAR-TEST-ENV-01 补强））
   const srv = spawn('npx', ['tsx', 'src/server/index.ts'], {
-    cwd: ROOT, env: { ...process.env, KFM_PORT: String(PORT) },
+    cwd: ROOT, env: { ...process.env, KFM_PORT: String(PORT), KFM_ROOT: smokeRoot() },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   let srvLog = '';

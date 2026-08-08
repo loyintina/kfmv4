@@ -9,6 +9,7 @@
 // ==========================================================================
 
 import assert from 'assert';
+import './env-test-isolation.mjs'; // 首 import：任何入口进来都先隔离数据目录（BAR-TEST-ENV-01 补强）
 import { group, regression, test } from './runner.js';
 import { join } from 'path';
 import { setupAiRoutes } from '../src/server/ai/routes.js';

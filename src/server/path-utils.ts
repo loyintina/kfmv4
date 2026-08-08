@@ -25,6 +25,10 @@ import { fileURLToPath } from 'url';
 // 包装；直跑 tsx tests/xxx.test.ts（agent 手工调试常这么干）绕过 preload，垃圾会话
 // 写进生产（08-05 04:49 s-basic/sess-x 等 9 个实案）。构造上堵漏：入口是 tests/ 下
 // 文件且未显式设 KFM_ROOT 时自动隔离到临时目录——直跑与包装跑行为一致。
+// 2026-08-08 补强：argv[1] 检查在 `tsx -e "import(...)"` / 自定义包装下失效（argv[1]
+// 是代码串不是测试文件，08-07 04:48 又一批 9 文件实案）——改由各测试文件**首 import**
+// tests/env-test-isolation.mjs 设 KFM_ROOT（ESM 副作用顺序先于一切被测模块），
+// 本 argv 检查降级为兜底。
 export const ROOT_DIR = process.env.KFM_ROOT
   || (process.argv[1]?.includes(`${path.sep}tests${path.sep}`)
     ? fs.mkdtempSync(path.join(os.tmpdir(), 'kfmv4-test-root-'))

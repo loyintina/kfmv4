@@ -8,6 +8,7 @@
  *   或: npm test
  */
 
+import './env-test-isolation.mjs'; // 首 import：任何入口（含 tsx -e）进来都先隔离数据目录（BAR-TEST-ENV-01 补强）
 import assert from 'assert';
 import * as clickQueue from '../src/client/modules/click-queue.js';
 import { L } from '../src/client/modules/renderer-lifecycle.js';

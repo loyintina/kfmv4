@@ -14,6 +14,7 @@
 
 import assert from 'assert';
 import { readFileSync } from 'fs';
+import './env-test-isolation.mjs'; // 首 import：任何入口进来都先隔离数据目录（BAR-TEST-ENV-01 补强）
 import { test, group, regression } from './runner.js';
 import {
   startRun, attachRun, getActiveRun, getRun, cancelRun, _setStallMsForTest,
