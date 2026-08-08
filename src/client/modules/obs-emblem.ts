@@ -249,33 +249,40 @@ class EmblemGather {
     });
     this.paths = this.glyph.map((g, i) => {
       const cell = pat.cells[i], dir = pat.dirs[i];
-      // 第一个路点沿「上轮抵达方向」伸出——离场延续抵达切向，不原地掉头
-      // （2026-08-08 用户实拍：成形前后方向无关联，观感反物理直觉）
+      const mn = Math.min(this.w, this.h);
+      const lat = () => (this.R() - 0.5) * mn * 0.3;
+      const px = -dir.y, py = dir.x; // 过阵方向的垂直轴（横向抖动用）
+      // 接近点 wp0：优先沿「上轮抵达方向」伸出（离场延续抵达切向）；但若会
+      // 冲到阵位下游（相对过阵方向），改放到阵位上游——顺向流入阵位，不掉头
+      // （2026-08-08 用户实拍：快成阵时突然停下掉头，刻意感）
       let wp0: { x: number; y: number };
       if (this.paths.length === 0) {
-        wp0 = { x: 12 + this.R() * (this.w - 24), y: 12 + this.R() * (this.h - 24) };
+        wp0 = clampP({ x: cell.x - dir.x * mn * 0.35 + px * lat(), y: cell.y - dir.y * mn * 0.35 + py * lat() });
       } else {
         const p = this.paths[i], nn = p.xs.length;
         let dx = p.xs[0] - p.xs[(nn - 4 + nn) % nn], dy = p.ys[0] - p.ys[(nn - 4 + nn) % nn];
         const dl = Math.hypot(dx, dy) || 1; dx /= dl; dy /= dl;
-        const reach = Math.min(this.w, this.h) * (0.4 + this.R() * 0.35);
-        const lat = (this.R() - 0.5) * Math.min(this.w, this.h) * 0.3;
-        wp0 = clampP({ x: g.x + dx * reach - dy * lat, y: g.y + dy * reach + dx * lat });
+        const reach = mn * (0.4 + this.R() * 0.35);
+        const cand = { x: g.x + dx * reach + px * lat(), y: g.y + dy * reach + py * lat() };
+        wp0 = (cand.x - cell.x) * dir.x + (cand.y - cell.y) * dir.y > mn * 0.1
+          ? clampP({ x: cell.x - dir.x * mn * (0.3 + this.R() * 0.3) + px * lat(), y: cell.y - dir.y * mn * (0.3 + this.R() * 0.3) + py * lat() })
+          : clampP(cand);
       }
+      // 离开点 wp1：阵位下游顺向伸出——过阵后顺势流走，不折返
+      const wp1 = clampP({ x: cell.x + dir.x * mn * (0.35 + this.R() * 0.35) + px * lat(), y: cell.y + dir.y * mn * (0.35 + this.R() * 0.35) + py * lat() });
       let wps = [
         wp0,
         clampP({ x: cell.x - dir.x * tangD, y: cell.y - dir.y * tangD }),
         clampP({ x: cell.x, y: cell.y }),
         clampP({ x: cell.x + dir.x * tangD, y: cell.y + dir.y * tangD }),
-        { x: 12 + this.R() * (this.w - 24), y: 12 + this.R() * (this.h - 24) },
+        wp1,
       ];
       let path = this.buildPath(g, wps);
-      // 归一带 ±40%：只缩两个随机点，阵位/切向点钉死
+      // 归一带 ±40%：只缩 wp0/wp1，且绕阵位缩——上/下游方位保持，约束不被破坏
       if (path.len > 1 && Math.abs(path.len - target) / target > 0.4) {
         const lam = target / path.len;
-        const c = { x: this.w / 2, y: this.h / 2 };
         wps = wps.map((p, wi) => (wi === 0 || wi === 4) ? clampP({
-          x: c.x + (p.x - c.x) * lam, y: c.y + (p.y - c.y) * lam,
+          x: cell.x + (p.x - cell.x) * lam, y: cell.y + (p.y - cell.y) * lam,
         }) : p);
         path = this.buildPath(g, wps);
       }
