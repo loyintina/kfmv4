@@ -161,8 +161,8 @@ class EmblemGather {
     const pats: { name: string; cells: { x: number; y: number }[]; dirs: { x: number; y: number }[] }[] = [];
     { // 交错阵：青 3×4 下行，紫 2×4 上行，两阵擦肩
       const cells: { x: number; y: number }[] = [], dirs: { x: number; y: number }[] = [];
-      const cCols = [0.28, 0.5, 0.72], cRows = [0.26, 0.42, 0.58, 0.74];
-      const vCols = [0.39, 0.61], vRows = [0.34, 0.50, 0.66, 0.82];
+      const cCols = [0.20, 0.5, 0.80], cRows = [0.15, 0.37, 0.59, 0.81];
+      const vCols = [0.35, 0.65], vRows = [0.26, 0.48, 0.70, 0.90];
       for (let i = 0; i < 12; i++) { cells.push({ x: cCols[i % 3] * w, y: cRows[(i / 3 | 0)] * h }); dirs.push({ x: 0, y: 1 }); }
       for (let i = 0; i < 8; i++) { cells.push({ x: vCols[i % 2] * w, y: vRows[(i / 2 | 0)] * h }); dirs.push({ x: 0, y: -1 }); }
       cells.push({ x: cx, y: cy }); dirs.push({ x: 0, y: 1 });
@@ -172,12 +172,12 @@ class EmblemGather {
       const cells: { x: number; y: number }[] = [], dirs: { x: number; y: number }[] = [];
       for (let i = 0; i < 12; i++) {
         const a = (i / 12) * PI2;
-        cells.push({ x: cx + 0.40 * mn * Math.cos(a), y: cy + 0.40 * mn * Math.sin(a) });
+        cells.push({ x: cx + 0.46 * mn * Math.cos(a), y: cy + 0.46 * mn * Math.sin(a) });
         dirs.push({ x: -Math.sin(a), y: Math.cos(a) });
       }
       for (let i = 0; i < 8; i++) {
         const a = (i / 8) * PI2 + 0.4;
-        cells.push({ x: cx + 0.20 * mn * Math.cos(a), y: cy + 0.20 * mn * Math.sin(a) });
+        cells.push({ x: cx + 0.24 * mn * Math.cos(a), y: cy + 0.24 * mn * Math.sin(a) });
         dirs.push({ x: Math.sin(a), y: -Math.cos(a) });
       }
       cells.push({ x: cx, y: cy }); dirs.push({ x: 0, y: 1 });
@@ -185,28 +185,28 @@ class EmblemGather {
     }
     { // 双链滑移：青两列竖链下行，紫一列竖链上行，DNA 错位
       const cells: { x: number; y: number }[] = [], dirs: { x: number; y: number }[] = [];
-      for (let i = 0; i < 12; i++) { cells.push({ x: (i % 2 === 0 ? 0.32 : 0.68) * w, y: (0.25 + 0.1 * (i / 2 | 0)) * h }); dirs.push({ x: 0, y: 1 }); }
-      for (let i = 0; i < 8; i++) { cells.push({ x: 0.5 * w, y: (0.22 + 0.08 * i) * h }); dirs.push({ x: 0, y: -1 }); }
+      for (let i = 0; i < 12; i++) { cells.push({ x: (i % 2 === 0 ? 0.25 : 0.75) * w, y: (0.15 + 0.14 * (i / 2 | 0)) * h }); dirs.push({ x: 0, y: 1 }); }
+      for (let i = 0; i < 8; i++) { cells.push({ x: 0.5 * w, y: (0.14 + 0.103 * i) * h }); dirs.push({ x: 0, y: -1 }); }
       cells.push({ x: cx, y: cy }); dirs.push({ x: 0, y: 1 });
       pats.push({ name: '双链滑移', cells, dirs });
     }
     { // 十字星：青拉对角 X（沿各自对角线外向），紫竖直十字上行，瞳心居十字心
       const cells: { x: number; y: number }[] = [], dirs: { x: number; y: number }[] = [];
       const D = 0.7071;
-      for (let i = 0; i < 6; i++) { const u = 0.18 + 0.128 * i; cells.push({ x: u * w, y: u * h }); dirs.push({ x: D, y: D }); }
-      for (let i = 0; i < 6; i++) { const u = 0.18 + 0.128 * i; cells.push({ x: u * w, y: (1 - u) * h }); dirs.push({ x: D, y: -D }); }
-      for (const u of [0.22, 0.38, 0.62, 0.78]) { cells.push({ x: cx, y: u * h }); dirs.push({ x: 0, y: -1 }); }
-      for (const u of [0.24, 0.40, 0.60, 0.76]) { cells.push({ x: u * w, y: cy }); dirs.push({ x: 0, y: -1 }); }
+      for (let i = 0; i < 6; i++) { const u = 0.10 + 0.16 * i; cells.push({ x: u * w, y: u * h }); dirs.push({ x: D, y: D }); }
+      for (let i = 0; i < 6; i++) { const u = 0.10 + 0.16 * i; cells.push({ x: u * w, y: (1 - u) * h }); dirs.push({ x: D, y: -D }); }
+      for (const u of [0.14, 0.34, 0.66, 0.86]) { cells.push({ x: cx, y: u * h }); dirs.push({ x: 0, y: -1 }); }
+      for (const u of [0.16, 0.38, 0.62, 0.84]) { cells.push({ x: u * w, y: cy }); dirs.push({ x: 0, y: -1 }); }
       cells.push({ x: cx, y: cy }); dirs.push({ x: 0, y: 1 });
       pats.push({ name: '十字星', cells, dirs });
     }
     { // 横波阵：三横排混排（按粒子序 7/7/7 分排），0/2 排右行 1 排左行
       const cells: { x: number; y: number }[] = [], dirs: { x: number; y: number }[] = [];
-      const rows = [0.32, 0.5, 0.68];
+      const rows = [0.25, 0.5, 0.75];
       for (let i = 0; i < 21; i++) {
         const row = (i / 7 | 0), col = i % 7;
         cells.push({
-          x: (0.14 + col * 0.12) * w + 0.04 * mn * Math.sin(col * 2.2 + row * 1.7),
+          x: (0.10 + col * 0.133) * w + 0.04 * mn * Math.sin(col * 2.2 + row * 1.7),
           y: rows[row] * h,
         });
         dirs.push({ x: row === 1 ? -1 : 1, y: 0 });
@@ -249,8 +249,21 @@ class EmblemGather {
     });
     this.paths = this.glyph.map((g, i) => {
       const cell = pat.cells[i], dir = pat.dirs[i];
+      // 第一个路点沿「上轮抵达方向」伸出——离场延续抵达切向，不原地掉头
+      // （2026-08-08 用户实拍：成形前后方向无关联，观感反物理直觉）
+      let wp0: { x: number; y: number };
+      if (this.paths.length === 0) {
+        wp0 = { x: 12 + this.R() * (this.w - 24), y: 12 + this.R() * (this.h - 24) };
+      } else {
+        const p = this.paths[i], nn = p.xs.length;
+        let dx = p.xs[0] - p.xs[(nn - 4 + nn) % nn], dy = p.ys[0] - p.ys[(nn - 4 + nn) % nn];
+        const dl = Math.hypot(dx, dy) || 1; dx /= dl; dy /= dl;
+        const reach = Math.min(this.w, this.h) * (0.4 + this.R() * 0.35);
+        const lat = (this.R() - 0.5) * Math.min(this.w, this.h) * 0.3;
+        wp0 = clampP({ x: g.x + dx * reach - dy * lat, y: g.y + dy * reach + dx * lat });
+      }
       let wps = [
-        { x: 12 + this.R() * (this.w - 24), y: 12 + this.R() * (this.h - 24) },
+        wp0,
         clampP({ x: cell.x - dir.x * tangD, y: cell.y - dir.y * tangD }),
         clampP({ x: cell.x, y: cell.y }),
         clampP({ x: cell.x + dir.x * tangD, y: cell.y + dir.y * tangD }),
@@ -315,20 +328,18 @@ class EmblemGather {
     const md = pos.reduce((acc, p, i) => acc + Math.hypot(p.x - this.glyph[i].x, p.y - this.glyph[i].y), 0) / pos.length;
     const mc = pos.reduce((acc, p, i) => acc + Math.hypot(p.x - this.cells[i].x, p.y - this.cells[i].y), 0) / pos.length;
     (window as unknown as { __emblemDbg: string }).__emblemDbg = `${s.toFixed(2)} md=${md.toFixed(1)} t=${(t / 1000).toFixed(1)} m=${m.toFixed(2)} mc=${mc.toFixed(1)} ${this.patName}`; // escape-ok: 守视验证钩子（试映期临时）
-    // 连线：同一套距离规则，全部动态连线随形度 s 统一渐隐——成形后只留
-    // 两环一点；闭环边跳过（交给描边层，避免双线叠亮）；
-    // 阵度窗内阈值放宽 0.7 倍——阵位邻点刚好够得着，矩阵结构显形
+    // 连线：同一套距离规则，全部动态连线随形度 s / 阵度 m 统一渐隐——
+    // 成形后只留两环一点，成阵时只有点在动（2026-08-08 用户定稿：阵期连线丑）；
+    // 闭环边跳过（交给描边层，避免双线叠亮）
     ctx.clearRect(0, 0, w, h);
     const n = pos.length;
-    const thrEff = this.thr * (1 + 0.7 * m);
     for (let i = 0; i < n; i++) {
       for (let j = i + 1; j < n; j++) {
         if (EmblemGather.loopEdge(i, j)) continue;
         const d = Math.hypot(pos[i].x - pos[j].x, pos[i].y - pos[j].y);
-        if (d >= thrEff) continue;
-        // 全局同亮 0.85；但所有动态连线随形度 s 统一渐隐——成形后只留两环一点，
-        // 同组隔点线（紫环内的弦）也不能出现（2026-08-08 用户定稿）
-        const a = 0.85 * (1 - s);
+        if (d >= this.thr) continue;
+        // 全局同亮 0.85；形度/阵度双隐
+        const a = 0.85 * (1 - s) * (1 - m);
         ctx.strokeStyle = `rgba(${i >= 12 && i < 20 || j >= 12 && j < 20 ? VIOLET : BLUE},${a})`;
         ctx.lineWidth = 0.8;
         ctx.beginPath(); ctx.moveTo(pos[i].x, pos[i].y); ctx.lineTo(pos[j].x, pos[j].y); ctx.stroke();
