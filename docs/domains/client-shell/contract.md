@@ -64,6 +64,8 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 - 七个信息面：余额卡 / 信箱+星轨双框行 / 待办卡 / SYS 监控面板 / 脉搏卡 / 执勤卡
   ——布局定位、数据口径、示警色规（琥珀黄示警、红只留硬失败）、信箱/待办手势滑动
   全禁改 5s 自动翻屏等**逐轮定稿细节 → ./detail-obs-hud.md**
+- 动态徽标：`src/client/modules/obs-emblem.ts`（深蓝意志 logo，同域同装配链，
+  几何随 placeRail 注入；三案并映试映细节 → ./detail-obs-hud.md 徽标节）
 - **渲染纪律：数据未变不重渲染**（JSON key 比对）——innerHTML 重建重置滚动位，
   5s 一次等于自动翻屏页位乱跳（2026-08-06 守视实拍抓获）；变时保存/恢复 scrollTop
 
