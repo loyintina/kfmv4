@@ -52,7 +52,7 @@ check-failures/build-metrics 各 100KB，permission-audit 暂缓）
 - 模块：`src/client/modules/obs-emblem.ts`（obs-hud 装配，几何随 placeRail 注入；
   单 rAF 三画布共享，pointer-events:none，DPR 适配，mulberry32 定种子）
 - A **聚散**（中央口袋：脉搏/执勤/信箱/SYS 围出的竖区）：**无相位状态机**——
-  一轮 T=10s 内每个粒子沿「随机闭环」匀速巡游：起点=终点=自己的形状位，
+  一轮 T=16s 内每个粒子沿「随机闭环」匀速巡游：起点=终点=自己的形状位，
   轨迹=形状位+5 随机路点的闭合 Catmull-Rom，每轮跨界重生成；路径长按
   「统一缓速 ×T」绕形心归一，弧长参数化保证全程同速、永不停顿；
   轮界瞬间 21 点同归形状位，形自然浮现后各自散入随机路径（2026-08-08 定稿）。

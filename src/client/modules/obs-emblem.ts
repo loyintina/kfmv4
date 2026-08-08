@@ -61,8 +61,7 @@ class EmblemGather {
   private thr = 0; // 连线阈值（单阈值）
   // 每粒子的本轮路径：采样点 + 弧长表（匀速靠弧长参数化实现）
   private paths: { xs: number[]; ys: number[]; cum: number[]; len: number }[] = [];
-  private static T = 10000;        // 一轮时长：形 → 散 → 乱 → 形（缓速下的下限：
-                                   // 路长 = 缓速×T ≈ 1×对角线，再短巡游幅度缩水）
+  private static T = 16000;        // 一轮时长：形 → 散 → 乱 → 形
   private static SHAPE_TAU = 1400; // 轮界前后形可读窗口（ms）
   private static WP = 5;           // 每轮随机路点数
   private static SEG = 60;         // 每段弧长采样数
@@ -82,7 +81,7 @@ class EmblemGather {
     g.push({ x: 0.5, y: 0.5 });
     this.glyph = g.map(p => ({ x: p.x * w, y: p.y * h }));
     this.thr = Math.min(w, h) * 0.30;
-    this.v = Math.hypot(w, h) * 0.10; // 缓速：一轮约走 1×对角线（T=10s 是此缓速下限）
+    this.v = Math.hypot(w, h) * 0.10; // 缓速：一轮约走 1.6 条对角线
     this.regen();
   }
   // 分组：0-11 菱形 / 12-19 竖瞳 / 20 瞳心（独组）
