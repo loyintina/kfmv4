@@ -41,15 +41,33 @@
 
 辅指标：理解准确度（judge 盲判要点覆盖）、幻觉率（复用 coldstart 幻觉尺纪律）。
 
-## 研究线状态（2026-08-08，wave 1 收官）
+## 研究线状态（2026-08-08，T0 收官）
 
-**首波正式矩阵完成（5 题 × DS v4-flash × 4 重复 = 20 臂），双轨判卷全绿。**
-H1 不支持（方向反了：唯一塌陷的是最老的文件树题）；H2 主读数=路由表对
-grep-first 探头不承重；最重要发现=可达性失败 → 幻觉而非「不知道」
-（file-tree-2 幻觉 15 条）。全文见 `results/wave1-2026-08-08.md`。
-下波待定：文件树域「文件树↔canvas-tree」关键词互注整改后复测同题追 H3。
+**T0 总目录探测完成（4 臂）：存在性发现的病灶定位了。**
+产品层功能全景稳定命中（覆盖均值 6.5/8，幻觉 2 条/4 臂）；系统性盲区 =
+agent 脚本负载 + 部署发布体系（3/4 臂同漏）——README/vision 承重良好，
+缺「运维面」索引；CLAUDE.md 定位确认为任务路由（答「该去哪」），
+与功能总目录（答「有什么」）分工错配不是病，盲区才是。全文见
+`results/t0-inventory-2026-08-08.md`。
+
+wave 1 结论（5 题 × 4 重复 = 20 臂）：H1 反向（最老的文件树题唯一塌陷）、
+静默幻觉发现、路由表对 grep-first 探头不承重——见
+`results/wave1-2026-08-08.md`。
+待整改项：①文件树↔canvas-tree 关键词互注；②README/vision 补运维面索引。
+整改后复测同题追 H3。
 
 ## 臂清单
+
+### T0 总目录探测（2026-08-08，钉 f1fee225，DS v4-flash × 4 重复）
+
+| 臂 | 题 | 状态 | 数据 |
+|---|---|---|---|
+| t0-inventory-1 | 总目录 T0 | 有效（覆盖 6/8） | sessions/docprobe-t0-inventory-1.json |
+| t0-inventory-2 | 总目录 T0 | 有效（覆盖 6/8，幻觉 1） | sessions/docprobe-t0-inventory-2.json |
+| t0-inventory-3 | 总目录 T0 | 有效（覆盖 8/8，全中臂） | sessions/docprobe-t0-inventory-3.json |
+| t0-inventory-4 | 总目录 T0 | 有效（覆盖 6/8） | sessions/docprobe-t0-inventory-4.json |
+
+盲判轨数据：`.kfmv4/experiments/docprobe/judge/t0-inventory.jsonl`（4 条）。
 
 ### wave 1（2026-08-08，钉 f1fee225，DS v4-flash × 4 重复）
 
