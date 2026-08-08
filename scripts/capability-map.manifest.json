@@ -1,5 +1,5 @@
 {
-  "$comment": "功能总目录登记源（gen-capability-map.mjs 消费）。每行：name 俗名 / keywords 关键词（必须能在 path 或域文档 grep 到，机械门）/ path 主入口 / domain 域（研究线可空）/ kind 产品|运维|研究 / desc 一句话。新功能落成时必须登记——docprobe wave1+T0 整改产物。",
+  "$comment": "功能总目录登记源（gen-capability-map.mjs 消费）。每行：name 俗名 / keywords 关键词（必须能在 path 或域文档 grep 到，机械门）/ path 主入口 / domain 域（研究线可空）/ kind 产品|运维|研究 / desc 一句话。新功能落成时必须登记——docprobe wave1+T0 整改产物。登记后必须过落成门探头：node experiments/docprobe/tools/probe-capability.mjs --capability <名>，docs/ledger/probe-state.json 无通过记录或记录陈旧（manifest 新于 probedAt）= check-probe-state 构建中断；确需豁免的行加 probeExempt 字段写原因。",
   "capabilities": [
     { "name": "会话聊天面板", "keywords": ["聊天", "会话"], "domain": "ai-chat", "kind": "产品", "path": "docs/domains/ai-chat/contract.md", "desc": "流式对话/思考框/工具卡折叠/历史会话" },
     { "name": "角色卡", "keywords": ["角色卡", "role"], "domain": "ai-chat", "kind": "产品", "path": "docs/domains/ai-chat/contract.md", "desc": "人格注入，L1 角色卡+L2 心法分层" },
