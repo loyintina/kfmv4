@@ -41,9 +41,19 @@
 
 辅指标：理解准确度（judge 盲判要点覆盖）、幻觉率（复用 coldstart 幻觉尺纪律）。
 
-## 研究线状态（2026-08-08，整改复测收官）
+## 研究线状态（2026-08-08，落成门 v1 实装上线）
 
-**头两个「抽测→整改→复测」闭环完成。** T0 运维面盲区**完全闭合**
+**落成门（§八 终极形态）已实装并挂链。** 三件套：probe-capability.mjs
+（探头，登记行现场生成真相 × 4 臂 × ≥2/4 通过）→ docs/ledger/probe-state.json
+（账本）→ check-probe-state.mjs（chain 检查门，⛳ MECH-FLOW-11）。
+首扫 25 功能 × 4 臂 = 100 臂铺底：**24/25 初过，唯二 FAIL 均闭环**——
+权限引擎 0/4（4/4 臂收敛真实权威文档 → 登记修正 path，复测 4/4）；
+角色卡 1/4（capability-map 未挂 CLAUDE.md 路由表的指引缺口 → 用户拍板
+加一行修路，复测 2/4 过）。FAIL 判读规则两条先例入 design §九。
+**新功能落成流程从此多一步**：capability-map 登记 → 跑 probe-capability
+过门 → 才算完工（账本陈旧 = 构建中断）。
+
+头两个「抽测→整改→复测」闭环完成。T0 运维面盲区**完全闭合**
 （覆盖 6.5→8.0 满分，幻觉 2→0，capability-map 被 4/4 臂采纳为标准入口，
 成本反降）；文件树题幻觉 15→0，残余未达判定为探头策略方差（H4 范畴，
 文档侧已无可修）。全文见 `results/retest-t0r-w2-2026-08-08.md`。
@@ -118,6 +128,27 @@ judge=DS v4-flash 统一尺，逐臂覆盖/幻觉/依据）。
 
 （试点 3 有效臂计入守视题 wave 1 重复数：pilot2-2 / pilot3-1 / pilot3-2 + w1-shoushi-4 = 4 重复）
 
+### 落成门校准期臂（2026-08-08，小样本/修路前 FAIL 诊断证据，已被正式扫取代）
+
+| 臂 | 功能 | 状态 | 数据 |
+|---|---|---|---|
+| gate-c74aaf0c-1-msjy9jzd | Canvas 文件树 小样本 | 有效（到达，后被正式扫取代） | sessions/gate-c74aaf0c-1-msjy9jzd.json |
+| gate-c74aaf0c-2-msjy9jzd | Canvas 文件树 小样本 | 有效（同上） | sessions/gate-c74aaf0c-2-msjy9jzd.json |
+| gate-c74aaf0c-3-msjy9jzd | Canvas 文件树 小样本 | 有效（同上） | sessions/gate-c74aaf0c-3-msjy9jzd.json |
+| gate-c74aaf0c-4-msjy9jzd | Canvas 文件树 小样本 | 有效（同上） | sessions/gate-c74aaf0c-4-msjy9jzd.json |
+| gate-520ea10f-1-msjyary6 | 守视 小样本 | 有效（到达，后被正式扫取代） | sessions/gate-520ea10f-1-msjyary6.json |
+| gate-520ea10f-2-msjyary6 | 守视 小样本 | 有效（同上） | sessions/gate-520ea10f-2-msjyary6.json |
+| gate-520ea10f-3-msjyary6 | 守视 小样本 | 有效（同上） | sessions/gate-520ea10f-3-msjyary6.json |
+| gate-520ea10f-4-msjyary6 | 守视 小样本 | 有效（同上） | sessions/gate-520ea10f-4-msjyary6.json |
+| gate-a2ee93f5-1-msjyc7ob | 权限引擎 小样本 | 有效（0/4 FAIL 诊断证据：4/4 收敛 harness-permission-engine.md → 登记修正） | sessions/gate-a2ee93f5-1-msjyc7ob.json |
+| gate-a2ee93f5-2-msjyc7ob | 权限引擎 小样本 | 有效（同上） | sessions/gate-a2ee93f5-2-msjyc7ob.json |
+| gate-a2ee93f5-3-msjyc7ob | 权限引擎 小样本 | 有效（同上） | sessions/gate-a2ee93f5-3-msjyc7ob.json |
+| gate-a2ee93f5-4-msjyc7ob | 权限引擎 小样本 | 有效（同上） | sessions/gate-a2ee93f5-4-msjyc7ob.json |
+| gate-6c734174-1-msjykffs | 角色卡 修路前 | 有效（1/4 FAIL 诊断证据：臂四散代码侧 → CLAUDE.md 路由表修路） | sessions/gate-6c734174-1-msjykffs.json |
+| gate-6c734174-2-msjykffs | 角色卡 修路前 | 有效（同上，此臂到达） | sessions/gate-6c734174-2-msjykffs.json |
+| gate-6c734174-3-msjykffs | 角色卡 修路前 | 有效（同上） | sessions/gate-6c734174-3-msjykffs.json |
+| gate-6c734174-4-msjykffs | 角色卡 修路前 | 有效（同上） | sessions/gate-6c734174-4-msjykffs.json |
+
 ### 落成门探头（自动区块，probe-capability.mjs 维护，勿手改）
 
 <!-- probe-gate:begin -->
@@ -128,10 +159,10 @@ judge=DS v4-flash 统一尺，逐臂覆盖/幻觉/依据）。
 | gate-188e3691-2-msjyiu12 | 会话聊天面板 落成门 | 到达 | sessions/gate-188e3691-2-msjyiu12.json |
 | gate-188e3691-3-msjyiu12 | 会话聊天面板 落成门 | 到达 | sessions/gate-188e3691-3-msjyiu12.json |
 | gate-188e3691-4-msjyiu12 | 会话聊天面板 落成门 | 到达 | sessions/gate-188e3691-4-msjyiu12.json |
-| gate-6c734174-1-msjykffs | 角色卡 落成门 | 未达 | sessions/gate-6c734174-1-msjykffs.json |
-| gate-6c734174-2-msjykffs | 角色卡 落成门 | 到达 | sessions/gate-6c734174-2-msjykffs.json |
-| gate-6c734174-3-msjykffs | 角色卡 落成门 | 未达 | sessions/gate-6c734174-3-msjykffs.json |
-| gate-6c734174-4-msjykffs | 角色卡 落成门 | 未达 | sessions/gate-6c734174-4-msjykffs.json |
+| gate-6c734174-1-msk2xifz | 角色卡 落成门 | 未达 | sessions/gate-6c734174-1-msk2xifz.json |
+| gate-6c734174-2-msk2xifz | 角色卡 落成门 | 到达 | sessions/gate-6c734174-2-msk2xifz.json |
+| gate-6c734174-3-msk2xifz | 角色卡 落成门 | 到达 | sessions/gate-6c734174-3-msk2xifz.json |
+| gate-6c734174-4-msk2xifz | 角色卡 落成门 | 未达 | sessions/gate-6c734174-4-msk2xifz.json |
 | gate-f16fa643-1-msjylskv | API 卡（provider 管理） 落成门 | 未达 | sessions/gate-f16fa643-1-msjylskv.json |
 | gate-f16fa643-2-msjylskv | API 卡（provider 管理） 落成门 | 未达 | sessions/gate-f16fa643-2-msjylskv.json |
 | gate-f16fa643-3-msjylskv | API 卡（provider 管理） 落成门 | 到达 | sessions/gate-f16fa643-3-msjylskv.json |
@@ -231,8 +262,12 @@ judge=DS v4-flash 统一尺，逐臂覆盖/幻觉/依据）。
 
 - 设计（design/）：design-docprobe.md
 - 结论（results/）：pilot-shoushi-2026-08-08.md（试点校准史+判卷尺发现）/
-  wave1-2026-08-08.md（首波矩阵 20 臂双轨判卷：H1 反向、静默幻觉发现）
-- 工具（tools/）：judge-trace.mjs（机械判卷轨）/ judge-understanding.mjs（盲判轨）
+  wave1-2026-08-08.md（首波矩阵 20 臂双轨判卷：H1 反向、静默幻觉发现）/
+  retest-t0r-w2-2026-08-08.md（整改复测：T0 盲区闭合+文件树幻觉清零）
+- 工具（tools/）：judge-trace.mjs（机械判卷轨）/ judge-understanding.mjs（盲判轨）/
+  probe-capability.mjs（落成门探头：登记行→4 臂→probe-state.json 账本）
+- 账本/检查门：`docs/ledger/probe-state.json` + `scripts/check/check-probe-state.mjs`
+  （挂 chain，⛳ MECH-FLOW-11；负例夹具 tests/probes/probe-state/）
 - 地面真相（私有区 `/root/.kfmv4/experiments/docprobe/truth/`）：shoushi.md（守视）/ error-codes.md（错误码体系，H1 活标本：
   路由表无行）/ paradigm.md（范式包）/ domain-contract.md（域契约）/
   file-tree.md（文件树，老功能对照组：路由表同样无行）

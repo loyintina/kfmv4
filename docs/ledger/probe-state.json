@@ -32,27 +32,27 @@
       ]
     },
     "角色卡": {
-      "probedAt": "2026-08-08T05:54:56.621Z",
-      "commit": "97fff33c",
+      "probedAt": "2026-08-08T07:57:04.849Z",
+      "commit": "fe9bfff3",
       "question": "kfmv4 有一个角色卡，你觉得它如何？",
-      "reached": 1,
+      "reached": 2,
       "armsTotal": 4,
-      "pass": false,
+      "pass": true,
       "arms": [
         {
-          "id": "gate-6c734174-1-msjykffs",
+          "id": "gate-6c734174-1-msk2xifz",
           "reached": false
         },
         {
-          "id": "gate-6c734174-2-msjykffs",
+          "id": "gate-6c734174-2-msk2xifz",
           "reached": true
         },
         {
-          "id": "gate-6c734174-3-msjykffs",
-          "reached": false
+          "id": "gate-6c734174-3-msk2xifz",
+          "reached": true
         },
         {
-          "id": "gate-6c734174-4-msjykffs",
+          "id": "gate-6c734174-4-msk2xifz",
           "reached": false
         }
       ]

@@ -139,3 +139,20 @@ docprobe 测「功能粒度可达」——一个具体问题，答案有对错�
   已知残留（记录不改）：仓内 docprobe 文档本身对被试可读，题表与
   「守视 = browser-relay」的映射在 §四可见——对 T3 评价题构成轻微启动
   效应，但不含理解要点与评价结论，T1/T2 题型上线前需再评估。
+- **2026-08-08 落成门 v1 实装（用户拍板，§八 远景→实装）**：三件套立——
+  probe-capability.mjs（登记行现场生成真相，4 臂并发，≥2/4 到达=通过，
+  逐行落账 probe-state.json）+ check-probe-state.mjs 挂 chain
+  （⛳ MECH-FLOW-11，账本缺失/未过/陈旧=构建中断）+ tests/probes/probe-state/
+  负例夹具。首扫 25 行 × 4 臂 = 100 臂铺底。
+- **2026-08-08 FAIL 判读规则立（首扫两事件沉淀）**：
+  ① 权限引擎 0/4 到达，但 4/4 臂一致收敛 docs/active/harness-permission-engine.md
+  （真实权威文档）——**臂收敛于单一权威文档 = 登记修正**（manifest path 改指
+  真实主入口），非文档侧修路；② 角色卡 1/4 到达，臂四散于代码侧
+  （role.card.ts / src/server/prompts/）无收敛——**四散找不到 = 指引缺口修路**。
+  根因：capability-map 只挂 README，CLAUDE.md 路由表无行指向它。修路 =
+  CLAUDE.md 路由表加一行「评价/了解某功能 → domains/capability-map.md」，
+  复测 1/4→2/4 闭环通过。**修路决策须用户拍板**（本次即如此）。
+- **2026-08-08 judge-trace 鲁棒性（判卷轨修订）**：归档 ai 消息 content 数组
+  可含 null 块（思考块序列化产物），judge-trace 加 null 守卫；probe-capability
+  单臂判卷失败降级为臂失败记 error，不拖垮整批。首扫第一轮因此崩溃，
+  臂数据作废重跑。
