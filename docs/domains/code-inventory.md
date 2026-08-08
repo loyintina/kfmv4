@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 5348f389 · 生成于 2026-08-08 -->
+<!-- 基准 commit 506a12e6 · 生成于 2026-08-08 -->
 
 # 代码清单（机械层）
 
@@ -72,15 +72,15 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（25 文件 · 4349 行）
+## client-shell（25 文件 · 4427 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/client/modules/obs-hud.ts | 645 | initObsHud |
 | src/client/modules/orb.ts | 538 | type OrbState, collapseOrbPanel, initOrb |
+| src/client/modules/obs-emblem.ts | 412 | EmblemRect, EmblemRects, initObsEmblems |
 | src/client/modules/gesture-registry.ts | 346 | GestureHandler, GestureRegistry, gestures |
 | src/client/modules/ui-registry.ts | 334 | UIElementType, UIElementState, InteractiveElement, ContentBlock, Capability, PageDescription, RegistryChangeHandler, UIElementRegistry, Registry |
-| src/client/modules/obs-emblem.ts | 334 | EmblemRect, EmblemRects, initObsEmblems |
 | src/client/modules/custom-select.ts | 246 | SelectItem, CustomSelectOptions, CustomSelect, createCustomSelect |
 | src/client/modules/orb-panel.ts | 221 | PanelConfig, buildPanelContent |
 | src/client/modules/gestures.ts | 217 | initGestures |
@@ -647,4 +647,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 297 文件 · 53502 行 · 跨域边 252 条
+合计 297 文件 · 53580 行 · 跨域边 252 条
