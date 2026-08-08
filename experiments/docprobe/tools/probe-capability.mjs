@@ -151,17 +151,22 @@ async function runArm(cap, armIdx, ts) {
     return { id, reached: false, error: String(e.message || e).slice(0, 200) };
   }
   // 机械判（judge-trace 输出 JSON；「任一命中」由 detail 自算）
+  // 判卷崩溃 = 臂失败（不拖垮整批——归档格式异常是个体事件，见 §九 null content 事件）
   const truthFile = join(tmpdir(), `probe-truth-${slug}.md`);
-  const raw = execFileSync(process.execPath, [JUDGE_TRACE, '--session', sessFile, '--truth', truthFile], { encoding: 'utf8' });
-  const judged = JSON.parse(raw);
-  const reached = judged.reachable.detail.some((d) => d.kind === 'required' && d.hit);
-  return {
-    id, reached,
-    requiredHit: judged.reachable.requiredHit,
-    requiredTotal: judged.reachable.requiredTotal,
-    callsBeforeFirstHit: judged.cost.callsBeforeFirstHit,
-    escapeAttempts: judged.cost.escapeAttempts,
-  };
+  try {
+    const raw = execFileSync(process.execPath, [JUDGE_TRACE, '--session', sessFile, '--truth', truthFile], { encoding: 'utf8' });
+    const judged = JSON.parse(raw);
+    const reached = judged.reachable.detail.some((d) => d.kind === 'required' && d.hit);
+    return {
+      id, reached,
+      requiredHit: judged.reachable.requiredHit,
+      requiredTotal: judged.reachable.requiredTotal,
+      callsBeforeFirstHit: judged.cost.callsBeforeFirstHit,
+      escapeAttempts: judged.cost.escapeAttempts,
+    };
+  } catch (e) {
+    return { id, reached: false, error: `judge 失败: ${String(e.message || e).slice(0, 150)}` };
+  }
 }
 
 // ---------- 主流程 ----------

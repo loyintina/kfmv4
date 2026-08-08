@@ -68,7 +68,7 @@ const resultText = (c) => {
 const calls = [];
 for (const msg of archive.messages || []) {
   for (const c of msg.content || []) {
-    if (c.type === 'tool') {
+    if (c && c.type === 'tool') {
       calls.push({
         name: c.name,
         target: norm(c.input?.path || c.input?.pattern || ''),

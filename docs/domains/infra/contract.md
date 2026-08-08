@@ -5,7 +5,7 @@
 
 ## 构建（build.mjs）
 
-## 检查管线（npm run check，43 脚本，顺序固定）
+## 检查管线（npm run check，44 脚本，顺序固定）
 
 （下方生成区枚举的链步数多于标题脚本数：43 = check-*.mjs 文件数，链上同数 43 个以
 check- 前缀书写——deploy-freshness/doc-coverage 等在链上省前缀；sass、gen-* 验证步
@@ -25,8 +25,8 @@ code-doc-refs → workflow-integrity → cards → contract-freshness → test-p
 ledger-commits → doc-budget → doc-symbols → doc-scripts → doc-linerefs → doc-schema → commit-docs →
 fix-tests → hooks → gen-page-state-schema → gen-tool-docs → gen-permission-map → gen-rules-map →
 gen-experiments-list → gen-scripts-catalog → doc-orphans → probes → release-radar → experiment-index →
-sync-counts → gen-code-inventory → gen-contract-lists → gen-route-table → gen-capability-map →
-npm test → tsc。
+probe-state → sync-counts → gen-code-inventory → gen-contract-lists → gen-route-table →
+gen-capability-map → npm test → tsc。
 <!-- /chain:auto -->
 
 **链外概率区自动化（2026-07-30 登记）**：`scripts/agent/semantic-chain.mjs`（语义巡逻，
