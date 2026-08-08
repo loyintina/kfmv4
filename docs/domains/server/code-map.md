@@ -14,7 +14,8 @@
 ## 一句话职责
 
 本机 HTTP/WS 服务器：Express 装配、文件 CRUD 路由、根切换、终端 PTY、tmux 桥、
-AI eval/snapshot 桥、出网代理。**安全边界域**——只绑 127.0.0.1 是前提。
+AI eval/snapshot 桥、出网代理、ai/permissions 权限引擎（RiskClass 风险分级）。
+**安全边界域**——只绑 127.0.0.1 是前提。
 数据目录 `$HOME/.kfmv4/`（`KFM_DATA_DIR`）：providers/active/sessions/roles/configs/
 page-state.md/restart-pending.json。
 

@@ -1170,6 +1170,15 @@ export const SCRIPTS_CATALOG: ScriptCatalogEntry[] = [
     "effect": "域 → src 路径映射单一真相源，供契约新鲜度检查与清单生成消费"
   },
   {
+    "name": "gen-capability-map.mjs",
+    "file": "scripts/check/gen-capability-map.mjs",
+    "category": "生成器",
+    "description": "功能总目录生成器（俗名↔关键词↔路径↔一句话，产品/运维/研究统一视图）",
+    "permission": "回写生成物；--check-only 只读校验",
+    "prompt": "无（机械拼接）",
+    "effect": "功能总目录生成器（俗名↔关键词↔路径↔一句话，产品/运维/研究统一视图）"
+  },
+  {
     "name": "gen-code-inventory.mjs",
     "file": "scripts/check/gen-code-inventory.mjs",
     "category": "生成器",

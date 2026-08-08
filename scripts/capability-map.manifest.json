@@ -1,0 +1,32 @@
+{
+  "$comment": "功能总目录登记源（gen-capability-map.mjs 消费）。每行：name 俗名 / keywords 关键词（必须能在 path 或域文档 grep 到，机械门）/ path 主入口 / domain 域（研究线可空）/ kind 产品|运维|研究 / desc 一句话。新功能落成时必须登记——docprobe wave1+T0 整改产物。",
+  "capabilities": [
+    { "name": "会话聊天面板", "keywords": ["聊天", "会话"], "domain": "ai-chat", "kind": "产品", "path": "docs/domains/ai-chat/contract.md", "desc": "流式对话/思考框/工具卡折叠/历史会话" },
+    { "name": "角色卡", "keywords": ["角色卡", "role"], "domain": "ai-chat", "kind": "产品", "path": "docs/domains/ai-chat/contract.md", "desc": "人格注入，L1 角色卡+L2 心法分层" },
+    { "name": "API 卡（provider 管理）", "keywords": ["provider", "API"], "domain": "ai-chat", "kind": "产品", "path": "docs/domains/ai-chat/contract.md", "desc": "多 provider 配置与模型选择" },
+    { "name": "会话存储与压缩", "keywords": ["压缩", "存储"], "domain": "ai-chat", "kind": "产品", "path": "docs/domains/ai-chat/contract.md", "desc": "会话落盘/工具结果压缩/长会话续读" },
+    { "name": "光球面板", "keywords": ["光球", "orb"], "domain": "client-shell", "kind": "产品", "path": "docs/domains/client-shell/contract.md", "desc": "中央光球+展开面板的主交互" },
+    { "name": "手势系统", "keywords": ["手势", "gesture"], "domain": "client-shell", "kind": "产品", "path": "docs/domains/client-shell/contract.md", "desc": "滑动手势注册与分发" },
+    { "name": "OBS HUD 观测台", "keywords": ["观测台", "HUD", "obs"], "domain": "client-shell", "kind": "产品", "path": "docs/domains/client-shell/contract.md", "desc": "页内状态观测 HUD" },
+    { "name": "卡片堆工作台", "keywords": ["卡片", "卡片堆"], "domain": "floating-card", "kind": "产品", "path": "docs/domains/floating-card/contract.md", "desc": "浮动卡片引擎+插件卡体系" },
+    { "name": "终端卡", "keywords": ["终端", "tmux", "xterm"], "domain": "floating-card", "kind": "产品", "path": "docs/domains/floating-card/contract.md", "desc": "xterm.js 终端/tmux 会话卡" },
+    { "name": "todo 卡", "keywords": ["todo"], "domain": "floating-card", "kind": "产品", "path": "docs/domains/floating-card/contract.md", "desc": "todo 工具的面板呈现" },
+    { "name": "Canvas 文件树", "keywords": ["文件树", "字符雨"], "domain": "canvas-tree", "kind": "产品", "path": "docs/domains/canvas-tree/contract.md", "desc": "Canvas 自绘文件树+字符雨动画" },
+
+    { "name": "构建检查链", "keywords": ["检查器", "chain", "检查"], "domain": "infra", "kind": "运维", "path": "docs/domains/infra/contract.md", "desc": "43+ 检查器构建时执法" },
+    { "name": "文档系统", "keywords": ["文档", "工作流", "域契约"], "domain": "infra", "kind": "运维", "path": "docs/guides/doc-architecture.md", "desc": "docs 分层体系+工作流路由" },
+    { "name": "错误码体系", "keywords": ["错误码", "FLOW"], "domain": "infra", "kind": "运维", "path": "docs/active/error-codes.md", "desc": "check 报错引导码（自我修正回路）" },
+    { "name": "agent 脚本负载", "keywords": ["agent-runner", "负载", "巡逻"], "domain": "infra", "kind": "运维", "path": "docs/guides/agent-runner.md", "desc": "常驻/定时 agent 脚本体系" },
+    { "name": "守视（browser-relay）", "keywords": ["守视", "browser-relay"], "domain": "infra", "kind": "运维", "path": "docs/guides/agent-runner.md", "desc": "headless Chrome 视觉自测" },
+    { "name": "语义审计", "keywords": ["语义审计", "semantic"], "domain": "infra", "kind": "运维", "path": "docs/guides/agent-runner.md", "desc": "文档-代码语义一致性探针集群" },
+    { "name": "部署与发布", "keywords": ["部署", "deploy", "发布"], "domain": "infra", "kind": "运维", "path": "docs/guides/release.md", "desc": "deploy-fast/版本发布流程" },
+    { "name": "回归测试体系", "keywords": ["回归", "BAR", "测试"], "domain": "infra", "kind": "运维", "path": "docs/guides/testing.md", "desc": "528+ 回归测试与 BAR 钉制度" },
+    { "name": "权限引擎", "keywords": ["权限", "RiskClass"], "domain": "server", "kind": "运维", "path": "docs/domains/server/contract.md", "desc": "工具风险分级与审计" },
+    { "name": "读写监狱（沙箱）", "keywords": ["沙箱", "监狱", "readRoot"], "domain": "ai-chat", "kind": "运维", "path": "docs/ledger/bugs.md", "desc": "write/edit 与 read/grep/glob 路径监狱" },
+
+    { "name": "paradigm 研究线", "keywords": ["范式包", "paradigm"], "kind": "研究", "path": "experiments/paradigm/index.md", "desc": "范式包对 agent 行为影响的实验体系" },
+    { "name": "coldstart 研究线", "keywords": ["冷启动", "coldstart"], "kind": "研究", "path": "experiments/coldstart/index.md", "desc": "全新 agent 整体接手能力测量" },
+    { "name": "docprobe 研究线", "keywords": ["docprobe", "文档抽测"], "kind": "研究", "path": "experiments/docprobe/index.md", "desc": "文档指引系统的功能粒度体检" },
+    { "name": "session-runner 跑批基建", "keywords": ["session-runner", "跑批"], "kind": "研究", "path": "experiments/paradigm/index.md", "desc": "离线会话驱动与实验臂归档" }
+  ]
+}

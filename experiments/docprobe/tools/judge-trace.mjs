@@ -50,6 +50,15 @@ if (!required.length) { console.error('truth 应达文档集必中为空'); proc
 // ---------- 解析轨迹 ----------
 const archive = JSON.parse(readFileSync(sessionPath, 'utf8'));
 const norm = (p) => String(p || '').replace(/:\d+(-\d+)?$/, '').replace(/^\.\//, '');
+// truth 文档路径允许 glob（如 docs/domains/*/contract.md 表「任一个域契约」）——
+// 字面 endsWith 会把真实命中误判未中（w1 域契约题全臂误判事故）
+const docMatcher = (docPath) => {
+  if (!docPath.includes('*')) return (t) => t.endsWith(docPath);
+  const re = new RegExp(docPath.split('*').map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('[^/]*') + '$');
+  return (t) => re.test(t);
+};
+const requiredM = required.map((d) => ({ doc: d, match: docMatcher(d) }));
+const bonusM = bonus.map((d) => ({ doc: d, match: docMatcher(d) }));
 const resultText = (c) => {
   const r = c.result;
   if (typeof r === 'string') return r;
@@ -72,23 +81,23 @@ for (const msg of archive.messages || []) {
   }
 }
 
-const touches = (call, docPath) =>
-  call.name === 'read' && !call.refused && call.target.replace(/\\/g, '/').endsWith(docPath);
+const touches = (call, match) =>
+  call.name === 'read' && !call.refused && match(call.target.replace(/\\/g, '/'));
 
 // ---------- 指标 ----------
 const hitDetail = [];
 let firstRequiredIdx = -1;
-for (const doc of required) {
-  const idx = calls.findIndex((c) => touches(c, doc));
+for (const { doc, match } of requiredM) {
+  const idx = calls.findIndex((c) => touches(c, match));
   hitDetail.push({ doc, kind: 'required', hit: idx >= 0, callIndex: idx >= 0 ? idx : null });
   if (idx >= 0 && (firstRequiredIdx < 0 || idx < firstRequiredIdx)) firstRequiredIdx = idx;
 }
-for (const doc of bonus) {
-  const idx = calls.findIndex((c) => touches(c, doc));
+for (const { doc, match } of bonusM) {
+  const idx = calls.findIndex((c) => touches(c, match));
   hitDetail.push({ doc, kind: 'bonus', hit: idx >= 0, callIndex: idx >= 0 ? idx : null });
 }
 
-const claudeIdx = calls.findIndex((c) => touches(c, 'CLAUDE.md'));
+const claudeIdx = calls.findIndex((c) => touches(c, docMatcher('CLAUDE.md')));
 const compliant = firstRequiredIdx >= 0 && claudeIdx >= 0 && claudeIdx < firstRequiredIdx;
 
 const tsList = calls.map((c) => c.ts).filter(Boolean).map((t) => Date.parse(t));

@@ -19,6 +19,19 @@
 | AI 对话运行时 | 后台挂机持久化（run-manager）+ 重连续读 + WebSocket 真心跳半开检测 + WS 重连三层恢复终端 + content block 协议（Claude/OpenAI 标准）流式思考/工具调用渲染 + 打字机结果动画 + 等待期无厘头提示 + 会话持久化服务端常规写者（客户端双轨残留治理中） + run 重连续读 + Z-Index L8 焦点交互层 |
 | 自动化检查管线 | 43 个 check-* 脚本 + 元检查器 + 文档-代码一致性验证 + 域契约新鲜度检查（contract-freshness），构建时零错误，528 个回归测试 |
 
+## 能力地图
+
+上表是面向用户的产品功能。本项目是「自己运维自己」的自指系统——运维负载与
+研究基建同样是功能的一等部分，全部功能的统一总目录（俗名/关键词/主入口，
+产品/运维/研究三类）见 [`docs/domains/capability-map.md`](docs/domains/capability-map.md)（机械生成）。
+运维面速览：
+
+| 运维面 | 说明 |
+|--------|------|
+| agent 脚本负载 | 巡逻 / 语义审计 / 守视（browser-relay 视觉自测）→ [`docs/guides/agent-runner.md`](docs/guides/agent-runner.md) |
+| 部署与发布 | deploy-fast 构建握手 + kfm-restart → [`docs/guides/release.md`](docs/guides/release.md) |
+| 研究实验基建 | `experiments/` 下 paradigm / coldstart / docprobe 三条研究线 + session-runner 跑批 |
+
 ## 快速开始
 
 ```bash

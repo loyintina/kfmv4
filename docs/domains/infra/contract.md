@@ -25,7 +25,8 @@ code-doc-refs → workflow-integrity → cards → contract-freshness → test-p
 ledger-commits → doc-budget → doc-symbols → doc-scripts → doc-linerefs → doc-schema → commit-docs →
 fix-tests → hooks → gen-page-state-schema → gen-tool-docs → gen-permission-map → gen-rules-map →
 gen-experiments-list → gen-scripts-catalog → doc-orphans → probes → release-radar → experiment-index →
-sync-counts → gen-code-inventory → gen-contract-lists → gen-route-table → npm test → tsc。
+sync-counts → gen-code-inventory → gen-contract-lists → gen-route-table → gen-capability-map →
+npm test → tsc。
 <!-- /chain:auto -->
 
 **链外概率区自动化（2026-07-30 登记）**：`scripts/agent/semantic-chain.mjs`（语义巡逻，

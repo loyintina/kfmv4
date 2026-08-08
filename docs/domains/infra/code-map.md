@@ -16,8 +16,8 @@
 
 ## 一句话职责
 
-构建产物链（check → sass → esbuild 双 bundle → 握手信息）、部署闭环
-（build → restart → 握手断言）组成的文档/代码管线、agent-runner 工具；check 数量以 check-checks.mjs 实报为准（本文不记快照值，曾记 31 已陈旧）。
+构建产物链（check 检查器链 → sass → esbuild 双 bundle → 握手信息）、部署闭环
+（build → restart → 握手断言）组成的文档/代码管线、agent-runner 工具；检查器数量以 check-checks.mjs 实报为准（本文不记快照值，曾记 31 已陈旧）。
 
 ## 承重入口
 
