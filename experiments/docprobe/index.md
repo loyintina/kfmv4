@@ -41,15 +41,42 @@
 
 辅指标：理解准确度（judge 盲判要点覆盖）、幻觉率（复用 coldstart 幻觉尺纪律）。
 
-## 研究线状态（2026-08-08，试点收官）
+## 研究线状态（2026-08-08，wave 1 收官）
 
-**试点校准完成，协议冻结，待正式矩阵。** 守视题三轮试点抓获两个协议级漏洞
-（truth 在试卷语料内 / 考场边界无 harness 保证），逼出 readRoot 读监狱基建；
-现行协议（truth 私有区 + `--read-root /root/kfmv4` + 只读白名单 + kfm-dev 空角色）
-经 v3 两臂验证零越界。判卷尺校准发现与矩阵建议见
-`results/pilot-shoushi-2026-08-08.md`。
+**首波正式矩阵完成（5 题 × DS v4-flash × 4 重复 = 20 臂），双轨判卷全绿。**
+H1 不支持（方向反了：唯一塌陷的是最老的文件树题）；H2 主读数=路由表对
+grep-first 探头不承重；最重要发现=可达性失败 → 幻觉而非「不知道」
+（file-tree-2 幻觉 15 条）。全文见 `results/wave1-2026-08-08.md`。
+下波待定：文件树域「文件树↔canvas-tree」关键词互注整改后复测同题追 H3。
 
 ## 臂清单
+
+### wave 1（2026-08-08，钉 f1fee225，DS v4-flash × 4 重复）
+
+| 臂 | 题 | 状态 | 数据 |
+|---|---|---|---|
+| w1-shoushi-4 | 守视 T3 | 有效（守视第 4 重复） | sessions/docprobe-w1-shoushi-4.json |
+| w1-error-codes-1 | 错误码 T3 | 有效 | sessions/docprobe-w1-error-codes-1.json |
+| w1-error-codes-2 | 错误码 T3 | 有效 | sessions/docprobe-w1-error-codes-2.json |
+| w1-error-codes-3 | 错误码 T3 | 有效 | sessions/docprobe-w1-error-codes-3.json |
+| w1-error-codes-4 | 错误码 T3 | 有效 | sessions/docprobe-w1-error-codes-4.json |
+| w1-paradigm-1 | 范式包 T3 | 有效 | sessions/docprobe-w1-paradigm-1.json |
+| w1-paradigm-2 | 范式包 T3 | 有效 | sessions/docprobe-w1-paradigm-2.json |
+| w1-paradigm-3 | 范式包 T3 | 有效 | sessions/docprobe-w1-paradigm-3.json |
+| w1-paradigm-4 | 范式包 T3 | 有效 | sessions/docprobe-w1-paradigm-4.json |
+| w1-domain-contract-1 | 域契约 T3 | 有效 | sessions/docprobe-w1-domain-contract-1.json |
+| w1-domain-contract-2 | 域契约 T3 | 有效 | sessions/docprobe-w1-domain-contract-2.json |
+| w1-domain-contract-3 | 域契约 T3 | 有效 | sessions/docprobe-w1-domain-contract-3.json |
+| w1-domain-contract-4 | 域契约 T3 | 有效 | sessions/docprobe-w1-domain-contract-4.json |
+| w1-file-tree-1 | 文件树 T3 | 有效 | sessions/docprobe-w1-file-tree-1.json |
+| w1-file-tree-2 | 文件树 T3 | 有效（未达+幻觉 15，阴性样本） | sessions/docprobe-w1-file-tree-2.json |
+| w1-file-tree-3 | 文件树 T3 | 有效 | sessions/docprobe-w1-file-tree-3.json |
+| w1-file-tree-4 | 文件树 T3 | 有效（未达+答非所问，阴性样本） | sessions/docprobe-w1-file-tree-4.json |
+
+盲判轨数据：`.kfmv4/experiments/docprobe/judge/wave1.jsonl`（20 条，
+judge=DS v4-flash 统一尺，逐臂覆盖/幻觉/依据）。
+
+### 试点（守视题，协议校准期）
 
 | 臂 | 题 | 轮 | 状态 | 数据 |
 |---|---|---|---|---|
@@ -60,11 +87,14 @@
 | pilot3-shoushi-1 | 守视 T3 | v3 | 有效（现行协议首臂） | sessions/docprobe-pilot3-shoushi-1.json |
 | pilot3-shoushi-2 | 守视 T3 | v3 | 有效（猎答案行为活证据） | sessions/docprobe-pilot3-shoushi-2.json |
 
+（试点 3 有效臂计入守视题 wave 1 重复数：pilot2-2 / pilot3-1 / pilot3-2 + w1-shoushi-4 = 4 重复）
+
 ## 产物登记
 
 - 设计（design/）：design-docprobe.md
-- 结论（results/）：pilot-shoushi-2026-08-08.md（试点校准史+三维指标+判卷尺发现+矩阵建议）
-- 工具（tools/）：judge-trace.mjs（机械判卷轨）
+- 结论（results/）：pilot-shoushi-2026-08-08.md（试点校准史+判卷尺发现）/
+  wave1-2026-08-08.md（首波矩阵 20 臂双轨判卷：H1 反向、静默幻觉发现）
+- 工具（tools/）：judge-trace.mjs（机械判卷轨）/ judge-understanding.mjs（盲判轨）
 - 地面真相（私有区 `/root/.kfmv4/experiments/docprobe/truth/`）：shoushi.md（守视）/ error-codes.md（错误码体系，H1 活标本：
   路由表无行）/ paradigm.md（范式包）/ domain-contract.md（域契约）/
   file-tree.md（文件树，老功能对照组：路由表同样无行）

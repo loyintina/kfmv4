@@ -385,6 +385,11 @@
       "permission": "纯本地读（归档 json + truth md），无网络无写盘",
       "prompt": "无内置提示词——判定口径硬编码（与 design/design-docprobe.md §六一致）",
       "effect": "docprobe 机械判卷轨：轨迹×地面真相 → 可达率/路径合规/到达成本三维 JSON"
+    },
+    "experiments/docprobe/tools/judge-understanding.mjs": {
+      "permission": "联网（经 session-runner 起判官会话）；读归档+truth；追加写 --out jsonl",
+      "prompt": "内置盲判卷 prompt（题目+回复+要点+陷阱 → 覆盖/幻觉 JSON）；判官无工具防开卷",
+      "effect": "docprobe 盲判轨：理解准确度=要点覆盖 0-N + 幻觉计数，断点续判按臂 id 跳过"
     }
   }
 }

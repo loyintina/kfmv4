@@ -81,6 +81,15 @@ export const SCRIPTS_CATALOG: ScriptCatalogEntry[] = [
     "effect": "docprobe 机械判卷轨：轨迹×地面真相 → 可达率/路径合规/到达成本三维 JSON"
   },
   {
+    "name": "judge-understanding.mjs",
+    "file": "experiments/docprobe/tools/judge-understanding.mjs",
+    "category": "文档抽测工具",
+    "description": "docprobe 盲判轨：理解准确度（要点覆盖 0-5 + 幻觉计数）",
+    "permission": "联网（经 session-runner 起判官会话）；读归档+truth；追加写 --out jsonl",
+    "prompt": "内置盲判卷 prompt（题目+回复+要点+陷阱 → 覆盖/幻觉 JSON）；判官无工具防开卷",
+    "effect": "docprobe 盲判轨：理解准确度=要点覆盖 0-N + 幻觉计数，断点续判按臂 id 跳过"
+  },
+  {
     "name": "aggregate-e13.mjs",
     "file": "experiments/paradigm/tools/aggregate-e13.mjs",
     "category": "范式实验工具",
