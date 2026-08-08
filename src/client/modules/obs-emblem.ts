@@ -51,9 +51,9 @@ function mkCanvas(rect: EmblemRect): [HTMLCanvasElement, CanvasRenderingContext2
 // ============ A 聚散：随机闭环 ⇄ 深渊菱瞳 ============
 // 设计（2026-08-08 用户定稿）：无相位状态机。一轮 T 内每个粒子沿「随机闭环」
 // 巡游——起点=终点=自己的形状位，轨迹每轮重生成。轮界瞬间 21 点同归形状位，
-// 形自然浮现；随后各自散入随机路径。速率全程缓动：成形前 3.75s smoothstep
-// 缓减速，成形点停顿 0.25s（轮界前后各 0.125s），再 3.75s 缓加速——减速点
-// 到加速点约半个周期，中段回到满缓速。
+// 形自然浮现；随后各自散入随机路径。速率全程缓动：成形前 4s smoothstep
+// 缓减速，成形瞬间速率归零即起（不停顿），再 4s 缓加速——减速点到加速点
+// 正好半个周期，中段回到满缓速。
 class EmblemGather {
   private glyph: { x: number; y: number }[] = [];
   private t0 = 0;
@@ -69,7 +69,8 @@ class EmblemGather {
   private static SHAPE_TAU = 2500; // 轮界前后形可读窗口（ms；缓动窗让粒子自然流连，同步拉宽）
   private static WP = 5;           // 每轮随机路点数
   private static SEG = 60;         // 每段弧长采样数
-  private static DWELL = 125;      // 谷底停顿（ms，轮界前后各一份，成形点共停 0.25s）
+  private static DWELL = 0;        // 谷底停顿（2026-08-08 实拍定稿：不停顿，
+                                   // 成形瞬间速率归零即起，缓动窗本身就足够好看）
   constructor(private w: number, private h: number) {
     this.R = rng(20260808);
     // 深渊菱瞳目标形：菱形 4 顶点 + 每边 2 等分点（12），竖瞳椭圆 8 点，瞳心 1 点
