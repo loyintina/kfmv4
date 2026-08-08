@@ -41,22 +41,33 @@
 
 辅指标：理解准确度（judge 盲判要点覆盖）、幻觉率（复用 coldstart 幻觉尺纪律）。
 
-## 研究线状态（2026-08-08，T0 收官）
+## 研究线状态（2026-08-08，整改复测收官）
 
-**T0 总目录探测完成（4 臂）：存在性发现的病灶定位了。**
-产品层功能全景稳定命中（覆盖均值 6.5/8，幻觉 2 条/4 臂）；系统性盲区 =
-agent 脚本负载 + 部署发布体系（3/4 臂同漏）——README/vision 承重良好，
-缺「运维面」索引；CLAUDE.md 定位确认为任务路由（答「该去哪」），
-与功能总目录（答「有什么」）分工错配不是病，盲区才是。全文见
-`results/t0-inventory-2026-08-08.md`。
+**头两个「抽测→整改→复测」闭环完成。** T0 运维面盲区**完全闭合**
+（覆盖 6.5→8.0 满分，幻觉 2→0，capability-map 被 4/4 臂采纳为标准入口，
+成本反降）；文件树题幻觉 15→0，残余未达判定为探头策略方差（H4 范畴，
+文档侧已无可修）。全文见 `results/retest-t0r-w2-2026-08-08.md`。
+文件树题转作 H4 探头差异监测题，待跨模型波次复用。
 
-wave 1 结论（5 题 × 4 重复 = 20 臂）：H1 反向（最老的文件树题唯一塌陷）、
-静默幻觉发现、路由表对 grep-first 探头不承重——见
+T0 首波结论见 `results/t0-inventory-2026-08-08.md`；wave 1 结论见
 `results/wave1-2026-08-08.md`。
-待整改项：①文件树↔canvas-tree 关键词互注；②README/vision 补运维面索引。
-整改后复测同题追 H3。
 
 ## 臂清单
+
+### 整改复测（2026-08-08，钉 8d91ce79，DS v4-flash × 4 重复/题）
+
+| 臂 | 题 | 状态 | 数据 |
+|---|---|---|---|
+| t0r-inventory-1 | 总目录 T0 复测 | 有效（覆盖 8/8） | sessions/docprobe-t0r-inventory-1.json |
+| t0r-inventory-2 | 总目录 T0 复测 | 有效（覆盖 8/8） | sessions/docprobe-t0r-inventory-2.json |
+| t0r-inventory-3 | 总目录 T0 复测 | 有效（覆盖 8/8） | sessions/docprobe-t0r-inventory-3.json |
+| t0r-inventory-4 | 总目录 T0 复测 | 有效（覆盖 8/8） | sessions/docprobe-t0r-inventory-4.json |
+| w2-file-tree-1 | 文件树 T3 复测 | 有效（未达，glob 流浪） | sessions/docprobe-w2-file-tree-1.json |
+| w2-file-tree-2 | 文件树 T3 复测 | 有效（未达，答非所问） | sessions/docprobe-w2-file-tree-2.json |
+| w2-file-tree-3 | 文件树 T3 复测 | 有效（未达，glob 流浪） | sessions/docprobe-w2-file-tree-3.json |
+| w2-file-tree-4 | 文件树 T3 复测 | 有效（到达，覆盖 5/5） | sessions/docprobe-w2-file-tree-4.json |
+
+盲判轨数据：`.kfmv4/experiments/docprobe/judge/retest-t0r-w2.jsonl`（8 条）。
 
 ### T0 总目录探测（2026-08-08，钉 f1fee225，DS v4-flash × 4 重复）
 
