@@ -78,7 +78,8 @@ class EmblemGather {
   private static MTAU = 1200;      // 矩阵时刻阵度窗口（ms，±1.2s）
   private static SEG = 60;         // 每段弧长采样数
   private static FMIN = 0.1;       // 主成形缓动谷底速率比
-  private static FMIN2 = 0.2;      // 矩阵时刻缓动谷底速率比（浅于主成形）
+  private static FMIN2 = 0.5;      // 矩阵时刻缓动谷底速率比（浅于主成形——
+                                   // 只稍微减速，0.2 实拍减速感太重）
   constructor(private w: number, private h: number) {
     this.R = rng(20260808);
     // 深渊菱瞳目标形：菱形 4 顶点 + 每边 2 等分点（12），竖瞳椭圆 8 点，瞳心 1 点
