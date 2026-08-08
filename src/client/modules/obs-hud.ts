@@ -16,6 +16,7 @@
  */
 import { API } from './state.js';
 import { Z } from './z-index-layers.js';
+import { initObsEmblems, type EmblemRects } from './obs-emblem.js';
 
 /** 轮询周期（5s，2026-08-06 用户定稿） */
 const REFRESH_MS = 5_000;
@@ -168,7 +169,32 @@ export function initObsHud(): void {
     duty.style.width = `${sm.left + sm.width - dutyLeft}px`;
     pulse.style.top = `${sm.bottom + 10}px`;
     duty.style.top = `${pulse.getBoundingClientRect().bottom + 10}px`;
+    // 深蓝意志徽标几何：A=四框围出的中央口袋，B/C=待办左竖带上下半
+    const dutyR = duty.getBoundingClientRect();
+    const todoR = hud.querySelector<HTMLElement>('.obs-stack')!.getBoundingClientRect();
+    const pocket = {
+      left: dutyLeft,
+      top: r.bottom + 10,
+      width: sm.left - dutyLeft - 10,
+      height: dutyR.top - (r.bottom + 10) - 10,
+    };
+    const stripL = dutyLeft;
+    const stripW = todoR.left - stripL - 10;
+    const stripTop = dutyR.bottom + 10;
+    const stripH = (todoR.bottom - stripTop - 20) / 2;
+    emblemRects = {
+      pocket,
+      stripTop: { left: stripL, top: stripTop, width: stripW, height: stripH },
+      stripBot: { left: stripL, top: stripTop + stripH + 10, width: stripW, height: stripH },
+    };
+    const sig = JSON.stringify(emblemRects, (k, v) => typeof v === 'number' ? Math.round(v) : v);
+    if (sig !== lastEmblemSig) { lastEmblemSig = sig; emblems?.relayout(); }
   };
+  let emblemRects: EmblemRects | null = null;
+  let lastEmblemSig = '';
+  // 深蓝意志动态徽标三案并映（2026-08-08 用户定稿试映：A 聚散/B 潮汐/C 轨道，
+  // 实拍裁决后留一）；getRects 惰性读 placeRail 算好的几何
+  const emblems = initObsEmblems(() => emblemRects);
   placeRail();
   window.addEventListener('resize', placeRail);
   // 竖条高度钉死 = 系统区 + 端口区恰好 4 行窗口（2026-08-07 用户定稿 v2：4 整行硬切，

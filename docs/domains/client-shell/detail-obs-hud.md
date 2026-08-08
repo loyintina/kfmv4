@@ -46,3 +46,15 @@ check-failures/build-metrics 各 100KB，permission-audit 暂缓）
 
 扩展面候选：调用统计（agent-calls 聚合）、permission-audit 审批分布
 （87% allow 分布单一，暂缓）、prompts/ 测绘缺口。
+
+## 深蓝意志动态徽标（2026-08-08 三案并映试映，待用户实拍裁决留一）
+
+- 模块：`src/client/modules/obs-emblem.ts`（obs-hud 装配，几何随 placeRail 注入；
+  单 rAF 三画布共享，pointer-events:none，DPR 适配，mulberry32 定种子）
+- A **聚散**（中央口袋：脉搏/执勤/信箱/SYS 围出的竖区）：21 点混沌漂移 11s →
+  收拢 2.6s → 定格 2.4s → 散开 1.8s；**漂移期近距网，聚/定期显式描边**
+  （菱形 12 点闭环 + 竖瞳 8 点闭环 + 瞳心——距离规则画出来是毛线不是形）
+- B **潮汐**（待办左竖带上半）：7 列竖向波层上升流，同排横索连线，两端淡出
+- C **轨道**（待办左竖带下半）：意志核慢利萨如（3:2，24s 周期）+ 12 卫星
+  邻近牵引 + 尾迹渐隐
+- 守视调试：`window.__emblemPhase` 暴露 A 相位（eval 掐点拍 hold 帧用）
