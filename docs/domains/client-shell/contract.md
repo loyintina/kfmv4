@@ -67,7 +67,10 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
      verdict 时间线（可点详情）；星轨=档案馆会话可视化（2026-08-07 定稿：
      每会话一条发光轨道线，横轴时间右端=现在，线长=活跃跨度，线宽=tokenCount
      sqrt 压缩，48h 活跃末端呼吸光点，TOP8 + 聚合虚线轨，底部 MM/DD 刻度，
-     行距半格 12px——2026-08-08 定稿：整格太疏，高度随轨道数自然变化）
+     行距半格 12px——2026-08-08 定稿：整格太疏，高度随轨道数自然变化）。
+     **信箱/待办 2026-08-08 定稿：手势滑动全禁**（列表滑动手势会吞掉全局卡片堆
+     手势）——overflow:hidden + 每 5s 按一屏高硬切自动翻屏，到底回顶，详情
+     视图同容器同翻屏；点击进详情/返回不受影响
   3. **待办卡**（2026-08-07 下移定稿：脱离 .obs-row 改 fixed 右下，右缘与主卡
      右缘对齐 `right:calc(50% - 186px)`，底缘贴输入栏上方 bottom:92px）：
      stack.yaml 全状态（todo/hold/done 分组，标题/note 分层截断——同层共
@@ -78,7 +81,8 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
      端口号 + 进程名 + 活跃连接数）；位置按 .obs-inbox 实测矩形注入
   5. **脉搏卡**（2026-08-08 定稿：填屏第二批，史官数据流上屏）：24h 窗口
      LLM 行（次数/成功率/均耗时/最近调用距今 + provider 分解）+ 工具行
-     （次数/失败数 + TOP4 渐变横向条）
+     （次数/失败数 + TOP4 渐变横向条）；成功率<95% 与失败数示警用**琥珀黄**
+     （2026-08-08 用户定稿：纯红太刺眼，红只留给构建 ✗ 这类硬失败）
   6. **执勤卡**（同日定稿，cron 八灯从 SYS 移出后的家）：cron 状态灯
      **4 列 2 行窗口**（dot+name+ago 紧凑组，>8 条每 5s 硬切一屏轮换）
      + 检查链失败 TOP2 + 构建次数/最近耗时；**左缘顶 SYS 竖条右缘+10、
@@ -91,7 +95,7 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
   四条 jsonl 尾部限扫滚动 24h——agent-calls/tool-exec 各 200KB、
   check-failures/build-metrics 各 100KB，permission-audit 暂缓）
 - **渲染纪律：数据未变不重渲染**（JSON key 比对）——innerHTML 重建重置滚动位，
-  5s 一次等于禁止翻列表（2026-08-06 守视实拍抓获）；变时保存/恢复 scrollTop
+  5s 一次等于自动翻屏页位乱跳（2026-08-06 守视实拍抓获）；变时保存/恢复 scrollTop
 - 扩展面：调用统计（agent-calls 聚合）、cron 状态（2026-08-07 从 SYS 面板
   移出待另置）为下一批候选
 

@@ -191,6 +191,17 @@ export function initObsHud(): void {
     else el.scrollTo({ top: Math.min(el.scrollTop + portStride, maxTop), behavior: 'auto' });
   }, 5_000);
 
+  // 信箱/待办自动翻屏（2026-08-08 用户定稿：列表手势滑动会吞掉全局卡片堆手势，
+  // 改 overflow:hidden + 每 5s 按一屏高硬切，到底回顶；点击/详情交互不受影响，
+  // 详情视图同容器也走翻屏——否则长文永远读不到后半）
+  const autoPage = (el: HTMLElement) => {
+    const maxTop = el.scrollHeight - el.clientHeight;
+    if (maxTop <= 2) { if (el.scrollTop) el.scrollTo({ top: 0, behavior: 'auto' }); return; }
+    if (el.scrollTop >= maxTop - 2) el.scrollTo({ top: 0, behavior: 'auto' });
+    else el.scrollTo({ top: Math.min(el.scrollTop + el.clientHeight, maxTop), behavior: 'auto' });
+  };
+  setInterval(() => { autoPage(inboxListEl); autoPage(stackListEl); }, 5_000);
+
   const clockEl = hud.querySelector<HTMLElement>('.obs-clock')!;
   const balanceEl = hud.querySelector<HTMLElement>('.obs-balance')!;
   const inboxListEl = hud.querySelector<HTMLElement>('.obs-inbox-list')!;
@@ -247,10 +258,12 @@ export function initObsHud(): void {
     const e = inboxEntries[i];
     if (!e) return;
     inboxDetail = e;
+    inboxListEl.scrollTop = 0;
     renderInboxDetail();
   }
   function showInboxList(): void {
     inboxDetail = null;
+    inboxListEl.scrollTop = 0;
     renderInboxList();
   }
 
@@ -303,10 +316,12 @@ ${body}</div>
     const e = stackData.entries[i];
     if (!e) return;
     stackDetail = e;
+    stackListEl.scrollTop = 0;
     renderStackDetail();
   }
   function showStackList(): void {
     stackDetail = null;
+    stackListEl.scrollTop = 0;
     renderStackList();
   }
 
@@ -396,9 +411,9 @@ ${body}</div>
     const bars = p.tools.top.map(t =>
       `<div class="obs-pulse-bar"><span class="obs-pulse-bar-label">${t.name}</span><span class="obs-pulse-bar-track"><span class="obs-pulse-bar-fill" style="width:${Math.round((t.n / maxN) * 100)}%"></span></span><span class="obs-pulse-bar-n">${t.n}</span></div>`).join('');
     pulseBodyEl.innerHTML = `
-      <div class="obs-pulse-line"><span class="obs-pulse-key">LLM</span> ${p.llm.calls} 次 · <span class="${p.llm.okRate < 95 ? 'obs-rail-num-red' : ''}">${p.llm.okRate}%</span> · 均 ${fmtDur(p.llm.avgMs)} · ${p.llm.lastAgo}前</div>
+      <div class="obs-pulse-line"><span class="obs-pulse-key">LLM</span> ${p.llm.calls} 次 · <span class="${p.llm.okRate < 95 ? 'obs-rail-num-amber' : ''}">${p.llm.okRate}%</span> · 均 ${fmtDur(p.llm.avgMs)} · ${p.llm.lastAgo}前</div>
       <div class="obs-pulse-dim">${provs || '—'}</div>
-      <div class="obs-pulse-line"><span class="obs-pulse-key">工具</span> ${p.tools.calls} 次${p.tools.fails > 0 ? ` · <span class="obs-rail-num-red">失败 ${p.tools.fails}</span>` : ''}</div>
+      <div class="obs-pulse-line"><span class="obs-pulse-key">工具</span> ${p.tools.calls} 次${p.tools.fails > 0 ? ` · <span class="obs-rail-num-amber">失败 ${p.tools.fails}</span>` : ''}</div>
       ${bars}`;
     dutyCron = cron;
     dutyCronPage = 0;

@@ -209,7 +209,7 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 .obs-inbox-title{font-size:11px;letter-spacing:2px;color:rgba(0,212,255,.75);text-transform:uppercase;white-space:nowrap;flex:none}
 .obs-inbox-status{font-size:10px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* 固定高度（用户定稿 2026-08-06）：内容不足不收缩，超出滚动 */
-.obs-inbox-list{height:150px;overflow-y:auto;pointer-events:auto;padding:4px 0;scrollbar-width:none;-ms-overflow-style:none}
+.obs-inbox-list{height:150px;overflow:hidden;pointer-events:auto;padding:4px 0;scrollbar-width:none;-ms-overflow-style:none}/* 2026-08-08：手势滑动改自动翻屏，让位全局卡片堆手势 */
 .obs-inbox-list::-webkit-scrollbar{display:none}
 /* 条目 = 圆点+日期+文字单行流；clamp 在内层 flow 上（clamp 与外 padding 同层会透出下一行残影） */
 .obs-inbox-item{display:block;padding:3px 10px;border-left:2px solid transparent;opacity:.55;cursor:pointer;transition:background .15s}
@@ -241,7 +241,7 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
    全状态渲染：todo/hold 全亮在前，done 渐淡殿后（藏起 done 是旧设计的诚实性缺陷）。 */
 .obs-stack{position:fixed;right:calc(50% - 186px);bottom:140px;width:200px;box-sizing:border-box;border-radius:16px;background:rgba(18,18,26,.5);border:1px solid transparent;background-clip:padding-box;border-image:linear-gradient(135deg,rgba(0,212,255,.35),rgba(124,58,237,.35)) 1;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);overflow:hidden}
 .obs-stack-status{font-size:10px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.obs-stack-list{height:150px;overflow-y:auto;pointer-events:auto;padding:4px 0;scrollbar-width:none;-ms-overflow-style:none}
+.obs-stack-list{height:150px;overflow:hidden;pointer-events:auto;padding:4px 0;scrollbar-width:none;-ms-overflow-style:none}/* 同信箱：自动翻屏无手势 */
 .obs-stack-list::-webkit-scrollbar{display:none}
 /* 状态点（复用 obs-dot 几何+呼吸，色按状态） */
 .obs-dot-stack-todo{background:#06b6d4;color:#06b6d4;box-shadow:0 0 4px rgba(6,182,212,.4)}
