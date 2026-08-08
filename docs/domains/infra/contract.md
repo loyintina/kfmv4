@@ -7,9 +7,10 @@
 
 ## 检查管线（npm run check，43 脚本，顺序固定）
 
-（下方生成区枚举的链步数多于标题脚本数：40 = check-*.mjs 文件数，链上 38 个以 check-
-前缀书写——deploy-freshness/doc-coverage 在链上省前缀；sass、gen-* 验证步（--check-only）、
-sync-counts、npm test、tsc 均非 check-* 脚本，不计入标题数。）
+（下方生成区枚举的链步数多于标题脚本数：43 = check-*.mjs 文件数，链上同数 43 个以
+check- 前缀书写——deploy-freshness/doc-coverage 等在链上省前缀；sass、gen-* 验证步
+（--check-only）、sync-counts、npm test、tsc 均非 check-* 脚本，不计入标题数。
+2026-08-08 裁决修订：旧文「40/链上 38」为计数漂移，现标题、文件数、链上数三者一致。）
 
 **域映射纪律（2026-08-06 定稿）**：新增 src/ 文件必须登记 `scripts/check/domain-src.mjs`
 对应域（client-shell 模块级枚举 / server·infra 目录级）——未登记的文件 check-contract-freshness
@@ -23,8 +24,8 @@ mutation-anchors → docs → consistency → active-stack → stack-status → 
 code-doc-refs → workflow-integrity → cards → contract-freshness → test-patterns → bar-ledger →
 ledger-commits → doc-budget → doc-symbols → doc-scripts → doc-linerefs → doc-schema → commit-docs →
 fix-tests → hooks → gen-page-state-schema → gen-tool-docs → gen-permission-map → gen-rules-map →
-gen-experiments-list → doc-orphans → probes → release-radar → experiment-index → sync-counts →
-gen-code-inventory → gen-contract-lists → gen-route-table → npm test → tsc。
+gen-experiments-list → gen-scripts-catalog → doc-orphans → probes → release-radar → experiment-index →
+sync-counts → gen-code-inventory → gen-contract-lists → gen-route-table → npm test → tsc。
 <!-- /chain:auto -->
 
 **链外概率区自动化（2026-07-30 登记）**：`scripts/agent/semantic-chain.mjs`（语义巡逻，

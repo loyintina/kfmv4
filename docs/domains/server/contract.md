@@ -18,7 +18,9 @@ Express 4 + WebSocket，`index.ts` 统一入口编排（协调层）。
   端口 30s/cron 5min 缓存 + 星轨 archive 30s 缓存读 sessions/*.json 顶层字段）+
   守视校准页 `/test` 与 `/obs/viewport` 视口回传
 - `ws-server.ts`：WS 连接管理；**30s 协议级 ping 半开检测 → killAll 清 PTY**
-- `ai/`：AI 对话子系统 → ../ai-chat/contract.md
+- `ai/`：AI 对话子系统 → ../ai-chat/contract.md。**唯一例外 `ai/permissions.ts`
+  归 server 域**（权限引擎贴近路由/工具调度层；域归属单一出处 = scripts/check/
+  domain-src.mjs，两域清单均由它生成，归属争议以它为准）
 
 ## 数据目录
 
@@ -28,6 +30,10 @@ Express 4 + WebSocket，`index.ts` 统一入口编排（协调层）。
 ## #陷阱
 
 1. **路径安全**：所有用户路径必须过 `sanitizePath()`，逃逸即拒。新端点不许例外。
+   （枚举类端点不接收用户路径、无消毒对象，天然豁免：`/roots` 只回允许根清单
+   （files.ts，verifyLocalOrigin 把守）、`/root/switch` 与 `/sessions/messages`
+   各有自带校验体系——2026-08-08 语义裁决：陷阱表述从「不许例外」修订为
+   「接收用户路径的端点不许例外」）
 2. **WS 半开**：后台冻结可导致连接假活——必须依赖协议级 ping，不可用 TCP 状态推断。
 3. **express.static 不得挂载仓库根**——曾暴露 `.git`/`src`/`node_modules`（v8.1 已删）。
 4. **CJS 依赖进 ESM bundle 即启动崩溃**——新增依赖同步 build.mjs external（见 ../infra/contract.md 硬规则 3）。

@@ -6,8 +6,9 @@
 
 ## 测绘元数据
 
-- 基准：commit 03da8c9 · 2026-07-29 · 域规模 8 文件 / 1705 行（已逐行读；
-  ai/session-store.ts、ai/routes.ts 因双实现嫌疑一并核查）
+- 基准：2026-08-08 · 域规模 10 文件 / 2192 行（契约清单口径：routes/obs+files+proxy+providers、
+  index、path-utils、ws-server、terminal-pty、env-store、ai/permissions；
+  旧基准 03da8c9 · 2026-07-29 · 8 文件 / 1705 行——obs.ts 与 permissions.ts 后入域）
 - 方法：subagent 七问侦察 + 主 agent 抽查核实
 
 ## 一句话职责
@@ -107,12 +108,17 @@ send('terminal-output')；输入 → pty.write；close/error/心跳判死 → ki
 13. 次要：/api 与 /kfmv4/api 双挂载（index.ts:50-51）；应用层 'ping' 消息客户端不回，
     纯喂看门狗——疑似协议残留；files.ts 死条件（path.join 恒真）已随批次二删除；
     心跳 interval 清理依赖 close 事件触发（行为正确但脆弱）。
-14. **prompts/ 无测绘归属**：契约文件清单含 `prompts/`，但本图与 ai-chat/cross-domain
-    均无一行测绘——提示词注入约束目录全图缺席（语义审计变异基准 M04 额外发现，
-    2026-07-30；用户 STACK 备注待办同源）。
-15. **ai/ 归属三方口径分叉**：契约文件清单写 `ai/（见 ai-chat 域）」，本图测绘元数据
-    却把 ai/session-store.ts、ai/routes.ts 计入 server 域规模，ai-chat code-map 又
-    无一字认领——所有权没有单一出处（语义审计变异基准额外发现，2026-07-30）。
+14. **prompts/ 归属已定、测绘仍缺**（2026-08-08 裁决修订）：旧文「契约文件清单含
+    `prompts/`」前提已过时——`src/server/prompts/` 现归 ai-chat 域（domain-src.mjs
+    单一出处），server 契约清单不含。残留缺口：ai-chat code-map 对 prompts/
+    目录内容仍无一行测绘（语义审计变异基准 M04 额外发现，2026-07-30；
+    用户 STACK 备注待办同源）。
+15. **ai/ 归属口径已统一**（2026-08-08 裁决结案）：旧文三方口径分叉（契约写
+    「ai/ 见 ai-chat 域」、本图元数据把 ai/session-store.ts 等计入 server 域、
+    ai-chat code-map 无认领）——现以 domain-src.mjs 为单一出处：ai/ 全目录归
+    ai-chat 域，唯一例外 ai/permissions.ts 归 server 域（server 契约模块职责节
+    已明文标注例外与出处）。本图测绘元数据的域规模统计口径以此为准。
+    （原发现：语义审计变异基准额外发现，2026-07-30）
 
 **已核实为真的契约声称**：30s 半开检测 → killAll、express.static 只挂 public、
 只绑 127.0.0.1、sanitizePath 被 files/prompt-assembler 一致使用。

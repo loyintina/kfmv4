@@ -21,11 +21,11 @@
 
 | 入口 | 位置 | 调用方 |
 |------|------|--------|
-| `doSend()` | orb-chat-run.ts:404 | orb-chat-host.ts（handleSend，唯一） |
-| `resumeRun()` | orb-chat-run.ts:354 | orb-chat-host.ts（刷新恢复 + kfm-restart 冷恢复） |
+| `doSend()` | orb-chat-run.ts:406 | orb-chat-host.ts（handleSend，唯一） |
+| `resumeRun()` | orb-chat-run.ts:356 | orb-chat-host.ts（刷新恢复 + kfm-restart 冷恢复） |
 | `patchEvent()` | chat-dom.ts:806 | 经 setEventHook 注入，SSE 事件 → DOM 唯一投影口 |
-| `sessionStore` 单例 | session-client.ts:149 | orb-chat-host.ts / orb-panel.ts / 域外两张卡片 |
-| `streamChat()` | chat.ts:139（服务端） | run-manager.ts:86（唯一） |
+| `sessionStore` 单例 | session-client.ts:151 | orb-chat-host.ts / orb-panel.ts / 域外两张卡片 |
+| `streamChat()` | chat.ts:150（服务端） | run-manager.ts:86（唯一） |
 | `promoteReasoningBlocks()` | message-normalize.ts:21 | 写时 orb-chat-run.ts:128；读时 session-client.ts:260,282 |
 | `startWaitingIndicator()` | orb-chat-hints.ts:27 | orb-chat-host.ts（发送/恢复三处） |
 
@@ -48,15 +48,15 @@
 
 1. orb.ts 发送按钮（DOM 属 client-shell）→ orb-chat-host handleSend → 起等待提示
 2. doSend：push 用户消息 → mountUserMessage 上屏（orb-chat-host.ts:300 直接调用）
-3. 读 .kfmv4/active.json 配置（orb-chat-run.ts:397）
+3. 读 .kfmv4/active.json 配置（orb-chat-run.ts:399）
 4. **格式转换在客户端**：content blocks → OpenAI tool_calls 形态 + 压缩投影
    + 空壳 assistant 过滤——唯一构造函数 shared/chat-protocol/to-openai-messages.ts
    （调用点：orb-chat-host.ts:197 冷恢复 / orb-chat-run.ts:438 doSend）
-5. 新会话先 sessionStore.saveMessages 建文件（orb-chat-run.ts:456）
+5. 新会话先 sessionStore.saveMessages 建文件（orb-chat-run.ts:458）
 6. POST /api/ai/chat/start → session-store.appendUserMessage（幂等）→ run-manager.startRun
 7. streamChat 组装 system + 边界规范化（chat.ts:193-241）→ POST 上游 → 解析 SSE
-   → 工具本地并行执行（chat.ts:475），上限 50 轮（chat.ts:253）
-8. 每事件三向分发：run 缓冲 / session-store 落盘 / 广播订阅者（run-manager.ts:114-126）
+   → 工具本地并行执行（chat.ts:488），上限 50 轮（MAX_TURNS，chat.ts:266）
+8. 每事件三向分发：run 缓冲 / session-store 落盘 / 广播订阅者（run-manager.ts:159-170）
 9. 客户端 SSE 续读 /api/ai/chat/:runId/stream?from=N → _applyEvent 写数据层
    → patchEvent 投影 DOM；首个 text/thinking delta 到达即停等待提示
 
@@ -68,7 +68,7 @@
 - **读路径注意**：files.ts 的 /sessions/list 只读会话文件并内联统计
   （messageCount/tokenCount），不写；写者确为 session-store 唯一
   （2026-07-30 语义巡逻裁决：旧文「双实现各自读/写」为过时表述，_computeStats
-  现存仅 session-store.ts:69 一份）。
+  现存仅 session-store.ts:131 一份）。
 
 ## 跨域边界
 
@@ -78,12 +78,14 @@
 - 被域外依赖：main.ts → initOrb（唯一启动口，initOrb 内部经 initChatHost 起宿主）；
   config.card / session.card → sessionStore；
   kfmv4 工具 → wsServer snapshot/eval 桥（server/ai-tools 已随 ADR-004 整删）
-- orb-chat-run / chat-dom / orb-chat-hints 只被 orb-chat 门面与 orb-chat-host 使用
+- orb-chat-run / orb-chat-hints 只被 orb-chat 门面与 orb-chat-host 使用；chat-dom
+  例外——还被 orb.ts:34、orb-chat-run.ts:29、orb-chat-hints.ts:18 直接 import
+  （2026-08-08 探针复核坐实，旧文「三者均只被门面与宿主使用」为过时表述）
 
 ## 代码强制的不变量（附证据）
 
-- content 类型归一 fail-closed：非字符串一律 JSON.stringify（chat.ts:202）；
-  无 tool_calls 的空 assistant 一律丢弃（chat.ts:213-215；客户端同策略
+- content 类型归一 fail-closed：非字符串一律 JSON.stringify（chat.ts:215）；
+  无 tool_calls 的空 assistant 一律丢弃（chat.ts:224-226；客户端同策略
   to-openai-messages.ts:285-292）
 - 空壳消息 reasoning 归位：写时 + 读时双挂点（见承重入口表）
 - 块索引连续化：block-idx.ts:13-23，text 恒 0、工具块从 1 连续
@@ -91,7 +93,7 @@
   压缩行强制单行（index.ts:219）
 - 注册表完整性：构建期 tools/index.ts 与 COMPACTOR_REGISTRY 双向核对，失配中断
 - 写前深拷贝剥 UI 字段：cleanBlockForSave（session-client.ts:74-97）；保存串行锁 _saveChain
-- run 单活跃：同 session 新 start 强制取消旧 run（run-manager.ts:89-95）
+- run 单活跃：同 session 新 start 强制取消旧 run（run-manager.ts:114-120）
 
 ## 漂移清单（实然 ≠ 应然 —— 语义审计立案源）
 

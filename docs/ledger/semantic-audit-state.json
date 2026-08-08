@@ -15,22 +15,8 @@
       "attempts": 1
     },
     "guides-testing-vs-infra": {
-      "hash": "c22b943ec530b40337a6670751256e645eb2a2a6",
-      "lastRun": "2026-08-06",
-      "status": "ok",
-      "tooled": false,
-      "fallback": false,
-      "reported": 0,
-      "kept": 0,
-      "dropped": 0,
-      "keptFindings": [],
-      "droppedFindings": [],
-      "provider": "deepseek/deepseek-v4-flash",
-      "attempts": 1
-    },
-    "stack-vs-ledger": {
-      "hash": "3f054565149963a816899ce5a2877d8ae8b6e87f",
-      "lastRun": "2026-08-06",
+      "hash": "806f27c0b8e1f605bf544e465752b08a5951c808",
+      "lastRun": "2026-08-07",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -40,13 +26,27 @@
       "keptFindings": [],
       "droppedFindings": [
         {
-          "type": "SEM005",
-          "claim": "docs/active/stack.yaml:205",
-          "against": "docs/active/stack.yaml:204",
-          "quote": "F5 待裁决",
-          "note": "条目17 status=done，但 note 明确「F5 待裁决」未闭环，状态与详情自相矛盾"
+          "type": "SEM001",
+          "claim": "docs/guides/testing.md:10",
+          "against": "docs/domains/infra/code-map.md:漂移9",
+          "quote": "11 条浏览器冒烟",
+          "note": "豁免跳过 EX-EX-008（testing.md 声称 smoke 有 11 条，但 code-map 漂移9 记录 smoke.mjs 实测 456 个测试，数量严重不符"
         }
       ],
+      "provider": "deepseek/deepseek-v4-flash",
+      "attempts": 1
+    },
+    "stack-vs-ledger": {
+      "hash": "e6f63c6ca32ce64932f055ea68730f6f81135f3d",
+      "lastRun": "2026-08-07",
+      "status": "ok",
+      "tooled": false,
+      "fallback": false,
+      "reported": 0,
+      "kept": 0,
+      "dropped": 0,
+      "keptFindings": [],
+      "droppedFindings": [],
       "provider": "deepseek/deepseek-v4-flash",
       "attempts": 1
     },
@@ -65,8 +65,30 @@
       "attempts": 1
     },
     "inter-readme-codemap": {
-      "hash": "2f8e1756c0d6d1a88715a8467f66cfc1781b5f37",
-      "lastRun": "2026-08-06",
+      "hash": "c760ea8fdde1e3a68291bf058b8ba236ce6c2720",
+      "lastRun": "2026-08-07",
+      "status": "ok",
+      "tooled": false,
+      "fallback": false,
+      "reported": 1,
+      "kept": 0,
+      "dropped": 1,
+      "keptFindings": [],
+      "droppedFindings": [
+        {
+          "type": "SEM001",
+          "claim": "README.md:5",
+          "against": "code-inventory.md（infra 域）",
+          "quote": "43 个 check-* 脚本",
+          "note": "机械清单实际列出 42 个 scripts/check/check-*.mjs，README 多计 1 个，计数漂移。"
+        }
+      ],
+      "provider": "deepseek/deepseek-v4-flash",
+      "attempts": 1
+    },
+    "inter-agentrunner-infra": {
+      "hash": "8894c5a74f1ea691d984a42b7e5041b91feda062",
+      "lastRun": "2026-08-07",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -78,31 +100,9 @@
       "provider": "deepseek/deepseek-v4-flash",
       "attempts": 1
     },
-    "inter-agentrunner-infra": {
-      "hash": "9bdf545756ad29689a3e11b1153ac670ae927b24",
-      "lastRun": "2026-08-06",
-      "status": "ok",
-      "tooled": false,
-      "fallback": false,
-      "reported": 1,
-      "kept": 1,
-      "dropped": 0,
-      "keptFindings": [
-        {
-          "type": "SEM002",
-          "claim": "docs/domains/infra/code-map.md:34",
-          "against": "docs/guides/agent-runner.md:37",
-          "quote": "exit 1 是统一模式",
-          "note": "code-map 状态所有权称域内脚本统一 exit 1，与 agent-runner 输出协议明确 exit 0/2 且 exit 1 未实现冲突，同类 B2"
-        }
-      ],
-      "droppedFindings": [],
-      "provider": "deepseek/deepseek-v4-flash",
-      "attempts": 1
-    },
     "vision-vs-maps": {
-      "hash": "a6fbffc6d367deeec74b79abb1fa85237fb43439",
-      "lastRun": "2026-08-06",
+      "hash": "ca556075a1d43f685bbb2c21b3dfdacbda4d9018",
+      "lastRun": "2026-08-07",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -129,30 +129,22 @@
       "attempts": 1
     },
     "readme-vs-maps": {
-      "hash": "53008476d2786fcc155160cfadef03da360e30d3",
-      "lastRun": "2026-08-06",
+      "hash": "d42594b72361f72b59c73aa730c6508cf831b883",
+      "lastRun": "2026-08-07",
       "status": "ok",
       "tooled": false,
       "fallback": false,
-      "reported": 1,
+      "reported": 0,
       "kept": 0,
-      "dropped": 1,
+      "dropped": 0,
       "keptFindings": [],
-      "droppedFindings": [
-        {
-          "type": "SEM001",
-          "claim": "README.md: 构建管线宣称 525 个回归测试",
-          "against": "docs/domains/infra/code-map.md: 漂移9",
-          "quote": "525 个回归测试",
-          "note": "豁免跳过 EX-EX-010（基准实测测试数 456，非 525，计数与现状不符。"
-        }
-      ],
+      "droppedFindings": [],
       "provider": "deepseek/deepseek-v4-flash",
       "attempts": 1
     },
     "claude-vs-docs": {
-      "hash": "329c108d976f036a4e45e95db88164dd9502d9bc",
-      "lastRun": "2026-08-06",
+      "hash": "1fbef1cd55ebb05eaf65cb052e69e465d4ad06d0",
+      "lastRun": "2026-08-07",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -165,8 +157,8 @@
       "attempts": 1
     },
     "workflows-vs-guides": {
-      "hash": "39e9b834e280d283c21054950b8da70e49d4bf09",
-      "lastRun": "2026-08-06",
+      "hash": "17dd3156df8e9feb077859705e222d3c6b1c100f",
+      "lastRun": "2026-08-07",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -179,8 +171,8 @@
       "attempts": 1
     },
     "guides-release-vs-history": {
-      "hash": "7a048858eeaf9042735a9bb8809fd96e159c79f4",
-      "lastRun": "2026-08-06",
+      "hash": "d550db31dc6615fbb0d427656b9fae8b74fb824b",
+      "lastRun": "2026-08-07",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -191,10 +183,10 @@
       "droppedFindings": [
         {
           "type": "SEM001",
-          "claim": "docs/guides/release.md:13",
-          "against": "docs/ledger/history.md:53",
-          "quote": "minor 只给**大主题**闭环",
-          "note": "豁免跳过 EX-EX-006（release 指南要求 minor 仅用于大主题闭环，但 history 中 v8.5.1 为正在推进的主题首版且注明“8.5 主题继续”，并非闭环，却发布了"
+          "claim": "docs/guides/release.md:16",
+          "against": "docs/ledger/history.md:63",
+          "quote": "问题轮闭环或小主题轮",
+          "note": "豁免跳过 EX-EX-006（patch 定义未涵盖主题分散收尾；v8.5.2 即此类，两者相悖。"
         }
       ],
       "provider": "deepseek/deepseek-v4-flash",
@@ -243,8 +235,30 @@
       "attempts": 1
     },
     "contract-vs-map-client-shell": {
-      "hash": "40769dab9529b0b0c0fa75e58fcd7c77973a34bc",
-      "lastRun": "2026-08-06",
+      "hash": "523ebc1b579dc26c42366b9f27ecdf593976e372",
+      "lastRun": "2026-08-07",
+      "status": "ok",
+      "tooled": false,
+      "fallback": false,
+      "reported": 1,
+      "kept": 0,
+      "dropped": 1,
+      "keptFindings": [],
+      "droppedFindings": [
+        {
+          "type": "SEM001",
+          "claim": "docs/domains/client-shell/code-map.md:72",
+          "against": "docs/domains/client-shell/contract.md:71",
+          "quote": "待办卡 .obs-stack",
+          "note": "契约称待办卡已脱离 .obs-row 独立 fixed 右下定位，code-map 仍将待办卡列为 .obs-row 双信息框之一，结构断言冲突。"
+        }
+      ],
+      "provider": "deepseek/deepseek-v4-flash",
+      "attempts": 1
+    },
+    "contract-vs-map-floating-card": {
+      "hash": "8ff9249a56256ea660227a02f907858af5dc2f14",
+      "lastRun": "2026-08-07",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -256,88 +270,23 @@
       "provider": "deepseek/deepseek-v4-flash",
       "attempts": 1
     },
-    "contract-vs-map-floating-card": {
-      "hash": "981e085f4ab76b5b490ec8a734377968ccbe01cf",
-      "lastRun": "2026-08-04",
-      "status": "ok",
-      "tooled": false,
-      "fallback": false,
-      "reported": 6,
-      "kept": 0,
-      "dropped": 6,
-      "keptFindings": [],
-      "droppedFindings": [
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/floating-card/code-map.md:13",
-          "against": "docs/domains/floating-card/contract.md:13",
-          "quote": "launchFocusedCard 实际在",
-          "note": "契约称launchFocusedCard是floating-card出口，实际位于card-stack.ts，归属断言冲突"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/floating-card/code-map.md:15",
-          "against": "docs/domains/floating-card/contract.md:12",
-          "quote": "契约尺寸数字全错",
-          "note": "契约规定compact 120×36/active 155×68，实际尺寸为155×68/240×288，断言冲突"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/floating-card/code-map.md:18",
-          "against": "docs/domains/floating-card/contract.md:24",
-          "quote": "硬规则 4 双色对应反了",
-          "note": "契约规定图标数字用color2，代码实际用color1，双色规则冲突"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/floating-card/code-map.md:20",
-          "against": "docs/domains/floating-card/contract.md:9",
-          "quote": "tmux-card 导入数为 0",
-          "note": "契约称tmux-card导入数为0是特性，实际已被插件卡静态导入，断言失效"
-        },
-        {
-          "type": "SEM002",
-          "claim": "docs/domains/floating-card/code-map.md:21",
-          "against": "docs/domains/floating-card/contract.md:32",
-          "quote": "enterFullscreen 对全后代写",
-          "note": "契约#陷阱2警告全后代写touchAction会永久粘住，代码仍违反该规则"
-        },
-        {
-          "type": "SEM002",
-          "claim": "docs/domains/floating-card/code-map.md:22",
-          "against": "docs/domains/floating-card/contract.md:19",
-          "quote": "硬规则 2 多处违反",
-          "note": "契约硬规则2禁止直接addEventListener，代码多处直接调用违反规则"
-        }
-      ],
-      "provider": "阶跃星辰/step-3.7-flash",
-      "attempts": 2
-    },
     "contract-vs-map-server": {
-      "hash": "e89e2f760db872c9f917c5eebcfb4aab44eda7c1",
-      "lastRun": "2026-08-06",
+      "hash": "43c89cad5c8f21a776b51de5ce7704e886dfbb32",
+      "lastRun": "2026-08-08",
       "status": "ok",
       "tooled": false,
       "fallback": false,
-      "reported": 1,
-      "kept": 1,
+      "reported": 0,
+      "kept": 0,
       "dropped": 0,
-      "keptFindings": [
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/server/contract.md:44",
-          "against": "docs/domains/server/code-map.md:9",
-          "quote": "src/server/routes/obs.ts",
-          "note": "契约清单列10文件含obs.ts/permissions.ts，code-map称域规模8文件且未提及，数量矛盾"
-        }
-      ],
+      "keptFindings": [],
       "droppedFindings": [],
       "provider": "deepseek/deepseek-v4-flash",
       "attempts": 1
     },
     "contract-vs-map-infra": {
-      "hash": "a565c140d8717b11700ade97e6674d66794adc6b",
-      "lastRun": "2026-08-06",
+      "hash": "2ac6ebf78bab4c3639a391ed2e0a3a6961507977",
+      "lastRun": "2026-08-08",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -350,8 +299,8 @@
       "attempts": 1
     },
     "crossdomain-vs-inventory": {
-      "hash": "1635c19a6fd07d0be304a188c036a651d57b9008",
-      "lastRun": "2026-08-06",
+      "hash": "074e3e68beda98df0ec5dce5eb927f536a550e08",
+      "lastRun": "2026-08-07",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -364,8 +313,8 @@
       "attempts": 1
     },
     "inter-workflows-infra": {
-      "hash": "874a6b38ee7d83aa0600b743fa81e615df6499eb",
-      "lastRun": "2026-08-06",
+      "hash": "1f8acade56c42a0b4fa5bb7b417cd4651e6c98ea",
+      "lastRun": "2026-08-07",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -378,8 +327,8 @@
       "attempts": 1
     },
     "inter-provenance-bugs": {
-      "hash": "f6d79399f586a086b1964cc7f244173570b4fe59",
-      "lastRun": "2026-08-06",
+      "hash": "14a2a6cc0182a9aa0b853af92c8c1cd899a60b3d",
+      "lastRun": "2026-08-07",
       "status": "ok",
       "tooled": false,
       "fallback": false,
@@ -448,59 +397,38 @@
       "attempts": 1
     },
     "code-map-vs-src-ai-chat": {
-      "hash": "d705085319fdb3806dfc05039bdfc6c9067fef3a",
-      "lastRun": "2026-08-06",
+      "hash": "9842d4316333acbdf1d91fd5315443fc636ac2ee",
+      "lastRun": "2026-08-08",
       "status": "ok",
       "tooled": true,
       "fallback": false,
-      "reported": 6,
-      "kept": 6,
-      "dropped": 0,
-      "keptFindings": [
+      "reported": 3,
+      "kept": 0,
+      "dropped": 3,
+      "keptFindings": [],
+      "droppedFindings": [
         {
           "type": "SEM001",
-          "claim": "docs/domains/ai-chat/code-map.md:28",
-          "against": "src/server/ai/chat.ts:150",
-          "quote": "chat.ts:139（服务端）",
-          "note": "承重入口表称 streamChat 在 chat.ts:139，实际 grep 在 :150，漂移 +11 行"
+          "claim": "承重入口 promoteReasoningBlocks 读时挂点 session-client.ts:260,282",
+          "against": "src/client/modules/session-client.ts:263,285",
+          "quote": "读时 session-client.ts:260,282",
+          "note": "grep 显示 promoteReasoningBlocks 实为 session-client.ts:263/285 两处，文档行号整体偏移 3 行，与基准不"
         },
         {
           "type": "SEM001",
-          "claim": "docs/domains/ai-chat/code-map.md:71",
-          "against": "src/server/ai/session-store.ts:131",
-          "quote": "现存仅 session-store.ts:69",
-          "note": "承重结论称 _computeStats 仅 session-store.ts:69 一份，实际定义在 :131，漂移 +62 行"
+          "claim": "漂移清单#1 _doSaveMessages（session-client.ts:389）",
+          "against": "src/client/modules/session-client.ts:393",
+          "quote": "_doSaveMessages（session-client",
+          "note": "grep 显示 _doSaveMessages 定义在 session-client.ts:393，非 389，行号偏移 4 行"
         },
         {
           "type": "SEM001",
-          "claim": "docs/domains/ai-chat/code-map.md:24",
-          "against": "src/client/modules/orb-chat-run.ts:406",
-          "quote": "orb-chat-run.ts:404",
-          "note": "承重入口表称 doSend 在 orb-chat-run.ts:404，实际 export 在 :406，漂移 +2 行"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/ai-chat/code-map.md:25",
-          "against": "src/client/modules/orb-chat-run.ts:356",
-          "quote": "orb-chat-run.ts:354",
-          "note": "承重入口表称 resumeRun 在 orb-chat-run.ts:354，实际 export 在 :356，漂移 +2 行"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/ai-chat/code-map.md:86",
-          "against": "src/server/ai/chat.ts:224-226",
-          "quote": "chat.ts:213-215",
-          "note": "不变量称空 assistant 丢弃在 chat.ts:213-215，实际 filter 在 :226，漂移 +11 行"
-        },
-        {
-          "type": "SEM001",
-          "claim": "docs/domains/ai-chat/code-map.md:27",
-          "against": "src/client/modules/session-client.ts:151",
-          "quote": "session-client.ts:149",
-          "note": "承重入口表称 sessionStore 单例在 session-client.ts:149，实际 export 在 :151，漂移 +2 行"
+          "claim": "一次发送链路步骤4 doSend 调用点 orb-chat-run.ts:438",
+          "against": "src/client/modules/orb-chat-run.ts:440",
+          "quote": "orb-chat-run.ts:438 doSend",
+          "note": "grep 显示 toOpenAiMessages 在 orb-chat-run.ts:440 调用，非 438，行号偏移 2 行"
         }
       ],
-      "droppedFindings": [],
       "provider": "deepseek/deepseek-v4-flash",
       "attempts": 1
     },
@@ -1015,6 +943,76 @@
       "ran": 23,
       "skipped": 7,
       "kept": 8,
+      "dropped": 3
+    },
+    {
+      "date": "2026-08-07",
+      "ran": 16,
+      "skipped": 14,
+      "kept": 5,
+      "dropped": 4
+    },
+    {
+      "date": "2026-08-08",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 1,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-08",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-08",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 1,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-08",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-08",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 3,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-08",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 2,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-08",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 3,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-08",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-08",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 0,
       "dropped": 3
     }
   ]
