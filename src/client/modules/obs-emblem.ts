@@ -213,8 +213,8 @@ class EmblemGather {
     // escape-ok: 守视验证钩子——形度与「粒子-形状位平均距离」原子读出，绕过截图延迟
     const md = pos.reduce((acc, p, i) => acc + Math.hypot(p.x - this.glyph[i].x, p.y - this.glyph[i].y), 0) / pos.length;
     (window as unknown as { __emblemDbg: string }).__emblemDbg = `${s.toFixed(2)} md=${md.toFixed(1)} t=${(t / 1000).toFixed(1)}`; // escape-ok: 守视验证钩子（试映期临时）
-    // 连线：同一套距离规则；跨组线随形度 s 渐隐（成形后两圈之间不留线）；
-    // 闭环边跳过（交给描边层，避免双线叠亮）
+    // 连线：同一套距离规则，全部动态连线随形度 s 统一渐隐——成形后只留
+    // 两环一点；闭环边跳过（交给描边层，避免双线叠亮）
     ctx.clearRect(0, 0, w, h);
     const n = pos.length;
     for (let i = 0; i < n; i++) {
@@ -222,10 +222,9 @@ class EmblemGather {
         if (EmblemGather.loopEdge(i, j)) continue;
         const d = Math.hypot(pos[i].x - pos[j].x, pos[i].y - pos[j].y);
         if (d >= this.thr) continue;
-        // 全局同亮 0.85（2026-08-08 用户定稿：连线不论远近，与成形描边一样亮）；
-        // 竖瞳组（12-19）参与的线紫色，其余蓝色
-        let a = 0.85;
-        if (EmblemGather.grp(i) !== EmblemGather.grp(j)) a *= 1 - s;
+        // 全局同亮 0.85；但所有动态连线随形度 s 统一渐隐——成形后只留两环一点，
+        // 同组隔点线（紫环内的弦）也不能出现（2026-08-08 用户定稿）
+        const a = 0.85 * (1 - s);
         ctx.strokeStyle = `rgba(${i >= 12 && i < 20 || j >= 12 && j < 20 ? VIOLET : BLUE},${a})`;
         ctx.lineWidth = 0.8;
         ctx.beginPath(); ctx.moveTo(pos[i].x, pos[i].y); ctx.lineTo(pos[j].x, pos[j].y); ctx.stroke();
