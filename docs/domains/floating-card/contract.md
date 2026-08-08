@@ -67,6 +67,10 @@
 14. **随机配色只在全量打开路径生成**（BAR-CARD-ACCENT-01）：`_generateRandomAccents`
     +`_updateCardStyles` 为「全新打开」设计（卡片在屏外，换色不可见）；closing→opening
     反向重开卡片就在屏中央，必须沿用本次已生成的 `_currentAccents`，否则可见跳色。
+15. **照抄卡片插件模板必须全量过一遍字面参数**（2026-08-08，5ab085c0）：scripts.card
+    照抄 tools.card 时漏改 `buildCardLayout` 的标题字面量，卡片顶着「tool」标题上线，
+    守视实拍才抓获。模板复制是最快的卡片开发路径，也是字面量残留的高发路径——
+    标题/图标/类名/存储 key 逐项核对。
 
 ## 素材考古（原文已随 archive 注销，`git show v8.1.1:docs/archive/design/…` 可挖）
 
