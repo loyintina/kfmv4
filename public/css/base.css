@@ -1073,8 +1073,9 @@ body {
 
 .obs-duty-cron-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1px 8px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px 4px;
+  padding: 5px 10px 0;
 }
 
 .obs-duty-cron {
@@ -1082,6 +1083,11 @@ body {
   align-items: center;
   font-size: 9px;
   min-width: 0;
+  overflow: hidden;
+}
+
+.obs-duty-cron .obs-dot {
+  margin-right: 2px;
 }
 
 .obs-duty-name {
