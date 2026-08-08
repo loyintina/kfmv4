@@ -50,21 +50,25 @@ function mkCanvas(rect: EmblemRect): [HTMLCanvasElement, CanvasRenderingContext2
 
 // ============ A 聚散：随机闭环 ⇄ 深渊菱瞳 ============
 // 设计（2026-08-08 用户定稿）：无相位状态机。一轮 T 内每个粒子沿「随机闭环」
-// 匀速巡游——起点=终点=自己的形状位，轨迹每轮重生成。轮界瞬间 21 点同归形状位，
-// 形自然浮现；随后各自散入随机路径。全程同速（弧长参数化），永不停顿。
+// 巡游——起点=终点=自己的形状位，轨迹每轮重生成。轮界瞬间 21 点同归形状位，
+// 形自然浮现；随后各自散入随机路径。速率全程缓动：成形前后半个周期内
+// smoothstep 减速到 0.25 倍谷底再缓缓加速（永不停顿），中段回到满缓速。
 class EmblemGather {
   private glyph: { x: number; y: number }[] = [];
   private t0 = 0;
   private lastT = -1;
   private R: () => number;
-  private v = 0;   // 全员统一速率（缓），px/s
+  private v = 0;   // 全员统一速率（缓，均值），px/s
   private thr = 0; // 连线阈值（单阈值）
-  // 每粒子的本轮路径：采样点 + 弧长表（匀速靠弧长参数化实现）
+  // 每粒子的本轮路径：采样点 + 弧长表；prog=弧长进度累计，k=进度推进系数（px/s@f=1）
   private paths: { xs: number[]; ys: number[]; cum: number[]; len: number }[] = [];
+  private prog: number[] = [];
+  private k: number[] = [];
   private static T = 16000;        // 一轮时长：形 → 散 → 乱 → 形
-  private static SHAPE_TAU = 1400; // 轮界前后形可读窗口（ms）
+  private static SHAPE_TAU = 2500; // 轮界前后形可读窗口（ms；缓动窗让粒子自然流连，同步拉宽）
   private static WP = 5;           // 每轮随机路点数
   private static SEG = 60;         // 每段弧长采样数
+  private static FMIN = 0.25;      // 缓动谷底速率比（成形瞬间不停，只放到最缓）
   constructor(private w: number, private h: number) {
     this.R = rng(20260808);
     // 深渊菱瞳目标形：菱形 4 顶点 + 每边 2 等分点（12），竖瞳椭圆 8 点，瞳心 1 点
@@ -86,6 +90,29 @@ class EmblemGather {
   }
   // 分组：0-11 菱形 / 12-19 竖瞳 / 20 瞳心（独组）
   private static grp(i: number): number { return i < 12 ? 0 : i < 20 ? 1 : 2; }
+  // 尺寸变化原地适配：采样坐标等比缩放 + 弧长表重建 + 进度按比例映射——
+  // 周期时钟/随机路径全保留，不重启不瞬移（2026-08-08：翻屏几何波动频繁触发
+  // relayout，重建引擎导致周期反复归零、形每 ~7s 瞬移一次）
+  resize(nw: number, nh: number): void {
+    const fx = nw / this.w, fy = nh / this.h;
+    this.w = nw; this.h = nh;
+    this.glyph = this.glyph.map(g => ({ x: g.x * fx, y: g.y * fy }));
+    for (let pi = 0; pi < this.paths.length; pi++) {
+      const p = this.paths[pi];
+      for (let i = 0; i < p.xs.length; i++) { p.xs[i] *= fx; p.ys[i] *= fy; }
+      const cum = [0];
+      for (let i = 1; i <= p.xs.length; i++) {
+        const a = i % p.xs.length;
+        cum.push(cum[i - 1] + Math.hypot(p.xs[a] - p.xs[i - 1], p.ys[a] - p.ys[i - 1]));
+      }
+      const oldLen = p.len;
+      p.cum = cum; p.len = cum[cum.length - 1];
+      this.prog[pi] = oldLen > 0 ? (this.prog[pi] / oldLen) * p.len : 0;
+    }
+    this.k = this.paths.map(p => p.len / EmblemGather.cycleInt());
+    this.thr = Math.min(nw, nh) * 0.30;
+    this.v = Math.hypot(nw, nh) * 0.10;
+  }
   // 闭环边（同组相邻 + 首尾相接）：由形状描边层统一画，动态连线跳过以免叠亮
   private static loopEdge(i: number, j: number): boolean {
     return (j === i + 1 && EmblemGather.grp(i) === EmblemGather.grp(j))
@@ -113,9 +140,22 @@ class EmblemGather {
     }
     return { xs, ys, cum, len: cum[cum.length - 1] };
   }
+  // 缓动速率因子：f(db) = FMIN + (1-FMIN)·smoothstep(db/W)，W=T/4——
+  // 成形前 4s 开始缓减速，成形后 4s 缓加速，减速点到加速点正好半个周期
+  private static speedF(dbMs: number): number {
+    const u = Math.min(1, dbMs / (EmblemGather.T / 4));
+    const sm = u * u * (3 - 2 * u);
+    return EmblemGather.FMIN + (1 - EmblemGather.FMIN) * sm;
+  }
+  // 一轮 ∫f dt（秒）：2·(W·(FMIN+(1-FMIN)/2) + (T/2−W))，W=T/4 → T − T/4·(1−FMIN)
+  private static cycleInt(): number {
+    const Ts = EmblemGather.T / 1000;
+    return Ts - (Ts / 4) * (1 - EmblemGather.FMIN);
+  }
   // 每轮重生成随机轨迹；长度归一到「统一速率 × T」（绕形心缩放点，保随机形状）
   private regen(): void {
     const target = this.v * (EmblemGather.T / 1000);
+    const intS = EmblemGather.cycleInt();
     this.paths = this.glyph.map(g => {
       let wps = Array.from({ length: EmblemGather.WP }, () => ({
         x: 12 + this.R() * (this.w - 24), y: 12 + this.R() * (this.h - 24),
@@ -132,6 +172,9 @@ class EmblemGather {
       }
       return path;
     });
+    // k = len/∫f dt：按各自路径长反推，保证缓动积分一轮后恰好回到形状位
+    this.k = this.paths.map(p => p.len / intS);
+    this.prog = this.paths.map(() => 0);
   }
   // 弧长 → 位置（二分 + 线性插值）
   private at(path: { xs: number[]; ys: number[]; cum: number[]; len: number }, d: number): { x: number; y: number } {
@@ -146,7 +189,7 @@ class EmblemGather {
       y: ys[lo % n] + (ys[hi % n] - ys[lo % n]) * u,
     };
   }
-  step(ctx: CanvasRenderingContext2D, now: number, _dt: number): void {
+  step(ctx: CanvasRenderingContext2D, now: number, dt: number): void {
     const { w, h } = this;
     if (!this.t0) this.t0 = now;
     const T = EmblemGather.T;
@@ -157,11 +200,16 @@ class EmblemGather {
     // 形度 s：距轮界越近越成形（粒子物理上恰好同归形状位，s 只是描边的渐变窗）
     const s = ease(Math.max(0, 1 - Math.min(t, T - t) / EmblemGather.SHAPE_TAU));
     (window as unknown as { __emblemPhase: string }).__emblemPhase = s.toFixed(2); // escape-ok: 守视掐点调试钩子（eval 读形度拍成形帧，试映期临时）
-    // 匀速弧长推进：全员同一 t/T 进度，路径长已归一 → 速率一致
-    const pos = this.paths.map(p => this.at(p, (t / T) * p.len));
+    // 缓动弧长推进：速率因子随「距轮界」smoothstep 变化，数值积分累计进度；
+    // k 已按 ∫f 归一——一轮后恰好回到形状位，平均速率仍是缓速 v
+    const f = EmblemGather.speedF(Math.min(t, T - t));
+    const pos = this.paths.map((p, i) => {
+      this.prog[i] = Math.min(p.len, this.prog[i] + f * this.k[i] * dt);
+      return this.at(p, this.prog[i]);
+    });
     // escape-ok: 守视验证钩子——形度与「粒子-形状位平均距离」原子读出，绕过截图延迟
     const md = pos.reduce((acc, p, i) => acc + Math.hypot(p.x - this.glyph[i].x, p.y - this.glyph[i].y), 0) / pos.length;
-    (window as unknown as { __emblemDbg: string }).__emblemDbg = `${s.toFixed(2)} md=${md.toFixed(1)}`; // escape-ok: 守视验证钩子（试映期临时）
+    (window as unknown as { __emblemDbg: string }).__emblemDbg = `${s.toFixed(2)} md=${md.toFixed(1)} t=${(t / 1000).toFixed(1)}`; // escape-ok: 守视验证钩子（试映期临时）
     // 连线：同一套距离规则；跨组线随形度 s 渐隐（成形后两圈之间不留线）；
     // 闭环边跳过（交给描边层，避免双线叠亮）
     ctx.clearRect(0, 0, w, h);
@@ -212,6 +260,7 @@ class EmblemTide {
       this.cols.push({ phase: R() * Math.PI * 2, speed: 0.75 + R() * 0.5, off: R() });
     }
   }
+  resize(nw: number, nh: number): void { this.w = nw; this.h = nh; } // 全场由 w/h 逐帧推导，改数即可
   step(ctx: CanvasRenderingContext2D, now: number): void {
     const { w, h } = this;
     const t = now / 1000;
@@ -256,6 +305,13 @@ class EmblemOrbit {
     for (let i = 0; i < 12; i++) {
       this.sats.push({ r0: (0.18 + R() * 0.26) * Math.min(w, h), om: (0.25 + R() * 0.4) * (R() > 0.5 ? 1 : -1), ph: R() * Math.PI * 2 });
     }
+  }
+  resize(nw: number, nh: number): void { // 轨道半径按短边比缩放，尾迹坐标等比映射
+    const f = Math.min(nw, nh) / Math.min(this.w, this.h);
+    const fx = nw / this.w, fy = nh / this.h;
+    this.w = nw; this.h = nh;
+    for (const s of this.sats) s.r0 *= f;
+    for (const p of this.trail) { p.x *= fx; p.y *= fy; }
   }
   step(ctx: CanvasRenderingContext2D, now: number): void {
     const { w, h } = this;
@@ -304,19 +360,41 @@ class EmblemOrbit {
 // ============ 装配：三画布共享单 rAF ============
 export function initObsEmblems(getRects: () => EmblemRects | null): { relayout: () => void } {
   let els: HTMLCanvasElement[] = [];
-  let engines: { step: (ctx: CanvasRenderingContext2D, now: number, dt: number) => void }[] = [];
+  let engines: { step: (ctx: CanvasRenderingContext2D, now: number, dt: number) => void; resize?: (nw: number, nh: number) => void }[] = [];
   let ctxs: CanvasRenderingContext2D[] = [];
 
   const build = () => {
-    for (const el of els) el.remove();
-    els = []; ctxs = []; engines = [];
     const r = getRects();
-    if (!r || r.pocket.width < 40 || r.pocket.height < 60) return; // 区域太小宁缺毋滥
+    if (!r || r.pocket.width < 40 || r.pocket.height < 60) { // 区域太小宁缺毋滥
+      for (const el of els) el.remove();
+      els = []; ctxs = []; engines = [];
+      return;
+    }
+    // 尺寸基本没变（±2px）只挪画布位置——亚像素几何波动连画布都不用换
+    const rects = [r.pocket, r.stripTop, r.stripBot];
+    if (els.length === 3) {
+      const same = rects.every((rc, i) =>
+        Math.abs(rc.width - parseFloat(els[i].style.width)) <= 2 &&
+        Math.abs(rc.height - parseFloat(els[i].style.height)) <= 2);
+      if (same) {
+        rects.forEach((rc, i) => { els[i].style.left = `${rc.left}px`; els[i].style.top = `${rc.top}px`; });
+        return;
+      }
+    }
+    for (const el of els) el.remove();
+    els = []; ctxs = [];
     const [cvA, ctxA, wA, hA] = mkCanvas(r.pocket);
     const [cvB, ctxB, wB, hB] = mkCanvas(r.stripTop);
     const [cvC, ctxC, wC, hC] = mkCanvas(r.stripBot);
     els = [cvA, cvB, cvC]; ctxs = [ctxA, ctxB, ctxC];
-    engines = [new EmblemGather(wA, hA), new EmblemTide(wB, hB), new EmblemOrbit(wC, hC)];
+    if (engines.length === 3) {
+      // 尺寸真变了：画布换新，引擎原地 resize——周期/进度连续，不重启不瞬移
+      (window as unknown as { __emblemRz: number }).__emblemRz = ((window as unknown as { __emblemRz: number }).__emblemRz || 0) + 1; // escape-ok: 守视计数（试映期临时）
+      engines[0].resize?.(wA, hA); engines[1].resize?.(wB, hB); engines[2].resize?.(wC, hC);
+    } else {
+      (window as unknown as { __emblemRb: number }).__emblemRb = ((window as unknown as { __emblemRb: number }).__emblemRb || 0) + 1; // escape-ok: 守视计数（试映期临时）
+      engines = [new EmblemGather(wA, hA), new EmblemTide(wB, hB), new EmblemOrbit(wC, hC)];
+    }
   };
 
   build();
