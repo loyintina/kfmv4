@@ -22,7 +22,10 @@ import { join, extname, relative } from 'path';
 const SRC_DIR = 'src';
 
 // vendored：移植的 OMP 工具，库边界断言合理，整目录豁免
-const VENDORED_PREFIXES = ['src/server/ai/tools/omp/'];
+// generated：机械生成物（scripts-catalog 等）——其内容源自各脚本头部注释
+// （如 check-as-any 自己的描述串 "as any / as unknown as" 会在 JSON 字符串里
+// 字面命中本检查的 ESCAPE_RE 造成假阳性，2026-08-08 实案）；审计点是生成器而非产物
+const VENDORED_PREFIXES = ['src/server/ai/tools/omp/', 'src/client/generated/'];
 
 // 两类逃逸
 const ESCAPE_RE = /\bas\s+unknown\s+as\b|\bas\s+any\b/;
