@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit e3939738 · 生成于 2026-08-08 -->
+<!-- 基准 commit c72c2570 · 生成于 2026-08-08 -->
 
 # 代码清单（机械层）
 
@@ -36,11 +36,11 @@
 | src/client/engine/v2/animation.ts | 40 | ease |
 | src/client/engine/v2/utils.ts | 24 | uniformSpacing, hvSpacing, ZERO_SPACING |
 
-## floating-card（31 文件 · 8584 行）
+## floating-card（31 文件 · 8593 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/client/generated/scripts-catalog.ts | 1346 | ScriptCatalogEntry, SCRIPTS_CATALOG, SCRIPT_CATEGORIES |
+| src/client/generated/scripts-catalog.ts | 1355 | ScriptCatalogEntry, SCRIPTS_CATALOG, SCRIPT_CATEGORIES |
 | src/client/modules/floating-card.ts | 811 | enterFullscreen, exitFullscreen, dismissFullscreen, updateFullscreenSavedPosition, createFloatingCard, dismissFloatingCard, initFloatingCards, hasFloatingCard, buildCardLayout |
 | src/client/modules/terminal-card-04.ts | 807 | TerminalCardMeta, initTerminalCore, disposeTerminalCore, compactTerminalCore, createTerminal04Handler |
 | src/client/cards/plugins/role.card.ts | 711 | — |
@@ -162,7 +162,7 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（10 文件 · 2299 行）
+## server（10 文件 · 2303 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -170,22 +170,22 @@
 | src/server/routes/files.ts | 417 | FileItem, sliceMessages, MSG_PAYLOAD_BUDGET, MSG_SINGLE_CAP, capMessagesPayload, setupFileRoutes |
 | src/server/ws-server.ts | 315 | WsServer |
 | src/server/index.ts | 186 | — |
-| src/server/path-utils.ts | 168 | ROOT_DIR, PROJECT_ROOT, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, SESSION_ID_RE, isValidSessionId, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
+| src/server/path-utils.ts | 172 | ROOT_DIR, PROJECT_ROOT, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, SESSION_ID_RE, isValidSessionId, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
 | src/server/ai/permissions.ts | 134 | RiskClass, TOOL_RISK, Decision, AuditEntry, riskClassOf, evaluate |
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/env-store.ts | 103 | ENV_PATH, parseEnv, loadEnvFile, isEnvRef, ResolvedKey, resolveKey, envNameForProvider, upsertEnvVar |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（151 文件 · 18363 行）
+## infra（153 文件 · 18470 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | tests/client-logic.test.ts | 939 | — |
-| tests/regression.test.ts | 652 | — |
+| tests/regression.test.ts | 653 | — |
 | experiments/coldstart/tools/normalize-arms.mjs | 587 | — |
 | tests/tool-compaction.test.ts | 505 | — |
-| tests/server-routes.test.ts | 471 | — |
+| tests/server-routes.test.ts | 472 | — |
 | scripts/agent/semantic-audit.mjs | 470 | parseOnly, taskFiles, buildPrompt, makeValidate, recheckRef, recheckQuote |
 | tests/preload.mjs | 423 | — |
 | tests/cards.test.ts | 410 | — |
@@ -194,7 +194,7 @@
 | scripts/agent/browser-relay.mjs | 323 | — |
 | tests/box.test.ts | 309 | — |
 | tests/mocks/gsap.ts | 305 | gsap |
-| tests/run-manager.test.ts | 300 | — |
+| tests/run-manager.test.ts | 301 | — |
 | scripts/check/check-registry.mjs | 292 | — |
 | tests/gesture-registry.test.ts | 263 | — |
 | scripts/agent/semantic-mutate.mjs | 261 | MUTATIONS |
@@ -205,7 +205,7 @@
 | tests/path-utils.test.ts | 215 | — |
 | tests/renderer.test.ts | 215 | — |
 | tests/to-openai-messages.test.ts | 208 | — |
-| tests/smoke/smoke.mjs | 190 | — |
+| tests/smoke/smoke.mjs | 199 | — |
 | scripts/agent/semantic-chain.mjs | 185 | — |
 | scripts/check/gen-code-inventory.mjs | 184 | — |
 | tests/chat-protocol.test.ts | 169 | — |
@@ -224,7 +224,7 @@
 | experiments/coldstart/tools/judge-batch.mjs | 135 | — |
 | scripts/agent/exp-iceberg.mjs | 134 | — |
 | build.mjs | 133 | — |
-| scripts/check/chain.mjs | 132 | STEPS |
+| scripts/check/chain.mjs | 133 | STEPS |
 | scripts/check/check-checks.mjs | 132 | — |
 | scripts/check/check-tool-compaction.mjs | 130 | — |
 | scripts/check/check-mutation-anchors.mjs | 127 | — |
@@ -269,6 +269,7 @@
 | scripts/check/check-experiment-registry.mjs | 76 | — |
 | scripts/check/docs-status.mjs | 76 | — |
 | scripts/check/check-doc-symbols.mjs | 75 | — |
+| scripts/check/check-kfmv4-data.mjs | 75 | — |
 | experiments/coldstart/tools/theme-code.mjs | 75 | — |
 | scripts/check/check-code-doc-refs.mjs | 69 | — |
 | scripts/check/check-card-meta.mjs | 68 | — |
@@ -306,6 +307,7 @@
 | .githooks/pre-push | 28 | — |
 | tests/semantic-audit.test.ts | 26 | — |
 | tests/check-deploy-freshness.test.ts | 19 | — |
+| tests/env-test-isolation.mjs | 19 | — |
 | tests/probes/gen-permission-map/src/server/ai/tools/index.ts | 19 | getToolDefinitions, getAllTools |
 | tests/gsap-hook.mjs | 17 | resolve |
 | tests/probes/gen-permission-map/src/server/ai/tools/fake.ts | 16 | fakeTool |
@@ -647,4 +649,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 297 文件 · 53583 行 · 跨域边 252 条
+合计 299 文件 · 53703 行 · 跨域边 252 条
