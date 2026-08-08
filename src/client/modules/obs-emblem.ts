@@ -90,7 +90,7 @@ class EmblemGather {
   step(ctx: CanvasRenderingContext2D, now: number, dt: number): void {
     const { w, h } = this;
     const [ph, k] = this.phase(now);
-    (window as unknown as { __emblemPhase: string }).__emblemPhase = ph; // 守视掐点调试钩子（试映期临时）
+    (window as unknown as { __emblemPhase: string }).__emblemPhase = ph; // escape-ok: 守视掐点调试钩子（eval 读相位拍 hold 帧，试映期临时）
     const ease = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
     for (let i = 0; i < this.pts.length; i++) {
       const p = this.pts[i];
