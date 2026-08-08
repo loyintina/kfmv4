@@ -449,13 +449,12 @@ body {
 /* 固定高度（用户定稿 2026-08-06）：内容不足不收缩，超出滚动 */
 .obs-inbox-list {
   height: 150px;
-  overflow-y: auto;
+  overflow: hidden;
   pointer-events: auto;
   padding: 4px 0;
   scrollbar-width: none;
   -ms-overflow-style: none;
-}
-
+} /* 2026-08-08：手势滑动改自动翻屏，让位全局卡片堆手势 */
 .obs-inbox-list::-webkit-scrollbar {
   display: none;
 }
@@ -621,13 +620,12 @@ body {
 
 .obs-stack-list {
   height: 150px;
-  overflow-y: auto;
+  overflow: hidden;
   pointer-events: auto;
   padding: 4px 0;
   scrollbar-width: none;
   -ms-overflow-style: none;
-}
-
+} /* 同信箱：自动翻屏无手势 */
 .obs-stack-list::-webkit-scrollbar {
   display: none;
 }
