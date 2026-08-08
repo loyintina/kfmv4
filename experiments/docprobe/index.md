@@ -54,3 +54,6 @@
 ## 产物登记
 
 - 设计（design/）：design-docprobe.md
+- 地面真相（truth/）：shoushi.md（守视）/ error-codes.md（错误码体系，H1 活标本：
+  路由表无行）/ paradigm.md（范式包）/ domain-contract.md（域契约）/
+  file-tree.md（文件树，老功能对照组：路由表同样无行）
