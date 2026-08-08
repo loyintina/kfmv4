@@ -37,7 +37,7 @@
 | 语义审计 | `语义审计` `semantic` | docs/guides/agent-runner.md | infra | 文档-代码语义一致性探针集群 |
 | 部署与发布 | `部署` `deploy` `发布` | docs/guides/release.md | infra | deploy-fast/版本发布流程 |
 | 回归测试体系 | `回归` `BAR` `测试` | docs/guides/testing.md | infra | 528+ 回归测试与 BAR 钉制度 |
-| 权限引擎 | `权限` `RiskClass` | docs/domains/server/contract.md | server | 工具风险分级与审计 |
+| 权限引擎 | `权限` `RiskClass` | docs/active/harness-permission-engine.md | server | 工具风险分级与审计 |
 | 读写监狱（沙箱） | `沙箱` `监狱` `readRoot` | docs/ledger/bugs.md | ai-chat | write/edit 与 read/grep/glob 路径监狱 |
 
 ## 研究（4）

@@ -21,7 +21,7 @@
     { "name": "语义审计", "keywords": ["语义审计", "semantic"], "domain": "infra", "kind": "运维", "path": "docs/guides/agent-runner.md", "desc": "文档-代码语义一致性探针集群" },
     { "name": "部署与发布", "keywords": ["部署", "deploy", "发布"], "domain": "infra", "kind": "运维", "path": "docs/guides/release.md", "desc": "deploy-fast/版本发布流程" },
     { "name": "回归测试体系", "keywords": ["回归", "BAR", "测试"], "domain": "infra", "kind": "运维", "path": "docs/guides/testing.md", "desc": "528+ 回归测试与 BAR 钉制度" },
-    { "name": "权限引擎", "keywords": ["权限", "RiskClass"], "domain": "server", "kind": "运维", "path": "docs/domains/server/contract.md", "desc": "工具风险分级与审计" },
+    { "name": "权限引擎", "keywords": ["权限", "RiskClass"], "domain": "server", "kind": "运维", "path": "docs/active/harness-permission-engine.md", "desc": "工具风险分级与审计" },
     { "name": "读写监狱（沙箱）", "keywords": ["沙箱", "监狱", "readRoot"], "domain": "ai-chat", "kind": "运维", "path": "docs/ledger/bugs.md", "desc": "write/edit 与 read/grep/glob 路径监狱" },
 
     { "name": "paradigm 研究线", "keywords": ["范式包", "paradigm"], "kind": "研究", "path": "experiments/paradigm/index.md", "desc": "范式包对 agent 行为影响的实验体系" },
