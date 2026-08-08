@@ -124,18 +124,106 @@ judge=DS v4-flash 统一尺，逐臂覆盖/幻觉/依据）。
 
 | 臂 | 功能 | 状态 | 数据 |
 |---|---|---|---|
-| gate-c74aaf0c-1-msjy9jzd | Canvas 文件树 落成门 | 到达 | sessions/gate-c74aaf0c-1-msjy9jzd.json |
-| gate-c74aaf0c-2-msjy9jzd | Canvas 文件树 落成门 | 到达 | sessions/gate-c74aaf0c-2-msjy9jzd.json |
-| gate-c74aaf0c-3-msjy9jzd | Canvas 文件树 落成门 | 到达 | sessions/gate-c74aaf0c-3-msjy9jzd.json |
-| gate-c74aaf0c-4-msjy9jzd | Canvas 文件树 落成门 | 到达 | sessions/gate-c74aaf0c-4-msjy9jzd.json |
-| gate-520ea10f-1-msjyary6 | 守视（browser-relay） 落成门 | 到达 | sessions/gate-520ea10f-1-msjyary6.json |
-| gate-520ea10f-2-msjyary6 | 守视（browser-relay） 落成门 | 到达 | sessions/gate-520ea10f-2-msjyary6.json |
-| gate-520ea10f-3-msjyary6 | 守视（browser-relay） 落成门 | 到达 | sessions/gate-520ea10f-3-msjyary6.json |
-| gate-520ea10f-4-msjyary6 | 守视（browser-relay） 落成门 | 到达 | sessions/gate-520ea10f-4-msjyary6.json |
-| gate-a2ee93f5-1-msjyc7ob | 权限引擎 落成门 | 未达 | sessions/gate-a2ee93f5-1-msjyc7ob.json |
-| gate-a2ee93f5-2-msjyc7ob | 权限引擎 落成门 | 未达 | sessions/gate-a2ee93f5-2-msjyc7ob.json |
-| gate-a2ee93f5-3-msjyc7ob | 权限引擎 落成门 | 未达 | sessions/gate-a2ee93f5-3-msjyc7ob.json |
-| gate-a2ee93f5-4-msjyc7ob | 权限引擎 落成门 | 未达 | sessions/gate-a2ee93f5-4-msjyc7ob.json |
+| gate-188e3691-1-msjyiu12 | 会话聊天面板 落成门 | 到达 | sessions/gate-188e3691-1-msjyiu12.json |
+| gate-188e3691-2-msjyiu12 | 会话聊天面板 落成门 | 到达 | sessions/gate-188e3691-2-msjyiu12.json |
+| gate-188e3691-3-msjyiu12 | 会话聊天面板 落成门 | 到达 | sessions/gate-188e3691-3-msjyiu12.json |
+| gate-188e3691-4-msjyiu12 | 会话聊天面板 落成门 | 到达 | sessions/gate-188e3691-4-msjyiu12.json |
+| gate-6c734174-1-msjykffs | 角色卡 落成门 | 未达 | sessions/gate-6c734174-1-msjykffs.json |
+| gate-6c734174-2-msjykffs | 角色卡 落成门 | 到达 | sessions/gate-6c734174-2-msjykffs.json |
+| gate-6c734174-3-msjykffs | 角色卡 落成门 | 未达 | sessions/gate-6c734174-3-msjykffs.json |
+| gate-6c734174-4-msjykffs | 角色卡 落成门 | 未达 | sessions/gate-6c734174-4-msjykffs.json |
+| gate-f16fa643-1-msjylskv | API 卡（provider 管理） 落成门 | 未达 | sessions/gate-f16fa643-1-msjylskv.json |
+| gate-f16fa643-2-msjylskv | API 卡（provider 管理） 落成门 | 未达 | sessions/gate-f16fa643-2-msjylskv.json |
+| gate-f16fa643-3-msjylskv | API 卡（provider 管理） 落成门 | 到达 | sessions/gate-f16fa643-3-msjylskv.json |
+| gate-f16fa643-4-msjylskv | API 卡（provider 管理） 落成门 | 到达 | sessions/gate-f16fa643-4-msjylskv.json |
+| gate-ff3e3a71-1-msjynx8v | 会话存储与压缩 落成门 | 到达 | sessions/gate-ff3e3a71-1-msjynx8v.json |
+| gate-ff3e3a71-2-msjynx8v | 会话存储与压缩 落成门 | 到达 | sessions/gate-ff3e3a71-2-msjynx8v.json |
+| gate-ff3e3a71-3-msjynx8v | 会话存储与压缩 落成门 | 到达 | sessions/gate-ff3e3a71-3-msjynx8v.json |
+| gate-ff3e3a71-4-msjynx8v | 会话存储与压缩 落成门 | 到达 | sessions/gate-ff3e3a71-4-msjynx8v.json |
+| gate-be964772-1-msjyq7x4 | 光球面板 落成门 | 到达 | sessions/gate-be964772-1-msjyq7x4.json |
+| gate-be964772-2-msjyq7x4 | 光球面板 落成门 | 到达 | sessions/gate-be964772-2-msjyq7x4.json |
+| gate-be964772-3-msjyq7x4 | 光球面板 落成门 | 到达 | sessions/gate-be964772-3-msjyq7x4.json |
+| gate-be964772-4-msjyq7x4 | 光球面板 落成门 | 到达 | sessions/gate-be964772-4-msjyq7x4.json |
+| gate-85255f3f-1-msjyrcl6 | 手势系统 落成门 | 到达 | sessions/gate-85255f3f-1-msjyrcl6.json |
+| gate-85255f3f-2-msjyrcl6 | 手势系统 落成门 | 到达 | sessions/gate-85255f3f-2-msjyrcl6.json |
+| gate-85255f3f-3-msjyrcl6 | 手势系统 落成门 | 到达 | sessions/gate-85255f3f-3-msjyrcl6.json |
+| gate-85255f3f-4-msjyrcl6 | 手势系统 落成门 | 到达 | sessions/gate-85255f3f-4-msjyrcl6.json |
+| gate-7bb02f76-1-msjyt7v6 | OBS HUD 观测台 落成门 | 到达 | sessions/gate-7bb02f76-1-msjyt7v6.json |
+| gate-7bb02f76-2-msjyt7v6 | OBS HUD 观测台 落成门 | 到达 | sessions/gate-7bb02f76-2-msjyt7v6.json |
+| gate-7bb02f76-3-msjyt7v6 | OBS HUD 观测台 落成门 | 到达 | sessions/gate-7bb02f76-3-msjyt7v6.json |
+| gate-7bb02f76-4-msjyt7v6 | OBS HUD 观测台 落成门 | 到达 | sessions/gate-7bb02f76-4-msjyt7v6.json |
+| gate-5b863c2e-1-msjyufzf | 卡片堆工作台 落成门 | 到达 | sessions/gate-5b863c2e-1-msjyufzf.json |
+| gate-5b863c2e-2-msjyufzf | 卡片堆工作台 落成门 | 到达 | sessions/gate-5b863c2e-2-msjyufzf.json |
+| gate-5b863c2e-3-msjyufzf | 卡片堆工作台 落成门 | 到达 | sessions/gate-5b863c2e-3-msjyufzf.json |
+| gate-5b863c2e-4-msjyufzf | 卡片堆工作台 落成门 | 到达 | sessions/gate-5b863c2e-4-msjyufzf.json |
+| gate-8fa492d2-1-msjyvn3u | 终端卡 落成门 | 未达 | sessions/gate-8fa492d2-1-msjyvn3u.json |
+| gate-8fa492d2-2-msjyvn3u | 终端卡 落成门 | 到达 | sessions/gate-8fa492d2-2-msjyvn3u.json |
+| gate-8fa492d2-3-msjyvn3u | 终端卡 落成门 | 未达 | sessions/gate-8fa492d2-3-msjyvn3u.json |
+| gate-8fa492d2-4-msjyvn3u | 终端卡 落成门 | 到达 | sessions/gate-8fa492d2-4-msjyvn3u.json |
+| gate-1f078d74-1-msjyxhiw | todo 卡 落成门 | 到达 | sessions/gate-1f078d74-1-msjyxhiw.json |
+| gate-1f078d74-2-msjyxhiw | todo 卡 落成门 | 未达 | sessions/gate-1f078d74-2-msjyxhiw.json |
+| gate-1f078d74-3-msjyxhiw | todo 卡 落成门 | 未达 | sessions/gate-1f078d74-3-msjyxhiw.json |
+| gate-1f078d74-4-msjyxhiw | todo 卡 落成门 | 到达 | sessions/gate-1f078d74-4-msjyxhiw.json |
+| gate-c74aaf0c-1-msjyyr2g | Canvas 文件树 落成门 | 到达 | sessions/gate-c74aaf0c-1-msjyyr2g.json |
+| gate-c74aaf0c-2-msjyyr2g | Canvas 文件树 落成门 | 到达 | sessions/gate-c74aaf0c-2-msjyyr2g.json |
+| gate-c74aaf0c-3-msjyyr2g | Canvas 文件树 落成门 | 到达 | sessions/gate-c74aaf0c-3-msjyyr2g.json |
+| gate-c74aaf0c-4-msjyyr2g | Canvas 文件树 落成门 | 到达 | sessions/gate-c74aaf0c-4-msjyyr2g.json |
+| gate-19065fd9-1-msjz07pe | 构建检查链 落成门 | 未达 | sessions/gate-19065fd9-1-msjz07pe.json |
+| gate-19065fd9-2-msjz07pe | 构建检查链 落成门 | 到达 | sessions/gate-19065fd9-2-msjz07pe.json |
+| gate-19065fd9-3-msjz07pe | 构建检查链 落成门 | 到达 | sessions/gate-19065fd9-3-msjz07pe.json |
+| gate-19065fd9-4-msjz07pe | 构建检查链 落成门 | 未达 | sessions/gate-19065fd9-4-msjz07pe.json |
+| gate-7c85d277-1-msjz2qwi | 文档系统 落成门 | 到达 | sessions/gate-7c85d277-1-msjz2qwi.json |
+| gate-7c85d277-2-msjz2qwi | 文档系统 落成门 | 到达 | sessions/gate-7c85d277-2-msjz2qwi.json |
+| gate-7c85d277-3-msjz2qwi | 文档系统 落成门 | 到达 | sessions/gate-7c85d277-3-msjz2qwi.json |
+| gate-7c85d277-4-msjz2qwi | 文档系统 落成门 | 到达 | sessions/gate-7c85d277-4-msjz2qwi.json |
+| gate-6ee7885f-1-msjz3sd5 | 错误码体系 落成门 | 到达 | sessions/gate-6ee7885f-1-msjz3sd5.json |
+| gate-6ee7885f-2-msjz3sd5 | 错误码体系 落成门 | 到达 | sessions/gate-6ee7885f-2-msjz3sd5.json |
+| gate-6ee7885f-3-msjz3sd5 | 错误码体系 落成门 | 到达 | sessions/gate-6ee7885f-3-msjz3sd5.json |
+| gate-6ee7885f-4-msjz3sd5 | 错误码体系 落成门 | 到达 | sessions/gate-6ee7885f-4-msjz3sd5.json |
+| gate-9aafac0f-1-msjz5hjj | agent 脚本负载 落成门 | 到达 | sessions/gate-9aafac0f-1-msjz5hjj.json |
+| gate-9aafac0f-2-msjz5hjj | agent 脚本负载 落成门 | 到达 | sessions/gate-9aafac0f-2-msjz5hjj.json |
+| gate-9aafac0f-3-msjz5hjj | agent 脚本负载 落成门 | 到达 | sessions/gate-9aafac0f-3-msjz5hjj.json |
+| gate-9aafac0f-4-msjz5hjj | agent 脚本负载 落成门 | 到达 | sessions/gate-9aafac0f-4-msjz5hjj.json |
+| gate-520ea10f-1-msjz75fc | 守视（browser-relay） 落成门 | 到达 | sessions/gate-520ea10f-1-msjz75fc.json |
+| gate-520ea10f-2-msjz75fc | 守视（browser-relay） 落成门 | 到达 | sessions/gate-520ea10f-2-msjz75fc.json |
+| gate-520ea10f-3-msjz75fc | 守视（browser-relay） 落成门 | 到达 | sessions/gate-520ea10f-3-msjz75fc.json |
+| gate-520ea10f-4-msjz75fc | 守视（browser-relay） 落成门 | 到达 | sessions/gate-520ea10f-4-msjz75fc.json |
+| gate-5f8bdd58-1-msjz89je | 语义审计 落成门 | 到达 | sessions/gate-5f8bdd58-1-msjz89je.json |
+| gate-5f8bdd58-2-msjz89je | 语义审计 落成门 | 到达 | sessions/gate-5f8bdd58-2-msjz89je.json |
+| gate-5f8bdd58-3-msjz89je | 语义审计 落成门 | 未达 | sessions/gate-5f8bdd58-3-msjz89je.json |
+| gate-5f8bdd58-4-msjz89je | 语义审计 落成门 | 未达 | sessions/gate-5f8bdd58-4-msjz89je.json |
+| gate-7eae379c-1-msjzaxuq | 部署与发布 落成门 | 到达 | sessions/gate-7eae379c-1-msjzaxuq.json |
+| gate-7eae379c-2-msjzaxuq | 部署与发布 落成门 | 到达 | sessions/gate-7eae379c-2-msjzaxuq.json |
+| gate-7eae379c-3-msjzaxuq | 部署与发布 落成门 | 到达 | sessions/gate-7eae379c-3-msjzaxuq.json |
+| gate-7eae379c-4-msjzaxuq | 部署与发布 落成门 | 到达 | sessions/gate-7eae379c-4-msjzaxuq.json |
+| gate-9185d6f7-1-msjzci8q | 回归测试体系 落成门 | 到达 | sessions/gate-9185d6f7-1-msjzci8q.json |
+| gate-9185d6f7-2-msjzci8q | 回归测试体系 落成门 | 到达 | sessions/gate-9185d6f7-2-msjzci8q.json |
+| gate-9185d6f7-3-msjzci8q | 回归测试体系 落成门 | 到达 | sessions/gate-9185d6f7-3-msjzci8q.json |
+| gate-9185d6f7-4-msjzci8q | 回归测试体系 落成门 | 到达 | sessions/gate-9185d6f7-4-msjzci8q.json |
+| gate-a2ee93f5-1-msjzef0w | 权限引擎 落成门 | 到达 | sessions/gate-a2ee93f5-1-msjzef0w.json |
+| gate-a2ee93f5-2-msjzef0w | 权限引擎 落成门 | 到达 | sessions/gate-a2ee93f5-2-msjzef0w.json |
+| gate-a2ee93f5-3-msjzef0w | 权限引擎 落成门 | 到达 | sessions/gate-a2ee93f5-3-msjzef0w.json |
+| gate-a2ee93f5-4-msjzef0w | 权限引擎 落成门 | 到达 | sessions/gate-a2ee93f5-4-msjzef0w.json |
+| gate-fd6064ff-1-msjzgloy | 读写监狱（沙箱） 落成门 | 未达 | sessions/gate-fd6064ff-1-msjzgloy.json |
+| gate-fd6064ff-2-msjzgloy | 读写监狱（沙箱） 落成门 | 到达 | sessions/gate-fd6064ff-2-msjzgloy.json |
+| gate-fd6064ff-3-msjzgloy | 读写监狱（沙箱） 落成门 | 到达 | sessions/gate-fd6064ff-3-msjzgloy.json |
+| gate-fd6064ff-4-msjzgloy | 读写监狱（沙箱） 落成门 | 到达 | sessions/gate-fd6064ff-4-msjzgloy.json |
+| gate-8cec497f-1-msjzir1c | paradigm 研究线 落成门 | 到达 | sessions/gate-8cec497f-1-msjzir1c.json |
+| gate-8cec497f-2-msjzir1c | paradigm 研究线 落成门 | 到达 | sessions/gate-8cec497f-2-msjzir1c.json |
+| gate-8cec497f-3-msjzir1c | paradigm 研究线 落成门 | 到达 | sessions/gate-8cec497f-3-msjzir1c.json |
+| gate-8cec497f-4-msjzir1c | paradigm 研究线 落成门 | 到达 | sessions/gate-8cec497f-4-msjzir1c.json |
+| gate-c04f0f20-1-msjzkb4g | coldstart 研究线 落成门 | 到达 | sessions/gate-c04f0f20-1-msjzkb4g.json |
+| gate-c04f0f20-2-msjzkb4g | coldstart 研究线 落成门 | 到达 | sessions/gate-c04f0f20-2-msjzkb4g.json |
+| gate-c04f0f20-3-msjzkb4g | coldstart 研究线 落成门 | 到达 | sessions/gate-c04f0f20-3-msjzkb4g.json |
+| gate-c04f0f20-4-msjzkb4g | coldstart 研究线 落成门 | 到达 | sessions/gate-c04f0f20-4-msjzkb4g.json |
+| gate-ce8fc140-1-msjzlykj | docprobe 研究线 落成门 | 到达 | sessions/gate-ce8fc140-1-msjzlykj.json |
+| gate-ce8fc140-2-msjzlykj | docprobe 研究线 落成门 | 到达 | sessions/gate-ce8fc140-2-msjzlykj.json |
+| gate-ce8fc140-3-msjzlykj | docprobe 研究线 落成门 | 到达 | sessions/gate-ce8fc140-3-msjzlykj.json |
+| gate-ce8fc140-4-msjzlykj | docprobe 研究线 落成门 | 到达 | sessions/gate-ce8fc140-4-msjzlykj.json |
+| gate-dbf71807-1-msjznpyz | session-runner 跑批基建 落成门 | 未达 | sessions/gate-dbf71807-1-msjznpyz.json |
+| gate-dbf71807-2-msjznpyz | session-runner 跑批基建 落成门 | 未达 | sessions/gate-dbf71807-2-msjznpyz.json |
+| gate-dbf71807-3-msjznpyz | session-runner 跑批基建 落成门 | 到达 | sessions/gate-dbf71807-3-msjznpyz.json |
+| gate-dbf71807-4-msjznpyz | session-runner 跑批基建 落成门 | 到达 | sessions/gate-dbf71807-4-msjznpyz.json |
 
 <!-- probe-gate:end -->
 

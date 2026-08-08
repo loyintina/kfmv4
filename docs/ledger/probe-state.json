@@ -5,81 +5,653 @@
   "arms": 4,
   "threshold": 2,
   "capabilities": {
+    "会话聊天面板": {
+      "probedAt": "2026-08-08T05:53:52.933Z",
+      "commit": "97fff33c",
+      "question": "kfmv4 有一个会话聊天面板，你觉得它如何？",
+      "reached": 4,
+      "armsTotal": 4,
+      "pass": true,
+      "arms": [
+        {
+          "id": "gate-188e3691-1-msjyiu12",
+          "reached": true
+        },
+        {
+          "id": "gate-188e3691-2-msjyiu12",
+          "reached": true
+        },
+        {
+          "id": "gate-188e3691-3-msjyiu12",
+          "reached": true
+        },
+        {
+          "id": "gate-188e3691-4-msjyiu12",
+          "reached": true
+        }
+      ]
+    },
+    "角色卡": {
+      "probedAt": "2026-08-08T05:54:56.621Z",
+      "commit": "97fff33c",
+      "question": "kfmv4 有一个角色卡，你觉得它如何？",
+      "reached": 1,
+      "armsTotal": 4,
+      "pass": false,
+      "arms": [
+        {
+          "id": "gate-6c734174-1-msjykffs",
+          "reached": false
+        },
+        {
+          "id": "gate-6c734174-2-msjykffs",
+          "reached": true
+        },
+        {
+          "id": "gate-6c734174-3-msjykffs",
+          "reached": false
+        },
+        {
+          "id": "gate-6c734174-4-msjykffs",
+          "reached": false
+        }
+      ]
+    },
+    "API 卡（provider 管理）": {
+      "probedAt": "2026-08-08T05:56:35.982Z",
+      "commit": "97fff33c",
+      "question": "kfmv4 有一个API 卡（provider 管理），你觉得它如何？",
+      "reached": 2,
+      "armsTotal": 4,
+      "pass": true,
+      "arms": [
+        {
+          "id": "gate-f16fa643-1-msjylskv",
+          "reached": false
+        },
+        {
+          "id": "gate-f16fa643-2-msjylskv",
+          "reached": false
+        },
+        {
+          "id": "gate-f16fa643-3-msjylskv",
+          "reached": true
+        },
+        {
+          "id": "gate-f16fa643-4-msjylskv",
+          "reached": true
+        }
+      ]
+    },
+    "会话存储与压缩": {
+      "probedAt": "2026-08-08T05:58:23.127Z",
+      "commit": "97fff33c",
+      "question": "kfmv4 有一个会话存储与压缩，你觉得它如何？",
+      "reached": 4,
+      "armsTotal": 4,
+      "pass": true,
+      "arms": [
+        {
+          "id": "gate-ff3e3a71-1-msjynx8v",
+          "reached": true
+        },
+        {
+          "id": "gate-ff3e3a71-2-msjynx8v",
+          "reached": true
+        },
+        {
+          "id": "gate-ff3e3a71-3-msjynx8v",
+          "reached": true
+        },
+        {
+          "id": "gate-ff3e3a71-4-msjynx8v",
+          "reached": true
+        }
+      ]
+    },
+    "光球面板": {
+      "probedAt": "2026-08-08T05:59:15.833Z",
+      "commit": "97fff33c",
+      "question": "kfmv4 有一个光球面板，你觉得它如何？",
+      "reached": 4,
+      "armsTotal": 4,
+      "pass": true,
+      "arms": [
+        {
+          "id": "gate-be964772-1-msjyq7x4",
+          "reached": true
+        },
+        {
+          "id": "gate-be964772-2-msjyq7x4",
+          "reached": true
+        },
+        {
+          "id": "gate-be964772-3-msjyq7x4",
+          "reached": true
+        },
+        {
+          "id": "gate-be964772-4-msjyq7x4",
+          "reached": true
+        }
+      ]
+    },
+    "手势系统": {
+      "probedAt": "2026-08-08T06:00:43.025Z",
+      "commit": "97fff33c",
+      "question": "kfmv4 有一个手势系统，你觉得它如何？",
+      "reached": 4,
+      "armsTotal": 4,
+      "pass": true,
+      "arms": [
+        {
+          "id": "gate-85255f3f-1-msjyrcl6",
+          "reached": true
+        },
+        {
+          "id": "gate-85255f3f-2-msjyrcl6",
+          "reached": true
+        },
+        {
+          "id": "gate-85255f3f-3-msjyrcl6",
+          "reached": true
+        },
+        {
+          "id": "gate-85255f3f-4-msjyrcl6",
+          "reached": true
+        }
+      ]
+    },
+    "OBS HUD 观测台": {
+      "probedAt": "2026-08-08T06:01:40.201Z",
+      "commit": "97fff33c",
+      "question": "kfmv4 有一个OBS HUD 观测台，你觉得它如何？",
+      "reached": 4,
+      "armsTotal": 4,
+      "pass": true,
+      "arms": [
+        {
+          "id": "gate-7bb02f76-1-msjyt7v6",
+          "reached": true
+        },
+        {
+          "id": "gate-7bb02f76-2-msjyt7v6",
+          "reached": true
+        },
+        {
+          "id": "gate-7bb02f76-3-msjyt7v6",
+          "reached": true
+        },
+        {
+          "id": "gate-7bb02f76-4-msjyt7v6",
+          "reached": true
+        }
+      ]
+    },
+    "卡片堆工作台": {
+      "probedAt": "2026-08-08T06:02:36.089Z",
+      "commit": "97fff33c",
+      "question": "kfmv4 有一个卡片堆工作台，你觉得它如何？",
+      "reached": 4,
+      "armsTotal": 4,
+      "pass": true,
+      "arms": [
+        {
+          "id": "gate-5b863c2e-1-msjyufzf",
+          "reached": true
+        },
+        {
+          "id": "gate-5b863c2e-2-msjyufzf",
+          "reached": true
+        },
+        {
+          "id": "gate-5b863c2e-3-msjyufzf",
+          "reached": true
+        },
+        {
+          "id": "gate-5b863c2e-4-msjyufzf",
+          "reached": true
+        }
+      ]
+    },
+    "终端卡": {
+      "probedAt": "2026-08-08T06:04:02.167Z",
+      "commit": "97fff33c",
+      "question": "kfmv4 有一个终端卡，你觉得它如何？",
+      "reached": 2,
+      "armsTotal": 4,
+      "pass": true,
+      "arms": [
+        {
+          "id": "gate-8fa492d2-1-msjyvn3u",
+          "reached": false
+        },
+        {
+          "id": "gate-8fa492d2-2-msjyvn3u",
+          "reached": true
+        },
+        {
+          "id": "gate-8fa492d2-3-msjyvn3u",
+          "reached": false
+        },
+        {
+          "id": "gate-8fa492d2-4-msjyvn3u",
+          "reached": true
+        }
+      ]
+    },
+    "todo 卡": {
+      "probedAt": "2026-08-08T06:05:01.191Z",
+      "commit": "97fff33c",
+      "question": "kfmv4 有一个todo 卡，你觉得它如何？",
+      "reached": 2,
+      "armsTotal": 4,
+      "pass": true,
+      "arms": [
+        {
+          "id": "gate-1f078d74-1-msjyxhiw",
+          "reached": true
+        },
+        {
+          "id": "gate-1f078d74-2-msjyxhiw",
+          "reached": false
+        },
+        {
+          "id": "gate-1f078d74-3-msjyxhiw",
+          "reached": false
+        },
+        {
+          "id": "gate-1f078d74-4-msjyxhiw",
+          "reached": true
+        }
+      ]
+    },
     "Canvas 文件树": {
-      "probedAt": "2026-08-08T05:46:22.588Z",
-      "commit": "a5e47390",
+      "probedAt": "2026-08-08T06:06:09.408Z",
+      "commit": "97fff33c",
       "question": "kfmv4 有一个Canvas 文件树，你觉得它如何？",
       "reached": 4,
       "armsTotal": 4,
       "pass": true,
       "arms": [
         {
-          "id": "gate-c74aaf0c-1-msjy9jzd",
+          "id": "gate-c74aaf0c-1-msjyyr2g",
           "reached": true
         },
         {
-          "id": "gate-c74aaf0c-2-msjy9jzd",
+          "id": "gate-c74aaf0c-2-msjyyr2g",
           "reached": true
         },
         {
-          "id": "gate-c74aaf0c-3-msjy9jzd",
+          "id": "gate-c74aaf0c-3-msjyyr2g",
           "reached": true
         },
         {
-          "id": "gate-c74aaf0c-4-msjy9jzd",
+          "id": "gate-c74aaf0c-4-msjyyr2g",
+          "reached": true
+        }
+      ]
+    },
+    "构建检查链": {
+      "probedAt": "2026-08-08T06:08:07.600Z",
+      "commit": "97fff33c",
+      "question": "kfmv4 有一个构建检查链，你觉得它如何？",
+      "reached": 2,
+      "armsTotal": 4,
+      "pass": true,
+      "arms": [
+        {
+          "id": "gate-19065fd9-1-msjz07pe",
+          "reached": false
+        },
+        {
+          "id": "gate-19065fd9-2-msjz07pe",
+          "reached": true
+        },
+        {
+          "id": "gate-19065fd9-3-msjz07pe",
+          "reached": true
+        },
+        {
+          "id": "gate-19065fd9-4-msjz07pe",
+          "reached": false
+        }
+      ]
+    },
+    "文档系统": {
+      "probedAt": "2026-08-08T06:08:56.151Z",
+      "commit": "97fff33c",
+      "question": "kfmv4 有一个文档系统，你觉得它如何？",
+      "reached": 4,
+      "armsTotal": 4,
+      "pass": true,
+      "arms": [
+        {
+          "id": "gate-7c85d277-1-msjz2qwi",
+          "reached": true
+        },
+        {
+          "id": "gate-7c85d277-2-msjz2qwi",
+          "reached": true
+        },
+        {
+          "id": "gate-7c85d277-3-msjz2qwi",
+          "reached": true
+        },
+        {
+          "id": "gate-7c85d277-4-msjz2qwi",
+          "reached": true
+        }
+      ]
+    },
+    "错误码体系": {
+      "probedAt": "2026-08-08T06:10:15.437Z",
+      "commit": "97fff33c",
+      "question": "kfmv4 有一个错误码体系，你觉得它如何？",
+      "reached": 4,
+      "armsTotal": 4,
+      "pass": true,
+      "arms": [
+        {
+          "id": "gate-6ee7885f-1-msjz3sd5",
+          "reached": true
+        },
+        {
+          "id": "gate-6ee7885f-2-msjz3sd5",
+          "reached": true
+        },
+        {
+          "id": "gate-6ee7885f-3-msjz3sd5",
+          "reached": true
+        },
+        {
+          "id": "gate-6ee7885f-4-msjz3sd5",
+          "reached": true
+        }
+      ]
+    },
+    "agent 脚本负载": {
+      "probedAt": "2026-08-08T06:11:33.043Z",
+      "commit": "97fff33c",
+      "question": "kfmv4 有一个agent 脚本负载，你觉得它如何？",
+      "reached": 4,
+      "armsTotal": 4,
+      "pass": true,
+      "arms": [
+        {
+          "id": "gate-9aafac0f-1-msjz5hjj",
+          "reached": true
+        },
+        {
+          "id": "gate-9aafac0f-2-msjz5hjj",
+          "reached": true
+        },
+        {
+          "id": "gate-9aafac0f-3-msjz5hjj",
+          "reached": true
+        },
+        {
+          "id": "gate-9aafac0f-4-msjz5hjj",
           "reached": true
         }
       ]
     },
     "守视（browser-relay）": {
-      "probedAt": "2026-08-08T05:47:29.625Z",
-      "commit": "a5e47390",
+      "probedAt": "2026-08-08T06:12:25.031Z",
+      "commit": "97fff33c",
       "question": "kfmv4 有一个守视（browser-relay），你觉得它如何？",
       "reached": 4,
       "armsTotal": 4,
       "pass": true,
       "arms": [
         {
-          "id": "gate-520ea10f-1-msjyary6",
+          "id": "gate-520ea10f-1-msjz75fc",
           "reached": true
         },
         {
-          "id": "gate-520ea10f-2-msjyary6",
+          "id": "gate-520ea10f-2-msjz75fc",
           "reached": true
         },
         {
-          "id": "gate-520ea10f-3-msjyary6",
+          "id": "gate-520ea10f-3-msjz75fc",
           "reached": true
         },
         {
-          "id": "gate-520ea10f-4-msjyary6",
+          "id": "gate-520ea10f-4-msjz75fc",
+          "reached": true
+        }
+      ]
+    },
+    "语义审计": {
+      "probedAt": "2026-08-08T06:14:29.857Z",
+      "commit": "97fff33c",
+      "question": "kfmv4 有一个语义审计，你觉得它如何？",
+      "reached": 2,
+      "armsTotal": 4,
+      "pass": true,
+      "arms": [
+        {
+          "id": "gate-5f8bdd58-1-msjz89je",
+          "reached": true
+        },
+        {
+          "id": "gate-5f8bdd58-2-msjz89je",
+          "reached": true
+        },
+        {
+          "id": "gate-5f8bdd58-3-msjz89je",
+          "reached": false
+        },
+        {
+          "id": "gate-5f8bdd58-4-msjz89je",
+          "reached": false
+        }
+      ]
+    },
+    "部署与发布": {
+      "probedAt": "2026-08-08T06:15:42.936Z",
+      "commit": "97fff33c",
+      "question": "kfmv4 有一个部署与发布，你觉得它如何？",
+      "reached": 4,
+      "armsTotal": 4,
+      "pass": true,
+      "arms": [
+        {
+          "id": "gate-7eae379c-1-msjzaxuq",
+          "reached": true
+        },
+        {
+          "id": "gate-7eae379c-2-msjzaxuq",
+          "reached": true
+        },
+        {
+          "id": "gate-7eae379c-3-msjzaxuq",
+          "reached": true
+        },
+        {
+          "id": "gate-7eae379c-4-msjzaxuq",
+          "reached": true
+        }
+      ]
+    },
+    "回归测试体系": {
+      "probedAt": "2026-08-08T06:17:12.079Z",
+      "commit": "97fff33c",
+      "question": "kfmv4 有一个回归测试体系，你觉得它如何？",
+      "reached": 4,
+      "armsTotal": 4,
+      "pass": true,
+      "arms": [
+        {
+          "id": "gate-9185d6f7-1-msjzci8q",
+          "reached": true
+        },
+        {
+          "id": "gate-9185d6f7-2-msjzci8q",
+          "reached": true
+        },
+        {
+          "id": "gate-9185d6f7-3-msjzci8q",
+          "reached": true
+        },
+        {
+          "id": "gate-9185d6f7-4-msjzci8q",
           "reached": true
         }
       ]
     },
     "权限引擎": {
-      "probedAt": "2026-08-08T05:48:23.076Z",
-      "commit": "a5e47390",
+      "probedAt": "2026-08-08T06:18:54.032Z",
+      "commit": "97fff33c",
       "question": "kfmv4 有一个权限引擎，你觉得它如何？",
-      "reached": 0,
+      "reached": 4,
       "armsTotal": 4,
-      "pass": false,
+      "pass": true,
       "arms": [
         {
-          "id": "gate-a2ee93f5-1-msjyc7ob",
+          "id": "gate-a2ee93f5-1-msjzef0w",
+          "reached": true
+        },
+        {
+          "id": "gate-a2ee93f5-2-msjzef0w",
+          "reached": true
+        },
+        {
+          "id": "gate-a2ee93f5-3-msjzef0w",
+          "reached": true
+        },
+        {
+          "id": "gate-a2ee93f5-4-msjzef0w",
+          "reached": true
+        }
+      ]
+    },
+    "读写监狱（沙箱）": {
+      "probedAt": "2026-08-08T06:20:34.271Z",
+      "commit": "97fff33c",
+      "question": "kfmv4 有一个读写监狱（沙箱），你觉得它如何？",
+      "reached": 3,
+      "armsTotal": 4,
+      "pass": true,
+      "arms": [
+        {
+          "id": "gate-fd6064ff-1-msjzgloy",
           "reached": false
         },
         {
-          "id": "gate-a2ee93f5-2-msjyc7ob",
+          "id": "gate-fd6064ff-2-msjzgloy",
+          "reached": true
+        },
+        {
+          "id": "gate-fd6064ff-3-msjzgloy",
+          "reached": true
+        },
+        {
+          "id": "gate-fd6064ff-4-msjzgloy",
+          "reached": true
+        }
+      ]
+    },
+    "paradigm 研究线": {
+      "probedAt": "2026-08-08T06:21:46.959Z",
+      "commit": "97fff33c",
+      "question": "kfmv4 有一个paradigm 研究线，你觉得它如何？",
+      "reached": 4,
+      "armsTotal": 4,
+      "pass": true,
+      "arms": [
+        {
+          "id": "gate-8cec497f-1-msjzir1c",
+          "reached": true
+        },
+        {
+          "id": "gate-8cec497f-2-msjzir1c",
+          "reached": true
+        },
+        {
+          "id": "gate-8cec497f-3-msjzir1c",
+          "reached": true
+        },
+        {
+          "id": "gate-8cec497f-4-msjzir1c",
+          "reached": true
+        }
+      ]
+    },
+    "coldstart 研究线": {
+      "probedAt": "2026-08-08T06:23:04.001Z",
+      "commit": "97fff33c",
+      "question": "kfmv4 有一个coldstart 研究线，你觉得它如何？",
+      "reached": 4,
+      "armsTotal": 4,
+      "pass": true,
+      "arms": [
+        {
+          "id": "gate-c04f0f20-1-msjzkb4g",
+          "reached": true
+        },
+        {
+          "id": "gate-c04f0f20-2-msjzkb4g",
+          "reached": true
+        },
+        {
+          "id": "gate-c04f0f20-3-msjzkb4g",
+          "reached": true
+        },
+        {
+          "id": "gate-c04f0f20-4-msjzkb4g",
+          "reached": true
+        }
+      ]
+    },
+    "docprobe 研究线": {
+      "probedAt": "2026-08-08T06:24:26.169Z",
+      "commit": "97fff33c",
+      "question": "kfmv4 有一个docprobe 研究线，你觉得它如何？",
+      "reached": 4,
+      "armsTotal": 4,
+      "pass": true,
+      "arms": [
+        {
+          "id": "gate-ce8fc140-1-msjzlykj",
+          "reached": true
+        },
+        {
+          "id": "gate-ce8fc140-2-msjzlykj",
+          "reached": true
+        },
+        {
+          "id": "gate-ce8fc140-3-msjzlykj",
+          "reached": true
+        },
+        {
+          "id": "gate-ce8fc140-4-msjzlykj",
+          "reached": true
+        }
+      ]
+    },
+    "session-runner 跑批基建": {
+      "probedAt": "2026-08-08T06:25:19.214Z",
+      "commit": "97fff33c",
+      "question": "kfmv4 有一个session-runner 跑批基建，你觉得它如何？",
+      "reached": 2,
+      "armsTotal": 4,
+      "pass": true,
+      "arms": [
+        {
+          "id": "gate-dbf71807-1-msjznpyz",
           "reached": false
         },
         {
-          "id": "gate-a2ee93f5-3-msjyc7ob",
+          "id": "gate-dbf71807-2-msjznpyz",
           "reached": false
         },
         {
-          "id": "gate-a2ee93f5-4-msjyc7ob",
-          "reached": false
+          "id": "gate-dbf71807-3-msjznpyz",
+          "reached": true
+        },
+        {
+          "id": "gate-dbf71807-4-msjznpyz",
+          "reached": true
         }
       ]
     }
