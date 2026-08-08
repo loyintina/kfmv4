@@ -95,11 +95,15 @@ function toOpenAi(messages) {
   return api;
 }
 
-/** 读范式包文件（.kfmv4/paradigms/<name>.md） */
+/** 读范式包文件（池 .kfmv4/paradigms/<name>.md；实验梯度档回退实验区 paradigm-packs/——
+ *  2026-08-08 .kfmv4 重构：metacognition-*k/meta-corpus-* 等实验档移出池，旧实验按名复现仍可用） */
 export function loadParadigm(name) {
   if (!name) return '';
-  const p = join(PARADIGMS, `${name}.md`);
-  return existsSync(p) ? readFileSync(p, 'utf-8') : '';
+  const cands = [join(PARADIGMS, `${name}.md`), join(homedir(), '.kfmv4', 'experiments', 'paradigm', 'paradigm-packs', `${name}.md`)];
+  for (const p of cands) {
+    if (existsSync(p)) return readFileSync(p, 'utf-8');
+  }
+  return '';
 }
 
 /** 读已有会话的历史消息（续写用）——支持 sessionId 或直接路径 */
