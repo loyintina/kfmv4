@@ -48,24 +48,25 @@ function mkCanvas(rect: EmblemRect): [HTMLCanvasElement, CanvasRenderingContext2
   return [cv, ctx, rect.width, rect.height];
 }
 
-// ============ A 聚散：混沌 ⇄ 深渊菱瞳 ============
+// ============ A 聚散：随机闭环 ⇄ 深渊菱瞳 ============
+// 设计（2026-08-08 用户定稿）：无相位状态机。一轮 T 内每个粒子沿「随机闭环」
+// 匀速巡游——起点=终点=自己的形状位，轨迹每轮重生成。轮界瞬间 21 点同归形状位，
+// 形自然浮现；随后各自散入随机路径。全程同速（弧长参数化），永不停顿。
 class EmblemGather {
-  private pts: { x: number; y: number; a: number }[] = []; // a=运动方向角
   private glyph: { x: number; y: number }[] = [];
   private t0 = 0;
+  private lastT = -1;
   private R: () => number;
-  // 恒定速率：全相位不变——混乱与成形不该有速度差，出形也不停（2026-08-08 定稿）
-  private v = 0;
-  // 连线阈值（单阈值：小于即连、大于即断）
-  private thr = 0;
-  // 相位时长：漂 11s → 聚 2.6s → 定 2.4s → 散 1.8s
-  private static DRIFT = 11000; private static GATHER = 2600;
-  private static HOLD = 2400; private static RELEASE = 1800;
+  private v = 0;   // 全员统一速率（缓），px/s
+  private thr = 0; // 连线阈值（单阈值）
+  // 每粒子的本轮路径：采样点 + 弧长表（匀速靠弧长参数化实现）
+  private paths: { xs: number[]; ys: number[]; cum: number[]; len: number }[] = [];
+  private static T = 16000;        // 一轮时长：形 → 散 → 乱 → 形
+  private static SHAPE_TAU = 1400; // 轮界前后形可读窗口（ms）
+  private static WP = 5;           // 每轮随机路点数
+  private static SEG = 60;         // 每段弧长采样数
   constructor(private w: number, private h: number) {
     this.R = rng(20260808);
-    for (let i = 0; i < 21; i++) {
-      this.pts.push({ x: this.R() * w, y: this.R() * h, a: this.R() * Math.PI * 2 });
-    }
     // 深渊菱瞳目标形：菱形 4 顶点 + 每边 2 等分点（12），竖瞳椭圆 8 点，瞳心 1 点
     const g: { x: number; y: number }[] = [];
     const V = [[0.5, 0.05], [0.88, 0.5], [0.5, 0.95], [0.12, 0.5]];
@@ -80,8 +81,8 @@ class EmblemGather {
     g.push({ x: 0.5, y: 0.5 });
     this.glyph = g.map(p => ({ x: p.x * w, y: p.y * h }));
     this.thr = Math.min(w, h) * 0.30;
-    // 速率按「最坏对角线也要在收拢窗口 75% 内到位」反推，之后全程恒定
-    this.v = Math.hypot(w, h) / ((EmblemGather.GATHER / 1000) * 0.75);
+    this.v = Math.hypot(w, h) * 0.10; // 缓速：一轮约走 1.6 条对角线
+    this.regen();
   }
   // 分组：0-11 菱形 / 12-19 竖瞳 / 20 瞳心（独组）
   private static grp(i: number): number { return i < 12 ? 0 : i < 20 ? 1 : 2; }
@@ -90,56 +91,92 @@ class EmblemGather {
     return (j === i + 1 && EmblemGather.grp(i) === EmblemGather.grp(j))
       || (i === 0 && j === 11) || (i === 12 && j === 19);
   }
-  private phase(now: number): [string, number] {
-    if (!this.t0) this.t0 = now;
-    const c = (now - this.t0) % (EmblemGather.DRIFT + EmblemGather.GATHER + EmblemGather.HOLD + EmblemGather.RELEASE);
-    if (c < EmblemGather.DRIFT) return ['drift', c / EmblemGather.DRIFT];
-    if (c < EmblemGather.DRIFT + EmblemGather.GATHER) return ['gather', (c - EmblemGather.DRIFT) / EmblemGather.GATHER];
-    if (c < EmblemGather.DRIFT + EmblemGather.GATHER + EmblemGather.HOLD) return ['hold', (c - EmblemGather.DRIFT - EmblemGather.GATHER) / EmblemGather.HOLD];
-    return ['release', (c - EmblemGather.DRIFT - EmblemGather.GATHER - EmblemGather.HOLD) / EmblemGather.RELEASE];
-  }
-  step(ctx: CanvasRenderingContext2D, now: number, dt: number): void {
-    const { w, h } = this;
-    const [ph, k] = this.phase(now);
-    (window as unknown as { __emblemPhase: string }).__emblemPhase = ph; // escape-ok: 守视掐点调试钩子（eval 读相位拍 hold 帧，试映期临时）
-    const ease = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-    // 形度 s：聚期渐入、定期满、散期渐出——描边/增亮/跨组线消隐都随它渐变
-    const s = ph === 'gather' ? ease(k) : ph === 'hold' ? 1 : ph === 'release' ? 1 - ease(k) : 0;
-    for (let i = 0; i < this.pts.length; i++) {
-      const p = this.pts[i];
-      if (ph === 'gather') {
-        // 恒速直指目标：方向即切（要的就是「突然组合」），速率与漂移完全相同
-        const dx = this.glyph[i].x - p.x, dy = this.glyph[i].y - p.y;
-        if (Math.hypot(dx, dy) <= this.v * dt) { p.x = this.glyph[i].x; p.y = this.glyph[i].y; }
-        else {
-          p.a = Math.atan2(dy, dx);
-          p.x += Math.cos(p.a) * this.v * dt; p.y += Math.sin(p.a) * this.v * dt;
-        }
-      } else if (ph === 'hold') {
-        p.x = this.glyph[i].x; p.y = this.glyph[i].y; // 定格钉形，方向角保留供散场续走
-      } else {
-        // drift/release 同一套随机游走：方向角缓漂，速率恒定；散场从抵达方向直接续走
-        p.a += (this.R() - 0.5) * 3.2 * dt;
-        p.x += Math.cos(p.a) * this.v * dt; p.y += Math.sin(p.a) * this.v * dt;
-        if (p.x < 2 || p.x > w - 2) { p.a = Math.PI - p.a; p.x = Math.max(2, Math.min(w - 2, p.x)); }
-        if (p.y < 2 || p.y > h - 2) { p.a = -p.a; p.y = Math.max(2, Math.min(h - 2, p.y)); }
+  // 形状位 + 随机路点 → 闭合 Catmull-Rom 采样 + 弧长表
+  private buildPath(g: { x: number; y: number }, wps: { x: number; y: number }[]): { xs: number[]; ys: number[]; cum: number[]; len: number } {
+    const P = [g, ...wps];
+    const M = P.length;
+    const xs: number[] = [], ys: number[] = [];
+    const cr = (a: number, b: number, c: number, d: number, u: number) =>
+      0.5 * (2 * b + (-a + c) * u + (2 * a - 5 * b + 4 * c - d) * u * u + (-a + 3 * b - 3 * c + d) * u * u * u);
+    for (let k = 0; k < M; k++) {
+      const p0 = P[(k - 1 + M) % M], p1 = P[k], p2 = P[(k + 1) % M], p3 = P[(k + 2) % M];
+      for (let si = 0; si < EmblemGather.SEG; si++) {
+        const u = si / EmblemGather.SEG;
+        xs.push(Math.max(4, Math.min(this.w - 4, cr(p0.x, p1.x, p2.x, p3.x, u))));
+        ys.push(Math.max(4, Math.min(this.h - 4, cr(p0.y, p1.y, p2.y, p3.y, u))));
       }
     }
-    // 连线：全相位同一套距离规则；跨组线随形度 s 渐隐（成形后两圈之间不留线）；
+    const cum = [0];
+    for (let i = 1; i <= xs.length; i++) {
+      const a = i % xs.length;
+      cum.push(cum[i - 1] + Math.hypot(xs[a] - xs[i - 1], ys[a] - ys[i - 1]));
+    }
+    return { xs, ys, cum, len: cum[cum.length - 1] };
+  }
+  // 每轮重生成随机轨迹；长度归一到「统一速率 × T」（绕形心缩放点，保随机形状）
+  private regen(): void {
+    const target = this.v * (EmblemGather.T / 1000);
+    this.paths = this.glyph.map(g => {
+      let wps = Array.from({ length: EmblemGather.WP }, () => ({
+        x: 12 + this.R() * (this.w - 24), y: 12 + this.R() * (this.h - 24),
+      }));
+      let path = this.buildPath(g, wps);
+      if (path.len > 1 && Math.abs(path.len - target) / target > 0.15) {
+        const lam = target / path.len;
+        const c = { x: wps.reduce((s2, p) => s2 + p.x, 0) / wps.length, y: wps.reduce((s2, p) => s2 + p.y, 0) / wps.length };
+        wps = wps.map(p => ({
+          x: Math.max(12, Math.min(this.w - 12, c.x + (p.x - c.x) * lam)),
+          y: Math.max(12, Math.min(this.h - 12, c.y + (p.y - c.y) * lam)),
+        }));
+        path = this.buildPath(g, wps);
+      }
+      return path;
+    });
+  }
+  // 弧长 → 位置（二分 + 线性插值）
+  private at(path: { xs: number[]; ys: number[]; cum: number[]; len: number }, d: number): { x: number; y: number } {
+    const { xs, ys, cum } = path;
+    const n = xs.length;
+    let lo = 0, hi = cum.length - 1;
+    while (lo + 1 < hi) { const mid = (lo + hi) >> 1; if (cum[mid] <= d) lo = mid; else hi = mid; }
+    const seg = cum[hi] - cum[lo] || 1;
+    const u = Math.max(0, Math.min(1, (d - cum[lo]) / seg));
+    return {
+      x: xs[lo % n] + (xs[hi % n] - xs[lo % n]) * u,
+      y: ys[lo % n] + (ys[hi % n] - ys[lo % n]) * u,
+    };
+  }
+  step(ctx: CanvasRenderingContext2D, now: number, _dt: number): void {
+    const { w, h } = this;
+    if (!this.t0) this.t0 = now;
+    const T = EmblemGather.T;
+    const t = (now - this.t0) % T;
+    if (this.lastT >= 0 && t < this.lastT) this.regen(); // 跨轮界：新一轮随机轨迹
+    this.lastT = t;
+    const ease = (x: number) => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+    // 形度 s：距轮界越近越成形（粒子物理上恰好同归形状位，s 只是描边的渐变窗）
+    const s = ease(Math.max(0, 1 - Math.min(t, T - t) / EmblemGather.SHAPE_TAU));
+    (window as unknown as { __emblemPhase: string }).__emblemPhase = s.toFixed(2); // escape-ok: 守视掐点调试钩子（eval 读形度拍成形帧，试映期临时）
+    // 匀速弧长推进：全员同一 t/T 进度，路径长已归一 → 速率一致
+    const pos = this.paths.map(p => this.at(p, (t / T) * p.len));
+    // escape-ok: 守视验证钩子——形度与「粒子-形状位平均距离」原子读出，绕过截图延迟
+    const md = pos.reduce((acc, p, i) => acc + Math.hypot(p.x - this.glyph[i].x, p.y - this.glyph[i].y), 0) / pos.length;
+    (window as unknown as { __emblemDbg: string }).__emblemDbg = `${s.toFixed(2)} md=${md.toFixed(1)}`;
+    // 连线：同一套距离规则；跨组线随形度 s 渐隐（成形后两圈之间不留线）；
     // 闭环边跳过（交给描边层，避免双线叠亮）
     ctx.clearRect(0, 0, w, h);
-    const n = this.pts.length;
+    const n = pos.length;
     for (let i = 0; i < n; i++) {
       for (let j = i + 1; j < n; j++) {
         if (EmblemGather.loopEdge(i, j)) continue;
-        const d = Math.hypot(this.pts[i].x - this.pts[j].x, this.pts[i].y - this.pts[j].y);
+        const d = Math.hypot(pos[i].x - pos[j].x, pos[i].y - pos[j].y);
         if (d >= this.thr) continue;
         // 峰值 0.85 与形状描边同亮；竖瞳组（12-19）参与的线紫色，其余蓝色
         let a = 0.3 + 0.55 * (1 - d / this.thr);
         if (EmblemGather.grp(i) !== EmblemGather.grp(j)) a *= 1 - s;
         ctx.strokeStyle = `rgba(${i >= 12 && i < 20 || j >= 12 && j < 20 ? VIOLET : BLUE},${a})`;
         ctx.lineWidth = 0.8;
-        ctx.beginPath(); ctx.moveTo(this.pts[i].x, this.pts[i].y); ctx.lineTo(this.pts[j].x, this.pts[j].y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(pos[i].x, pos[i].y); ctx.lineTo(pos[j].x, pos[j].y); ctx.stroke();
       }
     }
     // 形状描边：只要两圈（菱形闭环 + 竖瞳闭环），随形度 s 渐显渐隐
@@ -149,7 +186,7 @@ class EmblemGather {
         ctx.lineWidth = lw;
         ctx.beginPath();
         for (let i = from; i <= to; i++) {
-          const p = this.pts[i];
+          const p = pos[i];
           if (i === from) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
         }
         ctx.closePath(); ctx.stroke();
@@ -159,10 +196,9 @@ class EmblemGather {
     }
     // 粒子：青色组（菱形+瞳心）r1.9，竖瞳组紫色小粒 r1.4——三层层次感
     for (let i = 0; i < n; i++) {
-      const p = this.pts[i];
       const pupil = i >= 12 && i < 20;
       ctx.fillStyle = `rgba(${pupil ? VIOLET : CYAN},${0.8 + 0.15 * s})`;
-      ctx.beginPath(); ctx.arc(p.x, p.y, pupil ? 1.4 : 1.9, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(pos[i].x, pos[i].y, pupil ? 1.4 : 1.9, 0, Math.PI * 2); ctx.fill();
     }
   }
 }
