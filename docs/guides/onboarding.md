@@ -11,8 +11,9 @@
 **事实**（已核实，无需重新推断）：
 
 - 仓库：`/root/kfmv4` = canonical 主仓（活跃开发），origin=GitHub
-  （github.com/loyintina/kfmv4）。数据目录 `~/.kfmv4/`（sessions / providers.json /
-  .env 代字 / experiments 私有区）。
+  （github.com/loyintina/kfmv4）。数据目录 `~/.kfmv4/`（结构规范：
+  `guides/kfmv4-data.md`——分层/sessions 分流/范式包池/agent 工作区空位，
+  机械门 check-kfmv4-data 挂链执法）
 - 8021 端口 = **canonical 的生产服务**（node LISTEN + nginx 反代）。**lab 无服务**——lab 现状报告不得包含 8021（2026-08-02 routine 臂仍犯，硬事实写入）。
 - 若遇到第二仓库（如实验试卷快照 `/root/kfmv4-lab`）：它只是快照/考试材料，
   **生产接手无视之**；但如需比较，按下面取证三步。**已知事实（2026-08-02 验证轮回归后

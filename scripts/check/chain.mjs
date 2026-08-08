@@ -93,6 +93,7 @@ export const STEPS = [
   'node scripts/check/check-probes.mjs',
   'node scripts/check/check-release-radar.mjs',
   'node scripts/check/check-experiment-index.mjs',
+  'node scripts/check/check-kfmv4-data.mjs',
   'node scripts/check/check-probe-state.mjs',
   'node scripts/check/sync-counts.mjs --check-only',
   'node scripts/check/gen-code-inventory.mjs --check-only',
