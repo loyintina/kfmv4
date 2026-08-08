@@ -118,6 +118,27 @@ judge=DS v4-flash 统一尺，逐臂覆盖/幻觉/依据）。
 
 （试点 3 有效臂计入守视题 wave 1 重复数：pilot2-2 / pilot3-1 / pilot3-2 + w1-shoushi-4 = 4 重复）
 
+### 落成门探头（自动区块，probe-capability.mjs 维护，勿手改）
+
+<!-- probe-gate:begin -->
+
+| 臂 | 功能 | 状态 | 数据 |
+|---|---|---|---|
+| gate-c74aaf0c-1-msjy9jzd | Canvas 文件树 落成门 | 到达 | sessions/gate-c74aaf0c-1-msjy9jzd.json |
+| gate-c74aaf0c-2-msjy9jzd | Canvas 文件树 落成门 | 到达 | sessions/gate-c74aaf0c-2-msjy9jzd.json |
+| gate-c74aaf0c-3-msjy9jzd | Canvas 文件树 落成门 | 到达 | sessions/gate-c74aaf0c-3-msjy9jzd.json |
+| gate-c74aaf0c-4-msjy9jzd | Canvas 文件树 落成门 | 到达 | sessions/gate-c74aaf0c-4-msjy9jzd.json |
+| gate-520ea10f-1-msjyary6 | 守视（browser-relay） 落成门 | 到达 | sessions/gate-520ea10f-1-msjyary6.json |
+| gate-520ea10f-2-msjyary6 | 守视（browser-relay） 落成门 | 到达 | sessions/gate-520ea10f-2-msjyary6.json |
+| gate-520ea10f-3-msjyary6 | 守视（browser-relay） 落成门 | 到达 | sessions/gate-520ea10f-3-msjyary6.json |
+| gate-520ea10f-4-msjyary6 | 守视（browser-relay） 落成门 | 到达 | sessions/gate-520ea10f-4-msjyary6.json |
+| gate-a2ee93f5-1-msjyc7ob | 权限引擎 落成门 | 未达 | sessions/gate-a2ee93f5-1-msjyc7ob.json |
+| gate-a2ee93f5-2-msjyc7ob | 权限引擎 落成门 | 未达 | sessions/gate-a2ee93f5-2-msjyc7ob.json |
+| gate-a2ee93f5-3-msjyc7ob | 权限引擎 落成门 | 未达 | sessions/gate-a2ee93f5-3-msjyc7ob.json |
+| gate-a2ee93f5-4-msjyc7ob | 权限引擎 落成门 | 未达 | sessions/gate-a2ee93f5-4-msjyc7ob.json |
+
+<!-- probe-gate:end -->
+
 ## 产物登记
 
 - 设计（design/）：design-docprobe.md

@@ -390,6 +390,16 @@
       "permission": "联网（经 session-runner 起判官会话）；读归档+truth；追加写 --out jsonl",
       "prompt": "内置盲判卷 prompt（题目+回复+要点+陷阱 → 覆盖/幻觉 JSON）；判官无工具防开卷",
       "effect": "docprobe 盲判轨：理解准确度=要点覆盖 0-N + 幻觉计数，断点续判按臂 id 跳过"
+    },
+    "experiments/docprobe/tools/probe-capability.mjs": {
+      "permission": "联网（经 session-runner 起探测臂，readRoot 监狱）；写 docs/ledger/probe-state.json + 私有区臂归档 + index.md 自动区块",
+      "prompt": "题目模板现场生成「kfmv4 有一个{俗名}，你觉得它如何？」——无静态 prompt 文件",
+      "effect": "落成门探头：capability-map 登记行 → 4 臂可达率探测 → probe-state.json 账本（>=2/4 到达=通过）"
+    },
+    "scripts/check/check-probe-state.mjs": {
+      "permission": "纯本地读（manifest + probe-state.json + git log），无网络无写盘",
+      "prompt": "无内置提示词——账本比对硬编码（⛳ MECH-FLOW-11）",
+      "effect": "落成门检查门：每个 capability 行须有通过记录且新于 manifest 最后改动，否则构建中断"
     }
   }
 }

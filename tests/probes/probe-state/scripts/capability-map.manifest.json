@@ -1,0 +1,6 @@
+{
+  "$comment": "探针夹具：单行 manifest，probe-state.json 里无此行记录 → 必须报红",
+  "capabilities": [
+    { "name": "假功能", "keywords": ["假"], "kind": "产品", "path": "docs/domains/fake/contract.md", "desc": "探针负例" }
+  ]
+}

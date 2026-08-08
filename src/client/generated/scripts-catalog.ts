@@ -90,6 +90,15 @@ export const SCRIPTS_CATALOG: ScriptCatalogEntry[] = [
     "effect": "docprobe 盲判轨：理解准确度=要点覆盖 0-N + 幻觉计数，断点续判按臂 id 跳过"
   },
   {
+    "name": "probe-capability.mjs",
+    "file": "experiments/docprobe/tools/probe-capability.mjs",
+    "category": "文档抽测工具",
+    "description": "落成门探头（docprobe 终局形态 v1）",
+    "permission": "联网（经 session-runner 起探测臂，readRoot 监狱）；写 docs/ledger/probe-state.json + 私有区臂归档 + index.md 自动区块",
+    "prompt": "题目模板现场生成「kfmv4 有一个{俗名}，你觉得它如何？」——无静态 prompt 文件",
+    "effect": "落成门探头：capability-map 登记行 → 4 臂可达率探测 → probe-state.json 账本（>=2/4 到达=通过）"
+  },
+  {
     "name": "aggregate-e13.mjs",
     "file": "experiments/paradigm/tools/aggregate-e13.mjs",
     "category": "范式实验工具",
@@ -1033,6 +1042,15 @@ export const SCRIPTS_CATALOG: ScriptCatalogEntry[] = [
     "permission": "构建链内只读检查（无网络、无写盘副作用）",
     "prompt": "无（机械检查）",
     "effect": "变异集物料锚点新鲜度硬标准（2026-08-02 立）"
+  },
+  {
+    "name": "check-probe-state.mjs",
+    "file": "scripts/check/check-probe-state.mjs",
+    "category": "检查器",
+    "description": "落成门检查门（docprobe 落成门 v1）",
+    "permission": "纯本地读（manifest + probe-state.json + git log），无网络无写盘",
+    "prompt": "无内置提示词——账本比对硬编码（⛳ MECH-FLOW-11）",
+    "effect": "落成门检查门：每个 capability 行须有通过记录且新于 manifest 最后改动，否则构建中断"
   },
   {
     "name": "check-probes.mjs",

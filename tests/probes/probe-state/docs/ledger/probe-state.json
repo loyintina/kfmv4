@@ -1,0 +1,8 @@
+{
+  "$comment": "探针夹具：账本存在但不含「假功能」记录",
+  "model": "deepseek-v4-flash",
+  "provider": "deepseek",
+  "arms": 4,
+  "threshold": 2,
+  "capabilities": {}
+}

@@ -49,6 +49,7 @@
 | MECH-FLOW-08 | STACK 与事实漂移（check-active-stack） | active/stack.yaml | state-sync.yaml |
 | MECH-FLOW-09 | STACK schema/编号/bug 入口违例（check-stack-status） | active/stack.yaml 头注规范 | state-sync.yaml |
 | MECH-FLOW-10 | 巡逻心跳停摆（check-inbox-heartbeat） | /var/log/semantic-chain.log + crontab -l | 排查后手动补跑 semantic-chain.mjs；runner bug 走 bug-fix.yaml |
+| MECH-FLOW-11 | 功能未过落成门探头/记录缺失陈旧（check-probe-state） | experiments/docprobe/index.md §落成门 | 跑 probe-capability.mjs 补探测；修路后重跑 |
 
 ## 新错误码规程
 

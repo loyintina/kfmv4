@@ -85,11 +85,31 @@ docprobe 测「功能粒度可达」——一个具体问题，答案有对错�
 - **judge-trace.mjs（docprobe/tools/，2026-08-08 立）**：机械判卷轨已落地——
   轨迹 × truth → 可达率/路径合规/到达成本三维 JSON，判定口径同 §六。
 
-## 八、落成门远景（本线的终极形态）
+## 八、落成门（本线的终极形态，2026-08-08 实装）
 
 新功能发版 → 针对该功能的抽测题自动入题库 → 全新 agent 找不到/理解错/
 到达成本过高 → 功能不算完工，补文档。**抽测通过成为 definition-of-done
 的一部分**——文档系统的自我修正回路（与错误码体系同构）。
+
+**v1 实装（三件套）**：
+
+1. **探头** `tools/probe-capability.mjs`：从 capability-map 登记行现场生成
+   地面真相（题目模板「kfmv4 有一个{俗名}，你觉得它如何？」，必中 =
+   主入口 path + `docs/domains/<domain>/*.md` glob「任一命中即达」），
+   跑 4 臂（DS v4-flash，readRoot 监狱协议），judge-trace 机械判，
+   **≥2/4 臂到达 = 通过**，逐行落账 `docs/ledger/probe-state.json`
+   （中断不丢已完成探测）+ 臂归档入私有区 + 回写 index.md 自动区块。
+2. **检查门** `scripts/check/check-probe-state.mjs`（挂 chain，⛳ MECH-FLOW-11）：
+   每个 capability 行必须有通过记录，且 probedAt 新于 manifest 最后改动
+   （git log 即账本；探针夹具环境退化 mtime）。缺失/未过/陈旧 → 构建中断，
+   报错文案指认补探测的确切命令。探头本身不进 chain——chain 要快/离线/
+   确定性，跑臂是联网实验行为，二者经 probe-state.json 账本解耦。
+   豁免阀：manifest 行加 `probeExempt` 字段写原因（打印提醒不中断）。
+3. **探针夹具** `tests/probes/probe-state/`：负例（登记行无通过记录）必报红，
+   防「检查坏了报不出」的假绿。
+
+**留 v2**：staleness 行级追踪（v1 manifest 单文件级——任何行改动全行重探）、
+域代码变更联动重探、T4/T5 题型接入、跨模型落成门。
 
 ## 九、修订事件
 

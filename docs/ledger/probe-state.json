@@ -1,0 +1,87 @@
+{
+  "$comment": "落成门探头账本（probe-capability.mjs 自动维护，勿手改）。判定：单臂 read 命中应达文档集任一路径=到达；arms 中 >= threshold 到达=通过。check-probe-state.mjs 消费：每个 capability 行须 pass=true 且 probedAt 新于 manifest 最后改动。",
+  "model": "deepseek-v4-flash",
+  "provider": "deepseek",
+  "arms": 4,
+  "threshold": 2,
+  "capabilities": {
+    "Canvas 文件树": {
+      "probedAt": "2026-08-08T05:46:22.588Z",
+      "commit": "a5e47390",
+      "question": "kfmv4 有一个Canvas 文件树，你觉得它如何？",
+      "reached": 4,
+      "armsTotal": 4,
+      "pass": true,
+      "arms": [
+        {
+          "id": "gate-c74aaf0c-1-msjy9jzd",
+          "reached": true
+        },
+        {
+          "id": "gate-c74aaf0c-2-msjy9jzd",
+          "reached": true
+        },
+        {
+          "id": "gate-c74aaf0c-3-msjy9jzd",
+          "reached": true
+        },
+        {
+          "id": "gate-c74aaf0c-4-msjy9jzd",
+          "reached": true
+        }
+      ]
+    },
+    "守视（browser-relay）": {
+      "probedAt": "2026-08-08T05:47:29.625Z",
+      "commit": "a5e47390",
+      "question": "kfmv4 有一个守视（browser-relay），你觉得它如何？",
+      "reached": 4,
+      "armsTotal": 4,
+      "pass": true,
+      "arms": [
+        {
+          "id": "gate-520ea10f-1-msjyary6",
+          "reached": true
+        },
+        {
+          "id": "gate-520ea10f-2-msjyary6",
+          "reached": true
+        },
+        {
+          "id": "gate-520ea10f-3-msjyary6",
+          "reached": true
+        },
+        {
+          "id": "gate-520ea10f-4-msjyary6",
+          "reached": true
+        }
+      ]
+    },
+    "权限引擎": {
+      "probedAt": "2026-08-08T05:48:23.076Z",
+      "commit": "a5e47390",
+      "question": "kfmv4 有一个权限引擎，你觉得它如何？",
+      "reached": 0,
+      "armsTotal": 4,
+      "pass": false,
+      "arms": [
+        {
+          "id": "gate-a2ee93f5-1-msjyc7ob",
+          "reached": false
+        },
+        {
+          "id": "gate-a2ee93f5-2-msjyc7ob",
+          "reached": false
+        },
+        {
+          "id": "gate-a2ee93f5-3-msjyc7ob",
+          "reached": false
+        },
+        {
+          "id": "gate-a2ee93f5-4-msjyc7ob",
+          "reached": false
+        }
+      ]
+    }
+  }
+}
