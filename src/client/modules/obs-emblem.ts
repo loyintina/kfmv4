@@ -11,6 +11,8 @@
  *   失焦由浏览器自停 rAF（复用观测台既有能耗纪律）；mulberry32 定种子伪随机。
  */
 
+import { Z } from './z-index-layers.js';
+
 export interface EmblemRect { left: number; top: number; width: number; height: number }
 export interface EmblemRects {
   pocket: EmblemRect;   // A：中央口袋
@@ -38,7 +40,7 @@ interface Pt { x: number; y: number; vx: number; vy: number }
 function mkCanvas(rect: EmblemRect): [HTMLCanvasElement, CanvasRenderingContext2D, number, number] {
   const cv = document.createElement('canvas');
   cv.className = 'obs-emblem';
-  cv.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;pointer-events:none;z-index:100`;
+  cv.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;pointer-events:none;z-index:${Z.CENTER_CONTENT}`;
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   cv.width = Math.max(1, Math.round(rect.width * dpr));
   cv.height = Math.max(1, Math.round(rect.height * dpr));
