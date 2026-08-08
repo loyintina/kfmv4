@@ -92,6 +92,10 @@ agent 脚本层——检测归自动化，裁决归会话内 agent，**永远不
     agents/main/wire.jsonl ≥1MB 入选（当前=研究臂+主线两条）；token 口径=新处理
     token（inputOther+cacheCreation+output）**不含 cacheRead**（含它研究臂 4.77G
     会压扁 kfm 轨道）；增量扫描 offset 只读新增尾部，轮转截断归零重扫）
+    （2026-08-08 登记④：脉搏数据面 collectPulse——agent-calls/tool-exec/
+    check-failures/build-metrics 四条 jsonl 滚动 24h 聚合，尾部限扫
+    （200/200/100/100KB）+ 60s 缓存；permission-audit 暂缓（87% allow 分布单一，
+    等 8.5.1 审批通道连同 ask 流一起做）——史官制度「落盘→上屏」闭环首批）
 14. **语义生成**（2026-08-02，登记表 P0 完成）：契约清单生成器
     gen-contract-lists（6 域清单单一出处）、路由表生成器 gen-route-table
     （工作流行从 workflows/ 生成）——生成区标记 gen:xxx，幂等 + --check-only

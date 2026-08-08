@@ -55,13 +55,13 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
         → initWsChannel() → initVersionWatch() → initObsHud()（观测台 HUD）
 ```
 
-## 观测台 HUD（8.5 史官制度，2026-08-06 立项；2026-08-07 五面定稿）
+## 观测台 HUD（8.5 史官制度，2026-08-06 立项；2026-08-08 七面定稿）
 
 - 模块：`src/client/modules/obs-hud.ts`（域映射：client-shell）
 - 形态：L1 中央内容层（`Z.CENTER_CONTENT`，100）——纯展示
   （`pointer-events: none`，不挡手势/卡片）；按钮层（`SUMMON_BTN` 200）在卡外两侧，
   **禁止卡片横贯全宽**——双 backdrop-filter 垂直叠加在移动端合成异常会致按钮视觉消失
-- 五个信息面（用户逐轮实拍定稿）：
+- 七个信息面（用户逐轮实拍定稿）：
   1. **余额卡**（贴顶居中 372px）：余额大字焦点（2 位小数）> deepseek 标签 > 秒级时间
   2. **双信息框行**（372px，信箱 160 + 星轨 200，间隙 12）：信箱=语义巡逻
      verdict 时间线（可点详情）；星轨=档案馆会话可视化（2026-08-07 定稿：
@@ -76,10 +76,19 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
      系统四指标（文字行=标签+百分号+xx/xx 实值对，下方滚动柱状图——
      绿<70/黄 70-85/红>85 逐样本上色）+ 监听端口行（公/本作用域标 +
      端口号 + 进程名 + 活跃连接数）；位置按 .obs-inbox 实测矩形注入
+  5. **脉搏卡**（2026-08-08 定稿：填屏第二批，史官数据流上屏）：24h 窗口
+     LLM 行（次数/成功率/均耗时/最近调用距今 + provider 分解）+ 工具行
+     （次数/失败数 + TOP4 渐变横向条）
+  6. **执勤卡**（同日定稿，cron 八灯从 SYS 移出后的家）：cron 两列状态灯
+     （dot+name+ago 紧凑组）+ 检查链失败 TOP2 + 构建次数/最近耗时；
+     与脉搏纵叠于中右空带（左缘=SYS 竖条右缘+10，右缘=星轨右缘，
+     JS 实测矩形注入同 placeRail）
 - 数据：`/api/obs/hud` 5s 轮询（余额服务端 5s 缓存；SYS 30s 独立采样器
   环形 40 点落 ~/.kfmv4/sys-metrics.json，端口 30s/cron 5min 缓存；
   星轨 archive 30s 缓存，读 ~/.kfmv4/sessions/*.json 顶层字段，
-  msgs≤2 测试残留过滤，script/ 分流目录不读）
+  msgs≤2 测试残留过滤，script/ 分流目录不读；脉搏 pulse 60s 缓存，
+  四条 jsonl 尾部限扫滚动 24h——agent-calls/tool-exec 各 200KB、
+  check-failures/build-metrics 各 100KB，permission-audit 暂缓）
 - **渲染纪律：数据未变不重渲染**（JSON key 比对）——innerHTML 重建重置滚动位，
   5s 一次等于禁止翻列表（2026-08-06 守视实拍抓获）；变时保存/恢复 scrollTop
 - 扩展面：调用统计（agent-calls 聚合）、cron 状态（2026-08-07 从 SYS 面板

@@ -77,7 +77,7 @@ async function fetchDeepseekBalance(): Promise<Balance> {
 export function setupObsRoutes(router: Router): void {
   router.get('/obs/hud', async (_req, res) => {
     const balance = await fetchDeepseekBalance();
-    res.json({ balance, inbox: parseInbox(), stack: parseStack(), sys: collectSys(), archive: collectArchive(), serverTime: new Date().toISOString() });
+    res.json({ balance, inbox: parseInbox(), stack: parseStack(), sys: collectSys(), archive: collectArchive(), pulse: collectPulse(), serverTime: new Date().toISOString() });
   });
 
   // 守视视口校准回传：/test 页 POST 真机实测视口 → 存 viewport.json（browser-relay 读）
@@ -606,4 +606,101 @@ function collectKimiTracks(now: number): ArchiveTrack[] {
     }
   }
   return out;
+}
+
+// ========== 脉搏数据面（2026-08-08 用户定稿：填屏第二批——史官数据流上屏） ==========
+// 立项初心闭环：8.5 史官制度「每条数据流落盘」→ 观测台「放到一起显示」。
+// 四条 jsonl 滚动 24h 窗口聚合，**尾部限扫**（append-only，24h 量远小于尾部窗口；
+// agent-calls/tool-exec 各 200KB，check-failures/build-metrics 各 100KB）+ 60s 缓存。
+// permission-audit 暂缓：87% allow / 13% ask 分布单一（2026-08-08 实测 2000 条），
+// 等权限引擎 8.5.1 审批通道上线再连同 ask 流一起做。
+
+interface PulseLlm { calls: number; okRate: number; avgMs: number; byProvider: Record<string, number>; lastAgo: string }
+interface PulseTools { calls: number; fails: number; top: Array<{ name: string; n: number }> }
+interface PulseChecks { fails: number; top: Array<{ name: string; n: number }> }
+interface PulseBuild { lastMs: number; lastOk: boolean; builds: number }
+interface PulseData { llm: PulseLlm; tools: PulseTools; checks: PulseChecks; build: PulseBuild }
+
+const PULSE_CACHE_MS = 60_000;
+const PULSE_WINDOW_MS = 24 * 3_600_000;
+let pulseCache: { data: PulseData; ts: number } | null = null;
+
+// jsonl 尾部窗口解析（首行可能是半截，丢弃）
+function readJsonlTail(file: string, maxBytes: number): Array<Record<string, unknown>> {
+  try {
+    const st = fs.statSync(file);
+    const start = Math.max(0, st.size - maxBytes);
+    const fd = fs.openSync(file, 'r');
+    const buf = Buffer.alloc(st.size - start);
+    fs.readSync(fd, buf, 0, buf.length, start);
+    fs.closeSync(fd);
+    let text = buf.toString('utf-8');
+    if (start > 0) { const nl = text.indexOf('\n'); text = nl >= 0 ? text.slice(nl + 1) : ''; }
+    const out: Array<Record<string, unknown>> = [];
+    for (const line of text.split('\n')) {
+      if (!line) continue;
+      try { out.push(JSON.parse(line)); } catch { /* 半截尾行 */ }
+    }
+    return out;
+  } catch { return []; }
+}
+
+const inWindow = (ts: unknown, cutoff: number) => typeof ts === 'string' && new Date(ts).getTime() >= cutoff;
+
+function collectPulse(): PulseData {
+  const now = Date.now();
+  if (pulseCache && now - pulseCache.ts < PULSE_CACHE_MS) return pulseCache.data;
+  const cutoff = now - PULSE_WINDOW_MS;
+
+  const llmRows = readJsonlTail(path.join(KFM_DATA_DIR, 'agent-calls.jsonl'), 200_000).filter(r => inWindow(r.ts, cutoff));
+  const llmOk = llmRows.filter(r => r.ok === true);
+  const byProvider: Record<string, number> = {};
+  for (const r of llmRows) {
+    const p = String(r.provider ?? '?').split('/')[0];
+    byProvider[p] = (byProvider[p] ?? 0) + 1;
+  }
+  const lastTs = llmRows.length ? Math.max(...llmRows.map(r => new Date(String(r.ts)).getTime())) : 0;
+  const llm: PulseLlm = {
+    calls: llmRows.length,
+    okRate: llmRows.length ? Math.round((llmOk.length / llmRows.length) * 100) : 100,
+    avgMs: llmRows.length ? Math.round(llmRows.reduce((s, r) => s + Number(r.ms ?? 0), 0) / llmRows.length) : 0,
+    byProvider,
+    lastAgo: lastTs ? fmtAgo(lastTs) : '—',
+  };
+
+  const toolRows = readJsonlTail(path.join(KFM_DATA_DIR, 'tool-exec.jsonl'), 200_000).filter(r => inWindow(r.ts, cutoff));
+  const toolCnt = new Map<string, number>();
+  for (const r of toolRows) {
+    const t = String(r.tool ?? '?');
+    toolCnt.set(t, (toolCnt.get(t) ?? 0) + 1);
+  }
+  const tools: PulseTools = {
+    calls: toolRows.length,
+    fails: toolRows.filter(r => r.ok === false).length,
+    top: [...toolCnt.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([name, n]) => ({ name, n })),
+  };
+
+  const chkRows = readJsonlTail(path.join(KFM_DATA_DIR, 'check-failures.jsonl'), 100_000).filter(r => inWindow(r.ts, cutoff));
+  const chkCnt = new Map<string, number>();
+  for (const r of chkRows) {
+    const c = String(r.check ?? '?').replace(/\.mjs$/, '').replace(/^check-/, '');
+    chkCnt.set(c, (chkCnt.get(c) ?? 0) + 1);
+  }
+  const checks: PulseChecks = {
+    fails: chkRows.length,
+    top: [...chkCnt.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([name, n]) => ({ name, n })),
+  };
+
+  const bldRows = readJsonlTail(path.join(KFM_DATA_DIR, 'build-metrics.jsonl'), 100_000)
+    .filter(r => r.phase === 'build' && inWindow(r.ts, cutoff));
+  const lastBld = bldRows.at(-1);
+  const build: PulseBuild = {
+    lastMs: Number(lastBld?.ms ?? 0),
+    lastOk: lastBld ? lastBld.ok === true : true,
+    builds: bldRows.length,
+  };
+
+  const data: PulseData = { llm, tools, checks, build };
+  pulseCache = { data, ts: now };
+  return data;
 }

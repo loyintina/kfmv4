@@ -60,6 +60,13 @@ interface SysData { metrics: SysMetric[]; history: SysHistory; ports: SysPort[];
 // 星轨（档案馆会话，服务端已做残留过滤 + TOP8 + 聚合轨）
 interface ArchiveTrack { title: string; tokens: number; msgs: number; t0: string; t1: string; active: boolean; aggregate?: number }
 interface ArchiveData { sessions: number; totalTokens: number; tracks: ArchiveTrack[] }
+// 脉搏（史官数据流 24h 聚合）
+interface PulseData {
+  llm: { calls: number; okRate: number; avgMs: number; byProvider: Record<string, number>; lastAgo: string };
+  tools: { calls: number; fails: number; top: Array<{ name: string; n: number }> };
+  checks: { fails: number; top: Array<{ name: string; n: number }> };
+  build: { lastMs: number; lastOk: boolean; builds: number };
+}
 
 export function initObsHud(): void {
   if (inited) return;
@@ -117,10 +124,44 @@ export function initObsHud(): void {
   document.body.appendChild(rail);
   const railSysEl = rail.querySelector<HTMLElement>('.obs-rail-sys')!;
   const railPortsEl = rail.querySelector<HTMLElement>('.obs-rail-ports')!;
+
+  // 脉搏 + 执勤（2026-08-08 用户定稿：填屏第二批，史官数据流上屏——agent-calls/
+  // tool-exec/check-failures/build-metrics 24h 聚合 + cron 八灯从 SYS 移出后的家）。
+  // 中右空带两框纵叠：左缘=SYS 竖条右缘+10，右缘=星轨右缘；脉搏在上执勤在下，
+  // 位置同 placeRail 实测矩形注入（starmap 底缘起排，避开右下待办卡）
+  const pulse = document.createElement('div');
+  pulse.className = 'obs-pulse';
+  pulse.innerHTML = `
+    <div class="obs-inbox-head"><span class="obs-inbox-title">脉搏</span><span class="obs-pulse-status"></span></div>
+    <div class="obs-pulse-body"></div>
+  `;
+  pulse.style.zIndex = String(Z.CENTER_CONTENT);
+  document.body.appendChild(pulse);
+  const pulseBodyEl = pulse.querySelector<HTMLElement>('.obs-pulse-body')!;
+  const pulseStatusEl = pulse.querySelector<HTMLElement>('.obs-pulse-status')!;
+  const duty = document.createElement('div');
+  duty.className = 'obs-duty';
+  duty.innerHTML = `
+    <div class="obs-inbox-head"><span class="obs-inbox-title">执勤</span><span class="obs-duty-status"></span></div>
+    <div class="obs-duty-body"></div>
+  `;
+  duty.style.zIndex = String(Z.CENTER_CONTENT);
+  document.body.appendChild(duty);
+  const dutyBodyEl = duty.querySelector<HTMLElement>('.obs-duty-body')!;
+  const dutyStatusEl = duty.querySelector<HTMLElement>('.obs-duty-status')!;
+
   const placeRail = () => {
     const r = hud.querySelector<HTMLElement>('.obs-inbox')!.getBoundingClientRect();
     rail.style.left = `${r.left}px`;
     rail.style.top = `${r.bottom + 10}px`;
+    const sm = hud.querySelector<HTMLElement>('.obs-starmap')!.getBoundingClientRect();
+    const x = rail.getBoundingClientRect().right + 10;
+    for (const el of [pulse, duty]) {
+      el.style.left = `${x}px`;
+      el.style.width = `${sm.right - x}px`;
+    }
+    pulse.style.top = `${sm.bottom + 10}px`;
+    duty.style.top = `${pulse.getBoundingClientRect().bottom + 10}px`;
   };
   placeRail();
   window.addEventListener('resize', placeRail);
@@ -321,6 +362,32 @@ ${body}</div>
     starmapBodyEl.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img">${grid}${rows}${axis}</svg>`;
   }
 
+  // 渲染脉搏（LLM + 工具两行实况 + 工具 TOP4 横向条）与执勤（cron 八灯两列 +
+  // 检查链失败 TOP + 构建行）——渲染后重测位置（内容高度决定下一框起排点）
+  const fmtDur = (ms: number) => ms >= 60_000 ? `${(ms / 60_000).toFixed(1)}m` : ms >= 1000 ? `${Math.round(ms / 1000)}s` : `${ms}ms`;
+  function renderPulse(p: PulseData, cron: SysCron[]): void {
+    const provs = Object.entries(p.llm.byProvider).map(([k, v]) => `${k} ×${v}`).join(' ');
+    pulseStatusEl.textContent = '24h';
+    const maxN = Math.max(...p.tools.top.map(t => t.n), 1);
+    const bars = p.tools.top.map(t =>
+      `<div class="obs-pulse-bar"><span class="obs-pulse-bar-label">${t.name}</span><span class="obs-pulse-bar-track"><span class="obs-pulse-bar-fill" style="width:${Math.round((t.n / maxN) * 100)}%"></span></span><span class="obs-pulse-bar-n">${t.n}</span></div>`).join('');
+    pulseBodyEl.innerHTML = `
+      <div class="obs-pulse-line"><span class="obs-pulse-key">LLM</span> ${p.llm.calls} 次 · <span class="${p.llm.okRate < 95 ? 'obs-rail-num-red' : ''}">${p.llm.okRate}%</span> · 均 ${fmtDur(p.llm.avgMs)} · ${p.llm.lastAgo}前</div>
+      <div class="obs-pulse-dim">${provs || '—'}</div>
+      <div class="obs-pulse-line"><span class="obs-pulse-key">工具</span> ${p.tools.calls} 次${p.tools.fails > 0 ? ` · <span class="obs-rail-num-red">失败 ${p.tools.fails}</span>` : ''}</div>
+      ${bars}`;
+    const cr = cron.map(c => {
+      const cls = c.status === 'ok' ? 'obs-dot-ok' : c.status === 'fail' ? 'obs-dot-dead' : 'obs-dot-other';
+      return `<div class="obs-duty-cron"><span class="obs-dot ${cls}" style="${pulseStyle(c.name)}"></span><span class="obs-duty-name">${c.name}</span><span class="obs-duty-ago">${c.ago}</span></div>`;
+    }).join('');
+    dutyStatusEl.textContent = `${p.checks.fails} 败`;
+    dutyBodyEl.innerHTML = `
+      <div class="obs-duty-cron-grid">${cr}</div>
+      <div class="obs-pulse-line obs-duty-sep"><span class="obs-pulse-key">检查</span> ${p.checks.fails} 失败${p.checks.top.length ? ` · ${p.checks.top.slice(0, 2).map(t => `${t.name}×${t.n}`).join(' ')}` : ''}</div>
+      <div class="obs-pulse-line"><span class="obs-pulse-key">构建</span> ${p.build.builds} 次 · 最近 ${fmtDur(p.build.lastMs)} <span class="${p.build.lastOk ? 'obs-duty-ok' : 'obs-rail-num-red'}">${p.build.lastOk ? '✓' : '✗'}</span></div>`;
+    placeRail();
+  }
+
   // 渲染 SYS 面板（2026-08-07 用户定稿：指标行 = 文字行（标签+百分号+xx/xx 实值对）
   // + 下方滚动柱状图（绿<70/黄 70-85/红>85 逐样本上色，新样本右侧滚入）；
   // 端口行 = 作用域标（公/本）+ 端口号 + 进程名 + 活跃连接数）
@@ -439,11 +506,12 @@ ${body}</div>
   let lastStackKey = '';
   let lastSysKey = '';
   let lastArchiveKey = '';
+  let lastPulseKey = '';
   const refresh = async () => {
     try {
       const res = await fetch(`${API}/obs/hud`, { signal: AbortSignal.timeout(5000) });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const j = await res.json() as { balance?: { total?: string; error?: string }; inbox?: InboxEntry[]; stack?: StackData; sys?: SysData; archive?: ArchiveData };
+      const j = await res.json() as { balance?: { total?: string; error?: string }; inbox?: InboxEntry[]; stack?: StackData; sys?: SysData; archive?: ArchiveData; pulse?: PulseData };
       const b = j?.balance;
       if (b && !b.error && b.total != null) {
         balanceEl.textContent = fmtBalance(b.total);
@@ -488,6 +556,14 @@ ${body}</div>
         if (key !== lastArchiveKey) {
           lastArchiveKey = key;
           renderStarmap(j.archive);
+        }
+      }
+      if (j?.pulse?.llm && j?.pulse?.tools && j?.pulse?.checks && j?.pulse?.build) {
+        const cron = Array.isArray(j?.sys?.cron) ? j.sys.cron : [];
+        const key = JSON.stringify(j.pulse) + JSON.stringify(cron);
+        if (key !== lastPulseKey) {
+          lastPulseKey = key;
+          renderPulse(j.pulse, cron);
         }
       }
     } catch {
