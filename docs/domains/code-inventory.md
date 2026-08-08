@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 6b4bad81 · 生成于 2026-08-08 -->
+<!-- 基准 commit 2588ac7a · 生成于 2026-08-08 -->
 
 # 代码清单（机械层）
 
@@ -36,11 +36,11 @@
 | src/client/engine/v2/animation.ts | 40 | ease |
 | src/client/engine/v2/utils.ts | 24 | uniformSpacing, hvSpacing, ZERO_SPACING |
 
-## floating-card（31 文件 · 8566 行）
+## floating-card（31 文件 · 8584 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/client/generated/scripts-catalog.ts | 1328 | ScriptCatalogEntry, SCRIPTS_CATALOG, SCRIPT_CATEGORIES |
+| src/client/generated/scripts-catalog.ts | 1346 | ScriptCatalogEntry, SCRIPTS_CATALOG, SCRIPT_CATEGORIES |
 | src/client/modules/floating-card.ts | 811 | enterFullscreen, exitFullscreen, dismissFullscreen, updateFullscreenSavedPosition, createFloatingCard, dismissFloatingCard, initFloatingCards, hasFloatingCard, buildCardLayout |
 | src/client/modules/terminal-card-04.ts | 807 | TerminalCardMeta, initTerminalCore, disposeTerminalCore, compactTerminalCore, createTerminal04Handler |
 | src/client/cards/plugins/role.card.ts | 711 | — |
@@ -72,14 +72,15 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（24 文件 · 3989 行）
+## client-shell（25 文件 · 4297 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/client/modules/obs-hud.ts | 619 | initObsHud |
+| src/client/modules/obs-hud.ts | 645 | initObsHud |
 | src/client/modules/orb.ts | 538 | type OrbState, collapseOrbPanel, initOrb |
 | src/client/modules/gesture-registry.ts | 346 | GestureHandler, GestureRegistry, gestures |
 | src/client/modules/ui-registry.ts | 334 | UIElementType, UIElementState, InteractiveElement, ContentBlock, Capability, PageDescription, RegistryChangeHandler, UIElementRegistry, Registry |
+| src/client/modules/obs-emblem.ts | 282 | EmblemRect, EmblemRects, initObsEmblems |
 | src/client/modules/custom-select.ts | 246 | SelectItem, CustomSelectOptions, CustomSelect, createCustomSelect |
 | src/client/modules/orb-panel.ts | 221 | PanelConfig, buildPanelContent |
 | src/client/modules/gestures.ts | 217 | initGestures |
@@ -176,7 +177,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（150 文件 · 18282 行）
+## infra（151 文件 · 18363 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -223,8 +224,8 @@
 | experiments/coldstart/tools/judge-batch.mjs | 135 | — |
 | scripts/agent/exp-iceberg.mjs | 134 | — |
 | build.mjs | 133 | — |
+| scripts/check/chain.mjs | 132 | STEPS |
 | scripts/check/check-checks.mjs | 132 | — |
-| scripts/check/chain.mjs | 131 | STEPS |
 | scripts/check/check-tool-compaction.mjs | 130 | — |
 | scripts/check/check-mutation-anchors.mjs | 127 | — |
 | scripts/check/gen-permission-map.mjs | 126 | — |
@@ -260,6 +261,7 @@
 | scripts/check/check-experiment-index.mjs | 81 | — |
 | scripts/check/check-hooks.mjs | 81 | — |
 | scripts/agent/exp-thinking.mjs | 81 | — |
+| scripts/check/check-probe-state.mjs | 80 | — |
 | scripts/check/check-as-any.mjs | 79 | — |
 | scripts/check/check-console.mjs | 79 | — |
 | scripts/check/gen-contract-lists.mjs | 77 | — |
@@ -645,4 +647,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 295 文件 · 53043 行 · 跨域边 252 条
+合计 297 文件 · 53450 行 · 跨域边 252 条
