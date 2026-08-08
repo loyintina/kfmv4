@@ -143,11 +143,13 @@ export function initObsHud(): void {
   duty.className = 'obs-duty';
   duty.innerHTML = `
     <div class="obs-inbox-head"><span class="obs-inbox-title">执勤</span><span class="obs-duty-status"></span></div>
+    <div class="obs-duty-cron-grid"></div>
     <div class="obs-duty-body"></div>
   `;
   duty.style.zIndex = String(Z.CENTER_CONTENT);
   document.body.appendChild(duty);
   const dutyBodyEl = duty.querySelector<HTMLElement>('.obs-duty-body')!;
+  const dutyCronGridEl = duty.querySelector<HTMLElement>('.obs-duty-cron-grid')!;
   const dutyStatusEl = duty.querySelector<HTMLElement>('.obs-duty-status')!;
 
   const placeRail = () => {
@@ -155,10 +157,9 @@ export function initObsHud(): void {
     rail.style.left = `${r.left}px`;
     rail.style.top = `${r.bottom + 10}px`;
     const sm = hud.querySelector<HTMLElement>('.obs-starmap')!.getBoundingClientRect();
-    const x = rail.getBoundingClientRect().right + 10;
     for (const el of [pulse, duty]) {
-      el.style.left = `${x}px`;
-      el.style.width = `${sm.right - x}px`;
+      el.style.left = `${sm.left}px`;   // 左右界与星轨同齐（2026-08-08 用户定稿：
+      el.style.width = `${sm.width}px`; // 原跨带版左界压住了信箱下部——信箱 183px 比星轨高）
     }
     pulse.style.top = `${sm.bottom + 10}px`;
     duty.style.top = `${pulse.getBoundingClientRect().bottom + 10}px`;
@@ -362,9 +363,27 @@ ${body}</div>
     starmapBodyEl.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img">${grid}${rows}${axis}</svg>`;
   }
 
-  // 渲染脉搏（LLM + 工具两行实况 + 工具 TOP4 横向条）与执勤（cron 八灯两列 +
+  // 渲染脉搏（LLM + 工具两行实况 + 工具 TOP4 横向条）与执勤（cron 灯 4 列 2 行 +
   // 检查链失败 TOP + 构建行）——渲染后重测位置（内容高度决定下一框起排点）
   const fmtDur = (ms: number) => ms >= 60_000 ? `${(ms / 60_000).toFixed(1)}m` : ms >= 1000 ? `${Math.round(ms / 1000)}s` : `${ms}ms`;
+  // cron 灯窗口：4 列 2 行 = 8 条一屏（2026-08-08 用户定稿，原 2 列 4 行太高）；
+  // 超出 8 条每 5s 硬切一屏（同端口窗节奏）
+  let dutyCron: SysCron[] = [];
+  let dutyCronPage = 0;
+  function renderDutyCron(): void {
+    const per = 8;
+    const pages = Math.max(1, Math.ceil(dutyCron.length / per));
+    dutyCronPage %= pages;
+    dutyCronGridEl.innerHTML = dutyCron.slice(dutyCronPage * per, dutyCronPage * per + per).map(c => {
+      const cls = c.status === 'ok' ? 'obs-dot-ok' : c.status === 'fail' ? 'obs-dot-dead' : 'obs-dot-other';
+      return `<div class="obs-duty-cron"><span class="obs-dot ${cls}" style="${pulseStyle(c.name)}"></span><span class="obs-duty-name">${c.name}</span><span class="obs-duty-ago">${c.ago}</span></div>`;
+    }).join('');
+  }
+  setInterval(() => {
+    if (dutyCron.length <= 8) return;
+    dutyCronPage++;
+    renderDutyCron();
+  }, 5_000);
   function renderPulse(p: PulseData, cron: SysCron[]): void {
     const provs = Object.entries(p.llm.byProvider).map(([k, v]) => `${k} ×${v}`).join(' ');
     pulseStatusEl.textContent = '24h';
@@ -376,13 +395,11 @@ ${body}</div>
       <div class="obs-pulse-dim">${provs || '—'}</div>
       <div class="obs-pulse-line"><span class="obs-pulse-key">工具</span> ${p.tools.calls} 次${p.tools.fails > 0 ? ` · <span class="obs-rail-num-red">失败 ${p.tools.fails}</span>` : ''}</div>
       ${bars}`;
-    const cr = cron.map(c => {
-      const cls = c.status === 'ok' ? 'obs-dot-ok' : c.status === 'fail' ? 'obs-dot-dead' : 'obs-dot-other';
-      return `<div class="obs-duty-cron"><span class="obs-dot ${cls}" style="${pulseStyle(c.name)}"></span><span class="obs-duty-name">${c.name}</span><span class="obs-duty-ago">${c.ago}</span></div>`;
-    }).join('');
+    dutyCron = cron;
+    dutyCronPage = 0;
+    renderDutyCron();
     dutyStatusEl.textContent = `${p.checks.fails} 败`;
     dutyBodyEl.innerHTML = `
-      <div class="obs-duty-cron-grid">${cr}</div>
       <div class="obs-pulse-line obs-duty-sep"><span class="obs-pulse-key">检查</span> ${p.checks.fails} 失败${p.checks.top.length ? ` · ${p.checks.top.slice(0, 2).map(t => `${t.name}×${t.n}`).join(' ')}` : ''}</div>
       <div class="obs-pulse-line"><span class="obs-pulse-key">构建</span> ${p.build.builds} 次 · 最近 ${fmtDur(p.build.lastMs)} <span class="${p.build.lastOk ? 'obs-duty-ok' : 'obs-rail-num-red'}">${p.build.lastOk ? '✓' : '✗'}</span></div>`;
     placeRail();

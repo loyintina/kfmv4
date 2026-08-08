@@ -79,10 +79,11 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
   5. **脉搏卡**（2026-08-08 定稿：填屏第二批，史官数据流上屏）：24h 窗口
      LLM 行（次数/成功率/均耗时/最近调用距今 + provider 分解）+ 工具行
      （次数/失败数 + TOP4 渐变横向条）
-  6. **执勤卡**（同日定稿，cron 八灯从 SYS 移出后的家）：cron 两列状态灯
-     （dot+name+ago 紧凑组）+ 检查链失败 TOP2 + 构建次数/最近耗时；
-     与脉搏纵叠于中右空带（左缘=SYS 竖条右缘+10，右缘=星轨右缘，
-     JS 实测矩形注入同 placeRail）
+  6. **执勤卡**（同日定稿，cron 八灯从 SYS 移出后的家）：cron 状态灯
+     **4 列 2 行窗口**（dot+name+ago 紧凑组，>8 条每 5s 硬切一屏轮换）
+     + 检查链失败 TOP2 + 构建次数/最近耗时；
+     与脉搏纵叠于**星轨列**（左右界与星轨同齐，JS 实测矩形注入同
+     placeRail——原中右空带跨带版左界会压住信箱下部，2026-08-08 v3 收窄）
 - 数据：`/api/obs/hud` 5s 轮询（余额服务端 5s 缓存；SYS 30s 独立采样器
   环形 40 点落 ~/.kfmv4/sys-metrics.json，端口 30s/cron 5min 缓存；
   星轨 archive 30s 缓存，读 ~/.kfmv4/sessions/*.json 顶层字段，

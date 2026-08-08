@@ -332,8 +332,9 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 .obs-pulse-bar-track{flex:1;height:5px;border-radius:3px;background:rgba(124,58,237,.12);overflow:hidden}
 .obs-pulse-bar-fill{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,rgba(124,58,237,.7),rgba(0,212,255,.7));box-shadow:0 0 3px rgba(0,212,255,.35)}
 .obs-pulse-bar-n{flex:none;min-width:22px;color:var(--text);font-variant-numeric:tabular-nums}
-.obs-duty-cron-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px 8px}
-.obs-duty-cron{display:flex;align-items:center;font-size:9px;min-width:0}
+.obs-duty-cron-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px 4px;padding:5px 10px 0}
+.obs-duty-cron{display:flex;align-items:center;font-size:9px;min-width:0;overflow:hidden}
+.obs-duty-cron .obs-dot{margin-right:2px}
 .obs-duty-name{color:var(--text);white-space:nowrap;flex:none}
 .obs-duty-ago{flex:none;color:var(--text-dim);font-variant-numeric:tabular-nums;margin-left:3px}
 .obs-duty-sep{margin-top:3px;padding-top:4px;border-top:1px solid rgba(124,58,237,.15)}
