@@ -52,8 +52,8 @@ function mkCanvas(rect: EmblemRect): [HTMLCanvasElement, CanvasRenderingContext2
 // 设计（2026-08-08 用户定稿）：无相位状态机。一轮 T 内每个粒子沿「随机闭环」
 // 巡游——起点=终点=自己的形状位，轨迹每轮重生成。轮界瞬间 21 点同归形状位，
 // 形自然浮现；随后各自散入随机路径。速率全程缓动：成形前 4s smoothstep
-// 缓减速，成形瞬间速率归零即起（不停顿），再 4s 缓加速——减速点到加速点
-// 正好半个周期，中段回到满缓速。
+// 缓减速到 0.25 倍谷底（不停顿，归零那一瞬实拍有卡顿感），再 4s 缓加速
+// ——减速点到加速点正好半个周期，中段回到满缓速。
 class EmblemGather {
   private glyph: { x: number; y: number }[] = [];
   private t0 = 0;
@@ -69,8 +69,8 @@ class EmblemGather {
   private static SHAPE_TAU = 2500; // 轮界前后形可读窗口（ms；缓动窗让粒子自然流连，同步拉宽）
   private static WP = 5;           // 每轮随机路点数
   private static SEG = 60;         // 每段弧长采样数
-  private static DWELL = 0;        // 谷底停顿（2026-08-08 实拍定稿：不停顿，
-                                   // 成形瞬间速率归零即起，缓动窗本身就足够好看）
+  private static FMIN = 0.25;      // 缓动谷底速率比（成形瞬间只放到最缓不归零——
+                                   // 归零那一瞬实拍有卡顿感，2026-08-08 定稿）
   constructor(private w: number, private h: number) {
     this.R = rng(20260808);
     // 深渊菱瞳目标形：菱形 4 顶点 + 每边 2 等分点（12），竖瞳椭圆 8 点，瞳心 1 点
@@ -142,18 +142,17 @@ class EmblemGather {
     }
     return { xs, ys, cum, len: cum[cum.length - 1] };
   }
-  // 缓动速率因子：db ≤ DWELL 停 0；D→W smoothstep 升到满速，W=T/4——
-  // 成形点停顿 0.5s，前后各 3.75s 缓减/缓加速，减速点到加速点约半个周期
+  // 缓动速率因子：f(db) = FMIN + (1-FMIN)·smoothstep(db/W)，W=T/4——
+  // 成形前 4s 缓减速到谷底（不停），成形后 4s 缓加速，正好半个周期
   private static speedF(dbMs: number): number {
-    const W = EmblemGather.T / 4, D = EmblemGather.DWELL;
-    if (dbMs <= D) return 0;
-    const u = Math.min(1, (dbMs - D) / (W - D));
-    return u * u * (3 - 2 * u);
+    const u = Math.min(1, dbMs / (EmblemGather.T / 4));
+    const sm = u * u * (3 - 2 * u);
+    return EmblemGather.FMIN + (1 - EmblemGather.FMIN) * sm;
   }
-  // 一轮 ∫f dt（秒）：2·((W−D)/2 + (T/2−W)) = T − W − D，W=T/4
+  // 一轮 ∫f dt（秒）：2·(W·(FMIN+(1-FMIN)/2) + (T/2−W))，W=T/4 → T − T/4·(1−FMIN)
   private static cycleInt(): number {
     const Ts = EmblemGather.T / 1000;
-    return Ts - Ts / 4 - EmblemGather.DWELL / 1000;
+    return Ts - (Ts / 4) * (1 - EmblemGather.FMIN);
   }
   // 每轮重生成随机轨迹；长度归一到「统一速率 × T」（绕形心缩放点，保随机形状）
   private regen(): void {
