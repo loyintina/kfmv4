@@ -189,21 +189,21 @@ export function initObsHud(): void {
     const maxTop = el.scrollHeight - el.clientHeight;
     if (el.scrollTop >= maxTop - 2) el.scrollTo({ top: 0, behavior: 'auto' });
     else el.scrollTo({ top: Math.min(el.scrollTop + portStride, maxTop), behavior: 'auto' });
-  }, 5_000);
+  }, 2_500);
 
   // 信箱/待办自动翻屏（2026-08-08 用户定稿：列表手势滑动会吞掉全局卡片堆手势，
   // 改 overflow:hidden + 按一屏高硬切，到底回顶；点击/详情交互不受影响，
   // 详情视图同容器也走翻屏——否则长文永远读不到后半）。
-  // 节奏错位（同日定稿 v2）：端口 5.0s / 执勤 cron 5.6s / 信箱 6.2s / 待办 7.4s——
-  // 四处翻屏周期互质漂移，永不同拍齐跳，观感更活
+  // 节奏错位（同日定稿 v3 提速一倍）：端口 2.5s / 执勤 cron 2.8s / 信箱 3.1s /
+  // 待办 3.7s——四处翻屏周期互质漂移，永不同拍齐跳，观感更活
   const autoPage = (el: HTMLElement) => {
     const maxTop = el.scrollHeight - el.clientHeight;
     if (maxTop <= 2) { if (el.scrollTop) el.scrollTo({ top: 0, behavior: 'auto' }); return; }
     if (el.scrollTop >= maxTop - 2) el.scrollTo({ top: 0, behavior: 'auto' });
     else el.scrollTo({ top: Math.min(el.scrollTop + el.clientHeight, maxTop), behavior: 'auto' });
   };
-  setInterval(() => autoPage(inboxListEl), 6_200);
-  setInterval(() => autoPage(stackListEl), 7_400);
+  setInterval(() => autoPage(inboxListEl), 3_100);
+  setInterval(() => autoPage(stackListEl), 3_700);
 
   const clockEl = hud.querySelector<HTMLElement>('.obs-clock')!;
   const balanceEl = hud.querySelector<HTMLElement>('.obs-balance')!;
@@ -391,7 +391,7 @@ ${body}</div>
   // 检查链失败 TOP + 构建行）——渲染后重测位置（内容高度决定下一框起排点）
   const fmtDur = (ms: number) => ms >= 60_000 ? `${(ms / 60_000).toFixed(1)}m` : ms >= 1000 ? `${Math.round(ms / 1000)}s` : `${ms}ms`;
   // cron 灯窗口：4 列 2 行 = 8 条一屏（2026-08-08 用户定稿，原 2 列 4 行太高）；
-  // 超出 8 条每 5.6s 硬切一屏（翻屏节奏错位家族之一，见 autoPage 注释）
+  // 超出 8 条每 2.8s 硬切一屏（翻屏节奏错位家族之一，见 autoPage 注释）
   let dutyCron: SysCron[] = [];
   let dutyCronPage = 0;
   function renderDutyCron(): void {
@@ -407,7 +407,7 @@ ${body}</div>
     if (dutyCron.length <= 8) return;
     dutyCronPage++;
     renderDutyCron();
-  }, 5_600);
+  }, 2_800);
   function renderPulse(p: PulseData, cron: SysCron[]): void {
     const provs = Object.entries(p.llm.byProvider).map(([k, v]) => `${k} ×${v}`).join(' ');
     pulseStatusEl.textContent = '24h';
