@@ -127,8 +127,8 @@ export function initObsHud(): void {
 
   // 脉搏 + 执勤（2026-08-08 用户定稿：填屏第二批，史官数据流上屏——agent-calls/
   // tool-exec/check-failures/build-metrics 24h 聚合 + cron 八灯从 SYS 移出后的家）。
-  // 中右空带两框纵叠：左缘=SYS 竖条右缘+10，右缘=星轨右缘；脉搏在上执勤在下，
-  // 位置同 placeRail 实测矩形注入（starmap 底缘起排，避开右下待办卡）
+  // 布局 v4：脉搏与星轨同宽纵叠；执勤左缘顶 SYS 竖条右缘+10、右缘与星轨同齐；
+  // 脉搏在上执勤在下，位置同 placeRail 实测矩形注入（starmap 底缘起排，避开右下待办卡）
   const pulse = document.createElement('div');
   pulse.className = 'obs-pulse';
   pulse.innerHTML = `
@@ -157,10 +157,15 @@ export function initObsHud(): void {
     rail.style.left = `${r.left}px`;
     rail.style.top = `${r.bottom + 10}px`;
     const sm = hud.querySelector<HTMLElement>('.obs-starmap')!.getBoundingClientRect();
-    for (const el of [pulse, duty]) {
-      el.style.left = `${sm.left}px`;   // 左右界与星轨同齐（2026-08-08 用户定稿：
-      el.style.width = `${sm.width}px`; // 原跨带版左界压住了信箱下部——信箱 183px 比星轨高）
-    }
+    // 脉搏：左右界与星轨同齐（2026-08-08 v3 定稿）
+    pulse.style.left = `${sm.left}px`;
+    pulse.style.width = `${sm.width}px`;
+    // 执勤：左缘顶到 SYS 竖条右缘+10，右缘与星轨右缘同齐（2026-08-08 v4 用户定稿：
+    // 4 列 cron 灯在 200px 太挤，回到跨带版；此高度左侧是 SYS 竖条而非信箱，无碰撞）
+    const sysR = rail.getBoundingClientRect();
+    const dutyLeft = sysR.right + 10;
+    duty.style.left = `${dutyLeft}px`;
+    duty.style.width = `${sm.left + sm.width - dutyLeft}px`;
     pulse.style.top = `${sm.bottom + 10}px`;
     duty.style.top = `${pulse.getBoundingClientRect().bottom + 10}px`;
   };

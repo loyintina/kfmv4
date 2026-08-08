@@ -81,9 +81,9 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
      （次数/失败数 + TOP4 渐变横向条）
   6. **执勤卡**（同日定稿，cron 八灯从 SYS 移出后的家）：cron 状态灯
      **4 列 2 行窗口**（dot+name+ago 紧凑组，>8 条每 5s 硬切一屏轮换）
-     + 检查链失败 TOP2 + 构建次数/最近耗时；
-     与脉搏纵叠于**星轨列**（左右界与星轨同齐，JS 实测矩形注入同
-     placeRail——原中右空带跨带版左界会压住信箱下部，2026-08-08 v3 收窄）
+     + 检查链失败 TOP2 + 构建次数/最近耗时；**左缘顶 SYS 竖条右缘+10、
+     右缘与星轨同齐**（2026-08-08 v4 用户定稿：4 列灯在 200px 太挤回到
+     跨带版——此高度左侧是 SYS 竖条而非信箱，无碰撞；脉搏仍与星轨同宽）
 - 数据：`/api/obs/hud` 5s 轮询（余额服务端 5s 缓存；SYS 30s 独立采样器
   环形 40 点落 ~/.kfmv4/sys-metrics.json，端口 30s/cron 5min 缓存；
   星轨 archive 30s 缓存，读 ~/.kfmv4/sessions/*.json 顶层字段，
