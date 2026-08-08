@@ -56,11 +56,9 @@ class EmblemGather {
   private glyph: { x: number; y: number }[] = [];
   private t0 = 0;
   private R: () => number;
-  // 漂移态连线表（滞回：d < 结成阈值连线，d > 断开阈值才断——2026-08-08 用户定稿：
-  // 近距即连线应是稳定可见的事件，不是每帧重算的一瞬即灭）
-  private links = new Set<number>();
-  private linkThr = 0;  // 结成阈值（构造时按画布尺寸定）
-  private breakThr = 0; // 断开阈值（> 结成阈值，滞回带）
+  // 连线阈值（单阈值：小于即连、大于即断——2026-08-08 用户实拍：滞回带让长线
+  // 挂太多，看不见的原因是亮度不是长度；亮度已同步形状描边峰值 0.75）
+  private thr = 0;
   // 相位时长：漂 11s → 聚 2.6s → 定 2.4s → 散 1.8s
   private static DRIFT = 11000; private static GATHER = 2600;
   private static HOLD = 2400; private static RELEASE = 1800;
@@ -85,20 +83,7 @@ class EmblemGather {
     }
     g.push({ x: 0.5, y: 0.5 });
     this.glyph = g.map(p => ({ x: p.x * w, y: p.y * h }));
-    this.linkThr = Math.min(w, h) * 0.30;
-    this.breakThr = Math.min(w, h) * 0.46;
-  }
-  // 漂移态逐帧维护连线表：小于 linkThr 结成新线，大于 breakThr 断开旧线
-  private updateLinks(): void {
-    const n = this.pts.length;
-    for (let i = 0; i < n; i++) {
-      for (let j = i + 1; j < n; j++) {
-        const d = Math.hypot(this.pts[i].x - this.pts[j].x, this.pts[i].y - this.pts[j].y);
-        const key = i * 100 + j;
-        if (d < this.linkThr) this.links.add(key);
-        else if (d > this.breakThr) this.links.delete(key);
-      }
-    }
+    this.thr = Math.min(w, h) * 0.30;
   }
   private phase(now: number): [string, number] {
     if (!this.t0) this.t0 = now;
@@ -112,9 +97,9 @@ class EmblemGather {
     const { w, h } = this;
     const [ph, k] = this.phase(now);
     (window as unknown as { __emblemPhase: string }).__emblemPhase = ph; // escape-ok: 守视掐点调试钩子（eval 读相位拍 hold 帧，试映期临时）
-    if (ph !== 'drift' && this.links.size) this.links.clear(); // 离开漂移态清空连线表
-    if (ph === 'drift') this.updateLinks();
     const ease = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    // 形度 s：聚期渐入、定期满、散期渐出——形状描边与粒子增亮都随它渐变，无突变
+    const s = ph === 'gather' ? ease(k) : ph === 'hold' ? 1 : ph === 'release' ? 1 - ease(k) : 0;
     for (let i = 0; i < this.pts.length; i++) {
       const p = this.pts[i];
       if (ph === 'drift') {
@@ -126,29 +111,41 @@ class EmblemGather {
         if (p.y < 2 || p.y > h - 2) p.vy = -p.vy;
         p.x = Math.max(2, Math.min(w - 2, p.x)); p.y = Math.max(2, Math.min(h - 2, p.y));
       } else if (ph === 'gather' || ph === 'hold') {
-        const pull = ph === 'gather' ? ease(k) * 0.14 : 0.10;
-        p.x += (this.glyph[i].x - p.x) * pull; p.y += (this.glyph[i].y - p.y) * pull;
+        // 转向式收拢：速度矢量连续，从漂移方向缓缓转向目标——不停顿、不重来
+        // （期望速度正比于剩余距离，指数收敛；turn 是转向率，越小弧线越缓）
+        const dx = this.glyph[i].x - p.x, dy = this.glyph[i].y - p.y;
+        const dist = Math.hypot(dx, dy);
+        const tau = ph === 'gather' ? 0.6 : 0.3;
+        const sp = dist / tau;
+        const dvx = dist > 0.1 ? (dx / dist) * sp : 0;
+        const dvy = dist > 0.1 ? (dy / dist) * sp : 0;
+        const turn = Math.min(1, 3.0 * dt);
+        p.vx += (dvx - p.vx) * turn;
+        p.vy += (dvy - p.vy) * turn;
+        p.x += p.vx * dt; p.y += p.vy * dt;
       } else { // release：从瞳形散开，赋新速度回归漂移
         p.vx = (p.x - w / 2) * 0.06 + (this.R() - 0.5) * 6;
         p.vy = (p.y - h / 2) * 0.06 + (this.R() - 0.5) * 6;
         p.x += p.vx * dt * ease(k); p.y += p.vy * dt * ease(k);
       }
     }
-    // 连线：漂移期滞回连线表（links）；聚/定期改为显式描边（菱形 0-11 闭环 +
-    // 竖瞳 12-19 闭环），瞳形必须是「形」而不是「网」（2026-08-08 实拍迭代）
+    // 连线：全相位同一套距离规则——漂移结成什么就连着什么走，聚形途中远了断、
+    // 近了结；形状描边只是随 s 渐显的叠加层，不发生「线突然全变」的切换
     ctx.clearRect(0, 0, w, h);
-    if (ph === 'drift') {
-      for (const key of this.links) {
-        const i = Math.floor(key / 100), j = key % 100;
+    const n = this.pts.length;
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
         const d = Math.hypot(this.pts[i].x - this.pts[j].x, this.pts[i].y - this.pts[j].y);
-        // 越近越亮：刚结成的弱线淡，贴身强线亮
-        const a = 0.16 + 0.4 * Math.max(0, 1 - d / this.breakThr);
-        ctx.strokeStyle = `rgba(${BLUE},${a})`;
-        ctx.lineWidth = 0.7;
+        if (d >= this.thr) continue;
+        // 越近越亮，峰值 0.75 与形状描边同亮；瞳族粒子（12 起）及其连线紫色
+        const a = 0.25 + 0.5 * (1 - d / this.thr);
+        ctx.strokeStyle = `rgba(${i >= 12 || j >= 12 ? VIOLET : BLUE},${a})`;
+        ctx.lineWidth = 0.8;
         ctx.beginPath(); ctx.moveTo(this.pts[i].x, this.pts[i].y); ctx.lineTo(this.pts[j].x, this.pts[j].y); ctx.stroke();
       }
-    } else {
-      const edgeA = ph === 'hold' ? 0.75 : ph === 'gather' ? 0.2 + ease(k) * 0.5 : 0.7 * (1 - ease(k));
+    }
+    // 形状描边叠加层：随形度 s 渐显渐隐（菱形 0-11 闭环 + 竖瞳 12-19 闭环）
+    if (s > 0.01) {
       const loop = (from: number, to: number, rgb: string, a: number, lw: number) => {
         ctx.strokeStyle = `rgba(${rgb},${a})`;
         ctx.lineWidth = lw;
@@ -159,13 +156,14 @@ class EmblemGather {
         }
         ctx.closePath(); ctx.stroke();
       };
-      loop(0, 11, CYAN, edgeA, 1.1);        // 菱形外框
-      loop(12, 19, VIOLET, edgeA * 0.9, 0.9); // 竖瞳
+      loop(0, 11, CYAN, s * 0.75, 1.1);
+      loop(12, 19, VIOLET, s * 0.68, 0.9);
     }
-    for (const p of this.pts) {
-      const r = ph === 'hold' ? 1.9 : 1.4;
-      ctx.fillStyle = `rgba(${CYAN},${ph === 'hold' ? 0.95 : 0.8})`;
-      ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fill();
+    // 粒子：统一形状态半径；瞳族常紫；亮度随 s 渐变（0.8 → 0.95）
+    for (let i = 0; i < n; i++) {
+      const p = this.pts[i];
+      ctx.fillStyle = `rgba(${i >= 12 ? VIOLET : CYAN},${0.8 + 0.15 * s})`;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 1.9, 0, Math.PI * 2); ctx.fill();
     }
   }
 }
