@@ -221,8 +221,9 @@ class EmblemGather {
         if (EmblemGather.loopEdge(i, j)) continue;
         const d = Math.hypot(pos[i].x - pos[j].x, pos[i].y - pos[j].y);
         if (d >= this.thr) continue;
-        // 峰值 0.85 与形状描边同亮；竖瞳组（12-19）参与的线紫色，其余蓝色
-        let a = 0.3 + 0.55 * (1 - d / this.thr);
+        // 全局同亮 0.85（2026-08-08 用户定稿：连线不论远近，与成形描边一样亮）；
+        // 竖瞳组（12-19）参与的线紫色，其余蓝色
+        let a = 0.85;
         if (EmblemGather.grp(i) !== EmblemGather.grp(j)) a *= 1 - s;
         ctx.strokeStyle = `rgba(${i >= 12 && i < 20 || j >= 12 && j < 20 ? VIOLET : BLUE},${a})`;
         ctx.lineWidth = 0.8;
