@@ -161,7 +161,7 @@ class EmblemGather {
     const pos = this.paths.map(p => this.at(p, (t / T) * p.len));
     // escape-ok: 守视验证钩子——形度与「粒子-形状位平均距离」原子读出，绕过截图延迟
     const md = pos.reduce((acc, p, i) => acc + Math.hypot(p.x - this.glyph[i].x, p.y - this.glyph[i].y), 0) / pos.length;
-    (window as unknown as { __emblemDbg: string }).__emblemDbg = `${s.toFixed(2)} md=${md.toFixed(1)}`;
+    (window as unknown as { __emblemDbg: string }).__emblemDbg = `${s.toFixed(2)} md=${md.toFixed(1)}`; // escape-ok: 守视验证钩子（试映期临时）
     // 连线：同一套距离规则；跨组线随形度 s 渐隐（成形后两圈之间不留线）；
     // 闭环边跳过（交给描边层，避免双线叠亮）
     ctx.clearRect(0, 0, w, h);
