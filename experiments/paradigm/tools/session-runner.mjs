@@ -116,7 +116,7 @@ export function loadSessionMessages(sessionId) {
   return null;
 }
 
-async function startRun(sessionId, messages, userText, model, provider, roleFile, tools, sandboxRoot, extraSystem, maxTokens) {
+async function startRun(sessionId, messages, userText, model, provider, roleFile, tools, sandboxRoot, extraSystem, maxTokens, readRoot) {
   const res = await fetch(`${BASE}/ai/chat/start`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -130,6 +130,8 @@ async function startRun(sessionId, messages, userText, model, provider, roleFile
       sessionClass: 'script',
       // 写监狱（2026-08-06 e13 逃逸事故）：write/edit 路径强制限制在沙箱内
       ...(sandboxRoot ? { sandboxRoot } : {}),
+      // 读监狱（2026-08-08 docprobe v2 污染事故）：read/grep/glob 路径强制限制在考场内
+      ...(readRoot ? { readRoot } : {}),
       // 外部 system 注入（e15 system 档：范式包落服务端静态 system 段）
       ...(extraSystem ? { extraSystem } : {}),
       ...(roleFile ? { roleFile } : {}),
@@ -214,7 +216,7 @@ async function waitRun(runId, maxMs = 600_000) {
  * @param {string} [opts.out] 归档路径（默认 ~/.kfmv4/sessions/<sessionId>.json）
  * @returns {Promise<{runId, events, ms, sessionPath}>}
  */
-export async function runSession({ sessionId, messages, userText, model, provider, roleFile, paradigm, position, tools, out, sandboxRoot, maxTokens }) {
+export async function runSession({ sessionId, messages, userText, model, provider, roleFile, paradigm, position, tools, out, sandboxRoot, maxTokens, readRoot }) {
   if (!validSessionId(sessionId)) throw new Error(`sessionId 不合法: ${sessionId}`);
   if (position && !['first-user', 'pre-task-user', 'system'].includes(position)) {
     throw new Error(`position 不合法: ${position}（可选 first-user / pre-task-user / system）`);
@@ -226,7 +228,7 @@ export async function runSession({ sessionId, messages, userText, model, provide
   // system 档：包不进消息层（chat.ts:209 会过滤），改走 extraSystem 落服务端静态 system 段
   const extraSystem = position === 'system' && paradigmText ? PACK_MARK(paradigmText) : undefined;
   const apiMessages = toOpenAi(msgs); // 原始格式 → OpenAI 格式（provider 不认 role:'ai'）
-  const { runId } = await startRun(sessionId, apiMessages, userText, model, provider, roleFile, tools, sandboxRoot, extraSystem, maxTokens);
+  const { runId } = await startRun(sessionId, apiMessages, userText, model, provider, roleFile, tools, sandboxRoot, extraSystem, maxTokens, readRoot);
   const src = join(SESSIONS, `${sessionId}.json`);
   try {
     const { events, ms } = await waitRun(runId);
@@ -278,7 +280,7 @@ if (isMain && argv.length > 0) {
   const get = (k) => { const i = argv.indexOf(`--${k}`); return i >= 0 ? argv[i + 1] : undefined; };
   const prompt = get('prompt');
   const cont = get('continue');
-  if (!prompt && !cont) { console.error('用法: --prompt <文本> [--tools read,bash,grep] [--provider <名>] [--model <名>] [--role <角色>] [--paradigm <范式包名>] [--position first-user|pre-task-user|system] [--session <id>] [--out <路径>]'); process.exit(2); }
+  if (!prompt && !cont) { console.error('用法: --prompt <文本> [--tools read,bash,grep] [--provider <名>] [--model <名>] [--role <角色>] [--paradigm <范式包名>] [--position first-user|pre-task-user|system] [--session <id>] [--out <路径>] [--read-root <考场目录>]'); process.exit(2); }
   const provider = get('provider') || 'Opencode Go Google';
   const model = get('model') || 'deepseek-v4-flash';
   const role = get('role');
@@ -287,6 +289,7 @@ if (isMain && argv.length > 0) {
   const sessionId = get('session') || (cont ? (cont.includes('/') ? 'bi-cont' : cont) : `bi-${Date.now().toString(36)}`);
   const out = get('out');
   const tools = get('tools')?.split(',').map(s => s.trim()).filter(Boolean);
+  const readRoot = get('read-root'); // docprobe 考场边界：read/grep/glob 强制限制在该目录内
 
   // 续写：读历史 → 追加新 user 消息 → 全量重发（服务端 to-openai-messages 原生处理 role:'ai'）
   let history = [];
@@ -301,7 +304,7 @@ if (isMain && argv.length > 0) {
   const t0 = Date.now();
   console.log(`[session-runner] ${model} @ ${provider}${role ? ` 角色=${role}` : ''}${paradigm ? ` 范式包=${paradigm}` : ''} 会话=${sessionId}${cont ? '（多轮）' : ''}`);
   const res = await runSession({
-    sessionId, messages, userText: prompt, model, provider, roleFile: role, paradigm, position, tools, out,
+    sessionId, messages, userText: prompt, model, provider, roleFile: role, paradigm, position, tools, out, readRoot,
   });
   console.log(`[session-runner] 完成（${((Date.now() - t0) / 1000).toFixed(0)}s，${res.events} 事件）→ ${res.sessionPath}`);
 }

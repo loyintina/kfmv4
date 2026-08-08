@@ -179,6 +179,50 @@ regression('BAR-SANDBOX-JAIL-02', 'pending-commit', 'executeTool 沙箱外 write
   assert(noJail.isError !== true, '未设 sandboxRoot 不应限制');
 });
 
+// 读监狱（2026-08-08 docprobe 试点 v2 污染事故：被试 agent 顺仓内设计文档里的
+// 绝对路径直读私有区答案——只读白名单限工具类型不限路径，考场边界在 executeTool
+// 扼点强制）。路由层纪律：仅 script 会话可设；与写监狱不同，读监狱只收窄访问面
+// （不引入新权限），不限制必须落在哪个目录。
+regression('BAR-READ-JAIL-01', 'pending-commit', 'readRoot 仅 script 会话透传为读监狱根，panel 忽略，缺省不限制', () => {
+  const seen: Array<{ jail: unknown }> = [];
+  const fakeStart: StartRunFn = (...args: unknown[]) => {
+    seen.push({ jail: args[12] }); // startRun 第 13 参 = readRoot
+    return { id: 'run_rjail', done: false } as any;
+  };
+  const routes = collectRoutes(fakeStart);
+  const start = routes.get('POST /ai/chat/start')!;
+  const base = { sessionId: 'sess-rjail', messages: [{ role: 'user', content: 'hi' }] };
+  const call = (body: Record<string, unknown>) => { const res = makeRes(); start({ body }, res); assert(res._r.statusCode === 200, `应 200，得 ${res._r.statusCode}`); };
+
+  call({ ...base, sessionClass: 'script', readRoot: '/root/kfmv4' });
+  assert(seen[0]!.jail === '/root/kfmv4',
+    `script 会话 readRoot 应透传，得 ${JSON.stringify(seen[0]!.jail)}`);
+
+  call({ ...base, readRoot: '/root/kfmv4' });
+  assert(seen[1]!.jail === undefined, `panel 会话 readRoot 应忽略，得 ${JSON.stringify(seen[1]!.jail)}`);
+
+  call({ ...base, sessionClass: 'script' });
+  assert(seen[2]!.jail === undefined, `不传 readRoot 应不限制（undefined），得 ${JSON.stringify(seen[2]!.jail)}`);
+});
+
+// 读监狱扼点：executeTool 在 readRoot 下拒绝监狱外 read/grep/glob（fail-closed：
+// ctx.cwd 与 process.cwd() 双解析任一越界即拒），监狱内放行，未设根不限制。
+regression('BAR-READ-JAIL-02', 'pending-commit', 'executeTool 监狱外 read/grep 拒绝、监狱内放行', async () => {
+  const ctx = { cwd: '/root/kfmv4', wsServer: {} as never, readRoot: '/root/kfmv4' };
+  const outsideRel = await executeTool('read', { path: '../.kfmv4/experiments/docprobe/truth/shoushi.md' }, ctx);
+  assert(outsideRel.isError === true, 'read 相对路径逃逸应拒绝');
+  assert(String(outsideRel.content[0]!.text).includes('沙箱限制'), '拒绝文案应指明读限制');
+  const outsideAbs = await executeTool('read', { path: '/etc/hostname' }, ctx);
+  assert(outsideAbs.isError === true, 'read 绝对路径逃逸应拒绝');
+  const grepOutside = await executeTool('grep', { pattern: 'x', path: '/root/.kfmv4' }, ctx);
+  assert(grepOutside.isError === true, 'grep 监狱外 path 应拒绝');
+  const inside = await executeTool('read', { path: 'package.json' }, ctx);
+  assert(inside.isError !== true, `监狱内读取应放行，得 ${JSON.stringify(inside.content[0])}`);
+  const noJail = await executeTool('read', { path: 'package.json' },
+    { cwd: '/root/kfmv4', wsServer: {} as never });
+  assert(noJail.isError !== true, '未设 readRoot 不应限制');
+});
+
 // ---- 其他路由 ----
 
 regression('BAR-ORIGIN-GUARD-01', '4d3b251', '/ai/chat/start 挂 verifyLocalOrigin 中间件（drive-by 防护）', () => {

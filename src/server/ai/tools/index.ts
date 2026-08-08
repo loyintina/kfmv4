@@ -129,6 +129,18 @@ export async function executeTool(
         `「${params.path}」在沙箱外，已拒绝。请改用沙箱内路径。` }], isError: true };
     }
   }
+  // 读监狱（2026-08-08 docprobe 试点 v2 污染事故）：readRoot 设置时，read/grep/glob
+  // 的 path 必须落在读监狱内——被试 agent 顺设计文档里的绝对路径直读私有区答案，
+  // 提示词层面无法防（路径就写在仓内文档里），只能在扼点构造性拒绝。
+  // grep/glob 缺省 path = ctx.cwd（生产=PROJECT_ROOT，落在监狱内，无需拦截）。
+  if (ctx.readRoot && (name === 'read' || name === 'grep' || name === 'glob') && typeof params.path === 'string') {
+    const jail = resolve(ctx.readRoot);
+    const candidates = [resolve(ctx.cwd, params.path), resolve(process.cwd(), params.path)];
+    if (candidates.some(r => r !== jail && !r.startsWith(jail + sep))) {
+      return { content: [{ type: 'text', text: `沙箱限制：只能读指定目录（${ctx.readRoot}）内的内容，` +
+        `「${params.path}」在范围外，已拒绝。` }], isError: true };
+    }
+  }
   // 8.5.0 权限引擎影子模式：判定 + 审计（不拦截）；8.5.1 起 deny/ask 真正生效
   const decision = evaluate(name, params, ctx);
   if (decision.action !== 'allow') {

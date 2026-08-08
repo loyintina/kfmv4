@@ -52,6 +52,11 @@
 开卷作答——数据不可用于任何结论（已确认协议级漏洞，非执行失误）。
 处置：truth/ 迁出仓库入私有区，修订记录于 design 第九节，两臂重跑。
 
+**试点 v2 污染事件（同日，臂 1 作废）**：truth 迁出后重跑，臂 1
+（`docprobe-pilot2-shoushi-1`）读仓内设计文档后顺私有区绝对路径直读答案；
+臂 2（`docprobe-pilot2-shoushi-2`）未越界。处置：readRoot 读监狱落地
+（harness 层构造性考场边界），两臂按修订后协议重跑。
+
 ## 臂清单
 
 （首波实验跑完后逐臂登记，check-experiment-index 机检）

@@ -159,6 +159,7 @@ export async function* streamChat(
   maxTokens?: number, // 单轮输出预算覆盖（默认 16384；工具流思考型探针需放宽——思考链计入 max_tokens，预算被吃光则 text 为 0，2026-08-04 试点事故）
   params?: Record<string, unknown>, // 上游请求参数透传（provider 特定：thinking 开关等；与 tools/max_tokens 平级合并进 requestBody）
   sandboxRoot?: string, // script 会话写监狱沙箱根（2026-08-06 e13 逃逸事故）；设置后 write/edit 路径强制限制在内
+  readRoot?: string, // script 会话读监狱根（2026-08-08 docprobe v2 污染事故）；设置后 read/grep/glob 路径强制限制在内
 ): AsyncGenerator<StreamEvent> {
   const tools = allowTools?.length
     ? getToolDefinitions().filter(t => allowTools.includes(t.name))
@@ -170,6 +171,7 @@ export async function* streamChat(
     wsServer,
     signal, // run 中止信号透传（BAR-BASH-HANG-01：看门狗/取消要能杀死原生子进程）
     sandboxRoot, // script 会话写监狱（未设置 = 不限制，面板会话不受影响）
+    readRoot, // script 会话读监狱（同上，docprobe 考场边界）
   };
 
   // 读取 API 配置

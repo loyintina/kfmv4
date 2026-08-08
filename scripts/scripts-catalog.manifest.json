@@ -380,6 +380,11 @@
     },
     "experiments/paradigm/tools/legacy/run-silicon-backfill.round1.sh": {
       "desc": "硅基系 e11/e12 补跑第一轮——排除硅基上游挂死的 4B"
+    },
+    "experiments/docprobe/tools/judge-trace.mjs": {
+      "permission": "纯本地读（归档 json + truth md），无网络无写盘",
+      "prompt": "无内置提示词——判定口径硬编码（与 design/design-docprobe.md §六一致）",
+      "effect": "docprobe 机械判卷轨：轨迹×地面真相 → 可达率/路径合规/到达成本三维 JSON"
     }
   }
 }

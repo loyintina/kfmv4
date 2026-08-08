@@ -36,6 +36,11 @@ export interface ToolContext {
    *  的 path 强制限制在该目录内，逃逸在 executeTool 扼点直接拒绝。
    *  提示词约定不防呆——V3 曾写穿 fixture 模板、27B 曾写进真仓库 docs/。 */
   sandboxRoot?: string;
+  /** 读监狱根（2026-08-08 docprobe 试点 v2 污染事件）：设置后 read/grep/glob
+   *  的 path 强制限制在该目录内——考场边界由构造保证，不靠提示词自律。
+   *  与 sandboxRoot 正交：写监狱防破坏，读监狱防越界取证（答案在试卷语料外
+   *  也须不可读）。只收不放：设置后访问面只会变窄，无安全反噬。 */
+  readRoot?: string;
 }
 
 /** kfmv4 工具定义 */

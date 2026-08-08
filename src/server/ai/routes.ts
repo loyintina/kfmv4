@@ -26,8 +26,8 @@ export function setupAiRoutes(router: Router, wsServer: WsServer, startRunFn: St
    * 返回: { runId, fromIndex } —— fromIndex 是客户端应从该索引开始读的事件位置
    */
   router.post('/ai/chat/start', verifyLocalOrigin, (req, res) => {
-    // body: { sessionId, messages, model, provider, roleFile, userText, tools, extraSystem, maxTokens, params, sessionClass, sandboxRoot }
-    const { sessionId, messages, model, provider, roleFile, userText, tools, extraSystem, maxTokens, params, sessionClass, sandboxRoot } = req.body;
+    // body: { sessionId, messages, model, provider, roleFile, userText, tools, extraSystem, maxTokens, params, sessionClass, sandboxRoot, readRoot }
+    const { sessionId, messages, model, provider, roleFile, userText, tools, extraSystem, maxTokens, params, sessionClass, sandboxRoot, readRoot } = req.body;
     if (!sessionId || !messages || !Array.isArray(messages) || messages.length === 0) {
       res.status(400).json({ error: '缺少 sessionId 或 messages 参数' });
       return;
@@ -69,6 +69,12 @@ export function setupAiRoutes(router: Router, wsServer: WsServer, startRunFn: St
       if (resolved.startsWith(allowed)) jailRoot = resolved;
       else console.warn('[ai/chat/start] sandboxRoot 越出 sessions/script/，忽略:', sandboxRoot.slice(0, 80));
     }
+    // 读监狱根（2026-08-08 docprobe v2 污染事故）：read/grep/glob 的路径监狱。
+    // 仅 script 会话可设；与写监狱不同，它只收窄访问面（不引入新权限），
+    // 故无需限制必须落在哪个目录——考场边界由发起方（实验脚本）自定。
+    // 面板会话传了也忽略（面板的合法读取面就是全仓+私有区）。
+    const readJailRoot = sessionClass === 'script' && typeof readRoot === 'string' && readRoot.trim()
+      ? resolve(readRoot) : undefined;
     const run = startRunFn(
       sessionId, messages,
       model || 'deepseek-v4-flash',
@@ -81,6 +87,7 @@ export function setupAiRoutes(router: Router, wsServer: WsServer, startRunFn: St
       typeof maxTokens === 'number' && Number.isFinite(maxTokens) && maxTokens > 0 ? Math.floor(maxTokens) : undefined,
       params && typeof params === 'object' && !Array.isArray(params) ? params as Record<string, unknown> : undefined,
       jailRoot,
+      readJailRoot,
     );
     res.json({ runId: run.id, fromIndex: 0, done: run.done });
   });

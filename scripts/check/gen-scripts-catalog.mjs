@@ -34,6 +34,7 @@ const SCAN_DIRS = [
   { dir: 'experiments/paradigm/tools', category: '范式实验工具', exts: ['.mjs', '.py'], depth: 1 },
   { dir: 'experiments/paradigm/tools/legacy', category: '范式考古', exts: ['.mjs', '.py', '.sh'] },
   { dir: 'experiments/coldstart/tools', category: '冷启动工具', exts: ['.mjs'] },
+  { dir: 'experiments/docprobe/tools', category: '文档抽测工具', exts: ['.mjs'] },
   { dir: 'scripts/check', category: '__split__', exts: ['.mjs'], depth: 1 }, // 按前缀拆三类
   { dir: 'scripts', category: '运维', exts: ['.sh', '.cjs'], depth: 1 },
 ];
@@ -47,7 +48,7 @@ function splitCheckCategory(name) {
 }
 
 const CATEGORY_ORDER = [
-  'agent 负载', '范式实验工具', '范式考古', '冷启动工具',
+  'agent 负载', '范式实验工具', '范式考古', '冷启动工具', '文档抽测工具',
   '检查器', '生成器', '构建链基建', '运维',
 ];
 

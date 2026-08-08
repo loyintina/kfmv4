@@ -72,6 +72,15 @@ export const SCRIPTS_CATALOG: ScriptCatalogEntry[] = [
     "effect": "coldstart 阶段2：五域定性主题编码 → 主题分类学 JSON"
   },
   {
+    "name": "judge-trace.mjs",
+    "file": "experiments/docprobe/tools/judge-trace.mjs",
+    "category": "文档抽测工具",
+    "description": "docprobe 机械判卷轨：轨迹 × 地面真相 → 三维指标",
+    "permission": "纯本地读（归档 json + truth md），无网络无写盘",
+    "prompt": "无内置提示词——判定口径硬编码（与 design/design-docprobe.md §六一致）",
+    "effect": "docprobe 机械判卷轨：轨迹×地面真相 → 可达率/路径合规/到达成本三维 JSON"
+  },
+  {
     "name": "aggregate-e13.mjs",
     "file": "experiments/paradigm/tools/aggregate-e13.mjs",
     "category": "范式实验工具",
@@ -1297,4 +1306,4 @@ export const SCRIPTS_CATALOG: ScriptCatalogEntry[] = [
   }
 ];
 
-export const SCRIPT_CATEGORIES: string[] = ["agent 负载","范式实验工具","范式考古","冷启动工具","检查器","生成器","构建链基建","运维"];
+export const SCRIPT_CATEGORIES: string[] = ["agent 负载","范式实验工具","范式考古","冷启动工具","文档抽测工具","检查器","生成器","构建链基建","运维"];
