@@ -13,7 +13,7 @@
 | 目录 | 是什么 |
 |---|---|
 | `design/` | 设计文档（`design-docprobe.md` 线级设计：假设/指标/题型分级/环境钉版） |
-| `truth/` | 每题地面真相：应达文档集 + 正确理解要点 + 期望路由（易腐资产，判卷前刷新） |
+| `truth/`（在私有区，不在本仓） | 每题地面真相：`/root/.kfmv4/experiments/docprobe/truth/<topic>.md`。答案不能在试卷语料内——2026-08-08 试点 v1 污染事件后从仓内迁出（见 design 修订事件） |
 | `results/` | 实验结论文档 |
 
 **找结论**：先读本目录 results/ 最新结论文档；设计原理读
@@ -23,9 +23,9 @@
 
 | 角色 | 本线实例 |
 |------|----------|
-| 协议 | 题目逐字冻结（truth/<topic>.md 内 `question` 字段）；变量矩阵 = 题 × 模型 × 重复 |
+| 协议 | 题目逐字冻结（私有区 truth/<topic>.md 内 `question` 字段）；变量矩阵 = 题 × 模型 × 重复 |
 | 环境 | **活仓库钉 commit**——每波实验钉一个主仓 commit 哈希（记入波次文档），波内可复现、跨波追趋势；探测对象 = 真实 kfmv4 仓（只读白名单，非 lab） |
-| 地面真相 | `truth/<topic>.md`：应达文档集/理解要点/期望路由；每波判卷前按文档实际状态刷新并记录校准事件 |
+| 地面真相 | 私有区 `/root/.kfmv4/experiments/docprobe/truth/<topic>.md`：应达文档集/理解要点/期望路由；每波判卷前按文档实际状态刷新并记录校准事件 |
 | 评判 | 脚本机械判（轨迹 vs 期望路由/应达文档命中）+ judge-llm 盲判理解准确度（DS v4-flash 统一尺纪律，同 paradigm） |
 | 数据 | `.kfmv4/experiments/docprobe/sessions/` 私有同步区（复用 session-runner 归档） |
 | 索引 | 本文件臂清单（check-experiment-index 双向机检） |
@@ -46,6 +46,11 @@
 **题库建设期。** 首波题库 5 题（守视/错误码体系/范式包/契约域/文件树），
 新旧功能混考验证 H1（新功能文档铺设弱于老功能）。
 基建复用 paradigm 线 session-runner/exp-driver/arms.db（撞墙再拆）。
+
+**试点 v1 污染事件（2026-08-08，两臂作废）**：守视题试点两臂
+（`docprobe-pilot-shoushi-1/2`）均在首个 grep 后直接命中仓内 truth 文件，
+开卷作答——数据不可用于任何结论（已确认协议级漏洞，非执行失误）。
+处置：truth/ 迁出仓库入私有区，修订记录于 design 第九节，两臂重跑。
 
 ## 臂清单
 
