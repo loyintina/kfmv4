@@ -41,29 +41,30 @@
 
 辅指标：理解准确度（judge 盲判要点覆盖）、幻觉率（复用 coldstart 幻觉尺纪律）。
 
-## 研究线状态（2026-08-08）
+## 研究线状态（2026-08-08，试点收官）
 
-**题库建设期。** 首波题库 5 题（守视/错误码体系/范式包/契约域/文件树），
-新旧功能混考验证 H1（新功能文档铺设弱于老功能）。
-基建复用 paradigm 线 session-runner/exp-driver/arms.db（撞墙再拆）。
-
-**试点 v1 污染事件（2026-08-08，两臂作废）**：守视题试点两臂
-（`docprobe-pilot-shoushi-1/2`）均在首个 grep 后直接命中仓内 truth 文件，
-开卷作答——数据不可用于任何结论（已确认协议级漏洞，非执行失误）。
-处置：truth/ 迁出仓库入私有区，修订记录于 design 第九节，两臂重跑。
-
-**试点 v2 污染事件（同日，臂 1 作废）**：truth 迁出后重跑，臂 1
-（`docprobe-pilot2-shoushi-1`）读仓内设计文档后顺私有区绝对路径直读答案；
-臂 2（`docprobe-pilot2-shoushi-2`）未越界。处置：readRoot 读监狱落地
-（harness 层构造性考场边界），两臂按修订后协议重跑。
+**试点校准完成，协议冻结，待正式矩阵。** 守视题三轮试点抓获两个协议级漏洞
+（truth 在试卷语料内 / 考场边界无 harness 保证），逼出 readRoot 读监狱基建；
+现行协议（truth 私有区 + `--read-root /root/kfmv4` + 只读白名单 + kfm-dev 空角色）
+经 v3 两臂验证零越界。判卷尺校准发现与矩阵建议见
+`results/pilot-shoushi-2026-08-08.md`。
 
 ## 臂清单
 
-（首波实验跑完后逐臂登记，check-experiment-index 机检）
+| 臂 | 题 | 轮 | 状态 | 数据 |
+|---|---|---|---|---|
+| pilot-shoushi-1 | 守视 T3 | v1 | 作废（开卷：grep 命中仓内 truth） | sessions/docprobe-pilot-shoushi-1.json |
+| pilot-shoushi-2 | 守视 T3 | v1 | 作废（同上） | sessions/docprobe-pilot-shoushi-2.json |
+| pilot2-shoushi-1 | 守视 T3 | v2 | 作废（顺设计文档读私有区 truth） | sessions/docprobe-pilot2-shoushi-1.json |
+| pilot2-shoushi-2 | 守视 T3 | v2 | 有效（监狱前协议，轨迹与现行等价） | sessions/docprobe-pilot2-shoushi-2.json |
+| pilot3-shoushi-1 | 守视 T3 | v3 | 有效（现行协议首臂） | sessions/docprobe-pilot3-shoushi-1.json |
+| pilot3-shoushi-2 | 守视 T3 | v3 | 有效（猎答案行为活证据） | sessions/docprobe-pilot3-shoushi-2.json |
 
 ## 产物登记
 
 - 设计（design/）：design-docprobe.md
-- 地面真相（truth/）：shoushi.md（守视）/ error-codes.md（错误码体系，H1 活标本：
+- 结论（results/）：pilot-shoushi-2026-08-08.md（试点校准史+三维指标+判卷尺发现+矩阵建议）
+- 工具（tools/）：judge-trace.mjs（机械判卷轨）
+- 地面真相（私有区 `/root/.kfmv4/experiments/docprobe/truth/`）：shoushi.md（守视）/ error-codes.md（错误码体系，H1 活标本：
   路由表无行）/ paradigm.md（范式包）/ domain-contract.md（域契约）/
   file-tree.md（文件树，老功能对照组：路由表同样无行）

@@ -50,6 +50,12 @@ if (!required.length) { console.error('truth 应达文档集必中为空'); proc
 // ---------- 解析轨迹 ----------
 const archive = JSON.parse(readFileSync(sessionPath, 'utf8'));
 const norm = (p) => String(p || '').replace(/:\d+(-\d+)?$/, '').replace(/^\.\//, '');
+const resultText = (c) => {
+  const r = c.result;
+  if (typeof r === 'string') return r;
+  if (Array.isArray(r)) return r.map((b) => b?.text || '').join('\n');
+  return '';
+};
 const calls = [];
 for (const msg of archive.messages || []) {
   for (const c of msg.content || []) {
@@ -58,13 +64,16 @@ for (const msg of archive.messages || []) {
         name: c.name,
         target: norm(c.input?.path || c.input?.pattern || ''),
         ts: msg.ts || null,
+        // 读监狱/写监狱扼点拒绝（result 含「沙箱限制」）——逃逸尝试 ≠ 到达，
+        // 矩阵判卷须区分「试图越界被拦」与「真的读到了」
+        refused: resultText(c).includes('沙箱限制'),
       });
     }
   }
 }
 
 const touches = (call, docPath) =>
-  call.name === 'read' && call.target.replace(/\\/g, '/').endsWith(docPath);
+  call.name === 'read' && !call.refused && call.target.replace(/\\/g, '/').endsWith(docPath);
 
 // ---------- 指标 ----------
 const hitDetail = [];
@@ -111,10 +120,11 @@ const out = {
   cost: {
     callsBeforeFirstHit: firstRequiredIdx >= 0 ? firstRequiredIdx : null,
     totalCalls: calls.length,
+    escapeAttempts: calls.filter((c) => c.refused).length,
     wallSec,
     fullTokenCount: archive.fullTokenCount ?? null,
   },
-  callSequence: calls.map((c, i) => `${i}:${c.name}(${c.target})`),
+  callSequence: calls.map((c, i) => `${i}:${c.name}(${c.target})${c.refused ? '[拒]' : ''}`),
 };
 
 console.log(JSON.stringify(out, null, 2));
