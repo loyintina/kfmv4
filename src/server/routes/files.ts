@@ -323,6 +323,8 @@ export function setupFileRoutes(router: Router): void {
     fs.mkdirSync(path.dirname(targetPath), { recursive: true });
     if (req.body.append) fs.appendFileSync(targetPath, content, 'utf-8');
     else fs.writeFileSync(targetPath, content, 'utf-8');
+    _invalidateIfSessionFile(targetPath); // 2026-08-10 消息删除 bug：会话卡编辑/删除消息经
+    // files/write 落盘，不失效缓存则服务端旧 ctx 在下次对话 flush 覆盖还原（双写竞争）。
     res.json({ success: true, path: targetPath });
   } catch (error: any) { res.json({ error: error.message }); } });
 
