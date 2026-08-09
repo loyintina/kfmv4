@@ -110,6 +110,9 @@ function uid(): string {
 function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
   let providers: Provider[] = [];
   let currentId = '';
+  // 当前激活 provider（active.json providerId）——面板切 provider 经 kfm-provider-change
+  // 更新；编辑目标 currentId 与其独立（2026-08-09 断点修复：池列表激活标记）
+  let activeProviderId = '';
   let c1 = '#00d4ff', c2 = '#7c3aed';
   let nameEl!: HTMLInputElement;
   let urlEl!: HTMLInputElement;
@@ -119,6 +122,7 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
   let poolEl!: HTMLDivElement;
   let testBtn!: HTMLDivElement;
   let _providerSelect: CustomSelect | null = null;
+  let _onProviderChange: ((e: Event) => void) | null = null;
 
   function getCurrent(): Provider | undefined {
     return providers.find(p => p.id === currentId);
@@ -292,6 +296,13 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
       const title = document.createElement('div');
       title.style.cssText = 'font-size:var(--card-font-size,11px);color:rgba(255,255,255,0.85);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1';
       title.textContent = p.name || '(unnamed)';
+      // 当前激活 provider 标记（active.json providerId）——面板切 provider 经事件更新
+      if (p.id === activeProviderId) {
+        const act = document.createElement('span');
+        act.textContent = '当前';
+        act.style.cssText = 'font-size:var(--card-font-size,9px);color:#000;background:linear-gradient(135deg,' + c1 + ',' + c2 + ');border-radius:3px;padding:0 4px;margin-left:6px;flex-shrink:0';
+        title.appendChild(act);
+      }
 
       const delBtn = document.createElement('span');
       delBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12"><line x1="3" y1="3" x2="9" y2="9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="9" y1="3" x2="3" y2="9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
@@ -534,6 +545,15 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
       // 仅聚焦第一个 Provider（不写入 active.json）
       currentId = providers.length > 0 ? providers[0].id : '';
       log('[API] activate: loaded', providers.length, 'providers, focus:', currentId);
+      // 当前激活 provider（active.json providerId）——池列表标记用
+      try {
+        const res = await fetch(API_BASE + 'files/read', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: ACTIVE_PATH }),
+        });
+        const j = await res.json();
+        if (j.content) { const av = JSON.parse(j.content); activeProviderId = av.providerId || ''; }
+      } catch { activeProviderId = ''; }
       // Update the select with providers
       _providerSelect.updateItems(
         providers.map(p => ({ label: p.name || '(unnamed)', value: p.id })),
@@ -543,9 +563,23 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
       fillEditor(getCurrent() || null);
 
       bodyEl.appendChild(scrollArea);
+
+      // 监听面板/外部切 Provider（kfm-provider-change）→ 更新激活标记并重绘池
+      if (_onProviderChange) window.removeEventListener('kfm-provider-change', _onProviderChange);
+      _onProviderChange = (e: Event) => {
+        const providerId = (e as CustomEvent).detail?.providerId;
+        if (!providerId) return;
+        activeProviderId = providerId;
+        rebuildPool();
+      };
+      window.addEventListener('kfm-provider-change', _onProviderChange);
     },
 
     deactivate(contentEl) {
+      if (_onProviderChange) {
+        window.removeEventListener('kfm-provider-change', _onProviderChange);
+        _onProviderChange = null;
+      }
       contentEl.innerHTML = '';
     },
   };

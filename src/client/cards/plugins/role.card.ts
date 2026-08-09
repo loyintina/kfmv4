@@ -134,8 +134,12 @@ const TXT_SUB = 'rgba(255,255,255,0.5)';
 function createRoleHandler(meta: Record<string, unknown>): CardContentHandler {
   let roles: Role[] = [];
   let currentRoleId = '';
+  // 当前激活角色（active.json roleFile）——面板切角色时 kfm-role-change 更新；编辑器
+  // 语义的 currentRoleId 与其独立（2026-08-09 断点修复：卡侧激活标记）
+  let activeRoleFile = '';
   let editingRole: Role | null = null;
   let roleSelect: CustomSelect | null = null;
+  let _onRoleChange: ((e: Event) => void) | null = null;
   let _nameInput: HTMLInputElement | null = null;
 
   function getCurrentRole(): Role | null {
@@ -209,6 +213,13 @@ function createRoleHandler(meta: Record<string, unknown>): CardContentHandler {
       const title = document.createElement('div');
       title.style.cssText = 'font-size:var(--card-font-size,11px);color:' + TXT_TITLE + ';font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1';
       title.textContent = role.name;
+      // 当前激活角色标记（active.json roleFile）——面板切角色经 kfm-role-change 更新
+      if (role.id === activeRoleFile) {
+        const act = document.createElement('span');
+        act.textContent = '当前';
+        act.style.cssText = 'font-size:var(--card-font-size,9px);color:#000;background:linear-gradient(135deg,' + c1 + ',' + c2 + ');border-radius:3px;padding:0 4px;margin-left:6px;flex-shrink:0';
+        title.appendChild(act);
+      }
       
       const delBtn = document.createElement('span');
       delBtn.textContent = '\u2715';
@@ -290,6 +301,11 @@ function createRoleHandler(meta: Record<string, unknown>): CardContentHandler {
       // 加载角色列表，聚焦第一个
       roles = await loadRoles();
       currentRoleId = roles[0]?.id || '';
+      // 当前激活角色（active.json roleFile）——池列表标记用，独立于编辑目标
+      try {
+        const raw = await readFile(ACTIVE_ROLE_PATH);
+        if (raw) { const j = JSON.parse(raw); activeRoleFile = j.roleFile || ''; }
+      } catch (e) { activeRoleFile = ''; }
       
       // 如果没有默认角色，创建内置默认角色
       if (roles.length === 0) {
@@ -690,9 +706,22 @@ function createRoleHandler(meta: Record<string, unknown>): CardContentHandler {
       fillEditor(getCurrentRole());
       renderPoolList(poolListEl, c1, c2);
 
+      // 监听面板/外部切角色（kfm-role-change）→ 更新激活标记并重绘池
+      if (_onRoleChange) window.removeEventListener('kfm-role-change', _onRoleChange);
+      _onRoleChange = (e: Event) => {
+        const roleId = (e as CustomEvent).detail?.roleId;
+        if (!roleId) return;
+        activeRoleFile = roleId;
+        renderPoolList(poolListEl, c1, c2);
+      };
+      window.addEventListener('kfm-role-change', _onRoleChange);
     },
 
     deactivate(contentEl) {
+      if (_onRoleChange) {
+        window.removeEventListener('kfm-role-change', _onRoleChange);
+        _onRoleChange = null;
+      }
       roleSelect?.destroy();
       roleSelect = null;
       contentEl.innerHTML = '';
