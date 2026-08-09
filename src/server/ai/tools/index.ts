@@ -20,7 +20,7 @@ import { homedir } from 'os';
  * 每次工具调用记一条 {ts, tool, ok, error, ms}——周报聚合高频失败工具/
  * 错误类型/平均耗时。append-only，异步不阻塞（失败吞掉不影响工具执行）。
  */
-const TOOL_EXEC_LOG = join(homedir(), '.kfmv4', 'tool-exec.jsonl');
+const TOOL_EXEC_LOG = join(homedir(), '.kfmv4', 'ledger', 'tool-exec.jsonl');
 function recordToolExec(tool: string, ok: boolean, error: string, ms: number): void {
   try {
     appendFileSync(TOOL_EXEC_LOG, JSON.stringify({

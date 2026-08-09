@@ -24,9 +24,17 @@ if (!existsSync(DATA_HOME)) {
 }
 
 // ---------- 必在目录 ----------
-const REQUIRED_DIRS = ['roles', 'configs', 'prompts', 'sessions', 'sessions/script', 'paradigms', 'materials', 'experiments', 'logs', 'workspaces'];
+const REQUIRED_DIRS = ['roles', 'configs', 'prompts', 'sessions', 'sessions/script', 'paradigms', 'materials', 'experiments', 'logs', 'workspaces', 'ledger'];
 for (const d of REQUIRED_DIRS) {
   if (!existsSync(join(DATA_HOME, d))) errors.push(`缺目录: ${d}`);
+}
+
+// ---------- 规则 0：账本不得回潮根目录（2026-08-08 ledger/ 收拢定稿） ----------
+const LEDGER_FILES = ['agent-calls.jsonl', 'build-metrics.jsonl', 'check-failures.jsonl', 'discussion-log.jsonl', 'permission-audit.jsonl', 'semantic-chain-metrics.jsonl', 'sys-metrics.json', 'tool-exec.jsonl'];
+for (const f of LEDGER_FILES) {
+  if (existsSync(join(DATA_HOME, f))) {
+    errors.push(`账本 ${f} 回潮根目录 —— 应归 ledger/（2026-08-08 收拢，代码路径已改 obs.ts/chain/agent-runner 等）`);
+  }
 }
 
 // ---------- 规则 1：sessions/ 根测试残留 ----------

@@ -670,7 +670,7 @@ export const SCRIPTS_CATALOG: ScriptCatalogEntry[] = [
     "file": "scripts/agent/obs-aggregate.mjs",
     "category": "agent 负载",
     "description": "观测台聚合器（史官制度 8.5）：周报生成",
-    "permission": "只读 ~/.kfmv4/*.jsonl 账本、docs/ledger 信箱与 git log；--mailbox 时追加写 semantic-chain-inbox.md；不联网",
+    "permission": "只读 ~/.kfmv4/ledger/*.jsonl 账本、docs/ledger 信箱与 git log；--mailbox 时追加写 semantic-chain-inbox.md；不联网",
     "prompt": "无（机械聚合）",
     "effect": "观测台周报聚合：LLM 调用账本 + 工具审计 + 信箱趋势 → stdout 周报（可投信箱）"
   },

@@ -3,8 +3,8 @@
  * obs-aggregate.mjs — 观测台聚合器（史官制度 8.5）：周报生成
  *
  * 数据流（append-only）：
- *   ~/.kfmv4/agent-calls.jsonl        LLM 调用账本（provider/耗时/成败）
- *   ~/.kfmv4/permission-audit.jsonl   工具调用审计（RiskClass/判定）
+ *   ~/.kfmv4/ledger/agent-calls.jsonl        LLM 调用账本（provider/耗时/成败）
+ *   ~/.kfmv4/ledger/permission-audit.jsonl   工具调用审计（RiskClass/判定）
  *   docs/ledger/semantic-chain-inbox.md 语义巡逻信箱（文档健康趋势）
  * 产出：周报文本（stdout + 可投信箱），供 cron 每周聚合。
  *
@@ -30,7 +30,7 @@ const out = [];
 const add = s => out.push(s);
 
 // ---- 1. LLM 调用账本 ----
-const calls = readLines(join(homedir(), '.kfmv4', 'agent-calls.jsonl')).filter(c => new Date(c.ts).getTime() >= since);
+const calls = readLines(join(homedir(), '.kfmv4', 'ledger', 'agent-calls.jsonl')).filter(c => new Date(c.ts).getTime() >= since);
 const byProv = {};
 for (const c of calls) {
   const p = c.provider.split('/')[0];
@@ -50,7 +50,7 @@ if (calls.length === 0) {
 }
 
 // ---- 2. 工具调用审计（权限影子模式） ----
-const audits = readLines(join(homedir(), '.kfmv4', 'permission-audit.jsonl')).filter(a => new Date(a.ts).getTime() >= since);
+const audits = readLines(join(homedir(), '.kfmv4', 'ledger', 'permission-audit.jsonl')).filter(a => new Date(a.ts).getTime() >= since);
 if (audits.length) {
   const byRisk = {}, byTool = {}, nonAllow = [];
   for (const a of audits) {
@@ -159,7 +159,7 @@ if (DOC_READ.size === 0) {
 // ---- 5. check 失败账本（错误码结晶数据源） ----
 // chain.mjs 每次构建中断记一条（含 ⛳ 错误码）。周期内分布 = 流程摩擦面：
 // 高频码 = 流程哪步最容易走错 → 结晶回路候选（阈值待数据积累后科学划定）。
-const fails = readLines(join(homedir(), '.kfmv4', 'check-failures.jsonl')).filter(f => f.ts && new Date(f.ts).getTime() >= since);
+const fails = readLines(join(homedir(), '.kfmv4', 'ledger', 'check-failures.jsonl')).filter(f => f.ts && new Date(f.ts).getTime() >= since);
 add(`- check 失败账本：${fails.length} 次构建中断`);
 if (fails.length) {
   const byCode = {};
@@ -173,7 +173,7 @@ if (fails.length) {
 }
 
 // ---- 6. 工具执行（工具错误流） ----
-const execs = readLines(join(homedir(), '.kfmv4', 'tool-exec.jsonl')).filter(e => e.ts && new Date(e.ts).getTime() >= since);
+const execs = readLines(join(homedir(), '.kfmv4', 'ledger', 'tool-exec.jsonl')).filter(e => e.ts && new Date(e.ts).getTime() >= since);
 add(`- 工具执行：${execs.length} 次 · 失败 ${execs.filter(e => !e.ok).length} · 平均 ${execs.length ? Math.round(execs.reduce((s, e) => s + e.ms, 0) / execs.length) : 0}ms`);
 if (execs.length) {
   const byTool = {};
@@ -191,7 +191,7 @@ if (execs.length) {
 }
 
 // ---- 7. 构建/检查耗时 ----
-const metrics = readLines(join(homedir(), '.kfmv4', 'build-metrics.jsonl')).filter(m => m.ts && new Date(m.ts).getTime() >= since);
+const metrics = readLines(join(homedir(), '.kfmv4', 'ledger', 'build-metrics.jsonl')).filter(m => m.ts && new Date(m.ts).getTime() >= since);
 if (metrics.length) {
   const byPhase = {};
   for (const m of metrics) (byPhase[m.phase] = byPhase[m.phase] || []).push(m);
@@ -203,7 +203,7 @@ if (metrics.length) {
 }
 
 // ---- 8. 巡逻 metric（F5 记录层：语义巡逻耗时/成败趋势，长期收集） ----
-const patrol = readLines(join(homedir(), '.kfmv4', 'semantic-chain-metrics.jsonl')).filter(m => m.ts && new Date(m.ts).getTime() >= since);
+const patrol = readLines(join(homedir(), '.kfmv4', 'ledger', 'semantic-chain-metrics.jsonl')).filter(m => m.ts && new Date(m.ts).getTime() >= since);
 if (patrol.length) {
   const ok = patrol.filter(m => m.ok).length;
   const avg = Math.round(patrol.reduce((s, m) => s + (m.ms || 0), 0) / patrol.length / 1000);

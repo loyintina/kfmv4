@@ -34,7 +34,7 @@ import { createHash } from 'node:crypto';
 const REPO = resolve(fileURLToPath(new URL('../../', import.meta.url)));
 const STATE_PATH = join(REPO, 'docs/ledger/semantic-audit-state.json');
 const INBOX_PATH = join(REPO, 'docs/ledger/semantic-chain-inbox.md');
-const METRIC_PATH = join(homedir(), '.kfmv4', 'semantic-chain-metrics.jsonl'); // F5 记录层（2026-08-04）：巡逻耗时/成败账本，长期跑收集
+const METRIC_PATH = join(homedir(), '.kfmv4', 'ledger', 'semantic-chain-metrics.jsonl'); // F5 记录层（2026-08-04）：巡逻耗时/成败账本，长期跑收集
 let _inboxCount = 0;
 function recordMetric(ok, fail) {
   try {

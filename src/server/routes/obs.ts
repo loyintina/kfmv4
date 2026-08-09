@@ -211,7 +211,7 @@ function parseStack(): { entries: StackEntry[]; counts: { todo: number; hold: nu
 // 成败标记表末位对比判状态，见 CRON_MARKERS）。
 // 历史：独立 setInterval 5s 采样（不靠请求驱动——没人看面板时历史也在积累；
 // 2026-08-07 从 30s 加密到 5s：客户端柱状图缓动速度=柱宽/采样间隔，30s 慢到肉眼
-// 不可见，5s 才能看到持续流动），环形 40 点（≈3 分钟窗），落 ~/.kfmv4/sys-metrics.json
+// 不可见，5s 才能看到持续流动），环形 40 点（≈3 分钟窗），落 ~/.kfmv4/ledger/sys-metrics.json
 // 抗重启（重启后柱状图不清零）。
 // 缓存：端口 30s（execSync 贵），cron 5min（crontab 极少变）。
 
@@ -224,7 +224,7 @@ interface SysData { metrics: SysMetric[]; history: SysHistory; ports: SysPort[];
 const PORTS_CACHE_MS = 30_000;
 const CRON_CACHE_MS = 300_000;
 const HISTORY_MAX = 40; // 40 × 5s ≈ 3 分钟窗（覆盖客户端 24 根 ≈ 2 分钟显示窗）
-const HISTORY_PATH = path.join(KFM_DATA_DIR, 'sys-metrics.json');
+const HISTORY_PATH = path.join(KFM_DATA_DIR, 'ledger', 'sys-metrics.json');
 let portsCache: { data: SysPort[]; ts: number } | null = null;
 let cronCache: { data: SysCron[]; ts: number } | null = null;
 let history: Array<{ ts: number; disk: number; mem: number; load: number; rss: number }> = [];
@@ -611,8 +611,8 @@ function collectKimiTracks(now: number): ArchiveTrack[] {
 // ========== 脉搏数据面（2026-08-08 用户定稿：填屏第二批——史官数据流上屏） ==========
 // 立项初心闭环：8.5 史官制度「每条数据流落盘」→ 观测台「放到一起显示」。
 // 四条 jsonl 滚动 24h 窗口聚合，**尾部限扫**（append-only，24h 量远小于尾部窗口；
-// agent-calls/tool-exec 各 200KB，check-failures/build-metrics 各 100KB）+ 60s 缓存。
-// permission-audit 暂缓：87% allow / 13% ask 分布单一（2026-08-08 实测 2000 条），
+// ledger/agent-calls/tool-exec 各 200KB，check-failures/build-metrics 各 100KB）+ 60s 缓存。
+// ledger/permission-audit 暂缓：87% allow / 13% ask 分布单一（2026-08-08 实测 2000 条），
 // 等权限引擎 8.5.1 审批通道上线再连同 ask 流一起做。
 
 interface PulseLlm { calls: number; okRate: number; avgMs: number; byProvider: Record<string, number>; lastAgo: string }
@@ -652,7 +652,7 @@ function collectPulse(): PulseData {
   if (pulseCache && now - pulseCache.ts < PULSE_CACHE_MS) return pulseCache.data;
   const cutoff = now - PULSE_WINDOW_MS;
 
-  const llmRows = readJsonlTail(path.join(KFM_DATA_DIR, 'agent-calls.jsonl'), 200_000).filter(r => inWindow(r.ts, cutoff));
+  const llmRows = readJsonlTail(path.join(KFM_DATA_DIR, 'ledger', 'agent-calls.jsonl'), 200_000).filter(r => inWindow(r.ts, cutoff));
   const llmOk = llmRows.filter(r => r.ok === true);
   const byProvider: Record<string, number> = {};
   for (const r of llmRows) {
@@ -668,7 +668,7 @@ function collectPulse(): PulseData {
     lastAgo: lastTs ? fmtAgo(lastTs) : '—',
   };
 
-  const toolRows = readJsonlTail(path.join(KFM_DATA_DIR, 'tool-exec.jsonl'), 200_000).filter(r => inWindow(r.ts, cutoff));
+  const toolRows = readJsonlTail(path.join(KFM_DATA_DIR, 'ledger', 'tool-exec.jsonl'), 200_000).filter(r => inWindow(r.ts, cutoff));
   const toolCnt = new Map<string, number>();
   for (const r of toolRows) {
     const t = String(r.tool ?? '?');
@@ -680,7 +680,7 @@ function collectPulse(): PulseData {
     top: [...toolCnt.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([name, n]) => ({ name, n })),
   };
 
-  const chkRows = readJsonlTail(path.join(KFM_DATA_DIR, 'check-failures.jsonl'), 100_000).filter(r => inWindow(r.ts, cutoff));
+  const chkRows = readJsonlTail(path.join(KFM_DATA_DIR, 'ledger', 'check-failures.jsonl'), 100_000).filter(r => inWindow(r.ts, cutoff));
   const chkCnt = new Map<string, number>();
   for (const r of chkRows) {
     const c = String(r.check ?? '?').replace(/\.mjs$/, '').replace(/^check-/, '');
@@ -691,7 +691,7 @@ function collectPulse(): PulseData {
     top: [...chkCnt.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([name, n]) => ({ name, n })),
   };
 
-  const bldRows = readJsonlTail(path.join(KFM_DATA_DIR, 'build-metrics.jsonl'), 100_000)
+  const bldRows = readJsonlTail(path.join(KFM_DATA_DIR, 'ledger', 'build-metrics.jsonl'), 100_000)
     .filter(r => r.phase === 'build' && inWindow(r.ts, cutoff));
   const lastBld = bldRows.at(-1);
   const build: PulseBuild = {

@@ -23,7 +23,7 @@ const CHAIN = JSON.parse(
 );
 
 // ========== 调用账本（史官制度 8.5：每次 LLM 调用落 append-only 记录，观测台聚合） ==========
-const CALLS_PATH = join(homedir(), '.kfmv4', 'agent-calls.jsonl');
+const CALLS_PATH = join(homedir(), '.kfmv4', 'ledger', 'agent-calls.jsonl');
 function logCall(provider, ms, ok, error = '') {
   try {
     mkdirSync(join(homedir(), '.kfmv4'), { recursive: true });

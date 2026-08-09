@@ -18,7 +18,7 @@ import { appendFileSync, mkdirSync } from 'fs';
 import { homedir } from 'os';
 
 /** check 失败账本（错误码结晶数据源，8.5 观测）：每次构建中断记一条 */
-const FAIL_LOG = join(homedir(), '.kfmv4', 'check-failures.jsonl');
+const FAIL_LOG = join(homedir(), '.kfmv4', 'ledger', 'check-failures.jsonl');
 function recordFailure(cmd, output) {
   try {
     mkdirSync(dirname(FAIL_LOG), { recursive: true });
@@ -35,7 +35,7 @@ function recordFailure(cmd, output) {
 }
 
 /** 检查链耗时账本（观测台：构建/检查耗时，成功失败都记） */
-const METRIC_LOG = join(homedir(), '.kfmv4', 'build-metrics.jsonl');
+const METRIC_LOG = join(homedir(), '.kfmv4', 'ledger', 'build-metrics.jsonl');
 function recordCheckMetric(ms, ok) {
   try {
     appendFileSync(METRIC_LOG, JSON.stringify({ ts: new Date().toISOString(), phase: 'check', ms, ok }) + '\n');
