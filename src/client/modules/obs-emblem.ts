@@ -39,7 +39,9 @@ function mkCanvas(rect: EmblemRect): [HTMLCanvasElement, CanvasRenderingContext2
   const cv = document.createElement('canvas');
   cv.className = 'obs-emblem';
   cv.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;pointer-events:none;z-index:${Z.CENTER_CONTENT}`;
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  // DPR 上限 1.5（原 2）：粒子/细线图标 1.5 足够清晰，像素量降 44%——
+  // 移动端发热优化（2026-08-09 用户实拍徽标上线后手机发热明显）
+  const dpr = Math.min(1.5, window.devicePixelRatio || 1);
   cv.width = Math.max(1, Math.round(rect.width * dpr));
   cv.height = Math.max(1, Math.round(rect.height * dpr));
   const ctx = cv.getContext('2d')!;
@@ -315,11 +317,12 @@ class EmblemGather {
     // 闭环边跳过（交给描边层，避免双线叠亮）
     ctx.clearRect(0, 0, w, h);
     const n = pos.length;
+    const thr2 = this.thr * this.thr; // 距离²比较免开方：210 对/帧只在对内才 sqrt（移动端降耗）
     for (let i = 0; i < n; i++) {
       for (let j = i + 1; j < n; j++) {
         if (EmblemGather.loopEdge(i, j)) continue;
-        const d = Math.hypot(pos[i].x - pos[j].x, pos[i].y - pos[j].y);
-        if (d >= this.thr) continue;
+        const dx = pos[i].x - pos[j].x, dy = pos[i].y - pos[j].y;
+        if (dx * dx + dy * dy >= thr2) continue;
         // 全局同亮 0.85；形度/阵度双隐
         const a = 0.85 * (1 - s) * (1 - m);
         ctx.strokeStyle = `rgba(${i >= 12 && i < 20 || j >= 12 && j < 20 ? VIOLET : BLUE},${a})`;
@@ -499,11 +502,15 @@ export function initObsEmblems(getRects: () => EmblemRects | null): { relayout: 
   };
 
   build();
-  let last = 0;
+  let last = 0, lastStep = 0;
   const loop = (now: number) => {
-    const dt = Math.min(0.05, (now - last) / 1000 || 0.016);
-    last = now;
-    for (let i = 0; i < engines.length; i++) engines[i].step(ctxs[i], now, dt);
+    // 30fps 节流（原逐帧 60fps）：徽标运动极缓，30fps 观感无差，绘制功耗减半
+    // （2026-08-09 移动端发热优化）；rAF 空转帧成本可忽略，失焦浏览器自停
+    if (now - lastStep >= 33) {
+      const dt = Math.min(0.05, (now - last) / 1000 || 0.016);
+      last = now; lastStep = now;
+      for (let i = 0; i < engines.length; i++) engines[i].step(ctxs[i], now, dt);
+    }
     requestAnimationFrame(loop);
   };
   requestAnimationFrame(loop);

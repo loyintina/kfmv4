@@ -465,7 +465,8 @@ function collectSys(): SysData {
 // 清洗：messageCount≤2 且无 tokenCount 的是测试残留（s1/s2/s3/s-basic… 2026-08-06
 // 20:48 同刻产物），过滤。缺 count 字段的旧会话（蔚然的一次整理）以 messages.length
 // 兜底 messageCount、tokenCount 记 0。
-// 收束：按 tokenCount 降序取 TOP 8，其余聚合为一条「其他 ×N」虚线轨（跨度=min~max）。
+// 收束：按 tokenCount 降序取 TOP 5，其余聚合为一条「其他 ×N」虚线轨（跨度=min~max）。
+// 6 行钉死星轨高度（2026-08-09 用户定稿）；routine-validate-* 机器验证会话过滤不上轨。
 // 30s 缓存——会话文件低频变化，现场 parse 全部顶层文件（当前约 4MB）每 30s 一次可接受。
 
 interface ArchiveTrack {
@@ -481,7 +482,7 @@ interface ArchiveData { sessions: number; totalTokens: number; tracks: ArchiveTr
 
 const SESSIONS_DIR = path.join(KFM_DATA_DIR, 'sessions');
 const ARCHIVE_CACHE_MS = 30_000;
-const ARCHIVE_TOP_N = 8;
+const ARCHIVE_TOP_N = 5; // TOP5+聚合轨=6 行钉死星轨高度（2026-08-09 用户定稿：取消随轨道数自动长高，当前状态即最大高度）
 const ACTIVE_WINDOW_MS = 48 * 3_600_000;
 let archiveCache: { data: ArchiveData; ts: number } | null = null;
 
@@ -496,6 +497,11 @@ function collectArchive(): ArchiveData {
     for (const f of files) {
       try {
         const j = JSON.parse(fs.readFileSync(path.join(SESSIONS_DIR, f), 'utf-8')) as Record<string, unknown>;
+        const title = String(j.title || f.replace(/\.json$/, ''));
+        // 机器验证会话（研究臂 routine-entry-validation 产物）不上轨——自动化
+        // 例行运行会无限累积，把真实会话挤出 TOP（2026-08-09 用户实拍：星轨
+        // 一夜多出三条 routine-validate-*，面板自动长高）
+        if (title.startsWith('routine-validate-')) continue;
         const msgs = Number(j.messageCount) || (Array.isArray(j.messages) ? j.messages.length : 0);
         const tokens = Number(j.tokenCount) || 0;
         if (msgs <= 2) continue; // 测试残留（s1/s2/s3/s-basic… 同刻产物，msgs≤2；sess-ok 有 7 token 也是残留）
@@ -503,7 +509,7 @@ function collectArchive(): ArchiveData {
         if (!t0) continue;
         const t1 = String(j.updatedAt || t0);
         tracks.push({
-          title: String(j.title || f.replace(/\.json$/, '')),
+          title,
           tokens, msgs, t0, t1,
           active: now - new Date(t1).getTime() < ACTIVE_WINDOW_MS,
         });

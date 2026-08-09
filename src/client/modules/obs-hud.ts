@@ -572,9 +572,14 @@ ${body}</div>
       lastWins = wins;
       lastSeq = sys.seq ?? lastSeq;
     }
-    railPortsEl.innerHTML = sys.ports.map(p =>
+    // 隐形占位补满 4 行：端口不足 4 行时竖条高度不变矮（2026-08-09 用户定稿：
+    // 全部面板取消自动长高，当前状态即最大高度；占位行不占翻屏窗口——
+    // rows.length>4 才有 portStride，补齐到恰好 4 行不触发翻屏）
+    const portRows = sys.ports.map(p =>
       `<div class="obs-port-row"><span class="obs-port-dot obs-port-dot-${p.scope}" style="${pulseStyle(String(p.port))}"></span><span class="obs-port-num">${p.port}</span><span class="obs-port-name">${p.name}</span><span class="obs-port-conns">${(p.conns ?? 0) > 0 ? '×' + p.conns : ''}</span></div>`
-    ).join('');
+    );
+    while (portRows.length < 4) portRows.push('<div class="obs-port-row" style="visibility:hidden"><span class="obs-port-num">·</span></div>');
+    railPortsEl.innerHTML = portRows.join('');
     sizePorts(); // 端口窗口钉死 4 行高（行数变化后重测）
   }
 
