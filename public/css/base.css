@@ -1103,8 +1103,8 @@ body {
   flex: none;
 }
 
-/* ===== 角色卡星座图（2026-08-09 用户定稿：全角色关系网 · C 轨道极缓缓动 · 纯光点） ===== */
-/* 左列大区（系统下、待办左，巡逻/token 腾空处）：head 计数 + canvas。同卡片视觉族。 */
+/* ===== 角色卡星座图（2026-08-09 用户定稿：全角色关系网 · N 体引力 · 纯光点） ===== */
+/* 左列大区（系统下、待办左，巡逻/token 腾空处）：矮标题栏「角色」+ canvas。同卡片视觉族。 */
 .obs-roles {
   position: fixed;
   box-sizing: border-box;
@@ -1120,8 +1120,16 @@ body {
   pointer-events: none;
 }
 
+.obs-roles-head {
+  flex: none;
+  padding: 3px 8px 4px;
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: rgba(0, 212, 255, 0.7);
+  border-bottom: 1px solid rgba(124, 58, 237, 0.14);
+}
+
 .obs-roles-canvas {
   position: absolute;
-  inset: 0;
   display: block;
 }

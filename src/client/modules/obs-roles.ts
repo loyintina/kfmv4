@@ -52,10 +52,16 @@ interface Star {
   refCount: number;
   refs: number;     // 引用该文件的角色数（画线用：找角色星）
   roleIdx: number;  // 角色在 roles 数组的下标（-1=文件）
+  parentKey: string; // 行星母恒星 key（文件星专属，v5 引力源）
 }
 
 const ROLE_MAX = 24;
 const FILE_MAX = 60;
+// N 体引力常量（v5 用户定稿：行星绕母星、恒星间弱引力+强锚弹性）
+const G_P = 260;    // 行星-母星引力
+const G_S = 800;    // 恒星间弱引力（扰动源）
+const SOFT = 40;    // 软化解 ε²（防 r→0 奇点）
+const DAMP_T = 0.06; // 阻尼系数（每帧 exp(-dt·DAMP_T)）
 
 class RoleConstellation {
   private stars: Star[] = [];
@@ -185,6 +191,7 @@ class RoleConstellation {
         vx: (this.R() - 0.5) * 20, vy: (this.R() - 0.5) * 20,
         m: this.massOfRole(i, activeIdx, n),
         active: i === activeIdx, bright: 1, fade: 0, missing: false, refCount: 1, refs: 0, roleIdx: i,
+        parentKey: '',
       };
       this.stars.push(st); keep.add(key);
     });
@@ -192,14 +199,23 @@ class RoleConstellation {
       const key = `f:${f.path}`;
       if (keep.has(key)) continue;
       const a = fileAnchor(f.roleIdx);
+      // 行星切向初速（绕母星椭圆轨道）：v = sqrt(G_P·m_star/r0)·0.82
+      const parentIdx = f.roleIdx[0];
+      const parentM = this.massOfRole(parentIdx, activeIdx, wantRoles[parentIdx].static.length + wantRoles[parentIdx].dynamic.length);
+      const dx0 = a.x - (this.cx + Math.cos(roleAng[parentIdx]) * roleRad[parentIdx]);
+      const dy0 = a.y - (this.cy + Math.sin(roleAng[parentIdx]) * roleRad[parentIdx]);
+      const r0 = Math.max(8, Math.hypot(dx0, dy0));
+      const vt = Math.sqrt((G_P * parentM) / r0) * 0.82;
+      const nx = -dy0 / r0, ny = dx0 / r0; // 径向垂直 = 切向
       const st: Star = {
         key, kind: 'file', r: f.refCount > 1 ? 1.9 : 1.4,
         tx: a.x, ty: a.y,
         x: this.R() < 0.5 ? 6 : this.w - 6, y: this.R() * this.h,
-        vx: (this.R() - 0.5) * 26, vy: (this.R() - 0.5) * 26,
+        vx: nx * vt, vy: ny * vt,
         m: 0.4 + f.refCount * 0.25,
         active: false, bright: Math.min(1, 0.55 + f.refCount * 0.2), fade: 0, missing: f.missing,
         refCount: f.refCount, refs: f.roleIdx.length, roleIdx: f.roleIdx[0],
+        parentKey: `r:${wantRoles[parentIdx].id}`,
       };
       this.stars.push(st); keep.add(key);
     }
@@ -232,35 +248,40 @@ class RoleConstellation {
     return i === activeIdx ? base + 2.2 : base;
   }
 
-  /** 每帧：全 N 体牛顿引力积分（三体式混沌 · 2026-08-09 用户定稿）。
-   *  紫=恒星（质量大，弱锚弹性防漂出屏）、青=行星（质量小，纯引力绕母星）。
-   *  软化解 ε² 防 r→0 奇点；轻微阻尼耗散高能散射（双星弹射后减速回落）。
-   *  淡入期（fade<1）位置与锚位混合——新星从边缘滑入轨道，过渡完纯物理。 */
+  /** 每帧：行星绕母星引力 + 恒星间弱引力/锚弹性（v5 修正：不聚团不漂移）。
+   *  行星只受母恒星引力（软化解）→ 稳定椭圆轨道；恒星受彼此弱引力 +
+   *  较强锚弹性 → 在布局位附近缓慢推挤扰动（三体感），系统整体不漂移。
+   *  淡入期（fade<1）位置与锚位混合——新星滑入入轨。 */
   step(now: number, dt: number): void {
     const stars = this.stars;
-    const n = stars.length;
-    const G = 520;
-    const SOFT = 40;
-    const DAMP = Math.exp(-dt * 0.06);
-    const ANCHOR_K = 0.35; // 恒星锚弹性（弱，只防整体漂移）
-    const ACTIVE_ANCHOR_K = 0.22; // 主星更自由——带行星系统游走更明显
-    // 引力加速度（N² 软化解）
-    for (let i = 0; i < n; i++) {
-      const a = stars[i];
+    const byKey = new Map(stars.map(s => [s.key, s]));
+    const DAMP = Math.exp(-dt * DAMP_T);
+    const ANCHOR_K = 0.9;
+    const ACTIVE_K = 0.65;
+    for (const a of stars) {
       let ax = 0, ay = 0;
-      for (let j = 0; j < n; j++) {
-        if (j === i) continue;
-        const b = stars[j];
-        const dx = b.x - a.x, dy = b.y - a.y;
-        const r2 = dx * dx + dy * dy + SOFT;
-        const f = G * b.m / r2; // a 受 b 引力：a_m 约去（F=ma）
-        const inv = 1 / Math.sqrt(r2);
-        ax += f * dx * inv;
-        ay += f * dy * inv;
-      }
-      // 恒星锚弹性：拉回布局锚位（行星无锚，纯引力；主星更自由）
-      if (a.kind === 'role') {
-        const k = a.active ? ACTIVE_ANCHOR_K : ANCHOR_K;
+      if (a.kind === 'file') {
+        const parent = a.parentKey ? byKey.get(a.parentKey) : undefined;
+        if (parent) {
+          const dx = parent.x - a.x, dy = parent.y - a.y;
+          const r2 = dx * dx + dy * dy + SOFT;
+          const f = G_P * parent.m / r2;
+          const inv = 1 / Math.sqrt(r2);
+          ax += f * dx * inv;
+          ay += f * dy * inv;
+        }
+      } else {
+        // 恒星间弱引力（扰动源）+ 锚弹性（防聚团/漂移）
+        for (const b of stars) {
+          if (b.kind !== 'role' || b === a) continue;
+          const dx = b.x - a.x, dy = b.y - a.y;
+          const r2 = dx * dx + dy * dy + SOFT;
+          const f = G_S * b.m / r2;
+          const inv = 1 / Math.sqrt(r2);
+          ax += f * dx * inv;
+          ay += f * dy * inv;
+        }
+        const k = a.active ? ACTIVE_K : ANCHOR_K;
         ax -= k * (a.x - a.tx);
         ay -= k * (a.y - a.ty);
       }
@@ -268,7 +289,6 @@ class RoleConstellation {
       a.vy = (a.vy + ay * dt) * DAMP;
       a.x += a.vx * dt;
       a.y += a.vy * dt;
-      // 淡入滑入：物理位与锚位混合（fade 期过渡）
       if (a.fade < 1) {
         const mix = Math.min(1, a.fade);
         a.x += (a.tx - a.x) * (1 - mix) * 0.25;
@@ -348,9 +368,10 @@ export function initObsRoles(
 ): { onData: (d: RolesData) => void; relayout: () => void } {
   const container = document.createElement('div');
   container.className = 'obs-roles';
-  container.innerHTML = `<canvas class="obs-roles-canvas"></canvas>`;
+  container.innerHTML = `<div class="obs-roles-head">角色</div><canvas class="obs-roles-canvas"></canvas>`;
   container.style.zIndex = String(Z.CENTER_CONTENT);
   document.body.appendChild(container);
+  const headEl = container.querySelector<HTMLElement>('.obs-roles-head')!;
   const cv = container.querySelector<HTMLCanvasElement>('.obs-roles-canvas')!;
   const ctx = cv.getContext('2d')!;
   const dpr = Math.min(1.5, window.devicePixelRatio || 1);
@@ -360,10 +381,11 @@ export function initObsRoles(
   let occState = false;
   let fadeTimer = 0;
 
-  // 2026-08-09 用户定稿：标题栏整个取消（纯光点图，无文字）——canvas 铺满全面板
+  // 2026-08-09 v5 用户定稿：标题栏加回（「角色」字样，行高做小），大部分空间留星图
   const sizeCanvas = () => {
-    const cw = container.clientWidth, ch = container.clientHeight;
-    cv.style.cssText = `position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none`;
+    const hh = headEl.offsetHeight || 18;
+    const cw = container.clientWidth, ch = container.clientHeight - hh;
+    cv.style.cssText = `position:absolute;left:0;top:${hh}px;width:100%;height:${ch}px;pointer-events:none`;
     cv.width = Math.max(1, Math.round(cw * dpr));
     cv.height = Math.max(1, Math.round(ch * dpr));
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
