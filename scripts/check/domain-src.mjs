@@ -35,6 +35,7 @@ export const DOMAIN_SRC = {
     'src/client/modules/click-queue.ts', 'src/client/modules/z-index-layers.ts',
     'src/client/modules/version-watch.ts',
     'src/client/modules/obs-hud.ts', 'src/client/modules/obs-emblem.ts',
+    'src/client/modules/obs-roles.ts',
     'src/client/modules/orb.ts', 'src/client/modules/orb-panel.ts',
     'src/client/modules/orb-state.ts', 'src/client/modules/gestures.ts',
     'src/client/modules/debug-assert.ts', 'src/client/modules/custom-select.ts',
