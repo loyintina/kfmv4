@@ -16,6 +16,13 @@ check- 前缀书写——deploy-freshness/doc-coverage 等在链上省前缀；s
 对应域（client-shell 模块级枚举 / server·infra 目录级）——未登记的文件 check-contract-freshness
 对它的文档同步永久失明（obs-hud.ts 首犯，2026-08-06 被链当场拦下）。
 
+**文档工作流消费门（2026-08-09 实装，doc-orphans 第三层门）**：active/guides/constraints
+下规则/机制/SOP 类文档必须被意图-行为载体消费（workflows reads / check-agent 脚本 /
+CLAUDE-README 任一）——仅 docs 互引不算（external-sources 案例：被 onboarding 引用
+糊弄过孤儿门，原则 #5 只机械化一半）。constraints/detail-* 例外：被 invariants.md
+主文档引用或工作流消费二选一。状态/历史（decisions/ledger/archive）与生成/索引类
+（code-map/capability-map）豁免。⛳ DOC-FLOW-12 引导。
+
 <!-- chain:auto 由 sync-counts 生成，禁止手改 -->
 `check-uncommitted`（>3 未提交即中断，首位） → deploy-freshness → versions → checks → doc-coverage →
 code-map-coverage → agent-script-docs → experiment-registry → sass → css-wiring → tool-compaction →
