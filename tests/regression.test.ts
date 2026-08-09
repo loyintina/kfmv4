@@ -31,6 +31,7 @@ import './engine.test.js';
 import './floating-state.test.js';
 import './run-manager.test.js';
 import './server-routes.test.js';
+import './obs-roles.test.js';
 import './path-utils.test.js';
 import './chat-protocol.test.js';
 import './client-logic.test.js';

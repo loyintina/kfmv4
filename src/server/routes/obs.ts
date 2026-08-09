@@ -77,7 +77,7 @@ async function fetchDeepseekBalance(): Promise<Balance> {
 export function setupObsRoutes(router: Router): void {
   router.get('/obs/hud', async (_req, res) => {
     const balance = await fetchDeepseekBalance();
-    res.json({ balance, inbox: parseInbox(), stack: parseStack(), sys: collectSys(), archive: collectArchive(), pulse: collectPulse(), patrol: collectPatrol(), tokens: collectTokens(), perms: collectPerms(), serverTime: new Date().toISOString() });
+    res.json({ balance, inbox: parseInbox(), stack: parseStack(), sys: collectSys(), archive: collectArchive(), pulse: collectPulse(), patrol: collectPatrol(), tokens: collectTokens(), perms: collectPerms(), roles: collectRoles(), serverTime: new Date().toISOString() });
   });
 
   // 守视视口校准回传：/test 页 POST 真机实测视口 → 存 viewport.json（browser-relay 读）
@@ -792,5 +792,70 @@ function collectPerms(): PermsData {
     unattended,
   };
   permsCache = { data, ts: now };
+  return data;
+}
+
+// ========== 角色卡星座图（2026-08-09 用户定稿：全角色关系网，纯展示） ==========
+// 数据源 .kfmv4/agents/roles/*.json（id/name/promptFiles/dynamicPromptFiles/updatedAt）
+// + .kfmv4/active.json（roleFile=活跃角色）。文件为绝对路径可能在工作区外——只读 stat
+// 不写；refCount = 被几张卡引用（共用文件形成角色间隐式连线）。前端纯光点不显示文字。
+interface FileRef { path: string; name: string; dir: string; size: number; mtime: number; refCount: number; missing: boolean }
+interface RoleNode { id: string; name: string; updatedAt: string; static: FileRef[]; dynamic: FileRef[] }
+interface RolesData { roles: RoleNode[]; activeRoleId: string; totalRoles: number; totalFiles: number }
+
+const ROLES_CACHE_MS = 60_000;
+let rolesCache: { data: RolesData; ts: number } | null = null;
+
+/** 纯函数：可测（fixture 传临时目录）。坏文件跳过、缺失文件标 missing 仍入图 */
+export function buildRolesData(rolesDir: string, activePath: string): RolesData {
+  let files: string[] = [];
+  try { files = fs.readdirSync(rolesDir).filter(f => f.endsWith('.json')); } catch { files = []; }
+  const fileMap = new Map<string, { size: number; mtime: number; missing: boolean }>();
+  const refCount = new Map<string, number>();
+  const raw: Array<Record<string, unknown>> = [];
+  for (const f of files) {
+    try {
+      const r = JSON.parse(fs.readFileSync(path.join(rolesDir, f), 'utf-8')) as Record<string, unknown>;
+      raw.push(r);
+      const list = [
+        ...(Array.isArray(r.promptFiles) ? r.promptFiles as unknown[] : []),
+        ...(Array.isArray(r.dynamicPromptFiles) ? r.dynamicPromptFiles as unknown[] : []),
+      ];
+      for (const p of list) {
+        if (typeof p !== 'string' || !p) continue;
+        if (!fileMap.has(p)) {
+          let size = 0, mtime = 0, missing = false;
+          try { const st = fs.statSync(p); size = st.size; mtime = st.mtimeMs; } catch { missing = true; }
+          fileMap.set(p, { size, mtime, missing });
+        }
+        refCount.set(p, (refCount.get(p) ?? 0) + 1);
+      }
+    } catch { /* 坏 JSON 跳过 */ }
+  }
+  const mkRefs = (list: unknown[] | undefined): FileRef[] =>
+    (Array.isArray(list) ? list : []).filter((p): p is string => typeof p === 'string' && !!p).map(p => {
+      const m = fileMap.get(p) ?? { size: 0, mtime: 0, missing: true };
+      return { path: p, name: path.basename(p), dir: path.basename(path.dirname(p)), size: m.size, mtime: m.mtime, refCount: refCount.get(p) ?? 0, missing: m.missing };
+    });
+  const roles: RoleNode[] = raw.map(r => ({
+    id: String(r.id ?? ''),
+    name: String(r.name ?? r.id ?? ''),
+    updatedAt: String(r.updatedAt ?? ''),
+    static: mkRefs(r.promptFiles as unknown[] | undefined),
+    dynamic: mkRefs(r.dynamicPromptFiles as unknown[] | undefined),
+  })).filter(r => r.id);
+  let activeRoleId = '';
+  try {
+    activeRoleId = String(JSON.parse(fs.readFileSync(activePath, 'utf-8')).roleFile ?? '');
+  } catch { /* active 缺失兜底 */ }
+  if (!roles.some(r => r.id === activeRoleId)) activeRoleId = roles[0]?.id ?? '';
+  return { roles, activeRoleId, totalRoles: roles.length, totalFiles: fileMap.size };
+}
+
+function collectRoles(): RolesData {
+  const now = Date.now();
+  if (rolesCache && now - rolesCache.ts < ROLES_CACHE_MS) return rolesCache.data;
+  const data = buildRolesData(path.join(KFM_DATA_DIR, 'agents', 'roles'), path.join(KFM_DATA_DIR, 'active.json'));
+  rolesCache = { data, ts: now };
   return data;
 }

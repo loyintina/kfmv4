@@ -1067,8 +1067,7 @@ body {
 }
 
 /* ===== 填屏第三批（2026-08-09 用户定稿：巡逻 R1 / token R2 / 权限 R3） ===== */
-/* R1 巡逻健康（执勤下待办左 2×3 格小方块）：head + 单行体；R2 token 图（系统下
-   待办左 ~7×7 格）：head + SVG 柱状图/累计曲线；R3 权限审计（待办下输入栏上
+/* 巡逻/token 已删除重设计（同日实拍反馈非所需）；R3 权限审计（待办下输入栏上
    全宽横条）：单行决策分布。尺寸全部 placeRail 注入，同卡片视觉族。 */
 .obs-perms {
   position: fixed;
@@ -1102,4 +1101,27 @@ body {
   letter-spacing: 2px;
   color: rgba(0, 212, 255, 0.75);
   flex: none;
+}
+
+/* ===== 角色卡星座图（2026-08-09 用户定稿：全角色关系网 · C 轨道极缓缓动 · 纯光点） ===== */
+/* 左列大区（系统下、待办左，巡逻/token 腾空处）：head 计数 + canvas。同卡片视觉族。 */
+.obs-roles {
+  position: fixed;
+  box-sizing: border-box;
+  border-radius: 16px;
+  background: rgba(18, 18, 26, 0.5);
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  border-image: linear-gradient(135deg, rgba(124, 58, 237, 0.4), rgba(0, 212, 255, 0.3)) 1;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  overflow: hidden;
+  flex-direction: column;
+  pointer-events: none;
+}
+
+.obs-roles-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
 }
