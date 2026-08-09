@@ -67,6 +67,12 @@ const puppeteerDst = 'dist/server/puppeteer';
 mkdirSync(puppeteerDst, { recursive: true });
 cpSync(puppeteerSrc, puppeteerDst, { recursive: true });
 
+// 复制 aria-snapshot bundle 资产到 dist（aria-snapshot.ts 模块加载时
+// readFileSync 读取；worker 入口单独打包后 __dirname=dist/server/，
+// 资产必须与产物同目录——2026-08-10 browser 工具修复）
+mkdirSync('dist/server', { recursive: true });
+cpSync('src/server/ai/tools/omp/browser/aria/aria-snapshot.bundle.txt', 'dist/server/aria-snapshot.bundle.txt');
+
 // 服务端 + 客户端（2026-08-02 并行化：产物独立、BUILD_TIME 预计算共享，Promise.all 减半 esbuild 耗时）
 await Promise.all([
   build({
@@ -90,6 +96,18 @@ await Promise.all([
     minify: true,
     // 把构建时间烙进 bundle：version-watch 横幅据此与服务端 buildTime 比对报旧包
     define: { KFM_BUILD_TIME: JSON.stringify(BUILD_TIME) },
+  }),
+  // tab-worker 独立入口（2026-08-10 browser 工具修复）：tab-supervisor 用
+  // NodeWorker 加载此产物——若不单独打包，dist 里没有 tab-worker-entry，
+  // new NodeWorker 指向不存在的文件 → 异步 error 无监听 → 初始化 30s 超时
+  build({
+    entryPoints: ['src/server/ai/tools/omp/browser/tab-worker-entry.ts'],
+    bundle: true,
+    platform: 'node',
+    format: 'esm',
+    outfile: 'dist/server/tab-worker-entry.js',
+    external: ['express','compression','fs','path','os','ws','events','node-pty-prebuilt-multiarch'],
+    minify: true,
   }),
 ]);
 

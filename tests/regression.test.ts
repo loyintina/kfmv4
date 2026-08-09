@@ -55,6 +55,7 @@ import './semantic-audit.test.js';
 import './stack-numbering.test.js';
 import './doc-scripts.test.js';
 import './session-flush.test.js';
+import './browser-tool.test.js';
 
 function seedState(files: Record<string, any>) {
   KFMState.files = {};

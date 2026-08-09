@@ -11,6 +11,7 @@
 
 import * as crypto from 'node:crypto';
 import * as path from 'node:path';
+import { existsSync } from 'node:fs';
 import { Worker as NodeWorker } from 'node:worker_threads';
 import { fileURLToPath } from 'node:url';
 import type { Browser } from 'puppeteer-core';
@@ -258,11 +259,32 @@ function handleTabMessage(session: WorkerTabSession, msg: WorkerOutbound): void 
   }
 }
 
+// ---------------------------------------------------------------------------
+// Internal
+// ---------------------------------------------------------------------------
+
+/**
+ * 探测 tab-worker 入口文件：源码模式 .ts 优先（正主），生产构建产物 .js 兜底
+ * （dist 里没有 .ts）。都不存在返回 null（调用方降级 inline，而非指向死路径干等超时）。
+ * 纯函数——便于回归钉直测（BAR-BROWSER-01）。
+ */
+export function resolveTabWorkerEntry(workerDir: string): string | null {
+  const tsEntry = path.join(workerDir, 'tab-worker-entry.ts');
+  const jsEntry = path.join(workerDir, 'tab-worker-entry.js');
+  if (existsSync(tsEntry)) return tsEntry;
+  if (existsSync(jsEntry)) return jsEntry;
+  return null;
+}
+
 async function spawnTabWorker(): Promise<WorkerHandle> {
   try {
-    // Use tsx loader for worker thread (handles TypeScript imports)
     const workerDir = path.dirname(fileURLToPath(import.meta.url));
-    const workerPath = path.join(workerDir, 'tab-worker-entry.ts');
+    const workerPath = resolveTabWorkerEntry(workerDir);
+    if (!workerPath) {
+      // 两个入口都不存在（dist 未打包 / 源码缺失）——抛错走 spawnInlineWorker 兜底，
+      // 避免 new NodeWorker 指向不存在文件时只发异步 error 无人监听 → 干等 30s 超时
+      throw new Error(`tab-worker entry not found in ${workerDir}`);
+    }
     // Extract tsx loader args from process.execArgv, filter out --eval/-e and the eval script
     // Use tsx to run the worker entry (handles .ts imports without interfering with CDP)
     const tsxBin = process.argv[0]; // node binary
