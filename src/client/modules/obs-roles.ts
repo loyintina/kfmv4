@@ -38,14 +38,13 @@ interface Star {
   key: string;
   kind: 'role' | 'file';
   r: number;
-  // 锚位（布局目标）与当前缓动位置（x,y 只做锚位缓动，不含轨道）
+  // 锚位（布局目标，仅淡入滑入期混合用）与物理位置
   tx: number; ty: number;
   x: number; y: number;
-  // 轨道（C 方案）：绕锚位小椭圆公转——独立 ox/oy 纯时间函数，
-  // 与锚位缓动解耦（2026-08-09 修 bug：曾直接叠加在 s.x 上，被每帧
-  // 衰减放大 1/k≈20 倍，星漂出界半径 ~70px）
-  ox: number; oy: number;
-  oa: number; ob: number; oang: number; operiod: number; ophase: number;
+  // N 体引力（三体式，2026-08-09 用户定稿：紫=恒星、青=行星，
+  // 全 N 体牛顿引力 + 软化解 + 恒星锚弹性 + 阻尼；ox/oy 轨道模型废弃）
+  vx: number; vy: number;
+  m: number;          // 质量（恒星大、行星小）
   active: boolean;
   bright: number;   // 亮度 0~1（refCount 等）
   fade: number;     // 淡入淡出 0~1
@@ -172,7 +171,7 @@ class RoleConstellation {
       }
     }
 
-    // —— 新增星（淡入 + 边缘起始）——
+    // —— 新增星（淡入 + 边缘起始 + 初始切向速度入轨）——
     wantRoles.forEach((r, i) => {
       const key = `r:${r.id}`;
       if (keep.has(key)) return;
@@ -183,9 +182,8 @@ class RoleConstellation {
         tx: this.cx + Math.cos(roleAng[i]) * roleRad[i],
         ty: this.cy + Math.sin(roleAng[i]) * roleRad[i],
         x: edge < 0.5 ? 6 : this.w - 6, y: this.R() * this.h,
-        ox: 0, oy: 0,
-        oa: 1.5 + this.R() * 2, ob: 1.5 + this.R() * 2, oang: this.R() * Math.PI,
-        operiod: 20 + this.R() * 40, ophase: this.R() * Math.PI * 2,
+        vx: (this.R() - 0.5) * 20, vy: (this.R() - 0.5) * 20,
+        m: this.massOfRole(i, activeIdx, n),
         active: i === activeIdx, bright: 1, fade: 0, missing: false, refCount: 1, refs: 0, roleIdx: i,
       };
       this.stars.push(st); keep.add(key);
@@ -198,9 +196,8 @@ class RoleConstellation {
         key, kind: 'file', r: f.refCount > 1 ? 1.9 : 1.4,
         tx: a.x, ty: a.y,
         x: this.R() < 0.5 ? 6 : this.w - 6, y: this.R() * this.h,
-        ox: 0, oy: 0,
-        oa: 1 + this.R() * 1.6, ob: 1 + this.R() * 1.6, oang: this.R() * Math.PI,
-        operiod: 20 + this.R() * 40, ophase: this.R() * Math.PI * 2,
+        vx: (this.R() - 0.5) * 26, vy: (this.R() - 0.5) * 26,
+        m: 0.4 + f.refCount * 0.25,
         active: false, bright: Math.min(1, 0.55 + f.refCount * 0.2), fade: 0, missing: f.missing,
         refCount: f.refCount, refs: f.roleIdx.length, roleIdx: f.roleIdx[0],
       };
@@ -229,28 +226,56 @@ class RoleConstellation {
   private extraFiles = 0;
   private extraPts: { x: number; y: number; kind: 'other' }[] = [];
 
-  /** 每帧：锚位缓动 + 轨道相位推进（ox/oy 纯时间函数，与缓动解耦） */
-  step(now: number, dt: number): void {
-    for (const s of this.stars) {
-      s.fade = Math.min(1, s.fade + 0.03);
-      const k = 1 - Math.exp(-dt * 1.6); // 锚位缓动（慢迁移）
-      s.x += (s.tx - s.x) * k;
-      s.y += (s.ty - s.y) * k;
-      // C 轨道：绕锚位小椭圆公转（活跃角色只呼吸不转）——写入独立 ox/oy，
-      // 不污染 x/y（x/y 若叠轨道会被锚位缓动每帧衰减放大出界，2026-08-09 修）
-      if (!s.active) {
-        const ph = (now / 1000) * (Math.PI * 2 / s.operiod) + s.ophase;
-        s.ox = Math.cos(ph) * s.oa;
-        s.oy = Math.sin(ph + s.oang) * s.ob;
-      } else {
-        s.ox = 0; s.oy = 0;
-      }
-    }
+  /** 恒星质量：引用文件越多越重（活跃主星最重） */
+  private massOfRole(i: number, activeIdx: number, n: number): number {
+    const base = 1.6 + n * 0.35;
+    return i === activeIdx ? base + 2.2 : base;
   }
 
-  /** 星当前渲染位置（锚位 + 轨道） */
-  private static pos(s: Star): { x: number; y: number } {
-    return { x: s.x + s.ox, y: s.y + s.oy };
+  /** 每帧：全 N 体牛顿引力积分（三体式混沌 · 2026-08-09 用户定稿）。
+   *  紫=恒星（质量大，弱锚弹性防漂出屏）、青=行星（质量小，纯引力绕母星）。
+   *  软化解 ε² 防 r→0 奇点；轻微阻尼耗散高能散射（双星弹射后减速回落）。
+   *  淡入期（fade<1）位置与锚位混合——新星从边缘滑入轨道，过渡完纯物理。 */
+  step(now: number, dt: number): void {
+    const stars = this.stars;
+    const n = stars.length;
+    const G = 520;
+    const SOFT = 40;
+    const DAMP = Math.exp(-dt * 0.06);
+    const ANCHOR_K = 0.35; // 恒星锚弹性（弱，只防整体漂移）
+    const ACTIVE_ANCHOR_K = 0.22; // 主星更自由——带行星系统游走更明显
+    // 引力加速度（N² 软化解）
+    for (let i = 0; i < n; i++) {
+      const a = stars[i];
+      let ax = 0, ay = 0;
+      for (let j = 0; j < n; j++) {
+        if (j === i) continue;
+        const b = stars[j];
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const r2 = dx * dx + dy * dy + SOFT;
+        const f = G * b.m / r2; // a 受 b 引力：a_m 约去（F=ma）
+        const inv = 1 / Math.sqrt(r2);
+        ax += f * dx * inv;
+        ay += f * dy * inv;
+      }
+      // 恒星锚弹性：拉回布局锚位（行星无锚，纯引力；主星更自由）
+      if (a.kind === 'role') {
+        const k = a.active ? ACTIVE_ANCHOR_K : ANCHOR_K;
+        ax -= k * (a.x - a.tx);
+        ay -= k * (a.y - a.ty);
+      }
+      a.vx = (a.vx + ax * dt) * DAMP;
+      a.vy = (a.vy + ay * dt) * DAMP;
+      a.x += a.vx * dt;
+      a.y += a.vy * dt;
+      // 淡入滑入：物理位与锚位混合（fade 期过渡）
+      if (a.fade < 1) {
+        const mix = Math.min(1, a.fade);
+        a.x += (a.tx - a.x) * (1 - mix) * 0.25;
+        a.y += (a.ty - a.y) * (1 - mix) * 0.25;
+      }
+      a.fade = Math.min(1, a.fade + 0.03);
+    }
   }
 
   /** 守视钩子用：当前星数 */
@@ -271,13 +296,11 @@ class RoleConstellation {
         const roleStar = byKey.get(`r:${this.roles[i].id}`);
         if (!roleStar) continue;
         const active = roleStar.active;
-        const fs = RoleConstellation.pos(s);
-        const fr = RoleConstellation.pos(roleStar);
         ctx.strokeStyle = active ? `rgba(${CYAN},${0.4 * s.fade})` : `rgba(${VIOLET},${0.22 * s.fade})`;
         ctx.lineWidth = active ? 0.7 : 0.5;
         ctx.beginPath();
-        ctx.moveTo(fs.x, fs.y);
-        ctx.lineTo(fr.x, fr.y);
+        ctx.moveTo(s.x, s.y);
+        ctx.lineTo(roleStar.x, roleStar.y);
         ctx.stroke();
       }
     }
@@ -285,7 +308,7 @@ class RoleConstellation {
     for (const s of this.stars) {
       if (s.fade <= 0.01) continue;
       const a = Math.min(1, s.fade);
-      const p = RoleConstellation.pos(s);
+      const p = s;
       if (s.kind === 'role') {
         const col = s.active ? VIOLET : VIOLET;
         const r = s.r;
