@@ -52,16 +52,14 @@ interface Star {
   refCount: number;
   refs: number;     // 引用该文件的角色数（画线用：找角色星）
   roleIdx: number;  // 角色在 roles 数组的下标（-1=文件）
-  parentKey: string; // 行星母恒星 key（文件星专属，v5 引力源）
 }
 
 const ROLE_MAX = 24;
 const FILE_MAX = 60;
-// N 体引力常量（v5 用户定稿：行星绕母星、恒星间弱引力+强锚弹性）
-const G_P = 260;    // 行星-母星引力
-const G_S = 800;    // 恒星间弱引力（扰动源）
-const SOFT = 40;    // 软化解 ε²（防 r→0 奇点）
-const DAMP_T = 0.06; // 阻尼系数（每帧 exp(-dt·DAMP_T)）
+// N 体引力常量（v6 用户定稿：能量守恒自由三体——无阻尼/无锚弹性）
+const G = 450;      // 万有引力常数（全 N 体共用）
+const SOFT = 50;    // 软化解 ε²（防 r→0 奇点）
+const MIN_DIST = 4.5; // 近距弹簧半径（防合并，线性保守力）
 
 class RoleConstellation {
   private stars: Star[] = [];
@@ -177,21 +175,33 @@ class RoleConstellation {
       }
     }
 
-    // —— 新增星（淡入 + 边缘起始 + 初始切向速度入轨）——
+    // —— 新增星（淡入 + 边缘起始 + 切向初速入轨）——
+    const M_sys = wantRoles.reduce((s, r, i) => s + this.massOfRole(i, activeIdx, r.static.length + r.dynamic.length), 0);
     wantRoles.forEach((r, i) => {
       const key = `r:${r.id}`;
       if (keep.has(key)) return;
       const n = r.static.length + r.dynamic.length;
       const edge = this.R();
+      // 恒星初速：绕系统质心切向（椭圆偏心 k 随机），主星给随机小速
+      const ang = roleAng[i], rad = roleRad[i];
+      let vx = 0, vy = 0;
+      if (rad > 2) {
+        const vc = Math.sqrt((G * M_sys) / rad) * (0.55 + this.R() * 0.3);
+        const dir = this.R() < 0.5 ? 1 : -1;
+        vx = -Math.sin(ang) * vc * dir;
+        vy = Math.cos(ang) * vc * dir;
+      } else {
+        vx = (this.R() - 0.5) * 6;
+        vy = (this.R() - 0.5) * 6;
+      }
       const st: Star = {
         key, kind: 'role', r: i === activeIdx ? 3.2 : Math.min(2.6, 1.7 + Math.sqrt(n) * 0.25),
-        tx: this.cx + Math.cos(roleAng[i]) * roleRad[i],
-        ty: this.cy + Math.sin(roleAng[i]) * roleRad[i],
+        tx: this.cx + Math.cos(ang) * rad,
+        ty: this.cy + Math.sin(ang) * rad,
         x: edge < 0.5 ? 6 : this.w - 6, y: this.R() * this.h,
-        vx: (this.R() - 0.5) * 20, vy: (this.R() - 0.5) * 20,
+        vx, vy,
         m: this.massOfRole(i, activeIdx, n),
         active: i === activeIdx, bright: 1, fade: 0, missing: false, refCount: 1, refs: 0, roleIdx: i,
-        parentKey: '',
       };
       this.stars.push(st); keep.add(key);
     });
@@ -199,14 +209,15 @@ class RoleConstellation {
       const key = `f:${f.path}`;
       if (keep.has(key)) continue;
       const a = fileAnchor(f.roleIdx);
-      // 行星切向初速（绕母星椭圆轨道）：v = sqrt(G_P·m_star/r0)·0.82
+      // 行星初速：绕母恒星切向（近圆轨道 0.95 倍圆速度）
       const parentIdx = f.roleIdx[0];
       const parentM = this.massOfRole(parentIdx, activeIdx, wantRoles[parentIdx].static.length + wantRoles[parentIdx].dynamic.length);
-      const dx0 = a.x - (this.cx + Math.cos(roleAng[parentIdx]) * roleRad[parentIdx]);
-      const dy0 = a.y - (this.cy + Math.sin(roleAng[parentIdx]) * roleRad[parentIdx]);
+      const px = this.cx + Math.cos(roleAng[parentIdx]) * roleRad[parentIdx];
+      const py = this.cy + Math.sin(roleAng[parentIdx]) * roleRad[parentIdx];
+      const dx0 = a.x - px, dy0 = a.y - py;
       const r0 = Math.max(8, Math.hypot(dx0, dy0));
-      const vt = Math.sqrt((G_P * parentM) / r0) * 0.82;
-      const nx = -dy0 / r0, ny = dx0 / r0; // 径向垂直 = 切向
+      const vt = Math.sqrt((G * parentM) / r0) * 0.95;
+      const nx = -dy0 / r0, ny = dx0 / r0;
       const st: Star = {
         key, kind: 'file', r: f.refCount > 1 ? 1.9 : 1.4,
         tx: a.x, ty: a.y,
@@ -215,7 +226,6 @@ class RoleConstellation {
         m: 0.4 + f.refCount * 0.25,
         active: false, bright: Math.min(1, 0.55 + f.refCount * 0.2), fade: 0, missing: f.missing,
         refCount: f.refCount, refs: f.roleIdx.length, roleIdx: f.roleIdx[0],
-        parentKey: `r:${wantRoles[parentIdx].id}`,
       };
       this.stars.push(st); keep.add(key);
     }
@@ -248,47 +258,56 @@ class RoleConstellation {
     return i === activeIdx ? base + 2.2 : base;
   }
 
-  /** 每帧：行星绕母星引力 + 恒星间弱引力/锚弹性（v5 修正：不聚团不漂移）。
-   *  行星只受母恒星引力（软化解）→ 稳定椭圆轨道；恒星受彼此弱引力 +
-   *  较强锚弹性 → 在布局位附近缓慢推挤扰动（三体感），系统整体不漂移。
-   *  淡入期（fade<1）位置与锚位混合——新星滑入入轨。 */
+  /** 每帧：能量守恒自由 N 体（v6 用户定稿——无阻尼/无锚弹性，真正的三体）。
+   *  semi-implicit Euler（辛积分，能量近似守恒）：全 N 体牛顿引力 + 软化解
+   *  防奇点 + 近距弹簧防合并（线性保守力）+ **软墙势**（边界外平滑推回，
+   *  保守力不破坏质心，替代硬反弹——2026-08-09 45s 守视：硬反弹致星贴边
+   *  徘徊 + 质心漂移）+ 每帧质心修正（惯性系，恒星相对运动完全保留）。
+   *  初始位置=布局锚位、初速=切向圆轨道速度——自由混沌演化。 */
   step(now: number, dt: number): void {
     const stars = this.stars;
-    const byKey = new Map(stars.map(s => [s.key, s]));
-    const DAMP = Math.exp(-dt * DAMP_T);
-    const ANCHOR_K = 0.9;
-    const ACTIVE_K = 0.65;
+    const HARD = 30;     // 近距弹簧刚度
+    const WALL_Z = 14;   // 软墙作用带（px）
+    const WALL_K = 5;    // 软墙刚度
+    // 半隐式 Euler：先 v 后 x（辛，能量漂移远小于显式 Euler）
     for (const a of stars) {
       let ax = 0, ay = 0;
-      if (a.kind === 'file') {
-        const parent = a.parentKey ? byKey.get(a.parentKey) : undefined;
-        if (parent) {
-          const dx = parent.x - a.x, dy = parent.y - a.y;
-          const r2 = dx * dx + dy * dy + SOFT;
-          const f = G_P * parent.m / r2;
-          const inv = 1 / Math.sqrt(r2);
-          ax += f * dx * inv;
-          ay += f * dy * inv;
-        }
-      } else {
-        // 恒星间弱引力（扰动源）+ 锚弹性（防聚团/漂移）
-        for (const b of stars) {
-          if (b.kind !== 'role' || b === a) continue;
-          const dx = b.x - a.x, dy = b.y - a.y;
-          const r2 = dx * dx + dy * dy + SOFT;
-          const f = G_S * b.m / r2;
-          const inv = 1 / Math.sqrt(r2);
-          ax += f * dx * inv;
-          ay += f * dy * inv;
-        }
-        const k = a.active ? ACTIVE_K : ANCHOR_K;
-        ax -= k * (a.x - a.tx);
-        ay -= k * (a.y - a.ty);
+      for (const b of stars) {
+        if (b === a) continue;
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const rr = Math.hypot(dx, dy) || 1e-6;
+        const r2 = rr * rr + SOFT;
+        const inv = 1 / rr;
+        let f = G * b.m / r2;
+        // 近距防合并：线性弹簧斥力（保守力，不破坏能量守恒）
+        if (rr < MIN_DIST) f -= (MIN_DIST - rr) * HARD / rr;
+        ax += f * dx * inv;
+        ay += f * dy * inv;
       }
-      a.vx = (a.vx + ax * dt) * DAMP;
-      a.vy = (a.vy + ay * dt) * DAMP;
+      // 软墙势：边界带内平滑推回（保守力，星靠近被缓推回场内而非硬弹）
+      if (a.x < WALL_Z) ax += (WALL_Z - a.x) * WALL_K;
+      else if (a.x > this.w - WALL_Z) ax -= (a.x - (this.w - WALL_Z)) * WALL_K;
+      if (a.y < WALL_Z) ay += (WALL_Z - a.y) * WALL_K;
+      else if (a.y > this.h - WALL_Z) ay -= (a.y - (this.h - WALL_Z)) * WALL_K;
+      a.vx += ax * dt;
+      a.vy += ay * dt;
+    }
+    // 质心修正：惯性系（总动量归零，系统整体不漂移；相对运动零影响）
+    let sx = 0, sy = 0, sm = 0;
+    for (const a of stars) { sx += a.m * a.vx; sy += a.m * a.vy; sm += a.m; }
+    if (sm > 0) {
+      const vcx = sx / sm, vcy = sy / sm;
+      for (const a of stars) { a.vx -= vcx; a.vy -= vcy; }
+    }
+    for (const a of stars) {
       a.x += a.vx * dt;
       a.y += a.vy * dt;
+      // 极端保底 clamp（软墙正常拦得住，这里几乎不触发）
+      if (a.x < 1) { a.x = 1; a.vx = Math.abs(a.vx); }
+      else if (a.x > this.w - 1) { a.x = this.w - 1; a.vx = -Math.abs(a.vx); }
+      if (a.y < 1) { a.y = 1; a.vy = Math.abs(a.vy); }
+      else if (a.y > this.h - 1) { a.y = this.h - 1; a.vy = -Math.abs(a.vy); }
+      // 淡入滑入：物理位与锚位混合（fade 期过渡）
       if (a.fade < 1) {
         const mix = Math.min(1, a.fade);
         a.x += (a.tx - a.x) * (1 - mix) * 0.25;
