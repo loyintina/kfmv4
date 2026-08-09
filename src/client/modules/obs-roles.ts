@@ -398,9 +398,9 @@ export function initObsRoles(
 
   let last = 0, lastStep = 0;
   const loop = (now: number) => {
-    (window as unknown as Record<string, unknown>).__rolesDbg = {
+    (window as unknown as Record<string, unknown>).__rolesDbg = { // escape-ok: 守视钩子（同徽标 __emblemDbg 模式）
       stars: engine ? engine.stars.length : -1, renderOn, lastStep: Math.round(lastStep), now: Math.round(now), el: container.style.display,
-    }; // escape-ok: 守视钩子（同徽标 __emblemDbg 模式）
+    };
     if (renderOn && engine && now - lastStep >= 33) {
       const dt = Math.min(0.05, (now - last) / 1000 || 0.016);
       last = now; lastStep = now;
