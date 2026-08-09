@@ -64,11 +64,11 @@ class EmblemGather {
   private v = 0;   // 全员统一速率（缓，均值），px/s
   private thr = 0; // 连线阈值（单阈值）
   // 每粒子的本轮路径：采样点 + 弧长表；位置由 cumF 解析查表求值（无逐帧积分态）
-  // arcC=阵位所在弧长，k1/k2=前半轮/后半轮推进系数（px/s@f=1）
+  // k=全轮统一推进系数（px/s@f=1）——阵位被等半迭代钉在弧长中点，过阵与
+  // 过轮界同为单一光滑推进，无 k1/k2 分段速度跳变（2026-08-09 同款化定稿）
   private paths: { xs: number[]; ys: number[]; cum: number[]; len: number }[] = [];
-  private arcC: number[] = [];
-  private k1: number[] = [];
-  private k2: number[] = [];
+  private k: number[] = [];
+  private midFix: number[] = []; // 阵位弧长残差（arcC-len/2），sin² 窗修正精确过阵
   private cells: { x: number; y: number }[] = []; // 本轮阵位（守视验证/阵度用）
   private patName = '';
   private lastPat = -1;
@@ -117,11 +117,10 @@ class EmblemGather {
         cum.push(cum[i - 1] + Math.hypot(p.xs[a] - p.xs[i - 1], p.ys[a] - p.ys[i - 1]));
       }
       p.cum = cum; p.len = cum[cum.length - 1];
-      this.arcC[pi] = cum[3 * EmblemGather.SEG];
     }
-    const intH = EmblemGather.cumF(EmblemGather.T / 2);
-    this.k1 = this.paths.map((p, i) => this.arcC[i] / intH);
-    this.k2 = this.paths.map((p, i) => (p.len - this.arcC[i]) / intH);
+    const FT = EmblemGather.cumF(EmblemGather.T);
+    this.k = this.paths.map(p => p.len / FT);
+    this.midFix = this.paths.map(p => p.cum[3 * EmblemGather.SEG] - p.len / 2);
     this.thr = Math.min(nw, nh) * 0.22;
     this.v = Math.hypot(nw, nh) * 0.13;
   }
@@ -245,7 +244,6 @@ class EmblemGather {
   // 长度归一（绕形心缩放随机点，阵位钉死不动）
   private regen(): void {
     const target = this.v * (EmblemGather.T / 1000);
-    const intH = EmblemGather.cumF(EmblemGather.T / 2);
     const pats = EmblemGather.matrixPats(this.w, this.h);
     let pi = Math.floor(this.R() * pats.length);
     if (pi === this.lastPat) pi = (pi + 1) % pats.length;
@@ -281,29 +279,43 @@ class EmblemGather {
       }
       // 离开点 wp1：阵位下游顺向伸出——过阵后顺势流走，不折返
       const wp1 = clampP({ x: cell.x + dir.x * mn * (0.35 + this.R() * 0.35) + px * lat(), y: cell.y + dir.y * mn * (0.35 + this.R() * 0.35) + py * lat() });
-      let wps = [
+      // 切向臂长按阵位到边界的余量收紧——阵前/阵位/阵后三点必须共线，
+      // 不能被 clamp 折断成拐角（2026-08-09 实拍：靠边阵位过阵时小向移位）
+      const arm = Math.min(tangD, Math.max(6, Math.min(cell.x, this.w - cell.x, cell.y, this.h - cell.y) - 8));
+      const wps = [
         wp0,
-        clampP({ x: cell.x - dir.x * tangD, y: cell.y - dir.y * tangD }),
-        clampP({ x: cell.x, y: cell.y }),
-        clampP({ x: cell.x + dir.x * tangD, y: cell.y + dir.y * tangD }),
+        { x: cell.x - dir.x * arm, y: cell.y - dir.y * arm },
+        { x: cell.x, y: cell.y },
+        { x: cell.x + dir.x * arm, y: cell.y + dir.y * arm },
         wp1,
       ];
       let path = this.buildPath(g, wps);
       // 归一带 ±40%：只缩 wp0/wp1，且绕阵位缩——上/下游方位保持，约束不被破坏
       if (path.len > 1 && Math.abs(path.len - target) / target > 0.4) {
         const lam = target / path.len;
-        wps = wps.map((p, wi) => (wi === 0 || wi === 4) ? clampP({
-          x: cell.x + (p.x - cell.x) * lam, y: cell.y + (p.y - cell.y) * lam,
-        }) : p);
+        wps[0] = clampP({ x: cell.x + (wps[0].x - cell.x) * lam, y: cell.y + (wps[0].y - cell.y) * lam });
+        wps[4] = clampP({ x: cell.x + (wps[4].x - cell.x) * lam, y: cell.y + (wps[4].y - cell.y) * lam });
+        path = this.buildPath(g, wps);
+      }
+      // 弧长等半：绕阵位只缩 wp0，迭代 ≤3 次让阵位落到路径弧长中点——
+      // 全局单一推进系数 k 精确过阵，速率无 k1/k2 分段跳变（2026-08-09
+      // 用户实拍「成阵附近小向移位」：k1≠k2 在 0.5 倍谷底处速度突变；
+      // 轮界同款跳变藏在 0.1 倍谷底里不可见，故菱形不抖——同款化修复）
+      for (let it = 0; it < 6 && path.len > 1; it++) {
+        const ratio = path.cum[3 * EmblemGather.SEG] / path.len;
+        if (Math.abs(ratio - 0.5) < 0.003) break;
+        const lam = Math.max(0.5, Math.min(2, 0.5 / ratio));
+        wps[0] = clampP({ x: cell.x + (wps[0].x - cell.x) * lam, y: cell.y + (wps[0].y - cell.y) * lam });
         path = this.buildPath(g, wps);
       }
       return path;
     });
-    // 阵位是节点 3 → 采样点 3*SEG 处的弧长；k1/k2 分半反推，
-    // 保证解析查表后半轮恰好到阵位、一轮后恰好回形状位
-    this.arcC = this.paths.map(p => p.cum[3 * EmblemGather.SEG]);
-    this.k1 = this.paths.map((p, i) => this.arcC[i] / intH);
-    this.k2 = this.paths.map((p, i) => (p.len - this.arcC[i]) / intH);
+    // 阵位已等半到弧长中点附近（迭代粗调），单一 k 全轮通用；
+    // 残差 midFix 由 step 的 sin²(πt/T) 窗修正——t=T/2 精确过阵、
+    // 轮界归零、中点导数为零，全程 C∞ 光滑无速度跳变
+    const FT = EmblemGather.cumF(EmblemGather.T);
+    this.k = this.paths.map(p => p.len / FT);
+    this.midFix = this.paths.map(p => p.cum[3 * EmblemGather.SEG] - p.len / 2);
   }
   // 弧长 → 位置（二分 + 线性插值）
   private at(path: { xs: number[]; ys: number[]; cum: number[]; len: number }, d: number): { x: number; y: number } {
@@ -329,18 +341,16 @@ class EmblemGather {
     // 形度 s：距轮界越近越成形（粒子物理上恰好同归形状位，s 只是描边的渐变窗）
     const s = ease(Math.max(0, 1 - Math.min(t, T - t) / EmblemGather.SHAPE_TAU));
     (window as unknown as { __emblemPhase: string }).__emblemPhase = s.toFixed(2); // escape-ok: 守视掐点调试钩子（eval 读形度拍成形帧，试映期临时）
-    // 阵度 m：矩阵时刻前后 ±MTAU 窗——粒子微增亮 + 连线阈值放宽让阵形浮现
+    // 阵度 m：矩阵时刻前后 ±MTAU 窗——粒子微增亮 + 动态连线全隐（只有点在动）
     const mu = Math.min(1, Math.abs(t - T / 2) / EmblemGather.MTAU);
     const m = 1 - mu * mu * (3 - 2 * mu);
-    // 弧长推进：解析查表 F(t)=∫f，位置 = k·F(t) 直接求值——全程精确，
-    // 无逐帧积分漂移、无中点钉进度（2026-08-08 用户实拍「成阵抖一下」的根因）
+    // 弧长推进：解析查表 F(t)=∫f，位置 = k·F(t) + midFix·sin²(πt/T)——
+    // 单一 k 全轮光滑；sin² 窗把阵位残差摊到整轮，中点导数为零无速度跳变，
+    // t=T/2 精确过阵、轮界归零（与菱形同款，2026-08-09 定稿）
     const F = EmblemGather.cumF(t);
-    const FH = EmblemGather.cumF(T / 2);
-    const half = t < T / 2;
-    const pos = this.paths.map((p, i) => {
-      const d = half ? this.k1[i] * F : this.arcC[i] + this.k2[i] * (F - FH);
-      return this.at(p, Math.min(p.len, d));
-    });
+    const sn = Math.sin(Math.PI * t / T);
+    const fix = sn * sn;
+    const pos = this.paths.map((p, i) => this.at(p, Math.min(p.len, this.k[i] * F + this.midFix[i] * fix)));
     // escape-ok: 守视验证钩子——形度/阵度与「粒子-目标位平均距离」原子读出，绕过截图延迟
     const md = pos.reduce((acc, p, i) => acc + Math.hypot(p.x - this.glyph[i].x, p.y - this.glyph[i].y), 0) / pos.length;
     const mc = pos.reduce((acc, p, i) => acc + Math.hypot(p.x - this.cells[i].x, p.y - this.cells[i].y), 0) / pos.length;
