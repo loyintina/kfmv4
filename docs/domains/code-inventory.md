@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 9ebff43a · 生成于 2026-08-09 -->
+<!-- 基准 commit cb752bfa · 生成于 2026-08-09 -->
 
 # 代码清单（机械层）
 
@@ -178,7 +178,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（158 文件 · 18713 行）
+## infra（158 文件 · 18722 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -213,9 +213,9 @@
 | tests/provider-env.test.ts | 167 | — |
 | experiments/coldstart/tools/hallucinate-batch.mjs | 164 | — |
 | tests/protocol-reducer.test.ts | 161 | — |
+| experiments/coldstart/tools/routine-entry-validation.mjs | 158 | — |
 | scripts/check/gen-scripts-catalog.mjs | 157 | ScriptCatalogEntry, SCRIPTS_CATALOG, SCRIPT_CATEGORIES |
 | scripts/check/sync-counts.mjs | 157 | — |
-| experiments/coldstart/tools/routine-entry-validation.mjs | 152 | — |
 | scripts/check/check-doc-orphans.mjs | 149 | — |
 | scripts/agent/semantic-bench.mjs | 149 | — |
 | tests/probes/gen-page-state-schema/src/server/ai/page-state.ts | 149 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
@@ -255,12 +255,12 @@
 | scripts/check/check-versions.mjs | 91 | — |
 | scripts/check/check-deploy-freshness.mjs | 87 | — |
 | scripts/check/check-workflow-integrity.mjs | 87 | — |
+| scripts/check/check-kfmv4-data.mjs | 86 | — |
 | scripts/check/check-probes.mjs | 86 | — |
 | scripts/agent/exp-probe-matrix.mjs | 86 | — |
 | tests/engine.test.ts | 85 | — |
 | scripts/check/check-state-freshness.mjs | 84 | — |
 | scripts/check/gen-experiments-list.mjs | 84 | — |
-| scripts/check/check-kfmv4-data.mjs | 83 | — |
 | scripts/check/check-experiment-index.mjs | 81 | — |
 | scripts/check/check-hooks.mjs | 81 | — |
 | scripts/agent/exp-thinking.mjs | 81 | — |
@@ -656,4 +656,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 305 文件 · 54591 行 · 跨域边 253 条
+合计 305 文件 · 54600 行 · 跨域边 253 条
