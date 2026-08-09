@@ -38,7 +38,8 @@ regression('BAR-PERM-03', 'audit-log-written', '审计日志落盘（permission-
   const { evaluate } = await import('../src/server/ai/permissions.js');
   // 触发一次 evaluate 产生审计条目
   evaluate('read', { path: '/tmp/x.md' }, { cwd: '/tmp' });
-  const log = join(process.env.HOME || '', '.kfmv4', 'permission-audit.jsonl');
+  // 集成钉：断言审计日志真落生产 ledger（2026-08-08 收拢后路径含 ledger/）
+  const log = join(process.env.HOME || '', '.kfmv4', 'ledger', 'permission-audit.jsonl');
   const { existsSync } = await import('fs');
   assert(existsSync(log), '审计日志应存在');
   const tail = readFileSync(log, 'utf-8').trim().split('\n').pop();
