@@ -24,7 +24,15 @@ Express 4 + WebSocket，`index.ts` 统一入口编排（协调层）。
 
 ## 数据目录
 
-`$HOME/.kfmv4/`（`KFM_DATA_DIR`）：providers/active/sessions/roles/configs/page-state.md/restart-pending.json/.env（apiKey 代字的真实来源，chmod 600）。
+`$HOME/.kfmv4/`（`KFM_DATA_DIR`）——**2026-08-09 重构定稿后的结构**（详见
+`../guides/kfmv4-data.md`，机械门 check-kfmv4-data 执法）：
+- 根：`providers.json` / `active.json` / `.env`（apiKey 代字真实来源，chmod 600）
+- `agents/`：roles（角色卡）/ configs / prompts / paradigms（人设与配置四合一）
+- `sessions/`（面板会话 + script/ 脚本分流）、`ledger/`（8 个观测账本：
+  agent-calls / tool-exec / check-failures / build-metrics / permission-audit /
+  semantic-chain-metrics / sys-metrics / discussion-log）、`experiments/`（含 materials）、
+  `logs/` / `browser-relay/` / `workspaces/`（agent 工作区空位）
+- `restart-pending.json` 仍在根目录
 客户端经 API 端点以相对路径 `.kfmv4/...` 访问，`sanitizePath()` 解析到 `SAFE_ROOT`。
 
 ## #陷阱
