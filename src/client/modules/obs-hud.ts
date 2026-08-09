@@ -370,18 +370,20 @@ ${body}</div>
   // 每会话一条发光轨道：横轴时间（右端=现在），线长=活跃跨度（createdAt→updatedAt），
   // 线宽/亮度=tokenCount（sqrt 压缩动态范围），48h 内活跃会话末端挂呼吸光点
   // （pulseStyle 伪随机节奏，与端口/信箱/待办同族）；聚合轨虚线细轨；底部 MM/DD 刻度行。
-  // 行距半格 12px（2026-08-08 用户定稿），高度随轨道数自然变化。
+  // 行距半格 12px（2026-08-08 用户定稿），**高度钉死 6 行**（2026-08-09 用户定稿：
+  // 取消随轨道数自动长高——服务端 TOP5+聚合轨保证 ≤6 行，H 为常量，当前状态即最大高度）
   function renderStarmap(a: ArchiveData): void {
     const fmtK = (v: number) => v >= 1e6 ? `${(v / 1e6).toFixed(1)}M` : v >= 1e3 ? `${Math.round(v / 1e3)}K` : String(v);
     starmapStatusEl.textContent = `${a.sessions} 会话 · Σ${fmtK(a.totalTokens)}`;
-    if (a.tracks.length === 0) {
-      starmapBodyEl.innerHTML = '<div class="obs-starmap-empty">暂无会话</div>';
-      return;
-    }
     const W = 184, PADX = 4, AXIS_H = 14, PADY = 5;
     const n = a.tracks.length;
-    const rowH = 12; // 行距半格（网格 24px/格，2026-08-08 用户定稿：整格太疏，高度随轨道数自然变化）
-    const H = Math.round(PADY * 2 + n * rowH + AXIS_H);
+    const rowH = 12; // 行距半格（网格 24px/格）
+    const MAX_ROWS = 6; // 高度钉死：服务端 TOP5+聚合轨 ≤6 行
+    const H = Math.round(PADY * 2 + MAX_ROWS * rowH + AXIS_H);
+    if (a.tracks.length === 0) {
+      starmapBodyEl.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img"></svg><div class="obs-starmap-empty" style="margin-top:-${H}px;line-height:${H}px">暂无会话</div>`;
+      return;
+    }
     const now = Date.now();
     const tMin = Math.min(...a.tracks.map(t => new Date(t.t0).getTime()));
     const span = Math.max(1, now - tMin);
@@ -424,7 +426,12 @@ ${body}</div>
     const per = 8;
     const pages = Math.max(1, Math.ceil(dutyCron.length / per));
     dutyCronPage %= pages;
-    dutyCronGridEl.innerHTML = dutyCron.slice(dutyCronPage * per, dutyCronPage * per + per).map(c => {
+    const slice = dutyCron.slice(dutyCronPage * per, dutyCronPage * per + per);
+    // 隐形占位补满 8 格：2 行高度钉死，cron 不足/翻屏末页面板不变矮
+    // （2026-08-09 用户定稿：全部面板取消自动长高，当前状态即最大高度）
+    while (slice.length < per) slice.push({ name: '·', ago: '', status: 'pad' } as unknown as SysCron); // escape-ok: 隐形占位条构造（pad 占位，非类型逃逸语义）
+    dutyCronGridEl.innerHTML = slice.map(c => {
+      if ((c.status as string) === 'pad') return '<div class="obs-duty-cron" style="visibility:hidden"><span class="obs-duty-name">·</span></div>';
       const cls = c.status === 'ok' ? 'obs-dot-ok' : c.status === 'fail' ? 'obs-dot-dead' : 'obs-dot-other';
       return `<div class="obs-duty-cron"><span class="obs-dot ${cls}" style="${pulseStyle(c.name)}"></span><span class="obs-duty-name">${c.name}</span><span class="obs-duty-ago">${c.ago}</span></div>`;
     }).join('');
@@ -437,9 +444,14 @@ ${body}</div>
   function renderPulse(p: PulseData, cron: SysCron[]): void {
     const provs = Object.entries(p.llm.byProvider).map(([k, v]) => `${k} ×${v}`).join(' ');
     pulseStatusEl.textContent = '24h';
-    const maxN = Math.max(...p.tools.top.map(t => t.n), 1);
-    const bars = p.tools.top.map(t =>
-      `<div class="obs-pulse-bar"><span class="obs-pulse-bar-label">${t.name}</span><span class="obs-pulse-bar-track"><span class="obs-pulse-bar-fill" style="width:${Math.round((t.n / maxN) * 100)}%"></span></span><span class="obs-pulse-bar-n">${t.n}</span></div>`).join('');
+    // TOP4 条数钉死 4：不足补隐形占位条，面板高度不随工具数变矮（2026-08-09 用户定稿）
+    const tops = p.tools.top.slice(0, 4);
+    while (tops.length < 4) tops.push({ name: '·', n: 0 });
+    const maxN = Math.max(...tops.map(t => t.n), 1);
+    const bars = tops.map(t =>
+      t.n === 0 && t.name === '·'
+        ? '<div class="obs-pulse-bar" style="visibility:hidden"><span class="obs-pulse-bar-label">·</span><span class="obs-pulse-bar-track"><span class="obs-pulse-bar-fill" style="width:0%"></span></span><span class="obs-pulse-bar-n">0</span></div>'
+        : `<div class="obs-pulse-bar"><span class="obs-pulse-bar-label">${t.name}</span><span class="obs-pulse-bar-track"><span class="obs-pulse-bar-fill" style="width:${Math.round((t.n / maxN) * 100)}%"></span></span><span class="obs-pulse-bar-n">${t.n}</span></div>`).join('');
     pulseBodyEl.innerHTML = `
       <div class="obs-pulse-line"><span class="obs-pulse-key">LLM</span> ${p.llm.calls} 次 · <span class="${p.llm.okRate < 95 ? 'obs-rail-num-amber' : ''}">${p.llm.okRate}%</span> · 均 ${fmtDur(p.llm.avgMs)} · ${p.llm.lastAgo}前</div>
       <div class="obs-pulse-dim">${provs || '—'}</div>
