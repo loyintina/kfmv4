@@ -217,16 +217,20 @@ export function initObsHud(): void {
   // 信箱/待办自动翻屏（2026-08-08 用户定稿：列表手势滑动会吞掉全局卡片堆手势，
   // 改 overflow:hidden + 按一屏高硬切，到底回顶；点击/详情交互不受影响，
   // 详情视图同容器也走翻屏——否则长文永远读不到后半）。
+  // 详情三屏上限（2026-08-09 用户定稿：长文无限翻太拖沓）——详情态 maxTop 收
+  // 到 2 屏，滚完 3 屏停在末屏不回顶；列表态保持到底回顶循环。
   // 节奏错位（同日定稿 v3 提速一倍）：端口 2.5s / 执勤 cron 2.8s / 信箱 3.1s /
   // 待办 3.7s——四处翻屏周期互质漂移，永不同拍齐跳，观感更活
-  const autoPage = (el: HTMLElement) => {
-    const maxTop = el.scrollHeight - el.clientHeight;
+  const autoPage = (el: HTMLElement, detail: boolean) => {
+    const maxTop = detail
+      ? Math.min(el.scrollHeight - el.clientHeight, 2 * el.clientHeight)
+      : el.scrollHeight - el.clientHeight;
     if (maxTop <= 2) { if (el.scrollTop) el.scrollTo({ top: 0, behavior: 'auto' }); return; }
-    if (el.scrollTop >= maxTop - 2) el.scrollTo({ top: 0, behavior: 'auto' });
-    else el.scrollTo({ top: Math.min(el.scrollTop + el.clientHeight, maxTop), behavior: 'auto' });
+    if (el.scrollTop >= maxTop - 2) { if (!detail) el.scrollTo({ top: 0, behavior: 'auto' }); return; }
+    el.scrollTo({ top: Math.min(el.scrollTop + el.clientHeight, maxTop), behavior: 'auto' });
   };
-  setInterval(() => autoPage(inboxListEl), 3_100);
-  setInterval(() => autoPage(stackListEl), 3_700);
+  setInterval(() => autoPage(inboxListEl, !!inboxDetail), 3_100);
+  setInterval(() => autoPage(stackListEl, !!stackDetail), 3_700);
 
   const clockEl = hud.querySelector<HTMLElement>('.obs-clock')!;
   const balanceEl = hud.querySelector<HTMLElement>('.obs-balance')!;
