@@ -52,6 +52,9 @@ if (existsSync(sessRoot)) {
     if (/^s\d+\.json$/.test(f) || /^sess-\w+\.json$/.test(f)) {
       warnings.push(`sessions/ 疑似新测试残留 ${f}（广义模式）——确认为测试产物请按源头修复，勿只删文件`);
     }
+    if (/^routine-validate-/.test(f)) {
+      warnings.push(`sessions/ 脚本会话残留 ${f}——routine-entry-validation 应走 coldstart 数据区并清理根副本（2026-08-09 try/finally 已修，再现=回归）`);
+    }
   }
 }
 

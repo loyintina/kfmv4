@@ -87,8 +87,14 @@ async function runOneArm(i) {
   if (!existsSync(src)) throw new Error(`会话未落盘: ${src}`);
   const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
   const armId = `kfmv4_routine_${stamp}_${i}_kfmdocs-only`;
-  copyFileSync(src, join(COLD_SESSIONS, `${armId}.json`));
-  rmSync(src); // 清理生产区副本，保持面板会话列表干净
+  // 2026-08-09 发版事故：copy 抛错（如 COLD_SESSIONS 不可写）时 rm 不执行，
+  // routine-validate 残留生产 sessions/ 根（cron 04:47 与手动各一批 6 文件）。
+  // try/finally 保证生产区副本必清理——根目录不得留脚本会话。
+  try {
+    copyFileSync(src, join(COLD_SESSIONS, `${armId}.json`));
+  } finally {
+    if (existsSync(src)) { try { rmSync(src); } catch { /* 清理失败记日志，不掩盖 copy 错误 */ } }
+  }
   console.log(`[routine] 臂 ${armId} 完成（${ms}ms，${events} 事件）`);
   return armId;
 }
