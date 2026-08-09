@@ -1088,21 +1088,28 @@ body {
 .obs-patrol-body {
   flex: 1;
   min-height: 0;
-  padding: 0 10px;
+  padding: 0 6px;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
   font-size: 9px;
+  line-height: 1.25;
   color: var(--text-dim);
-  white-space: nowrap;
   overflow: hidden;
 }
 
 .obs-patrol-line {
   display: flex;
   align-items: center;
-  gap: 4px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.obs-patrol-line2 {
+  white-space: nowrap;
+  font-size: 8px;
+  opacity: 0.8;
 }
 
 .obs-tokens {

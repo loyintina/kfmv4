@@ -537,8 +537,12 @@ ${body}</div>
 
   // ========== 巡逻健康 R1 / 会话 token R2 / 权限审计 R3（2026-08-09 填屏第三批） ==========
   function renderPatrol(p: PatrolData): void {
-    patrolStatusEl.textContent = p.fails > 0 ? `${p.fails} 败` : `${p.runs} 次`;
-    patrolBodyEl.innerHTML = `<span class="obs-patrol-line"><span class="obs-dot ${p.lastOk ? 'obs-dot-ok' : 'obs-dot-dead'}" style="${pulseStyle('patrol')}"></span>近7天 ${p.runs}次 · ${fmtDur(p.lastMs)} ${p.lastAgo}</span>`;
+    // 窄块（~64px 宽）单行放不下「近7天 5次 · 3.7m 8h」——2026-08-09 守视诊断：
+    // head status 平时留空（仅失败时亮「N败」），body 拆两行竖排防裁断
+    patrolStatusEl.textContent = p.fails > 0 ? `${p.fails}败` : '';
+    patrolBodyEl.innerHTML =
+      `<span class="obs-patrol-line"><span class="obs-dot ${p.lastOk ? 'obs-dot-ok' : 'obs-dot-dead'}" style="${pulseStyle('patrol')}"></span>7天 ${p.runs}次</span>` +
+      `<span class="obs-patrol-line2">${fmtDur(p.lastMs)} · ${p.lastAgo}前</span>`;
   }
   // token 图：柱 = 各会话当前 token（青→紫渐变，主会话高亮由排序保证），
   // 曲线 = 累计总量客户端环形采样随聊天实时生长（同 SYS 柱状图族的 5s 节拍）
@@ -547,16 +551,22 @@ ${body}</div>
     if (!tokenData) { body.innerHTML = ''; return; }
     const w = body.clientWidth, h = body.clientHeight;
     if (w < 20 || h < 10) return;
-    const PAD = 4, BASE = h - 3;
+    const PAD = 4, BASE = h - 9; // 底部 9px 留给柱下数值标签
     const sessions = tokenData.sessions.slice(0, 6);
     const maxTok = Math.max(...sessions.map(s => s.tokens), 1);
-    const barW = Math.max(3, Math.min(14, (w - PAD * 2) / Math.max(sessions.length, 1) - 2));
+    // 等分全宽排布（2026-08-09 守视诊断：旧版柱挤左侧、右 60% 死空白）；
+    // 最小柱高 5px——零值柱退化成 2px 扁点像渲染残迹
+    const n = Math.max(sessions.length, 1);
+    const slot = (w - PAD * 2) / n;
+    const barW = Math.max(4, Math.min(18, slot * 0.55));
     const bars = sessions.map((s, i) => {
-      const bh = Math.max(2, Math.round((s.tokens / maxTok) * (h - 14)));
+      const bh = Math.max(5, Math.round((s.tokens / maxTok) * (h - 20)));
       const hue = 190 + (i * 60) / Math.max(sessions.length - 1, 1);
       const color = `hsl(${hue.toFixed(0)} 90% 62%)`;
-      const x = PAD + i * (barW + 2);
-      return `<rect x="${x.toFixed(1)}" y="${BASE - bh}" width="${barW.toFixed(1)}" height="${bh}" rx="1.5" fill="${color}" opacity=".8"><title>${s.title} · ${fmtK(s.tokens)} · ${s.msgs}条</title></rect>`;
+      const x = PAD + i * slot + (slot - barW) / 2;
+      const cx = x + barW / 2;
+      return `<rect x="${x.toFixed(1)}" y="${BASE - bh}" width="${barW.toFixed(1)}" height="${bh}" rx="1.5" fill="${color}" opacity=".8"><title>${s.title} · ${fmtK(s.tokens)} · ${s.msgs}条</title></rect>` +
+        `<text x="${cx.toFixed(1)}" y="${h - 1.5}" text-anchor="middle" font-size="6.5" fill="rgba(160,170,200,.75)">${fmtK(s.tokens)}</text>`;
     }).join('');
     let curve = '';
     if (tokenHist.length >= 2) {
