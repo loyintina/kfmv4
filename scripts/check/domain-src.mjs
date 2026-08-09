@@ -38,7 +38,7 @@ export const DOMAIN_SRC = {
     'src/client/modules/obs-roles.ts',
     'src/client/modules/orb.ts', 'src/client/modules/orb-panel.ts',
     'src/client/modules/orb-state.ts', 'src/client/modules/gestures.ts',
-    'src/client/modules/debug-assert.ts', 'src/client/modules/custom-select.ts',
+    'src/client/modules/app-lifecycle.ts', 'src/client/modules/debug-assert.ts', 'src/client/modules/custom-select.ts',
     'src/client/modules/confirm-dialog.ts', 'src/client/modules/card-toast.ts',
     'src/client/modules/logger.ts',
   ],
