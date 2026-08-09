@@ -38,7 +38,7 @@
    跨带版——此高度左侧是 SYS 竖条而非信箱，无碰撞；脉搏仍与星轨同宽）
 
 数据口径：`/api/obs/hud` 5s 轮询（余额服务端 5s 缓存；SYS 30s 独立采样器
-环形 40 点落 ~/.kfmv4/sys-metrics.json，端口 30s/cron 5min 缓存；
+环形 40 点落 ~/.kfmv4/ledger/sys-metrics.json，端口 30s/cron 5min 缓存；
 星轨 archive 30s 缓存，读 ~/.kfmv4/sessions/*.json 顶层字段，
 msgs≤2 测试残留过滤，script/ 分流目录不读；脉搏 pulse 60s 缓存，
 四条 jsonl 尾部限扫滚动 24h——agent-calls/tool-exec 各 200KB、

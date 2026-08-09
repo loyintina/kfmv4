@@ -73,13 +73,13 @@ agent 脚本层——检测归自动化，裁决归会话内 agent，**永远不
     发版门（routine 入口体检，臂数单源 = release.yaml 步骤 0 命令）是唯一人工例外。
     阈值按 22 臂池化校准（质疑软指标）。
 12. **史官制度**（2026-08-02，观测台 v0.1）：agent-runner 每次 LLM 调用必落
-    ~/.kfmv4/agent-calls.jsonl（provider/耗时/成败）——观测台聚合器
+    ~/.kfmv4/ledger/agent-calls.jsonl（provider/耗时/成败）——观测台聚合器
     scripts/agent/obs-aggregate.mjs 周报（周一 04:37 投信箱）；工具调用审计
     permission-audit.jsonl（权限引擎影子模式）同源；新增数据流必须登记观测台。
     （2026-08-06 登记：SYS 监控面板数据面——routes/obs.ts collectSys 现场采集
     硬盘/内存/负载/进程 RSS（含 used/total 实值对）+ 监听端口（ss -tlnp +
     established 连接数）+ crontab 清单；30s 独立采样器环形 40 点落
-    ~/.kfmv4/sys-metrics.json 供面板历史柱状图；cron 成败判据 = 逐脚本标记表
+    ~/.kfmv4/ledger/sys-metrics.json 供面板历史柱状图；cron 成败判据 = 逐脚本标记表
     CRON_MARKERS 末位对比，通用关键字实测三处误判已弃用；端口 30s/cron 5min
     缓存，新增 cron 条目只需在标记表/别名表登记）
     （2026-08-07 登记①：RSS 参照改自身 cgroup memory.high（800M 墙），按

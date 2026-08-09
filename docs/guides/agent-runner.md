@@ -190,8 +190,8 @@ deepseek 官方单臂，见上文「provider 兜底链」。）
 
 ## 五号负载：obs-aggregate.mjs（观测台聚合器，史官制度 8.5）
 
-周报生成（cron 每周聚合）：读三本 append-only 账本——`~/.kfmv4/agent-calls.jsonl`
-（LLM 调用：provider/耗时/成败）、`~/.kfmv4/permission-audit.jsonl`（工具调用审计：
+周报生成（cron 每周聚合）：读三本 append-only 账本——`~/.kfmv4/ledger/agent-calls.jsonl`
+（LLM 调用：provider/耗时/成败）、`~/.kfmv4/ledger/permission-audit.jsonl`（工具调用审计：
 RiskClass/判定）、`docs/ledger/semantic-chain-inbox.md`（文档健康趋势）→ 周报文本
 stdout，`--mailbox` 投信箱。用法：`node scripts/agent/obs-aggregate.mjs [--days=7] [--mailbox]`。
 

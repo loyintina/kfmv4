@@ -101,7 +101,7 @@ async function evaluate(name: string, params: Record<string, unknown>, ctx: Tool
   "mode": "attended|unattended" }
 ```
 
-落 `~/.kfmv4/permission-audit.jsonl`（append-only）。观测口径（关键定义）：
+落 `~/.kfmv4/ledger/permission-audit.jsonl`（append-only）。观测口径（关键定义）：
 
 - **模型试图越界被拦**（deny 且模型主动发起了危险操作）= **门控生效**，是成功不是失败；
 - **越界成功**（危险操作实际执行）= 门控失败，才是破界；

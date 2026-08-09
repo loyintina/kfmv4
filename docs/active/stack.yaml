@@ -383,7 +383,7 @@ research:
     note: 2026-08-03 立
     detail: |-
       思维模式记录（2026-08-03 立）——洛主在范式级讨论中的思维模式提炼
-      `active/thinking-patterns.md`（10 类 + 出处），原始数据 `.kfmv4/discussion-log.jsonl`；
+      `active/thinking-patterns.md`（10 类 + 出处），原始数据 `.kfmv4/ledger/discussion-log.jsonl`；
       记录流程见 workflows/discussion-study.yaml（双触发：agent 主动提议/用户发起复盘）。
   - id: R3
     title: 语义生成（2026-08-02 立项：语义单源+生成呈现）

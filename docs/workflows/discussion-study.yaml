@@ -14,13 +14,13 @@ steps:
      （类比驱动/追问本质/找反例/概念统一/分层治理/数据先行/元层思考——类型见
      active/thinking-patterns.md，随时补充新类型）
   3. 收尾沉淀成果：设计决策 → decisions/ 或对应文档（ADR/契约/设计文档/工作流）
-  4. 收尾记录思维：.kfmv4/discussion-log.jsonl 追加一条
+  4. 收尾记录思维：.kfmv4/ledger/discussion-log.jsonl 追加一条
      {ts, topic, trigger, jumps, patterns[], sinks, userConfirmed}
   5. 请用户确认模式标签（模式识别不能 agent 单方面定义——用户确认才入档）
   6. 新模式/新样本 → 更新 active/thinking-patterns.md（模式名 + 定义 + 出处）
 writes:
   - 决策文档（decisions/ 或对应文档）
-  - ~/.kfmv4/discussion-log.jsonl（原始数据账本，数据目录在仓库外）
+  - ~/.kfmv4/ledger/discussion-log.jsonl（原始数据账本，数据目录在仓库外）
   - active/thinking-patterns.md（模式+出处提炼）
 exit_condition: 成果已沉淀 + 账本已记 + 用户已确认模式 + patterns.md 已更新
 natural_next: 按成果类型走 doc-write / spec-driven / contract-maintain
