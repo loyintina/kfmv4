@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit e1c145f0 · 生成于 2026-08-09 -->
+<!-- 基准 commit 7f44dfb2 · 生成于 2026-08-09 -->
 
 # 代码清单（机械层）
 
@@ -36,14 +36,14 @@
 | src/client/engine/v2/animation.ts | 40 | ease |
 | src/client/engine/v2/utils.ts | 24 | uniformSpacing, hvSpacing, ZERO_SPACING |
 
-## floating-card（31 文件 · 8292 行）
+## floating-card（31 文件 · 8345 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/client/generated/scripts-catalog.ts | 1355 | ScriptCatalogEntry, SCRIPTS_CATALOG, SCRIPT_CATEGORIES |
 | src/client/modules/floating-card.ts | 811 | enterFullscreen, exitFullscreen, dismissFullscreen, updateFullscreenSavedPosition, createFloatingCard, dismissFloatingCard, initFloatingCards, hasFloatingCard, buildCardLayout |
 | src/client/modules/terminal-card-04.ts | 807 | TerminalCardMeta, initTerminalCore, disposeTerminalCore, compactTerminalCore, createTerminal04Handler |
-| src/client/cards/plugins/role.card.ts | 740 | — |
+| src/client/cards/plugins/role.card.ts | 793 | — |
 | src/client/cards/plugins/session.card.ts | 619 | — |
 | src/client/cards/plugins/api.card.ts | 596 | — |
 | src/client/modules/card-stack.ts | 502 | getCardCount, getCard, getCardName, getCardId, hexToRgba, cardGradient, cardBg, getFocusIndex, getCurrentAccent, getCardHandler, getFocusedCardRect, animateStackPullFeedback, launchFocusedCard, openCardStack, closeCardStack, isCardStackOpen, focusNext, focusPrev, initCardStack |
@@ -508,7 +508,7 @@
 - src/client/modules/floating-shared.ts → src/client/modules/theme.ts
 - src/client/modules/terminal-card-04.ts → src/client/modules/theme.ts
 
-### floating-card → client-shell（46 边）
+### floating-card → client-shell（47 边）
 
 - src/client/cards/plugins/api.card.ts → src/client/modules/confirm-dialog.ts
 - src/client/cards/plugins/api.card.ts → src/client/modules/custom-select.ts
@@ -523,6 +523,7 @@
 - src/client/cards/plugins/role.card.ts → src/client/modules/custom-select.ts
 - src/client/cards/plugins/role.card.ts → src/client/modules/logger.ts
 - src/client/cards/plugins/role.card.ts → src/client/modules/state.ts
+- src/client/cards/plugins/role.card.ts → src/client/modules/z-index-layers.ts
 - src/client/cards/plugins/scripts.card.ts → src/client/modules/custom-select.ts
 - src/client/cards/plugins/scripts.card.ts → src/client/modules/z-index-layers.ts
 - src/client/cards/plugins/session.card.ts → src/client/modules/confirm-dialog.ts
@@ -656,4 +657,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 305 文件 · 54280 行 · 跨域边 253 条
+合计 305 文件 · 54333 行 · 跨域边 254 条
