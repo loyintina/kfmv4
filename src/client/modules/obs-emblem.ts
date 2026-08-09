@@ -425,12 +425,13 @@ export function initObsEmblems(getRects: () => EmblemRects | null): { relayout: 
     if (occ === occState) return;
     occState = occ;
     clearTimeout(fadeTimer);
-    if (occ) { // 淡出：继续绘制（运动态）opacity→0，淡完停绘
-      if (cv) cv.style.opacity = '0';
+    if (occ) { // 淡出：ease-in 加速离场——截断 0 附近的拖沓长尾（用户实测：
+      // 双向同用 ease 时淡出长尾可见、淡入慢头不可见，观感淡入比淡出短得多）
+      if (cv) { cv.style.transition = 'opacity .9s ease-in'; cv.style.opacity = '0'; }
       fadeTimer = window.setTimeout(() => { renderOn = false; }, 950);
-    } else {     // 淡入：先恢复绘制（保证运动态）再 opacity→1
+    } else {     // 淡入：ease-out 快速可见后缓收尾——可见段铺满全程
       renderOn = true;
-      if (cv) cv.style.opacity = '1';
+      if (cv) { cv.style.transition = 'opacity .9s ease-out'; cv.style.opacity = '1'; }
     }
   };
   const probe = (first = false) => {
