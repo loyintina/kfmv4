@@ -194,10 +194,15 @@ export function initObsRoles(
 ): { onData: (d: RolesData) => void; relayout: () => void } {
   const container = document.createElement('div');
   container.className = 'obs-roles';
-  container.innerHTML = `<div class="obs-roles-head">角色</div><canvas class="obs-roles-canvas"></canvas>`;
+  // v15：标题栏回归其他框格式（.obs-inbox-head 标准高 38px + 角色/文件计数）
+  container.innerHTML = `
+    <div class="obs-inbox-head"><span class="obs-inbox-title">角色</span><span class="obs-roles-status"></span></div>
+    <canvas class="obs-roles-canvas"></canvas>
+  `;
   container.style.zIndex = String(Z.CENTER_CONTENT);
   document.body.appendChild(container);
-  const headEl = container.querySelector<HTMLElement>('.obs-roles-head')!;
+  const headEl = container.querySelector<HTMLElement>('.obs-inbox-head')!;
+  const statusEl = container.querySelector<HTMLElement>('.obs-roles-status')!;
   const cv = container.querySelector<HTMLCanvasElement>('.obs-roles-canvas')!;
   const ctx = cv.getContext('2d')!;
   const dpr = Math.min(1.5, window.devicePixelRatio || 1);
@@ -207,9 +212,9 @@ export function initObsRoles(
   let occState = false;
   let fadeTimer = 0;
 
-  // 标题栏矮行高（2026-08-09 v5 定稿：大部分空间留图）
+  // 标准标题栏高度（2026-08-09 v15 定稿：回归其他框格式）
   const sizeCanvas = (): [number, number] => {
-    const hh = headEl.offsetHeight || 18;
+    const hh = headEl.offsetHeight || 38;
     const cw = container.clientWidth, ch = container.clientHeight - hh;
     cv.style.cssText = `position:absolute;left:0;top:${hh}px;width:100%;height:${ch}px;pointer-events:none`;
     cv.width = Math.max(1, Math.round(cw * dpr));
@@ -294,6 +299,7 @@ export function initObsRoles(
   return {
     onData(d: RolesData) {
       lastData = d;
+      statusEl.textContent = `${d.totalRoles}卡 · ${d.totalFiles}文件`;
       if (engine) engine.setData(d);
     },
     relayout: build,

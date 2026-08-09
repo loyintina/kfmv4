@@ -339,8 +339,8 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 .obs-perms-row{display:flex;align-items:center;gap:8px;padding:0 12px;font-size:10px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .obs-perms-label{font-size:10px;letter-spacing:2px;color:rgba(0,212,255,.75);flex:none}
 
-/* ===== 角色卡星座图（2026-08-09 用户定稿：全角色关系网 · N 体引力 · 纯光点） ===== */
-/* 左列大区（系统下、待办左，巡逻/token 腾空处）：矮标题栏「角色」+ canvas。同卡片视觉族。 */
+/* ===== 角色卡关系面板（2026-08-09 定稿：环形弦图·落日构图·双环对转） ===== */
+/* 左列大区（系统下、待办左，巡逻/token 腾空处）：标准 head（角色+计数）+ canvas。 */
 .obs-roles{position:fixed;box-sizing:border-box;border-radius:16px;background:rgba(18,18,26,.5);border:1px solid transparent;background-clip:padding-box;border-image:linear-gradient(135deg,rgba(124,58,237,.4),rgba(0,212,255,.3)) 1;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);overflow:hidden;flex-direction:column;pointer-events:none}
-.obs-roles-head{flex:none;padding:3px 8px 4px;font-size:9px;letter-spacing:3px;color:rgba(0,212,255,.7);border-bottom:1px solid rgba(124,58,237,.14)}
+.obs-roles .obs-inbox-head{pointer-events:none} /* 纯展示：head 不挡手势（父级 none 被子级 auto 覆盖，需显式压回） */
 .obs-roles-canvas{position:absolute;display:block}
