@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 8df19ae9 · 生成于 2026-08-09 -->
+<!-- 基准 commit 1ad15168 · 生成于 2026-08-09 -->
 
 # 代码清单（机械层）
 
@@ -72,14 +72,14 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（26 文件 · 5044 行）
+## client-shell（26 文件 · 5066 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/client/modules/obs-hud.ts | 723 | initObsHud |
 | src/client/modules/orb.ts | 538 | type OrbState, collapseOrbPanel, initOrb |
 | src/client/modules/obs-emblem.ts | 497 | EmblemRect, EmblemRects, initObsEmblems |
-| src/client/modules/obs-roles.ts | 453 | RolesData, RolesRect, initObsRoles |
+| src/client/modules/obs-roles.ts | 475 | RolesData, RolesRect, initObsRoles |
 | src/client/modules/gesture-registry.ts | 346 | GestureHandler, GestureRegistry, gestures |
 | src/client/modules/ui-registry.ts | 334 | UIElementType, UIElementState, InteractiveElement, ContentBlock, Capability, PageDescription, RegistryChangeHandler, UIElementRegistry, Registry |
 | src/client/modules/custom-select.ts | 246 | SelectItem, CustomSelectOptions, CustomSelect, createCustomSelect |
@@ -656,4 +656,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 305 文件 · 54735 行 · 跨域边 253 条
+合计 305 文件 · 54757 行 · 跨域边 253 条
