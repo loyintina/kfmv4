@@ -232,7 +232,10 @@ export async function initChatHost(deps: ChatHostDeps): Promise<void> {
       }
     } catch { /* 网络失败静默，用户可手动重发 */ }
   }
-  tryAutoResume();
+  // 2026-08-10 竞态修复：auto-resume 延迟到页面初始化完成后触发（同步 init 后
+  // markAppReady + 额外 800ms），避免与刷新早期的手势操作（召唤/关闭卡片堆）并发
+  // 打架——tryAutoResume 会自动 expandPanel()，与用户召唤卡片堆同时发生 → 状态机冲突。
+  setTimeout(() => { tryAutoResume(); }, 800);
 
   // 监听会话切换 → 中止进行中的 run + 分段重载消息
   // 竞态防护：切换前 abort 进行中流式 run，防止流继续写入已切走的会话。

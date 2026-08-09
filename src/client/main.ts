@@ -6,6 +6,7 @@
  * 堆叠卡片面板：右侧边缘左滑唤出。
  */
 import { KFMState, API } from './modules/state.js';
+import { markAppReady } from './modules/app-lifecycle.js';
 
 declare global {
   interface Window {
@@ -83,6 +84,9 @@ initOrb();
 initTreeRenderer();
 initCardStack();
 initFloatingCards();
+// 同步初始化全部完成——手势/卡片堆可安全消费（2026-08-10 竞态修复：
+// initGestures 早于 initCardStack，READY 前手势忽略召唤，防刷新中触摸竞态）
+markAppReady();
 
 
 // ========== 注册能力层 ==========

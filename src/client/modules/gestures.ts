@@ -20,6 +20,7 @@ import { gestures } from './gesture-registry.js';
 import { cardRegistry } from './card-registry.js';
 import { DOM } from "./dom-refs.js";
 import { log } from './logger.js';
+import { isAppReady } from './app-lifecycle.js';
 
 // ========== 字号配置 ==========
 
@@ -208,6 +209,9 @@ export function initGestures(): void {
           if (dx < -60) { closeSidebar(); _actionTaken = true; }
           break;
         case 'both-closed':
+          // READY 守卫（2026-08-10 竞态修复）：同步 init 未完成时忽略召唤——
+          // initGestures 早于 initCardStack，刷新中触摸会操作未就绪状态
+          if (!isAppReady()) return;
           if (dx < -60) { openCardStack(); _actionTaken = true; }
           else if (dx > 60) { openSidebar(); _actionTaken = true; }
           break;
