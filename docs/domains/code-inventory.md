@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 22edda4c · 生成于 2026-08-09 -->
+<!-- 基准 commit 0fc32ed5 · 生成于 2026-08-09 -->
 
 # 代码清单（机械层）
 
@@ -177,7 +177,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（153 文件 · 18541 行）
+## infra（157 文件 · 18593 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -309,20 +309,24 @@
 | tests/check-deploy-freshness.test.ts | 19 | — |
 | tests/env-test-isolation.mjs | 19 | — |
 | tests/probes/gen-permission-map/src/server/ai/tools/index.ts | 19 | getToolDefinitions, getAllTools |
+| tests/probes/tool-compaction/src/server/ai/tools/index.ts | 19 | getToolDefinitions, getAllTools |
 | tests/gsap-hook.mjs | 17 | resolve |
 | tests/probes/gen-permission-map/src/server/ai/tools/fake.ts | 16 | fakeTool |
 | tests/probes/gen-tool-docs/src/server/ai/tools/fake.ts | 16 | fakeTool |
+| tests/probes/tool-compaction/src/server/ai/tools/fake.ts | 16 | fakeTool |
 | tests/mocks/xterm.ts | 15 | Terminal |
 | tests/probes/gen-tool-docs/src/server/ai/tools/index.ts | 15 | getToolDefinitions |
 | tests/probes/sync-counts/scripts/agent/semantic-mutate.mjs | 14 | MUTATIONS |
 | tests/probes/gen-permission-map/src/server/ai/tools/types.ts | 12 | KfmTool |
 | tests/probes/gen-tool-docs/src/server/ai/tools/types.ts | 12 | KfmTool |
+| tests/probes/tool-compaction/src/server/ai/tools/types.ts | 12 | KfmTool |
 | .githooks/commit-msg | 10 | — |
 | scripts/check/docs-root-const.mjs | 8 | DOCS_ROOT |
 | tests/register-hook.mjs | 8 | — |
 | tests/probes/gen-page-state-schema/src/client/modules/ui-registry.ts | 7 | ContentBlock |
 | tests/mocks/xterm-addon-fit.ts | 6 | FitAddon |
 | tests/probes/gen-permission-map/src/server/ai/permissions.ts | 5 | TOOL_RISK |
+| tests/probes/tool-compaction/src/shared/tool-compaction/index.ts | 5 | CompactorEntry, COMPACTOR_REGISTRY, COMPACTOR_NAMES |
 | tests/probes/doc-linerefs/src/fake.ts | 4 | a, b |
 | tests/probes/checks/build.mjs | 3 | — |
 | tests/probes/doc-scripts/scripts/check/check-real.mjs | 3 | STEPS |
@@ -649,4 +653,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 299 文件 · 53904 行 · 跨域边 252 条
+合计 303 文件 · 53956 行 · 跨域边 252 条
