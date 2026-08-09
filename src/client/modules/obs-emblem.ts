@@ -251,7 +251,6 @@ class EmblemGather {
     const pat = pats[pi];
     this.patName = pat.name;
     this.cells = pat.cells;
-    const tangD = Math.min(this.w, this.h) * 0.07; // 切向约束臂长
     const clampP = (p: { x: number; y: number }) => ({
       x: Math.max(12, Math.min(this.w - 12, p.x)),
       y: Math.max(12, Math.min(this.h - 12, p.y)),
@@ -279,9 +278,18 @@ class EmblemGather {
       }
       // 离开点 wp1：阵位下游顺向伸出——过阵后顺势流走，不折返
       const wp1 = clampP({ x: cell.x + dir.x * mn * (0.35 + this.R() * 0.35) + px * lat(), y: cell.y + dir.y * mn * (0.35 + this.R() * 0.35) + py * lat() });
-      // 切向臂长按阵位到边界的余量收紧——阵前/阵位/阵后三点必须共线，
-      // 不能被 clamp 折断成拐角（2026-08-09 实拍：靠边阵位过阵时小向移位）
-      const arm = Math.min(tangD, Math.max(6, Math.min(cell.x, this.w - cell.x, cell.y, this.h - cell.y) - 8));
+      // 切向引导点大幅拉远（0.18~0.30 倍短边）且与阵位保持三点共线——
+      // 密集小臂节点会让 CR 切向量级与邻边失配，在成阵处甩出 N 形过冲
+      // （2026-08-09 用户实拍）；臂长按 ±dir 到边界的射线距离收紧，不折断
+      const rayBox = (sgn: number) => {
+        let r = Infinity;
+        if (dir.x * sgn > 1e-6) r = Math.min(r, (this.w - 12 - cell.x) / (dir.x * sgn));
+        if (dir.x * sgn < -1e-6) r = Math.min(r, (12 - cell.x) / (dir.x * sgn));
+        if (dir.y * sgn > 1e-6) r = Math.min(r, (this.h - 12 - cell.y) / (dir.y * sgn));
+        if (dir.y * sgn < -1e-6) r = Math.min(r, (12 - cell.y) / (dir.y * sgn));
+        return r;
+      };
+      const arm = Math.max(8, Math.min(mn * (0.18 + this.R() * 0.12), rayBox(1) - 8, rayBox(-1) - 8));
       const wps = [
         wp0,
         { x: cell.x - dir.x * arm, y: cell.y - dir.y * arm },
