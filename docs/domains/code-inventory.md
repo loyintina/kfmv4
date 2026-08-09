@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 5c08bd43 · 生成于 2026-08-09 -->
+<!-- 基准 commit 5cfe71a2 · 生成于 2026-08-09 -->
 
 # 代码清单（机械层）
 
@@ -72,12 +72,12 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（25 文件 · 4563 行）
+## client-shell（25 文件 · 4573 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/client/modules/obs-hud.ts | 645 | initObsHud |
-| src/client/modules/obs-emblem.ts | 548 | EmblemRect, EmblemRects, initObsEmblems |
+| src/client/modules/obs-emblem.ts | 558 | EmblemRect, EmblemRects, initObsEmblems |
 | src/client/modules/orb.ts | 538 | type OrbState, collapseOrbPanel, initOrb |
 | src/client/modules/gesture-registry.ts | 346 | GestureHandler, GestureRegistry, gestures |
 | src/client/modules/ui-registry.ts | 334 | UIElementType, UIElementState, InteractiveElement, ContentBlock, Capability, PageDescription, RegistryChangeHandler, UIElementRegistry, Registry |
@@ -649,4 +649,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 299 文件 · 53836 行 · 跨域边 252 条
+合计 299 文件 · 53846 行 · 跨域边 252 条
