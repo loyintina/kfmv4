@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 208f52e7 · 生成于 2026-08-09 -->
+<!-- 基准 commit f9fe1008 · 生成于 2026-08-09 -->
 
 # 代码清单（机械层）
 
@@ -72,7 +72,7 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（26 文件 · 4897 行）
+## client-shell（26 文件 · 4891 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -81,7 +81,7 @@
 | src/client/modules/obs-emblem.ts | 497 | EmblemRect, EmblemRects, initObsEmblems |
 | src/client/modules/gesture-registry.ts | 346 | GestureHandler, GestureRegistry, gestures |
 | src/client/modules/ui-registry.ts | 334 | UIElementType, UIElementState, InteractiveElement, ContentBlock, Capability, PageDescription, RegistryChangeHandler, UIElementRegistry, Registry |
-| src/client/modules/obs-roles.ts | 306 | RolesData, RolesRect, initObsRoles |
+| src/client/modules/obs-roles.ts | 300 | RolesData, RolesRect, initObsRoles |
 | src/client/modules/custom-select.ts | 246 | SelectItem, CustomSelectOptions, CustomSelect, createCustomSelect |
 | src/client/modules/orb-panel.ts | 221 | PanelConfig, buildPanelContent |
 | src/client/modules/gestures.ts | 217 | initGestures |
@@ -656,4 +656,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 305 文件 · 54588 行 · 跨域边 253 条
+合计 305 文件 · 54582 行 · 跨域边 253 条
