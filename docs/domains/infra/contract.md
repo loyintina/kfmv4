@@ -7,19 +7,16 @@
 
 ## 检查管线（npm run check，45 脚本，顺序固定）
 
-（下方生成区枚举的链步数多于标题脚本数：43 = check-*.mjs 文件数，链上同数 43 个以
-check- 前缀书写——deploy-freshness/doc-coverage 等在链上省前缀；sass、gen-* 验证步
-（--check-only）、sync-counts、npm test、tsc 均非 check-* 脚本，不计入标题数。
-2026-08-08 裁决修订：旧文「40/链上 38」为计数漂移，现标题、文件数、链上数三者一致。）
+（链步数多于脚本数：43 = check-*.mjs 文件数；deploy-freshness/doc-coverage 链上省前缀；
+sass/gen-* 验证步、sync-counts、npm test、tsc 非 check-* 不计入。2026-08-08 修订统一计数。）
 
 **域映射纪律（2026-08-06 定稿）**：新增 src/ 文件必须登记 `scripts/check/domain-src.mjs`
 对应域（client-shell 模块级枚举 / server·infra 目录级）——未登记的文件 check-contract-freshness
 对它的文档同步永久失明（obs-hud.ts 首犯，2026-08-06 被链当场拦下）。
 
-**文档工作流消费门（2026-08-09，doc-orphans 第三层门）**：active/guides/constraints
-规则类文档须被 workflows reads / check-agent 脚本 / CLAUDE-README 任一消费（仅 docs
-互引不算，external-sources 实案）；constraints/detail-* 例外（invariants 主文档链或
-工作流消费二选一）；状态/历史与生成/索引类豁免。⛳ DOC-FLOW-12。
+**文档工作流消费门（2026-08-09，doc-orphans 第三层门）**：active/guides/constraints 规则类
+须被 workflows reads/check 脚本/CLAUDE-README 任一消费（仅 docs 互引不算；detail-* 例外走
+invariants 链或工作流消费）。⛳ DOC-FLOW-12。
 
 <!-- chain:auto 由 sync-counts 生成，禁止手改 -->
 `check-uncommitted`（>3 未提交即中断，首位） → deploy-freshness → versions → checks → doc-coverage →
