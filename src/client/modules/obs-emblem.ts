@@ -388,7 +388,7 @@ export function initObsEmblems(getRects: () => EmblemRects | null): { relayout: 
       cvA.style.transition = 'none';
       cvA.style.opacity = '0';
       void cvA.offsetWidth;
-      cvA.style.transition = '';
+      cvA.style.transition = 'opacity .6s ease'; // 复位要还原过渡，置空会把 cssText 里的 transition 一并清掉
       renderOn = false;
     }
     els = [cvA]; ctxs = [ctxA];
@@ -418,7 +418,7 @@ export function initObsEmblems(getRects: () => EmblemRects | null): { relayout: 
         cv.style.transition = 'none';
         cv.style.opacity = occ ? '0' : '1';
         void cv.offsetWidth;
-        cv.style.transition = '';
+        cv.style.transition = 'opacity .6s ease'; // 复位要还原过渡——置空曾致淡入淡出全失效（2026-08-09 用户实拍）
       }
       return;
     }
