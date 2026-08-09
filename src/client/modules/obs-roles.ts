@@ -119,7 +119,7 @@ class RoleConstellation {
   /** 绘制环形弦图（外环角色段/内环文件段/弦线） */
   draw(ctx: CanvasRenderingContext2D, now: number): void {
     ctx.clearRect(0, 0, this.w, this.h);
-    const R1 = Math.min(this.w, this.h) * 0.42;  // 外环（角色）
+    const R1 = Math.min(this.w, this.h) * 0.36;  // 外环（角色）——0.42 曾贴下界（v8 实拍）
     const R2 = R1 * 0.64;                        // 内环（文件）
     const cx = this.cx, cy = this.cy;
     const activeIdx = this.roleSegs.findIndex(s => s.active);
@@ -203,13 +203,14 @@ export function initObsRoles(
   let fadeTimer = 0;
 
   // 标题栏矮行高（2026-08-09 v5 定稿：大部分空间留图）
-  const sizeCanvas = () => {
+  const sizeCanvas = (): [number, number] => {
     const hh = headEl.offsetHeight || 18;
     const cw = container.clientWidth, ch = container.clientHeight - hh;
     cv.style.cssText = `position:absolute;left:0;top:${hh}px;width:100%;height:${ch}px;pointer-events:none`;
     cv.width = Math.max(1, Math.round(cw * dpr));
     cv.height = Math.max(1, Math.round(ch * dpr));
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return [cw, ch];
   };
 
   const build = () => {
@@ -223,9 +224,11 @@ export function initObsRoles(
     container.style.top = `${r.top}px`;
     container.style.width = `${r.width}px`;
     container.style.height = `${r.height}px`;
-    sizeCanvas();
-    if (!engine) engine = new RoleConstellation(r.width, r.height);
-    else engine.resize(r.width, r.height);
+    // 引擎几何必须用 canvas 实际尺寸（不含标题栏）——用面板尺寸曾致
+    // 环心偏下、外环超 canvas 下界（v8 实拍抓获，2026-08-09）
+    const [cw, ch] = sizeCanvas();
+    if (!engine) engine = new RoleConstellation(cw, ch);
+    else engine.resize(cw, ch);
     if (lastData) engine.setData(lastData);
   };
 
