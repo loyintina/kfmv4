@@ -57,10 +57,10 @@ export const MUTATIONS = [
   },
   {
     id: 'M04', level: 'L1', sem: 'SEM001', file: 'docs/domains/server/contract.md', expect: 'report',
-    find: 'providers/active/sessions/roles/configs/page-state.md/restart-pending.json',
-    replace: 'providers/active/sessions/roles/configs',
+    find: '根：`providers.json` / `active.json` / `.env`',
+    replace: '根：`providers.json` / `active.json` / `.env` / `sessions.json`',
     tasks: ['contract-vs-map-server'],
-    note: '数据目录清单缺 page-state/restart-pending（复刻 1400eea）',
+    note: '数据目录根清单掺入不存在的 sessions.json（复刻 1400eea，锚点随 2026-08-09 重构同步）',
   },
   {
     id: 'M05', level: 'L1', sem: 'SEM003', file: 'docs/guides/agent-runner.md', expect: 'report',
