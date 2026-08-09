@@ -196,13 +196,13 @@ export function initObsRoles(
   container.className = 'obs-roles';
   // v15：标题栏回归其他框格式（.obs-inbox-head 标准高 38px + 角色/文件计数）
   container.innerHTML = `
-    <div class="obs-inbox-head"><span class="obs-inbox-title">角色</span><span class="obs-roles-status"></span></div>
+    <div class="obs-inbox-head"><span class="obs-inbox-title">角色</span><span class="obs-inbox-status"></span></div>
     <canvas class="obs-roles-canvas"></canvas>
   `;
   container.style.zIndex = String(Z.CENTER_CONTENT);
   document.body.appendChild(container);
   const headEl = container.querySelector<HTMLElement>('.obs-inbox-head')!;
-  const statusEl = container.querySelector<HTMLElement>('.obs-roles-status')!;
+  const statusEl = container.querySelector<HTMLElement>('.obs-inbox-status')!;
   const cv = container.querySelector<HTMLCanvasElement>('.obs-roles-canvas')!;
   const ctx = cv.getContext('2d')!;
   const dpr = Math.min(1.5, window.devicePixelRatio || 1);
