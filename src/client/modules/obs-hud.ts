@@ -68,6 +68,11 @@ interface PulseData {
   checks: { fails: number; top: Array<{ name: string; n: number }> };
   build: { lastMs: number; lastOk: boolean; builds: number };
 }
+// 巡逻健康（语义巡逻 7d 聚合）+ 会话 token（排除口径在服务端）+ 权限审计（24h 决策分布）
+interface PatrolData { runs: number; fails: number; lastMs: number; lastOk: boolean; lastAgo: string }
+interface TokenSession { title: string; tokens: number; msgs: number; updatedAt: string }
+interface TokensData { total: number; sessions: TokenSession[] }
+interface PermsData { allow: number; ask: number; deny: number; total: number; breakRate: number; unattended: number }
 
 export function initObsHud(): void {
   if (inited) return;
@@ -155,6 +160,42 @@ export function initObsHud(): void {
   const dutyCronGridEl = duty.querySelector<HTMLElement>('.obs-duty-cron-grid')!;
   const dutyStatusEl = duty.querySelector<HTMLElement>('.obs-duty-status')!;
 
+  // 巡逻健康 R1 + 会话 token R2 + 权限审计 R3（2026-08-09 用户定稿：填屏第三批）。
+  // 三块都吃 placeRail 注入的实测矩形：R1=执勤下待办左小方块（2×3 格）、
+  // R2=系统下待办左大方块（~7×7 格）、R3=待办下输入栏上全宽横条
+  const patrol = document.createElement('div');
+  patrol.className = 'obs-patrol';
+  patrol.innerHTML = `
+    <div class="obs-inbox-head"><span class="obs-inbox-title">巡逻</span><span class="obs-patrol-status"></span></div>
+    <div class="obs-patrol-body"></div>
+  `;
+  patrol.style.zIndex = String(Z.CENTER_CONTENT);
+  document.body.appendChild(patrol);
+  const patrolStatusEl = patrol.querySelector<HTMLElement>('.obs-patrol-status')!;
+  const patrolBodyEl = patrol.querySelector<HTMLElement>('.obs-patrol-body')!;
+  const tokens = document.createElement('div');
+  tokens.className = 'obs-tokens';
+  tokens.innerHTML = `
+    <div class="obs-inbox-head"><span class="obs-inbox-title">token</span><span class="obs-tokens-status"></span></div>
+    <div class="obs-tokens-body"></div>
+  `;
+  tokens.style.zIndex = String(Z.CENTER_CONTENT);
+  document.body.appendChild(tokens);
+  const tokensStatusEl = tokens.querySelector<HTMLElement>('.obs-tokens-status')!;
+  const tokensBodyEl = tokens.querySelector<HTMLElement>('.obs-tokens-body')!;
+  const perms = document.createElement('div');
+  perms.className = 'obs-perms';
+  perms.innerHTML = `<div class="obs-perms-row"><span class="obs-perms-label">权限</span><span class="obs-perms-text"></span></div>`;
+  perms.style.zIndex = String(Z.CENTER_CONTENT);
+  document.body.appendChild(perms);
+  const permsTextEl = perms.querySelector<HTMLElement>('.obs-perms-text')!;
+
+  // token 图状态（必须在首个 placeRail 调用前声明——placeRail 首跑会触发 drawTokensChart）
+  const fmtK = (v: number) => v >= 1e6 ? `${(v / 1e6).toFixed(1)}M` : v >= 1e3 ? `${Math.round(v / 1e3)}K` : String(v);
+  const TOKEN_HIST_MAX = 36; // 5s 一拍 ≈ 3 分钟窗
+  let tokenData: TokensData | null = null;
+  let tokenHist: number[] = [];
+
   const placeRail = () => {
     const r = hud.querySelector<HTMLElement>('.obs-inbox')!.getBoundingClientRect();
     rail.style.left = `${r.left}px`;
@@ -175,6 +216,29 @@ export function initObsHud(): void {
     // 上界上移与执勤同距；fixed top+bottom 双锚拉伸，列表 flex 填满空隙）
     const stackEl = hud.querySelector<HTMLElement>('.obs-stack')!;
     stackEl.style.top = `${duty.getBoundingClientRect().bottom + 10}px`;
+    // 填屏第三批（2026-08-09）：巡逻 R1（系统右、执勤下、待办左，2×3 格）、
+    // token R2（系统下、待办左，~7×7 格）、权限 R3（待办下、输入栏上，全宽横条）
+    const srr = rail.getBoundingClientRect();
+    const stk = stackEl.getBoundingClientRect();
+    const dutyR2 = duty.getBoundingClientRect();
+    patrol.style.left = `${srr.right + 10}px`;
+    patrol.style.width = `${stk.left - srr.right - 10}px`;
+    patrol.style.top = `${dutyR2.bottom + 10}px`;
+    patrol.style.height = `${3 * 24 - 10}px`;
+    const ptr = patrol.getBoundingClientRect();
+    tokens.style.left = `${srr.left}px`;
+    tokens.style.width = `${stk.left - srr.left}px`;
+    tokens.style.top = `${Math.max(srr.bottom, ptr.bottom) + 10}px`;
+    // R2 是待办「左侧」纵列：底界 = 待办下界（stk.bottom），不是上界——待办已上伸
+    // 到执勤下，用 stk.top 会算出负高度（2026-08-09 首版实测抓获）
+    tokens.style.height = `${stk.bottom - 10 - tokens.getBoundingClientRect().top}px`;
+    const inputBar = document.querySelector<HTMLElement>('.ai-input-bar');
+    const inputTop = inputBar ? inputBar.getBoundingClientRect().top : window.innerHeight - 84;
+    perms.style.left = `${srr.left}px`;
+    perms.style.width = `${stk.left + stk.width - srr.left}px`;
+    perms.style.top = `${stk.bottom + 10}px`;
+    perms.style.height = `${inputTop - 10 - perms.getBoundingClientRect().top}px`;
+    drawTokensChart(); // 画布尺寸变了重画
     // 深蓝意志徽标几何：A=四框围出的中央口袋（2026-08-09 裁决留 A，B/C 竖带取消）
     const dutyR = duty.getBoundingClientRect();
     const pocket = {
@@ -471,6 +535,55 @@ ${body}</div>
     placeRail();
   }
 
+  // ========== 巡逻健康 R1 / 会话 token R2 / 权限审计 R3（2026-08-09 填屏第三批） ==========
+  function renderPatrol(p: PatrolData): void {
+    patrolStatusEl.textContent = p.fails > 0 ? `${p.fails} 败` : `${p.runs} 次`;
+    patrolBodyEl.innerHTML = `<span class="obs-patrol-line"><span class="obs-dot ${p.lastOk ? 'obs-dot-ok' : 'obs-dot-dead'}" style="${pulseStyle('patrol')}"></span>近7天 ${p.runs}次 · ${fmtDur(p.lastMs)} ${p.lastAgo}</span>`;
+  }
+  // token 图：柱 = 各会话当前 token（青→紫渐变，主会话高亮由排序保证），
+  // 曲线 = 累计总量客户端环形采样随聊天实时生长（同 SYS 柱状图族的 5s 节拍）
+  function drawTokensChart(): void {
+    const body = tokensBodyEl;
+    if (!tokenData) { body.innerHTML = ''; return; }
+    const w = body.clientWidth, h = body.clientHeight;
+    if (w < 20 || h < 10) return;
+    const PAD = 4, BASE = h - 3;
+    const sessions = tokenData.sessions.slice(0, 6);
+    const maxTok = Math.max(...sessions.map(s => s.tokens), 1);
+    const barW = Math.max(3, Math.min(14, (w - PAD * 2) / Math.max(sessions.length, 1) - 2));
+    const bars = sessions.map((s, i) => {
+      const bh = Math.max(2, Math.round((s.tokens / maxTok) * (h - 14)));
+      const hue = 190 + (i * 60) / Math.max(sessions.length - 1, 1);
+      const color = `hsl(${hue.toFixed(0)} 90% 62%)`;
+      const x = PAD + i * (barW + 2);
+      return `<rect x="${x.toFixed(1)}" y="${BASE - bh}" width="${barW.toFixed(1)}" height="${bh}" rx="1.5" fill="${color}" opacity=".8"><title>${s.title} · ${fmtK(s.tokens)} · ${s.msgs}条</title></rect>`;
+    }).join('');
+    let curve = '';
+    if (tokenHist.length >= 2) {
+      const maxV = Math.max(...tokenHist, 1);
+      const pts = tokenHist.map((v, i) => {
+        const x = PAD + (w - PAD * 2) * (i / (TOKEN_HIST_MAX - 1));
+        const y = BASE - Math.max(2, Math.round((v / maxV) * (h - 14)));
+        return `${x.toFixed(1)},${y}`;
+      }).join(' ');
+      curve = `<polyline points="${pts}" fill="none" stroke="rgba(0,212,255,.85)" stroke-width="1.4" style="filter:drop-shadow(0 0 2px rgba(0,212,255,.6))"/>`;
+    }
+    body.innerHTML = `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img">${bars}${curve}</svg>`;
+  }
+  function renderTokens(t: TokensData): void {
+    tokenData = t;
+    tokensStatusEl.textContent = `Σ ${fmtK(t.total)}`;
+    const last = tokenHist[tokenHist.length - 1];
+    if (t.total !== last) {
+      tokenHist.push(t.total);
+      if (tokenHist.length > TOKEN_HIST_MAX) tokenHist.shift();
+    }
+    drawTokensChart();
+  }
+  function renderPerms(p: PermsData): void {
+    permsTextEl.textContent = `24h 放行 ${p.allow} · 询问 ${p.ask} · 拒绝 ${p.deny} · 越界率 ${p.breakRate}%${p.unattended ? ` · 无人 ${p.unattended}` : ''}`;
+  }
+
   // 渲染 SYS 面板（2026-08-07 用户定稿：指标行 = 文字行（标签+百分号+xx/xx 实值对）
   // + 下方滚动柱状图（绿<70/黄 70-85/红>85 逐样本上色，新样本右侧滚入）；
   // 端口行 = 作用域标（公/本）+ 端口号 + 进程名 + 活跃连接数）
@@ -595,11 +708,14 @@ ${body}</div>
   let lastSysKey = '';
   let lastArchiveKey = '';
   let lastPulseKey = '';
+  let lastPatrolKey = '';
+  let lastTokensKey = '';
+  let lastPermsKey = '';
   const refresh = async () => {
     try {
       const res = await fetch(`${API}/obs/hud`, { signal: AbortSignal.timeout(5000) });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const j = await res.json() as { balance?: { total?: string; error?: string }; inbox?: InboxEntry[]; stack?: StackData; sys?: SysData; archive?: ArchiveData; pulse?: PulseData };
+      const j = await res.json() as { balance?: { total?: string; error?: string }; inbox?: InboxEntry[]; stack?: StackData; sys?: SysData; archive?: ArchiveData; pulse?: PulseData; patrol?: PatrolData; tokens?: TokensData; perms?: PermsData };
       const b = j?.balance;
       if (b && !b.error && b.total != null) {
         balanceEl.textContent = fmtBalance(b.total);
@@ -653,6 +769,18 @@ ${body}</div>
           lastPulseKey = key;
           renderPulse(j.pulse, cron);
         }
+      }
+      if (j?.patrol && typeof j.patrol.runs === 'number') {
+        const key = JSON.stringify(j.patrol);
+        if (key !== lastPatrolKey) { lastPatrolKey = key; renderPatrol(j.patrol); }
+      }
+      if (j?.tokens && Array.isArray(j.tokens.sessions)) {
+        const key = JSON.stringify(j.tokens);
+        if (key !== lastTokensKey) { lastTokensKey = key; renderTokens(j.tokens); }
+      }
+      if (j?.perms && typeof j.perms.total === 'number') {
+        const key = JSON.stringify(j.perms);
+        if (key !== lastPermsKey) { lastPermsKey = key; renderPerms(j.perms); }
       }
     } catch {
       balanceEl.textContent = '—';

@@ -77,7 +77,7 @@ async function fetchDeepseekBalance(): Promise<Balance> {
 export function setupObsRoutes(router: Router): void {
   router.get('/obs/hud', async (_req, res) => {
     const balance = await fetchDeepseekBalance();
-    res.json({ balance, inbox: parseInbox(), stack: parseStack(), sys: collectSys(), archive: collectArchive(), pulse: collectPulse(), serverTime: new Date().toISOString() });
+    res.json({ balance, inbox: parseInbox(), stack: parseStack(), sys: collectSys(), archive: collectArchive(), pulse: collectPulse(), patrol: collectPatrol(), tokens: collectTokens(), perms: collectPerms(), serverTime: new Date().toISOString() });
   });
 
   // 守视视口校准回传：/test 页 POST 真机实测视口 → 存 viewport.json（browser-relay 读）
@@ -708,5 +708,89 @@ function collectPulse(): PulseData {
 
   const data: PulseData = { llm, tools, checks, build };
   pulseCache = { data, ts: now };
+  return data;
+}
+
+// ========== 巡逻健康 + 会话 token + 权限审计（2026-08-09 用户定稿：填屏第三批） ==========
+// 立项初心延续：8.5 史官制度「每条数据流落盘」→ 观测台「放到一起显示」。
+// 巡逻 = 语义巡逻 runner 成本/健康（F5 成本闸门的数据源：次数/失败/耗时）；
+// tokens = 会话 token 消耗（口径：语料包/两个配置不统计——待用户点名后填排除表）；
+// perms = 权限引擎审计（破界率观测仪，8.5.0 骨架数据；2026-08-08 曾以「分布单一」
+// 暂缓——用户拍板先上屏，分布单一本身也是观测结论）。
+
+interface PatrolData { runs: number; fails: number; lastMs: number; lastOk: boolean; lastAgo: string }
+interface TokenSession { title: string; tokens: number; msgs: number; updatedAt: string }
+interface TokensData { total: number; sessions: TokenSession[] }
+interface PermsData { allow: number; ask: number; deny: number; total: number; breakRate: number; unattended: number }
+
+const PATROL_CACHE_MS = 60_000;
+const TOKENS_CACHE_MS = 60_000;
+const PERMS_CACHE_MS = 60_000;
+let patrolCache: { data: PatrolData; ts: number } | null = null;
+let tokensCache: { data: TokensData; ts: number } | null = null;
+let permsCache: { data: PermsData; ts: number } | null = null;
+
+function collectPatrol(): PatrolData {
+  const now = Date.now();
+  if (patrolCache && now - patrolCache.ts < PATROL_CACHE_MS) return patrolCache.data;
+  const cutoff = now - 7 * 24 * 3_600_000;
+  const rows = readJsonlTail(path.join(KFM_DATA_DIR, 'ledger', 'semantic-chain-metrics.jsonl'), 20_000).filter(r => inWindow(r.ts, cutoff));
+  const last = rows.at(-1);
+  const lastTs = last ? new Date(String(last.ts)).getTime() : 0;
+  const data: PatrolData = {
+    runs: rows.length,
+    fails: rows.filter(r => r.ok !== true).length,
+    lastMs: Number(last?.ms ?? 0),
+    lastOk: last ? last.ok === true : true,
+    lastAgo: lastTs ? fmtAgo(lastTs) : '—',
+  };
+  patrolCache = { data, ts: now };
+  return data;
+}
+
+function collectTokens(): TokensData {
+  const now = Date.now();
+  if (tokensCache && now - tokensCache.ts < TOKENS_CACHE_MS) return tokensCache.data;
+  // 口径排除表（用户 2026-08-09 定稿：语料包/两个配置不统计——待点名后填标题）
+  const EXCLUDE_TITLES: string[] = [];
+  const out: TokenSession[] = [];
+  let files: string[];
+  try { files = fs.readdirSync(SESSIONS_DIR).filter(f => f.endsWith('.json')); } catch { files = []; }
+  for (const f of files) {
+    try {
+      const j = JSON.parse(fs.readFileSync(path.join(SESSIONS_DIR, f), 'utf-8')) as Record<string, unknown>;
+      const title = String(j.title || f.replace(/\.json$/, ''));
+      if (/^routine-validate-/.test(title)) continue; // 机器验证会话（与星轨同过滤）
+      if (EXCLUDE_TITLES.includes(title)) continue;
+      const tokens = Number(j.tokenCount ?? 0);
+      const msgs = Number(j.messageCount ?? 0);
+      if (msgs <= 2 && tokens <= 0) continue; // 空会话/测试残留
+      out.push({ title, tokens, msgs, updatedAt: String(j.updatedAt ?? '') });
+    } catch { /* 损坏会话跳过 */ }
+  }
+  out.sort((a, b) => b.tokens - a.tokens);
+  const data: TokensData = { total: out.reduce((s, x) => s + x.tokens, 0), sessions: out };
+  tokensCache = { data, ts: now };
+  return data;
+}
+
+function collectPerms(): PermsData {
+  const now = Date.now();
+  if (permsCache && now - permsCache.ts < PERMS_CACHE_MS) return permsCache.data;
+  const cutoff = now - 24 * 3_600_000;
+  const rows = readJsonlTail(path.join(KFM_DATA_DIR, 'ledger', 'permission-audit.jsonl'), 100_000).filter(r => inWindow(r.ts, cutoff));
+  let allow = 0, ask = 0, deny = 0, unattended = 0;
+  for (const r of rows) {
+    const d = String(r.decision ?? '');
+    if (d === 'allow') allow++; else if (d === 'deny') deny++; else ask++;
+    if (String(r.mode ?? '') === 'unattended') unattended++;
+  }
+  const total = rows.length;
+  const data: PermsData = {
+    allow, ask, deny, total,
+    breakRate: total ? Math.round((deny / total) * 1000) / 10 : 0,
+    unattended,
+  };
+  permsCache = { data, ts: now };
   return data;
 }

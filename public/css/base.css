@@ -1065,3 +1065,105 @@ body {
 .obs-duty-ok {
   color: #22c55e;
 }
+
+/* ===== 填屏第三批（2026-08-09 用户定稿：巡逻 R1 / token R2 / 权限 R3） ===== */
+/* R1 巡逻健康（执勤下待办左 2×3 格小方块）：head + 单行体；R2 token 图（系统下
+   待办左 ~7×7 格）：head + SVG 柱状图/累计曲线；R3 权限审计（待办下输入栏上
+   全宽横条）：单行决策分布。尺寸全部 placeRail 注入，同卡片视觉族。 */
+.obs-patrol {
+  position: fixed;
+  box-sizing: border-box;
+  border-radius: 14px;
+  background: rgba(18, 18, 26, 0.5);
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  border-image: linear-gradient(135deg, rgba(124, 58, 237, 0.4), rgba(0, 212, 255, 0.25)) 1;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.obs-patrol-body {
+  flex: 1;
+  min-height: 0;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  font-size: 9px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.obs-patrol-line {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.obs-tokens {
+  position: fixed;
+  box-sizing: border-box;
+  border-radius: 16px;
+  background: rgba(18, 18, 26, 0.5);
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  border-image: linear-gradient(135deg, rgba(0, 212, 255, 0.35), rgba(124, 58, 237, 0.35)) 1;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.obs-tokens-body {
+  flex: 1;
+  min-height: 0;
+  padding: 2px 4px;
+  display: flex;
+  align-items: stretch;
+}
+
+.obs-tokens-body svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.obs-perms {
+  position: fixed;
+  box-sizing: border-box;
+  border-radius: 12px;
+  background: rgba(18, 18, 26, 0.5);
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  border-image: linear-gradient(135deg, rgba(124, 58, 237, 0.35), rgba(0, 212, 255, 0.2)) 1;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.obs-perms-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  font-size: 10px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.obs-perms-label {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: rgba(0, 212, 255, 0.75);
+  flex: none;
+}

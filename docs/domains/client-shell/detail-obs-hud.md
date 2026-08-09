@@ -48,13 +48,29 @@
    + 检查链失败 TOP2 + 构建次数/最近耗时；**左缘顶 SYS 竖条右缘+10、
    右缘与星轨同齐**（2026-08-08 v4 用户定稿：4 列灯在 200px 太挤回到
    跨带版——此高度左侧是 SYS 竖条而非信箱，无碰撞；脉搏仍与星轨同宽）
+7. **巡逻健康卡**（2026-08-09 定稿：填屏第三批 R1）：执勤下待办左
+   **2×3 格小方块**（placeRail 注入：系统右缘+10、待办左缘、执勤下缘+10、
+   高 3 格-10）——head + 单行体：近7天次数/失败/最近耗时/最近 verdict 灯。
+   数据源 semantic-chain-metrics.jsonl 尾部 7d 窗口（F5 巡逻成本数据上屏）
+8. **token 图卡**（同日 R2）：系统下待办左纵列（左缘=rail 左缘、右缘=待办
+   左缘、上缘=max(rail 底,巡逻底)+10、**底缘=待办下缘**——待办已上伸到执勤下，
+   用待办上缘会算负高，2026-08-09 首版实测抓获）——head(Σ 总量) + SVG：
+   柱=各会话当前 token（青→紫渐变，最多 6 条）+ 累计总量增长曲线（客户端
+   环形采样 36 点 ≈ 3 分钟窗，5s 一拍随聊天实时生长）。口径：服务端排除
+   routine-validate-* 机器会话与空会话，语料包/两配置排除表待用户点名
+9. **权限审计横条**（同日 R3）：待办下输入栏上全宽（左缘=rail 左缘、宽=待办
+   右缘-rail 左缘、上缘=待办下缘+10、高=输入栏顶-10-上缘）——单行 24h
+   决策分布：放行/询问/拒绝 + 越界率（拒绝占比）。数据源 permission-audit.jsonl
+   尾部 24h（8.5.0 破界率观测仪数据上屏，2026-08-08 曾以「分布单一」暂缓——
+   用户拍板先上屏，分布单一本身也是观测结论）
 
 数据口径：`/api/obs/hud` 5s 轮询（余额服务端 5s 缓存；SYS 30s 独立采样器
 环形 40 点落 ~/.kfmv4/ledger/sys-metrics.json，端口 30s/cron 5min 缓存；
 星轨 archive 30s 缓存，读 ~/.kfmv4/sessions/*.json 顶层字段，
 msgs≤2 测试残留过滤，script/ 分流目录不读；脉搏 pulse 60s 缓存，
 四条 jsonl 尾部限扫滚动 24h——agent-calls/tool-exec 各 200KB、
-check-failures/build-metrics 各 100KB，permission-audit 暂缓）
+check-failures/build-metrics 各 100KB；巡逻 patrol 60s 缓存尾部 7d；
+tokens 60s 缓存读 sessions 顶层 tokenCount；perms 60s 缓存尾部 24h）
 
 扩展面候选：调用统计（agent-calls 聚合）、permission-audit 审批分布
 （87% allow 分布单一，暂缓）、prompts/ 测绘缺口。
