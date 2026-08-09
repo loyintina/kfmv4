@@ -74,9 +74,8 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
   合并 path 后 2 次 stroke + 2 次 fill，~230 次绘制调用 → ~8；位置写入
   复用 posBuf 免逐帧分配；守视钩子 300ms 节流）+ **遮挡淡出淡入**
   （elementFromPoint 五点探测，遮挡时运动态播 opacity .9s 淡出后停绘、
-  去遮挡先恢复绘制再淡入，**分向缓动**：淡出 ease-in 截 0 附近长尾、
-  淡入 ease-out 铺满可见段——双向同用 ease 时淡出长尾可见/淡入慢头
-  不可见，观感淡入远短于淡出，2026-08-09 用户实测裁决；
+  去遮挡先恢复绘制再淡入，**分向缓动**：淡出 ease-in 截长尾、淡入
+  ease-out 铺满可见段（同 ease 观感淡入过短，2026-08-09 实测裁决）；
   半遮迟滞 ≥3/5↔≤1/5；粒子位置=当前时间纯函数故停绘零状态）；
   守视验证钩子 `__emblemDbg`（escape-ok 已标）；
   逐轮实拍细节 → ./detail-obs-hud.md 徽标节）
