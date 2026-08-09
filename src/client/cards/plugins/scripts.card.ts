@@ -201,7 +201,7 @@ function createScriptsHandler(_meta: Record<string, unknown>): CardContentHandle
 
       // ===== 上方：类工具卡（二层 c2→c1 反色） =====
       const scriptCard = document.createElement('div');
-      scriptCard.style.cssText = `${innerCardStyle(c1, c2)};display:flex;flex-direction:column;max-height:60%;min-height:100px`;
+      scriptCard.style.cssText = `${innerCardStyle(c1, c2)};display:flex;flex-direction:column;flex:1 1 50%;min-height:0`;
 
       const scriptHeader = document.createElement('div');
       scriptHeader.style.cssText = 'display:flex;align-items:center;margin-bottom:6px;flex-shrink:0';
@@ -233,7 +233,7 @@ function createScriptsHandler(_meta: Record<string, unknown>): CardContentHandle
 
       // ===== 下方：类池卡（二层 c2→c1 反色） =====
       const poolCard = document.createElement('div');
-      poolCard.style.cssText = `${innerCardStyle(c1, c2)};flex:1;display:flex;flex-direction:column;min-height:0`;
+      poolCard.style.cssText = `${innerCardStyle(c1, c2)};flex:1 1 50%;display:flex;flex-direction:column;min-height:0`;
 
       const poolHeader = document.createElement('div');
       poolHeader.style.cssText = 'display:flex;align-items:center;margin-bottom:6px;flex-shrink:0';

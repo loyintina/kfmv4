@@ -78,7 +78,7 @@ function createInjectHandler(meta: Record<string, unknown>): CardContentHandler 
 
       // ── 表单内卡（二级反色框）──
       const formSection = document.createElement('div');
-      formSection.style.cssText = innerCardStyle(c1, c2) + ';display:flex;flex-direction:column;flex-shrink:0';
+      formSection.style.cssText = innerCardStyle(c1, c2) + ';display:flex;flex-direction:column;flex:1 1 50%;min-height:0';
 
       const { row: nameRow, wrap: nameWrap } = mkRow('名称');
       const nameInput = document.createElement('input');
@@ -113,7 +113,7 @@ function createInjectHandler(meta: Record<string, unknown>): CardContentHandler 
 
       // ── 池内卡（二级反色框）──
       const poolCard = document.createElement('div');
-      poolCard.style.cssText = innerCardStyle(c1, c2) + ';flex-shrink:0';
+      poolCard.style.cssText = innerCardStyle(c1, c2) + ';flex:1 1 50%;min-height:0;overflow-y:auto';
 
       const poolTitle = document.createElement('div');
       poolTitle.style.cssText = 'font-size:var(--card-font-size,11px);font-weight:700;color:rgba(255,255,255,0.85);margin-bottom:6px';

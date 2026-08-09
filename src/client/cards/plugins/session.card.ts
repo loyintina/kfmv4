@@ -445,7 +445,7 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
 
       // ===== 预览框（二层反色） =====
       const previewCard = document.createElement('div');
-      previewCard.style.cssText = `${innerCardStyle(c1, c2)};display:flex;flex-direction:column;max-height:70%;min-height:120px`;
+      previewCard.style.cssText = `${innerCardStyle(c1, c2)};display:flex;flex-direction:column;flex:1 1 50%;min-height:0`;
 
       // 顶栏：会话选择器
       const previewHeader = document.createElement('div');
@@ -552,7 +552,7 @@ function createSessionHandler(meta: Record<string, unknown>): CardContentHandler
 
       // ===== 池框（二层反色） =====
       const poolCard = document.createElement('div');
-      poolCard.style.cssText = `${innerCardStyle(c1, c2)};flex:1;display:flex;flex-direction:column;min-height:0`;
+      poolCard.style.cssText = `${innerCardStyle(c1, c2)};flex:1 1 50%;display:flex;flex-direction:column;min-height:0`;
 
       // 顶栏：统计
       const poolHeader = document.createElement('div');

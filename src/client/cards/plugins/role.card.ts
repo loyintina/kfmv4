@@ -324,7 +324,7 @@ function createRoleHandler(meta: Record<string, unknown>): CardContentHandler {
       
       // 编辑表单（内卡样式）
       const formSection = document.createElement('div');
-      formSection.style.cssText = innerCardStyle(c1, c2) + ';margin-top:6px;display:flex;flex-direction:column;max-height:70vh';
+      formSection.style.cssText = innerCardStyle(c1, c2) + ';margin-top:6px;display:flex;flex-direction:column;flex:1 1 50%;min-height:0';
       
       // 顶部选择器（在卡片内部）
       const { row: roleRow, wrap: roleWrap } = mkRow('\u89D2\u8272');
@@ -689,7 +689,7 @@ function createRoleHandler(meta: Record<string, unknown>): CardContentHandler {
 
       // 池列表（内卡样式）
       const poolCard = document.createElement('div');
-      poolCard.style.cssText = innerCardStyle(c1, c2);
+      poolCard.style.cssText = innerCardStyle(c1, c2) + ';flex:1 1 50%;min-height:0;overflow-y:auto';
       
       const poolTitle = document.createElement('div');
       poolTitle.style.cssText = 'font-size:var(--card-font-size,11px);font-weight:700;color:' + TXT_TITLE + ';margin-bottom:6px';

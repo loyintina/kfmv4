@@ -421,7 +421,7 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
       scrollArea.setAttribute('data-scroll', 'api');
       // === Editor Card ===
       const inner = document.createElement('div');
-      inner.style.cssText = `${innerCardStyle(c1, c2)};display:flex;flex-direction:column;max-height:70vh`;
+      inner.style.cssText = `${innerCardStyle(c1, c2)};display:flex;flex-direction:column;flex:1 1 50%;min-height:0`;
 
       const innerScroll = document.createElement('div');
       innerScroll.style.cssText = 'flex:1;overflow-y:auto;min-height:0;touch-action:pan-y';
@@ -518,7 +518,7 @@ function createApiHandler(_meta: Record<string, unknown>): CardContentHandler {
 
       // === Provider Pool Card ===
       const poolCard = document.createElement('div');
-      poolCard.style.cssText = `${innerCardStyle(c1, c2)}`;
+      poolCard.style.cssText = `${innerCardStyle(c1, c2)};flex:1 1 50%;min-height:0;overflow-y:auto`;
       const pt = document.createElement('div');
       pt.textContent = 'Provider 池';
       pt.style.cssText = 'font-size:var(--card-font-size,11px);font-weight:700;color:rgba(255,255,255,0.85);margin-bottom:6px;flex-shrink:0';
