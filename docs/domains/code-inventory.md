@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 5b2b051c · 生成于 2026-08-09 -->
+<!-- 基准 commit e1c145f0 · 生成于 2026-08-09 -->
 
 # 代码清单（机械层）
 
@@ -178,11 +178,11 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（158 文件 · 18722 行）
+## infra（158 文件 · 18723 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| tests/client-logic.test.ts | 953 | — |
+| tests/client-logic.test.ts | 954 | — |
 | tests/regression.test.ts | 654 | — |
 | experiments/coldstart/tools/normalize-arms.mjs | 587 | — |
 | tests/tool-compaction.test.ts | 505 | — |
@@ -656,4 +656,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 305 文件 · 54279 行 · 跨域边 253 条
+合计 305 文件 · 54280 行 · 跨域边 253 条
