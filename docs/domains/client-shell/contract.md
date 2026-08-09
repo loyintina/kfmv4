@@ -51,14 +51,11 @@ renderer-lifecycle → canvas-utils → canvas-cursor → canvas-scroll → tree
 
 ```
 main.ts → gestures.init() → initApp() → initUI() → initGestures() → initOrb()
-        → initTreeRenderer() → loadFileTree() → initLazyLoader() → initCardStack()
-        → markAppReady() → initFloatingCards() → initWsChannel() → initVersionWatch() → initObsHud()
+        → initTreeRenderer() → initLazyLoader() → initCardStack() → markAppReady() → initFloatingCards() → initWsChannel() → initVersionWatch() → initObsHud()
 ```
 
-**初始化就绪守卫（2026-08-10 竞态修复）**：`app-lifecycle.ts` 的 `markAppReady()/isAppReady()`
-在同步 init 全部完成后置位——全局手势的「召唤卡片堆/侧栏」分支在 READY=false 时忽略
-（initGestures 早于 initCardStack，刷新中触摸会操作未就绪状态）；auto-resume 延迟
-800ms 避开早期手势窗口（刷新中召唤卡片堆 → 状态机并发打架 → 卡顿，2026-08-10 事故）。
+**初始化就绪守卫（2026-08-10 竞态修复）**：app-lifecycle.ts markAppReady/isAppReady——
+同步 init 后置位，手势「召唤」READY=false 忽略（initGestures 早于 initCardStack）；auto-resume 延迟 800ms 避早期手势窗口。
 
 ## 观测台 HUD（8.5 史官制度，2026-08-06 立项；2026-08-08 七面定稿）
 
@@ -124,8 +121,7 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
    批量修改用 `L.beginOp`/`L.endOp` 包裹，或确保空闲时执行。案例：2026-05-29 三连 setExpanded。
 9. **拖拽残留状态禁止 if 守卫绕过**：拖拽残留（v7 的 _dragItem，已随重写消亡）的根解是拖拽生命周期由事件系统
    保证，不是在拖拽入口（v7 的 _startFloatingDrag）开头加 if 守卫清场（INVARIANTS §五迁入）。
-10. **侧栏触摸区事件冒泡**：冒泡到 document 会误触发 GestureRegistry——
-    侧栏交互注意事件边界的阻止/隔离（旧 CLAUDE.md 注意事项迁入）。
+10. **侧栏触摸区事件冒泡**：冒泡到 document 会误触发 GestureRegistry——注意事件边界阻止/隔离（旧 CLAUDE.md 迁入）。
 
 ## Z-Index 层级（自 AI_CHAT_RUNTIME §九迁入，2026-07-28）
 
@@ -143,9 +139,8 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
   弹出（config/session/tools 卡的下拉都在弹窗里），低于模态框会被遮住。
 - 全表见 `z-index-layers.ts` / `z-index.css`（`scripts/check/check-zindex.mjs` 强制 JS↔CSS 一致）。
 
-## 素材考古（原文已随 archive 注销，`git show v8.1.1:docs/archive/design/…` 可挖）
-
-- `GESTURE_ARCHITECTURE_SPEC.md`：requireFailure 手势依赖方案（未采用——实际更简方案已落地）。
+## 素材考古（archive 注销可挖，`git show v8.1.1:docs/archive/design/…`）
+- `GESTURE_ARCHITECTURE_SPEC.md`：requireFailure 手势方案未采用（更简方案已落地）。
 
 ## 文件清单
 
