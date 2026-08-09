@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 9f567f33 · 生成于 2026-08-09 -->
+<!-- 基准 commit aaec7cf3 · 生成于 2026-08-09 -->
 
 # 代码清单（机械层）
 
