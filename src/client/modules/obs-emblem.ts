@@ -49,26 +49,25 @@ function mkCanvas(rect: EmblemRect): [HTMLCanvasElement, CanvasRenderingContext2
 }
 
 // ============ A 聚散：随机闭环 ⇄ 深渊菱瞳 + 矩阵时刻 ============
-// 设计（2026-08-08 用户定稿）：无相位状态机。一轮 T 内每个粒子沿「随机闭环」
-// 巡游——起点=终点=自己的形状位，轨迹每轮重生成。轮界瞬间 21 点同归形状位，
-// 形自然浮现；随后各自散入随机路径。**矩阵时刻**：周期中点（T/2）全员恰好
-// 穿过一套「秩序模式」阵位（交错阵/同心环/双链滑移/十字星/横波阵，每轮随机
-// 不连庄），混乱中段闪出第二次小秩序。速率全程缓动：成形前 4s smoothstep
-// 缓减速到 0.1 倍谷底（不停顿），再 4s 缓加速；矩阵时刻另有浅减速窗
-// （0.2 倍谷底、半宽 T/8）。减速点到加速点正好半个周期，中段回到满缓速。
+// 设计（2026-08-09 两节点中点定稿）：一轮 T 内每个粒子沿「随机闭环」巡游——
+// 闭环为**闭合二次 B 样条**：曲线精确穿过控制多边形每条边的中点且处处 C¹
+// 光滑。成形位（形状位 g 与阵位 cell）**不做节点**，而是「两侧翼节点连边」
+// 的中点：侧翼节点沿过点方向对称伸出，间距随机 2~7 格（48~168px）——
+// 粒子穿过成形位时方向天然连续，无节点折角（用户实拍：三节点方案减速前
+// 一个方向、减速后另一个方向）。计时分两段 Hermite：端点斜率直接给出
+// 成形 0.1 倍 / 成阵 0.5 倍谷底速率，中点连续 C¹，精确过位无需修正。
+// 跨轮界方向连续：新一轮形状位边方向 = 上轮抵达方向（gDir 留存）。
 class EmblemGather {
   private glyph: { x: number; y: number }[] = [];
   private t0 = 0;
   private lastT = -1;
   private R: () => number;
-  private v = 0;   // 全员统一速率（缓，均值），px/s
   private thr = 0; // 连线阈值（单阈值）
-  // 每粒子的本轮路径：采样点 + 弧长表；位置由 cumF 解析查表求值（无逐帧积分态）
-  // k=全轮统一推进系数（px/s@f=1）——阵位被等半迭代钉在弧长中点，过阵与
-  // 过轮界同为单一光滑推进，无 k1/k2 分段速度跳变（2026-08-09 同款化定稿）
+  // 每粒子的本轮闭环：二次 B 样条采样点 + 弧长表；arcC=阵位（段4起点）弧长；
+  // gDir=上轮形状位过点方向（跨轮界方向连续用）
   private paths: { xs: number[]; ys: number[]; cum: number[]; len: number }[] = [];
-  private k: number[] = [];
-  private midFix: number[] = []; // 阵位弧长残差（arcC-len/2），sin² 窗修正精确过阵
+  private arcC: number[] = [];
+  private gDir: ({ x: number; y: number } | undefined)[] = [];
   private cells: { x: number; y: number }[] = []; // 本轮阵位（守视验证/阵度用）
   private patName = '';
   private lastPat = -1;
@@ -76,9 +75,9 @@ class EmblemGather {
   private static SHAPE_TAU = 2500; // 轮界前后形可读窗口（ms）
   private static MTAU = 1200;      // 矩阵时刻阵度窗口（ms，±1.2s）
   private static SEG = 60;         // 每段弧长采样数
-  private static FMIN = 0.1;       // 主成形缓动谷底速率比
-  private static FMIN2 = 0.5;      // 矩阵时刻缓动谷底速率比（浅于主成形——
-                                   // 只稍微减速，0.2 实拍减速感太重）
+  private static GRID = 24;        // 布局网格单元 px（obs-hud 定稿：半格 12px）
+  private static FMIN = 0.1;       // 成形谷底速率比（相对本轮均速 len/T）
+  private static FMIN2 = 0.5;      // 成阵谷底速率比（浅于成形——只稍微减速）
   constructor(private w: number, private h: number) {
     this.R = rng(20260808);
     // 深渊菱瞳目标形：菱形 4 顶点 + 每边 2 等分点（12），竖瞳椭圆 8 点，瞳心 1 点
@@ -95,7 +94,6 @@ class EmblemGather {
     g.push({ x: 0.5, y: 0.5 });
     this.glyph = g.map(p => ({ x: p.x * w, y: p.y * h }));
     this.thr = Math.min(w, h) * 0.22; // 连接距离收紧（线网太密，2026-08-08 实拍）
-    this.v = Math.hypot(w, h) * 0.13; // 缓速略提：路径更长、轨迹更发散
     this.regen();
   }
   // 分组：0-11 菱形 / 12-19 竖瞳 / 20 瞳心（独组）
@@ -118,30 +116,33 @@ class EmblemGather {
       }
       p.cum = cum; p.len = cum[cum.length - 1];
     }
-    const FT = EmblemGather.cumF(EmblemGather.T);
-    this.k = this.paths.map(p => p.len / FT);
-    this.midFix = this.paths.map(p => p.cum[3 * EmblemGather.SEG] - p.len / 2);
+    this.arcC = this.paths.map(p => p.cum[4 * EmblemGather.SEG]); // 阵位=段4起点
+    this.gDir = this.gDir.map(d => {
+      if (!d) return d;
+      const x = d.x * fx, y = d.y * fy, l = Math.hypot(x, y) || 1;
+      return { x: x / l, y: y / l };
+    });
     this.thr = Math.min(nw, nh) * 0.22;
-    this.v = Math.hypot(nw, nh) * 0.13;
   }
   // 闭环边（同组相邻 + 首尾相接）：由形状描边层统一画，动态连线跳过以免叠亮
   private static loopEdge(i: number, j: number): boolean {
     return (j === i + 1 && EmblemGather.grp(i) === EmblemGather.grp(j))
       || (i === 0 && j === 11) || (i === 12 && j === 19);
   }
-  // 形状位 + 随机路点 → 闭合 Catmull-Rom 采样 + 弧长表
-  private buildPath(g: { x: number; y: number }, wps: { x: number; y: number }[]): { xs: number[]; ys: number[]; cum: number[]; len: number } {
-    const P = [g, ...wps];
-    const M = P.length;
+  // 控制多边形 → 闭合二次 B 样条采样 + 弧长表。
+  // 二次 B 样条段 j 由控制点 (Cj, Cj+1, Cj+2) 张成，精确起于 mid(Cj,Cj+1)、
+  // 止于 mid(Cj+1,Cj+2)，相邻段公共端点切线一致（C¹）——曲线穿过每条
+  // 控制边的中点，所以「成形位=两侧翼节点连边中点」是精确到达，且过点
+  // 方向=边方向，天然无折角（2026-08-09 两节点中点定稿）
+  private buildSpline(C: { x: number; y: number }[]): { xs: number[]; ys: number[]; cum: number[]; len: number } {
+    const M = C.length;
     const xs: number[] = [], ys: number[] = [];
-    const cr = (a: number, b: number, c: number, d: number, u: number) =>
-      0.5 * (2 * b + (-a + c) * u + (2 * a - 5 * b + 4 * c - d) * u * u + (-a + 3 * b - 3 * c + d) * u * u * u);
     for (let k = 0; k < M; k++) {
-      const p0 = P[(k - 1 + M) % M], p1 = P[k], p2 = P[(k + 1) % M], p3 = P[(k + 2) % M];
+      const c0 = C[k], c1 = C[(k + 1) % M], c2 = C[(k + 2) % M];
       for (let si = 0; si < EmblemGather.SEG; si++) {
-        const u = si / EmblemGather.SEG;
-        xs.push(Math.max(4, Math.min(this.w - 4, cr(p0.x, p1.x, p2.x, p3.x, u))));
-        ys.push(Math.max(4, Math.min(this.h - 4, cr(p0.y, p1.y, p2.y, p3.y, u))));
+        const u = si / EmblemGather.SEG, q = 1 - u;
+        xs.push(Math.max(4, Math.min(this.w - 4, 0.5 * (q * q * c0.x + (-2 * u * u + 2 * u + 1) * c1.x + u * u * c2.x))));
+        ys.push(Math.max(4, Math.min(this.h - 4, 0.5 * (q * q * c0.y + (-2 * u * u + 2 * u + 1) * c1.y + u * u * c2.y))));
       }
     }
     const cum = [0];
@@ -212,38 +213,12 @@ class EmblemGather {
     }
     return pats;
   }
-  // 缓动速率因子 f(t)：主成形窗（半宽 T/4，谷底 FMIN）+ 矩阵时刻浅窗
-  // （半宽 T/8，谷底 FMIN2）——两个秩序时刻各自缓减速再缓加速
-  private static speedF(tMs: number): number {
-    const T = EmblemGather.T;
-    const sm = (x: number) => x * x * (3 - 2 * x);
-    const b1 = 1 - sm(Math.min(1, Math.min(tMs, T - tMs) / (T / 4)));
-    const b2 = 1 - sm(Math.min(1, Math.abs(tMs - T / 2) / (T / 8)));
-    return 1 - (1 - EmblemGather.FMIN) * b1 - (1 - EmblemGather.FMIN2) * b2;
-  }
-  // ∫f 累积表（1ms 步长，惰性构建一次）——位置 = k·F(t) 解析求值，不做逐帧
-  // 积分：消除累积漂移 + 中点钉进度造成的「抖一下」（2026-08-08 用户实拍）
-  private static cumTab: number[] | null = null;
-  private static cumF(tMs: number): number {
-    if (!EmblemGather.cumTab) {
-      const tab = [0];
-      let acc = 0;
-      for (let ms = 1; ms <= EmblemGather.T; ms++) {
-        acc += EmblemGather.speedF(ms - 0.5) * 0.001;
-        tab.push(acc);
-      }
-      EmblemGather.cumTab = tab;
-    }
-    const tab = EmblemGather.cumTab;
-    const x = Math.max(0, Math.min(EmblemGather.T, tMs));
-    const i = Math.floor(x), u = x - i;
-    return tab[i] + (tab[Math.min(i + 1, tab.length - 1)] - tab[i]) * u;
-  }
-  // 每轮重生成随机轨迹：抽一套秩序模式（不连庄），路径节点 =
-  // 形状位 → 随机点 → 阵前切向点 → 阵位 → 阵后切向点 → 随机点（闭合）；
-  // 长度归一（绕形心缩放随机点，阵位钉死不动）
+  // 每轮重生成随机闭环：抽一套秩序模式（不连庄）。控制多边形 =
+  // [g侧翼A0, g侧翼B0, 随机, 随机, 阵侧翼A1, 阵侧翼B1, 随机, 随机]（闭合）——
+  // 段0 起点 = mid(A0,B0) = 形状位 g；段4 起点 = mid(A1,B1) = 阵位 cell。
+  // 侧翼节点沿过点方向对称伸出，间距随机 2~7 格（2026-08-09 用户定稿）；
+  // 形状位边方向延续上轮抵达方向（gDir），跨轮界方向连续无折角
   private regen(): void {
-    const target = this.v * (EmblemGather.T / 1000);
     const pats = EmblemGather.matrixPats(this.w, this.h);
     let pi = Math.floor(this.R() * pats.length);
     if (pi === this.lastPat) pi = (pi + 1) % pats.length;
@@ -251,79 +226,43 @@ class EmblemGather {
     const pat = pats[pi];
     this.patName = pat.name;
     this.cells = pat.cells;
-    const clampP = (p: { x: number; y: number }) => ({
-      x: Math.max(12, Math.min(this.w - 12, p.x)),
-      y: Math.max(12, Math.min(this.h - 12, p.y)),
-    });
+    const G = EmblemGather.GRID;
     this.paths = this.glyph.map((g, i) => {
       const cell = pat.cells[i], dir = pat.dirs[i];
-      const mn = Math.min(this.w, this.h);
-      const lat = () => (this.R() - 0.5) * mn * 0.3;
-      const px = -dir.y, py = dir.x; // 过阵方向的垂直轴（横向抖动用）
-      // 接近点 wp0：优先沿「上轮抵达方向」伸出（离场延续抵达切向）；但若会
-      // 冲到阵位下游（相对过阵方向），改放到阵位上游——顺向流入阵位，不掉头
-      // （2026-08-08 用户实拍：快成阵时突然停下掉头，刻意感）
-      let wp0: { x: number; y: number };
-      if (this.paths.length === 0) {
-        wp0 = clampP({ x: cell.x - dir.x * mn * 0.35 + px * lat(), y: cell.y - dir.y * mn * 0.35 + py * lat() });
-      } else {
-        const p = this.paths[i], nn = p.xs.length;
-        let dx = p.xs[0] - p.xs[(nn - 4 + nn) % nn], dy = p.ys[0] - p.ys[(nn - 4 + nn) % nn];
-        const dl = Math.hypot(dx, dy) || 1; dx /= dl; dy /= dl;
-        const reach = mn * (0.4 + this.R() * 0.35);
-        const cand = { x: g.x + dx * reach + px * lat(), y: g.y + dy * reach + py * lat() };
-        wp0 = (cand.x - cell.x) * dir.x + (cand.y - cell.y) * dir.y > mn * 0.1
-          ? clampP({ x: cell.x - dir.x * mn * (0.3 + this.R() * 0.3) + px * lat(), y: cell.y - dir.y * mn * (0.3 + this.R() * 0.3) + py * lat() })
-          : clampP(cand);
-      }
-      // 离开点 wp1：阵位下游顺向伸出——过阵后顺势流走，不折返
-      const wp1 = clampP({ x: cell.x + dir.x * mn * (0.35 + this.R() * 0.35) + px * lat(), y: cell.y + dir.y * mn * (0.35 + this.R() * 0.35) + py * lat() });
-      // 切向引导点大幅拉远（0.18~0.30 倍短边）且与阵位保持三点共线——
-      // 密集小臂节点会让 CR 切向量级与邻边失配，在成阵处甩出 N 形过冲
-      // （2026-08-09 用户实拍）；臂长按 ±dir 到边界的射线距离收紧，不折断
-      const rayBox = (sgn: number) => {
-        let r = Infinity;
-        if (dir.x * sgn > 1e-6) r = Math.min(r, (this.w - 12 - cell.x) / (dir.x * sgn));
-        if (dir.x * sgn < -1e-6) r = Math.min(r, (12 - cell.x) / (dir.x * sgn));
-        if (dir.y * sgn > 1e-6) r = Math.min(r, (this.h - 12 - cell.y) / (dir.y * sgn));
-        if (dir.y * sgn < -1e-6) r = Math.min(r, (12 - cell.y) / (dir.y * sgn));
-        return r;
+      // 两侧翼节点：中点=P、方向=d、半距随机 1~3.5 格，按 ±d 到边界
+      // （12px 余量）的射线距离收紧——不做 clamp，保持中点精确 = 成形位
+      const wing = (P: { x: number; y: number }, d: { x: number; y: number }) => {
+        const ray = (sgn: number) => {
+          let r = Infinity;
+          if (d.x * sgn > 1e-6) r = Math.min(r, (this.w - 12 - P.x) / (d.x * sgn));
+          if (d.x * sgn < -1e-6) r = Math.min(r, (12 - P.x) / (d.x * sgn));
+          if (d.y * sgn > 1e-6) r = Math.min(r, (this.h - 12 - P.y) / (d.y * sgn));
+          if (d.y * sgn < -1e-6) r = Math.min(r, (12 - P.y) / (d.y * sgn));
+          return r;
+        };
+        const L = Math.max(8, Math.min(G * (1 + this.R() * 2.5), ray(1) - 8, ray(-1) - 8));
+        return [
+          { x: P.x - d.x * L, y: P.y - d.y * L },
+          { x: P.x + d.x * L, y: P.y + d.y * L },
+        ];
       };
-      const arm = Math.max(8, Math.min(mn * (0.18 + this.R() * 0.12), rayBox(1) - 8, rayBox(-1) - 8));
-      const wps = [
-        wp0,
-        { x: cell.x - dir.x * arm, y: cell.y - dir.y * arm },
-        { x: cell.x, y: cell.y },
-        { x: cell.x + dir.x * arm, y: cell.y + dir.y * arm },
-        wp1,
-      ];
-      let path = this.buildPath(g, wps);
-      // 归一带 ±40%：只缩 wp0/wp1，且绕阵位缩——上/下游方位保持，约束不被破坏
-      if (path.len > 1 && Math.abs(path.len - target) / target > 0.4) {
-        const lam = target / path.len;
-        wps[0] = clampP({ x: cell.x + (wps[0].x - cell.x) * lam, y: cell.y + (wps[0].y - cell.y) * lam });
-        wps[4] = clampP({ x: cell.x + (wps[4].x - cell.x) * lam, y: cell.y + (wps[4].y - cell.y) * lam });
-        path = this.buildPath(g, wps);
+      // 形状位过点方向：延续上轮抵达方向；首轮用指向阵位的方向
+      let u = this.gDir[i];
+      if (!u) {
+        const dx = cell.x - g.x, dy = cell.y - g.y, l = Math.hypot(dx, dy) || 1;
+        u = { x: dx / l, y: dy / l };
       }
-      // 弧长等半：绕阵位只缩 wp0，迭代 ≤3 次让阵位落到路径弧长中点——
-      // 全局单一推进系数 k 精确过阵，速率无 k1/k2 分段跳变（2026-08-09
-      // 用户实拍「成阵附近小向移位」：k1≠k2 在 0.5 倍谷底处速度突变；
-      // 轮界同款跳变藏在 0.1 倍谷底里不可见，故菱形不抖——同款化修复）
-      for (let it = 0; it < 6 && path.len > 1; it++) {
-        const ratio = path.cum[3 * EmblemGather.SEG] / path.len;
-        if (Math.abs(ratio - 0.5) < 0.003) break;
-        const lam = Math.max(0.5, Math.min(2, 0.5 / ratio));
-        wps[0] = clampP({ x: cell.x + (wps[0].x - cell.x) * lam, y: cell.y + (wps[0].y - cell.y) * lam });
-        path = this.buildPath(g, wps);
-      }
-      return path;
+      const [A0, B0] = wing(g, u);
+      const [A1, B1] = wing(cell, dir);
+      const gdx = B0.x - A0.x, gdy = B0.y - A0.y, gl = Math.hypot(gdx, gdy) || 1;
+      this.gDir[i] = { x: gdx / gl, y: gdy / gl };
+      const rp = () => ({
+        x: 12 + this.R() * (this.w - 24),
+        y: 12 + this.R() * (this.h - 24),
+      });
+      return this.buildSpline([A0, B0, rp(), rp(), A1, B1, rp(), rp()]);
     });
-    // 阵位已等半到弧长中点附近（迭代粗调），单一 k 全轮通用；
-    // 残差 midFix 由 step 的 sin²(πt/T) 窗修正——t=T/2 精确过阵、
-    // 轮界归零、中点导数为零，全程 C∞ 光滑无速度跳变
-    const FT = EmblemGather.cumF(EmblemGather.T);
-    this.k = this.paths.map(p => p.len / FT);
-    this.midFix = this.paths.map(p => p.cum[3 * EmblemGather.SEG] - p.len / 2);
+    this.arcC = this.paths.map(p => p.cum[4 * EmblemGather.SEG]); // 阵位=段4起点
   }
   // 弧长 → 位置（二分 + 线性插值）
   private at(path: { xs: number[]; ys: number[]; cum: number[]; len: number }, d: number): { x: number; y: number } {
@@ -352,13 +291,21 @@ class EmblemGather {
     // 阵度 m：矩阵时刻前后 ±MTAU 窗——粒子微增亮 + 动态连线全隐（只有点在动）
     const mu = Math.min(1, Math.abs(t - T / 2) / EmblemGather.MTAU);
     const m = 1 - mu * mu * (3 - 2 * mu);
-    // 弧长推进：解析查表 F(t)=∫f，位置 = k·F(t) + midFix·sin²(πt/T)——
-    // 单一 k 全轮光滑；sin² 窗把阵位残差摊到整轮，中点导数为零无速度跳变，
-    // t=T/2 精确过阵、轮界归零（与菱形同款，2026-08-09 定稿）
-    const F = EmblemGather.cumF(t);
-    const sn = Math.sin(Math.PI * t / T);
-    const fix = sn * sn;
-    const pos = this.paths.map((p, i) => this.at(p, Math.min(p.len, this.k[i] * F + this.midFix[i] * fix)));
+    // 弧长推进：两段 Hermite（前半 0→arcC，后半 arcC→len），端点斜率 =
+    // 谷底速率（成形 FMIN、成阵 FMIN2，相对本轮均速 len/T）——中点斜率
+    // 一致 C¹ 连续，t=T/2 精确过阵、t=0/T 精确成形，无需任何修正项；
+    // 半轮中段自然巡航 ~1.5 倍均速（2026-08-09 两节点中点定稿）
+    const pos = this.paths.map((p, i) => {
+      const a = EmblemGather.FMIN * p.len / 2, b = EmblemGather.FMIN2 * p.len / 2;
+      const arcC = this.arcC[i], L = p.len;
+      const half = t < T / 2;
+      const u = half ? t / (T / 2) : (t - T / 2) / (T / 2);
+      const u2 = u * u, u3 = u2 * u;
+      const d = half
+        ? (u3 - 2 * u2 + u) * a + (-2 * u3 + 3 * u2) * arcC + (u3 - u2) * b
+        : (2 * u3 - 3 * u2 + 1) * arcC + (u3 - 2 * u2 + u) * b + (-2 * u3 + 3 * u2) * L + (u3 - u2) * a;
+      return this.at(p, Math.min(L, Math.max(0, d)));
+    });
     // escape-ok: 守视验证钩子——形度/阵度与「粒子-目标位平均距离」原子读出，绕过截图延迟
     const md = pos.reduce((acc, p, i) => acc + Math.hypot(p.x - this.glyph[i].x, p.y - this.glyph[i].y), 0) / pos.length;
     const mc = pos.reduce((acc, p, i) => acc + Math.hypot(p.x - this.cells[i].x, p.y - this.cells[i].y), 0) / pos.length;
