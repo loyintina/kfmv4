@@ -38,15 +38,17 @@ interface Star {
   key: string;
   kind: 'role' | 'file';
   r: number;
-  // 锚位（布局目标，仅淡入滑入期混合用）与物理位置
+  // 锚位（布局目标）与当前位置（淡入期混合滑入）
   tx: number; ty: number;
   x: number; y: number;
-  // N 体引力（三体式，2026-08-09 用户定稿：紫=恒星、青=行星，
-  // 全 N 体牛顿引力 + 软化解 + 恒星锚弹性 + 阻尼；ox/oy 轨道模型废弃）
-  vx: number; vy: number;
-  m: number;          // 质量（恒星大、行星小）
+  // 基线呼吸（v7 波纹脉冲：星锚定，每星独立相位慢脉动）
+  breathPhase: number;
+  breathPeriod: number;
+  // 运行时（非创建字段）：呼吸量 0~1、波纹激发量 0~1（step 每帧写）
+  breath: number;
+  pulse: number;
   active: boolean;
-  bright: number;   // 亮度 0~1（refCount 等）
+  bright: number;   // 基线亮度 0~1（refCount 等）
   fade: number;     // 淡入淡出 0~1
   missing: boolean;
   refCount: number;
@@ -56,10 +58,11 @@ interface Star {
 
 const ROLE_MAX = 24;
 const FILE_MAX = 60;
-// N 体引力常量（v6 用户定稿：能量守恒自由三体——无阻尼/无锚弹性）
-const G = 450;      // 万有引力常数（全 N 体共用）
-const SOFT = 50;    // 软化解 ε²（防 r→0 奇点）
-const MIN_DIST = 4.5; // 近距弹簧半径（防合并，线性保守力）
+// 波纹脉冲常量（v7 用户定稿：声呐式扫描——星锚定，活跃角色周期扩散波纹，
+// 星随波激发闪亮。零 N² 计算、永不相撞永不漂移，性能最低）
+const PULSE_PERIOD = 7;    // 脉冲周期 s（中心发一次波）
+const PULSE_WIDTH = 16;    // 波纹激发带宽 px
+const PULSE_TAIL = 3;      // 保留最近 N 个脉冲的残环（渐隐层次）
 
 class RoleConstellation {
   private stars: Star[] = [];
@@ -175,32 +178,21 @@ class RoleConstellation {
       }
     }
 
-    // —— 新增星（淡入 + 边缘起始 + 切向初速入轨）——
-    const M_sys = wantRoles.reduce((s, r, i) => s + this.massOfRole(i, activeIdx, r.static.length + r.dynamic.length), 0);
+    // —— 新增星（淡入 + 边缘起始，锚定布局位）——
     wantRoles.forEach((r, i) => {
       const key = `r:${r.id}`;
       if (keep.has(key)) return;
       const n = r.static.length + r.dynamic.length;
       const edge = this.R();
-      // 恒星初速：绕系统质心切向（椭圆偏心 k 随机），主星给随机小速
       const ang = roleAng[i], rad = roleRad[i];
-      let vx = 0, vy = 0;
-      if (rad > 2) {
-        const vc = Math.sqrt((G * M_sys) / rad) * (0.55 + this.R() * 0.3);
-        const dir = this.R() < 0.5 ? 1 : -1;
-        vx = -Math.sin(ang) * vc * dir;
-        vy = Math.cos(ang) * vc * dir;
-      } else {
-        vx = (this.R() - 0.5) * 6;
-        vy = (this.R() - 0.5) * 6;
-      }
       const st: Star = {
         key, kind: 'role', r: i === activeIdx ? 3.2 : Math.min(2.6, 1.7 + Math.sqrt(n) * 0.25),
         tx: this.cx + Math.cos(ang) * rad,
         ty: this.cy + Math.sin(ang) * rad,
         x: edge < 0.5 ? 6 : this.w - 6, y: this.R() * this.h,
-        vx, vy,
-        m: this.massOfRole(i, activeIdx, n),
+        breathPhase: this.R() * Math.PI * 2,
+        breathPeriod: 3 + this.R() * 4,
+        breath: 0, pulse: 0,
         active: i === activeIdx, bright: 1, fade: 0, missing: false, refCount: 1, refs: 0, roleIdx: i,
       };
       this.stars.push(st); keep.add(key);
@@ -209,21 +201,13 @@ class RoleConstellation {
       const key = `f:${f.path}`;
       if (keep.has(key)) continue;
       const a = fileAnchor(f.roleIdx);
-      // 行星初速：绕母恒星切向（近圆轨道 0.95 倍圆速度）
-      const parentIdx = f.roleIdx[0];
-      const parentM = this.massOfRole(parentIdx, activeIdx, wantRoles[parentIdx].static.length + wantRoles[parentIdx].dynamic.length);
-      const px = this.cx + Math.cos(roleAng[parentIdx]) * roleRad[parentIdx];
-      const py = this.cy + Math.sin(roleAng[parentIdx]) * roleRad[parentIdx];
-      const dx0 = a.x - px, dy0 = a.y - py;
-      const r0 = Math.max(8, Math.hypot(dx0, dy0));
-      const vt = Math.sqrt((G * parentM) / r0) * 0.95;
-      const nx = -dy0 / r0, ny = dx0 / r0;
       const st: Star = {
         key, kind: 'file', r: f.refCount > 1 ? 1.9 : 1.4,
         tx: a.x, ty: a.y,
         x: this.R() < 0.5 ? 6 : this.w - 6, y: this.R() * this.h,
-        vx: nx * vt, vy: ny * vt,
-        m: 0.4 + f.refCount * 0.25,
+        breathPhase: this.R() * Math.PI * 2,
+        breathPeriod: 3 + this.R() * 4,
+        breath: 0, pulse: 0,
         active: false, bright: Math.min(1, 0.55 + f.refCount * 0.2), fade: 0, missing: f.missing,
         refCount: f.refCount, refs: f.roleIdx.length, roleIdx: f.roleIdx[0],
       };
@@ -252,68 +236,48 @@ class RoleConstellation {
   private extraFiles = 0;
   private extraPts: { x: number; y: number; kind: 'other' }[] = [];
 
-  /** 恒星质量：引用文件越多越重（活跃主星最重） */
-  private massOfRole(i: number, activeIdx: number, n: number): number {
-    const base = 1.6 + n * 0.35;
-    return i === activeIdx ? base + 2.2 : base;
-  }
+  /** 脉冲源：活跃角色的声呐波纹（半径/激发，每帧由 step 推进） */
+  private pulseT = 0;           // 距上次脉冲的时间 s
+  private pulseN = 0;           // 脉冲序号（残环计数用）
+  private lastPulseT = 0;       // 上次脉冲的 t（残环相对年龄）
 
-  /** 每帧：能量守恒自由 N 体（v6 用户定稿——无阻尼/无锚弹性，真正的三体）。
-   *  semi-implicit Euler（辛积分，能量近似守恒）：全 N 体牛顿引力 + 软化解
-   *  防奇点 + 近距弹簧防合并（线性保守力）+ **软墙势**（边界外平滑推回，
-   *  保守力不破坏质心，替代硬反弹——2026-08-09 45s 守视：硬反弹致星贴边
-   *  徘徊 + 质心漂移）+ 每帧质心修正（惯性系，恒星相对运动完全保留）。
-   *  初始位置=布局锚位、初速=切向圆轨道速度——自由混沌演化。 */
+  /** 每帧（v7 波纹脉冲）：锚位缓动（淡入期）+ 星基线呼吸 + 脉冲相位推进。
+   *  零 N² 计算——纯三角函数，性能最低。 */
   step(now: number, dt: number): void {
-    const stars = this.stars;
-    const HARD = 30;     // 近距弹簧刚度
-    const WALL_Z = 14;   // 软墙作用带（px）
-    const WALL_K = 5;    // 软墙刚度
-    // 半隐式 Euler：先 v 后 x（辛，能量漂移远小于显式 Euler）
-    for (const a of stars) {
-      let ax = 0, ay = 0;
-      for (const b of stars) {
-        if (b === a) continue;
-        const dx = b.x - a.x, dy = b.y - a.y;
-        const rr = Math.hypot(dx, dy) || 1e-6;
-        const r2 = rr * rr + SOFT;
-        const inv = 1 / rr;
-        let f = G * b.m / r2;
-        // 近距防合并：线性弹簧斥力（保守力，不破坏能量守恒）
-        if (rr < MIN_DIST) f -= (MIN_DIST - rr) * HARD / rr;
-        ax += f * dx * inv;
-        ay += f * dy * inv;
-      }
-      // 软墙势：边界带内平滑推回（保守力，星靠近被缓推回场内而非硬弹）
-      if (a.x < WALL_Z) ax += (WALL_Z - a.x) * WALL_K;
-      else if (a.x > this.w - WALL_Z) ax -= (a.x - (this.w - WALL_Z)) * WALL_K;
-      if (a.y < WALL_Z) ay += (WALL_Z - a.y) * WALL_K;
-      else if (a.y > this.h - WALL_Z) ay -= (a.y - (this.h - WALL_Z)) * WALL_K;
-      a.vx += ax * dt;
-      a.vy += ay * dt;
+    // 脉冲推进：每 PULSE_PERIOD 中心发一次波
+    this.pulseT += dt;
+    if (this.pulseT >= PULSE_PERIOD) {
+      this.pulseT -= PULSE_PERIOD;
+      this.pulseN++;
+      this.lastPulseT = this.pulseT;
     }
-    // 质心修正：惯性系（总动量归零，系统整体不漂移；相对运动零影响）
-    let sx = 0, sy = 0, sm = 0;
-    for (const a of stars) { sx += a.m * a.vx; sy += a.m * a.vy; sm += a.m; }
-    if (sm > 0) {
-      const vcx = sx / sm, vcy = sy / sm;
-      for (const a of stars) { a.vx -= vcx; a.vy -= vcy; }
-    }
-    for (const a of stars) {
-      a.x += a.vx * dt;
-      a.y += a.vy * dt;
-      // 极端保底 clamp（软墙正常拦得住，这里几乎不触发）
-      if (a.x < 1) { a.x = 1; a.vx = Math.abs(a.vx); }
-      else if (a.x > this.w - 1) { a.x = this.w - 1; a.vx = -Math.abs(a.vx); }
-      if (a.y < 1) { a.y = 1; a.vy = Math.abs(a.vy); }
-      else if (a.y > this.h - 1) { a.y = this.h - 1; a.vy = -Math.abs(a.vy); }
-      // 淡入滑入：物理位与锚位混合（fade 期过渡）
-      if (a.fade < 1) {
-        const mix = Math.min(1, a.fade);
-        a.x += (a.tx - a.x) * (1 - mix) * 0.25;
-        a.y += (a.ty - a.y) * (1 - mix) * 0.25;
+    const maxR = Math.max(this.w, this.h) * 0.6;
+    // 激发量：每帧清零重算（波纹带扫过即亮、离开回落）
+    const distToCenter = (s: Star): number => Math.hypot(s.x - this.cx, s.y - this.cy);
+    for (const s of this.stars) {
+      s.pulse = 0;
+      if (s.fade < 1) {
+        const mix = Math.min(1, s.fade);
+        s.x += (s.tx - s.x) * (1 - mix) * 0.25;
+        s.y += (s.ty - s.y) * (1 - mix) * 0.25;
       }
-      a.fade = Math.min(1, a.fade + 0.03);
+      s.fade = Math.min(1, s.fade + 0.03);
+    }
+    for (let k = 0; k < PULSE_TAIL; k++) {
+      // 残环年龄：当前环 age=0（半径 0→maxR），第 k 个残环已传播 k·PERIOD
+      const age = this.pulseT + k * PULSE_PERIOD;
+      const rr = (age / (PULSE_TAIL * PULSE_PERIOD)) * maxR;
+      const alpha = Math.max(0, 1 - age / (PULSE_TAIL * PULSE_PERIOD));
+      if (alpha <= 0.02) continue;
+      for (const s of this.stars) {
+        const d = distToCenter(s);
+        const hit = Math.max(0, 1 - Math.abs(d - rr) / PULSE_WIDTH);
+        s.pulse = Math.max(s.pulse, hit * alpha * (s.active ? 0.9 : 1));
+      }
+    }
+    // 呼吸
+    for (const s of this.stars) {
+      s.breath = 0.5 + 0.5 * Math.sin(now / 1000 * (Math.PI * 2 / s.breathPeriod) + s.breathPhase);
     }
   }
 
@@ -324,18 +288,31 @@ class RoleConstellation {
   draw(ctx: CanvasRenderingContext2D, now: number): void {
     ctx.clearRect(0, 0, this.w, this.h);
     const byKey = new Map(this.stars.map(s => [s.key, s]));
-    // 连线：角色→文件（只画已淡入的）
+    // 波纹环（声呐脉冲：活跃角色为中心，PULSE_TAIL 个残环渐隐）
+    const maxR = Math.max(this.w, this.h) * 0.6;
+    for (let k = 0; k < PULSE_TAIL; k++) {
+      const age = this.pulseT + k * PULSE_PERIOD;
+      const rr = (age / (PULSE_TAIL * PULSE_PERIOD)) * maxR;
+      const alpha = Math.max(0, 1 - age / (PULSE_TAIL * PULSE_PERIOD));
+      if (alpha <= 0.02 || rr <= 0.5) continue;
+      ctx.strokeStyle = `rgba(${CYAN},${(0.1 + 0.16 * alpha) * (1 - rr / maxR + 0.3)})`;
+      ctx.lineWidth = 0.6 + alpha * 0.7;
+      ctx.beginPath();
+      ctx.arc(this.cx, this.cy, rr, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    // 连线：角色→文件（透明度受激发抬升——波纹扫过时连线也亮）
     for (const s of this.stars) {
       if (s.kind !== 'file' || s.fade < 0.2) continue;
       const refs = this.roles
         .map((r, i) => ({ r, i }))
         .filter(({ r, i }) => s.roleIdx !== undefined && (r.static.some(f => f.path === s.key.slice(2)) || r.dynamic.some(f => f.path === s.key.slice(2))));
-      // 用 refCount 对应角色数：直接连所有引用角色（≤2 根线，多引用用平均锚位表达）
       for (const { i } of refs) {
         const roleStar = byKey.get(`r:${this.roles[i].id}`);
         if (!roleStar) continue;
         const active = roleStar.active;
-        ctx.strokeStyle = active ? `rgba(${CYAN},${0.4 * s.fade})` : `rgba(${VIOLET},${0.22 * s.fade})`;
+        const boost = 0.25 + Math.min(1, s.pulse) * 0.75;
+        ctx.strokeStyle = active ? `rgba(${CYAN},${0.4 * boost * s.fade})` : `rgba(${VIOLET},${0.22 * boost * s.fade})`;
         ctx.lineWidth = active ? 0.7 : 0.5;
         ctx.beginPath();
         ctx.moveTo(s.x, s.y);
@@ -343,34 +320,34 @@ class RoleConstellation {
         ctx.stroke();
       }
     }
-    // 点
+    // 点：亮度 = 基线呼吸 + 波纹激发（扫过闪亮后回落）
     for (const s of this.stars) {
       if (s.fade <= 0.01) continue;
       const a = Math.min(1, s.fade);
-      const p = s;
+      const exc = Math.min(1, s.pulse);
+      const size = s.r * (1 + s.breath * 0.14 + exc * 0.5);
       if (s.kind === 'role') {
-        const col = s.active ? VIOLET : VIOLET;
-        const r = s.r;
-        // 光晕（2026-08-09 定稿：整体缩小——星偏大）
-        ctx.fillStyle = `rgba(${col},${0.2 * a})`;
-        ctx.beginPath(); ctx.arc(p.x, p.y, r * 2.2, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = `rgba(${col},${0.95 * a})`;
-        ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fill();
-        // 活跃：外圈淡光圈（呼吸）
+        const col = VIOLET;
+        const glow = 0.2 + exc * 0.5 + s.breath * 0.08;
+        ctx.fillStyle = `rgba(${col},${glow * a})`;
+        ctx.beginPath(); ctx.arc(s.x, s.y, size * 2.2, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = `rgba(${col},${(0.7 + exc * 0.3) * a})`;
+        ctx.beginPath(); ctx.arc(s.x, s.y, size, 0, Math.PI * 2); ctx.fill();
+        // 活跃：外圈淡光圈（呼吸）+ 脉冲源标记
         if (s.active) {
-          const br = 2.4 + Math.sin(now / 900) * 0.4 + 1.8;
-          ctx.strokeStyle = `rgba(${CYAN},${(0.16 + 0.14 * Math.sin(now / 900)) * a})`;
+          const br = (2.4 + Math.sin(now / 900) * 0.4 + 1.8) * (1 + exc * 0.4);
+          ctx.strokeStyle = `rgba(${CYAN},${(0.16 + 0.14 * Math.sin(now / 900) + exc * 0.4) * a})`;
           ctx.lineWidth = 1;
-          ctx.beginPath(); ctx.arc(p.x, p.y, br, 0, Math.PI * 2); ctx.stroke();
+          ctx.beginPath(); ctx.arc(s.x, s.y, br, 0, Math.PI * 2); ctx.stroke();
         }
       } else {
         const col = s.missing ? GREY : CYAN;
         const bright = s.missing ? 0.35 : s.bright;
-        ctx.fillStyle = `rgba(${col},${(0.55 + 0.45 * bright) * a})`;
-        ctx.beginPath(); ctx.arc(p.x, p.y, s.r, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = `rgba(${col},${(0.5 + 0.3 * bright + exc * 0.5 + s.breath * 0.1) * a})`;
+        ctx.beginPath(); ctx.arc(s.x, s.y, size, 0, Math.PI * 2); ctx.fill();
         if (s.refCount > 1) { // 共用文件微晕
-          ctx.fillStyle = `rgba(${col},${0.12 * a})`;
-          ctx.beginPath(); ctx.arc(p.x, p.y, s.r * 2.1, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = `rgba(${col},${(0.1 + exc * 0.25) * a})`;
+          ctx.beginPath(); ctx.arc(s.x, s.y, size * 2.1, 0, Math.PI * 2); ctx.fill();
         }
       }
     }
