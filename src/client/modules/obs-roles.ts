@@ -122,9 +122,10 @@ class RoleConstellation {
   /** 绘制环形弦图（外环角色段/内环文件段/弦线） */
   draw(ctx: CanvasRenderingContext2D, now: number): void {
     ctx.clearRect(0, 0, this.w, this.h);
-    // v12/v13：半径回缩 15px（w/2-3-15）、**圆心保持 v11 位置不变**
-    // （cy = 旧半径+2 = w/2-1，2026-08-09 用户定稿）
-    const R1 = this.w / 2 - 3 - 15;
+    // v14 落日定稿（2026-08-09 用户裁决）：尺寸最大——R 顶满左右（w/2-3），
+    // 圆心保持 v13 位置（cy=w/2-1）——上缘留 2px 不超上界，下界作地平线
+    // 把外环/内环都截断一部分（canvas 自然裁剪）
+    const R1 = this.w / 2 - 3;
     const R2 = R1 * 0.62;
     const rotA = now / 1000 * ROT_A;   // 外环顺转
     const rotB = now / 1000 * ROT_B;   // 内环逆转
