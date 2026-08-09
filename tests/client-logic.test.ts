@@ -490,12 +490,13 @@ regression('BAR-CARD-BLUR-01', 'floating-card', '浮卡拖拽期挂起 backdrop-
   assert(saveBody.includes('_restoreCardBlur'), 'onSavePosition 必须恢复模糊（pointercancel 由 drag-handler 保证到达）');
 });
 
-regression('BAR-LEAK-01', 'config.card', 'config.card 的 window 监听必须在 deactivate 移除（session 监听 2026-08-03 设计移除，剩 provider/model 两个）', () => {
+regression('BAR-LEAK-01', 'config.card', 'config.card 监听纪律：占位无监听；若未来重建必须遵守监听管理（字段存 handler + deactivate 移除）', () => {
   const src = readFileSync('src/client/cards/plugins/config.card.ts', 'utf-8');
-  // 曾只挂不摘：每次激活泄漏闭包（持过期 editingConfig/select 引用）
-  assert(src.includes('_onProviderChange') && src.includes('_onModelChange'), 'handler 必须存字段（匿名函数无法移除）');
-  const deact = src.split('deactivate')[1] || '';
-  assert(deact.includes('removeEventListener'), 'deactivate 必须 removeEventListener');
+  // 2026-08-09 配置卡清空占位（无实际作用，面板直接读写 active.json）——占位后无
+  // window 监听，泄漏面归零；未来重建若加监听，必须字段存 handler + deactivate 移除
+  // （曾只挂不摘：每次激活泄漏闭包，2026-08-03 事故）。
+  assert(src.includes('配置组（占位）') || src.includes('占位'), '配置卡应为占位实现');
+  assert(!src.includes('_onProviderChange') || !src.includes('addEventListener'), '占位不应注册 provider 监听（若已重建，须按监听管理纪律）');
 });
 
 regression('BAR-LEAK-02', 'session.card', 'session.card 的 kfm-session-change 监听必须在 deactivate 移除', () => {
