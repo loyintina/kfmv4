@@ -122,24 +122,23 @@ class RoleConstellation {
   /** 绘制环形弦图（外环角色段/内环文件段/弦线） */
   draw(ctx: CanvasRenderingContext2D, now: number): void {
     ctx.clearRect(0, 0, this.w, this.h);
-    // v9：外环顶满框宽（椭圆 rx=宽/2、ry 受高约束），双环反向旋转（纯时间函数）
-    const rx = this.w / 2 - 3;
-    const ry = this.h / 2 - 6;
-    const rx2 = rx * 0.62, ry2 = ry * 0.62;
+    // v10：正圆顶满框宽（R=宽/2-3，下界允许超 canvas——用户定稿；
+    // 去掉环上脉冲呼吸），双环反向旋转保留
+    const R1 = this.w / 2 - 3;
+    const R2 = R1 * 0.62;
     const rotA = now / 1000 * ROT_A;   // 外环顺转
     const rotB = now / 1000 * ROT_B;   // 内环逆转
     const cx = this.cx, cy = this.cy;
     const activeIdx = this.roleSegs.findIndex(s => s.active);
-    // 椭圆参数式取点（弦端点/控制点随各自环旋转）
-    const pt = (ang: number, rx: number, ry: number) =>
-      ({ x: cx + Math.cos(ang) * rx, y: cy + Math.sin(ang) * ry });
+    const pt = (ang: number, r: number) =>
+      ({ x: cx + Math.cos(ang) * r, y: cy + Math.sin(ang) * r });
 
     // 弦线（先画，压在环下）：外环段中心(旋转后) → 内环段中心(反向旋转后)
     for (const c of this.chords) {
       const a = c.from + rotA, b = c.to + rotB;
-      const p0 = pt(a, rx, ry);
-      const p1 = pt(b, rx2, ry2);
-      const pm = pt((a + b) / 2, (rx + rx2) / 2, (ry + ry2) / 2);
+      const p0 = pt(a, R1);
+      const p1 = pt(b, R2);
+      const pm = pt((a + b) / 2, (R1 + R2) / 2);
       ctx.strokeStyle = c.active ? `rgba(${CYAN},0.4)` : `rgba(${VIOLET},0.22)`;
       ctx.lineWidth = c.active ? 0.9 : 0.6;
       ctx.beginPath();
@@ -148,17 +147,13 @@ class RoleConstellation {
       ctx.stroke();
     }
 
-    // 外环：角色分段弧（随 rotA 顺转，活跃段青色描边+呼吸）
-    const breathe = 0.5 + 0.5 * Math.sin(now / 900);
+    // 外环：角色分段弧（随 rotA 顺转，活跃段青色固定加亮——无呼吸脉冲）
     this.roleSegs.forEach((s, i) => {
-      const lineW = s.active ? 4 + breathe * 1.4 : 3.2;
-      ctx.strokeStyle = s.active
-        ? `rgba(${CYAN},${0.55 + breathe * 0.4})`
-        : `rgba(${VIOLET},${0.4 + (i === activeIdx ? 0 : 0)})`;
-      ctx.lineWidth = lineW;
+      ctx.strokeStyle = s.active ? `rgba(${CYAN},0.6)` : `rgba(${VIOLET},0.4)`;
+      ctx.lineWidth = s.active ? 4 : 3.2;
       ctx.lineCap = 'round';
       ctx.beginPath();
-      ctx.ellipse(cx, cy, rx, ry, 0, s.a0 + rotA + 0.04, s.a1 + rotA - 0.04);
+      ctx.arc(cx, cy, R1, s.a0 + rotA + 0.04, s.a1 + rotA - 0.04);
       ctx.stroke();
     });
 
@@ -170,24 +165,23 @@ class RoleConstellation {
       ctx.lineWidth = s.refCount > 1 ? 2.6 : 2;
       ctx.lineCap = 'round';
       ctx.beginPath();
-      ctx.ellipse(cx, cy, rx2, ry2, 0, s.a0 + rotB + 0.05, s.a1 + rotB - 0.05);
+      ctx.arc(cx, cy, R2, s.a0 + rotB + 0.05, s.a1 + rotB - 0.05);
       ctx.stroke();
     });
 
-    // 中心：活跃角色小核（信息锚点，非星点装饰）
-    const coreR = 2.2 + breathe * 0.8;
-    ctx.fillStyle = `rgba(${CYAN},${0.5 + breathe * 0.3})`;
-    ctx.beginPath(); ctx.arc(cx, cy, coreR, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = `rgba(${CYAN},${0.2 + breathe * 0.15})`;
+    // 中心：活跃角色小核（固定亮度，信息锚点）
+    ctx.fillStyle = `rgba(${CYAN},0.55)`;
+    ctx.beginPath(); ctx.arc(cx, cy, 2.6, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = `rgba(${CYAN},0.28)`;
     ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.arc(cx, cy, coreR + 3.5 + breathe * 1.2, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, 6.2, 0, Math.PI * 2); ctx.stroke();
 
     // 聚合截断计数（灰细弧提示还有更多）
     if (this.extraRoles > 0 || this.extraFiles > 0) {
       ctx.strokeStyle = `rgba(${GREY},0.35)`;
       ctx.lineWidth = 1;
       ctx.setLineDash([2, 3]);
-      ctx.beginPath(); ctx.ellipse(cx, cy, rx + 5, ry + 5, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx, cy, R1 + 5, 0, Math.PI * 2); ctx.stroke();
       ctx.setLineDash([]);
     }
   }
