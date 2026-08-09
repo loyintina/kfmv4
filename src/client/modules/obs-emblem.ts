@@ -35,7 +35,7 @@ const BLUE = '59,130,246';
 function mkCanvas(rect: EmblemRect): [HTMLCanvasElement, CanvasRenderingContext2D, number, number] {
   const cv = document.createElement('canvas');
   cv.className = 'obs-emblem';
-  cv.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;pointer-events:none;z-index:${Z.CENTER_CONTENT}`;
+  cv.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;pointer-events:none;z-index:${Z.CENTER_CONTENT};transition:opacity .6s ease`;
   // DPR 上限 1.5（原 2）：粒子/细线图标 1.5 足够清晰，像素量降 44%——
   // 移动端发热优化（2026-08-09 用户实拍徽标上线后手机发热明显）
   const dpr = Math.min(1.5, window.devicePixelRatio || 1);
@@ -359,6 +359,9 @@ export function initObsEmblems(getRects: () => EmblemRects | null): { relayout: 
   let engines: { step: (ctx: CanvasRenderingContext2D, now: number, dt: number) => void; resize?: (nw: number, nh: number) => void }[] = [];
   let ctxs: CanvasRenderingContext2D[] = [];
   let curRect: EmblemRect | null = null;
+  let renderOn = true;   // 绘制开关（淡出播完才关，淡入前就开——保证运动态渐变）
+  let occState = false;  // 当前遮挡状态
+  let fadeTimer = 0;
 
   const build = () => {
     const r = getRects();
@@ -380,6 +383,14 @@ export function initObsEmblems(getRects: () => EmblemRects | null): { relayout: 
     for (const el of els) el.remove();
     els = []; ctxs = [];
     const [cvA, ctxA, wA, hA] = mkCanvas(r.pocket);
+    // 遮挡期重建的画布直接以隐藏态落位（不播淡入，避免无故闪一下）
+    if (occState) {
+      cvA.style.transition = 'none';
+      cvA.style.opacity = '0';
+      void cvA.offsetWidth;
+      cvA.style.transition = '';
+      renderOn = false;
+    }
     els = [cvA]; ctxs = [ctxA];
     if (engines.length === 1) {
       // 尺寸真变了：画布换新，引擎原地 resize——周期/进度连续，不重启不瞬移
@@ -392,33 +403,54 @@ export function initObsEmblems(getRects: () => EmblemRects | null): { relayout: 
   };
 
   build();
-  // 遮挡探测（2026-08-09 用户定稿：被卡片堆/浮卡/文件树盖住时不渲染）——
-  // 1.5s 一次在口袋区取 5 个采样点做 elementFromPoint，过半被盖即视为遮挡。
-  // 网格背景=.main 自身（命中子元素=聊天消息/卡片=遮挡）；徽标画布
-  // pointer-events:none 天然被命中测试跳过。遮挡期只停绘制：粒子位置是
-  // 当前时间的纯函数，恢复时无缝接续，无追赶无跳变
-  let occluded = false;
+  // 遮挡淡出/淡入（2026-08-09 v2 用户实拍定稿：硬切停绘在关卡卡帧时会
+  // 「卡住再跳变」，改透明度渐变藏交接）——检测到遮挡：动画继续运动播
+  // 淡出（opacity .6s），淡完才停绘；检测到移除：先恢复绘制（运动态）
+  // 再播淡入。1.5s 一次 elementFromPoint 五点探测，网格背景=.main 自身
+  // （命中子元素=聊天消息/卡片=遮挡）；≥3/5 判遮挡、≤1/5 才判恢复，
+  // 半遮边界迟滞不来回闪。粒子位置是当前时间的纯函数，停绘期时间照走。
   const mainEl = document.querySelector('.main');
-  const probe = () => {
-    if (!mainEl) { occluded = false; return; } // 找不到网格背景宁可常画，不误杀
-    if (!curRect || els.length === 0) { occluded = true; return; }
-    let covered = 0, total = 0;
+  const applyOcc = (occ: boolean, animate: boolean) => {
+    const cv = els[0];
+    if (!animate) { // 首次探测直接落位，不播动画
+      occState = occ; renderOn = !occ;
+      if (cv) {
+        cv.style.transition = 'none';
+        cv.style.opacity = occ ? '0' : '1';
+        void cv.offsetWidth;
+        cv.style.transition = '';
+      }
+      return;
+    }
+    if (occ === occState) return;
+    occState = occ;
+    clearTimeout(fadeTimer);
+    if (occ) { // 淡出：继续绘制（运动态）opacity→0，淡完停绘
+      if (cv) cv.style.opacity = '0';
+      fadeTimer = window.setTimeout(() => { renderOn = false; }, 650);
+    } else {     // 淡入：先恢复绘制（保证运动态）再 opacity→1
+      renderOn = true;
+      if (cv) cv.style.opacity = '1';
+    }
+  };
+  const probe = (first = false) => {
+    if (!mainEl) { applyOcc(false, !first); return; } // 找不到网格背景宁可常画，不误杀
+    if (!curRect || els.length === 0) { applyOcc(true, !first); return; }
+    let covered = 0;
     for (const [fx, fy] of [[0.5, 0.5], [0.25, 0.3], [0.75, 0.3], [0.25, 0.7], [0.75, 0.7]]) {
       const el = document.elementFromPoint(curRect.left + curRect.width * fx, curRect.top + curRect.height * fy);
-      if (!el) continue;
-      total++;
-      if (el !== mainEl) covered++;
+      if (el && el !== mainEl) covered++;
     }
-    occluded = total > 0 && covered * 2 >= total;
+    applyOcc(occState ? covered > 1 : covered >= 3, !first);
   };
-  setInterval(probe, 1500);
-  probe();
+  setInterval(() => probe(), 1500);
+  probe(true);
   let last = 0, lastStep = 0;
   const loop = (now: number) => {
     // 30fps 节流（原逐帧 60fps）：徽标运动极缓，30fps 观感无差，绘制功耗减半
-    // （2026-08-09 移动端发热优化）；遮挡期整段跳过（连 30fps 都不画），
-    // rAF 空转帧成本可忽略，失焦浏览器自停
-    if (!occluded && now - lastStep >= 33) {
+    // （2026-08-09 移动端发热优化）；淡出完成后 renderOn=false 整段跳过
+    // （连 30fps 都不画），rAF 空转帧成本可忽略，失焦浏览器自停
+    if (renderOn && now - lastStep >= 33) {
       const dt = Math.min(0.05, (now - last) / 1000 || 0.016);
       last = now; lastStep = now;
       for (let i = 0; i < engines.length; i++) engines[i].step(ctxs[i], now, dt);
