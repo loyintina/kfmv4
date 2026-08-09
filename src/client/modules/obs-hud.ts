@@ -200,12 +200,13 @@ export function initObsHud(): void {
     perms.style.width = `${stk.left + stk.width - srr.left}px`;
     perms.style.top = `${stk.bottom + 10}px`;
     perms.style.height = `${inputTop - 10 - perms.getBoundingClientRect().top}px`;
-    // 角色卡星座图（2026-08-09 定稿：左列大区，系统下、待办左；巡逻/token 腾空处）
+    // 角色卡星座图（2026-08-09 v2 定稿：左列大区，三边 10px 间距同步——
+    // 右界=待办左缘-10、上界=系统底+10、下界=权限顶-10，标题栏取消）
     rolesRect = {
       left: srr.left,
       top: srr.bottom + 10,
-      width: stk.left - srr.left,
-      height: Math.max(60, stk.bottom - 10 - (srr.bottom + 10)),
+      width: stk.left - 10 - srr.left,
+      height: Math.max(60, stk.bottom - srr.bottom - 10),
     };
     const rsig = JSON.stringify(rolesRect, (k, v) => typeof v === 'number' ? Math.round(v) : v);
     if (rsig !== lastRolesSig) { lastRolesSig = rsig; roles?.relayout(); }
@@ -225,12 +226,11 @@ export function initObsHud(): void {
   let lastEmblemSig = '';
   let rolesRect: RolesRect | null = null;
   let lastRolesSig = '';
-  let rolesStat: { totalRoles: number; totalFiles: number } | null = null;
   // 深蓝意志动态徽标 A 聚散（2026-08-09 用户实拍裁决：留 A，B 潮汐/C 轨道取消，
   // 三画布收敛单画布）；getRects 惰性读 placeRail 算好的几何
   const emblems = initObsEmblems(() => emblemRects);
-  // 角色卡星座图（全角色关系网 · C 轨道极缓缓动 · 纯光点，同日定稿）
-  const roles = initObsRoles(() => rolesRect, () => rolesStat);
+  // 角色卡星座图（全角色关系网 · C 轨道极缓缓动 · 纯光点，同日定稿；v2 去标题栏）
+  const roles = initObsRoles(() => rolesRect);
   placeRail();
   window.addEventListener('resize', placeRail);
   // 竖条高度钉死 = 系统区 + 端口区恰好 4 行窗口（2026-08-07 用户定稿 v2：4 整行硬切，
@@ -708,7 +708,6 @@ ${body}</div>
         const key = JSON.stringify(j.roles);
         if (key !== lastRolesKey) {
           lastRolesKey = key;
-          rolesStat = { totalRoles: j.roles.totalRoles, totalFiles: j.roles.totalFiles };
           roles.onData(j.roles);
         }
       }

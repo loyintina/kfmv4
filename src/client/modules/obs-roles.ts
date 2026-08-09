@@ -109,7 +109,8 @@ class RoleConstellation {
     for (const f of keptFiles) wantFiles.set(f.path, f);
 
     // —— 锚位表 ——
-    const R1 = Math.min(this.w, this.h) * 0.30;
+    // 2026-08-09 用户定稿：星整体缩小 + 环半径内缩（轨道公转不再推出界）
+    const R1 = Math.min(this.w, this.h) * 0.26;
     const nRole = wantRoles.length;
     const roleAng: number[] = [];
     const roleRad: number[] = [];
@@ -177,11 +178,11 @@ class RoleConstellation {
       const n = r.static.length + r.dynamic.length;
       const edge = this.R();
       const st: Star = {
-        key, kind: 'role', r: i === activeIdx ? 4 : Math.min(3.4, 2.2 + Math.sqrt(n) * 0.35),
+        key, kind: 'role', r: i === activeIdx ? 3.2 : Math.min(2.6, 1.7 + Math.sqrt(n) * 0.25),
         tx: this.cx + Math.cos(roleAng[i]) * roleRad[i],
         ty: this.cy + Math.sin(roleAng[i]) * roleRad[i],
-        x: edge < 0.5 ? -6 : this.w + 6, y: this.R() * this.h,
-        oa: 2 + this.R() * 4, ob: 2 + this.R() * 4, oang: this.R() * Math.PI,
+        x: edge < 0.5 ? 6 : this.w - 6, y: this.R() * this.h,
+        oa: 1.5 + this.R() * 2, ob: 1.5 + this.R() * 2, oang: this.R() * Math.PI,
         operiod: 20 + this.R() * 40, ophase: this.R() * Math.PI * 2,
         active: i === activeIdx, bright: 1, fade: 0, missing: false, refCount: 1, refs: 0, roleIdx: i,
       };
@@ -192,10 +193,10 @@ class RoleConstellation {
       if (keep.has(key)) continue;
       const a = fileAnchor(f.roleIdx);
       const st: Star = {
-        key, kind: 'file', r: f.refCount > 1 ? 2.3 : 1.7,
+        key, kind: 'file', r: f.refCount > 1 ? 1.9 : 1.4,
         tx: a.x, ty: a.y,
-        x: this.R() < 0.5 ? -6 : this.w + 6, y: this.R() * this.h,
-        oa: 1.5 + this.R() * 3, ob: 1.5 + this.R() * 3, oang: this.R() * Math.PI,
+        x: this.R() < 0.5 ? 6 : this.w - 6, y: this.R() * this.h,
+        oa: 1 + this.R() * 1.6, ob: 1 + this.R() * 1.6, oang: this.R() * Math.PI,
         operiod: 20 + this.R() * 40, ophase: this.R() * Math.PI * 2,
         active: false, bright: Math.min(1, 0.55 + f.refCount * 0.2), fade: 0, missing: f.missing,
         refCount: f.refCount, refs: f.roleIdx.length, roleIdx: f.roleIdx[0],
@@ -271,14 +272,14 @@ class RoleConstellation {
       if (s.kind === 'role') {
         const col = s.active ? VIOLET : VIOLET;
         const r = s.r;
-        // 光晕
-        ctx.fillStyle = `rgba(${col},${0.22 * a})`;
-        ctx.beginPath(); ctx.arc(s.x, s.y, r * 2.6, 0, Math.PI * 2); ctx.fill();
+        // 光晕（2026-08-09 定稿：整体缩小——星偏大）
+        ctx.fillStyle = `rgba(${col},${0.2 * a})`;
+        ctx.beginPath(); ctx.arc(s.x, s.y, r * 2.2, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = `rgba(${col},${0.95 * a})`;
         ctx.beginPath(); ctx.arc(s.x, s.y, r, 0, Math.PI * 2); ctx.fill();
         // 活跃：外圈淡光圈（呼吸）
         if (s.active) {
-          const br = 3 + Math.sin(now / 900) * 0.5 + 2.2;
+          const br = 2.4 + Math.sin(now / 900) * 0.4 + 1.8;
           ctx.strokeStyle = `rgba(${CYAN},${(0.16 + 0.14 * Math.sin(now / 900)) * a})`;
           ctx.lineWidth = 1;
           ctx.beginPath(); ctx.arc(s.x, s.y, br, 0, Math.PI * 2); ctx.stroke();
@@ -289,8 +290,8 @@ class RoleConstellation {
         ctx.fillStyle = `rgba(${col},${(0.55 + 0.45 * bright) * a})`;
         ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill();
         if (s.refCount > 1) { // 共用文件微晕
-          ctx.fillStyle = `rgba(${col},${0.14 * a})`;
-          ctx.beginPath(); ctx.arc(s.x, s.y, s.r * 2.4, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = `rgba(${col},${0.12 * a})`;
+          ctx.beginPath(); ctx.arc(s.x, s.y, s.r * 2.1, 0, Math.PI * 2); ctx.fill();
         }
       }
     }
@@ -304,32 +305,25 @@ class RoleConstellation {
 
 export function initObsRoles(
   getRect: () => RolesRect | null,
-  getStatus: () => { totalRoles: number; totalFiles: number } | null,
 ): { onData: (d: RolesData) => void; relayout: () => void } {
   const container = document.createElement('div');
   container.className = 'obs-roles';
-  container.innerHTML = `
-    <div class="obs-inbox-head"><span class="obs-inbox-title">角色</span><span class="obs-roles-status"></span></div>
-    <canvas class="obs-roles-canvas"></canvas>
-  `;
+  container.innerHTML = `<canvas class="obs-roles-canvas"></canvas>`;
   container.style.zIndex = String(Z.CENTER_CONTENT);
   document.body.appendChild(container);
-  const statusEl = container.querySelector<HTMLElement>('.obs-roles-status')!;
   const cv = container.querySelector<HTMLCanvasElement>('.obs-roles-canvas')!;
   const ctx = cv.getContext('2d')!;
   const dpr = Math.min(1.5, window.devicePixelRatio || 1);
-  let w = 0, h = 0;
   let engine: RoleConstellation | null = null;
   let lastData: RolesData | null = null;
   let renderOn = true;
   let occState = false;
   let fadeTimer = 0;
 
-  const headEl = container.querySelector<HTMLElement>('.obs-inbox-head')!;
+  // 2026-08-09 用户定稿：标题栏整个取消（纯光点图，无文字）——canvas 铺满全面板
   const sizeCanvas = () => {
-    const hh = headEl.offsetHeight || 38;
-    const cw = container.clientWidth, ch = container.clientHeight - hh;
-    cv.style.cssText = `position:absolute;left:0;top:${hh}px;width:100%;height:${ch}px;pointer-events:none`;
+    const cw = container.clientWidth, ch = container.clientHeight;
+    cv.style.cssText = `position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none`;
     cv.width = Math.max(1, Math.round(cw * dpr));
     cv.height = Math.max(1, Math.round(ch * dpr));
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -350,8 +344,6 @@ export function initObsRoles(
     if (!engine) engine = new RoleConstellation(r.width, r.height);
     else engine.resize(r.width, r.height);
     if (lastData) engine.setData(lastData);
-    const st = getStatus();
-    if (st) statusEl.textContent = `${st.totalRoles}卡 · ${st.totalFiles}文件`;
   };
 
   // 遮挡淡出/淡入（同 obs-emblem v2 方案：五点探测 + 迟滞 + 运动态渐变）
@@ -406,8 +398,6 @@ export function initObsRoles(
     onData(d: RolesData) {
       lastData = d;
       if (engine) engine.setData(d);
-      const st = getStatus();
-      if (st) statusEl.textContent = `${st.totalRoles}卡 · ${st.totalFiles}文件`;
     },
     relayout: build,
   };
