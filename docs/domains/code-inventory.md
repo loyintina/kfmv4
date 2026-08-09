@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 9d4ff8b3 · 生成于 2026-08-09 -->
+<!-- 基准 commit 547c1d40 · 生成于 2026-08-09 -->
 
 # 代码清单（机械层）
 
@@ -162,11 +162,11 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（10 文件 · 2303 行）
+## server（10 文件 · 2309 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/server/routes/obs.ts | 707 | setupObsRoutes, setupObsPages |
+| src/server/routes/obs.ts | 713 | setupObsRoutes, setupObsPages |
 | src/server/routes/files.ts | 417 | FileItem, sliceMessages, MSG_PAYLOAD_BUDGET, MSG_SINGLE_CAP, capMessagesPayload, setupFileRoutes |
 | src/server/ws-server.ts | 315 | WsServer |
 | src/server/index.ts | 186 | — |
@@ -177,7 +177,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（153 文件 · 18478 行）
+## infra（153 文件 · 18479 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -293,8 +293,8 @@
 | scripts/check/check-consistency.mjs | 51 | — |
 | scripts/check/check-uncommitted.mjs | 51 | — |
 | tests/doc-scripts.test.ts | 51 | — |
+| tests/permissions.test.ts | 50 | — |
 | scripts/check/gen-route-table.mjs | 49 | — |
-| tests/permissions.test.ts | 49 | — |
 | package.json | 49 | — |
 | tests/session-flush.test.ts | 48 | — |
 | scripts/kfm-restart.sh | 46 | — |
@@ -649,4 +649,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 299 文件 · 53809 行 · 跨域边 252 条
+合计 299 文件 · 53816 行 · 跨域边 252 条
