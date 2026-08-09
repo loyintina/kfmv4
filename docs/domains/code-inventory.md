@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 0753f889 · 生成于 2026-08-09 -->
+<!-- 基准 commit 9d4ff8b3 · 生成于 2026-08-09 -->
 
 # 代码清单（机械层）
 
@@ -177,7 +177,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（153 文件 · 18470 行）
+## infra（153 文件 · 18478 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -258,6 +258,7 @@
 | tests/engine.test.ts | 85 | — |
 | scripts/check/check-state-freshness.mjs | 84 | — |
 | scripts/check/gen-experiments-list.mjs | 84 | — |
+| scripts/check/check-kfmv4-data.mjs | 83 | — |
 | scripts/check/check-experiment-index.mjs | 81 | — |
 | scripts/check/check-hooks.mjs | 81 | — |
 | scripts/agent/exp-thinking.mjs | 81 | — |
@@ -269,7 +270,6 @@
 | scripts/check/check-experiment-registry.mjs | 76 | — |
 | scripts/check/docs-status.mjs | 76 | — |
 | scripts/check/check-doc-symbols.mjs | 75 | — |
-| scripts/check/check-kfmv4-data.mjs | 75 | — |
 | experiments/coldstart/tools/theme-code.mjs | 75 | — |
 | scripts/check/check-code-doc-refs.mjs | 69 | — |
 | scripts/check/check-card-meta.mjs | 68 | — |
@@ -649,4 +649,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 299 文件 · 53801 行 · 跨域边 252 条
+合计 299 文件 · 53809 行 · 跨域边 252 条
