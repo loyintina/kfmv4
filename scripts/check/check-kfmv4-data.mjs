@@ -14,7 +14,7 @@ import { existsSync, readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 
-const DATA_HOME = process.env.KFM_DATA_HOME || join(homedir(), '.kfmv4');
+const DATA_HOME = process.env.KFM_PROBE_ROOT || process.env.KFM_DATA_HOME || join(homedir(), '.kfmv4');
 const errors = [];
 const warnings = [];
 

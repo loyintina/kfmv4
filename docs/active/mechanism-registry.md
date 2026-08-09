@@ -22,8 +22,8 @@
 | 读写监狱（path-utils sanitizePath） | 核心 | 全（运行时） | 路径逃逸 → 拒绝 + 日志 | 运行时 BAR 钉 |
 | 测试隔离 env-test-isolation | 核心 | 全 | 测试污染生产区 → check-kfmv4-data 报红 | ✓（间接） |
 | 生成器族 gen-* | 核心 | 全（--check-only） | 生成物与源漂移 → 中断 | ✓（多数） |
-| 数据区结构 check-kfmv4-data | 核心 | 全 | 账本回潮/结构违例 → 中断 | ✗ 无探针（候选） |
-| 工具压缩登记 tool-compaction | 核心 | 全 | 新工具无压缩登记 → 中断 | ✗ 无探针（候选） |
+| 数据区结构 check-kfmv4-data | 核心 | 全 | 账本回潮/结构违例 → 中断 | ✓（2026-08-09 补） |
+| 工具压缩登记 tool-compaction | 核心 | 全 | 新工具无压缩登记 → 中断 | ✓（2026-08-09 补） |
 | 外部来源登记 external-sources | 外围 | 约定（pre-code-gate 清单） | 引外部代码没人登记 → 升级踩坑才知（滞后） | —（接受滞后+抽查） |
 | 工作流系统 workflows | 核心 | 约定 + workflow-integrity | 工作流引用失效 → MECH-FLOW-05 | ✓（consistency） |
 
@@ -38,4 +38,7 @@
 ## 历史
 
 - 2026-08-09 立项：机制注册表（递归终止框架落地第一步）。盘点 17 个机制，
-  4 个核心检查器无探针（探针补强候选），外围机制接受滞后信号。
+  4 个核心检查器无探针。
+- 2026-08-09 体检：17 机制失效信号全部可验证或合理豁免（report：
+  harness-studies/mechanism-audit-2026-08-09.md）；补 kfmv4-data + tool-compaction
+  探针（22→24）；contract-freshness/secrets 为 git 历史型豁免（有据）。

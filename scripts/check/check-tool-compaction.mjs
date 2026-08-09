@@ -27,7 +27,7 @@ import { join } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = fileURLToPath(new URL('../../', import.meta.url));
-const ROOT = __dirname;
+const ROOT = process.env.KFM_PROBE_ROOT || __dirname;
 
 void process.argv.includes('--check-only'); // 兼容参数，见文件头
 
