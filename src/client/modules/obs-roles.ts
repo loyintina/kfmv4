@@ -130,7 +130,8 @@ class RoleConstellation {
     const rotA = now / 1000 * ROT_A;   // 外环顺转
     const rotB = now / 1000 * ROT_B;   // 内环逆转
     const cx = this.cx;
-    const cy = this.w / 2 - 1;
+    // v16：圆（含圆心）整体下移 1 格 = 24px（2026-08-09 用户定稿）
+    const cy = this.w / 2 - 1 + 24;
     const activeIdx = this.roleSegs.findIndex(s => s.active);
     const pt = (ang: number, r: number) =>
       ({ x: cx + Math.cos(ang) * r, y: cy + Math.sin(ang) * r });
