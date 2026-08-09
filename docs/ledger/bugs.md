@@ -38,7 +38,7 @@
 | BAR-104 | `d4a60f7` | 挂机重连：已完成 run 补齐续读 / fromIndex 续读 / supersede 取代 | I | ✅ 已钉（104a/b/c，revert 验证） | `tests/run-manager.test.ts` |
 | BAR-105 | `da39891` | 取消时未完成工具卡卡在「忙碌中」 | L | ✅ 已钉（105a-c，剥离 cancelPendingToolBlocks，revert 验证） | `tests/chat-protocol.test.ts` |
 | BAR-106 | `7ac8f47` | Claude 工具块非零起始 index → content 空洞 → `reading type` 崩溃 | L | ✅ 已钉（106a-d，剥离 createClientIdxMapper，revert 验证） | `tests/chat-protocol.test.ts` |
-| BAR-107 | `(commit 待回填)` | 生产构建下 browser 工具永远 30s 超时：dist 从不打包 tab-worker 入口 → new NodeWorker 指向不存在文件 → 异步 error 无人监听 → 干等 ready；另 aria-snapshot.bundle.txt 资产 dist 从未复制 | L | ✅ 已钉（107a-c，剥离 resolveTabWorkerEntry，revert 验证真红） | `tests/browser-tool.test.ts` |
+| BAR-107 | `131e2215` | 生产构建下 browser 工具永远 30s 超时：dist 从不打包 tab-worker 入口 → new NodeWorker 指向不存在文件 → 异步 error 无人监听 → 干等 ready；另 aria-snapshot.bundle.txt 资产 dist 从未复制 | L | ✅ 已钉（107a-c，剥离 resolveTabWorkerEntry，revert 验证真红） | `tests/browser-tool.test.ts` |
 
 ### 第二批：服务端 + 安全边界
 

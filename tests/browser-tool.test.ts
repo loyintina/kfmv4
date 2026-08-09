@@ -29,7 +29,7 @@ function makeDir(files: string[]): string {
   return dir;
 }
 
-regression('BAR-107a', 'fix-head', '只有 .js（生产构建产物）→ 返回 .js 路径', () => {
+regression('BAR-107a', '131e2215', '只有 .js（生产构建产物）→ 返回 .js 路径', () => {
   const dir = makeDir(['tab-worker-entry.js']);
   try {
     const got = resolveTabWorkerEntry(dir);
@@ -37,7 +37,7 @@ regression('BAR-107a', 'fix-head', '只有 .js（生产构建产物）→ 返回
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
-regression('BAR-107b', 'fix-head', '只有 .ts（源码模式）→ 返回 .ts 路径', () => {
+regression('BAR-107b', '131e2215', '只有 .ts（源码模式）→ 返回 .ts 路径', () => {
   const dir = makeDir(['tab-worker-entry.ts']);
   try {
     const got = resolveTabWorkerEntry(dir);
@@ -45,7 +45,7 @@ regression('BAR-107b', 'fix-head', '只有 .ts（源码模式）→ 返回 .ts �
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
-regression('BAR-107c', 'fix-head', '都没有 → 返回 null（调用方降级 inline，不再干等 30s）', () => {
+regression('BAR-107c', '131e2215', '都没有 → 返回 null（调用方降级 inline，不再干等 30s）', () => {
   const dir = makeDir(['unrelated.js']);
   try {
     assert.strictEqual(resolveTabWorkerEntry(dir), null, '入口缺失必须返回 null');
