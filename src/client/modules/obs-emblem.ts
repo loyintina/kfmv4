@@ -35,7 +35,7 @@ const BLUE = '59,130,246';
 function mkCanvas(rect: EmblemRect): [HTMLCanvasElement, CanvasRenderingContext2D, number, number] {
   const cv = document.createElement('canvas');
   cv.className = 'obs-emblem';
-  cv.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;pointer-events:none;z-index:${Z.CENTER_CONTENT};transition:opacity .6s ease`;
+  cv.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;pointer-events:none;z-index:${Z.CENTER_CONTENT};transition:opacity .9s ease`;
   // DPR 上限 1.5（原 2）：粒子/细线图标 1.5 足够清晰，像素量降 44%——
   // 移动端发热优化（2026-08-09 用户实拍徽标上线后手机发热明显）
   const dpr = Math.min(1.5, window.devicePixelRatio || 1);
@@ -388,7 +388,7 @@ export function initObsEmblems(getRects: () => EmblemRects | null): { relayout: 
       cvA.style.transition = 'none';
       cvA.style.opacity = '0';
       void cvA.offsetWidth;
-      cvA.style.transition = 'opacity .6s ease'; // 复位要还原过渡，置空会把 cssText 里的 transition 一并清掉
+      cvA.style.transition = 'opacity .9s ease'; // 复位要还原过渡，置空会把 cssText 里的 transition 一并清掉
       renderOn = false;
     }
     els = [cvA]; ctxs = [ctxA];
@@ -405,7 +405,7 @@ export function initObsEmblems(getRects: () => EmblemRects | null): { relayout: 
   build();
   // 遮挡淡出/淡入（2026-08-09 v2 用户实拍定稿：硬切停绘在关卡卡帧时会
   // 「卡住再跳变」，改透明度渐变藏交接）——检测到遮挡：动画继续运动播
-  // 淡出（opacity .6s），淡完才停绘；检测到移除：先恢复绘制（运动态）
+  // 淡出（opacity .9s），淡完才停绘；检测到移除：先恢复绘制（运动态）
   // 再播淡入。1.5s 一次 elementFromPoint 五点探测，网格背景=.main 自身
   // （命中子元素=聊天消息/卡片=遮挡）；≥3/5 判遮挡、≤1/5 才判恢复，
   // 半遮边界迟滞不来回闪。粒子位置是当前时间的纯函数，停绘期时间照走。
@@ -418,7 +418,7 @@ export function initObsEmblems(getRects: () => EmblemRects | null): { relayout: 
         cv.style.transition = 'none';
         cv.style.opacity = occ ? '0' : '1';
         void cv.offsetWidth;
-        cv.style.transition = 'opacity .6s ease'; // 复位要还原过渡——置空曾致淡入淡出全失效（2026-08-09 用户实拍）
+        cv.style.transition = 'opacity .9s ease'; // 复位要还原过渡——置空曾致淡入淡出全失效（2026-08-09 用户实拍）
       }
       return;
     }
@@ -427,7 +427,7 @@ export function initObsEmblems(getRects: () => EmblemRects | null): { relayout: 
     clearTimeout(fadeTimer);
     if (occ) { // 淡出：继续绘制（运动态）opacity→0，淡完停绘
       if (cv) cv.style.opacity = '0';
-      fadeTimer = window.setTimeout(() => { renderOn = false; }, 650);
+      fadeTimer = window.setTimeout(() => { renderOn = false; }, 950);
     } else {     // 淡入：先恢复绘制（保证运动态）再 opacity→1
       renderOn = true;
       if (cv) cv.style.opacity = '1';

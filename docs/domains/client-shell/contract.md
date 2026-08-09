@@ -71,7 +71,7 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
   防周期重启；2026-08-09 用户实拍裁决：留 A，B 潮汐/C 轨道取消，
   三画布收敛单画布）；**移动端降耗链**：DPR≤1.5 + 30fps 节流 +
   连线距离²比较 + **遮挡淡出淡入**（elementFromPoint 五点探测，
-  遮挡时运动态播 opacity .6s 淡出后停绘、去遮挡先恢复绘制再淡入，
+  遮挡时运动态播 opacity .9s 淡出后停绘、去遮挡先恢复绘制再淡入，
   半遮迟滞 ≥3/5↔≤1/5；粒子位置=当前时间纯函数故停绘零状态）；
   守视验证钩子 `__emblemDbg`（escape-ok 已标）；
   逐轮实拍细节 → ./detail-obs-hud.md 徽标节）
