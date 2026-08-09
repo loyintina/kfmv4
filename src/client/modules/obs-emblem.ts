@@ -1,23 +1,20 @@
 /**
- * obs-emblem.ts — 深蓝意志动态徽标（2026-08-08 用户定稿：三方案同屏试映）
+ * obs-emblem.ts — 深蓝意志动态徽标（2026-08-09 用户实拍裁决：留 A，B/C 取消）
  *
- * 点线移动连接的纯动态结构，作为项目动态 logo。三案并映待用户实拍裁决：
+ * 点线移动连接的纯动态结构，作为项目动态 logo：
  *   A 聚散（中央口袋：脉搏/执勤/信箱/SYS 四框围出的竖区）——混沌漂移 ⇄ 收拢成
  *     深渊菱瞳（菱形框+竖瞳），秩序从无形浮现，聚的瞬间是节奏锚点
- *   B 潮汐（待办左侧竖带上半）——竖向波层上升流，纯氛围无图形
- *   C 轨道（待办左侧竖带下半）——意志核利萨如绕行，牵引余点拖尾
+ *   （B 潮汐 / C 轨道试映后于 2026-08-09 裁决取消，三画布收敛为单画布）
  *
- * 纪律：单 rAF 三画布共享；pointer-events:none 纯展示；DPR 适配；
- *   失焦由浏览器自停 rAF（复用观测台既有能耗纪律）；mulberry32 定种子伪随机。
+ * 纪律：单 rAF 单画布；pointer-events:none 纯展示；DPR 上限 1.5 + 30fps 节流
+ *   （移动端降耗）；失焦由浏览器自停 rAF；mulberry32 定种子伪随机。
  */
 
 import { Z } from './z-index-layers.js';
 
 export interface EmblemRect { left: number; top: number; width: number; height: number }
 export interface EmblemRects {
-  pocket: EmblemRect;   // A：中央口袋
-  stripTop: EmblemRect; // B：待办左竖带上半
-  stripBot: EmblemRect; // C：待办左竖带下半
+  pocket: EmblemRect; // A：中央口袋
 }
 
 // 确定性伪随机（与 pulseStyle 同族：定种子，重绘不跳变）
@@ -355,113 +352,8 @@ class EmblemGather {
   }
 }
 
-// ============ B 潮汐：竖向波层上升流 ============
-class EmblemTide {
-  private cols: { phase: number; speed: number; off: number }[] = [];
-  constructor(private w: number, private h: number) {
-    const R = rng(20260809);
-    for (let c = 0; c < 7; c++) {
-      this.cols.push({ phase: R() * Math.PI * 2, speed: 0.75 + R() * 0.5, off: R() });
-    }
-  }
-  resize(nw: number, nh: number): void { this.w = nw; this.h = nh; } // 全场由 w/h 逐帧推导，改数即可
-  step(ctx: CanvasRenderingContext2D, now: number): void {
-    const { w, h } = this;
-    const t = now / 1000;
-    ctx.clearRect(0, 0, w, h);
-    const per = 9;
-    const grid: { x: number; y: number; a: number }[][] = [];
-    for (let c = 0; c < this.cols.length; c++) {
-      const col = this.cols[c];
-      const cx = (c + 0.5) * (w / this.cols.length);
-      const pts: { x: number; y: number; a: number }[] = [];
-      for (let j = 0; j < per; j++) {
-        // 上升循环：底部淡入顶部淡出，各列错位
-        const prog = ((j / per) + t * col.speed / 16 + col.off) % 1;
-        const y = h + 6 - prog * (h + 12);
-        const x = cx + Math.sin(y * 0.05 + t * 1.1 + col.phase) * w * 0.055;
-        const a = Math.sin(prog * Math.PI); // 两端淡出
-        pts.push({ x, y, a });
-        ctx.fillStyle = `rgba(${CYAN},${0.75 * a})`;
-        ctx.beginPath(); ctx.arc(x, y, 1.3, 0, Math.PI * 2); ctx.fill();
-      }
-      grid.push(pts);
-    }
-    // 相邻波层同排连线（潮纹横索）
-    for (let c = 0; c < grid.length - 1; c++) {
-      for (let j = 0; j < per; j++) {
-        const p = grid[c][j], q = grid[c + 1][j];
-        const a = Math.min(p.a, q.a) * 0.34;
-        ctx.strokeStyle = `rgba(${BLUE},${a})`;
-        ctx.lineWidth = 0.6;
-        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
-      }
-    }
-  }
-}
 
-// ============ C 轨道：意志核利萨如绕行 ============
-class EmblemOrbit {
-  private sats: { r0: number; om: number; ph: number }[] = [];
-  private trail: { x: number; y: number }[] = [];
-  constructor(private w: number, private h: number) {
-    const R = rng(20260810);
-    for (let i = 0; i < 12; i++) {
-      this.sats.push({ r0: (0.18 + R() * 0.26) * Math.min(w, h), om: (0.25 + R() * 0.4) * (R() > 0.5 ? 1 : -1), ph: R() * Math.PI * 2 });
-    }
-  }
-  resize(nw: number, nh: number): void { // 轨道半径按短边比缩放，尾迹坐标等比映射
-    const f = Math.min(nw, nh) / Math.min(this.w, this.h);
-    const fx = nw / this.w, fy = nh / this.h;
-    this.w = nw; this.h = nh;
-    for (const s of this.sats) s.r0 *= f;
-    for (const p of this.trail) { p.x *= fx; p.y *= fy; }
-  }
-  step(ctx: CanvasRenderingContext2D, now: number): void {
-    const { w, h } = this;
-    const t = now / 1000;
-    const cx = w / 2, cy = h / 2;
-    // 意志核：慢利萨如（3:2，周期 ~24s）
-    const T = t * (Math.PI * 2 / 24);
-    const core = {
-      x: cx + w * 0.30 * Math.sin(3 * T + 1.7),
-      y: cy + h * 0.34 * Math.sin(2 * T + 0.4),
-    };
-    this.trail.push(core);
-    if (this.trail.length > 42) this.trail.shift();
-    ctx.clearRect(0, 0, w, h);
-    // 尾迹渐隐折线
-    for (let i = 1; i < this.trail.length; i++) {
-      const a = (i / this.trail.length) * 0.30;
-      ctx.strokeStyle = `rgba(${VIOLET},${a})`;
-      ctx.lineWidth = 0.8;
-      ctx.beginPath(); ctx.moveTo(this.trail[i - 1].x, this.trail[i - 1].y); ctx.lineTo(this.trail[i].x, this.trail[i].y); ctx.stroke();
-    }
-    // 卫星：本位轨道 + 核邻近牵引
-    const satPos: { x: number; y: number }[] = [];
-    for (const s of this.sats) {
-      const bx = cx + Math.cos(s.ph + t * s.om) * s.r0;
-      const by = cy + Math.sin(s.ph + t * s.om) * s.r0 * 1.25; // 竖区拉纵向
-      const d = Math.hypot(bx - core.x, by - core.y);
-      const k = 0.22 * Math.exp(-(d * d) / (2 * 26 * 26));
-      const x = bx * (1 - k) + core.x * k, y = by * (1 - k) + core.y * k;
-      satPos.push({ x, y });
-      const a = 0.18 + 0.5 * Math.exp(-(d * d) / (2 * 30 * 30));
-      ctx.strokeStyle = `rgba(${BLUE},${a})`;
-      ctx.lineWidth = 0.6;
-      ctx.beginPath(); ctx.moveTo(core.x, core.y); ctx.lineTo(x, y); ctx.stroke();
-      ctx.fillStyle = `rgba(${CYAN},0.75)`;
-      ctx.beginPath(); ctx.arc(x, y, 1.2, 0, Math.PI * 2); ctx.fill();
-    }
-    // 核：紫光焦点
-    ctx.fillStyle = `rgba(${VIOLET},0.95)`;
-    ctx.beginPath(); ctx.arc(core.x, core.y, 2.2, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = `rgba(${VIOLET},0.22)`;
-    ctx.beginPath(); ctx.arc(core.x, core.y, 5.5, 0, Math.PI * 2); ctx.fill();
-  }
-}
-
-// ============ 装配：三画布共享单 rAF ============
+// ============ 装配：单画布单 rAF（2026-08-09 裁决留 A，B/C 画布取消） ============
 export function initObsEmblems(getRects: () => EmblemRects | null): { relayout: () => void } {
   let els: HTMLCanvasElement[] = [];
   let engines: { step: (ctx: CanvasRenderingContext2D, now: number, dt: number) => void; resize?: (nw: number, nh: number) => void }[] = [];
@@ -475,29 +367,25 @@ export function initObsEmblems(getRects: () => EmblemRects | null): { relayout: 
       return;
     }
     // 尺寸基本没变（±2px）只挪画布位置——亚像素几何波动连画布都不用换
-    const rects = [r.pocket, r.stripTop, r.stripBot];
-    if (els.length === 3) {
-      const same = rects.every((rc, i) =>
-        Math.abs(rc.width - parseFloat(els[i].style.width)) <= 2 &&
-        Math.abs(rc.height - parseFloat(els[i].style.height)) <= 2);
+    if (els.length === 1) {
+      const same = Math.abs(r.pocket.width - parseFloat(els[0].style.width)) <= 2 &&
+        Math.abs(r.pocket.height - parseFloat(els[0].style.height)) <= 2;
       if (same) {
-        rects.forEach((rc, i) => { els[i].style.left = `${rc.left}px`; els[i].style.top = `${rc.top}px`; });
+        els[0].style.left = `${r.pocket.left}px`; els[0].style.top = `${r.pocket.top}px`;
         return;
       }
     }
     for (const el of els) el.remove();
     els = []; ctxs = [];
     const [cvA, ctxA, wA, hA] = mkCanvas(r.pocket);
-    const [cvB, ctxB, wB, hB] = mkCanvas(r.stripTop);
-    const [cvC, ctxC, wC, hC] = mkCanvas(r.stripBot);
-    els = [cvA, cvB, cvC]; ctxs = [ctxA, ctxB, ctxC];
-    if (engines.length === 3) {
+    els = [cvA]; ctxs = [ctxA];
+    if (engines.length === 1) {
       // 尺寸真变了：画布换新，引擎原地 resize——周期/进度连续，不重启不瞬移
-      (window as unknown as { __emblemRz: number }).__emblemRz = ((window as unknown as { __emblemRz: number }).__emblemRz || 0) + 1; // escape-ok: 守视计数（试映期临时）
-      engines[0].resize?.(wA, hA); engines[1].resize?.(wB, hB); engines[2].resize?.(wC, hC);
+      (window as unknown as { __emblemRz: number }).__emblemRz = ((window as unknown as { __emblemRz: number }).__emblemRz || 0) + 1; // escape-ok: 守视计数（调试期临时）
+      engines[0].resize?.(wA, hA);
     } else {
-      (window as unknown as { __emblemRb: number }).__emblemRb = ((window as unknown as { __emblemRb: number }).__emblemRb || 0) + 1; // escape-ok: 守视计数（试映期临时）
-      engines = [new EmblemGather(wA, hA), new EmblemTide(wB, hB), new EmblemOrbit(wC, hC)];
+      (window as unknown as { __emblemRb: number }).__emblemRb = ((window as unknown as { __emblemRb: number }).__emblemRb || 0) + 1; // escape-ok: 守视计数（调试期临时）
+      engines = [new EmblemGather(wA, hA)];
     }
   };
 

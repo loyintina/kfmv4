@@ -52,10 +52,10 @@ check-failures/build-metrics 各 100KB，permission-audit 暂缓）
 扩展面候选：调用统计（agent-calls 聚合）、permission-audit 审批分布
 （87% allow 分布单一，暂缓）、prompts/ 测绘缺口。
 
-## 深蓝意志动态徽标（2026-08-08 三案并映试映，待用户实拍裁决留一）
+## 深蓝意志动态徽标（2026-08-09 用户实拍裁决：留 A 聚散，B 潮汐/C 轨道取消）
 
 - 模块：`src/client/modules/obs-emblem.ts`（obs-hud 装配，几何随 placeRail 注入；
-  单 rAF 三画布共享，pointer-events:none，mulberry32 定种子；
+  单 rAF 单画布（B/C 画布随裁决移除），pointer-events:none，mulberry32 定种子；
   **移动端降耗**（2026-08-09 用户实拍发热）：DPR 上限 1.5（像素 -44%）+
   30fps 节流（绘制功耗减半）+ 连线距离²比较免开方）
 - A **聚散**（中央口袋：脉搏/执勤/信箱/SYS 围出的竖区）：**两节点中点定稿**

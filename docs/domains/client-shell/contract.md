@@ -65,10 +65,11 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
   ——布局定位、数据口径、示警色规（琥珀黄示警、红只留硬失败）、信箱/待办手势滑动
   全禁改 5s 自动翻屏等**逐轮定稿细节 → ./detail-obs-hud.md**
 - 动态徽标：`src/client/modules/obs-emblem.ts`（深蓝意志 logo，同域同装配链，
-  几何随 placeRail 注入；A 聚散已定稿为**随机闭环缓动巡游 + 矩阵时刻**
-  （无相位状态机，轨迹随机、起终点同位、谷底 0.1 倍不停顿的半周期速率
-  缓动窗、周期中点五套秩序模式随机闪现、引擎原地 resize 防周期重启），
-  B 潮汐/C 轨道仍试映；守视验证钩子 `__emblemDbg`（escape-ok 已标）；
+  几何随 placeRail 注入；A 聚散定稿为**两节点中点闭合二次 B 样条巡游 +
+  矩阵时刻**（成形位=两侧翼节点连边中点方向天然连续、两段 Hermite 计时
+  谷底 0.1/0.5 倍速率、周期中点五套秩序模式随机闪现、引擎原地 resize
+  防周期重启；2026-08-09 用户实拍裁决：留 A，B 潮汐/C 轨道取消，
+  三画布收敛单画布）；守视验证钩子 `__emblemDbg`（escape-ok 已标）；
   逐轮实拍细节 → ./detail-obs-hud.md 徽标节）
 - **渲染纪律：数据未变不重渲染**（JSON key 比对）——innerHTML 重建重置滚动位，
   5s 一次等于自动翻屏页位乱跳（2026-08-06 守视实拍抓获）；变时保存/恢复 scrollTop
