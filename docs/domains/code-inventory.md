@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit cb752bfa · 生成于 2026-08-09 -->
+<!-- 基准 commit 5b2b051c · 生成于 2026-08-09 -->
 
 # 代码清单（机械层）
 
@@ -36,22 +36,22 @@
 | src/client/engine/v2/animation.ts | 40 | ease |
 | src/client/engine/v2/utils.ts | 24 | uniformSpacing, hvSpacing, ZERO_SPACING |
 
-## floating-card（31 文件 · 8613 行）
+## floating-card（31 文件 · 8292 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/client/generated/scripts-catalog.ts | 1355 | ScriptCatalogEntry, SCRIPTS_CATALOG, SCRIPT_CATEGORIES |
 | src/client/modules/floating-card.ts | 811 | enterFullscreen, exitFullscreen, dismissFullscreen, updateFullscreenSavedPosition, createFloatingCard, dismissFloatingCard, initFloatingCards, hasFloatingCard, buildCardLayout |
 | src/client/modules/terminal-card-04.ts | 807 | TerminalCardMeta, initTerminalCore, disposeTerminalCore, compactTerminalCore, createTerminal04Handler |
-| src/client/cards/plugins/role.card.ts | 711 | — |
+| src/client/cards/plugins/role.card.ts | 740 | — |
 | src/client/cards/plugins/session.card.ts | 619 | — |
-| src/client/cards/plugins/config.card.ts | 600 | — |
-| src/client/cards/plugins/api.card.ts | 562 | — |
+| src/client/cards/plugins/api.card.ts | 596 | — |
 | src/client/modules/card-stack.ts | 502 | getCardCount, getCard, getCardName, getCardId, hexToRgba, cardGradient, cardBg, getFocusIndex, getCurrentAccent, getCardHandler, getFocusedCardRect, animateStackPullFeedback, launchFocusedCard, openCardStack, closeCardStack, isCardStackOpen, focusNext, focusPrev, initCardStack |
 | src/client/cards/plugins/tools.card.ts | 308 | — |
 | src/client/modules/tmux-card.ts | 306 | TmuxCardMeta, createTmuxCardHandler |
 | src/client/modules/renderers/handler-factory.ts | 297 | createFileHandler |
 | src/client/cards/plugins/scripts.card.ts | 272 | — |
+| src/client/cards/plugins/config.card.ts | 216 | — |
 | src/client/modules/floating-fullscreen.ts | 214 | enterFullscreen, exitFullscreen, dismissFullscreen |
 | src/client/cards/plugins/paradigm.card.ts | 213 | — |
 | src/client/modules/floating-shared.ts | 173 | FloatingCardAction, nextFloatingCardState, _hexToRgba, _cornerLayout, Z_FLOATING_BASE, Z_FULLSCREEN, TITLE_BAR_H, COMPACT_W, COMPACT_H, FloatingCardConfig, FloatingCardItem, _floatingCards, _allocZ, _brOrbToItem, _scatterPosition, _dismissOne |
@@ -656,4 +656,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 305 文件 · 54600 行 · 跨域边 253 条
+合计 305 文件 · 54279 行 · 跨域边 253 条
