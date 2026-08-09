@@ -48,8 +48,8 @@ const BUILD_TIME = (() => {
 // --fast：deploy-fast.sh 会话中途快通道——跳过全链（链在交付 deploy.sh 才完整跑）
 const FAST = process.argv.includes('--fast');
 
-/** 构建耗时账本（观测台） */
-const BUILD_METRIC_LOG = join(homedir(), '.kfmv4', 'build-metrics.jsonl');
+/** 构建耗时账本（观测台，2026-08-08 ledger/ 收拢后路径含 ledger） */
+const BUILD_METRIC_LOG = join(homedir(), '.kfmv4', 'ledger', 'build-metrics.jsonl');
 function recordBuildMetric(ms, ok) {
   try { appendFileSync(BUILD_METRIC_LOG, JSON.stringify({ ts: new Date().toISOString(), phase: 'build', ms, ok }) + '\n'); } catch {}
 }
