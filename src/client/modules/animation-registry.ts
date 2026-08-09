@@ -15,6 +15,7 @@ import gsap from 'gsap';
 
 // ========== 导出类型（供其他模块使用，避免直接 import gsap） ==========
 export type AnimTimeline = gsap.core.Timeline;
+export type AnimTween = gsap.core.Tween;
 
 // ========== 注册中心 ==========
 

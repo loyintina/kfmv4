@@ -1,6 +1,6 @@
 import { gestures } from "./gesture-registry.js";
 import { collapseOrbPanel } from './orb.js';
-import { anim, AnimTimeline } from './animation-registry.js';
+import { anim, AnimTimeline, AnimTween } from './animation-registry.js';
 import { Registry } from './ui-registry.js';
 import { wsChannel } from './ws-channel.js';
 import { currentTheme as theme } from './theme.js';
@@ -118,6 +118,8 @@ let _focusIndex = 0;
 let _cardEls: HTMLElement[] = [];
 let _scrollStartFocus = 0;
 let _tl: AnimTimeline | null = null;
+/** pull 反馈补间句柄（GHOST-04：opening→closing 反向关堆时只杀它、不杀 _tl） */
+let _pullTweens: AnimTween[] = [];
 
 
 
@@ -251,15 +253,17 @@ function _animateStackPullFeedback(): void {
     const origX = i === _focusIndex ? -28 : 0;
     const pullDist = -(Math.random() * 10 + 5);
     const delay = Math.random() * 0.15;
-    anim.to(el, {
+    // 两段补间都要登记：GHOST-04 要求在 opening→closing 反向关堆时精确杀掉它们
+    // （不能用 killTweensOf——会连带杀掉 _tl 内部补间 → GHOST-02 空壳 timeline 卡死）
+    _pullTweens.push(anim.to(el, {
       x: origX + pullDist,
       duration: 0.2,
       delay: delay,
       ease: 'power2.out',
       onComplete: () => {
-        anim.to(el, { x: origX, duration: 0.25, ease: 'back.out(1.2)' });
+        _pullTweens.push(anim.to(el, { x: origX, duration: 0.25, ease: 'back.out(1.2)' }));
       },
-    });
+    }));
   }
 }
 
@@ -338,9 +342,22 @@ export function openCardStack(): void {
 /** 状态迁移不变量：先清理所有卡片的在途补间，再启动新动画。
  *  教训 BAR-CARD-GHOST-01（2026-08-02）：左滑投卡路径的 pull 反馈回弹补间
  *  与关闭动画竞态，关闭完成后把卡片拉回展开位 → 幽灵堆。任何 opening/closing
- *  迁移前必须调用本函数——「迁移先杀在途」是硬规则，不是可选项。 */
+ *  迁移前必须调用本函数——「迁移先杀在途」是硬规则，不是可选项。
+ *  本函数顺带清空 _pullTweens 登记（killTweensOf 已按元素全杀，句柄随之失效）。 */
 function killAllCardTweens(): void {
   for (const el of _cardEls) anim.killTweensOf(el);
+  _pullTweens = [];
+}
+
+/** 只杀 pull 反馈补间、不碰 _tl 内部补间（BAR-CARD-GHOST-04）。
+ *  GHOST-01 与 GHOST-02 两条不变量曾互斥留下缝隙：opening→closing 反向分支
+ *  不敢杀任何补间，于是 opening 窗口内左滑投卡启动的 pull 回弹在 reverse 完成
+ *  （state→closed）之后才触发，把卡片拉回展开位 → 幽灵堆第六次复发。
+ *  句柄级追踪让两条不变量共存：反向分支杀 pull（GHOST-01 意图），_tl 完好
+ *  （GHOST-02 意图）。 */
+function killPullTweens(): void {
+  for (const t of _pullTweens) t.kill();
+  _pullTweens = [];
 }
 
 export function closeCardStack(): void {
@@ -350,7 +367,10 @@ export function closeCardStack(): void {
   // 会把 _tl 内部补间一并杀掉，空壳 timeline 的 reverse 永不触发 onReverseComplete，
   // 状态永远卡在 'closing' → 幽灵堆（BAR-CARD-GHOST-02）。与 openCardStack 的
   // closing→opening 反向分支对称。
+  // 但 pull 反馈补间必须精确杀掉（GHOST-04）：它作用在同一批 DOM 上、却不属于 _tl，
+  // 若放任不管，回弹会在 reverse 完成（state→closed）之后把卡片拉回展开位 → 幽灵堆。
   if (_state === 'opening' && _tl) {
+    killPullTweens();
     _state = 'closing';
     Registry.notifyStateChange('card-stack');
     _tl.reverse();

@@ -897,6 +897,20 @@ regression('BAR-CARD-GHOST-02', 'card-stack', 'closeCardStack 的 opening→clos
   assert(branchIdx < killIdx, '反向分支必须位于 killAllCardTweens 之前（先 return，杀补间只在全量关闭分支）');
 });
 
+regression('BAR-CARD-GHOST-04', 'card-stack', 'opening→closing 反向分支必须在 reverse 前精确杀掉 pull 反馈补间（句柄级），否则 opening 窗口内左滑投卡的回弹在关堆完成后把卡片拉回展开位 → 幽灵堆第六次复发', () => {
+  const src = readFileSync('src/client/modules/card-stack.ts', 'utf-8');
+  assert(src.includes('_pullTweens'), '必须有 _pullTweens 句柄数组追踪 pull 反馈补间');
+  assert(src.includes('function killPullTweens'), '必须有 killPullTweens() 句柄级精确清理函数');
+  const fnStart = src.indexOf('export function closeCardStack');
+  const fnEnd = src.indexOf('export function', fnStart + 1);
+  const fn = src.slice(fnStart, fnEnd);
+  const branchIdx = fn.indexOf("if (_state === 'opening' && _tl)");
+  assert(branchIdx !== -1, 'closeCardStack 必须有 opening→closing 反向分支');
+  const pullKillIdx = fn.indexOf('killPullTweens();', branchIdx);
+  const reverseIdx = fn.indexOf('_tl.reverse();', branchIdx);
+  assert(pullKillIdx !== -1 && pullKillIdx < reverseIdx, '反向分支必须在 _tl.reverse() 之前 killPullTweens()');
+});
+
 regression('BAR-CARD-GHOST-03', 'card-stack', '手势 onEnd「堆外 tap 关堆」必须豁免召唤按钮（否则 onEnd 先关堆、按钮 click 又重开 → 关→秒重开）', () => {
   const src = readFileSync('src/client/modules/card-stack.ts', 'utf-8');
   assert(src.includes("closest('#cardStackToggleBtn')"), 'onEnd 必须豁免 #cardStackToggleBtn');

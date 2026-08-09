@@ -60,6 +60,11 @@
     `killTweensOf` 会把 `_tl` 内部补间一并杀掉，空壳 timeline 的 reverse 永不触发
     onReverseComplete → 状态机永卡 closing（幽灵堆 II 型，快速双击召唤按钮必现）。
     killAllCardTweens 只在全量开/关分支（GHOST-01 防护点）。
+    **但 pull 反馈补间必须句柄级精确杀掉**（BAR-CARD-GHOST-04，2026-08-09）：
+    pull 补间与 `_tl` 内部补间作用在同一批 DOM 上却不属于 `_tl`，反向分支放任不管，
+    回弹会在 reverse 完成（state→closed）后把卡片拉回展开位（幽灵堆 III 型）。
+    契约：`_pullTweens` 句柄数组登记两段 pull 补间，反向分支 `_tl.reverse()` 前
+    `killPullTweens()`——只杀 pull、保 `_tl`，GHOST-01 与 GHOST-02 意图共存。
 13. **「点击空白关闭」类手势必须豁免同状态控件**（BAR-CARD-GHOST-03）：手势
     onEnd「堆外 tap 关堆」豁免 `#cardStackToggleBtn`——touchend 先于 click 触发，
     手势先关堆（state=closing 不算 open），紧随的 click 误判已关又重开，
