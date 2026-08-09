@@ -62,8 +62,8 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
   （`pointer-events: none`，不挡手势/卡片）；按钮层（`SUMMON_BTN` 200）在卡外两侧，
   **禁止卡片横贯全宽**——双 backdrop-filter 垂直叠加在移动端合成异常会致按钮视觉消失
 - 十个信息面：余额卡 / 信箱+星轨双框行 / 待办卡 / SYS 监控面板 / 脉搏卡 / 执勤卡
-  / 巡逻健康（执勤下待办左 2×3 格）/ token 图（系统下待办左，柱+累计曲线）/
-  权限审计横条（待办下全宽）——布局/口径/示警色规等逐轮定稿细节 → ./detail-obs-hud.md
+  / 权限审计横条（待办下全宽）——布局/口径/示警色规等逐轮定稿细节 → ./detail-obs-hud.md
+  （巡逻健康 + token 图两块于 2026-08-09 实拍反馈后删除，左列腾空待重设计）
 - 动态徽标：`src/client/modules/obs-emblem.ts`（深蓝意志 logo，同域同装配链，
   几何随 placeRail 注入；A 聚散定稿为**两节点中点闭合二次 B 样条巡游 +
   矩阵时刻**（成形位=两侧翼节点连边中点方向天然连续、两段 Hermite 计时
