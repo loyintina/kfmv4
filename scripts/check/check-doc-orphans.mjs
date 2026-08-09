@@ -54,7 +54,7 @@ const corpus = [
   ...walk(join(BASE, 'src')),
   ...walk(join(BASE, 'scripts')),
   ...walk(join(BASE, 'tests')),
-  ...walk(join(BASE, '.kfmv4', 'roles')),
+  ...walk(join(BASE, '.kfmv4', 'agents', 'roles')),
 ].map(read).join('\n');
 
 const orphans = [];

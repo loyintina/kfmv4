@@ -9,10 +9,10 @@
 | 层 | 目录/文件 | 是什么 |
 |---|---|---|
 | 运行配置 | `.env` / `providers.json` / `active.json` | 密钥、provider、当前激活角色（根目录，引用面多，不动） |
-| 人设与配置 | `roles/` / `configs/` / `prompts/` | 角色卡、配置卡、提示词（dynamic/ 说明） |
+| 人设与配置 | `agents/`（roles / configs / prompts / paradigms） | 角色卡、配置卡、提示词、范式包池——「定义 agent 是谁/用什么/说什么」四合一（2026-08-08 归并） |
 | 会话 | `sessions/` 根 + `script/` | 面板真实会话 / 脚本会话（脚本分流区） |
-| 范式包池 | `paradigms/` | **只放正式包**——实验梯度档在实验区 paradigm-packs/ |
-| 素材与实验 | `materials/` / `experiments/` | 素材库（含 `backups/` 考古会话）/ 实验数据区（arms.db 不入库） |
+| 范式包池 | `agents/paradigms/` | **只放正式包**——实验梯度档在实验区 paradigm-packs/ |
+| 素材与实验 | `experiments/`（含 `materials/`） | 实验数据区（arms.db 不入库）+ 素材库（materials/，含 backups/ 考古会话） |
 | 观测账本 | `ledger/` | 8 个账本：agent-calls / tool-exec / check-failures / build-metrics / permission-audit / semantic-chain-metrics / sys-metrics / discussion-log（2026-08-08 收拢） |
 | agent 工作区 | `workspaces/` | agent 可写沙箱区（2026-08-08 预立空位，机制下一阶段） |
 | 日志与巡守 | `logs/` / `browser-relay/` | 运行日志、守视截图 |
@@ -34,7 +34,7 @@
   chat-backups 增量不入库。
 - 2026-08-08 重构②：清除 9 个测试残留会话，源头根治（env-test-isolation）。
 - 2026-08-08 重构③：本规范 + check-kfmv4-data 机械门 + workspaces/ 空位。
-- 2026-08-08 重构④：**8 个账本收拢 ledger/**（obs.ts/chain/agent-runner/
-  obs-aggregate/permissions/semantic-chain 路径全量迁移）；chat-backups →
-  materials/backups/（考古素材归素材库）；删 puppeteer/ 与 active.json.bak。
-  根目录收敛为 4 文件 + 11 目录。
+- 2026-08-08 重构④：**8 个账本收拢 ledger/**；chat-backups → materials/backups/；
+  删 puppeteer/ 与 active.json.bak。根目录收敛为 4 文件 + 11 目录。
+- 2026-08-08 重构⑤：**agents/ 四合一**（roles+configs+prompts+paradigms——人设与
+  配置归一族）；materials → experiments/。根目录收敛为 2 文件 + 7 目录。

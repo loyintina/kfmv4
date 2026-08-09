@@ -18,7 +18,7 @@
  *     --examiner-model "THUDM/GLM-Z1-9B-0414" --examiner-provider "硅基流动" \
  *     --pack metacognition --turns 6 [--examiner-role kfm-dev] [--schedule attach@2,detach@5]
  *
- * --examiner-role：考生角色卡名（~/.kfmv4/roles/<名>.json）。
+ * --examiner-role：考生角色卡名（~/.kfmv4/agents/roles/<名>.json）。
  *   不传时服务端回落到面板当前激活角色（prompt-assembler 的 getActiveRoleFile），
  *   即考生的「人格底材」会被面板状态污染——跑实验建议显式指定。
  * --schedule：时刻表模式（残留半衰期专项，2026-08-05）——挂载/摘除按固定轮次

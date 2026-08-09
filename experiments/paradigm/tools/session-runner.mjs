@@ -22,7 +22,7 @@ import { fileURLToPath } from 'url';
 const REPO = join(fileURLToPath(new URL('../../..', import.meta.url)));
 const SESSIONS = join(homedir(), '.kfmv4', 'sessions');
 const SCRIPT_SESSIONS = join(SESSIONS, 'script'); // 脚本会话区（面板会话卡只列根目录，子文件夹天然排除）
-const PARADIGMS = join(homedir(), '.kfmv4', 'paradigms');
+const PARADIGMS = join(homedir(), '.kfmv4', 'agents', 'paradigms');
 const BASE = process.env.KFM_BASE || 'http://localhost:8021/api';
 
 function validSessionId(id) {
@@ -95,7 +95,7 @@ function toOpenAi(messages) {
   return api;
 }
 
-/** 读范式包文件（池 .kfmv4/paradigms/<name>.md；实验梯度档回退实验区 paradigm-packs/——
+/** 读范式包文件（池 .kfmv4/agents/paradigms/<name>.md；实验梯度档回退实验区 paradigm-packs/——
  *  2026-08-08 .kfmv4 重构：metacognition-*k/meta-corpus-* 等实验档移出池，旧实验按名复现仍可用） */
 export function loadParadigm(name) {
   if (!name) return '';
@@ -214,8 +214,8 @@ async function waitRun(runId, maxMs = 600_000) {
  * @param {string} opts.userText 落盘原文（防 ts 前缀污染）
  * @param {string} opts.model
  * @param {string} opts.provider
- * @param {string} [opts.roleFile] 角色卡名（.kfmv4/roles/<name>.json）
- * @param {string} [opts.paradigm] 范式包名（.kfmv4/paradigms/<name>.md）或直接文本
+ * @param {string} [opts.roleFile] 角色卡名（.kfmv4/agents/roles/<name>.json）
+ * @param {string} [opts.paradigm] 范式包名（.kfmv4/agents/paradigms/<name>.md）或直接文本
  * @param {string} [opts.position] 注入位置：first-user（默认）/ pre-task-user / system
  * @param {string} [opts.out] 归档路径（默认 ~/.kfmv4/sessions/<sessionId>.json）
  * @returns {Promise<{runId, events, ms, sessionPath}>}

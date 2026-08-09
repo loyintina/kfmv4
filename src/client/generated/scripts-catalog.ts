@@ -176,7 +176,7 @@ export const SCRIPTS_CATALOG: ScriptCatalogEntry[] = [
     "category": "范式实验工具",
     "description": "范式包实验批量驱动（并发烧 token 的关键基建）",
     "permission": "联网（经 session-runner 走 localhost:8021 面板 API 烧 token）；写 sessions/script 归档、arms.db 与臂沙箱（--sandbox-template 时 rm -rf 重建 sandbox-<armId>/）",
-    "prompt": "无内置提示词——任务文本（--tasks/任务文件）与范式包（.kfmv4/paradigms/<名>.md）均外部传入",
+    "prompt": "无内置提示词——任务文本（--tasks/任务文件）与范式包（.kfmv4/agents/paradigms/<名>.md）均外部传入",
     "effect": "范式包实验批量驱动：变体矩阵 × 重复臂并发跑会话，断点续跑"
   },
   {
@@ -211,7 +211,7 @@ export const SCRIPTS_CATALOG: ScriptCatalogEntry[] = [
     "file": "experiments/paradigm/tools/build-e14-combo.mjs",
     "category": "范式实验工具",
     "description": "e14 组合挂载实验的组合包构建器（2026-08-06）",
-    "permission": "读 ~/.kfmv4/paradigms/ 源包，写同目录 e14-bd-meta.md；幂等（逐字节一致）；不联网",
+    "permission": "读 ~/.kfmv4/agents/paradigms/ 源包，写同目录 e14-bd-meta.md；幂等（逐字节一致）；不联网",
     "prompt": "无（机械拼接）",
     "effect": "e14 组合包构建：behavior-discipline + metacognition 全文拼接 + token 估算"
   },
@@ -220,7 +220,7 @@ export const SCRIPTS_CATALOG: ScriptCatalogEntry[] = [
     "file": "experiments/paradigm/tools/build-e16-packs.mjs",
     "category": "范式实验工具",
     "description": "e16 结构实验（S5 对比对 / S6 复盘叙事）制包器（2026-08-06）",
-    "permission": "读 materials.db 与 meta-pool 打分文件，写 ~/.kfmv4/paradigms/ 的 S5/S6 包；不联网",
+    "permission": "读 materials.db 与 meta-pool 打分文件，写 ~/.kfmv4/agents/paradigms/ 的 S5/S6 包；不联网",
     "prompt": "无（机械选材拼接）",
     "effect": "e16 结构实验制包：按纯度过滤选材，W2 轻标记格式组装 S5/S6 包"
   },
@@ -229,7 +229,7 @@ export const SCRIPTS_CATALOG: ScriptCatalogEntry[] = [
     "file": "experiments/paradigm/tools/build-e19-packs.mjs",
     "category": "范式实验工具",
     "description": "e19 语料组装 + 同源嵌套切包（2026-08-07）",
-    "permission": "读 sessions/script 的 e19 语料 exam-state，写 ~/.kfmv4/paradigms/ 嵌套包；--dry 只预览；不联网",
+    "permission": "读 sessions/script 的 e19 语料 exam-state，写 ~/.kfmv4/agents/paradigms/ 嵌套包；--dry 只预览；不联网",
     "prompt": "无（机械拼接切档）",
     "effect": "e19 语料组装 + 同源嵌套切包（32k⊂128k⊂256k⊂512k，长度唯一变量）"
   },
@@ -247,7 +247,7 @@ export const SCRIPTS_CATALOG: ScriptCatalogEntry[] = [
     "file": "experiments/paradigm/tools/build-length-paradigms.py",
     "category": "范式实验工具",
     "description": "拼嵌套长度梯度范式包 v3：按「用户消息」块切分（细粒度），质量序逐块追加，严格嵌套",
-    "permission": "读 meta-pool episodes/index 与现有范式包，写 ~/.kfmv4/paradigms/ 长度梯度包；不联网",
+    "permission": "读 meta-pool episodes/index 与现有范式包，写 ~/.kfmv4/agents/paradigms/ 长度梯度包；不联网",
     "prompt": "无（机械拼接）",
     "effect": "嵌套长度梯度范式包 v3：按用户消息块切分，质量序逐块追加 32k⊂64k⊂96k⊂128k"
   },

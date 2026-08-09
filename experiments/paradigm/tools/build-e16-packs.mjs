@@ -18,7 +18,7 @@
  *
  * 幂等：评分/块文件不变时重复运行产出逐字节一致。
  * 用法：node experiments/paradigm/tools/build-e16-packs.mjs
- * 产出：~/.kfmv4/paradigms/e16-s5-contrast.md / e16-s6-retro.md
+ * 产出：~/.kfmv4/agents/paradigms/e16-s5-contrast.md / e16-s6-retro.md
  *       + meta-pool/e16-packs-manifest.json（选块清单与理由，供复算）
  */
 import { readFileSync, writeFileSync, readdirSync } from 'fs';
@@ -27,7 +27,7 @@ import { homedir } from 'os';
 
 const POOL = 'experiments/paradigm/meta-pool';
 const BLOCKS_DIR = join(POOL, 'e16-blocks');
-const OUT_DIR = join(homedir(), '.kfmv4', 'paradigms');
+const OUT_DIR = join(homedir(), '.kfmv4', 'agents', 'paradigms');
 const SEP = '\n\n---\n\n';
 const BODY_BUDGET = 11000; // 字符，≈8.2k tok（0.75 口径）
 const MIN_CHARS = 800, MAX_CHARS = 3000, PER_SESSION_CAP = 2;

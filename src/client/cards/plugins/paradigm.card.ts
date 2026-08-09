@@ -1,7 +1,7 @@
 /**
  * paradigm.card.ts — 范式包池卡
  *
- * 展示 .kfmv4/paradigms/*.md（行为预设范式包）——「池里有什么」，
+ * 展示 .kfmv4/agents/paradigms/*.md（行为预设范式包）——「池里有什么」，
  * 供配置卡下拉引用。支持：列表（名称）、点选查看/编辑内容、
  * 新建、删除。范式包 = 拼进会话首条消息的行为规范文本（会话参数组的
  * 可选字段，见 config.card.ts 的 paradigmFile）。
@@ -16,7 +16,7 @@ import { log } from '../../modules/logger.js';
 import { showConfirm } from '../../modules/confirm-dialog.js';
 import { innerCardStyle, inputStyle, btnStyle, mkRow, flashSaved } from '../card-ui.js';
 
-const PARADIGMS_PATH = '.kfmv4/paradigms';
+const PARADIGMS_PATH = '.kfmv4/agents/paradigms';
 
 const API_BASE = (() => {
   const base = window.location.pathname.replace(/\/+$/, '');
@@ -83,7 +83,7 @@ function createInjectHandler(meta: Record<string, unknown>): CardContentHandler 
       const { row: nameRow, wrap: nameWrap } = mkRow('名称');
       const nameInput = document.createElement('input');
       nameInput.style.cssText = inputStyle();
-      nameInput.placeholder = '范式包名称（存为 .kfmv4/paradigms/<名>.md）';
+      nameInput.placeholder = '范式包名称（存为 .kfmv4/agents/paradigms/<名>.md）';
       nameWrap.appendChild(nameInput);
       formSection.appendChild(nameRow);
 
@@ -117,7 +117,7 @@ function createInjectHandler(meta: Record<string, unknown>): CardContentHandler 
 
       const poolTitle = document.createElement('div');
       poolTitle.style.cssText = 'font-size:var(--card-font-size,11px);font-weight:700;color:rgba(255,255,255,0.85);margin-bottom:6px';
-      poolTitle.textContent = '范式包池（.kfmv4/paradigms/）';
+      poolTitle.textContent = '范式包池（.kfmv4/agents/paradigms/）';
       poolCard.appendChild(poolTitle);
 
       const listEl = document.createElement('div');

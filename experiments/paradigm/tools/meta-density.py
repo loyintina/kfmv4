@@ -24,7 +24,7 @@ import argparse, glob, hashlib, json, os, re
 from collections import defaultdict
 
 SCRIPT = os.path.expanduser('~/.kfmv4/sessions/script')
-PARADIGMS = os.path.expanduser('~/.kfmv4/paradigms')
+PARADIGMS = os.path.expanduser('~/.kfmv4/agents/paradigms')
 
 META_RE = re.compile(
     r'我(?:们)?[^。!！?？\n]{0,2}(?:思考|考虑|权衡|假设|推测|反思|怀疑|复盘|审视|意识|判断|想|验证|排除)')

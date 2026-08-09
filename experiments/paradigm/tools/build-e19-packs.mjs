@@ -18,7 +18,7 @@ import { join } from 'node:path';
 import { homedir } from 'node:os';
 
 const SCRIPT_DIR = join(homedir(), '.kfmv4', 'sessions', 'script');
-const PACK_DIR = join(homedir(), '.kfmv4', 'paradigms');
+const PACK_DIR = join(homedir(), '.kfmv4', 'agents', 'paradigms');
 const DRY = process.argv.includes('--dry');
 const LINES = [1, 2, 3, 4, 5].flatMap(n => [`e19g-line${n}`, `e19g-line${n}-c2`, `e19g-line${n}-c3`,
   `e19g-line${n}-r2`, `e19g-line${n}-c2-r2`, `e19g-line${n}-c3-r2`, `e19g-line${n}-c4`,

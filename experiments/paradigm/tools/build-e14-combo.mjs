@@ -10,14 +10,14 @@
  *   - 幂等：重复运行产出逐字节一致
  *
  * 用法：node experiments/paradigm/tools/build-e14-combo.mjs
- * 产出：~/.kfmv4/paradigms/e14-bd-meta.md + 打印 token 估算（字符数 × 0.75，
+ * 产出：~/.kfmv4/agents/paradigms/e14-bd-meta.md + 打印 token 估算（字符数 × 0.75，
  *       与 build-length-paradigms.py 同口径）
  */
 import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 
-const DIR = join(homedir(), '.kfmv4', 'paradigms');
+const DIR = join(homedir(), '.kfmv4', 'agents', 'paradigms');
 const SEP = '\n\n---\n\n';
 const SOURCES = ['behavior-discipline.md', 'metacognition.md'];
 const OUT = join(DIR, 'e14-bd-meta.md');

@@ -4,7 +4,7 @@
 import os, json, re
 
 BASE = '/root/kfmv4/experiments/paradigm/meta-pool/episodes'
-V1 = open('/root/.kfmv4/paradigms/metacognition.md').read().strip()
+V1 = open('/root/.kfmv4/agents/paradigms/metacognition.md').read().strip()
 # 2026-08-08 .kfmv4 重构：梯度档是实验输入，产出落实验区（paradigm-packs/），不进池
 OUT = '/root/.kfmv4/experiments/paradigm/paradigm-packs'
 INDEX = json.load(open('/root/kfmv4/experiments/paradigm/meta-pool/index.json'))

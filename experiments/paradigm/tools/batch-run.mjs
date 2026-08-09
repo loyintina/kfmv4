@@ -12,7 +12,7 @@
  *     --paradigms "无,evidence-discipline" \
  *     --models "deepseek-v4-flash" \
  *     --arms 2 --concurrency 4
- *   --paradigms "无" = 对照组（无范式包）；其他名 = .kfmv4/paradigms/<名>.md
+ *   --paradigms "无" = 对照组（无范式包）；其他名 = .kfmv4/agents/paradigms/<名>.md
  *   --arms N = 每配置重复次数（重复测量——模型随机性需多次取统计）
  *   --sandbox-template <dir> = 沙箱实验（e13）：每臂开跑前把模板目录复制到
  *     ~/.kfmv4/sessions/script/sandbox-<armId>/（已存在先 rm -rf 重建，臂间独立、

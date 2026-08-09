@@ -23,7 +23,7 @@ import { registerBatch, putArm, hasArm, dbStats } from './arm-store.mjs';
 
 const SCRIPT_DIR = join(homedir(), '.kfmv4', 'sessions', 'script');
 const ARCHIVE_DIR = join(homedir(), '.kfmv4', 'experiments', 'paradigm', 'sessions-archive');
-const PARADIGMS_DIR = join(homedir(), '.kfmv4', 'paradigms');
+const PARADIGMS_DIR = join(homedir(), '.kfmv4', 'agents', 'paradigms');
 const EXECUTE = process.argv.includes('--execute');
 
 // 遗留注册表（裸 id 按 pi 下标解码）——逐条文档出处：

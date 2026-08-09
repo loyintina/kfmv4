@@ -4,7 +4,7 @@
  * 管理 Agent 配置组合（Provider + Model + 角色 + 行为预设）。
  * sessionId 是运行参数（每次调用不同），不绑配置——运行时传入。
  * 类似 API 卡结构：顶部选择器 + 配置表单 + 池列表。
- * 数据存储于 .kfmv4/configs/ 文件夹。
+ * 数据存储于 .kfmv4/agents/configs/ 文件夹。
  */
 
 import { registerCardType, type CardContentHandler } from '../../modules/card-registry.js';
@@ -27,14 +27,14 @@ interface AgentConfig {
   providerId?: string; // 可选：空 = 用默认（active.json / 首选项）
   modelId?: string;
   roleFile?: string;
-  paradigmFile?: string; // 范式包引用（.kfmv4/paradigms/<name>.md，可选）
+  paradigmFile?: string; // 范式包引用（.kfmv4/agents/paradigms/<name>.md，可选）
   createdAt: string;
   updatedAt: string;
 }
 
 const PROVIDERS_PATH = '.kfmv4/providers.json';
-const CONFIGS_PATH = '.kfmv4/configs';
-const PARADIGMS_PATH = '.kfmv4/paradigms';
+const CONFIGS_PATH = '.kfmv4/agents/configs';
+const PARADIGMS_PATH = '.kfmv4/agents/paradigms';
 const ACTIVE_PATH = '.kfmv4/active.json';
 
 // ====== API 基础 ======

@@ -24,7 +24,7 @@ if (!existsSync(DATA_HOME)) {
 }
 
 // ---------- 必在目录 ----------
-const REQUIRED_DIRS = ['roles', 'configs', 'prompts', 'sessions', 'sessions/script', 'paradigms', 'materials', 'experiments', 'logs', 'workspaces', 'ledger'];
+const REQUIRED_DIRS = ['agents/roles', 'agents/configs', 'agents/prompts', 'agents/paradigms', 'sessions', 'sessions/script', 'experiments', 'experiments/materials', 'logs', 'workspaces', 'ledger'];
 for (const d of REQUIRED_DIRS) {
   if (!existsSync(join(DATA_HOME, d))) errors.push(`缺目录: ${d}`);
 }
@@ -56,7 +56,7 @@ if (existsSync(sessRoot)) {
 }
 
 // ---------- 规则 2：paradigms/ 池实验档 ----------
-const pool = join(DATA_HOME, 'paradigms');
+const pool = join(DATA_HOME, 'agents', 'paradigms');
 if (existsSync(pool)) {
   for (const f of readdirSync(pool)) {
     if (/^(metacognition-\d+k|metacognition-h\d+k|meta-corpus-\d+k|.*-dup)\.md$/.test(f)) {

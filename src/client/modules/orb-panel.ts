@@ -103,7 +103,7 @@ export function buildPanelContent(cfg: PanelConfig): void {
       try {
         const res = await fetch(base + 'files/list', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ path: '.kfmv4/roles' }),
+          body: JSON.stringify({ path: '.kfmv4/agents/roles' }),
         });
         const data = await res.json();
         roleFiles = (data.items || []).map((f: { name: string }) => f.name.replace('.json', '')).filter((n: string) => n);

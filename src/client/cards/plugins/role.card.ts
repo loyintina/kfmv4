@@ -3,7 +3,7 @@
  *
  * 管理 AI 角色配置文件（人设、性格、偏好）。
  * 类似 API 卡结构：顶部选择器 + 编辑表单 + 池列表。
- * 数据存储于 .kfmv4/roles/ 文件夹。
+ * 数据存储于 .kfmv4/agents/roles/ 文件夹。
  */
 
 import { registerCardType, type CardContentHandler } from '../../modules/card-registry.js';
@@ -25,7 +25,7 @@ interface Role {
   updatedAt: string;
 }
 
-const ROLES_PATH = '.kfmv4/roles';
+const ROLES_PATH = '.kfmv4/agents/roles';
 const ACTIVE_ROLE_PATH = '.kfmv4/active.json';
 
 // ====== API 基础 ======

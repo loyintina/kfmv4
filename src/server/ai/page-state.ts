@@ -16,7 +16,7 @@ import { join } from 'path';
 import { KFM_DATA_DIR } from '../path-utils.js';
 import type { WsServer } from '../ws-server.js';
 
-export const PAGE_STATE_PATH = join(KFM_DATA_DIR, 'prompts', 'dynamic', 'page-state.md');
+export const PAGE_STATE_PATH = join(KFM_DATA_DIR, 'agents', 'prompts', 'dynamic', 'page-state.md');
 
 /**
  * 页面状态模板常量注册表（原代码注册，gen-page-state-schema 读取）

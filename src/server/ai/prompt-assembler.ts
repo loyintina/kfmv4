@@ -3,7 +3,7 @@
  *
  * 架构决策（v7.4 眼睛系统）：
  *   system prompt 不再由客户端 doSend 冻结成字符串发来，而是服务端每轮 LLM
- *   调用前实时重组。数据源是角色卡（.kfmv4/roles/<roleFile>.json）声明的
+ *   调用前实时重组。数据源是角色卡（.kfmv4/agents/roles/<roleFile>.json）声明的
  *   promptFiles 列表——每轮重读所有文件拼接。
  *
  * 为什么放服务端 + 每轮重组：
@@ -42,7 +42,7 @@ export function getActiveRoleFile(): string {
 function loadRole(roleFile: string): RoleConfig | null {
   if (!roleFile || roleFile.includes('/') || roleFile.includes('..')) return null;
   try {
-    const raw = readFileSync(join(KFM_DATA_DIR, 'roles', roleFile + '.json'), 'utf-8');
+    const raw = readFileSync(join(KFM_DATA_DIR, 'agents', 'roles', roleFile + '.json'), 'utf-8');
     const parsed: unknown = JSON.parse(raw);
     if (parsed && typeof parsed === 'object') {
       const p = parsed as Record<string, unknown>;
