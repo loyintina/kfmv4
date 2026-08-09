@@ -81,12 +81,12 @@ test('bug 机理复现：不失效缓存时，同名 append 接续旧 ctx（两�
   }
 });
 
-regression('BAR-SESSION-01', 'files-route-invalidate', 'files.ts delete/rename/move 三路由均接线 _invalidateIfSessionFile', () => {
+regression('BAR-SESSION-01', 'files-route-invalidate', 'files.ts 四路由（delete/rename/move/write）均接线 _invalidateIfSessionFile', () => {
   const src = readFileSync(new URL('../src/server/routes/files.ts', import.meta.url), 'utf-8');
   assert(src.includes("import { invalidateSession } from '../ai/session-store.js'"), 'files.ts 未 import invalidateSession');
   const calls = (src.match(/_invalidateIfSessionFile\(/g) || []).length;
-  // 1 处定义 + 3 处调用（delete/rename/move）
-  assert(calls === 4, `_invalidateIfSessionFile 应出现 4 次（1 定义 + 3 路由），实际 ${calls} 次`);
+  // 1 处定义 + 4 处调用（delete/rename/move/write——2026-08-10 消息删除 bug 补 write）
+  assert(calls === 5, `_invalidateIfSessionFile 应出现 5 次（1 定义 + 4 路由），实际 ${calls} 次`);
 });
 
 regression('BAR-SESSION-01', 'invalidate-no-flush', 'invalidateSession 不 flush 脏数据（避免把已删会话重新写出）', () => {
