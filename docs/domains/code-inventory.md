@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 41cfdb74 · 生成于 2026-08-09 -->
+<!-- 基准 commit 020144c1 · 生成于 2026-08-09 -->
 
 # 代码清单（机械层）
 
@@ -72,11 +72,11 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（25 文件 · 4568 行）
+## client-shell（25 文件 · 4592 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/client/modules/obs-hud.ts | 700 | initObsHud |
+| src/client/modules/obs-hud.ts | 724 | initObsHud |
 | src/client/modules/orb.ts | 538 | type OrbState, collapseOrbPanel, initOrb |
 | src/client/modules/obs-emblem.ts | 497 | EmblemRect, EmblemRects, initObsEmblems |
 | src/client/modules/gesture-registry.ts | 346 | GestureHandler, GestureRegistry, gestures |
@@ -162,11 +162,11 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（10 文件 · 2393 行）
+## server（10 文件 · 2458 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/server/routes/obs.ts | 797 | setupObsRoutes, setupObsPages |
+| src/server/routes/obs.ts | 862 | setupObsRoutes, setupObsPages, buildRolesData |
 | src/server/routes/files.ts | 417 | FileItem, sliceMessages, MSG_PAYLOAD_BUDGET, MSG_SINGLE_CAP, capMessagesPayload, setupFileRoutes |
 | src/server/ws-server.ts | 315 | WsServer |
 | src/server/index.ts | 186 | — |
@@ -177,12 +177,12 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（157 文件 · 18593 行）
+## infra（158 文件 · 18700 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | tests/client-logic.test.ts | 953 | — |
-| tests/regression.test.ts | 653 | — |
+| tests/regression.test.ts | 654 | — |
 | experiments/coldstart/tools/normalize-arms.mjs | 587 | — |
 | tests/tool-compaction.test.ts | 505 | — |
 | tests/server-routes.test.ts | 472 | — |
@@ -243,6 +243,7 @@
 | experiments/coldstart/tools/gen-hallucination-inputs.mjs | 110 | — |
 | scripts/agent/exp-vision-internal.mjs | 109 | — |
 | tests/semantic-chain.test.ts | 108 | — |
+| tests/obs-roles.test.ts | 106 | — |
 | scripts/check/check-cards.mjs | 105 | — |
 | scripts/check/check-contract-freshness.mjs | 104 | — |
 | scripts/check/check-test-patterns.mjs | 102 | — |
@@ -338,6 +339,10 @@
 | tests/probes/sync-counts/tests/probe.ts | 2 | — |
 | tests/probes/checks/scripts/check/check-alpha.mjs | 1 | — |
 | tests/probes/checks/scripts/check/check-beta.mjs | 1 | — |
+
+## ⚠ 未登记（1 文件——不在 domain-src.mjs 任何域内）
+
+- src/client/modules/obs-roles.ts（415 行）
 
 ## 跨域 import 边（机械生成）
 
@@ -632,8 +637,9 @@
 - tests/floating-state.test.ts → src/client/modules/floating-shared.ts
 - tests/reset-hooks.ts → src/client/modules/card-registry.ts
 
-### infra → server（11 边）
+### infra → server（12 边）
 
+- tests/obs-roles.test.ts → src/server/routes/obs.ts
 - tests/path-utils.test.ts → src/server/path-utils.ts
 - tests/permissions.test.ts → src/server/ai/permissions.ts
 - tests/provider-env.test.ts → src/server/env-store.ts
@@ -653,4 +659,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 303 文件 · 54074 行 · 跨域边 252 条
+合计 304 文件 · 54270 行 · 跨域边 253 条
