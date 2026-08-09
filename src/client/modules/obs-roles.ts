@@ -1,18 +1,18 @@
 /**
- * obs-roles.ts — 角色卡星座图（观测台 · 全角色关系网）
+ * obs-roles.ts — 角色卡关系面板（观测台 · 环形弦图）
  *
- * 2026-08-09 用户定稿 v2：活跃角色=紫点+淡光圈（中心锚）、其余角色=统一紫点
- * 外环分布、引用文件=小青色点、连线=角色→文件（活跃青亮/其他紫暗，无角色-角色
- * 直连——共用文件经 refCount 隐式表达）。每颗星沿自身椭圆轨道绕锚位**极缓**
- * 公转（C 轨道方案，周期 20~60s 随机、相位/倾角各异——视觉不机械同步）。
- * 纯光点：星旁无任何文字；面板 head 承载「N卡 · M文件」计数。
+ * 2026-08-09 用户定稿 v8：回归信息显示本质——**环形弦图**（chord diagram）：
+ * 外环=角色分段弧（紫系，活跃角色段青色描边+呼吸）、内环=文件分段弧（青系，
+ * 共用文件段更长更亮）、弦线=角色→文件引用关系（活跃青亮/普通紫暗）。
+ * 4 角色 × 8 文件在窄面板内清晰可读；段长 ∝ 引用数（信息即长度）。
  *
- * 数据同步增星：新角色→新紫点从面板边缘淡入滑向轨道；文件引用新增→新青点淡入；
- * 消失的星淡出——不重建引擎、不瞬移（同徽标 resize 原地适配手法）。
+ * 演进史：v1 青紫瞳三层 → v2 尺寸/间距 → v3 出界修复 → v4 三体 N 体 →
+ * v5 行星绕母星 → v6 能量守恒真三体 → v7 波纹脉冲 → **v8 环形弦图**
+ * （用户裁决：星点与徽标粒子重复，回归信息显示）。
  *
- * 性能（同 obs-emblem 家族）：DPR≤1.5、30fps 节流、elementFromPoint 五点探测
- * 遮挡淡出（淡完停绘、露出先恢复运动再淡入）、聚合阈值（角色>24/文件>60 截断
- * +「×N」灰点）保证绘制量恒定。
+ * 性能：零 N²、纯 canvas 弧线绘制（段数 ≤24+60 但只画弦 ≤引用边数，
+ * 截断阈值 ROLE_MAX/FILE_MAX 保证绘制量恒定）；DPR≤1.5、30fps、
+ * 五点探测遮挡淡出（同徽标家族）。
  */
 import { Z } from './z-index-layers.js';
 
@@ -25,336 +25,161 @@ const CYAN = '0,212,255';
 const VIOLET = '139,92,246';
 const GREY = '110,120,145';
 
-/** 固定种子 rng（同徽标）：轨道参数/相位稳定，数据不变时视觉不跳变 */
-function rng(seed: number): () => number {
-  let s = seed >>> 0;
-  return () => {
-    s = (s * 1664525 + 1013904223) >>> 0;
-    return s / 4294967296;
-  };
-}
-
-interface Star {
-  key: string;
-  kind: 'role' | 'file';
-  r: number;
-  // 锚位（布局目标）与当前位置（淡入期混合滑入）
-  tx: number; ty: number;
-  x: number; y: number;
-  // 基线呼吸（v7 波纹脉冲：星锚定，每星独立相位慢脉动）
-  breathPhase: number;
-  breathPeriod: number;
-  // 运行时（非创建字段）：呼吸量 0~1、波纹激发量 0~1（step 每帧写）
-  breath: number;
-  pulse: number;
-  active: boolean;
-  bright: number;   // 基线亮度 0~1（refCount 等）
-  fade: number;     // 淡入淡出 0~1
-  missing: boolean;
-  refCount: number;
-  refs: number;     // 引用该文件的角色数（画线用：找角色星）
-  roleIdx: number;  // 角色在 roles 数组的下标（-1=文件）
-}
-
 const ROLE_MAX = 24;
 const FILE_MAX = 60;
-// 波纹脉冲常量（v7 用户定稿：声呐式扫描——星锚定，活跃角色周期扩散波纹，
-// 星随波激发闪亮。零 N² 计算、永不相撞永不漂移，性能最低）
-const PULSE_PERIOD = 7;    // 脉冲周期 s（中心发一次波）
-const PULSE_WIDTH = 16;    // 波纹激发带宽 px
-const PULSE_TAIL = 3;      // 保留最近 N 个脉冲的残环（渐隐层次）
 
 class RoleConstellation {
-  private stars: Star[] = [];
-  private w: number;
-  private h: number;
-  private R: () => number;
-  private cx: number;
-  private cy: number;
   private roles: RoleNode[] = [];
   private activeId = '';
-  private lastKey = '';
+  // 渲染缓存（setData 算一次，draw 复用）
+  private roleSegs: { a0: number; a1: number; active: boolean }[] = [];
+  private fileSegs: { a0: number; a1: number; refCount: number; missing: boolean }[] = [];
+  private chords: { from: number; to: number; active: boolean }[] = []; // from=角色段角, to=文件段角
+  private extraRoles = 0;
+  private extraFiles = 0;
+  private w: number;
+  private h: number;
+  private cx: number;
+  private cy: number;
 
   constructor(w: number, h: number) {
     this.w = w; this.h = h;
-    this.R = rng(20260809);
     this.cx = w / 2;
     this.cy = h / 2;
   }
 
   resize(nw: number, nh: number): void {
-    const fx = nw / this.w, fy = nh / this.h;
     this.w = nw; this.h = nh;
     this.cx = nw / 2; this.cy = nh / 2;
-    for (const s of this.stars) {
-      s.x *= fx; s.y *= fy; s.tx *= fx; s.ty *= fy;
-    }
-  }  /** 数据驱动：布局锚位表变化 → 星缓动迁移/增星淡入/消失淡出（不重建） */
+    this.rebuild();
+  }
+
+  /** 数据驱动：角色/文件分段 + 弦线（段长∝引用数，信息即长度） */
   setData(d: RolesData): void {
-    const sig = JSON.stringify({ r: d.roles.map(x => [x.id, x.static.length, x.dynamic.length]), a: d.activeRoleId });
     this.roles = d.roles;
     this.activeId = d.activeRoleId;
-    const wantRoles = d.roles.slice(0, ROLE_MAX);
-    const wantFiles = new Map<string, { path: string; name: string; refCount: number; missing: boolean; roleIdx: number[] }>();
-    // 文件集合（含截断聚合计数）
-    const fileAgg: Array<{ path: string; name: string; refCount: number; missing: boolean; roleIdx: number[] }> = [];
-    const seen = new Map<string, typeof fileAgg[number]>();
+    this.extraRoles = Math.max(0, d.totalRoles - ROLE_MAX);
+    this.rebuild();
+  }
+
+  private rebuild(): void {
+    const wantRoles = this.roles.slice(0, ROLE_MAX);
+    // 文件集合（截断聚合）
+    const fileAgg: { name: string; refCount: number; missing: boolean; by: number[] }[] = [];
+    const seen = new Map<string, number>();
     for (let i = 0; i < wantRoles.length; i++) {
       for (const f of [...wantRoles[i].static, ...wantRoles[i].dynamic]) {
-        let rec = seen.get(f.path);
-        if (!rec) {
-          rec = { path: f.path, name: f.name, refCount: f.refCount, missing: f.missing, roleIdx: [] };
-          seen.set(f.path, rec);
-          fileAgg.push(rec);
+        let idx = seen.get(f.path);
+        if (idx === undefined) {
+          idx = fileAgg.length;
+          seen.set(f.path, idx);
+          fileAgg.push({ name: f.name, refCount: f.refCount, missing: f.missing, by: [] });
         }
-        rec.roleIdx.push(i);
+        fileAgg[idx].by.push(i);
       }
     }
     fileAgg.sort((a, b) => b.refCount - a.refCount);
     const keptFiles = fileAgg.slice(0, FILE_MAX);
-    const extra = fileAgg.length - keptFiles.length;
-    for (const f of keptFiles) wantFiles.set(f.path, f);
+    this.extraFiles = Math.max(0, fileAgg.length - keptFiles.length);
 
-    // —— 锚位表 ——
-    // 2026-08-09 用户定稿：星整体缩小 + 环半径内缩（轨道公转不再推出界）
-    const R1 = Math.min(this.w, this.h) * 0.26;
-    const nRole = wantRoles.length;
-    const roleAng: number[] = [];
-    const roleRad: number[] = [];
-    let activeIdx = -1;
+    // —— 分段：外环=角色（∝引用数）、内环=文件（∝refCount）——
+    const roleWeight = wantRoles.map(r => Math.max(1, r.static.length + r.dynamic.length));
+    const roleTotal = roleWeight.reduce((s, x) => s + x, 0) || 1;
+    const fileWeight = keptFiles.map(f => Math.max(1, f.refCount));
+    const fileTotal = fileWeight.reduce((s, x) => s + x, 0) || 1;
+
+    this.roleSegs = [];
+    let acc = -Math.PI / 2; // 12 点起
     wantRoles.forEach((r, i) => {
-      if (r.id === this.activeId) activeIdx = i;
+      const span = (roleWeight[i] / roleTotal) * Math.PI * 2;
+      this.roleSegs.push({ a0: acc, a1: acc + span, active: r.id === this.activeId });
+      acc += span;
     });
-    // 活跃角色居中；其余均分外环（>12 双环交错）
-    let k = 0;
-    wantRoles.forEach((_, i) => {
-      if (i === activeIdx) { roleAng[i] = 0; roleRad[i] = 0; return; }
-      const total = Math.max(1, nRole - (activeIdx >= 0 ? 1 : 0));
-      const ring = total > 12 && k % 2 === 1 ? 1 : 0;
-      const per = Math.ceil(total / (ring ? 2 : 1));
-      const slot = k - (ring ? Math.floor(total / 2) : 0);
-      roleAng[i] = ring ? (slot / per + 0.5 / per) * Math.PI * 2 : (slot / total + 0.5 / total) * Math.PI * 2;
-      roleRad[i] = ring ? R1 * 0.72 : R1;
-      k++;
+    this.fileSegs = [];
+    acc = -Math.PI / 2;
+    keptFiles.forEach((f, i) => {
+      const span = (fileWeight[i] / fileTotal) * Math.PI * 2;
+      this.fileSegs.push({ a0: acc, a1: acc + span, refCount: f.refCount, missing: f.missing });
+      acc += span;
     });
-    // 文件锚位：角度=引用角色平均角，半径=min(引用角色半径)*0.55 上抬 0.28R1 保底（活跃引用→内圈）
-    const fileAnchor = (roleIdx: number[]): { x: number; y: number; rad: number } => {
-      let aSum = 0, radSum = 0, radMin = Infinity;
-      let hasActive = false;
-      for (const i of roleIdx) {
-        aSum += roleAng[i];
-        radSum += roleRad[i];
-        if (roleRad[i] < radMin) radMin = roleRad[i];
-        if (roleAng[i] === 0 && roleRad[i] === 0) hasActive = true;
+    // —— 弦：角色段中心角 → 文件段中心角（共用文件多弦汇聚）——
+    this.chords = [];
+    keptFiles.forEach((f, i) => {
+      const to = (this.fileSegs[i].a0 + this.fileSegs[i].a1) / 2;
+      for (const roleIdx of f.by) {
+        const from = (this.roleSegs[roleIdx].a0 + this.roleSegs[roleIdx].a1) / 2;
+        this.chords.push({ from, to, active: this.roleSegs[roleIdx].active });
       }
-      const ang = aSum / roleIdx.length;
-      const rad = hasActive ? R1 * 0.45 : Math.max(R1 * 0.28, radMin * 0.55);
-      return { x: this.cx + Math.cos(ang) * rad, y: this.cy + Math.sin(ang) * rad, rad };
-    };
-
-    // —— 对齐现有星 ——
-    const keep = new Set<string>();
-    const roleKeys = new Set(wantRoles.map((_, i) => `r:${wantRoles[i].id}`));
-    for (const s of this.stars) {
-      const keepStar = s.kind === 'role' ? roleKeys.has(s.key) : wantFiles.has(s.key.slice(2));
-      if (!keepStar) { s.fade -= 0.04; if (s.fade <= 0) continue; keep.add(s.key); continue; }
-      // 目标锚位
-      if (s.kind === 'role') {
-        const i = wantRoles.findIndex(r => r.id === s.key.slice(2));
-        s.tx = this.cx + Math.cos(roleAng[i]) * roleRad[i];
-        s.ty = this.cy + Math.sin(roleAng[i]) * roleRad[i];
-        s.active = i === activeIdx;
-        s.roleIdx = i;
-        keep.add(s.key);
-      } else {
-        const f = wantFiles.get(s.key.slice(2));
-        if (!f) { s.fade -= 0.04; if (s.fade > 0) keep.add(s.key); continue; }
-        const a = fileAnchor(f.roleIdx);
-        s.tx = a.x; s.ty = a.y;
-        s.refCount = f.refCount;
-        s.bright = Math.min(1, 0.55 + f.refCount * 0.2);
-        s.roleIdx = f.roleIdx[0];
-        keep.add(s.key);
-      }
-    }
-
-    // —— 新增星（淡入 + 边缘起始，锚定布局位）——
-    wantRoles.forEach((r, i) => {
-      const key = `r:${r.id}`;
-      if (keep.has(key)) return;
-      const n = r.static.length + r.dynamic.length;
-      const edge = this.R();
-      const ang = roleAng[i], rad = roleRad[i];
-      const st: Star = {
-        key, kind: 'role', r: i === activeIdx ? 3.2 : Math.min(2.6, 1.7 + Math.sqrt(n) * 0.25),
-        tx: this.cx + Math.cos(ang) * rad,
-        ty: this.cy + Math.sin(ang) * rad,
-        x: edge < 0.5 ? 6 : this.w - 6, y: this.R() * this.h,
-        breathPhase: this.R() * Math.PI * 2,
-        breathPeriod: 3 + this.R() * 4,
-        breath: 0, pulse: 0,
-        active: i === activeIdx, bright: 1, fade: 0, missing: false, refCount: 1, refs: 0, roleIdx: i,
-      };
-      this.stars.push(st); keep.add(key);
     });
-    for (const f of keptFiles) {
-      const key = `f:${f.path}`;
-      if (keep.has(key)) continue;
-      const a = fileAnchor(f.roleIdx);
-      const st: Star = {
-        key, kind: 'file', r: f.refCount > 1 ? 1.9 : 1.4,
-        tx: a.x, ty: a.y,
-        x: this.R() < 0.5 ? 6 : this.w - 6, y: this.R() * this.h,
-        breathPhase: this.R() * Math.PI * 2,
-        breathPeriod: 3 + this.R() * 4,
-        breath: 0, pulse: 0,
-        active: false, bright: Math.min(1, 0.55 + f.refCount * 0.2), fade: 0, missing: f.missing,
-        refCount: f.refCount, refs: f.roleIdx.length, roleIdx: f.roleIdx[0],
-      };
-      this.stars.push(st); keep.add(key);
-    }
-    // 移除淡完的星
-    this.stars = this.stars.filter(s => keep.has(s.key) || s.fade > 0);
-    // 聚合灰点：被截断的文件数/角色数（画在边缘，静态）
-    this.extraRoles = nRole < d.totalRoles ? d.totalRoles - nRole : 0;
-    this.extraFiles = extra;
-    if (this.extraFiles > 0 || this.extraRoles > 0) {
-      const rng2 = this.R;
-      this.extraPts = [];
-      const total = Math.min(4, this.extraFiles + this.extraRoles);
-      for (let i = 0; i < total; i++) {
-        const a = (i / total + rng2() * 0.2) * Math.PI * 2;
-        this.extraPts.push({ x: this.cx + Math.cos(a) * (R1 + 8), y: this.cy + Math.sin(a) * (R1 + 8), kind: 'other' as const });
-      }
-    } else {
-      this.extraPts = [];
-    }
-    this.lastKey = sig;
   }
 
-  private extraRoles = 0;
-  private extraFiles = 0;
-  private extraPts: { x: number; y: number; kind: 'other' }[] = [];
+  /** 守视钩子用：当前弦数 */
+  chordCount(): number { return this.chords.length; }
 
-  /** 脉冲源：活跃角色的声呐波纹（半径/激发，每帧由 step 推进） */
-  private pulseT = 0;           // 距上次脉冲的时间 s
-  private pulseN = 0;           // 脉冲序号（残环计数用）
-  private lastPulseT = 0;       // 上次脉冲的 t（残环相对年龄）
-
-  /** 每帧（v7 波纹脉冲）：锚位缓动（淡入期）+ 星基线呼吸 + 脉冲相位推进。
-   *  零 N² 计算——纯三角函数，性能最低。 */
-  step(now: number, dt: number): void {
-    // 脉冲推进：每 PULSE_PERIOD 中心发一次波
-    this.pulseT += dt;
-    if (this.pulseT >= PULSE_PERIOD) {
-      this.pulseT -= PULSE_PERIOD;
-      this.pulseN++;
-      this.lastPulseT = this.pulseT;
-    }
-    const maxR = Math.max(this.w, this.h) * 0.6;
-    // 激发量：每帧清零重算（波纹带扫过即亮、离开回落）
-    const distToCenter = (s: Star): number => Math.hypot(s.x - this.cx, s.y - this.cy);
-    for (const s of this.stars) {
-      s.pulse = 0;
-      if (s.fade < 1) {
-        const mix = Math.min(1, s.fade);
-        s.x += (s.tx - s.x) * (1 - mix) * 0.25;
-        s.y += (s.ty - s.y) * (1 - mix) * 0.25;
-      }
-      s.fade = Math.min(1, s.fade + 0.03);
-    }
-    for (let k = 0; k < PULSE_TAIL; k++) {
-      // 残环年龄：当前环 age=0（半径 0→maxR），第 k 个残环已传播 k·PERIOD
-      const age = this.pulseT + k * PULSE_PERIOD;
-      const rr = (age / (PULSE_TAIL * PULSE_PERIOD)) * maxR;
-      const alpha = Math.max(0, 1 - age / (PULSE_TAIL * PULSE_PERIOD));
-      if (alpha <= 0.02) continue;
-      for (const s of this.stars) {
-        const d = distToCenter(s);
-        const hit = Math.max(0, 1 - Math.abs(d - rr) / PULSE_WIDTH);
-        s.pulse = Math.max(s.pulse, hit * alpha * (s.active ? 0.9 : 1));
-      }
-    }
-    // 呼吸
-    for (const s of this.stars) {
-      s.breath = 0.5 + 0.5 * Math.sin(now / 1000 * (Math.PI * 2 / s.breathPeriod) + s.breathPhase);
-    }
-  }
-
-  /** 守视钩子用：当前星数 */
-  starCount(): number { return this.stars.length; }
-
-  /** 绘制（调用方负责 renderOn 节流） */
+  /** 绘制环形弦图（外环角色段/内环文件段/弦线） */
   draw(ctx: CanvasRenderingContext2D, now: number): void {
     ctx.clearRect(0, 0, this.w, this.h);
-    const byKey = new Map(this.stars.map(s => [s.key, s]));
-    // 波纹环（声呐脉冲：活跃角色为中心，PULSE_TAIL 个残环渐隐）
-    const maxR = Math.max(this.w, this.h) * 0.6;
-    for (let k = 0; k < PULSE_TAIL; k++) {
-      const age = this.pulseT + k * PULSE_PERIOD;
-      const rr = (age / (PULSE_TAIL * PULSE_PERIOD)) * maxR;
-      const alpha = Math.max(0, 1 - age / (PULSE_TAIL * PULSE_PERIOD));
-      if (alpha <= 0.02 || rr <= 0.5) continue;
-      ctx.strokeStyle = `rgba(${CYAN},${(0.1 + 0.16 * alpha) * (1 - rr / maxR + 0.3)})`;
-      ctx.lineWidth = 0.6 + alpha * 0.7;
+    const R1 = Math.min(this.w, this.h) * 0.42;  // 外环（角色）
+    const R2 = R1 * 0.64;                        // 内环（文件）
+    const cx = this.cx, cy = this.cy;
+    const activeIdx = this.roleSegs.findIndex(s => s.active);
+
+    // 弦线（先画，压在环下）
+    for (const c of this.chords) {
+      // 贝塞尔：外环段中心 → 内环段中心，控制点向圆心内收
+      const x0 = cx + Math.cos(c.from) * R1, y0 = cy + Math.sin(c.from) * R1;
+      const x1 = cx + Math.cos(c.to) * R2, y1 = cy + Math.sin(c.to) * R2;
+      const mx = cx + Math.cos((c.from + c.to) / 2) * ((R1 + R2) / 2);
+      const my = cy + Math.sin((c.from + c.to) / 2) * ((R1 + R2) / 2);
+      ctx.strokeStyle = c.active ? `rgba(${CYAN},0.4)` : `rgba(${VIOLET},0.22)`;
+      ctx.lineWidth = c.active ? 0.9 : 0.6;
       ctx.beginPath();
-      ctx.arc(this.cx, this.cy, rr, 0, Math.PI * 2);
+      ctx.moveTo(x0, y0);
+      ctx.quadraticCurveTo(mx, my, x1, y1);
       ctx.stroke();
     }
-    // 连线：角色→文件（透明度受激发抬升——波纹扫过时连线也亮）
-    for (const s of this.stars) {
-      if (s.kind !== 'file' || s.fade < 0.2) continue;
-      const refs = this.roles
-        .map((r, i) => ({ r, i }))
-        .filter(({ r, i }) => s.roleIdx !== undefined && (r.static.some(f => f.path === s.key.slice(2)) || r.dynamic.some(f => f.path === s.key.slice(2))));
-      for (const { i } of refs) {
-        const roleStar = byKey.get(`r:${this.roles[i].id}`);
-        if (!roleStar) continue;
-        const active = roleStar.active;
-        const boost = 0.25 + Math.min(1, s.pulse) * 0.75;
-        ctx.strokeStyle = active ? `rgba(${CYAN},${0.4 * boost * s.fade})` : `rgba(${VIOLET},${0.22 * boost * s.fade})`;
-        ctx.lineWidth = active ? 0.7 : 0.5;
-        ctx.beginPath();
-        ctx.moveTo(s.x, s.y);
-        ctx.lineTo(roleStar.x, roleStar.y);
-        ctx.stroke();
-      }
-    }
-    // 点：亮度 = 基线呼吸 + 波纹激发（扫过闪亮后回落）
-    for (const s of this.stars) {
-      if (s.fade <= 0.01) continue;
-      const a = Math.min(1, s.fade);
-      const exc = Math.min(1, s.pulse);
-      const size = s.r * (1 + s.breath * 0.14 + exc * 0.5);
-      if (s.kind === 'role') {
-        const col = VIOLET;
-        const glow = 0.2 + exc * 0.5 + s.breath * 0.08;
-        ctx.fillStyle = `rgba(${col},${glow * a})`;
-        ctx.beginPath(); ctx.arc(s.x, s.y, size * 2.2, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = `rgba(${col},${(0.7 + exc * 0.3) * a})`;
-        ctx.beginPath(); ctx.arc(s.x, s.y, size, 0, Math.PI * 2); ctx.fill();
-        // 活跃：外圈淡光圈（呼吸）+ 脉冲源标记
-        if (s.active) {
-          const br = (2.4 + Math.sin(now / 900) * 0.4 + 1.8) * (1 + exc * 0.4);
-          ctx.strokeStyle = `rgba(${CYAN},${(0.16 + 0.14 * Math.sin(now / 900) + exc * 0.4) * a})`;
-          ctx.lineWidth = 1;
-          ctx.beginPath(); ctx.arc(s.x, s.y, br, 0, Math.PI * 2); ctx.stroke();
-        }
-      } else {
-        const col = s.missing ? GREY : CYAN;
-        const bright = s.missing ? 0.35 : s.bright;
-        ctx.fillStyle = `rgba(${col},${(0.5 + 0.3 * bright + exc * 0.5 + s.breath * 0.1) * a})`;
-        ctx.beginPath(); ctx.arc(s.x, s.y, size, 0, Math.PI * 2); ctx.fill();
-        if (s.refCount > 1) { // 共用文件微晕
-          ctx.fillStyle = `rgba(${col},${(0.1 + exc * 0.25) * a})`;
-          ctx.beginPath(); ctx.arc(s.x, s.y, size * 2.1, 0, Math.PI * 2); ctx.fill();
-        }
-      }
-    }
-    // 聚合灰点
-    for (const p of this.extraPts) {
-      ctx.fillStyle = `rgba(${GREY},0.4)`;
-      ctx.beginPath(); ctx.arc(p.x, p.y, 1.6, 0, Math.PI * 2); ctx.fill();
+
+    // 外环：角色分段弧（活跃段青色描边+呼吸）
+    const breathe = 0.5 + 0.5 * Math.sin(now / 900);
+    this.roleSegs.forEach((s, i) => {
+      const lineW = s.active ? 4 + breathe * 1.4 : 3.2;
+      ctx.strokeStyle = s.active
+        ? `rgba(${CYAN},${0.55 + breathe * 0.4})`
+        : `rgba(${VIOLET},${0.4 + (i === activeIdx ? 0 : 0)})`;
+      ctx.lineWidth = lineW;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(cx, cy, R1, s.a0 + 0.04, s.a1 - 0.04);
+      ctx.stroke();
+    });
+
+    // 内环：文件分段弧（refCount>1 加亮、missing 灰）
+    this.fileSegs.forEach((s) => {
+      const col = s.missing ? GREY : CYAN;
+      const bright = s.missing ? 0.3 : 0.4 + Math.min(0.45, s.refCount * 0.18);
+      ctx.strokeStyle = `rgba(${col},${bright})`;
+      ctx.lineWidth = s.refCount > 1 ? 2.6 : 2;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(cx, cy, R2, s.a0 + 0.05, s.a1 - 0.05);
+      ctx.stroke();
+    });
+
+    // 中心：活跃角色小核（信息锚点，非星点装饰）
+    const coreR = 2.2 + breathe * 0.8;
+    ctx.fillStyle = `rgba(${CYAN},${0.5 + breathe * 0.3})`;
+    ctx.beginPath(); ctx.arc(cx, cy, coreR, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = `rgba(${CYAN},${0.2 + breathe * 0.15})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(cx, cy, coreR + 3.5 + breathe * 1.2, 0, Math.PI * 2); ctx.stroke();
+
+    // 聚合截断计数（灰细弧提示还有更多）
+    if (this.extraRoles > 0 || this.extraFiles > 0) {
+      ctx.strokeStyle = `rgba(${GREY},0.35)`;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([2, 3]);
+      ctx.beginPath(); ctx.arc(cx, cy, R1 + 5, 0, Math.PI * 2); ctx.stroke();
+      ctx.setLineDash([]);
     }
   }
 }
@@ -377,7 +202,7 @@ export function initObsRoles(
   let occState = false;
   let fadeTimer = 0;
 
-  // 2026-08-09 v5 用户定稿：标题栏加回（「角色」字样，行高做小），大部分空间留星图
+  // 标题栏矮行高（2026-08-09 v5 定稿：大部分空间留图）
   const sizeCanvas = () => {
     const hh = headEl.offsetHeight || 18;
     const cw = container.clientWidth, ch = container.clientHeight - hh;
@@ -443,13 +268,12 @@ export function initObsRoles(
   let last = 0, lastStep = 0;
   const loop = (now: number) => {
     (window as unknown as Record<string, unknown>).__rolesDbg = { // escape-ok: 守视钩子（同徽标 __emblemDbg 模式）
-      stars: engine ? engine.starCount() : -1, renderOn, lastStep: Math.round(lastStep), now: Math.round(now), el: container.style.display,
+      chords: engine ? engine.chordCount() : -1, renderOn, now: Math.round(now),
     };
     if (renderOn && engine && now - lastStep >= 33) {
       const dt = Math.min(0.05, (now - last) / 1000 || 0.016);
       last = now; lastStep = now;
       try {
-        engine.step(now, dt);
         engine.draw(ctx, now);
       } catch (e) {
         (window as unknown as Record<string, unknown>).__rolesDbg = { err: e instanceof Error ? e.message : String(e) }; // escape-ok: 守视钩子
@@ -463,7 +287,6 @@ export function initObsRoles(
     onData(d: RolesData) {
       lastData = d;
       if (engine) engine.setData(d);
-      (window as unknown as Record<string, unknown>).__rolesDbg = { stars: engine ? engine.starCount() : -1 }; // escape-ok: 守视钩子
     },
     relayout: build,
   };
