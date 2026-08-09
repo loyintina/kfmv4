@@ -52,8 +52,13 @@ renderer-lifecycle → canvas-utils → canvas-cursor → canvas-scroll → tree
 ```
 main.ts → gestures.init() → initApp() → initUI() → initGestures() → initOrb()
         → initTreeRenderer() → loadFileTree() → initLazyLoader() → initCardStack()
-        → initWsChannel() → initVersionWatch() → initObsHud()（观测台 HUD）
+        → markAppReady() → initFloatingCards() → initWsChannel() → initVersionWatch() → initObsHud()
 ```
+
+**初始化就绪守卫（2026-08-10 竞态修复）**：`app-lifecycle.ts` 的 `markAppReady()/isAppReady()`
+在同步 init 全部完成后置位——全局手势的「召唤卡片堆/侧栏」分支在 READY=false 时忽略
+（initGestures 早于 initCardStack，刷新中触摸会操作未就绪状态）；auto-resume 延迟
+800ms 避开早期手势窗口（刷新中召唤卡片堆 → 状态机并发打架 → 卡顿，2026-08-10 事故）。
 
 ## 观测台 HUD（8.5 史官制度，2026-08-06 立项；2026-08-08 七面定稿）
 
