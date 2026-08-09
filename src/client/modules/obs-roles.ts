@@ -253,6 +253,9 @@ class RoleConstellation {
     return { x: s.x + s.ox, y: s.y + s.oy };
   }
 
+  /** 守视钩子用：当前星数 */
+  starCount(): number { return this.stars.length; }
+
   /** 绘制（调用方负责 renderOn 节流） */
   draw(ctx: CanvasRenderingContext2D, now: number): void {
     ctx.clearRect(0, 0, this.w, this.h);
@@ -399,7 +402,7 @@ export function initObsRoles(
   let last = 0, lastStep = 0;
   const loop = (now: number) => {
     (window as unknown as Record<string, unknown>).__rolesDbg = { // escape-ok: 守视钩子（同徽标 __emblemDbg 模式）
-      stars: engine ? engine.stars.length : -1, renderOn, lastStep: Math.round(lastStep), now: Math.round(now), el: container.style.display,
+      stars: engine ? engine.starCount() : -1, renderOn, lastStep: Math.round(lastStep), now: Math.round(now), el: container.style.display,
     };
     if (renderOn && engine && now - lastStep >= 33) {
       const dt = Math.min(0.05, (now - last) / 1000 || 0.016);
@@ -419,7 +422,7 @@ export function initObsRoles(
     onData(d: RolesData) {
       lastData = d;
       if (engine) engine.setData(d);
-      (window as unknown as Record<string, unknown>).__rolesDbg = { stars: engine ? engine.stars.length : -1 }; // escape-ok: 守视钩子
+      (window as unknown as Record<string, unknown>).__rolesDbg = { stars: engine ? engine.starCount() : -1 }; // escape-ok: 守视钩子
     },
     relayout: build,
   };
