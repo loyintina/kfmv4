@@ -7,6 +7,7 @@ reads:
   - active/generateable-facts.md（可生成事实登记——该拼接的别手写；新可生成事实先登记）
   - guides/doc-architecture.md（读/存分区——这份文档是书架还是档案馆）
   - active/error-codes.md（错误码总表——新流程门先登记再报错引导）
+  - active/mechanism-registry.md（机制注册表——新机制落地时登记一行：类型/机械化/失效信号/探针）
 steps:
   1. 判断类型 + 读/存分区（书架=读价值，执行者要读；档案馆=存价值，为了万一/血泪）
      → 决定放哪层：ADR/case-study → decisions/；detail → domains/{域}/；guide → guides/；
