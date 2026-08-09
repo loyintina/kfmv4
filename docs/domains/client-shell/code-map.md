@@ -19,13 +19,13 @@
 
 | 入口 | 位置 | 调用方 |
 |------|------|--------|
-| main.ts（无导出，启动编排） | main.ts:57-75 同步链 + :98-103 异步尾链 | 进程入口 |
+| main.ts（无导出，启动编排） | main.ts:80-89 同步链 + :100-104 异步尾链 | 进程入口 |
 | `KFMState` 单例 | state.ts:73 | 订阅者仅 tree-render.ts:85、ws-channel.ts:343 |
 | `L` 单例（渲染生命周期/动画锁） | renderer-lifecycle.ts:171 | 7 个 canvas-tree/floating 文件读写 |
 | `gestures` 单例 | gesture-registry.ts:346 | 9 个文件注册 handler |
 | `isAppReady()` | app-lifecycle.ts（初始化就绪标志，2026-08-10 竞态修复） | gestures.ts:197 召唤守卫、main.ts:89 markAppReady |
 | `anim` 单例 | animation-registry.ts | ~10 个文件 |
-| `initOrb()` | orb.ts（529 行纯 DOM 壳，宿主已拆出） | main.ts:61（唯一） |
+| `initOrb()` | orb.ts（529 行纯 DOM 壳，宿主已拆出） | main.ts:83（唯一） |
 | `createDragHandler()` | drag-handler.ts:68 | orb.ts:471、floating-card.ts |
 
 公共底座（logger.ts / dom-refs.ts / z-index-layers.ts / ui-registry.ts /
@@ -35,7 +35,7 @@ KFM_BUILD_TIME 与服务端 build-info.json 比对报旧包（构建链保证两
 ## 状态所有权
 
 - KFMState 常规写走方法；**但 expandedPaths 被 tree-render.ts:524、tree-loader.ts:178
-  直写绕过 setter（无 notify）**；currentRoot 由 main.ts:122 直接赋值
+  直写绕过 setter（无 notify）**；currentRoot 由 main.ts:128 直接赋值
 - 手势内部态：gesture-registry 独占；drag-handler 每次 create 一个闭包 DragState
 - orb 模块级变量（orb.ts:63 起）：orbState/panelState 等 orb.ts 独占写；
   chatMessages 已随拆分迁 orb-chat-host.ts（ai-chat 域）——跨界共享结案（见漂移 8）
@@ -46,7 +46,7 @@ KFM_BUILD_TIME 与服务端 build-info.json 比对报旧包（构建链保证两
 **启动序列（实然）**：gestures.init（绑 document 4 监听 + body touchAction=none）→
 initApp → initUI → initGestures → initOrb（ensurePanel、sessionStore 初始化、
 持久 run 恢复、tryAutoResume）→ initTreeRenderer → initCardStack → initFloatingCards
-→ initWsChannel（main.ts:75）→ establishRoot → loadFileTree → initLazyLoader。
+→ initWsChannel（main.ts:100）→ establishRoot → loadFileTree → initLazyLoader。
 
 **手势一帧**：pointerdown → _handleStart（gesture-registry.ts:189）→ preMatch hooks →
 按 priority 降序匹配（命中即 break :242）→ drag-handler onStart（长按计时 600ms）→
@@ -64,7 +64,7 @@ initApp → initUI → initGestures → initOrb（ensurePanel、sessionStore 初
 
 背景信息层（非卡片部件，与 orb/卡片堆/文件树同级的启动直挂部件）：
 
-- 启动：`initObsHud()`（main.ts:100，异步尾链）；DOM 直挂 body 的 `.obs-hud`
+- 启动：`initObsHud()`（main.ts:104，异步尾链）；DOM 直挂 body 的 `.obs-hud`
   （fixed 全屏、`pointer-events:none`，仅信箱滚动区/头部局部 `auto`）
 - z 层：`Z.CENTER_CONTENT`（z-index-layers.ts），低于召唤按钮层（SUMMON_BTN 200）
 - 结构：主卡 `.obs-card`（deepseek 余额 + 秒级时钟，5s 轮询刷新）+ 双信息框行
@@ -101,8 +101,8 @@ initApp → initUI → initGestures → initOrb（ensurePanel、sessionStore 初
 ## 漂移清单（实然 ≠ 应然）
 
 1. **初始化链漂移**：契约顺序与实然不符——initCardStack/initFloatingCards 在
-   loadFileTree 之前同步执行（main.ts:87-88 vs 原契约序在 loadFileTree 后），
-   initWsChannel 不在契约链上；loadFileTree 经 establishRoot 异步触发（main.ts:123）。
+   loadFileTree 之前同步执行（main.ts:85-86 vs 原契约序在 loadFileTree 后），
+   initWsChannel 不在契约链上；loadFileTree 经 establishRoot 异步触发（main.ts:129）。
 2. **【已结案】手势优先级表漂移**：契约表已按代码重测绘（实然 14 个 handler 全列，
    含平手靠注册序警告）。pinch-zoom 与 mode-btn 同为 90 的平手保留并在契约标注。
 3. **【已结案】orb 状态机漂移**：契约已改为实然 3 态（过渡态由 GSAP 承担）；

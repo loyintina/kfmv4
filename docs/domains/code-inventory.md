@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 364feea6 · 生成于 2026-08-09 -->
+<!-- 基准 commit 65d5e3a4 · 生成于 2026-08-09 -->
 
 # 代码清单（机械层）
 
@@ -72,7 +72,7 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（26 文件 · 4908 行）
+## client-shell（27 文件 · 4929 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -100,6 +100,7 @@
 | src/client/modules/click-queue.ts | 39 | ClickEvent, enqueue, dequeue, clear, isEmpty, peek |
 | src/client/modules/dom-refs.ts | 38 | DOM |
 | src/client/modules/interaction-constants.ts | 21 | MARGIN, LONG_PRESS_MS, DRAG_THRESHOLD, FLOATING_CARD_W, FLOATING_CARD_H |
+| src/client/modules/app-lifecycle.ts | 21 | markAppReady, isAppReady |
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
@@ -340,10 +341,6 @@
 | tests/probes/sync-counts/tests/probe.ts | 2 | — |
 | tests/probes/checks/scripts/check/check-alpha.mjs | 1 | — |
 | tests/probes/checks/scripts/check/check-beta.mjs | 1 | — |
-
-## ⚠ 未登记（1 文件——不在 domain-src.mjs 任何域内）
-
-- src/client/modules/app-lifecycle.ts（21 行）
 
 ## 跨域 import 边（机械生成）
 
@@ -662,4 +659,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 305 文件 · 54427 行 · 跨域边 255 条
+合计 306 文件 · 54448 行 · 跨域边 255 条

@@ -139,18 +139,10 @@ agent 脚本层——检测归自动化，裁决归会话内 agent，**永远不
    （BAR-BASH-HANG-01，2026-08-01）：brush 进程内 shell 的进程替换实现
    （`brush-core interp.rs setup_process_substitution`）把管道写端泄漏进
    node 进程——急性（`comm <(sort …)` 死锁 100 分钟挂死整轮 run）+ 慢性
-   （每次 bash 漏 ~2 fd）。换芯：`/bin/bash -c` + `detached: true` 进程组 +
-   超时/abort 负 pid SIGKILL 杀树 + 1MB 输出截断；omp 升级勿回退后端；
+   （每次 bash 漏 ~2 fd）。换芯：`/bin/bash -c` + `detached: true` 进程组 + 超时/abort 负 pid SIGKILL 杀树 + 1MB 输出截断；omp 升级勿回退后端；
    泄漏取证待反馈上游（STACK #11）。配套：run-manager 停摆看门狗 360s
    （生成器零事件即中止，兜一切「悬挂不抛错」类）。
-9. **新增 NodeWorker 入口必须独立 esbuild 产物 + 复制运行资产（BAR-107）**：
-   dist/server 是单文件 bundle，`new NodeWorker(入口)` 不会自动获得入口文件——
-   build.mjs 必须为每个 worker 入口单独跑一次 build（entryPoints 指向
-   tab-worker-entry.ts，outfile 到 dist/server/），并 cpSync 复制 worker
-   模块加载时 readFileSync 的资产（aria-snapshot.bundle.txt、puppeteer/*.txt）。
-   漏打包的症状是「初始化 30s 超时」而非报错——new NodeWorker 指向不存在文件
-   只发异步 error，try/catch 接不住，supervisor 干等 ready（2026-08-10 实案，
-   生产构建 browser 工具从构建那一刻起就坏着，一直没人在这条路上试过）。
+9. **新增 NodeWorker 入口：独立 esbuild 产物 + 复制资产（BAR-107）**：dist 单文件不含入口——单独 build + cpSync 资产；漏打包 = 30s 超时。
 ## 文件清单
 
 <!-- gen:contract-list 自动生成，禁止手改（源：code-inventory） -->

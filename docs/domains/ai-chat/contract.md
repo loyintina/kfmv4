@@ -136,16 +136,7 @@
 13. **apiKey 代字在使用点展开（fuse-on-save）**：`chat.ts` 选定 provider 后立即
     `resolveKey`（`../env-store.ts`）；`missingVar` → 人话错误，绝不裸发 `${VAR}` 或报 401。
     加载点展开的回写陷阱见 ../server/contract.md 陷阱 7。
-14. **NodeWorker 入口必须独立打包 + 运行资产必须复制（BAR-107）**：browser 工具
-    `tab-supervisor.ts` 用 `new NodeWorker(tab-worker-entry)` 加载 worker 线程。
-    dist 是单文件 bundle，**不会自动包含 worker 入口**——必须在 build.mjs 单独
-    esbuild 打包（`dist/server/tab-worker-entry.js`），否则 `new NodeWorker` 指向
-    不存在文件时只发异步 error 无人监听 → 干等 30s 报「初始化超时」（不抛同步错，
-    try/catch 接不住）。worker 模块加载时 `readFileSync` 的运行资产
-    （`aria-snapshot.bundle.txt`、`puppeteer/*.txt`）同样不会自动进 dist，
-    必须 cpSync 复制。入口探测走 `resolveTabWorkerEntry` 纯函数（.ts 源码优先 /
-    .js 产物兜底 / 都没有 → 降级 inline）。回归钉：BAR-107a-c。
-
+14. **NodeWorker 入口独立打包 + 复制资产（BAR-107）**：worker 入口 build.mjs 单独 esbuild + cpSync 资产；漏打包 = 30s 超时。详情 → detail-browser.md 踩坑 3。
 ## 素材考古（原文已随 archive 注销，`git show v8.1.1:docs/archive/design/…` 可挖）
 
 - `AI_ARCHITECTURE.md`（omp 借鉴接口草样 + Agent 卡未落地）；`CONTEXT_ASSEMBLY_SPEC.md`
