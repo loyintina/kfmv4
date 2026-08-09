@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 0fc32ed5 · 生成于 2026-08-09 -->
+<!-- 基准 commit f5baf944 · 生成于 2026-08-09 -->
 
 # 代码清单（机械层）
 
@@ -72,11 +72,11 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（25 文件 · 4534 行）
+## client-shell（25 文件 · 4662 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/client/modules/obs-hud.ts | 666 | initObsHud |
+| src/client/modules/obs-hud.ts | 794 | initObsHud |
 | src/client/modules/orb.ts | 538 | type OrbState, collapseOrbPanel, initOrb |
 | src/client/modules/obs-emblem.ts | 497 | EmblemRect, EmblemRects, initObsEmblems |
 | src/client/modules/gesture-registry.ts | 346 | GestureHandler, GestureRegistry, gestures |
@@ -162,11 +162,11 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（10 文件 · 2309 行）
+## server（10 文件 · 2393 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/server/routes/obs.ts | 713 | setupObsRoutes, setupObsPages |
+| src/server/routes/obs.ts | 797 | setupObsRoutes, setupObsPages |
 | src/server/routes/files.ts | 417 | FileItem, sliceMessages, MSG_PAYLOAD_BUDGET, MSG_SINGLE_CAP, capMessagesPayload, setupFileRoutes |
 | src/server/ws-server.ts | 315 | WsServer |
 | src/server/index.ts | 186 | — |
@@ -653,4 +653,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 303 文件 · 53956 行 · 跨域边 252 条
+合计 303 文件 · 54168 行 · 跨域边 252 条
