@@ -86,6 +86,7 @@ export function initObsHud(): void {
     <div class="obs-row">
       <div class="obs-inbox">
         <div class="obs-inbox-head">
+          <button class="obs-inbox-back obs-inbox-back-head" style="display:none" aria-label="返回">‹</button>
           <span class="obs-inbox-title">信箱</span>
           <span class="obs-inbox-status"></span>
         </div>
@@ -101,6 +102,7 @@ export function initObsHud(): void {
     </div>
     <div class="obs-stack">
       <div class="obs-inbox-head">
+        <button class="obs-inbox-back obs-inbox-back-head" style="display:none" aria-label="返回">‹</button>
         <span class="obs-inbox-title">待办</span>
         <span class="obs-stack-status"></span>
       </div>
@@ -230,8 +232,10 @@ export function initObsHud(): void {
   const balanceEl = hud.querySelector<HTMLElement>('.obs-balance')!;
   const inboxListEl = hud.querySelector<HTMLElement>('.obs-inbox-list')!;
   const inboxStatusEl = hud.querySelector<HTMLElement>('.obs-inbox-status')!;
+  const inboxBackBtn = hud.querySelector<HTMLElement>('.obs-inbox .obs-inbox-back-head')!;
   const stackListEl = hud.querySelector<HTMLElement>('.obs-stack-list')!;
   const stackStatusEl = hud.querySelector<HTMLElement>('.obs-stack-status')!;
+  const stackBackBtn = hud.querySelector<HTMLElement>('.obs-stack .obs-inbox-back-head')!;
   const starmapBodyEl = hud.querySelector<HTMLElement>('.obs-starmap-body')!;
   const starmapStatusEl = hud.querySelector<HTMLElement>('.obs-starmap-status')!;
 
@@ -264,16 +268,16 @@ export function initObsHud(): void {
     }).join('');
   }
 
-  // 详情视图：头部显示日期；滚动框内左上角返回按钮 + 类型徽标，下接完整原文
+  // 详情视图：返回按钮在标题栏（head 常驻不滚动，2026-08-09 用户定稿：sticky 方案
+  // 会盖正文，按钮放标题栏才符合直觉）；状态位显示日期 + 类型徽标
   function renderInboxDetail(): void {
     if (!inboxDetail) return;
-    const dot = INBOX_DOT_CLASS[inboxDetail.type] ?? 'obs-dot-other';
     const mark = INBOX_MARK[inboxDetail.type] ?? '·';
     const label = INBOX_LABEL[inboxDetail.type] ?? inboxDetail.type;
-    inboxStatusEl.textContent = inboxDetail.date + (inboxDetail.time ? ' ' + inboxDetail.time : '');
+    inboxStatusEl.textContent = `${inboxDetail.date}${inboxDetail.time ? ' ' + inboxDetail.time : ''} · ${mark} ${label}`;
+    inboxBackBtn.style.display = '';
     inboxListEl.innerHTML = `
       <div class="obs-inbox-detail">
-        <div class="obs-inbox-detail-top"><button class="obs-inbox-back">‹</button><span class="obs-dot ${dot}"></span><span class="obs-inbox-detail-meta">${mark} ${label}</span></div>
         <div class="obs-inbox-detail-text">${inboxDetail.text}</div>
       </div>`;
   }
@@ -287,16 +291,17 @@ export function initObsHud(): void {
   }
   function showInboxList(): void {
     inboxDetail = null;
+    inboxBackBtn.style.display = 'none';
     inboxListEl.scrollTop = 0;
     renderInboxList();
   }
 
-  // 点击条目 → 详情；详情内返回按钮 → 列表（事件委托，滚动区已局部 pointer-events auto）
+  // 标题栏返回按钮（head 常驻，点击直接回列表）
+  inboxBackBtn.addEventListener('click', showInboxList);
+  // 点击条目 → 详情（事件委托，滚动区已局部 pointer-events auto）
   inboxListEl.addEventListener('click', e => {
-    const target = e.target as HTMLElement;
-    if (target.closest('.obs-inbox-back')) { showInboxList(); return; }
     if (inboxDetail) return;
-    const item = target.closest<HTMLElement>('.obs-inbox-item');
+    const item = (e.target as HTMLElement).closest<HTMLElement>('.obs-inbox-item');
     if (item) {
       const i = Number(item.dataset.i);
       if (Number.isInteger(i)) showInboxDetail(i);
@@ -319,16 +324,16 @@ export function initObsHud(): void {
     }).join('');
   }
 
-  // 待办详情：头部显示编号；滚动框内左上角返回按钮 + 状态 chip，下接标题/日期/note/detail 全文
+  // 待办详情：返回按钮在标题栏；状态位显示 #编号 + 状态；滚动框内只留正文
   function renderStackDetail(): void {
     if (!stackDetail) return;
     const label = STACK_LABEL[stackDetail.status] ?? stackDetail.status;
     // 服务端 detail 首行 = title（详情锚），此处单独渲染标题后剥掉首行防重复
     const body = stackDetail.detail.split('\n').slice(1).join('\n').trim();
-    stackStatusEl.textContent = `#${stackDetail.n}`;
+    stackStatusEl.textContent = `#${stackDetail.n} · ${label}`;
+    stackBackBtn.style.display = '';
     stackListEl.innerHTML = `
       <div class="obs-inbox-detail">
-        <div class="obs-inbox-detail-top"><button class="obs-inbox-back obs-stack-back">‹</button><span class="obs-stack-chip obs-stack-chip-${stackDetail.status}">${label}</span></div>
         <div class="obs-inbox-detail-text"><span class="obs-stack-detail-title">${stackDetail.title}</span>
 <span class="obs-inbox-meta">${stackDetail.created}</span>
 ${stackDetail.note}
@@ -346,15 +351,15 @@ ${body}</div>
   }
   function showStackList(): void {
     stackDetail = null;
+    stackBackBtn.style.display = 'none';
     stackListEl.scrollTop = 0;
     renderStackList();
   }
 
+  stackBackBtn.addEventListener('click', showStackList);
   stackListEl.addEventListener('click', e => {
-    const target = e.target as HTMLElement;
-    if (target.closest('.obs-stack-back')) { showStackList(); return; }
     if (stackDetail) return;
-    const item = target.closest<HTMLElement>('.obs-inbox-item');
+    const item = (e.target as HTMLElement).closest<HTMLElement>('.obs-inbox-item');
     if (item) {
       const i = Number(item.dataset.i);
       if (Number.isInteger(i)) showStackDetail(i);

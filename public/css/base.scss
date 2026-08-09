@@ -228,12 +228,10 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 /* ===== 信箱详情视图（点击条目进入，2026-08-06） ===== */
 /* 返回按钮在滚动框内左上角（详情顶行：‹ + 圆点 + 类型徽标） */
 .obs-inbox-detail{padding:6px 10px 8px;display:flex;flex-direction:column;gap:6px}
-/* 返回行 sticky 常驻：自动翻屏卷走正文时 ‹ 按钮钉在滚动框顶（2026-08-09 用户实测：
-   长文详情等翻完一圈才能返回；sticky 顶行 + 不透底背景，正文在下方滚动不穿帮） */
-.obs-inbox-detail-top{display:flex;align-items:center;gap:6px;position:sticky;top:0;z-index:2;background:rgba(18,18,26,.94);border-bottom:1px solid rgba(124,58,237,.12);padding-bottom:2px;margin-bottom:-2px}
+/* 返回按钮进标题栏（2026-08-09 用户定稿：sticky 盖正文不符合直觉——head 常驻不滚动） */
+.obs-inbox-back-head{flex:none;width:20px;height:20px;margin-right:2px}
 .obs-inbox-back{flex:none;width:22px;height:22px;border-radius:6px;border:1px solid rgba(0,212,255,.25);background:rgba(18,18,26,.6);color:rgba(0,212,255,.85);font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .obs-inbox-back:active{background:rgba(124,58,237,.25)}
-.obs-inbox-detail-meta{font-size:9px;color:var(--text-dim);letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .obs-inbox-detail-text{font-size:11px;color:var(--text);line-height:1.5;white-space:pre-wrap;word-break:break-word}
 
 /* ===== 待办卡（stack.yaml 工作栈，2026-08-06 用户拍板：废 STACK.md，yaml 单一出处） ===== */
@@ -253,11 +251,6 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 /* note 次行独立成块单行截断（与标题 clamp 分层——同层共 clamp 会让两行标题白挂省略号） */
 .obs-stack-note{display:block;font-size:9px;color:var(--text-dim);letter-spacing:.3px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .obs-stack-divider{padding:4px 10px 2px;font-size:9px;letter-spacing:2px;color:rgba(0,212,255,.5);border-top:1px solid rgba(124,58,237,.15);margin-top:2px}
-/* 状态 chip（详情页徽标：描边小胶囊，色随状态） */
-.obs-stack-chip{flex:none;font-size:9px;letter-spacing:1px;padding:2px 7px;border-radius:8px;border:1px solid;white-space:nowrap}
-.obs-stack-chip-todo{color:#06b6d4;border-color:rgba(6,182,212,.4)}
-.obs-stack-chip-hold{color:#f59e0b;border-color:rgba(245,158,11,.4)}
-.obs-stack-chip-done{color:#22c55e;border-color:rgba(34,197,94,.35)}
 .obs-stack-detail-title{font-size:12px;color:var(--text);font-weight:600}
 /* 待办返回按钮复用信箱样式（事件类名单独 .obs-stack-back 便于委托区分） */
 
