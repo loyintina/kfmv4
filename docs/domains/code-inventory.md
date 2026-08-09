@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit b71dbd98 · 生成于 2026-08-09 -->
+<!-- 基准 commit 68384fce · 生成于 2026-08-09 -->
 
 # 代码清单（机械层）
 
@@ -36,7 +36,7 @@
 | src/client/engine/v2/animation.ts | 40 | ease |
 | src/client/engine/v2/utils.ts | 24 | uniformSpacing, hvSpacing, ZERO_SPACING |
 
-## floating-card（31 文件 · 8593 行）
+## floating-card（31 文件 · 8613 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -47,7 +47,7 @@
 | src/client/cards/plugins/session.card.ts | 619 | — |
 | src/client/cards/plugins/config.card.ts | 600 | — |
 | src/client/cards/plugins/api.card.ts | 562 | — |
-| src/client/modules/card-stack.ts | 482 | getCardCount, getCard, getCardName, getCardId, hexToRgba, cardGradient, cardBg, getFocusIndex, getCurrentAccent, getCardHandler, getFocusedCardRect, animateStackPullFeedback, launchFocusedCard, openCardStack, closeCardStack, isCardStackOpen, focusNext, focusPrev, initCardStack |
+| src/client/modules/card-stack.ts | 502 | getCardCount, getCard, getCardName, getCardId, hexToRgba, cardGradient, cardBg, getFocusIndex, getCurrentAccent, getCardHandler, getFocusedCardRect, animateStackPullFeedback, launchFocusedCard, openCardStack, closeCardStack, isCardStackOpen, focusNext, focusPrev, initCardStack |
 | src/client/cards/plugins/tools.card.ts | 308 | — |
 | src/client/modules/tmux-card.ts | 306 | TmuxCardMeta, createTmuxCardHandler |
 | src/client/modules/renderers/handler-factory.ts | 297 | createFileHandler |
@@ -72,7 +72,7 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（25 文件 · 4487 行）
+## client-shell（25 文件 · 4488 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -91,7 +91,7 @@
 | src/client/modules/app.ts | 131 | initApp |
 | src/client/main.ts | 128 | — |
 | src/client/modules/z-index-layers.ts | 105 | Z, ZLayer |
-| src/client/modules/animation-registry.ts | 75 | AnimTimeline, anim |
+| src/client/modules/animation-registry.ts | 76 | AnimTimeline, AnimTween, anim |
 | src/client/modules/ui.ts | 71 | openSidebar, closeSidebar, initUI |
 | src/client/modules/version-watch.ts | 60 | initVersionWatch |
 | src/client/modules/logger.ts | 58 | log, getLogs, clearLogs, copyLogs, onLog |
@@ -177,11 +177,11 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（153 文件 · 18479 行）
+## infra（153 文件 · 18493 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| tests/client-logic.test.ts | 939 | — |
+| tests/client-logic.test.ts | 953 | — |
 | tests/regression.test.ts | 653 | — |
 | experiments/coldstart/tools/normalize-arms.mjs | 587 | — |
 | tests/tool-compaction.test.ts | 505 | — |
@@ -649,4 +649,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 299 文件 · 53775 行 · 跨域边 252 条
+合计 299 文件 · 53810 行 · 跨域边 252 条
