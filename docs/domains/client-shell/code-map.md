@@ -23,6 +23,7 @@
 | `KFMState` 单例 | state.ts:73 | 订阅者仅 tree-render.ts:85、ws-channel.ts:343 |
 | `L` 单例（渲染生命周期/动画锁） | renderer-lifecycle.ts:171 | 7 个 canvas-tree/floating 文件读写 |
 | `gestures` 单例 | gesture-registry.ts:346 | 9 个文件注册 handler |
+| `isAppReady()` | app-lifecycle.ts（初始化就绪标志，2026-08-10 竞态修复） | gestures.ts:197 召唤守卫、main.ts:89 markAppReady |
 | `anim` 单例 | animation-registry.ts | ~10 个文件 |
 | `initOrb()` | orb.ts（529 行纯 DOM 壳，宿主已拆出） | main.ts:61（唯一） |
 | `createDragHandler()` | drag-handler.ts:68 | orb.ts:471、floating-card.ts |
