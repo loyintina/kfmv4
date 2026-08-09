@@ -358,14 +358,16 @@ export function initObsEmblems(getRects: () => EmblemRects | null): { relayout: 
   let els: HTMLCanvasElement[] = [];
   let engines: { step: (ctx: CanvasRenderingContext2D, now: number, dt: number) => void; resize?: (nw: number, nh: number) => void }[] = [];
   let ctxs: CanvasRenderingContext2D[] = [];
+  let curRect: EmblemRect | null = null;
 
   const build = () => {
     const r = getRects();
     if (!r || r.pocket.width < 40 || r.pocket.height < 60) { // 区域太小宁缺毋滥
       for (const el of els) el.remove();
-      els = []; ctxs = []; engines = [];
+      els = []; ctxs = []; engines = []; curRect = null;
       return;
     }
+    curRect = r.pocket;
     // 尺寸基本没变（±2px）只挪画布位置——亚像素几何波动连画布都不用换
     if (els.length === 1) {
       const same = Math.abs(r.pocket.width - parseFloat(els[0].style.width)) <= 2 &&
@@ -390,11 +392,33 @@ export function initObsEmblems(getRects: () => EmblemRects | null): { relayout: 
   };
 
   build();
+  // 遮挡探测（2026-08-09 用户定稿：被卡片堆/浮卡/文件树盖住时不渲染）——
+  // 1.5s 一次在口袋区取 5 个采样点做 elementFromPoint，过半被盖即视为遮挡。
+  // 网格背景=.main 自身（命中子元素=聊天消息/卡片=遮挡）；徽标画布
+  // pointer-events:none 天然被命中测试跳过。遮挡期只停绘制：粒子位置是
+  // 当前时间的纯函数，恢复时无缝接续，无追赶无跳变
+  let occluded = false;
+  const mainEl = document.querySelector('.main');
+  const probe = () => {
+    if (!mainEl) { occluded = false; return; } // 找不到网格背景宁可常画，不误杀
+    if (!curRect || els.length === 0) { occluded = true; return; }
+    let covered = 0, total = 0;
+    for (const [fx, fy] of [[0.5, 0.5], [0.25, 0.3], [0.75, 0.3], [0.25, 0.7], [0.75, 0.7]]) {
+      const el = document.elementFromPoint(curRect.left + curRect.width * fx, curRect.top + curRect.height * fy);
+      if (!el) continue;
+      total++;
+      if (el !== mainEl) covered++;
+    }
+    occluded = total > 0 && covered * 2 >= total;
+  };
+  setInterval(probe, 1500);
+  probe();
   let last = 0, lastStep = 0;
   const loop = (now: number) => {
     // 30fps 节流（原逐帧 60fps）：徽标运动极缓，30fps 观感无差，绘制功耗减半
-    // （2026-08-09 移动端发热优化）；rAF 空转帧成本可忽略，失焦浏览器自停
-    if (now - lastStep >= 33) {
+    // （2026-08-09 移动端发热优化）；遮挡期整段跳过（连 30fps 都不画），
+    // rAF 空转帧成本可忽略，失焦浏览器自停
+    if (!occluded && now - lastStep >= 33) {
       const dt = Math.min(0.05, (now - last) / 1000 || 0.016);
       last = now; lastStep = now;
       for (let i = 0; i < engines.length; i++) engines[i].step(ctxs[i], now, dt);
