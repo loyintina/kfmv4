@@ -169,6 +169,10 @@ export function initObsHud(): void {
     duty.style.width = `${sm.left + sm.width - dutyLeft}px`;
     pulse.style.top = `${sm.bottom + 10}px`;
     duty.style.top = `${pulse.getBoundingClientRect().bottom + 10}px`;
+    // 待办上界 = 执勤下界 + 10（2026-08-09 用户定稿：下界不动——CSS bottom:140 保留，
+    // 上界上移与执勤同距；fixed top+bottom 双锚拉伸，列表 flex 填满空隙）
+    const stackEl = hud.querySelector<HTMLElement>('.obs-stack')!;
+    stackEl.style.top = `${duty.getBoundingClientRect().bottom + 10}px`;
     // 深蓝意志徽标几何：A=四框围出的中央口袋（2026-08-09 裁决留 A，B/C 竖带取消）
     const dutyR = duty.getBoundingClientRect();
     const pocket = {

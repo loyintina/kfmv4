@@ -542,10 +542,19 @@ body {
   gap: 6px;
 }
 
+/* 返回行 sticky 常驻：自动翻屏卷走正文时 ‹ 按钮钉在滚动框顶（2026-08-09 用户实测：
+   长文详情等翻完一圈才能返回；sticky 顶行 + 不透底背景，正文在下方滚动不穿帮） */
 .obs-inbox-detail-top {
   display: flex;
   align-items: center;
   gap: 6px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: rgba(18, 18, 26, 0.94);
+  border-bottom: 1px solid rgba(124, 58, 237, 0.12);
+  padding-bottom: 2px;
+  margin-bottom: -2px;
 }
 
 .obs-inbox-back {
@@ -605,6 +614,8 @@ body {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .obs-stack-status {
@@ -616,7 +627,8 @@ body {
 }
 
 .obs-stack-list {
-  height: 150px;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: hidden;
   pointer-events: auto;
   padding: 4px 0;
