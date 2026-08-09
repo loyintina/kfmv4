@@ -97,7 +97,11 @@ async function serve() {
       headless: true,
       userDataDir: profileDir,
       args: ['--no-sandbox', '--disable-dev-shm-usage', '--disk-cache-size=1',
-             '--disable-application-cache', '--media-cache-size=1'],
+             '--disable-application-cache', '--media-cache-size=1',
+             // 后台防节流（2026-08-09：页面 hidden 时 rAF/定时器被暂停，
+             // 徽标/星座图等 canvas 动画守视全部静默——强制后台照跑）
+             '--disable-background-timer-throttling', '--disable-renderer-backgrounding',
+             '--disable-backgrounding-occluded-windows'],
     });
     browser.on('disconnected', () => { chrome = null; });
     chrome = { browser, profileDir };
@@ -231,6 +235,14 @@ fetch('/calibrate', { method: 'POST', body: JSON.stringify(v) }).then(r => r.jso
         return send({ ok: true });
       }
       if (url.pathname === '/eval') {
+        // 强制页面可见再执行：headless 后台 tab 常被标 hidden，rAF/定时器停摆
+        // 导致 canvas 动画静默（2026-08-09 星座图守视抓获）。CDP 覆盖 + args
+        // 防节流双保险，对截图/交互无副作用。
+        try {
+          const cdp = await page.createCDPSession();
+          await cdp.send('Emulation.setPageVisibilityStateOverride', { visibilityState: 'visible' });
+          await cdp.detach();
+        } catch { /* 老协议降级：忽略 */ }
         const result = await page.evaluate(String(b.js ?? ''));
         return send({ ok: true, result: result === undefined ? null : result });
       }

@@ -38,10 +38,13 @@ interface Star {
   key: string;
   kind: 'role' | 'file';
   r: number;
-  // 锚位（布局目标）与当前缓动位置
+  // 锚位（布局目标）与当前缓动位置（x,y 只做锚位缓动，不含轨道）
   tx: number; ty: number;
   x: number; y: number;
-  // 轨道（C 方案）：绕锚位小椭圆公转
+  // 轨道（C 方案）：绕锚位小椭圆公转——独立 ox/oy 纯时间函数，
+  // 与锚位缓动解耦（2026-08-09 修 bug：曾直接叠加在 s.x 上，被每帧
+  // 衰减放大 1/k≈20 倍，星漂出界半径 ~70px）
+  ox: number; oy: number;
   oa: number; ob: number; oang: number; operiod: number; ophase: number;
   active: boolean;
   bright: number;   // 亮度 0~1（refCount 等）
@@ -80,9 +83,7 @@ class RoleConstellation {
     for (const s of this.stars) {
       s.x *= fx; s.y *= fy; s.tx *= fx; s.ty *= fy;
     }
-  }
-
-  /** 数据驱动：布局锚位表变化 → 星缓动迁移/增星淡入/消失淡出（不重建） */
+  }  /** 数据驱动：布局锚位表变化 → 星缓动迁移/增星淡入/消失淡出（不重建） */
   setData(d: RolesData): void {
     const sig = JSON.stringify({ r: d.roles.map(x => [x.id, x.static.length, x.dynamic.length]), a: d.activeRoleId });
     this.roles = d.roles;
@@ -182,6 +183,7 @@ class RoleConstellation {
         tx: this.cx + Math.cos(roleAng[i]) * roleRad[i],
         ty: this.cy + Math.sin(roleAng[i]) * roleRad[i],
         x: edge < 0.5 ? 6 : this.w - 6, y: this.R() * this.h,
+        ox: 0, oy: 0,
         oa: 1.5 + this.R() * 2, ob: 1.5 + this.R() * 2, oang: this.R() * Math.PI,
         operiod: 20 + this.R() * 40, ophase: this.R() * Math.PI * 2,
         active: i === activeIdx, bright: 1, fade: 0, missing: false, refCount: 1, refs: 0, roleIdx: i,
@@ -196,6 +198,7 @@ class RoleConstellation {
         key, kind: 'file', r: f.refCount > 1 ? 1.9 : 1.4,
         tx: a.x, ty: a.y,
         x: this.R() < 0.5 ? 6 : this.w - 6, y: this.R() * this.h,
+        ox: 0, oy: 0,
         oa: 1 + this.R() * 1.6, ob: 1 + this.R() * 1.6, oang: this.R() * Math.PI,
         operiod: 20 + this.R() * 40, ophase: this.R() * Math.PI * 2,
         active: false, bright: Math.min(1, 0.55 + f.refCount * 0.2), fade: 0, missing: f.missing,
@@ -226,20 +229,28 @@ class RoleConstellation {
   private extraFiles = 0;
   private extraPts: { x: number; y: number; kind: 'other' }[] = [];
 
-  /** 每帧：轨道相位推进（真实 elapsed，锁屏/失焦回前台不瞬移）+ 锚位缓动 */
+  /** 每帧：锚位缓动 + 轨道相位推进（ox/oy 纯时间函数，与缓动解耦） */
   step(now: number, dt: number): void {
     for (const s of this.stars) {
       s.fade = Math.min(1, s.fade + 0.03);
       const k = 1 - Math.exp(-dt * 1.6); // 锚位缓动（慢迁移）
       s.x += (s.tx - s.x) * k;
       s.y += (s.ty - s.y) * k;
-      // C 轨道：绕锚位小椭圆公转（活跃角色只呼吸不转）
+      // C 轨道：绕锚位小椭圆公转（活跃角色只呼吸不转）——写入独立 ox/oy，
+      // 不污染 x/y（x/y 若叠轨道会被锚位缓动每帧衰减放大出界，2026-08-09 修）
       if (!s.active) {
         const ph = (now / 1000) * (Math.PI * 2 / s.operiod) + s.ophase;
-        s.x += Math.cos(ph) * s.oa;
-        s.y += Math.sin(ph + s.oang) * s.ob;
+        s.ox = Math.cos(ph) * s.oa;
+        s.oy = Math.sin(ph + s.oang) * s.ob;
+      } else {
+        s.ox = 0; s.oy = 0;
       }
     }
+  }
+
+  /** 星当前渲染位置（锚位 + 轨道） */
+  private static pos(s: Star): { x: number; y: number } {
+    return { x: s.x + s.ox, y: s.y + s.oy };
   }
 
   /** 绘制（调用方负责 renderOn 节流） */
@@ -257,11 +268,13 @@ class RoleConstellation {
         const roleStar = byKey.get(`r:${this.roles[i].id}`);
         if (!roleStar) continue;
         const active = roleStar.active;
+        const fs = RoleConstellation.pos(s);
+        const fr = RoleConstellation.pos(roleStar);
         ctx.strokeStyle = active ? `rgba(${CYAN},${0.4 * s.fade})` : `rgba(${VIOLET},${0.22 * s.fade})`;
         ctx.lineWidth = active ? 0.7 : 0.5;
         ctx.beginPath();
-        ctx.moveTo(s.x, s.y);
-        ctx.lineTo(roleStar.x, roleStar.y);
+        ctx.moveTo(fs.x, fs.y);
+        ctx.lineTo(fr.x, fr.y);
         ctx.stroke();
       }
     }
@@ -269,29 +282,30 @@ class RoleConstellation {
     for (const s of this.stars) {
       if (s.fade <= 0.01) continue;
       const a = Math.min(1, s.fade);
+      const p = RoleConstellation.pos(s);
       if (s.kind === 'role') {
         const col = s.active ? VIOLET : VIOLET;
         const r = s.r;
         // 光晕（2026-08-09 定稿：整体缩小——星偏大）
         ctx.fillStyle = `rgba(${col},${0.2 * a})`;
-        ctx.beginPath(); ctx.arc(s.x, s.y, r * 2.2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(p.x, p.y, r * 2.2, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = `rgba(${col},${0.95 * a})`;
-        ctx.beginPath(); ctx.arc(s.x, s.y, r, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fill();
         // 活跃：外圈淡光圈（呼吸）
         if (s.active) {
           const br = 2.4 + Math.sin(now / 900) * 0.4 + 1.8;
           ctx.strokeStyle = `rgba(${CYAN},${(0.16 + 0.14 * Math.sin(now / 900)) * a})`;
           ctx.lineWidth = 1;
-          ctx.beginPath(); ctx.arc(s.x, s.y, br, 0, Math.PI * 2); ctx.stroke();
+          ctx.beginPath(); ctx.arc(p.x, p.y, br, 0, Math.PI * 2); ctx.stroke();
         }
       } else {
         const col = s.missing ? GREY : CYAN;
         const bright = s.missing ? 0.35 : s.bright;
         ctx.fillStyle = `rgba(${col},${(0.55 + 0.45 * bright) * a})`;
-        ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(p.x, p.y, s.r, 0, Math.PI * 2); ctx.fill();
         if (s.refCount > 1) { // 共用文件微晕
           ctx.fillStyle = `rgba(${col},${0.12 * a})`;
-          ctx.beginPath(); ctx.arc(s.x, s.y, s.r * 2.1, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(p.x, p.y, s.r * 2.1, 0, Math.PI * 2); ctx.fill();
         }
       }
     }
@@ -384,11 +398,18 @@ export function initObsRoles(
 
   let last = 0, lastStep = 0;
   const loop = (now: number) => {
+    (window as unknown as Record<string, unknown>).__rolesDbg = {
+      stars: engine ? engine.stars.length : -1, renderOn, lastStep: Math.round(lastStep), now: Math.round(now), el: container.style.display,
+    }; // escape-ok: 守视钩子（同徽标 __emblemDbg 模式）
     if (renderOn && engine && now - lastStep >= 33) {
       const dt = Math.min(0.05, (now - last) / 1000 || 0.016);
       last = now; lastStep = now;
-      engine.step(now, dt);
-      engine.draw(ctx, now);
+      try {
+        engine.step(now, dt);
+        engine.draw(ctx, now);
+      } catch (e) {
+        (window as unknown as Record<string, unknown>).__rolesDbg = { err: e instanceof Error ? e.message : String(e) }; // escape-ok: 守视钩子
+      }
     }
     requestAnimationFrame(loop);
   };
@@ -398,6 +419,7 @@ export function initObsRoles(
     onData(d: RolesData) {
       lastData = d;
       if (engine) engine.setData(d);
+      (window as unknown as Record<string, unknown>).__rolesDbg = { stars: engine ? engine.stars.length : -1 }; // escape-ok: 守视钩子
     },
     relayout: build,
   };
