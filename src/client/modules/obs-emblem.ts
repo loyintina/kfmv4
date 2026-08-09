@@ -63,10 +63,9 @@ class EmblemGather {
   private R: () => number;
   private v = 0;   // 全员统一速率（缓，均值），px/s
   private thr = 0; // 连线阈值（单阈值）
-  // 每粒子的本轮路径：采样点 + 弧长表；prog=弧长进度累计；
+  // 每粒子的本轮路径：采样点 + 弧长表；位置由 cumF 解析查表求值（无逐帧积分态）
   // arcC=阵位所在弧长，k1/k2=前半轮/后半轮推进系数（px/s@f=1）
   private paths: { xs: number[]; ys: number[]; cum: number[]; len: number }[] = [];
-  private prog: number[] = [];
   private arcC: number[] = [];
   private k1: number[] = [];
   private k2: number[] = [];
@@ -117,12 +116,10 @@ class EmblemGather {
         const a = i % p.xs.length;
         cum.push(cum[i - 1] + Math.hypot(p.xs[a] - p.xs[i - 1], p.ys[a] - p.ys[i - 1]));
       }
-      const oldLen = p.len;
       p.cum = cum; p.len = cum[cum.length - 1];
-      this.prog[pi] = oldLen > 0 ? (this.prog[pi] / oldLen) * p.len : 0;
       this.arcC[pi] = cum[3 * EmblemGather.SEG];
     }
-    const intH = EmblemGather.halfInt();
+    const intH = EmblemGather.cumF(EmblemGather.T / 2);
     this.k1 = this.paths.map((p, i) => this.arcC[i] / intH);
     this.k2 = this.paths.map((p, i) => (p.len - this.arcC[i]) / intH);
     this.thr = Math.min(nw, nh) * 0.22;
@@ -225,17 +222,30 @@ class EmblemGather {
     const b2 = 1 - sm(Math.min(1, Math.abs(tMs - T / 2) / (T / 8)));
     return 1 - (1 - EmblemGather.FMIN) * b1 - (1 - EmblemGather.FMIN2) * b2;
   }
-  // 半轮 ∫f dt（秒）：T/2 − (1−FMIN)·W1/2 − (1−FMIN2)·W2/2（两半对称）
-  private static halfInt(): number {
-    const Ts = EmblemGather.T / 1000;
-    return Ts / 2 - (1 - EmblemGather.FMIN) * (Ts / 8) - (1 - EmblemGather.FMIN2) * (Ts / 16);
+  // ∫f 累积表（1ms 步长，惰性构建一次）——位置 = k·F(t) 解析求值，不做逐帧
+  // 积分：消除累积漂移 + 中点钉进度造成的「抖一下」（2026-08-08 用户实拍）
+  private static cumTab: number[] | null = null;
+  private static cumF(tMs: number): number {
+    if (!EmblemGather.cumTab) {
+      const tab = [0];
+      let acc = 0;
+      for (let ms = 1; ms <= EmblemGather.T; ms++) {
+        acc += EmblemGather.speedF(ms - 0.5) * 0.001;
+        tab.push(acc);
+      }
+      EmblemGather.cumTab = tab;
+    }
+    const tab = EmblemGather.cumTab;
+    const x = Math.max(0, Math.min(EmblemGather.T, tMs));
+    const i = Math.floor(x), u = x - i;
+    return tab[i] + (tab[Math.min(i + 1, tab.length - 1)] - tab[i]) * u;
   }
   // 每轮重生成随机轨迹：抽一套秩序模式（不连庄），路径节点 =
   // 形状位 → 随机点 → 阵前切向点 → 阵位 → 阵后切向点 → 随机点（闭合）；
   // 长度归一（绕形心缩放随机点，阵位钉死不动）
   private regen(): void {
     const target = this.v * (EmblemGather.T / 1000);
-    const intH = EmblemGather.halfInt();
+    const intH = EmblemGather.cumF(EmblemGather.T / 2);
     const pats = EmblemGather.matrixPats(this.w, this.h);
     let pi = Math.floor(this.R() * pats.length);
     if (pi === this.lastPat) pi = (pi + 1) % pats.length;
@@ -290,11 +300,10 @@ class EmblemGather {
       return path;
     });
     // 阵位是节点 3 → 采样点 3*SEG 处的弧长；k1/k2 分半反推，
-    // 保证缓动积分后半轮恰好到阵位、一轮后恰好回形状位
+    // 保证解析查表后半轮恰好到阵位、一轮后恰好回形状位
     this.arcC = this.paths.map(p => p.cum[3 * EmblemGather.SEG]);
     this.k1 = this.paths.map((p, i) => this.arcC[i] / intH);
     this.k2 = this.paths.map((p, i) => (p.len - this.arcC[i]) / intH);
-    this.prog = this.paths.map(() => 0);
   }
   // 弧长 → 位置（二分 + 线性插值）
   private at(path: { xs: number[]; ys: number[]; cum: number[]; len: number }, d: number): { x: number; y: number } {
@@ -309,14 +318,12 @@ class EmblemGather {
       y: ys[lo % n] + (ys[hi % n] - ys[lo % n]) * u,
     };
   }
-  step(ctx: CanvasRenderingContext2D, now: number, dt: number): void {
+  step(ctx: CanvasRenderingContext2D, now: number, _dt: number): void {
     const { w, h } = this;
     if (!this.t0) this.t0 = now;
     const T = EmblemGather.T;
     const t = (now - this.t0) % T;
     if (this.lastT >= 0 && t < this.lastT) this.regen(); // 跨轮界：新一轮随机轨迹+新模式
-    // 跨中点：进度钉到阵位弧长，消积分漂移——t=T/2 全员精确各就各位
-    if (this.lastT >= 0 && this.lastT < T / 2 && t >= T / 2) this.prog = this.arcC.slice();
     this.lastT = t;
     const ease = (x: number) => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
     // 形度 s：距轮界越近越成形（粒子物理上恰好同归形状位，s 只是描边的渐变窗）
@@ -325,12 +332,14 @@ class EmblemGather {
     // 阵度 m：矩阵时刻前后 ±MTAU 窗——粒子微增亮 + 连线阈值放宽让阵形浮现
     const mu = Math.min(1, Math.abs(t - T / 2) / EmblemGather.MTAU);
     const m = 1 - mu * mu * (3 - 2 * mu);
-    // 缓动弧长推进：双窗速率因子，k1/k2 分半归一
-    const f = EmblemGather.speedF(t);
+    // 弧长推进：解析查表 F(t)=∫f，位置 = k·F(t) 直接求值——全程精确，
+    // 无逐帧积分漂移、无中点钉进度（2026-08-08 用户实拍「成阵抖一下」的根因）
+    const F = EmblemGather.cumF(t);
+    const FH = EmblemGather.cumF(T / 2);
     const half = t < T / 2;
     const pos = this.paths.map((p, i) => {
-      this.prog[i] = Math.min(p.len, this.prog[i] + f * (half ? this.k1[i] : this.k2[i]) * dt);
-      return this.at(p, this.prog[i]);
+      const d = half ? this.k1[i] * F : this.arcC[i] + this.k2[i] * (F - FH);
+      return this.at(p, Math.min(p.len, d));
     });
     // escape-ok: 守视验证钩子——形度/阵度与「粒子-目标位平均距离」原子读出，绕过截图延迟
     const md = pos.reduce((acc, p, i) => acc + Math.hypot(p.x - this.glyph[i].x, p.y - this.glyph[i].y), 0) / pos.length;
