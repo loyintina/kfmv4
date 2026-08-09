@@ -11,6 +11,7 @@ import { buildCardLayout } from '../../modules/floating-card.js';
 import { log } from '../../modules/logger.js';
 import { createCustomSelect, type CustomSelect } from '../../modules/custom-select.js';
 import { showConfirm } from '../../modules/confirm-dialog.js';
+import { Z } from '../../modules/z-index-layers.js';
 import { selectFilesForPrompt } from '../../modules/tree-swipe.js';
 import { loadFileTree } from '../../modules/tree-loader.js';
 import { KFMState } from '../../modules/state.js';
@@ -462,6 +463,54 @@ function createRoleHandler(meta: Record<string, unknown>): CardContentHandler {
         dragOverTarget = null;
       }
 
+      // 文件详情弹窗：点击文件卡打开——完整内容只读 + 删除（从角色移除引用）
+      function showFileDetailDialog(filePath: string, source: 'static' | 'dynamic'): void {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:' + Z.MODAL_DIALOG + ';display:flex;align-items:flex-start;justify-content:center;padding-top:60px;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px)';
+        overlay.onclick = () => overlay.remove();
+        const dlg = document.createElement('div');
+        dlg.style.cssText = 'width:calc(94vw - 20px);max-width:560px;border-radius:12px;padding:0;background:linear-gradient(rgba(20,16,32,0.98),rgba(20,16,32,0.98)) padding-box,linear-gradient(135deg,' + c1 + ' 30%,' + c2 + ' 70%) border-box;border:1px solid transparent;border-left-width:3px;display:flex;flex-direction:column;max-height:85vh;min-height:40vh';
+        dlg.onclick = (e: Event) => e.stopPropagation();
+        const top = document.createElement('div');
+        top.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0';
+        const ttl = document.createElement('div');
+        ttl.style.cssText = 'font-size:var(--card-font-size,13px);font-weight:600;color:rgba(255,255,255,0.9);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1';
+        ttl.textContent = _pathDisplay(filePath);
+        const closeX = document.createElement('span');
+        closeX.textContent = '\u2715';
+        closeX.style.cssText = 'cursor:pointer;color:rgba(255,255,255,0.5);padding:0 4px;flex-shrink:0';
+        closeX.onclick = () => overlay.remove();
+        top.appendChild(ttl); top.appendChild(closeX);
+        const ta = document.createElement('textarea');
+        ta.style.cssText = 'flex:1;min-height:180px;border:none;padding:12px 14px;font-size:var(--card-font-size,12px);color:rgba(255,255,255,0.85);background:transparent;resize:none;font-family:monospace;line-height:1.6;outline:none;white-space:pre-wrap;overflow:auto';
+        ta.readOnly = true;
+        ta.placeholder = '加载中...';
+        const bottom = document.createElement('div');
+        bottom.style.cssText = 'display:flex;gap:8px;padding:10px 14px;border-top:1px solid rgba(255,255,255,0.06);flex-shrink:0';
+        const delBtn = document.createElement('div');
+        delBtn.style.cssText = 'flex:1;padding:0.5em 0;border-radius:6px;font-size:var(--card-font-size,12px);font-weight:600;cursor:pointer;border:1px solid rgba(255,100,100,0.4);color:rgba(255,120,120,0.95);background:transparent;text-align:center';
+        delBtn.textContent = '删除此文件';
+        const closeBtn = document.createElement('div');
+        closeBtn.style.cssText = 'flex:1;padding:0.5em 0;border-radius:6px;font-size:var(--card-font-size,12px);font-weight:600;cursor:pointer;border:1px solid ' + c1 + '40;color:' + c1 + ';background:transparent;text-align:center';
+        closeBtn.textContent = '关闭';
+        closeBtn.onclick = () => overlay.remove();
+        delBtn.onclick = async () => {
+          if (!editingRole) return;
+          const ok = await showConfirm({ title: '删除文件', message: '从角色「' + (editingRole.name || '') + '」移除 ' + _pathDisplay(filePath) + '？', accent: c1, accent2: c2, confirmText: '删除', cancelText: '取消' });
+          if (!ok) return;
+          if (source === 'static') editingRole.promptFiles = editingRole.promptFiles.filter(f => f !== filePath);
+          else editingRole.dynamicPromptFiles = editingRole.dynamicPromptFiles.filter(f => f !== filePath);
+          await saveRole(editingRole);
+          _renderPromptFiles?.();
+          overlay.remove();
+        };
+        bottom.appendChild(delBtn); bottom.appendChild(closeBtn);
+        dlg.appendChild(top); dlg.appendChild(ta); dlg.appendChild(bottom);
+        overlay.appendChild(dlg);
+        document.body.appendChild(overlay);
+        readFile(filePath).then(content => { ta.value = content || '(空文件)'; }).catch(() => { ta.value = '(无法读取)'; });
+      }
+
       function createFileCard(filePath: string, origIdx: number, source: 'static' | 'dynamic', c1: string, c2: string): HTMLElement {
         const card = document.createElement('div');
         card.style.cssText = 'border-radius:8px;padding:1px;padding-left:3px;margin-bottom:7px;' +
@@ -535,6 +584,10 @@ function createRoleHandler(meta: Record<string, unknown>): CardContentHandler {
 
         body.appendChild(pathEl);
         body.appendChild(previewEl);
+
+        // 点击内容区 → 详情弹窗（完整内容 + 删除）
+        body.style.cursor = 'pointer';
+        body.onclick = (e: MouseEvent) => { e.stopPropagation(); showFileDetailDialog(filePath, source); };
 
         const removeBtn = document.createElement('div');
         removeBtn.style.cssText = 'display:flex;align-items:flex-start;padding:3px 5px 0 0;flex-shrink:0;' +
