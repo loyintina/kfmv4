@@ -70,6 +70,8 @@ class EmblemGather {
   private cells: { x: number; y: number }[] = []; // 本轮阵位（守视验证/阵度用）
   private patName = '';
   private lastPat = -1;
+  private posBuf: { x: number; y: number }[] = []; // 逐帧位置复用缓冲（免每帧 ~60 对象分配）
+  private lastDbg = 0; // 守视钩子节流时钟（300ms）
   private static T = 16000;        // 一轮时长：形 → 散 → 阵 → 乱 → 形
   private static SHAPE_TAU = 2500; // 轮界前后形可读窗口（ms）
   private static MTAU = 1200;      // 矩阵时刻阵度窗口（ms，±1.2s）
@@ -93,6 +95,7 @@ class EmblemGather {
     g.push({ x: 0.5, y: 0.5 });
     this.glyph = g.map(p => ({ x: p.x * w, y: p.y * h }));
     this.thr = Math.min(w, h) * 0.22; // 连接距离收紧（线网太密，2026-08-08 实拍）
+    this.posBuf = this.glyph.map(() => ({ x: 0, y: 0 }));
     this.regen();
   }
   // 分组：0-11 菱形 / 12-19 竖瞳 / 20 瞳心（独组）
@@ -263,18 +266,16 @@ class EmblemGather {
     });
     this.arcC = this.paths.map(p => p.cum[4 * EmblemGather.SEG]); // 阵位=段4起点
   }
-  // 弧长 → 位置（二分 + 线性插值）
-  private at(path: { xs: number[]; ys: number[]; cum: number[]; len: number }, d: number): { x: number; y: number } {
+  // 弧长 → 位置（二分 + 线性插值），写入复用对象 out（不分配新对象）
+  private at(path: { xs: number[]; ys: number[]; cum: number[]; len: number }, d: number, out: { x: number; y: number }): void {
     const { xs, ys, cum } = path;
     const n = xs.length;
     let lo = 0, hi = cum.length - 1;
     while (lo + 1 < hi) { const mid = (lo + hi) >> 1; if (cum[mid] <= d) lo = mid; else hi = mid; }
     const seg = cum[hi] - cum[lo] || 1;
     const u = Math.max(0, Math.min(1, (d - cum[lo]) / seg));
-    return {
-      x: xs[lo % n] + (xs[hi % n] - xs[lo % n]) * u,
-      y: ys[lo % n] + (ys[hi % n] - ys[lo % n]) * u,
-    };
+    out.x = xs[lo % n] + (xs[hi % n] - xs[lo % n]) * u;
+    out.y = ys[lo % n] + (ys[hi % n] - ys[lo % n]) * u;
   }
   step(ctx: CanvasRenderingContext2D, now: number, _dt: number): void {
     const { w, h } = this;
@@ -286,7 +287,6 @@ class EmblemGather {
     const ease = (x: number) => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
     // 形度 s：距轮界越近越成形（粒子物理上恰好同归形状位，s 只是描边的渐变窗）
     const s = ease(Math.max(0, 1 - Math.min(t, T - t) / EmblemGather.SHAPE_TAU));
-    (window as unknown as { __emblemPhase: string }).__emblemPhase = s.toFixed(2); // escape-ok: 守视掐点调试钩子（eval 读形度拍成形帧，试映期临时）
     // 阵度 m：矩阵时刻前后 ±MTAU 窗——粒子微增亮 + 动态连线全隐（只有点在动）
     const mu = Math.min(1, Math.abs(t - T / 2) / EmblemGather.MTAU);
     const m = 1 - mu * mu * (3 - 2 * mu);
@@ -294,7 +294,10 @@ class EmblemGather {
     // 谷底速率（成形 FMIN、成阵 FMIN2，相对本轮均速 len/T）——中点斜率
     // 一致 C¹ 连续，t=T/2 精确过阵、t=0/T 精确成形，无需任何修正项；
     // 半轮中段自然巡航 ~1.5 倍均速（2026-08-09 两节点中点定稿）
-    const pos = this.paths.map((p, i) => {
+    // 位置写入复用缓冲 posBuf（原每帧 map+at 分配 ~60 对象，30fps ≈ 1900/s GC 压力）
+    const pos = this.posBuf;
+    for (let i = 0; i < this.paths.length; i++) {
+      const p = this.paths[i];
       const a = EmblemGather.FMIN * p.len / 2, b = EmblemGather.FMIN2 * p.len / 2;
       const arcC = this.arcC[i], L = p.len;
       const half = t < T / 2;
@@ -303,28 +306,44 @@ class EmblemGather {
       const d = half
         ? (u3 - 2 * u2 + u) * a + (-2 * u3 + 3 * u2) * arcC + (u3 - u2) * b
         : (2 * u3 - 3 * u2 + 1) * arcC + (u3 - 2 * u2 + u) * b + (-2 * u3 + 3 * u2) * L + (u3 - u2) * a;
-      return this.at(p, Math.min(L, Math.max(0, d)));
-    });
-    // escape-ok: 守视验证钩子——形度/阵度与「粒子-目标位平均距离」原子读出，绕过截图延迟
-    const md = pos.reduce((acc, p, i) => acc + Math.hypot(p.x - this.glyph[i].x, p.y - this.glyph[i].y), 0) / pos.length;
-    const mc = pos.reduce((acc, p, i) => acc + Math.hypot(p.x - this.cells[i].x, p.y - this.cells[i].y), 0) / pos.length;
-    (window as unknown as { __emblemDbg: string }).__emblemDbg = `${s.toFixed(2)} md=${md.toFixed(1)} t=${(t / 1000).toFixed(1)} m=${m.toFixed(2)} mc=${mc.toFixed(1)} ${this.patName}`; // escape-ok: 守视验证钩子（试映期临时）
-    // 连线：同一套距离规则，全部动态连线随形度 s / 阵度 m 统一渐隐——
-    // 成形后只留两环一点，成阵时只有点在动（2026-08-08 用户定稿：阵期连线丑）；
-    // 闭环边跳过（交给描边层，避免双线叠亮）
-    ctx.clearRect(0, 0, w, h);
+      this.at(p, Math.min(L, Math.max(0, d)), pos[i]);
+    }
+    // escape-ok: 守视验证钩子——形度/阵度与「粒子-目标位平均距离」原子读出，绕过截图延迟。
+    // 300ms 节流（eval 往返 ~2.7s，新鲜度足够；原逐帧 42 hypot + 模板拼串白烧）
+    if (now - this.lastDbg >= 300) {
+      this.lastDbg = now;
+      const md = pos.reduce((acc, p, i) => acc + Math.hypot(p.x - this.glyph[i].x, p.y - this.glyph[i].y), 0) / pos.length;
+      const mc = pos.reduce((acc, p, i) => acc + Math.hypot(p.x - this.cells[i].x, p.y - this.cells[i].y), 0) / pos.length;
+      (window as unknown as { __emblemDbg: string }).__emblemDbg = `${s.toFixed(2)} md=${md.toFixed(1)} t=${(t / 1000).toFixed(1)} m=${m.toFixed(2)} mc=${mc.toFixed(1)} ${this.patName}`;
+      (window as unknown as { __emblemPhase: string }).__emblemPhase = s.toFixed(2); // escape-ok: 守视掐点拍成形帧用
+    }
     const n = pos.length;
     const thr2 = this.thr * this.thr; // 距离²比较免开方：210 对/帧只在对内才 sqrt（移动端降耗）
-    for (let i = 0; i < n; i++) {
-      for (let j = i + 1; j < n; j++) {
-        if (EmblemGather.loopEdge(i, j)) continue;
-        const dx = pos[i].x - pos[j].x, dy = pos[i].y - pos[j].y;
-        if (dx * dx + dy * dy >= thr2) continue;
-        // 全局同亮 0.85；形度/阵度双隐
-        const a = 0.85 * (1 - s) * (1 - m);
-        ctx.strokeStyle = `rgba(${i >= 12 && i < 20 || j >= 12 && j < 20 ? VIOLET : BLUE},${a})`;
+    // 连线批量描边（2026-08-09 降耗批量化）：帧内 alpha 统一（0.85(1-s)(1-m)）、
+    // 颜色仅蓝/紫两桶——两遍收集合并 path，~210 次 stroke → 2 次；
+    // 连线随形度 s / 阵度 m 统一渐隐（成形只留两环一点，成阵只有点在动）；
+    // 闭环边跳过（交给描边层，避免双线叠亮）。注意：合并 path 后同色线交点
+    // 不再二次叠加增亮（原逐线 stroke 交点更亮），观感更均匀
+    ctx.clearRect(0, 0, w, h);
+    const lineA = 0.85 * (1 - s) * (1 - m);
+    if (lineA > 0.01) {
+      for (let vio = 0; vio < 2; vio++) {
+        ctx.strokeStyle = `rgba(${vio ? VIOLET : BLUE},${lineA})`;
         ctx.lineWidth = 0.8;
-        ctx.beginPath(); ctx.moveTo(pos[i].x, pos[i].y); ctx.lineTo(pos[j].x, pos[j].y); ctx.stroke();
+        ctx.beginPath();
+        let any = false;
+        for (let i = 0; i < n; i++) {
+          for (let j = i + 1; j < n; j++) {
+            if (EmblemGather.loopEdge(i, j)) continue;
+            const isV = (i >= 12 && i < 20) || (j >= 12 && j < 20);
+            if ((vio === 1) !== isV) continue;
+            const dx = pos[i].x - pos[j].x, dy = pos[i].y - pos[j].y;
+            if (dx * dx + dy * dy >= thr2) continue;
+            ctx.moveTo(pos[i].x, pos[i].y); ctx.lineTo(pos[j].x, pos[j].y);
+            any = true;
+          }
+        }
+        if (any) ctx.stroke();
       }
     }
     // 形状描边：只要两圈（菱形闭环 + 竖瞳闭环），随形度 s 渐显渐隐
@@ -342,13 +361,26 @@ class EmblemGather {
       loop(0, 11, CYAN, s * 0.85, 1.1);
       loop(12, 19, VIOLET, s * 0.77, 0.9);
     }
-    // 粒子：青色组（菱形+瞳心）r1.9，竖瞳组紫色小粒 r1.4——三层层次感；
+    // 粒子批量填充：两色两径各一 path——21 次 fill → 2 次。
+    // 青色组（菱形+瞳心）r1.9，竖瞳组紫色小粒 r1.4——三层层次感；
     // 亮度 = 基底 0.8 + 形度 0.15 + 阵度 0.1（矩阵时刻微增亮一拍）
+    const dotA = 0.8 + 0.15 * s + 0.1 * m;
+    const PI2 = Math.PI * 2;
+    ctx.fillStyle = `rgba(${CYAN},${dotA})`;
+    ctx.beginPath();
     for (let i = 0; i < n; i++) {
-      const pupil = i >= 12 && i < 20;
-      ctx.fillStyle = `rgba(${pupil ? VIOLET : CYAN},${0.8 + 0.15 * s + 0.1 * m})`;
-      ctx.beginPath(); ctx.arc(pos[i].x, pos[i].y, pupil ? 1.4 : 1.9, 0, Math.PI * 2); ctx.fill();
+      if (i >= 12 && i < 20) continue;
+      ctx.moveTo(pos[i].x + 1.9, pos[i].y);
+      ctx.arc(pos[i].x, pos[i].y, 1.9, 0, PI2);
     }
+    ctx.fill();
+    ctx.fillStyle = `rgba(${VIOLET},${dotA})`;
+    ctx.beginPath();
+    for (let i = 12; i < 20 && i < n; i++) {
+      ctx.moveTo(pos[i].x + 1.4, pos[i].y);
+      ctx.arc(pos[i].x, pos[i].y, 1.4, 0, PI2);
+    }
+    ctx.fill();
   }
 }
 
