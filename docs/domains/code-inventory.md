@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 7f44dfb2 · 生成于 2026-08-09 -->
+<!-- 基准 commit 364feea6 · 生成于 2026-08-09 -->
 
 # 代码清单（机械层）
 
@@ -72,7 +72,7 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（26 文件 · 4900 行）
+## client-shell（26 文件 · 4908 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -84,13 +84,13 @@
 | src/client/modules/obs-roles.ts | 309 | RolesData, RolesRect, initObsRoles |
 | src/client/modules/custom-select.ts | 246 | SelectItem, CustomSelectOptions, CustomSelect, createCustomSelect |
 | src/client/modules/orb-panel.ts | 221 | PanelConfig, buildPanelContent |
-| src/client/modules/gestures.ts | 217 | initGestures |
+| src/client/modules/gestures.ts | 221 | initGestures |
 | src/client/modules/confirm-dialog.ts | 192 | ConfirmOptions, showConfirm |
 | src/client/modules/renderer-lifecycle.ts | 172 | RenderContext, RendererLifecycle, L |
 | src/client/modules/state.ts | 165 | API, FileNode, ViewportState, KFMStateType, KFMState, FileRowData, getFileRowData |
 | src/client/modules/drag-handler.ts | 134 | DragConfig, createDragHandler |
+| src/client/main.ts | 132 | — |
 | src/client/modules/app.ts | 131 | initApp |
-| src/client/main.ts | 128 | — |
 | src/client/modules/z-index-layers.ts | 105 | Z, ZLayer |
 | src/client/modules/animation-registry.ts | 76 | AnimTimeline, AnimTween, anim |
 | src/client/modules/ui.ts | 71 | openSidebar, closeSidebar, initUI |
@@ -103,7 +103,7 @@
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（55 文件 · 11869 行）
+## ai-chat（54 文件 · 11875 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -118,8 +118,8 @@
 | src/shared/tool-compaction/index.ts | 369 | CompactorEntry, COMPACTOR_REGISTRY, COMPACTOR_NAMES, webTitleKey, CompactionCtx, MUT_BURST_GAP, EXEMPT_USER_ROUNDS, TODO_STALE_GAP, FAIL_REPEAT_MIN, errorFingerprint, failRepeatAnnotation, todoResultAnnotation, normalizeBashCommand, compactToolResult, compactToolInput |
 | src/server/ai/tools/omp/debug.ts | 362 | ompDebugTool |
 | src/server/ai/tools/omp/debug/debug-operations.ts | 356 | Breakpoint, StackFrame, Variable, SourceInfo, setBreakpoint, setFunctionBreakpoint, removeBreakpoint, doContinue, doPause, stepIn, stepOver, stepOut, waitForPause, getStack, getVariables, evaluate, loadedSources, injectProbe, capturePausedFrames, clearPausedFrames |
-| src/client/modules/orb-chat-host.ts | 332 | ChatHostDeps, initChatHost |
-| src/server/ai/tools/omp/browser/tab-supervisor.ts | 320 | WorkerHandle, TabSession, PendingRun, AcquireTabOptions, RunInTabOptions, getTab, acquireTab, runInTab, releaseTab, releaseAllTabs |
+| src/server/ai/tools/omp/browser/tab-supervisor.ts | 342 | WorkerHandle, TabSession, PendingRun, AcquireTabOptions, RunInTabOptions, getTab, acquireTab, runInTab, releaseTab, releaseAllTabs, resolveTabWorkerEntry |
+| src/client/modules/orb-chat-host.ts | 335 | ChatHostDeps, initChatHost |
 | src/server/ai/tools/omp/debug/kfmv4-views.ts | 318 | Kfmv4ViewName, Kfmv4ViewResult, RENDERER_SNAPSHOT_SCRIPT, ANIMATION_TIMELINE_SCRIPT, GESTURE_TRACE_SCRIPT, STATE_HISTORY_SCRIPT, CARD_LIFECYCLE_SCRIPT, KFMV4_SCRIPT_MAP, formatRendererSnapshot, formatAnimationTimeline, formatGestureTrace, formatStateHistory, formatCardLifecycle |
 | src/shared/chat-protocol/to-openai-messages.ts | 297 | OpenAiToolCall, OpenAiMessage, ToOpenAiOptions, ToOpenAiResult, toOpenAiMessages |
 | src/server/ai/session-store.ts | 258 | markSessionScript, appendEvent, flush, flushSync, invalidateSession, appendUserMessage |
@@ -159,7 +159,6 @@
 | src/client/modules/orb-chat.ts | 27 | — |
 | src/shared/chat-protocol/block-idx.ts | 24 | createClientIdxMapper |
 | src/server/ai/tools/omp/checkpoint.ts | 22 | ompCheckpointTool |
-| src/server/ai/tools/omp/browser/tab-worker-entry.js | 19 | — |
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
@@ -178,12 +177,12 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（158 文件 · 18723 行）
+## infra（159 文件 · 18803 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | tests/client-logic.test.ts | 954 | — |
-| tests/regression.test.ts | 654 | — |
+| tests/regression.test.ts | 655 | — |
 | experiments/coldstart/tools/normalize-arms.mjs | 587 | — |
 | tests/tool-compaction.test.ts | 505 | — |
 | tests/server-routes.test.ts | 472 | — |
@@ -216,6 +215,7 @@
 | experiments/coldstart/tools/routine-entry-validation.mjs | 158 | — |
 | scripts/check/gen-scripts-catalog.mjs | 157 | ScriptCatalogEntry, SCRIPTS_CATALOG, SCRIPT_CATEGORIES |
 | scripts/check/sync-counts.mjs | 157 | — |
+| build.mjs | 151 | — |
 | scripts/check/check-doc-orphans.mjs | 149 | — |
 | scripts/agent/semantic-bench.mjs | 149 | — |
 | tests/probes/gen-page-state-schema/src/server/ai/page-state.ts | 149 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
@@ -225,7 +225,6 @@
 | scripts/check/check-doc-linerefs.mjs | 137 | — |
 | experiments/coldstart/tools/judge-batch.mjs | 135 | — |
 | scripts/agent/exp-iceberg.mjs | 134 | — |
-| build.mjs | 133 | — |
 | scripts/check/chain.mjs | 133 | STEPS |
 | scripts/check/check-checks.mjs | 132 | — |
 | scripts/check/check-tool-compaction.mjs | 130 | — |
@@ -283,6 +282,7 @@
 | scripts/check/check-code-map-coverage.mjs | 63 | — |
 | scripts/check/check-fix-tests.mjs | 63 | — |
 | scripts/check/check-active-stack.mjs | 62 | — |
+| tests/browser-tool.test.ts | 61 | — |
 | tests/stack-numbering.test.ts | 61 | — |
 | scripts/check/check-doc-schema.mjs | 60 | — |
 | scripts/check/check-commit-docs.mjs | 59 | — |
@@ -340,6 +340,10 @@
 | tests/probes/sync-counts/tests/probe.ts | 2 | — |
 | tests/probes/checks/scripts/check/check-alpha.mjs | 1 | — |
 | tests/probes/checks/scripts/check/check-beta.mjs | 1 | — |
+
+## ⚠ 未登记（1 文件——不在 domain-src.mjs 任何域内）
+
+- src/client/modules/app-lifecycle.ts（21 行）
 
 ## 跨域 import 边（机械生成）
 
@@ -558,8 +562,9 @@
 - src/client/modules/terminal-card-04.ts → src/client/modules/z-index-layers.ts
 - src/client/modules/tmux-card.ts → src/client/modules/gesture-registry.ts
 
-### infra → ai-chat（26 边）
+### infra → ai-chat（27 边）
 
+- tests/browser-tool.test.ts → src/server/ai/tools/omp/browser/tab-supervisor.ts
 - tests/chat-protocol.test.ts → src/client/modules/orb-chat.ts
 - tests/chat-protocol.test.ts → src/server/ai/chat.ts
 - tests/client-logic.test.ts → src/client/modules/session-client.ts
@@ -657,4 +662,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 305 文件 · 54333 行 · 跨域边 254 条
+合计 305 文件 · 54427 行 · 跨域边 255 条

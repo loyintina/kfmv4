@@ -20,8 +20,12 @@ cmux 路径已删除（附着真实 Chrome 用，kfmv4 不需要）。
    依赖序列化的工具。**
 2. **Node 22 strip-only 不支持 TS 参数属性**：`constructor(readonly x)` 在
    tsx worker 里炸。写法：普通属性 + 构造器内赋值。
-3. **tsx worker execArgv 冲突**：必须过滤 `--eval`。最终方案：esbuild 预编译
-   `tab-worker-entry.js`，worker 直接加载 .js，不走 tsx loader。
+3. **tsx worker execArgv 冲突**：必须过滤 `--eval`。worker 入口由 build.mjs
+   单独 esbuild 打包为 `dist/server/tab-worker-entry.js`（.ts 源码 → dist 产物），
+   生产构建 worker 直接加载 .js 不走 tsx loader；tab-supervisor 用
+   `resolveTabWorkerEntry` 探测（源码 .ts 优先 / dist .js 兜底）。历史上
+   src/ 曾误提交过一个 import `./tab-worker.ts` 的 tab-worker-entry.js
+   （Node 无法原生加载，2026-08-10 已删）——教训：src/ 下不要手写"编译产物"。
 4. **Promise.withResolvers 是 ES2024**：项目 target ES2022，用内联 res/rej 模式。
 5. **@mozilla/readability / linkedom 无依赖**：用 regex 标签剥离 + article/main
    提取，对 AI 消费足够。
@@ -29,7 +33,8 @@ cmux 路径已删除（附着真实 Chrome 用，kfmv4 不需要）。
 ## 文件依赖图
 
 ```
-browser.ts → tab-supervisor.ts ├→ launch.ts ├→ tab-worker-entry.js(编译后)
+browser.ts → tab-supervisor.ts ├→ launch.ts ├→ tab-worker-entry.ts
+  → [build.mjs] → dist/server/tab-worker-entry.js（worker 加载此产物）
   → tab-worker.ts ├→ aria/aria-snapshot.ts ├→ readable.ts ├→ run-cancellation.ts
   └→ tab-protocol.ts(类型)        └→ ../../types.ts(ToolError/ToolAbortError)
 ```
