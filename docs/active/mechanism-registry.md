@@ -25,6 +25,7 @@
 | 数据区结构 check-kfmv4-data | 核心 | 全 | 账本回潮/结构违例 → 中断 | ✓（2026-08-09 补） |
 | 工具压缩登记 tool-compaction | 核心 | 全 | 新工具无压缩登记 → 中断 | ✓（2026-08-09 补） |
 | 外部来源登记 external-sources | 外围 | 约定（pre-code-gate 清单） | 引外部代码没人登记 → 升级踩坑才知（滞后） | —（接受滞后+抽查） |
+| 报错引导（撞墙含金量） | 核心 | 部分（29/54 带引导） | 报错无引导 → AI 反复不会改（墙倒） | 审计 2026-08-09 |
 | 工作流系统 workflows | 核心 | 约定 + workflow-integrity | 工作流引用失效 → MECH-FLOW-05 | ✓（consistency） |
 
 ## 分级处置
@@ -42,3 +43,5 @@
 - 2026-08-09 体检：17 机制失效信号全部可验证或合理豁免（report：
   harness-studies/mechanism-audit-2026-08-09.md）；补 kfmv4-data + tool-compaction
   探针（22→24）；contract-freshness/secrets 为 git 历史型豁免（有据）。
+- 2026-08-09 报错引导审计：54 脚本 29 带引导 / 25 无（自解释豁免/半引导可后补/待核实）；
+  标准=病因+位置+修正路径；存量不批量补，撞墙倒再补（反预设）。

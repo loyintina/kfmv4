@@ -38,6 +38,24 @@
 4. **下一批缝隙候选**：注册表里"机械化=约定"的机制（external-sources、工作流系统的手工
    部分）——若长期无真实使用触发，按退役规则处理。
 
+## 报错引导审计（撞墙含金量，2026-08-09 追加）
+
+**背景**：机制税讨论修正——高频失败=机制在呼吸（不是税）；真税=撞了没学到
+（报错无引导/被无视/重复同错）=墙倒了。报错提示本身是教育引导。
+
+**审计**：54 个有 console.error 的脚本，29 个带引导（⛳ 错误码 / 读 xxx / 跑 xxx），
+25 个无引导。无引导的 25 个按错误码体系判断标准（自解释不加码）初步分类：
+- 自解释型（报错文本已说清修正，符合标准不加）：deploy-freshness（跑 deploy-fast）、
+  secrets（删 key）、versions（打 tag）、uncommitted（提交）、gen-route-table（包裹标记）、
+  probes/checks（转发子检查器自带引导）等
+- 半引导型（位置明确但无修正指引，可后补）：as-any（escape-ok 标记在第二行）、
+  commit-docs（docs:na 说明在第二行）、console（位置无修法）、doc-symbols 等
+- 待核实型（{msg} 转发，需看实际输出）：cards/css-wiring/docs/hooks/registry/
+  schema/inbox-heartbeat/code-doc-refs/card-meta/doc-linerefs/zindex/anim/test-patterns
+
+**标准（预防性条款）**：新检查器/改检查器报错，必须带"病因 + 位置 + 修正路径"三者；
+存量无引导者不批量补（反预设），等撞到"报错后 AI 反复不会改"的墙倒案例再逐个补。
+
 ## 结论
 
 **17 个机制的失效信号全部可验证或合理豁免。** 机制防腐烂框架（地图 + 条款 + 审计 +
