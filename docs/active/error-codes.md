@@ -26,6 +26,7 @@
 | DOC-FLOW-09 | 新部件无 code-map 家（check-code-map-coverage：main.ts 直挂部件未入图） | 对应域 code-map.md（实然测绘） | 第 4 步 |
 | DOC-FLOW-10 | 新 agent 脚本无发现路径（check-agent-script-docs：scripts/agent/*.mjs 未登记，exp-* 豁免） | guides/agent-runner.md 负载登记节 | 第 4 步 |
 | DOC-FLOW-11 | 实验产物无发现路径（check-experiment-registry：tools/specs/results/design 等未入实验登记面，数据区豁免） | experiments/paradigm/index.md 产物登记面节 | 第 4 步 |
+| DOC-FLOW-12 | 规则/机制类文档无工作流消费（check-doc-orphans 第三层门：active/guides/constraints 须被 workflow reads/check 脚本/CLAUDE-README 任一引用，仅 docs 互引不算） | doc-architecture §结构原则 #5（执法缝隙注记） | 第 4 步 |
 
 ## TEST-FLOW（测试/账本纪律：bug-fix 流程）
 

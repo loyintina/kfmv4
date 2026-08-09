@@ -10,11 +10,12 @@
 3. **一个工作流定义 = 读什么 + 写什么 + 退出条件**。
 4. **最长引用链 ≤ 2 跳**：根 CLAUDE.md 路由表 → 目标。
 5. **结构从工作流需求中涌现**——一个文档若没有任何工作流 read/write 它，它不该存在。
-   （⚠️ 执法缝隙 2026-08-09 复盘标记：check-doc-orphans 孤儿门检查"被引用"
-   含 docs 互引，不检查"被工作流 read/write"——原则 #5 只机械化了一半。规则/机制
-   类文档（要 agent 遵守的）必须工作流可达，状态/历史类（decisions/ledger）被索引
-   即可。见 invariants.md §六「新机制可达性自检」；机械化候选：规则文档须被
-   ≥1 个 workflow read 引用。）
+   （2026-08-09 复盘 + 实装：原执法缝隙——check-doc-orphans 孤儿门只查"被引用"含 docs
+   互引，原则只机械化一半。现补第三层门「工作流消费门」（⛳ DOC-FLOW-12）：active/
+   guides/constraints 下规则/机制/SOP 类必须被 workflows reads / check-agent 脚本 /
+   CLAUDE-README 任一消费；仅 docs 互引不算。constraints/detail-* 例外：被
+   invariants.md 主文档引用或工作流消费二选一。状态/历史类（decisions/ledger/archive）
+   与生成/索引类（code-map/capability-map）豁免。）
 
 ## 分层（七层）
 

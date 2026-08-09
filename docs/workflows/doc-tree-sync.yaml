@@ -2,7 +2,8 @@ id: doc-tree-sync
 name: 文档树同步
 trigger: 新增/移动/删除文档
 frequency: 文档结构变化时
-reads: []
+reads:
+  - active/semantic-generation.md（语义单源+生成呈现方向——涉及可生成内容时对照）
 steps:
   1. 更新 CLAUDE.md 路由表（一行）
   2. 涉及工作流 reads/writes 变化 → 同步改对应 yaml

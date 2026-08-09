@@ -5,6 +5,8 @@ frequency: 遇 bug 时
 reads:
   - constraints/diagnostics.md（纯排查流程：触控/手势、CSS/视觉、渲染/Canvas、构建/Bundle 四类路径）
   - constraints/detail-research-method.md（研究方法论展开版：多假设/穷尽搜索/验证后结论）
+  - active/debug-tools.md（调试工具 CDP 操作表/服务端调试惯例）
+  - constraints/detail-cases.md（历史案例库——排查时对照同类案例）
 steps:
   1. 按症状选排查路径
   2. 先确认事件是否完整到达（log() 推日志卡），再查处理逻辑
