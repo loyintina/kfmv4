@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 12502ae9 · 生成于 2026-08-09 -->
+<!-- 基准 commit 3316383e · 生成于 2026-08-09 -->
 
 # 代码清单（机械层）
 
@@ -177,7 +177,7 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（153 文件 · 18493 行）
+## infra（153 文件 · 18541 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -215,6 +215,7 @@
 | scripts/check/gen-scripts-catalog.mjs | 157 | ScriptCatalogEntry, SCRIPTS_CATALOG, SCRIPT_CATEGORIES |
 | scripts/check/sync-counts.mjs | 157 | — |
 | experiments/coldstart/tools/routine-entry-validation.mjs | 152 | — |
+| scripts/check/check-doc-orphans.mjs | 149 | — |
 | scripts/agent/semantic-bench.mjs | 149 | — |
 | tests/probes/gen-page-state-schema/src/server/ai/page-state.ts | 149 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
 | scripts/check/check-docs.mjs | 146 | — |
@@ -246,7 +247,6 @@
 | scripts/check/check-contract-freshness.mjs | 104 | — |
 | scripts/check/check-test-patterns.mjs | 102 | — |
 | scripts/check/gen-rules-map.mjs | 102 | — |
-| scripts/check/check-doc-orphans.mjs | 101 | — |
 | tests/session-invalidate.test.ts | 100 | — |
 | scripts/check/check-anim.mjs | 99 | — |
 | scripts/check/check-stack-status.mjs | 99 | — |
@@ -649,4 +649,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 299 文件 · 53811 行 · 跨域边 252 条
+合计 299 文件 · 53859 行 · 跨域边 252 条
