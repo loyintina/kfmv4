@@ -189,7 +189,7 @@ export function initObsHud(): void {
     duty.style.top = `${pulse.getBoundingClientRect().bottom + 10}px`;
     // 底部信息框固定高度 + 空间不足消失（2026-08-10 用户定稿：浏览器高度各异，
     // 动态拉伸会过长/截断/重叠——统一固定高，空间不够哪个不够哪个消失）
-    const PANEL_H = 170; // 待办/角色两框固定高度
+    const PANEL_H = 218; // 待办/角色两框固定高度（2026-08-10 用户定稿：扩 2 格 = 网格 24px/格 ×2，170→218）
     const inputBar = document.querySelector<HTMLElement>('.ai-input-bar');
     const inputTop = inputBar ? inputBar.getBoundingClientRect().top : window.innerHeight - 84;
     const dutyB = duty.getBoundingClientRect().bottom;
@@ -216,7 +216,9 @@ export function initObsHud(): void {
     perms.style.left = `${srr.left}px`;
     perms.style.width = `${stk.left + stk.width - srr.left}px`;
     perms.style.top = `${stk.bottom + 10}px`;
-    perms.style.height = `${inputTop - 10 - perms.getBoundingClientRect().top}px`;
+    // 权限条固定高度（2026-08-10 用户定稿：原动态填满剩余——改为固定一行高）
+    const PERMS_H = 36;
+    perms.style.height = `${PERMS_H}px`;
     // 角色卡星座图（2026-08-10 修订：固定高（够空间时 PANEL_H），角色框与待办框
     // **并排**（左列），垂直延伸到待办下界；可用不足用 min(可用) 不重叠，极小才消失——
     // 实测 900px 视口可用 ~114px，硬 170 会永远隐藏（用户反馈））
