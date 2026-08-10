@@ -27,6 +27,8 @@ interface PageDescription {
   content: unknown[];
   capabilities: unknown[];
   timestamp: number;
+  /** 浏览器真实视口尺寸（眼睛坐标系标定用，2026-08-10） */
+  viewport?: { width: number; height: number };
 }
 
 interface WsMessage {

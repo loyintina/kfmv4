@@ -38,6 +38,7 @@ export const PAGE_STATE_TEXTS = {
   noSummary: '(无摘要)',
   disabledMark: '（禁用）',
   effectPrefix: '操作后：',
+  viewportPrefix: '> 屏幕：', // 眼睛坐标系：{w} × {h}，左上(0,0)，右下({w},{h})（2026-08-10 真实视口）
   noSnapshotFull: '# 当前页面状态\n\n> 暂无页面快照（浏览器未连接或未推送状态）。',
 } as const;
 
@@ -88,6 +89,13 @@ export function renderPageState(snap: unknown): string {
   lines.push('');
   lines.push(T.headerRefreshNote);
   lines.push('');
+  // 眼睛坐标系：浏览器真实视口（2026-08-10——坐标必须是真实屏幕，模拟视口会误导）
+  const vp = (snap as Record<string, unknown>)?.['viewport'] as { width?: number; height?: number } | undefined;
+  if (vp && vp.width && vp.height) {
+    const w = Math.round(vp.width); const h = Math.round(vp.height);
+    lines.push(`${T.viewportPrefix}${w} × ${h}，左上(0,0)，右下(${w},${h})`);
+    lines.push('');
+  }
 
   // 你能看到什么 —— 内容层摘要
   lines.push(T.sectionVisible);

@@ -184,7 +184,9 @@ class WsChannel {
       this.pushTimer = null;
       if (!this._connected || !this.ws) return;
       const snapshot = Registry.snapshot();
-      this.send('snapshot', snapshot);
+      // 眼睛坐标系：真实屏幕尺寸（2026-08-10 设计文档——坐标必须是浏览器真实
+      // viewport，puppeteer 模拟视口会给出错误坐标）
+      this.send('snapshot', { ...snapshot, viewport: { width: window.innerWidth, height: window.innerHeight } });
     }, PUSH_DEBOUNCE_MS);
   }
 
