@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 6da25691 · 生成于 2026-08-10 -->
+<!-- 基准 commit dbcd5c19 · 生成于 2026-08-10 -->
 
 # 代码清单（机械层）
 
@@ -104,7 +104,7 @@
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（54 文件 · 11875 行）
+## ai-chat（54 文件 · 11885 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -115,7 +115,7 @@
 | src/server/ai/chat.ts | 562 | ChatMessage, StreamEvent, createClientIdxMapper, findApiProvider |
 | src/client/modules/session-client.ts | 529 | SessionMessage, Session, extractMessageText, countTextMessages, sessionStore |
 | src/client/modules/orb-chat-run.ts | 512 | ChatMessage, StreamEvent, getActiveRunId, getActiveCursor, setEventHook, readPersistedRun, clearPersistedRun, settlePendingToolBlocks, resumeRun, doSend |
-| src/client/modules/ws-channel.ts | 426 | wsChannel, initWsChannel |
+| src/client/modules/ws-channel.ts | 428 | wsChannel, initWsChannel |
 | src/shared/tool-compaction/index.ts | 369 | CompactorEntry, COMPACTOR_REGISTRY, COMPACTOR_NAMES, webTitleKey, CompactionCtx, MUT_BURST_GAP, EXEMPT_USER_ROUNDS, TODO_STALE_GAP, FAIL_REPEAT_MIN, errorFingerprint, failRepeatAnnotation, todoResultAnnotation, normalizeBashCommand, compactToolResult, compactToolInput |
 | src/server/ai/tools/omp/debug.ts | 362 | ompDebugTool |
 | src/server/ai/tools/omp/debug/debug-operations.ts | 356 | Breakpoint, StackFrame, Variable, SourceInfo, setBreakpoint, setFunctionBreakpoint, removeBreakpoint, doContinue, doPause, stepIn, stepOver, stepOut, waitForPause, getStack, getVariables, evaluate, loadedSources, injectProbe, capturePausedFrames, clearPausedFrames |
@@ -128,8 +128,8 @@
 | src/server/ai/run-manager.ts | 240 | _setStallMsForTest, getActiveRun, getRun, StreamFn, startRun, attachRun, cancelRun |
 | src/client/modules/orb-chat-hints.ts | 225 | startWaitingIndicator, TODO_DISMISS_KEY, todosFingerprint, clearTodoPanel, dismissTodoPanel, updateTodoFromTool |
 | src/server/ai/tools/index.ts | 169 | getAllTools, getToolDefinitions, executeTool, hasTool, getTool |
+| src/server/ai/page-state.ts | 156 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
 | src/server/ai/routes.ts | 153 | StartRunFn, setupAiRoutes |
-| src/server/ai/page-state.ts | 148 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
 | src/server/ai/permissions.ts | 134 | RiskClass, TOOL_RISK, Decision, AuditEntry, riskClassOf, evaluate |
 | src/server/ai/prompt-assembler.ts | 124 | getActiveRoleFile, assembleRoleSystemPrompt, assembleDynamicPrompt |
 | src/shared/chat-protocol/reducer.ts | 122 | ReduceContext, applyEvent, reduceEvents |
@@ -163,13 +163,13 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（10 文件 · 2460 行）
+## server（10 文件 · 2462 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/server/routes/obs.ts | 862 | setupObsRoutes, setupObsPages, buildRolesData |
 | src/server/routes/files.ts | 419 | FileItem, sliceMessages, MSG_PAYLOAD_BUDGET, MSG_SINGLE_CAP, capMessagesPayload, setupFileRoutes |
-| src/server/ws-server.ts | 315 | WsServer |
+| src/server/ws-server.ts | 317 | WsServer |
 | src/server/index.ts | 186 | — |
 | src/server/path-utils.ts | 172 | ROOT_DIR, PROJECT_ROOT, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, SESSION_ID_RE, isValidSessionId, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
 | src/server/ai/permissions.ts | 134 | RiskClass, TOOL_RISK, Decision, AuditEntry, riskClassOf, evaluate |
@@ -659,4 +659,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 306 文件 · 54477 行 · 跨域边 255 条
+合计 306 文件 · 54489 行 · 跨域边 255 条
