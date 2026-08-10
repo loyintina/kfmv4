@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit dbcd5c19 · 生成于 2026-08-10 -->
+<!-- 基准 commit 3edc301e · 生成于 2026-08-10 -->
 
 # 代码清单（机械层）
 
@@ -163,13 +163,13 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（10 文件 · 2462 行）
+## server（10 文件 · 2466 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/server/routes/obs.ts | 862 | setupObsRoutes, setupObsPages, buildRolesData |
 | src/server/routes/files.ts | 419 | FileItem, sliceMessages, MSG_PAYLOAD_BUDGET, MSG_SINGLE_CAP, capMessagesPayload, setupFileRoutes |
-| src/server/ws-server.ts | 317 | WsServer |
+| src/server/ws-server.ts | 321 | WsServer |
 | src/server/index.ts | 186 | — |
 | src/server/path-utils.ts | 172 | ROOT_DIR, PROJECT_ROOT, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, SESSION_ID_RE, isValidSessionId, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
 | src/server/ai/permissions.ts | 134 | RiskClass, TOOL_RISK, Decision, AuditEntry, riskClassOf, evaluate |
@@ -652,11 +652,12 @@
 - tests/session-security.test.ts → src/server/path-utils.ts
 - tests/session-security.test.ts → src/server/ws-server.ts
 
-### server → ai-chat（3 边）
+### server → ai-chat（4 边）
 
 - src/server/ai/permissions.ts → src/server/ai/tools/types.ts
 - src/server/index.ts → src/server/ai/routes.ts
 - src/server/routes/files.ts → src/server/ai/session-store.ts
+- src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 306 文件 · 54489 行 · 跨域边 255 条
+合计 306 文件 · 54493 行 · 跨域边 256 条
