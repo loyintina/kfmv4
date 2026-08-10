@@ -194,13 +194,16 @@ export function initObsHud(): void {
     const inputTop = inputBar ? inputBar.getBoundingClientRect().top : window.innerHeight - 84;
     const dutyB = duty.getBoundingClientRect().bottom;
     const stackTop = dutyB + 10;
-    // 待办框（.obs-stack）：固定高度；空间（到输入栏）不足则整体消失
+    // 待办框（.obs-stack）：固定高（够空间时 PANEL_H）；空间不足用 min(可用) 不重叠，
+    // 可用空间极小（<MIN_VISIBLE）才整体消失——2026-08-10 修正：原 PANEL_H+40 阈值
+    // 太严（矮视口待办也消失），且硬高 170 在可用不足时会溢出重叠
+    const MIN_VISIBLE = 80;
     const stackEl = hud.querySelector<HTMLElement>('.obs-stack')!;
     const stackSpace = inputTop - 10 - stackTop;
-    if (stackSpace >= PANEL_H + 40) {
+    if (stackSpace >= MIN_VISIBLE) {
       stackEl.style.display = '';
       stackEl.style.top = `${stackTop}px`;
-      stackEl.style.height = `${PANEL_H}px`;
+      stackEl.style.height = `${Math.min(PANEL_H, stackSpace)}px`;
       stackEl.style.bottom = 'auto'; // 取消 CSS bottom 双锚拉伸，改固定高度
     } else {
       stackEl.style.display = 'none';
@@ -214,18 +217,18 @@ export function initObsHud(): void {
     perms.style.width = `${stk.left + stk.width - srr.left}px`;
     perms.style.top = `${stk.bottom + 10}px`;
     perms.style.height = `${inputTop - 10 - perms.getBoundingClientRect().top}px`;
-    // 角色卡星座图（2026-08-10 修订：固定高度；角色框与待办框**并排**（左列），
-    // 垂直可延伸到待办下界（原动态高度即 stk.bottom - srr.bottom - 10）——
-    // 用待办下界算可用空间，够 PANEL_H 显示固定高，不够消失）
+    // 角色卡星座图（2026-08-10 修订：固定高（够空间时 PANEL_H），角色框与待办框
+    // **并排**（左列），垂直延伸到待办下界；可用不足用 min(可用) 不重叠，极小才消失——
+    // 实测 900px 视口可用 ~114px，硬 170 会永远隐藏（用户反馈））
     const rolesTop = srr.bottom + 10;
     const stkBottom = stk.bottom;
     const rolesSpace = stkBottom - rolesTop;
-    if (rolesSpace >= PANEL_H) {
+    if (rolesSpace >= MIN_VISIBLE) {
       rolesRect = {
         left: srr.left,
         top: rolesTop,
         width: stk.left - 10 - srr.left,
-        height: PANEL_H,
+        height: Math.min(PANEL_H, rolesSpace),
       };
     } else {
       rolesRect = { left: srr.left, top: rolesTop, width: stk.left - 10 - srr.left, height: 0 };
