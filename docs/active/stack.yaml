@@ -418,3 +418,10 @@ research:
     detail: |-
       机制注册表（2026-08-09 落地）——`docs/active/mechanism-registry.md` 机制防腐烂地图（类型/机械化/失效信号/探针），
       递归终止框架：机制连现实不连机制；外围机制退役规则见 doc-architecture
+  - id: R6
+    title: 眼睛与手重构设计（2026-08-10 立项）
+    note: 2026-08-10 立项，设计文档临时态
+    detail: |-
+      眼睛与手重构——`docs/active/眼睛与手.md`（spec-driven 设计文档，临时，
+      完成后删除、知识进 client-shell contract + history）。眼睛=页面坐标化
+      空间感知（中央页面/文件树/光球/卡片堆四要素），手=可操作内容。
