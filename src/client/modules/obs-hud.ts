@@ -187,27 +187,47 @@ export function initObsHud(): void {
     duty.style.width = `${sm.left + sm.width - dutyLeft}px`;
     pulse.style.top = `${sm.bottom + 10}px`;
     duty.style.top = `${pulse.getBoundingClientRect().bottom + 10}px`;
-    // 待办上界 = 执勤下界 + 10（2026-08-09 用户定稿：下界不动——CSS bottom:140 保留，
-    // 上界上移与执勤同距；fixed top+bottom 双锚拉伸，列表 flex 填满空隙）
-    const stackEl = hud.querySelector<HTMLElement>('.obs-stack')!;
-    stackEl.style.top = `${duty.getBoundingClientRect().bottom + 10}px`;
-    // 权限审计 R3（2026-08-09）：待办下、输入栏上，全宽横条（巡逻/token 已删）
-    const srr = rail.getBoundingClientRect();
-    const stk = stackEl.getBoundingClientRect();
+    // 底部信息框固定高度 + 空间不足消失（2026-08-10 用户定稿：浏览器高度各异，
+    // 动态拉伸会过长/截断/重叠——统一固定高，空间不够哪个不够哪个消失）
+    const PANEL_H = 170; // 待办/角色两框固定高度
     const inputBar = document.querySelector<HTMLElement>('.ai-input-bar');
     const inputTop = inputBar ? inputBar.getBoundingClientRect().top : window.innerHeight - 84;
+    const dutyB = duty.getBoundingClientRect().bottom;
+    const stackTop = dutyB + 10;
+    // 待办框（.obs-stack）：固定高度；空间（到输入栏）不足则整体消失
+    const stackEl = hud.querySelector<HTMLElement>('.obs-stack')!;
+    const stackSpace = inputTop - 10 - stackTop;
+    if (stackSpace >= PANEL_H + 40) {
+      stackEl.style.display = '';
+      stackEl.style.top = `${stackTop}px`;
+      stackEl.style.height = `${PANEL_H}px`;
+      stackEl.style.bottom = 'auto'; // 取消 CSS bottom 双锚拉伸，改固定高度
+    } else {
+      stackEl.style.display = 'none';
+    }
+    // 权限审计 R3（2026-08-09）：待办下、输入栏上，全宽横条（巡逻/token 已删）
+    const srr = rail.getBoundingClientRect();
+    const stk = stackEl.style.display === 'none'
+      ? { left: srr.left + 210, bottom: stackTop + PANEL_H, width: 200 }
+      : stackEl.getBoundingClientRect();
     perms.style.left = `${srr.left}px`;
     perms.style.width = `${stk.left + stk.width - srr.left}px`;
     perms.style.top = `${stk.bottom + 10}px`;
     perms.style.height = `${inputTop - 10 - perms.getBoundingClientRect().top}px`;
-    // 角色卡星座图（2026-08-09 v2 定稿：左列大区，三边 10px 间距同步——
-    // 右界=待办左缘-10、上界=系统底+10、下界=权限顶-10，标题栏取消）
-    rolesRect = {
-      left: srr.left,
-      top: srr.bottom + 10,
-      width: stk.left - 10 - srr.left,
-      height: Math.max(60, stk.bottom - srr.bottom - 10),
-    };
+    // 角色卡星座图（2026-08-10 修订：固定高度；空间不足（到待办上界）则消失，
+    // 原动态拉伸到待办上界——浏览器高时拉很长、矮时截断重叠）
+    const rolesTop = srr.bottom + 10;
+    const rolesSpace = stackTop - rolesTop;
+    if (rolesSpace >= PANEL_H + 20) {
+      rolesRect = {
+        left: srr.left,
+        top: rolesTop,
+        width: stk.left - 10 - srr.left,
+        height: PANEL_H,
+      };
+    } else {
+      rolesRect = { left: srr.left, top: rolesTop, width: stk.left - 10 - srr.left, height: 0 };
+    }
     const rsig = JSON.stringify(rolesRect, (k, v) => typeof v === 'number' ? Math.round(v) : v);
     if (rsig !== lastRolesSig) { lastRolesSig = rsig; roles?.relayout(); }
     // 深蓝意志徽标几何：A=四框围出的中央口袋（2026-08-09 裁决留 A，B/C 竖带取消）
