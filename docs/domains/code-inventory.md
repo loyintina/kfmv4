@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit e0d9dcfd · 生成于 2026-08-10 -->
+<!-- 基准 commit 11e596b3 · 生成于 2026-08-10 -->
 
 # 代码清单（机械层）
 
@@ -72,11 +72,11 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（27 文件 · 4951 行）
+## client-shell（27 文件 · 4954 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/client/modules/obs-hud.ts | 745 | initObsHud |
+| src/client/modules/obs-hud.ts | 748 | initObsHud |
 | src/client/modules/orb.ts | 538 | type OrbState, collapseOrbPanel, initOrb |
 | src/client/modules/obs-emblem.ts | 497 | EmblemRect, EmblemRects, initObsEmblems |
 | src/client/modules/gesture-registry.ts | 346 | GestureHandler, GestureRegistry, gestures |
@@ -659,4 +659,4 @@
 - src/server/routes/files.ts → src/server/ai/session-store.ts
 
 ---
-合计 306 文件 · 54472 行 · 跨域边 255 条
+合计 306 文件 · 54475 行 · 跨域边 255 条
