@@ -214,11 +214,13 @@ export function initObsHud(): void {
     perms.style.width = `${stk.left + stk.width - srr.left}px`;
     perms.style.top = `${stk.bottom + 10}px`;
     perms.style.height = `${inputTop - 10 - perms.getBoundingClientRect().top}px`;
-    // 角色卡星座图（2026-08-10 修订：固定高度；空间不足（到待办上界）则消失，
-    // 原动态拉伸到待办上界——浏览器高时拉很长、矮时截断重叠）
+    // 角色卡星座图（2026-08-10 修订：固定高度；角色框与待办框**并排**（左列），
+    // 垂直可延伸到待办下界（原动态高度即 stk.bottom - srr.bottom - 10）——
+    // 用待办下界算可用空间，够 PANEL_H 显示固定高，不够消失）
     const rolesTop = srr.bottom + 10;
-    const rolesSpace = stackTop - rolesTop;
-    if (rolesSpace >= PANEL_H + 20) {
+    const stkBottom = stk.bottom;
+    const rolesSpace = stkBottom - rolesTop;
+    if (rolesSpace >= PANEL_H) {
       rolesRect = {
         left: srr.left,
         top: rolesTop,
