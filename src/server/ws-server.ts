@@ -18,6 +18,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { PtyManager } from './terminal-pty.js';
 import { isTrustedOrigin } from './path-utils.js';
 import { execFile } from 'child_process';
+import { refreshPageState } from './ai/page-state.js';
 
 // ========== 类型定义 ==========
 
@@ -158,6 +159,9 @@ export class WsServer {
       case 'snapshot':
         this._latestSnapshot = msg.payload as PageDescription;
         this.send(ws, 'ack', { received: 'snapshot', timestamp: (msg.payload as PageDescription).timestamp });
+        // 收到快照即刷新眼睛文件（2026-08-10：不只工具调用后——页面变化实时投影，
+        // 含真实 viewport 坐标系；refreshPageState 内部 try/catch 不抛）
+        try { refreshPageState(this); } catch { /* 眼睛刷新失败不阻断快照 */ }
         break;
 
       case 'capabilities':
