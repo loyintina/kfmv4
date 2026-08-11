@@ -75,10 +75,10 @@ class HandOrbit {
   /** 设置待机轨道区（视口绝对坐标）——relayout 时更新 */
   setOrbit(rect: HandRect): void {
     const shortSide = Math.min(rect.width, rect.height);
-    // 首次：按轨道区短边确定卫星半径 + 核从轨道中心出发
+    // 首次：按轨道区短边确定卫星半径（独立分散，不聚点）+ 核从轨道中心出发
     if (!this.satsInit) {
       const R = rng(20260810);
-      for (const s of this.sats) s.r0 = (0.18 + R() * 0.26) * shortSide;
+      for (const s of this.sats) s.r0 = (0.30 + R() * 0.45) * shortSide;
       this.satsInit = true;
       this.core = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
     } else if (this.orbit) {
@@ -130,15 +130,12 @@ class HandOrbit {
       ctx.lineWidth = 0.8;
       ctx.beginPath(); ctx.moveTo(this.trail[i - 1].x, this.trail[i - 1].y); ctx.lineTo(this.trail[i].x, this.trail[i].y); ctx.stroke();
     }
-    // 卫星：本位轨道（锚定轨道区中心）+ 核邻近牵引（核移动时卫星自然弹性跟随）
+    // 卫星：绕核轨道（核是中心——核移动时卫星整体跟随平移），
+    // 每颗独立 r0/相位/角速（不聚点）；2026-08-11 用户实拍修正
     for (const s of this.sats) {
-      const bx = cx + Math.cos(s.ph + t * s.om) * s.r0;
-      const by = cy + Math.sin(s.ph + t * s.om) * s.r0 * 1.25; // 竖区拉纵向
-      const d = Math.hypot(bx - this.core.x, by - this.core.y);
-      const k = 0.22 * Math.exp(-(d * d) / (2 * 26 * 26));
-      const x = bx * (1 - k) + this.core.x * k, y = by * (1 - k) + this.core.y * k;
-      const a = 0.18 + 0.5 * Math.exp(-(d * d) / (2 * 30 * 30));
-      ctx.strokeStyle = `rgba(${BLUE},${a})`;
+      const x = this.core.x + Math.cos(s.ph + t * s.om) * s.r0;
+      const y = this.core.y + Math.sin(s.ph + t * s.om) * s.r0 * 1.25; // 竖区拉纵向
+      ctx.strokeStyle = `rgba(${BLUE},0.5)`;
       ctx.lineWidth = 0.6;
       ctx.beginPath(); ctx.moveTo(this.core.x, this.core.y); ctx.lineTo(x, y); ctx.stroke();
       ctx.fillStyle = `rgba(${CYAN},0.75)`;
