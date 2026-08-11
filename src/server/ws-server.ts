@@ -162,6 +162,7 @@ export class WsServer {
         // 收到快照即刷新眼睛文件（2026-08-10：不只工具调用后——页面变化实时投影，
         // 含真实 viewport 坐标系；refreshPageState 内部 try/catch 不抛）
         try { refreshPageState(this); } catch { /* 眼睛刷新失败不阻断快照 */ }
+        void import('./ai/eyes.js').then(m => m.genEyes(this)).catch(() => {}); // 2026-08-11 新眼睛文件（MD+YAML）
         break;
 
       case 'capabilities':

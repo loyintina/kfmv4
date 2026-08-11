@@ -43,7 +43,7 @@ type Balance = BalanceOk | BalanceErr;
 
 let balanceCache: { data: Balance; ts: number } | null = null;
 
-async function fetchDeepseekBalance(): Promise<Balance> {
+export async function fetchDeepseekBalance(): Promise<Balance> {
   if (balanceCache && Date.now() - balanceCache.ts < BALANCE_CACHE_MS) {
     return balanceCache.data;
   }
@@ -142,7 +142,7 @@ function inboxTypeOf(mark: string | undefined): InboxEntry['type'] {
   }
 }
 
-function parseInbox(): InboxEntry[] {
+export function parseInbox(): InboxEntry[] {
   try {
     const text = fs.readFileSync(INBOX_PATH, 'utf-8');
     const entries: InboxEntry[] = [];
@@ -178,7 +178,7 @@ interface StackEntry {
 
 const STACK_PATH = path.join(PROJECT_ROOT, 'docs', 'active', 'stack.yaml');
 
-function parseStack(): { entries: StackEntry[]; counts: { todo: number; hold: number; done: number } } {
+export function parseStack(): { entries: StackEntry[]; counts: { todo: number; hold: number; done: number } } {
   const counts = { todo: 0, hold: 0, done: 0 };
   try {
     const doc = yamlLoad(fs.readFileSync(STACK_PATH, 'utf-8')) as { entries?: Array<Record<string, unknown>> };
@@ -438,7 +438,7 @@ function collectCron(): SysCron[] {
   return out;
 }
 
-function collectSys(): SysData {
+export function collectSys(): SysData {
   startSysSampler();
   const r = readMetricsRaw();
   const historyOf = (k: 'disk' | 'mem' | 'load' | 'rss') => history.map(s => s[k]);
@@ -486,7 +486,7 @@ const ARCHIVE_TOP_N = 5; // TOP5+聚合轨=6 行钉死星轨高度（2026-08-09 
 const ACTIVE_WINDOW_MS = 48 * 3_600_000;
 let archiveCache: { data: ArchiveData; ts: number } | null = null;
 
-function collectArchive(): ArchiveData {
+export function collectArchive(): ArchiveData {
   const now = Date.now();
   if (archiveCache && now - archiveCache.ts < ARCHIVE_CACHE_MS) return archiveCache.data;
   const empty: ArchiveData = { sessions: 0, totalTokens: 0, tracks: [] };
@@ -653,7 +653,7 @@ function readJsonlTail(file: string, maxBytes: number): Array<Record<string, unk
 
 const inWindow = (ts: unknown, cutoff: number) => typeof ts === 'string' && new Date(ts).getTime() >= cutoff;
 
-function collectPulse(): PulseData {
+export function collectPulse(): PulseData {
   const now = Date.now();
   if (pulseCache && now - pulseCache.ts < PULSE_CACHE_MS) return pulseCache.data;
   const cutoff = now - PULSE_WINDOW_MS;
@@ -774,7 +774,7 @@ function collectTokens(): TokensData {
   return data;
 }
 
-function collectPerms(): PermsData {
+export function collectPerms(): PermsData {
   const now = Date.now();
   if (permsCache && now - permsCache.ts < PERMS_CACHE_MS) return permsCache.data;
   const cutoff = now - 24 * 3_600_000;
@@ -852,7 +852,7 @@ export function buildRolesData(rolesDir: string, activePath: string): RolesData 
   return { roles, activeRoleId, totalRoles: roles.length, totalFiles: fileMap.size };
 }
 
-function collectRoles(): RolesData {
+export function collectRoles(): RolesData {
   const now = Date.now();
   if (rolesCache && now - rolesCache.ts < ROLES_CACHE_MS) return rolesCache.data;
   const data = buildRolesData(path.join(KFM_DATA_DIR, 'agents', 'roles'), path.join(KFM_DATA_DIR, 'active.json'));

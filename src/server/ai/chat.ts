@@ -256,6 +256,7 @@ export async function* streamChat(
 
   // 首轮前刷新一次 page-state（AI 发第一条前先看到当前页面）。
   refreshPageState(wsServer);
+  void import('./eyes.js').then(m => m.genEyes(wsServer)).catch(() => {});
   // 首轮注入动态反馈（让 AI 第一条就能看到页面状态）
   // 包裹（分隔线 + 「勿主动提及」规则）统一由 assembleDynamicPrompt 完成。
   const initialDynamic = assembleDynamicPrompt(roleFile);
@@ -540,6 +541,7 @@ export async function* streamChat(
       setTimeout(settleDone, 250);
       await settle;
       refreshPageState(wsServer);
+  void import('./eyes.js').then(m => m.genEyes(wsServer)).catch(() => {});
       // 动态反馈注入对话末尾（不破坏 system 前缀缓存；包裹同首轮）
       const dynamicPrompt = assembleDynamicPrompt(roleFile);
       if (dynamicPrompt) {
