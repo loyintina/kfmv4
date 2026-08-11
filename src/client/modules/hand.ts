@@ -38,6 +38,12 @@ function rng(seed: number): () => number {
 
 export interface HandRect { left: number; top: number; width: number; height: number }
 
+// 引力物理常量（2026-08-11 真实引力 N-body 模型）
+const GRAV = 2600;        // 引力常数（决定轨道速度/周期；sqrt(G/r0) 圆轨道速度）
+const SOFT = 14;          // 引力软化（防 r→0 加速度爆炸）
+const REP_MAG = 0.30;     // 青球互斥强度（弱磁场式：近距离才排斥）
+const REP_R = 18;         // 互斥作用半径（px，小于此距离才排斥）
+
 /**
  * 创建全屏手画布（固定定位覆盖整个视口，pointer-events:none 纯展示——
  * 手是视觉代理，点击事件由合成 PointerEvent 注入，不占真实 DOM 命中）。
@@ -57,12 +63,11 @@ function mkCanvas(vw: number, vh: number): [HTMLCanvasElement, CanvasRenderingCo
 
 // ============ 手引擎：待机利萨如巡逻 + 目标移动（弹簧物理） ============
 class HandOrbit {
-  // Verlet 积分 + 距离约束（成熟方案，2026-08-11 用户确认方向）：
-  // 青球 = Verlet 质点（记录当前/前一帧位置，速度隐含在位置差——天然稳定
-  // 不爆炸）。距离约束**只拉不推**：青球到核距离 > r0 时沿连线拉回 r0，
-  // 距离 ≤ r0 时约束松弛（自由飞行）——核移动时后方被拽（有惯性滞后）、
-  // 前方不受影响。青球初始有切向速度（绕核转），核是约束锚点。
-  private sats: { r0: number; om: number; ph: number; x: number; y: number; px: number; py: number }[] = [];
+  // 真实引力 + 速度积分（N-body 标准做法，2026-08-11 用户确认方向）：
+  // 青球是行星，受紫核引力 a = G/(r²+ε) **恒在**（持续向心力 → 自然开普勒
+  // 轨道，不会飘到中间停住）；核移动时引力中心跟着动——近的青球受引力强
+  // 跟得紧、远的滞后。青球间**弱磁场式互斥**（近距离才排斥，防聚点）。
+  private sats: { r0: number; om: number; ph: number; x: number; y: number; vx: number; vy: number }[] = [];
   private trail: { x: number; y: number; t: number }[] = [];
   private core = { x: 0, y: 0 };        // 核当前位置（视口绝对坐标）
   private coreV = { x: 0, y: 0 };       // 核速度（弹簧动力学）
@@ -70,30 +75,32 @@ class HandOrbit {
   private targetT0 = 0;                 // 目标设置时间戳（1.5s 后清除）
   private orbit: HandRect | null = null; // 待机轨道区（视口绝对坐标）
   constructor() {
-    // 3 颗青球（2026-08-11 用户拍板数量 12→3）——约束半径/切向角速/相位定种子
+    // 3 颗青球（2026-08-11 用户拍板数量 12→3）——轨道半径/切向角速/相位定种子
     const R = rng(20260810);
     for (let i = 0; i < 3; i++) {
       this.sats.push({
-        r0: (0.30 + R() * 0.45) * 60,                       // 距离约束长度（自然轨道半径）
-        om: (0.25 + R() * 0.4) * (R() > 0.5 ? 1 : -1),      // 切向角速（绕核转的初始速度）
+        r0: (0.30 + R() * 0.45) * 60,                       // 初始轨道半径
+        om: (0.25 + R() * 0.4) * (R() > 0.5 ? 1 : -1),      // 切向角速（决定初始轨道速度）
         ph: R() * Math.PI * 2,                              // 初始相位
-        x: 0, y: 0, px: 0, py: 0,                           // Verlet 位置（当前/前一帧）
+        x: 0, y: 0, vx: 0, vy: 0,                           // 位置/速度（引力积分）
       });
     }
   }
   /** 设置待机轨道区（视口绝对坐标）——relayout 时更新 */
   setOrbit(rect: HandRect): void {
     if (!this.orbit) {
-      // 首次：核从轨道中心出发；青球放在轨道位并给切向速度（Verlet 用前一帧偏移表达）
+      // 首次：核从轨道中心出发；青球放在轨道位并给圆轨道切向速度
+      // v = sqrt(G/r0)（引力提供向心力 → 稳定圆轨道）
       const cx0 = rect.left + rect.width / 2, cy0 = rect.top + rect.height / 2;
       this.core = { x: cx0, y: cy0 };
       for (const s of this.sats) {
         s.x = cx0 + Math.cos(s.ph) * s.r0;
         s.y = cy0 + Math.sin(s.ph) * s.r0 * 1.25;
-        // 切向速度（垂直半径方向）：前一帧位置 = 当前位置 - 速度×dt
-        const v = s.r0 * Math.abs(s.om) * 0.35 * Math.sign(s.om);
-        s.px = s.x + Math.sin(s.ph) * v * (1 / 60);
-        s.py = s.y - Math.cos(s.ph) * v * (1 / 60) * 1.25;
+        const v = Math.sqrt(GRAV / Math.max(20, s.r0));       // 圆轨道速度
+        const dir = Math.sign(s.om);
+        // 切向（垂直半径方向，椭圆纵向修正）
+        s.vx = -Math.sin(s.ph) * v * dir;
+        s.vy = Math.cos(s.ph) * v * dir * 1.25;
       }
     } else {
       // 尺寸变化：核/青球/尾迹等比映射到新锚点
@@ -105,8 +112,6 @@ class HandOrbit {
         for (const s of this.sats) {
           s.x = rect.left + (s.x - this.orbit.left) * fx;
           s.y = rect.top + (s.y - this.orbit.top) * fy;
-          s.px = rect.left + (s.px - this.orbit.left) * fx;
-          s.py = rect.top + (s.py - this.orbit.top) * fy;
         }
       }
     }
@@ -154,29 +159,35 @@ class HandOrbit {
       ctx.lineWidth = 0.8;
       ctx.beginPath(); ctx.moveTo(this.trail[i - 1].x, this.trail[i - 1].y); ctx.lineTo(this.trail[i].x, this.trail[i].y); ctx.stroke();
     }
-    // Verlet 青球：位置积分（速度隐含在位置差，稳定不爆炸）+ 距离约束
-    // **只拉不推**——到核距离 > r0 时拉回 r0（核远离→被拽），≤ r0 松弛
-    // （核靠近→自由飞行）。核移动时后方青球被拽（惯性滞后）、前方不受影响。
-    const dtV = Math.min(0.05, 33 / 1000);
-    const SOLVE = 3;            // 约束迭代次数（收敛更快、更硬）
-    const DAMP_V = 0.985;       // Verlet 阻尼（每帧速度衰减，防永久振荡）
+    // 真实引力积分（半隐式欧拉——先更新速度再位置，轨道稳定）+ 青球弱磁式互斥：
+    // 1. 每颗青球受紫核引力 a = G/(r²+ε) **恒在**（持续向心力 → 开普勒轨道，
+    //    不会飘到中间停住）；核移动时引力中心动——近的青球受引力强跟得紧
+    // 2. 青球间距离 < REP_R 时互斥（弱磁场式：越近越强，防聚点）
+    const dtG = Math.min(0.05, 33 / 1000);
+    const DAMP_G = 0.999;     // 极轻阻尼（防数值能量积累，几乎不影响轨道）
     for (const s of this.sats) {
-      // 1. Verlet 积分：新位置 = 当前位置 + (当前位置 - 前一帧位置)×阻尼
-      const nx = s.x + (s.x - s.px) * DAMP_V;
-      const ny = s.y + (s.y - s.py) * DAMP_V;
-      s.px = s.x; s.py = s.y;
-      s.x = nx; s.y = ny;
-      // 2. 距离约束（只拉不推）：超过 r0 沿连线拉回（迭代求硬约束）
-      for (let it = 0; it < SOLVE; it++) {
-        const dx = s.x - this.core.x, dy = s.y - this.core.y;
-        const d = Math.hypot(dx, dy);
-        if (d > s.r0 && d > 0.001) {
-          const corr = (d - s.r0) / d;         // 超标比例
-          s.x -= dx * corr;
-          s.y -= dy * corr;
+      // 核引力（平方反比 + 软化）
+      const dx = this.core.x - s.x, dy = this.core.y - s.y;
+      const r2 = dx * dx + dy * dy;
+      const acc = GRAV / (r2 + SOFT * SOFT);
+      s.vx += (dx / Math.sqrt(r2 + 1e-6)) * acc * dtG;
+      s.vy += (dy / Math.sqrt(r2 + 1e-6)) * acc * dtG;
+      // 青球间弱磁场互斥（两两）
+      for (const o of this.sats) {
+        if (o === s) continue;
+        const rx = s.x - o.x, ry = s.y - o.y;
+        const rd = Math.hypot(rx, ry);
+        if (rd < REP_R && rd > 0.01) {
+          const f = REP_MAG * (1 - rd / REP_R) * dtG;   // 越近越强
+          s.vx += (rx / rd) * f;
+          s.vy += (ry / rd) * f;
         }
       }
-      // 3. 绘制（连线随距离渐隐：近核亮远核暗）
+      // 积分（半隐式：速度已更新，再更新位置）
+      s.vx *= DAMP_G; s.vy *= DAMP_G;
+      s.x += s.vx * dtG;
+      s.y += s.vy * dtG;
+      // 绘制（连线随距离渐隐：近核亮远核暗）
       const d = Math.hypot(s.x - this.core.x, s.y - this.core.y);
       const a = 0.18 + 0.5 * Math.exp(-(d * d) / (2 * 30 * 30));
       ctx.strokeStyle = `rgba(${BLUE},${a})`;
