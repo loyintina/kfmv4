@@ -152,25 +152,39 @@ class HandOrbit {
     }
     // 卫星：独立橡皮筋质点——**只拉不推**。核与青球距离 > r0（拉紧）时产生
     // 沿连线的拉力把青球拽向核；距离 ≤ r0（松弛）时无力，青球靠惯性继续飞。
-    // 核快速远离 → 后方青球被拽着走（滞后）；核靠近 → 前方青球不受影响。
-    // 2026-08-11 用户描述：两个球之间的线是软的橡皮筋。
+    // 青球间加**软排斥**（防聚点）；整体**速度上限**（防橡皮筋拉拽积累出飞走）。
+    // 2026-08-11 用户描述：像软的橡皮筋 + 青球互斥 + 限速。
     const dtS = Math.min(0.05, 33 / 1000);
-    const R_BAND = 0.10;   // 橡皮筋刚度（拉紧时的拉力系数）
-    const DAMP = 0.015;    // 空气阻尼（防止永久振荡）
+    const R_BAND = 0.10;      // 橡皮筋刚度（拉紧时的拉力系数）
+    const DAMP = 0.015;       // 空气阻尼（防止永久振荡）
+    const REPULSE = 0.9;      // 青球间排斥刚度
+    const REP_DIST = 14;      // 排斥作用半径（px，小于此距离才排斥）
+    const MAX_SPEED = 3.2;    // 整体切向速度上限（px/帧·60 基准）
+    // 先算力（橡皮筋 + 青球间排斥），后积分——同一帧内力一致不串扰
     for (const s of this.sats) {
       const dx = this.core.x - s.x, dy = this.core.y - s.y;
       const d = Math.hypot(dx, dy);
       if (d > s.r0 && d > 0.01) {
-        // 拉紧：拉力沿连线指向核（力 = 刚度 × 拉伸量）
         const stretch = d - s.r0;
-        const fx = (dx / d) * R_BAND * stretch;
-        const fy = (dy / d) * R_BAND * stretch;
-        s.vx += fx * dtS * 60;
-        s.vy += fy * dtS * 60;
+        s.vx += (dx / d) * R_BAND * stretch * dtS * 60;
+        s.vy += (dy / d) * R_BAND * stretch * dtS * 60;
       }
-      // 空气阻尼（松弛段也作用——让自由飞行慢慢减速，不掉出屏幕）
+      // 青球间排斥：两两距离 < REP_DIST 时施加沿连线向外的力（越近越强）
+      for (const o of this.sats) {
+        if (o === s) continue;
+        const rx = s.x - o.x, ry = s.y - o.y;
+        const rd = Math.hypot(rx, ry);
+        if (rd < REP_DIST && rd > 0.01) {
+          const f = REPULSE * (1 - rd / REP_DIST) * dtS * 60;
+          s.vx += (rx / rd) * f;
+          s.vy += (ry / rd) * f;
+        }
+      }
+      // 空气阻尼 + 速度上限（切向速度被限制，防积累飞走）
       s.vx *= (1 - DAMP);
       s.vy *= (1 - DAMP);
+      const sp = Math.hypot(s.vx, s.vy);
+      if (sp > MAX_SPEED) { const k = MAX_SPEED / sp; s.vx *= k; s.vy *= k; }
       s.x += s.vx * dtS * 60;
       s.y += s.vy * dtS * 60;
       ctx.strokeStyle = `rgba(${BLUE},0.5)`;
