@@ -16,16 +16,14 @@
   `session-client.ts`（只读缓存 + pre-run 创建）`ws-channel.ts`（WS + 重连看门狗 + onReconnect）
 - 服务端 `ai/`：`chat.ts`（SSE 流式核心）`run-manager.ts`（后台挂机：runId/事件缓冲/5min 淘汰）
   `routes.ts`（start/stream/cancel/active/status）`session-store.ts`（唯一写者；冷恢复判据在客户端 orb-chat-host，detail-runtime §10）
-  `page-state.ts` `eyes.ts`（眼睛——eyes.ts 新生成器 MD+YAML 全量输出按
-  眼睛与手.md 模板；page-state.ts 旧三段式待退役）`prompt-assembler.ts` `rule-engine.ts` `tools/`
+  `eyes.ts`（眼睛生成器 MD+YAML 全量）`prompt-assembler.ts` `rule-engine.ts` `tools/`
 
 ## 硬规则
 
 1. 会话文件是全量真相源；任何运行态要么已落盘要么可重建（宪法三/四）。
-2. 工具 I/O 发给 LLM 前必须过压缩投影（check-tool-compaction 双向核对，
-   新工具不登记压缩行为 = 构建中断）。**手工具（v8.6.0）**：`kfm-hand-move`
-   移动 AI 的手（UI 状态，write_local），ws 广播 hand-move → 客户端弹性动画
-   + 1.5s 回归；坐标出视口报错。
+2. 工具 I/O 发给 LLM 前必须过压缩投影（check-tool-compaction 双向核对，新工具不登记
+   压缩行为 = 构建中断）。**手工具（v8.6.0）**：`kfm-hand-move` 移动 AI 的手（UI 状态
+   write_local），ws 广播→客户端弹性动画+1.5s 回归；出视口报错。
 3. 增量 DOM 只增不改：append 进已挂载消息不会投影——新消息必须走新 mount。
 4. 动态感官注入（dynamicPromptFiles）必须经 `assembleDynamicPrompt` 包裹：
    分隔线 + 使用规则（BAR-EYE-WRAP-01），并声明**感官可靠性**（report 15）：
