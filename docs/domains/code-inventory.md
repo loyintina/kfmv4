@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 117fa7b4 · 生成于 2026-08-11 -->
+<!-- 基准 commit 2f0de10f · 生成于 2026-08-11 -->
 
 # 代码清单（机械层）
 
@@ -72,7 +72,7 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（28 文件 · 5248 行）
+## client-shell（28 文件 · 5280 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -82,10 +82,10 @@
 | src/client/modules/ui-registry.ts | 352 | UIElementType, UIElementState, InteractiveElement, Rect, RectGetter, ContentBlock, Capability, PageDescription, RegistryChangeHandler, UIElementRegistry, Registry |
 | src/client/modules/gesture-registry.ts | 346 | GestureHandler, GestureRegistry, gestures |
 | src/client/modules/obs-roles.ts | 309 | RolesData, RolesRect, initObsRoles |
+| src/client/modules/hand.ts | 249 | HandRect, initHand |
 | src/client/modules/custom-select.ts | 246 | SelectItem, CustomSelectOptions, CustomSelect, createCustomSelect |
 | src/client/modules/orb-panel.ts | 221 | PanelConfig, buildPanelContent |
 | src/client/modules/gestures.ts | 221 | initGestures |
-| src/client/modules/hand.ts | 217 | HandRect, initHand |
 | src/client/modules/confirm-dialog.ts | 192 | ConfirmOptions, showConfirm |
 | src/client/modules/renderer-lifecycle.ts | 172 | RenderContext, RendererLifecycle, L |
 | src/client/modules/state.ts | 165 | API, FileNode, ViewportState, KFMStateType, KFMState, FileRowData, getFileRowData |
@@ -672,4 +672,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 309 文件 · 55306 行 · 跨域边 265 条
+合计 309 文件 · 55338 行 · 跨域边 265 条
