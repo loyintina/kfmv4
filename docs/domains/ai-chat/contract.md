@@ -16,9 +16,8 @@
   `session-client.ts`（只读缓存 + pre-run 创建）`ws-channel.ts`（WS + 重连看门狗 + onReconnect）
 - 服务端 `ai/`：`chat.ts`（SSE 流式核心）`run-manager.ts`（后台挂机：runId/事件缓冲/5min 淘汰）
   `routes.ts`（start/stream/cancel/active/status）`session-store.ts`（唯一写者；冷恢复判据在客户端 orb-chat-host，detail-runtime §10）
-  `page-state.ts` `eyes.ts`（眼睛系统——eyes.ts 新生成器：MD+YAML 按
-  docs/active/眼睛与手.md 模板，obs 聚合+快照全量输出；page-state.ts 旧三段式待退役）
-  `prompt-assembler.ts` `rule-engine.ts` `tools/`
+  `page-state.ts` `eyes.ts`（眼睛——eyes.ts 新生成器 MD+YAML 全量输出按
+  眼睛与手.md 模板；page-state.ts 旧三段式待退役）`prompt-assembler.ts` `rule-engine.ts` `tools/`
 
 ## 硬规则
 
