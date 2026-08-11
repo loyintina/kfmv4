@@ -170,6 +170,7 @@ export async function loadFileTree(rootPath: string): Promise<void> {
         root: KFMState.currentRoot,
         expanded,                       // 全量展开路径（不截断）
         selected: KFMState.selectedFile || '',
+        cursorPath: (L.cursorRowId || '').replace(/^label-/, ''),  // UI 光标所在行路径（点击目录也移动）
         visible: !!DOM.sidebar?.classList.contains('open'),
         // 滚动位置：renderer root 的 scrollY（真实值），可见高度 = canvas clientHeight
         scrollY: Math.round(L.renderer?.getRoot()?.scrollY ?? 0),

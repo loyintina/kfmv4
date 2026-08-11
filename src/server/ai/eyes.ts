@@ -41,9 +41,9 @@ function isHudHidden(snap: unknown): boolean {
 }
 
 /** 从快照提取文件树展开状态（content 层 file-tree 的 detail 优先，summary 回退） */
-function treeOf(snap: unknown): { root: string; expanded: string[]; selected: string; visible: boolean; scrollY: number; visibleH: number } {
+function treeOf(snap: unknown): { root: string; expanded: string[]; selected: string; cursorPath: string; visible: boolean; scrollY: number; visibleH: number } {
   const content = (snap as Record<string, unknown>)?.['content'] as Array<Record<string, unknown>> | undefined;
-  let root = '/root', expanded: string[] = [], selected = '', visible = false, scrollY = 0, visibleH = 618;
+  let root = '/root', expanded: string[] = [], selected = '', cursorPath = '', visible = false, scrollY = 0, visibleH = 618;
   for (const c of content || []) {
     if (c?.['type'] === 'file-tree') {
       const detail = c?.['detail'] as Record<string, unknown> | undefined;
@@ -53,6 +53,7 @@ function treeOf(snap: unknown): { root: string; expanded: string[]; selected: st
           expanded = detail['expanded'].filter((x): x is string => typeof x === 'string');
         }
         if (typeof detail['selected'] === 'string') selected = detail['selected'];
+        if (typeof detail['cursorPath'] === 'string') cursorPath = detail['cursorPath'];
         visible = detail['visible'] === true;
         if (typeof detail['scrollY'] === 'number') scrollY = detail['scrollY'];
         if (typeof detail['visibleH'] === 'number') visibleH = detail['visibleH'];
@@ -65,19 +66,21 @@ function treeOf(snap: unknown): { root: string; expanded: string[]; selected: st
       }
     }
   }
-  return { root, expanded, selected, visible, scrollY, visibleH };
+  return { root, expanded, selected, cursorPath, visible, scrollY, visibleH };
 }
 
 /**
  * 用 fs 重建文件树全量可见项（含隐藏 . 项——树加载器 showHidden:true）。
  * 设计意图（眼睛与手.md 二-文件树）：展开目录递归列出子项、折叠目录单行带
- * 直接子项数（含隐藏项）、文件单行；深度优先编号；光标 = selectedFile。
+ * 直接子项数（含隐藏项）、文件单行；深度优先编号；光标 = UI 光标所在行
+ * （cursorPath，点击目录也移动），selected 回退。
  * 懒加载只缓存展开过的目录，折叠目录子项数客户端拿不到 → 服务端直接读盘。
  */
-function buildTreeItems(root: string, expanded: string[], selected: string, maxItems = 400): { items: unknown[]; truncated: boolean } {
+function buildTreeItems(root: string, expanded: string[], cursorPath: string, selected: string, maxItems = 400): { items: unknown[]; truncated: boolean } {
   const expandedSet = new Set(expanded);
   const items: unknown[] = [];
   let truncated = false;
+  const cursor = cursorPath || selected;   // UI 光标优先，selectedFile 回退
 
   function readDir(dir: string): { name: string; path: string; isDir: boolean }[] {
     try {
@@ -109,12 +112,12 @@ function buildTreeItems(root: string, expanded: string[], selected: string, maxI
           depth, state: isExpanded ? 'expanded' : 'collapsed', path: child.path,
         };
         if (!isExpanded) entry.count = countChildren(child.path);
-        if (child.path === selected) entry.cursor = true;
+        if (child.path === cursor) entry.cursor = true;
         items.push(entry);
         if (isExpanded) walk(child.path, depth + 1);
       } else {
         const entry: Record<string, unknown> = { depth, state: 'file', path: child.path };
-        if (child.path === selected) entry.cursor = true;
+        if (child.path === cursor) entry.cursor = true;
         items.push(entry);
       }
     }
@@ -199,6 +202,17 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
     L.push(dump({ coords: { origin: { x: 0, y: 0 }, bottomRight: { x: vp.width, y: vp.height }, unit: 'px' } }).trimEnd());
     L.push('```\n');
 
+    // 坐标：快照 coords 实时量取（浏览器 getBoundingClientRect）——2026-08-11
+    const snapCoords = (snap as unknown as Record<string, unknown>)?.['coords'] as Record<string, { x?: number; y?: number; w?: number; h?: number }> | undefined; // escape-ok: 快照 coords 是 PageDescription 可选字段，运行时可能缺失，属受控读取
+    const rectOf = (k: string, fb: [number, number, number, number]): { a: number[]; b: number[] } => {
+      const r = snapCoords?.[k];
+      if (r && r.x !== undefined && r.y !== undefined && r.w !== undefined && r.h !== undefined) {
+        return { a: [Math.round(r.x), Math.round(r.y)], b: [Math.round(r.x + r.w), Math.round(r.y + r.h)] };
+      }
+      const [x1, y1, x2, y2] = fb;
+      return { a: [x1, y1], b: [x2, y2] };
+    };
+
     // ===== 中央面板（遮挡时省略）=====
     if (!hudHidden) {
       const [balance, inbox, stack, sys, archive, pulse, perms, roles] = await Promise.all([
@@ -212,21 +226,12 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
         Promise.resolve(collectRoles()),
       ]);
 
-      // 坐标：快照 coords 实时量取（浏览器 getBoundingClientRect）——2026-08-11
-      const snapCoords = (snap as unknown as Record<string, unknown>)?.['coords'] as Record<string, { x?: number; y?: number; w?: number; h?: number }> | undefined; // escape-ok: 快照 coords 是 PageDescription 可选字段，运行时可能缺失，属受控读取
       const FALLBACK: Record<string, [number, number, number, number]> = {
         top: [6, 14, 378, 76], inbox: [6, 86, 166, 269], starmap: [178, 86, 378, 228],
         sys: [6, 279, 104, 566], pulse: [178, 238, 378, 387], duty: [114, 397, 378, 510],
         stack: [178, 520, 378, 738], roles: [6, 576, 168, 738], perms: [6, 748, 378, 784],
       };
-      const c = (k: string) => {
-        const r = snapCoords?.[`hud.${k}`];
-        if (r && r.x !== undefined && r.y !== undefined && r.w !== undefined && r.h !== undefined) {
-          return { a: [Math.round(r.x), Math.round(r.y)], b: [Math.round(r.x + r.w), Math.round(r.y + r.h)] };
-        }
-        const [x1, y1, x2, y2] = FALLBACK[k];
-        return { a: [x1, y1], b: [x2, y2] };
-      };
+      const c = (k: string) => rectOf(`hud.${k}`, FALLBACK[k]);
       const cc = (k: string, obj: unknown) => { L.push(`## 中央页面 · ${k}`); L.push('```yaml'); L.push(dump(obj).trimEnd()); L.push('```\n'); };
 
       const balText = balance && 'total' in balance ? `¥${balance.total}` : '（不可用）';
@@ -253,11 +258,12 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
     const rootPath = tree.root === '~' ? getActiveRoot() : tree.root;
     const safeRoot = sanitizePath(rootPath);
     const displayRoot = safeRoot || rootPath;   // '~'/'.' 显示为解析后的绝对路径
-    items.push({ id: 1, depth: 0, state: 'expanded', path: displayRoot, cursor: tree.selected === displayRoot ? true : undefined });
+    const treeCursor = tree.cursorPath || tree.selected;   // UI 光标优先，selectedFile 回退
+    items.push({ id: 1, depth: 0, state: 'expanded', path: displayRoot, cursor: treeCursor === displayRoot ? true : undefined });
     if (safeRoot) {
       // 服务端 fs 重建全量 DFS 树（含隐藏项/折叠计数）——2026-08-11
       const expandedInRoot = tree.expanded.filter(p => p === displayRoot || p.startsWith(displayRoot + '/'));
-      const { items: treeItems, truncated } = buildTreeItems(safeRoot, expandedInRoot, tree.selected);
+      const { items: treeItems, truncated } = buildTreeItems(safeRoot, expandedInRoot, tree.cursorPath, tree.selected);
       if (truncated) treeObj.truncated = true;
       if (treeItems.length > 0) {
         // 重编号：根 = 1，后续 DFS 连续
@@ -273,6 +279,13 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
       treeObj.fallback = 'root 越出 activeRoot，仅列展开路径';
     }
     treeObj.items = items;
+    // 文件树坐标：快照 coords['tree']（.sidebar 实时量取），缺失回退设计文档实测值
+    const treeRect = snapCoords?.['tree'];
+    if (treeRect && treeRect.x !== undefined && treeRect.y !== undefined && treeRect.w !== undefined && treeRect.h !== undefined) {
+      treeObj.coords = { a: [Math.round(treeRect.x), Math.round(treeRect.y)], b: [Math.round(treeRect.x + treeRect.w), Math.round(treeRect.y + treeRect.h)] };
+    } else {
+      treeObj.coords = { a: [0, 0], b: [288, 769] };   // 384×853 实测 2026-08-10（设计文档 (二)1.(1)）
+    }
     // 可见范围：按客户端真实 scrollY/visibleH + 单行高 26px（LINE_HEIGHT 20 + 6）估算
     // 首 id 与末 id —— 不再写死全量 1..N
     const ROW_H = 26;
@@ -280,11 +293,11 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
       from: Math.min(items.length, Math.max(1, Math.floor(tree.scrollY / ROW_H) + 1)),
       to: Math.min(items.length, Math.ceil((tree.scrollY + tree.visibleH) / ROW_H)),
     };
-    // 光标：selectedFile 匹配项（buildTreeItems 内已标 cursor:true）；无选中则不输出
+    // 光标：UI 光标/选中项匹配项（buildTreeItems 内已标 cursor:true）；无则输出 null
     const cursorItem = items.find(i => (i as { cursor?: boolean }).cursor);
-    if (cursorItem) treeObj.cursor = (cursorItem as { id: number }).id;
+    treeObj.cursor = cursorItem ? (cursorItem as { id: number }).id : null;
     treeObj.multi = 'none';
-    treeObj.source = 'snapshot detail（expanded 全量 + 滚动位置）+ fs 重建（含隐藏项/折叠计数）';
+    treeObj.source = 'snapshot detail（expanded 全量 + 光标 + 滚动位置）+ fs 重建（含隐藏项/折叠计数）';
     L.push(dump(treeObj).trimEnd());
     L.push('```\n');
 
