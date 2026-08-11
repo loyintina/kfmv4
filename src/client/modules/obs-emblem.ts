@@ -441,10 +441,10 @@ class EmblemOrbit {
       ctx.fillStyle = `rgba(${CYAN},0.75)`;
       ctx.beginPath(); ctx.arc(x, y, 1.2, 0, Math.PI * 2); ctx.fill();
     }
-    // 核：紫光焦点 + 光圈（2026-08-11 用户定稿：单层 5.5px，透明度 0.25）
-    ctx.fillStyle = `rgba(${VIOLET},0.95)`;
+    // 核：红光焦点 + 光圈（2026-08-11 用户定稿：中央改红；单层 5.5px 透明度 0.25）
+    ctx.fillStyle = `rgba(239,68,68,0.95)`;
     ctx.beginPath(); ctx.arc(core.x, core.y, 2.2, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = `rgba(${VIOLET},0.25)`;
+    ctx.fillStyle = `rgba(239,68,68,0.25)`;
     ctx.beginPath(); ctx.arc(core.x, core.y, 5.5, 0, Math.PI * 2); ctx.fill();
   }
 }
