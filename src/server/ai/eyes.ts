@@ -41,9 +41,9 @@ function isHudHidden(snap: unknown): boolean {
 }
 
 /** 从快照提取文件树展开状态（content 层 file-tree 的 detail 优先，summary 回退） */
-function treeOf(snap: unknown): { root: string; expanded: string[]; selected: string; visible: boolean } {
+function treeOf(snap: unknown): { root: string; expanded: string[]; selected: string; visible: boolean; scrollY: number; visibleH: number } {
   const content = (snap as Record<string, unknown>)?.['content'] as Array<Record<string, unknown>> | undefined;
-  let root = '/root', expanded: string[] = [], selected = '', visible = false;
+  let root = '/root', expanded: string[] = [], selected = '', visible = false, scrollY = 0, visibleH = 618;
   for (const c of content || []) {
     if (c?.['type'] === 'file-tree') {
       const detail = c?.['detail'] as Record<string, unknown> | undefined;
@@ -54,6 +54,8 @@ function treeOf(snap: unknown): { root: string; expanded: string[]; selected: st
         }
         if (typeof detail['selected'] === 'string') selected = detail['selected'];
         visible = detail['visible'] === true;
+        if (typeof detail['scrollY'] === 'number') scrollY = detail['scrollY'];
+        if (typeof detail['visibleH'] === 'number') visibleH = detail['visibleH'];
       }
       const summary = String(c?.['summary'] || '');
       if (summary.includes('展开') || summary.includes('根目录')) visible = true;
@@ -63,7 +65,7 @@ function treeOf(snap: unknown): { root: string; expanded: string[]; selected: st
       }
     }
   }
-  return { root, expanded, selected, visible };
+  return { root, expanded, selected, visible, scrollY, visibleH };
 }
 
 /**
@@ -271,11 +273,18 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
       treeObj.fallback = 'root 越出 activeRoot，仅列展开路径';
     }
     treeObj.items = items;
-    treeObj.viewport = { from: 1, to: items.length };
-    treeObj.cursor = items.find(i => (i as { cursor?: boolean }).cursor) !== undefined
-      ? (items.find(i => (i as { cursor?: boolean }).cursor) as { id: number }).id : 1;
+    // 可见范围：按客户端真实 scrollY/visibleH + 单行高 26px（LINE_HEIGHT 20 + 6）估算
+    // 首 id 与末 id —— 不再写死全量 1..N
+    const ROW_H = 26;
+    treeObj.viewport = {
+      from: Math.min(items.length, Math.max(1, Math.floor(tree.scrollY / ROW_H) + 1)),
+      to: Math.min(items.length, Math.ceil((tree.scrollY + tree.visibleH) / ROW_H)),
+    };
+    // 光标：selectedFile 匹配项（buildTreeItems 内已标 cursor:true）；无选中则不输出
+    const cursorItem = items.find(i => (i as { cursor?: boolean }).cursor);
+    if (cursorItem) treeObj.cursor = (cursorItem as { id: number }).id;
     treeObj.multi = 'none';
-    treeObj.source = 'snapshot detail（expanded 全量）+ fs 重建（含隐藏项/折叠计数）';
+    treeObj.source = 'snapshot detail（expanded 全量 + 滚动位置）+ fs 重建（含隐藏项/折叠计数）';
     L.push(dump(treeObj).trimEnd());
     L.push('```\n');
 

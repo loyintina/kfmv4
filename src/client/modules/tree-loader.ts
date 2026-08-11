@@ -9,6 +9,7 @@
 
 import { KFMState, API, type FileNode } from './state.js';
 import { DOM } from './dom-refs.js';
+import { L } from './renderer-lifecycle.js';
 import { markAnimatingPath, isAnimLocked, triggerExpandAnimation } from './tree-render.js';
 import { Registry } from './ui-registry.js';
 import { log } from './logger.js';
@@ -153,7 +154,7 @@ export async function loadFileTree(rootPath: string): Promise<void> {
   markAnimatingPath(null);
 
   // 注册内容层：文件树摘要（使用生成器，每次 snapshot 返回实时状态）
-  // detail：结构化全量数据（root/expanded 全量/selected/visible/scrollTop），
+  // detail：结构化全量数据（root/expanded 全量/selected/visible/滚动位置），
   // 服务端 eyes.ts 据此用 fs 重建全量 DFS 树（含隐藏项、折叠计数）——2026-08-11
   Registry.registerContentGenerator('file-tree', () => {
     const expanded = Object.keys(KFMState.expandedPaths);
@@ -170,7 +171,9 @@ export async function loadFileTree(rootPath: string): Promise<void> {
         expanded,                       // 全量展开路径（不截断）
         selected: KFMState.selectedFile || '',
         visible: !!DOM.sidebar?.classList.contains('open'),
-        scrollTop: KFMState.viewport.scrollTop || 0,
+        // 滚动位置：renderer root 的 scrollY（真实值），可见高度 = canvas clientHeight
+        scrollY: Math.round(L.renderer?.getRoot()?.scrollY ?? 0),
+        visibleH: Math.round(DOM.treeCanvas?.clientHeight ?? 618),
       },
     };
   });
