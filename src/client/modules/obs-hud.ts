@@ -247,7 +247,16 @@ export function initObsHud(): void {
       width: sm.left - dutyLeft - 10,
       height: dutyR.top - (r.bottom + 10) - 10,
     };
-    emblemRects = { pocket };
+    // C 轨道区（2026-08-11 复活）：系统右沿 / 待办左沿 / 角色上沿 / 执勤下沿 四边围出
+    const stackL = stackEl.getBoundingClientRect().left;
+    const orbitTop = rolesRect ? rolesRect.top : srr.bottom + 10;
+    const orbit = {
+      left: sysR.right,
+      top: dutyR.bottom,
+      width: Math.max(0, stackL - sysR.right),
+      height: Math.max(0, orbitTop - dutyR.bottom),
+    };
+    emblemRects = { pocket, orbit };
     const sig = JSON.stringify(emblemRects, (k, v) => typeof v === 'number' ? Math.round(v) : v);
     if (sig !== lastEmblemSig) { lastEmblemSig = sig; emblems?.relayout(); }
   };

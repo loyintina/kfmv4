@@ -14,7 +14,8 @@ import { Z } from './z-index-layers.js';
 
 export interface EmblemRect { left: number; top: number; width: number; height: number }
 export interface EmblemRects {
-  pocket: EmblemRect; // A：中央口袋
+  pocket: EmblemRect; // A：中央口袋（系统/信箱/脉搏/执勤 围出）
+  orbit: EmblemRect;  // C：轨道区（系统右/待办左/角色上/执勤下 围出）——2026-08-11 复活
 }
 
 // 确定性伪随机（与 pulseStyle 同族：定种子，重绘不跳变）
@@ -384,53 +385,133 @@ class EmblemGather {
   }
 }
 
+// ============ C 轨道：意志核利萨如绕行（2026-08-11 复活自 5432ff2f^） ============
+// 设计（2026-08-09 试映 B/C 取消，2026-08-11 用户拍板复活置于「系统右/待办左/
+// 角色上/执勤下」四框围出的空区）：意志核慢利萨如（3:2，周期 ~24s）+ 12 卫星
+// 邻近牵引 + 尾迹渐隐。原实现保留——rng(20260810) 定种子、resize 等比映射。
+class EmblemOrbit {
+  private sats: { r0: number; om: number; ph: number }[] = [];
+  private trail: { x: number; y: number }[] = [];
+  constructor(private w: number, private h: number) {
+    const R = rng(20260810);
+    for (let i = 0; i < 12; i++) {
+      this.sats.push({ r0: (0.18 + R() * 0.26) * Math.min(w, h), om: (0.25 + R() * 0.4) * (R() > 0.5 ? 1 : -1), ph: R() * Math.PI * 2 });
+    }
+  }
+  resize(nw: number, nh: number): void { // 轨道半径按短边比缩放，尾迹坐标等比映射
+    const f = Math.min(nw, nh) / Math.min(this.w, this.h);
+    const fx = nw / this.w, fy = nh / this.h;
+    this.w = nw; this.h = nh;
+    for (const s of this.sats) s.r0 *= f;
+    for (const p of this.trail) { p.x *= fx; p.y *= fy; }
+  }
+  step(ctx: CanvasRenderingContext2D, now: number): void {
+    const { w, h } = this;
+    const t = now / 1000;
+    const cx = w / 2, cy = h / 2;
+    // 意志核：慢利萨如（3:2，周期 ~24s）
+    const T = t * (Math.PI * 2 / 24);
+    const core = {
+      x: cx + w * 0.30 * Math.sin(3 * T + 1.7),
+      y: cy + h * 0.34 * Math.sin(2 * T + 0.4),
+    };
+    this.trail.push(core);
+    if (this.trail.length > 42) this.trail.shift();
+    ctx.clearRect(0, 0, w, h);
+    // 尾迹渐隐折线
+    for (let i = 1; i < this.trail.length; i++) {
+      const a = (i / this.trail.length) * 0.30;
+      ctx.strokeStyle = `rgba(${VIOLET},${a})`;
+      ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.moveTo(this.trail[i - 1].x, this.trail[i - 1].y); ctx.lineTo(this.trail[i].x, this.trail[i].y); ctx.stroke();
+    }
+    // 卫星：本位轨道 + 核邻近牵引
+    const satPos: { x: number; y: number }[] = [];
+    for (const s of this.sats) {
+      const bx = cx + Math.cos(s.ph + t * s.om) * s.r0;
+      const by = cy + Math.sin(s.ph + t * s.om) * s.r0 * 1.25; // 竖区拉纵向
+      const d = Math.hypot(bx - core.x, by - core.y);
+      const k = 0.22 * Math.exp(-(d * d) / (2 * 26 * 26));
+      const x = bx * (1 - k) + core.x * k, y = by * (1 - k) + core.y * k;
+      satPos.push({ x, y });
+      const a = 0.18 + 0.5 * Math.exp(-(d * d) / (2 * 30 * 30));
+      ctx.strokeStyle = `rgba(${BLUE},${a})`;
+      ctx.lineWidth = 0.6;
+      ctx.beginPath(); ctx.moveTo(core.x, core.y); ctx.lineTo(x, y); ctx.stroke();
+      ctx.fillStyle = `rgba(${CYAN},0.75)`;
+      ctx.beginPath(); ctx.arc(x, y, 1.2, 0, Math.PI * 2); ctx.fill();
+    }
+    // 核：紫光焦点
+    ctx.fillStyle = `rgba(${VIOLET},0.95)`;
+    ctx.beginPath(); ctx.arc(core.x, core.y, 2.2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = `rgba(${VIOLET},0.22)`;
+    ctx.beginPath(); ctx.arc(core.x, core.y, 5.5, 0, Math.PI * 2); ctx.fill();
+  }
+}
 
-// ============ 装配：单画布单 rAF（2026-08-09 裁决留 A，B/C 画布取消） ============
+
+// ============ 装配：双画布共享单 rAF（A 聚散 + C 轨道，2026-08-11） ============
 export function initObsEmblems(getRects: () => EmblemRects | null): { relayout: () => void } {
   let els: HTMLCanvasElement[] = [];
   let engines: { step: (ctx: CanvasRenderingContext2D, now: number, dt: number) => void; resize?: (nw: number, nh: number) => void }[] = [];
   let ctxs: CanvasRenderingContext2D[] = [];
-  let curRect: EmblemRect | null = null;
+  let curRects: EmblemRect[] = [];
   let renderOn = true;   // 绘制开关（淡出播完才关，淡入前就开——保证运动态渐变）
   let occState = false;  // 当前遮挡状态
   let fadeTimer = 0;
 
   const build = () => {
     const r = getRects();
-    if (!r || r.pocket.width < 40 || r.pocket.height < 60) { // 区域太小宁缺毋滥
+    if (!r) {
       for (const el of els) el.remove();
-      els = []; ctxs = []; engines = []; curRect = null;
+      els = []; ctxs = []; engines = []; curRects = [];
       return;
     }
-    curRect = r.pocket;
+    const rects: EmblemRect[] = [];
+    if (r.pocket.width >= 40 && r.pocket.height >= 60) rects.push(r.pocket);
+    if (r.orbit.width >= 20 && r.orbit.height >= 20) rects.push(r.orbit);
+    if (rects.length === 0) { // 区域太小宁缺毋滥
+      for (const el of els) el.remove();
+      els = []; ctxs = []; engines = []; curRects = [];
+      return;
+    }
+    curRects = rects;
     // 尺寸基本没变（±2px）只挪画布位置——亚像素几何波动连画布都不用换
-    if (els.length === 1) {
-      const same = Math.abs(r.pocket.width - parseFloat(els[0].style.width)) <= 2 &&
-        Math.abs(r.pocket.height - parseFloat(els[0].style.height)) <= 2;
+    if (els.length === rects.length) {
+      const same = rects.every((rc, i) =>
+        Math.abs(rc.width - parseFloat(els[i].style.width)) <= 2 &&
+        Math.abs(rc.height - parseFloat(els[i].style.height)) <= 2);
       if (same) {
-        els[0].style.left = `${r.pocket.left}px`; els[0].style.top = `${r.pocket.top}px`;
+        rects.forEach((rc, i) => { els[i].style.left = `${rc.left}px`; els[i].style.top = `${rc.top}px`; });
         return;
       }
     }
     for (const el of els) el.remove();
     els = []; ctxs = [];
-    const [cvA, ctxA, wA, hA] = mkCanvas(r.pocket);
+    const built = rects.map(mkCanvas);
     // 遮挡期重建的画布直接以隐藏态落位（不播淡入，避免无故闪一下）
     if (occState) {
-      cvA.style.transition = 'none';
-      cvA.style.opacity = '0';
-      void cvA.offsetWidth;
-      cvA.style.transition = 'opacity .9s ease'; // 复位要还原过渡，置空会把 cssText 里的 transition 一并清掉
+      for (const [cv] of built) {
+        cv.style.transition = 'none';
+        cv.style.opacity = '0';
+        void cv.offsetWidth;
+        cv.style.transition = 'opacity .9s ease'; // 复位要还原过渡，置空会把 cssText 里的 transition 一并清掉
+      }
       renderOn = false;
     }
-    els = [cvA]; ctxs = [ctxA];
-    if (engines.length === 1) {
+    els = built.map(([cv]) => cv); ctxs = built.map(([, c]) => c);
+    const wA = built[0]?.[2], hA = built[0]?.[3];
+    const wC = built[1]?.[2], hC = built[1]?.[3];
+    if (engines.length === rects.length && wA !== undefined && hA !== undefined) {
       // 尺寸真变了：画布换新，引擎原地 resize——周期/进度连续，不重启不瞬移
       (window as unknown as { __emblemRz: number }).__emblemRz = ((window as unknown as { __emblemRz: number }).__emblemRz || 0) + 1; // escape-ok: 守视计数（调试期临时）
-      engines[0].resize?.(wA, hA);
+      if (engines[0]) engines[0].resize?.(wA, hA);
+      if (engines[1] && wC !== undefined && hC !== undefined) engines[1].resize?.(wC, hC);
     } else {
       (window as unknown as { __emblemRb: number }).__emblemRb = ((window as unknown as { __emblemRb: number }).__emblemRb || 0) + 1; // escape-ok: 守视计数（调试期临时）
-      engines = [new EmblemGather(wA, hA)];
+      engines = [];
+      if (wA !== undefined && hA !== undefined) engines.push(new EmblemGather(wA, hA));
+      if (wC !== undefined && hC !== undefined) engines.push(new EmblemOrbit(wC, hC));
     }
   };
 
@@ -443,10 +524,10 @@ export function initObsEmblems(getRects: () => EmblemRects | null): { relayout: 
   // 半遮边界迟滞不来回闪。粒子位置是当前时间的纯函数，停绘期时间照走。
   const mainEl = document.querySelector('.main');
   const applyOcc = (occ: boolean, animate: boolean) => {
-    const cv = els[0];
+    const cvs = els;
     if (!animate) { // 首次探测直接落位，不播动画
       occState = occ; renderOn = !occ;
-      if (cv) {
+      for (const cv of cvs) if (cv) {
         cv.style.transition = 'none';
         cv.style.opacity = occ ? '0' : '1';
         void cv.offsetWidth;
@@ -459,22 +540,27 @@ export function initObsEmblems(getRects: () => EmblemRects | null): { relayout: 
     clearTimeout(fadeTimer);
     if (occ) { // 淡出：ease-in 加速离场——截断 0 附近的拖沓长尾（用户实测：
       // 双向同用 ease 时淡出长尾可见、淡入慢头不可见，观感淡入比淡出短得多）
-      if (cv) { cv.style.transition = 'opacity .9s ease-in'; cv.style.opacity = '0'; }
+      for (const cv of cvs) if (cv) { cv.style.transition = 'opacity .9s ease-in'; cv.style.opacity = '0'; }
       fadeTimer = window.setTimeout(() => { renderOn = false; }, 950);
     } else {     // 淡入：ease-out 快速可见后缓收尾——可见段铺满全程
       renderOn = true;
-      if (cv) { cv.style.transition = 'opacity .9s ease-out'; cv.style.opacity = '1'; }
+      for (const cv of cvs) if (cv) { cv.style.transition = 'opacity .9s ease-out'; cv.style.opacity = '1'; }
     }
   };
   const probe = (first = false) => {
     if (!mainEl) { applyOcc(false, !first); return; } // 找不到网格背景宁可常画，不误杀
-    if (!curRect || els.length === 0) { applyOcc(true, !first); return; }
-    let covered = 0;
-    for (const [fx, fy] of [[0.5, 0.5], [0.25, 0.3], [0.75, 0.3], [0.25, 0.7], [0.75, 0.7]]) {
-      const el = document.elementFromPoint(curRect.left + curRect.width * fx, curRect.top + curRect.height * fy);
-      if (el && el !== mainEl) covered++;
+    if (curRects.length === 0 || els.length === 0) { applyOcc(true, !first); return; }
+    // 任一区域任一探测点被盖即算遮挡（多点取最严重）
+    let covered = 0, total = 0;
+    for (const rc of curRects) {
+      for (const [fx, fy] of [[0.5, 0.5], [0.25, 0.3], [0.75, 0.3], [0.25, 0.7], [0.75, 0.7]]) {
+        total++;
+        const el = document.elementFromPoint(rc.left + rc.width * fx, rc.top + rc.height * fy);
+        if (el && el !== mainEl) covered++;
+      }
     }
-    applyOcc(occState ? covered > 1 : covered >= 3, !first);
+    const ratio = total > 0 ? covered / total : 0;
+    applyOcc(occState ? ratio > 0.2 : ratio >= 0.6, !first);
   };
   setInterval(() => probe(), 1500);
   probe(true);
