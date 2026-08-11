@@ -235,7 +235,10 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
         stack: [178, 520, 378, 738], roles: [6, 576, 168, 738], perms: [6, 748, 378, 784],
       };
       const c = (k: string) => rectOf(`hud.${k}`, FALLBACK[k]);
-      const cc = (k: string, obj: unknown) => { L.push(`## 中央页面 · ${k}`); L.push('```yaml'); L.push(dump(obj).trimEnd()); L.push('```\n'); };
+      // 中央页面收拢为一个同级整体段（与文件树/光球面板/卡片堆平级），
+      // 各面板为段内 ### 子条目——2026-08-11 用户拍板组织结构统一
+      L.push('## 中央页面');
+      const cc = (k: string, obj: unknown) => { L.push(`### ${k}`); L.push('```yaml'); L.push(dump(obj).trimEnd()); L.push('```\n'); };
 
       const balText = balance && 'total' in balance ? `¥${balance.total}` : '（不可用）';
       cc('顶框', { coords: c('top'), provider: 'deepseek', balance: balText, time: now.toLocaleTimeString('zh-CN', { hour12: false }), source: 'providers.json + ledger/sys-metrics.json' });
