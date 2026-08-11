@@ -53,6 +53,7 @@
   --z-ai-input-bar: 9100;
   --z-ai-send-btn: 9200;
   --z-light-orb: 9200;
+  --z-hand: 9250;
   /* L8 焦点交互层（高于 AI 核心：弹窗=专注操作，不可被打断/遮挡） */
   --z-action-bar-scrim: 10000;
   --z-action-bar-drawer: 10100;
@@ -87,3 +88,4 @@
 .ai-input-bar { z-index: var(--z-ai-input-bar); }
 .ai-send-btn { z-index: var(--z-ai-send-btn); }
 .light-orb { z-index: var(--z-light-orb); }
+.ai-hand { z-index: var(--z-hand); }
