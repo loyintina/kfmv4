@@ -8,6 +8,7 @@
  */
 
 import { KFMState, API, type FileNode } from './state.js';
+import { DOM } from './dom-refs.js';
 import { markAnimatingPath, isAnimLocked, triggerExpandAnimation } from './tree-render.js';
 import { Registry } from './ui-registry.js';
 import { log } from './logger.js';
@@ -152,6 +153,8 @@ export async function loadFileTree(rootPath: string): Promise<void> {
   markAnimatingPath(null);
 
   // 注册内容层：文件树摘要（使用生成器，每次 snapshot 返回实时状态）
+  // detail：结构化全量数据（root/expanded 全量/selected/visible/scrollTop），
+  // 服务端 eyes.ts 据此用 fs 重建全量 DFS 树（含隐藏项、折叠计数）——2026-08-11
   Registry.registerContentGenerator('file-tree', () => {
     const expanded = Object.keys(KFMState.expandedPaths);
     const expandedStr = expanded.length > 0
@@ -162,6 +165,13 @@ export async function loadFileTree(rootPath: string): Promise<void> {
       id: 'file-tree',
       type: 'file-tree' as const,
       summary: [`根目录: ${KFMState.currentRoot}`, selected, expandedStr].filter(Boolean).join(' | '),
+      detail: {
+        root: KFMState.currentRoot,
+        expanded,                       // 全量展开路径（不截断）
+        selected: KFMState.selectedFile || '',
+        visible: !!DOM.sidebar?.classList.contains('open'),
+        scrollTop: KFMState.viewport.scrollTop || 0,
+      },
     };
   });
 }

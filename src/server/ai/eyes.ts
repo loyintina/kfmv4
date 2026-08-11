@@ -9,11 +9,11 @@
  * 写入 .kfmv4/agents/prompts/dynamic/eyes.md——角色卡列进 dynamicPromptFiles 即获得
  * 「眼睛」。触发时机：工具调用后 + 收到快照（同 refreshPageState）。
  */
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync, writeFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import { dump } from 'js-yaml';
-import { KFM_DATA_DIR } from '../path-utils.js';
+import { KFM_DATA_DIR, sanitizePath, getActiveRoot } from '../path-utils.js';
 import type { WsServer } from '../ws-server.js';
 import {
   fetchDeepseekBalance, parseInbox, parseStack, collectSys,
@@ -40,21 +40,86 @@ function isHudHidden(snap: unknown): boolean {
   return false;
 }
 
-/** 从快照提取文件树展开状态（content 层 file-tree） */
-function treeOf(snap: unknown): { root: string; expanded: string[]; visible: boolean } {
+/** 从快照提取文件树展开状态（content 层 file-tree 的 detail 优先，summary 回退） */
+function treeOf(snap: unknown): { root: string; expanded: string[]; selected: string; visible: boolean } {
   const content = (snap as Record<string, unknown>)?.['content'] as Array<Record<string, unknown>> | undefined;
-  let root = '/root', expanded: string[] = [], visible = false;
+  let root = '/root', expanded: string[] = [], selected = '', visible = false;
   for (const c of content || []) {
     if (c?.['type'] === 'file-tree') {
+      const detail = c?.['detail'] as Record<string, unknown> | undefined;
+      if (detail && typeof detail === 'object') {
+        if (typeof detail['root'] === 'string' && detail['root']) root = detail['root'];
+        if (Array.isArray(detail['expanded'])) {
+          expanded = detail['expanded'].filter((x): x is string => typeof x === 'string');
+        }
+        if (typeof detail['selected'] === 'string') selected = detail['selected'];
+        visible = detail['visible'] === true;
+      }
       const summary = String(c?.['summary'] || '');
-      const m = summary.match(/根目录: (\S+)/);
-      if (m) root = m[1];
-      const ex = summary.match(/展开: (.*?)(?:\s+\+\d+项)?$/);
-      if (ex) expanded = ex[1].split(',').map(x => x.trim()).filter(Boolean);
-      visible = summary.includes('展开');
+      if (summary.includes('展开') || summary.includes('根目录')) visible = true;
+      if (!expanded.length) {
+        const ex = summary.match(/展开: (.*?)(?:\s+\+\d+项)?$/);
+        if (ex) expanded = ex[1].split(',').map(x => x.trim()).filter(Boolean);
+      }
     }
   }
-  return { root, expanded, visible };
+  return { root, expanded, selected, visible };
+}
+
+/**
+ * 用 fs 重建文件树全量可见项（含隐藏 . 项——树加载器 showHidden:true）。
+ * 设计意图（眼睛与手.md 二-文件树）：展开目录递归列出子项、折叠目录单行带
+ * 直接子项数（含隐藏项）、文件单行；深度优先编号；光标 = selectedFile。
+ * 懒加载只缓存展开过的目录，折叠目录子项数客户端拿不到 → 服务端直接读盘。
+ */
+function buildTreeItems(root: string, expanded: string[], selected: string, maxItems = 400): { items: unknown[]; truncated: boolean } {
+  const expandedSet = new Set(expanded);
+  const items: unknown[] = [];
+  let truncated = false;
+
+  function readDir(dir: string): { name: string; path: string; isDir: boolean }[] {
+    try {
+      return readdirSync(dir, { withFileTypes: true })
+        .filter(d => d.isDirectory() || d.isFile())
+        .map(d => ({ name: d.name, path: `${dir}/${d.name}`, isDir: d.isDirectory() }))
+        .sort((a, b) => a.isDir !== b.isDir ? (a.isDir ? -1 : 1) : a.name.localeCompare(b.name));
+    } catch {
+      return [];
+    }
+  }
+
+  function countChildren(dir: string): number {
+    try {
+      return readdirSync(dir).length;
+    } catch {
+      return 0;
+    }
+  }
+
+  function walk(dir: string, depth: number): void {
+    if (items.length >= maxItems) { truncated = true; return; }
+    const children = readDir(dir);
+    for (const child of children) {
+      if (items.length >= maxItems) { truncated = true; return; }
+      if (child.isDir) {
+        const isExpanded = expandedSet.has(child.path);
+        const entry: Record<string, unknown> = {
+          depth, state: isExpanded ? 'expanded' : 'collapsed', path: child.path,
+        };
+        if (!isExpanded) entry.count = countChildren(child.path);
+        if (child.path === selected) entry.cursor = true;
+        items.push(entry);
+        if (isExpanded) walk(child.path, depth + 1);
+      } else {
+        const entry: Record<string, unknown> = { depth, state: 'file', path: child.path };
+        if (child.path === selected) entry.cursor = true;
+        items.push(entry);
+      }
+    }
+  }
+
+  if (items.length < maxItems) walk(root, 1);  // 根的直接子项 depth=1（根自身 depth=0 由调用方输出）
+  return { items, truncated };
 }
 
 /** 从快照提取卡片堆（content 层 card-content） */
@@ -182,14 +247,35 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
     L.push('```yaml');
     const treeObj: Record<string, unknown> = { visible: tree.visible, items: [] };
     const items: unknown[] = [];
-    items.push({ id: 1, depth: 0, state: 'expanded', path: tree.root });
-    tree.expanded.slice(0, 6).forEach((p, i) => items.push({ id: i + 2, depth: 1, state: 'expanded', path: p }));
-    if (items.length === 1) items.push({ id: 2, depth: 0, state: 'file', path: `${tree.root}/reasonix.toml`, cursor: true });
+    // 根目录项（depth 0，恒展开）；root 越出 activeRoot 时整树回退为展开路径链
+    const rootPath = tree.root === '~' ? getActiveRoot() : tree.root;
+    const safeRoot = sanitizePath(rootPath);
+    const displayRoot = safeRoot || rootPath;   // '~'/'.' 显示为解析后的绝对路径
+    items.push({ id: 1, depth: 0, state: 'expanded', path: displayRoot, cursor: tree.selected === displayRoot ? true : undefined });
+    if (safeRoot) {
+      // 服务端 fs 重建全量 DFS 树（含隐藏项/折叠计数）——2026-08-11
+      const expandedInRoot = tree.expanded.filter(p => p === displayRoot || p.startsWith(displayRoot + '/'));
+      const { items: treeItems, truncated } = buildTreeItems(safeRoot, expandedInRoot, tree.selected);
+      if (truncated) treeObj.truncated = true;
+      if (treeItems.length > 0) {
+        // 重编号：根 = 1，后续 DFS 连续
+        let id = 1;
+        for (const t of treeItems) {
+          id += 1;
+          items.push({ ...(t as Record<string, unknown>), id });
+        }
+      }
+    } else {
+      // root 越界（如 activeRoot 已切换）：安全回退——只列展开路径链
+      tree.expanded.slice(0, 6).forEach((p, i) => items.push({ id: i + 2, depth: 1, state: 'expanded', path: p }));
+      treeObj.fallback = 'root 越出 activeRoot，仅列展开路径';
+    }
     treeObj.items = items;
     treeObj.viewport = { from: 1, to: items.length };
-    treeObj.cursor = 1;
+    treeObj.cursor = items.find(i => (i as { cursor?: boolean }).cursor) !== undefined
+      ? (items.find(i => (i as { cursor?: boolean }).cursor) as { id: number }).id : 1;
     treeObj.multi = 'none';
-    treeObj.source = 'tree-model / state（文件树状态）';
+    treeObj.source = 'snapshot detail（expanded 全量）+ fs 重建（含隐藏项/折叠计数）';
     L.push(dump(treeObj).trimEnd());
     L.push('```\n');
 
