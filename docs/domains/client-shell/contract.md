@@ -79,7 +79,7 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
   B 样条巡游 + 矩阵时刻，2026-08-09 裁决三画布收敛单画布；移动端降耗：DPR≤1.5
   + 30fps 节流 + 批量化 ~230→~8 绘制 + posBuf 复用 + 守视钩子 300ms 节流；
   遮挡淡出淡入：多点探测分向缓动（淡出 ease-in 截尾/淡入 ease-out 铺满）、比例
-  迟滞、停绘零状态；探测排除 obs-* HUD 面板（2026-08-11）；`__emblemDbg` 实拍 → ./detail-obs-hud.md）
+  迟滞停绘零状态；探测排除 obs-* HUD 面板；`__emblemDbg` 实拍 → ./detail-obs-hud.md）
 - **C 轨道 → AI 的手（2026-08-11）**：`hand.ts` 独立——紫核弹簧移动（kfm-hand-move
   ws 命令）+ 3 青球真实引力轨道（G=2600 半隐式欧拉）+ 青球弱磁互斥 + 硬约束兜底
   （超 1×r0 硬线拉回）；尾迹时间衰减；置于系统右/待办左/角色上/执勤下四框空区
