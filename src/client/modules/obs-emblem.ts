@@ -394,7 +394,7 @@ class EmblemOrbit {
   private trail: { x: number; y: number }[] = [];
   constructor(private w: number, private h: number) {
     const R = rng(20260810);
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 6; i++) {   // 2026-08-11 用户拍板：青色卫星数量减半 12→6
       this.sats.push({ r0: (0.18 + R() * 0.26) * Math.min(w, h), om: (0.25 + R() * 0.4) * (R() > 0.5 ? 1 : -1), ph: R() * Math.PI * 2 });
     }
   }
@@ -416,11 +416,11 @@ class EmblemOrbit {
       y: cy + h * 0.34 * Math.sin(2 * T + 0.4),
     };
     this.trail.push(core);
-    if (this.trail.length > 42) this.trail.shift();
+    if (this.trail.length > 126) this.trail.shift();   // 2026-08-11 用户拍板：尾迹拉长 3 倍（42→126）
     ctx.clearRect(0, 0, w, h);
-    // 尾迹渐隐折线
+    // 尾迹渐隐折线（2026-08-11：长尾 126 点，头部保持清晰亮点）
     for (let i = 1; i < this.trail.length; i++) {
-      const a = (i / this.trail.length) * 0.30;
+      const a = Math.pow(i / this.trail.length, 1.5) * 0.42;
       ctx.strokeStyle = `rgba(${VIOLET},${a})`;
       ctx.lineWidth = 0.8;
       ctx.beginPath(); ctx.moveTo(this.trail[i - 1].x, this.trail[i - 1].y); ctx.lineTo(this.trail[i].x, this.trail[i].y); ctx.stroke();
@@ -441,11 +441,16 @@ class EmblemOrbit {
       ctx.fillStyle = `rgba(${CYAN},0.75)`;
       ctx.beginPath(); ctx.arc(x, y, 1.2, 0, Math.PI * 2); ctx.fill();
     }
-    // 核：紫光焦点
+    // 核：紫光焦点 + 光圈（2026-08-11 用户拍板：光圈更亮更明显）
     ctx.fillStyle = `rgba(${VIOLET},0.95)`;
     ctx.beginPath(); ctx.arc(core.x, core.y, 2.2, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = `rgba(${VIOLET},0.22)`;
     ctx.beginPath(); ctx.arc(core.x, core.y, 5.5, 0, Math.PI * 2); ctx.fill();
+    // 外层光圈：更亮、更大（两层渐变晕开）
+    ctx.fillStyle = `rgba(${VIOLET},0.40)`;
+    ctx.beginPath(); ctx.arc(core.x, core.y, 9, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = `rgba(${VIOLET},0.16)`;
+    ctx.beginPath(); ctx.arc(core.x, core.y, 14, 0, Math.PI * 2); ctx.fill();
   }
 }
 
