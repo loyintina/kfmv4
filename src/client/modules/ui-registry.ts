@@ -67,6 +67,10 @@ export interface InteractiveElement {
   source?: string;
 }
 
+/** 展示区坐标（纯展示面板/区域——不可交互，供眼睛坐标系实时量取） */
+export interface Rect { x: number; y: number; w: number; h: number }
+export type RectGetter = () => Rect;
+
 /** 内容层 —— 页面上能看到的信息摘要 */
 export interface ContentBlock {
   id: string;
@@ -90,6 +94,7 @@ export interface PageDescription {
   elements: InteractiveElement[];
   content: ContentBlock[];
   capabilities: Capability[];
+  coords: Record<string, Rect | null>;  // 展示区实时坐标（2026-08-11 眼睛坐标系）
   timestamp: number;
 }
 
@@ -108,6 +113,7 @@ export type RegistryChangeHandler = (changeType: 'register' | 'state-getter' | '
 
 export class UIElementRegistry {
   private _elements = new Map<string, InteractiveElement>();
+  private _coords = new Map<string, RectGetter>();
   private _stateGetters = new Map<string, StateGetter>();
   private _content = new Map<string, ContentBlock>();
   /** 内容生成器 —— 如果注册了 generator，snapshot 时优先调用它生成实时内容 */
@@ -116,6 +122,11 @@ export class UIElementRegistry {
   private _changeHandlers = new Set<RegistryChangeHandler>();
 
   /** 注册一个交互元素（由各模块在初始化时调用一次） */
+  /** 注册展示区坐标 getter（纯展示面板——眼睛实时坐标系用） */
+  registerCoords(id: string, getRect: RectGetter): void {
+    this._coords.set(id, getRect);
+  }
+
   register(el: InteractiveElement): void {
     if (this._elements.has(el.id)) {
       log('[warn] [ui-registry] 重复注册 UI 元素: ' + el.id + '，覆盖旧值');
@@ -260,10 +271,17 @@ export class UIElementRegistry {
       }
     }
 
+    // 展示区实时坐标（惰性量取，异常置 null）
+    const coordsOut: Record<string, Rect | null> = {};
+    for (const [id, g] of this._coords) {
+      try { coordsOut[id] = g(); } catch { coordsOut[id] = null; }
+    }
+
     return {
       elements,
       content,
       capabilities: Array.from(this._capabilities.values()),
+      coords: coordsOut,
       timestamp: Date.now(),
     };
   }

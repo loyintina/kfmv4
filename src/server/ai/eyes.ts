@@ -145,13 +145,21 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
         Promise.resolve(collectRoles()),
       ]);
 
-      // 坐标（384×853 实测；生成器按当前 viewport 量取——此处先落实测常量，后续接实时量取）
-      const COORDS: Record<string, [number, number, number, number]> = {
+      // 坐标：快照 coords 实时量取（浏览器 getBoundingClientRect）——2026-08-11
+      const snapCoords = (snap as unknown as Record<string, unknown>)?.['coords'] as Record<string, { x?: number; y?: number; w?: number; h?: number }> | undefined;
+      const FALLBACK: Record<string, [number, number, number, number]> = {
         top: [6, 14, 378, 76], inbox: [6, 86, 166, 269], starmap: [178, 86, 378, 228],
         sys: [6, 279, 104, 566], pulse: [178, 238, 378, 387], duty: [114, 397, 378, 510],
         stack: [178, 520, 378, 738], roles: [6, 576, 168, 738], perms: [6, 748, 378, 784],
       };
-      const c = (k: string) => { const [x1, y1, x2, y2] = COORDS[k]; return { a: [x1, y1], b: [x2, y2] }; };
+      const c = (k: string) => {
+        const r = snapCoords?.[`hud.${k}`];
+        if (r && r.x !== undefined && r.y !== undefined && r.w !== undefined && r.h !== undefined) {
+          return { a: [Math.round(r.x), Math.round(r.y)], b: [Math.round(r.x + r.w), Math.round(r.y + r.h)] };
+        }
+        const [x1, y1, x2, y2] = FALLBACK[k];
+        return { a: [x1, y1], b: [x2, y2] };
+      };
       const cc = (k: string, obj: unknown) => { L.push(`## 中央页面 · ${k}`); L.push('```yaml'); L.push(dump(obj).trimEnd()); L.push('```\n'); };
 
       const balText = balance && 'total' in balance ? `¥${balance.total}` : '（不可用）';

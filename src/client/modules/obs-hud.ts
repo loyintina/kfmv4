@@ -15,6 +15,7 @@
  * SYS 指标 5s 采样 / cron 5min 缓存）；时间本地每秒。
  */
 import { API } from './state.js';
+import { Registry } from './ui-registry.js';
 import { Z } from './z-index-layers.js';
 import { initObsEmblems, type EmblemRects } from './obs-emblem.js';
 import { initObsRoles, type RolesData, type RolesRect } from './obs-roles.js';
@@ -260,6 +261,21 @@ export function initObsHud(): void {
   const roles = initObsRoles(() => rolesRect);
   placeRail();
   window.addEventListener('resize', placeRail);
+  // 眼睛实时坐标系（2026-08-11）：九面板 + 光球 + 文件树注册坐标 getter——
+  // 快照每次携带，生成器按当前 viewport 量取，不再硬编码
+  const rectOf = (sel: string): { x: number; y: number; w: number; h: number } => {
+    const el = document.querySelector(sel);
+    if (!el) return { x: 0, y: 0, w: 0, h: 0 };
+    const r = el.getBoundingClientRect();
+    return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) };
+  };
+  const coords = {
+    'hud.top': '.obs-card', 'hud.inbox': '.obs-inbox', 'hud.starmap': '.obs-starmap',
+    'hud.sys': '.obs-rail', 'hud.pulse': '.obs-pulse', 'hud.duty': '.obs-duty',
+    'hud.stack': '.obs-stack', 'hud.roles': '.obs-roles', 'hud.perms': '.obs-perms',
+    'tree': '.sidebar', 'orb': '.light-orb', 'orb.panel': '.orb-panel',
+  };
+  for (const [id, sel] of Object.entries(coords)) Registry.registerCoords(id, () => rectOf(sel));
   // 竖条高度钉死 = 系统区 + 端口区恰好 4 行窗口（2026-08-07 用户定稿 v2：4 整行硬切，
   // 无重叠无平滑）；端口超出 4 行 → 窗口内每 5s 硬切一屏，最后一屏定格、再击回顶；无手势穿透
   let portStride = 0; // 一屏步长 = 第 5 行与第 1 行的位置差（4 行 + 4 间距）

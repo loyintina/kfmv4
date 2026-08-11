@@ -30,6 +30,8 @@ interface PageDescription {
   timestamp: number;
   /** 浏览器真实视口尺寸（眼睛坐标系标定用，2026-08-10） */
   viewport?: { width: number; height: number };
+  /** 展示区实时坐标（眼睛九面板/文件树/光球，2026-08-11） */
+  coords?: Record<string, { x: number; y: number; w: number; h: number } | null>;
 }
 
 interface WsMessage {
