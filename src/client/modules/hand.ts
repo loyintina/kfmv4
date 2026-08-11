@@ -60,7 +60,7 @@ class HandOrbit {
   // 卫星：独立弹簧质量点——r0/om/ph 定义"绕核的目标轨道位"，
   // x/y/vx/vy 是实际物理状态（惯性+弹性，核移动时被拽着滞后跟随）
   private sats: { r0: number; om: number; ph: number; x: number; y: number; vx: number; vy: number }[] = [];
-  private trail: { x: number; y: number }[] = [];
+  private trail: { x: number; y: number; t: number }[] = [];
   private core = { x: 0, y: 0 };        // 核当前位置（视口绝对坐标）
   private coreV = { x: 0, y: 0 };       // 核速度（弹簧动力学）
   private target: { x: number; y: number } | null = null;  // 目标点（视口绝对坐标）
@@ -129,12 +129,17 @@ class HandOrbit {
     this.coreV.y += (K * (goal.y - this.core.y) - C * this.coreV.y) * dt * 60;
     this.core.x += this.coreV.x * dt * 60;
     this.core.y += this.coreV.y * dt * 60;
-    this.trail.push(this.core);
-    if (this.trail.length > 126) this.trail.shift();   // 用户拍板：尾迹拉长 3 倍（42→126）
+    this.trail.push({ x: this.core.x, y: this.core.y, t: now });
+    // 尾迹按时间衰减：超过 1.5s 的旧点移除（核静止时尾迹自然消散，
+    // 移动时拉出真实轨迹——不再按点数堆积重合；2026-08-11 用户实拍：
+    // 全屏后 126 点挤在核周围，尾迹视觉消失）
+    const TRAIL_MS = 1500;
+    while (this.trail.length > 0 && now - this.trail[0].t > TRAIL_MS) this.trail.shift();
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    // 尾迹渐隐折线（用户定稿：头部亮度上限 0.6）
+    // 尾迹渐隐折线（用户定稿：头部亮度上限 0.6，幂次渐隐）
     for (let i = 1; i < this.trail.length; i++) {
-      const a = Math.pow(i / this.trail.length, 1.5) * 0.60;
+      const age = (now - this.trail[i].t) / TRAIL_MS;      // 0=新 1=将消
+      const a = Math.pow(1 - age, 1.5) * 0.60;
       ctx.strokeStyle = `rgba(${VIOLET},${a})`;
       ctx.lineWidth = 0.8;
       ctx.beginPath(); ctx.moveTo(this.trail[i - 1].x, this.trail[i - 1].y); ctx.lineTo(this.trail[i].x, this.trail[i].y); ctx.stroke();
