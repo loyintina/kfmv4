@@ -57,55 +57,40 @@ function mkCanvas(vw: number, vh: number): [HTMLCanvasElement, CanvasRenderingCo
 
 // ============ 手引擎：待机利萨如巡逻 + 目标移动（弹簧物理） ============
 class HandOrbit {
-  // 卫星：独立橡皮筋质点——r0=橡皮筋自然长度（轨道半径），om/ph=轨道参数，
-  // x/y/vx/vy=物理状态。橡皮筋**只拉不推**：距离>r0 拉紧产生沿连线拉力，
-  // 距离≤r0 松弛无力。核远离时青球被拽（滞后跟随），核靠近时青球不受影响
-  // （惯性保持）——2026-08-11 用户描述：像软的橡皮筋。
-  private sats: { r0: number; om: number; ph: number; x: number; y: number; vx: number; vy: number }[] = [];
+  // 卫星：纯运动学轨道（复刻原版方案 C）——锚定**核**而非画布中心。
+  // 每颗青球位置 = 核位置 + 各自轨道偏移（cos/sin 绕核转），r0/om/ph 独立。
+  // 核移动时卫星的轨道中心跟着核走（天然跟随），但保持各自绕转；
+  // 无物理积分 → 永不飞走/塌缩/聚点。2026-08-11 用户拍板：原版方案把
+  // 锚点换成移动的核即可。
+  private sats: { r0: number; om: number; ph: number }[] = [];
   private trail: { x: number; y: number; t: number }[] = [];
   private core = { x: 0, y: 0 };        // 核当前位置（视口绝对坐标）
   private coreV = { x: 0, y: 0 };       // 核速度（弹簧动力学）
   private target: { x: number; y: number } | null = null;  // 目标点（视口绝对坐标）
   private targetT0 = 0;                 // 目标设置时间戳（1.5s 后清除）
   private orbit: HandRect | null = null; // 待机轨道区（视口绝对坐标）
-  private satsInit = false;             // 卫星半径是否已按轨道区初始化
   constructor() {
-    // 卫星相位/角速定种子（半径待轨道区就绪后按短边比确定）
+    // 卫星相位/角速/半径定种子（3 颗——2026-08-11 用户拍板数量 12→3）
     const R = rng(20260810);
-    for (let i = 0; i < 6; i++) {
-      this.sats.push({ r0: 0, om: (0.25 + R() * 0.4) * (R() > 0.5 ? 1 : -1), ph: R() * Math.PI * 2, x: 0, y: 0, vx: 0, vy: 0 });
+    for (let i = 0; i < 3; i++) {
+      this.sats.push({ r0: (0.30 + R() * 0.45) * 60, om: (0.25 + R() * 0.4) * (R() > 0.5 ? 1 : -1), ph: R() * Math.PI * 2 });
     }
   }
   /** 设置待机轨道区（视口绝对坐标）——relayout 时更新 */
   setOrbit(rect: HandRect): void {
-    const shortSide = Math.min(rect.width, rect.height);
-    // 首次：按轨道区短边确定卫星半径（独立分散，不聚点）+ 核/卫星从轨道中心出发
-    if (!this.satsInit) {
-      const R = rng(20260810);
-      const cx0 = rect.left + rect.width / 2, cy0 = rect.top + rect.height / 2;
-      for (const s of this.sats) {
-        s.r0 = (0.30 + R() * 0.45) * shortSide;
-        // 初始位置 = 核 + 轨道偏移
-        s.x = cx0 + Math.cos(s.ph) * s.r0;
-        s.y = cy0 + Math.sin(s.ph) * s.r0 * 1.25;
-        // 初始切向速度（垂直半径方向）——青球靠它绕核转
-        const nx = -Math.sin(s.ph), ny = Math.cos(s.ph) * 1.25; // 切向单位向量
-        const v0 = s.r0 * Math.abs(s.om) * 0.5;                  // 轨道速度
-        s.vx = nx * v0 * Math.sign(s.om);
-        s.vy = ny * v0 * Math.sign(s.om);
-      }
-      this.satsInit = true;
-      this.core = { x: cx0, y: cy0 };
-    } else if (this.orbit) {
-      // 尺寸变化：既有位置/尾迹等比映射到新锚点
+    if (!this.orbit) {
+      // 首次：核从轨道中心出发
+      this.core = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    } else {
+      // 尺寸变化：核/尾迹等比映射到新锚点（卫星是纯时间函数，无需映射）
       const fx = rect.width / this.orbit.width, fy = rect.height / this.orbit.height;
       if (this.orbit.width > 0 && this.orbit.height > 0 && (fx !== 1 || fy !== 1)) {
-        for (const s of this.sats) { s.r0 *= Math.min(fx, fy); s.x = rect.left + (s.x - this.orbit.left) * fx; s.y = rect.top + (s.y - this.orbit.top) * fy; }
         for (const p of this.trail) { p.x = rect.left + (p.x - this.orbit.left) * fx; p.y = rect.top + (p.y - this.orbit.top) * fy; }
         this.core.x = rect.left + (this.core.x - this.orbit.left) * fx;
         this.core.y = rect.top + (this.core.y - this.orbit.top) * fy;
       }
     }
+    this.orbit = rect;
     this.orbit = rect;
   }
   /** 设置目标点（视口绝对坐标）——客户端命令入口 */
@@ -150,48 +135,19 @@ class HandOrbit {
       ctx.lineWidth = 0.8;
       ctx.beginPath(); ctx.moveTo(this.trail[i - 1].x, this.trail[i - 1].y); ctx.lineTo(this.trail[i].x, this.trail[i].y); ctx.stroke();
     }
-    // 卫星：独立橡皮筋质点——**只拉不推**。核与青球距离 > r0（拉紧）时产生
-    // 沿连线的拉力把青球拽向核；距离 ≤ r0（松弛）时无力，青球靠惯性继续飞。
-    // 青球间加**软排斥**（防聚点）；整体**速度上限**（防橡皮筋拉拽积累出飞走）。
-    // 2026-08-11 用户描述：像软的橡皮筋 + 青球互斥 + 限速。
-    const dtS = Math.min(0.05, 33 / 1000);
-    const R_BAND = 0.10;      // 橡皮筋刚度（拉紧时的拉力系数）
-    const DAMP = 0.015;       // 空气阻尼（防止永久振荡）
-    const REPULSE = 0.9;      // 青球间排斥刚度
-    const REP_DIST = 14;      // 排斥作用半径（px，小于此距离才排斥）
-    const MAX_SPEED = 3.2;    // 整体切向速度上限（px/帧·60 基准）
-    // 先算力（橡皮筋 + 青球间排斥），后积分——同一帧内力一致不串扰
+    // 卫星：纯运动学轨道（原版方案 C 模型，锚定核）——位置是时间函数，
+    // 无物理积分。青球绕核转（各自 r0/om/ph），核移动时轨道中心跟着核走。
+    // 连线亮度保留原版高斯距离衰减（近核亮、远核暗）。
     for (const s of this.sats) {
-      const dx = this.core.x - s.x, dy = this.core.y - s.y;
-      const d = Math.hypot(dx, dy);
-      if (d > s.r0 && d > 0.01) {
-        const stretch = d - s.r0;
-        s.vx += (dx / d) * R_BAND * stretch * dtS * 60;
-        s.vy += (dy / d) * R_BAND * stretch * dtS * 60;
-      }
-      // 青球间排斥：两两距离 < REP_DIST 时施加沿连线向外的力（越近越强）
-      for (const o of this.sats) {
-        if (o === s) continue;
-        const rx = s.x - o.x, ry = s.y - o.y;
-        const rd = Math.hypot(rx, ry);
-        if (rd < REP_DIST && rd > 0.01) {
-          const f = REPULSE * (1 - rd / REP_DIST) * dtS * 60;
-          s.vx += (rx / rd) * f;
-          s.vy += (ry / rd) * f;
-        }
-      }
-      // 空气阻尼 + 速度上限（切向速度被限制，防积累飞走）
-      s.vx *= (1 - DAMP);
-      s.vy *= (1 - DAMP);
-      const sp = Math.hypot(s.vx, s.vy);
-      if (sp > MAX_SPEED) { const k = MAX_SPEED / sp; s.vx *= k; s.vy *= k; }
-      s.x += s.vx * dtS * 60;
-      s.y += s.vy * dtS * 60;
-      ctx.strokeStyle = `rgba(${BLUE},0.5)`;
+      const x = this.core.x + Math.cos(s.ph + t * s.om) * s.r0;
+      const y = this.core.y + Math.sin(s.ph + t * s.om) * s.r0 * 1.25; // 竖区拉纵向
+      const d = Math.hypot(x - this.core.x, y - this.core.y);
+      const a = 0.18 + 0.5 * Math.exp(-(d * d) / (2 * 30 * 30));
+      ctx.strokeStyle = `rgba(${BLUE},${a})`;
       ctx.lineWidth = 0.6;
-      ctx.beginPath(); ctx.moveTo(this.core.x, this.core.y); ctx.lineTo(s.x, s.y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(this.core.x, this.core.y); ctx.lineTo(x, y); ctx.stroke();
       ctx.fillStyle = `rgba(${CYAN},0.75)`;
-      ctx.arc(s.x, s.y, 1.2, 0, Math.PI * 2);
+      ctx.arc(x, y, 1.2, 0, Math.PI * 2);
       ctx.fill();
     }
     // 核：紫光焦点 + 光圈（用户定稿：单层 5.5px 透明度 0.25）
