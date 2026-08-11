@@ -78,9 +78,10 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 - 动态徽标：`src/client/modules/obs-emblem.ts`（A 聚散定稿：两节点中点闭合二次
   B 样条巡游 + 矩阵时刻，2026-08-09 裁决三画布收敛单画布；移动端降耗：DPR≤1.5
   + 30fps 节流 + 批量化 ~230→~8 绘制 + posBuf 复用 + 守视钩子 300ms 节流；
-  遮挡淡出淡入：五点探测、分向缓动（淡出 ease-in 截长尾/淡入 ease-out 铺满）、
-  半遮迟滞 ≥3/5↔≤1/5、停绘零状态；`__emblemDbg`（escape-ok 已标）；
-  逐轮实拍 → ./detail-obs-hud.md 徽标节）
+  遮挡淡出淡入：多点探测分向缓动（淡出 ease-in 截尾/淡入 ease-out 铺满）、比例
+  迟滞、停绘零状态；`__emblemDbg`（escape-ok 已标）；实拍 → ./detail-obs-hud.md）
+- **C 轨道复活（2026-08-11）**：EmblemOrbit 自 5432ff2f^ 复刻（利萨如 3:2 24s
+  + 12 卫星牵引 + 尾迹渐隐），置于系统右/待办左/角色上/执勤下四框空区；双画布双引擎
 - **观测台高度纪律（2026-08-09 定稿）：全部面板高度钉死，当前满配即最大高度**
   ——星轨 TOP5+聚合轨恒 6 行（机器会话服务端过滤），cron/脉搏 TOP4/SYS 端口不足补隐形占位行
 - **渲染纪律：数据未变不重渲染**（JSON key 比对）——innerHTML 重建重置滚动位、
