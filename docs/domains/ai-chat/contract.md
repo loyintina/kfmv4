@@ -23,7 +23,9 @@
 
 1. 会话文件是全量真相源；任何运行态要么已落盘要么可重建（宪法三/四）。
 2. 工具 I/O 发给 LLM 前必须过压缩投影（check-tool-compaction 双向核对，
-   新工具不登记压缩行为 = 构建中断）。
+   新工具不登记压缩行为 = 构建中断）。**手工具（v8.6.0）**：`kfm-hand-move`
+   移动 AI 的手（UI 状态，write_local），ws 广播 hand-move → 客户端弹性动画
+   + 1.5s 回归；坐标出视口报错。
 3. 增量 DOM 只增不改：append 进已挂载消息不会投影——新消息必须走新 mount。
 4. 动态感官注入（dynamicPromptFiles）必须经 `assembleDynamicPrompt` 包裹：
    分隔线 + 使用规则（BAR-EYE-WRAP-01），并声明**感官可靠性**（report 15）：
