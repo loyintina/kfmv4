@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 3edc301e · 生成于 2026-08-10 -->
+<!-- 基准 commit 042b38e2 · 生成于 2026-08-11 -->
 
 # 代码清单（机械层）
 
@@ -104,7 +104,7 @@
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（54 文件 · 11885 行）
+## ai-chat（55 文件 · 12077 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -112,7 +112,7 @@
 | src/client/data/waiting-hints.ts | 1108 | WAITING_HINTS |
 | src/server/ai/tools/omp/browser/tab-worker.ts | 921 | WorkerCore |
 | src/server/ai/tools/omp/browser/launch.ts | 603 | DEFAULT_VIEWPORT, BROWSER_PROTOCOL_TIMEOUT_MS, loadPuppeteer, loadPuppeteerInWorker, LaunchHeadlessOptions, launchHeadlessBrowser, applyViewport, UserAgentOverride, UserAgentSession, applyStealthPatches |
-| src/server/ai/chat.ts | 562 | ChatMessage, StreamEvent, createClientIdxMapper, findApiProvider |
+| src/server/ai/chat.ts | 564 | ChatMessage, StreamEvent, createClientIdxMapper, findApiProvider |
 | src/client/modules/session-client.ts | 529 | SessionMessage, Session, extractMessageText, countTextMessages, sessionStore |
 | src/client/modules/orb-chat-run.ts | 512 | ChatMessage, StreamEvent, getActiveRunId, getActiveCursor, setEventHook, readPersistedRun, clearPersistedRun, settlePendingToolBlocks, resumeRun, doSend |
 | src/client/modules/ws-channel.ts | 428 | wsChannel, initWsChannel |
@@ -127,6 +127,7 @@
 | src/server/ai/tools/omp/debug/cdp-connection.ts | 242 | CdpSession, CdpLaunchOptions, CdpAttachOptions, CdpPausedEvent, sendCmd, onCdpEvent, launchCdp, attachCdp, closeCdp |
 | src/server/ai/run-manager.ts | 240 | _setStallMsForTest, getActiveRun, getRun, StreamFn, startRun, attachRun, cancelRun |
 | src/client/modules/orb-chat-hints.ts | 225 | startWaitingIndicator, TODO_DISMISS_KEY, todosFingerprint, clearTodoPanel, dismissTodoPanel, updateTodoFromTool |
+| src/server/ai/eyes.ts | 190 | EYES_PATH, genEyes |
 | src/server/ai/tools/index.ts | 169 | getAllTools, getToolDefinitions, executeTool, hasTool, getTool |
 | src/server/ai/page-state.ts | 156 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
 | src/server/ai/routes.ts | 153 | StartRunFn, setupAiRoutes |
@@ -163,13 +164,13 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（10 文件 · 2466 行）
+## server（10 文件 · 2467 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/server/routes/obs.ts | 862 | setupObsRoutes, setupObsPages, buildRolesData |
+| src/server/routes/obs.ts | 862 | fetchDeepseekBalance, setupObsRoutes, setupObsPages, parseInbox, parseStack, collectSys, collectArchive, collectPulse, collectPerms, buildRolesData, collectRoles |
 | src/server/routes/files.ts | 419 | FileItem, sliceMessages, MSG_PAYLOAD_BUDGET, MSG_SINGLE_CAP, capMessagesPayload, setupFileRoutes |
-| src/server/ws-server.ts | 321 | WsServer |
+| src/server/ws-server.ts | 322 | WsServer |
 | src/server/index.ts | 186 | — |
 | src/server/path-utils.ts | 172 | ROOT_DIR, PROJECT_ROOT, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, SESSION_ID_RE, isValidSessionId, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
 | src/server/ai/permissions.ts | 134 | RiskClass, TOOL_RISK, Decision, AuditEntry, riskClassOf, evaluate |
@@ -374,11 +375,14 @@
 - src/client/modules/chat-dom.ts → src/client/modules/renderers/md-css.ts
 - src/client/modules/chat-dom.ts → src/client/modules/renderers/md-extensions.ts
 
-### ai-chat → server（15 边）
+### ai-chat → server（18 边）
 
 - src/server/ai/chat.ts → src/server/env-store.ts
 - src/server/ai/chat.ts → src/server/path-utils.ts
 - src/server/ai/chat.ts → src/server/ws-server.ts
+- src/server/ai/eyes.ts → src/server/path-utils.ts
+- src/server/ai/eyes.ts → src/server/routes/obs.ts
+- src/server/ai/eyes.ts → src/server/ws-server.ts
 - src/server/ai/page-state.ts → src/server/path-utils.ts
 - src/server/ai/page-state.ts → src/server/ws-server.ts
 - src/server/ai/prompt-assembler.ts → src/server/path-utils.ts
@@ -652,12 +656,13 @@
 - tests/session-security.test.ts → src/server/path-utils.ts
 - tests/session-security.test.ts → src/server/ws-server.ts
 
-### server → ai-chat（4 边）
+### server → ai-chat（5 边）
 
 - src/server/ai/permissions.ts → src/server/ai/tools/types.ts
 - src/server/index.ts → src/server/ai/routes.ts
 - src/server/routes/files.ts → src/server/ai/session-store.ts
+- src/server/ws-server.ts → src/server/ai/eyes.ts
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 306 文件 · 54493 行 · 跨域边 256 条
+合计 307 文件 · 54686 行 · 跨域边 260 条
