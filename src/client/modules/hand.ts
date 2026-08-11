@@ -57,7 +57,9 @@ function mkCanvas(vw: number, vh: number): [HTMLCanvasElement, CanvasRenderingCo
 
 // ============ 手引擎：待机利萨如巡逻 + 目标移动（弹簧物理） ============
 class HandOrbit {
-  private sats: { r0: number; om: number; ph: number }[] = [];
+  // 卫星：独立弹簧质量点——r0/om/ph 定义"绕核的目标轨道位"，
+  // x/y/vx/vy 是实际物理状态（惯性+弹性，核移动时被拽着滞后跟随）
+  private sats: { r0: number; om: number; ph: number; x: number; y: number; vx: number; vy: number }[] = [];
   private trail: { x: number; y: number }[] = [];
   private core = { x: 0, y: 0 };        // 核当前位置（视口绝对坐标）
   private coreV = { x: 0, y: 0 };       // 核速度（弹簧动力学）
@@ -69,23 +71,30 @@ class HandOrbit {
     // 卫星相位/角速定种子（半径待轨道区就绪后按短边比确定）
     const R = rng(20260810);
     for (let i = 0; i < 6; i++) {
-      this.sats.push({ r0: 0, om: (0.25 + R() * 0.4) * (R() > 0.5 ? 1 : -1), ph: R() * Math.PI * 2 });
+      this.sats.push({ r0: 0, om: (0.25 + R() * 0.4) * (R() > 0.5 ? 1 : -1), ph: R() * Math.PI * 2, x: 0, y: 0, vx: 0, vy: 0 });
     }
   }
   /** 设置待机轨道区（视口绝对坐标）——relayout 时更新 */
   setOrbit(rect: HandRect): void {
     const shortSide = Math.min(rect.width, rect.height);
-    // 首次：按轨道区短边确定卫星半径（独立分散，不聚点）+ 核从轨道中心出发
+    // 首次：按轨道区短边确定卫星半径（独立分散，不聚点）+ 核/卫星从轨道中心出发
     if (!this.satsInit) {
       const R = rng(20260810);
-      for (const s of this.sats) s.r0 = (0.30 + R() * 0.45) * shortSide;
+      const cx0 = rect.left + rect.width / 2, cy0 = rect.top + rect.height / 2;
+      for (const s of this.sats) {
+        s.r0 = (0.30 + R() * 0.45) * shortSide;
+        // 卫星初始位置 = 核 + 轨道偏移（避免从零冲过去的突兀起步）
+        s.x = cx0 + Math.cos(s.ph) * s.r0;
+        s.y = cy0 + Math.sin(s.ph) * s.r0 * 1.25;
+        s.vx = 0; s.vy = 0;
+      }
       this.satsInit = true;
-      this.core = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+      this.core = { x: cx0, y: cy0 };
     } else if (this.orbit) {
       // 尺寸变化：既有位置/尾迹等比映射到新锚点
       const fx = rect.width / this.orbit.width, fy = rect.height / this.orbit.height;
       if (this.orbit.width > 0 && this.orbit.height > 0 && (fx !== 1 || fy !== 1)) {
-        for (const s of this.sats) { s.r0 *= Math.min(fx, fy); }
+        for (const s of this.sats) { s.r0 *= Math.min(fx, fy); s.x = rect.left + (s.x - this.orbit.left) * fx; s.y = rect.top + (s.y - this.orbit.top) * fy; }
         for (const p of this.trail) { p.x = rect.left + (p.x - this.orbit.left) * fx; p.y = rect.top + (p.y - this.orbit.top) * fy; }
         this.core.x = rect.left + (this.core.x - this.orbit.left) * fx;
         this.core.y = rect.top + (this.core.y - this.orbit.top) * fy;
@@ -130,16 +139,25 @@ class HandOrbit {
       ctx.lineWidth = 0.8;
       ctx.beginPath(); ctx.moveTo(this.trail[i - 1].x, this.trail[i - 1].y); ctx.lineTo(this.trail[i].x, this.trail[i].y); ctx.stroke();
     }
-    // 卫星：绕核轨道（核是中心——核移动时卫星整体跟随平移），
-    // 每颗独立 r0/相位/角速（不聚点）；2026-08-11 用户实拍修正
+    // 卫星：独立弹簧质量点——目标轨道位 = 核 + 各自偏移；
+    // 用弹簧动力学追赶（惯性+弹性），核移动时卫星被拽着滞后跟随，
+    // 不整体平移。2026-08-11 用户实拍：要物理效果不要整体移动。
+    const dtS = Math.min(0.05, 33 / 1000);
     for (const s of this.sats) {
-      const x = this.core.x + Math.cos(s.ph + t * s.om) * s.r0;
-      const y = this.core.y + Math.sin(s.ph + t * s.om) * s.r0 * 1.25; // 竖区拉纵向
+      // 目标轨道位（绕核）
+      const tx = this.core.x + Math.cos(s.ph + t * s.om) * s.r0;
+      const ty = this.core.y + Math.sin(s.ph + t * s.om) * s.r0 * 1.25; // 竖区拉纵向
+      // 弹簧追赶：比核软（跟随有滞后），阻尼适中（不过度振荡）
+      const KS = 0.012, CS = 0.10;
+      s.vx += (KS * (tx - s.x) - CS * s.vx) * dtS * 60;
+      s.vy += (KS * (ty - s.y) - CS * s.vy) * dtS * 60;
+      s.x += s.vx * dtS * 60;
+      s.y += s.vy * dtS * 60;
       ctx.strokeStyle = `rgba(${BLUE},0.5)`;
       ctx.lineWidth = 0.6;
-      ctx.beginPath(); ctx.moveTo(this.core.x, this.core.y); ctx.lineTo(x, y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(this.core.x, this.core.y); ctx.lineTo(s.x, s.y); ctx.stroke();
       ctx.fillStyle = `rgba(${CYAN},0.75)`;
-      ctx.arc(x, y, 1.2, 0, Math.PI * 2);
+      ctx.arc(s.x, s.y, 1.2, 0, Math.PI * 2);
       ctx.fill();
     }
     // 核：紫光焦点 + 光圈（用户定稿：单层 5.5px 透明度 0.25）
