@@ -19,6 +19,7 @@ import { Registry } from './ui-registry.js';
 import { Z } from './z-index-layers.js';
 import { isCardStackOpen } from './card-stack.js';
 import { initObsEmblems, type EmblemRects } from './obs-emblem.js';
+import { initHand, type HandRect } from './hand.js';
 import { initObsRoles, type RolesData, type RolesRect } from './obs-roles.js';
 
 /** 轮询周期（5s，2026-08-06 用户定稿） */
@@ -239,7 +240,7 @@ export function initObsHud(): void {
     }
     const rsig = JSON.stringify(rolesRect, (k, v) => typeof v === 'number' ? Math.round(v) : v);
     if (rsig !== lastRolesSig) { lastRolesSig = rsig; roles?.relayout(); }
-    // 深蓝意志徽标几何：A=四框围出的中央口袋（2026-08-09 裁决留 A，B/C 竖带取消）
+    // 深蓝意志徽标几何：A=四框围出的中央口袋（2026-08-09 裁决留 A；C 轨道已迁 hand.ts）
     const dutyR = duty.getBoundingClientRect();
     const pocket = {
       left: dutyLeft,
@@ -247,26 +248,31 @@ export function initObsHud(): void {
       width: sm.left - dutyLeft - 10,
       height: dutyR.top - (r.bottom + 10) - 10,
     };
-    // C 轨道区（2026-08-11 复活）：系统右沿 / 待办左沿 / 角色上沿 / 执勤下沿 四边围出
+    emblemRects = { pocket };
+    const sig = JSON.stringify(emblemRects, (k, v) => typeof v === 'number' ? Math.round(v) : v);
+    if (sig !== lastEmblemSig) { lastEmblemSig = sig; emblems?.relayout(); }
+    // AI 的手（hand.ts）：待机轨道区 = 系统右沿/待办左沿/角色上沿/执勤下沿 四边围出
     const stackL = stackEl.getBoundingClientRect().left;
-    const orbitTop = rolesRect ? rolesRect.top : srr.bottom + 10;
-    const orbit = {
+    const handTop = rolesRect ? rolesRect.top : srr.bottom + 10;
+    handRect = {
       left: sysR.right,
       top: dutyR.bottom,
       width: Math.max(0, stackL - sysR.right),
-      height: Math.max(0, orbitTop - dutyR.bottom),
+      height: Math.max(0, handTop - dutyR.bottom),
     };
-    emblemRects = { pocket, orbit };
-    const sig = JSON.stringify(emblemRects, (k, v) => typeof v === 'number' ? Math.round(v) : v);
-    if (sig !== lastEmblemSig) { lastEmblemSig = sig; emblems?.relayout(); }
+    const hsig = JSON.stringify(handRect, (k, v) => typeof v === 'number' ? Math.round(v) : v);
+    if (hsig !== lastHandSig) { lastHandSig = hsig; hand?.relayout(); }
   };
   let emblemRects: EmblemRects | null = null;
   let lastEmblemSig = '';
+  let handRect: HandRect | null = null;
+  let lastHandSig = '';
   let rolesRect: RolesRect | null = null;
   let lastRolesSig = '';
-  // 深蓝意志动态徽标 A 聚散（2026-08-09 用户实拍裁决：留 A，B 潮汐/C 轨道取消，
-  // 三画布收敛单画布）；getRects 惰性读 placeRail 算好的几何
+  // 深蓝意志动态徽标 A 聚散（2026-08-09 用户实拍裁决：留 A；C 轨道已迁 hand.ts）
   const emblems = initObsEmblems(() => emblemRects);
+  // AI 的手（2026-08-11）：待机利萨如巡逻区 = 系统右/待办左/角色上/执勤下 四框空区
+  const hand = initHand(() => handRect);
   // 角色卡星座图（全角色关系网 · C 轨道极缓缓动 · 纯光点，同日定稿；v2 去标题栏）
   const roles = initObsRoles(() => rolesRect);
   placeRail();
