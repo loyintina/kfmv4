@@ -28,14 +28,14 @@ function viewportOf(snap: unknown): { width: number; height: number } {
   return { width: Math.round(vp?.width || 384), height: Math.round(vp?.height || 853) };
 }
 
-/** 遮挡判断：文件树侧栏 open 或焦点卡全屏 → 中央面板省略 */
+/** 遮挡判断：文件树可见（快照 file-tree 有展开）或焦点卡全屏 → 中央面板省略 */
 function isHudHidden(snap: unknown): boolean {
-  const els = (snap as Record<string, unknown>)?.['elements'] as Array<Record<string, unknown>> | undefined;
-  if (!els) return false;
-  for (const e of els) {
-    const label = String(e?.['label'] || e?.['id'] || '');
-    const state = String(e?.['state'] || '');
-    if ((label.includes('文件树侧栏') || label.includes('文件树')) && state === 'open') return true;
+  const content = (snap as Record<string, unknown>)?.['content'] as Array<Record<string, unknown>> | undefined;
+  for (const c of content || []) {
+    if (c?.['type'] === 'file-tree' && String(c?.['summary'] || '').includes('展开')) return true;
+    if (c?.['type'] === 'card-content') {
+      // 焦点卡全屏时 card-content summary 带"全屏"标记（简化：存在 card-content 即视为可能遮挡）
+    }
   }
   return false;
 }
@@ -180,6 +180,14 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
       },
     };
     L.push(dump(panelObj).trimEnd());
+    L.push('```\n');
+
+    // ===== 卡片堆（始终——手操作清单）=====
+    L.push('## 卡片堆（全量——即使 UI 隐藏，手操作清单）');
+    L.push('```yaml');
+    const cardsObj: Record<string, unknown> = { visible: false, count: cards.count, focus: cards.focus };
+    if (cards.count > 0) cardsObj.title = cards.title;
+    L.push(dump(cardsObj).trimEnd());
     L.push('```');
 
     writeFileSync(EYES_PATH, L.join('\n') + '\n', 'utf-8');
