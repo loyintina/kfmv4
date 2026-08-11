@@ -49,6 +49,7 @@ fail-closed（默认拒绝、显式放行）。提示词边界条款保留（降
 | web_search | read | 只读，无副作用 |
 | checkpoint | write_local | 写本地，路径可控 |
 | edit | write_local | 写本地，路径可控 |
+| kfm-hand-move | write_local | 写本地，路径可控 |
 | rewind | write_local | 写本地，路径可控 |
 | todo | write_local | 写本地，路径可控 |
 | write | write_local | 写本地，路径可控 |
