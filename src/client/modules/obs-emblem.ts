@@ -418,9 +418,9 @@ class EmblemOrbit {
     this.trail.push(core);
     if (this.trail.length > 126) this.trail.shift();   // 2026-08-11 用户拍板：尾迹拉长 3 倍（42→126）
     ctx.clearRect(0, 0, w, h);
-    // 尾迹渐隐折线（2026-08-11：长尾 126 点，头部亮度上限 0.3）
+    // 尾迹渐隐折线（2026-08-11：长尾 126 点，头部亮度上限 0.6）
     for (let i = 1; i < this.trail.length; i++) {
-      const a = Math.pow(i / this.trail.length, 1.5) * 0.30;
+      const a = Math.pow(i / this.trail.length, 1.5) * 0.60;
       ctx.strokeStyle = `rgba(${VIOLET},${a})`;
       ctx.lineWidth = 0.8;
       ctx.beginPath(); ctx.moveTo(this.trail[i - 1].x, this.trail[i - 1].y); ctx.lineTo(this.trail[i].x, this.trail[i].y); ctx.stroke();
