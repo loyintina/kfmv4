@@ -262,7 +262,7 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
       cc('顶框', { coords: c('top'), provider: activeRaw.providerId || 'deepseek', balance: balText, time: now.toLocaleTimeString('zh-CN', { hour12: false }), source: 'DeepSeek API balance 实时查询（providers.json 取 apiKey）' });
       const pendingN = inbox.filter(x => x.type === 'warn').length; // 待裁决 = warn 类型条数
       cc('信箱', { coords: c('inbox'), pending: pendingN, latest: inbox.find(x => x.type === 'warn')?.text || '（无待裁决）', source: 'docs/ledger/semantic-chain-inbox.md' });
-      cc('星轨', { coords: c('starmap'), sessions: archive.sessions, total: `Σ${(archive.totalTokens / 1024 / 1024).toFixed(1)}M`, source: 'sessions/*.json + kimi 工作区 wire.jsonl（归档轨）' });
+      cc('星轨', { coords: c('starmap'), sessions: archive.sessions, local: archive.tracks.filter(t => !t.title.startsWith('kimi·')).length, kimi: archive.tracks.filter(t => t.title.startsWith('kimi·')).length, total: `Σ${(archive.totalTokens / 1024 / 1024).toFixed(1)}M`, source: 'sessions/*.json（本地）+ kimi 工作区 wire ≥1MB（kimi·前缀）——obs.ts collectArchive' });
       cc('系统', { coords: c('sys'), disk: sys.metrics.find(x => x.label === '硬盘')?.value, mem: sys.metrics.find(x => x.label === '内存')?.value, load: sys.metrics.find(x => x.label === '负载')?.value, proc: sys.metrics.find(x => x.label === '进程')?.value, ports: sys.ports.map(p => `${p.port} ${p.name}`).join('，'), source: 'ledger/sys-metrics.json' });
       cc('脉搏', { coords: c('pulse'), llm: `${pulse.llm.calls}次 ${pulse.llm.okRate}%成功率 均${(pulse.llm.avgMs / 1000).toFixed(1)}m ${pulse.llm.lastAgo}前`, llmByProvider: Object.entries(pulse.llm.byProvider).map(([k, v]) => `${k}×${v}`).join(' '), tools: `${pulse.tools.calls}次 失败${pulse.tools.fails}`, topTools: pulse.tools.top.map(t => `${t.name} ${t.n}`).join(' '), source: 'ledger/agent-calls.jsonl + ledger/tool-exec.jsonl' });
       const cronMap: Record<string, string> = {};
@@ -365,11 +365,12 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
     // ===== 卡片堆（始终——手操作清单）=====
     L.push('## 卡片堆（全量——即使 UI 隐藏，手操作清单）');
     L.push('```yaml');
-    // 卡片堆坐标：快照 coords['cards']（.stack-card rect 实时量取），缺失回退设计文档实测
+    // 卡片堆坐标：快照 coords['cards']（.stack-card rect 实时量取/视口推算），
+    // 缺失回退 384 屏推算值（right:0 + cardWidth 155，top = 853×0.12）
     const cardsRect = snapCoords?.['cards'];
     const cardsCoords = cardsRect && cardsRect.x !== undefined && cardsRect.y !== undefined && cardsRect.w !== undefined && cardsRect.h !== undefined
       ? { a: [Math.round(cardsRect.x), Math.round(cardsRect.y)], b: [Math.round(cardsRect.x + cardsRect.w), Math.round(cardsRect.y + cardsRect.h)] }
-      : { a: [278, 101], b: [440, 172] };   // 设计文档 (四)2 实测
+      : { a: [229, 102], b: [384, 170] };   // 384×853 推算（right:0 首卡 155 宽）
     const cardsObj: Record<string, unknown> = { visible: cards.visible, coords: cardsCoords, count: cards.count, focus: cards.focus };
     if (cards.list.length > 0) cardsObj.list = cards.list;
     else if (cards.title) cardsObj.list = [cards.title];

@@ -280,14 +280,18 @@ export function initObsHud(): void {
     return { x: 0, y: 0, w: el.offsetWidth || 288, h: el.offsetHeight || 769 };
   };
   // 卡片堆坐标：首张 .stack-card 的 rect（position:fixed right:0）。
-  // 未打开时元素处于关闭/动画态（偏移出屏或位移），量取无意义——回退设计文档
-  // 实测（显示时位置）；打开时才量真实位置。
+  // 未打开时元素处于关闭/动画态（偏移出屏），量取无意义——按当前 viewport 推算
+  // 展开位置（首卡 right:0 + width:155，top = innerHeight×0.12），而非回退
+  // 1440 时代文档实测值（278 超 384 屏）。2026-08-11 内置 AI 校准发现。
   const cardsRect = (): { x: number; y: number; w: number; h: number } => {
-    if (!isCardStackOpen()) return { x: 278, y: 101, w: 162, h: 71 };   // 设计文档 (四)2 实测兜底
     const el = document.querySelector('.stack-card') as HTMLElement | null;
-    if (!el) return { x: 278, y: 101, w: 162, h: 71 };
-    const r = el.getBoundingClientRect();
-    return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) };
+    if (el && isCardStackOpen()) {
+      const r = el.getBoundingClientRect();
+      return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) };
+    }
+    const w = window.innerWidth || 384;
+    const cardW = 155;
+    return { x: Math.max(0, w - cardW), y: Math.round((window.innerHeight || 853) * 0.12), w: cardW, h: 68 };
   };
   const coords = {
     'hud.top': '.obs-card', 'hud.inbox': '.obs-inbox', 'hud.starmap': '.obs-starmap',
