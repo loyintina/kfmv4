@@ -420,7 +420,7 @@ test('COMPACTOR_NAMES 覆盖映射表全部显式登记工具', () => {
   const expected = [
     'bash', 'read', 'write', 'edit', 'grep', 'glob', 'todo',
     'web_search', 'debug', 'eval', 'browser_eval', 'browser',
-    'kfm-logs', 'kfm-restart', 'checkpoint', 'rewind',
+    'kfm-logs', 'kfm-restart', 'kfm-hand-move', 'checkpoint', 'rewind',
   ];
   for (const name of expected) {
     assert(COMPACTOR_NAMES.includes(name), `注册表缺 ${name}`);
