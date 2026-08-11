@@ -278,6 +278,13 @@ export function initObsHud(): void {
     if (!el) return { x: 0, y: 0, w: 288, h: 769 };   // 384×853 实测兜底
     return { x: 0, y: 0, w: el.offsetWidth || 288, h: el.offsetHeight || 769 };
   };
+  // 卡片堆坐标：首张 .stack-card 的 rect（position:fixed right:0），无卡时设计文档实测
+  const cardsRect = (): { x: number; y: number; w: number; h: number } => {
+    const el = document.querySelector('.stack-card') as HTMLElement | null;
+    if (!el) return { x: 278, y: 101, w: 162, h: 71 };   // 设计文档 (四)2 实测兜底
+    const r = el.getBoundingClientRect();
+    return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) };
+  };
   const coords = {
     'hud.top': '.obs-card', 'hud.inbox': '.obs-inbox', 'hud.starmap': '.obs-starmap',
     'hud.sys': '.obs-rail', 'hud.pulse': '.obs-pulse', 'hud.duty': '.obs-duty',
@@ -286,6 +293,7 @@ export function initObsHud(): void {
   };
   for (const [id, sel] of Object.entries(coords)) Registry.registerCoords(id, () => rectOf(sel));
   Registry.registerCoords('tree', treeRect);
+  Registry.registerCoords('cards', cardsRect);
   // 竖条高度钉死 = 系统区 + 端口区恰好 4 行窗口（2026-08-07 用户定稿 v2：4 整行硬切，
   // 无重叠无平滑）；端口超出 4 行 → 窗口内每 5s 硬切一屏，最后一屏定格、再击回顶；无手势穿透
   let portStride = 0; // 一屏步长 = 第 5 行与第 1 行的位置差（4 行 + 4 间距）

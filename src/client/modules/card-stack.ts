@@ -491,6 +491,12 @@ export function initCardStack(): void {
       id: 'card-stack-content',
       type: 'card-content',
       summary: `卡片堆: [${_focusIndex + 1}/${total}] ${name}${filled < total ? ` (${filled}张已填充)` : ''}`,
+      detail: {
+        visible: isCardStackOpen(),
+        focus: _focusIndex + 1,          // 1-based，与 summary 一致
+        count: total,
+        list: Array.from({ length: total }, (_, i) => `${String(i + 1).padStart(2, '0')}${getCardName(i)}`),
+      },
     };
   });
 

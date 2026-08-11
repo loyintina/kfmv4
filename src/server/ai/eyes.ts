@@ -130,17 +130,26 @@ function buildTreeItems(root: string, expanded: string[], cursorPath: string, se
   return { items, truncated };
 }
 
-/** 从快照提取卡片堆（content 层 card-content） */
-function cardsOf(snap: unknown): { count: number; focus: number; title: string } {
+/** 从快照提取卡片堆（content 层 card-content 的 detail 优先，summary 回退） */
+function cardsOf(snap: unknown): { count: number; focus: number; title: string; visible: boolean; list: string[] } {
   const content = (snap as Record<string, unknown>)?.['content'] as Array<Record<string, unknown>> | undefined;
+  let count = 0, focus = 0, title = '', visible = false, list: string[] = [];
   for (const c of content || []) {
     if (c?.['type'] === 'card-content') {
+      const detail = c?.['detail'] as Record<string, unknown> | undefined;
+      if (detail && typeof detail === 'object') {
+        if (typeof detail['count'] === 'number') count = detail['count'];
+        if (typeof detail['focus'] === 'number') focus = detail['focus'];
+        if (typeof detail['visible'] === 'boolean') visible = detail['visible'];
+        if (Array.isArray(detail['list'])) list = detail['list'].filter((x): x is string => typeof x === 'string');
+      }
       const summary = String(c?.['summary'] || '');
       const m = summary.match(/\[(\d+)\/(\d+)\]\s*(\S+)/);
-      if (m) return { focus: Number(m[1]), count: Number(m[2]), title: m[3] };
+      if (m && focus === 0) { focus = Number(m[1]); count = Number(m[2]); title = m[3]; }
+      if (!title) title = (summary.match(/\]\s*(\S+)/) || [])[1] || '';
     }
   }
-  return { count: 0, focus: 0, title: '' };
+  return { count, focus, title, visible, list };
 }
 
 /** 从快照提取光球状态（elements 层） */
@@ -168,8 +177,8 @@ function readRecentDialog(sessionId: string, n: number): Array<Record<string, st
         else if (b?.type === 'tool') tool = String(b.name || '');
       }
       text = text.trim().replace(/\s+/g, ' ').slice(0, 50);
-      if (tool) return { role: 'ai', tool, summary: text };
-      return { role: m.role === 'user' ? '洛' : 'ai', text };
+      if (tool) return { role: '工具调用', tool, summary: text };
+      return { role: m.role === 'user' ? '洛' : m.role === 'ai' ? 'ai' : m.role, text };
     });
   } catch { return []; }
 }
@@ -192,6 +201,7 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
     const tree = treeOf(snap);
     const cards = cardsOf(snap);
     const orb = orbOf(snap);
+    const activeRaw = readActiveJson();   // 顶框 provider + 光球面板 role/session/provider/model 共用
     const now = new Date();
 
     const L: string[] = [];
@@ -241,12 +251,12 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
       const cc = (k: string, obj: unknown) => { L.push(`### ${k}`); L.push('```yaml'); L.push(dump(obj).trimEnd()); L.push('```\n'); };
 
       const balText = balance && 'total' in balance ? `¥${balance.total}` : '（不可用）';
-      cc('顶框', { coords: c('top'), provider: 'deepseek', balance: balText, time: now.toLocaleTimeString('zh-CN', { hour12: false }), source: 'providers.json + ledger/sys-metrics.json' });
+      cc('顶框', { coords: c('top'), provider: activeRaw.providerId || 'deepseek', balance: balText, time: now.toLocaleTimeString('zh-CN', { hour12: false }), source: 'providers.json + ledger/sys-metrics.json' });
       const pendingN = inbox.filter(x => x.type === 'warn').length; // 待裁决 = warn 类型条数
       cc('信箱', { coords: c('inbox'), pending: pendingN, latest: inbox.find(x => x.type === 'warn')?.text || '（无待裁决）', source: 'docs/ledger/semantic-chain-inbox.md' });
       cc('星轨', { coords: c('starmap'), sessions: archive.sessions, total: `Σ${(archive.totalTokens / 1024 / 1024).toFixed(1)}M`, source: 'sessions/*.json' });
-      cc('系统', { coords: c('sys'), disk: sys.metrics.find(x => x.label === '硬盘')?.value, mem: sys.metrics.find(x => x.label === '内存')?.value, load: sys.metrics.find(x => x.label === '负载')?.value, proc: sys.metrics.find(x => x.label === '进程')?.value, source: 'ledger/sys-metrics.json' });
-      cc('脉搏', { coords: c('pulse'), llm: `${pulse.llm.calls}次 ${pulse.llm.okRate}%`, tools: `${pulse.tools.calls}次 失败${pulse.tools.fails}`, source: 'ledger/agent-calls.jsonl + ledger/tool-exec.jsonl' });
+      cc('系统', { coords: c('sys'), disk: sys.metrics.find(x => x.label === '硬盘')?.value, mem: sys.metrics.find(x => x.label === '内存')?.value, load: sys.metrics.find(x => x.label === '负载')?.value, proc: sys.metrics.find(x => x.label === '进程')?.value, ports: sys.ports.map(p => `${p.port} ${p.name}`).join('，'), source: 'ledger/sys-metrics.json' });
+      cc('脉搏', { coords: c('pulse'), llm: `${pulse.llm.calls}次 ${pulse.llm.okRate}%成功率 均${(pulse.llm.avgMs / 1000).toFixed(1)}m ${pulse.llm.lastAgo}前`, llmByProvider: Object.entries(pulse.llm.byProvider).map(([k, v]) => `${k}×${v}`).join(' '), tools: `${pulse.tools.calls}次 失败${pulse.tools.fails}`, topTools: pulse.tools.top.map(t => `${t.name} ${t.n}`).join(' '), source: 'ledger/agent-calls.jsonl + ledger/tool-exec.jsonl' });
       const cronMap: Record<string, string> = {};
       for (const cr of sys.cron) cronMap[cr.name] = cr.status;
       cc('执勤', { coords: c('duty'), sync: cronMap['sync'] || '?', clean: cronMap['clean'] || '?', chain: cronMap['chain'] || '?', bench: cronMap['bench'] || '?', entry: cronMap['entry'] || '?', agg: cronMap['agg'] || '?', push: cronMap['push'] || '?', retain: cronMap['retain'] || '?', source: 'ledger/check-failures.jsonl' });
@@ -315,14 +325,24 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
     L.push('```\n');
 
     // ===== 光球面板（始终——含会话上下文 + 最近 3 条对话）=====
-    const activeRaw = readActiveJson();
     const dialog = readRecentDialog(activeRaw.sessionId || '', 3);
     L.push('## 光球面板');
     L.push('```yaml');
+    // 光球位置动态量取（快照 coords['orb'] = .light-orb rect），缺失回退 384×853 实测
+    const orbRect = snapCoords?.['orb'];
+    const orbPos = orbRect && orbRect.x !== undefined && orbRect.y !== undefined && orbRect.w !== undefined && orbRect.h !== undefined
+      ? { x: Math.round(orbRect.x), y: Math.round(orbRect.y), w: Math.round(orbRect.w), h: Math.round(orbRect.h) }
+      : { x: 324, y: 677, w: 36, h: 36 };
+    // 面板坐标：快照 coords['orb.panel']（.orb-panel rect），缺失回退设计文档实测
+    const panelRect = snapCoords?.['orb.panel'];
+    const panelCoords = panelRect && panelRect.x !== undefined && panelRect.y !== undefined && panelRect.w !== undefined && panelRect.h !== undefined
+      ? { a: [Math.round(panelRect.x), Math.round(panelRect.y)], b: [Math.round(panelRect.x + panelRect.w), Math.round(panelRect.y + panelRect.h)] }
+      : { a: [42, 345], b: [342, 695] };
     const panelObj: Record<string, unknown> = {
-      orb: { state: orb.state, position: { x: 324, y: 677 } },
+      orb: { state: orb.state, position: orbPos },
       panel: {
         state: orb.panel,
+        coords: panelCoords,
         role: activeRaw.roleFile || '',
         session: activeRaw.sessionId || '',
         provider: activeRaw.providerId || '',
@@ -337,8 +357,14 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
     // ===== 卡片堆（始终——手操作清单）=====
     L.push('## 卡片堆（全量——即使 UI 隐藏，手操作清单）');
     L.push('```yaml');
-    const cardsObj: Record<string, unknown> = { visible: false, count: cards.count, focus: cards.focus };
-    if (cards.count > 0) cardsObj.title = cards.title;
+    // 卡片堆坐标：快照 coords['cards']（.stack-card rect 实时量取），缺失回退设计文档实测
+    const cardsRect = snapCoords?.['cards'];
+    const cardsCoords = cardsRect && cardsRect.x !== undefined && cardsRect.y !== undefined && cardsRect.w !== undefined && cardsRect.h !== undefined
+      ? { a: [Math.round(cardsRect.x), Math.round(cardsRect.y)], b: [Math.round(cardsRect.x + cardsRect.w), Math.round(cardsRect.y + cardsRect.h)] }
+      : { a: [278, 101], b: [440, 172] };   // 设计文档 (四)2 实测
+    const cardsObj: Record<string, unknown> = { visible: cards.visible, coords: cardsCoords, count: cards.count, focus: cards.focus };
+    if (cards.list.length > 0) cardsObj.list = cards.list;
+    else if (cards.title) cardsObj.list = [cards.title];
     cardsObj.source = '卡注册表 registry.ts + card-stack 聚焦序号';
     L.push(dump(cardsObj).trimEnd());
     L.push('```');
