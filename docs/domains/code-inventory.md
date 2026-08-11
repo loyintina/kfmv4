@@ -1,12 +1,12 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 3161ab5d · 生成于 2026-08-11 -->
+<!-- 基准 commit 5822ac66 · 生成于 2026-08-11 -->
 
 # 代码清单（机械层）
 
 > 这是什么：全量代码文件的域归属、行数、导出符号，脚本生成可重跑。
 > 语义层现状 → 各域 code-map.md；域契约（应然）→ 各域 contract.md。
 
-## canvas-tree（25 文件 · 8051 行）
+## canvas-tree（25 文件 · 8052 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -24,7 +24,7 @@
 | src/client/engine/v2/BorderDrawer.ts | 267 | drawBorders |
 | src/client/engine/v2/flex.ts | 245 | applyFlexLayout |
 | src/client/modules/theme.ts | 228 | ThemeConfig, nebula, currentTheme |
-| src/client/modules/tree-loader.ts | 201 | loadFileTree, initLazyLoader |
+| src/client/modules/tree-loader.ts | 202 | loadFileTree, initLazyLoader |
 | src/client/modules/tree-model.ts | 191 | TreeOptions, buildTree, buildSidebarTree |
 | src/client/modules/style-registry.ts | 162 | DIMENSIONS, FONT, LINE_HEIGHT, MAX_LINES, TEXT_STYLES, styleRegistry, getShift, createBox |
 | src/client/modules/sibling-switcher.ts | 158 | initSiblingSwitcher, isSwitcherOpen, closeSwitcher |
@@ -104,7 +104,7 @@
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（55 文件 · 12213 行）
+## ai-chat（55 文件 · 12226 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -120,8 +120,8 @@
 | src/server/ai/tools/omp/debug.ts | 362 | ompDebugTool |
 | src/server/ai/tools/omp/debug/debug-operations.ts | 356 | Breakpoint, StackFrame, Variable, SourceInfo, setBreakpoint, setFunctionBreakpoint, removeBreakpoint, doContinue, doPause, stepIn, stepOver, stepOut, waitForPause, getStack, getVariables, evaluate, loadedSources, injectProbe, capturePausedFrames, clearPausedFrames |
 | src/server/ai/tools/omp/browser/tab-supervisor.ts | 342 | WorkerHandle, TabSession, PendingRun, AcquireTabOptions, RunInTabOptions, getTab, acquireTab, runInTab, releaseTab, releaseAllTabs, resolveTabWorkerEntry |
+| src/server/ai/eyes.ts | 339 | EYES_PATH, genEyes |
 | src/client/modules/orb-chat-host.ts | 335 | ChatHostDeps, initChatHost |
-| src/server/ai/eyes.ts | 326 | EYES_PATH, genEyes |
 | src/server/ai/tools/omp/debug/kfmv4-views.ts | 318 | Kfmv4ViewName, Kfmv4ViewResult, RENDERER_SNAPSHOT_SCRIPT, ANIMATION_TIMELINE_SCRIPT, GESTURE_TRACE_SCRIPT, STATE_HISTORY_SCRIPT, CARD_LIFECYCLE_SCRIPT, KFMV4_SCRIPT_MAP, formatRendererSnapshot, formatAnimationTimeline, formatGestureTrace, formatStateHistory, formatCardLifecycle |
 | src/shared/chat-protocol/to-openai-messages.ts | 297 | OpenAiToolCall, OpenAiMessage, ToOpenAiOptions, ToOpenAiResult, toOpenAiMessages |
 | src/server/ai/session-store.ts | 258 | markSessionScript, appendEvent, flush, flushSync, invalidateSession, appendUserMessage |
@@ -667,4 +667,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 307 文件 · 54871 行 · 跨域边 262 条
+合计 307 文件 · 54885 行 · 跨域边 262 条
