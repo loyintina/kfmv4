@@ -57,8 +57,10 @@ function mkCanvas(vw: number, vh: number): [HTMLCanvasElement, CanvasRenderingCo
 
 // ============ 手引擎：待机利萨如巡逻 + 目标移动（弹簧物理） ============
 class HandOrbit {
-  // 卫星：独立弹簧质量点——r0/om/ph 定义"绕核的目标轨道位"，
-  // x/y/vx/vy 是实际物理状态（惯性+弹性，核移动时被拽着滞后跟随）
+  // 卫星：独立橡皮筋质点——r0=橡皮筋自然长度（轨道半径），om/ph=轨道参数，
+  // x/y/vx/vy=物理状态。橡皮筋**只拉不推**：距离>r0 拉紧产生沿连线拉力，
+  // 距离≤r0 松弛无力。核远离时青球被拽（滞后跟随），核靠近时青球不受影响
+  // （惯性保持）——2026-08-11 用户描述：像软的橡皮筋。
   private sats: { r0: number; om: number; ph: number; x: number; y: number; vx: number; vy: number }[] = [];
   private trail: { x: number; y: number; t: number }[] = [];
   private core = { x: 0, y: 0 };        // 核当前位置（视口绝对坐标）
@@ -83,10 +85,14 @@ class HandOrbit {
       const cx0 = rect.left + rect.width / 2, cy0 = rect.top + rect.height / 2;
       for (const s of this.sats) {
         s.r0 = (0.30 + R() * 0.45) * shortSide;
-        // 卫星初始位置 = 核 + 轨道偏移（避免从零冲过去的突兀起步）
+        // 初始位置 = 核 + 轨道偏移
         s.x = cx0 + Math.cos(s.ph) * s.r0;
         s.y = cy0 + Math.sin(s.ph) * s.r0 * 1.25;
-        s.vx = 0; s.vy = 0;
+        // 初始切向速度（垂直半径方向）——青球靠它绕核转
+        const nx = -Math.sin(s.ph), ny = Math.cos(s.ph) * 1.25; // 切向单位向量
+        const v0 = s.r0 * Math.abs(s.om) * 0.5;                  // 轨道速度
+        s.vx = nx * v0 * Math.sign(s.om);
+        s.vy = ny * v0 * Math.sign(s.om);
       }
       this.satsInit = true;
       this.core = { x: cx0, y: cy0 };
@@ -144,18 +150,27 @@ class HandOrbit {
       ctx.lineWidth = 0.8;
       ctx.beginPath(); ctx.moveTo(this.trail[i - 1].x, this.trail[i - 1].y); ctx.lineTo(this.trail[i].x, this.trail[i].y); ctx.stroke();
     }
-    // 卫星：独立弹簧质量点——目标轨道位 = 核 + 各自偏移；
-    // 用弹簧动力学追赶（惯性+弹性），核移动时卫星被拽着滞后跟随，
-    // 不整体平移。2026-08-11 用户实拍：要物理效果不要整体移动。
+    // 卫星：独立橡皮筋质点——**只拉不推**。核与青球距离 > r0（拉紧）时产生
+    // 沿连线的拉力把青球拽向核；距离 ≤ r0（松弛）时无力，青球靠惯性继续飞。
+    // 核快速远离 → 后方青球被拽着走（滞后）；核靠近 → 前方青球不受影响。
+    // 2026-08-11 用户描述：两个球之间的线是软的橡皮筋。
     const dtS = Math.min(0.05, 33 / 1000);
+    const R_BAND = 0.10;   // 橡皮筋刚度（拉紧时的拉力系数）
+    const DAMP = 0.015;    // 空气阻尼（防止永久振荡）
     for (const s of this.sats) {
-      // 目标轨道位（绕核）
-      const tx = this.core.x + Math.cos(s.ph + t * s.om) * s.r0;
-      const ty = this.core.y + Math.sin(s.ph + t * s.om) * s.r0 * 1.25; // 竖区拉纵向
-      // 弹簧追赶：比核软（跟随有滞后），阻尼适中（不过度振荡）
-      const KS = 0.012, CS = 0.10;
-      s.vx += (KS * (tx - s.x) - CS * s.vx) * dtS * 60;
-      s.vy += (KS * (ty - s.y) - CS * s.vy) * dtS * 60;
+      const dx = this.core.x - s.x, dy = this.core.y - s.y;
+      const d = Math.hypot(dx, dy);
+      if (d > s.r0 && d > 0.01) {
+        // 拉紧：拉力沿连线指向核（力 = 刚度 × 拉伸量）
+        const stretch = d - s.r0;
+        const fx = (dx / d) * R_BAND * stretch;
+        const fy = (dy / d) * R_BAND * stretch;
+        s.vx += fx * dtS * 60;
+        s.vy += fy * dtS * 60;
+      }
+      // 空气阻尼（松弛段也作用——让自由飞行慢慢减速，不掉出屏幕）
+      s.vx *= (1 - DAMP);
+      s.vy *= (1 - DAMP);
       s.x += s.vx * dtS * 60;
       s.y += s.vy * dtS * 60;
       ctx.strokeStyle = `rgba(${BLUE},0.5)`;
