@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit bf84ed24 · 生成于 2026-08-11 -->
+<!-- 基准 commit 5a58a659 · 生成于 2026-08-11 -->
 
 # 代码清单（机械层）
 
@@ -72,11 +72,11 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（27 文件 · 5008 行）
+## client-shell（27 文件 · 5012 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/client/modules/obs-hud.ts | 784 | initObsHud |
+| src/client/modules/obs-hud.ts | 788 | initObsHud |
 | src/client/modules/orb.ts | 538 | type OrbState, collapseOrbPanel, initOrb |
 | src/client/modules/obs-emblem.ts | 497 | EmblemRect, EmblemRects, initObsEmblems |
 | src/client/modules/ui-registry.ts | 352 | UIElementType, UIElementState, InteractiveElement, Rect, RectGetter, ContentBlock, Capability, PageDescription, RegistryChangeHandler, UIElementRegistry, Registry |
@@ -104,7 +104,7 @@
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（55 文件 · 12265 行）
+## ai-chat（55 文件 · 12273 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -116,7 +116,7 @@
 | src/client/modules/session-client.ts | 529 | SessionMessage, Session, extractMessageText, countTextMessages, sessionStore |
 | src/client/modules/orb-chat-run.ts | 512 | ChatMessage, StreamEvent, getActiveRunId, getActiveCursor, setEventHook, readPersistedRun, clearPersistedRun, settlePendingToolBlocks, resumeRun, doSend |
 | src/client/modules/ws-channel.ts | 428 | wsChannel, initWsChannel |
-| src/server/ai/eyes.ts | 378 | EYES_PATH, genEyes |
+| src/server/ai/eyes.ts | 386 | EYES_PATH, genEyes |
 | src/shared/tool-compaction/index.ts | 369 | CompactorEntry, COMPACTOR_REGISTRY, COMPACTOR_NAMES, webTitleKey, CompactionCtx, MUT_BURST_GAP, EXEMPT_USER_ROUNDS, TODO_STALE_GAP, FAIL_REPEAT_MIN, errorFingerprint, failRepeatAnnotation, todoResultAnnotation, normalizeBashCommand, compactToolResult, compactToolInput |
 | src/server/ai/tools/omp/debug.ts | 362 | ompDebugTool |
 | src/server/ai/tools/omp/debug/debug-operations.ts | 356 | Breakpoint, StackFrame, Variable, SourceInfo, setBreakpoint, setFunctionBreakpoint, removeBreakpoint, doContinue, doPause, stepIn, stepOver, stepOut, waitForPause, getStack, getVariables, evaluate, loadedSources, injectProbe, capturePausedFrames, clearPausedFrames |
@@ -488,7 +488,7 @@
 - src/client/modules/renderer-lifecycle.ts → src/client/engine/v2/renderer.ts
 - src/client/modules/ui.ts → src/client/modules/tree-render.ts
 
-### client-shell → floating-card（7 边）
+### client-shell → floating-card（8 边）
 
 - src/client/main.ts → src/client/cards/registry.ts
 - src/client/main.ts → src/client/modules/card-registry.ts
@@ -497,6 +497,7 @@
 - src/client/modules/app.ts → src/client/modules/card-stack.ts
 - src/client/modules/gestures.ts → src/client/modules/card-registry.ts
 - src/client/modules/gestures.ts → src/client/modules/card-stack.ts
+- src/client/modules/obs-hud.ts → src/client/modules/card-stack.ts
 
 ### floating-card → ai-chat（4 边）
 
@@ -667,4 +668,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 307 文件 · 54966 行 · 跨域边 262 条
+合计 307 文件 · 54978 行 · 跨域边 263 条
