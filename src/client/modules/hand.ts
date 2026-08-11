@@ -188,11 +188,27 @@ class HandOrbit {
       s.vx *= DAMP_G; s.vy *= DAMP_G;
       s.x += s.vx * dtG;
       s.y += s.vy * dtG;
-      // 绘制（连线随距离渐隐：近核亮远核暗）
+      // **硬约束兜底**（2026-08-11 用户拍板）：青球距核超过 1.5×r0（格子长度
+      // 的 1.5 倍）时，连线变成硬线直接拉回——位置投影到 1.5r0 处，杜绝逃逸。
+      // 软引力管日常轨道，硬约束管上限，两层各司其职。
+      const hdx = s.x - this.core.x, hdy = s.y - this.core.y;
+      const hd = Math.hypot(hdx, hdy);
+      const HARD_LIMIT = s.r0 * 1.5;
+      if (hd > HARD_LIMIT && hd > 0.001) {
+        const scale = HARD_LIMIT / hd;      // 缩放到上限半径
+        s.x = this.core.x + hdx * scale;
+        s.y = this.core.y + hdy * scale;
+        // 速度的径向分量清零（硬线拉回后不再向外冲）
+        const rx = hdx / hd, ry = hdy / hd;
+        const vrad = s.vx * rx + s.vy * ry;
+        if (vrad > 0) { s.vx -= rx * vrad; s.vy -= ry * vrad; }
+      }
+      // 绘制（连线随距离渐隐：近核亮远核暗；超 1.5 格时亮——硬线态）
       const d = Math.hypot(s.x - this.core.x, s.y - this.core.y);
-      const a = 0.18 + 0.5 * Math.exp(-(d * d) / (2 * 30 * 30));
+      const hard = d > HARD_LIMIT - 2;
+      const a = hard ? 0.85 : 0.18 + 0.5 * Math.exp(-(d * d) / (2 * 30 * 30));
       ctx.strokeStyle = `rgba(${BLUE},${a})`;
-      ctx.lineWidth = 0.6;
+      ctx.lineWidth = hard ? 1.0 : 0.6;
       ctx.beginPath(); ctx.moveTo(this.core.x, this.core.y); ctx.lineTo(s.x, s.y); ctx.stroke();
       ctx.fillStyle = `rgba(${CYAN},0.75)`;
       ctx.arc(s.x, s.y, 1.2, 0, Math.PI * 2);
