@@ -165,19 +165,27 @@ function orbOf(snap: unknown): { state: string; panel: string } {
   return { state, panel };
 }
 
-/** 读会话尾 N 条（对话摘要——工具块只留名+要点） */
+/** 读会话尾 N 条（对话摘要——工具块显示 工具名+命令要点，不抓 AI 思考文本） */
 function readRecentDialog(sessionId: string, n: number): Array<Record<string, string>> {
   try {
     const d = JSON.parse(readFileSync(join(KFM_DATA_DIR, 'sessions', `${sessionId}.json`), 'utf-8'));
     const msgs = (d.messages || []).slice(-n);
     return msgs.map((m: { role: string; content?: Array<Record<string, unknown>> }) => {
-      let text = '', tool = '';
+      let text = '', tool = '', toolSummary = '';
       for (const b of (m.content || [])) {
         if (b?.type === 'text') text += String(b.text || '');
-        else if (b?.type === 'tool') tool = String(b.name || '');
+        else if (b?.type === 'tool') {
+          tool = String(b.name || '');
+          // 工具摘要 = 命令/输入要点（如 bash 的命令、read 的路径），不抓 AI 思考文本
+          const input = (b.input as Record<string, unknown> | undefined) ?? {};
+          const cmd = typeof input['command'] === 'string' ? input['command'] : '';
+          const p = typeof input['path'] === 'string' ? input['path'] : '';
+          const q = typeof input['query'] === 'string' ? input['query'] : '';
+          toolSummary = (cmd || p || q || tool).replace(/\s+/g, ' ').slice(0, 60);
+        }
       }
       text = text.trim().replace(/\s+/g, ' ').slice(0, 50);
-      if (tool) return { role: '工具调用', tool, summary: text };
+      if (tool) return { role: '工具调用', tool, summary: toolSummary };
       return { role: m.role === 'user' ? '洛' : m.role === 'ai' ? 'ai' : m.role, text };
     });
   } catch { return []; }
@@ -251,10 +259,10 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
       const cc = (k: string, obj: unknown) => { L.push(`### ${k}`); L.push('```yaml'); L.push(dump(obj).trimEnd()); L.push('```\n'); };
 
       const balText = balance && 'total' in balance ? `¥${balance.total}` : '（不可用）';
-      cc('顶框', { coords: c('top'), provider: activeRaw.providerId || 'deepseek', balance: balText, time: now.toLocaleTimeString('zh-CN', { hour12: false }), source: 'providers.json + ledger/sys-metrics.json' });
+      cc('顶框', { coords: c('top'), provider: activeRaw.providerId || 'deepseek', balance: balText, time: now.toLocaleTimeString('zh-CN', { hour12: false }), source: 'DeepSeek API balance 实时查询（providers.json 取 apiKey）' });
       const pendingN = inbox.filter(x => x.type === 'warn').length; // 待裁决 = warn 类型条数
       cc('信箱', { coords: c('inbox'), pending: pendingN, latest: inbox.find(x => x.type === 'warn')?.text || '（无待裁决）', source: 'docs/ledger/semantic-chain-inbox.md' });
-      cc('星轨', { coords: c('starmap'), sessions: archive.sessions, total: `Σ${(archive.totalTokens / 1024 / 1024).toFixed(1)}M`, source: 'sessions/*.json' });
+      cc('星轨', { coords: c('starmap'), sessions: archive.sessions, total: `Σ${(archive.totalTokens / 1024 / 1024).toFixed(1)}M`, source: 'sessions/*.json + kimi 工作区 wire.jsonl（归档轨）' });
       cc('系统', { coords: c('sys'), disk: sys.metrics.find(x => x.label === '硬盘')?.value, mem: sys.metrics.find(x => x.label === '内存')?.value, load: sys.metrics.find(x => x.label === '负载')?.value, proc: sys.metrics.find(x => x.label === '进程')?.value, ports: sys.ports.map(p => `${p.port} ${p.name}`).join('，'), source: 'ledger/sys-metrics.json' });
       cc('脉搏', { coords: c('pulse'), llm: `${pulse.llm.calls}次 ${pulse.llm.okRate}%成功率 均${(pulse.llm.avgMs / 1000).toFixed(1)}m ${pulse.llm.lastAgo}前`, llmByProvider: Object.entries(pulse.llm.byProvider).map(([k, v]) => `${k}×${v}`).join(' '), tools: `${pulse.tools.calls}次 失败${pulse.tools.fails}`, topTools: pulse.tools.top.map(t => `${t.name} ${t.n}`).join(' '), source: 'ledger/agent-calls.jsonl + ledger/tool-exec.jsonl' });
       const cronMap: Record<string, string> = {};

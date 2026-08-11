@@ -17,6 +17,7 @@
 import { API } from './state.js';
 import { Registry } from './ui-registry.js';
 import { Z } from './z-index-layers.js';
+import { isCardStackOpen } from './card-stack.js';
 import { initObsEmblems, type EmblemRects } from './obs-emblem.js';
 import { initObsRoles, type RolesData, type RolesRect } from './obs-roles.js';
 
@@ -278,10 +279,13 @@ export function initObsHud(): void {
     if (!el) return { x: 0, y: 0, w: 288, h: 769 };   // 384×853 实测兜底
     return { x: 0, y: 0, w: el.offsetWidth || 288, h: el.offsetHeight || 769 };
   };
-  // 卡片堆坐标：首张 .stack-card 的 rect（position:fixed right:0），无卡时设计文档实测
+  // 卡片堆坐标：首张 .stack-card 的 rect（position:fixed right:0）。
+  // 未打开时元素处于关闭/动画态（偏移出屏或位移），量取无意义——回退设计文档
+  // 实测（显示时位置）；打开时才量真实位置。
   const cardsRect = (): { x: number; y: number; w: number; h: number } => {
+    if (!isCardStackOpen()) return { x: 278, y: 101, w: 162, h: 71 };   // 设计文档 (四)2 实测兜底
     const el = document.querySelector('.stack-card') as HTMLElement | null;
-    if (!el) return { x: 278, y: 101, w: 162, h: 71 };   // 设计文档 (四)2 实测兜底
+    if (!el) return { x: 278, y: 101, w: 162, h: 71 };
     const r = el.getBoundingClientRect();
     return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) };
   };
