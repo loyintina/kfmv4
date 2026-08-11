@@ -21,6 +21,10 @@ Express 4 + WebSocket，`index.ts` 统一入口编排（协调层）。
 - `ai/`：AI 对话子系统 → ../ai-chat/contract.md。**唯一例外 `ai/permissions.ts`
   归 server 域**（权限引擎贴近路由/工具调度层；域归属单一出处 = scripts/check/
   domain-src.mjs，两域清单均由它生成，归属争议以它为准）
+- `ai/eyes.ts`（眼睛生成器，2026-08-11）：按 docs/active/眼睛与手.md 模板生成
+  .kfmv4/agents/prompts/dynamic/eyes.md——MD 语义外壳 + YAML 数据内核。数据源 =
+  obs.ts 聚合（余额/信箱/待办/系统/脉搏/执勤/权限/角色/星轨）+ 浏览器快照
+  （文件树/光球/卡片堆）；工具循环后 + 收到快照时生成；遮挡时中央面板省略
 
 ## 数据目录
 
