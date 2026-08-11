@@ -137,7 +137,8 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
 
       const balText = balance && 'total' in balance ? `¥${balance.total}` : '（不可用）';
       cc('顶框', { coords: c('top'), provider: 'deepseek', balance: balText, time: now.toLocaleTimeString('zh-CN', { hour12: false }) });
-      cc('信箱', { coords: c('inbox'), pending: inbox.length, latest: inbox[0]?.text || '（无待裁决）' });
+      const pendingN = inbox.filter(x => x.type === 'warn').length; // 待裁决 = warn 类型条数
+      cc('信箱', { coords: c('inbox'), pending: pendingN, latest: inbox.find(x => x.type === 'warn')?.text || '（无待裁决）' });
       cc('星轨', { coords: c('starmap'), sessions: archive.sessions, total: `Σ${(archive.totalTokens / 1024 / 1024).toFixed(1)}M` });
       cc('系统', { coords: c('sys'), disk: sys.metrics.find(x => x.label === '硬盘')?.value, mem: sys.metrics.find(x => x.label === '内存')?.value, load: sys.metrics.find(x => x.label === '负载')?.value, proc: sys.metrics.find(x => x.label === '进程')?.value });
       cc('脉搏', { coords: c('pulse'), llm: `${pulse.llm.calls}次 ${pulse.llm.okRate}%`, tools: `${pulse.tools.calls}次 失败${pulse.tools.fails}` });
