@@ -550,13 +550,16 @@ export function initObsEmblems(getRects: () => EmblemRects | null): { relayout: 
   const probe = (first = false) => {
     if (!mainEl) { applyOcc(false, !first); return; } // 找不到网格背景宁可常画，不误杀
     if (curRects.length === 0 || els.length === 0) { applyOcc(true, !first); return; }
-    // 任一区域任一探测点被盖即算遮挡（多点取最严重）
+    // 遮挡判定：命中 .main 自身或 HUD 面板（obs-*）都不算遮挡——HUD 面板是徽标的
+    // 「邻居」不是覆盖物。C 轨道区（74×56px）四周紧贴系统/待办/角色/执勤面板，
+    // 原判定把面板当遮挡 → 画布淡出全暗（2026-08-11 用户实拍：光点整体变暗）。
+    // 真正的遮挡物 = 聊天消息/卡片堆/浮卡（非 obs-* 的覆盖元素）。
     let covered = 0, total = 0;
     for (const rc of curRects) {
       for (const [fx, fy] of [[0.5, 0.5], [0.25, 0.3], [0.75, 0.3], [0.25, 0.7], [0.75, 0.7]]) {
         total++;
         const el = document.elementFromPoint(rc.left + rc.width * fx, rc.top + rc.height * fy);
-        if (el && el !== mainEl) covered++;
+        if (el && el !== mainEl && !el.classList.contains('obs-emblem') && !(el.closest?.('.obs-hud, [class^="obs-"], [class*=" obs-"]'))) covered++;
       }
     }
     const ratio = total > 0 ? covered / total : 0;
