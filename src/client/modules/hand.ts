@@ -57,12 +57,14 @@ function mkCanvas(vw: number, vh: number): [HTMLCanvasElement, CanvasRenderingCo
 
 // ============ 手引擎：待机利萨如巡逻 + 目标移动（弹簧物理） ============
 class HandOrbit {
-  // 卫星：纯运动学轨道（复刻原版方案 C）——锚定**核**而非画布中心。
-  // 每颗青球位置 = 核位置 + 各自轨道偏移（cos/sin 绕核转），r0/om/ph 独立。
-  // 核移动时卫星的轨道中心跟着核走（天然跟随），但保持各自绕转；
-  // 无物理积分 → 永不飞走/塌缩/聚点。2026-08-11 用户拍板：原版方案把
-  // 锚点换成移动的核即可。
-  private sats: { r0: number; om: number; ph: number }[] = [];
+  // 星系模型（2026-08-11 用户拍板）：三层结构
+  // 1. 紫核：可移动（弹簧驱动），星系中心大质量天体
+  // 2. 青球的「轨道中心」anchor：每颗独立——围绕紫核附近随机游走 +
+  //    延迟跟随紫核（紫核移动时 anchor 滞后，像引力波传播延迟）
+  // 3. 青球：绕自己的 anchor 转（本位轨道），同时受紫核**距离相关引力**
+  //    （近强远弱，高斯衰减）
+  // anchor 用软弹簧追核（AK/AC）+ 自身慢速环绕游走；无刚体耦合 → 天然星系感
+  private sats: { r0: number; om: number; ph: number; ax: number; ay: number; avx: number; avy: number; wa: number }[] = [];
   private trail: { x: number; y: number; t: number }[] = [];
   private core = { x: 0, y: 0 };        // 核当前位置（视口绝对坐标）
   private coreV = { x: 0, y: 0 };       // 核速度（弹簧动力学）
@@ -70,27 +72,37 @@ class HandOrbit {
   private targetT0 = 0;                 // 目标设置时间戳（1.5s 后清除）
   private orbit: HandRect | null = null; // 待机轨道区（视口绝对坐标）
   constructor() {
-    // 卫星相位/角速/半径定种子（3 颗——2026-08-11 用户拍板数量 12→3）
+    // 3 颗青球（2026-08-11 用户拍板数量 12→3）——轨道参数 + anchor 环绕角速定种子
     const R = rng(20260810);
     for (let i = 0; i < 3; i++) {
-      this.sats.push({ r0: (0.30 + R() * 0.45) * 60, om: (0.25 + R() * 0.4) * (R() > 0.5 ? 1 : -1), ph: R() * Math.PI * 2 });
+      this.sats.push({
+        r0: (0.30 + R() * 0.45) * 60,                       // 青球绕 anchor 的轨道半径
+        om: (0.25 + R() * 0.4) * (R() > 0.5 ? 1 : -1),      // 青球绕 anchor 角速
+        ph: R() * Math.PI * 2,                              // 青球轨道相位
+        ax: 0, ay: 0, avx: 0, avy: 0,                       // anchor 位置/速度（延迟跟随）
+        wa: (0.15 + R() * 0.2) * (R() > 0.5 ? 1 : -1),      // anchor 环绕紫核的角速（慢）
+      });
     }
   }
   /** 设置待机轨道区（视口绝对坐标）——relayout 时更新 */
   setOrbit(rect: HandRect): void {
     if (!this.orbit) {
-      // 首次：核从轨道中心出发
+      // 首次：核与各 anchor 从轨道中心出发
       this.core = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+      for (const s of this.sats) { s.ax = this.core.x; s.ay = this.core.y; s.avx = 0; s.avy = 0; }
     } else {
-      // 尺寸变化：核/尾迹等比映射到新锚点（卫星是纯时间函数，无需映射）
+      // 尺寸变化：核/anchor/尾迹等比映射到新锚点
       const fx = rect.width / this.orbit.width, fy = rect.height / this.orbit.height;
       if (this.orbit.width > 0 && this.orbit.height > 0 && (fx !== 1 || fy !== 1)) {
         for (const p of this.trail) { p.x = rect.left + (p.x - this.orbit.left) * fx; p.y = rect.top + (p.y - this.orbit.top) * fy; }
         this.core.x = rect.left + (this.core.x - this.orbit.left) * fx;
         this.core.y = rect.top + (this.core.y - this.orbit.top) * fy;
+        for (const s of this.sats) {
+          s.ax = rect.left + (s.ax - this.orbit.left) * fx;
+          s.ay = rect.top + (s.ay - this.orbit.top) * fy;
+        }
       }
     }
-    this.orbit = rect;
     this.orbit = rect;
   }
   /** 设置目标点（视口绝对坐标）——客户端命令入口 */
@@ -135,13 +147,33 @@ class HandOrbit {
       ctx.lineWidth = 0.8;
       ctx.beginPath(); ctx.moveTo(this.trail[i - 1].x, this.trail[i - 1].y); ctx.lineTo(this.trail[i].x, this.trail[i].y); ctx.stroke();
     }
-    // 卫星：纯运动学轨道（原版方案 C 模型，锚定核）——位置是时间函数，
-    // 无物理积分。青球绕核转（各自 r0/om/ph），核移动时轨道中心跟着核走。
-    // 连线亮度保留原版高斯距离衰减（近核亮、远核暗）。
+    // 星系模型（2026-08-11 用户拍板）：三层结构
+    // 1. anchor：青球的轨道中心——软弹簧延迟跟随紫核 + 自身环绕紫核慢速游走
+    // 2. 青球：绕自己的 anchor 转（本位轨道）
+    // 3. 距离引力：青球离紫核近 → 高斯引力系数大 → 被拉向核（近强远弱）
+    const dtS = Math.min(0.05, 33 / 1000);
+    const AK = 0.02;          // anchor 弹簧刚度（软——延迟跟随，像引力波传播）
+    const AC = 0.08;          // anchor 阻尼（防振荡）
+    const AR = 22;            // anchor 环绕紫核的游走半径（px）
+    const GRAV = 0.30;        // 紫核距离引力强度
+    const GSIG = 42;          // 引力高斯 σ（px，越大作用范围越广）
     for (const s of this.sats) {
-      const x = this.core.x + Math.cos(s.ph + t * s.om) * s.r0;
-      const y = this.core.y + Math.sin(s.ph + t * s.om) * s.r0 * 1.25; // 竖区拉纵向
-      const d = Math.hypot(x - this.core.x, y - this.core.y);
+      // anchor：软弹簧追核（延迟）+ 自身环绕游走（慢速，独立相位 wa）
+      const awx = Math.cos(s.ph * 2 + t * s.wa) * AR;
+      const awy = Math.sin(s.ph * 3 + t * s.wa) * AR;
+      s.avx += (AK * ((this.core.x + awx) - s.ax) - AC * s.avx) * dtS * 60;
+      s.avy += (AK * ((this.core.y + awy) - s.ay) - AC * s.avy) * dtS * 60;
+      s.ax += s.avx * dtS * 60;
+      s.ay += s.avy * dtS * 60;
+      // 青球：绕自己的 anchor 转
+      const bx = s.ax + Math.cos(s.ph + t * s.om) * s.r0;
+      const by = s.ay + Math.sin(s.ph + t * s.om) * s.r0 * 1.25; // 竖区拉纵向
+      // 距离引力：离核近 → 高斯系数大 → 位置被拉向核（近强远弱）
+      const d = Math.hypot(bx - this.core.x, by - this.core.y);
+      const k = GRAV * Math.exp(-(d * d) / (2 * GSIG * GSIG));
+      const x = bx * (1 - k) + this.core.x * k;
+      const y = by * (1 - k) + this.core.y * k;
+      // 连线亮度：随引力同向（近核亮、远核暗）
       const a = 0.18 + 0.5 * Math.exp(-(d * d) / (2 * 30 * 30));
       ctx.strokeStyle = `rgba(${BLUE},${a})`;
       ctx.lineWidth = 0.6;
