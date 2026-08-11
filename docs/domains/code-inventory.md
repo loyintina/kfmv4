@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 999df3f9 · 生成于 2026-08-11 -->
+<!-- 基准 commit 7044533c · 生成于 2026-08-11 -->
 
 # 代码清单（机械层）
 
@@ -72,7 +72,7 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（28 文件 · 5296 行）
+## client-shell（28 文件 · 5312 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -82,7 +82,7 @@
 | src/client/modules/ui-registry.ts | 352 | UIElementType, UIElementState, InteractiveElement, Rect, RectGetter, ContentBlock, Capability, PageDescription, RegistryChangeHandler, UIElementRegistry, Registry |
 | src/client/modules/gesture-registry.ts | 346 | GestureHandler, GestureRegistry, gestures |
 | src/client/modules/obs-roles.ts | 309 | RolesData, RolesRect, initObsRoles |
-| src/client/modules/hand.ts | 265 | HandRect, initHand |
+| src/client/modules/hand.ts | 281 | HandRect, initHand |
 | src/client/modules/custom-select.ts | 246 | SelectItem, CustomSelectOptions, CustomSelect, createCustomSelect |
 | src/client/modules/orb-panel.ts | 221 | PanelConfig, buildPanelContent |
 | src/client/modules/gestures.ts | 221 | initGestures |
@@ -672,4 +672,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 309 文件 · 55354 行 · 跨域边 265 条
+合计 309 文件 · 55370 行 · 跨域边 265 条
