@@ -170,11 +170,29 @@ export async function loadFileTree(rootPath: string): Promise<void> {
         root: KFMState.currentRoot,
         expanded,                       // 全量展开路径（不截断）
         selected: KFMState.selectedFile || '',
-        cursorPath: (L.cursorRowId || '').replace(/^label-/, ''),  // UI 光标所在行路径（点击目录也移动）
+        cursorPath: (L.cursorRowId || '').replace(/^(title|file|label)-/, ''),  // UI 光标所在行路径（row id 前缀 title-/file-，label 子盒 label-）
         visible: !!DOM.sidebar?.classList.contains('open'),
         // 滚动位置：renderer root 的 scrollY（真实值），可见高度 = canvas clientHeight
         scrollY: Math.round(L.renderer?.getRoot()?.scrollY ?? 0),
         visibleH: Math.round(DOM.treeCanvas?.clientHeight ?? 618),
+        // 精确可见行路径（一屏内）——服务端据此映射 id 得精确 viewport（行高动态，
+        // 服务端平均行高估算有偏差；渲染端 _rowIndex 按绝对 Y 排序可直接判可见）
+        visiblePaths: (() => {
+          const sy = Math.round(L.renderer?.getRoot()?.scrollY ?? 0);
+          const vh = Math.round(DOM.treeCanvas?.clientHeight ?? 618);
+          const out: string[] = [];
+          for (const row of L._rowIndex || []) {
+            try {
+              const abs = row.getAbsolutePosition();
+              const h = row.height || 26;
+              if (abs.y + h > sy && abs.y < sy + vh) {
+                const p = (row.data as { path?: string } | undefined)?.path;
+                if (typeof p === 'string') out.push(p);
+              }
+            } catch { /* box 已分离 */ }
+          }
+          return out;
+        })(),
       },
     };
   });

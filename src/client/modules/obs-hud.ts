@@ -269,13 +269,23 @@ export function initObsHud(): void {
     const r = el.getBoundingClientRect();
     return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) };
   };
+  // 文件树坐标语义 = 「展开时占据的屏幕区域」（设计文档 (二)1.(1)）。
+  // sidebar 用 transform: translateX(-100%) 隐藏，getBoundingClientRect 受 transform
+  // 影响会返回负 x；布局位置恒 left:0 top:0，用 offsetWidth/offsetHeight（不受 transform
+  // 影响）量取，隐藏时也返回展开后位置——AI 需知"展开后会遮挡哪里"。
+  const treeRect = (): { x: number; y: number; w: number; h: number } => {
+    const el = document.querySelector('.sidebar') as HTMLElement | null;
+    if (!el) return { x: 0, y: 0, w: 288, h: 769 };   // 384×853 实测兜底
+    return { x: 0, y: 0, w: el.offsetWidth || 288, h: el.offsetHeight || 769 };
+  };
   const coords = {
     'hud.top': '.obs-card', 'hud.inbox': '.obs-inbox', 'hud.starmap': '.obs-starmap',
     'hud.sys': '.obs-rail', 'hud.pulse': '.obs-pulse', 'hud.duty': '.obs-duty',
     'hud.stack': '.obs-stack', 'hud.roles': '.obs-roles', 'hud.perms': '.obs-perms',
-    'tree': '.sidebar', 'orb': '.light-orb', 'orb.panel': '.orb-panel',
+    'orb': '.light-orb', 'orb.panel': '.orb-panel',
   };
   for (const [id, sel] of Object.entries(coords)) Registry.registerCoords(id, () => rectOf(sel));
+  Registry.registerCoords('tree', treeRect);
   // 竖条高度钉死 = 系统区 + 端口区恰好 4 行窗口（2026-08-07 用户定稿 v2：4 整行硬切，
   // 无重叠无平滑）；端口超出 4 行 → 窗口内每 5s 硬切一屏，最后一屏定格、再击回顶；无手势穿透
   let portStride = 0; // 一屏步长 = 第 5 行与第 1 行的位置差（4 行 + 4 间距）

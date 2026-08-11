@@ -41,9 +41,9 @@ function isHudHidden(snap: unknown): boolean {
 }
 
 /** 从快照提取文件树展开状态（content 层 file-tree 的 detail 优先，summary 回退） */
-function treeOf(snap: unknown): { root: string; expanded: string[]; selected: string; cursorPath: string; visible: boolean; scrollY: number; visibleH: number } {
+function treeOf(snap: unknown): { root: string; expanded: string[]; selected: string; cursorPath: string; visible: boolean; scrollY: number; visibleH: number; visiblePaths: string[] } {
   const content = (snap as Record<string, unknown>)?.['content'] as Array<Record<string, unknown>> | undefined;
-  let root = '/root', expanded: string[] = [], selected = '', cursorPath = '', visible = false, scrollY = 0, visibleH = 618;
+  let root = '/root', expanded: string[] = [], selected = '', cursorPath = '', visible = false, scrollY = 0, visibleH = 618, visiblePaths: string[] = [];
   for (const c of content || []) {
     if (c?.['type'] === 'file-tree') {
       const detail = c?.['detail'] as Record<string, unknown> | undefined;
@@ -57,6 +57,9 @@ function treeOf(snap: unknown): { root: string; expanded: string[]; selected: st
         visible = detail['visible'] === true;
         if (typeof detail['scrollY'] === 'number') scrollY = detail['scrollY'];
         if (typeof detail['visibleH'] === 'number') visibleH = detail['visibleH'];
+        if (Array.isArray(detail['visiblePaths'])) {
+          visiblePaths = detail['visiblePaths'].filter((x): x is string => typeof x === 'string');
+        }
       }
       const summary = String(c?.['summary'] || '');
       if (summary.includes('展开') || summary.includes('根目录')) visible = true;
@@ -66,7 +69,7 @@ function treeOf(snap: unknown): { root: string; expanded: string[]; selected: st
       }
     }
   }
-  return { root, expanded, selected, cursorPath, visible, scrollY, visibleH };
+  return { root, expanded, selected, cursorPath, visible, scrollY, visibleH, visiblePaths };
 }
 
 /**
@@ -286,18 +289,25 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
     } else {
       treeObj.coords = { a: [0, 0], b: [288, 769] };   // 384×853 实测 2026-08-10（设计文档 (二)1.(1)）
     }
-    // 可见范围：按客户端真实 scrollY/visibleH + 单行高 26px（LINE_HEIGHT 20 + 6）估算
-    // 首 id 与末 id —— 不再写死全量 1..N
-    const ROW_H = 26;
-    treeObj.viewport = {
-      from: Math.min(items.length, Math.max(1, Math.floor(tree.scrollY / ROW_H) + 1)),
-      to: Math.min(items.length, Math.ceil((tree.scrollY + tree.visibleH) / ROW_H)),
-    };
+    // 可见范围：优先用客户端上报的精确可见行路径映射 id（行高动态，渲染端
+    // _rowIndex 按绝对 Y 判断最准）；缺失（旧浏览器）回退 scrollY/26 估算
+    const pathToId = new Map<string, number>();
+    for (const it of items) pathToId.set((it as { path: string }).path, (it as { id: number }).id);
+    const vpIds = tree.visiblePaths.map(p => pathToId.get(p)).filter((v): v is number => v !== undefined);
+    if (vpIds.length > 0) {
+      treeObj.viewport = { from: Math.min(...vpIds), to: Math.max(...vpIds) };
+    } else {
+      const ROW_H = 26;
+      treeObj.viewport = {
+        from: Math.min(items.length, Math.max(1, Math.floor(tree.scrollY / ROW_H) + 1)),
+        to: Math.min(items.length, Math.ceil((tree.scrollY + tree.visibleH) / ROW_H)),
+      };
+    }
     // 光标：UI 光标/选中项匹配项（buildTreeItems 内已标 cursor:true）；无则输出 null
     const cursorItem = items.find(i => (i as { cursor?: boolean }).cursor);
     treeObj.cursor = cursorItem ? (cursorItem as { id: number }).id : null;
     treeObj.multi = 'none';
-    treeObj.source = 'snapshot detail（expanded 全量 + 光标 + 滚动位置）+ fs 重建（含隐藏项/折叠计数）';
+    treeObj.source = 'snapshot detail（expanded 全量 + 光标 + 精确可见行）+ fs 重建（含隐藏项/折叠计数）';
     L.push(dump(treeObj).trimEnd());
     L.push('```\n');
 
