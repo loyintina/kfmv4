@@ -155,18 +155,18 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
       const cc = (k: string, obj: unknown) => { L.push(`## 中央页面 · ${k}`); L.push('```yaml'); L.push(dump(obj).trimEnd()); L.push('```\n'); };
 
       const balText = balance && 'total' in balance ? `¥${balance.total}` : '（不可用）';
-      cc('顶框', { coords: c('top'), provider: 'deepseek', balance: balText, time: now.toLocaleTimeString('zh-CN', { hour12: false }) });
+      cc('顶框', { coords: c('top'), provider: 'deepseek', balance: balText, time: now.toLocaleTimeString('zh-CN', { hour12: false }), source: 'providers.json + ledger/sys-metrics.json' });
       const pendingN = inbox.filter(x => x.type === 'warn').length; // 待裁决 = warn 类型条数
-      cc('信箱', { coords: c('inbox'), pending: pendingN, latest: inbox.find(x => x.type === 'warn')?.text || '（无待裁决）' });
-      cc('星轨', { coords: c('starmap'), sessions: archive.sessions, total: `Σ${(archive.totalTokens / 1024 / 1024).toFixed(1)}M` });
-      cc('系统', { coords: c('sys'), disk: sys.metrics.find(x => x.label === '硬盘')?.value, mem: sys.metrics.find(x => x.label === '内存')?.value, load: sys.metrics.find(x => x.label === '负载')?.value, proc: sys.metrics.find(x => x.label === '进程')?.value });
-      cc('脉搏', { coords: c('pulse'), llm: `${pulse.llm.calls}次 ${pulse.llm.okRate}%`, tools: `${pulse.tools.calls}次 失败${pulse.tools.fails}` });
+      cc('信箱', { coords: c('inbox'), pending: pendingN, latest: inbox.find(x => x.type === 'warn')?.text || '（无待裁决）', source: 'docs/ledger/semantic-chain-inbox.md' });
+      cc('星轨', { coords: c('starmap'), sessions: archive.sessions, total: `Σ${(archive.totalTokens / 1024 / 1024).toFixed(1)}M`, source: 'sessions/*.json' });
+      cc('系统', { coords: c('sys'), disk: sys.metrics.find(x => x.label === '硬盘')?.value, mem: sys.metrics.find(x => x.label === '内存')?.value, load: sys.metrics.find(x => x.label === '负载')?.value, proc: sys.metrics.find(x => x.label === '进程')?.value, source: 'ledger/sys-metrics.json' });
+      cc('脉搏', { coords: c('pulse'), llm: `${pulse.llm.calls}次 ${pulse.llm.okRate}%`, tools: `${pulse.tools.calls}次 失败${pulse.tools.fails}`, source: 'ledger/agent-calls.jsonl + ledger/tool-exec.jsonl' });
       const cronMap: Record<string, string> = {};
       for (const cr of sys.cron) cronMap[cr.name] = cr.status;
-      cc('执勤', { coords: c('duty'), sync: cronMap['sync'] || '?', clean: cronMap['clean'] || '?', chain: cronMap['chain'] || '?', bench: cronMap['bench'] || '?', entry: cronMap['entry'] || '?', agg: cronMap['agg'] || '?', push: cronMap['push'] || '?', retain: cronMap['retain'] || '?' });
-      cc('待办', { coords: c('stack'), todo: stack.counts.todo, done: stack.counts.done, items: stack.entries.filter(e => e.status === 'todo').slice(0, 3).map(e => `#${e.n} ${e.title}`) });
-      cc('角色框', { coords: c('roles'), count: roles.totalRoles, files: roles.totalFiles, active: roles.activeRoleId });
-      cc('权限', { coords: c('perms'), allow: perms.allow, ask: perms.ask, deny: perms.deny, breach: `${perms.breakRate}%` });
+      cc('执勤', { coords: c('duty'), sync: cronMap['sync'] || '?', clean: cronMap['clean'] || '?', chain: cronMap['chain'] || '?', bench: cronMap['bench'] || '?', entry: cronMap['entry'] || '?', agg: cronMap['agg'] || '?', push: cronMap['push'] || '?', retain: cronMap['retain'] || '?', source: 'ledger/check-failures.jsonl' });
+      cc('待办', { coords: c('stack'), todo: stack.counts.todo, done: stack.counts.done, items: stack.entries.filter(e => e.status === 'todo').slice(0, 3).map(e => `#${e.n} ${e.title}`), source: 'docs/active/stack.yaml' });
+      cc('角色框', { coords: c('roles'), count: roles.totalRoles, files: roles.totalFiles, active: roles.activeRoleId, source: 'agents/roles/*.json + active.json' });
+      cc('权限', { coords: c('perms'), allow: perms.allow, ask: perms.ask, deny: perms.deny, breach: `${perms.breakRate}%`, source: 'ledger/permission-audit.jsonl' });
     }
 
     // ===== 文件树（始终——手操作清单）=====
@@ -181,6 +181,7 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
     treeObj.viewport = { from: 1, to: items.length };
     treeObj.cursor = 1;
     treeObj.multi = 'none';
+    treeObj.source = 'tree-model / state（文件树状态）';
     L.push(dump(treeObj).trimEnd());
     L.push('```\n');
 
@@ -198,6 +199,7 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
         provider: activeRaw.providerId || '',
         model: activeRaw.modelId || '',
         dialog,
+        source: 'active.json + sessions/<id>.json',
       },
     };
     L.push(dump(panelObj).trimEnd());
@@ -208,6 +210,7 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
     L.push('```yaml');
     const cardsObj: Record<string, unknown> = { visible: false, count: cards.count, focus: cards.focus };
     if (cards.count > 0) cardsObj.title = cards.title;
+    cardsObj.source = '卡注册表 registry.ts + card-stack 聚焦序号';
     L.push(dump(cardsObj).trimEnd());
     L.push('```');
 
