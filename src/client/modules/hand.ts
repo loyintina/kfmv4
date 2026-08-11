@@ -5,12 +5,14 @@
  * 平时停驻在轨道区待机巡逻，AI 要操作时手脱离轨道、移动到目标坐标、
  * 按下（注入 PointerEvent 复用 gesture-registry 全套手势），完成后回归。
  *
- * 待机态完全复刻自 obs-emblem.ts 的 EmblemOrbit（C 轨道，2026-08-09 试映
- * 取消、2026-08-11 复活）：意志核慢利萨如（3:2，周期 ~24s）+ 卫星邻近牵引
- * + 尾迹渐隐。rng(20260810) 定种子、resize 等比映射。
+ * 画布全屏（覆盖整个视口）：手可移动到屏幕任意位置，轨道区 rect 只是
+ * 待机利萨如巡逻的中心锚点。核/卫星/尾迹全部用**视口绝对坐标**——
+ * 2026-08-11 用户实拍：画布只有轨道区大小时，核出界即被裁剪消失。
  *
- * 操作态（后续迭代）：ws 命令 hand-move(x,y) → GSAP 移到位 → hand-press
- * → 合成 PointerEvent 注入；用户触摸时手让位暂停。
+ * 待机态复刻自 obs-emblem.ts 的 EmblemOrbit（C 轨道）：意志核慢利萨如
+ * （3:2，周期 ~24s）+ 卫星邻近牵引 + 尾迹渐隐。rng(20260810) 定种子。
+ *
+ * 操作态：ws 命令 hand-move(x,y) → 核弹簧物理移动到目标，1.5s 后回归。
  *
  * 层级：Z.HAND（AI 核心层，光球之上、焦点弹窗之下）。
  */
@@ -37,64 +39,80 @@ function rng(seed: number): () => number {
 export interface HandRect { left: number; top: number; width: number; height: number }
 
 /**
- * 创建手画布（固定定位，pointer-events:none 纯展示——手是视觉代理，
- * 点击事件由合成 PointerEvent 注入，不占真实 DOM 命中）。
+ * 创建全屏手画布（固定定位覆盖整个视口，pointer-events:none 纯展示——
+ * 手是视觉代理，点击事件由合成 PointerEvent 注入，不占真实 DOM 命中）。
  */
-function mkCanvas(rect: HandRect): [HTMLCanvasElement, CanvasRenderingContext2D, number, number] {
+function mkCanvas(vw: number, vh: number): [HTMLCanvasElement, CanvasRenderingContext2D] {
   const cv = document.createElement('canvas');
   cv.className = 'ai-hand';
-  cv.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;pointer-events:none;z-index:${Z.HAND}`;
+  cv.style.cssText = `position:fixed;left:0;top:0;width:${vw}px;height:${vh}px;pointer-events:none;z-index:${Z.HAND}`;
   const dpr = Math.min(1.5, window.devicePixelRatio || 1);
-  cv.width = Math.max(1, Math.round(rect.width * dpr));
-  cv.height = Math.max(1, Math.round(rect.height * dpr));
+  cv.width = Math.max(1, Math.round(vw * dpr));
+  cv.height = Math.max(1, Math.round(vh * dpr));
   const ctx = cv.getContext('2d')!;
   ctx.scale(dpr, dpr);
   document.body.appendChild(cv);
-  return [cv, ctx, rect.width, rect.height];
+  return [cv, ctx];
 }
 
 // ============ 手引擎：待机利萨如巡逻 + 目标移动（弹簧物理） ============
 class HandOrbit {
   private sats: { r0: number; om: number; ph: number }[] = [];
   private trail: { x: number; y: number }[] = [];
-  private core = { x: 0, y: 0 };
-  private coreV = { x: 0, y: 0 };      // 核速度（弹簧动力学）
-  private target: { x: number; y: number } | null = null;  // 目标点（视口绝对坐标 → 画布内）
+  private core = { x: 0, y: 0 };        // 核当前位置（视口绝对坐标）
+  private coreV = { x: 0, y: 0 };       // 核速度（弹簧动力学）
+  private target: { x: number; y: number } | null = null;  // 目标点（视口绝对坐标）
   private targetT0 = 0;                 // 目标设置时间戳（1.5s 后清除）
-  private basePos = { x: 0, y: 0 };     // 待机轨道位置（利萨如，逐帧更新）
-  constructor(private w: number, private h: number) {
+  private orbit: HandRect | null = null; // 待机轨道区（视口绝对坐标）
+  private satsInit = false;             // 卫星半径是否已按轨道区初始化
+  constructor() {
+    // 卫星相位/角速定种子（半径待轨道区就绪后按短边比确定）
     const R = rng(20260810);
-    for (let i = 0; i < 6; i++) {   // 用户拍板：青色卫星数量减半 12→6
-      this.sats.push({ r0: (0.18 + R() * 0.26) * Math.min(w, h), om: (0.25 + R() * 0.4) * (R() > 0.5 ? 1 : -1), ph: R() * Math.PI * 2 });
+    for (let i = 0; i < 6; i++) {
+      this.sats.push({ r0: 0, om: (0.25 + R() * 0.4) * (R() > 0.5 ? 1 : -1), ph: R() * Math.PI * 2 });
     }
   }
-  resize(nw: number, nh: number): void { // 轨道半径按短边比缩放，尾迹坐标等比映射
-    const f = Math.min(nw, nh) / Math.min(this.w, this.h);
-    const fx = nw / this.w, fy = nh / this.h;
-    this.w = nw; this.h = nh;
-    for (const s of this.sats) s.r0 *= f;
-    for (const p of this.trail) { p.x *= fx; p.y *= fy; }
-    if (this.target) { this.target.x *= fx; this.target.y *= fy; }
+  /** 设置待机轨道区（视口绝对坐标）——relayout 时更新 */
+  setOrbit(rect: HandRect): void {
+    const shortSide = Math.min(rect.width, rect.height);
+    // 首次：按轨道区短边确定卫星半径 + 核从轨道中心出发
+    if (!this.satsInit) {
+      const R = rng(20260810);
+      for (const s of this.sats) s.r0 = (0.18 + R() * 0.26) * shortSide;
+      this.satsInit = true;
+      this.core = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    } else if (this.orbit) {
+      // 尺寸变化：既有位置/尾迹等比映射到新锚点
+      const fx = rect.width / this.orbit.width, fy = rect.height / this.orbit.height;
+      if (this.orbit.width > 0 && this.orbit.height > 0 && (fx !== 1 || fy !== 1)) {
+        for (const s of this.sats) { s.r0 *= Math.min(fx, fy); }
+        for (const p of this.trail) { p.x = rect.left + (p.x - this.orbit.left) * fx; p.y = rect.top + (p.y - this.orbit.top) * fy; }
+        this.core.x = rect.left + (this.core.x - this.orbit.left) * fx;
+        this.core.y = rect.top + (this.core.y - this.orbit.top) * fy;
+      }
+    }
+    this.orbit = rect;
   }
-  /** 设置目标点（视口坐标 → 画布内坐标）——客户端命令入口 */
-  moveTo(vx: number, vy: number, left: number, top: number, now: number): void {
-    this.target = { x: vx - left, y: vy - top };   // 画布内坐标
+  /** 设置目标点（视口绝对坐标）——客户端命令入口 */
+  moveTo(x: number, y: number, now: number): void {
+    this.target = { x, y };
     this.targetT0 = now;
   }
   step(ctx: CanvasRenderingContext2D, now: number): void {
-    const { w, h } = this;
     const t = now / 1000;
-    const cx = w / 2, cy = h / 2;
-    // 待机轨道位置：慢利萨如（3:2，周期 ~24s）
+    const ob = this.orbit;
+    if (!ob || ob.width < 20 || ob.height < 20) { ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); return; }
+    const cx = ob.left + ob.width / 2, cy = ob.top + ob.height / 2;
+    // 待机轨道位置：慢利萨如（3:2，周期 ~24s），以轨道区中心为锚
     const T = t * (Math.PI * 2 / 24);
-    this.basePos = {
-      x: cx + w * 0.30 * Math.sin(3 * T + 1.7),
-      y: cy + h * 0.34 * Math.sin(2 * T + 0.4),
+    const basePos = {
+      x: cx + ob.width * 0.30 * Math.sin(3 * T + 1.7),
+      y: cy + ob.height * 0.34 * Math.sin(2 * T + 0.4),
     };
     // 目标点超时（1.5s）后清除 → 核弹回待机轨道
     if (this.target && now - this.targetT0 > 1500) this.target = null;
     // 弹簧物理：加速度 = k×(目标或待机位 - 当前位置) - 阻尼×速度
-    const goal = this.target ?? this.basePos;
+    const goal = this.target ?? basePos;
     const K = this.target ? 0.028 : 0.004;   // 移动时硬弹簧（快速到位+小过冲）；回归时软弹簧（平滑回轨）
     const C = this.target ? 0.16 : 0.02;
     const dt = Math.min(0.05, 33 / 1000);
@@ -104,7 +122,7 @@ class HandOrbit {
     this.core.y += this.coreV.y * dt * 60;
     this.trail.push(this.core);
     if (this.trail.length > 126) this.trail.shift();   // 用户拍板：尾迹拉长 3 倍（42→126）
-    ctx.clearRect(0, 0, w, h);
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     // 尾迹渐隐折线（用户定稿：头部亮度上限 0.6）
     for (let i = 1; i < this.trail.length; i++) {
       const a = Math.pow(i / this.trail.length, 1.5) * 0.60;
@@ -112,7 +130,7 @@ class HandOrbit {
       ctx.lineWidth = 0.8;
       ctx.beginPath(); ctx.moveTo(this.trail[i - 1].x, this.trail[i - 1].y); ctx.lineTo(this.trail[i].x, this.trail[i].y); ctx.stroke();
     }
-    // 卫星：本位轨道 + 核邻近牵引（锚定核——核移动时卫星自然弹性跟随）
+    // 卫星：本位轨道（锚定轨道区中心）+ 核邻近牵引（核移动时卫星自然弹性跟随）
     for (const s of this.sats) {
       const bx = cx + Math.cos(s.ph + t * s.om) * s.r0;
       const by = cy + Math.sin(s.ph + t * s.om) * s.r0 * 1.25; // 竖区拉纵向
@@ -135,36 +153,31 @@ class HandOrbit {
   }
 }
 
-// ============ 装配：单画布单 rAF（待机巡逻） ============
-export function initHand(getRect: () => HandRect | null): { relayout: () => void; moveTo: (x: number, y: number) => void } {
+// ============ 装配：全屏画布单 rAF（待机巡逻 + 目标移动） ============
+export function initHand(getOrbit: () => HandRect | null): { relayout: () => void; moveTo: (x: number, y: number) => void } {
   let el: HTMLCanvasElement | null = null;
   let engine: HandOrbit | null = null;
   let ctx: CanvasRenderingContext2D | null = null;
-  let curRect: HandRect | null = null;
   let renderOn = true;
 
   const build = () => {
-    const r = getRect();
-    if (!r || r.width < 20 || r.height < 20) { // 区域太小宁缺毋滥
-      el?.remove();
-      el = null; ctx = null; engine = null; curRect = null;
-      return;
-    }
-    curRect = r;
-    // 尺寸基本没变（±2px）只挪画布位置
+    const ob = getOrbit();
+    const vw = window.innerWidth, vh = window.innerHeight;
+    // 画布尺寸变化（resize）才重建；轨道区变化只 setOrbit（引擎原地映射）
     if (el) {
-      const same = Math.abs(r.width - parseFloat(el.style.width)) <= 2 &&
-        Math.abs(r.height - parseFloat(el.style.height)) <= 2;
-      if (same) {
-        el.style.left = `${r.left}px`; el.style.top = `${r.top}px`;
-        return;
+      const wSame = Math.abs(vw - parseFloat(el.style.width)) <= 2;
+      const hSame = Math.abs(vh - parseFloat(el.style.height)) <= 2;
+      if (!wSame || !hSame) {
+        el.remove();
+        el = null; ctx = null;
       }
     }
-    el?.remove();
-    const [cv, c, w, h] = mkCanvas(r);
-    el = cv; ctx = c;
-    if (engine) engine.resize(w, h);
-    else engine = new HandOrbit(w, h);
+    if (!el) {
+      const [cv, c] = mkCanvas(vw, vh);
+      el = cv; ctx = c;
+      if (!engine) engine = new HandOrbit();
+    }
+    if (ob) engine?.setOrbit(ob);
   };
 
   build();
@@ -190,8 +203,7 @@ export function initHand(getRect: () => HandRect | null): { relayout: () => void
     relayout: build,
     /** 移动手到视口坐标（服务端 hand-move 命令入口） */
     moveTo(x: number, y: number): void {
-      if (!engine || !curRect) return;
-      engine.moveTo(x, y, curRect.left, curRect.top, Date.now());
+      engine?.moveTo(x, y, Date.now());
     },
   };
   moveFn = api.moveTo;
