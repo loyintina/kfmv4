@@ -79,7 +79,8 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
   B 样条巡游 + 矩阵时刻，2026-08-09 裁决三画布收敛单画布；移动端降耗：DPR≤1.5
   + 30fps 节流 + 批量化 ~230→~8 绘制 + posBuf 复用 + 守视钩子 300ms 节流；
   遮挡淡出淡入：多点探测分向缓动（淡出 ease-in 截尾/淡入 ease-out 铺满）、比例
-  迟滞、停绘零状态；`__emblemDbg`（escape-ok 已标）；实拍 → ./detail-obs-hud.md）
+  迟滞、停绘零状态；探测排除 obs-* HUD 面板（徽标邻居非遮挡，2026-08-11 修）；
+  `__emblemDbg`（escape-ok 已标）；实拍 → ./detail-obs-hud.md）
 - **C 轨道复活（2026-08-11）**：EmblemOrbit 自 5432ff2f^ 复刻（利萨如 3:2 24s
   + 12 卫星牵引 + 尾迹渐隐），置于系统右/待办左/角色上/执勤下四框空区；双画布双引擎
 - **观测台高度纪律（2026-08-09 定稿）：全部面板高度钉死，当前满配即最大高度**
