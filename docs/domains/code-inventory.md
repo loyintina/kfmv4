@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 3d501b2f · 生成于 2026-08-11 -->
+<!-- 基准 commit d76adda6 · 生成于 2026-08-11 -->
 
 # 代码清单（机械层）
 
@@ -72,15 +72,15 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（27 文件 · 4956 行）
+## client-shell（27 文件 · 4990 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/client/modules/obs-hud.ts | 750 | initObsHud |
+| src/client/modules/obs-hud.ts | 766 | initObsHud |
 | src/client/modules/orb.ts | 538 | type OrbState, collapseOrbPanel, initOrb |
 | src/client/modules/obs-emblem.ts | 497 | EmblemRect, EmblemRects, initObsEmblems |
+| src/client/modules/ui-registry.ts | 352 | UIElementType, UIElementState, InteractiveElement, Rect, RectGetter, ContentBlock, Capability, PageDescription, RegistryChangeHandler, UIElementRegistry, Registry |
 | src/client/modules/gesture-registry.ts | 346 | GestureHandler, GestureRegistry, gestures |
-| src/client/modules/ui-registry.ts | 334 | UIElementType, UIElementState, InteractiveElement, ContentBlock, Capability, PageDescription, RegistryChangeHandler, UIElementRegistry, Registry |
 | src/client/modules/obs-roles.ts | 309 | RolesData, RolesRect, initObsRoles |
 | src/client/modules/custom-select.ts | 246 | SelectItem, CustomSelectOptions, CustomSelect, createCustomSelect |
 | src/client/modules/orb-panel.ts | 221 | PanelConfig, buildPanelContent |
@@ -104,7 +104,7 @@
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（55 文件 · 12110 行）
+## ai-chat（55 文件 · 12118 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -126,8 +126,8 @@
 | src/server/ai/session-store.ts | 258 | markSessionScript, appendEvent, flush, flushSync, invalidateSession, appendUserMessage |
 | src/server/ai/tools/omp/debug/cdp-connection.ts | 242 | CdpSession, CdpLaunchOptions, CdpAttachOptions, CdpPausedEvent, sendCmd, onCdpEvent, launchCdp, attachCdp, closeCdp |
 | src/server/ai/run-manager.ts | 240 | _setStallMsForTest, getActiveRun, getRun, StreamFn, startRun, attachRun, cancelRun |
+| src/server/ai/eyes.ts | 231 | EYES_PATH, genEyes |
 | src/client/modules/orb-chat-hints.ts | 225 | startWaitingIndicator, TODO_DISMISS_KEY, todosFingerprint, clearTodoPanel, dismissTodoPanel, updateTodoFromTool |
-| src/server/ai/eyes.ts | 223 | EYES_PATH, genEyes |
 | src/server/ai/tools/index.ts | 169 | getAllTools, getToolDefinitions, executeTool, hasTool, getTool |
 | src/server/ai/page-state.ts | 156 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
 | src/server/ai/routes.ts | 153 | StartRunFn, setupAiRoutes |
@@ -164,13 +164,13 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（10 文件 · 2467 行）
+## server（10 文件 · 2469 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/server/routes/obs.ts | 862 | fetchDeepseekBalance, setupObsRoutes, setupObsPages, parseInbox, parseStack, collectSys, collectArchive, collectPulse, collectPerms, buildRolesData, collectRoles |
 | src/server/routes/files.ts | 419 | FileItem, sliceMessages, MSG_PAYLOAD_BUDGET, MSG_SINGLE_CAP, capMessagesPayload, setupFileRoutes |
-| src/server/ws-server.ts | 322 | WsServer |
+| src/server/ws-server.ts | 324 | WsServer |
 | src/server/index.ts | 186 | — |
 | src/server/path-utils.ts | 172 | ROOT_DIR, PROJECT_ROOT, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, SESSION_ID_RE, isValidSessionId, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
 | src/server/ai/permissions.ts | 134 | RiskClass, TOOL_RISK, Decision, AuditEntry, riskClassOf, evaluate |
@@ -665,4 +665,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 307 文件 · 54719 行 · 跨域边 260 条
+合计 307 文件 · 54763 行 · 跨域边 260 条
