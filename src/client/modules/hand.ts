@@ -188,12 +188,12 @@ class HandOrbit {
       s.vx *= DAMP_G; s.vy *= DAMP_G;
       s.x += s.vx * dtG;
       s.y += s.vy * dtG;
-      // **硬约束兜底**（2026-08-11 用户拍板）：青球距核超过 1.5×r0（格子长度
-      // 的 1.5 倍）时，连线变成硬线直接拉回——位置投影到 1.5r0 处，杜绝逃逸。
+      // **硬约束兜底**（2026-08-11 用户拍板）：青球距核超过 r0（格子长度）
+      // 时，连线变成硬线直接拉回——位置投影到 r0 处，杜绝逃逸。
       // 软引力管日常轨道，硬约束管上限，两层各司其职。
       const hdx = s.x - this.core.x, hdy = s.y - this.core.y;
       const hd = Math.hypot(hdx, hdy);
-      const HARD_LIMIT = s.r0 * 1.5;
+      const HARD_LIMIT = s.r0;      // 硬约束上限 = 1×r0（2026-08-11 用户拍板 1.5→1）
       if (hd > HARD_LIMIT && hd > 0.001) {
         const scale = HARD_LIMIT / hd;      // 缩放到上限半径
         s.x = this.core.x + hdx * scale;
@@ -203,7 +203,7 @@ class HandOrbit {
         const vrad = s.vx * rx + s.vy * ry;
         if (vrad > 0) { s.vx -= rx * vrad; s.vy -= ry * vrad; }
       }
-      // 绘制（连线随距离渐隐：近核亮远核暗；超 1.5 格时亮——硬线态）
+      // 绘制（连线随距离渐隐：近核亮远核暗；超上限时亮——硬线态）
       const d = Math.hypot(s.x - this.core.x, s.y - this.core.y);
       const hard = d > HARD_LIMIT - 2;
       const a = hard ? 0.85 : 0.18 + 0.5 * Math.exp(-(d * d) / (2 * 30 * 30));
