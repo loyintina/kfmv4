@@ -57,14 +57,12 @@ function mkCanvas(vw: number, vh: number): [HTMLCanvasElement, CanvasRenderingCo
 
 // ============ 手引擎：待机利萨如巡逻 + 目标移动（弹簧物理） ============
 class HandOrbit {
-  // 星系模型（2026-08-11 用户拍板）：三层结构
-  // 1. 紫核：可移动（弹簧驱动），星系中心大质量天体
-  // 2. 青球的「轨道中心」anchor：每颗独立——围绕紫核附近随机游走 +
-  //    延迟跟随紫核（紫核移动时 anchor 滞后，像引力波传播延迟）
-  // 3. 青球：绕自己的 anchor 转（本位轨道），同时受紫核**距离相关引力**
-  //    （近强远弱，高斯衰减）
-  // anchor 用软弹簧追核（AK/AC）+ 自身慢速环绕游走；无刚体耦合 → 天然星系感
-  private sats: { r0: number; om: number; ph: number; ax: number; ay: number; avx: number; avy: number; wa: number }[] = [];
+  // Verlet 积分 + 距离约束（成熟方案，2026-08-11 用户确认方向）：
+  // 青球 = Verlet 质点（记录当前/前一帧位置，速度隐含在位置差——天然稳定
+  // 不爆炸）。距离约束**只拉不推**：青球到核距离 > r0 时沿连线拉回 r0，
+  // 距离 ≤ r0 时约束松弛（自由飞行）——核移动时后方被拽（有惯性滞后）、
+  // 前方不受影响。青球初始有切向速度（绕核转），核是约束锚点。
+  private sats: { r0: number; om: number; ph: number; x: number; y: number; px: number; py: number }[] = [];
   private trail: { x: number; y: number; t: number }[] = [];
   private core = { x: 0, y: 0 };        // 核当前位置（视口绝对坐标）
   private coreV = { x: 0, y: 0 };       // 核速度（弹簧动力学）
@@ -72,34 +70,43 @@ class HandOrbit {
   private targetT0 = 0;                 // 目标设置时间戳（1.5s 后清除）
   private orbit: HandRect | null = null; // 待机轨道区（视口绝对坐标）
   constructor() {
-    // 3 颗青球（2026-08-11 用户拍板数量 12→3）——轨道参数 + anchor 环绕角速定种子
+    // 3 颗青球（2026-08-11 用户拍板数量 12→3）——约束半径/切向角速/相位定种子
     const R = rng(20260810);
     for (let i = 0; i < 3; i++) {
       this.sats.push({
-        r0: (0.30 + R() * 0.45) * 60,                       // 青球绕 anchor 的轨道半径
-        om: (0.25 + R() * 0.4) * (R() > 0.5 ? 1 : -1),      // 青球绕 anchor 角速
-        ph: R() * Math.PI * 2,                              // 青球轨道相位
-        ax: 0, ay: 0, avx: 0, avy: 0,                       // anchor 位置/速度（延迟跟随）
-        wa: (0.15 + R() * 0.2) * (R() > 0.5 ? 1 : -1),      // anchor 环绕紫核的角速（慢）
+        r0: (0.30 + R() * 0.45) * 60,                       // 距离约束长度（自然轨道半径）
+        om: (0.25 + R() * 0.4) * (R() > 0.5 ? 1 : -1),      // 切向角速（绕核转的初始速度）
+        ph: R() * Math.PI * 2,                              // 初始相位
+        x: 0, y: 0, px: 0, py: 0,                           // Verlet 位置（当前/前一帧）
       });
     }
   }
   /** 设置待机轨道区（视口绝对坐标）——relayout 时更新 */
   setOrbit(rect: HandRect): void {
     if (!this.orbit) {
-      // 首次：核与各 anchor 从轨道中心出发
-      this.core = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-      for (const s of this.sats) { s.ax = this.core.x; s.ay = this.core.y; s.avx = 0; s.avy = 0; }
+      // 首次：核从轨道中心出发；青球放在轨道位并给切向速度（Verlet 用前一帧偏移表达）
+      const cx0 = rect.left + rect.width / 2, cy0 = rect.top + rect.height / 2;
+      this.core = { x: cx0, y: cy0 };
+      for (const s of this.sats) {
+        s.x = cx0 + Math.cos(s.ph) * s.r0;
+        s.y = cy0 + Math.sin(s.ph) * s.r0 * 1.25;
+        // 切向速度（垂直半径方向）：前一帧位置 = 当前位置 - 速度×dt
+        const v = s.r0 * Math.abs(s.om) * 0.35 * Math.sign(s.om);
+        s.px = s.x + Math.sin(s.ph) * v * (1 / 60);
+        s.py = s.y - Math.cos(s.ph) * v * (1 / 60) * 1.25;
+      }
     } else {
-      // 尺寸变化：核/anchor/尾迹等比映射到新锚点
+      // 尺寸变化：核/青球/尾迹等比映射到新锚点
       const fx = rect.width / this.orbit.width, fy = rect.height / this.orbit.height;
       if (this.orbit.width > 0 && this.orbit.height > 0 && (fx !== 1 || fy !== 1)) {
         for (const p of this.trail) { p.x = rect.left + (p.x - this.orbit.left) * fx; p.y = rect.top + (p.y - this.orbit.top) * fy; }
         this.core.x = rect.left + (this.core.x - this.orbit.left) * fx;
         this.core.y = rect.top + (this.core.y - this.orbit.top) * fy;
         for (const s of this.sats) {
-          s.ax = rect.left + (s.ax - this.orbit.left) * fx;
-          s.ay = rect.top + (s.ay - this.orbit.top) * fy;
+          s.x = rect.left + (s.x - this.orbit.left) * fx;
+          s.y = rect.top + (s.y - this.orbit.top) * fy;
+          s.px = rect.left + (s.px - this.orbit.left) * fx;
+          s.py = rect.top + (s.py - this.orbit.top) * fy;
         }
       }
     }
@@ -147,39 +154,36 @@ class HandOrbit {
       ctx.lineWidth = 0.8;
       ctx.beginPath(); ctx.moveTo(this.trail[i - 1].x, this.trail[i - 1].y); ctx.lineTo(this.trail[i].x, this.trail[i].y); ctx.stroke();
     }
-    // 星系模型（2026-08-11 用户拍板）：三层结构
-    // 1. anchor：青球的轨道中心——软弹簧延迟跟随紫核 + 自身环绕紫核慢速游走
-    // 2. 青球：绕自己的 anchor 转（本位轨道）
-    // 3. 距离引力：青球离紫核近 → 高斯引力系数大 → 被拉向核（近强远弱）
-    const dtS = Math.min(0.05, 33 / 1000);
-    const AK = 0.02;          // anchor 弹簧刚度（软——延迟跟随，像引力波传播）
-    const AC = 0.08;          // anchor 阻尼（防振荡）
-    const AR = 22;            // anchor 环绕紫核的游走半径（px）
-    const GRAV = 0.30;        // 紫核距离引力强度
-    const GSIG = 42;          // 引力高斯 σ（px，越大作用范围越广）
+    // Verlet 青球：位置积分（速度隐含在位置差，稳定不爆炸）+ 距离约束
+    // **只拉不推**——到核距离 > r0 时拉回 r0（核远离→被拽），≤ r0 松弛
+    // （核靠近→自由飞行）。核移动时后方青球被拽（惯性滞后）、前方不受影响。
+    const dtV = Math.min(0.05, 33 / 1000);
+    const SOLVE = 3;            // 约束迭代次数（收敛更快、更硬）
+    const DAMP_V = 0.985;       // Verlet 阻尼（每帧速度衰减，防永久振荡）
     for (const s of this.sats) {
-      // anchor：软弹簧追核（延迟）+ 自身环绕游走（慢速，独立相位 wa）
-      const awx = Math.cos(s.ph * 2 + t * s.wa) * AR;
-      const awy = Math.sin(s.ph * 3 + t * s.wa) * AR;
-      s.avx += (AK * ((this.core.x + awx) - s.ax) - AC * s.avx) * dtS * 60;
-      s.avy += (AK * ((this.core.y + awy) - s.ay) - AC * s.avy) * dtS * 60;
-      s.ax += s.avx * dtS * 60;
-      s.ay += s.avy * dtS * 60;
-      // 青球：绕自己的 anchor 转
-      const bx = s.ax + Math.cos(s.ph + t * s.om) * s.r0;
-      const by = s.ay + Math.sin(s.ph + t * s.om) * s.r0 * 1.25; // 竖区拉纵向
-      // 距离引力：离核近 → 高斯系数大 → 位置被拉向核（近强远弱）
-      const d = Math.hypot(bx - this.core.x, by - this.core.y);
-      const k = GRAV * Math.exp(-(d * d) / (2 * GSIG * GSIG));
-      const x = bx * (1 - k) + this.core.x * k;
-      const y = by * (1 - k) + this.core.y * k;
-      // 连线亮度：随引力同向（近核亮、远核暗）
+      // 1. Verlet 积分：新位置 = 当前位置 + (当前位置 - 前一帧位置)×阻尼
+      const nx = s.x + (s.x - s.px) * DAMP_V;
+      const ny = s.y + (s.y - s.py) * DAMP_V;
+      s.px = s.x; s.py = s.y;
+      s.x = nx; s.y = ny;
+      // 2. 距离约束（只拉不推）：超过 r0 沿连线拉回（迭代求硬约束）
+      for (let it = 0; it < SOLVE; it++) {
+        const dx = s.x - this.core.x, dy = s.y - this.core.y;
+        const d = Math.hypot(dx, dy);
+        if (d > s.r0 && d > 0.001) {
+          const corr = (d - s.r0) / d;         // 超标比例
+          s.x -= dx * corr;
+          s.y -= dy * corr;
+        }
+      }
+      // 3. 绘制（连线随距离渐隐：近核亮远核暗）
+      const d = Math.hypot(s.x - this.core.x, s.y - this.core.y);
       const a = 0.18 + 0.5 * Math.exp(-(d * d) / (2 * 30 * 30));
       ctx.strokeStyle = `rgba(${BLUE},${a})`;
       ctx.lineWidth = 0.6;
-      ctx.beginPath(); ctx.moveTo(this.core.x, this.core.y); ctx.lineTo(x, y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(this.core.x, this.core.y); ctx.lineTo(s.x, s.y); ctx.stroke();
       ctx.fillStyle = `rgba(${CYAN},0.75)`;
-      ctx.arc(x, y, 1.2, 0, Math.PI * 2);
+      ctx.arc(s.x, s.y, 1.2, 0, Math.PI * 2);
       ctx.fill();
     }
     // 核：紫光焦点 + 光圈（用户定稿：单层 5.5px 透明度 0.25）
