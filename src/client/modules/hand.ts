@@ -16,6 +16,7 @@
  */
 
 import { Z } from './z-index-layers.js';
+import { wsChannel } from './ws-channel.js';
 
 // ========== 常量 ==========
 const CYAN = '6,182,212';
@@ -52,11 +53,15 @@ function mkCanvas(rect: HandRect): [HTMLCanvasElement, CanvasRenderingContext2D,
   return [cv, ctx, rect.width, rect.height];
 }
 
-// ============ 手引擎：待机利萨如巡逻（复刻自 EmblemOrbit） ============
+// ============ 手引擎：待机利萨如巡逻 + 目标移动（弹簧物理） ============
 class HandOrbit {
   private sats: { r0: number; om: number; ph: number }[] = [];
   private trail: { x: number; y: number }[] = [];
   private core = { x: 0, y: 0 };
+  private coreV = { x: 0, y: 0 };      // 核速度（弹簧动力学）
+  private target: { x: number; y: number } | null = null;  // 目标点（视口绝对坐标 → 画布内）
+  private targetT0 = 0;                 // 目标设置时间戳（1.5s 后清除）
+  private basePos = { x: 0, y: 0 };     // 待机轨道位置（利萨如，逐帧更新）
   constructor(private w: number, private h: number) {
     const R = rng(20260810);
     for (let i = 0; i < 6; i++) {   // 用户拍板：青色卫星数量减半 12→6
@@ -69,17 +74,34 @@ class HandOrbit {
     this.w = nw; this.h = nh;
     for (const s of this.sats) s.r0 *= f;
     for (const p of this.trail) { p.x *= fx; p.y *= fy; }
+    if (this.target) { this.target.x *= fx; this.target.y *= fy; }
+  }
+  /** 设置目标点（视口坐标 → 画布内坐标）——客户端命令入口 */
+  moveTo(vx: number, vy: number, left: number, top: number, now: number): void {
+    this.target = { x: vx - left, y: vy - top };   // 画布内坐标
+    this.targetT0 = now;
   }
   step(ctx: CanvasRenderingContext2D, now: number): void {
     const { w, h } = this;
     const t = now / 1000;
     const cx = w / 2, cy = h / 2;
-    // 意志核：慢利萨如（3:2，周期 ~24s）
+    // 待机轨道位置：慢利萨如（3:2，周期 ~24s）
     const T = t * (Math.PI * 2 / 24);
-    this.core = {
+    this.basePos = {
       x: cx + w * 0.30 * Math.sin(3 * T + 1.7),
       y: cy + h * 0.34 * Math.sin(2 * T + 0.4),
     };
+    // 目标点超时（1.5s）后清除 → 核弹回待机轨道
+    if (this.target && now - this.targetT0 > 1500) this.target = null;
+    // 弹簧物理：加速度 = k×(目标或待机位 - 当前位置) - 阻尼×速度
+    const goal = this.target ?? this.basePos;
+    const K = this.target ? 0.028 : 0.004;   // 移动时硬弹簧（快速到位+小过冲）；回归时软弹簧（平滑回轨）
+    const C = this.target ? 0.16 : 0.02;
+    const dt = Math.min(0.05, 33 / 1000);
+    this.coreV.x += (K * (goal.x - this.core.x) - C * this.coreV.x) * dt * 60;
+    this.coreV.y += (K * (goal.y - this.core.y) - C * this.coreV.y) * dt * 60;
+    this.core.x += this.coreV.x * dt * 60;
+    this.core.y += this.coreV.y * dt * 60;
     this.trail.push(this.core);
     if (this.trail.length > 126) this.trail.shift();   // 用户拍板：尾迹拉长 3 倍（42→126）
     ctx.clearRect(0, 0, w, h);
@@ -90,7 +112,7 @@ class HandOrbit {
       ctx.lineWidth = 0.8;
       ctx.beginPath(); ctx.moveTo(this.trail[i - 1].x, this.trail[i - 1].y); ctx.lineTo(this.trail[i].x, this.trail[i].y); ctx.stroke();
     }
-    // 卫星：本位轨道 + 核邻近牵引
+    // 卫星：本位轨道 + 核邻近牵引（锚定核——核移动时卫星自然弹性跟随）
     for (const s of this.sats) {
       const bx = cx + Math.cos(s.ph + t * s.om) * s.r0;
       const by = cy + Math.sin(s.ph + t * s.om) * s.r0 * 1.25; // 竖区拉纵向
@@ -102,7 +124,8 @@ class HandOrbit {
       ctx.lineWidth = 0.6;
       ctx.beginPath(); ctx.moveTo(this.core.x, this.core.y); ctx.lineTo(x, y); ctx.stroke();
       ctx.fillStyle = `rgba(${CYAN},0.75)`;
-      ctx.beginPath(); ctx.arc(x, y, 1.2, 0, Math.PI * 2); ctx.fill();
+      ctx.arc(x, y, 1.2, 0, Math.PI * 2);
+      ctx.fill();
     }
     // 核：紫光焦点 + 光圈（用户定稿：单层 5.5px 透明度 0.25）
     ctx.fillStyle = `rgba(${VIOLET},0.95)`;
@@ -113,7 +136,7 @@ class HandOrbit {
 }
 
 // ============ 装配：单画布单 rAF（待机巡逻） ============
-export function initHand(getRect: () => HandRect | null): { relayout: () => void } {
+export function initHand(getRect: () => HandRect | null): { relayout: () => void; moveTo: (x: number, y: number) => void } {
   let el: HTMLCanvasElement | null = null;
   let engine: HandOrbit | null = null;
   let ctx: CanvasRenderingContext2D | null = null;
@@ -145,6 +168,14 @@ export function initHand(getRect: () => HandRect | null): { relayout: () => void
   };
 
   build();
+  // AI 的手：接收服务端 hand-move 命令（工具 kfm-hand-move 广播）
+  let moveFn: ((x: number, y: number) => void) | null = null;
+  wsChannel.onCommand('hand-move', (_action, params) => {
+    const x = Number(params.x);
+    const y = Number(params.y);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+    moveFn?.(x, y);
+  });
   let lastStep = 0;
   const loop = (now: number) => {
     if (renderOn && ctx && engine && now - lastStep >= 33) {
@@ -155,5 +186,14 @@ export function initHand(getRect: () => HandRect | null): { relayout: () => void
   };
   requestAnimationFrame(loop);
 
-  return { relayout: build };
+  const api = {
+    relayout: build,
+    /** 移动手到视口坐标（服务端 hand-move 命令入口） */
+    moveTo(x: number, y: number): void {
+      if (!engine || !curRect) return;
+      engine.moveTo(x, y, curRect.left, curRect.top, Date.now());
+    },
+  };
+  moveFn = api.moveTo;
+  return api;
 }
