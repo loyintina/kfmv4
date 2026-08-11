@@ -39,10 +39,10 @@ function rng(seed: number): () => number {
 export interface HandRect { left: number; top: number; width: number; height: number }
 
 // 引力物理常量（2026-08-11 真实引力 N-body 模型）
-const GRAV = 2600;        // 引力常数（决定轨道速度/周期；sqrt(G/r0) 圆轨道速度）
-const SOFT = 14;          // 引力软化（防 r→0 加速度爆炸）
-const REP_MAG = 0.30;     // 青球互斥强度（弱磁场式：近距离才排斥）
-const REP_R = 18;         // 互斥作用半径（px，小于此距离才排斥）
+const GRAV = 2600;        // 引力常数（决定轨道速度/周期）
+const SOFT = 8;           // 引力软化（防 r→0 加速度爆炸，原 14 过大致近距引力不足）
+const REP_MAG = 0.12;     // 青球互斥强度（弱磁场式：近距离才轻微推开，原 0.30 过强）
+const REP_R = 12;         // 互斥作用半径（px，原 18 过大——轨道半径 18~45 内持续互推）
 
 /**
  * 创建全屏手画布（固定定位覆盖整个视口，pointer-events:none 纯展示——
@@ -75,14 +75,15 @@ class HandOrbit {
   private targetT0 = 0;                 // 目标设置时间戳（1.5s 后清除）
   private orbit: HandRect | null = null; // 待机轨道区（视口绝对坐标）
   constructor() {
-    // 3 颗青球（2026-08-11 用户拍板数量 12→3）——轨道半径/切向角速/相位定种子
+    // 3 颗青球（2026-08-11 用户拍板数量 12→3）——轨道半径相近（周期同步防发散）
+    // + 相位均匀 120° 分布（初始不聚拢，避免互斥注入能量）
     const R = rng(20260810);
     for (let i = 0; i < 3; i++) {
       this.sats.push({
-        r0: (0.30 + R() * 0.45) * 60,                       // 初始轨道半径
-        om: (0.25 + R() * 0.4) * (R() > 0.5 ? 1 : -1),      // 切向角速（决定初始轨道速度）
-        ph: R() * Math.PI * 2,                              // 初始相位
-        x: 0, y: 0, vx: 0, vy: 0,                           // 位置/速度（引力积分）
+        r0: (22 + R() * 12),                                   // 初始轨道半径 22~34px（相近→周期同步）
+        om: (0.25 + R() * 0.4) * (R() > 0.5 ? 1 : -1),         // 切向角速
+        ph: (i / 3) * Math.PI * 2 + R() * 0.3,                 // 相位 120° 均匀 + 小扰动
+        x: 0, y: 0, vx: 0, vy: 0,                              // 位置/速度（引力积分）
       });
     }
   }
@@ -96,7 +97,7 @@ class HandOrbit {
       for (const s of this.sats) {
         s.x = cx0 + Math.cos(s.ph) * s.r0;
         s.y = cy0 + Math.sin(s.ph) * s.r0 * 1.25;
-        const v = Math.sqrt(GRAV / Math.max(20, s.r0));       // 圆轨道速度
+        const v = Math.sqrt(GRAV / Math.max(20, s.r0)) * 0.92;   // 圆轨道速度×0.92（留安全余量不逃逸）
         const dir = Math.sign(s.om);
         // 切向（垂直半径方向，椭圆纵向修正）
         s.vx = -Math.sin(s.ph) * v * dir;
@@ -164,7 +165,7 @@ class HandOrbit {
     //    不会飘到中间停住）；核移动时引力中心动——近的青球受引力强跟得紧
     // 2. 青球间距离 < REP_R 时互斥（弱磁场式：越近越强，防聚点）
     const dtG = Math.min(0.05, 33 / 1000);
-    const DAMP_G = 0.999;     // 极轻阻尼（防数值能量积累，几乎不影响轨道）
+    const DAMP_G = 0.992;     // 阻尼（消耗数值能量积累，防发散逃逸；原 0.999 太弱）
     for (const s of this.sats) {
       // 核引力（平方反比 + 软化）
       const dx = this.core.x - s.x, dy = this.core.y - s.y;
