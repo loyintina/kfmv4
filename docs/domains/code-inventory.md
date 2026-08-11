@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit b45c9699 · 生成于 2026-08-11 -->
+<!-- 基准 commit 3d501b2f · 生成于 2026-08-11 -->
 
 # 代码清单（机械层）
 
@@ -104,7 +104,7 @@
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（55 文件 · 12107 行）
+## ai-chat（55 文件 · 12110 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -127,7 +127,7 @@
 | src/server/ai/tools/omp/debug/cdp-connection.ts | 242 | CdpSession, CdpLaunchOptions, CdpAttachOptions, CdpPausedEvent, sendCmd, onCdpEvent, launchCdp, attachCdp, closeCdp |
 | src/server/ai/run-manager.ts | 240 | _setStallMsForTest, getActiveRun, getRun, StreamFn, startRun, attachRun, cancelRun |
 | src/client/modules/orb-chat-hints.ts | 225 | startWaitingIndicator, TODO_DISMISS_KEY, todosFingerprint, clearTodoPanel, dismissTodoPanel, updateTodoFromTool |
-| src/server/ai/eyes.ts | 220 | EYES_PATH, genEyes |
+| src/server/ai/eyes.ts | 223 | EYES_PATH, genEyes |
 | src/server/ai/tools/index.ts | 169 | getAllTools, getToolDefinitions, executeTool, hasTool, getTool |
 | src/server/ai/page-state.ts | 156 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
 | src/server/ai/routes.ts | 153 | StartRunFn, setupAiRoutes |
@@ -665,4 +665,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 307 文件 · 54716 行 · 跨域边 260 条
+合计 307 文件 · 54719 行 · 跨域边 260 条
