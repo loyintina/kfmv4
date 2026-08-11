@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 5277cd66 · 生成于 2026-08-11 -->
+<!-- 基准 commit 631bc1d0 · 生成于 2026-08-11 -->
 
 # 代码清单（机械层）
 
@@ -72,13 +72,13 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（27 文件 · 5114 行）
+## client-shell（28 文件 · 5190 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/client/modules/obs-hud.ts | 801 | initObsHud |
-| src/client/modules/obs-emblem.ts | 586 | EmblemRect, EmblemRects, initObsEmblems |
+| src/client/modules/obs-hud.ts | 807 | initObsHud |
 | src/client/modules/orb.ts | 538 | type OrbState, collapseOrbPanel, initOrb |
+| src/client/modules/obs-emblem.ts | 494 | EmblemRect, EmblemRects, initObsEmblems |
 | src/client/modules/ui-registry.ts | 352 | UIElementType, UIElementState, InteractiveElement, Rect, RectGetter, ContentBlock, Capability, PageDescription, RegistryChangeHandler, UIElementRegistry, Registry |
 | src/client/modules/gesture-registry.ts | 346 | GestureHandler, GestureRegistry, gestures |
 | src/client/modules/obs-roles.ts | 309 | RolesData, RolesRect, initObsRoles |
@@ -88,10 +88,11 @@
 | src/client/modules/confirm-dialog.ts | 192 | ConfirmOptions, showConfirm |
 | src/client/modules/renderer-lifecycle.ts | 172 | RenderContext, RendererLifecycle, L |
 | src/client/modules/state.ts | 165 | API, FileNode, ViewportState, KFMStateType, KFMState, FileRowData, getFileRowData |
+| src/client/modules/hand.ts | 159 | HandRect, initHand |
 | src/client/modules/drag-handler.ts | 134 | DragConfig, createDragHandler |
 | src/client/main.ts | 132 | — |
 | src/client/modules/app.ts | 131 | initApp |
-| src/client/modules/z-index-layers.ts | 105 | Z, ZLayer |
+| src/client/modules/z-index-layers.ts | 108 | Z, ZLayer |
 | src/client/modules/animation-registry.ts | 76 | AnimTimeline, AnimTween, anim |
 | src/client/modules/ui.ts | 71 | openSidebar, closeSidebar, initUI |
 | src/client/modules/version-watch.ts | 60 | initVersionWatch |
@@ -668,4 +669,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 307 文件 · 55081 行 · 跨域边 263 条
+合计 308 文件 · 55157 行 · 跨域边 263 条
