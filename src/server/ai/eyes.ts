@@ -83,6 +83,24 @@ function orbOf(snap: unknown): { state: string; panel: string } {
   return { state, panel };
 }
 
+/** 读会话尾 N 条（对话摘要——工具块只留名+要点） */
+function readRecentDialog(sessionId: string, n: number): Array<Record<string, string>> {
+  try {
+    const d = JSON.parse(readFileSync(join(KFM_DATA_DIR, 'sessions', `${sessionId}.json`), 'utf-8'));
+    const msgs = (d.messages || []).slice(-n);
+    return msgs.map((m: { role: string; content?: Array<Record<string, unknown>> }) => {
+      let text = '', tool = '';
+      for (const b of (m.content || [])) {
+        if (b?.type === 'text') text += String(b.text || '');
+        else if (b?.type === 'tool') tool = String(b.name || '');
+      }
+      text = text.trim().replace(/\s+/g, ' ').slice(0, 50);
+      if (tool) return { role: 'ai', tool, summary: text };
+      return { role: m.role === 'user' ? '洛' : 'ai', text };
+    });
+  } catch { return []; }
+}
+
 /** 读 active.json（角色/会话/provider/model 当前值） */
 function readActiveJson(): Record<string, string> {
   try {
@@ -105,6 +123,7 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
 
     const L: string[] = [];
     L.push('# 当前页面状态（快照）\n');
+    L.push('> 本节由系统在每次工具调用后自动刷新，反映你的操作对页面的实际影响。\n');
     L.push(`> 屏幕：${vp.width} × ${vp.height} · 绝对像素 · 原点左上(0,0) · 生成于 ${now.toISOString()}\n`);
 
     // ===== 标定坐标系 =====
@@ -165,8 +184,9 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
     L.push(dump(treeObj).trimEnd());
     L.push('```\n');
 
-    // ===== 光球面板（始终——含会话上下文）=====
+    // ===== 光球面板（始终——含会话上下文 + 最近 3 条对话）=====
     const activeRaw = readActiveJson();
+    const dialog = readRecentDialog(activeRaw.sessionId || '', 3);
     L.push('## 光球面板');
     L.push('```yaml');
     const panelObj: Record<string, unknown> = {
@@ -177,6 +197,7 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
         session: activeRaw.sessionId || '',
         provider: activeRaw.providerId || '',
         model: activeRaw.modelId || '',
+        dialog,
       },
     };
     L.push(dump(panelObj).trimEnd());
