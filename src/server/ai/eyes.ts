@@ -146,7 +146,7 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
       ]);
 
       // 坐标：快照 coords 实时量取（浏览器 getBoundingClientRect）——2026-08-11
-      const snapCoords = (snap as unknown as Record<string, unknown>)?.['coords'] as Record<string, { x?: number; y?: number; w?: number; h?: number }> | undefined;
+      const snapCoords = (snap as unknown as Record<string, unknown>)?.['coords'] as Record<string, { x?: number; y?: number; w?: number; h?: number }> | undefined; // escape-ok: 快照 coords 是 PageDescription 可选字段，运行时可能缺失，属受控读取
       const FALLBACK: Record<string, [number, number, number, number]> = {
         top: [6, 14, 378, 76], inbox: [6, 86, 166, 269], starmap: [178, 86, 378, 228],
         sys: [6, 279, 104, 566], pulse: [178, 238, 378, 387], duty: [114, 397, 378, 510],

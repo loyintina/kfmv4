@@ -10,7 +10,7 @@
 | GestureRegistry | `gesture-registry.ts` | document 级触摸事件统一调度 |
 | RendererLifecycle (L) | `renderer-lifecycle.ts` | 渲染器生命周期 + 状态机 |
 | DOM | `dom-refs.ts` | 全局 DOM 元素引用 |
-| Registry | `ui-registry.ts` | UI 元素注册表（黄页模式） |
+| Registry | `ui-registry.ts` | UI 元素注册表（黄页模式）+ 展示区坐标注册 registerCoords |
 | KFMState | `state.ts` | 全局状态层（发布-订阅） |
 
 ## 手势优先级（不可违反）
@@ -57,6 +57,14 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 **初始化就绪守卫（2026-08-10 竞态修复）**：app-lifecycle.ts markAppReady/isAppReady——
 同步 init 后置位，手势「召唤」READY=false 忽略（initGestures 早于 initCardStack）；auto-resume 延迟 800ms 避早期手势窗口。
 
+## 实时坐标（2026-08-11 眼睛坐标系）
+
+- ui-registry `registerCoords(id, getRect)`：纯展示面板/区域坐标惰性 getter；
+  snapshot() 输出 `coords` 字段（getter 异常置 null 不炸）
+- obs-hud 注册 12 个：hud.top/inbox/starmap/sys/pulse/duty/stack/roles/perms
+  + tree=.sidebar + orb=.light-orb + orb.panel=.orb-panel
+- 消费方 server/ai/eyes.ts 优先快照 coords（算 a/b 角点），缺失 fallback 常量
+
 ## 观测台 HUD（8.5 史官制度，2026-08-06 立项；2026-08-08 七面定稿）
 
 - 模块：`src/client/modules/obs-hud.ts`（域映射：client-shell）
@@ -67,21 +75,12 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
   / 权限审计横条（待办下全宽）/ 角色卡关系面板（左列，2026-08-09 定稿：环形
   弦图·外角色内文件·双环对转）——逐轮定稿细节 → ./detail-obs-hud.md
   （巡逻健康+token 图同日实拍反馈删除，腾空给关系面板）
-- 动态徽标：`src/client/modules/obs-emblem.ts`（深蓝意志 logo，同域同装配链，
-  几何随 placeRail 注入；A 聚散定稿为**两节点中点闭合二次 B 样条巡游 +
-  矩阵时刻**（成形位=两侧翼节点连边中点方向天然连续、两段 Hermite 计时
-  谷底 0.1/0.5 倍速率、周期中点五套秩序模式随机闪现、引擎原地 resize
-  防周期重启；2026-08-09 用户实拍裁决：留 A，B 潮汐/C 轨道取消，
-  三画布收敛单画布）；**移动端降耗链**：DPR≤1.5 + 30fps 节流 +
-  连线距离²比较 + **渲染批量化**（连线/粒子帧内 alpha 统一、颜色仅两桶，
-  合并 path 后 2 次 stroke + 2 次 fill，~230 次绘制调用 → ~8；位置写入
-  复用 posBuf 免逐帧分配；守视钩子 300ms 节流）+ **遮挡淡出淡入**
-  （elementFromPoint 五点探测，遮挡时运动态播 opacity .9s 淡出后停绘、
-  去遮挡先恢复绘制再淡入，**分向缓动**：淡出 ease-in 截长尾、淡入
-  ease-out 铺满可见段（同 ease 观感淡入过短，2026-08-09 实测裁决）；
-  半遮迟滞 ≥3/5↔≤1/5；粒子位置=当前时间纯函数故停绘零状态）；
-  守视验证钩子 `__emblemDbg`（escape-ok 已标）；
-  逐轮实拍细节 → ./detail-obs-hud.md 徽标节）
+- 动态徽标：`src/client/modules/obs-emblem.ts`（A 聚散定稿：两节点中点闭合二次
+  B 样条巡游 + 矩阵时刻，2026-08-09 裁决三画布收敛单画布；移动端降耗：DPR≤1.5
+  + 30fps 节流 + 批量化 ~230→~8 绘制 + posBuf 复用 + 守视钩子 300ms 节流；
+  遮挡淡出淡入：五点探测、分向缓动（淡出 ease-in 截长尾/淡入 ease-out 铺满）、
+  半遮迟滞 ≥3/5↔≤1/5、停绘零状态；`__emblemDbg`（escape-ok 已标）；
+  逐轮实拍 → ./detail-obs-hud.md 徽标节）
 - **观测台高度纪律（2026-08-09 定稿）：全部面板高度钉死，当前满配即最大高度**
   ——星轨 TOP5+聚合轨恒 6 行（机器会话服务端过滤），cron/脉搏 TOP4/SYS 端口不足补隐形占位行
 - **渲染纪律：数据未变不重渲染**（JSON key 比对）——innerHTML 重建重置滚动位、
