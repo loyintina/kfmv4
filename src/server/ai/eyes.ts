@@ -115,7 +115,7 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
   try {
     const snap = wsServer.getLatestSnapshot();
     const vp = viewportOf(snap);
-    const hudHidden = isHudHidden(snap);
+    const hudHidden = false; // 2026-08-11 洛拍板：先全量输出，遮挡省略后续再做
     const tree = treeOf(snap);
     const cards = cardsOf(snap);
     const orb = orbOf(snap);
