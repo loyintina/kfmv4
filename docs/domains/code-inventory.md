@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit c11b19e6 · 生成于 2026-08-11 -->
+<!-- 基准 commit f7f3e243 · 生成于 2026-08-11 -->
 
 # 代码清单（机械层）
 
@@ -72,12 +72,12 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（27 文件 · 5111 行）
+## client-shell（27 文件 · 5116 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/client/modules/obs-hud.ts | 801 | initObsHud |
-| src/client/modules/obs-emblem.ts | 583 | EmblemRect, EmblemRects, initObsEmblems |
+| src/client/modules/obs-emblem.ts | 588 | EmblemRect, EmblemRects, initObsEmblems |
 | src/client/modules/orb.ts | 538 | type OrbState, collapseOrbPanel, initOrb |
 | src/client/modules/ui-registry.ts | 352 | UIElementType, UIElementState, InteractiveElement, Rect, RectGetter, ContentBlock, Capability, PageDescription, RegistryChangeHandler, UIElementRegistry, Registry |
 | src/client/modules/gesture-registry.ts | 346 | GestureHandler, GestureRegistry, gestures |
@@ -668,4 +668,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 307 文件 · 55078 行 · 跨域边 263 条
+合计 307 文件 · 55083 行 · 跨域边 263 条
