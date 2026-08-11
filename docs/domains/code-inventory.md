@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 631bc1d0 · 生成于 2026-08-11 -->
+<!-- 基准 commit 354bc2e1 · 生成于 2026-08-11 -->
 
 # 代码清单（机械层）
 
@@ -72,7 +72,7 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（28 文件 · 5190 行）
+## client-shell（28 文件 · 5230 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -85,10 +85,10 @@
 | src/client/modules/custom-select.ts | 246 | SelectItem, CustomSelectOptions, CustomSelect, createCustomSelect |
 | src/client/modules/orb-panel.ts | 221 | PanelConfig, buildPanelContent |
 | src/client/modules/gestures.ts | 221 | initGestures |
+| src/client/modules/hand.ts | 199 | HandRect, initHand |
 | src/client/modules/confirm-dialog.ts | 192 | ConfirmOptions, showConfirm |
 | src/client/modules/renderer-lifecycle.ts | 172 | RenderContext, RendererLifecycle, L |
 | src/client/modules/state.ts | 165 | API, FileNode, ViewportState, KFMStateType, KFMState, FileRowData, getFileRowData |
-| src/client/modules/hand.ts | 159 | HandRect, initHand |
 | src/client/modules/drag-handler.ts | 134 | DragConfig, createDragHandler |
 | src/client/main.ts | 132 | — |
 | src/client/modules/app.ts | 131 | initApp |
@@ -105,7 +105,7 @@
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（55 文件 · 12274 行）
+## ai-chat（56 文件 · 12364 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -118,7 +118,7 @@
 | src/client/modules/orb-chat-run.ts | 512 | ChatMessage, StreamEvent, getActiveRunId, getActiveCursor, setEventHook, readPersistedRun, clearPersistedRun, settlePendingToolBlocks, resumeRun, doSend |
 | src/client/modules/ws-channel.ts | 428 | wsChannel, initWsChannel |
 | src/server/ai/eyes.ts | 387 | EYES_PATH, genEyes |
-| src/shared/tool-compaction/index.ts | 369 | CompactorEntry, COMPACTOR_REGISTRY, COMPACTOR_NAMES, webTitleKey, CompactionCtx, MUT_BURST_GAP, EXEMPT_USER_ROUNDS, TODO_STALE_GAP, FAIL_REPEAT_MIN, errorFingerprint, failRepeatAnnotation, todoResultAnnotation, normalizeBashCommand, compactToolResult, compactToolInput |
+| src/shared/tool-compaction/index.ts | 370 | CompactorEntry, COMPACTOR_REGISTRY, COMPACTOR_NAMES, webTitleKey, CompactionCtx, MUT_BURST_GAP, EXEMPT_USER_ROUNDS, TODO_STALE_GAP, FAIL_REPEAT_MIN, errorFingerprint, failRepeatAnnotation, todoResultAnnotation, normalizeBashCommand, compactToolResult, compactToolInput |
 | src/server/ai/tools/omp/debug.ts | 362 | ompDebugTool |
 | src/server/ai/tools/omp/debug/debug-operations.ts | 356 | Breakpoint, StackFrame, Variable, SourceInfo, setBreakpoint, setFunctionBreakpoint, removeBreakpoint, doContinue, doPause, stepIn, stepOver, stepOut, waitForPause, getStack, getVariables, evaluate, loadedSources, injectProbe, capturePausedFrames, clearPausedFrames |
 | src/server/ai/tools/omp/browser/tab-supervisor.ts | 342 | WorkerHandle, TabSession, PendingRun, AcquireTabOptions, RunInTabOptions, getTab, acquireTab, runInTab, releaseTab, releaseAllTabs, resolveTabWorkerEntry |
@@ -129,10 +129,10 @@
 | src/server/ai/tools/omp/debug/cdp-connection.ts | 242 | CdpSession, CdpLaunchOptions, CdpAttachOptions, CdpPausedEvent, sendCmd, onCdpEvent, launchCdp, attachCdp, closeCdp |
 | src/server/ai/run-manager.ts | 240 | _setStallMsForTest, getActiveRun, getRun, StreamFn, startRun, attachRun, cancelRun |
 | src/client/modules/orb-chat-hints.ts | 225 | startWaitingIndicator, TODO_DISMISS_KEY, todosFingerprint, clearTodoPanel, dismissTodoPanel, updateTodoFromTool |
-| src/server/ai/tools/index.ts | 169 | getAllTools, getToolDefinitions, executeTool, hasTool, getTool |
+| src/server/ai/tools/index.ts | 171 | getAllTools, getToolDefinitions, executeTool, hasTool, getTool |
 | src/server/ai/page-state.ts | 156 | PAGE_STATE_PATH, PAGE_STATE_TEXTS, renderPageState, refreshPageState |
 | src/server/ai/routes.ts | 153 | StartRunFn, setupAiRoutes |
-| src/server/ai/permissions.ts | 134 | RiskClass, TOOL_RISK, Decision, AuditEntry, riskClassOf, evaluate |
+| src/server/ai/permissions.ts | 135 | RiskClass, TOOL_RISK, Decision, AuditEntry, riskClassOf, evaluate |
 | src/server/ai/prompt-assembler.ts | 124 | getActiveRoleFile, assembleRoleSystemPrompt, assembleDynamicPrompt |
 | src/shared/chat-protocol/reducer.ts | 122 | ReduceContext, applyEvent, reduceEvents |
 | src/server/ai/tools/kfmv4/logs.ts | 119 | kfmLogsTool |
@@ -144,6 +144,7 @@
 | src/server/ai/rule-engine.ts | 109 | AiRule, loadRules, buildAlwaysApplyPrompt, checkToolCallRules, reloadRules |
 | src/server/ai/tools/omp/web-search.ts | 109 | ompWebSearchTool |
 | src/server/ai/tools/omp/browser.ts | 100 | browserTool |
+| src/server/ai/tools/kfmv4/hand.ts | 86 | kfmHandMoveTool |
 | src/server/ai/tools/omp/browser/run-cancellation.ts | 86 | markHandled, waitForBrowserRun, bindBrowserRunFacade |
 | src/server/ai/tools/omp/bash.ts | 80 | ompBashTool |
 | src/server/ai/tools/omp/native.ts | 72 | executeShell, grep, glob |
@@ -165,7 +166,7 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（10 文件 · 2469 行）
+## server（10 文件 · 2470 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -174,7 +175,7 @@
 | src/server/ws-server.ts | 324 | WsServer |
 | src/server/index.ts | 186 | — |
 | src/server/path-utils.ts | 172 | ROOT_DIR, PROJECT_ROOT, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, SESSION_ID_RE, isValidSessionId, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
-| src/server/ai/permissions.ts | 134 | RiskClass, TOOL_RISK, Decision, AuditEntry, riskClassOf, evaluate |
+| src/server/ai/permissions.ts | 135 | RiskClass, TOOL_RISK, Decision, AuditEntry, riskClassOf, evaluate |
 | src/server/terminal-pty.ts | 109 | PtyDataCallback, PtyExitCallback, PtyManager |
 | src/server/env-store.ts | 103 | ENV_PATH, parseEnv, loadEnvFile, isEnvRef, ResolvedKey, resolveKey, envNameForProvider, upsertEnvVar |
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
@@ -376,7 +377,7 @@
 - src/client/modules/chat-dom.ts → src/client/modules/renderers/md-css.ts
 - src/client/modules/chat-dom.ts → src/client/modules/renderers/md-extensions.ts
 
-### ai-chat → server（18 边）
+### ai-chat → server（19 边）
 
 - src/server/ai/chat.ts → src/server/env-store.ts
 - src/server/ai/chat.ts → src/server/path-utils.ts
@@ -393,6 +394,7 @@
 - src/server/ai/run-manager.ts → src/server/ws-server.ts
 - src/server/ai/session-store.ts → src/server/path-utils.ts
 - src/server/ai/tools/index.ts → src/server/ai/permissions.ts
+- src/server/ai/tools/kfmv4/hand.ts → src/server/ws-server.ts
 - src/server/ai/tools/kfmv4/logs.ts → src/server/ws-server.ts
 - src/server/ai/tools/kfmv4/restart.ts → src/server/path-utils.ts
 - src/server/ai/tools/types.ts → src/server/ws-server.ts
@@ -468,10 +470,11 @@
 - src/client/modules/tree-swipe.ts → src/client/modules/renderers/file-type.ts
 - src/client/modules/tree-swipe.ts → src/client/modules/renderers/handler-factory.ts
 
-### client-shell → ai-chat（7 边）
+### client-shell → ai-chat（8 边）
 
 - src/client/main.ts → src/client/modules/ws-channel.ts
 - src/client/modules/app.ts → src/client/modules/ws-channel.ts
+- src/client/modules/hand.ts → src/client/modules/ws-channel.ts
 - src/client/modules/orb-panel.ts → src/client/modules/session-client.ts
 - src/client/modules/orb.ts → src/client/modules/chat-dom.ts
 - src/client/modules/orb.ts → src/client/modules/orb-chat-host.ts
@@ -669,4 +672,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 308 文件 · 55157 行 · 跨域边 263 条
+合计 309 文件 · 55288 行 · 跨域边 265 条
