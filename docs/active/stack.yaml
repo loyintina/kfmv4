@@ -173,9 +173,9 @@ entries:
       tests/tag-advisor.test.ts 3 钉 revert 验证
   - id: 6
     title: 全量代码分析 → domains 填充
-    status: done
+    status: todo
     created: '2026-07-29'
-    note: 2026-07-29 主体完成，用户动议；后续队列 ④⑤⑥ 仍活，见下
+    note: 主体已完成；队列残余 ④契约失真/⑤-localStorage 登记·多写者锁/⑥重复实现群·链单源化 仍活——2026-08-12 裁决轮 done→todo 回正（残余仅此跟踪）
     detail: |-
       — ✅ 六域 code-map + cross-domain.md（2026-07-29，99 条漂移带 file:line，0cecc62/3906707）
       — ✅ 机械层：gen-code-inventory.mjs（2026-07-29，已移 scripts/check/ 并 --check-only 挂链，鲜度不再靠人）
@@ -235,7 +235,8 @@ entries:
       — 现状：已入库 experiments/coldstart/（index.md + reports + tools），sessions/
       原始答卷在 .kfmv4/experiments/coldstart/ 私有区——数据重构已完成主体
       — 时机：随 #13 试卷体系固化成工作流时一并收尾（sessions 存档格式定型 +
-      index 入 ledger 或邻接层）
+      index 入 ledger 或邻接层）——✅ 本条目范围（迁入入库 + 数据重构主体）已结案
+      （2026-08-06 用户拍板），收尾工作由 #13 承载，非本条遗留
       — 方法论（#12 测试先行在实验基建上的同源应用）：先摸索实验机制和流程（试卷/
       基线/尸检/评分口径），产物是实验结论——结论用来推动决策和方向设计；
       设计不能脱离实际，决策需要真实数据支撑

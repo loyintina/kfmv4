@@ -37,7 +37,7 @@
       "attempts": 1
     },
     "stack-vs-ledger": {
-      "hash": "4c34f7b4384aef012a720b903064715e16e2011b",
+      "hash": "52a3e6b79edf502c9d7c5375bfdfcd315a75b113",
       "lastRun": "2026-08-12",
       "status": "ok",
       "tooled": false,
@@ -1053,6 +1053,20 @@
     {
       "date": "2026-08-12",
       "ran": 4,
+      "skipped": 0,
+      "kept": 0,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-12",
+      "ran": 1,
+      "skipped": 0,
+      "kept": 2,
+      "dropped": 0
+    },
+    {
+      "date": "2026-08-12",
+      "ran": 1,
       "skipped": 0,
       "kept": 0,
       "dropped": 0
