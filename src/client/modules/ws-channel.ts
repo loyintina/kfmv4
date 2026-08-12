@@ -21,6 +21,7 @@ import { Registry } from './ui-registry.js';
 import { KFMState } from './state.js';
 import { DOM } from './dom-refs.js';
 import { log } from './logger.js';
+import { assembleRegions, computeVisibility } from './viewport-visibility.js';
 
 // ========== 配置 ==========
 
@@ -184,9 +185,12 @@ class WsChannel {
       this.pushTimer = null;
       if (!this._connected || !this.ws) return;
       const snapshot = Registry.snapshot();
+      // 当前视口可见性（2026-08-12 眼睛「当前视口」段）：矩形减法算遮挡，
+      // 结果随 snapshot 推送 → eyes.ts 渲染「此刻真正露在屏幕上的区域」
+      const viewportVisibility = computeVisibility(assembleRegions(snapshot));
       // 眼睛坐标系：真实屏幕尺寸（2026-08-10 设计文档——坐标必须是浏览器真实
       // viewport，puppeteer 模拟视口会给出错误坐标）
-      this.send('snapshot', { ...snapshot, viewport: { width: window.innerWidth, height: window.innerHeight } });
+      this.send('snapshot', { ...snapshot, viewportVisibility, viewport: { width: window.innerWidth, height: window.innerHeight } });
     }, PUSH_DEBOUNCE_MS);
   }
 

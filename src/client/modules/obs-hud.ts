@@ -313,6 +313,9 @@ export function initObsHud(): void {
     'hud.sys': '.obs-rail', 'hud.pulse': '.obs-pulse', 'hud.duty': '.obs-duty',
     'hud.stack': '.obs-stack', 'hud.roles': '.obs-roles', 'hud.perms': '.obs-perms',
     'orb': '.light-orb', 'orb.panel': '.orb-panel',
+    // 全屏卡（2026-08-12 当前视口遮挡源）：全屏唯一槽位，无全屏卡时选择器
+    // 落空 → rectOf 返回 0 面积 → 视口可见性计算自动出局
+    'card.fullscreen': '.floating-card.fullscreen',
   };
   for (const [id, sel] of Object.entries(coords)) Registry.registerCoords(id, () => rectOf(sel));
   Registry.registerCoords('tree', treeRect);

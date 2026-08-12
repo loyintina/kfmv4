@@ -130,6 +130,7 @@ interface InboxEntry {
 }
 
 const INBOX_PATH = path.join(PROJECT_ROOT, 'docs', 'ledger', 'semantic-chain-inbox.md');
+const AUDIT_STATE_PATH = path.join(PROJECT_ROOT, 'docs', 'ledger', 'semantic-audit-state.json');
 const INBOX_LINE_RE = /^-?\s*(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2})?\s*(⚠️|✅|💀|📊)?\s*(.*)$/;
 
 function inboxTypeOf(mark: string | undefined): InboxEntry['type'] {
@@ -158,6 +159,21 @@ export function parseInbox(): InboxEntry[] {
     return entries.sort((a, b) => `${b.date} ${b.time || '00:00'}`.localeCompare(`${a.date} ${a.time || '00:00'}`));
   } catch {
     return [];
+  }
+}
+
+// ========== 语义审计待裁决计数（semantic-audit-state.json，2026-08-13） ==========
+// pending 的真相源是 audit-state 各任务 keptFindings 总量，不是 inbox 的 warn 行数——
+// inbox 是 append-only 巡逻历史（warn 行 = 历史累计轮次，从不删除），把它的条数当
+// 「待裁决」会把历史记录数当成当前未办件数（2026-08-13 茉莉实测：inbox warn 21 条，
+// audit-state keptFindings 总量 0——眼睛显示 21 是口径错误）。
+export function collectAuditPending(): number {
+  try {
+    const j = JSON.parse(fs.readFileSync(AUDIT_STATE_PATH, 'utf-8')) as { tasks?: Record<string, { keptFindings?: unknown[] }> };
+    if (!j || typeof j !== 'object' || !j.tasks) return 0;
+    return Object.values(j.tasks).reduce((n, t) => n + (Array.isArray(t?.keptFindings) ? t.keptFindings.length : 0), 0);
+  } catch {
+    return 0; // 无 state 文件 → 无待裁决
   }
 }
 

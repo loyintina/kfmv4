@@ -8,6 +8,10 @@
  *
  * 写入 .kfmv4/agents/prompts/dynamic/eyes.md——角色卡列进 dynamicPromptFiles 即获得
  * 「眼睛」。触发时机：工具调用后 + 收到快照（同 refreshPageState）。
+ *
+ * 2026-08-12 新增「当前视口」段（标定坐标系之后）：客户端 viewport-visibility
+ * 矩形减法实测遮挡，full/partial 列出（partial 带可见比例+遮挡者），hidden
+ * 只留一行汇总——修「全屏卡盖住中央页面，AI 仍以为待办可见」的手眼错位。
  */
 import { readFileSync, writeFileSync, readdirSync } from 'fs';
 import { join } from 'path';
@@ -17,7 +21,7 @@ import { KFM_DATA_DIR, sanitizePath, getActiveRoot } from '../path-utils.js';
 import type { WsServer } from '../ws-server.js';
 import {
   fetchDeepseekBalance, parseInbox, parseStack, collectSys,
-  collectArchive, collectPulse, collectPerms, collectRoles,
+  collectArchive, collectPulse, collectPerms, collectRoles, collectAuditPending,
 } from '../routes/obs.js';
 
 export const EYES_PATH = join(KFM_DATA_DIR, 'agents', 'prompts', 'dynamic', 'eyes.md');
@@ -234,6 +238,47 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
       return { a: [x1, y1], b: [x2, y2] };
     };
 
+    // ===== 当前视口（此刻真正露在屏幕上的——矩形减法遮挡实测，2026-08-12 立项） =====
+    // 用户拍板：full/partial 列出（partial 带可见比例+遮挡者），hidden 不列、
+    // 只留一行汇总（AI 需知它们还在、只是看不见）。旧客户端无 viewportVisibility → 整段省略。
+    // 边界：全屏卡只标「全屏卡」不带卡名——浮卡未接 Registry，快照拿不到标题（v2 再议）。
+    const vis = (snap as Record<string, unknown> | null)?.['viewportVisibility'] as Array<{ id: string; cover: string; visiblePct: number; coveredBy: string[] }> | undefined;
+    if (vis && vis.length > 0) {
+      const VIS_LABEL: Record<string, string> = {
+        'hud.top': '顶框', 'hud.inbox': '信箱', 'hud.starmap': '星轨', 'hud.sys': '系统',
+        'hud.pulse': '脉搏', 'hud.duty': '执勤', 'hud.stack': '待办', 'hud.roles': '角色框',
+        'hud.perms': '权限', 'tree': '文件树', 'cards': '卡片堆', 'orb': '光球', 'orb.panel': '光球面板',
+        'card.fullscreen': '全屏卡',
+      };
+      const labelOf = (id: string): string => VIS_LABEL[id] || id;
+      const coordsOf = (id: string): { a: number[]; b: number[] } | undefined => {
+        const r = snapCoords?.[id];
+        if (r && r.x !== undefined && r.y !== undefined && r.w !== undefined && r.h !== undefined && r.w > 0 && r.h > 0) {
+          return { a: [Math.round(r.x), Math.round(r.y)], b: [Math.round(r.x + r.w), Math.round(r.y + r.h)] };
+        }
+        return undefined;
+      };
+      L.push('## 当前视口（此刻真正露在屏幕上的区域——遮挡已实测；完全遮挡的不列出，见 hidden 行）');
+      L.push('```yaml');
+      const rows = vis.filter(v => v.cover !== 'hidden').map(v => {
+        const row: Record<string, unknown> = { region: labelOf(v.id) };
+        const co = coordsOf(v.id);
+        if (co) row.coords = co;
+        row.cover = v.cover;
+        if (v.cover === 'partial') {
+          row.visiblePct = v.visiblePct;
+          row.coveredBy = v.coveredBy.map(labelOf);
+        }
+        return row;
+      });
+      const hiddenRows = vis.filter(v => v.cover === 'hidden')
+        .map(v => ({ region: labelOf(v.id), coveredBy: v.coveredBy.map(labelOf) }));
+      const visObj: Record<string, unknown> = { viewport: rows };
+      if (hiddenRows.length > 0) visObj.hidden = hiddenRows;
+      L.push(dump(visObj).trimEnd());
+      L.push('```\n');
+    }
+
     // ===== 中央面板（遮挡时省略）=====
     if (!hudHidden) {
       const [balance, inbox, stack, sys, archive, pulse, perms, roles] = await Promise.all([
@@ -260,7 +305,7 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
 
       const balText = balance && 'total' in balance ? `¥${balance.total}` : '（不可用）';
       cc('顶框', { coords: c('top'), provider: activeRaw.providerId || 'deepseek', balance: balText, time: now.toLocaleTimeString('zh-CN', { hour12: false }), source: 'DeepSeek API balance 实时查询（providers.json 取 apiKey）' });
-      const pendingN = inbox.filter(x => x.type === 'warn').length; // 待裁决 = warn 类型条数
+      const pendingN = collectAuditPending(); // 待裁决 = audit-state keptFindings 总量（不是 inbox warn 行数）
       cc('信箱', { coords: c('inbox'), pending: pendingN, latest: inbox.find(x => x.type === 'warn')?.text || '（无待裁决）', source: 'docs/ledger/semantic-chain-inbox.md' });
       cc('星轨', { coords: c('starmap'), sessions: archive.sessions, local: archive.tracks.filter(t => !t.title.startsWith('kimi·')).length, kimi: archive.tracks.filter(t => t.title.startsWith('kimi·')).length, total: `Σ${(archive.totalTokens / 1024 / 1024).toFixed(1)}M`, source: 'sessions/*.json（本地）+ kimi 工作区 wire ≥1MB（kimi·前缀）——obs.ts collectArchive' });
       cc('系统', { coords: c('sys'), disk: sys.metrics.find(x => x.label === '硬盘')?.value, mem: sys.metrics.find(x => x.label === '内存')?.value, load: sys.metrics.find(x => x.label === '负载')?.value, proc: sys.metrics.find(x => x.label === '进程')?.value, ports: sys.ports.map(p => `${p.port} ${p.name}`).join('，'), source: 'ledger/sys-metrics.json' });
