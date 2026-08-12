@@ -47,6 +47,7 @@ export const DOMAIN_SRC = {
     'src/client/modules/orb-chat-hints.ts', 'src/client/modules/chat-dom.ts',
     'src/client/modules/orb-chat-host.ts',
     'src/client/modules/session-client.ts', 'src/client/modules/ws-channel.ts',
+    'src/client/modules/viewport-visibility.ts',
     'src/shared/chat-protocol/', 'src/shared/tool-compaction/',
     'src/shared/message-normalize.ts',
     'src/server/ai/', 'src/server/prompts/', 'src/client/data/waiting-hints.ts',
