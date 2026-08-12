@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 856635f5 · 生成于 2026-08-11 -->
+<!-- 基准 commit 6eea4e82 · 生成于 2026-08-12 -->
 
 # 代码清单（机械层）
 
@@ -181,16 +181,16 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（159 文件 · 18803 行）
+## infra（159 文件 · 18872 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | tests/client-logic.test.ts | 954 | — |
 | tests/regression.test.ts | 655 | — |
 | experiments/coldstart/tools/normalize-arms.mjs | 587 | — |
+| scripts/agent/semantic-audit.mjs | 517 | parseOnly, taskFiles, mechanicalOwners, buildPrompt, makeValidate, recheckRef, recheckQuote |
 | tests/tool-compaction.test.ts | 505 | — |
 | tests/server-routes.test.ts | 472 | — |
-| scripts/agent/semantic-audit.mjs | 470 | parseOnly, taskFiles, buildPrompt, makeValidate, recheckRef, recheckQuote |
 | tests/preload.mjs | 423 | — |
 | tests/cards.test.ts | 410 | — |
 | tests/visual-baseline.test.ts | 367 | — |
@@ -302,6 +302,7 @@
 | tests/permissions.test.ts | 50 | — |
 | scripts/check/gen-route-table.mjs | 49 | — |
 | package.json | 49 | — |
+| tests/semantic-audit.test.ts | 48 | — |
 | tests/session-flush.test.ts | 48 | — |
 | scripts/kfm-restart.sh | 46 | — |
 | scripts/check/check-doc-budget.mjs | 44 | — |
@@ -311,7 +312,6 @@
 | tests/runner.ts | 33 | test, group, runAll, regression, beforeEach, TestFileNode, singleFolder, nestedFolders |
 | scripts/deploy.sh | 29 | — |
 | .githooks/pre-push | 28 | — |
-| tests/semantic-audit.test.ts | 26 | — |
 | tests/check-deploy-freshness.test.ts | 19 | — |
 | tests/env-test-isolation.mjs | 19 | — |
 | tests/probes/gen-permission-map/src/server/ai/tools/index.ts | 19 | getToolDefinitions, getAllTools |
@@ -672,4 +672,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 309 文件 · 55370 行 · 跨域边 265 条
+合计 309 文件 · 55439 行 · 跨域边 265 条
