@@ -58,6 +58,7 @@ import './session-flush.test.js';
 import './browser-tool.test.js';
 import './obs-audit-pending.test.js';
 import './obs-track-time.test.js';
+import './viewport-visibility.test.js';
 
 function seedState(files: Record<string, any>) {
   KFMState.files = {};

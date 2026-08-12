@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 2a517177 · 生成于 2026-08-12 -->
+<!-- 基准 commit 4b7977ef · 生成于 2026-08-12 -->
 
 # 代码清单（机械层）
 
@@ -72,11 +72,11 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（28 文件 · 5394 行）
+## client-shell（28 文件 · 5397 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/client/modules/obs-hud.ts | 807 | initObsHud |
+| src/client/modules/obs-hud.ts | 810 | initObsHud |
 | src/client/modules/orb.ts | 538 | type OrbState, collapseOrbPanel, initOrb |
 | src/client/modules/obs-emblem.ts | 494 | EmblemRect, EmblemRects, initObsEmblems |
 | src/client/modules/hand.ts | 363 | HandRect, initHand |
@@ -105,7 +105,7 @@
 | src/client/modules/debug-assert.ts | 17 | assert |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（56 文件 · 12364 行）
+## ai-chat（57 文件 · 12524 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -116,8 +116,8 @@
 | src/server/ai/chat.ts | 564 | ChatMessage, StreamEvent, createClientIdxMapper, findApiProvider |
 | src/client/modules/session-client.ts | 529 | SessionMessage, Session, extractMessageText, countTextMessages, sessionStore |
 | src/client/modules/orb-chat-run.ts | 512 | ChatMessage, StreamEvent, getActiveRunId, getActiveCursor, setEventHook, readPersistedRun, clearPersistedRun, settlePendingToolBlocks, resumeRun, doSend |
-| src/client/modules/ws-channel.ts | 428 | wsChannel, initWsChannel |
-| src/server/ai/eyes.ts | 387 | EYES_PATH, genEyes |
+| src/client/modules/ws-channel.ts | 432 | wsChannel, initWsChannel |
+| src/server/ai/eyes.ts | 432 | EYES_PATH, genEyes |
 | src/shared/tool-compaction/index.ts | 370 | CompactorEntry, COMPACTOR_REGISTRY, COMPACTOR_NAMES, webTitleKey, CompactionCtx, MUT_BURST_GAP, EXEMPT_USER_ROUNDS, TODO_STALE_GAP, FAIL_REPEAT_MIN, errorFingerprint, failRepeatAnnotation, todoResultAnnotation, normalizeBashCommand, compactToolResult, compactToolInput |
 | src/server/ai/tools/omp/debug.ts | 362 | ompDebugTool |
 | src/server/ai/tools/omp/debug/debug-operations.ts | 356 | Breakpoint, StackFrame, Variable, SourceInfo, setBreakpoint, setFunctionBreakpoint, removeBreakpoint, doContinue, doPause, stepIn, stepOver, stepOut, waitForPause, getStack, getVariables, evaluate, loadedSources, injectProbe, capturePausedFrames, clearPausedFrames |
@@ -139,6 +139,7 @@
 | src/server/ai/tools/omp/read.ts | 117 | ompReadTool |
 | src/server/ai/tools/omp/browser/aria/aria-snapshot.ts | 116 | AriaSnapshotOptions, captureAriaSnapshot, resolveAriaRefHandle, parseAriaRefSelector, buildAriaSnapshotScript |
 | src/server/ai/tools/omp/browser/tab-protocol.ts | 115 | Transferable, ObservationEntry, Observation, ScreenshotResult, SessionSnapshot, WorkerInitPayload, ToolReply, WorkerInbound, ReadyInfo, RunResultOk, RunErrorPayload, WorkerOutbound, Transport |
+| src/client/modules/viewport-visibility.ts | 111 | RegionRect, RegionInput, Cover, RegionVisibility, rankOf, computeVisibility, assembleRegions |
 | src/server/ai/tools/omp/browser/readable.ts | 111 | ReadableFormat, ReadableResult, extractReadableFromHtml |
 | src/server/ai/tools/types.ts | 110 | ContentBlock, ToolResult, ToolUpdate, ToolContext, KfmTool, ToolError, ToolAbortError, throwIfAborted, renderError |
 | src/server/ai/rule-engine.ts | 109 | AiRule, loadRules, buildAlwaysApplyPrompt, checkToolCallRules, reloadRules |
@@ -166,11 +167,11 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（10 文件 · 2485 行）
+## server（10 文件 · 2501 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/server/routes/obs.ts | 877 | fetchDeepseekBalance, setupObsRoutes, setupObsPages, parseInbox, parseStack, collectSys, collectArchive, normalizeIso, collectPulse, collectPerms, buildRolesData, collectRoles |
+| src/server/routes/obs.ts | 893 | fetchDeepseekBalance, setupObsRoutes, setupObsPages, parseInbox, collectAuditPending, parseStack, collectSys, collectArchive, normalizeIso, collectPulse, collectPerms, buildRolesData, collectRoles |
 | src/server/routes/files.ts | 419 | FileItem, sliceMessages, MSG_PAYLOAD_BUDGET, MSG_SINGLE_CAP, capMessagesPayload, setupFileRoutes |
 | src/server/ws-server.ts | 324 | WsServer |
 | src/server/index.ts | 186 | — |
@@ -181,12 +182,12 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（160 文件 · 18929 行）
+## infra（162 文件 · 19107 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | tests/client-logic.test.ts | 968 | — |
-| tests/regression.test.ts | 656 | — |
+| tests/regression.test.ts | 658 | — |
 | experiments/coldstart/tools/normalize-arms.mjs | 587 | — |
 | scripts/agent/semantic-audit.mjs | 517 | parseOnly, taskFiles, mechanicalOwners, buildPrompt, makeValidate, recheckRef, recheckQuote |
 | tests/tool-compaction.test.ts | 505 | — |
@@ -227,6 +228,7 @@
 | scripts/check/check-bar-ledger.mjs | 143 | — |
 | scripts/check/check-doc-scripts.mjs | 139 | — |
 | scripts/check/check-doc-linerefs.mjs | 137 | — |
+| tests/viewport-visibility.test.ts | 137 | — |
 | experiments/coldstart/tools/judge-batch.mjs | 135 | — |
 | scripts/agent/exp-iceberg.mjs | 134 | — |
 | scripts/check/chain.mjs | 133 | STEPS |
@@ -279,7 +281,7 @@
 | scripts/check/check-code-doc-refs.mjs | 69 | — |
 | scripts/check/check-card-meta.mjs | 68 | — |
 | scripts/check/check-ledger-commits.mjs | 68 | — |
-| scripts/check/domain-src.mjs | 66 | DOMAIN_SRC |
+| scripts/check/domain-src.mjs | 67 | DOMAIN_SRC |
 | tests/floating-state.test.ts | 66 | — |
 | scripts/agent/session-retention.mjs | 64 | — |
 | scripts/agent/test-tag-advisor.mjs | 64 | — |
@@ -310,6 +312,7 @@
 | scripts/check/check-release-radar.mjs | 42 | — |
 | tests/obs-track-time.test.ts | 42 | — |
 | tests/reset-hooks.ts | 41 | — |
+| tests/obs-audit-pending.test.ts | 38 | — |
 | tests/runner.ts | 33 | test, group, runAll, regression, beforeEach, TestFileNode, singleFolder, nestedFolders |
 | scripts/deploy.sh | 29 | — |
 | .githooks/pre-push | 28 | — |
@@ -571,7 +574,7 @@
 - src/client/modules/terminal-card-04.ts → src/client/modules/z-index-layers.ts
 - src/client/modules/tmux-card.ts → src/client/modules/gesture-registry.ts
 
-### infra → ai-chat（27 边）
+### infra → ai-chat（28 边）
 
 - tests/browser-tool.test.ts → src/server/ai/tools/omp/browser/tab-supervisor.ts
 - tests/chat-protocol.test.ts → src/client/modules/orb-chat.ts
@@ -598,6 +601,7 @@
 - tests/to-openai-messages.test.ts → src/shared/tool-compaction/index.ts
 - tests/tool-compaction.test.ts → src/shared/tool-compaction/index.ts
 - tests/tool-schema.test.ts → src/server/ai/tools/index.ts
+- tests/viewport-visibility.test.ts → src/client/modules/viewport-visibility.ts
 - tests/visual-baseline.test.ts → src/client/modules/chat-dom.ts
 - tests/visual-baseline.test.ts → src/shared/chat-protocol/messages.ts
 
@@ -649,8 +653,9 @@
 - tests/floating-state.test.ts → src/client/modules/floating-shared.ts
 - tests/reset-hooks.ts → src/client/modules/card-registry.ts
 
-### infra → server（13 边）
+### infra → server（14 边）
 
+- tests/obs-audit-pending.test.ts → src/server/routes/obs.ts
 - tests/obs-roles.test.ts → src/server/routes/obs.ts
 - tests/obs-track-time.test.ts → src/server/routes/obs.ts
 - tests/path-utils.test.ts → src/server/path-utils.ts
@@ -674,4 +679,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 310 文件 · 55593 行 · 跨域边 266 条
+合计 313 文件 · 55950 行 · 跨域边 268 条

@@ -36,7 +36,7 @@ test('全屏卡盖住整个中央页面 → hud 全 hidden，全屏卡自身 ful
   assert.strictEqual(byId['hud.top'].cover, 'hidden', '顶框被全屏卡完全遮挡');
   assert.strictEqual(byId['hud.stack'].cover, 'hidden', '待办被全屏卡完全遮挡');
   assert.strictEqual(byId['hud.stack'].visiblePct, 0);
-  assert.deepStrictEqual(byId['hud.stack'].coveredBy, ['card.fullscreen']);
+  assert.deepStrictEqual(byId['hud.stack'].coveredBy.sort(), ['card.fullscreen', 'orb'], '光球压在待办区上，两个遮挡者都列出');
   assert.strictEqual(byId['card.fullscreen'].cover, 'full', '遮挡者自身可见');
   assert.strictEqual(byId['orb'].cover, 'full', '光球在最顶层，不被全屏卡遮');
 });
