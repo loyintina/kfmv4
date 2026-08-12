@@ -14,6 +14,9 @@
  * - 登记豁免：prompt 内置已登记病灶清单（semantic-provenance + bugs + 各域 code-map
  *   **漂移清单节**解析——只扫该节，全文件扫会把普通编号行当豁免、过度抑制真发现），
  *   重复发现不报（试点数据：加规则后重复立案归零）
+ * - 机械主人注入（SEM001-1/SEM002-1 结晶机械化，2026-08-12 用户拍板）：prompt 内置
+ *   「机械主人」节——sync-counts 回写点 + 文档树 gen: 生成区**从活源头现扫**注入，
+ *   「数字/区块有脚本主人」家族（EX-007~012 六判例）不再进语义层；清单不写死文件
  * - per-任务记账：reported/kept/dropped/provider/attempts 全量记 state，精确率迭代的数据源
  *
  * 用法：
@@ -120,7 +123,9 @@ function inlineDocs(files) {
 // 不加版本盐，修完脚本旧哈希会跳过复跑（四轮教训：误触发跑出的污染结果被哈希跳过）
 // v6（2026-07-30）：输出契约加 quote 引文字段 + recheckQuote 验原文——
 // 四臂实验发现「语义侦测对但锚点靠编」（M14 半逮/A 臂假命中），复核升级到内容级
-const AUDIT_VERSION = 6;
+// v7（2026-08-12）：prompt 注入「机械主人」节（SEM001-1/SEM002-1 结晶机械化）——
+// 派生计数/生成区不再进语义层，旧哈希全失效换一轮带新 prompt 的基线
+const AUDIT_VERSION = 7;
 
 function taskHash(task, files) {
   const h = createHash('sha1');
@@ -183,6 +188,45 @@ function registeredFindings(domainFilter = null) {
   return out.join('\n');
 }
 
+// ========== 机械主人事实（SEM001-1/SEM002-1 结晶机械化，2026-08-12 用户拍板） ==========
+// 「数字/事实有机械主人」家族 6 判例（EX-007~012）：探针不知某计数由 sync-counts
+// 派生、某区块由生成器回写，把派生事实当手写漂移报——占误报绝对大头。
+// 清单从活源头现扫（sync-counts TARGETS 源码 + 文档树/提示词目录 gen: 标记），
+// 不写死任何文件——写死即制造第二个会漂移的手写清单（与本病同根）。
+export function mechanicalOwners() {
+  const lines = [];
+  // 1) sync-counts 回写点：从 TARGETS 源码现扫 file: '...'
+  try {
+    const src = readFileSync(join(ROOT, 'scripts/check/sync-counts.mjs'), 'utf-8');
+    const files = [...new Set([...src.matchAll(/file: '([^']+)'/g)].map(m => m[1]))];
+    const checkCount = readdirSync(join(ROOT, 'scripts/check'))
+      .filter(f => f.startsWith('check-') && f.endsWith('.mjs')).length;
+    lines.push(`- 计数类（check 脚本数现值 ${checkCount}、回归测试数、版本号）由 sync-counts 机械回写，管理面：${files.join('、')}——这些位置的数字有单一出处；链步数与脚本数、标题数与括号注不一致多为已注口径差异，数字本身一律不报`);
+    lines.push('- infra contract 的 <!-- chain:auto --> 链枚举由 sync-counts 从 chain.mjs STEPS 生成，短名剥 check- 前缀（如 checks 即 check-checks.mjs，versions 即 check-versions.mjs）——短名与文件名不符一律不报');
+  } catch { /* sync-counts 缺席 = 无此机械主人 */ }
+  // 2) 生成区：<!-- gen:* --> 标记现扫（docs/ 递归 + 根入口文档 + 服务端提示词目录）
+  const zones = [];
+  const scan = (abs, rel) => {
+    try {
+      const marks = [...new Set([...readFileSync(abs, 'utf-8')
+        .matchAll(/<!-- (gen:[\w-]+)/g)].map(m => m[1]))];
+      if (marks.length) zones.push(`${rel}（${marks.join('、')}）`);
+    } catch { /* 读不到跳过 */ }
+  };
+  const walk = (dir, prefix) => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const abs = join(dir, e.name);
+      if (e.isDirectory()) { walk(abs, `${prefix}${e.name}/`); continue; }
+      if (e.name.endsWith('.md')) scan(abs, `${prefix}${e.name}`);
+    }
+  };
+  try { walk(join(ROOT, 'docs'), 'docs/'); } catch { /* docs 缺席 */ }
+  for (const f of ['CLAUDE.md', 'README.md']) { try { scan(join(ROOT, f), f); } catch { /* 缺席跳过 */ } }
+  try { walk(join(ROOT, 'src/server/prompts'), 'src/server/prompts/'); } catch { /* 提示词目录缺席 */ }
+  if (zones.length) lines.push(`- 生成区（<!-- gen:* --> 内内容由生成器机械回写、禁止手改）：${zones.join('；')}——生成区内容 = 其活源头的投影，一律不报`);
+  return lines.join('\n');
+}
+
 // ========== prompt 组装 ==========
 
 export function buildPrompt(task, files) {
@@ -215,6 +259,9 @@ against 填同文件另一处的 路径:行号（变异基准 MID-3/4 双漏教�
 
 【登记豁免】以下病灶已在账本登记，**不算新发现，一律跳过**：
 ${registeredFindings(domains) || '（无）'}
+
+【机械主人】以下事实有机械主人（脚本派生/生成器回写），不是手写内容——报它们 = 误报，一律跳过：
+${mechanicalOwners() || '（无）'}
 
 【被审文档】
 ${inlineDocs(feeds)}
