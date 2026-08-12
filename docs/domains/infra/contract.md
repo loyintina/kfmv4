@@ -7,8 +7,8 @@
 
 ## 检查管线（npm run check，45 脚本，顺序固定）
 
-（链步数多于脚本数：43 = check-*.mjs 文件数；deploy-freshness/doc-coverage 链上省前缀；
-sass/gen-* 验证步、sync-counts、npm test、tsc 非 check-* 不计入。2026-08-08 修订统一计数。）
+（链步数多于脚本数：脚本数 = check-*.mjs 文件实数即标题数（sync-counts 派生，勿复述——手写「43」曾陈旧被打）；
+deploy-freshness/doc-coverage 链上省前缀；sass/gen-* 验证步、sync-counts、npm test、tsc 非 check-* 不计入。2026-08-08 修订统一计数。）
 
 **域映射纪律（2026-08-06 定稿）**：新增 src/ 文件必须登记 `scripts/check/domain-src.mjs`
 对应域（client-shell 模块级枚举 / server·infra 目录级）——未登记的文件 check-contract-freshness

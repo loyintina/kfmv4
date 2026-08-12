@@ -171,3 +171,16 @@ G1（出生即错，9 处）居次，只能靠「写入时对照现实」的纪�
 - semantic-audit.yaml 加硬规则：裁决轮结束条件 = 受影响探针当场单跑清零 + 修复当场提交（8-04 欠账教训写入）；
 - G5 闭环回标机械化为研究线（STACK↔bugs.md 对账，追溯引用误报风险需先研究）；
 - 配套基建：semantic-audit.mjs `--task` 支持多任务并发（内部并发池，单进程写 state 无竞态）；provider 链收敛为 deepseek 官方单臂（opencode 两臂额度耗尽 + 阶跃星辰顺位撤下，失败原地重试 2 次 + 显式报错透传）。
+
+## 2026-08-12 裁决轮（8-12 04:17 巡逻 4 条，裁决人：kimi-code 会话）
+
+| 探针任务 | 裁决 | 处置 | 详情 |
+|---------|------|------|------|
+| stack-vs-ledger（SEM005：#17 done vs F5 待裁决） | 修复 | stack.yaml #17 注 + 拆出条目 20 | F1-F4 闭环而 F5「低优先先登记」悬在 done 条目内——状态与未完成事项矛盾；F5 拆为独立 todo 条目 20「语义巡逻成本闸门」（信箱周报数据：738 调用/平均 97s），#17 五缺口全部结案 |
+| contract-vs-map-floating-card（SEM001：27 vs 31 文件） | 修复 | code-map.md:9 改引用式 | 测绘元数据手写快照「27 文件」（基准 07-29）vs code-inventory 实报 31——G3 快照漂移家族；改引用式指 code-inventory（infra code-map:28 同款先例） |
+| contract-vs-map-infra（SEM001：45 vs 43） | 修复 | contract.md 括号注删手写数 | 标题「45」由 sync-counts 派生（正确），括号注手写「43 = check-*.mjs 文件数」无机械主人、8-08 修订后新增 2 脚本即陈旧——与 EX-007/009 反向：这次是真漂移，且根因正是「复述了有机械主人的数」；注改指标题数勿复述 |
+| inter-workflows-infra（SEM002：'checks' 步 vs 清单无 check-checks.mjs） | 豁免 EX-012 | 登记表 + 重跑 | 误报：chain:auto 短名剥 check- 前缀（sync-counts 从 STEPS 生成），gen:contract-list 实含 check-checks.mjs——探针不知短名映射，SEM001-1 同家族 SEM002 侧首例 |
+
+**变体登记（注册表首开）**：SEM001-1「派生计数误报」（EX-007/008/009/010/011 五判例，≥3 → 结晶回路提案机械化：探针 prompt 注入 sync-counts 管理面/gen 区清单，或裁决预管线机械过滤命中机械主人的发现——待用户拍板）；SEM002-1「生成区映射误报」（EX-012 首例）。
+
+**提示词有效性**：本轮 4 条：3 真 1 误报（精确率 75%）；误报仍属「探针不知机械主人」家族（第 6 例）。

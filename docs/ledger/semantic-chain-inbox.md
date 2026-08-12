@@ -26,3 +26,12 @@
 - 2026-08-06 ✅ 入口文档体检通过（3 臂：实错 0.00/臂 LCA 0/3 硬破界 0/3 质疑 0/3）
 - 2026-08-08 04:17 ⚠️ 11 条待裁决（SEM001×11；本轮新增 5，跑 16 跳 14，幻觉拦截 4）→ 明细见 semantic-audit-state.json 各任务 keptFindings，裁决流 workflows/semantic-audit.yaml；机械化候选（≥3 次）：SEM001
 - 2026-08-09 04:17 ⚠️ 2 条待裁决（SEM002×1 SEM001×1；本轮新增 2，跑 24 跳 6，幻觉拦截 4）→ 明细见 semantic-audit-state.json 各任务 keptFindings，裁决流 workflows/semantic-audit.yaml
+- 2026-08-10 04:17 ⚠️ 5 条待裁决（SEM001×4 SEM005×1；本轮新增 5，跑 22 跳 8，幻觉拦截 3）→ 明细见 semantic-audit-state.json 各任务 keptFindings，裁决流 workflows/semantic-audit.yaml；机械化候选（≥3 次）：SEM001
+- 2026-08-10 04:23 ⚠️ 5 条待裁决（SEM001×4 SEM005×1；本轮新增 0，跑 0 跳 30，幻觉拦截 0）→ 明细见 semantic-audit-state.json 各任务 keptFindings，裁决流 workflows/semantic-audit.yaml；机械化候选（≥3 次）：SEM001
+- 2026-08-10 04:23 📏 基准校准：召回（并集）：4/28 · NC 误报：1/3 · 变异面之外额外发现：1 条
+- 2026-08-09 📊 - LLM 调用：738 次 · 成功 273 · 失败 465 · 平均 97s/次
+- 2026-08-09 ✅ 入口文档体检通过（3 臂：实错 0.00/臂 LCA 0/3 硬破界 0/3 质疑 0.6666666666666666/3）
+- 2026-08-11 04:17 ⚠️ 5 条待裁决（SEM001×3 SEM005×1 SEM002×1；本轮新增 2，跑 9 跳 21，幻觉拦截 0）→ 明细见 semantic-audit-state.json 各任务 keptFindings，裁决流 workflows/semantic-audit.yaml；机械化候选（≥3 次）：SEM001
+- 2026-08-10 ✅ 入口文档体检通过（3 臂：实错 0.33/臂 LCA 0/3 硬破界 0/3 质疑 0.3333333333333333/3）
+- 2026-08-12 04:17 ⚠️ 4 条待裁决（SEM001×2 SEM005×1 SEM002×1；本轮新增 0，跑 9 跳 21，幻觉拦截 1）→ 明细见 semantic-audit-state.json 各任务 keptFindings，裁决流 workflows/semantic-audit.yaml
+- 2026-08-11 ✅ 入口文档体检通过（3 臂：实错 0.00/臂 LCA 0/3 硬破界 0/3 质疑 0.6666666666666666/3）
