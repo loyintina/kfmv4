@@ -108,10 +108,11 @@ class HandEngine {
 
   constructor() {
     // 3 颗电子（沿用用户拍板的数量）：半径渐远、倾角 60° 均布、异速异向、缓进动
+    // 2026-08-12 明显化二批：最内轨道 13→17px（用户实拍「最短的那个轨道加长」）
     const R = rng(20260812);
     for (let i = 0; i < 3; i++) {
       this.electrons.push({
-        rx: 13 + i * 6,                            // 13/19/25px——贴身原子，不摊大饼
+        rx: 17 + i * 6,                            // 17/23/29px——贴身原子，不摊大饼
         om: (1.3 + R() * 0.8) * (i % 2 === 0 ? 1 : -1),
         ph: (i / 3) * Math.PI * 2,
         tilt: i * Math.PI / 3,
@@ -246,21 +247,25 @@ class HandEngine {
       const rx = el.rx * scale, ry = el.rx * 0.38 * scale;
       const tilt = el.tilt + t * el.prec;
       const ct = Math.cos(tilt), st = Math.sin(tilt);
-      // 轨道环（淡蓝，仅示意轨线；2026-08-12 明显化批：0.10→0.22 透明度、0.6→0.9 线宽）
-      ctx.strokeStyle = `rgba(${BLUE},0.22)`;
+      // 轨道环（2026-08-12 明显化二批：双层绘制——先暗底衬保白底轮廓，
+      // 再蓝色辉光出发光感；透明度 0.22→0.38。暗底衬 = 光标/选中环同款
+      // 白底对比方案，小而淡，不影响底下阅读）
+      ctx.strokeStyle = `rgba(${BLUE},0.38)`;
       ctx.lineWidth = 0.9;
       ctx.beginPath();
       ctx.ellipse(echo.x, echo.y, rx, ry, tilt, 0, Math.PI * 2);
-      ctx.stroke();
-      // 电子（参数绕行，永不发散；2026-08-12 明显化批：1.4→2.0px + 青色辉光）
+      ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = 4; ctx.stroke();
+      ctx.shadowColor = `rgba(${BLUE},0.9)`; ctx.shadowBlur = 8; ctx.stroke();
+      ctx.shadowBlur = 0;
+      // 电子（参数绕行，永不发散；同样双层：暗底衬 + 青色辉光 6→8px）
       const a = el.om * t + el.ph;
       const lx = Math.cos(a) * rx, ly = Math.sin(a) * ry;
       const ex = echo.x + lx * ct - ly * st;
       const ey = echo.y + lx * st + ly * ct;
       ctx.fillStyle = `rgba(${CYAN},0.95)`;
-      ctx.shadowColor = `rgba(${CYAN},0.9)`;
-      ctx.shadowBlur = 6;
-      ctx.beginPath(); ctx.arc(ex, ey, 2.0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(ex, ey, 2.0, 0, Math.PI * 2);
+      ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = 4; ctx.fill();
+      ctx.shadowColor = `rgba(${CYAN},0.95)`; ctx.shadowBlur = 8; ctx.fill();
       ctx.shadowBlur = 0;
     }
 
@@ -280,10 +285,11 @@ class HandEngine {
     // 按下时光圈脉冲放大语义不变）
     const pulse = this.state === 'press' ? 1 + 0.8 * (1 - this.orbitScale(now)) : 1;
     const breathe = this.state === 'idle' ? 1 + 0.18 * Math.sin(t * 1.6) : 1;
+    // 双层：暗底衬（白字/白底保住焦点轮廓）→ 紫色辉光（黑底发光）
     ctx.fillStyle = `rgba(${VIOLET},0.95)`;
-    ctx.shadowColor = `rgba(${VIOLET},0.95)`;
-    ctx.shadowBlur = 12;
-    ctx.beginPath(); ctx.arc(this.center.x, this.center.y, 3.2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(this.center.x, this.center.y, 3.2, 0, Math.PI * 2);
+    ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 5; ctx.fill();
+    ctx.shadowColor = `rgba(${VIOLET},0.95)`; ctx.shadowBlur = 12; ctx.fill();
     ctx.shadowBlur = 0;
     ctx.fillStyle = `rgba(${VIOLET},0.35)`;
     ctx.beginPath(); ctx.arc(this.center.x, this.center.y, 8 * pulse * breathe, 0, Math.PI * 2); ctx.fill();
