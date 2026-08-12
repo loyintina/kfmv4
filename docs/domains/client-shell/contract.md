@@ -80,8 +80,7 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
   + 30fps 节流 + 批量化 ~230→~8 绘制 + posBuf 复用 + 守视钩子 300ms 节流；
   遮挡淡出淡入：多点探测分向缓动（淡出 ease-in 截尾/淡入 ease-out 铺满）、比例
   迟滞停绘零状态；探测排除 obs-* HUD 面板；`__emblemDbg` 实拍 → ./detail-obs-hud.md）
-- **C 轨道 → AI 的手（2026-08-11）**：`hand.ts` 独立——紫核弹簧移动（kfm-hand-move）
-  + 3 青球真实引力轨道（G=2600 半隐式欧拉）+ 弱磁互斥 + 硬约束兜底（超 1×r0 拉回）；尾迹时间衰减；置四框空区
+- **C 轨道 → AI 的手（2026-08-11 立，2026-08-12 重构）**：`hand.ts` 独立——状态机骨头（idle 值噪声游走/move 补间过冲 kfm-hand-move/press 收轨涟漪 hand-press/return）+ 玻尔原子皮肤（紫核 + 3 电子固定椭圆参数绕行·倾斜+进动，零积分）；尾迹时间衰减；置四框空区
 - **观测台高度纪律（2026-08-09 定稿）：全部面板高度钉死，当前满配即最大高度**
   ——星轨 TOP5+聚合轨恒 6 行（机器会话服务端过滤），cron/脉搏 TOP4/SYS 端口不足补隐形占位行
 - **渲染纪律：数据未变不重渲染**（JSON key 比对）——innerHTML 重建重置滚动位、
@@ -145,5 +144,5 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
 ## 文件清单
 
 <!-- gen:contract-list 自动生成，禁止手改（源：code-inventory） -->
-`src/client/modules/obs-hud.ts` `src/client/modules/orb.ts` `src/client/modules/obs-emblem.ts` `src/client/modules/ui-registry.ts` `src/client/modules/gesture-registry.ts` `src/client/modules/obs-roles.ts` `src/client/modules/hand.ts` `src/client/modules/custom-select.ts` `src/client/modules/orb-panel.ts` `src/client/modules/gestures.ts` `src/client/modules/confirm-dialog.ts` `src/client/modules/renderer-lifecycle.ts` `src/client/modules/state.ts` `src/client/modules/drag-handler.ts` `src/client/main.ts` `src/client/modules/app.ts` `src/client/modules/z-index-layers.ts` `src/client/modules/animation-registry.ts` `src/client/modules/ui.ts` `src/client/modules/version-watch.ts` `src/client/modules/logger.ts` `src/client/modules/card-toast.ts` `src/client/modules/click-queue.ts` `src/client/modules/dom-refs.ts` `src/client/modules/interaction-constants.ts` `src/client/modules/app-lifecycle.ts` `src/client/modules/debug-assert.ts` `src/client/modules/orb-state.ts`
+`src/client/modules/obs-hud.ts` `src/client/modules/orb.ts` `src/client/modules/obs-emblem.ts` `src/client/modules/ui-registry.ts` `src/client/modules/gesture-registry.ts` `src/client/modules/hand.ts` `src/client/modules/obs-roles.ts` `src/client/modules/custom-select.ts` `src/client/modules/orb-panel.ts` `src/client/modules/gestures.ts` `src/client/modules/confirm-dialog.ts` `src/client/modules/renderer-lifecycle.ts` `src/client/modules/state.ts` `src/client/modules/drag-handler.ts` `src/client/main.ts` `src/client/modules/app.ts` `src/client/modules/z-index-layers.ts` `src/client/modules/animation-registry.ts` `src/client/modules/ui.ts` `src/client/modules/version-watch.ts` `src/client/modules/logger.ts` `src/client/modules/card-toast.ts` `src/client/modules/click-queue.ts` `src/client/modules/dom-refs.ts` `src/client/modules/interaction-constants.ts` `src/client/modules/app-lifecycle.ts` `src/client/modules/debug-assert.ts` `src/client/modules/orb-state.ts`
 <!-- /gen:contract-list -->
