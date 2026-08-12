@@ -579,6 +579,19 @@ function scanKimiWire(file: string, size: number): KimiWireState {
   return st;
 }
 
+// 星轨时间戳归一化（2026-08-12 事故：kimi state.json 的 createdAt 是裸 epoch 毫秒数字，
+// String() 直赋后客户端 new Date("1786496781877") 解析为 NaN → tMin NaN → 整条 SVG 坐标
+// NaN → 星轨空白）。数字/纯数字串按 epoch ms，其余按日期串，统一输出 ISO；垃圾输入返回 null。
+export function normalizeIso(v: unknown): string | null {
+  if (typeof v === 'number' && Number.isFinite(v)) return new Date(v).toISOString();
+  if (typeof v === 'string' && v) {
+    const asNum = /^\d+$/.test(v.trim()) ? Number(v) : NaN;
+    const ms = Number.isFinite(asNum) ? asNum : new Date(v).getTime();
+    if (Number.isFinite(ms)) return new Date(ms).toISOString();
+  }
+  return null;
+}
+
 function collectKimiTracks(now: number): ArchiveTrack[] {
   const out: ArchiveTrack[] = [];
   let wds: string[] = [];
@@ -598,8 +611,10 @@ function collectKimiTracks(now: number): ArchiveTrack[] {
         try {
           const sj = JSON.parse(fs.readFileSync(path.join(wd, sd, 'state.json'), 'utf-8')) as Record<string, unknown>;
           if (sj.title) title = String(sj.title).slice(0, 14);
-          if (sj.createdAt) t0 = String(sj.createdAt);
-          if (sj.updatedAt && new Date(String(sj.updatedAt)).getTime() > new Date(t1).getTime()) t1 = String(sj.updatedAt);
+          const t0n = normalizeIso(sj.createdAt);
+          if (t0n) t0 = t0n;
+          const t1n = normalizeIso(sj.updatedAt);
+          if (t1n && new Date(t1n).getTime() > new Date(t1).getTime()) t1 = t1n;
         } catch { /* state.json 缺失/损坏 → 用 wire 时间戳 */ }
         out.push({
           title: `kimi·${title}`,

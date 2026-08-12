@@ -319,7 +319,7 @@ export function initHand(getOrbit: () => HandRect | null): { relayout: () => voi
   wsChannel.onCommand('hand-press', (_action, params) => {
     const x = Number(params.x), y = Number(params.y);
     const has = Number.isFinite(x) && Number.isFinite(y);
-    engine?.press(has ? x : null, has ? y : null, Date.now());
+    engine?.press(has ? x : null, has ? y : null, performance.now());
   });
   let lastStep = 0;
   const loop = (now: number) => {
@@ -333,9 +333,12 @@ export function initHand(getOrbit: () => HandRect | null): { relayout: () => voi
 
   const api = {
     relayout: build,
-    /** 移动手到视口坐标（服务端 hand-move 命令入口） */
+    /** 移动手到视口坐标（服务端 hand-move 命令入口）。
+     *  时基 = performance.now()——必须与 rAF 回调的 now 同源
+     *  （2026-08-12 事故：Date.now 混入，epoch 与页面时基差 1.7e12，
+     *  补间进度算出巨负值，easeOutBack 直接把手抛出屏幕永不回归） */
     moveTo(x: number, y: number): void {
-      engine?.moveTo(x, y, Date.now());
+      engine?.moveTo(x, y, performance.now());
     },
   };
   moveFn = api.moveTo;

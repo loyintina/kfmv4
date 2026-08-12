@@ -951,3 +951,17 @@ regression('BAR-SESSION-FEEDBACK-01', 'session-save-feedback', 'session.card 保
   const saveNameBody = src.slice(saveNameStart, src.indexOf('const saveBtn', saveNameStart));
   assert(saveNameBody.includes('flashSaved(saveBtn)'), 'saveName 保存成功路径必须调用 flashSaved(saveBtn)（无反馈 = 回归）');
 });
+
+// ==========================================================================
+// BAR-HAND-01: hand.ts 时基必须全链 performance.now()，禁 Date.now()
+// 事故（2026-08-12 用户实拍）：AI 代表调工具触发 hand 移动后手标消失，
+// 等 1.5s 不回归——补间 now 由 rAF 回调提供（performance.now 时基），
+// moveTo/hand-press 两处混入 Date.now()，epoch 与页面时基差 ~1.7e12，
+// 补间进度算出巨负值，easeOutBack 把手抛出屏幕且永不回弹。
+// revert 验证：hand.ts 任一 Date.now( 出现 → 本钉红。
+// ==========================================================================
+regression('BAR-HAND-01', 'hand-timebase', 'hand.ts 全链 performance.now() 时基，禁 Date.now()', () => {
+  const src = readFileSync('src/client/modules/hand.ts', 'utf-8');
+  assert(!src.includes('Date.now('), 'hand.ts 不得出现 Date.now(（时基必须与 rAF 回调 now 同源 = performance.now）');
+  assert(src.includes('performance.now()'), 'hand.ts 必须使用 performance.now() 取时基');
+});

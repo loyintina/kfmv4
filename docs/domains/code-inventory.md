@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit af141586 · 生成于 2026-08-12 -->
+<!-- 基准 commit f7ab3f9b · 生成于 2026-08-12 -->
 
 # 代码清单（机械层）
 
@@ -72,7 +72,7 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（28 文件 · 5375 行）
+## client-shell（28 文件 · 5378 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -80,8 +80,8 @@
 | src/client/modules/orb.ts | 538 | type OrbState, collapseOrbPanel, initOrb |
 | src/client/modules/obs-emblem.ts | 494 | EmblemRect, EmblemRects, initObsEmblems |
 | src/client/modules/ui-registry.ts | 352 | UIElementType, UIElementState, InteractiveElement, Rect, RectGetter, ContentBlock, Capability, PageDescription, RegistryChangeHandler, UIElementRegistry, Registry |
+| src/client/modules/hand.ts | 347 | HandRect, initHand |
 | src/client/modules/gesture-registry.ts | 346 | GestureHandler, GestureRegistry, gestures |
-| src/client/modules/hand.ts | 344 | HandRect, initHand |
 | src/client/modules/obs-roles.ts | 309 | RolesData, RolesRect, initObsRoles |
 | src/client/modules/custom-select.ts | 246 | SelectItem, CustomSelectOptions, CustomSelect, createCustomSelect |
 | src/client/modules/orb-panel.ts | 221 | PanelConfig, buildPanelContent |
@@ -166,11 +166,11 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（10 文件 · 2470 行）
+## server（10 文件 · 2485 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/server/routes/obs.ts | 862 | fetchDeepseekBalance, setupObsRoutes, setupObsPages, parseInbox, parseStack, collectSys, collectArchive, collectPulse, collectPerms, buildRolesData, collectRoles |
+| src/server/routes/obs.ts | 877 | fetchDeepseekBalance, setupObsRoutes, setupObsPages, parseInbox, parseStack, collectSys, collectArchive, normalizeIso, collectPulse, collectPerms, buildRolesData, collectRoles |
 | src/server/routes/files.ts | 419 | FileItem, sliceMessages, MSG_PAYLOAD_BUDGET, MSG_SINGLE_CAP, capMessagesPayload, setupFileRoutes |
 | src/server/ws-server.ts | 324 | WsServer |
 | src/server/index.ts | 186 | — |
@@ -181,12 +181,12 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（159 文件 · 18872 行）
+## infra（160 文件 · 18929 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| tests/client-logic.test.ts | 954 | — |
-| tests/regression.test.ts | 655 | — |
+| tests/client-logic.test.ts | 968 | — |
+| tests/regression.test.ts | 656 | — |
 | experiments/coldstart/tools/normalize-arms.mjs | 587 | — |
 | scripts/agent/semantic-audit.mjs | 517 | parseOnly, taskFiles, mechanicalOwners, buildPrompt, makeValidate, recheckRef, recheckQuote |
 | tests/tool-compaction.test.ts | 505 | — |
@@ -308,6 +308,7 @@
 | scripts/check/check-doc-budget.mjs | 44 | — |
 | scripts/clean-npm-temp.cjs | 44 | — |
 | scripts/check/check-release-radar.mjs | 42 | — |
+| tests/obs-track-time.test.ts | 42 | — |
 | tests/reset-hooks.ts | 41 | — |
 | tests/runner.ts | 33 | test, group, runAll, regression, beforeEach, TestFileNode, singleFolder, nestedFolders |
 | scripts/deploy.sh | 29 | — |
@@ -648,9 +649,10 @@
 - tests/floating-state.test.ts → src/client/modules/floating-shared.ts
 - tests/reset-hooks.ts → src/client/modules/card-registry.ts
 
-### infra → server（12 边）
+### infra → server（13 边）
 
 - tests/obs-roles.test.ts → src/server/routes/obs.ts
+- tests/obs-track-time.test.ts → src/server/routes/obs.ts
 - tests/path-utils.test.ts → src/server/path-utils.ts
 - tests/permissions.test.ts → src/server/ai/permissions.ts
 - tests/provider-env.test.ts → src/server/env-store.ts
@@ -672,4 +674,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 309 文件 · 55502 行 · 跨域边 265 条
+合计 310 文件 · 55577 行 · 跨域边 266 条
