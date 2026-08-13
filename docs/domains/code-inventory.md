@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 4b7977ef · 生成于 2026-08-12 -->
+<!-- 基准 commit d9add98d · 生成于 2026-08-13 -->
 
 # 代码清单（机械层）
 
@@ -36,7 +36,7 @@
 | src/client/engine/v2/animation.ts | 40 | ease |
 | src/client/engine/v2/utils.ts | 24 | uniformSpacing, hvSpacing, ZERO_SPACING |
 
-## floating-card（31 文件 · 8351 行）
+## floating-card（32 文件 · 8424 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -59,12 +59,13 @@
 | src/client/modules/renderers/math-diagram.ts | 155 | MathData, preprocessMath, renderMath, renderMermaid |
 | src/client/cards/plugins/debug.card.ts | 111 | — |
 | src/client/modules/renderers/code-highlight.ts | 106 | highlightAll, highlightCode |
+| src/client/cards/plugins/apk.card.ts | 72 | — |
 | src/client/modules/renderers/md-css.ts | 57 | MD_CSS |
 | src/client/modules/renderers/md-extensions.ts | 51 | MARKED_OPTS, preprocessMd |
 | src/client/cards/card-ui.ts | 49 | innerCardStyle, inputStyle, btnStyle, flashSaved, mkRow |
 | src/client/modules/renderers/binary-fallback.ts | 37 | renderBinaryInfo |
 | src/client/modules/renderers/text-preview.ts | 26 | renderTextPreview |
-| src/client/cards/registry.ts | 23 | — |
+| src/client/cards/registry.ts | 24 | — |
 | src/client/cards/plugins/file.card.ts | 19 | — |
 | src/client/cards/plugins/terminal.card.ts | 19 | — |
 | src/client/cards/plugins/tmux.card.ts | 19 | — |
@@ -167,12 +168,12 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（10 文件 · 2501 行）
+## server（10 文件 · 2522 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/server/routes/obs.ts | 893 | fetchDeepseekBalance, setupObsRoutes, setupObsPages, parseInbox, collectAuditPending, parseStack, collectSys, collectArchive, normalizeIso, collectPulse, collectPerms, buildRolesData, collectRoles |
-| src/server/routes/files.ts | 419 | FileItem, sliceMessages, MSG_PAYLOAD_BUDGET, MSG_SINGLE_CAP, capMessagesPayload, setupFileRoutes |
+| src/server/routes/files.ts | 440 | FileItem, sliceMessages, MSG_PAYLOAD_BUDGET, MSG_SINGLE_CAP, capMessagesPayload, setupFileRoutes |
 | src/server/ws-server.ts | 324 | WsServer |
 | src/server/index.ts | 186 | — |
 | src/server/path-utils.ts | 172 | ROOT_DIR, PROJECT_ROOT, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, SESSION_ID_RE, isValidSessionId, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
@@ -679,4 +680,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 313 文件 · 55950 行 · 跨域边 268 条
+合计 314 文件 · 56044 行 · 跨域边 268 条

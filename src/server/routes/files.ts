@@ -316,6 +316,27 @@ export function setupFileRoutes(router: Router): void {
     } catch (error: any) { res.status(500).json({ error: error.message }); }
   });
 
+  // KFM-NA APK 下载（2026-08-13）：硬编码路径，天然无路径逃逸问题。
+  // 带 Content-Disposition，手机浏览器直接落下载而不是内联乱码。
+  const KFM_NA_APK = '/root/kfm-na/target/release/apk/kfm-na.apk';
+
+  router.get('/download/apk/info', (_req, res) => {
+    try {
+      if (!fs.existsSync(KFM_NA_APK)) { res.status(404).json({ error: 'APK 不存在' }); return; }
+      const stat = fs.statSync(KFM_NA_APK);
+      res.json({ size: stat.size, mtime: stat.mtime.toISOString() });
+    } catch (error: any) { res.status(500).json({ error: error.message }); }
+  });
+
+  router.get('/download/apk', (_req, res) => {
+    try {
+      if (!fs.existsSync(KFM_NA_APK)) { res.status(404).json({ error: 'APK 不存在' }); return; }
+      res.setHeader('Content-Type', 'application/vnd.android.package-archive');
+      res.setHeader('Content-Disposition', 'attachment; filename="kfm-na.apk"');
+      fs.createReadStream(KFM_NA_APK).pipe(res);
+    } catch (error: any) { res.status(500).json({ error: error.message }); }
+  });
+
   router.post('/files/write', verifyLocalOrigin, (req, res) => { try {
     const targetPath = sanitizePath(req.body.path);
     if (!targetPath) { res.json({ error: '路径不合法' }); return; }

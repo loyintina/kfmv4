@@ -20,3 +20,4 @@ import './plugins/paradigm.card.js';
 import './plugins/role.card.js';
 import './plugins/tools.card.js';
 import './plugins/scripts.card.js';
+import './plugins/apk.card.js';
