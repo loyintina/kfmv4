@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit 07b95da2 · 生成于 2026-08-13 -->
+<!-- 基准 commit add590ba · 生成于 2026-08-13 -->
 
 # 代码清单（机械层）
 
@@ -73,13 +73,13 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（27 文件 · 4434 行）
+## client-shell（28 文件 · 4517 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/client/modules/orb.ts | 538 | type OrbState, collapseOrbPanel, initOrb |
 | src/client/modules/obs-emblem.ts | 494 | EmblemRect, EmblemRects, initObsEmblems |
-| src/client/modules/hand.ts | 363 | HandRect, initHand |
+| src/client/modules/hand.ts | 432 | HandRect, initHand |
 | src/client/modules/ui-registry.ts | 352 | UIElementType, UIElementState, InteractiveElement, Rect, RectGetter, ContentBlock, Capability, PageDescription, RegistryChangeHandler, UIElementRegistry, Registry |
 | src/client/modules/gesture-registry.ts | 346 | GestureHandler, GestureRegistry, gestures |
 | src/client/modules/custom-select.ts | 246 | SelectItem, CustomSelectOptions, CustomSelect, createCustomSelect |
@@ -88,7 +88,7 @@
 | src/client/modules/confirm-dialog.ts | 192 | ConfirmOptions, showConfirm |
 | src/client/modules/renderer-lifecycle.ts | 172 | RenderContext, RendererLifecycle, L |
 | src/client/modules/state.ts | 165 | API, FileNode, ViewportState, KFMStateType, KFMState, FileRowData, getFileRowData |
-| src/client/modules/obs-hud.ts | 156 | initObsHud |
+| src/client/modules/obs-hud.ts | 159 | initObsHud |
 | src/client/modules/drag-handler.ts | 134 | DragConfig, createDragHandler |
 | src/client/main.ts | 132 | — |
 | src/client/modules/app.ts | 131 | initApp |
@@ -103,6 +103,7 @@
 | src/client/modules/interaction-constants.ts | 21 | MARGIN, LONG_PRESS_MS, DRAG_THRESHOLD, FLOATING_CARD_W, FLOATING_CARD_H |
 | src/client/modules/app-lifecycle.ts | 21 | markAppReady, isAppReady |
 | src/client/modules/debug-assert.ts | 17 | assert |
+| src/client/modules/hand-geometry.ts | 11 | handHitTest |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
 ## ai-chat（57 文件 · 12524 行）
@@ -182,12 +183,12 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（162 文件 · 19107 行）
+## infra（163 文件 · 19138 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | tests/client-logic.test.ts | 968 | — |
-| tests/regression.test.ts | 658 | — |
+| tests/regression.test.ts | 659 | — |
 | experiments/coldstart/tools/normalize-arms.mjs | 587 | — |
 | scripts/agent/semantic-audit.mjs | 517 | parseOnly, taskFiles, mechanicalOwners, buildPrompt, makeValidate, recheckRef, recheckQuote |
 | tests/tool-compaction.test.ts | 505 | — |
@@ -314,6 +315,7 @@
 | tests/reset-hooks.ts | 41 | — |
 | tests/obs-audit-pending.test.ts | 38 | — |
 | tests/runner.ts | 33 | test, group, runAll, regression, beforeEach, TestFileNode, singleFolder, nestedFolders |
+| tests/hand-drag.test.ts | 30 | — |
 | scripts/deploy.sh | 29 | — |
 | .githooks/pre-push | 28 | — |
 | tests/check-deploy-freshness.test.ts | 19 | — |
@@ -626,11 +628,12 @@
 - tests/renderer.test.ts → src/client/engine/v2/flex.ts
 - tests/renderer.test.ts → src/client/engine/v2/renderer.ts
 
-### infra → client-shell（14 边）
+### infra → client-shell（15 边）
 
 - tests/cards.test.ts → src/client/modules/gesture-registry.ts
 - tests/client-logic.test.ts → src/client/modules/state.ts
 - tests/gesture-registry.test.ts → src/client/modules/gesture-registry.ts
+- tests/hand-drag.test.ts → src/client/modules/hand-geometry.ts
 - tests/invariants.test.ts → src/client/modules/z-index-layers.ts
 - tests/regression.test.ts → src/client/modules/animation-registry.ts
 - tests/regression.test.ts → src/client/modules/click-queue.ts
@@ -679,4 +682,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 313 文件 · 55099 行 · 跨域边 268 条
+合计 315 文件 · 55213 行 · 跨域边 269 条
