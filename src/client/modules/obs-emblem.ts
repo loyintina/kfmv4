@@ -236,10 +236,10 @@ class EmblemGather {
       const wing = (P: { x: number; y: number }, d: { x: number; y: number }) => {
         const ray = (sgn: number) => {
           let r = Infinity;
-          if (d.x * sgn > 1e-6) r = Math.min(r, (this.w - 4 - P.x) / (d.x * sgn));
-          if (d.x * sgn < -1e-6) r = Math.min(r, (4 - P.x) / (d.x * sgn));
-          if (d.y * sgn > 1e-6) r = Math.min(r, (this.h - 4 - P.y) / (d.y * sgn));
-          if (d.y * sgn < -1e-6) r = Math.min(r, (4 - P.y) / (d.y * sgn));
+          if (d.x * sgn > 1e-6) r = Math.min(r, (this.w - 2 - P.x) / (d.x * sgn));
+          if (d.x * sgn < -1e-6) r = Math.min(r, (2 - P.x) / (d.x * sgn));
+          if (d.y * sgn > 1e-6) r = Math.min(r, (this.h - 2 - P.y) / (d.y * sgn));
+          if (d.y * sgn < -1e-6) r = Math.min(r, (2 - P.y) / (d.y * sgn));
           return r;
         };
         const L = Math.max(8, Math.min(G * (1 + this.R() * 2.5), ray(1) - 8, ray(-1) - 8));
@@ -259,8 +259,8 @@ class EmblemGather {
       const gdx = B0.x - A0.x, gdy = B0.y - A0.y, gl = Math.hypot(gdx, gdy) || 1;
       this.gDir[i] = { x: gdx / gl, y: gdy / gl };
       const rp = () => ({
-        x: 4 + this.R() * (this.w - 8),
-        y: 4 + this.R() * (this.h - 8),
+        x: 2 + this.R() * (this.w - 4),
+        y: 2 + this.R() * (this.h - 4),
       });
       return this.buildSpline([A0, B0, rp(), rp(), A1, B1, rp(), rp()]);
     });
