@@ -337,6 +337,21 @@ export function setupFileRoutes(router: Router): void {
     } catch (error: any) { res.status(500).json({ error: error.message }); }
   });
 
+  // KFM-NA 飞鸽传书（2026-08-13）：手机实拍现场回传通道。
+  // 手机无 adb 通路（蜂窝 NAT 反连不回），APK 的 panic/启动里程碑
+  // 直接 POST 到服务器落盘，C 档实拍判卷的证据链。
+  // 不挂 verifyLocalOrigin——手机是外部来源，本就不是本地浏览器。
+  const NA_REPORT_LOG = '/root/kfm-na/field-reports.log';
+  router.post('/na-report', (req, res) => {
+    try {
+      const stage = String(req.body?.stage ?? '?').slice(0, 64);
+      const msg = String(req.body?.msg ?? '').slice(0, 2000);
+      const line = `${new Date().toISOString()} [${stage}] ${msg}\n`;
+      fs.appendFileSync(NA_REPORT_LOG, line, 'utf-8');
+      res.json({ ok: true });
+    } catch (error: any) { res.status(500).json({ error: error.message }); }
+  });
+
   router.post('/files/write', verifyLocalOrigin, (req, res) => { try {
     const targetPath = sanitizePath(req.body.path);
     if (!targetPath) { res.json({ error: '路径不合法' }); return; }

@@ -7,7 +7,9 @@
 
 Express 4 + WebSocket，`index.ts` 统一入口编排（协调层）。
 
-- `routes/files.ts`：文件 CRUD API（list/read/write/copy/move/delete/rename/create/media + system/info）
+- `routes/files.ts`：文件 CRUD API（list/read/write/copy/move/delete/rename/create/media + system/info）+
+  KFM-NA 配套端点（2026-08-13）：`/download/apk`（硬编码路径 + Content-Disposition 供手机下载）+
+  `/na-report`（飞鸽传书——APK panic/启动里程碑回传落 `/root/kfm-na/field-reports.log`，不挂 verifyLocalOrigin）
 - `routes/proxy.ts`：CORS 代理 `/proxy/fetch`（流式 SSE pipe + 非流式 JSON）
 - `routes/providers.ts`：providers.json 专用保存（粘贴即入库——明文 apiKey 转写 `.env` 只留 `${VAR}` 代字）
 - **`env-store.ts`（安全关键）**：`.kfmv4/.env` 解析（mtime 缓存）+ apiKey 代字 `resolveKey`（process.env 优先）+ `upsertEnvVar`（chmod 600）
