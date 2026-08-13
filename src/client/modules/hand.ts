@@ -158,14 +158,19 @@ class HandEngine {
     }
   }
 
-  /** 待机游走目标位置（live——回归时对着它降落，落地即接轨游走） */
+  /** 待机游走目标位置（live——回归时对着它降落，落地即接轨游走）
+   * 增益放大到半尺寸 0.60（噪声开区间达不到 ±1，理论最大会被吃掉），
+   * clamp 到距边 2px——上下左右轨迹都能真实贴到栏边框（2026-08-13 用户定稿）
+   */
   private idlePos(now: number): { x: number; y: number } {
     const ob = this.orbit!;
     const cx = ob.left + ob.width / 2, cy = ob.top + ob.height / 2;
     const t = now / 1000;
+    const nx = this.noiseX(t * 0.13) * ob.width * 0.60;
+    const ny = this.noiseY(t * 0.11) * ob.height * 0.60;
     return {
-      x: cx + this.noiseX(t * 0.13) * ob.width * 0.472,
-      y: cy + this.noiseY(t * 0.11) * ob.height * 0.467,
+      x: Math.min(Math.max(ob.left + 2, cx + nx), ob.left + ob.width - 2),
+      y: Math.min(Math.max(ob.top + 2, cy + ny), ob.top + ob.height - 2),
     };
   }
 
