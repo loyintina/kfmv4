@@ -108,12 +108,7 @@ main.ts → gestures.init() → initApp() → initUI() → initGestures() → in
    会 revert 到 CSS 默认值。案例：2026-07-05 光球 SVG 偏移 ~6px，排查数小时。
 5. **`endOp` 必须在早期 return 之前执行**（v6.11.0 已根解，再犯即回归）；
    动画锁 3s 兜底的不变量本体 → ../canvas-tree/contract.md 动画安全节。
-6. **hand 用户拖动生命周期**（2026-08-13 用户定稿：手不只 AI 能动）：
-   pointerdown 命中核附近（handHitTest 半径 48px）→ userDragStart 接管，
-   pointermove 直接驱动 center（不做补间），pointerup 记 dragReleaseT0 →
-   stepCenter 在 drag 状态等 HOLD_MS（1.5s）后转 return 回归待机。
-   契约：AI moveTo 命令可打断用户拖动（userDrag=false）；handHitTest
-   是纯函数（hand-geometry.ts，无浏览器依赖，可离线单测）。
+6. **hand 用户拖动**（2026-08-13）：pointerdown 命中核附近（48px）接管、松手 1.5s 回归、AI moveTo 可打断；handHitTest 纯函数（hand-geometry.ts）。
 6. **PointerEvent 统一**：所有触摸/鼠标输入必须走 gesture-registry 的 PointerEvent
    调度；禁止直接绑原生 `touchstart/touchmove/touchend`——两套事件系统在同一 DOM 上
    互相干扰，`pointermove` 被浏览器提前终止。案例：B.A.R. #001。
