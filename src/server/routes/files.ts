@@ -331,8 +331,11 @@ export function setupFileRoutes(router: Router): void {
   router.get('/download/apk', (_req, res) => {
     try {
       if (!fs.existsSync(KFM_NA_APK)) { res.status(404).json({ error: 'APK 不存在' }); return; }
+      // no-store：手机浏览器启发式缓存会让用户装到旧版（2026-08-13 实拍嫌疑变量）
+      res.setHeader('Cache-Control', 'no-store');
       res.setHeader('Content-Type', 'application/vnd.android.package-archive');
       res.setHeader('Content-Disposition', 'attachment; filename="kfm-na.apk"');
+      res.setHeader('Content-Length', fs.statSync(KFM_NA_APK).size);
       fs.createReadStream(KFM_NA_APK).pipe(res);
     } catch (error: any) { res.status(500).json({ error: error.message }); }
   });
