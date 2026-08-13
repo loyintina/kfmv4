@@ -155,4 +155,21 @@ export function initObsHud(): void {
   setInterval(refresh, REFRESH_MS);
   // 锁屏/失焦回前台：立即重同步
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+
+  // 首次加载统一淡入（2026-08-13 用户定稿：刷新后徽标/手/钱三者同时淡入，
+  // 与徽标遮挡后重现的淡入方式一致——opacity .9s ease）
+  // 三者都已挂到 DOM：hud（顶栏含钱）、.obs-emblem（徽标）、.ai-hand（手）。
+  // 初始 opacity 0 → 下一帧统一淡入到 1（transition 生效，三者同步浮现）。
+  const fadeEls = [
+    hud,
+    document.querySelector<HTMLElement>('.obs-emblem'),
+    document.querySelector<HTMLElement>('.ai-hand'),
+  ].filter((el): el is HTMLElement => el !== null);
+  for (const el of fadeEls) {
+    el.style.transition = 'opacity .9s ease';
+    el.style.opacity = '0';
+  }
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    for (const el of fadeEls) el.style.opacity = '1';
+  }));
 }
