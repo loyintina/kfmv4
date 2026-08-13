@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit ac69788f · 生成于 2026-08-13 -->
+<!-- 基准 commit 07b95da2 · 生成于 2026-08-13 -->
 
 # 代码清单（机械层）
 
@@ -73,23 +73,22 @@
 | src/client/cards/types.ts | 16 | — |
 | src/client/modules/renderers/katex-css.ts | 3 | KATEX_CSS |
 
-## client-shell（28 文件 · 5397 行）
+## client-shell（27 文件 · 4434 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
-| src/client/modules/obs-hud.ts | 810 | initObsHud |
 | src/client/modules/orb.ts | 538 | type OrbState, collapseOrbPanel, initOrb |
 | src/client/modules/obs-emblem.ts | 494 | EmblemRect, EmblemRects, initObsEmblems |
 | src/client/modules/hand.ts | 363 | HandRect, initHand |
 | src/client/modules/ui-registry.ts | 352 | UIElementType, UIElementState, InteractiveElement, Rect, RectGetter, ContentBlock, Capability, PageDescription, RegistryChangeHandler, UIElementRegistry, Registry |
 | src/client/modules/gesture-registry.ts | 346 | GestureHandler, GestureRegistry, gestures |
-| src/client/modules/obs-roles.ts | 309 | RolesData, RolesRect, initObsRoles |
 | src/client/modules/custom-select.ts | 246 | SelectItem, CustomSelectOptions, CustomSelect, createCustomSelect |
 | src/client/modules/orb-panel.ts | 221 | PanelConfig, buildPanelContent |
 | src/client/modules/gestures.ts | 221 | initGestures |
 | src/client/modules/confirm-dialog.ts | 192 | ConfirmOptions, showConfirm |
 | src/client/modules/renderer-lifecycle.ts | 172 | RenderContext, RendererLifecycle, L |
 | src/client/modules/state.ts | 165 | API, FileNode, ViewportState, KFMStateType, KFMState, FileRowData, getFileRowData |
+| src/client/modules/obs-hud.ts | 156 | initObsHud |
 | src/client/modules/drag-handler.ts | 134 | DragConfig, createDragHandler |
 | src/client/main.ts | 132 | — |
 | src/client/modules/app.ts | 131 | initApp |
@@ -680,4 +679,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 314 文件 · 56062 行 · 跨域边 268 条
+合计 313 文件 · 55099 行 · 跨域边 268 条
