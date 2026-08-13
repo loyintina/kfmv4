@@ -3,12 +3,12 @@
 // 命中测试是「用户拖动接管」的门槛——指针落在核附近（半径 48px）才接管。
 // 注意：harness 的 group(name) 只接收字符串（设置当前组名），不能包回调；
 //       test 必须平铺注册（2026-08-13 事故：回调写法导致 4 个测试全未注册）。
-import { test, group } from './runner.js';
+import { test, group, regression } from './runner.js';
 import { handHitTest } from '../src/client/modules/hand-geometry.js';
 
 group('hand 用户拖动命中测试（BAR-HAND-DRAG-01）');
 
-test('落在核附近（<48px）→ 命中，可接管拖动', () => {
+regression('BAR-HAND-DRAG-01', 'add590ba', '落在核附近（<48px）→ 命中，可接管拖动', () => {
   // 核在 (100,100)，指针在 (130,120)——距离 ~36px < 48
   if (!handHitTest(130, 120, 100, 100)) throw new Error('36px 应命中');
 });
