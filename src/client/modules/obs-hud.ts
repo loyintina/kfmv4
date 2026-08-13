@@ -156,20 +156,30 @@ export function initObsHud(): void {
   // 锁屏/失焦回前台：立即重同步
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
 
-  // 首次加载统一淡入（2026-08-13 用户定稿：刷新后徽标/手/钱三者同时淡入，
-  // 与徽标遮挡后重现的淡入方式一致——opacity .9s ease）
-  // 三者都已挂到 DOM：hud（顶栏含钱）、.obs-emblem（徽标）、.ai-hand（手）。
-  // 初始 opacity 0 → 下一帧统一淡入到 1（transition 生效，三者同步浮现）。
+  // 首次加载统一淡入 v2（2026-08-13 用户反馈 v1 失效——钱先 -- 再跳字、
+  // 徽标直接显示，因为三结构各自的初始化抢跑了淡入）：
+  //  1) 钱：refresh() 是异步 fetch，v1 在 fetch 返回前就淡入 → 显示 -- 后跳真值；
+  //     改为等首个 refresh 完成（拿到真值）再触发淡入，淡入时钱已是真值
+  //  2) 徽标：initObsEmblems 内部 probe(true) 首次探测直接落位 opacity 1（无动画）
+  //     覆盖 v1 的 opacity 0；且其 canvas 的 transition 会被 applyOcc 复位——
+  //     用 transition:none + 强制 reflow + 再设 transition 的「双复位」确保过渡生效
+  //  3) 手：无内部 opacity 冲突，v1 已生效，本次保持
   const fadeEls = [
     hud,
     document.querySelector<HTMLElement>('.obs-emblem'),
     document.querySelector<HTMLElement>('.ai-hand'),
   ].filter((el): el is HTMLElement => el !== null);
+  // 先全部隐藏（transition none 立即落位 0，不给内部逻辑覆盖窗口）
   for (const el of fadeEls) {
-    el.style.transition = 'opacity .9s ease';
+    el.style.transition = 'none';
     el.style.opacity = '0';
   }
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    for (const el of fadeEls) el.style.opacity = '1';
-  }));
+  const fadeIn = () => {
+    for (const el of fadeEls) {
+      el.style.transition = 'opacity .9s ease';
+      void el.offsetWidth;               // 强制 reflow——确保过渡从 0 起播
+      el.style.opacity = '1';
+    }
+  };
+  refresh().then(fadeIn).catch(fadeIn);  // 等首个 fetch 完成再淡入；失败也淡入（显示 —）
 }
