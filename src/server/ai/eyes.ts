@@ -20,8 +20,7 @@ import { dump } from 'js-yaml';
 import { KFM_DATA_DIR, sanitizePath, getActiveRoot } from '../path-utils.js';
 import type { WsServer } from '../ws-server.js';
 import {
-  fetchDeepseekBalance, parseInbox, parseStack, collectSys,
-  collectArchive, collectPulse, collectPerms, collectRoles, collectAuditPending,
+  fetchDeepseekBalance, collectSys,
 } from '../routes/obs.js';
 
 export const EYES_PATH = join(KFM_DATA_DIR, 'agents', 'prompts', 'dynamic', 'eyes.md');
@@ -280,22 +279,16 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
     }
 
     // ===== 中央面板（遮挡时省略）=====
+    // 2026-08-13 用户定稿：九格全删，回归网格线——顶栏 = provider + 系统三格 + 余额；
+    // 信箱/星轨/脉搏/执勤/待办/角色框/权限 UI 删除，数据源路标保留在下方注释。
     if (!hudHidden) {
-      const [balance, inbox, stack, sys, archive, pulse, perms, roles] = await Promise.all([
+      const [balance, sys] = await Promise.all([
         fetchDeepseekBalance().catch(() => null),
-        Promise.resolve(parseInbox()),
-        Promise.resolve(parseStack()),
         Promise.resolve(collectSys()),
-        Promise.resolve(collectArchive()),
-        Promise.resolve(collectPulse()),
-        Promise.resolve(collectPerms()),
-        Promise.resolve(collectRoles()),
       ]);
 
       const FALLBACK: Record<string, [number, number, number, number]> = {
-        top: [6, 14, 378, 76], inbox: [6, 86, 166, 269], starmap: [178, 86, 378, 228],
-        sys: [6, 279, 104, 566], pulse: [178, 238, 378, 387], duty: [114, 397, 378, 510],
-        stack: [178, 520, 378, 738], roles: [6, 576, 168, 738], perms: [6, 748, 378, 784],
+        top: [6, 14, 378, 76],
       };
       const c = (k: string) => rectOf(`hud.${k}`, FALLBACK[k]);
       // 中央页面收拢为一个同级整体段（与文件树/光球面板/卡片堆平级），
@@ -304,18 +297,25 @@ export async function genEyes(wsServer: WsServer): Promise<void> {
       const cc = (k: string, obj: unknown) => { L.push(`### ${k}`); L.push('```yaml'); L.push(dump(obj).trimEnd()); L.push('```\n'); };
 
       const balText = balance && 'total' in balance ? `¥${balance.total}` : '（不可用）';
-      cc('顶框', { coords: c('top'), provider: activeRaw.providerId || 'deepseek', balance: balText, time: now.toLocaleTimeString('zh-CN', { hour12: false }), source: 'DeepSeek API balance 实时查询（providers.json 取 apiKey）' });
-      const pendingN = collectAuditPending(); // 待裁决 = audit-state keptFindings 总量（不是 inbox warn 行数）
-      cc('信箱', { coords: c('inbox'), pending: pendingN, latest: inbox.find(x => x.type === 'warn')?.text || '（无待裁决）', source: 'docs/ledger/semantic-chain-inbox.md' });
-      cc('星轨', { coords: c('starmap'), sessions: archive.sessions, local: archive.tracks.filter(t => !t.title.startsWith('kimi·')).length, kimi: archive.tracks.filter(t => t.title.startsWith('kimi·')).length, total: `Σ${(archive.totalTokens / 1024 / 1024).toFixed(1)}M`, source: 'sessions/*.json（本地）+ kimi 工作区 wire ≥1MB（kimi·前缀）——obs.ts collectArchive' });
-      cc('系统', { coords: c('sys'), disk: sys.metrics.find(x => x.label === '硬盘')?.value, mem: sys.metrics.find(x => x.label === '内存')?.value, load: sys.metrics.find(x => x.label === '负载')?.value, proc: sys.metrics.find(x => x.label === '进程')?.value, ports: sys.ports.map(p => `${p.port} ${p.name}`).join('，'), source: 'ledger/sys-metrics.json' });
-      cc('脉搏', { coords: c('pulse'), llm: `${pulse.llm.calls}次 ${pulse.llm.okRate}%成功率 均${(pulse.llm.avgMs / 1000).toFixed(1)}m ${pulse.llm.lastAgo}前`, llmByProvider: Object.entries(pulse.llm.byProvider).map(([k, v]) => `${k}×${v}`).join(' '), tools: `${pulse.tools.calls}次 失败${pulse.tools.fails}`, topTools: pulse.tools.top.map(t => `${t.name} ${t.n}`).join(' '), source: 'ledger/agent-calls.jsonl + ledger/tool-exec.jsonl' });
-      const cronMap: Record<string, string> = {};
-      for (const cr of sys.cron) cronMap[cr.name] = cr.status;
-      cc('执勤', { coords: c('duty'), sync: cronMap['sync'] || '?', clean: cronMap['clean'] || '?', chain: cronMap['chain'] || '?', bench: cronMap['bench'] || '?', entry: cronMap['entry'] || '?', agg: cronMap['agg'] || '?', push: cronMap['push'] || '?', retain: cronMap['retain'] || '?', source: 'ledger/check-failures.jsonl' });
-      cc('待办', { coords: c('stack'), todo: stack.counts.todo, done: stack.counts.done, items: stack.entries.filter(e => e.status === 'todo').slice(0, 3).map(e => `#${e.n} ${e.title}`), source: 'docs/active/stack.yaml' });
-      cc('角色框', { coords: c('roles'), count: roles.totalRoles, files: roles.totalFiles, active: roles.activeRoleId, source: 'agents/roles/*.json + active.json' });
-      cc('权限', { coords: c('perms'), allow: perms.allow, ask: perms.ask, deny: perms.deny, breach: `${perms.breakRate}%`, source: 'ledger/permission-audit.jsonl' });
+      // 顶栏 = provider + 系统三格 + 余额（2026-08-13 用户定稿：九格 UI 删除，中央页面还给网格线）。
+      // 徽标/手锚定在顶栏下方（obs-hud.ts 内部处理，非坐标信息）。
+      cc('顶栏', {
+        coords: c('top'),
+        provider: activeRaw.providerId || 'deepseek',
+        balance: balText,
+        disk: sys.metrics.find(x => x.label === '硬盘')?.value,
+        mem: sys.metrics.find(x => x.label === '内存')?.value,
+        load: sys.metrics.find(x => x.label === '负载')?.value,
+        source: 'DeepSeek API balance 实时查询（providers.json 取 apiKey）+ ledger/sys-metrics.json',
+      });
+      // 已删除格子的数据源路标（UI 删除，AI 如需查仍可直读文件）：
+      // 信箱待裁决 → docs/ledger/semantic-chain-inbox.md（collectAuditPending 总量）
+      // 星轨 → sessions/*.json（collectArchive）
+      // 脉搏 → ledger/agent-calls.jsonl + ledger/tool-exec.jsonl（collectPulse）
+      // 执勤 → ledger/check-failures.jsonl（cron 状态）
+      // 待办 → docs/active/stack.yaml（parseStack）
+      // 角色框 → agents/roles/*.json + active.json（collectRoles）
+      // 权限 → ledger/permission-audit.jsonl（collectPerms）
     }
 
     // ===== 文件树（始终——手操作清单）=====
