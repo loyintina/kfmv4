@@ -335,7 +335,7 @@ body {
   justify-content: space-between;
   width: 372px;
   box-sizing: border-box;
-  padding: 14px 56px;
+  padding: 8px 12px;
   border-radius: 20px;
   background: rgba(18, 18, 26, 0.5);
   border: 1px solid transparent;
@@ -346,17 +346,17 @@ body {
   box-shadow: 0 4px 30px rgba(124, 58, 237, 0.08);
 }
 
-/* 顶栏四栏式（2026-08-13 用户定稿：徽标/ID/三数字/手 四栏） */
+/* 顶栏四栏式（2026-08-13 用户定稿：徽标/ID/三数字/手 四栏，左右大致对称） */
 .obs-card-4col {
   display: grid;
-  grid-template-columns: 60px auto auto;
+  grid-template-columns: 64px 1fr 1fr 72px;
   align-items: center;
-  gap: 10px;
-  padding: 14px 16px;
+  gap: 8px;
+  padding: 4px 12px;
 }
 
 .obs-emblem-slot {
-  width: 60px;
+  width: 56px;
   height: 60px;
 }
 
@@ -381,6 +381,12 @@ body {
   color: var(--text-dim);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.obs-hand-slot {
+  width: 72px;
+  height: 60px;
+  justify-self: end;
 }
 
 .obs-left {

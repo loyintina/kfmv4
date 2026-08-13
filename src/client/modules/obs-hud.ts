@@ -45,6 +45,7 @@ export function initObsHud(): void {
         <div class="obs-balance">¥--</div>
       </div>
       <div class="obs-sys-col"></div>
+      <div class="obs-hand-slot"></div>
     </div>
   `;
   hud.style.zIndex = String(Z.CENTER_CONTENT);
@@ -53,7 +54,7 @@ export function initObsHud(): void {
   const balanceEl = hud.querySelector<HTMLElement>('.obs-balance')!;
   const sysColEl = hud.querySelector<HTMLElement>('.obs-sys-col')!;
 
-  // 徽标：锚定顶栏最左侧（2026-08-13 用户定稿：移到栏内容最左侧，60×60 满足最小门槛）
+  // 徽标：锚定最左槽位（40×60 最小门槛，2026-08-13 用户定稿）
   const emblemRects = (): EmblemRects => {
     const slot = hud.querySelector<HTMLElement>('.obs-emblem-slot')!.getBoundingClientRect();
     return {
@@ -67,15 +68,15 @@ export function initObsHud(): void {
   };
   const emblems = initObsEmblems(emblemRects);
 
-  // AI 的手：待机区锚定顶栏右侧——可以超出栏高度向下延伸
-  // （2026-08-13 用户定稿：待机区域稍大、超出栏高度也可以）
+  // AI 的手：待机区 = 第四栏（顶栏内部右侧），栏内活动不越界
+  // （2026-08-13 用户定稿：四栏之一，图标在栏内右侧区域活动）
   const handRect = (): HandRect => {
-    const r = hud.querySelector<HTMLElement>('.obs-card')!.getBoundingClientRect();
+    const slot = hud.querySelector<HTMLElement>('.obs-hand-slot')!.getBoundingClientRect();
     return {
-      left: Math.round(r.right - 140),
-      top: Math.round(r.top),
-      width: 130,
-      height: Math.max(120, window.innerHeight - r.top - 40),
+      left: Math.round(slot.left),
+      top: Math.round(slot.top),
+      width: Math.round(slot.width),
+      height: Math.round(slot.height),
     };
   };
   const hand = initHand(handRect);
