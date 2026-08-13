@@ -386,26 +386,31 @@ export function initHand(getOrbit: () => HandRect | null): { relayout: () => voi
 
   // 用户交互：拖动核到任意位置，松手 1.5s 后回归待机轨道
   // （2026-08-13 用户定稿：手不只 AI 能动，用户也能拖）
+  // capture:true + stopPropagation——命中核时拦截事件，防止继续传播到
+  // gesture-registry 触发其他手势（召唤卡片堆/全屏卡滚动，2026-08-13 用户反馈）
   let dragPointerId: number | null = null;
   const onPointerDown = (e: PointerEvent) => {
     if (!engine || dragPointerId !== null) return;
     if (!engine.hitTest(e.clientX, e.clientY)) return;
     dragPointerId = e.pointerId;
     engine.userDragStart(e.clientX, e.clientY, performance.now());
+    e.stopPropagation();
   };
   const onPointerMove = (e: PointerEvent) => {
     if (dragPointerId !== e.pointerId) return;
     engine?.userDragMove(e.clientX, e.clientY);
+    e.stopPropagation();
   };
   const onPointerUp = (e: PointerEvent) => {
     if (dragPointerId !== e.pointerId) return;
     dragPointerId = null;
     engine?.userDragEnd(performance.now());
+    e.stopPropagation();
   };
-  document.addEventListener('pointerdown', onPointerDown);
-  document.addEventListener('pointermove', onPointerMove);
-  document.addEventListener('pointerup', onPointerUp);
-  document.addEventListener('pointercancel', onPointerUp);
+  document.addEventListener('pointerdown', onPointerDown, { capture: true });
+  document.addEventListener('pointermove', onPointerMove, { capture: true });
+  document.addEventListener('pointerup', onPointerUp, { capture: true });
+  document.addEventListener('pointercancel', onPointerUp, { capture: true });
   let lastStep = 0;
   const loop = (now: number) => {
     if (renderOn && ctx && engine && now - lastStep >= 33) {
