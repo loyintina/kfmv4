@@ -56,6 +56,7 @@ import './stack-numbering.test.js';
 import './doc-scripts.test.js';
 import './session-flush.test.js';
 import './browser-tool.test.js';
+import './hand-drag.test.js';
 import './obs-audit-pending.test.js';
 import './obs-track-time.test.js';
 import './viewport-visibility.test.js';

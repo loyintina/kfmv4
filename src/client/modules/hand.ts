@@ -20,6 +20,7 @@
 
 import { Z } from './z-index-layers.js';
 import { wsChannel } from './ws-channel.js';
+import { handHitTest } from './hand-geometry.js';
 
 // ========== 常量 ==========
 const CYAN = '6,182,212';
@@ -76,7 +77,7 @@ function mkCanvas(vw: number, vh: number): [HTMLCanvasElement, CanvasRenderingCo
 
 // ============ 手引擎：状态机（idle/move/press/return）+ 玻尔原子皮肤 ============
 
-type HandState = 'idle' | 'move' | 'press' | 'return';
+type HandState = 'idle' | 'move' | 'press' | 'return' | 'drag';
 
 interface Electron {
   rx: number;    // 椭圆轨道半长轴（px）
@@ -105,6 +106,9 @@ class HandEngine {
   private pressT0 = 0;
   private ripples: { t0: number }[] = [];
   private electrons: Electron[] = [];
+  // 用户拖动（2026-08-13 用户定稿：我也能拖动它，松手 1.5s 后回归）
+  private userDrag = false;         // 指针按下接管中（pointermove 直接驱动 center）
+  private dragReleaseT0 = 0;        // 松手时刻——HOLD_MS 后回归待机
 
   constructor() {
     // 3 颗电子（沿用用户拍板的数量）：半径渐远、倾角 60° 均布、异速异向、缓进动
@@ -143,6 +147,34 @@ class HandEngine {
     const dist = Math.hypot(x - this.center.x, y - this.center.y);
     this.tw.dur = Math.min(900, Math.max(300, 300 + dist * 0.45));
     this.state = 'move';
+    this.userDrag = false;            // AI 命令打断用户拖动
+  }
+
+  /** 用户指针按下（命中核附近）——接管核位置直接跟随指针 */
+  userDragStart(x: number, y: number, now: number): void {
+    this.userDrag = true;
+    this.dragReleaseT0 = 0;
+    this.center.x = x; this.center.y = y;
+    this.trail = [];
+    this.state = 'drag';
+  }
+
+  /** 命中测试：指针是否落在核附近（复用纯函数 handHitTest，半径 48px） */
+  hitTest(px: number, py: number): boolean {
+    return handHitTest(px, py, this.center.x, this.center.y);
+  }
+
+  /** 用户拖动中：pointermove 直接驱动 center（不做补间） */
+  userDragMove(x: number, y: number): void {
+    if (!this.userDrag) return;
+    this.center.x = x; this.center.y = y;
+  }
+
+  /** 用户松手：记录松手时刻，HOLD_MS 后回归待机轨道 */
+  userDragEnd(now: number): void {
+    if (!this.userDrag) return;
+    this.userDrag = false;
+    this.dragReleaseT0 = now;
   }
 
   /** 按下（服务端 hand-press 命令入口）：给了坐标就先移过去再按 */
@@ -178,6 +210,13 @@ class HandEngine {
   private stepCenter(now: number): void {
     if (this.state === 'idle') {
       this.center = this.idlePos(now);
+    } else if (this.state === 'drag') {
+      // 用户拖动：center 由 pointermove 直接驱动（不重算）；
+      // 松手后停留 HOLD_MS（1.5s）再回归待机轨道
+      if (!this.userDrag && this.dragReleaseT0 > 0 && now - this.dragReleaseT0 >= HOLD_MS) {
+        this.tw = { fx: this.center.x, fy: this.center.y, tx: 0, ty: 0, t0: now, dur: RETURN_MS };
+        this.state = 'return';
+      }
     } else if (this.state === 'move') {
       const p = Math.min(1, (now - this.tw.t0) / this.tw.dur);
       const e = easeOutBack(p);
@@ -301,7 +340,9 @@ class HandEngine {
   }
 }
 
-// ============ 装配：全屏画布单 rAF（待机巡逻 + 目标移动 + 按下） ============
+/** 命中测试委托：hand-geometry.js 提供（纯函数，可离线单测） */
+
+// ============ 装配：全屏画布单 rAF（待机巡逻 + 目标移动 + 按下 + 用户拖动） ============
 export function initHand(getOrbit: () => HandRect | null): { relayout: () => void; moveTo: (x: number, y: number) => void } {
   let el: HTMLCanvasElement | null = null;
   let engine: HandEngine | null = null;
@@ -342,6 +383,29 @@ export function initHand(getOrbit: () => HandRect | null): { relayout: () => voi
     const has = Number.isFinite(x) && Number.isFinite(y);
     engine?.press(has ? x : null, has ? y : null, performance.now());
   });
+
+  // 用户交互：拖动核到任意位置，松手 1.5s 后回归待机轨道
+  // （2026-08-13 用户定稿：手不只 AI 能动，用户也能拖）
+  let dragPointerId: number | null = null;
+  const onPointerDown = (e: PointerEvent) => {
+    if (!engine || dragPointerId !== null) return;
+    if (!engine.hitTest(e.clientX, e.clientY)) return;
+    dragPointerId = e.pointerId;
+    engine.userDragStart(e.clientX, e.clientY, performance.now());
+  };
+  const onPointerMove = (e: PointerEvent) => {
+    if (dragPointerId !== e.pointerId) return;
+    engine?.userDragMove(e.clientX, e.clientY);
+  };
+  const onPointerUp = (e: PointerEvent) => {
+    if (dragPointerId !== e.pointerId) return;
+    dragPointerId = null;
+    engine?.userDragEnd(performance.now());
+  };
+  document.addEventListener('pointerdown', onPointerDown);
+  document.addEventListener('pointermove', onPointerMove);
+  document.addEventListener('pointerup', onPointerUp);
+  document.addEventListener('pointercancel', onPointerUp);
   let lastStep = 0;
   const loop = (now: number) => {
     if (renderOn && ctx && engine && now - lastStep >= 33) {

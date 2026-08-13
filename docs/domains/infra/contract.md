@@ -87,6 +87,10 @@ agent 脚本层——检测归自动化，裁决归会话内 agent，**永远不
     （2026-08-07 登记①：RSS 参照改自身 cgroup memory.high（800M 墙），按
     /proc/self/cgroup 相对路径拼读——根路径是根 cgroup 的 max，直读必失效；
     rss 历史下发前转占限额百分比，柱状图口径统一「样本值=百分比」）
+    （2026-08-13 登记②：眼睛「当前视口」可见性模块 viewport-visibility.ts
+    登记 ai-chat 域——装配点 ws-channel.ts 在 ai-chat，新增 src 模块按
+    装配点归属登记 domain-src.mjs，否则 check-contract-freshness 报映射
+    盲区对该文件新鲜度失明）
     （2026-08-07 登记②：星轨数据面 collectArchive——读 ~/.kfmv4/sessions/*.json
     顶层字段（title/createdAt/updatedAt/messageCount/tokenCount），msgs≤2 测试
     残留过滤、缺 count 旧会话以 messages.length 兜底，按 tokenCount 降序 TOP8 +
