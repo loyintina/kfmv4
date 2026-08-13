@@ -164,8 +164,8 @@ class HandEngine {
     const cx = ob.left + ob.width / 2, cy = ob.top + ob.height / 2;
     const t = now / 1000;
     return {
-      x: cx + this.noiseX(t * 0.13) * ob.width * 0.30,
-      y: cy + this.noiseY(t * 0.11) * ob.height * 0.34,
+      x: cx + this.noiseX(t * 0.13) * ob.width * 0.45,
+      y: cy + this.noiseY(t * 0.11) * ob.height * 0.48,
     };
   }
 
