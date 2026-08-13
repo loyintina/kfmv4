@@ -52,13 +52,14 @@ export function initObsHud(): void {
   const balanceEl = hud.querySelector<HTMLElement>('.obs-balance')!;
   const sysMiniEl = hud.querySelector<HTMLElement>('.obs-sys-mini')!;
 
-  // 徽标：缩小锚定顶栏下方（2026-08-13 用户定稿：做小，运动不变）
+  // 徽标：缩小锚定顶栏内部右侧（2026-08-13 用户定稿：做小、放顶栏、运动不变）
+  // 顶栏宽 372 高 ~69（6,14)-(378,97)；徽标放右侧余额旁，60×60 满足最小门槛
   const emblemRects = (): EmblemRects => {
-    const r = hud.getBoundingClientRect();
+    const r = hud.querySelector<HTMLElement>('.obs-card')!.getBoundingClientRect();
     return {
       pocket: {
-        left: Math.round(r.left),
-        top: Math.round(r.bottom + 6),
+        left: Math.round(r.right - 56 - 60),
+        top: Math.round(r.top + (r.height - 60) / 2),
         width: 60,
         height: 60,
       },
@@ -66,14 +67,15 @@ export function initObsHud(): void {
   };
   const emblems = initObsEmblems(emblemRects);
 
-  // AI 的手：待机区锚定顶栏下方（2026-08-13 重构：原四框空区随九格删除）
+  // AI 的手：待机区锚定顶栏下方右侧——避开文件树展开区（0-288 宽）
+  // （2026-08-13 重构：原四框空区随九格删除；左半边被文件树占据，手只能待右侧）
   const handRect = (): HandRect => {
-    const r = hud.getBoundingClientRect();
+    const r = hud.querySelector<HTMLElement>('.obs-card')!.getBoundingClientRect();
     return {
-      left: Math.round(r.left),
-      top: Math.round(r.bottom + 80),
-      width: 200,
-      height: 120,
+      left: Math.round(r.right - 100),
+      top: Math.round(r.bottom + 10),
+      width: 90,
+      height: Math.max(60, window.innerHeight - r.bottom - 20),
     };
   };
   const hand = initHand(handRect);

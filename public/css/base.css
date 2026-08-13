@@ -367,6 +367,14 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.obs-sys-mini {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .obs-balance {
   font-size: clamp(24px, 6.5vw, 32px);
   font-weight: 700;

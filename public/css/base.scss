@@ -192,6 +192,7 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
 .obs-left{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
 .obs-provider{font-size:12px;letter-spacing:3px;color:rgba(0,212,255,.75);text-transform:uppercase}
 .obs-clock{font-size:12px;letter-spacing:2px;color:var(--text-dim);font-variant-numeric:tabular-nums}
+.obs-sys-mini{font-size:10px;letter-spacing:1px;color:var(--text-dim);font-variant-numeric:tabular-nums;white-space:nowrap}
 .obs-balance{font-size:clamp(24px,6.5vw,32px);font-weight:700;line-height:1.1;background:linear-gradient(90deg,#e0e0e0,#00d4ff);-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:1px;font-variant-numeric:tabular-nums}
 .obs-balance.obs-flash{animation:obsFlash .6s ease-out}
 @keyframes obsFlash{0%{opacity:.15}100%{opacity:1}}
