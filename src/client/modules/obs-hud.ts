@@ -38,44 +38,44 @@ export function initObsHud(): void {
   const hud = document.createElement('div');
   hud.className = 'obs-hud';
   hud.innerHTML = `
-    <div class="obs-card">
-      <div class="obs-left">
+    <div class="obs-card obs-card-4col">
+      <div class="obs-emblem-slot"></div>
+      <div class="obs-id-col">
         <div class="obs-provider">deepseek</div>
-        <div class="obs-sys-mini"></div>
+        <div class="obs-balance">¥--</div>
       </div>
-      <div class="obs-balance">¥--</div>
+      <div class="obs-sys-col"></div>
     </div>
   `;
   hud.style.zIndex = String(Z.CENTER_CONTENT);
   document.body.appendChild(hud);
 
   const balanceEl = hud.querySelector<HTMLElement>('.obs-balance')!;
-  const sysMiniEl = hud.querySelector<HTMLElement>('.obs-sys-mini')!;
+  const sysColEl = hud.querySelector<HTMLElement>('.obs-sys-col')!;
 
-  // 徽标：缩小锚定顶栏内部右侧（2026-08-13 用户定稿：做小、放顶栏、运动不变）
-  // 顶栏宽 372 高 ~69（6,14)-(378,97)；徽标放右侧余额旁，60×60 满足最小门槛
+  // 徽标：锚定顶栏最左侧（2026-08-13 用户定稿：移到栏内容最左侧，60×60 满足最小门槛）
   const emblemRects = (): EmblemRects => {
-    const r = hud.querySelector<HTMLElement>('.obs-card')!.getBoundingClientRect();
+    const slot = hud.querySelector<HTMLElement>('.obs-emblem-slot')!.getBoundingClientRect();
     return {
       pocket: {
-        left: Math.round(r.right - 56 - 60),
-        top: Math.round(r.top + (r.height - 60) / 2),
-        width: 60,
-        height: 60,
+        left: Math.round(slot.left),
+        top: Math.round(slot.top),
+        width: Math.round(slot.width),
+        height: Math.round(slot.height),
       },
     };
   };
   const emblems = initObsEmblems(emblemRects);
 
-  // AI 的手：待机区锚定顶栏下方右侧——避开文件树展开区（0-288 宽）
-  // （2026-08-13 重构：原四框空区随九格删除；左半边被文件树占据，手只能待右侧）
+  // AI 的手：待机区锚定顶栏右侧——可以超出栏高度向下延伸
+  // （2026-08-13 用户定稿：待机区域稍大、超出栏高度也可以）
   const handRect = (): HandRect => {
     const r = hud.querySelector<HTMLElement>('.obs-card')!.getBoundingClientRect();
     return {
-      left: Math.round(r.right - 100),
-      top: Math.round(r.bottom + 10),
-      width: 90,
-      height: Math.max(60, window.innerHeight - r.bottom - 20),
+      left: Math.round(r.right - 140),
+      top: Math.round(r.top),
+      width: 130,
+      height: Math.max(120, window.innerHeight - r.top - 40),
     };
   };
   const hand = initHand(handRect);
@@ -143,9 +143,9 @@ export function initObsHud(): void {
         balanceEl.textContent = '—';
       }
       const ms = j?.sys?.metrics ?? [];
-      const parts = ms.filter(m => ['硬盘', '内存', '负载'].includes(m.label))
-        .map(m => `${m.label} ${m.value}`).join(' · ');
-      sysMiniEl.textContent = parts;
+      const rows = ms.filter(m => ['硬盘', '内存', '负载'].includes(m.label))
+        .map(m => `<div class="obs-sys-row">${m.label} ${m.value}</div>`).join('');
+      sysColEl.innerHTML = rows;
     } catch {
       balanceEl.textContent = '—';
     }

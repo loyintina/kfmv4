@@ -94,7 +94,7 @@ class EmblemGather {
     }
     g.push({ x: 0.5, y: 0.5 });
     this.glyph = g.map(p => ({ x: p.x * w, y: p.y * h }));
-    this.thr = Math.min(w, h) * 0.22; // 连接距离收紧（线网太密，2026-08-08 实拍）
+    this.thr = Math.min(w, h) * 0.15; // 连接距离收紧（徽标缩小至 60px 后阈值同步调小，2026-08-13）
     this.posBuf = this.glyph.map(() => ({ x: 0, y: 0 }));
     this.regen();
   }
@@ -124,7 +124,7 @@ class EmblemGather {
       const x = d.x * fx, y = d.y * fy, l = Math.hypot(x, y) || 1;
       return { x: x / l, y: y / l };
     });
-    this.thr = Math.min(nw, nh) * 0.22;
+    this.thr = Math.min(nw, nh) * 0.15;
   }
   // 闭环边（同组相邻 + 首尾相接）：由形状描边层统一画，动态连线跳过以免叠亮
   private static loopEdge(i: number, j: number): boolean {

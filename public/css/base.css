@@ -346,6 +346,43 @@ body {
   box-shadow: 0 4px 30px rgba(124, 58, 237, 0.08);
 }
 
+/* 顶栏四栏式（2026-08-13 用户定稿：徽标/ID/三数字/手 四栏） */
+.obs-card-4col {
+  display: grid;
+  grid-template-columns: 60px auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+}
+
+.obs-emblem-slot {
+  width: 60px;
+  height: 60px;
+}
+
+.obs-id-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.obs-sys-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  justify-self: end;
+}
+
+.obs-sys-row {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .obs-left {
   display: flex;
   flex-direction: column;

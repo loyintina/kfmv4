@@ -189,6 +189,12 @@ body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--text)
    左列两行（deepseek 标签 + 秒级时间）· 右列余额大字单独放（重点）。
    禁全宽横贯：双 backdrop-filter 垂直叠加移动端合成异常会致按钮视觉消失。 */
 .obs-card{display:flex;flex-direction:row;align-items:center;justify-content:space-between;width:372px;box-sizing:border-box;padding:14px 56px;border-radius:20px;background:rgba(18,18,26,.5);border:1px solid transparent;background-clip:padding-box;border-image:linear-gradient(135deg,rgba(124,58,237,.5),rgba(0,212,255,.3)) 1;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 4px 30px rgba(124,58,237,.08)}
+/* 顶栏四栏式（2026-08-13 用户定稿：徽标/ID/三数字/手 四栏） */
+.obs-card-4col{display:grid;grid-template-columns:60px auto auto;align-items:center;gap:10px;padding:14px 16px}
+.obs-emblem-slot{width:60px;height:60px}
+.obs-id-col{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+.obs-sys-col{display:flex;flex-direction:column;align-items:flex-start;gap:1px;justify-self:end}
+.obs-sys-row{font-size:10px;letter-spacing:1px;color:var(--text-dim);font-variant-numeric:tabular-nums;white-space:nowrap}
 .obs-left{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
 .obs-provider{font-size:12px;letter-spacing:3px;color:rgba(0,212,255,.75);text-transform:uppercase}
 .obs-clock{font-size:12px;letter-spacing:2px;color:var(--text-dim);font-variant-numeric:tabular-nums}
