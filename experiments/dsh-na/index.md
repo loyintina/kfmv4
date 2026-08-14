@@ -40,9 +40,8 @@ kfmv4 的「一切皆卡片」与 dsh 的「一切皆插件」在 NA 统一。
 
 | 目录 | 是什么 |
 |------|--------|
-| `design/` | 设计文档：插件架构规格书（内核边界 / 插件域清单 / 契约 / 测试标准 / 热插拔语义） |
-| `references/` | dsh 对照研究材料（机制解剖笔记，随深挖增补） |
-| `reports/` | 裁决与实验报告 |
+| `dsh/` | dsh 研究材料：Cordis 机制解剖笔记、dsh 架构对照（随深挖增补） |
+| `na/` | NA 设计：插件架构规格书（内核边界 / 插件域清单 / 契约 / 测试标准 / 热插拔语义） |
 
 ## 研究阶段
 
@@ -68,10 +67,10 @@ kfmv4 的「一切皆卡片」与 dsh 的「一切皆插件」在 NA 统一。
 
 ## 产物登记面
 
-> 防孤儿文件（DOC-FLOW-11 同族）：`design/`、`references/`、`reports/` 下每份
-> 产物文件在此登记一行。新增产物先登记后提交。
+> 防孤儿文件（DOC-FLOW-11 同族）：`dsh/`、`na/` 下每份产物文件在此登记一行。
+> 新增产物先登记后提交。
 
 | 文件 | 说明 |
 |------|------|
-| `design/plugin-architecture-spec.md` | 插件架构规格书（v0 草案，随 dsh 深挖迭代） |
-| `references/cordis-mechanics.md` | Cordis 机制解剖笔记（源码级，file:line 出处；规格书证据层） |
+| `na/plugin-architecture-spec.md` | 插件架构规格书（v0 草案，随 dsh 深挖迭代） |
+| `dsh/cordis-mechanics.md` | Cordis 机制解剖笔记（源码级，file:line 出处；规格书证据层） |

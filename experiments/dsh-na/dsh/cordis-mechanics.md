@@ -2,7 +2,7 @@
 
 > 2026-08-14。来源：`/opt/dsh-src/vendor/cordis/src/`（`@deepseek-ai/cordis`
 > 4.0.0-rc.7 vendored 快照，上游 cordiverse/cordis 56b3d4f）。全部论断带
-> file:line 出处。本笔记是规格书（design/plugin-architecture-spec.md）的
+> file:line 出处。本笔记是规格书（na/plugin-architecture-spec.md）的
 > 证据层；规格书引用本笔记的机制结论。
 
 ## 0. 源码地形（9 文件 2693 行）
