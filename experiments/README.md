@@ -47,6 +47,7 @@
 |------|------|
 | [coldstart/](coldstart/) | 冷启动接手实验 · 数据集索引 |
 | [docprobe/](docprobe/) | docprobe · 研究线登记（文档抽测） |
+| [na-architecture/](na-architecture/) | NA 插件架构研究（一切皆插件 → kfm-na） |
 | [paradigm/](paradigm/) | paradigm · 研究线登记（范式包） |
 
 <!-- gen:experiments-list:end -->
