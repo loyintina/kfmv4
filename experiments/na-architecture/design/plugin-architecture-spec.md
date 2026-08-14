@@ -21,9 +21,10 @@ kfm-na 是完全 Rust 驱动的高性能安卓端软件。架构形态：**先�
   vendored 的 Cordis（`@deepseek-ai/cordis` 4.0.0-rc.7）驱动；设计论文
   《A Programming Paradigm for Spatiotemporal Composability》
 - dsh 五机制：① plugin = `apply(ctx)` + `inject` 依赖声明；② ctx = 服务仓库，
-  按 `ctx.<key>` 查找不 import 具体实现；③ 类型化事件四派发（emit 观察 /
-  waterfall 环绕短路 / parallel 并行 / serial 有序），派发模式即公开契约；
-  ④ 可逆效果（`ctx.effect()`/`ctx.on()`，卸载自动回滚）；⑤ profile/bundle
+  按 `ctx.<key>` 查找不 import 具体实现；③ 类型化事件**五派发**（emit 同步观察 /
+  parallel 并发 / serial 顺序短路 / bail 同步短路 / waterfall 环绕委托），
+  派发模式即公开契约（源码验证：vendor/cordis/src/events.ts）；④ 可逆效果
+  （注册进 fiber 的 DisposableList，卸载逆序回滚，async 支持）；⑤ profile/bundle
   分层组合（patch 按行 id 寻址整行替换，last-write-wins）
 - kfm-na 现状（2026-08-14）：尖刺 1 尾期，BAR-001~017 全闭环；BAR-017 判词
   「覆盖层 UI 统一 Rust 自绘」；下一步切片 = 快捷键行 → 左缘手势文件树 → 光球
@@ -93,10 +94,15 @@ trait Plugin {
 ```
 
 - 依赖声明：`inject` → `fn deps(&self) -> &[ServiceId]`，基座按依赖图激活
-- 可逆效果：apply 内注册的每个效果返回 disposer（RAII guard 或
-  `Box<dyn FnOnce>`），卸载时逆序 unwind
-- 事件四派发：emit = tokio broadcast / serial = Vec 有序链 / waterfall = 环绕
-  委托链（`next()` 短路语义）/ parallel = futures join
+- 可逆效果：apply 内注册的每个效果返回 disposer，卸载时**逆序 unwind**
+  （DisposableList 语义，最新注册先回滚——cordis utils.ts:27-30）。
+  **Rust 移植真设计点**：Drop 不能 await，卸载接口定为显式
+  `async fn unload()`（逆序跑 disposers）+ drop 兜底路径
+- 事件五派发：emit = 同步 for / parallel = futures join_all /
+  serial + bail = 顺序循环 + Result 短路 / waterfall = 委托链
+  （continuation 参数，不调即否决）。每个事件在事件枚举上标注派发模式
+- 作用域：isolate 标签（cordis context.ts:18-19）——终端会话/对话会话可各持
+  独立服务作用域，服务查找按标签解析；NA 首个用途 = 每终端会话一个 ctx
 
 ## 5. 测试标准（回答「插上后确保不出 bug」）
 

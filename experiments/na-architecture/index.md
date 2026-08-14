@@ -74,3 +74,4 @@ kfmv4 的「一切皆卡片」与 dsh 的「一切皆插件」在 NA 统一。
 | 文件 | 说明 |
 |------|------|
 | `design/plugin-architecture-spec.md` | 插件架构规格书（v0 草案，随 dsh 深挖迭代） |
+| `references/cordis-mechanics.md` | Cordis 机制解剖笔记（源码级，file:line 出处；规格书证据层） |
