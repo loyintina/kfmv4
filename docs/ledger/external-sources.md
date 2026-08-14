@@ -18,6 +18,7 @@
 | [omp](https://github.com/can1357/oh-my-pi)（oh-my-pi） | 2026-07-18 | A 代码/工具 | Browser 工具（open/run/close + tab-supervisor + puppeteer CDP）自 omp 移植；pi-natives（brush-core/uutils）全栈源码 vendored 可用 | 浏览器自动化能力（守视/巡检基建） | `docs/domains/ai-chat/detail-browser.md`（stealth patches 破坏 page.evaluate 等踩坑）；stack #11：pi-natives fd 泄漏已整理待反馈上游 |
 | [NVIDIA NOOA](https://github.com/NVIDIA-NeMo/labs-OO-Agents) | 2026-08-08 | B 知识塑造源 | 「引用传递」（工具结果不进上下文）作为对照假设并入 #19 压缩研究（A 全量/B 摘要/C 不进 三档） | 压缩机制效果研究的上限参照 | `experiments/harness-studies/nooa-direction.md` §6（延后决策 + 触发条件） |
 | [Project Cairn](https://github.com/iBlinkQ/project-cairn) | 2026-08-08 | B 知识塑造源 | 「外部来源登记 + 毕业元数据」思想 → 本登记表立项；论证结论：项目侧我们更强，只吸收"外部来源登记"轻机制 | 殊途同归方向（多个独立项目收敛到同一问题） | `experiments/harness-studies/cairn-assessment.md` |
+| [AgentMemories](https://agentmemories.ai/home) | 2026-08-14 | B 知识塑造源（研究素材，未评估） | AI Agent 持久记忆——方向与本项目宪法第四条「AI 的长期记忆是产品本体」直接相关 | 用户指定「以后用来研究，会很有用」；记忆系统基建的对照研究候选 | 待评估——记档时仅留指针，未读正文、未影响决策 |
 
 ## 历史
 
