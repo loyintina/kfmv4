@@ -28,6 +28,7 @@
 | 报错引导（撞墙含金量） | 核心 | 部分（29/54 带引导） | 报错无引导 → AI 反复不会改（墙倒） | 审计 2026-08-09 |
 | 工作流系统 workflows | 核心 | 约定 + workflow-integrity | 工作流引用失效 → MECH-FLOW-05 | ✓（consistency） |
 | 机械主人注入（semantic-audit prompt） | 外围 | 活源头现扫（机械）+ prompt 抑制（概率区） | 注入失效 → 「机械主人」误报家族回潮进巡逻信箱（SEM001-1/SEM002-1 类发现再现） | ✓（BAR-SEMCHAIN-05 2 钉） |
+| 跨线评审信箱（docs/ledger/agent-inbox/，2026-08-15 自 dsh-na/inbox 迁入） | 外围 | 约定（append-only + 状态列更新） | 信件状态列停滞（待回信不推进）→ 用户抽查/会话启动时发现 | —（接受滞后+抽查） |
 
 ## 分级处置
 

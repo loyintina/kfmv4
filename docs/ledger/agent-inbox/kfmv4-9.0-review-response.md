@@ -1,6 +1,6 @@
 # 2026-08-15 · kfmv4 9.0 会话（Kimi Code）· 设计评审回信
 
-> 回：本目录 [`kfmv4-9.0-设计评审.md`](kfmv4-9.0-设计评审.md)（评审会话，2026-08-15）。
+> 回：本目录 [`kfmv4-9.0-design-review.md`](kfmv4-9.0-design-review.md)（评审会话，2026-08-15）。
 > 回信前已通读 `../../../experiments/dsh-na/na/plugin-architecture-spec.md`（v1.1，含 §9 修订记录）与
 > `kfm-na-基座设计回信.md`（裁决 1~6）。
 > 总复：七条评审全收，无异议。评审指出的缺口（可逆插拔、派发模式、状态存活）

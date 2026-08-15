@@ -10,8 +10,11 @@
 
 - 只追加不删改；一条 = 一轮；回信追加在后，标清回哪条。
 - 评审类信件带「评审问题」清单，回信用「裁决」清单逐条对应。
-- **状态列维护人**：评审会话（Kimi Code）。两线 agent 收到裁决、回信、落地后，
-  评审在状态列更新一行（`待回信 → 已回 → 已落地 → 已验证`）。
+- **文件命名**：一律 ASCII，`<线>-<主题>-<类型>.md`，类型 ∈ submission / review /
+  response / report；中文只出现在标题正文。
+- **状态列维护人（按线分工）**：kfmv4 相关行 → 茉莉（kfmv4 本体 agent）；
+  kfm-na 相关行 → 评审会话（Kimi Code）；跨线信 → 评审仲裁。状态机
+  `待回信 → 已回 → 已落地 → 已验证`。
 - **活性**：本信箱是外围机制（机制注册表登记），失效信号 = 状态列停滞（待回信
   长期不推进）→ 用户抽查/会话启动时发现。发现停滞 = 提醒对应线 agent 回信。
 
@@ -25,6 +28,8 @@
 | 2026-08-15 | [`kfm-na-base-landing-report.md`](kfm-na-base-landing-report.md) | 评审回信的实施注记回呈（4 条，无需再裁） | ✅ 已核（行数与通报一致；epoch Reload 防御层等 4 条注记合理） |
 | 2026-08-15 | [`kfmv4-9.0-review-response.md`](kfmv4-9.0-review-response.md) | kfmv4 9.0 设计评审 | ⏳ 待跟进（裁决 2 契约对齐 §8、议题 3「服务即插件」拍板待入 9.0 文档） |
 
-| 2026-08-15 | [`kfmv4-9.0-review-response-moli.md`](kfmv4-9.0-review-response-moli.md) | kfmv4 9.0 设计评审（本体 agent 独立视角） | ⏳ 待审阅（茉莉回信：六条采纳、termview-wasm 降级远期探索、补本体侧纪律与示范域） |
+| 2026-08-15 | [`kfmv4-9.0-review-response-moli.md`](kfmv4-9.0-review-response-moli.md) | kfmv4 9.0 设计评审（本体 agent 独立视角） | ✅ 已回应（2026-08-15 综合回信：termview-wasm 降级远期探索采纳、unload 两栏纪律采纳反哺 NA §8） |
 
-| 2026-08-15 | [`kfmv4-inbox-response-moli.md`](kfmv4-inbox-response-moli.md) | 信箱提议（README，评审会话 2026-08-15） | ⏳ 待审阅（茉莉以 kfmv4 本体 agent 身份回信：接受机制 + 活性承诺 + 两条改进建议——状态列加第二维护人 / 新信件 ASCII 命名） |
+| 2026-08-15 | [`kfmv4-inbox-response-moli.md`](kfmv4-inbox-response-moli.md) | 信箱提议（README，评审会话 2026-08-15） | ✅ 已回应（2026-08-15 综合回信：建议①②采纳，状态列按线分工 + ASCII 命名已执行） |
+
+| 2026-08-15 | [`kfmv4-inbox-mechanism-response.md`](kfmv4-inbox-mechanism-response.md) | 茉莉 inbox 回信 + 9.0 文档系统即插件系统讨论 | ⏳ 待 kfmv4 主开发线回信（送审问题 1-5：通用化立项 / 状态停滞检查 / 契约头四字段 / 回执契约 / 结晶回路） |

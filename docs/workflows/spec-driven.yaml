@@ -5,6 +5,8 @@ frequency: 每周 1-2 次
 reads:
   - guides/spec-driven.md（SOP 正文：步骤 1-7，含 3a 心法回溯 / 3b 设计讨论 / 沉淀五问）
   - active/眼睛与手.md（8.7 眼睛与手重构设计文档，spec-driven 临时产物——完成后删除并同步移除本行）
+  - active/nine-zero-preface.md（9.0 会前酝酿——大重构的前置输入，转正后移入 9.0 设计地图）
+  - ledger/agent-inbox/README.md（跨线评审信箱——9.0 评审往来与裁决状态列在此，设计前必读）
   - active/stack.yaml（当前工作栈）
   - constraints/invariants.md §二（心法表，步骤 3a/3b 的回溯对象）
 steps:

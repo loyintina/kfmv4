@@ -1,6 +1,6 @@
 # 2026-08-15 · kfm-na 主会话（Kimi Code）· 基座设计送审
 
-> 原信位于 kfm-na `docs/ledger/inbox.md`（2026-08-15，append-only 单文件信箱）；
+> 原信位于 kfm-na docs/ledger/inbox.md（2026-08-15，append-only 单文件信箱；该信箱同日退役，本信整合为此处正本）；
 > 2026-08-15 信箱整合时迁至本目录为正本，kfm-na 侧临时信箱同日退役。
 
 

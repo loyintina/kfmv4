@@ -40,17 +40,32 @@ kfmv4 的「一切皆卡片」与 dsh 的「一切皆插件」在 NA 统一。
 
 | 目录 | 是什么 |
 |------|--------|
-| `dsh/` | dsh 研究材料：Cordis 机制解剖笔记、dsh 架构对照（随深挖增补） |
+| `dsh/` | dsh 研究材料：Cordis 机制解剖笔记、dsh 架构对照、论文研究（随深挖增补） |
+| `dsh/paper/` | 论文研究：《A Programming Paradigm for Spatiotemporal Composability》原文 + 精读笔记 |
 | `na/` | NA 设计：插件架构规格书（内核边界 / 插件域清单 / 契约 / 测试标准 / 热插拔语义） |
+| `inbox/` → 已迁出 | **跨线评审信箱**（2026-08-15 迁至 kfmv4 `docs/ledger/agent-inbox/`，见产物登记面） |
 
 ## 研究阶段
 
-1. **阶段 1 · 规格书**（当前）：dsh 五机制深挖 → 《插件架构规格书》——内核边界 /
-   插件域清单与优先级 / 每插件契约标准 / 热插拔语义（Rust 安卓现实）/ 测试四层
-2. **阶段 2 · 边界手术**：conn/session/protocol 抽成连接 provider 插件，
-   行为不变、测试全绿，架构边界立起来
-3. **阶段 3 · 基座落地**：插件基座最小核心 + 自然边界（终端/输入/覆盖层/连接）
-   逐个注册成插件；此后新能力全是加插件文件，不再碰架构
+> **线分工（2026-08-15 用户拍板）**：本会话做**纯理论研究**——dsh 的概念与
+> 实现原理，以论文为主、增进理解；NA 与 dsh 的结合（规格书 / kfm-na 落地）由
+> 其他 agent 负责。
+
+1. **阶段 1 · 规格书**：dsh 五机制深挖 → 《插件架构规格书》——内核边界 /
+   插件域清单与优先级 / 每插件契约标准 / 热插拔语义（Rust 安卓现实）/ 测试四层。
+   进度（2026-08-15）：五机制源码级解剖全部完成——①②③④⑥（笔记 §1-5）+
+   ⑤ inject 依赖引擎（§7）+ profile/bundle 分层组合（§8）；规格书 §4.3 依赖
+   激活语义已同步。**规格书 v1 定稿（2026-08-15）**——paper-digest 12 条修订
+   全部落地（NA 线 agent 接续完成）；本线后续为阶段 2/3
+2. **阶段 1T · 理论线**（当前）：dsh 论文级研究——Cordis 设计论文
+   《A Programming Paradigm for Spatiotemporal Composability》精读（`dsh/paper/`），
+   概念体系 + 数学结构 + 三层对照（论文 → cordis 源码 → dsh 强化）。待办方向：
+   论文可交换性 vs dsh 实际注册、§6.4 对 Rust 的启示、§6.6 版本化对照、dsh
+   scope 对应论文哪个机制（见笔记 §11）
+3. **阶段 2 · 边界手术**：conn/session/protocol 抽成连接 provider 插件，
+   行为不变、测试全绿，架构边界立起来（NA 线）
+4. **阶段 3 · 基座落地**：插件基座最小核心 + 自然边界（终端/输入/覆盖层/连接）
+   逐个注册成插件；此后新能力全是加插件文件，不再碰架构（NA 线）
 
 ## 已定架构决策（2026-08-14 用户拍板）
 
@@ -72,5 +87,12 @@ kfmv4 的「一切皆卡片」与 dsh 的「一切皆插件」在 NA 统一。
 
 | 文件 | 说明 |
 |------|------|
-| `na/plugin-architecture-spec.md` | 插件架构规格书（v0 草案，随 dsh 深挖迭代） |
+| `na/plugin-architecture-spec.md` | 插件架构规格书（**v1 定稿 2026-08-15**，论文精读 12 条修订落地；此后改动走文末修订记录） |
 | `dsh/cordis-mechanics.md` | Cordis 机制解剖笔记（源码级，file:line 出处；规格书证据层） |
+| `dsh/paper/paper.pdf` | 论文原文 PDF（cordiverse/paper，2026-08-13 preprint） |
+| `dsh/paper/paper.md` | 论文原文 Markdown（anydoc 转换，2171 行） |
+| `dsh/paper/paradigm-notes.md` | 论文精读笔记（概念体系 + 数学结构 + 论文↔cordis↔dsh 三层对照） |
+| `dsh/paper/paper.txt` | 论文文本提取（pymupdf，`paper/.venv` 隔离环境；与 paper.md 并存） |
+| `dsh/paper/paper-digest.md` | 论文增量笔记（对照 cordis-mechanics 源码解剖的增量认知 19 条 + 规格书 v0 修订清单 12 条 + 不采用清单；与 paradigm-notes 互补：那份是论文内概念地图，这份是落地修订依据） |
+| `/root/kfmv4/docs/ledger/agent-inbox/` | **跨线评审信箱**（2026-08-15 自本目录迁出，升为 kfmv4 通用 agent 信箱；README 含机制/规则/状态列） |
+| `inbox/kfmv4-9.0-评审回信.md` | 9.0 会话回评审：七条全收裁决清单 + 对 NA 的反向输入（池结构/三者分离/headless 布局） |
