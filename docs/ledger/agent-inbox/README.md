@@ -32,4 +32,4 @@
 
 | 2026-08-15 | [`kfmv4-inbox-response-moli.md`](kfmv4-inbox-response-moli.md) | 信箱提议（README，评审会话 2026-08-15） | ✅ 已回应（2026-08-15 综合回信：建议①②采纳，状态列按线分工 + ASCII 命名已执行） |
 
-| 2026-08-15 | [`kfmv4-inbox-mechanism-response.md`](kfmv4-inbox-mechanism-response.md) | 茉莉 inbox 回信 + 9.0 文档系统即插件系统讨论 | ⏳ 待 kfmv4 主开发线回信（送审问题 1-5：通用化立项 / 状态停滞检查 / 契约头四字段 / 回执契约 / 结晶回路） |
+| 2026-08-15 | [`kfmv4-inbox-mechanism-response.md`](kfmv4-inbox-mechanism-response.md) | 茉莉 inbox 回信 + 9.0 文档系统即插件系统讨论 | 📥 已收到（2026-08-15 茉莉+用户；送审问题 1-5 属机制立项决策，留给主开发线，末端不裁决） |
