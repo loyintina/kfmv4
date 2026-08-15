@@ -15,6 +15,6 @@ writes:
   - domains/（修正）
   - guides/（修正）
   - check-*.mjs（如机械化）
-exit_condition: 全量 check 绿 + 漂移清零
+exit_condition: 全量 check 绿 + 无未处置的发现（keptFindings 每条有去向：已修/误报/豁免/待议；"漂移清零"不可靠——采样方差会让真发现在单轮静默消失，单轮消失 ≠ 已裁决，见 agent-runner.md 采样闪烁）
 natural_next: discipline-mechanize（审计盛产机械化素材）
 metric: ≥60 天未审计 → 候选提醒（铺路字段，未实现）

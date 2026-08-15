@@ -117,7 +117,7 @@ _resetAnimTimeline → 下一个队列点击。
     canvas-scroll 三条越界「罚步进」近似实现（:77-86/:211-243/:293-330）。
 13. **【存疑】prompt 模式点击不更新 selectedFile**（promptSelectSingle 不走
     setSelectedFile）——选中高亮在 prompt 模式可能不生效。
-14. 次要：tree-render.ts:641-651 残留 10 行空 `;` 语句及多处注释乱码（编码曾受损）；
+14. ~~次要：tree-render.ts:641-651 残留 10 行空 `;` 语句及多处注释乱码（编码曾受损）~~——**已清除（2026-08-15 语义审计处置）**：实读 tree-render.ts 仅 1 行空分号，与漂移 9「残留语句同批清除」一致，本条为历史记录未更新；
     initTreeRenderer 首帧 rebuildTree 未走 rAF，靠 `|| 295`/`|| 618` 兜底（:934/939）。
 
 ## 陷阱指针
