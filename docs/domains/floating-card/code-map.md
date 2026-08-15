@@ -124,7 +124,7 @@ DOM 保 WS（:594）→ dismiss 全清 + terminal-close。tmux 卡叠加 list-se
     卡压根不读字号偏好。
 20. **【已结案】handler-factory 失焦静默丢写**：`_doSave` 查响应 + 失败 toast +
     失败不切预览保住文本（BAR-SAVE-01，成因 C 权宜，引入 0b12122）。
-21. main.ts:57 把 cardRegistry 挂 window.__cardRegistry——调试后门，契约未提。
+21. main.ts:51 把 cardRegistry 挂 window.__cardRegistry——调试后门，契约未提。
 22. 命名错位：card03 的 handler 工厂叫 `createTerminal04Handler`；契约文件清单混用
     03/04 编号。
 

@@ -37,7 +37,7 @@
 ## 状态所有权
 
 - 域内脚本基本无状态（一次性进程）；errors 累加 → 末尾 exit 1 是统一模式
-- dist/build-info.json 是跨进程状态：build.mjs:75 唯一写者；读者
+- dist/build-info.json 是跨进程状态：build.mjs:120 唯一写者；读者
   src/server/routes/files.ts（/api/system/info 暴露）+ deploy.sh 握手断言
 - tests/preload.mjs 模块级 mock localStorage（全测试共享，reset-hooks 隔离）
 

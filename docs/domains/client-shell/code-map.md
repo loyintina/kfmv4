@@ -26,7 +26,7 @@
 | `isAppReady()` | app-lifecycle.ts（初始化就绪标志，2026-08-10 竞态修复） | gestures.ts:197 召唤守卫、main.ts:89 markAppReady |
 | `anim` 单例 | animation-registry.ts | ~10 个文件 |
 | `initOrb()` | orb.ts（529 行纯 DOM 壳，宿主已拆出） | main.ts:83（唯一） |
-| `createDragHandler()` | drag-handler.ts:68 | orb.ts:471、floating-card.ts |
+| `createDragHandler()` | drag-handler.ts:63 | orb.ts:479、floating-card.ts |
 
 公共底座（logger.ts / dom-refs.ts / z-index-layers.ts / ui-registry.ts /
 animation-registry.ts）被全仓三域共用。version-watch.ts：版本横幅——bundle 内嵌

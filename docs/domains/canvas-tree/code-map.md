@@ -39,7 +39,7 @@ Canvas 2D 文件树的全部呈现与交互：树构建、展开/折叠动画（
 ## 核心流程
 
 **点击展开**：click 入队（tree-render.ts:434）→ processClickQueue（:485）→ doExpand（:587）
-→ L.beginOp + KFMState.setExpanded → notify → rebuildTree（:917，入口防御性清理）
+→ L.beginOp + KFMState.setExpanded → notify → rebuildTree（:895，入口防御性清理）
 → _runExpandAnimation（:610）→ overlay 搭建 + 字符雨 → onComplete：endOp → 清理 →
 _resetAnimTimeline → 下一个队列点击。
 
