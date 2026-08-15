@@ -258,7 +258,11 @@ export function toOpenAiMessages(messages: ChatMessage[], opts: ToOpenAiOptions)
         // 实测（2026-08-04）：当前官方 flash 端点宽容，不回传也 200；但文档明确
         // 要求 + 严格端点/版本演进风险——带上合规无害。无 tool_calls 的纯正文分支
         // 不带：官方文档「无工具调用时 reasoning 不参与拼接，传了会被忽略」。
-        const reasoning = textBlocks.map(b => b.reasoning || '').join('') || undefined;
+        // L2 远期 reasoning 剥离（2026-08-16 用户定稿）：豁免期外的思考链不上行——
+        // 判决（正文）已总结一切，远期过程是纯载荷（实测 94% 是它）。近期豁免
+        // （G1 同界）；带 tools 分支不剥离（deepseek 400 兼容，见上）。
+        // 真相源不删：会话文件 reasoning 原样全量，仅投影剥离（宪法第四条）。
+        const reasoning = (!compactable ? textBlocks.map(b => b.reasoning || '').join('') : '') || undefined;
         apiMessages.push({
           role: 'assistant',
           content: headText,
