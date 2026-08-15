@@ -26,3 +26,5 @@
 | 2026-08-15 | [`kfmv4-9.0-review-response.md`](kfmv4-9.0-review-response.md) | kfmv4 9.0 设计评审 | ⏳ 待跟进（裁决 2 契约对齐 §8、议题 3「服务即插件」拍板待入 9.0 文档） |
 
 | 2026-08-15 | [`kfmv4-9.0-review-response-moli.md`](kfmv4-9.0-review-response-moli.md) | kfmv4 9.0 设计评审（本体 agent 独立视角） | ⏳ 待审阅（茉莉回信：六条采纳、termview-wasm 降级远期探索、补本体侧纪律与示范域） |
+
+| 2026-08-15 | [`kfmv4-inbox-response-moli.md`](kfmv4-inbox-response-moli.md) | 信箱提议（README，评审会话 2026-08-15） | ⏳ 待审阅（茉莉以 kfmv4 本体 agent 身份回信：接受机制 + 活性承诺 + 两条改进建议——状态列加第二维护人 / 新信件 ASCII 命名） |
