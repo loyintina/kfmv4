@@ -82,8 +82,11 @@ SessionChanged { mode: DispatchMode, ... } }`）。
 
 - `DisposableList`：sn 递增注册，`clear()` 返回 **逆序**（最新注册先回滚，
   utils.ts:27-30 `values.reverse()`）
-- Fiber 状态机：`PENDING → … → UNLOADING（disposers 运行中）→ DISPOSED`
-  （fiber.ts:144-147）
+- Fiber 状态机**六态**（fiber.ts:147-154，§4 初稿只写了三态，实际六态）：
+  `PENDING`（等依赖服务）/ `LOADING`（callback 运行中）/ `ACTIVE`（已加载提供
+  中）/ `FAILED`（config 或 callback 抛错）/ `UNLOADING`（disposers 运行中）/
+  `DISPOSED`（已移除不可重启）。**依赖缺失是合法状态 PENDING，不是错误**——
+  服务出现后自动激活（机制见 §7）
 - `fiber.dispose()`：卸载插件 → 等清理完成（fiber.ts:195-196）；disposers
   支持 async，卸载会 await（fiber.ts:71-72）
 - 插件内部注册（监听器/服务/定时器）统一进 fiber 的 `_disposables`，
@@ -116,5 +119,136 @@ patch last-write-wins（架构层），这里在服务层也有同名机制。
 4. **框架自观察**：`internal/*` 事件模式给 NA 启发——基座自身的注册/派发
    可被观测（对应 kfmv4 的 obs 观测台思路）
 5. **inject 依赖**：registry.ts（337 行）的 `ctx.plugin`/`ctx.inject` 注册表
-   是激活顺序的引擎——NA 规格书依赖图激活的论断在此有源码支撑（细节随
-   深挖增补）
+   是激活顺序的引擎——源码级细节见本笔记 §7（六态状态机 / epoch 拓扑签名 /
+   notify 传播闭环）
+
+## 7. inject 依赖引擎：声明式反应式激活（registry.ts + fiber.ts + reflect.ts）
+
+> 2026-08-15 深挖补记。**inject 不是一次性依赖解析，是持续追踪的声明式
+> 反应式依赖**：服务上线/下线/换实现/失可用，依赖者自动激活/卸载/重载，
+> 插件作者零胶水。这是「一切皆插件」组合式架构的激活引擎。
+
+### 7.1 声明形态与规范化（registry.ts:19, 37-60, 71-88）
+
+- `Inject` 类型两种形态（registry.ts:19）：**数组**（只要服务可用，不带
+  intercept 配置）｜**对象**（服务名 → intercept 配置，依赖与配置二合一）
+- `@Inject` 装饰器（registry.ts:37-60）：类级 → 贡献到静态 `inject` map
+  （原型链继承，`symbols.checkProto` 标记，registry.ts:40-44）；**方法级** →
+  延迟到依赖服务可用才调用（`ctx.inject(inject, callback)`，registry.ts:48-55）
+- `Inject.resolve()`（registry.ts:71-88）：数组/对象/类继承元数据统一归一为
+  plain map（服务名 → 配置或 `null`）
+
+### 7.2 激活是状态机不是一次装载（fiber.ts:147-154, 314-319）
+
+- 构造时先 publish `internal/plugin`，再对每个 inject 服务 `_checkImpl(name)`，
+  最后 `_refresh()`（fiber.ts:314-319）——**加载延迟到依赖检查之后**
+- `PENDING` 是合法状态：依赖未齐 → 挂起；依赖齐 → 自动 LOADING → ACTIVE。
+  插件代码**不因依赖缺失而报错**
+
+### 7.3 epoch = 依赖拓扑签名（fiber.ts:611-639）——本机制题眼
+
+- `_refresh()`：遍历 inject，任一依赖缺失 → `epoch = INACTIVE`；否则
+  `epoch += ':' + impl.fiber.uid`（fiber.ts:611-623）——epoch 是**依赖实现的
+  身份串接**（fiber uid 唯一标识提供者）
+- `_setEpoch()`：epoch 未变 → 无事；INACTIVE → 有效 → `_reload()`
+  （LOADING）；有效 → INACTIVE → `_unload()`（UNLOADING）（fiber.ts:625-639）
+- **依赖实现换人（uid 变）→ epoch 变 → 自动重载**。注入不是一次性解析，
+  是持续追踪的拓扑签名比较
+
+### 7.4 可用性谓词 + strict（fiber.ts:597-609; reflect.ts:237-243）
+
+- `_checkImpl()`：`reflect._getImpl(name, strict)` 查找；`impl.check` 谓词
+  为 false 或抛错 → 视为缺失（fiber.ts:600-607）——服务「存在但不可用」语义
+- `_getImpl` strict：提供者 fiber 非 ACTIVE → 不可用（reflect.ts:241）——
+  服务提供者自己还在加载/卸载中，依赖者拿不到
+
+### 7.5 激活时解析配置（fiber.ts:646-673, 740-741）
+
+- `_reload()`：`store = { ..._store }` 快照 → `await Promise.resolve()` 排掉
+  一个 tick（stale epoch 不跑插件代码，fiber.ts:651-654）→ `_resolveConfig`
+  （`internal/config` waterfall + 服务 intercept 合并）→ `_execute(runner)`
+- **config 延迟到依赖就绪才求值**（fiber.ts:740 注释「Config resolution may
+  access injected services, so defer it until the fiber can activate」）——
+  插件配置可以引用注入的服务
+
+### 7.6 卸载：拓扑序，先撤依赖者（fiber.ts:675-696; reflect.ts:297-303）
+
+- `_unload()`：`_disposables.clear()` 逆序跑 disposers → `store = undefined`
+  → 若 epoch 又有效则重载（依赖在卸载期间回来了）
+- **provide 的 disposer 顺序**（reflect.ts:297-303）：`delete store[key]` →
+  `notify([name])` → **await 所有依赖该服务的 fiber 排空** → 最后才删自己的
+  `fiber.store[name]`（「ensure self access before dependencies cleanup」）——
+  **提供者卸载时依赖者先撤干净**，拓扑序回滚
+
+### 7.7 notify 传播闭环：事件驱动级联（reflect.ts:277-304, 314-336）
+
+- `provide()`：owner ACTIVE → `notify([name])`；disposer 里再次 notify
+  （reflect.ts:294-296, 297-300）——**服务上线、下线都广播**
+- `notify()`：遍历 registry 全部 fiber，`name in fiber.inject` 且 isolate
+  过滤匹配 → `_checkImpl` + `_refresh()`（reflect.ts:314-328）；最后 emit
+  `internal/service`（可被插件观察）
+- **级联激活**：A 提供 x → notify → B 依赖 x → 激活 → B 提供 y → notify →
+  C 激活……依赖图驱动、无中心调度器
+- `_updateState` 只在 ACTIVE ↔ 非 ACTIVE 变化时 `reflect.notify`（fiber.ts:588-594）
+- **isolate 过滤**（reflect.ts:314, 332）：通知只到达同 isolate 作用域的
+  fiber——A 会话的服务变更不惊动 B 会话
+
+**Rust 映射**：依赖激活 = 注册表 + watcher：服务 registry 变更广播
+「X 上线/下线」事件 → 依赖 X 的插件重算签名 → 缺则 Pending、齐则激活。
+卸载顺序 = provide 的 drop 先 notify 依赖者并 await 其卸载（拓扑序）。
+epoch → Rust 端用「服务实例 id 列表」做签名比较。
+
+## 8. profile/bundle 分层组合（dsh 层机制，非 cordis 核心）
+
+> 2026-08-15 深挖补记。五机制⑤在 dsh 架构层实现：`vendor/include`
+> （`@deepseek-ai/cordis-plugin-include`，patch 语义）+ `packages/boot/app-boot`
+> （profile 组装）。与 §5 服务层 intercept 是同构机制的配置面镜像。
+
+### 8.1 分层顺序（profile.ts:5-13, 358-403）
+
+profile = `$DSH_HOME/profiles/<name>/` 下的 `package.json`（`dsh.profile`
+带**有序 bundles 列表**）+ `cordis.patch.yml`（用户 patch 层，最后应用）。
+组合顺序：**空根 ← bundle 层（按 bundles 顺序）← 用户 patch ← launcher 层**
+（`--patch` 文件 + flag 派生 patch）。
+
+### 8.2 applyEntryPatches 语义（vendor/include/src/index.ts:58-128）
+
+- **输入不 mutate**：`structuredClone(data)`，输出总是 detached——可重复应用，
+  热重载能回退已移除/变更的 patch（index.ts:63, 47-52 注释）
+- `entryMap` 按行 `id` 索引，**group 递归**（index.ts:66-75）
+- `insert`：无 id → 追加到尾部；有 id 且目标是 group → push 进 group.config。
+  **insert 的行立即索引**（index.ts:96-101）——同一列表更后面的 patch 可寻址
+  刚插入的行（「a layer must be able to configure or disable a row an
+  earlier layer inserted」）
+- 非 insert：按 id 寻址；`name` 不匹配 → warn + skip（防错配，index.ts:116-119）；
+  其余字段**整体覆写**（`target[key] = value`，含 `disabled`、`config`）
+- 匹配不到 → warn + skip，不报错（index.ts:110-114）
+- **last-write-wins**：同 id 被多层命中 → 后层覆盖前层
+
+### 8.3 配置面与激活面分工——哲学核心
+
+base patch 头注释（`packages/bundle/base/cordis.patch.yml`）：「A patch
+replaces the targeted row's whole config rather than merging into it」+
+「**Row order carries no load semantics (activation is service-availability
+driven)**」。即：
+
+- 配置层（patch）只回答「有哪些插件 + 参数」，**行序无加载语义**
+- 激活顺序完全交给 §7 的 inject 引擎（服务可用性驱动）
+- **config 是整行替换不是深合并**——行语义 = 整行覆盖
+
+**Rust 映射**：配置分层 = `serde` 反序列化 + 覆写合并（分层 map：内核默认 →
+profile → 用户 patch，逐层覆盖）；行 id 寻址 → 配置条目以 id 为键覆写。
+「行序无加载语义」→ NA 的插件启动顺序同样由依赖图驱动，配置只声明清单。
+
+## 9. 对 NA 规格书的增补（2026-08-15 轮）
+
+1. **依赖缺失是状态不是错误**：PENDING 合法态，服务出现自动激活——规格书
+   §4.3 依赖声明补「依赖未齐时插件挂起，不报错」
+2. **epoch 反应式重载**：依赖实现换人自动重载——NA 插件基座需要「服务实例 id
+   签名」比较，而非一次性依赖解析
+3. **notify 的 isolate 过滤**：服务变更只广播到同作用域 fiber——NA 每终端
+   会话独立 ctx 时，会话 A 的服务变更不惊动会话 B
+4. **config 延迟解析**：插件 config 可引用注入服务——NA 的插件配置解析放
+   到依赖就绪之后
+5. **卸载拓扑序**：提供者卸载先 notify 依赖者并 await 排空——NA 的
+   `PluginHandle` 回滚顺序依依赖图，非注册序
