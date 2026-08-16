@@ -1,5 +1,5 @@
 <!-- 机械生成：node scripts/check/gen-code-inventory.mjs —— 请勿手改 -->
-<!-- 基准 commit db6ecd25 · 生成于 2026-08-16 -->
+<!-- 基准 commit 902928f5 · 生成于 2026-08-16 -->
 
 # 代码清单（机械层）
 
@@ -106,7 +106,7 @@
 | src/client/modules/hand-geometry.ts | 11 | handHitTest |
 | src/client/modules/orb-state.ts | 9 | OrbState |
 
-## ai-chat（57 文件 · 12614 行）
+## ai-chat（57 文件 · 12621 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
@@ -115,8 +115,8 @@
 | src/server/ai/tools/omp/browser/tab-worker.ts | 921 | WorkerCore |
 | src/server/ai/tools/omp/browser/launch.ts | 603 | DEFAULT_VIEWPORT, BROWSER_PROTOCOL_TIMEOUT_MS, loadPuppeteer, loadPuppeteerInWorker, LaunchHeadlessOptions, launchHeadlessBrowser, applyViewport, UserAgentOverride, UserAgentSession, applyStealthPatches |
 | src/server/ai/chat.ts | 572 | ChatMessage, StreamEvent, createClientIdxMapper, findApiProvider |
-| src/client/modules/session-client.ts | 538 | SessionMessage, Session, extractMessageText, countTextMessages, parseSessionItem, sessionStore |
-| src/client/modules/orb-chat-run.ts | 516 | ChatMessage, StreamEvent, getActiveRunId, getActiveCursor, setEventHook, readPersistedRun, clearPersistedRun, settlePendingToolBlocks, resumeRun, doSend |
+| src/client/modules/session-client.ts | 542 | SessionMessage, Session, extractMessageText, countTextMessages, parseSessionItem, sessionStore |
+| src/client/modules/orb-chat-run.ts | 519 | ChatMessage, StreamEvent, getActiveRunId, getActiveCursor, setEventHook, readPersistedRun, clearPersistedRun, settlePendingToolBlocks, resumeRun, doSend |
 | src/client/modules/ws-channel.ts | 432 | wsChannel, initWsChannel |
 | src/server/ai/eyes.ts | 432 | EYES_PATH, genEyes |
 | src/shared/tool-compaction/index.ts | 370 | CompactorEntry, COMPACTOR_REGISTRY, COMPACTOR_NAMES, webTitleKey, CompactionCtx, MUT_BURST_GAP, EXEMPT_USER_ROUNDS, TODO_STALE_GAP, FAIL_REPEAT_MIN, errorFingerprint, failRepeatAnnotation, todoResultAnnotation, normalizeBashCommand, compactToolResult, compactToolInput |
@@ -168,12 +168,12 @@
 | src/server/ai/tools/omp/rewind.ts | 19 | ompRewindTool |
 | src/shared/chat-protocol/index.ts | 5 | createClientIdxMapper, applyEvent, reduceEvents, type ReduceContext |
 
-## server（11 文件 · 2676 行）
+## server（11 文件 · 2691 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | src/server/routes/obs.ts | 893 | fetchDeepseekBalance, setupObsRoutes, setupObsPages, parseInbox, collectAuditPending, parseStack, collectSys, collectArchive, normalizeIso, collectPulse, collectPerms, buildRolesData, collectRoles |
-| src/server/routes/files.ts | 465 | pickSessionCompactToken, FileItem, sliceMessages, MSG_PAYLOAD_BUDGET, MSG_SINGLE_CAP, capMessagesPayload, setupFileRoutes |
+| src/server/routes/files.ts | 480 | pickSessionCompactToken, pickCompactCutIndex, FileItem, sliceMessages, MSG_PAYLOAD_BUDGET, MSG_SINGLE_CAP, capMessagesPayload, setupFileRoutes |
 | src/server/ws-server.ts | 324 | WsServer |
 | src/server/index.ts | 188 | — |
 | src/server/path-utils.ts | 172 | ROOT_DIR, PROJECT_ROOT, KFM_DATA_DIR, getActiveRoot, getSafeRoot, setActiveRoot, sanitizePath, SESSION_ID_RE, isValidSessionId, isLoopbackHost, isTrustedOrigin, verifyLocalOrigin |
@@ -184,12 +184,12 @@
 | src/server/routes/proxy.ts | 94 | setupProxyRoutes |
 | src/server/routes/providers.ts | 66 | setupProvidersRoutes |
 
-## infra（169 文件 · 19407 行）
+## infra（170 文件 · 19447 行）
 
 | 文件 | 行数 | 导出符号 |
 |------|-----:|----------|
 | tests/client-logic.test.ts | 968 | — |
-| tests/regression.test.ts | 665 | — |
+| tests/regression.test.ts | 666 | — |
 | experiments/coldstart/tools/normalize-arms.mjs | 587 | — |
 | scripts/agent/semantic-audit.mjs | 517 | parseOnly, taskFiles, mechanicalOwners, buildPrompt, makeValidate, recheckRef, recheckQuote |
 | tests/tool-compaction.test.ts | 505 | — |
@@ -317,6 +317,7 @@
 | scripts/check/check-release-radar.mjs | 42 | — |
 | tests/obs-track-time.test.ts | 42 | — |
 | tests/reset-hooks.ts | 41 | — |
+| tests/compact-cutindex.test.ts | 39 | — |
 | tests/obs-audit-pending.test.ts | 38 | — |
 | tests/runner.ts | 33 | test, group, runAll, regression, beforeEach, TestFileNode, singleFolder, nestedFolders |
 | tests/session-card-parser.test.ts | 33 | — |
@@ -583,13 +584,14 @@
 - src/client/modules/terminal-card-04.ts → src/client/modules/z-index-layers.ts
 - src/client/modules/tmux-card.ts → src/client/modules/gesture-registry.ts
 
-### infra → ai-chat（32 边）
+### infra → ai-chat（33 边）
 
 - tests/browser-tool.test.ts → src/server/ai/tools/omp/browser/tab-supervisor.ts
 - tests/chat-protocol.test.ts → src/client/modules/orb-chat.ts
 - tests/chat-protocol.test.ts → src/server/ai/chat.ts
 - tests/client-logic.test.ts → src/client/modules/session-client.ts
 - tests/client-logic.test.ts → src/shared/message-normalize.ts
+- tests/compact-cutindex.test.ts → src/client/modules/session-client.ts
 - tests/compact-l4.test.ts → src/shared/chat-protocol/to-openai-messages.ts
 - tests/invariants.test.ts → src/server/ai/chat.ts
 - tests/omp-glob.test.ts → src/server/ai/tools/omp/glob.ts
@@ -667,8 +669,9 @@
 - tests/floating-state.test.ts → src/client/modules/floating-shared.ts
 - tests/reset-hooks.ts → src/client/modules/card-registry.ts
 
-### infra → server（15 边）
+### infra → server（16 边）
 
+- tests/compact-cutindex.test.ts → src/server/routes/files.ts
 - tests/compact-list.test.ts → src/server/routes/files.ts
 - tests/obs-audit-pending.test.ts → src/server/routes/obs.ts
 - tests/obs-roles.test.ts → src/server/routes/obs.ts
@@ -696,4 +699,4 @@
 - src/server/ws-server.ts → src/server/ai/page-state.ts
 
 ---
-合计 322 文件 · 55733 行 · 跨域边 276 条
+合计 323 文件 · 55795 行 · 跨域边 278 条
